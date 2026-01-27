@@ -13,9 +13,10 @@
 4. Remove worktree and delete feature branch.
 
 ## Status
-- current: 2/4
+- current: 3/4
 - last_updated: 2025-09-27
 
 ## Progress Log
 - 2025-09-27: Plan created.
 - 2025-09-27: Verified feature branch and committed changes.
+- 2025-09-27: Squash-merged into main, resolved http.ts conflict, ran lint/tsc/test.
