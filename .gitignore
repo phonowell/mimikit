@@ -1,0 +1,32 @@
+# Dependencies
+/node_modules
+
+# Build & Test outputs
+*.tsbuildinfo
+.nyc_output
+/.cache
+/coverage
+/dist
+/stats.html
+__generated__
+junit.xml
+
+# Environment & Config
+!.env.example
+.env
+.env.*
+/.vscode
+
+# Runtime state
+/.mimikit
+
+# System & Temp
+*.log
+*.temp
+*.tmp
+.DS_Store
+/temp
+test-report.md
+
+# Trae IDE
+/.trae
