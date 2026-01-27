@@ -1,6 +1,8 @@
 import http from 'node:http'
 import { URL } from 'node:url'
 
+import { loadWebUiAsset } from './webui.js'
+
 import type { ResumePolicy } from '../config.js'
 import type { Master } from '../runtime/master.js'
 
@@ -22,6 +24,18 @@ const sendJson = (
   res.end(payload)
 }
 
+const sendText = (
+  res: http.ServerResponse,
+  status: number,
+  body: string,
+  contentType: string,
+): void => {
+  res.writeHead(status, {
+    'Content-Type': contentType,
+    'Content-Length': Buffer.byteLength(body),
+  })
+  res.end(body)
+}
 const logResponse = (
   req: http.IncomingMessage,
   url: URL,
@@ -39,7 +53,6 @@ const logResponse = (
 
 const shouldLog = (req: http.IncomingMessage, url: URL): boolean =>
   !(req.method === 'GET' && url.pathname === '/health')
-
 const readJson = async (req: http.IncomingMessage): Promise<unknown> => {
   const chunks: Buffer[] = []
   for await (const chunk of req)
@@ -70,6 +83,24 @@ export const startHttpServer = async (
     if (req.method === 'GET' && url.pathname === '/health') {
       respond(200, { ok: true })
       return
+    }
+
+    if (req.method === 'GET') {
+      try {
+        const asset = await loadWebUiAsset(url.pathname)
+        if (asset) {
+          sendText(res, 200, asset.body, asset.contentType)
+          return
+        }
+      } catch {
+        sendText(
+          res,
+          500,
+          'Failed to load web UI asset',
+          'text/plain; charset=utf-8',
+        )
+        return
+      }
     }
 
     if (req.method === 'POST' && url.pathname === '/tasks') {

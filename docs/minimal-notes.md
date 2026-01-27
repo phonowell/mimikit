@@ -37,3 +37,4 @@
 
 ## 运维
 - 应用变更需重启服务：停止现有进程后重启 `tsx src/cli.ts serve --port 8787`。
+- `serve` 同时提供 Web UI（`GET /`）与 API（`/health`、`/tasks`、`/tasks/:id`）。
