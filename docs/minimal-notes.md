@@ -34,3 +34,6 @@
 - JSONL 解析容错 + `--output-last-message` 兜底。
 - `rg` 不可用时 fallback `grep`。
 - resume 失败时降级新会话；必要时提供手动指定 sessionId。
+
+## 运维
+- 应用变更需重启服务：停止现有进程后重启 `tsx src/cli.ts serve --port 8787`。

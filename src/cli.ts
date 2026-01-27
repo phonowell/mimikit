@@ -1,3 +1,4 @@
+import { parseAskArgs } from './cli/args.js'
 import { loadConfig, type ResumePolicy } from './config.js'
 import { loadTaskLedger } from './runtime/ledger.js'
 import { Master } from './runtime/master.js'
@@ -6,8 +7,9 @@ import { startHttpServer } from './server/http.js'
 const printUsage = (): void => {
   console.log(`Usage:
   tsx src/cli.ts serve [--port <port>]
-  tsx src/cli.ts ask --session <key> --message <text> [--resume auto|always|never] [--verify "<cmd>"] [--max-iterations <n>]
+  tsx src/cli.ts ask [--session <key>] [--message <text>] [text...] [--resume auto|always|never] [--verify "<cmd>"] [--max-iterations <n>]
   tsx src/cli.ts task --id <taskId>
+  pnpm ask "message..."
 `)
 }
 
@@ -15,14 +17,6 @@ const getArgValue = (args: string[], flag: string): string | undefined => {
   const index = args.indexOf(flag)
   if (index === -1) return undefined
   return args[index + 1]
-}
-
-const parseResumePolicy = (
-  value: string | undefined,
-): ResumePolicy | undefined => {
-  if (!value) return undefined
-  if (value === 'auto' || value === 'always' || value === 'never') return value
-  return undefined
 }
 
 const runServe = async (args: string[]): Promise<void> => {
@@ -60,21 +54,11 @@ const waitForTask = async (
 }
 
 const runAsk = async (args: string[]): Promise<void> => {
-  const sessionKey = getArgValue(args, '--session')
-  const message = getArgValue(args, '--message')
-  if (!sessionKey || !message)
-    throw new Error('--session and --message are required')
+  const parsed = parseAskArgs(args)
+  if (!parsed.ok) throw new Error(parsed.error)
 
-  const resume = parseResumePolicy(getArgValue(args, '--resume'))
-  const verifyCommand = getArgValue(args, '--verify')
-  const maxIterationsValue = getArgValue(args, '--max-iterations')
-  let maxIterations: number | undefined
-  if (maxIterationsValue !== undefined) {
-    const parsed = Number(maxIterationsValue)
-    if (!Number.isFinite(parsed) || parsed < 1)
-      throw new Error('--max-iterations must be a positive number')
-    maxIterations = Math.floor(parsed)
-  }
+  const { sessionKey, message, resume, verifyCommand, maxIterations } =
+    parsed.value
   const config = await loadConfig()
   const master = await Master.create(config)
   const request: {
