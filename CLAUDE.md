@@ -9,6 +9,7 @@
 - Master 常驻并提供 HTTP 服务；同一 session 串行执行并锁 transcript。
 - 任务状态写入 `tasks.md`，重启可恢复；`codex exec` 失败/超时必须写 error entry。
 - 默认无 streaming；Worker prompt 必须包含简明输出约束。
+- 环境限制：位于中国大陆，禁止使用该地区不可访问或访问缓慢的服务。
 - 新功能开发使用新 worktree；充分验证后方可合并回主分支。
 - 新功能必须配套合理、必要、最小化的测试用例。
 - 元原则：精简冗余 · 冲突信代码。

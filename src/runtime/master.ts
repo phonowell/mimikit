@@ -1,6 +1,6 @@
 import crypto from 'node:crypto'
 
-import { SessionStore } from '../session/store.js'
+import { type SessionRecord, SessionStore } from '../session/store.js'
 
 import { appendTaskRecord, loadTaskLedger, type TaskRecord } from './ledger.js'
 import {
@@ -51,6 +51,28 @@ export class Master {
 
   getTask(taskId: string): TaskRecord | undefined {
     return this.tasks.get(taskId)
+  }
+
+  listSessions(): SessionRecord[] {
+    const sessions = Object.values(this.sessionStore.all())
+    sessions.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+    return sessions
+  }
+
+  async deleteSession(
+    sessionKey: string,
+  ): Promise<{ ok: boolean; reason?: string }> {
+    const trimmed = sessionKey.trim()
+    if (!trimmed) return { ok: false, reason: 'invalid_session' }
+    const hasActive = Array.from(this.tasks.values()).some(
+      (task) =>
+        task.sessionKey === trimmed &&
+        (task.status === 'queued' || task.status === 'running'),
+    )
+    if (hasActive) return { ok: false, reason: 'active_tasks' }
+    const removed = await this.sessionStore.remove(trimmed)
+    if (!removed) return { ok: false, reason: 'not_found' }
+    return { ok: true }
   }
 
   async enqueueTask(request: TaskRequest): Promise<TaskRecord> {

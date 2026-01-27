@@ -29,10 +29,12 @@ const sendText = (
   status: number,
   body: string,
   contentType: string,
+  headers?: Record<string, string>,
 ): void => {
   res.writeHead(status, {
     'Content-Type': contentType,
     'Content-Length': Buffer.byteLength(body),
+    ...(headers ?? {}),
   })
   res.end(body)
 }
@@ -89,7 +91,10 @@ export const startHttpServer = async (
       try {
         const asset = await loadWebUiAsset(url.pathname)
         if (asset) {
-          sendText(res, 200, asset.body, asset.contentType)
+          sendText(res, 200, asset.body, asset.contentType, {
+            'Cache-Control': 'no-store',
+            Pragma: 'no-cache',
+          })
           return
         }
       } catch {
@@ -99,6 +104,55 @@ export const startHttpServer = async (
           'Failed to load web UI asset',
           'text/plain; charset=utf-8',
         )
+        return
+      }
+    }
+
+    if (req.method === 'GET' && url.pathname === '/sessions') {
+      const sessions = options.master.listSessions().map((session) => ({
+        sessionKey: session.sessionKey,
+        createdAt: session.createdAt,
+        updatedAt: session.updatedAt,
+      }))
+      respond(200, { sessions }, `sessions=${sessions.length}`)
+      return
+    }
+
+    if (req.method === 'DELETE' && url.pathname.startsWith('/sessions/')) {
+      const sessionKey = decodeURIComponent(
+        url.pathname.slice('/sessions/'.length),
+      ).trim()
+      if (!sessionKey) {
+        respond(
+          400,
+          { error: 'sessionKey is required' },
+          'error=missing_session',
+        )
+        return
+      }
+      try {
+        const result = await options.master.deleteSession(sessionKey)
+        if (!result.ok) {
+          if (result.reason === 'active_tasks') {
+            respond(
+              409,
+              { error: 'session has active tasks' },
+              'error=active_tasks',
+            )
+            return
+          }
+          if (result.reason === 'not_found') {
+            respond(404, { error: 'Session not found' }, 'error=not_found')
+            return
+          }
+          respond(400, { error: 'Invalid session' }, 'error=invalid_session')
+          return
+        }
+        respond(200, { ok: true }, `session=${sessionKey}`)
+        return
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        respond(500, { error: message }, 'error=session_delete_failed')
         return
       }
     }

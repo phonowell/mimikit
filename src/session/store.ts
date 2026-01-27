@@ -1,3 +1,4 @@
+import fs from 'node:fs/promises'
 import path from 'node:path'
 
 import { readJsonFile, writeJsonFile } from '../utils/fs.js'
@@ -71,6 +72,25 @@ export class SessionStore {
     }
     this.sessions[sessionKey] = updated
     return updated
+  }
+
+  async remove(sessionKey: string): Promise<boolean> {
+    const record = this.sessions[sessionKey]
+    if (!record) return false
+    const lockPath = `${record.transcriptPath}.lock`
+    const removeFile = async (filePath: string): Promise<void> => {
+      try {
+        await fs.unlink(filePath)
+      } catch (error) {
+        const err = error as NodeJS.ErrnoException
+        if (err.code !== 'ENOENT') throw error
+      }
+    }
+    await removeFile(lockPath)
+    await removeFile(record.transcriptPath)
+    delete this.sessions[sessionKey]
+    await this.flush()
+    return true
   }
 
   all(): Record<string, SessionRecord> {

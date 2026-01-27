@@ -34,17 +34,11 @@ const assetMap = new Map<string, WebUiAssetEntry>([
   ],
 ])
 
-const cache = new Map<string, WebUiAsset>()
-
 export const loadWebUiAsset = async (
   pathname: string,
 ): Promise<WebUiAsset | null> => {
   const entry = assetMap.get(pathname)
   if (!entry) return null
-  const cached = cache.get(pathname)
-  if (cached) return cached
   const body = await fs.readFile(entry.file, 'utf8')
-  const asset = { contentType: entry.contentType, body }
-  cache.set(pathname, asset)
-  return asset
+  return { contentType: entry.contentType, body }
 }

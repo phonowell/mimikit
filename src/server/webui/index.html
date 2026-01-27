@@ -7,103 +7,80 @@
     <link rel="stylesheet" href="/webui/styles.css" />
   </head>
   <body>
-    <div class="backdrop">
-      <div class="blob blob-one"></div>
-      <div class="blob blob-two"></div>
-      <div class="grid"></div>
-    </div>
-    <main class="shell">
-      <header class="hero">
-        <p class="tag">Mimikit</p>
-        <h1>Task Console</h1>
-        <p class="subtitle">
-          Submit prompts to the local master and track status in real time.
-        </p>
-      </header>
-      <section class="layout">
-        <form class="panel" data-task-form>
-          <div class="field">
-            <label for="sessionKey">Session key</label>
-            <input
-              id="sessionKey"
-              name="sessionKey"
-              type="text"
-              value="default"
-              autocomplete="off"
-            />
+    <main class="page">
+      <form class="app" data-task-form>
+        <aside class="sidebar">
+          <div class="brand">
+            <div class="brand-mark">MK</div>
+            <div class="brand-copy">
+              <p class="tag">Mimikit</p>
+              <h1>Task Console</h1>
+              <p class="subtitle">Local master dispatcher</p>
+            </div>
           </div>
-          <div class="field">
+          <div class="card session-card">
+            <div class="session-head">
+              <div>
+                <p class="session-title">Sessions</p>
+                <p class="session-subtitle">Pick a conversation</p>
+              </div>
+              <button class="ghost" type="button" data-refresh-sessions>
+                Refresh
+              </button>
+            </div>
+            <div class="session-compose">
+              <label for="sessionKey">New session</label>
+              <input
+                id="sessionKey"
+                name="sessionKey"
+                type="text"
+                value="default"
+                autocomplete="off"
+              />
+            </div>
+            <div class="session-list" data-session-list>
+              <div class="session-empty" data-session-empty hidden>
+                No sessions yet.
+              </div>
+            </div>
+          </div>
+        </aside>
+        <section class="chat">
+          <header class="chat-header">
+            <div>
+              <h2>Conversation</h2>
+              <p class="chat-subtitle">Worker output appears here.</p>
+            </div>
+            <div class="status-card">
+              <span class="status-dot" data-status-dot></span>
+              <span class="status-text" data-task-status>Idle</span>
+            </div>
+          </header>
+          <div class="thread">
+            <div class="message incoming">
+              <div class="bubble">
+                <span class="bubble-title">Worker</span>
+                <pre data-task-result></pre>
+              </div>
+            </div>
+          </div>
+          <div class="composer">
             <label for="prompt">Prompt</label>
             <textarea
               id="prompt"
               name="prompt"
-              rows="6"
+              rows="5"
               placeholder="Describe the task..."
               required
             ></textarea>
+            <div class="actions">
+              <button type="submit" data-submit>Send task</button>
+              <span class="hint">POST /tasks</span>
+            </div>
+            <p class="error" data-task-error hidden></p>
           </div>
-          <details class="advanced">
-            <summary>Advanced options</summary>
-            <div class="field">
-              <label for="resume">Resume policy</label>
-              <select id="resume" name="resume">
-                <option value="auto" selected>auto</option>
-                <option value="always">always</option>
-                <option value="never">never</option>
-              </select>
-            </div>
-            <div class="field">
-              <label for="verifyCommand">Verify command</label>
-              <input
-                id="verifyCommand"
-                name="verifyCommand"
-                type="text"
-                placeholder="pnpm test"
-              />
-            </div>
-            <div class="field">
-              <label for="maxIterations">Max iterations</label>
-              <input
-                id="maxIterations"
-                name="maxIterations"
-                type="number"
-                min="1"
-                step="1"
-                placeholder="1"
-              />
-            </div>
-          </details>
-          <div class="actions">
-            <button type="submit" data-submit>Send task</button>
-            <span class="hint">POST /tasks</span>
-          </div>
-          <p class="error" data-task-error hidden></p>
-        </form>
-        <div class="panel status-panel">
-          <div class="status-line">
-            <span class="status-dot" data-status-dot></span>
-            <span class="status-text" data-task-status>Idle</span>
-          </div>
-          <div class="meta">
-            <div>
-              <span class="label">Task ID</span>
-              <span class="value" data-task-id>--</span>
-            </div>
-            <div>
-              <span class="label">Run ID</span>
-              <span class="value" data-run-id>--</span>
-            </div>
-            <div>
-              <span class="label">Session</span>
-              <span class="value" data-session>--</span>
-            </div>
-          </div>
-          <div class="result">
-            <span class="label">Result</span>
-            <pre data-task-result></pre>
-          </div>
-        </div>
-      </section>
+        </section>
+      </form>
     </main>
     <script src="/webui/app.js" defer></script>
   </body>
