@@ -22,6 +22,24 @@ const sendJson = (
   res.end(payload)
 }
 
+const logResponse = (
+  req: http.IncomingMessage,
+  url: URL,
+  status: number,
+  startedAt: number,
+  detail?: string,
+): void => {
+  const method = req.method ?? 'UNKNOWN'
+  const durationMs = Date.now() - startedAt
+  const base = `${method} ${url.pathname} ${status} ${durationMs}ms`
+  const line = detail ? `${base} ${detail}` : base
+  if (status >= 400) console.error(line)
+  else console.log(line)
+}
+
+const shouldLog = (req: http.IncomingMessage, url: URL): boolean =>
+  !(req.method === 'GET' && url.pathname === '/health')
+
 const readJson = async (req: http.IncomingMessage): Promise<unknown> => {
   const chunks: Buffer[] = []
   for await (const chunk of req)
@@ -39,13 +57,18 @@ export const startHttpServer = async (
   options: HttpServerOptions,
 ): Promise<http.Server> => {
   const server = http.createServer(async (req, res) => {
+    const startedAt = Date.now()
     const url = new URL(
       req.url ?? '/',
       `http://${req.headers.host ?? 'localhost'}`,
     )
+    const respond = (status: number, body: unknown, detail?: string): void => {
+      sendJson(res, status, body)
+      if (shouldLog(req, url)) logResponse(req, url, status, startedAt, detail)
+    }
 
     if (req.method === 'GET' && url.pathname === '/health') {
-      sendJson(res, 200, { ok: true })
+      respond(200, { ok: true })
       return
     }
 
@@ -53,7 +76,7 @@ export const startHttpServer = async (
       try {
         const body = await readJson(req)
         if (!body || typeof body !== 'object') {
-          sendJson(res, 400, { error: 'Invalid JSON' })
+          respond(400, { error: 'Invalid JSON' }, 'error=invalid_json')
           return
         }
         const record = body as {
@@ -67,7 +90,11 @@ export const startHttpServer = async (
           typeof record.sessionKey !== 'string' ||
           typeof record.prompt !== 'string'
         ) {
-          sendJson(res, 400, { error: 'sessionKey and prompt are required' })
+          respond(
+            400,
+            { error: 'sessionKey and prompt are required' },
+            'error=missing_fields',
+          )
           return
         }
         const resume = isResumePolicy(record.resume) ? record.resume : undefined
@@ -96,11 +123,10 @@ export const startHttpServer = async (
         if (maxIterations !== undefined) request.maxIterations = maxIterations
 
         const task = await options.master.enqueueTask(request)
-        sendJson(res, 200, task)
+        respond(200, task, `task=${task.id}`)
       } catch (error) {
-        sendJson(res, 400, {
-          error: error instanceof Error ? error.message : String(error),
-        })
+        const message = error instanceof Error ? error.message : String(error)
+        respond(400, { error: message }, 'error=invalid_request')
       }
       return
     }
@@ -109,14 +135,14 @@ export const startHttpServer = async (
       const id = decodeURIComponent(url.pathname.slice('/tasks/'.length))
       const task = options.master.getTask(id)
       if (!task) {
-        sendJson(res, 404, { error: 'Task not found' })
+        respond(404, { error: 'Task not found' }, `task=${id}`)
         return
       }
-      sendJson(res, 200, task)
+      respond(200, task, `task=${id}`)
       return
     }
 
-    sendJson(res, 404, { error: 'Not found' })
+    respond(404, { error: 'Not found' }, 'error=not_found')
   })
 
   await new Promise<void>((resolve, reject) => {
