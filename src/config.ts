@@ -16,23 +16,15 @@ export type Config = {
   codexFullAuto?: boolean
   timeoutMs: number
   maxWorkers: number
-  queueWarnMs: number
   maxIterations: number
   stateDir: string
-  metricsPath: string
-  lessonsPath: string
-  lessonsEnabled: boolean
   memoryPaths: string[]
   maxMemoryHits: number
   maxMemoryChars: number
   resumePolicy: ResumePolicy
   outputPolicy: string
-  guardRequireClean: boolean
-  guardMaxChangedFiles?: number
-  guardMaxChangedLines?: number
   triggerSessionKey: string
   triggerOnFailurePrompt?: string
-  triggerOnLowScorePrompt?: string
 }
 
 const DEFAULT_OUTPUT_POLICY = `Output Policy:\n- Only output the final answer, no reasoning steps.\n- Keep it short, at most 6 lines; if longer, start with a summary.\n- Do not repeat the question or restate the context.`
@@ -53,12 +45,6 @@ const parseNumber = (value: string | undefined, fallback: number): number => {
   if (!value) return fallback
   const parsed = Number(value)
   return Number.isFinite(parsed) ? parsed : fallback
-}
-
-const parseOptionalNumber = (value: string | undefined): number | undefined => {
-  if (value === undefined) return undefined
-  const parsed = Number(value)
-  return Number.isFinite(parsed) ? parsed : undefined
 }
 
 const parseStringArray = (value: string | undefined): string[] | undefined => {
@@ -108,32 +94,6 @@ export const loadConfig = async (options?: {
       process.env.MIMIKIT_STATE_DIR ??
         (fileConfig.stateDir as string | undefined),
     ) ?? defaultStateDir
-  const metricsPath =
-    resolvePath(
-      workspaceRoot,
-      process.env.MIMIKIT_METRICS_PATH ??
-        (fileConfig.metricsPath as string | undefined),
-    ) ?? path.join(stateDir, 'metrics.jsonl')
-  const lessonsPath =
-    resolvePath(
-      workspaceRoot,
-      process.env.MIMIKIT_LESSONS_PATH ??
-        (fileConfig.lessonsPath as string | undefined),
-    ) ?? path.join(stateDir, 'lessons.md')
-  const lessonsEnabled =
-    parseBoolean(process.env.MIMIKIT_LESSONS_ENABLED) ??
-    (fileConfig.lessonsEnabled as boolean | undefined) ??
-    true
-  const guardRequireClean =
-    parseBoolean(process.env.MIMIKIT_GUARD_REQUIRE_CLEAN) ??
-    (fileConfig.guardRequireClean as boolean | undefined) ??
-    false
-  const guardMaxChangedFiles =
-    parseOptionalNumber(process.env.MIMIKIT_GUARD_MAX_CHANGED_FILES) ??
-    (fileConfig.guardMaxChangedFiles as number | undefined)
-  const guardMaxChangedLines =
-    parseOptionalNumber(process.env.MIMIKIT_GUARD_MAX_CHANGED_LINES) ??
-    (fileConfig.guardMaxChangedLines as number | undefined)
   const triggerSessionKey =
     process.env.MIMIKIT_TRIGGER_SESSION_KEY ??
     (fileConfig.triggerSessionKey as string | undefined) ??
@@ -141,9 +101,6 @@ export const loadConfig = async (options?: {
   const triggerOnFailurePrompt =
     process.env.MIMIKIT_TRIGGER_ON_FAILURE_PROMPT ??
     (fileConfig.triggerOnFailurePrompt as string | undefined)
-  const triggerOnLowScorePrompt =
-    process.env.MIMIKIT_TRIGGER_ON_LOW_SCORE_PROMPT ??
-    (fileConfig.triggerOnLowScorePrompt as string | undefined)
 
   const memoryPaths =
     parseStringArray(process.env.MIMIKIT_MEMORY_PATHS) ??
@@ -189,10 +146,6 @@ export const loadConfig = async (options?: {
       process.env.MIMIKIT_MAX_WORKERS,
       fileConfig.maxWorkers ?? 5,
     ),
-    queueWarnMs: parseNumber(
-      process.env.MIMIKIT_QUEUE_WARN_MS,
-      fileConfig.queueWarnMs ?? 10_000,
-    ),
     maxIterations: Math.max(
       1,
       parseNumber(
@@ -201,9 +154,6 @@ export const loadConfig = async (options?: {
       ),
     ),
     stateDir,
-    metricsPath,
-    lessonsPath,
-    lessonsEnabled,
     memoryPaths: memoryPaths.map(
       (value) => resolvePath(workspaceRoot, value) ?? value,
     ),
@@ -217,7 +167,6 @@ export const loadConfig = async (options?: {
     ),
     resumePolicy,
     outputPolicy,
-    guardRequireClean,
     triggerSessionKey,
   }
 
@@ -226,14 +175,8 @@ export const loadConfig = async (options?: {
   if (codexProfile !== undefined) config.codexProfile = codexProfile
   if (codexSandbox !== undefined) config.codexSandbox = codexSandbox
   if (codexFullAuto !== undefined) config.codexFullAuto = codexFullAuto
-  if (guardMaxChangedFiles !== undefined)
-    config.guardMaxChangedFiles = guardMaxChangedFiles
-  if (guardMaxChangedLines !== undefined)
-    config.guardMaxChangedLines = guardMaxChangedLines
   if (triggerOnFailurePrompt !== undefined)
     config.triggerOnFailurePrompt = triggerOnFailurePrompt
-  if (triggerOnLowScorePrompt !== undefined)
-    config.triggerOnLowScorePrompt = triggerOnLowScorePrompt
 
   return config
 }

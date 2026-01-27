@@ -34,28 +34,17 @@ describe('parseAskArgs', () => {
     expect(result.error).toContain('--message')
   })
 
-  it('parses score and guard flags', () => {
+  it('parses verify and max-iterations flags', () => {
     const result = parseAskArgs([
-      '--score',
-      'echo 42',
-      '--min-score',
-      '40',
-      '--objective',
-      'quality',
-      '--guard-clean',
-      '--guard-max-files',
-      '2',
-      '--guard-max-lines',
-      '10',
+      '--verify',
+      'pnpm test',
+      '--max-iterations',
+      '3',
       'ping',
     ])
     expect(result.ok).toBe(true)
     if (!result.ok) return
-    expect(result.value.scoreCommand).toBe('echo 42')
-    expect(result.value.minScore).toBe(40)
-    expect(result.value.objective).toBe('quality')
-    expect(result.value.guardRequireClean).toBe(true)
-    expect(result.value.guardMaxChangedFiles).toBe(2)
-    expect(result.value.guardMaxChangedLines).toBe(10)
+    expect(result.value.verifyCommand).toBe('pnpm test')
+    expect(result.value.maxIterations).toBe(3)
   })
 })

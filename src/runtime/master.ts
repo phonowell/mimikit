@@ -4,16 +4,11 @@ import { SessionStore } from '../session/store.js'
 
 import { appendTaskRecord, loadTaskLedger, type TaskRecord } from './ledger.js'
 import {
-  normalizeGuardLimit,
   normalizeMaxIterations,
-  normalizeMinScore,
-  normalizeObjective,
-  sanitizeScoreCommand,
   sanitizeVerifyCommand,
   trimText,
 } from './master/helpers.js'
 import { runTask } from './master/task-runner.js'
-import { type MetricsSummary, summarizeMetrics } from './metrics.js'
 import { Semaphore, SessionQueue } from './queue.js'
 
 import type { Config, ResumePolicy } from '../config.js'
@@ -23,13 +18,7 @@ export type TaskRequest = {
   prompt: string
   resume?: ResumePolicy
   verifyCommand?: string
-  scoreCommand?: string
-  minScore?: number
-  objective?: string
   maxIterations?: number
-  guardRequireClean?: boolean
-  guardMaxChangedFiles?: number
-  guardMaxChangedLines?: number
   triggeredByTaskId?: string
 }
 
@@ -64,31 +53,12 @@ export class Master {
     return this.tasks.get(taskId)
   }
 
-  getMetricsSummary(): Promise<MetricsSummary> {
-    return summarizeMetrics(this.config.metricsPath)
-  }
-
   async enqueueTask(request: TaskRequest): Promise<TaskRecord> {
     const taskId = crypto.randomUUID()
     const runId = crypto.randomUUID()
     const now = new Date().toISOString()
     const verifyCommand = sanitizeVerifyCommand(request.verifyCommand)
-    const scoreCommand = sanitizeScoreCommand(request.scoreCommand)
-    const minScore = normalizeMinScore(request.minScore)
-    if (minScore !== undefined && !scoreCommand)
-      throw new Error('minScore requires scoreCommand')
-    const objective = normalizeObjective(request.objective)
-    const guardRequireClean =
-      request.guardRequireClean ?? this.config.guardRequireClean
-    const guardMaxChangedFiles = normalizeGuardLimit(
-      request.guardMaxChangedFiles ?? this.config.guardMaxChangedFiles,
-      'guardMaxChangedFiles',
-    )
-    const guardMaxChangedLines = normalizeGuardLimit(
-      request.guardMaxChangedLines ?? this.config.guardMaxChangedLines,
-      'guardMaxChangedLines',
-    )
-    const needsIterations = Boolean(verifyCommand ?? minScore !== undefined)
+    const needsIterations = Boolean(verifyCommand)
     const maxIterations = needsIterations
       ? normalizeMaxIterations(request.maxIterations, this.config.maxIterations)
       : undefined
@@ -103,16 +73,10 @@ export class Master {
       updatedAt: now,
       resume: request.resume ?? this.config.resumePolicy,
       prompt: request.prompt,
-      guardRequireClean,
     }
     const record: TaskRecord = {
       ...baseRecord,
       ...(verifyCommand ? { verifyCommand } : {}),
-      ...(scoreCommand ? { scoreCommand } : {}),
-      ...(minScore !== undefined ? { minScore } : {}),
-      ...(objective ? { objective } : {}),
-      ...(guardMaxChangedFiles !== undefined ? { guardMaxChangedFiles } : {}),
-      ...(guardMaxChangedLines !== undefined ? { guardMaxChangedLines } : {}),
       ...(maxIterations !== undefined ? { maxIterations } : {}),
       ...(request.triggeredByTaskId
         ? { triggeredByTaskId: request.triggeredByTaskId }
@@ -168,26 +132,18 @@ export class Master {
   private async maybeTriggerFollowup(
     task: TaskRecord,
     reason: string,
-    status: 'failed' | 'low-score',
   ): Promise<void> {
     if (task.triggeredByTaskId) return
-    const basePrompt =
-      status === 'low-score'
-        ? this.config.triggerOnLowScorePrompt
-        : this.config.triggerOnFailurePrompt
+    const basePrompt = this.config.triggerOnFailurePrompt
     const trimmedBase = basePrompt?.trim()
     if (!trimmedBase) return
     const lines = [
       trimmedBase,
       '',
       `Triggered by task ${task.id} (${task.sessionKey}).`,
-      `Status: ${status}`,
+      'Status: failed',
       `Reason: ${trimText(reason, 800)}`,
     ]
-    if (task.objective)
-      lines.push(`Objective: ${trimText(task.objective, 800)}`)
-    if (task.score !== undefined && task.minScore !== undefined)
-      lines.push(`Score: ${task.score} (min ${task.minScore})`)
     const prompt = lines.join('\n')
     await this.enqueueTask({
       sessionKey: this.config.triggerSessionKey,

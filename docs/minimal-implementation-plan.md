@@ -9,16 +9,19 @@
 
 ## 范围（做）
 - 常驻 HTTP 服务（任务提交/查询/健康检查）。
+- Web UI（`GET /` 静态页面）。
 - Master 任务队列 + Worker 子进程执行。
 - Markdown 任务账本（持久化 + 恢复）。
 - Session JSONL transcript（对话连续性审计）。
 - Codex sessionId 持久化 + resume 控制。
 - Memory 搜索：`MEMORY.md` + `memory/*.md` + `rg`。
+- 可选 verifyCommand 重试 + 失败 follow-up 任务（可配置）。
 
 ## 范围（不做）
 - 流式输出 / WebSocket / 多渠道适配。
 - 向量索引 / embedding。
-- 插件系统 / UI。
+- 插件系统。
+- metrics/lessons/guard/score。
 
 ## 关键决策
 - 7x24 由主进程常驻 + 外部 supervisor 守护（systemd/launchd/pm2）。
@@ -31,6 +34,7 @@
 - `src/cli.ts` (命令行入口: serve/ask/task)
 - `src/config.ts`
 - `src/server/http.ts` (HTTP 服务)
+- `src/server/webui.ts` (Web UI 资产加载)
 - `src/runtime/master.ts` (调度器)
 - `src/runtime/worker.ts` (子进程封装)
 - `src/runtime/queue.ts` (per-session 串行)
@@ -44,14 +48,16 @@
 - `codexModel` / `codexProfile` (可选, 优先使用 Codex config.toml)
 - `codexSandbox` / `codexFullAuto` (可选, 仅在需要时覆盖)
 - `timeoutMs`
-- `maxWorkers` / `queueWarnMs`
+- `maxWorkers`
 - `stateDir` (任务账本 + session store)
 - `memoryPaths` / `maxMemoryHits` / `maxMemoryChars`
 - `resumePolicy` (`auto` | `always` | `never`)
 - `outputPolicy` (简明输出约束, 追加到子进程 prompt)
+- `maxIterations` (verifyCommand 重试上限)
+- `triggerSessionKey` / `triggerOnFailurePrompt` (失败 follow-up)
 
 ## 配置最小化原则
-- 仅保留协调器必需配置（stateDir、queue、memory、resume、outputPolicy）。
+- 仅保留协调器必需配置（stateDir、queue、memory、resume、outputPolicy、maxIterations、trigger）。
 - Codex 相关配置优先走 `~/.codex/config.toml`；只有明确需求时才覆盖。
 - Worker 调用时避免强行指定 model/profile/sandbox，除非用户显式配置。
 
@@ -73,9 +79,13 @@
 - sessionKey: <key>
 - runId: <runId>
 - retries: <n>
+- attempt: <n>
 - createdAt: <iso>
 - updatedAt: <iso>
 - resume: auto|always|never
+- verifyCommand: <cmd?>
+- maxIterations: <n?>
+- triggeredByTaskId: <id?>
 - codexSessionId: <id?>
 - prompt: |
   <user prompt...>
@@ -102,12 +112,14 @@
 
 ## Phase 1: Master + HTTP 服务
 3) HTTP server:
+   - `GET /` Web UI。
    - `POST /tasks` 提交任务（含 sessionKey + resume）。
    - `GET /tasks/:id` 查询任务。
    - `GET /health` 健康检查。
 4) Master 调度器:
    - 维护任务队列、并发控制 `maxWorkers`。
    - 负责写入/更新 tasks.md。
+   - verifyCommand 失败时重试，失败可触发 follow-up。
 
 ## Phase 2: Worker 执行
 5) Worker 子进程:
@@ -148,7 +160,7 @@ Output Policy:
 12) `serve`:
    - 启动 HTTP + Master（7x24 运行入口）。
 13) `ask`:
-   - `ask --session <key> --message "..." [--resume auto|always|never]`。
+   - `ask --session <key> --message "..." [--resume auto|always|never] [--verify "<cmd>"] [--max-iterations <n>]`。
 14) `task`:
    - 查询任务状态或重新入队。
 
@@ -164,4 +176,4 @@ Output Policy:
 
 ## 计划复核（目标与最小化）
 - 7x24：主进程常驻 + 外部守护（systemd/launchd/pm2）+ 任务恢复策略，满足持续运行与自动恢复。
-- 最小化：仅包含 HTTP、Master/Worker、Markdown 持久化、`rg` 检索、`tsx` 直跑；刻意不引入 streaming/向量索引/UI/构建流程。
+- 最小化：仅包含 HTTP/Web UI、Master/Worker、Markdown 持久化、`rg` 检索、verify 重试、`tsx` 直跑；刻意不引入 streaming/向量索引/metrics/lessons/guard/score/构建流程。
