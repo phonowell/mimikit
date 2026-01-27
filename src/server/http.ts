@@ -85,6 +85,17 @@ export const startHttpServer = async (
       return
     }
 
+    if (req.method === 'GET' && url.pathname === '/stats') {
+      try {
+        const stats = await options.master.getMetricsSummary()
+        respond(200, stats)
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        respond(500, { error: message }, 'error=stats_failed')
+      }
+      return
+    }
+
     if (req.method === 'GET') {
       try {
         const asset = await loadWebUiAsset(url.pathname)
@@ -115,7 +126,13 @@ export const startHttpServer = async (
           prompt?: unknown
           resume?: unknown
           verifyCommand?: unknown
+          scoreCommand?: unknown
+          minScore?: unknown
+          objective?: unknown
           maxIterations?: unknown
+          guardRequireClean?: unknown
+          guardMaxChangedFiles?: unknown
+          guardMaxChangedLines?: unknown
         }
         if (
           typeof record.sessionKey !== 'string' ||
@@ -133,25 +150,67 @@ export const startHttpServer = async (
           typeof record.verifyCommand === 'string'
             ? record.verifyCommand
             : undefined
+        const scoreCommand =
+          typeof record.scoreCommand === 'string'
+            ? record.scoreCommand
+            : undefined
+        const minScore =
+          typeof record.minScore === 'number' &&
+          Number.isFinite(record.minScore)
+            ? record.minScore
+            : undefined
+        const objective =
+          typeof record.objective === 'string' ? record.objective : undefined
         const maxIterations =
           typeof record.maxIterations === 'number' &&
           Number.isFinite(record.maxIterations) &&
           record.maxIterations >= 1
             ? Math.floor(record.maxIterations)
             : undefined
+        const guardRequireClean =
+          typeof record.guardRequireClean === 'boolean'
+            ? record.guardRequireClean
+            : undefined
+        const guardMaxChangedFiles =
+          typeof record.guardMaxChangedFiles === 'number' &&
+          Number.isFinite(record.guardMaxChangedFiles) &&
+          record.guardMaxChangedFiles >= 0
+            ? Math.floor(record.guardMaxChangedFiles)
+            : undefined
+        const guardMaxChangedLines =
+          typeof record.guardMaxChangedLines === 'number' &&
+          Number.isFinite(record.guardMaxChangedLines) &&
+          record.guardMaxChangedLines >= 0
+            ? Math.floor(record.guardMaxChangedLines)
+            : undefined
         const request: {
           sessionKey: string
           prompt: string
           resume?: ResumePolicy
           verifyCommand?: string
+          scoreCommand?: string
+          minScore?: number
+          objective?: string
           maxIterations?: number
+          guardRequireClean?: boolean
+          guardMaxChangedFiles?: number
+          guardMaxChangedLines?: number
         } = {
           sessionKey: record.sessionKey,
           prompt: record.prompt,
         }
         if (resume !== undefined) request.resume = resume
         if (verifyCommand !== undefined) request.verifyCommand = verifyCommand
+        if (scoreCommand !== undefined) request.scoreCommand = scoreCommand
+        if (minScore !== undefined) request.minScore = minScore
+        if (objective !== undefined) request.objective = objective
         if (maxIterations !== undefined) request.maxIterations = maxIterations
+        if (guardRequireClean !== undefined)
+          request.guardRequireClean = guardRequireClean
+        if (guardMaxChangedFiles !== undefined)
+          request.guardMaxChangedFiles = guardMaxChangedFiles
+        if (guardMaxChangedLines !== undefined)
+          request.guardMaxChangedLines = guardMaxChangedLines
 
         const task = await options.master.enqueueTask(request)
         respond(200, task, `task=${task.id}`)

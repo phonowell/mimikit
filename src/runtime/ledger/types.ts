@@ -14,6 +14,17 @@ export type TaskRecord = {
   resume: ResumePolicy
   maxIterations?: number
   verifyCommand?: string
+  scoreCommand?: string
+  minScore?: number
+  objective?: string
+  score?: number
+  scoreSummary?: string
+  guardRequireClean?: boolean
+  guardMaxChangedFiles?: number
+  guardMaxChangedLines?: number
+  changedFiles?: number
+  changedLines?: number
+  triggeredByTaskId?: string
   codexSessionId?: string
   prompt?: string
   result?: string

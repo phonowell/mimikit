@@ -88,6 +88,7 @@ export const searchMemory = async (
   const paths = await discoverMemoryPaths(
     config.workspaceRoot,
     config.memoryPaths,
+    config.lessonsEnabled ? [config.lessonsPath] : [],
   )
   if (paths.length === 0) return []
 

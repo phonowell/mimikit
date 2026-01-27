@@ -51,6 +51,19 @@ const parseTaskSection = (section: string): TaskRecord | null => {
       continue
     }
 
+    if (line.startsWith('- scoreSummary: |')) {
+      i += 1
+      const buffer: string[] = []
+      while (i < lines.length) {
+        const raw = lines[i] ?? ''
+        if (raw.startsWith('- ')) break
+        buffer.push(raw.startsWith('  ') ? raw.slice(2) : raw)
+        i += 1
+      }
+      record.scoreSummary = buffer.join('\n')
+      continue
+    }
+
     if (line.startsWith('- result: |')) {
       i += 1
       const buffer: string[] = []
@@ -115,6 +128,63 @@ const parseTaskSection = (section: string): TaskRecord | null => {
         }
         case 'verifyCommand':
           if (value) record.verifyCommand = value
+
+          break
+        case 'scoreCommand':
+          if (value) record.scoreCommand = value
+
+          break
+        case 'minScore': {
+          const parsed = Number(value)
+          if (Number.isFinite(parsed)) record.minScore = parsed
+
+          break
+        }
+        case 'objective':
+          if (value) record.objective = value
+
+          break
+        case 'score': {
+          const parsed = Number(value)
+          if (Number.isFinite(parsed)) record.score = parsed
+
+          break
+        }
+        case 'guardRequireClean':
+          if (value === 'true') record.guardRequireClean = true
+          if (value === 'false') record.guardRequireClean = false
+
+          break
+        case 'guardMaxChangedFiles': {
+          const parsed = Number.parseInt(value, 10)
+          if (Number.isFinite(parsed) && parsed >= 0)
+            record.guardMaxChangedFiles = parsed
+
+          break
+        }
+        case 'guardMaxChangedLines': {
+          const parsed = Number.parseInt(value, 10)
+          if (Number.isFinite(parsed) && parsed >= 0)
+            record.guardMaxChangedLines = parsed
+
+          break
+        }
+        case 'changedFiles': {
+          const parsed = Number.parseInt(value, 10)
+          if (Number.isFinite(parsed) && parsed >= 0)
+            record.changedFiles = parsed
+
+          break
+        }
+        case 'changedLines': {
+          const parsed = Number.parseInt(value, 10)
+          if (Number.isFinite(parsed) && parsed >= 0)
+            record.changedLines = parsed
+
+          break
+        }
+        case 'triggeredByTaskId':
+          if (value) record.triggeredByTaskId = value
 
           break
         case 'codexSessionId':

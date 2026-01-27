@@ -7,8 +7,9 @@ import { startHttpServer } from './server/http.js'
 const printUsage = (): void => {
   console.log(`Usage:
   tsx src/cli.ts serve [--port <port>]
-  tsx src/cli.ts ask [--session <key>] [--message <text>] [text...] [--resume auto|always|never] [--verify "<cmd>"] [--max-iterations <n>]
+  tsx src/cli.ts ask [--session <key>] [--message <text>] [text...] [--resume auto|always|never] [--verify "<cmd>"] [--score "<cmd>"] [--min-score <n>] [--objective "<text>"] [--max-iterations <n>] [--guard-clean] [--guard-max-files <n>] [--guard-max-lines <n>]
   tsx src/cli.ts task --id <taskId>
+  tsx src/cli.ts stats
   pnpm ask "message..."
 `)
 }
@@ -59,6 +60,14 @@ const runAsk = async (args: string[]): Promise<void> => {
 
   const { sessionKey, message, resume, verifyCommand, maxIterations } =
     parsed.value
+  const {
+    scoreCommand,
+    minScore,
+    objective,
+    guardRequireClean,
+    guardMaxChangedFiles,
+    guardMaxChangedLines,
+  } = parsed.value
   const config = await loadConfig()
   const master = await Master.create(config)
   const request: {
@@ -66,14 +75,29 @@ const runAsk = async (args: string[]): Promise<void> => {
     prompt: string
     resume?: ResumePolicy
     verifyCommand?: string
+    scoreCommand?: string
+    minScore?: number
+    objective?: string
     maxIterations?: number
+    guardRequireClean?: boolean
+    guardMaxChangedFiles?: number
+    guardMaxChangedLines?: number
   } = {
     sessionKey,
     prompt: message,
   }
   if (resume !== undefined) request.resume = resume
   if (verifyCommand !== undefined) request.verifyCommand = verifyCommand
+  if (scoreCommand !== undefined) request.scoreCommand = scoreCommand
+  if (minScore !== undefined) request.minScore = minScore
+  if (objective !== undefined) request.objective = objective
   if (maxIterations !== undefined) request.maxIterations = maxIterations
+  if (guardRequireClean !== undefined)
+    request.guardRequireClean = guardRequireClean
+  if (guardMaxChangedFiles !== undefined)
+    request.guardMaxChangedFiles = guardMaxChangedFiles
+  if (guardMaxChangedLines !== undefined)
+    request.guardMaxChangedLines = guardMaxChangedLines
 
   const task = await master.enqueueTask(request)
   await waitForTask(master, task.id, config.timeoutMs + 30_000)
@@ -93,6 +117,13 @@ const runTask = async (args: string[]): Promise<void> => {
   }
 
   console.log(JSON.stringify(task, null, 2))
+}
+
+const runStats = async (): Promise<void> => {
+  const config = await loadConfig()
+  const master = await Master.create(config)
+  const stats = await master.getMetricsSummary()
+  console.log(JSON.stringify(stats, null, 2))
 }
 
 const main = async (): Promise<void> => {
@@ -116,6 +147,9 @@ const main = async (): Promise<void> => {
       return
     case 'task':
       await runTask(args)
+      return
+    case 'stats':
+      await runStats()
       return
     default:
       printUsage()
