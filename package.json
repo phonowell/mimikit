@@ -9,7 +9,7 @@
     "ask": "tsx src/cli.ts ask",
     "task": "tsx src/cli.ts task",
     "lint": "eslint \"src/**/*.ts\" --fix",
-    "test": "node -e \"console.log('no tests')\""
+    "test": "vitest run"
   },
   "devDependencies": {
     "@types/node": "^22.19.7",
@@ -22,6 +22,7 @@
     "globals": "^17.0.0",
     "prettier": "^3.8.0",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.8"
   }
 }

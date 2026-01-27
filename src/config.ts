@@ -136,7 +136,7 @@ export const loadConfig = async (options?: {
     ),
     maxWorkers: parseNumber(
       process.env.MIMIKIT_MAX_WORKERS,
-      fileConfig.maxWorkers ?? 2,
+      fileConfig.maxWorkers ?? 5,
     ),
     queueWarnMs: parseNumber(
       process.env.MIMIKIT_QUEUE_WARN_MS,
