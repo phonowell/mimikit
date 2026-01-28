@@ -109,6 +109,7 @@ export const runWorker = async (
       '--json',
       '--output-last-message',
       outputFile,
+      '--dangerously-bypass-approvals-and-sandbox',
     ]
 
     if (request.config.codexModel)
