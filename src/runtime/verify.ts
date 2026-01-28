@@ -8,6 +8,9 @@ export type VerifyResult = {
   error?: string
 }
 
+const MAX_VERIFY_STDOUT_CHARS = 20_000
+const MAX_VERIFY_STDERR_CHARS = 20_000
+
 type ParsedCommand = {
   command: string
   args: string[]
@@ -75,15 +78,29 @@ export const runVerifyCommand = async (
     stdio: ['ignore', 'pipe', 'pipe'],
   })
 
-  const stdoutChunks: string[] = []
-  const stderrChunks: string[] = []
+  let stdout = ''
+  let stderr = ''
 
-  child.stdout.on('data', (chunk: Buffer) =>
-    stdoutChunks.push(chunk.toString('utf8')),
-  )
-  child.stderr.on('data', (chunk: Buffer) =>
-    stderrChunks.push(chunk.toString('utf8')),
-  )
+  const appendLimited = (current: string, chunk: string, limit: number) => {
+    if (chunk.length >= limit) return chunk.slice(-limit)
+    const next = current + chunk
+    return next.length > limit ? next.slice(-limit) : next
+  }
+
+  child.stdout.on('data', (chunk: Buffer) => {
+    stdout = appendLimited(
+      stdout,
+      chunk.toString('utf8'),
+      MAX_VERIFY_STDOUT_CHARS,
+    )
+  })
+  child.stderr.on('data', (chunk: Buffer) => {
+    stderr = appendLimited(
+      stderr,
+      chunk.toString('utf8'),
+      MAX_VERIFY_STDERR_CHARS,
+    )
+  })
 
   let hardKillTimeout: NodeJS.Timeout | undefined
   const timeout = setTimeout(() => {
@@ -101,14 +118,22 @@ export const runVerifyCommand = async (
   clearTimeout(timeout)
   if (hardKillTimeout) clearTimeout(hardKillTimeout)
 
-  const stdout = stdoutChunks.join('').trim()
-  const stderr = stderrChunks.join('').trim()
+  const trimmedStdout = stdout.trim()
+  const trimmedStderr = stderr.trim()
 
   if (exitCode !== 0) {
     const error =
-      stderr.length > 0 ? stderr : `verify command failed with code ${exitCode}`
-    return { ok: false, exitCode, stdout, stderr, error }
+      trimmedStderr.length > 0
+        ? trimmedStderr
+        : `verify command failed with code ${exitCode}`
+    return {
+      ok: false,
+      exitCode,
+      stdout: trimmedStdout,
+      stderr: trimmedStderr,
+      error,
+    }
   }
 
-  return { ok: true, exitCode, stdout, stderr }
+  return { ok: true, exitCode, stdout: trimmedStdout, stderr: trimmedStderr }
 }

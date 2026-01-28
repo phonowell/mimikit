@@ -57,6 +57,18 @@ export const getDefaultOutputPolicy = (): string => DEFAULT_OUTPUT_POLICY
 
 type RawConfig = Partial<Config> & { memoryPaths?: unknown }
 
+const normalizeResumePolicy = (value: unknown): ResumePolicy | undefined =>
+  value === 'auto' || value === 'always' || value === 'never'
+    ? value
+    : undefined
+
+const normalizeCodexSandbox = (value: unknown): CodexSandbox | undefined =>
+  value === 'read-only' ||
+  value === 'workspace-write' ||
+  value === 'danger-full-access'
+    ? value
+    : undefined
+
 const parseBoolean = (value: string | undefined): boolean | undefined => {
   if (value === undefined) return undefined
   const normalized = value.trim().toLowerCase()
@@ -86,6 +98,23 @@ const resolvePath = (
 ): string | undefined => {
   if (!value) return undefined
   return path.isAbsolute(value) ? value : path.join(root, value)
+}
+
+const normalizePathList = (
+  workspaceRoot: string,
+  values: string[],
+): string[] => {
+  const seen = new Set<string>()
+  const results: string[] = []
+  for (const value of values) {
+    const trimmed = value.trim()
+    if (!trimmed) continue
+    const resolved = resolvePath(workspaceRoot, trimmed) ?? trimmed
+    if (seen.has(resolved)) continue
+    seen.add(resolved)
+    results.push(resolved)
+  }
+  return results
 }
 
 const readConfigFile = async (configPath: string): Promise<RawConfig> => {
@@ -199,8 +228,8 @@ export const loadConfig = async (options?: {
     ) ?? path.join(stateDir, 'heartbeat.json')
 
   const resumePolicy =
-    (process.env.MIMIKIT_RESUME_POLICY as ResumePolicy | undefined) ??
-    (fileConfig.resumePolicy as ResumePolicy | undefined) ??
+    normalizeResumePolicy(process.env.MIMIKIT_RESUME_POLICY) ??
+    normalizeResumePolicy(fileConfig.resumePolicy) ??
     'auto'
 
   const outputPolicy =
@@ -265,8 +294,8 @@ export const loadConfig = async (options?: {
     process.env.MIMIKIT_CODEX_PROFILE ??
     (fileConfig.codexProfile as string | undefined)
   const codexSandbox =
-    (process.env.MIMIKIT_CODEX_SANDBOX as CodexSandbox | undefined) ??
-    (fileConfig.codexSandbox as CodexSandbox | undefined)
+    normalizeCodexSandbox(process.env.MIMIKIT_CODEX_SANDBOX) ??
+    normalizeCodexSandbox(fileConfig.codexSandbox)
   const codexFullAuto =
     parseBoolean(process.env.MIMIKIT_CODEX_FULL_AUTO) ??
     (fileConfig.codexFullAuto as boolean | undefined)
@@ -294,9 +323,7 @@ export const loadConfig = async (options?: {
     taskLedgerAutoCompactIntervalMs,
     heartbeatIntervalMs,
     heartbeatPath,
-    memoryPaths: memoryPaths.map(
-      (value) => resolvePath(workspaceRoot, value) ?? value,
-    ),
+    memoryPaths: normalizePathList(workspaceRoot, memoryPaths),
     maxMemoryHits: parseNumber(
       process.env.MIMIKIT_MAX_MEMORY_HITS,
       fileConfig.maxMemoryHits ?? 20,

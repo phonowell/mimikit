@@ -11,6 +11,8 @@ export type HttpServerOptions = {
   master: Master
 }
 
+const MAX_BODY_BYTES = 1_000_000
+
 const sendJson = (
   res: http.ServerResponse,
   status: number,
@@ -55,10 +57,32 @@ const logResponse = (
 
 const shouldLog = (req: http.IncomingMessage, url: URL): boolean =>
   !(req.method === 'GET' && url.pathname === '/health')
-const readJson = async (req: http.IncomingMessage): Promise<unknown> => {
+const readJson = async (
+  req: http.IncomingMessage,
+  maxBytes: number,
+): Promise<unknown> => {
   const chunks: Buffer[] = []
-  for await (const chunk of req)
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
+  let total = 0
+  for await (const chunk of req) {
+    if (Buffer.isBuffer(chunk)) {
+      total += chunk.length
+      if (total > maxBytes) {
+        const error = new Error('Payload too large') as NodeJS.ErrnoException
+        error.code = 'PAYLOAD_TOO_LARGE'
+        throw error
+      }
+      chunks.push(chunk)
+    } else {
+      const buffer = Buffer.from(chunk)
+      total += buffer.length
+      if (total > maxBytes) {
+        const error = new Error('Payload too large') as NodeJS.ErrnoException
+        error.code = 'PAYLOAD_TOO_LARGE'
+        throw error
+      }
+      chunks.push(buffer)
+    }
+  }
 
   const raw = Buffer.concat(chunks).toString('utf8')
   if (!raw.trim()) return {}
@@ -160,7 +184,7 @@ export const startHttpServer = async (
 
     if (req.method === 'POST' && url.pathname === '/tasks') {
       try {
-        const body = await readJson(req)
+        const body = await readJson(req, MAX_BODY_BYTES)
         if (!body || typeof body !== 'object') {
           respond(400, { error: 'Invalid JSON' }, 'error=invalid_json')
           return
@@ -211,7 +235,16 @@ export const startHttpServer = async (
         const task = await options.master.enqueueTask(request)
         respond(200, task, `task=${task.id}`)
       } catch (error) {
-        const message = error instanceof Error ? error.message : String(error)
+        const err = error as NodeJS.ErrnoException
+        if (err.code === 'PAYLOAD_TOO_LARGE') {
+          respond(
+            413,
+            { error: 'Payload too large' },
+            'error=payload_too_large',
+          )
+          return
+        }
+        const message = err instanceof Error ? err.message : String(err)
         respond(400, { error: message }, 'error=invalid_request')
       }
       return

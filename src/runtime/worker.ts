@@ -19,6 +19,24 @@ export type WorkerResult = {
   codexSessionId?: string
 }
 
+const MAX_STDOUT_LINES = 400
+const MAX_STDERR_CHARS = 20_000
+
+const pushLimited = (buffer: string[], value: string, limit: number): void => {
+  buffer.push(value)
+  if (buffer.length > limit) buffer.splice(0, buffer.length - limit)
+}
+
+const appendLimited = (
+  current: string,
+  chunk: string,
+  limit: number,
+): string => {
+  if (chunk.length >= limit) return chunk.slice(-limit)
+  const next = current + chunk
+  return next.length > limit ? next.slice(-limit) : next
+}
+
 const extractSessionIdFromText = (text: string): string | undefined => {
   const match = text.match(/codex resume ([a-zA-Z0-9_-]+)/i)
   return match?.[1]
@@ -109,7 +127,7 @@ export const runWorker = async (
     let sessionId: string | undefined
     let lastOutput: string | undefined
     const stdoutLines: string[] = []
-    const stderrLines: string[] = []
+    let stderr = ''
 
     stdoutRl = readline.createInterface({
       input: child.stdout,
@@ -117,7 +135,7 @@ export const runWorker = async (
     })
 
     stdoutRl.on('line', (line) => {
-      stdoutLines.push(line)
+      pushLimited(stdoutLines, line, MAX_STDOUT_LINES)
       try {
         const event = JSON.parse(line) as unknown
         sessionId = sessionId ?? extractSessionIdFromEvent(event)
@@ -128,7 +146,7 @@ export const runWorker = async (
     })
 
     child.stderr.on('data', (chunk: Buffer) => {
-      stderrLines.push(chunk.toString('utf8'))
+      stderr = appendLimited(stderr, chunk.toString('utf8'), MAX_STDERR_CHARS)
     })
 
     timeout = setTimeout(() => {
@@ -143,10 +161,12 @@ export const runWorker = async (
     stdoutRl.close()
     stdoutRl = undefined
 
-    const stderr = stderrLines.join('').trim()
+    const stderrText = stderr.trim()
     if (exitCode !== 0) {
       const message =
-        stderr.length > 0 ? stderr : `codex exec failed with code ${exitCode}`
+        stderrText.length > 0
+          ? stderrText
+          : `codex exec failed with code ${exitCode}`
       throw new Error(message)
     }
 
