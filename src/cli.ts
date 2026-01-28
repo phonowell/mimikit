@@ -6,7 +6,7 @@ import { parseAskArgs } from './cli/args.js'
 import { loadConfig, type ResumePolicy } from './config.js'
 import { compactTaskLedger, loadTaskLedger } from './runtime/ledger.js'
 import { Master } from './runtime/master.js'
-import { startHttpServer } from './server/http.js'
+import { type RestartRequest, startHttpServer } from './server/http.js'
 
 const printUsage = (): void => {
   console.log(`Usage:
@@ -72,6 +72,8 @@ const parseBooleanEnv = (value: string | undefined): boolean => {
   return ['1', 'true', 'yes', 'on'].includes(normalized)
 }
 
+const RESTART_EXIT_CODE = 75
+
 const resolveTsxBin = (workspaceRoot: string): string => {
   const local = path.join(workspaceRoot, 'node_modules', '.bin', 'tsx')
   if (fs.existsSync(local)) return local
@@ -81,6 +83,24 @@ const resolveTsxBin = (workspaceRoot: string): string => {
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms))
 
+const requestRestart = (request: RestartRequest): void => {
+  const code = parseEnvNumber(
+    process.env.MIMIKIT_RESTART_EXIT_CODE,
+    RESTART_EXIT_CODE,
+  )
+  const supervised = process.env.MIMIKIT_SUPERVISED === '1'
+  const reason = request.reason ? ` reason=${request.reason}` : ''
+  const force = request.force ? ' force=true' : ''
+  const detail = `${request.source}${reason}${force}`
+  if (!supervised)
+    console.error(`Restart requested without supervisor (${detail})`)
+  else console.error(`Restart requested (${detail})`)
+
+  setTimeout(() => {
+    process.exit(code)
+  }, 50)
+}
+
 const runServe = async (args: string[]): Promise<void> => {
   const portValue = getArgValue(args, '--port')
   const port = portValue ? Number(portValue) : 8787
@@ -88,7 +108,7 @@ const runServe = async (args: string[]): Promise<void> => {
 
   const config = await loadConfig()
   const master = await Master.create(config)
-  await startHttpServer({ port, master })
+  await startHttpServer({ port, master, onRestart: requestRestart })
   console.log(`HTTP server listening on ${port}`)
 }
 

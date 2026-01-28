@@ -11,6 +11,14 @@ import type { Master } from '../runtime/master.js'
 export type HttpServerOptions = {
   port: number
   master: Master
+  onRestart?: (request: RestartRequest) => void
+}
+
+export type RestartRequest = {
+  source: 'http'
+  force: boolean
+  reason?: string
+  requestedAt: string
 }
 
 const MAX_BODY_BYTES = 1_000_000
@@ -60,6 +68,12 @@ const logResponse = (
 
 const shouldLog = (req: http.IncomingMessage, url: URL): boolean =>
   !(req.method === 'GET' && url.pathname === '/health')
+
+const isTruthy = (value: string | null): boolean => {
+  if (!value) return false
+  const normalized = value.trim().toLowerCase()
+  return ['1', 'true', 'yes', 'on'].includes(normalized)
+}
 const readJson = async (
   req: http.IncomingMessage,
   maxBytes: number,
@@ -312,6 +326,37 @@ export const startHttpServer = async (
         const message = err instanceof Error ? err.message : String(err)
         respond(400, { error: message }, 'error=invalid_request')
       }
+      return
+    }
+
+    if (req.method === 'POST' && url.pathname === '/control/restart') {
+      const force = isTruthy(url.searchParams.get('force'))
+      const reasonRaw = url.searchParams.get('reason')?.trim()
+      const reason =
+        reasonRaw !== undefined && reasonRaw.length > 0 ? reasonRaw : undefined
+      const stats = options.master.getStats()
+      const activeTasks = stats.tasks.queued + stats.tasks.running
+      if (!force && activeTasks > 0) {
+        respond(
+          409,
+          { error: 'active tasks', activeTasks },
+          'error=active_tasks',
+        )
+        return
+      }
+      if (!options.onRestart) {
+        respond(501, { error: 'restart not supported' }, 'error=not_supported')
+        return
+      }
+      respond(202, { ok: true, scheduled: true }, 'restart=scheduled')
+      setTimeout(() => {
+        options.onRestart?.({
+          source: 'http',
+          force,
+          reason,
+          requestedAt: new Date().toISOString(),
+        })
+      }, 50)
       return
     }
 
