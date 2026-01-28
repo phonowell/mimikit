@@ -91,6 +91,13 @@ const renderThread = (entries) => {
   thread.scrollTop = thread.scrollHeight
 }
 
+const appendMessage = (entry) => {
+  if (!thread) return
+  if (threadEmpty) threadEmpty.hidden = true
+  thread.append(buildMessageElement(entry))
+  thread.scrollTop = thread.scrollHeight
+}
+
 const updateTask = (task) => {
   const status = task?.status || 'idle'
   setStatus(status, status === 'idle' ? 'Idle' : status)
@@ -333,6 +340,7 @@ form.addEventListener('submit', async (event) => {
     return
   }
   fields.prompt.value = ''
+  appendMessage({ role: 'user', text: payload.prompt })
   stopPolling()
   const token = pollToken
   submitButton.disabled = true
@@ -347,7 +355,6 @@ form.addEventListener('submit', async (event) => {
     if (task?.sessionKey) {
       activeSessionKey = task.sessionKey
       setActiveSession(task.sessionKey)
-      void loadTranscript(task.sessionKey)
     }
     updateTask(task)
     void loadSessions()
