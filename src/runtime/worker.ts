@@ -8,11 +8,17 @@ import { ensureDir } from '../utils/fs.js'
 
 import type { Config, ResumePolicy } from '../config.js'
 
+export type ProgressEvent = {
+  type: string
+  summary?: string | undefined
+}
+
 export type WorkerRequest = {
   config: Config
   prompt: string
   resumePolicy: ResumePolicy
   resumeSessionId?: string
+  onProgress?: (event: ProgressEvent) => void
 }
 
 export type WorkerResult = {
@@ -62,6 +68,25 @@ const extractOutputFromEvent = (event: unknown): string | undefined => {
   if (record.message && typeof record.message === 'object') {
     const message = record.message as Record<string, unknown>
     if (typeof message.content === 'string') return message.content
+  }
+  return undefined
+}
+
+const extractEventType = (event: unknown): string | undefined => {
+  if (!event || typeof event !== 'object') return undefined
+  const record = event as Record<string, unknown>
+  if (typeof record.type === 'string') return record.type
+  if (typeof record.event === 'string') return record.event
+  return undefined
+}
+
+const extractEventSummary = (event: unknown): string | undefined => {
+  if (!event || typeof event !== 'object') return undefined
+  const record = event as Record<string, unknown>
+  if (typeof record.name === 'string') return record.name
+  if (record.tool_call && typeof record.tool_call === 'object') {
+    const toolCall = record.tool_call as Record<string, unknown>
+    if (typeof toolCall.name === 'string') return `tool:${toolCall.name}`
   }
   return undefined
 }
@@ -156,6 +181,15 @@ export const runWorker = async (
         const event = JSON.parse(line) as unknown
         sessionId = sessionId ?? extractSessionIdFromEvent(event)
         lastOutput = extractOutputFromEvent(event) ?? lastOutput
+        if (request.onProgress) {
+          const eventType = extractEventType(event)
+          if (eventType) {
+            request.onProgress({
+              type: eventType,
+              summary: extractEventSummary(event),
+            })
+          }
+        }
       } catch {
         sessionId = sessionId ?? extractSessionIdFromText(line)
       }

@@ -15,6 +15,7 @@ import {
   trimText,
 } from './master/helpers.js'
 import { runTask } from './master/task-runner.js'
+import { readProgress, type TaskProgress } from './progress.js'
 import { Semaphore, SessionQueue } from './queue.js'
 import { startSelfImprove } from './self-improve.js'
 
@@ -67,6 +68,14 @@ export class Master {
 
   getTask(taskId: string): TaskRecord | undefined {
     return this.tasks.get(taskId)
+  }
+
+  async getTaskProgress(taskId: string): Promise<TaskProgress | undefined> {
+    const task = this.tasks.get(taskId)
+    if (!task) return undefined
+    const progress = await readProgress(this.config.stateDir, taskId)
+    if (task.status === 'running') progress.status = 'running'
+    return progress
   }
 
   listSessions(): SessionRecord[] {

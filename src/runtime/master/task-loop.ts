@@ -8,6 +8,7 @@ import {
 } from '../../session/transcript.js'
 import { formatError } from '../../utils/error.js'
 import { appendTaskRecord, type TaskRecord } from '../ledger.js'
+import { appendProgress, clearProgress } from '../progress.js'
 import { runSelfEvaluation } from '../self-eval.js'
 import { runVerifyCommand } from '../verify.js'
 import { runWorker } from '../worker.js'
@@ -81,6 +82,7 @@ export const runTaskLoop = async ({
         outputPolicy: config.outputPolicy,
       })
 
+      await clearProgress(config.stateDir, running.id)
       const workerResult = await runWorker({
         config,
         prompt: finalPrompt,
@@ -88,6 +90,13 @@ export const runTaskLoop = async ({
         ...(resumePolicy !== 'never' && existingSessionId
           ? { resumeSessionId: existingSessionId }
           : {}),
+        onProgress: (event) => {
+          appendProgress(config.stateDir, running.id, {
+            ts: new Date().toISOString(),
+            type: event.type,
+            ...(event.summary ? { summary: event.summary } : {}),
+          }).catch(() => undefined)
+        },
       })
 
       if (workerResult.codexSessionId) {
@@ -208,6 +217,7 @@ export const runTaskLoop = async ({
 
       await appendTaskRecord(config.stateDir, done)
       tasks.set(running.id, done)
+      await clearProgress(config.stateDir, running.id)
       return
     }
   } catch (error) {
@@ -218,6 +228,7 @@ export const runTaskLoop = async ({
     sessionStore.update(currentRecord.sessionKey, summaryUpdate)
     await sessionStore.flush()
   } finally {
+    await clearProgress(config.stateDir, running.id)
     if (releaseLock) await releaseLock()
   }
 }

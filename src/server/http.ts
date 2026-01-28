@@ -362,7 +362,18 @@ export const startHttpServer = async (
     }
 
     if (req.method === 'GET' && url.pathname.startsWith('/tasks/')) {
-      const id = decodeURIComponent(url.pathname.slice('/tasks/'.length))
+      const suffix = url.pathname.slice('/tasks/'.length)
+      if (suffix.endsWith('/progress')) {
+        const id = decodeURIComponent(suffix.slice(0, -'/progress'.length))
+        const progress = await options.master.getTaskProgress(id)
+        if (!progress) {
+          respond(404, { error: 'Task not found' }, `task=${id}`)
+          return
+        }
+        respond(200, progress, `task=${id} progress`)
+        return
+      }
+      const id = decodeURIComponent(suffix)
       const task = options.master.getTask(id)
       if (!task) {
         respond(404, { error: 'Task not found' }, `task=${id}`)

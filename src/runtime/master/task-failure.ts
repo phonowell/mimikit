@@ -5,6 +5,7 @@ import {
   type TranscriptEntry,
 } from '../../session/transcript.js'
 import { appendTaskRecord, type TaskRecord } from '../ledger.js'
+import { clearProgress } from '../progress.js'
 
 import type { Config } from '../../config.js'
 
@@ -26,6 +27,7 @@ export const failTask = async (
 
   await appendTaskRecord(config.stateDir, failed)
   tasks.set(task.id, failed)
+  await clearProgress(config.stateDir, task.id)
 
   if (!options?.skipTranscript) {
     const lockTimeoutMs = config.timeoutMs + 30_000
