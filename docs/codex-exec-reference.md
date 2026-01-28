@@ -1,5 +1,8 @@
 # Codex exec 接口备忘
 
+## 关联文档
+- 架构说明：docs/minimal-architecture.md
+
 ## 用途
 - `codex exec` 为非交互执行入口，适合作为子进程运行。
 - `codex exec resume` 可用 sessionId 续跑。

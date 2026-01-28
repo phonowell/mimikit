@@ -1,5 +1,10 @@
 # Minimal Codex Coordinator 实施计划（主从 + HTTP + Resume）
 
+## 关联文档
+- 架构说明：docs/minimal-architecture.md
+- 决策备注：docs/minimal-notes.md
+- Codex exec 备忘：docs/codex-exec-reference.md
+
 ## 目标
 - 7x24 常驻运行，提供 HTTP 接口接受任务。
 - 主进程负责接收/调度/响应；子进程负责执行 (codex exec)。
@@ -23,94 +28,12 @@
 - 插件系统。
 - metrics/lessons/guard/score。
 
-## 关键决策
-- 7x24 由主进程常驻 + 外部 supervisor 守护（systemd/launchd/pm2）。
-- 任务恢复以 Markdown 账本为准；重启后重建队列。
-- Worker 只负责单次执行，失败可由 Master 重试。
-- 主进程保存 codexSessionId；需要连续对话时使用 resume。
-- 尽量依赖 Codex 自身配置与能力，减少额外配置覆盖。
-
-## 目录结构（建议）
-- `src/cli.ts` (命令行入口: serve/task/compact-tasks)
-- `src/config.ts`
-- `src/server/http.ts` (HTTP 服务)
-- `src/server/webui.ts` (Web UI 资产加载)
-- `src/runtime/master.ts` (调度器)
-- `src/runtime/worker.ts` (子进程封装)
-- `src/runtime/queue.ts` (per-session 串行)
-- `src/session/{store.ts, transcript.ts, lock.ts}`
-- `src/memory/{files.ts, search.ts}`
-- `src/agent/prompt.ts`
-
-## 配置模型 (src/config.ts)
-- `workspaceRoot`
-- `codexBin` (可选, 默认使用系统 PATH)
-- `codexModel` / `codexProfile` (可选, 优先使用 Codex config.toml)
-- `codexSandbox` / `codexFullAuto` (可选, 仅在需要时覆盖)
-- `timeoutMs`
-- `maxWorkers`
-- `stateDir` (任务账本 + session store)
-- `memoryPaths` / `maxMemoryHits` / `maxMemoryChars`
-- `resumePolicy` (`auto` | `always` | `never`)
-- `outputPolicy` (简明输出约束, 追加到子进程 prompt)
-- `maxIterations` (verifyCommand 重试上限)
-- `triggerSessionKey` / `triggerOnFailurePrompt` (失败 follow-up)
-
-## 配置最小化原则
-- 仅保留协调器必需配置（stateDir、queue、memory、resume、outputPolicy、maxIterations、trigger）。
-- Codex 相关配置优先走 `~/.codex/config.toml`；只有明确需求时才覆盖。
-- Worker 调用时避免强行指定 model/profile/sandbox，除非用户显式配置。
-
-## 数据模型
-- Session store (JSON):
-  - `sessionKey -> { sessionId, updatedAt, transcriptPath, codexSessionId? }`
-- Transcript JSONL:
-  - `{ type: "message", role: "user"|"assistant", text, ts, sessionId, runId, error? }`
-- Task ledger (Markdown):
-  - `taskId` 为主键；每次状态变更追加一段记录。
-
-## 任务账本格式（Markdown）
-- 文件: `<stateDir>/tasks.md`
-- 约定格式（追加写入，允许多段）:
-
-```
-## Task <taskId>
-- status: queued|running|done|failed
-- sessionKey: <key>
-- runId: <runId>
-- retries: <n>
-- attempt: <n>
-- createdAt: <iso>
-- updatedAt: <iso>
-- resume: auto|always|never
-- verifyCommand: <cmd?>
-- maxIterations: <n?>
-- triggeredByTaskId: <id?>
-- codexSessionId: <id?>
-- prompt: |
-  <user prompt...>
-- result: |
-  <assistant text or error...>
-```
-
-## Resume 规则
-- `resume=auto`: 有 `codexSessionId` 时使用 `codex exec resume`；没有则新会话。
-- `resume=always`: 必须有 `codexSessionId`，否则返回错误或降级新会话（可配置）。
-- `resume=never`: 始终新会话。
-- 如果 run 被提前中断而未获得 sessionId，下一次应降级新会话或由用户手动指定。
-
-## 恢复规则（启动时）
-- 解析 tasks.md 得到最新状态视图。
-- `queued` -> 重新入队。
-- `running` -> 视为中断，回到 `queued` 并 `retries+1`。
-- `failed` -> 可配置是否重试；默认不重试。
-- `done` -> 不处理。
-
-## Phase 0: Repo bootstrap
+## 阶段与任务
+### Phase 0: Repo bootstrap
 1) 初始化 `package.json` / `tsconfig.json` / `src/cli.ts`；依赖 `tsx`。
 2) 配置加载 (env + config file)。
 
-## Phase 1: Master + HTTP 服务
+### Phase 1: Master + HTTP 服务
 3) HTTP server:
    - `GET /` Web UI。
    - `POST /tasks` 提交任务（含 sessionKey + resume）。
@@ -121,7 +44,7 @@
    - 负责写入/更新 tasks.md。
    - verifyCommand 失败时重试，失败可触发 follow-up。
 
-## Phase 2: Worker 执行
+### Phase 2: Worker 执行
 5) Worker 子进程:
    - 若需要 resume：`codex exec resume <id> <prompt>`。
    - 否则：`codex exec <prompt>`。
@@ -129,7 +52,7 @@
    - 从 JSON 事件 `thread.started.thread_id` 获取 `codexSessionId`，写回 session store。
    - 失败/超时 -> 返回错误给 Master。
 
-## Phase 3: Session 与 Transcript
+### Phase 3: Session 与 Transcript
 6) Session store:
    - JSON 文件，自动创建。
 7) Transcript:
@@ -137,26 +60,16 @@
 8) 文件锁:
    - `<transcript>.lock` + pid + timestamp；超时/僵尸锁回收。
 
-## Phase 4: Memory (rg)
+### Phase 4: Memory 与 Prompt
 9) 文件发现:
    - MEMORY.md + memory/**/*.md (递归)。
 10) `rg` 搜索:
    - `rg -n --no-heading <query> <paths...>`；去重/截断。
 11) Prompt 注入:
    - `Memory Context` 块 + `path:line text`；超出 `maxMemoryChars` 截断。
-   - `Output Policy` 块：要求最简答复/限制行数与长度。
+   - `Output Policy` 块按配置追加。
 
-## Output Policy 模板（追加到子进程 prompt）
-- 建议默认文本（可配置）:
-
-```
-Output Policy:
-- 只输出最终答案，不输出思考过程。
-- 尽量简短，最多 6 行；超过则先给摘要。
-- 不重复题目，不复述上下文。
-```
-
-## Phase 5: CLI 入口
+### Phase 5: CLI 入口
 12) `serve`:
    - 启动 HTTP + Master（7x24 运行入口）。
 13) `task`:
@@ -168,12 +81,3 @@ Output Policy:
 - `tsx src/cli.ts serve --port 8787` 后提交任务，确认可返回结果。
 - 人为 kill 进程后重启，确认 `running` 任务回到队列。
 - 同 session 多次任务，确认 resume 生效与 transcript 连续。
-
-## 风险与缓解
-- Codex JSONL 格式变化 -> 容错解析 + `--output-last-message` 兜底。
-- tasks.md 过大 -> 周期归档（可选）。
-- `rg` 不存在 -> fallback `grep`。
-
-## 计划复核（目标与最小化）
-- 7x24：主进程常驻 + 外部守护（systemd/launchd/pm2）+ 任务恢复策略，满足持续运行与自动恢复。
-- 最小化：仅包含 HTTP/Web UI、Master/Worker、Markdown 持久化、`rg` 检索、verify 重试、`tsx` 直跑；刻意不引入 streaming/向量索引/metrics/lessons/guard/score/构建流程。

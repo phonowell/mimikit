@@ -28,10 +28,10 @@
 - `tsx src/cli.ts compact-tasks [--force]`
 
 ## 计划与文档
-- 实施计划：`docs/minimal-implementation-plan.md`
-- 架构说明：`docs/minimal-architecture.md`
-- 决策备注：`docs/minimal-notes.md`
-- Codex exec 备忘：`docs/codex-exec-reference.md`
+- 实施计划（范围/阶段/验收）：`docs/minimal-implementation-plan.md`
+- 架构说明（流程/存储/配置/Prompt）：`docs/minimal-architecture.md`
+- 目标/决策/风险/运维：`docs/minimal-notes.md`
+- Codex exec 备忘（CLI/Resume）：`docs/codex-exec-reference.md`
 
 ## 编码风格
 - ESM + 严格类型；避免 `any`；文件保持小而清晰；复杂处加简短注释。
