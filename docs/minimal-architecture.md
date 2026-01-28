@@ -15,7 +15,9 @@
 - Verify Loop: 可选 `verifyCommand` 重试。
 - Failure Trigger: 失败时可触发 follow-up 任务（可选）。
 - Self-Eval: 启发式/可选 LLM 评估，记录 lessons，问题可触发 follow-up。
+- Self-Improve: 读取 lessons，周期触发改进任务（可选）。
 - Heartbeat: 周期写入运行状态 JSON。
+- Supervisor: serve 自监督重启（可选）。
 - Web UI: 静态资产页面，用于本地提交任务与查看结果。
 
 ## 代码布局（建议）
@@ -119,6 +121,7 @@ Output Policy:
 - `resumePolicy` (`auto` | `always` | `never`)
 - `outputPolicy` (简明输出约束, 追加到子进程 prompt)
 - `selfEvalPrompt` / `selfEvalMaxChars` / `selfEvalMemoryPath` (自评估与 lessons)
+- `selfImprovePrompt` / `selfImproveIntervalMs` / `selfImproveMaxChars` / `selfImproveSessionKey` / `selfImproveStatePath`
 - `maxIterations` (verifyCommand 重试上限)
 - `triggerSessionKey` / `triggerOnFailurePrompt` (失败 follow-up)
 - `triggerOnIssuePrompt` (评估问题 follow-up)

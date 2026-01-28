@@ -156,7 +156,10 @@ export const runSelfEvaluation = async (
   const trimmedSummary = trimText(summary, MAX_SUMMARY_CHARS)
   const evaluation = formatEvaluation(verdict, mode, trimmedSummary)
 
-  if (verdict === 'issue') {
+  if (
+    verdict === 'issue' &&
+    input.sessionKey !== input.config.selfImproveSessionKey
+  ) {
     try {
       const issueSummary = trimmedSummary || 'issue detected'
       await appendLesson(input.config, {

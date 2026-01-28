@@ -31,6 +31,11 @@ export type Config = {
   selfEvalPrompt?: string
   selfEvalMaxChars: number
   selfEvalMemoryPath: string
+  selfImprovePrompt?: string
+  selfImproveIntervalMs: number
+  selfImproveMaxChars: number
+  selfImproveSessionKey: string
+  selfImproveStatePath: string
   triggerSessionKey: string
   triggerOnFailurePrompt?: string
   triggerOnIssuePrompt?: string
@@ -42,6 +47,8 @@ const DEFAULT_TASK_LEDGER_MAX_RECORDS = 1_000
 const DEFAULT_TASK_LEDGER_COMPACT_INTERVAL_MS = 600_000
 const DEFAULT_HEARTBEAT_INTERVAL_MS = 30_000
 const DEFAULT_SELF_EVAL_MAX_CHARS = 4_000
+const DEFAULT_SELF_IMPROVE_MAX_CHARS = 4_000
+const DEFAULT_SELF_IMPROVE_INTERVAL_MS = 0
 
 export const getDefaultOutputPolicy = (): string => DEFAULT_OUTPUT_POLICY
 
@@ -126,6 +133,14 @@ export const loadConfig = async (options?: {
     typeof selfEvalPromptRaw === 'string' && selfEvalPromptRaw.trim().length > 0
       ? selfEvalPromptRaw
       : undefined
+  const selfImprovePromptRaw =
+    process.env.MIMIKIT_SELF_IMPROVE_PROMPT ??
+    (fileConfig.selfImprovePrompt as string | undefined)
+  const selfImprovePrompt =
+    typeof selfImprovePromptRaw === 'string' &&
+    selfImprovePromptRaw.trim().length > 0
+      ? selfImprovePromptRaw
+      : undefined
 
   const memoryPaths =
     parseStringArray(process.env.MIMIKIT_MEMORY_PATHS) ??
@@ -188,12 +203,36 @@ export const loadConfig = async (options?: {
       fileConfig.selfEvalMaxChars ?? DEFAULT_SELF_EVAL_MAX_CHARS,
     ),
   )
+  const selfImproveMaxChars = Math.max(
+    200,
+    parseNumber(
+      process.env.MIMIKIT_SELF_IMPROVE_MAX_CHARS,
+      fileConfig.selfImproveMaxChars ?? DEFAULT_SELF_IMPROVE_MAX_CHARS,
+    ),
+  )
+  const selfImproveIntervalMs = Math.max(
+    0,
+    parseNumber(
+      process.env.MIMIKIT_SELF_IMPROVE_INTERVAL_MS,
+      fileConfig.selfImproveIntervalMs ?? DEFAULT_SELF_IMPROVE_INTERVAL_MS,
+    ),
+  )
+  const selfImproveSessionKey =
+    process.env.MIMIKIT_SELF_IMPROVE_SESSION_KEY ??
+    (fileConfig.selfImproveSessionKey as string | undefined) ??
+    'self-improve'
   const selfEvalMemoryPath =
     resolvePath(
       workspaceRoot,
       process.env.MIMIKIT_SELF_EVAL_MEMORY_PATH ??
         (fileConfig.selfEvalMemoryPath as string | undefined),
     ) ?? path.join(workspaceRoot, 'memory', 'LESSONS.md')
+  const selfImproveStatePath =
+    resolvePath(
+      workspaceRoot,
+      process.env.MIMIKIT_SELF_IMPROVE_STATE_PATH ??
+        (fileConfig.selfImproveStatePath as string | undefined),
+    ) ?? path.join(stateDir, 'self-improve.json')
 
   const codexBin =
     process.env.MIMIKIT_CODEX_BIN ?? (fileConfig.codexBin as string | undefined)
@@ -248,6 +287,10 @@ export const loadConfig = async (options?: {
     outputPolicy,
     selfEvalMaxChars,
     selfEvalMemoryPath,
+    selfImproveMaxChars,
+    selfImproveIntervalMs,
+    selfImproveSessionKey,
+    selfImproveStatePath,
     triggerSessionKey,
   }
 
@@ -261,6 +304,8 @@ export const loadConfig = async (options?: {
   if (triggerOnIssuePrompt !== undefined)
     config.triggerOnIssuePrompt = triggerOnIssuePrompt
   if (selfEvalPrompt !== undefined) config.selfEvalPrompt = selfEvalPrompt
+  if (selfImprovePrompt !== undefined)
+    config.selfImprovePrompt = selfImprovePrompt
 
   return config
 }

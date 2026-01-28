@@ -16,6 +16,7 @@ import {
 } from './master/helpers.js'
 import { runTask } from './master/task-runner.js'
 import { Semaphore, SessionQueue } from './queue.js'
+import { startSelfImprove } from './self-improve.js'
 
 import type { Config, ResumePolicy } from '../config.js'
 
@@ -60,6 +61,7 @@ export class Master {
     await master.recover()
     master.startAutoCompaction()
     master.startHeartbeat()
+    master.startSelfImprove()
     return master
   }
 
@@ -280,6 +282,13 @@ export class Master {
       void write()
     }, intervalMs)
     this.heartbeatTimer.unref()
+  }
+
+  private startSelfImprove(): void {
+    startSelfImprove({
+      config: this.config,
+      enqueueTask: this.enqueueTask.bind(this),
+    })
   }
 
   private async recover(): Promise<void> {

@@ -21,6 +21,8 @@
 - 自评估默认启发式，LLM 评估可选。
 - 评估问题写入 memory/LESSONS.md，可选触发 issue follow-up。
 - 心跳 JSON 周期写入用于 7x24 监控。
+- 可选 supervisor 负责 serve 自重启，降低外部守护依赖。
+- 可选 self-improve 周期触发改进任务。
 
 ## 约束与取舍
 - 无流式输出：实现更简单，但不支持中途插话/打断。

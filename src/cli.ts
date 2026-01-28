@@ -1,3 +1,7 @@
+import { spawn } from 'node:child_process'
+import fs from 'node:fs'
+import path from 'node:path'
+
 import { parseAskArgs } from './cli/args.js'
 import { loadConfig, type ResumePolicy } from './config.js'
 import { compactTaskLedger, loadTaskLedger } from './runtime/ledger.js'
@@ -7,6 +11,7 @@ import { startHttpServer } from './server/http.js'
 const printUsage = (): void => {
   console.log(`Usage:
   tsx src/cli.ts serve [--port <port>]
+  tsx src/cli.ts serve [--port <port>] [--supervise]
   tsx src/cli.ts ask [--session <key>] [--message <text>] [text...] [--resume auto|always|never] [--verify "<cmd>"] [--max-iterations <n>]
   tsx src/cli.ts task --id <taskId>
   tsx src/cli.ts compact-tasks [--force]
@@ -20,6 +25,62 @@ const getArgValue = (args: string[], flag: string): string | undefined => {
   return args[index + 1]
 }
 
+const hasFlag = (args: string[], flag: string): boolean => args.includes(flag)
+
+const stripArgs = (
+  args: string[],
+  flagsWithValue: string[],
+  flagsWithoutValue: string[],
+): string[] => {
+  const stripped: string[] = []
+  for (let i = 0; i < args.length; i += 1) {
+    const arg = args[i]
+    if (!arg) continue
+    if (flagsWithoutValue.includes(arg)) continue
+    if (flagsWithValue.includes(arg)) {
+      i += 1
+      continue
+    }
+    stripped.push(arg)
+  }
+  return stripped
+}
+
+const parseNumberArg = (
+  args: string[],
+  flag: string,
+  fallback: number,
+): number => {
+  const value = getArgValue(args, flag)
+  if (!value) return fallback
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : fallback
+}
+
+const parseEnvNumber = (
+  value: string | undefined,
+  fallback: number,
+): number => {
+  if (!value) return fallback
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : fallback
+}
+
+const parseBooleanEnv = (value: string | undefined): boolean => {
+  if (!value) return false
+  const normalized = value.trim().toLowerCase()
+  return ['1', 'true', 'yes', 'on'].includes(normalized)
+}
+
+const resolveTsxBin = (workspaceRoot: string): string => {
+  const local = path.join(workspaceRoot, 'node_modules', '.bin', 'tsx')
+  if (fs.existsSync(local)) return local
+  return 'tsx'
+}
+
+const sleep = (ms: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, ms))
+
 const runServe = async (args: string[]): Promise<void> => {
   const portValue = getArgValue(args, '--port')
   const port = portValue ? Number(portValue) : 8787
@@ -29,6 +90,71 @@ const runServe = async (args: string[]): Promise<void> => {
   const master = await Master.create(config)
   await startHttpServer({ port, master })
   console.log(`HTTP server listening on ${port}`)
+}
+
+const runServeSupervisor = async (args: string[]): Promise<void> => {
+  const delayMs = Math.max(
+    0,
+    parseNumberArg(
+      args,
+      '--supervise-delay',
+      parseEnvNumber(process.env.MIMIKIT_SUPERVISE_DELAY_MS, 2000),
+    ),
+  )
+  const maxRestarts = Math.max(
+    0,
+    parseNumberArg(
+      args,
+      '--supervise-max',
+      parseEnvNumber(process.env.MIMIKIT_SUPERVISE_MAX_RESTARTS, 0),
+    ),
+  )
+
+  const filteredArgs = stripArgs(
+    args,
+    ['--supervise-delay', '--supervise-max'],
+    ['--supervise', '--child'],
+  )
+  const tsxBin = resolveTsxBin(process.cwd())
+  let restarts = 0
+  let child: ReturnType<typeof spawn> | null = null
+
+  const stop = (): void => {
+    if (child && !child.killed) child.kill('SIGTERM')
+    process.exit(0)
+  }
+
+  process.on('SIGINT', stop)
+  process.on('SIGTERM', stop)
+
+  for (;;) {
+    const spawned = spawn(
+      tsxBin,
+      ['src/cli.ts', 'serve', '--child', ...filteredArgs],
+      {
+        stdio: 'inherit',
+        env: { ...process.env, MIMIKIT_SUPERVISED: '1' },
+      },
+    )
+    child = spawned
+
+    const exitCode = await new Promise<number>((resolve) => {
+      spawned.once('exit', (code, signal) => {
+        resolve(code ?? (signal ? 1 : 0))
+      })
+    })
+    if (exitCode === 0) return
+
+    restarts += 1
+    if (maxRestarts > 0 && restarts > maxRestarts) {
+      console.error('Supervisor max restarts exceeded')
+      process.exitCode = 1
+      return
+    }
+    const suffix = exitCode === 0 ? 'clean exit' : `code ${exitCode}`
+    console.error(`Supervisor restarting (${suffix})`)
+    if (delayMs > 0) await sleep(delayMs)
+  }
 }
 
 const waitForTask = async (
@@ -127,6 +253,20 @@ const main = async (): Promise<void> => {
 
   switch (command) {
     case 'serve':
+      if (
+        parseBooleanEnv(process.env.MIMIKIT_SUPERVISE) &&
+        process.env.MIMIKIT_SUPERVISED !== '1'
+      ) {
+        await runServeSupervisor(args)
+        return
+      }
+      if (
+        hasFlag(args, '--supervise') &&
+        process.env.MIMIKIT_SUPERVISED !== '1'
+      ) {
+        await runServeSupervisor(args)
+        return
+      }
       await runServe(args)
       return
     case 'ask':
