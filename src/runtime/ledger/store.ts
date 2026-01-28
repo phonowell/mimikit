@@ -8,6 +8,27 @@ import { type TaskRecord } from './types.js'
 
 const ledgerPath = (stateDir: string): string => path.join(stateDir, 'tasks.md')
 
+export type TaskLedgerCompactLimits = {
+  maxBytes?: number
+  maxRecords?: number
+}
+
+export type TaskLedgerStats = {
+  path: string
+  bytes: number
+  records: number
+  tasks: number
+}
+
+export type TaskLedgerCompactResult = {
+  path: string
+  records: number
+  tasks: number
+  bytesBefore: number
+  bytesAfter: number
+  wrote: boolean
+}
+
 export const appendTaskRecord = async (
   stateDir: string,
   record: TaskRecord,
@@ -150,6 +171,30 @@ const parseTaskLedgerContent = (content: string): TaskRecord[] => {
   return records
 }
 
+const buildTaskLedgerStats = (
+  filePath: string,
+  content: string,
+): TaskLedgerStats => {
+  const bytes = Buffer.byteLength(content)
+  if (!content.trim()) {
+    return {
+      path: filePath,
+      bytes,
+      records: 0,
+      tasks: 0,
+    }
+  }
+
+  const records = parseTaskLedgerContent(content)
+  const tasks = new Set(records.map((record) => record.id)).size
+  return {
+    path: filePath,
+    bytes,
+    records: records.length,
+    tasks,
+  }
+}
+
 export const loadTaskLedger = async (
   stateDir: string,
 ): Promise<Map<string, TaskRecord>> => {
@@ -169,16 +214,67 @@ export const loadTaskLedger = async (
   return tasks
 }
 
+export const getTaskLedgerStats = async (
+  stateDir: string,
+): Promise<TaskLedgerStats> => {
+  const filePath = ledgerPath(stateDir)
+  let content = ''
+  try {
+    content = await fs.readFile(filePath, 'utf8')
+  } catch (error) {
+    const err = error as NodeJS.ErrnoException
+    if (err.code === 'ENOENT') {
+      return {
+        path: filePath,
+        bytes: 0,
+        records: 0,
+        tasks: 0,
+      }
+    }
+    throw error
+  }
+
+  return buildTaskLedgerStats(filePath, content)
+}
+
+const hasPositive = (value: number | undefined): value is number =>
+  typeof value === 'number' && value > 0
+
+export const shouldCompactTaskLedger = (
+  stats: TaskLedgerStats,
+  limits: TaskLedgerCompactLimits,
+): boolean => {
+  if (stats.records <= stats.tasks) return false
+
+  const exceedsBytes =
+    hasPositive(limits.maxBytes) && stats.bytes >= limits.maxBytes
+  const exceedsRecords =
+    hasPositive(limits.maxRecords) && stats.records >= limits.maxRecords
+  return exceedsBytes || exceedsRecords
+}
+
+export const maybeCompactTaskLedger = async (
+  stateDir: string,
+  limits: TaskLedgerCompactLimits,
+): Promise<TaskLedgerCompactResult> => {
+  const stats = await getTaskLedgerStats(stateDir)
+  if (!shouldCompactTaskLedger(stats, limits)) {
+    return {
+      path: stats.path,
+      records: stats.records,
+      tasks: stats.tasks,
+      bytesBefore: stats.bytes,
+      bytesAfter: stats.bytes,
+      wrote: false,
+    }
+  }
+
+  return compactTaskLedger(stateDir)
+}
+
 export const compactTaskLedger = async (
   stateDir: string,
-): Promise<{
-  path: string
-  records: number
-  tasks: number
-  bytesBefore: number
-  bytesAfter: number
-  wrote: boolean
-}> => {
+): Promise<TaskLedgerCompactResult> => {
   const filePath = ledgerPath(stateDir)
   let content = ''
   try {

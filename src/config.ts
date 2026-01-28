@@ -18,6 +18,9 @@ export type Config = {
   maxWorkers: number
   maxIterations: number
   stateDir: string
+  taskLedgerMaxBytes: number
+  taskLedgerMaxRecords: number
+  taskLedgerAutoCompactIntervalMs: number
   memoryPaths: string[]
   maxMemoryHits: number
   maxMemoryChars: number
@@ -28,6 +31,9 @@ export type Config = {
 }
 
 const DEFAULT_OUTPUT_POLICY = `Output Policy:\n- Only output the final answer, no reasoning steps.\n- Keep it short, at most 6 lines; if longer, start with a summary.\n- Do not repeat the question or restate the context.`
+const DEFAULT_TASK_LEDGER_MAX_BYTES = 20_000
+const DEFAULT_TASK_LEDGER_MAX_RECORDS = 1_000
+const DEFAULT_TASK_LEDGER_COMPACT_INTERVAL_MS = 600_000
 
 export const getDefaultOutputPolicy = (): string => DEFAULT_OUTPUT_POLICY
 
@@ -111,6 +117,29 @@ export const loadConfig = async (options?: {
       : undefined) ??
     []
 
+  const taskLedgerMaxBytes = Math.max(
+    0,
+    parseNumber(
+      process.env.MIMIKIT_TASKS_COMPACT_BYTES,
+      fileConfig.taskLedgerMaxBytes ?? DEFAULT_TASK_LEDGER_MAX_BYTES,
+    ),
+  )
+  const taskLedgerMaxRecords = Math.max(
+    0,
+    parseNumber(
+      process.env.MIMIKIT_TASKS_COMPACT_RECORDS,
+      fileConfig.taskLedgerMaxRecords ?? DEFAULT_TASK_LEDGER_MAX_RECORDS,
+    ),
+  )
+  const taskLedgerAutoCompactIntervalMs = Math.max(
+    0,
+    parseNumber(
+      process.env.MIMIKIT_TASKS_COMPACT_INTERVAL_MS,
+      fileConfig.taskLedgerAutoCompactIntervalMs ??
+        DEFAULT_TASK_LEDGER_COMPACT_INTERVAL_MS,
+    ),
+  )
+
   const resumePolicy =
     (process.env.MIMIKIT_RESUME_POLICY as ResumePolicy | undefined) ??
     (fileConfig.resumePolicy as ResumePolicy | undefined) ??
@@ -154,6 +183,9 @@ export const loadConfig = async (options?: {
       ),
     ),
     stateDir,
+    taskLedgerMaxBytes,
+    taskLedgerMaxRecords,
+    taskLedgerAutoCompactIntervalMs,
     memoryPaths: memoryPaths.map(
       (value) => resolvePath(workspaceRoot, value) ?? value,
     ),

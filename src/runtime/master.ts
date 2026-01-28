@@ -2,7 +2,12 @@ import crypto from 'node:crypto'
 
 import { type SessionRecord, SessionStore } from '../session/store.js'
 
-import { appendTaskRecord, loadTaskLedger, type TaskRecord } from './ledger.js'
+import {
+  appendTaskRecord,
+  loadTaskLedger,
+  maybeCompactTaskLedger,
+  type TaskRecord,
+} from './ledger.js'
 import {
   normalizeMaxIterations,
   sanitizeVerifyCommand,
@@ -28,6 +33,8 @@ export class Master {
   private tasks: Map<string, TaskRecord>
   private queue: SessionQueue
   private semaphore: Semaphore
+  private compactionTimer?: NodeJS.Timeout
+  private compactionPromise: Promise<void> | undefined
 
   private constructor(
     config: Config,
@@ -46,6 +53,7 @@ export class Master {
     const tasks = await loadTaskLedger(config.stateDir)
     const master = new Master(config, sessionStore, tasks)
     await master.recover()
+    master.startAutoCompaction()
     return master
   }
 
@@ -64,18 +72,15 @@ export class Master {
   ): Promise<{ ok: boolean; reason?: string }> {
     const trimmed = sessionKey.trim()
     if (!trimmed) return { ok: false, reason: 'invalid_session' }
-    const hasActive = Array.from(this.tasks.values()).some(
-      (task) =>
-        task.sessionKey === trimmed &&
-        (task.status === 'queued' || task.status === 'running'),
-    )
-    if (hasActive) return { ok: false, reason: 'active_tasks' }
+    if (this.hasActiveTasks(trimmed))
+      return { ok: false, reason: 'active_tasks' }
     const removed = await this.sessionStore.remove(trimmed)
     if (!removed) return { ok: false, reason: 'not_found' }
     return { ok: true }
   }
 
   async enqueueTask(request: TaskRequest): Promise<TaskRecord> {
+    if (this.compactionPromise) await this.compactionPromise
     const taskId = crypto.randomUUID()
     const runId = crypto.randomUUID()
     const now = new Date().toISOString()
@@ -105,8 +110,13 @@ export class Master {
         : {}),
     }
 
-    await appendTaskRecord(this.config.stateDir, record)
     this.tasks.set(taskId, record)
+    try {
+      await appendTaskRecord(this.config.stateDir, record)
+    } catch (error) {
+      this.tasks.delete(taskId)
+      throw error
+    }
     this.enqueueRecord(record)
     return record
   }
@@ -128,6 +138,50 @@ export class Master {
         release()
       }
     })
+  }
+
+  private hasActiveTasks(sessionKey?: string): boolean {
+    for (const task of this.tasks.values()) {
+      if (sessionKey && task.sessionKey !== sessionKey) continue
+      if (task.status === 'queued' || task.status === 'running') return true
+    }
+    return false
+  }
+
+  private autoCompactionEnabled(): boolean {
+    if (this.config.taskLedgerAutoCompactIntervalMs <= 0) return false
+    if (
+      this.config.taskLedgerMaxBytes <= 0 &&
+      this.config.taskLedgerMaxRecords <= 0
+    )
+      return false
+    return true
+  }
+
+  private startAutoCompaction(): void {
+    if (!this.autoCompactionEnabled()) return
+    const intervalMs = this.config.taskLedgerAutoCompactIntervalMs
+    const run = async (): Promise<void> => {
+      if (this.compactionPromise) return
+      if (this.hasActiveTasks()) return
+      this.compactionPromise = (async () => {
+        await maybeCompactTaskLedger(this.config.stateDir, {
+          maxBytes: this.config.taskLedgerMaxBytes,
+          maxRecords: this.config.taskLedgerMaxRecords,
+        })
+      })()
+      try {
+        await this.compactionPromise
+      } finally {
+        this.compactionPromise = undefined
+      }
+    }
+
+    void run()
+    this.compactionTimer = setInterval(() => {
+      void run()
+    }, intervalMs)
+    this.compactionTimer.unref()
   }
 
   private async recover(): Promise<void> {
