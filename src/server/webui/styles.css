@@ -66,46 +66,6 @@ body {
   animation-delay: 0.05s;
 }
 
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.brand-mark {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, rgba(79, 141, 255, 0.9), #8cb6ff);
-  color: white;
-  display: grid;
-  place-items: center;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  font-family: var(--font-display);
-  box-shadow: 0 12px 26px rgba(79, 141, 255, 0.2);
-}
-
-.tag {
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-  font-size: 11px;
-  color: var(--muted);
-  margin: 0;
-}
-
-.brand h1 {
-  font-family: var(--font-display);
-  font-size: 18px;
-  margin: 4px 0 0;
-}
-
-.subtitle {
-  margin: 4px 0 0;
-  color: var(--muted);
-  font-size: 13px;
-}
-
 .card {
   background: var(--panel-solid);
   border: 1px solid var(--panel-border);
@@ -609,16 +569,6 @@ button:hover:not(:disabled) {
   .sidebar,
   .chat {
     padding: 18px;
-  }
-
-  .brand {
-    align-items: flex-start;
-  }
-
-  .brand-mark {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
   }
 
   .thread {
