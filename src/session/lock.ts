@@ -1,6 +1,8 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
+import { isErrnoException } from '../utils/error.js'
+
 type LockInfo = {
   pid: number
   ts: number
@@ -26,8 +28,7 @@ const readLock = async (lockPath: string): Promise<LockInfo | null> => {
       ts: parsed.ts,
     }
   } catch (error) {
-    const err = error as NodeJS.ErrnoException
-    if (err.code === 'ENOENT') return null
+    if (isErrnoException(error) && error.code === 'ENOENT') return null
     return null
   }
 }
@@ -42,8 +43,7 @@ export const acquireLock = async (
   try {
     await writeLock(lockPath)
   } catch (error) {
-    const err = error as NodeJS.ErrnoException
-    if (err.code !== 'EEXIST') throw error
+    if (!isErrnoException(error) || error.code !== 'EEXIST') throw error
 
     const existing = await readLock(lockPath)
     const stale = !existing || Date.now() - existing.ts > timeoutMs

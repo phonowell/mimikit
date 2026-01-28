@@ -1,6 +1,7 @@
 import crypto from 'node:crypto'
 import fs from 'node:fs/promises'
 
+import { isErrnoException } from '../utils/error.js'
 import { readJsonFile, writeJsonFileAtomic } from '../utils/fs.js'
 
 import type { Config, ResumePolicy } from '../config.js'
@@ -31,8 +32,7 @@ const readTail = async (
     await handle.read(buffer, 0, length, start)
     return buffer.toString('utf8').trim()
   } catch (error) {
-    const err = error as NodeJS.ErrnoException
-    if (err.code === 'ENOENT') return ''
+    if (isErrnoException(error) && error.code === 'ENOENT') return ''
     throw error
   } finally {
     if (handle) await handle.close()
@@ -103,9 +103,9 @@ export const startSelfImprove = (params: SelfImproveParams): void => {
     }
   }
 
-  void run()
+  run().catch((err) => console.error('self-improve failed:', err))
   const timer = setInterval(() => {
-    void run()
+    run().catch((err) => console.error('self-improve failed:', err))
   }, config.selfImproveIntervalMs)
   timer.unref()
 }

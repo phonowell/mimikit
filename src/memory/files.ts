@@ -1,13 +1,14 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
+import { isErrnoException } from '../utils/error.js'
+
 export const pathExists = async (targetPath: string): Promise<boolean> => {
   try {
     await fs.stat(targetPath)
     return true
   } catch (error) {
-    const err = error as NodeJS.ErrnoException
-    if (err.code === 'ENOENT') return false
+    if (isErrnoException(error) && error.code === 'ENOENT') return false
     throw error
   }
 }

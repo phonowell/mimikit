@@ -3,6 +3,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import readline from 'node:readline'
 
+import { isErrnoException } from '../utils/error.js'
 import { ensureDir } from '../utils/fs.js'
 
 import type { Config, ResumePolicy } from '../config.js'
@@ -80,8 +81,7 @@ const readOutputFile = async (
     const trimmed = buffer.toString('utf8').trim()
     return trimmed.length > 0 ? trimmed : undefined
   } catch (error) {
-    const err = error as NodeJS.ErrnoException
-    if (err.code === 'ENOENT') return undefined
+    if (isErrnoException(error) && error.code === 'ENOENT') return undefined
     throw error
   } finally {
     if (handle) await handle.close()

@@ -1,6 +1,8 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
+import { isErrnoException } from './utils/error.js'
+
 export type ResumePolicy = 'auto' | 'always' | 'never'
 export type CodexSandbox =
   | 'read-only'
@@ -122,8 +124,7 @@ const readConfigFile = async (configPath: string): Promise<RawConfig> => {
     const raw = await fs.readFile(configPath, 'utf8')
     return JSON.parse(raw) as RawConfig
   } catch (error) {
-    const err = error as NodeJS.ErrnoException
-    if (err.code === 'ENOENT') return {}
+    if (isErrnoException(error) && error.code === 'ENOENT') return {}
     throw error
   }
 }

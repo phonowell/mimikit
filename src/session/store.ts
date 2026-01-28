@@ -2,6 +2,7 @@ import crypto from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
+import { isErrnoException } from '../utils/error.js'
 import { readJsonFile, writeJsonFileAtomic } from '../utils/fs.js'
 
 export type SessionRecord = {
@@ -99,8 +100,7 @@ export class SessionStore {
       try {
         await fs.unlink(filePath)
       } catch (error) {
-        const err = error as NodeJS.ErrnoException
-        if (err.code !== 'ENOENT') throw error
+        if (!isErrnoException(error) || error.code !== 'ENOENT') throw error
       }
     }
     await removeFile(lockPath)

@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises'
 
+import { isErrnoException } from '../utils/error.js'
 import { appendFile } from '../utils/fs.js'
 
 import { buildSummary, trimText } from './master/helpers.js'
@@ -140,8 +141,7 @@ const trimLessonsFile = async (
     await handle.read(buffer, 0, length, start)
     await fs.writeFile(filePath, buffer.toString('utf8'), 'utf8')
   } catch (error) {
-    const err = error as NodeJS.ErrnoException
-    if (err.code === 'ENOENT') return
+    if (isErrnoException(error) && error.code === 'ENOENT') return
     throw error
   } finally {
     if (handle) await handle.close()
@@ -208,8 +208,9 @@ export const runSelfEvaluation = async (
         prompt: input.prompt,
         issue: issueSummary,
       })
-    } catch {
-      // ignore lesson write failures
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      console.error(`lesson write failed: ${message}`)
     }
   }
 

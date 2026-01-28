@@ -1,6 +1,8 @@
 import { spawn } from 'node:child_process'
 import readline from 'node:readline'
 
+import { isErrnoException } from '../utils/error.js'
+
 import { discoverMemoryPaths } from './files.js'
 
 import type { Config } from '../config.js'
@@ -119,8 +121,8 @@ export const searchMemory = async (
       .filter((hit): hit is MemoryHit => Boolean(hit))
     return trimHits(hits, maxHits, config.maxMemoryChars)
   } catch (error) {
-    const err = error as NodeJS.ErrnoException
-    if (err.code !== 'ENOENT') throw error
+    if (!isErrnoException(error) || error.code !== 'ENOENT') throw error
+    console.warn('rg not found, falling back to grep')
   }
 
   const grepArgs = [
@@ -139,8 +141,10 @@ export const searchMemory = async (
       .filter((hit): hit is MemoryHit => Boolean(hit))
     return trimHits(hits, maxHits, config.maxMemoryChars)
   } catch (error) {
-    const err = error as NodeJS.ErrnoException
-    if (err.code === 'ENOENT') return []
+    if (isErrnoException(error) && error.code === 'ENOENT') {
+      console.warn('neither rg nor grep found, memory search disabled')
+      return []
+    }
     throw error
   }
 }

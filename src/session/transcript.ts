@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises'
 
+import { isErrnoException } from '../utils/error.js'
 import { appendFile } from '../utils/fs.js'
 
 export type TranscriptRole = 'user' | 'assistant'
@@ -55,8 +56,7 @@ export const readTranscript = async (
 
     return entries
   } catch (error) {
-    const err = error as NodeJS.ErrnoException
-    if (err.code === 'ENOENT') return []
+    if (isErrnoException(error) && error.code === 'ENOENT') return []
     throw error
   }
 }

@@ -6,6 +6,7 @@ import {
   appendTranscript,
   type TranscriptEntry,
 } from '../../session/transcript.js'
+import { formatError } from '../../utils/error.js'
 import { appendTaskRecord, type TaskRecord } from '../ledger.js'
 import { runSelfEvaluation } from '../self-eval.js'
 import { runVerifyCommand } from '../verify.js'
@@ -210,7 +211,7 @@ export const runTaskLoop = async ({
       return
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
+    const message = formatError(error)
     if (onTriggerFollowup)
       await onTriggerFollowup(currentRecord, message, 'failed')
     await failTask(config, tasks, currentRecord, session, message, lockHeld)

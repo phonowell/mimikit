@@ -1,6 +1,8 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
+import { isErrnoException } from './error.js'
+
 export const ensureDir = async (dirPath: string): Promise<void> => {
   await fs.mkdir(dirPath, { recursive: true })
 }
@@ -13,8 +15,7 @@ export const readJsonFile = async <T>(
     const raw = await fs.readFile(filePath, 'utf8')
     return JSON.parse(raw) as T
   } catch (error) {
-    const err = error as NodeJS.ErrnoException
-    if (err.code === 'ENOENT') return fallback
+    if (isErrnoException(error) && error.code === 'ENOENT') return fallback
     throw error
   }
 }

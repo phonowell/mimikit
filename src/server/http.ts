@@ -2,6 +2,7 @@ import http from 'node:http'
 import { URL } from 'node:url'
 
 import { readTranscript } from '../session/transcript.js'
+import { isErrnoException } from '../utils/error.js'
 
 import { loadWebUiAsset } from './webui.js'
 
@@ -310,8 +311,7 @@ export const startHttpServer = async (
         const task = await options.master.enqueueTask(request)
         respond(200, task, `task=${task.id}`)
       } catch (error) {
-        const err = error as NodeJS.ErrnoException
-        if (err.code === 'PAYLOAD_TOO_LARGE') {
+        if (isErrnoException(error) && error.code === 'PAYLOAD_TOO_LARGE') {
           respond(
             413,
             { error: 'Payload too large' },
@@ -319,11 +319,11 @@ export const startHttpServer = async (
           )
           return
         }
-        if (err.code === 'REQUEST_TIMEOUT') {
+        if (isErrnoException(error) && error.code === 'REQUEST_TIMEOUT') {
           respond(408, { error: 'Request timeout' }, 'error=request_timeout')
           return
         }
-        const message = err instanceof Error ? err.message : String(err)
+        const message = error instanceof Error ? error.message : String(error)
         respond(400, { error: message }, 'error=invalid_request')
       }
       return
@@ -350,12 +350,13 @@ export const startHttpServer = async (
       }
       respond(202, { ok: true, scheduled: true }, 'restart=scheduled')
       setTimeout(() => {
-        options.onRestart?.({
+        const request: RestartRequest = {
           source: 'http',
           force,
-          reason,
           requestedAt: new Date().toISOString(),
-        })
+        }
+        if (reason !== undefined) request.reason = reason
+        options.onRestart?.(request)
       }, 50)
       return
     }

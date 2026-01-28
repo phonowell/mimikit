@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
+import { isErrnoException } from '../../utils/error.js'
 import { appendFile, writeFileAtomic } from '../../utils/fs.js'
 
 import { formatTaskRecord } from './format.js'
@@ -229,8 +230,7 @@ export const loadTaskLedger = async (
   try {
     content = await fs.readFile(filePath, 'utf8')
   } catch (error) {
-    const err = error as NodeJS.ErrnoException
-    if (err.code !== 'ENOENT') throw error
+    if (!isErrnoException(error) || error.code !== 'ENOENT') throw error
   }
 
   const tasks = new Map<string, TaskRecord>()
@@ -248,8 +248,7 @@ export const getTaskLedgerStats = async (
   try {
     content = await fs.readFile(filePath, 'utf8')
   } catch (error) {
-    const err = error as NodeJS.ErrnoException
-    if (err.code === 'ENOENT') {
+    if (isErrnoException(error) && error.code === 'ENOENT') {
       return {
         path: filePath,
         bytes: 0,
@@ -307,8 +306,7 @@ export const compactTaskLedger = (
     try {
       content = await fs.readFile(filePath, 'utf8')
     } catch (error) {
-      const err = error as NodeJS.ErrnoException
-      if (err.code === 'ENOENT') {
+      if (isErrnoException(error) && error.code === 'ENOENT') {
         return {
           path: filePath,
           records: 0,

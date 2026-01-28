@@ -270,9 +270,9 @@ export class Master {
       }
     }
 
-    void run()
+    run().catch((err) => console.error('compaction failed:', err))
     this.compactionTimer = setInterval(() => {
-      void run()
+      run().catch((err) => console.error('compaction failed:', err))
     }, intervalMs)
     this.compactionTimer.unref()
   }
@@ -300,9 +300,9 @@ export class Master {
       }
     }
 
-    void write()
+    write().catch((err) => console.error('heartbeat failed:', err))
     this.heartbeatTimer = setInterval(() => {
-      void write()
+      write().catch((err) => console.error('heartbeat failed:', err))
     }, intervalMs)
     this.heartbeatTimer.unref()
   }
