@@ -295,8 +295,7 @@ export const loadConfig = async (options?: {
     (fileConfig.codexProfile as string | undefined)
   const codexSandbox =
     normalizeCodexSandbox(process.env.MIMIKIT_CODEX_SANDBOX) ??
-    normalizeCodexSandbox(fileConfig.codexSandbox) ??
-    'workspace-write'
+    normalizeCodexSandbox(fileConfig.codexSandbox)
   const codexFullAuto =
     parseBoolean(process.env.MIMIKIT_CODEX_FULL_AUTO) ??
     (fileConfig.codexFullAuto as boolean | undefined)
@@ -349,7 +348,7 @@ export const loadConfig = async (options?: {
   if (codexBin !== undefined) config.codexBin = codexBin
   if (codexModel !== undefined) config.codexModel = codexModel
   if (codexProfile !== undefined) config.codexProfile = codexProfile
-  config.codexSandbox = codexSandbox
+  if (codexSandbox !== undefined) config.codexSandbox = codexSandbox
   if (codexFullAuto !== undefined) config.codexFullAuto = codexFullAuto
   if (triggerOnFailurePrompt !== undefined)
     config.triggerOnFailurePrompt = triggerOnFailurePrompt
