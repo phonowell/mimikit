@@ -1,6 +1,7 @@
 import crypto from 'node:crypto'
 
 import { type SessionRecord, SessionStore } from '../session/store.js'
+import { writeJsonFile } from '../utils/fs.js'
 
 import {
   appendTaskRecord,
@@ -33,8 +34,11 @@ export class Master {
   private tasks: Map<string, TaskRecord>
   private queue: SessionQueue
   private semaphore: Semaphore
+  private startedAt: number
   private compactionTimer?: NodeJS.Timeout
   private compactionPromise: Promise<void> | undefined
+  private heartbeatTimer?: NodeJS.Timeout
+  private heartbeatPromise: Promise<void> | undefined
 
   private constructor(
     config: Config,
@@ -46,6 +50,7 @@ export class Master {
     this.tasks = tasks
     this.queue = new SessionQueue()
     this.semaphore = new Semaphore(config.maxWorkers)
+    this.startedAt = Date.now()
   }
 
   static async create(config: Config): Promise<Master> {
@@ -54,6 +59,7 @@ export class Master {
     const master = new Master(config, sessionStore, tasks)
     await master.recover()
     master.startAutoCompaction()
+    master.startHeartbeat()
     return master
   }
 
@@ -65,6 +71,33 @@ export class Master {
     const sessions = Object.values(this.sessionStore.all())
     sessions.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
     return sessions
+  }
+
+  getStats(): {
+    ok: boolean
+    pid: number
+    startedAt: string
+    uptimeMs: number
+    sessions: number
+    activeSessions: number
+    tasks: {
+      total: number
+      queued: number
+      running: number
+      done: number
+      failed: number
+    }
+  } {
+    const counts = this.countTasks()
+    return {
+      ok: true,
+      pid: process.pid,
+      startedAt: new Date(this.startedAt).toISOString(),
+      uptimeMs: Date.now() - this.startedAt,
+      sessions: Object.keys(this.sessionStore.all()).length,
+      activeSessions: this.queue.size,
+      tasks: counts,
+    }
   }
 
   async deleteSession(
@@ -148,6 +181,41 @@ export class Master {
     return false
   }
 
+  private countTasks(): {
+    total: number
+    queued: number
+    running: number
+    done: number
+    failed: number
+  } {
+    const counts = {
+      total: this.tasks.size,
+      queued: 0,
+      running: 0,
+      done: 0,
+      failed: 0,
+    }
+    for (const task of this.tasks.values()) {
+      switch (task.status) {
+        case 'queued':
+          counts.queued += 1
+          break
+        case 'running':
+          counts.running += 1
+          break
+        case 'done':
+          counts.done += 1
+          break
+        case 'failed':
+          counts.failed += 1
+          break
+        default:
+          break
+      }
+    }
+    return counts
+  }
+
   private autoCompactionEnabled(): boolean {
     if (this.config.taskLedgerAutoCompactIntervalMs <= 0) return false
     if (
@@ -184,6 +252,36 @@ export class Master {
     this.compactionTimer.unref()
   }
 
+  private startHeartbeat(): void {
+    if (this.config.heartbeatIntervalMs <= 0) return
+    const intervalMs = this.config.heartbeatIntervalMs
+    const write = async (): Promise<void> => {
+      if (this.heartbeatPromise) return
+      this.heartbeatPromise = (async () => {
+        try {
+          await writeJsonFile(this.config.heartbeatPath, {
+            ...this.getStats(),
+            updatedAt: new Date().toISOString(),
+          })
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error)
+          console.error(`heartbeat write failed: ${message}`)
+        }
+      })()
+      try {
+        await this.heartbeatPromise
+      } finally {
+        this.heartbeatPromise = undefined
+      }
+    }
+
+    void write()
+    this.heartbeatTimer = setInterval(() => {
+      void write()
+    }, intervalMs)
+    this.heartbeatTimer.unref()
+  }
+
   private async recover(): Promise<void> {
     for (const record of this.tasks.values()) {
       if (!record.prompt) continue
@@ -208,16 +306,20 @@ export class Master {
   private async maybeTriggerFollowup(
     task: TaskRecord,
     reason: string,
+    kind: 'failed' | 'issue',
   ): Promise<void> {
     if (task.triggeredByTaskId) return
-    const basePrompt = this.config.triggerOnFailurePrompt
+    const basePrompt =
+      kind === 'failed'
+        ? this.config.triggerOnFailurePrompt
+        : this.config.triggerOnIssuePrompt
     const trimmedBase = basePrompt?.trim()
     if (!trimmedBase) return
     const lines = [
       trimmedBase,
       '',
       `Triggered by task ${task.id} (${task.sessionKey}).`,
-      'Status: failed',
+      `Status: ${kind}`,
       `Reason: ${trimText(reason, 800)}`,
     ]
     const prompt = lines.join('\n')

@@ -14,6 +14,8 @@
 - Memory Search: `rg` 全文检索 + 片段注入。
 - Verify Loop: 可选 `verifyCommand` 重试。
 - Failure Trigger: 失败时可触发 follow-up 任务（可选）。
+- Self-Eval: 启发式/可选 LLM 评估，记录 lessons，问题可触发 follow-up。
+- Heartbeat: 周期写入运行状态 JSON。
 - Web UI: 静态资产页面，用于本地提交任务与查看结果。
 
 ## 代码布局（建议）
@@ -112,11 +114,14 @@ Output Policy:
 - `timeoutMs`
 - `maxWorkers`
 - `stateDir` (任务账本 + session store)
+- `heartbeatIntervalMs` / `heartbeatPath` (运行心跳)
 - `memoryPaths` / `maxMemoryHits` / `maxMemoryChars`
 - `resumePolicy` (`auto` | `always` | `never`)
 - `outputPolicy` (简明输出约束, 追加到子进程 prompt)
+- `selfEvalPrompt` / `selfEvalMaxChars` / `selfEvalMemoryPath` (自评估与 lessons)
 - `maxIterations` (verifyCommand 重试上限)
 - `triggerSessionKey` / `triggerOnFailurePrompt` (失败 follow-up)
+- `triggerOnIssuePrompt` (评估问题 follow-up)
 
 ### 配置最小化原则
 - 仅保留协调器必需配置（stateDir、queue、memory、resume、outputPolicy、maxIterations、trigger）。

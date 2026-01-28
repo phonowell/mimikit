@@ -21,19 +21,27 @@ export type Config = {
   taskLedgerMaxBytes: number
   taskLedgerMaxRecords: number
   taskLedgerAutoCompactIntervalMs: number
+  heartbeatIntervalMs: number
+  heartbeatPath: string
   memoryPaths: string[]
   maxMemoryHits: number
   maxMemoryChars: number
   resumePolicy: ResumePolicy
   outputPolicy: string
+  selfEvalPrompt?: string
+  selfEvalMaxChars: number
+  selfEvalMemoryPath: string
   triggerSessionKey: string
   triggerOnFailurePrompt?: string
+  triggerOnIssuePrompt?: string
 }
 
 const DEFAULT_OUTPUT_POLICY = `Output Policy:\n- Only output the final answer, no reasoning steps.\n- Keep it short, at most 6 lines; if longer, start with a summary.\n- Do not repeat the question or restate the context.`
 const DEFAULT_TASK_LEDGER_MAX_BYTES = 20_000
 const DEFAULT_TASK_LEDGER_MAX_RECORDS = 1_000
 const DEFAULT_TASK_LEDGER_COMPACT_INTERVAL_MS = 600_000
+const DEFAULT_HEARTBEAT_INTERVAL_MS = 30_000
+const DEFAULT_SELF_EVAL_MAX_CHARS = 4_000
 
 export const getDefaultOutputPolicy = (): string => DEFAULT_OUTPUT_POLICY
 
@@ -107,6 +115,17 @@ export const loadConfig = async (options?: {
   const triggerOnFailurePrompt =
     process.env.MIMIKIT_TRIGGER_ON_FAILURE_PROMPT ??
     (fileConfig.triggerOnFailurePrompt as string | undefined)
+  const triggerOnIssuePrompt =
+    process.env.MIMIKIT_TRIGGER_ON_ISSUE_PROMPT ??
+    (fileConfig.triggerOnIssuePrompt as string | undefined)
+
+  const selfEvalPromptRaw =
+    process.env.MIMIKIT_SELF_EVAL_PROMPT ??
+    (fileConfig.selfEvalPrompt as string | undefined)
+  const selfEvalPrompt =
+    typeof selfEvalPromptRaw === 'string' && selfEvalPromptRaw.trim().length > 0
+      ? selfEvalPromptRaw
+      : undefined
 
   const memoryPaths =
     parseStringArray(process.env.MIMIKIT_MEMORY_PATHS) ??
@@ -139,6 +158,19 @@ export const loadConfig = async (options?: {
         DEFAULT_TASK_LEDGER_COMPACT_INTERVAL_MS,
     ),
   )
+  const heartbeatIntervalMs = Math.max(
+    0,
+    parseNumber(
+      process.env.MIMIKIT_HEARTBEAT_INTERVAL_MS,
+      fileConfig.heartbeatIntervalMs ?? DEFAULT_HEARTBEAT_INTERVAL_MS,
+    ),
+  )
+  const heartbeatPath =
+    resolvePath(
+      workspaceRoot,
+      process.env.MIMIKIT_HEARTBEAT_PATH ??
+        (fileConfig.heartbeatPath as string | undefined),
+    ) ?? path.join(stateDir, 'heartbeat.json')
 
   const resumePolicy =
     (process.env.MIMIKIT_RESUME_POLICY as ResumePolicy | undefined) ??
@@ -149,6 +181,19 @@ export const loadConfig = async (options?: {
     process.env.MIMIKIT_OUTPUT_POLICY ??
     (fileConfig.outputPolicy as string | undefined) ??
     DEFAULT_OUTPUT_POLICY
+  const selfEvalMaxChars = Math.max(
+    200,
+    parseNumber(
+      process.env.MIMIKIT_SELF_EVAL_MAX_CHARS,
+      fileConfig.selfEvalMaxChars ?? DEFAULT_SELF_EVAL_MAX_CHARS,
+    ),
+  )
+  const selfEvalMemoryPath =
+    resolvePath(
+      workspaceRoot,
+      process.env.MIMIKIT_SELF_EVAL_MEMORY_PATH ??
+        (fileConfig.selfEvalMemoryPath as string | undefined),
+    ) ?? path.join(workspaceRoot, 'memory', 'LESSONS.md')
 
   const codexBin =
     process.env.MIMIKIT_CODEX_BIN ?? (fileConfig.codexBin as string | undefined)
@@ -186,6 +231,8 @@ export const loadConfig = async (options?: {
     taskLedgerMaxBytes,
     taskLedgerMaxRecords,
     taskLedgerAutoCompactIntervalMs,
+    heartbeatIntervalMs,
+    heartbeatPath,
     memoryPaths: memoryPaths.map(
       (value) => resolvePath(workspaceRoot, value) ?? value,
     ),
@@ -199,6 +246,8 @@ export const loadConfig = async (options?: {
     ),
     resumePolicy,
     outputPolicy,
+    selfEvalMaxChars,
+    selfEvalMemoryPath,
     triggerSessionKey,
   }
 
@@ -209,6 +258,9 @@ export const loadConfig = async (options?: {
   if (codexFullAuto !== undefined) config.codexFullAuto = codexFullAuto
   if (triggerOnFailurePrompt !== undefined)
     config.triggerOnFailurePrompt = triggerOnFailurePrompt
+  if (triggerOnIssuePrompt !== undefined)
+    config.triggerOnIssuePrompt = triggerOnIssuePrompt
+  if (selfEvalPrompt !== undefined) config.selfEvalPrompt = selfEvalPrompt
 
   return config
 }

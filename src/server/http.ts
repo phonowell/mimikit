@@ -83,7 +83,7 @@ export const startHttpServer = async (
     }
 
     if (req.method === 'GET' && url.pathname === '/health') {
-      respond(200, { ok: true })
+      respond(200, options.master.getStats())
       return
     }
 

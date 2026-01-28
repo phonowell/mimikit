@@ -11,6 +11,13 @@ export type MemoryHit = {
   text: string
 }
 
+const normalizeQuery = (value: string, maxLen = 160): string => {
+  const normalized = value.replace(/\s+/g, ' ').trim()
+  if (!normalized) return ''
+  if (normalized.length <= maxLen) return normalized
+  return normalized.slice(0, maxLen).trimEnd()
+}
+
 const runSearch = async (
   command: string,
   args: string[],
@@ -82,8 +89,8 @@ export const searchMemory = async (
   config: Config,
   query: string,
 ): Promise<MemoryHit[]> => {
-  const trimmed = query.trim()
-  if (!trimmed) return []
+  const normalized = normalizeQuery(query)
+  if (!normalized) return []
 
   const paths = await discoverMemoryPaths(
     config.workspaceRoot,
@@ -97,7 +104,7 @@ export const searchMemory = async (
     '--color',
     'never',
     '-F',
-    trimmed,
+    normalized,
     ...paths,
   ]
 
@@ -112,7 +119,7 @@ export const searchMemory = async (
     if (err.code !== 'ENOENT') throw error
   }
 
-  const grepArgs = ['-R', '-nH', '-F', trimmed, ...paths]
+  const grepArgs = ['-R', '-nH', '-F', normalized, ...paths]
   try {
     const result = await runSearch('grep', grepArgs, config.workspaceRoot)
     const hits = result.lines

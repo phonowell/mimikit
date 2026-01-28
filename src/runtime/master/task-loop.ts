@@ -9,6 +9,7 @@ import {
 import { appendTaskRecord, type TaskRecord } from '../ledger.js'
 import { runVerifyCommand } from '../verify.js'
 import { runWorker } from '../worker.js'
+import { runSelfEvaluation } from '../self-eval.js'
 
 import { buildRetryMessage, buildSummary, trimForEnv } from './helpers.js'
 import { failTask } from './task-failure.js'
@@ -27,7 +28,11 @@ export type TaskLoopParams = {
   maxIterations: number
   session: SessionRecord
   memoryHits: MemoryHit[]
-  onTriggerFollowup?: (task: TaskRecord, reason: string) => Promise<void>
+  onTriggerFollowup?: (
+    task: TaskRecord,
+    reason: string,
+    kind: 'failed' | 'issue',
+  ) => Promise<void>
 }
 
 export const runTaskLoop = async ({
@@ -166,7 +171,8 @@ export const runTaskLoop = async ({
         await appendTranscript(session.transcriptPath, [issueEntry])
         sessionStore.update(running.sessionKey, summaryUpdate)
         await sessionStore.flush()
-        if (onTriggerFollowup) await onTriggerFollowup(attemptRecord, message)
+        if (onTriggerFollowup)
+          await onTriggerFollowup(attemptRecord, message, 'failed')
         await failTask(
           config,
           tasks,
@@ -179,11 +185,22 @@ export const runTaskLoop = async ({
         return
       }
 
+      const evaluation = await runSelfEvaluation({
+        config,
+        taskId: running.id,
+        sessionKey: running.sessionKey,
+        prompt,
+        output: workerResult.output,
+      })
+      if (evaluation.verdict === 'issue' && onTriggerFollowup)
+        await onTriggerFollowup(attemptRecord, evaluation.summary, 'issue')
+
       const done: TaskRecord = {
         ...attemptRecord,
         status: 'done',
         updatedAt: new Date().toISOString(),
         result: workerResult.output,
+        evaluation: evaluation.evaluation,
       }
       const codexSessionId = workerResult.codexSessionId ?? existingSessionId
       if (codexSessionId !== undefined) done.codexSessionId = codexSessionId
@@ -194,7 +211,8 @@ export const runTaskLoop = async ({
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    if (onTriggerFollowup) await onTriggerFollowup(currentRecord, message)
+    if (onTriggerFollowup)
+      await onTriggerFollowup(currentRecord, message, 'failed')
     await failTask(config, tasks, currentRecord, session, message, lockHeld)
     sessionStore.update(currentRecord.sessionKey, summaryUpdate)
     await sessionStore.flush()

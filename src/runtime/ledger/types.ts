@@ -18,4 +18,5 @@ export type TaskRecord = {
   codexSessionId?: string
   prompt?: string
   result?: string
+  evaluation?: string
 }

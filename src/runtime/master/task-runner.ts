@@ -12,7 +12,11 @@ export type TaskRunnerContext = {
   config: Config
   sessionStore: SessionStore
   tasks: Map<string, TaskRecord>
-  onTriggerFollowup?: (task: TaskRecord, reason: string) => Promise<void>
+  onTriggerFollowup?: (
+    task: TaskRecord,
+    reason: string,
+    kind: 'failed' | 'issue',
+  ) => Promise<void>
 }
 
 export const runTask = async (
@@ -61,7 +65,8 @@ export const runTask = async (
   const existingSessionId = session.codexSessionId
   if (resumePolicy === 'always' && !existingSessionId) {
     const message = 'resume=always requires a sessionId, but none was found'
-    if (ctx.onTriggerFollowup) await ctx.onTriggerFollowup(running, message)
+    if (ctx.onTriggerFollowup)
+      await ctx.onTriggerFollowup(running, message, 'failed')
     await failTask(ctx.config, ctx.tasks, running, session, message, false)
     ctx.sessionStore.update(running.sessionKey, {})
     await ctx.sessionStore.flush()

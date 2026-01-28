@@ -1,6 +1,10 @@
 export class SessionQueue {
   private chains = new Map<string, Promise<void>>()
 
+  get size(): number {
+    return this.chains.size
+  }
+
   enqueue<T>(sessionKey: string, task: () => Promise<T>): Promise<T> {
     const previous = this.chains.get(sessionKey) ?? Promise.resolve()
     const run = previous.then(task, task)

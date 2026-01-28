@@ -85,6 +85,19 @@ const parseTaskSection = (section: string): TaskRecord | null => {
       continue
     }
 
+    if (line.startsWith('- evaluation: |')) {
+      i += 1
+      const buffer: string[] = []
+      while (i < lines.length) {
+        const raw = lines[i] ?? ''
+        if (raw.startsWith('- ')) break
+        buffer.push(raw.startsWith('  ') ? raw.slice(2) : raw)
+        i += 1
+      }
+      record.evaluation = buffer.join('\n')
+      continue
+    }
+
     const match = line.match(/^- ([^:]+):\s*(.*)$/)
     if (match) {
       const key = match[1]

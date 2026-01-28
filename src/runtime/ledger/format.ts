@@ -32,5 +32,9 @@ export const formatTaskRecord = (record: TaskRecord): string => {
     lines.push('- result: |')
     lines.push(...indentBlock(record.result))
   }
+  if (record.evaluation !== undefined) {
+    lines.push('- evaluation: |')
+    lines.push(...indentBlock(record.evaluation))
+  }
   return `${lines.join('\n')}\n\n`
 }
