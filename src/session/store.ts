@@ -17,14 +17,23 @@ type SessionStoreData = {
   sessions: Record<string, SessionRecord>
 }
 
+const MAX_SESSION_KEY_SLUG = 48
+
 const sanitizeKey = (sessionKey: string): string =>
   sessionKey.replace(/[^a-zA-Z0-9._-]/g, '_')
 
 const hashKey = (sessionKey: string): string =>
   crypto.createHash('sha256').update(sessionKey).digest('hex').slice(0, 12)
 
-const transcriptFileName = (sessionKey: string): string =>
-  `${sanitizeKey(sessionKey)}-${hashKey(sessionKey)}.jsonl`
+const truncateSlug = (value: string): string =>
+  value.length > MAX_SESSION_KEY_SLUG
+    ? value.slice(0, MAX_SESSION_KEY_SLUG)
+    : value
+
+const transcriptFileName = (sessionKey: string): string => {
+  const slug = truncateSlug(sanitizeKey(sessionKey))
+  return `${slug}-${hashKey(sessionKey)}.jsonl`
+}
 
 export class SessionStore {
   private filePath: string

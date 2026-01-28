@@ -91,6 +91,7 @@ export const searchMemory = async (
 ): Promise<MemoryHit[]> => {
   const normalized = normalizeQuery(query)
   if (!normalized) return []
+  if (config.maxMemoryHits <= 0 || config.maxMemoryChars <= 0) return []
 
   const paths = await discoverMemoryPaths(
     config.workspaceRoot,
@@ -98,12 +99,15 @@ export const searchMemory = async (
   )
   if (paths.length === 0) return []
 
+  const maxHits = Math.max(1, config.maxMemoryHits)
   const rgArgs = [
     '-n',
     '--no-heading',
     '--color',
     'never',
     '-F',
+    '--max-count',
+    String(maxHits),
     normalized,
     ...paths,
   ]
@@ -113,19 +117,27 @@ export const searchMemory = async (
     const hits = result.lines
       .map(parseHit)
       .filter((hit): hit is MemoryHit => Boolean(hit))
-    return trimHits(hits, config.maxMemoryHits, config.maxMemoryChars)
+    return trimHits(hits, maxHits, config.maxMemoryChars)
   } catch (error) {
     const err = error as NodeJS.ErrnoException
     if (err.code !== 'ENOENT') throw error
   }
 
-  const grepArgs = ['-R', '-nH', '-F', normalized, ...paths]
+  const grepArgs = [
+    '-R',
+    '-nH',
+    '-F',
+    '-m',
+    String(maxHits),
+    normalized,
+    ...paths,
+  ]
   try {
     const result = await runSearch('grep', grepArgs, config.workspaceRoot)
     const hits = result.lines
       .map(parseHit)
       .filter((hit): hit is MemoryHit => Boolean(hit))
-    return trimHits(hits, config.maxMemoryHits, config.maxMemoryChars)
+    return trimHits(hits, maxHits, config.maxMemoryChars)
   } catch (error) {
     const err = error as NodeJS.ErrnoException
     if (err.code === 'ENOENT') return []

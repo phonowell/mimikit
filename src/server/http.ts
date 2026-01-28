@@ -12,6 +12,7 @@ export type HttpServerOptions = {
 }
 
 const MAX_BODY_BYTES = 1_000_000
+const MAX_BODY_READ_MS = 15_000
 
 const sendJson = (
   res: http.ServerResponse,
@@ -60,33 +61,55 @@ const shouldLog = (req: http.IncomingMessage, url: URL): boolean =>
 const readJson = async (
   req: http.IncomingMessage,
   maxBytes: number,
+  timeoutMs: number,
 ): Promise<unknown> => {
   const chunks: Buffer[] = []
   let total = 0
-  for await (const chunk of req) {
-    if (Buffer.isBuffer(chunk)) {
-      total += chunk.length
-      if (total > maxBytes) {
-        const error = new Error('Payload too large') as NodeJS.ErrnoException
-        error.code = 'PAYLOAD_TOO_LARGE'
-        throw error
-      }
-      chunks.push(chunk)
-    } else {
-      const buffer = Buffer.from(chunk)
-      total += buffer.length
-      if (total > maxBytes) {
-        const error = new Error('Payload too large') as NodeJS.ErrnoException
-        error.code = 'PAYLOAD_TOO_LARGE'
-        throw error
-      }
-      chunks.push(buffer)
-    }
-  }
+  let timeout: NodeJS.Timeout | undefined
 
-  const raw = Buffer.concat(chunks).toString('utf8')
-  if (!raw.trim()) return {}
-  return JSON.parse(raw) as unknown
+  const readPromise = (async () => {
+    for await (const chunk of req) {
+      if (Buffer.isBuffer(chunk)) {
+        total += chunk.length
+        if (total > maxBytes) {
+          const error = new Error('Payload too large') as NodeJS.ErrnoException
+          error.code = 'PAYLOAD_TOO_LARGE'
+          req.destroy()
+          throw error
+        }
+        chunks.push(chunk)
+      } else {
+        const buffer = Buffer.from(chunk)
+        total += buffer.length
+        if (total > maxBytes) {
+          const error = new Error('Payload too large') as NodeJS.ErrnoException
+          error.code = 'PAYLOAD_TOO_LARGE'
+          req.destroy()
+          throw error
+        }
+        chunks.push(buffer)
+      }
+    }
+
+    const raw = Buffer.concat(chunks).toString('utf8')
+    if (!raw.trim()) return {}
+    return JSON.parse(raw) as unknown
+  })()
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeout = setTimeout(() => {
+      const error = new Error('Request timeout') as NodeJS.ErrnoException
+      error.code = 'REQUEST_TIMEOUT'
+      req.destroy()
+      reject(error)
+    }, timeoutMs)
+  })
+
+  try {
+    return await Promise.race([readPromise, timeoutPromise])
+  } finally {
+    if (timeout) clearTimeout(timeout)
+  }
 }
 
 const isResumePolicy = (value: unknown): value is ResumePolicy =>
@@ -184,7 +207,7 @@ export const startHttpServer = async (
 
     if (req.method === 'POST' && url.pathname === '/tasks') {
       try {
-        const body = await readJson(req, MAX_BODY_BYTES)
+        const body = await readJson(req, MAX_BODY_BYTES, MAX_BODY_READ_MS)
         if (!body || typeof body !== 'object') {
           respond(400, { error: 'Invalid JSON' }, 'error=invalid_json')
           return
@@ -242,6 +265,10 @@ export const startHttpServer = async (
             { error: 'Payload too large' },
             'error=payload_too_large',
           )
+          return
+        }
+        if (err.code === 'REQUEST_TIMEOUT') {
+          respond(408, { error: 'Request timeout' }, 'error=request_timeout')
           return
         }
         const message = err instanceof Error ? err.message : String(err)

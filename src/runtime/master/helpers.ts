@@ -29,6 +29,8 @@ export const trimForEnv = (value: string, limit: number): string =>
 export const trimText = (value: string, limit: number): string =>
   value.length > limit ? value.slice(0, limit) : value
 
+const MAX_RETRY_OUTPUT_CHARS = 2_000
+
 export const buildSummary = (value: string, maxLen = 80): string => {
   const normalized = value.replace(/\s+/g, ' ').trim()
   if (!normalized) return ''
@@ -42,15 +44,17 @@ export const buildRetryMessage = (params: {
   attempt: number
   maxIterations: number
   issues: string[]
-}): string =>
-  [
+}): string => {
+  const output = trimText(params.output.trim(), MAX_RETRY_OUTPUT_CHARS)
+  return [
     params.prompt.trim(),
     '',
     `Previous output (attempt ${params.attempt} of ${params.maxIterations}):`,
-    params.output.trim(),
+    output,
     '',
     'Issues:',
     ...params.issues.map((issue) => `- ${issue.trim()}`),
     '',
     'Fix the issues and respond with the corrected output only.',
   ].join('\n')
+}

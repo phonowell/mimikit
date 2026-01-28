@@ -21,6 +21,7 @@ export type WorkerResult = {
 
 const MAX_STDOUT_LINES = 400
 const MAX_STDERR_CHARS = 20_000
+const MAX_OUTPUT_FILE_BYTES = 1_000_000
 
 const pushLimited = (buffer: string[], value: string, limit: number): void => {
   buffer.push(value)
@@ -69,6 +70,8 @@ const readOutputFile = async (
   filePath: string,
 ): Promise<string | undefined> => {
   try {
+    const stats = await fs.stat(filePath)
+    if (stats.size > MAX_OUTPUT_FILE_BYTES) return undefined
     const raw = await fs.readFile(filePath, 'utf8')
     const trimmed = raw.trim()
     return trimmed.length > 0 ? trimmed : undefined
