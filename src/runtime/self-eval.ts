@@ -159,9 +159,9 @@ export const runSelfEvaluation = async (
     }
   }
 
-  const heuristic = runHeuristicEval(input.output)
-  let verdict: SelfEvalVerdict = heuristic.verdict
-  let summary: string = heuristic.summary
+  const heuristic: { verdict: SelfEvalVerdict; summary: string } =
+    runHeuristicEval(input.output)
+  let { verdict, summary } = heuristic
   let mode: SelfEvalMode = 'heuristic'
 
   const prompt = input.config.selfEvalPrompt?.trim()
