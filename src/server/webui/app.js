@@ -307,6 +307,23 @@ const buildPayload = () => {
   }
 }
 
+const submitForm = () => {
+  if (typeof form?.requestSubmit === 'function') {
+    form.requestSubmit()
+    return
+  }
+  form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+}
+
+if (fields.prompt) {
+  fields.prompt.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' || event.shiftKey || event.isComposing) return
+    if (submitButton.disabled) return
+    event.preventDefault()
+    submitForm()
+  })
+}
+
 form.addEventListener('submit', async (event) => {
   event.preventDefault()
   setError('')
@@ -315,6 +332,7 @@ form.addEventListener('submit', async (event) => {
     setError('Prompt is required.')
     return
   }
+  fields.prompt.value = ''
   stopPolling()
   const token = pollToken
   submitButton.disabled = true
