@@ -302,6 +302,7 @@ export class Master {
     startSelfImprove({
       config: this.config,
       enqueueTask: this.enqueueTask.bind(this),
+      isSessionBusy: (sessionKey) => this.hasActiveTasks(sessionKey),
     })
   }
 

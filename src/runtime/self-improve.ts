@@ -1,7 +1,7 @@
 import crypto from 'node:crypto'
 import fs from 'node:fs/promises'
 
-import { readJsonFile, writeJsonFile } from '../utils/fs.js'
+import { readJsonFile, writeJsonFileAtomic } from '../utils/fs.js'
 
 import type { Config, ResumePolicy } from '../config.js'
 
@@ -52,10 +52,13 @@ const buildPrompt = (base: string, lessons: string): string =>
     'Return a single minimal improvement task or NO_CHANGE.',
   ].join('\n')
 
-export const startSelfImprove = (params: {
+type SelfImproveParams = {
   config: Config
   enqueueTask: EnqueueTask
-}): void => {
+  isSessionBusy?: (sessionKey: string) => boolean
+}
+
+export const startSelfImprove = (params: SelfImproveParams): void => {
   const { config } = params
   const basePrompt = config.selfImprovePrompt?.trim()
   if (!basePrompt) return
@@ -66,6 +69,7 @@ export const startSelfImprove = (params: {
     if (running) return
     running = true
     try {
+      if (params.isSessionBusy?.(config.selfImproveSessionKey)) return
       const lessons = await readTail(
         config.selfEvalMemoryPath,
         config.selfImproveMaxChars,
@@ -83,7 +87,7 @@ export const startSelfImprove = (params: {
         lastHash: currentHash,
         lastRunAt: new Date().toISOString(),
       }
-      await writeJsonFile(config.selfImproveStatePath, updatedState)
+      await writeJsonFileAtomic(config.selfImproveStatePath, updatedState)
 
       const prompt = buildPrompt(basePrompt, lessons)
       await params.enqueueTask({

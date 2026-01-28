@@ -71,83 +71,96 @@ export const runWorker = async (
     `last-message-${Date.now()}-${Math.random().toString(16).slice(2)}.txt`,
   )
 
-  const args: string[] = ['exec', '--json', '--output-last-message', outputFile]
+  let stdoutRl: readline.Interface | undefined
+  let timeout: NodeJS.Timeout | undefined
 
-  if (request.config.codexModel) args.push('--model', request.config.codexModel)
+  try {
+    const args: string[] = [
+      'exec',
+      '--json',
+      '--output-last-message',
+      outputFile,
+    ]
 
-  if (request.config.codexProfile)
-    args.push('--profile', request.config.codexProfile)
+    if (request.config.codexModel)
+      args.push('--model', request.config.codexModel)
 
-  if (request.config.codexSandbox)
-    args.push('--sandbox', request.config.codexSandbox)
+    if (request.config.codexProfile)
+      args.push('--profile', request.config.codexProfile)
 
-  if (request.config.codexFullAuto) args.push('--full-auto')
+    if (request.config.codexSandbox)
+      args.push('--sandbox', request.config.codexSandbox)
 
-  if (request.resumePolicy !== 'never' && request.resumeSessionId)
-    args.push('resume', request.resumeSessionId)
+    if (request.config.codexFullAuto) args.push('--full-auto')
 
-  args.push('-')
+    if (request.resumePolicy !== 'never' && request.resumeSessionId)
+      args.push('resume', request.resumeSessionId)
 
-  const child = spawn(bin, args, {
-    cwd: request.config.workspaceRoot,
-    stdio: ['pipe', 'pipe', 'pipe'],
-  })
+    args.push('-')
 
-  child.stdin.write(request.prompt)
-  child.stdin.end()
+    const child = spawn(bin, args, {
+      cwd: request.config.workspaceRoot,
+      stdio: ['pipe', 'pipe', 'pipe'],
+    })
 
-  let sessionId: string | undefined
-  let lastOutput: string | undefined
-  const stdoutLines: string[] = []
-  const stderrLines: string[] = []
+    child.stdin.write(request.prompt)
+    child.stdin.end()
 
-  const stdoutRl = readline.createInterface({
-    input: child.stdout,
-    crlfDelay: Infinity,
-  })
+    let sessionId: string | undefined
+    let lastOutput: string | undefined
+    const stdoutLines: string[] = []
+    const stderrLines: string[] = []
 
-  stdoutRl.on('line', (line) => {
-    stdoutLines.push(line)
-    try {
-      const event = JSON.parse(line) as unknown
-      sessionId = sessionId ?? extractSessionIdFromEvent(event)
-      lastOutput = extractOutputFromEvent(event) ?? lastOutput
-    } catch {
-      sessionId = sessionId ?? extractSessionIdFromText(line)
+    stdoutRl = readline.createInterface({
+      input: child.stdout,
+      crlfDelay: Infinity,
+    })
+
+    stdoutRl.on('line', (line) => {
+      stdoutLines.push(line)
+      try {
+        const event = JSON.parse(line) as unknown
+        sessionId = sessionId ?? extractSessionIdFromEvent(event)
+        lastOutput = extractOutputFromEvent(event) ?? lastOutput
+      } catch {
+        sessionId = sessionId ?? extractSessionIdFromText(line)
+      }
+    })
+
+    child.stderr.on('data', (chunk: Buffer) => {
+      stderrLines.push(chunk.toString('utf8'))
+    })
+
+    timeout = setTimeout(() => {
+      child.kill('SIGTERM')
+    }, request.config.timeoutMs)
+
+    const exitCode = await new Promise<number>((resolve, reject) => {
+      child.on('error', reject)
+      child.on('close', (code) => resolve(code ?? 0))
+    })
+
+    stdoutRl.close()
+    stdoutRl = undefined
+
+    const stderr = stderrLines.join('').trim()
+    if (exitCode !== 0) {
+      const message =
+        stderr.length > 0 ? stderr : `codex exec failed with code ${exitCode}`
+      throw new Error(message)
     }
-  })
 
-  child.stderr.on('data', (chunk: Buffer) => {
-    stderrLines.push(chunk.toString('utf8'))
-  })
+    const fileOutput = await readOutputFile(outputFile)
+    const output = fileOutput ?? lastOutput ?? stdoutLines.join('\n').trim()
+    if (!output) throw new Error('codex exec returned no output')
 
-  const timeout = setTimeout(() => {
-    child.kill('SIGTERM')
-  }, request.config.timeoutMs)
+    const result: WorkerResult = { output }
+    if (sessionId !== undefined) result.codexSessionId = sessionId
 
-  const exitCode = await new Promise<number>((resolve, reject) => {
-    child.on('error', reject)
-    child.on('close', (code) => resolve(code ?? 0))
-  })
-
-  clearTimeout(timeout)
-  stdoutRl.close()
-
-  const stderr = stderrLines.join('').trim()
-  if (exitCode !== 0) {
-    const message =
-      stderr.length > 0 ? stderr : `codex exec failed with code ${exitCode}`
-    throw new Error(message)
+    return result
+  } finally {
+    if (timeout) clearTimeout(timeout)
+    if (stdoutRl) stdoutRl.close()
+    await fs.unlink(outputFile).catch(() => undefined)
   }
-
-  const fileOutput = await readOutputFile(outputFile)
-  await fs.unlink(outputFile).catch(() => undefined)
-
-  const output = fileOutput ?? lastOutput ?? stdoutLines.join('\n').trim()
-  if (!output) throw new Error('codex exec returned no output')
-
-  const result: WorkerResult = { output }
-  if (sessionId !== undefined) result.codexSessionId = sessionId
-
-  return result
 }

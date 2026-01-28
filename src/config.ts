@@ -277,9 +277,9 @@ export const loadConfig = async (options?: {
       process.env.MIMIKIT_TIMEOUT_MS,
       fileConfig.timeoutMs ?? 120_000,
     ),
-    maxWorkers: parseNumber(
-      process.env.MIMIKIT_MAX_WORKERS,
-      fileConfig.maxWorkers ?? 5,
+    maxWorkers: Math.max(
+      1,
+      parseNumber(process.env.MIMIKIT_MAX_WORKERS, fileConfig.maxWorkers ?? 5),
     ),
     maxIterations: Math.max(
       1,

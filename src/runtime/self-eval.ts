@@ -61,6 +61,7 @@ const formatEvaluation = (
 const runHeuristicEval = (
   output: string,
 ): { verdict: 'ok' | 'issue'; summary: string } => {
+  if (!output.trim()) return { verdict: 'issue', summary: 'empty_output' }
   for (const rule of heuristicRules) {
     if (rule.regex.test(output))
       return { verdict: 'issue', summary: rule.label }
