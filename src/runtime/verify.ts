@@ -125,7 +125,9 @@ export const runVerifyCommand = async (
     const error =
       trimmedStderr.length > 0
         ? trimmedStderr
-        : `verify command failed with code ${exitCode}`
+        : trimmedStdout.length > 0
+          ? trimmedStdout
+          : `verify command failed with code ${exitCode}`
     return {
       ok: false,
       exitCode,

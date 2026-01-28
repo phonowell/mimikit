@@ -20,6 +20,7 @@ export type WorkerResult = {
 }
 
 const MAX_STDOUT_LINES = 400
+const MAX_STDOUT_LINE_CHARS = 8_000
 const MAX_STDERR_CHARS = 20_000
 const MAX_OUTPUT_FILE_BYTES = 1_000_000
 
@@ -39,18 +40,16 @@ const appendLimited = (
 }
 
 const extractSessionIdFromText = (text: string): string | undefined => {
-  const match = text.match(/codex resume ([a-zA-Z0-9_-]+)/i)
+  const match = text.match(/codex(?:\s+exec)?\s+resume\s+([a-zA-Z0-9_-]+)/i)
   return match?.[1]
 }
 
 const extractSessionIdFromEvent = (event: unknown): string | undefined => {
   if (!event || typeof event !== 'object') return undefined
   const record = event as Record<string, unknown>
-  if (record.type === 'thread.started') {
-    if (typeof record.thread_id === 'string') return record.thread_id
-    const thread = record.thread as Record<string, unknown> | undefined
-    if (thread && typeof thread.id === 'string') return thread.id
-  }
+  if (typeof record.thread_id === 'string') return record.thread_id
+  const thread = record.thread as Record<string, unknown> | undefined
+  if (thread && typeof thread.id === 'string') return thread.id
   return undefined
 }
 
@@ -69,16 +68,23 @@ const extractOutputFromEvent = (event: unknown): string | undefined => {
 const readOutputFile = async (
   filePath: string,
 ): Promise<string | undefined> => {
+  let handle: fs.FileHandle | undefined
   try {
     const stats = await fs.stat(filePath)
-    if (stats.size > MAX_OUTPUT_FILE_BYTES) return undefined
-    const raw = await fs.readFile(filePath, 'utf8')
-    const trimmed = raw.trim()
+    if (stats.size === 0) return undefined
+    const length = Math.min(stats.size, MAX_OUTPUT_FILE_BYTES)
+    const start = Math.max(0, stats.size - length)
+    const buffer = Buffer.alloc(length)
+    handle = await fs.open(filePath, 'r')
+    await handle.read(buffer, 0, length, start)
+    const trimmed = buffer.toString('utf8').trim()
     return trimmed.length > 0 ? trimmed : undefined
   } catch (error) {
     const err = error as NodeJS.ErrnoException
     if (err.code === 'ENOENT') return undefined
     throw error
+  } finally {
+    if (handle) await handle.close()
   }
 }
 
@@ -95,6 +101,7 @@ export const runWorker = async (
   let stdoutRl: readline.Interface | undefined
   let timeout: NodeJS.Timeout | undefined
   let hardKillTimeout: NodeJS.Timeout | undefined
+  const timeoutState = { triggered: false }
 
   try {
     const args: string[] = [
@@ -139,7 +146,11 @@ export const runWorker = async (
     })
 
     stdoutRl.on('line', (line) => {
-      pushLimited(stdoutLines, line, MAX_STDOUT_LINES)
+      const cappedLine =
+        line.length > MAX_STDOUT_LINE_CHARS
+          ? line.slice(-MAX_STDOUT_LINE_CHARS)
+          : line
+      pushLimited(stdoutLines, cappedLine, MAX_STDOUT_LINES)
       try {
         const event = JSON.parse(line) as unknown
         sessionId = sessionId ?? extractSessionIdFromEvent(event)
@@ -154,6 +165,7 @@ export const runWorker = async (
     })
 
     timeout = setTimeout(() => {
+      timeoutState.triggered = true
       child.kill('SIGTERM')
       hardKillTimeout = setTimeout(() => {
         child.kill('SIGKILL')
@@ -169,6 +181,11 @@ export const runWorker = async (
     stdoutRl = undefined
 
     const stderrText = stderr.trim()
+    if (timeoutState.triggered) {
+      throw new Error(
+        `codex exec timed out after ${request.config.timeoutMs}ms`,
+      )
+    }
     if (exitCode !== 0) {
       const message =
         stderrText.length > 0
@@ -179,7 +196,11 @@ export const runWorker = async (
 
     const fileOutput = await readOutputFile(outputFile)
     const output = fileOutput ?? lastOutput ?? stdoutLines.join('\n').trim()
-    if (!output) throw new Error('codex exec returned no output')
+    if (!output) {
+      const message =
+        stderrText.length > 0 ? stderrText : 'codex exec returned no output'
+      throw new Error(message)
+    }
 
     const result: WorkerResult = { output }
     if (sessionId !== undefined) result.codexSessionId = sessionId
