@@ -1,3 +1,4 @@
+import crypto from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
@@ -17,6 +18,12 @@ type SessionStoreData = {
 
 const sanitizeKey = (sessionKey: string): string =>
   sessionKey.replace(/[^a-zA-Z0-9._-]/g, '_')
+
+const hashKey = (sessionKey: string): string =>
+  crypto.createHash('sha256').update(sessionKey).digest('hex').slice(0, 12)
+
+const transcriptFileName = (sessionKey: string): string =>
+  `${sanitizeKey(sessionKey)}-${hashKey(sessionKey)}.jsonl`
 
 export class SessionStore {
   private filePath: string
@@ -49,7 +56,7 @@ export class SessionStore {
     const transcriptPath = path.join(
       path.dirname(this.filePath),
       'sessions',
-      `${sanitizeKey(sessionKey)}.jsonl`,
+      transcriptFileName(sessionKey),
     )
 
     const record: SessionRecord = {

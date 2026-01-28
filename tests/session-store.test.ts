@@ -9,6 +9,16 @@ import { SessionStore } from '../src/session/store.js'
 const makeTempDir = async (): Promise<string> =>
   fs.mkdtemp(path.join(os.tmpdir(), 'mimikit-session-'))
 
+describe('SessionStore.ensure', () => {
+  it('creates unique transcript paths for colliding keys', async () => {
+    const root = await makeTempDir()
+    const store = await SessionStore.load(root)
+    const first = store.ensure('alpha/beta')
+    const second = store.ensure('alpha?beta')
+    expect(first.transcriptPath).not.toBe(second.transcriptPath)
+  })
+})
+
 describe('SessionStore.remove', () => {
   it('returns false for missing sessions', async () => {
     const root = await makeTempDir()

@@ -110,6 +110,8 @@ export const runTaskLoop = async ({
       ]
 
       await appendTranscript(session.transcriptPath, transcriptEntries)
+      sessionStore.update(running.sessionKey, {})
+      await sessionStore.flush()
 
       const issues: string[] = []
 
@@ -160,6 +162,8 @@ export const runTaskLoop = async ({
           error: message,
         }
         await appendTranscript(session.transcriptPath, [issueEntry])
+        sessionStore.update(running.sessionKey, {})
+        await sessionStore.flush()
         if (onTriggerFollowup) await onTriggerFollowup(attemptRecord, message)
         await failTask(
           config,
@@ -190,6 +194,8 @@ export const runTaskLoop = async ({
     const message = error instanceof Error ? error.message : String(error)
     if (onTriggerFollowup) await onTriggerFollowup(currentRecord, message)
     await failTask(config, tasks, currentRecord, session, message, lockHeld)
+    sessionStore.update(currentRecord.sessionKey, {})
+    await sessionStore.flush()
   } finally {
     if (releaseLock) await releaseLock()
   }

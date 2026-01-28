@@ -61,6 +61,8 @@ export const runTask = async (
     const message = 'resume=always requires a sessionId, but none was found'
     if (ctx.onTriggerFollowup) await ctx.onTriggerFollowup(running, message)
     await failTask(ctx.config, ctx.tasks, running, session, message, false)
+    ctx.sessionStore.update(running.sessionKey, {})
+    await ctx.sessionStore.flush()
     return
   }
 
