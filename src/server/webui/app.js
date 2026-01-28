@@ -6,15 +6,28 @@ const result = document.querySelector('[data-task-result]')
 const errorText = document.querySelector('[data-task-error]')
 const sessionList = document.querySelector('[data-session-list]')
 const sessionEmpty = document.querySelector('[data-session-empty]')
+const newThreadButton = document.querySelector('[data-new-thread]')
 const refreshSessionsButton = document.querySelector('[data-refresh-sessions]')
 
 const fields = {
-  sessionKey: document.querySelector('#sessionKey'),
   prompt: document.querySelector('#prompt'),
 }
 
+let activeSessionKey = null
 let pollTimer = null
 let pollToken = 0
+
+const createSessionKey = () => {
+  if (window.crypto?.randomUUID) return `thread-${window.crypto.randomUUID()}`
+  if (window.crypto?.getRandomValues) {
+    const bytes = new Uint8Array(12)
+    window.crypto.getRandomValues(bytes)
+    return `thread-${Array.from(bytes, (b) =>
+      b.toString(16).padStart(2, '0'),
+    ).join('')}`
+  }
+  return `thread-${Math.random().toString(16).slice(2)}${Date.now().toString(16)}`
+}
 
 const stopPolling = () => {
   if (pollTimer) {
@@ -81,11 +94,16 @@ const formatSessionPreview = (value) => {
 
 const setActiveSession = (sessionKey) => {
   if (!sessionList) return
-  const target = sessionKey?.trim() || ''
+  const target = (sessionKey ?? activeSessionKey ?? '').trim()
   const items = sessionList.querySelectorAll('[data-session-key]')
   items.forEach((item) => {
     item.classList.toggle('is-active', item.dataset.sessionKey === target)
   })
+}
+
+const clearActiveSession = () => {
+  activeSessionKey = null
+  setActiveSession('')
 }
 
 const renderSessions = (sessions) => {
@@ -97,7 +115,7 @@ const renderSessions = (sessions) => {
     return
   }
   if (sessionEmpty) sessionEmpty.hidden = true
-  const current = fields.sessionKey.value.trim()
+  const current = (activeSessionKey ?? '').trim()
   sessions.forEach((session) => {
     const item = document.createElement('div')
     item.className = 'session-item'
@@ -110,7 +128,11 @@ const renderSessions = (sessions) => {
 
     const avatar = document.createElement('div')
     avatar.className = 'session-avatar'
-    avatar.textContent = session.sessionKey.slice(0, 2).toUpperCase()
+    const summary =
+      typeof session.summary === 'string' ? session.summary.trim() : ''
+    const label = summary || 'Untitled task'
+    const avatarText = label.slice(0, 1).toUpperCase() || '?'
+    avatar.textContent = avatarText
 
     const body = document.createElement('div')
     body.className = 'session-body'
@@ -120,7 +142,7 @@ const renderSessions = (sessions) => {
 
     const name = document.createElement('span')
     name.className = 'session-name'
-    name.textContent = session.sessionKey
+    name.textContent = label
 
     const time = document.createElement('span')
     time.className = 'session-time'
@@ -135,7 +157,7 @@ const renderSessions = (sessions) => {
     select.append(avatar, body)
 
     select.addEventListener('click', () => {
-      fields.sessionKey.value = session.sessionKey
+      activeSessionKey = session.sessionKey
       setActiveSession(session.sessionKey)
     })
 
@@ -146,7 +168,7 @@ const renderSessions = (sessions) => {
     remove.addEventListener('click', (event) => {
       event.preventDefault()
       event.stopPropagation()
-      void deleteSession(session.sessionKey)
+      void deleteSession(session.sessionKey, label)
     })
 
     item.append(select, remove)
@@ -169,17 +191,17 @@ const fetchJson = async (url, options) => {
   return payload
 }
 
-async function deleteSession(sessionKey) {
+async function deleteSession(sessionKey, label) {
   const key = sessionKey.trim()
   if (!key) return
-  if (!window.confirm(`Delete session "${key}"? This cannot be undone.`)) return
+  const safeLabel = typeof label === 'string' && label.trim()
+    ? label.trim()
+    : 'this thread'
+  if (!window.confirm(`Delete "${safeLabel}"? This cannot be undone.`)) return
   setError('')
   try {
     await fetchJson(`/sessions/${encodeURIComponent(key)}`, { method: 'DELETE' })
-    if (fields.sessionKey.value.trim() === key) {
-      fields.sessionKey.value = 'default'
-      setActiveSession(fields.sessionKey.value)
-    }
+    if (activeSessionKey?.trim() === key) clearActiveSession()
     await loadSessions()
   } catch (error) {
     setError(error instanceof Error ? error.message : String(error))
@@ -218,7 +240,11 @@ const pollTask = async (id, token) => {
 }
 
 const buildPayload = () => {
-  const sessionKey = fields.sessionKey.value.trim() || 'default'
+  let sessionKey = activeSessionKey?.trim()
+  if (!sessionKey) {
+    sessionKey = createSessionKey()
+    activeSessionKey = sessionKey
+  }
   const prompt = fields.prompt.value.trim()
   return {
     sessionKey,
@@ -245,6 +271,10 @@ form.addEventListener('submit', async (event) => {
       body: JSON.stringify(payload),
     })
     if (token !== pollToken) return
+    if (task?.sessionKey) {
+      activeSessionKey = task.sessionKey
+      setActiveSession(task.sessionKey)
+    }
     updateTask(task)
     void loadSessions()
     await pollTask(task.id, token)
@@ -261,9 +291,11 @@ form.addEventListener('submit', async (event) => {
 updateTask(null)
 void loadSessions()
 
-fields.sessionKey.addEventListener('input', () => {
-  setActiveSession(fields.sessionKey.value)
-})
+if (newThreadButton) {
+  newThreadButton.addEventListener('click', () => {
+    clearActiveSession()
+  })
+}
 
 if (refreshSessionsButton) {
   refreshSessionsButton.addEventListener('click', () => {

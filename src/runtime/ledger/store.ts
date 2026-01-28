@@ -136,6 +136,20 @@ const parseTaskSection = (section: string): TaskRecord | null => {
   return record
 }
 
+const parseTaskLedgerContent = (content: string): TaskRecord[] => {
+  const records: TaskRecord[] = []
+  if (!content.trim()) return records
+
+  const sections = content.split(/\n(?=## Task )/)
+  for (const section of sections) {
+    if (!section.trim()) continue
+    const record = parseTaskSection(section)
+    if (record) records.push(record)
+  }
+
+  return records
+}
+
 export const loadTaskLedger = async (
   stateDir: string,
 ): Promise<Map<string, TaskRecord>> => {
@@ -149,13 +163,85 @@ export const loadTaskLedger = async (
   }
 
   const tasks = new Map<string, TaskRecord>()
-  if (!content.trim()) return tasks
-
-  const sections = content.split(/\n(?=## Task )/)
-  for (const section of sections) {
-    const record = parseTaskSection(section)
-    if (record) tasks.set(record.id, record)
-  }
+  for (const record of parseTaskLedgerContent(content))
+    tasks.set(record.id, record)
 
   return tasks
+}
+
+export const compactTaskLedger = async (
+  stateDir: string,
+): Promise<{
+  path: string
+  records: number
+  tasks: number
+  bytesBefore: number
+  bytesAfter: number
+  wrote: boolean
+}> => {
+  const filePath = ledgerPath(stateDir)
+  let content = ''
+  try {
+    content = await fs.readFile(filePath, 'utf8')
+  } catch (error) {
+    const err = error as NodeJS.ErrnoException
+    if (err.code === 'ENOENT') {
+      return {
+        path: filePath,
+        records: 0,
+        tasks: 0,
+        bytesBefore: 0,
+        bytesAfter: 0,
+        wrote: false,
+      }
+    }
+    throw error
+  }
+
+  const bytesBefore = Buffer.byteLength(content)
+  if (!content.trim()) {
+    return {
+      path: filePath,
+      records: 0,
+      tasks: 0,
+      bytesBefore,
+      bytesAfter: 0,
+      wrote: false,
+    }
+  }
+
+  const records = parseTaskLedgerContent(content)
+  if (records.length === 0) {
+    return {
+      path: filePath,
+      records: 0,
+      tasks: 0,
+      bytesBefore,
+      bytesAfter: bytesBefore,
+      wrote: false,
+    }
+  }
+
+  const seen = new Set<string>()
+  const compacted: TaskRecord[] = []
+  for (let i = records.length - 1; i >= 0; i -= 1) {
+    const record = records[i]
+    if (!record) continue
+    if (seen.has(record.id)) continue
+    seen.add(record.id)
+    compacted.push(record)
+  }
+  compacted.reverse()
+
+  const output = compacted.map((record) => formatTaskRecord(record)).join('')
+  await fs.writeFile(filePath, output, 'utf8')
+
+  return {
+    path: filePath,
+    records: records.length,
+    tasks: compacted.length,
+    bytesBefore,
+    bytesAfter: Buffer.byteLength(output),
+    wrote: true,
+  }
 }

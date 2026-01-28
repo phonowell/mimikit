@@ -10,7 +10,7 @@
 - 任务状态写入 `tasks.md`，重启可恢复；`codex exec` 失败/超时必须写 error entry。
 - 默认无 streaming；Worker prompt 必须包含简明输出约束。
 - 环境限制：位于中国大陆，禁止使用该地区不可访问或访问缓慢的服务。
-- 新功能开发使用新 worktree；充分验证后方可合并回主分支。
+- 任何代码修改必须在新 worktree/分支完成；主分支禁止直接改代码，仅接受其他分支合并；合并前充分验证。
 - 新功能必须配套合理、必要、最小化的测试用例。
 - 元原则：精简冗余 · 冲突信代码。
 - 客观诚实：不主观评价 · 不因用户情绪转移立场 · 不编造事实 · 立刻暴露不确定信息。
@@ -24,7 +24,8 @@
 
 ## 核心命令
 - `tsx src/cli.ts serve --port 8787`
-- `tsx src/cli.ts ask --session <key> --message "..."`
+- `tsx src/cli.ts task --id <taskId>`
+- `tsx src/cli.ts compact-tasks [--force]`
 
 ## 计划与文档
 - 实施计划：`docs/minimal-implementation-plan.md`

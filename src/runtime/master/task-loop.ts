@@ -10,7 +10,7 @@ import { appendTaskRecord, type TaskRecord } from '../ledger.js'
 import { runVerifyCommand } from '../verify.js'
 import { runWorker } from '../worker.js'
 
-import { buildRetryMessage, trimForEnv } from './helpers.js'
+import { buildRetryMessage, buildSummary, trimForEnv } from './helpers.js'
 import { failTask } from './task-failure.js'
 
 import type { Config, ResumePolicy } from '../../config.js'
@@ -51,6 +51,8 @@ export const runTaskLoop = async ({
   let attempt = running.attempt ?? 0
   let userMessage = prompt
   let currentRecord = running
+  const summary = buildSummary(prompt)
+  const summaryUpdate = summary ? { summary } : {}
 
   try {
     releaseLock = await acquireLock(session.transcriptPath, lockTimeoutMs)
@@ -110,7 +112,7 @@ export const runTaskLoop = async ({
       ]
 
       await appendTranscript(session.transcriptPath, transcriptEntries)
-      sessionStore.update(running.sessionKey, {})
+      sessionStore.update(running.sessionKey, summaryUpdate)
       await sessionStore.flush()
 
       const issues: string[] = []
@@ -162,7 +164,7 @@ export const runTaskLoop = async ({
           error: message,
         }
         await appendTranscript(session.transcriptPath, [issueEntry])
-        sessionStore.update(running.sessionKey, {})
+        sessionStore.update(running.sessionKey, summaryUpdate)
         await sessionStore.flush()
         if (onTriggerFollowup) await onTriggerFollowup(attemptRecord, message)
         await failTask(
@@ -194,7 +196,7 @@ export const runTaskLoop = async ({
     const message = error instanceof Error ? error.message : String(error)
     if (onTriggerFollowup) await onTriggerFollowup(currentRecord, message)
     await failTask(config, tasks, currentRecord, session, message, lockHeld)
-    sessionStore.update(currentRecord.sessionKey, {})
+    sessionStore.update(currentRecord.sessionKey, summaryUpdate)
     await sessionStore.flush()
   } finally {
     if (releaseLock) await releaseLock()

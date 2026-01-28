@@ -79,5 +79,6 @@ describe('runTaskLoop', () => {
     const reloaded = await SessionStore.load(root)
     const after = reloaded.get('alpha')?.updatedAt ?? ''
     expect(after).not.toBe(before)
+    expect(reloaded.get('alpha')?.summary).toBe('hello')
   })
 })

@@ -113,6 +113,7 @@ export const startHttpServer = async (
         sessionKey: session.sessionKey,
         createdAt: session.createdAt,
         updatedAt: session.updatedAt,
+        summary: session.summary ?? '',
       }))
       respond(200, { sessions }, `sessions=${sessions.length}`)
       return

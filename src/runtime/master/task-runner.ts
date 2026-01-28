@@ -2,7 +2,7 @@ import { searchMemory } from '../../memory/search.js'
 import { type SessionStore } from '../../session/store.js'
 import { appendTaskRecord, type TaskRecord } from '../ledger.js'
 
-import { normalizeMaxIterations } from './helpers.js'
+import { buildSummary, normalizeMaxIterations } from './helpers.js'
 import { failTask } from './task-failure.js'
 import { runTaskLoop } from './task-loop.js'
 
@@ -53,6 +53,8 @@ export const runTask = async (
   ctx.tasks.set(taskId, running)
 
   const session = ctx.sessionStore.ensure(running.sessionKey)
+  const summary = buildSummary(prompt)
+  if (summary) ctx.sessionStore.update(running.sessionKey, { summary })
   await ctx.sessionStore.flush()
 
   const resumePolicy = running.resume

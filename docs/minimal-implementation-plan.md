@@ -31,7 +31,7 @@
 - 尽量依赖 Codex 自身配置与能力，减少额外配置覆盖。
 
 ## 目录结构（建议）
-- `src/cli.ts` (命令行入口: serve/ask/task)
+- `src/cli.ts` (命令行入口: serve/task/compact-tasks)
 - `src/config.ts`
 - `src/server/http.ts` (HTTP 服务)
 - `src/server/webui.ts` (Web UI 资产加载)
@@ -159,10 +159,10 @@ Output Policy:
 ## Phase 5: CLI 入口
 12) `serve`:
    - 启动 HTTP + Master（7x24 运行入口）。
-13) `ask`:
-   - `ask --session <key> --message "..." [--resume auto|always|never] [--verify "<cmd>"] [--max-iterations <n>]`。
-14) `task`:
+13) `task`:
    - 查询任务状态或重新入队。
+14) `compact-tasks`:
+   - 压缩 tasks.md，仅保留每个 task 最新记录（需停止服务或 `--force`）。
 
 ## 验收与手测
 - `tsx src/cli.ts serve --port 8787` 后提交任务，确认可返回结果。

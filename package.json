@@ -6,7 +6,6 @@
   "packageManager": "pnpm@9.12.3",
   "scripts": {
     "serve": "tsx src/cli.ts serve",
-    "ask": "tsx src/cli.ts ask",
     "task": "tsx src/cli.ts task",
     "lint": "eslint \"src/**/*.ts\" --fix",
     "test": "vitest run"

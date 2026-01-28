@@ -29,6 +29,13 @@ export const trimForEnv = (value: string, limit: number): string =>
 export const trimText = (value: string, limit: number): string =>
   value.length > limit ? value.slice(0, limit) : value
 
+export const buildSummary = (value: string, maxLen = 80): string => {
+  const normalized = value.replace(/\s+/g, ' ').trim()
+  if (!normalized) return ''
+  if (normalized.length <= maxLen) return normalized
+  return `${normalized.slice(0, maxLen - 3).trimEnd()}...`
+}
+
 export const buildRetryMessage = (params: {
   prompt: string
   output: string

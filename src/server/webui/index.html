@@ -21,26 +21,21 @@
           <div class="card session-card">
             <div class="session-head">
               <div>
-                <p class="session-title">Sessions</p>
-                <p class="session-subtitle">Pick a conversation</p>
+                <p class="session-title">Threads</p>
+                <p class="session-subtitle">Pick a thread or start a new one</p>
               </div>
-              <button class="ghost" type="button" data-refresh-sessions>
-                Refresh
-              </button>
-            </div>
-            <div class="session-compose">
-              <label for="sessionKey">New session</label>
-              <input
-                id="sessionKey"
-                name="sessionKey"
-                type="text"
-                value="default"
-                autocomplete="off"
-              />
+              <div class="session-actions">
+                <button class="ghost" type="button" data-new-thread>
+                  New
+                </button>
+                <button class="ghost" type="button" data-refresh-sessions>
+                  Refresh
+                </button>
+              </div>
             </div>
             <div class="session-list" data-session-list>
               <div class="session-empty" data-session-empty hidden>
-                No sessions yet.
+                No threads yet.
               </div>
             </div>
           </div>

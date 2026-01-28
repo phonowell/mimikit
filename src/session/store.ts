@@ -10,6 +10,7 @@ export type SessionRecord = {
   updatedAt: string
   transcriptPath: string
   codexSessionId?: string
+  summary?: string
 }
 
 type SessionStoreData = {
