@@ -160,6 +160,11 @@ body {
   color: var(--muted);
 }
 
+.thread-empty {
+  font-size: 12px;
+  color: var(--muted);
+}
+
 label {
   font-weight: 600;
   font-size: 11px;
@@ -295,6 +300,10 @@ select:focus {
   justify-content: flex-start;
 }
 
+.message.outgoing {
+  justify-content: flex-end;
+}
+
 .bubble {
   max-width: 82%;
   background: var(--bubble-in);
@@ -305,6 +314,25 @@ select:focus {
   gap: 8px;
   box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
   animation: fadeIn 0.5s ease both;
+}
+
+.message.outgoing .bubble {
+  background: rgba(79, 141, 255, 0.12);
+  border-color: rgba(79, 141, 255, 0.25);
+  border-radius: 18px 18px 8px 18px;
+}
+
+.message.outgoing .bubble-title {
+  color: var(--accent-strong);
+}
+
+.bubble.bubble-error {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.28);
+}
+
+.bubble.bubble-error .bubble-title {
+  color: var(--danger);
 }
 
 .bubble-title {
@@ -321,7 +349,7 @@ pre {
   font-size: 13px;
   color: var(--ink);
   font-family: "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
-  min-height: 160px;
+  line-height: 1.5;
 }
 
 .composer {

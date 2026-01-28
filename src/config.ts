@@ -295,7 +295,8 @@ export const loadConfig = async (options?: {
     (fileConfig.codexProfile as string | undefined)
   const codexSandbox =
     normalizeCodexSandbox(process.env.MIMIKIT_CODEX_SANDBOX) ??
-    normalizeCodexSandbox(fileConfig.codexSandbox)
+    normalizeCodexSandbox(fileConfig.codexSandbox) ??
+    'workspace-write'
   const codexFullAuto =
     parseBoolean(process.env.MIMIKIT_CODEX_FULL_AUTO) ??
     (fileConfig.codexFullAuto as boolean | undefined)
@@ -304,7 +305,7 @@ export const loadConfig = async (options?: {
     workspaceRoot,
     timeoutMs: parseNumber(
       process.env.MIMIKIT_TIMEOUT_MS,
-      fileConfig.timeoutMs ?? 120_000,
+      fileConfig.timeoutMs ?? 300_000,
     ),
     maxWorkers: Math.max(
       1,
@@ -348,7 +349,7 @@ export const loadConfig = async (options?: {
   if (codexBin !== undefined) config.codexBin = codexBin
   if (codexModel !== undefined) config.codexModel = codexModel
   if (codexProfile !== undefined) config.codexProfile = codexProfile
-  if (codexSandbox !== undefined) config.codexSandbox = codexSandbox
+  config.codexSandbox = codexSandbox
   if (codexFullAuto !== undefined) config.codexFullAuto = codexFullAuto
   if (triggerOnFailurePrompt !== undefined)
     config.triggerOnFailurePrompt = triggerOnFailurePrompt

@@ -1,6 +1,8 @@
 import http from 'node:http'
 import { URL } from 'node:url'
 
+import { readTranscript } from '../session/transcript.js'
+
 import { loadWebUiAsset } from './webui.js'
 
 import type { ResumePolicy } from '../config.js'
@@ -164,6 +166,42 @@ export const startHttpServer = async (
       }))
       respond(200, { sessions }, `sessions=${sessions.length}`)
       return
+    }
+
+    if (req.method === 'GET' && url.pathname.startsWith('/sessions/')) {
+      const suffix = url.pathname.slice('/sessions/'.length)
+      if (suffix.endsWith('/messages')) {
+        const rawKey = suffix.slice(0, -'/messages'.length)
+        const sessionKey = decodeURIComponent(rawKey).trim()
+        if (!sessionKey) {
+          respond(
+            400,
+            { error: 'sessionKey is required' },
+            'error=missing_session',
+          )
+          return
+        }
+        const session = options.master.getSession(sessionKey)
+        if (!session) {
+          respond(404, { error: 'Session not found' }, 'error=not_found')
+          return
+        }
+        const limitRaw = url.searchParams.get('limit')
+        const limit =
+          limitRaw && Number.isFinite(Number(limitRaw))
+            ? Math.max(1, Math.floor(Number(limitRaw)))
+            : undefined
+        const messages =
+          limit !== undefined
+            ? await readTranscript(session.transcriptPath, { limit })
+            : await readTranscript(session.transcriptPath)
+        respond(
+          200,
+          { messages },
+          `session=${sessionKey} messages=${messages.length}`,
+        )
+        return
+      }
     }
 
     if (req.method === 'DELETE' && url.pathname.startsWith('/sessions/')) {

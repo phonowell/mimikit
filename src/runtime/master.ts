@@ -75,6 +75,12 @@ export class Master {
     return sessions
   }
 
+  getSession(sessionKey: string): SessionRecord | undefined {
+    const trimmed = sessionKey.trim()
+    if (!trimmed) return undefined
+    return this.sessionStore.get(trimmed)
+  }
+
   getStats(): {
     ok: boolean
     pid: number

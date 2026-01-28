@@ -2,10 +2,11 @@ const form = document.querySelector('[data-task-form]')
 const submitButton = document.querySelector('[data-submit]')
 const statusText = document.querySelector('[data-task-status]')
 const statusDot = document.querySelector('[data-status-dot]')
-const result = document.querySelector('[data-task-result]')
 const errorText = document.querySelector('[data-task-error]')
 const sessionList = document.querySelector('[data-session-list]')
 const sessionEmpty = document.querySelector('[data-session-empty]')
+const thread = document.querySelector('[data-thread]')
+const threadEmpty = document.querySelector('[data-thread-empty]')
 const newThreadButton = document.querySelector('[data-new-thread]')
 const refreshSessionsButton = document.querySelector('[data-refresh-sessions]')
 
@@ -16,6 +17,7 @@ const fields = {
 let activeSessionKey = null
 let pollTimer = null
 let pollToken = 0
+const defaultThreadEmptyText = threadEmpty?.textContent ?? 'No messages yet.'
 
 const createSessionKey = () => {
   if (window.crypto?.randomUUID) return `thread-${window.crypto.randomUUID()}`
@@ -52,19 +54,50 @@ const setError = (message) => {
   errorText.hidden = false
 }
 
-const setResult = (message) => {
-  result.textContent = message || ''
+const setThreadEmptyText = (message) => {
+  if (!threadEmpty) return
+  threadEmpty.textContent = message
+}
+
+const buildMessageElement = (entry) => {
+  const role = entry?.role === 'user' ? 'user' : 'assistant'
+  const item = document.createElement('div')
+  item.className = `message ${role === 'user' ? 'outgoing' : 'incoming'}`
+  const bubble = document.createElement('div')
+  bubble.className = 'bubble'
+  if (entry?.error) bubble.classList.add('bubble-error')
+  const title = document.createElement('span')
+  title.className = 'bubble-title'
+  title.textContent = role === 'user' ? 'You' : 'Worker'
+  const body = document.createElement('pre')
+  body.textContent = typeof entry?.text === 'string' ? entry.text : ''
+  bubble.append(title, body)
+  item.append(bubble)
+  return item
+}
+
+const renderThread = (entries) => {
+  if (!thread) return
+  thread.textContent = ''
+  if (threadEmpty) thread.append(threadEmpty)
+  if (!entries.length) {
+    if (threadEmpty) threadEmpty.hidden = false
+    return
+  }
+  if (threadEmpty) threadEmpty.hidden = true
+  entries.forEach((entry) => {
+    thread.append(buildMessageElement(entry))
+  })
+  thread.scrollTop = thread.scrollHeight
 }
 
 const updateTask = (task) => {
   const status = task?.status || 'idle'
   setStatus(status, status === 'idle' ? 'Idle' : status)
-  if (task?.result !== undefined) {
-    setResult(task.result)
-  } else if (status === 'queued' || status === 'running') {
-    setResult('Waiting for worker output...')
+  if (status === 'queued' || status === 'running') {
+    setThreadEmptyText('Waiting for worker output...')
   } else {
-    setResult('')
+    setThreadEmptyText(defaultThreadEmptyText)
   }
 }
 
@@ -104,6 +137,7 @@ const setActiveSession = (sessionKey) => {
 const clearActiveSession = () => {
   activeSessionKey = null
   setActiveSession('')
+  renderThread([])
 }
 
 const renderSessions = (sessions) => {
@@ -159,6 +193,7 @@ const renderSessions = (sessions) => {
     select.addEventListener('click', () => {
       activeSessionKey = session.sessionKey
       setActiveSession(session.sessionKey)
+      void loadTranscript(session.sessionKey)
     })
 
     const remove = document.createElement('button')
@@ -219,6 +254,24 @@ const loadSessions = async () => {
   }
 }
 
+const loadTranscript = async (sessionKey) => {
+  if (!thread) return
+  const key = typeof sessionKey === 'string' ? sessionKey.trim() : ''
+  if (!key) {
+    renderThread([])
+    return
+  }
+  try {
+    const payload = await fetchJson(
+      `/sessions/${encodeURIComponent(key)}/messages`,
+    )
+    const messages = Array.isArray(payload?.messages) ? payload.messages : []
+    renderThread(messages)
+  } catch (error) {
+    setError(error instanceof Error ? error.message : String(error))
+  }
+}
+
 const pollTask = async (id, token) => {
   if (token !== pollToken) return
   if (pollTimer) {
@@ -231,6 +284,8 @@ const pollTask = async (id, token) => {
     updateTask(task)
     if (task.status === 'queued' || task.status === 'running') {
       pollTimer = setTimeout(() => pollTask(id, token), 1200)
+    } else if (task?.sessionKey) {
+      void loadTranscript(task.sessionKey)
     }
   } catch (error) {
     if (token !== pollToken) return
@@ -274,6 +329,7 @@ form.addEventListener('submit', async (event) => {
     if (task?.sessionKey) {
       activeSessionKey = task.sessionKey
       setActiveSession(task.sessionKey)
+      void loadTranscript(task.sessionKey)
     }
     updateTask(task)
     void loadSessions()
