@@ -2,7 +2,7 @@ import crypto from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
-import { readJsonFile, writeJsonFile } from '../utils/fs.js'
+import { readJsonFile, writeJsonFileAtomic } from '../utils/fs.js'
 
 export type SessionRecord = {
   sessionKey: string
@@ -106,6 +106,6 @@ export class SessionStore {
   }
 
   async flush(): Promise<void> {
-    await writeJsonFile(this.filePath, { sessions: this.sessions })
+    await writeJsonFileAtomic(this.filePath, { sessions: this.sessions })
   }
 }

@@ -1,12 +1,23 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
-import { appendFile } from '../../utils/fs.js'
+import { appendFile, writeFileAtomic } from '../../utils/fs.js'
 
 import { formatTaskRecord } from './format.js'
 import { type TaskRecord } from './types.js'
 
 const ledgerPath = (stateDir: string): string => path.join(stateDir, 'tasks.md')
+
+let ledgerWriteChain: Promise<void> = Promise.resolve()
+
+const queueLedgerWrite = <T>(operation: () => Promise<T>): Promise<T> => {
+  const next = ledgerWriteChain.then(operation, operation)
+  ledgerWriteChain = next.then(
+    () => undefined,
+    () => undefined,
+  )
+  return next
+}
 
 export type TaskLedgerCompactLimits = {
   maxBytes?: number
@@ -33,7 +44,9 @@ export const appendTaskRecord = async (
   stateDir: string,
   record: TaskRecord,
 ): Promise<void> => {
-  await appendFile(ledgerPath(stateDir), formatTaskRecord(record))
+  await queueLedgerWrite(() =>
+    appendFile(ledgerPath(stateDir), formatTaskRecord(record)),
+  )
 }
 
 const parseTaskSection = (section: string): TaskRecord | null => {
@@ -285,72 +298,73 @@ export const maybeCompactTaskLedger = async (
   return compactTaskLedger(stateDir)
 }
 
-export const compactTaskLedger = async (
+export const compactTaskLedger = (
   stateDir: string,
-): Promise<TaskLedgerCompactResult> => {
-  const filePath = ledgerPath(stateDir)
-  let content = ''
-  try {
-    content = await fs.readFile(filePath, 'utf8')
-  } catch (error) {
-    const err = error as NodeJS.ErrnoException
-    if (err.code === 'ENOENT') {
+): Promise<TaskLedgerCompactResult> =>
+  queueLedgerWrite(async () => {
+    const filePath = ledgerPath(stateDir)
+    let content = ''
+    try {
+      content = await fs.readFile(filePath, 'utf8')
+    } catch (error) {
+      const err = error as NodeJS.ErrnoException
+      if (err.code === 'ENOENT') {
+        return {
+          path: filePath,
+          records: 0,
+          tasks: 0,
+          bytesBefore: 0,
+          bytesAfter: 0,
+          wrote: false,
+        }
+      }
+      throw error
+    }
+
+    const bytesBefore = Buffer.byteLength(content)
+    if (!content.trim()) {
       return {
         path: filePath,
         records: 0,
         tasks: 0,
-        bytesBefore: 0,
+        bytesBefore,
         bytesAfter: 0,
         wrote: false,
       }
     }
-    throw error
-  }
 
-  const bytesBefore = Buffer.byteLength(content)
-  if (!content.trim()) {
+    const records = parseTaskLedgerContent(content)
+    if (records.length === 0) {
+      return {
+        path: filePath,
+        records: 0,
+        tasks: 0,
+        bytesBefore,
+        bytesAfter: bytesBefore,
+        wrote: false,
+      }
+    }
+
+    const seen = new Set<string>()
+    const compacted: TaskRecord[] = []
+    for (let i = records.length - 1; i >= 0; i -= 1) {
+      const record = records[i]
+      if (!record) continue
+      if (seen.has(record.id)) continue
+      seen.add(record.id)
+      compacted.push(record)
+    }
+    compacted.reverse()
+
+    const output = compacted.map((record) => formatTaskRecord(record)).join('')
+    await writeFileAtomic(filePath, output)
+
     return {
       path: filePath,
-      records: 0,
-      tasks: 0,
+      records: records.length,
+      tasks: compacted.length,
       bytesBefore,
-      bytesAfter: 0,
-      wrote: false,
+      bytesAfter: Buffer.byteLength(output),
+      wrote: true,
     }
-  }
-
-  const records = parseTaskLedgerContent(content)
-  if (records.length === 0) {
-    return {
-      path: filePath,
-      records: 0,
-      tasks: 0,
-      bytesBefore,
-      bytesAfter: bytesBefore,
-      wrote: false,
-    }
-  }
-
-  const seen = new Set<string>()
-  const compacted: TaskRecord[] = []
-  for (let i = records.length - 1; i >= 0; i -= 1) {
-    const record = records[i]
-    if (!record) continue
-    if (seen.has(record.id)) continue
-    seen.add(record.id)
-    compacted.push(record)
-  }
-  compacted.reverse()
-
-  const output = compacted.map((record) => formatTaskRecord(record)).join('')
-  await fs.writeFile(filePath, output, 'utf8')
-
-  return {
-    path: filePath,
-    records: records.length,
-    tasks: compacted.length,
-    bytesBefore,
-    bytesAfter: Buffer.byteLength(output),
-    wrote: true,
-  }
-}
+  })

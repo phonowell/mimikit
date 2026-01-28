@@ -130,6 +130,9 @@ export class Master {
 
   async enqueueTask(request: TaskRequest): Promise<TaskRecord> {
     if (this.compactionPromise) await this.compactionPromise
+    const sessionKey = request.sessionKey.trim()
+    if (!sessionKey) throw new Error('sessionKey is required')
+    if (!request.prompt.trim()) throw new Error('prompt is required')
     const taskId = crypto.randomUUID()
     const runId = crypto.randomUUID()
     const now = new Date().toISOString()
@@ -141,7 +144,7 @@ export class Master {
     const baseRecord: TaskRecord = {
       id: taskId,
       status: 'queued',
-      sessionKey: request.sessionKey,
+      sessionKey,
       runId,
       retries: 0,
       attempt: 0,

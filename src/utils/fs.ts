@@ -41,6 +41,20 @@ export const writeJsonFileAtomic = async (
   await fs.rename(tempPath, filePath)
 }
 
+export const writeFileAtomic = async (
+  filePath: string,
+  content: string,
+): Promise<void> => {
+  const dir = path.dirname(filePath)
+  await ensureDir(dir)
+  const tempPath = path.join(
+    dir,
+    `.${path.basename(filePath)}.${process.pid}.${Date.now()}.tmp`,
+  )
+  await fs.writeFile(tempPath, content, 'utf8')
+  await fs.rename(tempPath, filePath)
+}
+
 export const appendFile = async (
   filePath: string,
   content: string,

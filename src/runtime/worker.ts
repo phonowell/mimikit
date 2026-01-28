@@ -91,6 +91,7 @@ export const runWorker = async (
 
   let stdoutRl: readline.Interface | undefined
   let timeout: NodeJS.Timeout | undefined
+  let hardKillTimeout: NodeJS.Timeout | undefined
 
   try {
     const args: string[] = [
@@ -151,6 +152,9 @@ export const runWorker = async (
 
     timeout = setTimeout(() => {
       child.kill('SIGTERM')
+      hardKillTimeout = setTimeout(() => {
+        child.kill('SIGKILL')
+      }, 2000)
     }, request.config.timeoutMs)
 
     const exitCode = await new Promise<number>((resolve, reject) => {
@@ -180,6 +184,7 @@ export const runWorker = async (
     return result
   } finally {
     if (timeout) clearTimeout(timeout)
+    if (hardKillTimeout) clearTimeout(hardKillTimeout)
     if (stdoutRl) stdoutRl.close()
     await fs.unlink(outputFile).catch(() => undefined)
   }
