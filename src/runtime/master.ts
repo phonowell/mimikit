@@ -1,7 +1,7 @@
 import crypto from 'node:crypto'
 
 import { type SessionRecord, SessionStore } from '../session/store.js'
-import { writeJsonFile } from '../utils/fs.js'
+import { writeJsonFileAtomic } from '../utils/fs.js'
 
 import {
   appendTaskRecord,
@@ -82,6 +82,12 @@ export class Master {
     uptimeMs: number
     sessions: number
     activeSessions: number
+    features: {
+      selfImprove: boolean
+      selfEvalPrompt: boolean
+      selfEvalSkipSessions: number
+      heartbeatIntervalMs: number
+    }
     tasks: {
       total: number
       queued: number
@@ -98,6 +104,14 @@ export class Master {
       uptimeMs: Date.now() - this.startedAt,
       sessions: Object.keys(this.sessionStore.all()).length,
       activeSessions: this.queue.size,
+      features: {
+        selfImprove:
+          Boolean(this.config.selfImprovePrompt?.trim()) &&
+          this.config.selfImproveIntervalMs > 0,
+        selfEvalPrompt: Boolean(this.config.selfEvalPrompt?.trim()),
+        selfEvalSkipSessions: this.config.selfEvalSkipSessionKeys.length,
+        heartbeatIntervalMs: this.config.heartbeatIntervalMs,
+      },
       tasks: counts,
     }
   }
@@ -261,7 +275,7 @@ export class Master {
       if (this.heartbeatPromise) return
       this.heartbeatPromise = (async () => {
         try {
-          await writeJsonFile(this.config.heartbeatPath, {
+          await writeJsonFileAtomic(this.config.heartbeatPath, {
             ...this.getStats(),
             updatedAt: new Date().toISOString(),
           })

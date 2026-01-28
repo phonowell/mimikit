@@ -136,7 +136,7 @@ export const loadConfig = async (options?: {
     typeof selfEvalPromptRaw === 'string' && selfEvalPromptRaw.trim().length > 0
       ? selfEvalPromptRaw
       : undefined
-  const selfEvalSkipSessionKeys =
+  const selfEvalSkipSessionKeysRaw =
     parseStringArray(process.env.MIMIKIT_SELF_EVAL_SKIP_SESSIONS) ??
     (Array.isArray(fileConfig.selfEvalSkipSessionKeys)
       ? (fileConfig.selfEvalSkipSessionKeys.filter(
@@ -239,6 +239,10 @@ export const loadConfig = async (options?: {
     process.env.MIMIKIT_SELF_IMPROVE_SESSION_KEY ??
     (fileConfig.selfImproveSessionKey as string | undefined) ??
     'self-improve'
+  const selfEvalSkipSessionKeys =
+    selfEvalSkipSessionKeysRaw.length > 0
+      ? Array.from(new Set(selfEvalSkipSessionKeysRaw))
+      : [selfImproveSessionKey]
   const selfEvalMemoryPath =
     resolvePath(
       workspaceRoot,

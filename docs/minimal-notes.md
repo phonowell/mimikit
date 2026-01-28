@@ -24,6 +24,7 @@
 - 可选 supervisor 负责 serve 自重启，降低外部守护依赖。
 - 可选 self-improve 周期触发改进任务。
 - 自评估可按 sessionKey 跳过以降低成本。
+- 默认跳过 self-improve 会话，避免递归成本。
 
 ## 约束与取舍
 - 无流式输出：实现更简单，但不支持中途插话/打断。
