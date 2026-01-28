@@ -1,3 +1,5 @@
+import fs from 'node:fs/promises'
+
 import { appendFile } from '../utils/fs.js'
 
 import { buildSummary, trimText } from './master/helpers.js'
@@ -115,11 +117,48 @@ const appendLesson = async (
     promptSummary,
   )}" issue="${normalizeInline(params.issue)}"\n`
   await appendFile(config.selfEvalMemoryPath, line)
+  await trimLessonsFile(
+    config.selfEvalMemoryPath,
+    config.selfEvalMemoryMaxBytes,
+  )
+}
+
+const trimLessonsFile = async (
+  filePath: string,
+  maxBytes: number,
+): Promise<void> => {
+  if (maxBytes <= 0) return
+  let handle: fs.FileHandle | undefined
+  try {
+    handle = await fs.open(filePath, 'r')
+    const stats = await handle.stat()
+    if (stats.size <= maxBytes) return
+    const start = Math.max(0, stats.size - maxBytes)
+    const length = stats.size - start
+    const buffer = Buffer.alloc(length)
+    await handle.read(buffer, 0, length, start)
+    await fs.writeFile(filePath, buffer.toString('utf8'), 'utf8')
+  } catch (error) {
+    const err = error as NodeJS.ErrnoException
+    if (err.code === 'ENOENT') return
+    throw error
+  } finally {
+    if (handle) await handle.close()
+  }
 }
 
 export const runSelfEvaluation = async (
   input: SelfEvalInput,
 ): Promise<SelfEvalOutcome> => {
+  if (input.config.selfEvalSkipSessionKeys.includes(input.sessionKey)) {
+    return {
+      verdict: 'ok',
+      summary: 'skipped',
+      evaluation: 'ok (skipped): session excluded',
+      mode: 'heuristic',
+    }
+  }
+
   const heuristic = runHeuristicEval(input.output)
   let verdict: SelfEvalVerdict = heuristic.verdict
   let summary: string = heuristic.summary

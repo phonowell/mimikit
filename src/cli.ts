@@ -153,7 +153,10 @@ const runServeSupervisor = async (args: string[]): Promise<void> => {
     }
     const suffix = exitCode === 0 ? 'clean exit' : `code ${exitCode}`
     console.error(`Supervisor restarting (${suffix})`)
-    if (delayMs > 0) await sleep(delayMs)
+    if (delayMs > 0) {
+      const backoffFactor = Math.min(8, 2 ** Math.max(0, restarts - 1))
+      await sleep(delayMs * backoffFactor)
+    }
   }
 }
 

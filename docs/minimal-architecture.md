@@ -120,7 +120,7 @@ Output Policy:
 - `memoryPaths` / `maxMemoryHits` / `maxMemoryChars`
 - `resumePolicy` (`auto` | `always` | `never`)
 - `outputPolicy` (简明输出约束, 追加到子进程 prompt)
-- `selfEvalPrompt` / `selfEvalMaxChars` / `selfEvalMemoryPath` (自评估与 lessons)
+- `selfEvalPrompt` / `selfEvalMaxChars` / `selfEvalMemoryPath` / `selfEvalMemoryMaxBytes` / `selfEvalSkipSessionKeys` (自评估与 lessons)
 - `selfImprovePrompt` / `selfImproveIntervalMs` / `selfImproveMaxChars` / `selfImproveSessionKey` / `selfImproveStatePath`
 - `maxIterations` (verifyCommand 重试上限)
 - `triggerSessionKey` / `triggerOnFailurePrompt` (失败 follow-up)

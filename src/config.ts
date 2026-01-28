@@ -31,6 +31,8 @@ export type Config = {
   selfEvalPrompt?: string
   selfEvalMaxChars: number
   selfEvalMemoryPath: string
+  selfEvalMemoryMaxBytes: number
+  selfEvalSkipSessionKeys: string[]
   selfImprovePrompt?: string
   selfImproveIntervalMs: number
   selfImproveMaxChars: number
@@ -47,6 +49,7 @@ const DEFAULT_TASK_LEDGER_MAX_RECORDS = 1_000
 const DEFAULT_TASK_LEDGER_COMPACT_INTERVAL_MS = 600_000
 const DEFAULT_HEARTBEAT_INTERVAL_MS = 30_000
 const DEFAULT_SELF_EVAL_MAX_CHARS = 4_000
+const DEFAULT_SELF_EVAL_MEMORY_MAX_BYTES = 200_000
 const DEFAULT_SELF_IMPROVE_MAX_CHARS = 4_000
 const DEFAULT_SELF_IMPROVE_INTERVAL_MS = 0
 
@@ -133,6 +136,14 @@ export const loadConfig = async (options?: {
     typeof selfEvalPromptRaw === 'string' && selfEvalPromptRaw.trim().length > 0
       ? selfEvalPromptRaw
       : undefined
+  const selfEvalSkipSessionKeys =
+    parseStringArray(process.env.MIMIKIT_SELF_EVAL_SKIP_SESSIONS) ??
+    (Array.isArray(fileConfig.selfEvalSkipSessionKeys)
+      ? (fileConfig.selfEvalSkipSessionKeys.filter(
+          (item) => typeof item === 'string',
+        ) as string[])
+      : undefined) ??
+    []
   const selfImprovePromptRaw =
     process.env.MIMIKIT_SELF_IMPROVE_PROMPT ??
     (fileConfig.selfImprovePrompt as string | undefined)
@@ -201,6 +212,13 @@ export const loadConfig = async (options?: {
     parseNumber(
       process.env.MIMIKIT_SELF_EVAL_MAX_CHARS,
       fileConfig.selfEvalMaxChars ?? DEFAULT_SELF_EVAL_MAX_CHARS,
+    ),
+  )
+  const selfEvalMemoryMaxBytes = Math.max(
+    0,
+    parseNumber(
+      process.env.MIMIKIT_SELF_EVAL_MEMORY_MAX_BYTES,
+      fileConfig.selfEvalMemoryMaxBytes ?? DEFAULT_SELF_EVAL_MEMORY_MAX_BYTES,
     ),
   )
   const selfImproveMaxChars = Math.max(
@@ -287,6 +305,8 @@ export const loadConfig = async (options?: {
     outputPolicy,
     selfEvalMaxChars,
     selfEvalMemoryPath,
+    selfEvalMemoryMaxBytes,
+    selfEvalSkipSessionKeys,
     selfImproveMaxChars,
     selfImproveIntervalMs,
     selfImproveSessionKey,
