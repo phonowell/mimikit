@@ -9,6 +9,7 @@ const thread = document.querySelector('[data-thread]')
 const threadEmpty = document.querySelector('[data-thread-empty]')
 const newThreadButton = document.querySelector('[data-new-thread]')
 const refreshSessionsButton = document.querySelector('[data-refresh-sessions]')
+const restartButton = document.querySelector('[data-restart]')
 
 const fields = {
   prompt: document.querySelector('#prompt'),
@@ -381,5 +382,23 @@ if (newThreadButton) {
 if (refreshSessionsButton) {
   refreshSessionsButton.addEventListener('click', () => {
     void loadSessions()
+  })
+}
+
+if (restartButton) {
+  restartButton.addEventListener('click', async () => {
+    if (!window.confirm('Restart the server? Active tasks may be interrupted.')) return
+    setError('')
+    restartButton.disabled = true
+    restartButton.textContent = 'Restarting...'
+    try {
+      await fetchJson('/control/restart?force=true', { method: 'POST' })
+      setError('Server is restarting. Please refresh the page.')
+    } catch (error) {
+      setError(error instanceof Error ? error.message : String(error))
+    } finally {
+      restartButton.disabled = false
+      restartButton.textContent = 'Restart Server'
+    }
   })
 }
