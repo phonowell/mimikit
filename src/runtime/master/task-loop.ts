@@ -7,9 +7,9 @@ import {
   type TranscriptEntry,
 } from '../../session/transcript.js'
 import { appendTaskRecord, type TaskRecord } from '../ledger.js'
+import { runSelfEvaluation } from '../self-eval.js'
 import { runVerifyCommand } from '../verify.js'
 import { runWorker } from '../worker.js'
-import { runSelfEvaluation } from '../self-eval.js'
 
 import { buildRetryMessage, buildSummary, trimForEnv } from './helpers.js'
 import { failTask } from './task-failure.js'

@@ -1,4 +1,5 @@
 import { appendFile } from '../utils/fs.js'
+
 import { buildSummary, trimText } from './master/helpers.js'
 import { runWorker } from './worker.js'
 
@@ -40,7 +41,10 @@ const heuristicRules = [
 ]
 
 const normalizeInline = (value: string): string =>
-  value.replace(/[\r\n"]/g, ' ').replace(/\s+/g, ' ').trim()
+  value
+    .replace(/[\r\n"]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
 
 const formatEvaluation = (
   verdict: SelfEvalVerdict,
@@ -56,8 +60,10 @@ const runHeuristicEval = (
   output: string,
 ): { verdict: 'ok' | 'issue'; summary: string } => {
   for (const rule of heuristicRules) {
-    if (rule.regex.test(output)) return { verdict: 'issue', summary: rule.label }
+    if (rule.regex.test(output))
+      return { verdict: 'issue', summary: rule.label }
   }
+
   return { verdict: 'ok', summary: '' }
 }
 
@@ -116,7 +122,7 @@ export const runSelfEvaluation = async (
 ): Promise<SelfEvalOutcome> => {
   const heuristic = runHeuristicEval(input.output)
   let verdict: SelfEvalVerdict = heuristic.verdict
-  let summary = heuristic.summary
+  let summary: string = heuristic.summary
   let mode: SelfEvalMode = 'heuristic'
 
   const prompt = input.config.selfEvalPrompt?.trim()
@@ -138,11 +144,8 @@ export const runSelfEvaluation = async (
         verdict = parsed.verdict
         summary = parsed.summary
         mode = 'codex'
-      } else if (!summary) {
-        summary = 'codex unparsed'
-      } else {
-        summary = `${summary} (codex unparsed)`
-      }
+      } else if (!summary) summary = 'codex unparsed'
+      else summary = `${summary} (codex unparsed)`
     } catch (error) {
       verdict = 'error'
       summary = error instanceof Error ? error.message : String(error)
