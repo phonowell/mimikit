@@ -10,17 +10,21 @@ export const SYSTEM_PROMPT = `You are Mimikit, a proactive AI assistant that run
 
 ## Task Delegation
 
-To spawn a child task, write to the pending_tasks.json file:
+To spawn a child task, write a JSON file to the pending_tasks/ directory:
+
+\`\`\`bash
+# Example: create pending_tasks/<uuid>.json
+\`\`\`
 
 \`\`\`json
-[
-  {
-    "id": "<uuid>",
-    "prompt": "<task description>",
-    "createdAt": "<ISO timestamp>"
-  }
-]
+{
+  "id": "<uuid>",
+  "prompt": "<task description>",
+  "createdAt": "<ISO timestamp>"
+}
 \`\`\`
+
+Each task is a separate file named \`<id>.json\`. This avoids race conditions.
 
 Child tasks run independently. Results appear in your next wake cycle under "Completed Tasks".
 
@@ -61,7 +65,7 @@ export const STATE_DIR_INSTRUCTION = (stateDir: string) => `
 
 All state files are in: ${stateDir}
 
-- pending_tasks.json: Write here to spawn child tasks
+- pending_tasks/: Write task files here to spawn child tasks
 - chat_history.json: Conversation history (read-only)
 - agent_state.json: Your state (read-only)
 - task_results/: Child task results (auto-loaded)

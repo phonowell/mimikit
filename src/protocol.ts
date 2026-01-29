@@ -64,8 +64,8 @@ export class Protocol {
   private get agentStatePath() {
     return join(this.stateDir, 'agent_state.json')
   }
-  private get pendingTasksPath() {
-    return join(this.stateDir, 'pending_tasks.json')
+  private get pendingTasksDir() {
+    return join(this.stateDir, 'pending_tasks')
   }
   private get userInputPath() {
     return join(this.stateDir, 'user_input.json')
@@ -83,6 +83,7 @@ export class Protocol {
   async init(): Promise<void> {
     await mkdir(this.stateDir, { recursive: true })
     await mkdir(this.taskResultsDir, { recursive: true })
+    await mkdir(this.pendingTasksDir, { recursive: true })
   }
 
   // Agent State
@@ -101,28 +102,56 @@ export class Protocol {
 
   // Pending Tasks (to be dispatched)
   async getPendingTasks(): Promise<PendingTask[]> {
+    let files: string[]
     try {
-      const data = await readFile(this.pendingTasksPath, 'utf-8')
-      return JSON.parse(data) as PendingTask[]
+      files = await readdir(this.pendingTasksDir)
     } catch {
       return []
     }
+    const tasks: PendingTask[] = []
+    for (const file of files) {
+      if (!file.endsWith('.json')) continue
+      try {
+        const data = await readFile(join(this.pendingTasksDir, file), 'utf-8')
+        tasks.push(JSON.parse(data) as PendingTask)
+      } catch {
+        // ignore corrupted files
+      }
+    }
+    return tasks.sort(
+      (a, b) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    )
   }
 
   async addPendingTask(task: PendingTask): Promise<void> {
-    await withLock(this.pendingTasksPath, async () => {
-      const tasks = await this.getPendingTasks()
-      tasks.push(task)
-      await writeFile(this.pendingTasksPath, JSON.stringify(tasks, null, 2))
-    })
+    const path = join(this.pendingTasksDir, `${task.id}.json`)
+    await writeFile(path, JSON.stringify(task, null, 2))
   }
 
-  clearPendingTasks(): Promise<PendingTask[]> {
-    return withLock(this.pendingTasksPath, async () => {
-      const tasks = await this.getPendingTasks()
-      await writeFile(this.pendingTasksPath, '[]')
-      return tasks
-    })
+  async clearPendingTasks(): Promise<PendingTask[]> {
+    let files: string[]
+    try {
+      files = await readdir(this.pendingTasksDir)
+    } catch {
+      return []
+    }
+    const tasks: PendingTask[] = []
+    for (const file of files) {
+      if (!file.endsWith('.json')) continue
+      const path = join(this.pendingTasksDir, file)
+      try {
+        const data = await readFile(path, 'utf-8')
+        tasks.push(JSON.parse(data) as PendingTask)
+        await unlink(path)
+      } catch {
+        // ignore corrupted files
+      }
+    }
+    return tasks.sort(
+      (a, b) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    )
   }
 
   // Task Results

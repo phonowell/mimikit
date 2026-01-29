@@ -87,7 +87,7 @@ export class Supervisor {
       await this.protocol.appendTaskLog('supervisor:recover agent was running')
     }
 
-    // Pending tasks in pending_tasks.json are automatically picked up
+    // Pending tasks in pending_tasks/ dir are automatically picked up
     // Task results in task_results/ are automatically picked up
     // No additional recovery needed for file-based protocol
   }

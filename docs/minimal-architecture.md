@@ -33,7 +33,7 @@ src/
 
 ### Supervisor 主循环（每 1s）
 1. Agent 运行中？→ 跳过
-2. 派发 pending_tasks.json 中的子任务
+2. 派发 pending_tasks/ 目录中的子任务
 3. 有未处理事务（用户输入/任务结果）？→ 唤醒 Agent
 4. 无事务 + 距上次唤醒 ≥15min？→ 自唤醒 Agent
 
@@ -45,7 +45,7 @@ src/
 5. 清理已处理的输入和结果
 
 ### 子任务流程
-1. Agent 写入 pending_tasks.json
+1. Agent 写入 pending_tasks/{id}.json
 2. Supervisor 检测并派发（受 maxConcurrentTasks 限制）
 3. 子任务独立执行 codex exec
 4. 结果写入 task_results/{id}.json
@@ -55,7 +55,8 @@ src/
 ```
 .mimikit/
 ├── agent_state.json      # Agent 状态（running/idle + sessionId）
-├── pending_tasks.json    # 待派发的子任务
+├── pending_tasks/        # 待派发的子任务（每任务一文件）
+│   └── {taskId}.json
 ├── user_input.json       # 用户输入队列
 ├── chat_history.json     # 对话历史
 ├── task_results/         # 子任务结果
@@ -65,7 +66,7 @@ src/
 
 ## 恢复机制
 - 启动时检查 agent_state.json：若 status=running 则重置为 idle
-- pending_tasks.json 中未完成的任务自动在下次检查时派发
+- pending_tasks/ 目录中的任务自动在下次检查时派发
 - task_results/ 中的结果自动在下次 Agent 唤醒时处理
 
 ## HTTP 接口
