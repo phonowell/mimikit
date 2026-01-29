@@ -4,6 +4,11 @@
   "private": true,
   "type": "module",
   "packageManager": "pnpm@9.12.3",
+  "pnpm": {
+    "overrides": {
+      "esbuild": "^0.25.0"
+    }
+  },
   "scripts": {
     "start": "caffeinate -dimsu bin/mimikit",
     "lint": "eslint \"src/**/*.ts\" --fix",
