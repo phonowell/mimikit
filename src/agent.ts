@@ -1,12 +1,17 @@
 import { execCodex } from './codex.js'
 import { formatMemoryHits, type MemoryConfig, searchMemory } from './memory.js'
 import { STATE_DIR_INSTRUCTION, SYSTEM_PROMPT } from './prompt.js'
-import { type Protocol, type TaskResult, type UserInput } from './protocol.js'
+import {
+  type ChatMessage,
+  type Protocol,
+  type TaskResult,
+  type UserInput,
+} from './protocol.js'
 
 export type AgentContext = {
   userInputs: UserInput[]
   taskResults: TaskResult[]
-  chatHistory: string[]
+  chatHistory: ChatMessage[]
   memoryHits: string
   isSelfAwake: boolean
 }
@@ -25,10 +30,7 @@ export async function runAgent(
   protocol: Protocol,
   context: Omit<AgentContext, 'chatHistory' | 'memoryHits'>,
 ): Promise<void> {
-  const chatHistory = (await protocol.getChatHistory(20)).map((msg) => {
-    const prefix = msg.role === 'user' ? 'User' : 'You'
-    return `[${prefix}] ${msg.text.slice(0, 500)}`
-  })
+  const chatHistory = (await protocol.getChatHistory(20)).map((msg) => msg)
 
   let memoryHits = ''
   if (context.userInputs.length > 0) {
@@ -114,39 +116,139 @@ export async function runAgent(
   }
 }
 
+const MAX_INPUT_CHARS = 1000
+const MAX_HISTORY_CHARS = 400
+const MAX_HISTORY_MESSAGES = 8
+const MAX_TASK_RESULTS = 3
+const MAX_TASK_RESULT_CHARS = 800
+
+function truncate(text: string, maxChars: number): string {
+  if (text.length <= maxChars) return text
+  if (maxChars <= 3) return text.slice(0, maxChars)
+  return `${text.slice(0, maxChars - 3)}...`
+}
+
+function extractKeywords(inputs: UserInput[]): string[] {
+  const text = inputs.map((i) => i.text).join(' ')
+  if (!text) return []
+  const tokens: string[] = []
+  const latin = text.toLowerCase().match(/[a-z0-9_]{2,}/g) ?? []
+  tokens.push(...latin)
+  const cjk = text.match(/[\u4e00-\u9fff]{2,}/g) ?? []
+  tokens.push(...cjk)
+  const seen = new Set<string>()
+  const result: string[] = []
+  for (const token of tokens) {
+    if (seen.has(token)) continue
+    seen.add(token)
+    result.push(token)
+    if (result.length >= 12) break
+  }
+  return result
+}
+
+function shouldIncludeStateDir(inputs: UserInput[]): boolean {
+  const text = inputs.map((i) => i.text.toLowerCase()).join(' ')
+  if (!text) return false
+  const keywords = [
+    'pending_tasks',
+    'task_results',
+    'agent_state',
+    'chat_history',
+    'task log',
+    'tasks.md',
+    '.mimikit',
+    'state dir',
+    'state directory',
+    'statedir',
+  ]
+  return keywords.some((keyword) => text.includes(keyword))
+}
+
+function filterChatHistory(
+  history: ChatMessage[],
+  inputs: UserInput[],
+  keywords: string[],
+): ChatMessage[] {
+  const inputSet = new Set(inputs.map((i) => `${i.createdAt}|${i.text}`))
+  const deduped = history.filter(
+    (msg) =>
+      !(msg.role === 'user' && inputSet.has(`${msg.createdAt}|${msg.text}`)),
+  )
+  if (deduped.length === 0) return []
+  if (keywords.length === 0) return deduped.slice(-6)
+  const filtered = deduped.filter((msg) => {
+    const lower = msg.text.toLowerCase()
+    return keywords.some((keyword) => {
+      if (/[a-z0-9_]/.test(keyword)) return lower.includes(keyword)
+      return msg.text.includes(keyword)
+    })
+  })
+  if (filtered.length === 0) return deduped.slice(-6)
+  return filtered.slice(-MAX_HISTORY_MESSAGES)
+}
+
+function sortTaskResults(results: TaskResult[]): TaskResult[] {
+  return results.slice().sort((a, b) => {
+    const ta = Date.parse(a.completedAt) || 0
+    const tb = Date.parse(b.completedAt) || 0
+    return ta - tb
+  })
+}
+
 function buildPrompt(stateDir: string, context: AgentContext): string {
   const parts: string[] = []
+  const hasUserInputs = context.userInputs.length > 0
+  const keywords = hasUserInputs ? extractKeywords(context.userInputs) : []
 
   parts.push(SYSTEM_PROMPT)
-  parts.push(STATE_DIR_INSTRUCTION(stateDir))
-  parts.push('')
-
-  if (context.chatHistory.length > 0) {
-    parts.push('## Recent Conversation')
-    for (const line of context.chatHistory) parts.push(line)
-
+  if (hasUserInputs && shouldIncludeStateDir(context.userInputs)) {
+    parts.push(STATE_DIR_INSTRUCTION(stateDir))
     parts.push('')
   }
 
-  if (context.memoryHits) {
+  if (hasUserInputs && context.chatHistory.length > 0) {
+    const history = filterChatHistory(
+      context.chatHistory,
+      context.userInputs,
+      keywords,
+    )
+    if (history.length > 0) {
+      parts.push('## Recent Conversation')
+      for (const msg of history) {
+        const prefix = msg.role === 'user' ? 'User' : 'You'
+        parts.push(`[${prefix}] ${truncate(msg.text, MAX_HISTORY_CHARS)}`)
+      }
+
+      parts.push('')
+    }
+  }
+
+  if (hasUserInputs && context.memoryHits) {
     parts.push(context.memoryHits)
     parts.push('')
   }
 
-  if (context.userInputs.length > 0) {
+  if (hasUserInputs) {
     parts.push('## New User Inputs')
-    for (const input of context.userInputs)
-      parts.push(`[${input.createdAt}] ${input.text}`)
+    for (const input of context.userInputs) {
+      parts.push(
+        `[${input.createdAt}] ${truncate(input.text, MAX_INPUT_CHARS)}`,
+      )
+    }
 
     parts.push('')
   }
 
   if (context.taskResults.length > 0) {
     parts.push('## Completed Tasks')
-    for (const result of context.taskResults) {
+    const recent = sortTaskResults(context.taskResults).slice(-MAX_TASK_RESULTS)
+    for (const result of recent) {
       parts.push(`### Task ${result.id} (${result.status})`)
-      if (result.result) parts.push(result.result.slice(0, 2000))
-      if (result.error) parts.push(`Error: ${result.error}`)
+      if (result.result)
+        parts.push(truncate(result.result, MAX_TASK_RESULT_CHARS))
+      if (result.error)
+        parts.push(`Error: ${truncate(result.error, MAX_TASK_RESULT_CHARS)}`)
       parts.push('')
     }
   }
