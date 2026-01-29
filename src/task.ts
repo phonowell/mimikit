@@ -26,6 +26,8 @@ export async function runTask(
     await protocol.writeTaskResult({
       id: task.id,
       status: 'done',
+      prompt: task.prompt,
+      createdAt: task.createdAt,
       result: result.output,
       completedAt: new Date().toISOString(),
     })
@@ -35,6 +37,8 @@ export async function runTask(
     await protocol.writeTaskResult({
       id: task.id,
       status: 'failed',
+      prompt: task.prompt,
+      createdAt: task.createdAt,
       error: message,
       completedAt: new Date().toISOString(),
     })

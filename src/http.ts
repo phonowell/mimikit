@@ -76,6 +76,13 @@ async function handleRequest(
     return
   }
 
+  if (path === '/api/tasks' && req.method === 'GET') {
+    const limit = parseLimit(url.searchParams.get('limit'))
+    const data = await supervisor.getTasks(limit)
+    respond(res, 200, data)
+    return
+  }
+
   if (path === '/api/restart' && req.method === 'POST') {
     respond(res, 200, { ok: true })
     setTimeout(() => {
@@ -146,4 +153,10 @@ function readBody(req: IncomingMessage): Promise<string> {
     req.on('end', () => resolve(body))
     req.on('error', reject)
   })
+}
+
+function parseLimit(value: string | null): number {
+  const parsed = value ? Number(value) : NaN
+  if (!Number.isFinite(parsed) || parsed <= 0) return 200
+  return Math.min(Math.floor(parsed), 500)
 }

@@ -25,6 +25,8 @@ export type PendingTask = {
 export type TaskResult = {
   id: string
   status: 'done' | 'failed'
+  prompt?: string
+  createdAt?: string
   result?: string
   error?: string
   completedAt: string
@@ -91,6 +93,29 @@ export class Protocol {
     await mkdir(this.inflightTasksDir, { recursive: true })
   }
 
+  private async readTasksFromDir(dir: string): Promise<PendingTask[]> {
+    let files: string[]
+    try {
+      files = await readdir(dir)
+    } catch {
+      return []
+    }
+    const tasks: PendingTask[] = []
+    for (const file of files) {
+      if (!file.endsWith('.json')) continue
+      try {
+        const data = await readFile(join(dir, file), 'utf-8')
+        tasks.push(JSON.parse(data) as PendingTask)
+      } catch {
+        // ignore corrupted files
+      }
+    }
+    return tasks.sort(
+      (a, b) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    )
+  }
+
   // Agent State
   async getAgentState(): Promise<AgentState> {
     try {
@@ -107,26 +132,11 @@ export class Protocol {
 
   // Pending Tasks (to be dispatched)
   async getPendingTasks(): Promise<PendingTask[]> {
-    let files: string[]
-    try {
-      files = await readdir(this.pendingTasksDir)
-    } catch {
-      return []
-    }
-    const tasks: PendingTask[] = []
-    for (const file of files) {
-      if (!file.endsWith('.json')) continue
-      try {
-        const data = await readFile(join(this.pendingTasksDir, file), 'utf-8')
-        tasks.push(JSON.parse(data) as PendingTask)
-      } catch {
-        // ignore corrupted files
-      }
-    }
-    return tasks.sort(
-      (a, b) =>
-        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-    )
+    return this.readTasksFromDir(this.pendingTasksDir)
+  }
+
+  async getInflightTasks(): Promise<PendingTask[]> {
+    return this.readTasksFromDir(this.inflightTasksDir)
   }
 
   async addPendingTask(task: PendingTask): Promise<void> {
