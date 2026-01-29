@@ -167,6 +167,7 @@ body::before {
   flex-direction: column;
   gap: 14px;
   overflow-y: auto;
+  max-height: min(60vh, 520px);
   padding-right: 4px;
   flex: 1;
 }
