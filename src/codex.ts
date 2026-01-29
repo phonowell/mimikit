@@ -29,11 +29,27 @@ export function execCodex(options: CodexOptions): Promise<CodexResult> {
     const proc = spawn('codex', args, {
       cwd: options.workDir,
       stdio: ['ignore', 'pipe', 'pipe'],
-      timeout: options.timeout,
     })
 
     let stdout = ''
     let stderr = ''
+    let finished = false
+    let timedOut = false
+    const timeoutMs = Math.max(0, options.timeout)
+    const timeoutId =
+      timeoutMs > 0
+        ? setTimeout(() => {
+            timedOut = true
+            proc.kill()
+          }, timeoutMs)
+        : undefined
+
+    const finish = (fn: () => void) => {
+      if (finished) return
+      finished = true
+      if (timeoutId) clearTimeout(timeoutId)
+      fn()
+    }
 
     proc.stdout.on('data', (data) => {
       stdout += data.toString()
@@ -43,15 +59,23 @@ export function execCodex(options: CodexOptions): Promise<CodexResult> {
     })
 
     proc.on('close', (code) => {
-      if (code !== 0) {
-        reject(new Error(`codex exited with code ${code}: ${stderr}`))
-        return
-      }
-      const { sessionId, lastMessage } = parseJsonlOutput(stdout)
-      resolve({ output: lastMessage, sessionId })
+      finish(() => {
+        if (timedOut) {
+          reject(new Error(`codex timed out after ${timeoutMs}ms`))
+          return
+        }
+        if (code !== 0) {
+          reject(new Error(`codex exited with code ${code}: ${stderr}`))
+          return
+        }
+        const { sessionId, lastMessage } = parseJsonlOutput(stdout)
+        resolve({ output: lastMessage, sessionId })
+      })
     })
 
-    proc.on('error', reject)
+    proc.on('error', (error) => {
+      finish(() => reject(error))
+    })
   })
 }
 

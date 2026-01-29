@@ -360,7 +360,8 @@ body::before {
 
 @media (prefers-reduced-motion: reduce) {
   .container,
-  .message {
+  .message,
+  .status-dot[data-state="running"] {
     animation: none;
   }
 }

@@ -3,6 +3,7 @@ import {
   mkdir,
   readdir,
   readFile,
+  rename,
   unlink,
   writeFile,
 } from 'node:fs/promises'
@@ -73,6 +74,9 @@ export class Protocol {
   private get taskResultsDir() {
     return join(this.stateDir, 'task_results')
   }
+  private get inflightTasksDir() {
+    return join(this.stateDir, 'inflight_tasks')
+  }
   private get tasksLogPath() {
     return join(this.stateDir, 'tasks.md')
   }
@@ -84,6 +88,7 @@ export class Protocol {
     await mkdir(this.stateDir, { recursive: true })
     await mkdir(this.taskResultsDir, { recursive: true })
     await mkdir(this.pendingTasksDir, { recursive: true })
+    await mkdir(this.inflightTasksDir, { recursive: true })
   }
 
   // Agent State
@@ -129,7 +134,7 @@ export class Protocol {
     await writeFile(path, JSON.stringify(task, null, 2))
   }
 
-  async clearPendingTasks(): Promise<PendingTask[]> {
+  async claimPendingTasks(): Promise<PendingTask[]> {
     let files: string[]
     try {
       files = await readdir(this.pendingTasksDir)
@@ -139,11 +144,12 @@ export class Protocol {
     const tasks: PendingTask[] = []
     for (const file of files) {
       if (!file.endsWith('.json')) continue
-      const path = join(this.pendingTasksDir, file)
+      const fromPath = join(this.pendingTasksDir, file)
+      const inflightPath = join(this.inflightTasksDir, file)
       try {
-        const data = await readFile(path, 'utf-8')
+        await rename(fromPath, inflightPath)
+        const data = await readFile(inflightPath, 'utf-8')
         tasks.push(JSON.parse(data) as PendingTask)
-        await unlink(path)
       } catch {
         // ignore corrupted files
       }
@@ -152,6 +158,49 @@ export class Protocol {
       (a, b) =>
         new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
     )
+  }
+
+  async returnPendingTask(task: PendingTask): Promise<void> {
+    const inflightPath = join(this.inflightTasksDir, `${task.id}.json`)
+    const pendingPath = join(this.pendingTasksDir, `${task.id}.json`)
+    try {
+      await rename(inflightPath, pendingPath)
+    } catch {
+      await writeFile(pendingPath, JSON.stringify(task, null, 2))
+      try {
+        await unlink(inflightPath)
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  async clearInflightTask(taskId: string): Promise<void> {
+    const inflightPath = join(this.inflightTasksDir, `${taskId}.json`)
+    try {
+      await unlink(inflightPath)
+    } catch {
+      // ignore
+    }
+  }
+
+  async restoreInflightTasks(): Promise<void> {
+    let files: string[]
+    try {
+      files = await readdir(this.inflightTasksDir)
+    } catch {
+      return
+    }
+    for (const file of files) {
+      if (!file.endsWith('.json')) continue
+      const inflightPath = join(this.inflightTasksDir, file)
+      const pendingPath = join(this.pendingTasksDir, file)
+      try {
+        await rename(inflightPath, pendingPath)
+      } catch {
+        // ignore
+      }
+    }
   }
 
   // Task Results

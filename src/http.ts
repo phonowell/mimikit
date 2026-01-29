@@ -4,7 +4,7 @@ import {
   type IncomingMessage,
   type ServerResponse,
 } from 'node:http'
-import { extname, join } from 'node:path'
+import { extname, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import type { Supervisor } from './supervisor.js'
@@ -105,10 +105,12 @@ async function serveStatic(
   filePath: string,
 ): Promise<void> {
   const webDir = join(__dirname, 'webui')
-  const fullPath = join(webDir, filePath)
+  const safePath = filePath.replace(/^\/+/, '')
+  const fullPath = resolve(webDir, safePath)
+  const rel = relative(webDir, fullPath)
 
   // Security: ensure path is within webui directory
-  if (!fullPath.startsWith(webDir)) {
+  if (rel.startsWith('..') || rel.startsWith(sep)) {
     res.writeHead(403)
     res.end('Forbidden')
     return

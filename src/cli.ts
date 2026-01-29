@@ -15,18 +15,28 @@ const { values } = parseArgs({
   },
 })
 
-const port = values.port ?? '8787'
-const stateDir = values['state-dir'] ?? '.mimikit'
-const workDir = values['work-dir'] ?? '.'
-const checkInterval = values['check-interval'] ?? '1'
-const selfAwakeInterval = values['self-awake-interval'] ?? '900'
+const portValue = values.port
+const stateDir = values['state-dir']
+const workDir = values['work-dir']
+const checkIntervalValue = values['check-interval']
+const selfAwakeIntervalValue = values['self-awake-interval']
+
+const port = parsePort(portValue)
+const checkIntervalMs = parsePositiveNumber(
+  checkIntervalValue,
+  'check-interval',
+) * 1000
+const selfAwakeIntervalMs = parsePositiveNumber(
+  selfAwakeIntervalValue,
+  'self-awake-interval',
+) * 1000
 
 const config = {
   stateDir: resolve(stateDir),
   workDir: resolve(workDir),
   model: values.model,
-  checkIntervalMs: parseInt(checkInterval, 10) * 1000,
-  selfAwakeIntervalMs: parseInt(selfAwakeInterval, 10) * 1000,
+  checkIntervalMs,
+  selfAwakeIntervalMs,
 }
 
 console.log('[cli] config:', config)
@@ -47,3 +57,21 @@ process.on('SIGTERM', () => {
   supervisor.stop()
   process.exit(0)
 })
+
+function parsePort(value: string): string {
+  const num = Number(value)
+  if (!Number.isInteger(num) || num <= 0 || num > 65535) {
+    console.error(`[cli] invalid port: ${value}`)
+    process.exit(1)
+  }
+  return String(num)
+}
+
+function parsePositiveNumber(value: string, name: string): number {
+  const num = Number(value)
+  if (!Number.isFinite(num) || num <= 0) {
+    console.error(`[cli] invalid ${name}: ${value}`)
+    process.exit(1)
+  }
+  return num
+}

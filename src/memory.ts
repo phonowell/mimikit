@@ -41,6 +41,7 @@ export async function searchMemory(
     '-F',
     '--max-count',
     String(maxHits),
+    '--',
     normalized,
     ...paths,
   ]
@@ -91,11 +92,15 @@ function runRg(args: string[], cwd: string): Promise<string[]> {
 function parseHits(lines: string[]): MemoryHit[] {
   const hits: MemoryHit[] = []
   for (const line of lines) {
-    const match = line.match(/^(.*?):(\d+):(.*)$/)
-    if (!match) continue
-    const [, path, lineNum, text] = match
-    if (!path || !lineNum) continue
-    hits.push({ path, line: parseInt(lineNum, 10), text: text ?? '' })
+    const lastColon = line.lastIndexOf(':')
+    if (lastColon <= 0) continue
+    const secondLast = line.lastIndexOf(':', lastColon - 1)
+    if (secondLast <= 0) continue
+    const path = line.slice(0, secondLast)
+    const lineNum = line.slice(secondLast + 1, lastColon)
+    const text = line.slice(lastColon + 1)
+    if (!/^\d+$/.test(lineNum)) continue
+    hits.push({ path, line: parseInt(lineNum, 10), text })
   }
   return hits
 }

@@ -87,6 +87,8 @@ export class Supervisor {
       await this.protocol.appendTaskLog('supervisor:recover agent was running')
     }
 
+    await this.protocol.restoreInflightTasks()
+
     // Pending tasks in pending_tasks/ dir are automatically picked up
     // Task results in task_results/ are automatically picked up
     // No additional recovery needed for file-based protocol
@@ -147,15 +149,14 @@ export class Supervisor {
   }
 
   private async processPendingTasks(): Promise<void> {
-    // Atomically drain: clearPendingTasks returns and removes all pending tasks
-    const pending = await this.protocol.clearPendingTasks()
+    // Atomically claim: move pending tasks to inflight
+    const pending = await this.protocol.claimPendingTasks()
     if (pending.length === 0) return
 
     for (const task of pending) {
       // Respect concurrency limit
       if (this.activeTasks.size >= this.config.maxConcurrentTasks) {
-        // Re-add to pending for next cycle
-        await this.protocol.addPendingTask(task)
+        await this.protocol.returnPendingTask(task)
         continue
       }
 
@@ -167,6 +168,7 @@ export class Supervisor {
           await runTask(this.taskConfig, this.protocol, task)
         } finally {
           this.activeTasks.delete(task.id)
+          await this.protocol.clearInflightTask(task.id)
         }
       })()
     }
