@@ -7,7 +7,7 @@ export type SupervisorConfig = {
   workDir: string
   model?: string | undefined
   checkIntervalMs?: number | undefined // default 1s
-  selfAwakeIntervalMs?: number | undefined // default 15min
+  selfAwakeIntervalMs?: number | undefined // default 5min
   taskTimeout?: number | undefined // default 10min
   maxConcurrentTasks?: number | undefined // default 3
 }
@@ -33,7 +33,7 @@ export class Supervisor {
 
   constructor(config: SupervisorConfig) {
     const checkIntervalMs = config.checkIntervalMs ?? 1_000
-    const selfAwakeIntervalMs = config.selfAwakeIntervalMs ?? 15 * 60_000
+    const selfAwakeIntervalMs = config.selfAwakeIntervalMs ?? 5 * 60_000
     const taskTimeout = config.taskTimeout ?? 10 * 60_000
     const maxConcurrentTasks = config.maxConcurrentTasks ?? 3
 

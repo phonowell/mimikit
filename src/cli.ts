@@ -11,7 +11,7 @@ const { values } = parseArgs({
     'work-dir': { type: 'string', default: '.' },
     model: { type: 'string' },
     'check-interval': { type: 'string', default: '1' },
-    'self-awake-interval': { type: 'string', default: '900' },
+    'self-awake-interval': { type: 'string', default: '300' },
   },
 })
 
