@@ -390,7 +390,7 @@ const buildPrompt = (
   parts.push(CORE_PROMPT)
 
   // Task delegation section for first awake (not resume)
-  parts.push(TASK_DELEGATION_SECTION)
+  parts.push(TASK_DELEGATION_SECTION(stateDir))
 
   // Memory section only if we have memory hits
   if (context.memoryHits) parts.push(MEMORY_SECTION)

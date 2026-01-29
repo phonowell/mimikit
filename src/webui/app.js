@@ -12,6 +12,22 @@ const messages = createMessagesController({
   sendBtn: elements.sendBtn,
 })
 
+function syncTitleWithStatus() {
+  if (!elements.statusText) return
+  const text = elements.statusText.textContent?.trim()
+  document.title = text && text.length > 0 ? text : 'status'
+}
+
+syncTitleWithStatus()
+if (elements.statusText) {
+  const observer = new MutationObserver(syncTitleWithStatus)
+  observer.observe(elements.statusText, {
+    childList: true,
+    characterData: true,
+    subtree: true,
+  })
+}
+
 bindComposer({ form: elements.form, input: elements.input, messages })
 bindRestart({
   restartBtn: elements.restartBtn,

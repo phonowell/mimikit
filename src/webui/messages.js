@@ -68,7 +68,6 @@ export function createMessagesController({
     const parts = [status.agentStatus]
     if (status.activeTasks > 0) parts.push(`${status.activeTasks} tasks`)
     if (status.pendingTasks > 0) parts.push(`${status.pendingTasks} pending`)
-    if (status.pendingInputs > 0) parts.push(`${status.pendingInputs} inputs`)
     statusText.textContent = parts.join(' · ')
   }
 

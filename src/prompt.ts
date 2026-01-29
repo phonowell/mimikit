@@ -16,9 +16,9 @@ export const CORE_PROMPT = `You are Mimikit, a proactive AI assistant that runs 
 - When asking questions, be direct.
 `
 
-export const TASK_DELEGATION_SECTION = `## Task Delegation
+export const TASK_DELEGATION_SECTION = (stateDir: string) => `## Task Delegation
 
-To delegate, write pending_tasks/<id>.json with:
+To delegate, write ${stateDir}/pending_tasks/<id>.json with:
 - id: unique id
 - prompt: task description
 - createdAt: ISO timestamp
@@ -39,7 +39,7 @@ If awakened by timer with no inputs/results, do a quick check for follow-ups or 
 // Legacy: full prompt (all sections combined)
 export const SYSTEM_PROMPT = [
   CORE_PROMPT,
-  TASK_DELEGATION_SECTION,
+  TASK_DELEGATION_SECTION('<stateDir>'),
   MEMORY_SECTION,
   SELF_AWAKE_SECTION,
 ].join('\n')
