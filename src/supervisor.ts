@@ -1,5 +1,5 @@
 import { type AgentConfig, runAgent } from './agent.js'
-import { Protocol } from './protocol.js'
+import { type PendingTask, Protocol, type TaskResult } from './protocol.js'
 import { runTask, type TaskConfig } from './task.js'
 
 export type SupervisorConfig = {
@@ -20,6 +20,44 @@ type ResolvedConfig = {
   selfAwakeIntervalMs: number
   taskTimeout: number
   maxConcurrentTasks: number
+}
+
+export type TaskView = {
+  id: string
+  status: 'pending' | 'running' | 'done' | 'failed'
+  title: string
+  createdAt?: string
+  completedAt?: string
+}
+
+type TaskCounts = {
+  pending: number
+  running: number
+  done: number
+  failed: number
+}
+
+function makeTaskTitle(input: {
+  id: string
+  prompt?: string
+  result?: string
+  error?: string
+}): string {
+  const raw =
+    input.prompt ??
+    input.result ??
+    (input.error ? `Error: ${input.error}` : '')
+  const line = raw.split('\n').find((item) => item.trim())?.trim() ?? ''
+  if (!line) return input.id
+  if (line.length <= 120) return line
+  return `${line.slice(0, 117)}...`
+}
+
+function taskTime(task: TaskView): number {
+  const iso = task.completedAt ?? task.createdAt
+  if (!iso) return 0
+  const ms = new Date(iso).getTime()
+  return Number.isFinite(ms) ? ms : 0
 }
 
 export class Supervisor {
@@ -214,7 +252,63 @@ export class Supervisor {
     }
   }
 
+  async getTasks(limit = 200): Promise<{
+    tasks: TaskView[]
+    counts: TaskCounts
+  }> {
+    const [pending, inflight, results] = await Promise.all([
+      this.protocol.getPendingTasks(),
+      this.protocol.getInflightTasks(),
+      this.protocol.getTaskResults(),
+    ])
+
+    const tasks: TaskView[] = [
+      ...pending.map((task) => taskToView(task, 'pending')),
+      ...inflight.map((task) => taskToView(task, 'running')),
+      ...results.map((result) => resultToView(result)),
+    ]
+
+    tasks.sort((a, b) => taskTime(b) - taskTime(a))
+
+    const limited = tasks.slice(0, Math.max(0, limit))
+    const counts = countTasks(limited)
+    return { tasks: limited, counts }
+  }
+
   getChatHistory(limit = 50) {
     return this.protocol.getChatHistory(limit)
   }
+}
+
+function taskToView(
+  task: PendingTask,
+  status: 'pending' | 'running',
+): TaskView {
+  return {
+    id: task.id,
+    status,
+    title: makeTaskTitle({ id: task.id, prompt: task.prompt }),
+    createdAt: task.createdAt,
+  }
+}
+
+function resultToView(result: TaskResult): TaskView {
+  return {
+    id: result.id,
+    status: result.status,
+    title: makeTaskTitle({
+      id: result.id,
+      prompt: result.prompt,
+      result: result.result,
+      error: result.error,
+    }),
+    createdAt: result.createdAt,
+    completedAt: result.completedAt,
+  }
+}
+
+function countTasks(tasks: TaskView[]): TaskCounts {
+  const counts: TaskCounts = { pending: 0, running: 0, done: 0, failed: 0 }
+  for (const task of tasks) counts[task.status]++
+  return counts
 }

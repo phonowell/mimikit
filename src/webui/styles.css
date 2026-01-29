@@ -41,6 +41,10 @@ body {
   background-attachment: fixed;
 }
 
+body.modal-open {
+  overflow: hidden;
+}
+
 body::before {
   content: "";
   position: fixed;
@@ -303,6 +307,36 @@ body::before {
   box-shadow: var(--shadow-sm);
 }
 
+.tasks-btn {
+  background: linear-gradient(
+      160deg,
+      rgba(255, 255, 255, 0.7),
+      rgba(255, 255, 255, 0.25)
+    );
+  border: 1px solid var(--glass-border-soft);
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: color 0.2s ease, border-color 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.tasks-btn:hover {
+  color: var(--accent-strong);
+  border-color: rgba(47, 128, 255, 0.45);
+}
+
+.tasks-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
 .restart-btn:hover {
   color: var(--warning);
   border-color: rgba(245, 158, 11, 0.45);
@@ -312,6 +346,165 @@ body::before {
   opacity: 0.4;
   cursor: not-allowed;
   box-shadow: none;
+}
+
+.modal[hidden] {
+  display: none;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(11, 18, 32, 0.35);
+  backdrop-filter: blur(6px);
+}
+
+.modal-card {
+  position: relative;
+  width: min(760px, 92vw);
+  max-height: 80vh;
+  background: linear-gradient(
+      150deg,
+      rgba(255, 255, 255, 0.75),
+      rgba(255, 255, 255, 0.32)
+    );
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  animation: fadeIn 0.2s ease both;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--glass-border-soft);
+}
+
+.modal-title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.modal-close {
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid var(--glass-border-soft);
+  border-radius: 10px;
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--muted);
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.modal-close:hover {
+  color: var(--accent-strong);
+  border-color: rgba(47, 128, 255, 0.45);
+}
+
+.modal-body {
+  padding: 18px 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.tasks-meta {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.tasks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tasks-empty {
+  text-align: center;
+  padding: 18px 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.task-item {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.task-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.task-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.task-status {
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.task-item[data-status="pending"] .task-status {
+  color: var(--warning);
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.12);
+}
+
+.task-item[data-status="running"] .task-status {
+  color: var(--accent);
+  border-color: rgba(47, 128, 255, 0.35);
+  background: rgba(47, 128, 255, 0.12);
+}
+
+.task-item[data-status="done"] .task-status {
+  color: var(--success);
+  border-color: rgba(34, 197, 94, 0.35);
+  background: rgba(34, 197, 94, 0.12);
+}
+
+.task-item[data-status="failed"] .task-status {
+  color: var(--danger);
+  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.12);
 }
 
 @keyframes rise {
@@ -355,6 +548,14 @@ body::before {
 
   .send-btn {
     width: 100%;
+  }
+
+  .status {
+    gap: 8px;
+  }
+
+  .tasks-btn {
+    padding: 6px 8px;
   }
 }
 

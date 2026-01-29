@@ -13,6 +13,7 @@
       <div class="status" data-status>
         <span class="status-dot" data-status-dot></span>
         <span class="status-text" data-status-text>Loading...</span>
+        <button class="tasks-btn" data-tasks-btn>Tasks</button>
         <button class="restart-btn" data-restart title="Restart server">&#x21bb;</button>
       </div>
     </header>
@@ -35,6 +36,20 @@
         <button type="submit" class="send-btn" data-send>Send</button>
       </form>
     </footer>
+  </div>
+
+  <div class="modal" data-tasks-modal hidden>
+    <div class="modal-backdrop" data-tasks-close></div>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-label="Tasks">
+      <div class="modal-header">
+        <div class="modal-title">Tasks</div>
+        <button class="modal-close" data-tasks-close>Close</button>
+      </div>
+      <div class="modal-body">
+        <div class="tasks-meta" data-tasks-meta></div>
+        <div class="tasks-list" data-tasks-list></div>
+      </div>
+    </div>
   </div>
 
   <script src="app.js"></script>

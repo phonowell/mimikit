@@ -7,6 +7,11 @@ const form = $('[data-form]')
 const input = $('[data-input]')
 const sendBtn = $('[data-send]')
 const restartBtn = $('[data-restart]')
+const tasksBtn = $('[data-tasks-btn]')
+const tasksModal = $('[data-tasks-modal]')
+const tasksList = $('[data-tasks-list]')
+const tasksMeta = $('[data-tasks-meta]')
+const tasksCloseEls = document.querySelectorAll('[data-tasks-close]')
 
 let pollTimer = null
 let lastMessageCount = 0
@@ -51,6 +56,14 @@ function renderMessage(msg) {
 function formatTime(iso) {
   try {
     return new Date(iso).toLocaleTimeString()
+  } catch {
+    return ''
+  }
+}
+
+function formatDateTime(iso) {
+  try {
+    return new Date(iso).toLocaleString()
   } catch {
     return ''
   }
@@ -166,4 +179,108 @@ restartBtn.addEventListener('click', async () => {
   }
   if (pollTimer) clearTimeout(pollTimer)
   waitForServer()
+})
+
+async function loadTasks() {
+  if (!tasksList || !tasksMeta) return
+  tasksMeta.textContent = 'Loading...'
+  tasksList.innerHTML = ''
+  try {
+    const res = await fetch('/api/tasks?limit=200')
+    if (!res.ok) throw new Error('Failed to load tasks')
+    const data = await res.json()
+    renderTasks(data)
+  } catch (error) {
+    tasksMeta.textContent = 'Failed to load tasks'
+    const empty = document.createElement('div')
+    empty.className = 'tasks-empty'
+    const message = error instanceof Error ? error.message : String(error)
+    empty.textContent = message
+    tasksList.appendChild(empty)
+  }
+}
+
+function renderTasks(data) {
+  if (!tasksList || !tasksMeta) return
+  const tasks = data?.tasks || []
+  const counts = data?.counts || {}
+  const parts = [`${tasks.length} tasks`]
+  if (counts.pending) parts.push(`${counts.pending} pending`)
+  if (counts.running) parts.push(`${counts.running} running`)
+  if (counts.done) parts.push(`${counts.done} done`)
+  if (counts.failed) parts.push(`${counts.failed} failed`)
+  tasksMeta.textContent = parts.join(' · ')
+  tasksList.innerHTML = ''
+
+  if (tasks.length === 0) {
+    const empty = document.createElement('div')
+    empty.className = 'tasks-empty'
+    empty.textContent = 'No tasks'
+    tasksList.appendChild(empty)
+    return
+  }
+
+  for (const task of tasks) {
+    const item = document.createElement('div')
+    item.className = 'task-item'
+    item.dataset.status = task.status || 'pending'
+
+    const title = document.createElement('div')
+    title.className = 'task-title'
+    title.textContent = task.title || task.id
+
+    const meta = document.createElement('div')
+    meta.className = 'task-meta'
+
+    const status = document.createElement('span')
+    status.className = 'task-status'
+    status.textContent = task.status || 'pending'
+    meta.appendChild(status)
+
+    const time = task.completedAt || task.createdAt
+    if (time) {
+      const timeEl = document.createElement('span')
+      timeEl.textContent = formatDateTime(time)
+      meta.appendChild(timeEl)
+    }
+
+    const id = document.createElement('span')
+    id.textContent = `id:${task.id}`
+    meta.appendChild(id)
+
+    item.appendChild(title)
+    item.appendChild(meta)
+    tasksList.appendChild(item)
+  }
+}
+
+function openTasksModal() {
+  if (!tasksModal) return
+  tasksModal.hidden = false
+  document.body.classList.add('modal-open')
+  loadTasks()
+}
+
+function closeTasksModal() {
+  if (!tasksModal) return
+  tasksModal.hidden = true
+  document.body.classList.remove('modal-open')
+}
+
+if (tasksBtn) {
+  tasksBtn.addEventListener('click', () => {
+    openTasksModal()
+  })
+}
+
+for (const el of tasksCloseEls) {
+  el.addEventListener('click', () => {
+    closeTasksModal()
+  })
+}
+
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape') return
+  if (!tasksModal || tasksModal.hidden) return
+  closeTasksModal()
 })
