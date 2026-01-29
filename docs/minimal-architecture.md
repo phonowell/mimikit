@@ -51,6 +51,18 @@ src/
 4. 结果写入 task_results/{id}.json
 5. 下次 Agent 唤醒时读取结果
 
+### 委派协议（主 Agent 输出）
+- 需要委派时，主 Agent 在回复末尾输出（代码块标记为 delegations）：
+````markdown
+```delegations
+[
+  { "prompt": "task description" }
+]
+```
+````
+- Host 解析该块并写入 pending_tasks/；每轮最多 3 条
+- 若不委派，需给出简短理由（在正常回复中）
+
 ## 文件协议
 ```
 .mimikit/

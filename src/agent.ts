@@ -10,6 +10,7 @@ import {
 } from './prompt.js'
 import {
   type ChatMessage,
+  type PendingTask,
   type Protocol,
   type TaskResult,
   type UserInput,
@@ -93,11 +94,22 @@ export const runAgent = async (
       timeout: config.timeout ?? 10 * 60 * 1000,
     })
 
-    if (result.output.trim()) {
+    const { cleanedOutput, delegations } = extractDelegations(result.output)
+    let enqueued = 0
+    try {
+      enqueued = await enqueueDelegations(protocol, delegations)
+      if (enqueued > 0)
+        await protocol.appendTaskLog(`agent:delegate count=${enqueued}`)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      await protocol.appendTaskLog(`agent:delegate failed error=${message}`)
+    }
+
+    if (cleanedOutput.trim()) {
       await protocol.addChatMessage({
         id: shortId(),
         role: 'agent',
-        text: result.output.trim(),
+        text: cleanedOutput.trim(),
         createdAt: new Date().toISOString(),
       })
     }
@@ -140,6 +152,8 @@ const MAX_TASK_RESULTS = 2
 const MAX_TASK_RESULT_CHARS = 400
 const MAX_KEYWORDS = 6
 const HISTORY_FETCH_LIMIT = MAX_HISTORY_MESSAGES * 2
+const MAX_DELEGATIONS = 3
+const MAX_DELEGATION_PROMPT_CHARS = 1200
 
 const truncate = (text: string, maxChars: number): string => {
   if (text.length <= maxChars) return text
@@ -496,4 +510,74 @@ const buildResumePrompt = (context: AgentContext): string => {
     parts.push('(No new inputs or task results)')
 
   return parts.join('\n')
+}
+
+type DelegationSpec = {
+  prompt?: unknown
+}
+
+const DELEGATION_BLOCK_PATTERN = /```delegations\s*([\s\S]*?)```/i
+
+const extractDelegations = (
+  output: string,
+): {
+  cleanedOutput: string
+  delegations: DelegationSpec[]
+} => {
+  const match = output.match(DELEGATION_BLOCK_PATTERN)
+  if (match?.index === undefined)
+    return { cleanedOutput: output, delegations: [] }
+
+  const jsonText = match[1]?.trim() ?? ''
+  if (!jsonText) return { cleanedOutput: output, delegations: [] }
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(jsonText)
+  } catch {
+    return { cleanedOutput: output, delegations: [] }
+  }
+
+  if (!Array.isArray(parsed)) return { cleanedOutput: output, delegations: [] }
+
+  const before = output.slice(0, match.index)
+  const after = output.slice(match.index + match[0].length)
+  const cleaned = `${before}\n${after}`.trim()
+  return { cleanedOutput: cleaned, delegations: parsed as DelegationSpec[] }
+}
+
+const normalizeDelegationPrompt = (value: unknown): string | null => {
+  if (typeof value !== 'string') return null
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  return truncate(trimmed, MAX_DELEGATION_PROMPT_CHARS)
+}
+
+const enqueueDelegations = async (
+  protocol: Protocol,
+  delegations: DelegationSpec[],
+): Promise<number> => {
+  if (delegations.length === 0) return 0
+  const prompts: string[] = []
+  const seen = new Set<string>()
+
+  for (const item of delegations) {
+    const prompt = normalizeDelegationPrompt(item.prompt)
+    if (!prompt || seen.has(prompt)) continue
+    seen.add(prompt)
+    prompts.push(prompt)
+    if (prompts.length >= MAX_DELEGATIONS) break
+  }
+
+  if (prompts.length === 0) return 0
+
+  const now = new Date().toISOString()
+  const tasks: PendingTask[] = prompts.map((prompt) => ({
+    id: shortId(),
+    prompt,
+    createdAt: now,
+  }))
+
+  for (const task of tasks) await protocol.addPendingTask(task)
+  return tasks.length
 }

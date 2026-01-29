@@ -18,12 +18,22 @@ export const CORE_PROMPT = `You are Mimikit, a proactive AI assistant that runs 
 
 export const TASK_DELEGATION_SECTION = (stateDir: string) => `## Task Delegation
 
-To delegate, write ${stateDir}/pending_tasks/<id>.json with:
-- id: unique id
-- prompt: task description
-- createdAt: ISO timestamp
+Delegate when work is parallelizable, long-running, or can be split. If you choose not to delegate, include a brief reason in your reply (e.g., "No delegation: reason").
 
-Results appear next wake under "Completed Tasks". Delegate only long or parallel work.
+If delegating, append a block at the end of your response:
+\`\`\`delegations
+[
+  { "prompt": "task description" }
+]
+\`\`\`
+
+Rules:
+- Max 3 tasks.
+- Prompts must be self-contained and actionable.
+- Avoid secrets; keep scope narrow.
+
+Mimikit will enqueue these into ${stateDir}/pending_tasks/<id>.json.
+Results appear next wake under "Completed Tasks".
 `
 
 export const MEMORY_SECTION = `## Memory
