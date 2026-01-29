@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mimikit</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>Mimikit</h1>
+      <div class="status" data-status>
+        <span class="status-dot" data-status-dot></span>
+        <span class="status-text" data-status-text>Loading...</span>
+        <button class="restart-btn" data-restart title="Restart server">&#x21bb;</button>
+      </div>
+    </header>
+
+    <main class="main">
+      <div class="messages" data-messages>
+        <div class="empty-state" data-empty>Waiting for activity...</div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <form class="input-form" data-form>
+        <input
+          type="text"
+          class="input"
+          data-input
+          placeholder="Type a message..."
+          autocomplete="off"
+        >
+        <button type="submit" class="send-btn" data-send>Send</button>
+      </form>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

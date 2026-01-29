@@ -1,37 +1,31 @@
-# Mimikit Minimal Coordinator
+# Mimikit
 
 ## 项目概览
-- 7x24 常驻极简协调器：Master 提供 HTTP 调度，Worker 运行 `codex exec`。
-- 记忆 = Markdown + `rg`；保存 codexSessionId 用于 resume。
-- 使用 `tsx` 直跑 TypeScript，无 build。
+- 可自迭代的虚拟助理：Supervisor 常驻 + Agent (codex exec) 智能驱动。
+- 记忆 = Markdown + `rg`；文件协议通信；使用 `tsx` 直跑 TypeScript。
 
 ## 关键规则
-- Master 常驻并提供 HTTP 服务；同一 session 串行执行并锁 transcript。
-- 任务状态写入 `tasks.md`，重启可恢复；`codex exec` 失败/超时必须写 error entry。
-- 默认无 streaming；Worker prompt 必须包含简明输出约束。
+- Supervisor 常驻；Agent 按需唤醒（事件/定时）。
+- 任务日志写入 `tasks.md`，崩溃可恢复。
 - 环境限制：位于中国大陆，禁止使用该地区不可访问或访问缓慢的服务。
 - 任何代码修改必须在新 worktree/分支完成；主分支禁止直接改代码，仅接受其他分支合并；合并前充分验证。
 - 不主动添加测试用例；仅当 debug 需要时才添加最小化测试用例。
 - 元原则：精简冗余 · 冲突信代码。
 - 客观诚实：不主观评价 · 不因用户情绪转移立场 · 不编造事实 · 立刻暴露不确定信息。
 - 类型规范：≥5 处非空断言 → 立即重构类型架构（禁 eslint-disable 批量压制）。
-- 计划管理：≥3 步任务用 `/plans/task_plan_{suffix}.md` 并持续更新。
 
 ## 目录与路径
-- CLI/HTTP/调度：`src/cli.ts` · `src/server/http.ts` · `src/runtime/master.ts`
-- Worker/队列：`src/runtime/worker.ts` · `src/runtime/queue.ts`
-- Session/Memory/Prompt：`src/session/*` · `src/memory/*` · `src/agent/prompt.ts`
+- 入口：`src/cli.ts`
+- 核心：`src/supervisor.ts` · `src/agent.ts` · `src/task.ts`
+- 基础：`src/codex.ts` · `src/protocol.ts` · `src/memory.ts` · `src/prompt.ts`
+- 服务：`src/http.ts` · `src/webui/*`
 
 ## 核心命令
-- `tsx src/cli.ts serve --port 8787`
-- `tsx src/cli.ts task --id <taskId>`
-- `tsx src/cli.ts compact-tasks [--force]`
+- `tsx src/cli.ts` 或 `tsx src/cli.ts --port 8787`
 
-## 计划与文档
-- 实施计划（范围/阶段/验收）：`docs/minimal-implementation-plan.md`
-- 架构说明（流程/存储/配置/Prompt）：`docs/minimal-architecture.md`
-- 目标/决策/风险/运维：`docs/minimal-notes.md`
-- Codex exec 备忘（CLI/Resume）：`docs/codex-exec-reference.md`
+## 文档
+- 架构说明：`docs/minimal-architecture.md`
+- Codex exec 备忘：`docs/codex-exec-reference.md`
 
 ## 编码风格
 - ESM + 严格类型；避免 `any`；文件保持小而清晰；复杂处加简短注释。

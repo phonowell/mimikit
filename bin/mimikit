@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Daemon wrapper: restarts tsx process on exit code 75 (restart request)
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+
+while true; do
+  set +e
+  npx tsx "$SCRIPT_DIR/src/cli.ts" "$@"
+  EXIT_CODE=$?
+  set -e
+
+  if [ "$EXIT_CODE" -eq 75 ]; then
+    echo "[mimikit] restarting..."
+    sleep 1
+    continue
+  fi
+
+  echo "[mimikit] exited with code $EXIT_CODE"
+  exit "$EXIT_CODE"
+done
