@@ -84,7 +84,8 @@ async function poll() {
     statusDot.dataset.state = status.agentStatus
     const parts = [status.agentStatus]
     if (status.activeTasks > 0) parts.push(`${status.activeTasks} tasks`)
-    if (status.pendingInputs > 0) parts.push(`${status.pendingInputs} pending`)
+    if (status.pendingTasks > 0) parts.push(`${status.pendingTasks} pending`)
+    if (status.pendingInputs > 0) parts.push(`${status.pendingInputs} inputs`)
     statusText.textContent = parts.join(' · ')
 
     // Update messages only when count changes
