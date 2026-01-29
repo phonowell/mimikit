@@ -5,8 +5,7 @@
   "type": "module",
   "packageManager": "pnpm@9.12.3",
   "scripts": {
-    "start": "tsx src/cli.ts",
-    "start:daemon": "bin/mimikit",
+    "start": "caffeinate -dimsu bin/mimikit",
     "lint": "eslint \"src/**/*.ts\" --fix",
     "test": "vitest run"
   },
