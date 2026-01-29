@@ -11,24 +11,24 @@
   },
   "scripts": {
     "start": "caffeinate -dimsu bin/mimikit",
-    "fn-to-arrow": "tsx tasks/fn-to-arrow.ts",
+    "fn-to-arrow": "tsx scripts/fn-to-arrow.ts",
     "lint": "eslint \"src/**/*.ts\" --fix",
     "test": "vitest run"
   },
   "devDependencies": {
     "@types/node": "^22.19.7",
-    "@typescript-eslint/eslint-plugin": "^8.53.1",
-    "@typescript-eslint/parser": "^8.53.1",
+    "@typescript-eslint/eslint-plugin": "^8.54.0",
+    "@typescript-eslint/parser": "^8.54.0",
     "eslint": "^9.39.2",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-prettier": "^5.5.5",
     "eslint-plugin-unused-imports": "^4.3.0",
-    "fire-keeper": "^0.0.230",
-    "globals": "^17.0.0",
-    "prettier": "^3.8.0",
+    "fire-keeper": "^0.0.235",
+    "globals": "^17.2.0",
+    "prettier": "^3.8.1",
     "ts-morph": "^23.0.0",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "vitest": "^2.1.8"
+    "vitest": "^2.1.9"
   }
 }

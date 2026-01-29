@@ -17,10 +17,10 @@ export type MemoryConfig = {
 
 const DEFAULT_MEMORY_PATHS = ['memory', 'docs', '.mimikit/memory']
 
-export async function searchMemory(
+export const searchMemory = async (
   config: MemoryConfig,
   query: string,
-): Promise<MemoryHit[]> {
+): Promise<MemoryHit[]> => {
   const normalized = query.replace(/\s+/g, ' ').trim().slice(0, 160)
   if (!normalized) return []
 
@@ -54,10 +54,10 @@ export async function searchMemory(
   }
 }
 
-async function discoverPaths(
+const discoverPaths = async (
   workDir: string,
   candidates: string[],
-): Promise<string[]> {
+): Promise<string[]> => {
   const results: string[] = []
   for (const candidate of candidates) {
     const fullPath = join(workDir, candidate)
@@ -71,8 +71,8 @@ async function discoverPaths(
   return results
 }
 
-function runRg(args: string[], cwd: string): Promise<string[]> {
-  return new Promise((resolve, reject) => {
+const runRg = (args: string[], cwd: string): Promise<string[]> =>
+  new Promise((resolve, reject) => {
     const child = spawn('rg', args, { cwd, stdio: ['ignore', 'pipe', 'pipe'] })
     const lines: string[] = []
 
@@ -87,9 +87,8 @@ function runRg(args: string[], cwd: string): Promise<string[]> {
 
     child.on('error', reject)
   })
-}
 
-function parseHits(lines: string[]): MemoryHit[] {
+const parseHits = (lines: string[]): MemoryHit[] => {
   const hits: MemoryHit[] = []
   for (const line of lines) {
     const match = line.match(/^(.*?):(\d+):(.*)$/)
@@ -101,11 +100,11 @@ function parseHits(lines: string[]): MemoryHit[] {
   return hits
 }
 
-function trimHits(
+const trimHits = (
   hits: MemoryHit[],
   maxHits: number,
   maxChars: number,
-): MemoryHit[] {
+): MemoryHit[] => {
   const results: MemoryHit[] = []
   let totalChars = 0
   for (const hit of hits) {
@@ -118,7 +117,7 @@ function trimHits(
   return results
 }
 
-export function formatMemoryHits(hits: MemoryHit[]): string {
+export const formatMemoryHits = (hits: MemoryHit[]): string => {
   if (hits.length === 0) return ''
   const lines = ['## Relevant Memory']
   for (const hit of hits) lines.push(`- ${hit.path}:${hit.line} ${hit.text}`)

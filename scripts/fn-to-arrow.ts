@@ -97,4 +97,4 @@ const main = async () => {
   } else console.log('无需转换的文件')
 }
 
-export default main
+main()

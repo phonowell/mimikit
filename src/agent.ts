@@ -25,11 +25,11 @@ export type AgentConfig = {
   maxMemoryHits?: number | undefined
 }
 
-export async function runAgent(
+export const runAgent = async (
   config: AgentConfig,
   protocol: Protocol,
   context: Omit<AgentContext, 'chatHistory' | 'memoryHits'>,
-): Promise<void> {
+): Promise<void> => {
   const chatHistory = (await protocol.getChatHistory(20)).map((msg) => msg)
 
   let memoryHits = ''
@@ -122,13 +122,13 @@ const MAX_HISTORY_MESSAGES = 8
 const MAX_TASK_RESULTS = 3
 const MAX_TASK_RESULT_CHARS = 800
 
-function truncate(text: string, maxChars: number): string {
+const truncate = (text: string, maxChars: number): string => {
   if (text.length <= maxChars) return text
   if (maxChars <= 3) return text.slice(0, maxChars)
   return `${text.slice(0, maxChars - 3)}...`
 }
 
-function extractKeywords(inputs: UserInput[]): string[] {
+const extractKeywords = (inputs: UserInput[]): string[] => {
   const text = inputs.map((i) => i.text).join(' ')
   if (!text) return []
   const tokens: string[] = []
@@ -147,7 +147,7 @@ function extractKeywords(inputs: UserInput[]): string[] {
   return result
 }
 
-function shouldIncludeStateDir(inputs: UserInput[]): boolean {
+const shouldIncludeStateDir = (inputs: UserInput[]): boolean => {
   const text = inputs.map((i) => i.text.toLowerCase()).join(' ')
   if (!text) return false
   const keywords = [
@@ -165,11 +165,11 @@ function shouldIncludeStateDir(inputs: UserInput[]): boolean {
   return keywords.some((keyword) => text.includes(keyword))
 }
 
-function filterChatHistory(
+const filterChatHistory = (
   history: ChatMessage[],
   inputs: UserInput[],
   keywords: string[],
-): ChatMessage[] {
+): ChatMessage[] => {
   const inputSet = new Set(inputs.map((i) => `${i.createdAt}|${i.text}`))
   const deduped = history.filter(
     (msg) =>
@@ -188,15 +188,14 @@ function filterChatHistory(
   return filtered.slice(-MAX_HISTORY_MESSAGES)
 }
 
-function sortTaskResults(results: TaskResult[]): TaskResult[] {
-  return results.slice().sort((a, b) => {
+const sortTaskResults = (results: TaskResult[]): TaskResult[] =>
+  results.slice().sort((a, b) => {
     const ta = Date.parse(a.completedAt) || 0
     const tb = Date.parse(b.completedAt) || 0
     return ta - tb
   })
-}
 
-function buildPrompt(stateDir: string, context: AgentContext): string {
+const buildPrompt = (stateDir: string, context: AgentContext): string => {
   const parts: string[] = []
   const hasUserInputs = context.userInputs.length > 0
   const keywords = hasUserInputs ? extractKeywords(context.userInputs) : []

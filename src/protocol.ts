@@ -48,7 +48,7 @@ export type ChatMessage = {
 // Simple file-based mutex: serialize writes per path
 const writeLocks = new Map<string, Promise<void>>()
 
-function withLock<T>(path: string, fn: () => Promise<T>): Promise<T> {
+const withLock = <T>(path: string, fn: () => Promise<T>): Promise<T> => {
   const prev = writeLocks.get(path) ?? Promise.resolve()
   const next = prev.then(fn, fn)
   writeLocks.set(
@@ -63,14 +63,14 @@ function withLock<T>(path: string, fn: () => Promise<T>): Promise<T> {
 
 const MAX_HISTORY_FIELD_CHARS = 2000
 
-function trimField(value?: string): string | undefined {
+const trimField = (value?: string): string | undefined => {
   if (value === undefined) return undefined
   const trimmed = value.trim()
   if (trimmed.length <= MAX_HISTORY_FIELD_CHARS) return trimmed
   return `${trimmed.slice(0, MAX_HISTORY_FIELD_CHARS)}...`
 }
 
-function trimTaskResult(result: TaskResult): TaskResult {
+const trimTaskResult = (result: TaskResult): TaskResult => {
   const trimmed: TaskResult = {
     id: result.id,
     status: result.status,

@@ -29,5 +29,5 @@
     "noEmit": true
   },
   "include": ["src"],
-  "exclude": ["node_modules", "dist", "tasks"]
+  "exclude": ["node_modules", "dist", "scripts"]
 }

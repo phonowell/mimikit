@@ -18,7 +18,7 @@ const MIME_TYPES: Record<string, string> = {
   '.json': 'application/json',
 }
 
-export function createHttpServer(supervisor: Supervisor, port: number) {
+export const createHttpServer = (supervisor: Supervisor, port: number) => {
   const server = createServer(async (req, res) => {
     try {
       await handleRequest(supervisor, req, res)
@@ -35,11 +35,11 @@ export function createHttpServer(supervisor: Supervisor, port: number) {
   return server
 }
 
-async function handleRequest(
+const handleRequest = async (
   supervisor: Supervisor,
   req: IncomingMessage,
   res: ServerResponse,
-): Promise<void> {
+): Promise<void> => {
   const url = new URL(req.url ?? '/', `http://${req.headers.host}`)
   const path = url.pathname
 
@@ -102,15 +102,15 @@ async function handleRequest(
   respond(res, 404, { error: 'not found' })
 }
 
-function respond(res: ServerResponse, status: number, data: unknown): void {
+const respond = (res: ServerResponse, status: number, data: unknown): void => {
   res.writeHead(status, { 'Content-Type': 'application/json' })
   res.end(JSON.stringify(data))
 }
 
-async function serveStatic(
+const serveStatic = async (
   res: ServerResponse,
   filePath: string,
-): Promise<void> {
+): Promise<void> => {
   const webDir = join(__dirname, 'webui')
   const safePath = filePath.replace(/^\/+/, '')
   const fullPath = resolve(webDir, safePath)
@@ -137,8 +137,8 @@ async function serveStatic(
 
 const MAX_BODY_BYTES = 64 * 1024
 
-function readBody(req: IncomingMessage): Promise<string> {
-  return new Promise((resolve, reject) => {
+const readBody = (req: IncomingMessage): Promise<string> =>
+  new Promise((resolve, reject) => {
     let body = ''
     let bytes = 0
     req.on('data', (chunk: Buffer) => {
@@ -153,9 +153,8 @@ function readBody(req: IncomingMessage): Promise<string> {
     req.on('end', () => resolve(body))
     req.on('error', reject)
   })
-}
 
-function parseLimit(value: string | null): number {
+const parseLimit = (value: string | null): number => {
   const parsed = value ? Number(value) : NaN
   if (!Number.isFinite(parsed) || parsed <= 0) return 200
   return Math.min(Math.floor(parsed), 500)

@@ -54,7 +54,7 @@ process.on('SIGTERM', () => {
   process.exit(0)
 })
 
-function parsePort(value: string): string {
+const parsePort = (value: string): string => {
   const num = Number(value)
   if (!Number.isInteger(num) || num <= 0 || num > 65535) {
     console.error(`[cli] invalid port: ${value}`)
@@ -63,7 +63,7 @@ function parsePort(value: string): string {
   return String(num)
 }
 
-function parsePositiveNumber(value: string, name: string): number {
+const parsePositiveNumber = (value: string, name: string): number => {
   const num = Number(value)
   if (!Number.isFinite(num) || num <= 0) {
     console.error(`[cli] invalid ${name}: ${value}`)

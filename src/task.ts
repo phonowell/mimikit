@@ -8,11 +8,11 @@ export type TaskConfig = {
   timeout?: number | undefined
 }
 
-export async function runTask(
+export const runTask = async (
   config: TaskConfig,
   protocol: Protocol,
   task: PendingTask,
-): Promise<void> {
+): Promise<void> => {
   await protocol.appendTaskLog(`task:start id=${task.id}`)
 
   try {

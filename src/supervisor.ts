@@ -44,7 +44,7 @@ type TaskTitleInput = {
   error?: string
 }
 
-function makeTaskTitle(input: TaskTitleInput): string {
+const makeTaskTitle = (input: TaskTitleInput): string => {
   const raw =
     input.prompt ?? input.result ?? (input.error ? `Error: ${input.error}` : '')
   const line =
@@ -57,14 +57,14 @@ function makeTaskTitle(input: TaskTitleInput): string {
   return `${line.slice(0, 117)}...`
 }
 
-function buildTitleInput(
+const buildTitleInput = (
   id: string,
   fields: {
     prompt?: string | undefined
     result?: string | undefined
     error?: string | undefined
   },
-): TaskTitleInput {
+): TaskTitleInput => {
   const input: TaskTitleInput = { id }
   if (fields.prompt !== undefined) input.prompt = fields.prompt
   if (fields.result !== undefined) input.result = fields.result
@@ -72,7 +72,7 @@ function buildTitleInput(
   return input
 }
 
-function taskTime(task: TaskView): number {
+const taskTime = (task: TaskView): number => {
   const iso = task.completedAt ?? task.createdAt
   if (!iso) return 0
   const ms = new Date(iso).getTime()
@@ -299,10 +299,10 @@ export class Supervisor {
   }
 }
 
-function taskToView(
+const taskToView = (
   task: PendingTask,
   status: 'pending' | 'running',
-): TaskView {
+): TaskView => {
   const view: TaskView = {
     id: task.id,
     status,
@@ -312,7 +312,7 @@ function taskToView(
   return view
 }
 
-function resultToView(result: TaskResult): TaskView {
+const resultToView = (result: TaskResult): TaskView => {
   const view: TaskView = {
     id: result.id,
     status: result.status,
@@ -329,7 +329,7 @@ function resultToView(result: TaskResult): TaskView {
   return view
 }
 
-function countTasks(tasks: TaskView[]): TaskCounts {
+const countTasks = (tasks: TaskView[]): TaskCounts => {
   const counts: TaskCounts = { pending: 0, running: 0, done: 0, failed: 0 }
   for (const task of tasks) counts[task.status]++
   return counts

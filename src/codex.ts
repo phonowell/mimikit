@@ -13,8 +13,8 @@ export type CodexResult = {
   sessionId?: string | undefined
 }
 
-export function execCodex(options: CodexOptions): Promise<CodexResult> {
-  return new Promise((resolve, reject) => {
+export const execCodex = (options: CodexOptions): Promise<CodexResult> =>
+  new Promise((resolve, reject) => {
     const args: string[] = ['exec']
 
     // Resume existing session or start new
@@ -77,7 +77,6 @@ export function execCodex(options: CodexOptions): Promise<CodexResult> {
       finish(() => reject(error))
     })
   })
-}
 
 type JsonlEvent = {
   type?: string
@@ -86,10 +85,12 @@ type JsonlEvent = {
   [key: string]: unknown
 }
 
-function parseJsonlOutput(output: string): {
+const parseJsonlOutput = (
+  output: string,
+): {
   sessionId: string | undefined
   lastMessage: string
-} {
+} => {
   let sessionId: string | undefined
   let lastMessage = ''
 
