@@ -22,14 +22,10 @@ const checkIntervalValue = values['check-interval']
 const selfAwakeIntervalValue = values['self-awake-interval']
 
 const port = parsePort(portValue)
-const checkIntervalMs = parsePositiveNumber(
-  checkIntervalValue,
-  'check-interval',
-) * 1000
-const selfAwakeIntervalMs = parsePositiveNumber(
-  selfAwakeIntervalValue,
-  'self-awake-interval',
-) * 1000
+const checkIntervalMs =
+  parsePositiveNumber(checkIntervalValue, 'check-interval') * 1000
+const selfAwakeIntervalMs =
+  parsePositiveNumber(selfAwakeIntervalValue, 'self-awake-interval') * 1000
 
 const config = {
   stateDir: resolve(stateDir),

@@ -46,10 +46,12 @@ type TaskTitleInput = {
 
 function makeTaskTitle(input: TaskTitleInput): string {
   const raw =
-    input.prompt ??
-    input.result ??
-    (input.error ? `Error: ${input.error}` : '')
-  const line = raw.split('\n').find((item) => item.trim())?.trim() ?? ''
+    input.prompt ?? input.result ?? (input.error ? `Error: ${input.error}` : '')
+  const line =
+    raw
+      .split('\n')
+      .find((item) => item.trim())
+      ?.trim() ?? ''
   if (!line) return input.id
   if (line.length <= 120) return line
   return `${line.slice(0, 117)}...`
