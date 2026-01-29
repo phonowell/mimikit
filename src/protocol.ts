@@ -131,11 +131,11 @@ export class Protocol {
   }
 
   // Pending Tasks (to be dispatched)
-  async getPendingTasks(): Promise<PendingTask[]> {
+  getPendingTasks(): Promise<PendingTask[]> {
     return this.readTasksFromDir(this.pendingTasksDir)
   }
 
-  async getInflightTasks(): Promise<PendingTask[]> {
+  getInflightTasks(): Promise<PendingTask[]> {
     return this.readTasksFromDir(this.inflightTasksDir)
   }
 
