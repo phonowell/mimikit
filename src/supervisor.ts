@@ -305,8 +305,8 @@ function taskToView(
     id: task.id,
     status,
     title: makeTaskTitle({ id: task.id, prompt: task.prompt }),
+    createdAt: task.createdAt,
   }
-  if (task.createdAt !== undefined) view.createdAt = task.createdAt
   return view
 }
 
