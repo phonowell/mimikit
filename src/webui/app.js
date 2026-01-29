@@ -147,6 +147,13 @@ form.addEventListener('submit', (e) => {
   if (text) sendMessage(text)
 })
 
+input.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+    e.preventDefault()
+    form.requestSubmit()
+  }
+})
+
 // Start
 poll()
 input.focus()
