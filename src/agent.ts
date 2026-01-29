@@ -65,6 +65,8 @@ export async function runAgent(
     `agent:awake reason=${context.isSelfAwake ? 'timer' : 'event'}`,
   )
 
+  const processedInputIds = context.userInputs.map((input) => input.id)
+
   try {
     const result = await execCodex({
       prompt,
@@ -94,7 +96,7 @@ export async function runAgent(
       `agent:sleep sessionId=${result.sessionId ?? 'none'}`,
     )
 
-    await protocol.clearUserInputs()
+    await protocol.removeUserInputs(processedInputIds)
     for (const r of context.taskResults) await protocol.clearTaskResult(r.id)
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
@@ -107,7 +109,7 @@ export async function runAgent(
     await protocol.appendTaskLog(`agent:error ${message}`)
 
     // Clear inputs even on failure to avoid infinite retry loops
-    await protocol.clearUserInputs()
+    await protocol.removeUserInputs(processedInputIds)
     for (const r of context.taskResults) await protocol.clearTaskResult(r.id)
   }
 }

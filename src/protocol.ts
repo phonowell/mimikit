@@ -256,6 +256,17 @@ export class Protocol {
     })
   }
 
+  async removeUserInputs(ids: string[]): Promise<void> {
+    if (ids.length === 0) return
+    await withLock(this.userInputPath, async () => {
+      const inputs = await this.getUserInputs()
+      const idSet = new Set(ids)
+      const remaining = inputs.filter((input) => !idSet.has(input.id))
+      if (remaining.length === inputs.length) return
+      await writeFile(this.userInputPath, JSON.stringify(remaining, null, 2))
+    })
+  }
+
   clearUserInputs(): Promise<UserInput[]> {
     return withLock(this.userInputPath, async () => {
       const inputs = await this.getUserInputs()
