@@ -273,16 +273,16 @@ export class Supervisor {
     tasks: TaskView[]
     counts: TaskCounts
   }> {
-    const [pending, inflight, results] = await Promise.all([
+    const [pending, inflight, history] = await Promise.all([
       this.protocol.getPendingTasks(),
       this.protocol.getInflightTasks(),
-      this.protocol.getTaskResults(),
+      this.protocol.getTaskHistory(),
     ])
 
     const tasks: TaskView[] = [
       ...pending.map((task) => taskToView(task, 'pending')),
       ...inflight.map((task) => taskToView(task, 'running')),
-      ...results.map((result) => resultToView(result)),
+      ...history.map((result) => resultToView(result)),
     ]
 
     tasks.sort((a, b) => taskTime(b) - taskTime(a))

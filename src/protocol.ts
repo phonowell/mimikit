@@ -61,6 +61,24 @@ function withLock<T>(path: string, fn: () => Promise<T>): Promise<T> {
   return next
 }
 
+const MAX_HISTORY_FIELD_CHARS = 2000
+
+function trimField(value?: string): string | undefined {
+  if (value === undefined) return undefined
+  const trimmed = value.trim()
+  if (trimmed.length <= MAX_HISTORY_FIELD_CHARS) return trimmed
+  return `${trimmed.slice(0, MAX_HISTORY_FIELD_CHARS)}...`
+}
+
+function trimTaskResult(result: TaskResult): TaskResult {
+  return {
+    ...result,
+    prompt: trimField(result.prompt),
+    result: trimField(result.result),
+    error: trimField(result.error),
+  }
+}
+
 export class Protocol {
   constructor(private stateDir: string) {}
 
@@ -78,6 +96,9 @@ export class Protocol {
   }
   private get inflightTasksDir() {
     return join(this.stateDir, 'inflight_tasks')
+  }
+  private get taskHistoryPath() {
+    return join(this.stateDir, 'task_history.json')
   }
   private get tasksLogPath() {
     return join(this.stateDir, 'tasks.md')
@@ -217,6 +238,7 @@ export class Protocol {
   async writeTaskResult(result: TaskResult): Promise<void> {
     const path = join(this.taskResultsDir, `${result.id}.json`)
     await writeFile(path, JSON.stringify(result, null, 2))
+    await this.appendTaskHistory(result)
   }
 
   async getTaskResults(): Promise<TaskResult[]> {
@@ -246,6 +268,25 @@ export class Protocol {
     } catch {
       // ignore
     }
+  }
+
+  async getTaskHistory(limit = 200): Promise<TaskResult[]> {
+    try {
+      const data = await readFile(this.taskHistoryPath, 'utf-8')
+      const history = JSON.parse(data) as TaskResult[]
+      return history.slice(-limit)
+    } catch {
+      return []
+    }
+  }
+
+  async appendTaskHistory(result: TaskResult): Promise<void> {
+    await withLock(this.taskHistoryPath, async () => {
+      const history = await this.getTaskHistory(1000)
+      history.push(trimTaskResult(result))
+      const trimmed = history.slice(-1000)
+      await writeFile(this.taskHistoryPath, JSON.stringify(trimmed, null, 2))
+    })
   }
 
   // User Input Queue
