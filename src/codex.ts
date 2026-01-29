@@ -1,5 +1,7 @@
 import { spawn } from 'node:child_process'
 
+import { resolveCodexTargets, type SpawnTarget } from './codex/resolve.js'
+
 export type CodexOptions = {
   prompt: string
   sessionId?: string | undefined
@@ -13,6 +15,46 @@ export type CodexResult = {
   sessionId?: string | undefined
 }
 
+const spawnCandidate = (
+  target: SpawnTarget,
+  args: string[],
+  options: Parameters<typeof spawn>[2],
+): Promise<ReturnType<typeof spawn>> =>
+  new Promise((resolve, reject) => {
+    const proc = spawn(target.command, [...target.args, ...args], options)
+    const onError = (error: NodeJS.ErrnoException) => {
+      proc.off('spawn', onSpawn)
+      reject(error)
+    }
+    const onSpawn = () => {
+      proc.off('error', onError)
+      resolve(proc)
+    }
+    proc.once('error', onError)
+    proc.once('spawn', onSpawn)
+  })
+
+const spawnCodex = async (
+  args: string[],
+  options: Parameters<typeof spawn>[2],
+): Promise<ReturnType<typeof spawn>> => {
+  const targets = resolveCodexTargets()
+  const errors: string[] = []
+
+  for (const target of targets) {
+    try {
+      return await spawnCandidate(target, args, options)
+    } catch (error) {
+      const err = error as NodeJS.ErrnoException
+      const code = err.code ? String(err.code) : 'unknown'
+      errors.push(`${target.label}:${code}`)
+    }
+  }
+
+  const detail = errors.length ? ` Tried: ${errors.join(', ')}` : ''
+  throw new Error(`Unable to spawn codex.${detail}`)
+}
+
 export const execCodex = (options: CodexOptions): Promise<CodexResult> =>
   new Promise((resolve, reject) => {
     const args: string[] = ['exec']
@@ -24,58 +66,69 @@ export const execCodex = (options: CodexOptions): Promise<CodexResult> =>
 
     if (options.model) args.push('--model', options.model)
 
-    args.push('--', options.prompt)
-
-    const proc = spawn('codex', args, {
+    spawnCodex(args, {
       cwd: options.workDir,
-      stdio: ['ignore', 'pipe', 'pipe'],
+      stdio: ['pipe', 'pipe', 'pipe'],
     })
+      .then((proc) => {
+        let stdout = ''
+        let stderr = ''
+        let finished = false
+        let timedOut = false
+        const timeoutMs = Math.max(0, options.timeout)
+        const timeoutId =
+          timeoutMs > 0
+            ? setTimeout(() => {
+                timedOut = true
+                proc.kill()
+              }, timeoutMs)
+            : undefined
 
-    let stdout = ''
-    let stderr = ''
-    let finished = false
-    let timedOut = false
-    const timeoutMs = Math.max(0, options.timeout)
-    const timeoutId =
-      timeoutMs > 0
-        ? setTimeout(() => {
-            timedOut = true
-            proc.kill()
-          }, timeoutMs)
-        : undefined
-
-    const finish = (fn: () => void) => {
-      if (finished) return
-      finished = true
-      if (timeoutId) clearTimeout(timeoutId)
-      fn()
-    }
-
-    proc.stdout.on('data', (data) => {
-      stdout += data.toString()
-    })
-    proc.stderr.on('data', (data) => {
-      stderr += data.toString()
-    })
-
-    proc.on('close', (code) => {
-      finish(() => {
-        if (timedOut) {
-          reject(new Error(`codex timed out after ${timeoutMs}ms`))
-          return
+        const finish = (fn: () => void) => {
+          if (finished) return
+          finished = true
+          if (timeoutId) clearTimeout(timeoutId)
+          fn()
         }
-        if (code !== 0) {
-          reject(new Error(`codex exited with code ${code}: ${stderr}`))
-          return
+
+        if (proc.stdout) {
+          proc.stdout.on('data', (data) => {
+            stdout += data.toString()
+          })
         }
-        const { sessionId, lastMessage } = parseJsonlOutput(stdout)
-        resolve({ output: lastMessage, sessionId })
+        if (proc.stderr) {
+          proc.stderr.on('data', (data) => {
+            stderr += data.toString()
+          })
+        }
+
+        if (proc.stdin) {
+          proc.stdin.write(options.prompt)
+          proc.stdin.end()
+        }
+
+        proc.on('close', (code) => {
+          finish(() => {
+            if (timedOut) {
+              reject(new Error(`codex timed out after ${timeoutMs}ms`))
+              return
+            }
+            if (code !== 0) {
+              reject(new Error(`codex exited with code ${code}: ${stderr}`))
+              return
+            }
+            const { sessionId, lastMessage } = parseJsonlOutput(stdout)
+            resolve({ output: lastMessage, sessionId })
+          })
+        })
+
+        proc.on('error', (error) => {
+          finish(() => reject(error))
+        })
       })
-    })
-
-    proc.on('error', (error) => {
-      finish(() => reject(error))
-    })
+      .catch((error) => {
+        reject(error)
+      })
   })
 
 type JsonlEvent = {
