@@ -37,12 +37,14 @@ type TaskCounts = {
   failed: number
 }
 
-function makeTaskTitle(input: {
+type TaskTitleInput = {
   id: string
   prompt?: string
   result?: string
   error?: string
-}): string {
+}
+
+function makeTaskTitle(input: TaskTitleInput): string {
   const raw =
     input.prompt ??
     input.result ??
@@ -51,6 +53,21 @@ function makeTaskTitle(input: {
   if (!line) return input.id
   if (line.length <= 120) return line
   return `${line.slice(0, 117)}...`
+}
+
+function buildTitleInput(
+  id: string,
+  fields: {
+    prompt?: string | undefined
+    result?: string | undefined
+    error?: string | undefined
+  },
+): TaskTitleInput {
+  const input: TaskTitleInput = { id }
+  if (fields.prompt !== undefined) input.prompt = fields.prompt
+  if (fields.result !== undefined) input.result = fields.result
+  if (fields.error !== undefined) input.error = fields.error
+  return input
 }
 
 function taskTime(task: TaskView): number {
@@ -284,27 +301,30 @@ function taskToView(
   task: PendingTask,
   status: 'pending' | 'running',
 ): TaskView {
-  return {
+  const view: TaskView = {
     id: task.id,
     status,
     title: makeTaskTitle({ id: task.id, prompt: task.prompt }),
-    createdAt: task.createdAt,
   }
+  if (task.createdAt !== undefined) view.createdAt = task.createdAt
+  return view
 }
 
 function resultToView(result: TaskResult): TaskView {
-  return {
+  const view: TaskView = {
     id: result.id,
     status: result.status,
-    title: makeTaskTitle({
-      id: result.id,
-      prompt: result.prompt,
-      result: result.result,
-      error: result.error,
-    }),
-    createdAt: result.createdAt,
+    title: makeTaskTitle(
+      buildTitleInput(result.id, {
+        prompt: result.prompt,
+        result: result.result,
+        error: result.error,
+      }),
+    ),
     completedAt: result.completedAt,
   }
+  if (result.createdAt !== undefined) view.createdAt = result.createdAt
+  return view
 }
 
 function countTasks(tasks: TaskView[]): TaskCounts {
