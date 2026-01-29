@@ -21,6 +21,24 @@ const workDir = values['work-dir']
 const checkIntervalValue = values['check-interval']
 const selfAwakeIntervalValue = values['self-awake-interval']
 
+const parsePort = (value: string): string => {
+  const num = Number(value)
+  if (!Number.isInteger(num) || num <= 0 || num > 65535) {
+    console.error(`[cli] invalid port: ${value}`)
+    process.exit(1)
+  }
+  return String(num)
+}
+
+const parsePositiveNumber = (value: string, name: string): number => {
+  const num = Number(value)
+  if (!Number.isFinite(num) || num <= 0) {
+    console.error(`[cli] invalid ${name}: ${value}`)
+    process.exit(1)
+  }
+  return num
+}
+
 const port = parsePort(portValue)
 const checkIntervalMs =
   parsePositiveNumber(checkIntervalValue, 'check-interval') * 1000
@@ -53,21 +71,3 @@ process.on('SIGTERM', () => {
   supervisor.stop()
   process.exit(0)
 })
-
-const parsePort = (value: string): string => {
-  const num = Number(value)
-  if (!Number.isInteger(num) || num <= 0 || num > 65535) {
-    console.error(`[cli] invalid port: ${value}`)
-    process.exit(1)
-  }
-  return String(num)
-}
-
-const parsePositiveNumber = (value: string, name: string): number => {
-  const num = Number(value)
-  if (!Number.isFinite(num) || num <= 0) {
-    console.error(`[cli] invalid ${name}: ${value}`)
-    process.exit(1)
-  }
-  return num
-}

@@ -1,4 +1,5 @@
 import { type AgentConfig, runAgent } from './agent.js'
+import { shortId } from './id.js'
 import { type PendingTask, Protocol, type TaskResult } from './protocol.js'
 import { runTask, type TaskConfig } from './task.js'
 
@@ -233,7 +234,7 @@ export class Supervisor {
 
   // HTTP interface methods
   async addUserInput(text: string): Promise<string> {
-    const id = crypto.randomUUID()
+    const id = shortId()
     const now = new Date().toISOString()
     await this.protocol.addUserInput({
       id,

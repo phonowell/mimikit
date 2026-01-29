@@ -1,0 +1,75 @@
+:root {
+  color-scheme: light;
+  --bg: #f4f6fb;
+  --panel: #ffffff;
+  --panel-soft: #f7f9fc;
+  --border: #d9e0ea;
+  --text: #1b1f26;
+  --muted: #5c6b7a;
+  --accent: #2a7de1;
+  --accent-soft: #e8f1ff;
+  --success: #3bb273;
+  --warning: #f2b24f;
+  --danger: #e25d5d;
+  --shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+  --radius: 18px;
+  --radius-sm: 12px;
+  --max-width: 920px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: "HarmonyOS Sans", "PingFang SC", "Source Han Sans SC",
+    "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
+  background: linear-gradient(180deg, #eef3fb 0%, #f8fafc 100%);
+  color: var(--text);
+}
+
+button,
+textarea {
+  font: inherit;
+}
+
+button {
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+textarea {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  outline: none;
+  resize: none;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+body.modal-open {
+  overflow: hidden;
+}

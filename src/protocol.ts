@@ -61,7 +61,7 @@ const withLock = <T>(path: string, fn: () => Promise<T>): Promise<T> => {
   return next
 }
 
-const MAX_HISTORY_FIELD_CHARS = 2000
+const MAX_HISTORY_FIELD_CHARS = 1200
 
 const trimField = (value?: string): string | undefined => {
   if (value === undefined) return undefined

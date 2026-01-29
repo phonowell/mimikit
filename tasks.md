@@ -1,0 +1,1 @@
+- 2026-01-29 Split webui app.js into modules (dom/messages/tasks/restart/time).

@@ -1,6 +1,13 @@
 import { execCodex } from './codex.js'
+import { shortId } from './id.js'
 import { formatMemoryHits, type MemoryConfig, searchMemory } from './memory.js'
-import { STATE_DIR_INSTRUCTION, SYSTEM_PROMPT } from './prompt.js'
+import {
+  CORE_PROMPT,
+  MEMORY_SECTION,
+  SELF_AWAKE_SECTION,
+  STATE_DIR_INSTRUCTION,
+  TASK_DELEGATION_SECTION,
+} from './prompt.js'
 import {
   type ChatMessage,
   type Protocol,
@@ -30,18 +37,29 @@ export const runAgent = async (
   protocol: Protocol,
   context: Omit<AgentContext, 'chatHistory' | 'memoryHits'>,
 ): Promise<void> => {
-  const chatHistory = (await protocol.getChatHistory(20)).map((msg) => msg)
+  const state = await protocol.getAgentState()
+  const { sessionId } = state
+  const isResume = !!sessionId
 
+  // Extract keywords early for memory search and history filtering
+  const keywords = extractKeywords(context.userInputs)
+
+  let chatHistory: ChatMessage[] = []
   let memoryHits = ''
-  if (context.userInputs.length > 0) {
-    const query = context.userInputs.map((i) => i.text).join(' ')
-    const memoryConfig: MemoryConfig = {
-      workDir: config.workDir,
-      memoryPaths: config.memoryPaths,
-      maxHits: config.maxMemoryHits ?? 10,
+
+  if (!isResume) {
+    if (context.userInputs.length > 0)
+      chatHistory = await protocol.getChatHistory(HISTORY_FETCH_LIMIT)
+
+    if (context.userInputs.length > 0 && keywords.length > 0) {
+      const memoryConfig: MemoryConfig = {
+        workDir: config.workDir,
+        memoryPaths: config.memoryPaths,
+        maxHits: config.maxMemoryHits ?? 6,
+      }
+      const hits = await searchMemory(memoryConfig, keywords)
+      memoryHits = formatMemoryHits(hits)
     }
-    const hits = await searchMemory(memoryConfig, query)
-    memoryHits = formatMemoryHits(hits)
   }
 
   const fullContext: AgentContext = {
@@ -50,12 +68,9 @@ export const runAgent = async (
     memoryHits,
   }
 
-  const prompt = buildPrompt(config.stateDir, fullContext)
-
-  // User messages already recorded by Supervisor at input time
-
-  const state = await protocol.getAgentState()
-  const { sessionId } = state
+  const prompt = isResume
+    ? buildResumePrompt(fullContext)
+    : buildPrompt(config.stateDir, fullContext, keywords)
 
   await protocol.setAgentState({
     status: 'running',
@@ -80,7 +95,7 @@ export const runAgent = async (
 
     if (result.output.trim()) {
       await protocol.addChatMessage({
-        id: crypto.randomUUID(),
+        id: shortId(),
         role: 'agent',
         text: result.output.trim(),
         createdAt: new Date().toISOString(),
@@ -116,11 +131,15 @@ export const runAgent = async (
   }
 }
 
-const MAX_INPUT_CHARS = 1000
-const MAX_HISTORY_CHARS = 400
-const MAX_HISTORY_MESSAGES = 8
-const MAX_TASK_RESULTS = 3
-const MAX_TASK_RESULT_CHARS = 800
+const MAX_INPUT_CHARS = 800
+const MAX_HISTORY_CHARS = 300
+const MAX_HISTORY_MESSAGES = 4
+const MAX_HISTORY_KEYWORDS = 4
+const HISTORY_FALLBACK_MESSAGES = 2
+const MAX_TASK_RESULTS = 2
+const MAX_TASK_RESULT_CHARS = 400
+const MAX_KEYWORDS = 6
+const HISTORY_FETCH_LIMIT = MAX_HISTORY_MESSAGES * 2
 
 const truncate = (text: string, maxChars: number): string => {
   if (text.length <= maxChars) return text
@@ -128,23 +147,181 @@ const truncate = (text: string, maxChars: number): string => {
   return `${text.slice(0, maxChars - 3)}...`
 }
 
+const LATIN_STOPWORDS = new Set([
+  'a',
+  'an',
+  'the',
+  'and',
+  'or',
+  'of',
+  'to',
+  'in',
+  'for',
+  'on',
+  'with',
+  'at',
+  'by',
+  'from',
+  'up',
+  'out',
+  'about',
+  'into',
+  'over',
+  'after',
+  'before',
+  'between',
+  'among',
+  'is',
+  'are',
+  'was',
+  'were',
+  'be',
+  'been',
+  'being',
+  'have',
+  'has',
+  'had',
+  'do',
+  'does',
+  'did',
+  'can',
+  'could',
+  'should',
+  'would',
+  'may',
+  'might',
+  'will',
+  'shall',
+  'not',
+  'no',
+  'yes',
+  'if',
+  'then',
+  'else',
+  'when',
+  'where',
+  'why',
+  'how',
+  'what',
+  'which',
+  'who',
+  'whom',
+  'whose',
+  'this',
+  'that',
+  'these',
+  'those',
+  'it',
+  'its',
+  'i',
+  'you',
+  'he',
+  'she',
+  'they',
+  'we',
+  'them',
+  'us',
+  'my',
+  'your',
+  'our',
+  'their',
+  'me',
+  'his',
+  'her',
+  'as',
+  'but',
+  'so',
+  'than',
+  'too',
+  'very',
+  'also',
+  'just',
+  'via',
+  'per',
+  'please',
+  'pls',
+  'plz',
+])
+
+const TOKEN_PATTERN = /[a-z0-9_]{2,}|[\u4e00-\u9fff]{2,}/gi
+
+const isLatinToken = (token: string): boolean => /[a-z0-9_]/i.test(token)
+
+type TokenStat = {
+  count: number
+  firstIndex: number
+  length: number
+  kind: 'latin' | 'cjk'
+}
+
 const extractKeywords = (inputs: UserInput[]): string[] => {
   const text = inputs.map((i) => i.text).join(' ')
   if (!text) return []
-  const tokens: string[] = []
-  const latin = text.toLowerCase().match(/[a-z0-9_]{2,}/g) ?? []
-  tokens.push(...latin)
-  const cjk = text.match(/[\u4e00-\u9fff]{2,}/g) ?? []
-  tokens.push(...cjk)
-  const seen = new Set<string>()
-  const result: string[] = []
-  for (const token of tokens) {
-    if (seen.has(token)) continue
-    seen.add(token)
-    result.push(token)
-    if (result.length >= 12) break
+  const stats = new Map<string, TokenStat>()
+  let index = 0
+
+  for (const match of text.matchAll(TOKEN_PATTERN)) {
+    const raw = match[0]
+    const position = index
+    index += 1
+    const latin = isLatinToken(raw)
+    const token = latin ? raw.toLowerCase() : raw
+
+    if (latin) {
+      if (LATIN_STOPWORDS.has(token)) continue
+      if (/^_+$/.test(token)) continue
+      if (/^\d+$/.test(token) && token.length < 4) continue
+    }
+
+    const existing = stats.get(token)
+    if (existing) {
+      existing.count += 1
+      continue
+    }
+
+    stats.set(token, {
+      count: 1,
+      firstIndex: position,
+      length: token.length,
+      kind: latin ? 'latin' : 'cjk',
+    })
   }
-  return result
+
+  if (stats.size === 0) return []
+
+  const scored: Array<{
+    token: string
+    score: number
+    length: number
+    index: number
+  }> = []
+
+  for (const [token, stat] of stats) {
+    if (stat.length <= 2 && stat.count < 2) continue
+
+    let score = stat.count
+    if (stat.kind === 'latin') {
+      if (stat.length >= 6) score += 1
+      if (stat.length >= 10) score += 1
+      if (token.includes('_')) score += 1
+      if (/^\d+$/.test(token)) score -= 1
+    } else score += Math.max(0, stat.length - 2)
+
+    scored.push({
+      token,
+      score,
+      length: stat.length,
+      index: stat.firstIndex,
+    })
+  }
+
+  scored.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score
+    if (b.length !== a.length) return b.length - a.length
+    return a.index - b.index
+  })
+
+  return scored.slice(0, MAX_KEYWORDS).map((item) => item.token)
 }
 
 const shouldIncludeStateDir = (inputs: UserInput[]): boolean => {
@@ -170,21 +347,27 @@ const filterChatHistory = (
   inputs: UserInput[],
   keywords: string[],
 ): ChatMessage[] => {
+  const inputIds = new Set(inputs.map((i) => i.id))
   const inputSet = new Set(inputs.map((i) => `${i.createdAt}|${i.text}`))
-  const deduped = history.filter(
-    (msg) =>
-      !(msg.role === 'user' && inputSet.has(`${msg.createdAt}|${msg.text}`)),
-  )
+  const deduped = history.filter((msg) => {
+    if (msg.role !== 'user') return true
+    if (inputIds.has(msg.id)) return false
+    return !inputSet.has(`${msg.createdAt}|${msg.text}`)
+  })
   if (deduped.length === 0) return []
-  if (keywords.length === 0) return deduped.slice(-6)
+  const historyKeywords = keywords
+    .filter((keyword) => !isLatinToken(keyword) || keyword.length >= 3)
+    .slice(0, MAX_HISTORY_KEYWORDS)
+  if (historyKeywords.length === 0)
+    return deduped.slice(-HISTORY_FALLBACK_MESSAGES)
   const filtered = deduped.filter((msg) => {
     const lower = msg.text.toLowerCase()
-    return keywords.some((keyword) => {
-      if (/[a-z0-9_]/.test(keyword)) return lower.includes(keyword)
+    return historyKeywords.some((keyword) => {
+      if (isLatinToken(keyword)) return lower.includes(keyword)
       return msg.text.includes(keyword)
     })
   })
-  if (filtered.length === 0) return deduped.slice(-6)
+  if (filtered.length === 0) return deduped.slice(-HISTORY_FALLBACK_MESSAGES)
   return filtered.slice(-MAX_HISTORY_MESSAGES)
 }
 
@@ -195,12 +378,26 @@ const sortTaskResults = (results: TaskResult[]): TaskResult[] =>
     return ta - tb
   })
 
-const buildPrompt = (stateDir: string, context: AgentContext): string => {
+const buildPrompt = (
+  stateDir: string,
+  context: AgentContext,
+  keywords: string[],
+): string => {
   const parts: string[] = []
   const hasUserInputs = context.userInputs.length > 0
-  const keywords = hasUserInputs ? extractKeywords(context.userInputs) : []
 
-  parts.push(SYSTEM_PROMPT)
+  // Core prompt always included
+  parts.push(CORE_PROMPT)
+
+  // Task delegation section for first awake (not resume)
+  parts.push(TASK_DELEGATION_SECTION)
+
+  // Memory section only if we have memory hits
+  if (context.memoryHits) parts.push(MEMORY_SECTION)
+
+  // Self-awake section only if self-awake mode
+  if (context.isSelfAwake) parts.push(SELF_AWAKE_SECTION)
+
   if (hasUserInputs && shouldIncludeStateDir(context.userInputs)) {
     parts.push(STATE_DIR_INSTRUCTION(stateDir))
     parts.push('')
@@ -264,6 +461,39 @@ const buildPrompt = (stateDir: string, context: AgentContext): string => {
     )
     parts.push('')
   }
+
+  return parts.join('\n')
+}
+
+const buildResumePrompt = (context: AgentContext): string => {
+  const parts: string[] = []
+  const hasUserInputs = context.userInputs.length > 0
+
+  if (hasUserInputs) {
+    parts.push('## New User Inputs')
+    for (const input of context.userInputs) {
+      parts.push(
+        `[${input.createdAt}] ${truncate(input.text, MAX_INPUT_CHARS)}`,
+      )
+    }
+    parts.push('')
+  }
+
+  if (context.taskResults.length > 0) {
+    parts.push('## Completed Tasks')
+    const recent = sortTaskResults(context.taskResults).slice(-MAX_TASK_RESULTS)
+    for (const result of recent) {
+      parts.push(`### Task ${result.id} (${result.status})`)
+      if (result.result)
+        parts.push(truncate(result.result, MAX_TASK_RESULT_CHARS))
+      if (result.error)
+        parts.push(`Error: ${truncate(result.error, MAX_TASK_RESULT_CHARS)}`)
+      parts.push('')
+    }
+  }
+
+  if (!hasUserInputs && context.taskResults.length === 0)
+    parts.push('(No new inputs or task results)')
 
   return parts.join('\n')
 }

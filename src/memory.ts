@@ -16,16 +16,16 @@ export type MemoryConfig = {
 }
 
 const DEFAULT_MEMORY_PATHS = ['memory', 'docs', '.mimikit/memory']
+const MAX_HIT_TEXT_CHARS = 160
 
 export const searchMemory = async (
   config: MemoryConfig,
-  query: string,
+  keywords: string[],
 ): Promise<MemoryHit[]> => {
-  const normalized = query.replace(/\s+/g, ' ').trim().slice(0, 160)
-  if (!normalized) return []
+  if (keywords.length === 0) return []
 
   const maxHits = config.maxHits ?? 10
-  const maxChars = config.maxChars ?? 4000
+  const maxChars = config.maxChars ?? 1200
   const paths = await discoverPaths(
     config.workDir,
     config.memoryPaths ?? DEFAULT_MEMORY_PATHS,
@@ -38,11 +38,10 @@ export const searchMemory = async (
     '--no-heading',
     '--color',
     'never',
-    '-F',
     '--max-count',
     String(maxHits),
+    ...keywords.flatMap((kw) => ['-e', kw]),
     '--',
-    normalized,
     ...paths,
   ]
 
@@ -100,6 +99,12 @@ const parseHits = (lines: string[]): MemoryHit[] => {
   return hits
 }
 
+const truncateLine = (text: string, maxChars: number): string => {
+  if (text.length <= maxChars) return text
+  if (maxChars <= 3) return text.slice(0, maxChars)
+  return `${text.slice(0, maxChars - 3)}...`
+}
+
 const trimHits = (
   hits: MemoryHit[],
   maxHits: number,
@@ -109,9 +114,10 @@ const trimHits = (
   let totalChars = 0
   for (const hit of hits) {
     if (results.length >= maxHits) break
-    const line = `${hit.path}:${hit.line} ${hit.text}`
+    const trimmedText = truncateLine(hit.text, MAX_HIT_TEXT_CHARS)
+    const line = `${hit.path}:${hit.line} ${trimmedText}`
     if (totalChars + line.length > maxChars) break
-    results.push(hit)
+    results.push({ ...hit, text: trimmedText })
     totalChars += line.length + 1
   }
   return results

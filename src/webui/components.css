@@ -1,0 +1,239 @@
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #c9d3df;
+  box-shadow: 0 0 0 4px rgba(100, 116, 139, 0.08);
+}
+
+.status-dot[data-state='running'] {
+  background: var(--success);
+  box-shadow: 0 0 0 4px rgba(59, 178, 115, 0.2);
+}
+
+.status-dot[data-state='idle'] {
+  background: var(--accent);
+  box-shadow: 0 0 0 4px rgba(42, 125, 225, 0.2);
+}
+
+.status-dot[data-state='paused'] {
+  background: var(--warning);
+  box-shadow: 0 0 0 4px rgba(242, 178, 79, 0.18);
+}
+
+.status-dot[data-state='error'] {
+  background: var(--danger);
+  box-shadow: 0 0 0 4px rgba(226, 93, 93, 0.18);
+}
+
+.tasks-btn,
+.restart-btn {
+  border-radius: 999px;
+  padding: 6px 12px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.restart-btn {
+  padding: 6px 10px;
+  font-size: 16px;
+}
+
+.messages .empty-state {
+  margin: auto;
+  padding: 16px 18px;
+  border-radius: var(--radius-sm);
+  background: #f0f3f8;
+  color: var(--muted);
+  text-align: center;
+}
+
+.message {
+  display: flex;
+}
+
+.message article {
+  max-width: 76%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.05);
+}
+
+.message.user {
+  justify-content: flex-end;
+}
+
+.message.user article {
+  background: #e6f1ff;
+  border-color: transparent;
+  border-bottom-right-radius: 8px;
+}
+
+.message.assistant {
+  justify-content: flex-start;
+}
+
+.message.assistant article {
+  border-bottom-left-radius: 8px;
+}
+
+.message.system {
+  justify-content: center;
+}
+
+.message.system article {
+  background: #f1f3f7;
+  border-color: transparent;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.message .content {
+  white-space: pre-wrap;
+  line-height: 1.45;
+  font-size: 14px;
+}
+
+.message .time {
+  font-size: 11px;
+  color: var(--muted);
+  align-self: flex-end;
+}
+
+.modal {
+  border: none;
+  background: transparent;
+  padding: 0;
+  width: min(600px, 92vw);
+}
+
+.modal::backdrop {
+  background: rgba(15, 23, 42, 0.35);
+  backdrop-filter: blur(4px);
+}
+
+.modal-card {
+  background: var(--panel);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 16px;
+}
+
+.modal-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  position: relative;
+}
+
+.modal-close::before,
+.modal-close::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 12px;
+  height: 2px;
+  background: var(--accent);
+  transform-origin: center;
+}
+
+.modal-close::before {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.modal-close::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+.modal-body {
+  padding: 12px 16px 18px;
+}
+
+.tasks-meta {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.tasks-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.task-item,
+.tasks-empty {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: #ffffff;
+}
+
+.task-title {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.task-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+.task-item[data-status='failed'] {
+  border-color: rgba(226, 93, 93, 0.35);
+  background: #fff6f6;
+}
+
+.task-item[data-status='running'] {
+  border-color: rgba(42, 125, 225, 0.35);
+  background: #f1f6ff;
+}
+
+.task-item[data-status='done'] {
+  border-color: rgba(59, 178, 115, 0.35);
+  background: #f2fbf6;
+}
+
+@media (max-width: 640px) {
+  .message article {
+    max-width: 88%;
+  }
+}

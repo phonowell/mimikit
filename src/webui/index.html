@@ -1,56 +1,85 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mimikit</title>
-  <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-  <div class="container">
-    <header class="header">
-      <h1>Mimikit</h1>
-      <div class="status" data-status>
-        <span class="status-dot" data-status-dot></span>
-        <span class="status-text" data-status-text>Loading...</span>
-        <button class="tasks-btn" data-tasks-btn>Tasks</button>
-        <button class="restart-btn" data-restart title="Restart server">&#x21bb;</button>
-      </div>
-    </header>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mimikit</title>
+    <link rel="stylesheet" href="base.css" />
+    <link rel="stylesheet" href="layout.css" />
+    <link rel="stylesheet" href="components.css" />
+  </head>
+  <body>
+    <main data-app>
+      <header class="app-header">
+        <section class="app-controls" aria-label="Status and actions">
+          <p class="status-item">
+            <span class="status-dot" data-status-dot></span>
+            <span class="status-text" data-status-text aria-live="polite"
+              >Loading...</span
+            >
+          </p>
+          <menu class="app-actions" aria-label="Actions">
+            <li>
+              <button class="tasks-btn" data-tasks-btn type="button">
+                Tasks
+              </button>
+            </li>
+            <li>
+              <button
+                class="restart-btn"
+                data-restart
+                type="button"
+                title="Restart server"
+                aria-label="Restart server"
+              >
+                &#x21bb;
+              </button>
+            </li>
+          </menu>
+        </section>
+      </header>
 
-    <main class="main">
-      <div class="messages" data-messages>
-        <div class="empty-state" data-empty>Waiting for activity...</div>
-      </div>
+      <section class="messages-section" aria-label="Messages">
+        <h2 class="visually-hidden">Messages</h2>
+        <ul class="messages" data-messages>
+          <li class="empty-state" data-empty>
+            <p>Waiting for activity...</p>
+          </li>
+        </ul>
+      </section>
+
+      <footer class="composer">
+        <form data-form>
+          <label class="visually-hidden" for="message-input">Message</label>
+          <textarea
+            id="message-input"
+            data-input
+            placeholder="Type a message..."
+            rows="1"
+          ></textarea>
+          <button type="submit" data-send>Send</button>
+        </form>
+      </footer>
     </main>
 
-    <footer class="footer">
-      <form class="input-form" data-form>
-        <textarea
-          class="input"
-          data-input
-          placeholder="Type a message..."
-          rows="1"
-        ></textarea>
-        <button type="submit" class="send-btn" data-send>Send</button>
-      </form>
-    </footer>
-  </div>
+    <dialog class="modal" data-tasks-modal aria-labelledby="tasks-title">
+      <article class="modal-card">
+        <header class="modal-header">
+          <h2 class="modal-title" id="tasks-title">Tasks</h2>
+          <button
+            class="modal-close"
+            data-tasks-close
+            type="button"
+            aria-label="Close"
+          ></button>
+        </header>
+        <section class="modal-body">
+          <p class="tasks-meta" data-tasks-meta aria-live="polite"></p>
+          <ul class="tasks-list" data-tasks-list></ul>
+        </section>
+      </article>
+    </dialog>
 
-  <div class="modal" data-tasks-modal hidden>
-    <div class="modal-backdrop" data-tasks-close></div>
-    <div class="modal-card" role="dialog" aria-modal="true" aria-label="Tasks">
-      <div class="modal-header">
-        <div class="modal-title">Tasks</div>
-        <button class="modal-close" data-tasks-close>Close</button>
-      </div>
-      <div class="modal-body">
-        <div class="tasks-meta" data-tasks-meta></div>
-        <div class="tasks-list" data-tasks-list></div>
-      </div>
-    </div>
-  </div>
-
-  <script src="app.js"></script>
-</body>
+    <script type="module" src="app.js"></script>
+  </body>
 </html>
