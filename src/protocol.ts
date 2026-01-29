@@ -71,12 +71,19 @@ function trimField(value?: string): string | undefined {
 }
 
 function trimTaskResult(result: TaskResult): TaskResult {
-  return {
-    ...result,
-    prompt: trimField(result.prompt),
-    result: trimField(result.result),
-    error: trimField(result.error),
+  const trimmed: TaskResult = {
+    id: result.id,
+    status: result.status,
+    completedAt: result.completedAt,
   }
+  if (result.createdAt !== undefined) trimmed.createdAt = result.createdAt
+  const prompt = trimField(result.prompt)
+  if (prompt !== undefined) trimmed.prompt = prompt
+  const output = trimField(result.result)
+  if (output !== undefined) trimmed.result = output
+  const error = trimField(result.error)
+  if (error !== undefined) trimmed.error = error
+  return trimmed
 }
 
 export class Protocol {
