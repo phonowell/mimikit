@@ -1,39 +1,39 @@
-# Mimikit Dev Conventions
+# 开发用 Agent 准则
 
-## Scope
-- For agents developing/modifying project code.
-- Runtime system instructions: CLAUDE.md.
+## 适用范围
+- 仅适用于开发/修改项目代码的 Agent（非运行时唤醒）。
+- 运行时准则见 docs/agent-runtime.md（入口由 CLAUDE.md 路由）。
 
-## Key Rules
-- Plan mgmt: >=3 steps -> /plans/task_plan_{suffix}.md and keep updated.
-- Tests: do not add tests unless debugging; then add minimal tests only.
-- Meta: trim redundancy; trust code on conflicts.
-- Objectivity: no subjective judgments; do not shift stance with user emotion; no fabrication; surface uncertainty immediately.
-- Types: >=5 non-null assertions => refactor type architecture (no eslint-disable bulk suppression).
-- Environment: mainland China; avoid blocked/slow services.
-- Skill use: if request matches a skill, call it; wait for completion before next steps.
+## 关键规则
+- 计划管理：>=3 步任务用 /plans/task_plan_{suffix}.md 并持续更新。
+- 测试：不主动添加测试；仅在 debug 需要时添加最小化测试。
+- 元原则：精简冗余 · 冲突信代码。
+- 客观诚实：不主观评价 · 不因用户情绪转移立场 · 不编造事实 · 立刻暴露不确定信息。
+- 类型规范：>=5 处非空断言 → 立即重构类型架构（禁 eslint-disable 批量压制）。
+- 环境限制：位于中国大陆，避免使用不可访问或访问缓慢的服务。
+- Skill 使用：请求匹配 skill 必须调用；等待 skill 完成后再继续。
 
-## Paths
-- Entry: src/cli.ts
-- Core: src/supervisor.ts, src/agent.ts, src/task.ts
-- Base: src/codex.ts, src/protocol.ts, src/memory.ts, src/prompt.ts
-- Service: src/http.ts, src/webui/*
+## 目录与路径
+- 入口：src/cli.ts
+- 核心：src/supervisor.ts · src/agent.ts · src/task.ts
+- 基础：src/codex.ts · src/protocol.ts · src/memory.ts · src/prompt.ts
+- 服务：src/http.ts · src/webui/*
 
-## Commands
+## 核心命令
 - tsx src/cli.ts
 - tsx src/cli.ts --port 8787
 
-## Docs
+## 文档
 - docs/minimal-architecture.md
 - docs/agent-runtime.md
 - docs/codex-exec-reference.md
 
-## Style
-- ESM + strict types; avoid any.
-- Keep files small and clear; add brief comments only when needed.
+## 编码风格
+- ESM + 严格类型；避免 any。
+- 文件保持小而清晰；复杂处加简短注释。
 
-## Output Format
-- No preambles; status uses ✓/✗/→; zero output between tools; batch edits once.
-- Data first; direct conclusions; no summary repetition; progress {current}/{total}; questions are direct.
-- Error format `✗ {location}:{type}`; code blocks contain no comments; if >=2 items, use a list.
-- Path shorthand: `.` project root, `~` home.
+## 输出格式
+- 禁预告文字；状态用 ✓/✗/→；工具间隔零输出；一次性批量 Edit。
+- 数据优先 · 直达结论 · 禁总结性重复 · 进度 {当前}/{总数} · 提问直入。
+- 错误格式 `✗ {位置}:{类型}`；代码块零注释；>=2 条用列表。
+- 路径缩写：. 项目根 · ~ 主目录。

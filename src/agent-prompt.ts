@@ -11,6 +11,8 @@ export type SelfAwakePromptContext = {
   checkHistory?: Record<string, string>
 }
 
+const RUNTIME_AGENT_DECLARATION = 'You are the Mimikit runtime agent.'
+
 const formatBacklog = (backlog: BacklogItem[]): string => {
   const pending = backlog.filter((item) => !item.done)
   if (pending.length === 0) return 'No pending items.'
@@ -35,7 +37,7 @@ export const buildPrompt = (
   context: AgentContext,
   selfAwakeContext?: SelfAwakePromptContext | null,
 ): string => {
-  const parts: string[] = []
+  const parts: string[] = [RUNTIME_AGENT_DECLARATION]
   const hasUserInputs = context.userInputs.length > 0
 
   if (context.isSelfAwake) appendSelfAwakeContext(parts, selfAwakeContext)
