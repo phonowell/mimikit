@@ -2,6 +2,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
 import { appendAudit, getGitDiffSummary } from './audit.js'
+import { type BacklogItem, readBacklog } from './backlog.js'
 import { execCodex } from './codex.js'
 import {
   commitAll,
@@ -40,6 +41,11 @@ export type AgentContext = {
   isSelfAwake: boolean
 }
 
+type SelfAwakePromptContext = {
+  backlog: BacklogItem[]
+  checkHistory?: Record<string, string>
+}
+
 export type AgentConfig = {
   stateDir: string
   workDir: string
@@ -66,6 +72,15 @@ export const runAgent = async (
   const selfAwake = context.isSelfAwake
     ? await prepareSelfAwakeRun(config)
     : { state: null, allowDelegation: true, active: false }
+
+  let selfAwakePromptContext: SelfAwakePromptContext | null = null
+  if (context.isSelfAwake) {
+    const checkHistory = selfAwake.state?.checkHistory
+    selfAwakePromptContext = {
+      backlog: await readBacklog(config.stateDir),
+      ...(checkHistory ? { checkHistory } : {}),
+    }
+  }
 
   // Extract keywords early for memory search and history filtering
   const keywords = extractKeywords(context.userInputs)
@@ -95,8 +110,13 @@ export const runAgent = async (
   }
 
   const prompt = isResume
-    ? buildResumePrompt(fullContext)
-    : buildPrompt(config.stateDir, fullContext, keywords)
+    ? buildResumePrompt(fullContext, selfAwakePromptContext)
+    : buildPrompt(
+        config.stateDir,
+        fullContext,
+        keywords,
+        selfAwakePromptContext,
+      )
 
   await protocol.setAgentState({
     status: 'running',
@@ -120,6 +140,9 @@ export const runAgent = async (
     })
 
     const { cleanedOutput, delegations } = extractDelegations(result.output)
+    const attemptedChecks = context.isSelfAwake
+      ? collectSelfAwakeCheckIdsFromDelegations(delegations)
+      : []
     let enqueued = 0
     try {
       const allowDelegation = !context.isSelfAwake || selfAwake.allowDelegation
@@ -156,11 +179,19 @@ export const runAgent = async (
       }
       const firstTask = tasks[0]
       if (context.isSelfAwake && firstTask && selfAwake.state) {
+        const updatedAt = new Date().toISOString()
+        const delegatedChecks = collectSelfAwakeCheckIds(tasks)
+        const checkHistory = updateCheckHistory(
+          selfAwake.state.checkHistory,
+          delegatedChecks,
+          updatedAt,
+        )
         await saveSelfAwakeState(config.stateDir, {
           ...selfAwake.state,
           status: 'delegated',
           taskId: firstTask.id,
-          updatedAt: new Date().toISOString(),
+          updatedAt,
+          ...withOptional('checkHistory', checkHistory),
         })
         await appendAudit(config.stateDir, {
           ts: new Date().toISOString(),
@@ -173,10 +204,25 @@ export const runAgent = async (
         })
       }
       if (context.isSelfAwake && tasks.length === 0 && selfAwake.state) {
+        const updatedAt = new Date().toISOString()
+        const checkHistory = selfAwake.active
+          ? selfAwake.state.checkHistory
+          : delegations.length === 0
+            ? updateCheckHistory(
+                selfAwake.state.checkHistory,
+                [...SELF_AWAKE_CHECK_IDS],
+                updatedAt,
+              )
+            : updateCheckHistory(
+                selfAwake.state.checkHistory,
+                attemptedChecks,
+                updatedAt,
+              )
         await saveSelfAwakeState(config.stateDir, {
           ...selfAwake.state,
           status: selfAwake.active ? selfAwake.state.status : 'no-action',
-          updatedAt: new Date().toISOString(),
+          updatedAt,
+          ...withOptional('checkHistory', checkHistory),
         })
       }
       if (enqueued > 0)
@@ -253,6 +299,18 @@ const SELF_AWAKE_MAX_DELEGATIONS = 1
 const SELF_AWAKE_STATE_FILE = 'self_awake.json'
 const REVIEW_DIFF_MAX_CHARS = 8000
 const REVIEW_TIMEOUT_MS = 4 * 60 * 1000
+const SELF_AWAKE_CHECK_IDS = [
+  'P1',
+  'P2',
+  'P3',
+  'P4',
+  'P5',
+  'P6',
+  'P7',
+  'P8',
+  'P9',
+] as const
+const SELF_AWAKE_CHECK_SET = new Set<string>(SELF_AWAKE_CHECK_IDS)
 
 type SelfAwakeStateStatus =
   | 'started'
@@ -273,6 +331,7 @@ type SelfAwakeState = {
   stashMessage?: string
   taskId?: string
   updatedAt?: string
+  checkHistory?: Record<string, string>
 }
 
 const truncate = (text: string, maxChars: number): string => {
@@ -289,6 +348,73 @@ const withOptional = <T extends string, V>(
   const entry: Partial<Record<T, V>> = {}
   entry[key] = value
   return entry
+}
+
+type SelfAwakeCheckId = (typeof SELF_AWAKE_CHECK_IDS)[number]
+
+const extractSelfAwakeCheckId = (prompt: string): SelfAwakeCheckId | null => {
+  const match = prompt.match(/^\s*\[?(P\d+)\]?(?::|\s|-)/i)
+  if (!match) return null
+  const candidate = match[1]?.toUpperCase()
+  if (!candidate) return null
+  if (!SELF_AWAKE_CHECK_SET.has(candidate)) return null
+  return candidate as SelfAwakeCheckId
+}
+
+const collectSelfAwakeCheckIds = (tasks: PendingTask[]): SelfAwakeCheckId[] => {
+  const ids = new Set<SelfAwakeCheckId>()
+  for (const task of tasks) {
+    const id = extractSelfAwakeCheckId(task.prompt)
+    if (id) ids.add(id)
+  }
+  return [...ids]
+}
+
+const collectSelfAwakeCheckIdsFromDelegations = (
+  delegations: DelegationSpec[],
+): SelfAwakeCheckId[] => {
+  const ids = new Set<SelfAwakeCheckId>()
+  for (const item of delegations) {
+    const prompt = normalizeDelegationPrompt(item.prompt)
+    if (!prompt) continue
+    const id = extractSelfAwakeCheckId(prompt)
+    if (id) ids.add(id)
+  }
+  return [...ids]
+}
+
+const updateCheckHistory = (
+  history: Record<string, string> | undefined,
+  checkIds: SelfAwakeCheckId[],
+  timestamp: string,
+): Record<string, string> | undefined => {
+  if (checkIds.length === 0) return history
+  const next = { ...(history ?? {}) }
+  for (const id of checkIds) next[id] = timestamp
+  return next
+}
+
+const formatCheckHistory = (
+  history: Record<string, string> | undefined,
+): string => {
+  if (!history || Object.keys(history).length === 0) return 'None recorded.'
+  const lines: string[] = []
+  for (const id of SELF_AWAKE_CHECK_IDS) {
+    const ts = history[id]
+    if (ts) lines.push(`${id}: ${ts}`)
+  }
+  const extra = Object.keys(history).filter(
+    (id) => !SELF_AWAKE_CHECK_SET.has(id),
+  )
+  extra.sort()
+  for (const id of extra) lines.push(`${id}: ${history[id]}`)
+  return lines.length > 0 ? lines.join('\n') : 'None recorded.'
+}
+
+const formatBacklog = (backlog: BacklogItem[]): string => {
+  const pending = backlog.filter((item) => !item.done)
+  if (pending.length === 0) return 'No pending items.'
+  return pending.map((item) => `- ${item.text}`).join('\n')
 }
 
 const TOKEN_PATTERN = /[a-z0-9_]{2,}|[\u4e00-\u9fff]{2,}/gi
@@ -440,10 +566,24 @@ const sortTaskResults = (results: TaskResult[]): TaskResult[] =>
     return ta - tb
   })
 
+const appendSelfAwakeContext = (
+  parts: string[],
+  context: SelfAwakePromptContext | null | undefined,
+): void => {
+  if (!context) return
+  parts.push('## Self-Awake Check History')
+  parts.push(formatCheckHistory(context.checkHistory))
+  parts.push('')
+  parts.push('## Backlog')
+  parts.push(formatBacklog(context.backlog))
+  parts.push('')
+}
+
 const buildPrompt = (
   stateDir: string,
   context: AgentContext,
   keywords: string[],
+  selfAwakeContext?: SelfAwakePromptContext | null,
 ): string => {
   const parts: string[] = []
   const hasUserInputs = context.userInputs.length > 0
@@ -459,7 +599,10 @@ const buildPrompt = (
   if (context.memoryHits) parts.push(MEMORY_SECTION)
 
   // Self-awake section only if self-awake mode
-  if (context.isSelfAwake) parts.push(SELF_AWAKE_SECTION)
+  if (context.isSelfAwake) {
+    parts.push(SELF_AWAKE_SECTION)
+    appendSelfAwakeContext(parts, selfAwakeContext)
+  }
 
   if (hasUserInputs && shouldIncludeStateDir(context.userInputs)) {
     parts.push(STATE_DIR_INSTRUCTION(stateDir))
@@ -512,11 +655,17 @@ const buildPrompt = (
   return parts.join('\n')
 }
 
-const buildResumePrompt = (context: AgentContext): string => {
+const buildResumePrompt = (
+  context: AgentContext,
+  selfAwakeContext?: SelfAwakePromptContext | null,
+): string => {
   const parts: string[] = []
   const hasUserInputs = context.userInputs.length > 0
 
-  if (context.isSelfAwake) parts.push(SELF_AWAKE_SECTION)
+  if (context.isSelfAwake) {
+    parts.push(SELF_AWAKE_SECTION)
+    appendSelfAwakeContext(parts, selfAwakeContext)
+  }
 
   if (hasUserInputs) {
     parts.push('## New User Inputs')
@@ -654,6 +803,7 @@ const prepareSelfAwakeRun = async (
 ): Promise<SelfAwakeRun> => {
   try {
     const existing = await readSelfAwakeState(config.stateDir)
+    const previousCheckHistory = existing?.checkHistory
     if (existing?.status === 'delegated' && existing.taskId) {
       await appendAudit(config.stateDir, {
         ts: new Date().toISOString(),
@@ -694,6 +844,7 @@ const prepareSelfAwakeRun = async (
       stashMessage,
       updatedAt: now.toISOString(),
       ...withOptional('stashRef', stashRef),
+      ...withOptional('checkHistory', previousCheckHistory),
     }
 
     await saveSelfAwakeState(config.stateDir, state)
@@ -864,10 +1015,12 @@ const handleSelfAwakeTaskResults = async (
       ...withOptional('runId', runId),
     })
 
+    const checkHistory = state?.checkHistory
     const baseState: SelfAwakeState = state ?? {
       runId: runId ?? formatTimestamp(),
       startedAt: new Date().toISOString(),
       status: 'started',
+      ...withOptional('checkHistory', checkHistory),
     }
 
     if (result.status === 'failed') {
