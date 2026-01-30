@@ -293,6 +293,17 @@
   min-height: 16px;
 }
 
+.loading-time {
+  display: none;
+  font-size: 12px;
+  color: var(--muted);
+  margin-left: 4px;
+}
+
+.loading-time.is-visible {
+  display: inline;
+}
+
 .loading-dots .dot {
   width: 6px;
   height: 6px;

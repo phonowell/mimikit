@@ -17,9 +17,13 @@ export function createMessagesController({
   let lastStatus = null
   let lastAssistantMessageId = null
   let loadingItem = null
+  let loadingTimeEl = null
+  let loadingStartAt = null
+  let loadingTimer = null
   let showLoading = false
   let scrollBound = false
   const scrollBottomMultiplier = 1.5
+  const loadingTimeThreshold = 3000
 
   function removeEmpty() {
     if (emptyRemoved) return
@@ -55,6 +59,19 @@ export function createMessagesController({
     if (input !== null) parts.push(`↑ ${formatCount(input)}`)
     if (output !== null) parts.push(`↓ ${formatCount(output)}`)
     return parts.join(' · ')
+  }
+
+  function formatElapsedLabel(elapsedMs) {
+    const ms = asNumber(elapsedMs)
+    if (ms === null) return ''
+    const totalSeconds = Math.max(0, Math.floor(ms / 1000))
+    if (totalSeconds < 60) return `${totalSeconds}s`
+    const totalMinutes = Math.floor(totalSeconds / 60)
+    if (totalMinutes < 60) return `${totalMinutes}m`
+    const totalHours = Math.floor(totalMinutes / 60)
+    const minutes = totalMinutes % 60
+    if (minutes === 0) return `${totalHours}h`
+    return `${totalHours}h ${minutes}m`
   }
 
   function getScrollState() {
@@ -160,10 +177,17 @@ export function createMessagesController({
       content.appendChild(dot)
     }
 
+    const time = document.createElement('span')
+    time.className = 'loading-time'
+    time.setAttribute('aria-live', 'polite')
+    content.appendChild(time)
+
     article.appendChild(content)
     item.appendChild(article)
     messagesEl.appendChild(item)
     loadingItem = item
+    loadingTimeEl = time
+    updateLoadingElapsed()
     if (shouldAutoScroll) scrollToBottom({ smooth: false })
     updateScrollButton()
   }
@@ -171,13 +195,45 @@ export function createMessagesController({
   function removeLoadingPlaceholder() {
     if (loadingItem && loadingItem.isConnected) loadingItem.remove()
     loadingItem = null
+    loadingTimeEl = null
     updateScrollButton()
   }
 
+  function updateLoadingElapsed() {
+    if (!loadingStartAt || !loadingTimeEl) return
+    const elapsed = Date.now() - loadingStartAt
+    if (elapsed < loadingTimeThreshold) {
+      loadingTimeEl.textContent = ''
+      loadingTimeEl.classList.remove('is-visible')
+      return
+    }
+    const label = formatElapsedLabel(elapsed)
+    loadingTimeEl.textContent = label ? `Waiting ${label}` : ''
+    loadingTimeEl.classList.add('is-visible')
+  }
+
+  function startLoadingTimer() {
+    if (loadingTimer) return
+    loadingTimer = window.setInterval(updateLoadingElapsed, 500)
+  }
+
+  function stopLoadingTimer() {
+    if (loadingTimer) clearInterval(loadingTimer)
+    loadingTimer = null
+    loadingStartAt = null
+  }
+
   function setLoading(active) {
+    const wasLoading = showLoading
     showLoading = active
-    if (active) ensureLoadingPlaceholder()
-    else removeLoadingPlaceholder()
+    if (active) {
+      if (!wasLoading) loadingStartAt = Date.now()
+      ensureLoadingPlaceholder()
+      startLoadingTimer()
+    } else {
+      stopLoadingTimer()
+      removeLoadingPlaceholder()
+    }
   }
 
   function renderMessages(messages) {
@@ -192,6 +248,7 @@ export function createMessagesController({
     const previousScrollTop = messagesEl.scrollTop
     const previousScrollHeight = messagesEl.scrollHeight
     loadingItem = null
+    loadingTimeEl = null
     messagesEl.innerHTML = ''
     for (const msg of messages) {
       renderMessage(msg)
@@ -227,6 +284,9 @@ export function createMessagesController({
     article.appendChild(content)
 
     const usageText = isAssistantMessage(msg) ? formatUsage(msg.usage) : ''
+    const elapsedText = isAssistantMessage(msg)
+      ? formatElapsedLabel(msg.elapsedMs)
+      : ''
     const timeText = formatTime(msg.createdAt)
     const meta = document.createElement('small')
     meta.className = 'meta'
@@ -235,6 +295,12 @@ export function createMessagesController({
       usage.className = 'usage'
       usage.textContent = usageText
       meta.appendChild(usage)
+    }
+    if (elapsedText) {
+      const elapsed = document.createElement('span')
+      elapsed.className = 'elapsed'
+      elapsed.textContent = `took ${elapsedText}`
+      meta.appendChild(elapsed)
     }
     const time = document.createElement('span')
     time.className = 'time'

@@ -43,4 +43,5 @@ export type ChatMessage = {
   text: string
   createdAt: string
   usage?: TokenUsage
+  elapsedMs?: number
 }

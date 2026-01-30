@@ -83,12 +83,14 @@ export const runAgent = async (
   const processedInputIds = context.userInputs.map((input) => input.id)
 
   try {
+    const startedAt = Date.now()
     const result = await execCodex({
       prompt,
       workDir: config.workDir,
       model: config.model,
       timeout: config.timeout ?? 10 * 60 * 1000,
     })
+    const elapsedMs = Math.max(0, Date.now() - startedAt)
 
     const { cleanedOutput, delegations } = extractDelegations(result.output)
     const attemptedChecks = context.isSelfAwake
@@ -124,6 +126,7 @@ export const runAgent = async (
         text: trimmedOutput,
         createdAt: new Date().toISOString(),
         ...(result.usage ? { usage: result.usage } : {}),
+        elapsedMs,
       })
     }
 
