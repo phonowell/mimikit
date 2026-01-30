@@ -1,4 +1,3 @@
-import { HISTORY_FETCH_LIMIT } from './agent-constants.js'
 import { extractDelegations } from './agent-delegation.js'
 import { extractKeywords } from './agent-keywords.js'
 import { buildPrompt, type SelfAwakePromptContext } from './agent-prompt.js'
@@ -49,7 +48,7 @@ export const runAgent = async (
   let memoryHits = ''
 
   if (context.userInputs.length > 0)
-    chatHistory = await protocol.getChatHistory(HISTORY_FETCH_LIMIT)
+    chatHistory = await protocol.getChatHistory()
 
   if (context.userInputs.length > 0 && keywords.length > 0) {
     const memoryConfig: MemoryConfig = {
@@ -70,7 +69,6 @@ export const runAgent = async (
   const prompt = buildPrompt(
     config.stateDir,
     fullContext,
-    keywords,
     selfAwakePromptContext,
   )
 

@@ -1,10 +1,3 @@
-export const MAX_HISTORY_CHARS = 300
-export const MAX_HISTORY_MESSAGES = 3
-export const MAX_HISTORY_KEYWORDS = 4
-export const HISTORY_FALLBACK_MESSAGES = 2
-export const MAX_TASK_RESULTS = 2
-export const MAX_TASK_RESULT_CHARS = 300
 export const MAX_KEYWORDS = 6
-export const HISTORY_FETCH_LIMIT = MAX_HISTORY_MESSAGES * 2
 export const MAX_DELEGATIONS = 3
 export const MAX_DELEGATION_PROMPT_CHARS = 1200

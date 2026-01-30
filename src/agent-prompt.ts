@@ -1,12 +1,6 @@
-import {
-  MAX_HISTORY_CHARS,
-  MAX_TASK_RESULT_CHARS,
-  MAX_TASK_RESULTS,
-} from './agent-constants.js'
 import { filterChatHistory, sortTaskResults } from './agent-history.js'
 import { cleanUserInput, shouldIncludeStateDir } from './agent-input.js'
 import { formatCheckHistory } from './agent-self-awake-checks.js'
-import { truncate } from './agent-utils.js'
 import {
   CORE_PROMPT,
   MEMORY_SECTION,
@@ -46,7 +40,6 @@ const appendSelfAwakeContext = (
 export const buildPrompt = (
   stateDir: string,
   context: AgentContext,
-  keywords: string[],
   selfAwakeContext?: SelfAwakePromptContext | null,
 ): string => {
   const parts: string[] = []
@@ -69,16 +62,12 @@ export const buildPrompt = (
   }
 
   if (hasUserInputs && context.chatHistory.length > 0) {
-    const history = filterChatHistory(
-      context.chatHistory,
-      context.userInputs,
-      keywords,
-    )
+    const history = filterChatHistory(context.chatHistory, context.userInputs)
     if (history.length > 0) {
       parts.push('## Recent Conversation')
       for (const msg of history) {
         const prefix = msg.role === 'user' ? 'U:' : 'A:'
-        parts.push(`${prefix} ${truncate(msg.text, MAX_HISTORY_CHARS)}`)
+        parts.push(`${prefix} ${msg.text}`)
       }
 
       parts.push('')
@@ -100,13 +89,11 @@ export const buildPrompt = (
 
   if (context.taskResults.length > 0) {
     parts.push('## Completed Tasks')
-    const recent = sortTaskResults(context.taskResults).slice(-MAX_TASK_RESULTS)
+    const recent = sortTaskResults(context.taskResults)
     for (const result of recent) {
       parts.push(`T${result.id}: ${result.status}`)
-      if (result.result)
-        parts.push(truncate(result.result, MAX_TASK_RESULT_CHARS))
-      if (result.error)
-        parts.push(`Error: ${truncate(result.error, MAX_TASK_RESULT_CHARS)}`)
+      if (result.result) parts.push(result.result)
+      if (result.error) parts.push(`Error: ${result.error}`)
       parts.push('')
     }
   }
