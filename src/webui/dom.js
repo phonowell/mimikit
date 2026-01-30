@@ -5,6 +5,7 @@ export function selectAppElements() {
     statusDot: $('[data-status-dot]'),
     statusText: $('[data-status-text]'),
     messagesEl: $('[data-messages]'),
+    scrollBottomBtn: $('[data-scroll-bottom]'),
     form: $('[data-form]'),
     input: $('[data-input]'),
     sendBtn: $('[data-send]'),

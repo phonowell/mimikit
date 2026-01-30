@@ -58,6 +58,46 @@
   text-align: center;
 }
 
+.scroll-bottom {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--accent);
+  border: 1px solid var(--border);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.18);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(8px);
+  transition: opacity 0.2s ease, transform 0.2s ease,
+    background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  z-index: 2;
+}
+
+.scroll-bottom.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.scroll-bottom:hover {
+  background: var(--accent);
+  color: #ffffff;
+  border-color: transparent;
+}
+
+.scroll-bottom:focus-visible {
+  outline: 2px solid rgba(42, 125, 225, 0.4);
+  outline-offset: 2px;
+}
+
 .message {
   display: flex;
 }
@@ -281,6 +321,10 @@
     animation: none;
     opacity: 0.7;
   }
+
+  .scroll-bottom {
+    transition: none;
+  }
 }
 
 .modal {
@@ -403,5 +447,10 @@
 @media (max-width: 640px) {
   .message article {
     max-width: 88%;
+  }
+
+  .scroll-bottom {
+    right: 12px;
+    bottom: 12px;
   }
 }

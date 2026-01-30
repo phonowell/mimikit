@@ -11,20 +11,19 @@ export function bindTasksModal({
     return typeof value === 'number' && Number.isFinite(value) ? value : null
   }
 
+  function formatCount(value) {
+    if (value === null) return ''
+    const rounded = Math.round(value)
+    return new Intl.NumberFormat('en-US').format(rounded)
+  }
+
   function formatUsage(usage) {
     if (!usage) return ''
     const input = asNumber(usage.input)
     const output = asNumber(usage.output)
-    const total = asNumber(usage.total)
     const parts = []
-    if (total !== null) {
-      parts.push(`${total} tokens`)
-    } else if (input !== null || output !== null) {
-      const sum = (input ?? 0) + (output ?? 0)
-      if (sum > 0) parts.push(`${sum} tokens`)
-    }
-    if (input !== null) parts.push(`in ${input}`)
-    if (output !== null) parts.push(`out ${output}`)
+    if (input !== null) parts.push(`↑ ${formatCount(input)}`)
+    if (output !== null) parts.push(`↓ ${formatCount(output)}`)
     return parts.join(' · ')
   }
 

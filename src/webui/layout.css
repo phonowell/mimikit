@@ -48,6 +48,7 @@ main[data-app] {
   box-shadow: var(--shadow);
   overflow: hidden;
   min-height: 0;
+  position: relative;
 }
 
 .messages {

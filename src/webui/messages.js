@@ -3,6 +3,7 @@ import { renderMarkdown } from './markdown.js'
 
 export function createMessagesController({
   messagesEl,
+  scrollBottomBtn,
   statusDot,
   statusText,
   input,
@@ -17,6 +18,8 @@ export function createMessagesController({
   let lastAssistantMessageId = null
   let loadingItem = null
   let showLoading = false
+  let scrollBound = false
+  const scrollBottomMultiplier = 1.5
 
   function removeEmpty() {
     if (emptyRemoved) return
@@ -33,21 +36,86 @@ export function createMessagesController({
     return typeof value === 'number' && Number.isFinite(value) ? value : null
   }
 
+  function formatCount(value) {
+    if (value === null) return ''
+    const rounded = Math.round(value)
+    return new Intl.NumberFormat('en-US').format(rounded)
+  }
+
   function formatUsage(usage) {
     if (!usage) return ''
     const input = asNumber(usage.input)
     const output = asNumber(usage.output)
-    const total = asNumber(usage.total)
     const parts = []
-    if (total !== null) {
-      parts.push(`${total} tokens`)
-    } else if (input !== null || output !== null) {
-      const sum = (input ?? 0) + (output ?? 0)
-      if (sum > 0) parts.push(`${sum} tokens`)
-    }
-    if (input !== null) parts.push(`in ${input}`)
-    if (output !== null) parts.push(`out ${output}`)
+    if (input !== null) parts.push(`↑ ${formatCount(input)}`)
+    if (output !== null) parts.push(`↓ ${formatCount(output)}`)
     return parts.join(' · ')
+  }
+
+  function getScrollState() {
+    if (!messagesEl) return null
+    const scrollHeight = messagesEl.scrollHeight
+    const clientHeight = messagesEl.clientHeight
+    const scrollTop = messagesEl.scrollTop
+    const distance = scrollHeight - scrollTop - clientHeight
+    return { scrollHeight, clientHeight, scrollTop, distance }
+  }
+
+  function getBottomThreshold(clientHeight) {
+    return clientHeight * scrollBottomMultiplier
+  }
+
+  function isNearBottom() {
+    const state = getScrollState()
+    if (!state || state.clientHeight === 0) return true
+    return state.distance <= getBottomThreshold(state.clientHeight)
+  }
+
+  function setScrollButtonVisible(visible) {
+    if (!scrollBottomBtn) return
+    scrollBottomBtn.classList.toggle('is-visible', visible)
+    scrollBottomBtn.setAttribute('aria-hidden', visible ? 'false' : 'true')
+    scrollBottomBtn.tabIndex = visible ? 0 : -1
+  }
+
+  function updateScrollButton() {
+    if (!scrollBottomBtn || !messagesEl) return
+    const state = getScrollState()
+    if (!state || state.clientHeight === 0) {
+      setScrollButtonVisible(false)
+      return
+    }
+    const threshold = getBottomThreshold(state.clientHeight)
+    setScrollButtonVisible(state.distance > threshold)
+  }
+
+  function scrollToBottom({ smooth = true } = {}) {
+    if (!messagesEl) return
+    const reduceMotion =
+      window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const behavior = smooth && !reduceMotion ? 'smooth' : 'auto'
+    messagesEl.scrollTo({ top: messagesEl.scrollHeight, behavior })
+  }
+
+  function bindScrollControls() {
+    if (!messagesEl || scrollBound) return
+    scrollBound = true
+    messagesEl.addEventListener(
+      'scroll',
+      () => {
+        updateScrollButton()
+      },
+      { passive: true },
+    )
+    window.addEventListener('resize', updateScrollButton)
+    if (scrollBottomBtn) {
+      scrollBottomBtn.addEventListener('click', () => {
+        scrollToBottom({ smooth: true })
+        setScrollButtonVisible(false)
+      })
+    }
+    updateScrollButton()
   }
 
   function findLatestAssistantMessage(messages) {
@@ -61,6 +129,7 @@ export function createMessagesController({
   function ensureLoadingPlaceholder() {
     if (!messagesEl) return
     if (loadingItem && loadingItem.isConnected) return
+    const shouldAutoScroll = isNearBottom()
     removeEmpty()
     const item = document.createElement('li')
     item.className = 'message assistant message-loading'
@@ -81,12 +150,14 @@ export function createMessagesController({
     item.appendChild(article)
     messagesEl.appendChild(item)
     loadingItem = item
-    messagesEl.scrollTop = messagesEl.scrollHeight
+    if (shouldAutoScroll) scrollToBottom({ smooth: false })
+    updateScrollButton()
   }
 
   function removeLoadingPlaceholder() {
     if (loadingItem && loadingItem.isConnected) loadingItem.remove()
     loadingItem = null
+    updateScrollButton()
   }
 
   function setLoading(active) {
@@ -103,13 +174,24 @@ export function createMessagesController({
       lastAssistantMessageId = latestAssistant.id
       if (showLoading) setLoading(false)
     }
+    const wasNearBottom = isNearBottom()
+    const previousScrollTop = messagesEl.scrollTop
+    const previousScrollHeight = messagesEl.scrollHeight
     loadingItem = null
     messagesEl.innerHTML = ''
     for (const msg of messages) {
       renderMessage(msg)
     }
     if (showLoading) ensureLoadingPlaceholder()
-    messagesEl.scrollTop = messagesEl.scrollHeight
+    const newScrollHeight = messagesEl.scrollHeight
+    if (wasNearBottom) {
+      scrollToBottom({ smooth: false })
+    } else {
+      const delta = newScrollHeight - previousScrollHeight
+      const nextTop = previousScrollTop + delta
+      messagesEl.scrollTop = nextTop < 0 ? 0 : nextTop
+    }
+    updateScrollButton()
   }
 
   function renderMessage(msg) {
@@ -151,6 +233,7 @@ export function createMessagesController({
     article.textContent = `Error: ${message}`
     item.appendChild(article)
     messagesEl.appendChild(item)
+    updateScrollButton()
   }
 
   function updateStatus(status) {
@@ -248,6 +331,7 @@ export function createMessagesController({
 
   function start() {
     if (isPolling) return
+    bindScrollControls()
     isPolling = true
     poll()
   }

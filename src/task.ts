@@ -10,13 +10,20 @@ export type TaskConfig = {
   timeout?: number | undefined
 }
 
+const formatCount = (value?: number): string => {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return ''
+  const rounded = Math.round(value)
+  return new Intl.NumberFormat('en-US').format(rounded)
+}
+
 const formatUsageForLog = (usage?: TokenUsage): string => {
   if (!usage) return ''
   const parts: string[] = []
-  if (usage.total !== undefined) parts.push(`tokens=${usage.total}`)
-  if (usage.input !== undefined) parts.push(`in=${usage.input}`)
-  if (usage.output !== undefined) parts.push(`out=${usage.output}`)
-  return parts.length > 0 ? ` ${parts.join(' ')}` : ''
+  if (typeof usage.input === 'number' && Number.isFinite(usage.input))
+    parts.push(`↑ ${formatCount(usage.input)}`)
+  if (typeof usage.output === 'number' && Number.isFinite(usage.output))
+    parts.push(`↓ ${formatCount(usage.output)}`)
+  return parts.length > 0 ? ` ${parts.join(' · ')}` : ''
 }
 
 export const runTask = async (

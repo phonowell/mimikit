@@ -6,6 +6,7 @@ import { bindTasksModal } from './tasks.js'
 const elements = selectAppElements()
 const messages = createMessagesController({
   messagesEl: elements.messagesEl,
+  scrollBottomBtn: elements.scrollBottomBtn,
   statusDot: elements.statusDot,
   statusText: elements.statusText,
   input: elements.input,
