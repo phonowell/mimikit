@@ -61,5 +61,5 @@ ${renderPrompt(loadPrompt('agent/state-dir.md'), { STATE_DIR: stateDir })}
 export const buildTaskPrompt = (taskPrompt: string): string => {
   const trimmed = taskPrompt.trim()
   if (!trimmed) return TASK_PROMPT
-  return [TASK_PROMPT, '## Task', trimmed].join('\n\n')
+  return [TASK_PROMPT, 'Task:', trimmed].join('\n')
 }

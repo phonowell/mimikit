@@ -238,11 +238,11 @@ export const runAgent = async (
 
 const MAX_INPUT_CHARS = 800
 const MAX_HISTORY_CHARS = 300
-const MAX_HISTORY_MESSAGES = 4
+const MAX_HISTORY_MESSAGES = 3
 const MAX_HISTORY_KEYWORDS = 4
 const HISTORY_FALLBACK_MESSAGES = 2
 const MAX_TASK_RESULTS = 2
-const MAX_TASK_RESULT_CHARS = 400
+const MAX_TASK_RESULT_CHARS = 300
 const MAX_KEYWORDS = 6
 const HISTORY_FETCH_LIMIT = MAX_HISTORY_MESSAGES * 2
 const MAX_DELEGATIONS = 3
@@ -555,8 +555,8 @@ const buildPrompt = (
     if (history.length > 0) {
       parts.push('## Recent Conversation')
       for (const msg of history) {
-        const prefix = msg.role === 'user' ? 'User' : 'You'
-        parts.push(`[${prefix}] ${truncate(msg.text, MAX_HISTORY_CHARS)}`)
+        const prefix = msg.role === 'user' ? 'U:' : 'A:'
+        parts.push(`${prefix} ${truncate(msg.text, MAX_HISTORY_CHARS)}`)
       }
 
       parts.push('')
@@ -583,7 +583,7 @@ const buildPrompt = (
     parts.push('## Completed Tasks')
     const recent = sortTaskResults(context.taskResults).slice(-MAX_TASK_RESULTS)
     for (const result of recent) {
-      parts.push(`### Task ${result.id} (${result.status})`)
+      parts.push(`T${result.id}: ${result.status}`)
       if (result.result)
         parts.push(truncate(result.result, MAX_TASK_RESULT_CHARS))
       if (result.error)
@@ -615,7 +615,7 @@ const buildResumePrompt = (context: AgentContext): string => {
     parts.push('## Completed Tasks')
     const recent = sortTaskResults(context.taskResults).slice(-MAX_TASK_RESULTS)
     for (const result of recent) {
-      parts.push(`### Task ${result.id} (${result.status})`)
+      parts.push(`T${result.id}: ${result.status}`)
       if (result.result)
         parts.push(truncate(result.result, MAX_TASK_RESULT_CHARS))
       if (result.error)
@@ -837,8 +837,8 @@ const reviewSelfAwakeChanges = async (
 
 const parseReviewDecision = (output: string): 'pass' | 'fail' => {
   const upper = output.toUpperCase()
-  if (upper.includes('REVIEW: FAIL')) return 'fail'
-  if (upper.includes('REVIEW: PASS')) return 'pass'
+  if (upper.includes('FAIL')) return 'fail'
+  if (upper.includes('PASS')) return 'pass'
   return 'fail'
 }
 
@@ -846,10 +846,8 @@ const buildReviewPrompt = (status: string, diff: string): string => {
   const statusBlock = status.trim() ? status.trim() : '(clean)'
   const diffBlock = diff.trim() ? diff.trim() : '(no diff)'
   return [
-    'Review the code changes and output exactly one of:',
-    'REVIEW: PASS',
-    'REVIEW: FAIL',
-    'If FAIL, add up to 3 short bullet reasons. Do not modify files.',
+    'Output exactly: PASS or FAIL.',
+    'If FAIL: add up to 3 short bullet reasons.',
     'Git status:',
     '```',
     statusBlock,

@@ -1,8 +1,8 @@
 ## State Directory
 
-All state files are in: {{STATE_DIR}}
+STATE_DIR={{STATE_DIR}}
 
-- pending_tasks/: Write task files here to spawn child tasks
-- chat_history.json: Conversation history (read-only)
-- agent_state.json: Your state (read-only)
-- task_results/: Child task results (auto-loaded)
+- pending_tasks/: write task files here to spawn child tasks
+- chat_history.json: conversation history (read-only)
+- agent_state.json: your state (read-only)
+- task_results/: child task results (auto-loaded)

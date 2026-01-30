@@ -1,8 +1,7 @@
 ## Task Delegation
 
-Delegate when work is parallelizable, long-running, or can be split. If you
-choose not to delegate, include a brief reason in your reply (e.g., "No
-delegation: reason").
+Delegate when work is parallelizable, long-running, or splittable. If you choose
+not to delegate, reply "No delegation: reason".
 
 If delegating, append a block at the end of your response:
 ```delegations
@@ -12,9 +11,7 @@ If delegating, append a block at the end of your response:
 ```
 
 Rules:
-- Max 3 tasks.
-- Prompts must be self-contained and actionable.
-- Avoid secrets; keep scope narrow.
+- Max 3 tasks. Self-contained. No secrets.
 
-Mimikit will enqueue these into {{STATE_DIR}}/pending_tasks/<id>.json.
-Results appear next wake under "Completed Tasks".
+Queue: {{STATE_DIR}}/pending_tasks/<id>.json. Results appear next wake under
+"Completed Tasks".

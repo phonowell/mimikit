@@ -195,7 +195,7 @@ const trimHits = (
 
 export const formatMemoryHits = (hits: MemoryHit[]): string => {
   if (hits.length === 0) return ''
-  const lines = ['## Relevant Memory']
+  const lines = ['## Mem']
   for (const hit of hits) lines.push(`- ${hit.path}:${hit.line} ${hit.text}`)
 
   return lines.join('\n')
