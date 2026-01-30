@@ -29,7 +29,7 @@ src/
 └── webui/          # 前端静态文件
 
 prompts/
-├── agent/          # 主 Agent prompt 模板
+├── agent/          # 动态片段（state-dir.md）
 └── task/           # 子任务 prompt 模板
 ```
 
@@ -43,14 +43,14 @@ prompts/
 
 ### Agent 唤醒流程
 1. 加载：对话历史 + 记忆检索 + 用户输入 + 任务结果
-2. 构建 prompt（系统指令 + 上下文）
+2. 构建 prompt（CLAUDE.md 系统指令 + 动态上下文）
 3. 执行 codex exec（可 resume）
 4. 记录输出到对话历史
 5. 清理已处理的输入和结果
 
 ### 自唤醒流程（无输入/结果）
 1. git stash push 保护工作区（记录 self_awake.json）
-2. 按 prompts/agent/self-awake.md 清单检查，最多委派 1 个子任务
+2. 按 CLAUDE.md Self-Awake 清单检查，最多委派 1 个子任务
 3. 子任务完成后审查变更；通过则建分支+提交，不通过则回滚
 4. 审计写入 audit.jsonl
 

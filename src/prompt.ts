@@ -34,25 +34,7 @@ const renderPrompt = (
   return output
 }
 
-export const SOUL_PROMPT = loadPrompt('agent/soul.md')
-export const CORE_PROMPT = loadPrompt('agent/core.md')
 export const TASK_PROMPT = loadPrompt('task/core.md')
-export const MEMORY_SECTION = loadPrompt('agent/memory.md')
-export const SELF_AWAKE_SECTION = loadPrompt('agent/self-awake.md')
-
-export const TASK_DELEGATION_SECTION = (stateDir: string) =>
-  renderPrompt(loadPrompt('agent/task-delegation.md'), {
-    STATE_DIR: stateDir,
-  })
-
-// Legacy: full prompt (all sections combined)
-export const SYSTEM_PROMPT = [
-  SOUL_PROMPT,
-  CORE_PROMPT,
-  TASK_DELEGATION_SECTION('<stateDir>'),
-  MEMORY_SECTION,
-  SELF_AWAKE_SECTION,
-].join('\n')
 
 export const STATE_DIR_INSTRUCTION = (stateDir: string) => `
 ${renderPrompt(loadPrompt('agent/state-dir.md'), { STATE_DIR: stateDir })}

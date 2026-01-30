@@ -2,7 +2,7 @@
 
 ## 适用范围
 - 本文件描述 Mimikit 运行时系统（Supervisor/Agent/Task）的行为与约束。
-- 开发/改代码规范见 `CLAUDE.md`。
+- 运行时系统指令见 `CLAUDE.md`；开发/改代码规范见 `docs/dev-conventions.md`。
 
 ## 核心行为
 - Supervisor 常驻；Agent 按需唤醒（事件/定时）。
