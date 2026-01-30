@@ -1,53 +1,53 @@
-// System prompt for the main agent
+import { readFileSync } from 'node:fs'
+import { join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-export const CORE_PROMPT = `You are Mimikit, a proactive AI assistant that runs continuously.
+const SRC_DIR = fileURLToPath(new URL('.', import.meta.url))
+const PROMPTS_DIR = resolve(SRC_DIR, '..', 'prompts')
+const PROMPT_CACHE = new Map<string, string>()
 
-## Core Behaviors
+const loadPrompt = (relativePath: string): string => {
+  const cached = PROMPT_CACHE.get(relativePath)
+  if (cached) return cached
+  const fullPath = join(PROMPTS_DIR, relativePath)
+  try {
+    const content = readFileSync(fullPath, 'utf-8')
+    const normalized = content.replace(/\r\n/g, '\n').trimEnd()
+    PROMPT_CACHE.set(relativePath, normalized)
+    return normalized
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    throw new Error(
+      `Missing prompt file: ${relativePath} (${fullPath}). ${message}`,
+    )
+  }
+}
 
-1. **Process User Requests**: Handle user inputs promptly and thoroughly.
-2. **Self-Improve**: When idle, review recent work, identify improvements, and assign yourself tasks.
-3. **Delegate Work**: Spawn child tasks for parallel or long-running work.
+const renderPrompt = (
+  template: string,
+  vars: Record<string, string>,
+): string => {
+  let output = template
+  for (const [key, value] of Object.entries(vars))
+    output = output.replaceAll(`{{${key}}}`, value)
 
-## Output Guidelines
+  return output
+}
 
-- Be concise. No filler phrases.
-- Use structured output: lists, code blocks, headers.
-- For status updates: ✓ done, ✗ failed, → in progress.
-- When asking questions, be direct.
-`
+export const SOUL_PROMPT = loadPrompt('agent/soul.md')
+export const CORE_PROMPT = loadPrompt('agent/core.md')
+export const TASK_PROMPT = loadPrompt('task/core.md')
+export const MEMORY_SECTION = loadPrompt('agent/memory.md')
+export const SELF_AWAKE_SECTION = loadPrompt('agent/self-awake.md')
 
-export const TASK_DELEGATION_SECTION = (stateDir: string) => `## Task Delegation
-
-Delegate when work is parallelizable, long-running, or can be split. If you choose not to delegate, include a brief reason in your reply (e.g., "No delegation: reason").
-
-If delegating, append a block at the end of your response:
-\`\`\`delegations
-[
-  { "prompt": "task description" }
-]
-\`\`\`
-
-Rules:
-- Max 3 tasks.
-- Prompts must be self-contained and actionable.
-- Avoid secrets; keep scope narrow.
-
-Mimikit will enqueue these into ${stateDir}/pending_tasks/<id>.json.
-Results appear next wake under "Completed Tasks".
-`
-
-export const MEMORY_SECTION = `## Memory
-
-Memory lives in markdown (memory/, docs/). Relevant hits are auto-included. Write back to memory/ when needed.
-`
-
-export const SELF_AWAKE_SECTION = `## Self-Awake Mode
-
-If awakened by timer with no inputs/results, do a quick check for follow-ups or improvements, then sleep.
-`
+export const TASK_DELEGATION_SECTION = (stateDir: string) =>
+  renderPrompt(loadPrompt('agent/task-delegation.md'), {
+    STATE_DIR: stateDir,
+  })
 
 // Legacy: full prompt (all sections combined)
 export const SYSTEM_PROMPT = [
+  SOUL_PROMPT,
   CORE_PROMPT,
   TASK_DELEGATION_SECTION('<stateDir>'),
   MEMORY_SECTION,
@@ -55,12 +55,11 @@ export const SYSTEM_PROMPT = [
 ].join('\n')
 
 export const STATE_DIR_INSTRUCTION = (stateDir: string) => `
-## State Directory
-
-All state files are in: ${stateDir}
-
-- pending_tasks/: Write task files here to spawn child tasks
-- chat_history.json: Conversation history (read-only)
-- agent_state.json: Your state (read-only)
-- task_results/: Child task results (auto-loaded)
+${renderPrompt(loadPrompt('agent/state-dir.md'), { STATE_DIR: stateDir })}
 `
+
+export const buildTaskPrompt = (taskPrompt: string): string => {
+  const trimmed = taskPrompt.trim()
+  if (!trimmed) return TASK_PROMPT
+  return [TASK_PROMPT, '## Task', trimmed].join('\n\n')
+}

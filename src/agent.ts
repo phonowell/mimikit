@@ -5,6 +5,7 @@ import {
   CORE_PROMPT,
   MEMORY_SECTION,
   SELF_AWAKE_SECTION,
+  SOUL_PROMPT,
   STATE_DIR_INSTRUCTION,
   TASK_DELEGATION_SECTION,
 } from './prompt.js'
@@ -401,6 +402,7 @@ const buildPrompt = (
   const hasUserInputs = context.userInputs.length > 0
 
   // Core prompt always included
+  parts.push(SOUL_PROMPT)
   parts.push(CORE_PROMPT)
 
   // Task delegation section for first awake (not resume)

@@ -24,9 +24,13 @@ src/
 ├── codex.ts        # codex exec 封装
 ├── protocol.ts     # 文件协议（状态/队列/历史）
 ├── memory.ts       # 记忆检索
-├── prompt.ts       # 系统 prompt
+├── prompt.ts       # prompt 装配/加载
 ├── http.ts         # HTTP 服务
 └── webui/          # 前端静态文件
+
+prompts/
+├── agent/          # 主 Agent prompt 模板
+└── task/           # 子任务 prompt 模板
 ```
 
 ## 核心流程

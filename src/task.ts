@@ -1,4 +1,5 @@
 import { execCodex } from './codex.js'
+import { buildTaskPrompt } from './prompt.js'
 
 import type { PendingTask, Protocol } from './protocol.js'
 
@@ -17,7 +18,7 @@ export const runTask = async (
 
   try {
     const result = await execCodex({
-      prompt: task.prompt,
+      prompt: buildTaskPrompt(task.prompt),
       workDir: config.workDir,
       model: config.model,
       timeout: config.timeout ?? 10 * 60 * 1000,
