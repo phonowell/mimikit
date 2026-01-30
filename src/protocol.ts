@@ -20,6 +20,8 @@ export type PendingTask = {
   id: string
   prompt: string
   createdAt: string
+  origin?: 'self-awake' | 'event'
+  selfAwakeRunId?: string
 }
 
 export type TaskResult = {
@@ -30,6 +32,8 @@ export type TaskResult = {
   result?: string
   error?: string
   completedAt: string
+  origin?: 'self-awake' | 'event'
+  selfAwakeRunId?: string
 }
 
 export type UserInput = {
@@ -77,6 +81,9 @@ const trimTaskResult = (result: TaskResult): TaskResult => {
     completedAt: result.completedAt,
   }
   if (result.createdAt !== undefined) trimmed.createdAt = result.createdAt
+  if (result.origin !== undefined) trimmed.origin = result.origin
+  if (result.selfAwakeRunId !== undefined)
+    trimmed.selfAwakeRunId = result.selfAwakeRunId
   const prompt = trimField(result.prompt)
   if (prompt !== undefined) trimmed.prompt = prompt
   const output = trimField(result.result)
@@ -88,6 +95,10 @@ const trimTaskResult = (result: TaskResult): TaskResult => {
 
 export class Protocol {
   constructor(private stateDir: string) {}
+
+  getStateDir(): string {
+    return this.stateDir
+  }
 
   private get agentStatePath() {
     return join(this.stateDir, 'agent_state.json')
