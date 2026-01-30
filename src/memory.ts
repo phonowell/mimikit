@@ -1,6 +1,12 @@
 import { spawn } from 'node:child_process'
-import { stat } from 'node:fs/promises'
+import { readdir, stat } from 'node:fs/promises'
 import { join } from 'node:path'
+
+import { searchBm25 } from './memory/bm25.js'
+import { listSearchFiles } from './memory/index.js'
+import { expandKeywords } from './memory/query-expand.js'
+
+import type { Dirent } from 'node:fs'
 
 export type MemoryHit = {
   path: string
@@ -15,7 +21,6 @@ export type MemoryConfig = {
   maxChars?: number | undefined
 }
 
-const DEFAULT_MEMORY_PATHS = ['memory', 'docs', '.mimikit/memory']
 const MAX_HIT_TEXT_CHARS = 160
 
 export const searchMemory = async (
@@ -26,12 +31,33 @@ export const searchMemory = async (
 
   const maxHits = config.maxHits ?? 10
   const maxChars = config.maxChars ?? 1200
-  const paths = await discoverPaths(
-    config.workDir,
-    config.memoryPaths ?? DEFAULT_MEMORY_PATHS,
-  )
+  const expanded = expandKeywords(keywords, { maxTerms: 12 })
+  if (expanded.length === 0) return []
+  const paths = await resolveSearchFiles(config)
 
   if (paths.length === 0) return []
+
+  const query = expanded.join(' ')
+
+  if (!config.memoryPaths || config.memoryPaths.length === 0) {
+    try {
+      const bm25Hits = await searchBm25({
+        workDir: config.workDir,
+        query,
+        limit: maxHits * 4,
+      })
+      if (bm25Hits.length > 0) {
+        const mapped = bm25Hits.map((hit) => ({
+          path: hit.path,
+          line: hit.lineStart,
+          text: firstLine(hit.text),
+        }))
+        return trimHits(mapped, maxHits, maxChars)
+      }
+    } catch {
+      // fall back to rg
+    }
+  }
 
   const args = [
     '-n',
@@ -40,7 +66,7 @@ export const searchMemory = async (
     'never',
     '--max-count',
     String(maxHits),
-    ...keywords.flatMap((kw) => ['-e', kw]),
+    ...expanded.flatMap((kw) => ['-e', kw]),
     '--',
     ...paths,
   ]
@@ -68,6 +94,50 @@ const discoverPaths = async (
     }
   }
   return results
+}
+
+const walkMarkdown = async (dir: string): Promise<string[]> => {
+  const results: string[] = []
+  let entries: Dirent[] = []
+  try {
+    entries = await readdir(dir, { withFileTypes: true })
+  } catch {
+    return results
+  }
+  for (const entry of entries) {
+    if (entry.isSymbolicLink()) continue
+    const full = join(dir, entry.name)
+    if (entry.isDirectory()) {
+      results.push(...(await walkMarkdown(full)))
+      continue
+    }
+    if (entry.isFile() && entry.name.endsWith('.md')) results.push(full)
+  }
+  return results
+}
+
+const resolveSearchFiles = async (config: MemoryConfig): Promise<string[]> => {
+  if (config.memoryPaths && config.memoryPaths.length > 0) {
+    const roots = await discoverPaths(config.workDir, config.memoryPaths)
+    const files: string[] = []
+    for (const root of roots) {
+      try {
+        const s = await stat(root)
+        if (s.isDirectory()) files.push(...(await walkMarkdown(root)))
+        else if (s.isFile()) files.push(root)
+      } catch {
+        // ignore
+      }
+    }
+    return files
+  }
+  const entries = await listSearchFiles({ workDir: config.workDir })
+  return entries.map((entry) => entry.path)
+}
+
+const firstLine = (text: string): string => {
+  const line = text.split('\n').find((item) => item.trim())
+  return line?.trim() ?? text
 }
 
 const runRg = (args: string[], cwd: string): Promise<string[]> =>

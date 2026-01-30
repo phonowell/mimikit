@@ -8,8 +8,8 @@ Goal
 - Add tiered retention: 0-5d raw session files, 5-90d daily summaries, >90d monthly summaries.
 
 Status
-- Current: in_progress
-- Progress: 0/8
+- Current: completed
+- Progress: 8/8
 
 Files
 - src/memory.ts:18-132
@@ -34,38 +34,39 @@ Files
 
 Phases
 1) Align memory layout + prompts
-   - Update default memory paths to include MEMORY.md + memory/ + memory/summary/ + docs/.
-   - Update memory prompt text to mention MEMORY.md and daily files.
-   - Update docs/minimal-architecture.md Memory description.
+   - Update default memory paths to include MEMORY.md + memory/ + memory/summary/ + docs. (Done)
+   - Update memory prompt text to mention MEMORY.md and daily files. (Done)
+   - Update docs/minimal-architecture.md Memory description. (Done)
 2) Add memory write helpers
-   - Implement daily memory append + long-term memory append helpers.
-   - Standardize file header format (date, session id, source) with zero model calls.
+   - Implement daily memory append + long-term memory append helpers. (Done)
+   - Standardize file header format (date, session id, source) with zero model calls. (Done)
 3) /new session memory hook
-   - Auto session handoff: trigger on 6h idle or 100 chat messages (mixed).
-   - Read last N chat messages, generate deterministic slug, write memory/YYYY-MM-DD-slug.md.
-   - Reset agent sessionId; keep chat_history (decision gate: verify risk).
-   - Persist handoff watermark (lastHandoffAt + lastChatCount) in .mimikit/memory_flush.json to avoid repeat triggers.
+   - Auto session handoff: trigger on 6h idle or 100 chat messages (mixed). (Done)
+   - Read last N chat messages, generate deterministic slug, write memory/YYYY-MM-DD-slug.md. (Done)
+   - Reset agent sessionId; keep chat_history (decision gate: verify risk). (Done)
+   - Persist handoff watermark (lastHandoffAt + lastChatCount) in .mimikit/memory_flush.json to avoid repeat triggers. (Done)
+   - Wire into supervisor before runAgent. (Done)
 4) Daily rollup (5d~90d)
-   - For days older than 5d and newer than 90d, summarize that day's session files.
-   - Store summary in memory/summary/YYYY-MM-DD.md with source file list.
-   - Track rollup watermark per day in .mimikit/memory_rollup.json.
-   - Raw files remain but are excluded from search by default.
+   - For days older than 5d and newer than 90d, summarize that day's session files. (Done)
+   - Store summary in memory/summary/YYYY-MM-DD.md with source file list. (Done)
+   - Track rollup watermark per day in .mimikit/memory_rollup.json. (Done)
+   - Raw files remain but are excluded from search by default. (Done)
 5) Monthly rollup (>90d)
-   - Summarize per-month from daily summaries into memory/summary/YYYY-MM.md.
-   - Track monthly rollup watermark in .mimikit/memory_rollup.json.
+   - Summarize per-month from daily summaries into memory/summary/YYYY-MM.md. (Done)
+   - Track monthly rollup watermark in .mimikit/memory_rollup.json. (Done)
 6) Pre-compaction-like memory flush
-   - Add heuristic trigger (chat_history.json size or message count) before runAgent.
-   - Persist lastFlushAt + lastChatSize in .mimikit/memory_flush.json to avoid repeats.
-   - Flush writes to daily memory file only, no extra model call.
+   - Add heuristic trigger (chat_history.json size or message count) before runAgent. (Done)
+   - Persist lastFlushAt + lastChatSize in .mimikit/memory_flush.json to avoid repeats. (Done)
+   - Flush writes to daily memory file only, no extra model call. (Done)
 7) Keyword expansion + BM25
-   - Build memory indexer: chunk markdown, store metadata, update on change.
-   - Implement BM25 scoring via third-party library (no custom impl).
-   - Add rule-based query expansion, cap terms to preserve token budget.
-   - Wire search to prefer BM25, fallback to rg when index unavailable.
+   - Build memory indexer: chunk markdown, store metadata, update on change. (Done)
+   - Implement BM25 scoring via third-party library (no custom impl). (Done)
+   - Add rule-based query expansion, cap terms to preserve token budget. (Done)
+   - Wire search to prefer BM25, fallback to rg when index unavailable. (Done)
 8) Memory CLI
-   - Add memory CLI entrypoint with status/index/search.
-   - Expose index stats (files, chunks, last sync) and simple search output.
-   - Add bin/script wiring for `mimikit memory ...` (or separate `mimikit-memory`).
+   - Add memory CLI entrypoint with status/index/search. (Done)
+   - Expose index stats (files, chunks, last sync) and simple search output. (Done)
+   - Add bin/script wiring for `mimikit memory ...` (or separate `mimikit-memory`). (Done)
 
 Decisions
 - BM25 library: wink-bm25-text-search.
@@ -80,6 +81,7 @@ Decisions
 - Retention tiers: 0-5d raw session files, 5-90d daily summaries, >90d monthly summaries.
 - Rollup runs only on self-awake.
 - Raw files beyond 5d are excluded from search by default.
+- MEMORY.md usage: curated long-term facts only; keep short, structured entries.
 
 Risks
 - Index freshness and storage size need guardrails to avoid runaway IO.
@@ -87,6 +89,7 @@ Risks
 - Query expansion can increase noise and reduce precision if not capped.
 - Rollups use model calls (token cost); no length limits may increase costs.
 - Keeping chat_history without pruning can grow files indefinitely.
+- MEMORY.md growth can degrade recall precision and indexing speed.
 
 Errors
 - None

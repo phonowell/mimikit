@@ -1,5 +1,8 @@
 import { type AgentConfig, runAgent } from './agent.js'
 import { shortId } from './id.js'
+import { maybeMemoryFlush } from './memory/flush.js'
+import { runMemoryRollup } from './memory/rollup.js'
+import { maybeAutoHandoff } from './memory/session-hook.js'
 import { type PendingTask, Protocol, type TaskResult } from './protocol.js'
 import { runTask, type TaskConfig } from './task.js'
 
@@ -194,10 +197,76 @@ export class Supervisor {
   }
 
   private async awakeAgent(isSelfAwake: boolean): Promise<void> {
-    const [userInputs, taskResults] = await Promise.all([
+    const [userInputs, taskResults, state, chatHistory] = await Promise.all([
       this.protocol.getUserInputs(),
       this.protocol.getTaskResults(),
+      this.protocol.getAgentState(),
+      this.protocol.getChatHistory(1000),
     ])
+
+    try {
+      const handoff = await maybeAutoHandoff({
+        stateDir: this.config.stateDir,
+        workDir: this.config.workDir,
+        userInputs,
+        chatHistory,
+        sessionId: state.sessionId,
+      })
+      if (handoff.didHandoff) {
+        await this.protocol.appendTaskLog(
+          `memory:handoff reason=${handoff.reason ?? 'unknown'} path=${handoff.path ?? 'none'}`,
+        )
+        if (handoff.resetSession && state.sessionId) {
+          await this.protocol.setAgentState({
+            ...state,
+            sessionId: undefined,
+          })
+        }
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      await this.protocol.appendTaskLog(
+        `memory:handoff failed error=${message}`,
+      )
+    }
+
+    try {
+      const flush = await maybeMemoryFlush({
+        stateDir: this.config.stateDir,
+        workDir: this.config.workDir,
+        chatHistory,
+        userInputs,
+        sessionId: state.sessionId,
+      })
+      if (flush.didFlush) {
+        await this.protocol.appendTaskLog(
+          `memory:flush path=${flush.path ?? 'none'}`,
+        )
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      await this.protocol.appendTaskLog(`memory:flush failed error=${message}`)
+    }
+
+    if (isSelfAwake) {
+      try {
+        const rollup = await runMemoryRollup({
+          stateDir: this.config.stateDir,
+          workDir: this.config.workDir,
+          model: this.config.model,
+        })
+        if (rollup.dailySummaries || rollup.monthlySummaries) {
+          await this.protocol.appendTaskLog(
+            `memory:rollup daily=${rollup.dailySummaries} monthly=${rollup.monthlySummaries}`,
+          )
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        await this.protocol.appendTaskLog(
+          `memory:rollup failed error=${message}`,
+        )
+      }
+    }
 
     await runAgent(this.agentConfig, this.protocol, {
       userInputs,

@@ -11,7 +11,7 @@
 - **Agent**: 主智能体（codex exec），处理用户输入、自驱动改进、派发子任务。
 - **Task**: 子任务进程（codex exec），由 Agent 派发，并行执行。
 - **Protocol**: 文件协议层，所有进程间通信通过 JSON 文件。
-- **Memory**: `rg` 全文检索 markdown 文件。
+- **Memory**: 关键词检索 workspace root（workDir）下的 MEMORY.md + memory/ + memory/summary/ + docs/（`rg` 兜底），不在 `.mimikit/`。
 - **WebUI**: 单窗口对话界面。
 
 ## 代码布局
@@ -53,6 +53,13 @@ prompts/
 2. 按 prompts/agent/self-awake.md 清单检查，最多委派 1 个子任务
 3. 子任务完成后审查变更；通过则建分支+提交，不通过则回滚
 4. 审计写入 audit.jsonl
+
+### Memory 机制
+- 检索范围（workDir 下）：`MEMORY.md` + `memory/`(≤5d) + `memory/summary/`(5-90d 日摘要，>90d 月摘要) + `docs/`（不在 `.mimikit/`）
+- 检索策略：规则扩展关键词 + BM25；失败时 `rg` 兜底
+- 自动托管：6h 无消息或 100 条对话触发，写 `memory/YYYY-MM-DD-slug.md`，reset sessionId，保留 chat_history
+- Flush：对话记录 ≥800 且距上次 ≥1h，追加到 `memory/YYYY-MM-DD.md`
+- Rollup：仅自唤醒触发，生成 `memory/summary/YYYY-MM-DD.md` 与 `memory/summary/YYYY-MM.md`
 
 ### 子任务流程
 1. Agent 写入 pending_tasks/{id}.json
@@ -101,6 +108,10 @@ prompts/
 - `GET /api/status` 系统状态
 - `POST /api/input` 提交用户输入
 - `GET /api/messages` 对话历史
+
+## 核心命令
+- `tsx src/cli.ts` 或 `tsx src/cli.ts --port 8787`
+- `tsx src/cli.ts memory status|index|search`
 
 ## 依赖
 - Node.js 22+ / tsx

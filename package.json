@@ -16,6 +16,9 @@
     "lint": "eslint \"src/**/*.ts\" --fix",
     "test": "vitest run"
   },
+  "dependencies": {
+    "wink-bm25-text-search": "^3.1.0"
+  },
   "devDependencies": {
     "@types/node": "^22.19.7",
     "@typescript-eslint/eslint-plugin": "^8.54.0",

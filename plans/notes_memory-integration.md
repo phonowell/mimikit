@@ -6,6 +6,7 @@ Assumptions
 - Keep defaults minimal; no complex config surface for v1.
 - Keep chat_history after handoff; need watermark to prevent re-trigger.
 - Rollup summaries use model calls (no explicit length limits).
+ - MEMORY.md stays short and structured to avoid recall noise.
 
 Open Questions
 - None (decisions set in plan).
@@ -18,6 +19,7 @@ Open Questions
 - Rollup runs only on self-awake.
 - Search scope includes memory/summary/.
 - BM25 library: wink-bm25-text-search.
+- MEMORY.md usage: curated long-term facts only; keep short, structured entries.
 
 Constraints
 - Do not add tests unless needed for debugging.

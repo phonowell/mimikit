@@ -2,7 +2,14 @@ import { resolve } from 'node:path'
 import { parseArgs } from 'node:util'
 
 import { createHttpServer } from './http.js'
+import { runMemoryCli } from './memory/cli.js'
 import { Supervisor } from './supervisor.js'
+
+const args = process.argv.slice(2)
+if (args[0] === 'memory') {
+  await runMemoryCli(args.slice(1))
+  process.exit(0)
+}
 
 const { values } = parseArgs({
   options: {
