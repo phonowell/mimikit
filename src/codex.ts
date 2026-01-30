@@ -6,7 +6,6 @@ import type { TokenUsage } from './protocol.js'
 
 export type CodexOptions = {
   prompt: string
-  sessionId?: string | undefined
   workDir: string
   model?: string | undefined
   timeout: number
@@ -14,7 +13,6 @@ export type CodexOptions = {
 
 export type CodexResult = {
   output: string
-  sessionId?: string | undefined
   usage?: TokenUsage
 }
 
@@ -62,8 +60,7 @@ export const execCodex = (options: CodexOptions): Promise<CodexResult> =>
   new Promise((resolve, reject) => {
     const args: string[] = ['exec']
 
-    // Resume existing session or start new
-    if (options.sessionId) args.push('resume', options.sessionId)
+    // Always start new session
 
     args.push('--dangerously-bypass-approvals-and-sandbox', '--json')
 
@@ -120,8 +117,8 @@ export const execCodex = (options: CodexOptions): Promise<CodexResult> =>
               reject(new Error(`codex exited with code ${code}: ${stderr}`))
               return
             }
-            const { sessionId, lastMessage, usage } = parseJsonlOutput(stdout)
-            const result: CodexResult = { output: lastMessage, sessionId }
+            const { lastMessage, usage } = parseJsonlOutput(stdout)
+            const result: CodexResult = { output: lastMessage }
             if (usage !== undefined) result.usage = usage
             resolve(result)
           })
@@ -226,11 +223,9 @@ const extractUsageFromEvent = (event: JsonlEvent): TokenUsage | undefined => {
 const parseJsonlOutput = (
   output: string,
 ): {
-  sessionId: string | undefined
   lastMessage: string
   usage: TokenUsage | undefined
 } => {
-  let sessionId: string | undefined
   let lastMessage = ''
   let usage: TokenUsage | undefined
 
@@ -238,8 +233,6 @@ const parseJsonlOutput = (
     if (!line.trim()) continue
     try {
       const event = JSON.parse(line) as JsonlEvent
-      if (event.type === 'thread.started' && event.thread_id)
-        sessionId = event.thread_id
 
       if (
         event.type === 'item.completed' &&
@@ -255,5 +248,5 @@ const parseJsonlOutput = (
     }
   }
 
-  return { sessionId, lastMessage, usage }
+  return { lastMessage, usage }
 }

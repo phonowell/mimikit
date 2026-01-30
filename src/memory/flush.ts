@@ -62,7 +62,6 @@ export const maybeMemoryFlush = async (params: {
   workDir: string
   chatHistory: ChatMessage[]
   userInputs: UserInput[]
-  sessionId?: string | undefined
   now?: Date | undefined
 }): Promise<MemoryFlushResult> => {
   const now = params.now ?? new Date()
@@ -90,7 +89,6 @@ export const maybeMemoryFlush = async (params: {
     title: 'auto-flush',
     timestamp: formatTimestamp(now),
     source: 'auto-flush',
-    sessionId: params.sessionId,
     lines: formatTranscript(recent),
   }
 

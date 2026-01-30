@@ -67,8 +67,6 @@ export const runAgent = async (
   context: Omit<AgentContext, 'chatHistory' | 'memoryHits'>,
 ): Promise<void> => {
   const state = await protocol.getAgentState()
-  const { sessionId } = state
-  const isResume = !!sessionId
   const selfAwake = context.isSelfAwake
     ? await prepareSelfAwakeRun(config)
     : { state: null, allowDelegation: true, active: false }
@@ -88,19 +86,17 @@ export const runAgent = async (
   let chatHistory: ChatMessage[] = []
   let memoryHits = ''
 
-  if (!isResume) {
-    if (context.userInputs.length > 0)
-      chatHistory = await protocol.getChatHistory(HISTORY_FETCH_LIMIT)
+  if (context.userInputs.length > 0)
+    chatHistory = await protocol.getChatHistory(HISTORY_FETCH_LIMIT)
 
-    if (context.userInputs.length > 0 && keywords.length > 0) {
-      const memoryConfig: MemoryConfig = {
-        workDir: config.workDir,
-        memoryPaths: config.memoryPaths,
-        maxHits: config.maxMemoryHits ?? 3,
-      }
-      const hits = await searchMemory(memoryConfig, keywords)
-      memoryHits = formatMemoryHits(hits)
+  if (context.userInputs.length > 0 && keywords.length > 0) {
+    const memoryConfig: MemoryConfig = {
+      workDir: config.workDir,
+      memoryPaths: config.memoryPaths,
+      maxHits: config.maxMemoryHits ?? 3,
     }
+    const hits = await searchMemory(memoryConfig, keywords)
+    memoryHits = formatMemoryHits(hits)
   }
 
   const fullContext: AgentContext = {
@@ -109,19 +105,16 @@ export const runAgent = async (
     memoryHits,
   }
 
-  const prompt = isResume
-    ? buildResumePrompt(fullContext, selfAwakePromptContext)
-    : buildPrompt(
-        config.stateDir,
-        fullContext,
-        keywords,
-        selfAwakePromptContext,
-      )
+  const prompt = buildPrompt(
+    config.stateDir,
+    fullContext,
+    keywords,
+    selfAwakePromptContext,
+  )
 
   await protocol.setAgentState({
     status: 'running',
     lastAwakeAt: new Date().toISOString(),
-    sessionId,
   })
 
   await protocol.appendTaskLog(
@@ -133,7 +126,6 @@ export const runAgent = async (
   try {
     const result = await execCodex({
       prompt,
-      sessionId,
       workDir: config.workDir,
       model: config.model,
       timeout: config.timeout ?? 10 * 60 * 1000,
@@ -260,12 +252,9 @@ export const runAgent = async (
       status: 'idle',
       lastAwakeAt: state.lastAwakeAt,
       lastSleepAt: new Date().toISOString(),
-      sessionId: result.sessionId ?? sessionId,
     })
 
-    await protocol.appendTaskLog(
-      `agent:sleep sessionId=${result.sessionId ?? 'none'}`,
-    )
+    await protocol.appendTaskLog('agent:sleep')
 
     await protocol.removeUserInputs(processedInputIds)
     for (const r of context.taskResults) await protocol.clearTaskResult(r.id)
@@ -275,7 +264,6 @@ export const runAgent = async (
       status: 'idle',
       lastAwakeAt: state.lastAwakeAt,
       lastSleepAt: new Date().toISOString(),
-      sessionId,
     })
     await protocol.appendTaskLog(`agent:error ${message}`)
 
@@ -592,7 +580,7 @@ const buildPrompt = (
   parts.push(SOUL_PROMPT)
   parts.push(CORE_PROMPT)
 
-  // Task delegation section for first awake (not resume)
+  // Task delegation section always included
   parts.push(TASK_DELEGATION_SECTION(stateDir))
 
   // Memory section only if we have memory hits
@@ -651,44 +639,6 @@ const buildPrompt = (
       parts.push('')
     }
   }
-
-  return parts.join('\n')
-}
-
-const buildResumePrompt = (
-  context: AgentContext,
-  selfAwakeContext?: SelfAwakePromptContext | null,
-): string => {
-  const parts: string[] = []
-  const hasUserInputs = context.userInputs.length > 0
-
-  if (context.isSelfAwake) {
-    parts.push(SELF_AWAKE_SECTION)
-    appendSelfAwakeContext(parts, selfAwakeContext)
-  }
-
-  if (hasUserInputs) {
-    parts.push('## New User Inputs')
-    for (const input of context.userInputs)
-      parts.push(`[${input.createdAt}] ${cleanUserInput(input.text)}`)
-    parts.push('')
-  }
-
-  if (context.taskResults.length > 0) {
-    parts.push('## Completed Tasks')
-    const recent = sortTaskResults(context.taskResults).slice(-MAX_TASK_RESULTS)
-    for (const result of recent) {
-      parts.push(`T${result.id}: ${result.status}`)
-      if (result.result)
-        parts.push(truncate(result.result, MAX_TASK_RESULT_CHARS))
-      if (result.error)
-        parts.push(`Error: ${truncate(result.error, MAX_TASK_RESULT_CHARS)}`)
-      parts.push('')
-    }
-  }
-
-  if (!hasUserInputs && context.taskResults.length === 0)
-    parts.push('(No new inputs or task results)')
 
   return parts.join('\n')
 }

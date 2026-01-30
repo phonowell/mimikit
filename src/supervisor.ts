@@ -203,10 +203,9 @@ export class Supervisor {
   }
 
   private async awakeAgent(isSelfAwake: boolean): Promise<void> {
-    const [userInputs, taskResults, state, chatHistory] = await Promise.all([
+    const [userInputs, taskResults, chatHistory] = await Promise.all([
       this.protocol.getUserInputs(),
       this.protocol.getTaskResults(),
-      this.protocol.getAgentState(),
       this.protocol.getChatHistory(1000),
     ])
 
@@ -216,18 +215,11 @@ export class Supervisor {
         workDir: this.config.workDir,
         userInputs,
         chatHistory,
-        sessionId: state.sessionId,
       })
       if (handoff.didHandoff) {
         await this.protocol.appendTaskLog(
           `memory:handoff reason=${handoff.reason ?? 'unknown'} path=${handoff.path ?? 'none'}`,
         )
-        if (handoff.resetSession && state.sessionId) {
-          await this.protocol.setAgentState({
-            ...state,
-            sessionId: undefined,
-          })
-        }
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
@@ -242,7 +234,6 @@ export class Supervisor {
         workDir: this.config.workDir,
         chatHistory,
         userInputs,
-        sessionId: state.sessionId,
       })
       if (flush.didFlush) {
         await this.protocol.appendTaskLog(

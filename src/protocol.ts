@@ -13,7 +13,6 @@ export type AgentState = {
   status: 'idle' | 'running'
   lastAwakeAt?: string | undefined
   lastSleepAt?: string | undefined
-  sessionId?: string | undefined
 }
 
 export type TokenUsage = {

@@ -7,7 +7,6 @@ import type { ChatMessage, UserInput } from '../protocol.js'
 
 export type AutoHandoffResult = {
   didHandoff: boolean
-  resetSession: boolean
   reason?: 'idle' | 'count' | undefined
   path?: string | undefined
 }
@@ -54,12 +53,10 @@ export const maybeAutoHandoff = async (params: {
   workDir: string
   userInputs: UserInput[]
   chatHistory: ChatMessage[]
-  sessionId?: string | undefined
   now?: Date | undefined
 }): Promise<AutoHandoffResult> => {
   const now = params.now ?? new Date()
-  if (params.chatHistory.length === 0)
-    return { didHandoff: false, resetSession: false }
+  if (params.chatHistory.length === 0) return { didHandoff: false }
 
   const state = await readMemoryFlushState(params.stateDir)
   const lastHandoffAt = state.lastHandoffAt
@@ -67,7 +64,7 @@ export const maybeAutoHandoff = async (params: {
     : 0
   const inputIds = new Set(params.userInputs.map((input) => input.id))
   const eligible = params.chatHistory.filter((msg) => !inputIds.has(msg.id))
-  if (eligible.length === 0) return { didHandoff: false, resetSession: false }
+  if (eligible.length === 0) return { didHandoff: false }
 
   const recent = eligible.filter((msg) => {
     if (!lastHandoffAt) return true
@@ -75,7 +72,7 @@ export const maybeAutoHandoff = async (params: {
     return Number.isFinite(ts) && ts > lastHandoffAt
   })
 
-  if (recent.length === 0) return { didHandoff: false, resetSession: false }
+  if (recent.length === 0) return { didHandoff: false }
 
   const lastMessage = recent[recent.length - 1]
   const lastMessageAt = lastMessage ? Date.parse(lastMessage.createdAt) : 0
@@ -84,8 +81,7 @@ export const maybeAutoHandoff = async (params: {
     now.getTime() - lastMessageAt >= IDLE_THRESHOLD_MS
   const countTrigger = recent.length >= COUNT_THRESHOLD
 
-  if (!idleTrigger && !countTrigger)
-    return { didHandoff: false, resetSession: false }
+  if (!idleTrigger && !countTrigger) return { didHandoff: false }
 
   const fallback = formatTimestamp(now).slice(11, 16).replace(':', '')
   const slug = buildSlug(recent, fallback)
@@ -95,7 +91,6 @@ export const maybeAutoHandoff = async (params: {
     date: now,
     slug,
     source: idleTrigger ? 'auto-handoff:idle' : 'auto-handoff:count',
-    sessionId: params.sessionId,
     messages: transcript,
   })
 
@@ -106,7 +101,6 @@ export const maybeAutoHandoff = async (params: {
 
   return {
     didHandoff: true,
-    resetSession: true,
     reason: idleTrigger ? 'idle' : 'count',
     path: writeResult.path,
   }
