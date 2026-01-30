@@ -1,93 +1,19 @@
-import { type AgentConfig, runAgent } from './agent.js'
+import { type AgentConfig } from './agent.js'
 import { shortId } from './id.js'
-import { maybeMemoryFlush } from './memory/flush.js'
-import { runMemoryRollup } from './memory/rollup.js'
-import { maybeAutoHandoff } from './memory/session-hook.js'
+import { Protocol } from './protocol.js'
+import { runSupervisorCheck } from './supervisor-check.js'
+import { recoverSupervisor } from './supervisor-recover.js'
 import {
-  type PendingTask,
-  Protocol,
-  type TaskResult,
-  type TokenUsage,
-} from './protocol.js'
-import { runTask, type TaskConfig } from './task.js'
+  buildTaskViews,
+  type TaskCounts,
+  type TaskView,
+} from './supervisor-task-view.js'
 
-export type SupervisorConfig = {
-  stateDir: string
-  workDir: string
-  model?: string | undefined
-  checkIntervalMs?: number | undefined // default 1s
-  selfAwakeIntervalMs?: number | undefined // default 5min
-  taskTimeout?: number | undefined // default 10min
-  maxConcurrentTasks?: number | undefined // default 3
-}
+import type { ResolvedConfig, SupervisorConfig } from './supervisor-types.js'
+import type { TaskConfig } from './task.js'
 
-type ResolvedConfig = {
-  stateDir: string
-  workDir: string
-  model?: string | undefined
-  checkIntervalMs: number
-  selfAwakeIntervalMs: number
-  taskTimeout: number
-  maxConcurrentTasks: number
-}
-
-export type TaskView = {
-  id: string
-  status: 'pending' | 'running' | 'done' | 'failed'
-  title: string
-  createdAt?: string
-  completedAt?: string
-  usage?: TokenUsage
-}
-
-type TaskCounts = {
-  pending: number
-  running: number
-  done: number
-  failed: number
-}
-
-type TaskTitleInput = {
-  id: string
-  prompt?: string
-  result?: string
-  error?: string
-}
-
-const makeTaskTitle = (input: TaskTitleInput): string => {
-  const raw =
-    input.prompt ?? input.result ?? (input.error ? `Error: ${input.error}` : '')
-  const line =
-    raw
-      .split('\n')
-      .find((item) => item.trim())
-      ?.trim() ?? ''
-  if (!line) return input.id
-  if (line.length <= 120) return line
-  return `${line.slice(0, 117)}...`
-}
-
-const buildTitleInput = (
-  id: string,
-  fields: {
-    prompt?: string | undefined
-    result?: string | undefined
-    error?: string | undefined
-  },
-): TaskTitleInput => {
-  const input: TaskTitleInput = { id }
-  if (fields.prompt !== undefined) input.prompt = fields.prompt
-  if (fields.result !== undefined) input.result = fields.result
-  if (fields.error !== undefined) input.error = fields.error
-  return input
-}
-
-const taskTime = (task: TaskView): number => {
-  const iso = task.completedAt ?? task.createdAt
-  if (!iso) return 0
-  const ms = new Date(iso).getTime()
-  return Number.isFinite(ms) ? ms : 0
-}
+export type { SupervisorConfig } from './supervisor-types.js'
+export type { TaskCounts, TaskView } from './supervisor-task-view.js'
 
 export class Supervisor {
   private protocol: Protocol
@@ -143,22 +69,8 @@ export class Supervisor {
     }
   }
 
-  private async recover(): Promise<void> {
-    // Recover agent state: if was running, mark as idle
-    const state = await this.protocol.getAgentState()
-    if (state.status === 'running') {
-      await this.protocol.setAgentState({
-        ...state,
-        status: 'idle',
-      })
-      await this.protocol.appendTaskLog('supervisor:recover agent was running')
-    }
-
-    await this.protocol.restoreInflightTasks()
-
-    // Pending tasks in pending_tasks/ dir are automatically picked up
-    // Task results in task_results/ are automatically picked up
-    // No additional recovery needed for file-based protocol
+  private recover(): Promise<void> {
+    return recoverSupervisor(this.protocol)
   }
 
   private scheduleCheck(): void {
@@ -174,131 +86,15 @@ export class Supervisor {
   }
 
   private async check(): Promise<void> {
-    try {
-      // 1. Check if agent is already running
-      const state = await this.protocol.getAgentState()
-      if (state.status === 'running') return // frozen, wait for agent to sleep
-
-      // 2. Process pending tasks (spawn child tasks)
-      await this.processPendingTasks()
-
-      // 3. Check for pending work (user inputs, task results)
-      const hasPendingWork = await this.protocol.hasPendingWork()
-      if (hasPendingWork) {
-        await this.awakeAgent(false)
-        return
-      }
-
-      // 4. Check self-awake timer
-      const lastSleep = state.lastSleepAt
-        ? new Date(state.lastSleepAt).getTime()
-        : 0
-      const now = Date.now()
-      if (now - lastSleep >= this.config.selfAwakeIntervalMs)
-        await this.awakeAgent(true)
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      console.error(`[supervisor] check error: ${message}`)
-    }
-  }
-
-  private async awakeAgent(isSelfAwake: boolean): Promise<void> {
-    const [userInputs, taskResults, chatHistory] = await Promise.all([
-      this.protocol.getUserInputs(),
-      this.protocol.getTaskResults(),
-      this.protocol.getChatHistory(1000),
-    ])
-
-    try {
-      const handoff = await maybeAutoHandoff({
-        stateDir: this.config.stateDir,
-        workDir: this.config.workDir,
-        userInputs,
-        chatHistory,
-      })
-      if (handoff.didHandoff) {
-        await this.protocol.appendTaskLog(
-          `memory:handoff reason=${handoff.reason ?? 'unknown'} path=${handoff.path ?? 'none'}`,
-        )
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      await this.protocol.appendTaskLog(
-        `memory:handoff failed error=${message}`,
-      )
-    }
-
-    try {
-      const flush = await maybeMemoryFlush({
-        stateDir: this.config.stateDir,
-        workDir: this.config.workDir,
-        chatHistory,
-        userInputs,
-      })
-      if (flush.didFlush) {
-        await this.protocol.appendTaskLog(
-          `memory:flush path=${flush.path ?? 'none'}`,
-        )
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      await this.protocol.appendTaskLog(`memory:flush failed error=${message}`)
-    }
-
-    if (isSelfAwake) {
-      try {
-        const rollup = await runMemoryRollup({
-          stateDir: this.config.stateDir,
-          workDir: this.config.workDir,
-          model: this.config.model,
-        })
-        if (rollup.dailySummaries || rollup.monthlySummaries) {
-          await this.protocol.appendTaskLog(
-            `memory:rollup daily=${rollup.dailySummaries} monthly=${rollup.monthlySummaries}`,
-          )
-        }
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error)
-        await this.protocol.appendTaskLog(
-          `memory:rollup failed error=${message}`,
-        )
-      }
-    }
-
-    await runAgent(this.agentConfig, this.protocol, {
-      userInputs,
-      taskResults,
-      isSelfAwake,
+    await runSupervisorCheck({
+      protocol: this.protocol,
+      config: this.config,
+      agentConfig: this.agentConfig,
+      taskConfig: this.taskConfig,
+      activeTasks: this.activeTasks,
     })
   }
 
-  private async processPendingTasks(): Promise<void> {
-    // Atomically claim: move pending tasks to inflight
-    const pending = await this.protocol.claimPendingTasks()
-    if (pending.length === 0) return
-
-    for (const task of pending) {
-      // Respect concurrency limit
-      if (this.activeTasks.size >= this.config.maxConcurrentTasks) {
-        await this.protocol.returnPendingTask(task)
-        continue
-      }
-
-      this.activeTasks.add(task.id)
-
-      // Run task in background (don't await)
-      void (async () => {
-        try {
-          await runTask(this.taskConfig, this.protocol, task)
-        } finally {
-          this.activeTasks.delete(task.id)
-          await this.protocol.clearInflightTask(task.id)
-        }
-      })()
-    }
-  }
-
-  // HTTP interface methods
   async addUserInput(text: string): Promise<string> {
     const id = shortId()
     const now = new Date().toISOString()
@@ -307,7 +103,6 @@ export class Supervisor {
       text,
       createdAt: now,
     })
-    // Immediately record to chat history so WebUI can display it
     await this.protocol.addChatMessage({
       id,
       role: 'user',
@@ -338,67 +133,14 @@ export class Supervisor {
     }
   }
 
-  async getTasks(limit = 200): Promise<{
+  getTasks(limit = 200): Promise<{
     tasks: TaskView[]
     counts: TaskCounts
   }> {
-    const [pending, inflight, history] = await Promise.all([
-      this.protocol.getPendingTasks(),
-      this.protocol.getInflightTasks(),
-      this.protocol.getTaskHistory(),
-    ])
-
-    const tasks: TaskView[] = [
-      ...pending.map((task) => taskToView(task, 'pending')),
-      ...inflight.map((task) => taskToView(task, 'running')),
-      ...history.map((result) => resultToView(result)),
-    ]
-
-    tasks.sort((a, b) => taskTime(b) - taskTime(a))
-
-    const limited = tasks.slice(0, Math.max(0, limit))
-    const counts = countTasks(limited)
-    return { tasks: limited, counts }
+    return buildTaskViews(this.protocol, limit)
   }
 
   getChatHistory(limit = 50) {
     return this.protocol.getChatHistory(limit)
   }
-}
-
-const taskToView = (
-  task: PendingTask,
-  status: 'pending' | 'running',
-): TaskView => {
-  const view: TaskView = {
-    id: task.id,
-    status,
-    title: makeTaskTitle({ id: task.id, prompt: task.prompt }),
-    createdAt: task.createdAt,
-  }
-  return view
-}
-
-const resultToView = (result: TaskResult): TaskView => {
-  const view: TaskView = {
-    id: result.id,
-    status: result.status,
-    title: makeTaskTitle(
-      buildTitleInput(result.id, {
-        prompt: result.prompt,
-        result: result.result,
-        error: result.error,
-      }),
-    ),
-    completedAt: result.completedAt,
-  }
-  if (result.createdAt !== undefined) view.createdAt = result.createdAt
-  if (result.usage !== undefined) view.usage = result.usage
-  return view
-}
-
-const countTasks = (tasks: TaskView[]): TaskCounts => {
-  const counts: TaskCounts = { pending: 0, running: 0, done: 0, failed: 0 }
-  for (const task of tasks) counts[task.status]++
-  return counts
 }
