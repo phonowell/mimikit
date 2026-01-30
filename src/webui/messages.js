@@ -67,11 +67,18 @@ export function createMessagesController({
     const totalSeconds = Math.max(0, Math.floor(ms / 1000))
     if (totalSeconds < 60) return `${totalSeconds}s`
     const totalMinutes = Math.floor(totalSeconds / 60)
-    if (totalMinutes < 60) return `${totalMinutes}m`
     const totalHours = Math.floor(totalMinutes / 60)
     const minutes = totalMinutes % 60
-    if (minutes === 0) return `${totalHours}h`
-    return `${totalHours}h ${minutes}m`
+    const seconds = totalSeconds % 60
+    const parts = []
+    if (totalHours > 0) {
+      parts.push(`${totalHours}h`)
+      parts.push(`${minutes}m`)
+    } else {
+      parts.push(`${totalMinutes}m`)
+    }
+    parts.push(`${seconds}s`)
+    return parts.join(' ')
   }
 
   function getScrollState() {
@@ -299,7 +306,7 @@ export function createMessagesController({
     if (elapsedText) {
       const elapsed = document.createElement('span')
       elapsed.className = 'elapsed'
-      elapsed.textContent = `took ${elapsedText}`
+      elapsed.textContent = usageText ? `· ${elapsedText}` : elapsedText
       meta.appendChild(elapsed)
     }
     const time = document.createElement('span')
