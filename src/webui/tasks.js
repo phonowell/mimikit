@@ -14,7 +14,12 @@ export function bindTasksModal({
   function formatCount(value) {
     if (value === null) return ''
     const rounded = Math.round(value)
-    return new Intl.NumberFormat('en-US').format(rounded)
+    if (Math.abs(rounded) < 1000)
+      return new Intl.NumberFormat('en-US').format(rounded)
+    const formatted = new Intl.NumberFormat('en-US', {
+      maximumFractionDigits: 1,
+    }).format(rounded / 1000)
+    return `${formatted}k`
   }
 
   function formatUsage(usage) {
