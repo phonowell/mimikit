@@ -2,7 +2,11 @@ export function bindRestart({ restartBtn, statusText, statusDot, messages }) {
   if (!restartBtn) return
 
   restartBtn.addEventListener('click', async () => {
-    if (!confirm('Restart server?')) return
+    const skipConfirm =
+      messages &&
+      typeof messages.isFullyIdle === 'function' &&
+      messages.isFullyIdle()
+    if (!skipConfirm && !confirm('Restart server?')) return
     restartBtn.disabled = true
     if (statusText) statusText.textContent = 'restarting...'
     if (statusDot) statusDot.dataset.state = ''

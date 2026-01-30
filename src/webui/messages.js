@@ -11,6 +11,7 @@ export function createMessagesController({
   let isPolling = false
   let lastMessageCount = 0
   let emptyRemoved = false
+  let lastStatus = null
 
   function removeEmpty() {
     if (emptyRemoved) return
@@ -63,6 +64,7 @@ export function createMessagesController({
   }
 
   function updateStatus(status) {
+    lastStatus = status
     if (!statusText || !statusDot) return
     statusDot.dataset.state = status.agentStatus
     const parts = [status.agentStatus]
@@ -74,6 +76,7 @@ export function createMessagesController({
   function setDisconnected() {
     if (statusText) statusText.textContent = 'disconnected'
     if (statusDot) statusDot.dataset.state = ''
+    lastStatus = null
   }
 
   async function poll() {
@@ -153,7 +156,16 @@ export function createMessagesController({
     pollTimer = null
   }
 
-  return { start, stop, sendMessage }
+  function isFullyIdle() {
+    if (!lastStatus) return false
+    return (
+      lastStatus.agentStatus === 'idle' &&
+      (lastStatus.activeTasks ?? 0) === 0 &&
+      (lastStatus.pendingTasks ?? 0) === 0
+    )
+  }
+
+  return { start, stop, sendMessage, isFullyIdle }
 }
 
 export function bindComposer({ form, input, messages }) {
