@@ -73,8 +73,17 @@ export function createMessagesController({
 
   function setScrollButtonVisible(visible) {
     if (!scrollBottomBtn) return
+    if (!visible && document.activeElement === scrollBottomBtn) {
+      scrollBottomBtn.blur()
+    }
     scrollBottomBtn.classList.toggle('is-visible', visible)
-    scrollBottomBtn.setAttribute('aria-hidden', visible ? 'false' : 'true')
+    if (visible) {
+      scrollBottomBtn.removeAttribute('aria-hidden')
+      scrollBottomBtn.removeAttribute('inert')
+    } else {
+      scrollBottomBtn.setAttribute('aria-hidden', 'true')
+      scrollBottomBtn.setAttribute('inert', '')
+    }
     scrollBottomBtn.tabIndex = visible ? 0 : -1
   }
 
