@@ -3,7 +3,12 @@ import { shortId } from './id.js'
 import { maybeMemoryFlush } from './memory/flush.js'
 import { runMemoryRollup } from './memory/rollup.js'
 import { maybeAutoHandoff } from './memory/session-hook.js'
-import { type PendingTask, Protocol, type TaskResult } from './protocol.js'
+import {
+  type PendingTask,
+  Protocol,
+  type TaskResult,
+  type TokenUsage,
+} from './protocol.js'
 import { runTask, type TaskConfig } from './task.js'
 
 export type SupervisorConfig = {
@@ -32,6 +37,7 @@ export type TaskView = {
   title: string
   createdAt?: string
   completedAt?: string
+  usage?: TokenUsage
 }
 
 type TaskCounts = {
@@ -396,6 +402,7 @@ const resultToView = (result: TaskResult): TaskView => {
     completedAt: result.completedAt,
   }
   if (result.createdAt !== undefined) view.createdAt = result.createdAt
+  if (result.usage !== undefined) view.usage = result.usage
   return view
 }
 

@@ -16,6 +16,12 @@ export type AgentState = {
   sessionId?: string | undefined
 }
 
+export type TokenUsage = {
+  input?: number
+  output?: number
+  total?: number
+}
+
 export type PendingTask = {
   id: string
   prompt: string
@@ -32,6 +38,7 @@ export type TaskResult = {
   result?: string
   error?: string
   completedAt: string
+  usage?: TokenUsage
   origin?: 'self-awake' | 'event'
   selfAwakeRunId?: string
 }
@@ -47,6 +54,7 @@ export type ChatMessage = {
   role: 'user' | 'agent'
   text: string
   createdAt: string
+  usage?: TokenUsage
 }
 
 // Simple file-based mutex: serialize writes per path
@@ -84,6 +92,7 @@ const trimTaskResult = (result: TaskResult): TaskResult => {
   if (result.origin !== undefined) trimmed.origin = result.origin
   if (result.selfAwakeRunId !== undefined)
     trimmed.selfAwakeRunId = result.selfAwakeRunId
+  if (result.usage !== undefined) trimmed.usage = result.usage
   const prompt = trimField(result.prompt)
   if (prompt !== undefined) trimmed.prompt = prompt
   const output = trimField(result.result)

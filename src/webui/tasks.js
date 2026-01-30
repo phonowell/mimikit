@@ -7,6 +7,27 @@ export function bindTasksModal({
   tasksMeta,
   tasksCloseBtn,
 }) {
+  function asNumber(value) {
+    return typeof value === 'number' && Number.isFinite(value) ? value : null
+  }
+
+  function formatUsage(usage) {
+    if (!usage) return ''
+    const input = asNumber(usage.input)
+    const output = asNumber(usage.output)
+    const total = asNumber(usage.total)
+    const parts = []
+    if (total !== null) {
+      parts.push(`${total} tokens`)
+    } else if (input !== null || output !== null) {
+      const sum = (input ?? 0) + (output ?? 0)
+      if (sum > 0) parts.push(`${sum} tokens`)
+    }
+    if (input !== null) parts.push(`in ${input}`)
+    if (output !== null) parts.push(`out ${output}`)
+    return parts.join(' · ')
+  }
+
   async function loadTasks() {
     if (!tasksList || !tasksMeta) return
     tasksMeta.textContent = 'Loading...'
@@ -74,6 +95,13 @@ export function bindTasksModal({
         const timeEl = document.createElement('span')
         timeEl.textContent = formatDateTime(time)
         meta.appendChild(timeEl)
+      }
+
+      const usageText = formatUsage(task.usage)
+      if (usageText) {
+        const usage = document.createElement('span')
+        usage.textContent = usageText
+        meta.appendChild(usage)
       }
 
       const id = document.createElement('span')

@@ -2,12 +2,21 @@ import { appendAudit, getGitDiffSummary } from './audit.js'
 import { execCodex } from './codex.js'
 import { buildTaskPrompt } from './prompt.js'
 
-import type { PendingTask, Protocol } from './protocol.js'
+import type { PendingTask, Protocol, TokenUsage } from './protocol.js'
 
 export type TaskConfig = {
   workDir: string
   model?: string | undefined
   timeout?: number | undefined
+}
+
+const formatUsageForLog = (usage?: TokenUsage): string => {
+  if (!usage) return ''
+  const parts: string[] = []
+  if (usage.total !== undefined) parts.push(`tokens=${usage.total}`)
+  if (usage.input !== undefined) parts.push(`in=${usage.input}`)
+  if (usage.output !== undefined) parts.push(`out=${usage.output}`)
+  return parts.length > 0 ? ` ${parts.join(' ')}` : ''
 }
 
 export const runTask = async (
@@ -35,6 +44,7 @@ export const runTask = async (
       model: config.model,
       timeout: config.timeout ?? 10 * 60 * 1000,
     })
+    const usageNote = formatUsageForLog(result.usage)
 
     await protocol.writeTaskResult({
       id: task.id,
@@ -43,12 +53,13 @@ export const runTask = async (
       createdAt: task.createdAt,
       result: result.output,
       completedAt: new Date().toISOString(),
+      ...(result.usage ? { usage: result.usage } : {}),
       ...(task.origin === undefined ? {} : { origin: task.origin }),
       ...(task.selfAwakeRunId === undefined
         ? {}
         : { selfAwakeRunId: task.selfAwakeRunId }),
     })
-    await protocol.appendTaskLog(`task:done id=${task.id}`)
+    await protocol.appendTaskLog(`task:done id=${task.id}${usageNote}`)
     await appendAudit(stateDir, {
       ts: new Date().toISOString(),
       action: 'task:done',

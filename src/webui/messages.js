@@ -29,6 +29,27 @@ export function createMessagesController({
     return msg?.role === 'agent' || msg?.role === 'assistant'
   }
 
+  function asNumber(value) {
+    return typeof value === 'number' && Number.isFinite(value) ? value : null
+  }
+
+  function formatUsage(usage) {
+    if (!usage) return ''
+    const input = asNumber(usage.input)
+    const output = asNumber(usage.output)
+    const total = asNumber(usage.total)
+    const parts = []
+    if (total !== null) {
+      parts.push(`${total} tokens`)
+    } else if (input !== null || output !== null) {
+      const sum = (input ?? 0) + (output ?? 0)
+      if (sum > 0) parts.push(`${sum} tokens`)
+    }
+    if (input !== null) parts.push(`in ${input}`)
+    if (output !== null) parts.push(`out ${output}`)
+    return parts.join(' · ')
+  }
+
   function findLatestAssistantMessage(messages) {
     for (let i = messages.length - 1; i >= 0; i -= 1) {
       const msg = messages[i]
@@ -111,7 +132,9 @@ export function createMessagesController({
 
     const time = document.createElement('small')
     time.className = 'time'
-    time.textContent = formatTime(msg.createdAt)
+    const usageText = isAssistantMessage(msg) ? formatUsage(msg.usage) : ''
+    const timeText = formatTime(msg.createdAt)
+    time.textContent = usageText ? `${timeText} · ${usageText}` : timeText
     article.appendChild(time)
 
     item.appendChild(article)

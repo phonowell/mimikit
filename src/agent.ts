@@ -199,12 +199,14 @@ export const runAgent = async (
       })
     }
 
-    if (cleanedOutput.trim()) {
+    const trimmedOutput = cleanedOutput.trim()
+    if (trimmedOutput) {
       await protocol.addChatMessage({
         id: shortId(),
         role: 'agent',
-        text: cleanedOutput.trim(),
+        text: trimmedOutput,
         createdAt: new Date().toISOString(),
+        ...(result.usage ? { usage: result.usage } : {}),
       })
     }
 
