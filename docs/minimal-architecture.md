@@ -57,7 +57,7 @@ prompts/
 ### Memory 机制
 - 检索范围（workDir 下）：`MEMORY.md` + `memory/`(≤5d) + `memory/summary/`(5-90d 日摘要，>90d 月摘要) + `docs/`（不在 `.mimikit/`）
 - 检索策略：规则扩展关键词 + BM25；失败时 `rg` 兜底
-- 自动托管：6h 无消息或 100 条对话触发，写 `memory/YYYY-MM-DD-slug.md`，reset sessionId，保留 chat_history
+- 自动托管：6h 无消息或 100 条对话触发，写 `memory/YYYY-MM-DD-slug.md`，保留 chat_history
 - Flush：对话记录 ≥800 且距上次 ≥1h，追加到 `memory/YYYY-MM-DD.md`
 - Rollup：仅自唤醒触发，生成 `memory/summary/YYYY-MM-DD.md` 与 `memory/summary/YYYY-MM.md`
 
@@ -83,7 +83,7 @@ prompts/
 ## 文件协议
 ```
 .mimikit/
-├── agent_state.json      # Agent 状态（running/idle + sessionId）
+├── agent_state.json      # Agent 状态（running/idle）
 ├── pending_tasks/        # 待派发的子任务（每任务一文件）
 │   └── {taskId}.json
 ├── inflight_tasks/       # 正在执行的子任务

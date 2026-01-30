@@ -6,7 +6,6 @@ export type MemoryEntry = {
   lines: string[]
   timestamp: string
   source: string
-  sessionId?: string | undefined
 }
 
 export type MemoryWriteResult = {
@@ -51,7 +50,6 @@ const formatEntry = (entry: MemoryEntry): string => {
   const lines: string[] = []
   lines.push(`## ${entry.timestamp} ${entry.title}`)
   lines.push(`- source: ${entry.source}`)
-  if (entry.sessionId) lines.push(`- session: ${entry.sessionId}`)
   if (entry.lines.length > 0) {
     lines.push('- transcript:')
     for (const line of entry.lines) lines.push(`  - ${line}`)
@@ -99,7 +97,6 @@ export const writeSessionMemoryFile = async (params: {
   date: Date
   slug: string
   source: string
-  sessionId?: string | undefined
   messages: string[]
 }): Promise<MemoryWriteResult> => {
   const day = formatDate(params.date)
@@ -113,7 +110,6 @@ export const writeSessionMemoryFile = async (params: {
   const header = [
     `# Session: ${formatTimestamp(params.date)}`,
     `- source: ${params.source}`,
-    params.sessionId ? `- session: ${params.sessionId}` : '',
     `- messages: ${params.messages.length}`,
     '',
     '## Transcript',
