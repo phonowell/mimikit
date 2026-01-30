@@ -1,8 +1,4 @@
-import {
-  MAX_DELEGATION_PROMPT_CHARS,
-  MAX_DELEGATIONS,
-} from './agent-constants.js'
-import { truncate } from './agent-utils.js'
+import { MAX_DELEGATIONS } from './agent-constants.js'
 import { shortId } from './id.js'
 
 import type { PendingTask, Protocol } from './protocol.js'
@@ -45,7 +41,7 @@ export const normalizeDelegationPrompt = (value: unknown): string | null => {
   if (typeof value !== 'string') return null
   const trimmed = value.trim()
   if (!trimmed) return null
-  return truncate(trimmed, MAX_DELEGATION_PROMPT_CHARS)
+  return trimmed
 }
 
 export const enqueueDelegations = async (

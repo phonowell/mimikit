@@ -14,5 +14,4 @@ export type AgentConfig = {
   model?: string | undefined
   timeout?: number | undefined
   memoryPaths?: string[] | undefined
-  maxMemoryHits?: number | undefined
 }

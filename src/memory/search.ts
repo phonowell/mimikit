@@ -5,14 +5,14 @@ import { firstLine, parseHits, runRg, trimHits } from './search-utils.js'
 
 import type { MemoryConfig, MemoryHit } from './types.js'
 
+const SEARCH_MAX_HITS = 20
+
 export const searchMemory = async (
   config: MemoryConfig,
   keywords: string[],
 ): Promise<MemoryHit[]> => {
   if (keywords.length === 0) return []
 
-  const maxHits = config.maxHits ?? 10
-  const maxChars = config.maxChars ?? 1200
   const expanded = expandKeywords(keywords, { maxTerms: 12 })
   if (expanded.length === 0) return []
   const paths = await resolveSearchFiles(config)
@@ -26,7 +26,7 @@ export const searchMemory = async (
       const bm25Hits = await searchBm25({
         workDir: config.workDir,
         query,
-        limit: maxHits * 4,
+        limit: SEARCH_MAX_HITS * 4,
       })
       if (bm25Hits.length > 0) {
         const mapped = bm25Hits.map((hit) => ({
@@ -34,7 +34,7 @@ export const searchMemory = async (
           line: hit.lineStart,
           text: firstLine(hit.text),
         }))
-        return trimHits(mapped, maxHits, maxChars)
+        return trimHits(mapped, SEARCH_MAX_HITS)
       }
     } catch {
       // fall back to rg
@@ -47,7 +47,7 @@ export const searchMemory = async (
     '--color',
     'never',
     '--max-count',
-    String(maxHits),
+    String(SEARCH_MAX_HITS),
     ...expanded.flatMap((kw) => ['-e', kw]),
     '--',
     ...paths,
@@ -55,7 +55,7 @@ export const searchMemory = async (
 
   try {
     const lines = await runRg(args, config.workDir)
-    return trimHits(parseHits(lines), maxHits, maxChars)
+    return trimHits(parseHits(lines), SEARCH_MAX_HITS)
   } catch {
     return []
   }

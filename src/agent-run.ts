@@ -54,7 +54,6 @@ export const runAgent = async (
     const memoryConfig: MemoryConfig = {
       workDir: config.workDir,
       memoryPaths: config.memoryPaths,
-      maxHits: config.maxMemoryHits ?? 3,
     }
     const hits = await searchMemory(memoryConfig, keywords)
     memoryHits = formatMemoryHits(hits)

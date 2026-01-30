@@ -2,8 +2,6 @@ import { spawn } from 'node:child_process'
 
 import type { MemoryHit } from './types.js'
 
-const MAX_HIT_TEXT_CHARS = 160
-
 export const firstLine = (text: string): string => {
   const line = text.split('\n').find((item) => item.trim())
   return line?.trim() ?? text
@@ -38,26 +36,5 @@ export const parseHits = (lines: string[]): MemoryHit[] => {
   return hits
 }
 
-const truncateLine = (text: string, maxChars: number): string => {
-  if (text.length <= maxChars) return text
-  if (maxChars <= 3) return text.slice(0, maxChars)
-  return `${text.slice(0, maxChars - 3)}...`
-}
-
-export const trimHits = (
-  hits: MemoryHit[],
-  maxHits: number,
-  maxChars: number,
-): MemoryHit[] => {
-  const results: MemoryHit[] = []
-  let totalChars = 0
-  for (const hit of hits) {
-    if (results.length >= maxHits) break
-    const trimmedText = truncateLine(hit.text, MAX_HIT_TEXT_CHARS)
-    const line = `${hit.path}:${hit.line} ${trimmedText}`
-    if (totalChars + line.length > maxChars) break
-    results.push({ ...hit, text: trimmedText })
-    totalChars += line.length + 1
-  }
-  return results
-}
+export const trimHits = (hits: MemoryHit[], maxHits: number): MemoryHit[] =>
+  hits.slice(0, maxHits)

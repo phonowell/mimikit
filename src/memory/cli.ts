@@ -103,8 +103,6 @@ export const runMemoryCli = async (argv: string[]): Promise<void> => {
     const hits = await searchMemory(
       {
         workDir,
-        maxHits: 10,
-        maxChars: 1200,
       },
       keywords,
     )
