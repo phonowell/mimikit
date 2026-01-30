@@ -6,18 +6,18 @@
 
 每 1 秒执行一次，按优先级：
 
-1. **Teller 运行中？**（进程级判断） → 冻结所有需要唤醒 Teller 的步骤（3-needs_input、7-结果/输入），其余步骤正常执行。
+1. **Teller 运行中？**（进程级判断） → 仅冻结会唤醒 Teller 的分支（`needs_input` / 结果回传 / 用户输入），其余步骤正常执行。
 2. **内置操作待执行？** → 执行（记忆归档、历史长度限制、确定性条件评估等）。
-3. **Planner 结果待处理？** → 检查状态：`done` → 解析子任务写入 `worker/queue/`（不唤醒 Teller）；`needs_input` → 唤醒 Teller 与用户交互；`failed` → 进入重试流程。
+3. **Planner 结果待处理？** → `done` → 解析子任务写入 `worker/queue/`；`needs_input` → 若 Teller 空闲则唤醒，否则延后；`failed` → 进入重试流程。
 4. **有待派发 Planner？** → 若 Planner 未在运行且 `planner/queue/` 非空，派发一个。
 5. **有待派发 Worker？** → 若 Worker 运行数 < 3 且 `worker/queue/` 非空，按优先级派发（先按 `priority` 降序，同优先级内 `llm_eval` 评估优先，再按 `createdAt` 升序）。
-6. **调度任务到期？** → 检查 `triggers/`，按任务类型处理：`recurring` / `conditional` 复制到对应队列（保留 trigger 定义）；`scheduled` 移动到队列（执行后移除 trigger）。
-7. **Worker 结果待处理 或 用户输入待处理 或 `ask_user` 回复待处理？** → 唤醒 Teller。
+6. **调度任务到期？** → 检查 `triggers/`，按任务类型处理：`recurring` / `conditional` 触发为 oneshot 入队（保留 trigger 定义）；`scheduled` 到点后触发并移除。
+7. **Worker 结果待处理 / 用户输入待处理 / `ask_user` 回复待处理？** → 若 Teller 空闲则唤醒。
 
 ## 并发控制
 
 | 角色 | 并发上限 | 说明 |
-|------|---------|------|
+|------|------|------|
 | Teller | 1 | 同一时刻只有一个 Teller 运行，保证回复顺序一致 |
 | Planner | 1 | 同一时刻只有一个 Planner 运行，避免任务编排冲突 |
 | Worker | 3 | 可并行执行多个独立子任务，提高吞吐 |
@@ -33,12 +33,18 @@ Planner 和 Worker 各自有独立的队列、运行目录、结果目录，互�
 - `planner/queue/` 非空 → 继续派发。
 - `worker/queue/` 非空 → 继续派发。
 - `planner/results/` 非空 → 解析子任务写入 `worker/queue/`。
-- `worker/results/` 非空 → 唤醒 Teller 处理。
+- `worker/results/` 非空 → 更新 `task_status.json`，并在 Teller 空闲时唤醒处理。
 - `inbox.json` 有内容 → 唤醒 Teller。
 - `history.json` 中存在 `archived: "pending"` → 回退为 `false`（归档中断，下次重新归档）。
 - `pending_question.json` 存在 → 保留，等待用户回复后唤醒 Teller。
 
 Teller 是否运行中由 Supervisor 进程级判断（子进程是否存活），不写文件。
+
+## 任务结果索引与清理
+
+- Worker 结果写入时，Supervisor 更新 `task_status.json`（`status` / `completedAt` / `resultId` / `sourceTriggerId`）。
+- `task_done` / `task_failed` 条件基于 `task_status.json` 判断，避免依赖结果文件是否存在。
+- Teller 消费结果后，可按保留策略清理 `worker/results/`（例如保留 7~30 天或按数量上限），不影响条件判断。
 
 ## 超时与失败
 
@@ -47,7 +53,7 @@ Teller 是否运行中由 Supervisor 进程级判断（子进程是否存活）�
 Supervisor 监控所有 Planner / Worker 进程的运行时长，超时后 kill 进程，视为一次失败。
 
 | 角色 | 默认超时 | 说明 |
-|------|---------|------|
+|------|------|------|
 | Teller | 3 min | 回复 + 委派，应快速完成 |
 | Planner | 10 min | 含信息收集与任务拆分 |
 | Worker | 10 min | 常规任务执行 |

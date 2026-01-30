@@ -36,8 +36,10 @@
 | 操作 | 实现方式 |
 |------|---------|
 | 任务调度（recurring / scheduled / conditional） | 时间比较、文件 stat、任务状态检查 |
+| 触发器状态更新 | 写回 `lastTriggeredAt/lastEvalAt/lastMtime` 等 |
+| 任务结果索引 | 更新 `task_status.json`、标记消费 |
+| 历史长度限制 | `history.json` 超 200 条时移除最旧条目（仅已归档） |
 | 记忆归档触发 | 条数统计 + 时间差计算 |
-| 历史长度限制 | `history.json` 超 200 条时移除最旧条目 |
 | 记忆文件搬运（≤ 5 天） | 原样复制到 `memory/YYYY-MM-DD-slug.md` |
 | 记忆汇总派发（> 5 天） | 直接派 Worker，不经 Teller |
 | 历史会话注入裁剪 | token 预算逆序累加，截断长消息 |
@@ -49,6 +51,7 @@
 | 确定性条件评估 | `file_changed`、`task_done`、`task_failed`、`file_exists` |
 | 下次执行时间计算 | `lastRunAt + interval` |
 | 冷却期判断 | `lastTriggeredAt + cooldown > now` |
+| 原子写入 | `*.tmp` + rename，读侧忽略临时文件 |
 
 ### 需要 LLM 的操作（不可避免）
 
@@ -68,6 +71,7 @@
 ├── inbox.json              # 用户输入队列
 ├── pending_question.json   # ask_user 待回复问题（Teller 写入，用户回复后清除）
 ├── history.json            # 对话历史
+├── task_status.json        # 任务最终状态索引（条件评估/展示）
 ├── memory.md               # 长期记忆
 ├── memory/                 # 近期记忆
 │   ├── YYYY-MM-DD-slug.md
@@ -88,10 +92,12 @@
 │   │   └── {taskId}.json
 │   └── results/            # Worker 结果（唤醒 Teller）
 │       └── {taskId}.json
-├── triggers/               # 调度任务定义（recurring / scheduled / conditional）
-│   └── {taskId}.json
+├── triggers/               # 调度/条件任务定义（recurring / scheduled / conditional）
+│   └── {triggerId}.json
 └── log.jsonl               # 日志（任务事件 + 审计事件，type 字段区分）
 ```
+
+**协议约定**：所有 JSON 写入使用 `*.tmp` + rename，读侧忽略临时文件；触发器与任务结果可被清理，但 `task_status.json` 保留最终状态。
 
 ## 实施计划
 
@@ -101,11 +107,13 @@
 - Teller 职责收窄为只回复 + 委派 Planner。
 - Planner 作为独立角色，创建 `docs/agents/planner.md`。
 - 实现超时监控与失败重试机制。
+- 引入原子写入协议（`*.tmp` + rename）。
 
 ### 第二阶段：任务调度系统
 
-- 实现四种任务类型（oneshot / recurring / scheduled / conditional）。
+- 实现触发器与执行任务分离（`triggers/` → `worker/queue/`）。
 - 实现 `schedule` + `list_tasks` + `cancel_task` 工具。
+- 增加 `task_status.json` 作为条件评估索引。
 - Supervisor 内置实现所有确定性条件评估。
 - 语义条件（`llm_eval`）按需批量评估，优先级高于普通任务。
 - 记忆归档作为 Supervisor 内置定时检查（纯代码计时器，非任务系统 recurring 类型）。
@@ -118,7 +126,7 @@
 
 ### 第四阶段：扩展工具与交互
 
-- 实现 `ask_user` 工具。
+- 实现 `ask_user`（异步回调）工具。
 - 实现 `needs_input` 状态，支持 Planner 回退至 Teller 与用户交互。
 - 移除所有旧的正则解析 fallback。
 
