@@ -1,4 +1,5 @@
 import { formatTime } from './time.js'
+import { renderMarkdown } from './markdown.js'
 
 export function createMessagesController({
   messagesEl,
@@ -99,7 +100,13 @@ export function createMessagesController({
 
     const content = document.createElement('div')
     content.className = 'content'
-    content.textContent = msg.text
+    const text = msg?.text ?? ''
+    if (isAssistantMessage(msg)) {
+      content.classList.add('markdown')
+      content.appendChild(renderMarkdown(text))
+    } else {
+      content.textContent = text
+    }
     article.appendChild(content)
 
     const time = document.createElement('small')

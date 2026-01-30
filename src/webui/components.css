@@ -109,6 +109,125 @@
   font-size: 14px;
 }
 
+.message .content.markdown {
+  white-space: normal;
+}
+
+.message .content.markdown > * {
+  margin: 0 0 8px;
+}
+
+.message .content.markdown > *:last-child {
+  margin-bottom: 0;
+}
+
+.message .content.markdown h1 {
+  font-size: 18px;
+}
+
+.message .content.markdown h2 {
+  font-size: 16px;
+}
+
+.message .content.markdown h3 {
+  font-size: 15px;
+}
+
+.message .content.markdown h4,
+.message .content.markdown h5,
+.message .content.markdown h6 {
+  font-size: 14px;
+}
+
+.message .content.markdown ul,
+.message .content.markdown ol {
+  padding-left: 18px;
+}
+
+.message .content.markdown .contains-task-list {
+  padding-left: 0;
+}
+
+.message .content.markdown .task-list-item {
+  list-style: none;
+}
+
+.message .content.markdown .task-list-item input[type='checkbox'] {
+  margin-right: 6px;
+  transform: translateY(1px);
+}
+
+.message .content.markdown li + li {
+  margin-top: 4px;
+}
+
+.message .content.markdown a {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.message .content.markdown code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    'Liberation Mono', 'Courier New', monospace;
+  background: rgba(15, 23, 42, 0.08);
+  padding: 0 4px;
+  border-radius: 4px;
+  font-size: 0.95em;
+}
+
+.message .content.markdown pre {
+  background: #f5f7fb;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.message .content.markdown pre code {
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+}
+
+.message .content.markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  display: block;
+  overflow-x: auto;
+}
+
+.message .content.markdown th,
+.message .content.markdown td {
+  border: 1px solid var(--border);
+  padding: 6px 8px;
+  text-align: left;
+}
+
+.message .content.markdown thead {
+  background: #f3f6fb;
+}
+
+.message .content.markdown img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  display: block;
+}
+
+.message .content.markdown blockquote {
+  border-left: 3px solid var(--border);
+  padding-left: 10px;
+  color: var(--muted);
+}
+
+.message .content.markdown hr {
+  border: none;
+  border-top: 1px solid var(--border);
+}
+
 .message .time {
   font-size: 11px;
   color: var(--muted);
