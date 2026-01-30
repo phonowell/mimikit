@@ -1,7 +1,11 @@
 import { filterChatHistory, sortTaskResults } from './agent-history.js'
 import { cleanUserInput, shouldIncludeStateDir } from './agent-input.js'
 import { formatCheckHistory } from './agent-self-awake-checks.js'
-import { STATE_DIR_INSTRUCTION } from './prompt.js'
+import {
+  RUNTIME_AGENT_PROMPT,
+  SELF_AWAKE_PROMPT,
+  STATE_DIR_INSTRUCTION,
+} from './prompt.js'
 
 import type { AgentContext } from './agent-types.js'
 import type { BacklogItem } from './backlog.js'
@@ -37,10 +41,15 @@ export const buildPrompt = (
   context: AgentContext,
   selfAwakeContext?: SelfAwakePromptContext | null,
 ): string => {
-  const parts: string[] = [RUNTIME_AGENT_DECLARATION]
+  const parts: string[] = [RUNTIME_AGENT_DECLARATION, '', RUNTIME_AGENT_PROMPT]
   const hasUserInputs = context.userInputs.length > 0
 
-  if (context.isSelfAwake) appendSelfAwakeContext(parts, selfAwakeContext)
+  if (context.isSelfAwake) {
+    parts.push('')
+    parts.push(SELF_AWAKE_PROMPT)
+    parts.push('')
+    appendSelfAwakeContext(parts, selfAwakeContext)
+  }
 
   if (hasUserInputs && shouldIncludeStateDir(context.userInputs)) {
     parts.push(STATE_DIR_INSTRUCTION(stateDir))

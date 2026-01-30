@@ -31,6 +31,9 @@ src/
 prompts/
 ├── agent/          # 动态片段（state-dir.md）
 └── task/           # 子任务 prompt 模板
+
+docs/
+└── runtime/         # 运行时注入文档（agent/self-awake/task）
 ```
 
 ## 核心流程
@@ -43,7 +46,7 @@ prompts/
 
 ### Agent 唤醒流程
 1. 加载：对话历史 + 记忆检索 + 用户输入 + 任务结果
-2. 构建 prompt（CLAUDE.md 系统指令 + 动态上下文）
+2. 构建 prompt（固定声明 "You are the Mimikit runtime agent." → docs/runtime/agent.md → 若自唤醒追加 docs/runtime/self-awake.md → 动态上下文）
 3. 执行 codex exec（可 resume）
 4. 记录输出到对话历史
 5. 清理已处理的输入和结果
@@ -64,9 +67,10 @@ prompts/
 ### 子任务流程
 1. Agent 写入 pending_tasks/{id}.json
 2. Supervisor 检测并派发（受 maxConcurrentTasks 限制）
-3. 子任务独立执行 codex exec
-4. 结果写入 task_results/{id}.json
-5. 下次 Agent 唤醒时读取结果
+3. 子任务构建 prompt（docs/runtime/task.md + prompts/task/core.md + Task: {prompt}）
+4. 子任务独立执行 codex exec
+5. 结果写入 task_results/{id}.json
+6. 下次 Agent 唤醒时读取结果
 
 ### 委派协议（主 Agent 输出）
 - 需要委派时，主 Agent 在回复末尾输出（代码块标记为 delegations）：
