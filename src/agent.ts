@@ -81,7 +81,7 @@ export const runAgent = async (
       const memoryConfig: MemoryConfig = {
         workDir: config.workDir,
         memoryPaths: config.memoryPaths,
-        maxHits: config.maxMemoryHits ?? 6,
+        maxHits: config.maxMemoryHits ?? 3,
       }
       const hits = await searchMemory(memoryConfig, keywords)
       memoryHits = formatMemoryHits(hits)
@@ -239,7 +239,6 @@ export const runAgent = async (
   }
 }
 
-const MAX_INPUT_CHARS = 800
 const MAX_HISTORY_CHARS = 300
 const MAX_HISTORY_MESSAGES = 3
 const MAX_HISTORY_KEYWORDS = 4
@@ -373,6 +372,20 @@ const extractKeywords = (inputs: UserInput[]): string[] => {
   return scored.slice(0, MAX_KEYWORDS).map((item) => item.token)
 }
 
+const NOISE_PATTERNS = [
+  /^#+\s*(AGENTS?\.md|CLAUDE\.md|environment_context)/im,
+  /```(agents?|environment|context)[\s\S]*?```/gi,
+  /<(environment|agents|context)>[\s\S]*?<\/\1>/gi,
+  /(?:^|\r?\n)##\s*(Environment|Context|Agents?)[\s\S]*?(?=\r?\n##|$)/gi,
+]
+
+const cleanUserInput = (text: string): string => {
+  let cleaned = text
+  for (const pattern of NOISE_PATTERNS) cleaned = cleaned.replace(pattern, '')
+  cleaned = cleaned.replace(/\n{3,}/g, '\n\n')
+  return cleaned.trim()
+}
+
 const shouldIncludeStateDir = (inputs: UserInput[]): boolean => {
   const text = inputs.map((i) => i.text.toLowerCase()).join(' ')
   if (!text) return false
@@ -477,11 +490,8 @@ const buildPrompt = (
 
   if (hasUserInputs) {
     parts.push('## New User Inputs')
-    for (const input of context.userInputs) {
-      parts.push(
-        `[${input.createdAt}] ${truncate(input.text, MAX_INPUT_CHARS)}`,
-      )
-    }
+    for (const input of context.userInputs)
+      parts.push(`[${input.createdAt}] ${cleanUserInput(input.text)}`)
 
     parts.push('')
   }
@@ -510,11 +520,8 @@ const buildResumePrompt = (context: AgentContext): string => {
 
   if (hasUserInputs) {
     parts.push('## New User Inputs')
-    for (const input of context.userInputs) {
-      parts.push(
-        `[${input.createdAt}] ${truncate(input.text, MAX_INPUT_CHARS)}`,
-      )
-    }
+    for (const input of context.userInputs)
+      parts.push(`[${input.createdAt}] ${cleanUserInput(input.text)}`)
     parts.push('')
   }
 
