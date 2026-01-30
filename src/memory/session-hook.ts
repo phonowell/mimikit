@@ -1,3 +1,5 @@
+import { LATIN_STOPWORDS } from '../stopwords.js'
+
 import { readMemoryFlushState, updateMemoryFlushState } from './flush.js'
 import { formatTimestamp, writeSessionMemoryFile } from './write.js'
 
@@ -14,45 +16,6 @@ const IDLE_THRESHOLD_MS = 6 * 60 * 60 * 1000
 const COUNT_THRESHOLD = 100
 const MAX_SLUG_TOKENS = 3
 const MAX_SLUG_CHARS = 48
-
-const LATIN_STOPWORDS = new Set([
-  'a',
-  'an',
-  'the',
-  'and',
-  'or',
-  'of',
-  'to',
-  'in',
-  'for',
-  'on',
-  'with',
-  'at',
-  'by',
-  'from',
-  'as',
-  'is',
-  'are',
-  'was',
-  'were',
-  'be',
-  'been',
-  'being',
-  'this',
-  'that',
-  'these',
-  'those',
-  'it',
-  'its',
-  'i',
-  'you',
-  'we',
-  'they',
-  'us',
-  'our',
-  'your',
-  'my',
-])
 
 const tokenizeLatin = (text: string): string[] => {
   const matches = text.match(/[a-z0-9]{2,}/gi)
