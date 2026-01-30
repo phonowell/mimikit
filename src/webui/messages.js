@@ -10,8 +10,12 @@ export function createMessagesController({
   let pollTimer = null
   let isPolling = false
   let lastMessageCount = 0
+  let lastMessageId = null
   let emptyRemoved = false
   let lastStatus = null
+  let lastAssistantMessageId = null
+  let loadingItem = null
+  let showLoading = false
 
   function removeEmpty() {
     if (emptyRemoved) return
@@ -20,13 +24,69 @@ export function createMessagesController({
     emptyRemoved = true
   }
 
+  function isAssistantMessage(msg) {
+    return msg?.role === 'agent' || msg?.role === 'assistant'
+  }
+
+  function findLatestAssistantMessage(messages) {
+    for (let i = messages.length - 1; i >= 0; i -= 1) {
+      const msg = messages[i]
+      if (isAssistantMessage(msg)) return msg
+    }
+    return null
+  }
+
+  function ensureLoadingPlaceholder() {
+    if (!messagesEl) return
+    if (loadingItem && loadingItem.isConnected) return
+    removeEmpty()
+    const item = document.createElement('li')
+    item.className = 'message assistant message-loading'
+
+    const article = document.createElement('article')
+    const content = document.createElement('div')
+    content.className = 'content loading-dots'
+    content.setAttribute('role', 'status')
+    content.setAttribute('aria-label', 'Loading')
+
+    for (let i = 0; i < 3; i += 1) {
+      const dot = document.createElement('span')
+      dot.className = 'dot'
+      content.appendChild(dot)
+    }
+
+    article.appendChild(content)
+    item.appendChild(article)
+    messagesEl.appendChild(item)
+    loadingItem = item
+    messagesEl.scrollTop = messagesEl.scrollHeight
+  }
+
+  function removeLoadingPlaceholder() {
+    if (loadingItem && loadingItem.isConnected) loadingItem.remove()
+    loadingItem = null
+  }
+
+  function setLoading(active) {
+    showLoading = active
+    if (active) ensureLoadingPlaceholder()
+    else removeLoadingPlaceholder()
+  }
+
   function renderMessages(messages) {
     if (!messagesEl || !messages || messages.length === 0) return
     removeEmpty()
+    const latestAssistant = findLatestAssistantMessage(messages)
+    if (latestAssistant && latestAssistant.id !== lastAssistantMessageId) {
+      lastAssistantMessageId = latestAssistant.id
+      if (showLoading) setLoading(false)
+    }
+    loadingItem = null
     messagesEl.innerHTML = ''
     for (const msg of messages) {
       renderMessage(msg)
     }
+    if (showLoading) ensureLoadingPlaceholder()
     messagesEl.scrollTop = messagesEl.scrollHeight
   }
 
@@ -64,7 +124,9 @@ export function createMessagesController({
   }
 
   function updateStatus(status) {
+    const wasRunning = lastStatus?.agentStatus === 'running'
     lastStatus = status
+    if (!wasRunning && status.agentStatus === 'running') setLoading(true)
     if (!statusText || !statusDot) return
     statusDot.dataset.state = status.agentStatus
     const parts = [status.agentStatus]
@@ -77,6 +139,7 @@ export function createMessagesController({
     if (statusText) statusText.textContent = 'disconnected'
     if (statusDot) statusDot.dataset.state = ''
     lastStatus = null
+    setLoading(false)
   }
 
   async function poll() {
@@ -92,9 +155,15 @@ export function createMessagesController({
       updateStatus(status)
 
       const messages = msgData.messages || []
-      if (messages.length !== lastMessageCount) {
-        renderMessages(messages)
+      const newestMessageId =
+        messages.length > 0 ? messages[messages.length - 1].id : null
+      if (
+        messages.length !== lastMessageCount ||
+        newestMessageId !== lastMessageId
+      ) {
+        if (messages.length > 0) renderMessages(messages)
         lastMessageCount = messages.length
+        lastMessageId = newestMessageId
       }
     } catch {
       setDisconnected()
@@ -131,8 +200,11 @@ export function createMessagesController({
       const msgRes = await fetch('/api/messages?limit=50')
       const msgData = await msgRes.json()
       const messages = msgData.messages || []
+      const newestMessageId =
+        messages.length > 0 ? messages[messages.length - 1].id : null
       renderMessages(messages)
       lastMessageCount = messages.length
+      lastMessageId = newestMessageId
     } catch (error) {
       renderError(error)
     } finally {
