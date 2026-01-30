@@ -212,12 +212,21 @@ export function createMessagesController({
     }
     article.appendChild(content)
 
-    const time = document.createElement('small')
-    time.className = 'time'
     const usageText = isAssistantMessage(msg) ? formatUsage(msg.usage) : ''
     const timeText = formatTime(msg.createdAt)
-    time.textContent = usageText ? `${timeText} · ${usageText}` : timeText
-    article.appendChild(time)
+    const meta = document.createElement('small')
+    meta.className = 'meta'
+    if (usageText) {
+      const usage = document.createElement('span')
+      usage.className = 'usage'
+      usage.textContent = usageText
+      meta.appendChild(usage)
+    }
+    const time = document.createElement('span')
+    time.className = 'time'
+    time.textContent = timeText
+    meta.appendChild(time)
+    article.appendChild(meta)
 
     item.appendChild(article)
     messagesEl.appendChild(item)

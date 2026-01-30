@@ -268,10 +268,17 @@
   border-top: 1px solid var(--border);
 }
 
-.message .time {
+.message .meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 11px;
   color: var(--muted);
-  align-self: flex-end;
+  width: 100%;
+}
+
+.message .meta .time {
+  margin-left: auto;
 }
 
 .message-loading article {
@@ -427,6 +434,10 @@
   font-size: 12px;
   color: var(--muted);
   margin-top: 6px;
+}
+
+.task-meta .task-time {
+  margin-left: auto;
 }
 
 .task-item[data-status='failed'] {

@@ -89,21 +89,24 @@ export function bindTasksModal({
       status.textContent = task.status || 'pending'
       meta.appendChild(status)
 
-      const time = task.completedAt || task.createdAt
-      if (time) {
-        const timeEl = document.createElement('span')
-        timeEl.textContent = formatDateTime(time)
-        meta.appendChild(timeEl)
-      }
-
       const usageText = formatUsage(task.usage)
       if (usageText) {
         const usage = document.createElement('span')
+        usage.className = 'task-usage'
         usage.textContent = usageText
         meta.appendChild(usage)
       }
 
+      const time = task.completedAt || task.createdAt
+      if (time) {
+        const timeEl = document.createElement('span')
+        timeEl.className = 'task-time'
+        timeEl.textContent = formatDateTime(time)
+        meta.appendChild(timeEl)
+      }
+
       const id = document.createElement('span')
+      id.className = 'task-id'
       id.textContent = `id:${task.id}`
       meta.appendChild(id)
 
