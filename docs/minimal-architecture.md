@@ -48,6 +48,12 @@ prompts/
 4. 记录输出到对话历史
 5. 清理已处理的输入和结果
 
+### 自唤醒流程（无输入/结果）
+1. git stash push 保护工作区（记录 self_awake.json）
+2. 按 prompts/agent/self-awake.md 清单检查，最多委派 1 个子任务
+3. 子任务完成后审查变更；通过则建分支+提交，不通过则回滚
+4. 审计写入 audit.jsonl
+
 ### 子任务流程
 1. Agent 写入 pending_tasks/{id}.json
 2. Supervisor 检测并派发（受 maxConcurrentTasks 限制）
@@ -64,7 +70,7 @@ prompts/
 ]
 ```
 ````
-- Host 解析该块并写入 pending_tasks/；每轮最多 3 条
+- Host 解析该块并写入 pending_tasks/；每轮最多 3 条（自唤醒 1 条）
 - 若不委派，需给出简短理由（在正常回复中）
 
 ## 文件协议
@@ -73,10 +79,15 @@ prompts/
 ├── agent_state.json      # Agent 状态（running/idle + sessionId）
 ├── pending_tasks/        # 待派发的子任务（每任务一文件）
 │   └── {taskId}.json
+├── inflight_tasks/       # 正在执行的子任务
+│   └── {taskId}.json
 ├── user_input.json       # 用户输入队列
 ├── chat_history.json     # 对话历史
 ├── task_results/         # 子任务结果
 │   └── {taskId}.json
+├── task_history.json     # 任务历史
+├── self_awake.json       # 自唤醒运行状态
+├── audit.jsonl           # 审计日志
 └── tasks.md              # 任务日志
 ```
 
@@ -95,3 +106,4 @@ prompts/
 - Node.js 22+ / tsx
 - Codex CLI
 - ripgrep (rg)
+- git
