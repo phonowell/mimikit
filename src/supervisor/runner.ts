@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { writeJson } from '../fs/json.js'
 import { extractPlannerResult } from '../llm/output.js'
 import { appendLog } from '../log/append.js'
+import { writeLlmOutput } from '../log/llm-output.js'
 import { selectHistory } from '../memory/inject.js'
 import { extractKeywords } from '../memory/keywords.js'
 import { searchMemory } from '../memory/search.js'
@@ -18,6 +19,8 @@ import { nowIso } from '../time.js'
 
 import type { SupervisorConfig } from '../config.js'
 import type { StatePaths } from '../fs/paths.js'
+import type { MemoryHit } from '../memory/search.js'
+import type { HistoryMessage } from '../types/history.js'
 import type { PlannerResult, Task, WorkerResult } from '../types/tasks.js'
 
 const toRunningPath = (dir: string, id: string): string =>
@@ -46,10 +49,13 @@ export const runPlannerTask = async (params: {
   paths: StatePaths
   config: SupervisorConfig
 }) => {
+  const injectContext = true
+  let messages: HistoryMessage[] = []
+  let memoryHits: MemoryHit[] = []
   const history = await readHistory(params.paths.history)
-  const messages = selectHistory({ history, budget: 4096, min: 5, max: 20 })
+  messages = selectHistory({ history, budget: 4096, min: 5, max: 20 })
   const keywords = extractKeywords(messages.map((m) => m.text))
-  const memoryHits = keywords.length
+  memoryHits = keywords.length
     ? await searchMemory({
         stateDir: params.paths.root,
         query: keywords.join(' '),
@@ -71,14 +77,22 @@ export const runPlannerTask = async (params: {
     memory: memoryHits,
     request: params.task.prompt,
     timeoutMs: params.config.timeouts.plannerMs,
+    injectContext,
     ...(params.config.model ? { model: params.config.model } : {}),
   }
 
   const result = await runPlanner(plannerParams)
+  const outputPath = await writeLlmOutput({
+    dir: params.paths.llmDir,
+    role: 'planner',
+    taskId: params.task.id,
+    output: result.rawOutput,
+  })
   await appendLog(params.paths.log, {
     event: 'llm_activity',
     role: 'planner',
     taskId: params.task.id,
+    outputPath,
     elapsedMs: result.elapsedMs,
     ...(result.usage ? { usage: result.usage } : {}),
   })
@@ -134,10 +148,17 @@ export const runWorkerTask = async (params: {
       ...(params.config.model ? { model: params.config.model } : {}),
     }
     const llmResult = await runWorker(workerParams)
+    const outputPath = await writeLlmOutput({
+      dir: params.paths.llmDir,
+      role: 'worker',
+      taskId: params.task.id,
+      output: llmResult.output,
+    })
     await appendLog(params.paths.log, {
       event: 'llm_activity',
       role: 'worker',
       taskId: params.task.id,
+      outputPath,
       elapsedMs: llmResult.elapsedMs,
       ...(llmResult.usage ? { usage: llmResult.usage } : {}),
     })
@@ -199,13 +220,16 @@ export const runTellerSession = async (params: {
     inputs: inbox.length,
     events: tellerInbox.length,
   })
+  const injectContext = true
+  let messages: HistoryMessage[] = []
+  let memoryHits: MemoryHit[] = []
   const history = await readHistory(params.paths.history)
-  const messages = selectHistory({ history, budget: 4096, min: 5, max: 20 })
+  messages = selectHistory({ history, budget: 4096, min: 5, max: 20 })
   const keywords = extractKeywords([
     ...inbox.map((i) => i.text),
     ...messages.slice(-5).map((m) => m.text),
   ])
-  const memoryHits = keywords.length
+  memoryHits = keywords.length
     ? await searchMemory({
         stateDir: params.paths.root,
         query: keywords.join(' '),
@@ -228,6 +252,7 @@ export const runTellerSession = async (params: {
     inputs: inbox.map((i) => i.text),
     events: tellerInbox,
     timeoutMs: params.config.timeouts.tellerMs,
+    injectContext,
     ...(params.config.model ? { model: params.config.model } : {}),
   }
 

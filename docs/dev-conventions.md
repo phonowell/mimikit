@@ -14,7 +14,7 @@
 - 调度：src/supervisor/
 - 角色：src/roles/
 - 任务：src/tasks/ + src/tools/ + src/scheduler/
-- 基础：src/codex.ts + src/config.ts + src/fs/ + src/storage/ + src/log/
+- 基础：src/llm/sdk-runner.ts + src/config.ts + src/fs/ + src/storage/ + src/log/
 - 记忆：src/memory/
 - 服务：src/http/ + src/webui/
 - 状态：.mimikit/（结构见 docs/minimal-architecture.md）
@@ -28,7 +28,7 @@
 ## 文档
 - docs/minimal-architecture.md
 - docs/design/*
-- docs/codex-exec-reference.md
+- docs/codex-sdk.md
 
 ## 编码风格
 - 文件/模块尽量解耦，避免隐式耦合

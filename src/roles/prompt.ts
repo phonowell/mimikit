@@ -66,6 +66,8 @@ export const buildTellerPrompt = async (params: {
   const needsInput = formatNeedsInput(params.events)
   const plannerFailures = formatPlannerFailures(params.events)
   const taskResults = formatTaskResults(params.events)
+  const historyText = formatHistory(params.history)
+  const memoryText = formatMemory(params.memory)
   return [
     'You are the Mimikit runtime teller.',
     guide,
@@ -84,14 +86,13 @@ export const buildTellerPrompt = async (params: {
     ...(taskResults
       ? ['## Task Results', taskResults, 'Summarize results to user.']
       : []),
-    '## History',
-    formatHistory(params.history),
-    '## Memory',
-    formatMemory(params.memory),
+    ...(historyText ? ['## History', historyText] : []),
+    ...(memoryText ? ['## Memory', memoryText] : []),
     '## Output',
-    'Return tool calls as JSON lines. Example: {"tool":"reply","args":{"text":"..."}}',
-    'Always call reply once for each user input unless you call ask_user.',
-    'If you delegate work, still reply with a brief acknowledgment.',
+    'Return a single JSON object with "tool_calls".',
+    'Example: {"tool_calls":[{"tool":"reply","args":{"text":"..."}}]}',
+    'Always include one reply call per user input unless you call ask_user.',
+    'If you delegate work, still include a brief reply tool call.',
   ].join('\n\n')
 }
 
@@ -102,20 +103,19 @@ export const buildPlannerPrompt = async (params: {
   request: string
 }): Promise<string> => {
   const guide = await loadGuide(params.workDir, 'planner')
+  const historyText = formatHistory(params.history)
+  const memoryText = formatMemory(params.memory)
   return [
     guide,
     '## User Request',
     params.request,
-    '## History',
-    formatHistory(params.history),
-    '## Memory',
-    formatMemory(params.memory),
+    ...(historyText ? ['## History', historyText] : []),
+    ...(memoryText ? ['## Memory', memoryText] : []),
     '## Output',
-    'Return tool calls as JSON lines. Example: {"tool":"delegate","args":{...}}',
-    'If you need user input, add a final JSON line:',
-    '{"result":{"status":"needs_input","question":"...","options":["..."],"default":"..."}}',
-    'If planning is complete, add a final JSON line with tasks/triggers:',
-    '{"result":{"status":"done","tasks":[{"prompt":"...","priority":5}],"triggers":[{"type":"scheduled","prompt":"...","runAt":"..."}]}}',
+    'Return a single JSON object with optional "tool_calls" and required "result".',
+    'Example: {"tool_calls":[{"tool":"delegate","args":{...}}],"result":{"status":"done","tasks":[{"prompt":"...","priority":5}]}}',
+    'If you need user input: {"result":{"status":"needs_input","question":"...","options":["..."],"default":"..."}}',
+    'If planning is complete: {"result":{"status":"done","tasks":[...],"triggers":[...]}}',
     'On failure: {"result":{"status":"failed","error":"..."}}',
   ].join('\n\n')
 }

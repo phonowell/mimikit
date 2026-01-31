@@ -194,6 +194,6 @@ Planner 拆分复杂请求时，用 `task_done` 串联 oneshot 子任务（A 完
 
 ## Worker
 
-**执行环境**：完整 shell access（codex exec sandbox）。
+**执行环境**：完整 shell access（Codex SDK sandbox）。
 
 **输出**：写入 `worker/results/{taskId}.json`，由 Supervisor 处理；用户可见结果才唤醒 Teller。

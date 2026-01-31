@@ -18,6 +18,7 @@ export type StatePaths = {
   workerResults: string
   triggers: string
   log: string
+  llmDir: string
   archiveJobs: string
 }
 
@@ -43,6 +44,7 @@ export const buildPaths = (stateDir: string): StatePaths => {
     workerResults: join(root, 'worker', 'results'),
     triggers: join(root, 'triggers'),
     log: join(root, 'log.jsonl'),
+    llmDir: join(root, 'llm'),
     archiveJobs: join(memoryDir, 'archive_jobs.json'),
   }
 }

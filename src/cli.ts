@@ -3,6 +3,7 @@ import { parseArgs } from 'node:util'
 
 import { defaultConfig } from './config.js'
 import { createHttpServer } from './http/index.js'
+import { loadCodexSettings } from './llm/openai.js'
 import { runMemoryCli } from './memory/cli.js'
 import { Supervisor } from './supervisor/supervisor.js'
 
@@ -27,6 +28,8 @@ const portValue = values.port
 const stateDir = values['state-dir']
 const workDir = values['work-dir']
 const checkIntervalValue = values['check-interval']
+
+await loadCodexSettings()
 
 const parsePort = (value: string): string => {
   const num = Number(value)

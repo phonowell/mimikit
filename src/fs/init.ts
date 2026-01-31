@@ -13,4 +13,5 @@ export const ensureStateDirs = async (paths: StatePaths): Promise<void> => {
   await ensureDir(paths.workerRunning)
   await ensureDir(paths.workerResults)
   await ensureDir(paths.triggers)
+  await ensureDir(paths.llmDir)
 }

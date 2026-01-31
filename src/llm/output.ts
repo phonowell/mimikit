@@ -6,7 +6,24 @@ export type PlannerResultLine = Pick<
   'status' | 'question' | 'options' | 'default' | 'error' | 'tasks' | 'triggers'
 >
 
+const parseJsonObject = (output: string): unknown | null => {
+  const trimmed = output.trim()
+  if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) return null
+  try {
+    return JSON.parse(trimmed) as unknown
+  } catch {
+    return null
+  }
+}
+
 export const extractToolCalls = (output: string): ToolCall[] => {
+  const parsed = parseJsonObject(output)
+  if (parsed && typeof parsed === 'object' && 'tool_calls' in parsed) {
+    const toolCalls = (parsed as { tool_calls?: ToolCall[] }).tool_calls
+    if (Array.isArray(toolCalls))
+      return toolCalls.filter((call) => typeof call.tool === 'string')
+  }
+
   const calls: ToolCall[] = []
   const lines = output.split(/\r?\n/)
   for (const line of lines) {
@@ -31,6 +48,12 @@ export const extractToolCalls = (output: string): ToolCall[] => {
 export const extractPlannerResult = (
   output: string,
 ): PlannerResultLine | null => {
+  const parsed = parseJsonObject(output)
+  if (parsed && typeof parsed === 'object' && 'result' in parsed) {
+    const { result } = parsed as { result?: PlannerResultLine }
+    if (result?.status) return result
+  }
+
   const lines = output.split(/\r?\n/)
   for (const line of lines) {
     const trimmed = line.trim()
@@ -46,6 +69,9 @@ export const extractPlannerResult = (
 }
 
 export const stripToolCalls = (output: string): string => {
+  const parsed = parseJsonObject(output)
+  if (parsed && typeof parsed === 'object' && 'tool_calls' in parsed) return ''
+
   const lines = output.split(/\r?\n/)
   const remaining = lines.filter((line) => {
     const trimmed = line.trim()

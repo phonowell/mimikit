@@ -14,6 +14,10 @@
 3. Supervisor 负责确定性调度与状态维护
 4. 跨进程通信统一落在 .mimikit/ JSON，原子写入
 
+## 上下文策略
+- 每次 run 都创建新 thread，不复用线程上下文
+- Teller/Planner 只使用 Supervisor 注入的 history/memory + 当前输入
+
 ## 角色职责
 - Supervisor：调度/恢复/日志/状态索引
 - Teller：面向用户的轻量交互与转交 Planner
@@ -33,7 +37,7 @@
 
 ## 关联文档
 - docs/minimal-architecture.md
-- docs/codex-exec-reference.md
+- docs/codex-sdk.md
 - docs/agents/teller.md
 - docs/agents/planner.md
 - docs/agents/worker.md

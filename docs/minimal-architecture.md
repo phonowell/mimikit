@@ -2,7 +2,7 @@
 
 ## 关联文档
 - docs/design/README.md
-- docs/codex-exec-reference.md
+- docs/codex-sdk.md
 
 ## 设计目标
 - 24x7 稳定运行，Supervisor 纯代码调度
@@ -13,7 +13,7 @@
 - Supervisor：主循环，调度/恢复/记录
 - Teller：面向用户的 LLM（reply/ask_user/list/cancel 等工具）
 - Planner：需求拆解与任务/触发器生成
-- Worker：执行子任务（codex exec + shell）
+- Worker：执行子任务（Codex SDK + shell）
 - Memory：归档/检索，供 Teller/Planner/Worker 使用
 - WebUI/HTTP：状态与输入接口
 
