@@ -91,6 +91,9 @@ export const searchMemory = async (params: {
 }): Promise<MemoryHit[]> => {
   const files = await listMemoryFiles({ stateDir: params.stateDir })
   if (params.limit <= 0) return []
+  const tokens = tokenize(params.query)
+  if (tokens.length === 0) return []
+  if (files.length === 0) return []
   const engine = bm25()
   engine.defineConfig({
     fldWeights: { body: 1 },
@@ -99,6 +102,7 @@ export const searchMemory = async (params: {
   engine.definePrepTasks([tokenize], 'body')
   engine.definePrepTasks([tokenize])
 
+  let docsAdded = 0
   for (let i = 0; i < files.length; i += 1) {
     const entry = files[i]
     if (!entry) continue
@@ -109,10 +113,35 @@ export const searchMemory = async (params: {
       continue
     }
     engine.addDoc({ body }, i)
+    docsAdded += 1
+  }
+  if (docsAdded === 0) {
+    const rgHits = await rgFallback({
+      files: files.map((f) => f.path),
+      tokens,
+      limit: params.limit,
+    })
+    if (rgHits.length > 0) return rgHits
+    const fallback: MemoryHit[] = []
+    for (const entry of files) {
+      let content = ''
+      try {
+        content = await readFile(entry.path, 'utf8')
+      } catch {
+        continue
+      }
+      const found = tokens.some((t) => content.toLowerCase().includes(t))
+      if (!found) continue
+      fallback.push({
+        source: entry.path,
+        content: content.slice(0, 300),
+        score: 0.1,
+      })
+      if (fallback.length >= params.limit) break
+    }
+    return fallback
   }
   engine.consolidate()
-  const tokens = tokenize(params.query)
-  if (tokens.length === 0) return []
   const results = engine.search(
     params.query,
     Math.max(1, params.limit * 2),
