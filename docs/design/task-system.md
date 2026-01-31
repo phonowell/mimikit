@@ -9,6 +9,7 @@
 1. 固定声明：`"You are the Mimikit runtime teller."`
 2. `docs/agents/teller.md`
 3. 动态上下文：对话历史、记忆检索结果、用户输入、任务结果（均由 Supervisor 注入）
+4. 仅 Teller 需要固定声明，Planner/Worker 无固定身份注入
 
 
 ### 唤醒流程
@@ -33,8 +34,8 @@ planner/queue/ → Planner → planner/results/
   ↓
 Supervisor 解析 Planner 结果
   ├─ done → oneshot 子任务写入 worker/queue/
-  ├─ needs_input → Teller ask_user → pending_question.json → 用户回复 → Teller → Planner
-  └─ failed → 重试/汇报
+  ├─ needs_input → teller_inbox.json → Teller ask_user → pending_question.json → 用户回复 → Teller → Planner
+  └─ failed → Teller 汇报（不自动重试）
   ↓
 Worker 执行 → worker/results/
   ↓
@@ -129,7 +130,7 @@ Planner 写入 `planner/results/{taskId}.json`：
 
 - `status=done` → `tasks` 列出子任务/触发器定义（由 Supervisor 入队）
 - `status=needs_input` → `question/options/default` 交给 Teller 发问
-- `status=failed` → 进入重试/汇报流程
+- `status=failed` → Teller 汇报（不自动重试）
 
 **`needs_input`**：仅存在于 `planner/results/`，不写入 `task_status.json`。
 

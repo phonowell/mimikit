@@ -1,9 +1,10 @@
-import { resolve } from 'node:path'
+﻿import { resolve } from 'node:path'
 import { parseArgs } from 'node:util'
 
-import { createHttpServer } from './http.js'
+import { defaultConfig } from './config.js'
+import { createHttpServer } from './http/index.js'
 import { runMemoryCli } from './memory/cli.js'
-import { Supervisor } from './supervisor.js'
+import { Supervisor } from './supervisor/supervisor.js'
 
 const args = process.argv.slice(2)
 if (args[0] === 'memory') {
@@ -26,7 +27,6 @@ const portValue = values.port
 const stateDir = values['state-dir']
 const workDir = values['work-dir']
 const checkIntervalValue = values['check-interval']
-const selfAwakeIntervalValue = values['self-awake-interval']
 
 const parsePort = (value: string): string => {
   const num = Number(value)
@@ -49,16 +49,13 @@ const parsePositiveNumber = (value: string, name: string): number => {
 const port = parsePort(portValue)
 const checkIntervalMs =
   parsePositiveNumber(checkIntervalValue, 'check-interval') * 1000
-const selfAwakeIntervalMs =
-  parsePositiveNumber(selfAwakeIntervalValue, 'self-awake-interval') * 1000
 
-const config = {
+const config = defaultConfig({
   stateDir: resolve(stateDir),
   workDir: resolve(workDir),
   model: values.model,
   checkIntervalMs,
-  selfAwakeIntervalMs,
-}
+})
 
 console.log('[cli] config:', config)
 

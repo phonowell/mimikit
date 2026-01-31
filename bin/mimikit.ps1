@@ -1,4 +1,4 @@
-# PowerShell wrapper: restarts tsx on exit code 75
+﻿# PowerShell wrapper: restarts tsx on exit code 75
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Root = Resolve-Path (Join-Path $ScriptDir '..')
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+﻿#!/usr/bin/env bash
 # Daemon wrapper: restarts tsx process on exit code 75 (restart request)
 set -euo pipefail
 

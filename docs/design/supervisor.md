@@ -57,28 +57,26 @@ Teller 是否运行中由 Supervisor 进程级判断（子进程是否存活）�
 
 ### 进程超时
 
-Supervisor 监控所有 Planner / Worker 进程的运行时长，超时后 kill 进程，视为一次失败。
+Supervisor 监控所有 Teller / Planner / Worker 进程的空闲时长（stdout/stderr 无输出），超时后 kill 进程，视为一次失败。
 
 | 角色 | 默认超时 | 说明 |
 |------|------|------|
-| Teller | 3 min | 回复 + 委派，应快速完成 |
+| Teller | 2 min | 回复 + 委派，应快速完成 |
 | Planner | 10 min | 含信息收集与任务拆分 |
 | Worker | 10 min | 常规任务执行 |
 | `llm_eval` 评估 | 2 min | 轻量批量判断 |
 
 任务可通过 `timeout` 字段覆盖默认值（秒），Planner 拆分任务时应评估执行时长，对预期耗时较长的任务显式设置更大的 `timeout`。
 
-**超时重试翻倍**：超时导致的重试，`timeout` 自动翻倍（如默认 600s → 重试时 1200s）。
+**超时翻倍**：当前不做超时翻倍。
 
 Supervisor 在写入失败结果时补充 `failureReason`（`timeout|error|killed`）与 `error`，并记录重试原因到 `log.jsonl`。
 
-### 失败重试
+### 失败处理
 
 Planner 和 Worker 统一处理，规则相同：
 
-1. **首次失败** → Supervisor 延迟 60s 后自动重试一次，不唤醒 Teller。超时失败时 `timeout` 翻倍。
-2. **重试仍失败** → 标记为最终失败，写入对应 `results/`，唤醒 Teller 汇报。
-3. **`task_failed` 条件** 仅在最终失败时触发，重试期间不触发。
+1. 当前不自动重试，失败直接写入对应 `results/`，用户可见则唤醒 Teller 汇报。
 
 任务 JSON 通过 `attempts` 字段追踪执行次数（入队为 0，开始执行时递增为 1，重试时在重新入队前递增）。
 

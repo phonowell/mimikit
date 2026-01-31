@@ -1,4 +1,4 @@
-import type { TokenUsage } from '../protocol.js'
+﻿import type { TokenUsage } from '../types/usage.js'
 
 type JsonlEvent = {
   type?: string

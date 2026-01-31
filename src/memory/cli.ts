@@ -1,13 +1,10 @@
-import { resolve } from 'node:path'
+﻿import { resolve } from 'node:path'
 import { parseArgs } from 'node:util'
 
-import { searchMemory } from '../memory.js'
+import { defaultConfig } from '../config.js'
 
-import { getBm25Stats } from './bm25.js'
-import { readMemoryFlushState } from './flush.js'
-import { readMemoryRollupState } from './rollup.js'
-
-import { listSearchFiles } from './index.js'
+import { listMemoryFiles } from './files.js'
+import { searchMemory } from './search.js'
 
 const usage = () => {
   console.log(
@@ -16,7 +13,7 @@ const usage = () => {
       '',
       'Commands:',
       '  status            Show memory search status',
-      '  index             Build BM25 index and show counts',
+      '  index             Show memory file counts',
       '  search <query>    Search memory',
       '',
       'Options:',
@@ -26,13 +23,7 @@ const usage = () => {
   )
 }
 
-const extractKeywords = (query: string): string[] => {
-  const tokens: string[] = []
-  const matches = query.match(/[a-z0-9_]{2,}|[\u4e00-\u9fff]{2,}/gi)
-  if (!matches) return tokens
-  for (const match of matches) tokens.push(match)
-  return tokens
-}
+const extractQuery = (parts: string[]): string => parts.join(' ').trim()
 
 export const runMemoryCli = async (argv: string[]): Promise<void> => {
   const { positionals, values } = parseArgs({
@@ -53,65 +44,46 @@ export const runMemoryCli = async (argv: string[]): Promise<void> => {
   const workDir = resolve(values['work-dir'])
   const stateDir = resolve(values['state-dir'])
 
-  if (command === 'status') {
-    const files = await listSearchFiles({ workDir })
+  if (command === 'status' || command === 'index') {
+    const files = await listMemoryFiles({ stateDir })
     const counts = files.reduce(
       (acc, entry) => {
         acc.total += 1
         acc[entry.kind] += 1
         return acc
       },
-      {
-        total: 0,
-        memory: 0,
-        summary: 0,
-        docs: 0,
-        longterm: 0,
-      },
+      { total: 0, memory: 0, summary: 0, longterm: 0 },
     )
-    const bm25 = await getBm25Stats(workDir)
-    const flush = await readMemoryFlushState(stateDir)
-    const rollup = await readMemoryRollupState(stateDir)
     console.log(`files=${counts.total}`)
     console.log(
-      `longterm=${counts.longterm} memory=${counts.memory} summary=${counts.summary} docs=${counts.docs}`,
+      `longterm=${counts.longterm} memory=${counts.memory} summary=${counts.summary}`,
     )
-    console.log(`bm25.files=${bm25.fileCount} bm25.chunks=${bm25.chunkCount}`)
-    if (flush.lastFlushAt) console.log(`last_flush=${flush.lastFlushAt}`)
-    if (flush.lastHandoffAt) console.log(`last_handoff=${flush.lastHandoffAt}`)
-    if (rollup.lastRunAt) console.log(`last_rollup=${rollup.lastRunAt}`)
-    return
-  }
-
-  if (command === 'index') {
-    const stats = await getBm25Stats(workDir)
-    console.log(`files=${stats.fileCount} chunks=${stats.chunkCount}`)
     return
   }
 
   if (command === 'search') {
-    const query = positionals.slice(1).join(' ').trim()
+    const query = extractQuery(positionals.slice(1))
     if (!query) {
       console.error('search query required')
       process.exit(1)
     }
-    const keywords = extractKeywords(query)
-    if (keywords.length === 0) {
-      console.error('no valid keywords extracted')
-      process.exit(1)
-    }
-    const hits = await searchMemory(
-      {
-        workDir,
-      },
-      keywords,
-    )
+    const config = defaultConfig({ stateDir, workDir })
+    const hits = await searchMemory({
+      stateDir,
+      query,
+      limit: config.memorySearch.maxHits,
+      k1: config.memorySearch.bm25K1,
+      b: config.memorySearch.bm25B,
+      minScore: config.memorySearch.minScore,
+    })
     if (hits.length === 0) {
       console.log('no hits')
       return
     }
-    for (const hit of hits) console.log(`${hit.path}:${hit.line} ${hit.text}`)
-
+    for (const hit of hits) {
+      const snippet = hit.content.replace(/\s+/g, ' ').trim()
+      console.log(`${hit.source} (${hit.score.toFixed(2)}): ${snippet}`)
+    }
     return
   }
 
