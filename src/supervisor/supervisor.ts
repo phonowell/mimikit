@@ -113,7 +113,6 @@ export class Supervisor {
     try {
       await rotateLogIfNeeded(this.paths.log)
       await maintainHistory({ paths: this.paths, config: this.config })
-      await appendLog(this.paths.log, { event: 'tick' })
 
       const taskStatus = await readTaskStatus(this.paths.taskStatus)
       const triggeredTasks = await processTriggers(

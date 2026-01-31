@@ -24,17 +24,8 @@ export const execCodex = (options: CodexOptions): Promise<CodexResult> =>
     const allowShell = options.allowShell ?? true
     if (allowShell)
       args.push('--dangerously-bypass-approvals-and-sandbox', '--json')
-    else {
-      args.push(
-        '--disable',
-        'shell_tool',
-        '--sandbox',
-        'read-only',
-        '--ask-for-approval',
-        'never',
-        '--json',
-      )
-    }
+    else
+      args.push('--disable', 'shell_tool', '--sandbox', 'read-only', '--json')
 
     if (options.model) args.push('--model', options.model)
 
