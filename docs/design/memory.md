@@ -4,11 +4,19 @@
 
 ## 记忆存储结构
 
-记忆统一存储在 `.mimikit/` 下：
+目录树见 `docs/design/README.md` 的“文件协议”。此处仅补充记忆相关约定：
 
 - `memory.md` — 长期记忆
 - `memory/` — 近期记忆（≤ 5 天原样保存）
 - `memory/summary/` — 汇总记忆（日摘要 / 月摘要）
+
+## 记忆文件命名与 slug 规则
+
+`memory/YYYY-MM-DD-{slug}.md` 的 `slug` 约束：
+
+- 仅使用 ASCII 小写字符（`a-z0-9-`），长度 ≤ 32。
+- 优先使用内容关键词生成 `kebab-case`；若无法生成，使用 `mem-{shortId}`（`shortId` 为 UUID/ULID 前 8 位）。
+- 同日文件名冲突时，追加 `-{n}` 或 `-{shortId}` 保证唯一性。
 
 ## history.json
 
@@ -16,6 +24,8 @@
 
 - **长度限制（软上限）**：目标最多 200 条。超出时从最旧的 `archived: true` 消息开始移除（Supervisor 每轮检查）。若仅存在 `archived: false/pending` 消息导致超限，允许短暂超过上限并立即触发归档，避免未归档数据丢失。
 - **归档标记**：三态——`false`（未归档）、`"pending"`（归档中，防止被 200 条硬限制移除）、`true`（归档完成）。已完成的消息仍可用于展示，但不再被归档处理。
+- **容量兜底（硬上限）**：当条数 > 300 或文件体积 > 10MB 时，优先移除最旧的 `archived: true` 记录；若仍超限，记录 `history_overflow` 事件并强制触发归档（不丢弃未归档消息）。
+- **归档失败字段（可选）**：`archiveAttempts`、`archiveFailedAt`、`archiveNextAt` 用于记录退避与重试节奏。
 
 ## 触发与归档
 
@@ -37,6 +47,11 @@
 > 示例：当前为 1 月 31 日，则 12 月的消息按日汇总，11 月及之前按月汇总；当 2 月 1 日时，12 月及之前按月汇总。
 
 3. 各项处理完成后，将对应消息从 `"archived": "pending"` 更新为 `"archived": true`。若 Worker 汇总失败，回退为 `"archived": false` 以便下次归档重试。
+
+**失败与退避**：
+
+- Worker 汇总失败时，更新消息的 `archiveAttempts`（+1）与 `archiveFailedAt`，并计算 `archiveNextAt` 进行指数退避（建议 10m → 30m → 2h → 6h → 12h）。
+- 达到最大尝试次数（建议 5 次）后，记录 `archive_backlog` 事件并延长退避间隔，避免频繁失败占用资源。
 
 **汇总 prompt 模板**（见 `docs/prompts/`）：
 
@@ -62,7 +77,7 @@ Supervisor 在唤醒 Teller 前自动执行（代码）。
 2. `memory/` 近期文件（≤ 5 天）
 3. `memory/summary/` 汇总文件（排除已被月汇总覆盖的日摘要，见上文排除规则）
 
-检索策略：BM25 评分，失败回退 `rg`。命中结果按相关度降序排列，逐条累加直到逼近 token 预算。无命中时不注入，不占用上下文空间。
+检索策略：BM25 评分（建议参数：`k1=1.2`，`b=0.75`，最小分阈值 `score>=0.2`），失败或无命中回退 `rg`。命中结果按相关度降序排列，逐条累加直到逼近 token 预算。无命中时不注入，不占用上下文空间。
 
 **注入格式**：
 

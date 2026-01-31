@@ -20,8 +20,9 @@
 | `condition` | `Condition` | 否 | `type="conditional"` 时必填 |
 | `priority` | `number` | 否 | 0-10，默认 `5` |
 | `timeout` | `number \| null` | 否 | 超时秒数，`null` 使用角色默认值 |
+| `traceId` | `string` | 否 | 观测链路 ID；缺省由系统生成，子任务继承 |
 
-**返回**：`{ taskId: string }`（条件任务为 triggerId）
+**返回**：`{ taskId: string }`（`oneshot`）或 `{ triggerId: string }`（`conditional`）
 
 ### `reply`
 
@@ -96,8 +97,9 @@
 | `condition` | `Condition` | 条件 | `conditional` 时必填 |
 | `cooldown` | `number` | 否 | 冷却期（秒），默认 `0` |
 | `timeout` | `number \| null` | 否 | 超时秒数 |
+| `traceId` | `string` | 否 | 观测链路 ID；缺省由系统生成 |
 
-**返回**：`{ taskId: string }`（triggerId）
+**返回**：`{ triggerId: string }`
 
 ### `list_tasks`
 
@@ -105,13 +107,21 @@
 
 **参数**：`{ scope?: "queue" | "running" | "triggers" | "all", role?: "planner" | "worker" }`
 
-**返回**：`{ tasks: TaskSummary[] }`，`TaskSummary` = `{ id, type, prompt, priority, status, createdAt }`
+**返回**：`{ tasks: TaskSummary[] }`，`TaskSummary` = `{ id, type, prompt, priority, status, createdAt, traceId? }`
+
+**status 枚举**：`queued` | `running` | `done` | `failed` | `trigger`
 
 ### `cancel_task`
 
-取消队列任务或移除 trigger（对运行中任务不生效）。
+取消队列任务或移除 trigger（对运行中任务不生效）。适用于用户发起的取消请求。
 
-**参数**：`{ taskId: string }` → **返回**：`{ success: boolean }`
+**参数**：`{ id: string }`（taskId 或 triggerId） → **返回**：`{ success: boolean }`
+
+**取消规则**：
+
+- `queued`：从 `queue/` 删除并返回 `success=true`
+- `trigger`：从 `triggers/` 删除并返回 `success=true`
+- `running`：不生效，返回 `success=false`
 
 ## 工具权限
 

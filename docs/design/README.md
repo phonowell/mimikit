@@ -14,8 +14,8 @@
 ## 设计原则
 
 1. **LLM 只做需要智能的事**：理解意图、生成回复、分析需求、编写代码。所有可确定性执行的操作一律固化为内置操作。
-2. **Teller 只做回复**：主 Teller 不执行任何耗时操作，只生成面向用户的回复并委派 Planner。
-3. **文件协议通信**：所有进程间通信通过 `.mimikit/` 下的 JSON 文件完成。
+2. **Teller 只做用户交互**：主 Teller 不执行任何耗时操作，只处理面向用户的即时交互（回复、轻量控制类请求）并委派 Planner；仅通过工具交互，不直接读写文件。
+3. **文件协议通信**：所有进程间通信通过 `.mimikit/` 下的 JSON 文件完成，由 Supervisor 负责读写；Teller/Planner 仅通过工具交互。
 4. **崩溃安全**：任何进程在任何时刻中断，系统重启后均可自动恢复。
 
 ## 系统角色
@@ -23,9 +23,9 @@
 | 角色 | 性质 | 职责 |
 |------|------|------|
 | **Supervisor** | 常驻进程，纯代码 | 调度、派发、条件评估、记忆归档、内置操作执行 |
-| **Teller** | LLM（codex exec） | 回复用户、委派 Planner |
-| **Planner** | LLM（codex exec） | 分析需求、拆分任务、编排依赖 |
-| **Worker** | LLM（codex exec） | 执行具体子任务 |
+| **Teller** | LLM（工具模式，无文件系统/命令行） | 回复用户、处理轻量控制请求（如任务查询/取消、记忆写入）、委派 Planner |
+| **Planner** | LLM（工具模式，无文件系统/命令行） | 分析需求、拆分任务、编排依赖 |
+| **Worker** | LLM（codex exec sandbox，完整 shell） | 执行具体子任务 |
 
 ## 内置操作 vs LLM 操作
 
@@ -37,8 +37,8 @@
 |------|---------|
 | 任务调度（recurring / scheduled / conditional） | 时间比较、文件 stat、任务状态检查 |
 | 触发器状态更新 | 写回 `lastTriggeredAt/lastEvalAt/lastMtime` 等 |
-| 任务结果索引 | 更新 `task_status.json`、标记消费 |
-| 历史长度限制 | `history.json` 超 200 条时移除最旧条目（仅已归档） |
+| 任务结果索引 | 更新 `task_status.json`、标记消费（定义见 `docs/design/task-system.md`） |
+| 历史长度限制 | `history.json` 软上限 200（硬上限与细则见 `docs/design/memory.md`） |
 | 记忆归档触发 | 条数统计 + 时间差计算 |
 | 记忆文件搬运（≤ 5 天） | 原样复制到 `memory/YYYY-MM-DD-slug.md` |
 | 记忆汇总派发（> 5 天） | 直接派 Worker，不经 Teller |
@@ -55,14 +55,13 @@
 
 ### 需要 LLM 的操作（不可避免）
 
-| 操作 | 由谁执行 | 说明 |
-|------|---------|------|
-| 回复用户 | Teller | 理解意图、生成自然语言回复 |
-| 判断是否需要委派 Planner | Teller | 判断用户请求是否涉及任务 |
-| 任务拆分与依赖编排 | Planner | 分析复杂度、决定并行/串联 |
-| 执行具体任务 | Worker | 编写代码、分析问题等 |
-| 记忆汇总（日/月摘要） | Worker | 需要理解内容、提炼摘要 |
-| 语义条件评估（`llm_eval`） | Worker | 需要理解自然语言条件 |
+以下仅列出不可避免的 LLM 工作，具体执行角色见“系统角色”表：
+
+- 回复用户、判断是否需要委派 Planner
+- 任务拆分与依赖编排
+- 执行具体任务
+- 记忆汇总（日/月摘要）
+- 语义条件评估（`llm_eval`）
 
 ## 文件协议
 
@@ -71,7 +70,7 @@
 ├── inbox.json              # 用户输入队列
 ├── pending_question.json   # ask_user 待回复问题（Teller 写入，用户回复后清除）
 ├── history.json            # 对话历史
-├── task_status.json        # 任务最终状态索引（条件评估/展示）
+├── task_status.json        # 任务最终状态索引（条件评估/展示，定义见 task-system.md）
 ├── memory.md               # 长期记忆
 ├── memory/                 # 近期记忆
 │   ├── YYYY-MM-DD-slug.md
@@ -90,21 +89,21 @@
 │   │   └── {taskId}.json
 │   ├── running/            # Worker 执行中（最多 3 个）
 │   │   └── {taskId}.json
-│   └── results/            # Worker 结果（唤醒 Teller）
+│   └── results/            # Worker 结果（由 Supervisor 判定是否唤醒 Teller）
 │       └── {taskId}.json
 ├── triggers/               # 调度/条件任务定义（recurring / scheduled / conditional）
 │   └── {triggerId}.json
-└── log.jsonl               # 日志（任务事件 + 审计事件，type 字段区分）
+└── log.jsonl               # 日志（任务事件 + 审计事件，event 字段区分）
 ```
 
-**协议约定**：所有 JSON 写入使用 `*.tmp` + rename，读侧忽略临时文件；触发器与任务结果可被清理，但 `task_status.json` 保留最终状态。
+**协议约定**：所有 JSON 写入使用 `*.tmp` + rename，读侧忽略临时文件；触发器与任务结果可被清理，但 `task_status.json` 保留最终状态（定义见 `docs/design/task-system.md`）。
 
 ## 实施计划
 
 ### 第一阶段：核心工具化
 
 - 实现 `delegate` + `reply` 工具，替代 delegations 代码块正则解析。
-- Teller 职责收窄为只回复 + 委派 Planner。
+- Teller 职责收窄为用户交互（回复/轻量控制）+ 委派 Planner。
 - Planner 作为独立角色，创建 `docs/agents/planner.md`。
 - 实现超时监控与失败重试机制。
 - 引入原子写入协议（`*.tmp` + rename）。

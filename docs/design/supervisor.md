@@ -10,9 +10,16 @@
 2. **内置操作待执行？** → 执行（记忆归档、历史长度限制、确定性条件评估等）。
 3. **Planner 结果待处理？** → `done` → 解析子任务写入 `worker/queue/`；`needs_input` → 若 Teller 空闲则唤醒，否则延后；`failed` → 进入重试流程。
 4. **有待派发 Planner？** → 若 Planner 未在运行且 `planner/queue/` 非空，派发一个。
-5. **有待派发 Worker？** → 若 Worker 运行数 < 3 且 `worker/queue/` 非空，按优先级派发（先按 `priority` 降序，同优先级内 `llm_eval` 评估优先，再按 `createdAt` 升序）。
+5. **有待派发 Worker？** → 若 Worker 运行数 < 3 且 `worker/queue/` 非空，按优先级派发（先按 `priority` 降序，同优先级内来源于 `llm_eval` 条件的任务优先，再按 `createdAt` 升序）。
 6. **调度任务到期？** → 检查 `triggers/`，按任务类型处理：`recurring` / `conditional` 触发为 oneshot 入队（保留 trigger 定义）；`scheduled` 到点后触发并移除。
-7. **Worker 结果待处理 / 用户输入待处理 / `ask_user` 回复待处理？** → 若 Teller 空闲则唤醒。
+7. **用户可见结果/输入待处理？** → 若 Teller 空闲则唤醒（`llm_eval` 等内部结果由 Supervisor 消费，不唤醒）。
+
+## 内部结果判定（确定性）
+
+Supervisor 通过以下规则判断结果是否“用户可见”，无需 LLM：
+
+- 若 `sourceTriggerId` 指向的 trigger 为 `conditional` 且 `condition.type=llm_eval` → **内部结果**（不唤醒 Teller）。
+- 其他结果默认 **用户可见**。
 
 ## 并发控制
 
@@ -33,7 +40,7 @@ Planner 和 Worker 各自有独立的队列、运行目录、结果目录，互�
 - `planner/queue/` 非空 → 继续派发。
 - `worker/queue/` 非空 → 继续派发。
 - `planner/results/` 非空 → 解析子任务写入 `worker/queue/`。
-- `worker/results/` 非空 → 更新 `task_status.json`，并在 Teller 空闲时唤醒处理。
+- `worker/results/` 非空 → 更新 `task_status.json`，仅用户可见结果在 Teller 空闲时唤醒处理。
 - `inbox.json` 有内容 → 唤醒 Teller。
 - `history.json` 中存在 `archived: "pending"` → 回退为 `false`（归档中断，下次重新归档）。
 - `pending_question.json` 存在 → 保留，等待用户回复后唤醒 Teller。
@@ -42,7 +49,7 @@ Teller 是否运行中由 Supervisor 进程级判断（子进程是否存活）�
 
 ## 任务结果索引与清理
 
-- Worker 结果写入时，Supervisor 更新 `task_status.json`（`status` / `completedAt` / `resultId` / `sourceTriggerId`）。
+- Worker 结果写入时，Supervisor 更新 `task_status.json`（字段与语义见 `docs/design/task-system.md`）。
 - `task_done` / `task_failed` 条件基于 `task_status.json` 判断，避免依赖结果文件是否存在。
 - Teller 消费结果后，可按保留策略清理 `worker/results/`（例如保留 7~30 天或按数量上限），不影响条件判断。
 
@@ -63,6 +70,8 @@ Supervisor 监控所有 Planner / Worker 进程的运行时长，超时后 kill 
 
 **超时重试翻倍**：超时导致的重试，`timeout` 自动翻倍（如默认 600s → 重试时 1200s）。
 
+Supervisor 在写入失败结果时补充 `failureReason`（`timeout|error|killed`）与 `error`，并记录重试原因到 `log.jsonl`。
+
 ### 失败重试
 
 Planner 和 Worker 统一处理，规则相同：
@@ -71,7 +80,16 @@ Planner 和 Worker 统一处理，规则相同：
 2. **重试仍失败** → 标记为最终失败，写入对应 `results/`，唤醒 Teller 汇报。
 3. **`task_failed` 条件** 仅在最终失败时触发，重试期间不触发。
 
-任务 JSON 通过 `attempts` 字段追踪执行次数（首次为 1，重试后为 2）。
+任务 JSON 通过 `attempts` 字段追踪执行次数（入队为 0，开始执行时递增为 1，重试时在重新入队前递增）。
+
+## 日志字段
+
+`log.jsonl` 每行记录一个事件，建议包含以下字段（便于审计与排障）：
+
+- `timestamp`（UTC ISO 8601）
+- `event`（如 `task_started`/`task_completed`/`task_failed`/`task_retry`/`archive_triggered`）
+- `taskId` / `traceId` / `parentTaskId`
+- `attempts` / `durationMs` / `failureReason`
 
 ## 日志轮转
 
