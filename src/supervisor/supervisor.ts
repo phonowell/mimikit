@@ -3,7 +3,11 @@ import { buildPaths } from '../fs/paths.js'
 import { shortId } from '../ids.js'
 import { appendLog, rotateLogIfNeeded } from '../log/append.js'
 import { processTriggers } from '../scheduler/triggers.js'
-import { appendHistory, readHistory } from '../storage/history.js'
+import {
+  appendHistory,
+  normalizeHistoryFile,
+  readHistory,
+} from '../storage/history.js'
 import { readInbox, writeInbox } from '../storage/inbox.js'
 import {
   readPendingQuestion,
@@ -40,6 +44,7 @@ export class Supervisor {
 
   async start() {
     await ensureStateDirs(this.paths)
+    await normalizeHistoryFile(this.paths.history)
     await recoverRunning(this.paths)
     await this.tick()
     this.timer = setInterval(() => this.tick(), this.config.checkIntervalMs)

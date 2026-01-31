@@ -32,7 +32,7 @@ export const askUser = async (ctx: ToolContext, args: AskUserArgs) => {
   await writePendingQuestion(ctx.paths.pendingQuestion, question)
   await appendHistory(ctx.paths.history, {
     id: shortId(),
-    role: 'assistant',
+    role: 'agent',
     text: formatPendingQuestion(question),
     createdAt,
   })

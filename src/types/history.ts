@@ -1,6 +1,6 @@
 ﻿import type { Id, ISODate } from './common.js'
 
-export type Role = 'user' | 'assistant'
+export type Role = 'user' | 'agent'
 
 export type HistoryMessage = {
   id: Id

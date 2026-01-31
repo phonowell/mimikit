@@ -21,7 +21,7 @@ export function createMessagesController({
   let lastMessageRole = null
   let emptyRemoved = false
   let lastStatus = null
-  let lastAssistantMessageId = null
+  let lastAgentMessageId = null
   let awaitingReply = false
 
   const removeEmpty = () => {
@@ -58,9 +58,9 @@ export function createMessagesController({
   }
 
   const applyRenderedState = (rendered) => {
-    if (rendered?.latestAssistantId) {
-      if (rendered.latestAssistantId !== lastAssistantMessageId) {
-        lastAssistantMessageId = rendered.latestAssistantId
+    if (rendered?.latestAgentId) {
+      if (rendered.latestAgentId !== lastAgentMessageId) {
+        lastAgentMessageId = rendered.latestAgentId
         awaitingReply = false
         loading.setLoading(false)
       }
@@ -68,7 +68,7 @@ export function createMessagesController({
     if (rendered?.lastRole !== null && rendered?.lastRole !== undefined) {
       lastMessageRole = rendered.lastRole
     }
-    if (rendered?.lastIsAssistant) awaitingReply = false
+    if (rendered?.lastIsAgent) awaitingReply = false
     syncLoadingState()
   }
 

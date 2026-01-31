@@ -19,7 +19,7 @@ export const createLoadingController = ({
     const shouldAutoScroll = isNearBottom()
     removeEmpty()
     const item = document.createElement('li')
-    item.className = 'message assistant message-loading'
+    item.className = 'message agent message-loading'
 
     const article = document.createElement('article')
     const content = document.createElement('div')

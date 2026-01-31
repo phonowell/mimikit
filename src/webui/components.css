@@ -124,11 +124,11 @@
   border-bottom-right-radius: 8px;
 }
 
-.message.assistant {
+.message.agent {
   justify-content: flex-start;
 }
 
-.message.assistant article {
+.message.agent article {
   border-bottom-left-radius: 8px;
 }
 

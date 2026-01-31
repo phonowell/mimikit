@@ -55,7 +55,7 @@
 
 **参数**：`{ after: string, before?: string }` → **返回**：`{ messages: Message[] }`
 
-`Message` 类型（两个历史工具共用）：`{ role: "user" | "assistant", text: string, createdAt: string }`
+`Message` 类型（两个历史工具共用）：`{ role: "user" | "agent", text: string, createdAt: string }`
 
 ### `search_memory`
 

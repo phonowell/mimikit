@@ -1,10 +1,9 @@
-export const isAssistantMessage = (msg) =>
-  msg?.role === 'agent' || msg?.role === 'assistant'
+export const isAgentMessage = (msg) => msg?.role === 'agent'
 
-export const findLatestAssistantMessage = (messages) => {
+export const findLatestAgentMessage = (messages) => {
   for (let i = messages.length - 1; i >= 0; i -= 1) {
     const msg = messages[i]
-    if (isAssistantMessage(msg)) return msg
+    if (isAgentMessage(msg)) return msg
   }
   return null
 }
@@ -26,7 +25,7 @@ const renderMessage = (params, msg) => {
   const content = document.createElement('div')
   content.className = 'content'
   const text = msg?.text ?? ''
-  if (isAssistantMessage(msg)) {
+  if (isAgentMessage(msg)) {
     content.classList.add('markdown')
     content.appendChild(renderMarkdown(text))
   } else {
@@ -34,8 +33,8 @@ const renderMessage = (params, msg) => {
   }
   article.appendChild(content)
 
-  const usageText = isAssistantMessage(msg) ? formatUsage(msg.usage) : ''
-  const elapsedText = isAssistantMessage(msg)
+  const usageText = isAgentMessage(msg) ? formatUsage(msg.usage) : ''
+  const elapsedText = isAgentMessage(msg)
     ? formatElapsedLabel(msg.elapsedMs)
     : ''
   const timeText = formatTime(msg.createdAt)
@@ -74,9 +73,9 @@ export const renderMessages = (params) => {
     loading,
   } = params
   if (!messagesEl || !messages || messages.length === 0)
-    return { latestAssistantId: null, lastRole: null, lastIsAssistant: false }
+    return { latestAgentId: null, lastRole: null, lastIsAgent: false }
   removeEmpty()
-  const latestAssistant = findLatestAssistantMessage(messages)
+  const latestAgent = findLatestAgentMessage(messages)
   const wasNearBottom = isNearBottom()
   const previousScrollTop = messagesEl.scrollTop
   const previousScrollHeight = messagesEl.scrollHeight
@@ -97,9 +96,9 @@ export const renderMessages = (params) => {
 
   const last = messages[messages.length - 1]
   return {
-    latestAssistantId: latestAssistant?.id ?? null,
+    latestAgentId: latestAgent?.id ?? null,
     lastRole: last?.role ?? null,
-    lastIsAssistant: last ? isAssistantMessage(last) : false,
+    lastIsAgent: last ? isAgentMessage(last) : false,
   }
 }
 

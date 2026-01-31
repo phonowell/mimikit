@@ -10,7 +10,7 @@ export type ReplyArgs = { text: string }
 export const reply = async (ctx: ToolContext, args: ReplyArgs) => {
   const message: HistoryMessage = {
     id: shortId(),
-    role: 'assistant',
+    role: 'agent',
     text: args.text,
     createdAt: nowIso(),
   }
