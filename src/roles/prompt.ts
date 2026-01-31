@@ -90,6 +90,8 @@ export const buildTellerPrompt = async (params: {
     formatMemory(params.memory),
     '## Output',
     'Return tool calls as JSON lines. Example: {"tool":"reply","args":{"text":"..."}}',
+    'Always call reply once for each user input unless you call ask_user.',
+    'If you delegate work, still reply with a brief acknowledgment.',
   ].join('\n\n')
 }
 

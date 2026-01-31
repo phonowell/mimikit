@@ -2,6 +2,7 @@
 
 import { writeJson } from '../fs/json.js'
 import { extractPlannerResult } from '../llm/output.js'
+import { appendLog } from '../log/append.js'
 import { selectHistory } from '../memory/inject.js'
 import { extractKeywords } from '../memory/keywords.js'
 import { searchMemory } from '../memory/search.js'
@@ -179,6 +180,11 @@ export const runTellerSession = async (params: {
     readTellerInbox(params.paths.tellerInbox),
   ])
   if (inbox.length === 0 && tellerInbox.length === 0) return
+  await appendLog(params.paths.log, {
+    event: 'teller_session',
+    inputs: inbox.length,
+    events: tellerInbox.length,
+  })
   const history = await readHistory(params.paths.history)
   const messages = selectHistory({ history, budget: 4096, min: 5, max: 20 })
   const keywords = extractKeywords([

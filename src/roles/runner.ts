@@ -1,5 +1,6 @@
 ﻿import { extractToolCalls, stripToolCalls } from '../llm/output.js'
 import { runCodex } from '../llm/runner.js'
+import { appendLog } from '../log/append.js'
 import { executeTool } from '../tools/execute.js'
 
 import {
@@ -12,6 +13,7 @@ import type { MemoryHit } from '../memory/search.js'
 import type { ToolContext } from '../tools/context.js'
 import type { HistoryMessage } from '../types/history.js'
 import type { TellerEvent } from '../types/teller.js'
+import type { ToolCall } from '../types/tools.js'
 
 const buildRunOptions = (params: {
   prompt: string
@@ -64,7 +66,21 @@ export const runTeller = async (params: {
   )
   const calls = extractToolCalls(output)
   for (const call of calls) await executeTool(params.ctx, call)
-  return { calls, output: stripToolCalls(output) }
+  const stripped = stripToolCalls(output).trim()
+  let fallbackUsed = false
+  if (calls.length === 0 && stripped) {
+    const fallback: ToolCall = { tool: 'reply', args: { text: stripped } }
+    await executeTool(params.ctx, fallback)
+    calls.push(fallback)
+    fallbackUsed = true
+  }
+  await appendLog(params.ctx.paths.log, {
+    event: 'teller_response',
+    toolCalls: calls.length,
+    fallbackUsed,
+    outputChars: stripped.length,
+  })
+  return { calls, output: stripped }
 }
 
 export const runPlanner = async (params: {

@@ -1,4 +1,5 @@
 ﻿import { writeJson } from '../fs/json.js'
+import { appendLog } from '../log/append.js'
 import { listItems } from '../storage/queue.js'
 import { listTriggers } from '../storage/triggers.js'
 import { pickNextTask } from '../tasks/pick.js'
@@ -28,6 +29,10 @@ export const dispatchPlanner = async (params: {
     task,
     queueDir: params.paths.plannerQueue,
     runningDir: params.paths.plannerRunning,
+  })
+  await appendLog(params.paths.log, {
+    event: 'planner_task_started',
+    taskId: claimed.id,
   })
   try {
     await runPlannerTask({
@@ -79,6 +84,11 @@ export const dispatchWorker = async (params: {
       task,
       queueDir: params.paths.workerQueue,
       runningDir: params.paths.workerRunning,
+    })
+    await appendLog(params.paths.log, {
+      event: 'worker_task_started',
+      taskId: claimed.id,
+      sourceTriggerId: claimed.sourceTriggerId ?? null,
     })
     queued.splice(queued.indexOf(task), 1)
     const isEval = claimed.sourceTriggerId

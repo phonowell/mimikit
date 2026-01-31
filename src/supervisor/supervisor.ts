@@ -64,6 +64,7 @@ export class Supervisor {
     })
     const pending = await readPendingQuestion(this.paths.pendingQuestion)
     if (pending) await writePendingQuestion(this.paths.pendingQuestion, null)
+    await appendLog(this.paths.log, { event: 'user_input', id })
     return id
   }
 
@@ -119,6 +120,16 @@ export class Supervisor {
         { workDir: this.config.workDir, taskStatus },
         this.paths.triggers,
       )
+      if (triggeredTasks.length > 0) {
+        await appendLog(this.paths.log, {
+          event: 'trigger_tasks_enqueued',
+          count: triggeredTasks.length,
+          taskIds: triggeredTasks.map((task) => task.id),
+          triggerIds: triggeredTasks.map(
+            (task) => task.sourceTriggerId ?? null,
+          ),
+        })
+      }
       for (const task of triggeredTasks)
         await writeItem(this.paths.workerQueue, task.id, task)
 

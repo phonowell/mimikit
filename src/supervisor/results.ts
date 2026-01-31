@@ -1,6 +1,7 @@
 ﻿import { join } from 'node:path'
 
 import { newId, shortId } from '../ids.js'
+import { appendLog } from '../log/append.js'
 import { applyArchiveResult } from '../memory/archive-apply.js'
 import { readHistory, writeHistory } from '../storage/history.js'
 import { listItems, removeItem, writeItem } from '../storage/queue.js'
@@ -113,6 +114,16 @@ export const processPlannerResults = async (paths: StatePaths) => {
         }
       }
     }
+    await appendLog(paths.log, {
+      event: 'planner_result',
+      taskId: result.id,
+      status: result.status,
+      tasks: Array.isArray(result.tasks) ? result.tasks.length : 0,
+      triggers: Array.isArray(result.triggers) ? result.triggers.length : 0,
+      ...(result.status === 'failed'
+        ? { error: result.error ?? 'planner failed' }
+        : {}),
+    })
     await removeItem(join(paths.plannerResults, `${result.id}.json`))
   }
   await appendTellerInbox(paths.tellerInbox, events)
@@ -179,6 +190,14 @@ export const processWorkerResults = async (paths: StatePaths) => {
       taskId: result.id,
       status: result.status,
       ...(resultText ? { result: resultText } : {}),
+      ...(result.error ? { error: result.error } : {}),
+    })
+    await appendLog(paths.log, {
+      event: 'worker_result',
+      taskId: result.id,
+      status: result.status,
+      failureReason: result.failureReason ?? null,
+      sourceTriggerId: result.sourceTriggerId ?? null,
       ...(result.error ? { error: result.error } : {}),
     })
     await removeItem(join(paths.workerResults, `${result.id}.json`))
