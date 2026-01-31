@@ -1,4 +1,4 @@
-﻿import { writeFileAtomic } from '../fs/atomic.js'
+import { writeFileAtomic } from '../fs/atomic.js'
 import { appendLog } from '../log/append.js'
 import { addSeconds, nowIso } from '../time.js'
 

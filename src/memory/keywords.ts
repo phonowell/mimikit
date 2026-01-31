@@ -1,4 +1,4 @@
-﻿const WORD_RE = /[a-z0-9_]{2,}|[\u4e00-\u9fff]{2,}/gi
+const WORD_RE = /[a-z0-9_]{2,}|[\u4e00-\u9fff]{2,}/gi
 const STOP = new Set([
   'the',
   'and',

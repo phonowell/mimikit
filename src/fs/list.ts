@@ -1,4 +1,4 @@
-﻿import { readdir } from 'node:fs/promises'
+import { readdir } from 'node:fs/promises'
 
 import type { Dirent } from 'node:fs'
 

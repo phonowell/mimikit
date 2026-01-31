@@ -1,4 +1,4 @@
-﻿import { searchMemory } from '../memory/search.js'
+import { searchMemory } from '../memory/search.js'
 
 import type { ToolContext } from './context.js'
 

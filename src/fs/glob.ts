@@ -1,4 +1,4 @@
-﻿import { readdir, stat } from 'node:fs/promises'
+import { readdir, stat } from 'node:fs/promises'
 import { join, sep } from 'node:path'
 
 const toPosix = (value: string): string => value.split(sep).join('/')

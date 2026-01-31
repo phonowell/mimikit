@@ -1,4 +1,4 @@
-﻿import { resolve } from 'node:path'
+import { resolve } from 'node:path'
 
 export type Timeouts = {
   tellerMs: number

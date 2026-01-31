@@ -1,4 +1,4 @@
-﻿import { isVendorPath, serveStatic, serveVendor } from './static.js'
+import { isVendorPath, serveStatic, serveVendor } from './static.js'
 import { parseLimit, readBody, respond } from './utils.js'
 
 import type { Supervisor } from '../supervisor/supervisor.js'

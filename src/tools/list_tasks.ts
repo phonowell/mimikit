@@ -1,4 +1,4 @@
-﻿import { listItems } from '../storage/queue.js'
+import { listItems } from '../storage/queue.js'
 import { listTriggers } from '../storage/triggers.js'
 
 import type { ToolContext } from './context.js'

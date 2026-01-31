@@ -1,4 +1,4 @@
-﻿import { shortId } from '../ids.js'
+import { shortId } from '../ids.js'
 
 const slugify = (text: string): string =>
   text

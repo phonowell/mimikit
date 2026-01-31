@@ -1,4 +1,4 @@
-﻿import { createServer } from 'node:http'
+import { createServer } from 'node:http'
 
 import { handleRequest } from './handler.js'
 import { respond } from './utils.js'

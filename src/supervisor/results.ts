@@ -1,4 +1,4 @@
-﻿import { join } from 'node:path'
+import { join } from 'node:path'
 
 import { newId, shortId } from '../ids.js'
 import { appendLog } from '../log/append.js'

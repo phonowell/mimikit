@@ -1,4 +1,4 @@
-﻿import { join } from 'node:path'
+import { join } from 'node:path'
 
 import { removeItem } from '../storage/queue.js'
 import { removeTrigger } from '../storage/triggers.js'

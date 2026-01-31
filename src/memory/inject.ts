@@ -1,4 +1,4 @@
-﻿import type { HistoryMessage } from '../types/history.js'
+import type { HistoryMessage } from '../types/history.js'
 
 const estimateTokens = (text: string): number => Math.ceil(text.length / 4)
 

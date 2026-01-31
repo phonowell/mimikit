@@ -1,4 +1,4 @@
-﻿export type ToolName =
+export type ToolName =
   | 'delegate'
   | 'reply'
   | 'remember'

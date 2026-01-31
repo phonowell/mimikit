@@ -1,4 +1,4 @@
-﻿import { appendFile } from 'node:fs/promises'
+import { appendFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
 import { ensureDir } from '../fs/ensure.js'

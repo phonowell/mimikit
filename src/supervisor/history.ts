@@ -1,4 +1,4 @@
-﻿import { appendLog } from '../log/append.js'
+import { appendLog } from '../log/append.js'
 import {
   applyHistoryLimits,
   archiveHistory,

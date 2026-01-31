@@ -1,4 +1,4 @@
-﻿import type { PendingQuestion } from './types/history.js'
+import type { PendingQuestion } from './types/history.js'
 
 const formatOptions = (options?: string[]): string => {
   if (!options || options.length === 0) return ''

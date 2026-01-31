@@ -1,4 +1,4 @@
-﻿import { readFile } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises'
 import { extname, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 

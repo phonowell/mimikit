@@ -1,4 +1,4 @@
-﻿import { stat } from 'node:fs/promises'
+import { stat } from 'node:fs/promises'
 import { join } from 'node:path'
 
 import { globExists, globMtime } from '../fs/glob.js'

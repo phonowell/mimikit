@@ -1,4 +1,4 @@
-﻿import { resolve } from 'node:path'
+import { resolve } from 'node:path'
 import { parseArgs } from 'node:util'
 
 import { defaultConfig } from '../config.js'

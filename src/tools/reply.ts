@@ -1,4 +1,4 @@
-﻿import { shortId } from '../ids.js'
+import { shortId } from '../ids.js'
 import { appendHistory } from '../storage/history.js'
 import { nowIso } from '../time.js'
 
@@ -13,6 +13,10 @@ export const reply = async (ctx: ToolContext, args: ReplyArgs) => {
     role: 'agent',
     text: args.text,
     createdAt: nowIso(),
+    ...(ctx.llmUsage ? { usage: ctx.llmUsage } : {}),
+    ...(Number.isFinite(ctx.llmElapsedMs)
+      ? { elapsedMs: ctx.llmElapsedMs }
+      : {}),
   }
   await appendHistory(ctx.paths.history, message)
 }

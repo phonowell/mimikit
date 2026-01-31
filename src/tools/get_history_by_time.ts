@@ -1,4 +1,4 @@
-﻿import { readHistory } from '../storage/history.js'
+import { readHistory } from '../storage/history.js'
 
 import type { ToolContext } from './context.js'
 

@@ -1,4 +1,4 @@
-﻿import type { Task } from '../types/tasks.js'
+import type { Task } from '../types/tasks.js'
 
 export const pickNextTask = (
   tasks: Task[],

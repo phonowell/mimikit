@@ -1,4 +1,4 @@
-﻿import { createReadStream, createWriteStream } from 'node:fs'
+import { createReadStream, createWriteStream } from 'node:fs'
 import {
   appendFile,
   readdir,

@@ -13,6 +13,8 @@
     "start": "caffeinate -dimsu bin/mimikit",
     "start:windows": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\bin\\mimikit.ps1",
     "fn-to-arrow": "tsx scripts/fn-to-arrow.ts",
+    "fix-crlf": "tsx scripts/fix-crlf.ts",
+    "fix-bom": "tsx scripts/remove-bom.ts",
     "lint": "eslint \"src/**/*.ts\" --fix",
     "test": "vitest run"
   },

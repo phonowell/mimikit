@@ -1,4 +1,4 @@
-﻿import { parseJsonlOutput } from './codex/jsonl.js'
+import { parseJsonlOutput } from './codex/jsonl.js'
 import { spawnCodex } from './codex/spawn.js'
 
 import type { TokenUsage } from './types/usage.js'

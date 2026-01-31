@@ -1,4 +1,5 @@
-﻿import type { StatePaths } from '../fs/paths.js'
+import type { StatePaths } from '../fs/paths.js'
+import type { TokenUsage } from '../types/usage.js'
 
 export type ToolRole = 'teller' | 'planner'
 
@@ -7,4 +8,6 @@ export type ToolContext = {
   paths: StatePaths
   workDir: string
   now: Date
+  llmUsage?: TokenUsage
+  llmElapsedMs?: number
 }

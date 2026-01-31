@@ -1,4 +1,4 @@
-﻿import type { Id, ISODate } from './common.js'
+import type { Id, ISODate } from './common.js'
 
 export type InboxItem = {
   id: Id

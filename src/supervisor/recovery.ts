@@ -1,4 +1,4 @@
-﻿import { writeJson } from '../fs/json.js'
+import { writeJson } from '../fs/json.js'
 import { readHistory, writeHistory } from '../storage/history.js'
 import { listItems, removeItem } from '../storage/queue.js'
 import { nowIso } from '../time.js'

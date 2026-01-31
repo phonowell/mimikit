@@ -1,4 +1,4 @@
-﻿import { extractToolCalls, stripToolCalls } from '../llm/output.js'
+import { extractToolCalls, stripToolCalls } from '../llm/output.js'
 import { runCodex } from '../llm/runner.js'
 import { appendLog } from '../log/append.js'
 import { executeTool } from '../tools/execute.js'
@@ -55,7 +55,7 @@ export const runTeller = async (params: {
     inputs: params.inputs,
     events: params.events,
   })
-  const output = await runCodex(
+  const llmResult = await runCodex(
     buildRunOptions({
       prompt,
       workDir: params.ctx.workDir,
@@ -64,13 +64,25 @@ export const runTeller = async (params: {
       ...(params.model ? { model: params.model } : {}),
     }),
   )
+  const { output, usage, elapsedMs } = llmResult
+  await appendLog(params.ctx.paths.log, {
+    event: 'llm_activity',
+    role: params.ctx.role,
+    elapsedMs,
+    ...(usage ? { usage } : {}),
+  })
+  const toolCtx: ToolContext = {
+    ...params.ctx,
+    ...(usage !== undefined ? { llmUsage: usage } : {}),
+    llmElapsedMs: elapsedMs,
+  }
   const calls = extractToolCalls(output)
-  for (const call of calls) await executeTool(params.ctx, call)
+  for (const call of calls) await executeTool(toolCtx, call)
   const stripped = stripToolCalls(output).trim()
   let fallbackUsed = false
   if (calls.length === 0 && stripped) {
     const fallback: ToolCall = { tool: 'reply', args: { text: stripped } }
-    await executeTool(params.ctx, fallback)
+    await executeTool(toolCtx, fallback)
     calls.push(fallback)
     fallbackUsed = true
   }
@@ -79,8 +91,10 @@ export const runTeller = async (params: {
     toolCalls: calls.length,
     fallbackUsed,
     outputChars: stripped.length,
+    ...(usage ? { usage } : {}),
+    elapsedMs,
   })
-  return { calls, output: stripped }
+  return { calls, output: stripped, usage, elapsedMs }
 }
 
 export const runPlanner = async (params: {
@@ -97,7 +111,7 @@ export const runPlanner = async (params: {
     memory: params.memory,
     request: params.request,
   })
-  const output = await runCodex(
+  const llmResult = await runCodex(
     buildRunOptions({
       prompt,
       workDir: params.ctx.workDir,
@@ -106,9 +120,10 @@ export const runPlanner = async (params: {
       ...(params.model ? { model: params.model } : {}),
     }),
   )
+  const { output, usage, elapsedMs } = llmResult
   const calls = extractToolCalls(output)
   for (const call of calls) await executeTool(params.ctx, call)
-  return { calls, output: stripToolCalls(output) }
+  return { calls, output: stripToolCalls(output), usage, elapsedMs }
 }
 
 export const runWorker = async (params: {
@@ -121,7 +136,7 @@ export const runWorker = async (params: {
     workDir: params.workDir,
     taskPrompt: params.taskPrompt,
   })
-  const output = await runCodex(
+  const llmResult = await runCodex(
     buildRunOptions({
       prompt,
       workDir: params.workDir,
@@ -130,5 +145,9 @@ export const runWorker = async (params: {
       ...(params.model ? { model: params.model } : {}),
     }),
   )
-  return output
+  return {
+    output: llmResult.output,
+    usage: llmResult.usage,
+    elapsedMs: llmResult.elapsedMs,
+  }
 }

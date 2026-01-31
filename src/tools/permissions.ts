@@ -1,4 +1,4 @@
-﻿import type { ToolRole } from './context.js'
+import type { ToolRole } from './context.js'
 import type { ToolName } from '../types/tools.js'
 
 export const toolPermissions: Record<ToolName, ToolRole[]> = {

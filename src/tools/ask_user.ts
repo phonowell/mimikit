@@ -1,4 +1,4 @@
-﻿import { formatPendingQuestion } from '../format-question.js'
+import { formatPendingQuestion } from '../format-question.js'
 import { shortId } from '../ids.js'
 import { appendHistory } from '../storage/history.js'
 import { writePendingQuestion } from '../storage/pending-question.js'
@@ -35,6 +35,10 @@ export const askUser = async (ctx: ToolContext, args: AskUserArgs) => {
     role: 'agent',
     text: formatPendingQuestion(question),
     createdAt,
+    ...(ctx.llmUsage ? { usage: ctx.llmUsage } : {}),
+    ...(Number.isFinite(ctx.llmElapsedMs)
+      ? { elapsedMs: ctx.llmElapsedMs }
+      : {}),
   })
   return { questionId: question.questionId }
 }

@@ -1,4 +1,4 @@
-﻿import { readJson, writeJson } from '../fs/json.js'
+import { readJson, writeJson } from '../fs/json.js'
 
 export type ArchiveJob = {
   id: string

@@ -1,4 +1,4 @@
-﻿import type { Id, ISODate } from './common.js'
+import type { Id, ISODate } from './common.js'
 
 export type TaskType = 'oneshot'
 export type TriggerType = 'recurring' | 'scheduled' | 'conditional'

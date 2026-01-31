@@ -7,6 +7,7 @@
 - 客观：不编造，不假设，明确不确定性
 - 类型：ESM + 严格类型，避免 any；文件 >200 行需拆分
 - Skill：命中 skill 必须调用
+- Windows 编码：统一使用 UTF-8（读写）
 
 ## 目录与路径
 - 入口：src/cli.ts
@@ -22,6 +23,7 @@
 - tsx src/cli.ts
 - tsx src/cli.ts --port 8787
 - tsx src/cli.ts memory status|index|search
+- Windows 编码/换行问题：pnpm fix-crlf / pnpm fix-bom
 
 ## 文档
 - docs/minimal-architecture.md

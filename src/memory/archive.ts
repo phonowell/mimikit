@@ -1,4 +1,4 @@
-﻿import { appendFile, stat } from 'node:fs/promises'
+import { appendFile, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 
 import { writeItem } from '../storage/queue.js'

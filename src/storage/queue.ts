@@ -1,4 +1,4 @@
-﻿import { basename, join } from 'node:path'
+import { basename, join } from 'node:path'
 
 import { readJson, writeJson } from '../fs/json.js'
 

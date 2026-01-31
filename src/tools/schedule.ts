@@ -1,4 +1,4 @@
-﻿import { newId } from '../ids.js'
+import { newId } from '../ids.js'
 import { writeTrigger } from '../storage/triggers.js'
 import { nowIso } from '../time.js'
 

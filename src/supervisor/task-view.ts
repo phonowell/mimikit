@@ -1,4 +1,4 @@
-﻿import { listItems } from '../storage/queue.js'
+import { listItems } from '../storage/queue.js'
 import { readTaskStatus } from '../storage/task-status.js'
 
 import type { StatePaths } from '../fs/paths.js'

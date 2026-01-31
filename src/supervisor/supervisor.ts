@@ -1,4 +1,4 @@
-﻿import { ensureStateDirs } from '../fs/init.js'
+import { ensureStateDirs } from '../fs/init.js'
 import { buildPaths } from '../fs/paths.js'
 import { shortId } from '../ids.js'
 import { appendLog, rotateLogIfNeeded } from '../log/append.js'

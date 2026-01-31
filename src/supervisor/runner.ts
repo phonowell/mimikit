@@ -1,4 +1,4 @@
-﻿import { join } from 'node:path'
+import { join } from 'node:path'
 
 import { writeJson } from '../fs/json.js'
 import { extractPlannerResult } from '../llm/output.js'
@@ -75,6 +75,13 @@ export const runPlannerTask = async (params: {
   }
 
   const result = await runPlanner(plannerParams)
+  await appendLog(params.paths.log, {
+    event: 'llm_activity',
+    role: 'planner',
+    taskId: params.task.id,
+    elapsedMs: result.elapsedMs,
+    ...(result.usage ? { usage: result.usage } : {}),
+  })
 
   const parsed = extractPlannerResult(result.output)
   let status: PlannerResult['status'] = parsed?.status ?? 'done'
@@ -126,12 +133,19 @@ export const runWorkerTask = async (params: {
       timeoutMs: params.timeoutMs,
       ...(params.config.model ? { model: params.config.model } : {}),
     }
-    const output = await runWorker(workerParams)
+    const llmResult = await runWorker(workerParams)
+    await appendLog(params.paths.log, {
+      event: 'llm_activity',
+      role: 'worker',
+      taskId: params.task.id,
+      elapsedMs: llmResult.elapsedMs,
+      ...(llmResult.usage ? { usage: llmResult.usage } : {}),
+    })
     const result: WorkerResult = {
       id: params.task.id,
       status: 'done',
       resultType: 'text',
-      result: output,
+      result: llmResult.output,
       attempts: params.task.attempts,
       startedAt: nowIso(),
       completedAt: nowIso(),

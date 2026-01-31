@@ -1,4 +1,4 @@
-﻿import { ensureDir } from './ensure.js'
+import { ensureDir } from './ensure.js'
 
 import type { StatePaths } from './paths.js'
 

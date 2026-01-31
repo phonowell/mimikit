@@ -1,4 +1,4 @@
-﻿import { spawn } from 'node:child_process'
+import { spawn } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
 
 import bm25 from 'wink-bm25-text-search'

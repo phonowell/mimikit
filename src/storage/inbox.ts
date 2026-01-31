@@ -1,4 +1,4 @@
-﻿import { readJson, writeJson } from '../fs/json.js'
+import { readJson, writeJson } from '../fs/json.js'
 
 import type { InboxItem } from '../types/inbox.js'
 

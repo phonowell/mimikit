@@ -1,4 +1,4 @@
-﻿import { rename, writeFile } from 'node:fs/promises'
+import { rename, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 
 export const writeFileAtomic = async (

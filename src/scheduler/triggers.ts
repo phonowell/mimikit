@@ -1,4 +1,4 @@
-﻿import {
+import {
   listTriggers,
   removeTrigger,
   writeTrigger,

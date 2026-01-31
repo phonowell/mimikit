@@ -1,4 +1,4 @@
-﻿import { writeJson } from '../fs/json.js'
+import { writeJson } from '../fs/json.js'
 import { appendLog } from '../log/append.js'
 import { listItems } from '../storage/queue.js'
 import { listTriggers } from '../storage/triggers.js'
