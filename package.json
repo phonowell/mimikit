@@ -15,6 +15,8 @@
     "fn-to-arrow": "tsx scripts/fn-to-arrow.ts",
     "fix-crlf": "tsx scripts/fix-crlf.ts",
     "fix-bom": "tsx scripts/remove-bom.ts",
+    "prompt:preview": "tsx scripts/preview-prompt.ts",
+    "prompt:report": "tsx scripts/prompt-report.ts",
     "lint": "eslint \"src/**/*.ts\" --fix",
     "test": "vitest run"
   },

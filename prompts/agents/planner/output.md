@@ -1,5 +1,8 @@
-Return a single JSON object with optional "tool_calls" and required "result".
-Example: {"tool_calls":[{"tool":"delegate","args":{...}}],"result":{"status":"done","tasks":[{"prompt":"...","priority":5}]}}
-If you need user input: {"result":{"status":"needs_input","question":"...","options":["..."],"default":"..."}}
-If planning is complete: {"result":{"status":"done","tasks":[...],"triggers":[...]}}
-On failure: {"result":{"status":"failed","error":"..."}}
+只输出一个 JSON 对象；不要输出任何额外文本或 markdown。
+格式：{"tool_calls":[...],"result":{...}}
+- tool_calls 可省略；result 必须存在。
+
+示例：
+- needs_input: {"result":{"status":"needs_input","question":"...","options":["..."],"default":"..."}}
+- done: {"result":{"status":"done","tasks":[...],"triggers":[...]}}
+- failed: {"result":{"status":"failed","error":"..."}}

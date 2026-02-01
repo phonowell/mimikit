@@ -5,6 +5,13 @@ import type { MemoryHit } from '../memory/search.js'
 import type { HistoryMessage } from '../types/history.js'
 import type { TellerEvent } from '../types/teller.js'
 
+export type PromptMode = 'full' | 'minimal' | 'none'
+
+export type PromptSection = {
+  tag: string
+  content: string
+}
+
 const isNeedsInputEvent = (
   event: TellerEvent,
 ): event is Extract<TellerEvent, { kind: 'needs_input' }> =>
@@ -73,19 +80,38 @@ const formatTaskResults = (events: TellerEvent[]): string => {
 const wrapTag = (tag: string, content: string): string =>
   `<${tag}>\n${content}\n</${tag}>`
 
-const pushIf = (items: string[], tag: string, content: string): void => {
-  if (!content) return
-  items.push(wrapTag(tag, content))
+export const renderPromptSections = (sections: PromptSection[]): string =>
+  sections.map((section) => wrapTag(section.tag, section.content)).join('\n\n')
+
+const resolvePromptMode = (mode?: PromptMode): PromptMode => mode ?? 'full'
+
+const pushSection = (
+  sections: PromptSection[],
+  tag: string,
+  content: string,
+  opts?: { force?: boolean },
+): void => {
+  if (!opts?.force && !content) return
+  sections.push({ tag, content })
 }
 
-export const buildTellerPrompt = async (params: {
+export const buildTellerPromptSections = async (params: {
   workDir: string
   history: HistoryMessage[]
   memory: MemoryHit[]
   inputs: string[]
   events: TellerEvent[]
-}): Promise<string> => {
+  promptMode?: PromptMode
+}): Promise<PromptSection[]> => {
+  const mode = resolvePromptMode(params.promptMode)
+  const includeIdentity = mode !== 'none'
+  const includeTools = mode !== 'none'
+  const includeHistory = mode === 'full'
+  const includeMemory = mode === 'full'
+  const includeOutput = mode !== 'none'
+
   const identity = await loadGuide(params.workDir, 'teller/identity')
+  const toolsText = await loadGuide(params.workDir, 'teller/tools')
   const outputText = await loadGuide(params.workDir, 'teller/output')
 
   const needsInput = formatNeedsInput(params.events)
@@ -95,29 +121,79 @@ export const buildTellerPrompt = async (params: {
   const memoryText = formatMemory(params.memory)
 
   const plannerNeedsInput = needsInput
-    ? `${needsInput}\nCall ask_user with the question/options/default.`
+    ? `${needsInput}\n请用 question/options/default 调用 ask_user。`
     : ''
   const plannerFailed = plannerFailures
-    ? `${plannerFailures}\nReport failure to user.`
+    ? `${plannerFailures}\n向用户报告失败原因。`
     : ''
-  const taskResultsText = taskResults
-    ? `${taskResults}\nSummarize results to user.`
-    : ''
+  const taskResultsText = taskResults ? `${taskResults}\n向用户概述结果。` : ''
 
-  const sections: string[] = []
+  const sections: PromptSection[] = []
 
-  pushIf(sections, 'identity', identity)
-  sections.push(wrapTag('user_inputs', params.inputs.join('\n')))
+  if (includeIdentity) pushSection(sections, 'identity', identity)
+  if (includeTools) pushSection(sections, 'tools', toolsText)
+  pushSection(sections, 'user_inputs', params.inputs.join('\n'), {
+    force: true,
+  })
 
-  pushIf(sections, 'planner_needs_input', plannerNeedsInput)
-  pushIf(sections, 'planner_failed', plannerFailed)
-  pushIf(sections, 'task_results', taskResultsText)
-  pushIf(sections, 'history', historyText)
-  pushIf(sections, 'memory', memoryText)
+  pushSection(sections, 'planner_needs_input', plannerNeedsInput)
+  pushSection(sections, 'planner_failed', plannerFailed)
+  pushSection(sections, 'task_results', taskResultsText)
+  if (includeHistory) pushSection(sections, 'history', historyText)
+  if (includeMemory) pushSection(sections, 'memory', memoryText)
 
-  sections.push(wrapTag('output', outputText))
+  if (includeOutput)
+    pushSection(sections, 'output', outputText, { force: true })
 
-  return sections.join('\n\n')
+  return sections
+}
+
+export const buildTellerPrompt = async (params: {
+  workDir: string
+  history: HistoryMessage[]
+  memory: MemoryHit[]
+  inputs: string[]
+  events: TellerEvent[]
+  promptMode?: PromptMode
+}): Promise<string> =>
+  renderPromptSections(await buildTellerPromptSections(params))
+
+export const buildPlannerPromptSections = async (params: {
+  workDir: string
+  history: HistoryMessage[]
+  memory: MemoryHit[]
+  request: string
+  promptMode?: PromptMode
+}): Promise<PromptSection[]> => {
+  const mode = resolvePromptMode(params.promptMode)
+  const includeIdentity = mode !== 'none'
+  const includeTools = mode !== 'none'
+  const includeRules = mode !== 'none'
+  const includeHistory = mode === 'full'
+  const includeMemory = mode === 'full'
+  const includeOutput = mode !== 'none'
+
+  const identity = await loadGuide(params.workDir, 'planner/identity')
+  const toolsText = await loadGuide(params.workDir, 'planner/tools')
+  const rulesText = await loadGuide(params.workDir, 'planner/rules')
+  const outputText = await loadGuide(params.workDir, 'planner/output')
+
+  const historyText = formatHistory(params.history)
+  const memoryText = formatMemory(params.memory)
+
+  const sections: PromptSection[] = []
+
+  if (includeIdentity) pushSection(sections, 'identity', identity)
+  if (includeTools) pushSection(sections, 'tools', toolsText)
+  if (includeRules) pushSection(sections, 'rules', rulesText)
+  pushSection(sections, 'user_request', params.request, { force: true })
+  if (includeHistory) pushSection(sections, 'history', historyText)
+  if (includeMemory) pushSection(sections, 'memory', memoryText)
+
+  if (includeOutput)
+    pushSection(sections, 'output', outputText, { force: true })
+
+  return sections
 }
 
 export const buildPlannerPrompt = async (params: {
@@ -125,35 +201,41 @@ export const buildPlannerPrompt = async (params: {
   history: HistoryMessage[]
   memory: MemoryHit[]
   request: string
-}): Promise<string> => {
-  const guide = await loadGuide(params.workDir, 'planner/guide')
-  const outputText = await loadGuide(params.workDir, 'planner/output')
+  promptMode?: PromptMode
+}): Promise<string> =>
+  renderPromptSections(await buildPlannerPromptSections(params))
 
-  const historyText = formatHistory(params.history)
-  const memoryText = formatMemory(params.memory)
+export const buildWorkerPromptSections = async (params: {
+  workDir: string
+  taskPrompt: string
+  promptMode?: PromptMode
+}): Promise<PromptSection[]> => {
+  const mode = resolvePromptMode(params.promptMode)
+  const includeIdentity = mode !== 'none'
+  const includeTools = mode !== 'none'
+  const includeRules = mode !== 'none'
+  const includeOutput = mode !== 'none'
 
-  const sections: string[] = []
+  const identity = await loadGuide(params.workDir, 'worker/identity')
+  const toolsText = await loadGuide(params.workDir, 'worker/tools')
+  const rulesText = await loadGuide(params.workDir, 'worker/rules')
+  const outputText = await loadGuide(params.workDir, 'worker/output')
 
-  pushIf(sections, 'guide', guide)
-  sections.push(wrapTag('user_request', params.request))
-  pushIf(sections, 'history', historyText)
-  pushIf(sections, 'memory', memoryText)
+  const sections: PromptSection[] = []
 
-  sections.push(wrapTag('output', outputText))
+  if (includeIdentity) pushSection(sections, 'identity', identity)
+  if (includeTools) pushSection(sections, 'tools', toolsText)
+  if (includeRules) pushSection(sections, 'rules', rulesText)
+  pushSection(sections, 'task', params.taskPrompt, { force: true })
+  if (includeOutput)
+    pushSection(sections, 'output', outputText, { force: true })
 
-  return sections.join('\n\n')
+  return sections
 }
 
 export const buildWorkerPrompt = async (params: {
   workDir: string
   taskPrompt: string
-}): Promise<string> => {
-  const guide = await loadGuide(params.workDir, 'worker/guide')
-
-  const sections: string[] = []
-
-  pushIf(sections, 'guide', guide)
-  sections.push(wrapTag('task', params.taskPrompt))
-
-  return sections.join('\n\n')
-}
+  promptMode?: PromptMode
+}): Promise<string> =>
+  renderPromptSections(await buildWorkerPromptSections(params))

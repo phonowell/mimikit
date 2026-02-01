@@ -32,5 +32,13 @@
 ## 关联文档
 - docs/codex-sdk.md
 - prompts/agents/teller/identity.md
-- prompts/agents/planner/guide.md
-- prompts/agents/worker/guide.md
+- prompts/agents/teller/tools.md
+- prompts/agents/teller/output.md
+- prompts/agents/planner/identity.md
+- prompts/agents/planner/tools.md
+- prompts/agents/planner/rules.md
+- prompts/agents/planner/output.md
+- prompts/agents/worker/identity.md
+- prompts/agents/worker/tools.md
+- prompts/agents/worker/rules.md
+- prompts/agents/worker/output.md
