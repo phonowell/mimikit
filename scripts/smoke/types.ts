@@ -40,7 +40,12 @@ export type Report = {
     stateDir: string
     workDir: string
     model?: string
+    phase?: 'all' | 'code' | 'llm'
+    failFast?: boolean
+    segments?: { id: string; cases: string[] }[]
   }
+  aborted?: boolean
+  abortReason?: string
   cases: CaseResult[]
   totals: {
     passed: number

@@ -24,6 +24,9 @@ const run = async () => {
       'work-dir': { type: 'string' },
       'timeout-mins': { type: 'string' },
       cases: { type: 'string' },
+      segments: { type: 'string' },
+      phase: { type: 'string' },
+      'fail-fast': { type: 'boolean' },
       'llm-verify': { type: 'boolean' },
       'llm-verify-model': { type: 'string' },
     },
@@ -31,20 +34,71 @@ const run = async () => {
 
   const rawCases =
     values.cases?.trim() || process.env.MIMIKIT_SMOKE_CASES?.trim() || ''
+  const rawSegments =
+    values.segments?.trim() || process.env.MIMIKIT_SMOKE_SEGMENTS?.trim() || ''
+  const rawPhase =
+    values.phase?.trim() || process.env.MIMIKIT_SMOKE_PHASE?.trim() || ''
+  const failFast =
+    Boolean(values['fail-fast']) ||
+    process.env.MIMIKIT_SMOKE_FAIL_FAST === '1'
   const normalizeCase = (value: string) => value.trim().toUpperCase()
+  const normalizePhase = (value: string) => value.trim().toLowerCase()
+  const knownCases = new Set(['C1', 'C2', 'C3', 'C4'])
   const resolveCaseSet = (raw: string): Set<string> | null => {
     if (!raw) return null
     const lowered = raw.toLowerCase()
     if (lowered === 'basic') return new Set(['C1', 'C2', 'C3'])
     if (lowered === 'full') return new Set(['C1', 'C2', 'C3', 'C4'])
+    if (lowered === 'all') return new Set(['C1', 'C2', 'C3', 'C4'])
     const items = raw
       .split(',')
       .map((entry) => entry.trim())
       .filter(Boolean)
       .map(normalizeCase)
+    const invalid = items.filter((item) => !knownCases.has(item))
+    if (invalid.length > 0) {
+      throw new Error(`unknown cases: ${invalid.join(', ')}`)
+    }
     return items.length > 0 ? new Set(items) : null
   }
-  const caseFilter = resolveCaseSet(rawCases)
+  const resolvePhase = (raw: string): 'all' | 'code' | 'llm' => {
+    if (!raw) return 'all'
+    const normalized = normalizePhase(raw)
+    if (normalized === 'all') return 'all'
+    if (normalized === 'code') return 'code'
+    if (normalized === 'llm') return 'llm'
+    throw new Error(`invalid phase: ${raw}`)
+  }
+  const parseSegments = (
+    raw: string,
+  ): { id: string; cases: Set<string> }[] | null => {
+    if (!raw) return null
+    const parts = raw
+      .split('|')
+      .map((part) => part.trim())
+      .filter(Boolean)
+    if (parts.length === 0) return null
+    return parts.map((part, index) => {
+      const colonIndex = part.indexOf(':')
+      const name =
+        colonIndex > -1
+          ? part.slice(0, colonIndex).trim() || `S${index + 1}`
+          : `S${index + 1}`
+      const spec = colonIndex > -1 ? part.slice(colonIndex + 1).trim() : part
+      const cases = resolveCaseSet(spec)
+      if (!cases) {
+        throw new Error(`invalid segment: ${part}`)
+      }
+      return { id: name, cases }
+    })
+  }
+  const phase = resolvePhase(rawPhase)
+  const segments = parseSegments(rawSegments)
+  const caseFilter = segments ? null : resolveCaseSet(rawCases)
+  const segmentConfig = segments?.map((segment) => ({
+    id: segment.id,
+    cases: Array.from(segment.cases),
+  }))
 
   const timeoutMins = toInt(values['timeout-mins'], 15)
   const globalTimeoutMs = clamp(timeoutMins, 1, 60) * 60 * 1000
@@ -60,9 +114,11 @@ const run = async () => {
 
   const model = values.model?.trim() || undefined
   const workDir = resolve(values['work-dir'] ?? '.')
-  const llmVerifyEnabled =
+  const llmVerifyFlag =
     Boolean(values['llm-verify']) ||
     process.env.MIMIKIT_SMOKE_LLM_VERIFY === '1'
+  const llmVerifyEnabled =
+    phase === 'code' ? false : phase === 'llm' ? true : llmVerifyFlag
   const triggersSource = llmVerifyEnabled
     ? await loadReference(resolve(workDir, 'src/scheduler/triggers.ts'))
     : undefined
@@ -126,6 +182,8 @@ const run = async () => {
   }
 
   const cases: CaseResult[] = []
+  let aborted = false
+  let abortReason: string | undefined
   let report: Report | null = null
   try {
     await withTimeout(
@@ -138,82 +196,99 @@ const run = async () => {
       'status check timeout',
     )
 
-    if (!caseFilter || caseFilter.has('C1')) {
-      cases.push(
-        await runSimpleCase({
-          id: 'C1',
-          name: 'math-sum',
-          baseUrl,
-          token: apiToken,
-          timeoutMs: 120000,
-          prompt:
-            'Smoke test. Return only the numeric result of 3+4. No extra text.',
-          evalFn: (text) => evalContainsNumbers(text, [7]),
-          llm: {
-            ...llmConfig,
-            criteria:
-              'Answer must clearly state 3+4=7. Must include "7" and may include "3" and "4" only; no other numbers. Keep it short (<=20 chars) and avoid extra reasoning.',
-          },
-        }),
-      )
+    const orderedCases = ['C1', 'C2', 'C3', 'C4'] as const
+    const runCaseById = async (caseId: string): Promise<CaseResult> => {
+      switch (caseId) {
+        case 'C1':
+          return runSimpleCase({
+            id: 'C1',
+            name: 'math-sum',
+            baseUrl,
+            token: apiToken,
+            timeoutMs: 120000,
+            prompt:
+              'Smoke test. Return only the numeric result of 3+4. No extra text.',
+            evalFn: (text) => evalContainsNumbers(text, [7]),
+            llm: {
+              ...llmConfig,
+              criteria:
+                'Answer must clearly state 3+4=7. Must include "7" and may include "3" and "4" only; no other numbers. Keep it short (<=20 chars) and avoid extra reasoning.',
+            },
+          })
+        case 'C2':
+          return runSimpleCase({
+            id: 'C2',
+            name: 'math-product',
+            baseUrl,
+            token: apiToken,
+            timeoutMs: 120000,
+            prompt:
+              'Smoke test. Return only the numeric result of 6*7. No extra text.',
+            evalFn: (text) => evalContainsNumbers(text, [42]),
+            llm: {
+              ...llmConfig,
+              criteria:
+                'Answer must clearly state 6*7=42. Must include "42" and may include "6" and "7" only; no other numbers. Keep it short (<=20 chars) and avoid extra reasoning.',
+            },
+          })
+        case 'C3':
+          return runSimpleCase({
+            id: 'C3',
+            name: 'translation',
+            baseUrl,
+            token: apiToken,
+            timeoutMs: 120000,
+            prompt:
+              "Smoke test. Return only the ASCII pinyin for 'hello' (ni hao/nihao). No extra text.",
+            evalFn: (text) => evalContainsEither(text, ['ni hao', 'nihao']),
+            llm: {
+              ...llmConfig,
+              criteria:
+                "Answer must be ASCII-only pinyin for 'hello': 'ni hao' or 'nihao'. No Chinese characters, no extra words, and no punctuation beyond an optional space.",
+            },
+          })
+        case 'C4':
+          return runComplexCase({
+            baseUrl,
+            token: apiToken,
+            timeoutMs: 240000,
+            llm: {
+              ...llmConfig,
+              criteria:
+                'Response must be 2-3 bullet points, mention "triggers.ts" and "processTriggers", and be consistent with the reference file. It should cover at least 3 key behaviors from the file (e.g. stuck/running normalization, recurring interval scheduling updates, scheduled runAt handling/removal, condition evaluation including llm_eval, nextRunAt/nextWakeAt updates). Penalize inaccuracies or fabricated behavior.',
+              context: triggersSource
+                ? `File: src/scheduler/triggers.ts\n${triggersSource}`
+                : undefined,
+            },
+          })
+        default:
+          throw new Error(`unknown case: ${caseId}`)
+      }
     }
-
-    if (!caseFilter || caseFilter.has('C2')) {
-      cases.push(
-        await runSimpleCase({
-          id: 'C2',
-          name: 'math-product',
-          baseUrl,
-          token: apiToken,
-          timeoutMs: 120000,
-          prompt:
-            'Smoke test. Return only the numeric result of 6*7. No extra text.',
-          evalFn: (text) => evalContainsNumbers(text, [42]),
-          llm: {
-            ...llmConfig,
-            criteria:
-              'Answer must clearly state 6*7=42. Must include "42" and may include "6" and "7" only; no other numbers. Keep it short (<=20 chars) and avoid extra reasoning.',
-          },
-        }),
-      )
+    const runCaseSet = async (caseSet: Set<string> | null, segmentId?: string) => {
+      for (const caseId of orderedCases) {
+        if (caseSet && !caseSet.has(caseId)) continue
+        const result = await runCaseById(caseId)
+        cases.push(result)
+        if (Date.now() - startTime > globalTimeoutMs) {
+          throw new Error('global timeout exceeded')
+        }
+        if (!result.ok && failFast) {
+          aborted = true
+          abortReason = segmentId
+            ? `fail-fast in ${segmentId} at ${caseId}`
+            : `fail-fast at ${caseId}`
+          return
+        }
+      }
     }
-
-    if (!caseFilter || caseFilter.has('C3')) {
-      cases.push(
-        await runSimpleCase({
-          id: 'C3',
-          name: 'translation',
-          baseUrl,
-          token: apiToken,
-          timeoutMs: 120000,
-          prompt:
-            "Smoke test. Return only the ASCII pinyin for 'hello' (ni hao/nihao). No extra text.",
-          evalFn: (text) => evalContainsEither(text, ['ni hao', 'nihao']),
-          llm: {
-            ...llmConfig,
-            criteria:
-              "Answer must be ASCII-only pinyin for 'hello': 'ni hao' or 'nihao'. No Chinese characters, no extra words, and no punctuation beyond an optional space.",
-          },
-        }),
-      )
-    }
-
-    if (!caseFilter || caseFilter.has('C4')) {
-      cases.push(
-        await runComplexCase({
-          baseUrl,
-          token: apiToken,
-          timeoutMs: 240000,
-          llm: {
-            ...llmConfig,
-            criteria:
-              'Response must be 2-3 bullet points, mention "triggers.ts" and "processTriggers", and be consistent with the reference file. It should cover at least 3 key behaviors from the file (e.g. stuck/running normalization, recurring interval scheduling updates, scheduled runAt handling/removal, condition evaluation including llm_eval, nextRunAt/nextWakeAt updates). Penalize inaccuracies or fabricated behavior.',
-            context: triggersSource
-              ? `File: src/scheduler/triggers.ts\n${triggersSource}`
-              : undefined,
-          },
-        }),
-      )
+    if (segments && segments.length > 0) {
+      for (const segment of segments) {
+        await runCaseSet(segment.cases, segment.id)
+        if (aborted) break
+      }
+    } else {
+      await runCaseSet(caseFilter)
     }
 
     const durationMs = Date.now() - startTime
@@ -238,7 +313,17 @@ const run = async () => {
       startedAt: new Date(startTime).toISOString(),
       endedAt: nowIso(),
       durationMs,
-      config: { port, stateDir, workDir, model },
+      config: {
+        port,
+        stateDir,
+        workDir,
+        model,
+        phase,
+        failFast,
+        segments: segmentConfig,
+      },
+      aborted,
+      abortReason,
       cases,
       totals: {
         passed,
@@ -261,7 +346,17 @@ const run = async () => {
       startedAt: new Date(startTime).toISOString(),
       endedAt: nowIso(),
       durationMs: Date.now() - startTime,
-      config: { port, stateDir, workDir, model },
+      config: {
+        port,
+        stateDir,
+        workDir,
+        model,
+        phase,
+        failFast,
+        segments: segmentConfig,
+      },
+      aborted,
+      abortReason,
       cases,
       totals: {
         passed: cases.filter((c) => c.ok).length,

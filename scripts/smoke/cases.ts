@@ -38,6 +38,7 @@ export const runSimpleCase = async (params: {
 }): Promise<CaseResult> => {
   const maxAttempts = Math.max(1, params.attempts ?? 2)
   let lastFailure: CaseResult | null = null
+  let lastResponse: string | null = null
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     const userId = await postInput({
       baseUrl: params.baseUrl,
@@ -71,29 +72,52 @@ export const runSimpleCase = async (params: {
       qualityReason: evalOutcome.ok ? undefined : evalOutcome.reason,
       responseSnippet: truncate(agent.text),
     }
-    if (params.llm?.enabled) {
-      const llmResult = await runLlmValidation({
-        workDir: params.llm.workDir,
-        model: params.llm.model,
-        timeoutMs: params.llm.timeoutMs,
-        caseId: params.id,
-        criteria: params.llm.criteria,
-        context: params.llm.context,
-        prompt: params.prompt,
-        response: agent.text,
-      })
-      result.llmValidation = llmResult
-      result.qualityScore = llmResult.score
-      if (!llmResult.pass) {
-        result.ok = false
-        result.qualityReason = result.qualityReason
-          ? `${result.qualityReason}; llm: ${llmResult.reason}`
-          : `llm: ${llmResult.reason}`
+    if (evalOutcome.ok) {
+      if (params.llm?.enabled) {
+        const llmResult = await runLlmValidation({
+          workDir: params.llm.workDir,
+          model: params.llm.model,
+          timeoutMs: params.llm.timeoutMs,
+          caseId: params.id,
+          criteria: params.llm.criteria,
+          context: params.llm.context,
+          prompt: params.prompt,
+          response: agent.text,
+        })
+        result.llmValidation = llmResult
+        result.qualityScore = llmResult.score
+        if (!llmResult.pass) {
+          result.ok = false
+          result.qualityReason = result.qualityReason
+            ? `${result.qualityReason}; llm: ${llmResult.reason}`
+            : `llm: ${llmResult.reason}`
+        }
       }
+      return result
     }
-    if (evalOutcome.ok) return result
     lastFailure = result
+    lastResponse = agent.text
     await sleep(300)
+  }
+  if (lastFailure && params.llm?.enabled && lastResponse) {
+    const llmResult = await runLlmValidation({
+      workDir: params.llm.workDir,
+      model: params.llm.model,
+      timeoutMs: params.llm.timeoutMs,
+      caseId: params.id,
+      criteria: params.llm.criteria,
+      context: params.llm.context,
+      prompt: params.prompt,
+      response: lastResponse,
+    })
+    lastFailure.llmValidation = llmResult
+    lastFailure.qualityScore = llmResult.score
+    if (!llmResult.pass) {
+      lastFailure.ok = false
+      lastFailure.qualityReason = lastFailure.qualityReason
+        ? `${lastFailure.qualityReason}; llm: ${llmResult.reason}`
+        : `llm: ${llmResult.reason}`
+    }
   }
   return lastFailure as CaseResult
 }
