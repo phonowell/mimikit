@@ -1,10 +1,13 @@
 import { echo, glob, read, runConcurrent, wrapList, write } from 'fire-keeper'
 
 const sources = [
-  './*.{js,ts,mjs,cjs}',
-  './src/**/*.{js,ts,tsx,mjs,cjs}',
-  './scripts/**/*.{js,ts,tsx,mjs,cjs}',
-  './test/**/*.{js,ts,tsx,mjs,cjs}',
+  './*.{js,ts,mjs,cjs,md}',
+  './src/**/*.{js,ts,tsx,mjs,cjs,md}',
+  './scripts/**/*.{js,ts,tsx,mjs,cjs,md}',
+  './test/**/*.{js,ts,tsx,mjs,cjs,md}',
+  './docs/**/*.md',
+  './plans/**/*.md',
+  './prompts/**/*.md',
 ]
 
 const listSources = () => glob(sources)
@@ -19,19 +22,9 @@ const stripBom = async (filePath: string): Promise<string | null> => {
   const raw = await read<undefined, string, true>(filePath, { raw: true })
   if (!raw) return null
 
-  if (typeof raw === 'string') {
-    if (raw.charCodeAt(0) !== 0xfeff) return null
-    await write(filePath, raw.slice(1))
-    return filePath
-  }
-
-  if (Buffer.isBuffer(raw)) {
-    if (!hasUtf8Bom(raw)) return null
-    await write(filePath, raw.subarray(3))
-    return filePath
-  }
-
-  return null
+  if (!hasUtf8Bom(raw)) return null
+  await write(filePath, raw.subarray(3))
+  return filePath
 }
 
 const main = async () => {

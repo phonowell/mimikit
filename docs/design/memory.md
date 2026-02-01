@@ -4,7 +4,7 @@
 
 ## 记忆存储结构
 
-目录树见 `docs/design/README.md` 的“文件协议”。此处仅补充记忆相关约定：
+目录树见 `docs/design/state-directory.md`。此处仅补充记忆相关约定：
 
 - `memory.md` — 长期记忆
 - `memory/` — 近期记忆（≤ 5 天原样保存）

@@ -24,6 +24,8 @@
 
 **返回**：`{ taskId: string }`（`oneshot`）或 `{ triggerId: string }`（`conditional`）
 
+Condition 定义见 `docs/design/task-conditions.md`。
+
 ### `reply`
 
 回复用户。

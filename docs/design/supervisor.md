@@ -49,7 +49,7 @@ Teller 是否运行中由 Supervisor 进程级判断（子进程是否存活）�
 
 ## 任务结果索引与清理
 
-- Worker 结果写入时，Supervisor 更新 `task_status.json`（字段与语义见 `docs/design/task-system.md`）。
+- Worker 结果写入时，Supervisor 更新 `task_status.json`（字段与语义见 `docs/design/task-data.md`）。
 - `task_done` / `task_failed` 条件基于 `task_status.json` 判断，避免依赖结果文件是否存在。
 - Teller 消费结果后，可按保留策略清理 `worker/results/`（例如保留 7~30 天或按数量上限），不影响条件判断。
 

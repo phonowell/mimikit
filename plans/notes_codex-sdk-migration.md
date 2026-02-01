@@ -1,4 +1,4 @@
-﻿# Notes: Codex SDK Migration
+# Notes: Codex SDK Migration
 
 - SDK wraps local `codex` binary and communicates via JSONL (from SDK README).
 - SDK supports `runStreamed()` for structured event streaming.

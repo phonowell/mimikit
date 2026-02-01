@@ -1,4 +1,4 @@
-﻿# 开发用 Agent 准则 (v2)
+# 开发用 Agent 准则 (v2)
 
 ## 关键规则
 - 计划管理：3+ 步任务使用 /plans/task_plan_{suffix}.md 并持续更新
@@ -17,7 +17,7 @@
 - 基础：src/llm/sdk-runner.ts + src/config.ts + src/fs/ + src/storage/ + src/log/
 - 记忆：src/memory/
 - 服务：src/http/ + src/webui/
-- 状态：.mimikit/（结构见 docs/minimal-architecture.md）
+- 状态：.mimikit/（结构见 docs/design/state-directory.md）
 
 ## 核心命令
 - tsx src/cli.ts
@@ -26,7 +26,7 @@
 - Windows 编码/换行问题：pnpm fix-crlf / pnpm fix-bom
 
 ## 文档
-- docs/minimal-architecture.md
+- docs/design/overview.md
 - docs/design/*
 - docs/codex-sdk.md
 

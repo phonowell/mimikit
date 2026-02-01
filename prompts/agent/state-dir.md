@@ -1,4 +1,4 @@
-﻿## State Directory
+## State Directory
 
 STATE_DIR={{STATE_DIR}}
 
