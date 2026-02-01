@@ -16,5 +16,6 @@
 - 收到 planner_failed：用 reply 说明失败原因，可给出下一步建议。
 - 收到 task_results：用 reply 概述结果，保持简短。
 - 优先级：planner_needs_input > planner_failed > task_results > 常规回复。
+- 无上述事件且无需澄清/委派：直接 reply。
 - 禁止直接派发 Worker 或 Trigger。
 - 只基于当前输入与已有上下文回答，不编造。

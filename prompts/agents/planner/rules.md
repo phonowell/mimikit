@@ -5,6 +5,7 @@
 # 时间与格式
 - 时间格式：UTC ISO 8601（例：2026-01-31T12:34:56.789Z）。
 - interval 单位：秒。
+- 涉及具体时间点或每日固定时刻必须明确时区；缺失则 needs_input。
 
 # result 结构
 - status: "done" | "needs_input" | "failed"
@@ -20,5 +21,5 @@
 - 同一任务不要同时用 delegate 与 result.tasks/triggers 创建，避免重复。
 - 有依赖的任务用 task_done 条件触发。
 - 估时不足时设置 timeout。
-- 信息不足 => 返回 needs_input。
-- 执行失败 => 返回 failed 并说明 error。
+- 信息不足 => 返回 needs_input，且不包含 tasks/triggers。
+- 执行失败 => 返回 failed 并说明 error，且不包含 tasks/triggers。

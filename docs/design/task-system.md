@@ -6,6 +6,12 @@
 - 固定声明 → prompts/agents/teller/identity.md + prompts/agents/teller/tools.md + prompts/agents/teller/output.md → Supervisor 动态上下文（history/memory/输入/结果）
 - 仅 Teller 有固定声明，Planner/Worker 无
 
+## PromptMode（注入强度）
+- full：注入 identity/tools/rules/output + history/memory（有内容时）。
+- minimal：只注入 identity/tools/rules/output，不注入 history/memory。
+- none：只保留 user_inputs/user_request/task，仅用于测试。
+- 运行时策略：Teller/Planner 有 history/memory 时用 full，否则用 minimal；Worker 固定 minimal。
+
 ## 生命周期（高层）
 ```
 用户输入

@@ -9,6 +9,7 @@ import {
   buildPlannerPrompt,
   buildTellerPrompt,
   buildWorkerPrompt,
+  type PromptMode,
 } from './prompt.js'
 
 import type { MemoryHit } from '../memory/search.js'
@@ -16,6 +17,17 @@ import type { ToolContext } from '../tools/context.js'
 import type { HistoryMessage } from '../types/history.js'
 import type { TellerEvent } from '../types/teller.js'
 import type { ToolCall } from '../types/tools.js'
+
+const resolveContextPromptMode = (params: {
+  history: HistoryMessage[]
+  memory: MemoryHit[]
+  injectContext: boolean
+}): PromptMode => {
+  if (!params.injectContext) return 'minimal'
+  return params.history.length > 0 || params.memory.length > 0
+    ? 'full'
+    : 'minimal'
+}
 
 export const runTeller = async (params: {
   ctx: ToolContext
@@ -28,12 +40,18 @@ export const runTeller = async (params: {
   injectContext?: boolean
 }) => {
   const injectContext = params.injectContext ?? true
+  const promptMode = resolveContextPromptMode({
+    history: params.history,
+    memory: params.memory,
+    injectContext,
+  })
   const prompt = await buildTellerPrompt({
     workDir: params.ctx.workDir,
     history: injectContext ? params.history : [],
     memory: injectContext ? params.memory : [],
     inputs: params.inputs,
     events: params.events,
+    promptMode,
   })
   const llmResult = await runCodexSdk({
     role: 'teller',
@@ -93,11 +111,17 @@ export const runPlanner = async (params: {
   injectContext?: boolean
 }) => {
   const injectContext = params.injectContext ?? true
+  const promptMode = resolveContextPromptMode({
+    history: params.history,
+    memory: params.memory,
+    injectContext,
+  })
   const prompt = await buildPlannerPrompt({
     workDir: params.ctx.workDir,
     history: injectContext ? params.history : [],
     memory: injectContext ? params.memory : [],
     request: params.request,
+    promptMode,
   })
   const llmResult = await runCodexSdk({
     role: 'planner',
@@ -125,9 +149,11 @@ export const runWorker = async (params: {
   model?: string
   timeoutMs: number
 }) => {
+  const promptMode: PromptMode = 'minimal'
   const prompt = await buildWorkerPrompt({
     workDir: params.workDir,
     taskPrompt: params.taskPrompt,
+    promptMode,
   })
   const llmResult = await runCodexSdk({
     role: 'worker',
