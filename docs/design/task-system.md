@@ -3,12 +3,12 @@
 > 返回 [系统设计总览](./README.md)
 
 ## Teller 注入（摘要）
-- 固定声明 → prompts/agents/teller/identity.md + prompts/agents/teller/tools.md + prompts/agents/teller/output.md → Supervisor 动态上下文（history/memory/输入/结果）
+- 固定声明 → prompts/agents/teller/identity.md + prompts/agents/teller/voice.md + prompts/agents/teller/tools.md + prompts/agents/teller/output.md → Supervisor 动态上下文（history/memory/输入/结果）
 - 仅 Teller 有固定声明，Planner/Worker 无
 
 ## PromptMode（注入强度）
-- full：注入 identity/tools/rules/output + history/memory（有内容时）。
-- minimal：只注入 identity/tools/rules/output，不注入 history/memory。
+- full：注入 identity/tools/rules/output（Teller 额外注入 voice）+ history/memory（有内容时）。
+- minimal：只注入 identity/tools/rules/output（Teller 额外注入 voice），不注入 history/memory。
 - none：只保留 user_inputs/user_request/task，仅用于测试。
 - 运行时策略：Teller/Planner 有 history/memory 时用 full，否则用 minimal；Worker 固定 minimal。
 
@@ -53,4 +53,4 @@ triggers/（schedule/conditional）→ Supervisor 评估 → 触发 oneshot 入�
 ## 细节文档
 - 任务/触发器/结果结构：docs/design/task-data.md
 - 条件与时间语义：docs/design/task-conditions.md
-- 角色细节：prompts/agents/teller/identity.md / prompts/agents/teller/tools.md / prompts/agents/teller/output.md / prompts/agents/planner/identity.md / prompts/agents/planner/tools.md / prompts/agents/planner/rules.md / prompts/agents/planner/output.md / prompts/agents/worker/identity.md / prompts/agents/worker/tools.md / prompts/agents/worker/rules.md / prompts/agents/worker/output.md
+- 角色细节：prompts/agents/teller/identity.md / prompts/agents/teller/voice.md / prompts/agents/teller/tools.md / prompts/agents/teller/output.md / prompts/agents/planner/identity.md / prompts/agents/planner/tools.md / prompts/agents/planner/rules.md / prompts/agents/planner/output.md / prompts/agents/worker/identity.md / prompts/agents/worker/tools.md / prompts/agents/worker/rules.md / prompts/agents/worker/output.md

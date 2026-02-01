@@ -105,12 +105,14 @@ export const buildTellerPromptSections = async (params: {
 }): Promise<PromptSection[]> => {
   const mode = resolvePromptMode(params.promptMode)
   const includeIdentity = mode !== 'none'
+  const includeVoice = mode !== 'none'
   const includeTools = mode !== 'none'
   const includeHistory = mode === 'full'
   const includeMemory = mode === 'full'
   const includeOutput = mode !== 'none'
 
   const identity = await loadGuide(params.workDir, 'teller/identity')
+  const voiceText = await loadGuide(params.workDir, 'teller/voice')
   const toolsText = await loadGuide(params.workDir, 'teller/tools')
   const outputText = await loadGuide(params.workDir, 'teller/output')
 
@@ -131,6 +133,7 @@ export const buildTellerPromptSections = async (params: {
   const sections: PromptSection[] = []
 
   if (includeIdentity) pushSection(sections, 'identity', identity)
+  if (includeVoice) pushSection(sections, 'voice', voiceText)
   if (includeTools) pushSection(sections, 'tools', toolsText)
   pushSection(sections, 'user_inputs', params.inputs.join('\n'), {
     force: true,

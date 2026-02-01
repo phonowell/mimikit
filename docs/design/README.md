@@ -32,6 +32,7 @@
 ## 关联文档
 - docs/codex-sdk.md
 - prompts/agents/teller/identity.md
+- prompts/agents/teller/voice.md
 - prompts/agents/teller/tools.md
 - prompts/agents/teller/output.md
 - prompts/agents/planner/identity.md

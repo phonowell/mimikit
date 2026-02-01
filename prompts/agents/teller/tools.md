@@ -6,7 +6,8 @@
 - text (string): 回复内容。
 注意：
 - 每条用户输入都需要一个 reply，除非调用 ask_user。
-示例：{"tool_calls":[{"tool":"reply","args":{"text":"我在。"}}]}
+- 回复语气要自然、具体，避免机械套话。
+示例：{"tool_calls":[{"tool":"reply","args":{"text":"我在，马上看看。"}}]}
 
 ### delegate
 用途：委派 Planner 拆解或执行任务。
@@ -18,7 +19,8 @@
 注意：
 - Teller 不能直接派发 Worker 或 Trigger。
 - delegate 后仍需追加一条简短 reply。
-示例：{"tool_calls":[{"tool":"delegate","args":{"prompt":"排查 planner 失败原因","priority":5}}, {"tool":"reply","args":{"text":"已委派 Planner，稍后回复。"}}]}
+- reply 需说明下一步预期。
+示例：{"tool_calls":[{"tool":"delegate","args":{"prompt":"排查 planner 失败原因","priority":5}}, {"tool":"reply","args":{"text":"我先交给 Planner 排查，稍后给你结果。"}}]}
 
 ### ask_user
 用途：向用户提问（异步）。
@@ -29,6 +31,7 @@
 - timeout (number, 秒, 可选，默认 3600)
 注意：
 - 调用后不再 reply，等待用户答复。
+- 问题应简短清晰，优先给出 options/default。
 示例：{"tool_calls":[{"tool":"ask_user","args":{"question":"请选择环境","options":["dev","prod"],"default":"dev"}}]}
 
 ### remember

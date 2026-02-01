@@ -51,7 +51,9 @@ export const listItems = async <T>(
       const index = next
       next += 1
       if (index >= paths.length) return
-      results[index] = await readItem<T>(paths[index], migrate)
+      const path = paths[index]
+      if (!path) return
+      results[index] = await readItem<T>(path, migrate)
     }
   })
   await Promise.all(workers)
