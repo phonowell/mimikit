@@ -1,3 +1,8 @@
+import {
+  migratePlannerResult,
+  migrateTask,
+  migrateWorkerResult,
+} from '../storage/migrations.js'
 import { listItems } from '../storage/queue.js'
 import { listTriggers } from '../storage/triggers.js'
 
@@ -70,30 +75,34 @@ export const listTasks = async (ctx: ToolContext, args: ListTasksArgs) => {
 
   if (scope === 'queue' || scope === 'all') {
     if (!args.role || args.role === 'planner') {
-      const items = await listItems<Task>(ctx.paths.plannerQueue)
+      const items = await listItems<Task>(ctx.paths.plannerQueue, migrateTask)
       tasks.push(...items.map((t) => summarizeTask(t, 'queued')))
     }
     if (!args.role || args.role === 'worker') {
-      const items = await listItems<Task>(ctx.paths.workerQueue)
+      const items = await listItems<Task>(ctx.paths.workerQueue, migrateTask)
       tasks.push(...items.map((t) => summarizeTask(t, 'queued')))
     }
   }
 
   if (scope === 'running' || scope === 'all') {
     if (!args.role || args.role === 'planner') {
-      const items = await listItems<Task>(ctx.paths.plannerRunning)
+      const items = await listItems<Task>(ctx.paths.plannerRunning, migrateTask)
       tasks.push(...items.map((t) => summarizeTask(t, 'running')))
     }
     if (!args.role || args.role === 'worker') {
-      const items = await listItems<Task>(ctx.paths.workerRunning)
+      const items = await listItems<Task>(ctx.paths.workerRunning, migrateTask)
       tasks.push(...items.map((t) => summarizeTask(t, 'running')))
     }
   }
 
   if (scope === 'all') {
-    const workerResults = await listItems<WorkerResult>(ctx.paths.workerResults)
+    const workerResults = await listItems<WorkerResult>(
+      ctx.paths.workerResults,
+      migrateWorkerResult,
+    )
     const plannerResults = await listItems<PlannerResult>(
       ctx.paths.plannerResults,
+      migratePlannerResult,
     )
     tasks.push(...workerResults.map((r) => summarizeResult(r)))
     tasks.push(...plannerResults.map((r) => summarizeResult(r)))

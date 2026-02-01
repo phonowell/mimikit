@@ -20,12 +20,18 @@ export type StatePaths = {
   log: string
   llmDir: string
   archiveJobs: string
+  runsDir: string
+  taskRuns: string
+  triggerRuns: string
 }
 
 export const buildPaths = (stateDir: string): StatePaths => {
   const root = stateDir
   const memoryDir = join(root, 'memory')
   const memorySummaryDir = join(memoryDir, 'summary')
+  const runsDir = join(root, 'runs')
+  const taskRuns = join(runsDir, 'tasks')
+  const triggerRuns = join(runsDir, 'triggers')
   return {
     root,
     inbox: join(root, 'inbox.json'),
@@ -46,5 +52,8 @@ export const buildPaths = (stateDir: string): StatePaths => {
     log: join(root, 'log.jsonl'),
     llmDir: join(root, 'llm'),
     archiveJobs: join(memoryDir, 'archive_jobs.json'),
+    runsDir,
+    taskRuns,
+    triggerRuns,
   }
 }

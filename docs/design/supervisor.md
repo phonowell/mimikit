@@ -4,15 +4,17 @@
 
 ## 主循环
 
-每 1 秒执行一次，按优先级：
+按下一次唤醒时间执行（`min(checkIntervalMs, nextTriggerRunAt)`），按优先级：
 
 1. **Teller 运行中？**（进程级判断） → 仅冻结会唤醒 Teller 的分支（`needs_input` / 结果回传 / 用户输入），其余步骤正常执行。
 2. **内置操作待执行？** → 执行（记忆归档、历史长度限制、确定性条件评估等）。
 3. **Planner 结果待处理？** → `done` → 解析子任务写入 `worker/queue/`；`needs_input` → 若 Teller 空闲则唤醒，否则延后；`failed` → 进入重试流程。
 4. **有待派发 Planner？** → 若 Planner 未在运行且 `planner/queue/` 非空，派发一个。
-5. **有待派发 Worker？** → 若 Worker 运行数 < 3 且 `worker/queue/` 非空，按优先级派发（先按 `priority` 降序，同优先级内来源于 `llm_eval` 条件的任务优先，再按 `createdAt` 升序）。
+5. **有待派发 Worker？** → 按并发上限派发（lane 队列），按优先级 + aging 排序（先 `priority` 降序，同优先级内 `llm_eval` 条件任务优先，再按 `createdAt` 升序；`deferUntil` 未到期的任务不派发）。
 6. **调度任务到期？** → 检查 `triggers/`，按任务类型处理：`recurring` / `conditional` 触发为 oneshot 入队（保留 trigger 定义）；`scheduled` 到点后触发并移除。
 7. **用户可见结果/输入待处理？** → 若 Teller 空闲则唤醒（`llm_eval` 等内部结果由 Supervisor 消费，不唤醒）。
+
+`triggerCheckMs` 控制 conditional 评估间隔，`triggerStuckMs` 用于清理卡死的触发器运行状态。
 
 ## 内部结果判定（确定性）
 
@@ -21,15 +23,16 @@ Supervisor 通过以下规则判断结果是否“用户可见”，无需 LLM�
 - 若 `sourceTriggerId` 指向的 trigger 为 `conditional` 且 `condition.type=llm_eval` → **内部结果**（不唤醒 Teller）。
 - 其他结果默认 **用户可见**。
 
-## 并发控制
+## 并发控制（lane）
 
-| 角色 | 并发上限 | 说明 |
+| 角色 | 并发上限（默认） | 说明 |
 |------|------|------|
 | Teller | 1 | 同一时刻只有一个 Teller 运行，保证回复顺序一致 |
 | Planner | 1 | 同一时刻只有一个 Planner 运行，避免任务编排冲突 |
 | Worker | 3 | 可并行执行多个独立子任务，提高吞吐 |
 
 Planner 和 Worker 各自有独立的队列、运行目录、结果目录，互不干扰。
+并发上限由配置项 `concurrency` 控制。
 
 ## 恢复机制
 
@@ -52,6 +55,7 @@ Teller 是否运行中由 Supervisor 进程级判断（子进程是否存活）�
 - Worker 结果写入时，Supervisor 更新 `task_status.json`（字段与语义见 `docs/design/task-data.md`）。
 - `task_done` / `task_failed` 条件基于 `task_status.json` 判断，避免依赖结果文件是否存在。
 - Teller 消费结果后，可按保留策略清理 `worker/results/`（例如保留 7~30 天或按数量上限），不影响条件判断。
+- 任务/触发器运行状态写入 `runs/` 目录，便于审计与排障。
 
 ## 超时与失败
 
@@ -72,13 +76,19 @@ Supervisor 监控所有 Teller / Planner / Worker 进程的空闲时长（stdout
 
 Supervisor 在写入失败结果时补充 `failureReason`（`timeout|error|killed`）与 `error`，并记录重试原因到 `log.jsonl`。
 
-### 失败处理
+### 失败处理与重试
 
 Planner 和 Worker 统一处理，规则相同：
 
-1. 当前不自动重试，失败直接写入对应 `results/`，用户可见则唤醒 Teller 汇报。
+1. Worker 可配置重试：`retry.maxAttempts` > 1 时失败任务会重新入队（按 `retry.backoffMs` 设置 `deferUntil`）。
+2. Planner 默认不自动重试，失败直接写入对应 `results/`，用户可见则唤醒 Teller 汇报。
 
 任务 JSON 通过 `attempts` 字段追踪执行次数（入队为 0，开始执行时递增为 1，重试时在重新入队前递增）。
+
+## 运行日志（Run Logs）
+
+- `runs/tasks/<taskId>.jsonl`：记录任务开始/完成时间、状态、耗时等。
+- `runs/triggers/<triggerId>.jsonl`：记录触发器触发与对应任务完成状态。
 
 ## 日志字段
 

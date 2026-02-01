@@ -4,12 +4,17 @@ import { parseArgs } from 'node:util'
 import { defaultConfig } from './config.js'
 import { createHttpServer } from './http/index.js'
 import { loadCodexSettings } from './llm/openai.js'
+import { runRunsCli } from './log/cli.js'
 import { runMemoryCli } from './memory/cli.js'
 import { Supervisor } from './supervisor/supervisor.js'
 
 const args = process.argv.slice(2)
 if (args[0] === 'memory') {
   await runMemoryCli(args.slice(1))
+  process.exit(0)
+}
+if (args[0] === 'runs') {
+  await runRunsCli(args.slice(1))
   process.exit(0)
 }
 
@@ -19,7 +24,7 @@ const { values } = parseArgs({
     'state-dir': { type: 'string', default: '.mimikit' },
     'work-dir': { type: 'string', default: '.' },
     model: { type: 'string' },
-    'check-interval': { type: 'string', default: '1' },
+    'check-interval': { type: 'string', default: '5' },
     'self-awake-interval': { type: 'string', default: '300' },
   },
 })
@@ -65,7 +70,7 @@ console.log('[cli] config:', config)
 const supervisor = new Supervisor(config)
 
 await supervisor.start()
-createHttpServer(supervisor, parseInt(port, 10))
+createHttpServer(supervisor, config, parseInt(port, 10))
 
 process.on('SIGINT', () => {
   console.log('\n[cli] shutting down...')

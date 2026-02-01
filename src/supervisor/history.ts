@@ -4,12 +4,16 @@ import {
   archiveHistory,
   shouldArchive,
 } from '../memory/archive.js'
+import { pruneMemory } from '../memory/prune.js'
 import { loadTemplate } from '../memory/templates.js'
 import { readHistory, writeHistory } from '../storage/history.js'
 
 import type { SupervisorConfig } from '../config.js'
 import type { StatePaths } from '../fs/paths.js'
 import type { HistoryMessage } from '../types/history.js'
+
+const PRUNE_INTERVAL_MS = 6 * 60 * 60 * 1000
+let lastPruneAt = 0
 
 const estimateBytes = (history: HistoryMessage[]): number =>
   Buffer.byteLength(JSON.stringify(history), 'utf8')
@@ -101,5 +105,22 @@ export const maintainHistory = async (params: {
 
   if (nextHistory !== history)
     await writeHistory(params.paths.history, nextHistory)
+
+  if (
+    params.config.memoryRetention.autoPrune &&
+    Date.now() - lastPruneAt > PRUNE_INTERVAL_MS
+  ) {
+    const result = await pruneMemory({
+      stateDir: params.paths.root,
+      policy: params.config.memoryRetention,
+    })
+    lastPruneAt = Date.now()
+    if (result.removed.length > 0) {
+      await appendLog(params.paths.log, {
+        event: 'memory_prune',
+        removed: result.removed.length,
+      })
+    }
+  }
   return nextHistory
 }

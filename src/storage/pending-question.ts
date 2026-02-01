@@ -1,5 +1,7 @@
 import { readJson, writeJson } from '../fs/json.js'
 
+import { withStoreLock } from './store-lock.js'
+
 import type { PendingQuestion } from '../types/history.js'
 
 export const readPendingQuestion = (
@@ -11,9 +13,11 @@ export const writePendingQuestion = async (
   path: string,
   question: PendingQuestion | null,
 ): Promise<void> => {
-  if (!question) {
-    await writeJson(path, null)
-    return
-  }
-  await writeJson(path, question)
+  await withStoreLock(path, async () => {
+    if (!question) {
+      await writeJson(path, null)
+      return
+    }
+    await writeJson(path, question)
+  })
 }

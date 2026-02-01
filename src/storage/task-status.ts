@@ -1,24 +1,35 @@
 import { readJson, writeJson } from '../fs/json.js'
 
+import { migrateTaskStatusIndex } from './migrations.js'
+import { withStoreLock } from './store-lock.js'
+
 import type { TaskStatus } from '../types/tasks.js'
 
 export type TaskStatusIndex = Record<string, TaskStatus>
 
-export const readTaskStatus = (path: string): Promise<TaskStatusIndex> =>
-  readJson<TaskStatusIndex>(path, {})
+export const readTaskStatus = async (
+  path: string,
+): Promise<TaskStatusIndex> => {
+  const raw = await readJson<unknown>(path, {})
+  return migrateTaskStatusIndex(raw)
+}
 
 export const writeTaskStatus = async (
   path: string,
   index: TaskStatusIndex,
 ): Promise<void> => {
-  await writeJson(path, index)
+  await withStoreLock(path, async () => {
+    await writeJson(path, index)
+  })
 }
 
 export const upsertTaskStatus = async (
   path: string,
   status: TaskStatus,
 ): Promise<void> => {
-  const index = await readTaskStatus(path)
-  index[status.id] = status
-  await writeTaskStatus(path, index)
+  await withStoreLock(path, async () => {
+    const index = await readTaskStatus(path)
+    index[status.id] = status
+    await writeJson(path, index)
+  })
 }

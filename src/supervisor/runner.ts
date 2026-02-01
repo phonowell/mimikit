@@ -10,12 +10,17 @@ import { searchMemory } from '../memory/search.js'
 import { runPlanner, runTeller, runWorker } from '../roles/runner.js'
 import { readHistory } from '../storage/history.js'
 import { readInbox, removeInboxItems } from '../storage/inbox.js'
-import { removeItem, writeItem } from '../storage/queue.js'
+import { migrateTask } from '../storage/migrations.js'
+import { claimItem, removeItem, writeItem } from '../storage/queue.js'
 import {
   readTellerInbox,
   removeTellerInboxItems,
 } from '../storage/teller-inbox.js'
 import { nowIso } from '../time.js'
+import {
+  PLANNER_RESULT_SCHEMA_VERSION,
+  WORKER_RESULT_SCHEMA_VERSION,
+} from '../types/schema.js'
 
 import type { SupervisorConfig } from '../config.js'
 import type { StatePaths } from '../fs/paths.js'
@@ -31,10 +36,22 @@ export const claimTask = async (params: {
   queueDir: string
   runningDir: string
 }) => {
-  const updated = { ...params.task, attempts: params.task.attempts + 1 }
-  await writeItem(params.runningDir, updated.id, updated)
-  await removeItem(join(params.queueDir, `${params.task.id}.json`))
-  return updated
+  const claimed = await claimItem<Task>(
+    {
+      queueDir: params.queueDir,
+      runningDir: params.runningDir,
+      id: params.task.id,
+      update: (item) => ({ ...item, attempts: item.attempts + 1 }),
+    },
+    migrateTask,
+  )
+  if (!claimed) {
+    const updated = { ...params.task, attempts: params.task.attempts + 1 }
+    await writeItem(params.runningDir, updated.id, updated)
+    await removeItem(join(params.queueDir, `${params.task.id}.json`))
+    return updated
+  }
+  return claimed
 }
 
 export const completeTask = async (params: {
@@ -48,7 +65,7 @@ export const runPlannerTask = async (params: {
   task: Task
   paths: StatePaths
   config: SupervisorConfig
-}) => {
+}): Promise<PlannerResult> => {
   const injectContext = true
   let messages: HistoryMessage[] = []
   let memoryHits: MemoryHit[] = []
@@ -114,6 +131,7 @@ export const runPlannerTask = async (params: {
   if (status === 'failed' && !error) error = 'planner failed'
 
   const plannerResult: PlannerResult = {
+    schemaVersion: PLANNER_RESULT_SCHEMA_VERSION,
     id: params.task.id,
     status,
     attempts: params.task.attempts,
@@ -130,7 +148,7 @@ export const runPlannerTask = async (params: {
     toRunningPath(params.paths.plannerResults, params.task.id),
     plannerResult,
   )
-  return result
+  return plannerResult
 }
 
 export const runWorkerTask = async (params: {
@@ -138,8 +156,24 @@ export const runWorkerTask = async (params: {
   paths: StatePaths
   config: SupervisorConfig
   timeoutMs: number
-}) => {
+}): Promise<WorkerResult> => {
   const startedAt = Date.now()
+  const taskSnapshot = {
+    prompt: params.task.prompt,
+    priority: params.task.priority,
+    createdAt: params.task.createdAt,
+    timeout: params.task.timeout ?? null,
+    ...(params.task.traceId ? { traceId: params.task.traceId } : {}),
+    ...(params.task.parentTaskId
+      ? { parentTaskId: params.task.parentTaskId }
+      : {}),
+    ...(params.task.sourceTriggerId
+      ? { sourceTriggerId: params.task.sourceTriggerId }
+      : {}),
+    ...(params.task.triggeredAt
+      ? { triggeredAt: params.task.triggeredAt }
+      : {}),
+  }
   try {
     const workerParams = {
       workDir: params.config.workDir,
@@ -163,6 +197,7 @@ export const runWorkerTask = async (params: {
       ...(llmResult.usage ? { usage: llmResult.usage } : {}),
     })
     const result: WorkerResult = {
+      schemaVersion: WORKER_RESULT_SCHEMA_VERSION,
       id: params.task.id,
       status: 'done',
       resultType: 'text',
@@ -171,6 +206,7 @@ export const runWorkerTask = async (params: {
       startedAt: nowIso(),
       completedAt: nowIso(),
       durationMs: Math.max(0, Date.now() - startedAt),
+      task: taskSnapshot,
       ...(params.task.traceId ? { traceId: params.task.traceId } : {}),
       ...(params.task.sourceTriggerId
         ? { sourceTriggerId: params.task.sourceTriggerId }
@@ -180,12 +216,14 @@ export const runWorkerTask = async (params: {
       toRunningPath(params.paths.workerResults, params.task.id),
       result,
     )
+    return result
   } catch (error) {
     const failureReason =
       error instanceof Error && /timed out/i.test(error.message)
         ? 'timeout'
         : 'error'
     const result: WorkerResult = {
+      schemaVersion: WORKER_RESULT_SCHEMA_VERSION,
       id: params.task.id,
       status: 'failed',
       resultType: 'analysis',
@@ -194,6 +232,7 @@ export const runWorkerTask = async (params: {
       failureReason,
       completedAt: nowIso(),
       durationMs: Math.max(0, Date.now() - startedAt),
+      task: taskSnapshot,
       ...(params.task.traceId ? { traceId: params.task.traceId } : {}),
       ...(params.task.sourceTriggerId
         ? { sourceTriggerId: params.task.sourceTriggerId }
@@ -203,6 +242,7 @@ export const runWorkerTask = async (params: {
       toRunningPath(params.paths.workerResults, params.task.id),
       result,
     )
+    return result
   }
 }
 

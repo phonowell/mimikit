@@ -2,6 +2,7 @@ import { newId } from '../ids.js'
 import { writeItem } from '../storage/queue.js'
 import { writeTrigger } from '../storage/triggers.js'
 import { nowIso } from '../time.js'
+import { TASK_SCHEMA_VERSION, TRIGGER_SCHEMA_VERSION } from '../types/schema.js'
 
 import type { ToolContext } from './context.js'
 import type { Condition, Task, Trigger } from '../types/tasks.js'
@@ -23,6 +24,7 @@ export const delegate = async (ctx: ToolContext, args: DelegateArgs) => {
   if (ctx.role === 'teller') {
     const id = newId()
     const task: Task = {
+      schemaVersion: TASK_SCHEMA_VERSION,
       id,
       type: 'oneshot',
       prompt: args.prompt,
@@ -40,6 +42,7 @@ export const delegate = async (ctx: ToolContext, args: DelegateArgs) => {
     if (!args.condition) throw new Error('condition required')
     const id = newId()
     const trigger: Trigger = {
+      schemaVersion: TRIGGER_SCHEMA_VERSION,
       id,
       type: 'conditional',
       prompt: args.prompt,
@@ -57,6 +60,7 @@ export const delegate = async (ctx: ToolContext, args: DelegateArgs) => {
 
   const id = newId()
   const task: Task = {
+    schemaVersion: TASK_SCHEMA_VERSION,
     id,
     type: 'oneshot',
     prompt: args.prompt,

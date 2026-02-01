@@ -1,3 +1,8 @@
+import {
+  migratePlannerResult,
+  migrateTask,
+  migrateWorkerResult,
+} from '../storage/migrations.js'
 import { listItems } from '../storage/queue.js'
 import { readTaskStatus } from '../storage/task-status.js'
 
@@ -123,12 +128,12 @@ export const buildTaskViews = async (
     workerResults,
     taskStatusIndex,
   ] = await Promise.all([
-    listItems<Task>(paths.plannerQueue),
-    listItems<Task>(paths.workerQueue),
-    listItems<Task>(paths.plannerRunning),
-    listItems<Task>(paths.workerRunning),
-    listItems<PlannerResult>(paths.plannerResults),
-    listItems<WorkerResult>(paths.workerResults),
+    listItems<Task>(paths.plannerQueue, migrateTask),
+    listItems<Task>(paths.workerQueue, migrateTask),
+    listItems<Task>(paths.plannerRunning, migrateTask),
+    listItems<Task>(paths.workerRunning, migrateTask),
+    listItems<PlannerResult>(paths.plannerResults, migratePlannerResult),
+    listItems<WorkerResult>(paths.workerResults, migrateWorkerResult),
     readTaskStatus(paths.taskStatus),
   ])
 

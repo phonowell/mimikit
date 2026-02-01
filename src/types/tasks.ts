@@ -18,6 +18,11 @@ export type TriggerState = {
   lastSeenResultId?: Id | null
   lastMtime?: number | null
   initialized?: boolean
+  runningAt?: ISODate | null
+  lastStatus?: 'ok' | 'error' | 'skipped'
+  lastError?: string | null
+  lastDurationMs?: number | null
+  nextRunAt?: ISODate | null
 }
 
 export type TriggerSchedule =
@@ -25,6 +30,7 @@ export type TriggerSchedule =
   | { runAt: ISODate }
 
 export type Trigger = {
+  schemaVersion?: number
   id: Id
   type: TriggerType
   traceId?: Id
@@ -40,6 +46,7 @@ export type Trigger = {
 }
 
 export type Task = {
+  schemaVersion?: number
   id: Id
   type: TaskType
   traceId?: Id
@@ -49,6 +56,7 @@ export type Task = {
   createdAt: ISODate
   attempts: number
   timeout?: number | null
+  deferUntil?: ISODate | null
   sourceTriggerId?: Id
   triggeredAt?: ISODate
 }
@@ -59,6 +67,7 @@ export type PlannerTaskSpec = {
   prompt: string
   priority?: number
   timeout?: number | null
+  deferUntil?: ISODate | null
   traceId?: Id
   parentTaskId?: Id
   sourceTriggerId?: Id
@@ -80,6 +89,7 @@ export type PlannerTriggerSpec = {
 }
 
 export type PlannerResult = {
+  schemaVersion?: number
   id: Id
   status: 'done' | 'needs_input' | 'failed'
   tasks?: PlannerTaskSpec[]
@@ -94,6 +104,7 @@ export type PlannerResult = {
 }
 
 export type WorkerResult = {
+  schemaVersion?: number
   id: Id
   status: 'done' | 'failed'
   resultType: 'text' | 'code_change' | 'analysis' | 'summary'
@@ -106,9 +117,20 @@ export type WorkerResult = {
   startedAt?: ISODate
   completedAt: ISODate
   durationMs?: number
+  task?: {
+    prompt: string
+    priority: number
+    createdAt: ISODate
+    timeout?: number | null
+    traceId?: Id
+    parentTaskId?: Id
+    sourceTriggerId?: Id
+    triggeredAt?: ISODate
+  }
 }
 
 export type TaskStatus = {
+  schemaVersion?: number
   id: Id
   status: 'done' | 'failed'
   completedAt: ISODate

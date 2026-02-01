@@ -20,6 +20,38 @@ export type MemorySearchConfig = {
   maxHits: number
 }
 
+export type ConcurrencyConfig = {
+  teller: number
+  planner: number
+  worker: number
+  internal: number
+}
+
+export type SchedulerConfig = {
+  triggerCheckMs: number
+  triggerStuckMs: number
+  queueWarnDepth: number
+  agingMs: number
+  agingMaxBoost: number
+}
+
+export type RetryConfig = {
+  maxAttempts: number
+  backoffMs: number
+}
+
+export type HttpConfig = {
+  apiKey?: string | null
+  allowStatusWithoutAuth: boolean
+}
+
+export type MemoryRetentionConfig = {
+  autoPrune: boolean
+  recentDays: number
+  summaryDays: number
+  keepLongTerm: boolean
+}
+
 export type SupervisorConfig = {
   stateDir: string
   workDir: string
@@ -28,6 +60,11 @@ export type SupervisorConfig = {
   timeouts: Timeouts
   limits: Limits
   memorySearch: MemorySearchConfig
+  concurrency: ConcurrencyConfig
+  scheduler: SchedulerConfig
+  retry: RetryConfig
+  http: HttpConfig
+  memoryRetention: MemoryRetentionConfig
 }
 
 export const defaultConfig = (params: {
@@ -39,7 +76,7 @@ export const defaultConfig = (params: {
   const base: SupervisorConfig = {
     stateDir: resolve(params.stateDir),
     workDir: resolve(params.workDir),
-    checkIntervalMs: params.checkIntervalMs ?? 1000,
+    checkIntervalMs: params.checkIntervalMs ?? 5000,
     timeouts: {
       tellerMs: 2 * 60 * 1000,
       plannerMs: 10 * 60 * 1000,
@@ -56,6 +93,33 @@ export const defaultConfig = (params: {
       bm25B: 0.75,
       minScore: 0.2,
       maxHits: 5,
+    },
+    concurrency: {
+      teller: 1,
+      planner: 1,
+      worker: 3,
+      internal: 1,
+    },
+    scheduler: {
+      triggerCheckMs: 5000,
+      triggerStuckMs: 2 * 60 * 60 * 1000,
+      queueWarnDepth: 50,
+      agingMs: 60 * 1000,
+      agingMaxBoost: 5,
+    },
+    retry: {
+      maxAttempts: 1,
+      backoffMs: 0,
+    },
+    http: {
+      apiKey: process.env.MIMIKIT_API_KEY ?? null,
+      allowStatusWithoutAuth: true,
+    },
+    memoryRetention: {
+      autoPrune: false,
+      recentDays: 5,
+      summaryDays: 180,
+      keepLongTerm: true,
     },
   }
   if (params.model) return { ...base, model: params.model }

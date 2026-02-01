@@ -13,9 +13,12 @@
 - planner/queue | running | results：Planner 任务与结果
 - worker/queue | running | results：Worker 任务与结果
 - triggers/：持久化调度与条件触发器
+- runs/tasks/：任务运行日志（按 taskId 分文件 JSONL）
+- runs/triggers/：触发器运行日志（按 triggerId 分文件 JSONL）
 - log.jsonl：运行日志
 
 ## 约束
 - 跨进程通信统一落在 .mimikit/ JSON，需原子写入。
+- 关键 JSON 文件使用 `.lock` 文件串行化读改写；写入会生成 `.bak` 备份。
 - 任务与触发器结构见 docs/design/task-data.md。
 - 记忆归档与 history 规则见 docs/design/memory.md。

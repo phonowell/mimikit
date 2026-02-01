@@ -46,6 +46,9 @@ triggers/（schedule/conditional）→ Supervisor 评估 → 触发 oneshot 入�
 - Worker 仅执行 `oneshot`；条件触发用 triggers/ 持久化。
 - Planner 结果 `needs_input` 仅出现在 planner/results/，不写入 task_status.json。
 - `llm_eval` 条件评估结果为内部结果，由 Supervisor 消费不唤醒 Teller。
+- 任务执行语义为 **at-least-once**：崩溃/超时可能导致重复执行，任务应尽量幂等。
+- 可选重试：Worker 失败可按 `retry.maxAttempts` 重新入队，并通过 `deferUntil` 控制回退。
+- `deferUntil` 未到期的任务不会被调度执行。
 
 ## 细节文档
 - 任务/触发器/结果结构：docs/design/task-data.md

@@ -2,15 +2,26 @@ import { join } from 'node:path'
 
 import { newId, shortId } from '../ids.js'
 import { appendLog } from '../log/append.js'
+import { appendRunLog } from '../log/run-log.js'
 import { applyArchiveResult } from '../memory/archive-apply.js'
 import { readHistory, writeHistory } from '../storage/history.js'
+import {
+  migratePlannerResult,
+  migrateWorkerResult,
+} from '../storage/migrations.js'
 import { listItems, removeItem, writeItem } from '../storage/queue.js'
 import { upsertTaskStatus } from '../storage/task-status.js'
 import { appendTellerInbox } from '../storage/teller-inbox.js'
 import { readTrigger, writeTrigger } from '../storage/triggers.js'
 import { taskFromTrigger } from '../tasks/from-trigger.js'
 import { nowIso } from '../time.js'
+import {
+  TASK_SCHEMA_VERSION,
+  TASK_STATUS_SCHEMA_VERSION,
+  TRIGGER_SCHEMA_VERSION,
+} from '../types/schema.js'
 
+import type { SupervisorConfig } from '../config.js'
 import type { StatePaths } from '../fs/paths.js'
 import type {
   PlannerResult,
@@ -41,7 +52,10 @@ const formatResultText = (value: unknown, limit = 2000): string | undefined => {
 }
 
 export const processPlannerResults = async (paths: StatePaths) => {
-  const results = await listItems<PlannerResult>(paths.plannerResults)
+  const results = await listItems<PlannerResult>(
+    paths.plannerResults,
+    migratePlannerResult,
+  )
   let needsTeller = false
   const events: TellerEvent[] = []
   for (const result of results) {
@@ -73,6 +87,7 @@ export const processPlannerResults = async (paths: StatePaths) => {
           const traceId = spec.traceId ?? result.traceId
           const parentTaskId = spec.parentTaskId ?? result.id
           const task: Task = {
+            schemaVersion: TASK_SCHEMA_VERSION,
             id,
             type: spec.type ?? 'oneshot',
             prompt: spec.prompt,
@@ -80,6 +95,7 @@ export const processPlannerResults = async (paths: StatePaths) => {
             createdAt: nowIso(),
             attempts: 0,
             timeout: spec.timeout ?? null,
+            ...(spec.deferUntil ? { deferUntil: spec.deferUntil } : {}),
             ...(spec.sourceTriggerId
               ? { sourceTriggerId: spec.sourceTriggerId }
               : {}),
@@ -97,6 +113,7 @@ export const processPlannerResults = async (paths: StatePaths) => {
           const traceId = spec.traceId ?? result.traceId
           const parentTaskId = spec.parentTaskId ?? result.id
           const trigger: Trigger = {
+            schemaVersion: TRIGGER_SCHEMA_VERSION,
             id,
             type: spec.type,
             prompt: spec.prompt,
@@ -130,13 +147,63 @@ export const processPlannerResults = async (paths: StatePaths) => {
   return needsTeller
 }
 
-export const processWorkerResults = async (paths: StatePaths) => {
-  const results = await listItems<WorkerResult>(paths.workerResults)
+export const processWorkerResults = async (
+  paths: StatePaths,
+  config: SupervisorConfig,
+) => {
+  const results = await listItems<WorkerResult>(
+    paths.workerResults,
+    migrateWorkerResult,
+  )
   let needsTeller = false
   let history = await readHistory(paths.history)
   const events: TellerEvent[] = []
   for (const result of results) {
+    const resultPath = join(paths.workerResults, `${result.id}.json`)
+    const shouldRetry =
+      result.status === 'failed' &&
+      result.attempts < config.retry.maxAttempts &&
+      Boolean(result.task?.prompt)
+    if (shouldRetry && result.task) {
+      const deferUntil =
+        config.retry.backoffMs > 0
+          ? new Date(Date.now() + config.retry.backoffMs).toISOString()
+          : null
+      const retryTask: Task = {
+        schemaVersion: TASK_SCHEMA_VERSION,
+        id: result.id,
+        type: 'oneshot',
+        prompt: result.task.prompt,
+        priority: result.task.priority,
+        createdAt: result.task.createdAt,
+        attempts: result.attempts,
+        timeout: result.task.timeout ?? null,
+        deferUntil,
+        ...(result.task.traceId ? { traceId: result.task.traceId } : {}),
+        ...(result.task.parentTaskId
+          ? { parentTaskId: result.task.parentTaskId }
+          : {}),
+        ...(result.task.sourceTriggerId
+          ? { sourceTriggerId: result.task.sourceTriggerId }
+          : {}),
+        ...(result.task.triggeredAt
+          ? { triggeredAt: result.task.triggeredAt }
+          : {}),
+      }
+      await writeItem(paths.workerQueue, retryTask.id, retryTask)
+      await appendLog(paths.log, {
+        event: 'worker_task_retry',
+        taskId: result.id,
+        attempts: result.attempts,
+        nextAttempt: result.attempts + 1,
+        deferUntil,
+      })
+      await removeItem(resultPath)
+      continue
+    }
+
     const taskStatus = {
+      schemaVersion: TASK_STATUS_SCHEMA_VERSION,
       id: result.id,
       status: result.status,
       completedAt: result.completedAt,
@@ -159,25 +226,47 @@ export const processWorkerResults = async (paths: StatePaths) => {
     })
     if (archiveOutcome.handled) {
       history = archiveOutcome.history
-      await removeItem(join(paths.workerResults, `${result.id}.json`))
+      await removeItem(resultPath)
       continue
     }
     history = archiveOutcome.history
 
     if (result.sourceTriggerId) {
       const trigger = await readTrigger(paths.triggers, result.sourceTriggerId)
-      if (trigger?.condition?.type === 'llm_eval') {
-        const ok = parseBool(result.result)
+      if (trigger) {
         const state = { ...(trigger.state ?? {}) }
-        state.lastEvalAt = nowIso()
-        if (ok) {
-          const task = taskFromTrigger({ trigger })
-          await writeItem(paths.workerQueue, task.id, task)
-          state.lastTriggeredAt = nowIso()
+        state.runningAt = null
+        state.lastStatus = result.status === 'done' ? 'ok' : 'error'
+        state.lastError = result.error ?? result.failureReason ?? null
+        state.lastDurationMs = result.durationMs ?? null
+        await appendRunLog(paths.triggerRuns, trigger.id, {
+          action: 'finished',
+          status: result.status === 'done' ? 'ok' : 'error',
+          ...(result.error
+            ? { error: result.error }
+            : result.failureReason
+              ? { error: result.failureReason }
+              : {}),
+          ...(result.durationMs !== undefined
+            ? { durationMs: result.durationMs }
+            : {}),
+          taskId: result.id,
+          triggerId: trigger.id,
+          ...(result.traceId ? { traceId: result.traceId } : {}),
+        })
+        if (trigger.condition?.type === 'llm_eval') {
+          const ok = parseBool(result.result)
+          state.lastEvalAt = nowIso()
+          if (ok) {
+            const task = taskFromTrigger({ trigger })
+            await writeItem(paths.workerQueue, task.id, task)
+            state.lastTriggeredAt = nowIso()
+          }
+          await writeTrigger(paths.triggers, { ...trigger, state })
+          await removeItem(resultPath)
+          continue
         }
         await writeTrigger(paths.triggers, { ...trigger, state })
-        await removeItem(join(paths.workerResults, `${result.id}.json`))
-        continue
       }
     }
 
@@ -200,7 +289,7 @@ export const processWorkerResults = async (paths: StatePaths) => {
       sourceTriggerId: result.sourceTriggerId ?? null,
       ...(result.error ? { error: result.error } : {}),
     })
-    await removeItem(join(paths.workerResults, `${result.id}.json`))
+    await removeItem(resultPath)
   }
 
   if (results.length > 0) await writeHistory(paths.history, history)

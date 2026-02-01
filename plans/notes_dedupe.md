@@ -1,4 +1,4 @@
-﻿# Notes: dedupe
+# Notes: dedupe
 
 - Date: 2026-02-01
 - Initial request: "寻找项目里冗余重复的地方，做移除或合并"

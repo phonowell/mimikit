@@ -10,6 +10,14 @@
 - `memory/` — 近期记忆（≤ 5 天原样保存）
 - `memory/summary/` — 汇总记忆（日摘要 / 月摘要）
 
+## 记忆保留与删除（Retention）
+
+- 默认不自动删除；可通过配置开启 `memoryRetention.autoPrune`。
+- `recentDays`：保留原始记忆文件天数（`memory/YYYY-MM-DD-*.md`）。
+- `summaryDays`：保留汇总记忆天数（`memory/summary/*.md`）。
+- `keepLongTerm`：是否保留 `memory.md`。
+- CLI 手动执行：`tsx src/cli.ts memory prune --recent-days 5 --summary-days 180 --keep-longterm`.
+
 ## 记忆文件命名与 slug 规则
 
 `memory/YYYY-MM-DD-{slug}.md` 的 `slug` 约束：

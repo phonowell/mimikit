@@ -1,5 +1,7 @@
 import { readJson, writeJson } from '../fs/json.js'
 
+import { withStoreLock } from './store-lock.js'
+
 import type { HistoryMessage } from '../types/history.js'
 
 const normalizeHistory = (
@@ -19,9 +21,11 @@ const normalizeHistory = (
 }
 
 export const normalizeHistoryFile = async (path: string): Promise<void> => {
-  const history = await readJson<HistoryMessage[]>(path, [])
-  const { normalized, changed } = normalizeHistory(history)
-  if (changed) await writeJson(path, normalized)
+  await withStoreLock(path, async () => {
+    const history = await readJson<HistoryMessage[]>(path, [])
+    const { normalized, changed } = normalizeHistory(history)
+    if (changed) await writeJson(path, normalized)
+  })
 }
 
 export const readHistory = async (path: string): Promise<HistoryMessage[]> => {
@@ -33,15 +37,20 @@ export const writeHistory = async (
   path: string,
   messages: HistoryMessage[],
 ): Promise<void> => {
-  const { normalized } = normalizeHistory(messages)
-  await writeJson(path, normalized)
+  await withStoreLock(path, async () => {
+    const { normalized } = normalizeHistory(messages)
+    await writeJson(path, normalized)
+  })
 }
 
 export const appendHistory = async (
   path: string,
   message: HistoryMessage,
 ): Promise<void> => {
-  const history = await readHistory(path)
-  history.push(message)
-  await writeHistory(path, history)
+  await withStoreLock(path, async () => {
+    const history = await readJson<HistoryMessage[]>(path, [])
+    history.push(message)
+    const { normalized } = normalizeHistory(history)
+    await writeJson(path, normalized)
+  })
 }

@@ -19,6 +19,7 @@
 - `task_done` / `task_failed`：读取 `task_status.json`，若状态匹配且 `state.lastSeenResultId` 不同，则触发并更新 `lastSeenResultId`。
 - `llm_eval`：按批量 Worker 评估，结果由 Supervisor 消费，不唤醒 Teller。
 - 冷却期：命中后写入 `lastTriggeredAt`，`cooldown` 期间不再触发。
+- 触发器处于 `state.runningAt` 时不会再次触发；超出 `triggerStuckMs` 视为卡死并清除。
 
 ## 时间语义
 - 所有时间戳使用 **UTC ISO 8601**（如 `2026-01-31T12:34:56.789Z`）。
@@ -26,6 +27,7 @@
 - `recurring`：当 `now >= nextRunAt` 时触发一次，随后设置 `lastRunAt=now`、`nextRunAt=now+interval`（不补跑累计次数）。
 - `scheduled`：若 `now >= runAt`，在下一轮立即触发并移除。
 - 冷却期基于 `lastTriggeredAt`（UTC）判断。
+- `conditional`：默认每 `triggerCheckMs` 评估一次；若冷却期生效，则推迟到冷却结束时再评估。
 
 ## 任务串联
 - Planner 拆分复杂请求时，用 `task_done` 串联 oneshot 子任务（A 完成 → 触发 B）。

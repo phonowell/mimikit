@@ -6,6 +6,7 @@
 - 24x7 稳定运行，Supervisor 纯代码调度
 - Teller/Planner 仅工具交互，Worker 执行具体任务
 - 状态与通信统一落在 .mimikit/
+- 运行日志与运行历史单独落盘（runs/），便于审计与排障
 
 ## 组件
 - Supervisor：主循环，调度/恢复/记录

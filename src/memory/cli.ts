@@ -15,10 +15,15 @@ const usage = () => {
       '  status            Show memory search status',
       '  index             Show memory file counts',
       '  search <query>    Search memory',
+      '  prune             Remove old memory files',
       '',
       'Options:',
       '  --work-dir <dir>  Workspace directory (default: .)',
       '  --state-dir <dir> State directory (default: .mimikit)',
+      '  --recent-days <n> Keep recent memory days (default: 5)',
+      '  --summary-days <n> Keep summary days (default: 180)',
+      '  --keep-longterm   Keep memory.md (default: true)',
+      '  --dry-run         Show what would be removed',
     ].join('\n'),
   )
 }
@@ -32,6 +37,10 @@ export const runMemoryCli = async (argv: string[]): Promise<void> => {
     options: {
       'work-dir': { type: 'string', default: '.' },
       'state-dir': { type: 'string', default: '.mimikit' },
+      'recent-days': { type: 'string', default: '5' },
+      'summary-days': { type: 'string', default: '180' },
+      'keep-longterm': { type: 'boolean', default: true },
+      'dry-run': { type: 'boolean', default: false },
     },
   })
 
@@ -84,6 +93,32 @@ export const runMemoryCli = async (argv: string[]): Promise<void> => {
       const snippet = hit.content.replace(/\s+/g, ' ').trim()
       console.log(`${hit.source} (${hit.score.toFixed(2)}): ${snippet}`)
     }
+    return
+  }
+
+  if (command === 'prune') {
+    const { pruneMemory } = await import('./prune.js')
+    const recentRaw = Number(values['recent-days'])
+    const summaryRaw = Number(values['summary-days'])
+    const recentDays = Number.isFinite(recentRaw) ? Math.max(0, recentRaw) : 5
+    const summaryDays = Number.isFinite(summaryRaw)
+      ? Math.max(0, summaryRaw)
+      : 180
+    const keepLongTerm = values['keep-longterm'] !== false
+    const dryRun = values['dry-run'] === true
+    const result = await pruneMemory({
+      stateDir,
+      policy: {
+        recentDays,
+        summaryDays,
+        keepLongTerm,
+      },
+      dryRun,
+    })
+    for (const path of result.removed)
+      console.log(`${dryRun ? 'would remove' : 'removed'}: ${path}`)
+
+    if (result.removed.length === 0) console.log('nothing to remove')
     return
   }
 

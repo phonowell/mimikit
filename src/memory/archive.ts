@@ -3,6 +3,7 @@ import { join } from 'node:path'
 
 import { writeItem } from '../storage/queue.js'
 import { nowIso } from '../time.js'
+import { TASK_SCHEMA_VERSION } from '../types/schema.js'
 
 import { addArchiveJob } from './archive-jobs.js'
 import { makeSlug } from './slug.js'
@@ -90,6 +91,7 @@ const createWorkerTask = async (params: {
   id: string
 }): Promise<Task> => {
   const task: Task = {
+    schemaVersion: TASK_SCHEMA_VERSION,
     id: params.id,
     type: 'oneshot',
     prompt: params.prompt,
