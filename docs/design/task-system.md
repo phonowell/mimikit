@@ -3,7 +3,7 @@
 > 返回 [系统设计总览](./README.md)
 
 ## Teller 注入（摘要）
-- 固定声明 → docs/agents/teller.md → Supervisor 动态上下文（history/memory/输入/结果）
+- 固定声明 → prompts/agents/teller/identity.md → Supervisor 动态上下文（history/memory/输入/结果）
 - 仅 Teller 有固定声明，Planner/Worker 无
 
 ## 生命周期（高层）
@@ -44,4 +44,4 @@ triggers/（schedule/conditional）→ Supervisor 评估 → 触发 oneshot 入�
 ## 细节文档
 - 任务/触发器/结果结构：docs/design/task-data.md
 - 条件与时间语义：docs/design/task-conditions.md
-- 角色细节：docs/agents/teller.md / docs/agents/planner.md / docs/agents/worker.md
+- 角色细节：prompts/agents/teller/identity.md / prompts/agents/planner/guide.md / prompts/agents/worker/guide.md

@@ -5,8 +5,23 @@ import type { MemoryHit } from '../memory/search.js'
 import type { HistoryMessage } from '../types/history.js'
 import type { TellerEvent } from '../types/teller.js'
 
+const isNeedsInputEvent = (
+  event: TellerEvent,
+): event is Extract<TellerEvent, { kind: 'needs_input' }> =>
+  event.kind === 'needs_input'
+
+const isPlannerFailedEvent = (
+  event: TellerEvent,
+): event is Extract<TellerEvent, { kind: 'planner_failed' }> =>
+  event.kind === 'planner_failed'
+
+const isTaskResultEvent = (
+  event: TellerEvent,
+): event is Extract<TellerEvent, { kind: 'task_result' }> =>
+  event.kind === 'task_result'
+
 const loadGuide = async (workDir: string, name: string): Promise<string> => {
-  const path = join(workDir, 'docs', 'agents', `${name}.md`)
+  const path = join(workDir, 'prompts', 'agents', `${name}.md`)
   try {
     return await readFile(path, 'utf8')
   } catch {
@@ -21,7 +36,7 @@ const formatMemory = (hits: MemoryHit[]): string =>
   hits.map((h) => `[${h.source}] ${h.content}`).join('\n')
 
 const formatNeedsInput = (events: TellerEvent[]): string => {
-  const items = events.filter((e) => e.kind === 'needs_input')
+  const items = events.filter(isNeedsInputEvent)
   if (items.length === 0) return ''
   return items
     .map((item, idx) => {
@@ -38,13 +53,13 @@ const formatNeedsInput = (events: TellerEvent[]): string => {
 }
 
 const formatPlannerFailures = (events: TellerEvent[]): string => {
-  const items = events.filter((e) => e.kind === 'planner_failed')
+  const items = events.filter(isPlannerFailedEvent)
   if (items.length === 0) return ''
   return items.map((item, idx) => `#${idx + 1}: ${item.error}`).join('\n')
 }
 
 const formatTaskResults = (events: TellerEvent[]): string => {
-  const items = events.filter((e) => e.kind === 'task_result')
+  const items = events.filter(isTaskResultEvent)
   if (items.length === 0) return ''
   return items
     .map((item, idx) => {
@@ -55,6 +70,14 @@ const formatTaskResults = (events: TellerEvent[]): string => {
     .join('\n')
 }
 
+const wrapTag = (tag: string, content: string): string =>
+  `<${tag}>\n${content}\n</${tag}>`
+
+const pushIf = (items: string[], tag: string, content: string): void => {
+  if (!content) return
+  items.push(wrapTag(tag, content))
+}
+
 export const buildTellerPrompt = async (params: {
   workDir: string
   history: HistoryMessage[]
@@ -62,38 +85,39 @@ export const buildTellerPrompt = async (params: {
   inputs: string[]
   events: TellerEvent[]
 }): Promise<string> => {
-  const guide = await loadGuide(params.workDir, 'teller')
+  const identity = await loadGuide(params.workDir, 'teller/identity')
+  const outputText = await loadGuide(params.workDir, 'teller/output')
+
   const needsInput = formatNeedsInput(params.events)
   const plannerFailures = formatPlannerFailures(params.events)
   const taskResults = formatTaskResults(params.events)
   const historyText = formatHistory(params.history)
   const memoryText = formatMemory(params.memory)
-  return [
-    'You are the Mimikit runtime teller.',
-    guide,
-    '## User Inputs',
-    params.inputs.join('\n'),
-    ...(needsInput
-      ? [
-          '## Planner Needs Input',
-          needsInput,
-          'Call ask_user with the question/options/default.',
-        ]
-      : []),
-    ...(plannerFailures
-      ? ['## Planner Failed', plannerFailures, 'Report failure to user.']
-      : []),
-    ...(taskResults
-      ? ['## Task Results', taskResults, 'Summarize results to user.']
-      : []),
-    ...(historyText ? ['## History', historyText] : []),
-    ...(memoryText ? ['## Memory', memoryText] : []),
-    '## Output',
-    'Return a single JSON object with "tool_calls".',
-    'Example: {"tool_calls":[{"tool":"reply","args":{"text":"..."}}]}',
-    'Always include one reply call per user input unless you call ask_user.',
-    'If you delegate work, still include a brief reply tool call.',
-  ].join('\n\n')
+
+  const plannerNeedsInput = needsInput
+    ? `${needsInput}\nCall ask_user with the question/options/default.`
+    : ''
+  const plannerFailed = plannerFailures
+    ? `${plannerFailures}\nReport failure to user.`
+    : ''
+  const taskResultsText = taskResults
+    ? `${taskResults}\nSummarize results to user.`
+    : ''
+
+  const sections: string[] = []
+
+  pushIf(sections, 'identity', identity)
+  sections.push(wrapTag('user_inputs', params.inputs.join('\n')))
+
+  pushIf(sections, 'planner_needs_input', plannerNeedsInput)
+  pushIf(sections, 'planner_failed', plannerFailed)
+  pushIf(sections, 'task_results', taskResultsText)
+  pushIf(sections, 'history', historyText)
+  pushIf(sections, 'memory', memoryText)
+
+  sections.push(wrapTag('output', outputText))
+
+  return sections.join('\n\n')
 }
 
 export const buildPlannerPrompt = async (params: {
@@ -102,28 +126,34 @@ export const buildPlannerPrompt = async (params: {
   memory: MemoryHit[]
   request: string
 }): Promise<string> => {
-  const guide = await loadGuide(params.workDir, 'planner')
+  const guide = await loadGuide(params.workDir, 'planner/guide')
+  const outputText = await loadGuide(params.workDir, 'planner/output')
+
   const historyText = formatHistory(params.history)
   const memoryText = formatMemory(params.memory)
-  return [
-    guide,
-    '## User Request',
-    params.request,
-    ...(historyText ? ['## History', historyText] : []),
-    ...(memoryText ? ['## Memory', memoryText] : []),
-    '## Output',
-    'Return a single JSON object with optional "tool_calls" and required "result".',
-    'Example: {"tool_calls":[{"tool":"delegate","args":{...}}],"result":{"status":"done","tasks":[{"prompt":"...","priority":5}]}}',
-    'If you need user input: {"result":{"status":"needs_input","question":"...","options":["..."],"default":"..."}}',
-    'If planning is complete: {"result":{"status":"done","tasks":[...],"triggers":[...]}}',
-    'On failure: {"result":{"status":"failed","error":"..."}}',
-  ].join('\n\n')
+
+  const sections: string[] = []
+
+  pushIf(sections, 'guide', guide)
+  sections.push(wrapTag('user_request', params.request))
+  pushIf(sections, 'history', historyText)
+  pushIf(sections, 'memory', memoryText)
+
+  sections.push(wrapTag('output', outputText))
+
+  return sections.join('\n\n')
 }
 
 export const buildWorkerPrompt = async (params: {
   workDir: string
   taskPrompt: string
 }): Promise<string> => {
-  const guide = await loadGuide(params.workDir, 'worker')
-  return [guide, '## Task', params.taskPrompt].join('\n\n')
+  const guide = await loadGuide(params.workDir, 'worker/guide')
+
+  const sections: string[] = []
+
+  pushIf(sections, 'guide', guide)
+  sections.push(wrapTag('task', params.taskPrompt))
+
+  return sections.join('\n\n')
 }

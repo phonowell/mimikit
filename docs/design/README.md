@@ -31,6 +31,6 @@
 
 ## 关联文档
 - docs/codex-sdk.md
-- docs/agents/teller.md
-- docs/agents/planner.md
-- docs/agents/worker.md
+- prompts/agents/teller/identity.md
+- prompts/agents/planner/guide.md
+- prompts/agents/worker/guide.md
