@@ -39,7 +39,7 @@ triggers/（schedule/conditional）→ Supervisor 评估 → 触发 oneshot 入�
 
 ## 角色分工
 - Teller：回复用户，必要时 delegate Planner
-- Planner：拆分任务/触发器并设置优先级/超时
+- Planner：规划任务/触发器并设置优先级/超时（默认不拆分）
 - Worker：执行 oneshot 任务并产出结果
 
 ## 关键规则

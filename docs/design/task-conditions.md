@@ -30,5 +30,5 @@
 - `conditional`：默认每 `triggerCheckMs` 评估一次；若冷却期生效，则推迟到冷却结束时再评估。
 
 ## 任务串联
-- Planner 拆分复杂请求时，用 `task_done` 串联 oneshot 子任务（A 完成 → 触发 B）。
+- 需要串联子任务时，用 `task_done` 触发 oneshot 子任务（A 完成 → 触发 B）。
 - 子任务继承同一 `traceId`，并用 `parentTaskId` 指向上游任务。

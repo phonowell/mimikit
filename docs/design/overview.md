@@ -7,11 +7,12 @@
 - Teller/Planner 仅工具交互，Worker 执行具体任务
 - 状态与通信统一落在 .mimikit/
 - 运行日志与运行历史单独落盘（runs/），便于审计与排障
+- 关键规则（Teller/Planner/Worker）：见 [系统设计总览](./README.md) 的“关键规则”一节
 
 ## 组件
 - Supervisor：主循环，调度/恢复/记录
 - Teller：面向用户的 LLM（reply/ask_user/list/cancel 等工具）
-- Planner：需求拆解与任务/触发器生成
+- Planner：目标澄清与任务/触发器生成
 - Worker：执行子任务（Codex SDK + shell）
 - Memory：归档/检索，供 Teller/Planner/Worker 使用
 - WebUI/HTTP：状态与输入接口
@@ -31,7 +32,7 @@
 
 ## 内置执行 vs LLM
 - 内置：触发器评估、任务队列、history 裁剪、归档调度、task_status 索引
-- LLM：回复、拆解、执行任务、语义条件 llm_eval、归档摘要生成
+- LLM：回复、规划、执行任务、语义条件 llm_eval、归档摘要生成
 
 ## 深入阅读
 - 状态目录与文件协议：docs/design/state-directory.md

@@ -35,6 +35,11 @@ export type SchedulerConfig = {
   agingMaxBoost: number
 }
 
+export type TellerConfig = {
+  debounceMs: number
+  returnAfterMs: number
+}
+
 export type RetryConfig = {
   maxAttempts: number
   backoffMs: number
@@ -62,6 +67,7 @@ export type SupervisorConfig = {
   memorySearch: MemorySearchConfig
   concurrency: ConcurrencyConfig
   scheduler: SchedulerConfig
+  teller: TellerConfig
   retry: RetryConfig
   http: HttpConfig
   memoryRetention: MemoryRetentionConfig
@@ -78,7 +84,7 @@ export const defaultConfig = (params: {
     workDir: resolve(params.workDir),
     checkIntervalMs: params.checkIntervalMs ?? 5000,
     timeouts: {
-      tellerMs: 2 * 60 * 1000,
+      tellerMs: 20 * 1000,
       plannerMs: 10 * 60 * 1000,
       workerMs: 10 * 60 * 1000,
       llmEvalMs: 2 * 60 * 1000,
@@ -106,6 +112,10 @@ export const defaultConfig = (params: {
       queueWarnDepth: 50,
       agingMs: 60 * 1000,
       agingMaxBoost: 5,
+    },
+    teller: {
+      debounceMs: 800,
+      returnAfterMs: 5 * 60 * 1000,
     },
     retry: {
       maxAttempts: 1,

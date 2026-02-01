@@ -35,6 +35,7 @@ import { buildTaskViews } from './task-view.js'
 
 import type { SupervisorConfig } from '../config.js'
 import type { Task } from '../types/tasks.js'
+import type { InboxItem } from '../types/inbox.js'
 
 export class Supervisor {
   private readonly config: SupervisorConfig
@@ -147,6 +148,49 @@ export class Supervisor {
     }
   }
 
+  private getLatestInboxAt(inbox: InboxItem[]): number | null {
+    let latest = 0
+    for (const item of inbox) {
+      const ts = Date.parse(item.createdAt)
+      if (!Number.isFinite(ts)) continue
+      if (ts > latest) latest = ts
+    }
+    return latest > 0 ? latest : null
+  }
+
+  private async isReturningUser(
+    inbox: InboxItem[],
+    latestInputAt: number,
+  ): Promise<boolean> {
+    const returnAfterMs = this.config.teller.returnAfterMs
+    if (returnAfterMs <= 0 || !Number.isFinite(latestInputAt)) return false
+    const history = await readHistory(this.paths.history)
+    if (history.length === 0) return true
+    const inboxIds = new Set(inbox.map((item) => item.id))
+    for (let i = history.length - 1; i >= 0; i -= 1) {
+      const msg = history[i]
+      if (msg.role !== 'user') continue
+      if (inboxIds.has(msg.id)) continue
+      const prevMs = Date.parse(msg.createdAt)
+      if (!Number.isFinite(prevMs)) return true
+      return latestInputAt - prevMs >= returnAfterMs
+    }
+    return true
+  }
+
+  private async getTellerDebounceDelay(
+    inbox: InboxItem[],
+  ): Promise<number | null> {
+    const debounceMs = this.config.teller.debounceMs
+    if (debounceMs <= 0) return null
+    const latestInputAt = this.getLatestInboxAt(inbox)
+    if (!latestInputAt) return null
+    if (await this.isReturningUser(inbox, latestInputAt)) return null
+    const elapsedMs = Date.now() - latestInputAt
+    if (!Number.isFinite(elapsedMs) || elapsedMs >= debounceMs) return null
+    return Math.max(0, debounceMs - elapsedMs)
+  }
+
   private scheduleNextTick(delayMs: number) {
     if (this.timer) clearTimeout(this.timer)
     const delay = Math.max(0, delayMs)
@@ -209,11 +253,17 @@ export class Supervisor {
         readInbox(this.paths.inbox),
         readTellerInbox(this.paths.tellerInbox),
       ])
-      const shouldWakeTeller =
-        inbox.length > 0 ||
+      const hasInbox = inbox.length > 0
+      const hasEvents =
         tellerInbox.length > 0 ||
         needsTellerFromPlanner ||
         needsTellerFromWorker
+      const tellerDelayMs =
+        !hasEvents && hasInbox
+          ? await this.getTellerDebounceDelay(inbox)
+          : null
+      const shouldWakeTeller =
+        hasEvents || (hasInbox && tellerDelayMs === null)
 
       const plannerStats = getLaneStats(CommandLane.Planner)
       const workerStats = getLaneStats(CommandLane.Worker)
@@ -271,7 +321,8 @@ export class Supervisor {
         triggerOutcome.nextWakeAtMs !== null
           ? Math.max(0, triggerOutcome.nextWakeAtMs - Date.now())
           : baseDelay
-      const nextDelay = Math.min(baseDelay, triggerDelay)
+      let nextDelay = Math.min(baseDelay, triggerDelay)
+      if (tellerDelayMs !== null) nextDelay = Math.min(nextDelay, tellerDelayMs)
       if (this.pendingWake) {
         this.pendingWake = false
         this.scheduleNextTick(0)

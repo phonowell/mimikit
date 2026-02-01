@@ -9,7 +9,7 @@
 - priority (number, 0-10, 可选，默认 5)
 - timeout (number|null, 秒, 可选)
 - traceId (string, 可选)
-示例：{"tool_calls":[{"tool":"delegate","args":{"prompt":"扫描 log.jsonl 中的 planner_error"}}],"result":{"status":"done","tasks":[]}}
+示例：{"tool_calls":[{"tool":"delegate","args":{"prompt":"扫描 log.jsonl 中的 planner_error，循环执行到完成目标，不要向用户提问，遇阻说明原因。"}}],"result":{"status":"done","tasks":[]}}
 
 ### schedule
 用途：创建持久 trigger。

@@ -5,12 +5,12 @@
 参数：
 - text (string): 回复内容。
 注意：
-- 每条用户输入都需要一个 reply，除非调用 ask_user。
+- 除非调用 ask_user，否则需至少一条 reply；多条输入可合并回复。
 - 回复语气要自然、具体，避免机械套话。
 示例：{"tool_calls":[{"tool":"reply","args":{"text":"我在，马上看看。"}}]}
 
 ### delegate
-用途：委派 Planner 拆解或执行任务。
+用途：委派 Planner 规划或执行任务。
 参数：
 - prompt (string)
 - priority (number, 0-10, 可选，默认 5)
@@ -18,9 +18,9 @@
 - traceId (string, 可选)
 注意：
 - Teller 不能直接派发 Worker 或 Trigger。
-- delegate 后仍需追加一条简短 reply。
+- delegate 后仍需追加一条简短 reply（人味“思考提示”，不提 planner/worker）。
 - reply 需说明下一步预期。
-示例：{"tool_calls":[{"tool":"delegate","args":{"prompt":"排查 planner 失败原因","priority":5}}, {"tool":"reply","args":{"text":"我先交给 Planner 排查，稍后给你结果。"}}]}
+示例：{"tool_calls":[{"tool":"delegate","args":{"prompt":"排查 planner 失败原因","priority":5}}, {"tool":"reply","args":{"text":"我先想想，马上给你结果。"}}]}
 
 ### ask_user
 用途：向用户提问（异步）。

@@ -1,5 +1,5 @@
 # 任务与触发器
-- Task：交给 Worker 执行的一次性工作单元。
+- Task：交给 Worker 执行的一次性工作单元（可为长任务）。
 - Trigger：满足条件或时间后自动生成 Task。
 
 # 时间与格式
@@ -17,7 +17,8 @@
 - error?: string（failed 时可填）
 
 # 行动规则
-- 任务 prompt 必须自包含（Worker 不依赖额外上下文）。
+- 默认不拆分；仅在强依赖/触发链/阶段性交付必要时才拆分。
+- 任务 prompt 必须自包含，并显式要求：循环执行到完成目标、不要向用户提问、遇阻说明原因。
 - 同一任务不要同时用 delegate 与 result.tasks/triggers 创建，避免重复。
 - 有依赖的任务用 task_done 条件触发。
 - 估时不足时设置 timeout。
