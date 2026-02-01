@@ -1,16 +1,8 @@
 import { echo, glob, read, runConcurrent, wrapList, write } from 'fire-keeper'
 
-const sources = [
-  './*.{js,ts,mjs,cjs,md}',
-  './src/**/*.{js,ts,tsx,mjs,cjs,md}',
-  './scripts/**/*.{js,ts,tsx,mjs,cjs,md}',
-  './test/**/*.{js,ts,tsx,mjs,cjs,md}',
-  './docs/**/*.md',
-  './plans/**/*.md',
-  './prompts/**/*.md',
-]
+import { listTextSources } from './shared/text-sources.js'
 
-const listSources = () => glob(sources)
+const listSources = () => glob(listTextSources())
 
 const hasUtf8Bom = (buffer: Buffer): boolean =>
   buffer.length >= 3 &&
@@ -30,7 +22,7 @@ const stripBom = async (filePath: string): Promise<string | null> => {
 const main = async () => {
   const list = await listSources()
   if (!list.length) {
-    echo('remove-bom', `no files found matching ${wrapList(sources)}`)
+    echo('remove-bom', `no files found matching ${wrapList(listTextSources())}`)
     return
   }
 

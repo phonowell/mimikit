@@ -1,16 +1,8 @@
 import { echo, glob, read, runConcurrent, wrapList, write } from 'fire-keeper'
 
-const sources = [
-  './*.{js,ts,mjs,cjs,md}',
-  './src/**/*.{js,ts,tsx,mjs,cjs,md}',
-  './scripts/**/*.{js,ts,tsx,mjs,cjs,md}',
-  './test/**/*.{js,ts,tsx,mjs,cjs,md}',
-  './docs/**/*.md',
-  './plans/**/*.md',
-  './prompts/**/*.md',
-]
+import { listTextSources } from './shared/text-sources.js'
 
-const listSources = () => glob(sources)
+const listSources = () => glob(listTextSources())
 
 const normalizeLf = async (filePath: string): Promise<string | null> => {
   const raw = await read<undefined, string, true>(filePath, { raw: true })
@@ -29,7 +21,7 @@ const normalizeLf = async (filePath: string): Promise<string | null> => {
 const main = async () => {
   const list = await listSources()
   if (!list.length) {
-    echo('fix-crlf', `no files found matching ${wrapList(sources)}`)
+    echo('fix-crlf', `no files found matching ${wrapList(listTextSources())}`)
     return
   }
 
