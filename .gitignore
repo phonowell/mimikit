@@ -19,6 +19,7 @@ junit.xml
 
 # Runtime state
 /.mimikit
+/.mimikit-smoke
 
 # System & Temp
 *.log

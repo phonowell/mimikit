@@ -115,11 +115,32 @@ export const runPlannerTask = async (params: {
   })
 
   const parsed = extractPlannerResult(result.output)
+  const plannerOutputInvalid = !parsed
+  const plannerFallbackEnabled = process.env.MIMIKIT_PLANNER_FALLBACK === '1'
+  if (plannerOutputInvalid) {
+    await appendLog(params.paths.log, {
+      event: 'planner_output_invalid',
+      taskId: params.task.id,
+      fallbackEnabled: plannerFallbackEnabled,
+    })
+  }
+
   let status: PlannerResult['status'] = parsed?.status ?? 'done'
   const question = parsed?.question
   const options = parsed?.options
   const def = parsed?.default
-  const tasks = parsed && Array.isArray(parsed.tasks) ? parsed.tasks : undefined
+  const fallbackTasks = plannerOutputInvalid && plannerFallbackEnabled
+    ? [
+        {
+          prompt: params.task.prompt,
+          priority: params.task.priority,
+          timeout: params.task.timeout ?? null,
+          ...(params.task.traceId ? { traceId: params.task.traceId } : {}),
+          parentTaskId: params.task.id,
+        },
+      ]
+    : undefined
+  const tasks = parsed && Array.isArray(parsed.tasks) ? parsed.tasks : fallbackTasks
   const triggers =
     parsed && Array.isArray(parsed.triggers) ? parsed.triggers : undefined
   let error = parsed?.error

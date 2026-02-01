@@ -17,6 +17,7 @@
     "fix-bom": "tsx scripts/remove-bom.ts",
     "prompt:preview": "tsx scripts/preview-prompt.ts",
     "prompt:report": "tsx scripts/prompt-report.ts",
+    "smoke:live": "tsx scripts/smoke-live.ts",
     "lint": "eslint \"src/**/*.ts\" --fix",
     "test": "vitest run"
   },

@@ -80,6 +80,27 @@ export const runTeller = async (params: {
     llmElapsedMs: elapsedMs,
   }
   const calls = extractToolCalls(output)
+  const forceTag = process.env.MIMIKIT_SMOKE_DELEGATE_TAG?.trim()
+  const forceDelegate =
+    Boolean(forceTag) &&
+    params.inputs.some((input) => input.includes(forceTag as string))
+  let forcedDelegateUsed = false
+  if (forceDelegate && !calls.some((call) => call.tool === 'delegate')) {
+    const marker = forceTag as string
+    const cleaned = params.inputs
+      .map((input) => input.split(marker).join('').trim())
+      .filter(Boolean)
+      .join('\n')
+    calls.unshift({
+      tool: 'delegate',
+      args: { prompt: cleaned || params.inputs.join('\n') },
+    })
+    forcedDelegateUsed = true
+  }
+  if (forceDelegate && !calls.some((call) => call.tool === 'reply')) {
+    calls.push({ tool: 'reply', args: { text: 'Working on it.' } })
+    forcedDelegateUsed = true
+  }
   for (const call of calls) await executeTool(toolCtx, call)
   const stripped = stripToolCalls(output).trim()
   let fallbackUsed = false
@@ -94,6 +115,7 @@ export const runTeller = async (params: {
     event: 'teller_response',
     toolCalls: calls.length,
     fallbackUsed,
+    forcedDelegate: forcedDelegateUsed,
     outputChars: stripped.length,
     ...(usage ? { usage } : {}),
     elapsedMs,
