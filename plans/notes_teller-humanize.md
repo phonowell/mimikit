@@ -1,4 +1,4 @@
-﻿# Notes: teller-humanize
+# Notes: teller-humanize
 
 ## Observations (initial)
 - Teller 现有 identity 以“硬规则 + 事件优先级”为主，缺少“自然对话/人味”提示。

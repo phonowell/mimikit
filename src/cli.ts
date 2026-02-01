@@ -6,6 +6,7 @@ import { createHttpServer } from './http/index.js'
 import { loadCodexSettings } from './llm/openai.js'
 import { runRunsCli } from './log/cli.js'
 import { runMemoryCli } from './memory/cli.js'
+import { acquireInstanceLock } from './storage/instance-lock.js'
 import { Supervisor } from './supervisor/supervisor.js'
 
 const args = process.argv.slice(2)
@@ -34,6 +35,9 @@ const stateDir = values['state-dir']
 const workDir = values['work-dir']
 const checkIntervalValue = values['check-interval']
 
+const resolvedStateDir = resolve(stateDir)
+const resolvedWorkDir = resolve(workDir)
+const instanceLock = await acquireInstanceLock(resolvedStateDir)
 await loadCodexSettings()
 
 const parsePort = (value: string): string => {
@@ -59,27 +63,31 @@ const checkIntervalMs =
   parsePositiveNumber(checkIntervalValue, 'check-interval') * 1000
 
 const config = defaultConfig({
-  stateDir: resolve(stateDir),
-  workDir: resolve(workDir),
+  stateDir: resolvedStateDir,
+  workDir: resolvedWorkDir,
   model: values.model,
   checkIntervalMs,
 })
 
 console.log('[cli] config:', config)
+console.log('[cli] instance lock:', instanceLock.lockPath)
 
 const supervisor = new Supervisor(config)
 
 await supervisor.start()
 createHttpServer(supervisor, config, parseInt(port, 10))
 
-process.on('SIGINT', () => {
-  console.log('\n[cli] shutting down...')
+const shutdown = async (reason: string) => {
+  console.log(`\n[cli] ${reason}`)
   supervisor.stop()
+  await instanceLock.release().catch(() => undefined)
   process.exit(0)
+}
+
+process.on('SIGINT', () => {
+  void shutdown('shutting down...')
 })
 
 process.on('SIGTERM', () => {
-  console.log('[cli] received SIGTERM, shutting down...')
-  supervisor.stop()
-  process.exit(0)
+  void shutdown('received SIGTERM, shutting down...')
 })

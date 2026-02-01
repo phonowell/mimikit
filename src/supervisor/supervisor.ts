@@ -34,8 +34,8 @@ import { runTellerSession } from './runner.js'
 import { buildTaskViews } from './task-view.js'
 
 import type { SupervisorConfig } from '../config.js'
-import type { Task } from '../types/tasks.js'
 import type { InboxItem } from '../types/inbox.js'
+import type { Task } from '../types/tasks.js'
 
 export class Supervisor {
   private readonly config: SupervisorConfig
@@ -162,13 +162,14 @@ export class Supervisor {
     inbox: InboxItem[],
     latestInputAt: number,
   ): Promise<boolean> {
-    const returnAfterMs = this.config.teller.returnAfterMs
+    const { returnAfterMs } = this.config.teller
     if (returnAfterMs <= 0 || !Number.isFinite(latestInputAt)) return false
     const history = await readHistory(this.paths.history)
     if (history.length === 0) return true
     const inboxIds = new Set(inbox.map((item) => item.id))
     for (let i = history.length - 1; i >= 0; i -= 1) {
       const msg = history[i]
+      if (!msg) continue
       if (msg.role !== 'user') continue
       if (inboxIds.has(msg.id)) continue
       const prevMs = Date.parse(msg.createdAt)
@@ -181,7 +182,7 @@ export class Supervisor {
   private async getTellerDebounceDelay(
     inbox: InboxItem[],
   ): Promise<number | null> {
-    const debounceMs = this.config.teller.debounceMs
+    const { debounceMs } = this.config.teller
     if (debounceMs <= 0) return null
     const latestInputAt = this.getLatestInboxAt(inbox)
     if (!latestInputAt) return null
@@ -259,11 +260,8 @@ export class Supervisor {
         needsTellerFromPlanner ||
         needsTellerFromWorker
       const tellerDelayMs =
-        !hasEvents && hasInbox
-          ? await this.getTellerDebounceDelay(inbox)
-          : null
-      const shouldWakeTeller =
-        hasEvents || (hasInbox && tellerDelayMs === null)
+        !hasEvents && hasInbox ? await this.getTellerDebounceDelay(inbox) : null
+      const shouldWakeTeller = hasEvents || (hasInbox && tellerDelayMs === null)
 
       const plannerStats = getLaneStats(CommandLane.Planner)
       const workerStats = getLaneStats(CommandLane.Worker)

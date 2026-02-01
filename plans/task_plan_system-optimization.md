@@ -1,4 +1,4 @@
-﻿# Task Plan: System Optimization
+# Task Plan: System Optimization
 
 Goal: Identify concrete optimization points in mimikit, research related solutions in ../moltbot, then implement and review changes.
 

@@ -20,6 +20,8 @@ junit.xml
 # Runtime state
 /.mimikit
 /.mimikit-smoke
+/reports/diagnostics
+/reports/smoke-live-*.json
 
 # System & Temp
 *.log

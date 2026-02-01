@@ -1,4 +1,4 @@
-﻿# Notes: System Optimization
+# Notes: System Optimization
 
 - Created 2026-02-01.
 - No user questions allowed; proceed with assumptions and document decisions.

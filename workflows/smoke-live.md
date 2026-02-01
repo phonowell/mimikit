@@ -36,3 +36,6 @@ description: API-only live smoke with LLM scoring, segmented runs, and metrics
 
 ## Notes
 - C4 enforces delegation and validates response against `src/scheduler/triggers.ts`.
+
+## Related
+- `workflows/debug-automation.md`

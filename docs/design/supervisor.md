@@ -39,14 +39,15 @@ Teller 是否运行中由 Supervisor 进程级判断（子进程是否存活）�
 - Teller 消费结果后，可按保留策略清理 `worker/results/`（例如保留 7~30 天或按数量上限），不影响条件判断。
 - 任务/触发器运行状态写入 `runs/` 目录，便于审计与排障。
 ## 超时与失败
-### 进程超时
-Supervisor 监控所有 Teller / Planner / Worker 进程的空闲时长（stdout/stderr 无输出），超时后 kill 进程，视为一次失败。
-| 角色 | 默认超时 | 说明 |
+### LLM 超时（空闲）
+超时基于 Codex SDK 事件流的空闲时间（无事件输出）。只要有事件输出就会续命，不按总耗时。
+| 角色 | 默认超时（空闲） | 说明 |
 |------|------|------|
-| Teller | 20s | 回复 + 委派，应快速完成（软性 15s 阈值，超出应委派） |
+| Teller | 120s | prompt 建议 ~20s 粒度拆分，但超时不是强制 20s |
 | Planner | 10 min | 含信息收集与任务规划 |
 | Worker | 10 min | 常规任务执行 |
 | `llm_eval` 评估 | 2 min | 轻量批量判断 |
+环境变量覆盖：`MIMIKIT_TELLER_TIMEOUT_MS` / `MIMIKIT_PLANNER_TIMEOUT_MS` / `MIMIKIT_WORKER_TIMEOUT_MS` / `MIMIKIT_LLM_EVAL_TIMEOUT_MS`。
 任务可通过 `timeout` 字段覆盖默认值（秒），Planner 设定任务时应评估执行时长，对预期耗时较长的任务显式设置更大的 `timeout`。
 **超时翻倍**：当前不做超时翻倍。
 Supervisor 在写入失败结果时补充 `failureReason`（`timeout|error|killed`）与 `error`，并记录重试原因到 `log.jsonl`。

@@ -53,14 +53,206 @@ export const runTeller = async (params: {
     events: params.events,
     promptMode,
   })
-  const llmResult = await runCodexSdk({
-    role: 'teller',
-    prompt,
-    workDir: params.ctx.workDir,
-    timeoutMs: params.timeoutMs,
-    outputSchema: tellerOutputSchema,
-    ...(params.model ? { model: params.model } : {}),
-  })
+  const promptLines = prompt.split(/\r?\n/).length
+  const startedAt = Date.now()
+  let llmResult: Awaited<ReturnType<typeof runCodexSdk>>
+  try {
+    llmResult = await runCodexSdk({
+      role: 'teller',
+      prompt,
+      workDir: params.ctx.workDir,
+      timeoutMs: params.timeoutMs,
+      outputSchema: tellerOutputSchema,
+      logPath: params.ctx.paths.log,
+      logContext: {
+        promptMode,
+        historyCount: params.history.length,
+        memoryCount: params.memory.length,
+        inputsCount: params.inputs.length,
+        eventsCount: params.events.length,
+        injectContext,
+      },
+      ...(params.model ? { model: params.model } : {}),
+    })
+  } catch (error) {
+    const elapsedMs = Math.max(0, Date.now() - startedAt)
+    const err = error instanceof Error ? error : new Error(String(error))
+    const aborted = err.name === 'AbortError' || /aborted/i.test(err.message)
+    const retryOnError = process.env.MIMIKIT_TELLER_RETRY_ON_ERROR === '1'
+    const retryEnabled =
+      process.env.MIMIKIT_TELLER_RETRY_MINIMAL !== '0' &&
+      (aborted || retryOnError)
+    const retryTimeoutEnv = Number(process.env.MIMIKIT_TELLER_RETRY_TIMEOUT_MS)
+    const retryTimeoutMs =
+      Number.isFinite(retryTimeoutEnv) && retryTimeoutEnv > 0
+        ? Math.min(params.timeoutMs, retryTimeoutEnv)
+        : Math.min(params.timeoutMs, 30_000)
+
+    if (retryEnabled) {
+      await appendLog(params.ctx.paths.log, {
+        event: 'llm_retry_started',
+        role: params.ctx.role,
+        reason: err.message,
+        aborted,
+        elapsedMs,
+        timeoutMs: params.timeoutMs,
+        retryTimeoutMs,
+        promptMode,
+        promptChars: prompt.length,
+        promptLines,
+        historyCount: params.history.length,
+        memoryCount: params.memory.length,
+        inputsCount: params.inputs.length,
+        eventsCount: params.events.length,
+        injectContext,
+        ...(params.model ? { model: params.model } : {}),
+      }).catch(() => undefined)
+      try {
+        const retryPrompt = await buildTellerPrompt({
+          workDir: params.ctx.workDir,
+          history: params.history,
+          memory: params.memory,
+          inputs: params.inputs,
+          events: params.events,
+          promptMode: 'minimal',
+        })
+        llmResult = await runCodexSdk({
+          role: 'teller',
+          prompt: retryPrompt,
+          workDir: params.ctx.workDir,
+          timeoutMs: retryTimeoutMs,
+          outputSchema: tellerOutputSchema,
+          logPath: params.ctx.paths.log,
+          logContext: {
+            promptMode: 'minimal',
+            historyCount: params.history.length,
+            memoryCount: params.memory.length,
+            inputsCount: params.inputs.length,
+            eventsCount: params.events.length,
+            injectContext,
+            retryAttempt: 1,
+          },
+          ...(params.model ? { model: params.model } : {}),
+        })
+        await appendLog(params.ctx.paths.log, {
+          event: 'llm_retry_finished',
+          role: params.ctx.role,
+          elapsedMs: llmResult.elapsedMs,
+          ...(llmResult.usage ? { usage: llmResult.usage } : {}),
+        }).catch(() => undefined)
+      } catch (retryError) {
+        const retryErr =
+          retryError instanceof Error
+            ? retryError
+            : new Error(String(retryError))
+        const trimmedRetry = retryErr.stack
+          ? retryErr.stack.split(/\r?\n/).slice(0, 6).join('\n')
+          : undefined
+        await appendLog(params.ctx.paths.log, {
+          event: 'llm_retry_failed',
+          role: params.ctx.role,
+          error: retryErr.message,
+          errorName: retryErr.name,
+          ...(trimmedRetry ? { errorStack: trimmedRetry } : {}),
+        }).catch(() => undefined)
+        const trimmedStack = err.stack
+          ? err.stack.split(/\r?\n/).slice(0, 6).join('\n')
+          : undefined
+        await appendLog(params.ctx.paths.log, {
+          event: 'llm_error',
+          role: params.ctx.role,
+          error: err.message,
+          errorName: err.name,
+          ...(trimmedStack ? { errorStack: trimmedStack } : {}),
+          aborted,
+          elapsedMs,
+          timeoutMs: params.timeoutMs,
+          promptMode,
+          promptChars: prompt.length,
+          promptLines,
+          historyCount: params.history.length,
+          memoryCount: params.memory.length,
+          inputsCount: params.inputs.length,
+          eventsCount: params.events.length,
+          injectContext,
+          ...(params.model ? { model: params.model } : {}),
+        }).catch(() => undefined)
+        const failureReplyDisabled =
+          process.env.MIMIKIT_TELLER_FAILURE_REPLY_DISABLED === '1'
+        if (!failureReplyDisabled) {
+          const textOverride = process.env.MIMIKIT_TELLER_FAILURE_REPLY?.trim()
+          const text =
+            textOverride && textOverride.length > 0
+              ? textOverride
+              : '系统暂时不可用，请稍后再试。'
+          const fallback: ToolCall = { tool: 'reply', args: { text } }
+          const toolCtx: ToolContext = {
+            ...params.ctx,
+            llmElapsedMs: elapsedMs,
+          }
+          await executeTool(toolCtx, fallback)
+          await appendLog(params.ctx.paths.log, {
+            event: 'teller_response',
+            toolCalls: 1,
+            fallbackUsed: true,
+            forcedDelegate: false,
+            outputChars: 0,
+            elapsedMs,
+          }).catch(() => undefined)
+          return { calls: [fallback], output: '', elapsedMs }
+        }
+        throw error
+      }
+    } else {
+      const trimmedStack = err.stack
+        ? err.stack.split(/\r?\n/).slice(0, 6).join('\n')
+        : undefined
+      await appendLog(params.ctx.paths.log, {
+        event: 'llm_error',
+        role: params.ctx.role,
+        error: err.message,
+        errorName: err.name,
+        ...(trimmedStack ? { errorStack: trimmedStack } : {}),
+        aborted,
+        elapsedMs,
+        timeoutMs: params.timeoutMs,
+        promptMode,
+        promptChars: prompt.length,
+        promptLines,
+        historyCount: params.history.length,
+        memoryCount: params.memory.length,
+        inputsCount: params.inputs.length,
+        eventsCount: params.events.length,
+        injectContext,
+        ...(params.model ? { model: params.model } : {}),
+      }).catch(() => undefined)
+      const failureReplyDisabled =
+        process.env.MIMIKIT_TELLER_FAILURE_REPLY_DISABLED === '1'
+      if (!failureReplyDisabled) {
+        const textOverride = process.env.MIMIKIT_TELLER_FAILURE_REPLY?.trim()
+        const text =
+          textOverride && textOverride.length > 0
+            ? textOverride
+            : '系统暂时不可用，请稍后再试。'
+        const fallback: ToolCall = { tool: 'reply', args: { text } }
+        const toolCtx: ToolContext = {
+          ...params.ctx,
+          llmElapsedMs: elapsedMs,
+        }
+        await executeTool(toolCtx, fallback)
+        await appendLog(params.ctx.paths.log, {
+          event: 'teller_response',
+          toolCalls: 1,
+          fallbackUsed: true,
+          forcedDelegate: false,
+          outputChars: 0,
+          elapsedMs,
+        }).catch(() => undefined)
+        return { calls: [fallback], output: '', elapsedMs }
+      }
+      throw error
+    }
+  }
   const { output, usage, elapsedMs } = llmResult
   const outputPath = await writeLlmOutput({
     dir: params.ctx.paths.llmDir,
@@ -145,14 +337,50 @@ export const runPlanner = async (params: {
     request: params.request,
     promptMode,
   })
-  const llmResult = await runCodexSdk({
-    role: 'planner',
-    prompt,
-    workDir: params.ctx.workDir,
-    timeoutMs: params.timeoutMs,
-    outputSchema: plannerOutputSchema,
-    ...(params.model ? { model: params.model } : {}),
-  })
+  const promptLines = prompt.split(/\r?\n/).length
+  const startedAt = Date.now()
+  let llmResult: Awaited<ReturnType<typeof runCodexSdk>>
+  try {
+    llmResult = await runCodexSdk({
+      role: 'planner',
+      prompt,
+      workDir: params.ctx.workDir,
+      timeoutMs: params.timeoutMs,
+      outputSchema: plannerOutputSchema,
+      logPath: params.ctx.paths.log,
+      logContext: {
+        promptMode,
+        historyCount: params.history.length,
+        memoryCount: params.memory.length,
+        injectContext,
+      },
+      ...(params.model ? { model: params.model } : {}),
+    })
+  } catch (error) {
+    const elapsedMs = Math.max(0, Date.now() - startedAt)
+    const err = error instanceof Error ? error : new Error(String(error))
+    const trimmedStack = err.stack
+      ? err.stack.split(/\r?\n/).slice(0, 6).join('\n')
+      : undefined
+    await appendLog(params.ctx.paths.log, {
+      event: 'llm_error',
+      role: params.ctx.role,
+      error: err.message,
+      errorName: err.name,
+      ...(trimmedStack ? { errorStack: trimmedStack } : {}),
+      aborted: err.name === 'AbortError' || /aborted/i.test(err.message),
+      elapsedMs,
+      timeoutMs: params.timeoutMs,
+      promptMode,
+      promptChars: prompt.length,
+      promptLines,
+      historyCount: params.history.length,
+      memoryCount: params.memory.length,
+      injectContext,
+      ...(params.model ? { model: params.model } : {}),
+    }).catch(() => undefined)
+    throw error
+  }
   const { output, usage, elapsedMs } = llmResult
   const calls = extractToolCalls(output)
   for (const call of calls) await executeTool(params.ctx, call)
@@ -170,6 +398,8 @@ export const runWorker = async (params: {
   taskPrompt: string
   model?: string
   timeoutMs: number
+  logPath?: string
+  logContext?: Record<string, unknown>
 }) => {
   const promptMode: PromptMode = 'minimal'
   const prompt = await buildWorkerPrompt({
@@ -182,6 +412,11 @@ export const runWorker = async (params: {
     prompt,
     workDir: params.workDir,
     timeoutMs: params.timeoutMs,
+    ...(params.logPath ? { logPath: params.logPath } : {}),
+    logContext: {
+      promptMode,
+      ...(params.logContext ?? {}),
+    },
     ...(params.model ? { model: params.model } : {}),
   })
   return {

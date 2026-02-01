@@ -73,6 +73,14 @@ export type SupervisorConfig = {
   memoryRetention: MemoryRetentionConfig
 }
 
+const readEnvMs = (name: string): number | null => {
+  const raw = process.env[name]
+  if (!raw) return null
+  const value = Number(raw)
+  if (!Number.isFinite(value) || value <= 0) return null
+  return value
+}
+
 export const defaultConfig = (params: {
   stateDir: string
   workDir: string
@@ -84,10 +92,10 @@ export const defaultConfig = (params: {
     workDir: resolve(params.workDir),
     checkIntervalMs: params.checkIntervalMs ?? 5000,
     timeouts: {
-      tellerMs: 20 * 1000,
-      plannerMs: 10 * 60 * 1000,
-      workerMs: 10 * 60 * 1000,
-      llmEvalMs: 2 * 60 * 1000,
+      tellerMs: readEnvMs('MIMIKIT_TELLER_TIMEOUT_MS') ?? 120 * 1000,
+      plannerMs: readEnvMs('MIMIKIT_PLANNER_TIMEOUT_MS') ?? 10 * 60 * 1000,
+      workerMs: readEnvMs('MIMIKIT_WORKER_TIMEOUT_MS') ?? 10 * 60 * 1000,
+      llmEvalMs: readEnvMs('MIMIKIT_LLM_EVAL_TIMEOUT_MS') ?? 2 * 60 * 1000,
     },
     limits: {
       historySoft: 200,

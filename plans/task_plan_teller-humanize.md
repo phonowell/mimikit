@@ -1,4 +1,4 @@
-﻿# Task Plan: teller-humanize
+# Task Plan: teller-humanize
 
 ## Goal
 Improve teller prompt/behavior to feel more human, informed by patterns in ../moltbot, then document changes.

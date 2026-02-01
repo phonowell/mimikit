@@ -129,18 +129,20 @@ export const runPlannerTask = async (params: {
   const question = parsed?.question
   const options = parsed?.options
   const def = parsed?.default
-  const fallbackTasks = plannerOutputInvalid && plannerFallbackEnabled
-    ? [
-        {
-          prompt: params.task.prompt,
-          priority: params.task.priority,
-          timeout: params.task.timeout ?? null,
-          ...(params.task.traceId ? { traceId: params.task.traceId } : {}),
-          parentTaskId: params.task.id,
-        },
-      ]
-    : undefined
-  const tasks = parsed && Array.isArray(parsed.tasks) ? parsed.tasks : fallbackTasks
+  const fallbackTasks =
+    plannerOutputInvalid && plannerFallbackEnabled
+      ? [
+          {
+            prompt: params.task.prompt,
+            priority: params.task.priority,
+            timeout: params.task.timeout ?? null,
+            ...(params.task.traceId ? { traceId: params.task.traceId } : {}),
+            parentTaskId: params.task.id,
+          },
+        ]
+      : undefined
+  const tasks =
+    parsed && Array.isArray(parsed.tasks) ? parsed.tasks : fallbackTasks
   const triggers =
     parsed && Array.isArray(parsed.triggers) ? parsed.triggers : undefined
   let error = parsed?.error
@@ -200,6 +202,14 @@ export const runWorkerTask = async (params: {
       workDir: params.config.workDir,
       taskPrompt: params.task.prompt,
       timeoutMs: params.timeoutMs,
+      logPath: params.paths.log,
+      logContext: {
+        taskId: params.task.id,
+        ...(params.task.traceId ? { traceId: params.task.traceId } : {}),
+        ...(params.task.sourceTriggerId
+          ? { sourceTriggerId: params.task.sourceTriggerId }
+          : {}),
+      },
       ...(params.config.model ? { model: params.config.model } : {}),
     }
     const llmResult = await runWorker(workerParams)
@@ -239,16 +249,39 @@ export const runWorkerTask = async (params: {
     )
     return result
   } catch (error) {
+    const err = error instanceof Error ? error : new Error(String(error))
+    const trimmedStack = err.stack
+      ? err.stack.split(/\r?\n/).slice(0, 6).join('\n')
+      : undefined
     const failureReason =
-      error instanceof Error && /timed out/i.test(error.message)
+      (error instanceof Error && /timed out/i.test(error.message)) ||
+      err.name === 'AbortError' ||
+      /aborted/i.test(err.message)
         ? 'timeout'
         : 'error'
+    await appendLog(params.paths.log, {
+      event: 'llm_error',
+      role: 'worker',
+      error: err.message,
+      errorName: err.name,
+      ...(trimmedStack ? { errorStack: trimmedStack } : {}),
+      aborted: failureReason === 'timeout',
+      elapsedMs: Math.max(0, Date.now() - startedAt),
+      timeoutMs: params.timeoutMs,
+      promptChars: params.task.prompt.length,
+      promptLines: params.task.prompt.split(/\r?\n/).length,
+      ...(params.config.model ? { model: params.config.model } : {}),
+      ...(params.task.traceId ? { traceId: params.task.traceId } : {}),
+      ...(params.task.sourceTriggerId
+        ? { sourceTriggerId: params.task.sourceTriggerId }
+        : {}),
+    }).catch(() => undefined)
     const result: WorkerResult = {
       schemaVersion: WORKER_RESULT_SCHEMA_VERSION,
       id: params.task.id,
       status: 'failed',
       resultType: 'analysis',
-      result: error instanceof Error ? error.message : String(error),
+      result: err.message,
       attempts: params.task.attempts,
       failureReason,
       completedAt: nowIso(),
