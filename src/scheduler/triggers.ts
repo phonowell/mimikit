@@ -82,6 +82,16 @@ const computeNextWakeForTrigger = (params: {
 const isDue = (nextRunAtMs: number | null, nowMs: number): boolean =>
   nextRunAtMs !== null && nextRunAtMs <= nowMs
 
+const writeTriggerIfChanged = async (
+  dir: string,
+  original: string,
+  trigger: Trigger,
+): Promise<boolean> => {
+  if (JSON.stringify(trigger) === original) return false
+  await writeTrigger(dir, trigger)
+  return true
+}
+
 export const processTriggers = async (
   ctx: EvalContext,
   triggersDir: string,
@@ -97,10 +107,10 @@ export const processTriggers = async (
   let nextWakeAtMs: number | null = null
 
   for (const trigger of triggers) {
+    const original = JSON.stringify(trigger)
     let updated = { ...trigger }
     const normalized = normalizeRunningState(updated, nowMs, stuckMs)
     updated.state = normalized.state
-    if (normalized.cleared) await writeTrigger(triggersDir, updated)
 
     const runningAt = parseIso(updated.state.runningAt)
     if (runningAt) {
@@ -109,7 +119,7 @@ export const processTriggers = async (
         ...updated.state,
         nextRunAt: new Date(nextWake).toISOString(),
       }
-      await writeTrigger(triggersDir, updated)
+      await writeTriggerIfChanged(triggersDir, original, updated)
       nextWakeAtMs = nextWakeAtMs ? Math.min(nextWakeAtMs, nextWake) : nextWake
       continue
     }
@@ -153,7 +163,7 @@ export const processTriggers = async (
           ? Math.min(nextWakeAtMs, resolvedNext)
           : resolvedNext
       }
-      await writeTrigger(triggersDir, updated)
+      await writeTriggerIfChanged(triggersDir, original, updated)
       continue
     }
 
@@ -169,20 +179,25 @@ export const processTriggers = async (
           ...(updated.state ?? {}),
           nextRunAt: new Date(runAtMs).toISOString(),
         }
-        await writeTrigger(triggersDir, updated)
+        await writeTriggerIfChanged(triggersDir, original, updated)
         nextWakeAtMs = nextWakeAtMs ? Math.min(nextWakeAtMs, runAtMs) : runAtMs
+        continue
       }
+      await writeTriggerIfChanged(triggersDir, original, updated)
       continue
     }
 
-    if (!updated.condition) continue
+    if (!updated.condition) {
+      await writeTriggerIfChanged(triggersDir, original, updated)
+      continue
+    }
     const cooldownUntil = cooldownUntilMs(updated)
     if (cooldownUntil && cooldownUntil > nowMs) {
       updated.state = {
         ...(updated.state ?? {}),
         nextRunAt: new Date(cooldownUntil).toISOString(),
       }
-      await writeTrigger(triggersDir, updated)
+      await writeTriggerIfChanged(triggersDir, original, updated)
       nextWakeAtMs = nextWakeAtMs
         ? Math.min(nextWakeAtMs, cooldownUntil)
         : cooldownUntil
@@ -230,7 +245,7 @@ export const processTriggers = async (
       nextWakeAtMs = nextWakeAtMs ? Math.min(nextWakeAtMs, nextWake) : nextWake
     }
     updated = { ...updated, state: updatedState }
-    await writeTrigger(triggersDir, updated)
+    await writeTriggerIfChanged(triggersDir, original, updated)
   }
 
   return { tasks, nextWakeAtMs }

@@ -6,6 +6,8 @@ import { readJson, writeJson } from '../fs/json.js'
 import { listJsonPaths } from './dir.js'
 import { withStoreLock } from './store-lock.js'
 
+const DEFAULT_LIST_CONCURRENCY = 16
+
 export const readItem = async <T>(
   path: string,
   migrate?: (value: unknown) => T | null,
@@ -38,12 +40,23 @@ export const listItems = async <T>(
   migrate?: (value: unknown) => T | null,
 ): Promise<T[]> => {
   const paths = await listJsonPaths(dir)
-  const items: T[] = []
-  for (const path of paths) {
-    const item = await readItem<T>(path, migrate)
-    if (item) items.push(item)
-  }
-  return items
+  if (paths.length === 0) return []
+
+  const results: Array<T | null> = new Array(paths.length)
+  const limit = Math.max(1, Math.min(DEFAULT_LIST_CONCURRENCY, paths.length))
+  let next = 0
+
+  const workers = Array.from({ length: limit }, async () => {
+    for (;;) {
+      const index = next
+      next += 1
+      if (index >= paths.length) return
+      results[index] = await readItem<T>(paths[index], migrate)
+    }
+  })
+  await Promise.all(workers)
+
+  return results.filter((item): item is T => Boolean(item))
 }
 
 export const claimItem = <T>(
