@@ -1,6 +1,7 @@
 import { Codex } from '@openai/codex-sdk'
 
 import { appendLog } from '../log/append.js'
+import { normalizeUsage } from '../shared/utils.js'
 
 import { loadCodexSettings } from './openai.js'
 
@@ -17,21 +18,6 @@ type RunResult = {
 type LogContext = Record<string, unknown>
 
 const codex = new Codex()
-
-const normalizeUsage = (
-  usage: { input_tokens: number; output_tokens: number } | null,
-): TokenUsage | undefined => {
-  if (!usage) return undefined
-  const input = usage.input_tokens
-  const output = usage.output_tokens
-  if (!Number.isFinite(input) && !Number.isFinite(output)) return undefined
-  const result: TokenUsage = {}
-  if (Number.isFinite(input)) result.input = input
-  if (Number.isFinite(output)) result.output = output
-  if (Number.isFinite(input) && Number.isFinite(output))
-    result.total = input + output
-  return result
-}
 
 export const runCodexSdk = async (params: {
   role: SdkRole

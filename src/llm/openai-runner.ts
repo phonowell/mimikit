@@ -1,3 +1,5 @@
+import { normalizeChatUsage, normalizeUsage } from '../shared/utils.js'
+
 import { loadCodexSettings, resolveOpenAiModel } from './openai.js'
 
 import type { TokenUsage } from '../types/usage.js'
@@ -18,39 +20,6 @@ type ChatUsage = {
   prompt_tokens?: number
   completion_tokens?: number
   total_tokens?: number
-}
-
-const isFiniteNumber = (value: unknown): value is number =>
-  typeof value === 'number' && Number.isFinite(value)
-
-const normalizeUsage = (usage?: OpenAiUsage | null): TokenUsage | undefined => {
-  if (!usage) return undefined
-  const input = usage.input_tokens
-  const output = usage.output_tokens
-  if (!isFiniteNumber(input) && !isFiniteNumber(output)) return undefined
-  const result: TokenUsage = {}
-  if (isFiniteNumber(input)) result.input = input
-  if (isFiniteNumber(output)) result.output = output
-  if (isFiniteNumber(input) && isFiniteNumber(output))
-    result.total = input + output
-  else if (isFiniteNumber(usage.total_tokens)) result.total = usage.total_tokens
-  return result
-}
-
-const normalizeChatUsage = (
-  usage?: ChatUsage | null,
-): TokenUsage | undefined => {
-  if (!usage) return undefined
-  const input = usage.prompt_tokens
-  const output = usage.completion_tokens
-  if (!isFiniteNumber(input) && !isFiniteNumber(output)) return undefined
-  const result: TokenUsage = {}
-  if (isFiniteNumber(input)) result.input = input
-  if (isFiniteNumber(output)) result.output = output
-  if (isFiniteNumber(input) && isFiniteNumber(output))
-    result.total = input + output
-  else if (isFiniteNumber(usage.total_tokens)) result.total = usage.total_tokens
-  return result
 }
 
 const extractOutputText = (response: unknown): string => {

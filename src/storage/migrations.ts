@@ -1,3 +1,4 @@
+import { asBoolean, asNumber, asString } from '../shared/utils.js'
 import {
   PLANNER_RESULT_SCHEMA_VERSION,
   TASK_SCHEMA_VERSION,
@@ -15,15 +16,6 @@ import type {
   TriggerState,
   WorkerResult,
 } from '../types/tasks.js'
-
-const asString = (value: unknown): string | undefined =>
-  typeof value === 'string' ? value : undefined
-
-const asNumber = (value: unknown): number | undefined =>
-  typeof value === 'number' && Number.isFinite(value) ? value : undefined
-
-const asBoolean = (value: unknown): boolean | undefined =>
-  typeof value === 'boolean' ? value : undefined
 
 const normalizeTriggerState = (raw: unknown): TriggerState | undefined => {
   if (!raw || typeof raw !== 'object') return undefined

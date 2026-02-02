@@ -8,6 +8,7 @@
 - 类型：ESM + 严格类型，避免 any；文件 >200 行需拆分
 - Skill：命中 skill 必须调用
 - Windows 编码：统一使用 UTF-8（读写）
+- 谨慎使用 try/catch，避免吞掉错误；暴露错误优于静默失败
 
 ## 目录与路径
 - 入口：src/cli.ts
