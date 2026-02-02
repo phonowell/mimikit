@@ -16,6 +16,7 @@ import type {
   TriggerState,
   WorkerResult,
 } from '../types/tasks.js'
+import type { TokenUsage } from '../types/usage.js'
 
 const normalizeTriggerState = (raw: unknown): TriggerState | undefined => {
   if (!raw || typeof raw !== 'object') return undefined
@@ -55,12 +56,30 @@ const normalizeSchedule = (raw: unknown): TriggerSchedule | undefined => {
   return undefined
 }
 
+const parseUsage = (raw: unknown): TokenUsage | undefined => {
+  if (!raw || typeof raw !== 'object') return undefined
+  const usage = raw as { input?: unknown; output?: unknown; total?: unknown }
+  const input = asNumber(usage.input)
+  const output = asNumber(usage.output)
+  const total = asNumber(usage.total)
+  if (input === undefined && output === undefined && total === undefined)
+    return undefined
+  const next: TokenUsage = {}
+  if (input !== undefined) next.input = input
+  if (output !== undefined) next.output = output
+  if (total !== undefined) next.total = total
+  if (next.total === undefined && input !== undefined && output !== undefined)
+    next.total = input + output
+  return next
+}
+
 export const migrateTask = (raw: unknown): Task | null => {
   if (!raw || typeof raw !== 'object') return null
   const task = raw as Partial<Task>
   const id = asString(task.id)
   const prompt = asString(task.prompt)
   if (!id || !prompt) return null
+  const summary = asString(task.summary)
   const next: Task = {
     schemaVersion: TASK_SCHEMA_VERSION,
     id,
@@ -72,6 +91,7 @@ export const migrateTask = (raw: unknown): Task | null => {
     timeout: task.timeout ?? null,
     deferUntil: asString(task.deferUntil) ?? null,
   }
+  if (summary) next.summary = summary
   if (task.traceId) next.traceId = task.traceId
   if (task.parentTaskId) next.parentTaskId = task.parentTaskId
   if (task.sourceTriggerId) next.sourceTriggerId = task.sourceTriggerId
@@ -112,6 +132,8 @@ export const migratePlannerResult = (raw: unknown): PlannerResult | null => {
   const id = asString(result.id)
   const { status } = result
   if (!id || !status) return null
+  const durationMs = asNumber(result.durationMs)
+  const usage = parseUsage(result.usage)
   const next: PlannerResult = {
     schemaVersion: PLANNER_RESULT_SCHEMA_VERSION,
     id,
@@ -119,6 +141,7 @@ export const migratePlannerResult = (raw: unknown): PlannerResult | null => {
     attempts: asNumber(result.attempts) ?? 0,
     completedAt: asString(result.completedAt) ?? new Date().toISOString(),
   }
+  if (result.summary) next.summary = result.summary
   if (Array.isArray(result.tasks)) next.tasks = result.tasks
   if (Array.isArray(result.triggers)) next.triggers = result.triggers
   if (result.question) next.question = result.question
@@ -127,6 +150,8 @@ export const migratePlannerResult = (raw: unknown): PlannerResult | null => {
 
   if (result.default) next.default = result.default
   if (result.error) next.error = result.error
+  if (durationMs !== undefined) next.durationMs = durationMs
+  if (usage) next.usage = usage
   if (result.traceId) next.traceId = result.traceId
   return next
 }
@@ -137,16 +162,20 @@ export const migrateWorkerResult = (raw: unknown): WorkerResult | null => {
   const id = asString(result.id)
   const { status } = result
   if (!id || !status) return null
+  const durationMs = asNumber(result.durationMs)
+  const usage = parseUsage(result.usage)
   const taskRaw = result.task
   let task: WorkerResult['task']
   if (taskRaw && typeof taskRaw === 'object') {
     const prompt = asString((taskRaw as { prompt?: unknown }).prompt) ?? ''
+    const summary = asString((taskRaw as { summary?: unknown }).summary)
     const priority = asNumber((taskRaw as { priority?: unknown }).priority) ?? 5
     const createdAt =
       asString((taskRaw as { createdAt?: unknown }).createdAt) ??
       new Date().toISOString()
     const timeout = asNumber((taskRaw as { timeout?: unknown }).timeout) ?? null
     task = { prompt, priority, createdAt, timeout }
+    if (summary) task.summary = summary
     const traceId = asString((taskRaw as { traceId?: unknown }).traceId)
     const parentTaskId = asString(
       (taskRaw as { parentTaskId?: unknown }).parentTaskId,
@@ -176,7 +205,8 @@ export const migrateWorkerResult = (raw: unknown): WorkerResult | null => {
   if (result.traceId) next.traceId = result.traceId
   if (result.sourceTriggerId) next.sourceTriggerId = result.sourceTriggerId
   if (result.startedAt) next.startedAt = result.startedAt
-  if (result.durationMs !== undefined) next.durationMs = result.durationMs
+  if (durationMs !== undefined) next.durationMs = durationMs
+  if (usage) next.usage = usage
   if (task) next.task = task
   return next
 }
@@ -187,6 +217,13 @@ export const migrateTaskStatus = (raw: unknown): TaskStatus | null => {
   const id = asString(status.id)
   const completedAt = asString(status.completedAt)
   if (!id || !status.status || !completedAt) return null
+  const durationMs = asNumber(status.durationMs)
+  const usage = parseUsage(status.usage)
+  const role =
+    status.role === 'planner' || status.role === 'worker'
+      ? status.role
+      : undefined
+  const summary = asString(status.summary)
   const next: TaskStatus = {
     schemaVersion: TASK_STATUS_SCHEMA_VERSION,
     id,
@@ -194,6 +231,10 @@ export const migrateTaskStatus = (raw: unknown): TaskStatus | null => {
     completedAt,
     resultId: asString(status.resultId) ?? id,
   }
+  if (role) next.role = role
+  if (summary) next.summary = summary
+  if (durationMs !== undefined) next.durationMs = durationMs
+  if (usage) next.usage = usage
   if (status.sourceTriggerId) next.sourceTriggerId = status.sourceTriggerId
   if (status.failureReason) next.failureReason = status.failureReason
   if (status.traceId) next.traceId = status.traceId

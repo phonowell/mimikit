@@ -11,7 +11,7 @@
 
 ## 组件
 - Supervisor：主循环，调度/恢复/记录
-- Teller：面向用户的 LLM（reply/ask_user/list/cancel 等工具）
+- Teller：面向用户的 LLM（reply/ask_user/list/cancel 等工具），不执行任务，所有请求转交 Planner
 - Planner：目标澄清与任务/触发器生成
 - Worker：执行子任务（Codex SDK + shell）
 - Memory：归档/检索，供 Teller/Planner/Worker 使用
@@ -19,7 +19,7 @@
 
 ## 核心流程（高层）
 1. Supervisor tick：维护历史、处理触发器、派发 Planner/Worker、收集结果、唤醒 Teller。
-2. Teller 被输入/结果唤醒，读取 history + memory + inbox + teller_inbox，输出工具调用。
+2. Teller 被输入/结果唤醒，读取 history + memory + inbox + teller_inbox，将用户请求全部委派给 Planner 并输出工具调用。
 3. Planner 消费 planner/queue，生成 tasks/triggers 或 needs_input。
 4. Worker 消费 worker/queue，执行任务并写入结果。
 

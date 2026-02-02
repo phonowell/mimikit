@@ -2,6 +2,7 @@ import { writeJson } from '../fs/json.js'
 import { readHistory, writeHistory } from '../storage/history.js'
 import { migrateTask } from '../storage/migrations.js'
 import { listItems, removeItem } from '../storage/queue.js'
+import { summaryFromCandidates } from '../tasks/summary.js'
 import { nowIso } from '../time.js'
 import {
   PLANNER_RESULT_SCHEMA_VERSION,
@@ -17,6 +18,7 @@ export const recoverRunning = async (paths: StatePaths) => {
     migrateTask,
   )
   for (const task of plannerRunning) {
+    const summary = summaryFromCandidates([task.summary, task.prompt])
     const result: PlannerResult = {
       schemaVersion: PLANNER_RESULT_SCHEMA_VERSION,
       id: task.id,
@@ -24,6 +26,7 @@ export const recoverRunning = async (paths: StatePaths) => {
       attempts: task.attempts,
       error: 'planner interrupted',
       completedAt: nowIso(),
+      ...(summary ? { summary } : {}),
       ...(task.traceId ? { traceId: task.traceId } : {}),
     }
     await writeJson(`${paths.plannerResults}/${task.id}.json`, result)
@@ -32,8 +35,10 @@ export const recoverRunning = async (paths: StatePaths) => {
 
   const workerRunning = await listItems<Task>(paths.workerRunning, migrateTask)
   for (const task of workerRunning) {
+    const summary = summaryFromCandidates([task.summary, task.prompt])
     const taskSnapshot = {
       prompt: task.prompt,
+      ...(summary ? { summary } : {}),
       priority: task.priority,
       createdAt: task.createdAt,
       timeout: task.timeout ?? null,

@@ -20,7 +20,7 @@ inbox.json + history.json（Host 写入）
   ↓
 Supervisor 唤醒 Teller
   ↓
-Teller 回复用户 + 委派 Planner → 立即休眠
+Teller 仅转交 Planner（不执行任务）并给出简短回复 → 立即休眠
   ↓
 planner/queue/ → Planner → planner/results/
   ↓
@@ -38,7 +38,7 @@ triggers/（schedule/conditional）→ Supervisor 评估 → 触发 oneshot 入�
 ```
 
 ## 角色分工
-- Teller：回复用户，必要时 delegate Planner
+- Teller：仅转交 Planner 并汇报结果，不执行任务
 - Planner：规划任务/触发器并设置优先级/超时（默认不拆分）
 - Worker：执行 oneshot 任务并产出结果
 

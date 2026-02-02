@@ -3,6 +3,7 @@ import { writeItem } from '../storage/queue.js'
 import { writeTrigger } from '../storage/triggers.js'
 import { nowIso } from '../time.js'
 import { TASK_SCHEMA_VERSION, TRIGGER_SCHEMA_VERSION } from '../types/schema.js'
+import { summaryFromCandidates } from '../tasks/summary.js'
 
 import type { ToolContext } from './context.js'
 import type { Condition, Task, Trigger } from '../types/tasks.js'
@@ -20,6 +21,7 @@ export const delegate = async (ctx: ToolContext, args: DelegateArgs) => {
   const priority = args.priority ?? 5
   const createdAt = nowIso()
   const trace = args.traceId ? { traceId: args.traceId } : {}
+  const summary = summaryFromCandidates([args.prompt])
 
   if (ctx.role === 'teller') {
     const id = newId()
@@ -28,6 +30,7 @@ export const delegate = async (ctx: ToolContext, args: DelegateArgs) => {
       id,
       type: 'oneshot',
       prompt: args.prompt,
+      ...(summary ? { summary } : {}),
       priority,
       createdAt,
       attempts: 0,
@@ -64,6 +67,7 @@ export const delegate = async (ctx: ToolContext, args: DelegateArgs) => {
     id,
     type: 'oneshot',
     prompt: args.prompt,
+    ...(summary ? { summary } : {}),
     priority,
     createdAt,
     attempts: 0,

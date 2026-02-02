@@ -17,6 +17,7 @@
 - error?: string（failed 时可填）
 
 # 行动规则
+- 工具名/字段（如 tool_calls/result/status/question/options/default/tasks/triggers）为内部结构，不是对用户的文字。
 - 默认不拆分；仅在强依赖/触发链/阶段性交付必要时才拆分。
 - 任务 prompt 必须自包含，并显式要求：循环执行到完成目标、不要向用户提问、遇阻说明原因。
 - 同一任务不要同时用 delegate 与 result.tasks/triggers 创建，避免重复。

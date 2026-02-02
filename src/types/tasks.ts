@@ -1,4 +1,5 @@
 import type { Id, ISODate } from './common.js'
+import type { TokenUsage } from './usage.js'
 
 export type TaskType = 'oneshot'
 export type TriggerType = 'recurring' | 'scheduled' | 'conditional'
@@ -52,6 +53,7 @@ export type Task = {
   traceId?: Id
   parentTaskId?: Id
   prompt: string
+  summary?: string
   priority: number
   createdAt: ISODate
   attempts: number
@@ -65,6 +67,7 @@ export type PlannerTaskSpec = {
   id?: Id
   type?: TaskType
   prompt: string
+  summary?: string
   priority?: number
   timeout?: number | null
   deferUntil?: ISODate | null
@@ -101,6 +104,9 @@ export type PlannerResult = {
   attempts: number
   traceId?: Id
   completedAt: ISODate
+  summary?: string
+  durationMs?: number
+  usage?: TokenUsage
 }
 
 export type WorkerResult = {
@@ -117,8 +123,10 @@ export type WorkerResult = {
   startedAt?: ISODate
   completedAt: ISODate
   durationMs?: number
+  usage?: TokenUsage
   task?: {
     prompt: string
+    summary?: string
     priority: number
     createdAt: ISODate
     timeout?: number | null
@@ -132,9 +140,13 @@ export type WorkerResult = {
 export type TaskStatus = {
   schemaVersion?: number
   id: Id
-  status: 'done' | 'failed'
+  status: 'done' | 'failed' | 'needs_input'
+  role?: 'planner' | 'worker'
   completedAt: ISODate
   resultId: Id
+  summary?: string
+  durationMs?: number
+  usage?: TokenUsage
   sourceTriggerId?: Id
   failureReason?: 'timeout' | 'error' | 'killed'
   traceId?: Id

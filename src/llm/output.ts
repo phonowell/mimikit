@@ -8,7 +8,7 @@ export type PlannerResultLine = Pick<
   'status' | 'question' | 'options' | 'default' | 'error' | 'tasks' | 'triggers'
 >
 
-const parseJsonObject = (output: string): unknown | null => {
+export const parseJsonObject = (output: string): unknown | null => {
   const trimmed = output.trim()
   if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) return null
   try {

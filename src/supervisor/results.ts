@@ -15,6 +15,7 @@ import { upsertTaskStatus } from '../storage/task-status.js'
 import { appendTellerInbox } from '../storage/teller-inbox.js'
 import { readTrigger, writeTrigger } from '../storage/triggers.js'
 import { taskFromTrigger } from '../tasks/from-trigger.js'
+import { summaryFromCandidates } from '../tasks/summary.js'
 import { nowIso } from '../time.js'
 import {
   TASK_SCHEMA_VERSION,
@@ -88,11 +89,13 @@ export const processPlannerResults = async (paths: StatePaths) => {
           const id = spec.id ?? newId()
           const traceId = spec.traceId ?? result.traceId
           const parentTaskId = spec.parentTaskId ?? result.id
+          const summary = summaryFromCandidates([spec.summary, spec.prompt])
           const task: Task = {
             schemaVersion: TASK_SCHEMA_VERSION,
             id,
             type: spec.type ?? 'oneshot',
             prompt: spec.prompt,
+            ...(summary ? { summary } : {}),
             priority: spec.priority ?? 5,
             createdAt: nowIso(),
             attempts: 0,
@@ -133,6 +136,28 @@ export const processPlannerResults = async (paths: StatePaths) => {
         }
       }
     }
+    const summary = summaryFromCandidates([
+      result.summary,
+      result.question,
+      result.tasks?.[0]?.summary,
+      result.tasks?.[0]?.prompt,
+      result.triggers?.[0]?.prompt,
+      result.error,
+    ])
+    await upsertTaskStatus(paths.taskStatus, {
+      schemaVersion: TASK_STATUS_SCHEMA_VERSION,
+      id: result.id,
+      status: result.status,
+      role: 'planner',
+      completedAt: result.completedAt,
+      resultId: result.id,
+      ...(summary ? { summary } : {}),
+      ...(result.durationMs !== undefined
+        ? { durationMs: result.durationMs }
+        : {}),
+      ...(result.usage ? { usage: result.usage } : {}),
+      ...(result.traceId ? { traceId: result.traceId } : {}),
+    })
     await appendLog(paths.log, {
       event: 'planner_result',
       taskId: result.id,
@@ -171,11 +196,16 @@ export const processWorkerResults = async (
         config.retry.backoffMs > 0
           ? new Date(Date.now() + config.retry.backoffMs).toISOString()
           : null
+      const summary = summaryFromCandidates([
+        result.task.summary,
+        result.task.prompt,
+      ])
       const retryTask: Task = {
         schemaVersion: TASK_SCHEMA_VERSION,
         id: result.id,
         type: 'oneshot',
         prompt: result.task.prompt,
+        ...(summary ? { summary } : {}),
         priority: result.task.priority,
         createdAt: result.task.createdAt,
         attempts: result.attempts,
@@ -204,12 +234,22 @@ export const processWorkerResults = async (
       continue
     }
 
+    const summary = summaryFromCandidates([
+      result.task?.summary,
+      result.task?.prompt,
+    ])
     const taskStatus = {
       schemaVersion: TASK_STATUS_SCHEMA_VERSION,
       id: result.id,
       status: result.status,
+      role: 'worker' as const,
       completedAt: result.completedAt,
       resultId: result.id,
+      ...(summary ? { summary } : {}),
+      ...(result.durationMs !== undefined
+        ? { durationMs: result.durationMs }
+        : {}),
+      ...(result.usage ? { usage: result.usage } : {}),
       ...(result.sourceTriggerId
         ? { sourceTriggerId: result.sourceTriggerId }
         : {}),

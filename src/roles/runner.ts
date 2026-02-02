@@ -1,4 +1,4 @@
-import { extractToolCalls, stripToolCalls } from '../llm/output.js'
+import { extractToolCalls, parseJsonObject, stripToolCalls } from '../llm/output.js'
 import { plannerOutputSchema, tellerOutputSchema } from '../llm/schemas.js'
 import { runCodexSdk } from '../llm/sdk-runner.js'
 import { appendLog } from '../log/append.js'
@@ -28,6 +28,70 @@ const resolveContextPromptMode = (params: {
   return params.history.length > 0 || params.memory.length > 0
     ? 'full'
     : 'minimal'
+}
+
+const TELLER_TOOL_NAMES = new Set([
+  'reply',
+  'delegate',
+  'ask_user',
+  'remember',
+  'list_tasks',
+  'cancel_task',
+])
+
+const isPlainObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+
+const validateTellerOutput = (
+  output: string,
+): { ok: true } | { ok: false; reason: string } => {
+  const parsed = parseJsonObject(output)
+  if (!isPlainObject(parsed)) return { ok: false, reason: 'not_json_object' }
+  const rootKeys = Object.keys(parsed)
+  if (rootKeys.length !== 1 || rootKeys[0] !== 'tool_calls')
+    return { ok: false, reason: 'unexpected_root_keys' }
+  const toolCalls = (parsed as { tool_calls?: unknown }).tool_calls
+  if (!Array.isArray(toolCalls))
+    return { ok: false, reason: 'tool_calls_not_array' }
+  if (toolCalls.length === 0)
+    return { ok: false, reason: 'tool_calls_empty' }
+  for (const call of toolCalls) {
+    if (!isPlainObject(call)) return { ok: false, reason: 'tool_call_not_object' }
+    const keys = Object.keys(call)
+    if (!keys.includes('tool') || !keys.includes('args'))
+      return { ok: false, reason: 'tool_call_missing_fields' }
+    if (keys.some((key) => key !== 'tool' && key !== 'args'))
+      return { ok: false, reason: 'tool_call_extra_fields' }
+    const tool = (call as { tool?: unknown }).tool
+    if (typeof tool !== 'string' || !TELLER_TOOL_NAMES.has(tool))
+      return { ok: false, reason: 'tool_not_allowed' }
+    const args = (call as { args?: unknown }).args
+    if (!isPlainObject(args)) return { ok: false, reason: 'args_not_object' }
+  }
+  return { ok: true }
+}
+
+const buildRepairBlock = (reason: string, output: string): string => {
+  const trimmed = output.trim()
+  const maxChars = 1200
+  const snippet =
+    trimmed.length === 0
+      ? '(empty)'
+      : trimmed.length <= maxChars
+        ? trimmed
+        : `${trimmed.slice(0, maxChars)}...<truncated ${
+            trimmed.length - maxChars
+          } chars>`
+  return [
+    '## repair',
+    'The previous output did not match the required JSON schema.',
+    `Reason: ${reason}`,
+    'Return ONLY a single JSON object with the shape:',
+    '{"tool_calls":[{"tool":"reply","args":{"text":"..."}}]}',
+    'No extra text, no markdown, no code fences.',
+    '## previous_output',
+    snippet,
+  ].join('\n')
 }
 
 export const runTeller = async (params: {
@@ -302,35 +366,157 @@ export const runTeller = async (params: {
     elapsedMs,
     ...(usage ? { usage } : {}),
   })
+  let outputToUse = output
+  let usageToUse = usage
+  let elapsedToUse = elapsedMs
+  let repairUsed = false
+  const validation = validateTellerOutput(outputToUse)
+  if (!validation.ok) {
+    await safe(
+      'appendLog: llm_output_repair_started (teller)',
+      () =>
+        appendLog(params.ctx.paths.log, {
+          event: 'llm_output_repair_started',
+          role: params.ctx.role,
+          reason: validation.reason,
+          outputChars: outputToUse.length,
+        }),
+      { fallback: undefined },
+    )
+    try {
+      const repairBasePrompt = await buildTellerPrompt({
+        workDir: params.ctx.workDir,
+        history: params.history,
+        memory: params.memory,
+        inputs: params.inputs,
+        events: params.events,
+        promptMode: 'minimal',
+      })
+      const repairPrompt = `${repairBasePrompt}\n\n${buildRepairBlock(
+        validation.reason,
+        outputToUse,
+      )}`
+      const repairResult = await runCodexSdk({
+        role: 'teller',
+        prompt: repairPrompt,
+        workDir: params.ctx.workDir,
+        timeoutMs: params.timeoutMs,
+        outputSchema: tellerOutputSchema,
+        logPath: params.ctx.paths.log,
+        logContext: {
+          promptMode: 'minimal',
+          historyCount: params.history.length,
+          memoryCount: params.memory.length,
+          inputsCount: params.inputs.length,
+          eventsCount: params.events.length,
+          injectContext,
+          repairAttempt: 1,
+          repairReason: validation.reason,
+        },
+        ...(params.model ? { model: params.model } : {}),
+      })
+      const repairOutputPath = await writeLlmOutput({
+        dir: params.ctx.paths.llmDir,
+        role: params.ctx.role,
+        output: repairResult.output,
+      })
+      await appendLog(params.ctx.paths.log, {
+        event: 'llm_activity',
+        role: params.ctx.role,
+        outputPath: repairOutputPath,
+        elapsedMs: repairResult.elapsedMs,
+        ...(repairResult.usage ? { usage: repairResult.usage } : {}),
+        repairAttempt: 1,
+      })
+      const repairValidation = validateTellerOutput(repairResult.output)
+      if (repairValidation.ok) {
+        outputToUse = repairResult.output
+        usageToUse = repairResult.usage
+        elapsedToUse = repairResult.elapsedMs
+        repairUsed = true
+        await safe(
+          'appendLog: llm_output_repair_finished (teller)',
+          () =>
+            appendLog(params.ctx.paths.log, {
+              event: 'llm_output_repair_finished',
+              role: params.ctx.role,
+              outputChars: outputToUse.length,
+            }),
+          { fallback: undefined },
+        )
+      } else {
+        await safe(
+          'appendLog: llm_output_repair_failed (teller)',
+          () =>
+            appendLog(params.ctx.paths.log, {
+              event: 'llm_output_repair_failed',
+              role: params.ctx.role,
+              reason: repairValidation.reason,
+              outputChars: repairResult.output.length,
+            }),
+          { fallback: undefined },
+        )
+      }
+    } catch (error) {
+      await safe(
+        'appendLog: llm_output_repair_failed (teller)',
+        () =>
+          appendLog(params.ctx.paths.log, {
+            event: 'llm_output_repair_failed',
+            role: params.ctx.role,
+            error: error instanceof Error ? error.message : String(error),
+          }),
+        { fallback: undefined },
+      )
+    }
+  }
+
   const toolCtx: ToolContext = {
     ...params.ctx,
-    ...(usage !== undefined ? { llmUsage: usage } : {}),
-    llmElapsedMs: elapsedMs,
+    ...(usageToUse !== undefined ? { llmUsage: usageToUse } : {}),
+    llmElapsedMs: elapsedToUse,
   }
-  const calls = extractToolCalls(output)
+  let calls = extractToolCalls(outputToUse)
+  const hasNeedsInputEvent = params.events.some(
+    (event) => event.kind === 'needs_input',
+  )
+  const shouldAutoDelegate = params.inputs.length > 0 && !hasNeedsInputEvent
+  let forcedDelegateUsed = false
+
+  if (shouldAutoDelegate) {
+    const filteredCalls = calls.filter((call) => call.tool !== 'ask_user')
+    if (filteredCalls.length !== calls.length) {
+      calls = filteredCalls
+      forcedDelegateUsed = true
+    }
+  }
+
   const forceTag = process.env.MIMIKIT_SMOKE_DELEGATE_TAG?.trim()
   const forceDelegate =
     Boolean(forceTag) &&
     params.inputs.some((input) => input.includes(forceTag as string))
-  let forcedDelegateUsed = false
-  if (forceDelegate && !calls.some((call) => call.tool === 'delegate')) {
+  const mustDelegate = shouldAutoDelegate || forceDelegate
+
+  if (mustDelegate && !calls.some((call) => call.tool === 'delegate')) {
     const marker = forceTag as string
-    const cleaned = params.inputs
-      .map((input) => input.split(marker).join('').trim())
-      .filter(Boolean)
-      .join('\n')
+    const cleaned = forceDelegate
+      ? params.inputs
+          .map((input) => input.split(marker).join('').trim())
+          .filter(Boolean)
+          .join('\n')
+      : ''
     calls.unshift({
       tool: 'delegate',
       args: { prompt: cleaned || params.inputs.join('\n') },
     })
     forcedDelegateUsed = true
   }
-  if (forceDelegate && !calls.some((call) => call.tool === 'reply')) {
+  if (mustDelegate && !calls.some((call) => call.tool === 'reply')) {
     calls.push({ tool: 'reply', args: { text: 'Working on it.' } })
     forcedDelegateUsed = true
   }
   for (const call of calls) await executeTool(toolCtx, call)
-  const stripped = stripToolCalls(output).trim()
+  const stripped = stripToolCalls(outputToUse).trim()
   let fallbackUsed = false
   if (calls.length === 0) {
     const text = stripped || '（系统）未生成有效的工具调用，请重试。'
@@ -344,11 +530,12 @@ export const runTeller = async (params: {
     toolCalls: calls.length,
     fallbackUsed,
     forcedDelegate: forcedDelegateUsed,
+    repairUsed,
     outputChars: stripped.length,
-    ...(usage ? { usage } : {}),
-    elapsedMs,
+    ...(usageToUse ? { usage: usageToUse } : {}),
+    elapsedMs: elapsedToUse,
   })
-  return { calls, output: stripped, usage, elapsedMs }
+  return { calls, output: stripped, usage: usageToUse, elapsedMs: elapsedToUse }
 }
 
 export const runPlanner = async (params: {

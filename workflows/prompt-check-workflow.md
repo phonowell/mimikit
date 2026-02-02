@@ -10,7 +10,7 @@
 
 ## 默认输入
 - teller（多输入，按顺序传参）：
-  1) "我在 Windows 上维护 Mimikit，需要统一三角色 prompt 风格，要求中文 + XML-like 标签。"
+  1) "我在 Windows 上维护 Mimikit，需要统一三角色 prompt 风格，要求中文 + Markdown 标题段落。"
   2) "请补一条优先级规则，并把示例改成行内 JSON；不要向我提问。"
 - planner（单请求）：
   "把 prompt 检查流程标准化：1) 生成 report；2) 生成 preview；3) 记录结论到 docs/reports/prompt-review.md。要求每天 09:00 自动触发；如需权限或路径信息缺失，返回 needs_input。"
@@ -21,9 +21,9 @@
 ## 执行步骤
 1) 严格逐条执行：一次只运行一条命令，立刻分析并记录，不允许先批量执行再集中分析。
 2) Teller 检查：
-   - pnpm -s prompt:report teller "我在 Windows 上维护 Mimikit，需要统一三角色 prompt 风格，要求中文 + XML-like 标签。" "请补一条优先级规则，并把示例改成行内 JSON；不要向我提问。"
+   - pnpm -s prompt:report teller "我在 Windows 上维护 Mimikit，需要统一三角色 prompt 风格，要求中文 + Markdown 标题段落。" "请补一条优先级规则，并把示例改成行内 JSON；不要向我提问。"
    - 记录 report 数据与观察结论。
-   - pnpm -s prompt:preview teller "我在 Windows 上维护 Mimikit，需要统一三角色 prompt 风格，要求中文 + XML-like 标签。" "请补一条优先级规则，并把示例改成行内 JSON；不要向我提问。"
+   - pnpm -s prompt:preview teller "我在 Windows 上维护 Mimikit，需要统一三角色 prompt 风格，要求中文 + Markdown 标题段落。" "请补一条优先级规则，并把示例改成行内 JSON；不要向我提问。"
    - 角色代入：扮演 teller，判断是否能快速给出正确工具调用与回复。
 3) Planner 检查：
    - pnpm -s prompt:report planner "把 prompt 检查流程标准化：1) 生成 report；2) 生成 preview；3) 记录结论到 docs/reports/prompt-review.md。要求每天 09:00 自动触发；如需权限或路径信息缺失，返回 needs_input。"
@@ -41,7 +41,7 @@
    - rules：关键约束覆盖 needs_input/failed/重复派发等边界。
    - output：JSON-only（或纯文本）要求明确；示例“仅参考”。
 4) 落地优化：
-   - 只改 prompts/agents 下文案；保持 XML-like 标签结构不变。
+   - 只改 prompts/agents 下文案；保持 Markdown 标题段落结构不变。
    - 以最小改动达成更强约束/更少歧义。
 5) 复验：重复步骤 2-4，逐条执行并逐条分析。
 

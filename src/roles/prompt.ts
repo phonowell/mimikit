@@ -85,11 +85,15 @@ const formatTaskResults = (events: TellerEvent[]): string => {
     .join('\n')
 }
 
-const wrapTag = (tag: string, content: string): string =>
-  `<${tag}>\n${content}\n</${tag}>`
+const wrapSection = (tag: string, content: string): string => {
+  const header = `## ${tag}`
+  return content ? `${header}\n${content}` : header
+}
 
 export const renderPromptSections = (sections: PromptSection[]): string =>
-  sections.map((section) => wrapTag(section.tag, section.content)).join('\n\n')
+  sections
+    .map((section) => wrapSection(section.tag, section.content))
+    .join('\n\n')
 
 const resolvePromptMode = (mode?: PromptMode): PromptMode => mode ?? 'full'
 

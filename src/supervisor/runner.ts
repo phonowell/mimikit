@@ -17,6 +17,7 @@ import {
   readTellerInbox,
   removeTellerInboxItems,
 } from '../storage/teller-inbox.js'
+import { summaryFromCandidates } from '../tasks/summary.js'
 import { nowIso } from '../time.js'
 import {
   PLANNER_RESULT_SCHEMA_VERSION,
@@ -154,12 +155,22 @@ export const runPlannerTask = async (params: {
   }
   if (status === 'failed' && !error) error = 'planner failed'
 
+  const summary = summaryFromCandidates([
+    params.task.summary,
+    params.task.prompt,
+  ])
+  const durationMs = Number.isFinite(result.elapsedMs)
+    ? Math.max(0, result.elapsedMs)
+    : undefined
   const plannerResult: PlannerResult = {
     schemaVersion: PLANNER_RESULT_SCHEMA_VERSION,
     id: params.task.id,
     status,
     attempts: params.task.attempts,
     completedAt: nowIso(),
+    ...(summary ? { summary } : {}),
+    ...(durationMs !== undefined ? { durationMs } : {}),
+    ...(result.usage ? { usage: result.usage } : {}),
     ...(params.task.traceId ? { traceId: params.task.traceId } : {}),
     ...(question ? { question } : {}),
     ...(options ? { options } : {}),
@@ -182,8 +193,13 @@ export const runWorkerTask = async (params: {
   timeoutMs: number
 }): Promise<WorkerResult> => {
   const startedAt = Date.now()
+  const summary = summaryFromCandidates([
+    params.task.summary,
+    params.task.prompt,
+  ])
   const taskSnapshot = {
     prompt: params.task.prompt,
+    ...(summary ? { summary } : {}),
     priority: params.task.priority,
     createdAt: params.task.createdAt,
     timeout: params.task.timeout ?? null,
@@ -238,6 +254,7 @@ export const runWorkerTask = async (params: {
       startedAt: nowIso(),
       completedAt: nowIso(),
       durationMs: Math.max(0, Date.now() - startedAt),
+      ...(llmResult.usage ? { usage: llmResult.usage } : {}),
       task: taskSnapshot,
       ...(params.task.traceId ? { traceId: params.task.traceId } : {}),
       ...(params.task.sourceTriggerId

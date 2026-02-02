@@ -49,7 +49,7 @@
 - subagent 限制：
   - 子会话仅注入 AGENTS.md + TOOLS.md。
 - skills prompt：
-  - `<available_skills>` XML-like 结构 + 只读一个 skill 的流程指令。
+  - `available_skills` 段落（标题区）+ 只读一个 skill 的流程指令。
 
 ## 5. extraSystemPrompt 来源
 - 群聊 intro / group system prompt。
@@ -65,7 +65,7 @@
 - Heartbeat：
   - 默认 prompt 强制读 HEARTBEAT.md，空则 HEARTBEAT_OK。
 - Reasoning Tag Hint：
-  - 特定 provider 下强制 <think>/<final> 输出。
+  - 特定 provider 下强制 think/final 段落输出。
 
 ## 7. Prompt 观测与报表
 - systemPromptReport 统计：
@@ -76,7 +76,7 @@
 ## 8. 对 Mimikit 的直接借鉴方向
 - 引入 promptMode（full/minimal/none）分角色降噪。
 - 建立 prompt 预算报表（按段统计字符/占比）。
-- extraSystemPrompt 独立标签区，统一入口。
+- extraSystemPrompt 独立段落区，统一入口。
 - 工具区动态化：按可用工具生成列表，提示大小写敏感。
 - 注入文件截断策略：head+tail+marker，避免单文件挤爆。
 

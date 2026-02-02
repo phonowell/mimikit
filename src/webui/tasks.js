@@ -32,6 +32,18 @@ export function bindTasksModal({
     return parts.join(' · ')
   }
 
+  function formatDuration(value) {
+    const ms = asNumber(value)
+    if (ms === null) return ''
+    if (ms < 1000) return `${Math.round(ms)}ms`
+    const seconds = ms / 1000
+    if (seconds < 60)
+      return `${seconds.toFixed(seconds < 10 ? 1 : 0)}s`
+    const minutes = Math.floor(seconds / 60)
+    const remaining = seconds % 60
+    return `${minutes}m ${remaining.toFixed(remaining < 10 ? 1 : 0)}s`
+  }
+
   async function loadTasks() {
     if (!tasksList || !tasksMeta) return
     tasksMeta.textContent = 'Loading...'
@@ -94,6 +106,21 @@ export function bindTasksModal({
       status.textContent = task.status || 'pending'
       meta.appendChild(status)
 
+      if (task.role) {
+        const role = document.createElement('span')
+        role.className = 'task-role'
+        role.textContent = task.role
+        meta.appendChild(role)
+      }
+
+      const durationText = formatDuration(task.durationMs)
+      if (durationText) {
+        const duration = document.createElement('span')
+        duration.className = 'task-duration'
+        duration.textContent = `dur ${durationText}`
+        meta.appendChild(duration)
+      }
+
       const usageText = formatUsage(task.usage)
       if (usageText) {
         const usage = document.createElement('span')
@@ -106,7 +133,8 @@ export function bindTasksModal({
       if (time) {
         const timeEl = document.createElement('span')
         timeEl.className = 'task-time'
-        timeEl.textContent = formatDateTime(time)
+        const label = task.completedAt ? 'done' : 'created'
+        timeEl.textContent = `${label} ${formatDateTime(time)}`
         meta.appendChild(timeEl)
       }
 

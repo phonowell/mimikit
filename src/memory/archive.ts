@@ -2,6 +2,7 @@ import { appendFile, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 
 import { writeItem } from '../storage/queue.js'
+import { summaryFromCandidates } from '../tasks/summary.js'
 import { nowIso } from '../time.js'
 import { TASK_SCHEMA_VERSION } from '../types/schema.js'
 
@@ -95,11 +96,13 @@ const createWorkerTask = async (params: {
   prompt: string
   id: string
 }): Promise<Task> => {
+  const summary = summaryFromCandidates([params.prompt])
   const task: Task = {
     schemaVersion: TASK_SCHEMA_VERSION,
     id: params.id,
     type: 'oneshot',
     prompt: params.prompt,
+    ...(summary ? { summary } : {}),
     priority: 5,
     createdAt: nowIso(),
     attempts: 0,

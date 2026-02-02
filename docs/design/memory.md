@@ -95,7 +95,7 @@ Supervisor 在唤醒 Teller 前自动执行（代码）。
 [memory/2026-01-28-deploy.md] 上次部署使用了 Cloudflare Workers，遇到了超时问题……[truncated]
 ```
 
-每条命中带来源路径（方括号标注），内容超 300 字符截断。Teller 看到来源后如果需要完整内容，可委派 Planner 深入查询。
+每条命中带来源路径（方括号标注），内容超 300 字符截断。Teller 如需完整内容，直接委派 Planner 深入查询。
 
 ## 上下文注入预算
 
@@ -113,4 +113,4 @@ Supervisor 在唤醒 Teller 前自动执行（代码），历史会话和记忆�
 3. 单条超 500 字符截断，Teller 回复优先截断。
 4. 每条消息以 `createdAt` 为自然键，`createdAt + text` 去重。
 
-Teller 只使用自动注入的历史和记忆，不主动查询更多。若上下文不足，Teller 先基于已有信息快速回复，同时委派 Planner 补充上下文后跟进。
+Teller 只使用自动注入的历史和记忆，不主动查询更多。若上下文不足，Teller 直接委派 Planner 补充上下文并后续汇报，不自行补全内容。

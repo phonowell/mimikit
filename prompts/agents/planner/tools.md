@@ -1,5 +1,7 @@
 ## 工具（仅限以下，区分大小写）
 
+提示：工具名/参数为内部结构，不是对用户的文字。
+
 ### delegate
 用途：派发 Worker 任务或 conditional trigger。
 参数：
