@@ -2,10 +2,11 @@ import { resolve } from 'node:path'
 import { parseArgs } from 'node:util'
 
 import { defaultConfig } from './config.js'
+import { buildPaths } from './fs/paths.js'
 import { createHttpServer } from './http/index.js'
 import { loadCodexSettings } from './llm/openai.js'
 import { runRunsCli } from './log/cli.js'
-import { safe } from './log/safe.js'
+import { safe, setDefaultLogPath } from './log/safe.js'
 import { runMemoryCli } from './memory/cli.js'
 import { acquireInstanceLock } from './storage/instance-lock.js'
 import { Supervisor } from './supervisor/supervisor.js'
@@ -38,6 +39,7 @@ const checkIntervalValue = values['check-interval']
 
 const resolvedStateDir = resolve(stateDir)
 const resolvedWorkDir = resolve(workDir)
+setDefaultLogPath(buildPaths(resolvedStateDir).log)
 const instanceLock = await acquireInstanceLock(resolvedStateDir)
 await loadCodexSettings()
 

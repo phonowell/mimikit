@@ -68,9 +68,15 @@ export const withStoreLock = async <T>(
           continue
         }
       } catch (error) {
-        await logSafeError('withStoreLock: stat', error, {
-          meta: { path: lockPath },
-        })
+        const code =
+          error && typeof error === 'object' && 'code' in error
+            ? String((error as { code?: unknown }).code)
+            : null
+        if (code !== 'ENOENT') {
+          await logSafeError('withStoreLock: stat', error, {
+            meta: { path: lockPath },
+          })
+        }
       }
 
       await sleep(pollIntervalMs)
@@ -83,6 +89,7 @@ export const withStoreLock = async <T>(
     await safe('withStoreLock: unlink', () => unlink(lockPath), {
       fallback: undefined,
       meta: { path: lockPath },
+      ignoreCodes: ['ENOENT'],
     })
   }
 }

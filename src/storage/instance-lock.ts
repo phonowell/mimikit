@@ -30,6 +30,7 @@ const readLockData = async (path: string): Promise<LockData> => {
     {
       fallback: null,
       meta: { path },
+      ignoreCodes: ['ENOENT'],
     },
   )
   if (!raw) return {}
@@ -70,6 +71,7 @@ export const acquireInstanceLock = async (stateDir: string) => {
       await safe('instanceLock: unlink', () => unlink(lockPath), {
         fallback: undefined,
         meta: { path: lockPath },
+        ignoreCodes: ['ENOENT'],
       })
     }
     return { lockPath, release }
@@ -88,6 +90,7 @@ export const acquireInstanceLock = async (stateDir: string) => {
   await safe('instanceLock: unlink stale', () => unlink(lockPath), {
     fallback: undefined,
     meta: { path: lockPath },
+    ignoreCodes: ['ENOENT'],
   })
   const { handle } = await tryAcquire()
   const release = async () => {
@@ -98,6 +101,7 @@ export const acquireInstanceLock = async (stateDir: string) => {
     await safe('instanceLock: unlink', () => unlink(lockPath), {
       fallback: undefined,
       meta: { path: lockPath },
+      ignoreCodes: ['ENOENT'],
     })
   }
   return { lockPath, release }

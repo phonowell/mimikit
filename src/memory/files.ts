@@ -42,14 +42,14 @@ export const listMemoryFiles = async (params: {
       await import('node:fs/promises').then((fs) => fs.stat(longTerm))
       return true
     },
-    { fallback: false, meta: { path: longTerm } },
+    { fallback: false, meta: { path: longTerm }, ignoreCodes: ['ENOENT'] },
   )
   if (hasLongTerm) results.push({ path: longTerm, kind: 'longterm' })
 
   const memoryEntries = await safe(
     'listMemoryFiles: readdir memory',
     () => readdir(memoryDir),
-    { fallback: [], meta: { path: memoryDir } },
+    { fallback: [], meta: { path: memoryDir }, ignoreCodes: ['ENOENT'] },
   )
   for (const name of memoryEntries) {
     if (name === 'summary' || !name.endsWith('.md')) continue
@@ -62,7 +62,7 @@ export const listMemoryFiles = async (params: {
   const summaryEntries = await safe(
     'listMemoryFiles: readdir summary',
     () => readdir(summaryDir),
-    { fallback: [], meta: { path: summaryDir } },
+    { fallback: [], meta: { path: summaryDir }, ignoreCodes: ['ENOENT'] },
   )
   const monthly = new Set<string>()
   const daily: Array<{ day: string; path: string }> = []

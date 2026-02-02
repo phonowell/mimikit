@@ -8,4 +8,5 @@ export const listFiles = (dir: string): Promise<Dirent[]> =>
   safe('listFiles: readdir', () => readdir(dir, { withFileTypes: true }), {
     fallback: [],
     meta: { dir },
+    ignoreCodes: ['ENOENT'],
   })

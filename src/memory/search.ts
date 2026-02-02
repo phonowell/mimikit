@@ -77,7 +77,7 @@ const rgFallback = async (params: {
     const content = await safe(
       'rgFallback: readFile',
       () => readFile(file, 'utf8'),
-      { fallback: null, meta: { file } },
+      { fallback: null, meta: { file }, ignoreCodes: ['ENOENT'] },
     )
     if (content === null) continue
     hits.push({ source: file, content: content.slice(0, 300), score: 0.1 })
@@ -114,7 +114,7 @@ export const searchMemory = async (params: {
     const body = await safe(
       'searchMemory: readFile',
       () => readFile(entry.path, 'utf8'),
-      { fallback: null, meta: { file: entry.path } },
+      { fallback: null, meta: { file: entry.path }, ignoreCodes: ['ENOENT'] },
     )
     if (body === null) continue
     engine.addDoc({ body }, i)
@@ -132,7 +132,11 @@ export const searchMemory = async (params: {
       const content = await safe(
         'searchMemory: readFile (fallback)',
         () => readFile(entry.path, 'utf8'),
-        { fallback: null, meta: { file: entry.path } },
+        {
+          fallback: null,
+          meta: { file: entry.path },
+          ignoreCodes: ['ENOENT'],
+        },
       )
       if (content === null) continue
       const found = tokens.some((t) => content.toLowerCase().includes(t))
@@ -161,7 +165,7 @@ export const searchMemory = async (params: {
     const content = await safe(
       'searchMemory: readFile (result)',
       () => readFile(entry.path, 'utf8'),
-      { fallback: '', meta: { file: entry.path } },
+      { fallback: '', meta: { file: entry.path }, ignoreCodes: ['ENOENT'] },
     )
     hits.push({ source: entry.path, content: content.slice(0, 300), score })
     if (hits.length >= params.limit) break
@@ -180,7 +184,7 @@ export const searchMemory = async (params: {
     const content = await safe(
       'searchMemory: readFile (final fallback)',
       () => readFile(entry.path, 'utf8'),
-      { fallback: null, meta: { file: entry.path } },
+      { fallback: null, meta: { file: entry.path }, ignoreCodes: ['ENOENT'] },
     )
     if (content === null) continue
     const found = tokens.some((t) => content.toLowerCase().includes(t))

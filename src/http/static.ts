@@ -48,7 +48,7 @@ export const serveStatic = async (
   const content = await safe(
     'serveStatic: readFile',
     () => readFile(fullPath),
-    { fallback: null, meta: { filePath: fullPath } },
+    { fallback: null, meta: { filePath: fullPath }, ignoreCodes: ['ENOENT'] },
   )
   if (!content) {
     res.writeHead(404)
@@ -77,6 +77,7 @@ export const serveVendor = async (
     {
       fallback: null,
       meta: { filePath },
+      ignoreCodes: ['ENOENT'],
     },
   )
   if (!content) {

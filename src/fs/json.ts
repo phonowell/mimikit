@@ -12,6 +12,7 @@ export const readJson = async <T>(
   const raw = await safe('readJson: readFile', () => readFile(path, 'utf8'), {
     fallback: null,
     meta: { path },
+    ignoreCodes: ['ENOENT'],
   })
   if (raw !== null) {
     return safe('readJson: parse', () => JSON.parse(raw) as T, {
@@ -24,7 +25,7 @@ export const readJson = async <T>(
   const backupRaw = await safe(
     'readJson: readFile backup',
     () => readFile(backupPath, 'utf8'),
-    { fallback: null, meta: { path: backupPath } },
+    { fallback: null, meta: { path: backupPath }, ignoreCodes: ['ENOENT'] },
   )
   if (backupRaw !== null) {
     return safe('readJson: parse backup', () => JSON.parse(backupRaw) as T, {

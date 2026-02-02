@@ -3,7 +3,7 @@ import { buildPaths } from '../fs/paths.js'
 import { shortId } from '../ids.js'
 import { appendLog, rotateLogIfNeeded } from '../log/append.js'
 import { appendRunLog } from '../log/run-log.js'
-import { safe } from '../log/safe.js'
+import { safe, setDefaultLogPath } from '../log/safe.js'
 import {
   enqueueCommandInLane,
   getLaneStats,
@@ -48,6 +48,7 @@ export class Supervisor {
   constructor(config: SupervisorConfig) {
     this.config = config
     this.paths = buildPaths(config.stateDir)
+    setDefaultLogPath(this.paths.log)
   }
 
   async start() {

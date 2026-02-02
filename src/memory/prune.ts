@@ -54,13 +54,14 @@ export const pruneMemory = async (params: {
         await stat(longTerm)
         return true
       },
-      { fallback: false, meta: { path: longTerm } },
+      { fallback: false, meta: { path: longTerm }, ignoreCodes: ['ENOENT'] },
     )
     if (exists) {
       if (!params.dryRun) {
         await safe('pruneMemory: unlink longterm', () => unlink(longTerm), {
           fallback: undefined,
           meta: { path: longTerm },
+          ignoreCodes: ['ENOENT'],
         })
       }
       removed.push(longTerm)
@@ -70,7 +71,7 @@ export const pruneMemory = async (params: {
   const memoryEntries = await safe(
     'pruneMemory: readdir memory',
     () => readdir(memoryDir),
-    { fallback: [], meta: { path: memoryDir } },
+    { fallback: [], meta: { path: memoryDir }, ignoreCodes: ['ENOENT'] },
   )
   for (const name of memoryEntries) {
     if (name === 'summary' || !name.endsWith('.md')) continue
@@ -84,6 +85,7 @@ export const pruneMemory = async (params: {
         await safe('pruneMemory: unlink', () => unlink(fullPath), {
           fallback: undefined,
           meta: { path: fullPath },
+          ignoreCodes: ['ENOENT'],
         })
       }
       removed.push(fullPath)
@@ -93,7 +95,7 @@ export const pruneMemory = async (params: {
   const summaryEntries = await safe(
     'pruneMemory: readdir summary',
     () => readdir(summaryDir),
-    { fallback: [], meta: { path: summaryDir } },
+    { fallback: [], meta: { path: summaryDir }, ignoreCodes: ['ENOENT'] },
   )
   for (const name of summaryEntries) {
     if (!name.endsWith('.md')) continue
@@ -109,6 +111,7 @@ export const pruneMemory = async (params: {
         await safe('pruneMemory: unlink summary', () => unlink(fullPath), {
           fallback: undefined,
           meta: { path: fullPath },
+          ignoreCodes: ['ENOENT'],
         })
       }
       removed.push(fullPath)

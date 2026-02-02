@@ -39,7 +39,7 @@ export const removeItem = async (path: string): Promise<void> => {
   await safe(
     'removeItem: unlink',
     () => import('node:fs/promises').then((fs) => fs.unlink(path)),
-    { fallback: undefined, meta: { path } },
+    { fallback: undefined, meta: { path }, ignoreCodes: ['ENOENT'] },
   )
 }
 

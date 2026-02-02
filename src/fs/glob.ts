@@ -40,7 +40,7 @@ const walkFiles = async (root: string): Promise<string[]> => {
   const entries = await safe(
     'walkFiles: readdir',
     () => readdir(root, { withFileTypes: true }),
-    { fallback: [], meta: { root } },
+    { fallback: [], meta: { root }, ignoreCodes: ['ENOENT'] },
   )
   for (const entry of entries) {
     if (entry.isSymbolicLink()) continue
@@ -67,6 +67,7 @@ export const globMtime = async (
     const info = await safe('globMtime: stat', () => stat(file), {
       fallback: null,
       meta: { file },
+      ignoreCodes: ['ENOENT'],
     })
     if (!info) continue
     if (!latest || info.mtimeMs > latest) latest = info.mtimeMs

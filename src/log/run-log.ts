@@ -36,6 +36,7 @@ const pruneIfNeeded = async (
   const info = await safe('pruneRunLog: stat', () => stat(filePath), {
     fallback: null,
     meta: { path: filePath },
+    ignoreCodes: ['ENOENT'],
   })
   if (!info || info.size <= opts.maxBytes) return
   const raw = await safe(
@@ -44,6 +45,7 @@ const pruneIfNeeded = async (
     {
       fallback: '',
       meta: { path: filePath },
+      ignoreCodes: ['ENOENT'],
     },
   )
   const lines = raw
@@ -99,6 +101,7 @@ export const readRunLog = async (
     {
       fallback: '',
       meta: { path: filePath },
+      ignoreCodes: ['ENOENT'],
     },
   )
   if (!raw.trim()) return []

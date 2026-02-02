@@ -36,7 +36,11 @@ const evalFileChanged = async (
       hasGlob
         ? globMtime(ctx.workDir, path)
         : (await stat(join(ctx.workDir, path))).mtimeMs,
-    { fallback: null, meta: { path, workDir: ctx.workDir } },
+    {
+      fallback: null,
+      meta: { path, workDir: ctx.workDir },
+      ignoreCodes: ['ENOENT'],
+    },
   )
   if (!mtime) return { status: 'false', state: nextState }
   if (!state.initialized) {
@@ -75,7 +79,11 @@ const evalFileExists = async (
       await stat(join(ctx.workDir, path))
       return true
     },
-    { fallback: false, meta: { path, workDir: ctx.workDir } },
+    {
+      fallback: false,
+      meta: { path, workDir: ctx.workDir },
+      ignoreCodes: ['ENOENT'],
+    },
   )
   return { status: exists ? 'true' : 'false', state }
 }

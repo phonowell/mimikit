@@ -10,6 +10,18 @@ export type SafeOptions<T> = {
   logPath?: string
   meta?: Record<string, unknown>
   fallback?: T | ((error: unknown) => T)
+  ignoreCodes?: string[]
+}
+
+let defaultLogPath: string | null = null
+
+export const setDefaultLogPath = (path?: string | null): void => {
+  if (typeof path !== 'string') {
+    defaultLogPath = null
+    return
+  }
+  const trimmed = path.trim()
+  defaultLogPath = trimmed.length > 0 ? trimmed : null
 }
 
 const trimStack = (stack?: string, lines = 6): string | undefined => {
@@ -30,6 +42,15 @@ const normalizeError = (error: unknown): SafeErrorInfo => {
   return { message: String(error) }
 }
 
+const getErrorCode = (error: unknown): string | undefined => {
+  if (!error || typeof error !== 'object' || !('code' in error))
+    return undefined
+  const { code } = error as { code?: unknown }
+  if (typeof code === 'string' && code) return code
+  if (typeof code === 'number') return String(code)
+  return undefined
+}
+
 export const logSafeError = async (
   context: string,
   error: unknown,
@@ -44,9 +65,10 @@ export const logSafeError = async (
     ...(info.stack ? { errorStack: info.stack } : {}),
     ...(options?.meta ? { meta: options.meta } : {}),
   }
-  if (options?.logPath) {
+  const logPath = options?.logPath ?? defaultLogPath
+  if (logPath) {
     try {
-      await appendLog(options.logPath, payload)
+      await appendLog(logPath, payload)
       return
     } catch (appendError) {
       console.error(`[safe] failed to append log for ${context}`, appendError)
@@ -63,7 +85,10 @@ export const safe = async <T>(
   try {
     return await fn()
   } catch (error) {
-    await logSafeError(context, error, options)
+    const code = getErrorCode(error)
+    const shouldIgnore =
+      code && options.ignoreCodes ? options.ignoreCodes.includes(code) : false
+    if (!shouldIgnore) await logSafeError(context, error, options)
     if (Object.prototype.hasOwnProperty.call(options, 'fallback')) {
       const { fallback } = options
       if (typeof fallback === 'function')
