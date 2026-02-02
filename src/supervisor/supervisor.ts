@@ -3,6 +3,7 @@ import { buildPaths } from '../fs/paths.js'
 import { shortId } from '../ids.js'
 import { appendLog, rotateLogIfNeeded } from '../log/append.js'
 import { appendRunLog } from '../log/run-log.js'
+import { safe } from '../log/safe.js'
 import {
   enqueueCommandInLane,
   getLaneStats,
@@ -204,7 +205,11 @@ export class Supervisor {
       return
     }
     this.scheduleNextTick(0)
-    appendLog(this.paths.log, { event: 'wake', reason }).catch(() => undefined)
+    void safe(
+      'appendLog: wake',
+      () => appendLog(this.paths.log, { event: 'wake', reason }),
+      { fallback: undefined },
+    )
   }
 
   private async tick() {
@@ -279,10 +284,15 @@ export class Supervisor {
           config: this.config,
           onComplete: () => this.wake('planner_complete'),
         }).catch((err) =>
-          appendLog(this.paths.log, {
-            event: 'planner_error',
-            error: String(err),
-          }),
+          safe(
+            'appendLog: planner_error',
+            () =>
+              appendLog(this.paths.log, {
+                event: 'planner_error',
+                error: String(err),
+              }),
+            { fallback: undefined },
+          ),
         )
       }
 
@@ -293,10 +303,15 @@ export class Supervisor {
           available: workerAvailable,
           onComplete: () => this.wake('worker_complete'),
         }).catch((err) =>
-          appendLog(this.paths.log, {
-            event: 'worker_error',
-            error: String(err),
-          }),
+          safe(
+            'appendLog: worker_error',
+            () =>
+              appendLog(this.paths.log, {
+                event: 'worker_error',
+                error: String(err),
+              }),
+            { fallback: undefined },
+          ),
         )
       }
 
@@ -307,10 +322,15 @@ export class Supervisor {
         enqueueCommandInLane(CommandLane.Teller, async () => {
           await runTellerSession({ paths: this.paths, config: this.config })
         }).catch((err) =>
-          appendLog(this.paths.log, {
-            event: 'teller_error',
-            error: String(err),
-          }),
+          safe(
+            'appendLog: teller_error',
+            () =>
+              appendLog(this.paths.log, {
+                event: 'teller_error',
+                error: String(err),
+              }),
+            { fallback: undefined },
+          ),
         )
       }
 

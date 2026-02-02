@@ -2,6 +2,7 @@ import { stat } from 'node:fs/promises'
 import { join } from 'node:path'
 
 import { globExists, globMtime } from '../fs/glob.js'
+import { safe } from '../log/safe.js'
 
 import type { Condition, TaskStatus, TriggerState } from '../types/tasks.js'
 
@@ -28,28 +29,29 @@ const evalFileChanged = async (
 ): Promise<EvalOutcome> => {
   const { path } = condition.params
   const nextState: TriggerState = { ...state }
-  try {
-    const hasGlob = /[*?[]/.test(path)
-    const mtime = hasGlob
-      ? await globMtime(ctx.workDir, path)
-      : (await stat(join(ctx.workDir, path))).mtimeMs
-    if (!mtime) return { status: 'false', state: nextState }
-    if (!state.initialized) {
-      nextState.initialized = true
-      nextState.lastMtime = mtime
-      return {
-        status: condition.params.fireOnInit ? 'true' : 'false',
-        state: nextState,
-      }
+  const hasGlob = /[*?[]/.test(path)
+  const mtime = await safe(
+    'evalFileChanged: mtime',
+    async () =>
+      hasGlob
+        ? globMtime(ctx.workDir, path)
+        : (await stat(join(ctx.workDir, path))).mtimeMs,
+    { fallback: null, meta: { path, workDir: ctx.workDir } },
+  )
+  if (!mtime) return { status: 'false', state: nextState }
+  if (!state.initialized) {
+    nextState.initialized = true
+    nextState.lastMtime = mtime
+    return {
+      status: condition.params.fireOnInit ? 'true' : 'false',
+      state: nextState,
     }
-    if (!state.lastMtime || mtime > state.lastMtime) {
-      nextState.lastMtime = mtime
-      return { status: 'true', state: nextState }
-    }
-    return { status: 'false', state: nextState }
-  } catch {
-    return { status: 'false', state: nextState }
   }
+  if (!state.lastMtime || mtime > state.lastMtime) {
+    nextState.lastMtime = mtime
+    return { status: 'true', state: nextState }
+  }
+  return { status: 'false', state: nextState }
 }
 
 const evalFileExists = async (
@@ -58,17 +60,24 @@ const evalFileExists = async (
   state: TriggerState,
 ): Promise<EvalOutcome> => {
   const { path } = condition.params
-  try {
-    const hasGlob = /[*?[]/.test(path)
-    if (hasGlob) {
-      const exists = await globExists(ctx.workDir, path)
-      return { status: exists ? 'true' : 'false', state }
-    }
-    await stat(join(ctx.workDir, path))
-    return { status: 'true', state }
-  } catch {
-    return { status: 'false', state }
+  const hasGlob = /[*?[]/.test(path)
+  if (hasGlob) {
+    const exists = await safe(
+      'evalFileExists: glob',
+      () => globExists(ctx.workDir, path),
+      { fallback: false, meta: { path, workDir: ctx.workDir } },
+    )
+    return { status: exists ? 'true' : 'false', state }
   }
+  const exists = await safe(
+    'evalFileExists: stat',
+    async () => {
+      await stat(join(ctx.workDir, path))
+      return true
+    },
+    { fallback: false, meta: { path, workDir: ctx.workDir } },
+  )
+  return { status: exists ? 'true' : 'false', state }
 }
 
 const evalTaskStatus = (

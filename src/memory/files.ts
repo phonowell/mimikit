@@ -1,6 +1,8 @@
 import { readdir } from 'node:fs/promises'
 import { join } from 'node:path'
 
+import { safe } from '../log/safe.js'
+
 export type MemoryFile = {
   path: string
   kind: 'memory' | 'summary' | 'longterm'
@@ -34,19 +36,21 @@ export const listMemoryFiles = async (params: {
   const summaryDir = join(memoryDir, 'summary')
   const longTerm = join(params.stateDir, 'memory.md')
 
-  try {
-    await import('node:fs/promises').then((fs) => fs.stat(longTerm))
-    results.push({ path: longTerm, kind: 'longterm' })
-  } catch {
-    // ignore
-  }
+  const hasLongTerm = await safe(
+    'listMemoryFiles: stat longterm',
+    async () => {
+      await import('node:fs/promises').then((fs) => fs.stat(longTerm))
+      return true
+    },
+    { fallback: false, meta: { path: longTerm } },
+  )
+  if (hasLongTerm) results.push({ path: longTerm, kind: 'longterm' })
 
-  let memoryEntries: string[] = []
-  try {
-    memoryEntries = await readdir(memoryDir)
-  } catch {
-    memoryEntries = []
-  }
+  const memoryEntries = await safe(
+    'listMemoryFiles: readdir memory',
+    () => readdir(memoryDir),
+    { fallback: [], meta: { path: memoryDir } },
+  )
   for (const name of memoryEntries) {
     if (name === 'summary' || !name.endsWith('.md')) continue
     const day = parseDay(name)
@@ -55,12 +59,11 @@ export const listMemoryFiles = async (params: {
     if (age <= 5) results.push({ path: join(memoryDir, name), kind: 'memory' })
   }
 
-  let summaryEntries: string[] = []
-  try {
-    summaryEntries = await readdir(summaryDir)
-  } catch {
-    summaryEntries = []
-  }
+  const summaryEntries = await safe(
+    'listMemoryFiles: readdir summary',
+    () => readdir(summaryDir),
+    { fallback: [], meta: { path: summaryDir } },
+  )
   const monthly = new Set<string>()
   const daily: Array<{ day: string; path: string }> = []
   for (const name of summaryEntries) {

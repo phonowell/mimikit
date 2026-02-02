@@ -4,6 +4,7 @@ import { writeJson } from '../fs/json.js'
 import { extractPlannerResult } from '../llm/output.js'
 import { appendLog } from '../log/append.js'
 import { writeLlmOutput } from '../log/llm-output.js'
+import { safe } from '../log/safe.js'
 import { selectHistory } from '../memory/inject.js'
 import { extractKeywords } from '../memory/keywords.js'
 import { searchMemory } from '../memory/search.js'
@@ -259,23 +260,28 @@ export const runWorkerTask = async (params: {
       /aborted/i.test(err.message)
         ? 'timeout'
         : 'error'
-    await appendLog(params.paths.log, {
-      event: 'llm_error',
-      role: 'worker',
-      error: err.message,
-      errorName: err.name,
-      ...(trimmedStack ? { errorStack: trimmedStack } : {}),
-      aborted: failureReason === 'timeout',
-      elapsedMs: Math.max(0, Date.now() - startedAt),
-      timeoutMs: params.timeoutMs,
-      promptChars: params.task.prompt.length,
-      promptLines: params.task.prompt.split(/\r?\n/).length,
-      ...(params.config.model ? { model: params.config.model } : {}),
-      ...(params.task.traceId ? { traceId: params.task.traceId } : {}),
-      ...(params.task.sourceTriggerId
-        ? { sourceTriggerId: params.task.sourceTriggerId }
-        : {}),
-    }).catch(() => undefined)
+    await safe(
+      'appendLog: llm_error (worker)',
+      () =>
+        appendLog(params.paths.log, {
+          event: 'llm_error',
+          role: 'worker',
+          error: err.message,
+          errorName: err.name,
+          ...(trimmedStack ? { errorStack: trimmedStack } : {}),
+          aborted: failureReason === 'timeout',
+          elapsedMs: Math.max(0, Date.now() - startedAt),
+          timeoutMs: params.timeoutMs,
+          promptChars: params.task.prompt.length,
+          promptLines: params.task.prompt.split(/\r?\n/).length,
+          ...(params.config.model ? { model: params.config.model } : {}),
+          ...(params.task.traceId ? { traceId: params.task.traceId } : {}),
+          ...(params.task.sourceTriggerId
+            ? { sourceTriggerId: params.task.sourceTriggerId }
+            : {}),
+        }),
+      { fallback: undefined },
+    )
     const result: WorkerResult = {
       schemaVersion: WORKER_RESULT_SCHEMA_VERSION,
       id: params.task.id,

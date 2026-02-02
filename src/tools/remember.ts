@@ -2,6 +2,7 @@ import { appendFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
 import { ensureDir } from '../fs/ensure.js'
+import { logSafeError } from '../log/safe.js'
 import { makeSlug } from '../memory/slug.js'
 import { nowIso } from '../time.js'
 
@@ -30,8 +31,14 @@ export const remember = async (ctx: ToolContext, args: RememberArgs) => {
       filename = `${day}-${slug}-${i}.md`
       path = join(ctx.paths.memoryDir, filename)
       i += 1
-    } catch {
-      break
+    } catch (error) {
+      const code =
+        typeof error === 'object' && error && 'code' in error
+          ? String((error as { code?: string }).code)
+          : undefined
+      if (code === 'ENOENT') break
+      await logSafeError('remember: stat', error, { meta: { path } })
+      throw error
     }
   }
   const entry = `# ${day}\n\n[${timestamp}] ${args.content}\n`

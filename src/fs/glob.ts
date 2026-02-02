@@ -1,6 +1,8 @@
 import { readdir, stat } from 'node:fs/promises'
 import { join, sep } from 'node:path'
 
+import { safe } from '../log/safe.js'
+
 const toPosix = (value: string): string => value.split(sep).join('/')
 
 const escapeRegExp = (text: string): string =>
@@ -35,7 +37,11 @@ const globToRegex = (pattern: string): RegExp => {
 
 const walkFiles = async (root: string): Promise<string[]> => {
   const results: string[] = []
-  const entries = await readdir(root, { withFileTypes: true }).catch(() => [])
+  const entries = await safe(
+    'walkFiles: readdir',
+    () => readdir(root, { withFileTypes: true }),
+    { fallback: [], meta: { root } },
+  )
   for (const entry of entries) {
     if (entry.isSymbolicLink()) continue
     const full = join(root, entry.name)
@@ -58,12 +64,12 @@ export const globMtime = async (
   for (const file of files) {
     const rel = toPosix(file.slice(root.length + 1))
     if (!regex.test(rel)) continue
-    try {
-      const info = await stat(file)
-      if (!latest || info.mtimeMs > latest) latest = info.mtimeMs
-    } catch {
-      // ignore
-    }
+    const info = await safe('globMtime: stat', () => stat(file), {
+      fallback: null,
+      meta: { file },
+    })
+    if (!info) continue
+    if (!latest || info.mtimeMs > latest) latest = info.mtimeMs
   }
   return latest
 }

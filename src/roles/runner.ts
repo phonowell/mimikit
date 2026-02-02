@@ -3,6 +3,7 @@ import { plannerOutputSchema, tellerOutputSchema } from '../llm/schemas.js'
 import { runCodexSdk } from '../llm/sdk-runner.js'
 import { appendLog } from '../log/append.js'
 import { writeLlmOutput } from '../log/llm-output.js'
+import { safe } from '../log/safe.js'
 import { executeTool } from '../tools/execute.js'
 
 import {
@@ -89,24 +90,29 @@ export const runTeller = async (params: {
         : Math.min(params.timeoutMs, 30_000)
 
     if (retryEnabled) {
-      await appendLog(params.ctx.paths.log, {
-        event: 'llm_retry_started',
-        role: params.ctx.role,
-        reason: err.message,
-        aborted,
-        elapsedMs,
-        timeoutMs: params.timeoutMs,
-        retryTimeoutMs,
-        promptMode,
-        promptChars: prompt.length,
-        promptLines,
-        historyCount: params.history.length,
-        memoryCount: params.memory.length,
-        inputsCount: params.inputs.length,
-        eventsCount: params.events.length,
-        injectContext,
-        ...(params.model ? { model: params.model } : {}),
-      }).catch(() => undefined)
+      await safe(
+        'appendLog: llm_retry_started (teller)',
+        () =>
+          appendLog(params.ctx.paths.log, {
+            event: 'llm_retry_started',
+            role: params.ctx.role,
+            reason: err.message,
+            aborted,
+            elapsedMs,
+            timeoutMs: params.timeoutMs,
+            retryTimeoutMs,
+            promptMode,
+            promptChars: prompt.length,
+            promptLines,
+            historyCount: params.history.length,
+            memoryCount: params.memory.length,
+            inputsCount: params.inputs.length,
+            eventsCount: params.events.length,
+            injectContext,
+            ...(params.model ? { model: params.model } : {}),
+          }),
+        { fallback: undefined },
+      )
       try {
         const retryPrompt = await buildTellerPrompt({
           workDir: params.ctx.workDir,
@@ -134,12 +140,17 @@ export const runTeller = async (params: {
           },
           ...(params.model ? { model: params.model } : {}),
         })
-        await appendLog(params.ctx.paths.log, {
-          event: 'llm_retry_finished',
-          role: params.ctx.role,
-          elapsedMs: llmResult.elapsedMs,
-          ...(llmResult.usage ? { usage: llmResult.usage } : {}),
-        }).catch(() => undefined)
+        await safe(
+          'appendLog: llm_retry_finished (teller)',
+          () =>
+            appendLog(params.ctx.paths.log, {
+              event: 'llm_retry_finished',
+              role: params.ctx.role,
+              elapsedMs: llmResult.elapsedMs,
+              ...(llmResult.usage ? { usage: llmResult.usage } : {}),
+            }),
+          { fallback: undefined },
+        )
       } catch (retryError) {
         const retryErr =
           retryError instanceof Error
@@ -148,35 +159,45 @@ export const runTeller = async (params: {
         const trimmedRetry = retryErr.stack
           ? retryErr.stack.split(/\r?\n/).slice(0, 6).join('\n')
           : undefined
-        await appendLog(params.ctx.paths.log, {
-          event: 'llm_retry_failed',
-          role: params.ctx.role,
-          error: retryErr.message,
-          errorName: retryErr.name,
-          ...(trimmedRetry ? { errorStack: trimmedRetry } : {}),
-        }).catch(() => undefined)
+        await safe(
+          'appendLog: llm_retry_failed (teller)',
+          () =>
+            appendLog(params.ctx.paths.log, {
+              event: 'llm_retry_failed',
+              role: params.ctx.role,
+              error: retryErr.message,
+              errorName: retryErr.name,
+              ...(trimmedRetry ? { errorStack: trimmedRetry } : {}),
+            }),
+          { fallback: undefined },
+        )
         const trimmedStack = err.stack
           ? err.stack.split(/\r?\n/).slice(0, 6).join('\n')
           : undefined
-        await appendLog(params.ctx.paths.log, {
-          event: 'llm_error',
-          role: params.ctx.role,
-          error: err.message,
-          errorName: err.name,
-          ...(trimmedStack ? { errorStack: trimmedStack } : {}),
-          aborted,
-          elapsedMs,
-          timeoutMs: params.timeoutMs,
-          promptMode,
-          promptChars: prompt.length,
-          promptLines,
-          historyCount: params.history.length,
-          memoryCount: params.memory.length,
-          inputsCount: params.inputs.length,
-          eventsCount: params.events.length,
-          injectContext,
-          ...(params.model ? { model: params.model } : {}),
-        }).catch(() => undefined)
+        await safe(
+          'appendLog: llm_error (teller)',
+          () =>
+            appendLog(params.ctx.paths.log, {
+              event: 'llm_error',
+              role: params.ctx.role,
+              error: err.message,
+              errorName: err.name,
+              ...(trimmedStack ? { errorStack: trimmedStack } : {}),
+              aborted,
+              elapsedMs,
+              timeoutMs: params.timeoutMs,
+              promptMode,
+              promptChars: prompt.length,
+              promptLines,
+              historyCount: params.history.length,
+              memoryCount: params.memory.length,
+              inputsCount: params.inputs.length,
+              eventsCount: params.events.length,
+              injectContext,
+              ...(params.model ? { model: params.model } : {}),
+            }),
+          { fallback: undefined },
+        )
         const failureReplyDisabled =
           process.env.MIMIKIT_TELLER_FAILURE_REPLY_DISABLED === '1'
         if (!failureReplyDisabled) {
@@ -191,14 +212,19 @@ export const runTeller = async (params: {
             llmElapsedMs: elapsedMs,
           }
           await executeTool(toolCtx, fallback)
-          await appendLog(params.ctx.paths.log, {
-            event: 'teller_response',
-            toolCalls: 1,
-            fallbackUsed: true,
-            forcedDelegate: false,
-            outputChars: 0,
-            elapsedMs,
-          }).catch(() => undefined)
+          await safe(
+            'appendLog: teller_response (fallback)',
+            () =>
+              appendLog(params.ctx.paths.log, {
+                event: 'teller_response',
+                toolCalls: 1,
+                fallbackUsed: true,
+                forcedDelegate: false,
+                outputChars: 0,
+                elapsedMs,
+              }),
+            { fallback: undefined },
+          )
           return { calls: [fallback], output: '', elapsedMs }
         }
         throw error
@@ -207,25 +233,30 @@ export const runTeller = async (params: {
       const trimmedStack = err.stack
         ? err.stack.split(/\r?\n/).slice(0, 6).join('\n')
         : undefined
-      await appendLog(params.ctx.paths.log, {
-        event: 'llm_error',
-        role: params.ctx.role,
-        error: err.message,
-        errorName: err.name,
-        ...(trimmedStack ? { errorStack: trimmedStack } : {}),
-        aborted,
-        elapsedMs,
-        timeoutMs: params.timeoutMs,
-        promptMode,
-        promptChars: prompt.length,
-        promptLines,
-        historyCount: params.history.length,
-        memoryCount: params.memory.length,
-        inputsCount: params.inputs.length,
-        eventsCount: params.events.length,
-        injectContext,
-        ...(params.model ? { model: params.model } : {}),
-      }).catch(() => undefined)
+      await safe(
+        'appendLog: llm_error (teller)',
+        () =>
+          appendLog(params.ctx.paths.log, {
+            event: 'llm_error',
+            role: params.ctx.role,
+            error: err.message,
+            errorName: err.name,
+            ...(trimmedStack ? { errorStack: trimmedStack } : {}),
+            aborted,
+            elapsedMs,
+            timeoutMs: params.timeoutMs,
+            promptMode,
+            promptChars: prompt.length,
+            promptLines,
+            historyCount: params.history.length,
+            memoryCount: params.memory.length,
+            inputsCount: params.inputs.length,
+            eventsCount: params.events.length,
+            injectContext,
+            ...(params.model ? { model: params.model } : {}),
+          }),
+        { fallback: undefined },
+      )
       const failureReplyDisabled =
         process.env.MIMIKIT_TELLER_FAILURE_REPLY_DISABLED === '1'
       if (!failureReplyDisabled) {
@@ -240,14 +271,19 @@ export const runTeller = async (params: {
           llmElapsedMs: elapsedMs,
         }
         await executeTool(toolCtx, fallback)
-        await appendLog(params.ctx.paths.log, {
-          event: 'teller_response',
-          toolCalls: 1,
-          fallbackUsed: true,
-          forcedDelegate: false,
-          outputChars: 0,
-          elapsedMs,
-        }).catch(() => undefined)
+        await safe(
+          'appendLog: teller_response (fallback)',
+          () =>
+            appendLog(params.ctx.paths.log, {
+              event: 'teller_response',
+              toolCalls: 1,
+              fallbackUsed: true,
+              forcedDelegate: false,
+              outputChars: 0,
+              elapsedMs,
+            }),
+          { fallback: undefined },
+        )
         return { calls: [fallback], output: '', elapsedMs }
       }
       throw error
@@ -362,23 +398,28 @@ export const runPlanner = async (params: {
     const trimmedStack = err.stack
       ? err.stack.split(/\r?\n/).slice(0, 6).join('\n')
       : undefined
-    await appendLog(params.ctx.paths.log, {
-      event: 'llm_error',
-      role: params.ctx.role,
-      error: err.message,
-      errorName: err.name,
-      ...(trimmedStack ? { errorStack: trimmedStack } : {}),
-      aborted: err.name === 'AbortError' || /aborted/i.test(err.message),
-      elapsedMs,
-      timeoutMs: params.timeoutMs,
-      promptMode,
-      promptChars: prompt.length,
-      promptLines,
-      historyCount: params.history.length,
-      memoryCount: params.memory.length,
-      injectContext,
-      ...(params.model ? { model: params.model } : {}),
-    }).catch(() => undefined)
+    await safe(
+      'appendLog: llm_error (planner)',
+      () =>
+        appendLog(params.ctx.paths.log, {
+          event: 'llm_error',
+          role: params.ctx.role,
+          error: err.message,
+          errorName: err.name,
+          ...(trimmedStack ? { errorStack: trimmedStack } : {}),
+          aborted: err.name === 'AbortError' || /aborted/i.test(err.message),
+          elapsedMs,
+          timeoutMs: params.timeoutMs,
+          promptMode,
+          promptChars: prompt.length,
+          promptLines,
+          historyCount: params.history.length,
+          memoryCount: params.memory.length,
+          injectContext,
+          ...(params.model ? { model: params.model } : {}),
+        }),
+      { fallback: undefined },
+    )
     throw error
   }
   const { output, usage, elapsedMs } = llmResult

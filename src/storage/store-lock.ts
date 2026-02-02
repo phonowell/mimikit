@@ -1,6 +1,8 @@
 import { mkdir, open, stat, unlink, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 
+import { logSafeError, safe } from '../log/safe.js'
+
 type StoreLockOptions = {
   lockPath?: string
   timeoutMs?: number
@@ -36,15 +38,16 @@ export const withStoreLock = async <T>(
   for (;;) {
     try {
       const handle = await open(lockPath, 'wx')
-      try {
-        await writeFile(
-          lockPath,
-          JSON.stringify({ pid: process.pid, startedAt: Date.now() }),
-          'utf8',
-        )
-      } catch {
-        // best-effort
-      }
+      await safe(
+        'withStoreLock: writeFile',
+        () =>
+          writeFile(
+            lockPath,
+            JSON.stringify({ pid: process.pid, startedAt: Date.now() }),
+            'utf8',
+          ),
+        { fallback: undefined, meta: { path: lockPath } },
+      )
       await handle.close()
       break
     } catch (error) {
@@ -64,8 +67,10 @@ export const withStoreLock = async <T>(
           await unlink(lockPath)
           continue
         }
-      } catch {
-        // ignore
+      } catch (error) {
+        await logSafeError('withStoreLock: stat', error, {
+          meta: { path: lockPath },
+        })
       }
 
       await sleep(pollIntervalMs)
@@ -75,6 +80,9 @@ export const withStoreLock = async <T>(
   try {
     return await fn()
   } finally {
-    await unlink(lockPath).catch(() => undefined)
+    await safe('withStoreLock: unlink', () => unlink(lockPath), {
+      fallback: undefined,
+      meta: { path: lockPath },
+    })
   }
 }

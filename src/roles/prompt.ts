@@ -1,6 +1,8 @@
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
+import { logSafeError } from '../log/safe.js'
+
 import type { MemoryHit } from '../memory/search.js'
 import type { HistoryMessage } from '../types/history.js'
 import type { TellerEvent } from '../types/teller.js'
@@ -31,8 +33,14 @@ const loadGuide = async (workDir: string, name: string): Promise<string> => {
   const path = join(workDir, 'prompts', 'agents', `${name}.md`)
   try {
     return await readFile(path, 'utf8')
-  } catch {
-    return ''
+  } catch (error) {
+    const code =
+      typeof error === 'object' && error && 'code' in error
+        ? String((error as { code?: string }).code)
+        : undefined
+    if (code === 'ENOENT') return ''
+    await logSafeError('loadGuide', error, { meta: { path } })
+    throw error
   }
 }
 

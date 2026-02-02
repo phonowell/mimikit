@@ -61,7 +61,8 @@ const isSafeHref = (value) => {
     const url = new URL(raw, window.location.origin)
     if (url.protocol === 'mailto:') return true
     return SAFE_PROTOCOLS.has(url.protocol)
-  } catch {
+  } catch (error) {
+    console.warn('[webui] isSafeHref failed', error)
     return false
   }
 }
@@ -72,7 +73,8 @@ const isSafeSrc = (value) => {
   try {
     const url = new URL(raw, window.location.origin)
     return SAFE_PROTOCOLS.has(url.protocol)
-  } catch {
+  } catch (error) {
+    console.warn('[webui] isSafeSrc failed', error)
     return false
   }
 }

@@ -135,7 +135,8 @@ export function createMessagesController({
       } else {
         syncLoadingState()
       }
-    } catch {
+    } catch (error) {
+      console.warn('[webui] poll failed', error)
       setDisconnected()
     }
 
@@ -162,7 +163,8 @@ export function createMessagesController({
         let data = null
         try {
           data = await res.json()
-        } catch {
+        } catch (error) {
+          console.warn('[webui] parse error response failed', error)
           data = null
         }
         throw new Error(data?.error || 'Failed to send')

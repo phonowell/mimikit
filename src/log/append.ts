@@ -29,8 +29,8 @@ const compressLog = async (path: string): Promise<void> => {
       createWriteStream(gzPath),
     )
     await unlink(path)
-  } catch {
-    // keep original on failure
+  } catch (error) {
+    console.error('[log] compress failed', error)
   }
 }
 
@@ -38,7 +38,13 @@ const pruneLogs = async (dir: string): Promise<void> => {
   let entries
   try {
     entries = await readdir(dir, { withFileTypes: true })
-  } catch {
+  } catch (error) {
+    const code =
+      typeof error === 'object' && error && 'code' in error
+        ? String((error as { code?: string }).code)
+        : undefined
+    if (code === 'ENOENT') return
+    console.error('[log] pruneLogs readdir failed', error)
     return
   }
   const logs: Array<{ path: string; mtime: number; size: number }> = []
@@ -51,8 +57,12 @@ const pruneLogs = async (dir: string): Promise<void> => {
     try {
       const info = await stat(fullPath)
       logs.push({ path: fullPath, mtime: info.mtimeMs, size: info.size })
-    } catch {
-      // ignore
+    } catch (error) {
+      const code =
+        typeof error === 'object' && error && 'code' in error
+          ? String((error as { code?: string }).code)
+          : undefined
+      if (code !== 'ENOENT') console.error('[log] pruneLogs stat failed', error)
     }
   }
   const cutoff = Date.now() - MAX_DAYS * 24 * 60 * 60 * 1000
@@ -61,8 +71,13 @@ const pruneLogs = async (dir: string): Promise<void> => {
     if (log.mtime < cutoff) {
       try {
         await unlink(log.path)
-      } catch {
-        // ignore
+      } catch (error) {
+        const code =
+          typeof error === 'object' && error && 'code' in error
+            ? String((error as { code?: string }).code)
+            : undefined
+        if (code !== 'ENOENT')
+          console.error('[log] pruneLogs unlink failed', error)
       }
       continue
     }
@@ -76,8 +91,13 @@ const pruneLogs = async (dir: string): Promise<void> => {
     try {
       await unlink(item.path)
       total -= item.size
-    } catch {
-      // ignore
+    } catch (error) {
+      const code =
+        typeof error === 'object' && error && 'code' in error
+          ? String((error as { code?: string }).code)
+          : undefined
+      if (code !== 'ENOENT')
+        console.error('[log] pruneLogs unlink failed', error)
     }
   }
 }
@@ -98,8 +118,14 @@ export const rotateLogIfNeeded = async (path: string): Promise<void> => {
     const info = await stat(path)
     size = info.size
     existingDate = dateStamp(info.mtime.toISOString())
-  } catch {
-    return
+  } catch (error) {
+    const code =
+      typeof error === 'object' && error && 'code' in error
+        ? String((error as { code?: string }).code)
+        : undefined
+    if (code === 'ENOENT') return
+    console.error('[log] rotateLogIfNeeded stat failed', error)
+    throw error
   }
   const today = dateStamp(nowIso())
   if (size < MAX_BYTES && existingDate === today) return
@@ -111,8 +137,14 @@ export const rotateLogIfNeeded = async (path: string): Promise<void> => {
       await stat(target)
       target = join(dirname(path), `log.${today}.${idx}.jsonl`)
       idx += 1
-    } catch {
-      break
+    } catch (error) {
+      const code =
+        typeof error === 'object' && error && 'code' in error
+          ? String((error as { code?: string }).code)
+          : undefined
+      if (code === 'ENOENT') break
+      console.error('[log] rotateLogIfNeeded stat failed', error)
+      throw error
     }
   }
   await rename(path, target)

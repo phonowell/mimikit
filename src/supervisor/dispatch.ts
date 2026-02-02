@@ -1,6 +1,7 @@
 import { writeJson } from '../fs/json.js'
 import { appendLog } from '../log/append.js'
 import { appendRunLog } from '../log/run-log.js'
+import { logSafeError } from '../log/safe.js'
 import { enqueueCommandInLane } from '../process/command-queue.js'
 import { CommandLane } from '../process/lanes.js'
 import { migrateTask } from '../storage/migrations.js'
@@ -104,8 +105,11 @@ export const dispatchPlanner = async (params: {
           queuedAhead,
         }),
     },
-  ).catch(() => undefined)
+  ).catch((error) => logEnqueueError('planner', error))
 }
+
+const logEnqueueError = (lane: string, error: unknown) =>
+  logSafeError('enqueueCommandInLane', error, { meta: { lane } })
 
 const evalTriggerIds = (triggers: Trigger[]): Set<string> => {
   const ids = new Set<string>()
@@ -201,7 +205,7 @@ export const dispatchWorker = async (params: {
             queuedAhead,
           }),
       },
-    ).catch(() => undefined)
+    ).catch((error) => logEnqueueError('worker', error))
     dispatched += 1
   }
   return dispatched

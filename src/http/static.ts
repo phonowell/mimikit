@@ -2,6 +2,8 @@ import { readFile } from 'node:fs/promises'
 import { extname, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { safe } from '../log/safe.js'
+
 import type { ServerResponse } from 'node:http'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
@@ -43,16 +45,20 @@ export const serveStatic = async (
     return
   }
 
-  try {
-    const content = await readFile(fullPath)
-    const ext = extname(filePath)
-    const mime = MIME_TYPES[ext] ?? 'application/octet-stream'
-    res.writeHead(200, { 'Content-Type': mime })
-    res.end(content)
-  } catch {
+  const content = await safe(
+    'serveStatic: readFile',
+    () => readFile(fullPath),
+    { fallback: null, meta: { filePath: fullPath } },
+  )
+  if (!content) {
     res.writeHead(404)
     res.end('Not Found')
+    return
   }
+  const ext = extname(filePath)
+  const mime = MIME_TYPES[ext] ?? 'application/octet-stream'
+  res.writeHead(200, { 'Content-Type': mime })
+  res.end(content)
 }
 
 export const serveVendor = async (
@@ -65,14 +71,21 @@ export const serveVendor = async (
     res.end('Not Found')
     return
   }
-  try {
-    const content = await readFile(filePath)
-    const ext = extname(filePath)
-    const mime = MIME_TYPES[ext] ?? 'application/javascript'
-    res.writeHead(200, { 'Content-Type': mime })
-    res.end(content)
-  } catch {
+  const content = await safe(
+    'serveVendor: readFile',
+    () => readFile(filePath),
+    {
+      fallback: null,
+      meta: { filePath },
+    },
+  )
+  if (!content) {
     res.writeHead(404)
     res.end('Not Found')
+    return
   }
+  const ext = extname(filePath)
+  const mime = MIME_TYPES[ext] ?? 'application/javascript'
+  res.writeHead(200, { 'Content-Type': mime })
+  res.end(content)
 }

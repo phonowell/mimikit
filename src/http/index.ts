@@ -1,5 +1,7 @@
 import { createServer } from 'node:http'
 
+import { logSafeError } from '../log/safe.js'
+
 import { handleRequest } from './handler.js'
 import { respond } from './utils.js'
 
@@ -15,6 +17,7 @@ export const createHttpServer = (
     try {
       await handleRequest(supervisor, config, req, res)
     } catch (error) {
+      await logSafeError('http: handleRequest', error)
       const message = error instanceof Error ? error.message : String(error)
       respond(res, 500, { error: message })
     }

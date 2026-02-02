@@ -5,6 +5,7 @@ import { defaultConfig } from './config.js'
 import { createHttpServer } from './http/index.js'
 import { loadCodexSettings } from './llm/openai.js'
 import { runRunsCli } from './log/cli.js'
+import { safe } from './log/safe.js'
 import { runMemoryCli } from './memory/cli.js'
 import { acquireInstanceLock } from './storage/instance-lock.js'
 import { Supervisor } from './supervisor/supervisor.js'
@@ -80,7 +81,9 @@ createHttpServer(supervisor, config, parseInt(port, 10))
 const shutdown = async (reason: string) => {
   console.log(`\n[cli] ${reason}`)
   supervisor.stop()
-  await instanceLock.release().catch(() => undefined)
+  await safe('instanceLock.release', () => instanceLock.release(), {
+    fallback: undefined,
+  })
   process.exit(0)
 }
 

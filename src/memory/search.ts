@@ -3,6 +3,8 @@ import { readFile } from 'node:fs/promises'
 
 import bm25 from 'wink-bm25-text-search'
 
+import { safe } from '../log/safe.js'
+
 import { listMemoryFiles } from './files.js'
 
 export type MemoryHit = { source: string; content: string; score: number }
@@ -59,22 +61,25 @@ const rgFallback = async (params: {
 }): Promise<MemoryHit[]> => {
   const matches = new Set<string>()
   for (const group of chunk(params.files, 80)) {
-    try {
-      const found = await runRg(params.tokens, group)
-      for (const file of found) matches.add(file)
-    } catch {
-      // ignore rg failure, fallback handled later
-    }
+    const found = await safe(
+      'rgFallback: runRg',
+      () => runRg(params.tokens, group),
+      {
+        fallback: [],
+        meta: { files: group.length, tokens: params.tokens.length },
+      },
+    )
+    for (const file of found) matches.add(file)
     if (matches.size >= params.limit) break
   }
   const hits: MemoryHit[] = []
   for (const file of matches) {
-    let content = ''
-    try {
-      content = await readFile(file, 'utf8')
-    } catch {
-      continue
-    }
+    const content = await safe(
+      'rgFallback: readFile',
+      () => readFile(file, 'utf8'),
+      { fallback: null, meta: { file } },
+    )
+    if (content === null) continue
     hits.push({ source: file, content: content.slice(0, 300), score: 0.1 })
     if (hits.length >= params.limit) break
   }
@@ -106,12 +111,12 @@ export const searchMemory = async (params: {
   for (let i = 0; i < files.length; i += 1) {
     const entry = files[i]
     if (!entry) continue
-    let body = ''
-    try {
-      body = await readFile(entry.path, 'utf8')
-    } catch {
-      continue
-    }
+    const body = await safe(
+      'searchMemory: readFile',
+      () => readFile(entry.path, 'utf8'),
+      { fallback: null, meta: { file: entry.path } },
+    )
+    if (body === null) continue
     engine.addDoc({ body }, i)
     docsAdded += 1
   }
@@ -124,12 +129,12 @@ export const searchMemory = async (params: {
     if (rgHits.length > 0) return rgHits
     const fallback: MemoryHit[] = []
     for (const entry of files) {
-      let content = ''
-      try {
-        content = await readFile(entry.path, 'utf8')
-      } catch {
-        continue
-      }
+      const content = await safe(
+        'searchMemory: readFile (fallback)',
+        () => readFile(entry.path, 'utf8'),
+        { fallback: null, meta: { file: entry.path } },
+      )
+      if (content === null) continue
       const found = tokens.some((t) => content.toLowerCase().includes(t))
       if (!found) continue
       fallback.push({
@@ -153,12 +158,11 @@ export const searchMemory = async (params: {
     const score = typeof result === 'number' ? 1 : result.score
     const entry = files[entryId]
     if (!entry || score < params.minScore) continue
-    let content = ''
-    try {
-      content = await readFile(entry.path, 'utf8')
-    } catch {
-      content = ''
-    }
+    const content = await safe(
+      'searchMemory: readFile (result)',
+      () => readFile(entry.path, 'utf8'),
+      { fallback: '', meta: { file: entry.path } },
+    )
     hits.push({ source: entry.path, content: content.slice(0, 300), score })
     if (hits.length >= params.limit) break
   }
@@ -173,12 +177,12 @@ export const searchMemory = async (params: {
 
   const fallback: MemoryHit[] = []
   for (const entry of files) {
-    let content = ''
-    try {
-      content = await readFile(entry.path, 'utf8')
-    } catch {
-      continue
-    }
+    const content = await safe(
+      'searchMemory: readFile (final fallback)',
+      () => readFile(entry.path, 'utf8'),
+      { fallback: null, meta: { file: entry.path } },
+    )
+    if (content === null) continue
     const found = tokens.some((t) => content.toLowerCase().includes(t))
     if (!found) continue
     fallback.push({

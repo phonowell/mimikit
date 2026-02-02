@@ -1,6 +1,7 @@
 import { Codex } from '@openai/codex-sdk'
 
 import { appendLog } from '../log/append.js'
+import { logSafeError, safe } from '../log/safe.js'
 import { normalizeUsage } from '../shared/utils.js'
 
 import { loadCodexSettings } from './openai.js'
@@ -53,7 +54,11 @@ export const runCodexSdk = async (params: {
   }
   const append = logPath
     ? (entry: LogContext) =>
-        appendLog(logPath, { ...entry, ...baseContext }).catch(() => undefined)
+        safe(
+          'appendLog: llm_call',
+          () => appendLog(logPath, { ...entry, ...baseContext }),
+          { fallback: undefined },
+        )
     : () => Promise.resolve()
 
   if (logPath) {
@@ -78,7 +83,8 @@ export const runCodexSdk = async (params: {
           : {}),
         apiKeyPresent,
       })
-    } catch {
+    } catch (error) {
+      await logSafeError('runCodexSdk: loadCodexSettings', error, { logPath })
       await append({ event: 'llm_call_started' })
     }
   }

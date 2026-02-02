@@ -79,8 +79,13 @@ const resolveMemoryPath = async (params: {
         `${params.day}-${params.slug}-${idx}.md`,
       )
       idx += 1
-    } catch {
-      return path
+    } catch (error) {
+      const code =
+        typeof error === 'object' && error && 'code' in error
+          ? String((error as { code?: string }).code)
+          : undefined
+      if (code === 'ENOENT') return path
+      throw error
     }
   }
 }

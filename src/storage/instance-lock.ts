@@ -1,6 +1,8 @@
 import { mkdir, open, readFile, unlink } from 'node:fs/promises'
 import { join } from 'node:path'
 
+import { safe } from '../log/safe.js'
+
 type LockData = {
   pid?: number
   startedAt?: string
@@ -22,12 +24,19 @@ const isProcessAlive = (pid: number): boolean => {
 }
 
 const readLockData = async (path: string): Promise<LockData> => {
-  try {
-    const raw = await readFile(path, 'utf8')
-    return JSON.parse(raw) as LockData
-  } catch {
-    return {}
-  }
+  const raw = await safe(
+    'readLockData: readFile',
+    () => readFile(path, 'utf8'),
+    {
+      fallback: null,
+      meta: { path },
+    },
+  )
+  if (!raw) return {}
+  return safe('readLockData: parse', () => JSON.parse(raw) as LockData, {
+    fallback: {},
+    meta: { path },
+  })
 }
 
 export const acquireInstanceLock = async (stateDir: string) => {
@@ -40,15 +49,28 @@ export const acquireInstanceLock = async (stateDir: string) => {
       pid: process.pid,
       startedAt: new Date().toISOString(),
     })
-    await handle.writeFile(payload, 'utf8').catch(() => undefined)
+    await safe(
+      'instanceLock: writeFile',
+      () => handle.writeFile(payload, 'utf8'),
+      {
+        fallback: undefined,
+        meta: { path: lockPath },
+      },
+    )
     return { handle }
   }
 
   try {
     const { handle } = await tryAcquire()
     const release = async () => {
-      await handle.close().catch(() => undefined)
-      await unlink(lockPath).catch(() => undefined)
+      await safe('instanceLock: close', () => handle.close(), {
+        fallback: undefined,
+        meta: { path: lockPath },
+      })
+      await safe('instanceLock: unlink', () => unlink(lockPath), {
+        fallback: undefined,
+        meta: { path: lockPath },
+      })
     }
     return { lockPath, release }
   } catch (error) {
@@ -63,11 +85,20 @@ export const acquireInstanceLock = async (stateDir: string) => {
   if (existing.pid && isProcessAlive(existing.pid))
     throw new Error(`[cli] instance already running (pid ${existing.pid}).`)
 
-  await unlink(lockPath).catch(() => undefined)
+  await safe('instanceLock: unlink stale', () => unlink(lockPath), {
+    fallback: undefined,
+    meta: { path: lockPath },
+  })
   const { handle } = await tryAcquire()
   const release = async () => {
-    await handle.close().catch(() => undefined)
-    await unlink(lockPath).catch(() => undefined)
+    await safe('instanceLock: close', () => handle.close(), {
+      fallback: undefined,
+      meta: { path: lockPath },
+    })
+    await safe('instanceLock: unlink', () => unlink(lockPath), {
+      fallback: undefined,
+      meta: { path: lockPath },
+    })
   }
   return { lockPath, release }
 }

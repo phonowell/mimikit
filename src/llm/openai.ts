@@ -3,6 +3,7 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 
 import { readJson } from '../fs/json.js'
+import { logSafeError } from '../log/safe.js'
 
 type CodexAuth = {
   OPENAI_API_KEY?: string
@@ -46,7 +47,8 @@ const parseTomlValue = (raw: string): string | boolean | number | null => {
     if (trimmed.startsWith('"')) {
       try {
         return JSON.parse(trimmed) as string
-      } catch {
+      } catch (error) {
+        console.warn('[llm] parseTomlValue JSON parse failed', error)
         return slice
       }
     }
@@ -104,7 +106,15 @@ const readCodexConfig = async (): Promise<CodexConfig> => {
   try {
     const raw = await readFile(codexConfigPath(), 'utf8')
     return parseCodexConfig(raw)
-  } catch {
+  } catch (error) {
+    const code =
+      typeof error === 'object' && error && 'code' in error
+        ? String((error as { code?: string }).code)
+        : undefined
+    if (code === 'ENOENT') return { providers: {} }
+    await logSafeError('readCodexConfig', error, {
+      meta: { path: codexConfigPath() },
+    })
     return { providers: {} }
   }
 }

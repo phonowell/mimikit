@@ -1,5 +1,6 @@
 import { join } from 'node:path'
 
+import { logSafeError } from '../log/safe.js'
 import { removeItem } from '../storage/queue.js'
 import { removeTrigger } from '../storage/triggers.js'
 
@@ -11,8 +12,14 @@ const exists = async (path: string): Promise<boolean> => {
   try {
     await import('node:fs/promises').then((fs) => fs.stat(path))
     return true
-  } catch {
-    return false
+  } catch (error) {
+    const code =
+      typeof error === 'object' && error && 'code' in error
+        ? String((error as { code?: string }).code)
+        : undefined
+    if (code === 'ENOENT') return false
+    await logSafeError('cancelTask: stat', error, { meta: { path } })
+    throw error
   }
 }
 

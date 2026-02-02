@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { newId, shortId } from '../ids.js'
 import { appendLog } from '../log/append.js'
 import { appendRunLog } from '../log/run-log.js'
+import { logSafeError } from '../log/safe.js'
 import { applyArchiveResult } from '../memory/archive-apply.js'
 import { readHistory, writeHistory } from '../storage/history.js'
 import {
@@ -46,7 +47,8 @@ const formatResultText = (value: unknown, limit = 2000): string | undefined => {
   try {
     const text = JSON.stringify(value)
     return text ? text.slice(0, limit) : undefined
-  } catch {
+  } catch (error) {
+    void logSafeError('formatResultText: stringify', error)
     return undefined
   }
 }

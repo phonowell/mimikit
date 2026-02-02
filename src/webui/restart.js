@@ -12,8 +12,8 @@ export function bindRestart({ restartBtn, statusText, statusDot, messages }) {
     if (statusDot) statusDot.dataset.state = ''
     try {
       await fetch('/api/restart', { method: 'POST' })
-    } catch {
-      // expected: connection drops
+    } catch (error) {
+      console.warn('[webui] restart request failed', error)
     }
 
     const waitForServer = () => {
@@ -25,8 +25,8 @@ export function bindRestart({ restartBtn, statusText, statusDot, messages }) {
             if (messages) messages.start()
             return
           }
-        } catch {
-          // still down
+        } catch (error) {
+          console.warn('[webui] status check failed', error)
         }
         waitForServer()
       }, 1000)

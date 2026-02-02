@@ -1,6 +1,8 @@
 import { readdir, stat, unlink } from 'node:fs/promises'
 import { join } from 'node:path'
 
+import { safe } from '../log/safe.js'
+
 export type MemoryRetentionPolicy = {
   recentDays: number
   summaryDays: number
@@ -46,21 +48,30 @@ export const pruneMemory = async (params: {
   const longTerm = join(params.stateDir, 'memory.md')
 
   if (!params.policy.keepLongTerm) {
-    try {
-      await stat(longTerm)
-      if (!params.dryRun) await unlink(longTerm)
+    const exists = await safe(
+      'pruneMemory: stat longterm',
+      async () => {
+        await stat(longTerm)
+        return true
+      },
+      { fallback: false, meta: { path: longTerm } },
+    )
+    if (exists) {
+      if (!params.dryRun) {
+        await safe('pruneMemory: unlink longterm', () => unlink(longTerm), {
+          fallback: undefined,
+          meta: { path: longTerm },
+        })
+      }
       removed.push(longTerm)
-    } catch {
-      // ignore
     }
   } else kept.push(longTerm)
 
-  let memoryEntries: string[] = []
-  try {
-    memoryEntries = await readdir(memoryDir)
-  } catch {
-    memoryEntries = []
-  }
+  const memoryEntries = await safe(
+    'pruneMemory: readdir memory',
+    () => readdir(memoryDir),
+    { fallback: [], meta: { path: memoryDir } },
+  )
   for (const name of memoryEntries) {
     if (name === 'summary' || !name.endsWith('.md')) continue
     const day = parseDay(name)
@@ -69,17 +80,21 @@ export const pruneMemory = async (params: {
     if (!Number.isFinite(dateMs)) continue
     const fullPath = join(memoryDir, name)
     if (dateMs < cutoffRecent) {
-      if (!params.dryRun) await unlink(fullPath).catch(() => undefined)
+      if (!params.dryRun) {
+        await safe('pruneMemory: unlink', () => unlink(fullPath), {
+          fallback: undefined,
+          meta: { path: fullPath },
+        })
+      }
       removed.push(fullPath)
     } else kept.push(fullPath)
   }
 
-  let summaryEntries: string[] = []
-  try {
-    summaryEntries = await readdir(summaryDir)
-  } catch {
-    summaryEntries = []
-  }
+  const summaryEntries = await safe(
+    'pruneMemory: readdir summary',
+    () => readdir(summaryDir),
+    { fallback: [], meta: { path: summaryDir } },
+  )
   for (const name of summaryEntries) {
     if (!name.endsWith('.md')) continue
     const day = parseSummaryDay(name)
@@ -90,7 +105,12 @@ export const pruneMemory = async (params: {
     if (!Number.isFinite(dateMs)) continue
     const fullPath = join(summaryDir, name)
     if (dateMs < cutoffSummary) {
-      if (!params.dryRun) await unlink(fullPath).catch(() => undefined)
+      if (!params.dryRun) {
+        await safe('pruneMemory: unlink summary', () => unlink(fullPath), {
+          fallback: undefined,
+          meta: { path: fullPath },
+        })
+      }
       removed.push(fullPath)
     } else kept.push(fullPath)
   }

@@ -2,6 +2,7 @@ import { rename } from 'node:fs/promises'
 import { join } from 'node:path'
 
 import { readJson, writeJson } from '../fs/json.js'
+import { safe } from '../log/safe.js'
 
 import { listJsonPaths } from './dir.js'
 import { withStoreLock } from './store-lock.js'
@@ -12,13 +13,20 @@ export const readItem = async <T>(
   path: string,
   migrate?: (value: unknown) => T | null,
 ): Promise<T | null> => {
-  try {
-    const raw = await readJson<unknown>(path, null as unknown)
-    if (!raw) return null
-    return migrate ? migrate(raw) : (raw as T)
-  } catch {
-    return null
-  }
+  const raw = await safe(
+    'readItem: readJson',
+    () => readJson<unknown>(path, null as unknown),
+    {
+      fallback: null,
+      meta: { path },
+    },
+  )
+  if (!raw) return null
+  if (!migrate) return raw as T
+  return safe('readItem: migrate', () => migrate(raw), {
+    fallback: null,
+    meta: { path },
+  })
 }
 
 export const writeItem = async (dir: string, id: string, value: unknown) => {
@@ -28,11 +36,11 @@ export const writeItem = async (dir: string, id: string, value: unknown) => {
 }
 
 export const removeItem = async (path: string): Promise<void> => {
-  try {
-    await import('node:fs/promises').then((fs) => fs.unlink(path))
-  } catch {
-    // ignore
-  }
+  await safe(
+    'removeItem: unlink',
+    () => import('node:fs/promises').then((fs) => fs.unlink(path)),
+    { fallback: undefined, meta: { path } },
+  )
 }
 
 export const listItems = async <T>(

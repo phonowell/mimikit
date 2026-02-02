@@ -10,6 +10,8 @@ import { dirname, join } from 'node:path'
 
 import { nowIso } from '../time.js'
 
+import { logSafeError, safe } from './safe.js'
+
 export type RunLogKind = 'task' | 'trigger'
 
 export type RunLogEntry = {
@@ -31,9 +33,19 @@ const pruneIfNeeded = async (
   filePath: string,
   opts: { maxBytes: number; keepLines: number },
 ) => {
-  const info = await stat(filePath).catch(() => null)
+  const info = await safe('pruneRunLog: stat', () => stat(filePath), {
+    fallback: null,
+    meta: { path: filePath },
+  })
   if (!info || info.size <= opts.maxBytes) return
-  const raw = await readFile(filePath, 'utf8').catch(() => '')
+  const raw = await safe(
+    'pruneRunLog: readFile',
+    () => readFile(filePath, 'utf8'),
+    {
+      fallback: '',
+      meta: { path: filePath },
+    },
+  )
   const lines = raw
     .split('\n')
     .map((line) => line.trim())
@@ -56,7 +68,11 @@ export const appendRunLog = async (
   const filePath = resolveRunLogPath(dir, id)
   const prev = writesByPath.get(filePath) ?? Promise.resolve()
   const next = prev
-    .catch(() => undefined)
+    .catch((error) =>
+      logSafeError('appendRunLog: previous', error, {
+        meta: { path: filePath },
+      }),
+    )
     .then(async () => {
       await mkdir(dirname(filePath), { recursive: true })
       const payload = { ts: entry.ts ?? nowIso(), ...entry }
@@ -77,10 +93,18 @@ export const readRunLog = async (
 ): Promise<RunLogEntry[]> => {
   const limit = Math.max(1, Math.min(5000, Math.floor(opts?.limit ?? 200)))
   const filePath = resolveRunLogPath(dir, id)
-  const raw = await readFile(filePath, 'utf8').catch(() => '')
+  const raw = await safe(
+    'readRunLog: readFile',
+    () => readFile(filePath, 'utf8'),
+    {
+      fallback: '',
+      meta: { path: filePath },
+    },
+  )
   if (!raw.trim()) return []
   const lines = raw.split('\n')
   const entries: RunLogEntry[] = []
+  let parseWarned = false
   for (let i = lines.length - 1; i >= 0 && entries.length < limit; i -= 1) {
     const line = lines[i]?.trim()
     if (!line) continue
@@ -90,8 +114,13 @@ export const readRunLog = async (
       const entry = obj as Partial<RunLogEntry>
       if (!entry.ts || !entry.action) continue
       entries.push(entry as RunLogEntry)
-    } catch {
-      // ignore
+    } catch (error) {
+      if (!parseWarned) {
+        parseWarned = true
+        void logSafeError('readRunLog: parse', error, {
+          meta: { path: filePath, line: line.slice(0, 200) },
+        })
+      }
     }
   }
   return entries.reverse()
