@@ -16,8 +16,8 @@
 - WebUI/HTTP：输入与状态展示
 
 ## 核心流程（高层）
-1. 用户输入 → Teller 回复并输出 `<MIMIKIT:record_input />`。
-2. Teller 记录 `user-inputs.jsonl`，通知写入 `teller-notices.jsonl`。
+1. 用户输入 → Teller 回复，并在有新要点时输出 `<MIMIKIT:record_input>...</MIMIKIT:record_input>`。
+2. Teller 写入 `user-inputs.jsonl`（整理摘要，可在 Thinker 消费前更新），通知写入 `teller-notices.jsonl`。
 3. Thinker 在输入稳定后苏醒，解析输入/结果，派发任务或通知。
 4. Worker 从 `agent-queue/` 取任务并写入结果到 `agent-results/`。
 5. Thinker 读取结果并通知 Teller。

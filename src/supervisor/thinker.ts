@@ -42,35 +42,82 @@ const canWake = async (runtime: RuntimeState): Promise<boolean> => {
 }
 
 const runThinkerOnce = async (runtime: RuntimeState): Promise<void> => {
-  const state = await readThinkerState(runtime.paths.thinkerState)
-  const inputs = await takeUnprocessedUserInputs(runtime.paths.userInputs)
-  const results = await takeTaskResults(runtime.paths.agentResults)
-  const tasks = await listTasks(runtime.paths.agentQueue)
+  const startedAt = Date.now()
+  let sessionId: string | null = null
+  let inputs: Awaited<ReturnType<typeof takeUnprocessedUserInputs>> = []
+  let results: Awaited<ReturnType<typeof takeTaskResults>> = []
+  let tasks: Awaited<ReturnType<typeof listTasks>> = []
 
-  const llmResult = await runThinker({
-    workDir: runtime.config.workDir,
-    state,
-    inputs,
-    results,
-    tasks,
-    timeoutMs: DEFAULT_THINKER_TIMEOUT_MS,
-    threadId: state.sessionId || null,
-  })
+  try {
+    const state = await readThinkerState(runtime.paths.thinkerState)
+    sessionId = state.sessionId ? state.sessionId : null
+    inputs = await takeUnprocessedUserInputs(runtime.paths.userInputs)
+    results = await takeTaskResults(runtime.paths.agentResults)
+    tasks = await listTasks(runtime.paths.agentQueue)
+    await appendLog(runtime.paths.log, {
+      event: 'thinker_start',
+      inputCount: inputs.length,
+      resultCount: results.length,
+      taskCount: tasks.length,
+      inputIds: inputs.map((input) => input.id),
+      resultIds: results.map((result) => result.taskId),
+      sessionId,
+    })
 
-  const parsed = parseCommands(llmResult.output)
-  await executeCommands(parsed.commands, { paths: runtime.paths })
+    const llmResult = await runThinker({
+      workDir: runtime.config.workDir,
+      state,
+      inputs,
+      results,
+      tasks,
+      timeoutMs: DEFAULT_THINKER_TIMEOUT_MS,
+      threadId: sessionId,
+    })
 
-  const updated = await readThinkerState(runtime.paths.thinkerState)
-  await writeThinkerState(runtime.paths.thinkerState, {
-    ...updated,
-    sessionId: llmResult.threadId ?? updated.sessionId,
-    lastWakeAt: nowIso(),
-  })
+    const parsed = parseCommands(llmResult.output)
+    await executeCommands(parsed.commands, { paths: runtime.paths })
 
-  await appendLog(runtime.paths.log, {
-    event: 'thinker_run',
-    elapsedMs: llmResult.elapsedMs,
-  })
+    const updated = await readThinkerState(runtime.paths.thinkerState)
+    await writeThinkerState(runtime.paths.thinkerState, {
+      ...updated,
+      sessionId: llmResult.threadId ?? updated.sessionId,
+      lastWakeAt: nowIso(),
+    })
+
+    await appendLog(runtime.paths.log, {
+      event: 'thinker_end',
+      status: 'ok',
+      elapsedMs: llmResult.elapsedMs,
+      ...(llmResult.usage ? { usage: llmResult.usage } : {}),
+    })
+    runtime.thinkerLast = {
+      elapsedMs: llmResult.elapsedMs,
+      ...(llmResult.usage ? { usage: llmResult.usage } : {}),
+      endedAt: nowIso(),
+    }
+  } catch (error) {
+    const elapsedMs = Math.max(0, Date.now() - startedAt)
+    await safe(
+      'appendLog: thinker_end',
+      () =>
+        appendLog(runtime.paths.log, {
+          event: 'thinker_end',
+          status: 'error',
+          error: error instanceof Error ? error.message : String(error),
+          elapsedMs,
+          inputCount: inputs.length,
+          resultCount: results.length,
+          taskCount: tasks.length,
+          sessionId,
+        }),
+      { fallback: undefined },
+    )
+    runtime.thinkerLast = {
+      elapsedMs,
+      endedAt: nowIso(),
+      error: error instanceof Error ? error.message : String(error),
+    }
+  }
 }
 
 export const thinkerLoop = async (runtime: RuntimeState): Promise<void> => {
@@ -84,10 +131,10 @@ export const thinkerLoop = async (runtime: RuntimeState): Promise<void> => {
     } catch (error) {
       runtime.thinkerRunning = false
       await safe(
-        'appendLog: thinker_error',
+        'appendLog: thinker_loop_error',
         () =>
           appendLog(runtime.paths.log, {
-            event: 'thinker_error',
+            event: 'thinker_loop_error',
             error: error instanceof Error ? error.message : String(error),
           }),
         { fallback: undefined },

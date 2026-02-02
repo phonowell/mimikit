@@ -15,6 +15,7 @@ import { workerLoop } from './worker.js'
 
 import type { RuntimeState } from './runtime.js'
 import type { SupervisorConfig } from '../config.js'
+import type { TokenUsage } from '../types/usage.js'
 
 export class Supervisor {
   private runtime: RuntimeState
@@ -47,12 +48,22 @@ export class Supervisor {
 
   async addUserInput(
     text: string,
-    meta?: { source?: string; remote?: string; userAgent?: string },
+    meta?: {
+      source?: string
+      remote?: string
+      userAgent?: string
+      language?: string
+      clientLocale?: string
+      clientTimeZone?: string
+      clientOffsetMinutes?: number
+      clientNowIso?: string
+    },
   ): Promise<string> {
     const id = newId()
     const createdAt = nowIso()
     this.runtime.pendingInputs.push({ id, text, createdAt })
     this.runtime.lastUserInputAt = Date.now()
+    if (meta) this.runtime.lastUserMeta = meta
     await appendHistory(this.runtime.paths.history, {
       id,
       role: 'user',
@@ -65,6 +76,13 @@ export class Supervisor {
       ...(meta?.source ? { source: meta.source } : {}),
       ...(meta?.remote ? { remote: meta.remote } : {}),
       ...(meta?.userAgent ? { userAgent: meta.userAgent } : {}),
+      ...(meta?.language ? { language: meta.language } : {}),
+      ...(meta?.clientLocale ? { clientLocale: meta.clientLocale } : {}),
+      ...(meta?.clientTimeZone ? { clientTimeZone: meta.clientTimeZone } : {}),
+      ...(meta?.clientOffsetMinutes !== undefined
+        ? { clientOffsetMinutes: meta.clientOffsetMinutes }
+        : {}),
+      ...(meta?.clientNowIso ? { clientNowIso: meta.clientNowIso } : {}),
     })
     return id
   }
@@ -82,14 +100,20 @@ export class Supervisor {
   async getStatus(): Promise<{
     ok: boolean
     agentStatus: 'idle' | 'running'
+    thinkerStatus: 'idle' | 'running'
     activeTasks: number
     pendingTasks: number
     pendingInputs: number
+    thinkerLastElapsedMs?: number
+    thinkerLastUsage?: TokenUsage
+    thinkerLastAt?: string
+    thinkerLastError?: string
   }> {
     const tasks = await listTasks(this.runtime.paths.agentQueue)
     const pendingTasks = tasks.filter((task) => task.status === 'queued').length
     const activeTasks = this.runtime.runningWorkers.size
     const agentStatus = activeTasks > 0 ? 'running' : 'idle'
+    const thinkerStatus = this.runtime.thinkerRunning ? 'running' : 'idle'
     const inputs = await readUserInputs(this.runtime.paths.userInputs)
     const pendingInputs =
       this.runtime.pendingInputs.length +
@@ -97,9 +121,22 @@ export class Supervisor {
     return {
       ok: true,
       agentStatus,
+      thinkerStatus,
       activeTasks,
       pendingTasks,
       pendingInputs,
+      ...(this.runtime.thinkerLast?.elapsedMs !== undefined
+        ? { thinkerLastElapsedMs: this.runtime.thinkerLast.elapsedMs }
+        : {}),
+      ...(this.runtime.thinkerLast?.usage
+        ? { thinkerLastUsage: this.runtime.thinkerLast.usage }
+        : {}),
+      ...(this.runtime.thinkerLast?.endedAt
+        ? { thinkerLastAt: this.runtime.thinkerLast.endedAt }
+        : {}),
+      ...(this.runtime.thinkerLast?.error
+        ? { thinkerLastError: this.runtime.thinkerLast.error }
+        : {}),
     }
   }
 

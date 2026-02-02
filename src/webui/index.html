@@ -12,12 +12,20 @@
     <main data-app>
       <header class="app-header">
         <section class="app-controls" aria-label="Status and actions">
-          <p class="status-item">
-            <span class="status-dot" data-status-dot></span>
-            <span class="status-text" data-status-text aria-live="polite"
-              >Loading...</span
-            >
-          </p>
+          <div class="status-group" aria-label="Status">
+            <p class="status-item">
+              <span class="status-dot" data-status-dot></span>
+              <span class="status-text" data-status-text aria-live="polite"
+                >Loading...</span
+              >
+            </p>
+            <p class="status-item" data-thinker-status>
+              <span class="status-dot" data-thinker-dot></span>
+              <span class="status-text" data-thinker-text aria-live="polite"
+                >Thinker idle</span
+              >
+            </p>
+          </div>
           <menu class="app-actions" aria-label="Actions">
             <li>
               <button class="tasks-btn" data-tasks-btn type="button">

@@ -23,9 +23,40 @@ export const handleRequest = async (
   if (path === '/api/input' && req.method === 'POST') {
     const body = await readBody(req)
     let text: string
+    let clientTimeZone: string | undefined
+    let clientOffsetMinutes: number | undefined
+    let clientLocale: string | undefined
+    let clientNowIso: string | undefined
+    let bodyLanguage: string | undefined
     try {
-      const parsed = JSON.parse(body) as { text?: string }
+      const parsed = JSON.parse(body) as {
+        text?: string
+        clientTimeZone?: string
+        clientOffsetMinutes?: number
+        clientLocale?: string
+        clientNowIso?: string
+        language?: string
+      }
       text = parsed.text?.trim() ?? ''
+      clientTimeZone =
+        typeof parsed.clientTimeZone === 'string'
+          ? parsed.clientTimeZone
+          : undefined
+      clientOffsetMinutes =
+        typeof parsed.clientOffsetMinutes === 'number' &&
+        Number.isFinite(parsed.clientOffsetMinutes)
+          ? parsed.clientOffsetMinutes
+          : undefined
+      clientLocale =
+        typeof parsed.clientLocale === 'string'
+          ? parsed.clientLocale
+          : undefined
+      clientNowIso =
+        typeof parsed.clientNowIso === 'string'
+          ? parsed.clientNowIso
+          : undefined
+      bodyLanguage =
+        typeof parsed.language === 'string' ? parsed.language : undefined
     } catch {
       respond(res, 400, { error: 'invalid JSON' })
       return
@@ -39,10 +70,20 @@ export const handleRequest = async (
       typeof req.headers['user-agent'] === 'string'
         ? req.headers['user-agent']
         : undefined
+    const acceptLanguage =
+      typeof req.headers['accept-language'] === 'string'
+        ? req.headers['accept-language']
+        : undefined
+    const language = bodyLanguage ?? acceptLanguage
     const id = await supervisor.addUserInput(text, {
       source: 'http',
       ...(remote ? { remote } : {}),
       ...(userAgent ? { userAgent } : {}),
+      ...(language ? { language } : {}),
+      ...(clientLocale ? { clientLocale } : {}),
+      ...(clientTimeZone ? { clientTimeZone } : {}),
+      ...(clientOffsetMinutes !== undefined ? { clientOffsetMinutes } : {}),
+      ...(clientNowIso ? { clientNowIso } : {}),
     })
     respond(res, 200, { id })
     return

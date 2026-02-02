@@ -5,7 +5,7 @@
 ## HTTP API
 - GET / → WebUI
 - GET /api/status
-- POST /api/input
+- POST /api/input（支持可选字段：clientLocale / clientTimeZone / clientOffsetMinutes / clientNowIso / language）
 - GET /api/messages?limit=...
 - GET /api/tasks?limit=...
 - POST /api/restart

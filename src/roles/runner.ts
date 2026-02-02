@@ -1,4 +1,4 @@
-import { runOllama } from '../llm/ollama.js'
+import { runTellerApi } from '../llm/api-runner.js'
 import { runCodexSdk } from '../llm/sdk-runner.js'
 
 import {
@@ -7,62 +7,88 @@ import {
   buildWorkerPrompt,
 } from './prompt.js'
 
+import type { TellerEnv } from './prompt.js'
+import type { HistoryMessage } from '../types/history.js'
 import type { Task, TaskResult } from '../types/tasks.js'
 import type { TellerNotice } from '../types/teller-notice.js'
 import type { ThinkerState } from '../types/thinker-state.js'
+import type { TokenUsage } from '../types/usage.js'
 import type { UserInput } from '../types/user-input.js'
+import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
-const readEnvModel = (key: string, fallback: string): string => {
+const readEnvOptional = (key: string): string | undefined => {
   const raw = process.env[key]
   const trimmed = raw?.trim()
   if (trimmed && trimmed.length > 0) return trimmed
-  return fallback
+  return undefined
 }
 
-const DEFAULT_TELLER_MODEL = readEnvModel('MIMIKIT_TELLER_MODEL', 'qwen2.5:7b')
-const DEFAULT_TELLER_FALLBACK_MODEL = readEnvModel(
+const normalizeOptional = (value?: string | null): string | undefined => {
+  const trimmed = value?.trim()
+  return trimmed && trimmed.length > 0 ? trimmed : undefined
+}
+
+const DEFAULT_TELLER_FALLBACK_MODEL = readEnvOptional(
   'MIMIKIT_TELLER_FALLBACK_MODEL',
-  '',
 )
 
 export const runTeller = async (params: {
   workDir: string
   inputs: string[]
   notices: TellerNotice[]
+  history: HistoryMessage[]
+  env?: TellerEnv
   timeoutMs: number
   model?: string
+  modelReasoningEffort?: ModelReasoningEffort
   fallbackModel?: string
-}): Promise<{ output: string; elapsedMs: number; fallbackUsed: boolean }> => {
+}): Promise<{
+  output: string
+  elapsedMs: number
+  fallbackUsed: boolean
+  usage?: TokenUsage
+}> => {
   const prompt = await buildTellerPrompt({
     workDir: params.workDir,
     inputs: params.inputs,
     notices: params.notices,
+    history: params.history,
+    ...(params.env ? { env: params.env } : {}),
   })
   try {
-    const result = await runOllama({
-      model: params.model ?? DEFAULT_TELLER_MODEL,
+    const model = normalizeOptional(params.model)
+    const result = await runTellerApi({
       prompt,
       timeoutMs: params.timeoutMs,
+      ...(model ? { model } : {}),
+      ...(params.modelReasoningEffort
+        ? { modelReasoningEffort: params.modelReasoningEffort }
+        : {}),
     })
     return {
       output: result.output,
       elapsedMs: result.elapsedMs,
       fallbackUsed: false,
+      ...(result.usage ? { usage: result.usage } : {}),
     }
   } catch (error) {
-    const fallbackModel = params.fallbackModel ?? DEFAULT_TELLER_FALLBACK_MODEL
+    const fallbackModel = normalizeOptional(
+      params.fallbackModel ?? DEFAULT_TELLER_FALLBACK_MODEL,
+    )
     if (!fallbackModel) throw error
-    const llmResult = await runCodexSdk({
-      role: 'teller',
+    const llmResult = await runTellerApi({
       prompt,
-      workDir: params.workDir,
       timeoutMs: params.timeoutMs,
       model: fallbackModel,
+      ...(params.modelReasoningEffort
+        ? { modelReasoningEffort: params.modelReasoningEffort }
+        : {}),
     })
     return {
       output: llmResult.output,
       elapsedMs: llmResult.elapsedMs,
       fallbackUsed: true,
+      ...(llmResult.usage ? { usage: llmResult.usage } : {}),
     }
   }
 }
@@ -76,7 +102,12 @@ export const runThinker = async (params: {
   timeoutMs: number
   threadId?: string | null
   model?: string
-}): Promise<{ output: string; elapsedMs: number; threadId: string | null }> => {
+}): Promise<{
+  output: string
+  elapsedMs: number
+  threadId: string | null
+  usage?: TokenUsage
+}> => {
   const prompt = await buildThinkerPrompt({
     workDir: params.workDir,
     state: params.state,
@@ -95,6 +126,7 @@ export const runThinker = async (params: {
   return {
     output: llmResult.output,
     elapsedMs: llmResult.elapsedMs,
+    ...(llmResult.usage ? { usage: llmResult.usage } : {}),
     threadId: llmResult.threadId ?? null,
   }
 }
@@ -104,7 +136,7 @@ export const runWorker = async (params: {
   task: Task
   timeoutMs: number
   model?: string
-}): Promise<{ output: string; elapsedMs: number }> => {
+}): Promise<{ output: string; elapsedMs: number; usage?: TokenUsage }> => {
   const prompt = await buildWorkerPrompt({
     workDir: params.workDir,
     task: params.task,
@@ -116,5 +148,9 @@ export const runWorker = async (params: {
     timeoutMs: params.timeoutMs,
     ...(params.model ? { model: params.model } : {}),
   })
-  return { output: llmResult.output, elapsedMs: llmResult.elapsedMs }
+  return {
+    output: llmResult.output,
+    elapsedMs: llmResult.elapsedMs,
+    ...(llmResult.usage ? { usage: llmResult.usage } : {}),
+  }
 }

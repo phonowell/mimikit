@@ -4,12 +4,12 @@ import { appendLog } from '../log/append.js'
 import { safe } from '../log/safe.js'
 import { runTeller } from '../roles/runner.js'
 import { sleep } from '../shared/sleep.js'
-import { appendHistory } from '../storage/history.js'
+import { appendHistory, readHistory } from '../storage/history.js'
 import {
   markNoticesProcessed,
   readTellerNotices,
 } from '../storage/teller-notices.js'
-import { appendUserInputs } from '../storage/user-inputs.js'
+import { upsertUserDraft } from '../storage/user-inputs.js'
 import { nowIso } from '../time.js'
 
 import type { RuntimeState } from './runtime.js'
@@ -55,47 +55,60 @@ const recordInputs = async (
   paths: RuntimeState['paths'],
 ) => {
   if (buffer.inputs.length === 0) return
-  await appendUserInputs(
-    paths.userInputs,
-    buffer.inputs.map((input) => ({
-      id: input.id,
-      text: input.text,
-      createdAt: input.createdAt,
-      processedByThinker: false,
-    })),
-  )
+  const summary = buffer.inputs.map((input) => input.text).join('\n')
+  await upsertUserDraft(paths.userInputs, {
+    id: buffer.inputs[0]?.id ?? `draft-${Date.now()}`,
+    summary,
+    createdAt: buffer.inputs[0]?.createdAt ?? nowIso(),
+    sourceIds: buffer.inputs.map((input) => input.id),
+  })
 }
 
 const runTellerBuffer = async (runtime: RuntimeState, buffer: TellerBuffer) => {
   const inputs = buffer.inputs.map((input) => input.text)
   const { notices } = buffer
+  const historyLimit = Math.max(0, runtime.config.teller.historyLimit)
+  const history = await readHistory(runtime.paths.history)
+  const excludeIds = new Set(buffer.inputs.map((input) => input.id))
+  const filteredHistory = history.filter((item) => !excludeIds.has(item.id))
+  const recentHistory =
+    historyLimit > 0
+      ? filteredHistory.slice(
+          Math.max(0, filteredHistory.length - historyLimit),
+        )
+      : []
+  const startedAt = Date.now()
   try {
+    const { model } = runtime.config.teller
+    const { modelReasoningEffort } = runtime.config.teller
+    await appendLog(runtime.paths.log, {
+      event: 'teller_start',
+      inputCount: inputs.length,
+      noticeCount: notices.length,
+      historyCount: recentHistory.length,
+      historyLimit,
+      inputIds: buffer.inputs.map((input) => input.id),
+      noticeIds: [...buffer.noticeIds],
+      ...(model ? { model } : {}),
+      ...(modelReasoningEffort ? { modelReasoningEffort } : {}),
+    })
     const result = await runTeller({
       workDir: runtime.config.workDir,
       inputs,
       notices,
+      history: recentHistory,
+      ...(runtime.lastUserMeta
+        ? { env: { lastUser: runtime.lastUserMeta } }
+        : {}),
       timeoutMs: DEFAULT_TELLER_TIMEOUT_MS,
-      model: runtime.config.teller.model,
+      ...(model ? { model } : {}),
+      ...(modelReasoningEffort ? { modelReasoningEffort } : {}),
     })
     const parsed = parseCommands(result.output)
-    const hasRecord = parsed.commands.some(
-      (command) => command.action === 'record_input',
-    )
     await executeCommands(parsed.commands, {
       paths: runtime.paths,
       inputBuffer: buffer.inputs,
     })
-    if (!hasRecord && buffer.inputs.length > 0) {
-      await appendUserInputs(
-        runtime.paths.userInputs,
-        buffer.inputs.map((input) => ({
-          id: input.id,
-          text: input.text,
-          createdAt: input.createdAt,
-          processedByThinker: false,
-        })),
-      )
-    }
     if (parsed.text) {
       await appendHistory(runtime.paths.history, {
         id: `teller-${Date.now()}`,
@@ -103,6 +116,7 @@ const runTellerBuffer = async (runtime: RuntimeState, buffer: TellerBuffer) => {
         text: parsed.text,
         createdAt: nowIso(),
         elapsedMs: result.elapsedMs,
+        ...(result.usage ? { usage: result.usage } : {}),
       })
     }
     if (buffer.noticeIds.size > 0) {
@@ -112,18 +126,22 @@ const runTellerBuffer = async (runtime: RuntimeState, buffer: TellerBuffer) => {
     }
     runtime.lastTellerReplyAt = Date.now()
     await appendLog(runtime.paths.log, {
-      event: 'teller_response',
+      event: 'teller_end',
+      status: 'ok',
       elapsedMs: result.elapsedMs,
+      ...(result.usage ? { usage: result.usage } : {}),
       ...(result.fallbackUsed ? { fallbackUsed: true } : {}),
     })
     clearBuffer(buffer)
   } catch (error) {
     await safe(
-      'appendLog: teller_error',
+      'appendLog: teller_end',
       () =>
         appendLog(runtime.paths.log, {
-          event: 'teller_error',
+          event: 'teller_end',
+          status: 'error',
           error: error instanceof Error ? error.message : String(error),
+          elapsedMs: Math.max(0, Date.now() - startedAt),
         }),
       { fallback: undefined },
     )

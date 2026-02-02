@@ -12,13 +12,13 @@
 - docs/design/interfaces.md：HTTP 接口与 CLI
 
 ## 设计原则
-1. Teller 只做快速回复与输入记录
+1. Teller 只做快速回复与输入摘要整理
 2. Thinker 做决策与调度，单线程、可恢复 session
 3. Worker 专注执行任务，不与用户对话
 4. 状态统一落盘到 .mimikit/（JSONL + JSON）
 
 ## 角色职责（摘要）
-- Teller：聊天 + 记录输入 + 传达通知
+- Teller：聊天 + 整理摘要 + 传达通知
 - Thinker：解析输入、派发/更新/取消任务、通知用户
 - Worker：执行任务并写入结果
 

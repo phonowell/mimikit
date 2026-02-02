@@ -1,13 +1,32 @@
-import { appendJsonl, readJsonl, writeJsonl } from './jsonl.js'
+import { readJsonl, updateJsonl, writeJsonl } from './jsonl.js'
 import { withStoreLock } from './store-lock.js'
 
 import type { TellerNotice } from '../types/teller-notice.js'
+
+const MAX_ITEMS = 1000
+
+const capNotices = (notices: TellerNotice[]): TellerNotice[] => {
+  if (notices.length <= MAX_ITEMS) return notices
+  const pending = notices.filter((notice) => !notice.processedByTeller)
+  if (pending.length >= MAX_ITEMS) return pending
+  const slots = MAX_ITEMS - pending.length
+  const processed = notices.filter((notice) => notice.processedByTeller)
+  const keepProcessed = processed.slice(Math.max(0, processed.length - slots))
+  const keepIds = new Set<string>([
+    ...pending.map((notice) => notice.id),
+    ...keepProcessed.map((notice) => notice.id),
+  ])
+  return notices.filter((notice) => keepIds.has(notice.id))
+}
 
 export const appendTellerNotices = async (
   path: string,
   notices: TellerNotice[],
 ): Promise<void> => {
-  await appendJsonl(path, notices)
+  if (notices.length === 0) return
+  await updateJsonl<TellerNotice>(path, (current) =>
+    capNotices([...current, ...notices]),
+  )
 }
 
 export const readTellerNotices = (path: string): Promise<TellerNotice[]> =>
@@ -24,7 +43,7 @@ export const takeUnprocessedNotices = (path: string): Promise<TellerNotice[]> =>
         ? { ...notice, processedByTeller: true }
         : notice,
     )
-    await writeJsonl(path, next)
+    await writeJsonl(path, capNotices(next))
     return pending
   })
 
@@ -39,5 +58,5 @@ export const markNoticesProcessed = (
     const next = notices.map((notice) =>
       mark.has(notice.id) ? { ...notice, processedByTeller: true } : notice,
     )
-    await writeJsonl(path, next)
+    await writeJsonl(path, capNotices(next))
   })

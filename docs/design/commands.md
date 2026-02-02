@@ -13,8 +13,9 @@
 
 ## 命令列表
 ### Teller
-- `record_input`：记录当前输入缓冲到 `user-inputs.jsonl`（每轮最多一次）。
-  - 示例：`<MIMIKIT:record_input />`
+- `record_input`：记录整理后的输入摘要到 `user-inputs.jsonl`（每轮最多一次，可更新未处理草稿）。
+  - 示例：`<MIMIKIT:record_input>关键信息要点...</MIMIKIT:record_input>`
+  - 若没有新要点（如寒暄/闲聊），可不输出该命令。
 
 ### Thinker
 - `dispatch_worker`：派发任务到 `agent-queue/`。
@@ -26,8 +27,9 @@
 - `update_task`：更新任务 `priority` / `blocked_by`。
   - attrs：`id`(必填) · `priority` · `blocked_by`（空字符串用于清空依赖）
   - 示例：`<MIMIKIT:update_task id="task-123" priority="8" blocked_by="" />`
-- `notify_teller`：追加通知到 `teller-notices.jsonl`。
-  - 示例：`<MIMIKIT:notify_teller>任务完成：已生成报告。</MIMIKIT:notify_teller>`
+- `notify_teller`：追加事实/重要数据到 `teller-notices.jsonl`。
+  - 示例：`<MIMIKIT:notify_teller>- 任务完成\n- 已生成报告</MIMIKIT:notify_teller>`
+  - 若没有需要补充的关键信息，可不输出该命令。
 - `update_state`：更新 `thinker-state.json`。
   - attrs：`key`（仅支持 `notes`）
   - 示例：`<MIMIKIT:update_state key="notes">等待用户确认。</MIMIKIT:update_state>`

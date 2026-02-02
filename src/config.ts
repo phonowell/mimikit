@@ -1,5 +1,7 @@
 import { resolve } from 'node:path'
 
+import type { ModelReasoningEffort } from '@openai/codex-sdk'
+
 export type SupervisorConfig = {
   stateDir: string
   workDir: string
@@ -7,7 +9,9 @@ export type SupervisorConfig = {
     pollMs: number
     debounceMs: number
     maxNoticeWaitMs: number
-    model: string
+    historyLimit: number
+    model?: string
+    modelReasoningEffort?: ModelReasoningEffort
   }
   thinker: {
     settleMs: number
@@ -28,7 +32,8 @@ export const defaultConfig = (params: {
     pollMs: 1000,
     debounceMs: 2000,
     maxNoticeWaitMs: 5000,
-    model: 'qwen2.5:7b',
+    historyLimit: 100,
+    model: 'gpt-5.1',
   },
   thinker: {
     settleMs: 30_000,

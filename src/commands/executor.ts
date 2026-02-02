@@ -5,14 +5,13 @@ import {
   readThinkerState,
   writeThinkerState,
 } from '../storage/thinker-state.js'
-import { appendUserInputs } from '../storage/user-inputs.js'
+import { upsertUserDraft } from '../storage/user-inputs.js'
 import { nowIso } from '../time.js'
 
 import type { ParsedCommand } from './parser.js'
 import type { StatePaths } from '../fs/paths.js'
 import type { Task } from '../types/tasks.js'
 import type { TellerNotice } from '../types/teller-notice.js'
-import type { UserInput } from '../types/user-input.js'
 
 export type PendingUserInput = {
   id: string
@@ -53,13 +52,16 @@ export const executeCommands = async (
     if (action === 'record_input') {
       if (inputsRecorded) continue
       if (!ctx.inputBuffer || ctx.inputBuffer.length === 0) continue
-      const payload: UserInput[] = ctx.inputBuffer.map((input) => ({
-        id: input.id,
-        text: input.text,
-        createdAt: input.createdAt,
-        processedByThinker: false,
-      }))
-      await appendUserInputs(ctx.paths.userInputs, payload)
+      const summary = command.content?.trim()
+      const rawFallback = ctx.inputBuffer.map((input) => input.text).join('\n')
+      const draftSummary = summary && summary.length > 0 ? summary : rawFallback
+      const createdAt = ctx.inputBuffer[0]?.createdAt ?? nowIso()
+      await upsertUserDraft(ctx.paths.userInputs, {
+        id: ctx.inputBuffer[0]?.id ?? newId(),
+        summary: draftSummary,
+        createdAt,
+        sourceIds: ctx.inputBuffer.map((input) => input.id),
+      })
       inputsRecorded = true
       continue
     }
@@ -112,11 +114,11 @@ export const executeCommands = async (
     }
 
     if (action === 'notify_teller') {
-      const message = command.content?.trim()
-      if (!message) continue
+      const fact = command.content?.trim()
+      if (!fact) continue
       const notice: TellerNotice = {
         id: newId(),
-        message,
+        fact,
         createdAt: nowIso(),
         processedByTeller: false,
       }

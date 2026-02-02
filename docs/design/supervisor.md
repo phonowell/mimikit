@@ -8,7 +8,7 @@ Supervisor 启动三条循环，均在同一进程内：
 1) **Teller Loop**
 - 轮询 `teller-notices.jsonl` 与内存输入缓冲。
 - 满足 debounce / notice wait 时调用 Teller。
-- 解析输出中的 `<MIMIKIT:record_input />` 并写入 `user-inputs.jsonl`。
+- 解析输出中的 `<MIMIKIT:record_input>...</MIMIKIT:record_input>` 并写入/更新 `user-inputs.jsonl`。
 
 2) **Thinker Loop**
 - 条件：有未处理输入或有任务结果。
@@ -27,5 +27,5 @@ Supervisor 启动三条循环，均在同一进程内：
 - 状态完全从文件推导，进程重启后可继续运行。
 
 ## 日志
-- `log.jsonl` 记录关键事件（输入、teller/thinker/worker 执行、错误）。
+- `log.jsonl` 记录关键事件（输入、teller/thinker/worker 的 start/end、错误）。
 - 日志轮转逻辑见 `src/log/append.ts`。

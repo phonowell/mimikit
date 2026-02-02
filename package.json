@@ -22,7 +22,6 @@
     "@openai/codex-sdk": "0.93.0",
     "dompurify": "^3.3.1",
     "marked": "^17.0.1",
-    "ollama": "^0.5.0",
     "wink-bm25-text-search": "^3.1.0"
   },
   "devDependencies": {

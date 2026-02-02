@@ -2,7 +2,10 @@ import type { Id, ISODate } from './common.js'
 
 export type UserInput = {
   id: Id
-  text: string
+  summary?: string
+  text?: string
   createdAt: ISODate
+  updatedAt?: ISODate
   processedByThinker: boolean
+  sourceIds?: Id[]
 }

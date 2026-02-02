@@ -9,6 +9,8 @@ import { safe, setDefaultLogPath } from './log/safe.js'
 import { acquireInstanceLock } from './storage/instance-lock.js'
 import { Supervisor } from './supervisor/supervisor.js'
 
+import type { ModelReasoningEffort } from '@openai/codex-sdk'
+
 const { values } = parseArgs({
   options: {
     port: { type: 'string', short: 'p', default: '8787' },
@@ -45,6 +47,20 @@ const config = defaultConfig({
 
 const envModel = process.env.MIMIKIT_TELLER_MODEL?.trim()
 if (envModel) config.teller.model = envModel
+const envReasoning = process.env.MIMIKIT_TELLER_REASONING_EFFORT?.trim()
+if (envReasoning) {
+  const allowed: ModelReasoningEffort[] = [
+    'minimal',
+    'low',
+    'medium',
+    'high',
+    'xhigh',
+  ]
+  if (allowed.includes(envReasoning as ModelReasoningEffort))
+    config.teller.modelReasoningEffort = envReasoning as ModelReasoningEffort
+  else
+    console.warn('[cli] invalid MIMIKIT_TELLER_REASONING_EFFORT:', envReasoning)
+}
 
 console.log('[cli] config:', config)
 console.log('[cli] instance lock:', instanceLock.lockPath)

@@ -3,8 +3,8 @@
 > 返回 [系统设计总览](./README.md)
 
 ## 目录结构（概要）
-- user-inputs.jsonl：用户输入（`processedByThinker` 标记）
-- teller-notices.jsonl：Thinker → Teller 通知（`processedByTeller` 标记）
+- user-inputs.jsonl：Teller 整理后的输入摘要（可在 Thinker 消费前更新，`processedByThinker` 标记）
+- teller-notices.jsonl：Thinker → Teller 的事实/重要数据（`processedByTeller` 标记）
 - thinker-state.json：Thinker sessionId / notes / lastWakeAt
 - history.jsonl：聊天历史（WebUI 展示）
 - agent-queue/：任务队列（单文件任务，含 status）

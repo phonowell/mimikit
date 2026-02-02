@@ -44,6 +44,14 @@ const runTask = async (runtime: RuntimeState, task: Task): Promise<void> => {
   try {
     running = await markRunning(runtime, task)
     if (!running) return
+    await appendLog(runtime.paths.log, {
+      event: 'worker_start',
+      taskId: running.id,
+      priority: running.priority,
+      promptChars: running.prompt.length,
+      ...(running.blockedBy ? { blockedBy: running.blockedBy } : {}),
+      ...(running.scheduledAt ? { scheduledAt: running.scheduledAt } : {}),
+    })
     const llmResult = await runWorker({
       workDir: runtime.config.workDir,
       task: running,
@@ -58,9 +66,12 @@ const runTask = async (runtime: RuntimeState, task: Task): Promise<void> => {
     }
     await finalizeTask(runtime, running.id, result)
     await appendLog(runtime.paths.log, {
-      event: 'worker_done',
+      event: 'worker_end',
       taskId: running.id,
+      status: 'done',
       durationMs: result.durationMs,
+      elapsedMs: result.durationMs,
+      ...(llmResult.usage ? { usage: llmResult.usage } : {}),
     })
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error))
@@ -76,12 +87,15 @@ const runTask = async (runtime: RuntimeState, task: Task): Promise<void> => {
     }
     await finalizeTask(runtime, running?.id ?? task.id, result)
     await safe(
-      'appendLog: worker_error',
+      'appendLog: worker_end',
       () =>
         appendLog(runtime.paths.log, {
-          event: 'worker_error',
+          event: 'worker_end',
           taskId: task.id,
+          status,
           error: err.message,
+          durationMs: result.durationMs,
+          elapsedMs: result.durationMs,
         }),
       { fallback: undefined },
     )
