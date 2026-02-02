@@ -12,14 +12,8 @@
   "scripts": {
     "start": "caffeinate -dimsu bin/mimikit",
     "start:windows": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\bin\\mimikit.ps1",
-    "fn-to-arrow": "tsx scripts/fn-to-arrow.ts",
-    "fix-crlf": "tsx scripts/fix-crlf.ts",
-    "fix-bom": "tsx scripts/remove-bom.ts",
     "prompt:preview": "tsx scripts/preview-prompt.ts",
     "prompt:report": "tsx scripts/prompt-report.ts",
-    "debug:loop": "tsx scripts/debug-loop.ts --auto-fix",
-    "debug:repro": "tsx scripts/debug-repro.ts --auto-fix",
-    "smoke:live": "tsx scripts/smoke-live.ts",
     "lint": "eslint \"src/**/*.ts\" --fix",
     "test": "vitest run"
   },
@@ -28,6 +22,7 @@
     "@openai/codex-sdk": "0.93.0",
     "dompurify": "^3.3.1",
     "marked": "^17.0.1",
+    "ollama": "^0.5.0",
     "wink-bm25-text-search": "^3.1.0"
   },
   "devDependencies": {

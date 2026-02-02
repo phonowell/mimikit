@@ -7,41 +7,16 @@ export function bindTasksModal({
   tasksMeta,
   tasksCloseBtn,
 }) {
-  function asNumber(value) {
-    return typeof value === 'number' && Number.isFinite(value) ? value : null
-  }
-
-  function formatCount(value) {
-    if (value === null) return ''
-    const rounded = Math.round(value)
-    if (Math.abs(rounded) < 1000)
-      return new Intl.NumberFormat('en-US').format(rounded)
-    const formatted = new Intl.NumberFormat('en-US', {
-      maximumFractionDigits: 1,
-    }).format(rounded / 1000)
-    return `${formatted}k`
-  }
-
-  function formatUsage(usage) {
-    if (!usage) return ''
-    const input = asNumber(usage.input)
-    const output = asNumber(usage.output)
+  function formatStatusCounts(counts) {
     const parts = []
-    if (input !== null) parts.push(`↑ ${formatCount(input)}`)
-    if (output !== null) parts.push(`↓ ${formatCount(output)}`)
-    return parts.join(' · ')
-  }
-
-  function formatDuration(value) {
-    const ms = asNumber(value)
-    if (ms === null) return ''
-    if (ms < 1000) return `${Math.round(ms)}ms`
-    const seconds = ms / 1000
-    if (seconds < 60)
-      return `${seconds.toFixed(seconds < 10 ? 1 : 0)}s`
-    const minutes = Math.floor(seconds / 60)
-    const remaining = seconds % 60
-    return `${minutes}m ${remaining.toFixed(remaining < 10 ? 1 : 0)}s`
+    if (!counts) return parts
+    if (counts.queued) parts.push(`${counts.queued} queued`)
+    if (counts.running) parts.push(`${counts.running} running`)
+    if (counts.done) parts.push(`${counts.done} done`)
+    if (counts.failed) parts.push(`${counts.failed} failed`)
+    if (counts.cancelled) parts.push(`${counts.cancelled} cancelled`)
+    if (counts.timeout) parts.push(`${counts.timeout} timeout`)
+    return parts
   }
 
   async function loadTasks() {
@@ -69,11 +44,7 @@ export function bindTasksModal({
     if (!tasksList || !tasksMeta) return
     const tasks = data?.tasks || []
     const counts = data?.counts || {}
-    const parts = [`${tasks.length} tasks`]
-    if (counts.pending) parts.push(`${counts.pending} pending`)
-    if (counts.running) parts.push(`${counts.running} running`)
-    if (counts.done) parts.push(`${counts.done} done`)
-    if (counts.failed) parts.push(`${counts.failed} failed`)
+    const parts = [`${tasks.length} tasks`, ...formatStatusCounts(counts)]
     tasksMeta.textContent = parts.join(' · ')
     tasksList.innerHTML = ''
 
@@ -90,7 +61,7 @@ export function bindTasksModal({
     for (const task of tasks) {
       const item = document.createElement('li')
       item.className = 'task-item'
-      item.dataset.status = task.status || 'pending'
+      item.dataset.status = task.status || 'queued'
 
       const article = document.createElement('article')
 
@@ -106,36 +77,32 @@ export function bindTasksModal({
       status.textContent = task.status || 'pending'
       meta.appendChild(status)
 
-      if (task.role) {
-        const role = document.createElement('span')
-        role.className = 'task-role'
-        role.textContent = task.role
-        meta.appendChild(role)
+      if (typeof task.priority === 'number') {
+        const priority = document.createElement('span')
+        priority.className = 'task-priority'
+        priority.textContent = `p${task.priority}`
+        meta.appendChild(priority)
       }
 
-      const durationText = formatDuration(task.durationMs)
-      if (durationText) {
-        const duration = document.createElement('span')
-        duration.className = 'task-duration'
-        duration.textContent = `dur ${durationText}`
-        meta.appendChild(duration)
-      }
-
-      const usageText = formatUsage(task.usage)
-      if (usageText) {
-        const usage = document.createElement('span')
-        usage.className = 'task-usage'
-        usage.textContent = usageText
-        meta.appendChild(usage)
-      }
-
-      const time = task.completedAt || task.createdAt
-      if (time) {
+      if (task.createdAt) {
         const timeEl = document.createElement('span')
         timeEl.className = 'task-time'
-        const label = task.completedAt ? 'done' : 'created'
-        timeEl.textContent = `${label} ${formatDateTime(time)}`
+        timeEl.textContent = `created ${formatDateTime(task.createdAt)}`
         meta.appendChild(timeEl)
+      }
+
+      if (task.scheduledAt) {
+        const scheduled = document.createElement('span')
+        scheduled.className = 'task-scheduled'
+        scheduled.textContent = `scheduled ${formatDateTime(task.scheduledAt)}`
+        meta.appendChild(scheduled)
+      }
+
+      if (task.blockedBy && task.blockedBy.length > 0) {
+        const blocked = document.createElement('span')
+        blocked.className = 'task-blocked'
+        blocked.textContent = `blocked by ${task.blockedBy.join(',')}`
+        meta.appendChild(blocked)
       }
 
       const id = document.createElement('span')

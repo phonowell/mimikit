@@ -1,109 +1,68 @@
 import {
-  buildPlannerPromptSections,
-  buildTellerPromptSections,
-  buildWorkerPromptSections,
-  renderPromptSections,
-  type PromptMode,
-  type PromptSection,
+  buildTellerPrompt,
+  buildThinkerPrompt,
+  buildWorkerPrompt,
 } from '../src/roles/prompt.js'
 
-type Role = 'teller' | 'planner' | 'worker'
-
-type SectionReport = {
-  tag: string
-  contentChars: number
-  wrappedChars: number
-}
+type Role = 'teller' | 'thinker' | 'worker'
 
 type PromptReport = {
   role: Role
-  mode: PromptMode
   totalChars: number
-  separatorChars: number
-  sections: SectionReport[]
 }
 
 const usage = () => {
-  console.log(
-    'Usage: pnpm prompt:report <teller|planner|worker|all> [--mode full|minimal|none] [--json] ["input"...]',
-  )
+  console.log('Usage: pnpm prompt:report <teller|thinker|worker|all> [--json] ["input"...]')
   console.log('  teller: each extra arg becomes one user input line')
-  console.log('  planner/worker: extra args are joined with spaces')
+  console.log('  thinker: extra args become user inputs')
+  console.log('  worker: extra args are joined as the task prompt')
 }
-
-const parseMode = (value?: string): PromptMode | undefined => {
-  if (!value) return undefined
-  if (value === 'full' || value === 'minimal' || value === 'none') return value
-  return undefined
-}
-
-const wrapTag = (section: PromptSection): string =>
-  `<${section.tag}>\n${section.content}\n</${section.tag}>`
 
 const buildReport = async (params: {
   role: Role
   workDir: string
   args: string[]
-  mode?: PromptMode
 }): Promise<PromptReport> => {
-  let sections: PromptSection[] = []
+  let prompt = ''
   if (params.role === 'teller') {
-    sections = await buildTellerPromptSections({
+    prompt = await buildTellerPrompt({
       workDir: params.workDir,
-      history: [],
-      memory: [],
       inputs: params.args,
-      events: [],
-      promptMode: params.mode,
+      notices: [],
     })
   }
-  if (params.role === 'planner') {
-    sections = await buildPlannerPromptSections({
+  if (params.role === 'thinker') {
+    prompt = await buildThinkerPrompt({
       workDir: params.workDir,
-      history: [],
-      memory: [],
-      request: params.args.join(' '),
-      promptMode: params.mode,
+      state: { sessionId: '', lastWakeAt: '', notes: '' },
+      inputs: params.args.map((text, idx) => ({
+        id: String(idx + 1),
+        text,
+        createdAt: new Date().toISOString(),
+        processedByThinker: false,
+      })),
+      results: [],
+      tasks: [],
     })
   }
   if (params.role === 'worker') {
-    sections = await buildWorkerPromptSections({
+    prompt = await buildWorkerPrompt({
       workDir: params.workDir,
-      taskPrompt: params.args.join(' '),
-      promptMode: params.mode,
+      task: {
+        id: 'task-1',
+        prompt: params.args.join(' '),
+        priority: 5,
+        status: 'queued',
+        createdAt: new Date().toISOString(),
+      },
     })
   }
-
-  const rendered = renderPromptSections(sections)
-  const totalChars = rendered.length
-  const separatorChars = Math.max(0, sections.length - 1) * 2
-
-  const reports = sections.map((section) => ({
-    tag: section.tag,
-    contentChars: section.content.length,
-    wrappedChars: wrapTag(section).length,
-  }))
-
-  return {
-    role: params.role,
-    mode: params.mode ?? 'full',
-    totalChars,
-    separatorChars,
-    sections: reports,
-  }
+  return { role: params.role, totalChars: prompt.length }
 }
 
 const printReport = (report: PromptReport) => {
   console.log(`role: ${report.role}`)
-  console.log(`mode: ${report.mode}`)
   console.log(`total chars: ${report.totalChars}`)
-  console.log(`separator chars: ${report.separatorChars}`)
-  console.log('sections:')
-  report.sections.forEach((section) => {
-    console.log(
-      `- ${section.tag}: ${section.wrappedChars} (content ${section.contentChars})`,
-    )
-  })
 }
 
 const main = async () => {
@@ -114,7 +73,6 @@ const main = async () => {
   }
 
   let role: Role | 'all' | undefined
-  let mode: PromptMode | undefined
   let json = false
   const args: string[] = []
 
@@ -122,16 +80,6 @@ const main = async () => {
     const arg = argv[i]
     if (!role && !arg.startsWith('-')) {
       role = arg as Role | 'all'
-      continue
-    }
-    if (arg === '--mode' || arg === '-m') {
-      mode = parseMode(argv[i + 1])
-      i += 1
-      if (!mode) {
-        console.error('Invalid --mode. Use full, minimal, or none.')
-        usage()
-        process.exit(1)
-      }
       continue
     }
     if (arg === '--json' || arg === '-j') {
@@ -147,7 +95,7 @@ const main = async () => {
   }
 
   const workDir = process.cwd()
-  const allowedRoles: Role[] = ['teller', 'planner', 'worker']
+  const allowedRoles: Role[] = ['teller', 'thinker', 'worker']
   if (role !== 'all' && !allowedRoles.includes(role as Role)) {
     console.error(`Unknown role: ${role}`)
     usage()
@@ -155,7 +103,6 @@ const main = async () => {
   }
 
   const roles: Role[] = role === 'all' ? allowedRoles : [role]
-
   const reports = [] as PromptReport[]
   for (const item of roles) {
     reports.push(
@@ -163,14 +110,12 @@ const main = async () => {
         role: item,
         workDir,
         args,
-        mode,
       }),
     )
   }
 
   if (json) {
-    const payload = role === 'all' ? { mode: mode ?? 'full', reports } : reports[0]
-    console.log(JSON.stringify(payload, null, 2))
+    console.log(JSON.stringify(role === 'all' ? { reports } : reports[0], null, 2))
     return
   }
 

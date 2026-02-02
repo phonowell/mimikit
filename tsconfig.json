@@ -5,7 +5,7 @@
     "baseUrl": ".",
     "exactOptionalPropertyTypes": true,
     "experimentalDecorators": true,
-    "lib": ["esnext"],
+    "lib": ["esnext", "dom"],
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "noFallthroughCasesInSwitch": true,

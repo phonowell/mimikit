@@ -1,56 +1,13 @@
-import { readJson, writeJson } from '../fs/json.js'
-
-import { withStoreLock } from './store-lock.js'
+import { appendJsonl, readJsonl } from './jsonl.js'
 
 import type { HistoryMessage } from '../types/history.js'
 
-const normalizeHistory = (
-  messages: HistoryMessage[],
-): { normalized: HistoryMessage[]; changed: boolean } => {
-  let changed = false
-  const normalized = messages.map((message) => {
-    const role: HistoryMessage['role'] =
-      message.role === 'user' ? 'user' : 'agent'
-    if (role !== message.role) {
-      changed = true
-      return { ...message, role }
-    }
-    return message
-  })
-  return { normalized, changed }
-}
-
-export const normalizeHistoryFile = async (path: string): Promise<void> => {
-  await withStoreLock(path, async () => {
-    const history = await readJson<HistoryMessage[]>(path, [])
-    const { normalized, changed } = normalizeHistory(history)
-    if (changed) await writeJson(path, normalized)
-  })
-}
-
-export const readHistory = async (path: string): Promise<HistoryMessage[]> => {
-  const history = await readJson<HistoryMessage[]>(path, [])
-  return normalizeHistory(history).normalized
-}
-
-export const writeHistory = async (
-  path: string,
-  messages: HistoryMessage[],
-): Promise<void> => {
-  await withStoreLock(path, async () => {
-    const { normalized } = normalizeHistory(messages)
-    await writeJson(path, normalized)
-  })
-}
+export const readHistory = (path: string): Promise<HistoryMessage[]> =>
+  readJsonl<HistoryMessage>(path)
 
 export const appendHistory = async (
   path: string,
   message: HistoryMessage,
 ): Promise<void> => {
-  await withStoreLock(path, async () => {
-    const history = await readJson<HistoryMessage[]>(path, [])
-    history.push(message)
-    const { normalized } = normalizeHistory(history)
-    await writeJson(path, normalized)
-  })
+  await appendJsonl(path, [message])
 }

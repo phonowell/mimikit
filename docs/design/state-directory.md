@@ -3,22 +3,16 @@
 > 返回 [系统设计总览](./README.md)
 
 ## 目录结构（概要）
-- inbox.json：用户输入队列（Host 写入）
-- teller_inbox.json：任务结果/needs_input 事件
-- pending_question.json：ask_user 等待回覆
-- history.json：对话历史（归档标记见 memory.md）
-- task_status.json：任务终态索引（条件评估用）
-- memory.md：长期记忆
-- memory/ 与 memory/summary/：近期记忆与汇总
-- planner/queue | running | results：Planner 任务与结果
-- worker/queue | running | results：Worker 任务与结果
-- triggers/：持久化调度与条件触发器
-- runs/tasks/：任务运行日志（按 taskId 分文件 JSONL）
-- runs/triggers/：触发器运行日志（按 triggerId 分文件 JSONL）
+- user-inputs.jsonl：用户输入（`processedByThinker` 标记）
+- teller-notices.jsonl：Thinker → Teller 通知（`processedByTeller` 标记）
+- thinker-state.json：Thinker sessionId / notes / lastWakeAt
+- history.jsonl：聊天历史（WebUI 展示）
+- agent-queue/：任务队列（单文件任务，含 status）
+- agent-results/：任务结果（Thinker 读取后删除）
+- llm/：模型输出调试文件
 - log.jsonl：运行日志
 
 ## 约束
-- 跨进程通信统一落在 .mimikit/ JSON，需原子写入。
-- 关键 JSON 文件使用 `.lock` 文件串行化读改写；写入会生成 `.bak` 备份。
-- 任务与触发器结构见 docs/design/task-data.md。
-- 记忆归档与 history 规则见 docs/design/memory.md。
+- JSONL 以“追加 + 重写标记”为主；标记 processed 时整文件重写。
+- 关键文件写入使用 `.lock` 串行化（store-lock）。
+- 任务与结果结构见 docs/design/task-data.md。

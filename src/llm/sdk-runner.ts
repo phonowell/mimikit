@@ -8,12 +8,13 @@ import { loadCodexSettings } from './openai.js'
 
 import type { TokenUsage } from '../types/usage.js'
 
-type SdkRole = 'teller' | 'planner' | 'worker'
+type SdkRole = 'teller' | 'thinker' | 'worker'
 
 type RunResult = {
   output: string
   usage?: TokenUsage
   elapsedMs: number
+  threadId?: string | null
 }
 
 type LogContext = Record<string, unknown>
@@ -26,6 +27,7 @@ export const runCodexSdk = async (params: {
   workDir: string
   model?: string
   timeoutMs: number
+  threadId?: string | null
   outputSchema?: unknown
   logPath?: string
   logContext?: LogContext
@@ -96,7 +98,9 @@ export const runCodexSdk = async (params: {
     approvalPolicy,
   }
 
-  const thread = codex.startThread(threadOptions)
+  const thread = params.threadId
+    ? codex.resumeThread(params.threadId, threadOptions)
+    : codex.startThread(threadOptions)
   const controller = params.timeoutMs > 0 ? new AbortController() : null
   const startedAt = Date.now()
   let lastActivityAt = startedAt
@@ -156,7 +160,12 @@ export const runCodexSdk = async (params: {
       idleTimeoutMs,
       timeoutType: 'idle',
     })
-    return { output: finalResponse, elapsedMs, ...(usage ? { usage } : {}) }
+    return {
+      output: finalResponse,
+      elapsedMs,
+      ...(usage ? { usage } : {}),
+      threadId: thread.id ?? params.threadId ?? null,
+    }
   } catch (error) {
     const elapsedMs = Math.max(0, Date.now() - startedAt)
     const err = error instanceof Error ? error : new Error(String(error))

@@ -1,22 +1,16 @@
 import {
-  buildPlannerPrompt,
   buildTellerPrompt,
+  buildThinkerPrompt,
   buildWorkerPrompt,
-  type PromptMode,
 } from '../src/roles/prompt.js'
 
 const usage = () => {
   console.log(
-    'Usage: pnpm prompt:preview <teller|planner|worker> [--mode full|minimal|none] ["input"...]',
+    'Usage: pnpm prompt:preview <teller|thinker|worker> ["input"...]',
   )
   console.log('  teller: each extra arg becomes one user input line')
-  console.log('  planner/worker: extra args are joined with spaces')
-}
-
-const parseMode = (value?: string): PromptMode | undefined => {
-  if (!value) return undefined
-  if (value === 'full' || value === 'minimal' || value === 'none') return value
-  return undefined
+  console.log('  thinker: extra args become user inputs')
+  console.log('  worker: extra args are joined as the task prompt')
 }
 
 const main = async () => {
@@ -26,56 +20,32 @@ const main = async () => {
     process.exit(argv.length ? 0 : 1)
   }
 
-  let role: string | undefined
-  let mode: PromptMode | undefined
-  const args: string[] = []
-
-  for (let i = 0; i < argv.length; i += 1) {
-    const arg = argv[i]
-    if (!role && !arg.startsWith('-')) {
-      role = arg
-      continue
-    }
-    if (arg === '--mode' || arg === '-m') {
-      mode = parseMode(argv[i + 1])
-      i += 1
-      if (!mode) {
-        console.error('Invalid --mode. Use full, minimal, or none.')
-        usage()
-        process.exit(1)
-      }
-      continue
-    }
-    args.push(arg)
-  }
-
-  if (!role) {
-    usage()
-    process.exit(1)
-  }
-
+  const role = argv[0]
+  const args = argv.slice(1)
   const workDir = process.cwd()
 
   switch (role) {
     case 'teller': {
       const prompt = await buildTellerPrompt({
         workDir,
-        history: [],
-        memory: [],
         inputs: args,
-        events: [],
-        promptMode: mode,
+        notices: [],
       })
       console.log(prompt)
       return
     }
-    case 'planner': {
-      const prompt = await buildPlannerPrompt({
+    case 'thinker': {
+      const prompt = await buildThinkerPrompt({
         workDir,
-        history: [],
-        memory: [],
-        request: args.join(' '),
-        promptMode: mode,
+        state: { sessionId: '', lastWakeAt: '', notes: '' },
+        inputs: args.map((text, idx) => ({
+          id: String(idx + 1),
+          text,
+          createdAt: new Date().toISOString(),
+          processedByThinker: false,
+        })),
+        results: [],
+        tasks: [],
       })
       console.log(prompt)
       return
@@ -83,8 +53,13 @@ const main = async () => {
     case 'worker': {
       const prompt = await buildWorkerPrompt({
         workDir,
-        taskPrompt: args.join(' '),
-        promptMode: mode,
+        task: {
+          id: 'task-1',
+          prompt: args.join(' '),
+          priority: 5,
+          status: 'queued',
+          createdAt: new Date().toISOString(),
+        },
       })
       console.log(prompt)
       return
