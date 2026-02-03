@@ -6,6 +6,7 @@ import { safe, setDefaultLogPath } from '../log/safe.js'
 import { appendHistory, readHistory } from '../storage/history.js'
 import { nowIso } from '../time.js'
 
+import { cancelTask } from './cancel.js'
 import { managerLoop } from './manager.js'
 import { buildTaskViews } from './task-view.js'
 import { workerLoop } from './worker.js'
@@ -28,6 +29,7 @@ export class Supervisor {
       pendingResults: [],
       tasks: [],
       runningWorkers: new Set(),
+      runningControllers: new Map(),
     }
   }
 
@@ -89,6 +91,10 @@ export class Supervisor {
 
   getTasks(limit = 200) {
     return buildTaskViews(this.runtime.tasks, limit)
+  }
+
+  cancelTask(taskId: string, meta?: { source?: string; reason?: string }) {
+    return cancelTask(this.runtime, taskId, meta)
   }
 
   getStatus(): {

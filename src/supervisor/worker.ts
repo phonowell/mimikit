@@ -4,6 +4,7 @@ import { runWorker } from '../roles/runner.js'
 import { sleep } from '../shared/utils.js'
 import { appendTaskResultArchive } from '../storage/task-results.js'
 import {
+  markTaskCanceled,
   markTaskFailed,
   markTaskRunning,
   markTaskSucceeded,
@@ -14,7 +15,11 @@ import { nowIso } from '../time.js'
 import type { RuntimeState } from './runtime.js'
 import type { Task, TaskResult } from '../types/tasks.js'
 
-const runTask = async (runtime: RuntimeState, task: Task): Promise<void> => {
+const runTask = async (
+  runtime: RuntimeState,
+  task: Task,
+  controller: AbortController,
+): Promise<void> => {
   const startedAt = Date.now()
   try {
     await appendLog(runtime.paths.log, {
@@ -27,7 +32,50 @@ const runTask = async (runtime: RuntimeState, task: Task): Promise<void> => {
       workDir: runtime.config.workDir,
       task,
       timeoutMs: runtime.config.worker.timeoutMs,
+      abortSignal: controller.signal,
     })
+    if (task.status === 'canceled') {
+      const completedAt = nowIso()
+      const result: TaskResult = {
+        taskId: task.id,
+        status: 'canceled',
+        ok: false,
+        output: 'Task canceled',
+        durationMs: Math.max(0, Date.now() - startedAt),
+        completedAt,
+        ...(task.title ? { title: task.title } : {}),
+        ...(llmResult.usage ? { usage: llmResult.usage } : {}),
+      }
+      const archivePath = await safe(
+        'appendTaskResultArchive: worker',
+        () =>
+          appendTaskResultArchive(runtime.config.stateDir, {
+            taskId: task.id,
+            title: task.title,
+            status: result.status,
+            prompt: task.prompt,
+            output: result.output,
+            createdAt: task.createdAt,
+            completedAt,
+            durationMs: result.durationMs,
+            ...(result.usage ? { usage: result.usage } : {}),
+          }),
+        { fallback: undefined },
+      )
+      if (archivePath) result.archivePath = archivePath
+      markTaskCanceled(runtime.tasks, task.id)
+      runtime.pendingResults.push(result)
+      await appendLog(runtime.paths.log, {
+        event: 'worker_end',
+        taskId: task.id,
+        status: result.status,
+        durationMs: result.durationMs,
+        elapsedMs: result.durationMs,
+        ...(llmResult.usage ? { usage: llmResult.usage } : {}),
+        ...(archivePath ? { archivePath } : {}),
+      })
+      return
+    }
     const completedAt = nowIso()
     const result: TaskResult = {
       taskId: task.id,
@@ -69,6 +117,53 @@ const runTask = async (runtime: RuntimeState, task: Task): Promise<void> => {
     })
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error))
+    const isCanceled = task.status === 'canceled'
+    if (isCanceled) {
+      const completedAt = nowIso()
+      const result: TaskResult = {
+        taskId: task.id,
+        status: 'canceled',
+        ok: false,
+        output: err.message || 'Task canceled',
+        durationMs: Math.max(0, Date.now() - startedAt),
+        completedAt,
+        ...(task.title ? { title: task.title } : {}),
+      }
+      const archivePath = await safe(
+        'appendTaskResultArchive: worker',
+        () =>
+          appendTaskResultArchive(runtime.config.stateDir, {
+            taskId: task.id,
+            title: task.title,
+            status: result.status,
+            prompt: task.prompt,
+            output: result.output,
+            createdAt: task.createdAt,
+            completedAt,
+            durationMs: result.durationMs,
+          }),
+        { fallback: undefined },
+      )
+      if (archivePath) result.archivePath = archivePath
+      markTaskCanceled(runtime.tasks, task.id)
+      runtime.pendingResults.push(result)
+      await safe(
+        'appendLog: worker_end',
+        () =>
+          appendLog(runtime.paths.log, {
+            event: 'worker_end',
+            taskId: task.id,
+            status: 'canceled',
+            taskStatus: result.status,
+            error: err.message,
+            durationMs: result.durationMs,
+            elapsedMs: result.durationMs,
+            ...(archivePath ? { archivePath } : {}),
+          }),
+        { fallback: undefined },
+      )
+      return
+    }
     const isTimeout =
       err.name === 'AbortError' || /timed out|timeout/i.test(err.message)
     const status = isTimeout ? 'timeout' : 'error'
@@ -119,13 +214,17 @@ const runTask = async (runtime: RuntimeState, task: Task): Promise<void> => {
 }
 
 const spawnWorker = async (runtime: RuntimeState, task: Task) => {
+  if (task.status !== 'pending') return
   if (runtime.runningWorkers.has(task.id)) return
   runtime.runningWorkers.add(task.id)
+  const controller = new AbortController()
+  runtime.runningControllers.set(task.id, controller)
   markTaskRunning(runtime.tasks, task.id)
   try {
-    await runTask(runtime, task)
+    await runTask(runtime, task, controller)
   } finally {
     runtime.runningWorkers.delete(task.id)
+    runtime.runningControllers.delete(task.id)
   }
 }
 

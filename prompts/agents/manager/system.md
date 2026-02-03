@@ -23,12 +23,14 @@
 
 ## 可用命令
 <MIMIKIT:dispatch_worker prompt="任务描述" title="任务标题" />
+<MIMIKIT:cancel_task id="任务ID" />
 
 重要：命令必须以 ` />` 结尾（自闭合），不是 `>`。
 
 示例：
 - 正确：<MIMIKIT:dispatch_worker prompt="检查磁盘空间" title="检查磁盘" />
 - 正确：<MIMIKIT:dispatch_worker prompt="多行任务\n第二行" title="多行任务" />
+- 正确：<MIMIKIT:cancel_task id="task_123" />
 - 错误：<MIMIKIT:dispatch_worker prompt="xxx">
 
 ## 输入格式
