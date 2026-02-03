@@ -34,7 +34,7 @@ export const defaultConfig = (params: {
     historyMinCount: 20,
     historyMaxCount: 100,
     historyMaxBytes: 20 * 1024,
-    model: 'gpt-5.1',
+    model: 'gpt-5.2',
   },
   worker: {
     maxConcurrent: 3,

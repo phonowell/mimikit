@@ -25,5 +25,5 @@ export const summaryFromCandidates = (
 export const titleFromCandidates = (
   id: string,
   candidates: Array<string | undefined>,
-  limit = 120,
+  limit = 48,
 ): string => summaryFromCandidates(candidates, limit) ?? id

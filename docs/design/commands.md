@@ -13,8 +13,8 @@
 
 ## 命令列表
 - `dispatch_worker`：派发任务到内存队列。
-  - attrs：`prompt`(必填)
-  - 示例：`<MIMIKIT:dispatch_worker prompt="整理接口文档" />`
+  - attrs：`prompt`(必填)，`title`(可选，任务短标题)
+  - 示例：`<MIMIKIT:dispatch_worker prompt="整理接口文档" title="整理文档" />`
   - 也可使用内容体：`<MIMIKIT:dispatch_worker>整理接口文档</MIMIKIT:dispatch_worker>`
 
 ## 解析与执行

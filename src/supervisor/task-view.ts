@@ -12,14 +12,17 @@ export type TaskView = {
 export type TaskCounts = Record<TaskStatus, number>
 
 const initCounts = (): TaskCounts => ({
-  done: 0,
   pending: 0,
+  running: 0,
+  succeeded: 0,
+  failed: 0,
+  canceled: 0,
 })
 
 const taskToView = (task: Task): TaskView => ({
   id: task.id,
   status: task.status,
-  title: titleFromCandidates(task.id, [task.prompt]),
+  title: task.title || titleFromCandidates(task.id, [task.prompt]),
   createdAt: task.createdAt,
 })
 

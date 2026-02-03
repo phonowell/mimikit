@@ -42,8 +42,6 @@ export function createMessagesController({
     scrollToBottom: scroll.scrollToBottom,
     updateScrollButton: scroll.updateScrollButton,
     removeEmpty,
-    formatElapsedLabel,
-    loadingTimeThreshold: 3000,
   })
 
   const syncLoadingState = () => {

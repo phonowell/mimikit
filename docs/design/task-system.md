@@ -10,7 +10,7 @@
   ↓
 Worker 执行
   ↓
-结果回传 → Manager 告知用户
+结果回传 → Manager 告知用户（同时写入 results 归档）
 ```
 
 ## 调度规则
@@ -21,6 +21,7 @@ Worker 执行
 - Worker 不派发新任务、不与用户对话。
 - Manager 通过 MIMIKIT 命令派发任务。
 - 无内建重试；需要重试由 Manager 重新派发。
+- 结果落盘：.mimikit/results/YYYY-MM-DD/
 
 ## 相关文档
 - 任务结构：docs/design/task-data.md

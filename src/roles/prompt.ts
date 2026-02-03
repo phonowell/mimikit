@@ -138,17 +138,24 @@ const formatTaskResults = (results: TaskResult[]): string => {
   if (results.length === 0) return '（无）'
   const text = results
     .map((result) => {
-      const status = result.ok ? 'ok' : 'error'
-      return `- [${result.taskId}] ${status}\n${result.output}`
+      const title = result.title ? ` ${result.title}` : ''
+      const archive = result.archivePath
+        ? `\narchive: ${result.archivePath}`
+        : ''
+      return `- [${result.taskId}] ${result.status}${title}\n${result.output}${archive}`
     })
     .join('\n')
   return escapeCdata(text)
 }
 
 const formatQueueStatus = (tasks: Task[]): string => {
-  const pending = tasks.filter((task) => task.status === 'pending')
-  if (pending.length === 0) return '（无）'
-  const text = pending.map((task) => `- [${task.id}] ${task.prompt}`).join('\n')
+  const active = tasks.filter(
+    (task) => task.status === 'pending' || task.status === 'running',
+  )
+  if (active.length === 0) return '（无）'
+  const text = active
+    .map((task) => `- [${task.id}] ${task.status} ${task.title}`)
+    .join('\n')
   return escapeCdata(text)
 }
 

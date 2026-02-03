@@ -10,10 +10,7 @@ export function selectAppElements() {
     input: $('[data-input]'),
     sendBtn: $('[data-send]'),
     restartBtn: $('[data-restart]'),
-    tasksBtn: $('[data-tasks-btn]'),
-    tasksModal: $('[data-tasks-modal]'),
     tasksList: $('[data-tasks-list]'),
     tasksMeta: $('[data-tasks-meta]'),
-    tasksCloseBtn: $('[data-tasks-close]'),
   }
 }

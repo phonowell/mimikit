@@ -7,7 +7,8 @@
 {
   "id": "task-001",
   "prompt": "...",
-  "status": "pending|done",
+  "title": "简短标题",
+  "status": "pending|running|succeeded|failed|canceled",
   "createdAt": "2026-02-02T12:00:00.000Z"
 }
 ```
@@ -16,14 +17,16 @@
 ```jsonc
 {
   "taskId": "task-001",
-  "status": "done",
+  "status": "succeeded|failed|canceled",
   "ok": true,
   "output": "...",
   "durationMs": 12345,
-  "completedAt": "2026-02-02T12:34:56.789Z"
+  "completedAt": "2026-02-02T12:34:56.789Z",
+  "usage": { "input": 123, "output": 456, "total": 579 },
+  "archivePath": ".mimikit/results/2026-02-02/task-001_short-title.md"
 }
 ```
 
 ## 说明
-- 任务与结果均在内存，未持久化。
-- 结果由 Worker 回传给 Manager，用于生成用户回复。
+- 任务仍在内存，结果会落盘到 .mimikit/results/YYYY-MM-DD/。
+- 结果由 Worker 回传给 Manager，用于生成用户回复，同时写入归档文件。

@@ -23,7 +23,7 @@ type ParsedCommand = {
 }
 
 const MIMIKIT_TAG =
-  /<MIMIKIT:(\w+)([^>]*?)(?:\/>|>(?:([\s\S]*?)<\/MIMIKIT:\1>)?)/g
+  /<MIMIKIT:(\w+)((?:\s+\w+\s*=\s*"[^"]*")*)\s*(?:\/>|>(?:([\s\S]*?)<\/MIMIKIT:\1>)?)/g
 const ATTR_RE = /(\w+)\s*=\s*"([^"]*)"/g
 
 const parseAttrs = (raw: string): Record<string, string> => {
@@ -153,7 +153,8 @@ const runManagerBuffer = async (
           ? content
           : (command.attrs.prompt?.trim() ?? '')
       if (!prompt) continue
-      enqueueTask(runtime.tasks, prompt)
+      const rawTitle = command.attrs.title?.trim()
+      enqueueTask(runtime.tasks, prompt, rawTitle)
     }
     if (parsed.text) {
       await appendHistory(runtime.paths.history, {

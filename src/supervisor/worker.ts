@@ -2,7 +2,13 @@ import { appendLog } from '../log/append.js'
 import { safe } from '../log/safe.js'
 import { runWorker } from '../roles/runner.js'
 import { sleep } from '../shared/utils.js'
-import { markTaskDone, pickNextPendingTask } from '../tasks/queue.js'
+import { appendTaskResultArchive } from '../storage/task-results.js'
+import {
+  markTaskFailed,
+  markTaskRunning,
+  markTaskSucceeded,
+  pickNextPendingTask,
+} from '../tasks/queue.js'
 import { nowIso } from '../time.js'
 
 import type { RuntimeState } from './runtime.js'
@@ -22,38 +28,77 @@ const runTask = async (runtime: RuntimeState, task: Task): Promise<void> => {
       task,
       timeoutMs: runtime.config.worker.timeoutMs,
     })
+    const completedAt = nowIso()
     const result: TaskResult = {
       taskId: task.id,
-      status: 'done',
+      status: 'succeeded',
       ok: true,
       output: llmResult.output,
       durationMs: Math.max(0, Date.now() - startedAt),
-      completedAt: nowIso(),
+      completedAt,
+      ...(llmResult.usage ? { usage: llmResult.usage } : {}),
+      ...(task.title ? { title: task.title } : {}),
     }
-    markTaskDone(runtime.tasks, task.id)
+    const archivePath = await safe(
+      'appendTaskResultArchive: worker',
+      () =>
+        appendTaskResultArchive(runtime.config.stateDir, {
+          taskId: task.id,
+          title: task.title,
+          status: result.status,
+          prompt: task.prompt,
+          output: result.output,
+          createdAt: task.createdAt,
+          completedAt,
+          durationMs: result.durationMs,
+          ...(result.usage ? { usage: result.usage } : {}),
+        }),
+      { fallback: undefined },
+    )
+    if (archivePath) result.archivePath = archivePath
+    markTaskSucceeded(runtime.tasks, task.id)
     runtime.pendingResults.push(result)
     await appendLog(runtime.paths.log, {
       event: 'worker_end',
       taskId: task.id,
-      status: 'done',
+      status: result.status,
       durationMs: result.durationMs,
       elapsedMs: result.durationMs,
       ...(llmResult.usage ? { usage: llmResult.usage } : {}),
+      ...(archivePath ? { archivePath } : {}),
     })
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error))
     const isTimeout =
       err.name === 'AbortError' || /timed out|timeout/i.test(err.message)
     const status = isTimeout ? 'timeout' : 'error'
+    const completedAt = nowIso()
     const result: TaskResult = {
       taskId: task.id,
-      status: 'done',
+      status: 'failed',
       ok: false,
       output: err.message,
       durationMs: Math.max(0, Date.now() - startedAt),
-      completedAt: nowIso(),
+      completedAt,
+      ...(task.title ? { title: task.title } : {}),
     }
-    markTaskDone(runtime.tasks, task.id)
+    const archivePath = await safe(
+      'appendTaskResultArchive: worker',
+      () =>
+        appendTaskResultArchive(runtime.config.stateDir, {
+          taskId: task.id,
+          title: task.title,
+          status: result.status,
+          prompt: task.prompt,
+          output: result.output,
+          createdAt: task.createdAt,
+          completedAt,
+          durationMs: result.durationMs,
+        }),
+      { fallback: undefined },
+    )
+    if (archivePath) result.archivePath = archivePath
+    markTaskFailed(runtime.tasks, task.id)
     runtime.pendingResults.push(result)
     await safe(
       'appendLog: worker_end',
@@ -62,9 +107,11 @@ const runTask = async (runtime: RuntimeState, task: Task): Promise<void> => {
           event: 'worker_end',
           taskId: task.id,
           status,
+          taskStatus: result.status,
           error: err.message,
           durationMs: result.durationMs,
           elapsedMs: result.durationMs,
+          ...(archivePath ? { archivePath } : {}),
         }),
       { fallback: undefined },
     )
@@ -74,6 +121,7 @@ const runTask = async (runtime: RuntimeState, task: Task): Promise<void> => {
 const spawnWorker = async (runtime: RuntimeState, task: Task) => {
   if (runtime.runningWorkers.has(task.id)) return
   runtime.runningWorkers.add(task.id)
+  markTaskRunning(runtime.tasks, task.id)
   try {
     await runTask(runtime, task)
   } finally {

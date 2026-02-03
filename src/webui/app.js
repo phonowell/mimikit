@@ -1,7 +1,7 @@
 import { selectAppElements } from './dom.js'
 import { bindComposer, createMessagesController } from './messages.js'
 import { bindRestart } from './restart.js'
-import { bindTasksModal } from './tasks.js'
+import { bindTasksPanel } from './tasks.js'
 
 const elements = selectAppElements()
 const messages = createMessagesController({
@@ -36,12 +36,9 @@ bindRestart({
   statusDot: elements.statusDot,
   messages,
 })
-bindTasksModal({
-  tasksBtn: elements.tasksBtn,
-  tasksModal: elements.tasksModal,
+bindTasksPanel({
   tasksList: elements.tasksList,
   tasksMeta: elements.tasksMeta,
-  tasksCloseBtn: elements.tasksCloseBtn,
 })
 
 messages.start()

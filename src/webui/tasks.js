@@ -1,21 +1,25 @@
 import { formatDateTime } from './time.js'
 
-export function bindTasksModal({
-  tasksBtn,
-  tasksModal,
-  tasksList,
-  tasksMeta,
-  tasksCloseBtn,
-}) {
+const TASK_POLL_MS = 5000
+
+export function bindTasksPanel({ tasksList, tasksMeta }) {
+  if (!tasksList || !tasksMeta) return
+  let pollTimer = null
+  let isPolling = false
+
   function formatStatusCounts(counts) {
     const parts = []
     if (!counts) return parts
     if (counts.pending) parts.push(`${counts.pending} pending`)
-    if (counts.done) parts.push(`${counts.done} done`)
+    if (counts.running) parts.push(`${counts.running} running`)
+    if (counts.succeeded) parts.push(`${counts.succeeded} succeeded`)
+    if (counts.failed) parts.push(`${counts.failed} failed`)
+    if (counts.canceled) parts.push(`${counts.canceled} canceled`)
     return parts
   }
 
   async function loadTasks() {
+    if (!isPolling) return
     if (!tasksList || !tasksMeta) return
     tasksMeta.textContent = 'Loading...'
     tasksList.innerHTML = ''
@@ -34,6 +38,9 @@ export function bindTasksModal({
       empty.appendChild(article)
       tasksList.appendChild(empty)
     }
+
+    if (!isPolling) return
+    pollTimer = window.setTimeout(loadTasks, TASK_POLL_MS)
   }
 
   function renderTasks(data) {
@@ -59,9 +66,12 @@ export function bindTasksModal({
       item.className = 'task-item'
       item.dataset.status = task.status || 'pending'
 
-      const article = document.createElement('article')
+      const link = document.createElement('a')
+      link.className = 'task-link'
+      link.href = `#task-${task.id}`
+      link.dataset.status = task.status || 'pending'
 
-      const title = document.createElement('div')
+      const title = document.createElement('span')
       title.className = 'task-title'
       title.textContent = task.title || task.id
 
@@ -85,53 +95,19 @@ export function bindTasksModal({
       id.textContent = `id:${task.id}`
       meta.appendChild(id)
 
-      article.appendChild(title)
-      article.appendChild(meta)
-      item.appendChild(article)
+      link.appendChild(title)
+      link.appendChild(meta)
+      item.appendChild(link)
       tasksList.appendChild(item)
     }
   }
 
-  function openTasksModal() {
-    if (!tasksModal) return
-    if (typeof tasksModal.showModal === 'function') {
-      tasksModal.showModal()
-    } else {
-      tasksModal.setAttribute('open', '')
-    }
-    document.body.classList.add('modal-open')
-    loadTasks()
-  }
+  isPolling = true
+  loadTasks()
 
-  function closeTasksModal() {
-    if (!tasksModal) return
-    if (typeof tasksModal.close === 'function') {
-      tasksModal.close()
-    } else {
-      tasksModal.removeAttribute('open')
-    }
-    document.body.classList.remove('modal-open')
-  }
-
-  if (tasksBtn) {
-    tasksBtn.addEventListener('click', () => {
-      openTasksModal()
-    })
-  }
-
-  if (tasksCloseBtn) {
-    tasksCloseBtn.addEventListener('click', (event) => {
-      event.preventDefault()
-      closeTasksModal()
-    })
-  }
-
-  if (tasksModal) {
-    tasksModal.addEventListener('click', (event) => {
-      if (event.target === tasksModal) closeTasksModal()
-    })
-    tasksModal.addEventListener('close', () => {
-      document.body.classList.remove('modal-open')
-    })
+  return () => {
+    isPolling = false
+    if (pollTimer) clearTimeout(pollTimer)
+    pollTimer = null
   }
 }
