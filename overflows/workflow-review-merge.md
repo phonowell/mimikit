@@ -9,4 +9,5 @@
 3. Pull the latest main into the current branch.
 4. Resolve conflicts in the current branch, if any.
 5. Merge into main.
-6. Keep the current branch and worktree for future use.
+6. Remove completed workflow plan files under plans/.
+7. Keep the current branch and worktree for future use.
