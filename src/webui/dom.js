@@ -10,6 +10,9 @@ export function selectAppElements() {
     input: $('[data-input]'),
     sendBtn: $('[data-send]'),
     restartBtn: $('[data-restart]'),
+    tasksDialog: $('[data-tasks-dialog]'),
+    tasksOpenBtn: $('[data-tasks-open]'),
+    tasksCloseBtn: $('[data-tasks-close]'),
     tasksList: $('[data-tasks-list]'),
     tasksMeta: $('[data-tasks-meta]'),
   }

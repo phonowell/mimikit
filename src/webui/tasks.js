@@ -2,10 +2,17 @@ import { formatDateTime } from './time.js'
 
 const TASK_POLL_MS = 5000
 
-export function bindTasksPanel({ tasksList, tasksMeta }) {
+export function bindTasksPanel({
+  tasksList,
+  tasksMeta,
+  tasksDialog,
+  tasksOpenBtn,
+  tasksCloseBtn,
+}) {
   if (!tasksList || !tasksMeta) return
   let pollTimer = null
   let isPolling = false
+  let isOpen = false
 
   function formatStatusCounts(counts) {
     const parts = []
@@ -16,6 +23,23 @@ export function bindTasksPanel({ tasksList, tasksMeta }) {
     if (counts.failed) parts.push(`${counts.failed} failed`)
     if (counts.canceled) parts.push(`${counts.canceled} canceled`)
     return parts
+  }
+
+  function startPolling() {
+    if (isPolling) return
+    isPolling = true
+    loadTasks()
+  }
+
+  function stopPolling() {
+    isPolling = false
+    if (pollTimer) clearTimeout(pollTimer)
+    pollTimer = null
+  }
+
+  function setExpanded(nextOpen) {
+    if (!tasksOpenBtn) return
+    tasksOpenBtn.setAttribute('aria-expanded', nextOpen ? 'true' : 'false')
   }
 
   async function loadTasks() {
@@ -102,12 +126,72 @@ export function bindTasksPanel({ tasksList, tasksMeta }) {
     }
   }
 
-  isPolling = true
-  loadTasks()
+  function openDialog() {
+    if (!tasksDialog) return
+    if (typeof tasksDialog.showModal === 'function') {
+      if (!tasksDialog.open) tasksDialog.showModal()
+    } else {
+      tasksDialog.setAttribute('open', '')
+    }
+    isOpen = true
+    setExpanded(true)
+    startPolling()
+    if (tasksCloseBtn) {
+      window.requestAnimationFrame(() => {
+        tasksCloseBtn.focus()
+      })
+    }
+  }
+
+  function closeDialog() {
+    if (!tasksDialog) return
+    if (typeof tasksDialog.close === 'function') {
+      tasksDialog.close()
+    } else {
+      tasksDialog.removeAttribute('open')
+    }
+    isOpen = false
+    setExpanded(false)
+    stopPolling()
+    if (tasksOpenBtn) tasksOpenBtn.focus()
+  }
+
+  const dialogEnabled = Boolean(tasksDialog && tasksOpenBtn)
+  const onOpen = (event) => {
+    event.preventDefault()
+    openDialog()
+  }
+  const onClose = (event) => {
+    event.preventDefault()
+    closeDialog()
+  }
+  const onDialogClick = (event) => {
+    if (event.target === tasksDialog) closeDialog()
+  }
+  const onDialogClose = () => {
+    isOpen = false
+    setExpanded(false)
+    stopPolling()
+    if (tasksOpenBtn) tasksOpenBtn.focus()
+  }
+
+  if (dialogEnabled) {
+    setExpanded(isOpen)
+    tasksOpenBtn.addEventListener('click', onOpen)
+    if (tasksCloseBtn) tasksCloseBtn.addEventListener('click', onClose)
+    tasksDialog.addEventListener('click', onDialogClick)
+    tasksDialog.addEventListener('close', onDialogClose)
+  } else {
+    startPolling()
+  }
 
   return () => {
-    isPolling = false
-    if (pollTimer) clearTimeout(pollTimer)
-    pollTimer = null
+    stopPolling()
+    if (dialogEnabled) {
+      tasksOpenBtn.removeEventListener('click', onOpen)
+      if (tasksCloseBtn) tasksCloseBtn.removeEventListener('click', onClose)
+      tasksDialog.removeEventListener('click', onDialogClick)
+      tasksDialog.removeEventListener('close', onDialogClose)
+    }
   }
 }
