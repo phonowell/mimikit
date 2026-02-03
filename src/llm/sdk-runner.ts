@@ -31,6 +31,7 @@ export const runCodexSdk = async (params: {
   outputSchema?: unknown
   logPath?: string
   logContext?: LogContext
+  abortSignal?: AbortSignal
 }): Promise<RunResult> => {
   const promptChars = params.prompt.length
   const promptLines = params.prompt.split(/\r?\n/).length
@@ -101,11 +102,21 @@ export const runCodexSdk = async (params: {
   const thread = params.threadId
     ? codex.resumeThread(params.threadId, threadOptions)
     : codex.startThread(threadOptions)
-  const controller = params.timeoutMs > 0 ? new AbortController() : null
+  const externalSignal = params.abortSignal
+  const controller =
+    params.timeoutMs > 0 || externalSignal ? new AbortController() : null
   const startedAt = Date.now()
   let lastActivityAt = startedAt
   let idleTimer: ReturnType<typeof setTimeout> | undefined
   const idleTimeoutMs = params.timeoutMs
+  const onExternalAbort = () => {
+    if (controller && !controller.signal.aborted) controller.abort()
+  }
+  if (externalSignal) {
+    if (externalSignal.aborted) onExternalAbort()
+    else
+      externalSignal.addEventListener('abort', onExternalAbort, { once: true })
+  }
   const resetIdleTimer = () => {
     lastActivityAt = Date.now()
     if (!controller || idleTimeoutMs <= 0) return
@@ -185,5 +196,7 @@ export const runCodexSdk = async (params: {
     throw error
   } finally {
     clearTimeout(idleTimer)
+    if (externalSignal)
+      externalSignal.removeEventListener('abort', onExternalAbort)
   }
 }

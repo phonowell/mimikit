@@ -67,6 +67,52 @@ export function bindTasksPanel({
     pollTimer = window.setTimeout(loadTasks, TASK_POLL_MS)
   }
 
+  async function requestCancel(taskId, button) {
+    if (!taskId) return
+    const originalText = button?.textContent || ''
+    if (button) {
+      button.disabled = true
+      button.textContent = 'Canceling...'
+    }
+    try {
+      const res = await fetch(
+        `/api/tasks/${encodeURIComponent(taskId)}/cancel`,
+        { method: 'POST' },
+      )
+      if (!res.ok) {
+        let data = null
+        try {
+          data = await res.json()
+        } catch (error) {
+          data = null
+        }
+        throw new Error(data?.error || 'Failed to cancel task')
+      }
+      if (pollTimer) {
+        clearTimeout(pollTimer)
+        pollTimer = null
+      }
+      await loadTasks()
+    } catch (error) {
+      if (button) {
+        button.disabled = false
+        button.textContent = originalText || 'Cancel'
+      }
+      const message = error instanceof Error ? error.message : String(error)
+      console.warn('[webui] cancel task failed', message)
+    }
+  }
+
+  tasksList.addEventListener('click', (event) => {
+    const target = event.target
+    if (!(target instanceof Element)) return
+    const button = target.closest('.task-cancel')
+    if (!button) return
+    event.preventDefault()
+    const taskId = button.getAttribute('data-task-id') || ''
+    void requestCancel(taskId, button)
+  })
+
   function renderTasks(data) {
     if (!tasksList || !tasksMeta) return
     const tasks = data?.tasks || []
@@ -122,6 +168,17 @@ export function bindTasksPanel({
       link.appendChild(title)
       link.appendChild(meta)
       item.appendChild(link)
+
+      if (task.status === 'pending' || task.status === 'running') {
+        const cancelBtn = document.createElement('button')
+        cancelBtn.type = 'button'
+        cancelBtn.className = 'task-cancel'
+        cancelBtn.textContent = 'Cancel'
+        cancelBtn.setAttribute('data-task-id', task.id)
+        cancelBtn.setAttribute('aria-label', `Cancel task ${task.id}`)
+        item.appendChild(cancelBtn)
+      }
+
       tasksList.appendChild(item)
     }
   }

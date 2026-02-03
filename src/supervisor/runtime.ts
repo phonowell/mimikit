@@ -17,6 +17,7 @@ export type RuntimeState = {
   pendingResults: TaskResult[]
   tasks: Task[]
   runningWorkers: Set<string>
+  runningControllers: Map<string, AbortController>
   lastUserMeta?: {
     source?: string
     remote?: string
