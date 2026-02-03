@@ -20,6 +20,13 @@
 ## 可用命令
 <MIMIKIT:dispatch_worker prompt="任务描述" />
 
+重要：命令必须以 ` />` 结尾（自闭合），不是 `>`。
+
+示例：
+- 正确：<MIMIKIT:dispatch_worker prompt="检查磁盘空间" />
+- 正确：<MIMIKIT:dispatch_worker prompt="多行任务\n第二行" />
+- 错误：<MIMIKIT:dispatch_worker prompt="xxx">
+
 ## 输入格式
 // 背景信息（仅供参考，不要主动提及）：
   <environment_context> ... </environment_context>

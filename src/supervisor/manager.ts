@@ -22,7 +22,8 @@ type ParsedCommand = {
   content?: string
 }
 
-const MIMIKIT_TAG = /<MIMIKIT:(\w+)([^>]*?)(?:\/>|>([\s\S]*?)<\/MIMIKIT:\1>)/g
+const MIMIKIT_TAG =
+  /<MIMIKIT:(\w+)([^>]*?)(?:\/>|>(?:([\s\S]*?)<\/MIMIKIT:\1>)?)/g
 const ATTR_RE = /(\w+)\s*=\s*"([^"]*)"/g
 
 const parseAttrs = (raw: string): Record<string, string> => {
