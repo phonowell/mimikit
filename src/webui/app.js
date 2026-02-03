@@ -39,6 +39,9 @@ bindRestart({
 bindTasksPanel({
   tasksList: elements.tasksList,
   tasksMeta: elements.tasksMeta,
+  tasksDialog: elements.tasksDialog,
+  tasksOpenBtn: elements.tasksOpenBtn,
+  tasksCloseBtn: elements.tasksCloseBtn,
 })
 
 messages.start()

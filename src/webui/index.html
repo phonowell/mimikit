@@ -11,7 +11,7 @@
   <body>
     <main data-app>
       <header class="app-header">
-        <section class="app-controls" aria-label="Status and actions">
+        <div class="app-controls" role="group" aria-label="Status and actions">
           <div class="status-group" aria-label="Status">
             <p class="status-item">
               <span class="status-dot" data-status-dot></span>
@@ -20,29 +20,31 @@
               >
             </p>
           </div>
-          <menu class="app-actions" aria-label="Actions">
-            <li>
-              <button
-                class="restart-btn"
-                data-restart
-                type="button"
-                title="Restart server"
-                aria-label="Restart server"
-              >
-                &#x21bb;
-              </button>
-            </li>
-          </menu>
-        </section>
+          <div class="app-actions" role="toolbar" aria-label="Actions">
+            <button
+              class="tasks-open"
+              data-tasks-open
+              type="button"
+              title="Tasks"
+              aria-label="Open tasks"
+              aria-haspopup="dialog"
+              aria-controls="tasks-dialog"
+              aria-expanded="false"
+            >
+              Tasks
+            </button>
+            <button
+              class="restart-btn"
+              data-restart
+              type="button"
+              title="Restart server"
+              aria-label="Restart server"
+            >
+              &#x21bb;
+            </button>
+          </div>
+        </div>
       </header>
-
-      <section class="tasks-panel" aria-label="Tasks">
-        <header class="tasks-header">
-          <h2 class="tasks-title">Tasks</h2>
-          <p class="tasks-meta" data-tasks-meta aria-live="polite"></p>
-        </header>
-        <ul class="tasks-list" data-tasks-list></ul>
-      </section>
 
       <section class="messages-section" aria-label="Messages">
         <h2 class="visually-hidden">Messages</h2>
@@ -65,7 +67,7 @@
         </button>
       </section>
 
-      <footer class="composer">
+      <section class="composer" aria-label="Composer">
         <form data-form>
           <label class="visually-hidden" for="message-input">Message</label>
           <textarea
@@ -76,7 +78,33 @@
           ></textarea>
           <button type="submit" data-send>Send</button>
         </form>
-      </footer>
+      </section>
+
+      <dialog
+        class="tasks-dialog"
+        data-tasks-dialog
+        id="tasks-dialog"
+        aria-labelledby="tasks-title"
+      >
+        <section class="tasks-panel">
+          <header class="tasks-header">
+            <h2 class="tasks-title" id="tasks-title">Tasks</h2>
+            <div class="tasks-actions" role="group" aria-label="Tasks actions">
+              <p class="tasks-meta" data-tasks-meta aria-live="polite"></p>
+              <button
+                class="tasks-close"
+                data-tasks-close
+                type="button"
+                title="Close tasks"
+                aria-label="Close tasks"
+              >
+                &#x2715;
+              </button>
+            </div>
+          </header>
+          <ul class="tasks-list" data-tasks-list></ul>
+        </section>
+      </dialog>
     </main>
 
     <script type="module" src="app.js"></script>

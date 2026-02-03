@@ -44,6 +44,27 @@
   font-size: 16px;
 }
 
+.tasks-open {
+  border-radius: 999px;
+  padding: 6px 12px;
+  background: #ffffff;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 12px;
+  border: 1px solid var(--border);
+}
+
+.tasks-open:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: transparent;
+}
+
+.tasks-open:focus-visible {
+  outline: 2px solid rgba(42, 125, 225, 0.4);
+  outline-offset: 2px;
+}
+
 .messages .empty-state {
   margin: auto;
   padding: 16px 18px;
@@ -331,9 +352,15 @@
 
 .tasks-header {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.tasks-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .tasks-title {
@@ -346,6 +373,30 @@
   margin: 0;
   color: var(--muted);
   font-size: 12px;
+}
+
+.tasks-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: #ffffff;
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+
+.tasks-close:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: transparent;
+}
+
+.tasks-close:focus-visible {
+  outline: 2px solid rgba(42, 125, 225, 0.4);
+  outline-offset: 2px;
 }
 
 .tasks-list {
