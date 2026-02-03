@@ -10,7 +10,7 @@
 - GET /api/tasks?limit=...
 - POST /api/restart
 
-实现：`src/http/handler.ts`；WebUI 静态文件在 `src/webui/`。
+实现：`src/http/index.ts`；WebUI 静态文件在 `src/webui/`。
 
 ## CLI
 - `tsx src/cli.ts`
