@@ -86,16 +86,28 @@ const runManagerBuffer = async (
 ) => {
   const inputs = buffer.inputs.map((input) => input.text)
   const { results } = buffer
-  const historyLimit = Math.max(0, runtime.config.manager.historyLimit)
   const history = await readHistory(runtime.paths.history)
   const excludeIds = new Set(buffer.inputs.map((input) => input.id))
   const filteredHistory = history.filter((item) => !excludeIds.has(item.id))
-  const recentHistory =
-    historyLimit > 0
-      ? filteredHistory.slice(
-          Math.max(0, filteredHistory.length - historyLimit),
-        )
-      : []
+  const historyMin = Math.max(0, runtime.config.manager.historyMinCount)
+  const historyMax = Math.max(
+    historyMin,
+    runtime.config.manager.historyMaxCount,
+  )
+  const historyMaxBytes = Math.max(0, runtime.config.manager.historyMaxBytes)
+  const recentHistory: typeof filteredHistory = []
+  let totalBytes = 0
+  for (let i = filteredHistory.length - 1; i >= 0; i -= 1) {
+    const item = filteredHistory[i]
+    if (!item) continue
+    const itemBytes = Buffer.byteLength(JSON.stringify(item), 'utf8')
+    totalBytes += itemBytes
+    recentHistory.push(item)
+    if (recentHistory.length >= historyMax) break
+    if (historyMaxBytes > 0 && totalBytes > historyMaxBytes)
+      if (recentHistory.length >= historyMin) break
+  }
+  recentHistory.reverse()
   const startedAt = Date.now()
   runtime.managerRunning = true
   try {
@@ -106,7 +118,9 @@ const runManagerBuffer = async (
       inputCount: inputs.length,
       resultCount: results.length,
       historyCount: recentHistory.length,
-      historyLimit,
+      historyMinCount: historyMin,
+      historyMaxCount: historyMax,
+      historyMaxBytes,
       inputIds: buffer.inputs.map((input) => input.id),
       resultIds: results.map((result) => result.taskId),
       pendingTaskCount: runtime.tasks.filter(

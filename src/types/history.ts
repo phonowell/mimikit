@@ -1,5 +1,4 @@
-import type { Id, ISODate } from './common.js'
-import type { TokenUsage } from './common.js'
+import type { Id, ISODate, TokenUsage } from './common.js'
 
 export type Role = 'user' | 'manager' | 'system'
 

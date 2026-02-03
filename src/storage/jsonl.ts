@@ -21,10 +21,7 @@ const runSerialized = async <T>(
   const next = new Promise<void>((resolve) => {
     release = resolve
   })
-  updateQueue.set(
-    path,
-    safePrevious.then(() => next),
-  )
+  updateQueue.set(path, next)
   await safePrevious
   try {
     return await fn()
