@@ -82,16 +82,17 @@ const mapHistoryRole = (role: HistoryMessage['role']): string => {
 }
 
 const formatHistory = (history: HistoryMessage[]): string => {
-  if (history.length === 0)
-    return `<history_message role="system" time="${new Date().toISOString()}"><![CDATA[\n（无）\n]]></history_message>`
-  return history
+  if (history.length === 0) return ''
+  const items = history
     .map((item) => {
-      const role = mapHistoryRole(item.role)
       const text = item.text.trim()
-      const content = text.length > 0 ? escapeCdata(text) : '（空）'
+      if (!text) return ''
+      const role = mapHistoryRole(item.role)
+      const content = escapeCdata(text)
       return `<history_message role="${role}" time="${item.createdAt}"><![CDATA[\n${content}\n]]></history_message>`
     })
-    .join('\n')
+    .filter((item) => item.length > 0)
+  return items.length > 0 ? items.join('\n') : ''
 }
 
 const formatEnvironment = (workDir: string, env?: ManagerEnv): string => {
@@ -124,18 +125,25 @@ const formatEnvironment = (workDir: string, env?: ManagerEnv): string => {
       push('client_tz_offset_minutes', last.clientOffsetMinutes)
     push('client_now_iso', last.clientNowIso)
   }
-  const text = lines.length > 0 ? lines.join('\n') : '（无）'
-  return escapeCdata(text)
+  if (lines.length === 0) return ''
+  return escapeCdata(lines.join('\n'))
+}
+
+const formatCapabilities = (capabilities?: string): string => {
+  const trimmed = capabilities?.trim() ?? ''
+  if (!trimmed) return ''
+  return escapeCdata(trimmed)
 }
 
 const formatInputs = (inputs: string[]): string => {
-  if (inputs.length === 0) return '（无）'
-  const text = inputs.map((input) => `- ${input}`).join('\n')
+  const cleaned = inputs.filter((input) => input.trim().length > 0)
+  if (cleaned.length === 0) return ''
+  const text = cleaned.map((input) => `- ${input}`).join('\n')
   return escapeCdata(text)
 }
 
 const formatTaskResults = (results: TaskResult[]): string => {
-  if (results.length === 0) return '（无）'
+  if (results.length === 0) return ''
   const text = results
     .map((result) => {
       const title = result.title ? ` ${result.title}` : ''
@@ -152,11 +160,29 @@ const formatQueueStatus = (tasks: Task[]): string => {
   const active = tasks.filter(
     (task) => task.status === 'pending' || task.status === 'running',
   )
-  if (active.length === 0) return '（无）'
+  if (active.length === 0) return ''
   const text = active
     .map((task) => `- [${task.id}] ${task.status} ${task.title}`)
     .join('\n')
   return escapeCdata(text)
+}
+
+const buildCdataBlock = (
+  comment: string,
+  tag: string,
+  content: string,
+): string => {
+  if (!content) return ''
+  return `// ${comment}\n<${tag}>\n<![CDATA[\n${content}\n]]>\n</${tag}>`
+}
+
+const buildRawBlock = (
+  comment: string,
+  tag: string,
+  content: string,
+): string => {
+  if (!content) return ''
+  return `// ${comment}\n<${tag}>\n${content}\n</${tag}>`
 }
 
 export const buildManagerPrompt = async (params: {
@@ -169,17 +195,50 @@ export const buildManagerPrompt = async (params: {
 }): Promise<string> => {
   const system = await loadSystemPrompt(params.workDir, 'manager')
   const injectionTemplate = await loadInjectionPrompt(params.workDir, 'manager')
+  const workerCapabilitiesPrompt = await loadPromptFile(
+    params.workDir,
+    'worker',
+    'capabilities',
+  )
   const inputsText = formatInputs(params.inputs)
   const historyText = formatHistory(params.history)
   const envText = formatEnvironment(params.workDir, params.env)
   const resultsText = formatTaskResults(params.results)
   const tasksText = formatQueueStatus(params.tasks)
+  const capabilitiesText = formatCapabilities(workerCapabilitiesPrompt)
+  const envBlock = buildCdataBlock(
+    '背景信息（仅供参考，不要主动提及）：',
+    'environment_context',
+    envText,
+  )
+  const capabilitiesBlock = buildCdataBlock(
+    'Worker 能力清单（内部参考）：',
+    'worker_capabilities',
+    capabilitiesText,
+  )
+  const historyBlock = buildRawBlock(
+    '之前的对话：',
+    'conversation_history',
+    historyText,
+  )
+  const inputBlock = buildCdataBlock('用户刚刚说：', 'user_input', inputsText)
+  const resultsBlock = buildCdataBlock(
+    '已处理的结果（可视情况告知用户）：',
+    'task_results',
+    resultsText,
+  )
+  const tasksBlock = buildCdataBlock(
+    '待处理事项（内部参考，不要主动汇报）：',
+    'pending_tasks',
+    tasksText,
+  )
   const injectionValues = Object.fromEntries<string>([
-    ['环境信息', envText],
-    ['历史对话', historyText],
-    ['用户输入', inputsText],
-    ['任务完成情况', resultsText],
-    ['当前任务队列', tasksText],
+    ['environment_context', envBlock],
+    ['worker_capabilities', capabilitiesBlock],
+    ['conversation_history', historyBlock],
+    ['user_input', inputBlock],
+    ['task_results', resultsBlock],
+    ['pending_tasks', tasksBlock],
   ])
   const injection = renderPromptTemplate(injectionTemplate, injectionValues)
   return joinPromptSections([system, injection])
