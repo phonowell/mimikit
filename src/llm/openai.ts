@@ -2,6 +2,8 @@ import { readFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
+import * as toml from '@iarna/toml'
+
 import { readJson } from '../fs/json.js'
 import { logSafeError } from '../log/safe.js'
 
@@ -34,71 +36,38 @@ const codexDir = (): string => join(homedir(), '.codex')
 const codexAuthPath = (): string => join(codexDir(), 'auth.json')
 const codexConfigPath = (): string => join(codexDir(), 'config.toml')
 
-const parseTomlValue = (raw: string): string | boolean | number | null => {
-  const trimmed = raw.trim()
-  if (!trimmed) return null
-  if (trimmed === 'true') return true
-  if (trimmed === 'false') return false
-  if (
-    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
-    (trimmed.startsWith("'") && trimmed.endsWith("'"))
-  ) {
-    const slice = trimmed.slice(1, -1)
-    if (trimmed.startsWith('"')) {
-      try {
-        return JSON.parse(trimmed) as string
-      } catch (error) {
-        console.warn('[llm] parseTomlValue JSON parse failed', error)
-        return slice
-      }
-    }
-    return slice
-  }
-  const num = Number(trimmed)
-  if (Number.isFinite(num)) return num
-  return trimmed
+const asRecord = (value: unknown): Record<string, unknown> | null => {
+  if (!value || typeof value !== 'object') return null
+  return value as Record<string, unknown>
 }
 
 const parseCodexConfig = (raw: string): CodexConfig => {
+  const parsed = asRecord(toml.parse(raw)) ?? {}
   const config: CodexConfig = { providers: {} }
-  let currentProvider: string | null = null
-  for (const line of raw.split(/\r?\n/)) {
-    const trimmed = line.trim()
-    if (!trimmed || trimmed.startsWith('#')) continue
-    const sectionMatch = /^\[(.+)\]$/.exec(trimmed)
-    if (sectionMatch) {
-      const section = (sectionMatch[1] ?? '').trim()
-      const providerMatch = /^model_providers\.([A-Za-z0-9_-]+)$/.exec(section)
-      const providerKey = providerMatch?.[1] ?? null
-      currentProvider = providerKey
-      if (currentProvider && !config.providers[currentProvider])
-        config.providers[currentProvider] = {}
+  if (typeof parsed.model === 'string') config.model = parsed.model
+  if (typeof parsed.model_provider === 'string')
+    config.modelProvider = parsed.model_provider
+  if (typeof parsed.model_reasoning_effort === 'string')
+    config.modelReasoningEffort = parsed.model_reasoning_effort
 
-      continue
+  const providers = asRecord(parsed.model_providers)
+  if (providers) {
+    for (const [key, value] of Object.entries(providers)) {
+      const entry = asRecord(value)
+      if (!entry) continue
+      const provider: {
+        baseUrl?: string
+        wireApi?: string
+        requiresOpenAiAuth?: boolean
+      } = {}
+      if (typeof entry.base_url === 'string') provider.baseUrl = entry.base_url
+      if (typeof entry.wire_api === 'string') provider.wireApi = entry.wire_api
+      if (typeof entry.requires_openai_auth === 'boolean')
+        provider.requiresOpenAiAuth = entry.requires_openai_auth
+      config.providers[key] = provider
     }
-    const eqIndex = trimmed.indexOf('=')
-    if (eqIndex <= 0) continue
-    const key = trimmed.slice(0, eqIndex).trim()
-    const rawValue = trimmed.slice(eqIndex + 1).trim()
-    const value = parseTomlValue(rawValue)
-    if (currentProvider) {
-      const provider =
-        config.providers[currentProvider] ??
-        (config.providers[currentProvider] = {})
-      if (key === 'base_url' && typeof value === 'string')
-        provider.baseUrl = value
-      else if (key === 'wire_api' && typeof value === 'string')
-        provider.wireApi = value
-      else if (key === 'requires_openai_auth' && typeof value === 'boolean')
-        provider.requiresOpenAiAuth = value
-      continue
-    }
-    if (key === 'model' && typeof value === 'string') config.model = value
-    if (key === 'model_provider' && typeof value === 'string')
-      config.modelProvider = value
-    if (key === 'model_reasoning_effort' && typeof value === 'string')
-      config.modelReasoningEffort = value
   }
+
   return config
 }
 

@@ -1,5 +1,6 @@
-import { copyFile, rename, writeFile } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
+import { copyFile } from 'node:fs/promises'
+
+import writeFileAtomicLib from 'write-file-atomic'
 
 import { logSafeError } from '../log/safe.js'
 
@@ -8,11 +9,6 @@ export const writeFileAtomic = async (
   content: string,
   opts?: { backup?: boolean },
 ): Promise<void> => {
-  const dir = dirname(path)
-  const tmp = join(
-    dir,
-    `${Date.now()}-${Math.random().toString(16).slice(2)}.tmp`,
-  )
   if (opts?.backup) {
     try {
       await copyFile(path, `${path}.bak`)
@@ -29,6 +25,5 @@ export const writeFileAtomic = async (
       }
     }
   }
-  await writeFile(tmp, content, 'utf8')
-  await rename(tmp, path)
+  await writeFileAtomicLib(path, content, { encoding: 'utf8' })
 }

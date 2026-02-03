@@ -1,5 +1,5 @@
-import { marked } from './vendor/marked.js'
-import createDOMPurify from './vendor/purify.js'
+import { marked } from './vendor/marked/marked.esm.js'
+import createDOMPurify from './vendor/purify/purify.es.mjs'
 
 const purify = createDOMPurify(window)
 const ALLOWED_TAGS = [
