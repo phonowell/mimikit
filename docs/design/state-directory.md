@@ -5,6 +5,7 @@
 ## 目录结构（概要）
 - history.jsonl：聊天历史（WebUI 展示）
 - log.jsonl：运行日志
+- llm/YYYY-MM-DD.jsonl：LLM 交互归档（完整输入/输出，按日期分文件）
 
 ## 说明
 - 任务与结果不落盘，进程重启会丢失。

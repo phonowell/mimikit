@@ -17,6 +17,7 @@ const runTask = async (runtime: RuntimeState, task: Task): Promise<void> => {
       promptChars: task.prompt.length,
     })
     const llmResult = await runWorker({
+      stateDir: runtime.config.stateDir,
       workDir: runtime.config.workDir,
       task,
       timeoutMs: runtime.config.worker.timeoutMs,

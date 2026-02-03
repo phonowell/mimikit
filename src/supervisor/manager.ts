@@ -130,6 +130,7 @@ const runManagerBuffer = async (
       ...(modelReasoningEffort ? { modelReasoningEffort } : {}),
     })
     const result = await runManager({
+      stateDir: runtime.config.stateDir,
       workDir: runtime.config.workDir,
       inputs,
       results,
