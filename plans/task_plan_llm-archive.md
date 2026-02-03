@@ -10,12 +10,12 @@
 4. Update docs/state directory notes and run checks.
 
 ## Decisions
-- Transcript stored in `.mimikit/llm/YYYY-MM-DD.jsonl` with JSONL entries per LLM call.
+- Transcript stored as per-call `.txt` in `.mimikit/llm/YYYY-MM-DD/` with timestamped filenames.
 
 ## Progress
 - Completed: located manager/worker prompt assembly and history/log storage.
-- Completed: chose date-based JSONL archive path and schema.
-- Completed: implemented archive writes for manager/worker and updated docs.
+- Completed: chose date-based archive path and schema.
+- Completed: switched archive format to per-call `.txt` with date directories.
 - Validation: `pnpm exec eslint "src/**/*.ts"`, `pnpm exec tsc -p tsconfig.json --noEmit`, `pnpm test`.
 
 ## Risks / Questions

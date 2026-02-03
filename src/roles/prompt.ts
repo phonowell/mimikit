@@ -50,15 +50,11 @@ const loadInjectionPrompt = (workDir: string, role: string): Promise<string> =>
 const renderPromptTemplate = (
   template: string,
   values: PromptTemplateValues,
-): string => {
-  let output = template
-  for (const [key, value] of Object.entries(values)) {
-    const token = `{${key}}`
-    if (!output.includes(token)) continue
-    output = output.split(token).join(value)
-  }
-  return output
-}
+): string =>
+  template.replace(/\{([^}]+)\}/g, (match, key) => {
+    if (!Object.prototype.hasOwnProperty.call(values, key)) return match
+    return values[key] ?? match
+  })
 
 const joinPromptSections = (sections: string[]): string => {
   let output = ''
@@ -69,9 +65,33 @@ const joinPromptSections = (sections: string[]): string => {
   return output
 }
 
+const escapeCdata = (value: string): string =>
+  value.replaceAll(']]>', ']]]]><![CDATA[>')
+
+const mapHistoryRole = (role: HistoryMessage['role']): string => {
+  switch (role) {
+    case 'user':
+      return 'user'
+    case 'manager':
+      return 'assistant'
+    case 'system':
+      return 'system'
+    default:
+      return 'unknown'
+  }
+}
+
 const formatHistory = (history: HistoryMessage[]): string => {
-  if (history.length === 0) return '（无）'
-  return history.map((item) => `- [${item.role}] ${item.text}`).join('\n')
+  if (history.length === 0)
+    return `<history_message role="system"><![CDATA[\n（无）\n]]></history_message>`
+  return history
+    .map((item) => {
+      const role = mapHistoryRole(item.role)
+      const text = item.text.trim()
+      const content = text.length > 0 ? escapeCdata(text) : '（空）'
+      return `<history_message role="${role}"><![CDATA[\n${content}\n]]></history_message>`
+    })
+    .join('\n')
 }
 
 const formatEnvironment = (workDir: string, env?: ManagerEnv): string => {
@@ -104,28 +124,32 @@ const formatEnvironment = (workDir: string, env?: ManagerEnv): string => {
       push('client_tz_offset_minutes', last.clientOffsetMinutes)
     push('client_now_iso', last.clientNowIso)
   }
-  return lines.length > 0 ? lines.join('\n') : '（无）'
+  const text = lines.length > 0 ? lines.join('\n') : '（无）'
+  return escapeCdata(text)
 }
 
 const formatInputs = (inputs: string[]): string => {
   if (inputs.length === 0) return '（无）'
-  return inputs.map((input) => `- ${input}`).join('\n')
+  const text = inputs.map((input) => `- ${input}`).join('\n')
+  return escapeCdata(text)
 }
 
 const formatTaskResults = (results: TaskResult[]): string => {
   if (results.length === 0) return '（无）'
-  return results
+  const text = results
     .map((result) => {
       const status = result.ok ? 'ok' : 'error'
       return `- [${result.taskId}] ${status}\n${result.output}`
     })
     .join('\n')
+  return escapeCdata(text)
 }
 
 const formatQueueStatus = (tasks: Task[]): string => {
   const pending = tasks.filter((task) => task.status === 'pending')
   if (pending.length === 0) return '（无）'
-  return pending.map((task) => `- [${task.id}] ${task.prompt}`).join('\n')
+  const text = pending.map((task) => `- [${task.id}] ${task.prompt}`).join('\n')
+  return escapeCdata(text)
 }
 
 export const buildManagerPrompt = async (params: {

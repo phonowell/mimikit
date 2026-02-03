@@ -1,14 +1,32 @@
-环境信息（背景上下文，仅在相关时参考，无需主动提及）：
+// 背景信息（仅供参考，不要主动提及）：
+<environment_context>
+<![CDATA[
 {环境信息}
+]]>
+</environment_context>
 
-历史对话：
+// 之前的对话：
+<conversation_history>
 {历史对话}
+</conversation_history>
 
-用户消息：
+// 用户刚刚说：
+<user_input>
+<![CDATA[
 {用户输入}
+]]>
+</user_input>
 
-任务完成情况（如有需要可告知用户）：
+// 已处理的结果（可视情况告知用户）：
+<task_results>
+<![CDATA[
 {任务完成情况}
+]]>
+</task_results>
 
-当前任务队列（无需主动汇报）：
+// 待处理事项（内部参考，不要主动汇报）：
+<pending_tasks>
+<![CDATA[
 {当前任务队列}
+]]>
+</pending_tasks>

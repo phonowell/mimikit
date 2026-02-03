@@ -1,7 +1,8 @@
-import { appendFile } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
+import { writeFile } from 'node:fs/promises'
+import { join } from 'node:path'
 
 import { ensureDir } from '../fs/ensure.js'
+import { shortId } from '../ids.js'
 import { nowIso } from '../time.js'
 
 import type { TokenUsage } from '../types/common.js'
@@ -9,7 +10,7 @@ import type { TokenUsage } from '../types/common.js'
 export type LlmArchiveEntry = {
   role: 'manager' | 'worker'
   prompt: string
-  output?: string
+  output: string
   ok: boolean
   elapsedMs?: number
   usage?: TokenUsage
@@ -23,16 +24,61 @@ export type LlmArchiveEntry = {
 
 const dateStamp = (iso: string): string => iso.slice(0, 10)
 
-const buildArchivePath = (stateDir: string, iso: string): string =>
-  join(stateDir, 'llm', `${dateStamp(iso)}.jsonl`)
+const timeStamp = (iso: string): string =>
+  iso.slice(11, 23).replace(/:/g, '').replace('.', '-')
+
+const buildArchivePath = (
+  stateDir: string,
+  iso: string,
+  entry: LlmArchiveEntry,
+): string => {
+  const dateDir = dateStamp(iso)
+  const time = timeStamp(iso)
+  const parts = [time, entry.role]
+  if (entry.attempt) parts.push(entry.attempt)
+  parts.push(shortId())
+  const filename = `${parts.join('-')}.txt`
+  return join(stateDir, 'llm', dateDir, filename)
+}
+
+const pushLine = (lines: string[], label: string, value?: string | number) => {
+  if (value === undefined || value === '') return
+  lines.push(`${label}: ${value}`)
+}
+
+const formatSection = (title: string, content: string): string =>
+  `${title}\n${content}`
+
+const buildArchiveContent = (
+  timestamp: string,
+  entry: LlmArchiveEntry,
+): string => {
+  const lines: string[] = []
+  pushLine(lines, 'timestamp', timestamp)
+  pushLine(lines, 'role', entry.role)
+  pushLine(lines, 'attempt', entry.attempt)
+  pushLine(lines, 'model', entry.model)
+  pushLine(lines, 'task_id', entry.taskId)
+  pushLine(lines, 'thread_id', entry.threadId ?? undefined)
+  pushLine(lines, 'ok', entry.ok ? 'true' : 'false')
+  pushLine(lines, 'elapsed_ms', entry.elapsedMs)
+  if (entry.usage) pushLine(lines, 'usage', JSON.stringify(entry.usage))
+  const header = lines.join('\n')
+  const sections = [
+    formatSection('=== PROMPT ===', entry.prompt),
+    formatSection('=== OUTPUT ===', entry.output),
+  ]
+  if (entry.error) sections.push(formatSection('=== ERROR ===', entry.error))
+  return `${header}\n\n${sections.join('\n\n')}\n`
+}
 
 export const appendLlmArchive = async (
   stateDir: string,
   entry: LlmArchiveEntry,
 ): Promise<void> => {
   const timestamp = nowIso()
-  const path = buildArchivePath(stateDir, timestamp)
-  await ensureDir(dirname(path))
-  const line = `${JSON.stringify({ timestamp, ...entry })}\n`
-  await appendFile(path, line, 'utf8')
+  const path = buildArchivePath(stateDir, timestamp, entry)
+  await ensureDir(join(stateDir, 'llm', dateStamp(timestamp)))
+  const content = buildArchiveContent(timestamp, entry)
+  await writeFile(path, content, 'utf8')
 }
