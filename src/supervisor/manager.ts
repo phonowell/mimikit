@@ -147,6 +147,7 @@ const runManagerBuffer = async (
       ...(modelReasoningEffort ? { modelReasoningEffort } : {}),
     })
     const parsed = parseCommands(result.output)
+    const seenDispatches = new Set<string>()
     for (const command of parsed.commands) {
       if (command.action === 'dispatch_worker') {
         const content = command.content?.trim()
@@ -156,6 +157,9 @@ const runManagerBuffer = async (
             : (command.attrs.prompt?.trim() ?? '')
         if (!prompt) continue
         const rawTitle = command.attrs.title?.trim()
+        const dedupeKey = `${prompt}\n${rawTitle ?? ''}`
+        if (seenDispatches.has(dedupeKey)) continue
+        seenDispatches.add(dedupeKey)
         enqueueTask(runtime.tasks, prompt, rawTitle)
         continue
       }
