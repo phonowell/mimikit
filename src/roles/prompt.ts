@@ -83,13 +83,13 @@ const mapHistoryRole = (role: HistoryMessage['role']): string => {
 
 const formatHistory = (history: HistoryMessage[]): string => {
   if (history.length === 0)
-    return `<history_message role="system"><![CDATA[\n（无）\n]]></history_message>`
+    return `<history_message role="system" time="${new Date().toISOString()}"><![CDATA[\n（无）\n]]></history_message>`
   return history
     .map((item) => {
       const role = mapHistoryRole(item.role)
       const text = item.text.trim()
       const content = text.length > 0 ? escapeCdata(text) : '（空）'
-      return `<history_message role="${role}"><![CDATA[\n${content}\n]]></history_message>`
+      return `<history_message role="${role}" time="${item.createdAt}"><![CDATA[\n${content}\n]]></history_message>`
     })
     .join('\n')
 }

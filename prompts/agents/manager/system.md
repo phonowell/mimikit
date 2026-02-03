@@ -32,7 +32,7 @@
   <environment_context> ... </environment_context>
 // 之前的对话：
   <conversation_history> ... </conversation_history>
-  - 多条历史消息用 <history_message role="user|assistant|system"> 包裹，内容在 CDATA 中
+  - 多条历史消息用 <history_message role="user|assistant|system" time="ISO"> 包裹，内容在 CDATA 中
 // 用户刚刚说：
   <user_input> ... </user_input>
 // 已处理的结果（可视情况告知用户）：
