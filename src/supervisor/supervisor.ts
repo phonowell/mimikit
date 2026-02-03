@@ -4,18 +4,14 @@ import { newId } from '../ids.js'
 import { appendLog } from '../log/append.js'
 import { safe, setDefaultLogPath } from '../log/safe.js'
 import { appendHistory, readHistory } from '../storage/history.js'
-import { listTasks } from '../storage/tasks.js'
-import { readUserInputs } from '../storage/user-inputs.js'
 import { nowIso } from '../time.js'
 
+import { managerLoop } from './manager.js'
 import { buildTaskViews } from './task-view.js'
-import { tellerLoop } from './teller.js'
-import { thinkerLoop } from './thinker.js'
 import { workerLoop } from './worker.js'
 
 import type { RuntimeState } from './runtime.js'
 import type { SupervisorConfig } from '../config.js'
-import type { TokenUsage } from '../types/usage.js'
 
 export class Supervisor {
   private runtime: RuntimeState
@@ -27,18 +23,17 @@ export class Supervisor {
       config,
       paths,
       stopped: false,
+      managerRunning: false,
       pendingInputs: [],
-      lastUserInputAt: 0,
-      lastTellerReplyAt: 0,
-      thinkerRunning: false,
+      pendingResults: [],
+      tasks: [],
       runningWorkers: new Set(),
     }
   }
 
   async start() {
     await ensureStateDirs(this.runtime.paths)
-    void tellerLoop(this.runtime)
-    void thinkerLoop(this.runtime)
+    void managerLoop(this.runtime)
     void workerLoop(this.runtime)
   }
 
@@ -62,7 +57,6 @@ export class Supervisor {
     const id = newId()
     const createdAt = nowIso()
     this.runtime.pendingInputs.push({ id, text, createdAt })
-    this.runtime.lastUserInputAt = Date.now()
     if (meta) this.runtime.lastUserMeta = meta
     await appendHistory(this.runtime.paths.history, {
       id,
@@ -94,49 +88,29 @@ export class Supervisor {
   }
 
   getTasks(limit = 200) {
-    return buildTaskViews(this.runtime.paths, limit)
+    return buildTaskViews(this.runtime.tasks, limit)
   }
 
-  async getStatus(): Promise<{
+  getStatus(): {
     ok: boolean
     agentStatus: 'idle' | 'running'
-    thinkerStatus: 'idle' | 'running'
     activeTasks: number
     pendingTasks: number
     pendingInputs: number
-    thinkerLastElapsedMs?: number
-    thinkerLastUsage?: TokenUsage
-    thinkerLastAt?: string
-    thinkerLastError?: string
-  }> {
-    const tasks = await listTasks(this.runtime.paths.agentQueue)
-    const pendingTasks = tasks.filter((task) => task.status === 'queued').length
+  } {
+    const pendingTasks = this.runtime.tasks.filter(
+      (task) => task.status === 'pending',
+    ).length
     const activeTasks = this.runtime.runningWorkers.size
-    const agentStatus = activeTasks > 0 ? 'running' : 'idle'
-    const thinkerStatus = this.runtime.thinkerRunning ? 'running' : 'idle'
-    const inputs = await readUserInputs(this.runtime.paths.userInputs)
-    const pendingInputs =
-      this.runtime.pendingInputs.length +
-      inputs.filter((input) => !input.processedByThinker).length
+    const agentStatus =
+      this.runtime.managerRunning || activeTasks > 0 ? 'running' : 'idle'
+    const pendingInputs = this.runtime.pendingInputs.length
     return {
       ok: true,
       agentStatus,
-      thinkerStatus,
       activeTasks,
       pendingTasks,
       pendingInputs,
-      ...(this.runtime.thinkerLast?.elapsedMs !== undefined
-        ? { thinkerLastElapsedMs: this.runtime.thinkerLast.elapsedMs }
-        : {}),
-      ...(this.runtime.thinkerLast?.usage
-        ? { thinkerLastUsage: this.runtime.thinkerLast.usage }
-        : {}),
-      ...(this.runtime.thinkerLast?.endedAt
-        ? { thinkerLastAt: this.runtime.thinkerLast.endedAt }
-        : {}),
-      ...(this.runtime.thinkerLast?.error
-        ? { thinkerLastError: this.runtime.thinkerLast.error }
-        : {}),
     }
   }
 

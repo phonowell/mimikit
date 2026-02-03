@@ -6,11 +6,8 @@ import { logSafeError } from '../log/safe.js'
 
 import type { HistoryMessage } from '../types/history.js'
 import type { Task, TaskResult } from '../types/tasks.js'
-import type { TellerNotice } from '../types/teller-notice.js'
-import type { ThinkerState } from '../types/thinker-state.js'
-import type { UserInput } from '../types/user-input.js'
 
-export type TellerEnv = {
+export type ManagerEnv = {
   lastUser?: {
     source?: string
     remote?: string
@@ -41,37 +38,12 @@ const loadSystemPrompt = async (
   }
 }
 
-const formatInputs = (inputs: UserInput[]): string => {
-  if (inputs.length === 0) return '（无）'
-  return inputs
-    .map((input) => {
-      const summary = input.summary ?? input.text ?? ''
-      const metaParts: string[] = []
-      if (input.sourceIds?.length)
-        metaParts.push(`sources=${input.sourceIds.join(',')}`)
-      if (input.updatedAt) metaParts.push(`updated_at=${input.updatedAt}`)
-      const meta = metaParts.length > 0 ? ` ${metaParts.join(' ')}` : ''
-      return `- [${input.id}${meta}] ${summary}`
-    })
-    .join('\n')
-}
-
-const formatNotices = (notices: TellerNotice[]): string => {
-  if (notices.length === 0) return '（无）'
-  const lines = notices
-    .map((notice) => notice.fact ?? notice.message ?? '')
-    .map((fact) => fact.trim())
-    .filter((fact) => fact.length > 0)
-    .map((fact) => `- ${fact}`)
-  return lines.length > 0 ? lines.join('\n') : '（无）'
-}
-
 const formatHistory = (history: HistoryMessage[]): string => {
   if (history.length === 0) return '（无）'
   return history.map((item) => `- [${item.role}] ${item.text}`).join('\n')
 }
 
-const formatEnvironment = (workDir: string, env?: TellerEnv): string => {
+const formatEnvironment = (workDir: string, env?: ManagerEnv): string => {
   const now = new Date()
   const resolved = Intl.DateTimeFormat().resolvedOptions()
   const lines: string[] = []
@@ -104,58 +76,42 @@ const formatEnvironment = (workDir: string, env?: TellerEnv): string => {
   return lines.length > 0 ? lines.join('\n') : '（无）'
 }
 
+const formatInputs = (inputs: string[]): string => {
+  if (inputs.length === 0) return '（无）'
+  return inputs.map((input) => `- ${input}`).join('\n')
+}
+
 const formatTaskResults = (results: TaskResult[]): string => {
   if (results.length === 0) return '（无）'
   return results
-    .map((result) => `- [${result.taskId}] ${result.status}\n${result.output}`)
-    .join('\n')
-}
-
-const formatQueueStatus = (tasks: Task[]): string => {
-  if (tasks.length === 0) return '（无）'
-  return tasks
-    .map((task) => {
-      const blocked = task.blockedBy?.length
-        ? ` blocked_by=${task.blockedBy.join(',')}`
-        : ''
-      const scheduled = task.scheduledAt
-        ? ` scheduled_at=${task.scheduledAt}`
-        : ''
-      return `- [${task.id}] ${task.status} p${task.priority}${blocked}${scheduled}\n${task.prompt}`
+    .map((result) => {
+      const status = result.ok ? 'ok' : 'error'
+      return `- [${result.taskId}] ${status}\n${result.output}`
     })
     .join('\n')
 }
 
-export const buildTellerPrompt = async (params: {
-  workDir: string
-  inputs: string[]
-  notices: TellerNotice[]
-  history: HistoryMessage[]
-  env?: TellerEnv
-}): Promise<string> => {
-  const system = await loadSystemPrompt(params.workDir, 'teller')
-  const inputsText =
-    params.inputs.length > 0 ? params.inputs.join('\n') : '（无）'
-  const historyText = formatHistory(params.history)
-  const envText = formatEnvironment(params.workDir, params.env)
-  const noticesText = formatNotices(params.notices)
-  return `${system}\n\n环境信息：\n${envText}\n\n历史对话：\n${historyText}\n\n用户消息：\n${inputsText}\n\n系统通知：\n${noticesText}`
+const formatQueueStatus = (tasks: Task[]): string => {
+  const pending = tasks.filter((task) => task.status === 'pending')
+  if (pending.length === 0) return '（无）'
+  return pending.map((task) => `- [${task.id}] ${task.prompt}`).join('\n')
 }
 
-export const buildThinkerPrompt = async (params: {
+export const buildManagerPrompt = async (params: {
   workDir: string
-  state: ThinkerState
-  inputs: UserInput[]
+  inputs: string[]
   results: TaskResult[]
   tasks: Task[]
+  history: HistoryMessage[]
+  env?: ManagerEnv
 }): Promise<string> => {
-  const system = await loadSystemPrompt(params.workDir, 'thinker')
+  const system = await loadSystemPrompt(params.workDir, 'manager')
   const inputsText = formatInputs(params.inputs)
+  const historyText = formatHistory(params.history)
+  const envText = formatEnvironment(params.workDir, params.env)
   const resultsText = formatTaskResults(params.results)
   const tasksText = formatQueueStatus(params.tasks)
-  const notes = params.state.notes.trim()
-  const notesBlock = notes ? `\n\n你的笔记：\n${notes}` : ''
-  return `${system}\n\n整理后的用户输入：\n${inputsText}\n\n任务完成情况：\n${resultsText}\n\n当前队列状态：\n${tasksText}${notesBlock}`
+  return `${system}\n\n环境信息：\n${envText}\n\n历史对话：\n${historyText}\n\n用户消息：\n${inputsText}\n\n任务完成情况：\n${resultsText}\n\n当前任务队列：\n${tasksText}`
 }
 
 export const buildWorkerPrompt = async (params: {

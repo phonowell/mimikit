@@ -9,8 +9,6 @@ const messages = createMessagesController({
   scrollBottomBtn: elements.scrollBottomBtn,
   statusDot: elements.statusDot,
   statusText: elements.statusText,
-  thinkerDot: elements.thinkerDot,
-  thinkerText: elements.thinkerText,
   input: elements.input,
   sendBtn: elements.sendBtn,
 })

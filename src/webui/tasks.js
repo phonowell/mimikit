@@ -10,12 +10,8 @@ export function bindTasksModal({
   function formatStatusCounts(counts) {
     const parts = []
     if (!counts) return parts
-    if (counts.queued) parts.push(`${counts.queued} queued`)
-    if (counts.running) parts.push(`${counts.running} running`)
+    if (counts.pending) parts.push(`${counts.pending} pending`)
     if (counts.done) parts.push(`${counts.done} done`)
-    if (counts.failed) parts.push(`${counts.failed} failed`)
-    if (counts.cancelled) parts.push(`${counts.cancelled} cancelled`)
-    if (counts.timeout) parts.push(`${counts.timeout} timeout`)
     return parts
   }
 
@@ -61,7 +57,7 @@ export function bindTasksModal({
     for (const task of tasks) {
       const item = document.createElement('li')
       item.className = 'task-item'
-      item.dataset.status = task.status || 'queued'
+      item.dataset.status = task.status || 'pending'
 
       const article = document.createElement('article')
 
@@ -77,32 +73,11 @@ export function bindTasksModal({
       status.textContent = task.status || 'pending'
       meta.appendChild(status)
 
-      if (typeof task.priority === 'number') {
-        const priority = document.createElement('span')
-        priority.className = 'task-priority'
-        priority.textContent = `p${task.priority}`
-        meta.appendChild(priority)
-      }
-
       if (task.createdAt) {
         const timeEl = document.createElement('span')
         timeEl.className = 'task-time'
         timeEl.textContent = `created ${formatDateTime(task.createdAt)}`
         meta.appendChild(timeEl)
-      }
-
-      if (task.scheduledAt) {
-        const scheduled = document.createElement('span')
-        scheduled.className = 'task-scheduled'
-        scheduled.textContent = `scheduled ${formatDateTime(task.scheduledAt)}`
-        meta.appendChild(scheduled)
-      }
-
-      if (task.blockedBy && task.blockedBy.length > 0) {
-        const blocked = document.createElement('span')
-        blocked.className = 'task-blocked'
-        blocked.textContent = `blocked by ${task.blockedBy.join(',')}`
-        meta.appendChild(blocked)
       }
 
       const id = document.createElement('span')

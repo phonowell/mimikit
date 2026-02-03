@@ -1,6 +1,6 @@
 import type { SupervisorConfig } from '../config.js'
 import type { StatePaths } from '../fs/paths.js'
-import type { TokenUsage } from '../types/usage.js'
+import type { Task, TaskResult } from '../types/tasks.js'
 
 export type PendingUserInput = {
   id: string
@@ -12,10 +12,10 @@ export type RuntimeState = {
   config: SupervisorConfig
   paths: StatePaths
   stopped: boolean
+  managerRunning: boolean
   pendingInputs: PendingUserInput[]
-  lastUserInputAt: number
-  lastTellerReplyAt: number
-  thinkerRunning: boolean
+  pendingResults: TaskResult[]
+  tasks: Task[]
   runningWorkers: Set<string>
   lastUserMeta?: {
     source?: string
@@ -26,11 +26,5 @@ export type RuntimeState = {
     clientTimeZone?: string
     clientOffsetMinutes?: number
     clientNowIso?: string
-  }
-  thinkerLast?: {
-    elapsedMs?: number
-    usage?: TokenUsage
-    endedAt?: string
-    error?: string
   }
 }

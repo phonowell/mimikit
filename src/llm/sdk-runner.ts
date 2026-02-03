@@ -6,9 +6,9 @@ import { normalizeUsage } from '../shared/utils.js'
 
 import { loadCodexSettings } from './openai.js'
 
-import type { TokenUsage } from '../types/usage.js'
+import type { TokenUsage } from '../types/common.js'
 
-type SdkRole = 'teller' | 'thinker' | 'worker'
+type SdkRole = 'manager' | 'worker'
 
 type RunResult = {
   output: string

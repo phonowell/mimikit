@@ -451,12 +451,7 @@
   margin-left: auto;
 }
 
-.task-item[data-status='failed'] {
-  border-color: rgba(226, 93, 93, 0.35);
-  background: #fff6f6;
-}
-
-.task-item[data-status='running'] {
+.task-item[data-status='pending'] {
   border-color: rgba(42, 125, 225, 0.35);
   background: #f1f6ff;
 }

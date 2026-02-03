@@ -1,10 +1,6 @@
-import {
-  buildTellerPrompt,
-  buildThinkerPrompt,
-  buildWorkerPrompt,
-} from '../src/roles/prompt.js'
+import { buildManagerPrompt, buildWorkerPrompt } from '../src/roles/prompt.js'
 
-type Role = 'teller' | 'thinker' | 'worker'
+type Role = 'manager' | 'worker'
 
 type PromptReport = {
   role: Role
@@ -12,9 +8,10 @@ type PromptReport = {
 }
 
 const usage = () => {
-  console.log('Usage: pnpm prompt:report <teller|thinker|worker|all> [--json] ["input"...]')
-  console.log('  teller: each extra arg becomes one user input line')
-  console.log('  thinker: extra args become user inputs')
+  console.log(
+    'Usage: pnpm prompt:report <manager|worker|all> [--json] ["input"...]',
+  )
+  console.log('  manager: each extra arg becomes one user input line')
   console.log('  worker: extra args are joined as the task prompt')
 }
 
@@ -24,25 +21,13 @@ const buildReport = async (params: {
   args: string[]
 }): Promise<PromptReport> => {
   let prompt = ''
-  if (params.role === 'teller') {
-    prompt = await buildTellerPrompt({
+  if (params.role === 'manager') {
+    prompt = await buildManagerPrompt({
       workDir: params.workDir,
       inputs: params.args,
-      notices: [],
-    })
-  }
-  if (params.role === 'thinker') {
-    prompt = await buildThinkerPrompt({
-      workDir: params.workDir,
-      state: { sessionId: '', lastWakeAt: '', notes: '' },
-      inputs: params.args.map((text, idx) => ({
-        id: String(idx + 1),
-        text,
-        createdAt: new Date().toISOString(),
-        processedByThinker: false,
-      })),
       results: [],
       tasks: [],
+      history: [],
     })
   }
   if (params.role === 'worker') {
@@ -51,8 +36,7 @@ const buildReport = async (params: {
       task: {
         id: 'task-1',
         prompt: params.args.join(' '),
-        priority: 5,
-        status: 'queued',
+        status: 'pending',
         createdAt: new Date().toISOString(),
       },
     })
@@ -95,7 +79,7 @@ const main = async () => {
   }
 
   const workDir = process.cwd()
-  const allowedRoles: Role[] = ['teller', 'thinker', 'worker']
+  const allowedRoles: Role[] = ['manager', 'worker']
   if (role !== 'all' && !allowedRoles.includes(role as Role)) {
     console.error(`Unknown role: ${role}`)
     usage()

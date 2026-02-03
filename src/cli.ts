@@ -5,8 +5,7 @@ import { defaultConfig } from './config.js'
 import { buildPaths } from './fs/paths.js'
 import { createHttpServer } from './http/index.js'
 import { loadCodexSettings } from './llm/openai.js'
-import { safe, setDefaultLogPath } from './log/safe.js'
-import { acquireInstanceLock } from './storage/instance-lock.js'
+import { setDefaultLogPath } from './log/safe.js'
 import { Supervisor } from './supervisor/supervisor.js'
 
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
@@ -26,7 +25,6 @@ const workDir = values['work-dir']
 const resolvedStateDir = resolve(stateDir)
 const resolvedWorkDir = resolve(workDir)
 setDefaultLogPath(buildPaths(resolvedStateDir).log)
-const instanceLock = await acquireInstanceLock(resolvedStateDir)
 await loadCodexSettings()
 
 const parsePort = (value: string): string => {
@@ -45,9 +43,9 @@ const config = defaultConfig({
   workDir: resolvedWorkDir,
 })
 
-const envModel = process.env.MIMIKIT_TELLER_MODEL?.trim()
-if (envModel) config.teller.model = envModel
-const envReasoning = process.env.MIMIKIT_TELLER_REASONING_EFFORT?.trim()
+const envModel = process.env.MIMIKIT_MODEL?.trim()
+if (envModel) config.manager.model = envModel
+const envReasoning = process.env.MIMIKIT_REASONING_EFFORT?.trim()
 if (envReasoning) {
   const allowed: ModelReasoningEffort[] = [
     'minimal',
@@ -57,32 +55,27 @@ if (envReasoning) {
     'xhigh',
   ]
   if (allowed.includes(envReasoning as ModelReasoningEffort))
-    config.teller.modelReasoningEffort = envReasoning as ModelReasoningEffort
-  else
-    console.warn('[cli] invalid MIMIKIT_TELLER_REASONING_EFFORT:', envReasoning)
+    config.manager.modelReasoningEffort = envReasoning as ModelReasoningEffort
+  else console.warn('[cli] invalid MIMIKIT_REASONING_EFFORT:', envReasoning)
 }
 
 console.log('[cli] config:', config)
-console.log('[cli] instance lock:', instanceLock.lockPath)
 
 const supervisor = new Supervisor(config)
 
 await supervisor.start()
 createHttpServer(supervisor, config, parseInt(port, 10))
 
-const shutdown = async (reason: string) => {
+const shutdown = (reason: string) => {
   console.log(`\n[cli] ${reason}`)
   supervisor.stop()
-  await safe('instanceLock.release', () => instanceLock.release(), {
-    fallback: undefined,
-  })
   process.exit(0)
 }
 
 process.on('SIGINT', () => {
-  void shutdown('shutting down...')
+  shutdown('shutting down...')
 })
 
 process.on('SIGTERM', () => {
-  void shutdown('received SIGTERM, shutting down...')
+  shutdown('received SIGTERM, shutting down...')
 })

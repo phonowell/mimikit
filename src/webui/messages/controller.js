@@ -11,8 +11,6 @@ export function createMessagesController({
   scrollBottomBtn,
   statusDot,
   statusText,
-  thinkerDot,
-  thinkerText,
   input,
   sendBtn,
 }) {
@@ -74,27 +72,6 @@ export function createMessagesController({
     syncLoadingState()
   }
 
-  const formatTokenCount = (value) => {
-    if (typeof value !== 'number' || !Number.isFinite(value)) return ''
-    const rounded = Math.round(value)
-    if (Math.abs(rounded) < 1000)
-      return new Intl.NumberFormat('en-US').format(rounded)
-    const formatted = new Intl.NumberFormat('en-US', {
-      maximumFractionDigits: 1,
-    }).format(rounded / 1000)
-    return `${formatted}k`
-  }
-
-  const formatThinkerUsage = (usage) => {
-    if (!usage) return ''
-    const total =
-      typeof usage.total === 'number'
-        ? usage.total
-        : (usage.input ?? 0) + (usage.output ?? 0)
-    if (!Number.isFinite(total) || total <= 0) return ''
-    return `${formatTokenCount(total)} tokens`
-  }
-
   const updateStatus = (status) => {
     lastStatus = status
     if (!statusText || !statusDot) {
@@ -106,24 +83,12 @@ export function createMessagesController({
     if (status.activeTasks > 0) parts.push(`${status.activeTasks} tasks`)
     if (status.pendingTasks > 0) parts.push(`${status.pendingTasks} pending`)
     statusText.textContent = parts.join(' · ')
-    if (thinkerDot && thinkerText) {
-      const thinkerState = status.thinkerStatus || 'idle'
-      thinkerDot.dataset.state = thinkerState
-      const thinkerParts = [`thinker ${thinkerState}`]
-      if (status.thinkerLastElapsedMs)
-        thinkerParts.push(formatElapsedLabel(status.thinkerLastElapsedMs))
-      const tokenLabel = formatThinkerUsage(status.thinkerLastUsage)
-      if (tokenLabel) thinkerParts.push(tokenLabel)
-      thinkerText.textContent = thinkerParts.join(' · ')
-    }
     syncLoadingState()
   }
 
   const setDisconnected = () => {
     if (statusText) statusText.textContent = 'disconnected'
     if (statusDot) statusDot.dataset.state = ''
-    if (thinkerText) thinkerText.textContent = 'thinker disconnected'
-    if (thinkerDot) thinkerDot.dataset.state = ''
     lastStatus = null
     lastMessageRole = null
     awaitingReply = false

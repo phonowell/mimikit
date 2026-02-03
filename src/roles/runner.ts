@@ -1,19 +1,12 @@
-import { runTellerApi } from '../llm/api-runner.js'
+import { runManagerApi } from '../llm/api-runner.js'
 import { runCodexSdk } from '../llm/sdk-runner.js'
 
-import {
-  buildTellerPrompt,
-  buildThinkerPrompt,
-  buildWorkerPrompt,
-} from './prompt.js'
+import { buildManagerPrompt, buildWorkerPrompt } from './prompt.js'
 
-import type { TellerEnv } from './prompt.js'
+import type { ManagerEnv } from './prompt.js'
+import type { TokenUsage } from '../types/common.js'
 import type { HistoryMessage } from '../types/history.js'
 import type { Task, TaskResult } from '../types/tasks.js'
-import type { TellerNotice } from '../types/teller-notice.js'
-import type { ThinkerState } from '../types/thinker-state.js'
-import type { TokenUsage } from '../types/usage.js'
-import type { UserInput } from '../types/user-input.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
 const readEnvOptional = (key: string): string | undefined => {
@@ -28,16 +21,15 @@ const normalizeOptional = (value?: string | null): string | undefined => {
   return trimmed && trimmed.length > 0 ? trimmed : undefined
 }
 
-const DEFAULT_TELLER_FALLBACK_MODEL = readEnvOptional(
-  'MIMIKIT_TELLER_FALLBACK_MODEL',
-)
+const DEFAULT_MANAGER_FALLBACK_MODEL = readEnvOptional('MIMIKIT_FALLBACK_MODEL')
 
-export const runTeller = async (params: {
+export const runManager = async (params: {
   workDir: string
   inputs: string[]
-  notices: TellerNotice[]
+  results: TaskResult[]
+  tasks: Task[]
   history: HistoryMessage[]
-  env?: TellerEnv
+  env?: ManagerEnv
   timeoutMs: number
   model?: string
   modelReasoningEffort?: ModelReasoningEffort
@@ -48,16 +40,17 @@ export const runTeller = async (params: {
   fallbackUsed: boolean
   usage?: TokenUsage
 }> => {
-  const prompt = await buildTellerPrompt({
+  const prompt = await buildManagerPrompt({
     workDir: params.workDir,
     inputs: params.inputs,
-    notices: params.notices,
+    results: params.results,
+    tasks: params.tasks,
     history: params.history,
     ...(params.env ? { env: params.env } : {}),
   })
   try {
     const model = normalizeOptional(params.model)
-    const result = await runTellerApi({
+    const result = await runManagerApi({
       prompt,
       timeoutMs: params.timeoutMs,
       ...(model ? { model } : {}),
@@ -73,10 +66,10 @@ export const runTeller = async (params: {
     }
   } catch (error) {
     const fallbackModel = normalizeOptional(
-      params.fallbackModel ?? DEFAULT_TELLER_FALLBACK_MODEL,
+      params.fallbackModel ?? DEFAULT_MANAGER_FALLBACK_MODEL,
     )
     if (!fallbackModel) throw error
-    const llmResult = await runTellerApi({
+    const llmResult = await runManagerApi({
       prompt,
       timeoutMs: params.timeoutMs,
       model: fallbackModel,
@@ -90,44 +83,6 @@ export const runTeller = async (params: {
       fallbackUsed: true,
       ...(llmResult.usage ? { usage: llmResult.usage } : {}),
     }
-  }
-}
-
-export const runThinker = async (params: {
-  workDir: string
-  state: ThinkerState
-  inputs: UserInput[]
-  results: TaskResult[]
-  tasks: Task[]
-  timeoutMs: number
-  threadId?: string | null
-  model?: string
-}): Promise<{
-  output: string
-  elapsedMs: number
-  threadId: string | null
-  usage?: TokenUsage
-}> => {
-  const prompt = await buildThinkerPrompt({
-    workDir: params.workDir,
-    state: params.state,
-    inputs: params.inputs,
-    results: params.results,
-    tasks: params.tasks,
-  })
-  const llmResult = await runCodexSdk({
-    role: 'thinker',
-    prompt,
-    workDir: params.workDir,
-    timeoutMs: params.timeoutMs,
-    threadId: params.threadId ?? null,
-    ...(params.model ? { model: params.model } : {}),
-  })
-  return {
-    output: llmResult.output,
-    elapsedMs: llmResult.elapsedMs,
-    ...(llmResult.usage ? { usage: llmResult.usage } : {}),
-    threadId: llmResult.threadId ?? null,
   }
 }
 

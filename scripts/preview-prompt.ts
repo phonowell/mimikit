@@ -1,15 +1,10 @@
-import {
-  buildTellerPrompt,
-  buildThinkerPrompt,
-  buildWorkerPrompt,
-} from '../src/roles/prompt.js'
+import { buildManagerPrompt, buildWorkerPrompt } from '../src/roles/prompt.js'
 
 const usage = () => {
   console.log(
-    'Usage: pnpm prompt:preview <teller|thinker|worker> ["input"...]',
+    'Usage: pnpm prompt:preview <manager|worker> ["input"...]',
   )
-  console.log('  teller: each extra arg becomes one user input line')
-  console.log('  thinker: extra args become user inputs')
+  console.log('  manager: each extra arg becomes one user input line')
   console.log('  worker: extra args are joined as the task prompt')
 }
 
@@ -25,27 +20,13 @@ const main = async () => {
   const workDir = process.cwd()
 
   switch (role) {
-    case 'teller': {
-      const prompt = await buildTellerPrompt({
+    case 'manager': {
+      const prompt = await buildManagerPrompt({
         workDir,
         inputs: args,
-        notices: [],
-      })
-      console.log(prompt)
-      return
-    }
-    case 'thinker': {
-      const prompt = await buildThinkerPrompt({
-        workDir,
-        state: { sessionId: '', lastWakeAt: '', notes: '' },
-        inputs: args.map((text, idx) => ({
-          id: String(idx + 1),
-          text,
-          createdAt: new Date().toISOString(),
-          processedByThinker: false,
-        })),
         results: [],
         tasks: [],
+        history: [],
       })
       console.log(prompt)
       return
@@ -56,8 +37,7 @@ const main = async () => {
         task: {
           id: 'task-1',
           prompt: args.join(' '),
-          priority: 5,
-          status: 'queued',
+          status: 'pending',
           createdAt: new Date().toISOString(),
         },
       })

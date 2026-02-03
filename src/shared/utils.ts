@@ -1,13 +1,10 @@
-import type { TokenUsage } from '../types/usage.js'
-
-export const asString = (value: unknown): string | undefined =>
-  typeof value === 'string' ? value : undefined
+import type { TokenUsage } from '../types/common.js'
 
 export const asNumber = (value: unknown): number | undefined =>
   typeof value === 'number' && Number.isFinite(value) ? value : undefined
 
-export const asBoolean = (value: unknown): boolean | undefined =>
-  typeof value === 'boolean' ? value : undefined
+export const sleep = (ms: number) =>
+  new Promise((resolve) => setTimeout(resolve, ms))
 
 const normalizeUsageParts = (parts: {
   input?: unknown

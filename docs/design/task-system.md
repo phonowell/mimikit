@@ -4,27 +4,23 @@
 
 ## 生命周期（高层）
 ```
-用户输入 → Teller 回复 + 整理输入摘要
+用户输入 → Manager 回复 + 可能派发任务
   ↓
-Thinker 苏醒 → 解析输入/结果 → 派发任务/通知
+内存任务队列（pending）
   ↓
-agent-queue/ 任务执行（Worker）
+Worker 执行
   ↓
-agent-results/ 结果生成
-  ↓
-Thinker 消费结果 → notify_teller
+结果回传 → Manager 告知用户
 ```
 
 ## 调度规则
-- 仅处理 `status=queued` 的任务。
-- 依赖：`blockedBy` 全部完成后才可运行。
-- 定时：`scheduledAt` 未到期不执行。
-- 优先级：`priority` 数值越大越先执行；同优先级按 `createdAt` 先后。
+- 仅处理 `status=pending` 的任务。
+- FIFO：按创建顺序执行。
 
 ## 关键规则
 - Worker 不派发新任务、不与用户对话。
-- Thinker 通过 MIMIKIT 命令派发/取消/更新任务。
-- 无内建重试；需要重试由 Thinker 重新派发。
+- Manager 通过 MIMIKIT 命令派发任务。
+- 无内建重试；需要重试由 Manager 重新派发。
 
 ## 相关文档
 - 任务结构：docs/design/task-data.md

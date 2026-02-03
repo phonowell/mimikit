@@ -1,7 +1,7 @@
 import type { Id, ISODate } from './common.js'
-import type { TokenUsage } from './usage.js'
+import type { TokenUsage } from './common.js'
 
-export type Role = 'user' | 'teller' | 'system'
+export type Role = 'user' | 'manager' | 'system'
 
 export type HistoryMessage = {
   id: Id

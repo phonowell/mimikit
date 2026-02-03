@@ -3,13 +3,36 @@ import { appendFile, readFile } from 'node:fs/promises'
 import { writeFileAtomic } from '../fs/atomic.js'
 import { logSafeError, safe } from '../log/safe.js'
 
-import { withStoreLock } from './store-lock.js'
-
 const splitLines = (raw: string): string[] =>
   raw
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter((line) => line.length > 0)
+
+const updateQueue = new Map<string, Promise<void>>()
+
+const runSerialized = async <T>(
+  path: string,
+  fn: () => Promise<T>,
+): Promise<T> => {
+  const previous = updateQueue.get(path) ?? Promise.resolve()
+  const safePrevious = previous.catch(() => undefined)
+  let release!: () => void
+  const next = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  updateQueue.set(
+    path,
+    safePrevious.then(() => next),
+  )
+  await safePrevious
+  try {
+    return await fn()
+  } finally {
+    release()
+    if (updateQueue.get(path) === next) updateQueue.delete(path)
+  }
+}
 
 export const readJsonl = async <T>(path: string): Promise<T[]> => {
   const raw = await safe('readJsonl: readFile', () => readFile(path, 'utf8'), {
@@ -47,16 +70,14 @@ export const appendJsonl = async <T>(
   if (items.length === 0) return
   const body = items.map((item) => JSON.stringify(item)).join('\n')
   const payload = `${body}\n`
-  await withStoreLock(path, async () => {
-    await appendFile(path, payload, 'utf8')
-  })
+  await appendFile(path, payload, 'utf8')
 }
 
 export const updateJsonl = <T>(
   path: string,
   updater: (items: T[]) => T[] | Promise<T[]>,
 ): Promise<T[]> =>
-  withStoreLock(path, async () => {
+  runSerialized(path, async () => {
     const current = await readJsonl<T>(path)
     const next = await updater([...current])
     await writeJsonl(path, next)

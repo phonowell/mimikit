@@ -1,4 +1,4 @@
-export const isAgentMessage = (msg) => msg?.role === 'teller'
+export const isAgentMessage = (msg) => msg?.role === 'manager'
 
 export const findLatestAgentMessage = (messages) => {
   for (let i = messages.length - 1; i >= 0; i -= 1) {
@@ -18,7 +18,7 @@ const renderMessage = (params, msg) => {
   } = params
   if (!messagesEl) return
   const item = document.createElement('li')
-  const roleClass = msg.role === 'teller' ? 'agent' : msg.role
+  const roleClass = msg.role === 'manager' ? 'agent' : msg.role
   item.className = `message ${roleClass}`
 
   const article = document.createElement('article')
