@@ -9,7 +9,6 @@ main[data-app] {
 }
 
 .app-header,
-.tasks-panel,
 .messages-section,
 .composer {
   width: 100%;
@@ -23,6 +22,24 @@ main[data-app] {
   box-shadow: var(--shadow);
 }
 
+.tasks-dialog {
+  border: 0;
+  padding: 0;
+  margin: auto;
+  background: transparent;
+  width: min(420px, 92vw);
+  z-index: 10;
+}
+
+.tasks-dialog:not([open]) {
+  display: none;
+}
+
+.tasks-dialog::backdrop {
+  background: rgba(15, 23, 42, 0.35);
+  backdrop-filter: blur(2px);
+}
+
 .tasks-panel {
   background: var(--panel);
   border: 1px solid var(--border);
@@ -32,7 +49,9 @@ main[data-app] {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 30vh;
+  width: 100%;
+  max-height: min(70vh, 640px);
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -55,9 +74,6 @@ main[data-app] {
   display: flex;
   align-items: center;
   gap: 8px;
-  list-style: none;
-  margin: 0;
-  padding: 0;
 }
 
 .messages-section {

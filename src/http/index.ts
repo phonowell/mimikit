@@ -137,6 +137,27 @@ export const createHttpServer = (
     return supervisor.getTasks(limit)
   })
 
+  app.post('/api/tasks/:id/cancel', async (request, reply) => {
+    const params = request.params as { id?: string } | undefined
+    const taskId = typeof params?.id === 'string' ? params.id.trim() : ''
+    if (!taskId) {
+      reply.code(400).send({ error: 'task id is required' })
+      return
+    }
+    const result = await supervisor.cancelTask(taskId, { source: 'http' })
+    if (!result.ok) {
+      const status =
+        result.status === 'not_found'
+          ? 404
+          : result.status === 'invalid'
+            ? 400
+            : 409
+      reply.code(status).send({ error: result.status })
+      return
+    }
+    reply.send({ ok: true, status: result.status, taskId })
+  })
+
   app.post('/api/restart', (_request, reply) => {
     reply.send({ ok: true })
     setTimeout(() => {

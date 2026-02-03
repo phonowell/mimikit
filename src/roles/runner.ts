@@ -143,6 +143,7 @@ export const runWorker = async (params: {
   task: Task
   timeoutMs: number
   model?: string
+  abortSignal?: AbortSignal
 }): Promise<{ output: string; elapsedMs: number; usage?: TokenUsage }> => {
   const prompt = await buildWorkerPrompt({
     workDir: params.workDir,
@@ -154,6 +155,7 @@ export const runWorker = async (params: {
       prompt,
       workDir: params.workDir,
       timeoutMs: params.timeoutMs,
+      ...(params.abortSignal ? { abortSignal: params.abortSignal } : {}),
       ...(params.model ? { model: params.model } : {}),
     })
     await appendLlmArchive(params.stateDir, {

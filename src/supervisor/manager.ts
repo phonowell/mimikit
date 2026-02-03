@@ -6,6 +6,8 @@ import { appendHistory, readHistory } from '../storage/history.js'
 import { enqueueTask } from '../tasks/queue.js'
 import { nowIso } from '../time.js'
 
+import { cancelTask } from './cancel.js'
+
 import type { RuntimeState } from './runtime.js'
 import type { TaskResult } from '../types/tasks.js'
 
@@ -145,16 +147,27 @@ const runManagerBuffer = async (
       ...(modelReasoningEffort ? { modelReasoningEffort } : {}),
     })
     const parsed = parseCommands(result.output)
+    const seenDispatches = new Set<string>()
     for (const command of parsed.commands) {
-      if (command.action !== 'dispatch_worker') continue
-      const content = command.content?.trim()
-      const prompt =
-        content && content.length > 0
-          ? content
-          : (command.attrs.prompt?.trim() ?? '')
-      if (!prompt) continue
-      const rawTitle = command.attrs.title?.trim()
-      enqueueTask(runtime.tasks, prompt, rawTitle)
+      if (command.action === 'dispatch_worker') {
+        const content = command.content?.trim()
+        const prompt =
+          content && content.length > 0
+            ? content
+            : (command.attrs.prompt?.trim() ?? '')
+        if (!prompt) continue
+        const rawTitle = command.attrs.title?.trim()
+        const dedupeKey = `${prompt}\n${rawTitle ?? ''}`
+        if (seenDispatches.has(dedupeKey)) continue
+        seenDispatches.add(dedupeKey)
+        enqueueTask(runtime.tasks, prompt, rawTitle)
+        continue
+      }
+      if (command.action === 'cancel_task') {
+        const id = command.attrs.id?.trim() ?? command.content?.trim()
+        if (!id) continue
+        await cancelTask(runtime, id, { source: 'manager' })
+      }
     }
     if (parsed.text) {
       await appendHistory(runtime.paths.history, {
