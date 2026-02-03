@@ -111,7 +111,7 @@ export const buildManagerPrompt = async (params: {
   const envText = formatEnvironment(params.workDir, params.env)
   const resultsText = formatTaskResults(params.results)
   const tasksText = formatQueueStatus(params.tasks)
-  return `${system}\n\n环境信息：\n${envText}\n\n历史对话：\n${historyText}\n\n用户消息：\n${inputsText}\n\n任务完成情况：\n${resultsText}\n\n当前任务队列：\n${tasksText}`
+  return `${system}\n\n环境信息（背景上下文，仅在相关时参考，无需主动提及）：\n${envText}\n\n历史对话：\n${historyText}\n\n用户消息：\n${inputsText}\n\n任务完成情况（如有需要可告知用户）：\n${resultsText}\n\n当前任务队列（无需主动汇报）：\n${tasksText}`
 }
 
 export const buildWorkerPrompt = async (params: {
