@@ -77,10 +77,7 @@ export function createMessagesController({
       return
     }
     statusDot.dataset.state = status.agentStatus
-    const parts = [status.agentStatus]
-    if (status.activeTasks > 0) parts.push(`${status.activeTasks} tasks`)
-    if (status.pendingTasks > 0) parts.push(`${status.pendingTasks} pending`)
-    statusText.textContent = parts.join(' · ')
+    statusText.textContent = status.agentStatus
     syncLoadingState()
   }
 
@@ -179,7 +176,10 @@ export function createMessagesController({
         throw new Error(data?.error || 'Failed to send')
       }
 
-      if (input) input.value = ''
+      if (input) {
+        input.value = ''
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+      }
 
       const msgRes = await fetch('/api/messages?limit=50')
       const msgData = await msgRes.json()
@@ -247,11 +247,30 @@ export function createMessagesController({
 export function bindComposer({ form, input, messages }) {
   if (!form || !input || !messages) return
 
+  const resizeInput = () => {
+    input.style.height = 'auto'
+    const computed = window.getComputedStyle(input)
+    const borderTop = Number.parseFloat(computed.borderTopWidth) || 0
+    const borderBottom = Number.parseFloat(computed.borderBottomWidth) || 0
+    const maxHeight = Number.parseFloat(computed.maxHeight) || 0
+    const nextHeight = input.scrollHeight + borderTop + borderBottom
+    if (maxHeight > 0) {
+      input.style.height = `${Math.min(nextHeight, maxHeight)}px`
+      input.style.overflowY = nextHeight > maxHeight ? 'auto' : 'hidden'
+    } else {
+      input.style.height = `${nextHeight}px`
+      input.style.overflowY = 'hidden'
+    }
+  }
+
   form.addEventListener('submit', (event) => {
     event.preventDefault()
     const text = input.value.trim()
     if (text) messages.sendMessage(text)
   })
+
+  resizeInput()
+  input.addEventListener('input', resizeInput)
 
   input.addEventListener('keydown', (event) => {
     if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
