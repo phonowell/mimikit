@@ -20,11 +20,14 @@ export type ManagerEnv = {
   }
 }
 
-const loadSystemPrompt = async (
+type PromptTemplateValues = Record<string, string>
+
+const loadPromptFile = async (
   workDir: string,
   role: string,
+  name: string,
 ): Promise<string> => {
-  const path = join(workDir, 'prompts', 'agents', role, 'system.md')
+  const path = join(workDir, 'prompts', 'agents', role, `${name}.md`)
   try {
     return await readFile(path, 'utf8')
   } catch (error) {
@@ -33,9 +36,37 @@ const loadSystemPrompt = async (
         ? String((error as { code?: string }).code)
         : undefined
     if (code === 'ENOENT') return ''
-    await logSafeError('loadSystemPrompt', error, { meta: { path } })
+    await logSafeError('loadPromptFile', error, { meta: { path } })
     throw error
   }
+}
+
+const loadSystemPrompt = (workDir: string, role: string): Promise<string> =>
+  loadPromptFile(workDir, role, 'system')
+
+const loadInjectionPrompt = (workDir: string, role: string): Promise<string> =>
+  loadPromptFile(workDir, role, 'injection')
+
+const renderPromptTemplate = (
+  template: string,
+  values: PromptTemplateValues,
+): string => {
+  let output = template
+  for (const [key, value] of Object.entries(values)) {
+    const token = `{${key}}`
+    if (!output.includes(token)) continue
+    output = output.split(token).join(value)
+  }
+  return output
+}
+
+const joinPromptSections = (sections: string[]): string => {
+  let output = ''
+  for (const section of sections) {
+    if (!section) continue
+    output = output ? `${output}\n\n${section}` : section
+  }
+  return output
 }
 
 const formatHistory = (history: HistoryMessage[]): string => {
@@ -106,12 +137,21 @@ export const buildManagerPrompt = async (params: {
   env?: ManagerEnv
 }): Promise<string> => {
   const system = await loadSystemPrompt(params.workDir, 'manager')
+  const injectionTemplate = await loadInjectionPrompt(params.workDir, 'manager')
   const inputsText = formatInputs(params.inputs)
   const historyText = formatHistory(params.history)
   const envText = formatEnvironment(params.workDir, params.env)
   const resultsText = formatTaskResults(params.results)
   const tasksText = formatQueueStatus(params.tasks)
-  return `${system}\n\n环境信息（背景上下文，仅在相关时参考，无需主动提及）：\n${envText}\n\n历史对话：\n${historyText}\n\n用户消息：\n${inputsText}\n\n任务完成情况（如有需要可告知用户）：\n${resultsText}\n\n当前任务队列（无需主动汇报）：\n${tasksText}`
+  const injectionValues = Object.fromEntries<string>([
+    ['环境信息', envText],
+    ['历史对话', historyText],
+    ['用户输入', inputsText],
+    ['任务完成情况', resultsText],
+    ['当前任务队列', tasksText],
+  ])
+  const injection = renderPromptTemplate(injectionTemplate, injectionValues)
+  return joinPromptSections([system, injection])
 }
 
 export const buildWorkerPrompt = async (params: {
@@ -119,5 +159,10 @@ export const buildWorkerPrompt = async (params: {
   task: Task
 }): Promise<string> => {
   const system = await loadSystemPrompt(params.workDir, 'worker')
-  return `${system}\n\n任务描述：\n${params.task.prompt}`
+  const injectionTemplate = await loadInjectionPrompt(params.workDir, 'worker')
+  const injectionValues = Object.fromEntries<string>([
+    ['任务描述', params.task.prompt],
+  ])
+  const injection = renderPromptTemplate(injectionTemplate, injectionValues)
+  return joinPromptSections([system, injection])
 }
