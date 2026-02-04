@@ -1,7 +1,7 @@
 import { appendLog } from '../log/append.js'
 import { safe } from '../log/safe.js'
 import { runLocal } from '../roles/runner.js'
-import { appendHistory, readHistory } from '../storage/history.js'
+import { readHistory } from '../storage/history.js'
 import { nowIso } from '../time.js'
 
 import type { RuntimeState } from './runtime.js'
@@ -47,6 +47,7 @@ export const runLocalQuickReply = async (
   },
 ): Promise<void> => {
   const startedAt = Date.now()
+  runtime.localReplyInFlight.add(params.id)
   const { config } = runtime
   const { model, baseUrl, timeoutMs } = config.local
   await safe(
@@ -83,16 +84,19 @@ export const runLocalQuickReply = async (
       baseUrl,
     })
     const output = result.output.trim()
-    if (output) {
-      await appendHistory(runtime.paths.history, {
+    const disabled = runtime.localReplyDisabled.has(params.id)
+    if (output && !disabled) {
+      runtime.localReplies.set(params.id, {
         id: `local-${Date.now()}`,
         role: 'manager',
         text: output,
         createdAt: nowIso(),
+        origin: 'local',
         elapsedMs: result.elapsedMs,
         ...(result.usage ? { usage: result.usage } : {}),
       })
     }
+    if (disabled) runtime.localReplyDisabled.delete(params.id)
     await appendLog(runtime.paths.log, {
       event: 'local_end',
       status: 'ok',
@@ -111,5 +115,9 @@ export const runLocalQuickReply = async (
         }),
       { fallback: undefined },
     )
+  } finally {
+    runtime.localReplyInFlight.delete(params.id)
+    if (runtime.localReplyDisabled.has(params.id))
+      runtime.localReplyDisabled.delete(params.id)
   }
 }
