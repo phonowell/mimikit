@@ -13,6 +13,7 @@
   border-radius: 50%;
   background: #c9d3df;
   box-shadow: 0 0 0 4px rgba(100, 116, 139, 0.08);
+  animation: statusPulse 1.6s ease-in-out infinite;
 }
 
 .status-dot[data-state='running'] {
@@ -35,25 +36,113 @@
   box-shadow: 0 0 0 4px rgba(226, 93, 93, 0.18);
 }
 
-.action-btn {
-  border-radius: 999px;
-  padding: 6px 12px;
-  background: #ffffff;
-  color: var(--muted);
+@keyframes statusPulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.25);
+  }
+}
+
+.btn {
+  --btn-bg: #ffffff;
+  --btn-color: var(--muted);
+  --btn-border: var(--border);
+  --btn-hover-bg: var(--accent-soft);
+  --btn-hover-color: var(--accent);
+  --btn-hover-border: transparent;
+  --btn-focus: rgba(42, 125, 225, 0.4);
+  --btn-pad: 6px 12px;
+  --btn-font: 12px;
+  --btn-radius: 999px;
+  --btn-min-width: auto;
+  --btn-min-height: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: var(--btn-pad);
+  min-width: var(--btn-min-width);
+  min-height: var(--btn-min-height);
+  border-radius: var(--btn-radius);
+  border: 1px solid var(--btn-border);
+  background: var(--btn-bg);
+  color: var(--btn-color);
+  font-size: var(--btn-font);
   font-weight: 600;
-  font-size: 12px;
-  border: 1px solid var(--border);
+  box-shadow: var(--btn-shadow, none);
+  transition: background-color 0.2s ease, color 0.2s ease,
+    border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
-.action-btn:hover {
-  background: var(--accent-soft);
-  color: var(--accent);
-  border-color: transparent;
+.btn:hover {
+  background: var(--btn-hover-bg);
+  color: var(--btn-hover-color);
+  border-color: var(--btn-hover-border);
 }
 
-.action-btn:focus-visible {
-  outline: 2px solid rgba(42, 125, 225, 0.4);
+.btn:focus-visible {
+  outline: 2px solid var(--btn-focus);
   outline-offset: 2px;
+}
+
+.btn--xs {
+  --btn-pad: 4px 10px;
+  --btn-font: 12px;
+}
+
+.btn--sm {
+  --btn-pad: 6px 12px;
+  --btn-font: 12px;
+}
+
+.btn--md {
+  --btn-pad: 8px 16px;
+  --btn-font: 13px;
+}
+
+.btn--dialog {
+  --btn-min-width: 88px;
+  --btn-min-height: 32px;
+}
+
+.btn--primary {
+  --btn-bg: var(--accent);
+  --btn-color: #ffffff;
+  --btn-border: transparent;
+  --btn-hover-bg: #1f6cc7;
+  --btn-hover-color: #ffffff;
+  --btn-hover-border: transparent;
+  --btn-focus: rgba(42, 125, 225, 0.4);
+}
+
+.btn--danger {
+  --btn-bg: #fff5f5;
+  --btn-color: var(--danger);
+  --btn-border: rgba(226, 93, 93, 0.35);
+  --btn-hover-bg: var(--danger);
+  --btn-hover-color: #ffffff;
+  --btn-hover-border: transparent;
+  --btn-focus: rgba(226, 93, 93, 0.35);
+}
+
+.btn--icon {
+  --btn-pad: 0;
+  width: var(--btn-size, 32px);
+  height: var(--btn-size, 32px);
+  font-size: var(--btn-icon-size, 12px);
+}
+
+.btn--icon-sm {
+  --btn-size: 28px;
+  --btn-icon-size: 12px;
+}
+
+.btn--icon-lg {
+  --btn-size: 40px;
+  --btn-icon-size: 18px;
 }
 
 .messages .empty-state {
@@ -66,20 +155,14 @@
 }
 
 .scroll-bottom {
+  --btn-color: var(--accent);
+  --btn-hover-bg: var(--accent);
+  --btn-hover-color: #ffffff;
+  --btn-hover-border: transparent;
+  --btn-shadow: 0 12px 24px rgba(15, 23, 42, 0.18);
   position: absolute;
   right: 18px;
   bottom: 18px;
-  width: 40px;
-  height: 40px;
-  border-radius: 999px;
-  background: #ffffff;
-  color: var(--accent);
-  border: 1px solid var(--border);
-  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.18);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
   opacity: 0;
   pointer-events: none;
   transform: translateY(8px);
@@ -92,17 +175,6 @@
   opacity: 1;
   pointer-events: auto;
   transform: translateY(0);
-}
-
-.scroll-bottom:hover {
-  background: var(--accent);
-  color: #ffffff;
-  border-color: transparent;
-}
-
-.scroll-bottom:focus-visible {
-  outline: 2px solid rgba(42, 125, 225, 0.4);
-  outline-offset: 2px;
 }
 
 .message {
@@ -140,8 +212,8 @@
 }
 
 .message.local-reply article {
-  background: #f7f8fb;
   border-style: dashed;
+  opacity: 0.5;
 }
 
 .message.system {
@@ -353,6 +425,10 @@
   .scroll-bottom {
     transition: none;
   }
+
+  .status-dot {
+    animation: none;
+  }
 }
 
 .restart-header {
@@ -383,50 +459,8 @@
   gap: 8px;
 }
 
-.restart-dialog-btn {
-  border-radius: 999px;
-  min-width: 88px;
-  min-height: 32px;
-  padding: 8px 14px;
-  background: #ffffff;
-  color: var(--muted);
-  font-weight: 600;
-  font-size: 13px;
-  border: 1px solid var(--border);
-}
-
-.restart-dialog-btn:hover {
-  background: var(--accent-soft);
-  color: var(--accent);
-  border-color: transparent;
-}
-
-.restart-dialog-btn:focus-visible {
-  outline: 2px solid rgba(42, 125, 225, 0.4);
-  outline-offset: 2px;
-}
-
-.restart-dialog-btn-primary {
-  background: var(--accent);
-  color: #ffffff;
-  border-color: transparent;
-}
-
-.restart-dialog-btn-primary:hover {
-  background: #1f6cc7;
-}
-
 .restart-dialog-btn-danger {
-  background: #fff5f5;
-  color: var(--danger);
-  border-color: rgba(226, 93, 93, 0.35);
   margin-right: auto;
-}
-
-.restart-dialog-btn-danger:hover {
-  background: var(--danger);
-  color: #ffffff;
-  border-color: transparent;
 }
 
 .tasks-header {
@@ -454,29 +488,6 @@
   font-size: 12px;
 }
 
-.tasks-close {
-  width: 28px;
-  height: 28px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: #ffffff;
-  color: var(--muted);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-}
-
-.tasks-close:hover {
-  background: var(--accent-soft);
-  color: var(--accent);
-  border-color: transparent;
-}
-
-.tasks-close:focus-visible {
-  outline: 2px solid rgba(42, 125, 225, 0.4);
-  outline-offset: 2px;
-}
 
 .tasks-list {
   margin: 0;
@@ -533,6 +544,14 @@
   margin-top: 6px;
 }
 
+.task-elapsed {
+  font-variant-numeric: tabular-nums;
+}
+
+.task-tokens {
+  font-variant-numeric: tabular-nums;
+}
+
 .task-meta .task-time {
   margin-left: auto;
 }
@@ -563,25 +582,7 @@
 }
 
 .task-cancel {
-  border-radius: 999px;
-  padding: 4px 10px;
-  background: #fff0f0;
-  color: var(--danger);
-  border: 1px solid rgba(226, 93, 93, 0.35);
-  font-size: 12px;
-  font-weight: 600;
   align-self: flex-start;
-}
-
-.task-cancel:hover {
-  background: var(--danger);
-  color: #ffffff;
-  border-color: transparent;
-}
-
-.task-cancel:focus-visible {
-  outline: 2px solid rgba(226, 93, 93, 0.35);
-  outline-offset: 2px;
 }
 
 @media (max-width: 640px) {

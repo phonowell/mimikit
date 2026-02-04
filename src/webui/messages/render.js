@@ -47,12 +47,6 @@ const renderMessage = (params, msg) => {
   const timeText = formatTime(msg.createdAt)
   const meta = document.createElement('small')
   meta.className = 'meta'
-  if (isLocal) {
-    const origin = document.createElement('span')
-    origin.className = 'origin'
-    origin.textContent = '内心活动'
-    meta.appendChild(origin)
-  }
   if (usageText) {
     const usage = document.createElement('span')
     usage.className = 'usage'

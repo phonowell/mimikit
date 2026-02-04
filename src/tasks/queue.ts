@@ -33,24 +33,42 @@ const updateTaskStatus = (
   tasks: Task[],
   taskId: string,
   status: TaskStatus,
+  patch?: Partial<Task>,
 ): Task | null => {
   const task = tasks.find((item) => item.id === taskId)
   if (!task) return null
   task.status = status
+  if (patch) Object.assign(task, patch)
   return task
 }
 
-export const markTaskRunning = (tasks: Task[], taskId: string): Task | null =>
-  updateTaskStatus(tasks, taskId, 'running')
+export const markTaskRunning = (
+  tasks: Task[],
+  taskId: string,
+  patch?: Partial<Task>,
+): Task | null =>
+  updateTaskStatus(tasks, taskId, 'running', {
+    ...patch,
+    startedAt: patch?.startedAt ?? nowIso(),
+  })
 
-export const markTaskSucceeded = (tasks: Task[], taskId: string): Task | null =>
-  updateTaskStatus(tasks, taskId, 'succeeded')
+export const markTaskSucceeded = (
+  tasks: Task[],
+  taskId: string,
+  patch?: Partial<Task>,
+): Task | null => updateTaskStatus(tasks, taskId, 'succeeded', patch)
 
-export const markTaskFailed = (tasks: Task[], taskId: string): Task | null =>
-  updateTaskStatus(tasks, taskId, 'failed')
+export const markTaskFailed = (
+  tasks: Task[],
+  taskId: string,
+  patch?: Partial<Task>,
+): Task | null => updateTaskStatus(tasks, taskId, 'failed', patch)
 
-export const markTaskCanceled = (tasks: Task[], taskId: string): Task | null =>
-  updateTaskStatus(tasks, taskId, 'canceled')
+export const markTaskCanceled = (
+  tasks: Task[],
+  taskId: string,
+  patch?: Partial<Task>,
+): Task | null => updateTaskStatus(tasks, taskId, 'canceled', patch)
 
 export const pickNextPendingTask = (
   tasks: Task[],

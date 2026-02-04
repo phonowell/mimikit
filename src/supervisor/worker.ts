@@ -63,7 +63,12 @@ const runTask = async (
         { fallback: undefined },
       )
       if (archivePath) result.archivePath = archivePath
-      markTaskCanceled(runtime.tasks, task.id)
+      const cancelPatch = {
+        completedAt,
+        durationMs: result.durationMs,
+        ...(result.usage ? { usage: result.usage } : {}),
+      }
+      markTaskCanceled(runtime.tasks, task.id, cancelPatch)
       runtime.pendingResults.push(result)
       await appendLog(runtime.paths.log, {
         event: 'worker_end',
@@ -104,7 +109,12 @@ const runTask = async (
       { fallback: undefined },
     )
     if (archivePath) result.archivePath = archivePath
-    markTaskSucceeded(runtime.tasks, task.id)
+    const successPatch = {
+      completedAt,
+      durationMs: result.durationMs,
+      ...(result.usage ? { usage: result.usage } : {}),
+    }
+    markTaskSucceeded(runtime.tasks, task.id, successPatch)
     runtime.pendingResults.push(result)
     await appendLog(runtime.paths.log, {
       event: 'worker_end',
@@ -145,7 +155,10 @@ const runTask = async (
         { fallback: undefined },
       )
       if (archivePath) result.archivePath = archivePath
-      markTaskCanceled(runtime.tasks, task.id)
+      markTaskCanceled(runtime.tasks, task.id, {
+        completedAt,
+        durationMs: result.durationMs,
+      })
       runtime.pendingResults.push(result)
       await safe(
         'appendLog: worker_end',
@@ -193,7 +206,10 @@ const runTask = async (
       { fallback: undefined },
     )
     if (archivePath) result.archivePath = archivePath
-    markTaskFailed(runtime.tasks, task.id)
+    markTaskFailed(runtime.tasks, task.id, {
+      completedAt,
+      durationMs: result.durationMs,
+    })
     runtime.pendingResults.push(result)
     await safe(
       'appendLog: worker_end',
