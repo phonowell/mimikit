@@ -21,10 +21,10 @@
    - src/types/history.ts（如需新增角色）
    - src/webui/messages/render.js（如需新增角色）
    - src/webui/components.css（如需新增样式）
-3. 手动验证（待确认）
-   - 本地 5 分钟空窗后输入 -> local-runner 先返回
-   - api-runner 随后返回
-   - 失败时回退/日志可追踪
+3. 手动验证（已完成）
+   - 本地模型可正常响应（冷/热启动）
+   - local-runner 端到端可用
+   - 失败时记录日志不影响主流程
 
 ## 决策
 - 历史角色：沿用 manager（不区分本地/远端）
@@ -38,5 +38,5 @@
 - 历史角色变更影响 WebUI 渲染
 
 ## 状态
-- 进度: 2/3
+- 进度: 3/3
 - 阻塞: 无
