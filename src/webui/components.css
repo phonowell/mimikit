@@ -371,11 +371,13 @@
 
 .restart-dialog-btn {
   border-radius: 999px;
-  padding: 6px 12px;
+  min-width: 88px;
+  min-height: 32px;
+  padding: 8px 14px;
   background: #ffffff;
   color: var(--muted);
   font-weight: 600;
-  font-size: 12px;
+  font-size: 13px;
   border: 1px solid var(--border);
 }
 
@@ -404,6 +406,7 @@
   background: #fff5f5;
   color: var(--danger);
   border-color: rgba(226, 93, 93, 0.35);
+  margin-right: auto;
 }
 
 .restart-dialog-btn-danger:hover {

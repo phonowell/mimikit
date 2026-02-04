@@ -56,11 +56,15 @@ export function bindRestart({
     if (!isBusy) restartBtn.focus()
   }
 
-  const waitForServer = () => {
+  const waitForServer = (onReady) => {
     setTimeout(async () => {
       try {
         const res = await fetch('/api/status')
         if (res.ok) {
+          if (typeof onReady === 'function') {
+            onReady()
+            return
+          }
           restartBtn.disabled = false
           disableActions(false)
           isBusy = false
@@ -70,7 +74,7 @@ export function bindRestart({
       } catch (error) {
         console.warn('[webui] status check failed', error)
       }
-      waitForServer()
+      waitForServer(onReady)
     }, 1000)
   }
 
@@ -91,6 +95,12 @@ export function bindRestart({
       })
     } catch (error) {
       console.warn('[webui] restart request failed', error)
+    }
+    if (mode === 'reset') {
+      waitForServer(() => {
+        window.location.reload()
+      })
+      return
     }
     waitForServer()
   }
