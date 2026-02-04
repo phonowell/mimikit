@@ -7,6 +7,10 @@ export type TaskView = {
   status: TaskStatus
   title: string
   createdAt: string
+  startedAt?: string
+  completedAt?: string
+  durationMs?: number
+  usage?: Task['usage']
 }
 
 export type TaskCounts = Record<TaskStatus, number>
@@ -24,6 +28,12 @@ const taskToView = (task: Task): TaskView => ({
   status: task.status,
   title: task.title || titleFromCandidates(task.id, [task.prompt]),
   createdAt: task.createdAt,
+  ...(task.startedAt ? { startedAt: task.startedAt } : {}),
+  ...(task.completedAt ? { completedAt: task.completedAt } : {}),
+  ...(typeof task.durationMs === 'number'
+    ? { durationMs: task.durationMs }
+    : {}),
+  ...(task.usage ? { usage: task.usage } : {}),
 })
 
 export const buildTaskViews = (

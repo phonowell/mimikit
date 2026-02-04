@@ -1,4 +1,4 @@
-import { formatDateTime } from './time.js'
+import { createElapsedTicker, renderTasks } from './tasks-view.js'
 
 const TASK_POLL_MS = 5000
 
@@ -13,21 +13,12 @@ export function bindTasksPanel({
   let pollTimer = null
   let isPolling = false
   let isOpen = false
-
-  function formatStatusCounts(counts) {
-    const parts = []
-    if (!counts) return parts
-    if (counts.pending) parts.push(`${counts.pending} pending`)
-    if (counts.running) parts.push(`${counts.running} running`)
-    if (counts.succeeded) parts.push(`${counts.succeeded} succeeded`)
-    if (counts.failed) parts.push(`${counts.failed} failed`)
-    if (counts.canceled) parts.push(`${counts.canceled} canceled`)
-    return parts
-  }
+  const elapsedTicker = createElapsedTicker(tasksList)
 
   function startPolling() {
     if (isPolling) return
     isPolling = true
+    elapsedTicker.start()
     loadTasks()
   }
 
@@ -35,6 +26,7 @@ export function bindTasksPanel({
     isPolling = false
     if (pollTimer) clearTimeout(pollTimer)
     pollTimer = null
+    elapsedTicker.stop()
   }
 
   function setExpanded(nextOpen) {
@@ -51,7 +43,8 @@ export function bindTasksPanel({
       const res = await fetch('/api/tasks?limit=200')
       if (!res.ok) throw new Error('Failed to load tasks')
       const data = await res.json()
-      renderTasks(data)
+      renderTasks(tasksList, tasksMeta, data)
+      elapsedTicker.update()
     } catch (error) {
       tasksMeta.textContent = 'Failed to load tasks'
       const empty = document.createElement('li')
@@ -112,76 +105,6 @@ export function bindTasksPanel({
     const taskId = button.getAttribute('data-task-id') || ''
     void requestCancel(taskId, button)
   })
-
-  function renderTasks(data) {
-    if (!tasksList || !tasksMeta) return
-    const tasks = data?.tasks || []
-    const counts = data?.counts || {}
-    const parts = [`${tasks.length} tasks`, ...formatStatusCounts(counts)]
-    tasksMeta.textContent = parts.join(' · ')
-    tasksList.innerHTML = ''
-
-    if (tasks.length === 0) {
-      const empty = document.createElement('li')
-      empty.className = 'tasks-empty'
-      const article = document.createElement('article')
-      article.textContent = 'No tasks'
-      empty.appendChild(article)
-      tasksList.appendChild(empty)
-      return
-    }
-
-    for (const task of tasks) {
-      const item = document.createElement('li')
-      item.className = 'task-item'
-      item.dataset.status = task.status || 'pending'
-
-      const link = document.createElement('a')
-      link.className = 'task-link'
-      link.href = `#task-${task.id}`
-      link.dataset.status = task.status || 'pending'
-
-      const title = document.createElement('span')
-      title.className = 'task-title'
-      title.textContent = task.title || task.id
-
-      const meta = document.createElement('small')
-      meta.className = 'task-meta'
-
-      const status = document.createElement('span')
-      status.className = 'task-status'
-      status.textContent = task.status || 'pending'
-      meta.appendChild(status)
-
-      if (task.createdAt) {
-        const timeEl = document.createElement('span')
-        timeEl.className = 'task-time'
-        timeEl.textContent = `created ${formatDateTime(task.createdAt)}`
-        meta.appendChild(timeEl)
-      }
-
-      const id = document.createElement('span')
-      id.className = 'task-id'
-      id.textContent = `id:${task.id}`
-      meta.appendChild(id)
-
-      link.appendChild(title)
-      link.appendChild(meta)
-      item.appendChild(link)
-
-      if (task.status === 'pending' || task.status === 'running') {
-        const cancelBtn = document.createElement('button')
-        cancelBtn.type = 'button'
-        cancelBtn.className = 'task-cancel'
-        cancelBtn.textContent = 'Cancel'
-        cancelBtn.setAttribute('data-task-id', task.id)
-        cancelBtn.setAttribute('aria-label', `Cancel task ${task.id}`)
-        item.appendChild(cancelBtn)
-      }
-
-      tasksList.appendChild(item)
-    }
-  }
 
   function openDialog() {
     if (!tasksDialog) return
