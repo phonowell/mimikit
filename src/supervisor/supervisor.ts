@@ -31,6 +31,9 @@ export class Supervisor {
       tasks: [],
       runningWorkers: new Set(),
       runningControllers: new Map(),
+      localReplies: new Map(),
+      localReplyInFlight: new Set(),
+      localReplyDisabled: new Set(),
     }
   }
 
@@ -69,6 +72,8 @@ export class Supervisor {
     this.runtime.lastUserInputAtMs = nowMs
     this.runtime.pendingInputs.push({ id, text, createdAt })
     if (meta) this.runtime.lastUserMeta = meta
+    this.runtime.localReplies.delete(id)
+    this.runtime.localReplyDisabled.delete(id)
     await appendHistory(this.runtime.paths.history, {
       id,
       role: 'user',
@@ -89,14 +94,21 @@ export class Supervisor {
         : {}),
       ...(meta?.clientNowIso ? { clientNowIso: meta.clientNowIso } : {}),
     })
-    if (shouldRunLocal) void runLocalQuickReply(this.runtime, { id, text })
+    if (shouldRunLocal) {
+      this.runtime.localReplyInFlight.add(id)
+      void runLocalQuickReply(this.runtime, { id, text })
+    }
     return id
   }
 
   async getChatHistory(limit = 50) {
     const history = await readHistory(this.runtime.paths.history)
+    const localReplies = [...this.runtime.localReplies.values()]
+    const merged = [...history, ...localReplies].sort((a, b) =>
+      a.createdAt.localeCompare(b.createdAt),
+    )
     if (limit <= 0) return []
-    return history.slice(Math.max(0, history.length - limit))
+    return merged.slice(Math.max(0, merged.length - limit))
   }
 
   getTasks(limit = 200) {

@@ -139,6 +139,11 @@
   border-bottom-left-radius: 8px;
 }
 
+.message.local-reply article {
+  background: #f7f8fb;
+  border-style: dashed;
+}
+
 .message.system {
   justify-content: center;
 }
@@ -286,6 +291,15 @@
 
 .message .meta .time {
   margin-left: auto;
+}
+
+.message .meta .origin {
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: #eef2f7;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
 }
 
 .message-loading article {

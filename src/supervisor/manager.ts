@@ -67,6 +67,17 @@ const createBuffer = (): ManagerBuffer => ({
   firstResultAt: 0,
 })
 
+const replaceLocalReplies = (
+  runtime: RuntimeState,
+  inputIds: string[],
+): void => {
+  if (inputIds.length === 0) return
+  for (const id of inputIds) {
+    runtime.localReplies.delete(id)
+    if (runtime.localReplyInFlight.has(id)) runtime.localReplyDisabled.add(id)
+  }
+}
+
 const clearBuffer = (buffer: ManagerBuffer): void => {
   buffer.inputs = []
   buffer.results = []
@@ -87,6 +98,7 @@ const runManagerBuffer = async (
   runtime: RuntimeState,
   buffer: ManagerBuffer,
 ) => {
+  const inputIds = buffer.inputs.map((input) => input.id)
   const inputs = buffer.inputs.map((input) => input.text)
   const { results } = buffer
   const history = await readHistory(runtime.paths.history)
@@ -202,6 +214,7 @@ const runManagerBuffer = async (
     await appendFallbackReply(runtime.paths)
     clearBuffer(buffer)
   } finally {
+    replaceLocalReplies(runtime, inputIds)
     runtime.managerRunning = false
   }
 }
