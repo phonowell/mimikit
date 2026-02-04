@@ -1,8 +1,13 @@
 import { runManagerApi } from '../llm/api-runner.js'
+import { runLocalRunner } from '../llm/local-runner.js'
 import { runCodexSdk } from '../llm/sdk-runner.js'
 import { appendLlmArchive } from '../storage/llm-archive.js'
 
-import { buildManagerPrompt, buildWorkerPrompt } from './prompt.js'
+import {
+  buildLocalPrompt,
+  buildManagerPrompt,
+  buildWorkerPrompt,
+} from './prompt.js'
 
 import type { ManagerEnv } from './prompt.js'
 import type { TokenUsage } from '../types/common.js'
@@ -187,6 +192,58 @@ export const runWorker = async (params: {
       ...(err.name ? { errorName: err.name } : {}),
       ...(params.model ? { model: params.model } : {}),
       taskId: params.task.id,
+    })
+    throw error
+  }
+}
+
+export const runLocal = async (params: {
+  stateDir: string
+  workDir: string
+  input: string
+  history: HistoryMessage[]
+  env?: ManagerEnv
+  timeoutMs: number
+  model: string
+  baseUrl: string
+}): Promise<{ output: string; elapsedMs: number; usage?: TokenUsage }> => {
+  const prompt = await buildLocalPrompt({
+    workDir: params.workDir,
+    input: params.input,
+    history: params.history,
+    ...(params.env ? { env: params.env } : {}),
+  })
+  try {
+    const llmResult = await runLocalRunner({
+      prompt,
+      timeoutMs: params.timeoutMs,
+      model: params.model,
+      baseUrl: params.baseUrl,
+    })
+    await appendLlmArchive(params.stateDir, {
+      role: 'local',
+      prompt,
+      output: llmResult.output,
+      ok: true,
+      elapsedMs: llmResult.elapsedMs,
+      ...(llmResult.usage ? { usage: llmResult.usage } : {}),
+      model: params.model,
+    })
+    return {
+      output: llmResult.output,
+      elapsedMs: llmResult.elapsedMs,
+      ...(llmResult.usage ? { usage: llmResult.usage } : {}),
+    }
+  } catch (error) {
+    const err = error instanceof Error ? error : new Error(String(error))
+    await appendLlmArchive(params.stateDir, {
+      role: 'local',
+      prompt,
+      output: '',
+      ok: false,
+      error: err.message,
+      ...(err.name ? { errorName: err.name } : {}),
+      model: params.model,
     })
     throw error
   }

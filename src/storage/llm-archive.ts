@@ -8,7 +8,7 @@ import { nowIso } from '../time.js'
 import type { TokenUsage } from '../types/common.js'
 
 export type LlmArchiveEntry = {
-  role: 'manager' | 'worker'
+  role: 'manager' | 'worker' | 'local'
   prompt: string
   output: string
   ok: boolean
