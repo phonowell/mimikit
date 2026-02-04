@@ -25,9 +25,9 @@ export type CancelResult = {
 
 const buildCanceledResult = (task: Task, output: string): TaskResult => {
   const completedAt = nowIso()
-  const createdAtMs = Date.parse(task.createdAt)
-  const durationMs = Number.isFinite(createdAtMs)
-    ? Math.max(0, Date.now() - createdAtMs)
+  const startedAtMs = task.startedAt ? Date.parse(task.startedAt) : NaN
+  const durationMs = Number.isFinite(startedAtMs)
+    ? Math.max(0, Date.now() - startedAtMs)
     : 0
   return {
     taskId: task.id,
@@ -99,8 +99,11 @@ export const cancelTask = async (
     return { ok: false, status: 'already_done', taskId: trimmed }
 
   if (task.status === 'pending') {
-    markTaskCanceled(runtime.tasks, task.id)
     const result = buildCanceledResult(task, meta?.reason ?? 'Task canceled')
+    markTaskCanceled(runtime.tasks, task.id, {
+      completedAt: result.completedAt,
+      durationMs: result.durationMs,
+    })
     await pushCanceledResult(runtime, task, result)
     return { ok: true, status: 'canceled', taskId: task.id }
   }

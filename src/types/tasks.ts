@@ -15,6 +15,10 @@ export type Task = {
   title: string
   status: TaskStatus
   createdAt: ISODate
+  startedAt?: ISODate
+  completedAt?: ISODate
+  durationMs?: number
+  usage?: TokenUsage
 }
 
 export type TaskResult = {

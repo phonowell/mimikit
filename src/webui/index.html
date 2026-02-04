@@ -22,7 +22,7 @@
           </div>
           <div class="app-actions" role="toolbar" aria-label="Actions">
             <button
-              class="action-btn tasks-open"
+              class="btn btn--sm tasks-open"
               data-tasks-open
               type="button"
               title="Tasks"
@@ -34,7 +34,7 @@
               Tasks
             </button>
             <button
-              class="action-btn restart-btn"
+              class="btn btn--sm restart-btn"
               data-restart
               type="button"
               title="Restart server"
@@ -57,7 +57,7 @@
           </li>
         </ul>
         <button
-          class="scroll-bottom"
+          class="btn btn--icon btn--icon-lg scroll-bottom"
           data-scroll-bottom
           type="button"
           title="Scroll to bottom"
@@ -79,7 +79,9 @@
             placeholder="Type a message..."
             rows="1"
           ></textarea>
-          <button type="submit" data-send>Send</button>
+          <button class="btn btn--md btn--primary" type="submit" data-send>
+            Send
+          </button>
         </form>
       </section>
 
@@ -95,7 +97,7 @@
             <div class="tasks-actions" role="group" aria-label="Tasks actions">
               <p class="tasks-meta" data-tasks-meta aria-live="polite"></p>
               <button
-                class="tasks-close"
+                class="btn btn--icon btn--icon-sm tasks-close"
                 data-tasks-close
                 type="button"
                 title="Close tasks"
@@ -126,17 +128,17 @@
           </p>
           <div class="restart-actions" role="group" aria-label="Restart actions">
             <button
-              class="restart-dialog-btn restart-dialog-btn-danger"
+              class="btn btn--md btn--dialog btn--danger restart-dialog-btn-danger"
               data-restart-reset
               type="button"
             >
               Reset
             </button>
-            <button class="restart-dialog-btn" data-restart-cancel type="button">
+            <button class="btn btn--md btn--dialog" data-restart-cancel type="button">
               Cancel
             </button>
             <button
-              class="restart-dialog-btn restart-dialog-btn-primary"
+              class="btn btn--md btn--dialog btn--primary"
               data-restart-confirm
               type="button"
             >
