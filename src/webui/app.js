@@ -32,6 +32,10 @@ if (elements.statusText) {
 bindComposer({ form: elements.form, input: elements.input, messages })
 bindRestart({
   restartBtn: elements.restartBtn,
+  restartDialog: elements.restartDialog,
+  restartCancelBtn: elements.restartCancelBtn,
+  restartConfirmBtn: elements.restartConfirmBtn,
+  restartResetBtn: elements.restartResetBtn,
   statusText: elements.statusText,
   statusDot: elements.statusDot,
   messages,

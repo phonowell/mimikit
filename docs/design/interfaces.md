@@ -9,6 +9,7 @@
 - GET /api/messages?limit=...
 - GET /api/tasks?limit=...
 - POST /api/restart
+- POST /api/reset
 
 实现：`src/http/index.ts`；WebUI 静态文件在 `src/webui/`。
 

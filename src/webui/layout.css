@@ -22,7 +22,8 @@ main[data-app] {
   box-shadow: var(--shadow);
 }
 
-.tasks-dialog {
+.tasks-dialog,
+.restart-dialog {
   border: 0;
   padding: 0;
   margin: auto;
@@ -31,11 +32,13 @@ main[data-app] {
   z-index: 10;
 }
 
-.tasks-dialog:not([open]) {
+.tasks-dialog:not([open]),
+.restart-dialog:not([open]) {
   display: none;
 }
 
-.tasks-dialog::backdrop {
+.tasks-dialog::backdrop,
+.restart-dialog::backdrop {
   background: rgba(15, 23, 42, 0.35);
   backdrop-filter: blur(2px);
 }
@@ -53,6 +56,18 @@ main[data-app] {
   max-height: min(70vh, 640px);
   min-height: 0;
   overflow: hidden;
+}
+
+.restart-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
 }
 
 .app-controls {

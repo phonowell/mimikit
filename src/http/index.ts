@@ -1,45 +1,21 @@
-import { resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
-
 import fastifyStatic from '@fastify/static'
 import fastify from 'fastify'
 
 import { logSafeError } from '../log/safe.js'
+
+import { clearStateDir } from './state-reset.js'
+import { parseMessageLimit, parseTaskLimit, resolveRoots } from './utils.js'
 
 import type { SupervisorConfig } from '../config.js'
 import type { Supervisor } from '../supervisor/supervisor.js'
 
 const MAX_BODY_BYTES = 64 * 1024
 
-const parseTaskLimit = (value: unknown): number => {
-  const parsed = typeof value === 'string' ? Number(value) : Number(value)
-  if (!Number.isFinite(parsed) || parsed <= 0) return 200
-  return Math.min(Math.floor(parsed), 500)
-}
-
-const parseMessageLimit = (value: unknown): number => {
-  const parsed = typeof value === 'string' ? Number(value) : Number(value)
-  if (!Number.isFinite(parsed) || parsed <= 0) return 50
-  return Math.floor(parsed)
-}
-
-const resolveRoots = () => {
-  const __dirname = fileURLToPath(new URL('.', import.meta.url))
-  const rootDir = resolve(__dirname, '..', '..')
-  return {
-    rootDir,
-    webDir: resolve(__dirname, '..', 'webui'),
-    markedDir: resolve(rootDir, 'node_modules', 'marked', 'lib'),
-    purifyDir: resolve(rootDir, 'node_modules', 'dompurify', 'dist'),
-  }
-}
-
 export const createHttpServer = (
   supervisor: Supervisor,
-  _config: SupervisorConfig,
+  config: SupervisorConfig,
   port: number,
 ) => {
-  void _config
   const app = fastify({ bodyLimit: MAX_BODY_BYTES })
   const { webDir, markedDir, purifyDir } = resolveRoots()
 
@@ -163,6 +139,21 @@ export const createHttpServer = (
     setTimeout(() => {
       supervisor.stop()
       process.exit(75)
+    }, 100)
+  })
+
+  app.post('/api/reset', (_request, reply) => {
+    reply.send({ ok: true })
+    setTimeout(() => {
+      void (async () => {
+        supervisor.stop()
+        try {
+          await clearStateDir(config.stateDir)
+        } catch (error) {
+          await logSafeError('http: reset', error)
+        }
+        process.exit(75)
+      })()
     }, 100)
   })
 
