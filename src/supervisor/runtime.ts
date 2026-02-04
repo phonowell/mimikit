@@ -18,6 +18,7 @@ export type RuntimeState = {
   tasks: Task[]
   runningWorkers: Set<string>
   runningControllers: Map<string, AbortController>
+  lastUserInputAtMs?: number
   lastUserMeta?: {
     source?: string
     remote?: string

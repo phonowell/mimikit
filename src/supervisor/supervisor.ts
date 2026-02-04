@@ -7,6 +7,7 @@ import { appendHistory, readHistory } from '../storage/history.js'
 import { nowIso } from '../time.js'
 
 import { cancelTask } from './cancel.js'
+import { runLocalQuickReply } from './local-reply.js'
 import { managerLoop } from './manager.js'
 import { buildTaskViews } from './task-view.js'
 import { workerLoop } from './worker.js'
@@ -58,6 +59,14 @@ export class Supervisor {
   ): Promise<string> {
     const id = newId()
     const createdAt = nowIso()
+    const nowMs = Date.now()
+    const lastInputAt = this.runtime.lastUserInputAtMs
+    const { idleMs } = this.runtime.config.local
+    const shouldRunLocal =
+      this.runtime.config.local.enabled &&
+      typeof lastInputAt === 'number' &&
+      nowMs - lastInputAt > idleMs
+    this.runtime.lastUserInputAtMs = nowMs
     this.runtime.pendingInputs.push({ id, text, createdAt })
     if (meta) this.runtime.lastUserMeta = meta
     await appendHistory(this.runtime.paths.history, {
@@ -80,6 +89,7 @@ export class Supervisor {
         : {}),
       ...(meta?.clientNowIso ? { clientNowIso: meta.clientNowIso } : {}),
     })
+    if (shouldRunLocal) void runLocalQuickReply(this.runtime, { id, text })
     return id
   }
 

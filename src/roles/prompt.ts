@@ -244,6 +244,37 @@ export const buildManagerPrompt = async (params: {
   return joinPromptSections([system, injection])
 }
 
+export const buildLocalPrompt = async (params: {
+  workDir: string
+  input: string
+  history: HistoryMessage[]
+  env?: ManagerEnv
+}): Promise<string> => {
+  const system = await loadSystemPrompt(params.workDir, 'local')
+  const injectionTemplate = await loadInjectionPrompt(params.workDir, 'local')
+  const inputsText = formatInputs([params.input])
+  const historyText = formatHistory(params.history)
+  const envText = formatEnvironment(params.workDir, params.env)
+  const envBlock = buildCdataBlock(
+    '背景信息（仅供参考，不要主动提及）：',
+    'environment_context',
+    envText,
+  )
+  const historyBlock = buildRawBlock(
+    '之前的对话：',
+    'conversation_history',
+    historyText,
+  )
+  const inputBlock = buildCdataBlock('用户刚刚说：', 'user_input', inputsText)
+  const injectionValues = Object.fromEntries<string>([
+    ['environment_context', envBlock],
+    ['conversation_history', historyBlock],
+    ['user_input', inputBlock],
+  ])
+  const injection = renderPromptTemplate(injectionTemplate, injectionValues)
+  return joinPromptSections([system, injection])
+}
+
 export const buildWorkerPrompt = async (params: {
   workDir: string
   task: Task
