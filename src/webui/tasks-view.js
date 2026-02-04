@@ -1,17 +1,14 @@
 import { formatDateTime } from './time.js'
+import { formatElapsedLabel, formatUsage } from './messages/format.js'
 
 const ELAPSED_TICK_MS = 1000
 
-const pad2 = (value) => String(value).padStart(2, '0')
-
-export const formatElapsedMs = (ms) => {
-  const totalSeconds = Math.max(0, Math.floor(ms / 1000))
-  const seconds = totalSeconds % 60
-  const totalMinutes = Math.floor(totalSeconds / 60)
-  const minutes = totalMinutes % 60
-  const hours = Math.floor(totalMinutes / 60)
-  if (hours > 0) return `${hours}:${pad2(minutes)}:${pad2(seconds)}`
-  return `${minutes}:${pad2(seconds)}`
+const STATUS_SYMBOLS = {
+  pending: '…',
+  running: '→',
+  succeeded: '✓',
+  failed: '✗',
+  canceled: '×',
 }
 
 const parseTimeMs = (value) => {
@@ -30,25 +27,26 @@ const resolveDurationMs = (startMs, endMs) => {
   return Math.max(0, endMs - startMs)
 }
 
-const formatTokenCount = (value) =>
-  typeof value === 'number' && Number.isFinite(value)
-    ? new Intl.NumberFormat('en-US').format(Math.round(value))
-    : '--'
+const formatStatusSymbol = (status) => STATUS_SYMBOLS[status] ?? status
 
-const formatTokensLabel = (usage) => {
-  const input = formatTokenCount(usage?.input)
-  const output = formatTokenCount(usage?.output)
-  return `tokens ${input}/${output}`
+const formatElapsedText = (elapsedMs, hasUsage) => {
+  const label = formatElapsedLabel(elapsedMs)
+  if (!label) return ''
+  return hasUsage ? `· ${label}` : label
 }
 
 const formatStatusCounts = (counts) => {
   const parts = []
   if (!counts) return parts
-  if (counts.pending) parts.push(`${counts.pending} pending`)
-  if (counts.running) parts.push(`${counts.running} running`)
-  if (counts.succeeded) parts.push(`${counts.succeeded} succeeded`)
-  if (counts.failed) parts.push(`${counts.failed} failed`)
-  if (counts.canceled) parts.push(`${counts.canceled} canceled`)
+  if (counts.pending)
+    parts.push(`${formatStatusSymbol('pending')} ${counts.pending}`)
+  if (counts.running)
+    parts.push(`${formatStatusSymbol('running')} ${counts.running}`)
+  if (counts.succeeded)
+    parts.push(`${formatStatusSymbol('succeeded')} ${counts.succeeded}`)
+  if (counts.failed) parts.push(`${formatStatusSymbol('failed')} ${counts.failed}`)
+  if (counts.canceled)
+    parts.push(`${formatStatusSymbol('canceled')} ${counts.canceled}`)
   return parts
 }
 
@@ -61,7 +59,8 @@ const updateElapsedTimes = (tasksList) => {
     const startedAt = Number(item.dataset.startedAt)
     if (!Number.isFinite(startedAt)) continue
     const elapsedMs = Math.max(0, now - startedAt)
-    item.textContent = `elapsed ${formatElapsedMs(elapsedMs)}`
+    const hasUsage = item.dataset.hasUsage === 'true'
+    item.textContent = formatElapsedText(elapsedMs, hasUsage)
   }
 }
 
@@ -108,24 +107,30 @@ export const renderTasks = (tasksList, tasksMeta, data) => {
 
     const link = document.createElement('a')
     link.className = 'task-link'
-    link.href = `#task-${task.id}`
+    link.href = '#tasks-dialog'
     link.dataset.status = task.status || 'pending'
 
     const title = document.createElement('span')
     title.className = 'task-title'
-    title.textContent = task.title || task.id
+    const titleText =
+      typeof task.title === 'string' && task.title.trim() && task.title !== task.id
+        ? task.title
+        : 'Untitled task'
+    title.textContent = titleText
 
     const meta = document.createElement('small')
     meta.className = 'task-meta'
 
     const status = document.createElement('span')
     status.className = 'task-status'
-    status.textContent = task.status || 'pending'
+    const statusValue = task.status || 'pending'
+    status.textContent = formatStatusSymbol(statusValue)
+    status.setAttribute('aria-label', statusValue)
+    status.title = statusValue
     meta.appendChild(status)
 
     const elapsedEl = document.createElement('span')
     elapsedEl.className = 'task-elapsed'
-    elapsedEl.dataset.elapsed = 'true'
 
     const createdAt = parseTimeMs(task.createdAt)
     const startedAt = parseTimeMs(task.startedAt)
@@ -136,20 +141,26 @@ export const renderTasks = (tasksList, tasksMeta, data) => {
         ? task.durationMs
         : resolveDurationMs(startMs, completedAt)
 
+    const usageText = formatUsage(task.usage)
+    const hasUsage = Boolean(usageText)
+
+    if (usageText) {
+      const tokensEl = document.createElement('span')
+      tokensEl.className = 'task-tokens'
+      tokensEl.textContent = usageText
+      meta.appendChild(tokensEl)
+    }
+
     if (task.status === 'running' && Number.isFinite(startMs)) {
       elapsedEl.dataset.startedAt = String(startMs)
-      elapsedEl.textContent = `elapsed ${formatElapsedMs(now - startMs)}`
+      elapsedEl.dataset.elapsed = 'true'
+      elapsedEl.dataset.hasUsage = hasUsage ? 'true' : 'false'
+      elapsedEl.textContent = formatElapsedText(now - startMs, hasUsage)
+      meta.appendChild(elapsedEl)
     } else if (durationMs !== null) {
-      elapsedEl.textContent = `elapsed ${formatElapsedMs(durationMs)}`
-    } else {
-      elapsedEl.textContent = 'elapsed --:--'
+      elapsedEl.textContent = formatElapsedText(durationMs, hasUsage)
+      meta.appendChild(elapsedEl)
     }
-    meta.appendChild(elapsedEl)
-
-    const tokensEl = document.createElement('span')
-    tokensEl.className = 'task-tokens'
-    tokensEl.textContent = formatTokensLabel(task.usage)
-    meta.appendChild(tokensEl)
 
     if (task.createdAt) {
       const timeEl = document.createElement('span')
@@ -158,10 +169,6 @@ export const renderTasks = (tasksList, tasksMeta, data) => {
       meta.appendChild(timeEl)
     }
 
-    const id = document.createElement('span')
-    id.className = 'task-id'
-    id.textContent = `id:${task.id}`
-    meta.appendChild(id)
 
     link.appendChild(title)
     link.appendChild(meta)
@@ -173,7 +180,7 @@ export const renderTasks = (tasksList, tasksMeta, data) => {
       cancelBtn.className = 'btn btn--xs btn--danger task-cancel'
       cancelBtn.textContent = 'Cancel'
       cancelBtn.setAttribute('data-task-id', task.id)
-      cancelBtn.setAttribute('aria-label', `Cancel task ${task.id}`)
+      cancelBtn.setAttribute('aria-label', `Cancel task ${titleText}`)
       item.appendChild(cancelBtn)
     }
 
