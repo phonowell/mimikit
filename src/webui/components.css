@@ -35,16 +35,7 @@
   box-shadow: 0 0 0 4px rgba(226, 93, 93, 0.18);
 }
 
-.restart-btn {
-  border-radius: 999px;
-  padding: 6px 10px;
-  background: var(--accent-soft);
-  color: var(--accent);
-  font-weight: 600;
-  font-size: 16px;
-}
-
-.tasks-open {
+.action-btn {
   border-radius: 999px;
   padding: 6px 12px;
   background: #ffffff;
@@ -54,13 +45,13 @@
   border: 1px solid var(--border);
 }
 
-.tasks-open:hover {
+.action-btn:hover {
   background: var(--accent-soft);
   color: var(--accent);
   border-color: transparent;
 }
 
-.tasks-open:focus-visible {
+.action-btn:focus-visible {
   outline: 2px solid rgba(42, 125, 225, 0.4);
   outline-offset: 2px;
 }
@@ -348,6 +339,77 @@
   .scroll-bottom {
     transition: none;
   }
+}
+
+.restart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.restart-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.restart-description {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.restart-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.restart-dialog-btn {
+  border-radius: 999px;
+  padding: 6px 12px;
+  background: #ffffff;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 12px;
+  border: 1px solid var(--border);
+}
+
+.restart-dialog-btn:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: transparent;
+}
+
+.restart-dialog-btn:focus-visible {
+  outline: 2px solid rgba(42, 125, 225, 0.4);
+  outline-offset: 2px;
+}
+
+.restart-dialog-btn-primary {
+  background: var(--accent);
+  color: #ffffff;
+  border-color: transparent;
+}
+
+.restart-dialog-btn-primary:hover {
+  background: #1f6cc7;
+}
+
+.restart-dialog-btn-danger {
+  background: #fff5f5;
+  color: var(--danger);
+  border-color: rgba(226, 93, 93, 0.35);
+}
+
+.restart-dialog-btn-danger:hover {
+  background: var(--danger);
+  color: #ffffff;
+  border-color: transparent;
 }
 
 .tasks-header {

@@ -22,7 +22,7 @@
           </div>
           <div class="app-actions" role="toolbar" aria-label="Actions">
             <button
-              class="tasks-open"
+              class="action-btn tasks-open"
               data-tasks-open
               type="button"
               title="Tasks"
@@ -34,13 +34,16 @@
               Tasks
             </button>
             <button
-              class="restart-btn"
+              class="action-btn restart-btn"
               data-restart
               type="button"
               title="Restart server"
               aria-label="Restart server"
+              aria-haspopup="dialog"
+              aria-controls="restart-dialog"
+              aria-expanded="false"
             >
-              &#x21bb;
+              Restart
             </button>
           </div>
         </div>
@@ -103,6 +106,43 @@
             </div>
           </header>
           <ul class="tasks-list" data-tasks-list></ul>
+        </section>
+      </dialog>
+
+      <dialog
+        class="restart-dialog"
+        data-restart-dialog
+        id="restart-dialog"
+        aria-labelledby="restart-title"
+        aria-describedby="restart-description"
+      >
+        <section class="restart-panel">
+          <header class="restart-header">
+            <h2 class="restart-title" id="restart-title">Restart server?</h2>
+          </header>
+          <p class="restart-description" id="restart-description">
+            Restart will reload the server. Reset will clear .mimikit state
+            before restarting.
+          </p>
+          <div class="restart-actions" role="group" aria-label="Restart actions">
+            <button class="restart-dialog-btn" data-restart-cancel type="button">
+              Cancel
+            </button>
+            <button
+              class="restart-dialog-btn restart-dialog-btn-primary"
+              data-restart-confirm
+              type="button"
+            >
+              Restart
+            </button>
+            <button
+              class="restart-dialog-btn restart-dialog-btn-danger"
+              data-restart-reset
+              type="button"
+            >
+              Reset
+            </button>
+          </div>
         </section>
       </dialog>
     </main>
