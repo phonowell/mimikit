@@ -1,3 +1,6 @@
+import { mkdirSync } from 'node:fs'
+import { resolve } from 'node:path'
+
 import fastifyStatic from '@fastify/static'
 import fastify from 'fastify'
 
@@ -18,6 +21,8 @@ export const createHttpServer = (
 ) => {
   const app = fastify({ bodyLimit: MAX_BODY_BYTES })
   const { webDir, markedDir, purifyDir } = resolveRoots()
+  const generatedDir = resolve(config.stateDir, 'generated')
+  mkdirSync(generatedDir, { recursive: true })
 
   app.setErrorHandler(async (error, _request, reply) => {
     const statusCode =
@@ -173,6 +178,11 @@ export const createHttpServer = (
   app.register(fastifyStatic, {
     root: purifyDir,
     prefix: '/vendor/purify/',
+    decorateReply: false,
+  })
+  app.register(fastifyStatic, {
+    root: generatedDir,
+    prefix: '/artifacts/',
     decorateReply: false,
   })
   app.register(fastifyStatic, {
