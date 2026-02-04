@@ -14,10 +14,20 @@ export const formatElapsedMs = (ms) => {
   return `${minutes}:${pad2(seconds)}`
 }
 
-const parseIsoMs = (iso) => {
-  if (!iso) return null
-  const parsed = Date.parse(iso)
-  return Number.isFinite(parsed) ? parsed : null
+const parseTimeMs = (value) => {
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  if (typeof value !== 'string') return null
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  const parsed = Date.parse(trimmed)
+  if (Number.isFinite(parsed)) return parsed
+  const asNumber = Number(trimmed)
+  return Number.isFinite(asNumber) ? asNumber : null
+}
+
+const resolveDurationMs = (startMs, endMs) => {
+  if (!Number.isFinite(startMs) || !Number.isFinite(endMs)) return null
+  return Math.max(0, endMs - startMs)
 }
 
 const formatTokenCount = (value) =>
@@ -117,15 +127,18 @@ export const renderTasks = (tasksList, tasksMeta, data) => {
     elapsedEl.className = 'task-elapsed'
     elapsedEl.dataset.elapsed = 'true'
 
-    const startedAt = parseIsoMs(task.startedAt)
+    const createdAt = parseTimeMs(task.createdAt)
+    const startedAt = parseTimeMs(task.startedAt)
+    const completedAt = parseTimeMs(task.completedAt)
+    const startMs = Number.isFinite(startedAt) ? startedAt : createdAt
     const durationMs =
       typeof task.durationMs === 'number' && Number.isFinite(task.durationMs)
         ? task.durationMs
-        : null
+        : resolveDurationMs(startMs, completedAt)
 
-    if (task.status === 'running' && Number.isFinite(startedAt)) {
-      elapsedEl.dataset.startedAt = String(startedAt)
-      elapsedEl.textContent = `elapsed ${formatElapsedMs(now - startedAt)}`
+    if (task.status === 'running' && Number.isFinite(startMs)) {
+      elapsedEl.dataset.startedAt = String(startMs)
+      elapsedEl.textContent = `elapsed ${formatElapsedMs(now - startMs)}`
     } else if (durationMs !== null) {
       elapsedEl.textContent = `elapsed ${formatElapsedMs(durationMs)}`
     } else {
