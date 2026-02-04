@@ -67,8 +67,7 @@ export class Supervisor {
     const { idleMs } = this.runtime.config.local
     const shouldRunLocal =
       this.runtime.config.local.enabled &&
-      typeof lastInputAt === 'number' &&
-      nowMs - lastInputAt > idleMs
+      (typeof lastInputAt !== 'number' || nowMs - lastInputAt > idleMs)
     this.runtime.lastUserInputAtMs = nowMs
     this.runtime.pendingInputs.push({ id, text, createdAt })
     if (meta) this.runtime.lastUserMeta = meta
