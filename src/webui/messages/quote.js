@@ -13,19 +13,45 @@ export const createQuoteController = ({
   input,
 } = {}) => {
   let activeQuote = null
+  let hideTimer = null
+
+  const setVisibility = (visible) => {
+    if (!quotePreview) return
+    if (hideTimer) {
+      clearTimeout(hideTimer)
+      hideTimer = null
+    }
+    if (visible) {
+      quotePreview.hidden = false
+      quotePreview.setAttribute('aria-hidden', 'false')
+      requestAnimationFrame(() => {
+        quotePreview.classList.add('is-visible')
+      })
+      return
+    }
+    if (quotePreview.hidden) return
+    quotePreview.setAttribute('aria-hidden', 'true')
+    quotePreview.classList.remove('is-visible')
+    const finalize = () => {
+      if (quotePreview.classList.contains('is-visible')) return
+      quotePreview.hidden = true
+    }
+    quotePreview.addEventListener('transitionend', finalize, { once: true })
+    hideTimer = setTimeout(finalize, 240)
+  }
 
   const updateQuotePreview = () => {
     if (!quotePreview || !quoteText) return
     if (!activeQuote) {
       quoteText.textContent = ''
-      quotePreview.hidden = true
+      setVisibility(false)
       return
     }
     const preview = formatQuotePreview(activeQuote.text)
     quoteText.textContent = preview
       ? `${activeQuote.id} | ${preview}`
       : activeQuote.id
-    quotePreview.hidden = false
+    setVisibility(true)
   }
 
   const clear = () => {

@@ -212,6 +212,8 @@
 
 .message {
   display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 @keyframes message-enter {
@@ -245,6 +247,7 @@
   background: #ffffff;
   border: 1px solid var(--border);
   box-shadow: 0 1px 0 rgba(15, 23, 42, 0.05);
+  order: 1;
 }
 
 .message.user {
@@ -428,12 +431,28 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 8px;
+  padding: 0 8px;
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-4px);
+  overflow: hidden;
+  pointer-events: none;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
   background: var(--panel-soft);
   font-size: 11px;
   color: var(--muted);
+  transition: max-height 0.2s ease, opacity 0.2s ease, transform 0.2s ease,
+    padding 0.2s ease, border-color 0.2s ease;
+}
+
+.composer .quote-preview.is-visible {
+  padding: 6px 8px;
+  max-height: 56px;
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+  border-color: var(--border);
 }
 
 .composer .quote-label {
@@ -446,6 +465,25 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.message .message-quote-btn {
+  --btn-size: 26px;
+  --btn-icon-size: 12px;
+  --btn-pad: 0;
+  --btn-radius: 10px;
+  --btn-bg: #ffffff;
+  --btn-color: var(--muted);
+  --btn-border: var(--border);
+  --btn-hover-bg: var(--accent-soft);
+  --btn-hover-color: var(--accent);
+  --btn-hover-border: transparent;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.05);
+  order: 0;
+}
+
+.message.user .message-quote-btn {
+  order: 2;
 }
 
 .message-loading article {
@@ -494,6 +532,10 @@
   .loading-dots .dot {
     animation: none;
     opacity: 0.7;
+  }
+
+  .composer .quote-preview {
+    transition: none;
   }
 
   .scroll-bottom {

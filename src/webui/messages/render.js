@@ -56,13 +56,15 @@ const renderMessage = (params, msg) => {
     elapsed.textContent = usageText ? `· ${elapsedText}` : elapsedText
     meta.appendChild(elapsed)
   }
+  let quoteBtn = null
   if (onQuote && msg?.id) {
-    const quoteBtn = document.createElement('button')
+    quoteBtn = document.createElement('button')
     quoteBtn.type = 'button'
-    quoteBtn.className = 'btn btn--xs message-quote-btn'
-    quoteBtn.textContent = 'Quote'
+    quoteBtn.className = 'btn btn--icon btn--icon-sm message-quote-btn'
+    quoteBtn.textContent = '>'
+    quoteBtn.title = 'Quote'
+    quoteBtn.setAttribute('aria-label', 'Quote')
     quoteBtn.addEventListener('click', () => onQuote(msg))
-    meta.appendChild(quoteBtn)
   }
   const time = document.createElement('span')
   time.className = 'time'
@@ -71,6 +73,7 @@ const renderMessage = (params, msg) => {
   article.appendChild(meta)
 
   item.appendChild(article)
+  if (quoteBtn) item.appendChild(quoteBtn)
   messagesEl.appendChild(item)
 }
 

@@ -217,8 +217,21 @@ main[data-app] {
   }
 
   .app-controls {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 10px;
+  }
+
+  .status-group {
+    flex: 1;
+    min-width: 0;
+    gap: 8px;
+    flex-wrap: nowrap;
+  }
+
+  .app-actions {
+    margin-left: auto;
   }
 
   .composer form {
@@ -226,7 +239,7 @@ main[data-app] {
     align-items: stretch;
   }
 
-  .composer .btn {
+  .composer form > .btn {
     width: 100%;
   }
 }
