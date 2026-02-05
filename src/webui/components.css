@@ -7,6 +7,10 @@
   font-size: 13px;
 }
 
+.status-text {
+  text-transform: uppercase;
+}
+
 .status-dot {
   width: 8px;
   height: 8px;

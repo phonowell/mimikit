@@ -1,4 +1,5 @@
 import { renderMarkdown } from '../markdown.js'
+import { formatStatusText } from '../status-text.js'
 
 import { formatElapsedLabel, formatTime, formatUsage } from './format.js'
 import { createLoadingController } from './loading.js'
@@ -99,13 +100,13 @@ export function createMessagesController({
     lastStatus = status
     if (statusText && statusDot) {
       statusDot.dataset.state = status.agentStatus
-      statusText.textContent = status.agentStatus
+      statusText.textContent = formatStatusText(status.agentStatus)
     }
     syncLoadingState()
   }
 
   const setDisconnected = () => {
-    if (statusText) statusText.textContent = 'disconnected'
+    if (statusText) statusText.textContent = formatStatusText('disconnected')
     if (statusDot) statusDot.dataset.state = ''
     lastStatus = null
     lastMessageRole = null

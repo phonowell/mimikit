@@ -1,3 +1,5 @@
+import { formatStatusText } from './status-text.js'
+
 export function bindRestart({
   restartBtn,
   restartDialog,
@@ -84,7 +86,8 @@ export function bindRestart({
     restartBtn.disabled = true
     disableActions(true)
     if (statusText) {
-      statusText.textContent = mode === 'reset' ? 'resetting...' : 'restarting...'
+      const label = mode === 'reset' ? 'resetting...' : 'restarting...'
+      statusText.textContent = formatStatusText(label)
     }
     if (statusDot) statusDot.dataset.state = ''
     if (messages) messages.stop()
