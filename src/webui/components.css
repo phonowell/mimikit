@@ -771,7 +771,7 @@
   }
 
   .composer .quote-clear::before {
-    content: '×';
+    content: 'x';
     font-size: var(--btn-icon-size);
     line-height: 1;
   }
