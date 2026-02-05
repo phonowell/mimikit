@@ -101,11 +101,13 @@ export class Supervisor {
     activeTasks: number
     pendingTasks: number
     pendingInputs: number
+    maxWorkers: number
   } {
     const pendingTasks = this.runtime.tasks.filter(
       (task) => task.status === 'pending',
     ).length
     const activeTasks = this.runtime.runningWorkers.size
+    const maxWorkers = this.runtime.config.worker.maxConcurrent
     const agentStatus =
       this.runtime.managerRunning || activeTasks > 0 ? 'running' : 'idle'
     const pendingInputs = this.runtime.pendingInputs.length
@@ -115,6 +117,7 @@ export class Supervisor {
       activeTasks,
       pendingTasks,
       pendingInputs,
+      maxWorkers,
     }
   }
 

@@ -7,7 +7,7 @@ import { renderError, renderMessages } from './render.js'
 import { createScrollController } from './scroll.js'
 
 export function createMessagesController({
-  messagesEl, scrollBottomBtn, statusDot, statusText, input, sendBtn,
+  messagesEl, scrollBottomBtn, statusDot, statusText, input, sendBtn, workerDots,
 }) {
   let pollTimer = null
   let isPolling = false
@@ -96,12 +96,41 @@ export function createMessagesController({
     return changed
   }
 
+  const normalizeCount = (value) =>
+    typeof value === 'number' && Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0
+
+  const updateWorkerDots = (status) => {
+    if (!workerDots) return
+    const maxWorkers = normalizeCount(status?.maxWorkers ?? status?.maxConcurrent)
+    if (maxWorkers <= 0) {
+      workerDots.innerHTML = ''
+      return
+    }
+    if (workerDots.childElementCount !== maxWorkers) {
+      workerDots.innerHTML = ''
+      for (let i = 0; i < maxWorkers; i += 1) {
+        const dot = document.createElement('span')
+        dot.className = 'worker-dot'
+        workerDots.appendChild(dot)
+      }
+    }
+    const activeWorkers = Math.min(normalizeCount(status?.activeTasks), maxWorkers)
+    const dots = workerDots.querySelectorAll('.worker-dot')
+    for (let i = 0; i < dots.length; i += 1) {
+      const dot = dots[i]
+      if (dot instanceof HTMLElement) {
+        dot.dataset.active = i < activeWorkers ? 'true' : 'false'
+      }
+    }
+  }
+
   const updateStatus = (status) => {
     lastStatus = status
     if (statusText && statusDot) {
       statusDot.dataset.state = status.agentStatus
       statusText.textContent = formatStatusText(status.agentStatus)
     }
+    updateWorkerDots(status)
     syncLoadingState()
   }
 
@@ -109,6 +138,7 @@ export function createMessagesController({
     if (statusText) statusText.textContent = formatStatusText('disconnected')
     if (statusDot) statusDot.dataset.state = ''
     lastStatus = null
+    updateWorkerDots(null)
     lastMessageRole = null
     lastMessageIds = new Set()
     awaitingReply = false

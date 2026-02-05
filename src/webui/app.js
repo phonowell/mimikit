@@ -20,6 +20,7 @@ const elements = {
   restartResetBtn: $('[data-restart-reset]'),
   tasksDialog: $('[data-tasks-dialog]'),
   tasksOpenBtn: $('[data-tasks-open]'),
+  workerDots: $('[data-worker-dots]'),
   tasksCloseBtn: $('[data-tasks-close]'),
   tasksList: $('[data-tasks-list]'),
   tasksMeta: $('[data-tasks-meta]'),
@@ -32,6 +33,7 @@ const messages = createMessagesController({
   statusText: elements.statusText,
   input: elements.input,
   sendBtn: elements.sendBtn,
+  workerDots: elements.workerDots,
 })
 
 function syncTitleWithStatus() {
