@@ -1,6 +1,6 @@
 import { appendLog } from '../log/append.js'
 import { safe } from '../log/safe.js'
-import { runWorker } from '../roles/runner.js'
+import { runWorker } from '../roles/worker-runner.js'
 import { nowIso, sleep } from '../shared/utils.js'
 import { appendTaskResultArchive } from '../storage/task-results.js'
 import {

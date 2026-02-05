@@ -1,11 +1,12 @@
 import { renderMarkdown } from '../markdown.js'
-import { applyStatus, clearStatus } from '../status.js'
+import { applyStatus } from '../status.js'
 
 import { formatElapsedLabel, formatTime, formatUsage } from './format.js'
 import { createLoadingController } from './loading.js'
 import { createQuoteController } from './quote.js'
-import { renderError, renderMessages } from './render.js'
+import { renderMessages } from './render.js'
 import { createScrollController } from './scroll.js'
+import { createSendHandler } from './send.js'
 import {
   applyRenderedState,
   clearMessageState,
@@ -14,6 +15,7 @@ import {
   hasMessageChange,
   updateMessageState,
 } from './state.js'
+import { clearWorkerDots, updateWorkerDots } from './worker-dots.js'
 
 export function createMessagesController({
   messagesEl,
@@ -64,36 +66,6 @@ export function createMessagesController({
     } else if (loading.isLoading()) loading.setLoading(false)
   }
 
-  const normalizeCount = (value) =>
-    typeof value === 'number' && Number.isFinite(value)
-      ? Math.max(0, Math.floor(value))
-      : 0
-
-  const updateWorkerDots = (status) => {
-    if (!workerDots) return
-    const maxWorkers = normalizeCount(status?.maxWorkers ?? status?.maxConcurrent)
-    if (maxWorkers <= 0) {
-      workerDots.innerHTML = ''
-      return
-    }
-    if (workerDots.childElementCount !== maxWorkers) {
-      workerDots.innerHTML = ''
-      for (let i = 0; i < maxWorkers; i += 1) {
-        const dot = document.createElement('span')
-        dot.className = 'worker-dot'
-        workerDots.appendChild(dot)
-      }
-    }
-    const activeWorkers = Math.min(normalizeCount(status?.activeTasks), maxWorkers)
-    const dots = workerDots.querySelectorAll('.worker-dot')
-    for (let i = 0; i < dots.length; i += 1) {
-      const dot = dots[i]
-      if (dot instanceof HTMLElement) {
-        dot.dataset.active = i < activeWorkers ? 'true' : 'false'
-      }
-    }
-  }
-
   const doRender = (messages, enterMessageIds) => {
     if (!messages?.length) return null
     return renderMessages({
@@ -133,14 +105,14 @@ export function createMessagesController({
     lastStatus = status
     if (statusText && statusDot)
       applyStatus({ statusDot, statusText }, status.agentStatus)
-    updateWorkerDots(status)
+    updateWorkerDots(workerDots, status)
     syncLoadingState()
   }
 
   const setDisconnected = () => {
     applyStatus({ statusDot, statusText }, 'disconnected')
     lastStatus = null
-    updateWorkerDots(null)
+    clearWorkerDots(workerDots)
     clearMessageState(messageState)
     loading.setLoading(false)
   }
@@ -172,60 +144,17 @@ export function createMessagesController({
     if (isPolling) pollTimer = window.setTimeout(poll, 2000)
   }
 
-  const sendMessage = async (text) => {
-    if (!text) return
-    if (sendBtn) sendBtn.disabled = true
-    if (input) input.disabled = true
-    messageState.awaitingReply = true
-    messageState.lastMessageRole = 'user'
-    loading.setLoading(true)
-    try {
-      const payload = {
-        text,
-        clientLocale:
-          typeof navigator !== 'undefined' ? navigator.language : undefined,
-        clientTimeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        clientOffsetMinutes: new Date().getTimezoneOffset(),
-        clientNowIso: new Date().toISOString(),
-      }
-      const activeQuote = quote.getActive()
-      if (activeQuote?.id) payload.quote = activeQuote.id
-      const res = await fetch('/api/input', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-      if (!res.ok) {
-        let data = null
-        try {
-          data = await res.json()
-        } catch {
-          data = null
-        }
-        throw new Error(data?.error || 'Failed to send')
-      }
-      if (input) {
-        input.value = ''
-        input.dispatchEvent(new Event('input', { bubbles: true }))
-      }
-      quote.clear()
-      await fetchAndRenderMessages()
-    } catch (error) {
-      renderError(
-        { messagesEl, removeEmpty, updateScrollButton: scroll.updateScrollButton },
-        error,
-      )
-      messageState.awaitingReply = false
-      messageState.lastMessageRole = 'system'
-      loading.setLoading(false)
-    } finally {
-      if (sendBtn) sendBtn.disabled = false
-      if (input) {
-        input.disabled = false
-        input.focus()
-      }
-    }
-  }
+  const sendMessage = createSendHandler({
+    sendBtn,
+    input,
+    messageState,
+    loading,
+    quote,
+    fetchAndRenderMessages,
+    scroll,
+    messagesEl,
+    removeEmpty,
+  })
 
   if (quoteClearBtn) quoteClearBtn.addEventListener('click', quote.clear)
 

@@ -4,19 +4,18 @@ import { appendLog } from '../log/append.js'
 import { logSafeError, safe } from '../log/safe.js'
 import { normalizeUsage } from '../shared/utils.js'
 
+import { createIdleAbort } from './idle-abort.js'
 import { loadCodexSettings } from './openai.js'
 
 import type { TokenUsage } from '../types/index.js'
 
 type SdkRole = 'manager' | 'worker'
-
 type RunResult = {
   output: string
   usage?: TokenUsage
   elapsedMs: number
   threadId?: string | null
 }
-
 type LogContext = Record<string, unknown>
 
 const codex = new Codex()
@@ -102,54 +101,38 @@ export const runCodexSdk = async (params: {
   const thread = params.threadId
     ? codex.resumeThread(params.threadId, threadOptions)
     : codex.startThread(threadOptions)
-  const externalSignal = params.abortSignal
-  const controller =
-    params.timeoutMs > 0 || externalSignal ? new AbortController() : null
-  const startedAt = Date.now()
-  let lastActivityAt = startedAt
-  let idleTimer: ReturnType<typeof setTimeout> | undefined
+
   const idleTimeoutMs = params.timeoutMs
-  const onExternalAbort = () => {
-    if (controller && !controller.signal.aborted) controller.abort()
-  }
-  if (externalSignal) {
-    if (externalSignal.aborted) onExternalAbort()
-    else
-      externalSignal.addEventListener('abort', onExternalAbort, { once: true })
-  }
-  const resetIdleTimer = () => {
-    lastActivityAt = Date.now()
-    if (!controller || idleTimeoutMs <= 0) return
-    clearTimeout(idleTimer)
-    idleTimer = setTimeout(() => controller.abort(), idleTimeoutMs)
-  }
-  if (controller && logPath) {
-    controller.signal.addEventListener(
-      'abort',
-      () => {
-        const now = Date.now()
-        void append({
-          event: 'llm_call_aborted',
-          elapsedMs: Math.max(0, now - startedAt),
-          idleElapsedMs: Math.max(0, now - lastActivityAt),
-          idleTimeoutMs,
-          timeoutType: 'idle',
-        })
-      },
-      { once: true },
-    )
-  }
+  const idle = createIdleAbort({
+    timeoutMs: idleTimeoutMs,
+    ...(params.abortSignal ? { externalSignal: params.abortSignal } : {}),
+    ...(logPath
+      ? {
+          onAbort: () => {
+            const now = Date.now()
+            void append({
+              event: 'llm_call_aborted',
+              elapsedMs: Math.max(0, now - idle.startedAt),
+              idleElapsedMs: Math.max(0, now - idle.lastActivityAt()),
+              idleTimeoutMs,
+              timeoutType: 'idle',
+            })
+          },
+        }
+      : {}),
+  })
+
   try {
-    resetIdleTimer()
+    idle.reset()
     const stream = await thread.runStreamed(params.prompt, {
       ...(params.outputSchema ? { outputSchema: params.outputSchema } : {}),
-      ...(controller ? { signal: controller.signal } : {}),
+      ...(idle.signal ? { signal: idle.signal } : {}),
     })
     let finalResponse = ''
     let usage: TokenUsage | undefined
     let turnFailure: { message: string } | null = null
     for await (const event of stream.events) {
-      resetIdleTimer()
+      idle.reset()
       if (event.type === 'item.completed') {
         if (event.item.type === 'agent_message') finalResponse = event.item.text
       } else if (event.type === 'turn.completed')
@@ -163,7 +146,7 @@ export const runCodexSdk = async (params: {
       }
     }
     if (turnFailure) throw new Error(turnFailure.message)
-    const elapsedMs = Math.max(0, Date.now() - startedAt)
+    const elapsedMs = Math.max(0, Date.now() - idle.startedAt)
     await append({
       event: 'llm_call_finished',
       elapsedMs,
@@ -178,7 +161,7 @@ export const runCodexSdk = async (params: {
       threadId: thread.id ?? params.threadId ?? null,
     }
   } catch (error) {
-    const elapsedMs = Math.max(0, Date.now() - startedAt)
+    const elapsedMs = Math.max(0, Date.now() - idle.startedAt)
     const err = error instanceof Error ? error : new Error(String(error))
     const trimmedStack = err.stack
       ? err.stack.split(/\r?\n/).slice(0, 6).join('\n')
@@ -195,8 +178,6 @@ export const runCodexSdk = async (params: {
     })
     throw error
   } finally {
-    clearTimeout(idleTimer)
-    if (externalSignal)
-      externalSignal.removeEventListener('abort', onExternalAbort)
+    idle.dispose()
   }
 }

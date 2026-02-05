@@ -1,11 +1,10 @@
 import { runManagerApi } from '../llm/api-runner.js'
-import { runCodexSdk } from '../llm/sdk-runner.js'
 import {
   appendLlmArchive,
   type LlmArchiveEntry,
 } from '../storage/llm-archive.js'
 
-import { buildManagerPrompt, buildWorkerPrompt } from './prompt.js'
+import { buildManagerPrompt } from './prompt.js'
 
 import type { ManagerEnv } from './prompt.js'
 import type {
@@ -16,8 +15,6 @@ import type {
   UserInput,
 } from '../types/index.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
-
-type LlmResult = { output: string; elapsedMs: number; usage?: TokenUsage }
 
 const readEnvOptional = (key: string): string | undefined => {
   const raw = process.env[key]
@@ -148,57 +145,5 @@ export const runManager = async (params: {
       )
       throw fbError
     }
-  }
-}
-
-export const runWorker = async (params: {
-  stateDir: string
-  workDir: string
-  task: Task
-  timeoutMs: number
-  model?: string
-  abortSignal?: AbortSignal
-}): Promise<LlmResult> => {
-  const prompt = await buildWorkerPrompt({
-    workDir: params.workDir,
-    task: params.task,
-  })
-  const base = {
-    role: 'worker' as const,
-    taskId: params.task.id,
-    ...(params.model ? { model: params.model } : {}),
-  }
-  try {
-    const r = await runCodexSdk({
-      role: 'worker',
-      prompt,
-      workDir: params.workDir,
-      timeoutMs: params.timeoutMs,
-      ...(params.abortSignal ? { abortSignal: params.abortSignal } : {}),
-      ...(params.model ? { model: params.model } : {}),
-    })
-    await archive(
-      params.stateDir,
-      {
-        ...base,
-        ...(r.threadId !== undefined ? { threadId: r.threadId } : {}),
-      },
-      prompt,
-      { ...r, ok: true },
-    )
-    return {
-      output: r.output,
-      elapsedMs: r.elapsedMs,
-      ...(r.usage ? { usage: r.usage } : {}),
-    }
-  } catch (error) {
-    const err = toError(error)
-    await archive(params.stateDir, base, prompt, {
-      output: '',
-      ok: false,
-      error: err.message,
-      errorName: err.name,
-    })
-    throw error
   }
 }
