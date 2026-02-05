@@ -8,7 +8,7 @@
 - 运行：`pnpm run merge:worktree -- [--clean-plans <file...>]`
 - 限制：只能在 `worktree-1/2/3` 执行，禁止在 `main`
 
-## 同步 main → worktree-1/2/3
+## 同步 main → 当前槽位
 - 路径：`./scripts/sync-worktree.ts`
 - 运行：`pnpm run sync:worktree`
 - 限制：只能在 `worktree-1/2/3` 执行，禁止在 `main`

@@ -1,14 +1,11 @@
 import {
   detectConflictState,
   ensureClean,
-  parseWorktrees,
   runGitCapture,
   runGitFast,
 } from "./git-utils.js";
 
 const ALLOWED_BRANCHES = new Set(["worktree-1", "worktree-2", "worktree-3"]);
-const TARGET_BRANCHES = ["worktree-1", "worktree-2", "worktree-3"] as const;
-
 const exitWith = (message: string): never => {
   console.error(message);
   process.exit(1);
@@ -29,39 +26,15 @@ if (!ALLOWED_BRANCHES.has(currentBranch))
 
 ensureNoInProgressState();
 
-const worktrees = parseWorktrees(
-  runGitCapture(["worktree", "list", "--porcelain"]),
-);
+ensureClean(process.cwd(), currentBranch);
 
-const worktreeMap = new Map<string, string>();
-for (const wt of worktrees) {
-  if (!wt.branch) continue;
-  const match = wt.branch.match(/^refs\/heads\/(.+)$/);
-  const name = match?.[1];
-  if (name) worktreeMap.set(name, wt.path);
-}
-
-const resolved = TARGET_BRANCHES.map((branch) => ({
-  branch,
-  path: worktreeMap.get(branch) ?? exitWith(`worktree not found for ${branch}`),
-}));
-
-for (const { branch, path } of resolved) {
-  ensureNoInProgressState(path);
-  ensureClean(path, branch);
-}
-
-for (const { branch, path } of resolved) {
-  runGitFast({
-    args: ["fetch", "--prune"],
-    cwd: path,
-    context: `fetch origin (${branch})`,
-    tag: "sync",
-  });
-  runGitFast({
-    args: ["rebase", "origin/main"],
-    cwd: path,
-    context: `rebase origin/main (${branch})`,
-    tag: "sync",
-  });
-}
+runGitFast({
+  args: ["fetch", "--prune"],
+  context: `fetch origin (${currentBranch})`,
+  tag: "sync",
+});
+runGitFast({
+  args: ["rebase", "origin/main"],
+  context: `rebase origin/main (${currentBranch})`,
+  tag: "sync",
+});
