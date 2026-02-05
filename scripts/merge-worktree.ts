@@ -114,6 +114,21 @@ runGitFast({
   context: "ff merge origin/main",
   tag: "merge",
 });
+
+const pendingMerge = runGitCapture(
+  ["diff", "--name-only", `HEAD...${currentBranch}`],
+  mainWorktree.path,
+);
+if (pendingMerge.length === 0) {
+  console.log(`[merge] no changes to merge from ${currentBranch}`);
+  runGitFast({
+    args: ["rebase", "origin/main"],
+    context: `sync slot ${currentBranch} to origin/main`,
+    tag: "merge",
+  });
+  process.exit(0);
+}
+
 runGitFast({
   args: ["merge", "--squash", currentBranch],
   cwd: mainWorktree.path,
