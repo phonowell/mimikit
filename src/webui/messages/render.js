@@ -31,7 +31,16 @@ const renderMessage = (params, msg) => {
 
   const article = document.createElement('article')
   if (canQuote) {
-    article.addEventListener('dblclick', () => onQuote(msg))
+    article.addEventListener('dblclick', () => {
+      if (
+        typeof window !== 'undefined' &&
+        typeof window.matchMedia === 'function' &&
+        window.matchMedia('(max-width: 640px)').matches
+      ) {
+        return
+      }
+      onQuote(msg)
+    })
   }
 
   const content = document.createElement('div')
