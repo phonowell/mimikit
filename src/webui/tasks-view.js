@@ -81,6 +81,7 @@ export const createElapsedTicker = (tasksList) => {
 
 export const renderTasks = (tasksList, tasksMeta, data) => {
   if (!tasksList || !tasksMeta) return
+  const previousScrollTop = tasksList.scrollTop
   const tasks = data?.tasks || []
   const counts = data?.counts || {}
   const parts = [`${tasks.length} tasks`, ...formatStatusCounts(counts)]
@@ -184,5 +185,11 @@ export const renderTasks = (tasksList, tasksMeta, data) => {
     }
 
     tasksList.appendChild(item)
+  }
+
+  if (previousScrollTop > 0) {
+    const maxTop = Math.max(0, tasksList.scrollHeight - tasksList.clientHeight)
+    const nextTop = Math.min(maxTop, previousScrollTop)
+    tasksList.scrollTop = nextTop
   }
 }

@@ -77,7 +77,6 @@ export function bindTasksPanel({
     if (!isPolling) return
     if (!tasksList || !tasksMeta) return
     tasksMeta.textContent = 'Loading...'
-    tasksList.innerHTML = ''
     try {
       const res = await fetch('/api/tasks?limit=200')
       if (!res.ok) throw new Error('Failed to load tasks')
@@ -86,6 +85,7 @@ export function bindTasksPanel({
       elapsedTicker.update()
     } catch (error) {
       tasksMeta.textContent = 'Failed to load tasks'
+      tasksList.innerHTML = ''
       const empty = document.createElement('li')
       empty.className = 'tasks-empty'
       const article = document.createElement('article')
