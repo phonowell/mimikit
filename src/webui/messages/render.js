@@ -23,6 +23,11 @@ const renderMessage = (params, msg) => {
   const roleClass = msg.role === 'manager' ? 'agent' : msg.role
   const isEntering = enterMessageIds?.has(msg?.id)
   item.className = `message ${roleClass}${isEntering ? ' message--enter' : ''}`
+  const canQuote = Boolean(onQuote && msg?.id)
+  if (canQuote) {
+    item.classList.add('message--quoteable')
+    item.tabIndex = 0
+  }
 
   const article = document.createElement('article')
 
@@ -57,7 +62,7 @@ const renderMessage = (params, msg) => {
     meta.appendChild(elapsed)
   }
   let quoteBtn = null
-  if (onQuote && msg?.id) {
+  if (canQuote) {
     quoteBtn = document.createElement('button')
     quoteBtn.type = 'button'
     quoteBtn.className = 'btn btn--icon btn--icon-sm message-quote-btn'

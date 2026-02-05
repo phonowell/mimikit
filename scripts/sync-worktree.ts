@@ -34,7 +34,7 @@ runGitFast({
   tag: "sync",
 });
 runGitFast({
-  args: ["rebase", "origin/main"],
-  context: `rebase origin/main (${currentBranch})`,
+  args: ["rebase", "main"],
+  context: `rebase main (${currentBranch})`,
   tag: "sync",
 });

@@ -88,17 +88,6 @@ if (status.length > 0) {
 
 ensureClean(process.cwd(), currentBranch);
 
-runGitFast({
-  args: ["fetch", "--prune"],
-  context: `fetch origin (${currentBranch})`,
-  tag: "merge",
-});
-runGitFast({
-  args: ["rebase", "origin/main"],
-  context: `rebase origin/main (${currentBranch})`,
-  tag: "merge",
-});
-
 const worktrees = parseWorktrees(
   runGitCapture(["worktree", "list", "--porcelain"]),
 );
@@ -122,17 +111,18 @@ runGitFast({
   tag: "merge",
 });
 
+runGitFast({
+  args: ["rebase", "main"],
+  context: `rebase main (${currentBranch})`,
+  tag: "merge",
+});
+
 const pendingMerge = runGitCapture(
   ["diff", "--name-only", `HEAD...${currentBranch}`],
   mainWorktree.path,
 );
 if (pendingMerge.length === 0) {
   console.log(`[merge] no changes to merge from ${currentBranch}`);
-  runGitFast({
-    args: ["rebase", "origin/main"],
-    context: `sync slot ${currentBranch} to origin/main`,
-    tag: "merge",
-  });
   process.exit(0);
 }
 
@@ -154,7 +144,7 @@ const mergeMessage =
 runGit(["commit", "-m", mergeMessage], mainWorktree.path);
 
 runGitFast({
-  args: ["rebase", "origin/main"],
-  context: `sync slot ${currentBranch} to origin/main`,
+  args: ["reset", "--hard", "main"],
+  context: `reset ${currentBranch} to main`,
   tag: "merge",
 });
