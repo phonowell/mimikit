@@ -13,6 +13,9 @@ const elements = {
   form: $('[data-form]'),
   input: $('[data-input]'),
   sendBtn: $('[data-send]'),
+  quotePreview: $('[data-quote-preview]'),
+  quoteText: $('[data-quote-text]'),
+  quoteClearBtn: $('[data-quote-clear]'),
   restartBtn: $('[data-restart]'),
   restartDialog: $('[data-restart-dialog]'),
   restartCancelBtn: $('[data-restart-cancel]'),
@@ -34,6 +37,9 @@ const messages = createMessagesController({
   input: elements.input,
   sendBtn: elements.sendBtn,
   workerDots: elements.workerDots,
+  quotePreview: elements.quotePreview,
+  quoteText: elements.quoteText,
+  quoteClearBtn: elements.quoteClearBtn,
 })
 
 function syncTitleWithStatus() {

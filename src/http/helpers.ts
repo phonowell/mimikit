@@ -69,7 +69,7 @@ export const parseInputBody = (
     userAgent?: string | undefined
     acceptLanguage?: string | undefined
   },
-): { text: string; meta: InputMeta } | { error: string } => {
+): { text: string; meta: InputMeta; quote?: string } | { error: string } => {
   if (!body || typeof body !== 'object') return { error: 'invalid JSON' }
   const parsed = body as Record<string, unknown>
   const text = asString(parsed.text)?.trim() ?? ''
@@ -88,5 +88,6 @@ export const parseInputBody = (
   if (clientOffset !== undefined) meta.clientOffsetMinutes = clientOffset
   const clientNow = asString(parsed.clientNowIso)
   if (clientNow) meta.clientNowIso = clientNow
-  return { text, meta }
+  const quote = asString(parsed.quote)?.trim()
+  return quote ? { text, meta, quote } : { text, meta }
 }

@@ -16,7 +16,12 @@ import {
   renderPromptTemplate,
 } from './prompt-format.js'
 
-import type { HistoryMessage, Task, TaskResult } from '../types/index.js'
+import type {
+  HistoryMessage,
+  Task,
+  TaskResult,
+  UserInput,
+} from '../types/index.js'
 
 export type ManagerEnv = {
   lastUser?: {
@@ -58,7 +63,7 @@ const loadInjectionPrompt = (workDir: string, role: string): Promise<string> =>
 
 export const buildManagerPrompt = async (params: {
   workDir: string
-  inputs: string[]
+  inputs: UserInput[]
   results: TaskResult[]
   tasks: Task[]
   history: HistoryMessage[]

@@ -1,7 +1,12 @@
 import { hostname, release as osRelease, type as osType } from 'node:os'
 
 import type { ManagerEnv } from './prompt.js'
-import type { HistoryMessage, Task, TaskResult } from '../types/index.js'
+import type {
+  HistoryMessage,
+  Task,
+  TaskResult,
+  UserInput,
+} from '../types/index.js'
 
 type PromptTemplateValues = Record<string, string>
 
@@ -26,6 +31,13 @@ export const joinPromptSections = (sections: string[]): string => {
 const escapeCdata = (value: string): string =>
   value.replaceAll(']]>', ']]]]><![CDATA[>')
 
+const escapeAttr = (value?: string): string =>
+  (value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('"', '&quot;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+
 const mapHistoryRole = (role: HistoryMessage['role']): string => {
   switch (role) {
     case 'user':
@@ -46,8 +58,11 @@ export const formatHistory = (history: HistoryMessage[]): string => {
       const text = item.text.trim()
       if (!text) return ''
       const role = mapHistoryRole(item.role)
+      const id = escapeAttr(item.id)
+      const time = escapeAttr(item.createdAt)
+      const quote = item.quote ? ` quote="${escapeAttr(item.quote)}"` : ''
       const content = escapeCdata(text)
-      return `<history_message role="${role}" time="${item.createdAt}"><![CDATA[\n${content}\n]]></history_message>`
+      return `<history_message id="${id}" role="${role}" time="${time}"${quote}><![CDATA[\n${content}\n]]></history_message>`
     })
     .filter((item) => item.length > 0)
   return items.length > 0 ? items.join('\n') : ''
@@ -96,11 +111,19 @@ export const formatCapabilities = (capabilities?: string): string => {
   return escapeCdata(trimmed)
 }
 
-export const formatInputs = (inputs: string[]): string => {
-  const cleaned = inputs.filter((input) => input.trim().length > 0)
+export const formatInputs = (inputs: UserInput[]): string => {
+  const cleaned = inputs
+    .map((input) => {
+      const text = input.text.trim()
+      if (!text) return ''
+      const metaParts = [`id=${input.id}`]
+      if (input.quote) metaParts.push(`quote=${input.quote}`)
+      const meta = metaParts.length > 0 ? `[${metaParts.join(' ')}] ` : ''
+      return `- ${meta}${text}`
+    })
+    .filter((line) => line.length > 0)
   if (cleaned.length === 0) return ''
-  const text = cleaned.map((input) => `- ${input}`).join('\n')
-  return escapeCdata(text)
+  return escapeCdata(cleaned.join('\n'))
 }
 
 export const formatTaskResults = (results: TaskResult[]): string => {

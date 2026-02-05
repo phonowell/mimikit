@@ -13,6 +13,7 @@ import type {
   Task,
   TaskResult,
   TokenUsage,
+  UserInput,
 } from '../types/index.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
@@ -61,7 +62,7 @@ const DEFAULT_MANAGER_FALLBACK_MODEL = readEnvOptional('MIMIKIT_FALLBACK_MODEL')
 export const runManager = async (params: {
   stateDir: string
   workDir: string
-  inputs: string[]
+  inputs: UserInput[]
   results: TaskResult[]
   tasks: Task[]
   history: HistoryMessage[]

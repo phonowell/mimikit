@@ -16,6 +16,7 @@ const renderMessage = (params, msg) => {
     formatUsage,
     formatElapsedLabel,
     enterMessageIds,
+    onQuote,
   } = params
   if (!messagesEl) return
   const item = document.createElement('li')
@@ -54,6 +55,14 @@ const renderMessage = (params, msg) => {
     elapsed.className = 'elapsed'
     elapsed.textContent = usageText ? `· ${elapsedText}` : elapsedText
     meta.appendChild(elapsed)
+  }
+  if (onQuote && msg?.id) {
+    const quoteBtn = document.createElement('button')
+    quoteBtn.type = 'button'
+    quoteBtn.className = 'btn btn--xs message-quote-btn'
+    quoteBtn.textContent = 'Quote'
+    quoteBtn.addEventListener('click', () => onQuote(msg))
+    meta.appendChild(quoteBtn)
   }
   const time = document.createElement('span')
   time.className = 'time'

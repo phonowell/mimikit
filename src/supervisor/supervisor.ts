@@ -53,20 +53,25 @@ export class Supervisor {
       clientOffsetMinutes?: number
       clientNowIso?: string
     },
+    quote?: string,
   ): Promise<string> {
     const id = newId()
     const createdAt = nowIso()
-    this.runtime.pendingInputs.push({ id, text, createdAt })
+    this.runtime.pendingInputs.push(
+      quote ? { id, text, createdAt, quote } : { id, text, createdAt },
+    )
     if (meta) this.runtime.lastUserMeta = meta
     await appendHistory(this.runtime.paths.history, {
       id,
       role: 'user',
       text,
       createdAt,
+      ...(quote ? { quote } : {}),
     })
     await appendLog(this.runtime.paths.log, {
       event: 'user_input',
       id,
+      ...(quote ? { quote } : {}),
       ...(meta?.source ? { source: meta.source } : {}),
       ...(meta?.remote ? { remote: meta.remote } : {}),
       ...(meta?.userAgent ? { userAgent: meta.userAgent } : {}),

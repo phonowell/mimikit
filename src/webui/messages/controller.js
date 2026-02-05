@@ -7,7 +7,16 @@ import { renderError, renderMessages } from './render.js'
 import { createScrollController } from './scroll.js'
 
 export function createMessagesController({
-  messagesEl, scrollBottomBtn, statusDot, statusText, input, sendBtn, workerDots,
+  messagesEl,
+  scrollBottomBtn,
+  statusDot,
+  statusText,
+  input,
+  sendBtn,
+  workerDots,
+  quotePreview,
+  quoteText,
+  quoteClearBtn,
 }) {
   let pollTimer = null
   let isPolling = false
@@ -19,6 +28,7 @@ export function createMessagesController({
   let lastAgentMessageId = null
   let awaitingReply = false
   let lastMessageIds = new Set()
+  let activeQuote = null
 
   const removeEmpty = () => {
     if (emptyRemoved) return
@@ -38,6 +48,41 @@ export function createMessagesController({
     const shouldWait = awaitingReply || (pending > 0 && lastMessageRole === 'user')
     if (shouldWait) { if (!loading.isLoading()) loading.setLoading(true) }
     else if (loading.isLoading()) loading.setLoading(false)
+  }
+
+  const formatQuotePreview = (text) => {
+    const cleaned = String(text ?? '').replace(/\s+/g, ' ').trim()
+    if (!cleaned) return ''
+    const max = 80
+    return cleaned.length > max ? `${cleaned.slice(0, max)}...` : cleaned
+  }
+
+  const updateQuotePreview = () => {
+    if (!quotePreview || !quoteText) return
+    if (!activeQuote) {
+      quoteText.textContent = ''
+      quotePreview.hidden = true
+      return
+    }
+    const preview = formatQuotePreview(activeQuote.text)
+    quoteText.textContent = preview
+      ? `${activeQuote.id} | ${preview}`
+      : activeQuote.id
+    quotePreview.hidden = false
+  }
+
+  const clearQuote = () => {
+    if (!activeQuote) return
+    activeQuote = null
+    updateQuotePreview()
+  }
+
+  const setQuote = (msg) => {
+    const id = msg?.id
+    if (!id) return
+    activeQuote = { id: String(id), text: msg?.text ?? '' }
+    updateQuotePreview()
+    if (input) input.focus()
   }
 
   const collectMessageIds = (messages) => {
@@ -76,6 +121,7 @@ export function createMessagesController({
       formatUsage, formatElapsedLabel, isNearBottom: scroll.isNearBottom,
       scrollToBottom: scroll.scrollToBottom, updateScrollButton: scroll.updateScrollButton, loading,
       enterMessageIds,
+      onQuote: setQuote,
     })
   }
 
@@ -176,16 +222,18 @@ export function createMessagesController({
     lastMessageRole = 'user'
     loading.setLoading(true)
     try {
+      const payload = {
+        text,
+        clientLocale: typeof navigator !== 'undefined' ? navigator.language : undefined,
+        clientTimeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        clientOffsetMinutes: new Date().getTimezoneOffset(),
+        clientNowIso: new Date().toISOString(),
+      }
+      if (activeQuote?.id) payload.quote = activeQuote.id
       const res = await fetch('/api/input', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text,
-          clientLocale: typeof navigator !== 'undefined' ? navigator.language : undefined,
-          clientTimeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          clientOffsetMinutes: new Date().getTimezoneOffset(),
-          clientNowIso: new Date().toISOString(),
-        }),
+        body: JSON.stringify(payload),
       })
       if (!res.ok) {
         let data = null
@@ -193,6 +241,7 @@ export function createMessagesController({
         throw new Error(data?.error || 'Failed to send')
       }
       if (input) { input.value = ''; input.dispatchEvent(new Event('input', { bubbles: true })) }
+      clearQuote()
       await fetchAndRenderMessages()
     } catch (error) {
       renderError({ messagesEl, removeEmpty, updateScrollButton: scroll.updateScrollButton }, error)
@@ -204,6 +253,9 @@ export function createMessagesController({
       if (input) { input.disabled = false; input.focus() }
     }
   }
+
+  if (quoteClearBtn) quoteClearBtn.addEventListener('click', clearQuote)
+  updateQuotePreview()
 
   const start = () => { if (isPolling) return; scroll.bindScrollControls(); isPolling = true; poll() }
   const stop = () => { isPolling = false; if (pollTimer) clearTimeout(pollTimer); pollTimer = null }

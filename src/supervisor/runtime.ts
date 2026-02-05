@@ -1,12 +1,8 @@
 import type { SupervisorConfig } from '../config.js'
 import type { StatePaths } from '../fs/paths.js'
-import type { Task, TaskResult } from '../types/index.js'
+import type { Task, TaskResult, UserInput } from '../types/index.js'
 
-export type PendingUserInput = {
-  id: string
-  text: string
-  createdAt: string
-}
+export type PendingUserInput = UserInput
 
 export type RuntimeState = {
   config: SupervisorConfig

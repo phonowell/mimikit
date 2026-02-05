@@ -15,6 +15,14 @@ export type HistoryMessage = {
   createdAt: ISODate
   usage?: TokenUsage
   elapsedMs?: number
+  quote?: Id
+}
+
+export type UserInput = {
+  id: Id
+  text: string
+  createdAt: ISODate
+  quote?: Id
 }
 
 export type TaskStatus =

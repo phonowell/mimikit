@@ -69,7 +69,11 @@ export const createHttpServer = (
       reply.code(400).send({ error: result.error })
       return
     }
-    const id = await supervisor.addUserInput(result.text, result.meta)
+    const id = await supervisor.addUserInput(
+      result.text,
+      result.meta,
+      result.quote,
+    )
     reply.send({ id })
   })
 

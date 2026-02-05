@@ -423,6 +423,31 @@
   font-weight: 600;
 }
 
+.composer .quote-preview {
+  flex: 0 0 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--panel-soft);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.composer .quote-label {
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.composer .quote-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .message-loading article {
   background: #f7f9fc;
   border-style: dashed;

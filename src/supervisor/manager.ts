@@ -49,7 +49,7 @@ const runManagerBuffer = async (
   runtime: RuntimeState,
   buffer: ManagerBuffer,
 ) => {
-  const inputs = buffer.inputs.map((input) => input.text)
+  const { inputs } = buffer
   const { results } = buffer
   const history = await readHistory(runtime.paths.history)
   const recentHistory = selectRecentHistory(history, {
