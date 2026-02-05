@@ -138,7 +138,7 @@ export function createMessagesController({
   }
 
   const setDisconnected = () => {
-    clearStatus({ statusDot, statusText }, 'disconnected')
+    applyStatus({ statusDot, statusText }, 'disconnected')
     lastStatus = null
     updateWorkerDots(null)
     clearMessageState(messageState)

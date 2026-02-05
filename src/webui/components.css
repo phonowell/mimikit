@@ -15,29 +15,24 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #c9d3df;
-  box-shadow: 0 0 0 4px rgba(100, 116, 139, 0.08);
-  animation: statusPulse 1.6s ease-in-out infinite;
+  background: var(--status-idle);
+  box-shadow: 0 0 0 4px rgba(148, 163, 184, 0.12);
 }
 
 .status-dot[data-state='running'] {
-  background: var(--success);
-  box-shadow: 0 0 0 4px rgba(59, 178, 115, 0.2);
+  background: var(--status-running);
+  box-shadow: 0 0 0 4px rgba(42, 125, 225, 0.2);
+  animation: statusPulse 1.6s ease-in-out infinite;
 }
 
 .status-dot[data-state='idle'] {
-  background: var(--accent);
-  box-shadow: 0 0 0 4px rgba(42, 125, 225, 0.2);
+  background: var(--status-idle);
+  box-shadow: 0 0 0 4px rgba(148, 163, 184, 0.12);
 }
 
-.status-dot[data-state='paused'] {
-  background: var(--warning);
-  box-shadow: 0 0 0 4px rgba(242, 178, 79, 0.18);
-}
-
-.status-dot[data-state='error'] {
-  background: var(--danger);
-  box-shadow: 0 0 0 4px rgba(226, 93, 93, 0.18);
+.status-dot[data-state='disconnected'] {
+  background: var(--status-disconnected);
+  box-shadow: 0 0 0 4px rgba(100, 116, 139, 0.14);
 }
 
 @keyframes statusPulse {
@@ -165,21 +160,19 @@
 .tasks-worker-dots {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
 }
 
 .tasks-worker-dots .worker-dot {
   width: 6px;
   height: 6px;
   border-radius: 999px;
-  background: rgba(148, 163, 184, 0.6);
-  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.4);
+  background: var(--status-idle);
   opacity: 0.7;
 }
 
 .tasks-worker-dots .worker-dot[data-active='true'] {
-  background: var(--success);
-  box-shadow: 0 0 0 2px rgba(59, 178, 115, 0.2);
+  background: var(--status-running);
   opacity: 1;
 }
 
@@ -262,7 +255,7 @@
 .message.user article {
   background: #e6f1ff;
   border-color: transparent;
-  border-bottom-right-radius: 8px;
+  border-bottom-right-radius: 4px;
 }
 
 .message.agent {
@@ -270,7 +263,7 @@
 }
 
 .message.agent article {
-  border-bottom-left-radius: 8px;
+  border-bottom-left-radius: 4px;
 }
 
 .message.system {
@@ -610,60 +603,56 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: #ffffff;
 }
 
 .tasks-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .tasks-title {
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
 }
 
-.tasks-meta {
-  margin: 0;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-
 .tasks-list {
   margin: 0;
-  padding: 0;
+  padding: 12px;
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   flex: 1;
   overflow-y: auto;
   min-height: 0;
+  background: #f4f6f9;
 }
 
 .task-item,
 .tasks-empty {
   padding: 10px 12px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--panel);
+  border-radius: 12px;
+  border: 1px solid #e3e8f0;
+  background: #ffffff;
 }
 
 .task-item {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: 10px;
   position: relative;
-  border-left-width: 3px;
   box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04);
 }
 
 .task-link {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   text-decoration: none;
   color: inherit;
   flex: 1;
@@ -677,17 +666,17 @@
 
 .task-title {
   font-weight: 600;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .task-meta {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
-  font-size: 12px;
+  gap: 10px;
+  font-size: 11px;
   color: var(--muted);
-  margin-top: 6px;
+  margin-top: 4px;
   width: 100%;
 }
 
@@ -695,15 +684,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 20px;
-  height: 18px;
-  padding: 0 6px;
+  width: 8px;
+  height: 8px;
+  min-width: 8px;
+  padding: 0;
   border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  background: rgba(148, 163, 184, 0.18);
-  color: var(--muted);
+  background: var(--task-dot, var(--status-pending));
 }
 
 .task-elapsed {
@@ -719,38 +705,23 @@
 }
 
 .task-item[data-status='pending'] {
-  --task-accent: var(--accent);
-  --task-tint: rgba(42, 125, 225, 0.12);
+  --task-dot: var(--status-pending);
 }
 
 .task-item[data-status='running'] {
-  --task-accent: var(--warning);
-  --task-tint: rgba(242, 178, 79, 0.18);
+  --task-dot: var(--status-running);
 }
 
 .task-item[data-status='succeeded'] {
-  --task-accent: var(--success);
-  --task-tint: rgba(59, 178, 115, 0.14);
+  --task-dot: var(--status-success);
 }
 
 .task-item[data-status='failed'] {
-  --task-accent: var(--danger);
-  --task-tint: rgba(226, 93, 93, 0.14);
+  --task-dot: var(--status-fail);
 }
 
 .task-item[data-status='canceled'] {
-  --task-accent: #94a3b8;
-  --task-tint: rgba(148, 163, 184, 0.18);
-}
-
-.task-item[data-status] {
-  border-left-color: var(--task-accent);
-  background: linear-gradient(90deg, var(--task-tint) 0%, var(--panel) 42%);
-}
-
-.task-item[data-status] .task-status {
-  background: var(--task-tint);
-  color: var(--task-accent);
+  --task-dot: var(--status-cancel);
 }
 
 .task-cancel {

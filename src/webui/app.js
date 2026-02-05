@@ -26,7 +26,6 @@ const elements = {
   workerDots: $('[data-worker-dots]'),
   tasksCloseBtn: $('[data-tasks-close]'),
   tasksList: $('[data-tasks-list]'),
-  tasksMeta: $('[data-tasks-meta]'),
 }
 
 const messages = createMessagesController({
@@ -71,7 +70,6 @@ bindRestart({
 })
 bindTasksPanel({
   tasksList: elements.tasksList,
-  tasksMeta: elements.tasksMeta,
   tasksDialog: elements.tasksDialog,
   tasksOpenBtn: elements.tasksOpenBtn,
   tasksCloseBtn: elements.tasksCloseBtn,

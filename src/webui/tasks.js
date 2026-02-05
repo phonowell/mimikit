@@ -5,12 +5,11 @@ const TASK_POLL_MS = 5000
 
 export function bindTasksPanel({
   tasksList,
-  tasksMeta,
   tasksDialog,
   tasksOpenBtn,
   tasksCloseBtn,
 }) {
-  if (!tasksList || !tasksMeta) return
+  if (!tasksList) return
   let pollTimer = null
   let isPolling = false
   const elapsedTicker = createElapsedTicker(tasksList)
@@ -31,15 +30,14 @@ export function bindTasksPanel({
 
   async function loadTasks() {
     if (!isPolling) return
-    tasksMeta.textContent = 'Loading...'
+    if (!tasksList) return
     try {
       const res = await fetch('/api/tasks?limit=200')
       if (!res.ok) throw new Error('Failed to load tasks')
       const data = await res.json()
-      renderTasks(tasksList, tasksMeta, data)
+      renderTasks(tasksList, data)
       elapsedTicker.update()
     } catch (error) {
-      tasksMeta.textContent = 'Failed to load tasks'
       tasksList.innerHTML = ''
       const empty = document.createElement('li')
       empty.className = 'tasks-empty'

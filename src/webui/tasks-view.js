@@ -2,13 +2,6 @@ import { formatDateTime, formatElapsedLabel, formatUsage } from './messages/form
 
 const ELAPSED_TICK_MS = 1000
 
-const STATUS_SYMBOLS = {
-  pending: '⏸',
-  running: '▶',
-  succeeded: '✓',
-  failed: '✗',
-  canceled: '-',
-}
 
 const parseTimeMs = (value) => {
   if (typeof value === 'number' && Number.isFinite(value)) return value
@@ -26,7 +19,6 @@ const resolveDurationMs = (startMs, endMs) => {
   return Math.max(0, endMs - startMs)
 }
 
-const formatStatusSymbol = (status) => STATUS_SYMBOLS[status] ?? status
 
 const formatElapsedText = (elapsedMs, hasUsage) => {
   const label = formatElapsedLabel(elapsedMs)
@@ -34,20 +26,6 @@ const formatElapsedText = (elapsedMs, hasUsage) => {
   return hasUsage ? `· ${label}` : label
 }
 
-const formatStatusCounts = (counts) => {
-  const parts = []
-  if (!counts) return parts
-  if (counts.pending)
-    parts.push(`${formatStatusSymbol('pending')} ${counts.pending}`)
-  if (counts.running)
-    parts.push(`${formatStatusSymbol('running')} ${counts.running}`)
-  if (counts.succeeded)
-    parts.push(`${formatStatusSymbol('succeeded')} ${counts.succeeded}`)
-  if (counts.failed) parts.push(`${formatStatusSymbol('failed')} ${counts.failed}`)
-  if (counts.canceled)
-    parts.push(`${formatStatusSymbol('canceled')} ${counts.canceled}`)
-  return parts
-}
 
 const updateElapsedTimes = (tasksList) => {
   if (!tasksList) return
@@ -79,13 +57,10 @@ export const createElapsedTicker = (tasksList) => {
   return { start, stop, update }
 }
 
-export const renderTasks = (tasksList, tasksMeta, data) => {
-  if (!tasksList || !tasksMeta) return
+export const renderTasks = (tasksList, data) => {
+  if (!tasksList) return
   const previousScrollTop = tasksList.scrollTop
   const tasks = data?.tasks || []
-  const counts = data?.counts || {}
-  const parts = [`${tasks.length} tasks`, ...formatStatusCounts(counts)]
-  tasksMeta.textContent = parts.join(' · ')
   tasksList.innerHTML = ''
 
   if (tasks.length === 0) {
@@ -124,7 +99,8 @@ export const renderTasks = (tasksList, tasksMeta, data) => {
     const status = document.createElement('span')
     status.className = 'task-status'
     const statusValue = task.status || 'pending'
-    status.textContent = formatStatusSymbol(statusValue)
+    status.dataset.status = statusValue
+    status.setAttribute('role', 'img')
     status.setAttribute('aria-label', statusValue)
     status.title = statusValue
     meta.appendChild(status)
