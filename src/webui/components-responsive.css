@@ -1,0 +1,56 @@
+@media (prefers-reduced-motion: reduce) {
+  .message.message--enter article {
+    animation: none;
+  }
+
+  .loading-dots .dot {
+    animation: none;
+    opacity: 0.7;
+  }
+
+  .composer .quote-preview {
+    transition: none;
+  }
+
+  .scroll-bottom {
+    transition: none;
+  }
+
+  .status-dot {
+    animation: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .message article {
+    max-width: 88%;
+  }
+
+  .composer .quote-clear {
+    --btn-size: 26px;
+    --btn-icon-size: 12px;
+    --btn-pad: 0;
+    --btn-radius: 50%;
+    width: var(--btn-size);
+    height: var(--btn-size);
+    font-size: 0;
+    line-height: 0;
+    position: relative;
+  }
+
+  .composer .quote-clear::before {
+    content: 'x';
+    font-size: var(--btn-icon-size);
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+
+  .scroll-bottom {
+    right: 12px;
+    bottom: 12px;
+  }
+}

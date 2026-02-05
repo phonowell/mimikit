@@ -1,0 +1,161 @@
+.restart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.restart-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.restart-description {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.restart-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.restart-dialog-btn-danger {
+  margin-right: auto;
+}
+
+.tasks-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: #ffffff;
+}
+
+.tasks-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tasks-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.tasks-list {
+  margin: 0;
+  padding: 12px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  background: #f4f6f9;
+}
+
+.task-item,
+.tasks-empty {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #e3e8f0;
+  background: #ffffff;
+}
+
+.task-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  position: relative;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04);
+}
+
+.task-link {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-decoration: none;
+  color: inherit;
+  flex: 1;
+  min-width: 0;
+}
+
+.task-link:focus-visible {
+  outline: 2px solid rgba(42, 125, 225, 0.4);
+  outline-offset: 2px;
+}
+
+.task-title {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.task-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+  width: 100%;
+}
+
+.task-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 8px;
+  height: 8px;
+  min-width: 8px;
+  padding: 0;
+  border-radius: 999px;
+  background: var(--task-dot, var(--status-pending));
+}
+
+.task-elapsed {
+  font-variant-numeric: tabular-nums;
+}
+
+.task-tokens {
+  font-variant-numeric: tabular-nums;
+}
+
+.task-meta .task-time {
+  margin-left: auto;
+}
+
+.task-item[data-status='pending'] {
+  --task-dot: var(--status-pending);
+}
+
+.task-item[data-status='running'] {
+  --task-dot: var(--status-running);
+}
+
+.task-item[data-status='succeeded'] {
+  --task-dot: var(--status-success);
+}
+
+.task-item[data-status='failed'] {
+  --task-dot: var(--status-fail);
+}
+
+.task-item[data-status='canceled'] {
+  --task-dot: var(--status-cancel);
+}
+
+.task-cancel {
+  align-self: flex-start;
+}
