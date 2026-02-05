@@ -32,6 +32,17 @@ main[data-app] {
   z-index: 10;
 }
 
+.tasks-dialog[open],
+.restart-dialog[open] {
+  animation: dialog-in 160ms ease-out;
+}
+
+.tasks-dialog.is-closing,
+.restart-dialog.is-closing {
+  animation: dialog-out 140ms ease-in forwards;
+  pointer-events: none;
+}
+
 .tasks-dialog:not([open]),
 .restart-dialog:not([open]) {
   display: none;
@@ -41,6 +52,12 @@ main[data-app] {
 .restart-dialog::backdrop {
   background: rgba(15, 23, 42, 0.35);
   backdrop-filter: blur(2px);
+  animation: dialog-backdrop-in 160ms ease-out;
+}
+
+.tasks-dialog.is-closing::backdrop,
+.restart-dialog.is-closing::backdrop {
+  animation: dialog-backdrop-out 140ms ease-in forwards;
 }
 
 .tasks-panel {
@@ -138,6 +155,59 @@ main[data-app] {
   border-radius: var(--radius-sm);
   background: #ffffff;
   border: 1px solid var(--border);
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes dialog-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+@keyframes dialog-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes dialog-backdrop-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tasks-dialog[open],
+  .restart-dialog[open],
+  .tasks-dialog.is-closing,
+  .restart-dialog.is-closing,
+  .tasks-dialog::backdrop,
+  .restart-dialog::backdrop,
+  .tasks-dialog.is-closing::backdrop,
+  .restart-dialog.is-closing::backdrop {
+    animation: none;
+  }
 }
 
 @media (max-width: 640px) {

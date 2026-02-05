@@ -11,6 +11,11 @@ export function bindRestart({
   messages,
 }) {
   if (!restartBtn) return
+  const closeAnimationMs = 140
+  const prefersReducedMotion =
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
   const dialogEnabled = Boolean(
     restartDialog &&
       restartCancelBtn &&
@@ -19,9 +24,42 @@ export function bindRestart({
   )
   let isOpen = false
   let isBusy = false
+  let closeTimer = null
+  let closeAnimationHandler = null
 
   const setExpanded = (nextOpen) => {
     restartBtn.setAttribute('aria-expanded', nextOpen ? 'true' : 'false')
+  }
+
+  const clearClosingState = () => {
+    if (!restartDialog) return
+    restartDialog.classList.remove('is-closing')
+    if (closeAnimationHandler) {
+      restartDialog.removeEventListener('animationend', closeAnimationHandler)
+      closeAnimationHandler = null
+    }
+    if (closeTimer) {
+      clearTimeout(closeTimer)
+      closeTimer = null
+    }
+  }
+
+  const finalizeClose = () => {
+    if (!isOpen) return
+    isOpen = false
+    setExpanded(false)
+    clearClosingState()
+    if (!isBusy) restartBtn.focus()
+  }
+
+  const performClose = () => {
+    if (!restartDialog || !isOpen) return
+    if (typeof restartDialog.close === 'function') {
+      restartDialog.close()
+    } else {
+      restartDialog.removeAttribute('open')
+      finalizeClose()
+    }
   }
 
   const disableActions = (disabled) => {
@@ -31,7 +69,12 @@ export function bindRestart({
   }
 
   const openDialog = () => {
-    if (!restartDialog || isOpen) return
+    if (!restartDialog) return
+    if (restartDialog.classList.contains('is-closing')) {
+      clearClosingState()
+      return
+    }
+    if (isOpen) return
     if (typeof restartDialog.showModal === 'function') {
       if (!restartDialog.open) restartDialog.showModal()
     } else {
@@ -48,14 +91,33 @@ export function bindRestart({
 
   const closeDialog = () => {
     if (!restartDialog || !isOpen) return
-    if (typeof restartDialog.close === 'function') {
-      restartDialog.close()
-    } else {
-      restartDialog.removeAttribute('open')
+    if (restartDialog.classList.contains('is-closing')) return
+    if (prefersReducedMotion) {
+      performClose()
+      return
     }
-    isOpen = false
-    setExpanded(false)
-    if (!isBusy) restartBtn.focus()
+    restartDialog.classList.add('is-closing')
+    const onAnimationEnd = (event) => {
+      if (event.target !== restartDialog) return
+      if (closeAnimationHandler) {
+        restartDialog.removeEventListener('animationend', closeAnimationHandler)
+        closeAnimationHandler = null
+      }
+      if (closeTimer) {
+        clearTimeout(closeTimer)
+        closeTimer = null
+      }
+      performClose()
+    }
+    closeAnimationHandler = onAnimationEnd
+    restartDialog.addEventListener('animationend', onAnimationEnd)
+    closeTimer = window.setTimeout(() => {
+      if (closeAnimationHandler) {
+        restartDialog.removeEventListener('animationend', closeAnimationHandler)
+        closeAnimationHandler = null
+      }
+      performClose()
+    }, closeAnimationMs + 40)
   }
 
   const waitForServer = (onReady) => {
@@ -133,9 +195,12 @@ export function bindRestart({
     if (event.target === restartDialog) closeDialog()
   }
   const onDialogClose = () => {
-    isOpen = false
-    setExpanded(false)
-    if (!isBusy) restartBtn.focus()
+    if (!isOpen) return
+    finalizeClose()
+  }
+  const onDialogCancel = (event) => {
+    event.preventDefault()
+    closeDialog()
   }
 
   if (dialogEnabled) {
@@ -145,6 +210,7 @@ export function bindRestart({
     restartConfirmBtn.addEventListener('click', onRestart)
     restartResetBtn.addEventListener('click', onReset)
     restartDialog.addEventListener('click', onDialogClick)
+    restartDialog.addEventListener('cancel', onDialogCancel)
     restartDialog.addEventListener('close', onDialogClose)
   } else {
     restartBtn.addEventListener('click', onOpen)
