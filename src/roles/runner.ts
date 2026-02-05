@@ -8,6 +8,7 @@ import {
 import { buildManagerPrompt, buildWorkerPrompt } from './prompt.js'
 
 import type { ManagerEnv } from './prompt.js'
+import type { BeadsContext } from '../integrations/beads/types.js'
 import type {
   HistoryMessage,
   Task,
@@ -66,6 +67,7 @@ export const runManager = async (params: {
   tasks: Task[]
   history: HistoryMessage[]
   env?: ManagerEnv
+  beads?: BeadsContext
   timeoutMs: number
   model?: string
   modelReasoningEffort?: ModelReasoningEffort
@@ -83,6 +85,7 @@ export const runManager = async (params: {
     tasks: params.tasks,
     history: params.history,
     ...(params.env ? { env: params.env } : {}),
+    ...(params.beads ? { beads: params.beads } : {}),
   })
   const model = normalizeOptional(params.model)
   const base = { role: 'manager' as const, ...(model ? { model } : {}) }

@@ -1,3 +1,7 @@
+import {
+  executeBeadsCommand,
+  loadBeadsContext,
+} from '../integrations/beads/index.js'
 import { appendLog } from '../log/append.js'
 import { safe } from '../log/safe.js'
 import { runManager } from '../roles/runner.js'
@@ -10,6 +14,7 @@ import { parseCommands } from './command-parser.js'
 import { selectRecentHistory } from './history-select.js'
 
 import type { RuntimeState } from './runtime.js'
+import type { BeadsCommandResult } from '../integrations/beads/types.js'
 import type { TaskResult } from '../types/index.js'
 
 type ManagerBuffer = {
@@ -57,6 +62,11 @@ const runManagerBuffer = async (
     maxCount: runtime.config.manager.historyMaxCount,
     maxBytes: runtime.config.manager.historyMaxBytes,
   })
+  const previousBeadsResults = runtime.beads.lastResults.splice(0)
+  const beadsContext = await loadBeadsContext({
+    workDir: runtime.config.workDir,
+    lastResults: previousBeadsResults,
+  })
   const startedAt = Date.now()
   runtime.managerRunning = true
   try {
@@ -81,6 +91,7 @@ const runManagerBuffer = async (
       results,
       tasks: runtime.tasks,
       history: recentHistory,
+      ...(beadsContext ? { beads: beadsContext } : {}),
       ...(runtime.lastUserMeta
         ? { env: { lastUser: runtime.lastUserMeta } }
         : {}),
@@ -90,6 +101,7 @@ const runManagerBuffer = async (
     })
     const parsed = parseCommands(result.output)
     const seenDispatches = new Set<string>()
+    const beadsResults: BeadsCommandResult[] = []
     for (const command of parsed.commands) {
       if (command.action === 'dispatch_worker') {
         const content = command.content?.trim()
@@ -109,8 +121,15 @@ const runManagerBuffer = async (
         const id = command.attrs.id?.trim() ?? command.content?.trim()
         if (!id) continue
         await cancelTask(runtime, id, { source: 'manager' })
+        continue
+      }
+      if (command.action.startsWith('beads_')) {
+        beadsResults.push(
+          await executeBeadsCommand(runtime.config.workDir, command),
+        )
       }
     }
+    if (beadsResults.length > 0) runtime.beads.lastResults = beadsResults
     if (parsed.text) {
       await appendHistory(runtime.paths.history, {
         id: `manager-${Date.now()}`,

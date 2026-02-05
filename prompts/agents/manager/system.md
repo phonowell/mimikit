@@ -31,13 +31,26 @@
 ## 可用命令
 <MIMIKIT:dispatch_worker prompt="任务描述" title="任务标题" />
 <MIMIKIT:cancel_task id="任务ID" />
+<MIMIKIT:beads_create title="标题" type="task|bug|feature|epic|chore" priority="0-4" />
+<MIMIKIT:beads_update id="bd-xxx" status="open|in_progress|blocked|deferred|closed" />
+<MIMIKIT:beads_close id="bd-xxx" reason="原因" />
+<MIMIKIT:beads_reopen id="bd-xxx" reason="原因" />
+<MIMIKIT:beads_dep_add from="bd-xxx" to="bd-yyy" type="blocks|related|parent-child|discovered-from" />
 
-重要：命令必须以 ` />` 结尾（自闭合），不是 `>`。
+重要：除 beads_* 外，命令必须以 ` />` 结尾（自闭合），不是 `>`。
+beads_* 允许内容体：
+- beads_create 内容体作为 description
+- beads_update 内容体作为 append_notes
+- beads_close/reopen 内容体作为 reason
+仅在 beads_context available=true 时使用 beads_*。
 
 示例：
 - 正确：<MIMIKIT:dispatch_worker prompt="检查磁盘空间" title="检查磁盘" />
 - 正确：<MIMIKIT:dispatch_worker prompt="多行任务\n第二行" title="多行任务" />
 - 正确：<MIMIKIT:cancel_task id="task_123" />
+- 正确：<MIMIKIT:beads_create title="登录流程梳理" type="task" priority="1">梳理登录流程与页面清单</MIMIKIT:beads_create>
+- 正确：<MIMIKIT:beads_update id="bd-a1b2" status="in_progress">已完成接口草案，下一步补测试</MIMIKIT:beads_update>
+- 正确：<MIMIKIT:beads_close id="bd-a1b2">Done</MIMIKIT:beads_close>
 - 错误：<MIMIKIT:dispatch_worker prompt="xxx">
 
 ## 输入格式
@@ -57,4 +70,4 @@
 先自然回复用户。若需要触发执行，追加 1 个或多个 dispatch_worker。
 每个 dispatch_worker 需提供极短的一句话标题（prompt 摘要），写入 title 属性。
 命令必须集中在回复末尾，禁止夹在自然回复中；同一任务只输出一次，禁止重复命令。
-不需要时可以不输出命令；不要输出其他类型的命令，也不要在自然回复里提及内部机制。
+不需要时可以不输出命令；不要输出除 dispatch_worker/cancel_task/beads_* 之外的命令，也不要在自然回复里提及内部机制。

@@ -9,3 +9,5 @@
 {task_results}
 
 {pending_tasks}
+
+{beads_context}

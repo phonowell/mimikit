@@ -6,6 +6,7 @@ import { logSafeError } from '../log/safe.js'
 import {
   buildCdataBlock,
   buildRawBlock,
+  formatBeadsContext,
   formatCapabilities,
   formatEnvironment,
   formatHistory,
@@ -16,6 +17,7 @@ import {
   renderPromptTemplate,
 } from './prompt-format.js'
 
+import type { BeadsContext } from '../integrations/beads/types.js'
 import type { HistoryMessage, Task, TaskResult } from '../types/index.js'
 
 export type ManagerEnv = {
@@ -63,6 +65,7 @@ export const buildManagerPrompt = async (params: {
   tasks: Task[]
   history: HistoryMessage[]
   env?: ManagerEnv
+  beads?: BeadsContext
 }): Promise<string> => {
   const system = await loadSystemPrompt(params.workDir, 'manager')
   const injectionTemplate = await loadInjectionPrompt(params.workDir, 'manager')
@@ -118,6 +121,14 @@ export const buildManagerPrompt = async (params: {
         '待处理事项（内部参考，不要主动汇报）：',
         'pending_tasks',
         formatQueueStatus(params.tasks),
+      ),
+    ],
+    [
+      'beads_context',
+      buildCdataBlock(
+        'Beads 任务上下文（内部参考，不要主动汇报）：',
+        'beads_context',
+        formatBeadsContext(params.beads),
       ),
     ],
   ])
