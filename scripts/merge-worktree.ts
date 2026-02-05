@@ -130,3 +130,9 @@ const mergeMessage =
     ? `merge(${currentBranch}): ${lastSubject}`
     : `merge(${currentBranch})`;
 runGit(["commit", "-m", mergeMessage], mainWorktree.path);
+
+runGitFast({
+  args: ["rebase", "origin/main"],
+  context: `sync slot ${currentBranch} to origin/main`,
+  tag: "merge",
+});
