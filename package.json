@@ -17,6 +17,7 @@
     "prompt:preview": "tsx scripts/preview-prompt.ts",
     "prompt:report": "tsx scripts/prompt-report.ts",
     "lint": "eslint \"src/**/*.ts\" --fix",
+    "type-check": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run"
   },
   "dependencies": {

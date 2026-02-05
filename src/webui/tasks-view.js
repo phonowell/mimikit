@@ -3,11 +3,11 @@ import { formatDateTime, formatElapsedLabel, formatUsage } from './messages/form
 const ELAPSED_TICK_MS = 1000
 
 const STATUS_SYMBOLS = {
-  pending: '…',
-  running: '→',
+  pending: '⏸',
+  running: '▶',
   succeeded: '✓',
   failed: '✗',
-  canceled: '×',
+  canceled: '-',
 }
 
 const parseTimeMs = (value) => {
