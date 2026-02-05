@@ -3,7 +3,7 @@ import { extname, join } from 'node:path'
 
 import { ensureDir } from '../fs/paths.js'
 
-import type { TokenUsage, TaskResultStatus } from '../types/index.js'
+import type { TaskResultStatus, TokenUsage } from '../types/index.js'
 
 export const dateStamp = (iso: string): string => iso.slice(0, 10)
 

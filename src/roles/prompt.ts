@@ -98,7 +98,11 @@ export const buildManagerPrompt = async (params: {
     ],
     [
       'user_input',
-      buildCdataBlock('用户刚刚说：', 'user_input', formatInputs(params.inputs)),
+      buildCdataBlock(
+        '用户刚刚说：',
+        'user_input',
+        formatInputs(params.inputs),
+      ),
     ],
     [
       'task_results',
@@ -119,19 +123,6 @@ export const buildManagerPrompt = async (params: {
   ])
   const injection = renderPromptTemplate(injectionTemplate, injectionValues)
   return joinPromptSections([system, injection])
-}
-
-export const buildLocalPrompt = async (params: {
-  workDir: string
-  input: string
-  history: HistoryMessage[]
-  env?: ManagerEnv
-}): Promise<string> => {
-  const systemTemplate = await loadSystemPrompt(params.workDir, 'local')
-  const system = renderPromptTemplate(systemTemplate, {
-    user_input: params.input,
-  })
-  return joinPromptSections([system])
 }
 
 export const buildWorkerPrompt = async (params: {

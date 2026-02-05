@@ -138,10 +138,26 @@ export const createHttpServer = (
     reply.code(404).send({ error: 'not found' })
   })
 
-  app.register(fastifyStatic, { root: markedDir, prefix: '/vendor/marked/', decorateReply: false })
-  app.register(fastifyStatic, { root: purifyDir, prefix: '/vendor/purify/', decorateReply: false })
-  app.register(fastifyStatic, { root: generatedDir, prefix: '/artifacts/', decorateReply: false })
-  app.register(fastifyStatic, { root: webDir, prefix: '/', decorateReply: false })
+  app.register(fastifyStatic, {
+    root: markedDir,
+    prefix: '/vendor/marked/',
+    decorateReply: false,
+  })
+  app.register(fastifyStatic, {
+    root: purifyDir,
+    prefix: '/vendor/purify/',
+    decorateReply: false,
+  })
+  app.register(fastifyStatic, {
+    root: generatedDir,
+    prefix: '/artifacts/',
+    decorateReply: false,
+  })
+  app.register(fastifyStatic, {
+    root: webDir,
+    prefix: '/',
+    decorateReply: false,
+  })
 
   void app
     .listen({ port })

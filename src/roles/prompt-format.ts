@@ -53,7 +53,10 @@ export const formatHistory = (history: HistoryMessage[]): string => {
   return items.length > 0 ? items.join('\n') : ''
 }
 
-export const formatEnvironment = (workDir: string, env?: ManagerEnv): string => {
+export const formatEnvironment = (
+  workDir: string,
+  env?: ManagerEnv,
+): string => {
   const now = new Date()
   const resolved = Intl.DateTimeFormat().resolvedOptions()
   const lines: string[] = []

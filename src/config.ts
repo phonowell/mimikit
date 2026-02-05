@@ -19,13 +19,6 @@ export type SupervisorConfig = {
     maxConcurrent: number
     timeoutMs: number
   }
-  local: {
-    enabled: boolean
-    baseUrl: string
-    model: string
-    timeoutMs: number
-    idleMs: number
-  }
 }
 
 export const defaultConfig = (params: {
@@ -46,12 +39,5 @@ export const defaultConfig = (params: {
   worker: {
     maxConcurrent: 3,
     timeoutMs: 10 * 60 * 1000,
-  },
-  local: {
-    enabled: true,
-    baseUrl: 'http://localhost:11434',
-    model: 'qwen3:0.6b',
-    timeoutMs: 10_000,
-    idleMs: 5 * 60 * 1000,
   },
 })

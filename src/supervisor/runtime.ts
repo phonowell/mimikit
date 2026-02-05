@@ -1,6 +1,6 @@
 import type { SupervisorConfig } from '../config.js'
 import type { StatePaths } from '../fs/paths.js'
-import type { HistoryMessage, Task, TaskResult } from '../types/index.js'
+import type { Task, TaskResult } from '../types/index.js'
 
 export type PendingUserInput = {
   id: string
@@ -18,10 +18,6 @@ export type RuntimeState = {
   tasks: Task[]
   runningWorkers: Set<string>
   runningControllers: Map<string, AbortController>
-  localReplies: Map<string, HistoryMessage>
-  localReplyInFlight: Set<string>
-  localReplyDisabled: Set<string>
-  lastUserInputAtMs?: number
   lastUserMeta?: {
     source?: string
     remote?: string

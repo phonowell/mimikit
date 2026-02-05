@@ -105,20 +105,31 @@ const runTask = async (
     })
     if (task.status === 'canceled') {
       const result = buildResult(
-        task, 'canceled', 'Task canceled', elapsed(), llmResult.usage,
+        task,
+        'canceled',
+        'Task canceled',
+        elapsed(),
+        llmResult.usage,
       )
       await finalizeResult(runtime, task, result, markTaskCanceled)
       return
     }
     const result = buildResult(
-      task, 'succeeded', llmResult.output, elapsed(), llmResult.usage,
+      task,
+      'succeeded',
+      llmResult.output,
+      elapsed(),
+      llmResult.usage,
     )
     await finalizeResult(runtime, task, result, markTaskSucceeded)
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error))
     if (task.status === 'canceled') {
       const result = buildResult(
-        task, 'canceled', err.message || 'Task canceled', elapsed(),
+        task,
+        'canceled',
+        err.message || 'Task canceled',
+        elapsed(),
       )
       await finalizeResult(runtime, task, result, markTaskCanceled)
       return

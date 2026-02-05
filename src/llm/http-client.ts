@@ -65,10 +65,7 @@ export type ChatUsage = {
   total_tokens?: number
 }
 
-export const formatLlmError = (
-  prefix: string,
-  err: unknown,
-): string => {
+export const formatLlmError = (prefix: string, err: unknown): string => {
   if (!err) return `${prefix} failed`
   if (err instanceof Error) {
     const anyErr = err as Error & {
@@ -83,8 +80,7 @@ export const formatLlmError = (
     if (anyErr.error?.code) parts.push(`code ${anyErr.error.code}`)
     if (anyErr.error?.param) parts.push(`param ${anyErr.error.param}`)
     if (anyErr.body) parts.push(`body ${anyErr.body}`)
-    if (parts.length > 0)
-      return `${prefix} failed: ${parts.join(', ')}`
+    if (parts.length > 0) return `${prefix} failed: ${parts.join(', ')}`
     if (err.message) return `${prefix} failed: ${err.message}`
   }
   return `${prefix} failed: ${String(err)}`

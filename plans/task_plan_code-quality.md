@@ -42,11 +42,9 @@
 | `src/webui/messages/controller.js` | 281 | → 提取 sendMessage+bindComposer 到 `src/webui/messages/composer.js` |
 
 ### 重复代码
-1. `api-runner.ts` 与 `local-runner.ts` 共享：`extractChatText`, `normalizeBaseUrl`, `HttpError`, `requestJson` → 提取到 `src/llm/http-client.ts`
-2. `llm-archive.ts` 与 `task-results.ts` 共享：`dateStamp`, `pushLine`, `formatSection` → 提取到 `src/storage/archive-format.ts`
-3. `worker.ts` 中 buildTaskResult+archive 逻辑重复 3 次 → 统一函数
-4. `manager.ts` 与 `local-reply.ts` 共享 `selectRecentHistory` → 提取到 shared
-5. `shared/utils.ts` 中 `asNumber` 与 `webui/messages/format.js` 中 `asNumber` 重复（不同运行时，保留两份）
+1. `llm-archive.ts` 与 `task-results.ts` 共享：`dateStamp`, `pushLine`, `formatSection` → 提取到 `src/storage/archive-format.ts`
+2. `worker.ts` 中 buildTaskResult+archive 逻辑重复 3 次 → 统一函数
+3. `shared/utils.ts` 中 `asNumber` 与 `webui/messages/format.js` 中 `asNumber` 重复（不同运行时，保留两份）
 
 ### 命名问题
 - `src/shared/utils.ts` → `src/shared/usage.ts`（内容全是 token usage 相关 + sleep）

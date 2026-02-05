@@ -64,7 +64,11 @@ export type InputMeta = {
 
 export const parseInputBody = (
   body: unknown,
-  request: { remoteAddress?: string | undefined; userAgent?: string | undefined; acceptLanguage?: string | undefined },
+  request: {
+    remoteAddress?: string | undefined
+    userAgent?: string | undefined
+    acceptLanguage?: string | undefined
+  },
 ): { text: string; meta: InputMeta } | { error: string } => {
   if (!body || typeof body !== 'object') return { error: 'invalid JSON' }
   const parsed = body as Record<string, unknown>

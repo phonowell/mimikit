@@ -211,11 +211,6 @@
   border-bottom-left-radius: 8px;
 }
 
-.message.local-reply article {
-  border-style: dashed;
-  opacity: 0.5;
-}
-
 .message.system {
   justify-content: center;
 }

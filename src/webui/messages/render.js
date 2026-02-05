@@ -1,9 +1,5 @@
 export const isAgentMessage = (msg) => msg?.role === 'manager'
 
-const isLocalReply = (msg) =>
-  msg?.origin === 'local' ||
-  (typeof msg?.id === 'string' && msg.id.startsWith('local-'))
-
 export const findLatestAgentMessage = (messages) => {
   for (let i = messages.length - 1; i >= 0; i -= 1) {
     const msg = messages[i]
@@ -24,7 +20,6 @@ const renderMessage = (params, msg) => {
   const item = document.createElement('li')
   const roleClass = msg.role === 'manager' ? 'agent' : msg.role
   item.className = `message ${roleClass}`
-  if (isLocalReply(msg)) item.classList.add('local-reply')
 
   const article = document.createElement('article')
 
@@ -39,7 +34,6 @@ const renderMessage = (params, msg) => {
   }
   article.appendChild(content)
 
-  const isLocal = isLocalReply(msg)
   const usageText = isAgentMessage(msg) ? formatUsage(msg.usage) : ''
   const elapsedText = isAgentMessage(msg)
     ? formatElapsedLabel(msg.elapsedMs)

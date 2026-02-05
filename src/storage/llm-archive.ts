@@ -9,7 +9,7 @@ import { dateStamp, formatSection, pushLine } from './task-results.js'
 import type { TokenUsage } from '../types/index.js'
 
 export type LlmArchiveEntry = {
-  role: 'manager' | 'worker' | 'local'
+  role: 'manager' | 'worker'
   prompt: string
   output: string
   ok: boolean

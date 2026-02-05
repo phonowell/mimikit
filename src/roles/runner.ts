@@ -1,16 +1,19 @@
 import { runManagerApi } from '../llm/api-runner.js'
-import { runLocalRunner } from '../llm/local-runner.js'
 import { runCodexSdk } from '../llm/sdk-runner.js'
-import { appendLlmArchive, type LlmArchiveEntry } from '../storage/llm-archive.js'
-
 import {
-  buildLocalPrompt,
-  buildManagerPrompt,
-  buildWorkerPrompt,
-} from './prompt.js'
+  appendLlmArchive,
+  type LlmArchiveEntry,
+} from '../storage/llm-archive.js'
+
+import { buildManagerPrompt, buildWorkerPrompt } from './prompt.js'
 
 import type { ManagerEnv } from './prompt.js'
-import type { TokenUsage, HistoryMessage, Task, TaskResult } from '../types/index.js'
+import type {
+  HistoryMessage,
+  Task,
+  TaskResult,
+  TokenUsage,
+} from '../types/index.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
 type LlmResult = { output: string; elapsedMs: number; usage?: TokenUsage }
@@ -30,7 +33,14 @@ const archive = (
   stateDir: string,
   base: Omit<LlmArchiveEntry, 'prompt' | 'output' | 'ok'>,
   prompt: string,
-  result: { output: string; ok: boolean; elapsedMs?: number; usage?: TokenUsage; error?: string; errorName?: string },
+  result: {
+    output: string
+    ok: boolean
+    elapsedMs?: number
+    usage?: TokenUsage
+    error?: string
+    errorName?: string
+  },
 ) =>
   appendLlmArchive(stateDir, {
     ...base,
@@ -80,21 +90,61 @@ export const runManager = async (params: {
     ? { modelReasoningEffort: params.modelReasoningEffort }
     : {}
   try {
-    const r = await runManagerApi({ prompt, timeoutMs: params.timeoutMs, ...(model ? { model } : {}), ...effort })
-    await archive(params.stateDir, { ...base, attempt: 'primary' }, prompt, { ...r, ok: true })
-    return { output: r.output, elapsedMs: r.elapsedMs, fallbackUsed: false, ...(r.usage ? { usage: r.usage } : {}) }
+    const r = await runManagerApi({
+      prompt,
+      timeoutMs: params.timeoutMs,
+      ...(model ? { model } : {}),
+      ...effort,
+    })
+    await archive(params.stateDir, { ...base, attempt: 'primary' }, prompt, {
+      ...r,
+      ok: true,
+    })
+    return {
+      output: r.output,
+      elapsedMs: r.elapsedMs,
+      fallbackUsed: false,
+      ...(r.usage ? { usage: r.usage } : {}),
+    }
   } catch (error) {
     const err = toError(error)
-    await archive(params.stateDir, { ...base, attempt: 'primary' }, prompt, { output: '', ok: false, error: err.message, errorName: err.name })
-    const fallbackModel = normalizeOptional(params.fallbackModel ?? DEFAULT_MANAGER_FALLBACK_MODEL)
+    await archive(params.stateDir, { ...base, attempt: 'primary' }, prompt, {
+      output: '',
+      ok: false,
+      error: err.message,
+      errorName: err.name,
+    })
+    const fallbackModel = normalizeOptional(
+      params.fallbackModel ?? DEFAULT_MANAGER_FALLBACK_MODEL,
+    )
     if (!fallbackModel) throw error
     try {
-      const r = await runManagerApi({ prompt, timeoutMs: params.timeoutMs, model: fallbackModel, ...effort })
-      await archive(params.stateDir, { role: 'manager', model: fallbackModel, attempt: 'fallback' }, prompt, { ...r, ok: true })
-      return { output: r.output, elapsedMs: r.elapsedMs, fallbackUsed: true, ...(r.usage ? { usage: r.usage } : {}) }
+      const r = await runManagerApi({
+        prompt,
+        timeoutMs: params.timeoutMs,
+        model: fallbackModel,
+        ...effort,
+      })
+      await archive(
+        params.stateDir,
+        { role: 'manager', model: fallbackModel, attempt: 'fallback' },
+        prompt,
+        { ...r, ok: true },
+      )
+      return {
+        output: r.output,
+        elapsedMs: r.elapsedMs,
+        fallbackUsed: true,
+        ...(r.usage ? { usage: r.usage } : {}),
+      }
     } catch (fbError) {
       const fbErr = toError(fbError)
-      await archive(params.stateDir, { role: 'manager', model: fallbackModel, attempt: 'fallback' }, prompt, { output: '', ok: false, error: fbErr.message, errorName: fbErr.name })
+      await archive(
+        params.stateDir,
+        { role: 'manager', model: fallbackModel, attempt: 'fallback' },
+        prompt,
+        { output: '', ok: false, error: fbErr.message, errorName: fbErr.name },
+      )
       throw fbError
     }
   }
@@ -108,38 +158,46 @@ export const runWorker = async (params: {
   model?: string
   abortSignal?: AbortSignal
 }): Promise<LlmResult> => {
-  const prompt = await buildWorkerPrompt({ workDir: params.workDir, task: params.task })
-  const base = { role: 'worker' as const, taskId: params.task.id, ...(params.model ? { model: params.model } : {}) }
-  try {
-    const r = await runCodexSdk({ role: 'worker', prompt, workDir: params.workDir, timeoutMs: params.timeoutMs, ...(params.abortSignal ? { abortSignal: params.abortSignal } : {}), ...(params.model ? { model: params.model } : {}) })
-    await archive(params.stateDir, { ...base, ...(r.threadId !== undefined ? { threadId: r.threadId } : {}) }, prompt, { ...r, ok: true })
-    return { output: r.output, elapsedMs: r.elapsedMs, ...(r.usage ? { usage: r.usage } : {}) }
-  } catch (error) {
-    const err = toError(error)
-    await archive(params.stateDir, base, prompt, { output: '', ok: false, error: err.message, errorName: err.name })
-    throw error
+  const prompt = await buildWorkerPrompt({
+    workDir: params.workDir,
+    task: params.task,
+  })
+  const base = {
+    role: 'worker' as const,
+    taskId: params.task.id,
+    ...(params.model ? { model: params.model } : {}),
   }
-}
-
-export const runLocal = async (params: {
-  stateDir: string
-  workDir: string
-  input: string
-  history: HistoryMessage[]
-  env?: ManagerEnv
-  timeoutMs: number
-  model: string
-  baseUrl: string
-}): Promise<LlmResult> => {
-  const prompt = await buildLocalPrompt({ workDir: params.workDir, input: params.input, history: params.history, ...(params.env ? { env: params.env } : {}) })
-  const base = { role: 'local' as const, model: params.model }
   try {
-    const r = await runLocalRunner({ prompt, timeoutMs: params.timeoutMs, model: params.model, baseUrl: params.baseUrl })
-    await archive(params.stateDir, base, prompt, { ...r, ok: true })
-    return { output: r.output, elapsedMs: r.elapsedMs, ...(r.usage ? { usage: r.usage } : {}) }
+    const r = await runCodexSdk({
+      role: 'worker',
+      prompt,
+      workDir: params.workDir,
+      timeoutMs: params.timeoutMs,
+      ...(params.abortSignal ? { abortSignal: params.abortSignal } : {}),
+      ...(params.model ? { model: params.model } : {}),
+    })
+    await archive(
+      params.stateDir,
+      {
+        ...base,
+        ...(r.threadId !== undefined ? { threadId: r.threadId } : {}),
+      },
+      prompt,
+      { ...r, ok: true },
+    )
+    return {
+      output: r.output,
+      elapsedMs: r.elapsedMs,
+      ...(r.usage ? { usage: r.usage } : {}),
+    }
   } catch (error) {
     const err = toError(error)
-    await archive(params.stateDir, base, prompt, { output: '', ok: false, error: err.message, errorName: err.name })
+    await archive(params.stateDir, base, prompt, {
+      output: '',
+      ok: false,
+      error: err.message,
+      errorName: err.name,
+    })
     throw error
   }
 }

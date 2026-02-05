@@ -1,11 +1,10 @@
 import { buildPaths, ensureStateDirs } from '../fs/paths.js'
-import { newId, nowIso } from '../shared/utils.js'
 import { appendLog } from '../log/append.js'
 import { safe, setDefaultLogPath } from '../log/safe.js'
+import { newId, nowIso } from '../shared/utils.js'
 import { appendHistory, readHistory } from '../storage/jsonl.js'
 
 import { cancelTask } from './cancel.js'
-import { runLocalQuickReply } from './local-reply.js'
 import { managerLoop } from './manager.js'
 import { buildTaskViews } from './task-view.js'
 import { workerLoop } from './worker.js'
@@ -29,9 +28,6 @@ export class Supervisor {
       tasks: [],
       runningWorkers: new Set(),
       runningControllers: new Map(),
-      localReplies: new Map(),
-      localReplyInFlight: new Set(),
-      localReplyDisabled: new Set(),
     }
   }
 
@@ -60,17 +56,8 @@ export class Supervisor {
   ): Promise<string> {
     const id = newId()
     const createdAt = nowIso()
-    const nowMs = Date.now()
-    const lastInputAt = this.runtime.lastUserInputAtMs
-    const { idleMs } = this.runtime.config.local
-    const shouldRunLocal =
-      this.runtime.config.local.enabled &&
-      (typeof lastInputAt !== 'number' || nowMs - lastInputAt > idleMs)
-    this.runtime.lastUserInputAtMs = nowMs
     this.runtime.pendingInputs.push({ id, text, createdAt })
     if (meta) this.runtime.lastUserMeta = meta
-    this.runtime.localReplies.delete(id)
-    this.runtime.localReplyDisabled.delete(id)
     await appendHistory(this.runtime.paths.history, {
       id,
       role: 'user',
@@ -91,21 +78,13 @@ export class Supervisor {
         : {}),
       ...(meta?.clientNowIso ? { clientNowIso: meta.clientNowIso } : {}),
     })
-    if (shouldRunLocal) {
-      this.runtime.localReplyInFlight.add(id)
-      void runLocalQuickReply(this.runtime, { id, text })
-    }
     return id
   }
 
   async getChatHistory(limit = 50) {
     const history = await readHistory(this.runtime.paths.history)
-    const localReplies = [...this.runtime.localReplies.values()]
-    const merged = [...history, ...localReplies].sort((a, b) =>
-      a.createdAt.localeCompare(b.createdAt),
-    )
     if (limit <= 0) return []
-    return merged.slice(Math.max(0, merged.length - limit))
+    return history.slice(Math.max(0, history.length - limit))
   }
 
   getTasks(limit = 200) {
