@@ -49,8 +49,6 @@ export const createQuoteController = ({
     }
     const preview = formatQuotePreview(activeQuote.text)
     quoteText.textContent = preview
-      ? `${activeQuote.id} | ${preview}`
-      : activeQuote.id
     setVisibility(true)
   }
 

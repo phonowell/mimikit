@@ -3,6 +3,7 @@ import { join, resolve, sep } from "node:path";
 
 import {
   detectConflictState,
+  ensureClean,
   parseWorktrees,
   runGit,
   runGitCapture,
@@ -85,10 +86,16 @@ if (status.length > 0) {
   runGit(["commit", "-m", `auto: ${currentBranch} ${today}`]);
 }
 
-runGitFast({ args: ["fetch", "--prune"], context: "fetch origin", tag: "merge" });
+ensureClean(process.cwd(), currentBranch);
+
+runGitFast({
+  args: ["fetch", "--prune"],
+  context: `fetch origin (${currentBranch})`,
+  tag: "merge",
+});
 runGitFast({
   args: ["rebase", "origin/main"],
-  context: "rebase origin/main",
+  context: `rebase origin/main (${currentBranch})`,
   tag: "merge",
 });
 
