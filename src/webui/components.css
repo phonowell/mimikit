@@ -771,16 +771,17 @@
     height: var(--btn-size);
     font-size: 0;
     line-height: 0;
+    position: relative;
   }
 
   .composer .quote-clear::before {
     content: 'x';
     font-size: var(--btn-icon-size);
+    position: absolute;
+    inset: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 100%;
-    height: 100%;
     line-height: 1;
   }
 
