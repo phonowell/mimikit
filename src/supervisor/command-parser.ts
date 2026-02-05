@@ -7,8 +7,12 @@ export type ParsedCommand = {
 const MIMIKIT_TAG =
   /<MIMIKIT:(\w+)((?:\s+\w+\s*=\s*"[^"]*")*)\s*(?:\/>|>(?:([\s\S]*?)<\/MIMIKIT:\1>)?)/g
 const ATTR_RE = /(\w+)\s*=\s*"([^"]*)"/g
-const COMMANDS_START_MARKER = '[MIMIKIT_COMMANDS]'
-const COMMANDS_END_MARKER = '[/MIMIKIT_COMMANDS]'
+const COMMANDS_TAG = 'MIMIKIT:commands'
+const COMMANDS_BLOCK_RE = new RegExp(
+  `<${COMMANDS_TAG}\\s*>([\\s\\S]*?)<\\/${COMMANDS_TAG}>`,
+  'g',
+)
+const COMMAND_LINE_RE = /^@([a-zA-Z_][\w-]*)(?:\s+(.+))?$/
 
 type Range = {
   start: number
@@ -94,7 +98,9 @@ const parseCommandMatches = (matches: RegExpMatchArray[]): ParsedCommand[] =>
         ...(content ? { content } : {}),
       }
     })
-    .filter((command) => command.action.length > 0)
+    .filter(
+      (command) => command.action.length > 0 && command.action !== 'commands',
+    )
 
 const collectCommandMatches = (text: string): RegExpMatchArray[] => {
   const ranges = findCodeBlockRanges(text)
@@ -104,19 +110,31 @@ const collectCommandMatches = (text: string): RegExpMatchArray[] => {
   })
 }
 
+const findCommandsBlock = (masked: string): CommandZone | undefined => {
+  const matches = [...masked.matchAll(COMMANDS_BLOCK_RE)]
+  if (matches.length === 0) return undefined
+  const match = matches[matches.length - 1]
+  if (!match) return undefined
+  const full = match[0]
+  if (!full) return undefined
+  const start = match.index
+  const openEnd = full.indexOf('>')
+  const closeTag = `</${COMMANDS_TAG}>`
+  const closeStart = full.lastIndexOf(closeTag)
+  if (openEnd < 0 || closeStart < 0) return undefined
+  return {
+    parseStart: start + openEnd + 1,
+    parseEnd: start + closeStart,
+    removeStart: start,
+    removeEnd: start + full.length,
+  }
+}
+
 const findCommandZone = (output: string): CommandZone | undefined => {
   const codeBlocks = findCodeBlockRanges(output)
   const masked = maskRanges(output, codeBlocks, 'x')
-  const markerStart = masked.lastIndexOf(COMMANDS_START_MARKER)
-  if (markerStart !== -1) {
-    const parseStart = markerStart + COMMANDS_START_MARKER.length
-    const markerEnd = masked.indexOf(COMMANDS_END_MARKER, parseStart)
-    const parseEnd = markerEnd === -1 ? output.length : markerEnd
-    const removeStart = markerStart
-    const removeEnd =
-      markerEnd === -1 ? output.length : markerEnd + COMMANDS_END_MARKER.length
-    return { parseStart, parseEnd, removeStart, removeEnd }
-  }
+  const commandsBlock = findCommandsBlock(masked)
+  if (commandsBlock) return commandsBlock
 
   const matches = [...masked.matchAll(createTagRegExp())]
   if (matches.length === 0) return undefined
@@ -139,6 +157,23 @@ const findCommandZone = (output: string): CommandZone | undefined => {
     removeStart: zoneStart,
     removeEnd: output.length,
   }
+}
+
+const parseCommandLines = (text: string): ParsedCommand[] => {
+  const commands: ParsedCommand[] = []
+  if (!text) return commands
+  const lines = text.split('\n')
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed.startsWith('@')) continue
+    const match = trimmed.match(COMMAND_LINE_RE)
+    if (!match) continue
+    const action = match[1] ?? ''
+    if (!action) continue
+    const attrs = parseAttrs(match[2] ?? '')
+    commands.push({ action, attrs })
+  }
+  return commands
 }
 
 const removeTagsOutsideCodeBlocks = (text: string): string => {
@@ -179,6 +214,8 @@ export const parseCommands = (
 } => {
   const { commandText, text } = extractCommandsAndText(output)
   if (!commandText) return { commands: [], text }
+  const lineCommands = parseCommandLines(commandText)
+  if (lineCommands.length > 0) return { commands: lineCommands, text }
   const commands = parseCommandMatches(collectCommandMatches(commandText))
   return { commands, text }
 }

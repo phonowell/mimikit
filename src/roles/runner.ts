@@ -75,6 +75,7 @@ export const runManager = async (params: {
   usage?: TokenUsage
 }> => {
   const prompt = await buildManagerPrompt({
+    stateDir: params.stateDir,
     workDir: params.workDir,
     inputs: params.inputs,
     results: params.results,

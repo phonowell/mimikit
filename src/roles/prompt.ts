@@ -2,18 +2,18 @@ import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
 import { logSafeError } from '../log/safe.js'
+import { readTaskResultsForTasks } from '../storage/task-results.js'
 
 import {
   buildCdataBlock,
-  buildRawBlock,
-  formatCapabilities,
   formatEnvironment,
   formatHistory,
   formatInputs,
-  formatQueueStatus,
-  formatTaskResults,
+  formatResultsYaml,
+  formatTasksYaml,
   joinPromptSections,
   renderPromptTemplate,
+  selectTasksForPrompt,
 } from './prompt-format.js'
 
 import type {
@@ -34,6 +34,47 @@ export type ManagerEnv = {
     clientOffsetMinutes?: number
     clientNowIso?: string
   }
+}
+
+const mergeTaskResults = (
+  primary: TaskResult[],
+  secondary: TaskResult[],
+): TaskResult[] => {
+  const merged = new Map<string, TaskResult>()
+  for (const result of secondary) merged.set(result.taskId, result)
+  for (const result of primary) merged.set(result.taskId, result)
+  const values = Array.from(merged.values())
+  values.sort((a, b) => Date.parse(b.completedAt) - Date.parse(a.completedAt))
+  return values
+}
+
+const dedupeInputs = (
+  inputs: UserInput[],
+  history: HistoryMessage[],
+): UserInput[] => {
+  const historyIds = new Set(history.map((item) => item.id))
+  const unique = new Map<string, UserInput>()
+  for (const input of inputs) {
+    if (historyIds.has(input.id)) continue
+    unique.set(input.id, input)
+  }
+  return Array.from(unique.values())
+}
+
+const dedupeResults = (results: TaskResult[]): TaskResult[] => {
+  const unique = new Map<string, TaskResult>()
+  for (const result of results) {
+    const existing = unique.get(result.taskId)
+    if (!existing) {
+      unique.set(result.taskId, result)
+      continue
+    }
+    const existingTs = Date.parse(existing.completedAt)
+    const nextTs = Date.parse(result.completedAt)
+    if (Number.isFinite(nextTs) && nextTs >= existingTs)
+      unique.set(result.taskId, result)
+  }
+  return Array.from(unique.values())
 }
 
 const loadPromptFile = async (
@@ -62,6 +103,7 @@ const loadInjectionPrompt = (workDir: string, role: string): Promise<string> =>
   loadPromptFile(workDir, role, 'injection')
 
 export const buildManagerPrompt = async (params: {
+  stateDir: string
   workDir: string
   inputs: UserInput[]
   results: TaskResult[]
@@ -69,62 +111,60 @@ export const buildManagerPrompt = async (params: {
   history: HistoryMessage[]
   env?: ManagerEnv
 }): Promise<string> => {
+  const pendingResults = dedupeResults(params.results)
+  const pendingResultIds = new Set(
+    pendingResults.map((result) => result.taskId),
+  )
+  const tasksForPrompt = params.tasks
+  const promptTasks = selectTasksForPrompt(tasksForPrompt, 50)
+  const resultTaskIds = promptTasks
+    .filter((task) => task.status !== 'pending' && task.status !== 'running')
+    .map((task) => task.id)
+  const dateHints = Object.fromEntries(
+    promptTasks
+      .filter(
+        (task): task is Task & { completedAt: string } =>
+          typeof task.completedAt === 'string' && task.completedAt.length > 0,
+      )
+      .map((task) => [task.id, task.completedAt.slice(0, 10)]),
+  )
+  const archivedResults =
+    resultTaskIds.length > 0
+      ? await readTaskResultsForTasks(params.stateDir, resultTaskIds, {
+          dateHints,
+        })
+      : []
+  const mergedResults = mergeTaskResults(pendingResults, archivedResults)
+  const resultsForTasks = mergedResults.filter(
+    (result) => !pendingResultIds.has(result.taskId),
+  )
+  const inputs = dedupeInputs(params.inputs, params.history)
   const system = await loadSystemPrompt(params.workDir, 'manager')
   const injectionTemplate = await loadInjectionPrompt(params.workDir, 'manager')
-  const workerCapabilitiesPrompt = await loadPromptFile(
-    params.workDir,
-    'worker',
-    'capabilities',
-  )
   const injectionValues = Object.fromEntries<string>([
     [
-      'environment_context',
+      'environment',
       buildCdataBlock(
-        '背景信息（仅供参考，不要主动提及）：',
-        'environment_context',
+        'environment',
         formatEnvironment(params.workDir, params.env),
       ),
     ],
+    ['inputs', buildCdataBlock('inputs', formatInputs(inputs))],
     [
-      'worker_capabilities',
+      'results',
       buildCdataBlock(
-        'Worker 能力清单（内部参考）：',
-        'worker_capabilities',
-        formatCapabilities(workerCapabilitiesPrompt),
+        'results',
+        formatResultsYaml(params.tasks, pendingResults),
       ),
     ],
     [
-      'conversation_history',
-      buildRawBlock(
-        '之前的对话：',
-        'conversation_history',
-        formatHistory(params.history),
-      ),
-    ],
-    [
-      'user_input',
+      'tasks',
       buildCdataBlock(
-        '用户刚刚说：',
-        'user_input',
-        formatInputs(params.inputs),
+        'tasks',
+        formatTasksYaml(tasksForPrompt, resultsForTasks),
       ),
     ],
-    [
-      'task_results',
-      buildCdataBlock(
-        '已处理的结果（可视情况告知用户）：',
-        'task_results',
-        formatTaskResults(params.results),
-      ),
-    ],
-    [
-      'pending_tasks',
-      buildCdataBlock(
-        '待处理事项（内部参考，不要主动汇报）：',
-        'pending_tasks',
-        formatQueueStatus(params.tasks),
-      ),
-    ],
+    ['history', buildCdataBlock('history', formatHistory(params.history))],
   ])
   const injection = renderPromptTemplate(injectionTemplate, injectionValues)
   return joinPromptSections([system, injection])

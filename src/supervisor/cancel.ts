@@ -113,7 +113,17 @@ export const cancelTask = async (
     return { ok: true, status: 'canceled', taskId: task.id }
   }
 
-  markTaskCanceled(runtime.tasks, task.id)
+  const canceledAt = nowIso()
+  const canceledAtMs = Date.parse(canceledAt)
+  const startedAtMs = task.startedAt ? Date.parse(task.startedAt) : NaN
+  const durationMs =
+    Number.isFinite(startedAtMs) && Number.isFinite(canceledAtMs)
+      ? Math.max(0, canceledAtMs - startedAtMs)
+      : undefined
+  markTaskCanceled(runtime.tasks, task.id, {
+    completedAt: canceledAt,
+    ...(durationMs !== undefined ? { durationMs } : {}),
+  })
   const controller = runtime.runningControllers.get(task.id)
   if (controller && !controller.signal.aborted) controller.abort()
   await safe(

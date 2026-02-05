@@ -7,19 +7,18 @@
 - 由 Manager 解析并执行。
 
 ## 格式
-- 自闭合标签：`<MIMIKIT:command attr="value" />`
-- 带内容标签：`<MIMIKIT:command>内容</MIMIKIT:command>`
-- 属性仅支持双引号；属性名为字母/数字/下划线。
+- 命令块：`<MIMIKIT:commands> ... </MIMIKIT:commands>`
+- 行内命令：`@add_task prompt="..." title="..."`
+- 每行一个命令，行首 `@` + 命令名；属性仅支持双引号；属性名为字母/数字/下划线。
 
 ## 命令列表
-- `dispatch_worker`：派发任务到内存队列。
+- `add_task`：派发任务到内存队列。
   - attrs：`prompt`(必填)，`title`(可选，任务短标题)
-  - 示例：`<MIMIKIT:dispatch_worker prompt="整理接口文档" title="整理文档" />`
-  - 也可使用内容体：`<MIMIKIT:dispatch_worker>整理接口文档</MIMIKIT:dispatch_worker>`
+  - 示例：`@add_task prompt="整理接口文档" title="整理文档"`（放在 `<MIMIKIT:commands>` 块内）
 - `cancel_task`：取消任务。
   - attrs：`id`(必填)
-  - 示例：`<MIMIKIT:cancel_task id="task_123" />`
+  - 示例：`@cancel_task id="task_123"`（放在 `<MIMIKIT:commands>` 块内）
 
 ## 解析与执行
-- 解析器：内联于 `src/supervisor/manager.ts`
+- 解析器：`src/supervisor/command-parser.ts`
 - 命令会从输出中剥离，剩余文本作为自然回复。

@@ -95,7 +95,14 @@ export const markTaskCanceled = (
   tasks: Task[],
   taskId: string,
   patch?: Partial<Task>,
-): Task | null => updateTaskStatus(tasks, taskId, 'canceled', patch)
+): Task | null => {
+  const task = tasks.find((item) => item.id === taskId)
+  if (!task) return null
+  const nextPatch: Partial<Task> = { ...patch }
+  if (task.completedAt) nextPatch.completedAt = task.completedAt
+  if (task.durationMs !== undefined) nextPatch.durationMs = task.durationMs
+  return updateTaskStatus(tasks, taskId, 'canceled', nextPatch)
+}
 
 export const pickNextPendingTask = (
   tasks: Task[],

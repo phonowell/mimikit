@@ -164,7 +164,7 @@ export const createHttpServer = (
   })
 
   void app
-    .listen({ port })
+    .listen({ port, host: '0.0.0.0' })
     .then((address) => {
       console.log(`[http] listening on ${address}`)
     })

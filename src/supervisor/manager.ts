@@ -92,7 +92,7 @@ const runManagerBuffer = async (
     const parsed = parseCommands(result.output)
     const seenDispatches = new Set<string>()
     for (const command of parsed.commands) {
-      if (command.action === 'dispatch_worker') {
+      if (command.action === 'add_task') {
         const content = command.content?.trim()
         const prompt =
           content && content.length > 0
