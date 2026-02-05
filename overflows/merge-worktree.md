@@ -28,3 +28,17 @@
 ## 快速路径与 LLM
 - 快速路径：全部 git 操作可自动完成
 - 失败处理：仅在冲突阻塞时提示使用 LLM 介入
+
+## 当前工作状态
+- worktree-1/2/3 为本地开发槽位，不推送远端
+- 开发完成后运行 `pnpm run merge:worktree` 合并到 main
+- 脚本会自动将当前槽位 rebase 到 `origin/main`
+- 如需与最新远端对齐，先 `git push origin main`
+
+## 禁推送（worktree 槽位）
+- 初始化：`git -C <repo-root> config extensions.worktreeConfig true`
+- 槽位配置：`git -C <worktree-path> config --worktree remote.origin.pushurl "disabled://no-push"`
+- 解除禁推送：`git -C <worktree-path> config --worktree --unset remote.origin.pushurl`
+
+## 禁 publish（可选）
+- `package.json` 加 `prepublishOnly`，仅允许在 `main` 执行发布
