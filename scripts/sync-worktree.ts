@@ -37,19 +37,21 @@ const worktreeMap = new Map<string, string>();
 for (const wt of worktrees) {
   if (!wt.branch) continue;
   const match = wt.branch.match(/^refs\/heads\/(.+)$/);
-  if (match) worktreeMap.set(match[1], wt.path);
+  const name = match?.[1];
+  if (name) worktreeMap.set(name, wt.path);
 }
 
-for (const branch of TARGET_BRANCHES) {
-  const path = worktreeMap.get(branch);
-  if (!path) exitWith(`worktree not found for ${branch}`);
+const resolved = TARGET_BRANCHES.map((branch) => ({
+  branch,
+  path: worktreeMap.get(branch) ?? exitWith(`worktree not found for ${branch}`),
+}));
+
+for (const { branch, path } of resolved) {
   ensureNoInProgressState(path);
   ensureClean(path, branch);
 }
 
-for (const branch of TARGET_BRANCHES) {
-  const path = worktreeMap.get(branch);
-  if (!path) continue;
+for (const { branch, path } of resolved) {
   runGitFast({
     args: ["fetch", "--prune"],
     cwd: path,

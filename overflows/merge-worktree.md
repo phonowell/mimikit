@@ -9,8 +9,8 @@
 - 限制：只能在 `worktree-1/2/3` 执行，禁止在 `main`
 
 ## 同步 main → worktree-1/2/3
-- 路径：`./scripts/sync-worktrees.ts`
-- 运行：`pnpm run sync:worktrees`
+- 路径：`./scripts/sync-worktree.ts`
+- 运行：`pnpm run sync:worktree`
 - 限制：只能在 `worktree-1/2/3` 执行，禁止在 `main`
 
 ## 步骤
