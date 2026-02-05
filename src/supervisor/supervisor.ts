@@ -28,9 +28,6 @@ export class Supervisor {
       tasks: [],
       runningWorkers: new Set(),
       runningControllers: new Map(),
-      beads: {
-        lastResults: [],
-      },
     }
   }
 

@@ -1,7 +1,6 @@
 import { hostname, release as osRelease, type as osType } from 'node:os'
 
 import type { ManagerEnv } from './prompt.js'
-import type { BeadsContext } from '../integrations/beads/types.js'
 import type { HistoryMessage, Task, TaskResult } from '../types/index.js'
 
 type PromptTemplateValues = Record<string, string>
@@ -127,11 +126,6 @@ export const formatQueueStatus = (tasks: Task[]): string => {
     .map((task) => `- [${task.id}] ${task.status} ${task.title}`)
     .join('\n')
   return escapeCdata(text)
-}
-
-export const formatBeadsContext = (context?: BeadsContext): string => {
-  if (!context) return ''
-  return escapeCdata(JSON.stringify(context, null, 2))
 }
 
 export const buildCdataBlock = (

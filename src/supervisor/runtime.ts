@@ -1,6 +1,5 @@
 import type { SupervisorConfig } from '../config.js'
 import type { StatePaths } from '../fs/paths.js'
-import type { BeadsCommandResult } from '../integrations/beads/types.js'
 import type { Task, TaskResult } from '../types/index.js'
 
 export type PendingUserInput = {
@@ -19,9 +18,6 @@ export type RuntimeState = {
   tasks: Task[]
   runningWorkers: Set<string>
   runningControllers: Map<string, AbortController>
-  beads: {
-    lastResults: BeadsCommandResult[]
-  }
   lastUserMeta?: {
     source?: string
     remote?: string

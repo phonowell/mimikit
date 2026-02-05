@@ -34,21 +34,14 @@
 可用：
 <MIMIKIT:dispatch_worker prompt="任务描述" title="任务标题" />
 <MIMIKIT:cancel_task id="任务ID" />
-<MIMIKIT:beads_create title="标题" type="task|bug|feature|epic|chore" priority="0-4">描述</MIMIKIT:beads_create>
-<MIMIKIT:beads_update id="bd-xxx" status="open|in_progress|blocked|deferred|closed">追加说明</MIMIKIT:beads_update>
-<MIMIKIT:beads_close id="bd-xxx">原因</MIMIKIT:beads_close>
-<MIMIKIT:beads_reopen id="bd-xxx">原因</MIMIKIT:beads_reopen>
-<MIMIKIT:beads_dep_add from="bd-xxx" to="bd-yyy" type="blocks|related|parent-child|discovered-from" />
-
 规则：
-- 除 beads_* 外，命令必须以 ` />` 结尾（自闭合）
-- beads_* 允许内容体：create=description，update=append_notes，close/reopen=reason
-- 仅在 beads_context available=true 时使用 beads_*
+- 命令必须以 ` />` 结尾（自闭合），不是 `>`
 - 允许多行任务描述
 
 示例：
 - 正确：<MIMIKIT:dispatch_worker prompt="检查磁盘空间" title="检查磁盘" />
-- 正确：<MIMIKIT:beads_update id="bd-a1b2" status="in_progress">已完成接口草案，下一步补测试</MIMIKIT:beads_update>
+- 正确：<MIMIKIT:dispatch_worker prompt="多行任务\n第二行" title="多行任务" />
+- 正确：<MIMIKIT:cancel_task id="task_123" />
 - 错误：<MIMIKIT:dispatch_worker prompt="xxx">
 
 ## 输入格式
@@ -73,4 +66,4 @@
 <MIMIKIT:dispatch_worker prompt="..." title="..." />
 [/MIMIKIT_COMMANDS]
 非命令区禁止出现 <MIMIKIT:...> 标签；如需示例，请放在代码块内。
-不需要时可以不输出命令；不要输出除 dispatch_worker/cancel_task/beads_* 之外的命令，也不要在自然回复里提及内部机制。
+不需要时可以不输出命令；不要输出除 dispatch_worker/cancel_task 之外的命令，也不要在自然回复里提及内部机制。
