@@ -61,7 +61,7 @@ const renderMessage = (params, msg) => {
     quoteBtn = document.createElement('button')
     quoteBtn.type = 'button'
     quoteBtn.className = 'btn btn--icon btn--icon-sm message-quote-btn'
-    quoteBtn.textContent = '>'
+    quoteBtn.textContent = msg.role === 'user' ? '↪' : '↩'
     quoteBtn.title = 'Quote'
     quoteBtn.setAttribute('aria-label', 'Quote')
     quoteBtn.addEventListener('click', () => onQuote(msg))
