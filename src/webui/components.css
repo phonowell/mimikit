@@ -181,6 +181,27 @@
   display: flex;
 }
 
+@keyframes message-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.message.message--enter article {
+  animation: message-enter 220ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .message.message--enter article {
+    animation: none;
+  }
+}
+
 .message article {
   max-width: 76%;
   display: flex;

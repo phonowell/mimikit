@@ -15,11 +15,13 @@ const renderMessage = (params, msg) => {
     formatTime,
     formatUsage,
     formatElapsedLabel,
+    enterMessageIds,
   } = params
   if (!messagesEl) return
   const item = document.createElement('li')
   const roleClass = msg.role === 'manager' ? 'agent' : msg.role
-  item.className = `message ${roleClass}`
+  const isEntering = enterMessageIds?.has(msg?.id)
+  item.className = `message ${roleClass}${isEntering ? ' message--enter' : ''}`
 
   const article = document.createElement('article')
 

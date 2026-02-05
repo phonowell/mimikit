@@ -17,6 +17,7 @@ export function createMessagesController({
   let lastStatus = null
   let lastAgentMessageId = null
   let awaitingReply = false
+  let lastMessageIds = new Set()
 
   const removeEmpty = () => {
     if (emptyRemoved) return
@@ -38,6 +39,24 @@ export function createMessagesController({
     else if (loading.isLoading()) loading.setLoading(false)
   }
 
+  const collectMessageIds = (messages) => {
+    const ids = new Set()
+    for (const msg of messages) {
+      if (msg?.id != null) ids.add(msg.id)
+    }
+    return ids
+  }
+
+  const collectNewMessageIds = (messages) => {
+    if (lastMessageIds.size === 0) return new Set()
+    const ids = new Set()
+    for (const msg of messages) {
+      const id = msg?.id
+      if (id != null && !lastMessageIds.has(id)) ids.add(id)
+    }
+    return ids
+  }
+
   const applyRenderedState = (rendered) => {
     if (rendered?.latestAgentId && rendered.latestAgentId !== lastAgentMessageId) {
       lastAgentMessageId = rendered.latestAgentId
@@ -49,12 +68,13 @@ export function createMessagesController({
     syncLoadingState()
   }
 
-  const doRender = (messages) => {
+  const doRender = (messages, enterMessageIds) => {
     if (!messages?.length) return null
     return renderMessages({
       messages, messagesEl, removeEmpty, renderMarkdown, formatTime,
       formatUsage, formatElapsedLabel, isNearBottom: scroll.isNearBottom,
       scrollToBottom: scroll.scrollToBottom, updateScrollButton: scroll.updateScrollButton, loading,
+      enterMessageIds,
     })
   }
 
@@ -65,8 +85,10 @@ export function createMessagesController({
     const newestId = messages.length > 0 ? messages[messages.length - 1].id : null
     const changed = messages.length !== lastMessageCount || newestId !== lastMessageId
     if (changed) {
-      const rendered = doRender(messages)
+      const enterMessageIds = collectNewMessageIds(messages)
+      const rendered = doRender(messages, enterMessageIds)
       if (rendered) applyRenderedState(rendered)
+      lastMessageIds = collectMessageIds(messages)
     }
     lastMessageCount = messages.length
     lastMessageId = newestId
@@ -87,6 +109,7 @@ export function createMessagesController({
     if (statusDot) statusDot.dataset.state = ''
     lastStatus = null
     lastMessageRole = null
+    lastMessageIds = new Set()
     awaitingReply = false
     loading.setLoading(false)
   }
@@ -100,10 +123,12 @@ export function createMessagesController({
       const messages = msgData.messages || []
       const newestId = messages.length > 0 ? messages[messages.length - 1].id : null
       if (messages.length !== lastMessageCount || newestId !== lastMessageId) {
-        const rendered = doRender(messages)
+        const enterMessageIds = collectNewMessageIds(messages)
+        const rendered = doRender(messages, enterMessageIds)
         if (rendered) applyRenderedState(rendered)
         lastMessageCount = messages.length
         lastMessageId = newestId
+        lastMessageIds = collectMessageIds(messages)
       } else { syncLoadingState() }
     } catch (error) {
       console.warn('[webui] poll failed', error)
