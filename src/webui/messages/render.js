@@ -30,6 +30,9 @@ const renderMessage = (params, msg) => {
   }
 
   const article = document.createElement('article')
+  if (canQuote) {
+    article.addEventListener('dblclick', () => onQuote(msg))
+  }
 
   const content = document.createElement('div')
   content.className = 'content'
