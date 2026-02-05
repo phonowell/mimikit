@@ -11,6 +11,8 @@ import {
   pickNextPendingTask,
 } from '../tasks/queue.js'
 
+import { appendTaskSystemMessage } from './task-history.js'
+
 import type { RuntimeState } from './runtime.js'
 import type { Task, TaskResult, TokenUsage } from '../types/index.js'
 
@@ -66,6 +68,12 @@ const finalizeResult = async (
     durationMs: result.durationMs,
     ...(result.usage ? { usage: result.usage } : {}),
   })
+  if (result.status !== 'canceled') {
+    await appendTaskSystemMessage(runtime.paths.history, 'completed', task, {
+      status: result.status,
+      createdAt: result.completedAt,
+    })
+  }
   runtime.pendingResults.push(result)
   await safe(
     'appendLog: worker_end',

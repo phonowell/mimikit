@@ -4,6 +4,8 @@ import { nowIso } from '../shared/utils.js'
 import { appendTaskResultArchive } from '../storage/task-results.js'
 import { markTaskCanceled } from '../tasks/queue.js'
 
+import { appendTaskSystemMessage } from './task-history.js'
+
 import type { RuntimeState } from './runtime.js'
 import type { Task, TaskResult } from '../types/index.js'
 
@@ -105,6 +107,9 @@ export const cancelTask = async (
       durationMs: result.durationMs,
     })
     await pushCanceledResult(runtime, task, result)
+    await appendTaskSystemMessage(runtime.paths.history, 'canceled', task, {
+      createdAt: result.completedAt,
+    })
     return { ok: true, status: 'canceled', taskId: task.id }
   }
 
@@ -122,5 +127,6 @@ export const cancelTask = async (
       }),
     { fallback: undefined },
   )
+  await appendTaskSystemMessage(runtime.paths.history, 'canceled', task)
   return { ok: true, status: 'canceled', taskId: task.id }
 }

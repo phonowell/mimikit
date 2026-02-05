@@ -12,6 +12,7 @@ import { enqueueTask } from '../tasks/queue.js'
 import { cancelTask } from './cancel.js'
 import { parseCommands } from './command-parser.js'
 import { selectRecentHistory } from './history-select.js'
+import { appendTaskSystemMessage } from './task-history.js'
 
 import type { RuntimeState } from './runtime.js'
 import type { BeadsCommandResult } from '../integrations/beads/types.js'
@@ -114,7 +115,10 @@ const runManagerBuffer = async (
         const dedupeKey = `${prompt}\n${rawTitle ?? ''}`
         if (seenDispatches.has(dedupeKey)) continue
         seenDispatches.add(dedupeKey)
-        enqueueTask(runtime.tasks, prompt, rawTitle)
+        const task = enqueueTask(runtime.tasks, prompt, rawTitle)
+        await appendTaskSystemMessage(runtime.paths.history, 'created', task, {
+          createdAt: task.createdAt,
+        })
         continue
       }
       if (command.action === 'cancel_task') {
@@ -176,13 +180,11 @@ export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
       buffer.inputs.push(...drained)
       buffer.lastInputAt = now
     }
-
     if (runtime.pendingResults.length > 0) {
       const drained = runtime.pendingResults.splice(0)
       buffer.results.push(...drained)
       if (buffer.firstResultAt === 0) buffer.firstResultAt = now
     }
-
     const hasInputs = buffer.inputs.length > 0
     const hasResults = buffer.results.length > 0
     const debounceReady =
@@ -191,10 +193,8 @@ export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
       hasResults &&
       !hasInputs &&
       now - buffer.firstResultAt >= runtime.config.manager.maxResultWaitMs
-
     if ((debounceReady || resultsReady) && (hasInputs || hasResults))
       await runManagerBuffer(runtime, buffer)
-
     await sleep(runtime.config.manager.pollMs)
   }
 }
