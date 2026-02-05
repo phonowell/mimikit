@@ -2,8 +2,8 @@ import { basename, dirname } from 'node:path'
 
 import { createStream, type RotatingFileStream } from 'rotating-file-stream'
 
-import { ensureDir } from '../fs/ensure.js'
-import { nowIso } from '../time.js'
+import { ensureDir } from '../fs/paths.js'
+import { nowIso } from '../shared/utils.js'
 
 const MAX_BYTES = 10 * 1024 * 1024
 const MAX_TOTAL_BYTES = 500 * 1024 * 1024

@@ -1,10 +1,23 @@
 import { access, writeFile } from 'node:fs/promises'
 import { extname, join } from 'node:path'
 
-import { ensureDir } from '../fs/ensure.js'
+import { ensureDir } from '../fs/paths.js'
 
-import type { TokenUsage } from '../types/common.js'
-import type { TaskResultStatus } from '../types/tasks.js'
+import type { TokenUsage, TaskResultStatus } from '../types/index.js'
+
+export const dateStamp = (iso: string): string => iso.slice(0, 10)
+
+export const pushLine = (
+  lines: string[],
+  label: string,
+  value?: string | number,
+): void => {
+  if (value === undefined || value === '') return
+  lines.push(`${label}: ${value}`)
+}
+
+export const formatSection = (title: string, content: string): string =>
+  `${title}\n${content}`
 
 export type TaskArchiveEntry = {
   taskId?: string
@@ -17,8 +30,6 @@ export type TaskArchiveEntry = {
   durationMs: number
   usage?: TokenUsage
 }
-
-const dateStamp = (iso: string): string => iso.slice(0, 10)
 
 const compactTimestamp = (iso: string): string => {
   const date = iso.slice(0, 10).replace(/-/g, '')
@@ -71,14 +82,6 @@ const ensureUniquePath = async (basePath: string): Promise<string> => {
   }
   return `${head}_${Date.now()}${ext}`
 }
-
-const pushLine = (lines: string[], label: string, value?: string | number) => {
-  if (value === undefined || value === '') return
-  lines.push(`${label}: ${value}`)
-}
-
-const formatSection = (title: string, content: string): string =>
-  `${title}\n${content}`
 
 const buildArchiveContent = (entry: TaskArchiveEntry): string => {
   const lines: string[] = []

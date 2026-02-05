@@ -1,11 +1,12 @@
 import { writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
-import { ensureDir } from '../fs/ensure.js'
-import { shortId } from '../ids.js'
-import { nowIso } from '../time.js'
+import { ensureDir } from '../fs/paths.js'
+import { nowIso, shortId } from '../shared/utils.js'
 
-import type { TokenUsage } from '../types/common.js'
+import { dateStamp, formatSection, pushLine } from './task-results.js'
+
+import type { TokenUsage } from '../types/index.js'
 
 export type LlmArchiveEntry = {
   role: 'manager' | 'worker' | 'local'
@@ -21,8 +22,6 @@ export type LlmArchiveEntry = {
   taskId?: string
   threadId?: string | null
 }
-
-const dateStamp = (iso: string): string => iso.slice(0, 10)
 
 const timeStamp = (iso: string): string =>
   iso.slice(11, 23).replace(/:/g, '').replace('.', '-')
@@ -40,14 +39,6 @@ const buildArchivePath = (
   const filename = `${parts.join('-')}.txt`
   return join(stateDir, 'llm', dateDir, filename)
 }
-
-const pushLine = (lines: string[], label: string, value?: string | number) => {
-  if (value === undefined || value === '') return
-  lines.push(`${label}: ${value}`)
-}
-
-const formatSection = (title: string, content: string): string =>
-  `${title}\n${content}`
 
 const buildArchiveContent = (
   timestamp: string,

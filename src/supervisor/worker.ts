@@ -1,7 +1,7 @@
 import { appendLog } from '../log/append.js'
 import { safe } from '../log/safe.js'
 import { runWorker } from '../roles/runner.js'
-import { sleep } from '../shared/utils.js'
+import { nowIso, sleep } from '../shared/utils.js'
 import { appendTaskResultArchive } from '../storage/task-results.js'
 import {
   markTaskCanceled,
@@ -10,10 +10,78 @@ import {
   markTaskSucceeded,
   pickNextPendingTask,
 } from '../tasks/queue.js'
-import { nowIso } from '../time.js'
 
 import type { RuntimeState } from './runtime.js'
-import type { Task, TaskResult } from '../types/tasks.js'
+import type { Task, TaskResult, TokenUsage } from '../types/index.js'
+
+const buildResult = (
+  task: Task,
+  status: TaskResult['status'],
+  output: string,
+  durationMs: number,
+  usage?: TokenUsage,
+): TaskResult => ({
+  taskId: task.id,
+  status,
+  ok: status === 'succeeded',
+  output,
+  durationMs,
+  completedAt: nowIso(),
+  ...(usage ? { usage } : {}),
+  ...(task.title ? { title: task.title } : {}),
+})
+
+const archiveResult = (
+  runtime: RuntimeState,
+  task: Task,
+  result: TaskResult,
+): Promise<string | undefined> =>
+  safe(
+    'appendTaskResultArchive: worker',
+    () =>
+      appendTaskResultArchive(runtime.config.stateDir, {
+        taskId: task.id,
+        title: task.title,
+        status: result.status,
+        prompt: task.prompt,
+        output: result.output,
+        createdAt: task.createdAt,
+        completedAt: result.completedAt,
+        durationMs: result.durationMs,
+        ...(result.usage ? { usage: result.usage } : {}),
+      }),
+    { fallback: undefined },
+  )
+
+const finalizeResult = async (
+  runtime: RuntimeState,
+  task: Task,
+  result: TaskResult,
+  markFn: (tasks: Task[], taskId: string, patch?: Partial<Task>) => void,
+) => {
+  const archivePath = await archiveResult(runtime, task, result)
+  if (archivePath) result.archivePath = archivePath
+  markFn(runtime.tasks, task.id, {
+    completedAt: result.completedAt,
+    durationMs: result.durationMs,
+    ...(result.usage ? { usage: result.usage } : {}),
+  })
+  runtime.pendingResults.push(result)
+  await safe(
+    'appendLog: worker_end',
+    () =>
+      appendLog(runtime.paths.log, {
+        event: 'worker_end',
+        taskId: task.id,
+        status: result.status,
+        durationMs: result.durationMs,
+        elapsedMs: result.durationMs,
+        ...(result.usage ? { usage: result.usage } : {}),
+        ...(archivePath ? { archivePath } : {}),
+      }),
+    { fallback: undefined },
+  )
+}
 
 const runTask = async (
   runtime: RuntimeState,
@@ -21,6 +89,7 @@ const runTask = async (
   controller: AbortController,
 ): Promise<void> => {
   const startedAt = Date.now()
+  const elapsed = () => Math.max(0, Date.now() - startedAt)
   try {
     await appendLog(runtime.paths.log, {
       event: 'worker_start',
@@ -35,197 +104,27 @@ const runTask = async (
       abortSignal: controller.signal,
     })
     if (task.status === 'canceled') {
-      const completedAt = nowIso()
-      const result: TaskResult = {
-        taskId: task.id,
-        status: 'canceled',
-        ok: false,
-        output: 'Task canceled',
-        durationMs: Math.max(0, Date.now() - startedAt),
-        completedAt,
-        ...(task.title ? { title: task.title } : {}),
-        ...(llmResult.usage ? { usage: llmResult.usage } : {}),
-      }
-      const archivePath = await safe(
-        'appendTaskResultArchive: worker',
-        () =>
-          appendTaskResultArchive(runtime.config.stateDir, {
-            taskId: task.id,
-            title: task.title,
-            status: result.status,
-            prompt: task.prompt,
-            output: result.output,
-            createdAt: task.createdAt,
-            completedAt,
-            durationMs: result.durationMs,
-            ...(result.usage ? { usage: result.usage } : {}),
-          }),
-        { fallback: undefined },
+      const result = buildResult(
+        task, 'canceled', 'Task canceled', elapsed(), llmResult.usage,
       )
-      if (archivePath) result.archivePath = archivePath
-      const cancelPatch = {
-        completedAt,
-        durationMs: result.durationMs,
-        ...(result.usage ? { usage: result.usage } : {}),
-      }
-      markTaskCanceled(runtime.tasks, task.id, cancelPatch)
-      runtime.pendingResults.push(result)
-      await appendLog(runtime.paths.log, {
-        event: 'worker_end',
-        taskId: task.id,
-        status: result.status,
-        durationMs: result.durationMs,
-        elapsedMs: result.durationMs,
-        ...(llmResult.usage ? { usage: llmResult.usage } : {}),
-        ...(archivePath ? { archivePath } : {}),
-      })
+      await finalizeResult(runtime, task, result, markTaskCanceled)
       return
     }
-    const completedAt = nowIso()
-    const result: TaskResult = {
-      taskId: task.id,
-      status: 'succeeded',
-      ok: true,
-      output: llmResult.output,
-      durationMs: Math.max(0, Date.now() - startedAt),
-      completedAt,
-      ...(llmResult.usage ? { usage: llmResult.usage } : {}),
-      ...(task.title ? { title: task.title } : {}),
-    }
-    const archivePath = await safe(
-      'appendTaskResultArchive: worker',
-      () =>
-        appendTaskResultArchive(runtime.config.stateDir, {
-          taskId: task.id,
-          title: task.title,
-          status: result.status,
-          prompt: task.prompt,
-          output: result.output,
-          createdAt: task.createdAt,
-          completedAt,
-          durationMs: result.durationMs,
-          ...(result.usage ? { usage: result.usage } : {}),
-        }),
-      { fallback: undefined },
+    const result = buildResult(
+      task, 'succeeded', llmResult.output, elapsed(), llmResult.usage,
     )
-    if (archivePath) result.archivePath = archivePath
-    const successPatch = {
-      completedAt,
-      durationMs: result.durationMs,
-      ...(result.usage ? { usage: result.usage } : {}),
-    }
-    markTaskSucceeded(runtime.tasks, task.id, successPatch)
-    runtime.pendingResults.push(result)
-    await appendLog(runtime.paths.log, {
-      event: 'worker_end',
-      taskId: task.id,
-      status: result.status,
-      durationMs: result.durationMs,
-      elapsedMs: result.durationMs,
-      ...(llmResult.usage ? { usage: llmResult.usage } : {}),
-      ...(archivePath ? { archivePath } : {}),
-    })
+    await finalizeResult(runtime, task, result, markTaskSucceeded)
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error))
-    const isCanceled = task.status === 'canceled'
-    if (isCanceled) {
-      const completedAt = nowIso()
-      const result: TaskResult = {
-        taskId: task.id,
-        status: 'canceled',
-        ok: false,
-        output: err.message || 'Task canceled',
-        durationMs: Math.max(0, Date.now() - startedAt),
-        completedAt,
-        ...(task.title ? { title: task.title } : {}),
-      }
-      const archivePath = await safe(
-        'appendTaskResultArchive: worker',
-        () =>
-          appendTaskResultArchive(runtime.config.stateDir, {
-            taskId: task.id,
-            title: task.title,
-            status: result.status,
-            prompt: task.prompt,
-            output: result.output,
-            createdAt: task.createdAt,
-            completedAt,
-            durationMs: result.durationMs,
-          }),
-        { fallback: undefined },
+    if (task.status === 'canceled') {
+      const result = buildResult(
+        task, 'canceled', err.message || 'Task canceled', elapsed(),
       )
-      if (archivePath) result.archivePath = archivePath
-      markTaskCanceled(runtime.tasks, task.id, {
-        completedAt,
-        durationMs: result.durationMs,
-      })
-      runtime.pendingResults.push(result)
-      await safe(
-        'appendLog: worker_end',
-        () =>
-          appendLog(runtime.paths.log, {
-            event: 'worker_end',
-            taskId: task.id,
-            status: 'canceled',
-            taskStatus: result.status,
-            error: err.message,
-            durationMs: result.durationMs,
-            elapsedMs: result.durationMs,
-            ...(archivePath ? { archivePath } : {}),
-          }),
-        { fallback: undefined },
-      )
+      await finalizeResult(runtime, task, result, markTaskCanceled)
       return
     }
-    const isTimeout =
-      err.name === 'AbortError' || /timed out|timeout/i.test(err.message)
-    const status = isTimeout ? 'timeout' : 'error'
-    const completedAt = nowIso()
-    const result: TaskResult = {
-      taskId: task.id,
-      status: 'failed',
-      ok: false,
-      output: err.message,
-      durationMs: Math.max(0, Date.now() - startedAt),
-      completedAt,
-      ...(task.title ? { title: task.title } : {}),
-    }
-    const archivePath = await safe(
-      'appendTaskResultArchive: worker',
-      () =>
-        appendTaskResultArchive(runtime.config.stateDir, {
-          taskId: task.id,
-          title: task.title,
-          status: result.status,
-          prompt: task.prompt,
-          output: result.output,
-          createdAt: task.createdAt,
-          completedAt,
-          durationMs: result.durationMs,
-        }),
-      { fallback: undefined },
-    )
-    if (archivePath) result.archivePath = archivePath
-    markTaskFailed(runtime.tasks, task.id, {
-      completedAt,
-      durationMs: result.durationMs,
-    })
-    runtime.pendingResults.push(result)
-    await safe(
-      'appendLog: worker_end',
-      () =>
-        appendLog(runtime.paths.log, {
-          event: 'worker_end',
-          taskId: task.id,
-          status,
-          taskStatus: result.status,
-          error: err.message,
-          durationMs: result.durationMs,
-          elapsedMs: result.durationMs,
-          ...(archivePath ? { archivePath } : {}),
-        }),
-      { fallback: undefined },
-    )
+    const result = buildResult(task, 'failed', err.message, elapsed())
+    await finalizeResult(runtime, task, result, markTaskFailed)
   }
 }
 

@@ -2,10 +2,10 @@ import { appendLog } from '../log/append.js'
 import { safe } from '../log/safe.js'
 import { appendTaskResultArchive } from '../storage/task-results.js'
 import { markTaskCanceled } from '../tasks/queue.js'
-import { nowIso } from '../time.js'
+import { nowIso } from '../shared/utils.js'
 
 import type { RuntimeState } from './runtime.js'
-import type { Task, TaskResult } from '../types/tasks.js'
+import type { Task, TaskResult } from '../types/index.js'
 
 export type CancelMeta = {
   source?: string

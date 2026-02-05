@@ -6,8 +6,13 @@ import fastify from 'fastify'
 
 import { logSafeError } from '../log/safe.js'
 
-import { clearStateDir } from './state-reset.js'
-import { parseMessageLimit, parseTaskLimit, resolveRoots } from './utils.js'
+import {
+  clearStateDir,
+  parseInputBody,
+  parseMessageLimit,
+  parseTaskLimit,
+  resolveRoots,
+} from './helpers.js'
 
 import type { SupervisorConfig } from '../config.js'
 import type { Supervisor } from '../supervisor/supervisor.js'
@@ -49,59 +54,22 @@ export const createHttpServer = (
   app.get('/api/status', () => supervisor.getStatus())
 
   app.post('/api/input', async (request, reply) => {
-    const { body } = request
-    if (!body || typeof body !== 'object') {
-      reply.code(400).send({ error: 'invalid JSON' })
-      return
-    }
-    const parsed = body as {
-      text?: string
-      clientTimeZone?: string
-      clientOffsetMinutes?: number
-      clientLocale?: string
-      clientNowIso?: string
-      language?: string
-    }
-    const text = parsed.text?.trim() ?? ''
-    if (!text) {
-      reply.code(400).send({ error: 'text is required' })
-      return
-    }
-    const remote = request.raw.socket.remoteAddress ?? undefined
-    const userAgent =
-      typeof request.headers['user-agent'] === 'string'
-        ? request.headers['user-agent']
-        : undefined
-    const acceptLanguage =
-      typeof request.headers['accept-language'] === 'string'
-        ? request.headers['accept-language']
-        : undefined
-    const bodyLanguage =
-      typeof parsed.language === 'string' ? parsed.language : undefined
-    const language = bodyLanguage ?? acceptLanguage
-    const clientLocale =
-      typeof parsed.clientLocale === 'string' ? parsed.clientLocale : undefined
-    const clientTimeZone =
-      typeof parsed.clientTimeZone === 'string'
-        ? parsed.clientTimeZone
-        : undefined
-    const clientNowIso =
-      typeof parsed.clientNowIso === 'string' ? parsed.clientNowIso : undefined
-    const clientOffsetMinutes =
-      typeof parsed.clientOffsetMinutes === 'number' &&
-      Number.isFinite(parsed.clientOffsetMinutes)
-        ? parsed.clientOffsetMinutes
-        : undefined
-    const id = await supervisor.addUserInput(text, {
-      source: 'http',
-      ...(remote ? { remote } : {}),
-      ...(userAgent ? { userAgent } : {}),
-      ...(language ? { language } : {}),
-      ...(clientLocale ? { clientLocale } : {}),
-      ...(clientTimeZone ? { clientTimeZone } : {}),
-      ...(clientOffsetMinutes !== undefined ? { clientOffsetMinutes } : {}),
-      ...(clientNowIso ? { clientNowIso } : {}),
+    const result = parseInputBody(request.body, {
+      remoteAddress: request.raw.socket.remoteAddress ?? undefined,
+      userAgent:
+        typeof request.headers['user-agent'] === 'string'
+          ? request.headers['user-agent']
+          : undefined,
+      acceptLanguage:
+        typeof request.headers['accept-language'] === 'string'
+          ? request.headers['accept-language']
+          : undefined,
     })
+    if ('error' in result) {
+      reply.code(400).send({ error: result.error })
+      return
+    }
+    const id = await supervisor.addUserInput(result.text, result.meta)
     reply.send({ id })
   })
 
@@ -125,18 +93,18 @@ export const createHttpServer = (
       reply.code(400).send({ error: 'task id is required' })
       return
     }
-    const result = await supervisor.cancelTask(taskId, { source: 'http' })
-    if (!result.ok) {
+    const cancelResult = await supervisor.cancelTask(taskId, { source: 'http' })
+    if (!cancelResult.ok) {
       const status =
-        result.status === 'not_found'
+        cancelResult.status === 'not_found'
           ? 404
-          : result.status === 'invalid'
+          : cancelResult.status === 'invalid'
             ? 400
             : 409
-      reply.code(status).send({ error: result.status })
+      reply.code(status).send({ error: cancelResult.status })
       return
     }
-    reply.send({ ok: true, status: result.status, taskId })
+    reply.send({ ok: true, status: cancelResult.status, taskId })
   })
 
   app.post('/api/restart', (_request, reply) => {
@@ -170,26 +138,10 @@ export const createHttpServer = (
     reply.code(404).send({ error: 'not found' })
   })
 
-  app.register(fastifyStatic, {
-    root: markedDir,
-    prefix: '/vendor/marked/',
-    decorateReply: false,
-  })
-  app.register(fastifyStatic, {
-    root: purifyDir,
-    prefix: '/vendor/purify/',
-    decorateReply: false,
-  })
-  app.register(fastifyStatic, {
-    root: generatedDir,
-    prefix: '/artifacts/',
-    decorateReply: false,
-  })
-  app.register(fastifyStatic, {
-    root: webDir,
-    prefix: '/',
-    decorateReply: false,
-  })
+  app.register(fastifyStatic, { root: markedDir, prefix: '/vendor/marked/', decorateReply: false })
+  app.register(fastifyStatic, { root: purifyDir, prefix: '/vendor/purify/', decorateReply: false })
+  app.register(fastifyStatic, { root: generatedDir, prefix: '/artifacts/', decorateReply: false })
+  app.register(fastifyStatic, { root: webDir, prefix: '/', decorateReply: false })
 
   void app
     .listen({ port })

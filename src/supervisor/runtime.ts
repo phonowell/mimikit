@@ -1,7 +1,6 @@
 import type { SupervisorConfig } from '../config.js'
 import type { StatePaths } from '../fs/paths.js'
-import type { HistoryMessage } from '../types/history.js'
-import type { Task, TaskResult } from '../types/tasks.js'
+import type { HistoryMessage, Task, TaskResult } from '../types/index.js'
 
 export type PendingUserInput = {
   id: string

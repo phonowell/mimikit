@@ -1,10 +1,8 @@
-import { ensureStateDirs } from '../fs/init.js'
-import { buildPaths } from '../fs/paths.js'
-import { newId } from '../ids.js'
+import { buildPaths, ensureStateDirs } from '../fs/paths.js'
+import { newId, nowIso } from '../shared/utils.js'
 import { appendLog } from '../log/append.js'
 import { safe, setDefaultLogPath } from '../log/safe.js'
-import { appendHistory, readHistory } from '../storage/history.js'
-import { nowIso } from '../time.js'
+import { appendHistory, readHistory } from '../storage/jsonl.js'
 
 import { cancelTask } from './cancel.js'
 import { runLocalQuickReply } from './local-reply.js'

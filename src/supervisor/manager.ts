@@ -1,61 +1,22 @@
 import { appendLog } from '../log/append.js'
 import { safe } from '../log/safe.js'
 import { runManager } from '../roles/runner.js'
-import { sleep } from '../shared/utils.js'
-import { appendHistory, readHistory } from '../storage/history.js'
+import { nowIso, sleep } from '../shared/utils.js'
+import { appendHistory, readHistory } from '../storage/jsonl.js'
 import { enqueueTask } from '../tasks/queue.js'
-import { nowIso } from '../time.js'
 
 import { cancelTask } from './cancel.js'
+import { parseCommands } from './command-parser.js'
+import { selectRecentHistory } from './history-select.js'
 
 import type { RuntimeState } from './runtime.js'
-import type { TaskResult } from '../types/tasks.js'
+import type { TaskResult } from '../types/index.js'
 
 type ManagerBuffer = {
   inputs: RuntimeState['pendingInputs']
   results: TaskResult[]
   lastInputAt: number
   firstResultAt: number
-}
-
-type ParsedCommand = {
-  action: string
-  attrs: Record<string, string>
-  content?: string
-}
-
-const MIMIKIT_TAG =
-  /<MIMIKIT:(\w+)((?:\s+\w+\s*=\s*"[^"]*")*)\s*(?:\/>|>(?:([\s\S]*?)<\/MIMIKIT:\1>)?)/g
-const ATTR_RE = /(\w+)\s*=\s*"([^"]*)"/g
-
-const parseAttrs = (raw: string): Record<string, string> => {
-  const attrs: Record<string, string> = {}
-  if (!raw) return attrs
-  for (const match of raw.matchAll(ATTR_RE)) {
-    const key = match[1]
-    const value = match[2] ?? ''
-    if (!key) continue
-    attrs[key] = value
-  }
-  return attrs
-}
-
-const parseCommands = (
-  output: string,
-): {
-  commands: ParsedCommand[]
-  text: string
-} => {
-  const commands = [...output.matchAll(MIMIKIT_TAG)].map((match) => {
-    const content = match[3]?.trim()
-    return {
-      action: match[1] ?? '',
-      attrs: parseAttrs(match[2] ?? ''),
-      ...(content ? { content } : {}),
-    }
-  })
-  const text = output.replace(MIMIKIT_TAG, '').trim()
-  return { commands, text }
 }
 
 const DEFAULT_MANAGER_TIMEOUT_MS = 30_000
@@ -102,40 +63,21 @@ const runManagerBuffer = async (
   const inputs = buffer.inputs.map((input) => input.text)
   const { results } = buffer
   const history = await readHistory(runtime.paths.history)
-  const excludeIds = new Set(buffer.inputs.map((input) => input.id))
-  const filteredHistory = history.filter((item) => !excludeIds.has(item.id))
-  const historyMin = Math.max(0, runtime.config.manager.historyMinCount)
-  const historyMax = Math.max(
-    historyMin,
-    runtime.config.manager.historyMaxCount,
-  )
-  const historyMaxBytes = Math.max(0, runtime.config.manager.historyMaxBytes)
-  const recentHistory: typeof filteredHistory = []
-  let totalBytes = 0
-  for (let i = filteredHistory.length - 1; i >= 0; i -= 1) {
-    const item = filteredHistory[i]
-    if (!item) continue
-    const itemBytes = Buffer.byteLength(JSON.stringify(item), 'utf8')
-    totalBytes += itemBytes
-    recentHistory.push(item)
-    if (recentHistory.length >= historyMax) break
-    if (historyMaxBytes > 0 && totalBytes > historyMaxBytes)
-      if (recentHistory.length >= historyMin) break
-  }
-  recentHistory.reverse()
+  const recentHistory = selectRecentHistory(history, {
+    excludeIds: new Set(buffer.inputs.map((input) => input.id)),
+    minCount: runtime.config.manager.historyMinCount,
+    maxCount: runtime.config.manager.historyMaxCount,
+    maxBytes: runtime.config.manager.historyMaxBytes,
+  })
   const startedAt = Date.now()
   runtime.managerRunning = true
   try {
-    const { model } = runtime.config.manager
-    const { modelReasoningEffort } = runtime.config.manager
+    const { model, modelReasoningEffort } = runtime.config.manager
     await appendLog(runtime.paths.log, {
       event: 'manager_start',
       inputCount: inputs.length,
       resultCount: results.length,
       historyCount: recentHistory.length,
-      historyMinCount: historyMin,
-      historyMaxCount: historyMax,
-      historyMaxBytes,
       inputIds: buffer.inputs.map((input) => input.id),
       resultIds: results.map((result) => result.taskId),
       pendingTaskCount: runtime.tasks.filter(

@@ -6,7 +6,7 @@ import { normalizeUsage } from '../shared/utils.js'
 
 import { loadCodexSettings } from './openai.js'
 
-import type { TokenUsage } from '../types/common.js'
+import type { TokenUsage } from '../types/index.js'
 
 type SdkRole = 'manager' | 'worker'
 

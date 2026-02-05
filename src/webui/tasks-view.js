@@ -1,5 +1,4 @@
-import { formatDateTime } from './time.js'
-import { formatElapsedLabel, formatUsage } from './messages/format.js'
+import { formatDateTime, formatElapsedLabel, formatUsage } from './messages/format.js'
 
 const ELAPSED_TICK_MS = 1000
 

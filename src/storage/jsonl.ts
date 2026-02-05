@@ -1,7 +1,9 @@
 import { appendFile, readFile } from 'node:fs/promises'
 
-import { writeFileAtomic } from '../fs/atomic.js'
+import { writeFileAtomic } from '../fs/json.js'
 import { logSafeError, safe } from '../log/safe.js'
+
+import type { HistoryMessage } from '../types/index.js'
 
 const splitLines = (raw: string): string[] =>
   raw
@@ -80,3 +82,22 @@ export const updateJsonl = <T>(
     await writeJsonl(path, next)
     return next
   })
+
+const MAX_HISTORY_ITEMS = 1000
+
+const capHistory = (items: HistoryMessage[]): HistoryMessage[] => {
+  if (items.length <= MAX_HISTORY_ITEMS) return items
+  return items.slice(Math.max(0, items.length - MAX_HISTORY_ITEMS))
+}
+
+export const readHistory = (path: string): Promise<HistoryMessage[]> =>
+  readJsonl<HistoryMessage>(path)
+
+export const appendHistory = async (
+  path: string,
+  message: HistoryMessage,
+): Promise<void> => {
+  await updateJsonl<HistoryMessage>(path, (current) =>
+    capHistory([...current, message]),
+  )
+}
