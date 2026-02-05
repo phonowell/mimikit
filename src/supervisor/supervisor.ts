@@ -9,7 +9,7 @@ import { managerLoop } from './manager.js'
 import { buildTaskViews } from './task-view.js'
 import { workerLoop } from './worker.js'
 
-import type { RuntimeState } from './runtime.js'
+import type { RuntimeState, UserMeta } from './runtime.js'
 import type { SupervisorConfig } from '../config.js'
 
 export class Supervisor {
@@ -43,16 +43,7 @@ export class Supervisor {
 
   async addUserInput(
     text: string,
-    meta?: {
-      source?: string
-      remote?: string
-      userAgent?: string
-      language?: string
-      clientLocale?: string
-      clientTimeZone?: string
-      clientOffsetMinutes?: number
-      clientNowIso?: string
-    },
+    meta?: UserMeta,
     quote?: string,
   ): Promise<string> {
     const id = newId()

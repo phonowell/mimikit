@@ -1,10 +1,19 @@
 import { renderMarkdown } from '../markdown.js'
-import { formatStatusText } from '../status-text.js'
+import { applyStatus, clearStatus } from '../status.js'
 
 import { formatElapsedLabel, formatTime, formatUsage } from './format.js'
 import { createLoadingController } from './loading.js'
+import { createQuoteController } from './quote.js'
 import { renderError, renderMessages } from './render.js'
 import { createScrollController } from './scroll.js'
+import {
+  applyRenderedState,
+  clearMessageState,
+  collectNewMessageIds,
+  createMessageState,
+  hasMessageChange,
+  updateMessageState,
+} from './state.js'
 
 export function createMessagesController({
   messagesEl,
@@ -20,15 +29,9 @@ export function createMessagesController({
 }) {
   let pollTimer = null
   let isPolling = false
-  let lastMessageCount = 0
-  let lastMessageId = null
-  let lastMessageRole = null
   let emptyRemoved = false
   let lastStatus = null
-  let lastAgentMessageId = null
-  let awaitingReply = false
-  let lastMessageIds = new Set()
-  let activeQuote = null
+  const messageState = createMessageState()
 
   const removeEmpty = () => {
     if (emptyRemoved) return
@@ -37,113 +40,34 @@ export function createMessagesController({
     emptyRemoved = true
   }
 
-  const scroll = createScrollController({ messagesEl, scrollBottomBtn, scrollBottomMultiplier: 1.5 })
-  const loading = createLoadingController({
-    messagesEl, isNearBottom: scroll.isNearBottom, scrollToBottom: scroll.scrollToBottom,
-    updateScrollButton: scroll.updateScrollButton, removeEmpty,
+  const scroll = createScrollController({
+    messagesEl,
+    scrollBottomBtn,
+    scrollBottomMultiplier: 1.5,
   })
+  const loading = createLoadingController({
+    messagesEl,
+    isNearBottom: scroll.isNearBottom,
+    scrollToBottom: scroll.scrollToBottom,
+    updateScrollButton: scroll.updateScrollButton,
+    removeEmpty,
+  })
+  const quote = createQuoteController({ quotePreview, quoteText, input })
 
   const syncLoadingState = () => {
     const pending = lastStatus?.pendingInputs ?? 0
-    const shouldWait = awaitingReply || (pending > 0 && lastMessageRole === 'user')
-    if (shouldWait) { if (!loading.isLoading()) loading.setLoading(true) }
-    else if (loading.isLoading()) loading.setLoading(false)
-  }
-
-  const formatQuotePreview = (text) => {
-    const cleaned = String(text ?? '').replace(/\s+/g, ' ').trim()
-    if (!cleaned) return ''
-    const max = 80
-    return cleaned.length > max ? `${cleaned.slice(0, max)}...` : cleaned
-  }
-
-  const updateQuotePreview = () => {
-    if (!quotePreview || !quoteText) return
-    if (!activeQuote) {
-      quoteText.textContent = ''
-      quotePreview.hidden = true
-      return
-    }
-    const preview = formatQuotePreview(activeQuote.text)
-    quoteText.textContent = preview
-      ? `${activeQuote.id} | ${preview}`
-      : activeQuote.id
-    quotePreview.hidden = false
-  }
-
-  const clearQuote = () => {
-    if (!activeQuote) return
-    activeQuote = null
-    updateQuotePreview()
-  }
-
-  const setQuote = (msg) => {
-    const id = msg?.id
-    if (!id) return
-    activeQuote = { id: String(id), text: msg?.text ?? '' }
-    updateQuotePreview()
-    if (input) input.focus()
-  }
-
-  const collectMessageIds = (messages) => {
-    const ids = new Set()
-    for (const msg of messages) {
-      if (msg?.id != null) ids.add(msg.id)
-    }
-    return ids
-  }
-
-  const collectNewMessageIds = (messages) => {
-    if (lastMessageIds.size === 0) return new Set()
-    const ids = new Set()
-    for (const msg of messages) {
-      const id = msg?.id
-      if (id != null && !lastMessageIds.has(id)) ids.add(id)
-    }
-    return ids
-  }
-
-  const applyRenderedState = (rendered) => {
-    if (rendered?.latestAgentId && rendered.latestAgentId !== lastAgentMessageId) {
-      lastAgentMessageId = rendered.latestAgentId
-      awaitingReply = false
-      loading.setLoading(false)
-    }
-    if (rendered?.lastRole != null) lastMessageRole = rendered.lastRole
-    if (rendered?.lastIsAgent) awaitingReply = false
-    syncLoadingState()
-  }
-
-  const doRender = (messages, enterMessageIds) => {
-    if (!messages?.length) return null
-    return renderMessages({
-      messages, messagesEl, removeEmpty, renderMarkdown, formatTime,
-      formatUsage, formatElapsedLabel, isNearBottom: scroll.isNearBottom,
-      scrollToBottom: scroll.scrollToBottom, updateScrollButton: scroll.updateScrollButton, loading,
-      enterMessageIds,
-      onQuote: setQuote,
-    })
-  }
-
-  const fetchAndRenderMessages = async () => {
-    const msgRes = await fetch('/api/messages?limit=50')
-    const msgData = await msgRes.json()
-    const messages = msgData.messages || []
-    const newestId = messages.length > 0 ? messages[messages.length - 1].id : null
-    const changed = messages.length !== lastMessageCount || newestId !== lastMessageId
-    if (changed) {
-      const enterMessageIds = collectNewMessageIds(messages)
-      const rendered = doRender(messages, enterMessageIds)
-      if (rendered) applyRenderedState(rendered)
-      lastMessageIds = collectMessageIds(messages)
-    }
-    lastMessageCount = messages.length
-    lastMessageId = newestId
-    return changed
+    const shouldWait =
+      messageState.awaitingReply ||
+      (pending > 0 && messageState.lastMessageRole === 'user')
+    if (shouldWait) {
+      if (!loading.isLoading()) loading.setLoading(true)
+    } else if (loading.isLoading()) loading.setLoading(false)
   }
 
   const normalizeCount = (value) =>
-    typeof value === 'number' && Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0
+    typeof value === 'number' && Number.isFinite(value)
+      ? Math.max(0, Math.floor(value))
+      : 0
 
   const updateWorkerDots = (status) => {
     if (!workerDots) return
@@ -170,43 +94,77 @@ export function createMessagesController({
     }
   }
 
+  const doRender = (messages, enterMessageIds) => {
+    if (!messages?.length) return null
+    return renderMessages({
+      messages,
+      messagesEl,
+      removeEmpty,
+      renderMarkdown,
+      formatTime,
+      formatUsage,
+      formatElapsedLabel,
+      isNearBottom: scroll.isNearBottom,
+      scrollToBottom: scroll.scrollToBottom,
+      updateScrollButton: scroll.updateScrollButton,
+      loading,
+      enterMessageIds,
+      onQuote: quote.set,
+    })
+  }
+
+  const fetchAndRenderMessages = async () => {
+    const msgRes = await fetch('/api/messages?limit=50')
+    const msgData = await msgRes.json()
+    const messages = msgData.messages || []
+    const newestId = messages.length > 0 ? messages[messages.length - 1].id : null
+    const changed = hasMessageChange(messageState, messages, newestId)
+    if (changed) {
+      const enterMessageIds = collectNewMessageIds(messageState, messages)
+      const rendered = doRender(messages, enterMessageIds)
+      if (rendered)
+        applyRenderedState(messageState, rendered, { loading, syncLoadingState })
+    }
+    updateMessageState(messageState, messages, newestId)
+    return changed
+  }
+
   const updateStatus = (status) => {
     lastStatus = status
-    if (statusText && statusDot) {
-      statusDot.dataset.state = status.agentStatus
-      statusText.textContent = formatStatusText(status.agentStatus)
-    }
+    if (statusText && statusDot)
+      applyStatus({ statusDot, statusText }, status.agentStatus)
     updateWorkerDots(status)
     syncLoadingState()
   }
 
   const setDisconnected = () => {
-    if (statusText) statusText.textContent = formatStatusText('disconnected')
-    if (statusDot) statusDot.dataset.state = ''
+    clearStatus({ statusDot, statusText }, 'disconnected')
     lastStatus = null
     updateWorkerDots(null)
-    lastMessageRole = null
-    lastMessageIds = new Set()
-    awaitingReply = false
+    clearMessageState(messageState)
     loading.setLoading(false)
   }
 
   const poll = async () => {
     if (!isPolling) return
     try {
-      const [statusRes, msgRes] = await Promise.all([fetch('/api/status'), fetch('/api/messages?limit=50')])
+      const [statusRes, msgRes] = await Promise.all([
+        fetch('/api/status'),
+        fetch('/api/messages?limit=50'),
+      ])
       updateStatus(await statusRes.json())
       const msgData = await msgRes.json()
       const messages = msgData.messages || []
       const newestId = messages.length > 0 ? messages[messages.length - 1].id : null
-      if (messages.length !== lastMessageCount || newestId !== lastMessageId) {
-        const enterMessageIds = collectNewMessageIds(messages)
+      if (hasMessageChange(messageState, messages, newestId)) {
+        const enterMessageIds = collectNewMessageIds(messageState, messages)
         const rendered = doRender(messages, enterMessageIds)
-        if (rendered) applyRenderedState(rendered)
-        lastMessageCount = messages.length
-        lastMessageId = newestId
-        lastMessageIds = collectMessageIds(messages)
-      } else { syncLoadingState() }
+        if (rendered)
+          applyRenderedState(messageState, rendered, { loading, syncLoadingState })
+      } else {
+        syncLoadingState()
+      }
+      updateMessageState(messageState, messages, newestId)
     } catch (error) {
       console.warn('[webui] poll failed', error)
       setDisconnected()
@@ -218,17 +176,19 @@ export function createMessagesController({
     if (!text) return
     if (sendBtn) sendBtn.disabled = true
     if (input) input.disabled = true
-    awaitingReply = true
-    lastMessageRole = 'user'
+    messageState.awaitingReply = true
+    messageState.lastMessageRole = 'user'
     loading.setLoading(true)
     try {
       const payload = {
         text,
-        clientLocale: typeof navigator !== 'undefined' ? navigator.language : undefined,
+        clientLocale:
+          typeof navigator !== 'undefined' ? navigator.language : undefined,
         clientTimeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         clientOffsetMinutes: new Date().getTimezoneOffset(),
         clientNowIso: new Date().toISOString(),
       }
+      const activeQuote = quote.getActive()
       if (activeQuote?.id) payload.quote = activeQuote.id
       const res = await fetch('/api/input', {
         method: 'POST',
@@ -237,29 +197,54 @@ export function createMessagesController({
       })
       if (!res.ok) {
         let data = null
-        try { data = await res.json() } catch { data = null }
+        try {
+          data = await res.json()
+        } catch {
+          data = null
+        }
         throw new Error(data?.error || 'Failed to send')
       }
-      if (input) { input.value = ''; input.dispatchEvent(new Event('input', { bubbles: true })) }
-      clearQuote()
+      if (input) {
+        input.value = ''
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+      }
+      quote.clear()
       await fetchAndRenderMessages()
     } catch (error) {
-      renderError({ messagesEl, removeEmpty, updateScrollButton: scroll.updateScrollButton }, error)
-      awaitingReply = false
-      lastMessageRole = 'system'
+      renderError(
+        { messagesEl, removeEmpty, updateScrollButton: scroll.updateScrollButton },
+        error,
+      )
+      messageState.awaitingReply = false
+      messageState.lastMessageRole = 'system'
       loading.setLoading(false)
     } finally {
       if (sendBtn) sendBtn.disabled = false
-      if (input) { input.disabled = false; input.focus() }
+      if (input) {
+        input.disabled = false
+        input.focus()
+      }
     }
   }
 
-  if (quoteClearBtn) quoteClearBtn.addEventListener('click', clearQuote)
-  updateQuotePreview()
+  if (quoteClearBtn) quoteClearBtn.addEventListener('click', quote.clear)
 
-  const start = () => { if (isPolling) return; scroll.bindScrollControls(); isPolling = true; poll() }
-  const stop = () => { isPolling = false; if (pollTimer) clearTimeout(pollTimer); pollTimer = null }
-  const isFullyIdle = () => lastStatus && lastStatus.agentStatus === 'idle' && !(lastStatus.activeTasks ?? 0) && !(lastStatus.pendingTasks ?? 0)
+  const start = () => {
+    if (isPolling) return
+    scroll.bindScrollControls()
+    isPolling = true
+    poll()
+  }
+  const stop = () => {
+    isPolling = false
+    if (pollTimer) clearTimeout(pollTimer)
+    pollTimer = null
+  }
+  const isFullyIdle = () =>
+    lastStatus &&
+    lastStatus.agentStatus === 'idle' &&
+    !(lastStatus.activeTasks ?? 0) &&
+    !(lastStatus.pendingTasks ?? 0)
 
   return { start, stop, sendMessage, isFullyIdle }
 }

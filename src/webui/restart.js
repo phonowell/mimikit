@@ -1,4 +1,5 @@
-import { formatStatusText } from './status-text.js'
+import { createDialogController } from './dialog.js'
+import { setStatusState, setStatusText } from './status.js'
 
 export function bindRestart({
   restartBtn,
@@ -11,113 +12,31 @@ export function bindRestart({
   messages,
 }) {
   if (!restartBtn) return
-  const closeAnimationMs = 140
-  const prefersReducedMotion =
-    typeof window !== 'undefined' &&
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches
   const dialogEnabled = Boolean(
     restartDialog &&
       restartCancelBtn &&
       restartConfirmBtn &&
       restartResetBtn,
   )
-  let isOpen = false
   let isBusy = false
-  let closeTimer = null
-  let closeAnimationHandler = null
 
-  const setExpanded = (nextOpen) => {
-    restartBtn.setAttribute('aria-expanded', nextOpen ? 'true' : 'false')
-  }
+  const dialog = dialogEnabled
+    ? createDialogController({
+        dialog: restartDialog,
+        trigger: restartBtn,
+        focusOnOpen: restartCancelBtn,
+        onAfterClose: () => {
+          if (!isBusy) restartBtn.focus()
+        },
+      })
+    : null
 
-  const clearClosingState = () => {
-    if (!restartDialog) return
-    restartDialog.classList.remove('is-closing')
-    if (closeAnimationHandler) {
-      restartDialog.removeEventListener('animationend', closeAnimationHandler)
-      closeAnimationHandler = null
-    }
-    if (closeTimer) {
-      clearTimeout(closeTimer)
-      closeTimer = null
-    }
-  }
-
-  const finalizeClose = () => {
-    if (!isOpen) return
-    isOpen = false
-    setExpanded(false)
-    clearClosingState()
-    if (!isBusy) restartBtn.focus()
-  }
-
-  const performClose = () => {
-    if (!restartDialog || !isOpen) return
-    if (typeof restartDialog.close === 'function') {
-      restartDialog.close()
-    } else {
-      restartDialog.removeAttribute('open')
-      finalizeClose()
-    }
-  }
+  if (dialogEnabled && dialog) dialog.setExpanded(false)
 
   const disableActions = (disabled) => {
     if (restartCancelBtn) restartCancelBtn.disabled = disabled
     if (restartConfirmBtn) restartConfirmBtn.disabled = disabled
     if (restartResetBtn) restartResetBtn.disabled = disabled
-  }
-
-  const openDialog = () => {
-    if (!restartDialog) return
-    if (restartDialog.classList.contains('is-closing')) {
-      clearClosingState()
-      return
-    }
-    if (isOpen) return
-    if (typeof restartDialog.showModal === 'function') {
-      if (!restartDialog.open) restartDialog.showModal()
-    } else {
-      restartDialog.setAttribute('open', '')
-    }
-    isOpen = true
-    setExpanded(true)
-    if (restartCancelBtn) {
-      window.requestAnimationFrame(() => {
-        restartCancelBtn.focus()
-      })
-    }
-  }
-
-  const closeDialog = () => {
-    if (!restartDialog || !isOpen) return
-    if (restartDialog.classList.contains('is-closing')) return
-    if (prefersReducedMotion) {
-      performClose()
-      return
-    }
-    restartDialog.classList.add('is-closing')
-    const onAnimationEnd = (event) => {
-      if (event.target !== restartDialog) return
-      if (closeAnimationHandler) {
-        restartDialog.removeEventListener('animationend', closeAnimationHandler)
-        closeAnimationHandler = null
-      }
-      if (closeTimer) {
-        clearTimeout(closeTimer)
-        closeTimer = null
-      }
-      performClose()
-    }
-    closeAnimationHandler = onAnimationEnd
-    restartDialog.addEventListener('animationend', onAnimationEnd)
-    closeTimer = window.setTimeout(() => {
-      if (closeAnimationHandler) {
-        restartDialog.removeEventListener('animationend', closeAnimationHandler)
-        closeAnimationHandler = null
-      }
-      performClose()
-    }, closeAnimationMs + 40)
   }
 
   const waitForServer = (onReady) => {
@@ -147,13 +66,11 @@ export function bindRestart({
     isBusy = true
     restartBtn.disabled = true
     disableActions(true)
-    if (statusText) {
-      const label = mode === 'reset' ? 'resetting...' : 'restarting...'
-      statusText.textContent = formatStatusText(label)
-    }
-    if (statusDot) statusDot.dataset.state = ''
+    const label = mode === 'reset' ? 'resetting...' : 'restarting...'
+    setStatusText(statusText, label)
+    setStatusState(statusDot, '')
     if (messages) messages.stop()
-    closeDialog()
+    if (dialog) dialog.close()
     try {
       await fetch(mode === 'reset' ? '/api/reset' : '/api/restart', {
         method: 'POST',
@@ -173,13 +90,13 @@ export function bindRestart({
   const onOpen = (event) => {
     event.preventDefault()
     if (isBusy) return
-    if (dialogEnabled) openDialog()
+    if (dialogEnabled && dialog) dialog.open()
     else void requestRestart('restart')
   }
   const onCancel = (event) => {
     event.preventDefault()
     if (isBusy) return
-    closeDialog()
+    if (dialog) dialog.close()
   }
   const onRestart = (event) => {
     event.preventDefault()
@@ -192,19 +109,16 @@ export function bindRestart({
     void requestRestart('reset')
   }
   const onDialogClick = (event) => {
-    if (event.target === restartDialog) closeDialog()
+    if (dialog) dialog.handleDialogClick(event)
   }
   const onDialogClose = () => {
-    if (!isOpen) return
-    finalizeClose()
+    if (dialog) dialog.handleDialogClose()
   }
   const onDialogCancel = (event) => {
-    event.preventDefault()
-    closeDialog()
+    if (dialog) dialog.handleDialogCancel(event)
   }
 
-  if (dialogEnabled) {
-    setExpanded(isOpen)
+  if (dialogEnabled && dialog) {
     restartBtn.addEventListener('click', onOpen)
     restartCancelBtn.addEventListener('click', onCancel)
     restartConfirmBtn.addEventListener('click', onRestart)

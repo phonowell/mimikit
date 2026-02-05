@@ -1,3 +1,4 @@
+import { createDialogController } from './dialog.js'
 import { createElapsedTicker, renderTasks } from './tasks-view.js'
 
 const TASK_POLL_MS = 5000
@@ -10,72 +11,26 @@ export function bindTasksPanel({
   tasksCloseBtn,
 }) {
   if (!tasksList || !tasksMeta) return
-  const closeAnimationMs = 140
-  const prefersReducedMotion =
-    typeof window !== 'undefined' &&
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches
   let pollTimer = null
   let isPolling = false
-  let isOpen = false
-  let closeTimer = null
-  let closeAnimationHandler = null
   const elapsedTicker = createElapsedTicker(tasksList)
 
-  function startPolling() {
+  const startPolling = () => {
     if (isPolling) return
     isPolling = true
     elapsedTicker.start()
     loadTasks()
   }
 
-  function stopPolling() {
+  const stopPolling = () => {
     isPolling = false
     if (pollTimer) clearTimeout(pollTimer)
     pollTimer = null
     elapsedTicker.stop()
   }
 
-  function setExpanded(nextOpen) {
-    if (!tasksOpenBtn) return
-    tasksOpenBtn.setAttribute('aria-expanded', nextOpen ? 'true' : 'false')
-  }
-
-  function clearClosingState() {
-    if (!tasksDialog) return
-    tasksDialog.classList.remove('is-closing')
-    if (closeAnimationHandler) {
-      tasksDialog.removeEventListener('animationend', closeAnimationHandler)
-      closeAnimationHandler = null
-    }
-    if (closeTimer) {
-      clearTimeout(closeTimer)
-      closeTimer = null
-    }
-  }
-
-  function finalizeClose() {
-    if (!isOpen) return
-    isOpen = false
-    setExpanded(false)
-    stopPolling()
-    clearClosingState()
-    if (tasksOpenBtn) tasksOpenBtn.focus()
-  }
-
-  function performClose() {
-    if (!tasksDialog || !isOpen) return
-    if (typeof tasksDialog.close === 'function') {
-      tasksDialog.close()
-    } else {
-      tasksDialog.removeAttribute('open')
-      finalizeClose()
-    }
-  }
-
   async function loadTasks() {
     if (!isPolling) return
-    if (!tasksList || !tasksMeta) return
     tasksMeta.textContent = 'Loading...'
     try {
       const res = await fetch('/api/tasks?limit=200')
@@ -145,83 +100,38 @@ export function bindTasksPanel({
     void requestCancel(taskId, button)
   })
 
-  function openDialog() {
-    if (!tasksDialog) return
-    if (tasksDialog.classList.contains('is-closing')) {
-      clearClosingState()
-      return
-    }
-    if (isOpen) return
-    if (typeof tasksDialog.showModal === 'function') {
-      if (!tasksDialog.open) tasksDialog.showModal()
-    } else {
-      tasksDialog.setAttribute('open', '')
-    }
-    isOpen = true
-    setExpanded(true)
-    startPolling()
-    if (tasksCloseBtn) {
-      window.requestAnimationFrame(() => {
-        tasksCloseBtn.focus()
-      })
-    }
-  }
-
-  function closeDialog() {
-    if (!tasksDialog) return
-    if (!isOpen) return
-    if (tasksDialog.classList.contains('is-closing')) return
-    if (prefersReducedMotion) {
-      performClose()
-      return
-    }
-    tasksDialog.classList.add('is-closing')
-    const onAnimationEnd = (event) => {
-      if (event.target !== tasksDialog) return
-      if (closeAnimationHandler) {
-        tasksDialog.removeEventListener('animationend', closeAnimationHandler)
-        closeAnimationHandler = null
-      }
-      if (closeTimer) {
-        clearTimeout(closeTimer)
-        closeTimer = null
-      }
-      performClose()
-    }
-    closeAnimationHandler = onAnimationEnd
-    tasksDialog.addEventListener('animationend', onAnimationEnd)
-    closeTimer = window.setTimeout(() => {
-      if (closeAnimationHandler) {
-        tasksDialog.removeEventListener('animationend', closeAnimationHandler)
-        closeAnimationHandler = null
-      }
-      performClose()
-    }, closeAnimationMs + 40)
-  }
-
   const dialogEnabled = Boolean(tasksDialog && tasksOpenBtn)
+  const dialog = dialogEnabled
+    ? createDialogController({
+        dialog: tasksDialog,
+        trigger: tasksOpenBtn,
+        focusOnOpen: tasksCloseBtn,
+        focusOnClose: tasksOpenBtn,
+        onOpen: startPolling,
+        onAfterClose: stopPolling,
+      })
+    : null
+
   const onOpen = (event) => {
     event.preventDefault()
-    openDialog()
+    if (dialog) dialog.open()
   }
   const onClose = (event) => {
     event.preventDefault()
-    closeDialog()
+    if (dialog) dialog.close()
   }
   const onDialogClick = (event) => {
-    if (event.target === tasksDialog) closeDialog()
+    if (dialog) dialog.handleDialogClick(event)
   }
   const onDialogClose = () => {
-    if (!isOpen) return
-    finalizeClose()
+    if (dialog) dialog.handleDialogClose()
   }
   const onDialogCancel = (event) => {
-    event.preventDefault()
-    closeDialog()
+    if (dialog) dialog.handleDialogCancel(event)
   }
 
-  if (dialogEnabled) {
-    setExpanded(isOpen)
+  if (dialogEnabled && dialog) {
+    dialog.setExpanded(false)
     tasksOpenBtn.addEventListener('click', onOpen)
     if (tasksCloseBtn) tasksCloseBtn.addEventListener('click', onClose)
     tasksDialog.addEventListener('click', onDialogClick)
@@ -233,7 +143,7 @@ export function bindTasksPanel({
 
   return () => {
     stopPolling()
-    if (dialogEnabled) {
+    if (dialogEnabled && dialog) {
       tasksOpenBtn.removeEventListener('click', onOpen)
       if (tasksCloseBtn) tasksCloseBtn.removeEventListener('click', onClose)
       tasksDialog.removeEventListener('click', onDialogClick)
