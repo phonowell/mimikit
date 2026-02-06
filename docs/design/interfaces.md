@@ -22,3 +22,10 @@
 - `MIMIKIT_MODEL`：覆盖 manager model（默认 `gpt-5.2-xhigh`）
 - `MIMIKIT_WORKER_MODEL`：覆盖 worker model（默认 `gpt-5.3-codex-xhigh`）
 - `MIMIKIT_REASONING_EFFORT`：设置 manager reasoning effort（`minimal|low|medium|high|xhigh`）
+### 默认配置（节选）
+- `manager.pollMs = 1000`
+- `manager.debounceMs = 10000`
+- `manager.maxResultWaitMs = 20000`
+- `manager.tasksMaxCount = 50`（当前为配置暴露字段，尚未接入调度限制）
+
+定义位置：`src/config.ts`
