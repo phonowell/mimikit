@@ -37,17 +37,6 @@
     right: 4px;
   }
 
-  .composer .quote-clear::before {
-    content: 'x';
-    font-size: var(--btn-icon-size);
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
-  }
-
   .scroll-bottom {
     right: 12px;
     bottom: 12px;

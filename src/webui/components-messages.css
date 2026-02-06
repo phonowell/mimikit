@@ -251,7 +251,8 @@
 }
 
 .composer .quote-text {
-  flex: 1 1 0;
+  flex: 0 0 auto;
+  width: 100%;
   min-width: 0;
   max-width: 100%;
   font-size: 11px;
@@ -264,9 +265,8 @@
 }
 
 .composer .quote-clear {
-  --btn-size: 20px;
-  --btn-icon-size: 11px;
-  --btn-pad: 0;
+  --btn-size: 22px;
+  --btn-icon-size: 13px;
   --btn-radius: 50%;
   --btn-bg: rgba(15, 23, 42, 0.05);
   --btn-color: var(--muted);
@@ -276,15 +276,7 @@
   position: absolute;
   top: 6px;
   right: 6px;
-  width: var(--btn-size);
-  height: var(--btn-size);
-  font-size: 0;
-  line-height: 0;
-}
-
-.composer .quote-clear::before {
-  content: 'x';
-  font-size: var(--btn-icon-size);
+  line-height: 1;
 }
 
 .message .message-quote-btn {
