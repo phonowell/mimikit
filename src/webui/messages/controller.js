@@ -58,10 +58,8 @@ export function createMessagesController({
   const quote = createQuoteController({ quotePreview, quoteLabel, quoteText, input })
 
   const syncLoadingState = () => {
-    const pending = lastStatus?.pendingInputs ?? 0
-    const shouldWait =
-      messageState.awaitingReply ||
-      (pending > 0 && messageState.lastMessageRole === 'user')
+    const managerRunning = Boolean(lastStatus?.managerRunning)
+    const shouldWait = messageState.awaitingReply && managerRunning
     if (shouldWait) {
       if (!loading.isLoading()) loading.setLoading(true)
     } else if (loading.isLoading()) loading.setLoading(false)

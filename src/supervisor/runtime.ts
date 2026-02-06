@@ -20,6 +20,7 @@ export type RuntimeState = {
   paths: StatePaths
   stopped: boolean
   managerRunning: boolean
+  managerPendingInputs: PendingUserInput[]
   pendingInputs: PendingUserInput[]
   pendingResults: TaskResult[]
   tasks: Task[]

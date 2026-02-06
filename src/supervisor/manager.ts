@@ -37,6 +37,13 @@ const clearBuffer = (buffer: ManagerBuffer): void => {
   buffer.firstResultAt = 0
 }
 
+const syncManagerPendingInputs = (
+  runtime: RuntimeState,
+  buffer: ManagerBuffer,
+): void => {
+  runtime.managerPendingInputs = [...buffer.inputs]
+}
+
 const appendFallbackReply = async (paths: RuntimeState['paths']) => {
   await appendHistory(paths.history, {
     id: `sys-${Date.now()}`,
@@ -219,6 +226,7 @@ const runManagerBuffer = async (
       ...(result.fallbackUsed ? { fallbackUsed: true } : {}),
     })
     clearBuffer(buffer)
+    syncManagerPendingInputs(runtime, buffer)
   } catch (error) {
     const remainingInputs = buffer.inputs.slice(consumedInputCount)
     if (remainingInputs.length > 0)
@@ -235,6 +243,7 @@ const runManagerBuffer = async (
     )
     await appendFallbackReply(runtime.paths)
     clearBuffer(buffer)
+    syncManagerPendingInputs(runtime, buffer)
   } finally {
     runtime.managerRunning = false
   }
@@ -248,6 +257,7 @@ export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
       const drained = runtime.pendingInputs.splice(0)
       buffer.inputs.push(...drained)
       buffer.lastInputAt = now
+      syncManagerPendingInputs(runtime, buffer)
     }
     if (runtime.pendingResults.length > 0) {
       const drained = runtime.pendingResults.splice(0)

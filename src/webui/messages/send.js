@@ -13,14 +13,15 @@ export function createSendHandler({
 }) {
   return async (text) => {
     if (!text) return
+    const trimmed = text.trim()
+    if (!trimmed) return
     if (sendBtn) sendBtn.disabled = true
     if (input) input.disabled = true
     messageState.awaitingReply = true
     messageState.lastMessageRole = 'user'
-    loading.setLoading(true)
     try {
       const payload = {
-        text,
+        text: trimmed,
         clientLocale:
           typeof navigator !== 'undefined' ? navigator.language : undefined,
         clientTimeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,

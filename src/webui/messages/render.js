@@ -114,6 +114,14 @@ const renderMessage = (params, msg) => {
   }
 
   const article = document.createElement('article')
+  if (msg?.role === 'user') {
+    const isRead = msg.read !== false
+    item.dataset.read = isRead ? 'read' : 'unread'
+    const readState = document.createElement('span')
+    readState.className = 'read-state'
+    readState.textContent = isRead ? 'Read' : 'Unread'
+    article.appendChild(readState)
+  }
   if (canQuote) {
     article.addEventListener('dblclick', () => {
       if (

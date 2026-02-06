@@ -5,6 +5,7 @@ import { newId, nowIso } from '../shared/utils.js'
 import { readHistory } from '../storage/jsonl.js'
 
 import { cancelTask } from './cancel.js'
+import { type ChatMessage, mergeChatMessages } from './chat-view.js'
 import { managerLoop } from './manager.js'
 import { buildTaskViews } from './task-view.js'
 import { workerLoop } from './worker.js'
@@ -23,6 +24,7 @@ export class Supervisor {
       paths,
       stopped: false,
       managerRunning: false,
+      managerPendingInputs: [],
       pendingInputs: [],
       pendingResults: [],
       tasks: [],
@@ -70,10 +72,19 @@ export class Supervisor {
     return id
   }
 
-  async getChatHistory(limit = 50) {
+  getInflightInputs() {
+    if (this.runtime.managerPendingInputs.length === 0)
+      return [...this.runtime.pendingInputs]
+    return [...this.runtime.managerPendingInputs, ...this.runtime.pendingInputs]
+  }
+
+  async getChatHistory(limit = 50): Promise<ChatMessage[]> {
     const history = await readHistory(this.runtime.paths.history)
-    if (limit <= 0) return []
-    return history.slice(Math.max(0, history.length - limit))
+    return mergeChatMessages({
+      history,
+      inflightInputs: this.getInflightInputs(),
+      limit,
+    })
   }
 
   getTasks(limit = 200) {
@@ -90,6 +101,7 @@ export class Supervisor {
     activeTasks: number
     pendingTasks: number
     pendingInputs: number
+    managerRunning: boolean
     maxWorkers: number
   } {
     const pendingTasks = this.runtime.tasks.filter(
@@ -99,13 +111,14 @@ export class Supervisor {
     const maxWorkers = this.runtime.config.worker.maxConcurrent
     const agentStatus =
       this.runtime.managerRunning || activeTasks > 0 ? 'running' : 'idle'
-    const pendingInputs = this.runtime.pendingInputs.length
+    const pendingInputs = this.getInflightInputs().length
     return {
       ok: true,
       agentStatus,
       activeTasks,
       pendingTasks,
       pendingInputs,
+      managerRunning: this.runtime.managerRunning,
       maxWorkers,
     }
   }
