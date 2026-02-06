@@ -76,7 +76,7 @@ export const renderMessage = (params, msg) => {
   if (canQuote) {
     quoteBtn = document.createElement('button')
     quoteBtn.type = 'button'
-    quoteBtn.className = 'btn btn--icon btn--icon-sm message-quote-btn'
+    quoteBtn.className = 'btn btn--icon btn--icon-muted message-quote-btn'
     quoteBtn.textContent = msg.role === 'user' ? '↪' : '↩'
     quoteBtn.title = 'Quote'
     quoteBtn.setAttribute('aria-label', 'Quote')

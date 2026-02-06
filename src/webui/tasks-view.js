@@ -78,17 +78,25 @@ export const renderTasks = (tasksList, data) => {
   for (const task of tasks) {
     const item = document.createElement('li')
     item.className = 'task-item'
-    item.dataset.status = task.status || 'pending'
+    const statusValue = task.status || 'pending'
+    item.dataset.status = statusValue
 
-    const link = document.createElement('a')
+    const isCancelable = statusValue === 'pending' || statusValue === 'running'
+    const hasArchivePath =
+      typeof task.archivePath === 'string' && task.archivePath.trim().length > 0
+    const canOpenArchive = hasArchivePath && !isCancelable
+
+    const link = document.createElement(canOpenArchive ? 'a' : 'div')
     link.className = 'task-link'
-    link.href = '#tasks-dialog'
-    link.dataset.status = task.status || 'pending'
-    link.setAttribute('data-task-id', task.id)
-    if (typeof task.archivePath === 'string' && task.archivePath.trim()) {
-      link.setAttribute('data-archive-openable', 'true')
+    link.dataset.status = statusValue
+    if (canOpenArchive) {
       link.href = '#'
+      link.setAttribute('data-task-id', task.id)
+      link.setAttribute('data-archive-openable', 'true')
     }
+
+    const titleRow = document.createElement('div')
+    titleRow.className = 'task-title-row'
 
     const title = document.createElement('span')
     title.className = 'task-title'
@@ -103,7 +111,6 @@ export const renderTasks = (tasksList, data) => {
 
     const status = document.createElement('span')
     status.className = 'task-status'
-    const statusValue = task.status || 'pending'
     status.dataset.status = statusValue
     status.setAttribute('role', 'img')
     status.setAttribute('aria-label', statusValue)
@@ -158,19 +165,22 @@ export const renderTasks = (tasksList, data) => {
     }
 
 
-    link.appendChild(title)
-    link.appendChild(meta)
-    item.appendChild(link)
+    titleRow.appendChild(title)
 
-    if (task.status === 'pending' || task.status === 'running') {
+    if (isCancelable) {
       const cancelBtn = document.createElement('button')
       cancelBtn.type = 'button'
-      cancelBtn.className = 'btn btn--xs btn--danger task-cancel'
-      cancelBtn.textContent = 'Cancel'
+      cancelBtn.className = 'btn btn--icon btn--icon-muted task-cancel'
+      cancelBtn.textContent = '✕'
       cancelBtn.setAttribute('data-task-id', task.id)
+      cancelBtn.setAttribute('title', `Cancel task ${titleText}`)
       cancelBtn.setAttribute('aria-label', `Cancel task ${titleText}`)
-      item.appendChild(cancelBtn)
+      titleRow.appendChild(cancelBtn)
     }
+
+    link.appendChild(titleRow)
+    link.appendChild(meta)
+    item.appendChild(link)
 
     tasksList.appendChild(item)
   }

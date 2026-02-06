@@ -54,10 +54,14 @@ export function bindTasksPanel({
 
   async function requestCancel(taskId, button) {
     if (!taskId) return
-    const originalText = button?.textContent || ''
+    const originalText = button?.textContent || '✕'
+    const originalLabel = button?.getAttribute('aria-label') || ''
+    const originalTitle = button?.getAttribute('title') || ''
     if (button) {
       button.disabled = true
-      button.textContent = 'Canceling...'
+      button.textContent = '…'
+      button.setAttribute('aria-label', 'Canceling task')
+      button.setAttribute('title', 'Canceling task')
     }
     try {
       const res = await fetch(
@@ -81,7 +85,9 @@ export function bindTasksPanel({
     } catch (error) {
       if (button) {
         button.disabled = false
-        button.textContent = originalText || 'Cancel'
+        button.textContent = originalText
+        if (originalLabel) button.setAttribute('aria-label', originalLabel)
+        if (originalTitle) button.setAttribute('title', originalTitle)
       }
       const message = error instanceof Error ? error.message : String(error)
       console.warn('[webui] cancel task failed', message)
@@ -91,6 +97,15 @@ export function bindTasksPanel({
   tasksList.addEventListener('click', (event) => {
     const target = event.target
     if (!(target instanceof Element)) return
+
+    const button = target.closest('.task-cancel')
+    if (button instanceof HTMLButtonElement) {
+      event.preventDefault()
+      event.stopPropagation()
+      const taskId = button.getAttribute('data-task-id') || ''
+      void requestCancel(taskId, button)
+      return
+    }
 
     const link = target.closest('.task-link')
     if (link) {
@@ -106,12 +121,6 @@ export function bindTasksPanel({
       }
       return
     }
-
-    const button = target.closest('.task-cancel')
-    if (!button) return
-    event.preventDefault()
-    const taskId = button.getAttribute('data-task-id') || ''
-    void requestCancel(taskId, button)
   })
 
   const dialogEnabled = Boolean(tasksDialog && tasksOpenBtn)

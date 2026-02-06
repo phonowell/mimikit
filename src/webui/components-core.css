@@ -139,6 +139,22 @@
   --btn-icon-size: 18px;
 }
 
+.btn--icon-muted {
+  --btn-size: 28px;
+  --btn-icon-size: 12px;
+  --btn-pad: 0;
+  --btn-radius: 50%;
+  --btn-bg: transparent;
+  --btn-color: #8593a6;
+  --btn-border: transparent;
+  --btn-hover-bg: #e8eef7;
+  --btn-hover-color: #5e6d80;
+  --btn-hover-border: transparent;
+  --btn-focus: rgba(42, 125, 225, 0.28);
+  font-weight: 500;
+  line-height: 1;
+}
+
 .app-actions .btn {
   line-height: 1;
 }

@@ -91,12 +91,24 @@
   min-width: 0;
 }
 
+.task-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
 .task-link:focus-visible {
   outline: 2px solid rgba(42, 125, 225, 0.4);
   outline-offset: 2px;
 }
 
 .task-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-weight: 600;
   font-size: 13px;
 }
@@ -157,5 +169,10 @@
 }
 
 .task-cancel {
-  align-self: flex-start;
+  flex-shrink: 0;
+  margin-right: -2px;
+}
+
+.task-cancel:disabled {
+  opacity: 0.75;
 }

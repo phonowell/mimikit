@@ -71,6 +71,7 @@
   --quote-bar: var(--accent);
   --quote-bg: rgba(42, 125, 225, 0.1);
   --quote-bg-hover: rgba(42, 125, 225, 0.12);
+  --quote-author: var(--quote-bar);
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -114,6 +115,7 @@
   --quote-bar: var(--border);
   --quote-bg: rgba(92, 107, 122, 0.1);
   --quote-bg-hover: rgba(92, 107, 122, 0.12);
+  --quote-author: var(--muted);
 }
 
 .message .message-quote[data-quote-role='unknown'] {
@@ -145,7 +147,7 @@
   font-size: 11px;
   font-weight: 600;
   line-height: 1.2;
-  color: var(--quote-bar);
+  color: var(--quote-author);
 }
 
 .message .message-quote-text {
@@ -216,6 +218,7 @@
 .composer .quote-preview {
   --quote-bar: var(--accent);
   --quote-bg: rgba(42, 125, 225, 0.1);
+  --quote-label: var(--quote-bar);
   flex: 0 0 100%;
   display: flex;
   flex-direction: column;
@@ -281,6 +284,7 @@
 .composer .quote-preview[data-role='system'] {
   --quote-bar: var(--border);
   --quote-bg: rgba(92, 107, 122, 0.1);
+  --quote-label: var(--muted);
 }
 
 .composer .quote-preview[data-role='unknown'] {
@@ -292,7 +296,7 @@
   font-weight: 600;
   font-size: 11px;
   line-height: 1.2;
-  color: var(--quote-bar);
+  color: var(--quote-label);
 }
 
 .composer .quote-text {
@@ -312,16 +316,6 @@
 
 .composer .quote-clear {
   --btn-size: 20px;
-  --btn-icon-size: 12px;
-  --btn-pad: 0;
-  --btn-radius: 50%;
-  --btn-bg: transparent;
-  --btn-color: var(--muted);
-  --btn-border: transparent;
-  --btn-hover-bg: rgba(15, 23, 42, 0.06);
-  --btn-hover-color: var(--text);
-  --btn-hover-border: transparent;
-  --btn-focus: rgba(42, 125, 225, 0.22);
   position: absolute;
   top: 50%;
   right: 8px;
@@ -329,8 +323,6 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-weight: 500;
-  line-height: 1;
   transition: background-color 0.12s ease, color 0.12s ease,
     border-color 0.12s ease, transform 0.12s ease;
 }
@@ -349,16 +341,11 @@
 
 .message .message-quote-btn {
   --btn-size: 26px;
-  --btn-icon-size: 12px;
-  --btn-pad: 0;
-  --btn-radius: 50%;
   --btn-bg: rgba(255, 255, 255, 0.92);
-  --btn-color: var(--muted);
   --btn-border: var(--border);
   --btn-hover-bg: rgba(15, 23, 42, 0.06);
-  --btn-hover-color: var(--text);
-  --btn-hover-border: transparent;
-  --btn-focus: rgba(42, 125, 225, 0.22);
+  --btn-hover-color: #5e6d80;
+  --btn-focus: rgba(42, 125, 225, 0.28);
   box-shadow: 0 1px 0 rgba(15, 23, 42, 0.05);
   order: 2;
   opacity: 0;
