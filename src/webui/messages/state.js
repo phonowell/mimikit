@@ -3,6 +3,7 @@ export const createMessageState = () => ({
   lastMessageId: null,
   lastMessageRole: null,
   lastAgentMessageId: null,
+  lastLoadingVisible: false,
   awaitingReply: false,
   lastMessageIds: new Set(),
 })
@@ -28,10 +29,17 @@ export const collectNewMessageIds = (state, messages) => {
 export const hasMessageChange = (state, messages, newestId) =>
   messages.length !== state.lastMessageCount || newestId !== state.lastMessageId
 
+export const hasLoadingVisibilityChange = (state, loadingVisible) =>
+  state.lastLoadingVisible !== loadingVisible
+
 export const updateMessageState = (state, messages, newestId) => {
   state.lastMessageCount = messages.length
   state.lastMessageId = newestId
   state.lastMessageIds = collectMessageIds(messages)
+}
+
+export const updateLoadingVisibilityState = (state, loadingVisible) => {
+  state.lastLoadingVisible = loadingVisible
 }
 
 export const applyRenderedState = (state, rendered, { loading, syncLoadingState }) => {
@@ -48,5 +56,6 @@ export const applyRenderedState = (state, rendered, { loading, syncLoadingState 
 export const clearMessageState = (state) => {
   state.lastMessageRole = null
   state.lastMessageIds = new Set()
+  state.lastLoadingVisible = false
   state.awaitingReply = false
 }

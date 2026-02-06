@@ -1,5 +1,27 @@
 export const isAgentMessage = (msg) => msg?.role === 'manager'
 
+export const collectAckedUserMessageIds = (messages, loadingActive = false) => {
+  const acked = new Set()
+  let hasAgentAfter = false
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const msg = messages[i]
+    if (isAgentMessage(msg)) {
+      hasAgentAfter = true
+      continue
+    }
+    if (msg?.role !== 'user' || msg?.id == null) continue
+    if (hasAgentAfter) acked.add(String(msg.id))
+  }
+  if (!loadingActive) return acked
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const msg = messages[i]
+    if (msg?.role !== 'user' || msg?.id == null) continue
+    acked.add(String(msg.id))
+    break
+  }
+  return acked
+}
+
 export const findLatestAgentMessage = (messages) => {
   for (let i = messages.length - 1; i >= 0; i -= 1) {
     const msg = messages[i]
@@ -100,6 +122,7 @@ const renderMessage = (params, msg) => {
     enterMessageIds,
     onQuote,
     messageLookup,
+    ackedUserMessageIds,
   } = params
   if (!messagesEl) return
   const item = document.createElement('li')
@@ -179,12 +202,12 @@ const renderMessage = (params, msg) => {
   const time = document.createElement('span')
   time.className = 'time'
   time.textContent = timeText
-  if (msg?.role === 'user') {
+  if (msg?.role === 'user' && ackedUserMessageIds?.has(String(msg.id))) {
     const delivery = document.createElement('span')
     delivery.className = 'delivery'
     delivery.textContent = '✓'
-    delivery.title = 'Sent'
-    delivery.setAttribute('aria-label', 'Sent')
+    delivery.title = 'Seen by agent'
+    delivery.setAttribute('aria-label', 'Seen by agent')
     meta.appendChild(delivery)
   }
   meta.appendChild(time)
@@ -217,7 +240,11 @@ export const renderMessages = (params) => {
   for (const msg of messages) {
     if (msg?.id) messageLookup.set(String(msg.id), msg)
   }
-  const renderParams = { ...params, messageLookup }
+  const ackedUserMessageIds = collectAckedUserMessageIds(
+    messages,
+    Boolean(loading?.isLoading()),
+  )
+  const renderParams = { ...params, messageLookup, ackedUserMessageIds }
   for (const msg of messages) {
     renderMessage(renderParams, msg)
   }

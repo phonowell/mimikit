@@ -12,7 +12,9 @@ import {
   clearMessageState,
   collectNewMessageIds,
   createMessageState,
+  hasLoadingVisibilityChange,
   hasMessageChange,
+  updateLoadingVisibilityState,
   updateMessageState,
 } from './state.js'
 import { clearWorkerDots, updateWorkerDots } from './worker-dots.js'
@@ -89,7 +91,10 @@ export function createMessagesController({
     const msgData = await msgRes.json()
     const messages = msgData.messages || []
     const newestId = messages.length > 0 ? messages[messages.length - 1].id : null
-    const changed = hasMessageChange(messageState, messages, newestId)
+    const loadingVisible = loading.isLoading()
+    const changed =
+      hasMessageChange(messageState, messages, newestId) ||
+      hasLoadingVisibilityChange(messageState, loadingVisible)
     if (changed) {
       const enterMessageIds = collectNewMessageIds(messageState, messages)
       const rendered = doRender(messages, enterMessageIds)
@@ -97,6 +102,7 @@ export function createMessagesController({
         applyRenderedState(messageState, rendered, { loading, syncLoadingState })
     }
     updateMessageState(messageState, messages, newestId)
+    updateLoadingVisibilityState(messageState, loading.isLoading())
     return changed
   }
 
@@ -127,7 +133,11 @@ export function createMessagesController({
       const msgData = await msgRes.json()
       const messages = msgData.messages || []
       const newestId = messages.length > 0 ? messages[messages.length - 1].id : null
-      if (hasMessageChange(messageState, messages, newestId)) {
+      const loadingVisible = loading.isLoading()
+      if (
+        hasMessageChange(messageState, messages, newestId) ||
+        hasLoadingVisibilityChange(messageState, loadingVisible)
+      ) {
         const enterMessageIds = collectNewMessageIds(messageState, messages)
         const rendered = doRender(messages, enterMessageIds)
         if (rendered)
@@ -136,6 +146,7 @@ export function createMessagesController({
         syncLoadingState()
       }
       updateMessageState(messageState, messages, newestId)
+      updateLoadingVisibilityState(messageState, loading.isLoading())
     } catch (error) {
       console.warn('[webui] poll failed', error)
       setDisconnected()
