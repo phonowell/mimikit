@@ -45,6 +45,8 @@ const config = defaultConfig({
 
 const envModel = process.env.MIMIKIT_MODEL?.trim()
 if (envModel) config.manager.model = envModel
+const envWorkerModel = process.env.MIMIKIT_WORKER_MODEL?.trim()
+if (envWorkerModel) config.worker.model = envWorkerModel
 const envReasoning = process.env.MIMIKIT_REASONING_EFFORT?.trim()
 if (envReasoning) {
   const allowed: ModelReasoningEffort[] = [

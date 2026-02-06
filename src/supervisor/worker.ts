@@ -109,6 +109,9 @@ const runTask = async (
       workDir: runtime.config.workDir,
       task,
       timeoutMs: runtime.config.worker.timeoutMs,
+      ...(runtime.config.worker.model
+        ? { model: runtime.config.worker.model }
+        : {}),
       abortSignal: controller.signal,
     })
     if (task.status === 'canceled') {

@@ -18,6 +18,7 @@ export type SupervisorConfig = {
   worker: {
     maxConcurrent: number
     timeoutMs: number
+    model?: string
   }
 }
 
@@ -34,10 +35,11 @@ export const defaultConfig = (params: {
     historyMinCount: 20,
     historyMaxCount: 100,
     historyMaxBytes: 20 * 1024,
-    model: 'gpt-5.2',
+    model: 'gpt-5.2-xhigh',
   },
   worker: {
     maxConcurrent: 3,
     timeoutMs: 10 * 60 * 1000,
+    model: 'gpt-5.3-codex-xhigh',
   },
 })
