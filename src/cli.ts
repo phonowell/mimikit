@@ -61,6 +61,33 @@ if (envReasoning) {
   else console.warn('[cli] invalid MIMIKIT_REASONING_EFFORT:', envReasoning)
 }
 
+const envTokenBudgetDaily = process.env.MIMIKIT_TOKEN_BUDGET_DAILY?.trim()
+if (envTokenBudgetDaily) {
+  const parsed = Number(envTokenBudgetDaily)
+  if (Number.isFinite(parsed) && parsed > 0)
+    config.tokenBudget.dailyTotal = Math.floor(parsed)
+  else {
+    console.warn(
+      '[cli] invalid MIMIKIT_TOKEN_BUDGET_DAILY:',
+      envTokenBudgetDaily,
+    )
+  }
+}
+
+const envTokenBudgetEnabled = process.env.MIMIKIT_TOKEN_BUDGET_ENABLED?.trim()
+if (envTokenBudgetEnabled) {
+  if (envTokenBudgetEnabled === '1' || envTokenBudgetEnabled === 'true')
+    config.tokenBudget.enabled = true
+  else if (envTokenBudgetEnabled === '0' || envTokenBudgetEnabled === 'false')
+    config.tokenBudget.enabled = false
+  else {
+    console.warn(
+      '[cli] invalid MIMIKIT_TOKEN_BUDGET_ENABLED:',
+      envTokenBudgetEnabled,
+    )
+  }
+}
+
 console.log('[cli] config:', config)
 
 const supervisor = new Supervisor(config)
@@ -70,8 +97,10 @@ createHttpServer(supervisor, config, parseInt(port, 10))
 
 const shutdown = (reason: string) => {
   console.log(`\n[cli] ${reason}`)
-  supervisor.stop()
-  process.exit(0)
+  void (async () => {
+    await supervisor.stopAndPersist()
+    process.exit(0)
+  })()
 }
 
 process.on('SIGINT', () => {

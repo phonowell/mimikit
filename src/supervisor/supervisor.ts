@@ -7,6 +7,7 @@ import { readHistory } from '../storage/jsonl.js'
 import { cancelTask } from './cancel.js'
 import { type ChatMessage, mergeChatMessages } from './chat-view.js'
 import { managerLoop } from './manager.js'
+import { hydrateRuntimeState, persistRuntimeState } from './runtime-persist.js'
 import { buildTaskViews } from './task-view.js'
 import { workerLoop } from './worker.js'
 
@@ -16,6 +17,12 @@ import type { Task } from '../types/index.js'
 
 export class Supervisor {
   private runtime: RuntimeState
+
+  private persistStopSnapshot = async (): Promise<void> => {
+    await bestEffort('persistRuntimeState: stop', () =>
+      persistRuntimeState(this.runtime),
+    )
+  }
 
   constructor(config: SupervisorConfig) {
     const paths = buildPaths(config.stateDir)
@@ -31,17 +38,28 @@ export class Supervisor {
       tasks: [],
       runningWorkers: new Set(),
       runningControllers: new Map(),
+      tokenBudget: {
+        date: nowIso().slice(0, 10),
+        spent: 0,
+      },
     }
   }
 
   async start() {
     await ensureStateDirs(this.runtime.paths)
+    await hydrateRuntimeState(this.runtime)
     void managerLoop(this.runtime)
     void workerLoop(this.runtime)
   }
 
   stop() {
     this.runtime.stopped = true
+    void this.persistStopSnapshot()
+  }
+
+  async stopAndPersist(): Promise<void> {
+    this.runtime.stopped = true
+    await this.persistStopSnapshot()
   }
 
   async addUserInput(
@@ -110,6 +128,12 @@ export class Supervisor {
     pendingInputs: number
     managerRunning: boolean
     maxWorkers: number
+    tokenBudget: {
+      date: string
+      spent: number
+      limit: number
+      enabled: boolean
+    }
   } {
     const pendingTasks = this.runtime.tasks.filter(
       (task) => task.status === 'pending',
@@ -127,6 +151,12 @@ export class Supervisor {
       pendingInputs,
       managerRunning: this.runtime.managerRunning,
       maxWorkers,
+      tokenBudget: {
+        date: this.runtime.tokenBudget.date,
+        spent: this.runtime.tokenBudget.spent,
+        limit: this.runtime.config.tokenBudget.dailyTotal,
+        enabled: this.runtime.config.tokenBudget.enabled,
+      },
     }
   }
 

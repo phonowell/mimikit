@@ -18,12 +18,17 @@ import {
   appendConsumedResultsToHistory,
   appendFallbackReply,
 } from './manager-history.js'
+import { persistRuntimeState } from './runtime-persist.js'
 import { appendTaskSystemMessage } from './task-history.js'
 import { selectRecentTasks } from './task-select.js'
+import { addTokenUsage, canSpendTokens } from './token-budget.js'
 
 import type { RuntimeState } from './runtime.js'
 
 const DEFAULT_MANAGER_TIMEOUT_MS = 30_000
+
+const estimateTaskTokenCost = (prompt: string): number =>
+  Math.max(512, Math.ceil(prompt.length / 3))
 
 export const runManagerBuffer = async (
   runtime: RuntimeState,
@@ -76,6 +81,7 @@ export const runManagerBuffer = async (
       ...(model ? { model } : {}),
       ...(modelReasoningEffort ? { modelReasoningEffort } : {}),
     })
+    addTokenUsage(runtime, result.usage?.total)
 
     const parsed = parseCommands(result.output)
 
@@ -105,6 +111,16 @@ export const runManagerBuffer = async (
         const dedupeKey = `${prompt}\n${rawTitle ?? ''}`
         if (seenDispatches.has(dedupeKey)) continue
         seenDispatches.add(dedupeKey)
+        if (!canSpendTokens(runtime, estimateTaskTokenCost(prompt))) {
+          await appendLog(runtime.paths.log, {
+            event: 'task_dispatch_skipped_budget',
+            promptChars: prompt.length,
+            budgetDate: runtime.tokenBudget.date,
+            budgetSpent: runtime.tokenBudget.spent,
+            budgetLimit: runtime.config.tokenBudget.dailyTotal,
+          })
+          continue
+        }
         const { task, created } = enqueueTask(runtime.tasks, prompt, rawTitle)
         if (created) {
           await appendTaskSystemMessage(
@@ -162,6 +178,9 @@ export const runManagerBuffer = async (
     clearManagerBuffer(buffer)
     syncManagerPendingInputs(runtime, buffer)
   } finally {
+    await bestEffort('persistRuntimeState: manager', () =>
+      persistRuntimeState(runtime),
+    )
     runtime.managerRunning = false
   }
 }

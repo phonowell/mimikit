@@ -7,6 +7,11 @@ export type TokenUsage = {
   total?: number
 }
 
+export type TokenBudgetState = {
+  date: string
+  spent: number
+}
+
 export type Role = 'user' | 'manager' | 'system'
 export type HistoryMessage = {
   id: Id
@@ -44,6 +49,7 @@ export type Task = {
   startedAt?: ISODate
   completedAt?: ISODate
   durationMs?: number
+  attempts?: number
   usage?: TokenUsage
   archivePath?: string
   result?: TaskResult

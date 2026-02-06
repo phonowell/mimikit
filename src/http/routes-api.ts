@@ -105,8 +105,10 @@ const registerControlRoutes = (
   app.post('/api/restart', (_request, reply) => {
     reply.send({ ok: true })
     setTimeout(() => {
-      supervisor.stop()
-      process.exit(75)
+      void (async () => {
+        await supervisor.stopAndPersist()
+        process.exit(75)
+      })()
     }, 100)
   })
 
@@ -114,7 +116,7 @@ const registerControlRoutes = (
     reply.send({ ok: true })
     setTimeout(() => {
       void (async () => {
-        supervisor.stop()
+        await supervisor.stopAndPersist()
         try {
           await clearStateDir(config.stateDir)
         } catch (error) {

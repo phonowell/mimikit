@@ -29,14 +29,20 @@
 - `MIMIKIT_MODEL`：覆盖 manager model（默认 `gpt-5.2-high`）
 - `MIMIKIT_WORKER_MODEL`：覆盖 worker model（默认 `gpt-5.3-codex-high`）
 - `MIMIKIT_REASONING_EFFORT`：设置 manager reasoning effort（`minimal|low|medium|high|xhigh`）
+- `MIMIKIT_TOKEN_BUDGET_DAILY`：覆盖每日 token 预算（正整数）
+- `MIMIKIT_TOKEN_BUDGET_ENABLED`：预算开关（`true|false|1|0`）
 
 ### 默认配置（节选）
+- `tokenBudget.enabled = true`
+- `tokenBudget.dailyTotal = 500000000`
 - `manager.pollMs = 1000`
 - `manager.debounceMs = 10000`
 - `manager.maxResultWaitMs = 20000`
 - `manager.tasksMaxCount = 20`
 - `manager.tasksMinCount = 5`
 - `manager.tasksMaxBytes = 20480`
+- `worker.retryMaxAttempts = 1`
+- `worker.retryBackoffMs = 5000`
 
 说明：manager 已对 tasks 与 history 都按 `min/max/maxBytes` 窗口裁剪后再注入 prompt。
 

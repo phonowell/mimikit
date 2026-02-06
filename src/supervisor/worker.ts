@@ -11,8 +11,18 @@ import {
   pickNextPendingTask,
 } from '../tasks/queue.js'
 
+import { persistRuntimeState } from './runtime-persist.js'
+import {
+  addTokenUsage,
+  canSpendTokens,
+  isTokenBudgetExceeded,
+} from './token-budget.js'
+
 import type { RuntimeState } from './runtime.js'
 import type { Task, TaskResult, TokenUsage } from '../types/index.js'
+
+const estimateTaskTokenCost = (task: Task): number =>
+  Math.max(1024, Math.ceil(task.prompt.length / 2))
 
 const buildResult = (
   task: Task,
@@ -91,16 +101,42 @@ const runTask = async (
       taskId: task.id,
       promptChars: task.prompt.length,
     })
-    const llmResult = await runWorker({
-      stateDir: runtime.config.stateDir,
-      workDir: runtime.config.workDir,
-      task,
-      timeoutMs: runtime.config.worker.timeoutMs,
-      ...(runtime.config.worker.model
-        ? { model: runtime.config.worker.model }
-        : {}),
-      abortSignal: controller.signal,
-    })
+    let llmResult: Awaited<ReturnType<typeof runWorker>> | null = null
+    const maxAttempts = Math.max(0, runtime.config.worker.retryMaxAttempts)
+    const backoffMs = Math.max(0, runtime.config.worker.retryBackoffMs)
+    let attempt = 0
+    while (attempt <= maxAttempts) {
+      try {
+        llmResult = await runWorker({
+          stateDir: runtime.config.stateDir,
+          workDir: runtime.config.workDir,
+          task,
+          timeoutMs: runtime.config.worker.timeoutMs,
+          ...(runtime.config.worker.model
+            ? { model: runtime.config.worker.model }
+            : {}),
+          abortSignal: controller.signal,
+        })
+        break
+      } catch (error) {
+        if (attempt >= maxAttempts) throw error
+        await appendLog(runtime.paths.log, {
+          event: 'worker_retry',
+          taskId: task.id,
+          attempt: attempt + 1,
+          maxAttempts,
+          backoffMs,
+        })
+        attempt += 1
+        task.attempts = Math.max(0, (task.attempts ?? 0) + 1)
+        await bestEffort('persistRuntimeState: worker_retry', () =>
+          persistRuntimeState(runtime),
+        )
+        await sleep(backoffMs)
+      }
+    }
+    if (!llmResult) throw new Error('worker_result_missing')
+    addTokenUsage(runtime, llmResult.usage?.total)
     if (task.status === 'canceled') {
       const result = buildResult(
         task,
@@ -140,21 +176,43 @@ const runTask = async (
 const spawnWorker = async (runtime: RuntimeState, task: Task) => {
   if (task.status !== 'pending') return
   if (runtime.runningWorkers.has(task.id)) return
+  if (!canSpendTokens(runtime, estimateTaskTokenCost(task))) {
+    await bestEffort('appendLog: worker_budget_skipped', () =>
+      appendLog(runtime.paths.log, {
+        event: 'worker_budget_skipped',
+        taskId: task.id,
+        budgetDate: runtime.tokenBudget.date,
+        budgetSpent: runtime.tokenBudget.spent,
+        budgetLimit: runtime.config.tokenBudget.dailyTotal,
+      }),
+    )
+    return
+  }
   runtime.runningWorkers.add(task.id)
   const controller = new AbortController()
   runtime.runningControllers.set(task.id, controller)
   markTaskRunning(runtime.tasks, task.id)
+  await bestEffort('persistRuntimeState: worker_start', () =>
+    persistRuntimeState(runtime),
+  )
   try {
     await runTask(runtime, task, controller)
   } finally {
     runtime.runningWorkers.delete(task.id)
     runtime.runningControllers.delete(task.id)
+    await bestEffort('persistRuntimeState: worker_end', () =>
+      persistRuntimeState(runtime),
+    )
   }
 }
 
 export const workerLoop = async (runtime: RuntimeState): Promise<void> => {
   while (!runtime.stopped) {
     try {
+      if (isTokenBudgetExceeded(runtime)) {
+        await sleep(1000)
+        continue
+      }
       if (runtime.runningWorkers.size < runtime.config.worker.maxConcurrent) {
         const next = pickNextPendingTask(runtime.tasks, runtime.runningWorkers)
         if (next) void spawnWorker(runtime, next)

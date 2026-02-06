@@ -4,6 +4,8 @@ import { nowIso } from '../shared/utils.js'
 import { appendTaskResultArchive } from '../storage/task-results.js'
 import { markTaskCanceled } from '../tasks/queue.js'
 
+import { persistRuntimeState } from './runtime-persist.js'
+
 import type { RuntimeState } from './runtime.js'
 import type { Task, TaskResult } from '../types/index.js'
 
@@ -100,6 +102,9 @@ export const cancelTask = async (
       durationMs: result.durationMs,
     })
     await pushCanceledResult(runtime, task, result)
+    await bestEffort('persistRuntimeState: cancel_pending', () =>
+      persistRuntimeState(runtime),
+    )
     return { ok: true, status: 'canceled', taskId: task.id }
   }
 
@@ -123,6 +128,9 @@ export const cancelTask = async (
       ...(meta?.source ? { source: meta.source } : {}),
       ...(meta?.reason ? { reason: meta.reason } : {}),
     }),
+  )
+  await bestEffort('persistRuntimeState: cancel_running', () =>
+    persistRuntimeState(runtime),
   )
   return { ok: true, status: 'canceled', taskId: task.id }
 }

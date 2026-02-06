@@ -5,6 +5,10 @@ import type { ModelReasoningEffort } from '@openai/codex-sdk'
 export type SupervisorConfig = {
   stateDir: string
   workDir: string
+  tokenBudget: {
+    enabled: boolean
+    dailyTotal: number
+  }
   manager: {
     pollMs: number
     debounceMs: number
@@ -21,6 +25,8 @@ export type SupervisorConfig = {
   worker: {
     maxConcurrent: number
     timeoutMs: number
+    retryMaxAttempts: number
+    retryBackoffMs: number
     model?: string
   }
 }
@@ -31,6 +37,10 @@ export const defaultConfig = (params: {
 }): SupervisorConfig => ({
   stateDir: resolve(params.stateDir),
   workDir: resolve(params.workDir),
+  tokenBudget: {
+    enabled: true,
+    dailyTotal: 500_000_000,
+  },
   manager: {
     pollMs: 1000,
     debounceMs: 10000,
@@ -46,6 +56,8 @@ export const defaultConfig = (params: {
   worker: {
     maxConcurrent: 3,
     timeoutMs: 10 * 60 * 1000,
+    retryMaxAttempts: 1,
+    retryBackoffMs: 5_000,
     model: 'gpt-5.3-codex-high',
   },
 })
