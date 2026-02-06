@@ -163,7 +163,7 @@ const parseIsoToMs = (value: string): number => {
   return Number.isFinite(ts) ? ts : 0
 }
 
-export const selectTasksForPrompt = (tasks: Task[], limit = 50): Task[] => {
+export const selectTasksForPrompt = (tasks: Task[]): Task[] => {
   if (tasks.length === 0) return []
   const sorted = [...tasks].sort((a, b) => {
     const aTs = parseIsoToMs(resolveTaskChangedAt(a))
@@ -171,7 +171,7 @@ export const selectTasksForPrompt = (tasks: Task[], limit = 50): Task[] => {
     if (aTs !== bTs) return bTs - aTs
     return a.id.localeCompare(b.id)
   })
-  return sorted.slice(0, Math.max(0, limit))
+  return sorted
 }
 
 const yamlIndent = (level: number): string => '  '.repeat(level)
@@ -236,9 +236,9 @@ export const formatTasksYaml = (
 ): string => {
   if (tasks.length === 0 && results.length === 0) return ''
   const resultById = new Map(results.map((result) => [result.taskId, result]))
-  const limited = selectTasksForPrompt(tasks, 50)
+  const ordered = selectTasksForPrompt(tasks)
   const lines: string[] = ['tasks:']
-  if (limited.length === 0 && results.length > 0) {
+  if (ordered.length === 0 && results.length > 0) {
     for (const result of results) {
       const fallbackTask: Task = {
         id: result.taskId,
@@ -253,7 +253,7 @@ export const formatTasksYaml = (
     }
     return escapeCdata(lines.join('\n'))
   }
-  for (const task of limited)
+  for (const task of ordered)
     formatTaskEntry(task, resultById.get(task.id), lines)
 
   return escapeCdata(lines.join('\n'))

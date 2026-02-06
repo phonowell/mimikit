@@ -26,6 +26,10 @@
 - `manager.pollMs = 1000`
 - `manager.debounceMs = 10000`
 - `manager.maxResultWaitMs = 20000`
-- `manager.tasksMaxCount = 50`（当前为配置暴露字段，尚未接入调度限制）
+- `manager.tasksMaxCount = 20`
+- `manager.tasksMinCount = 5`
+- `manager.tasksMaxBytes = 20480`
+
+说明：manager 已对 tasks 与 history 都按 `min/max/maxBytes` 窗口裁剪后再注入 prompt。
 
 定义位置：`src/config.ts`

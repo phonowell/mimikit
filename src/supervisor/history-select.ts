@@ -1,3 +1,5 @@
+import { selectByWindow } from './select-window.js'
+
 import type { HistoryMessage } from '../types/index.js'
 
 export type HistorySelectParams = {
@@ -10,21 +12,16 @@ export const selectRecentHistory = (
   history: HistoryMessage[],
   params: HistorySelectParams,
 ): HistoryMessage[] => {
-  const historyMin = Math.max(0, params.minCount)
-  const historyMax = Math.max(historyMin, params.maxCount)
-  const historyMaxBytes = Math.max(0, params.maxBytes)
+  if (history.length === 0) return []
   const recent: HistoryMessage[] = []
-  let totalBytes = 0
   for (let i = history.length - 1; i >= 0; i -= 1) {
     const item = history[i]
     if (!item) continue
-    const itemBytes = Buffer.byteLength(JSON.stringify(item), 'utf8')
-    totalBytes += itemBytes
     recent.push(item)
-    if (recent.length >= historyMax) break
-    if (historyMaxBytes > 0 && totalBytes > historyMaxBytes)
-      if (recent.length >= historyMin) break
   }
-  recent.reverse()
-  return recent
+  const selected = selectByWindow(recent, params, (item) =>
+    Buffer.byteLength(JSON.stringify(item), 'utf8'),
+  )
+  selected.reverse()
+  return selected
 }

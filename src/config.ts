@@ -10,6 +10,8 @@ export type SupervisorConfig = {
     debounceMs: number
     maxResultWaitMs: number
     tasksMaxCount: number
+    tasksMinCount: number
+    tasksMaxBytes: number
     historyMinCount: number
     historyMaxCount: number
     historyMaxBytes: number
@@ -33,7 +35,9 @@ export const defaultConfig = (params: {
     pollMs: 1000,
     debounceMs: 10000,
     maxResultWaitMs: 20000,
-    tasksMaxCount: 50,
+    tasksMaxCount: 20,
+    tasksMinCount: 5,
+    tasksMaxBytes: 20480,
     historyMinCount: 20,
     historyMaxCount: 100,
     historyMaxBytes: 20 * 1024,

@@ -13,7 +13,6 @@ import {
   formatTasksYaml,
   joinPromptSections,
   renderPromptTemplate,
-  selectTasksForPrompt,
 } from './prompt-format.js'
 
 import type {
@@ -99,7 +98,7 @@ export const buildManagerPrompt = async (params: {
     pendingResults.map((result) => result.taskId),
   )
   const tasksForPrompt = params.tasks
-  const promptTasks = selectTasksForPrompt(tasksForPrompt, 50)
+  const promptTasks = tasksForPrompt
   const resultTaskIds = promptTasks
     .filter((task) => task.status !== 'pending' && task.status !== 'running')
     .map((task) => task.id)

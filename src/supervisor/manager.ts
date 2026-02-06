@@ -9,6 +9,7 @@ import { cancelTask } from './cancel.js'
 import { parseCommands } from './command-parser.js'
 import { selectRecentHistory } from './history-select.js'
 import { appendTaskSystemMessage } from './task-history.js'
+import { selectRecentTasks } from './task-select.js'
 
 import type { RuntimeState } from './runtime.js'
 import type { TaskResult, UserInput } from '../types/index.js'
@@ -115,6 +116,11 @@ const runManagerBuffer = async (
     maxCount: runtime.config.manager.historyMaxCount,
     maxBytes: runtime.config.manager.historyMaxBytes,
   })
+  const recentTasks = selectRecentTasks(runtime.tasks, {
+    minCount: runtime.config.manager.tasksMinCount,
+    maxCount: runtime.config.manager.tasksMaxCount,
+    maxBytes: runtime.config.manager.tasksMaxBytes,
+  })
   const startedAt = Date.now()
   runtime.managerRunning = true
   let consumedInputCount = 0
@@ -139,7 +145,7 @@ const runManagerBuffer = async (
       workDir: runtime.config.workDir,
       inputs,
       results,
-      tasks: runtime.tasks,
+      tasks: recentTasks,
       history: recentHistory,
       ...(runtime.lastUserMeta
         ? { env: { lastUser: runtime.lastUserMeta } }
