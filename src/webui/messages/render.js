@@ -179,7 +179,6 @@ const renderMessage = (params, msg) => {
   const time = document.createElement('span')
   time.className = 'time'
   time.textContent = timeText
-  meta.appendChild(time)
   if (msg?.role === 'user') {
     const delivery = document.createElement('span')
     delivery.className = 'delivery'
@@ -188,6 +187,7 @@ const renderMessage = (params, msg) => {
     delivery.setAttribute('aria-label', 'Sent')
     meta.appendChild(delivery)
   }
+  meta.appendChild(time)
   article.appendChild(meta)
 
   item.appendChild(article)
