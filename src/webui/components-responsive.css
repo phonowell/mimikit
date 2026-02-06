@@ -16,6 +16,20 @@
     transition: none;
   }
 
+  .composer .quote-preview::before {
+    transition: none;
+  }
+
+  .composer .quote-clear,
+  .composer .quote-clear:hover,
+  .composer .quote-clear:active,
+  .message .message-quote,
+  .message .message-quote-btn,
+  .message .message-quote-btn:active {
+    transition: none;
+    transform: none;
+  }
+
   .scroll-bottom {
     transition: none;
   }
@@ -31,9 +45,9 @@
   }
 
   .composer .quote-clear {
-    --btn-size: 24px;
+    --btn-size: 22px;
     --btn-icon-size: 12px;
-    top: 4px;
+    top: 50%;
     right: 4px;
   }
 
