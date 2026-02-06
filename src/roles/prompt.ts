@@ -35,6 +35,12 @@ export type ManagerEnv = {
   }
 }
 
+export type ManagerToolResult = {
+  tool: string
+  attrs: Record<string, string>
+  result: unknown
+}
+
 const mergeTaskResults = (
   primary: TaskResult[],
   secondary: TaskResult[],
@@ -90,6 +96,7 @@ export const buildManagerPrompt = async (params: {
   tasks: Task[]
   history: HistoryMessage[]
   env?: ManagerEnv
+  toolResults?: ManagerToolResult[]
 }): Promise<string> => {
   const pendingResults = dedupeTaskResults(params.results)
   const persistedResults = collectTaskResults(params.tasks)
@@ -136,7 +143,7 @@ export const buildManagerPrompt = async (params: {
       'results',
       buildCdataBlock(
         'results',
-        formatResultsYaml(params.tasks, pendingResults),
+        formatResultsYaml(params.tasks, pendingResults, params.toolResults),
       ),
     ],
     [

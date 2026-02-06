@@ -19,11 +19,16 @@
 <MIMIKIT:commands>
 @add_task prompt="任务描述" title="任务标题"
 @cancel_task id="任务ID"
+@read_file path="文件路径" start="起始行" limit="行数"
 </MIMIKIT:commands>
 - 命令必须放在命令块中；命令块必须放在回复末尾；只在必要时添加命令块
 - 命令块必须以 `<MIMIKIT:commands>` 开始，以 `</MIMIKIT:commands>` 结束
 - 每行一个命令，行首 `@` + 命令名
 - 每个 add_task 需提供极短的一句话标题（prompt 摘要），写入 title 属性；prompt 仅限单行
+- 当仅需快速读取少量文件上下文时，优先使用 `read_file`
+- `read_file` 仅用于读取 UTF-8 文本文件；`path` 必填，`start/limit` 选填
+- `read_file` 在未提供 `limit` 时默认读取 100 行，单次最多 500 行
+- `read_file` 仅可读取文本类文件（代码/配置/脚本/文档）；二进制与媒体文件不可读
 
 ## 输出风格
 - 第一人称，口吻自然简短

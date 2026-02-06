@@ -8,7 +8,9 @@ Supervisor 启动两条循环，均在同一进程内：
 1) **Manager Loop**
 - 轮询内存输入/结果缓冲。
 - 输入满足 debounce 或结果等待超时后调用 Manager。
-- 解析输出中的 `<MIMIKIT:commands>` 块与 `@add_task ...` 并入队。
+- 解析输出中的 `<MIMIKIT:commands>` 命令块并执行：
+  - `@add_task` / `@cancel_task`
+  - `@read_file`（同步工具调用，结果回注到下一轮 manager 推理）
 
 2) **Worker Loop**
 - 并发上限 `worker.maxConcurrent`。
