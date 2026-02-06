@@ -6,6 +6,8 @@ import type { Task } from '../src/types/index.js'
 const createTask = (params: {
   id: string
   createdAt: string
+  startedAt?: string
+  completedAt?: string
   archivePath?: string
   resultArchivePath?: string
 }): Task => ({
@@ -15,6 +17,8 @@ const createTask = (params: {
   title: params.id,
   status: 'succeeded',
   createdAt: params.createdAt,
+  ...(params.startedAt ? { startedAt: params.startedAt } : {}),
+  ...(params.completedAt ? { completedAt: params.completedAt } : {}),
   ...(params.archivePath ? { archivePath: params.archivePath } : {}),
   ...(params.resultArchivePath
     ? {
@@ -51,4 +55,16 @@ test('buildTaskViews falls back to result.archivePath', () => {
     }),
   ])
   expect(tasks[0]?.archivePath).toBe('.mimikit/tasks/2026-02-06/t1_task.md')
+})
+
+test('buildTaskViews exposes changeAt from latest lifecycle time', () => {
+  const { tasks } = buildTaskViews([
+    createTask({
+      id: 't1',
+      createdAt: '2026-02-06T00:00:00.000Z',
+      startedAt: '2026-02-06T00:00:10.000Z',
+      completedAt: '2026-02-06T00:00:20.000Z',
+    }),
+  ])
+  expect(tasks[0]?.changeAt).toBe('2026-02-06T00:00:20.000Z')
 })

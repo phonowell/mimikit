@@ -7,6 +7,7 @@ export type TaskView = {
   status: TaskStatus
   title: string
   createdAt: string
+  changeAt: string
   startedAt?: string
   completedAt?: string
   durationMs?: number
@@ -24,11 +25,15 @@ const initCounts = (): TaskCounts => ({
   canceled: 0,
 })
 
+const resolveTaskChangeAt = (task: Task): string =>
+  task.completedAt ?? task.startedAt ?? task.createdAt
+
 const taskToView = (task: Task): TaskView => ({
   id: task.id,
   status: task.status,
   title: task.title || titleFromCandidates(task.id, [task.prompt]),
   createdAt: task.createdAt,
+  changeAt: resolveTaskChangeAt(task),
   ...(task.startedAt ? { startedAt: task.startedAt } : {}),
   ...(task.completedAt ? { completedAt: task.completedAt } : {}),
   ...(typeof task.durationMs === 'number'

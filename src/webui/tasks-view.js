@@ -1,4 +1,4 @@
-import { formatDateTime, formatElapsedLabel, formatUsage } from './messages/format.js'
+import { formatElapsedLabel, formatTime, formatUsage } from './messages/format.js'
 
 const ELAPSED_TICK_MS = 1000
 
@@ -143,10 +143,17 @@ export const renderTasks = (tasksList, data) => {
       meta.appendChild(elapsedEl)
     }
 
-    if (task.createdAt) {
+    const changeAt =
+      typeof task.changeAt === 'string' && task.changeAt.trim()
+        ? task.changeAt
+        : typeof task.change_at === 'string' && task.change_at.trim()
+          ? task.change_at
+          : ''
+
+    if (changeAt) {
       const timeEl = document.createElement('span')
       timeEl.className = 'task-time'
-      timeEl.textContent = `created ${formatDateTime(task.createdAt)}`
+      timeEl.textContent = formatTime(changeAt)
       meta.appendChild(timeEl)
     }
 
