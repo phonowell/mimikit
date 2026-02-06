@@ -1,6 +1,6 @@
 import { buildPaths, ensureStateDirs } from '../fs/paths.js'
 import { appendLog } from '../log/append.js'
-import { safe, setDefaultLogPath } from '../log/safe.js'
+import { bestEffort, setDefaultLogPath } from '../log/safe.js'
 import { newId, nowIso } from '../shared/utils.js'
 import { readHistory } from '../storage/jsonl.js'
 
@@ -111,12 +111,8 @@ export class Supervisor {
   }
 
   async logEvent(entry: Record<string, unknown>) {
-    await safe(
-      'appendLog: event',
-      () => appendLog(this.runtime.paths.log, entry),
-      {
-        fallback: undefined,
-      },
+    await bestEffort('appendLog: event', () =>
+      appendLog(this.runtime.paths.log, entry),
     )
   }
 }

@@ -1,5 +1,5 @@
 import { appendLog } from '../log/append.js'
-import { safe } from '../log/safe.js'
+import { bestEffort, safeOrUndefined } from '../log/safe.js'
 import { nowIso } from '../shared/utils.js'
 import { appendTaskResultArchive } from '../storage/task-results.js'
 import { markTaskCanceled } from '../tasks/queue.js'
@@ -45,21 +45,18 @@ const archiveCanceledResult = (
   task: Task,
   result: TaskResult,
 ): Promise<string | undefined> =>
-  safe(
-    'appendTaskResultArchive: cancel',
-    () =>
-      appendTaskResultArchive(runtime.config.stateDir, {
-        taskId: task.id,
-        title: task.title,
-        status: result.status,
-        prompt: task.prompt,
-        output: result.output,
-        createdAt: task.createdAt,
-        completedAt: result.completedAt,
-        durationMs: result.durationMs,
-        ...(result.usage ? { usage: result.usage } : {}),
-      }),
-    { fallback: undefined },
+  safeOrUndefined('appendTaskResultArchive: cancel', () =>
+    appendTaskResultArchive(runtime.config.stateDir, {
+      taskId: task.id,
+      title: task.title,
+      status: result.status,
+      prompt: task.prompt,
+      output: result.output,
+      createdAt: task.createdAt,
+      completedAt: result.completedAt,
+      durationMs: result.durationMs,
+      ...(result.usage ? { usage: result.usage } : {}),
+    }),
   )
 
 const pushCanceledResult = async (
@@ -70,17 +67,14 @@ const pushCanceledResult = async (
   const archivePath = await archiveCanceledResult(runtime, task, result)
   if (archivePath) result.archivePath = archivePath
   runtime.pendingResults.push(result)
-  await safe(
-    'appendLog: task_canceled',
-    () =>
-      appendLog(runtime.paths.log, {
-        event: 'task_canceled',
-        taskId: task.id,
-        status: result.status,
-        durationMs: result.durationMs,
-        ...(archivePath ? { archivePath } : {}),
-      }),
-    { fallback: undefined },
+  await bestEffort('appendLog: task_canceled', () =>
+    appendLog(runtime.paths.log, {
+      event: 'task_canceled',
+      taskId: task.id,
+      status: result.status,
+      durationMs: result.durationMs,
+      ...(archivePath ? { archivePath } : {}),
+    }),
   )
 }
 
@@ -121,16 +115,13 @@ export const cancelTask = async (
   })
   const controller = runtime.runningControllers.get(task.id)
   if (controller && !controller.signal.aborted) controller.abort()
-  await safe(
-    'appendLog: task_cancel_requested',
-    () =>
-      appendLog(runtime.paths.log, {
-        event: 'task_cancel_requested',
-        taskId: task.id,
-        ...(meta?.source ? { source: meta.source } : {}),
-        ...(meta?.reason ? { reason: meta.reason } : {}),
-      }),
-    { fallback: undefined },
+  await bestEffort('appendLog: task_cancel_requested', () =>
+    appendLog(runtime.paths.log, {
+      event: 'task_cancel_requested',
+      taskId: task.id,
+      ...(meta?.source ? { source: meta.source } : {}),
+      ...(meta?.reason ? { reason: meta.reason } : {}),
+    }),
   )
   return { ok: true, status: 'canceled', taskId: task.id }
 }

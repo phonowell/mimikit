@@ -1,5 +1,5 @@
 import { appendLog } from '../log/append.js'
-import { safe } from '../log/safe.js'
+import { bestEffort, safeOrUndefined } from '../log/safe.js'
 import { runWorker } from '../roles/worker-runner.js'
 import { nowIso, sleep } from '../shared/utils.js'
 import { appendTaskResultArchive } from '../storage/task-results.js'
@@ -36,21 +36,18 @@ const archiveResult = (
   task: Task,
   result: TaskResult,
 ): Promise<string | undefined> =>
-  safe(
-    'appendTaskResultArchive: worker',
-    () =>
-      appendTaskResultArchive(runtime.config.stateDir, {
-        taskId: task.id,
-        title: task.title,
-        status: result.status,
-        prompt: task.prompt,
-        output: result.output,
-        createdAt: task.createdAt,
-        completedAt: result.completedAt,
-        durationMs: result.durationMs,
-        ...(result.usage ? { usage: result.usage } : {}),
-      }),
-    { fallback: undefined },
+  safeOrUndefined('appendTaskResultArchive: worker', () =>
+    appendTaskResultArchive(runtime.config.stateDir, {
+      taskId: task.id,
+      title: task.title,
+      status: result.status,
+      prompt: task.prompt,
+      output: result.output,
+      createdAt: task.createdAt,
+      completedAt: result.completedAt,
+      durationMs: result.durationMs,
+      ...(result.usage ? { usage: result.usage } : {}),
+    }),
   )
 
 const finalizeResult = async (
@@ -67,19 +64,16 @@ const finalizeResult = async (
     ...(result.usage ? { usage: result.usage } : {}),
   })
   runtime.pendingResults.push(result)
-  await safe(
-    'appendLog: worker_end',
-    () =>
-      appendLog(runtime.paths.log, {
-        event: 'worker_end',
-        taskId: task.id,
-        status: result.status,
-        durationMs: result.durationMs,
-        elapsedMs: result.durationMs,
-        ...(result.usage ? { usage: result.usage } : {}),
-        ...(archivePath ? { archivePath } : {}),
-      }),
-    { fallback: undefined },
+  await bestEffort('appendLog: worker_end', () =>
+    appendLog(runtime.paths.log, {
+      event: 'worker_end',
+      taskId: task.id,
+      status: result.status,
+      durationMs: result.durationMs,
+      elapsedMs: result.durationMs,
+      ...(result.usage ? { usage: result.usage } : {}),
+      ...(archivePath ? { archivePath } : {}),
+    }),
   )
 }
 
@@ -165,14 +159,11 @@ export const workerLoop = async (runtime: RuntimeState): Promise<void> => {
         if (next) void spawnWorker(runtime, next)
       }
     } catch (error) {
-      await safe(
-        'appendLog: worker_loop_error',
-        () =>
-          appendLog(runtime.paths.log, {
-            event: 'worker_loop_error',
-            error: error instanceof Error ? error.message : String(error),
-          }),
-        { fallback: undefined },
+      await bestEffort('appendLog: worker_loop_error', () =>
+        appendLog(runtime.paths.log, {
+          event: 'worker_loop_error',
+          error: error instanceof Error ? error.message : String(error),
+        }),
       )
     }
     await sleep(1000)

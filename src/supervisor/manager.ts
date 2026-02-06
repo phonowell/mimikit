@@ -1,5 +1,5 @@
 import { appendLog } from '../log/append.js'
-import { safe } from '../log/safe.js'
+import { bestEffort, safe } from '../log/safe.js'
 import { runManager } from '../roles/runner.js'
 import { nowIso, sleep } from '../shared/utils.js'
 import { appendHistory, readHistory } from '../storage/jsonl.js'
@@ -223,18 +223,15 @@ const runManagerBuffer = async (
     const remainingInputs = buffer.inputs.slice(consumedInputCount)
     if (remainingInputs.length > 0)
       runtime.pendingInputs.unshift(...remainingInputs)
-    await safe(
-      'appendLog: manager_end',
-      () =>
-        appendLog(runtime.paths.log, {
-          event: 'manager_end',
-          status: 'error',
-          error: error instanceof Error ? error.message : String(error),
-          elapsedMs: Math.max(0, Date.now() - startedAt),
-          ...(consumedInputCount > 0 ? { consumedInputCount } : {}),
-          ...(consumedResultCount > 0 ? { consumedResultCount } : {}),
-        }),
-      { fallback: undefined },
+    await bestEffort('appendLog: manager_end', () =>
+      appendLog(runtime.paths.log, {
+        event: 'manager_end',
+        status: 'error',
+        error: error instanceof Error ? error.message : String(error),
+        elapsedMs: Math.max(0, Date.now() - startedAt),
+        ...(consumedInputCount > 0 ? { consumedInputCount } : {}),
+        ...(consumedResultCount > 0 ? { consumedResultCount } : {}),
+      }),
     )
     await appendFallbackReply(runtime.paths)
     clearBuffer(buffer)

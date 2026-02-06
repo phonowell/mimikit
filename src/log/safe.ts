@@ -13,6 +13,8 @@ export type SafeOptions<T> = {
   ignoreCodes?: string[]
 }
 
+export type SafeLogOptions = Omit<SafeOptions<unknown>, 'fallback'>
+
 let defaultLogPath: string | null = null
 
 export const setDefaultLogPath = (path?: string | null): void => {
@@ -54,7 +56,7 @@ const getErrorCode = (error: unknown): string | undefined => {
 export const logSafeError = async (
   context: string,
   error: unknown,
-  options?: Omit<SafeOptions<unknown>, 'fallback'>,
+  options?: SafeLogOptions,
 ): Promise<void> => {
   const info = normalizeError(error)
   const payload = {
@@ -97,4 +99,19 @@ export const safe = async <T>(
     }
     throw error
   }
+}
+
+export const safeOrUndefined = <T>(
+  context: string,
+  fn: () => T | Promise<T>,
+  options: SafeLogOptions = {},
+): Promise<T | undefined> =>
+  safe<T | undefined>(context, fn, { ...options, fallback: undefined })
+
+export const bestEffort = async (
+  context: string,
+  fn: () => unknown | Promise<unknown>,
+  options: SafeLogOptions = {},
+): Promise<void> => {
+  await safeOrUndefined(context, fn, options)
 }

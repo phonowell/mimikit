@@ -1,7 +1,7 @@
 import { Codex } from '@openai/codex-sdk'
 
 import { appendLog } from '../log/append.js'
-import { logSafeError, safe } from '../log/safe.js'
+import { bestEffort, logSafeError } from '../log/safe.js'
 import { normalizeUsage } from '../shared/utils.js'
 
 import { createIdleAbort } from './idle-abort.js'
@@ -56,10 +56,8 @@ export const runCodexSdk = async (params: {
   }
   const append = logPath
     ? (entry: LogContext) =>
-        safe(
-          'appendLog: llm_call',
-          () => appendLog(logPath, { ...entry, ...baseContext }),
-          { fallback: undefined },
+        bestEffort('appendLog: llm_call', () =>
+          appendLog(logPath, { ...entry, ...baseContext }),
         )
     : () => Promise.resolve()
 
