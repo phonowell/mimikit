@@ -8,13 +8,11 @@ import { enqueueTask } from '../tasks/queue.js'
 import { cancelTask } from './cancel.js'
 import { parseCommands } from './command-parser.js'
 import { selectRecentHistory } from './history-select.js'
-import { executeReadFileTool } from './read-file-tool.js'
 import { appendTaskSystemMessage } from './task-history.js'
 import { selectRecentTasks } from './task-select.js'
 
 import type { RuntimeState } from './runtime.js'
-import type { ManagerToolResult } from '../roles/prompt.js'
-import type { HistoryMessage, TaskResult, UserInput } from '../types/index.js'
+import type { TaskResult, UserInput } from '../types/index.js'
 
 type ManagerBuffer = {
   inputs: RuntimeState['pendingInputs']
@@ -24,23 +22,6 @@ type ManagerBuffer = {
 }
 
 const DEFAULT_MANAGER_TIMEOUT_MS = 30_000
-const READ_FILE_MAX_CALLS_PER_TURN = 3
-const READ_FILE_DEFAULT_LINES = 100
-const READ_FILE_MAX_LINES = 500
-const READ_FILE_MAX_BYTES = 12 * 1024
-
-const parseOptionalPositiveInt = (
-  value: string | undefined,
-): number | undefined => {
-  if (!value) return undefined
-  const num = Number(value)
-  if (!Number.isFinite(num)) return undefined
-  const normalized = Math.floor(num)
-  return normalized > 0 ? normalized : undefined
-}
-
-const shouldRunReadFile = (command: { action: string }): boolean =>
-  command.action === 'read_file'
 
 const createBuffer = (): ManagerBuffer => ({
   inputs: [],
@@ -130,27 +111,6 @@ const appendConsumedResultsToHistory = async (
   return consumed
 }
 
-const createManagerHistoryMessage = (params: {
-  text: string
-  elapsedMs: number
-  usage?: TaskResult['usage']
-  suffix: string
-}): HistoryMessage => ({
-  id: `manager-${Date.now()}-${params.suffix}`,
-  role: 'manager',
-  text: params.text,
-  createdAt: nowIso(),
-  elapsedMs: params.elapsedMs,
-  ...(params.usage ? { usage: params.usage } : {}),
-})
-
-const appendHistoryMessages = async (
-  historyPath: string,
-  messages: HistoryMessage[],
-): Promise<void> => {
-  for (const message of messages) await appendHistory(historyPath, message)
-}
-
 const runManagerBuffer = async (
   runtime: RuntimeState,
   buffer: ManagerBuffer,
@@ -163,8 +123,6 @@ const runManagerBuffer = async (
     maxCount: runtime.config.manager.historyMaxCount,
     maxBytes: runtime.config.manager.historyMaxBytes,
   })
-  const nextRoundHistory = [...recentHistory]
-  const stagedManagerMessages: HistoryMessage[] = []
   const recentTasks = selectRecentTasks(runtime.tasks, {
     minCount: runtime.config.manager.tasksMinCount,
     maxCount: runtime.config.manager.tasksMaxCount,
@@ -176,8 +134,6 @@ const runManagerBuffer = async (
   let consumedResultCount = 0
   try {
     const { model, modelReasoningEffort } = runtime.config.manager
-    const readFileToolResults: ManagerToolResult[] = []
-    const maxReadFileCalls = READ_FILE_MAX_CALLS_PER_TURN
     await appendLog(runtime.paths.log, {
       event: 'manager_start',
       inputCount: inputs.length,
@@ -192,13 +148,13 @@ const runManagerBuffer = async (
       ...(modelReasoningEffort ? { modelReasoningEffort } : {}),
     })
 
-    let result = await runManager({
+    const result = await runManager({
       stateDir: runtime.config.stateDir,
       workDir: runtime.config.workDir,
       inputs,
       results,
       tasks: recentTasks,
-      history: nextRoundHistory,
+      history: recentHistory,
       ...(runtime.lastUserMeta
         ? { env: { lastUser: runtime.lastUserMeta } }
         : {}),
@@ -207,86 +163,7 @@ const runManagerBuffer = async (
       ...(modelReasoningEffort ? { modelReasoningEffort } : {}),
     })
 
-    let parsed = parseCommands(result.output)
-    let readFileCallCount = 0
-    let readFileRound = 0
-    while (readFileCallCount < maxReadFileCalls) {
-      const readFileCommands = parsed.commands.filter(shouldRunReadFile)
-      if (readFileCommands.length === 0) break
-      readFileRound += 1
-      if (parsed.text) {
-        const staged = createManagerHistoryMessage({
-          text: parsed.text,
-          elapsedMs: result.elapsedMs,
-          usage: result.usage,
-          suffix: `tool-${readFileRound}-${stagedManagerMessages.length}`,
-        })
-        stagedManagerMessages.push(staged)
-        nextRoundHistory.push(staged)
-      }
-      const remainingCalls = maxReadFileCalls - readFileCallCount
-      const commandsToRun = readFileCommands.slice(0, remainingCalls)
-      for (const command of commandsToRun) {
-        const path = command.attrs.path?.trim() ?? command.content?.trim() ?? ''
-        const { attrs } = command
-        const start = parseOptionalPositiveInt(attrs.start)
-        const limit = parseOptionalPositiveInt(attrs.limit)
-        const toolResult = await executeReadFileTool(
-          {
-            path,
-            ...(start !== undefined ? { start } : {}),
-            ...(limit !== undefined ? { limit } : {}),
-          },
-          {
-            baseDir: runtime.config.workDir,
-            defaultLines: READ_FILE_DEFAULT_LINES,
-            maxLines: READ_FILE_MAX_LINES,
-            maxBytes: READ_FILE_MAX_BYTES,
-          },
-        )
-        readFileToolResults.push({
-          tool: 'read_file',
-          attrs,
-          result: toolResult,
-        })
-      }
-      readFileCallCount += commandsToRun.length
-      await appendLog(runtime.paths.log, {
-        event: 'manager_tool_round',
-        tool: 'read_file',
-        round: readFileRound,
-        toolCallCount: commandsToRun.length,
-        requestedToolCallCount: readFileCommands.length,
-      })
-      result = await runManager({
-        stateDir: runtime.config.stateDir,
-        workDir: runtime.config.workDir,
-        inputs,
-        results,
-        tasks: recentTasks,
-        history: nextRoundHistory,
-        ...(runtime.lastUserMeta
-          ? { env: { lastUser: runtime.lastUserMeta } }
-          : {}),
-        toolResults: readFileToolResults,
-        timeoutMs: DEFAULT_MANAGER_TIMEOUT_MS,
-        ...(model ? { model } : {}),
-        ...(modelReasoningEffort ? { modelReasoningEffort } : {}),
-      })
-      parsed = parseCommands(result.output)
-    }
-
-    if (
-      parsed.commands.some(shouldRunReadFile) &&
-      readFileCallCount >= maxReadFileCalls
-    ) {
-      await appendLog(runtime.paths.log, {
-        event: 'manager_tool_limit_reached',
-        tool: 'read_file',
-        maxReadFileCalls,
-        readFileCallCount,
-      })
-    }
+    const parsed = parseCommands(result.output)
 
     consumedInputCount = await appendConsumedInputsToHistory(
       runtime.paths.history,
@@ -301,7 +178,6 @@ const runManagerBuffer = async (
     )
     if (consumedResultCount < results.length)
       throw new Error('append_consumed_results_incomplete')
-    await appendHistoryMessages(runtime.paths.history, stagedManagerMessages)
     const seenDispatches = new Set<string>()
     for (const command of parsed.commands) {
       if (command.action === 'add_task') {
@@ -336,15 +212,14 @@ const runManagerBuffer = async (
       }
     }
     if (parsed.text) {
-      await appendHistory(
-        runtime.paths.history,
-        createManagerHistoryMessage({
-          text: parsed.text,
-          elapsedMs: result.elapsedMs,
-          usage: result.usage,
-          suffix: 'final',
-        }),
-      )
+      await appendHistory(runtime.paths.history, {
+        id: `manager-${Date.now()}`,
+        role: 'manager',
+        text: parsed.text,
+        createdAt: nowIso(),
+        elapsedMs: result.elapsedMs,
+        ...(result.usage ? { usage: result.usage } : {}),
+      })
     }
     await appendLog(runtime.paths.log, {
       event: 'manager_end',

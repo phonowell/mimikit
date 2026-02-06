@@ -6,7 +6,7 @@ import {
 
 import { buildManagerPrompt } from './prompt.js'
 
-import type { ManagerEnv, ManagerToolResult } from './prompt.js'
+import type { ManagerEnv } from './prompt.js'
 import type {
   HistoryMessage,
   Task,
@@ -64,7 +64,6 @@ export const runManager = async (params: {
   tasks: Task[]
   history: HistoryMessage[]
   env?: ManagerEnv
-  toolResults?: ManagerToolResult[]
   timeoutMs: number
   model?: string
   modelReasoningEffort?: ModelReasoningEffort
@@ -83,7 +82,6 @@ export const runManager = async (params: {
     tasks: params.tasks,
     history: params.history,
     ...(params.env ? { env: params.env } : {}),
-    ...(params.toolResults ? { toolResults: params.toolResults } : {}),
   })
   const model = normalizeOptional(params.model)
   const base = { role: 'manager' as const, ...(model ? { model } : {}) }

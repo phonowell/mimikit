@@ -1,6 +1,6 @@
 import { hostname, release as osRelease, type as osType } from 'node:os'
 
-import type { ManagerEnv, ManagerToolResult } from './prompt.js'
+import type { ManagerEnv } from './prompt.js'
 import type {
   HistoryMessage,
   Task,
@@ -262,9 +262,8 @@ export const formatTasksYaml = (
 export const formatResultsYaml = (
   tasks: Task[],
   results: TaskResult[],
-  toolResults: ManagerToolResult[] = [],
 ): string => {
-  if (results.length === 0 && toolResults.length === 0) return ''
+  if (results.length === 0) return ''
   const taskById = new Map(tasks.map((task) => [task.id, task]))
   const resultById = new Map<string, TaskResult>()
   for (const result of results) {
@@ -302,18 +301,6 @@ export const formatResultsYaml = (
     if (result.archivePath)
       appendYamlLine(lines, 3, 'archive_path', result.archivePath)
     appendYamlUsage(lines, 3, result.usage)
-  }
-  if (toolResults.length > 0) {
-    lines.push('tools:')
-    for (const item of toolResults) {
-      lines.push(`${yamlIndent(1)}- tool: ${yamlScalar(item.tool)}`)
-      lines.push(
-        `${yamlIndent(2)}attrs: ${yamlScalar(JSON.stringify(item.attrs))}`,
-      )
-      lines.push(
-        `${yamlIndent(2)}result: ${yamlScalar(JSON.stringify(item.result))}`,
-      )
-    }
   }
   return escapeCdata(lines.join('\n'))
 }
