@@ -19,8 +19,8 @@
 - `tsx src/cli.ts --state-dir .mimikit --work-dir .`
 
 ### 环境变量
-- `MIMIKIT_MODEL`：覆盖 manager model（默认 `gpt-5.2-xhigh`）
-- `MIMIKIT_WORKER_MODEL`：覆盖 worker model（默认 `gpt-5.3-codex-xhigh`）
+- `MIMIKIT_MODEL`：覆盖 manager model（默认 `gpt-5.2-high`）
+- `MIMIKIT_WORKER_MODEL`：覆盖 worker model（默认 `gpt-5.3-codex-high`）
 - `MIMIKIT_REASONING_EFFORT`：设置 manager reasoning effort（`minimal|low|medium|high|xhigh`）
 ### 默认配置（节选）
 - `manager.pollMs = 1000`
