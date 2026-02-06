@@ -47,7 +47,8 @@
     "start:windows": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\bin\\mimikit.ps1",
     "sync": "pnpm exec tsx scripts/sync-worktree.ts",
     "test": "vitest run",
-    "type-check": "tsc -p tsconfig.json --noEmit"
+    "type-check": "tsc -p tsconfig.json --noEmit",
+    "replay:eval": "tsx scripts/replay-eval.ts"
   },
   "type": "module",
   "version": "0.1.0"

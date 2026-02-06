@@ -19,10 +19,17 @@
 - `tsx src/cli.ts --port 8787`
 - `tsx src/cli.ts --state-dir .mimikit --work-dir .`
 
+### 回放评测 CLI
+- `pnpm replay:eval -- --suite test/fixtures/replay/manager-core.json --out .mimikit/generated/replay/last.json --md .mimikit/generated/replay/last.md`
+- 必填：`--suite` `--out`
+- 可选：`--md` `--model` `--seed` `--temperature` `--offline` `--prefer-archive` `--archive-dir` `--max-fail` `--timeout-ms` `--state-dir` `--work-dir`
+- 退出码：`0` 全通过，`1` 断言失败，`2` 运行错误/样本格式错误
+
 ### 环境变量
 - `MIMIKIT_MODEL`：覆盖 manager model（默认 `gpt-5.2-high`）
 - `MIMIKIT_WORKER_MODEL`：覆盖 worker model（默认 `gpt-5.3-codex-high`）
 - `MIMIKIT_REASONING_EFFORT`：设置 manager reasoning effort（`minimal|low|medium|high|xhigh`）
+
 ### 默认配置（节选）
 - `manager.pollMs = 1000`
 - `manager.debounceMs = 10000`

@@ -22,6 +22,8 @@ export const runManagerApi = async (params: {
   prompt: string
   model?: string
   modelReasoningEffort?: ModelReasoningEffort
+  seed?: number
+  temperature?: number
   timeoutMs: number
 }): Promise<RunResult> => {
   const settings = await loadCodexSettings()
@@ -55,6 +57,10 @@ export const runManagerApi = async (params: {
       {
         model,
         ...(reasoningEffort ? { model_reasoning_effort: reasoningEffort } : {}),
+        ...(params.seed !== undefined ? { seed: params.seed } : {}),
+        ...(params.temperature !== undefined
+          ? { temperature: params.temperature }
+          : {}),
         messages: [{ role: 'user', content: params.prompt }],
       },
       headers,

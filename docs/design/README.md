@@ -10,6 +10,7 @@
 - docs/design/task-data.md：任务/结果结构
 - docs/design/commands.md：MIMIKIT 命令协议
 - docs/design/interfaces.md：HTTP 接口与 CLI
+- docs/design/evaluation.md：回放评测协议与报告
 
 ## 设计原则
 1. Manager 直接面向用户，负责理解 + 回复 + 派发任务

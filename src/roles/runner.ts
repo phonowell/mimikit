@@ -1,7 +1,9 @@
 import { runManagerApi } from '../llm/api-runner.js'
 import {
   appendLlmArchive,
+  buildLlmArchiveLookupKey,
   type LlmArchiveEntry,
+  type LlmArchiveLookup,
 } from '../storage/llm-archive.js'
 
 import { buildManagerPrompt } from './prompt.js'
@@ -26,6 +28,16 @@ const normalizeOptional = (value?: string | null): string | undefined => {
   const trimmed = value?.trim()
   return trimmed && trimmed.length > 0 ? trimmed : undefined
 }
+
+const withSampling = (params: {
+  seed?: number
+  temperature?: number
+}): { seed?: number; temperature?: number } => ({
+  ...(params.seed !== undefined ? { seed: params.seed } : {}),
+  ...(params.temperature !== undefined
+    ? { temperature: params.temperature }
+    : {}),
+})
 
 const archive = (
   stateDir: string,
@@ -67,6 +79,8 @@ export const runManager = async (params: {
   timeoutMs: number
   model?: string
   modelReasoningEffort?: ModelReasoningEffort
+  seed?: number
+  temperature?: number
   fallbackModel?: string
 }): Promise<{
   output: string
@@ -84,21 +98,56 @@ export const runManager = async (params: {
     ...(params.env ? { env: params.env } : {}),
   })
   const model = normalizeOptional(params.model)
+  const lookup: LlmArchiveLookup = {
+    role: 'manager',
+    ...(model ? { model } : {}),
+    prompt,
+    messages: [{ role: 'user', content: prompt }],
+    ...(params.seed !== undefined ? { seed: params.seed } : {}),
+    ...(params.temperature !== undefined
+      ? { temperature: params.temperature }
+      : {}),
+  }
+  const requestKey = buildLlmArchiveLookupKey(lookup)
   const base = { role: 'manager' as const, ...(model ? { model } : {}) }
   const effort = params.modelReasoningEffort
     ? { modelReasoningEffort: params.modelReasoningEffort }
     : {}
+  const fallbackModel = normalizeOptional(
+    params.fallbackModel ?? DEFAULT_MANAGER_FALLBACK_MODEL,
+  )
+  const fallbackRequestKey = fallbackModel
+    ? buildLlmArchiveLookupKey({
+        ...lookup,
+        model: fallbackModel,
+        attempt: 'fallback',
+      })
+    : undefined
   try {
     const r = await runManagerApi({
       prompt,
       timeoutMs: params.timeoutMs,
       ...(model ? { model } : {}),
+      ...(params.seed !== undefined ? { seed: params.seed } : {}),
+      ...(params.temperature !== undefined
+        ? { temperature: params.temperature }
+        : {}),
       ...effort,
     })
-    await archive(params.stateDir, { ...base, attempt: 'primary' }, prompt, {
-      ...r,
-      ok: true,
-    })
+    await archive(
+      params.stateDir,
+      {
+        ...base,
+        attempt: 'primary',
+        requestKey,
+        ...withSampling(params),
+      },
+      prompt,
+      {
+        ...r,
+        ok: true,
+      },
+    )
     return {
       output: r.output,
       elapsedMs: r.elapsedMs,
@@ -107,14 +156,21 @@ export const runManager = async (params: {
     }
   } catch (error) {
     const err = toError(error)
-    await archive(params.stateDir, { ...base, attempt: 'primary' }, prompt, {
-      output: '',
-      ok: false,
-      error: err.message,
-      errorName: err.name,
-    })
-    const fallbackModel = normalizeOptional(
-      params.fallbackModel ?? DEFAULT_MANAGER_FALLBACK_MODEL,
+    await archive(
+      params.stateDir,
+      {
+        ...base,
+        attempt: 'primary',
+        requestKey,
+        ...withSampling(params),
+      },
+      prompt,
+      {
+        output: '',
+        ok: false,
+        error: err.message,
+        errorName: err.name,
+      },
     )
     if (!fallbackModel) throw error
     try {
@@ -122,11 +178,21 @@ export const runManager = async (params: {
         prompt,
         timeoutMs: params.timeoutMs,
         model: fallbackModel,
+        ...(params.seed !== undefined ? { seed: params.seed } : {}),
+        ...(params.temperature !== undefined
+          ? { temperature: params.temperature }
+          : {}),
         ...effort,
       })
       await archive(
         params.stateDir,
-        { role: 'manager', model: fallbackModel, attempt: 'fallback' },
+        {
+          role: 'manager',
+          model: fallbackModel,
+          attempt: 'fallback',
+          ...(fallbackRequestKey ? { requestKey: fallbackRequestKey } : {}),
+          ...withSampling(params),
+        },
         prompt,
         { ...r, ok: true },
       )
@@ -140,7 +206,13 @@ export const runManager = async (params: {
       const fbErr = toError(fbError)
       await archive(
         params.stateDir,
-        { role: 'manager', model: fallbackModel, attempt: 'fallback' },
+        {
+          role: 'manager',
+          model: fallbackModel,
+          attempt: 'fallback',
+          ...(fallbackRequestKey ? { requestKey: fallbackRequestKey } : {}),
+          ...withSampling(params),
+        },
         prompt,
         { output: '', ok: false, error: fbErr.message, errorName: fbErr.name },
       )
