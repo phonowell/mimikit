@@ -12,6 +12,7 @@ import { workerLoop } from './worker.js'
 
 import type { RuntimeState, UserMeta } from './runtime.js'
 import type { SupervisorConfig } from '../config.js'
+import type { Task } from '../types/index.js'
 
 export class Supervisor {
   private runtime: RuntimeState
@@ -89,6 +90,12 @@ export class Supervisor {
 
   getTasks(limit = 200) {
     return buildTaskViews(this.runtime.tasks, limit)
+  }
+
+  getTaskById(taskId: string): Task | undefined {
+    const trimmed = taskId.trim()
+    if (!trimmed) return undefined
+    return this.runtime.tasks.find((task) => task.id === trimmed)
   }
 
   cancelTask(taskId: string, meta?: { source?: string; reason?: string }) {

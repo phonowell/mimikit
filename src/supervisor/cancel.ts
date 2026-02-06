@@ -66,6 +66,7 @@ const pushCanceledResult = async (
 ) => {
   const archivePath = await archiveCanceledResult(runtime, task, result)
   if (archivePath) result.archivePath = archivePath
+  if (archivePath) task.archivePath = archivePath
   runtime.pendingResults.push(result)
   await bestEffort('appendLog: task_canceled', () =>
     appendLog(runtime.paths.log, {

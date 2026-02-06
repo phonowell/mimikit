@@ -36,6 +36,8 @@ export type TaskArchiveEntry = {
   usage?: TokenUsage
 }
 
+const TASK_ARCHIVE_DIR = 'tasks'
+
 const compactTimestamp = (iso: string): string => {
   const date = iso.slice(0, 10).replace(/-/g, '')
   const time = iso.slice(11, 19).replace(/:/g, '')
@@ -110,7 +112,7 @@ export const appendTaskResultArchive = async (
   entry: TaskArchiveEntry,
 ): Promise<string> => {
   const dateDir = dateStamp(entry.completedAt)
-  const dir = join(stateDir, 'results', dateDir)
+  const dir = join(stateDir, TASK_ARCHIVE_DIR, dateDir)
   await ensureDir(dir)
   const filename = buildFilename(entry)
   const path = await ensureUniquePath(join(dir, filename))
@@ -233,12 +235,6 @@ export const readTaskResultsForTasks = async (
   const trimmed = taskIds.map((id) => id.trim()).filter((id) => id.length > 0)
   if (trimmed.length === 0) return []
   const idSet = new Set(trimmed)
-  const resultsDir = join(stateDir, 'results')
-  const allDateDirs = (await listFiles(resultsDir))
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => entry.name)
-    .sort()
-    .reverse()
   const hintedDirs = new Map<string, Set<string>>()
   const unhinted = new Set<string>()
   const hints = options.dateHints ?? {}
@@ -250,16 +246,22 @@ export const readTaskResultsForTasks = async (
     } else unhinted.add(id)
   }
   const scanAll = unhinted.size > 0 || hintedDirs.size === 0
-  const dateDirs = scanAll
-    ? allDateDirs
-    : Array.from(hintedDirs.keys()).sort().reverse()
   const found = new Map<string, TaskResult>()
   const maxFiles =
     options.maxFiles ?? (scanAll ? 500 : Number.POSITIVE_INFINITY)
   let scanned = 0
+  const archiveRoot = join(stateDir, TASK_ARCHIVE_DIR)
+  const allDateDirs = (await listFiles(archiveRoot))
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort()
+    .reverse()
+  const dateDirs = scanAll
+    ? allDateDirs
+    : Array.from(hintedDirs.keys()).sort().reverse()
   for (const dateDir of dateDirs) {
     if (found.size >= idSet.size) break
-    const dirPath = join(resultsDir, dateDir)
+    const dirPath = join(archiveRoot, dateDir)
     const entries = await listFiles(dirPath)
     const targetIds = scanAll ? idSet : hintedDirs.get(dateDir)
     if (!targetIds || targetIds.size === 0) continue

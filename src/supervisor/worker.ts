@@ -62,6 +62,7 @@ const finalizeResult = async (
     completedAt: result.completedAt,
     durationMs: result.durationMs,
     ...(result.usage ? { usage: result.usage } : {}),
+    ...(archivePath ? { archivePath } : {}),
   })
   runtime.pendingResults.push(result)
   await bestEffort('appendLog: worker_end', () =>

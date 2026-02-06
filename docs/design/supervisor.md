@@ -17,7 +17,7 @@ Supervisor 启动两条循环，均在同一进程内：
 - FIFO 取 `status=pending` 的任务执行。
 - 拉起即标记 `running`。
 - 完成后回传结果给 Manager，并标记任务 `succeeded`/`failed`。
-- 结果同时写入 .mimikit/results/YYYY-MM-DD/ 归档文件。
+- 结果同时写入 .mimikit/tasks/YYYY-MM-DD/ 归档文件。
 
 ## 并发与恢复
 - Manager：单线程。

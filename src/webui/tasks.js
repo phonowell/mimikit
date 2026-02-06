@@ -91,6 +91,22 @@ export function bindTasksPanel({
   tasksList.addEventListener('click', (event) => {
     const target = event.target
     if (!(target instanceof Element)) return
+
+    const link = target.closest('.task-link')
+    if (link) {
+      const openable = link.getAttribute('data-archive-openable') === 'true'
+      if (!openable) return
+      event.preventDefault()
+      const taskId = link.getAttribute('data-task-id') || ''
+      const archiveUrl = `/api/tasks/${encodeURIComponent(taskId)}/archive`
+      const opened = window.open(archiveUrl, '_blank', 'noopener,noreferrer')
+      if (!opened) {
+        console.warn('[webui] open task archive failed', 'popup blocked')
+        return
+      }
+      return
+    }
+
     const button = target.closest('.task-cancel')
     if (!button) return
     event.preventDefault()

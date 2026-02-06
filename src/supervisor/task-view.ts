@@ -11,6 +11,7 @@ export type TaskView = {
   completedAt?: string
   durationMs?: number
   usage?: Task['usage']
+  archivePath?: string
 }
 
 export type TaskCounts = Record<TaskStatus, number>
@@ -34,6 +35,11 @@ const taskToView = (task: Task): TaskView => ({
     ? { durationMs: task.durationMs }
     : {}),
   ...(task.usage ? { usage: task.usage } : {}),
+  ...(task.archivePath
+    ? { archivePath: task.archivePath }
+    : task.result?.archivePath
+      ? { archivePath: task.result.archivePath }
+      : {}),
 })
 
 export const buildTaskViews = (

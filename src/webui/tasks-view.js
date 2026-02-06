@@ -84,6 +84,11 @@ export const renderTasks = (tasksList, data) => {
     link.className = 'task-link'
     link.href = '#tasks-dialog'
     link.dataset.status = task.status || 'pending'
+    link.setAttribute('data-task-id', task.id)
+    if (typeof task.archivePath === 'string' && task.archivePath.trim()) {
+      link.setAttribute('data-archive-openable', 'true')
+      link.href = '#'
+    }
 
     const title = document.createElement('span')
     title.className = 'task-title'

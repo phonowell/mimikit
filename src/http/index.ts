@@ -1,5 +1,6 @@
 import { mkdirSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { readFile } from 'node:fs/promises'
+import { isAbsolute, relative, resolve } from 'node:path'
 
 import fastifyStatic from '@fastify/static'
 import fastify from 'fastify'
@@ -18,6 +19,13 @@ import type { SupervisorConfig } from '../config.js'
 import type { Supervisor } from '../supervisor/supervisor.js'
 
 const MAX_BODY_BYTES = 64 * 1024
+
+const isWithinRoot = (root: string, path: string): boolean => {
+  const rel = relative(root, path)
+  if (!rel) return true
+  if (rel.startsWith('..')) return false
+  return !isAbsolute(rel)
+}
 
 export const createHttpServer = (
   supervisor: Supervisor,
@@ -88,6 +96,45 @@ export const createHttpServer = (
     const query = request.query as Record<string, unknown> | undefined
     const limit = parseTaskLimit(query?.limit)
     return supervisor.getTasks(limit)
+  })
+
+  app.get('/api/tasks/:id/archive', async (request, reply) => {
+    const params = request.params as { id?: string } | undefined
+    const taskId = typeof params?.id === 'string' ? params.id.trim() : ''
+    if (!taskId) {
+      reply.code(400).send({ error: 'task id is required' })
+      return
+    }
+    const task = supervisor.getTaskById(taskId)
+    if (!task) {
+      reply.code(404).send({ error: 'task not found' })
+      return
+    }
+    const archivePath = task.archivePath ?? task.result?.archivePath
+    if (!archivePath) {
+      reply.code(404).send({ error: 'task archive not found' })
+      return
+    }
+    const resolvedStateDir = resolve(config.stateDir)
+    const resolvedArchivePath = resolve(archivePath)
+    if (!isWithinRoot(resolvedStateDir, resolvedArchivePath)) {
+      reply.code(400).send({ error: 'invalid archive path' })
+      return
+    }
+    try {
+      const content = await readFile(resolvedArchivePath, 'utf8')
+      reply.type('text/markdown; charset=utf-8').send(content)
+    } catch (error) {
+      const code =
+        typeof error === 'object' && error && 'code' in error
+          ? String((error as { code?: string }).code)
+          : undefined
+      if (code === 'ENOENT') {
+        reply.code(404).send({ error: 'task archive not found' })
+        return
+      }
+      throw error
+    }
   })
 
   app.post('/api/tasks/:id/cancel', async (request, reply) => {
