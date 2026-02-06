@@ -7,6 +7,7 @@
 - GET /api/status
 - POST /api/input（支持可选字段：clientLocale / clientTimeZone / clientOffsetMinutes / clientNowIso / language）
 - GET /api/messages?limit=...
+- GET /api/messages/export?limit=...（导出人类可读 markdown）
 - GET /api/tasks?limit=...
 - POST /api/restart
 - POST /api/reset

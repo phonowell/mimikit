@@ -16,6 +16,12 @@ export const parseMessageLimit = (value: unknown): number => {
   return Math.floor(parsed)
 }
 
+export const parseExportLimit = (value: unknown): number => {
+  const parsed = Number(value)
+  if (!Number.isFinite(parsed) || parsed <= 0) return 200
+  return Math.min(Math.floor(parsed), 1000)
+}
+
 export const resolveRoots = () => {
   const __dirname = fileURLToPath(new URL('.', import.meta.url))
   const rootDir = resolve(__dirname, '..', '..')

@@ -5,10 +5,15 @@ import { logSafeError } from '../log/safe.js'
 
 import {
   clearStateDir,
+  parseExportLimit,
   parseInputBody,
   parseMessageLimit,
   parseTaskLimit,
 } from './helpers.js'
+import {
+  buildMessagesExportFilename,
+  buildMessagesMarkdownExport,
+} from './messages-export.js'
 
 import type { SupervisorConfig } from '../config.js'
 import type { Supervisor } from '../supervisor/supervisor.js'
@@ -121,6 +126,26 @@ const registerControlRoutes = (
   })
 }
 
+const registerMessagesExportRoute = (
+  app: FastifyInstance,
+  supervisor: Supervisor,
+): void => {
+  app.get('/api/messages/export', async (request, reply) => {
+    const query = request.query as Record<string, unknown> | undefined
+    const limit = parseExportLimit(query?.limit)
+    const messages = await supervisor.getChatHistory(limit)
+    const exportedAt = new Date().toISOString()
+    const markdown = buildMessagesMarkdownExport({
+      messages,
+      exportedAt,
+      limit,
+    })
+    const filename = buildMessagesExportFilename(exportedAt)
+    reply.header('Content-Disposition', `attachment; filename="${filename}"`)
+    reply.type('text/markdown; charset=utf-8').send(markdown)
+  })
+}
+
 export const registerApiRoutes = (
   app: FastifyInstance,
   supervisor: Supervisor,
@@ -158,6 +183,8 @@ export const registerApiRoutes = (
     const messages = await supervisor.getChatHistory(limit)
     return { messages }
   })
+
+  registerMessagesExportRoute(app, supervisor)
 
   app.get('/api/tasks', (request) => {
     const query = request.query as Record<string, unknown> | undefined

@@ -1,3 +1,4 @@
+import { bindExport } from './export.js'
 import { bindComposer } from './messages/composer.js'
 import { createMessagesController } from './messages/controller.js'
 import { bindRestart } from './restart.js'
@@ -17,6 +18,7 @@ const elements = {
   quoteLabel: $('[data-quote-label]'),
   quoteText: $('[data-quote-text]'),
   quoteClearBtn: $('[data-quote-clear]'),
+  exportBtn: $('[data-export]'),
   restartBtn: $('[data-restart]'),
   restartDialog: $('[data-restart-dialog]'),
   restartCancelBtn: $('[data-restart-cancel]'),
@@ -60,6 +62,7 @@ if (elements.statusText) {
 }
 
 bindComposer({ form: elements.form, input: elements.input, messages })
+bindExport({ exportBtn: elements.exportBtn })
 bindRestart({
   restartBtn: elements.restartBtn,
   restartDialog: elements.restartDialog,
