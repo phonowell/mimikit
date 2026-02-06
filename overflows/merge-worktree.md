@@ -5,12 +5,12 @@
 
 ## 脚本
 - 路径：`./scripts/merge-worktree.ts`
-- 运行：`pnpm run merge:worktree -- [--clean-plans <file...>]`
+- 运行：`pnpm run merge`
 - 限制：只能在 `worktree-1/2/3` 执行，禁止在 `main`
 
 ## 同步 main → 当前槽位
 - 路径：`./scripts/sync-worktree.ts`
-- 运行：`pnpm run sync:worktree`
+- 运行：`pnpm run sync`
 - 限制：只能在 `worktree-1/2/3` 执行，禁止在 `main`
 
 ## 步骤
@@ -23,7 +23,7 @@
 - 当前分支：自动提交未提交改动（自动消息）
 - 同步：`rebase origin/main`
 - main worktree：`merge --squash` 当前分支并提交
-- 可选：`--clean-plans <file...>` 删除 `plans/` 下指定文件
+- 合并前：自动清空 `plans/` 目录内容
 
 ## 快速路径与 LLM
 - 快速路径：全部 git 操作可自动完成
@@ -31,7 +31,7 @@
 
 ## 当前工作状态
 - worktree-1/2/3 为本地开发槽位，不推送远端
-- 开发完成后运行 `pnpm run merge:worktree` 合并到 main
+- 开发完成后运行 `pnpm run merge` 合并到 main
 - 脚本会自动将当前槽位 rebase 到 `origin/main`
 - 如需与最新远端对齐，先 `git push origin main`
 

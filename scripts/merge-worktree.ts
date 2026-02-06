@@ -1,5 +1,5 @@
-import { existsSync, rmSync } from "node:fs";
-import { join, resolve, sep } from "node:path";
+import { existsSync, readdirSync, rmSync } from "node:fs";
+import { join } from "node:path";
 
 import {
   detectConflictState,
@@ -10,10 +10,6 @@ import {
   runGitFast,
 } from "./git-utils.js";
 
-type Options = {
-  cleanPlans: string[];
-};
-
 const ALLOWED_BRANCHES = new Set(["worktree-1", "worktree-2", "worktree-3"]);
 
 const exitWith = (message: string): never => {
@@ -21,30 +17,14 @@ const exitWith = (message: string): never => {
   process.exit(1);
 };
 
-const parseArgs = (argv: string[]): Options => {
-  const cleanPlans: string[] = [];
-  let i = 0;
-  while (i < argv.length) {
-    const arg = argv[i];
-    if (arg === "--clean-plans") {
-      i += 1;
-      const start = i;
-      while (i < argv.length && !argv[i].startsWith("--")) {
-        cleanPlans.push(argv[i]);
-        i += 1;
-      }
-      if (cleanPlans.length === 0 || start === i) {
-        exitWith("missing files after --clean-plans");
-      }
-      continue;
-    }
+const parseArgs = (argv: string[]): void => {
+  for (const arg of argv) {
     if (arg === "--help" || arg === "-h") {
-      console.log("Usage: tsx scripts/merge-worktree.ts [--clean-plans <file...>]");
+      console.log("Usage: tsx scripts/merge-worktree.ts");
       process.exit(0);
     }
     exitWith(`unknown arg: ${arg}`);
   }
-  return { cleanPlans };
 };
 
 const ensureNoInProgressState = (): void => {
@@ -54,7 +34,21 @@ const ensureNoInProgressState = (): void => {
   if (state.conflicts) exitWith("conflicts detected: resolve first");
 };
 
-const options = parseArgs(process.argv.slice(2));
+parseArgs(process.argv.slice(2));
+
+const clearPlansDirectory = (repoRoot: string): void => {
+  const plansDir = join(repoRoot, "plans");
+  if (!existsSync(plansDir)) return;
+
+  const entries = readdirSync(plansDir);
+  for (const entry of entries) {
+    rmSync(join(plansDir, entry), { force: true, recursive: true });
+  }
+
+  if (entries.length > 0) {
+    console.log(`[merge] cleared plans/: ${entries.length} item(s)`);
+  }
+};
 
 const repoRoot = runGitCapture(["rev-parse", "--show-toplevel"]);
 const currentBranch = runGitCapture(["rev-parse", "--abbrev-ref", "HEAD"]);
@@ -65,19 +59,7 @@ if (!ALLOWED_BRANCHES.has(currentBranch))
 
 ensureNoInProgressState();
 
-if (options.cleanPlans.length > 0) {
-  const plansDir = join(repoRoot, "plans");
-  for (const name of options.cleanPlans) {
-    const target = resolve(plansDir, name);
-    if (!target.startsWith(plansDir + sep)) {
-      exitWith(`invalid plan path: ${name}`);
-    }
-    if (existsSync(target)) {
-      rmSync(target);
-      console.log(`removed ${target}`);
-    }
-  }
-}
+clearPlansDirectory(repoRoot);
 
 const status = runGitCapture(["status", "--porcelain"]);
 if (status.length > 0) {
