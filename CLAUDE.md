@@ -25,6 +25,15 @@
 - WebUI：`tsx src/cli.ts --port 8787`
 - Windows 编码/换行：`pnpm fix-crlf` / `pnpm fix-bom`
 
+## Worktree 工作模式
+- 角色分工：`~/Projects/mimikit` 固定 `main`（汇总/发布）；`~/Projects/mimikit-worktree-{1,2,3}` 对应 `worktree-{1,2,3}`（并行槽位）
+- 槽位限制：`pnpm run sync` / `pnpm run merge` 仅允许在 `worktree-1/2/3` 执行，禁止在 `main`
+- 日常同步：在槽位运行 `pnpm run sync`（`fetch --prune` + `rebase main`）
+- 合并流程：先运行 `review-code-changes` skill，再在槽位运行 `pnpm run merge`（自动提交→同步 main→squash 合并）
+- 合并后状态：保留槽位分支与 worktree，不做 `git worktree remove` / `git branch -D`
+- 合并副作用：`pnpm run merge` 会清空 `plans/` 目录
+- 推送策略：槽位默认 `remote.origin.pushurl=disabled://no-push`；发布/推送在 `main` 执行
+
 ## 目录与路径
 - 入口：`src/cli.ts`
 - 调度：`src/supervisor/`
@@ -42,3 +51,4 @@
 ## 编码风格
 - 文件/模块尽量解耦，避免隐式耦合
 - 注释只解释不直观逻辑
+- 总是使用 if-return 的早返回模式
