@@ -19,15 +19,34 @@ export function formatDateTime(iso) {
 const asNumber = (value) =>
   typeof value === 'number' && Number.isFinite(value) ? value : null
 
+const COUNT_SUFFIXES = ['', 'k', 'M', 'B', 'T']
+
+const integerFormatter = new Intl.NumberFormat('en-US')
+
+const compactFormatter = new Intl.NumberFormat('en-US', {
+  maximumFractionDigits: 1,
+})
+
 const formatCount = (value) => {
   if (value === null) return ''
   const rounded = Math.round(value)
-  if (Math.abs(rounded) < 1000)
-    return new Intl.NumberFormat('en-US').format(rounded)
-  const formatted = new Intl.NumberFormat('en-US', {
-    maximumFractionDigits: 1,
-  }).format(rounded / 1000)
-  return `${formatted}k`
+  let scaled = rounded
+  let suffixIndex = 0
+
+  while (Math.abs(scaled) >= 1000 && suffixIndex < COUNT_SUFFIXES.length - 1) {
+    scaled /= 1000
+    suffixIndex += 1
+  }
+
+  if (suffixIndex === 0) return integerFormatter.format(rounded)
+
+  let normalized = Math.round(scaled * 10) / 10
+  if (Math.abs(normalized) >= 1000 && suffixIndex < COUNT_SUFFIXES.length - 1) {
+    normalized /= 1000
+    suffixIndex += 1
+  }
+
+  return `${compactFormatter.format(normalized)}${COUNT_SUFFIXES[suffixIndex]}`
 }
 
 export const formatUsage = (usage) => {
