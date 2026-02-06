@@ -43,11 +43,11 @@ test('mergeChatMessages includes inflight input as unread', () => {
   ]
   const merged = mergeChatMessages({ history, inflightInputs: inflight, limit: 20 })
   expect(merged.map((item) => item.id)).toEqual(['u-1', 'm-1', 'u-2'])
-  expect(merged.find((item) => item.id === 'u-1')?.read).toBe(true)
-  expect(merged.find((item) => item.id === 'u-2')?.read).toBe(false)
+  expect(merged.find((item) => item.id === 'u-1')?.role).toBe('user')
+  expect(merged.find((item) => item.id === 'u-2')?.role).toBe('user')
 })
 
-test('mergeChatMessages keeps persisted user message read', () => {
+test('mergeChatMessages keeps persisted user message only once', () => {
   const history: HistoryMessage[] = [
     asHistory({
       id: 'u-1',
@@ -60,7 +60,7 @@ test('mergeChatMessages keeps persisted user message read', () => {
   ]
   const merged = mergeChatMessages({ history, inflightInputs: inflight, limit: 20 })
   expect(merged).toHaveLength(1)
-  expect(merged[0]?.read).toBe(true)
+  expect(merged[0]?.id).toBe('u-1')
 })
 
 test('mergeChatMessages applies limit from the tail', () => {

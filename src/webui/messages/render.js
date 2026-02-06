@@ -114,14 +114,6 @@ const renderMessage = (params, msg) => {
   }
 
   const article = document.createElement('article')
-  if (msg?.role === 'user') {
-    const isRead = msg.read !== false
-    item.dataset.read = isRead ? 'read' : 'unread'
-    const readState = document.createElement('span')
-    readState.className = 'read-state'
-    readState.textContent = isRead ? 'Read' : 'Unread'
-    article.appendChild(readState)
-  }
   if (canQuote) {
     article.addEventListener('dblclick', () => {
       if (
@@ -188,6 +180,14 @@ const renderMessage = (params, msg) => {
   time.className = 'time'
   time.textContent = timeText
   meta.appendChild(time)
+  if (msg?.role === 'user') {
+    const delivery = document.createElement('span')
+    delivery.className = 'delivery'
+    delivery.textContent = '✓'
+    delivery.title = 'Sent'
+    delivery.setAttribute('aria-label', 'Sent')
+    meta.appendChild(delivery)
+  }
   article.appendChild(meta)
 
   item.appendChild(article)

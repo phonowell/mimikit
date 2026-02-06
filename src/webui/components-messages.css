@@ -32,18 +32,6 @@
   order: 1;
 }
 
-.message .read-state {
-  align-self: flex-end;
-  font-size: 10px;
-  line-height: 1.2;
-  color: var(--muted);
-  padding: 1px 0;
-}
-
-.message.user[data-read='unread'] .read-state {
-  color: #2563eb;
-}
-
 .message.user {
   justify-content: flex-end;
 }
@@ -175,6 +163,12 @@
 
 .message .meta .time {
   margin-left: auto;
+}
+
+.message .meta .delivery {
+  font-size: 12px;
+  line-height: 1;
+  color: var(--muted);
 }
 
 .message .meta .origin {
