@@ -165,6 +165,14 @@
   margin-left: auto;
 }
 
+.message.user .meta .delivery {
+  margin-left: auto;
+}
+
+.message.user .meta .time {
+  margin-left: 0;
+}
+
 .message .meta .delivery {
   font-size: 12px;
   line-height: 1;
