@@ -14,6 +14,7 @@ const elements = {
   input: $('[data-input]'),
   sendBtn: $('[data-send]'),
   quotePreview: $('[data-quote-preview]'),
+  quoteLabel: $('[data-quote-label]'),
   quoteText: $('[data-quote-text]'),
   quoteClearBtn: $('[data-quote-clear]'),
   restartBtn: $('[data-restart]'),
@@ -37,6 +38,7 @@ const messages = createMessagesController({
   sendBtn: elements.sendBtn,
   workerDots: elements.workerDots,
   quotePreview: elements.quotePreview,
+  quoteLabel: elements.quoteLabel,
   quoteText: elements.quoteText,
   quoteClearBtn: elements.quoteClearBtn,
 })

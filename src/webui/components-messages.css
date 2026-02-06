@@ -67,6 +67,91 @@
   font-size: 14px;
 }
 
+.message .message-quote {
+  --quote-bar: var(--accent);
+  --quote-bg: rgba(42, 125, 225, 0.08);
+  --quote-bg-hover: rgba(42, 125, 225, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px;
+  border-radius: 12px;
+  border-left: 3px solid var(--quote-bar);
+  background: var(--quote-bg);
+  color: inherit;
+  text-align: left;
+  border: 0;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.message .message-quote[data-quote-role='user'] {
+  --quote-bar: var(--success);
+  --quote-bg: rgba(59, 178, 115, 0.08);
+  --quote-bg-hover: rgba(59, 178, 115, 0.12);
+}
+
+.message .message-quote[data-quote-role='agent'] {
+  --quote-bar: var(--accent);
+  --quote-bg: rgba(42, 125, 225, 0.08);
+  --quote-bg-hover: rgba(42, 125, 225, 0.12);
+}
+
+.message .message-quote[data-quote-role='system'] {
+  --quote-bar: var(--border);
+  --quote-bg: rgba(92, 107, 122, 0.08);
+  --quote-bg-hover: rgba(92, 107, 122, 0.12);
+}
+
+.message .message-quote[data-quote-role='unknown'] {
+  --quote-bar: var(--border);
+  --quote-bg: rgba(148, 163, 184, 0.12);
+  --quote-bg-hover: rgba(148, 163, 184, 0.18);
+}
+
+.message .message-quote:hover:not(:disabled) {
+  background: var(--quote-bg-hover);
+}
+
+.message .message-quote:focus-visible {
+  outline: 2px solid rgba(42, 125, 225, 0.35);
+  outline-offset: 2px;
+}
+
+.message .message-quote:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.message .message-quote-author {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.message .message-quote-text {
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.message.message--flash article {
+  animation: message-flash 700ms ease-out;
+}
+
+@keyframes message-flash {
+  from {
+    box-shadow: 0 0 0 0 rgba(42, 125, 225, 0.35);
+  }
+  to {
+    box-shadow: 0 0 0 14px rgba(42, 125, 225, 0);
+  }
+}
+
 .message .meta {
   display: flex;
   align-items: center;
@@ -92,51 +177,95 @@
 .composer .quote-preview {
   flex: 0 0 100%;
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  position: relative;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  padding: 0 8px;
+  padding: 0 32px 0 10px;
   max-height: 0;
   opacity: 0;
   transform: translateY(-4px);
   overflow: hidden;
   pointer-events: none;
-  border-radius: var(--radius-sm);
-  border: 1px solid transparent;
-  background: var(--panel-soft);
-  font-size: 11px;
-  color: var(--muted);
+  border-radius: 12px;
+  border-left: 3px solid transparent;
+  background: transparent;
   transition: max-height 0.2s ease, opacity 0.2s ease, transform 0.2s ease,
-    padding 0.2s ease, border-color 0.2s ease;
+    padding 0.2s ease, background-color 0.2s ease, border-left-color 0.2s ease;
 }
 
 .composer .quote-preview.is-visible {
-  padding: 6px 8px;
-  max-height: 56px;
+  padding: 6px 32px 6px 10px;
+  max-height: 64px;
   opacity: 1;
   transform: translateY(0);
   pointer-events: auto;
-  border-color: var(--border);
+  border-left-color: var(--quote-bar, var(--border));
+  background: var(--quote-bg, var(--panel-soft));
 }
 
 .composer .quote-preview[hidden] {
   display: none;
 }
 
+.composer .quote-preview[data-role='user'] {
+  --quote-bar: var(--success);
+  --quote-bg: rgba(59, 178, 115, 0.08);
+}
+
+.composer .quote-preview[data-role='agent'] {
+  --quote-bar: var(--accent);
+  --quote-bg: rgba(42, 125, 225, 0.08);
+}
+
+.composer .quote-preview[data-role='system'] {
+  --quote-bar: var(--border);
+  --quote-bg: rgba(92, 107, 122, 0.08);
+}
+
 .composer .quote-label {
   font-weight: 600;
-  text-transform: uppercase;
+  font-size: 12px;
 }
 
 .composer .quote-text {
   flex: 1 1 0;
   min-width: 0;
   max-width: 100%;
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+}
+
+.composer .quote-clear {
+  --btn-size: 20px;
+  --btn-icon-size: 11px;
+  --btn-pad: 0;
+  --btn-radius: 50%;
+  --btn-bg: rgba(15, 23, 42, 0.05);
+  --btn-color: var(--muted);
+  --btn-border: transparent;
+  --btn-hover-bg: rgba(15, 23, 42, 0.1);
+  --btn-hover-color: var(--text);
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: var(--btn-size);
+  height: var(--btn-size);
+  font-size: 0;
+  line-height: 0;
+}
+
+.composer .quote-clear::before {
+  content: 'x';
+  font-size: var(--btn-icon-size);
 }
 
 .message .message-quote-btn {

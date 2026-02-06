@@ -26,6 +26,7 @@ export function createMessagesController({
   sendBtn,
   workerDots,
   quotePreview,
+  quoteLabel,
   quoteText,
   quoteClearBtn,
 }) {
@@ -54,7 +55,7 @@ export function createMessagesController({
     updateScrollButton: scroll.updateScrollButton,
     removeEmpty,
   })
-  const quote = createQuoteController({ quotePreview, quoteText, input })
+  const quote = createQuoteController({ quotePreview, quoteLabel, quoteText, input })
 
   const syncLoadingState = () => {
     const pending = lastStatus?.pendingInputs ?? 0

@@ -1,14 +1,30 @@
 const cleanText = (text) => String(text ?? '').replace(/\s+/g, ' ').trim()
 
+const normalizeRole = (role) => {
+  if (role === 'manager') return 'agent'
+  if (role === 'user') return 'user'
+  if (role === 'system') return 'system'
+  return 'unknown'
+}
+
+const formatRoleLabel = (role) => {
+  const normalized = normalizeRole(role)
+  if (normalized === 'user') return 'You'
+  if (normalized === 'agent') return 'Agent'
+  if (normalized === 'system') return 'System'
+  return 'Quote'
+}
+
 const formatQuotePreview = (text) => {
   const cleaned = cleanText(text)
   if (!cleaned) return ''
-  const max = 80
+  const max = 120
   return cleaned.length > max ? `${cleaned.slice(0, max)}...` : cleaned
 }
 
 export const createQuoteController = ({
   quotePreview,
+  quoteLabel,
   quoteText,
   input,
 } = {}) => {
@@ -41,6 +57,17 @@ export const createQuoteController = ({
   }
 
   const updateQuotePreview = () => {
+    if (quoteLabel)
+      quoteLabel.textContent = activeQuote
+        ? formatRoleLabel(activeQuote.role)
+        : 'Quote'
+    if (quotePreview) {
+      if (activeQuote) {
+        quotePreview.dataset.role = normalizeRole(activeQuote.role)
+      } else {
+        quotePreview.removeAttribute('data-role')
+      }
+    }
     if (!quotePreview || !quoteText) return
     if (!activeQuote) {
       quoteText.textContent = ''
@@ -61,7 +88,11 @@ export const createQuoteController = ({
   const set = (msg) => {
     const id = msg?.id
     if (!id) return
-    activeQuote = { id: String(id), text: msg?.text ?? '' }
+    activeQuote = {
+      id: String(id),
+      text: msg?.text ?? '',
+      role: msg?.role ?? null,
+    }
     updateQuotePreview()
     if (input) input.focus()
   }
