@@ -3,6 +3,7 @@ import { applyStatus } from '../status.js'
 
 import { formatElapsedLabel, formatTime, formatUsage } from './format.js'
 import { createLoadingController } from './loading.js'
+import { createBrowserNotificationController } from './notification.js'
 import { createQuoteController } from './quote.js'
 import { renderMessages } from './render.js'
 import { createScrollController } from './scroll.js'
@@ -36,7 +37,9 @@ export function createMessagesController({
   let isPolling = false
   let emptyRemoved = false
   let lastStatus = null
+  let unbindNotificationPrompt = () => {}
   const messageState = createMessageState()
+  const notifications = createBrowserNotificationController()
 
   const removeEmpty = () => {
     if (emptyRemoved) return
@@ -100,6 +103,7 @@ export function createMessagesController({
       const rendered = doRender(messages, enterMessageIds)
       if (rendered)
         applyRenderedState(messageState, rendered, { loading, syncLoadingState })
+      notifications.notifyMessages(messages, enterMessageIds)
     }
     updateMessageState(messageState, messages, newestId)
     updateLoadingVisibilityState(messageState, loading.isLoading())
@@ -142,6 +146,7 @@ export function createMessagesController({
         const rendered = doRender(messages, enterMessageIds)
         if (rendered)
           applyRenderedState(messageState, rendered, { loading, syncLoadingState })
+        notifications.notifyMessages(messages, enterMessageIds)
       } else {
         syncLoadingState()
       }
@@ -157,6 +162,7 @@ export function createMessagesController({
   const sendMessage = createSendHandler({
     sendBtn,
     input,
+    onUserMessageSubmitted: notifications.primePermission,
     messageState,
     loading,
     quote,
@@ -171,11 +177,14 @@ export function createMessagesController({
   const start = () => {
     if (isPolling) return
     scroll.bindScrollControls()
+    unbindNotificationPrompt = notifications.bindPermissionPrompt()
     isPolling = true
     poll()
   }
   const stop = () => {
     isPolling = false
+    unbindNotificationPrompt()
+    unbindNotificationPrompt = () => {}
     if (pollTimer) clearTimeout(pollTimer)
     pollTimer = null
   }
