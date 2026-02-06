@@ -166,11 +166,16 @@
 }
 
 .message.user .meta .delivery {
-  margin-left: auto;
+  margin-left: 0;
 }
 
 .message.user .meta .time {
   margin-left: 0;
+}
+
+.message.user .meta {
+  justify-content: flex-end;
+  gap: 3px;
 }
 
 .message .meta .delivery {
