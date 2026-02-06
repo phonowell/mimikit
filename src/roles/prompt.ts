@@ -159,7 +159,7 @@ export const buildWorkerPrompt = async (params: {
   const system = await loadSystemPrompt(params.workDir, 'worker')
   const injectionTemplate = await loadInjectionPrompt(params.workDir, 'worker')
   const injectionValues = Object.fromEntries<string>([
-    ['任务描述', params.task.prompt],
+    ['prompt', params.task.prompt],
   ])
   const injection = renderPromptTemplate(injectionTemplate, injectionValues)
   return joinPromptSections([system, injection])

@@ -38,9 +38,9 @@ const formatTime = (iso: string): string => {
 }
 
 const formatRoleLabel = (role: Role): string => {
-  if (role === 'user') return '我'
-  if (role === 'manager') return '助手'
-  return '系统'
+  if (role === 'user') return 'USER'
+  if (role === 'manager') return 'AGENT'
+  return 'SYSTEM'
 }
 
 const compactInlineText = (text: string, maxChars = 90): string => {
