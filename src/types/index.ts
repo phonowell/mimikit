@@ -36,6 +36,7 @@ export type TaskResultStatus = 'succeeded' | 'failed' | 'canceled'
 
 export type Task = {
   id: Id
+  fingerprint: string
   prompt: string
   title: string
   status: TaskStatus

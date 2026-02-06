@@ -103,10 +103,12 @@ const runManagerBuffer = async (
         const dedupeKey = `${prompt}\n${rawTitle ?? ''}`
         if (seenDispatches.has(dedupeKey)) continue
         seenDispatches.add(dedupeKey)
-        const task = enqueueTask(runtime.tasks, prompt, rawTitle)
-        await appendTaskSystemMessage(runtime.paths.history, 'created', task, {
-          createdAt: task.createdAt,
-        })
+        const { task, created } = enqueueTask(runtime.tasks, prompt, rawTitle)
+        if (created) {
+          await appendTaskSystemMessage(runtime.paths.history, 'created', task, {
+            createdAt: task.createdAt,
+          })
+        }
         continue
       }
       if (command.action === 'cancel_task') {

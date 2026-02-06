@@ -16,6 +16,7 @@ Worker 执行
 ## 调度规则
 - 仅处理 `status=pending` 的任务。
 - FIFO：按创建顺序执行。
+- 任务创建去重：若已有同 fingerprint 的 `pending/running` 任务，则复用现有任务，不重复创建。
 
 ## 关键规则
 - Worker 不派发新任务、不与用户对话。

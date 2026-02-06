@@ -242,6 +242,7 @@ export const formatTasksYaml = (
     for (const result of results) {
       const fallbackTask: Task = {
         id: result.taskId,
+        fingerprint: '',
         prompt: '',
         title: result.title ?? result.taskId,
         status: result.status,
