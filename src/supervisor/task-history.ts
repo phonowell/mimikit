@@ -29,12 +29,12 @@ const buildTaskText = (
   return `任务已完成：${label}，状态：${statusLabel}`
 }
 
-export const appendTaskSystemMessage = async (
+export const appendTaskSystemMessage = (
   historyPath: string,
   event: TaskHistoryEvent,
   task: Task,
   options?: { status?: TaskResultStatus; createdAt?: string },
-): Promise<void> => {
+): Promise<boolean> => {
   const text = buildTaskText(event, resolveTaskLabel(task), options?.status)
   const message: HistoryMessage = {
     id: `sys-task-${newId()}`,
@@ -42,9 +42,12 @@ export const appendTaskSystemMessage = async (
     text,
     createdAt: options?.createdAt ?? nowIso(),
   }
-  await safe(
+  return safe(
     'appendHistory: task_system_message',
-    () => appendHistory(historyPath, message),
-    { fallback: undefined, meta: { event, taskId: task.id } },
+    async () => {
+      await appendHistory(historyPath, message)
+      return true
+    },
+    { fallback: false, meta: { event, taskId: task.id } },
   )
 }

@@ -48,34 +48,15 @@ const mergeTaskResults = (
   return values
 }
 
-const dedupeInputs = (
-  inputs: UserInput[],
-  history: HistoryMessage[],
-): UserInput[] => {
-  const historyIds = new Set(history.map((item) => item.id))
-  const unique = new Map<string, UserInput>()
-  for (const input of inputs) {
-    if (historyIds.has(input.id)) continue
-    unique.set(input.id, input)
-  }
-  return Array.from(unique.values())
-}
+const dedupeTaskResults = (results: TaskResult[]): TaskResult[] =>
+  mergeTaskResults(results, [])
 
-const dedupeResults = (results: TaskResult[]): TaskResult[] => {
-  const unique = new Map<string, TaskResult>()
-  for (const result of results) {
-    const existing = unique.get(result.taskId)
-    if (!existing) {
-      unique.set(result.taskId, result)
-      continue
-    }
-    const existingTs = Date.parse(existing.completedAt)
-    const nextTs = Date.parse(result.completedAt)
-    if (Number.isFinite(nextTs) && nextTs >= existingTs)
-      unique.set(result.taskId, result)
-  }
-  return Array.from(unique.values())
-}
+const collectTaskResults = (tasks: Task[]): TaskResult[] =>
+  tasks
+    .filter((task): task is Task & { result: TaskResult } =>
+      Boolean(task.result),
+    )
+    .map((task) => task.result)
 
 const loadPromptFile = async (
   workDir: string,
@@ -111,7 +92,9 @@ export const buildManagerPrompt = async (params: {
   history: HistoryMessage[]
   env?: ManagerEnv
 }): Promise<string> => {
-  const pendingResults = dedupeResults(params.results)
+  const pendingResults = dedupeTaskResults(params.results)
+  const persistedResults = collectTaskResults(params.tasks)
+  const knownResults = mergeTaskResults(pendingResults, persistedResults)
   const pendingResultIds = new Set(
     pendingResults.map((result) => result.taskId),
   )
@@ -134,11 +117,11 @@ export const buildManagerPrompt = async (params: {
           dateHints,
         })
       : []
-  const mergedResults = mergeTaskResults(pendingResults, archivedResults)
+  const mergedResults = mergeTaskResults(knownResults, archivedResults)
   const resultsForTasks = mergedResults.filter(
     (result) => !pendingResultIds.has(result.taskId),
   )
-  const inputs = dedupeInputs(params.inputs, params.history)
+  const { inputs } = params
   const system = await loadSystemPrompt(params.workDir, 'manager')
   const injectionTemplate = await loadInjectionPrompt(params.workDir, 'manager')
   const injectionValues = Object.fromEntries<string>([

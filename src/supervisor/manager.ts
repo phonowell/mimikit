@@ -11,7 +11,7 @@ import { selectRecentHistory } from './history-select.js'
 import { appendTaskSystemMessage } from './task-history.js'
 
 import type { RuntimeState } from './runtime.js'
-import type { TaskResult } from '../types/index.js'
+import type { TaskResult, UserInput } from '../types/index.js'
 
 type ManagerBuffer = {
   inputs: RuntimeState['pendingInputs']
@@ -45,6 +45,64 @@ const appendFallbackReply = async (paths: RuntimeState['paths']) => {
   })
 }
 
+const appendConsumedInputsToHistory = async (
+  historyPath: string,
+  inputs: UserInput[],
+): Promise<number> => {
+  let consumed = 0
+  for (const input of inputs) {
+    const appended = await safe(
+      'appendHistory: consumed_input',
+      async () => {
+        await appendHistory(historyPath, {
+          id: input.id,
+          role: 'user',
+          text: input.text,
+          createdAt: input.createdAt,
+          ...(input.quote ? { quote: input.quote } : {}),
+        })
+        return true
+      },
+      { fallback: false, meta: { inputId: input.id } },
+    )
+    if (!appended) break
+    consumed += 1
+  }
+  return consumed
+}
+
+const appendConsumedResultsToHistory = async (
+  historyPath: string,
+  tasks: RuntimeState['tasks'],
+  results: TaskResult[],
+): Promise<number> => {
+  let consumed = 0
+  for (const result of results) {
+    const task = tasks.find((item) => item.id === result.taskId)
+    if (!task) {
+      consumed += 1
+      continue
+    }
+    if (task.result) {
+      consumed += 1
+      continue
+    }
+    const appended =
+      result.status === 'canceled'
+        ? await appendTaskSystemMessage(historyPath, 'canceled', task, {
+            createdAt: result.completedAt,
+          })
+        : await appendTaskSystemMessage(historyPath, 'completed', task, {
+            status: result.status,
+            createdAt: result.completedAt,
+          })
+    if (!appended) break
+    task.result = result
+    consumed += 1
+  }
+  return consumed
+}
+
 const runManagerBuffer = async (
   runtime: RuntimeState,
   buffer: ManagerBuffer,
@@ -53,13 +111,14 @@ const runManagerBuffer = async (
   const { results } = buffer
   const history = await readHistory(runtime.paths.history)
   const recentHistory = selectRecentHistory(history, {
-    excludeIds: new Set(buffer.inputs.map((input) => input.id)),
     minCount: runtime.config.manager.historyMinCount,
     maxCount: runtime.config.manager.historyMaxCount,
     maxBytes: runtime.config.manager.historyMaxBytes,
   })
   const startedAt = Date.now()
   runtime.managerRunning = true
+  let consumedInputCount = 0
+  let consumedResultCount = 0
   try {
     const { model, modelReasoningEffort } = runtime.config.manager
     await appendLog(runtime.paths.log, {
@@ -89,6 +148,19 @@ const runManagerBuffer = async (
       ...(model ? { model } : {}),
       ...(modelReasoningEffort ? { modelReasoningEffort } : {}),
     })
+    consumedInputCount = await appendConsumedInputsToHistory(
+      runtime.paths.history,
+      inputs,
+    )
+    if (consumedInputCount < inputs.length)
+      throw new Error('append_consumed_inputs_incomplete')
+    consumedResultCount = await appendConsumedResultsToHistory(
+      runtime.paths.history,
+      runtime.tasks,
+      results,
+    )
+    if (consumedResultCount < results.length)
+      throw new Error('append_consumed_results_incomplete')
     const parsed = parseCommands(result.output)
     const seenDispatches = new Set<string>()
     for (const command of parsed.commands) {
@@ -105,9 +177,14 @@ const runManagerBuffer = async (
         seenDispatches.add(dedupeKey)
         const { task, created } = enqueueTask(runtime.tasks, prompt, rawTitle)
         if (created) {
-          await appendTaskSystemMessage(runtime.paths.history, 'created', task, {
-            createdAt: task.createdAt,
-          })
+          await appendTaskSystemMessage(
+            runtime.paths.history,
+            'created',
+            task,
+            {
+              createdAt: task.createdAt,
+            },
+          )
         }
         continue
       }
@@ -137,6 +214,9 @@ const runManagerBuffer = async (
     })
     clearBuffer(buffer)
   } catch (error) {
+    const remainingInputs = buffer.inputs.slice(consumedInputCount)
+    if (remainingInputs.length > 0)
+      runtime.pendingInputs.unshift(...remainingInputs)
     await safe(
       'appendLog: manager_end',
       () =>
@@ -145,6 +225,8 @@ const runManagerBuffer = async (
           status: 'error',
           error: error instanceof Error ? error.message : String(error),
           elapsedMs: Math.max(0, Date.now() - startedAt),
+          ...(consumedInputCount > 0 ? { consumedInputCount } : {}),
+          ...(consumedResultCount > 0 ? { consumedResultCount } : {}),
         }),
       { fallback: undefined },
     )

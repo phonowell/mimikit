@@ -45,6 +45,7 @@ export type Task = {
   completedAt?: ISODate
   durationMs?: number
   usage?: TokenUsage
+  result?: TaskResult
 }
 
 export type TaskResult = {

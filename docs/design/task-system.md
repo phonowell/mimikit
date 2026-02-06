@@ -13,6 +13,8 @@ Worker 执行
 结果回传 → Manager 告知用户（同时写入 results 归档）
 ```
 
+注：`pendingInputs` 与 `pendingResults` 仅在 Manager 消费时写入 `history.jsonl`，避免预写后再去重。
+
 ## 调度规则
 - 仅处理 `status=pending` 的任务。
 - FIFO：按创建顺序执行。

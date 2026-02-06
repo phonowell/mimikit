@@ -41,10 +41,7 @@ const resolveTitle = (id: string, prompt: string, title?: string): string =>
   titleFromCandidates(id, [title, prompt])
 
 export const buildTaskFingerprint = (prompt: string): string =>
-  prompt
-    .trim()
-    .replace(/\s+/g, ' ')
-    .toLowerCase()
+  prompt.trim().replace(/\s+/g, ' ').toLowerCase()
 
 const isActiveTask = (task: Task): boolean =>
   task.status === 'pending' || task.status === 'running'

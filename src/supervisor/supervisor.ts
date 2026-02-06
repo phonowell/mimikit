@@ -2,7 +2,7 @@ import { buildPaths, ensureStateDirs } from '../fs/paths.js'
 import { appendLog } from '../log/append.js'
 import { safe, setDefaultLogPath } from '../log/safe.js'
 import { newId, nowIso } from '../shared/utils.js'
-import { appendHistory, readHistory } from '../storage/jsonl.js'
+import { readHistory } from '../storage/jsonl.js'
 
 import { cancelTask } from './cancel.js'
 import { managerLoop } from './manager.js'
@@ -52,13 +52,6 @@ export class Supervisor {
       quote ? { id, text, createdAt, quote } : { id, text, createdAt },
     )
     if (meta) this.runtime.lastUserMeta = meta
-    await appendHistory(this.runtime.paths.history, {
-      id,
-      role: 'user',
-      text,
-      createdAt,
-      ...(quote ? { quote } : {}),
-    })
     await appendLog(this.runtime.paths.log, {
       event: 'user_input',
       id,
