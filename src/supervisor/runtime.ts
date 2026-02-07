@@ -31,6 +31,7 @@ export type RuntimeState = {
   tasks: Task[]
   runningWorkers: Set<string>
   runningControllers: Map<string, AbortController>
+  evolveRunning: boolean
   tokenBudget: TokenBudgetState
   lastUserMeta?: UserMeta
 }

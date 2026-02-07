@@ -1,11 +1,14 @@
 import { readFile } from 'node:fs/promises'
 import { isAbsolute, relative, resolve } from 'node:path'
 
+import { appendEvolveFeedback } from '../evolve/feedback.js'
 import { logSafeError } from '../log/safe.js'
+import { newId, nowIso } from '../shared/utils.js'
 
 import {
   clearStateDir,
   parseExportLimit,
+  parseFeedbackBody,
   parseInputBody,
   parseMessageLimit,
   parseTaskLimit,
@@ -177,6 +180,31 @@ export const registerApiRoutes = (
       result.quote,
     )
     reply.send({ id })
+  })
+
+  app.post('/api/feedback', async (request, reply) => {
+    const result = parseFeedbackBody(request.body)
+    if ('error' in result) {
+      reply.code(400).send({ error: result.error })
+      return
+    }
+    const id = newId()
+    await appendEvolveFeedback(config.stateDir, {
+      id,
+      createdAt: nowIso(),
+      kind: 'user_feedback',
+      severity: result.severity,
+      message: result.message,
+      ...(result.context ? { context: result.context } : {}),
+    })
+    await supervisor.logEvent({
+      event: 'feedback_received',
+      feedbackId: id,
+      severity: result.severity,
+      remote: request.raw.socket.remoteAddress ?? undefined,
+      hasContext: Boolean(result.context),
+    })
+    reply.send({ ok: true, id })
   })
 
   app.get('/api/messages', async (request) => {

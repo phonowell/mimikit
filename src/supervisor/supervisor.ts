@@ -8,6 +8,7 @@ import { cancelTask } from './cancel.js'
 import { type ChatMessage, mergeChatMessages } from './chat-view.js'
 import { managerLoop } from './manager.js'
 import { hydrateRuntimeState, persistRuntimeState } from './runtime-persist.js'
+import { idleEvolveLoop } from './supervisor-evolve.js'
 import { buildTaskViews } from './task-view.js'
 import { workerLoop } from './worker.js'
 
@@ -38,6 +39,7 @@ export class Supervisor {
       tasks: [],
       runningWorkers: new Set(),
       runningControllers: new Map(),
+      evolveRunning: false,
       tokenBudget: {
         date: nowIso().slice(0, 10),
         spent: 0,
@@ -50,6 +52,7 @@ export class Supervisor {
     await hydrateRuntimeState(this.runtime)
     void managerLoop(this.runtime)
     void workerLoop(this.runtime)
+    void idleEvolveLoop(this.runtime)
   }
 
   stop() {

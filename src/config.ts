@@ -5,6 +5,16 @@ import type { ModelReasoningEffort } from '@openai/codex-sdk'
 export type SupervisorConfig = {
   stateDir: string
   workDir: string
+  evolve: {
+    enabled: boolean
+    idlePollMs: number
+    maxRounds: number
+    minPassRateDelta: number
+    minTokenDelta: number
+    minLatencyDeltaMs: number
+    feedbackHistoryLimit: number
+    feedbackSuiteMaxCases: number
+  }
   tokenBudget: {
     enabled: boolean
     dailyTotal: number
@@ -37,6 +47,16 @@ export const defaultConfig = (params: {
 }): SupervisorConfig => ({
   stateDir: resolve(params.stateDir),
   workDir: resolve(params.workDir),
+  evolve: {
+    enabled: true,
+    idlePollMs: 15_000,
+    maxRounds: 1,
+    minPassRateDelta: 0,
+    minTokenDelta: 50,
+    minLatencyDeltaMs: 200,
+    feedbackHistoryLimit: 30,
+    feedbackSuiteMaxCases: 200,
+  },
   tokenBudget: {
     enabled: true,
     dailyTotal: 500_000_000,

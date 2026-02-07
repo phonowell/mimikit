@@ -36,6 +36,39 @@ const parsePort = (value: string): string => {
   return String(num)
 }
 
+const parseEnvBoolean = (
+  name: string,
+  value: string | undefined,
+): boolean | undefined => {
+  if (!value) return undefined
+  if (value === '1' || value === 'true') return true
+  if (value === '0' || value === 'false') return false
+  console.warn(`[cli] invalid ${name}:`, value)
+  return undefined
+}
+
+const parseEnvPositiveInteger = (
+  name: string,
+  value: string | undefined,
+): number | undefined => {
+  if (!value) return undefined
+  const parsed = Number(value)
+  if (Number.isInteger(parsed) && parsed > 0) return parsed
+  console.warn(`[cli] invalid ${name}:`, value)
+  return undefined
+}
+
+const parseEnvNonNegativeNumber = (
+  name: string,
+  value: string | undefined,
+): number | undefined => {
+  if (!value) return undefined
+  const parsed = Number(value)
+  if (Number.isFinite(parsed) && parsed >= 0) return parsed
+  console.warn(`[cli] invalid ${name}:`, value)
+  return undefined
+}
+
 const port = parsePort(portValue)
 
 const config = defaultConfig({
@@ -87,6 +120,61 @@ if (envTokenBudgetEnabled) {
     )
   }
 }
+
+const envEvolveEnabled = parseEnvBoolean(
+  'MIMIKIT_EVOLVE_ENABLED',
+  process.env.MIMIKIT_EVOLVE_ENABLED?.trim(),
+)
+if (envEvolveEnabled !== undefined) config.evolve.enabled = envEvolveEnabled
+
+const envEvolveIdlePollMs = parseEnvPositiveInteger(
+  'MIMIKIT_EVOLVE_IDLE_POLL_MS',
+  process.env.MIMIKIT_EVOLVE_IDLE_POLL_MS?.trim(),
+)
+if (envEvolveIdlePollMs !== undefined)
+  config.evolve.idlePollMs = envEvolveIdlePollMs
+
+const envEvolveMaxRounds = parseEnvPositiveInteger(
+  'MIMIKIT_EVOLVE_MAX_ROUNDS',
+  process.env.MIMIKIT_EVOLVE_MAX_ROUNDS?.trim(),
+)
+if (envEvolveMaxRounds !== undefined)
+  config.evolve.maxRounds = envEvolveMaxRounds
+
+const envEvolveMinPassRateDelta = parseEnvNonNegativeNumber(
+  'MIMIKIT_EVOLVE_MIN_PASS_RATE_DELTA',
+  process.env.MIMIKIT_EVOLVE_MIN_PASS_RATE_DELTA?.trim(),
+)
+if (envEvolveMinPassRateDelta !== undefined)
+  config.evolve.minPassRateDelta = envEvolveMinPassRateDelta
+
+const envEvolveMinTokenDelta = parseEnvNonNegativeNumber(
+  'MIMIKIT_EVOLVE_MIN_TOKEN_DELTA',
+  process.env.MIMIKIT_EVOLVE_MIN_TOKEN_DELTA?.trim(),
+)
+if (envEvolveMinTokenDelta !== undefined)
+  config.evolve.minTokenDelta = Math.floor(envEvolveMinTokenDelta)
+
+const envEvolveMinLatencyDeltaMs = parseEnvNonNegativeNumber(
+  'MIMIKIT_EVOLVE_MIN_LATENCY_DELTA_MS',
+  process.env.MIMIKIT_EVOLVE_MIN_LATENCY_DELTA_MS?.trim(),
+)
+if (envEvolveMinLatencyDeltaMs !== undefined)
+  config.evolve.minLatencyDeltaMs = Math.floor(envEvolveMinLatencyDeltaMs)
+
+const envEvolveFeedbackHistoryLimit = parseEnvPositiveInteger(
+  'MIMIKIT_EVOLVE_FEEDBACK_HISTORY_LIMIT',
+  process.env.MIMIKIT_EVOLVE_FEEDBACK_HISTORY_LIMIT?.trim(),
+)
+if (envEvolveFeedbackHistoryLimit !== undefined)
+  config.evolve.feedbackHistoryLimit = envEvolveFeedbackHistoryLimit
+
+const envEvolveFeedbackSuiteMaxCases = parseEnvPositiveInteger(
+  'MIMIKIT_EVOLVE_FEEDBACK_SUITE_MAX_CASES',
+  process.env.MIMIKIT_EVOLVE_FEEDBACK_SUITE_MAX_CASES?.trim(),
+)
+if (envEvolveFeedbackSuiteMaxCases !== undefined)
+  config.evolve.feedbackSuiteMaxCases = envEvolveFeedbackSuiteMaxCases
 
 console.log('[cli] config:', config)
 

@@ -68,6 +68,54 @@ export type InputMeta = {
   clientNowIso?: string
 }
 
+export type FeedbackBody = {
+  severity: 'low' | 'medium' | 'high'
+  message: string
+  context?: {
+    input?: string
+    response?: string
+    note?: string
+  }
+}
+
+const isFeedbackSeverity = (
+  value: unknown,
+): value is FeedbackBody['severity'] =>
+  value === 'low' || value === 'medium' || value === 'high'
+
+export const parseFeedbackBody = (
+  body: unknown,
+): FeedbackBody | { error: string } => {
+  if (!body || typeof body !== 'object') return { error: 'invalid JSON' }
+  const parsed = body as Record<string, unknown>
+  const message = asString(parsed.message)?.trim() ?? ''
+  if (!message) return { error: 'message is required' }
+  const severityRaw = parsed.severity
+  if (!isFeedbackSeverity(severityRaw))
+    return { error: 'severity must be low|medium|high' }
+  const contextRaw = parsed.context
+  if (contextRaw !== undefined && typeof contextRaw !== 'object')
+    return { error: 'context must be an object' }
+  const context = (() => {
+    if (!contextRaw || typeof contextRaw !== 'object') return undefined
+    const value = contextRaw as Record<string, unknown>
+    const input = asString(value.input)
+    const response = asString(value.response)
+    const note = asString(value.note)
+    if (!input && !response && !note) return undefined
+    return {
+      ...(input ? { input } : {}),
+      ...(response ? { response } : {}),
+      ...(note ? { note } : {}),
+    }
+  })()
+  return {
+    severity: severityRaw,
+    message,
+    ...(context ? { context } : {}),
+  }
+}
+
 export const parseInputBody = (
   body: unknown,
   request: {

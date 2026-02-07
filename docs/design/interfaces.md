@@ -6,6 +6,7 @@
 - GET / → WebUI
 - GET /api/status
 - POST /api/input（支持可选字段：clientLocale / clientTimeZone / clientOffsetMinutes / clientNowIso / language）
+- POST /api/feedback（支持字段：severity(low|medium|high) / message / context{input,response,note}）
 - GET /api/messages?limit=...
 - GET /api/messages/export?limit=...（导出人类可读 markdown）
 - GET /api/tasks?limit=...
@@ -31,6 +32,14 @@
 - `MIMIKIT_REASONING_EFFORT`：设置 manager reasoning effort（`minimal|low|medium|high|xhigh`）
 - `MIMIKIT_TOKEN_BUDGET_DAILY`：覆盖每日 token 预算（正整数）
 - `MIMIKIT_TOKEN_BUDGET_ENABLED`：预算开关（`true|false|1|0`）
+- `MIMIKIT_EVOLVE_ENABLED`：空闲轮次自演进开关（`true|false|1|0`）
+- `MIMIKIT_EVOLVE_IDLE_POLL_MS`：空闲轮询间隔（正整数）
+- `MIMIKIT_EVOLVE_MAX_ROUNDS`：每次空闲自演进最大迭代轮数（正整数）
+- `MIMIKIT_EVOLVE_MIN_PASS_RATE_DELTA`：通过率提升阈值（非负数）
+- `MIMIKIT_EVOLVE_MIN_TOKEN_DELTA`：Token 下降阈值（非负整数）
+- `MIMIKIT_EVOLVE_MIN_LATENCY_DELTA_MS`：LLM 延时下降阈值（非负整数）
+- `MIMIKIT_EVOLVE_FEEDBACK_HISTORY_LIMIT`：每次取最新反馈样本上限（正整数）
+- `MIMIKIT_EVOLVE_FEEDBACK_SUITE_MAX_CASES`：反馈派生回放样本上限（正整数）
 
 ### 默认配置（节选）
 - `tokenBudget.enabled = true`

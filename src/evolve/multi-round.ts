@@ -1,5 +1,5 @@
 import { mkdir, writeFile } from 'node:fs/promises'
-import { resolve } from 'node:path'
+import { dirname, resolve } from 'node:path'
 
 import { decideAggregatePromotion, type PromotionPolicy } from './decision.js'
 import { runReplaySuitesAggregate } from './multi-suite.js'
@@ -44,7 +44,7 @@ const writeJson = async (
   path: string,
   payload: Record<string, unknown>,
 ): Promise<void> => {
-  await mkdir(resolve(path, '..'), { recursive: true })
+  await mkdir(dirname(path), { recursive: true })
   await writeFile(path, `${JSON.stringify(payload, null, 2)}\n`, 'utf8')
 }
 

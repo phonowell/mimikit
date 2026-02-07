@@ -72,3 +72,10 @@
   - 或出现 `no_gain`（未跨越阈值提升 `passRate`，且未跨越阈值降低 `usage.total`，且未跨越阈值降低 `llmElapsedMs`）
 - 循环也支持阈值参数：`--min-pass-rate-delta` `--min-token-delta` `--min-latency-delta-ms`
 - 汇总产物：`loop-report.json`（包含 `stoppedReason`、每轮摘要、最佳轮次）
+
+## 运行期反馈驱动自演进
+- 反馈入口：`POST /api/feedback`，写入 `.mimikit/evolve/feedback.jsonl`。
+- 空闲触发：Supervisor 在空闲轮次自动消费“未处理反馈”。
+- 数据控量：按 `feedbackHistoryLimit` 截断待处理反馈，按 `feedbackSuiteMaxCases` 生成派生 suite。
+- 演进执行：复用多 suite 决策逻辑与阈值策略，保持“评测→改写→验证→回滚”闭环一致性。
+- 观测证据：`evolve_idle_run` 日志记录 `elapsedMs`、反馈样本数、基线/候选指标（含 token 与 llmElapsedMs）。
