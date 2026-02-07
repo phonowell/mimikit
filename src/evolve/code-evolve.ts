@@ -42,6 +42,7 @@ export type CodeEvolveRoundResult = {
   output: string
   usage?: TokenUsage
   llmElapsedMs: number
+  changedPaths: GitChanges
   validation: {
     ok: boolean
     steps: ValidationStep[]
@@ -281,6 +282,7 @@ export const runCodeEvolveRound = async (params: {
       reason: 'repo_not_clean',
       output: 'code evolve skipped: git working tree is not clean',
       llmElapsedMs: 0,
+      changedPaths: { tracked: [], untracked: [] },
       validation: { ok: false, steps: [] },
       changedFiles: 0,
     }
@@ -312,6 +314,7 @@ export const runCodeEvolveRound = async (params: {
       output: plannerResult.output,
       ...(usage ? { usage } : {}),
       llmElapsedMs: plannerResult.elapsedMs,
+      changedPaths: { tracked: [], untracked: [] },
       validation: { ok: true, steps: [] },
       changedFiles: 0,
     }
@@ -324,6 +327,7 @@ export const runCodeEvolveRound = async (params: {
       output: plannerResult.output,
       ...(usage ? { usage } : {}),
       llmElapsedMs: plannerResult.elapsedMs,
+      changedPaths: { tracked: [], untracked: [] },
       validation: { ok: true, steps: [] },
       changedFiles: 0,
     }
@@ -360,6 +364,7 @@ export const runCodeEvolveRound = async (params: {
       output: workerResult.output,
       ...(usage ? { usage } : {}),
       llmElapsedMs,
+      changedPaths: { tracked: [], untracked: [] },
       validation: { ok: true, steps: [] },
       changedFiles,
     }
@@ -375,6 +380,7 @@ export const runCodeEvolveRound = async (params: {
       output: workerResult.output,
       ...(usage ? { usage } : {}),
       llmElapsedMs,
+      changedPaths: codeChanges,
       validation,
       changedFiles,
     }
@@ -387,6 +393,7 @@ export const runCodeEvolveRound = async (params: {
     output: workerResult.output,
     ...(usage ? { usage } : {}),
     llmElapsedMs,
+    changedPaths: codeChanges,
     validation,
     changedFiles,
   }

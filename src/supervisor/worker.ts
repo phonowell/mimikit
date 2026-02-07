@@ -1,5 +1,6 @@
 import { runCodeEvolveRound } from '../evolve/code-evolve.js'
 import {
+  appendRuntimeSignalFeedback,
   getFeedbackReplaySuitePath,
   hasPendingEvolveFeedback,
   readEvolveFeedback,
@@ -126,9 +127,24 @@ const runSystemEvolveTask = async (
   runtime: RuntimeState,
   task: Task,
 ): Promise<{ output: string; usage?: TokenUsage }> => {
+  const promptPathRelative = 'prompts/agents/manager/system.md'
+  const promptPathAbsolute = `${runtime.config.workDir}/${promptPathRelative}`
+  const feedbackStateBefore = await readEvolveFeedbackState(
+    runtime.config.stateDir,
+  )
+  const feedbackBefore = await readEvolveFeedback(runtime.config.stateDir)
+  const promptRollback = {
+    required: false,
+    original: '' as string,
+  }
+  const rollbackPromptIfNeeded = async (): Promise<void> => {
+    if (!promptRollback.required) return
+    const { restorePrompt } = await import('../evolve/prompt-optimizer.js')
+    await restorePrompt(promptPathAbsolute, promptRollback.original)
+  }
   try {
-    const feedback = await readEvolveFeedback(runtime.config.stateDir)
-    const state = await readEvolveFeedbackState(runtime.config.stateDir)
+    const feedback = feedbackBefore
+    const state = feedbackStateBefore
     const pending = selectPendingFeedback({
       feedback,
       processedCount: state.processedCount,
@@ -154,8 +170,6 @@ const runSystemEvolveTask = async (
     }
     const suitePath = getFeedbackReplaySuitePath(runtime.config.stateDir)
     const outDirRoot = `${runtime.config.stateDir}/evolve/idle-run-${Date.now()}`
-    const promptPathRelative = 'prompts/agents/manager/system.md'
-    const promptPathAbsolute = `${runtime.config.workDir}/${promptPathRelative}`
     const rounds = Math.max(1, runtime.config.evolve.maxRounds)
     const suites = [{ path: suitePath, alias: 'feedback', weight: 1 }]
     const promotionPolicy = buildPromotionPolicy({
@@ -171,6 +185,10 @@ const runSystemEvolveTask = async (
         ? { optimizerModel: runtime.config.manager.model }
         : {}),
     }
+
+    const promptOriginal = await import('node:fs/promises').then(
+      ({ readFile }) => readFile(promptPathAbsolute, 'utf8'),
+    )
 
     let result = await runSelfEvolveMultiRound({
       suites,
@@ -220,6 +238,8 @@ const runSystemEvolveTask = async (
     let codeEvolveUsage: TokenUsage | undefined
     let codeResultValidationOk = true
     if (result.promote && shouldRunCodeEvolve) {
+      promptRollback.required = true
+      promptRollback.original = promptOriginal
       const messages = pending.map((item) => item.message)
       const codeResult = await runCodeEvolveRound({
         stateDir: runtime.config.stateDir,
@@ -236,6 +256,13 @@ const runSystemEvolveTask = async (
       })
       codeEvolveUsage = codeResult.usage
       codeResultValidationOk = codeResult.validation.ok
+      if (!codeResult.validation.ok) {
+        await rollbackPromptIfNeeded()
+        await writeEvolveFeedbackState(
+          runtime.config.stateDir,
+          feedbackStateBefore,
+        )
+      }
       await bestEffort('appendLog: evolve_code_run', () =>
         appendLog(runtime.paths.log, {
           event: 'evolve_code_run',
@@ -255,6 +282,12 @@ const runSystemEvolveTask = async (
       codeResultValidationOk &&
       runtime.config.evolve.autoRestartOnPromote
     ) {
+      runtime.postRestartHealthGate = {
+        required: true,
+        promptPath: promptPathAbsolute,
+        promptBackup: promptOriginal,
+        suitePath,
+      }
       await bestEffort('persistRuntimeState: evolve_restart', () =>
         persistRuntimeState(runtime),
       )
@@ -276,11 +309,29 @@ const runSystemEvolveTask = async (
       output,
       usage: {
         total: usageTotal,
-        input: usageTotal,
+        input: baseUsageTotal + (codeEvolveUsage?.input ?? 0),
         output: codeEvolveUsage?.output ?? 0,
       },
     }
   } catch (error) {
+    await bestEffort('rollbackPromptIfNeeded: evolve_idle_error', () =>
+      rollbackPromptIfNeeded(),
+    )
+    await bestEffort('restoreFeedbackState: evolve_idle_error', () =>
+      writeEvolveFeedbackState(runtime.config.stateDir, feedbackStateBefore),
+    )
+    await bestEffort('appendEvolveFeedback: evolve_idle_error', () =>
+      appendRuntimeSignalFeedback({
+        stateDir: runtime.config.stateDir,
+        severity: 'high',
+        message: `evolve idle error: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+        context: {
+          note: 'evolve_idle_error',
+        },
+      }).then(() => undefined),
+    )
     await bestEffort('appendLog: evolve_idle_error', () =>
       appendLog(runtime.paths.log, {
         event: 'evolve_idle_error',
@@ -336,6 +387,18 @@ const runTask = async (
         })
         break
       } catch (error) {
+        await bestEffort('appendEvolveFeedback: worker_retry', () =>
+          appendRuntimeSignalFeedback({
+            stateDir: runtime.config.stateDir,
+            severity: 'medium',
+            message: `worker retry: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+            context: {
+              note: 'worker_retry',
+            },
+          }).then(() => undefined),
+        )
         if (attempt >= maxAttempts) throw error
         await appendLog(runtime.paths.log, {
           event: 'worker_retry',
@@ -386,6 +449,17 @@ const runTask = async (
       return
     }
     const result = buildResult(task, 'failed', err.message, elapsed())
+    await bestEffort('appendEvolveFeedback: worker_failed', () =>
+      appendRuntimeSignalFeedback({
+        stateDir: runtime.config.stateDir,
+        severity: 'high',
+        message: `worker failed: ${err.message}`,
+        context: {
+          note: 'worker_failed',
+          input: task.prompt,
+        },
+      }).then(() => undefined),
+    )
     await finalizeResult(runtime, task, result, markTaskFailed)
   }
 }
@@ -396,6 +470,17 @@ const spawnWorker = async (runtime: RuntimeState, task: Task) => {
   if (task.kind === 'system_evolve' && !isRuntimeIdleForEvolve(runtime)) return
 
   if (!canSpendTokens(runtime, estimateTaskTokenCost(task))) {
+    await bestEffort('appendEvolveFeedback: worker_budget_skipped', () =>
+      appendRuntimeSignalFeedback({
+        stateDir: runtime.config.stateDir,
+        severity: 'medium',
+        message: 'worker budget skipped: task deferred due to token budget',
+        context: {
+          note: 'worker_budget_skipped',
+          input: task.prompt,
+        },
+      }).then(() => undefined),
+    )
     await bestEffort('appendLog: worker_budget_skipped', () =>
       appendLog(runtime.paths.log, {
         event: 'worker_budget_skipped',
@@ -458,6 +543,18 @@ export const workerLoop = async (runtime: RuntimeState): Promise<void> => {
         if (next) void spawnWorker(runtime, next)
       }
     } catch (error) {
+      await bestEffort('appendEvolveFeedback: worker_loop_error', () =>
+        appendRuntimeSignalFeedback({
+          stateDir: runtime.config.stateDir,
+          severity: 'high',
+          message: `worker loop error: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+          context: {
+            note: 'worker_loop_error',
+          },
+        }).then(() => undefined),
+      )
       await bestEffort('appendLog: worker_loop_error', () =>
         appendLog(runtime.paths.log, {
           event: 'worker_loop_error',

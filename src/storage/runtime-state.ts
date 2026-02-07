@@ -7,6 +7,12 @@ import type { Task, TokenBudgetState } from '../types/index.js'
 type RuntimeSnapshot = {
   tasks: Task[]
   tokenBudget?: TokenBudgetState
+  postRestartHealthGate?: {
+    required: boolean
+    promptPath?: string
+    promptBackup?: string
+    suitePath?: string
+  }
 }
 
 const runtimePath = (stateDir: string): string =>
@@ -81,6 +87,7 @@ const normalizeSnapshot = (value: unknown): RuntimeSnapshot => {
   const record = value as {
     tasks?: unknown
     tokenBudget?: unknown
+    postRestartHealthGate?: unknown
   }
   const tasks = Array.isArray(record.tasks)
     ? record.tasks
@@ -88,7 +95,13 @@ const normalizeSnapshot = (value: unknown): RuntimeSnapshot => {
         .filter((item): item is Task => Boolean(item))
     : []
   const tokenBudget = asTokenBudgetState(record.tokenBudget)
-  return tokenBudget ? { tasks, tokenBudget } : { tasks }
+  const gate =
+    record.postRestartHealthGate &&
+    typeof record.postRestartHealthGate === 'object'
+      ? (record.postRestartHealthGate as RuntimeSnapshot['postRestartHealthGate'])
+      : undefined
+  const base = tokenBudget ? { tasks, tokenBudget } : { tasks }
+  return gate ? { ...base, postRestartHealthGate: gate } : base
 }
 
 export const loadRuntimeSnapshot = async (

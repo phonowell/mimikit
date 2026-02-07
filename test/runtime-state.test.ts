@@ -93,3 +93,21 @@ test('runtime snapshot keeps system task kind', async () => {
   const loaded = await loadRuntimeSnapshot(stateDir)
   expect(loaded.tasks[0]?.kind).toBe('system_evolve')
 })
+
+test('runtime snapshot keeps postRestartHealthGate', async () => {
+  const stateDir = await createTmpDir()
+  await saveRuntimeSnapshot(stateDir, {
+    tasks: [],
+    postRestartHealthGate: {
+      required: true,
+      promptPath: 'prompts/agents/manager/system.md',
+      promptBackup: 'backup-prompt',
+      suitePath: '.mimikit/evolve/feedback-suite.json',
+    },
+  })
+  const loaded = await loadRuntimeSnapshot(stateDir)
+  expect(loaded.postRestartHealthGate?.required).toBe(true)
+  expect(loaded.postRestartHealthGate?.promptPath).toBe(
+    'prompts/agents/manager/system.md',
+  )
+})

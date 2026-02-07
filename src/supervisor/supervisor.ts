@@ -1,3 +1,7 @@
+import { loadReplaySuite } from '../eval/replay-loader.js'
+import { runReplaySuite } from '../eval/replay-runner.js'
+import { appendRuntimeSignalFeedback } from '../evolve/feedback.js'
+import { restorePrompt } from '../evolve/prompt-optimizer.js'
 import { buildPaths, ensureStateDirs } from '../fs/paths.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort, setDefaultLogPath } from '../log/safe.js'
@@ -38,6 +42,7 @@ export class Supervisor {
       tasks: [],
       runningWorkers: new Set(),
       runningControllers: new Map(),
+      postRestartHealthGate: undefined,
       tokenBudget: {
         date: nowIso().slice(0, 10),
         spent: 0,
@@ -48,6 +53,41 @@ export class Supervisor {
   async start() {
     await ensureStateDirs(this.runtime.paths)
     await hydrateRuntimeState(this.runtime)
+    if (this.runtime.postRestartHealthGate?.required) {
+      const gate = this.runtime.postRestartHealthGate
+      let passed = false
+      try {
+        if (gate.suitePath) {
+          const suite = await loadReplaySuite(gate.suitePath)
+          const report = await runReplaySuite({
+            suite,
+            stateDir: this.runtime.config.stateDir,
+            workDir: this.runtime.config.workDir,
+            timeoutMs: this.runtime.config.worker.timeoutMs,
+            ...(this.runtime.config.manager.model
+              ? { model: this.runtime.config.manager.model }
+              : {}),
+            maxFail: 1,
+          })
+          passed = report.failed === 0
+        }
+      } catch {
+        passed = false
+      }
+      if (!passed && gate.promptPath && gate.promptBackup) {
+        await restorePrompt(gate.promptPath, gate.promptBackup)
+        await appendRuntimeSignalFeedback({
+          stateDir: this.runtime.config.stateDir,
+          severity: 'high',
+          message: 'post-restart health gate failed, prompt rollback applied',
+          context: {
+            note: 'post_restart_health_gate_failed',
+          },
+        })
+      }
+      this.runtime.postRestartHealthGate = undefined
+      await this.persistStopSnapshot()
+    }
     void managerLoop(this.runtime)
     void workerLoop(this.runtime)
   }

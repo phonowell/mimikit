@@ -1,3 +1,4 @@
+import { appendRuntimeSignalFeedback } from '../evolve/feedback.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { runManager } from '../roles/runner.js'
@@ -173,6 +174,18 @@ export const runManagerBuffer = async (
         ...(consumedInputCount > 0 ? { consumedInputCount } : {}),
         ...(consumedResultCount > 0 ? { consumedResultCount } : {}),
       }),
+    )
+    await bestEffort('appendEvolveFeedback: manager_error', () =>
+      appendRuntimeSignalFeedback({
+        stateDir: runtime.config.stateDir,
+        severity: 'high',
+        message: `manager error: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+        context: {
+          note: 'manager_error',
+        },
+      }).then(() => undefined),
     )
     await appendFallbackReply(runtime.paths)
     clearManagerBuffer(buffer)

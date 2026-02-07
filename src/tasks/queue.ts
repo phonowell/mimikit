@@ -151,6 +151,12 @@ export const pickNextPendingTask = (
   for (const task of tasks) {
     if (task.status !== 'pending') continue
     if (running.has(task.id)) continue
+    if (task.kind === 'system_evolve') continue
+    return task
+  }
+  for (const task of tasks) {
+    if (task.status !== 'pending') continue
+    if (running.has(task.id)) continue
     return task
   }
   return null

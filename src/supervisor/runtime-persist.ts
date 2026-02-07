@@ -14,6 +14,8 @@ export const hydrateRuntimeState = async (
   const snapshot = await loadRuntimeSnapshot(runtime.config.stateDir)
   runtime.tasks = snapshot.tasks
   if (snapshot.tokenBudget) runtime.tokenBudget = snapshot.tokenBudget
+  if (snapshot.postRestartHealthGate)
+    runtime.postRestartHealthGate = snapshot.postRestartHealthGate
   if (snapshot.tasks.length > 0) {
     await bestEffort('appendLog: runtime_hydrated', () =>
       appendLog(runtime.paths.log, {
@@ -30,5 +32,8 @@ export const persistRuntimeState = async (
   await saveRuntimeSnapshot(runtime.config.stateDir, {
     tasks: selectPersistedTasks(runtime.tasks),
     tokenBudget: runtime.tokenBudget,
+    ...(runtime.postRestartHealthGate
+      ? { postRestartHealthGate: runtime.postRestartHealthGate }
+      : {}),
   })
 }

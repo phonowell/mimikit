@@ -3,6 +3,7 @@ import { dirname, join, resolve } from 'node:path'
 
 import { readJson, writeJson } from '../fs/json.js'
 import { ensureDir } from '../fs/paths.js'
+import { newId, nowIso } from '../shared/utils.js'
 import { appendJsonl, readJsonl } from '../storage/jsonl.js'
 
 import type { ReplaySuite } from '../eval/replay-types.js'
@@ -98,6 +99,83 @@ export const hasPendingEvolveFeedback = async (params: {
     historyLimit: params.historyLimit,
   })
   return pending.length > 0
+}
+
+const inferFeedbackSeverity = (text: string): EvolveFeedback['severity'] => {
+  const normalized = text.toLowerCase()
+  const highSignals = [
+    '崩溃',
+    '卡死',
+    '严重',
+    '错误',
+    '失败',
+    '超时',
+    '回滚',
+    'timeout',
+    'error',
+    'crash',
+    'stuck',
+  ]
+  if (highSignals.some((token) => normalized.includes(token))) return 'high'
+  const mediumSignals = [
+    '不准',
+    '不清楚',
+    '太慢',
+    '很慢',
+    '昂贵',
+    '费 token',
+    'bug',
+    'issue',
+    'slow',
+    'expensive',
+  ]
+  if (mediumSignals.some((token) => normalized.includes(token))) return 'medium'
+  return 'low'
+}
+
+export const parseChatFeedback = (
+  text: string,
+):
+  | {
+      message: string
+      severity: EvolveFeedback['severity']
+    }
+  | undefined => {
+  const trimmed = text.trim()
+  if (!trimmed) return undefined
+  const patterns = [
+    /^\/feedback\s+([\s\S]+)$/i,
+    /^(?:反馈|意見|意见|建议|建議)\s*[：:]\s*([\s\S]+)$/i,
+    /^(?:feedback|fb)\s*[：:]\s*([\s\S]+)$/i,
+  ]
+  for (const pattern of patterns) {
+    const match = trimmed.match(pattern)
+    const message = match?.[1]?.trim()
+    if (!message) continue
+    return {
+      message,
+      severity: inferFeedbackSeverity(message),
+    }
+  }
+  return undefined
+}
+
+export const appendRuntimeSignalFeedback = async (params: {
+  stateDir: string
+  message: string
+  severity?: EvolveFeedback['severity']
+  context?: EvolveFeedback['context']
+}): Promise<{ id: string }> => {
+  const id = newId()
+  await appendEvolveFeedback(params.stateDir, {
+    id,
+    createdAt: nowIso(),
+    kind: 'runtime_signal',
+    severity: params.severity ?? inferFeedbackSeverity(params.message),
+    message: params.message,
+    ...(params.context ? { context: params.context } : {}),
+  })
+  return { id }
 }
 
 const toReplayCase = (
