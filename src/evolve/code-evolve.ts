@@ -232,18 +232,28 @@ const buildCodeEvolvePrompt = (feedbackMessages: string[]): string => {
 const parseInstruction = (output: string): EvolveCodeInstruction => {
   const trimmed = output.trim()
   if (!trimmed) return { mode: 'skip' }
-  try {
-    const parsed = JSON.parse(trimmed) as Partial<EvolveCodeInstruction>
-    if (parsed.mode === 'code') {
-      const target = parsed.target?.trim()
-      const prompt = parsed.prompt?.trim()
-      if (!target || !prompt) return { mode: 'skip' }
-      return { mode: 'code', target, prompt }
+  const parseOne = (raw: string): EvolveCodeInstruction | null => {
+    try {
+      const parsed = JSON.parse(raw) as Partial<EvolveCodeInstruction>
+      if (parsed.mode === 'code') {
+        const target = parsed.target?.trim()
+        const prompt = parsed.prompt?.trim()
+        if (!target || !prompt) return { mode: 'skip' }
+        return { mode: 'code', target, prompt }
+      }
+      return { mode: 'skip' }
+    } catch {
+      return null
     }
-    return { mode: 'skip' }
-  } catch {
-    return { mode: 'skip' }
   }
+  const direct = parseOne(trimmed)
+  if (direct) return direct
+  const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)
+  if (fenceMatch?.[1]) {
+    const fenced = parseOne(fenceMatch[1].trim())
+    if (fenced) return fenced
+  }
+  return { mode: 'skip' }
 }
 
 const isPromptTarget = (target: string): boolean => {

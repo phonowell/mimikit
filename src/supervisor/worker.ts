@@ -393,8 +393,7 @@ const runTask = async (
 const spawnWorker = async (runtime: RuntimeState, task: Task) => {
   if (task.status !== 'pending') return
   if (runtime.runningWorkers.has(task.id)) return
-  if (task.kind === 'system_evolve')
-    if (!isRuntimeIdleForEvolve(runtime)) return
+  if (task.kind === 'system_evolve' && !isRuntimeIdleForEvolve(runtime)) return
 
   if (!canSpendTokens(runtime, estimateTaskTokenCost(task))) {
     await bestEffort('appendLog: worker_budget_skipped', () =>
@@ -427,23 +426,33 @@ const spawnWorker = async (runtime: RuntimeState, task: Task) => {
 }
 
 export const workerLoop = async (runtime: RuntimeState): Promise<void> => {
+  const evolvePollMs = Math.max(1000, runtime.config.evolve.idlePollMs)
+  let nextEvolvePollAt = 0
   while (!runtime.stopped) {
     try {
       if (isTokenBudgetExceeded(runtime)) {
         await sleep(1000)
         continue
       }
-      if (
+      const canProbeEvolve =
         runtime.config.evolve.enabled &&
         isRuntimeIdleForEvolve(runtime) &&
         !hasPendingEvolveTask(runtime)
-      ) {
-        const hasPendingFeedback = await hasPendingEvolveFeedback({
-          stateDir: runtime.config.stateDir,
-          historyLimit: runtime.config.evolve.feedbackHistoryLimit,
-        })
-        if (hasPendingFeedback) enqueueSystemEvolveTask(runtime.tasks)
-      }
+      if (canProbeEvolve) {
+        const now = Date.now()
+        if (now >= nextEvolvePollAt) {
+          nextEvolvePollAt = now + evolvePollMs
+          const hasPendingFeedback = await hasPendingEvolveFeedback({
+            stateDir: runtime.config.stateDir,
+            historyLimit: runtime.config.evolve.feedbackHistoryLimit,
+          })
+          if (hasPendingFeedback) {
+            enqueueSystemEvolveTask(runtime.tasks)
+            nextEvolvePollAt = 0
+          }
+        }
+      } else nextEvolvePollAt = 0
+
       if (runtime.runningWorkers.size < runtime.config.worker.maxConcurrent) {
         const next = pickNextPendingTask(runtime.tasks, runtime.runningWorkers)
         if (next) void spawnWorker(runtime, next)

@@ -38,5 +38,6 @@ test('enqueueSystemEvolveTask dedupes active evolve task', () => {
   expect(first.created).toBe(true)
   expect(second.created).toBe(false)
   expect(first.task.kind).toBe('system_evolve')
+  expect(first.task.prompt).toBe('run evolve loop when idle')
   expect(second.task.id).toBe(first.task.id)
 })

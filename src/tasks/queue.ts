@@ -88,9 +88,7 @@ export const enqueueTask = (
 
 export const enqueueSystemEvolveTask = (tasks: Task[]): EnqueueTaskResult => {
   const existing = tasks.find(
-    (task) =>
-      task.kind === 'system_evolve' &&
-      (task.status === 'pending' || task.status === 'running'),
+    (task) => task.kind === 'system_evolve' && isActiveTask(task),
   )
   if (existing) return { task: existing, created: false }
   const task = createSystemEvolveTask()
