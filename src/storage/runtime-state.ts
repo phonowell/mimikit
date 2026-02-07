@@ -19,6 +19,9 @@ const isTaskStatus = (value: unknown): value is Task['status'] =>
   value === 'failed' ||
   value === 'canceled'
 
+const isTaskKind = (value: unknown): value is NonNullable<Task['kind']> =>
+  value === 'system_evolve'
+
 const asTask = (value: unknown): Task | null => {
   if (!value || typeof value !== 'object') return null
   const record = value as Partial<Task>
@@ -38,6 +41,7 @@ const asTask = (value: unknown): Task | null => {
     fingerprint: record.fingerprint,
     prompt: record.prompt,
     title: record.title,
+    ...(isTaskKind(record.kind) ? { kind: record.kind } : {}),
     status: record.status,
     createdAt: record.createdAt,
     ...(typeof record.startedAt === 'string'
@@ -111,6 +115,7 @@ export const selectPersistedTasks = (tasks: Task[]): Task[] =>
           fingerprint: task.fingerprint,
           prompt: task.prompt,
           title: task.title,
+          ...(task.kind ? { kind: task.kind } : {}),
           status: 'pending',
           createdAt: task.createdAt,
           ...(typeof task.attempts === 'number'

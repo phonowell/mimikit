@@ -1,6 +1,10 @@
 import { expect, test } from 'vitest'
 
-import { buildTaskFingerprint, enqueueTask } from '../src/tasks/queue.js'
+import {
+  buildTaskFingerprint,
+  enqueueSystemEvolveTask,
+  enqueueTask,
+} from '../src/tasks/queue.js'
 import type { Task } from '../src/types/index.js'
 
 test('buildTaskFingerprint normalizes whitespace and case', () => {
@@ -27,3 +31,12 @@ test('enqueueTask allows recreate after completion', () => {
   expect(tasks).toHaveLength(2)
 })
 
+test('enqueueSystemEvolveTask dedupes active evolve task', () => {
+  const tasks: Task[] = []
+  const first = enqueueSystemEvolveTask(tasks)
+  const second = enqueueSystemEvolveTask(tasks)
+  expect(first.created).toBe(true)
+  expect(second.created).toBe(false)
+  expect(first.task.kind).toBe('system_evolve')
+  expect(second.task.id).toBe(first.task.id)
+})

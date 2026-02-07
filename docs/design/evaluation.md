@@ -75,7 +75,12 @@
 
 ## 运行期反馈驱动自演进
 - 反馈入口：`POST /api/feedback`，写入 `.mimikit/evolve/feedback.jsonl`。
-- 空闲触发：Supervisor 在空闲轮次自动消费“未处理反馈”。
+- 空闲触发：Worker Loop 在空闲状态下自动拉起 `system_evolve` 任务并消费“未处理反馈”。
 - 数据控量：按 `feedbackHistoryLimit` 截断待处理反馈，按 `feedbackSuiteMaxCases` 生成派生 suite。
 - 演进执行：复用多 suite 决策逻辑与阈值策略，保持“评测→改写→验证→回滚”闭环一致性。
 - 观测证据：`evolve_idle_run` 日志记录 `elapsedMs`、反馈样本数、基线/候选指标（含 token 与 llmElapsedMs）。
+
+## 代码自演进触发
+- 入口：`POST /api/evolve/code`，用于显式请求“代码+Prompt”自演进轮次。
+- 触发后会重置 feedback 处理游标，并注入一条高优先级 runtime_signal 反馈。
+- 实际执行仍遵循空闲调度，不抢占在线用户请求。

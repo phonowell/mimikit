@@ -127,6 +127,13 @@ const envEvolveEnabled = parseEnvBoolean(
 )
 if (envEvolveEnabled !== undefined) config.evolve.enabled = envEvolveEnabled
 
+const envEvolveAutoRestart = parseEnvBoolean(
+  'MIMIKIT_EVOLVE_AUTO_RESTART_ON_PROMOTE',
+  process.env.MIMIKIT_EVOLVE_AUTO_RESTART_ON_PROMOTE?.trim(),
+)
+if (envEvolveAutoRestart !== undefined)
+  config.evolve.autoRestartOnPromote = envEvolveAutoRestart
+
 const envEvolveIdlePollMs = parseEnvPositiveInteger(
   'MIMIKIT_EVOLVE_IDLE_POLL_MS',
   process.env.MIMIKIT_EVOLVE_IDLE_POLL_MS?.trim(),

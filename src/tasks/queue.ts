@@ -58,6 +58,19 @@ export const createTask = (prompt: string, title?: string): Task => {
   }
 }
 
+export const createSystemEvolveTask = (prompt: string): Task => {
+  const id = newId()
+  return {
+    id,
+    fingerprint: `system_evolve:${id}`,
+    prompt,
+    title: 'System evolve',
+    kind: 'system_evolve',
+    status: 'pending',
+    createdAt: nowIso(),
+  }
+}
+
 export const enqueueTask = (
   tasks: Task[],
   prompt: string,
@@ -69,6 +82,18 @@ export const enqueueTask = (
   )
   if (existing) return { task: existing, created: false }
   const task = createTask(prompt, title)
+  tasks.push(task)
+  return { task, created: true }
+}
+
+export const enqueueSystemEvolveTask = (tasks: Task[]): EnqueueTaskResult => {
+  const existing = tasks.find(
+    (task) =>
+      task.kind === 'system_evolve' &&
+      (task.status === 'pending' || task.status === 'running'),
+  )
+  if (existing) return { task: existing, created: false }
+  const task = createSystemEvolveTask('run evolve loop when idle')
   tasks.push(task)
   return { task, created: true }
 }

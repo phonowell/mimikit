@@ -75,3 +75,21 @@ test('runtime snapshot roundtrip keeps token budget', async () => {
   expect(loaded.tokenBudget?.spent).toBe(1234)
 })
 
+test('runtime snapshot keeps system task kind', async () => {
+  const stateDir = await createTmpDir()
+  await saveRuntimeSnapshot(stateDir, {
+    tasks: [
+      {
+        id: 'e1',
+        fingerprint: 'system_evolve:e1',
+        prompt: 'run evolve loop when idle',
+        title: 'System evolve',
+        kind: 'system_evolve',
+        status: 'pending',
+        createdAt: '2026-02-07T00:00:00.000Z',
+      },
+    ],
+  })
+  const loaded = await loadRuntimeSnapshot(stateDir)
+  expect(loaded.tasks[0]?.kind).toBe('system_evolve')
+})

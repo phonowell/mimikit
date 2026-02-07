@@ -18,12 +18,9 @@ Supervisor 启动两条循环，均在同一进程内：
 - 失败任务按 `worker.retryMaxAttempts` 自动重试（线性退避 `worker.retryBackoffMs`）。
 - 完成后回传结果给 Manager，并标记任务 `succeeded`/`failed`。
 - 结果同时写入 .mimikit/tasks/YYYY-MM-DD/ 归档文件。
-
-3) **Idle Evolve Loop**
-- 仅在系统空闲时触发（manager 未运行、无待处理输入/结果、无 worker 在跑）。
-- 消费 `POST /api/feedback` 收集的反馈（`.mimikit/evolve/feedback.jsonl`）。
-- 生成反馈派生 replay suite（`.mimikit/evolve/feedback-suite.json`），执行自演进闭环。
-- 按阈值策略自动判定是否保留候选 prompt，不满足则自动回滚。
+- 当系统空闲且存在未处理反馈时，自动创建 `system_evolve` 系统任务，由 worker 执行自演进。
+- 自演进任务闭环：评测 → Prompt/代码变更 → 验证 → 回滚/保留。
+- 支持通过 `MIMIKIT_EVOLVE_AUTO_RESTART_ON_PROMOTE` 在验证通过后自动重启应用更新。
 - 运行结果写入日志事件：`evolve_idle_run` / `evolve_idle_error`。
 
 ## 并发与恢复

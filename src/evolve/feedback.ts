@@ -80,6 +80,26 @@ export const writeEvolveFeedbackState = async (
   await writeJson(path, state)
 }
 
+export const resetEvolveFeedbackState = async (
+  stateDir: string,
+): Promise<void> => {
+  await writeEvolveFeedbackState(stateDir, { processedCount: 0 })
+}
+
+export const hasPendingEvolveFeedback = async (params: {
+  stateDir: string
+  historyLimit: number
+}): Promise<boolean> => {
+  const feedback = await readEvolveFeedback(params.stateDir)
+  const state = await readEvolveFeedbackState(params.stateDir)
+  const pending = selectPendingFeedback({
+    feedback,
+    processedCount: state.processedCount,
+    historyLimit: params.historyLimit,
+  })
+  return pending.length > 0
+}
+
 const toReplayCase = (
   feedback: EvolveFeedback,
   index: number,

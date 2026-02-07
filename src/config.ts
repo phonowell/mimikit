@@ -9,6 +9,7 @@ export type SupervisorConfig = {
     enabled: boolean
     idlePollMs: number
     maxRounds: number
+    autoRestartOnPromote: boolean
     minPassRateDelta: number
     minTokenDelta: number
     minLatencyDeltaMs: number
@@ -51,6 +52,7 @@ export const defaultConfig = (params: {
     enabled: true,
     idlePollMs: 15_000,
     maxRounds: 1,
+    autoRestartOnPromote: false,
     minPassRateDelta: 0,
     minTokenDelta: 50,
     minLatencyDeltaMs: 200,

@@ -7,6 +7,7 @@
 - GET /api/status
 - POST /api/input（支持可选字段：clientLocale / clientTimeZone / clientOffsetMinutes / clientNowIso / language）
 - POST /api/feedback（支持字段：severity(low|medium|high) / message / context{input,response,note}）
+- POST /api/evolve/code（触发“代码+Prompt”自演进轮次，按空闲策略执行）
 - GET /api/messages?limit=...
 - GET /api/messages/export?limit=...（导出人类可读 markdown）
 - GET /api/tasks?limit=...
@@ -33,6 +34,7 @@
 - `MIMIKIT_TOKEN_BUDGET_DAILY`：覆盖每日 token 预算（正整数）
 - `MIMIKIT_TOKEN_BUDGET_ENABLED`：预算开关（`true|false|1|0`）
 - `MIMIKIT_EVOLVE_ENABLED`：空闲轮次自演进开关（`true|false|1|0`）
+- `MIMIKIT_EVOLVE_AUTO_RESTART_ON_PROMOTE`：演进通过后自动重启开关（`true|false|1|0`）
 - `MIMIKIT_EVOLVE_IDLE_POLL_MS`：空闲轮询间隔（正整数）
 - `MIMIKIT_EVOLVE_MAX_ROUNDS`：每次空闲自演进最大迭代轮数（正整数）
 - `MIMIKIT_EVOLVE_MIN_PASS_RATE_DELTA`：通过率提升阈值（非负数）

@@ -1,7 +1,10 @@
 import { readFile } from 'node:fs/promises'
 import { isAbsolute, relative, resolve } from 'node:path'
 
-import { appendEvolveFeedback } from '../evolve/feedback.js'
+import {
+  appendEvolveFeedback,
+  resetEvolveFeedbackState,
+} from '../evolve/feedback.js'
 import { logSafeError } from '../log/safe.js'
 import { newId, nowIso } from '../shared/utils.js'
 
@@ -203,6 +206,28 @@ export const registerApiRoutes = (
       severity: result.severity,
       remote: request.raw.socket.remoteAddress ?? undefined,
       hasContext: Boolean(result.context),
+    })
+    reply.send({ ok: true, id })
+  })
+
+  app.post('/api/evolve/code', async (request, reply) => {
+    await resetEvolveFeedbackState(config.stateDir)
+    const id = newId()
+    await appendEvolveFeedback(config.stateDir, {
+      id,
+      createdAt: nowIso(),
+      kind: 'runtime_signal',
+      severity: 'high',
+      message:
+        'run self-evolution code round: identify highest ROI gap and apply minimal validated code change',
+      context: {
+        note: 'code_evolve_required',
+      },
+    })
+    await supervisor.logEvent({
+      event: 'code_evolve_requested',
+      feedbackId: id,
+      remote: request.raw.socket.remoteAddress ?? undefined,
     })
     reply.send({ ok: true, id })
   })
