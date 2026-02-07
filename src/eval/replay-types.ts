@@ -50,6 +50,16 @@ export type ReplaySuite = {
   cases: ReplayCase[]
 }
 
+export type ReplaySuiteEntry = {
+  path: string
+  weight?: number
+  alias?: string
+}
+
+export type ReplaySuiteBundle = {
+  suites: ReplaySuiteEntry[]
+}
+
 export type ReplayAssertionKind =
   | 'command-min'
   | 'command-max'

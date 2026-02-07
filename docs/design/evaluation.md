@@ -21,6 +21,11 @@
 - 可选重复执行：`repeat.count`（正整数）+ `repeat.idFormat`（支持 `{i}` 占位）
 - `history/inputs/tasks/results` 直接映射 `runManager` 入参
 
+### 多 suite bundle（防过拟合）
+- 文件格式：`{"suites":[{"path":"...","weight":1,"alias":"..."}]}`
+- `weight` 默认 `1`，用于聚合加权评分；`alias` 仅用于报告可读性
+- 单轮自演进可通过 `--bundle <path>` 启用多 suite 聚合评测
+
 ## 断言类型
 - 命令次数：`expect.commands.<action>.min|max`
 - 输出必含：`expect.output.mustContain[]`
@@ -52,6 +57,7 @@
 
 ## 自演进单轮
 - 入口：`pnpm self:evolve -- --suite test/fixtures/replay/manager-core.json --out-dir .mimikit/generated/evolve/round1 --state-dir .mimikit/generated/evolve/state-round1`
+- 多 suite 入口：`pnpm self:evolve -- --bundle test/fixtures/replay/suite-bundle-core.json --out-dir .mimikit/generated/evolve/multi --state-dir .mimikit/generated/evolve/state-multi`
 - 闭环：基线评测 → 自动改写 `prompts/agents/manager/system.md` → 候选评测 → 自动判定是否回滚
 - 判定优先级：`passRate` > `usage.total` > `llmElapsedMs`
 - 防抖阈值（可选）：`--min-pass-rate-delta` `--min-token-delta` `--min-latency-delta-ms`

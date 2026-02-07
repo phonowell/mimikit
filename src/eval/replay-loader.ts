@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises'
+import { resolve } from 'node:path'
 
 import {
   optionalNumber,
@@ -11,7 +12,12 @@ import {
   requireRecord,
   requireString,
 } from './replay-parse.js'
-import { type ReplaySuite, ReplaySuiteFormatError } from './replay-types.js'
+import {
+  type ReplaySuite,
+  type ReplaySuiteBundle,
+  type ReplaySuiteEntry,
+  ReplaySuiteFormatError,
+} from './replay-types.js'
 
 const parseCommandExpect = (
   value: unknown,
@@ -161,4 +167,47 @@ export const loadReplaySuite = async (path: string): Promise<ReplaySuite> => {
     version,
     cases,
   }
+}
+
+const parsePositiveWeight = (value: unknown, path: string): number => {
+  const parsed = optionalNumber(value, path)
+  if (parsed === undefined || !Number.isFinite(parsed) || parsed <= 0)
+    throw new ReplaySuiteFormatError(`${path} must be a positive number`)
+  return parsed
+}
+
+const parseReplaySuiteEntry = (
+  value: unknown,
+  path: string,
+): ReplaySuiteEntry => {
+  if (typeof value === 'string') return { path: resolve(value) }
+  const record = requireRecord(value, path)
+  return {
+    path: resolve(requireString(record.path, `${path}.path`)),
+    ...(record.weight !== undefined
+      ? { weight: parsePositiveWeight(record.weight, `${path}.weight`) }
+      : {}),
+    ...(record.alias !== undefined
+      ? { alias: requireString(record.alias, `${path}.alias`) }
+      : {}),
+  }
+}
+
+export const loadReplaySuiteBundle = async (
+  path: string,
+): Promise<ReplaySuiteBundle> => {
+  const raw = await readFile(path, 'utf8')
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    throw new ReplaySuiteFormatError(`invalid JSON: ${path}`)
+  }
+  const root = requireRecord(parsed, 'bundle')
+  const suites = requireArray(root.suites, 'suites').map((item, index) =>
+    parseReplaySuiteEntry(item, `suites[${index}]`),
+  )
+  if (suites.length === 0)
+    throw new ReplaySuiteFormatError('suites must not be empty')
+  return { suites }
 }

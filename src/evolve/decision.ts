@@ -1,5 +1,11 @@
 import type { ReplayReport } from '../eval/replay-types.js'
 
+export type AggregateScore = {
+  weightedPassRate: number
+  weightedUsageTotal: number
+  weightedLlmElapsedMs: number
+}
+
 export type PromotionDecision = {
   promote: boolean
   reason: string
@@ -43,6 +49,33 @@ export const decidePromptPromotion = (
     return { promote: true, reason: 'llm_elapsed_reduced' }
   if (latencyDelta <= -policy.minLatencyDeltaMs)
     return { promote: false, reason: 'llm_elapsed_increased' }
+
+  return { promote: false, reason: 'no_measurable_gain' }
+}
+
+export const decideAggregatePromotion = (
+  baseline: AggregateScore,
+  candidate: AggregateScore,
+  policy = defaultPromotionPolicy(),
+): PromotionDecision => {
+  const passRateDelta = candidate.weightedPassRate - baseline.weightedPassRate
+  if (passRateDelta > policy.minPassRateDelta)
+    return { promote: true, reason: 'aggregate_pass_rate_improved' }
+  if (passRateDelta < -policy.minPassRateDelta)
+    return { promote: false, reason: 'aggregate_pass_rate_regressed' }
+
+  const tokenDelta = baseline.weightedUsageTotal - candidate.weightedUsageTotal
+  if (tokenDelta >= policy.minTokenDelta)
+    return { promote: true, reason: 'aggregate_token_reduced' }
+  if (tokenDelta <= -policy.minTokenDelta)
+    return { promote: false, reason: 'aggregate_token_increased' }
+
+  const latencyDelta =
+    baseline.weightedLlmElapsedMs - candidate.weightedLlmElapsedMs
+  if (latencyDelta >= policy.minLatencyDeltaMs)
+    return { promote: true, reason: 'aggregate_latency_reduced' }
+  if (latencyDelta <= -policy.minLatencyDeltaMs)
+    return { promote: false, reason: 'aggregate_latency_increased' }
 
   return { promote: false, reason: 'no_measurable_gain' }
 }

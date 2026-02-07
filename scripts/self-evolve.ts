@@ -1,7 +1,12 @@
 import { resolve } from 'node:path'
 import { parseArgs } from 'node:util'
 
+import {
+  loadReplaySuiteBundle,
+  type ReplaySuiteBundle,
+} from '../src/eval/replay-loader.js'
 import { buildPromotionPolicy } from '../src/evolve/loop-stop.js'
+import { runSelfEvolveMultiRound } from '../src/evolve/multi-round.js'
 import { runSelfEvolveRound } from '../src/evolve/round.js'
 import { loadCodexSettings } from '../src/llm/openai.js'
 
@@ -15,6 +20,7 @@ type CliArgs = {
   minPassRateDelta?: number
   minTokenDelta?: number
   minLatencyDeltaMs?: number
+  bundlePath?: string
   model?: string
   optimizerModel?: string
 }
@@ -65,6 +71,7 @@ const parseCliArgs = (): CliArgs => {
       'min-pass-rate-delta': { type: 'string' },
       'min-token-delta': { type: 'string' },
       'min-latency-delta-ms': { type: 'string' },
+      bundle: { type: 'string' },
       model: { type: 'string' },
       'optimizer-model': { type: 'string' },
       help: { type: 'boolean', short: 'h' },
@@ -78,10 +85,11 @@ const parseCliArgs = (): CliArgs => {
     process.exit(0)
   }
 
-  if (!values.suite) throw new Error('--suite is required')
+  if (!values.suite && !values.bundle)
+    throw new Error('--suite is required (or provide --bundle)')
 
   return {
-    suitePath: resolve(values.suite),
+    suitePath: values.suite ? resolve(values.suite) : '',
     outDir: resolve(values['out-dir']),
     stateDir: resolve(values['state-dir']),
     workDir: resolve(values['work-dir']),
@@ -113,6 +121,7 @@ const parseCliArgs = (): CliArgs => {
           ),
         }
       : {}),
+    ...(values.bundle ? { bundlePath: resolve(values.bundle) } : {}),
     ...(values.model ? { model: values.model } : {}),
     ...(values['optimizer-model']
       ? { optimizerModel: values['optimizer-model'] }
@@ -123,6 +132,37 @@ const parseCliArgs = (): CliArgs => {
 const main = async () => {
   const args = parseCliArgs()
   await loadCodexSettings()
+  const policy = buildPromotionPolicy({
+    ...(args.minPassRateDelta !== undefined
+      ? { minPassRateDelta: args.minPassRateDelta }
+      : {}),
+    ...(args.minTokenDelta !== undefined
+      ? { minTokenDelta: args.minTokenDelta }
+      : {}),
+    ...(args.minLatencyDeltaMs !== undefined
+      ? { minLatencyDeltaMs: args.minLatencyDeltaMs }
+      : {}),
+  })
+
+  if (args.bundlePath) {
+    const bundle: ReplaySuiteBundle = await loadReplaySuiteBundle(args.bundlePath)
+    const result = await runSelfEvolveMultiRound({
+      suites: bundle.suites,
+      outDir: args.outDir,
+      stateDir: args.stateDir,
+      workDir: args.workDir,
+      promptPath: args.promptPath,
+      timeoutMs: args.timeoutMs,
+      promotionPolicy: policy,
+      ...(args.model ? { model: args.model } : {}),
+      ...(args.optimizerModel ? { optimizerModel: args.optimizerModel } : {}),
+    })
+    console.log(
+      `[self-evolve] bundle_mode promote=${result.promote} reason=${result.reason} baseline.weightedPassRate=${result.baseline.weightedPassRate} candidate.weightedPassRate=${result.candidate.weightedPassRate}`,
+    )
+    return
+  }
+
   const result = await runSelfEvolveRound({
     suitePath: args.suitePath,
     outDir: args.outDir,
@@ -130,17 +170,7 @@ const main = async () => {
     workDir: args.workDir,
     promptPath: args.promptPath,
     timeoutMs: args.timeoutMs,
-    promotionPolicy: buildPromotionPolicy({
-      ...(args.minPassRateDelta !== undefined
-        ? { minPassRateDelta: args.minPassRateDelta }
-        : {}),
-      ...(args.minTokenDelta !== undefined
-        ? { minTokenDelta: args.minTokenDelta }
-        : {}),
-      ...(args.minLatencyDeltaMs !== undefined
-        ? { minLatencyDeltaMs: args.minLatencyDeltaMs }
-        : {}),
-    }),
+    promotionPolicy: policy,
     ...(args.model ? { model: args.model } : {}),
     ...(args.optimizerModel ? { optimizerModel: args.optimizerModel } : {}),
   })
