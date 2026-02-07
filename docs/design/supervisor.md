@@ -9,12 +9,14 @@ Supervisor 在同一进程内运行两条循环：
 - 轮询输入/结果缓存
 - 满足防抖或等待超时后调用 Manager
 - 解析 `<MIMIKIT:commands>` 并执行任务控制命令
+- 消费 `pendingResults` 时将结果写入任务：优先采用 `@summarize_result`，缺失时本地兜底摘要
 
 2) Worker Loop
 - 并发上限由 `worker.maxConcurrent` 控制
 - 按 FIFO 处理 `pending` 任务
 - 支持失败重试（`retryMaxAttempts` + `retryBackoffMs`）
 - 完成后写入任务归档并回传给 Manager
+- 归档文件保存 Worker 原始详细结果，不受 Manager 摘要改写影响
 - 空闲时可执行 idle review，写入反馈信号
 
 ## 持久化与恢复

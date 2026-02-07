@@ -16,4 +16,5 @@
 - 任务运行队列在内存中调度，但会在停机/轮次中写入 `runtime-state.json` 快照。
 - 进程重启后会恢复 `pending/running` 任务（`running` 会恢复为 `pending` 后继续执行）。
 - 任务结果会写入 tasks 目录。
+- tasks 归档保存的是 Worker 原始详细结果；`task.result.output` 可能是 Manager 摘要或本地兜底摘要。
 - 任务结构见 docs/design/task-data.md。

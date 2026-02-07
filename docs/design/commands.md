@@ -22,6 +22,7 @@
   - attrs：`taskId`(必填)，`summary`(必填)
   - 兼容 attrs：`id` 可作为 `taskId` 别名
   - 示例：`@summarize_result taskId="task_123" summary="已完成接口文档整理，新增 3 个端点说明并修复 1 处示例错误。"`
+  - 兜底：若 Manager 未输出该命令，系统会在消费 `pendingResults` 时做本地摘要（压缩空白并按长度截断），确保 `task.result.output` 不保留完整长文。
 - `capture_feedback`：采集结构化反馈并写入自演进反馈流。
   - content：JSON payload（需包含 `message`）
   - 可选字段：`category` `roiScore` `confidence` `action` `rationale` `fingerprint`

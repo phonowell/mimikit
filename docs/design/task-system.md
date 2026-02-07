@@ -22,11 +22,12 @@ Worker 执行
 
 ## 关键规则
 - Worker 不派发新任务、不与用户对话。
-- Manager 通过 MIMIKIT 命令派发任务（`@add_task` / `@cancel_task` / `@capture_feedback`）。
+- Manager 通过 MIMIKIT 命令派发任务（`@add_task` / `@cancel_task` / `@summarize_result` / `@capture_feedback`）。
 - Worker 内建最小自动重试（默认 1 次），减少瞬时失败人工干预。
 - 受每日 token 预算闸门约束，预算用尽时暂停新任务进入执行。
 - 运行时快照会持久化 pending/running 任务；重启后可继续执行。
 - 结果落盘：.mimikit/tasks/YYYY-MM-DD/
+- `task.result.output` 对外展示摘要版本：优先 `@summarize_result`，缺失时本地兜底摘要；归档文件保留详细原文。
 
 ## 相关文档
 - 任务结构：docs/design/task-data.md
