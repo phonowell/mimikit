@@ -1,3 +1,7 @@
+import {
+  appendRuntimeSignalFeedback,
+  resetEvolveFeedbackState,
+} from '../evolve/feedback.js'
 import { buildPaths, ensureStateDirs } from '../fs/paths.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort, setDefaultLogPath } from '../log/safe.js'
@@ -165,5 +169,25 @@ export class Supervisor {
     await bestEffort('appendLog: event', () =>
       appendLog(this.runtime.paths.log, entry),
     )
+  }
+
+  async recordCodeEvolveRemovedTrigger(params?: {
+    remote?: string
+  }): Promise<{ id: string }> {
+    await resetEvolveFeedbackState(this.runtime.config.stateDir)
+    const { id } = await appendRuntimeSignalFeedback({
+      stateDir: this.runtime.config.stateDir,
+      severity: 'low',
+      message: 'manual evolve trigger ignored: evaluation pipeline removed',
+      context: {
+        note: 'code_evolve_removed',
+      },
+    })
+    await this.logEvent({
+      event: 'code_evolve_removed',
+      feedbackId: id,
+      ...(params?.remote ? { remote: params.remote } : {}),
+    })
+    return { id }
   }
 }

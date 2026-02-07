@@ -2,7 +2,7 @@ import { hostname, release as osRelease, type as osType } from 'node:os'
 
 import { escapeCdata, normalizeTagName } from './prompt-format-base.js'
 
-import type { ManagerEnv } from './prompt.js'
+import type { ManagerEnv } from './prompt-types.js'
 
 type PromptTemplateValues = Record<string, string>
 

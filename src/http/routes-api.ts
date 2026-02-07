@@ -1,8 +1,3 @@
-import {
-  appendRuntimeSignalFeedback,
-  resetEvolveFeedbackState,
-} from '../evolve/feedback.js'
-
 import { parseInputBody, parseMessageLimit, parseTaskLimit } from './helpers.js'
 import {
   registerControlRoutes,
@@ -47,20 +42,10 @@ export const registerApiRoutes = (
   })
 
   app.post('/api/evolve/code', async (request, reply) => {
-    await resetEvolveFeedbackState(_config.stateDir)
-    const { id } = await appendRuntimeSignalFeedback({
-      stateDir: _config.stateDir,
-      severity: 'low',
-      message: 'manual evolve trigger ignored: evaluation pipeline removed',
-      context: {
-        note: 'code_evolve_removed',
-      },
-    })
-    await supervisor.logEvent({
-      event: 'code_evolve_removed',
-      feedbackId: id,
-      remote: request.raw.socket.remoteAddress ?? undefined,
-    })
+    const remote = request.raw.socket.remoteAddress ?? undefined
+    const { id } = await supervisor.recordCodeEvolveRemovedTrigger(
+      remote ? { remote } : undefined,
+    )
     reply.code(410).send({
       ok: false,
       error: 'evaluation pipeline removed',

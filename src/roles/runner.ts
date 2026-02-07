@@ -13,7 +13,7 @@ import {
   withSampling,
 } from './runner-helpers.js'
 
-import type { ManagerEnv } from './prompt.js'
+import type { ManagerEnv } from './prompt-types.js'
 import type {
   HistoryMessage,
   Task,

@@ -15,6 +15,7 @@ import {
   renderPromptTemplate,
 } from './prompt-format.js'
 
+import type { ManagerEnv } from './prompt-types.js'
 import type {
   HistoryMessage,
   Task,
@@ -22,18 +23,7 @@ import type {
   UserInput,
 } from '../types/index.js'
 
-export type ManagerEnv = {
-  lastUser?: {
-    source?: string
-    remote?: string
-    userAgent?: string
-    language?: string
-    clientLocale?: string
-    clientTimeZone?: string
-    clientOffsetMinutes?: number
-    clientNowIso?: string
-  }
-}
+export type { ManagerEnv } from './prompt-types.js'
 
 const mergeTaskResults = (
   primary: TaskResult[],
