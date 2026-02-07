@@ -1,6 +1,9 @@
 import { expect, test } from 'vitest'
 
-import { isRoundImprovement } from '../src/evolve/loop-stop.js'
+import {
+  buildPromotionPolicy,
+  isRoundImprovement,
+} from '../src/evolve/loop-stop.js'
 
 test('improvement prefers pass rate', () => {
   const improved = isRoundImprovement(
@@ -21,11 +24,20 @@ test('improvement falls back to token then latency', () => {
     { passRate: 1, usageTotal: 1000, llmElapsedMs: 500 },
     { passRate: 1, usageTotal: 1000, llmElapsedMs: 490 },
   )
-  expect(byLatency).toBe(true)
+  expect(byLatency).toBe(false)
 
   const noGain = isRoundImprovement(
     { passRate: 1, usageTotal: 1000, llmElapsedMs: 500 },
     { passRate: 1, usageTotal: 1000, llmElapsedMs: 500 },
   )
   expect(noGain).toBe(false)
+})
+
+test('custom policy thresholds are respected', () => {
+  const byLatency = isRoundImprovement(
+    { passRate: 1, usageTotal: 1000, llmElapsedMs: 500 },
+    { passRate: 1, usageTotal: 1000, llmElapsedMs: 490 },
+    buildPromotionPolicy({ minLatencyDeltaMs: 5 }),
+  )
+  expect(byLatency).toBe(true)
 })

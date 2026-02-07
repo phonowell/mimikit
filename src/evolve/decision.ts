@@ -5,36 +5,44 @@ export type PromotionDecision = {
   reason: string
 }
 
-const compareNumber = (candidate: number, baseline: number): -1 | 0 | 1 => {
-  if (candidate < baseline) return -1
-  if (candidate > baseline) return 1
-  return 0
+export type PromotionPolicy = {
+  minPassRateDelta: number
+  minTokenDelta: number
+  minLatencyDeltaMs: number
 }
+
+export const defaultPromotionPolicy = (): PromotionPolicy => ({
+  minPassRateDelta: 0,
+  minTokenDelta: 50,
+  minLatencyDeltaMs: 200,
+})
 
 export const decidePromptPromotion = (
   baseline: ReplayReport,
   candidate: ReplayReport,
+  policy = defaultPromotionPolicy(),
 ): PromotionDecision => {
-  const passRateCompare = compareNumber(candidate.passRate, baseline.passRate)
-  if (passRateCompare > 0)
+  const passRateDelta = candidate.passRate - baseline.passRate
+  if (passRateDelta > policy.minPassRateDelta)
     return { promote: true, reason: 'pass_rate_improved' }
-  if (passRateCompare < 0)
+  if (passRateDelta < -policy.minPassRateDelta)
     return { promote: false, reason: 'pass_rate_regressed' }
 
-  const tokenCompare = compareNumber(
-    candidate.metrics.usage.total,
-    baseline.metrics.usage.total,
-  )
-  if (tokenCompare < 0) return { promote: true, reason: 'token_total_reduced' }
-  if (tokenCompare > 0)
+  const baselineTokens = baseline.metrics.usage.total
+  const candidateTokens = candidate.metrics.usage.total
+  const tokenDelta = baselineTokens - candidateTokens
+  if (tokenDelta >= policy.minTokenDelta)
+    return { promote: true, reason: 'token_total_reduced' }
+  if (tokenDelta <= -policy.minTokenDelta)
     return { promote: false, reason: 'token_total_increased' }
 
-  const latencyCompare = compareNumber(
-    candidate.metrics.llmElapsedMs,
-    baseline.metrics.llmElapsedMs,
-  )
-  if (latencyCompare < 0)
+  const baselineLatency = baseline.metrics.llmElapsedMs
+  const candidateLatency = candidate.metrics.llmElapsedMs
+  const latencyDelta = baselineLatency - candidateLatency
+  if (latencyDelta >= policy.minLatencyDeltaMs)
     return { promote: true, reason: 'llm_elapsed_reduced' }
+  if (latencyDelta <= -policy.minLatencyDeltaMs)
+    return { promote: false, reason: 'llm_elapsed_increased' }
 
   return { promote: false, reason: 'no_measurable_gain' }
 }

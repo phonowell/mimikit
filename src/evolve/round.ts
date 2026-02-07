@@ -5,7 +5,7 @@ import { loadReplaySuite } from '../eval/replay-loader.js'
 import { writeReplayReportJson } from '../eval/replay-report.js'
 import { runReplaySuite } from '../eval/replay-runner.js'
 
-import { decidePromptPromotion } from './decision.js'
+import { decidePromptPromotion, type PromotionPolicy } from './decision.js'
 import { optimizeManagerPrompt, restorePrompt } from './prompt-optimizer.js'
 
 export type RunSelfEvolveRoundParams = {
@@ -15,6 +15,7 @@ export type RunSelfEvolveRoundParams = {
   workDir: string
   promptPath: string
   timeoutMs: number
+  promotionPolicy?: PromotionPolicy
   model?: string
   optimizerModel?: string
 }
@@ -85,15 +86,19 @@ export const runSelfEvolveRound = async (
   const candidatePath = resolve(params.outDir, 'candidate.json')
   await writeReplayReportJson(candidatePath, candidate)
 
-  const decision = decidePromptPromotion(baseline, candidate)
-  if (!decision.promote)
+  const decisionWithPolicy = decidePromptPromotion(
+    baseline,
+    candidate,
+    params.promotionPolicy,
+  )
+  if (!decisionWithPolicy.promote)
     await restorePrompt(params.promptPath, optimized.original)
 
   const decisionPayload = {
     suite: suite.suite,
     promptPath: params.promptPath,
-    promote: decision.promote,
-    reason: decision.reason,
+    promote: decisionWithPolicy.promote,
+    reason: decisionWithPolicy.reason,
     baseline: {
       passRate: baseline.passRate,
       usageTotal: baseline.metrics.usage.total,
@@ -113,8 +118,8 @@ export const runSelfEvolveRound = async (
   return {
     suite: suite.suite,
     promptPath: params.promptPath,
-    promote: decision.promote,
-    reason: decision.reason,
+    promote: decisionWithPolicy.promote,
+    reason: decisionWithPolicy.reason,
     baseline: {
       passRate: baseline.passRate,
       usageTotal: baseline.metrics.usage.total,

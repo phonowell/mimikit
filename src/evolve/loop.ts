@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
+import { type PromotionPolicy } from './decision.js'
 import { isRoundImprovement } from './loop-stop.js'
 import { runSelfEvolveRound, type SelfEvolveRoundResult } from './round.js'
 
@@ -13,6 +14,7 @@ export type RunSelfEvolveLoopParams = {
   timeoutMs: number
   maxRounds: number
   stopOnNoGain?: boolean
+  promotionPolicy?: PromotionPolicy
   model?: string
   optimizerModel?: string
 }
@@ -58,6 +60,9 @@ export const runSelfEvolveLoop = async (
       workDir: params.workDir,
       promptPath: params.promptPath,
       timeoutMs: params.timeoutMs,
+      ...(params.promotionPolicy
+        ? { promotionPolicy: params.promotionPolicy }
+        : {}),
       ...(params.model ? { model: params.model } : {}),
       ...(params.optimizerModel
         ? { optimizerModel: params.optimizerModel }
@@ -80,7 +85,11 @@ export const runSelfEvolveLoop = async (
 
     if (
       stopOnNoGain &&
-      !isRoundImprovement(result.baseline, result.candidate)
+      !isRoundImprovement(
+        result.baseline,
+        result.candidate,
+        params.promotionPolicy,
+      )
     ) {
       stoppedReason = 'no_gain'
       break

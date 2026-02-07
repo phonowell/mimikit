@@ -1,6 +1,7 @@
 import { resolve } from 'node:path'
 import { parseArgs } from 'node:util'
 
+import { buildPromotionPolicy } from '../src/evolve/loop-stop.js'
 import { runSelfEvolveRound } from '../src/evolve/round.js'
 import { loadCodexSettings } from '../src/llm/openai.js'
 
@@ -11,6 +12,9 @@ type CliArgs = {
   workDir: string
   promptPath: string
   timeoutMs: number
+  minPassRateDelta?: number
+  minTokenDelta?: number
+  minLatencyDeltaMs?: number
   model?: string
   optimizerModel?: string
 }
@@ -23,6 +27,24 @@ const parsePositiveInteger = (raw: string | undefined, flag: string): number => 
   const parsed = Number(raw)
   if (!Number.isInteger(parsed) || parsed <= 0)
     throw new Error(`${flag} must be a positive integer`)
+  return parsed
+}
+
+const parseFiniteNumber = (raw: string | undefined, flag: string): number => {
+  if (!raw) throw new Error(`${flag} requires a value`)
+  const parsed = Number(raw)
+  if (!Number.isFinite(parsed)) throw new Error(`${flag} must be a number`)
+  return parsed
+}
+
+const parseNonNegativeInteger = (
+  raw: string | undefined,
+  flag: string,
+): number => {
+  if (!raw) throw new Error(`${flag} requires a value`)
+  const parsed = Number(raw)
+  if (!Number.isInteger(parsed) || parsed < 0)
+    throw new Error(`${flag} must be a non-negative integer`)
   return parsed
 }
 
@@ -40,6 +62,9 @@ const parseCliArgs = (): CliArgs => {
       'work-dir': { type: 'string', default: '.' },
       'prompt-path': { type: 'string', default: DEFAULT_PROMPT_PATH },
       'timeout-ms': { type: 'string' },
+      'min-pass-rate-delta': { type: 'string' },
+      'min-token-delta': { type: 'string' },
+      'min-latency-delta-ms': { type: 'string' },
       model: { type: 'string' },
       'optimizer-model': { type: 'string' },
       help: { type: 'boolean', short: 'h' },
@@ -64,6 +89,30 @@ const parseCliArgs = (): CliArgs => {
     timeoutMs: values['timeout-ms']
       ? parsePositiveInteger(values['timeout-ms'], '--timeout-ms')
       : DEFAULT_TIMEOUT_MS,
+    ...(values['min-pass-rate-delta'] !== undefined
+      ? {
+          minPassRateDelta: parseFiniteNumber(
+            values['min-pass-rate-delta'],
+            '--min-pass-rate-delta',
+          ),
+        }
+      : {}),
+    ...(values['min-token-delta'] !== undefined
+      ? {
+          minTokenDelta: parseNonNegativeInteger(
+            values['min-token-delta'],
+            '--min-token-delta',
+          ),
+        }
+      : {}),
+    ...(values['min-latency-delta-ms'] !== undefined
+      ? {
+          minLatencyDeltaMs: parseNonNegativeInteger(
+            values['min-latency-delta-ms'],
+            '--min-latency-delta-ms',
+          ),
+        }
+      : {}),
     ...(values.model ? { model: values.model } : {}),
     ...(values['optimizer-model']
       ? { optimizerModel: values['optimizer-model'] }
@@ -81,6 +130,17 @@ const main = async () => {
     workDir: args.workDir,
     promptPath: args.promptPath,
     timeoutMs: args.timeoutMs,
+    promotionPolicy: buildPromotionPolicy({
+      ...(args.minPassRateDelta !== undefined
+        ? { minPassRateDelta: args.minPassRateDelta }
+        : {}),
+      ...(args.minTokenDelta !== undefined
+        ? { minTokenDelta: args.minTokenDelta }
+        : {}),
+      ...(args.minLatencyDeltaMs !== undefined
+        ? { minLatencyDeltaMs: args.minLatencyDeltaMs }
+        : {}),
+    }),
     ...(args.model ? { model: args.model } : {}),
     ...(args.optimizerModel ? { optimizerModel: args.optimizerModel } : {}),
   })

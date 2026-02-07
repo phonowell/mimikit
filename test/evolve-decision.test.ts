@@ -1,6 +1,9 @@
 import { expect, test } from 'vitest'
 
-import { decidePromptPromotion } from '../src/evolve/decision.js'
+import {
+  decidePromptPromotion,
+  defaultPromotionPolicy,
+} from '../src/evolve/decision.js'
 
 import type { ReplayReport } from '../src/eval/replay-types.js'
 
@@ -77,6 +80,39 @@ test('uses token and latency tiebreakers', () => {
     llmElapsedMs: 400,
   })
   const latencyDecision = decidePromptPromotion(baseline, candidateBetterLatency)
-  expect(latencyDecision.promote).toBe(true)
-  expect(latencyDecision.reason).toBe('llm_elapsed_reduced')
+  expect(latencyDecision.promote).toBe(false)
+  expect(latencyDecision.reason).toBe('no_measurable_gain')
+})
+
+test('applies thresholds to avoid tiny noisy gains', () => {
+  const baseline = makeReport({ passRate: 1, usageTotal: 1000, llmElapsedMs: 500 })
+  const candidateSmallTokenGain = makeReport({
+    passRate: 1,
+    usageTotal: 980,
+    llmElapsedMs: 500,
+  })
+  const noPromote = decidePromptPromotion(
+    baseline,
+    candidateSmallTokenGain,
+    defaultPromotionPolicy(),
+  )
+  expect(noPromote.promote).toBe(false)
+  expect(noPromote.reason).toBe('no_measurable_gain')
+
+  const candidateWithCustomThreshold = makeReport({
+    passRate: 1,
+    usageTotal: 980,
+    llmElapsedMs: 500,
+  })
+  const promoteWithCustom = decidePromptPromotion(
+    baseline,
+    candidateWithCustomThreshold,
+    {
+      minPassRateDelta: 0,
+      minTokenDelta: 10,
+      minLatencyDeltaMs: 200,
+    },
+  )
+  expect(promoteWithCustom.promote).toBe(true)
+  expect(promoteWithCustom.reason).toBe('token_total_reduced')
 })
