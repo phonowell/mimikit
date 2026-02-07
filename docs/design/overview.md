@@ -26,4 +26,5 @@
 - 双循环细节：docs/design/supervisor.md
 - 任务生命周期与结构：docs/design/task-system.md / docs/design/task-data.md
 - MIMIKIT 命令协议：docs/design/commands.md
+- 反馈→提高链路：docs/design/feedback-improvement-loop.md
 - HTTP/CLI：docs/design/interfaces.md

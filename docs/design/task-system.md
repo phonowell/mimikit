@@ -31,3 +31,4 @@ Worker 执行
 ## 相关文档
 - 任务结构：docs/design/task-data.md
 - 命令协议：docs/design/commands.md
+- 反馈→提高链路：docs/design/feedback-improvement-loop.md

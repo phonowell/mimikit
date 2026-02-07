@@ -65,9 +65,6 @@ export const runManager = async (params: {
   }
   const requestKey = buildLlmArchiveLookupKey(lookup)
   const base = { role: 'manager' as const, ...(model ? { model } : {}) }
-  const effort = params.modelReasoningEffort
-    ? { modelReasoningEffort: params.modelReasoningEffort }
-    : {}
   const fallbackModel = normalizeOptional(
     params.fallbackModel ?? DEFAULT_MANAGER_FALLBACK_MODEL,
   )
@@ -83,11 +80,13 @@ export const runManager = async (params: {
       prompt,
       timeoutMs: params.timeoutMs,
       ...(model ? { model } : {}),
+      ...(params.modelReasoningEffort
+        ? { modelReasoningEffort: params.modelReasoningEffort }
+        : {}),
       ...(params.seed !== undefined ? { seed: params.seed } : {}),
       ...(params.temperature !== undefined
         ? { temperature: params.temperature }
         : {}),
-      ...effort,
     })
     await archiveManagerResult(
       params.stateDir,
@@ -133,11 +132,13 @@ export const runManager = async (params: {
         prompt,
         timeoutMs: params.timeoutMs,
         model: fallbackModel,
+        ...(params.modelReasoningEffort
+          ? { modelReasoningEffort: params.modelReasoningEffort }
+          : {}),
         ...(params.seed !== undefined ? { seed: params.seed } : {}),
         ...(params.temperature !== undefined
           ? { temperature: params.temperature }
           : {}),
-        ...effort,
       })
       await archiveManagerResult(
         params.stateDir,

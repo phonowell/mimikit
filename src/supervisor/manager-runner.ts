@@ -20,7 +20,6 @@ import {
 import { processManagerCommands } from './manager-runner-commands.js'
 import { persistRuntimeState } from './runtime-persist.js'
 import { selectRecentTasks } from './task-select.js'
-import { addTokenUsage } from './token-budget.js'
 
 import type { RuntimeState } from './runtime.js'
 
@@ -60,7 +59,6 @@ export const runManagerBuffer = async (
         (task) => task.status === 'pending',
       ).length,
       ...(model ? { model } : {}),
-      ...(modelReasoningEffort ? { modelReasoningEffort } : {}),
     })
 
     const result = await runManager({
@@ -74,10 +72,9 @@ export const runManagerBuffer = async (
         ? { env: { lastUser: runtime.lastUserMeta } }
         : {}),
       timeoutMs: DEFAULT_MANAGER_TIMEOUT_MS,
-      ...(model ? { model } : {}),
-      ...(modelReasoningEffort ? { modelReasoningEffort } : {}),
+      model,
+      modelReasoningEffort,
     })
-    addTokenUsage(runtime, result.usage?.total)
 
     const parsed = parseCommands(result.output)
 

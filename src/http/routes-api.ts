@@ -41,18 +41,6 @@ export const registerApiRoutes = (
     reply.send({ id })
   })
 
-  app.post('/api/evolve/code', async (request, reply) => {
-    const remote = request.raw.socket.remoteAddress ?? undefined
-    const { id } = await supervisor.recordCodeEvolveRemovedTrigger(
-      remote ? { remote } : undefined,
-    )
-    reply.code(410).send({
-      ok: false,
-      error: 'evaluation pipeline removed',
-      id,
-    })
-  })
-
   app.get('/api/messages', async (request) => {
     const query = request.query as Record<string, unknown> | undefined
     const limit = parseMessageLimit(query?.limit)

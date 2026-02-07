@@ -5,7 +5,7 @@
 ## 目录结构（概要）
 - history.jsonl：聊天历史（WebUI 展示）
 - log.jsonl：运行日志
-- runtime-state.json：运行时快照（pending/running 任务、tokenBudget、evolve 状态、重启健康门）
+- runtime-state.json：运行时快照（pending/running 任务、evolve 状态、重启健康门）
 - evolve/feedback.jsonl：自演进反馈事件（来自 API 反馈、manager 内部采集、空闲回顾、运行时信号）
 - evolve/feedback-archive.md：反馈归档（可读审计轨迹）
 - evolve/issue-queue.json：按 fingerprint 去重后的问题队列（含 ROI/置信度/状态）

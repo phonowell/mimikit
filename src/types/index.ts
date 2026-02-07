@@ -7,11 +7,6 @@ export type TokenUsage = {
   total?: number
 }
 
-export type TokenBudgetState = {
-  date: string
-  spent: number
-}
-
 export type Role = 'user' | 'manager' | 'system'
 export type HistoryMessage = {
   id: Id

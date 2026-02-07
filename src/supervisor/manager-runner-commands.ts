@@ -1,12 +1,10 @@
 import { appendStructuredFeedback } from '../evolve/feedback.js'
-import { appendLog } from '../log/append.js'
 import { nowIso } from '../shared/utils.js'
 import { enqueueTask } from '../tasks/queue.js'
 
 import { cancelTask } from './cancel.js'
 import { parseCommandPayload } from './command-parser.js'
 import { appendTaskSystemMessage } from './task-history.js'
-import { canSpendTokens } from './token-budget.js'
 
 import type { ParsedCommand } from './command-parser.js'
 import type { RuntimeState } from './runtime.js'
@@ -20,9 +18,6 @@ type FeedbackCommandPayload = {
   rationale?: string
   fingerprint?: string
 }
-
-const estimateTaskTokenCost = (prompt: string): number =>
-  Math.max(512, Math.ceil(prompt.length / 3))
 
 const parseFeedbackCommand = (
   payload: FeedbackCommandPayload | undefined,
@@ -60,16 +55,6 @@ const handleAddTaskCommand = async (
   const dedupeKey = `${prompt}\n${rawTitle ?? ''}`
   if (seenDispatches.has(dedupeKey)) return
   seenDispatches.add(dedupeKey)
-  if (!canSpendTokens(runtime, estimateTaskTokenCost(prompt))) {
-    await appendLog(runtime.paths.log, {
-      event: 'task_dispatch_skipped_budget',
-      promptChars: prompt.length,
-      budgetDate: runtime.tokenBudget.date,
-      budgetSpent: runtime.tokenBudget.spent,
-      budgetLimit: runtime.config.tokenBudget.dailyTotal,
-    })
-    return
-  }
   const { task, created } = enqueueTask(runtime.tasks, prompt, rawTitle)
   if (!created) return
   await appendTaskSystemMessage(runtime.paths.history, 'created', task, {

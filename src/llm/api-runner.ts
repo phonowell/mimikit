@@ -8,6 +8,7 @@ import {
   requestJson,
 } from './http-client.js'
 import { loadCodexSettings, resolveOpenAiModel } from './openai.js'
+import { HARDCODED_MODEL_REASONING_EFFORT } from './reasoning-effort.js'
 
 import type { TokenUsage } from '../types/index.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
@@ -30,8 +31,6 @@ export const runManagerApi = async (params: {
   const model = await resolveOpenAiModel(params.model)
   const baseUrl =
     settings.baseUrl ?? process.env.OPENAI_BASE_URL ?? 'https://api.openai.com'
-  const reasoningEffort =
-    params.modelReasoningEffort ?? settings.modelReasoningEffort
   const apiKey = settings.apiKey ?? process.env.OPENAI_API_KEY
   if (!apiKey && settings.requiresOpenAiAuth !== false) {
     throw new Error(
@@ -50,13 +49,15 @@ export const runManagerApi = async (params: {
     'Content-Type': 'application/json',
   }
   if (apiKey) headers.Authorization = `Bearer ${apiKey}`
+  const modelReasoningEffort =
+    params.modelReasoningEffort ?? HARDCODED_MODEL_REASONING_EFFORT
 
   try {
     const response = await requestJson(
       `${apiBase}/chat/completions`,
       {
         model,
-        ...(reasoningEffort ? { model_reasoning_effort: reasoningEffort } : {}),
+        model_reasoning_effort: modelReasoningEffort,
         ...(params.seed !== undefined ? { seed: params.seed } : {}),
         ...(params.temperature !== undefined
           ? { temperature: params.temperature }

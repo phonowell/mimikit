@@ -9,7 +9,6 @@ import {
 } from '../tasks/queue.js'
 
 import { persistRuntimeState } from './runtime-persist.js'
-import { addTokenUsage } from './token-budget.js'
 import { appendRuntimeIssue } from './worker-feedback.js'
 import { buildResult, finalizeResult } from './worker-result.js'
 
@@ -40,9 +39,8 @@ export const runTask = async (
           workDir: runtime.config.workDir,
           task,
           timeoutMs: runtime.config.worker.timeoutMs,
-          ...(runtime.config.worker.model
-            ? { model: runtime.config.worker.model }
-            : {}),
+          model: runtime.config.worker.model,
+          modelReasoningEffort: runtime.config.worker.modelReasoningEffort,
           abortSignal: controller.signal,
         })
         break
@@ -79,7 +77,6 @@ export const runTask = async (
       }
     }
     if (!llmResult) throw new Error('worker_result_missing')
-    addTokenUsage(runtime, llmResult.usage?.total)
     const usageTotal = llmResult.usage?.total ?? 0
     const elapsedMs = elapsed()
     if (elapsedMs >= runtime.config.evolve.runtimeHighLatencyMs) {

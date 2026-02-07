@@ -1,11 +1,6 @@
 import type { SupervisorConfig } from '../config.js'
 import type { StatePaths } from '../fs/paths.js'
-import type {
-  Task,
-  TaskResult,
-  TokenBudgetState,
-  UserInput,
-} from '../types/index.js'
+import type { Task, TaskResult, UserInput } from '../types/index.js'
 
 export type PendingUserInput = UserInput
 
@@ -31,7 +26,6 @@ export type RuntimeState = {
   tasks: Task[]
   runningWorkers: Set<string>
   runningControllers: Map<string, AbortController>
-  tokenBudget: TokenBudgetState
   evolveState: {
     lastIdleReviewAt?: string
   }

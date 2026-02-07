@@ -6,20 +6,11 @@ export type SupervisorConfig = {
   stateDir: string
   workDir: string
   evolve: {
-    enabled: boolean
-    idlePollMs: number
-    feedbackHistoryLimit: number
-    issueMinRoiScore: number
-    issueMaxCountPerRound: number
     idleReviewEnabled: boolean
     idleReviewIntervalMs: number
     idleReviewHistoryCount: number
     runtimeHighLatencyMs: number
     runtimeHighUsageTotal: number
-  }
-  tokenBudget: {
-    enabled: boolean
-    dailyTotal: number
   }
   manager: {
     pollMs: number
@@ -31,15 +22,16 @@ export type SupervisorConfig = {
     historyMinCount: number
     historyMaxCount: number
     historyMaxBytes: number
-    model?: string
-    modelReasoningEffort?: ModelReasoningEffort
+    model: string
+    modelReasoningEffort: ModelReasoningEffort
   }
   worker: {
     maxConcurrent: number
     timeoutMs: number
     retryMaxAttempts: number
     retryBackoffMs: number
-    model?: string
+    model: string
+    modelReasoningEffort: ModelReasoningEffort
   }
 }
 
@@ -50,38 +42,31 @@ export const defaultConfig = (params: {
   stateDir: resolve(params.stateDir),
   workDir: resolve(params.workDir),
   evolve: {
-    enabled: true,
-    idlePollMs: 15_000,
-    feedbackHistoryLimit: 30,
-    issueMinRoiScore: 35,
-    issueMaxCountPerRound: 12,
     idleReviewEnabled: true,
-    idleReviewIntervalMs: 5 * 60 * 1000,
-    idleReviewHistoryCount: 40,
-    runtimeHighLatencyMs: 45_000,
-    runtimeHighUsageTotal: 8_000,
-  },
-  tokenBudget: {
-    enabled: true,
-    dailyTotal: 500_000_000,
+    idleReviewIntervalMs: 30 * 60 * 1_000,
+    idleReviewHistoryCount: 100,
+    runtimeHighLatencyMs: 15 * 60 * 1_000,
+    runtimeHighUsageTotal: 100_000,
   },
   manager: {
-    pollMs: 1000,
-    debounceMs: 10000,
-    maxResultWaitMs: 20000,
+    pollMs: 1_000,
+    debounceMs: 10_000,
+    maxResultWaitMs: 20_000,
     tasksMaxCount: 20,
     tasksMinCount: 5,
-    tasksMaxBytes: 20480,
+    tasksMaxBytes: 20 * 1024,
     historyMinCount: 20,
     historyMaxCount: 100,
     historyMaxBytes: 20 * 1024,
     model: 'gpt-5.2-high',
+    modelReasoningEffort: 'high',
   },
   worker: {
     maxConcurrent: 3,
-    timeoutMs: 10 * 60 * 1000,
+    timeoutMs: 10 * 60 * 1_000,
     retryMaxAttempts: 1,
     retryBackoffMs: 5_000,
     model: 'gpt-5.3-codex-high',
+    modelReasoningEffort: 'high',
   },
 })

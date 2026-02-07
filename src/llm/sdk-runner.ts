@@ -6,8 +6,10 @@ import { normalizeUsage } from '../shared/utils.js'
 
 import { createIdleAbort } from './idle-abort.js'
 import { loadCodexSettings } from './openai.js'
+import { HARDCODED_MODEL_REASONING_EFFORT } from './reasoning-effort.js'
 
 import type { TokenUsage } from '../types/index.js'
+import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
 type SdkRole = 'manager' | 'worker'
 type RunResult = {
@@ -25,6 +27,7 @@ export const runCodexSdk = async (params: {
   prompt: string
   workDir: string
   model?: string
+  modelReasoningEffort?: ModelReasoningEffort
   timeoutMs: number
   threadId?: string | null
   outputSchema?: unknown
@@ -40,6 +43,8 @@ export const runCodexSdk = async (params: {
       ? ('danger-full-access' as const)
       : ('read-only' as const)
   const approvalPolicy = 'never' as const
+  const modelReasoningEffort =
+    params.modelReasoningEffort ?? HARDCODED_MODEL_REASONING_EFFORT
   const baseContext: LogContext = {
     role: params.role,
     timeoutMs: params.timeoutMs,
@@ -78,9 +83,7 @@ export const runCodexSdk = async (params: {
         ...(settings.requiresOpenAiAuth !== undefined
           ? { requiresOpenAiAuth: settings.requiresOpenAiAuth }
           : {}),
-        ...(settings.modelReasoningEffort
-          ? { modelReasoningEffort: settings.modelReasoningEffort }
-          : {}),
+        modelReasoningEffort,
         apiKeyPresent,
       })
     } catch (error) {
@@ -92,6 +95,7 @@ export const runCodexSdk = async (params: {
   const threadOptions = {
     workingDirectory: params.workDir,
     ...(params.model ? { model: params.model } : {}),
+    modelReasoningEffort,
     sandboxMode,
     approvalPolicy,
   }

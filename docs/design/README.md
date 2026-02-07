@@ -4,6 +4,7 @@
 
 ## 阅读路径
 - `docs/design/overview.md`
+- `docs/design/feedback-improvement-loop.md`
 - `docs/design/state-directory.md`
 - `docs/design/supervisor.md`
 - `docs/design/task-system.md`

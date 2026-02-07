@@ -13,7 +13,6 @@ export const hydrateRuntimeState = async (
 ): Promise<void> => {
   const snapshot = await loadRuntimeSnapshot(runtime.config.stateDir)
   runtime.tasks = snapshot.tasks
-  if (snapshot.tokenBudget) runtime.tokenBudget = snapshot.tokenBudget
   if (snapshot.evolve) runtime.evolveState = snapshot.evolve
   if (snapshot.tasks.length > 0) {
     await bestEffort('appendLog: runtime_hydrated', () =>
@@ -30,7 +29,6 @@ export const persistRuntimeState = async (
 ): Promise<void> => {
   await saveRuntimeSnapshot(runtime.config.stateDir, {
     tasks: selectPersistedTasks(runtime.tasks),
-    tokenBudget: runtime.tokenBudget,
     evolve: runtime.evolveState,
   })
 }

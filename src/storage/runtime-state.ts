@@ -2,11 +2,10 @@ import { join } from 'node:path'
 
 import { readJson, writeJson } from '../fs/json.js'
 
-import type { Task, TokenBudgetState } from '../types/index.js'
+import type { Task } from '../types/index.js'
 
 type RuntimeSnapshot = {
   tasks: Task[]
-  tokenBudget?: TokenBudgetState
   evolve?: {
     lastIdleReviewAt?: string
   }
@@ -63,23 +62,10 @@ const asTask = (value: unknown): Task | null => {
   return task
 }
 
-const asTokenBudgetState = (value: unknown): TokenBudgetState | undefined => {
-  if (!value || typeof value !== 'object') return undefined
-  const record = value as Partial<TokenBudgetState>
-  if (typeof record.date !== 'string') return undefined
-  if (typeof record.spent !== 'number' || !Number.isFinite(record.spent))
-    return undefined
-  return {
-    date: record.date,
-    spent: Math.max(0, record.spent),
-  }
-}
-
 const normalizeSnapshot = (value: unknown): RuntimeSnapshot => {
   if (!value || typeof value !== 'object') return { tasks: [] }
   const record = value as {
     tasks?: unknown
-    tokenBudget?: unknown
     evolve?: unknown
   }
   const tasks = Array.isArray(record.tasks)
@@ -87,7 +73,6 @@ const normalizeSnapshot = (value: unknown): RuntimeSnapshot => {
         .map((item) => asTask(item))
         .filter((item): item is Task => Boolean(item))
     : []
-  const tokenBudget = asTokenBudgetState(record.tokenBudget)
   const evolve =
     record.evolve &&
     typeof record.evolve === 'object' &&
@@ -98,8 +83,7 @@ const normalizeSnapshot = (value: unknown): RuntimeSnapshot => {
             .lastIdleReviewAt,
         }
       : undefined
-  const base = tokenBudget ? { tasks, tokenBudget } : { tasks }
-  return evolve ? { ...base, evolve } : base
+  return evolve ? { tasks, evolve } : { tasks }
 }
 
 export const loadRuntimeSnapshot = async (

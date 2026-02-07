@@ -114,11 +114,7 @@ export const hasPendingEvolveFeedback = async (params: {
   return pending.length > 0
 }
 
-export {
-  buildIssueQueue,
-  persistIssueQueue,
-  selectActionableIssues,
-}
+export { buildIssueQueue, persistIssueQueue, selectActionableIssues }
 
 export const readIssueQueue = (
   stateDir: string,

@@ -43,7 +43,8 @@ const applyModelEnv = (config: SupervisorConfig): void => {
 
 const applyReasoningEnv = (config: SupervisorConfig): void => {
   const envReasoning = process.env.MIMIKIT_REASONING_EFFORT?.trim()
-  if (!envReasoning) return
+  const envWorkerReasoning = process.env.MIMIKIT_WORKER_REASONING_EFFORT?.trim()
+  if (!envReasoning && !envWorkerReasoning) return
   const allowed: ModelReasoningEffort[] = [
     'minimal',
     'low',
@@ -51,53 +52,35 @@ const applyReasoningEnv = (config: SupervisorConfig): void => {
     'high',
     'xhigh',
   ]
-  if (allowed.includes(envReasoning as ModelReasoningEffort)) {
-    config.manager.modelReasoningEffort = envReasoning as ModelReasoningEffort
-    return
+  if (envReasoning) {
+    if (allowed.includes(envReasoning as ModelReasoningEffort)) {
+      config.manager.modelReasoningEffort = envReasoning as ModelReasoningEffort
+      config.worker.modelReasoningEffort = envReasoning as ModelReasoningEffort
+    } else console.warn('[cli] invalid MIMIKIT_REASONING_EFFORT:', envReasoning)
   }
-  console.warn('[cli] invalid MIMIKIT_REASONING_EFFORT:', envReasoning)
-}
-
-const applyTokenBudgetEnv = (config: SupervisorConfig): void => {
-  const envTokenBudgetDaily = process.env.MIMIKIT_TOKEN_BUDGET_DAILY?.trim()
-  if (envTokenBudgetDaily) {
-    const parsed = Number(envTokenBudgetDaily)
-    if (Number.isFinite(parsed) && parsed > 0)
-      config.tokenBudget.dailyTotal = Math.floor(parsed)
-    else {
-      console.warn(
-        '[cli] invalid MIMIKIT_TOKEN_BUDGET_DAILY:',
-        envTokenBudgetDaily,
-      )
+  if (envWorkerReasoning) {
+    if (allowed.includes(envWorkerReasoning as ModelReasoningEffort)) {
+      config.worker.modelReasoningEffort =
+        envWorkerReasoning as ModelReasoningEffort
+      return
     }
+    console.warn(
+      '[cli] invalid MIMIKIT_WORKER_REASONING_EFFORT:',
+      envWorkerReasoning,
+    )
   }
-  const enabled = parseEnvBoolean(
-    'MIMIKIT_TOKEN_BUDGET_ENABLED',
-    process.env.MIMIKIT_TOKEN_BUDGET_ENABLED?.trim(),
-  )
-  if (enabled !== undefined) config.tokenBudget.enabled = enabled
 }
 
 const applyEvolveEnv = (config: SupervisorConfig): void => {
-  const evolveEnabled = parseEnvBoolean(
-    'MIMIKIT_EVOLVE_ENABLED',
-    process.env.MIMIKIT_EVOLVE_ENABLED?.trim(),
-  )
-  if (evolveEnabled !== undefined) config.evolve.enabled = evolveEnabled
   const autoRestart = parseEnvBoolean(
     'MIMIKIT_EVOLVE_AUTO_RESTART_ON_PROMOTE',
     process.env.MIMIKIT_EVOLVE_AUTO_RESTART_ON_PROMOTE?.trim(),
   )
-  if (autoRestart !== undefined)
+  if (autoRestart !== undefined) {
     console.warn(
       '[cli] MIMIKIT_EVOLVE_AUTO_RESTART_ON_PROMOTE is deprecated and ignored',
     )
-  const evolveIdlePollMs = parseEnvPositiveInteger(
-    'MIMIKIT_EVOLVE_IDLE_POLL_MS',
-    process.env.MIMIKIT_EVOLVE_IDLE_POLL_MS?.trim(),
-  )
-  if (evolveIdlePollMs !== undefined)
-    config.evolve.idlePollMs = evolveIdlePollMs
+  }
   const evolveMaxRounds = parseEnvPositiveInteger(
     'MIMIKIT_EVOLVE_MAX_ROUNDS',
     process.env.MIMIKIT_EVOLVE_MAX_ROUNDS?.trim(),
@@ -108,52 +91,38 @@ const applyEvolveEnv = (config: SupervisorConfig): void => {
     'MIMIKIT_EVOLVE_MIN_PASS_RATE_DELTA',
     process.env.MIMIKIT_EVOLVE_MIN_PASS_RATE_DELTA?.trim(),
   )
-  if (minPassRateDelta !== undefined)
+  if (minPassRateDelta !== undefined) {
     console.warn(
       '[cli] MIMIKIT_EVOLVE_MIN_PASS_RATE_DELTA is deprecated and ignored',
     )
+  }
   const minTokenDelta = parseEnvNonNegativeNumber(
     'MIMIKIT_EVOLVE_MIN_TOKEN_DELTA',
     process.env.MIMIKIT_EVOLVE_MIN_TOKEN_DELTA?.trim(),
   )
-  if (minTokenDelta !== undefined)
+  if (minTokenDelta !== undefined) {
     console.warn(
       '[cli] MIMIKIT_EVOLVE_MIN_TOKEN_DELTA is deprecated and ignored',
     )
+  }
   const minLatencyDeltaMs = parseEnvNonNegativeNumber(
     'MIMIKIT_EVOLVE_MIN_LATENCY_DELTA_MS',
     process.env.MIMIKIT_EVOLVE_MIN_LATENCY_DELTA_MS?.trim(),
   )
-  if (minLatencyDeltaMs !== undefined)
+  if (minLatencyDeltaMs !== undefined) {
     console.warn(
       '[cli] MIMIKIT_EVOLVE_MIN_LATENCY_DELTA_MS is deprecated and ignored',
     )
-  const feedbackHistoryLimit = parseEnvPositiveInteger(
-    'MIMIKIT_EVOLVE_FEEDBACK_HISTORY_LIMIT',
-    process.env.MIMIKIT_EVOLVE_FEEDBACK_HISTORY_LIMIT?.trim(),
-  )
-  if (feedbackHistoryLimit !== undefined)
-    config.evolve.feedbackHistoryLimit = feedbackHistoryLimit
+  }
   const feedbackSuiteMaxCases = parseEnvPositiveInteger(
     'MIMIKIT_EVOLVE_FEEDBACK_SUITE_MAX_CASES',
     process.env.MIMIKIT_EVOLVE_FEEDBACK_SUITE_MAX_CASES?.trim(),
   )
-  if (feedbackSuiteMaxCases !== undefined)
+  if (feedbackSuiteMaxCases !== undefined) {
     console.warn(
       '[cli] MIMIKIT_EVOLVE_FEEDBACK_SUITE_MAX_CASES is deprecated and ignored',
     )
-  const issueMinRoi = parseEnvNonNegativeNumber(
-    'MIMIKIT_EVOLVE_ISSUE_MIN_ROI_SCORE',
-    process.env.MIMIKIT_EVOLVE_ISSUE_MIN_ROI_SCORE?.trim(),
-  )
-  if (issueMinRoi !== undefined)
-    config.evolve.issueMinRoiScore = Math.floor(issueMinRoi)
-  const issueMaxCount = parseEnvPositiveInteger(
-    'MIMIKIT_EVOLVE_ISSUE_MAX_COUNT_PER_ROUND',
-    process.env.MIMIKIT_EVOLVE_ISSUE_MAX_COUNT_PER_ROUND?.trim(),
-  )
-  if (issueMaxCount !== undefined)
-    config.evolve.issueMaxCountPerRound = issueMaxCount
+  }
   const idleReviewEnabled = parseEnvBoolean(
     'MIMIKIT_EVOLVE_IDLE_REVIEW_ENABLED',
     process.env.MIMIKIT_EVOLVE_IDLE_REVIEW_ENABLED?.trim(),
@@ -189,6 +158,5 @@ const applyEvolveEnv = (config: SupervisorConfig): void => {
 export const applyCliEnvOverrides = (config: SupervisorConfig): void => {
   applyModelEnv(config)
   applyReasoningEnv(config)
-  applyTokenBudgetEnv(config)
   applyEvolveEnv(config)
 }

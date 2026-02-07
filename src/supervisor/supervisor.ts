@@ -1,7 +1,3 @@
-import {
-  appendRuntimeSignalFeedback,
-  resetEvolveFeedbackState,
-} from '../evolve/feedback.js'
 import { buildPaths, ensureStateDirs } from '../fs/paths.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort, setDefaultLogPath } from '../log/safe.js'
@@ -42,10 +38,6 @@ export class Supervisor {
       tasks: [],
       runningWorkers: new Set(),
       runningControllers: new Map(),
-      tokenBudget: {
-        date: nowIso().slice(0, 10),
-        spent: 0,
-      },
       evolveState: {},
     }
   }
@@ -133,12 +125,6 @@ export class Supervisor {
     pendingInputs: number
     managerRunning: boolean
     maxWorkers: number
-    tokenBudget: {
-      date: string
-      spent: number
-      limit: number
-      enabled: boolean
-    }
   } {
     const pendingTasks = this.runtime.tasks.filter(
       (task) => task.status === 'pending',
@@ -156,12 +142,6 @@ export class Supervisor {
       pendingInputs,
       managerRunning: this.runtime.managerRunning,
       maxWorkers,
-      tokenBudget: {
-        date: this.runtime.tokenBudget.date,
-        spent: this.runtime.tokenBudget.spent,
-        limit: this.runtime.config.tokenBudget.dailyTotal,
-        enabled: this.runtime.config.tokenBudget.enabled,
-      },
     }
   }
 
@@ -169,25 +149,5 @@ export class Supervisor {
     await bestEffort('appendLog: event', () =>
       appendLog(this.runtime.paths.log, entry),
     )
-  }
-
-  async recordCodeEvolveRemovedTrigger(params?: {
-    remote?: string
-  }): Promise<{ id: string }> {
-    await resetEvolveFeedbackState(this.runtime.config.stateDir)
-    const { id } = await appendRuntimeSignalFeedback({
-      stateDir: this.runtime.config.stateDir,
-      severity: 'low',
-      message: 'manual evolve trigger ignored: evaluation pipeline removed',
-      context: {
-        note: 'code_evolve_removed',
-      },
-    })
-    await this.logEvent({
-      event: 'code_evolve_removed',
-      feedbackId: id,
-      ...(params?.remote ? { remote: params.remote } : {}),
-    })
-    return { id }
   }
 }

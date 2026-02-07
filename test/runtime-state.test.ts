@@ -50,31 +50,6 @@ test('selectPersistedTasks keeps pending and recovers running', () => {
   expect(persisted[1]?.startedAt).toBeUndefined()
 })
 
-test('runtime snapshot roundtrip keeps token budget', async () => {
-  const stateDir = await createTmpDir()
-  await saveRuntimeSnapshot(stateDir, {
-    tasks: [
-      {
-        id: 'x',
-        fingerprint: 'x',
-        prompt: 'x',
-        title: 'x',
-        status: 'pending',
-        createdAt: '2026-02-06T00:00:00.000Z',
-      },
-    ],
-    tokenBudget: {
-      date: '2026-02-06',
-      spent: 1234,
-    },
-  })
-
-  const loaded = await loadRuntimeSnapshot(stateDir)
-  expect(loaded.tasks).toHaveLength(1)
-  expect(loaded.tokenBudget?.date).toBe('2026-02-06')
-  expect(loaded.tokenBudget?.spent).toBe(1234)
-})
-
 test('runtime snapshot keeps evolve idle review state', async () => {
   const stateDir = await createTmpDir()
   await saveRuntimeSnapshot(stateDir, {

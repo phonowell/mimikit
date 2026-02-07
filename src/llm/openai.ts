@@ -18,7 +18,6 @@ type CodexConfig = {
     string,
     { baseUrl?: string; wireApi?: string; requiresOpenAiAuth?: boolean }
   >
-  modelReasoningEffort?: string
 }
 
 type CodexSettings = {
@@ -27,7 +26,6 @@ type CodexSettings = {
   baseUrl?: string
   wireApi?: string
   requiresOpenAiAuth?: boolean
-  modelReasoningEffort?: string
 }
 
 let cachedSettings: CodexSettings | null = null
@@ -47,8 +45,6 @@ const parseCodexConfig = (raw: string): CodexConfig => {
   if (typeof parsed.model === 'string') config.model = parsed.model
   if (typeof parsed.model_provider === 'string')
     config.modelProvider = parsed.model_provider
-  if (typeof parsed.model_reasoning_effort === 'string')
-    config.modelReasoningEffort = parsed.model_reasoning_effort
 
   const providers = asRecord(parsed.model_providers)
   if (providers) {
@@ -120,9 +116,6 @@ export const loadCodexSettings = async (): Promise<CodexSettings> => {
 
   if (provider?.requiresOpenAiAuth !== undefined)
     settings.requiresOpenAiAuth = provider.requiresOpenAiAuth
-
-  if (config.modelReasoningEffort)
-    settings.modelReasoningEffort = config.modelReasoningEffort
 
   cachedSettings = settings
   return settings

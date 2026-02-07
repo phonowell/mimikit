@@ -96,15 +96,8 @@ export const runIdleConversationReview = async (params: {
     tasks: [],
     history: recent,
     timeoutMs: Math.min(45_000, params.runtime.config.worker.timeoutMs),
-    ...(params.runtime.config.manager.model
-      ? { model: params.runtime.config.manager.model }
-      : {}),
-    ...(params.runtime.config.manager.modelReasoningEffort
-      ? {
-          modelReasoningEffort:
-            params.runtime.config.manager.modelReasoningEffort,
-        }
-      : {}),
+    model: params.runtime.config.manager.model,
+    modelReasoningEffort: params.runtime.config.manager.modelReasoningEffort,
   })
 
   const items = parseIdleReviewItems(reviewResult.output)

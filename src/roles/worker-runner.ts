@@ -7,6 +7,7 @@ import {
 import { buildWorkerPrompt } from './prompt.js'
 
 import type { Task, TokenUsage } from '../types/index.js'
+import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
 type LlmResult = { output: string; elapsedMs: number; usage?: TokenUsage }
 
@@ -40,6 +41,7 @@ export const runWorker = async (params: {
   task: Task
   timeoutMs: number
   model?: string
+  modelReasoningEffort?: ModelReasoningEffort
   abortSignal?: AbortSignal
 }): Promise<LlmResult> => {
   const prompt = await buildWorkerPrompt({
@@ -59,6 +61,9 @@ export const runWorker = async (params: {
       timeoutMs: params.timeoutMs,
       ...(params.abortSignal ? { abortSignal: params.abortSignal } : {}),
       ...(params.model ? { model: params.model } : {}),
+      ...(params.modelReasoningEffort
+        ? { modelReasoningEffort: params.modelReasoningEffort }
+        : {}),
     })
     await archiveEntry(
       params.stateDir,
