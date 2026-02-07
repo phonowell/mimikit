@@ -17,7 +17,10 @@ import {
   appendConsumedResultsToHistory,
   appendFallbackReply,
 } from './manager-history.js'
-import { processManagerCommands } from './manager-runner-commands.js'
+import {
+  collectResultSummaries,
+  processManagerCommands,
+} from './manager-runner-commands.js'
 import { persistRuntimeState } from './runtime-persist.js'
 import { selectRecentTasks } from './task-select.js'
 
@@ -77,6 +80,7 @@ export const runManagerBuffer = async (
     })
 
     const parsed = parseCommands(result.output)
+    const resultSummaries = collectResultSummaries(parsed.commands)
 
     consumedInputCount = await appendConsumedInputsToHistory(
       runtime.paths.history,
@@ -88,6 +92,7 @@ export const runManagerBuffer = async (
       runtime.paths.history,
       runtime.tasks,
       results,
+      resultSummaries,
     )
     if (consumedResultCount < results.length)
       throw new Error('append_consumed_results_incomplete')

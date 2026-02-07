@@ -7,6 +7,18 @@ import { appendTaskSystemMessage } from './task-history.js'
 import type { RuntimeState } from './runtime.js'
 import type { TaskResult, UserInput } from '../types/index.js'
 
+const summarizeResultOutput = (
+  result: TaskResult,
+  summaries?: Map<string, string>,
+): string => {
+  const summary = summaries?.get(result.taskId)?.trim()
+  if (summary) return summary
+  const compacted = result.output.replace(/\s+/g, ' ').trim()
+  const maxChars = 280
+  if (compacted.length <= maxChars) return compacted
+  return `${compacted.slice(0, maxChars - 1).trimEnd()}…`
+}
+
 export const appendFallbackReply = async (
   paths: RuntimeState['paths'],
 ): Promise<void> => {
@@ -48,6 +60,7 @@ export const appendConsumedResultsToHistory = async (
   historyPath: string,
   tasks: RuntimeState['tasks'],
   results: TaskResult[],
+  summaries?: Map<string, string>,
 ): Promise<number> => {
   let consumed = 0
   for (const result of results) {
@@ -70,7 +83,10 @@ export const appendConsumedResultsToHistory = async (
             createdAt: result.completedAt,
           })
     if (!appended) break
-    task.result = result
+    task.result = {
+      ...result,
+      output: summarizeResultOutput(result, summaries),
+    }
     consumed += 1
   }
   return consumed

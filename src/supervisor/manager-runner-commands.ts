@@ -19,6 +19,12 @@ type FeedbackCommandPayload = {
   fingerprint?: string
 }
 
+type ResultSummaryCommandPayload = {
+  taskId?: string
+  id?: string
+  summary?: string
+}
+
 const parseFeedbackCommand = (
   payload: FeedbackCommandPayload | undefined,
 ): FeedbackCommandPayload | undefined => {
@@ -38,6 +44,39 @@ const parseFeedbackCommand = (
     ...(payload.rationale ? { rationale: payload.rationale } : {}),
     ...(payload.fingerprint ? { fingerprint: payload.fingerprint } : {}),
   }
+}
+
+const normalizeResultSummary = (
+  taskIdRaw: string | undefined,
+  summaryRaw: string | undefined,
+): { taskId: string; summary: string } | undefined => {
+  const taskId = taskIdRaw?.trim() ?? ''
+  const summary = summaryRaw?.trim() ?? ''
+  if (!taskId || !summary) return undefined
+  return { taskId, summary }
+}
+
+const parseResultSummaryCommand = (
+  command: ParsedCommand,
+): { taskId: string; summary: string } | undefined => {
+  const payload = parseCommandPayload<ResultSummaryCommandPayload>(command)
+  return normalizeResultSummary(
+    payload?.taskId ?? payload?.id ?? command.attrs.taskId ?? command.attrs.id,
+    payload?.summary ?? command.attrs.summary,
+  )
+}
+
+export const collectResultSummaries = (
+  commands: ParsedCommand[],
+): Map<string, string> => {
+  const summaries = new Map<string, string>()
+  for (const command of commands) {
+    if (command.action !== 'summarize_result') continue
+    const summary = parseResultSummaryCommand(command)
+    if (!summary) continue
+    summaries.set(summary.taskId, summary.summary)
+  }
+  return summaries
 }
 
 const handleAddTaskCommand = async (
@@ -120,5 +159,6 @@ export const processManagerCommands = async (
     }
     if (command.action === 'capture_feedback')
       await handleFeedbackCommand(runtime, command)
+    if (command.action === 'summarize_result') continue
   }
 }

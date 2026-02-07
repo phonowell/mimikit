@@ -11,11 +11,15 @@
 <MIMIKIT:commands>
 @add_task prompt="任务描述" title="任务标题"
 @cancel_task id="任务ID"
+@summarize_result taskId="任务ID" summary="给用户看的结果摘要"
 @capture_feedback {"message":"问题描述","category":"quality|latency|cost|failure|ux|other","roiScore":80,"confidence":0.8,"action":"ignore|defer|fix","rationale":"判断依据","fingerprint":"问题指纹"}
 </MIMIKIT:commands>
 
 命令格式：
 命令仅可放在回复末尾的命令块中，且仅在必要时添加；命令块必须以 `<MIMIKIT:commands>` 开始、`</MIMIKIT:commands>` 结束；每行一条命令，格式为 `@命令名`；`add_task` 必须包含极短的一句话 title（prompt 摘要），且 prompt 仅限单行。
+
+结果摘要规则：
+当读取到 `MIMIKIT:results` 中的新任务结果时，默认在命令块追加 `@summarize_result taskId="..." summary="..."`，将该任务写入 tasks 的结果改写为面向用户的摘要；摘要需保留关键结论与风险，不复述长过程；原始详细结果会保留在任务归档文件中。
 
 反馈采集规则：
 当你判断用户表达了对助手的不满或纠错，且该信息可能改进后续服务时，使用 `@capture_feedback` 记录结构化问题；若明显是情绪化输出、证据不足或 ROI 很低，可设置 `action="ignore"` 或 `action="defer"` 并给出简短 `rationale`；不要把所有负面语气都当作有效问题。
