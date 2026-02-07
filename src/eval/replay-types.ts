@@ -2,6 +2,7 @@ import type {
   HistoryMessage,
   Task,
   TaskResult,
+  TokenUsage,
   UserInput,
 } from '../types/index.js'
 
@@ -36,6 +37,10 @@ export type ReplayCase = {
   inputs: UserInput[]
   tasks: Task[]
   results: TaskResult[]
+  repeat?: {
+    count: number
+    idFormat?: string
+  }
   expect?: ReplayCaseExpect
 }
 
@@ -64,11 +69,22 @@ export type ReplayCaseReport = {
   id: string
   description?: string
   status: ReplayCaseStatus
+  source: 'live' | 'archive'
   elapsedMs: number
+  llmElapsedMs: number
+  usage: TokenUsage
   outputChars: number
   commandStats: Record<string, number>
   assertions: ReplayAssertionResult[]
   error?: string
+}
+
+export type ReplayReportMetrics = {
+  llmCalls: number
+  liveCases: number
+  archiveCases: number
+  llmElapsedMs: number
+  usage: Required<TokenUsage>
 }
 
 export type ReplayReport = {
@@ -82,6 +98,7 @@ export type ReplayReport = {
   passRate: number
   stoppedEarly: boolean
   maxFail: number
+  metrics: ReplayReportMetrics
   cases: ReplayCaseReport[]
 }
 

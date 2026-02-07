@@ -48,7 +48,8 @@
     "sync": "pnpm exec tsx scripts/sync-worktree.ts",
     "test": "vitest run",
     "type-check": "tsc -p tsconfig.json --noEmit",
-    "replay:eval": "tsx scripts/replay-eval.ts"
+    "replay:eval": "tsx scripts/replay-eval.ts",
+    "self:evolve": "tsx scripts/self-evolve.ts"
   },
   "type": "module",
   "version": "0.1.0"

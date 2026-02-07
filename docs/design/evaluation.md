@@ -18,6 +18,7 @@
 - 路径建议：`test/fixtures/replay/*.json`
 - 根字段：`suite` `version` `cases[]`
 - case 字段：`id` `history` `inputs` `tasks` `results` `expect`
+- 可选重复执行：`repeat.count`（正整数）+ `repeat.idFormat`（支持 `{i}` 占位）
 - `history/inputs/tasks/results` 直接映射 `runManager` 入参
 
 ## 断言类型
@@ -28,7 +29,9 @@
 ## 报告与产物
 - JSON：`./.mimikit/generated/replay/*.json`
 - Markdown：`./.mimikit/generated/replay/*.md`
-- 报告字段：`suite/runAt/model/total/passed/failed/passRate/cases[]`
+- 报告字段：`suite/runAt/model/total/passed/failed/passRate/metrics/cases[]`
+- `metrics`：`llmCalls/liveCases/archiveCases/llmElapsedMs/usage(input/output/total)`
+- `cases[]` 增加：`source(live|archive)`、`llmElapsedMs`、`usage`
 
 ## 退出码
 - `0`：全部通过
@@ -46,3 +49,9 @@
 - 归档优先（miss 才在线）：追加 `--prefer-archive`
 - 指定归档目录：追加 `--archive-dir <path>`（默认 `<state-dir>/llm`）
 - 快速失败：追加 `--max-fail 1`
+
+## 自演进单轮
+- 入口：`pnpm self:evolve -- --suite test/fixtures/replay/manager-core.json --out-dir .mimikit/generated/evolve/round1 --state-dir .mimikit/generated/evolve/state-round1`
+- 闭环：基线评测 → 自动改写 `prompts/agents/manager/system.md` → 候选评测 → 自动判定是否回滚
+- 判定优先级：`passRate` > `usage.total` > `llmElapsedMs`
+- 产物：`decision.json` + `baseline.json` + `candidate.json`

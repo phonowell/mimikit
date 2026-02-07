@@ -59,6 +59,28 @@ const parseOutputExpect = (
   }
 }
 
+const parsePositiveInteger = (value: unknown, path: string): number => {
+  const parsed = optionalNumber(value, path)
+  if (parsed === undefined || !Number.isInteger(parsed) || parsed <= 0)
+    throw new ReplaySuiteFormatError(`${path} must be a positive integer`)
+  return parsed
+}
+
+const parseRepeat = (
+  value: unknown,
+  path: string,
+): { count: number; idFormat?: string } => {
+  const repeat = requireRecord(value, path)
+  return {
+    count: parsePositiveInteger(repeat.count, `${path}.count`),
+    ...(repeat.idFormat !== undefined
+      ? {
+          idFormat: requireString(repeat.idFormat, `${path}.idFormat`),
+        }
+      : {}),
+  }
+}
+
 export const loadReplaySuite = async (path: string): Promise<ReplaySuite> => {
   const raw = await readFile(path, 'utf8')
   let parsed: unknown
@@ -127,6 +149,9 @@ export const loadReplaySuite = async (path: string): Promise<ReplaySuite> => {
         (resultItem, resultIndex) =>
           parseTaskResult(resultItem, `${casePath}.results[${resultIndex}]`),
       ),
+      ...(record.repeat !== undefined
+        ? { repeat: parseRepeat(record.repeat, `${casePath}.repeat`) }
+        : {}),
       ...(Object.keys(parsedExpect).length > 0 ? { expect: parsedExpect } : {}),
     }
   })

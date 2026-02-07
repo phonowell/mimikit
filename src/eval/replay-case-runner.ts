@@ -17,6 +17,7 @@ import type {
   ReplayCase,
   ReplayCaseStatus,
 } from './replay-types.js'
+import type { TokenUsage } from '../types/index.js'
 
 export type ReplayCaseRunParams = {
   replayCase: ReplayCase
@@ -33,10 +34,24 @@ export type ReplayCaseRunParams = {
 
 export type ReplayCaseRunResult = {
   status: ReplayCaseStatus
+  source: 'live' | 'archive'
+  llmElapsedMs: number
+  usage: TokenUsage
   output: string
   commandStats: Record<string, number>
   assertions: ReplayAssertionResult[]
   error?: string
+}
+
+const emptyUsage = (): TokenUsage => ({ input: 0, output: 0, total: 0 })
+
+const mergeUsage = (usage?: TokenUsage): TokenUsage => {
+  if (!usage) return emptyUsage()
+  const input = typeof usage.input === 'number' ? usage.input : 0
+  const output = typeof usage.output === 'number' ? usage.output : 0
+  const total =
+    typeof usage.total === 'number' ? usage.total : Math.max(0, input + output)
+  return { input, output, total }
 }
 
 const toErrorMessage = (error: unknown): string => {
@@ -46,7 +61,12 @@ const toErrorMessage = (error: unknown): string => {
 
 const resolveArchiveOutput = async (
   params: ReplayCaseRunParams,
-): Promise<{ hit: boolean; output?: string }> => {
+): Promise<{
+  hit: boolean
+  output?: string
+  usage?: TokenUsage
+  elapsedMs?: number
+}> => {
   if (!params.archiveIndex) return { hit: false }
   const prompt = await buildManagerPrompt({
     stateDir: params.stateDir,
@@ -78,12 +98,17 @@ const resolveArchiveOutput = async (
       })
   const hit = primaryHit ?? fallbackHit
   if (!hit) return { hit: false }
-  return { hit: true, output: hit.output }
+  return {
+    hit: true,
+    output: hit.output,
+    ...(hit.usage ? { usage: hit.usage } : {}),
+    ...(hit.elapsedMs !== undefined ? { elapsedMs: hit.elapsedMs } : {}),
+  }
 }
 
 const runOnlineManager = async (
   params: ReplayCaseRunParams,
-): Promise<string> => {
+): Promise<{ output: string; elapsedMs: number; usage: TokenUsage }> => {
   const result = await runManager({
     stateDir: params.stateDir,
     workDir: params.workDir,
@@ -98,7 +123,11 @@ const runOnlineManager = async (
       ? { temperature: params.temperature }
       : {}),
   })
-  return result.output
+  return {
+    output: result.output,
+    elapsedMs: result.elapsedMs,
+    usage: mergeUsage(result.usage),
+  }
 }
 
 export const runReplayCase = async (
@@ -107,13 +136,22 @@ export const runReplayCase = async (
   try {
     const archiveResult = await resolveArchiveOutput(params)
     let managerOutput = archiveResult.output ?? ''
+    const source: 'live' | 'archive' = archiveResult.hit ? 'archive' : 'live'
+    let llmElapsedMs = 0
+    let usage = emptyUsage()
     if (!archiveResult.hit) {
       if (params.offline) {
         throw new Error(
           `[replay:eval] offline archive miss: case=${params.replayCase.id} model=${params.model ?? 'default'} archiveDir=${params.archiveDir}`,
         )
       }
-      managerOutput = await runOnlineManager(params)
+      const liveResult = await runOnlineManager(params)
+      managerOutput = liveResult.output
+      llmElapsedMs = liveResult.elapsedMs
+      usage = liveResult.usage
+    } else {
+      llmElapsedMs = archiveResult.elapsedMs ?? 0
+      usage = mergeUsage(archiveResult.usage)
     }
     const parsed = parseCommands(managerOutput)
     const output = parsed.text
@@ -126,6 +164,9 @@ export const runReplayCase = async (
     const hasFailedAssertion = assertions.some((assertion) => !assertion.passed)
     return {
       status: hasFailedAssertion ? 'failed' : 'passed',
+      source,
+      llmElapsedMs,
+      usage,
       output,
       commandStats,
       assertions,
@@ -133,6 +174,9 @@ export const runReplayCase = async (
   } catch (error) {
     return {
       status: 'error',
+      source: 'live',
+      llmElapsedMs: 0,
+      usage: emptyUsage(),
       output: '',
       commandStats: {},
       assertions: [],

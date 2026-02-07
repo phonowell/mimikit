@@ -96,7 +96,13 @@ test('runReplaySuite offline mode uses archive without llm call', async () => {
 
   expect(report.passed).toBe(1)
   expect(report.failed).toBe(0)
-  expect(report.cases[0]?.status).toBe('passed')
+  const caseReport = report.cases[0]
+  expect(caseReport?.status).toBe('passed')
+  expect(caseReport?.source).toBe('archive')
+  expect(caseReport?.usage.total).toBe(0)
+  expect(report.metrics.archiveCases).toBe(1)
+  expect(report.metrics.liveCases).toBe(0)
+  expect(report.metrics.llmCalls).toBe(0)
 })
 
 test('runReplaySuite offline mode archive miss fails before openai auth', async () => {
@@ -112,6 +118,7 @@ test('runReplaySuite offline mode archive miss fails before openai auth', async 
 
   const error = report.cases[0]?.error ?? ''
   expect(report.cases[0]?.status).toBe('error')
+  expect(report.metrics.llmCalls).toBe(0)
   expect(error.includes('[replay:eval] offline archive miss')).toBe(true)
   expect(error.includes('OPENAI_API_KEY is missing')).toBe(false)
 })
