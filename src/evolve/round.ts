@@ -6,6 +6,7 @@ import { writeReplayReportJson } from '../eval/replay-report.js'
 import { runReplaySuite } from '../eval/replay-runner.js'
 
 import { decidePromptPromotion, type PromotionPolicy } from './decision.js'
+import { validatePromptCandidate } from './prompt-guard.js'
 import { optimizeManagerPrompt, restorePrompt } from './prompt-optimizer.js'
 
 export type RunSelfEvolveRoundParams = {
@@ -38,6 +39,10 @@ export type SelfEvolveRoundResult = {
   reportPaths: {
     baseline: string
     candidate: string
+  }
+  guard?: {
+    ok: boolean
+    reason: string
   }
   decisionPath: string
 }
@@ -74,6 +79,53 @@ export const runSelfEvolveRound = async (
     timeoutMs: params.timeoutMs,
     ...(params.optimizerModel ? { model: params.optimizerModel } : {}),
   })
+  const guard = validatePromptCandidate(optimized.original, optimized.candidate)
+  if (!guard.ok) {
+    await restorePrompt(params.promptPath, optimized.original)
+    const decisionPath = await writeDecision(params.outDir, {
+      suite: suite.suite,
+      promptPath: params.promptPath,
+      promote: false,
+      reason: `guard_reject:${guard.reason}`,
+      guard,
+      baseline: {
+        passRate: baseline.passRate,
+        usageTotal: baseline.metrics.usage.total,
+        llmElapsedMs: baseline.metrics.llmElapsedMs,
+      },
+      candidate: {
+        passRate: baseline.passRate,
+        usageTotal: baseline.metrics.usage.total,
+        llmElapsedMs: baseline.metrics.llmElapsedMs,
+      },
+      reportPaths: {
+        baseline: baselinePath,
+        candidate: baselinePath,
+      },
+    })
+    return {
+      suite: suite.suite,
+      promptPath: params.promptPath,
+      promote: false,
+      reason: `guard_reject:${guard.reason}`,
+      baseline: {
+        passRate: baseline.passRate,
+        usageTotal: baseline.metrics.usage.total,
+        llmElapsedMs: baseline.metrics.llmElapsedMs,
+      },
+      candidate: {
+        passRate: baseline.passRate,
+        usageTotal: baseline.metrics.usage.total,
+        llmElapsedMs: baseline.metrics.llmElapsedMs,
+      },
+      reportPaths: {
+        baseline: baselinePath,
+        candidate: baselinePath,
+      },
+      guard,
+      decisionPath,
+    }
+  }
 
   const candidate = await runReplaySuite({
     suite,
@@ -113,6 +165,7 @@ export const runSelfEvolveRound = async (
       baseline: baselinePath,
       candidate: candidatePath,
     },
+    guard,
   }
   const decisionPath = await writeDecision(params.outDir, decisionPayload)
   return {
@@ -134,6 +187,7 @@ export const runSelfEvolveRound = async (
       baseline: baselinePath,
       candidate: candidatePath,
     },
+    guard,
     decisionPath,
   }
 }

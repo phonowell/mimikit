@@ -55,6 +55,7 @@
 - 闭环：基线评测 → 自动改写 `prompts/agents/manager/system.md` → 候选评测 → 自动判定是否回滚
 - 判定优先级：`passRate` > `usage.total` > `llmElapsedMs`
 - 防抖阈值（可选）：`--min-pass-rate-delta` `--min-token-delta` `--min-latency-delta-ms`
+- 候选护栏：若缺失命令协议标记或长度异常（过短/过长），直接拒绝并回滚，避免无效评测消耗
 - 产物：`decision.json` + `baseline.json` + `candidate.json`
 
 ## 自演进多轮循环
