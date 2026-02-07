@@ -40,6 +40,9 @@ export type RuntimeState = {
       }
     | undefined
   tokenBudget: TokenBudgetState
+  evolveState: {
+    lastIdleReviewAt?: string
+  }
   lastUserMeta?: UserMeta
 }
 

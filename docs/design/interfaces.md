@@ -42,6 +42,13 @@
 - `MIMIKIT_EVOLVE_MIN_LATENCY_DELTA_MS`：LLM 延时下降阈值（非负整数）
 - `MIMIKIT_EVOLVE_FEEDBACK_HISTORY_LIMIT`：每次取最新反馈样本上限（正整数）
 - `MIMIKIT_EVOLVE_FEEDBACK_SUITE_MAX_CASES`：反馈派生回放样本上限（正整数）
+- `MIMIKIT_EVOLVE_ISSUE_MIN_ROI_SCORE`：进入执行队列的最低 ROI 分数（非负整数）
+- `MIMIKIT_EVOLVE_ISSUE_MAX_COUNT_PER_ROUND`：每轮最多处理的问题数（正整数）
+- `MIMIKIT_EVOLVE_IDLE_REVIEW_ENABLED`：空闲会话主动回顾开关（`true|false|1|0`）
+- `MIMIKIT_EVOLVE_IDLE_REVIEW_INTERVAL_MS`：空闲主动回顾最小间隔（正整数）
+- `MIMIKIT_EVOLVE_IDLE_REVIEW_HISTORY_COUNT`：空闲回顾读取历史条数（正整数）
+- `MIMIKIT_EVOLVE_RUNTIME_HIGH_LATENCY_MS`：高耗时信号阈值（正整数）
+- `MIMIKIT_EVOLVE_RUNTIME_HIGH_USAGE_TOTAL`：高 token 消耗信号阈值（正整数）
 
 ### 默认配置（节选）
 - `tokenBudget.enabled = true`

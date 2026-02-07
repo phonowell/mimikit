@@ -1,4 +1,7 @@
-import { appendRuntimeSignalFeedback } from '../evolve/feedback.js'
+import {
+  appendRuntimeSignalFeedback,
+  appendStructuredFeedback,
+} from '../evolve/feedback.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { runManager } from '../roles/runner.js'
@@ -7,7 +10,7 @@ import { appendHistory, readHistory } from '../storage/jsonl.js'
 import { enqueueTask } from '../tasks/queue.js'
 
 import { cancelTask } from './cancel.js'
-import { parseCommands } from './command-parser.js'
+import { parseCommandPayload, parseCommands } from './command-parser.js'
 import { selectRecentHistory } from './history-select.js'
 import {
   clearManagerBuffer,
@@ -30,6 +33,37 @@ const DEFAULT_MANAGER_TIMEOUT_MS = 30_000
 
 const estimateTaskTokenCost = (prompt: string): number =>
   Math.max(512, Math.ceil(prompt.length / 3))
+
+type FeedbackCommandPayload = {
+  message: string
+  category?: 'quality' | 'latency' | 'cost' | 'failure' | 'ux' | 'other'
+  roiScore?: number
+  confidence?: number
+  action?: 'ignore' | 'defer' | 'fix'
+  rationale?: string
+  fingerprint?: string
+}
+
+const parseFeedbackCommand = (
+  payload: FeedbackCommandPayload | undefined,
+): FeedbackCommandPayload | undefined => {
+  if (!payload) return undefined
+  const message = payload.message.trim()
+  if (!message) return undefined
+  return {
+    message,
+    ...(payload.category ? { category: payload.category } : {}),
+    ...(typeof payload.roiScore === 'number'
+      ? { roiScore: payload.roiScore }
+      : {}),
+    ...(typeof payload.confidence === 'number'
+      ? { confidence: payload.confidence }
+      : {}),
+    ...(payload.action ? { action: payload.action } : {}),
+    ...(payload.rationale ? { rationale: payload.rationale } : {}),
+    ...(payload.fingerprint ? { fingerprint: payload.fingerprint } : {}),
+  }
+}
 
 export const runManagerBuffer = async (
   runtime: RuntimeState,
@@ -141,6 +175,45 @@ export const runManagerBuffer = async (
         await cancelTask(runtime, id, { source: 'manager' })
         continue
       }
+      if (command.action === 'capture_feedback') {
+        const payload = parseFeedbackCommand(
+          parseCommandPayload<FeedbackCommandPayload>(command),
+        )
+        if (!payload) continue
+        await appendStructuredFeedback({
+          stateDir: runtime.config.stateDir,
+          feedback: {
+            id: `fb-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            createdAt: nowIso(),
+            kind: 'user_feedback',
+            severity: payload.action === 'ignore' ? 'low' : 'medium',
+            message: payload.message,
+            source: 'manager_tool',
+            context: {
+              note: 'manager_capture_feedback',
+            },
+          },
+          extractedIssue: {
+            kind: 'issue',
+            issue: {
+              title: payload.message,
+              category: payload.category ?? 'other',
+              ...(payload.fingerprint
+                ? { fingerprint: payload.fingerprint }
+                : {}),
+              ...(payload.roiScore !== undefined
+                ? { roiScore: payload.roiScore }
+                : {}),
+              ...(payload.confidence !== undefined
+                ? { confidence: payload.confidence }
+                : {}),
+              ...(payload.action ? { action: payload.action } : {}),
+              ...(payload.rationale ? { rationale: payload.rationale } : {}),
+            },
+          },
+        })
+        continue
+      }
     }
     if (parsed.text) {
       await appendHistory(runtime.paths.history, {
@@ -182,6 +255,23 @@ export const runManagerBuffer = async (
         message: `manager error: ${
           error instanceof Error ? error.message : String(error)
         }`,
+        extractedIssue: {
+          kind: 'issue',
+          issue: {
+            title: `manager error: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+            category: 'failure',
+            confidence: 0.95,
+            roiScore: 90,
+            action: 'fix',
+            rationale: 'manager runtime failure',
+            fingerprint: 'manager_error',
+          },
+        },
+        evidence: {
+          event: 'manager_error',
+        },
         context: {
           note: 'manager_error',
         },

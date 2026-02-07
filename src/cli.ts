@@ -183,6 +183,55 @@ const envEvolveFeedbackSuiteMaxCases = parseEnvPositiveInteger(
 if (envEvolveFeedbackSuiteMaxCases !== undefined)
   config.evolve.feedbackSuiteMaxCases = envEvolveFeedbackSuiteMaxCases
 
+const envEvolveIssueMinRoi = parseEnvNonNegativeNumber(
+  'MIMIKIT_EVOLVE_ISSUE_MIN_ROI_SCORE',
+  process.env.MIMIKIT_EVOLVE_ISSUE_MIN_ROI_SCORE?.trim(),
+)
+if (envEvolveIssueMinRoi !== undefined)
+  config.evolve.issueMinRoiScore = Math.floor(envEvolveIssueMinRoi)
+
+const envEvolveIssueMaxCount = parseEnvPositiveInteger(
+  'MIMIKIT_EVOLVE_ISSUE_MAX_COUNT_PER_ROUND',
+  process.env.MIMIKIT_EVOLVE_ISSUE_MAX_COUNT_PER_ROUND?.trim(),
+)
+if (envEvolveIssueMaxCount !== undefined)
+  config.evolve.issueMaxCountPerRound = envEvolveIssueMaxCount
+
+const envEvolveIdleReviewEnabled = parseEnvBoolean(
+  'MIMIKIT_EVOLVE_IDLE_REVIEW_ENABLED',
+  process.env.MIMIKIT_EVOLVE_IDLE_REVIEW_ENABLED?.trim(),
+)
+if (envEvolveIdleReviewEnabled !== undefined)
+  config.evolve.idleReviewEnabled = envEvolveIdleReviewEnabled
+
+const envEvolveIdleReviewIntervalMs = parseEnvPositiveInteger(
+  'MIMIKIT_EVOLVE_IDLE_REVIEW_INTERVAL_MS',
+  process.env.MIMIKIT_EVOLVE_IDLE_REVIEW_INTERVAL_MS?.trim(),
+)
+if (envEvolveIdleReviewIntervalMs !== undefined)
+  config.evolve.idleReviewIntervalMs = envEvolveIdleReviewIntervalMs
+
+const envEvolveIdleReviewHistoryCount = parseEnvPositiveInteger(
+  'MIMIKIT_EVOLVE_IDLE_REVIEW_HISTORY_COUNT',
+  process.env.MIMIKIT_EVOLVE_IDLE_REVIEW_HISTORY_COUNT?.trim(),
+)
+if (envEvolveIdleReviewHistoryCount !== undefined)
+  config.evolve.idleReviewHistoryCount = envEvolveIdleReviewHistoryCount
+
+const envEvolveRuntimeHighLatencyMs = parseEnvPositiveInteger(
+  'MIMIKIT_EVOLVE_RUNTIME_HIGH_LATENCY_MS',
+  process.env.MIMIKIT_EVOLVE_RUNTIME_HIGH_LATENCY_MS?.trim(),
+)
+if (envEvolveRuntimeHighLatencyMs !== undefined)
+  config.evolve.runtimeHighLatencyMs = envEvolveRuntimeHighLatencyMs
+
+const envEvolveRuntimeHighUsage = parseEnvPositiveInteger(
+  'MIMIKIT_EVOLVE_RUNTIME_HIGH_USAGE_TOTAL',
+  process.env.MIMIKIT_EVOLVE_RUNTIME_HIGH_USAGE_TOTAL?.trim(),
+)
+if (envEvolveRuntimeHighUsage !== undefined)
+  config.evolve.runtimeHighUsageTotal = envEvolveRuntimeHighUsage
+
 console.log('[cli] config:', config)
 
 const supervisor = new Supervisor(config)

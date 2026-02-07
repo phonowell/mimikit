@@ -2,9 +2,8 @@ import { readFile } from 'node:fs/promises'
 import { isAbsolute, relative, resolve } from 'node:path'
 
 import {
-  appendEvolveFeedback,
   appendRuntimeSignalFeedback,
-  parseChatFeedback,
+  appendStructuredFeedback,
   resetEvolveFeedbackState,
 } from '../evolve/feedback.js'
 import { logSafeError } from '../log/safe.js'
@@ -184,28 +183,6 @@ export const registerApiRoutes = (
       result.meta,
       result.quote,
     )
-    const chatFeedback = parseChatFeedback(result.text)
-    if (chatFeedback) {
-      const feedbackId = newId()
-      await appendEvolveFeedback(config.stateDir, {
-        id: feedbackId,
-        createdAt: nowIso(),
-        kind: 'user_feedback',
-        severity: chatFeedback.severity,
-        message: chatFeedback.message,
-        context: {
-          input: result.text,
-          note: 'chat_feedback',
-        },
-      })
-      await supervisor.logEvent({
-        event: 'feedback_received',
-        feedbackId,
-        severity: chatFeedback.severity,
-        source: 'chat_input',
-        remote: request.raw.socket.remoteAddress ?? undefined,
-      })
-    }
     reply.send({ id })
   })
 
@@ -216,13 +193,27 @@ export const registerApiRoutes = (
       return
     }
     const id = newId()
-    await appendEvolveFeedback(config.stateDir, {
-      id,
-      createdAt: nowIso(),
-      kind: 'user_feedback',
-      severity: result.severity,
-      message: result.message,
-      ...(result.context ? { context: result.context } : {}),
+    await appendStructuredFeedback({
+      stateDir: config.stateDir,
+      feedback: {
+        id,
+        createdAt: nowIso(),
+        kind: 'user_feedback',
+        severity: result.severity,
+        message: result.message,
+        source: 'api_feedback',
+        ...(result.context ? { context: result.context } : {}),
+      },
+      extractedIssue: {
+        kind: 'issue',
+        issue: {
+          title: result.message,
+          category: 'quality',
+          confidence: 0.9,
+          action: result.severity === 'low' ? 'defer' : 'fix',
+          rationale: 'explicit api feedback',
+        },
+      },
     })
     await supervisor.logEvent({
       event: 'feedback_received',
@@ -241,6 +232,19 @@ export const registerApiRoutes = (
       severity: 'high',
       message:
         'run self-evolution code round: identify highest ROI gap and apply minimal validated code change',
+      extractedIssue: {
+        kind: 'issue',
+        issue: {
+          title:
+            'run self-evolution code round: identify highest ROI gap and apply minimal validated code change',
+          category: 'quality',
+          confidence: 0.9,
+          roiScore: 80,
+          action: 'fix',
+          rationale: 'explicit manual trigger',
+          fingerprint: 'manual_code_evolve_trigger',
+        },
+      },
       context: {
         note: 'code_evolve_required',
       },

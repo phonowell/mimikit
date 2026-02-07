@@ -1,10 +1,13 @@
 import { runCodeEvolveRound } from '../evolve/code-evolve.js'
 import {
-  appendRuntimeSignalFeedback,
+  appendStructuredFeedback,
+  buildIssueQueue,
   getFeedbackReplaySuitePath,
   hasPendingEvolveFeedback,
+  persistIssueQueue,
   readEvolveFeedback,
   readEvolveFeedbackState,
+  selectActionableIssues,
   selectPendingFeedback,
   writeEvolveFeedbackState,
   writeFeedbackReplaySuite,
@@ -25,6 +28,7 @@ import {
   pickNextPendingTask,
 } from '../tasks/queue.js'
 
+import { runIdleConversationReview } from './idle-review.js'
 import { persistRuntimeState } from './runtime-persist.js'
 import {
   addTokenUsage,
@@ -123,6 +127,64 @@ const hasPendingEvolveTask = (runtime: RuntimeState): boolean =>
       (task.status === 'pending' || task.status === 'running'),
   )
 
+const appendRuntimeIssue = async (params: {
+  runtime: RuntimeState
+  message: string
+  severity: 'low' | 'medium' | 'high'
+  category: 'quality' | 'latency' | 'cost' | 'failure' | 'ux' | 'other'
+  action?: 'ignore' | 'defer' | 'fix'
+  confidence?: number
+  roiScore?: number
+  note: string
+  task?: Task
+  elapsedMs?: number
+  usageTotal?: number
+  rationale?: string
+}): Promise<void> => {
+  await appendStructuredFeedback({
+    stateDir: params.runtime.config.stateDir,
+    feedback: {
+      id: `fb-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      createdAt: nowIso(),
+      kind: 'runtime_signal',
+      severity: params.severity,
+      message: params.message,
+      source: 'runtime',
+      evidence: {
+        event: params.note,
+        ...(params.task ? { taskId: params.task.id } : {}),
+        ...(params.elapsedMs !== undefined
+          ? { elapsedMs: params.elapsedMs }
+          : {}),
+        ...(params.usageTotal !== undefined
+          ? { usageTotal: params.usageTotal }
+          : {}),
+      },
+      context: {
+        note: params.note,
+        ...(params.task ? { input: params.task.prompt } : {}),
+      },
+    },
+    extractedIssue: {
+      kind: 'issue',
+      issue: {
+        title: params.message,
+        category: params.category,
+        ...(params.action ? { action: params.action } : {}),
+        ...(params.confidence !== undefined
+          ? { confidence: params.confidence }
+          : {}),
+        ...(params.roiScore !== undefined ? { roiScore: params.roiScore } : {}),
+        ...(params.rationale ? { rationale: params.rationale } : {}),
+        fingerprint: `${params.note}:${params.message
+          .toLowerCase()
+          .replace(/\s+/g, ' ')
+          .slice(0, 80)}`,
+      },
+    },
+  })
+}
+
 const runSystemEvolveTask = async (
   runtime: RuntimeState,
   task: Task,
@@ -157,14 +219,21 @@ const runSystemEvolveTask = async (
       }
     }
 
+    const issueQueue = buildIssueQueue(pending)
+    await persistIssueQueue(runtime.config.stateDir, issueQueue)
+    const actionableIssues = selectActionableIssues({
+      issues: issueQueue,
+      minRoiScore: runtime.config.evolve.issueMinRoiScore,
+      maxCount: runtime.config.evolve.issueMaxCountPerRound,
+    })
     const suite = await writeFeedbackReplaySuite({
       stateDir: runtime.config.stateDir,
-      feedback: pending,
+      issues: actionableIssues,
       maxCases: runtime.config.evolve.feedbackSuiteMaxCases,
     })
     if (!suite) {
       return {
-        output: 'evolve skipped: no derived replay suite',
+        output: 'evolve skipped: no actionable issue after ROI filter',
         usage: { total: 0, input: 0, output: 0 },
       }
     }
@@ -226,6 +295,8 @@ const runSystemEvolveTask = async (
         reason: result.reason,
         feedbackCount: feedback.length,
         pendingFeedbackCount: pending.length,
+        issueCount: issueQueue.length,
+        actionableIssueCount: actionableIssues.length,
         maxRounds: rounds,
         baseline: result.baseline,
         candidate: result.candidate,
@@ -240,7 +311,7 @@ const runSystemEvolveTask = async (
     if (result.promote && shouldRunCodeEvolve) {
       promptRollback.required = true
       promptRollback.original = promptOriginal
-      const messages = pending.map((item) => item.message)
+      const messages = actionableIssues.map((item) => item.title)
       const codeResult = await runCodeEvolveRound({
         stateDir: runtime.config.stateDir,
         workDir: runtime.config.workDir,
@@ -321,16 +392,18 @@ const runSystemEvolveTask = async (
       writeEvolveFeedbackState(runtime.config.stateDir, feedbackStateBefore),
     )
     await bestEffort('appendEvolveFeedback: evolve_idle_error', () =>
-      appendRuntimeSignalFeedback({
-        stateDir: runtime.config.stateDir,
+      appendRuntimeIssue({
+        runtime,
         severity: 'high',
+        category: 'failure',
         message: `evolve idle error: ${
           error instanceof Error ? error.message : String(error)
         }`,
-        context: {
-          note: 'evolve_idle_error',
-        },
-      }).then(() => undefined),
+        note: 'evolve_idle_error',
+        confidence: 0.95,
+        roiScore: 88,
+        action: 'fix',
+      }),
     )
     await bestEffort('appendLog: evolve_idle_error', () =>
       appendLog(runtime.paths.log, {
@@ -388,16 +461,19 @@ const runTask = async (
         break
       } catch (error) {
         await bestEffort('appendEvolveFeedback: worker_retry', () =>
-          appendRuntimeSignalFeedback({
-            stateDir: runtime.config.stateDir,
+          appendRuntimeIssue({
+            runtime,
             severity: 'medium',
+            category: 'failure',
             message: `worker retry: ${
               error instanceof Error ? error.message : String(error)
             }`,
-            context: {
-              note: 'worker_retry',
-            },
-          }).then(() => undefined),
+            note: 'worker_retry',
+            task,
+            confidence: 0.75,
+            roiScore: 64,
+            action: 'fix',
+          }),
         )
         if (attempt >= maxAttempts) throw error
         await appendLog(runtime.paths.log, {
@@ -417,6 +493,54 @@ const runTask = async (
     }
     if (!llmResult) throw new Error('worker_result_missing')
     addTokenUsage(runtime, llmResult.usage?.total)
+    const usageTotal = llmResult.usage?.total ?? 0
+    const elapsedMs = elapsed()
+    if (elapsedMs >= runtime.config.evolve.runtimeHighLatencyMs) {
+      await bestEffort('appendEvolveFeedback: worker_high_latency', () =>
+        appendRuntimeIssue({
+          runtime,
+          severity:
+            elapsedMs >= runtime.config.evolve.runtimeHighLatencyMs * 2
+              ? 'high'
+              : 'medium',
+          category: 'latency',
+          message: `worker high latency: ${elapsedMs}ms`,
+          note: 'worker_high_latency',
+          task,
+          elapsedMs,
+          usageTotal,
+          confidence: 0.85,
+          roiScore:
+            elapsedMs >= runtime.config.evolve.runtimeHighLatencyMs * 2
+              ? 85
+              : 68,
+          action: 'fix',
+        }),
+      )
+    }
+    if (usageTotal >= runtime.config.evolve.runtimeHighUsageTotal) {
+      await bestEffort('appendEvolveFeedback: worker_high_usage', () =>
+        appendRuntimeIssue({
+          runtime,
+          severity:
+            usageTotal >= runtime.config.evolve.runtimeHighUsageTotal * 2
+              ? 'high'
+              : 'medium',
+          category: 'cost',
+          message: `worker high usage: ${usageTotal} tokens`,
+          note: 'worker_high_usage',
+          task,
+          elapsedMs,
+          usageTotal,
+          confidence: 0.85,
+          roiScore:
+            usageTotal >= runtime.config.evolve.runtimeHighUsageTotal * 2
+              ? 87
+              : 70,
+          action: 'fix',
+        }),
+      )
+    }
     if (task.status === 'canceled') {
       const result = buildResult(
         task,
@@ -450,15 +574,17 @@ const runTask = async (
     }
     const result = buildResult(task, 'failed', err.message, elapsed())
     await bestEffort('appendEvolveFeedback: worker_failed', () =>
-      appendRuntimeSignalFeedback({
-        stateDir: runtime.config.stateDir,
+      appendRuntimeIssue({
+        runtime,
         severity: 'high',
+        category: 'failure',
         message: `worker failed: ${err.message}`,
-        context: {
-          note: 'worker_failed',
-          input: task.prompt,
-        },
-      }).then(() => undefined),
+        note: 'worker_failed',
+        task,
+        confidence: 0.95,
+        roiScore: 92,
+        action: 'fix',
+      }),
     )
     await finalizeResult(runtime, task, result, markTaskFailed)
   }
@@ -471,15 +597,17 @@ const spawnWorker = async (runtime: RuntimeState, task: Task) => {
 
   if (!canSpendTokens(runtime, estimateTaskTokenCost(task))) {
     await bestEffort('appendEvolveFeedback: worker_budget_skipped', () =>
-      appendRuntimeSignalFeedback({
-        stateDir: runtime.config.stateDir,
+      appendRuntimeIssue({
+        runtime,
         severity: 'medium',
+        category: 'cost',
         message: 'worker budget skipped: task deferred due to token budget',
-        context: {
-          note: 'worker_budget_skipped',
-          input: task.prompt,
-        },
-      }).then(() => undefined),
+        note: 'worker_budget_skipped',
+        task,
+        confidence: 0.9,
+        roiScore: 72,
+        action: 'fix',
+      }),
     )
     await bestEffort('appendLog: worker_budget_skipped', () =>
       appendLog(runtime.paths.log, {
@@ -527,6 +655,36 @@ export const workerLoop = async (runtime: RuntimeState): Promise<void> => {
         const now = Date.now()
         if (now >= nextEvolvePollAt) {
           nextEvolvePollAt = now + evolvePollMs
+          if (
+            runtime.config.evolve.idleReviewEnabled &&
+            (!runtime.evolveState.lastIdleReviewAt ||
+              now - Date.parse(runtime.evolveState.lastIdleReviewAt) >=
+                runtime.config.evolve.idleReviewIntervalMs)
+          ) {
+            const idleReview = await runIdleConversationReview({
+              runtime,
+              appendFeedback: async ({ message, extractedIssue }) => {
+                await appendStructuredFeedback({
+                  stateDir: runtime.config.stateDir,
+                  feedback: {
+                    id: `fb-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                    createdAt: nowIso(),
+                    kind: 'user_feedback',
+                    severity: 'medium',
+                    message,
+                    source: 'idle_review',
+                    context: {
+                      note: 'idle_review',
+                    },
+                  },
+                  extractedIssue,
+                })
+              },
+            })
+            runtime.evolveState.lastIdleReviewAt = nowIso()
+            await persistRuntimeState(runtime)
+            addTokenUsage(runtime, idleReview.usageTotal)
+          }
           const hasPendingFeedback = await hasPendingEvolveFeedback({
             stateDir: runtime.config.stateDir,
             historyLimit: runtime.config.evolve.feedbackHistoryLimit,
@@ -544,16 +702,18 @@ export const workerLoop = async (runtime: RuntimeState): Promise<void> => {
       }
     } catch (error) {
       await bestEffort('appendEvolveFeedback: worker_loop_error', () =>
-        appendRuntimeSignalFeedback({
-          stateDir: runtime.config.stateDir,
+        appendRuntimeIssue({
+          runtime,
           severity: 'high',
+          category: 'failure',
           message: `worker loop error: ${
             error instanceof Error ? error.message : String(error)
           }`,
-          context: {
-            note: 'worker_loop_error',
-          },
-        }).then(() => undefined),
+          note: 'worker_loop_error',
+          confidence: 0.95,
+          roiScore: 90,
+          action: 'fix',
+        }),
       )
       await bestEffort('appendLog: worker_loop_error', () =>
         appendLog(runtime.paths.log, {

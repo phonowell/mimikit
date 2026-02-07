@@ -47,6 +47,7 @@ export class Supervisor {
         date: nowIso().slice(0, 10),
         spent: 0,
       },
+      evolveState: {},
     }
   }
 
@@ -80,6 +81,18 @@ export class Supervisor {
           stateDir: this.runtime.config.stateDir,
           severity: 'high',
           message: 'post-restart health gate failed, prompt rollback applied',
+          extractedIssue: {
+            kind: 'issue',
+            issue: {
+              title: 'post-restart health gate failed, prompt rollback applied',
+              category: 'failure',
+              confidence: 0.95,
+              roiScore: 88,
+              action: 'fix',
+              rationale: 'restart validation gate failure',
+              fingerprint: 'post_restart_health_gate_failed',
+            },
+          },
           context: {
             note: 'post_restart_health_gate_failed',
           },

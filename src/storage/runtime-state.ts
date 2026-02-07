@@ -7,6 +7,9 @@ import type { Task, TokenBudgetState } from '../types/index.js'
 type RuntimeSnapshot = {
   tasks: Task[]
   tokenBudget?: TokenBudgetState
+  evolve?: {
+    lastIdleReviewAt?: string
+  }
   postRestartHealthGate?: {
     required: boolean
     promptPath?: string
@@ -87,6 +90,7 @@ const normalizeSnapshot = (value: unknown): RuntimeSnapshot => {
   const record = value as {
     tasks?: unknown
     tokenBudget?: unknown
+    evolve?: unknown
     postRestartHealthGate?: unknown
   }
   const tasks = Array.isArray(record.tasks)
@@ -100,8 +104,19 @@ const normalizeSnapshot = (value: unknown): RuntimeSnapshot => {
     typeof record.postRestartHealthGate === 'object'
       ? (record.postRestartHealthGate as RuntimeSnapshot['postRestartHealthGate'])
       : undefined
+  const evolve =
+    record.evolve &&
+    typeof record.evolve === 'object' &&
+    typeof (record.evolve as { lastIdleReviewAt?: unknown })
+      .lastIdleReviewAt === 'string'
+      ? {
+          lastIdleReviewAt: (record.evolve as { lastIdleReviewAt: string })
+            .lastIdleReviewAt,
+        }
+      : undefined
   const base = tokenBudget ? { tasks, tokenBudget } : { tasks }
-  return gate ? { ...base, postRestartHealthGate: gate } : base
+  const withEvolve = evolve ? { ...base, evolve } : base
+  return gate ? { ...withEvolve, postRestartHealthGate: gate } : withEvolve
 }
 
 export const loadRuntimeSnapshot = async (

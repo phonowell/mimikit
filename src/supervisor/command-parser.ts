@@ -49,7 +49,12 @@ const parseCommandLines = (text: string): ParsedCommand[] => {
     if (!match) continue
     const action = match[1] ?? ''
     if (!action) continue
-    const attrs = parseAttrs(match[2] ?? '')
+    const raw = match[2]?.trim() ?? ''
+    const attrs = parseAttrs(raw)
+    if (raw.startsWith('{') || raw.startsWith('[')) {
+      commands.push({ action, attrs, content: raw })
+      continue
+    }
     commands.push({ action, attrs })
   }
   return commands
@@ -67,4 +72,16 @@ export const parseCommands = (
   if (lineCommands.length > 0) return { commands: lineCommands, text }
   const commands = parseCommandMatches(collectCommandMatches(commandText))
   return { commands, text }
+}
+
+export const parseCommandPayload = <T>(
+  command: ParsedCommand,
+): T | undefined => {
+  const content = command.content?.trim()
+  if (!content) return undefined
+  try {
+    return JSON.parse(content) as T
+  } catch {
+    return undefined
+  }
 }

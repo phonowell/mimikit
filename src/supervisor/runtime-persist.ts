@@ -14,6 +14,7 @@ export const hydrateRuntimeState = async (
   const snapshot = await loadRuntimeSnapshot(runtime.config.stateDir)
   runtime.tasks = snapshot.tasks
   if (snapshot.tokenBudget) runtime.tokenBudget = snapshot.tokenBudget
+  if (snapshot.evolve) runtime.evolveState = snapshot.evolve
   if (snapshot.postRestartHealthGate)
     runtime.postRestartHealthGate = snapshot.postRestartHealthGate
   if (snapshot.tasks.length > 0) {
@@ -32,6 +33,7 @@ export const persistRuntimeState = async (
   await saveRuntimeSnapshot(runtime.config.stateDir, {
     tasks: selectPersistedTasks(runtime.tasks),
     tokenBudget: runtime.tokenBudget,
+    evolve: runtime.evolveState,
     ...(runtime.postRestartHealthGate
       ? { postRestartHealthGate: runtime.postRestartHealthGate }
       : {}),

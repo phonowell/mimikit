@@ -75,8 +75,14 @@
 
 ## 运行期反馈驱动自演进
 - 反馈入口：`POST /api/feedback`，写入 `.mimikit/evolve/feedback.jsonl`。
+- manager 内部采集：manager 在识别到用户不满或纠错且有价值时，通过 `@capture_feedback {...}` 内部命令写入结构化反馈（支持 `category/confidence/roiScore/action/rationale/fingerprint`）。
+- 空闲主动回顾：空闲轮次由 LLM 回顾最近会话并产出 `@capture_feedback`，用于补充被动漏采样本。
+- 运行时信号采集：自动记录失败、高耗时、高 token 消耗等信号，统一写入反馈流。
+- 反馈归档：每条反馈同时追加到 `.mimikit/evolve/feedback-archive.md`，并聚合为 `.mimikit/evolve/issue-queue.json`。
 - 空闲触发：Worker Loop 在空闲状态下自动拉起 `system_evolve` 任务并消费“未处理反馈”。
-- 数据控量：按 `feedbackHistoryLimit` 截断待处理反馈，按 `feedbackSuiteMaxCases` 生成派生 suite。
+- 去重与排序：按 `fingerprint` 去重，按 ROI/置信度/复现次数排序生成问题队列。
+- 过滤策略：情绪化或低价值问题可标记 `ignore/defer`；仅高 ROI 问题进入自演进执行。
+- 数据控量：按 `feedbackHistoryLimit` 截断待处理反馈，按 `issueMinRoiScore/issueMaxCountPerRound/feedbackSuiteMaxCases` 限制当轮样本。
 - 演进执行：复用多 suite 决策逻辑与阈值策略，保持“评测→改写→验证→回滚”闭环一致性。
 - 观测证据：`evolve_idle_run` 日志记录 `elapsedMs`、反馈样本数、基线/候选指标（含 token 与 llmElapsedMs）。
 

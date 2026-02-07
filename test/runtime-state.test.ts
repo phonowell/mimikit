@@ -111,3 +111,15 @@ test('runtime snapshot keeps postRestartHealthGate', async () => {
     'prompts/agents/manager/system.md',
   )
 })
+
+test('runtime snapshot keeps evolve idle review state', async () => {
+  const stateDir = await createTmpDir()
+  await saveRuntimeSnapshot(stateDir, {
+    tasks: [],
+    evolve: {
+      lastIdleReviewAt: '2026-02-07T10:00:00.000Z',
+    },
+  })
+  const loaded = await loadRuntimeSnapshot(stateDir)
+  expect(loaded.evolve?.lastIdleReviewAt).toBe('2026-02-07T10:00:00.000Z')
+})

@@ -15,6 +15,13 @@ export type SupervisorConfig = {
     minLatencyDeltaMs: number
     feedbackHistoryLimit: number
     feedbackSuiteMaxCases: number
+    issueMinRoiScore: number
+    issueMaxCountPerRound: number
+    idleReviewEnabled: boolean
+    idleReviewIntervalMs: number
+    idleReviewHistoryCount: number
+    runtimeHighLatencyMs: number
+    runtimeHighUsageTotal: number
   }
   tokenBudget: {
     enabled: boolean
@@ -58,6 +65,13 @@ export const defaultConfig = (params: {
     minLatencyDeltaMs: 200,
     feedbackHistoryLimit: 30,
     feedbackSuiteMaxCases: 200,
+    issueMinRoiScore: 35,
+    issueMaxCountPerRound: 12,
+    idleReviewEnabled: true,
+    idleReviewIntervalMs: 5 * 60 * 1000,
+    idleReviewHistoryCount: 40,
+    runtimeHighLatencyMs: 45_000,
+    runtimeHighUsageTotal: 8_000,
   },
   tokenBudget: {
     enabled: true,
