@@ -37,7 +37,7 @@ export type TaskStatus =
   | 'failed'
   | 'canceled'
 
-export type TaskKind = 'user' | 'system_evolve'
+export type TaskKind = 'system_evolve'
 
 export type TaskResultStatus = 'succeeded' | 'failed' | 'canceled'
 

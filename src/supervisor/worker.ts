@@ -271,12 +271,14 @@ const runSystemEvolveTask = async (
       ),
     )
     const usageTotal = baseUsageTotal + (codeEvolveUsage?.total ?? 0)
-    const usageInput = usageTotal
-    const usageOutput = codeEvolveUsage?.output ?? 0
     const output = `evolve ${result.promote ? 'promoted' : 'rolled_back'}: ${result.reason}`
     return {
       output,
-      usage: { total: usageTotal, input: usageInput, output: usageOutput },
+      usage: {
+        total: usageTotal,
+        input: usageTotal,
+        output: codeEvolveUsage?.output ?? 0,
+      },
     }
   } catch (error) {
     await bestEffort('appendLog: evolve_idle_error', () =>
