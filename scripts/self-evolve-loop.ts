@@ -1,21 +1,11 @@
 import { resolve } from 'node:path'
 import { parseArgs } from 'node:util'
 
-import { runSelfEvolveRound } from '../src/evolve/round.js'
+import { runSelfEvolveLoop } from '../src/evolve/loop.js'
 import { loadCodexSettings } from '../src/llm/openai.js'
 
-type CliArgs = {
-  suitePath: string
-  outDir: string
-  stateDir: string
-  workDir: string
-  promptPath: string
-  timeoutMs: number
-  model?: string
-  optimizerModel?: string
-}
-
 const DEFAULT_TIMEOUT_MS = 30_000
+const DEFAULT_MAX_ROUNDS = 5
 const DEFAULT_PROMPT_PATH = 'prompts/agents/manager/system.md'
 
 const parsePositiveInteger = (raw: string | undefined, flag: string): number => {
@@ -26,7 +16,7 @@ const parsePositiveInteger = (raw: string | undefined, flag: string): number => 
   return parsed
 }
 
-const parseCliArgs = (): CliArgs => {
+const main = async () => {
   const rawArgs = process.argv.slice(2)
   const args = rawArgs[0] === '--' ? rawArgs.slice(1) : rawArgs
   const { values } = parseArgs({
@@ -35,11 +25,15 @@ const parseCliArgs = (): CliArgs => {
     allowPositionals: false,
     options: {
       suite: { type: 'string' },
-      'out-dir': { type: 'string', default: '.mimikit/generated/evolve' },
-      'state-dir': { type: 'string', default: '.mimikit/generated/evolve/state' },
+      'out-dir': { type: 'string', default: '.mimikit/generated/evolve-loop' },
+      'state-dir': {
+        type: 'string',
+        default: '.mimikit/generated/evolve-loop/state',
+      },
       'work-dir': { type: 'string', default: '.' },
       'prompt-path': { type: 'string', default: DEFAULT_PROMPT_PATH },
       'timeout-ms': { type: 'string' },
+      'max-rounds': { type: 'string' },
       model: { type: 'string' },
       'optimizer-model': { type: 'string' },
       help: { type: 'boolean', short: 'h' },
@@ -48,14 +42,16 @@ const parseCliArgs = (): CliArgs => {
 
   if (values.help) {
     console.log(
-      'Usage: pnpm self:evolve -- --suite <path> [--out-dir <path>] [--state-dir <path>] [--work-dir <path>] [--prompt-path <path>] [--timeout-ms <n>] [--model <name>] [--optimizer-model <name>]',
+      'Usage: pnpm self:evolve:loop -- --suite <path> [--max-rounds <n>] [--out-dir <path>] [--state-dir <path>] [--work-dir <path>] [--prompt-path <path>] [--timeout-ms <n>] [--model <name>] [--optimizer-model <name>]',
     )
     process.exit(0)
   }
 
   if (!values.suite) throw new Error('--suite is required')
 
-  return {
+  await loadCodexSettings()
+
+  const result = await runSelfEvolveLoop({
     suitePath: resolve(values.suite),
     outDir: resolve(values['out-dir']),
     stateDir: resolve(values['state-dir']),
@@ -64,34 +60,22 @@ const parseCliArgs = (): CliArgs => {
     timeoutMs: values['timeout-ms']
       ? parsePositiveInteger(values['timeout-ms'], '--timeout-ms')
       : DEFAULT_TIMEOUT_MS,
+    maxRounds: values['max-rounds']
+      ? parsePositiveInteger(values['max-rounds'], '--max-rounds')
+      : DEFAULT_MAX_ROUNDS,
     ...(values.model ? { model: values.model } : {}),
     ...(values['optimizer-model']
       ? { optimizerModel: values['optimizer-model'] }
       : {}),
-  }
-}
-
-const main = async () => {
-  const args = parseCliArgs()
-  await loadCodexSettings()
-  const result = await runSelfEvolveRound({
-    suitePath: args.suitePath,
-    outDir: args.outDir,
-    stateDir: args.stateDir,
-    workDir: args.workDir,
-    promptPath: args.promptPath,
-    timeoutMs: args.timeoutMs,
-    ...(args.model ? { model: args.model } : {}),
-    ...(args.optimizerModel ? { optimizerModel: args.optimizerModel } : {}),
   })
 
   console.log(
-    `[self-evolve] promote=${result.promote} reason=${result.reason} baseline.passRate=${result.baseline.passRate} candidate.passRate=${result.candidate.passRate}`,
+    `[self-evolve-loop] stoppedReason=${result.stoppedReason} rounds=${result.rounds.length} bestRound=${result.bestRound ?? 0}`,
   )
 }
 
 void main().catch((error: unknown) => {
   const message = error instanceof Error ? error.message : String(error)
-  console.error(`[self-evolve] failed: ${message}`)
+  console.error(`[self-evolve-loop] failed: ${message}`)
   process.exit(1)
 })

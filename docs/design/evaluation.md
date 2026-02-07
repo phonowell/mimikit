@@ -55,3 +55,11 @@
 - 闭环：基线评测 → 自动改写 `prompts/agents/manager/system.md` → 候选评测 → 自动判定是否回滚
 - 判定优先级：`passRate` > `usage.total` > `llmElapsedMs`
 - 产物：`decision.json` + `baseline.json` + `candidate.json`
+
+## 自演进多轮循环
+- 入口：`pnpm self:evolve:loop -- --suite test/fixtures/replay/manager-core.json --max-rounds 5 --out-dir .mimikit/generated/evolve-loop --state-dir .mimikit/generated/evolve-loop/state`
+- 每轮流程：执行 `self:evolve` 同等闭环，并输出 `round-{n}/decision.json`
+- 停止条件：
+  - 达到 `--max-rounds`
+  - 或出现 `no_gain`（未提升 `passRate`，且未降低 `usage.total`，且未降低 `llmElapsedMs`）
+- 汇总产物：`loop-report.json`（包含 `stoppedReason`、每轮摘要、最佳轮次）
