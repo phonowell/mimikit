@@ -8,13 +8,7 @@ export type SupervisorConfig = {
   evolve: {
     enabled: boolean
     idlePollMs: number
-    maxRounds: number
-    autoRestartOnPromote: boolean
-    minPassRateDelta: number
-    minTokenDelta: number
-    minLatencyDeltaMs: number
     feedbackHistoryLimit: number
-    feedbackSuiteMaxCases: number
     issueMinRoiScore: number
     issueMaxCountPerRound: number
     idleReviewEnabled: boolean
@@ -58,13 +52,7 @@ export const defaultConfig = (params: {
   evolve: {
     enabled: true,
     idlePollMs: 15_000,
-    maxRounds: 1,
-    autoRestartOnPromote: false,
-    minPassRateDelta: 0,
-    minTokenDelta: 50,
-    minLatencyDeltaMs: 200,
     feedbackHistoryLimit: 30,
-    feedbackSuiteMaxCases: 200,
     issueMinRoiScore: 35,
     issueMaxCountPerRound: 12,
     idleReviewEnabled: true,

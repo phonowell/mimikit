@@ -1,12 +1,17 @@
 import { runManagerApi } from '../llm/api-runner.js'
 import {
-  appendLlmArchive,
   buildLlmArchiveLookupKey,
-  type LlmArchiveEntry,
   type LlmArchiveLookup,
 } from '../storage/llm-archive.js'
 
 import { buildManagerPrompt } from './prompt.js'
+import {
+  archiveManagerResult,
+  DEFAULT_MANAGER_FALLBACK_MODEL,
+  normalizeOptional,
+  toError,
+  withSampling,
+} from './runner-helpers.js'
 
 import type { ManagerEnv } from './prompt.js'
 import type {
@@ -17,56 +22,6 @@ import type {
   UserInput,
 } from '../types/index.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
-
-const readEnvOptional = (key: string): string | undefined => {
-  const raw = process.env[key]
-  const trimmed = raw?.trim()
-  return trimmed && trimmed.length > 0 ? trimmed : undefined
-}
-
-const normalizeOptional = (value?: string | null): string | undefined => {
-  const trimmed = value?.trim()
-  return trimmed && trimmed.length > 0 ? trimmed : undefined
-}
-
-const withSampling = (params: {
-  seed?: number
-  temperature?: number
-}): { seed?: number; temperature?: number } => ({
-  ...(params.seed !== undefined ? { seed: params.seed } : {}),
-  ...(params.temperature !== undefined
-    ? { temperature: params.temperature }
-    : {}),
-})
-
-const archive = (
-  stateDir: string,
-  base: Omit<LlmArchiveEntry, 'prompt' | 'output' | 'ok'>,
-  prompt: string,
-  result: {
-    output: string
-    ok: boolean
-    elapsedMs?: number
-    usage?: TokenUsage
-    error?: string
-    errorName?: string
-  },
-) =>
-  appendLlmArchive(stateDir, {
-    ...base,
-    prompt,
-    output: result.output,
-    ok: result.ok,
-    ...(result.elapsedMs !== undefined ? { elapsedMs: result.elapsedMs } : {}),
-    ...(result.usage ? { usage: result.usage } : {}),
-    ...(result.error ? { error: result.error } : {}),
-    ...(result.errorName ? { errorName: result.errorName } : {}),
-  })
-
-const toError = (err: unknown): Error =>
-  err instanceof Error ? err : new Error(String(err))
-
-const DEFAULT_MANAGER_FALLBACK_MODEL = readEnvOptional('MIMIKIT_FALLBACK_MODEL')
 
 export const runManager = async (params: {
   stateDir: string
@@ -134,7 +89,7 @@ export const runManager = async (params: {
         : {}),
       ...effort,
     })
-    await archive(
+    await archiveManagerResult(
       params.stateDir,
       {
         ...base,
@@ -156,7 +111,7 @@ export const runManager = async (params: {
     }
   } catch (error) {
     const err = toError(error)
-    await archive(
+    await archiveManagerResult(
       params.stateDir,
       {
         ...base,
@@ -184,7 +139,7 @@ export const runManager = async (params: {
           : {}),
         ...effort,
       })
-      await archive(
+      await archiveManagerResult(
         params.stateDir,
         {
           role: 'manager',
@@ -204,7 +159,7 @@ export const runManager = async (params: {
       }
     } catch (fbError) {
       const fbErr = toError(fbError)
-      await archive(
+      await archiveManagerResult(
         params.stateDir,
         {
           role: 'manager',

@@ -18,7 +18,12 @@
 - `cancel_task`：取消任务。
   - attrs：`id`(必填)
   - 示例：`@cancel_task id="task_123"`（放在 `<MIMIKIT:commands>` 块内）
+- `capture_feedback`：采集结构化反馈并写入自演进反馈流。
+  - content：JSON payload（需包含 `message`）
+  - 可选字段：`category` `roiScore` `confidence` `action` `rationale` `fingerprint`
+  - 示例：`@capture_feedback {"message":"回答不准确","category":"quality","roiScore":78,"confidence":0.82,"action":"fix"}`
 
 ## 解析与执行
 - 解析器：`src/supervisor/command-parser.ts`
+- 执行器：`src/supervisor/manager-runner.ts`
 - 命令会从输出中剥离，剩余文本作为自然回复。

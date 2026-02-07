@@ -1,30 +1,11 @@
-import { runCodeEvolveRound } from '../evolve/code-evolve.js'
 import {
   appendStructuredFeedback,
-  buildIssueQueue,
-  getFeedbackReplaySuitePath,
-  hasPendingEvolveFeedback,
-  persistIssueQueue,
-  readEvolveFeedback,
-  readEvolveFeedbackState,
-  selectActionableIssues,
-  selectPendingFeedback,
-  writeEvolveFeedbackState,
-  writeFeedbackReplaySuite,
 } from '../evolve/feedback.js'
-import { buildPromotionPolicy } from '../evolve/loop-stop.js'
-import { runSelfEvolveMultiRound } from '../evolve/multi-round.js'
 import { appendLog } from '../log/append.js'
-import { bestEffort, safeOrUndefined } from '../log/safe.js'
-import { runWorker } from '../roles/worker-runner.js'
+import { bestEffort } from '../log/safe.js'
 import { nowIso, sleep } from '../shared/utils.js'
-import { appendTaskResultArchive } from '../storage/task-results.js'
 import {
-  enqueueSystemEvolveTask,
-  markTaskCanceled,
-  markTaskFailed,
   markTaskRunning,
-  markTaskSucceeded,
   pickNextPendingTask,
 } from '../tasks/queue.js'
 
@@ -35,566 +16,27 @@ import {
   canSpendTokens,
   isTokenBudgetExceeded,
 } from './token-budget.js'
+import { appendRuntimeIssue } from './worker-feedback.js'
+import { runTask } from './worker-run-task.js'
 
 import type { RuntimeState } from './runtime.js'
-import type { Task, TaskResult, TokenUsage } from '../types/index.js'
+import type { Task } from '../types/index.js'
 
 const estimateTaskTokenCost = (task: Task): number =>
   Math.max(1024, Math.ceil(task.prompt.length / 2))
 
-const buildResult = (
-  task: Task,
-  status: TaskResult['status'],
-  output: string,
-  durationMs: number,
-  usage?: TokenUsage,
-): TaskResult => ({
-  taskId: task.id,
-  status,
-  ok: status === 'succeeded',
-  output,
-  durationMs,
-  completedAt: nowIso(),
-  ...(usage ? { usage } : {}),
-  ...(task.title ? { title: task.title } : {}),
-})
-
-const archiveResult = (
-  runtime: RuntimeState,
-  task: Task,
-  result: TaskResult,
-): Promise<string | undefined> =>
-  safeOrUndefined('appendTaskResultArchive: worker', () =>
-    appendTaskResultArchive(runtime.config.stateDir, {
-      taskId: task.id,
-      title: task.title,
-      status: result.status,
-      prompt: task.prompt,
-      output: result.output,
-      createdAt: task.createdAt,
-      completedAt: result.completedAt,
-      durationMs: result.durationMs,
-      ...(result.usage ? { usage: result.usage } : {}),
-    }),
-  )
-
-const finalizeResult = async (
-  runtime: RuntimeState,
-  task: Task,
-  result: TaskResult,
-  markFn: (tasks: Task[], taskId: string, patch?: Partial<Task>) => void,
-) => {
-  const archivePath = await archiveResult(runtime, task, result)
-  if (archivePath) result.archivePath = archivePath
-  markFn(runtime.tasks, task.id, {
-    completedAt: result.completedAt,
-    durationMs: result.durationMs,
-    ...(result.usage ? { usage: result.usage } : {}),
-    ...(archivePath ? { archivePath } : {}),
-  })
-  if (task.kind !== 'system_evolve') runtime.pendingResults.push(result)
-  await bestEffort('appendLog: worker_end', () =>
-    appendLog(runtime.paths.log, {
-      event: 'worker_end',
-      taskId: task.id,
-      status: result.status,
-      durationMs: result.durationMs,
-      elapsedMs: result.durationMs,
-      ...(result.usage ? { usage: result.usage } : {}),
-      ...(archivePath ? { archivePath } : {}),
-    }),
-  )
-}
-
-const isRuntimeIdleForEvolve = (runtime: RuntimeState): boolean => {
+const isRuntimeIdle = (runtime: RuntimeState): boolean => {
   if (runtime.managerRunning) return false
   if (runtime.pendingInputs.length > 0) return false
   if (runtime.pendingResults.length > 0) return false
-  const hasRunningUserTask = runtime.tasks.some(
-    (task) => task.status === 'running' && task.kind !== 'system_evolve',
+  return !runtime.tasks.some(
+    (task) => task.status === 'pending' || task.status === 'running',
   )
-  if (hasRunningUserTask) return false
-  const hasPendingUserTask = runtime.tasks.some(
-    (task) => task.status === 'pending' && task.kind !== 'system_evolve',
-  )
-  return !hasPendingUserTask
-}
-
-const hasPendingEvolveTask = (runtime: RuntimeState): boolean =>
-  runtime.tasks.some(
-    (task) =>
-      task.kind === 'system_evolve' &&
-      (task.status === 'pending' || task.status === 'running'),
-  )
-
-const appendRuntimeIssue = async (params: {
-  runtime: RuntimeState
-  message: string
-  severity: 'low' | 'medium' | 'high'
-  category: 'quality' | 'latency' | 'cost' | 'failure' | 'ux' | 'other'
-  action?: 'ignore' | 'defer' | 'fix'
-  confidence?: number
-  roiScore?: number
-  note: string
-  task?: Task
-  elapsedMs?: number
-  usageTotal?: number
-  rationale?: string
-}): Promise<void> => {
-  await appendStructuredFeedback({
-    stateDir: params.runtime.config.stateDir,
-    feedback: {
-      id: `fb-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      createdAt: nowIso(),
-      kind: 'runtime_signal',
-      severity: params.severity,
-      message: params.message,
-      source: 'runtime',
-      evidence: {
-        event: params.note,
-        ...(params.task ? { taskId: params.task.id } : {}),
-        ...(params.elapsedMs !== undefined
-          ? { elapsedMs: params.elapsedMs }
-          : {}),
-        ...(params.usageTotal !== undefined
-          ? { usageTotal: params.usageTotal }
-          : {}),
-      },
-      context: {
-        note: params.note,
-        ...(params.task ? { input: params.task.prompt } : {}),
-      },
-    },
-    extractedIssue: {
-      kind: 'issue',
-      issue: {
-        title: params.message,
-        category: params.category,
-        ...(params.action ? { action: params.action } : {}),
-        ...(params.confidence !== undefined
-          ? { confidence: params.confidence }
-          : {}),
-        ...(params.roiScore !== undefined ? { roiScore: params.roiScore } : {}),
-        ...(params.rationale ? { rationale: params.rationale } : {}),
-        fingerprint: `${params.note}:${params.message
-          .toLowerCase()
-          .replace(/\s+/g, ' ')
-          .slice(0, 80)}`,
-      },
-    },
-  })
-}
-
-const runSystemEvolveTask = async (
-  runtime: RuntimeState,
-  task: Task,
-): Promise<{ output: string; usage?: TokenUsage }> => {
-  const promptPathRelative = 'prompts/agents/manager/system.md'
-  const promptPathAbsolute = `${runtime.config.workDir}/${promptPathRelative}`
-  const feedbackStateBefore = await readEvolveFeedbackState(
-    runtime.config.stateDir,
-  )
-  const feedbackBefore = await readEvolveFeedback(runtime.config.stateDir)
-  const promptRollback = {
-    required: false,
-    original: '' as string,
-  }
-  const rollbackPromptIfNeeded = async (): Promise<void> => {
-    if (!promptRollback.required) return
-    const { restorePrompt } = await import('../evolve/prompt-optimizer.js')
-    await restorePrompt(promptPathAbsolute, promptRollback.original)
-  }
-  try {
-    const feedback = feedbackBefore
-    const state = feedbackStateBefore
-    const pending = selectPendingFeedback({
-      feedback,
-      processedCount: state.processedCount,
-      historyLimit: runtime.config.evolve.feedbackHistoryLimit,
-    })
-    if (pending.length === 0) {
-      return {
-        output: 'evolve skipped: no pending feedback',
-        usage: { total: 0, input: 0, output: 0 },
-      }
-    }
-
-    const issueQueue = buildIssueQueue(pending)
-    await persistIssueQueue(runtime.config.stateDir, issueQueue)
-    const actionableIssues = selectActionableIssues({
-      issues: issueQueue,
-      minRoiScore: runtime.config.evolve.issueMinRoiScore,
-      maxCount: runtime.config.evolve.issueMaxCountPerRound,
-    })
-    const suite = await writeFeedbackReplaySuite({
-      stateDir: runtime.config.stateDir,
-      issues: actionableIssues,
-      maxCases: runtime.config.evolve.feedbackSuiteMaxCases,
-    })
-    if (!suite) {
-      return {
-        output: 'evolve skipped: no actionable issue after ROI filter',
-        usage: { total: 0, input: 0, output: 0 },
-      }
-    }
-    const suitePath = getFeedbackReplaySuitePath(runtime.config.stateDir)
-    const outDirRoot = `${runtime.config.stateDir}/evolve/idle-run-${Date.now()}`
-    const rounds = Math.max(1, runtime.config.evolve.maxRounds)
-    const suites = [{ path: suitePath, alias: 'feedback', weight: 1 }]
-    const promotionPolicy = buildPromotionPolicy({
-      minPassRateDelta: runtime.config.evolve.minPassRateDelta,
-      minTokenDelta: runtime.config.evolve.minTokenDelta,
-      minLatencyDeltaMs: runtime.config.evolve.minLatencyDeltaMs,
-    })
-    const modelOptions = {
-      ...(runtime.config.manager.model
-        ? { model: runtime.config.manager.model }
-        : {}),
-      ...(runtime.config.manager.model
-        ? { optimizerModel: runtime.config.manager.model }
-        : {}),
-    }
-
-    const promptOriginal = await import('node:fs/promises').then(
-      ({ readFile }) => readFile(promptPathAbsolute, 'utf8'),
-    )
-
-    let result = await runSelfEvolveMultiRound({
-      suites,
-      outDir: `${outDirRoot}/round-1`,
-      stateDir: runtime.config.stateDir,
-      workDir: runtime.config.workDir,
-      promptPath: promptPathAbsolute,
-      timeoutMs: runtime.config.worker.timeoutMs,
-      promotionPolicy,
-      ...modelOptions,
-    })
-    for (let index = 1; index < rounds; index += 1) {
-      if (!result.promote) break
-      result = await runSelfEvolveMultiRound({
-        suites,
-        outDir: `${outDirRoot}/round-${index + 1}`,
-        stateDir: runtime.config.stateDir,
-        workDir: runtime.config.workDir,
-        promptPath: promptPathAbsolute,
-        timeoutMs: runtime.config.worker.timeoutMs,
-        promotionPolicy,
-        ...modelOptions,
-      })
-    }
-
-    await writeEvolveFeedbackState(runtime.config.stateDir, {
-      processedCount: feedback.length,
-      lastRunAt: nowIso(),
-    })
-    await bestEffort('appendLog: evolve_idle_run', () =>
-      appendLog(runtime.paths.log, {
-        event: 'evolve_idle_run',
-        taskId: task.id,
-        promote: result.promote,
-        reason: result.reason,
-        feedbackCount: feedback.length,
-        pendingFeedbackCount: pending.length,
-        issueCount: issueQueue.length,
-        actionableIssueCount: actionableIssues.length,
-        maxRounds: rounds,
-        baseline: result.baseline,
-        candidate: result.candidate,
-      }),
-    )
-
-    const shouldRunCodeEvolve = pending.some(
-      (item) => item.context?.note === 'code_evolve_required',
-    )
-    let codeEvolveUsage: TokenUsage | undefined
-    let codeResultValidationOk = true
-    if (result.promote && shouldRunCodeEvolve) {
-      promptRollback.required = true
-      promptRollback.original = promptOriginal
-      const messages = actionableIssues.map((item) => item.title)
-      const codeResult = await runCodeEvolveRound({
-        stateDir: runtime.config.stateDir,
-        workDir: runtime.config.workDir,
-        timeoutMs: runtime.config.worker.timeoutMs,
-        ...(runtime.config.worker.model
-          ? { model: runtime.config.worker.model }
-          : {}),
-        feedbackMessages: messages,
-        allowDirtyPaths: [
-          promptPathRelative,
-          promptPathRelative.replaceAll('/', '\\'),
-        ],
-      })
-      codeEvolveUsage = codeResult.usage
-      codeResultValidationOk = codeResult.validation.ok
-      if (!codeResult.validation.ok) {
-        await rollbackPromptIfNeeded()
-        await writeEvolveFeedbackState(
-          runtime.config.stateDir,
-          feedbackStateBefore,
-        )
-      }
-      await bestEffort('appendLog: evolve_code_run', () =>
-        appendLog(runtime.paths.log, {
-          event: 'evolve_code_run',
-          taskId: task.id,
-          applied: codeResult.applied,
-          reason: codeResult.reason,
-          llmElapsedMs: codeResult.llmElapsedMs,
-          changedFiles: codeResult.changedFiles,
-          validation: codeResult.validation,
-          ...(codeResult.usage ? { usage: codeResult.usage } : {}),
-        }),
-      )
-    }
-
-    if (
-      result.promote &&
-      codeResultValidationOk &&
-      runtime.config.evolve.autoRestartOnPromote
-    ) {
-      runtime.postRestartHealthGate = {
-        required: true,
-        promptPath: promptPathAbsolute,
-        promptBackup: promptOriginal,
-        suitePath,
-      }
-      await bestEffort('persistRuntimeState: evolve_restart', () =>
-        persistRuntimeState(runtime),
-      )
-      setTimeout(() => {
-        process.exit(75)
-      }, 100)
-    }
-
-    const baseUsageTotal = Math.max(
-      0,
-      Math.round(
-        result.baseline.weightedUsageTotal +
-          result.candidate.weightedUsageTotal,
-      ),
-    )
-    const usageTotal = baseUsageTotal + (codeEvolveUsage?.total ?? 0)
-    const output = `evolve ${result.promote ? 'promoted' : 'rolled_back'}: ${result.reason}`
-    return {
-      output,
-      usage: {
-        total: usageTotal,
-        input: baseUsageTotal + (codeEvolveUsage?.input ?? 0),
-        output: codeEvolveUsage?.output ?? 0,
-      },
-    }
-  } catch (error) {
-    await bestEffort('rollbackPromptIfNeeded: evolve_idle_error', () =>
-      rollbackPromptIfNeeded(),
-    )
-    await bestEffort('restoreFeedbackState: evolve_idle_error', () =>
-      writeEvolveFeedbackState(runtime.config.stateDir, feedbackStateBefore),
-    )
-    await bestEffort('appendEvolveFeedback: evolve_idle_error', () =>
-      appendRuntimeIssue({
-        runtime,
-        severity: 'high',
-        category: 'failure',
-        message: `evolve idle error: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-        note: 'evolve_idle_error',
-        confidence: 0.95,
-        roiScore: 88,
-        action: 'fix',
-      }),
-    )
-    await bestEffort('appendLog: evolve_idle_error', () =>
-      appendLog(runtime.paths.log, {
-        event: 'evolve_idle_error',
-        taskId: task.id,
-        error: error instanceof Error ? error.message : String(error),
-      }),
-    )
-    throw error
-  }
-}
-
-const runTask = async (
-  runtime: RuntimeState,
-  task: Task,
-  controller: AbortController,
-): Promise<void> => {
-  const startedAt = Date.now()
-  const elapsed = () => Math.max(0, Date.now() - startedAt)
-  try {
-    await appendLog(runtime.paths.log, {
-      event: 'worker_start',
-      taskId: task.id,
-      promptChars: task.prompt.length,
-    })
-    let llmResult: Awaited<ReturnType<typeof runWorker>> | null = null
-    if (task.kind === 'system_evolve') {
-      const result = await runSystemEvolveTask(runtime, task)
-      addTokenUsage(runtime, result.usage?.total)
-      const taskResult = buildResult(
-        task,
-        'succeeded',
-        result.output,
-        elapsed(),
-        result.usage,
-      )
-      await finalizeResult(runtime, task, taskResult, markTaskSucceeded)
-      return
-    }
-    const maxAttempts = Math.max(0, runtime.config.worker.retryMaxAttempts)
-    const backoffMs = Math.max(0, runtime.config.worker.retryBackoffMs)
-    let attempt = 0
-    while (attempt <= maxAttempts) {
-      try {
-        llmResult = await runWorker({
-          stateDir: runtime.config.stateDir,
-          workDir: runtime.config.workDir,
-          task,
-          timeoutMs: runtime.config.worker.timeoutMs,
-          ...(runtime.config.worker.model
-            ? { model: runtime.config.worker.model }
-            : {}),
-          abortSignal: controller.signal,
-        })
-        break
-      } catch (error) {
-        await bestEffort('appendEvolveFeedback: worker_retry', () =>
-          appendRuntimeIssue({
-            runtime,
-            severity: 'medium',
-            category: 'failure',
-            message: `worker retry: ${
-              error instanceof Error ? error.message : String(error)
-            }`,
-            note: 'worker_retry',
-            task,
-            confidence: 0.75,
-            roiScore: 64,
-            action: 'fix',
-          }),
-        )
-        if (attempt >= maxAttempts) throw error
-        await appendLog(runtime.paths.log, {
-          event: 'worker_retry',
-          taskId: task.id,
-          attempt: attempt + 1,
-          maxAttempts,
-          backoffMs,
-        })
-        attempt += 1
-        task.attempts = Math.max(0, (task.attempts ?? 0) + 1)
-        await bestEffort('persistRuntimeState: worker_retry', () =>
-          persistRuntimeState(runtime),
-        )
-        await sleep(backoffMs)
-      }
-    }
-    if (!llmResult) throw new Error('worker_result_missing')
-    addTokenUsage(runtime, llmResult.usage?.total)
-    const usageTotal = llmResult.usage?.total ?? 0
-    const elapsedMs = elapsed()
-    if (elapsedMs >= runtime.config.evolve.runtimeHighLatencyMs) {
-      await bestEffort('appendEvolveFeedback: worker_high_latency', () =>
-        appendRuntimeIssue({
-          runtime,
-          severity:
-            elapsedMs >= runtime.config.evolve.runtimeHighLatencyMs * 2
-              ? 'high'
-              : 'medium',
-          category: 'latency',
-          message: `worker high latency: ${elapsedMs}ms`,
-          note: 'worker_high_latency',
-          task,
-          elapsedMs,
-          usageTotal,
-          confidence: 0.85,
-          roiScore:
-            elapsedMs >= runtime.config.evolve.runtimeHighLatencyMs * 2
-              ? 85
-              : 68,
-          action: 'fix',
-        }),
-      )
-    }
-    if (usageTotal >= runtime.config.evolve.runtimeHighUsageTotal) {
-      await bestEffort('appendEvolveFeedback: worker_high_usage', () =>
-        appendRuntimeIssue({
-          runtime,
-          severity:
-            usageTotal >= runtime.config.evolve.runtimeHighUsageTotal * 2
-              ? 'high'
-              : 'medium',
-          category: 'cost',
-          message: `worker high usage: ${usageTotal} tokens`,
-          note: 'worker_high_usage',
-          task,
-          elapsedMs,
-          usageTotal,
-          confidence: 0.85,
-          roiScore:
-            usageTotal >= runtime.config.evolve.runtimeHighUsageTotal * 2
-              ? 87
-              : 70,
-          action: 'fix',
-        }),
-      )
-    }
-    if (task.status === 'canceled') {
-      const result = buildResult(
-        task,
-        'canceled',
-        'Task canceled',
-        elapsed(),
-        llmResult.usage,
-      )
-      await finalizeResult(runtime, task, result, markTaskCanceled)
-      return
-    }
-    const result = buildResult(
-      task,
-      'succeeded',
-      llmResult.output,
-      elapsed(),
-      llmResult.usage,
-    )
-    await finalizeResult(runtime, task, result, markTaskSucceeded)
-  } catch (error) {
-    const err = error instanceof Error ? error : new Error(String(error))
-    if (task.status === 'canceled') {
-      const result = buildResult(
-        task,
-        'canceled',
-        err.message || 'Task canceled',
-        elapsed(),
-      )
-      await finalizeResult(runtime, task, result, markTaskCanceled)
-      return
-    }
-    const result = buildResult(task, 'failed', err.message, elapsed())
-    await bestEffort('appendEvolveFeedback: worker_failed', () =>
-      appendRuntimeIssue({
-        runtime,
-        severity: 'high',
-        category: 'failure',
-        message: `worker failed: ${err.message}`,
-        note: 'worker_failed',
-        task,
-        confidence: 0.95,
-        roiScore: 92,
-        action: 'fix',
-      }),
-    )
-    await finalizeResult(runtime, task, result, markTaskFailed)
-  }
 }
 
 const spawnWorker = async (runtime: RuntimeState, task: Task) => {
   if (task.status !== 'pending') return
   if (runtime.runningWorkers.has(task.id)) return
-  if (task.kind === 'system_evolve' && !isRuntimeIdleForEvolve(runtime)) return
-
   if (!canSpendTokens(runtime, estimateTaskTokenCost(task))) {
     await bestEffort('appendEvolveFeedback: worker_budget_skipped', () =>
       appendRuntimeIssue({
@@ -639,62 +81,41 @@ const spawnWorker = async (runtime: RuntimeState, task: Task) => {
 }
 
 export const workerLoop = async (runtime: RuntimeState): Promise<void> => {
-  const evolvePollMs = Math.max(1000, runtime.config.evolve.idlePollMs)
-  let nextEvolvePollAt = 0
   while (!runtime.stopped) {
     try {
       if (isTokenBudgetExceeded(runtime)) {
         await sleep(1000)
         continue
       }
-      const canProbeEvolve =
-        runtime.config.evolve.enabled &&
-        isRuntimeIdleForEvolve(runtime) &&
-        !hasPendingEvolveTask(runtime)
-      if (canProbeEvolve) {
-        const now = Date.now()
-        if (now >= nextEvolvePollAt) {
-          nextEvolvePollAt = now + evolvePollMs
-          if (
-            runtime.config.evolve.idleReviewEnabled &&
-            (!runtime.evolveState.lastIdleReviewAt ||
-              now - Date.parse(runtime.evolveState.lastIdleReviewAt) >=
-                runtime.config.evolve.idleReviewIntervalMs)
-          ) {
-            const idleReview = await runIdleConversationReview({
-              runtime,
-              appendFeedback: async ({ message, extractedIssue }) => {
-                await appendStructuredFeedback({
-                  stateDir: runtime.config.stateDir,
-                  feedback: {
-                    id: `fb-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-                    createdAt: nowIso(),
-                    kind: 'user_feedback',
-                    severity: 'medium',
-                    message,
-                    source: 'idle_review',
-                    context: {
-                      note: 'idle_review',
-                    },
-                  },
-                  extractedIssue,
-                })
+      if (
+        runtime.config.evolve.idleReviewEnabled &&
+        isRuntimeIdle(runtime) &&
+        (!runtime.evolveState.lastIdleReviewAt ||
+          Date.now() - Date.parse(runtime.evolveState.lastIdleReviewAt) >=
+            runtime.config.evolve.idleReviewIntervalMs)
+      ) {
+        const idleReview = await runIdleConversationReview({
+          runtime,
+          appendFeedback: async ({ message, extractedIssue }) => {
+            await appendStructuredFeedback({
+              stateDir: runtime.config.stateDir,
+              feedback: {
+                id: `fb-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                createdAt: nowIso(),
+                kind: 'user_feedback',
+                severity: 'medium',
+                message,
+                source: 'idle_review',
+                context: { note: 'idle_review' },
               },
+              extractedIssue,
             })
-            runtime.evolveState.lastIdleReviewAt = nowIso()
-            await persistRuntimeState(runtime)
-            addTokenUsage(runtime, idleReview.usageTotal)
-          }
-          const hasPendingFeedback = await hasPendingEvolveFeedback({
-            stateDir: runtime.config.stateDir,
-            historyLimit: runtime.config.evolve.feedbackHistoryLimit,
-          })
-          if (hasPendingFeedback) {
-            enqueueSystemEvolveTask(runtime.tasks)
-            nextEvolvePollAt = 0
-          }
-        }
-      } else nextEvolvePollAt = 0
+          },
+        })
+        runtime.evolveState.lastIdleReviewAt = nowIso()
+        await persistRuntimeState(runtime)
+        addTokenUsage(runtime, idleReview.usageTotal)
+      }
 
       if (runtime.runningWorkers.size < runtime.config.worker.maxConcurrent) {
         const next = pickNextPendingTask(runtime.tasks, runtime.runningWorkers)

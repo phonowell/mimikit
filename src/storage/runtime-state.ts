@@ -10,12 +10,6 @@ type RuntimeSnapshot = {
   evolve?: {
     lastIdleReviewAt?: string
   }
-  postRestartHealthGate?: {
-    required: boolean
-    promptPath?: string
-    promptBackup?: string
-    suitePath?: string
-  }
 }
 
 const runtimePath = (stateDir: string): string =>
@@ -27,9 +21,6 @@ const isTaskStatus = (value: unknown): value is Task['status'] =>
   value === 'succeeded' ||
   value === 'failed' ||
   value === 'canceled'
-
-const isTaskKind = (value: unknown): value is NonNullable<Task['kind']> =>
-  value === 'system_evolve'
 
 const asTask = (value: unknown): Task | null => {
   if (!value || typeof value !== 'object') return null
@@ -50,7 +41,6 @@ const asTask = (value: unknown): Task | null => {
     fingerprint: record.fingerprint,
     prompt: record.prompt,
     title: record.title,
-    ...(isTaskKind(record.kind) ? { kind: record.kind } : {}),
     status: record.status,
     createdAt: record.createdAt,
     ...(typeof record.startedAt === 'string'
@@ -91,7 +81,6 @@ const normalizeSnapshot = (value: unknown): RuntimeSnapshot => {
     tasks?: unknown
     tokenBudget?: unknown
     evolve?: unknown
-    postRestartHealthGate?: unknown
   }
   const tasks = Array.isArray(record.tasks)
     ? record.tasks
@@ -99,11 +88,6 @@ const normalizeSnapshot = (value: unknown): RuntimeSnapshot => {
         .filter((item): item is Task => Boolean(item))
     : []
   const tokenBudget = asTokenBudgetState(record.tokenBudget)
-  const gate =
-    record.postRestartHealthGate &&
-    typeof record.postRestartHealthGate === 'object'
-      ? (record.postRestartHealthGate as RuntimeSnapshot['postRestartHealthGate'])
-      : undefined
   const evolve =
     record.evolve &&
     typeof record.evolve === 'object' &&
@@ -115,8 +99,7 @@ const normalizeSnapshot = (value: unknown): RuntimeSnapshot => {
         }
       : undefined
   const base = tokenBudget ? { tasks, tokenBudget } : { tasks }
-  const withEvolve = evolve ? { ...base, evolve } : base
-  return gate ? { ...withEvolve, postRestartHealthGate: gate } : withEvolve
+  return evolve ? { ...base, evolve } : base
 }
 
 export const loadRuntimeSnapshot = async (
@@ -143,7 +126,6 @@ export const selectPersistedTasks = (tasks: Task[]): Task[] =>
           fingerprint: task.fingerprint,
           prompt: task.prompt,
           title: task.title,
-          ...(task.kind ? { kind: task.kind } : {}),
           status: 'pending',
           createdAt: task.createdAt,
           ...(typeof task.attempts === 'number'

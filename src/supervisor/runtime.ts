@@ -31,14 +31,6 @@ export type RuntimeState = {
   tasks: Task[]
   runningWorkers: Set<string>
   runningControllers: Map<string, AbortController>
-  postRestartHealthGate:
-    | {
-        required: boolean
-        promptPath?: string
-        promptBackup?: string
-        suitePath?: string
-      }
-    | undefined
   tokenBudget: TokenBudgetState
   evolveState: {
     lastIdleReviewAt?: string

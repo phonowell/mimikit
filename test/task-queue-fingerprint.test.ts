@@ -2,7 +2,6 @@ import { expect, test } from 'vitest'
 
 import {
   buildTaskFingerprint,
-  enqueueSystemEvolveTask,
   enqueueTask,
 } from '../src/tasks/queue.js'
 import type { Task } from '../src/types/index.js'
@@ -29,15 +28,4 @@ test('enqueueTask allows recreate after completion', () => {
   expect(second.created).toBe(true)
   expect(second.task.id).not.toBe(first.task.id)
   expect(tasks).toHaveLength(2)
-})
-
-test('enqueueSystemEvolveTask dedupes active evolve task', () => {
-  const tasks: Task[] = []
-  const first = enqueueSystemEvolveTask(tasks)
-  const second = enqueueSystemEvolveTask(tasks)
-  expect(first.created).toBe(true)
-  expect(second.created).toBe(false)
-  expect(first.task.kind).toBe('system_evolve')
-  expect(first.task.prompt).toBe('run evolve loop when idle')
-  expect(second.task.id).toBe(first.task.id)
 })

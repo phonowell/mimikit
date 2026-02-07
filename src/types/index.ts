@@ -37,8 +37,6 @@ export type TaskStatus =
   | 'failed'
   | 'canceled'
 
-export type TaskKind = 'system_evolve'
-
 export type TaskResultStatus = 'succeeded' | 'failed' | 'canceled'
 
 export type Task = {
@@ -46,7 +44,6 @@ export type Task = {
   fingerprint: string
   prompt: string
   title: string
-  kind?: TaskKind
   status: TaskStatus
   createdAt: ISODate
   startedAt?: ISODate
