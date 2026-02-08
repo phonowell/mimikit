@@ -1,4 +1,4 @@
-export const isAgentMessage = (msg) => msg?.role === 'manager'
+export const isAgentMessage = (msg) => msg?.role === 'assistant'
 
 export const collectAckedUserMessageIds = (messages, loadingActive = false) => {
   const acked = new Set()
@@ -31,7 +31,7 @@ export const findLatestAgentMessage = (messages) => {
 }
 
 const normalizeRole = (role) => {
-  if (role === 'manager') return 'agent'
+  if (role === 'assistant') return 'agent'
   if (role === 'user') return 'user'
   if (role === 'system') return 'system'
   return 'unknown'
@@ -109,3 +109,4 @@ export const createQuoteBlock = ({ quoteId, quoteMessage, messagesEl }) => {
   quoteEl.append(author, text)
   return quoteEl
 }
+

@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 
-import { buildTaskViews } from '../src/supervisor/task-view.js'
+import { buildTaskViews } from '../src/orchestrator/task-view.js'
 import type { Task } from '../src/types/index.js'
 
 const createTask = (params: {
@@ -68,3 +68,4 @@ test('buildTaskViews exposes changeAt from latest lifecycle time', () => {
   ])
   expect(tasks[0]?.changeAt).toBe('2026-02-06T00:00:20.000Z')
 })
+

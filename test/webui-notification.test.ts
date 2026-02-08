@@ -4,7 +4,7 @@ import { buildNotificationPayload } from '../src/webui/messages/notification.js'
 
 const createMessage = (params: {
   id: string
-  role: 'user' | 'manager' | 'system'
+  role: 'user' | 'thinker' | 'system'
   text: string
 }) => ({
   id: params.id,
@@ -14,7 +14,7 @@ const createMessage = (params: {
 })
 
 test('buildNotificationPayload skips active page and empty changes', () => {
-  const messages = [createMessage({ id: 'm-1', role: 'manager', text: 'hello' })]
+  const messages = [createMessage({ id: 'm-1', role: 'assistant', text: 'hello' })]
   expect(
     buildNotificationPayload({
       messages,
@@ -33,12 +33,12 @@ test('buildNotificationPayload skips active page and empty changes', () => {
   ).toBeNull()
 })
 
-test('buildNotificationPayload picks latest new manager message', () => {
+test('buildNotificationPayload picks latest new thinker message', () => {
   const messages = [
     createMessage({ id: 'u-1', role: 'user', text: 'question' }),
-    createMessage({ id: 'm-1', role: 'manager', text: 'first reply' }),
+    createMessage({ id: 'm-1', role: 'assistant', text: 'first reply' }),
     createMessage({ id: 's-1', role: 'system', text: 'note' }),
-    createMessage({ id: 'm-2', role: 'manager', text: 'second reply' }),
+    createMessage({ id: 'm-2', role: 'assistant', text: 'second reply' }),
   ]
   expect(
     buildNotificationPayload({
@@ -56,7 +56,7 @@ test('buildNotificationPayload picks latest new manager message', () => {
 
 test('buildNotificationPayload skips already notified id and truncates body', () => {
   const longText = `${'x'.repeat(220)}\n  line`
-  const messages = [createMessage({ id: 'm-2', role: 'manager', text: longText })]
+  const messages = [createMessage({ id: 'm-2', role: 'assistant', text: longText })]
   expect(
     buildNotificationPayload({
       messages,
@@ -76,3 +76,5 @@ test('buildNotificationPayload skips already notified id and truncates body', ()
   expect(payload?.body.endsWith('…')).toBe(true)
   expect(payload?.body.length).toBe(160)
 })
+
+

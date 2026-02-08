@@ -1,30 +1,31 @@
-# 系统概览 (v4)
+# 系统概览（v5）
 
 > 返回 [系统设计总览](./README.md)
 
-## 设计目标
-- Manager 统一理解与回复
-- Worker 并发执行任务
-- 内存队列简化调度
-- 状态落盘最小化（历史 + 日志 + 结果）
+## 目标
+- 降低长会话噪音对决策的干扰。
+- 把“对话理解/回复”与“决策/调度”解耦。
+- 通过 worker 分层平衡成本与能力。
 
-## 组件
-- Supervisor：启动双循环并管理运行状态
-- Manager：面向用户的对话与调度
-- Worker：任务执行
-- WebUI/HTTP：输入与状态展示
+## 架构
+- `teller`：
+  - 输入：用户输入 + 任务状态摘要 + 历史。
+  - 输出：`teller-digest`、最终 assistant 回复。
+- `thinker`：
+  - 输入：`teller-digest` + 任务结果。
+  - 输出：任务命令 + `thinker-decision`。
+- `worker`：
+  - `economy`：api-runner，便宜、能力弱。
+  - `expert`：codex-sdk，昂贵、能力强。
 
-## 核心流程（高层）
-1. 用户输入 → Manager 回复并可派发任务。
-2. Worker 从内存队列取任务执行并回传结果。
-3. Manager 汇总结果并告知用户。
+## 数据流
+1. 用户输入写入 `user-input.jsonp`。
+2. teller 消费输入/结果并产出摘要到 `teller-digest.jsonp`。
+3. thinker 节流消费摘要，产出决策到 `thinker-decision.jsonp`。
+4. teller 消费决策并生成最终用户可见回复。
+5. worker 执行结果写入 `worker-result.jsonp`。
 
-## 状态目录
-详见 docs/design/state-directory.md。
-
-## 深入阅读
-- 双循环细节：docs/design/supervisor.md
-- 任务生命周期与结构：docs/design/task-system.md / docs/design/task-data.md
-- MIMIKIT 命令协议：docs/design/commands.md
-- 反馈→提高链路：docs/design/feedback-improvement-loop.md
-- HTTP/CLI：docs/design/interfaces.md
+## 关键策略
+- thinker 通过 `minIntervalMs` 节流，优先省费。
+- teller 始终掌控最终语气，thinker 不直接对话。
+- 通道消费采用 cursor，避免重复处理。

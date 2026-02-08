@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 
-import { mergeChatMessages } from '../src/supervisor/chat-view.js'
+import { mergeChatMessages } from '../src/orchestrator/chat-view.js'
 import type { HistoryMessage, UserInput } from '../src/types/index.js'
 
 const asHistory = (params: {
@@ -34,7 +34,7 @@ test('mergeChatMessages includes inflight input as unread', () => {
     }),
     asHistory({
       id: 'm-1',
-      role: 'manager',
+      role: 'assistant',
       createdAt: '2026-01-01T10:00:05.000Z',
     }),
   ]
@@ -72,7 +72,7 @@ test('mergeChatMessages applies limit from the tail', () => {
     }),
     asHistory({
       id: 'm-1',
-      role: 'manager',
+      role: 'assistant',
       createdAt: '2026-01-01T10:00:05.000Z',
     }),
   ]
@@ -82,3 +82,5 @@ test('mergeChatMessages applies limit from the tail', () => {
   const merged = mergeChatMessages({ history, inflightInputs: inflight, limit: 2 })
   expect(merged.map((item) => item.id)).toEqual(['m-1', 'u-2'])
 })
+
+

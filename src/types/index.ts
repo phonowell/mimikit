@@ -7,7 +7,7 @@ export type TokenUsage = {
   total?: number
 }
 
-export type Role = 'user' | 'manager' | 'system'
+export type Role = 'user' | 'assistant' | 'system'
 export type HistoryMessage = {
   id: Id
   role: Role
@@ -34,11 +34,14 @@ export type TaskStatus =
 
 export type TaskResultStatus = 'succeeded' | 'failed' | 'canceled'
 
+export type WorkerProfile = 'economy' | 'expert'
+
 export type Task = {
   id: Id
   fingerprint: string
   prompt: string
   title: string
+  profile: WorkerProfile
   status: TaskStatus
   createdAt: ISODate
   startedAt?: ISODate
@@ -60,4 +63,5 @@ export type TaskResult = {
   usage?: TokenUsage
   title?: string
   archivePath?: string
+  profile?: WorkerProfile
 }

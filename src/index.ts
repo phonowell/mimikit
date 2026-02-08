@@ -1,8 +1,8 @@
 import { defaultConfig } from './config.js'
 import { createHttpServer } from './http/index.js'
-import { Supervisor } from './supervisor/supervisor.js'
+import { Orchestrator } from './orchestrator/orchestrator.js'
 
-import type { SupervisorConfig } from './config.js'
+import type { AppConfig } from './config.js'
 import type {
   HistoryMessage,
   Task,
@@ -11,9 +11,9 @@ import type {
   UserInput,
 } from './types/index.js'
 
-export { Supervisor, defaultConfig, createHttpServer }
+export { Orchestrator, defaultConfig, createHttpServer }
 export type {
-  SupervisorConfig,
+  AppConfig,
   HistoryMessage,
   Task,
   TaskResult,
@@ -21,15 +21,15 @@ export type {
   UserInput,
 }
 
-export type SupervisorStatus = ReturnType<Supervisor['getStatus']>
-export type SupervisorHistory = Awaited<
-  ReturnType<Supervisor['getChatHistory']>
+export type OrchestratorStatus = ReturnType<Orchestrator['getStatus']>
+export type OrchestratorHistory = Awaited<
+  ReturnType<Orchestrator['getChatHistory']>
 >
 
-export const createSupervisor = (config: SupervisorConfig) =>
-  new Supervisor(config)
+export const createOrchestrator = (config: AppConfig) =>
+  new Orchestrator(config)
 
 export const resolveDefaultConfig = (params: {
   stateDir: string
   workDir: string
-}): SupervisorConfig => defaultConfig(params)
+}): AppConfig => defaultConfig(params)

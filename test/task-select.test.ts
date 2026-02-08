@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 
-import { selectRecentTasks } from '../src/supervisor/task-select.js'
+import { selectRecentTasks } from '../src/orchestrator/task-select.js'
 import type { Task } from '../src/types/index.js'
 
 const createTask = (params: {
@@ -70,3 +70,4 @@ test('selectRecentTasks enforces minCount before maxBytes stop', () => {
   expect(selected).toHaveLength(2)
   expect(selected.map((task) => task.id)).toEqual(['t3', 't2'])
 })
+

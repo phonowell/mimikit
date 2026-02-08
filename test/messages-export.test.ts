@@ -6,7 +6,7 @@ import {
 } from '../src/http/messages-export.js'
 import { parseExportLimit } from '../src/http/helpers.js'
 
-import type { ChatMessage } from '../src/supervisor/chat-view.js'
+import type { ChatMessage } from '../src/orchestrator/chat-view.js'
 
 const sampleMessages: ChatMessage[] = [
   {
@@ -17,7 +17,7 @@ const sampleMessages: ChatMessage[] = [
   },
   {
     id: 'm-1',
-    role: 'manager',
+    role: 'assistant',
     text: '可以，先从 markdown 开始。',
     createdAt: '2026-02-06T16:20:03.000Z',
     quote: 'u-1',
@@ -66,3 +66,5 @@ test('parseExportLimit applies default and max guard', () => {
   expect(parseExportLimit(50)).toBe(50)
   expect(parseExportLimit(5000)).toBe(1000)
 })
+
+

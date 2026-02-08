@@ -14,7 +14,7 @@ export const renderMessage = (params, msg) => {
   } = params
   if (!messagesEl) return
   const item = document.createElement('li')
-  const roleClass = msg.role === 'manager' ? 'agent' : msg.role
+  const roleClass = msg.role === 'assistant' ? 'agent' : msg.role
   const isEntering = enterMessageIds?.has(msg?.id)
   item.className = `message ${roleClass}${isEntering ? ' message--enter' : ''}`
   if (msg?.id) item.dataset.messageId = String(msg.id)
@@ -101,3 +101,4 @@ export const renderMessage = (params, msg) => {
   if (quoteBtn) item.appendChild(quoteBtn)
   messagesEl.appendChild(item)
 }
+

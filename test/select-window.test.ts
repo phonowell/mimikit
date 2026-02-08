@@ -3,7 +3,7 @@ import { expect, test } from 'vitest'
 import {
   normalizeWindowParams,
   selectByWindow,
-} from '../src/supervisor/select-window.js'
+} from '../src/orchestrator/select-window.js'
 
 test('normalizeWindowParams clamps invalid values', () => {
   expect(
@@ -41,3 +41,4 @@ test('selectByWindow stops on maxCount', () => {
   )
   expect(selected).toEqual([1, 2])
 })
+

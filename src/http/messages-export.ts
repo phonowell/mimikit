@@ -1,4 +1,4 @@
-import type { ChatMessage } from '../supervisor/chat-view.js'
+import type { ChatMessage } from '../orchestrator/chat-view.js'
 import type { Role, TokenUsage } from '../types/index.js'
 
 const TITLE = 'Mimikit 对话导出'
@@ -39,7 +39,7 @@ const formatTime = (iso: string): string => {
 
 const formatRoleLabel = (role: Role): string => {
   if (role === 'user') return 'USER'
-  if (role === 'manager') return 'AGENT'
+  if (role === 'assistant') return 'AGENT'
   return 'SYSTEM'
 }
 

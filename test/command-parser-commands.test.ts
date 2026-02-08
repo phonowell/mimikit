@@ -3,7 +3,7 @@ import { expect, test } from 'vitest'
 import {
   parseCommandPayload,
   parseCommands,
-} from '../src/supervisor/command-parser.js'
+} from '../src/orchestrator/command-parser.js'
 
 test('parseCommands parses add_task line command and keeps text', () => {
   const output = `我来创建任务。\n\n<MIMIKIT:commands>\n@add_task prompt="整理接口文档" title="整理文档"\n</MIMIKIT:commands>`
@@ -42,3 +42,4 @@ test('parseCommands parses capture_feedback json payload', () => {
   expect(payload?.confidence).toBe(0.82)
   expect(payload?.action).toBe('fix')
 })
+

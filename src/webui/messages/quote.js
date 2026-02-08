@@ -1,7 +1,7 @@
 const cleanText = (text) => String(text ?? '').replace(/\s+/g, ' ').trim()
 
 const normalizeRole = (role) => {
-  if (role === 'manager') return 'agent'
+  if (role === 'assistant') return 'agent'
   if (role === 'user') return 'user'
   if (role === 'system') return 'system'
   return 'unknown'
@@ -103,3 +103,4 @@ export const createQuoteController = ({
 
   return { clear, set, getActive }
 }
+

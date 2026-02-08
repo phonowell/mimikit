@@ -19,7 +19,7 @@ type RunResult = {
   elapsedMs: number
 }
 
-export const runManagerApi = async (params: {
+export const runApiRunner = async (params: {
   prompt: string
   model?: string
   modelReasoningEffort?: ModelReasoningEffort
@@ -77,3 +77,5 @@ export const runManagerApi = async (params: {
     if (timer) clearTimeout(timer)
   }
 }
+
+export const runManagerApi = runApiRunner

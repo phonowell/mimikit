@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 
-import { runManager } from '../roles/runner.js'
+import { runThinker } from '../thinker/runner.js'
 
 type OptimizeResult = {
   original: string
@@ -43,7 +43,7 @@ export const optimizeManagerPrompt = async (params: {
 }): Promise<OptimizeResult> => {
   const resolvedPath = resolve(params.promptPath)
   const original = await readFile(resolvedPath, 'utf8')
-  const result = await runManager({
+  const result = await runThinker({
     stateDir: params.stateDir,
     workDir: params.workDir,
     inputs: [

@@ -12,7 +12,7 @@ export type EvolveFeedback = {
   kind: 'user_feedback' | 'runtime_signal'
   severity: 'low' | 'medium' | 'high'
   message: string
-  source?: 'manager_tool' | 'idle_review' | 'runtime'
+  source?: 'thinker_tool' | 'idle_review' | 'runtime'
   evidence?: {
     fromMessageId?: string
     taskId?: string

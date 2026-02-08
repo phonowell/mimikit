@@ -1,6 +1,6 @@
-import { runWorker } from '../roles/worker-runner.js'
 import { newId, nowIso } from '../shared/utils.js'
 import { buildTaskFingerprint } from '../tasks/queue.js'
+import { runWorker } from '../worker/expert-runner.js'
 
 import {
   diffGitChanges,
@@ -61,6 +61,7 @@ export const runCodeEvolveRound = async (params: {
     fingerprint: buildTaskFingerprint(taskPrompt),
     prompt: taskPrompt,
     title: 'System evolve code',
+    profile: 'expert',
     status: 'running',
     createdAt: nowIso(),
   }
@@ -106,6 +107,7 @@ export const runCodeEvolveRound = async (params: {
     ),
     prompt: `Only modify ${instruction.target}\n${instruction.prompt}`,
     title: 'System evolve code apply',
+    profile: 'expert',
     status: 'running',
     createdAt: nowIso(),
   }

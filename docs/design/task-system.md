@@ -1,35 +1,24 @@
-# 任务系统概览
+# 任务系统
 
 > 返回 [系统设计总览](./README.md)
 
-## 生命周期（高层）
-```
-用户输入 → Manager 回复 + 可能派发任务
-  ↓
-内存任务队列（pending）
-  ↓
-Worker 执行
-  ↓
-结果回传 → Manager 告知用户（同时写入 tasks 归档）
-```
+## 任务生命周期
+- `pending`：thinker 已派发，等待 worker 执行。
+- `running`：worker 已接单执行。
+- `succeeded|failed|canceled`：终态。
 
-注：`pendingInputs` 与 `pendingResults` 仅在 Manager 消费时写入 `history.jsonl`，避免预写后再去重。
+## 派发规则
+- thinker 通过 `@add_task` 创建任务。
+- 派发时附带 `profile`：`economy` 或 `expert`。
+- 去重基于 prompt fingerprint，避免重复派单。
 
-## 调度规则
-- 仅处理 `status=pending` 的任务。
-- FIFO：按创建顺序执行。
-- 任务创建去重：若已有同 fingerprint 的 `pending/running` 任务，则复用现有任务，不重复创建。
+## 执行规则
+- workerLoop 按 `maxConcurrent` 并发调度。
+- `economy` 任务走 `src/worker/economy-runner.ts`。
+- `expert` 任务走 `src/worker/expert-runner.ts`。
+- 结果统一回写 `worker-result.jsonp`。
 
-## 关键规则
-- Worker 不派发新任务、不与用户对话。
-- Manager 通过 MIMIKIT 命令派发任务（`@add_task` / `@cancel_task` / `@summarize_result` / `@capture_feedback`）。
-- Worker 内建最小自动重试（默认 1 次），减少瞬时失败人工干预。
-- 受每日 token 预算闸门约束，预算用尽时暂停新任务进入执行。
-- 运行时快照会持久化 pending/running 任务；重启后可继续执行。
-- 结果落盘：.mimikit/tasks/YYYY-MM-DD/
-- `task.result.output` 对外展示摘要版本：优先 `@summarize_result`，缺失时本地兜底摘要；归档文件保留详细原文。
-
-## 相关文档
-- 任务结构：docs/design/task-data.md
-- 命令协议：docs/design/commands.md
-- 反馈→提高链路：docs/design/feedback-improvement-loop.md
+## 取消规则
+- thinker 可通过 `@cancel_task` 请求取消。
+- pending 任务立即终止并生成 canceled 结果。
+- running 任务触发 `AbortController` 取消。

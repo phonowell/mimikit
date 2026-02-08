@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 
-import { selectRecentHistory } from '../src/supervisor/history-select.js'
+import { selectRecentHistory } from '../src/orchestrator/history-select.js'
 import type { HistoryMessage } from '../src/types/index.js'
 
 const createMessage = (id: string, createdAt: string): HistoryMessage => ({
@@ -38,3 +38,4 @@ test('selectRecentHistory enforces minCount before bytes stop', () => {
   expect(selected).toHaveLength(2)
   expect(selected.map((item) => item.id)).toEqual(['m2', 'm3'])
 })
+

@@ -9,6 +9,12 @@ type RuntimeSnapshot = {
   evolve?: {
     lastIdleReviewAt?: string
   }
+  channels?: {
+    tellerUserInputCursor?: number
+    tellerWorkerResultCursor?: number
+    tellerThinkerDecisionCursor?: number
+    thinkerTellerDigestCursor?: number
+  }
 }
 
 const runtimePath = (stateDir: string): string =>
@@ -40,6 +46,7 @@ const asTask = (value: unknown): Task | null => {
     fingerprint: record.fingerprint,
     prompt: record.prompt,
     title: record.title,
+    profile: record.profile === 'expert' ? 'expert' : 'economy',
     status: record.status,
     createdAt: record.createdAt,
     ...(typeof record.startedAt === 'string'
@@ -67,6 +74,7 @@ const normalizeSnapshot = (value: unknown): RuntimeSnapshot => {
   const record = value as {
     tasks?: unknown
     evolve?: unknown
+    channels?: unknown
   }
   const tasks = Array.isArray(record.tasks)
     ? record.tasks
@@ -83,7 +91,40 @@ const normalizeSnapshot = (value: unknown): RuntimeSnapshot => {
             .lastIdleReviewAt,
         }
       : undefined
-  return evolve ? { tasks, evolve } : { tasks }
+  const channelsRaw =
+    record.channels && typeof record.channels === 'object'
+      ? (record.channels as {
+          tellerUserInputCursor?: unknown
+          tellerWorkerResultCursor?: unknown
+          tellerThinkerDecisionCursor?: unknown
+          thinkerTellerDigestCursor?: unknown
+        })
+      : undefined
+  const channels = channelsRaw
+    ? {
+        tellerUserInputCursor:
+          typeof channelsRaw.tellerUserInputCursor === 'number'
+            ? Math.max(0, Math.floor(channelsRaw.tellerUserInputCursor))
+            : 0,
+        tellerWorkerResultCursor:
+          typeof channelsRaw.tellerWorkerResultCursor === 'number'
+            ? Math.max(0, Math.floor(channelsRaw.tellerWorkerResultCursor))
+            : 0,
+        tellerThinkerDecisionCursor:
+          typeof channelsRaw.tellerThinkerDecisionCursor === 'number'
+            ? Math.max(0, Math.floor(channelsRaw.tellerThinkerDecisionCursor))
+            : 0,
+        thinkerTellerDigestCursor:
+          typeof channelsRaw.thinkerTellerDigestCursor === 'number'
+            ? Math.max(0, Math.floor(channelsRaw.thinkerTellerDigestCursor))
+            : 0,
+      }
+    : undefined
+  return {
+    tasks,
+    ...(evolve ? { evolve } : {}),
+    ...(channels ? { channels } : {}),
+  }
 }
 
 export const loadRuntimeSnapshot = async (
@@ -110,6 +151,7 @@ export const selectPersistedTasks = (tasks: Task[]): Task[] =>
           fingerprint: task.fingerprint,
           prompt: task.prompt,
           title: task.title,
+          profile: task.profile,
           status: 'pending',
           createdAt: task.createdAt,
           ...(typeof task.attempts === 'number'

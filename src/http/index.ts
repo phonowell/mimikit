@@ -10,14 +10,14 @@ import { registerErrorHandler } from './error-handler.js'
 import { resolveRoots } from './helpers.js'
 import { registerApiRoutes, registerNotFoundHandler } from './routes-api.js'
 
-import type { SupervisorConfig } from '../config.js'
-import type { Supervisor } from '../supervisor/supervisor.js'
+import type { AppConfig } from '../config.js'
+import type { Orchestrator } from '../orchestrator/orchestrator.js'
 
 const MAX_BODY_BYTES = 64 * 1024
 
 const registerStaticAssets = (
   app: ReturnType<typeof fastify>,
-  config: SupervisorConfig,
+  config: AppConfig,
 ): void => {
   const { webDir, markedDir, purifyDir } = resolveRoots()
   const generatedDir = resolve(config.stateDir, 'generated')
@@ -46,14 +46,14 @@ const registerStaticAssets = (
 }
 
 export const createHttpServer = (
-  supervisor: Supervisor,
-  config: SupervisorConfig,
+  orchestrator: Orchestrator,
+  config: AppConfig,
   port: number,
 ) => {
   const app = fastify({ bodyLimit: MAX_BODY_BYTES })
 
   registerErrorHandler(app)
-  registerApiRoutes(app, supervisor, config)
+  registerApiRoutes(app, orchestrator, config)
   registerNotFoundHandler(app)
   registerStaticAssets(app, config)
 

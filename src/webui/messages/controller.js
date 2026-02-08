@@ -63,8 +63,8 @@ export function createMessagesController({
   const quote = createQuoteController({ quotePreview, quoteLabel, quoteText, input })
 
   const syncLoadingState = () => {
-    const managerRunning = Boolean(lastStatus?.managerRunning)
-    const shouldWait = messageState.awaitingReply && managerRunning
+    const thinkerRunning = Boolean(lastStatus?.thinkerRunning)
+    const shouldWait = messageState.awaitingReply && thinkerRunning
     if (shouldWait) {
       if (!loading.isLoading()) loading.setLoading(true)
     } else if (loading.isLoading()) loading.setLoading(false)
@@ -196,3 +196,4 @@ export function createMessagesController({
 
   return { start, stop, sendMessage, isFullyIdle }
 }
+

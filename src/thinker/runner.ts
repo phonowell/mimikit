@@ -1,0 +1,178 @@
+import { runApiRunner } from '../llm/api-runner.js'
+import { buildThinkerPrompt } from '../prompts/build-prompts.js'
+import {
+  buildLlmArchiveLookupKey,
+  type LlmArchiveLookup,
+} from '../storage/llm-archive.js'
+
+import {
+  archiveThinkerResult,
+  DEFAULT_THINKER_FALLBACK_MODEL,
+  normalizeOptional,
+  toError,
+  withSampling,
+} from './archive-helpers.js'
+
+import type { ThinkerEnv } from './env-types.js'
+import type {
+  HistoryMessage,
+  Task,
+  TaskResult,
+  TokenUsage,
+  UserInput,
+} from '../types/index.js'
+import type { ModelReasoningEffort } from '@openai/codex-sdk'
+
+export const runThinker = async (params: {
+  stateDir: string
+  workDir: string
+  inputs: UserInput[]
+  results: TaskResult[]
+  tasks: Task[]
+  history: HistoryMessage[]
+  env?: ThinkerEnv
+  timeoutMs: number
+  model?: string
+  modelReasoningEffort?: ModelReasoningEffort
+  seed?: number
+  temperature?: number
+  fallbackModel?: string
+}): Promise<{
+  output: string
+  elapsedMs: number
+  fallbackUsed: boolean
+  usage?: TokenUsage
+}> => {
+  const prompt = await buildThinkerPrompt({
+    stateDir: params.stateDir,
+    workDir: params.workDir,
+    inputs: params.inputs,
+    results: params.results,
+    tasks: params.tasks,
+    history: params.history,
+    ...(params.env ? { env: params.env } : {}),
+  })
+  const model = normalizeOptional(params.model)
+  const lookup: LlmArchiveLookup = {
+    role: 'thinker',
+    ...(model ? { model } : {}),
+    prompt,
+    messages: [{ role: 'user', content: prompt }],
+    ...(params.seed !== undefined ? { seed: params.seed } : {}),
+    ...(params.temperature !== undefined
+      ? { temperature: params.temperature }
+      : {}),
+  }
+  const requestKey = buildLlmArchiveLookupKey(lookup)
+  const base = { role: 'thinker' as const, ...(model ? { model } : {}) }
+  const fallbackModel = normalizeOptional(
+    params.fallbackModel ?? DEFAULT_THINKER_FALLBACK_MODEL,
+  )
+  const fallbackRequestKey = fallbackModel
+    ? buildLlmArchiveLookupKey({
+        ...lookup,
+        model: fallbackModel,
+        attempt: 'fallback',
+      })
+    : undefined
+  try {
+    const r = await runApiRunner({
+      prompt,
+      timeoutMs: params.timeoutMs,
+      ...(model ? { model } : {}),
+      ...(params.modelReasoningEffort
+        ? { modelReasoningEffort: params.modelReasoningEffort }
+        : {}),
+      ...(params.seed !== undefined ? { seed: params.seed } : {}),
+      ...(params.temperature !== undefined
+        ? { temperature: params.temperature }
+        : {}),
+    })
+    await archiveThinkerResult(
+      params.stateDir,
+      {
+        ...base,
+        attempt: 'primary',
+        requestKey,
+        ...withSampling(params),
+      },
+      prompt,
+      {
+        ...r,
+        ok: true,
+      },
+    )
+    return {
+      output: r.output,
+      elapsedMs: r.elapsedMs,
+      fallbackUsed: false,
+      ...(r.usage ? { usage: r.usage } : {}),
+    }
+  } catch (error) {
+    const err = toError(error)
+    await archiveThinkerResult(
+      params.stateDir,
+      {
+        ...base,
+        attempt: 'primary',
+        requestKey,
+        ...withSampling(params),
+      },
+      prompt,
+      {
+        output: '',
+        ok: false,
+        error: err.message,
+        errorName: err.name,
+      },
+    )
+    if (!fallbackModel) throw error
+    try {
+      const r = await runApiRunner({
+        prompt,
+        timeoutMs: params.timeoutMs,
+        model: fallbackModel,
+        ...(params.modelReasoningEffort
+          ? { modelReasoningEffort: params.modelReasoningEffort }
+          : {}),
+        ...(params.seed !== undefined ? { seed: params.seed } : {}),
+        ...(params.temperature !== undefined
+          ? { temperature: params.temperature }
+          : {}),
+      })
+      await archiveThinkerResult(
+        params.stateDir,
+        {
+          role: 'thinker',
+          model: fallbackModel,
+          attempt: 'fallback',
+          ...(fallbackRequestKey ? { requestKey: fallbackRequestKey } : {}),
+          ...withSampling(params),
+        },
+        prompt,
+        { ...r, ok: true },
+      )
+      return {
+        output: r.output,
+        elapsedMs: r.elapsedMs,
+        fallbackUsed: true,
+        ...(r.usage ? { usage: r.usage } : {}),
+      }
+    } catch (fbError) {
+      const fbErr = toError(fbError)
+      await archiveThinkerResult(
+        params.stateDir,
+        {
+          role: 'thinker',
+          model: fallbackModel,
+          attempt: 'fallback',
+          ...(fallbackRequestKey ? { requestKey: fallbackRequestKey } : {}),
+          ...withSampling(params),
+        },
+        prompt,
+        { output: '', ok: false, error: fbErr.message, errorName: fbErr.name },
+      )
+      throw fbError
+    }
+  }
+}

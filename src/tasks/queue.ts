@@ -1,6 +1,6 @@
 import { newId, nowIso } from '../shared/utils.js'
 
-import type { Task, TaskStatus } from '../types/index.js'
+import type { Task, TaskStatus, WorkerProfile } from '../types/index.js'
 
 export type EnqueueTaskResult = {
   task: Task
@@ -46,13 +46,18 @@ export const buildTaskFingerprint = (prompt: string): string =>
 const isActiveTask = (task: Task): boolean =>
   task.status === 'pending' || task.status === 'running'
 
-export const createTask = (prompt: string, title?: string): Task => {
+export const createTask = (
+  prompt: string,
+  title?: string,
+  profile: WorkerProfile = 'economy',
+): Task => {
   const id = newId()
   return {
     id,
     fingerprint: buildTaskFingerprint(prompt),
     prompt,
     title: resolveTitle(id, prompt, title),
+    profile,
     status: 'pending',
     createdAt: nowIso(),
   }
@@ -62,13 +67,14 @@ export const enqueueTask = (
   tasks: Task[],
   prompt: string,
   title?: string,
+  profile: WorkerProfile = 'economy',
 ): EnqueueTaskResult => {
   const fingerprint = buildTaskFingerprint(prompt)
   const existing = tasks.find(
     (task) => task.fingerprint === fingerprint && isActiveTask(task),
   )
   if (existing) return { task: existing, created: false }
-  const task = createTask(prompt, title)
+  const task = createTask(prompt, title, profile)
   tasks.push(task)
   return { task, created: true }
 }

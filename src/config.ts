@@ -2,7 +2,7 @@ import { resolve } from 'node:path'
 
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
-export type SupervisorConfig = {
+export type AppConfig = {
   stateDir: string
   workDir: string
   evolve: {
@@ -12,9 +12,15 @@ export type SupervisorConfig = {
     runtimeHighLatencyMs: number
     runtimeHighUsageTotal: number
   }
-  manager: {
+  teller: {
     pollMs: number
     debounceMs: number
+    model: string
+    modelReasoningEffort: ModelReasoningEffort
+  }
+  thinker: {
+    pollMs: number
+    minIntervalMs: number
     maxResultWaitMs: number
     tasksMaxCount: number
     tasksMinCount: number
@@ -27,18 +33,27 @@ export type SupervisorConfig = {
   }
   worker: {
     maxConcurrent: number
-    timeoutMs: number
     retryMaxAttempts: number
     retryBackoffMs: number
-    model: string
-    modelReasoningEffort: ModelReasoningEffort
+    economy: {
+      timeoutMs: number
+      model: string
+      modelReasoningEffort: ModelReasoningEffort
+    }
+    expert: {
+      timeoutMs: number
+      model: string
+      modelReasoningEffort: ModelReasoningEffort
+    }
   }
 }
+
+export type OrchestratorConfig = AppConfig
 
 export const defaultConfig = (params: {
   stateDir: string
   workDir: string
-}): SupervisorConfig => ({
+}): AppConfig => ({
   stateDir: resolve(params.stateDir),
   workDir: resolve(params.workDir),
   evolve: {
@@ -48,9 +63,15 @@ export const defaultConfig = (params: {
     runtimeHighLatencyMs: 15 * 60 * 1_000,
     runtimeHighUsageTotal: 100_000,
   },
-  manager: {
+  teller: {
     pollMs: 1_000,
     debounceMs: 10_000,
+    model: 'gpt-5.2-high',
+    modelReasoningEffort: 'medium',
+  },
+  thinker: {
+    pollMs: 2_000,
+    minIntervalMs: 15_000,
     maxResultWaitMs: 20_000,
     tasksMaxCount: 20,
     tasksMinCount: 5,
@@ -63,10 +84,17 @@ export const defaultConfig = (params: {
   },
   worker: {
     maxConcurrent: 3,
-    timeoutMs: 10 * 60 * 1_000,
     retryMaxAttempts: 1,
     retryBackoffMs: 5_000,
-    model: 'gpt-5.3-codex-high',
-    modelReasoningEffort: 'high',
+    economy: {
+      timeoutMs: 5 * 60 * 1_000,
+      model: 'gpt-5.2-mini',
+      modelReasoningEffort: 'low',
+    },
+    expert: {
+      timeoutMs: 10 * 60 * 1_000,
+      model: 'gpt-5.3-codex-high',
+      modelReasoningEffort: 'high',
+    },
   },
 })

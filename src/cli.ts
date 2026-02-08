@@ -7,7 +7,7 @@ import { buildPaths } from './fs/paths.js'
 import { createHttpServer } from './http/index.js'
 import { loadCodexSettings } from './llm/openai.js'
 import { setDefaultLogPath } from './log/safe.js'
-import { Supervisor } from './supervisor/supervisor.js'
+import { Orchestrator } from './orchestrator/orchestrator.js'
 
 const { values } = parseArgs({
   options: {
@@ -46,15 +46,15 @@ applyCliEnvOverrides(config)
 
 console.log('[cli] config:', config)
 
-const supervisor = new Supervisor(config)
+const orchestrator = new Orchestrator(config)
 
-await supervisor.start()
-createHttpServer(supervisor, config, parseInt(port, 10))
+await orchestrator.start()
+createHttpServer(orchestrator, config, parseInt(port, 10))
 
 const shutdown = (reason: string) => {
   console.log(`\n[cli] ${reason}`)
   void (async () => {
-    await supervisor.stopAndPersist()
+    await orchestrator.stopAndPersist()
     process.exit(0)
   })()
 }

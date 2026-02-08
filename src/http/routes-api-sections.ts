@@ -9,8 +9,8 @@ import {
   buildMessagesMarkdownExport,
 } from './messages-export.js'
 
-import type { SupervisorConfig } from '../config.js'
-import type { Supervisor } from '../supervisor/supervisor.js'
+import type { AppConfig } from '../config.js'
+import type { Orchestrator } from '../orchestrator/orchestrator.js'
 import type { FastifyInstance } from 'fastify'
 
 const isWithinRoot = (root: string, path: string): boolean => {
@@ -22,8 +22,8 @@ const isWithinRoot = (root: string, path: string): boolean => {
 
 export const registerTaskArchiveRoute = (
   app: FastifyInstance,
-  supervisor: Supervisor,
-  config: SupervisorConfig,
+  orchestrator: Orchestrator,
+  config: AppConfig,
 ): void => {
   app.get('/api/tasks/:id/archive', async (request, reply) => {
     const params = request.params as { id?: string } | undefined
@@ -32,7 +32,7 @@ export const registerTaskArchiveRoute = (
       reply.code(400).send({ error: 'task id is required' })
       return
     }
-    const task = supervisor.getTaskById(taskId)
+    const task = orchestrator.getTaskById(taskId)
     if (!task) {
       reply.code(404).send({ error: 'task not found' })
       return
@@ -67,7 +67,7 @@ export const registerTaskArchiveRoute = (
 
 export const registerTaskCancelRoute = (
   app: FastifyInstance,
-  supervisor: Supervisor,
+  orchestrator: Orchestrator,
 ): void => {
   app.post('/api/tasks/:id/cancel', async (request, reply) => {
     const params = request.params as { id?: string } | undefined
@@ -76,7 +76,9 @@ export const registerTaskCancelRoute = (
       reply.code(400).send({ error: 'task id is required' })
       return
     }
-    const cancelResult = await supervisor.cancelTask(taskId, { source: 'http' })
+    const cancelResult = await orchestrator.cancelTask(taskId, {
+      source: 'http',
+    })
     if (!cancelResult.ok) {
       const status =
         cancelResult.status === 'not_found'
@@ -93,14 +95,14 @@ export const registerTaskCancelRoute = (
 
 export const registerControlRoutes = (
   app: FastifyInstance,
-  supervisor: Supervisor,
-  config: SupervisorConfig,
+  orchestrator: Orchestrator,
+  config: AppConfig,
 ): void => {
   app.post('/api/restart', (_request, reply) => {
     reply.send({ ok: true })
     setTimeout(() => {
       void (async () => {
-        await supervisor.stopAndPersist()
+        await orchestrator.stopAndPersist()
         process.exit(75)
       })()
     }, 100)
@@ -110,7 +112,7 @@ export const registerControlRoutes = (
     reply.send({ ok: true })
     setTimeout(() => {
       void (async () => {
-        await supervisor.stopAndPersist()
+        await orchestrator.stopAndPersist()
         try {
           await clearStateDir(config.stateDir)
         } catch (error) {
@@ -124,12 +126,12 @@ export const registerControlRoutes = (
 
 export const registerMessagesExportRoute = (
   app: FastifyInstance,
-  supervisor: Supervisor,
+  orchestrator: Orchestrator,
 ): void => {
   app.get('/api/messages/export', async (request, reply) => {
     const query = request.query as Record<string, unknown> | undefined
     const limit = parseExportLimit(query?.limit)
-    const messages = await supervisor.getChatHistory(limit)
+    const messages = await orchestrator.getChatHistory(limit)
     const exportedAt = new Date().toISOString()
     const markdown = buildMessagesMarkdownExport({
       messages,

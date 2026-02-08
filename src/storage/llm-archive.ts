@@ -9,7 +9,7 @@ import { dateStamp, formatSection, pushLine } from './task-results.js'
 import type { TokenUsage } from '../types/index.js'
 
 export type LlmArchiveEntry = {
-  role: 'manager' | 'worker'
+  role: 'teller' | 'thinker' | 'worker'
   prompt: string
   output: string
   ok: boolean
@@ -27,7 +27,7 @@ export type LlmArchiveEntry = {
 }
 
 export type LlmArchiveLookup = {
-  role: 'manager' | 'worker'
+  role: 'teller' | 'thinker' | 'worker'
   model?: string
   attempt?: 'primary' | 'fallback'
   prompt?: string
@@ -40,7 +40,7 @@ export type LlmArchiveLookup = {
 
 export type LlmArchiveRecord = {
   path: string
-  role: 'manager' | 'worker'
+  role: 'teller' | 'thinker' | 'worker'
   prompt: string
   output: string
   ok: boolean

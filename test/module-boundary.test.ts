@@ -154,7 +154,10 @@ const topLevelOf = (relativePath: string): string => {
 const forbiddenBySource = new Map<string, Set<string>>([
   ['http', new Set(['evolve'])],
   ['log', new Set(['fs'])],
-  ['fs', new Set(['supervisor', 'http', 'roles', 'evolve', 'llm', 'tasks'])],
+  [
+    'fs',
+    new Set(['orchestrator', 'http', 'prompts', 'evolve', 'llm', 'tasks']),
+  ],
 ])
 
 const findForbiddenEdges = (edges: ImportEdge[]): ImportEdge[] =>
