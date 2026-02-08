@@ -1,8 +1,3 @@
-import { join } from 'node:path'
-
-import read from 'fire-keeper/read'
-
-import { logSafeError } from '../log/safe.js'
 import { readTaskResultsForTasks } from '../storage/task-results.js'
 
 import {
@@ -15,66 +10,34 @@ import {
   joinPromptSections,
   renderPromptTemplate,
 } from './format.js'
+import {
+  loadInjectionPrompt,
+  loadPromptFile,
+  loadSystemPrompt,
+} from './prompt-loader.js'
+import {
+  buildTaskResultDateHints,
+  collectResultTaskIds,
+  collectTaskResults,
+  dedupeTaskResults,
+  mergeTaskResults,
+} from './task-results-merge.js'
+export {
+  buildCodeEvolveTaskPrompt,
+  buildIdleReviewPrompt,
+  buildPromptOptimizerPrompt,
+  buildWorkerStandardPlannerPrompt,
+} from './build-prompts-extra.js'
 
-import type { ThinkerEnv } from '../thinker/env-types.js'
 import type {
   HistoryMessage,
   Task,
   TaskResult,
+  ThinkerEnv,
   UserInput,
 } from '../types/index.js'
 
-export type { ThinkerEnv } from '../thinker/env-types.js'
-
-const mergeTaskResults = (
-  primary: TaskResult[],
-  secondary: TaskResult[],
-): TaskResult[] => {
-  const merged = new Map<string, TaskResult>()
-  for (const result of secondary) merged.set(result.taskId, result)
-  for (const result of primary) merged.set(result.taskId, result)
-  const values = Array.from(merged.values())
-  values.sort((a, b) => Date.parse(b.completedAt) - Date.parse(a.completedAt))
-  return values
-}
-
-const dedupeTaskResults = (results: TaskResult[]): TaskResult[] =>
-  mergeTaskResults(results, [])
-
-const collectTaskResults = (tasks: Task[]): TaskResult[] =>
-  tasks
-    .filter((task): task is Task & { result: TaskResult } =>
-      Boolean(task.result),
-    )
-    .map((task) => task.result)
-
-const loadPromptFile = async (
-  workDir: string,
-  role: string,
-  name: string,
-): Promise<string> => {
-  const path = join(workDir, 'prompts', 'agents', role, `${name}.md`)
-  try {
-    const content = await read(path, { raw: true })
-    if (!content) return ''
-    if (Buffer.isBuffer(content)) return content.toString('utf8')
-    return typeof content === 'string' ? content : ''
-  } catch (error) {
-    const code =
-      typeof error === 'object' && error && 'code' in error
-        ? String((error as { code?: string }).code)
-        : undefined
-    if (code === 'ENOENT') return ''
-    await logSafeError('loadPromptFile', error, { meta: { path } })
-    throw error
-  }
-}
-
-const loadSystemPrompt = (workDir: string, role: string): Promise<string> =>
-  loadPromptFile(workDir, role, 'system')
-
-const loadInjectionPrompt = (workDir: string, role: string): Promise<string> =>
-  loadPromptFile(workDir, role, 'injection')
+export type { ThinkerEnv } from '../types/index.js'
 
 export const buildThinkerPrompt = async (params: {
   stateDir: string
@@ -93,17 +56,8 @@ export const buildThinkerPrompt = async (params: {
   )
   const tasksForPrompt = params.tasks
   const promptTasks = tasksForPrompt
-  const resultTaskIds = promptTasks
-    .filter((task) => task.status !== 'pending' && task.status !== 'running')
-    .map((task) => task.id)
-  const dateHints = Object.fromEntries(
-    promptTasks
-      .filter(
-        (task): task is Task & { completedAt: string } =>
-          typeof task.completedAt === 'string' && task.completedAt.length > 0,
-      )
-      .map((task) => [task.id, task.completedAt.slice(0, 10)]),
-  )
+  const resultTaskIds = collectResultTaskIds(promptTasks)
+  const dateHints = buildTaskResultDateHints(promptTasks)
   const archivedResults =
     resultTaskIds.length > 0
       ? await readTaskResultsForTasks(params.stateDir, resultTaskIds, {
@@ -214,92 +168,4 @@ export const buildTellerDigestPrompt = async (params: {
   ])
   const injection = renderPromptTemplate(injectionTemplate, injectionValues)
   return joinPromptSections([system, injection])
-}
-
-export const buildWorkerStandardPlannerPrompt = async (params: {
-  workDir: string
-  taskPrompt: string
-  transcript: string[]
-  tools: string[]
-  checkpointRecovered: boolean
-}): Promise<string> => {
-  const system = await loadPromptFile(
-    params.workDir,
-    'worker-standard',
-    'planner-system',
-  )
-  const injectionTemplate = await loadPromptFile(
-    params.workDir,
-    'worker-standard',
-    'planner-injection',
-  )
-  const transcript =
-    params.transcript.length > 0 ? params.transcript.join('\n\n') : '(empty)'
-  const injectionValues = Object.fromEntries<string>([
-    ['checkpoint_recovered', params.checkpointRecovered ? 'true' : 'false'],
-    ['task_prompt', params.taskPrompt],
-    ['available_tools', params.tools.join(', ')],
-    ['transcript', transcript],
-  ])
-  const injection = renderPromptTemplate(injectionTemplate, injectionValues)
-  return joinPromptSections([system, injection])
-}
-
-export const buildIdleReviewPrompt = async (params: {
-  workDir: string
-  historyTexts: string[]
-}): Promise<string> => {
-  const system = await loadPromptFile(
-    params.workDir,
-    'thinker',
-    'idle-review-system',
-  )
-  const injectionTemplate = await loadPromptFile(
-    params.workDir,
-    'thinker',
-    'idle-review-injection',
-  )
-  const historySnippets =
-    params.historyTexts.length > 0
-      ? params.historyTexts
-          .map((line, index) => `${index + 1}. ${line}`)
-          .join('\n')
-      : '(empty)'
-  const injection = renderPromptTemplate(injectionTemplate, {
-    history_snippets: historySnippets,
-  })
-  return joinPromptSections([system, injection])
-}
-
-export const buildCodeEvolveTaskPrompt = async (params: {
-  workDir: string
-  feedbackMessages: string[]
-}): Promise<string> => {
-  const template = await loadPromptFile(
-    params.workDir,
-    'worker-expert',
-    'code-evolve-task',
-  )
-  const feedbackList =
-    params.feedbackMessages.length > 0
-      ? params.feedbackMessages
-          .slice(0, 20)
-          .map((item, index) => `${index + 1}. ${item}`)
-          .join('\n')
-      : '(empty)'
-  return renderPromptTemplate(template, { feedback_list: feedbackList })
-}
-
-export const buildPromptOptimizerPrompt = async (params: {
-  workDir: string
-  source: string
-}): Promise<string> => {
-  const template = await loadPromptFile(
-    params.workDir,
-    'thinker',
-    'prompt-optimizer',
-  )
-  return renderPromptTemplate(template, {
-    source_prompt: params.source,
-  })
 }

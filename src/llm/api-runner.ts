@@ -7,8 +7,11 @@ import {
   normalizeBaseUrl,
   requestJson,
 } from './http-client.js'
-import { loadCodexSettings, resolveOpenAiModel } from './openai.js'
-import { HARDCODED_MODEL_REASONING_EFFORT } from './reasoning-effort.js'
+import {
+  HARDCODED_MODEL_REASONING_EFFORT,
+  loadCodexSettings,
+  resolveOpenAiModel,
+} from './openai.js'
 
 import type { TokenUsage } from '../types/index.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'

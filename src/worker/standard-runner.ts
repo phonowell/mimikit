@@ -1,50 +1,24 @@
 import { runApiRunner } from '../llm/api-runner.js'
 import { buildWorkerStandardPlannerPrompt } from '../prompts/build-prompts.js'
-import { parseCommandAttrs } from '../shared/command-attrs.js'
 import {
   loadTaskCheckpoint,
   saveTaskCheckpoint,
 } from '../storage/task-checkpoint.js'
 import { appendTaskProgress } from '../storage/task-progress.js'
 
-import { listWorkerTools, runWorkerTool } from './tools/registry.js'
+import { parseStep } from './standard-runner-step.js'
+import { executeToolStep } from './standard-runner-toolcall.js'
+import { listWorkerTools } from './tools/registry.js'
 
+import type { StandardToolStep } from './standard-runner-toolcall.js'
 import type { TokenUsage } from '../types/index.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
-
-const TOOL_ACTIONS = [
-  'read',
-  'write',
-  'edit',
-  'apply_patch',
-  'exec',
-  'browser',
-] as const
-
-type StandardToolAction = (typeof TOOL_ACTIONS)[number]
-
-type StandardStep = {
-  action: 'respond' | 'tool'
-  response?: string
-  tool?: {
-    name: StandardToolAction
-    args: Record<string, unknown>
-  }
-}
 
 type StandardState = {
   round: number
   transcript: string[]
   finalized: boolean
   finalOutput: string
-}
-
-type ToolExecutionRecord = {
-  round: number
-  tool: string
-  ok: boolean
-  output: string
-  error?: string
 }
 
 const initialState = (): StandardState => ({
@@ -72,126 +46,6 @@ const normalizeState = (raw: unknown): StandardState => {
       typeof record.finalOutput === 'string' ? record.finalOutput : '',
   }
 }
-
-const parseStep = (output: string): StandardStep => {
-  const raw = output.trim()
-  if (!raw) throw new Error('standard_step_empty')
-
-  const parseBoolean = (value: string | undefined): boolean | undefined => {
-    if (value === undefined) return undefined
-    if (value === 'true') return true
-    if (value === 'false') return false
-    throw new Error('standard_tool_boolean_invalid')
-  }
-
-  const requireAttr = (attrs: Record<string, string>, key: string): string => {
-    const value = attrs[key]
-    if (value === undefined || value.trim().length === 0)
-      throw new Error(`standard_tool_attr_missing:${key}`)
-    return value
-  }
-
-  const asToolAction = (action: string): StandardToolAction | undefined =>
-    TOOL_ACTIONS.find((item) => item === action)
-
-  const buildToolArgs = (
-    action: StandardToolAction,
-    attrs: Record<string, string>,
-  ): Record<string, unknown> => {
-    if (action === 'read') return { path: requireAttr(attrs, 'path') }
-
-    if (action === 'write') {
-      return {
-        path: requireAttr(attrs, 'path'),
-        content: requireAttr(attrs, 'content'),
-      }
-    }
-    if (action === 'edit') {
-      const replaceAll = parseBoolean(attrs.replaceAll)
-      return {
-        path: requireAttr(attrs, 'path'),
-        oldText: requireAttr(attrs, 'oldText'),
-        newText: requireAttr(attrs, 'newText'),
-        ...(replaceAll === undefined ? {} : { replaceAll }),
-      }
-    }
-    if (action === 'apply_patch') return { input: requireAttr(attrs, 'input') }
-
-    if (action === 'exec') return { command: requireAttr(attrs, 'command') }
-
-    return { command: requireAttr(attrs, 'command') }
-  }
-
-  const parseAtStep = (text: string): StandardStep | null => {
-    const lines = text
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .filter((line) => line.startsWith('@'))
-    if (lines.length === 0) return null
-    const line = lines[lines.length - 1] ?? ''
-    const commandMatch = line.match(/^@([a-zA-Z_][\w-]*)(?:\s+(.+))?$/)
-    if (!commandMatch) return null
-    const action = (commandMatch[1] ?? '').trim()
-    const attrs = parseCommandAttrs(commandMatch[2]?.trim() ?? '')
-
-    if (action === 'respond') {
-      const response = (attrs.response ?? '').trim()
-      if (!response) throw new Error('standard_response_empty')
-      return {
-        action: 'respond',
-        response,
-      }
-    }
-
-    const toolName = asToolAction(action)
-    if (!toolName) throw new Error(`standard_step_unknown_command:${action}`)
-
-    return {
-      action: 'tool',
-      tool: {
-        name: toolName,
-        args: buildToolArgs(toolName, attrs),
-      },
-    }
-  }
-
-  const direct = parseAtStep(raw)
-  if (direct) return direct
-
-  const commandBlockMatch = raw.match(
-    /<MIMIKIT:commands\s*>([\s\S]*?)<\/MIMIKIT:commands>/,
-  )
-  if (commandBlockMatch) {
-    const block = parseAtStep(commandBlockMatch[1] ?? '')
-    if (block) return block
-  }
-
-  throw new Error('standard_step_parse_failed:missing_valid_command')
-}
-
-const summarizeToolCall = (params: {
-  name: string
-  args: unknown
-  output: string
-  ok: boolean
-  error?: string
-}): string =>
-  [
-    `tool: ${params.name}`,
-    `ok: ${params.ok}`,
-    `args: ${JSON.stringify(params.args ?? {})}`,
-    ...(params.error ? [`error: ${params.error}`] : []),
-    `output:\n${params.output}`,
-  ].join('\n')
-
-const buildToolExecutionPayload = (
-  record: ToolExecutionRecord,
-): Record<string, unknown> => ({
-  round: record.round,
-  tool: record.tool,
-  ok: record.ok,
-  ...(record.error ? { error: record.error } : {}),
-})
 
 export const runStandardWorker = async (params: {
   stateDir: string
@@ -289,55 +143,15 @@ export const runStandardWorker = async (params: {
       break
     }
 
-    const toolName = step.tool?.name.trim() ?? ''
-    if (!toolName) throw new Error('standard_tool_name_missing')
-    await appendTaskProgress({
+    const toolStep = step as StandardToolStep
+    const toolCall = await executeToolStep({
       stateDir: params.stateDir,
       taskId: params.taskId,
-      type: 'tool_call_start',
-      payload: {
-        round: state.round,
-        tool: toolName,
-        args: step.tool?.args ?? {},
-      },
-    })
-    const toolResult = await runWorkerTool(
-      { workDir: params.workDir },
-      toolName,
-      step.tool?.args ?? {},
-    )
-    const toolOutput =
-      toolResult.output.length > 20_000
-        ? `${toolResult.output.slice(0, 20_000)}\n...[truncated]`
-        : toolResult.output
-    const record: ToolExecutionRecord = {
+      workDir: params.workDir,
       round: state.round,
-      tool: toolName,
-      ok: toolResult.ok,
-      output: toolOutput,
-      ...(toolResult.error ? { error: toolResult.error } : {}),
-    }
-    await appendTaskProgress({
-      stateDir: params.stateDir,
-      taskId: params.taskId,
-      type: 'tool_call_end',
-      payload: {
-        round: state.round,
-        tool: toolName,
-        ok: toolResult.ok,
-        ...(toolResult.error ? { error: toolResult.error } : {}),
-        record: buildToolExecutionPayload(record),
-      },
+      step: toolStep,
     })
-    state.transcript.push(
-      summarizeToolCall({
-        name: toolName,
-        args: step.tool?.args ?? {},
-        output: toolOutput,
-        ok: toolResult.ok,
-        ...(toolResult.error ? { error: toolResult.error } : {}),
-      }),
-    )
+    state.transcript.push(toolCall.transcriptEntry)
     await saveTaskCheckpoint({
       stateDir: params.stateDir,
       checkpoint: {

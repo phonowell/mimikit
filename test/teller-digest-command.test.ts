@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 
-import { extractTellerDigestSummary } from '../src/orchestrator/teller-digest-command.js'
+import { extractTellerDigestSummary } from '../src/orchestrator/command-parser.js'
 
 test('extractTellerDigestSummary prefers @teller_digest summary attribute', () => {
   const output = [

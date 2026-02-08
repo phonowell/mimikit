@@ -1,4 +1,3 @@
-import { appendRuntimeSignalFeedback } from '../evolve/feedback.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { sleep } from '../shared/utils.js'
@@ -21,13 +20,15 @@ import {
   collectResultSummaries,
   processThinkerCommands,
 } from './thinker-commands.js'
+import {
+  appendThinkerErrorFeedback,
+  publishThinkerErrorDecision,
+} from './thinker-cycle-error.js'
 
 import type { RuntimeState } from './runtime-state.js'
 import type { TellerDigest } from '../types/index.js'
 
 const DEFAULT_THINKER_TIMEOUT_MS = 30_000
-
-const THINKER_ERROR_REPLY = '抱歉，我刚刚处理失败了。我会马上重试并继续推进。'
 
 const runThinkerCycle = async (
   runtime: RuntimeState,
@@ -141,43 +142,9 @@ const runThinkerCycle = async (
       }),
     )
     await bestEffort('appendEvolveFeedback: thinker_error', () =>
-      appendRuntimeSignalFeedback({
-        stateDir: runtime.config.stateDir,
-        severity: 'high',
-        message: `thinker error: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-        extractedIssue: {
-          kind: 'issue',
-          issue: {
-            title: `thinker error: ${
-              error instanceof Error ? error.message : String(error)
-            }`,
-            category: 'failure',
-            confidence: 0.95,
-            roiScore: 90,
-            action: 'fix',
-            rationale: 'thinker runtime failure',
-            fingerprint: 'thinker_error',
-          },
-        },
-        evidence: {
-          event: 'thinker_error',
-        },
-        context: {
-          note: 'thinker_error',
-        },
-      }).then(() => undefined),
+      appendThinkerErrorFeedback(runtime, error),
     )
-    await publishThinkerDecision({
-      paths: runtime.paths,
-      payload: {
-        digestId: digest.digestId,
-        decision: THINKER_ERROR_REPLY,
-        inputIds: inputs.map((input) => input.id),
-        taskSummary: digest.taskSummary,
-      },
-    })
+    await publishThinkerErrorDecision(runtime, digest)
   } finally {
     await bestEffort('persistRuntimeState: thinker', () =>
       persistRuntimeState(runtime),

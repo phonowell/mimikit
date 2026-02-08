@@ -1,5 +1,5 @@
 import { runApiRunner } from '../llm/api-runner.js'
-import { extractTellerDigestSummary } from '../orchestrator/teller-digest-command.js'
+import { extractTellerDigestSummary } from '../orchestrator/command-parser.js'
 import {
   buildTellerDigestPrompt,
   buildTellerPrompt,

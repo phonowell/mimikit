@@ -8,9 +8,29 @@ import {
 } from '../streams/channels.js'
 import { formatDecisionForUser, runTellerDigest } from '../teller/runner.js'
 
-import { clearTellerBuffer, createTellerBuffer } from './teller-buffer.js'
-
 import type { RuntimeState } from './runtime-state.js'
+import type { TaskResult } from '../types/index.js'
+
+type TellerBuffer = {
+  inputs: RuntimeState['inflightInputs']
+  results: TaskResult[]
+  lastInputAt: number
+  firstResultAt: number
+}
+
+const createTellerBuffer = (): TellerBuffer => ({
+  inputs: [],
+  results: [],
+  lastInputAt: 0,
+  firstResultAt: 0,
+})
+
+const clearTellerBuffer = (buffer: TellerBuffer): void => {
+  buffer.inputs = []
+  buffer.results = []
+  buffer.lastInputAt = 0
+  buffer.firstResultAt = 0
+}
 
 export const tellerLoop = async (runtime: RuntimeState): Promise<void> => {
   const buffer = createTellerBuffer()

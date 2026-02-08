@@ -1,5 +1,3 @@
-import { parseCommandAttrs } from '../shared/command-attrs.js'
-
 import {
   collectCommandMatches,
   extractCommandsAndText,
@@ -12,6 +10,28 @@ export type ParsedCommand = {
 }
 
 const COMMAND_LINE_RE = /^@([a-zA-Z_][\w-]*)(?:\s+(.+))?$/
+const COMMAND_ATTR_RE = /(\w+)\s*=\s*"((?:\\.|[^"\\])*)"/g
+const TELLER_DIGEST_ACTIONS = new Set(['teller_digest', 'handoff_thinker'])
+
+const unescapeCommandAttrValue = (value: string): string =>
+  value.replace(/\\([\\"nrt])/g, (_match, token: string) => {
+    if (token === 'n') return '\n'
+    if (token === 'r') return '\r'
+    if (token === 't') return '\t'
+    return token
+  })
+
+const parseCommandAttrs = (raw: string): Record<string, string> => {
+  const attrs: Record<string, string> = {}
+  if (!raw) return attrs
+  for (const match of raw.matchAll(COMMAND_ATTR_RE)) {
+    const key = match[1]
+    const value = unescapeCommandAttrValue(match[2] ?? '')
+    if (!key) continue
+    attrs[key] = value
+  }
+  return attrs
+}
 
 const parseCommandMatches = (matches: RegExpMatchArray[]): ParsedCommand[] =>
   matches
@@ -57,4 +77,20 @@ export const parseCommands = (
   if (lineCommands.length > 0) return { commands: lineCommands, text }
   const commands = parseCommandMatches(collectCommandMatches(commandText))
   return { commands, text }
+}
+
+export const extractTellerDigestSummary = (output: string): string => {
+  const trimmed = output.trim()
+  if (!trimmed) return ''
+  const parsed = parseCommands(trimmed)
+  for (const command of parsed.commands) {
+    if (!TELLER_DIGEST_ACTIONS.has(command.action)) continue
+    const summaryAttr = command.attrs.summary?.trim()
+    if (summaryAttr) return summaryAttr
+    const summaryContent = command.content?.trim()
+    if (summaryContent) return summaryContent
+  }
+  const fallbackText = parsed.text.trim()
+  if (fallbackText) return fallbackText
+  return trimmed
 }

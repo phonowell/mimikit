@@ -28,7 +28,11 @@ type CodexSettings = {
   requiresOpenAiAuth?: boolean
 }
 
+import type { ModelReasoningEffort } from '@openai/codex-sdk'
+
 let cachedSettings: CodexSettings | null = null
+
+export const HARDCODED_MODEL_REASONING_EFFORT: ModelReasoningEffort = 'high'
 
 const codexDir = (): string => join(homedir(), '.codex')
 const codexAuthPath = (): string => join(codexDir(), 'auth.json')

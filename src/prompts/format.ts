@@ -2,7 +2,7 @@ import { hostname, release as osRelease, type as osType } from 'node:os'
 
 import { escapeCdata, normalizeTagName } from './format-base.js'
 
-import type { ThinkerEnv } from '../thinker/env-types.js'
+import type { ThinkerEnv } from '../types/index.js'
 
 type PromptTemplateValues = Record<string, string>
 

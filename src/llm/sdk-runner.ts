@@ -5,8 +5,10 @@ import { bestEffort, logSafeError } from '../log/safe.js'
 import { normalizeUsage } from '../shared/utils.js'
 
 import { createIdleAbort } from './idle-abort.js'
-import { loadCodexSettings } from './openai.js'
-import { HARDCODED_MODEL_REASONING_EFFORT } from './reasoning-effort.js'
+import {
+  HARDCODED_MODEL_REASONING_EFFORT,
+  loadCodexSettings,
+} from './openai.js'
 
 import type { TokenUsage } from '../types/index.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'

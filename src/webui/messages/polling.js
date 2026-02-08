@@ -1,0 +1,98 @@
+export const createMessageFetchers = (params) => {
+  const {
+    messageState,
+    loading,
+    notifications,
+    doRender,
+    onStatusUpdate,
+    onStatusStale,
+    setDisconnected,
+    getMessagesUrl,
+    getStatusUrl,
+    getMessageEtag,
+    setMessageEtag,
+    getStatusEtag,
+    setStatusEtag,
+    getLastMessageCursor,
+    setLastMessageCursor,
+    collectNewMessageIds,
+    hasMessageChange,
+    hasLoadingVisibilityChange,
+    updateMessageState,
+    updateLoadingVisibilityState,
+    applyRenderedState,
+    syncLoadingState,
+    mergeIncomingMessages,
+  } = params
+
+  const fetchMessages = async () => {
+    const headers = {}
+    const etag = getMessageEtag()
+    if (etag) headers['If-None-Match'] = etag
+    const msgRes = await fetch(getMessagesUrl(), { headers })
+    if (msgRes.status === 304) return null
+    const nextEtag = msgRes.headers.get('etag')
+    if (nextEtag) setMessageEtag(nextEtag)
+    return msgRes.json()
+  }
+
+  const fetchStatus = async () => {
+    const headers = {}
+    const etag = getStatusEtag()
+    if (etag) headers['If-None-Match'] = etag
+    const statusRes = await fetch(getStatusUrl(), { headers })
+    if (statusRes.status === 304) return null
+    const nextEtag = statusRes.headers.get('etag')
+    if (nextEtag) setStatusEtag(nextEtag)
+    return statusRes.json()
+  }
+
+  const applyMessageData = (msgData) => {
+    if (msgData === null) {
+      updateLoadingVisibilityState(messageState, loading.isLoading())
+      return false
+    }
+    const incoming = msgData.messages || []
+    const mode = msgData && typeof msgData.mode === 'string' ? msgData.mode : 'full'
+    const messages = mergeIncomingMessages(incoming, mode)
+    const newestId = messages.length > 0 ? messages[messages.length - 1].id : null
+    const loadingVisible = loading.isLoading()
+    const changed =
+      hasMessageChange(messageState, messages, newestId) ||
+      hasLoadingVisibilityChange(messageState, loadingVisible)
+    if (changed) {
+      const enterMessageIds = collectNewMessageIds(messageState, messages)
+      const rendered = doRender(messages, enterMessageIds)
+      if (rendered)
+        applyRenderedState(messageState, rendered, { loading, syncLoadingState })
+      notifications.notifyMessages(messages, enterMessageIds)
+    }
+    updateMessageState(messageState, messages, newestId)
+    setLastMessageCursor(newestId)
+    updateLoadingVisibilityState(messageState, loading.isLoading())
+    return changed
+  }
+
+  const fetchAndRenderMessages = async () => {
+    const msgData = await fetchMessages()
+    return applyMessageData(msgData)
+  }
+
+  const pollOnce = async () => {
+    const [statusRes, msgRes] = await Promise.all([fetchStatus(), fetchMessages()])
+    if (statusRes !== null) onStatusUpdate(statusRes)
+    else onStatusStale()
+    if (msgRes !== null) {
+      applyMessageData(msgRes)
+      return
+    }
+    syncLoadingState()
+  }
+
+  return {
+    fetchAndRenderMessages,
+    pollOnce,
+    setDisconnected,
+    getLastMessageCursor,
+  }
+}

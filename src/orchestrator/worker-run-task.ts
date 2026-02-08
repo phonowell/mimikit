@@ -1,73 +1,20 @@
 import { appendLog } from '../log/append.js'
-import { bestEffort } from '../log/safe.js'
-import { buildWorkerPrompt } from '../prompts/build-prompts.js'
-import { sleep } from '../shared/utils.js'
 import {
   markTaskCanceled,
   markTaskFailed,
   markTaskSucceeded,
 } from '../tasks/queue.js'
-import { runWorker as runExpertWorker } from '../worker/expert-runner.js'
-import { runStandardWorker as runStandardApiWorker } from '../worker/standard-runner.js'
 
-import { persistRuntimeState } from './runtime-persist.js'
-import { appendRuntimeIssue } from './worker-feedback.js'
 import { buildResult, finalizeResult } from './worker-result.js'
+import {
+  appendWorkerFailedFeedback,
+  appendWorkerHighLatencyFeedback,
+  appendWorkerHighUsageFeedback,
+} from './worker-run-feedback.js'
+import { runTaskWithRetry } from './worker-run-retry.js'
 
 import type { RuntimeState } from './runtime-state.js'
-import type { Task, TokenUsage } from '../types/index.js'
-
-type WorkerLlmResult = {
-  output: string
-  elapsedMs: number
-  usage?: TokenUsage
-}
-
-const runStandardProfile = async (params: {
-  runtime: RuntimeState
-  task: Task
-  controller: AbortController
-}): Promise<WorkerLlmResult> => {
-  const { standard } = params.runtime.config.worker
-  const prompt = await buildWorkerPrompt({
-    workDir: params.runtime.config.workDir,
-    task: params.task,
-  })
-  return runStandardApiWorker({
-    stateDir: params.runtime.config.stateDir,
-    workDir: params.runtime.config.workDir,
-    taskId: params.task.id,
-    prompt,
-    timeoutMs: standard.timeoutMs,
-    model: standard.model,
-    modelReasoningEffort: standard.modelReasoningEffort,
-    abortSignal: params.controller.signal,
-  })
-}
-
-const runTaskByProfile = (params: {
-  runtime: RuntimeState
-  task: Task
-  controller: AbortController
-}): Promise<WorkerLlmResult> => {
-  if (params.task.profile === 'standard') {
-    return runStandardProfile({
-      runtime: params.runtime,
-      task: params.task,
-      controller: params.controller,
-    })
-  }
-  const { expert } = params.runtime.config.worker
-  return runExpertWorker({
-    stateDir: params.runtime.config.stateDir,
-    workDir: params.runtime.config.workDir,
-    task: params.task,
-    timeoutMs: expert.timeoutMs,
-    model: expert.model,
-    modelReasoningEffort: expert.modelReasoningEffort,
-    abortSignal: params.controller.signal,
-  })
-}
+import type { Task } from '../types/index.js'
 
 export const runTask = async (
   runtime: RuntimeState,
@@ -83,96 +30,21 @@ export const runTask = async (
       profile: task.profile,
       promptChars: task.prompt.length,
     })
-    let llmResult: WorkerLlmResult | null = null
-    const maxAttempts = Math.max(0, runtime.config.worker.retryMaxAttempts)
-    const backoffMs = Math.max(0, runtime.config.worker.retryBackoffMs)
-    let attempt = 0
-    while (attempt <= maxAttempts) {
-      try {
-        llmResult = await runTaskByProfile({ runtime, task, controller })
-        break
-      } catch (error) {
-        await bestEffort('appendEvolveFeedback: worker_retry', () =>
-          appendRuntimeIssue({
-            runtime,
-            severity: 'medium',
-            category: 'failure',
-            message: `worker retry: ${
-              error instanceof Error ? error.message : String(error)
-            }`,
-            note: 'worker_retry',
-            task,
-            confidence: 0.75,
-            roiScore: 64,
-            action: 'fix',
-          }),
-        )
-        if (attempt >= maxAttempts) throw error
-        await appendLog(runtime.paths.log, {
-          event: 'worker_retry',
-          taskId: task.id,
-          profile: task.profile,
-          attempt: attempt + 1,
-          maxAttempts,
-          backoffMs,
-        })
-        attempt += 1
-        task.attempts = Math.max(0, (task.attempts ?? 0) + 1)
-        await bestEffort('persistRuntimeState: worker_retry', () =>
-          persistRuntimeState(runtime),
-        )
-        await sleep(backoffMs)
-      }
-    }
-    if (!llmResult) throw new Error('worker_result_missing')
+    const llmResult = await runTaskWithRetry({ runtime, task, controller })
     const usageTotal = llmResult.usage?.total ?? 0
     const elapsedMs = elapsed()
-    if (elapsedMs >= runtime.config.evolve.runtimeHighLatencyMs) {
-      await bestEffort('appendEvolveFeedback: worker_high_latency', () =>
-        appendRuntimeIssue({
-          runtime,
-          severity:
-            elapsedMs >= runtime.config.evolve.runtimeHighLatencyMs * 2
-              ? 'high'
-              : 'medium',
-          category: 'latency',
-          message: `worker high latency: ${elapsedMs}ms`,
-          note: 'worker_high_latency',
-          task,
-          elapsedMs,
-          usageTotal,
-          confidence: 0.85,
-          roiScore:
-            elapsedMs >= runtime.config.evolve.runtimeHighLatencyMs * 2
-              ? 85
-              : 68,
-          action: 'fix',
-        }),
-      )
-    }
-    if (usageTotal >= runtime.config.evolve.runtimeHighUsageTotal) {
-      await bestEffort('appendEvolveFeedback: worker_high_usage', () =>
-        appendRuntimeIssue({
-          runtime,
-          severity:
-            usageTotal >= runtime.config.evolve.runtimeHighUsageTotal * 2
-              ? 'high'
-              : 'medium',
-          category: 'cost',
-          message: `worker high usage: ${usageTotal} tokens`,
-          note: 'worker_high_usage',
-          task,
-          elapsedMs,
-          usageTotal,
-          confidence: 0.85,
-          roiScore:
-            usageTotal >= runtime.config.evolve.runtimeHighUsageTotal * 2
-              ? 87
-              : 70,
-          action: 'fix',
-        }),
-      )
-    }
+    await appendWorkerHighLatencyFeedback({
+      runtime,
+      task,
+      elapsedMs,
+      usageTotal,
+    })
+    await appendWorkerHighUsageFeedback({
+      runtime,
+      task,
+      elapsedMs,
+      usageTotal,
+    })
     if (task.status === 'canceled') {
       const result = buildResult(
         task,
@@ -205,19 +77,7 @@ export const runTask = async (
       return
     }
     const result = buildResult(task, 'failed', err.message, elapsed())
-    await bestEffort('appendEvolveFeedback: worker_failed', () =>
-      appendRuntimeIssue({
-        runtime,
-        severity: 'high',
-        category: 'failure',
-        message: `worker failed: ${err.message}`,
-        note: 'worker_failed',
-        task,
-        confidence: 0.95,
-        roiScore: 92,
-        action: 'fix',
-      }),
-    )
+    await appendWorkerFailedFeedback({ runtime, task, message: err.message })
     await finalizeResult(runtime, task, result, markTaskFailed)
   }
 }

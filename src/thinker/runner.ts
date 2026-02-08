@@ -13,11 +13,11 @@ import {
   withSampling,
 } from './archive-helpers.js'
 
-import type { ThinkerEnv } from './env-types.js'
 import type {
   HistoryMessage,
   Task,
   TaskResult,
+  ThinkerEnv,
   TokenUsage,
   UserInput,
 } from '../types/index.js'

@@ -1,38 +1,11 @@
+import {
+  parseEnvBoolean,
+  parseEnvNonNegativeNumber,
+  parseEnvPositiveInteger,
+} from './cli-env-parse.js'
+import { applyReasoningEnv } from './cli-env-reasoning.js'
+
 import type { AppConfig } from './config.js'
-import type { ModelReasoningEffort } from '@openai/codex-sdk'
-
-const parseEnvBoolean = (
-  name: string,
-  value: string | undefined,
-): boolean | undefined => {
-  if (!value) return undefined
-  if (value === '1' || value === 'true') return true
-  if (value === '0' || value === 'false') return false
-  console.warn(`[cli] invalid ${name}:`, value)
-  return undefined
-}
-
-const parseEnvPositiveInteger = (
-  name: string,
-  value: string | undefined,
-): number | undefined => {
-  if (!value) return undefined
-  const parsed = Number(value)
-  if (Number.isInteger(parsed) && parsed > 0) return parsed
-  console.warn(`[cli] invalid ${name}:`, value)
-  return undefined
-}
-
-const parseEnvNonNegativeNumber = (
-  name: string,
-  value: string | undefined,
-): number | undefined => {
-  if (!value) return undefined
-  const parsed = Number(value)
-  if (Number.isFinite(parsed) && parsed >= 0) return parsed
-  console.warn(`[cli] invalid ${name}:`, value)
-  return undefined
-}
 
 const applyModelEnv = (config: AppConfig): void => {
   const envModel = process.env.MIMIKIT_MODEL?.trim()
@@ -53,99 +26,6 @@ const applyModelEnv = (config: AppConfig): void => {
     config.worker.standard.model = envWorkerStandardModel
   const envWorkerExpertModel = process.env.MIMIKIT_WORKER_EXPERT_MODEL?.trim()
   if (envWorkerExpertModel) config.worker.expert.model = envWorkerExpertModel
-}
-
-const applyReasoningEnv = (config: AppConfig): void => {
-  const envReasoning = process.env.MIMIKIT_REASONING_EFFORT?.trim()
-  const envTellerReasoning = process.env.MIMIKIT_TELLER_REASONING_EFFORT?.trim()
-  const envThinkerReasoning =
-    process.env.MIMIKIT_THINKER_REASONING_EFFORT?.trim()
-  const envStandardReasoning =
-    process.env.MIMIKIT_WORKER_STANDARD_REASONING_EFFORT?.trim()
-  const envWorkerReasoning = process.env.MIMIKIT_WORKER_REASONING_EFFORT?.trim()
-  const envWorkerExpertReasoning =
-    process.env.MIMIKIT_WORKER_EXPERT_REASONING_EFFORT?.trim()
-  if (
-    !envReasoning &&
-    !envTellerReasoning &&
-    !envThinkerReasoning &&
-    !envStandardReasoning &&
-    !envWorkerReasoning &&
-    !envWorkerExpertReasoning
-  )
-    return
-  const allowed: ModelReasoningEffort[] = [
-    'minimal',
-    'low',
-    'medium',
-    'high',
-    'xhigh',
-  ]
-  if (envReasoning) {
-    if (allowed.includes(envReasoning as ModelReasoningEffort)) {
-      config.teller.modelReasoningEffort = envReasoning as ModelReasoningEffort
-      config.thinker.modelReasoningEffort = envReasoning as ModelReasoningEffort
-      config.worker.standard.modelReasoningEffort =
-        envReasoning as ModelReasoningEffort
-      config.worker.expert.modelReasoningEffort =
-        envReasoning as ModelReasoningEffort
-    } else console.warn('[cli] invalid MIMIKIT_REASONING_EFFORT:', envReasoning)
-  }
-  if (envTellerReasoning) {
-    if (allowed.includes(envTellerReasoning as ModelReasoningEffort)) {
-      config.teller.modelReasoningEffort =
-        envTellerReasoning as ModelReasoningEffort
-    } else {
-      console.warn(
-        '[cli] invalid MIMIKIT_TELLER_REASONING_EFFORT:',
-        envTellerReasoning,
-      )
-    }
-  }
-  if (envThinkerReasoning) {
-    if (allowed.includes(envThinkerReasoning as ModelReasoningEffort)) {
-      config.thinker.modelReasoningEffort =
-        envThinkerReasoning as ModelReasoningEffort
-    } else {
-      console.warn(
-        '[cli] invalid MIMIKIT_THINKER_REASONING_EFFORT:',
-        envThinkerReasoning,
-      )
-    }
-  }
-  if (envStandardReasoning) {
-    if (allowed.includes(envStandardReasoning as ModelReasoningEffort)) {
-      config.worker.standard.modelReasoningEffort =
-        envStandardReasoning as ModelReasoningEffort
-    } else {
-      console.warn(
-        '[cli] invalid MIMIKIT_WORKER_STANDARD_REASONING_EFFORT:',
-        envStandardReasoning,
-      )
-    }
-  }
-  if (envWorkerReasoning) {
-    if (allowed.includes(envWorkerReasoning as ModelReasoningEffort)) {
-      config.worker.expert.modelReasoningEffort =
-        envWorkerReasoning as ModelReasoningEffort
-    } else {
-      console.warn(
-        '[cli] invalid MIMIKIT_WORKER_REASONING_EFFORT:',
-        envWorkerReasoning,
-      )
-    }
-  }
-  if (envWorkerExpertReasoning) {
-    if (allowed.includes(envWorkerExpertReasoning as ModelReasoningEffort)) {
-      config.worker.expert.modelReasoningEffort =
-        envWorkerExpertReasoning as ModelReasoningEffort
-      return
-    }
-    console.warn(
-      '[cli] invalid MIMIKIT_WORKER_EXPERT_REASONING_EFFORT:',
-      envWorkerExpertReasoning,
-    )
-  }
 }
 
 const applyEvolveEnv = (config: AppConfig): void => {

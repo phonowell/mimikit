@@ -3,10 +3,10 @@ import exec from 'fire-keeper/exec'
 import {
   asString,
   parseToolArgs,
+  prependWorkDir,
   type ToolCallResult,
   type WorkerToolContext,
 } from './common.js'
-import { prependWorkDir } from './shell.js'
 
 type BrowserToolArgs = {
   input?: string

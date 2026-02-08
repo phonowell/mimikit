@@ -60,3 +60,14 @@ export const resolveToolPath = (workDir: string, inputPath: string): string => {
   if (isAbsolute(normalizedInput)) return normalizedInput
   return resolve(workDir, normalizedInput)
 }
+
+export const quoteShellValue = (value: string): string =>
+  `"${value.replaceAll('"', '\\"')}"`
+
+export const prependWorkDir = (
+  workDir: string,
+  command: string | string[],
+): string[] => {
+  const list = Array.isArray(command) ? command : [command]
+  return [`cd ${quoteShellValue(workDir)}`, ...list]
+}

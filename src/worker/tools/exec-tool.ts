@@ -5,10 +5,10 @@ import {
   asString,
   asStringArray,
   parseToolArgs,
+  prependWorkDir,
   type ToolCallResult,
   type WorkerToolContext,
 } from './common.js'
-import { prependWorkDir } from './shell.js'
 
 type ExecToolArgs = {
   command?: string | string[]
