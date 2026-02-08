@@ -131,7 +131,7 @@ export const formatTasksYaml = (
         fingerprint: '',
         prompt: '',
         title: result.title ?? result.taskId,
-        profile: result.profile === 'expert' ? 'expert' : 'economy',
+        profile: result.profile === 'expert' ? 'expert' : 'standard',
         status: result.status,
         createdAt: result.completedAt,
         completedAt: result.completedAt,

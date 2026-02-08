@@ -8,6 +8,8 @@
 - `history.jsonl`：用户与 assistant/system 历史消息。
 - `log.jsonl`：运行日志事件。
 - `runtime-state.json`：任务快照 + evolve + 通道 cursor。
+- `task-progress/{taskId}.jsonl`：standard worker 分步执行进度。
+- `task-checkpoints/{taskId}.json`：standard worker 断点状态快照。
 
 ## 通道目录
 - `channels/user-input.jsonp`
@@ -16,6 +18,5 @@
 - `channels/thinker-decision.jsonp`
 
 ## 归档目录
-- `task-results/YYYY-MM-DD/*.txt`
+- `tasks/YYYY-MM-DD/*.md`
 - `llm/YYYY-MM-DD/*.txt`
-

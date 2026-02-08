@@ -35,25 +35,25 @@ const createTask = (params: {
     : {}),
 })
 
-test('buildTaskViews exposes archivePath from task', () => {
-  const { tasks } = buildTaskViews([
-    createTask({
+test.each([
+  {
+    name: 'archivePath from task',
+    params: {
       id: 't1',
       createdAt: '2026-02-06T00:00:00.000Z',
       archivePath: '.mimikit/tasks/2026-02-06/t1_task.md',
-    }),
-  ])
-  expect(tasks[0]?.archivePath).toBe('.mimikit/tasks/2026-02-06/t1_task.md')
-})
-
-test('buildTaskViews falls back to result.archivePath', () => {
-  const { tasks } = buildTaskViews([
-    createTask({
+    },
+  },
+  {
+    name: 'archivePath from result fallback',
+    params: {
       id: 't1',
       createdAt: '2026-02-06T00:00:00.000Z',
       resultArchivePath: '.mimikit/tasks/2026-02-06/t1_task.md',
-    }),
-  ])
+    },
+  },
+])('buildTaskViews exposes $name', ({ params }) => {
+  const { tasks } = buildTaskViews([createTask(params)])
   expect(tasks[0]?.archivePath).toBe('.mimikit/tasks/2026-02-06/t1_task.md')
 })
 
@@ -68,4 +68,3 @@ test('buildTaskViews exposes changeAt from latest lifecycle time', () => {
   ])
   expect(tasks[0]?.changeAt).toBe('2026-02-06T00:00:20.000Z')
 })
-

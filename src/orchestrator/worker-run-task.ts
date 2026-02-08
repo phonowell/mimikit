@@ -1,13 +1,14 @@
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
+import { buildWorkerPrompt } from '../prompts/build-prompts.js'
 import { sleep } from '../shared/utils.js'
 import {
   markTaskCanceled,
   markTaskFailed,
   markTaskSucceeded,
 } from '../tasks/queue.js'
-import { runEconomyWorker as runEconomyApiWorker } from '../worker/economy-runner.js'
 import { runWorker as runExpertWorker } from '../worker/expert-runner.js'
+import { runStandardWorker as runStandardApiWorker } from '../worker/standard-runner.js'
 
 import { persistRuntimeState } from './runtime-persist.js'
 import { appendRuntimeIssue } from './worker-feedback.js'
@@ -22,16 +23,25 @@ type WorkerLlmResult = {
   usage?: TokenUsage
 }
 
-const runEconomyProfile = (params: {
+const runStandardProfile = async (params: {
   runtime: RuntimeState
   task: Task
+  controller: AbortController
 }): Promise<WorkerLlmResult> => {
-  const { economy } = params.runtime.config.worker
-  return runEconomyApiWorker({
-    prompt: params.task.prompt,
-    timeoutMs: economy.timeoutMs,
-    model: economy.model,
-    modelReasoningEffort: economy.modelReasoningEffort,
+  const { standard } = params.runtime.config.worker
+  const prompt = await buildWorkerPrompt({
+    workDir: params.runtime.config.workDir,
+    task: params.task,
+  })
+  return runStandardApiWorker({
+    stateDir: params.runtime.config.stateDir,
+    workDir: params.runtime.config.workDir,
+    taskId: params.task.id,
+    prompt,
+    timeoutMs: standard.timeoutMs,
+    model: standard.model,
+    modelReasoningEffort: standard.modelReasoningEffort,
+    abortSignal: params.controller.signal,
   })
 }
 
@@ -40,8 +50,13 @@ const runTaskByProfile = (params: {
   task: Task
   controller: AbortController
 }): Promise<WorkerLlmResult> => {
-  if (params.task.profile === 'economy')
-    return runEconomyProfile({ runtime: params.runtime, task: params.task })
+  if (params.task.profile === 'standard') {
+    return runStandardProfile({
+      runtime: params.runtime,
+      task: params.task,
+      controller: params.controller,
+    })
+  }
   const { expert } = params.runtime.config.worker
   return runExpertWorker({
     stateDir: params.runtime.config.stateDir,

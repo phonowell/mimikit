@@ -1,7 +1,9 @@
-import { readFile } from 'node:fs/promises'
 import { isAbsolute, relative, resolve } from 'node:path'
 
+import read from 'fire-keeper/read'
+
 import { logSafeError } from '../log/safe.js'
+import { readTaskProgress } from '../storage/task-progress.js'
 
 import { clearStateDir, parseExportLimit } from './helpers.js'
 import {
@@ -49,7 +51,17 @@ export const registerTaskArchiveRoute = (
       return
     }
     try {
-      const content = await readFile(resolvedArchivePath, 'utf8')
+      const raw = await read(resolvedArchivePath, { raw: true })
+      if (!raw) {
+        reply.code(404).send({ error: 'task archive not found' })
+        return
+      }
+      const content =
+        typeof raw === 'string'
+          ? raw
+          : Buffer.isBuffer(raw)
+            ? raw.toString('utf8')
+            : ''
       reply.type('text/markdown; charset=utf-8').send(content)
     } catch (error) {
       const code =
@@ -62,6 +74,28 @@ export const registerTaskArchiveRoute = (
       }
       throw error
     }
+  })
+}
+
+export const registerTaskProgressRoute = (
+  app: FastifyInstance,
+  orchestrator: Orchestrator,
+  config: AppConfig,
+): void => {
+  app.get('/api/tasks/:id/progress', async (request, reply) => {
+    const params = request.params as { id?: string } | undefined
+    const taskId = typeof params?.id === 'string' ? params.id.trim() : ''
+    if (!taskId) {
+      reply.code(400).send({ error: 'task id is required' })
+      return
+    }
+    const task = orchestrator.getTaskById(taskId)
+    if (!task) {
+      reply.code(404).send({ error: 'task not found' })
+      return
+    }
+    const events = await readTaskProgress(config.stateDir, taskId)
+    reply.send({ taskId, events })
   })
 }
 

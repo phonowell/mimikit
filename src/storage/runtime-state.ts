@@ -46,7 +46,7 @@ const asTask = (value: unknown): Task | null => {
     fingerprint: record.fingerprint,
     prompt: record.prompt,
     title: record.title,
-    profile: record.profile === 'expert' ? 'expert' : 'economy',
+    profile: record.profile === 'expert' ? 'expert' : 'standard',
     status: record.status,
     createdAt: record.createdAt,
     ...(typeof record.startedAt === 'string'

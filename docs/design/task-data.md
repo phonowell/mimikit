@@ -4,7 +4,7 @@
 
 ## Task
 - 关键字段：`id`、`prompt`、`title`、`profile`、`status`。
-- `profile`：`economy | expert`。
+- `profile`：`standard | expert`。
 - 运行字段：`startedAt`、`completedAt`、`durationMs`、`attempts`。
 
 ## TaskResult

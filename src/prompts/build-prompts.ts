@@ -1,5 +1,6 @@
-import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
+
+import read from 'fire-keeper/read'
 
 import { logSafeError } from '../log/safe.js'
 import { readTaskResultsForTasks } from '../storage/task-results.js'
@@ -54,7 +55,10 @@ const loadPromptFile = async (
 ): Promise<string> => {
   const path = join(workDir, 'prompts', 'agents', role, `${name}.md`)
   try {
-    return await readFile(path, 'utf8')
+    const content = await read(path, { raw: true })
+    if (!content) return ''
+    if (Buffer.isBuffer(content)) return content.toString('utf8')
+    return typeof content === 'string' ? content : ''
   } catch (error) {
     const code =
       typeof error === 'object' && error && 'code' in error
@@ -147,7 +151,7 @@ export const buildWorkerPrompt = async (params: {
   task: Task
 }): Promise<string> => {
   const role =
-    params.task.profile === 'economy' ? 'worker-economy' : 'worker-expert'
+    params.task.profile === 'standard' ? 'worker-standard' : 'worker-expert'
   const system = await loadSystemPrompt(params.workDir, role)
   const injectionTemplate = await loadInjectionPrompt(params.workDir, role)
   const injectionValues = Object.fromEntries<string>([

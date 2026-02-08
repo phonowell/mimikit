@@ -1,5 +1,6 @@
-import { writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
+
+import write from 'fire-keeper/write'
 
 import { ensureDir } from '../fs/paths.js'
 import { nowIso, shortId } from '../shared/utils.js'
@@ -134,5 +135,5 @@ export const appendLlmArchive = async (
   const path = buildArchivePath(stateDir, timestamp, entry)
   await ensureDir(join(stateDir, 'llm', dateStamp(timestamp)))
   const content = buildArchiveContent(timestamp, entry)
-  await writeFile(path, content, 'utf8')
+  await write(path, content, { encoding: 'utf8' })
 }

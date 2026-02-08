@@ -1,45 +1,44 @@
 import { expect, test } from 'vitest'
 
-import {
-  parseCommandPayload,
-  parseCommands,
-} from '../src/orchestrator/command-parser.js'
+import { parseCommands } from '../src/orchestrator/command-parser.js'
 
-test('parseCommands parses add_task line command and keeps text', () => {
-  const output = `我来创建任务。\n\n<MIMIKIT:commands>\n@add_task prompt="整理接口文档" title="整理文档"\n</MIMIKIT:commands>`
+test('parseCommands parses line commands and keeps plain text', () => {
+  const output = `Create one task.\n\n<MIMIKIT:commands>\n@add_task prompt="整理接口文档" title="整理文档"\n</MIMIKIT:commands>`
   const parsed = parseCommands(output)
+  expect(parsed.text).toBe('Create one task.')
   expect(parsed.commands).toHaveLength(1)
-  expect(parsed.commands[0]?.action).toBe('add_task')
-  expect(parsed.commands[0]?.attrs.prompt).toBe('整理接口文档')
-  expect(parsed.commands[0]?.attrs.title).toBe('整理文档')
-  expect(parsed.text).toBe('我来创建任务。')
+  expect(parsed.commands[0]).toMatchObject({
+    action: 'add_task',
+    attrs: {
+      prompt: '整理接口文档',
+      title: '整理文档',
+    },
+  })
 })
 
-test('parseCommands parses cancel_task line command', () => {
-  const output = `<MIMIKIT:commands>\n@cancel_task id="task_123"\n</MIMIKIT:commands>`
+test.each([
+  {
+    name: 'cancel_task attrs',
+    output: `<MIMIKIT:commands>\n@cancel_task id="task_123"\n</MIMIKIT:commands>`,
+    action: 'cancel_task',
+    attrs: { id: 'task_123' },
+  },
+  {
+    name: 'capture_feedback attrs',
+    output: `<MIMIKIT:commands>\n@capture_feedback message="回答不准确"\n</MIMIKIT:commands>`,
+    action: 'capture_feedback',
+    attrs: { message: '回答不准确' },
+  },
+  {
+    name: 'escaped attrs',
+    output:
+      `<MIMIKIT:commands>\n@write path="a.txt" content="line1\\nline2\\\"q\\\""\n</MIMIKIT:commands>`,
+    action: 'write',
+    attrs: { path: 'a.txt', content: 'line1\nline2"q"' },
+  },
+])('parseCommands parses $name', ({ output, action, attrs }) => {
   const parsed = parseCommands(output)
-  expect(parsed.commands).toHaveLength(1)
-  expect(parsed.commands[0]?.action).toBe('cancel_task')
-  expect(parsed.commands[0]?.attrs.id).toBe('task_123')
   expect(parsed.text).toBe('')
-})
-
-test('parseCommands parses capture_feedback json payload', () => {
-  const output = `<MIMIKIT:commands>\n@capture_feedback {"message":"回答不准确","category":"quality","roiScore":78,"confidence":0.82,"action":"fix"}\n</MIMIKIT:commands>`
-  const parsed = parseCommands(output)
   expect(parsed.commands).toHaveLength(1)
-  expect(parsed.commands[0]?.action).toBe('capture_feedback')
-  const payload = parseCommandPayload<{
-    message: string
-    category: string
-    roiScore: number
-    confidence: number
-    action: string
-  }>(parsed.commands[0]!)
-  expect(payload?.message).toBe('回答不准确')
-  expect(payload?.category).toBe('quality')
-  expect(payload?.roiScore).toBe(78)
-  expect(payload?.confidence).toBe(0.82)
-  expect(payload?.action).toBe('fix')
+  expect(parsed.commands[0]).toMatchObject({ action, attrs })
 })
-

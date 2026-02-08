@@ -1,9 +1,16 @@
-import { appendFile, readFile } from 'node:fs/promises'
+import read from 'fire-keeper/read'
+import write from 'fire-keeper/write'
 
 import { writeFileAtomic } from '../fs/json.js'
 import { logSafeError, safe } from '../log/safe.js'
 
 import type { HistoryMessage } from '../types/index.js'
+
+const normalizeReadText = (raw: unknown): string => {
+  if (typeof raw === 'string') return raw
+  if (Buffer.isBuffer(raw)) return raw.toString('utf8')
+  return ''
+}
 
 const splitLines = (raw: string): string[] =>
   raw
@@ -34,13 +41,18 @@ const runSerialized = async <T>(
 }
 
 export const readJsonl = async <T>(path: string): Promise<T[]> => {
-  const raw = await safe('readJsonl: readFile', () => readFile(path, 'utf8'), {
-    fallback: null,
-    meta: { path },
-    ignoreCodes: ['ENOENT'],
-  })
-  if (!raw) return []
-  const lines = splitLines(raw)
+  const raw = await safe(
+    'readJsonl: readFile',
+    () => read(path, { raw: true }),
+    {
+      fallback: null,
+      meta: { path },
+      ignoreCodes: ['ENOENT'],
+    },
+  )
+  const text = normalizeReadText(raw)
+  if (!text) return []
+  const lines = splitLines(text)
   if (lines.length === 0) return []
   const items: T[] = []
   for (const line of lines) {
@@ -69,7 +81,7 @@ export const appendJsonl = async <T>(
   if (items.length === 0) return
   const body = items.map((item) => JSON.stringify(item)).join('\n')
   const payload = `${body}\n`
-  await appendFile(path, payload, 'utf8')
+  await write(path, payload, { flag: 'a', encoding: 'utf8' })
 }
 
 export const updateJsonl = <T>(

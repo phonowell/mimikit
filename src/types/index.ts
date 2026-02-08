@@ -34,7 +34,7 @@ export type TaskStatus =
 
 export type TaskResultStatus = 'succeeded' | 'failed' | 'canceled'
 
-export type WorkerProfile = 'economy' | 'expert'
+export type WorkerProfile = 'standard' | 'expert'
 
 export type Task = {
   id: Id

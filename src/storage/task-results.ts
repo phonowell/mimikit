@@ -1,5 +1,7 @@
-import { access, writeFile } from 'node:fs/promises'
 import { extname, join } from 'node:path'
+
+import isExist from 'fire-keeper/isExist'
+import write from 'fire-keeper/write'
 
 import { ensureDir } from '../fs/paths.js'
 
@@ -65,19 +67,7 @@ const buildFilename = (entry: TaskArchiveEntry): string => {
   return `${id}_${safeTitle}.md`
 }
 
-const pathExists = async (path: string): Promise<boolean> => {
-  try {
-    await access(path)
-    return true
-  } catch (error) {
-    const code =
-      typeof error === 'object' && error && 'code' in error
-        ? String((error as { code?: string }).code)
-        : undefined
-    if (code === 'ENOENT') return false
-    throw error
-  }
-}
+const pathExists = (path: string): Promise<boolean> => isExist(path)
 
 const ensureUniquePath = async (basePath: string): Promise<string> => {
   if (!(await pathExists(basePath))) return basePath
@@ -118,7 +108,7 @@ export const appendTaskResultArchive = async (
   const filename = buildFilename(entry)
   const path = await ensureUniquePath(join(dir, filename))
   const content = buildArchiveContent(entry)
-  await writeFile(path, content, 'utf8')
+  await write(path, content, { encoding: 'utf8' })
   return path
 }
 

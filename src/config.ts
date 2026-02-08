@@ -35,7 +35,7 @@ export type AppConfig = {
     maxConcurrent: number
     retryMaxAttempts: number
     retryBackoffMs: number
-    economy: {
+    standard: {
       timeoutMs: number
       model: string
       modelReasoningEffort: ModelReasoningEffort
@@ -67,7 +67,7 @@ export const defaultConfig = (params: {
     pollMs: 1_000,
     debounceMs: 10_000,
     model: 'gpt-5.2-high',
-    modelReasoningEffort: 'medium',
+    modelReasoningEffort: 'high',
   },
   thinker: {
     pollMs: 2_000,
@@ -86,10 +86,10 @@ export const defaultConfig = (params: {
     maxConcurrent: 3,
     retryMaxAttempts: 1,
     retryBackoffMs: 5_000,
-    economy: {
+    standard: {
       timeoutMs: 5 * 60 * 1_000,
-      model: 'gpt-5.2-mini',
-      modelReasoningEffort: 'low',
+      model: 'gpt-5.2-high',
+      modelReasoningEffort: 'high',
     },
     expert: {
       timeoutMs: 10 * 60 * 1_000,

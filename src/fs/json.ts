@@ -1,8 +1,28 @@
-import { copyFile, readFile } from 'node:fs/promises'
-
+import copy from 'fire-keeper/copy'
+import read from 'fire-keeper/read'
 import writeFileAtomicLib from 'write-file-atomic'
 
 import { logSafeError, safe } from '../log/safe.js'
+
+const parseJsonRaw = <T>(
+  raw: unknown,
+  fallback: T,
+  meta: { path: string },
+): T | Promise<T> => {
+  if (!raw) return fallback
+  if (typeof raw === 'object' && !Buffer.isBuffer(raw)) return raw as T
+  const text =
+    typeof raw === 'string'
+      ? raw
+      : Buffer.isBuffer(raw)
+        ? raw.toString('utf8')
+        : ''
+  if (!text.trim()) return fallback
+  return safe('readJson: parse', () => JSON.parse(text) as T, {
+    fallback,
+    meta,
+  })
+}
 
 export const writeFileAtomic = async (
   path: string,
@@ -11,7 +31,7 @@ export const writeFileAtomic = async (
 ): Promise<void> => {
   if (opts?.backup) {
     try {
-      await copyFile(path, `${path}.bak`)
+      await copy(path, `${path}.bak`)
     } catch (error) {
       const code =
         typeof error === 'object' && error && 'code' in error
@@ -33,30 +53,28 @@ export const readJson = async <T>(
   fallback: T,
   opts?: { useBackup?: boolean },
 ): Promise<T> => {
-  const raw = await safe('readJson: readFile', () => readFile(path, 'utf8'), {
-    fallback: null,
-    meta: { path },
-    ignoreCodes: ['ENOENT'],
-  })
-  if (raw !== null) {
-    return safe('readJson: parse', () => JSON.parse(raw) as T, {
-      fallback,
+  const raw = await safe(
+    'readJson: readFile',
+    () => read(path, { raw: true }),
+    {
+      fallback: null,
       meta: { path },
-    })
-  }
+      ignoreCodes: ['ENOENT'],
+    },
+  )
+  const parsed = await parseJsonRaw(raw, fallback, { path })
+  if (parsed !== fallback) return parsed
   if (opts?.useBackup === false) return fallback
   const backupPath = `${path}.bak`
   const backupRaw = await safe(
     'readJson: readFile backup',
-    () => readFile(backupPath, 'utf8'),
+    () => read(backupPath, { raw: true }),
     { fallback: null, meta: { path: backupPath }, ignoreCodes: ['ENOENT'] },
   )
-  if (backupRaw !== null) {
-    return safe('readJson: parse backup', () => JSON.parse(backupRaw) as T, {
-      fallback,
-      meta: { path: backupPath },
-    })
-  }
+  const parsedBackup = await parseJsonRaw(backupRaw, fallback, {
+    path: backupPath,
+  })
+  if (parsedBackup !== fallback) return parsedBackup
   return fallback
 }
 

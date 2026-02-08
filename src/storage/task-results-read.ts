@@ -1,5 +1,6 @@
-import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
+
+import read from 'fire-keeper/read'
 
 import { listFiles } from '../fs/paths.js'
 import { safe } from '../log/safe.js'
@@ -105,7 +106,15 @@ export const readTaskResultArchive = (
   safe(
     'readTaskResultArchive',
     async () => {
-      const content = await readFile(path, 'utf8')
+      const raw = await read(path, { raw: true })
+      if (!raw) return null
+      const content =
+        typeof raw === 'string'
+          ? raw
+          : Buffer.isBuffer(raw)
+            ? raw.toString('utf8')
+            : ''
+      if (!content) return null
       return parseTaskResultArchive(content, fallbackTaskId, path)
     },
     { fallback: null, meta: { path }, ignoreCodes: ['ENOENT'] },

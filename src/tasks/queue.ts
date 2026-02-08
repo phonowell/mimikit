@@ -49,7 +49,7 @@ const isActiveTask = (task: Task): boolean =>
 export const createTask = (
   prompt: string,
   title?: string,
-  profile: WorkerProfile = 'economy',
+  profile: WorkerProfile = 'standard',
 ): Task => {
   const id = newId()
   return {
@@ -67,7 +67,7 @@ export const enqueueTask = (
   tasks: Task[],
   prompt: string,
   title?: string,
-  profile: WorkerProfile = 'economy',
+  profile: WorkerProfile = 'standard',
 ): EnqueueTaskResult => {
   const fingerprint = buildTaskFingerprint(prompt)
   const existing = tasks.find(

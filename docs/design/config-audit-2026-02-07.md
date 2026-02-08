@@ -4,10 +4,14 @@
 
 - `teller.*`
 - `thinker.*`
-- `worker.economy.*`
+- `worker.standard.*`
 - `worker.expert.*`
 
 关键变化：
 - thinker 引入 `minIntervalMs` 作为节流阈值。
 - worker 采用 profile 路由，不再单一配置。
 - 运行状态增加通道 cursor 持久化字段。
+
+兼容映射：
+- `MIMIKIT_WORKER_MODEL` 仍可用，映射到 `worker.expert.model`。
+- `MIMIKIT_WORKER_REASONING_EFFORT` 仍可用，映射到 `worker.expert.modelReasoningEffort`。

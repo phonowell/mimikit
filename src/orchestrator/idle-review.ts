@@ -4,7 +4,7 @@ import { nowIso } from '../shared/utils.js'
 import { readHistory } from '../storage/jsonl.js'
 import { runThinker } from '../thinker/runner.js'
 
-import { parseCommandPayload, parseCommands } from './command-parser.js'
+import { parseCommands } from './command-parser.js'
 import { selectRecentHistory } from './history-select.js'
 
 import type { RuntimeState } from './runtime-state.js'
@@ -12,12 +12,6 @@ import type { ExtractIssueResult } from '../evolve/feedback.js'
 
 type IdleReviewItem = {
   message: string
-  category?: 'quality' | 'latency' | 'cost' | 'failure' | 'ux' | 'other'
-  confidence?: number
-  roiScore?: number
-  action?: 'ignore' | 'defer' | 'fix'
-  rationale?: string
-  fingerprint?: string
 }
 
 const parseIdleReviewItems = (output: string): IdleReviewItem[] => {
@@ -25,23 +19,9 @@ const parseIdleReviewItems = (output: string): IdleReviewItem[] => {
   const items: IdleReviewItem[] = []
   for (const command of parsed.commands) {
     if (command.action !== 'capture_feedback') continue
-    const payload = parseCommandPayload<IdleReviewItem>(command)
-    if (!payload) continue
-    const message = payload.message.trim()
+    const message = command.attrs.message?.trim() ?? ''
     if (!message) continue
-    items.push({
-      message,
-      ...(payload.category ? { category: payload.category } : {}),
-      ...(typeof payload.confidence === 'number'
-        ? { confidence: payload.confidence }
-        : {}),
-      ...(typeof payload.roiScore === 'number'
-        ? { roiScore: payload.roiScore }
-        : {}),
-      ...(payload.action ? { action: payload.action } : {}),
-      ...(payload.rationale ? { rationale: payload.rationale } : {}),
-      ...(payload.fingerprint ? { fingerprint: payload.fingerprint } : {}),
-    })
+    items.push({ message })
   }
   return items
 }
@@ -53,7 +33,7 @@ const buildIdleReviewPrompt = (historyTexts: string[]): string => {
   return [
     'Review recent user-assistant conversation snippets and extract only high-value issues.',
     'Return commands only, each in one line:',
-    '@capture_feedback {"message":"...","category":"quality|latency|cost|failure|ux|other","confidence":0.0-1.0,"roiScore":0-100,"action":"ignore|defer|fix","rationale":"...","fingerprint":"..."}',
+    '@capture_feedback message="..."',
     'Rules:',
     '- Ignore emotional-only statements with no actionable value.',
     '- Prefer issues with repeated evidence, high cost, high latency, or failures.',
@@ -95,7 +75,10 @@ export const runIdleConversationReview = async (params: {
     results: [],
     tasks: [],
     history: recent,
-    timeoutMs: Math.min(45_000, params.runtime.config.worker.economy.timeoutMs),
+    timeoutMs: Math.min(
+      45_000,
+      params.runtime.config.worker.standard.timeoutMs,
+    ),
     model: params.runtime.config.thinker.model,
     modelReasoningEffort: params.runtime.config.thinker.modelReasoningEffort,
   })
@@ -104,28 +87,13 @@ export const runIdleConversationReview = async (params: {
   for (const item of items) {
     await params.appendFeedback({
       message: item.message,
-      extractedIssue:
-        item.action === 'ignore'
-          ? {
-              kind: 'non_issue',
-              rationale: item.rationale ?? 'idle review ignored',
-            }
-          : {
-              kind: 'issue',
-              issue: {
-                title: item.message,
-                category: item.category ?? 'other',
-                ...(item.confidence !== undefined
-                  ? { confidence: item.confidence }
-                  : {}),
-                ...(item.roiScore !== undefined
-                  ? { roiScore: item.roiScore }
-                  : {}),
-                ...(item.action ? { action: item.action } : {}),
-                ...(item.rationale ? { rationale: item.rationale } : {}),
-                ...(item.fingerprint ? { fingerprint: item.fingerprint } : {}),
-              },
-            },
+      extractedIssue: {
+        kind: 'issue',
+        issue: {
+          title: item.message,
+          category: 'other',
+        },
+      },
     })
   }
 

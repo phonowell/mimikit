@@ -1,5 +1,7 @@
-import { mkdir, readdir } from 'node:fs/promises'
+import { readdir } from 'node:fs/promises'
 import { join } from 'node:path'
+
+import mkdir from 'fire-keeper/mkdir'
 
 import { safe } from '../log/safe.js'
 
@@ -32,7 +34,7 @@ export const buildPaths = (stateDir: string): StatePaths => {
 }
 
 export const ensureDir = async (path: string): Promise<void> => {
-  await mkdir(path, { recursive: true })
+  await mkdir(path)
 }
 
 export const ensureStateDirs = async (paths: StatePaths): Promise<void> => {

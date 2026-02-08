@@ -14,7 +14,7 @@ const createTask = (): Task => ({
   fingerprint: 'fp-task-1',
   prompt: 'do something',
   title: 'Task One',
-  profile: 'economy',
+  profile: 'standard',
   status: 'succeeded',
   createdAt: '2026-02-07T00:00:00.000Z',
 })

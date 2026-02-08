@@ -4,6 +4,7 @@ import {
   registerMessagesExportRoute,
   registerTaskArchiveRoute,
   registerTaskCancelRoute,
+  registerTaskProgressRoute,
 } from './routes-api-sections.js'
 
 import type { AppConfig } from '../config.js'
@@ -57,6 +58,7 @@ export const registerApiRoutes = (
   })
 
   registerTaskArchiveRoute(app, orchestrator, _config)
+  registerTaskProgressRoute(app, orchestrator, _config)
   registerTaskCancelRoute(app, orchestrator)
   registerControlRoutes(app, orchestrator, _config)
 }

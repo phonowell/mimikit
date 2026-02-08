@@ -10,8 +10,8 @@ test('collectResultSummaries collects summarize_result attrs command', () => {
   expect(summaries.get('task-1')).toBe('short summary')
 })
 
-test('collectResultSummaries supports json payload and keeps latest', () => {
-  const output = `<MIMIKIT:commands>\n@summarize_result {"taskId":"task-1","summary":"first"}\n@summarize_result id="task-1" summary="second"\n</MIMIKIT:commands>`
+test('collectResultSummaries keeps latest attrs summary', () => {
+  const output = `<MIMIKIT:commands>\n@summarize_result taskId="task-1" summary="first"\n@summarize_result id="task-1" summary="second"\n</MIMIKIT:commands>`
   const parsed = parseCommands(output)
   const summaries = collectResultSummaries(parsed.commands)
   expect(summaries.get('task-1')).toBe('second')

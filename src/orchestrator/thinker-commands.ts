@@ -3,7 +3,6 @@ import { nowIso } from '../shared/utils.js'
 import { enqueueTask } from '../tasks/queue.js'
 
 import { cancelTask } from './cancel.js'
-import { parseCommandPayload } from './command-parser.js'
 import { appendTaskSystemMessage } from './task-history.js'
 
 import type { ParsedCommand } from './command-parser.js'
@@ -12,39 +11,14 @@ import type { WorkerProfile } from '../types/index.js'
 
 type FeedbackCommandPayload = {
   message: string
-  category?: 'quality' | 'latency' | 'cost' | 'failure' | 'ux' | 'other'
-  roiScore?: number
-  confidence?: number
-  action?: 'ignore' | 'defer' | 'fix'
-  rationale?: string
-  fingerprint?: string
-}
-
-type ResultSummaryCommandPayload = {
-  taskId?: string
-  id?: string
-  summary?: string
 }
 
 const parseFeedbackCommand = (
-  payload: FeedbackCommandPayload | undefined,
+  command: ParsedCommand,
 ): FeedbackCommandPayload | undefined => {
-  if (!payload) return undefined
-  const message = payload.message.trim()
+  const message = command.attrs.message?.trim() ?? ''
   if (!message) return undefined
-  return {
-    message,
-    ...(payload.category ? { category: payload.category } : {}),
-    ...(typeof payload.roiScore === 'number'
-      ? { roiScore: payload.roiScore }
-      : {}),
-    ...(typeof payload.confidence === 'number'
-      ? { confidence: payload.confidence }
-      : {}),
-    ...(payload.action ? { action: payload.action } : {}),
-    ...(payload.rationale ? { rationale: payload.rationale } : {}),
-    ...(payload.fingerprint ? { fingerprint: payload.fingerprint } : {}),
-  }
+  return { message }
 }
 
 const normalizeResultSummary = (
@@ -59,13 +33,11 @@ const normalizeResultSummary = (
 
 const parseResultSummaryCommand = (
   command: ParsedCommand,
-): { taskId: string; summary: string } | undefined => {
-  const payload = parseCommandPayload<ResultSummaryCommandPayload>(command)
-  return normalizeResultSummary(
-    payload?.taskId ?? payload?.id ?? command.attrs.taskId ?? command.attrs.id,
-    payload?.summary ?? command.attrs.summary,
+): { taskId: string; summary: string } | undefined =>
+  normalizeResultSummary(
+    command.attrs.taskId ?? command.attrs.id,
+    command.attrs.summary,
   )
-}
 
 export const collectResultSummaries = (
   commands: ParsedCommand[],
@@ -85,15 +57,11 @@ const handleAddTaskCommand = async (
   command: ParsedCommand,
   seenDispatches: Set<string>,
 ): Promise<void> => {
-  const content = command.content?.trim()
-  const prompt =
-    content && content.length > 0
-      ? content
-      : (command.attrs.prompt?.trim() ?? '')
+  const prompt = command.attrs.prompt?.trim() ?? ''
   if (!prompt) return
   const rawTitle = command.attrs.title?.trim()
   const profileRaw = command.attrs.profile?.trim().toLowerCase()
-  const profile: WorkerProfile = profileRaw === 'expert' ? 'expert' : 'economy'
+  const profile: WorkerProfile = profileRaw === 'expert' ? 'expert' : 'standard'
   const dedupeKey = `${prompt}\n${rawTitle ?? ''}\n${profile}`
   if (seenDispatches.has(dedupeKey)) return
   seenDispatches.add(dedupeKey)
@@ -113,9 +81,7 @@ const handleFeedbackCommand = async (
   runtime: RuntimeState,
   command: ParsedCommand,
 ): Promise<void> => {
-  const payload = parseFeedbackCommand(
-    parseCommandPayload<FeedbackCommandPayload>(command),
-  )
+  const payload = parseFeedbackCommand(command)
   if (!payload) return
   await appendStructuredFeedback({
     stateDir: runtime.config.stateDir,
@@ -123,7 +89,7 @@ const handleFeedbackCommand = async (
       id: `fb-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       createdAt: nowIso(),
       kind: 'user_feedback',
-      severity: payload.action === 'ignore' ? 'low' : 'medium',
+      severity: 'medium',
       message: payload.message,
       source: 'thinker_tool',
       context: {
@@ -134,16 +100,7 @@ const handleFeedbackCommand = async (
       kind: 'issue',
       issue: {
         title: payload.message,
-        category: payload.category ?? 'other',
-        ...(payload.fingerprint ? { fingerprint: payload.fingerprint } : {}),
-        ...(payload.roiScore !== undefined
-          ? { roiScore: payload.roiScore }
-          : {}),
-        ...(payload.confidence !== undefined
-          ? { confidence: payload.confidence }
-          : {}),
-        ...(payload.action ? { action: payload.action } : {}),
-        ...(payload.rationale ? { rationale: payload.rationale } : {}),
+        category: 'other',
       },
     },
   })
@@ -160,7 +117,7 @@ export const processThinkerCommands = async (
       continue
     }
     if (command.action === 'cancel_task') {
-      const id = command.attrs.id?.trim() ?? command.content?.trim()
+      const id = command.attrs.id?.trim() ?? ''
       if (!id) continue
       await cancelTask(runtime, id, { source: 'thinker' })
       continue

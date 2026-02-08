@@ -1,6 +1,6 @@
-import { mkdir } from 'node:fs/promises'
 import { basename, dirname } from 'node:path'
 
+import mkdir from 'fire-keeper/mkdir'
 import { createStream, type RotatingFileStream } from 'rotating-file-stream'
 
 import { nowIso } from '../shared/utils.js'
@@ -12,7 +12,7 @@ const MAX_FILES = Math.max(1, Math.ceil(MAX_TOTAL_BYTES / MAX_BYTES))
 const streams = new Map<string, RotatingFileStream>()
 
 const ensureDir = async (path: string): Promise<void> => {
-  await mkdir(path, { recursive: true })
+  await mkdir(path)
 }
 
 const buildStream = async (path: string): Promise<RotatingFileStream> => {

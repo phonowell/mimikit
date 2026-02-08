@@ -15,7 +15,7 @@
   - 输入：`teller-digest` + 任务结果。
   - 输出：任务命令 + `thinker-decision`。
 - `worker`：
-  - `economy`：api-runner，便宜、能力弱。
+  - `standard`：api-runner，多步执行，支持内部工具（read/write/edit/apply_patch/exec/browser）。
   - `expert`：codex-sdk，昂贵、能力强。
 
 ## 数据流

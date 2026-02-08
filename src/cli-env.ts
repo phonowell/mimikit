@@ -39,7 +39,7 @@ const applyModelEnv = (config: AppConfig): void => {
   if (envModel) {
     config.teller.model = envModel
     config.thinker.model = envModel
-    config.worker.economy.model = envModel
+    config.worker.standard.model = envModel
   }
   const envTellerModel = process.env.MIMIKIT_TELLER_MODEL?.trim()
   if (envTellerModel) config.teller.model = envTellerModel
@@ -47,8 +47,10 @@ const applyModelEnv = (config: AppConfig): void => {
   if (envThinkerModel) config.thinker.model = envThinkerModel
   const envWorkerModel = process.env.MIMIKIT_WORKER_MODEL?.trim()
   if (envWorkerModel) config.worker.expert.model = envWorkerModel
-  const envWorkerEconomyModel = process.env.MIMIKIT_WORKER_ECONOMY_MODEL?.trim()
-  if (envWorkerEconomyModel) config.worker.economy.model = envWorkerEconomyModel
+  const envWorkerStandardModel =
+    process.env.MIMIKIT_WORKER_STANDARD_MODEL?.trim()
+  if (envWorkerStandardModel)
+    config.worker.standard.model = envWorkerStandardModel
   const envWorkerExpertModel = process.env.MIMIKIT_WORKER_EXPERT_MODEL?.trim()
   if (envWorkerExpertModel) config.worker.expert.model = envWorkerExpertModel
 }
@@ -58,8 +60,8 @@ const applyReasoningEnv = (config: AppConfig): void => {
   const envTellerReasoning = process.env.MIMIKIT_TELLER_REASONING_EFFORT?.trim()
   const envThinkerReasoning =
     process.env.MIMIKIT_THINKER_REASONING_EFFORT?.trim()
-  const envEconomyReasoning =
-    process.env.MIMIKIT_WORKER_ECONOMY_REASONING_EFFORT?.trim()
+  const envStandardReasoning =
+    process.env.MIMIKIT_WORKER_STANDARD_REASONING_EFFORT?.trim()
   const envWorkerReasoning = process.env.MIMIKIT_WORKER_REASONING_EFFORT?.trim()
   const envWorkerExpertReasoning =
     process.env.MIMIKIT_WORKER_EXPERT_REASONING_EFFORT?.trim()
@@ -67,7 +69,7 @@ const applyReasoningEnv = (config: AppConfig): void => {
     !envReasoning &&
     !envTellerReasoning &&
     !envThinkerReasoning &&
-    !envEconomyReasoning &&
+    !envStandardReasoning &&
     !envWorkerReasoning &&
     !envWorkerExpertReasoning
   )
@@ -83,7 +85,7 @@ const applyReasoningEnv = (config: AppConfig): void => {
     if (allowed.includes(envReasoning as ModelReasoningEffort)) {
       config.teller.modelReasoningEffort = envReasoning as ModelReasoningEffort
       config.thinker.modelReasoningEffort = envReasoning as ModelReasoningEffort
-      config.worker.economy.modelReasoningEffort =
+      config.worker.standard.modelReasoningEffort =
         envReasoning as ModelReasoningEffort
       config.worker.expert.modelReasoningEffort =
         envReasoning as ModelReasoningEffort
@@ -111,14 +113,14 @@ const applyReasoningEnv = (config: AppConfig): void => {
       )
     }
   }
-  if (envEconomyReasoning) {
-    if (allowed.includes(envEconomyReasoning as ModelReasoningEffort)) {
-      config.worker.economy.modelReasoningEffort =
-        envEconomyReasoning as ModelReasoningEffort
+  if (envStandardReasoning) {
+    if (allowed.includes(envStandardReasoning as ModelReasoningEffort)) {
+      config.worker.standard.modelReasoningEffort =
+        envStandardReasoning as ModelReasoningEffort
     } else {
       console.warn(
-        '[cli] invalid MIMIKIT_WORKER_ECONOMY_REASONING_EFFORT:',
-        envEconomyReasoning,
+        '[cli] invalid MIMIKIT_WORKER_STANDARD_REASONING_EFFORT:',
+        envStandardReasoning,
       )
     }
   }
