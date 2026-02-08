@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto'
+
 import { parseInputBody, parseMessageLimit, parseTaskLimit } from './helpers.js'
 import {
   registerControlRoutes,
@@ -11,12 +13,44 @@ import type { AppConfig } from '../config.js'
 import type { Orchestrator } from '../orchestrator/orchestrator.js'
 import type { FastifyInstance } from 'fastify'
 
+const comparableEtag = (value: string): string =>
+  value.trim().replace(/^W\//, '')
+
+const matchesIfNoneMatch = (ifNoneMatch: unknown, etag: string): boolean => {
+  if (typeof ifNoneMatch !== 'string') return false
+  const candidates = ifNoneMatch
+    .split(',')
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0)
+  if (candidates.includes('*')) return true
+  const normalizedEtag = comparableEtag(etag)
+  return candidates.some(
+    (candidate) => comparableEtag(candidate) === normalizedEtag,
+  )
+}
+
+const buildPayloadEtag = (prefix: string, payload: unknown): string => {
+  const digest = createHash('sha1')
+    .update(JSON.stringify(payload))
+    .digest('base64url')
+  return `W/"${prefix}-${digest}"`
+}
+
 export const registerApiRoutes = (
   app: FastifyInstance,
   orchestrator: Orchestrator,
   _config: AppConfig,
 ): void => {
-  app.get('/api/status', () => orchestrator.getStatus())
+  app.get('/api/status', (request, reply) => {
+    const payload = orchestrator.getStatus()
+    const etag = buildPayloadEtag('status', payload)
+    reply.header('ETag', etag)
+    if (matchesIfNoneMatch(request.headers['if-none-match'], etag)) {
+      reply.code(304).send()
+      return
+    }
+    return payload
+  })
 
   app.post('/api/input', async (request, reply) => {
     const result = parseInputBody(request.body, {
@@ -42,11 +76,23 @@ export const registerApiRoutes = (
     reply.send({ id })
   })
 
-  app.get('/api/messages', async (request) => {
+  app.get('/api/messages', async (request, reply) => {
     const query = request.query as Record<string, unknown> | undefined
     const limit = parseMessageLimit(query?.limit)
-    const messages = await orchestrator.getChatHistory(limit)
-    return { messages }
+    const afterId =
+      typeof query?.afterId === 'string' ? query.afterId.trim() : undefined
+    const { messages, mode } = await orchestrator.getChatMessages(
+      limit,
+      afterId,
+    )
+    const payload = { messages, mode }
+    const etag = buildPayloadEtag('messages', payload)
+    reply.header('ETag', etag)
+    if (matchesIfNoneMatch(request.headers['if-none-match'], etag)) {
+      reply.code(304).send()
+      return
+    }
+    return payload
   })
 
   registerMessagesExportRoute(app, orchestrator)

@@ -6,7 +6,12 @@ import { readHistory } from '../storage/jsonl.js'
 import { publishUserInput } from '../streams/channels.js'
 
 import { cancelTask } from './cancel.js'
-import { type ChatMessage, mergeChatMessages } from './chat-view.js'
+import {
+  type ChatMessage,
+  type ChatMessagesMode,
+  mergeChatMessages,
+  selectChatMessages,
+} from './chat-view.js'
 import { hydrateRuntimeState, persistRuntimeState } from './runtime-persist.js'
 import { buildTaskViews } from './task-view.js'
 import { tellerLoop } from './teller-loop.js'
@@ -111,6 +116,19 @@ export class Orchestrator {
       history,
       inflightInputs: this.getInflightInputs(),
       limit,
+    })
+  }
+
+  async getChatMessages(
+    limit = 50,
+    afterId?: string,
+  ): Promise<{ messages: ChatMessage[]; mode: ChatMessagesMode }> {
+    const history = await readHistory(this.runtime.paths.history)
+    return selectChatMessages({
+      history,
+      inflightInputs: this.getInflightInputs(),
+      limit,
+      ...(afterId ? { afterId } : {}),
     })
   }
 

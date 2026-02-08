@@ -33,10 +33,21 @@ export function createMessagesController({
   quoteText,
   quoteClearBtn,
 }) {
+  const ACTIVE_POLL_MS = 2000
+  const IDLE_POLL_MS = 30000
+  const RETRY_BASE_MS = 1000
+  const RETRY_MAX_MS = 30000
+  const MESSAGE_LIMIT = 50
+
   let pollTimer = null
   let isPolling = false
+  let pausedByVisibility = false
+  let consecutiveFailures = 0
   let emptyRemoved = false
   let lastStatus = null
+  let lastMessageCursor = null
+  let lastStatusEtag = null
+  let lastMessagesEtag = null
   let unbindNotificationPrompt = () => {}
   const messageState = createMessageState()
   const notifications = createBrowserNotificationController()
@@ -89,10 +100,51 @@ export function createMessagesController({
     })
   }
 
+  const buildMessagesUrl = () => {
+    const query = lastMessageCursor
+      ? `?limit=${MESSAGE_LIMIT}&afterId=${encodeURIComponent(lastMessageCursor)}`
+      : `?limit=${MESSAGE_LIMIT}`
+    return `/api/messages${query}`
+  }
+
+  const mergeIncomingMessages = (incoming, mode) => {
+    const merged =
+      mode === 'delta' && messageState.lastMessages.length > 0
+        ? [...messageState.lastMessages, ...incoming]
+        : incoming
+    return merged.slice(Math.max(0, merged.length - MESSAGE_LIMIT))
+  }
+
+  const fetchMessages = async () => {
+    const headers = {}
+    if (lastMessagesEtag) headers['If-None-Match'] = lastMessagesEtag
+    const msgRes = await fetch(buildMessagesUrl(), { headers })
+    if (msgRes.status === 304) return null
+    const etag = msgRes.headers.get('etag')
+    if (etag) lastMessagesEtag = etag
+    return msgRes.json()
+  }
+
+  const fetchStatus = async () => {
+    const headers = {}
+    if (lastStatusEtag) headers['If-None-Match'] = lastStatusEtag
+    const statusRes = await fetch('/api/status', { headers })
+    if (statusRes.status === 304) return null
+    const etag = statusRes.headers.get('etag')
+    if (etag) lastStatusEtag = etag
+    return statusRes.json()
+  }
+
   const fetchAndRenderMessages = async () => {
-    const msgRes = await fetch('/api/messages?limit=50')
-    const msgData = await msgRes.json()
-    const messages = msgData.messages || []
+    const msgData = await fetchMessages()
+    if (msgData === null) {
+      updateLoadingVisibilityState(messageState, loading.isLoading())
+      return false
+    }
+    const incoming = msgData.messages || []
+    const mode =
+      msgData && typeof msgData.mode === 'string' ? msgData.mode : 'full'
+    const messages = mergeIncomingMessages(incoming, mode)
     const newestId = messages.length > 0 ? messages[messages.length - 1].id : null
     const loadingVisible = loading.isLoading()
     const changed =
@@ -106,8 +158,26 @@ export function createMessagesController({
       notifications.notifyMessages(messages, enterMessageIds)
     }
     updateMessageState(messageState, messages, newestId)
+    lastMessageCursor = newestId
     updateLoadingVisibilityState(messageState, loading.isLoading())
     return changed
+  }
+
+  const scheduleNextPoll = (delayMs) => {
+    if (!isPolling || pausedByVisibility) return
+    if (pollTimer) clearTimeout(pollTimer)
+    pollTimer = window.setTimeout(poll, delayMs)
+  }
+
+  const currentPollDelay = () => {
+    if (isFullyIdle()) return IDLE_POLL_MS
+    return ACTIVE_POLL_MS
+  }
+
+  const currentBackoffDelay = () => {
+    const shift = Math.max(0, consecutiveFailures - 1)
+    const factor = 2 ** shift
+    return Math.min(RETRY_MAX_MS, RETRY_BASE_MS * factor)
   }
 
   const updateStatus = (status) => {
@@ -123,6 +193,9 @@ export function createMessagesController({
     lastStatus = null
     clearWorkerDots(workerDots)
     clearMessageState(messageState)
+    lastStatusEtag = null
+    lastMessageCursor = null
+    lastMessagesEtag = null
     loading.setLoading(false)
   }
 
@@ -130,33 +203,48 @@ export function createMessagesController({
     if (!isPolling) return
     try {
       const [statusRes, msgRes] = await Promise.all([
-        fetch('/api/status'),
-        fetch('/api/messages?limit=50'),
+        fetchStatus(),
+        fetchMessages(),
       ])
-      updateStatus(await statusRes.json())
-      const msgData = await msgRes.json()
-      const messages = msgData.messages || []
-      const newestId = messages.length > 0 ? messages[messages.length - 1].id : null
-      const loadingVisible = loading.isLoading()
-      if (
-        hasMessageChange(messageState, messages, newestId) ||
-        hasLoadingVisibilityChange(messageState, loadingVisible)
-      ) {
-        const enterMessageIds = collectNewMessageIds(messageState, messages)
-        const rendered = doRender(messages, enterMessageIds)
-        if (rendered)
-          applyRenderedState(messageState, rendered, { loading, syncLoadingState })
-        notifications.notifyMessages(messages, enterMessageIds)
+      if (statusRes !== null) {
+        updateStatus(statusRes)
       } else {
         syncLoadingState()
       }
-      updateMessageState(messageState, messages, newestId)
-      updateLoadingVisibilityState(messageState, loading.isLoading())
+      if (msgRes !== null) {
+        const incoming = msgRes.messages || []
+        const mode =
+          msgRes && typeof msgRes.mode === 'string' ? msgRes.mode : 'full'
+        const messages = mergeIncomingMessages(incoming, mode)
+        const newestId = messages.length > 0 ? messages[messages.length - 1].id : null
+        const loadingVisible = loading.isLoading()
+        if (
+          hasMessageChange(messageState, messages, newestId) ||
+          hasLoadingVisibilityChange(messageState, loadingVisible)
+        ) {
+          const enterMessageIds = collectNewMessageIds(messageState, messages)
+          const rendered = doRender(messages, enterMessageIds)
+          if (rendered)
+            applyRenderedState(messageState, rendered, { loading, syncLoadingState })
+          notifications.notifyMessages(messages, enterMessageIds)
+        } else {
+          syncLoadingState()
+        }
+        updateMessageState(messageState, messages, newestId)
+        lastMessageCursor = newestId
+        updateLoadingVisibilityState(messageState, loading.isLoading())
+      } else {
+        syncLoadingState()
+      }
+      consecutiveFailures = 0
     } catch (error) {
+      consecutiveFailures += 1
       console.warn('[webui] poll failed', error)
       setDisconnected()
     }
-    if (isPolling) pollTimer = window.setTimeout(poll, 2000)
+    const nextDelay =
+      consecutiveFailures > 0 ? currentBackoffDelay() : currentPollDelay()
+    scheduleNextPoll(nextDelay)
   }
 
   const sendMessage = createSendHandler({
@@ -179,14 +267,41 @@ export function createMessagesController({
     scroll.bindScrollControls()
     unbindNotificationPrompt = notifications.bindPermissionPrompt()
     isPolling = true
+    pausedByVisibility =
+      typeof document !== 'undefined' && document.hidden === true
+    if (pausedByVisibility) return
     poll()
   }
   const stop = () => {
     isPolling = false
+    pausedByVisibility = false
     unbindNotificationPrompt()
     unbindNotificationPrompt = () => {}
     if (pollTimer) clearTimeout(pollTimer)
     pollTimer = null
+  }
+
+  const onVisibilityChange = () => {
+    if (!isPolling) return
+    const hidden =
+      typeof document !== 'undefined' && document.hidden === true
+    if (hidden) {
+      pausedByVisibility = true
+      if (pollTimer) clearTimeout(pollTimer)
+      pollTimer = null
+      return
+    }
+    const wasPaused = pausedByVisibility
+    pausedByVisibility = false
+    if (wasPaused) {
+      if (pollTimer) clearTimeout(pollTimer)
+      pollTimer = null
+      poll()
+    }
+  }
+
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', onVisibilityChange)
   }
   const isFullyIdle = () =>
     lastStatus &&
@@ -196,4 +311,3 @@ export function createMessagesController({
 
   return { start, stop, sendMessage, isFullyIdle }
 }
-
