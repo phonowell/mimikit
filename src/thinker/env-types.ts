@@ -1,4 +1,4 @@
-import type { TaskStatusSummary } from '../contracts/channels.js'
+import type { TaskStatusSummary } from '../types/index.js'
 
 export type ThinkerEnv = {
   lastUser?: {

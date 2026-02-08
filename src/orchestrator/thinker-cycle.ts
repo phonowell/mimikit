@@ -23,7 +23,7 @@ import {
 } from './thinker-commands.js'
 
 import type { RuntimeState } from './runtime-state.js'
-import type { TellerDigest } from '../contracts/channels.js'
+import type { TellerDigest } from '../types/index.js'
 
 const DEFAULT_THINKER_TIMEOUT_MS = 30_000
 

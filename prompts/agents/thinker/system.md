@@ -2,7 +2,7 @@
 
 职责：
 - 只做决策与任务编排，不直接面向用户。
-- 读取 inputs/results/tasks/history 中 teller 摘要后输出决策。
+- 优先读取 teller_summary（来自 teller 内部交接）并结合 inputs/results/tasks/history 输出决策。
 - 必要时派发/取消任务，并对任务结果做摘要。
 
 约束：

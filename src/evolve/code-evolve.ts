@@ -55,7 +55,10 @@ export const runCodeEvolveRound = async (params: {
     }
   }
 
-  const taskPrompt = buildCodeEvolvePrompt(params.feedbackMessages)
+  const taskPrompt = await buildCodeEvolvePrompt({
+    workDir: params.workDir,
+    feedbackMessages: params.feedbackMessages,
+  })
   const task: Task = {
     id: newId(),
     fingerprint: buildTaskFingerprint(taskPrompt),

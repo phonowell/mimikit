@@ -1,21 +1,15 @@
+import { buildCodeEvolveTaskPrompt } from '../prompts/build-prompts.js'
+
 import type { EvolveCodeInstruction } from './code-evolve-types.js'
 
-export const buildCodeEvolvePrompt = (feedbackMessages: string[]): string => {
-  const cases = feedbackMessages
-    .slice(0, 20)
-    .map((item, index) => `${index + 1}. ${item}`)
-  return [
-    'You are the system code-evolution planner.',
-    'Goal: choose the highest-ROI issue from feedback and propose minimal code changes.',
-    'Constraints: modify only directly relevant code; avoid architecture rewrites; keep rollback-safe.',
-    'Do not target prompt files under prompts/*; focus on code files.',
-    'Output strict JSON only in one of these forms:',
-    '{"mode":"code","target":"<file or module>","prompt":"<short execution instruction>"}',
-    '{"mode":"skip"}',
-    'Feedback list:',
-    ...cases,
-  ].join('\n')
-}
+export const buildCodeEvolvePrompt = (params: {
+  workDir: string
+  feedbackMessages: string[]
+}): Promise<string> =>
+  buildCodeEvolveTaskPrompt({
+    workDir: params.workDir,
+    feedbackMessages: params.feedbackMessages,
+  })
 
 export const parseInstruction = (output: string): EvolveCodeInstruction => {
   const trimmed = output.trim()

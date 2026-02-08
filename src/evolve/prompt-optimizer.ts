@@ -1,32 +1,13 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 
+import { buildPromptOptimizerPrompt } from '../prompts/build-prompts.js'
 import { runThinker } from '../thinker/runner.js'
 
 type OptimizeResult = {
   original: string
   candidate: string
 }
-
-const OPTIMIZER_SYSTEM = [
-  '你是 Prompt 优化器。',
-  '任务：在不改变行为边界的前提下，优化提示词以提升通过率并降低 tokens/time。',
-  '硬约束：',
-  '1) 保留原意与安全边界；',
-  '2) 删除冗余、压缩重复；',
-  '3) 不引入与当前系统无关的新规则；',
-  '4) 仅输出优化后的完整提示词文本，不要解释。',
-].join('\n')
-
-const buildOptimizerPrompt = (source: string): string =>
-  [
-    OPTIMIZER_SYSTEM,
-    '',
-    '以下是当前提示词，请输出优化后的完整版本：',
-    '---BEGIN PROMPT---',
-    source,
-    '---END PROMPT---',
-  ].join('\n')
 
 const normalizeOutput = (output: string): string => {
   const trimmed = output.trim()
@@ -49,7 +30,10 @@ export const optimizeManagerPrompt = async (params: {
     inputs: [
       {
         id: 'optimize-input',
-        text: buildOptimizerPrompt(original),
+        text: await buildPromptOptimizerPrompt({
+          workDir: params.workDir,
+          source: original,
+        }),
         createdAt: new Date().toISOString(),
       },
     ],

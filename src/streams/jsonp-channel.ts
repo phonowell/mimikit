@@ -1,6 +1,6 @@
 import { readJsonl, updateJsonl } from '../storage/jsonl.js'
 
-import type { JsonPacket } from '../contracts/channels.js'
+import type { JsonPacket } from '../types/index.js'
 
 type ChannelState<TPayload> = {
   cursor: number

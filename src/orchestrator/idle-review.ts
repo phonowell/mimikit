@@ -1,5 +1,6 @@
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
+import { buildIdleReviewPrompt } from '../prompts/build-prompts.js'
 import { nowIso } from '../shared/utils.js'
 import { readHistory } from '../storage/jsonl.js'
 import { runThinker } from '../thinker/runner.js'
@@ -26,23 +27,6 @@ const parseIdleReviewItems = (output: string): IdleReviewItem[] => {
   return items
 }
 
-const buildIdleReviewPrompt = (historyTexts: string[]): string => {
-  const historyBlock = historyTexts
-    .map((line, index) => `${index + 1}. ${line}`)
-    .join('\n')
-  return [
-    'Review recent user-assistant conversation snippets and extract only high-value issues.',
-    'Return commands only, each in one line:',
-    '@capture_feedback message="..."',
-    'Rules:',
-    '- Ignore emotional-only statements with no actionable value.',
-    '- Prefer issues with repeated evidence, high cost, high latency, or failures.',
-    '- If no valuable issue exists, return empty output.',
-    'Conversation snippets:',
-    historyBlock,
-  ].join('\n')
-}
-
 export const runIdleConversationReview = async (params: {
   runtime: RuntimeState
   appendFeedback: (args: {
@@ -58,9 +42,10 @@ export const runIdleConversationReview = async (params: {
   })
   if (recent.length === 0) return { captured: 0, usageTotal: 0, elapsedMs: 0 }
 
-  const prompt = buildIdleReviewPrompt(
-    recent.map((item) => `${item.role}: ${item.text}`),
-  )
+  const prompt = await buildIdleReviewPrompt({
+    workDir: params.runtime.config.workDir,
+    historyTexts: recent.map((item) => `${item.role}: ${item.text}`),
+  })
 
   const reviewResult = await runThinker({
     stateDir: params.runtime.config.stateDir,

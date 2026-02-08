@@ -6,13 +6,14 @@ import {
   pruneJsonpPackets,
 } from './jsonp-channel.js'
 
+import type { StatePaths } from '../fs/paths.js'
 import type {
   JsonPacket,
+  TaskResult,
   TellerDigest,
   ThinkerDecision,
-} from '../contracts/channels.js'
-import type { StatePaths } from '../fs/paths.js'
-import type { TaskResult, UserInput } from '../types/index.js'
+  UserInput,
+} from '../types/index.js'
 
 const makePacket = <TPayload>(payload: TPayload): JsonPacket<TPayload> => ({
   id: `${shortId()}-${Date.now()}`,

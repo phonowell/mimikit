@@ -1,4 +1,5 @@
 import { runApiRunner } from '../llm/api-runner.js'
+import { buildWorkerStandardPlannerPrompt } from '../prompts/build-prompts.js'
 import { parseCommandAttrs } from '../shared/command-attrs.js'
 import {
   loadTaskCheckpoint,
@@ -168,41 +169,6 @@ const parseStep = (output: string): StandardStep => {
   throw new Error('standard_step_parse_failed:missing_valid_command')
 }
 
-const buildPlannerPrompt = (params: {
-  taskPrompt: string
-  state: StandardState
-  tools: string[]
-  checkpointRecovered: boolean
-}): string => {
-  const transcript =
-    params.state.transcript.length > 0
-      ? params.state.transcript.join('\n\n')
-      : '(empty)'
-  return [
-    'You are worker-standard. Solve the task in iterative steps.',
-    'You must output exactly one command line per round.',
-    'Use command block format and put it at end:',
-    '<MIMIKIT:commands>',
-    '@read path="relative/file.txt"',
-    '@write path="relative/file.txt" content="escaped\\ntext"',
-    '@edit path="relative/file.txt" oldText="before" newText="after" replaceAll="true|false"',
-    '@apply_patch input="*** Begin Patch\\n*** Update File: src/a.ts\\n@@\\n-old\\n+new\\n*** End Patch"',
-    '@exec command="pnpm test"',
-    '@browser command="open https://example.com"',
-    '@respond response="final answer for thinker"',
-    '</MIMIKIT:commands>',
-    'Rules:',
-    '- Do not emit JSON commands.',
-    '- Keep all argument values in double quotes.',
-    '- Encode multiline text with escaped \\n.',
-    '- Choose only one command line each round.',
-    `checkpoint_recovered: ${params.checkpointRecovered ? 'true' : 'false'}`,
-    `task:\n${params.taskPrompt}`,
-    `available_tools:\n${params.tools.join(', ')}`,
-    `transcript:\n${transcript}`,
-  ].join('\n\n')
-}
-
 const summarizeToolCall = (params: {
   name: string
   args: unknown
@@ -265,9 +231,10 @@ export const runStandardWorker = async (params: {
       throw new Error('standard_timeout')
     if (state.round >= maxRounds)
       throw new Error('standard_max_rounds_exceeded')
-    const plannerPrompt = buildPlannerPrompt({
+    const plannerPrompt = await buildWorkerStandardPlannerPrompt({
+      workDir: params.workDir,
       taskPrompt: params.prompt,
-      state,
+      transcript: state.transcript,
       tools,
       checkpointRecovered,
     })

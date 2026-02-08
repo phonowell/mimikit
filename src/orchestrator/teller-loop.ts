@@ -90,6 +90,7 @@ export const tellerLoop = async (runtime: RuntimeState): Promise<void> => {
     if ((debounceReady || resultsReady) && (hasInputs || hasResults)) {
       const history = await readHistory(runtime.paths.history)
       const digest = await runTellerDigest({
+        workDir: runtime.config.workDir,
         inputs: buffer.inputs,
         results: buffer.results,
         tasks: runtime.tasks,

@@ -1,19 +1,18 @@
 import { runApiRunner } from '../llm/api-runner.js'
-import { buildTellerPrompt } from '../prompts/build-prompts.js'
+import { extractTellerDigestSummary } from '../orchestrator/teller-digest-command.js'
 import {
-  formatHistory,
-  formatInputs,
-  formatTasksYaml,
-} from '../prompts/format.js'
+  buildTellerDigestPrompt,
+  buildTellerPrompt,
+} from '../prompts/build-prompts.js'
 import { nowIso, shortId } from '../shared/utils.js'
 
 import { buildTaskStatusSummary } from './task-summary.js'
 
-import type { TellerDigest } from '../contracts/channels.js'
 import type {
   HistoryMessage,
   Task,
   TaskResult,
+  TellerDigest,
   TokenUsage,
   UserInput,
 } from '../types/index.js'
@@ -23,31 +22,6 @@ type TellerUserResponse = {
   text: string
   usage?: TokenUsage
   elapsedMs?: number
-}
-
-const buildSummaryPrompt = (params: {
-  inputs: UserInput[]
-  results: TaskResult[]
-  tasks: Task[]
-  history: HistoryMessage[]
-}): string => {
-  const inputText = formatInputs(params.inputs)
-  const historyText = formatHistory(params.history)
-  const taskText = formatTasksYaml(params.tasks, params.results)
-  return [
-    '你是 teller，负责对用户当下重点做去噪摘要，供 thinker 决策。',
-    '仅输出摘要正文，不要命令、不要代码块、不要解释流程。',
-    '优先包含：目标、约束、优先级、未决问题、已知结果。',
-    '',
-    '【用户输入】',
-    inputText || '(empty)',
-    '',
-    '【任务状态摘要】',
-    taskText || '(empty)',
-    '',
-    '【历史对话】',
-    historyText || '(empty)',
-  ].join('\n')
 }
 
 const fallbackSummary = (params: {
@@ -62,6 +36,7 @@ const fallbackSummary = (params: {
 }
 
 export const runTellerDigest = async (params: {
+  workDir: string
   inputs: UserInput[]
   results: TaskResult[]
   tasks: Task[]
@@ -70,7 +45,13 @@ export const runTellerDigest = async (params: {
   model?: string
   modelReasoningEffort?: ModelReasoningEffort
 }): Promise<TellerDigest> => {
-  const prompt = buildSummaryPrompt(params)
+  const prompt = await buildTellerDigestPrompt({
+    workDir: params.workDir,
+    inputs: params.inputs,
+    tasks: params.tasks,
+    results: params.results,
+    history: params.history,
+  })
   let summary = ''
   try {
     const response = await runApiRunner({
@@ -81,7 +62,7 @@ export const runTellerDigest = async (params: {
         ? { modelReasoningEffort: params.modelReasoningEffort }
         : {}),
     })
-    summary = response.output.trim()
+    summary = extractTellerDigestSummary(response.output)
   } catch {
     summary = ''
   }

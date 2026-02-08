@@ -1,7 +1,6 @@
 import { resolveTaskChangedAt } from '../prompts/format-base.js'
 
-import type { TaskStatusSummary } from '../contracts/channels.js'
-import type { Task } from '../types/index.js'
+import type { Task, TaskStatusSummary } from '../types/index.js'
 
 const statusCounts = (tasks: Task[]): Omit<TaskStatusSummary, 'recent'> => ({
   pending: tasks.filter((task) => task.status === 'pending').length,
