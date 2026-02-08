@@ -49,7 +49,7 @@ export const tellerLoop = async (runtime: RuntimeState): Promise<void> => {
       const history = await readHistory(runtime.paths.history)
       for (const packet of decisionPackets) {
         runtime.channels.tellerThinkerDecisionCursor = packet.cursor
-        const responseText = await formatDecisionForUser({
+        const response = await formatDecisionForUser({
           workDir: runtime.config.workDir,
           tasks: runtime.tasks,
           history,
@@ -63,8 +63,12 @@ export const tellerLoop = async (runtime: RuntimeState): Promise<void> => {
         await appendHistory(runtime.paths.history, {
           id: `assistant-${Date.now()}-${packet.cursor}`,
           role: 'assistant',
-          text: responseText,
+          text: response.text,
           createdAt: nowIso(),
+          ...(response.usage ? { usage: response.usage } : {}),
+          ...(response.elapsedMs !== undefined
+            ? { elapsedMs: response.elapsedMs }
+            : {}),
         })
       }
       const consumed = new Set(

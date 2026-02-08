@@ -14,9 +14,16 @@ import type {
   HistoryMessage,
   Task,
   TaskResult,
+  TokenUsage,
   UserInput,
 } from '../types/index.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
+
+type TellerUserResponse = {
+  text: string
+  usage?: TokenUsage
+  elapsedMs?: number
+}
 
 const buildSummaryPrompt = (params: {
   inputs: UserInput[]
@@ -98,7 +105,7 @@ export const formatDecisionForUser = (params: {
   timeoutMs: number
   model?: string
   modelReasoningEffort?: ModelReasoningEffort
-}): Promise<string> => {
+}): Promise<TellerUserResponse> => {
   const fallback = () => {
     const text = params.decision.trim()
     if (text.length > 0) return text
@@ -127,10 +134,14 @@ export const formatDecisionForUser = (params: {
           : {}),
       })
       const text = response.output.trim()
-      if (!text) return fallback()
-      return text
+      const finalText = text || fallback()
+      return {
+        text: finalText,
+        ...(response.usage ? { usage: response.usage } : {}),
+        elapsedMs: response.elapsedMs,
+      }
     } catch {
-      return fallback()
+      return { text: fallback() }
     }
   })()
 }
