@@ -137,7 +137,7 @@ export const runTaskWithRetry = (params: {
       try {
         return await runTaskByProfile({ runtime, task, controller })
       } catch (error) {
-        if (controller.signal.aborted)
+        if (isAbortLikeError(error))
           throw new AbortError(controller.signal.reason ?? 'Task canceled')
         throw toRetryError(error)
       }

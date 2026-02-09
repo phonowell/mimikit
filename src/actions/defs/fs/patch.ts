@@ -2,8 +2,11 @@ import { applyPatch } from 'diff'
 import read from 'fire-keeper/read'
 import write from 'fire-keeper/write'
 
-import { buildArgsSchema, nonEmptyString } from '../../shared/args.js'
-import { resolvePath } from '../../shared/path.js'
+import {
+  buildArgsSchema,
+  nonEmptyString,
+  resolvePath,
+} from '../../shared/args.js'
 
 import type { Spec } from '../../model/spec.js'
 import type { z } from 'zod'

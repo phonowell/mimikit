@@ -4,8 +4,6 @@ import write from 'fire-keeper/write'
 import { writeFileAtomic } from '../fs/json.js'
 import { logSafeError, safe } from '../log/safe.js'
 
-import { splitNonEmptyLines, toUtf8Text } from './text-codec.js'
-
 import type { HistoryMessage } from '../types/index.js'
 
 type JsonlReadOptions<T> = {
@@ -13,6 +11,18 @@ type JsonlReadOptions<T> = {
 }
 
 const updateQueue = new Map<string, Promise<void>>()
+
+const toUtf8Text = (raw: unknown): string => {
+  if (typeof raw === 'string') return raw
+  if (Buffer.isBuffer(raw)) return raw.toString('utf8')
+  return ''
+}
+
+const splitNonEmptyLines = (text: string): string[] =>
+  text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
 
 const runSerialized = async <T>(
   path: string,

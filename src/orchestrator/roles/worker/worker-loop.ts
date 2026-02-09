@@ -3,7 +3,7 @@ import { generateMissingDailyReports } from '../../../reporting/daily-report.js'
 import { persistRuntimeState } from '../../core/runtime-persistence.js'
 import { waitForWorkerLoopSignal } from '../../core/worker-signal.js'
 
-import { appendRuntimeIssue } from './worker-runtime-feedback.js'
+import { appendRuntimeIssue } from './worker-runtime-utils.js'
 
 import type { RuntimeState } from '../../core/runtime-state.js'
 

@@ -5,8 +5,10 @@ import { join } from 'node:path'
 import { createPatch } from 'diff'
 import { expect, test } from 'vitest'
 
-import { listInvokableActionNames } from '../src/actions/registry/index.js'
-import { invokeAction } from '../src/actions/runtime/invoke.js'
+import {
+  invokeAction,
+  listInvokableActionNames,
+} from '../src/actions/registry/index.js'
 
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-worker-actions-'))
 

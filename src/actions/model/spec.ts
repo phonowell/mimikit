@@ -1,5 +1,17 @@
-import type { Result } from './result.js'
 import type { z } from 'zod'
+
+export type Parsed = {
+  name: string
+  attrs: Record<string, string>
+  content?: string | undefined
+}
+
+export type Result = {
+  ok: boolean
+  output: string
+  error?: string
+  details?: Record<string, unknown>
+}
 
 export type Context = {
   workDir: string

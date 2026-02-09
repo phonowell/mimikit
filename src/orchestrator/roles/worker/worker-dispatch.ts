@@ -5,7 +5,7 @@ import { persistRuntimeState } from '../../core/runtime-persistence.js'
 import { notifyWorkerLoop } from '../../core/worker-signal.js'
 
 import { runTask } from './worker-run-task.js'
-import { appendRuntimeIssue } from './worker-runtime-feedback.js'
+import { appendRuntimeIssue } from './worker-runtime-utils.js'
 
 import type { Task } from '../../../types/index.js'
 import type { RuntimeState } from '../../core/runtime-state.js'

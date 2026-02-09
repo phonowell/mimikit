@@ -1,6 +1,6 @@
 import { bestEffort } from '../../../log/safe.js'
 
-import { appendRuntimeIssue } from './worker-runtime-feedback.js'
+import { appendRuntimeIssue } from './worker-runtime-utils.js'
 
 import type { Task } from '../../../types/index.js'
 import type { RuntimeState } from '../../core/runtime-state.js'

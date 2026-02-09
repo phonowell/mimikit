@@ -1,17 +1,49 @@
-import { dirname } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 
 import { ensureDir } from '../fs/paths.js'
 import { nowIso } from '../shared/utils.js'
 import { appendJsonl, readJsonl } from '../storage/jsonl.js'
 
-import { reportingEventsPath } from './storage.js'
+type ReportingSeverity = 'low' | 'medium' | 'high'
 
-import type {
-  ReportingCategory,
-  ReportingEvent,
-  ReportingSeverity,
-  ReportingSource,
-} from './types.js'
+type ReportingCategory =
+  | 'quality'
+  | 'latency'
+  | 'cost'
+  | 'failure'
+  | 'ux'
+  | 'other'
+
+type ReportingSource =
+  | 'thinker_action'
+  | 'runtime'
+  | 'worker_loop'
+  | 'thinker_error'
+
+export type ReportingEvent = {
+  id: string
+  createdAt: string
+  source: ReportingSource
+  category: ReportingCategory
+  severity: ReportingSeverity
+  message: string
+  note?: string
+  taskId?: string
+  elapsedMs?: number
+  usageTotal?: number
+}
+
+const reportingDirPath = (stateDir: string): string =>
+  resolve(join(stateDir, 'reporting'))
+
+const reportingEventsPath = (stateDir: string): string =>
+  resolve(join(reportingDirPath(stateDir), 'events.jsonl'))
+
+export const dailyReportDirPath = (stateDir: string): string =>
+  resolve(join(stateDir, 'reports', 'daily'))
+
+export const dailyReportPath = (stateDir: string, day: string): string =>
+  resolve(join(dailyReportDirPath(stateDir), `${day}.md`))
 
 export const appendReportingEvent = async (params: {
   stateDir: string

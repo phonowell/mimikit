@@ -4,7 +4,7 @@ import { parseActions, parseLooseLines } from '../actions/protocol/parse.js'
 import { getInvokableSpec } from '../actions/registry/index.js'
 import { parseArgs } from '../actions/shared/args.js'
 
-import type { Parsed } from '../actions/model/parsed.js'
+import type { Parsed } from '../actions/model/spec.js'
 import type { InvokableName } from '../actions/registry/index.js'
 
 export type StandardStep =

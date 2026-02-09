@@ -1,7 +1,10 @@
 import exec from 'fire-keeper/exec'
 
-import { buildArgsSchema, nonEmptyString } from '../../shared/args.js'
-import { prependWorkDir } from '../../shared/shell.js'
+import {
+  buildArgsSchema,
+  nonEmptyString,
+  prependWorkDir,
+} from '../../shared/args.js'
 
 import type { Spec } from '../../model/spec.js'
 import type { z } from 'zod'

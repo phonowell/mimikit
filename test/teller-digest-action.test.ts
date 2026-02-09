@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 
-import { extractDigestSummary } from '../src/teller/digest-summary.js'
+import { extractDigestSummary } from '../src/teller/runner.js'
 
 test('extractDigestSummary prefers @digest_context summary attribute', () => {
   const output = [

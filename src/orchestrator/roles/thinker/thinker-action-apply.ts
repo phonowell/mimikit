@@ -8,7 +8,7 @@ import { appendTaskSystemMessage } from '../../read-model/task-history.js'
 import { cancelTask } from '../worker/worker-cancel-task.js'
 import { enqueueWorkerTask } from '../worker/worker-dispatch.js'
 
-import type { Parsed } from '../../../actions/model/parsed.js'
+import type { Parsed } from '../../../actions/model/spec.js'
 import type { WorkerProfile } from '../../../types/index.js'
 import type { RuntimeState } from '../../core/runtime-state.js'
 

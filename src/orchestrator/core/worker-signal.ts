@@ -22,13 +22,12 @@ export const waitForWorkerLoopSignal = async (
   const waitMs = clampWaitMs(timeoutMs)
   if (waitMs <= 0) return
   await new Promise<void>((resolve) => {
-    let timer: NodeJS.Timeout | undefined
     const done = () => {
-      if (timer) clearTimeout(timer)
+      clearTimeout(timer)
       signal.removeEventListener('abort', done)
       resolve()
     }
+    const timer = setTimeout(done, waitMs)
     signal.addEventListener('abort', done, { once: true })
-    timer = setTimeout(done, waitMs)
   })
 }

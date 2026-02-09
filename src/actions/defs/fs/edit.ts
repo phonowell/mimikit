@@ -6,8 +6,8 @@ import {
   booleanLike,
   buildArgsSchema,
   nonEmptyString,
+  resolvePath,
 } from '../../shared/args.js'
-import { resolvePath } from '../../shared/path.js'
 
 import type { Spec } from '../../model/spec.js'
 

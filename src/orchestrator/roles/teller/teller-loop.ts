@@ -4,13 +4,13 @@ import { appendHistory, readHistory } from '../../../storage/jsonl.js'
 import {
   consumeThinkerDecisions,
   consumeUserInputs,
+  pruneChannelsByCursor,
   publishTellerDigest,
 } from '../../../streams/channels.js'
 import {
   formatDecisionForUser,
   runTellerDigest,
 } from '../../../teller/runner.js'
-import { pruneChannelsByCursor } from '../../shared/channel-prune.js'
 
 import type { RuntimeState } from '../../core/runtime-state.js'
 

@@ -3,9 +3,9 @@ import { sleep } from '../../../shared/utils.js'
 import {
   consumeTellerDigests,
   consumeWorkerResults,
+  pruneChannelsByCursor,
 } from '../../../streams/channels.js'
 import { buildTaskStatusSummary } from '../../../teller/task-summary.js'
-import { pruneChannelsByCursor } from '../../shared/channel-prune.js'
 
 import { runThinkerCycle } from './thinker-cycle.js'
 

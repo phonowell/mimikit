@@ -1,12 +1,12 @@
 import { runBrowserSpec } from '../defs/browser/run.js'
 import { editFileSpec } from '../defs/fs/edit.js'
 import { patchFileSpec } from '../defs/fs/patch.js'
-import { readFileSpec } from '../defs/fs/read.js'
+import { readFileSpec, writeFileSpec } from '../defs/fs/read.js'
 import { searchFilesSpec } from '../defs/fs/search.js'
-import { writeFileSpec } from '../defs/fs/write.js'
 import { execShellSpec } from '../defs/shell/exec.js'
+import { parseArgs, safeRun } from '../shared/args.js'
 
-import type { Spec } from '../model/spec.js'
+import type { Context, Result, Spec } from '../model/spec.js'
 
 const INVOKABLE_SPECS = [
   readFileSpec,
@@ -32,3 +32,23 @@ export const getInvokableSpec = (name: string): Spec | undefined =>
 
 export const isInvokableActionName = (name: string): name is InvokableName =>
   specMap.has(name)
+
+export const invokeAction = (
+  context: Context,
+  name: string,
+  args: unknown,
+): Promise<Result> => {
+  const spec = getInvokableSpec(name)
+  if (!spec) {
+    return Promise.resolve({
+      ok: false,
+      output: '',
+      error: `unknown_action:${name}`,
+    })
+  }
+
+  return safeRun(() => {
+    const parsed = parseArgs(args, spec.schema)
+    return spec.run(context, parsed)
+  })
+}

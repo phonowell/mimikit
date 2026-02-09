@@ -1,4 +1,4 @@
-import { invokeAction } from '../actions/runtime/invoke.js'
+import { invokeAction } from '../actions/registry/index.js'
 import { appendTaskProgress } from '../storage/task-progress.js'
 
 import type { StandardStep } from './standard-step.js'

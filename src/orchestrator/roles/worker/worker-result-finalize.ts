@@ -3,7 +3,7 @@ import { bestEffort } from '../../../log/safe.js'
 import { nowIso } from '../../../shared/utils.js'
 import { publishWorkerResult } from '../../../streams/channels.js'
 
-import { archiveTaskResult } from './worker-result-archive.js'
+import { archiveTaskResult } from './worker-runtime-utils.js'
 
 import type { Task, TaskResult, TokenUsage } from '../../../types/index.js'
 import type { RuntimeState } from '../../core/runtime-state.js'

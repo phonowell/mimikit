@@ -1,3 +1,4 @@
+import { listInvokableActionNames } from '../actions/registry/index.js'
 import { runApiRunner } from '../llm/api-runner.js'
 import { buildWorkerStandardPlannerPrompt } from '../prompts/build-prompts.js'
 import {
@@ -6,7 +7,6 @@ import {
 } from '../storage/task-checkpoint.js'
 import { appendTaskProgress } from '../storage/task-progress.js'
 
-import { listStandardActions } from './standard-actions.js'
 import { executeStandardStep } from './standard-step-exec.js'
 import { parseStandardStep } from './standard-step.js'
 
@@ -62,7 +62,7 @@ export const runStandardWorker = async (params: {
     1,
     Math.floor(Math.max(1, params.timeoutMs) / 1_000),
   )
-  const actions = listStandardActions()
+  const actions = listInvokableActionNames()
   const recovered = await loadTaskCheckpoint(params.stateDir, params.taskId)
   const state = normalizeState(recovered?.state)
   const checkpointRecovered = Boolean(recovered)

@@ -1,4 +1,8 @@
+import { isAbsolute, normalize, resolve } from 'node:path'
+
 import { z } from 'zod'
+
+import type { Result } from '../model/spec.js'
 
 const rawArgsSchema = z.record(z.string(), z.unknown())
 
@@ -66,3 +70,34 @@ export const booleanLike = z.union([
       return z.NEVER
     }),
 ])
+
+export const resolvePath = (workDir: string, inputPath: string): string => {
+  const normalizedInput = normalize(inputPath)
+  if (isAbsolute(normalizedInput)) return normalizedInput
+  return resolve(workDir, normalizedInput)
+}
+
+export const quoteShellValue = (value: string): string =>
+  `"${value.replaceAll('"', '\\"')}"`
+
+export const prependWorkDir = (
+  workDir: string,
+  command: string | string[],
+): string[] => {
+  const list = Array.isArray(command) ? command : [command]
+  return [`cd ${quoteShellValue(workDir)}`, ...list]
+}
+
+export const safeRun = async (
+  handler: () => Promise<Result>,
+): Promise<Result> => {
+  try {
+    return await handler()
+  } catch (error) {
+    return {
+      ok: false,
+      output: '',
+      error: error instanceof Error ? error.message : String(error),
+    }
+  }
+}

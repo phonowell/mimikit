@@ -1,8 +1,12 @@
 import read from 'fire-keeper/read'
+import write from 'fire-keeper/write'
 import { z } from 'zod'
 
-import { buildArgsSchema, nonEmptyString } from '../../shared/args.js'
-import { resolvePath } from '../../shared/path.js'
+import {
+  buildArgsSchema,
+  nonEmptyString,
+  resolvePath,
+} from '../../shared/args.js'
 
 import type { Spec } from '../../model/spec.js'
 
@@ -27,6 +31,13 @@ const schema = buildArgsSchema({
 })
 
 type Input = z.infer<typeof schema>
+
+const writeSchema = buildArgsSchema({
+  path: nonEmptyString,
+  content: z.string(),
+})
+
+type WriteInput = z.infer<typeof writeSchema>
 
 const normalizeContent = (value: unknown): string => {
   if (Buffer.isBuffer(value)) return value.toString('utf8')
@@ -64,6 +75,20 @@ export const readFileSpec: Spec<Input> = {
         line_count: lineCount,
         end_line: endLine,
       },
+    }
+  },
+}
+
+export const writeFileSpec: Spec<WriteInput> = {
+  name: 'write_file',
+  schema: writeSchema,
+  run: async (context, args) => {
+    const path = resolvePath(context.workDir, args.path)
+    await write(path, args.content, { encoding: 'utf8' })
+    return {
+      ok: true,
+      output: `write ok: ${path}`,
+      details: { path, bytes: Buffer.byteLength(args.content, 'utf8') },
     }
   },
 }

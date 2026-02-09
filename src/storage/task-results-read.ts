@@ -6,7 +6,6 @@ import { listFiles } from '../fs/paths.js'
 import { safe } from '../log/safe.js'
 
 import { extractArchiveSection, parseArchiveHeader } from './archive-format.js'
-import { toUtf8Text } from './text-codec.js'
 import { parseTokenUsageJson } from './token-usage.js'
 
 import type { TaskResult, TaskResultStatus } from '../types/index.js'
@@ -73,6 +72,12 @@ type SearchPlan = {
   idSet: Set<string>
   hintedDirs: Map<string, Set<string>>
   shouldScanAll: boolean
+}
+
+const toUtf8Text = (raw: unknown): string => {
+  if (typeof raw === 'string') return raw
+  if (Buffer.isBuffer(raw)) return raw.toString('utf8')
+  return ''
 }
 
 const buildSearchPlan = (

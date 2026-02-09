@@ -6,7 +6,7 @@ import { markTaskCanceled } from '../../../tasks/queue.js'
 import { persistRuntimeState } from '../../core/runtime-persistence.js'
 import { notifyWorkerLoop } from '../../core/worker-signal.js'
 
-import { archiveTaskResult } from './worker-result-archive.js'
+import { archiveTaskResult } from './worker-runtime-utils.js'
 
 import type { Task, TaskResult } from '../../../types/index.js'
 import type { RuntimeState } from '../../core/runtime-state.js'

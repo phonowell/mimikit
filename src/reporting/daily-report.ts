@@ -1,13 +1,14 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 
-import { readReportingEvents } from './events.js'
-import { dailyReportDirPath, dailyReportPath } from './storage.js'
+import {
+  dailyReportDirPath,
+  dailyReportPath,
+  readReportingEvents,
+  type ReportingEvent,
+} from './events.js'
 
-import type {
-  ReportingCategory,
-  ReportingEvent,
-  ReportingSeverity,
-} from './types.js'
+type ReportingSeverity = ReportingEvent['severity']
+type ReportingCategory = ReportingEvent['category']
 
 const pad2 = (value: number): string => String(value).padStart(2, '0')
 
