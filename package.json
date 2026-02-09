@@ -45,7 +45,7 @@
     "prompt:report": "tsx scripts/prompt-report.ts",
     "start": "caffeinate -dimsu bin/mimikit",
     "start:windows": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\bin\\mimikit.ps1",
-    "sync": "pnpm exec tsx scripts/sync-worktree.ts",
+    "sync": "pnpm exec tsx scripts/sync-worktree.ts && pnpm i",
     "test": "vitest run",
     "type-check": "tsc -p tsconfig.json --noEmit"
   },

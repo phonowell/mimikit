@@ -66,7 +66,7 @@ test('exec tool supports command alias and workdir', async () => {
   const result = await runWorkerTool(
     { workDir },
     'exec',
-    { cmd: ['Write-Output alpha', 'Write-Output beta'], silent: true },
+    { cmd: ['echo alpha', 'echo beta'], silent: true },
   )
   expect(result.ok).toBe(true)
   expect(result.output).toContain('alpha')
