@@ -26,11 +26,11 @@ export type RuntimeState = {
   channels: {
     teller: {
       userInputCursor: number
-      workerResultCursor: number
       thinkerDecisionCursor: number
     }
     thinker: {
       tellerDigestCursor: number
+      workerResultCursor: number
     }
   }
   tasks: Task[]

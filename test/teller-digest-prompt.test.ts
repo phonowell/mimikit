@@ -29,7 +29,6 @@ test('buildTellerDigestPrompt renders externalized teller digest templates', asy
       },
     ],
     tasks: [],
-    results: [],
     history: [
       {
         id: 'h-1',
@@ -47,4 +46,3 @@ test('buildTellerDigestPrompt renders externalized teller digest templates', asy
   expect(output).not.toContain('{tasks}')
   expect(output).not.toContain('{history}')
 })
-

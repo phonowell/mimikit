@@ -10,11 +10,11 @@ export type RuntimeSnapshot = {
   channels?: {
     teller: {
       userInputCursor: number
-      workerResultCursor: number
       thinkerDecisionCursor: number
     }
     thinker: {
       tellerDigestCursor: number
+      workerResultCursor: number
     }
   }
 }
@@ -50,13 +50,13 @@ const runtimeSnapshotChannelsSchema = z
     teller: z
       .object({
         userInputCursor: z.number().int().nonnegative(),
-        workerResultCursor: z.number().int().nonnegative(),
         thinkerDecisionCursor: z.number().int().nonnegative(),
       })
       .strict(),
     thinker: z
       .object({
         tellerDigestCursor: z.number().int().nonnegative(),
+        workerResultCursor: z.number().int().nonnegative(),
       })
       .strict(),
   })

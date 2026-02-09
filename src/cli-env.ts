@@ -45,8 +45,23 @@ const applyReportingEnv = (config: AppConfig): void => {
     config.reporting.runtimeHighUsageTotal = runtimeHighUsageTotal
 }
 
+const applyChannelEnv = (config: AppConfig): void => {
+  const pruneEnabled = parseEnvBoolean(
+    'MIMIKIT_CHANNEL_PRUNE_ENABLED',
+    process.env.MIMIKIT_CHANNEL_PRUNE_ENABLED?.trim(),
+  )
+  if (pruneEnabled !== undefined) config.channels.pruneEnabled = pruneEnabled
+  const keepRecentPackets = parseEnvPositiveInteger(
+    'MIMIKIT_CHANNEL_PRUNE_KEEP_PACKETS',
+    process.env.MIMIKIT_CHANNEL_PRUNE_KEEP_PACKETS?.trim(),
+  )
+  if (keepRecentPackets !== undefined)
+    config.channels.keepRecentPackets = keepRecentPackets
+}
+
 export const applyCliEnvOverrides = (config: AppConfig): void => {
   applyModelEnv(config)
   applyReasoningEnv(config)
   applyReportingEnv(config)
+  applyChannelEnv(config)
 }

@@ -1,35 +1,57 @@
+import { bestEffort } from '../log/safe.js'
 import { nowIso, sleep } from '../shared/utils.js'
 import { appendHistory, readHistory } from '../storage/jsonl.js'
 import {
   consumeThinkerDecisions,
   consumeUserInputs,
-  consumeWorkerResults,
+  pruneChannelBefore,
   publishTellerDigest,
 } from '../streams/channels.js'
 import { formatDecisionForUser, runTellerDigest } from '../teller/runner.js'
 
 import type { RuntimeState } from './runtime-state.js'
-import type { TaskResult } from '../types/index.js'
 
 type TellerBuffer = {
   inputs: RuntimeState['inflightInputs']
-  results: TaskResult[]
   lastInputAt: number
-  firstResultAt: number
 }
 
 const createTellerBuffer = (): TellerBuffer => ({
   inputs: [],
-  results: [],
   lastInputAt: 0,
-  firstResultAt: 0,
 })
 
 const clearTellerBuffer = (buffer: TellerBuffer): void => {
   buffer.inputs = []
-  buffer.results = []
   buffer.lastInputAt = 0
-  buffer.firstResultAt = 0
+}
+
+const maybePruneTellerChannels = (runtime: RuntimeState): Promise<void> => {
+  if (!runtime.config.channels.pruneEnabled) return Promise.resolve()
+  const keepRecent = Math.max(1, runtime.config.channels.keepRecentPackets)
+  const pruneOps: Promise<void>[] = []
+  const userInputKeepFrom =
+    runtime.channels.teller.userInputCursor - keepRecent + 1
+  if (userInputKeepFrom > 1) {
+    pruneOps.push(
+      pruneChannelBefore({
+        path: runtime.paths.userInputChannel,
+        keepFromCursor: userInputKeepFrom,
+      }),
+    )
+  }
+  const decisionKeepFrom =
+    runtime.channels.teller.thinkerDecisionCursor - keepRecent + 1
+  if (decisionKeepFrom > 1) {
+    pruneOps.push(
+      pruneChannelBefore({
+        path: runtime.paths.thinkerDecisionChannel,
+        keepFromCursor: decisionKeepFrom,
+      }),
+    )
+  }
+  if (pruneOps.length === 0) return Promise.resolve()
+  return Promise.all(pruneOps).then(() => undefined)
 }
 
 const appendPacketsToBuffer = <TPayload>(params: {
@@ -66,24 +88,6 @@ export const tellerLoop = async (runtime: RuntimeState): Promise<void> => {
       })
     )
       buffer.lastInputAt = now
-
-    const resultPackets = await consumeWorkerResults({
-      paths: runtime.paths,
-      fromCursor: runtime.channels.teller.workerResultCursor,
-      limit: 100,
-    })
-    if (
-      appendPacketsToBuffer({
-        packets: resultPackets,
-        pushPayload: (payload) => {
-          buffer.results.push(payload)
-        },
-        setCursor: (cursor) => {
-          runtime.channels.teller.workerResultCursor = cursor
-        },
-      })
-    )
-      if (buffer.firstResultAt === 0) buffer.firstResultAt = now
 
     const decisionPackets = await consumeThinkerDecisions({
       paths: runtime.paths,
@@ -123,21 +127,18 @@ export const tellerLoop = async (runtime: RuntimeState): Promise<void> => {
         (input) => !consumed.has(input.id),
       )
       buffer.inputs = buffer.inputs.filter((input) => !consumed.has(input.id))
+      await bestEffort('pruneChannels: teller_decisions', () =>
+        maybePruneTellerChannels(runtime),
+      )
     }
     const hasInputs = buffer.inputs.length > 0
-    const hasResults = buffer.results.length > 0
     const debounceReady =
       hasInputs && now - buffer.lastInputAt >= runtime.config.teller.debounceMs
-    const resultsReady =
-      hasResults &&
-      !hasInputs &&
-      now - buffer.firstResultAt >= runtime.config.thinker.maxResultWaitMs
-    if ((debounceReady || resultsReady) && (hasInputs || hasResults)) {
+    if (debounceReady) {
       const history = await readHistory(runtime.paths.history)
       const digest = await runTellerDigest({
         workDir: runtime.config.workDir,
         inputs: buffer.inputs,
-        results: buffer.results,
         tasks: runtime.tasks,
         history,
         timeoutMs: Math.max(5_000, runtime.config.teller.pollMs * 20),
@@ -149,6 +150,9 @@ export const tellerLoop = async (runtime: RuntimeState): Promise<void> => {
         payload: digest,
       })
       clearTellerBuffer(buffer)
+      await bestEffort('pruneChannels: teller_digest', () =>
+        maybePruneTellerChannels(runtime),
+      )
     }
     await sleep(runtime.config.teller.pollMs)
   }

@@ -5,6 +5,10 @@ import type { ModelReasoningEffort } from '@openai/codex-sdk'
 export type AppConfig = {
   stateDir: string
   workDir: string
+  channels: {
+    pruneEnabled: boolean
+    keepRecentPackets: number
+  }
   reporting: {
     dailyReportEnabled: boolean
     runtimeHighLatencyMs: number
@@ -54,6 +58,10 @@ export const defaultConfig = (params: {
 }): AppConfig => ({
   stateDir: resolve(params.stateDir),
   workDir: resolve(params.workDir),
+  channels: {
+    pruneEnabled: true,
+    keepRecentPackets: 200,
+  },
   reporting: {
     dailyReportEnabled: true,
     runtimeHighLatencyMs: 15 * 60 * 1_000,

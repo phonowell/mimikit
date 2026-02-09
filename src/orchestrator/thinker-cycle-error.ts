@@ -28,7 +28,7 @@ export const publishThinkerErrorDecision = (
   publishThinkerDecision({
     paths: runtime.paths,
     payload: {
-      digestId: digest.digestId,
+      digestId: digest.digestId || `thinker-error-${Date.now()}`,
       decision: THINKER_ERROR_REPLY,
       inputIds: digest.inputs.map((input) => input.id),
       taskSummary: digest.taskSummary,

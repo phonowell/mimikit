@@ -1,164 +1,75 @@
-import { parseActions } from '../actions/protocol/parse.js'
-import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { sleep } from '../shared/utils.js'
-import { readHistory } from '../storage/jsonl.js'
 import {
   consumeTellerDigests,
-  publishThinkerDecision,
+  consumeWorkerResults,
+  pruneChannelBefore,
 } from '../streams/channels.js'
-import { runThinker } from '../thinker/runner.js'
+import { buildTaskStatusSummary } from '../teller/task-summary.js'
 
-import {
-  applyTaskActions,
-  collectTaskResultSummaries,
-} from './action-intents.js'
-import { selectRecentHistory } from './history-select.js'
-import { persistRuntimeState } from './runtime-persist.js'
-import { selectRecentTasks } from './task-select.js'
-import {
-  appendConsumedInputsToHistory,
-  appendConsumedResultsToHistory,
-} from './teller-history.js'
-import {
-  appendThinkerErrorFeedback,
-  publishThinkerErrorDecision,
-} from './thinker-cycle-error.js'
+import { runThinkerCycle } from './thinker-run-cycle.js'
 
 import type { RuntimeState } from './runtime-state.js'
-import type { TellerDigest } from '../types/index.js'
+import type { TaskResult } from '../types/index.js'
 
-const DEFAULT_THINKER_TIMEOUT_MS = 30_000
-
-const runThinkerCycle = async (
-  runtime: RuntimeState,
-  digest: TellerDigest,
-): Promise<void> => {
-  runtime.lastThinkerRunAt = Date.now()
-  const { inputs, results } = digest
-  const history = await readHistory(runtime.paths.history)
-  const recentHistory = selectRecentHistory(history, {
-    minCount: runtime.config.thinker.historyMinCount,
-    maxCount: runtime.config.thinker.historyMaxCount,
-    maxBytes: runtime.config.thinker.historyMaxBytes,
-  })
-  const recentTasks = selectRecentTasks(runtime.tasks, {
-    minCount: runtime.config.thinker.tasksMinCount,
-    maxCount: runtime.config.thinker.tasksMaxCount,
-    maxBytes: runtime.config.thinker.tasksMaxBytes,
-  })
-  const startedAt = Date.now()
-  runtime.thinkerRunning = true
-  let consumedInputCount = 0
-  let consumedResultCount = 0
-  try {
-    const { model, modelReasoningEffort } = runtime.config.thinker
-    await appendLog(runtime.paths.log, {
-      event: 'thinker_start',
-      inputCount: inputs.length,
-      resultCount: results.length,
-      historyCount: recentHistory.length,
-      inputIds: inputs.map((input) => input.id),
-      resultIds: results.map((result) => result.taskId),
-      pendingTaskCount: runtime.tasks.filter(
-        (task) => task.status === 'pending',
-      ).length,
-      ...(model ? { model } : {}),
-    })
-
-    const result = await runThinker({
-      stateDir: runtime.config.stateDir,
-      workDir: runtime.config.workDir,
-      inputs,
-      results,
-      tasks: recentTasks,
-      history: recentHistory,
-      env: {
-        ...(runtime.lastUserMeta ? { lastUser: runtime.lastUserMeta } : {}),
-        tellerDigestSummary: digest.summary,
-        taskSummary: digest.taskSummary,
-      },
-      timeoutMs: DEFAULT_THINKER_TIMEOUT_MS,
-      model,
-      modelReasoningEffort,
-    })
-
-    const parsed = parseActions(result.output)
-    const resultSummaries = collectTaskResultSummaries(parsed.actions)
-
-    consumedInputCount = await appendConsumedInputsToHistory(
-      runtime.paths.history,
-      inputs,
-    )
-    if (consumedInputCount < inputs.length)
-      throw new Error('append_consumed_inputs_incomplete')
-    consumedResultCount = await appendConsumedResultsToHistory(
-      runtime.paths.history,
-      runtime.tasks,
-      results,
-      resultSummaries,
-    )
-    if (consumedResultCount < results.length)
-      throw new Error('append_consumed_results_incomplete')
-
-    await applyTaskActions(runtime, parsed.actions)
-
-    await publishThinkerDecision({
-      paths: runtime.paths,
-      payload: {
-        digestId: digest.digestId,
-        decision: parsed.text,
-        inputIds: inputs.map((input) => input.id),
-        taskSummary: digest.taskSummary,
-      },
-    })
-
-    await appendLog(runtime.paths.log, {
-      event: 'thinker_end',
-      status: 'ok',
-      elapsedMs: result.elapsedMs,
-      ...(result.usage ? { usage: result.usage } : {}),
-      ...(result.fallbackUsed ? { fallbackUsed: true } : {}),
-    })
-  } catch (error) {
-    await bestEffort('appendHistory: thinker_error_inputs', async () => {
-      consumedInputCount += await appendConsumedInputsToHistory(
-        runtime.paths.history,
-        inputs.slice(consumedInputCount),
-      )
-    })
-    await bestEffort('appendHistory: thinker_error_results', async () => {
-      consumedResultCount += await appendConsumedResultsToHistory(
-        runtime.paths.history,
-        runtime.tasks,
-        results.slice(consumedResultCount),
-      )
-    })
-    await bestEffort('appendLog: thinker_end', () =>
-      appendLog(runtime.paths.log, {
-        event: 'thinker_end',
-        status: 'error',
-        error: error instanceof Error ? error.message : String(error),
-        elapsedMs: Math.max(0, Date.now() - startedAt),
-        ...(consumedInputCount > 0 ? { consumedInputCount } : {}),
-        ...(consumedResultCount > 0 ? { consumedResultCount } : {}),
+const maybePruneThinkerChannels = (runtime: RuntimeState): Promise<void> => {
+  if (!runtime.config.channels.pruneEnabled) return Promise.resolve()
+  const keepRecent = Math.max(1, runtime.config.channels.keepRecentPackets)
+  const pruneOps: Promise<void>[] = []
+  const digestKeepFrom =
+    runtime.channels.thinker.tellerDigestCursor - keepRecent + 1
+  if (digestKeepFrom > 1) {
+    pruneOps.push(
+      pruneChannelBefore({
+        path: runtime.paths.tellerDigestChannel,
+        keepFromCursor: digestKeepFrom,
       }),
     )
-    await bestEffort('appendEvolveFeedback: thinker_error', () =>
-      appendThinkerErrorFeedback(runtime, error),
-    )
-    await publishThinkerErrorDecision(runtime, digest)
-  } finally {
-    await bestEffort('persistRuntimeState: thinker', () =>
-      persistRuntimeState(runtime),
-    )
-    runtime.thinkerRunning = false
   }
+  const resultKeepFrom =
+    runtime.channels.thinker.workerResultCursor - keepRecent + 1
+  if (resultKeepFrom > 1) {
+    pruneOps.push(
+      pruneChannelBefore({
+        path: runtime.paths.workerResultChannel,
+        keepFromCursor: resultKeepFrom,
+      }),
+    )
+  }
+  if (pruneOps.length === 0) return Promise.resolve()
+  return Promise.all(pruneOps).then(() => undefined)
+}
+
+const mergeResultBatch = (items: TaskResult[]): TaskResult[] => {
+  const byKey = new Map<string, TaskResult>()
+  for (const item of items) {
+    const key = `${item.taskId}:${item.completedAt}:${item.status}`
+    byKey.set(key, item)
+  }
+  return [...byKey.values()]
 }
 
 export const thinkerLoop = async (runtime: RuntimeState): Promise<void> => {
+  const bufferedResults: TaskResult[] = []
+  let firstResultAt = 0
   while (!runtime.stopped) {
     const now = Date.now()
+    const resultPackets = await consumeWorkerResults({
+      paths: runtime.paths,
+      fromCursor: runtime.channels.thinker.workerResultCursor,
+      limit: 100,
+    })
+    if (resultPackets.length > 0) {
+      for (const packet of resultPackets) {
+        bufferedResults.push(packet.payload)
+        runtime.channels.thinker.workerResultCursor = packet.cursor
+      }
+      if (firstResultAt === 0) firstResultAt = now
+      await bestEffort('pruneChannels: thinker_result_ingest', () =>
+        maybePruneThinkerChannels(runtime),
+      )
+    }
+
     const throttled =
       runtime.lastThinkerRunAt &&
       now - runtime.lastThinkerRunAt < runtime.config.thinker.minIntervalMs
@@ -166,17 +77,50 @@ export const thinkerLoop = async (runtime: RuntimeState): Promise<void> => {
       await sleep(runtime.config.thinker.pollMs)
       continue
     }
+
     const packets = await consumeTellerDigests({
       paths: runtime.paths,
       fromCursor: runtime.channels.thinker.tellerDigestCursor,
       limit: 1,
     })
     const packet = packets[0]
-    if (!packet) {
+    const resultsReady =
+      bufferedResults.length > 0 &&
+      now - firstResultAt >= runtime.config.thinker.maxResultWaitMs
+    if (!packet && !resultsReady) {
       await sleep(runtime.config.thinker.pollMs)
       continue
     }
-    runtime.channels.thinker.tellerDigestCursor = packet.cursor
-    await runThinkerCycle(runtime, packet.payload)
+
+    if (packet) {
+      runtime.channels.thinker.tellerDigestCursor = packet.cursor
+      const merged = mergeResultBatch([
+        ...bufferedResults,
+        ...packet.payload.results,
+      ])
+      await runThinkerCycle(runtime, {
+        ...packet.payload,
+        results: merged,
+      })
+      bufferedResults.length = 0
+      firstResultAt = 0
+      await bestEffort('pruneChannels: thinker_digest_ingest', () =>
+        maybePruneThinkerChannels(runtime),
+      )
+      continue
+    }
+
+    await runThinkerCycle(runtime, {
+      digestId: `worker-result-${Date.now()}-${runtime.channels.thinker.workerResultCursor}`,
+      summary: '',
+      inputs: [],
+      results: mergeResultBatch(bufferedResults),
+      taskSummary: buildTaskStatusSummary(runtime.tasks),
+    })
+    bufferedResults.length = 0
+    firstResultAt = 0
+    await bestEffort('pruneChannels: thinker_result_only', () =>
+      maybePruneThinkerChannels(runtime),
+    )
   }
 }

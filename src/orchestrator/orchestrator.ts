@@ -48,11 +48,11 @@ export class Orchestrator {
       channels: {
         teller: {
           userInputCursor: 0,
-          workerResultCursor: 0,
           thinkerDecisionCursor: 0,
         },
         thinker: {
           tellerDigestCursor: 0,
+          workerResultCursor: 0,
         },
       },
       tasks: [],

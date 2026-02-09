@@ -13,8 +13,8 @@
 
 ## 通道载荷
 - `user-input`：`UserInput`。
-- `worker-result`：`TaskResult`。
-- `teller-digest`：`TellerDigest`（含 `taskSummary`）。
+- `worker-result`：`TaskResult`（由 thinker 直接消费）。
+- `teller-digest`：`TellerDigest`（`summary` + `inputs` + `results` + `taskSummary`）。
 - `thinker-decision`：`ThinkerDecision`（含 `decision` 与 `inputIds`）。
 
-定义位置：`src/contracts/channels.ts`、`src/types/index.ts`。
+定义位置：`src/types/index.ts`。

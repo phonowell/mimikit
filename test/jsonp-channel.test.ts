@@ -89,4 +89,3 @@ test('jsonp channel prune keeps tail packets', async () => {
   expect(kept.map((item) => item.cursor)).toEqual([2, 3])
   expect(kept.map((item) => item.payload.text)).toEqual(['b', 'c'])
 })
-

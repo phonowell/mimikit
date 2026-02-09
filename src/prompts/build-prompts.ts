@@ -144,7 +144,6 @@ export const buildTellerDigestPrompt = async (params: {
   workDir: string
   inputs: UserInput[]
   tasks: Task[]
-  results: TaskResult[]
   history: HistoryMessage[]
 }): Promise<string> => {
   const system = await loadPromptFile(params.workDir, 'teller', 'digest-system')
@@ -155,10 +154,7 @@ export const buildTellerDigestPrompt = async (params: {
   )
   const injectionValues = Object.fromEntries<string>([
     ['inputs', buildCdataBlock('inputs', formatInputs(params.inputs))],
-    [
-      'tasks',
-      buildCdataBlock('tasks', formatTasksYaml(params.tasks, params.results)),
-    ],
+    ['tasks', buildCdataBlock('tasks', formatTasksYaml(params.tasks, []))],
     ['history', buildCdataBlock('history', formatHistory(params.history))],
   ])
   const injection = renderPromptTemplate(injectionTemplate, injectionValues)

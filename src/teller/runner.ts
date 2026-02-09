@@ -11,7 +11,6 @@ import { buildTaskStatusSummary } from './task-summary.js'
 import type {
   HistoryMessage,
   Task,
-  TaskResult,
   TellerDigest,
   TokenUsage,
   UserInput,
@@ -24,21 +23,15 @@ type TellerUserResponse = {
   elapsedMs?: number
 }
 
-const fallbackSummary = (params: {
-  inputs: UserInput[]
-  results: TaskResult[]
-}): string => {
+const fallbackSummary = (params: { inputs: UserInput[] }): string => {
   const latestInput = params.inputs.at(-1)?.text.trim()
   if (latestInput) return latestInput
-  const latestResult = params.results.at(-1)?.output.trim()
-  if (latestResult) return latestResult.slice(0, 300)
   return '继续处理当前任务并保持与用户最新目标一致。'
 }
 
 export const runTellerDigest = async (params: {
   workDir: string
   inputs: UserInput[]
-  results: TaskResult[]
   tasks: Task[]
   history: HistoryMessage[]
   timeoutMs: number
@@ -49,7 +42,6 @@ export const runTellerDigest = async (params: {
     workDir: params.workDir,
     inputs: params.inputs,
     tasks: params.tasks,
-    results: params.results,
     history: params.history,
   })
   let summary = ''
@@ -71,7 +63,7 @@ export const runTellerDigest = async (params: {
     digestId: `digest-${shortId()}`,
     summary: finalSummary,
     inputs: params.inputs,
-    results: params.results,
+    results: [],
     taskSummary: buildTaskStatusSummary(params.tasks),
   }
 }

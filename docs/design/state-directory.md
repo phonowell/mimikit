@@ -13,9 +13,14 @@
 
 ## runtime-state 结构约束（2026-02-09）
 - 仅接受 `reporting.lastDailyReportDate`。
-- 仅接受 `channels.teller.userInputCursor` / `workerResultCursor` / `thinkerDecisionCursor`。
-- 仅接受 `channels.thinker.tellerDigestCursor`。
-- 拒绝历史字段：`evolve.lastIdleReviewAt`、`tellerUserInputCursor`、`tellerWorkerResultCursor`、`tellerThinkerDecisionCursor`、`thinkerTellerDigestCursor`。
+- 当前 channels 结构：
+  - `channels.teller.userInputCursor`
+  - `channels.teller.thinkerDecisionCursor`
+  - `channels.thinker.tellerDigestCursor`
+  - `channels.thinker.workerResultCursor`
+- 不兼容旧 grouped 结构：`channels.teller.workerResultCursor`（旧 teller 结果 cursor）。
+- 不兼容历史平铺字段：`tellerUserInputCursor`、`tellerWorkerResultCursor`、`tellerThinkerDecisionCursor`、`thinkerTellerDigestCursor`。
+- 不兼容历史字段：`evolve.lastIdleReviewAt`。
 
 ## task-progress 结构约束（2026-02-09）
 - 每行必须是合法 JSON 且满足：`taskId`/`type`/`createdAt` 为非空字符串，`payload` 为对象。

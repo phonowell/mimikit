@@ -81,6 +81,50 @@ test('runtime snapshot rejects legacy evolve field', async () => {
   await expect(loadRuntimeSnapshot(stateDir)).rejects.toThrow()
 })
 
+test('runtime snapshot accepts thinker worker-result cursor', async () => {
+  const stateDir = await createTmpDir()
+  await saveRuntimeSnapshot(stateDir, {
+    tasks: [],
+    channels: {
+      teller: {
+        userInputCursor: 3,
+        thinkerDecisionCursor: 5,
+      },
+      thinker: {
+        tellerDigestCursor: 6,
+        workerResultCursor: 9,
+      },
+    },
+  })
+
+  const loaded = await loadRuntimeSnapshot(stateDir)
+  expect(loaded.channels?.thinker.workerResultCursor).toBe(9)
+  expect(loaded.channels?.teller.userInputCursor).toBe(3)
+})
+
+test('runtime snapshot rejects legacy grouped channel shape', async () => {
+  const stateDir = await createTmpDir()
+  await writeFile(
+    join(stateDir, 'runtime-state.json'),
+    JSON.stringify({
+      tasks: [],
+      channels: {
+        teller: {
+          userInputCursor: 3,
+          workerResultCursor: 4,
+          thinkerDecisionCursor: 5,
+        },
+        thinker: {
+          tellerDigestCursor: 6,
+        },
+      },
+    }),
+    'utf8',
+  )
+
+  await expect(loadRuntimeSnapshot(stateDir)).rejects.toThrow()
+})
+
 test('runtime snapshot rejects legacy flat channel cursor fields', async () => {
   const stateDir = await createTmpDir()
   await writeFile(
