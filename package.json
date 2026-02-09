@@ -8,9 +8,12 @@
     "dompurify": "^3.3.1",
     "fastify": "^5.7.4",
     "marked": "^17.0.1",
+    "p-queue": "^8.1.0",
+    "p-retry": "^7.1.0",
     "rotating-file-stream": "^3.2.8",
     "wink-bm25-text-search": "^3.1.2",
     "write-file-atomic": "^7.0.0",
+    "yaml": "^2.8.1",
     "zod": "^4.3.6"
   },
   "devDependencies": {

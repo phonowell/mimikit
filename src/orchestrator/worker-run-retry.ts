@@ -1,7 +1,8 @@
+import pRetry, { AbortError } from 'p-retry'
+
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { buildWorkerPrompt } from '../prompts/build-prompts.js'
-import { sleep } from '../shared/utils.js'
 import { runExpertWorker } from '../worker/expert-runner.js'
 import { runStandardWorker } from '../worker/standard-runner.js'
 
@@ -63,39 +64,59 @@ const runTaskByProfile = (params: {
   })
 }
 
-export const runTaskWithRetry = async (params: {
+const toRetryError = (error: unknown): Error => {
+  if (error instanceof Error) return error
+  return new Error(String(error))
+}
+
+export const runTaskWithRetry = (params: {
   runtime: RuntimeState
   task: Task
   controller: AbortController
 }): Promise<WorkerLlmResult> => {
   const { runtime, task, controller } = params
-  let llmResult: WorkerLlmResult | null = null
-  const maxAttempts = Math.max(0, runtime.config.worker.retryMaxAttempts)
+  const retries = Math.max(0, runtime.config.worker.retryMaxAttempts)
   const backoffMs = Math.max(0, runtime.config.worker.retryBackoffMs)
-  let attempt = 0
-  while (attempt <= maxAttempts) {
-    try {
-      llmResult = await runTaskByProfile({ runtime, task, controller })
-      break
-    } catch (error) {
-      await appendWorkerRetryFeedback({ runtime, task, error })
-      if (attempt >= maxAttempts) throw error
-      await appendLog(runtime.paths.log, {
-        event: 'worker_retry',
-        taskId: task.id,
-        profile: task.profile,
-        attempt: attempt + 1,
-        maxAttempts,
-        backoffMs,
-      })
-      attempt += 1
-      task.attempts = Math.max(0, (task.attempts ?? 0) + 1)
-      await bestEffort('persistRuntimeState: worker_retry', () =>
-        persistRuntimeState(runtime),
-      )
-      await sleep(backoffMs)
-    }
-  }
-  if (!llmResult) throw new Error('worker_result_missing')
-  return llmResult
+  return pRetry(
+    async () => {
+      if (controller.signal.aborted)
+        throw new AbortError(controller.signal.reason ?? 'Task canceled')
+      try {
+        return await runTaskByProfile({ runtime, task, controller })
+      } catch (error) {
+        if (controller.signal.aborted)
+          throw new AbortError(controller.signal.reason ?? 'Task canceled')
+        throw toRetryError(error)
+      }
+    },
+    {
+      retries,
+      factor: 1,
+      minTimeout: backoffMs,
+      maxTimeout: backoffMs,
+      randomize: false,
+      signal: controller.signal,
+      shouldRetry: ({ error }) => !(error instanceof AbortError),
+      onFailedAttempt: async (attemptError) => {
+        await appendWorkerRetryFeedback({
+          runtime,
+          task,
+          error: attemptError.error,
+        })
+        if (attemptError.retriesLeft <= 0) return
+        await appendLog(runtime.paths.log, {
+          event: 'worker_retry',
+          taskId: task.id,
+          profile: task.profile,
+          attempt: attemptError.attemptNumber,
+          maxAttempts: retries + 1,
+          backoffMs,
+        })
+        task.attempts = Math.max(0, (task.attempts ?? 0) + 1)
+        await bestEffort('persistRuntimeState: worker_retry', () =>
+          persistRuntimeState(runtime),
+        )
+      },
+    },
+  )
 }

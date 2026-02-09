@@ -1,3 +1,5 @@
+import { stringify as stringifyYaml } from 'yaml'
+
 import type { HistoryMessage, Task } from '../types/index.js'
 
 const TAG_PREFIX = 'MIMIKIT:'
@@ -32,36 +34,24 @@ export const mapHistoryRole = (role: HistoryMessage['role']): string => {
   }
 }
 
-export const yamlIndent = (level: number): string => '  '.repeat(level)
-
-export const yamlScalar = (value: string | number | boolean): string => {
-  if (typeof value === 'number')
-    return Number.isFinite(value) ? `${value}` : '0'
-  if (typeof value === 'boolean') return value ? 'true' : 'false'
-  return JSON.stringify(value)
-}
-
-export const appendYamlLine = (
-  lines: string[],
-  level: number,
-  key: string,
-  value: string | number | boolean,
-): void => {
-  lines.push(`${yamlIndent(level)}${key}: ${yamlScalar(value)}`)
-}
-
-export const appendYamlUsage = (
-  lines: string[],
-  level: number,
+export const normalizeYamlUsage = (
   usage?: Task['usage'],
-): void => {
+): Task['usage'] | undefined => {
   if (!usage) return
-  const entries: Array<[string, number]> = []
-  if (typeof usage.input === 'number') entries.push(['input', usage.input])
-  if (typeof usage.output === 'number') entries.push(['output', usage.output])
-  if (typeof usage.total === 'number') entries.push(['total', usage.total])
-  if (entries.length === 0) return
-  lines.push(`${yamlIndent(level)}usage:`)
-  for (const [key, val] of entries)
-    lines.push(`${yamlIndent(level + 1)}${key}: ${val}`)
+  const normalized: Task['usage'] = {}
+  if (typeof usage.input === 'number') normalized.input = usage.input
+  if (typeof usage.output === 'number') normalized.output = usage.output
+  if (typeof usage.total === 'number') normalized.total = usage.total
+  if (Object.keys(normalized).length === 0) return undefined
+  return normalized
 }
+
+export const stringifyPromptYaml = (value: unknown): string =>
+  stringifyYaml(value, {
+    lineWidth: 0,
+    indent: 2,
+    singleQuote: false,
+    blockQuote: false,
+    defaultKeyType: 'PLAIN',
+    defaultStringType: 'QUOTE_DOUBLE',
+  }).trimEnd()

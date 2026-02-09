@@ -33,8 +33,8 @@ export type RuntimeState = {
     }
   }
   tasks: Task[]
-  runningWorkers: Set<string>
   runningControllers: Map<string, AbortController>
+  workerSignalController: AbortController
   evolveState: {
     lastIdleReviewAt?: string
   }

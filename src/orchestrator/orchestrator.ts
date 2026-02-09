@@ -17,6 +17,7 @@ import { buildTaskViews } from './task-view.js'
 import { tellerLoop } from './teller-loop.js'
 import { thinkerLoop } from './thinker-cycle.js'
 import { workerLoop } from './worker-loop.js'
+import { notifyWorkerLoop } from './worker-signal.js'
 
 import type { RuntimeState, UserMeta } from './runtime-state.js'
 import type { AppConfig } from '../config.js'
@@ -52,8 +53,8 @@ export class Orchestrator {
         },
       },
       tasks: [],
-      runningWorkers: new Set(),
       runningControllers: new Map(),
+      workerSignalController: new AbortController(),
       evolveState: {},
     }
   }
@@ -68,11 +69,13 @@ export class Orchestrator {
 
   stop() {
     this.runtime.stopped = true
+    notifyWorkerLoop(this.runtime)
     void this.persistStopSnapshot()
   }
 
   async stopAndPersist(): Promise<void> {
     this.runtime.stopped = true
+    notifyWorkerLoop(this.runtime)
     await this.persistStopSnapshot()
   }
 
@@ -162,7 +165,7 @@ export class Orchestrator {
     const pendingTasks = this.runtime.tasks.filter(
       (task) => task.status === 'pending',
     ).length
-    const activeTasks = this.runtime.runningWorkers.size
+    const activeTasks = this.runtime.runningControllers.size
     const maxWorkers = this.runtime.config.worker.maxConcurrent
     const agentStatus =
       this.runtime.thinkerRunning || activeTasks > 0 ? 'running' : 'idle'

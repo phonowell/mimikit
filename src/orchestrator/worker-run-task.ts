@@ -12,6 +12,7 @@ import {
   appendWorkerHighUsageFeedback,
 } from './worker-run-feedback.js'
 import { runTaskWithRetry } from './worker-run-retry.js'
+import { notifyWorkerLoop } from './worker-signal.js'
 
 import type { RuntimeState } from './runtime-state.js'
 import type { Task } from '../types/index.js'
@@ -64,6 +65,7 @@ export const runTask = async (
       llmResult.usage,
     )
     await finalizeResult(runtime, task, result, markTaskSucceeded)
+    notifyWorkerLoop(runtime)
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error))
     if (task.status === 'canceled') {
@@ -79,5 +81,6 @@ export const runTask = async (
     const result = buildResult(task, 'failed', err.message, elapsed())
     await appendWorkerFailedFeedback({ runtime, task, message: err.message })
     await finalizeResult(runtime, task, result, markTaskFailed)
+    notifyWorkerLoop(runtime)
   }
 }

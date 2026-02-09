@@ -126,15 +126,3 @@ export const markTaskCanceled = (
   if (task.durationMs !== undefined) nextPatch.durationMs = task.durationMs
   return updateTaskStatus(tasks, taskId, 'canceled', nextPatch)
 }
-
-export const pickNextPendingTask = (
-  tasks: Task[],
-  running: Set<string>,
-): Task | null => {
-  for (const task of tasks) {
-    if (task.status !== 'pending') continue
-    if (running.has(task.id)) continue
-    return task
-  }
-  return null
-}

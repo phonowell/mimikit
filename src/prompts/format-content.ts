@@ -1,12 +1,10 @@
 import {
-  appendYamlLine,
-  appendYamlUsage,
   escapeCdata,
   mapHistoryRole,
+  normalizeYamlUsage,
   parseIsoToMs,
   resolveTaskChangedAt,
-  yamlIndent,
-  yamlScalar,
+  stringifyPromptYaml,
 } from './format-base.js'
 
 import type {
@@ -26,6 +24,12 @@ const sortByTimeAndIdDesc = <T extends { time: string; id: string }>(
     return a.id.localeCompare(b.id)
   })
 
+const withNormalizedUsage = (usage?: TaskResult['usage']) => {
+  const normalized = normalizeYamlUsage(usage)
+  if (!normalized) return {}
+  return { usage: normalized }
+}
+
 const formatMessagesYaml = (
   entries: Array<{
     id: string
@@ -37,15 +41,11 @@ const formatMessagesYaml = (
 ): string => {
   if (entries.length === 0) return ''
   const sorted = sortByTimeAndIdDesc(entries)
-  const lines: string[] = ['messages:']
-  for (const entry of sorted) {
-    lines.push(`${yamlIndent(1)}- id: ${yamlScalar(entry.id)}`)
-    appendYamlLine(lines, 2, 'role', entry.role)
-    appendYamlLine(lines, 2, 'time', entry.time)
-    if (entry.quote) appendYamlLine(lines, 2, 'quote', entry.quote)
-    appendYamlLine(lines, 2, 'content', entry.content)
-  }
-  return escapeCdata(lines.join('\n'))
+  return escapeCdata(
+    stringifyPromptYaml({
+      messages: sorted,
+    }),
+  )
 }
 
 export const formatHistory = (history: HistoryMessage[]): string => {
@@ -97,24 +97,26 @@ export const selectTasksForPrompt = (tasks: Task[]): Task[] => {
 const formatTaskEntry = (
   task: Task,
   result: TaskResult | undefined,
-  lines: string[],
-): void => {
-  lines.push(`${yamlIndent(1)}- id: ${yamlScalar(task.id)}`)
-  appendYamlLine(lines, 2, 'status', task.status)
-  appendYamlLine(lines, 2, 'title', task.title.trim() || task.id)
-  appendYamlLine(lines, 2, 'changed_at', resolveTaskChangedAt(task))
-  appendYamlLine(lines, 2, 'prompt', task.prompt)
-  if (!result) return
-  lines.push(`${yamlIndent(2)}result:`)
-  appendYamlLine(lines, 3, 'status', result.status)
-  appendYamlLine(lines, 3, 'ok', result.ok)
-  appendYamlLine(lines, 3, 'completed_at', result.completedAt)
-  appendYamlLine(lines, 3, 'duration_ms', result.durationMs)
-  appendYamlLine(lines, 3, 'output', result.output)
-  if (result.archivePath)
-    appendYamlLine(lines, 3, 'archive_path', result.archivePath)
-  appendYamlUsage(lines, 3, result.usage)
-}
+): Record<string, unknown> => ({
+  id: task.id,
+  status: task.status,
+  title: task.title.trim() || task.id,
+  changed_at: resolveTaskChangedAt(task),
+  prompt: task.prompt,
+  ...(result
+    ? {
+        result: {
+          status: result.status,
+          ok: result.ok,
+          completed_at: result.completedAt,
+          duration_ms: result.durationMs,
+          output: result.output,
+          ...(result.archivePath ? { archive_path: result.archivePath } : {}),
+          ...withNormalizedUsage(result.usage),
+        },
+      }
+    : {}),
+})
 
 export const formatTasksYaml = (
   tasks: Task[],
@@ -123,7 +125,7 @@ export const formatTasksYaml = (
   if (tasks.length === 0 && results.length === 0) return ''
   const resultById = new Map(results.map((result) => [result.taskId, result]))
   const ordered = selectTasksForPrompt(tasks)
-  const lines: string[] = ['tasks:']
+  const taskEntries: Array<Record<string, unknown>> = []
   if (ordered.length === 0 && results.length > 0) {
     for (const result of results) {
       const fallbackTask: Task = {
@@ -136,14 +138,14 @@ export const formatTasksYaml = (
         createdAt: result.completedAt,
         completedAt: result.completedAt,
       }
-      formatTaskEntry(fallbackTask, result, lines)
+      taskEntries.push(formatTaskEntry(fallbackTask, result))
     }
-    return escapeCdata(lines.join('\n'))
+    return escapeCdata(stringifyPromptYaml({ tasks: taskEntries }))
   }
   for (const task of ordered)
-    formatTaskEntry(task, resultById.get(task.id), lines)
+    taskEntries.push(formatTaskEntry(task, resultById.get(task.id)))
 
-  return escapeCdata(lines.join('\n'))
+  return escapeCdata(stringifyPromptYaml({ tasks: taskEntries }))
 }
 
 export const formatResultsYaml = (
@@ -169,25 +171,29 @@ export const formatResultsYaml = (
     if (aTs !== bTs) return bTs - aTs
     return a.taskId.localeCompare(b.taskId)
   })
-  const lines: string[] = []
-  if (ordered.length > 0) lines.push('tasks:')
-  else lines.push('tasks: []')
+  const taskEntries: Array<Record<string, unknown>> = []
   for (const result of ordered) {
     const task = taskById.get(result.taskId)
     const title = task?.title.trim() ?? result.title?.trim() ?? result.taskId
-    lines.push(`${yamlIndent(1)}- id: ${yamlScalar(result.taskId)}`)
-    appendYamlLine(lines, 2, 'title', title)
-    appendYamlLine(lines, 2, 'prompt', task?.prompt ?? '')
-    appendYamlLine(lines, 2, 'changed_at', result.completedAt)
-    lines.push(`${yamlIndent(2)}result:`)
-    appendYamlLine(lines, 3, 'status', result.status)
-    appendYamlLine(lines, 3, 'ok', result.ok)
-    appendYamlLine(lines, 3, 'completed_at', result.completedAt)
-    appendYamlLine(lines, 3, 'duration_ms', result.durationMs)
-    appendYamlLine(lines, 3, 'output', result.output)
-    if (result.archivePath)
-      appendYamlLine(lines, 3, 'archive_path', result.archivePath)
-    appendYamlUsage(lines, 3, result.usage)
+    taskEntries.push({
+      id: result.taskId,
+      title,
+      prompt: task?.prompt ?? '',
+      changed_at: result.completedAt,
+      result: {
+        status: result.status,
+        ok: result.ok,
+        completed_at: result.completedAt,
+        duration_ms: result.durationMs,
+        output: result.output,
+        ...(result.archivePath ? { archive_path: result.archivePath } : {}),
+        ...withNormalizedUsage(result.usage),
+      },
+    })
   }
-  return escapeCdata(lines.join('\n'))
+  return escapeCdata(
+    stringifyPromptYaml({
+      tasks: taskEntries,
+    }),
+  )
 }

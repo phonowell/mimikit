@@ -6,6 +6,7 @@ import { publishWorkerResult } from '../streams/channels.js'
 import { markTaskCanceled } from '../tasks/queue.js'
 
 import { persistRuntimeState } from './runtime-persist.js'
+import { notifyWorkerLoop } from './worker-signal.js'
 
 import type { RuntimeState } from './runtime-state.js'
 import type { Task, TaskResult } from '../types/index.js'
@@ -110,6 +111,7 @@ export const cancelTask = async (
     await bestEffort('persistRuntimeState: cancel_pending', () =>
       persistRuntimeState(runtime),
     )
+    notifyWorkerLoop(runtime)
     return { ok: true, status: 'canceled', taskId: task.id }
   }
 
@@ -137,5 +139,6 @@ export const cancelTask = async (
   await bestEffort('persistRuntimeState: cancel_running', () =>
     persistRuntimeState(runtime),
   )
+  notifyWorkerLoop(runtime)
   return { ok: true, status: 'canceled', taskId: task.id }
 }
