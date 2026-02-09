@@ -5,6 +5,10 @@
 ## 阅读路径
 - `docs/design/overview.md`
 - `docs/design/orchestrator.md`
+- `docs/design/teller-workflow.md`
+- `docs/design/thinker-workflow.md`
+- `docs/design/worker-workflow.md`
+- `docs/design/runners.md`
 - `docs/design/task-system.md`
 - `docs/design/task-data.md`
 - `docs/design/actions.md`

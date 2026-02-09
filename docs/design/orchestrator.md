@@ -1,32 +1,38 @@
-# Orchestrator 循环
+# Orchestrator 循环（入口）
 
 > 返回 [系统设计总览](./README.md)
 
-## 角色分层
-- `teller`：消费用户输入与任务结果，产出去噪摘要；掌控最终用户回复语气。
-- `thinker`：只做决策，不直接面向用户；消费 `teller` 摘要并产出 action 与决策文本。
-- `worker`：执行层，分为 `standard`（api-runner）与 `expert`（codex-sdk）。
+## 目的
+- 该文档只保留 orchestrator 总览与分流入口。
+- 角色细节以下列独立文档为准，避免重复维护：
+  - `docs/design/teller-workflow.md`
+  - `docs/design/thinker-workflow.md`
+  - `docs/design/worker-workflow.md`
 
-## 通道模型（jsonp）
-- `user-input.jsonp`：用户输入事件。
-- `worker-result.jsonp`：任务执行结果事件。
-- `teller-digest.jsonp`：teller 生成的摘要事件。
-- `thinker-decision.jsonp`：thinker 产出的决策事件。
+## 启动与并发循环
+- 启动入口：`Orchestrator.start()`。
+- 并发拉起三个循环：`tellerLoop`、`thinkerLoop`、`workerLoop`。
+- 实现位置：`src/orchestrator/orchestrator.ts`。
 
-每个通道均维护 `cursor`，消费者按 cursor 增量读取，避免重复消费。
+## 通道总览（JSONP）
+- `channels/user-input.jsonp`：用户输入事件。
+- `channels/worker-result.jsonp`：任务结果事件。
+- `channels/teller-digest.jsonp`：teller 给 thinker 的摘要事件。
+- `channels/thinker-decision.jsonp`：thinker 给 teller 的决策事件。
 
-## 循环机制
-- `tellerLoop`：
-  - 拉取 `user-input` 与 `worker-result`。
-  - debounce 后生成 digest 并写入 `teller-digest`。
-  - 消费 `thinker-decision`，通过 teller egress 生成最终 assistant 回复。
-- `thinkerLoop`：
-  - 按 `minIntervalMs` 节流。
-  - 消费 `teller-digest`，运行 thinker（api-runner），解析 action 并写入 `thinker-decision`。
-- `workerLoop`：
-  - 按并发限制拉取 pending task。
-  - 按 profile 路由至 standard/expert 执行器。
+## cursor 与持久化
+- teller cursor：`channels.teller.userInputCursor` / `workerResultCursor` / `thinkerDecisionCursor`。
+- thinker cursor：`channels.thinker.tellerDigestCursor`。
+- 状态持久化：`runtime-state.json`（strict schema）。
 
-## 节流与成本
-- thinker 只在 digest 到达且满足节流时运行。
-- standard worker 支持多轮 action/respond（read_file/write_file/edit_file/exec_shell/run_browser），expert worker 保留复杂编码与重任务能力。
+## 角色分工（摘要）
+- `teller`：消费输入/结果，生成 digest，并将 thinker 决策改写为用户可见回复。
+- `thinker`：消费 digest，产出决策文本与任务 action（create/cancel/feedback 等）。
+- `worker`：执行任务（standard/expert），发布 `worker-result`。
+
+## 参数入口
+- 配置定义：`src/config.ts`。
+- 角色关键节流参数：
+  - `teller.pollMs` / `teller.debounceMs`
+  - `thinker.pollMs` / `thinker.minIntervalMs` / `thinker.maxResultWaitMs`
+  - `worker.maxConcurrent` / `worker.retryMaxAttempts` / `worker.retryBackoffMs`
