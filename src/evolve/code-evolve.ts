@@ -1,6 +1,6 @@
 import { newId, nowIso } from '../shared/utils.js'
 import { buildTaskFingerprint } from '../tasks/queue.js'
-import { runWorker } from '../worker/expert-runner.js'
+import { runExpertWorker } from '../worker/expert-runner.js'
 
 import {
   diffGitChanges,
@@ -68,7 +68,7 @@ export const runCodeEvolveRound = async (params: {
     status: 'running',
     createdAt: nowIso(),
   }
-  const plannerResult = await runWorker({
+  const plannerResult = await runExpertWorker({
     stateDir: params.stateDir,
     workDir: params.workDir,
     task,
@@ -114,7 +114,7 @@ export const runCodeEvolveRound = async (params: {
     status: 'running',
     createdAt: nowIso(),
   }
-  const workerResult = await runWorker({
+  const workerResult = await runExpertWorker({
     stateDir: params.stateDir,
     workDir: params.workDir,
     task: executeTask,

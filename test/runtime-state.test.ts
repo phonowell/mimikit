@@ -1,4 +1,4 @@
-import { mkdtemp } from 'node:fs/promises'
+import { mkdtemp, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -63,4 +63,26 @@ test('runtime snapshot keeps evolve idle review state', async () => {
   })
   const loaded = await loadRuntimeSnapshot(stateDir)
   expect(loaded.evolve?.lastIdleReviewAt).toBe('2026-02-07T10:00:00.000Z')
+})
+
+test('runtime snapshot loads legacy flat channel cursor fields', async () => {
+  const stateDir = await createTmpDir()
+  await writeFile(
+    join(stateDir, 'runtime-state.json'),
+    JSON.stringify({
+      tasks: [],
+      channels: {
+        tellerUserInputCursor: 3,
+        tellerWorkerResultCursor: 4,
+        tellerThinkerDecisionCursor: 5,
+        thinkerTellerDigestCursor: 6,
+      },
+    }),
+    'utf8',
+  )
+  const loaded = await loadRuntimeSnapshot(stateDir)
+  expect(loaded.channels?.teller.userInputCursor).toBe(3)
+  expect(loaded.channels?.teller.workerResultCursor).toBe(4)
+  expect(loaded.channels?.teller.thinkerDecisionCursor).toBe(5)
+  expect(loaded.channels?.thinker.tellerDigestCursor).toBe(6)
 })

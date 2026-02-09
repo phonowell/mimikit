@@ -10,10 +10,66 @@ type RuntimeSnapshot = {
     lastIdleReviewAt?: string
   }
   channels?: {
-    tellerUserInputCursor?: number
-    tellerWorkerResultCursor?: number
-    tellerThinkerDecisionCursor?: number
-    thinkerTellerDigestCursor?: number
+    teller?: {
+      userInputCursor?: number
+      workerResultCursor?: number
+      thinkerDecisionCursor?: number
+    }
+    thinker?: {
+      tellerDigestCursor?: number
+    }
+  }
+}
+
+type RuntimeSnapshotChannels = NonNullable<RuntimeSnapshot['channels']>
+
+const normalizeCursor = (value: unknown): number =>
+  typeof value === 'number' ? Math.max(0, Math.floor(value)) : 0
+
+const normalizeChannels = (
+  value: unknown,
+): RuntimeSnapshotChannels | undefined => {
+  if (!value || typeof value !== 'object') return undefined
+  const record = value as {
+    teller?: unknown
+    thinker?: unknown
+    tellerUserInputCursor?: unknown
+    tellerWorkerResultCursor?: unknown
+    tellerThinkerDecisionCursor?: unknown
+    thinkerTellerDigestCursor?: unknown
+  }
+  const tellerRecord =
+    record.teller && typeof record.teller === 'object'
+      ? (record.teller as {
+          userInputCursor?: unknown
+          workerResultCursor?: unknown
+          thinkerDecisionCursor?: unknown
+        })
+      : undefined
+  const thinkerRecord =
+    record.thinker && typeof record.thinker === 'object'
+      ? (record.thinker as {
+          tellerDigestCursor?: unknown
+        })
+      : undefined
+  return {
+    teller: {
+      userInputCursor: normalizeCursor(
+        tellerRecord?.userInputCursor ?? record.tellerUserInputCursor,
+      ),
+      workerResultCursor: normalizeCursor(
+        tellerRecord?.workerResultCursor ?? record.tellerWorkerResultCursor,
+      ),
+      thinkerDecisionCursor: normalizeCursor(
+        tellerRecord?.thinkerDecisionCursor ??
+          record.tellerThinkerDecisionCursor,
+      ),
+    },
+    thinker: {
+      tellerDigestCursor: normalizeCursor(
+        thinkerRecord?.tellerDigestCursor ?? record.thinkerTellerDigestCursor,
+      ),
+    },
   }
 }
 
@@ -91,35 +147,7 @@ const normalizeSnapshot = (value: unknown): RuntimeSnapshot => {
             .lastIdleReviewAt,
         }
       : undefined
-  const channelsRaw =
-    record.channels && typeof record.channels === 'object'
-      ? (record.channels as {
-          tellerUserInputCursor?: unknown
-          tellerWorkerResultCursor?: unknown
-          tellerThinkerDecisionCursor?: unknown
-          thinkerTellerDigestCursor?: unknown
-        })
-      : undefined
-  const channels = channelsRaw
-    ? {
-        tellerUserInputCursor:
-          typeof channelsRaw.tellerUserInputCursor === 'number'
-            ? Math.max(0, Math.floor(channelsRaw.tellerUserInputCursor))
-            : 0,
-        tellerWorkerResultCursor:
-          typeof channelsRaw.tellerWorkerResultCursor === 'number'
-            ? Math.max(0, Math.floor(channelsRaw.tellerWorkerResultCursor))
-            : 0,
-        tellerThinkerDecisionCursor:
-          typeof channelsRaw.tellerThinkerDecisionCursor === 'number'
-            ? Math.max(0, Math.floor(channelsRaw.tellerThinkerDecisionCursor))
-            : 0,
-        thinkerTellerDigestCursor:
-          typeof channelsRaw.thinkerTellerDigestCursor === 'number'
-            ? Math.max(0, Math.floor(channelsRaw.thinkerTellerDigestCursor))
-            : 0,
-      }
-    : undefined
+  const channels = normalizeChannels(record.channels)
   return {
     tasks,
     ...(evolve ? { evolve } : {}),

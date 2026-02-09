@@ -23,10 +23,14 @@ export type RuntimeState = {
   inflightInputs: PendingUserInput[]
   lastThinkerRunAt?: number
   channels: {
-    tellerUserInputCursor: number
-    tellerWorkerResultCursor: number
-    tellerThinkerDecisionCursor: number
-    thinkerTellerDigestCursor: number
+    teller: {
+      userInputCursor: number
+      workerResultCursor: number
+      thinkerDecisionCursor: number
+    }
+    thinker: {
+      tellerDigestCursor: number
+    }
   }
   tasks: Task[]
   runningWorkers: Set<string>

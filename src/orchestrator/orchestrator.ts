@@ -42,10 +42,14 @@ export class Orchestrator {
       inflightInputs: [],
       lastThinkerRunAt: 0,
       channels: {
-        tellerUserInputCursor: 0,
-        tellerWorkerResultCursor: 0,
-        tellerThinkerDecisionCursor: 0,
-        thinkerTellerDigestCursor: 0,
+        teller: {
+          userInputCursor: 0,
+          workerResultCursor: 0,
+          thinkerDecisionCursor: 0,
+        },
+        thinker: {
+          tellerDigestCursor: 0,
+        },
       },
       tasks: [],
       runningWorkers: new Set(),

@@ -2,8 +2,8 @@ import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { buildWorkerPrompt } from '../prompts/build-prompts.js'
 import { sleep } from '../shared/utils.js'
-import { runWorker as runExpertWorker } from '../worker/expert-runner.js'
-import { runStandardWorker as runStandardApiWorker } from '../worker/standard-runner.js'
+import { runExpertWorker } from '../worker/expert-runner.js'
+import { runStandardWorker } from '../worker/standard-runner.js'
 
 import { persistRuntimeState } from './runtime-persist.js'
 import { appendWorkerRetryFeedback } from './worker-run-feedback.js'
@@ -27,7 +27,7 @@ const runStandardProfile = async (params: {
     workDir: params.runtime.config.workDir,
     task: params.task,
   })
-  return runStandardApiWorker({
+  return runStandardWorker({
     stateDir: params.runtime.config.stateDir,
     workDir: params.runtime.config.workDir,
     taskId: params.task.id,

@@ -58,6 +58,15 @@ export type LlmArchiveRecord = {
   error?: string
 }
 
+export type LlmArchiveResult = {
+  output: string
+  ok: boolean
+  elapsedMs?: number
+  usage?: TokenUsage
+  error?: string
+  errorName?: string
+}
+
 const normalizeForKey = (value: unknown): unknown => {
   if (Array.isArray(value)) return value.map((item) => normalizeForKey(item))
   if (value && typeof value === 'object') {
@@ -137,3 +146,20 @@ export const appendLlmArchive = async (
   const content = buildArchiveContent(timestamp, entry)
   await write(path, content, { encoding: 'utf8' })
 }
+
+export const appendLlmArchiveResult = (
+  stateDir: string,
+  base: Omit<LlmArchiveEntry, 'prompt' | 'output' | 'ok'>,
+  prompt: string,
+  result: LlmArchiveResult,
+): Promise<void> =>
+  appendLlmArchive(stateDir, {
+    ...base,
+    prompt,
+    output: result.output,
+    ok: result.ok,
+    ...(result.elapsedMs !== undefined ? { elapsedMs: result.elapsedMs } : {}),
+    ...(result.usage ? { usage: result.usage } : {}),
+    ...(result.error ? { error: result.error } : {}),
+    ...(result.errorName ? { errorName: result.errorName } : {}),
+  })

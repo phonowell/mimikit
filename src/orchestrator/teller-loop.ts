@@ -32,43 +32,68 @@ const clearTellerBuffer = (buffer: TellerBuffer): void => {
   buffer.firstResultAt = 0
 }
 
+const appendPacketsToBuffer = <TPayload>(params: {
+  packets: Array<{ payload: TPayload; cursor: number }>
+  pushPayload: (payload: TPayload) => void
+  setCursor: (cursor: number) => void
+}): boolean => {
+  if (params.packets.length === 0) return false
+  for (const packet of params.packets) {
+    params.pushPayload(packet.payload)
+    params.setCursor(packet.cursor)
+  }
+  return true
+}
+
 export const tellerLoop = async (runtime: RuntimeState): Promise<void> => {
   const buffer = createTellerBuffer()
   while (!runtime.stopped) {
     const now = Date.now()
     const inputPackets = await consumeUserInputs({
       paths: runtime.paths,
-      fromCursor: runtime.channels.tellerUserInputCursor,
+      fromCursor: runtime.channels.teller.userInputCursor,
       limit: 100,
     })
-    if (inputPackets.length > 0) {
-      for (const packet of inputPackets) {
-        buffer.inputs.push(packet.payload)
-        runtime.channels.tellerUserInputCursor = packet.cursor
-      }
+    if (
+      appendPacketsToBuffer({
+        packets: inputPackets,
+        pushPayload: (payload) => {
+          buffer.inputs.push(payload)
+        },
+        setCursor: (cursor) => {
+          runtime.channels.teller.userInputCursor = cursor
+        },
+      })
+    )
       buffer.lastInputAt = now
-    }
+
     const resultPackets = await consumeWorkerResults({
       paths: runtime.paths,
-      fromCursor: runtime.channels.tellerWorkerResultCursor,
+      fromCursor: runtime.channels.teller.workerResultCursor,
       limit: 100,
     })
-    if (resultPackets.length > 0) {
-      for (const packet of resultPackets) {
-        buffer.results.push(packet.payload)
-        runtime.channels.tellerWorkerResultCursor = packet.cursor
-      }
+    if (
+      appendPacketsToBuffer({
+        packets: resultPackets,
+        pushPayload: (payload) => {
+          buffer.results.push(payload)
+        },
+        setCursor: (cursor) => {
+          runtime.channels.teller.workerResultCursor = cursor
+        },
+      })
+    )
       if (buffer.firstResultAt === 0) buffer.firstResultAt = now
-    }
+
     const decisionPackets = await consumeThinkerDecisions({
       paths: runtime.paths,
-      fromCursor: runtime.channels.tellerThinkerDecisionCursor,
+      fromCursor: runtime.channels.teller.thinkerDecisionCursor,
       limit: 20,
     })
     if (decisionPackets.length > 0) {
       const history = await readHistory(runtime.paths.history)
       for (const packet of decisionPackets) {
-        runtime.channels.tellerThinkerDecisionCursor = packet.cursor
+        runtime.channels.teller.thinkerDecisionCursor = packet.cursor
         const response = await formatDecisionForUser({
           workDir: runtime.config.workDir,
           tasks: runtime.tasks,

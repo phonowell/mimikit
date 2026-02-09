@@ -165,7 +165,7 @@ export const thinkerLoop = async (runtime: RuntimeState): Promise<void> => {
     }
     const packets = await consumeTellerDigests({
       paths: runtime.paths,
-      fromCursor: runtime.channels.thinkerTellerDigestCursor,
+      fromCursor: runtime.channels.thinker.tellerDigestCursor,
       limit: 1,
     })
     const packet = packets[0]
@@ -173,7 +173,7 @@ export const thinkerLoop = async (runtime: RuntimeState): Promise<void> => {
       await sleep(runtime.config.thinker.pollMs)
       continue
     }
-    runtime.channels.thinkerTellerDigestCursor = packet.cursor
+    runtime.channels.thinker.tellerDigestCursor = packet.cursor
     await runThinkerCycle(runtime, packet.payload)
     await bestEffort('persistRuntimeState: thinker_cursor', () =>
       persistRuntimeState(runtime),

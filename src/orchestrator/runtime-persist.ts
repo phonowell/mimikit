@@ -16,8 +16,14 @@ export const hydrateRuntimeState = async (
   if (snapshot.evolve) runtime.evolveState = snapshot.evolve
   if (snapshot.channels) {
     runtime.channels = {
-      ...runtime.channels,
-      ...snapshot.channels,
+      teller: {
+        ...runtime.channels.teller,
+        ...snapshot.channels.teller,
+      },
+      thinker: {
+        ...runtime.channels.thinker,
+        ...snapshot.channels.thinker,
+      },
     }
   }
   if (snapshot.tasks.length > 0) {

@@ -1,8 +1,9 @@
 import { runCodexSdk } from '../llm/sdk-runner.js'
 import { buildWorkerPrompt } from '../prompts/build-prompts.js'
 import {
-  appendLlmArchive,
+  appendLlmArchiveResult,
   type LlmArchiveEntry,
+  type LlmArchiveResult,
 } from '../storage/llm-archive.js'
 
 import type { Task, TokenUsage } from '../types/index.js'
@@ -10,31 +11,14 @@ import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
 type LlmResult = { output: string; elapsedMs: number; usage?: TokenUsage }
 
-const archiveEntry = (
+const archiveWorkerResult = (
   stateDir: string,
   base: Omit<LlmArchiveEntry, 'prompt' | 'output' | 'ok'>,
   prompt: string,
-  result: {
-    output: string
-    ok: boolean
-    elapsedMs?: number
-    usage?: TokenUsage
-    error?: string
-    errorName?: string
-  },
-) =>
-  appendLlmArchive(stateDir, {
-    ...base,
-    prompt,
-    output: result.output,
-    ok: result.ok,
-    ...(result.elapsedMs !== undefined ? { elapsedMs: result.elapsedMs } : {}),
-    ...(result.usage ? { usage: result.usage } : {}),
-    ...(result.error ? { error: result.error } : {}),
-    ...(result.errorName ? { errorName: result.errorName } : {}),
-  })
+  result: LlmArchiveResult,
+) => appendLlmArchiveResult(stateDir, base, prompt, result)
 
-export const runWorker = async (params: {
+export const runExpertWorker = async (params: {
   stateDir: string
   workDir: string
   task: Task
@@ -64,7 +48,7 @@ export const runWorker = async (params: {
         ? { modelReasoningEffort: params.modelReasoningEffort }
         : {}),
     })
-    await archiveEntry(
+    await archiveWorkerResult(
       params.stateDir,
       {
         ...base,
@@ -80,7 +64,7 @@ export const runWorker = async (params: {
     }
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error))
-    await archiveEntry(params.stateDir, base, prompt, {
+    await archiveWorkerResult(params.stateDir, base, prompt, {
       output: '',
       ok: false,
       error: err.message,
@@ -89,3 +73,5 @@ export const runWorker = async (params: {
     throw error
   }
 }
+
+export const runWorker = runExpertWorker
