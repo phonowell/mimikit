@@ -1,44 +1,32 @@
-import { bestEffort } from '../log/safe.js'
-import { sleep } from '../shared/utils.js'
+import { bestEffort } from '../../../log/safe.js'
+import { sleep } from '../../../shared/utils.js'
 import {
   consumeTellerDigests,
   consumeWorkerResults,
-  pruneChannelBefore,
-} from '../streams/channels.js'
-import { buildTaskStatusSummary } from '../teller/task-summary.js'
+} from '../../../streams/channels.js'
+import { buildTaskStatusSummary } from '../../../teller/task-summary.js'
+import { pruneChannelsByCursor } from '../../shared/channel-prune.js'
 
-import { runThinkerCycle } from './thinker-run-cycle.js'
+import { runThinkerCycle } from './thinker-cycle.js'
 
-import type { RuntimeState } from './runtime-state.js'
-import type { TaskResult } from '../types/index.js'
+import type { TaskResult } from '../../../types/index.js'
+import type { RuntimeState } from '../../core/runtime-state.js'
 
-const maybePruneThinkerChannels = (runtime: RuntimeState): Promise<void> => {
-  if (!runtime.config.channels.pruneEnabled) return Promise.resolve()
-  const keepRecent = Math.max(1, runtime.config.channels.keepRecentPackets)
-  const pruneOps: Promise<void>[] = []
-  const digestKeepFrom =
-    runtime.channels.thinker.tellerDigestCursor - keepRecent + 1
-  if (digestKeepFrom > 1) {
-    pruneOps.push(
-      pruneChannelBefore({
+const maybePruneThinkerChannels = (runtime: RuntimeState): Promise<void> =>
+  pruneChannelsByCursor({
+    enabled: runtime.config.channels.pruneEnabled,
+    keepRecent: runtime.config.channels.keepRecentPackets,
+    targets: [
+      {
         path: runtime.paths.tellerDigestChannel,
-        keepFromCursor: digestKeepFrom,
-      }),
-    )
-  }
-  const resultKeepFrom =
-    runtime.channels.thinker.workerResultCursor - keepRecent + 1
-  if (resultKeepFrom > 1) {
-    pruneOps.push(
-      pruneChannelBefore({
+        cursor: runtime.channels.thinker.tellerDigestCursor,
+      },
+      {
         path: runtime.paths.workerResultChannel,
-        keepFromCursor: resultKeepFrom,
-      }),
-    )
-  }
-  if (pruneOps.length === 0) return Promise.resolve()
-  return Promise.all(pruneOps).then(() => undefined)
-}
+        cursor: runtime.channels.thinker.workerResultCursor,
+      },
+    ],
+  })
 
 const mergeResultBatch = (items: TaskResult[]): TaskResult[] => {
   const byKey = new Map<string, TaskResult>()

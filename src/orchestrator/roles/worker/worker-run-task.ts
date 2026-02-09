@@ -1,21 +1,21 @@
-import { appendLog } from '../log/append.js'
+import { appendLog } from '../../../log/append.js'
 import {
   markTaskCanceled,
   markTaskFailed,
   markTaskSucceeded,
-} from '../tasks/queue.js'
+} from '../../../tasks/queue.js'
+import { notifyWorkerLoop } from '../../core/worker-signal.js'
 
-import { buildResult, finalizeResult } from './worker-result.js'
+import { buildResult, finalizeResult } from './worker-result-finalize.js'
 import {
   appendWorkerFailedFeedback,
   appendWorkerHighLatencyFeedback,
   appendWorkerHighUsageFeedback,
 } from './worker-run-feedback.js'
 import { runTaskWithRetry } from './worker-run-retry.js'
-import { notifyWorkerLoop } from './worker-signal.js'
 
-import type { RuntimeState } from './runtime-state.js'
-import type { Task } from '../types/index.js'
+import type { Task } from '../../../types/index.js'
+import type { RuntimeState } from '../../core/runtime-state.js'
 
 export const runTask = async (
   runtime: RuntimeState,

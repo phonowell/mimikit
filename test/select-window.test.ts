@@ -3,7 +3,7 @@ import { expect, test } from 'vitest'
 import {
   normalizeWindowParams,
   selectByWindow,
-} from '../src/orchestrator/select-window.js'
+} from '../src/orchestrator/read-model/select-window.js'
 
 test('normalizeWindowParams clamps invalid values', () => {
   expect(

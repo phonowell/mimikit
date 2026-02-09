@@ -1,7 +1,7 @@
-import { appendReportingEvent } from '../reporting/events.js'
+import { appendReportingEvent } from '../../../reporting/events.js'
 
-import type { RuntimeState } from './runtime-state.js'
-import type { Task } from '../types/index.js'
+import type { Task } from '../../../types/index.js'
+import type { RuntimeState } from '../../core/runtime-state.js'
 
 export const appendRuntimeIssue = (params: {
   runtime: RuntimeState

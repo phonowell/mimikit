@@ -11,11 +11,11 @@ import {
   publishTellerDigest,
   publishWorkerResult,
 } from '../src/streams/channels.js'
-import { thinkerLoop } from '../src/orchestrator/thinker-cycle.js'
+import { thinkerLoop } from '../src/orchestrator/roles/thinker/thinker-loop.js'
 
-import type { RuntimeState } from '../src/orchestrator/runtime-state.js'
+import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
 
-vi.mock('../src/orchestrator/thinker-run-cycle.js', () => ({
+vi.mock('../src/orchestrator/roles/thinker/thinker-cycle.js', () => ({
   runThinkerCycle: vi.fn(async (runtime: RuntimeState) => {
     runtime.lastThinkerRunAt = Date.now()
   }),

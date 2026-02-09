@@ -1,8 +1,12 @@
-import { safe } from '../log/safe.js'
-import { newId, nowIso } from '../shared/utils.js'
-import { appendHistory } from '../storage/jsonl.js'
+import { safe } from '../../log/safe.js'
+import { newId, nowIso } from '../../shared/utils.js'
+import { appendHistory } from '../../storage/jsonl.js'
 
-import type { HistoryMessage, Task, TaskResultStatus } from '../types/index.js'
+import type {
+  HistoryMessage,
+  Task,
+  TaskResultStatus,
+} from '../../types/index.js'
 
 type TaskHistoryEvent = 'created' | 'canceled' | 'completed'
 

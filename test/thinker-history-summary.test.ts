@@ -4,7 +4,7 @@ import { join } from 'node:path'
 
 import { expect, test } from 'vitest'
 
-import { appendConsumedResultsToHistory } from '../src/orchestrator/teller-history.js'
+import { appendConsumedResultsToHistory } from '../src/orchestrator/roles/teller/teller-history.js'
 import type { Task, TaskResult } from '../src/types/index.js'
 
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-thinker-history-'))

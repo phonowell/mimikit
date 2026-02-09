@@ -15,7 +15,7 @@
 
 ## 入口与调度
 - 入口：`src/cli.ts` 创建 `Orchestrator` 并 `start()`。
-- 调度：`src/orchestrator/orchestrator.ts` 并行启动 `tellerLoop`、`thinkerLoop`、`workerLoop`。
+- 调度：`src/orchestrator/core/orchestrator-service.ts` 并行启动 `tellerLoop`、`thinkerLoop`、`workerLoop`。
 
 ## 当前通信链路（2026-02-09 同步后）
 - `user -> teller`：`publishUserInput` / `consumeUserInputs`。

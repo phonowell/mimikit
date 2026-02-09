@@ -8,7 +8,7 @@ import { expect, test } from 'vitest'
 import { defaultConfig } from '../src/config.js'
 import { registerTaskProgressRoute } from '../src/http/routes-api-sections.js'
 import { appendTaskProgress } from '../src/storage/task-progress.js'
-import type { Orchestrator } from '../src/orchestrator/orchestrator.js'
+import type { Orchestrator } from '../src/orchestrator/core/orchestrator-service.js'
 
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-task-progress-route-'))
 

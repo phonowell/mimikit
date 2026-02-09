@@ -1,4 +1,4 @@
-import type { HistoryMessage, UserInput } from '../types/index.js'
+import type { HistoryMessage, UserInput } from '../../types/index.js'
 
 export type ChatMessage = HistoryMessage
 

@@ -11,7 +11,7 @@ import { resolveRoots } from './helpers.js'
 import { registerApiRoutes, registerNotFoundHandler } from './routes-api.js'
 
 import type { AppConfig } from '../config.js'
-import type { Orchestrator } from '../orchestrator/orchestrator.js'
+import type { Orchestrator } from '../orchestrator/core/orchestrator-service.js'
 
 const MAX_BODY_BYTES = 64 * 1024
 

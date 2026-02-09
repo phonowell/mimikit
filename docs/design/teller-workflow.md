@@ -4,8 +4,8 @@
 
 ## 范围与依据
 - 本文描述当前 `teller` 真实执行链路（以代码实现为准）。
-- 主线代码：`src/orchestrator/teller-loop.ts`、`src/teller/runner.ts`。
-- 协作代码：`src/orchestrator/thinker-cycle.ts`、`src/orchestrator/orchestrator.ts`、`src/streams/channels.ts`。
+- 主线代码：`src/orchestrator/roles/teller/teller-loop.ts`、`src/teller/runner.ts`。
+- 协作代码：`src/orchestrator/roles/thinker/thinker-loop.ts`、`src/orchestrator/core/orchestrator-service.ts`、`src/streams/channels.ts`。
 
 ## teller 角色边界
 - 角色定义：
@@ -21,7 +21,7 @@
    - 同时放入内存 `runtime.inflightInputs`，用于“待回复输入”追踪。
 
 ## tellerLoop 每轮执行顺序
-位于 `src/orchestrator/teller-loop.ts`，循环直到 `runtime.stopped=true`。
+位于 `src/orchestrator/roles/teller/teller-loop.ts`，循环直到 `runtime.stopped=true`。
 
 ### 1) 消费用户输入
 - 从 `channels/user-input.jsonp` 按 `channels.teller.userInputCursor` 增量读取（`limit=100`）。

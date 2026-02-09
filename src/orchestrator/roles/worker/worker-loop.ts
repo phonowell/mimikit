@@ -1,11 +1,11 @@
-import { bestEffort } from '../log/safe.js'
-import { generateMissingDailyReports } from '../reporting/daily-report.js'
+import { bestEffort } from '../../../log/safe.js'
+import { generateMissingDailyReports } from '../../../reporting/daily-report.js'
+import { persistRuntimeState } from '../../core/runtime-persistence.js'
+import { waitForWorkerLoopSignal } from '../../core/worker-signal.js'
 
-import { persistRuntimeState } from './runtime-persist.js'
-import { appendRuntimeIssue } from './worker-feedback.js'
-import { waitForWorkerLoopSignal } from './worker-signal.js'
+import { appendRuntimeIssue } from './worker-runtime-feedback.js'
 
-import type { RuntimeState } from './runtime-state.js'
+import type { RuntimeState } from '../../core/runtime-state.js'
 
 const reportWorkerLoopError = async (
   runtime: RuntimeState,

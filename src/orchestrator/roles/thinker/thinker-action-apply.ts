@@ -1,17 +1,16 @@
 import { z } from 'zod'
 
-import { appendReportingEvent } from '../reporting/events.js'
-import { enqueueTask } from '../tasks/queue.js'
+import { appendReportingEvent } from '../../../reporting/events.js'
+import { enqueueTask } from '../../../tasks/queue.js'
+import { persistRuntimeState } from '../../core/runtime-persistence.js'
+import { notifyWorkerLoop } from '../../core/worker-signal.js'
+import { appendTaskSystemMessage } from '../../read-model/task-history.js'
+import { cancelTask } from '../worker/worker-cancel-task.js'
+import { enqueueWorkerTask } from '../worker/worker-dispatch.js'
 
-import { cancelTask } from './cancel.js'
-import { persistRuntimeState } from './runtime-persist.js'
-import { appendTaskSystemMessage } from './task-history.js'
-import { enqueueWorkerTask } from './worker-dispatch.js'
-import { notifyWorkerLoop } from './worker-signal.js'
-
-import type { RuntimeState } from './runtime-state.js'
-import type { Parsed } from '../actions/model/parsed.js'
-import type { WorkerProfile } from '../types/index.js'
+import type { Parsed } from '../../../actions/model/parsed.js'
+import type { WorkerProfile } from '../../../types/index.js'
+import type { RuntimeState } from '../../core/runtime-state.js'
 
 const nonEmptyString = z.string().trim().min(1)
 

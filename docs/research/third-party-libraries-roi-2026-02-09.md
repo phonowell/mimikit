@@ -18,7 +18,7 @@
 
 ## 关键证据（对应代码位置）
 - `zod`/`valibot` 候选：`src/http/helpers.ts:56` `src/storage/runtime-state-schema.ts:1` `src/actions/shared/args.ts:14` `src/storage/task-progress.ts:13` `src/storage/task-checkpoint.ts:9`
-- `p-queue`/`p-retry` 候选：`src/orchestrator/worker-dispatch.ts:61` `src/orchestrator/worker-run-retry.ts:78` `src/orchestrator/action-intents.ts:78`
+- `p-queue`/`p-retry` 候选：`src/orchestrator/roles/worker/worker-dispatch.ts:61` `src/orchestrator/roles/worker/worker-run-retry.ts:78` `src/orchestrator/roles/thinker/thinker-action-apply.ts:78`
 - `yaml` 候选：`src/prompts/format-base.ts:35` `src/prompts/format-content.ts:97`
 - `htmlparser2` 候选：`src/actions/protocol/extract-block.ts:1` `src/actions/protocol/parse.ts:12`
 - `better-sqlite3` 候选：`src/storage/jsonl.ts:1` `src/streams/jsonp-channel.ts:55` `src/storage/task-progress.ts:23`

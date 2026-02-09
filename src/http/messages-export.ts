@@ -1,4 +1,4 @@
-import type { ChatMessage } from '../orchestrator/chat-view.js'
+import type { ChatMessage } from '../orchestrator/read-model/chat-view.js'
 import type { Role, TokenUsage } from '../types/index.js'
 
 const TITLE = 'Mimikit 对话导出'

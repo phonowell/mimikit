@@ -1,30 +1,33 @@
 import PQueue from 'p-queue'
 
-import { buildPaths, ensureStateDirs } from '../fs/paths.js'
-import { appendLog } from '../log/append.js'
-import { bestEffort, setDefaultLogPath } from '../log/safe.js'
-import { newId, nowIso } from '../shared/utils.js'
-import { readHistory } from '../storage/jsonl.js'
-import { publishUserInput } from '../streams/channels.js'
-
-import { cancelTask } from './cancel.js'
+import { buildPaths, ensureStateDirs } from '../../fs/paths.js'
+import { appendLog } from '../../log/append.js'
+import { bestEffort, setDefaultLogPath } from '../../log/safe.js'
+import { newId, nowIso } from '../../shared/utils.js'
+import { readHistory } from '../../storage/jsonl.js'
+import { publishUserInput } from '../../streams/channels.js'
 import {
   type ChatMessage,
   type ChatMessagesMode,
   mergeChatMessages,
   selectChatMessages,
-} from './chat-view.js'
-import { hydrateRuntimeState, persistRuntimeState } from './runtime-persist.js'
-import { buildTaskViews } from './task-view.js'
-import { tellerLoop } from './teller-loop.js'
-import { thinkerLoop } from './thinker-cycle.js'
-import { enqueuePendingWorkerTasks } from './worker-dispatch.js'
-import { workerLoop } from './worker-loop.js'
+} from '../read-model/chat-view.js'
+import { buildTaskViews } from '../read-model/task-view.js'
+import { tellerLoop } from '../roles/teller/teller-loop.js'
+import { thinkerLoop } from '../roles/thinker/thinker-loop.js'
+import { cancelTask } from '../roles/worker/worker-cancel-task.js'
+import { enqueuePendingWorkerTasks } from '../roles/worker/worker-dispatch.js'
+import { workerLoop } from '../roles/worker/worker-loop.js'
+
+import {
+  hydrateRuntimeState,
+  persistRuntimeState,
+} from './runtime-persistence.js'
 import { notifyWorkerLoop } from './worker-signal.js'
 
 import type { RuntimeState, UserMeta } from './runtime-state.js'
-import type { AppConfig } from '../config.js'
-import type { Task } from '../types/index.js'
+import type { AppConfig } from '../../config.js'
+import type { Task } from '../../types/index.js'
 
 export class Orchestrator {
   private runtime: RuntimeState

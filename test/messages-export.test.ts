@@ -6,7 +6,7 @@ import {
 } from '../src/http/messages-export.js'
 import { parseExportLimit } from '../src/http/helpers.js'
 
-import type { ChatMessage } from '../src/orchestrator/chat-view.js'
+import type { ChatMessage } from '../src/orchestrator/read-model/chat-view.js'
 
 const sampleMessages: ChatMessage[] = [
   {

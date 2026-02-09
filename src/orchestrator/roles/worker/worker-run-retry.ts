@@ -1,16 +1,16 @@
 import pRetry, { AbortError } from 'p-retry'
 
-import { appendLog } from '../log/append.js'
-import { bestEffort } from '../log/safe.js'
-import { buildWorkerPrompt } from '../prompts/build-prompts.js'
-import { runExpertWorker } from '../worker/expert-runner.js'
-import { runStandardWorker } from '../worker/standard-runner.js'
+import { appendLog } from '../../../log/append.js'
+import { bestEffort } from '../../../log/safe.js'
+import { buildWorkerPrompt } from '../../../prompts/build-prompts.js'
+import { runExpertWorker } from '../../../worker/expert-runner.js'
+import { runStandardWorker } from '../../../worker/standard-runner.js'
+import { persistRuntimeState } from '../../core/runtime-persistence.js'
 
-import { persistRuntimeState } from './runtime-persist.js'
 import { appendWorkerRetryFeedback } from './worker-run-feedback.js'
 
-import type { RuntimeState } from './runtime-state.js'
-import type { Task, TokenUsage } from '../types/index.js'
+import type { Task, TokenUsage } from '../../../types/index.js'
+import type { RuntimeState } from '../../core/runtime-state.js'
 
 export type WorkerLlmResult = {
   output: string

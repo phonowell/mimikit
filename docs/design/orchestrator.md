@@ -9,7 +9,7 @@
 ## 启动与并发循环
 - 启动入口：`Orchestrator.start()`。
 - 并发拉起：`tellerLoop`、`thinkerLoop`、`workerLoop`。
-- 实现位置：`src/orchestrator/orchestrator.ts`。
+- 实现位置：`src/orchestrator/core/orchestrator-service.ts`。
 
 ## 通道总览（JSONP）
 - `channels/user-input.jsonp`：用户输入事件。

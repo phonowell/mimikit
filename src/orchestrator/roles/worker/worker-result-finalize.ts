@@ -1,11 +1,12 @@
-import { appendLog } from '../log/append.js'
-import { bestEffort, safeOrUndefined } from '../log/safe.js'
-import { nowIso } from '../shared/utils.js'
-import { appendTaskResultArchive } from '../storage/task-results.js'
-import { publishWorkerResult } from '../streams/channels.js'
+import { appendLog } from '../../../log/append.js'
+import { bestEffort } from '../../../log/safe.js'
+import { nowIso } from '../../../shared/utils.js'
+import { publishWorkerResult } from '../../../streams/channels.js'
 
-import type { RuntimeState } from './runtime-state.js'
-import type { Task, TaskResult, TokenUsage } from '../types/index.js'
+import { archiveTaskResult } from './worker-result-archive.js'
+
+import type { Task, TaskResult, TokenUsage } from '../../../types/index.js'
+import type { RuntimeState } from '../../core/runtime-state.js'
 
 export const buildResult = (
   task: Task,
@@ -25,32 +26,13 @@ export const buildResult = (
   profile: task.profile,
 })
 
-const archiveResult = (
-  runtime: RuntimeState,
-  task: Task,
-  result: TaskResult,
-): Promise<string | undefined> =>
-  safeOrUndefined('appendTaskResultArchive: worker', () =>
-    appendTaskResultArchive(runtime.config.stateDir, {
-      taskId: task.id,
-      title: task.title,
-      status: result.status,
-      prompt: task.prompt,
-      output: result.output,
-      createdAt: task.createdAt,
-      completedAt: result.completedAt,
-      durationMs: result.durationMs,
-      ...(result.usage ? { usage: result.usage } : {}),
-    }),
-  )
-
 export const finalizeResult = async (
   runtime: RuntimeState,
   task: Task,
   result: TaskResult,
   markFn: (tasks: Task[], taskId: string, patch?: Partial<Task>) => void,
 ): Promise<void> => {
-  const archivePath = await archiveResult(runtime, task, result)
+  const archivePath = await archiveTaskResult(runtime, task, result, 'worker')
   if (archivePath) result.archivePath = archivePath
   markFn(runtime.tasks, task.id, {
     completedAt: result.completedAt,

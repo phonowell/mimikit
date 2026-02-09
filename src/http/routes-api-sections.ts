@@ -12,7 +12,7 @@ import {
 } from './messages-export.js'
 
 import type { AppConfig } from '../config.js'
-import type { Orchestrator } from '../orchestrator/orchestrator.js'
+import type { Orchestrator } from '../orchestrator/core/orchestrator-service.js'
 import type { FastifyInstance } from 'fastify'
 
 const isWithinRoot = (root: string, path: string): boolean => {

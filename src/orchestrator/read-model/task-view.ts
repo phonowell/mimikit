@@ -1,6 +1,6 @@
-import { titleFromCandidates } from '../tasks/queue.js'
+import { titleFromCandidates } from '../../tasks/queue.js'
 
-import type { Task, TaskStatus } from '../types/index.js'
+import type { Task, TaskStatus } from '../../types/index.js'
 
 export type TaskView = {
   id: string

@@ -1,28 +1,28 @@
-import { parseActions } from '../actions/protocol/parse.js'
-import { appendLog } from '../log/append.js'
-import { bestEffort } from '../log/safe.js'
-import { readHistory } from '../storage/jsonl.js'
-import { publishThinkerDecision } from '../streams/channels.js'
-import { runThinker } from '../thinker/runner.js'
+import { parseActions } from '../../../actions/protocol/parse.js'
+import { appendLog } from '../../../log/append.js'
+import { bestEffort } from '../../../log/safe.js'
+import { readHistory } from '../../../storage/jsonl.js'
+import { publishThinkerDecision } from '../../../streams/channels.js'
+import { runThinker } from '../../../thinker/runner.js'
+import { persistRuntimeState } from '../../core/runtime-persistence.js'
+import { selectRecentHistory } from '../../read-model/history-select.js'
+import { selectRecentTasks } from '../../read-model/task-select.js'
+import {
+  appendConsumedInputsToHistory,
+  appendConsumedResultsToHistory,
+} from '../teller/teller-history.js'
 
 import {
   applyTaskActions,
   collectTaskResultSummaries,
-} from './action-intents.js'
-import { selectRecentHistory } from './history-select.js'
-import { persistRuntimeState } from './runtime-persist.js'
-import { selectRecentTasks } from './task-select.js'
-import {
-  appendConsumedInputsToHistory,
-  appendConsumedResultsToHistory,
-} from './teller-history.js'
+} from './thinker-action-apply.js'
 import {
   appendThinkerErrorFeedback,
   publishThinkerErrorDecision,
 } from './thinker-cycle-error.js'
 
-import type { RuntimeState } from './runtime-state.js'
-import type { TellerDigest } from '../types/index.js'
+import type { TellerDigest } from '../../../types/index.js'
+import type { RuntimeState } from '../../core/runtime-state.js'
 
 const DEFAULT_THINKER_TIMEOUT_MS = 30_000
 

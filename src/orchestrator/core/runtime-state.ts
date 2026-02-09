@@ -1,6 +1,6 @@
-import type { AppConfig } from '../config.js'
-import type { StatePaths } from '../fs/paths.js'
-import type { Task, UserInput } from '../types/index.js'
+import type { AppConfig } from '../../config.js'
+import type { StatePaths } from '../../fs/paths.js'
+import type { Task, UserInput } from '../../types/index.js'
 import type PQueue from 'p-queue'
 
 export type PendingUserInput = UserInput

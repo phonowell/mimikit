@@ -1,15 +1,15 @@
-import { appendLog } from '../log/append.js'
-import { bestEffort, safeOrUndefined } from '../log/safe.js'
-import { nowIso } from '../shared/utils.js'
-import { appendTaskResultArchive } from '../storage/task-results.js'
-import { publishWorkerResult } from '../streams/channels.js'
-import { markTaskCanceled } from '../tasks/queue.js'
+import { appendLog } from '../../../log/append.js'
+import { bestEffort } from '../../../log/safe.js'
+import { nowIso } from '../../../shared/utils.js'
+import { publishWorkerResult } from '../../../streams/channels.js'
+import { markTaskCanceled } from '../../../tasks/queue.js'
+import { persistRuntimeState } from '../../core/runtime-persistence.js'
+import { notifyWorkerLoop } from '../../core/worker-signal.js'
 
-import { persistRuntimeState } from './runtime-persist.js'
-import { notifyWorkerLoop } from './worker-signal.js'
+import { archiveTaskResult } from './worker-result-archive.js'
 
-import type { RuntimeState } from './runtime-state.js'
-import type { Task, TaskResult } from '../types/index.js'
+import type { Task, TaskResult } from '../../../types/index.js'
+import type { RuntimeState } from '../../core/runtime-state.js'
 
 export type CancelMeta = {
   source?: string
@@ -45,31 +45,12 @@ const buildCanceledResult = (task: Task, output: string): TaskResult => {
   }
 }
 
-const archiveCanceledResult = (
-  runtime: RuntimeState,
-  task: Task,
-  result: TaskResult,
-): Promise<string | undefined> =>
-  safeOrUndefined('appendTaskResultArchive: cancel', () =>
-    appendTaskResultArchive(runtime.config.stateDir, {
-      taskId: task.id,
-      title: task.title,
-      status: result.status,
-      prompt: task.prompt,
-      output: result.output,
-      createdAt: task.createdAt,
-      completedAt: result.completedAt,
-      durationMs: result.durationMs,
-      ...(result.usage ? { usage: result.usage } : {}),
-    }),
-  )
-
 const pushCanceledResult = async (
   runtime: RuntimeState,
   task: Task,
   result: TaskResult,
 ) => {
-  const archivePath = await archiveCanceledResult(runtime, task, result)
+  const archivePath = await archiveTaskResult(runtime, task, result, 'cancel')
   if (archivePath) result.archivePath = archivePath
   if (archivePath) task.archivePath = archivePath
   await publishWorkerResult({

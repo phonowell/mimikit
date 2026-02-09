@@ -3,7 +3,7 @@ import { expect, test } from 'vitest'
 import {
   mergeChatMessages,
   selectChatMessages,
-} from '../src/orchestrator/chat-view.js'
+} from '../src/orchestrator/read-model/chat-view.js'
 import type { HistoryMessage, UserInput } from '../src/types/index.js'
 
 const asHistory = (params: {

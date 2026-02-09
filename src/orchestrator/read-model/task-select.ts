@@ -1,6 +1,6 @@
 import { selectByWindow } from './select-window.js'
 
-import type { Task } from '../types/index.js'
+import type { Task } from '../../types/index.js'
 
 export type TaskSelectParams = {
   minCount: number

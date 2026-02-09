@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 
-import { selectRecentHistory } from '../src/orchestrator/history-select.js'
+import { selectRecentHistory } from '../src/orchestrator/read-model/history-select.js'
 import type { HistoryMessage } from '../src/types/index.js'
 
 const createMessage = (id: string, createdAt: string): HistoryMessage => ({

@@ -1,15 +1,18 @@
-import { bestEffort } from '../log/safe.js'
-import { nowIso, sleep } from '../shared/utils.js'
-import { appendHistory, readHistory } from '../storage/jsonl.js'
+import { bestEffort } from '../../../log/safe.js'
+import { nowIso, sleep } from '../../../shared/utils.js'
+import { appendHistory, readHistory } from '../../../storage/jsonl.js'
 import {
   consumeThinkerDecisions,
   consumeUserInputs,
-  pruneChannelBefore,
   publishTellerDigest,
-} from '../streams/channels.js'
-import { formatDecisionForUser, runTellerDigest } from '../teller/runner.js'
+} from '../../../streams/channels.js'
+import {
+  formatDecisionForUser,
+  runTellerDigest,
+} from '../../../teller/runner.js'
+import { pruneChannelsByCursor } from '../../shared/channel-prune.js'
 
-import type { RuntimeState } from './runtime-state.js'
+import type { RuntimeState } from '../../core/runtime-state.js'
 
 type TellerBuffer = {
   inputs: RuntimeState['inflightInputs']
@@ -26,33 +29,21 @@ const clearTellerBuffer = (buffer: TellerBuffer): void => {
   buffer.lastInputAt = 0
 }
 
-const maybePruneTellerChannels = (runtime: RuntimeState): Promise<void> => {
-  if (!runtime.config.channels.pruneEnabled) return Promise.resolve()
-  const keepRecent = Math.max(1, runtime.config.channels.keepRecentPackets)
-  const pruneOps: Promise<void>[] = []
-  const userInputKeepFrom =
-    runtime.channels.teller.userInputCursor - keepRecent + 1
-  if (userInputKeepFrom > 1) {
-    pruneOps.push(
-      pruneChannelBefore({
+const maybePruneTellerChannels = (runtime: RuntimeState): Promise<void> =>
+  pruneChannelsByCursor({
+    enabled: runtime.config.channels.pruneEnabled,
+    keepRecent: runtime.config.channels.keepRecentPackets,
+    targets: [
+      {
         path: runtime.paths.userInputChannel,
-        keepFromCursor: userInputKeepFrom,
-      }),
-    )
-  }
-  const decisionKeepFrom =
-    runtime.channels.teller.thinkerDecisionCursor - keepRecent + 1
-  if (decisionKeepFrom > 1) {
-    pruneOps.push(
-      pruneChannelBefore({
+        cursor: runtime.channels.teller.userInputCursor,
+      },
+      {
         path: runtime.paths.thinkerDecisionChannel,
-        keepFromCursor: decisionKeepFrom,
-      }),
-    )
-  }
-  if (pruneOps.length === 0) return Promise.resolve()
-  return Promise.all(pruneOps).then(() => undefined)
-}
+        cursor: runtime.channels.teller.thinkerDecisionCursor,
+      },
+    ],
+  })
 
 const appendPacketsToBuffer = <TPayload>(params: {
   packets: Array<{ payload: TPayload; cursor: number }>

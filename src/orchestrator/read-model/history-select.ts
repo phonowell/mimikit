@@ -1,6 +1,6 @@
 import { selectByWindow } from './select-window.js'
 
-import type { HistoryMessage } from '../types/index.js'
+import type { HistoryMessage } from '../../types/index.js'
 
 export type HistorySelectParams = {
   minCount: number

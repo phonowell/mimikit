@@ -111,7 +111,7 @@
 - 失败：`browser_exit_{code}`。
 
 ## 任务类 Action（orchestrator 消费）
-来源：`src/orchestrator/action-intents.ts`。
+来源：`src/orchestrator/roles/thinker/thinker-action-apply.ts`。
 
 ### `create_task`
 - 入参：`prompt` `title` `profile`。

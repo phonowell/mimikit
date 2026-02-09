@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 
-import { buildTaskViews } from '../src/orchestrator/task-view.js'
+import { buildTaskViews } from '../src/orchestrator/read-model/task-view.js'
 import type { Task } from '../src/types/index.js'
 
 const createTask = (params: {

@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 
-import { selectRecentTasks } from '../src/orchestrator/task-select.js'
+import { selectRecentTasks } from '../src/orchestrator/read-model/task-select.js'
 import type { Task } from '../src/types/index.js'
 
 const createTask = (params: {

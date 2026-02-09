@@ -11,9 +11,9 @@ import {
   publishThinkerDecision,
   publishUserInput,
 } from '../src/streams/channels.js'
-import { tellerLoop } from '../src/orchestrator/teller-loop.js'
+import { tellerLoop } from '../src/orchestrator/roles/teller/teller-loop.js'
 
-import type { RuntimeState } from '../src/orchestrator/runtime-state.js'
+import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
 
 vi.mock('../src/teller/runner.js', () => ({
   formatDecisionForUser: vi.fn(async () => ({ text: 'ok' })),

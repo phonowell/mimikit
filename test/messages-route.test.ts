@@ -3,9 +3,9 @@ import { expect, test } from 'vitest'
 
 import { defaultConfig } from '../src/config.js'
 import { registerApiRoutes } from '../src/http/routes-api.js'
-import type { ChatMessage, ChatMessagesMode } from '../src/orchestrator/chat-view.js'
+import type { ChatMessage, ChatMessagesMode } from '../src/orchestrator/read-model/chat-view.js'
 import type { InputMeta } from '../src/http/helpers.js'
-import type { Orchestrator } from '../src/orchestrator/orchestrator.js'
+import type { Orchestrator } from '../src/orchestrator/core/orchestrator-service.js'
 
 const createOrchestratorStub = () => {
   const calls: Array<{ limit: number; afterId?: string }> = []
