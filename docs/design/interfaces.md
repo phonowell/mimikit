@@ -17,9 +17,9 @@
 实现位置：`src/http/index.ts`、`src/http/routes-api.ts`。
 
 ## CLI
-- `tsx src/cli.ts`
-- `tsx src/cli.ts --port 8787`
-- `tsx src/cli.ts --state-dir .mimikit --work-dir .`
+- `tsx src/cli/index.ts`
+- `tsx src/cli/index.ts --port 8787`
+- `tsx src/cli/index.ts --state-dir .mimikit --work-dir .`
 
 ## 环境变量（核心）
 - `MIMIKIT_MODEL`（覆盖 teller/thinker/worker.standard）

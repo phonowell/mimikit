@@ -3,7 +3,7 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Root = Resolve-Path (Join-Path $ScriptDir '..')
 
 while ($true) {
-  & pnpm exec tsx (Join-Path $Root 'src/cli.ts') @args
+  & pnpm exec tsx (Join-Path $Root 'src/cli/index.ts') @args
   $exitCode = $LASTEXITCODE
 
   if ($exitCode -eq 75) {

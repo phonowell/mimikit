@@ -11,7 +11,7 @@ import {
   publishThinkerDecision,
   publishUserInput,
 } from '../src/streams/channels.js'
-import { tellerLoop } from '../src/orchestrator/roles/teller/teller-loop.js'
+import { tellerLoop } from '../src/teller/loop.js'
 
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
 

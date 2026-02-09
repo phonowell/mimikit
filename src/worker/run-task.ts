@@ -1,21 +1,21 @@
-import { appendLog } from '../../../log/append.js'
+import { appendLog } from '../log/append.js'
+import { notifyWorkerLoop } from '../orchestrator/core/worker-signal.js'
 import {
   markTaskCanceled,
   markTaskFailed,
   markTaskSucceeded,
-} from '../../../tasks/queue.js'
-import { notifyWorkerLoop } from '../../core/worker-signal.js'
+} from '../tasks/queue.js'
 
-import { buildResult, finalizeResult } from './worker-result-finalize.js'
+import { buildResult, finalizeResult } from './result-finalize.js'
 import {
   appendWorkerFailedFeedback,
   appendWorkerHighLatencyFeedback,
   appendWorkerHighUsageFeedback,
-} from './worker-run-feedback.js'
-import { runTaskWithRetry } from './worker-run-retry.js'
+} from './run-feedback.js'
+import { runTaskWithRetry } from './run-retry.js'
 
-import type { Task } from '../../../types/index.js'
-import type { RuntimeState } from '../../core/runtime-state.js'
+import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
+import type { Task } from '../types/index.js'
 
 export const runTask = async (
   runtime: RuntimeState,

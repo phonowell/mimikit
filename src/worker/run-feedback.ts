@@ -1,9 +1,9 @@
-import { bestEffort } from '../../../log/safe.js'
+import { bestEffort } from '../log/safe.js'
 
-import { appendRuntimeIssue } from './worker-runtime-utils.js'
+import { appendRuntimeIssue } from './runtime-utils.js'
 
-import type { Task } from '../../../types/index.js'
-import type { RuntimeState } from '../../core/runtime-state.js'
+import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
+import type { Task } from '../types/index.js'
 
 export const appendWorkerRetryFeedback = async (params: {
   runtime: RuntimeState

@@ -1,15 +1,15 @@
-import { appendLog } from '../../../log/append.js'
-import { bestEffort } from '../../../log/safe.js'
-import { nowIso } from '../../../shared/utils.js'
-import { publishWorkerResult } from '../../../streams/channels.js'
-import { markTaskCanceled } from '../../../tasks/queue.js'
-import { persistRuntimeState } from '../../core/runtime-persistence.js'
-import { notifyWorkerLoop } from '../../core/worker-signal.js'
+import { appendLog } from '../log/append.js'
+import { bestEffort } from '../log/safe.js'
+import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
+import { notifyWorkerLoop } from '../orchestrator/core/worker-signal.js'
+import { nowIso } from '../shared/utils.js'
+import { publishWorkerResult } from '../streams/channels.js'
+import { markTaskCanceled } from '../tasks/queue.js'
 
-import { archiveTaskResult } from './worker-runtime-utils.js'
+import { archiveTaskResult } from './runtime-utils.js'
 
-import type { Task, TaskResult } from '../../../types/index.js'
-import type { RuntimeState } from '../../core/runtime-state.js'
+import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
+import type { Task, TaskResult } from '../types/index.js'
 
 export type CancelMeta = {
   source?: string

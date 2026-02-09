@@ -4,8 +4,8 @@
 
 ## 范围与依据
 - 本文描述当前 `thinker` 真实执行链路（以代码实现为准）。
-- 主线代码：`src/orchestrator/roles/thinker/thinker-loop.ts`、`src/orchestrator/roles/thinker/thinker-cycle.ts`、`src/thinker/runner.ts`。
-- 协作代码：`src/orchestrator/roles/thinker/thinker-action-apply.ts`、`src/orchestrator/roles/teller/teller-history.ts`、`src/streams/channels.ts`。
+- 主线代码：`src/thinker/loop.ts`、`src/thinker/cycle.ts`、`src/thinker/runner.ts`。
+- 协作代码：`src/thinker/action-apply.ts`、`src/teller/history.ts`、`src/streams/channels.ts`。
 
 ## thinker 角色边界
 - 角色定义：直接消费 `worker-result` 与 `teller-digest`，输出“决策文本 + 任务 action”。
@@ -17,7 +17,7 @@
 2. `thinkerLoop` 每轮先读 `worker-result`，再读 `teller-digest`。
 
 ## thinkerLoop 每轮执行顺序
-位于 `src/orchestrator/roles/thinker/thinker-loop.ts`，循环直到 `runtime.stopped=true`。
+位于 `src/thinker/loop.ts`，循环直到 `runtime.stopped=true`。
 
 ### 1) 拉取 worker-result
 - 按 `channels.thinker.workerResultCursor` 增量读取 `worker-result`（`limit=100`）。
@@ -47,7 +47,7 @@
   - `channels/teller-digest.jsonp`
 
 ## runThinkerCycle 细节
-实现：`src/orchestrator/roles/thinker/thinker-cycle.ts`。
+实现：`src/thinker/cycle.ts`。
 
 - 输入：`digest.inputs` + `digest.results` + 任务/历史窗口。
 - 调用：`runThinker()`，解析 `actions + text`。

@@ -1,10 +1,10 @@
-import { safe } from '../../../log/safe.js'
-import { nowIso } from '../../../shared/utils.js'
-import { appendHistory } from '../../../storage/jsonl.js'
-import { appendTaskSystemMessage } from '../../read-model/task-history.js'
+import { safe } from '../log/safe.js'
+import { appendTaskSystemMessage } from '../orchestrator/read-model/task-history.js'
+import { nowIso } from '../shared/utils.js'
+import { appendHistory } from '../storage/jsonl.js'
 
-import type { TaskResult, UserInput } from '../../../types/index.js'
-import type { RuntimeState } from '../../core/runtime-state.js'
+import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
+import type { TaskResult, UserInput } from '../types/index.js'
 
 const summarizeResultOutput = (
   result: TaskResult,

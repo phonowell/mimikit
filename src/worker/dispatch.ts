@@ -1,14 +1,14 @@
-import { appendLog } from '../../../log/append.js'
-import { bestEffort } from '../../../log/safe.js'
-import { markTaskRunning } from '../../../tasks/queue.js'
-import { persistRuntimeState } from '../../core/runtime-persistence.js'
-import { notifyWorkerLoop } from '../../core/worker-signal.js'
+import { appendLog } from '../log/append.js'
+import { bestEffort } from '../log/safe.js'
+import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
+import { notifyWorkerLoop } from '../orchestrator/core/worker-signal.js'
+import { markTaskRunning } from '../tasks/queue.js'
 
-import { runTask } from './worker-run-task.js'
-import { appendRuntimeIssue } from './worker-runtime-utils.js'
+import { runTask } from './run-task.js'
+import { appendRuntimeIssue } from './runtime-utils.js'
 
-import type { Task } from '../../../types/index.js'
-import type { RuntimeState } from '../../core/runtime-state.js'
+import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
+import type { Task } from '../types/index.js'
 
 const reportWorkerQueueError = async (
   runtime: RuntimeState,

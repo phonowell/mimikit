@@ -1,4 +1,4 @@
-import { buildManagerPrompt, buildWorkerPrompt } from '../src/roles/prompt.js'
+import { buildThinkerPrompt, buildWorkerPrompt } from '../src/prompts/build-prompts.js'
 
 const usage = () => {
   console.log(
@@ -21,9 +21,14 @@ const main = async () => {
 
   switch (role) {
     case 'manager': {
-      const prompt = await buildManagerPrompt({
+      const prompt = await buildThinkerPrompt({
+        stateDir: workDir,
         workDir,
-        inputs: args,
+        inputs: args.map((text, index) => ({
+          id: `in-${index + 1}`,
+          text,
+          createdAt: new Date().toISOString(),
+        })),
         results: [],
         tasks: [],
         history: [],

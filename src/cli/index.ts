@@ -1,13 +1,14 @@
 import { resolve } from 'node:path'
 import { parseArgs } from 'node:util'
 
-import { applyCliEnvOverrides } from './cli-env.js'
-import { defaultConfig } from './config.js'
-import { buildPaths } from './fs/paths.js'
-import { createHttpServer } from './http/index.js'
-import { loadCodexSettings } from './llm/openai.js'
-import { setDefaultLogPath } from './log/safe.js'
-import { Orchestrator } from './orchestrator/core/orchestrator-service.js'
+import { defaultConfig } from '../config.js'
+import { buildPaths } from '../fs/paths.js'
+import { createHttpServer } from '../http/index.js'
+import { loadCodexSettings } from '../llm/openai.js'
+import { setDefaultLogPath } from '../log/safe.js'
+import { Orchestrator } from '../orchestrator/core/orchestrator-service.js'
+
+import { applyCliEnvOverrides } from './env.js'
 
 const { values } = parseArgs({
   options: {

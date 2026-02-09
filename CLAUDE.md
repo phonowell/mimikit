@@ -47,8 +47,8 @@
 - TypeScript（ESM）+ 严格类型
 
 ## 核心命令
-- 启动：`tsx src/cli.ts`
-- WebUI：`tsx src/cli.ts --port 8787`
+- 启动：`tsx src/cli/index.ts`
+- WebUI：`tsx src/cli/index.ts --port 8787`
 - Windows 编码/换行：`pnpm fix:crlf` / `pnpm fix:bom`
 
 ## Worktree 工作流
@@ -59,7 +59,7 @@
 - 合并后保留槽位分支与 worktree；`pnpm run merge` 会清空 `plans/`；发布/推送仅在 `main`
 
 ## 目录结构
-- 入口：`src/cli.ts` · 调度：`src/supervisor/` · 角色：`src/roles/` · 任务：`src/tasks/`
+- 入口：`src/cli/index.ts` · 调度：`src/orchestrator/` · 角色：`src/{teller,thinker,worker}/` · 任务：`src/tasks/`
 - 基础：`src/llm/sdk-runner.ts` + `src/config.ts` + `src/fs/` + `src/storage/` + `src/log/`
 - 服务：`src/http/` + `src/webui/` · 状态：`.mimikit/`（见 `docs/design/state-directory.md`）
 

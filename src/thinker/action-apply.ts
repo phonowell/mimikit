@@ -1,16 +1,16 @@
 import { z } from 'zod'
 
-import { appendReportingEvent } from '../../../reporting/events.js'
-import { enqueueTask } from '../../../tasks/queue.js'
-import { persistRuntimeState } from '../../core/runtime-persistence.js'
-import { notifyWorkerLoop } from '../../core/worker-signal.js'
-import { appendTaskSystemMessage } from '../../read-model/task-history.js'
-import { cancelTask } from '../worker/worker-cancel-task.js'
-import { enqueueWorkerTask } from '../worker/worker-dispatch.js'
+import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
+import { notifyWorkerLoop } from '../orchestrator/core/worker-signal.js'
+import { appendTaskSystemMessage } from '../orchestrator/read-model/task-history.js'
+import { appendReportingEvent } from '../reporting/events.js'
+import { enqueueTask } from '../tasks/queue.js'
+import { cancelTask } from '../worker/cancel-task.js'
+import { enqueueWorkerTask } from '../worker/dispatch.js'
 
-import type { Parsed } from '../../../actions/model/spec.js'
-import type { WorkerProfile } from '../../../types/index.js'
-import type { RuntimeState } from '../../core/runtime-state.js'
+import type { Parsed } from '../actions/model/spec.js'
+import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
+import type { WorkerProfile } from '../types/index.js'
 
 const nonEmptyString = z.string().trim().min(1)
 

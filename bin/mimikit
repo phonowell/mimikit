@@ -6,7 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
 while true; do
   set +e
-  npx tsx "$SCRIPT_DIR/src/cli.ts" "$@"
+  npx tsx "$SCRIPT_DIR/src/cli/index.ts" "$@"
   EXIT_CODE=$?
   set -e
 

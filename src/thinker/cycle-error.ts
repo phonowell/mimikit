@@ -1,8 +1,8 @@
-import { appendReportingEvent } from '../../../reporting/events.js'
-import { publishThinkerDecision } from '../../../streams/channels.js'
+import { appendReportingEvent } from '../reporting/events.js'
+import { publishThinkerDecision } from '../streams/channels.js'
 
-import type { TellerDigest } from '../../../types/index.js'
-import type { RuntimeState } from '../../core/runtime-state.js'
+import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
+import type { TellerDigest } from '../types/index.js'
 
 const THINKER_ERROR_REPLY = '抱歉，我刚刚处理失败了。我会马上重试并继续推进。'
 

@@ -14,7 +14,7 @@
 - 审计维度：通信方式、内部方法、落盘文件、命名一致性、相似流程合并。
 
 ## 入口与调度
-- 入口：`src/cli.ts` 创建 `Orchestrator` 并 `start()`。
+- 入口：`src/cli/index.ts` 创建 `Orchestrator` 并 `start()`。
 - 调度：`src/orchestrator/core/orchestrator-service.ts` 并行启动 `tellerLoop`、`thinkerLoop`、`workerLoop`。
 
 ## 当前通信链路（2026-02-09 同步后）

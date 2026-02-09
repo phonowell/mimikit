@@ -1,18 +1,16 @@
-import { bestEffort } from '../../../log/safe.js'
-import { nowIso, sleep } from '../../../shared/utils.js'
-import { appendHistory, readHistory } from '../../../storage/jsonl.js'
+import { bestEffort } from '../log/safe.js'
+import { nowIso, sleep } from '../shared/utils.js'
+import { appendHistory, readHistory } from '../storage/jsonl.js'
 import {
   consumeThinkerDecisions,
   consumeUserInputs,
   pruneChannelsByCursor,
   publishTellerDigest,
-} from '../../../streams/channels.js'
-import {
-  formatDecisionForUser,
-  runTellerDigest,
-} from '../../../teller/runner.js'
+} from '../streams/channels.js'
 
-import type { RuntimeState } from '../../core/runtime-state.js'
+import { formatDecisionForUser, runTellerDigest } from './runner.js'
+
+import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 
 type TellerBuffer = {
   inputs: RuntimeState['inflightInputs']

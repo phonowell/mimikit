@@ -1,16 +1,16 @@
-import { bestEffort } from '../../../log/safe.js'
-import { sleep } from '../../../shared/utils.js'
+import { bestEffort } from '../log/safe.js'
+import { sleep } from '../shared/utils.js'
 import {
   consumeTellerDigests,
   consumeWorkerResults,
   pruneChannelsByCursor,
-} from '../../../streams/channels.js'
-import { buildTaskStatusSummary } from '../../../teller/task-summary.js'
+} from '../streams/channels.js'
+import { buildTaskStatusSummary } from '../teller/task-summary.js'
 
-import { runThinkerCycle } from './thinker-cycle.js'
+import { runThinkerCycle } from './cycle.js'
 
-import type { TaskResult } from '../../../types/index.js'
-import type { RuntimeState } from '../../core/runtime-state.js'
+import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
+import type { TaskResult } from '../types/index.js'
 
 const maybePruneThinkerChannels = (runtime: RuntimeState): Promise<void> =>
   pruneChannelsByCursor({

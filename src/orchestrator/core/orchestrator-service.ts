@@ -6,6 +6,11 @@ import { bestEffort, setDefaultLogPath } from '../../log/safe.js'
 import { newId, nowIso } from '../../shared/utils.js'
 import { readHistory } from '../../storage/jsonl.js'
 import { publishUserInput } from '../../streams/channels.js'
+import { tellerLoop } from '../../teller/loop.js'
+import { thinkerLoop } from '../../thinker/loop.js'
+import { cancelTask } from '../../worker/cancel-task.js'
+import { enqueuePendingWorkerTasks } from '../../worker/dispatch.js'
+import { workerLoop } from '../../worker/loop.js'
 import {
   type ChatMessage,
   type ChatMessagesMode,
@@ -13,11 +18,6 @@ import {
   selectChatMessages,
 } from '../read-model/chat-view.js'
 import { buildTaskViews } from '../read-model/task-view.js'
-import { tellerLoop } from '../roles/teller/teller-loop.js'
-import { thinkerLoop } from '../roles/thinker/thinker-loop.js'
-import { cancelTask } from '../roles/worker/worker-cancel-task.js'
-import { enqueuePendingWorkerTasks } from '../roles/worker/worker-dispatch.js'
-import { workerLoop } from '../roles/worker/worker-loop.js'
 
 import {
   hydrateRuntimeState,

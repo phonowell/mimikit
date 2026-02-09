@@ -1,4 +1,4 @@
-import type { AppConfig } from './config.js'
+import type { AppConfig } from '../config.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
 const ALLOWED_REASONING_EFFORT: ModelReasoningEffort[] = [

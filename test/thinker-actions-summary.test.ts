@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest'
 
 import { parseActions } from '../src/actions/protocol/parse.js'
-import { collectTaskResultSummaries } from '../src/orchestrator/roles/thinker/thinker-action-apply.js'
+import { collectTaskResultSummaries } from '../src/thinker/action-apply.js'
 
 test('collectTaskResultSummaries collects summarize_task_result attrs action', () => {
   const output = `<MIMIKIT:actions>\n@summarize_task_result task_id="task-1" summary="short summary"\n</MIMIKIT:actions>`

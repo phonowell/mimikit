@@ -1,7 +1,7 @@
-import { parseEnvBoolean, parseEnvPositiveInteger } from './cli-env-parse.js'
-import { applyReasoningEnv } from './cli-env-reasoning.js'
+import { parseEnvBoolean, parseEnvPositiveInteger } from './env-parse.js'
+import { applyReasoningEnv } from './env-reasoning.js'
 
-import type { AppConfig } from './config.js'
+import type { AppConfig } from '../config.js'
 
 const applyModelEnv = (config: AppConfig): void => {
   const envModel = process.env.MIMIKIT_MODEL?.trim()

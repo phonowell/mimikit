@@ -4,7 +4,7 @@
 
 ## 范围与依据
 - 本文描述当前 worker 真实链路（以代码为准）。
-- 主线代码：`src/orchestrator/roles/worker/worker-loop.ts`、`src/orchestrator/roles/worker/worker-dispatch.ts`、`src/orchestrator/roles/worker/worker-run-task.ts`、`src/orchestrator/roles/worker/worker-run-retry.ts`。
+- 主线代码：`src/worker/loop.ts`、`src/worker/dispatch.ts`、`src/worker/run-task.ts`、`src/worker/run-retry.ts`。
 - 执行器代码：`src/worker/standard-runner.ts`、`src/worker/expert-runner.ts`。
 
 ## worker 角色边界

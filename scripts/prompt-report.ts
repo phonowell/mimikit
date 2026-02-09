@@ -1,4 +1,4 @@
-import { buildManagerPrompt, buildWorkerPrompt } from '../src/roles/prompt.js'
+import { buildThinkerPrompt, buildWorkerPrompt } from '../src/prompts/build-prompts.js'
 
 type Role = 'manager' | 'worker'
 
@@ -22,9 +22,14 @@ const buildReport = async (params: {
 }): Promise<PromptReport> => {
   let prompt = ''
   if (params.role === 'manager') {
-    prompt = await buildManagerPrompt({
+    prompt = await buildThinkerPrompt({
+      stateDir: params.workDir,
       workDir: params.workDir,
-      inputs: params.args,
+      inputs: params.args.map((text, index) => ({
+        id: `in-${index + 1}`,
+        text,
+        createdAt: new Date().toISOString(),
+      })),
       results: [],
       tasks: [],
       history: [],

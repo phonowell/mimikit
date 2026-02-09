@@ -1,9 +1,9 @@
-import { safeOrUndefined } from '../../../log/safe.js'
-import { appendReportingEvent } from '../../../reporting/events.js'
-import { appendTaskResultArchive } from '../../../storage/task-results.js'
+import { safeOrUndefined } from '../log/safe.js'
+import { appendReportingEvent } from '../reporting/events.js'
+import { appendTaskResultArchive } from '../storage/task-results.js'
 
-import type { Task, TaskResult } from '../../../types/index.js'
-import type { RuntimeState } from '../../core/runtime-state.js'
+import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
+import type { Task, TaskResult } from '../types/index.js'
 
 export const archiveTaskResult = (
   runtime: RuntimeState,
