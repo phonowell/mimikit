@@ -4,7 +4,6 @@ import { appendLog } from '../log/append.js'
 import { bestEffort, logSafeError } from '../log/safe.js'
 import { normalizeUsage } from '../shared/utils.js'
 
-import { createIdleAbort } from './idle-abort.js'
 import {
   HARDCODED_MODEL_REASONING_EFFORT,
   loadCodexSettings,
@@ -13,7 +12,6 @@ import {
 import type { TokenUsage } from '../types/index.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
-type SdkRole = 'thinker' | 'worker'
 type RunResult = {
   output: string
   usage?: TokenUsage
@@ -21,11 +19,8 @@ type RunResult = {
   threadId?: string | null
 }
 type LogContext = Record<string, unknown>
-
-const codex = new Codex()
-
-export const runCodexSdk = async (params: {
-  role: SdkRole
+type RunParams = {
+  role: 'thinker' | 'worker'
   prompt: string
   workDir: string
   model?: string
@@ -36,15 +31,16 @@ export const runCodexSdk = async (params: {
   logPath?: string
   logContext?: LogContext
   abortSignal?: AbortSignal
-}): Promise<RunResult> => {
-  const promptChars = params.prompt.length
-  const promptLines = params.prompt.split(/\r?\n/).length
-  const { logPath } = params
+}
+
+const codex = new Codex()
+const approvalPolicy = 'never' as const
+
+export const runCodexSdk = async (params: RunParams): Promise<RunResult> => {
   const sandboxMode =
     params.role === 'worker'
       ? ('danger-full-access' as const)
       : ('read-only' as const)
-  const approvalPolicy = 'never' as const
   const modelReasoningEffort =
     params.modelReasoningEffort ?? HARDCODED_MODEL_REASONING_EFFORT
   const baseContext: LogContext = {
@@ -52,44 +48,40 @@ export const runCodexSdk = async (params: {
     timeoutMs: params.timeoutMs,
     idleTimeoutMs: params.timeoutMs,
     timeoutType: 'idle',
-    promptChars,
-    promptLines,
-    outputSchema: !!params.outputSchema,
+    promptChars: params.prompt.length,
+    promptLines: params.prompt.split(/\r?\n/).length,
+    outputSchema: Boolean(params.outputSchema),
     workingDirectory: params.workDir,
     sandboxMode,
     approvalPolicy,
     ...(params.model ? { model: params.model } : {}),
     ...(params.logContext ?? {}),
   }
-  const append = logPath
+  const append = params.logPath
     ? (entry: LogContext) =>
         bestEffort('appendLog: llm_call', () =>
-          appendLog(logPath, { ...entry, ...baseContext }),
+          appendLog(params.logPath as string, { ...entry, ...baseContext }),
         )
-    : () => Promise.resolve()
+    : (_entry: LogContext) => Promise.resolve()
 
-  if (logPath) {
+  if (params.logPath) {
     try {
       const settings = await loadCodexSettings()
-      const modelResolved = settings.model ?? process.env.OPENAI_MODEL
-      const baseUrl = settings.baseUrl ?? process.env.OPENAI_BASE_URL
-      const wireApi = settings.wireApi ?? process.env.OPENAI_WIRE_API
-      const apiKeyPresent = Boolean(
-        settings.apiKey ?? process.env.OPENAI_API_KEY,
-      )
       await append({
         event: 'llm_call_started',
-        ...(modelResolved ? { modelResolved } : {}),
-        ...(baseUrl ? { baseUrl } : {}),
-        ...(wireApi ? { wireApi } : {}),
+        ...(settings.model ? { modelResolved: settings.model } : {}),
+        ...(settings.baseUrl ? { baseUrl: settings.baseUrl } : {}),
+        ...(settings.wireApi ? { wireApi: settings.wireApi } : {}),
         ...(settings.requiresOpenAiAuth !== undefined
           ? { requiresOpenAiAuth: settings.requiresOpenAiAuth }
           : {}),
         modelReasoningEffort,
-        apiKeyPresent,
+        apiKeyPresent: Boolean(settings.apiKey ?? process.env.OPENAI_API_KEY),
       })
     } catch (error) {
-      await logSafeError('runCodexSdk: loadCodexSettings', error, { logPath })
+      await logSafeError('runCodexSdk: loadCodexSettings', error, {
+        logPath: params.logPath,
+      })
       await append({ event: 'llm_call_started' })
     }
   }
@@ -101,87 +93,82 @@ export const runCodexSdk = async (params: {
     sandboxMode,
     approvalPolicy,
   }
-
   const thread = params.threadId
     ? codex.resumeThread(params.threadId, threadOptions)
     : codex.startThread(threadOptions)
 
-  const idleTimeoutMs = params.timeoutMs
-  const idle = createIdleAbort({
-    timeoutMs: idleTimeoutMs,
-    ...(params.abortSignal ? { externalSignal: params.abortSignal } : {}),
-    ...(logPath
-      ? {
-          onAbort: () => {
-            const now = Date.now()
-            void append({
-              event: 'llm_call_aborted',
-              elapsedMs: Math.max(0, now - idle.startedAt),
-              idleElapsedMs: Math.max(0, now - idle.lastActivityAt()),
-              idleTimeoutMs,
-              timeoutType: 'idle',
-            })
-          },
-        }
-      : {}),
-  })
+  const controller =
+    params.timeoutMs > 0 || params.abortSignal ? new AbortController() : null
+  let idleTimer: ReturnType<typeof setTimeout> | undefined
+  const startedAt = Date.now()
+  let lastActivityAt = startedAt
+  const onExternalAbort = () => {
+    if (controller && !controller.signal.aborted) controller.abort()
+  }
+  const resetIdle = () => {
+    lastActivityAt = Date.now()
+    if (!controller || params.timeoutMs <= 0) return
+    clearTimeout(idleTimer)
+    idleTimer = setTimeout(() => controller.abort(), params.timeoutMs)
+  }
+
+  if (params.abortSignal) {
+    if (params.abortSignal.aborted) onExternalAbort()
+    else params.abortSignal.addEventListener('abort', onExternalAbort)
+  }
 
   try {
-    idle.reset()
+    resetIdle()
     const stream = await thread.runStreamed(params.prompt, {
       ...(params.outputSchema ? { outputSchema: params.outputSchema } : {}),
-      ...(idle.signal ? { signal: idle.signal } : {}),
+      ...(controller ? { signal: controller.signal } : {}),
     })
-    let finalResponse = ''
+    let output = ''
     let usage: TokenUsage | undefined
-    let turnFailure: { message: string } | null = null
     for await (const event of stream.events) {
-      idle.reset()
+      resetIdle()
       if (event.type === 'item.completed') {
-        if (event.item.type === 'agent_message') finalResponse = event.item.text
-      } else if (event.type === 'turn.completed')
-        usage = normalizeUsage(event.usage)
-      else if (event.type === 'turn.failed') {
-        turnFailure = event.error
-        break
-      } else if (event.type === 'error') {
-        turnFailure = { message: event.message }
-        break
+        if (event.item.type === 'agent_message') output = event.item.text
+        continue
       }
+      if (event.type === 'turn.completed') {
+        usage = normalizeUsage(event.usage)
+        continue
+      }
+      if (event.type === 'turn.failed') throw new Error(event.error.message)
+      if (event.type === 'error') throw new Error(event.message)
     }
-    if (turnFailure) throw new Error(turnFailure.message)
-    const elapsedMs = Math.max(0, Date.now() - idle.startedAt)
+    const elapsedMs = Math.max(0, Date.now() - startedAt)
     await append({
       event: 'llm_call_finished',
       elapsedMs,
       ...(usage ? { usage } : {}),
-      idleTimeoutMs,
+      idleTimeoutMs: params.timeoutMs,
       timeoutType: 'idle',
     })
     return {
-      output: finalResponse,
+      output,
       elapsedMs,
       ...(usage ? { usage } : {}),
       threadId: thread.id ?? params.threadId ?? null,
     }
   } catch (error) {
-    const elapsedMs = Math.max(0, Date.now() - idle.startedAt)
+    const elapsedMs = Math.max(0, Date.now() - startedAt)
     const err = error instanceof Error ? error : new Error(String(error))
-    const trimmedStack = err.stack
-      ? err.stack.split(/\r?\n/).slice(0, 6).join('\n')
-      : undefined
     await append({
       event: 'llm_call_failed',
       elapsedMs,
       error: err.message,
       errorName: err.name,
-      ...(trimmedStack ? { errorStack: trimmedStack } : {}),
       aborted: err.name === 'AbortError' || /aborted/i.test(err.message),
-      idleTimeoutMs,
+      idleElapsedMs: Math.max(0, Date.now() - lastActivityAt),
+      idleTimeoutMs: params.timeoutMs,
       timeoutType: 'idle',
     })
     throw error
   } finally {
-    idle.dispose()
+    clearTimeout(idleTimer)
+    if (params.abortSignal)
+      params.abortSignal.removeEventListener('abort', onExternalAbort)
   }
 }
