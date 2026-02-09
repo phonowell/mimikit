@@ -1,11 +1,11 @@
 import { runApiRunner } from '../llm/api-runner.js'
-import { extractTellerDigestSummary } from '../orchestrator/command-parser.js'
 import {
   buildTellerDigestPrompt,
   buildTellerPrompt,
 } from '../prompts/build-prompts.js'
 import { nowIso, shortId } from '../shared/utils.js'
 
+import { extractDigestSummary } from './digest-summary.js'
 import { buildTaskStatusSummary } from './task-summary.js'
 
 import type {
@@ -62,7 +62,7 @@ export const runTellerDigest = async (params: {
         ? { modelReasoningEffort: params.modelReasoningEffort }
         : {}),
     })
-    summary = extractTellerDigestSummary(response.output)
+    summary = extractDigestSummary(response.output)
   } catch {
     summary = ''
   }

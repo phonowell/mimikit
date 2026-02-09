@@ -2,6 +2,8 @@ import { rm } from 'node:fs/promises'
 import { parse, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { z } from 'zod'
+
 import { ensureDir } from '../fs/paths.js'
 
 export const parseTaskLimit = (value: unknown): number => {
@@ -51,11 +53,30 @@ export const clearStateDir = async (stateDir: string): Promise<void> => {
   await ensureDir(resolved)
 }
 
-const asString = (value: unknown): string | undefined =>
-  typeof value === 'string' ? value : undefined
+const trimmedStringOrUndefinedSchema = z.preprocess((value) => {
+  if (typeof value !== 'string') return value
+  const trimmed = value.trim()
+  return trimmed.length > 0 ? trimmed : undefined
+}, z.string().optional())
 
-const asFiniteNumber = (value: unknown): number | undefined =>
-  typeof value === 'number' && Number.isFinite(value) ? value : undefined
+const finiteNumberSchema = z.number().finite()
+
+const inputTextSchema = z.preprocess(
+  (value) => (typeof value === 'string' ? value.trim() : value),
+  z.string().min(1),
+)
+
+const inputBodySchema = z
+  .object({
+    text: inputTextSchema,
+    quote: trimmedStringOrUndefinedSchema.optional(),
+    language: trimmedStringOrUndefinedSchema.optional(),
+    clientLocale: trimmedStringOrUndefinedSchema.optional(),
+    clientTimeZone: trimmedStringOrUndefinedSchema.optional(),
+    clientOffsetMinutes: finiteNumberSchema.optional(),
+    clientNowIso: trimmedStringOrUndefinedSchema.optional(),
+  })
+  .strict()
 
 export type InputMeta = {
   source: string
@@ -76,24 +97,30 @@ export const parseInputBody = (
     acceptLanguage?: string | undefined
   },
 ): { text: string; meta: InputMeta; quote?: string } | { error: string } => {
-  if (!body || typeof body !== 'object') return { error: 'invalid JSON' }
-  const parsed = body as Record<string, unknown>
-  const text = asString(parsed.text)?.trim() ?? ''
-  if (!text) return { error: 'text is required' }
-  const bodyLanguage = asString(parsed.language)
+  const parsedBody = inputBodySchema.safeParse(body)
+  if (!parsedBody.success) {
+    const hasTextIssue = parsedBody.error.issues.some(
+      (issue) => issue.path[0] === 'text',
+    )
+    return { error: hasTextIssue ? 'text is required' : 'invalid JSON' }
+  }
+  const {
+    text,
+    language: bodyLanguage,
+    clientLocale,
+    clientTimeZone,
+    clientOffsetMinutes: clientOffset,
+    clientNowIso: clientNow,
+    quote,
+  } = parsedBody.data
   const language = bodyLanguage ?? request.acceptLanguage
   const meta: InputMeta = { source: 'http' }
   if (request.remoteAddress) meta.remote = request.remoteAddress
   if (request.userAgent) meta.userAgent = request.userAgent
   if (language) meta.language = language
-  const clientLocale = asString(parsed.clientLocale)
   if (clientLocale) meta.clientLocale = clientLocale
-  const clientTimeZone = asString(parsed.clientTimeZone)
   if (clientTimeZone) meta.clientTimeZone = clientTimeZone
-  const clientOffset = asFiniteNumber(parsed.clientOffsetMinutes)
   if (clientOffset !== undefined) meta.clientOffsetMinutes = clientOffset
-  const clientNow = asString(parsed.clientNowIso)
   if (clientNow) meta.clientNowIso = clientNow
-  const quote = asString(parsed.quote)?.trim()
   return quote ? { text, meta, quote } : { text, meta }
 }

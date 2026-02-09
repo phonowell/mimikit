@@ -8,7 +8,7 @@
 - `succeeded|failed|canceled`：终态。
 
 ## 派发规则
-- thinker 通过 `@add_task` 创建任务。
+- thinker 通过 `@create_task` 创建任务。
 - 派发时附带 `profile`：`standard` 或 `expert`。
 - 去重基于 prompt fingerprint，避免重复派单。
 
@@ -19,8 +19,8 @@
 - 结果统一回写 `worker-result.jsonp`。
 
 ## 标准 worker 运行特性
-- `standard` 采用多轮 step 执行（tool/respond），不是单次对话。
-- `standard` 可调用内部工具：`read` / `write` / `edit` / `apply_patch` / `exec` / `browser`。
+- `standard` 采用多轮 step 执行（action/respond），不是单次对话。
+- `standard` 可调用内部 action：`read_file` / `write_file` / `edit_file` / `exec_shell` / `run_browser`。
 - 运行过程会记录进度：`.mimikit/task-progress/{taskId}.jsonl`。
 - 每轮会保存 checkpoint：`.mimikit/task-checkpoints/{taskId}.json`。
 - 任务恢复时可从 checkpoint 继续；可通过 `GET /api/tasks/:id/progress` 查看过程。

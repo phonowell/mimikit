@@ -65,7 +65,7 @@ test('runtime snapshot keeps evolve idle review state', async () => {
   expect(loaded.evolve?.lastIdleReviewAt).toBe('2026-02-07T10:00:00.000Z')
 })
 
-test('runtime snapshot loads legacy flat channel cursor fields', async () => {
+test('runtime snapshot rejects legacy flat channel cursor fields', async () => {
   const stateDir = await createTmpDir()
   await writeFile(
     join(stateDir, 'runtime-state.json'),
@@ -80,9 +80,6 @@ test('runtime snapshot loads legacy flat channel cursor fields', async () => {
     }),
     'utf8',
   )
-  const loaded = await loadRuntimeSnapshot(stateDir)
-  expect(loaded.channels?.teller.userInputCursor).toBe(3)
-  expect(loaded.channels?.teller.workerResultCursor).toBe(4)
-  expect(loaded.channels?.teller.thinkerDecisionCursor).toBe(5)
-  expect(loaded.channels?.thinker.tellerDigestCursor).toBe(6)
+
+  await expect(loadRuntimeSnapshot(stateDir)).rejects.toThrow()
 })

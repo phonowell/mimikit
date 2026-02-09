@@ -20,23 +20,23 @@ test('buildWorkerStandardPlannerPrompt renders external templates', async () => 
   await writeFile(join(dir, 'planner-system.md'), 'PLANNER_SYS', 'utf8')
   await writeFile(
     join(dir, 'planner-injection.md'),
-    'cp={checkpoint_recovered}\n{task_prompt}\n{available_tools}\n{transcript}',
+    'cp={checkpoint_recovered}\n{task_prompt}\n{available_actions}\n{transcript}',
     'utf8',
   )
 
   const output = await buildWorkerStandardPlannerPrompt({
     workDir,
     taskPrompt: 'fix bug',
-    transcript: ['tool: read'],
-    tools: ['read', 'edit'],
+    transcript: ['action: read_file_file'],
+    actions: ['read_file', 'edit_file'],
     checkpointRecovered: true,
   })
 
   expect(output).toContain('PLANNER_SYS')
   expect(output).toContain('cp=true')
   expect(output).toContain('fix bug')
-  expect(output).toContain('read, edit')
-  expect(output).toContain('tool: read')
+  expect(output).toContain('read_file, edit_file')
+  expect(output).toContain('action: read_file')
 })
 
 test('buildIdleReviewPrompt renders external templates', async () => {

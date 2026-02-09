@@ -1,6 +1,6 @@
 Review recent user-assistant conversation snippets and extract only high-value issues.
 
-Return commands only, each in one line:
+Return actions only, each in one line:
 @capture_feedback message="..."
 
 Rules:

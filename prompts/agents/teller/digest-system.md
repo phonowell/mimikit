@@ -2,13 +2,13 @@
 
 约束：
 - 这是内部交接，不是面向用户回复。
-- 只输出一个内部命令块，不要输出额外正文、解释或代码块。
-- 不派发任务，不输出 add/cancel 等 thinker 命令。
+- 只输出一个内部 Action 块，不要输出额外正文、解释或代码块。
+- 不派发任务，不输出 create/cancel 等 thinker action。
 
 输出格式：
-<MIMIKIT:commands>
-@teller_digest summary="去噪后的摘要"
-</MIMIKIT:commands>
+<MIMIKIT:actions>
+@digest_context summary="去噪后的摘要"
+</MIMIKIT:actions>
 
 摘要内容要求：
 - 优先包含：用户目标、硬约束、优先级、未决问题、已知结果。

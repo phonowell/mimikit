@@ -1,3 +1,4 @@
+import { parseActions } from '../actions/protocol/parse.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { sleep } from '../shared/utils.js'
@@ -8,7 +9,10 @@ import {
 } from '../streams/channels.js'
 import { runThinker } from '../thinker/runner.js'
 
-import { parseCommands } from './command-parser.js'
+import {
+  applyTaskActions,
+  collectTaskResultSummaries,
+} from './action-intents.js'
 import { selectRecentHistory } from './history-select.js'
 import { persistRuntimeState } from './runtime-persist.js'
 import { selectRecentTasks } from './task-select.js'
@@ -16,10 +20,6 @@ import {
   appendConsumedInputsToHistory,
   appendConsumedResultsToHistory,
 } from './teller-history.js'
-import {
-  collectResultSummaries,
-  processThinkerCommands,
-} from './thinker-commands.js'
 import {
   appendThinkerErrorFeedback,
   publishThinkerErrorDecision,
@@ -83,8 +83,8 @@ const runThinkerCycle = async (
       modelReasoningEffort,
     })
 
-    const parsed = parseCommands(result.output)
-    const resultSummaries = collectResultSummaries(parsed.commands)
+    const parsed = parseActions(result.output)
+    const resultSummaries = collectTaskResultSummaries(parsed.actions)
 
     consumedInputCount = await appendConsumedInputsToHistory(
       runtime.paths.history,
@@ -100,7 +100,9 @@ const runThinkerCycle = async (
     )
     if (consumedResultCount < results.length)
       throw new Error('append_consumed_results_incomplete')
-    await processThinkerCommands(runtime, parsed.commands)
+
+    await applyTaskActions(runtime, parsed.actions)
+
     await publishThinkerDecision({
       paths: runtime.paths,
       payload: {
@@ -110,6 +112,7 @@ const runThinkerCycle = async (
         taskSummary: digest.taskSummary,
       },
     })
+
     await appendLog(runtime.paths.log, {
       event: 'thinker_end',
       status: 'ok',
@@ -175,8 +178,5 @@ export const thinkerLoop = async (runtime: RuntimeState): Promise<void> => {
     }
     runtime.channels.thinker.tellerDigestCursor = packet.cursor
     await runThinkerCycle(runtime, packet.payload)
-    await bestEffort('persistRuntimeState: thinker_cursor', () =>
-      persistRuntimeState(runtime),
-    )
   }
 }

@@ -73,5 +73,3 @@ export const runExpertWorker = async (params: {
     throw error
   }
 }
-
-export const runWorker = runExpertWorker

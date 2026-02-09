@@ -13,9 +13,9 @@
   - 输出：`teller-digest`、最终 assistant 回复。
 - `thinker`：
   - 输入：`teller-digest` + 任务结果。
-  - 输出：任务命令 + `thinker-decision`。
+  - 输出：任务 action + `thinker-decision`。
 - `worker`：
-  - `standard`：api-runner，多步执行，支持内部工具（read/write/edit/apply_patch/exec/browser）。
+  - `standard`：api-runner，多步执行，支持内部 action（read_file/write_file/edit_file/exec_shell/run_browser）。
   - `expert`：codex-sdk，昂贵、能力强。
 
 ## 数据流

@@ -1,8 +1,10 @@
 const MIMIKIT_TAG =
   /<MIMIKIT:(\w+)((?:\s+\w+\s*=\s*"[^"]*")*)\s*(?:\/>|>(?:([\s\S]*?)<\/MIMIKIT:\1>)?)/g
-const COMMANDS_TAG = 'MIMIKIT:commands'
-const COMMANDS_BLOCK_RE = new RegExp(
-  `<${COMMANDS_TAG}\\s*>([\\s\\S]*?)<\\/${COMMANDS_TAG}>`,
+
+const ACTIONS_TAG = 'MIMIKIT:actions'
+
+const ACTIONS_BLOCK_RE = new RegExp(
+  `<${ACTIONS_TAG}\\s*>([\\s\\S]*?)<\\/${ACTIONS_TAG}>`,
   'g',
 )
 
@@ -11,7 +13,7 @@ type Range = {
   end: number
 }
 
-type CommandZone = {
+type Zone = {
   parseStart: number
   parseEnd: number
   removeStart: number
@@ -28,11 +30,13 @@ const findCodeBlockRanges = (text: string): Range[] => {
   let inBlock = false
   let blockStart = 0
   let pos = 0
+
   while (pos < text.length) {
     const nextNewline = text.indexOf('\n', pos)
     const lineEnd = nextNewline === -1 ? text.length : nextNewline
     const lineEndExclusive = nextNewline === -1 ? text.length : nextNewline + 1
     const line = text.slice(pos, lineEnd)
+
     if (isFenceLine(line)) {
       if (!inBlock) {
         inBlock = true
@@ -42,8 +46,10 @@ const findCodeBlockRanges = (text: string): Range[] => {
         ranges.push({ start: blockStart, end: lineEndExclusive })
       }
     }
+
     pos = lineEndExclusive
   }
+
   if (inBlock) ranges.push({ start: blockStart, end: text.length })
   return ranges
 }
@@ -57,19 +63,17 @@ const maskRanges = (
   const chars = text.split('')
   for (const range of ranges)
     for (let i = range.start; i < range.end; i += 1) chars[i] = maskChar
-
   return chars.join('')
 }
 
 const isIndexInRanges = (index: number, ranges: Range[]): boolean => {
   for (const range of ranges)
     if (index >= range.start && index < range.end) return true
-
   return false
 }
 
-const findCommandsBlock = (masked: string): CommandZone | undefined => {
-  const matches = [...masked.matchAll(COMMANDS_BLOCK_RE)]
+const findActionsBlock = (masked: string): Zone | undefined => {
+  const matches = [...masked.matchAll(ACTIONS_BLOCK_RE)]
   if (matches.length === 0) return undefined
   const match = matches[matches.length - 1]
   if (!match) return undefined
@@ -77,7 +81,7 @@ const findCommandsBlock = (masked: string): CommandZone | undefined => {
   if (!full) return undefined
   const start = match.index
   const openEnd = full.indexOf('>')
-  const closeTag = `</${COMMANDS_TAG}>`
+  const closeTag = `</${ACTIONS_TAG}>`
   const closeStart = full.lastIndexOf(closeTag)
   if (openEnd < 0 || closeStart < 0) return undefined
   return {
@@ -88,14 +92,15 @@ const findCommandsBlock = (masked: string): CommandZone | undefined => {
   }
 }
 
-const findCommandZone = (output: string): CommandZone | undefined => {
+const findZone = (output: string): Zone | undefined => {
   const codeBlocks = findCodeBlockRanges(output)
   const masked = maskRanges(output, codeBlocks, 'x')
-  const commandsBlock = findCommandsBlock(masked)
-  if (commandsBlock) return commandsBlock
+  const actionsBlock = findActionsBlock(masked)
+  if (actionsBlock) return actionsBlock
 
   const matches = [...masked.matchAll(createTagRegExp())]
   if (matches.length === 0) return undefined
+
   let zoneStart: number | null = null
   let zoneEnd = masked.length
   for (let i = matches.length - 1; i >= 0; i -= 1) {
@@ -108,6 +113,7 @@ const findCommandZone = (output: string): CommandZone | undefined => {
     zoneStart = start
     zoneEnd = start
   }
+
   if (zoneStart === null) return undefined
   return {
     parseStart: zoneStart,
@@ -122,6 +128,7 @@ const removeTagsOutsideCodeBlocks = (text: string): string => {
   if (ranges.length === 0) return text.replace(createTagRegExp(), '').trim()
   const matches = [...text.matchAll(createTagRegExp())]
   if (matches.length === 0) return text.trim()
+
   let result = ''
   let lastIndex = 0
   for (const match of matches) {
@@ -135,7 +142,7 @@ const removeTagsOutsideCodeBlocks = (text: string): string => {
   return result.trim()
 }
 
-const collectCommandMatches = (text: string): RegExpMatchArray[] => {
+export const collectTagMatches = (text: string): RegExpMatchArray[] => {
   const ranges = findCodeBlockRanges(text)
   return [...text.matchAll(createTagRegExp())].filter((match) => {
     const start = match.index
@@ -143,16 +150,14 @@ const collectCommandMatches = (text: string): RegExpMatchArray[] => {
   })
 }
 
-export const extractCommandsAndText = (
+export const extractActionText = (
   output: string,
-): { commandText: string; text: string } => {
-  const zone = findCommandZone(output)
-  const commandText = zone ? output.slice(zone.parseStart, zone.parseEnd) : ''
-  const withoutCommands = zone
+): { actionText: string; text: string } => {
+  const zone = findZone(output)
+  const actionText = zone ? output.slice(zone.parseStart, zone.parseEnd) : ''
+  const withoutActions = zone
     ? output.slice(0, zone.removeStart) + output.slice(zone.removeEnd)
     : output
-  const text = removeTagsOutsideCodeBlocks(withoutCommands)
-  return { commandText, text }
+  const text = removeTagsOutsideCodeBlocks(withoutActions)
+  return { actionText, text }
 }
-
-export { collectCommandMatches }

@@ -4,10 +4,10 @@ import { validatePromptCandidate } from '../src/evolve/prompt-guard.js'
 
 const validOriginal = [
   '你是对话助手',
-  '<MIMIKIT:commands>',
-  '@add_task prompt="x" title="y"',
-  '@cancel_task id="z"',
-  '</MIMIKIT:commands>',
+  '<MIMIKIT:actions>',
+  '@create_task prompt="x" title="y" profile="standard"',
+  '@cancel_task task_id="z"',
+  '</MIMIKIT:actions>',
 ].join('\n')
 
 test('accepts valid candidate', () => {
@@ -18,7 +18,7 @@ test('accepts valid candidate', () => {
 })
 
 test('rejects missing markers', () => {
-  const candidate = '你是助手\n@add_task'
+  const candidate = '你是助手\n@create_task'
   const result = validatePromptCandidate(validOriginal, candidate)
   expect(result.ok).toBe(false)
   expect(result.reason.startsWith('missing_marker:')).toBe(true)

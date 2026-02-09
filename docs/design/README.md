@@ -7,7 +7,7 @@
 - `docs/design/orchestrator.md`
 - `docs/design/task-system.md`
 - `docs/design/task-data.md`
-- `docs/design/commands.md`
+- `docs/design/actions.md`
 - `docs/design/interfaces.md`
 - `docs/design/state-directory.md`
 - `docs/design/feedback-improvement-loop.md`

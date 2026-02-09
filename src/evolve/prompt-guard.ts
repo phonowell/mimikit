@@ -3,11 +3,12 @@ export type PromptGuardResult = {
   reason: string
 }
 
+const REQUIRED_ACTION_NAMES = ['create_task', 'cancel_task'] as const
+
 const REQUIRED_MARKERS = [
-  '<MIMIKIT:commands>',
-  '</MIMIKIT:commands>',
-  '@add_task',
-  '@cancel_task',
+  '<MIMIKIT:actions>',
+  '</MIMIKIT:actions>',
+  ...REQUIRED_ACTION_NAMES.map((actionName) => `@${actionName}`),
 ]
 
 const isFiniteRatio = (value: number): boolean =>

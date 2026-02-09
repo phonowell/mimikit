@@ -15,7 +15,7 @@
 - `worker -> teller`：`publishWorkerResult` / `consumeWorkerResults`。
 - `teller -> thinker`：`publishTellerDigest` / `consumeTellerDigests`。
 - `thinker -> teller`：`publishThinkerDecision` / `consumeThinkerDecisions`。
-- `thinker -> worker`：通过命令解析与任务队列（`parseCommands` + `processThinkerCommands` + `enqueueTask`）。
+- `thinker -> worker`：通过 action 解析与任务队列（`parseActions` + `applyTaskActions` + `enqueueTask`）。
 - `worker -> thinker`：间接通过 `worker-result` 被 teller 汇总后传入 thinker digest。
 
 ## 通信方式与关键方法
@@ -23,7 +23,7 @@
 - 内存通道：
   - `runtime.inflightInputs`（用户输入待回复集合）。
   - `runtime.tasks`（thinker 入队，worker 调度）。
-- 命令通道：`src/orchestrator/command-parser.ts`、`src/orchestrator/thinker-commands.ts`。
+- action 通道：`src/actions/protocol/parse.ts`（解析） + `src/orchestrator/action-intents.ts`（任务意图处理） + `src/actions/runtime/invoke.ts`（通用执行）。
 
 ## 落盘文件
 - 主状态：`history.jsonl`、`log.jsonl`、`runtime-state.json`。
@@ -32,7 +32,7 @@
 - 结果归档：`tasks/{yyyy-mm-dd}/*.md`、`llm/{yyyy-mm-dd}/*.txt`。
 
 ## 本轮已落地优化
-- 命名统一：`worker/expert-runner` 新增主导出 `runExpertWorker`，并保留兼容别名 `runWorker`。
+- 命名统一：`worker/expert-runner` 仅保留主导出 `runExpertWorker`。
 - 调用统一：`orchestrator/worker-run-retry` 与 `evolve/code-evolve` 改为显式调用 `runExpertWorker`。
 - 归档合并：新增 `appendLlmArchiveResult`，复用 thinker/worker 的归档写入模板。
 - 流程合并：`teller-loop` 抽出 `appendPacketsToBuffer`，统一 input/result 包消费逻辑。
@@ -52,8 +52,8 @@
 | 5 | `tellerLoop` | `runTellerDigest` | 生成 digest（含 summary/tasks/results） | 无直接文件写入 |
 | 6 | `tellerLoop` | `publishTellerDigest` | 发布 digest 给 thinker | `channels/teller-digest.jsonp` |
 | 7 | `thinkerLoop` | `consumeTellerDigests` | 拉取 digest 并推进 `channels.thinker.tellerDigestCursor` | 读取 `channels/teller-digest.jsonp` |
-| 8 | `thinkerCycle` | `runThinker` | 产出 thinker 原始输出（commands + text） | `llm/{date}/*.txt` |
-| 9 | `thinkerCycle` | `parseCommands` + `processThinkerCommands` | 入队/取消任务、反馈收集 | `runtime-state.json`（间接持久化） |
+| 8 | `thinkerCycle` | `runThinker` | 产出 thinker 原始输出（actions + text） | `llm/{date}/*.txt` |
+| 9 | `thinkerCycle` | `parseActions` + `applyTaskActions` | 入队/取消任务、反馈收集 | `runtime-state.json`（间接持久化） |
 | 10 | `thinkerCycle` | `appendConsumedInputsToHistory` | 已消费输入写入历史 | `history.jsonl` |
 | 11 | `thinkerCycle` | `appendConsumedResultsToHistory` | 已消费结果写入历史并更新 task.result 摘要 | `history.jsonl` |
 | 12 | `thinkerCycle` | `publishThinkerDecision` | 发布决策给 teller | `channels/thinker-decision.jsonp` |

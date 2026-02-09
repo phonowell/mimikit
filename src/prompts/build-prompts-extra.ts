@@ -5,7 +5,7 @@ export const buildWorkerStandardPlannerPrompt = async (params: {
   workDir: string
   taskPrompt: string
   transcript: string[]
-  tools: string[]
+  actions: string[]
   checkpointRecovered: boolean
 }): Promise<string> => {
   const system = await loadPromptFile(
@@ -23,7 +23,7 @@ export const buildWorkerStandardPlannerPrompt = async (params: {
   const injectionValues = Object.fromEntries<string>([
     ['checkpoint_recovered', params.checkpointRecovered ? 'true' : 'false'],
     ['task_prompt', params.taskPrompt],
-    ['available_tools', params.tools.join(', ')],
+    ['available_actions', params.actions.join(', ')],
     ['transcript', transcript],
   ])
   const injection = renderPromptTemplate(injectionTemplate, injectionValues)

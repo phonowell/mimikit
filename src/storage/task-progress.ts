@@ -3,17 +3,24 @@ import { join } from 'node:path'
 import mkdir from 'fire-keeper/mkdir'
 import read from 'fire-keeper/read'
 import write from 'fire-keeper/write'
+import { z } from 'zod'
 
 import { nowIso } from '../shared/utils.js'
 
 type JsonObject = Record<string, unknown>
 
-export type TaskProgressEvent = {
-  taskId: string
-  type: string
-  createdAt: string
-  payload: JsonObject
-}
+const jsonObjectSchema = z.object({}).catchall(z.unknown())
+
+const taskProgressEventSchema = z
+  .object({
+    taskId: z.string().trim().min(1),
+    type: z.string().trim().min(1),
+    createdAt: z.string().trim().min(1),
+    payload: jsonObjectSchema,
+  })
+  .strict()
+
+export type TaskProgressEvent = z.infer<typeof taskProgressEventSchema>
 
 const TASK_PROGRESS_DIR = 'task-progress'
 
@@ -28,12 +35,12 @@ export const appendTaskProgress = async (params: {
 }): Promise<string> => {
   const path = taskProgressPath(params.stateDir, params.taskId)
   await mkdir(join(params.stateDir, TASK_PROGRESS_DIR))
-  const event: TaskProgressEvent = {
+  const event = taskProgressEventSchema.parse({
     taskId: params.taskId,
     type: params.type,
     createdAt: nowIso(),
     payload: params.payload ?? {},
-  }
+  })
   await write(path, `${JSON.stringify(event)}\n`, {
     flag: 'a',
     encoding: 'utf8',
@@ -46,13 +53,9 @@ const parseLine = (line: string): TaskProgressEvent | null => {
   if (!trimmed) return null
   try {
     const parsed = JSON.parse(trimmed) as unknown
-    if (!parsed || typeof parsed !== 'object') return null
-    const record = parsed as Partial<TaskProgressEvent>
-    if (typeof record.taskId !== 'string') return null
-    if (typeof record.type !== 'string') return null
-    if (typeof record.createdAt !== 'string') return null
-    if (!record.payload || typeof record.payload !== 'object') return null
-    return record as TaskProgressEvent
+    const validated = taskProgressEventSchema.safeParse(parsed)
+    if (!validated.success) return null
+    return validated.data
   } catch {
     return null
   }

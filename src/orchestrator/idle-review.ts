@@ -1,3 +1,4 @@
+import { parseActions } from '../actions/protocol/parse.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { buildIdleReviewPrompt } from '../prompts/build-prompts.js'
@@ -5,7 +6,7 @@ import { nowIso } from '../shared/utils.js'
 import { readHistory } from '../storage/jsonl.js'
 import { runThinker } from '../thinker/runner.js'
 
-import { parseCommands } from './command-parser.js'
+import { collectFeedbackMessages } from './action-intents.js'
 import { selectRecentHistory } from './history-select.js'
 
 import type { RuntimeState } from './runtime-state.js'
@@ -16,15 +17,10 @@ type IdleReviewItem = {
 }
 
 const parseIdleReviewItems = (output: string): IdleReviewItem[] => {
-  const parsed = parseCommands(output)
-  const items: IdleReviewItem[] = []
-  for (const command of parsed.commands) {
-    if (command.action !== 'capture_feedback') continue
-    const message = command.attrs.message?.trim() ?? ''
-    if (!message) continue
-    items.push({ message })
-  }
-  return items
+  const parsed = parseActions(output)
+  return collectFeedbackMessages(parsed.actions).map((message) => ({
+    message,
+  }))
 }
 
 export const runIdleConversationReview = async (params: {

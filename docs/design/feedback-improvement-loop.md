@@ -3,7 +3,7 @@
 > 返回 [系统设计总览](./README.md)
 
 ## 信号来源
-- thinker 命令：`@capture_feedback`。
+- thinker action：`@capture_feedback`。
 - 运行信号：超时、高延迟、高 token、失败重试。
 - 空闲复盘：`workerLoop` 在系统空闲时触发。
 

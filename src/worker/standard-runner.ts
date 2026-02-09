@@ -6,11 +6,11 @@ import {
 } from '../storage/task-checkpoint.js'
 import { appendTaskProgress } from '../storage/task-progress.js'
 
-import { parseStep } from './standard-runner-step.js'
-import { executeToolStep } from './standard-runner-toolcall.js'
-import { listWorkerTools } from './tools/registry.js'
+import { listStandardActions } from './standard-actions.js'
+import { executeStandardStep } from './standard-step-exec.js'
+import { parseStandardStep } from './standard-step.js'
 
-import type { StandardToolStep } from './standard-runner-toolcall.js'
+import type { StandardActionStep } from './standard-step-exec.js'
 import type { TokenUsage } from '../types/index.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
@@ -62,7 +62,7 @@ export const runStandardWorker = async (params: {
     1,
     Math.floor(Math.max(1, params.timeoutMs) / 1_000),
   )
-  const tools = listWorkerTools()
+  const actions = listStandardActions()
   const recovered = await loadTaskCheckpoint(params.stateDir, params.taskId)
   const state = normalizeState(recovered?.state)
   const checkpointRecovered = Boolean(recovered)
@@ -72,7 +72,7 @@ export const runStandardWorker = async (params: {
     type: checkpointRecovered ? 'standard_resume' : 'standard_start',
     payload: {
       round: state.round,
-      tools,
+      actions,
     },
   })
 
@@ -85,11 +85,12 @@ export const runStandardWorker = async (params: {
       throw new Error('standard_timeout')
     if (state.round >= maxRounds)
       throw new Error('standard_max_rounds_exceeded')
+
     const plannerPrompt = await buildWorkerStandardPlannerPrompt({
       workDir: params.workDir,
       taskPrompt: params.prompt,
       transcript: state.transcript,
-      tools,
+      actions,
       checkpointRecovered,
     })
     const planner = await runApiRunner({
@@ -100,9 +101,11 @@ export const runStandardWorker = async (params: {
         ? { modelReasoningEffort: params.modelReasoningEffort }
         : {}),
     })
+
     usageInput += planner.usage?.input ?? 0
     usageOutput += planner.usage?.output ?? 0
-    const step = parseStep(planner.output)
+
+    const step = parseStandardStep(planner.output)
     state.round += 1
     await appendTaskProgress({
       stateDir: params.stateDir,
@@ -110,13 +113,12 @@ export const runStandardWorker = async (params: {
       type: 'standard_round',
       payload: {
         round: state.round,
-        action: step.action,
+        kind: step.kind,
       },
     })
 
-    if (step.action === 'respond') {
-      const response =
-        typeof step.response === 'string' ? step.response.trim() : ''
+    if (step.kind === 'respond') {
+      const response = step.response.trim()
       if (!response) throw new Error('standard_response_empty')
       state.finalized = true
       state.finalOutput = response
@@ -143,15 +145,15 @@ export const runStandardWorker = async (params: {
       break
     }
 
-    const toolStep = step as StandardToolStep
-    const toolCall = await executeToolStep({
+    const actionStep = step as StandardActionStep
+    const actionCall = await executeStandardStep({
       stateDir: params.stateDir,
       taskId: params.taskId,
       workDir: params.workDir,
       round: state.round,
-      step: toolStep,
+      step: actionStep,
     })
-    state.transcript.push(toolCall.transcriptEntry)
+    state.transcript.push(actionCall.transcriptEntry)
     await saveTaskCheckpoint({
       stateDir: params.stateDir,
       checkpoint: {
