@@ -1,3 +1,5 @@
+import PQueue from 'p-queue'
+
 import { buildPaths, ensureStateDirs } from '../fs/paths.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort, setDefaultLogPath } from '../log/safe.js'
@@ -16,6 +18,7 @@ import { hydrateRuntimeState, persistRuntimeState } from './runtime-persist.js'
 import { buildTaskViews } from './task-view.js'
 import { tellerLoop } from './teller-loop.js'
 import { thinkerLoop } from './thinker-cycle.js'
+import { enqueuePendingWorkerTasks } from './worker-dispatch.js'
 import { workerLoop } from './worker-loop.js'
 import { notifyWorkerLoop } from './worker-signal.js'
 
@@ -54,6 +57,9 @@ export class Orchestrator {
       },
       tasks: [],
       runningControllers: new Map(),
+      workerQueue: new PQueue({
+        concurrency: config.worker.maxConcurrent,
+      }),
       workerSignalController: new AbortController(),
       evolveState: {},
     }
@@ -62,6 +68,8 @@ export class Orchestrator {
   async start() {
     await ensureStateDirs(this.runtime.paths)
     await hydrateRuntimeState(this.runtime)
+    enqueuePendingWorkerTasks(this.runtime)
+    notifyWorkerLoop(this.runtime)
     void tellerLoop(this.runtime)
     void thinkerLoop(this.runtime)
     void workerLoop(this.runtime)

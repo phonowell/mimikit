@@ -46,8 +46,23 @@ export const normalizeYamlUsage = (
   return normalized
 }
 
+const yamlReplacer = (_key: unknown, value: unknown): unknown => {
+  if (value === undefined || value === null) return undefined
+  if (typeof value === 'number' && !Number.isFinite(value)) return undefined
+  if (typeof value === 'string' && value === '') return undefined
+  if (Array.isArray(value) && value.length === 0) return undefined
+  if (typeof value === 'object') {
+    const entries = Object.entries(value as Record<string, unknown>).filter(
+      ([, next]) => next !== undefined,
+    )
+    if (entries.length === 0) return undefined
+    return Object.fromEntries(entries)
+  }
+  return value
+}
+
 export const stringifyPromptYaml = (value: unknown): string =>
-  stringifyYaml(value, {
+  stringifyYaml(value, yamlReplacer, {
     lineWidth: 0,
     indent: 2,
     singleQuote: false,

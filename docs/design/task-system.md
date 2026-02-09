@@ -11,9 +11,12 @@
 - thinker 通过 `@create_task` 创建任务。
 - 派发时附带 `profile`：`standard` 或 `expert`。
 - 去重基于 prompt fingerprint，避免重复派单。
+- 创建成功后立即持久化 runtime，并通过 `enqueueWorkerTask` 入 `p-queue`。
 
 ## 执行规则
-- workerLoop 按 `maxConcurrent` 并发调度。
+- worker 并发由 `runtime.workerQueue` 控制，`concurrency=worker.maxConcurrent`。
+- `workerLoop` 不再扫描 pending；仅负责空闲复盘与信号等待。
+- 启动恢复时，`hydrateRuntimeState` 后会将 pending 任务重建入队。
 - `standard` 任务走 `src/worker/standard-runner.ts`。
 - `expert` 任务走 `src/worker/expert-runner.ts`。
 - 结果统一回写 `worker-result.jsonp`。
@@ -25,7 +28,8 @@
 - 每轮会保存 checkpoint：`.mimikit/task-checkpoints/{taskId}.json`。
 - 任务恢复时可从 checkpoint 继续；可通过 `GET /api/tasks/:id/progress` 查看过程。
 
-## 取消规则
+## 重试与取消
+- 重试由 `p-retry` 统一处理（`signal + AbortError`）。
 - thinker 可通过 `@cancel_task` 请求取消。
 - pending 任务立即终止并生成 canceled 结果。
 - running 任务触发 `AbortController` 取消。

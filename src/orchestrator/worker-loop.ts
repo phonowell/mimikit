@@ -1,20 +1,13 @@
-import PQueue from 'p-queue'
-
 import { appendStructuredFeedback } from '../evolve/feedback.js'
-import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { nowIso } from '../shared/utils.js'
-import { markTaskRunning } from '../tasks/queue.js'
 
 import { runIdleConversationReview } from './idle-review.js'
 import { persistRuntimeState } from './runtime-persist.js'
 import { appendRuntimeIssue } from './worker-feedback.js'
-import { runTask } from './worker-run-task.js'
-import { notifyWorkerLoop, waitForWorkerLoopSignal } from './worker-signal.js'
+import { waitForWorkerLoopSignal } from './worker-signal.js'
 
 import type { RuntimeState } from './runtime-state.js'
-import type { Task } from '../types/index.js'
-
 const isRuntimeIdle = (runtime: RuntimeState): boolean => {
   if (runtime.thinkerRunning) return false
   if (runtime.inflightInputs.length > 0) return false
@@ -26,63 +19,20 @@ const isRuntimeIdle = (runtime: RuntimeState): boolean => {
 const reportWorkerLoopError = async (
   runtime: RuntimeState,
   error: unknown,
-  note: 'worker_loop_error' | 'worker_queue_error',
 ): Promise<void> => {
   const message = error instanceof Error ? error.message : String(error)
-  await bestEffort(`appendEvolveFeedback: ${note}`, () =>
+  await bestEffort('appendEvolveFeedback: worker_loop_error', () =>
     appendRuntimeIssue({
       runtime,
       severity: 'high',
       category: 'failure',
       message: `worker loop error: ${message}`,
-      note,
+      note: 'worker_loop_error',
       confidence: 0.95,
       roiScore: 90,
       action: 'fix',
     }),
   )
-  await bestEffort(`appendLog: ${note}`, () =>
-    appendLog(runtime.paths.log, {
-      event: note,
-      error: message,
-    }),
-  )
-}
-
-const spawnWorker = async (runtime: RuntimeState, task: Task) => {
-  if (task.status !== 'pending') return
-  if (runtime.runningControllers.has(task.id)) return
-  const controller = new AbortController()
-  runtime.runningControllers.set(task.id, controller)
-  markTaskRunning(runtime.tasks, task.id)
-  await bestEffort('persistRuntimeState: worker_start', () =>
-    persistRuntimeState(runtime),
-  )
-  try {
-    await runTask(runtime, task, controller)
-  } finally {
-    runtime.runningControllers.delete(task.id)
-    await bestEffort('persistRuntimeState: worker_end', () =>
-      persistRuntimeState(runtime),
-    )
-    notifyWorkerLoop(runtime)
-  }
-}
-
-const enqueuePendingWorkers = (
-  runtime: RuntimeState,
-  workerQueue: PQueue,
-): void => {
-  for (const task of runtime.tasks) {
-    if (task.status !== 'pending') continue
-    if (runtime.runningControllers.has(task.id)) continue
-    if (workerQueue.sizeBy({ id: task.id }) > 0) continue
-    void workerQueue
-      .add(() => spawnWorker(runtime, task), { id: task.id })
-      .catch((error) =>
-        reportWorkerLoopError(runtime, error, 'worker_queue_error'),
-      )
-  }
 }
 
 const resolveIdleReviewWaitMs = (runtime: RuntimeState): number => {
@@ -96,9 +46,6 @@ const resolveIdleReviewWaitMs = (runtime: RuntimeState): number => {
 }
 
 export const workerLoop = async (runtime: RuntimeState): Promise<void> => {
-  const workerQueue = new PQueue({
-    concurrency: runtime.config.worker.maxConcurrent,
-  })
   while (!runtime.stopped) {
     try {
       if (
@@ -129,12 +76,11 @@ export const workerLoop = async (runtime: RuntimeState): Promise<void> => {
         runtime.evolveState.lastIdleReviewAt = nowIso()
         await persistRuntimeState(runtime)
       }
-      enqueuePendingWorkers(runtime, workerQueue)
     } catch (error) {
-      await reportWorkerLoopError(runtime, error, 'worker_loop_error')
+      await reportWorkerLoopError(runtime, error)
     }
     await waitForWorkerLoopSignal(runtime, resolveIdleReviewWaitMs(runtime))
   }
-  workerQueue.pause()
-  workerQueue.clear()
+  runtime.workerQueue.pause()
+  runtime.workerQueue.clear()
 }

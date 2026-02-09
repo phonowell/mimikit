@@ -24,12 +24,6 @@ const sortByTimeAndIdDesc = <T extends { time: string; id: string }>(
     return a.id.localeCompare(b.id)
   })
 
-const withNormalizedUsage = (usage?: TaskResult['usage']) => {
-  const normalized = normalizeYamlUsage(usage)
-  if (!normalized) return {}
-  return { usage: normalized }
-}
-
 const formatMessagesYaml = (
   entries: Array<{
     id: string
@@ -112,7 +106,7 @@ const formatTaskEntry = (
           duration_ms: result.durationMs,
           output: result.output,
           ...(result.archivePath ? { archive_path: result.archivePath } : {}),
-          ...withNormalizedUsage(result.usage),
+          usage: normalizeYamlUsage(result.usage),
         },
       }
     : {}),
@@ -187,7 +181,7 @@ export const formatResultsYaml = (
         duration_ms: result.durationMs,
         output: result.output,
         ...(result.archivePath ? { archive_path: result.archivePath } : {}),
-        ...withNormalizedUsage(result.usage),
+        usage: normalizeYamlUsage(result.usage),
       },
     })
   }

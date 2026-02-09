@@ -15,14 +15,15 @@
 - `worker -> teller`：`publishWorkerResult` / `consumeWorkerResults`。
 - `teller -> thinker`：`publishTellerDigest` / `consumeTellerDigests`。
 - `thinker -> teller`：`publishThinkerDecision` / `consumeThinkerDecisions`。
-- `thinker -> worker`：通过 action 解析与任务队列（`parseActions` + `applyTaskActions` + `enqueueTask`）。
+- `thinker -> worker`：通过 action 解析与任务入队（`parseActions` + `applyTaskActions` + `enqueueTask` + `enqueueWorkerTask`）。
 - `worker -> thinker`：间接通过 `worker-result` 被 teller 汇总后传入 thinker digest。
 
 ## 通信方式与关键方法
 - 文件通道（JSONP）：`src/streams/channels.ts` + `src/streams/jsonp-channel.ts`。
 - 内存通道：
   - `runtime.inflightInputs`（用户输入待回复集合）。
-  - `runtime.tasks`（thinker 入队，worker 调度）。
+  - `runtime.tasks`（thinker 任务集合）。
+  - `runtime.workerQueue`（worker 并发队列，事件驱动调度）。
 - action 通道：`src/actions/protocol/parse.ts`（解析） + `src/orchestrator/action-intents.ts`（任务意图处理） + `src/actions/runtime/invoke.ts`（通用执行）。
 
 ## 落盘文件
@@ -47,7 +48,7 @@
 |---|---|---|---|---|
 | 1 | `Orchestrator.addUserInput` | `publishUserInput` | 写入用户输入事件 | `channels/user-input.jsonp` |
 | 2 | `tellerLoop` | `consumeUserInputs` | 拉取新输入并推进 `channels.teller.userInputCursor` | 读取 `channels/user-input.jsonp` |
-| 3 | `workerLoop -> runTask` | `finalizeResult -> publishWorkerResult` | 产出任务结果事件 | `channels/worker-result.jsonp` |
+| 3 | `thinkerCycle + workerQueue` | `applyTaskActions -> enqueueWorkerTask -> runTask -> finalizeResult -> publishWorkerResult` | 产出任务结果事件 | `channels/worker-result.jsonp` |
 | 4 | `tellerLoop` | `consumeWorkerResults` | 拉取新结果并推进 `channels.teller.workerResultCursor` | 读取 `channels/worker-result.jsonp` |
 | 5 | `tellerLoop` | `runTellerDigest` | 生成 digest（含 summary/tasks/results） | 无直接文件写入 |
 | 6 | `tellerLoop` | `publishTellerDigest` | 发布 digest 给 thinker | `channels/teller-digest.jsonp` |

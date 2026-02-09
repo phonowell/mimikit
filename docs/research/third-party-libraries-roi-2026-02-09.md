@@ -18,7 +18,7 @@
 
 ## 关键证据（对应代码位置）
 - `zod`/`valibot` 候选：`src/http/helpers.ts:56` `src/storage/runtime-state-schema.ts:1` `src/actions/shared/args.ts:14` `src/storage/task-progress.ts:13` `src/storage/task-checkpoint.ts:9`
-- `p-queue`/`p-retry` 候选：`src/orchestrator/worker-loop.ts:44` `src/orchestrator/worker-run-retry.ts:66` `src/tasks/queue.ts:66`
+- `p-queue`/`p-retry` 候选：`src/orchestrator/worker-dispatch.ts:61` `src/orchestrator/worker-run-retry.ts:78` `src/orchestrator/action-intents.ts:78`
 - `yaml` 候选：`src/prompts/format-base.ts:35` `src/prompts/format-content.ts:97`
 - `htmlparser2` 候选：`src/actions/protocol/extract-block.ts:1` `src/actions/protocol/parse.ts:12`
 - `better-sqlite3` 候选：`src/storage/jsonl.ts:1` `src/streams/jsonp-channel.ts:55` `src/storage/task-progress.ts:23`
@@ -28,6 +28,22 @@
 - P0：先落地 `zod`（收益最高、改动小、验证快）。
 - P1：落地 `p-queue+p-retry` 与 `yaml`（稳定性 + 维护成本双降）。
 - P2：评估 `action parser` 与存储层升级（收益可观但迁移面更大）。
+
+## P1 深化执行状态（2026-02-09）
+- 状态：✓ 已完成（继续深挖三方库能力，不保留兼容分支）。
+- `p-queue`：
+  - worker 调度改为事件驱动（创建即入队 + 启动恢复重建队列）。
+  - 去重使用 `id + sizeBy`，删除自管 `pending` 扫描路径。
+- `p-retry`：
+  - 使用 `signal + AbortError` 收敛取消路径。
+  - 使用 `shouldConsumeRetry + shouldRetry` 控制重试预算消耗。
+- `yaml`：
+  - Prompt YAML 统一走 `yaml.stringify` 单入口。
+  - 通过 `replacer` 过滤空值/无效值，移除分散条件拼接。
+- 行为影响：
+  - 任务启动延迟下降（不再依赖固定 1s 轮询）。
+  - 取消后可立即终止重试链路。
+  - YAML 输出稳定性提升，减少格式分叉。
 
 ## zod 全量执行状态（2026-02-09）
 - 状态：✓ 已完成（按要求全量替换，不保留 legacy 兼容分支）。

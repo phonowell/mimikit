@@ -5,7 +5,9 @@ import { nowIso } from '../shared/utils.js'
 import { enqueueTask } from '../tasks/queue.js'
 
 import { cancelTask } from './cancel.js'
+import { persistRuntimeState } from './runtime-persist.js'
 import { appendTaskSystemMessage } from './task-history.js'
+import { enqueueWorkerTask } from './worker-dispatch.js'
 import { notifyWorkerLoop } from './worker-signal.js'
 
 import type { RuntimeState } from './runtime-state.js'
@@ -94,6 +96,8 @@ const applyCreateTask = async (
   await appendTaskSystemMessage(runtime.paths.history, 'created', task, {
     createdAt: task.createdAt,
   })
+  await persistRuntimeState(runtime)
+  enqueueWorkerTask(runtime, task)
   notifyWorkerLoop(runtime)
 }
 
