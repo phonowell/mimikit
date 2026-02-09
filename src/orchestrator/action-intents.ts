@@ -1,7 +1,6 @@
 import { z } from 'zod'
 
-import { appendStructuredFeedback } from '../evolve/feedback.js'
-import { nowIso } from '../shared/utils.js'
+import { appendReportingEvent } from '../reporting/events.js'
 import { enqueueTask } from '../tasks/queue.js'
 
 import { cancelTask } from './cancel.js'
@@ -107,26 +106,13 @@ const applyFeedback = async (
 ): Promise<void> => {
   const message = parseFeedbackMessage(item)
   if (!message) return
-  await appendStructuredFeedback({
+  await appendReportingEvent({
     stateDir: runtime.config.stateDir,
-    feedback: {
-      id: `fb-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      createdAt: nowIso(),
-      kind: 'user_feedback',
-      severity: 'medium',
-      message,
-      source: 'thinker_action',
-      context: {
-        note: 'thinker_capture_feedback',
-      },
-    },
-    extractedIssue: {
-      kind: 'issue',
-      issue: {
-        title: message,
-        category: 'other',
-      },
-    },
+    source: 'thinker_action',
+    category: 'other',
+    severity: 'medium',
+    message,
+    note: 'thinker_capture_feedback',
   })
 }
 

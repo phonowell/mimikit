@@ -22,6 +22,7 @@
 3. `worker` 按能力/成本分层：`standard` 与 `expert`。
 4. teller/thinker 通过 `jsonp` 通道解耦，按 cursor 增量消费。
 5. 运行状态最小持久化：历史、日志、任务快照、通道 cursor、standard worker progress/checkpoint。
+6. 运行反馈仅用于日报观测，不触发自动代码演进。
 
 ## 关联文件
 - `src/orchestrator/*`
@@ -29,3 +30,4 @@
 - `src/thinker/*`
 - `src/worker/*`
 - `src/streams/*`
+- `src/reporting/*`

@@ -4,8 +4,8 @@ import type { Task, TokenUsage } from '../types/index.js'
 
 export type RuntimeSnapshot = {
   tasks: Task[]
-  evolve?: {
-    lastIdleReviewAt?: string
+  reporting?: {
+    lastDailyReportDate?: string
   }
   channels?: {
     teller: {
@@ -65,9 +65,9 @@ const runtimeSnapshotChannelsSchema = z
 const runtimeSnapshotRawSchema = z
   .object({
     tasks: z.array(taskRawSchema),
-    evolve: z
+    reporting: z
       .object({
-        lastIdleReviewAt: z.string().optional(),
+        lastDailyReportDate: z.string().optional(),
       })
       .strict()
       .optional(),
@@ -112,14 +112,13 @@ const toTask = (task: z.infer<typeof taskRawSchema>): Task => {
 
 export const parseRuntimeSnapshot = (value: unknown): RuntimeSnapshot => {
   const parsed = runtimeSnapshotRawSchema.parse(value)
-  const evolve =
-    parsed.evolve?.lastIdleReviewAt !== undefined
-      ? { lastIdleReviewAt: parsed.evolve.lastIdleReviewAt }
-      : undefined
+  const reportingDate = parsed.reporting?.lastDailyReportDate
 
   return {
     tasks: parsed.tasks.map((task) => toTask(task)),
-    ...(evolve ? { evolve } : {}),
+    ...(reportingDate
+      ? { reporting: { lastDailyReportDate: reportingDate } }
+      : {}),
     ...(parsed.channels ? { channels: parsed.channels } : {}),
   }
 }

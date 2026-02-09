@@ -5,10 +5,8 @@ import type { ModelReasoningEffort } from '@openai/codex-sdk'
 export type AppConfig = {
   stateDir: string
   workDir: string
-  evolve: {
-    idleReviewEnabled: boolean
-    idleReviewIntervalMs: number
-    idleReviewHistoryCount: number
+  reporting: {
+    dailyReportEnabled: boolean
     runtimeHighLatencyMs: number
     runtimeHighUsageTotal: number
   }
@@ -56,10 +54,8 @@ export const defaultConfig = (params: {
 }): AppConfig => ({
   stateDir: resolve(params.stateDir),
   workDir: resolve(params.workDir),
-  evolve: {
-    idleReviewEnabled: true,
-    idleReviewIntervalMs: 30 * 60 * 1_000,
-    idleReviewHistoryCount: 100,
+  reporting: {
+    dailyReportEnabled: true,
     runtimeHighLatencyMs: 15 * 60 * 1_000,
     runtimeHighUsageTotal: 100_000,
   },

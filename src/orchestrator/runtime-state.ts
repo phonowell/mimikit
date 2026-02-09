@@ -37,8 +37,8 @@ export type RuntimeState = {
   runningControllers: Map<string, AbortController>
   workerQueue: PQueue
   workerSignalController: AbortController
-  evolveState: {
-    lastIdleReviewAt?: string
+  reportingState: {
+    lastDailyReportDate?: string
   }
   lastUserMeta?: UserMeta
 }

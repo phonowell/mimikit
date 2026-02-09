@@ -1,71 +1,10 @@
 # teller-thinker-worker 链路审计（2026-02-09）
 
-> 返回 [系统设计总览](./README.md)
+## 结论
+- 主链路为 `teller -> thinker -> worker`，执行调用路径已统一。
+- `worker-run-retry` 显式调用 `runExpertWorker`（expert profile）。
+- 历史 `evolve/code-evolve` 相关链路已下线，系统改为 reporting 每日报告模式。
 
-## 范围
-- 审计目标：`teller <-> thinker <-> worker` 通信链路。
-- 审计维度：通信方式、内部方法、落盘文件、命名一致性、相似流程合并。
-
-## 入口与调度
-- 入口：`src/cli.ts` 创建 `Orchestrator` 并 `start()`。
-- 调度：`src/orchestrator/orchestrator.ts` 并行启动 `tellerLoop`、`thinkerLoop`、`workerLoop`。
-
-## 通信链路
-- `user -> teller`：`publishUserInput` / `consumeUserInputs`。
-- `worker -> teller`：`publishWorkerResult` / `consumeWorkerResults`。
-- `teller -> thinker`：`publishTellerDigest` / `consumeTellerDigests`。
-- `thinker -> teller`：`publishThinkerDecision` / `consumeThinkerDecisions`。
-- `thinker -> worker`：通过 action 解析与任务入队（`parseActions` + `applyTaskActions` + `enqueueTask` + `enqueueWorkerTask`）。
-- `worker -> thinker`：间接通过 `worker-result` 被 teller 汇总后传入 thinker digest。
-
-## 通信方式与关键方法
-- 文件通道（JSONP）：`src/streams/channels.ts` + `src/streams/jsonp-channel.ts`。
-- 内存通道：
-  - `runtime.inflightInputs`（用户输入待回复集合）。
-  - `runtime.tasks`（thinker 任务集合）。
-  - `runtime.workerQueue`（worker 并发队列，事件驱动调度）。
-- action 通道：`src/actions/protocol/parse.ts`（解析） + `src/orchestrator/action-intents.ts`（任务意图处理） + `src/actions/runtime/invoke.ts`（通用执行）。
-
-## 落盘文件
-- 主状态：`history.jsonl`、`log.jsonl`、`runtime-state.json`。
-- 通道：`channels/user-input.jsonp`、`channels/worker-result.jsonp`、`channels/teller-digest.jsonp`、`channels/thinker-decision.jsonp`。
-- worker 过程：`task-progress/{taskId}.jsonl`、`task-checkpoints/{taskId}.json`。
-- 结果归档：`tasks/{yyyy-mm-dd}/*.md`、`llm/{yyyy-mm-dd}/*.txt`。
-
-## 本轮已落地优化
-- 命名统一：`worker/expert-runner` 仅保留主导出 `runExpertWorker`。
-- 调用统一：`orchestrator/worker-run-retry` 与 `evolve/code-evolve` 改为显式调用 `runExpertWorker`。
-- 归档合并：新增 `appendLlmArchiveResult`，复用 thinker/worker 的归档写入模板。
-- 流程合并：`teller-loop` 抽出 `appendPacketsToBuffer`，统一 input/result 包消费逻辑。
-
-## 当前命名一致性评估
-- `publish*/consume*` 通道命名一致。
-- `runThinker` / `runTellerDigest` / `runStandardWorker` / `runExpertWorker` 角色命名已趋于一致。
-- `runtime.channels` cursor 已统一为分组命名：`channels.teller.*` + `channels.thinker.*`。
-
-## 方法级时序表（可审核）
-| 步骤 | 调用方 | 方法 | 输出/副作用 | 落盘文件 |
-|---|---|---|---|---|
-| 1 | `Orchestrator.addUserInput` | `publishUserInput` | 写入用户输入事件 | `channels/user-input.jsonp` |
-| 2 | `tellerLoop` | `consumeUserInputs` | 拉取新输入并推进 `channels.teller.userInputCursor` | 读取 `channels/user-input.jsonp` |
-| 3 | `thinkerCycle + workerQueue` | `applyTaskActions -> enqueueWorkerTask -> runTask -> finalizeResult -> publishWorkerResult` | 产出任务结果事件 | `channels/worker-result.jsonp` |
-| 4 | `tellerLoop` | `consumeWorkerResults` | 拉取新结果并推进 `channels.teller.workerResultCursor` | 读取 `channels/worker-result.jsonp` |
-| 5 | `tellerLoop` | `runTellerDigest` | 生成 digest（含 summary/tasks/results） | 无直接文件写入 |
-| 6 | `tellerLoop` | `publishTellerDigest` | 发布 digest 给 thinker | `channels/teller-digest.jsonp` |
-| 7 | `thinkerLoop` | `consumeTellerDigests` | 拉取 digest 并推进 `channels.thinker.tellerDigestCursor` | 读取 `channels/teller-digest.jsonp` |
-| 8 | `thinkerCycle` | `runThinker` | 产出 thinker 原始输出（actions + text） | `llm/{date}/*.txt` |
-| 9 | `thinkerCycle` | `parseActions` + `applyTaskActions` | 入队/取消任务、反馈收集 | `runtime-state.json`（间接持久化） |
-| 10 | `thinkerCycle` | `appendConsumedInputsToHistory` | 已消费输入写入历史 | `history.jsonl` |
-| 11 | `thinkerCycle` | `appendConsumedResultsToHistory` | 已消费结果写入历史并更新 task.result 摘要 | `history.jsonl` |
-| 12 | `thinkerCycle` | `publishThinkerDecision` | 发布决策给 teller | `channels/thinker-decision.jsonp` |
-| 13 | `tellerLoop` | `consumeThinkerDecisions` | 拉取决策并推进 `channels.teller.thinkerDecisionCursor` | 读取 `channels/thinker-decision.jsonp` |
-| 14 | `tellerLoop` | `formatDecisionForUser` | 生成面向用户文本 | 无直接文件写入 |
-| 15 | `tellerLoop` | `appendHistory` | 写 assistant 回复并清理 inflight inputs | `history.jsonl` |
-
-## 关键持久化节点
-- 通道 cursor 与任务快照：`persistRuntimeState -> saveRuntimeSnapshot`。
-- worker 标准模式过程：`appendTaskProgress` 与 `saveTaskCheckpoint`。
-- LLM 归档统一入口：`appendLlmArchiveResult -> appendLlmArchive`。
-
-## 下一步（已确认继续）
-- 第二轮 cursor 命名统一已完成，后续可选项是把 channel 读写封装成“角色级 gateway”进一步减少 loop 侧样板代码。
+## 关注点
+- thinker 只产出 action/decision，不直接执行任务。
+- worker 负责执行与结果回写，reporting 负责事件归档与日报。

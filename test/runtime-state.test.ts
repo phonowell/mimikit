@@ -53,16 +53,32 @@ test('selectPersistedTasks keeps pending and recovers running', () => {
   expect(persisted[1]?.startedAt).toBeUndefined()
 })
 
-test('runtime snapshot keeps evolve idle review state', async () => {
+test('runtime snapshot keeps reporting daily state', async () => {
   const stateDir = await createTmpDir()
   await saveRuntimeSnapshot(stateDir, {
     tasks: [],
-    evolve: {
-      lastIdleReviewAt: '2026-02-07T10:00:00.000Z',
+    reporting: {
+      lastDailyReportDate: '2026-02-07',
     },
   })
   const loaded = await loadRuntimeSnapshot(stateDir)
-  expect(loaded.evolve?.lastIdleReviewAt).toBe('2026-02-07T10:00:00.000Z')
+  expect(loaded.reporting?.lastDailyReportDate).toBe('2026-02-07')
+})
+
+test('runtime snapshot rejects legacy evolve field', async () => {
+  const stateDir = await createTmpDir()
+  await writeFile(
+    join(stateDir, 'runtime-state.json'),
+    JSON.stringify({
+      tasks: [],
+      evolve: {
+        lastIdleReviewAt: '2026-02-07T10:00:00.000Z',
+      },
+    }),
+    'utf8',
+  )
+
+  await expect(loadRuntimeSnapshot(stateDir)).rejects.toThrow()
 })
 
 test('runtime snapshot rejects legacy flat channel cursor fields', async () => {

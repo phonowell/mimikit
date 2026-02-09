@@ -13,7 +13,7 @@ export const hydrateRuntimeState = async (
 ): Promise<void> => {
   const snapshot = await loadRuntimeSnapshot(runtime.config.stateDir)
   runtime.tasks = snapshot.tasks
-  if (snapshot.evolve) runtime.evolveState = snapshot.evolve
+  if (snapshot.reporting) runtime.reportingState = snapshot.reporting
   if (snapshot.channels) {
     runtime.channels = {
       teller: {
@@ -41,7 +41,7 @@ export const persistRuntimeState = async (
 ): Promise<void> => {
   await saveRuntimeSnapshot(runtime.config.stateDir, {
     tasks: selectPersistedTasks(runtime.tasks),
-    evolve: runtime.evolveState,
+    reporting: runtime.reportingState,
     channels: runtime.channels,
   })
 }

@@ -18,9 +18,9 @@
   - 写任务历史。
   - 立即持久化 runtime。
   - 通过 `enqueueWorkerTask()` 直接入 `p-queue`。
-- `workerLoop` 不再固定扫描 pending；仅负责：
-  - 空闲自演进检查。
-  - 等待唤醒信号或 idle-review 定时到期。
+- `workerLoop` 不再固定扫描 pending；负责：
+  - 每日报告补齐（基于 reporting events）。
+  - 等待唤醒信号。
 
 ### 启动恢复
 - `hydrateRuntimeState()` 读取 `runtime-state.json` 后，调用 `enqueuePendingWorkerTasks()` 把恢复出来的 pending 任务重建入队。
@@ -43,7 +43,7 @@
 - `runTaskWithRetry()` 使用 `p-retry`。
 - `signal` 透传取消；取消路径通过 `AbortError` 直接停止重试。
 - `shouldConsumeRetry/shouldRetry` 对 abort-like 错误都返回 false。
-- `onFailedAttempt` 统一记录反馈、日志与重试态持久化。
+- `onFailedAttempt` 统一记录日报事件、日志与重试态持久化。
 
 ## 取消路径
 - `pending`：立即标记 canceled，发布 canceled 结果，持久化并唤醒 worker。
@@ -56,6 +56,7 @@
 - checkpoint：`task-checkpoints/{taskId}.json`。
 - 任务归档：`tasks/YYYY-MM-DD/*.md`。
 - llm 归档：`llm/YYYY-MM-DD/*.txt`（expert 必有；standard 由步骤侧产生）。
+- 日报：`reports/daily/YYYY-MM-DD.md`。
 
 ## 默认参数（worker）
 - `worker.maxConcurrent = 3`

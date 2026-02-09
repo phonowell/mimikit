@@ -22,12 +22,7 @@ import {
   dedupeTaskResults,
   mergeTaskResults,
 } from './task-results-merge.js'
-export {
-  buildCodeEvolveTaskPrompt,
-  buildIdleReviewPrompt,
-  buildPromptOptimizerPrompt,
-  buildWorkerStandardPlannerPrompt,
-} from './build-prompts-extra.js'
+export { buildWorkerStandardPlannerPrompt } from './build-prompts-extra.js'
 
 import type {
   HistoryMessage,

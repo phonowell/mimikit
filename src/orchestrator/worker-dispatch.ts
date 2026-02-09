@@ -15,16 +15,13 @@ const reportWorkerQueueError = async (
   error: unknown,
 ): Promise<void> => {
   const message = error instanceof Error ? error.message : String(error)
-  await bestEffort('appendEvolveFeedback: worker_queue_error', () =>
+  await bestEffort('appendReportingEvent: worker_queue_error', () =>
     appendRuntimeIssue({
       runtime,
       severity: 'high',
       category: 'failure',
       message: `worker queue error: ${message}`,
       note: 'worker_queue_error',
-      confidence: 0.95,
-      roiScore: 90,
-      action: 'fix',
     }),
   )
   await bestEffort('appendLog: worker_queue_error', () =>

@@ -48,11 +48,6 @@ export const applyReasoningEnv = (config: AppConfig): void => {
     process.env.MIMIKIT_WORKER_STANDARD_REASONING_EFFORT,
   )
   if (standard) config.worker.standard.modelReasoningEffort = standard
-  const worker = parseReasoning(
-    'MIMIKIT_WORKER_REASONING_EFFORT',
-    process.env.MIMIKIT_WORKER_REASONING_EFFORT,
-  )
-  if (worker) config.worker.expert.modelReasoningEffort = worker
   const expert = parseReasoning(
     'MIMIKIT_WORKER_EXPERT_REASONING_EFFORT',
     process.env.MIMIKIT_WORKER_EXPERT_REASONING_EFFORT,

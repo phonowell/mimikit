@@ -61,7 +61,7 @@ export class Orchestrator {
         concurrency: config.worker.maxConcurrent,
       }),
       workerSignalController: new AbortController(),
-      evolveState: {},
+      reportingState: {},
     }
   }
 

@@ -1,4 +1,4 @@
-import { appendRuntimeSignalFeedback } from '../evolve/feedback.js'
+import { appendReportingEvent } from '../reporting/events.js'
 import { publishThinkerDecision } from '../streams/channels.js'
 
 import type { RuntimeState } from './runtime-state.js'
@@ -10,32 +10,15 @@ export const appendThinkerErrorFeedback = (
   runtime: RuntimeState,
   error: unknown,
 ): Promise<void> =>
-  appendRuntimeSignalFeedback({
+  appendReportingEvent({
     stateDir: runtime.config.stateDir,
+    source: 'thinker_error',
+    category: 'failure',
     severity: 'high',
     message: `thinker error: ${
       error instanceof Error ? error.message : String(error)
     }`,
-    extractedIssue: {
-      kind: 'issue',
-      issue: {
-        title: `thinker error: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-        category: 'failure',
-        confidence: 0.95,
-        roiScore: 90,
-        action: 'fix',
-        rationale: 'thinker runtime failure',
-        fingerprint: 'thinker_error',
-      },
-    },
-    evidence: {
-      event: 'thinker_error',
-    },
-    context: {
-      note: 'thinker_error',
-    },
+    note: 'thinker_error',
   }).then(() => undefined)
 
 export const publishThinkerErrorDecision = (

@@ -11,7 +11,7 @@ export const appendWorkerRetryFeedback = async (params: {
   error: unknown
 }): Promise<void> => {
   const { runtime, task, error } = params
-  await bestEffort('appendEvolveFeedback: worker_retry', () =>
+  await bestEffort('appendReportingEvent: worker_retry', () =>
     appendRuntimeIssue({
       runtime,
       severity: 'medium',
@@ -21,9 +21,6 @@ export const appendWorkerRetryFeedback = async (params: {
       }`,
       note: 'worker_retry',
       task,
-      confidence: 0.75,
-      roiScore: 64,
-      action: 'fix',
     }),
   )
 }
@@ -35,12 +32,12 @@ export const appendWorkerHighLatencyFeedback = async (params: {
   usageTotal: number
 }): Promise<void> => {
   const { runtime, task, elapsedMs, usageTotal } = params
-  if (elapsedMs < runtime.config.evolve.runtimeHighLatencyMs) return
-  await bestEffort('appendEvolveFeedback: worker_high_latency', () =>
+  if (elapsedMs < runtime.config.reporting.runtimeHighLatencyMs) return
+  await bestEffort('appendReportingEvent: worker_high_latency', () =>
     appendRuntimeIssue({
       runtime,
       severity:
-        elapsedMs >= runtime.config.evolve.runtimeHighLatencyMs * 2
+        elapsedMs >= runtime.config.reporting.runtimeHighLatencyMs * 2
           ? 'high'
           : 'medium',
       category: 'latency',
@@ -49,10 +46,6 @@ export const appendWorkerHighLatencyFeedback = async (params: {
       task,
       elapsedMs,
       usageTotal,
-      confidence: 0.85,
-      roiScore:
-        elapsedMs >= runtime.config.evolve.runtimeHighLatencyMs * 2 ? 85 : 68,
-      action: 'fix',
     }),
   )
 }
@@ -64,12 +57,12 @@ export const appendWorkerHighUsageFeedback = async (params: {
   usageTotal: number
 }): Promise<void> => {
   const { runtime, task, elapsedMs, usageTotal } = params
-  if (usageTotal < runtime.config.evolve.runtimeHighUsageTotal) return
-  await bestEffort('appendEvolveFeedback: worker_high_usage', () =>
+  if (usageTotal < runtime.config.reporting.runtimeHighUsageTotal) return
+  await bestEffort('appendReportingEvent: worker_high_usage', () =>
     appendRuntimeIssue({
       runtime,
       severity:
-        usageTotal >= runtime.config.evolve.runtimeHighUsageTotal * 2
+        usageTotal >= runtime.config.reporting.runtimeHighUsageTotal * 2
           ? 'high'
           : 'medium',
       category: 'cost',
@@ -78,10 +71,6 @@ export const appendWorkerHighUsageFeedback = async (params: {
       task,
       elapsedMs,
       usageTotal,
-      confidence: 0.85,
-      roiScore:
-        usageTotal >= runtime.config.evolve.runtimeHighUsageTotal * 2 ? 87 : 70,
-      action: 'fix',
     }),
   )
 }
@@ -92,7 +81,7 @@ export const appendWorkerFailedFeedback = async (params: {
   message: string
 }): Promise<void> => {
   const { runtime, task, message } = params
-  await bestEffort('appendEvolveFeedback: worker_failed', () =>
+  await bestEffort('appendReportingEvent: worker_failed', () =>
     appendRuntimeIssue({
       runtime,
       severity: 'high',
@@ -100,9 +89,6 @@ export const appendWorkerFailedFeedback = async (params: {
       message: `worker failed: ${message}`,
       note: 'worker_failed',
       task,
-      confidence: 0.95,
-      roiScore: 92,
-      action: 'fix',
     }),
   )
 }

@@ -36,4 +36,3 @@
 
 ## 调用方
 - `runTaskWithRetry` 在 `profile=expert` 时调用。
-- `code-evolve` 任务也直接调用该 runner。

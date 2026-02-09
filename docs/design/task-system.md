@@ -15,7 +15,7 @@
 
 ## 执行规则
 - worker 并发由 `runtime.workerQueue` 控制，`concurrency=worker.maxConcurrent`。
-- `workerLoop` 不再扫描 pending；仅负责空闲复盘与信号等待。
+- `workerLoop` 不再扫描 pending；负责日报补齐与信号等待。
 - 启动恢复时，`hydrateRuntimeState` 后会将 pending 任务重建入队。
 - `standard` 任务走 `src/worker/standard-runner.ts`。
 - `expert` 任务走 `src/worker/expert-runner.ts`。
@@ -24,12 +24,3 @@
 ## 标准 worker 运行特性
 - `standard` 采用多轮 step 执行（action/respond），不是单次对话。
 - `standard` 可调用内部 action：`read_file` / `write_file` / `edit_file` / `exec_shell` / `run_browser`。
-- 运行过程会记录进度：`.mimikit/task-progress/{taskId}.jsonl`。
-- 每轮会保存 checkpoint：`.mimikit/task-checkpoints/{taskId}.json`。
-- 任务恢复时可从 checkpoint 继续；可通过 `GET /api/tasks/:id/progress` 查看过程。
-
-## 重试与取消
-- 重试由 `p-retry` 统一处理（`signal + AbortError`）。
-- thinker 可通过 `@cancel_task` 请求取消。
-- pending 任务立即终止并生成 canceled 结果。
-- running 任务触发 `AbortController` 取消。
