@@ -5,7 +5,7 @@ import write from 'fire-keeper/write'
 import { ensureDir } from '../fs/paths.js'
 import { nowIso, shortId } from '../shared/utils.js'
 
-import { dateStamp, formatSection, pushLine } from './task-results.js'
+import { buildArchiveDocument, dateStamp } from './archive-format.js'
 
 import type { TokenUsage } from '../types/index.js'
 
@@ -113,28 +113,31 @@ const buildArchivePath = (
 const buildArchiveContent = (
   timestamp: string,
   entry: LlmArchiveEntry,
-): string => {
-  const lines: string[] = []
-  pushLine(lines, 'timestamp', timestamp)
-  pushLine(lines, 'role', entry.role)
-  pushLine(lines, 'attempt', entry.attempt)
-  pushLine(lines, 'model', entry.model)
-  pushLine(lines, 'request_key', entry.requestKey)
-  pushLine(lines, 'seed', entry.seed)
-  pushLine(lines, 'temperature', entry.temperature)
-  pushLine(lines, 'task_id', entry.taskId)
-  pushLine(lines, 'thread_id', entry.threadId ?? undefined)
-  pushLine(lines, 'ok', entry.ok ? 'true' : 'false')
-  pushLine(lines, 'elapsed_ms', entry.elapsedMs)
-  if (entry.usage) pushLine(lines, 'usage', JSON.stringify(entry.usage))
-  const header = lines.join('\n')
-  const sections = [
-    formatSection('=== PROMPT ===', entry.prompt),
-    formatSection('=== OUTPUT ===', entry.output),
-  ]
-  if (entry.error) sections.push(formatSection('=== ERROR ===', entry.error))
-  return `${header}\n\n${sections.join('\n\n')}\n`
-}
+): string =>
+  buildArchiveDocument(
+    [
+      ['timestamp', timestamp],
+      ['role', entry.role],
+      ['attempt', entry.attempt],
+      ['model', entry.model],
+      ['request_key', entry.requestKey],
+      ['seed', entry.seed],
+      ['temperature', entry.temperature],
+      ['task_id', entry.taskId],
+      ['thread_id', entry.threadId ?? undefined],
+      ['ok', entry.ok ? 'true' : 'false'],
+      ['elapsed_ms', entry.elapsedMs],
+      ['usage', entry.usage ? JSON.stringify(entry.usage) : undefined],
+      ['error_name', entry.errorName],
+    ],
+    [
+      { marker: '=== PROMPT ===', content: entry.prompt },
+      { marker: '=== OUTPUT ===', content: entry.output },
+      ...(entry.error
+        ? [{ marker: '=== ERROR ===', content: entry.error }]
+        : []),
+    ],
+  )
 
 export const appendLlmArchive = async (
   stateDir: string,

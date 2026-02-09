@@ -1,6 +1,8 @@
 import { z } from 'zod'
 
-import type { Task, TokenUsage } from '../types/index.js'
+import { normalizeTokenUsage, tokenUsageSchema } from './token-usage.js'
+
+import type { Task } from '../types/index.js'
 
 export type RuntimeSnapshot = {
   tasks: Task[]
@@ -18,14 +20,6 @@ export type RuntimeSnapshot = {
     }
   }
 }
-
-const tokenUsageSchema = z
-  .object({
-    input: z.number().finite().nonnegative().optional(),
-    output: z.number().finite().nonnegative().optional(),
-    total: z.number().finite().nonnegative().optional(),
-  })
-  .strict()
 
 const taskRawSchema = z
   .object({
@@ -75,20 +69,8 @@ const runtimeSnapshotRawSchema = z
   })
   .strict()
 
-const toTokenUsage = (
-  usage: z.infer<typeof tokenUsageSchema> | undefined,
-): TokenUsage | undefined => {
-  if (!usage) return undefined
-  const normalized: TokenUsage = {
-    ...(usage.input !== undefined ? { input: usage.input } : {}),
-    ...(usage.output !== undefined ? { output: usage.output } : {}),
-    ...(usage.total !== undefined ? { total: usage.total } : {}),
-  }
-  return Object.keys(normalized).length > 0 ? normalized : undefined
-}
-
 const toTask = (task: z.infer<typeof taskRawSchema>): Task => {
-  const usage = toTokenUsage(task.usage)
+  const usage = normalizeTokenUsage(task.usage)
   return {
     id: task.id,
     fingerprint: task.fingerprint,

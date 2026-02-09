@@ -5,6 +5,7 @@ import write from 'fire-keeper/write'
 
 import { ensureDir } from '../fs/paths.js'
 
+import { buildArchiveDocument, dateStamp } from './archive-format.js'
 import {
   readTaskResultArchive,
   readTaskResultsForTasks,
@@ -12,20 +13,6 @@ import {
 } from './task-results-read.js'
 
 import type { TaskResultStatus, TokenUsage } from '../types/index.js'
-
-export const dateStamp = (iso: string): string => iso.slice(0, 10)
-
-export const pushLine = (
-  lines: string[],
-  label: string,
-  value?: string | number,
-): void => {
-  if (value === undefined || value === '') return
-  lines.push(`${label}: ${value}`)
-}
-
-export const formatSection = (title: string, content: string): string =>
-  `${title}\n${content}`
 
 export type TaskArchiveEntry = {
   taskId?: string
@@ -81,22 +68,22 @@ const ensureUniquePath = async (basePath: string): Promise<string> => {
   return `${head}_${Date.now()}${ext}`
 }
 
-const buildArchiveContent = (entry: TaskArchiveEntry): string => {
-  const lines: string[] = []
-  pushLine(lines, 'task_id', entry.taskId ?? '')
-  pushLine(lines, 'title', entry.title)
-  pushLine(lines, 'status', entry.status)
-  pushLine(lines, 'created_at', entry.createdAt)
-  pushLine(lines, 'completed_at', entry.completedAt)
-  pushLine(lines, 'duration_ms', entry.durationMs)
-  if (entry.usage) pushLine(lines, 'usage', JSON.stringify(entry.usage))
-  const header = lines.join('\n')
-  const sections = [
-    formatSection('=== PROMPT ===', entry.prompt),
-    formatSection('=== RESULT ===', entry.output),
-  ]
-  return `${header}\n\n${sections.join('\n\n')}\n`
-}
+const buildArchiveContent = (entry: TaskArchiveEntry): string =>
+  buildArchiveDocument(
+    [
+      ['task_id', entry.taskId ?? ''],
+      ['title', entry.title],
+      ['status', entry.status],
+      ['created_at', entry.createdAt],
+      ['completed_at', entry.completedAt],
+      ['duration_ms', entry.durationMs],
+      ['usage', entry.usage ? JSON.stringify(entry.usage) : undefined],
+    ],
+    [
+      { marker: '=== PROMPT ===', content: entry.prompt },
+      { marker: '=== RESULT ===', content: entry.output },
+    ],
+  )
 
 export const appendTaskResultArchive = async (
   stateDir: string,

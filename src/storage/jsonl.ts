@@ -4,19 +4,13 @@ import write from 'fire-keeper/write'
 import { writeFileAtomic } from '../fs/json.js'
 import { logSafeError, safe } from '../log/safe.js'
 
+import { splitNonEmptyLines, toUtf8Text } from './text-codec.js'
+
 import type { HistoryMessage } from '../types/index.js'
 
-const normalizeReadText = (raw: unknown): string => {
-  if (typeof raw === 'string') return raw
-  if (Buffer.isBuffer(raw)) return raw.toString('utf8')
-  return ''
+type JsonlReadOptions<T> = {
+  validate?: (value: unknown) => T | undefined | null
 }
-
-const splitLines = (raw: string): string[] =>
-  raw
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0)
 
 const updateQueue = new Map<string, Promise<void>>()
 
@@ -40,7 +34,10 @@ const runSerialized = async <T>(
   }
 }
 
-export const readJsonl = async <T>(path: string): Promise<T[]> => {
+export const readJsonl = async <T>(
+  path: string,
+  options: JsonlReadOptions<T> = {},
+): Promise<T[]> => {
   const raw = await safe(
     'readJsonl: readFile',
     () => read(path, { raw: true }),
@@ -50,14 +47,19 @@ export const readJsonl = async <T>(path: string): Promise<T[]> => {
       ignoreCodes: ['ENOENT'],
     },
   )
-  const text = normalizeReadText(raw)
+  const text = toUtf8Text(raw)
   if (!text) return []
-  const lines = splitLines(text)
+  const lines = splitNonEmptyLines(text)
   if (lines.length === 0) return []
   const items: T[] = []
   for (const line of lines) {
     try {
-      items.push(JSON.parse(line) as T)
+      const parsed = JSON.parse(line) as unknown
+      const normalized = options.validate
+        ? options.validate(parsed)
+        : (parsed as T)
+      if (normalized !== undefined && normalized !== null)
+        items.push(normalized)
     } catch (error) {
       await logSafeError('readJsonl: parse', error, { meta: { path, line } })
     }

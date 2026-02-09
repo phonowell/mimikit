@@ -1,11 +1,11 @@
 import { join } from 'node:path'
 
 import mkdir from 'fire-keeper/mkdir'
-import read from 'fire-keeper/read'
-import write from 'fire-keeper/write'
 import { z } from 'zod'
 
 import { nowIso } from '../shared/utils.js'
+
+import { appendJsonl, readJsonl } from './jsonl.js'
 
 type JsonObject = Record<string, unknown>
 
@@ -41,43 +41,20 @@ export const appendTaskProgress = async (params: {
     createdAt: nowIso(),
     payload: params.payload ?? {},
   })
-  await write(path, `${JSON.stringify(event)}\n`, {
-    flag: 'a',
-    encoding: 'utf8',
-  })
+  await appendJsonl(path, [event])
   return path
 }
 
-const parseLine = (line: string): TaskProgressEvent | null => {
-  const trimmed = line.trim()
-  if (!trimmed) return null
-  try {
-    const parsed = JSON.parse(trimmed) as unknown
-    const validated = taskProgressEventSchema.safeParse(parsed)
-    if (!validated.success) return null
-    return validated.data
-  } catch {
-    return null
-  }
+const asProgressEvent = (value: unknown): TaskProgressEvent | undefined => {
+  const validated = taskProgressEventSchema.safeParse(value)
+  if (!validated.success) return undefined
+  return validated.data
 }
 
-export const readTaskProgress = async (
+export const readTaskProgress = (
   stateDir: string,
   taskId: string,
-): Promise<TaskProgressEvent[]> => {
-  const path = taskProgressPath(stateDir, taskId)
-  const raw = await read(path, { raw: true })
-  if (!raw) return []
-  const text =
-    typeof raw === 'string'
-      ? raw
-      : Buffer.isBuffer(raw)
-        ? raw.toString('utf8')
-        : ''
-  if (!text.trim()) return []
-  const entries = text
-    .split(/\r?\n/)
-    .map((line) => parseLine(line))
-    .filter((item): item is TaskProgressEvent => Boolean(item))
-  return entries
-}
+): Promise<TaskProgressEvent[]> =>
+  readJsonl<TaskProgressEvent>(taskProgressPath(stateDir, taskId), {
+    validate: asProgressEvent,
+  })

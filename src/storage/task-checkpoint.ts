@@ -1,9 +1,9 @@
 import { join } from 'node:path'
 
-import mkdir from 'fire-keeper/mkdir'
-import read from 'fire-keeper/read'
-import write from 'fire-keeper/write'
 import { z } from 'zod'
+
+import { readJson, writeJson } from '../fs/json.js'
+import { ensureDir } from '../fs/paths.js'
 
 const jsonObjectSchema = z.object({}).catchall(z.unknown())
 
@@ -29,10 +29,8 @@ export const saveTaskCheckpoint = async (params: {
 }): Promise<string> => {
   const checkpoint = taskCheckpointSchema.parse(params.checkpoint)
   const path = checkpointPath(params.stateDir, checkpoint.taskId)
-  await mkdir(join(params.stateDir, TASK_CHECKPOINT_DIR))
-  await write(path, `${JSON.stringify(checkpoint, null, 2)}\n`, {
-    encoding: 'utf8',
-  })
+  await ensureDir(join(params.stateDir, TASK_CHECKPOINT_DIR))
+  await writeJson(path, checkpoint, { backup: false })
   return path
 }
 
@@ -41,7 +39,7 @@ export const loadTaskCheckpoint = async (
   taskId: string,
 ): Promise<TaskCheckpoint | null> => {
   const path = checkpointPath(stateDir, taskId)
-  const raw = await read<unknown>(path)
+  const raw = await readJson<unknown>(path, null, { useBackup: false })
   const parsed = taskCheckpointSchema.safeParse(raw)
   if (!parsed.success) return null
   return parsed.data
