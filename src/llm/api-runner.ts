@@ -23,7 +23,7 @@ export const runApiRunner = async (params: {
   timeoutMs: number
 }): Promise<RunResult> => {
   const settings = await loadCodexSettings()
-  const model = await resolveOpenAiModel(params.model)
+  const model = await resolveOpenAiModel(params.model, settings)
   const baseUrl = settings.baseUrl ?? 'https://api.openai.com'
   const apiKey = settings.apiKey ?? process.env.OPENAI_API_KEY
   if (!apiKey && settings.requiresOpenAiAuth !== false) {
