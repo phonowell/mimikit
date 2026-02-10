@@ -61,6 +61,15 @@ export function bindRestart({
     }, 1000)
   }
 
+  const restoreAfterRequestFailure = (mode) => {
+    restartBtn.disabled = false
+    disableActions(false)
+    isBusy = false
+    setStatusText(statusText, `${mode} failed`)
+    setStatusState(statusDot, 'disconnected')
+    if (messages) messages.start()
+  }
+
   const requestRestart = async (mode) => {
     if (isBusy) return
     isBusy = true
@@ -72,11 +81,16 @@ export function bindRestart({
     if (messages) messages.stop()
     if (dialog) dialog.close()
     try {
-      await fetch(mode === 'reset' ? '/api/reset' : '/api/restart', {
+      const response = await fetch(mode === 'reset' ? '/api/reset' : '/api/restart', {
         method: 'POST',
       })
+      if (!response.ok) {
+        throw new Error(`restart request failed: ${response.status}`)
+      }
     } catch (error) {
       console.warn('[webui] restart request failed', error)
+      restoreAfterRequestFailure(mode)
+      return
     }
     if (mode === 'reset') {
       waitForServer(() => {
