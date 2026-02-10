@@ -19,15 +19,21 @@ export type CodexSettings = {
 
 export const HARDCODED_MODEL_REASONING_EFFORT: ModelReasoningEffort = 'high'
 
-const codexAuthPath = (): string => join(homedir(), '.codex', 'auth.json')
-const codexConfigPath = (): string => join(homedir(), '.codex', 'config.toml')
-
 const envString = (key: string): string | undefined => {
   const value = process.env[key]
   if (!value) return undefined
   const normalized = value.trim()
   return normalized ? normalized : undefined
 }
+
+const resolveHomeDir = (): string =>
+  envString('HOME') ?? envString('USERPROFILE') ?? homedir()
+
+const codexAuthPath = (): string =>
+  join(resolveHomeDir(), '.codex', 'auth.json')
+
+const codexConfigPath = (): string =>
+  join(resolveHomeDir(), '.codex', 'config.toml')
 
 const envBoolean = (key: string): boolean | undefined => {
   const value = envString(key)

@@ -134,10 +134,14 @@ test('patch_file applies unified diff through third-party engine', async () => {
 
 test('exec action runs command in workdir', async () => {
   const workDir = await createTmpDir()
+  const command =
+    process.platform === 'win32'
+      ? 'echo alpha; echo beta'
+      : 'echo alpha && echo beta'
   const result = await invokeAction(
     { workDir },
     'exec_shell',
-    { command: 'echo alpha && echo beta' },
+    { command },
   )
   expect(result.ok).toBe(true)
   expect(result.output).toContain('alpha')

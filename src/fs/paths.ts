@@ -65,15 +65,35 @@ const ensureFile = async (
   }
 }
 
+const EMPTY_JSONL = ''
+const INITIAL_QUEUE_STATE = '{\n  "managerCursor": 0\n}\n'
+const INITIAL_RUNTIME_STATE =
+  '{\n  "tasks": [],\n  "queues": {\n    "inputsCursor": 0,\n    "resultsCursor": 0\n  }\n}\n'
+
 export const ensureStateDirs = async (paths: StatePaths): Promise<void> => {
   await ensureDir(paths.root)
   await ensureDir(paths.inputsDir)
   await ensureDir(paths.resultsDir)
   await ensureDir(paths.tasksDir)
   await ensureDir(paths.agentPersonaVersionsDir)
+  await ensureDir(join(paths.root, 'task-progress'))
+  await ensureDir(join(paths.root, 'task-checkpoints'))
+  await ensureDir(join(paths.root, 'llm'))
   await ensureDir(join(paths.root, 'reporting'))
   await ensureDir(join(paths.root, 'reports'))
   await ensureDir(join(paths.root, 'reports', 'daily'))
+  await ensureFile(paths.history, EMPTY_JSONL)
+  await ensureFile(paths.log, EMPTY_JSONL)
+  await ensureFile(paths.inputsPackets, EMPTY_JSONL)
+  await ensureFile(paths.inputsState, INITIAL_QUEUE_STATE)
+  await ensureFile(paths.resultsPackets, EMPTY_JSONL)
+  await ensureFile(paths.resultsState, INITIAL_QUEUE_STATE)
+  await ensureFile(paths.tasksEvents, EMPTY_JSONL)
+  await ensureFile(
+    join(paths.root, 'runtime-state.json'),
+    INITIAL_RUNTIME_STATE,
+  )
+  await ensureFile(join(paths.root, 'reporting', 'events.jsonl'), EMPTY_JSONL)
   await ensureFile(paths.feedback, '# Feedback\n\n')
   await ensureFile(paths.userProfile, '# User Profile\n\n')
   await ensureFile(paths.agentPersona, '# Agent Persona\n\n')
