@@ -25,12 +25,27 @@ export const createMessageFetchers = (params) => {
     mergeIncomingMessages,
   } = params
 
+  const readErrorMessage = async (response, fallback) => {
+    try {
+      const data = await response.json()
+      if (data && typeof data.error === 'string' && data.error.trim()) {
+        return data.error
+      }
+    } catch {
+      return `${fallback}: ${response.status}`
+    }
+    return `${fallback}: ${response.status}`
+  }
+
   const fetchMessages = async () => {
     const headers = {}
     const etag = getMessageEtag()
     if (etag) headers['If-None-Match'] = etag
     const msgRes = await fetch(getMessagesUrl(), { headers })
     if (msgRes.status === 304) return null
+    if (!msgRes.ok) {
+      throw new Error(await readErrorMessage(msgRes, 'Failed to fetch messages'))
+    }
     const nextEtag = msgRes.headers.get('etag')
     if (nextEtag) setMessageEtag(nextEtag)
     return msgRes.json()
@@ -42,6 +57,9 @@ export const createMessageFetchers = (params) => {
     if (etag) headers['If-None-Match'] = etag
     const statusRes = await fetch(getStatusUrl(), { headers })
     if (statusRes.status === 304) return null
+    if (!statusRes.ok) {
+      throw new Error(await readErrorMessage(statusRes, 'Failed to fetch status'))
+    }
     const nextEtag = statusRes.headers.get('etag')
     if (nextEtag) setStatusEtag(nextEtag)
     return statusRes.json()

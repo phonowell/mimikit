@@ -27,5 +27,6 @@ export const createPollingDelayController = (params) => {
 
   return {
     scheduleNext,
+    clear,
   }
 }
