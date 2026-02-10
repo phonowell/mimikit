@@ -34,7 +34,7 @@ export type TaskStatus =
 
 export type TaskResultStatus = 'succeeded' | 'failed' | 'canceled'
 
-export type WorkerProfile = 'standard' | 'expert'
+export type WorkerProfile = 'standard' | 'specialist'
 
 export type Task = {
   id: Id
@@ -66,12 +66,6 @@ export type TaskResult = {
   profile?: WorkerProfile
 }
 
-export type ChannelName =
-  | 'user-input'
-  | 'worker-result'
-  | 'teller-digest'
-  | 'thinker-decision'
-
 export type JsonPacket<TPayload> = {
   id: string
   createdAt: string
@@ -93,22 +87,7 @@ export type TaskStatusSummary = {
   }>
 }
 
-export type TellerDigest = {
-  digestId: string
-  summary: string
-  inputs: UserInput[]
-  results: TaskResult[]
-  taskSummary: TaskStatusSummary
-}
-
-export type ThinkerDecision = {
-  digestId: string
-  decision: string
-  inputIds: string[]
-  taskSummary: TaskStatusSummary
-}
-
-export type ThinkerEnv = {
+export type ManagerEnv = {
   lastUser?: {
     source?: string
     remote?: string
@@ -119,6 +98,5 @@ export type ThinkerEnv = {
     clientOffsetMinutes?: number
     clientNowIso?: string
   }
-  tellerDigestSummary?: string
   taskSummary?: TaskStatusSummary
 }

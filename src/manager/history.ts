@@ -1,7 +1,7 @@
 import { safe } from '../log/safe.js'
 import { appendTaskSystemMessage } from '../orchestrator/read-model/task-history.js'
 import { nowIso } from '../shared/utils.js'
-import { appendHistory } from '../storage/jsonl.js'
+import { appendHistory, readHistory } from '../storage/jsonl.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { TaskResult, UserInput } from '../types/index.js'
@@ -18,7 +18,7 @@ const summarizeResultOutput = (
   return `${compacted.slice(0, maxChars - 1).trimEnd()}…`
 }
 
-export const appendFallbackReply = async (
+export const appendManagerFallbackReply = async (
   paths: RuntimeState['paths'],
 ): Promise<void> => {
   await appendHistory(paths.history, {
@@ -33,8 +33,14 @@ export const appendConsumedInputsToHistory = async (
   historyPath: string,
   inputs: UserInput[],
 ): Promise<number> => {
+  const existing = await readHistory(historyPath)
+  const existingIds = new Set(existing.map((item) => item.id))
   let consumed = 0
   for (const input of inputs) {
+    if (existingIds.has(input.id)) {
+      consumed += 1
+      continue
+    }
     const appended = await safe(
       'appendHistory: consumed_input',
       async () => {
@@ -50,6 +56,7 @@ export const appendConsumedInputsToHistory = async (
       { fallback: false, meta: { inputId: input.id } },
     )
     if (!appended) break
+    existingIds.add(input.id)
     consumed += 1
   }
   return consumed

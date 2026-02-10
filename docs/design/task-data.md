@@ -1,20 +1,29 @@
-# 数据结构
+# 数据结构（当前实现）
 
 > 返回 [系统设计总览](./README.md)
 
+## 核心类型
+- 定义文件：`src/types/index.ts`
+
+## UserInput
+- 字段：`id`、`text`、`createdAt`、`quote?`
+- 写入：`inputs/packets.jsonl`
+
 ## Task
-- 关键字段：`id`、`prompt`、`title`、`profile`、`status`。
-- `profile`：`standard | expert`。
-- 运行字段：`startedAt`、`completedAt`、`durationMs`、`attempts`。
+- 字段：`id`、`fingerprint`、`prompt`、`title`、`profile`、`status`
+- 运行字段：`startedAt?`、`completedAt?`、`durationMs?`、`attempts?`
+- profile：`standard | specialist`
 
 ## TaskResult
-- 关键字段：`taskId`、`status`、`output`、`durationMs`、`completedAt`。
-- 可选字段：`usage`、`archivePath`、`profile`。
+- 字段：`taskId`、`status`、`ok`、`output`、`durationMs`、`completedAt`
+- 可选：`usage`、`title`、`archivePath`、`profile`
+- 写入：`results/packets.jsonl`
 
-## 通道载荷
-- `user-input`：`UserInput`。
-- `worker-result`：`TaskResult`（由 thinker 直接消费）。
-- `teller-digest`：`TellerDigest`（`summary` + `inputs` + `results` + `taskSummary`）。
-- `thinker-decision`：`ThinkerDecision`（含 `decision` 与 `inputIds`）。
+## HistoryMessage
+- 字段：`id`、`role(user|assistant|system)`、`text`、`createdAt`
+- 可选：`usage`、`elapsedMs`、`quote`
+- 写入：`history.jsonl`
 
-定义位置：`src/types/index.ts`。
+## Queue Packet
+- 结构：`{ id, createdAt, payload }`
+- `inputs/results` 都使用统一 packet 包装。

@@ -81,25 +81,19 @@ test('runtime snapshot rejects legacy evolve field', async () => {
   await expect(loadRuntimeSnapshot(stateDir)).rejects.toThrow()
 })
 
-test('runtime snapshot accepts thinker worker-result cursor', async () => {
+test('runtime snapshot accepts queue cursors', async () => {
   const stateDir = await createTmpDir()
   await saveRuntimeSnapshot(stateDir, {
     tasks: [],
-    channels: {
-      teller: {
-        userInputCursor: 3,
-        thinkerDecisionCursor: 5,
-      },
-      thinker: {
-        tellerDigestCursor: 6,
-        workerResultCursor: 9,
-      },
+    queues: {
+      inputsCursor: 3,
+      resultsCursor: 9,
     },
   })
 
   const loaded = await loadRuntimeSnapshot(stateDir)
-  expect(loaded.channels?.thinker.workerResultCursor).toBe(9)
-  expect(loaded.channels?.teller.userInputCursor).toBe(3)
+  expect(loaded.queues?.resultsCursor).toBe(9)
+  expect(loaded.queues?.inputsCursor).toBe(3)
 })
 
 test('runtime snapshot rejects legacy grouped channel shape', async () => {

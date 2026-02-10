@@ -1,13 +1,14 @@
 import PQueue from 'p-queue'
 
+import { type AppConfig } from '../../config.js'
+import { evolverLoop } from '../../evolver/loop.js'
 import { buildPaths, ensureStateDirs } from '../../fs/paths.js'
 import { appendLog } from '../../log/append.js'
 import { bestEffort, setDefaultLogPath } from '../../log/safe.js'
+import { managerLoop } from '../../manager/loop.js'
 import { newId, nowIso } from '../../shared/utils.js'
 import { readHistory } from '../../storage/jsonl.js'
-import { publishUserInput } from '../../streams/channels.js'
-import { tellerLoop } from '../../teller/loop.js'
-import { thinkerLoop } from '../../thinker/loop.js'
+import { publishUserInput } from '../../streams/queues.js'
 import { cancelTask } from '../../worker/cancel-task.js'
 import { enqueuePendingWorkerTasks } from '../../worker/dispatch.js'
 import { workerLoop } from '../../worker/loop.js'
@@ -26,7 +27,6 @@ import {
 import { notifyWorkerLoop } from './worker-signal.js'
 
 import type { RuntimeState, UserMeta } from './runtime-state.js'
-import type { AppConfig } from '../../config.js'
 import type { Task } from '../../types/index.js'
 
 export class Orchestrator {
@@ -45,18 +45,12 @@ export class Orchestrator {
       config,
       paths,
       stopped: false,
-      thinkerRunning: false,
+      managerRunning: false,
       inflightInputs: [],
-      lastThinkerRunAt: 0,
-      channels: {
-        teller: {
-          userInputCursor: 0,
-          thinkerDecisionCursor: 0,
-        },
-        thinker: {
-          tellerDigestCursor: 0,
-          workerResultCursor: 0,
-        },
+      lastManagerRunAt: 0,
+      queues: {
+        inputsCursor: 0,
+        resultsCursor: 0,
       },
       tasks: [],
       runningControllers: new Map(),
@@ -73,8 +67,8 @@ export class Orchestrator {
     await hydrateRuntimeState(this.runtime)
     enqueuePendingWorkerTasks(this.runtime)
     notifyWorkerLoop(this.runtime)
-    void tellerLoop(this.runtime)
-    void thinkerLoop(this.runtime)
+    void managerLoop(this.runtime)
+    void evolverLoop(this.runtime)
     void workerLoop(this.runtime)
   }
 
@@ -170,7 +164,7 @@ export class Orchestrator {
     activeTasks: number
     pendingTasks: number
     pendingInputs: number
-    thinkerRunning: boolean
+    managerRunning: boolean
     maxWorkers: number
   } {
     const pendingTasks = this.runtime.tasks.filter(
@@ -179,7 +173,7 @@ export class Orchestrator {
     const activeTasks = this.runtime.runningControllers.size
     const maxWorkers = this.runtime.config.worker.maxConcurrent
     const agentStatus =
-      this.runtime.thinkerRunning || activeTasks > 0 ? 'running' : 'idle'
+      this.runtime.managerRunning || activeTasks > 0 ? 'running' : 'idle'
     const pendingInputs = this.getInflightInputs().length
     return {
       ok: true,
@@ -187,7 +181,7 @@ export class Orchestrator {
       activeTasks,
       pendingTasks,
       pendingInputs,
-      thinkerRunning: this.runtime.thinkerRunning,
+      managerRunning: this.runtime.managerRunning,
       maxWorkers,
     }
   }

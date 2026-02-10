@@ -28,29 +28,25 @@ export const applyReasoningEnv = (config: AppConfig): void => {
     process.env.MIMIKIT_REASONING_EFFORT,
   )
   if (global) {
-    config.teller.modelReasoningEffort = global
-    config.thinker.modelReasoningEffort = global
+    config.manager.modelReasoningEffort = global
     config.worker.standard.modelReasoningEffort = global
-    config.worker.expert.modelReasoningEffort = global
+    config.worker.specialist.modelReasoningEffort = global
   }
-  const teller = parseReasoning(
-    'MIMIKIT_TELLER_REASONING_EFFORT',
-    process.env.MIMIKIT_TELLER_REASONING_EFFORT,
+  const manager = parseReasoning(
+    'MIMIKIT_MANAGER_REASONING_EFFORT',
+    process.env.MIMIKIT_MANAGER_REASONING_EFFORT,
   )
-  if (teller) config.teller.modelReasoningEffort = teller
-  const thinker = parseReasoning(
-    'MIMIKIT_THINKER_REASONING_EFFORT',
-    process.env.MIMIKIT_THINKER_REASONING_EFFORT,
-  )
-  if (thinker) config.thinker.modelReasoningEffort = thinker
+  if (manager) config.manager.modelReasoningEffort = manager
+
   const standard = parseReasoning(
     'MIMIKIT_WORKER_STANDARD_REASONING_EFFORT',
     process.env.MIMIKIT_WORKER_STANDARD_REASONING_EFFORT,
   )
   if (standard) config.worker.standard.modelReasoningEffort = standard
-  const expert = parseReasoning(
-    'MIMIKIT_WORKER_EXPERT_REASONING_EFFORT',
-    process.env.MIMIKIT_WORKER_EXPERT_REASONING_EFFORT,
+
+  const specialist = parseReasoning(
+    'MIMIKIT_WORKER_SPECIALIST_REASONING_EFFORT',
+    process.env.MIMIKIT_WORKER_SPECIALIST_REASONING_EFFORT,
   )
-  if (expert) config.worker.expert.modelReasoningEffort = expert
+  if (specialist) config.worker.specialist.modelReasoningEffort = specialist
 }

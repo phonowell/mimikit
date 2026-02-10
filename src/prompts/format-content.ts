@@ -78,6 +78,20 @@ export const formatInputs = (inputs: UserInput[]): string => {
   return formatMessagesYaml(entries)
 }
 
+export const formatDecesionsYaml = (decesions: string[]): string => {
+  if (decesions.length === 0) return ''
+  const entries = decesions
+    .map((decesion) => decesion.trim())
+    .filter((decesion) => decesion.length > 0)
+    .map((content) => ({ content }))
+  if (entries.length === 0) return ''
+  return escapeCdata(
+    stringifyPromptYaml({
+      decesions: entries,
+    }),
+  )
+}
+
 export const selectTasksForPrompt = (tasks: Task[]): Task[] => {
   if (tasks.length === 0) return []
   return [...tasks].sort((a, b) => {
@@ -127,7 +141,7 @@ export const formatTasksYaml = (
         fingerprint: '',
         prompt: '',
         title: result.title ?? result.taskId,
-        profile: result.profile === 'expert' ? 'expert' : 'standard',
+        profile: result.profile === 'specialist' ? 'specialist' : 'standard',
         status: result.status,
         createdAt: result.completedAt,
         completedAt: result.completedAt,

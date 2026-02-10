@@ -25,10 +25,11 @@ test.each([
     attrs: { task_id: 'task_123' },
   },
   {
-    name: 'capture_feedback attrs',
-    output: `<MIMIKIT:actions>\n@capture_feedback message="回答不准确"\n</MIMIKIT:actions>`,
-    action: 'capture_feedback',
-    attrs: { message: '回答不准确' },
+    name: 'summarize_task_result attrs',
+    output:
+      `<MIMIKIT:actions>\n@summarize_task_result task_id="task_1" summary="brief"\n</MIMIKIT:actions>`,
+    action: 'summarize_task_result',
+    attrs: { task_id: 'task_1', summary: 'brief' },
   },
   {
     name: 'escaped attrs',

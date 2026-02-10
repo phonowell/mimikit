@@ -5,25 +5,17 @@ import type { ModelReasoningEffort } from '@openai/codex-sdk'
 export type AppConfig = {
   stateDir: string
   workDir: string
-  channels: {
-    pruneEnabled: boolean
-    keepRecentPackets: number
-  }
   reporting: {
     dailyReportEnabled: boolean
     runtimeHighLatencyMs: number
     runtimeHighUsageTotal: number
   }
-  teller: {
-    pollMs: number
-    debounceMs: number
-    model: string
-    modelReasoningEffort: ModelReasoningEffort
-  }
-  thinker: {
+  manager: {
     pollMs: number
     minIntervalMs: number
-    maxResultWaitMs: number
+    maxBatch: number
+    queueCompactMinPackets: number
+    taskSnapshotMaxCount: number
     tasksMaxCount: number
     tasksMinCount: number
     tasksMaxBytes: number
@@ -32,6 +24,11 @@ export type AppConfig = {
     historyMaxBytes: number
     model: string
     modelReasoningEffort: ModelReasoningEffort
+  }
+  evolver: {
+    pollMs: number
+    idleThresholdMs: number
+    minIntervalMs: number
   }
   worker: {
     maxConcurrent: number
@@ -42,7 +39,7 @@ export type AppConfig = {
       model: string
       modelReasoningEffort: ModelReasoningEffort
     }
-    expert: {
+    specialist: {
       timeoutMs: number
       model: string
       modelReasoningEffort: ModelReasoningEffort
@@ -58,25 +55,17 @@ export const defaultConfig = (params: {
 }): AppConfig => ({
   stateDir: resolve(params.stateDir),
   workDir: resolve(params.workDir),
-  channels: {
-    pruneEnabled: true,
-    keepRecentPackets: 200,
-  },
   reporting: {
     dailyReportEnabled: true,
     runtimeHighLatencyMs: 15 * 60 * 1_000,
     runtimeHighUsageTotal: 100_000,
   },
-  teller: {
+  manager: {
     pollMs: 1_000,
-    debounceMs: 10_000,
-    model: 'gpt-5.2-high',
-    modelReasoningEffort: 'high',
-  },
-  thinker: {
-    pollMs: 2_000,
-    minIntervalMs: 15_000,
-    maxResultWaitMs: 20_000,
+    minIntervalMs: 8_000,
+    maxBatch: 100,
+    queueCompactMinPackets: 1_000,
+    taskSnapshotMaxCount: 2_000,
     tasksMaxCount: 20,
     tasksMinCount: 5,
     tasksMaxBytes: 20 * 1024,
@@ -85,6 +74,11 @@ export const defaultConfig = (params: {
     historyMaxBytes: 20 * 1024,
     model: 'gpt-5.2-high',
     modelReasoningEffort: 'high',
+  },
+  evolver: {
+    pollMs: 2_000,
+    idleThresholdMs: 60_000,
+    minIntervalMs: 5 * 60 * 1_000,
   },
   worker: {
     maxConcurrent: 3,
@@ -95,7 +89,7 @@ export const defaultConfig = (params: {
       model: 'gpt-5.2-high',
       modelReasoningEffort: 'high',
     },
-    expert: {
+    specialist: {
       timeoutMs: 10 * 60 * 1_000,
       model: 'gpt-5.3-codex-high',
       modelReasoningEffort: 'high',

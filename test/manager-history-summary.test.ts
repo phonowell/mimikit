@@ -4,10 +4,14 @@ import { join } from 'node:path'
 
 import { expect, test } from 'vitest'
 
-import { appendConsumedResultsToHistory } from '../src/teller/history.js'
-import type { Task, TaskResult } from '../src/types/index.js'
+import {
+  appendConsumedInputsToHistory,
+  appendConsumedResultsToHistory,
+} from '../src/manager/history.js'
+import { readHistory } from '../src/storage/jsonl.js'
+import type { Task, TaskResult, UserInput } from '../src/types/index.js'
 
-const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-thinker-history-'))
+const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-manager-history-'))
 
 const createTask = (): Task => ({
   id: 'task-1',
@@ -37,10 +41,10 @@ test('appendConsumedResultsToHistory writes summary into task.result output', as
     historyPath,
     [task],
     [result],
-    new Map([['task-1', 'short summary for thinker']]),
+    new Map([['task-1', 'short summary for manager']]),
   )
   expect(consumed).toBe(1)
-  expect(task.result?.output).toBe('short summary for thinker')
+  expect(task.result?.output).toBe('short summary for manager')
 })
 
 test('appendConsumedResultsToHistory creates local summary when command missing', async () => {
@@ -51,10 +55,32 @@ test('appendConsumedResultsToHistory creates local summary when command missing'
     ...createResult(),
     output: `  ${'detail '.repeat(80)}  `,
   }
-  const consumed = await appendConsumedResultsToHistory(historyPath, [task], [result])
+  const consumed = await appendConsumedResultsToHistory(
+    historyPath,
+    [task],
+    [result],
+  )
   expect(consumed).toBe(1)
   expect(task.result?.output.length ?? 0).toBeLessThanOrEqual(281)
   expect(task.result?.output.endsWith('…')).toBe(true)
   const historyRaw = await readFile(historyPath, 'utf8')
   expect(historyRaw.length).toBeGreaterThan(0)
+})
+
+test('appendConsumedInputsToHistory is idempotent by input id', async () => {
+  const stateDir = await createTmpDir()
+  const historyPath = join(stateDir, 'history.jsonl')
+  const input: UserInput = {
+    id: 'in-1',
+    text: 'hello',
+    createdAt: '2026-02-07T00:02:00.000Z',
+  }
+
+  const first = await appendConsumedInputsToHistory(historyPath, [input])
+  const second = await appendConsumedInputsToHistory(historyPath, [input])
+  const history = await readHistory(historyPath)
+
+  expect(first).toBe(1)
+  expect(second).toBe(1)
+  expect(history.filter((item) => item.id === 'in-1')).toHaveLength(1)
 })

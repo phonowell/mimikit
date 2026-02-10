@@ -4,7 +4,7 @@ import { buildNotificationPayload } from '../src/webui/messages/notification.js'
 
 const createMessage = (params: {
   id: string
-  role: 'user' | 'thinker' | 'system'
+  role: 'user' | 'assistant' | 'system'
   text: string
 }) => ({
   id: params.id,
@@ -33,7 +33,7 @@ test('buildNotificationPayload skips active page and empty changes', () => {
   ).toBeNull()
 })
 
-test('buildNotificationPayload picks latest new thinker message', () => {
+test('buildNotificationPayload picks latest new assistant message', () => {
   const messages = [
     createMessage({ id: 'u-1', role: 'user', text: 'question' }),
     createMessage({ id: 'm-1', role: 'assistant', text: 'first reply' }),

@@ -5,6 +5,12 @@ import {
   saveRuntimeSnapshot,
   selectPersistedTasks,
 } from '../../storage/runtime-state.js'
+import {
+  loadInputQueueState,
+  loadResultQueueState,
+  saveInputQueueState,
+  saveResultQueueState,
+} from '../../streams/queues.js'
 
 import type { RuntimeState } from './runtime-state.js'
 
@@ -14,18 +20,24 @@ export const hydrateRuntimeState = async (
   const snapshot = await loadRuntimeSnapshot(runtime.config.stateDir)
   runtime.tasks = snapshot.tasks
   if (snapshot.reporting) runtime.reportingState = snapshot.reporting
-  if (snapshot.channels) {
-    runtime.channels = {
-      teller: {
-        ...runtime.channels.teller,
-        ...snapshot.channels.teller,
-      },
-      thinker: {
-        ...runtime.channels.thinker,
-        ...snapshot.channels.thinker,
-      },
+  if (snapshot.queues) {
+    runtime.queues = {
+      inputsCursor: snapshot.queues.inputsCursor,
+      resultsCursor: snapshot.queues.resultsCursor,
     }
   }
+
+  const inputQueueState = await loadInputQueueState(runtime.paths)
+  const resultQueueState = await loadResultQueueState(runtime.paths)
+  runtime.queues.inputsCursor = Math.max(
+    runtime.queues.inputsCursor,
+    inputQueueState.managerCursor,
+  )
+  runtime.queues.resultsCursor = Math.max(
+    runtime.queues.resultsCursor,
+    resultQueueState.managerCursor,
+  )
+
   if (snapshot.tasks.length > 0) {
     await bestEffort('appendLog: runtime_hydrated', () =>
       appendLog(runtime.paths.log, {
@@ -42,6 +54,12 @@ export const persistRuntimeState = async (
   await saveRuntimeSnapshot(runtime.config.stateDir, {
     tasks: selectPersistedTasks(runtime.tasks),
     reporting: runtime.reportingState,
-    channels: runtime.channels,
+    queues: runtime.queues,
+  })
+  await saveInputQueueState(runtime.paths, {
+    managerCursor: runtime.queues.inputsCursor,
+  })
+  await saveResultQueueState(runtime.paths, {
+    managerCursor: runtime.queues.resultsCursor,
   })
 }

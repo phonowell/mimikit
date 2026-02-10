@@ -5,8 +5,8 @@ import { bestEffort } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import { buildWorkerPrompt } from '../prompts/build-prompts.js'
 
-import { runExpertWorker } from './expert-runner.js'
 import { appendWorkerRetryFeedback } from './run-feedback.js'
+import { runSpecialistWorker } from './specialist-runner.js'
 import { runStandardWorker } from './standard-runner.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
@@ -58,14 +58,14 @@ const runTaskByProfile = (params: {
       controller: params.controller,
     })
   }
-  const { expert } = params.runtime.config.worker
-  return runExpertWorker({
+  const { specialist } = params.runtime.config.worker
+  return runSpecialistWorker({
     stateDir: params.runtime.config.stateDir,
     workDir: params.runtime.config.workDir,
     task: params.task,
-    timeoutMs: expert.timeoutMs,
-    model: expert.model,
-    modelReasoningEffort: expert.modelReasoningEffort,
+    timeoutMs: specialist.timeoutMs,
+    model: specialist.model,
+    modelReasoningEffort: specialist.modelReasoningEffort,
     abortSignal: params.controller.signal,
   })
 }

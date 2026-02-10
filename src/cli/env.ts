@@ -6,20 +6,19 @@ import type { AppConfig } from '../config.js'
 const applyModelEnv = (config: AppConfig): void => {
   const envModel = process.env.MIMIKIT_MODEL?.trim()
   if (envModel) {
-    config.teller.model = envModel
-    config.thinker.model = envModel
+    config.manager.model = envModel
     config.worker.standard.model = envModel
   }
-  const envTellerModel = process.env.MIMIKIT_TELLER_MODEL?.trim()
-  if (envTellerModel) config.teller.model = envTellerModel
-  const envThinkerModel = process.env.MIMIKIT_THINKER_MODEL?.trim()
-  if (envThinkerModel) config.thinker.model = envThinkerModel
+  const envManagerModel = process.env.MIMIKIT_MANAGER_MODEL?.trim()
+  if (envManagerModel) config.manager.model = envManagerModel
   const envWorkerStandardModel =
     process.env.MIMIKIT_WORKER_STANDARD_MODEL?.trim()
   if (envWorkerStandardModel)
     config.worker.standard.model = envWorkerStandardModel
-  const envWorkerExpertModel = process.env.MIMIKIT_WORKER_EXPERT_MODEL?.trim()
-  if (envWorkerExpertModel) config.worker.expert.model = envWorkerExpertModel
+  const envWorkerSpecialistModel =
+    process.env.MIMIKIT_WORKER_SPECIALIST_MODEL?.trim()
+  if (envWorkerSpecialistModel)
+    config.worker.specialist.model = envWorkerSpecialistModel
 }
 
 const applyReportingEnv = (config: AppConfig): void => {
@@ -45,23 +44,64 @@ const applyReportingEnv = (config: AppConfig): void => {
     config.reporting.runtimeHighUsageTotal = runtimeHighUsageTotal
 }
 
-const applyChannelEnv = (config: AppConfig): void => {
-  const pruneEnabled = parseEnvBoolean(
-    'MIMIKIT_CHANNEL_PRUNE_ENABLED',
-    process.env.MIMIKIT_CHANNEL_PRUNE_ENABLED?.trim(),
+const applyLoopEnv = (config: AppConfig): void => {
+  const managerPollMs = parseEnvPositiveInteger(
+    'MIMIKIT_MANAGER_POLL_MS',
+    process.env.MIMIKIT_MANAGER_POLL_MS?.trim(),
   )
-  if (pruneEnabled !== undefined) config.channels.pruneEnabled = pruneEnabled
-  const keepRecentPackets = parseEnvPositiveInteger(
-    'MIMIKIT_CHANNEL_PRUNE_KEEP_PACKETS',
-    process.env.MIMIKIT_CHANNEL_PRUNE_KEEP_PACKETS?.trim(),
+  if (managerPollMs !== undefined) config.manager.pollMs = managerPollMs
+
+  const managerMinIntervalMs = parseEnvPositiveInteger(
+    'MIMIKIT_MANAGER_MIN_INTERVAL_MS',
+    process.env.MIMIKIT_MANAGER_MIN_INTERVAL_MS?.trim(),
   )
-  if (keepRecentPackets !== undefined)
-    config.channels.keepRecentPackets = keepRecentPackets
+  if (managerMinIntervalMs !== undefined)
+    config.manager.minIntervalMs = managerMinIntervalMs
+
+  const managerMaxBatch = parseEnvPositiveInteger(
+    'MIMIKIT_MANAGER_MAX_BATCH',
+    process.env.MIMIKIT_MANAGER_MAX_BATCH?.trim(),
+  )
+  if (managerMaxBatch !== undefined) config.manager.maxBatch = managerMaxBatch
+
+  const managerQueueCompactMinPackets = parseEnvPositiveInteger(
+    'MIMIKIT_MANAGER_QUEUE_COMPACT_MIN_PACKETS',
+    process.env.MIMIKIT_MANAGER_QUEUE_COMPACT_MIN_PACKETS?.trim(),
+  )
+  if (managerQueueCompactMinPackets !== undefined)
+    config.manager.queueCompactMinPackets = managerQueueCompactMinPackets
+
+  const managerTaskSnapshotMaxCount = parseEnvPositiveInteger(
+    'MIMIKIT_MANAGER_TASK_SNAPSHOT_MAX_COUNT',
+    process.env.MIMIKIT_MANAGER_TASK_SNAPSHOT_MAX_COUNT?.trim(),
+  )
+  if (managerTaskSnapshotMaxCount !== undefined)
+    config.manager.taskSnapshotMaxCount = managerTaskSnapshotMaxCount
+
+  const evolverPollMs = parseEnvPositiveInteger(
+    'MIMIKIT_EVOLVER_POLL_MS',
+    process.env.MIMIKIT_EVOLVER_POLL_MS?.trim(),
+  )
+  if (evolverPollMs !== undefined) config.evolver.pollMs = evolverPollMs
+
+  const evolverIdleThresholdMs = parseEnvPositiveInteger(
+    'MIMIKIT_EVOLVER_IDLE_THRESHOLD_MS',
+    process.env.MIMIKIT_EVOLVER_IDLE_THRESHOLD_MS?.trim(),
+  )
+  if (evolverIdleThresholdMs !== undefined)
+    config.evolver.idleThresholdMs = evolverIdleThresholdMs
+
+  const evolverMinIntervalMs = parseEnvPositiveInteger(
+    'MIMIKIT_EVOLVER_MIN_INTERVAL_MS',
+    process.env.MIMIKIT_EVOLVER_MIN_INTERVAL_MS?.trim(),
+  )
+  if (evolverMinIntervalMs !== undefined)
+    config.evolver.minIntervalMs = evolverMinIntervalMs
 }
 
 export const applyCliEnvOverrides = (config: AppConfig): void => {
   applyModelEnv(config)
   applyReasoningEnv(config)
   applyReportingEnv(config)
-  applyChannelEnv(config)
+  applyLoopEnv(config)
 }

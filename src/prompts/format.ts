@@ -2,7 +2,7 @@ import { hostname, release as osRelease, type as osType } from 'node:os'
 
 import { escapeCdata, normalizeTagName } from './format-base.js'
 
-import type { ThinkerEnv } from '../types/index.js'
+import type { ManagerEnv } from '../types/index.js'
 
 type PromptTemplateValues = Record<string, string>
 
@@ -26,7 +26,7 @@ export const joinPromptSections = (sections: string[]): string => {
 
 export const formatEnvironment = (
   workDir: string,
-  env?: ThinkerEnv,
+  env?: ManagerEnv,
 ): string => {
   const now = new Date()
   const resolved = Intl.DateTimeFormat().resolvedOptions()
@@ -57,8 +57,6 @@ export const formatEnvironment = (
       push('client_tz_offset_minutes', last.clientOffsetMinutes)
     push('client_now_iso', last.clientNowIso)
   }
-  if (env?.tellerDigestSummary)
-    push('teller_digest_summary', env.tellerDigestSummary)
   if (env?.taskSummary) {
     push('task_pending', env.taskSummary.pending)
     push('task_running', env.taskSummary.running)
@@ -83,6 +81,7 @@ export const buildRawBlock = (tag: string, content: string): string => {
 }
 
 export {
+  formatDecesionsYaml,
   formatHistory,
   formatInputs,
   formatResultsYaml,

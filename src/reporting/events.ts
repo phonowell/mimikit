@@ -14,11 +14,7 @@ type ReportingCategory =
   | 'ux'
   | 'other'
 
-type ReportingSource =
-  | 'thinker_action'
-  | 'runtime'
-  | 'worker_loop'
-  | 'thinker_error'
+type ReportingSource = 'runtime'
 
 export type ReportingEvent = {
   id: string

@@ -12,20 +12,12 @@ export const TASK_ACTION_NAMES = [
   'create_task',
   'cancel_task',
   'summarize_task_result',
-  'capture_feedback',
-] as const
-
-export const MESSAGE_ACTION_NAMES = [
-  'respond',
-  'digest_context',
-  'handoff_context',
 ] as const
 
 export const ACTION_NAMES = [
   ...FILE_ACTION_NAMES,
   ...PROCESS_ACTION_NAMES,
   ...TASK_ACTION_NAMES,
-  ...MESSAGE_ACTION_NAMES,
 ] as const
 
 export type ActionName = (typeof ACTION_NAMES)[number]

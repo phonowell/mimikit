@@ -1,13 +1,13 @@
 import { runApiRunner } from '../llm/api-runner.js'
-import { buildThinkerPrompt } from '../prompts/build-prompts.js'
+import { buildManagerPrompt } from '../prompts/build-prompts.js'
 import {
   buildLlmArchiveLookupKey,
   type LlmArchiveLookup,
 } from '../storage/llm-archive.js'
 
 import {
-  archiveThinkerResult,
-  DEFAULT_THINKER_FALLBACK_MODEL,
+  archiveManagerResult,
+  DEFAULT_MANAGER_FALLBACK_MODEL,
   normalizeOptional,
   toError,
   withSampling,
@@ -15,22 +15,22 @@ import {
 
 import type {
   HistoryMessage,
+  ManagerEnv,
   Task,
   TaskResult,
-  ThinkerEnv,
   TokenUsage,
   UserInput,
 } from '../types/index.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
-export const runThinker = async (params: {
+export const runManager = async (params: {
   stateDir: string
   workDir: string
   inputs: UserInput[]
   results: TaskResult[]
   tasks: Task[]
   history: HistoryMessage[]
-  env?: ThinkerEnv
+  env?: ManagerEnv
   timeoutMs: number
   model?: string
   modelReasoningEffort?: ModelReasoningEffort
@@ -43,7 +43,7 @@ export const runThinker = async (params: {
   fallbackUsed: boolean
   usage?: TokenUsage
 }> => {
-  const prompt = await buildThinkerPrompt({
+  const prompt = await buildManagerPrompt({
     stateDir: params.stateDir,
     workDir: params.workDir,
     inputs: params.inputs,
@@ -54,7 +54,7 @@ export const runThinker = async (params: {
   })
   const model = normalizeOptional(params.model)
   const lookup: LlmArchiveLookup = {
-    role: 'thinker',
+    role: 'manager',
     ...(model ? { model } : {}),
     prompt,
     messages: [{ role: 'user', content: prompt }],
@@ -64,9 +64,9 @@ export const runThinker = async (params: {
       : {}),
   }
   const requestKey = buildLlmArchiveLookupKey(lookup)
-  const base = { role: 'thinker' as const, ...(model ? { model } : {}) }
+  const base = { role: 'manager' as const, ...(model ? { model } : {}) }
   const fallbackModel = normalizeOptional(
-    params.fallbackModel ?? DEFAULT_THINKER_FALLBACK_MODEL,
+    params.fallbackModel ?? DEFAULT_MANAGER_FALLBACK_MODEL,
   )
   const fallbackRequestKey = fallbackModel
     ? buildLlmArchiveLookupKey({
@@ -88,7 +88,7 @@ export const runThinker = async (params: {
         ? { temperature: params.temperature }
         : {}),
     })
-    await archiveThinkerResult(
+    await archiveManagerResult(
       params.stateDir,
       {
         ...base,
@@ -110,7 +110,7 @@ export const runThinker = async (params: {
     }
   } catch (error) {
     const err = toError(error)
-    await archiveThinkerResult(
+    await archiveManagerResult(
       params.stateDir,
       {
         ...base,
@@ -140,10 +140,10 @@ export const runThinker = async (params: {
           ? { temperature: params.temperature }
           : {}),
       })
-      await archiveThinkerResult(
+      await archiveManagerResult(
         params.stateDir,
         {
-          role: 'thinker',
+          role: 'manager',
           model: fallbackModel,
           attempt: 'fallback',
           ...(fallbackRequestKey ? { requestKey: fallbackRequestKey } : {}),
@@ -158,21 +158,26 @@ export const runThinker = async (params: {
         fallbackUsed: true,
         ...(r.usage ? { usage: r.usage } : {}),
       }
-    } catch (fbError) {
-      const fbErr = toError(fbError)
-      await archiveThinkerResult(
+    } catch (fallbackError) {
+      const fallbackErr = toError(fallbackError)
+      await archiveManagerResult(
         params.stateDir,
         {
-          role: 'thinker',
+          role: 'manager',
           model: fallbackModel,
           attempt: 'fallback',
           ...(fallbackRequestKey ? { requestKey: fallbackRequestKey } : {}),
           ...withSampling(params),
         },
         prompt,
-        { output: '', ok: false, error: fbErr.message, errorName: fbErr.name },
+        {
+          output: '',
+          ok: false,
+          error: fallbackErr.message,
+          errorName: fallbackErr.name,
+        },
       )
-      throw fbError
+      throw fallbackError
     }
   }
 }

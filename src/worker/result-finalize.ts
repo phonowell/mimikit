@@ -1,7 +1,7 @@
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { nowIso } from '../shared/utils.js'
-import { publishWorkerResult } from '../streams/channels.js'
+import { publishWorkerResult } from '../streams/queues.js'
 
 import { archiveTaskResult } from './runtime-utils.js'
 

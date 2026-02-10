@@ -3,7 +3,6 @@ import { z } from 'zod'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import { notifyWorkerLoop } from '../orchestrator/core/worker-signal.js'
 import { appendTaskSystemMessage } from '../orchestrator/read-model/task-history.js'
-import { appendReportingEvent } from '../reporting/events.js'
 import { enqueueTask } from '../tasks/queue.js'
 import { cancelTask } from '../worker/cancel-task.js'
 import { enqueueWorkerTask } from '../worker/dispatch.js'
@@ -25,7 +24,7 @@ const createSchema = z
   .object({
     prompt: nonEmptyString,
     title: nonEmptyString,
-    profile: z.enum(['standard', 'expert']),
+    profile: z.enum(['standard', 'specialist']),
   })
   .strict()
 
@@ -34,23 +33,6 @@ const cancelSchema = z
     task_id: nonEmptyString,
   })
   .strict()
-
-const feedbackSchema = z
-  .object({
-    message: nonEmptyString,
-  })
-  .strict()
-
-const parseFeedbackMessage = (item: Parsed): string | undefined => {
-  const parsed = feedbackSchema.safeParse(item.attrs)
-  if (!parsed.success) return undefined
-  return parsed.data.message
-}
-
-export const collectFeedbackMessages = (items: Parsed[]): string[] =>
-  items
-    .map((item) => parseFeedbackMessage(item))
-    .filter((value): value is string => value !== undefined)
 
 const parseSummary = (
   item: Parsed,
@@ -99,22 +81,6 @@ const applyCreateTask = async (
   notifyWorkerLoop(runtime)
 }
 
-const applyFeedback = async (
-  runtime: RuntimeState,
-  item: Parsed,
-): Promise<void> => {
-  const message = parseFeedbackMessage(item)
-  if (!message) return
-  await appendReportingEvent({
-    stateDir: runtime.config.stateDir,
-    source: 'thinker_action',
-    category: 'other',
-    severity: 'medium',
-    message,
-    note: 'thinker_capture_feedback',
-  })
-}
-
 export const applyTaskActions = async (
   runtime: RuntimeState,
   items: Parsed[],
@@ -128,11 +94,7 @@ export const applyTaskActions = async (
     if (item.name === 'cancel_task') {
       const parsed = cancelSchema.safeParse(item.attrs)
       if (!parsed.success) continue
-      await cancelTask(runtime, parsed.data.task_id, { source: 'thinker' })
-      continue
-    }
-    if (item.name === 'capture_feedback') {
-      await applyFeedback(runtime, item)
+      await cancelTask(runtime, parsed.data.task_id, { source: 'manager' })
       continue
     }
   }

@@ -3,7 +3,7 @@ import { bestEffort } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import { notifyWorkerLoop } from '../orchestrator/core/worker-signal.js'
 import { nowIso } from '../shared/utils.js'
-import { publishWorkerResult } from '../streams/channels.js'
+import { publishWorkerResult } from '../streams/queues.js'
 import { markTaskCanceled } from '../tasks/queue.js'
 
 import { archiveTaskResult } from './runtime-utils.js'

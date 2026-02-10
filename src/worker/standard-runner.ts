@@ -117,19 +117,17 @@ export const runStandardWorker = async (params: {
       },
     })
 
-    if (step.kind === 'respond') {
-      const response = step.response.trim()
-      if (!response) throw new Error('standard_response_empty')
+    if (step.kind === 'final') {
       state.finalized = true
-      state.finalOutput = response
+      state.finalOutput = step.output
       state.transcript.push(
-        [`round: ${state.round}`, `final_response:\n${response}`].join('\n'),
+        [`round: ${state.round}`, `final_response:\n${step.output}`].join('\n'),
       )
       await saveTaskCheckpoint({
         stateDir: params.stateDir,
         checkpoint: {
           taskId: params.taskId,
-          stage: 'responded',
+          stage: 'finalized',
           updatedAt: new Date().toISOString(),
           state,
         },

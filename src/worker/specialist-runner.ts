@@ -18,7 +18,7 @@ const archiveWorkerResult = (
   result: LlmArchiveResult,
 ) => appendLlmArchiveResult(stateDir, base, prompt, result)
 
-export const runExpertWorker = async (params: {
+export const runSpecialistWorker = async (params: {
   stateDir: string
   workDir: string
   task: Task

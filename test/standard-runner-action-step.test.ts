@@ -2,11 +2,11 @@ import { expect, test } from 'vitest'
 
 import { parseStandardStep } from '../src/worker/standard-step.js'
 
-test('parseStandardStep supports direct @respond action', () => {
-  const step = parseStandardStep('@respond response="done"')
+test('parseStandardStep supports plain final output', () => {
+  const step = parseStandardStep('done')
   expect(step).toEqual({
-    kind: 'respond',
-    response: 'done',
+    kind: 'final',
+    output: 'done',
   })
 })
 

@@ -1,36 +1,32 @@
-# Orchestrator 循环（入口）
+# Orchestrator（入口与并发）
 
 > 返回 [系统设计总览](./README.md)
 
-## 目的
-- 本文只保留 orchestrator 总览与分流入口。
-- 角色细节见：`docs/design/teller-workflow.md`、`docs/design/thinker-workflow.md`、`docs/design/worker-workflow.md`。
+## 启动入口
+- 入口类：`src/orchestrator/core/orchestrator-service.ts`
+- `Orchestrator.start()` 启动顺序：
+  1) `ensureStateDirs`
+  2) `hydrateRuntimeState`
+  3) `enqueuePendingWorkerTasks`
+  4) 并发启动 `managerLoop` / `evolverLoop` / `workerLoop`
 
-## 启动与并发循环
-- 启动入口：`Orchestrator.start()`。
-- 并发拉起：`tellerLoop`、`thinkerLoop`、`workerLoop`。
-- 实现位置：`src/orchestrator/core/orchestrator-service.ts`。
+## 运行态模型
+- 定义：`src/orchestrator/core/runtime-state.ts`
+- 核心字段：
+  - `managerRunning`
+  - `inflightInputs`
+  - `queues.inputsCursor` / `queues.resultsCursor`
+  - `tasks`
+  - `runningControllers` / `workerQueue`
+  - `lastEvolverRunAt`
 
-## 通道总览（JSONP）
-- `channels/user-input.jsonp`：用户输入事件。
-- `channels/worker-result.jsonp`：任务结果事件（thinker 直连消费）。
-- `channels/teller-digest.jsonp`：teller 给 thinker 的摘要事件。
-- `channels/thinker-decision.jsonp`：thinker 给 teller 的决策事件。
+## 输入与查询接口
+- 用户输入：`addUserInput()` 发布到 `inputs` 队列。
+- 读取消息：`getChatMessages()` 从 `history + inflightInputs` 构建视图。
+- 读取任务：`getTasks()` 基于 runtime `tasks` 输出 view。
+- 状态接口：`getStatus()` 返回 `managerRunning`、并发任务数、待处理输入数。
 
-## cursor 与持久化
-- teller cursor：`channels.teller.userInputCursor` / `channels.teller.thinkerDecisionCursor`。
-- thinker cursor：`channels.thinker.tellerDigestCursor` / `channels.thinker.workerResultCursor`。
-- 状态持久化：`runtime-state.json`（strict schema）。
-
-## 角色分工（摘要）
-- `teller`：消费输入与 thinker 决策，生成 digest，产出用户可见回复。
-- `thinker`：消费 digest + worker 结果，产出决策文本与任务 action。
-- `worker`：执行任务（standard/expert），发布 `worker-result`。
-
-## 参数入口
-- 配置定义：`src/config.ts`。
-- 关键节流参数：
-  - `teller.pollMs` / `teller.debounceMs`
-  - `thinker.pollMs` / `thinker.minIntervalMs` / `thinker.maxResultWaitMs`
-  - `channels.pruneEnabled` / `channels.keepRecentPackets`
-  - `worker.maxConcurrent` / `worker.retryMaxAttempts` / `worker.retryBackoffMs`
+## 持久化职责
+- `persistRuntimeState`：写 `runtime-state.json` + queues cursor state。
+- `hydrateRuntimeState`：恢复 pending/running 任务与 cursor。
+- worker 启动前会把恢复出的 pending 任务重新入队。

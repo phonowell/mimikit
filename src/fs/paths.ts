@@ -1,4 +1,4 @@
-import { readdir } from 'node:fs/promises'
+import { access, readdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
 import mkdir from 'fire-keeper/mkdir'
@@ -9,27 +9,44 @@ import type { Dirent } from 'node:fs'
 
 export type StatePaths = {
   root: string
-  channels: string
+  inputsDir: string
+  resultsDir: string
+  tasksDir: string
   history: string
   log: string
-  userInputChannel: string
-  workerResultChannel: string
-  tellerDigestChannel: string
-  thinkerDecisionChannel: string
+  inputsPackets: string
+  inputsState: string
+  resultsPackets: string
+  resultsState: string
+  tasksEvents: string
+  feedback: string
+  userProfile: string
+  agentPersona: string
+  agentPersonaVersionsDir: string
 }
 
 export const buildPaths = (stateDir: string): StatePaths => {
   const root = stateDir
-  const channels = join(root, 'channels')
+  const inputsDir = join(root, 'inputs')
+  const resultsDir = join(root, 'results')
+  const tasksDir = join(root, 'tasks')
+  const agentPersonaVersionsDir = join(root, 'agent_persona_versions')
   return {
     root,
-    channels,
+    inputsDir,
+    resultsDir,
+    tasksDir,
     history: join(root, 'history.jsonl'),
     log: join(root, 'log.jsonl'),
-    userInputChannel: join(channels, 'user-input.jsonp'),
-    workerResultChannel: join(channels, 'worker-result.jsonp'),
-    tellerDigestChannel: join(channels, 'teller-digest.jsonp'),
-    thinkerDecisionChannel: join(channels, 'thinker-decision.jsonp'),
+    inputsPackets: join(inputsDir, 'packets.jsonl'),
+    inputsState: join(inputsDir, 'state.json'),
+    resultsPackets: join(resultsDir, 'packets.jsonl'),
+    resultsState: join(resultsDir, 'state.json'),
+    tasksEvents: join(tasksDir, 'tasks.jsonl'),
+    feedback: join(root, 'feedback.md'),
+    userProfile: join(root, 'user_profile.md'),
+    agentPersona: join(root, 'agent_persona.md'),
+    agentPersonaVersionsDir,
   }
 }
 
@@ -37,9 +54,29 @@ export const ensureDir = async (path: string): Promise<void> => {
   await mkdir(path)
 }
 
+const ensureFile = async (
+  path: string,
+  initialContent: string,
+): Promise<void> => {
+  try {
+    await access(path)
+  } catch {
+    await writeFile(path, initialContent, 'utf8')
+  }
+}
+
 export const ensureStateDirs = async (paths: StatePaths): Promise<void> => {
   await ensureDir(paths.root)
-  await ensureDir(paths.channels)
+  await ensureDir(paths.inputsDir)
+  await ensureDir(paths.resultsDir)
+  await ensureDir(paths.tasksDir)
+  await ensureDir(paths.agentPersonaVersionsDir)
+  await ensureDir(join(paths.root, 'reporting'))
+  await ensureDir(join(paths.root, 'reports'))
+  await ensureDir(join(paths.root, 'reports', 'daily'))
+  await ensureFile(paths.feedback, '# Feedback\n\n')
+  await ensureFile(paths.userProfile, '# User Profile\n\n')
+  await ensureFile(paths.agentPersona, '# Agent Persona\n\n')
 }
 
 export const listFiles = (dir: string): Promise<Dirent[]> =>

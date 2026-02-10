@@ -3,64 +3,40 @@
 > 返回 [系统设计总览](./README.md)
 
 ## 范围与依据
-- 本文描述当前 worker 真实链路（以代码为准）。
-- 主线代码：`src/worker/loop.ts`、`src/worker/dispatch.ts`、`src/worker/run-task.ts`、`src/worker/run-retry.ts`。
-- 执行器代码：`src/worker/standard-runner.ts`、`src/worker/expert-runner.ts`。
+- 调度：`src/worker/dispatch.ts`、`src/worker/loop.ts`
+- 执行：`src/worker/run-task.ts`、`src/worker/run-retry.ts`
+- 结果落盘：`src/worker/result-finalize.ts`
 
-## worker 角色边界
-- 负责执行 thinker 派发任务并发布 `worker-result`。
-- profile：`standard`（动作循环）/`expert`（Codex SDK）。
-- 不负责直接面向用户的最终回复。
+## 角色边界
+- 只执行任务，不直接面向用户。
+- 输出统一是 `TaskResult` 并发布到 `results` 队列。
+- 支持 `standard` 与 `specialist` 两档执行。
 
-## 调度模型（P1 后）
-### 事件驱动
-- `create_task` 成功后：
-  - 写任务历史。
-  - 立即持久化 runtime。
-  - 通过 `enqueueWorkerTask()` 直接入 `p-queue`。
-- `workerLoop` 不再固定扫描 pending；负责：
-  - 每日报告补齐（基于 reporting events）。
-  - 等待唤醒信号。
+## 调度模型
+- 全局队列：`runtime.workerQueue`（`p-queue`）。
+- 并发：`worker.maxConcurrent`。
+- 去重：`task.id + sizeBy({id})`。
+- 启动恢复：`hydrateRuntimeState` 后重建 pending 任务入队。
 
-### 启动恢复
-- `hydrateRuntimeState()` 读取 `runtime-state.json` 后，调用 `enqueuePendingWorkerTasks()` 把恢复出来的 pending 任务重建入队。
-- `running` 任务在持久化时会被降级回 `pending`，重启后可继续执行。
+## 执行链路
+1. `enqueueWorkerTask` 入队。
+2. `runQueuedWorker` 标记 `running` 并持久化。
+3. `runTaskWithRetry` 按 profile 执行：
+   - `standard` -> `runStandardWorker`
+   - `specialist` -> `runSpecialistWorker`
+4. 成功/失败/取消统一走 `finalizeResult`：
+   - 更新任务状态
+   - 归档任务结果
+   - 发布到 `results`
 
-## 并发与去重（p-queue）
-- 全局队列：`runtime.workerQueue`（concurrency=`worker.maxConcurrent`）。
-- 去重：`id=task.id` + `sizeBy({id})`，避免重复入队。
-- 运行态：以 `runningControllers` 为单一真值源。
-
-## 执行生命周期
-1. `enqueueWorkerTask()` 入队任务。
-2. `runQueuedWorker()`：
-   - 标记 running + 持久化。
-   - 调 `runTask()`。
-   - finally 清理运行态并持久化。
-3. `runTask()` 结束后由 `finalizeResult()` 归档/发布结果。
-
-## 重试（p-retry）
-- `runTaskWithRetry()` 使用 `p-retry`。
-- `signal` 透传取消；取消路径通过 `AbortError` 直接停止重试。
-- `shouldConsumeRetry/shouldRetry` 对 abort-like 错误都返回 false。
-- `onFailedAttempt` 统一记录日报事件、日志与重试态持久化。
-
-## 取消路径
-- `pending`：立即标记 canceled，发布 canceled 结果，持久化并唤醒 worker。
-- `running`：标记 canceled + `AbortController.abort()`，由执行链路收敛为 canceled 结果。
-
-## 状态与落盘
-- 任务快照：`runtime-state.json`（pending/running 会被保留）。
-- 结果通道：`channels/worker-result.jsonp`。
-- 过程轨迹：`task-progress/{taskId}.jsonl`。
-- checkpoint：`task-checkpoints/{taskId}.json`。
-- 任务归档：`tasks/YYYY-MM-DD/*.md`。
-- llm 归档：`llm/YYYY-MM-DD/*.txt`（expert 必有；standard 由步骤侧产生）。
-- 日报：`reports/daily/YYYY-MM-DD.md`。
+## 取消与重试
+- `pending` 取消：直接发布 `canceled` 结果。
+- `running` 取消：`AbortController.abort()`，执行链路收敛为 `canceled`。
+- 重试框架：`p-retry`，abort-like 错误不消耗重试预算。
 
 ## 默认参数（worker）
-- `worker.maxConcurrent = 3`
-- `worker.retryMaxAttempts = 1`
-- `worker.retryBackoffMs = 5000`
-- `worker.standard.timeoutMs = 300000`
-- `worker.expert.timeoutMs = 600000`
+- `maxConcurrent=3`
+- `retryMaxAttempts=1`
+- `retryBackoffMs=5000`
+- `standard.timeoutMs=300000`
+- `specialist.timeoutMs=600000`

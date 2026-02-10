@@ -26,7 +26,7 @@ const reportWorkerLoopError = async (
 const resolveWorkerLoopWaitMs = (runtime: RuntimeState): number => {
   if (!runtime.config.reporting.dailyReportEnabled)
     return Number.POSITIVE_INFINITY
-  return Math.max(5_000, runtime.config.teller.pollMs)
+  return Math.max(5_000, runtime.config.manager.pollMs)
 }
 
 const maybeGenerateDailyReports = async (

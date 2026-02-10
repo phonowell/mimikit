@@ -10,7 +10,7 @@ import { buildArchiveDocument, dateStamp } from './archive-format.js'
 import type { TokenUsage } from '../types/index.js'
 
 export type LlmArchiveEntry = {
-  role: 'teller' | 'thinker' | 'worker'
+  role: 'manager' | 'worker'
   prompt: string
   output: string
   ok: boolean
@@ -28,7 +28,7 @@ export type LlmArchiveEntry = {
 }
 
 export type LlmArchiveLookup = {
-  role: 'teller' | 'thinker' | 'worker'
+  role: 'manager' | 'worker'
   model?: string
   attempt?: 'primary' | 'fallback'
   prompt?: string
@@ -41,7 +41,7 @@ export type LlmArchiveLookup = {
 
 export type LlmArchiveRecord = {
   path: string
-  role: 'teller' | 'thinker' | 'worker'
+  role: 'manager' | 'worker'
   prompt: string
   output: string
   ok: boolean

@@ -20,18 +20,12 @@ export type RuntimeState = {
   config: AppConfig
   paths: StatePaths
   stopped: boolean
-  thinkerRunning: boolean
+  managerRunning: boolean
   inflightInputs: PendingUserInput[]
-  lastThinkerRunAt?: number
-  channels: {
-    teller: {
-      userInputCursor: number
-      thinkerDecisionCursor: number
-    }
-    thinker: {
-      tellerDigestCursor: number
-      workerResultCursor: number
-    }
+  lastManagerRunAt?: number
+  queues: {
+    inputsCursor: number
+    resultsCursor: number
   }
   tasks: Task[]
   runningControllers: Map<string, AbortController>
@@ -41,4 +35,5 @@ export type RuntimeState = {
     lastDailyReportDate?: string
   }
   lastUserMeta?: UserMeta
+  lastEvolverRunAt?: number
 }

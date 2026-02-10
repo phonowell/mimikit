@@ -50,7 +50,10 @@ const yamlReplacer = (_key: unknown, value: unknown): unknown => {
   if (value === undefined || value === null) return undefined
   if (typeof value === 'number' && !Number.isFinite(value)) return undefined
   if (typeof value === 'string' && value === '') return undefined
-  if (Array.isArray(value) && value.length === 0) return undefined
+  if (Array.isArray(value)) {
+    if (value.length === 0) return undefined
+    return value
+  }
   if (typeof value === 'object') {
     const entries = Object.entries(value as Record<string, unknown>).filter(
       ([, next]) => next !== undefined,

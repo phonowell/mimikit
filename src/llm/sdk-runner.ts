@@ -20,7 +20,7 @@ type RunResult = {
 }
 type LogContext = Record<string, unknown>
 type RunParams = {
-  role: 'thinker' | 'worker'
+  role: 'manager' | 'worker'
   prompt: string
   workDir: string
   model?: string

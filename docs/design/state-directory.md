@@ -1,43 +1,39 @@
-# 状态目录
+# 状态目录（当前实现）
 
 > 返回 [系统设计总览](./README.md)
 
 默认目录：`./.mimikit/`
 
-## 关键文件
-- `history.jsonl`：用户与 assistant/system 历史消息。
-- `log.jsonl`：运行日志事件。
-- `runtime-state.json`：任务快照 + reporting + 通道 cursor（2026-02-09 起使用 strict schema 校验）。
-- `task-progress/{taskId}.jsonl`：standard worker 分步执行进度（2026-02-09 起按 schema 逐行校验，坏行忽略）。
-- `task-checkpoints/{taskId}.json`：standard worker 断点状态快照（2026-02-09 起按 schema strict 校验）。
-
-## runtime-state 结构约束（2026-02-09）
-- 仅接受 `reporting.lastDailyReportDate`。
-- 当前 channels 结构：
-  - `channels.teller.userInputCursor`
-  - `channels.teller.thinkerDecisionCursor`
-  - `channels.thinker.tellerDigestCursor`
-  - `channels.thinker.workerResultCursor`
-- 不兼容旧 grouped 结构：`channels.teller.workerResultCursor`（旧 teller 结果 cursor）。
-- 不兼容历史平铺字段：`tellerUserInputCursor`、`tellerWorkerResultCursor`、`tellerThinkerDecisionCursor`、`thinkerTellerDigestCursor`。
-- 不兼容历史字段：`evolve.lastIdleReviewAt`。
-
-## task-progress 结构约束（2026-02-09）
-- 每行必须是合法 JSON 且满足：`taskId`/`type`/`createdAt` 为非空字符串，`payload` 为对象。
-- 含未知字段或结构不符的事件行在读取时会被忽略。
-
-## task-checkpoint 结构约束（2026-02-09）
-- checkpoint 必须满足：`taskId`/`stage`/`updatedAt` 为非空字符串，`state` 为对象。
-- 含未知字段或结构不符的 checkpoint 在加载时返回 `null`。
-
-## 通道目录
-- `channels/user-input.jsonp`
-- `channels/worker-result.jsonp`
-- `channels/teller-digest.jsonp`
-- `channels/thinker-decision.jsonp`
-
-## 归档目录
-- `tasks/YYYY-MM-DD/*.md`
-- `llm/YYYY-MM-DD/*.txt`
+## 目录结构
+- `history.jsonl`：对话历史
+- `log.jsonl`：运行日志
+- `runtime-state.json`：任务快照 + reporting + queue cursor
+- `inputs/`
+  - `packets.jsonl`：待消费用户输入
+  - `state.json`：`managerCursor`
+- `results/`
+  - `packets.jsonl`：待消费任务结果
+  - `state.json`：`managerCursor`
+- `tasks/`
+  - `tasks.jsonl`：任务快照流
+- `feedback.md`
+- `user_profile.md`
+- `agent_persona.md`
+- `agent_persona_versions/*.md`
+- `task-progress/{taskId}.jsonl`
+- `task-checkpoints/{taskId}.json`
+- `tasks/YYYY-MM-DD/*.md`（任务结果归档）
+- `llm/YYYY-MM-DD/*.txt`（LLM 调用归档）
 - `reporting/events.jsonl`
 - `reports/daily/YYYY-MM-DD.md`
+
+## runtime-state 结构约束
+- schema：`src/storage/runtime-state-schema.ts`
+- `queues` 仅包含：
+  - `inputsCursor`
+  - `resultsCursor`
+- 旧 `channels.*` 字段不再兼容。
+
+## queue state 结构约束
+- schema 语义：`managerCursor` 必须是非负整数。
+- 落盘文件：`inputs/state.json`、`results/state.json`。

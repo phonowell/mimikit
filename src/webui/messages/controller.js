@@ -72,8 +72,8 @@ export function createMessagesController({
   const { doRender } = rendering
 
   const syncLoadingState = () => {
-    const thinkerRunning = Boolean(lastStatus?.thinkerRunning)
-    const shouldWait = messageState.awaitingReply && thinkerRunning
+    const managerRunning = Boolean(lastStatus?.managerRunning)
+    const shouldWait = messageState.awaitingReply && managerRunning
     if (shouldWait && !loading.isLoading()) loading.setLoading(true)
     else if (!shouldWait && loading.isLoading()) loading.setLoading(false)
   }

@@ -9,15 +9,9 @@ export type RuntimeSnapshot = {
   reporting?: {
     lastDailyReportDate?: string
   }
-  channels?: {
-    teller: {
-      userInputCursor: number
-      thinkerDecisionCursor: number
-    }
-    thinker: {
-      tellerDigestCursor: number
-      workerResultCursor: number
-    }
+  queues?: {
+    inputsCursor: number
+    resultsCursor: number
   }
 }
 
@@ -27,7 +21,7 @@ const taskRawSchema = z
     fingerprint: z.string().trim().min(1),
     prompt: z.string(),
     title: z.string(),
-    profile: z.enum(['standard', 'expert']),
+    profile: z.enum(['standard', 'specialist']),
     status: z.enum(['pending', 'running', 'succeeded', 'failed', 'canceled']),
     createdAt: z.string(),
     startedAt: z.string().optional(),
@@ -39,20 +33,10 @@ const taskRawSchema = z
   })
   .strict()
 
-const runtimeSnapshotChannelsSchema = z
+const queueStateSchema = z
   .object({
-    teller: z
-      .object({
-        userInputCursor: z.number().int().nonnegative(),
-        thinkerDecisionCursor: z.number().int().nonnegative(),
-      })
-      .strict(),
-    thinker: z
-      .object({
-        tellerDigestCursor: z.number().int().nonnegative(),
-        workerResultCursor: z.number().int().nonnegative(),
-      })
-      .strict(),
+    inputsCursor: z.number().int().nonnegative(),
+    resultsCursor: z.number().int().nonnegative(),
   })
   .strict()
 
@@ -65,7 +49,7 @@ const runtimeSnapshotRawSchema = z
       })
       .strict()
       .optional(),
-    channels: runtimeSnapshotChannelsSchema.optional(),
+    queues: queueStateSchema.optional(),
   })
   .strict()
 
@@ -101,6 +85,6 @@ export const parseRuntimeSnapshot = (value: unknown): RuntimeSnapshot => {
     ...(reportingDate
       ? { reporting: { lastDailyReportDate: reportingDate } }
       : {}),
-    ...(parsed.channels ? { channels: parsed.channels } : {}),
+    ...(parsed.queues ? { queues: parsed.queues } : {}),
   }
 }

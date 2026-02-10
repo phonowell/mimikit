@@ -10,7 +10,7 @@ const readEnvOptional = (key: string): string | undefined => {
   return trimmed && trimmed.length > 0 ? trimmed : undefined
 }
 
-export const DEFAULT_THINKER_FALLBACK_MODEL = readEnvOptional(
+export const DEFAULT_MANAGER_FALLBACK_MODEL = readEnvOptional(
   'MIMIKIT_FALLBACK_MODEL',
 )
 
@@ -34,7 +34,7 @@ export const withSampling = (params: {
 export const toError = (err: unknown): Error =>
   err instanceof Error ? err : new Error(String(err))
 
-export const archiveThinkerResult = (
+export const archiveManagerResult = (
   stateDir: string,
   base: Omit<LlmArchiveEntry, 'prompt' | 'output' | 'ok'>,
   prompt: string,
