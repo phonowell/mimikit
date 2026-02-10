@@ -1,4 +1,4 @@
-# 运行接口（当前实现）
+# 接口与状态目录（当前实现）
 
 > 返回 [系统设计总览](./README.md)
 
@@ -21,7 +21,7 @@
 - `tsx src/cli/index.ts --port 8787`
 - `tsx src/cli/index.ts --state-dir .mimikit --work-dir .`
 
-## 环境变量（核心）
+## 核心环境变量
 - `MIMIKIT_MODEL`（覆盖 `manager + worker.standard`）
 - `MIMIKIT_MANAGER_MODEL`
 - `MIMIKIT_WORKER_STANDARD_MODEL`
@@ -42,3 +42,37 @@
 - `MIMIKIT_REPORTING_RUNTIME_HIGH_LATENCY_MS`
 - `MIMIKIT_REPORTING_RUNTIME_HIGH_USAGE_TOTAL`
 - `MIMIKIT_FALLBACK_MODEL`
+
+## 状态目录
+默认目录：`./.mimikit/`
+
+- `history.jsonl`：对话历史
+- `log.jsonl`：运行日志
+- `runtime-state.json`：任务快照 + reporting + queue cursor
+- `inputs/packets.jsonl`：待消费用户输入
+- `inputs/state.json`：`managerCursor`
+- `results/packets.jsonl`：待消费任务结果
+- `results/state.json`：`managerCursor`
+- `tasks/tasks.jsonl`：任务快照流
+- `feedback.md`
+- `user_profile.md`
+- `agent_persona.md`
+- `agent_persona_versions/*.md`
+- `task-progress/{taskId}.jsonl`
+- `task-checkpoints/{taskId}.json`
+- `tasks/YYYY-MM-DD/*.md`（任务结果归档）
+- `llm/YYYY-MM-DD/*.txt`（LLM 调用归档）
+- `reporting/events.jsonl`
+- `reports/daily/YYYY-MM-DD.md`
+
+## schema 约束
+- runtime-state schema：`src/storage/runtime-state-schema.ts`
+- `runtime-state.queues` 仅包含：
+  - `inputsCursor`
+  - `resultsCursor`
+- 旧 `channels.*` 字段不再兼容。
+
+queue state 约束：
+- `managerCursor` 必须是非负整数。
+- 落盘：`inputs/state.json`、`results/state.json`。
+

@@ -3,18 +3,10 @@
 > 当前架构：`manager / evolver / worker`。
 
 ## 阅读路径
-- `docs/design/overview.md`
-- `docs/design/orchestrator.md`
-- `docs/design/manager-workflow.md`
-- `docs/design/evolver-workflow.md`
-- `docs/design/worker-workflow.md`
+- `docs/design/system-architecture.md`
 - `docs/design/runners.md`
-- `docs/design/task-system.md`
-- `docs/design/task-data.md`
-- `docs/design/actions.md`
-- `docs/design/interfaces.md`
-- `docs/design/state-directory.md`
-- `docs/design/feedback-improvement-loop.md`
+- `docs/design/task-and-action.md`
+- `docs/design/interfaces-and-state.md`
 
 ## 设计原则
 1. 一次性全量重构（Big Bang），不保留旧多角色链路与旧队列字段兼容层。
