@@ -4,9 +4,10 @@ import { join } from 'node:path'
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { renderPromptTemplate } from '../prompts/format.js'
-import { loadPromptTemplate } from '../prompts/prompt-loader.js'
 import { nowIso, sleep } from '../shared/utils.js'
 import { readHistory } from '../storage/jsonl.js'
+
+import { loadEvolverTemplates } from './templates.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 
@@ -24,23 +25,6 @@ const appendMarkdownSection = async (params: {
     '',
   ].join('\n')
   await writeFile(params.path, body, 'utf8')
-}
-
-const parseMarkdownList = (content: string): string[] =>
-  content
-    .split(/\r?\n/)
-    .map((line) => line.trimEnd())
-    .filter((line) => line.trim().length > 0)
-
-const readRequiredEvolverTemplate = async (
-  runtime: RuntimeState,
-  relativePath: string,
-): Promise<string> => {
-  const content = (
-    await loadPromptTemplate(runtime.config.workDir, relativePath)
-  ).trim()
-  if (!content) throw new Error(`missing_evolver_template:${relativePath}`)
-  return content
 }
 
 const summarizeTaskStats = (runtime: RuntimeState): string[] => {
@@ -80,6 +64,7 @@ const summarizeTaskStats = (runtime: RuntimeState): string[] => {
 
 const summarizeRecentUserMessages = async (
   runtime: RuntimeState,
+  noRecentUserInput: string[],
 ): Promise<string[]> => {
   const history = await readHistory(runtime.paths.history)
   const recent = history
@@ -87,25 +72,16 @@ const summarizeRecentUserMessages = async (
     .slice(-5)
     .map((item) => item.text.replace(/\s+/g, ' ').trim())
     .filter((item) => item.length > 0)
-  if (recent.length === 0) {
-    const fallback = await readRequiredEvolverTemplate(
-      runtime,
-      'evolver/no-recent-user-input.md',
-    )
-    return parseMarkdownList(fallback)
-  }
+  if (recent.length === 0) return noRecentUserInput
   return recent.map((item, index) => `- recent_user_${index + 1}: ${item}`)
 }
 
 const writeAgentPersonaVersion = async (
   runtime: RuntimeState,
   stamp: string,
+  snapshotTemplate: string,
 ): Promise<void> => {
   const versionPath = join(runtime.paths.agentPersonaVersionsDir, `${stamp}.md`)
-  const snapshotTemplate = await readRequiredEvolverTemplate(
-    runtime,
-    'evolver/persona-snapshot.md',
-  )
   const body = renderPromptTemplate(snapshotTemplate, { stamp })
   await writeFile(versionPath, body, 'utf8')
 }
@@ -153,31 +129,26 @@ export const evolverLoop = async (runtime: RuntimeState): Promise<void> => {
     runtime.lastEvolverRunAt = now
 
     try {
-      const feedbackSource = parseMarkdownList(
-        await readRequiredEvolverTemplate(
-          runtime,
-          'evolver/feedback-source.md',
-        ),
-      )
-      const personaLines = parseMarkdownList(
-        await readRequiredEvolverTemplate(runtime, 'evolver/persona-update.md'),
-      )
+      const templates = await loadEvolverTemplates(runtime.config.workDir)
       await appendMarkdownSection({
         path: runtime.paths.feedback,
         title: `Feedback ${stamp}`,
-        lines: [...feedbackSource, ...summarizeTaskStats(runtime)],
+        lines: [...templates.feedbackSource, ...summarizeTaskStats(runtime)],
       })
       await appendMarkdownSection({
         path: runtime.paths.userProfile,
         title: `Profile Update ${stamp}`,
-        lines: await summarizeRecentUserMessages(runtime),
+        lines: await summarizeRecentUserMessages(
+          runtime,
+          templates.noRecentUserInput,
+        ),
       })
       await appendMarkdownSection({
         path: runtime.paths.agentPersona,
         title: `Persona Update ${stamp}`,
-        lines: personaLines,
+        lines: templates.personaLines,
       })
-      await writeAgentPersonaVersion(runtime, stamp)
+      await writeAgentPersonaVersion(runtime, stamp, templates.personaSnapshot)
       await appendLog(runtime.paths.log, {
         event: 'evolver_end',
         status: 'ok',

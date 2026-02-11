@@ -52,6 +52,7 @@
 - 从 `history` 提取用户反馈，写入 `feedback.md`。
 - 从 `tasks` 提取耗时/token/失败异常，写入 `feedback.md`。
 - 基于反馈更新 `agent_persona.md` 与 `user_profile.md`（版本化 + 可审计）。
+- 使用 `prompts/evolver/system.md` + `prompts/evolver/injection.md` 作为唯一模板入口。
 
 ## 实施要求（一次发布内完成）
 - 同一版本中完成重构并替换旧架构入口。

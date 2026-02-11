@@ -26,7 +26,7 @@ export const loadPromptFile = (
   role: string,
   name: string,
 ): Promise<string> => {
-  const path = join(workDir, 'prompts', 'agents', role, `${name}.md`)
+  const path = join(workDir, 'prompts', role, `${name}.md`)
   return readPromptByPath(path)
 }
 

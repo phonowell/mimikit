@@ -95,6 +95,14 @@
 ## Evolver 空闲链路
 实现：`src/evolver/loop.ts`
 
+模板来源：`prompts/evolver/system.md` + `prompts/evolver/injection.md`
+
+`injection.md` 必须包含以下块：
+- `<MIMIKIT:feedback_source>...</MIMIKIT:feedback_source>`
+- `<MIMIKIT:persona_update>...</MIMIKIT:persona_update>`
+- `<MIMIKIT:no_recent_user_input>...</MIMIKIT:no_recent_user_input>`
+- `<MIMIKIT:persona_snapshot>...</MIMIKIT:persona_snapshot>`
+
 触发条件：
 - `managerRunning=false`
 - 无 `running` / `pending` 任务
@@ -118,4 +126,3 @@
 - 在线链路只做观测与记录，不阻塞 manager/worker 主链路。
 - 报告与演进信息用于后续优化，不直接改写在线任务结果。
 - 异常优先记录，不静默吞错。
-

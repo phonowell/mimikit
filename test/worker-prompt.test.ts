@@ -10,7 +10,7 @@ const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-worker-prompt-'))
 
 test('buildWorkerPrompt injects prompt and optional context placeholders', async () => {
   const workDir = await createTmpDir()
-  const workerDir = join(workDir, 'prompts', 'agents', 'worker-standard')
+  const workerDir = join(workDir, 'prompts', 'worker-standard')
   await mkdir(workerDir, { recursive: true })
   await writeFile(join(workerDir, 'system.md'), 'SYS', 'utf8')
   await writeFile(

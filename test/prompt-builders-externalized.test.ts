@@ -10,7 +10,7 @@ const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-prompt-builders-'))
 
 test('buildWorkerPrompt renders external templates for standard worker', async () => {
   const workDir = await createTmpDir()
-  const dir = join(workDir, 'prompts', 'agents', 'worker-standard')
+  const dir = join(workDir, 'prompts', 'worker-standard')
   await mkdir(dir, { recursive: true })
   await writeFile(join(dir, 'system.md'), 'WORKER_SYS', 'utf8')
   await writeFile(

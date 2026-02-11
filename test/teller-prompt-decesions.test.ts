@@ -19,7 +19,7 @@ const getTagContent = (output: string, tag: string): string => {
 
 test('buildManagerPrompt renders results/tasks/history placeholders', async () => {
   const workDir = await createTmpDir()
-  const managerDir = join(workDir, 'prompts', 'agents', 'manager')
+  const managerDir = join(workDir, 'prompts', 'manager')
   await mkdir(managerDir, { recursive: true })
   await writeFile(join(managerDir, 'system.md'), 'MANAGER_SYS', 'utf8')
   await writeFile(
@@ -88,7 +88,7 @@ test('buildManagerPrompt renders results/tasks/history placeholders', async () =
 
 test('buildManagerPrompt keeps persona/profile placeholders empty when files are missing', async () => {
   const workDir = await createTmpDir()
-  const managerDir = join(workDir, 'prompts', 'agents', 'manager')
+  const managerDir = join(workDir, 'prompts', 'manager')
   await mkdir(managerDir, { recursive: true })
   await writeFile(join(managerDir, 'system.md'), 'MANAGER_SYS', 'utf8')
   await writeFile(
