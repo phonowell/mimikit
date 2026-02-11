@@ -5,13 +5,11 @@ import {
 } from '../prompts/prompt-loader.js'
 
 type EvolverTemplateTag =
-  | 'feedback_source'
   | 'persona_update'
   | 'no_recent_user_input'
   | 'persona_snapshot'
 
 export type EvolverTemplates = {
-  feedbackSource: string[]
   personaLines: string[]
   noRecentUserInput: string[]
   personaSnapshot: string
@@ -46,9 +44,6 @@ export const loadEvolverTemplates = async (
     throw new Error('missing_evolver_template:evolver/injection.md')
   const content = joinPromptSections([system, injection])
   return {
-    feedbackSource: parseMarkdownList(
-      extractRequiredTemplateBlock(content, 'feedback_source'),
-    ),
     personaLines: parseMarkdownList(
       extractRequiredTemplateBlock(content, 'persona_update'),
     ),

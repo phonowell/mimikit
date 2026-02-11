@@ -1,4 +1,4 @@
-import { parseEnvBoolean, parseEnvPositiveInteger } from './env-parse.js'
+import { parseEnvPositiveInteger } from './env-parse.js'
 import { applyReasoningEnv } from './env-reasoning.js'
 
 import type { AppConfig } from '../config.js'
@@ -19,29 +19,6 @@ const applyModelEnv = (config: AppConfig): void => {
     process.env.MIMIKIT_WORKER_SPECIALIST_MODEL?.trim()
   if (envWorkerSpecialistModel)
     config.worker.specialist.model = envWorkerSpecialistModel
-}
-
-const applyReportingEnv = (config: AppConfig): void => {
-  const dailyReportEnabled = parseEnvBoolean(
-    'MIMIKIT_REPORTING_DAILY_ENABLED',
-    process.env.MIMIKIT_REPORTING_DAILY_ENABLED?.trim(),
-  )
-  if (dailyReportEnabled !== undefined)
-    config.reporting.dailyReportEnabled = dailyReportEnabled
-
-  const runtimeHighLatencyMs = parseEnvPositiveInteger(
-    'MIMIKIT_REPORTING_RUNTIME_HIGH_LATENCY_MS',
-    process.env.MIMIKIT_REPORTING_RUNTIME_HIGH_LATENCY_MS?.trim(),
-  )
-  if (runtimeHighLatencyMs !== undefined)
-    config.reporting.runtimeHighLatencyMs = runtimeHighLatencyMs
-
-  const runtimeHighUsageTotal = parseEnvPositiveInteger(
-    'MIMIKIT_REPORTING_RUNTIME_HIGH_USAGE_TOTAL',
-    process.env.MIMIKIT_REPORTING_RUNTIME_HIGH_USAGE_TOTAL?.trim(),
-  )
-  if (runtimeHighUsageTotal !== undefined)
-    config.reporting.runtimeHighUsageTotal = runtimeHighUsageTotal
 }
 
 const applyLoopEnv = (config: AppConfig): void => {
@@ -102,6 +79,5 @@ const applyLoopEnv = (config: AppConfig): void => {
 export const applyCliEnvOverrides = (config: AppConfig): void => {
   applyModelEnv(config)
   applyReasoningEnv(config)
-  applyReportingEnv(config)
   applyLoopEnv(config)
 }

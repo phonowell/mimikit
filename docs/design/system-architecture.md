@@ -18,7 +18,7 @@
   - 支持 `standard` 与 `specialist` 两档执行。
 - `evolver`
   - 仅在系统空闲时触发。
-  - 汇总 `history/tasks` 并更新演进文档（`feedback.md`、`user_profile.md`、`agent_persona.md`）。
+  - 基于 `history` 与模板内容更新演进文档（`user_profile.md`、`agent_persona.md`）。
 
 ## 启动与运行态
 - 启动入口：`src/orchestrator/core/orchestrator-service.ts`
@@ -43,7 +43,7 @@
 2. `manager` 增量消费 `inputs/results`，写入 `history` 并执行任务编排。
 3. `worker` 执行任务后写入 `results/packets.jsonl`。
 4. `manager` 消费结果、更新任务快照并回复用户。
-5. 系统空闲后，`evolver` 执行反馈与人格演进。
+5. 系统空闲后，`evolver` 执行画像与人格演进。
 
 ## Manager 主循环
 实现：`src/manager/loop.ts`
@@ -98,7 +98,6 @@
 模板来源：`prompts/evolver/system.md` + `prompts/evolver/injection.md`
 
 `injection.md` 必须包含以下块：
-- `<MIMIKIT:feedback_source>...</MIMIKIT:feedback_source>`
 - `<MIMIKIT:persona_update>...</MIMIKIT:persona_update>`
 - `<MIMIKIT:no_recent_user_input>...</MIMIKIT:no_recent_user_input>`
 - `<MIMIKIT:persona_snapshot>...</MIMIKIT:persona_snapshot>`
@@ -111,18 +110,17 @@
 - 距上次执行达到 `evolver.minIntervalMs`
 
 每轮动作：
-1. 追加 `feedback.md`（任务状态 + 高时延/高 usage 汇总）。
-2. 追加 `user_profile.md`（近期用户画像摘要）。
-3. 追加 `agent_persona.md`（人格策略更新）。
-4. 写 `agent_persona_versions/{timestamp}.md` 快照。
-5. 记录 `evolver_end` 日志。
+1. 追加 `user_profile.md`（近期用户画像摘要）。
+2. 追加 `agent_persona.md`（人格策略更新）。
+3. 写 `agent_persona_versions/{timestamp}.md` 快照。
+4. 记录 `evolver_end` 日志。
 
 默认参数（evolver）：
 - `pollMs=2000`
 - `idleThresholdMs=60000`
 - `minIntervalMs=300000`
 
-## 反馈与演进边界
+## 演进边界
 - 在线链路只做观测与记录，不阻塞 manager/worker 主链路。
-- 报告与演进信息用于后续优化，不直接改写在线任务结果。
+- 演进信息用于后续优化，不直接改写在线任务结果。
 - 异常优先记录，不静默吞错。

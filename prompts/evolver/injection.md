@@ -1,7 +1,3 @@
-<MIMIKIT:feedback_source>
-- 来源：history + tasks
-</MIMIKIT:feedback_source>
-
 <MIMIKIT:persona_update>
 - 目标：高效率、低费用、准确完成请求。
 - 策略：优先复用任务，避免重复派单。

@@ -4,7 +4,6 @@ import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 
-import { appendWorkerRetryFeedback } from './run-feedback.js'
 import { runSpecialistWorker } from './specialist-runner.js'
 import { runStandardWorker } from './standard-runner.js'
 
@@ -87,11 +86,6 @@ const buildRetryOptions = (params: {
     shouldConsumeRetry: ({ error }) => !isAbortLikeError(error),
     shouldRetry: ({ error }) => !isAbortLikeError(error),
     onFailedAttempt: async (attemptError) => {
-      await appendWorkerRetryFeedback({
-        runtime,
-        task,
-        error: attemptError.error,
-      })
       if (attemptError.retriesLeft <= 0) return
       await appendLog(runtime.paths.log, {
         event: 'worker_retry',

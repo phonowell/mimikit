@@ -53,18 +53,6 @@ test('selectPersistedTasks keeps pending and recovers running', () => {
   expect(persisted[1]?.startedAt).toBeUndefined()
 })
 
-test('runtime snapshot keeps reporting daily state', async () => {
-  const stateDir = await createTmpDir()
-  await saveRuntimeSnapshot(stateDir, {
-    tasks: [],
-    reporting: {
-      lastDailyReportDate: '2026-02-07',
-    },
-  })
-  const loaded = await loadRuntimeSnapshot(stateDir)
-  expect(loaded.reporting?.lastDailyReportDate).toBe('2026-02-07')
-})
-
 test('runtime snapshot accepts queue cursors', async () => {
   const stateDir = await createTmpDir()
   await saveRuntimeSnapshot(stateDir, {

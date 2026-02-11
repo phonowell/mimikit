@@ -22,7 +22,6 @@
 - `src/evolver/*`
 - `src/worker/*`
 - `src/streams/*`
-- `src/reporting/*`
 
 ## 提示词目录（当前实现）
 - `prompts/manager/system.md`

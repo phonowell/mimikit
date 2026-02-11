@@ -8,7 +8,7 @@
 
 ## 目标角色
 - `manager`：直接面向用户，负责意图理解、任务编排、结果复述。
-- `evolver`：仅在空闲时运行，负责反馈沉淀、人格演进、用户画像更新。
+- `evolver`：仅在空闲时运行，负责用户画像与人格演进更新。
 - `worker`：执行任务。
 
 ## worker 层级
@@ -26,7 +26,6 @@
 - `history`：对话历史（用户与 assistant）。
 - `results`：待消费任务结果队列；消费后写入 `tasks`。
 - `tasks`：任务记录（含状态流与归档）。
-- `feedback.md`：用户反馈与系统异常反馈。
 - `user_profile.md`：用户画像。
 - `agent_persona.md`：人格配置与版本。
 
@@ -36,7 +35,7 @@
 3. `manager` 派发/取消任务给 `worker`。
 4. `worker` 执行后把结果写入 `results`。
 5. `manager` 消费 `results`，更新 `tasks` 并对用户回复。
-6. `evolver` 在空闲窗口消费 `history/tasks`，写入 `feedback.md`，更新 `agent_persona.md/user_profile.md`。
+6. `evolver` 在空闲窗口消费 `history/tasks`，更新 `agent_persona.md/user_profile.md`。
 
 ## manager 工作流
 - 监听 `inputs/results`，有新数据即唤醒。
@@ -49,9 +48,8 @@
 
 ## evolver 工作流
 - 仅在 `manager` 空闲阈值满足时触发。
-- 从 `history` 提取用户反馈，写入 `feedback.md`。
-- 从 `tasks` 提取耗时/token/失败异常，写入 `feedback.md`。
-- 基于反馈更新 `agent_persona.md` 与 `user_profile.md`（版本化 + 可审计）。
+- 从 `history` 提取用户偏好与近期主题，更新 `user_profile.md`。
+- 从 `tasks` 与交互结果提炼策略，更新 `agent_persona.md`（版本化 + 可审计）。
 - 使用 `prompts/evolver/system.md` + `prompts/evolver/injection.md` 作为唯一模板入口。
 
 ## 实施要求（一次发布内完成）

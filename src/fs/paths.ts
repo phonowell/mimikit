@@ -19,7 +19,6 @@ export type StatePaths = {
   resultsPackets: string
   resultsState: string
   tasksEvents: string
-  feedback: string
   userProfile: string
   agentPersona: string
   agentPersonaVersionsDir: string
@@ -43,7 +42,6 @@ export const buildPaths = (stateDir: string): StatePaths => {
     resultsPackets: join(resultsDir, 'packets.jsonl'),
     resultsState: join(resultsDir, 'state.json'),
     tasksEvents: join(tasksDir, 'tasks.jsonl'),
-    feedback: join(root, 'feedback.md'),
     userProfile: join(root, 'user_profile.md'),
     agentPersona: join(root, 'agent_persona.md'),
     agentPersonaVersionsDir,

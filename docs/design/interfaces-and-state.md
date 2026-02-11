@@ -38,9 +38,6 @@
 - `MIMIKIT_EVOLVER_POLL_MS`
 - `MIMIKIT_EVOLVER_IDLE_THRESHOLD_MS`
 - `MIMIKIT_EVOLVER_MIN_INTERVAL_MS`
-- `MIMIKIT_REPORTING_DAILY_ENABLED`
-- `MIMIKIT_REPORTING_RUNTIME_HIGH_LATENCY_MS`
-- `MIMIKIT_REPORTING_RUNTIME_HIGH_USAGE_TOTAL`
 - `MIMIKIT_FALLBACK_MODEL`
 
 ## 状态目录
@@ -48,13 +45,12 @@
 
 - `history.jsonl`：对话历史
 - `log.jsonl`：运行日志
-- `runtime-state.json`：任务快照 + reporting + queue cursor
+- `runtime-state.json`：任务快照 + queue cursor
 - `inputs/packets.jsonl`：待消费用户输入
 - `inputs/state.json`：`managerCursor`
 - `results/packets.jsonl`：待消费任务结果
 - `results/state.json`：`managerCursor`
 - `tasks/tasks.jsonl`：任务快照流
-- `feedback.md`
 - `user_profile.md`
 - `agent_persona.md`
 - `agent_persona_versions/*.md`
@@ -62,8 +58,6 @@
 - `task-checkpoints/{taskId}.json`
 - `tasks/YYYY-MM-DD/*.md`（任务结果归档）
 - `llm/YYYY-MM-DD/*.txt`（LLM 调用归档）
-- `reporting/events.jsonl`
-- `reports/daily/YYYY-MM-DD.md`
 
 ## schema 约束
 - runtime-state schema：`src/storage/runtime-state-schema.ts`
@@ -75,4 +69,3 @@
 queue state 约束：
 - `managerCursor` 必须是非负整数。
 - 落盘：`inputs/state.json`、`results/state.json`。
-

@@ -19,7 +19,6 @@ export const hydrateRuntimeState = async (
 ): Promise<void> => {
   const snapshot = await loadRuntimeSnapshot(runtime.config.stateDir)
   runtime.tasks = snapshot.tasks
-  if (snapshot.reporting) runtime.reportingState = snapshot.reporting
   if (snapshot.queues) {
     runtime.queues = {
       inputsCursor: snapshot.queues.inputsCursor,
@@ -53,7 +52,6 @@ export const persistRuntimeState = async (
 ): Promise<void> => {
   await saveRuntimeSnapshot(runtime.config.stateDir, {
     tasks: selectPersistedTasks(runtime.tasks),
-    reporting: runtime.reportingState,
     queues: runtime.queues,
   })
   await saveInputQueueState(runtime.paths, {

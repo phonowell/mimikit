@@ -7,11 +7,6 @@ import {
 } from '../tasks/queue.js'
 
 import { buildResult, finalizeResult } from './result-finalize.js'
-import {
-  appendWorkerFailedFeedback,
-  appendWorkerHighLatencyFeedback,
-  appendWorkerHighUsageFeedback,
-} from './run-feedback.js'
 import { runTaskWithRetry } from './run-retry.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
@@ -32,20 +27,6 @@ export const runTask = async (
       promptChars: task.prompt.length,
     })
     const llmResult = await runTaskWithRetry({ runtime, task, controller })
-    const usageTotal = llmResult.usage?.total ?? 0
-    const elapsedMs = elapsed()
-    await appendWorkerHighLatencyFeedback({
-      runtime,
-      task,
-      elapsedMs,
-      usageTotal,
-    })
-    await appendWorkerHighUsageFeedback({
-      runtime,
-      task,
-      elapsedMs,
-      usageTotal,
-    })
     if (task.status === 'canceled') {
       const result = buildResult(
         task,
@@ -79,7 +60,6 @@ export const runTask = async (
       return
     }
     const result = buildResult(task, 'failed', err.message, elapsed())
-    await appendWorkerFailedFeedback({ runtime, task, message: err.message })
     await finalizeResult(runtime, task, result, markTaskFailed)
     notifyWorkerLoop(runtime)
   }

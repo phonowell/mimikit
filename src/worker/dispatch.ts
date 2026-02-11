@@ -5,7 +5,6 @@ import { notifyWorkerLoop } from '../orchestrator/core/worker-signal.js'
 import { markTaskRunning } from '../tasks/queue.js'
 
 import { runTask } from './run-task.js'
-import { appendRuntimeIssue } from './runtime-utils.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { Task } from '../types/index.js'
@@ -15,15 +14,6 @@ const reportWorkerQueueError = async (
   error: unknown,
 ): Promise<void> => {
   const message = error instanceof Error ? error.message : String(error)
-  await bestEffort('appendReportingEvent: worker_queue_error', () =>
-    appendRuntimeIssue({
-      runtime,
-      severity: 'high',
-      category: 'failure',
-      message: `worker queue error: ${message}`,
-      note: 'worker_queue_error',
-    }),
-  )
   await bestEffort('appendLog: worker_queue_error', () =>
     appendLog(runtime.paths.log, {
       event: 'worker_queue_error',

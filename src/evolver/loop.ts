@@ -19,13 +19,11 @@ const appendMarkdownSection = async (params: {
 }): Promise<void> => {
   const fileName = params.path.split(/[\\/]/).at(-1)
   const initial =
-    fileName === 'feedback.md'
-      ? '# Feedback\n\n'
-      : fileName === 'user_profile.md'
-        ? '# User Profile\n\n'
-        : fileName === 'agent_persona.md'
-          ? '# Agent Persona\n\n'
-          : ''
+    fileName === 'user_profile.md'
+      ? '# User Profile\n\n'
+      : fileName === 'agent_persona.md'
+        ? '# Agent Persona\n\n'
+        : ''
   await ensureFile(params.path, initial)
   const current = await readFile(params.path, 'utf8')
   const body = [
@@ -36,41 +34,6 @@ const appendMarkdownSection = async (params: {
     '',
   ].join('\n')
   await writeFile(params.path, body, 'utf8')
-}
-
-const summarizeTaskStats = (runtime: RuntimeState): string[] => {
-  const pending = runtime.tasks.filter(
-    (task) => task.status === 'pending',
-  ).length
-  const running = runtime.tasks.filter(
-    (task) => task.status === 'running',
-  ).length
-  const succeeded = runtime.tasks.filter(
-    (task) => task.status === 'succeeded',
-  ).length
-  const failed = runtime.tasks.filter((task) => task.status === 'failed').length
-  const canceled = runtime.tasks.filter(
-    (task) => task.status === 'canceled',
-  ).length
-  const slowTasks = runtime.tasks.filter(
-    (task) =>
-      typeof task.durationMs === 'number' &&
-      task.durationMs >= runtime.config.reporting.runtimeHighLatencyMs,
-  ).length
-  const highUsageTasks = runtime.tasks.filter(
-    (task) =>
-      (task.usage?.total ?? 0) >=
-      runtime.config.reporting.runtimeHighUsageTotal,
-  ).length
-  return [
-    `- pending: ${pending}`,
-    `- running: ${running}`,
-    `- succeeded: ${succeeded}`,
-    `- failed: ${failed}`,
-    `- canceled: ${canceled}`,
-    `- high_latency_tasks: ${slowTasks}`,
-    `- high_usage_tasks: ${highUsageTasks}`,
-  ]
 }
 
 const summarizeRecentUserMessages = async (
@@ -142,11 +105,6 @@ export const evolverLoop = async (runtime: RuntimeState): Promise<void> => {
 
     try {
       const templates = await loadEvolverTemplates(runtime.config.workDir)
-      await appendMarkdownSection({
-        path: runtime.paths.feedback,
-        title: `Feedback ${stamp}`,
-        lines: [...templates.feedbackSource, ...summarizeTaskStats(runtime)],
-      })
       await appendMarkdownSection({
         path: runtime.paths.userProfile,
         title: `Profile Update ${stamp}`,

@@ -6,7 +6,6 @@ import mkdir from 'fire-keeper/mkdir'
 import { expect, test } from 'vitest'
 
 import { buildPaths } from '../src/fs/paths.js'
-import { readReportingEvents } from '../src/reporting/events.js'
 import { loadRuntimeSnapshot } from '../src/storage/runtime-state.js'
 import { readHistory } from '../src/storage/jsonl.js'
 import {
@@ -31,7 +30,6 @@ test('state files are created lazily when read', async () => {
   await expect(access(paths.inputsState)).rejects.toBeDefined()
   await expect(access(paths.resultsState)).rejects.toBeDefined()
   await expect(access(join(stateDir, 'runtime-state.json'))).rejects.toBeDefined()
-  await expect(access(join(stateDir, 'reporting', 'events.jsonl'))).rejects.toBeDefined()
 
   await expect(readHistory(paths.history)).resolves.toEqual([])
   await expect(loadInputQueueState(paths)).resolves.toEqual({ managerCursor: 0 })
@@ -43,7 +41,6 @@ test('state files are created lazily when read', async () => {
       resultsCursor: 0,
     },
   })
-  await expect(readReportingEvents(stateDir)).resolves.toEqual([])
 
   await expect(readFile(paths.history, 'utf8')).resolves.toBe('')
   await expect(readFile(paths.inputsState, 'utf8')).resolves.toContain(
@@ -55,8 +52,4 @@ test('state files are created lazily when read', async () => {
   await expect(readFile(join(stateDir, 'runtime-state.json'), 'utf8')).resolves.toContain(
     '"tasks": []',
   )
-  await expect(
-    readFile(join(stateDir, 'reporting', 'events.jsonl'), 'utf8'),
-  ).resolves.toBe('')
 })
-

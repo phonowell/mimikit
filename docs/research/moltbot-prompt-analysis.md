@@ -7,8 +7,6 @@
 - 核心系统 prompt 生成: `..\moltbot\src\agents\system-prompt.ts`
 - 嵌入式运行的 prompt 装配: `..\moltbot\src\agents\pi-embedded-runner\run\attempt.ts`
 - Prompt override 与运行入口: `..\moltbot\src\agents\pi-embedded-runner\system-prompt.ts`
-- Prompt 报表与统计: `..\moltbot\src\agents\system-prompt-report.ts`
-- /context 报告输出: `..\moltbot\src\auto-reply\reply\commands-context-report.ts`
 - 工作区注入文件与截断策略: `..\moltbot\src\agents\workspace.ts`, `..\moltbot\src\agents\pi-embedded-helpers\bootstrap.ts`
 - skills prompt 生产与筛选: `..\moltbot\src\agents\skills\workspace.ts`
 - Gateway/OpenAI/OpenResponses 的 extraSystemPrompt: `..\moltbot\src\gateway\openai-http.ts`, `..\moltbot\src\gateway\openresponses-http.ts`

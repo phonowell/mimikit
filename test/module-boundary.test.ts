@@ -152,11 +152,10 @@ const topLevelOf = (relativePath: string): string => {
 }
 
 const forbiddenBySource = new Map<string, Set<string>>([
-  ['http', new Set(['reporting'])],
   ['log', new Set(['fs'])],
   [
     'fs',
-    new Set(['orchestrator', 'http', 'prompts', 'reporting', 'llm', 'tasks']),
+    new Set(['orchestrator', 'http', 'prompts', 'llm', 'tasks']),
   ],
 ])
 

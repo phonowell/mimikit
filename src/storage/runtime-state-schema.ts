@@ -6,9 +6,6 @@ import type { Task } from '../types/index.js'
 
 export type RuntimeSnapshot = {
   tasks: Task[]
-  reporting?: {
-    lastDailyReportDate?: string
-  }
   queues?: {
     inputsCursor: number
     resultsCursor: number
@@ -43,12 +40,6 @@ const queueStateSchema = z
 const runtimeSnapshotRawSchema = z
   .object({
     tasks: z.array(taskRawSchema),
-    reporting: z
-      .object({
-        lastDailyReportDate: z.string().optional(),
-      })
-      .strict()
-      .optional(),
     queues: queueStateSchema.optional(),
   })
   .strict()
@@ -78,13 +69,9 @@ const toTask = (task: z.infer<typeof taskRawSchema>): Task => {
 
 export const parseRuntimeSnapshot = (value: unknown): RuntimeSnapshot => {
   const parsed = runtimeSnapshotRawSchema.parse(value)
-  const reportingDate = parsed.reporting?.lastDailyReportDate
 
   return {
     tasks: parsed.tasks.map((task) => toTask(task)),
-    ...(reportingDate
-      ? { reporting: { lastDailyReportDate: reportingDate } }
-      : {}),
     ...(parsed.queues ? { queues: parsed.queues } : {}),
   }
 }

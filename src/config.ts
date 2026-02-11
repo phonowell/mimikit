@@ -14,15 +14,6 @@ export type AppConfig = {
   stateDir: string
   /** 工作目录绝对路径 */
   workDir: string
-  /** 运行报告相关配置 */
-  reporting: {
-    /** 是否启用每日报告产出 */
-    dailyReportEnabled: boolean
-    /** 运行延迟高阈值（毫秒） */
-    runtimeHighLatencyMs: number
-    /** 运行消耗高阈值（总 token） */
-    runtimeHighUsageTotal: number
-  }
   /** 管理器调度配置 */
   manager: {
     /** 轮询间隔（毫秒） */
@@ -95,11 +86,6 @@ export type OrchestratorConfig = AppConfig
 export const defaultConfig = (params: DefaultConfigParams): AppConfig => ({
   stateDir: resolve(params.stateDir),
   workDir: resolve(params.workDir),
-  reporting: {
-    dailyReportEnabled: true,
-    runtimeHighLatencyMs: 15 * 60 * 1_000,
-    runtimeHighUsageTotal: 100_000,
-  },
   manager: {
     pollMs: 1_000,
     minIntervalMs: 8_000,
