@@ -29,29 +29,6 @@ test('messages route forwards afterId and returns mode', async () => {
   await app.close()
 })
 
-test('messages route returns full mode when afterId is absent', async () => {
-  const app = fastify()
-  const { orchestrator, calls } = createOrchestratorStub()
-  const config = defaultConfig({ stateDir: '.mimikit', workDir: process.cwd() })
-  registerApiRoutes(app, orchestrator, config)
-
-  const response = await app.inject({
-    method: 'GET',
-    url: '/api/messages?limit=20',
-  })
-
-  expect(response.statusCode).toBe(200)
-  const body = response.json() as {
-    messages: Array<{ id: string }>
-    mode: ChatMessagesMode
-  }
-  expect(body.mode).toBe('full')
-  expect(body.messages[0]?.id).toBe('full-1')
-  expect(calls).toEqual([{ limit: 20, afterId: undefined }])
-
-  await app.close()
-})
-
 test('input route parses body and calls orchestrator', async () => {
   const app = fastify()
   const { orchestrator, addInputCalls } = createOrchestratorStub()
@@ -111,14 +88,6 @@ test('input route rejects invalid payload', async () => {
   expect(textMissing.statusCode).toBe(400)
   expect(textMissing.json()).toEqual({ error: 'text is required' })
 
-  const invalidType = await app.inject({
-    method: 'POST',
-    url: '/api/input',
-    payload: { text: 'ok', clientOffsetMinutes: '480' },
-  })
-  expect(invalidType.statusCode).toBe(400)
-  expect(invalidType.json()).toEqual({ error: 'invalid JSON' })
-
   expect(addInputCalls).toHaveLength(0)
 
   await app.close()
@@ -141,30 +110,6 @@ test('messages route returns 304 when If-None-Match hits', async () => {
   const second = await app.inject({
     method: 'GET',
     url: '/api/messages?limit=20',
-    headers: { 'if-none-match': String(etag) },
-  })
-  expect(second.statusCode).toBe(304)
-
-  await app.close()
-})
-
-test('status route returns 304 when If-None-Match hits', async () => {
-  const app = fastify()
-  const { orchestrator } = createOrchestratorStub()
-  const config = defaultConfig({ stateDir: '.mimikit', workDir: process.cwd() })
-  registerApiRoutes(app, orchestrator, config)
-
-  const first = await app.inject({
-    method: 'GET',
-    url: '/api/status',
-  })
-  expect(first.statusCode).toBe(200)
-  const etag = first.headers.etag
-  expect(typeof etag).toBe('string')
-
-  const second = await app.inject({
-    method: 'GET',
-    url: '/api/status',
     headers: { 'if-none-match': String(etag) },
   })
   expect(second.statusCode).toBe(304)

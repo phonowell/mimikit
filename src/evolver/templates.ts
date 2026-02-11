@@ -1,5 +1,8 @@
 import { joinPromptSections } from '../prompts/format.js'
-import { loadInjectionPrompt, loadSystemPrompt } from '../prompts/prompt-loader.js'
+import {
+  loadInjectionPrompt,
+  loadSystemPrompt,
+} from '../prompts/prompt-loader.js'
 
 type EvolverTemplateTag =
   | 'feedback_source'
@@ -24,7 +27,9 @@ const extractRequiredTemplateBlock = (
   content: string,
   tag: EvolverTemplateTag,
 ): string => {
-  const pattern = new RegExp(`<MIMIKIT:${tag}\\s*>([\\s\\S]*?)<\\/MIMIKIT:${tag}>`)
+  const pattern = new RegExp(
+    `<MIMIKIT:${tag}\\s*>([\\s\\S]*?)<\\/MIMIKIT:${tag}>`,
+  )
   const match = content.match(pattern)
   const block = match?.[1]?.trim()
   if (!block) throw new Error(`missing_evolver_template_tag:${tag}`)

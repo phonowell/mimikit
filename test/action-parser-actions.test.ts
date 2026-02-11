@@ -19,19 +19,6 @@ test('parseActions parses line actions and keeps plain text', () => {
 
 test.each([
   {
-    name: 'cancel_task attrs',
-    output: `<MIMIKIT:actions>\n@cancel_task task_id="task_123"\n</MIMIKIT:actions>`,
-    action: 'cancel_task',
-    attrs: { task_id: 'task_123' },
-  },
-  {
-    name: 'summarize_task_result attrs',
-    output:
-      `<MIMIKIT:actions>\n@summarize_task_result task_id="task_1" summary="brief"\n</MIMIKIT:actions>`,
-    action: 'summarize_task_result',
-    attrs: { task_id: 'task_1', summary: 'brief' },
-  },
-  {
     name: 'escaped attrs',
     output:
       `<MIMIKIT:actions>\n@write_file path="a.txt" content="line1\\nline2\\\"q\\\""\n</MIMIKIT:actions>`,

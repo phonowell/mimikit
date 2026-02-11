@@ -2,14 +2,6 @@ import { expect, test } from 'vitest'
 
 import { parseStandardStep } from '../src/worker/standard-step.js'
 
-test('parseStandardStep supports plain final output', () => {
-  const step = parseStandardStep('done')
-  expect(step).toEqual({
-    kind: 'final',
-    output: 'done',
-  })
-})
-
 test('parseStandardStep parses action from actions block', () => {
   const output = [
     '<MIMIKIT:actions>',

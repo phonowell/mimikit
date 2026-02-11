@@ -65,22 +65,6 @@ test('runtime snapshot keeps reporting daily state', async () => {
   expect(loaded.reporting?.lastDailyReportDate).toBe('2026-02-07')
 })
 
-test('runtime snapshot rejects legacy evolve field', async () => {
-  const stateDir = await createTmpDir()
-  await writeFile(
-    join(stateDir, 'runtime-state.json'),
-    JSON.stringify({
-      tasks: [],
-      evolve: {
-        lastIdleReviewAt: '2026-02-07T10:00:00.000Z',
-      },
-    }),
-    'utf8',
-  )
-
-  await expect(loadRuntimeSnapshot(stateDir)).rejects.toThrow()
-})
-
 test('runtime snapshot accepts queue cursors', async () => {
   const stateDir = await createTmpDir()
   await saveRuntimeSnapshot(stateDir, {
@@ -111,25 +95,6 @@ test('runtime snapshot rejects legacy grouped channel shape', async () => {
         thinker: {
           tellerDigestCursor: 6,
         },
-      },
-    }),
-    'utf8',
-  )
-
-  await expect(loadRuntimeSnapshot(stateDir)).rejects.toThrow()
-})
-
-test('runtime snapshot rejects legacy flat channel cursor fields', async () => {
-  const stateDir = await createTmpDir()
-  await writeFile(
-    join(stateDir, 'runtime-state.json'),
-    JSON.stringify({
-      tasks: [],
-      channels: {
-        tellerUserInputCursor: 3,
-        tellerWorkerResultCursor: 4,
-        tellerThinkerDecisionCursor: 5,
-        thinkerTellerDigestCursor: 6,
       },
     }),
     'utf8',

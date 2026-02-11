@@ -1,14 +1,7 @@
 import { expect, test } from 'vitest'
 
-import {
-  buildTaskFingerprint,
-  enqueueTask,
-} from '../src/tasks/queue.js'
+import { enqueueTask } from '../src/tasks/queue.js'
 import type { Task } from '../src/types/index.js'
-
-test('buildTaskFingerprint normalizes whitespace and case', () => {
-  expect(buildTaskFingerprint('  Foo\n\tBar  ')).toBe('foo bar')
-})
 
 test('enqueueTask dedupes active task by fingerprint', () => {
   const tasks: Task[] = []

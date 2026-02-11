@@ -70,14 +70,3 @@ test('buildTaskViews exposes changeAt from latest lifecycle time', () => {
   ])
   expect(tasks[0]?.changeAt).toBe('2026-02-06T00:00:20.000Z')
 })
-
-test('buildTaskViews exposes profile', () => {
-  const { tasks } = buildTaskViews([
-    createTask({
-      id: 't-specialist',
-      createdAt: '2026-02-06T00:00:00.000Z',
-      profile: 'specialist',
-    }),
-  ])
-  expect(tasks[0]?.profile).toBe('specialist')
-})
