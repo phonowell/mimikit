@@ -6,6 +6,7 @@ import type { Task } from '../src/types/index.js'
 const createTask = (params: {
   id: string
   createdAt: string
+  profile?: Task['profile']
   startedAt?: string
   completedAt?: string
   archivePath?: string
@@ -15,6 +16,7 @@ const createTask = (params: {
   fingerprint: params.id,
   prompt: params.id,
   title: params.id,
+  profile: params.profile ?? 'standard',
   status: 'succeeded',
   createdAt: params.createdAt,
   ...(params.startedAt ? { startedAt: params.startedAt } : {}),
@@ -67,4 +69,15 @@ test('buildTaskViews exposes changeAt from latest lifecycle time', () => {
     }),
   ])
   expect(tasks[0]?.changeAt).toBe('2026-02-06T00:00:20.000Z')
+})
+
+test('buildTaskViews exposes profile', () => {
+  const { tasks } = buildTaskViews([
+    createTask({
+      id: 't-specialist',
+      createdAt: '2026-02-06T00:00:00.000Z',
+      profile: 'specialist',
+    }),
+  ])
+  expect(tasks[0]?.profile).toBe('specialist')
 })

@@ -1,8 +1,6 @@
 import { formatElapsedLabel, formatTime, formatUsage } from './messages/format.js'
 
 const ELAPSED_TICK_MS = 1000
-
-
 const parseTimeMs = (value) => {
   if (typeof value === 'number' && Number.isFinite(value)) return value
   if (typeof value !== 'string') return null
@@ -19,13 +17,14 @@ const resolveDurationMs = (startMs, endMs) => {
   return Math.max(0, endMs - startMs)
 }
 
-
 const formatElapsedText = (elapsedMs, hasUsage) => {
   const label = formatElapsedLabel(elapsedMs)
   if (!label) return ''
   return hasUsage ? `· ${label}` : label
 }
 
+const resolveProfileText = (task) =>
+  task?.profile === 'specialist' ? 'specialist' : 'standard'
 
 const updateElapsedTimes = (tasksList) => {
   if (!tasksList) return
@@ -116,6 +115,13 @@ export const renderTasks = (tasksList, data) => {
     status.setAttribute('aria-label', statusValue)
     status.title = statusValue
     meta.appendChild(status)
+
+    const profile = document.createElement('span')
+    profile.className = 'task-profile'
+    const profileText = resolveProfileText(task)
+    profile.textContent = profileText
+    profile.setAttribute('aria-label', `task profile ${profileText}`)
+    meta.appendChild(profile)
 
     const elapsedEl = document.createElement('span')
     elapsedEl.className = 'task-elapsed'

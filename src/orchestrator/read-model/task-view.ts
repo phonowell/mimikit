@@ -5,6 +5,7 @@ import type { Task, TaskStatus } from '../../types/index.js'
 export type TaskView = {
   id: string
   status: TaskStatus
+  profile: Task['profile']
   title: string
   createdAt: string
   changeAt: string
@@ -31,6 +32,7 @@ const resolveTaskChangeAt = (task: Task): string =>
 const taskToView = (task: Task): TaskView => ({
   id: task.id,
   status: task.status,
+  profile: task.profile,
   title: task.title || titleFromCandidates(task.id, [task.prompt]),
   createdAt: task.createdAt,
   changeAt: resolveTaskChangeAt(task),
