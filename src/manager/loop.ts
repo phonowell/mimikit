@@ -124,7 +124,12 @@ export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
       await applyTaskActions(runtime, parsed.actions)
 
       const responseText =
-        parsed.text.trim() || buildFallbackReply({ inputs, results })
+        parsed.text.trim() ||
+        (await buildFallbackReply({
+          workDir: runtime.config.workDir,
+          inputs,
+          results,
+        }))
       await appendHistory(runtime.paths.history, {
         id: `assistant-${Date.now()}-${nextInputsCursor}`,
         role: 'assistant',
@@ -169,7 +174,7 @@ export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
 
       if (drainedOnError && !assistantAppended && inputs.length > 0) {
         await bestEffort('appendHistory: manager_fallback_reply', () =>
-          appendManagerFallbackReply(runtime.paths),
+          appendManagerFallbackReply(runtime.config.workDir, runtime.paths),
         )
       }
 

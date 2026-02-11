@@ -3,6 +3,8 @@ import { join } from 'node:path'
 
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
+import { renderPromptTemplate } from '../prompts/format.js'
+import { loadPromptTemplate } from '../prompts/prompt-loader.js'
 import { nowIso, sleep } from '../shared/utils.js'
 import { readHistory } from '../storage/jsonl.js'
 
@@ -22,6 +24,23 @@ const appendMarkdownSection = async (params: {
     '',
   ].join('\n')
   await writeFile(params.path, body, 'utf8')
+}
+
+const parseMarkdownList = (content: string): string[] =>
+  content
+    .split(/\r?\n/)
+    .map((line) => line.trimEnd())
+    .filter((line) => line.trim().length > 0)
+
+const readRequiredEvolverTemplate = async (
+  runtime: RuntimeState,
+  relativePath: string,
+): Promise<string> => {
+  const content = (
+    await loadPromptTemplate(runtime.config.workDir, relativePath)
+  ).trim()
+  if (!content) throw new Error(`missing_evolver_template:${relativePath}`)
+  return content
 }
 
 const summarizeTaskStats = (runtime: RuntimeState): string[] => {
@@ -68,7 +87,13 @@ const summarizeRecentUserMessages = async (
     .slice(-5)
     .map((item) => item.text.replace(/\s+/g, ' ').trim())
     .filter((item) => item.length > 0)
-  if (recent.length === 0) return ['- 无新增用户输入']
+  if (recent.length === 0) {
+    const fallback = await readRequiredEvolverTemplate(
+      runtime,
+      'evolver/no-recent-user-input.md',
+    )
+    return parseMarkdownList(fallback)
+  }
   return recent.map((item, index) => `- recent_user_${index + 1}: ${item}`)
 }
 
@@ -77,14 +102,11 @@ const writeAgentPersonaVersion = async (
   stamp: string,
 ): Promise<void> => {
   const versionPath = join(runtime.paths.agentPersonaVersionsDir, `${stamp}.md`)
-  const body = [
-    '# Agent Persona Snapshot',
-    '',
-    `- updated_at: ${stamp}`,
-    '-原则：准确、简洁、先完成用户请求。',
-    '-语气：直接、礼貌、可执行。',
-    '',
-  ].join('\n')
+  const snapshotTemplate = await readRequiredEvolverTemplate(
+    runtime,
+    'evolver/persona-snapshot.md',
+  )
+  const body = renderPromptTemplate(snapshotTemplate, { stamp })
   await writeFile(versionPath, body, 'utf8')
 }
 
@@ -131,10 +153,19 @@ export const evolverLoop = async (runtime: RuntimeState): Promise<void> => {
     runtime.lastEvolverRunAt = now
 
     try {
+      const feedbackSource = parseMarkdownList(
+        await readRequiredEvolverTemplate(
+          runtime,
+          'evolver/feedback-source.md',
+        ),
+      )
+      const personaLines = parseMarkdownList(
+        await readRequiredEvolverTemplate(runtime, 'evolver/persona-update.md'),
+      )
       await appendMarkdownSection({
         path: runtime.paths.feedback,
         title: `Feedback ${stamp}`,
-        lines: ['- 来源：history + tasks', ...summarizeTaskStats(runtime)],
+        lines: [...feedbackSource, ...summarizeTaskStats(runtime)],
       })
       await appendMarkdownSection({
         path: runtime.paths.userProfile,
@@ -144,11 +175,7 @@ export const evolverLoop = async (runtime: RuntimeState): Promise<void> => {
       await appendMarkdownSection({
         path: runtime.paths.agentPersona,
         title: `Persona Update ${stamp}`,
-        lines: [
-          '- 目标：高效率、低费用、准确完成请求。',
-          '- 策略：优先复用任务，避免重复派单。',
-          '- 约束：不编造事实，优先暴露不确定性。',
-        ],
+        lines: personaLines,
       })
       await writeAgentPersonaVersion(runtime, stamp)
       await appendLog(runtime.paths.log, {

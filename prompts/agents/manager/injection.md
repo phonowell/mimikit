@@ -1,14 +1,24 @@
-// 环境信息（仅参考）
-{environment}
-
-// 用户新输入（待消费）
+// 用户最近新输入
+// - CDATA 中为 messages 列表，按 time 倒序
 {inputs}
 
-// 新任务结果（待消费）
+// 待处理的新任务结果
+// - CDATA 中为 tasks 列表，按 change_at 倒序
 {results}
 
-// 当前任务视图
+// 历史对话；供参考，不主动提及
+// - CDATA 中为 messages 列表，按 time 倒序
+{history}
+
+// 当前任务列表；供参考，不主动提及
+// - CDATA 中为 tasks 列表，按 create_at 倒序
 {tasks}
 
-// 历史对话
-{history}
+// 环境信息；供参考，不主动提及
+{environment}
+
+// 你的身份信息；供参考，不主动提及
+{persona}
+
+// 用户画像；供参考，不主动提及
+{user_profile}

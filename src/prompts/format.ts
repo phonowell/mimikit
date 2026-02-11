@@ -1,6 +1,6 @@
 import { hostname, release as osRelease, type as osType } from 'node:os'
 
-import { escapeCdata, normalizeTagName } from './format-base.js'
+import { normalizeTagName } from './format-base.js'
 
 import type { ManagerEnv } from '../types/index.js'
 
@@ -65,19 +65,34 @@ export const formatEnvironment = (
     push('task_canceled', env.taskSummary.canceled)
   }
   if (lines.length === 0) return ''
-  return escapeCdata(lines.join('\n'))
+  return lines.join('\n')
 }
 
-export const buildCdataBlock = (tag: string, content: string): string => {
-  if (!content) return ''
+export const buildCdataBlock = (
+  tag: string,
+  content: string,
+  includeEmpty = false,
+): string => {
+  if (!content && !includeEmpty) return ''
   const normalized = normalizeTagName(tag)
   return `<${normalized}>\n<![CDATA[\n${content}\n]]>\n</${normalized}>`
 }
 
-export const buildRawBlock = (tag: string, content: string): string => {
-  if (!content) return ''
+export const buildRawBlock = (
+  tag: string,
+  content: string,
+  includeEmpty = false,
+): string => {
+  if (!content && !includeEmpty) return ''
   const normalized = normalizeTagName(tag)
-  return `<${normalized}>\n${content}\n</${normalized}>`
+  const escaped = content.replaceAll(`</${normalized}>`, `<\\/${normalized}>`)
+  return `<${normalized}>\n${escaped}\n</${normalized}>`
+}
+
+export const formatMarkdownReference = (content: string): string => {
+  const trimmed = content.trim()
+  if (!trimmed) return ''
+  return trimmed
 }
 
 export {

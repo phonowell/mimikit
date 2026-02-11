@@ -1,3 +1,4 @@
+import { loadPromptTemplate } from '../prompts/prompt-loader.js'
 import { nowIso } from '../shared/utils.js'
 import { updateJsonl } from '../storage/jsonl.js'
 import {
@@ -21,15 +22,21 @@ type TaskSnapshotEvent = {
   tasks: RuntimeState['tasks']
 }
 
-export const buildFallbackReply = (params: {
+export const buildFallbackReply = async (params: {
+  workDir: string
   inputs: UserInput[]
   results: TaskResult[]
-}): string => {
+}): Promise<string> => {
   const latestInput = params.inputs.at(-1)?.text.trim()
   if (latestInput) return latestInput
   const latestResult = params.results.at(-1)?.output.trim()
   if (latestResult) return latestResult
-  return '收到，我继续处理。'
+  const fallback = (
+    await loadPromptTemplate(params.workDir, 'manager/fallback-reply.md')
+  ).trim()
+  if (!fallback)
+    throw new Error('missing_prompt_template:manager/fallback-reply.md')
+  return fallback
 }
 
 const appendTaskSnapshot = async (runtime: RuntimeState): Promise<void> => {

@@ -1,6 +1,6 @@
 import { listInvokableActionNames } from '../actions/registry/index.js'
 import { runApiRunner } from '../llm/api-runner.js'
-import { buildWorkerStandardPlannerPrompt } from '../prompts/build-prompts.js'
+import { buildWorkerPrompt } from '../prompts/build-prompts.js'
 import {
   loadTaskCheckpoint,
   saveTaskCheckpoint,
@@ -11,7 +11,7 @@ import { executeStandardStep } from './standard-step-exec.js'
 import { parseStandardStep } from './standard-step.js'
 
 import type { StandardActionStep } from './standard-step-exec.js'
-import type { TokenUsage } from '../types/index.js'
+import type { Task, TokenUsage } from '../types/index.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
 type StandardState = {
@@ -50,8 +50,7 @@ const normalizeState = (raw: unknown): StandardState => {
 export const runStandardWorker = async (params: {
   stateDir: string
   workDir: string
-  taskId: string
-  prompt: string
+  task: Task
   timeoutMs: number
   model?: string
   modelReasoningEffort?: ModelReasoningEffort
@@ -63,12 +62,12 @@ export const runStandardWorker = async (params: {
     Math.floor(Math.max(1, params.timeoutMs) / 1_000),
   )
   const actions = listInvokableActionNames()
-  const recovered = await loadTaskCheckpoint(params.stateDir, params.taskId)
+  const recovered = await loadTaskCheckpoint(params.stateDir, params.task.id)
   const state = normalizeState(recovered?.state)
   const checkpointRecovered = Boolean(recovered)
   await appendTaskProgress({
     stateDir: params.stateDir,
-    taskId: params.taskId,
+    taskId: params.task.id,
     type: checkpointRecovered ? 'standard_resume' : 'standard_start',
     payload: {
       round: state.round,
@@ -86,12 +85,14 @@ export const runStandardWorker = async (params: {
     if (state.round >= maxRounds)
       throw new Error('standard_max_rounds_exceeded')
 
-    const plannerPrompt = await buildWorkerStandardPlannerPrompt({
+    const plannerPrompt = await buildWorkerPrompt({
       workDir: params.workDir,
-      taskPrompt: params.prompt,
-      transcript: state.transcript,
-      actions,
-      checkpointRecovered,
+      task: params.task,
+      context: {
+        checkpointRecovered,
+        actions,
+        transcript: state.transcript,
+      },
     })
     const planner = await runApiRunner({
       prompt: plannerPrompt,
@@ -109,7 +110,7 @@ export const runStandardWorker = async (params: {
     state.round += 1
     await appendTaskProgress({
       stateDir: params.stateDir,
-      taskId: params.taskId,
+      taskId: params.task.id,
       type: 'standard_round',
       payload: {
         round: state.round,
@@ -126,7 +127,7 @@ export const runStandardWorker = async (params: {
       await saveTaskCheckpoint({
         stateDir: params.stateDir,
         checkpoint: {
-          taskId: params.taskId,
+          taskId: params.task.id,
           stage: 'finalized',
           updatedAt: new Date().toISOString(),
           state,
@@ -134,7 +135,7 @@ export const runStandardWorker = async (params: {
       })
       await appendTaskProgress({
         stateDir: params.stateDir,
-        taskId: params.taskId,
+        taskId: params.task.id,
         type: 'standard_done',
         payload: {
           round: state.round,
@@ -146,7 +147,7 @@ export const runStandardWorker = async (params: {
     const actionStep = step as StandardActionStep
     const actionCall = await executeStandardStep({
       stateDir: params.stateDir,
-      taskId: params.taskId,
+      taskId: params.task.id,
       workDir: params.workDir,
       round: state.round,
       step: actionStep,
@@ -155,7 +156,7 @@ export const runStandardWorker = async (params: {
     await saveTaskCheckpoint({
       stateDir: params.stateDir,
       checkpoint: {
-        taskId: params.taskId,
+        taskId: params.task.id,
         stage: 'running',
         updatedAt: new Date().toISOString(),
         state,

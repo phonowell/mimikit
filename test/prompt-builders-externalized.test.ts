@@ -4,32 +4,48 @@ import { join } from 'node:path'
 
 import { expect, test } from 'vitest'
 
-import { buildWorkerStandardPlannerPrompt } from '../src/prompts/build-prompts.js'
+import { buildWorkerPrompt } from '../src/prompts/build-prompts.js'
 
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-prompt-builders-'))
 
-test('buildWorkerStandardPlannerPrompt renders external templates', async () => {
+test('buildWorkerPrompt renders external templates for standard worker', async () => {
   const workDir = await createTmpDir()
   const dir = join(workDir, 'prompts', 'agents', 'worker-standard')
   await mkdir(dir, { recursive: true })
-  await writeFile(join(dir, 'planner-system.md'), 'PLANNER_SYS', 'utf8')
+  await writeFile(join(dir, 'system.md'), 'WORKER_SYS', 'utf8')
   await writeFile(
-    join(dir, 'planner-injection.md'),
-    'cp={checkpoint_recovered}\n{task_prompt}\n{available_actions}\n{transcript}',
+    join(dir, 'injection.md'),
+    'cp={checkpoint_recovered}\n{prompt}\n{available_actions}\n{transcript}',
     'utf8',
   )
 
-  const output = await buildWorkerStandardPlannerPrompt({
+  const output = await buildWorkerPrompt({
     workDir,
-    taskPrompt: 'fix bug',
-    transcript: ['action: read_file_file'],
-    actions: ['read_file', 'edit_file'],
-    checkpointRecovered: true,
+    task: {
+      id: 'task-1',
+      fingerprint: 'fp-1',
+      prompt: 'fix bug',
+      title: 'Fix bug',
+      profile: 'standard',
+      status: 'pending',
+      createdAt: '2026-02-06T00:00:00.000Z',
+    },
+    context: {
+      checkpointRecovered: true,
+      transcript: ['action: read_file'],
+      actions: ['read_file', 'edit_file'],
+    },
   })
 
-  expect(output).toContain('PLANNER_SYS')
-  expect(output).toContain('cp=true')
-  expect(output).toContain('fix bug')
-  expect(output).toContain('read_file, edit_file')
-  expect(output).toContain('action: read_file')
+  expect(output).toContain('WORKER_SYS')
+  expect(output).toContain(
+    'cp=<MIMIKIT:checkpoint_recovered>\ntrue\n</MIMIKIT:checkpoint_recovered>',
+  )
+  expect(output).toContain('<MIMIKIT:prompt>\nfix bug\n</MIMIKIT:prompt>')
+  expect(output).toContain(
+    '<MIMIKIT:available_actions>\nread_file, edit_file\n</MIMIKIT:available_actions>',
+  )
+  expect(output).toContain(
+    '<MIMIKIT:transcript>\naction: read_file\n</MIMIKIT:transcript>',
+  )
 })

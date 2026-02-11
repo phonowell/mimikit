@@ -20,3 +20,23 @@ Rules:
 - Keep all argument values in double quotes.
 - Encode multiline text with escaped \n.
 - Do not emit action block in final response.
+
+
+checkpoint_recovered: <MIMIKIT:checkpoint_recovered>
+false
+</MIMIKIT:checkpoint_recovered>
+
+task:
+<MIMIKIT:task_prompt>
+
+</MIMIKIT:task_prompt>
+
+available_actions:
+<MIMIKIT:available_actions>
+
+</MIMIKIT:available_actions>
+
+transcript:
+<MIMIKIT:transcript>
+(empty)
+</MIMIKIT:transcript>

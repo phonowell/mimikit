@@ -1,5 +1,6 @@
 import { safe } from '../log/safe.js'
 import { appendTaskSystemMessage } from '../orchestrator/read-model/task-history.js'
+import { loadPromptTemplate } from '../prompts/prompt-loader.js'
 import { nowIso } from '../shared/utils.js'
 import { appendHistory, readHistory } from '../storage/jsonl.js'
 
@@ -19,12 +20,18 @@ const summarizeResultOutput = (
 }
 
 export const appendManagerFallbackReply = async (
+  workDir: string,
   paths: RuntimeState['paths'],
 ): Promise<void> => {
+  const fallback = (
+    await loadPromptTemplate(workDir, 'manager/system-fallback-reply.md')
+  ).trim()
+  if (!fallback)
+    throw new Error('missing_prompt_template:manager/system-fallback-reply.md')
   await appendHistory(paths.history, {
     id: `sys-${Date.now()}`,
     role: 'system',
-    text: '系统暂时不可用，请稍后再试。',
+    text: fallback,
     createdAt: nowIso(),
   })
 }

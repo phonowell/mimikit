@@ -1,10 +1,15 @@
+import read from 'fire-keeper/read'
+
+import { buildPaths } from '../fs/paths.js'
 import { readTaskResultsForTasks } from '../storage/task-results.js'
 
 import {
   buildCdataBlock,
+  buildRawBlock,
   formatEnvironment,
   formatHistory,
   formatInputs,
+  formatMarkdownReference,
   formatResultsYaml,
   formatTasksYaml,
   joinPromptSections,
@@ -18,7 +23,6 @@ import {
   dedupeTaskResults,
   mergeTaskResults,
 } from './task-results-merge.js'
-export { buildWorkerStandardPlannerPrompt } from './build-prompts-extra.js'
 
 import type {
   HistoryMessage,
@@ -29,6 +33,28 @@ import type {
 } from '../types/index.js'
 
 export type { ManagerEnv } from '../types/index.js'
+
+type WorkerPromptContext = {
+  checkpointRecovered?: boolean
+  actions?: string[]
+  transcript?: string[]
+}
+
+const readOptionalMarkdown = async (path: string): Promise<string> => {
+  try {
+    const content = await read(path, { raw: true })
+    if (!content) return ''
+    if (Buffer.isBuffer(content)) return content.toString('utf8')
+    return typeof content === 'string' ? content : ''
+  } catch (error) {
+    const code =
+      typeof error === 'object' && error && 'code' in error
+        ? String((error as { code?: string }).code)
+        : undefined
+    if (code === 'ENOENT') return ''
+    throw error
+  }
+}
 
 export const buildManagerPrompt = async (params: {
   stateDir: string
@@ -48,6 +74,11 @@ export const buildManagerPrompt = async (params: {
   const tasksForPrompt = params.tasks
   const resultTaskIds = collectResultTaskIds(tasksForPrompt)
   const dateHints = buildTaskResultDateHints(tasksForPrompt)
+  const statePaths = buildPaths(params.stateDir)
+  const [persona, userProfile] = await Promise.all([
+    readOptionalMarkdown(statePaths.agentPersona),
+    readOptionalMarkdown(statePaths.userProfile),
+  ])
   const archivedResults =
     resultTaskIds.length > 0
       ? await readTaskResultsForTasks(params.stateDir, resultTaskIds, {
@@ -63,17 +94,19 @@ export const buildManagerPrompt = async (params: {
   const injectionValues = Object.fromEntries<string>([
     [
       'environment',
-      buildCdataBlock(
+      buildRawBlock(
         'environment',
         formatEnvironment(params.workDir, params.env),
+        true,
       ),
     ],
-    ['inputs', buildCdataBlock('inputs', formatInputs(params.inputs))],
+    ['inputs', buildCdataBlock('inputs', formatInputs(params.inputs), true)],
     [
       'results',
       buildCdataBlock(
         'results',
         formatResultsYaml(params.tasks, pendingResults),
+        true,
       ),
     ],
     [
@@ -81,9 +114,21 @@ export const buildManagerPrompt = async (params: {
       buildCdataBlock(
         'tasks',
         formatTasksYaml(tasksForPrompt, resultsForTasks),
+        true,
       ),
     ],
-    ['history', buildCdataBlock('history', formatHistory(params.history))],
+    [
+      'history',
+      buildCdataBlock('history', formatHistory(params.history), true),
+    ],
+    [
+      'persona',
+      buildRawBlock('persona', formatMarkdownReference(persona), true),
+    ],
+    [
+      'user_profile',
+      buildRawBlock('user_profile', formatMarkdownReference(userProfile), true),
+    ],
   ])
   const injection = renderPromptTemplate(injectionTemplate, injectionValues)
   return joinPromptSections([system, injection])
@@ -92,13 +137,30 @@ export const buildManagerPrompt = async (params: {
 export const buildWorkerPrompt = async (params: {
   workDir: string
   task: Task
+  context?: WorkerPromptContext
 }): Promise<string> => {
   const role =
     params.task.profile === 'standard' ? 'worker-standard' : 'worker-specialist'
   const system = await loadSystemPrompt(params.workDir, role)
   const injectionTemplate = await loadInjectionPrompt(params.workDir, role)
+  const checkpointRecovered =
+    params.context?.checkpointRecovered === true ? 'true' : 'false'
+  const availableActions = params.context?.actions?.join(', ') ?? ''
+  const transcript =
+    params.context?.transcript && params.context.transcript.length > 0
+      ? params.context.transcript.join('\n\n')
+      : ''
   const injectionValues = Object.fromEntries<string>([
-    ['prompt', params.task.prompt],
+    ['prompt', buildRawBlock('prompt', params.task.prompt, true)],
+    [
+      'checkpoint_recovered',
+      buildRawBlock('checkpoint_recovered', checkpointRecovered, true),
+    ],
+    [
+      'available_actions',
+      buildRawBlock('available_actions', availableActions, true),
+    ],
+    ['transcript', buildRawBlock('transcript', transcript, true)],
   ])
   const injection = renderPromptTemplate(injectionTemplate, injectionValues)
   return joinPromptSections([system, injection])

@@ -4,12 +4,7 @@ import read from 'fire-keeper/read'
 
 import { logSafeError } from '../log/safe.js'
 
-export const loadPromptFile = async (
-  workDir: string,
-  role: string,
-  name: string,
-): Promise<string> => {
-  const path = join(workDir, 'prompts', 'agents', role, `${name}.md`)
+const readPromptByPath = async (path: string): Promise<string> => {
   try {
     const content = await read(path, { raw: true })
     if (!content) return ''
@@ -21,9 +16,26 @@ export const loadPromptFile = async (
         ? String((error as { code?: string }).code)
         : undefined
     if (code === 'ENOENT') return ''
-    await logSafeError('loadPromptFile', error, { meta: { path } })
+    await logSafeError('readPromptByPath', error, { meta: { path } })
     throw error
   }
+}
+
+export const loadPromptFile = (
+  workDir: string,
+  role: string,
+  name: string,
+): Promise<string> => {
+  const path = join(workDir, 'prompts', 'agents', role, `${name}.md`)
+  return readPromptByPath(path)
+}
+
+export const loadPromptTemplate = (
+  workDir: string,
+  relativePath: string,
+): Promise<string> => {
+  const path = join(workDir, 'prompts', relativePath)
+  return readPromptByPath(path)
 }
 
 export const loadSystemPrompt = (

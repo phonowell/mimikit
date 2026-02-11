@@ -3,7 +3,6 @@ import pRetry, { AbortError } from 'p-retry'
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
-import { buildWorkerPrompt } from '../prompts/build-prompts.js'
 
 import { appendWorkerRetryFeedback } from './run-feedback.js'
 import { runSpecialistWorker } from './specialist-runner.js'
@@ -24,21 +23,16 @@ const isAbortLikeError = (error: unknown): boolean => {
   return error.name === 'AbortError' || /aborted|canceled/i.test(error.message)
 }
 
-const runStandardProfile = async (params: {
+const runStandardProfile = (params: {
   runtime: RuntimeState
   task: Task
   controller: AbortController
 }): Promise<WorkerLlmResult> => {
   const { standard } = params.runtime.config.worker
-  const prompt = await buildWorkerPrompt({
-    workDir: params.runtime.config.workDir,
-    task: params.task,
-  })
   return runStandardWorker({
     stateDir: params.runtime.config.stateDir,
     workDir: params.runtime.config.workDir,
-    taskId: params.task.id,
-    prompt,
+    task: params.task,
     timeoutMs: standard.timeoutMs,
     model: standard.model,
     modelReasoningEffort: standard.modelReasoningEffort,
