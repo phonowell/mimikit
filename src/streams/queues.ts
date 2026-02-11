@@ -59,7 +59,9 @@ const consumeQueuePackets = async <TPayload>(params: {
   fromCursor: number
   limit?: number
 }): Promise<Array<PacketWithCursor<TPayload>>> => {
-  const all = withCursor(await readJsonl<JsonPacket<TPayload>>(params.path))
+  const all = withCursor(
+    await readJsonl<JsonPacket<TPayload>>(params.path, { ensureFile: true }),
+  )
   const start = normalizeCursor(params.fromCursor)
   const filtered = all.filter((item) => item.cursor > start)
   if (!params.limit || params.limit <= 0) return filtered
@@ -75,7 +77,15 @@ const appendQueuePacket = <TPayload>(params: {
   )
 
 const loadQueueState = async (statePath: string): Promise<QueueState> =>
-  normalizeState(await readJson<unknown>(statePath, { ...INITIAL_QUEUE_STATE }))
+  normalizeState(
+    await readJson<unknown>(
+      statePath,
+      { ...INITIAL_QUEUE_STATE },
+      {
+        ensureFile: true,
+      },
+    ),
+  )
 
 const saveQueueState = async (
   statePath: string,
@@ -95,7 +105,9 @@ const compactQueueIfFullyConsumed = (params: {
   runSerialized(params.packetsPath, async () => {
     const minPackets = Math.max(1, Math.floor(params.minPacketsToCompact))
     const cursor = normalizeCursor(params.cursor)
-    const packets = await readJsonl<JsonPacket<unknown>>(params.packetsPath)
+    const packets = await readJsonl<JsonPacket<unknown>>(params.packetsPath, {
+      ensureFile: true,
+    })
     if (packets.length < minPackets) return false
     if (cursor < packets.length) return false
     await writeJsonl(params.packetsPath, [])
@@ -189,6 +201,7 @@ export const countPendingUserInputs = async (params: {
 }): Promise<number> => {
   const packets = await readJsonl<JsonPacket<UserInput>>(
     params.paths.inputsPackets,
+    { ensureFile: true },
   )
   return Math.max(0, packets.length - normalizeCursor(params.cursor))
 }

@@ -1,6 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
+import { ensureDir, ensureFile } from '../fs/paths.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { renderPromptTemplate } from '../prompts/format.js'
@@ -16,6 +17,16 @@ const appendMarkdownSection = async (params: {
   title: string
   lines: string[]
 }): Promise<void> => {
+  const fileName = params.path.split(/[\\/]/).at(-1)
+  const initial =
+    fileName === 'feedback.md'
+      ? '# Feedback\n\n'
+      : fileName === 'user_profile.md'
+        ? '# User Profile\n\n'
+        : fileName === 'agent_persona.md'
+          ? '# Agent Persona\n\n'
+          : ''
+  await ensureFile(params.path, initial)
   const current = await readFile(params.path, 'utf8')
   const body = [
     current.trimEnd(),
@@ -82,6 +93,7 @@ const writeAgentPersonaVersion = async (
   snapshotTemplate: string,
 ): Promise<void> => {
   const versionPath = join(runtime.paths.agentPersonaVersionsDir, `${stamp}.md`)
+  await ensureDir(runtime.paths.agentPersonaVersionsDir)
   const body = renderPromptTemplate(snapshotTemplate, { stamp })
   await writeFile(versionPath, body, 'utf8')
 }

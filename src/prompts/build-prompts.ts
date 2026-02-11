@@ -1,6 +1,6 @@
 import read from 'fire-keeper/read'
 
-import { buildPaths } from '../fs/paths.js'
+import { buildPaths, ensureFile } from '../fs/paths.js'
 import { readTaskResultsForTasks } from '../storage/task-results.js'
 
 import {
@@ -41,6 +41,7 @@ type WorkerPromptContext = {
 }
 
 const readOptionalMarkdown = async (path: string): Promise<string> => {
+  await ensureFile(path, '')
   try {
     const content = await read(path, { raw: true })
     if (!content) return ''

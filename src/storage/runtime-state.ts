@@ -10,10 +10,24 @@ import type { Task } from '../types/index.js'
 const runtimePath = (stateDir: string): string =>
   join(stateDir, 'runtime-state.json')
 
+const initialRuntimeSnapshot = (): RuntimeSnapshot => ({
+  tasks: [],
+  queues: {
+    inputsCursor: 0,
+    resultsCursor: 0,
+  },
+})
+
 export const loadRuntimeSnapshot = async (
   stateDir: string,
 ): Promise<RuntimeSnapshot> => {
-  const raw = await readJson<unknown>(runtimePath(stateDir), { tasks: [] })
+  const raw = await readJson<unknown>(
+    runtimePath(stateDir),
+    initialRuntimeSnapshot(),
+    {
+      ensureFile: true,
+    },
+  )
   return parseRuntimeSnapshot(raw)
 }
 

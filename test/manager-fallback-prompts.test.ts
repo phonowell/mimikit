@@ -4,7 +4,7 @@ import { join } from 'node:path'
 
 import { expect, test } from 'vitest'
 
-import { buildPaths, ensureStateDirs } from '../src/fs/paths.js'
+import { buildPaths } from '../src/fs/paths.js'
 import { appendManagerFallbackReply } from '../src/manager/history.js'
 import { buildFallbackReply } from '../src/manager/loop-helpers.js'
 import { readHistory } from '../src/storage/jsonl.js'
@@ -40,7 +40,6 @@ test('appendManagerFallbackReply writes externalized system fallback text', asyn
   await prepareManagerPrompts(workDir)
   const stateDir = await createTmpDir()
   const paths = buildPaths(stateDir)
-  await ensureStateDirs(paths)
 
   await appendManagerFallbackReply(workDir, paths)
 

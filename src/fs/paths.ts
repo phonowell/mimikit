@@ -1,5 +1,5 @@
 import { access, readdir, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 
 import mkdir from 'fire-keeper/mkdir'
 
@@ -54,49 +54,25 @@ export const ensureDir = async (path: string): Promise<void> => {
   await mkdir(path)
 }
 
-const ensureFile = async (
+const getErrorCode = (error: unknown): string | undefined => {
+  if (!error || typeof error !== 'object' || !('code' in error))
+    return undefined
+  const { code } = error as { code?: unknown }
+  return typeof code === 'string' ? code : undefined
+}
+
+export const ensureFile = async (
   path: string,
   initialContent: string,
 ): Promise<void> => {
+  await ensureDir(dirname(path))
   try {
     await access(path)
-  } catch {
+  } catch (error) {
+    const code = getErrorCode(error)
+    if (code && code !== 'ENOENT') throw error
     await writeFile(path, initialContent, 'utf8')
   }
-}
-
-const EMPTY_JSONL = ''
-const INITIAL_QUEUE_STATE = '{\n  "managerCursor": 0\n}\n'
-const INITIAL_RUNTIME_STATE =
-  '{\n  "tasks": [],\n  "queues": {\n    "inputsCursor": 0,\n    "resultsCursor": 0\n  }\n}\n'
-
-export const ensureStateDirs = async (paths: StatePaths): Promise<void> => {
-  await ensureDir(paths.root)
-  await ensureDir(paths.inputsDir)
-  await ensureDir(paths.resultsDir)
-  await ensureDir(paths.tasksDir)
-  await ensureDir(paths.agentPersonaVersionsDir)
-  await ensureDir(join(paths.root, 'task-progress'))
-  await ensureDir(join(paths.root, 'task-checkpoints'))
-  await ensureDir(join(paths.root, 'llm'))
-  await ensureDir(join(paths.root, 'reporting'))
-  await ensureDir(join(paths.root, 'reports'))
-  await ensureDir(join(paths.root, 'reports', 'daily'))
-  await ensureFile(paths.history, EMPTY_JSONL)
-  await ensureFile(paths.log, EMPTY_JSONL)
-  await ensureFile(paths.inputsPackets, EMPTY_JSONL)
-  await ensureFile(paths.inputsState, INITIAL_QUEUE_STATE)
-  await ensureFile(paths.resultsPackets, EMPTY_JSONL)
-  await ensureFile(paths.resultsState, INITIAL_QUEUE_STATE)
-  await ensureFile(paths.tasksEvents, EMPTY_JSONL)
-  await ensureFile(
-    join(paths.root, 'runtime-state.json'),
-    INITIAL_RUNTIME_STATE,
-  )
-  await ensureFile(join(paths.root, 'reporting', 'events.jsonl'), EMPTY_JSONL)
-  await ensureFile(paths.feedback, '# Feedback\n\n')
-  await ensureFile(paths.userProfile, '# User Profile\n\n')
-  await ensureFile(paths.agentPersona, '# Agent Persona\n\n')
 }
 
 export const listFiles = (dir: string): Promise<Dirent[]> =>

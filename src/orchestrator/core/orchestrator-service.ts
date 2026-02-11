@@ -2,7 +2,7 @@ import PQueue from 'p-queue'
 
 import { type AppConfig } from '../../config.js'
 import { evolverLoop } from '../../evolver/loop.js'
-import { buildPaths, ensureStateDirs } from '../../fs/paths.js'
+import { buildPaths } from '../../fs/paths.js'
 import { appendLog } from '../../log/append.js'
 import { bestEffort, setDefaultLogPath } from '../../log/safe.js'
 import { managerLoop } from '../../manager/loop.js'
@@ -63,7 +63,6 @@ export class Orchestrator {
   }
 
   async start() {
-    await ensureStateDirs(this.runtime.paths)
     await hydrateRuntimeState(this.runtime)
     enqueuePendingWorkerTasks(this.runtime)
     notifyWorkerLoop(this.runtime)

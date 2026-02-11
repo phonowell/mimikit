@@ -75,4 +75,6 @@ export const appendReportingEvent = async (params: {
 export const readReportingEvents = (
   stateDir: string,
 ): Promise<ReportingEvent[]> =>
-  readJsonl<ReportingEvent>(reportingEventsPath(stateDir))
+  readJsonl<ReportingEvent>(reportingEventsPath(stateDir), {
+    ensureFile: true,
+  })

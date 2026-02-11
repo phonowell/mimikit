@@ -1,8 +1,12 @@
+import { dirname } from 'node:path'
+
 import copy from 'fire-keeper/copy'
 import read from 'fire-keeper/read'
 import writeFileAtomicLib from 'write-file-atomic'
 
 import { logSafeError, safe } from '../log/safe.js'
+
+import { ensureDir, ensureFile } from './paths.js'
 
 const parseJsonRaw = <T>(
   raw: unknown,
@@ -29,6 +33,7 @@ export const writeFileAtomic = async (
   content: string,
   opts?: { backup?: boolean },
 ): Promise<void> => {
+  await ensureDir(dirname(path))
   if (opts?.backup) {
     try {
       await copy(path, `${path}.bak`)
@@ -48,20 +53,27 @@ export const writeFileAtomic = async (
   await writeFileAtomicLib(path, content, { encoding: 'utf8' })
 }
 
+const toJsonText = (value: unknown): string =>
+  `${JSON.stringify(value, null, 2)}\n`
+
 export const readJson = async <T>(
   path: string,
   fallback: T,
-  opts?: { useBackup?: boolean },
+  opts?: { useBackup?: boolean; ensureFile?: boolean },
 ): Promise<T> => {
-  const raw = await safe(
-    'readJson: readFile',
-    () => read(path, { raw: true }),
-    {
+  const readRaw = () =>
+    safe('readJson: readFile', () => read(path, { raw: true }), {
       fallback: null,
       meta: { path },
       ignoreCodes: ['ENOENT'],
-    },
-  )
+    })
+
+  let raw = await readRaw()
+  if (!raw && opts?.ensureFile) {
+    await ensureFile(path, toJsonText(fallback))
+    raw = await readRaw()
+  }
+
   const parsed = await parseJsonRaw(raw, fallback, { path })
   if (parsed !== fallback) return parsed
   if (opts?.useBackup === false) return fallback

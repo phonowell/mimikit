@@ -4,7 +4,7 @@ import { join } from 'node:path'
 
 import { expect, test } from 'vitest'
 
-import { buildPaths, ensureStateDirs } from '../src/fs/paths.js'
+import { buildPaths } from '../src/fs/paths.js'
 import {
   compactInputQueueIfFullyConsumed,
   compactResultQueueIfFullyConsumed,
@@ -21,7 +21,6 @@ const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-queue-'))
 test('input queue append and consume by cursor', async () => {
   const dir = await createTmpDir()
   const paths = buildPaths(dir)
-  await ensureStateDirs(paths)
 
   await publishUserInput({
     paths,
@@ -58,7 +57,6 @@ test('input queue append and consume by cursor', async () => {
 test('result queue append and consume by cursor', async () => {
   const dir = await createTmpDir()
   const paths = buildPaths(dir)
-  await ensureStateDirs(paths)
 
   await publishWorkerResult({
     paths,
@@ -94,7 +92,6 @@ test('result queue append and consume by cursor', async () => {
 test('input queue compacts only when fully consumed', async () => {
   const dir = await createTmpDir()
   const paths = buildPaths(dir)
-  await ensureStateDirs(paths)
 
   await publishUserInput({
     paths,
@@ -140,7 +137,6 @@ test('input queue compacts only when fully consumed', async () => {
 test('result queue compacts only when fully consumed', async () => {
   const dir = await createTmpDir()
   const paths = buildPaths(dir)
-  await ensureStateDirs(paths)
 
   await publishWorkerResult({
     paths,

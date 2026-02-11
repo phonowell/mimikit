@@ -1,7 +1,10 @@
+import { dirname } from 'node:path'
+
 import read from 'fire-keeper/read'
 import write from 'fire-keeper/write'
 
 import { writeFileAtomic } from '../fs/json.js'
+import { ensureDir, ensureFile } from '../fs/paths.js'
 import { logSafeError, safe } from '../log/safe.js'
 
 import type { HistoryMessage } from '../types/index.js'
@@ -46,17 +49,21 @@ const runSerialized = async <T>(
 
 export const readJsonl = async <T>(
   path: string,
-  options: JsonlReadOptions<T> = {},
+  options: JsonlReadOptions<T> & { ensureFile?: boolean } = {},
 ): Promise<T[]> => {
-  const raw = await safe(
-    'readJsonl: readFile',
-    () => read(path, { raw: true }),
-    {
+  const readRaw = () =>
+    safe('readJsonl: readFile', () => read(path, { raw: true }), {
       fallback: null,
       meta: { path },
       ignoreCodes: ['ENOENT'],
-    },
-  )
+    })
+
+  let raw = await readRaw()
+  if (!raw && options.ensureFile) {
+    await ensureFile(path, '')
+    raw = await readRaw()
+  }
+
   const text = toUtf8Text(raw)
   if (!text) return []
   const lines = splitNonEmptyLines(text)
@@ -91,6 +98,7 @@ export const appendJsonl = async <T>(
   items: T[],
 ): Promise<void> => {
   if (items.length === 0) return
+  await ensureDir(dirname(path))
   const body = items.map((item) => JSON.stringify(item)).join('\n')
   const payload = `${body}\n`
   await write(path, payload, { flag: 'a', encoding: 'utf8' })
@@ -115,7 +123,7 @@ const capHistory = (items: HistoryMessage[]): HistoryMessage[] => {
 }
 
 export const readHistory = (path: string): Promise<HistoryMessage[]> =>
-  readJsonl<HistoryMessage>(path)
+  readJsonl<HistoryMessage>(path, { ensureFile: true })
 
 export const appendHistory = async (
   path: string,
