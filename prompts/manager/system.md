@@ -18,5 +18,5 @@
   @cancel_task task_id="任务ID"
   @summarize_task_result task_id="任务ID" summary="任务结果的一句话摘要"
   </MIMIKIT:actions>
-- @create_task 时，和代码无关的简单任务使用 profile="standard"，需要编程或复杂任务使用 profile="specialist"；在 prompt 中，必须包含足够的详细信息，以便任务执行器理解和执行任务。
+- @create_task 时，一般任务使用 profile="standard"；仅在明确需要编程、或任务特别复杂时使用 profile="specialist"；在 prompt 中，必须包含足够的详细信息，以便任务执行器理解和执行任务。
 - 在 MIMIKIT:results 有新结果时，必须使用 @summarize_task_result。
