@@ -62,8 +62,8 @@
   flex: 1;
   overflow-y: auto;
   min-height: 0;
-  background: var(--panel-soft);
-  box-shadow: var(--shadow-inset-soft);
+  background: var(--well-bg);
+  box-shadow: var(--shadow-inset);
 }
 
 .task-item,
@@ -99,7 +99,7 @@
 
 .task-link[data-archive-openable='true']:active {
   box-shadow: var(--shadow-inset-soft);
-  transform: translate(1px, 1px);
+  transform: translate(0.5px, 0.5px);
 }
 
 .task-title-row {
@@ -154,9 +154,9 @@
   padding: 0 6px;
   border-radius: 999px;
   border: 1px solid transparent;
-  background: var(--panel-soft);
+  background: var(--panel-strong);
   color: var(--muted);
-  box-shadow: var(--shadow-inset-soft);
+  box-shadow: none;
   font-size: 10px;
   letter-spacing: 0.02em;
   text-transform: lowercase;

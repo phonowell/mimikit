@@ -39,8 +39,8 @@
 .message.user article {
   background: var(--accent-soft);
   border-color: transparent;
-  box-shadow: -6px -6px 12px rgba(255, 255, 255, 0.52),
-    7px 7px 14px rgba(129, 156, 190, 0.34);
+  box-shadow: -4px -4px 8px rgba(255, 255, 255, 0.5),
+    4px 4px 8px rgba(129, 156, 190, 0.3);
   border-bottom-right-radius: 4px;
 }
 
@@ -136,7 +136,7 @@
 .message .message-quote:active:not(:disabled) {
   background: var(--quote-bg-hover);
   box-shadow: var(--shadow-inset-soft);
-  transform: translate(1px, 1px);
+  transform: translate(0.5px, 0.5px);
 }
 
 .message .message-quote:focus-visible {
@@ -215,9 +215,9 @@
 .message .meta .origin {
   padding: 2px 6px;
   border-radius: 999px;
-  background: var(--panel-soft);
+  background: var(--panel-strong);
   border: 1px solid transparent;
-  box-shadow: var(--shadow-inset-soft);
+  box-shadow: none;
   color: var(--muted);
   font-size: 10px;
   font-weight: 600;
@@ -269,7 +269,7 @@
   transform: translateY(0);
   pointer-events: auto;
   background: var(--quote-bg);
-  box-shadow: var(--shadow-inset-soft);
+  box-shadow: var(--shadow-raised-soft);
 }
 
 .composer .quote-preview.is-visible::before {

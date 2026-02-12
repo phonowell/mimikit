@@ -2,8 +2,9 @@
   color-scheme: light;
   --bg: #e6ebf2;
   --panel: #e6ebf2;
-  --panel-soft: #e0e6ee;
-  --panel-strong: #d8e0ea;
+  --panel-soft: #dfe6ef;
+  --panel-strong: #d6dee9;
+  --well-bg: #dbe3ed;
   --border: rgba(130, 149, 171, 0.14);
   --border-subtle: rgba(130, 149, 171, 0.08);
   --text: #2f3d4f;
@@ -20,16 +21,16 @@
   --status-pending: #b9c5d6;
   --status-idle: #3bb273;
   --status-disconnected: #8a96a8;
-  --shadow-raised: -10px -10px 20px rgba(255, 255, 255, 0.74),
-    10px 10px 20px rgba(145, 161, 182, 0.34);
-  --shadow-raised-soft: -6px -6px 12px rgba(255, 255, 255, 0.7),
-    6px 6px 12px rgba(150, 165, 185, 0.31);
-  --shadow-inset: inset -8px -8px 16px rgba(255, 255, 255, 0.7),
-    inset 8px 8px 16px rgba(146, 162, 183, 0.34);
-  --shadow-inset-soft: inset -4px -4px 8px rgba(255, 255, 255, 0.68),
-    inset 4px 4px 8px rgba(150, 166, 187, 0.32);
-  --shadow-floating: -8px -8px 14px rgba(255, 255, 255, 0.62),
-    10px 10px 18px rgba(128, 145, 167, 0.43);
+  --shadow-raised: -7px -7px 14px rgba(255, 255, 255, 0.72),
+    7px 7px 14px rgba(152, 168, 189, 0.34);
+  --shadow-raised-soft: -4px -4px 8px rgba(255, 255, 255, 0.68),
+    4px 4px 8px rgba(157, 173, 194, 0.28);
+  --shadow-inset: inset -6px -6px 10px rgba(255, 255, 255, 0.68),
+    inset 6px 6px 10px rgba(152, 168, 189, 0.34);
+  --shadow-inset-soft: inset -3px -3px 6px rgba(255, 255, 255, 0.64),
+    inset 3px 3px 6px rgba(157, 173, 194, 0.3);
+  --shadow-floating: -7px -7px 13px rgba(255, 255, 255, 0.6),
+    9px 9px 16px rgba(136, 152, 173, 0.42);
   --shadow: var(--shadow-raised);
   --focus-ring: rgba(47, 125, 230, 0.34);
   --radius: 18px;

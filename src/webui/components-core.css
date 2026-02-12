@@ -89,8 +89,8 @@
 .btn:active:not(:disabled),
 .btn[aria-pressed='true'],
 .btn.is-pressed {
-  box-shadow: var(--btn-shadow-press);
-  transform: translate(1px, 1px);
+  box-shadow: var(--btn-shadow-press, var(--shadow-inset-soft));
+  transform: translate(0.5px, 0.5px);
 }
 
 .btn--xs {
@@ -121,12 +121,12 @@
   --btn-hover-color: #ffffff;
   --btn-hover-border: transparent;
   --btn-focus: rgba(47, 125, 230, 0.42);
-  --btn-shadow: -6px -6px 12px rgba(255, 255, 255, 0.42),
-    7px 7px 14px rgba(89, 120, 167, 0.42);
-  --btn-shadow-hover: -7px -7px 14px rgba(255, 255, 255, 0.45),
-    9px 9px 16px rgba(81, 113, 161, 0.44);
-  --btn-shadow-press: inset -4px -4px 8px rgba(104, 157, 237, 0.28),
-    inset 5px 5px 10px rgba(33, 95, 171, 0.45);
+  --btn-shadow: -5px -5px 10px rgba(255, 255, 255, 0.4),
+    6px 6px 12px rgba(89, 120, 167, 0.36);
+  --btn-shadow-hover: -6px -6px 12px rgba(255, 255, 255, 0.42),
+    7px 7px 14px rgba(81, 113, 161, 0.38);
+  --btn-shadow-press: inset -3px -3px 6px rgba(104, 157, 237, 0.28),
+    inset 4px 4px 8px rgba(33, 95, 171, 0.42);
 }
 
 .btn--danger {
@@ -137,12 +137,12 @@
   --btn-hover-color: #d04343;
   --btn-hover-border: transparent;
   --btn-focus: rgba(226, 93, 93, 0.35);
-  --btn-shadow: -6px -6px 12px rgba(255, 255, 255, 0.45),
-    6px 6px 12px rgba(180, 133, 139, 0.35);
-  --btn-shadow-hover: -7px -7px 14px rgba(255, 255, 255, 0.48),
-    8px 8px 14px rgba(177, 124, 132, 0.36);
-  --btn-shadow-press: inset -4px -4px 8px rgba(255, 255, 255, 0.35),
-    inset 4px 4px 8px rgba(173, 116, 124, 0.4);
+  --btn-shadow: -4px -4px 8px rgba(255, 255, 255, 0.42),
+    5px 5px 10px rgba(180, 133, 139, 0.34);
+  --btn-shadow-hover: -5px -5px 10px rgba(255, 255, 255, 0.45),
+    6px 6px 12px rgba(177, 124, 132, 0.36);
+  --btn-shadow-press: inset -3px -3px 6px rgba(255, 255, 255, 0.32),
+    inset 3px 3px 6px rgba(173, 116, 124, 0.4);
 }
 
 .btn--icon {
@@ -219,7 +219,7 @@
   border-radius: var(--radius-sm);
   background: var(--panel);
   border: 1px solid transparent;
-  box-shadow: var(--shadow-inset-soft);
+  box-shadow: var(--shadow-raised-soft);
   color: var(--muted);
   text-align: center;
 }

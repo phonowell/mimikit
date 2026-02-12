@@ -12,6 +12,19 @@
 - 强调克制：主色仅用于核心动作与状态，避免大面积高饱和。
 - 最小复杂度：优先复用 token 与已有 class 语义，不引入平行体系。
 
+## 规范依据（摘要）
+- 新态拟物仅适合少层级（建议 2-3 层），并要求统一光源方向。
+- 阴影必须承载语义层级（surface / well / pressed），不能仅作装饰。
+- 凹陷态应限于“槽位和交互瞬时状态”，不应泛化到信息卡片。
+- 文本和控件对比度必须满足可读性基线（WCAG）。
+- 阴影展示需避免被父容器 `overflow` 裁剪。
+- 参考链接：
+- https://css-tricks.com/neumorphism-and-css/
+- https://idevie.com/design/ui/what-is-neumorphism-is-it-all-about-soft-ui
+- https://m3.material.io/styles/elevation/overview
+- https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum.html
+- https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html
+
 ## 信息架构（页面骨架）
 - 结构顺序：`header -> messages -> composer -> dialogs`。
 - 主容器：`main[data-app]` 控制纵向布局与最大宽度。
@@ -23,7 +36,7 @@
 
 ## Token 体系
 - 来源：`src/webui/base.css`。
-- 色彩 token：`--bg` `--panel` `--panel-soft` `--panel-strong` `--text` `--muted`。
+- 色彩 token：`--bg` `--panel` `--panel-soft` `--panel-strong` `--well-bg` `--text` `--muted`。
 - 语义色 token：`--accent` `--success` `--warning` `--danger`。
 - 状态色 token：`--status-running` `--status-success` `--status-fail` 等。
 - 阴影 token：`--shadow-raised` `--shadow-raised-soft` `--shadow-inset` `--shadow-inset-soft` `--shadow-floating`。
@@ -33,10 +46,19 @@
 ## 层级语法（必须遵循）
 - 凸起层（Raised）：卡片、面板、默认按钮。
 - 使用：`--shadow-raised` 或 `--shadow-raised-soft`。
-- 凹陷层（Inset）：输入区、容器内部槽、按压态。
+- 凹陷层（Inset）：输入区、列表槽位、按压态。
 - 使用：`--shadow-inset` 或 `--shadow-inset-soft`。
 - 浮动层（Floating）：悬浮快捷按钮。
 - 使用：`--shadow-floating`。
+- 凹陷白名单（当前实现）：
+- `.messages`
+- `.tasks-list`
+- `.composer textarea`
+- 交互按压态（`:active` / `[aria-pressed='true']`）
+- 禁止凹陷的常规信息区：
+- 消息气泡主体
+- 元信息胶囊（如 origin / task profile）
+- 引用预览显示态
 
 ## 组件规范
 - 按钮（`.btn`）
@@ -53,9 +75,11 @@
 - 引用块（`.message-quote` / `.quote-preview`）
 - 必须包含竖向角色条（`--quote-bar`）+ 轻量背景。
 - 角色只改语义色，不改结构与层级语法。
+- `.quote-preview.is-visible` 使用凸起层，不使用凹陷层。
 - 任务面板（`.tasks-*`）
 - 列表槽位为凹陷层，任务项为凸起层。
 - 可点击任务链接需要按压反馈（阴影反转）。
+- `task-profile` 归类为信息标签，保持平面/轻凸起，不使用 inset。
 
 ## 文本与排版
 - 基础字体：系统中日韩无衬线组合（见 `base.css`）。
@@ -102,6 +126,13 @@
 - 新可点击元素必须接入统一按压反馈规则。
 - 涉及核心操作的新强调色使用，先评估是否可复用 `--accent`。
 - 变更后至少检查：header、messages、composer、dialogs 四区视觉一致性。
+
+## 变更记录（2026-02-12）
+- 调整阴影深度：整体降强度，减少“塌陷感”和脏边缘。
+- 引入 `--well-bg`，统一凹陷槽位底色（消息列表/任务列表/输入框）。
+- 收敛凹陷语义：仅保留槽位、输入框和按压态；去除信息胶囊凹陷。
+- 按压位移由 `1px` 下调到 `0.5px`，触觉反馈更自然。
+- 解决 dialog 阴影裁剪问题：dialog 容器使用 `overflow: visible` 并留出内边距。
 
 ## 验收清单
 - 页面背景与主要组件保持同色调。

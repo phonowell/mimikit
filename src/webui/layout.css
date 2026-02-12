@@ -130,8 +130,8 @@ main[data-app] {
   flex-direction: column;
   gap: 10px;
   overflow-y: auto;
-  background: var(--panel-soft);
-  box-shadow: var(--shadow-inset-soft);
+  background: var(--well-bg);
+  box-shadow: var(--shadow-inset);
   min-height: 0;
 }
 
@@ -156,9 +156,9 @@ main[data-app] {
   max-height: 120px;
   padding: 10px 12px;
   border-radius: var(--radius-sm);
-  background: var(--panel-soft);
-  border: 1px solid transparent;
-  box-shadow: var(--shadow-inset-soft);
+  background: var(--well-bg);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-inset);
 }
 
 @keyframes dialog-in {
