@@ -20,7 +20,6 @@ import {
   finalizeBatchProgress,
 } from './loop-helpers.js'
 import { runManager } from './runner.js'
-import { buildTaskStatusSummary } from './task-summary.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 
@@ -93,10 +92,9 @@ export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
         results,
         tasks: recentTasks,
         history: recentHistory,
-        env: {
-          ...(runtime.lastUserMeta ? { lastUser: runtime.lastUserMeta } : {}),
-          taskSummary: buildTaskStatusSummary(runtime.tasks),
-        },
+        ...(runtime.lastUserMeta
+          ? { env: { lastUser: runtime.lastUserMeta } }
+          : {}),
         timeoutMs: DEFAULT_MANAGER_TIMEOUT_MS,
         model: runtime.config.manager.model,
         modelReasoningEffort: runtime.config.manager.modelReasoningEffort,

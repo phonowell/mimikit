@@ -95,11 +95,7 @@ export const buildManagerPrompt = async (params: {
   const injectionValues = Object.fromEntries<string>([
     [
       'environment',
-      buildRawBlock(
-        'environment',
-        formatEnvironment(params.workDir, params.env),
-        true,
-      ),
+      buildRawBlock('environment', formatEnvironment(params.env), true),
     ],
     ['inputs', buildCdataBlock('inputs', formatInputs(params.inputs), true)],
     [

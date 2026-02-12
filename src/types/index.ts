@@ -81,31 +81,9 @@ export type JsonPacket<TPayload> = {
   payload: TPayload
 }
 
-export type TaskStatusSummary = {
-  pending: number
-  running: number
-  succeeded: number
-  failed: number
-  canceled: number
-  recent: Array<{
-    id: string
-    title: string
-    status: Task['status']
-    profile: Task['profile']
-    changedAt: string
-  }>
-}
-
 export type ManagerEnv = {
   lastUser?: {
-    source?: string
-    remote?: string
-    userAgent?: string
-    language?: string
-    clientLocale?: string
     clientTimeZone?: string
-    clientOffsetMinutes?: number
     clientNowIso?: string
   }
-  taskSummary?: TaskStatusSummary
 }
