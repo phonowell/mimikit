@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process'
 
 import {
+  mergeTokenUsage,
   parseJsonLine,
   readEventText,
   readEventUsage,
@@ -89,7 +90,7 @@ const runOpencode = async (
     if (text) outputChunks.push(text)
     const nextUsage = readEventUsage(event)
     if (!nextUsage) return
-    usage = nextUsage
+    usage = mergeTokenUsage(usage, nextUsage)
     request.onUsage?.(usage)
   }
 

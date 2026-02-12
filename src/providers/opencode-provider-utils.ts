@@ -15,6 +15,18 @@ const readRecord = (value: unknown): Record<string, unknown> | undefined => {
   return value as Record<string, unknown>
 }
 
+const readNumberByKeys = (
+  record: Record<string, unknown> | undefined,
+  keys: readonly string[],
+): number | undefined => {
+  if (!record) return undefined
+  for (const key of keys) {
+    const value = readNumber(record[key])
+    if (value !== undefined) return value
+  }
+  return undefined
+}
+
 export const parseJsonLine = (
   line: string,
 ): Record<string, unknown> | undefined => {
@@ -51,10 +63,47 @@ export const readEventUsage = (
   const part = readRecord(event.part)
   const tokens = readRecord(part?.tokens)
   if (!tokens) return undefined
-  const input = readNumber(tokens.input)
-  const output = readNumber(tokens.output)
-  if (input === undefined && output === undefined) return undefined
-  const total = readNumber(tokens.total)
+  const input = readNumberByKeys(tokens, ['input', 'input_tokens', 'prompt'])
+  const output = readNumberByKeys(tokens, [
+    'output',
+    'output_tokens',
+    'completion',
+  ])
+  const total = readNumberByKeys(tokens, ['total', 'total_tokens'])
+  if (input === undefined && output === undefined && total === undefined)
+    return undefined
+  return {
+    ...(input !== undefined ? { input } : {}),
+    ...(output !== undefined ? { output } : {}),
+    ...(total !== undefined
+      ? { total }
+      : input !== undefined && output !== undefined
+        ? { total: input + output }
+        : {}),
+  }
+}
+
+export const mergeTokenUsage = (
+  current: TokenUsage | undefined,
+  next: TokenUsage,
+): TokenUsage => {
+  let input = current?.input
+  if (next.input !== undefined) input = (current?.input ?? 0) + next.input
+
+  let output = current?.output
+  if (next.output !== undefined) output = (current?.output ?? 0) + next.output
+
+  let nextTotal = next.total
+  if (
+    nextTotal === undefined &&
+    next.input !== undefined &&
+    next.output !== undefined
+  )
+    nextTotal = next.input + next.output
+
+  let total = current?.total
+  if (nextTotal !== undefined) total = (current?.total ?? 0) + nextTotal
+
   return {
     ...(input !== undefined ? { input } : {}),
     ...(output !== undefined ? { output } : {}),
