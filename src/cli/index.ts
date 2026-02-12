@@ -4,9 +4,9 @@ import { parseArgs } from 'node:util'
 import { defaultConfig } from '../config.js'
 import { buildPaths } from '../fs/paths.js'
 import { createHttpServer } from '../http/index.js'
-import { loadCodexSettings } from '../llm/openai.js'
 import { setDefaultLogPath } from '../log/safe.js'
 import { Orchestrator } from '../orchestrator/core/orchestrator-service.js'
+import { loadCodexSettings } from '../providers/openai-settings.js'
 
 import { applyCliEnvOverrides } from './env.js'
 

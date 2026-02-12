@@ -1,5 +1,5 @@
-import { runCodexSdk } from '../llm/sdk-runner.js'
 import { buildWorkerPrompt } from '../prompts/build-prompts.js'
+import { runWithProvider } from '../providers/run.js'
 import {
   appendLlmArchiveResult,
   type LlmArchiveEntry,
@@ -37,7 +37,8 @@ export const runSpecialistWorker = async (params: {
     ...(params.model ? { model: params.model } : {}),
   }
   try {
-    const r = await runCodexSdk({
+    const r = await runWithProvider({
+      provider: 'codex-sdk',
       role: 'worker',
       prompt,
       workDir: params.workDir,

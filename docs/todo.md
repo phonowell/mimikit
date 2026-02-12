@@ -14,11 +14,11 @@
 ## worker 层级
 
 ### standard
-- 使用 `api-runner`。
+- 使用 `runWithProvider(provider='openai-chat')`。
 - 低成本，多轮工具交互。
 
 ### specialist
-- 使用 `sdk-runner`（codex）。
+- 使用 `runWithProvider(provider='codex-sdk')`。
 - 高能力，处理复杂任务。
 
 ## 目标文件系统（最终态）

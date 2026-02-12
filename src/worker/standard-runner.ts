@@ -1,6 +1,6 @@
 import { listInvokableActionNames } from '../actions/registry/index.js'
-import { runApiRunner } from '../llm/api-runner.js'
 import { buildWorkerPrompt } from '../prompts/build-prompts.js'
+import { runWithProvider } from '../providers/run.js'
 import {
   loadTaskCheckpoint,
   saveTaskCheckpoint,
@@ -94,7 +94,8 @@ export const runStandardWorker = async (params: {
         transcript: state.transcript,
       },
     })
-    const planner = await runApiRunner({
+    const planner = await runWithProvider({
+      provider: 'openai-chat',
       prompt: plannerPrompt,
       timeoutMs: Math.max(5_000, Math.min(30_000, params.timeoutMs)),
       ...(params.model ? { model: params.model } : {}),

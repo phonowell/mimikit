@@ -162,7 +162,7 @@ export const resolveOpenAiModel = async (
   const resolved = resolvedSettings.model
   if (!resolved) {
     throw new Error(
-      '[llm] OpenAI model not configured. Set --model or OPENAI_MODEL.',
+      '[provider:openai-chat] OpenAI model not configured. Set --model or OPENAI_MODEL.',
     )
   }
   return resolved

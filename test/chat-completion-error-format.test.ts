@@ -1,6 +1,6 @@
 import { expect, test, vi } from 'vitest'
 
-import { runChatCompletion } from '../src/llm/chat-completion.js'
+import { runChatCompletion } from '../src/providers/openai-chat-client.js'
 
 test('runChatCompletion includes nested network cause details', async () => {
   const fetchMock = vi.fn(async () => {

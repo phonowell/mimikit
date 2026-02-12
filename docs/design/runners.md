@@ -7,7 +7,7 @@
 
 - 导出：`runManager`
 - Prompt 组装：`buildManagerPrompt`
-- 模型调用：`runApiRunner`
+- 模型调用：`runWithProvider(provider='openai-chat')`
 
 输入：
 - 必填：`stateDir`、`workDir`、`inputs`、`results`、`tasks`、`history`、`timeoutMs`
@@ -38,10 +38,10 @@
 实现：`src/worker/standard-runner.ts`
 
 - 导出：`runStandardWorker`
-- 依赖：`runApiRunner`、`parseStandardStep`、`executeStandardStep`
+- 依赖：`runWithProvider(provider='openai-chat')`、`parseStandardStep`、`executeStandardStep`
 
 输入：
-- 必填：`stateDir`、`workDir`、`taskId`、`prompt`、`timeoutMs`
+- 必填：`stateDir`、`workDir`、`task`、`timeoutMs`
 - 可选：`model`、`modelReasoningEffort`、`abortSignal`
 
 输出：
@@ -65,7 +65,7 @@
 实现：`src/worker/specialist-runner.ts`
 
 - 导出：`runSpecialistWorker`
-- 依赖：`runCodexSdk`
+- 依赖：`runWithProvider(provider='codex-sdk')`
 
 输入：
 - 必填：`stateDir`、`workDir`、`task`、`timeoutMs`
@@ -76,78 +76,32 @@
 
 流程：
 1. 构建 worker prompt。
-2. 调用 `runCodexSdk(role='worker')`。
+2. 调用 `runWithProvider(provider='codex-sdk', role='worker')`。
 3. 成功时归档 `ok=true` 并返回。
 4. 失败时归档 `ok=false` 并抛原始异常。
 
 调用方：
 - `src/worker/run-retry.ts`（`profile=specialist`）
 
-## API Runner
-实现：`src/llm/api-runner.ts`
+## Provider Runtime
+实现：`src/providers/run.ts` + `src/providers/registry.ts`
 
-- 导出：`runApiRunner`
-- 目标：通过 HTTP 调用 OpenAI Chat Completions
+- 导出：`runWithProvider`
+- 能力：统一请求入口、按 `provider` 分发、默认 provider 注册。
 
-输入：
-- `prompt`、`timeoutMs`
-- 可选：`model`、`modelReasoningEffort`、`seed`、`temperature`
+当前 provider：
+- `openai-chat`：`src/providers/openai-chat-provider.ts`
+- `codex-sdk`：`src/providers/codex-sdk-provider.ts`
 
-输出：
-- `{ output, elapsedMs, usage? }`
+## OpenAI Chat Provider
+实现：`src/providers/openai-chat-provider.ts`
 
-流程：
-1. 读取 codex settings。
-2. 解析最终模型 `resolveOpenAiModel()`。
-3. 建立 `AbortController` 超时控制。
-4. 调用 `/chat/completions`。
-5. 解析输出文本与 usage。
-6. 失败时抛错，不做内部 fallback。
+- 目标：通过 OpenAI-compatible `/chat/completions` 执行。
+- 配置来源：`src/providers/openai-settings.ts`
+- HTTP 客户端：`src/providers/openai-chat-client.ts`
 
-调用方：
-- `src/manager/runner.ts`
-- `src/worker/standard-runner.ts`
+## Codex SDK Provider
+实现：`src/providers/codex-sdk-provider.ts`
 
-## SDK Runner
-实现：`src/llm/sdk-runner.ts`
-
-- 导出：`runCodexSdk`
-- 目标：通过 `@openai/codex-sdk` 流式执行
-
-输入：
-- 必填：`role(manager|worker)`、`prompt`、`workDir`、`timeoutMs`
-- 可选：`model`、`modelReasoningEffort`、`threadId`、`outputSchema`、`logPath`、`logContext`、`abortSignal`
-
-输出：
-- `{ output, elapsedMs, usage?, threadId? }`
-
-流程：
-1. 按 role 决定 sandbox（`worker=danger-full-access`，`manager=read-only`）。
-2. 启动或恢复 thread。
-3. `runStreamed` 消费事件流并聚合输出/usage。
-4. 失败事件抛错。
-5. 写调用日志后返回。
-
-调用方：
-- `src/worker/specialist-runner.ts`
-
-## Local Runner
-实现：`src/llm/local-runner.ts`
-
-- 导出：`runLocalRunner`
-- 目标：调用本地兼容 `/chat/completions` 服务
-
-输入：
-- `prompt`、`model`、`baseUrl`、`timeoutMs`
-
-输出：
-- `{ output, elapsedMs, usage? }`
-
-流程：
-1. 建立超时控制。
-2. 请求本地 `/chat/completions`。
-3. 解析输出文本与 usage。
-4. 失败抛错并清理 timer。
-
-当前调用情况：
-- 当前仓库未作为运行时主链路调用。
+- 目标：通过 `@openai/codex-sdk` 流式执行。
+- 关键能力：thread resume、idle timeout、日志事件写入。

@@ -1,0 +1,45 @@
+import type { TokenUsage } from '../types/index.js'
+import type { ModelReasoningEffort } from '@openai/codex-sdk'
+
+export type ProviderKind = 'openai-chat' | 'codex-sdk'
+
+export type ProviderResult = {
+  output: string
+  usage?: TokenUsage
+  elapsedMs: number
+  threadId?: string | null
+}
+
+export type OpenAiChatProviderRequest = {
+  provider: 'openai-chat'
+  prompt: string
+  timeoutMs: number
+  model?: string
+  modelReasoningEffort?: ModelReasoningEffort
+  seed?: number
+  temperature?: number
+}
+
+export type CodexSdkProviderRequest = {
+  provider: 'codex-sdk'
+  role: 'manager' | 'worker'
+  prompt: string
+  workDir: string
+  timeoutMs: number
+  model?: string
+  modelReasoningEffort?: ModelReasoningEffort
+  threadId?: string | null
+  outputSchema?: unknown
+  logPath?: string
+  logContext?: Record<string, unknown>
+  abortSignal?: AbortSignal
+}
+
+export type ProviderRequest =
+  | OpenAiChatProviderRequest
+  | CodexSdkProviderRequest
+
+export type Provider<TRequest extends ProviderRequest> = {
+  id: TRequest['provider']
+  run: (request: TRequest) => Promise<ProviderResult>
+}

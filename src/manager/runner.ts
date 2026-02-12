@@ -1,5 +1,5 @@
-import { runApiRunner } from '../llm/api-runner.js'
 import { buildManagerPrompt } from '../prompts/build-prompts.js'
+import { runWithProvider } from '../providers/run.js'
 import {
   buildLlmArchiveLookupKey,
   type LlmArchiveLookup,
@@ -76,7 +76,8 @@ export const runManager = async (params: {
       })
     : undefined
   try {
-    const r = await runApiRunner({
+    const r = await runWithProvider({
+      provider: 'openai-chat',
       prompt,
       timeoutMs: params.timeoutMs,
       ...(model ? { model } : {}),
@@ -128,7 +129,8 @@ export const runManager = async (params: {
     )
     if (!fallbackModel) throw error
     try {
-      const r = await runApiRunner({
+      const r = await runWithProvider({
+        provider: 'openai-chat',
         prompt,
         timeoutMs: params.timeoutMs,
         model: fallbackModel,

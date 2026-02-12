@@ -4,7 +4,7 @@ import { join } from 'node:path'
 
 import { describe, expect, test } from 'vitest'
 
-import { loadCodexSettings } from '../src/llm/openai.js'
+import { loadCodexSettings } from '../src/providers/openai-settings.js'
 
 type ManagedEnvKey =
   | 'HOME'

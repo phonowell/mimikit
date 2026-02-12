@@ -64,7 +64,7 @@
   - `new Codex()`、`startThread()`、`runStreamed()`
   - `workingDirectory`、`sandboxMode`、`approvalPolicy`、`modelReasoningEffort: 'high'`
   - `turn.failed` / `error` 失败处理、`turn.completed.usage` 统计
-  - `outputSchema` 入参通道（`src/llm/sdk-runner.ts` 已支持）
+  - `outputSchema` 入参通道（`src/providers/codex-sdk-provider.ts` 已支持）
 - 未使用但可直接接入：
   - `resumeThread(id)`（跨轮会话复用）
   - `UserInput.local_image`（多图输入）
@@ -76,4 +76,4 @@
 ## 七、接入注意与补证项
 - 事件流提供“过程可观测性”，不等于可直接读取模型完整内部上下文。
 - `config.toml`、Rules/Skills、MCP 在 SDK 场景的最终继承边界，建议用集成测试固化。
-- 建议补一组基准：`sdk-runner` vs `codex exec`（按角色、任务类型、token、时延、失败率）。
+- 建议补一组基准：`codex-sdk-provider` vs `codex exec`（按角色、任务类型、token、时延、失败率）。
