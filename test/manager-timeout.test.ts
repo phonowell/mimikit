@@ -4,7 +4,7 @@ import {
   MAX_MANAGER_TIMEOUT_MS,
   MIN_MANAGER_TIMEOUT_MS,
   resolveManagerTimeoutMs,
-} from '../src/manager/timeout.js'
+} from '../src/manager/runner.js'
 
 test('manager timeout stays within 60s ~ 120s bounds', () => {
   expect(resolveManagerTimeoutMs('')).toBe(MIN_MANAGER_TIMEOUT_MS)

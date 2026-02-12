@@ -6,7 +6,7 @@ import { notifyWorkerLoop } from '../orchestrator/core/worker-signal.js'
 import { nowIso } from '../shared/utils.js'
 import { publishWorkerResult } from '../streams/queues.js'
 
-import { archiveTaskResult } from './runtime-utils.js'
+import { archiveTaskResult } from './result-finalize.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { Task, TaskCancelMeta, TaskResult } from '../types/index.js'

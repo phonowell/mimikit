@@ -14,6 +14,36 @@ import type {
 import type { Task } from '../types/index.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
+export const runStandardWorker = (params: {
+  stateDir: string
+  workDir: string
+  task: Task
+  timeoutMs: number
+  model?: string
+  modelReasoningEffort?: ModelReasoningEffort
+  abortSignal?: AbortSignal
+}): Promise<LlmResult> =>
+  runProfiledWorker({
+    ...params,
+    provider: 'opencode',
+    profile: 'standard',
+  })
+
+export const runSpecialistWorker = (params: {
+  stateDir: string
+  workDir: string
+  task: Task
+  timeoutMs: number
+  model?: string
+  modelReasoningEffort?: ModelReasoningEffort
+  abortSignal?: AbortSignal
+}): Promise<LlmResult> =>
+  runProfiledWorker({
+    ...params,
+    provider: 'codex-sdk',
+    profile: 'specialist',
+  })
+
 export const runProfiledWorker = async (params: {
   stateDir: string
   workDir: string

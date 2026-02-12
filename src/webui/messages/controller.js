@@ -43,12 +43,9 @@ export function createMessagesController({
   const RETRY_MAX_MS = 30000
   const MESSAGE_LIMIT = 50
 
-  let pollTimer = null
-  let consecutiveFailures = 0
-  let lastStatus = null
-  let lastMessageCursor = null
-  let lastStatusEtag = null
-  let lastMessagesEtag = null
+  let pollTimer = null, consecutiveFailures = 0
+  let lastStatus = null, lastMessageCursor = null
+  let lastStatusEtag = null, lastMessagesEtag = null
   const runtime = { isPolling: false, isPageHidden: false, unbindNotificationPrompt: () => {} }
   const messageState = createMessageState()
   const notifications = createBrowserNotificationController()
@@ -192,14 +189,11 @@ export function createMessagesController({
   })
   lifecycle.bindVisibility()
   const isFullyIdle = () => isStatusFullyIdle(lastStatus)
-  const clearStatusEtag = () => {
-    lastStatusEtag = null
-  }
 
   return {
     start: lifecycle.start,
     stop: lifecycle.stop,
-    clearStatusEtag,
+    clearStatusEtag: () => { lastStatusEtag = null },
     sendMessage,
     isFullyIdle,
   }

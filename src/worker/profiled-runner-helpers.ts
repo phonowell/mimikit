@@ -1,4 +1,4 @@
-import { runWithProvider } from '../providers/run.js'
+import { runWithProvider } from '../providers/registry.js'
 import {
   appendLlmArchiveResult,
   type LlmArchiveEntry,

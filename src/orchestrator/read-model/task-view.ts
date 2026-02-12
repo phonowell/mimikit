@@ -1,4 +1,4 @@
-import { titleFromCandidates } from '../../shared/task-title.js'
+import { titleFromCandidates } from '../../shared/utils.js'
 
 import type { Task, TaskStatus } from '../../types/index.js'
 

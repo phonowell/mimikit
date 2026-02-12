@@ -4,8 +4,7 @@ import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 
-import { runSpecialistWorker } from './specialist-runner.js'
-import { runStandardWorker } from './standard-runner.js'
+import { runSpecialistWorker, runStandardWorker } from './profiled-runner.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { Task, TokenUsage } from '../types/index.js'

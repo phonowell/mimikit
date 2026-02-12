@@ -4,7 +4,7 @@ vi.mock('../src/prompts/build-prompts.js', () => ({
   buildWorkerPrompt: vi.fn(async () => 'worker prompt'),
 }))
 
-vi.mock('../src/providers/run.js', () => ({
+vi.mock('../src/providers/registry.js', () => ({
   runWithProvider: vi.fn(),
 }))
 
@@ -16,8 +16,8 @@ vi.mock('../src/storage/task-progress.js', () => ({
   appendTaskProgress: vi.fn(async () => {}),
 }))
 
-import { runWithProvider } from '../src/providers/run.js'
-import { runStandardWorker } from '../src/worker/standard-runner.js'
+import { runWithProvider } from '../src/providers/registry.js'
+import { runStandardWorker } from '../src/worker/profiled-runner.js'
 
 import type { Task } from '../src/types/index.js'
 

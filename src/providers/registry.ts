@@ -1,4 +1,13 @@
-import type { Provider, ProviderKind, ProviderRequest } from './types.js'
+import { codexSdkProvider } from './codex-sdk-provider.js'
+import { openAiChatProvider } from './openai-chat-provider.js'
+import { opencodeProvider } from './opencode-provider.js'
+
+import type {
+  Provider,
+  ProviderKind,
+  ProviderRequest,
+  ProviderResult,
+} from './types.js'
 
 type AnyProvider = Provider<ProviderRequest>
 
@@ -23,3 +32,27 @@ export const getProvider = <TKind extends ProviderKind>(
 
 export const listProviderKinds = (): ProviderKind[] =>
   Array.from(providers.keys())
+
+let registered = false
+
+const ensureDefaultProvidersRegistered = (): void => {
+  if (registered) return
+  registerProvider(openAiChatProvider)
+  registerProvider(codexSdkProvider)
+  registerProvider(opencodeProvider)
+  registered = true
+}
+
+export const runWithProvider = (
+  request: ProviderRequest,
+): Promise<ProviderResult> => {
+  ensureDefaultProvidersRegistered()
+  switch (request.provider) {
+    case 'openai-chat':
+      return getProvider('openai-chat').run(request)
+    case 'codex-sdk':
+      return getProvider('codex-sdk').run(request)
+    case 'opencode':
+      return getProvider('opencode').run(request)
+  }
+}

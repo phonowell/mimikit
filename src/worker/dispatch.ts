@@ -2,7 +2,10 @@ import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import { markTaskRunning } from '../orchestrator/core/task-state.js'
-import { notifyWorkerLoop } from '../orchestrator/core/worker-signal.js'
+import {
+  notifyWorkerLoop,
+  waitForWorkerLoopSignal,
+} from '../orchestrator/core/worker-signal.js'
 
 import { runTask } from './run-task.js'
 
@@ -59,4 +62,12 @@ export const enqueuePendingWorkerTasks = (runtime: RuntimeState): void => {
     if (task.status !== 'pending') continue
     enqueueWorkerTask(runtime, task)
   }
+}
+
+export const workerLoop = async (runtime: RuntimeState): Promise<void> => {
+  while (!runtime.stopped)
+    await waitForWorkerLoopSignal(runtime, Number.POSITIVE_INFINITY)
+
+  runtime.workerQueue.pause()
+  runtime.workerQueue.clear()
 }

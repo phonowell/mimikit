@@ -14,16 +14,13 @@ vi.mock('../src/orchestrator/core/runtime-persistence.js', () => ({
   persistRuntimeState: vi.fn(async () => {}),
 }))
 
-vi.mock('../src/worker/standard-runner.js', () => ({
+vi.mock('../src/worker/profiled-runner.js', () => ({
   runStandardWorker: vi.fn(),
-}))
-
-vi.mock('../src/worker/specialist-runner.js', () => ({
   runSpecialistWorker: vi.fn(),
 }))
 
 import { runTaskWithRetry } from '../src/worker/run-retry.js'
-import { runStandardWorker } from '../src/worker/standard-runner.js'
+import { runStandardWorker } from '../src/worker/profiled-runner.js'
 
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
 import type { Task } from '../src/types/index.js'

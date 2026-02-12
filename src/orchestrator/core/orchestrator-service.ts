@@ -10,8 +10,7 @@ import { newId, nowIso } from '../../shared/utils.js'
 import { appendHistory, readHistory } from '../../storage/jsonl.js'
 import { publishUserInput } from '../../streams/queues.js'
 import { cancelTask } from '../../worker/cancel-task.js'
-import { enqueuePendingWorkerTasks } from '../../worker/dispatch.js'
-import { workerLoop } from '../../worker/loop.js'
+import { enqueuePendingWorkerTasks, workerLoop } from '../../worker/dispatch.js'
 import {
   type ChatMessage,
   type ChatMessagesMode,
@@ -20,6 +19,10 @@ import {
 } from '../read-model/chat-view.js'
 import { buildTaskViews } from '../read-model/task-view.js'
 
+import {
+  computeOrchestratorStatus,
+  type OrchestratorStatus,
+} from './orchestrator-status.js'
 import {
   hydrateRuntimeState,
   persistRuntimeState,
@@ -168,39 +171,11 @@ export class Orchestrator {
     return cancelTask(this.runtime, taskId, meta)
   }
 
-  getStatus(): {
-    ok: boolean
-    agentStatus: 'idle' | 'running'
-    activeTasks: number
-    pendingTasks: number
-    pendingInputs: number
-    managerRunning: boolean
-    maxWorkers: number
-  } {
-    const pendingTasks = this.runtime.tasks.filter(
-      (task) => task.status === 'pending',
-    ).length
-    const runningTaskIds = new Set(
-      this.runtime.tasks
-        .filter((task) => task.status === 'running')
-        .map((task) => task.id),
+  getStatus(): OrchestratorStatus {
+    return computeOrchestratorStatus(
+      this.runtime,
+      this.getInflightInputs().length,
     )
-    const activeTasks = [...this.runtime.runningControllers.keys()].filter(
-      (taskId) => runningTaskIds.has(taskId),
-    ).length
-    const maxWorkers = this.runtime.config.worker.maxConcurrent
-    const agentStatus =
-      this.runtime.managerRunning || activeTasks > 0 ? 'running' : 'idle'
-    const pendingInputs = this.getInflightInputs().length
-    return {
-      ok: true,
-      agentStatus,
-      activeTasks,
-      pendingTasks,
-      pendingInputs,
-      managerRunning: this.runtime.managerRunning,
-      maxWorkers,
-    }
   }
 
   async logEvent(entry: Record<string, unknown>) {

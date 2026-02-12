@@ -1,5 +1,4 @@
-import { titleFromCandidates } from '../../shared/task-title.js'
-import { newId, nowIso } from '../../shared/utils.js'
+import { newId, nowIso, titleFromCandidates } from '../../shared/utils.js'
 
 import type { Task, TaskStatus, WorkerProfile } from '../../types/index.js'
 
