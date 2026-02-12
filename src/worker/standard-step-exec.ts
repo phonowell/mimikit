@@ -8,6 +8,7 @@ export type StepExecutionRecord = {
   actionIndex?: number
   actionCount?: number
   action: string
+  evidenceRef: string
   ok: boolean
   output: string
   error?: string
@@ -18,6 +19,7 @@ const summarizeActionCall = (params: {
   actionCount?: number
   name: string
   args: unknown
+  evidenceRef: string
   output: string
   ok: boolean
   error?: string
@@ -27,6 +29,7 @@ const summarizeActionCall = (params: {
     ...(params.actionIndex !== undefined && params.actionCount !== undefined
       ? [`action_index: ${params.actionIndex}/${params.actionCount}`]
       : []),
+    `evidence_ref: ${params.evidenceRef}`,
     `ok: ${params.ok}`,
     `args: ${JSON.stringify(params.args ?? {})}`,
     ...(params.error ? [`error: ${params.error}`] : []),
@@ -42,6 +45,7 @@ const toPayload = (record: StepExecutionRecord): Record<string, unknown> => ({
     ? { actionCount: record.actionCount }
     : {}),
   action: record.action,
+  evidenceRef: record.evidenceRef,
   ok: record.ok,
   ...(record.error ? { error: record.error } : {}),
 })
@@ -58,6 +62,11 @@ export const executeStandardStep = async (params: {
   const actionName = params.actionCall.name.trim()
   if (!actionName) throw new Error('standard_action_name_missing')
 
+  const evidenceRef =
+    params.actionIndex !== undefined
+      ? `action:${params.round}.${params.actionIndex}`
+      : `action:${params.round}`
+
   await appendTaskProgress({
     stateDir: params.stateDir,
     taskId: params.taskId,
@@ -71,6 +80,7 @@ export const executeStandardStep = async (params: {
         ? { actionCount: params.actionCount }
         : {}),
       action: actionName,
+      evidenceRef,
       args: params.actionCall.args,
     },
   })
@@ -95,6 +105,7 @@ export const executeStandardStep = async (params: {
       ? { actionCount: params.actionCount }
       : {}),
     action: actionName,
+    evidenceRef,
     ok: actionResult.ok,
     output: actionOutput,
     ...(actionResult.error ? { error: actionResult.error } : {}),
@@ -113,6 +124,7 @@ export const executeStandardStep = async (params: {
         ? { actionCount: params.actionCount }
         : {}),
       action: actionName,
+      evidenceRef,
       ok: actionResult.ok,
       ...(actionResult.error ? { error: actionResult.error } : {}),
       record: toPayload(record),
@@ -130,6 +142,7 @@ export const executeStandardStep = async (params: {
         : {}),
       name: actionName,
       args: params.actionCall.args,
+      evidenceRef,
       output: actionOutput,
       ok: actionResult.ok,
       ...(actionResult.error ? { error: actionResult.error } : {}),

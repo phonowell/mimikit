@@ -7,44 +7,18 @@ import {
 } from '../storage/task-checkpoint.js'
 import { appendTaskProgress } from '../storage/task-progress.js'
 
+import { handleStandardFinalOutput } from './standard-final.js'
+import {
+  initialStandardState,
+  normalizeStandardState,
+} from './standard-state.js'
 import { executeStandardStep } from './standard-step-exec.js'
 import { parseStandardStep } from './standard-step.js'
 
 import type { Task, TokenUsage } from '../types/index.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
-type StandardState = {
-  round: number
-  transcript: string[]
-  finalized: boolean
-  finalOutput: string
-}
-
-const initialState = (): StandardState => ({
-  round: 0,
-  transcript: [],
-  finalized: false,
-  finalOutput: '',
-})
-
-const normalizeState = (raw: unknown): StandardState => {
-  if (!raw || typeof raw !== 'object') return initialState()
-  const record = raw as Partial<StandardState>
-  return {
-    round:
-      typeof record.round === 'number' && record.round >= 0
-        ? Math.floor(record.round)
-        : 0,
-    transcript: Array.isArray(record.transcript)
-      ? record.transcript.filter(
-          (item): item is string => typeof item === 'string',
-        )
-      : [],
-    finalized: record.finalized === true,
-    finalOutput:
-      typeof record.finalOutput === 'string' ? record.finalOutput : '',
-  }
-}
+const maxRepairAttempts = 1
 
 export const runStandardWorker = async (params: {
   stateDir: string
@@ -62,8 +36,22 @@ export const runStandardWorker = async (params: {
   )
   const actions = listInvokableActionNames()
   const recovered = await loadTaskCheckpoint(params.stateDir, params.task.id)
-  const state = normalizeState(recovered?.state)
+  const state = recovered
+    ? normalizeStandardState(recovered.state)
+    : initialStandardState()
   const checkpointRecovered = Boolean(recovered)
+
+  const saveCheckpoint = (stage: 'running' | 'finalized') =>
+    saveTaskCheckpoint({
+      stateDir: params.stateDir,
+      checkpoint: {
+        taskId: params.task.id,
+        stage,
+        updatedAt: new Date().toISOString(),
+        state,
+      },
+    })
+
   await appendTaskProgress({
     stateDir: params.stateDir,
     taskId: params.task.id,
@@ -103,7 +91,6 @@ export const runStandardWorker = async (params: {
         ? { modelReasoningEffort: params.modelReasoningEffort }
         : {}),
     })
-
     usageInput += planner.usage?.input ?? 0
     usageOutput += planner.usage?.output ?? 0
 
@@ -123,26 +110,41 @@ export const runStandardWorker = async (params: {
     })
 
     if (step.kind === 'final') {
-      state.finalized = true
-      state.finalOutput = step.output
-      state.transcript.push(
-        [`round: ${state.round}`, `final_response:\n${step.output}`].join('\n'),
-      )
-      await saveTaskCheckpoint({
+      const decision = await handleStandardFinalOutput({
         stateDir: params.stateDir,
-        checkpoint: {
-          taskId: params.task.id,
-          stage: 'finalized',
-          updatedAt: new Date().toISOString(),
-          state,
-        },
+        taskId: params.task.id,
+        round: state.round,
+        rawOutput: step.output,
+        evidenceRefs: new Set(state.evidenceRefs),
+        repairAttempts: state.repairAttempts,
+        maxRepairAttempts,
       })
+      if (decision.kind === 'failed') throw new Error(decision.error)
+      if (decision.kind === 'retry') {
+        state.repairAttempts = decision.repairAttempts
+        state.transcript.push(
+          [`round: ${state.round}`, decision.hint].join('\n'),
+        )
+        await saveCheckpoint('running')
+        continue
+      }
+
+      state.finalized = true
+      state.finalOutput = decision.output
+      state.transcript.push(
+        [`round: ${state.round}`, `final_response:\n${decision.output}`].join(
+          '\n',
+        ),
+      )
+      await saveCheckpoint('finalized')
       await appendTaskProgress({
         stateDir: params.stateDir,
         taskId: params.task.id,
         type: 'standard_done',
         payload: {
           round: state.round,
+          repairAttempts: state.repairAttempts,
+          blockerCount: decision.blockerCount,
         },
       })
       break
@@ -155,7 +157,6 @@ export const runStandardWorker = async (params: {
         throw new Error('standard_timeout')
       const actionCall = step.actionCalls[index]
       if (!actionCall) throw new Error('standard_action_missing')
-
       const actionResult = await executeStandardStep({
         stateDir: params.stateDir,
         taskId: params.task.id,
@@ -166,15 +167,9 @@ export const runStandardWorker = async (params: {
         actionCount,
       })
       state.transcript.push(actionResult.transcriptEntry)
-      await saveTaskCheckpoint({
-        stateDir: params.stateDir,
-        checkpoint: {
-          taskId: params.task.id,
-          stage: 'running',
-          updatedAt: new Date().toISOString(),
-          state,
-        },
-      })
+      if (!state.evidenceRefs.includes(actionResult.record.evidenceRef))
+        state.evidenceRefs.push(actionResult.record.evidenceRef)
+      await saveCheckpoint('running')
     }
   }
 
