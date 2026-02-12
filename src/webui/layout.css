@@ -53,8 +53,8 @@ main[data-app] {
 .restart-dialog::backdrop {
   background: repeating-linear-gradient(
       135deg,
-      rgba(255, 255, 255, 0.24) 0 2px,
-      rgba(183, 193, 206, 0.2) 2px 4px
+      rgba(255, 255, 255, 0.2) 0 3px,
+      rgba(198, 207, 220, 0.14) 3px 6px
     ),
     rgba(224, 230, 238, 0.72);
   backdrop-filter: blur(3px);
