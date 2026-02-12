@@ -25,21 +25,18 @@
   --status-pending: #b9c5d6;
   --status-idle: #3bb273;
   --status-disconnected: #8a96a8;
-  --shadow-hi: rgba(255, 215, 157, 0.9);
-  --shadow-hi-soft: rgba(255, 205, 142, 0.78);
-  --shadow-lo: rgba(170, 90, 22, 0.54);
-  --shadow-lo-soft: rgba(166, 86, 18, 0.44);
-  --shadow-raised: -7px -7px 14px var(--shadow-hi), 7px 7px 14px var(--shadow-lo);
-  --shadow-raised-soft: -4px -4px 8px var(--shadow-hi-soft),
-    4px 4px 8px var(--shadow-lo-soft);
-  --shadow-inset: inset -6px -6px 10px rgba(255, 210, 149, 0.82),
-    inset 6px 6px 10px rgba(161, 81, 15, 0.5);
-  --shadow-inset-soft: inset -3px -3px 6px rgba(255, 205, 140, 0.72),
-    inset 3px 3px 6px rgba(158, 78, 12, 0.42);
-  --shadow-floating: -7px -7px 13px rgba(255, 202, 133, 0.74),
-    9px 9px 16px rgba(157, 76, 9, 0.6);
-  --shadow-dialog: -2px -2px 6px rgba(255, 198, 126, 0.44),
-    10px 12px 22px rgba(153, 74, 10, 0.52);
+  --shadow-raised: -7px -7px 14px rgba(255, 255, 255, 0.72),
+    7px 7px 14px rgba(152, 168, 189, 0.34);
+  --shadow-raised-soft: -4px -4px 8px rgba(255, 255, 255, 0.68),
+    4px 4px 8px rgba(157, 173, 194, 0.28);
+  --shadow-inset: inset -6px -6px 10px rgba(255, 255, 255, 0.68),
+    inset 6px 6px 10px rgba(152, 168, 189, 0.34);
+  --shadow-inset-soft: inset -3px -3px 6px rgba(255, 255, 255, 0.64),
+    inset 3px 3px 6px rgba(157, 173, 194, 0.3);
+  --shadow-floating: -7px -7px 13px rgba(255, 255, 255, 0.6),
+    9px 9px 16px rgba(136, 152, 173, 0.42);
+  --shadow-dialog: -2px -2px 6px rgba(255, 255, 255, 0.42),
+    10px 12px 22px rgba(112, 129, 151, 0.35);
   --shadow: var(--shadow-raised);
   --focus-ring: rgba(47, 125, 230, 0.34);
   --radius: 18px;
