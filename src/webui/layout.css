@@ -65,7 +65,7 @@ main[data-app] {
   background: var(--panel);
   border: 1px solid transparent;
   border-radius: var(--radius);
-  box-shadow: var(--shadow-raised);
+  box-shadow: var(--shadow-dialog);
   padding: 0;
   display: flex;
   flex-direction: column;
@@ -80,7 +80,7 @@ main[data-app] {
   background: var(--panel);
   border: 1px solid transparent;
   border-radius: var(--radius);
-  box-shadow: var(--shadow-raised);
+  box-shadow: var(--shadow-dialog);
   padding: 16px;
   display: flex;
   flex-direction: column;
@@ -128,7 +128,7 @@ main[data-app] {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 14px;
   overflow-y: auto;
   background: var(--well-bg);
   box-shadow: var(--shadow-inset);
@@ -157,7 +157,7 @@ main[data-app] {
   padding: 10px 12px;
   border-radius: var(--radius-sm);
   background: var(--well-bg);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-hairline);
   box-shadow: var(--shadow-inset);
 }
 

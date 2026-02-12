@@ -7,6 +7,7 @@
   --well-bg: #dbe3ed;
   --border: rgba(130, 149, 171, 0.14);
   --border-subtle: rgba(130, 149, 171, 0.08);
+  --border-hairline: rgba(130, 149, 171, 0.04);
   --text: #2f3d4f;
   --muted: #68778b;
   --accent: #2f7de6;
@@ -31,6 +32,8 @@
     inset 3px 3px 6px rgba(157, 173, 194, 0.3);
   --shadow-floating: -7px -7px 13px rgba(255, 255, 255, 0.6),
     9px 9px 16px rgba(136, 152, 173, 0.42);
+  --shadow-dialog: -2px -2px 6px rgba(255, 255, 255, 0.42),
+    10px 12px 22px rgba(112, 129, 151, 0.35);
   --shadow: var(--shadow-raised);
   --focus-ring: rgba(47, 125, 230, 0.34);
   --radius: 18px;
