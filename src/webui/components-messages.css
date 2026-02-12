@@ -28,8 +28,8 @@
   border-radius: 16px;
   background: var(--bubble-agent-bg);
   border: 1px solid transparent;
-  box-shadow: -1px -1px 2px rgba(255, 255, 255, 0.44),
-    1px 1px 2px rgba(123, 142, 166, 0.18);
+  box-shadow: -1px -1px 2px rgba(255, 255, 255, 0.38),
+    1px 1px 2px rgba(123, 142, 166, 0.14);
   order: 1;
 }
 
@@ -40,8 +40,8 @@
 .message.user article {
   background: var(--bubble-user-bg);
   border-color: transparent;
-  box-shadow: -1px -1px 2px rgba(255, 255, 255, 0.4),
-    1px 1px 2px rgba(89, 119, 164, 0.22);
+  box-shadow: -1px -1px 2px rgba(255, 255, 255, 0.34),
+    1px 1px 2px rgba(89, 119, 164, 0.17);
   border-bottom-right-radius: 4px;
 }
 
@@ -51,8 +51,6 @@
 
 .message.agent article {
   border-bottom-left-radius: 4px;
-  box-shadow: -0.5px -0.5px 1px rgba(255, 255, 255, 0.22),
-    1px 1px 2px rgba(123, 142, 166, 0.2), inset 0 0 0 1px rgba(123, 142, 166, 0.12);
 }
 
 .message.system {
@@ -74,14 +72,14 @@
 
 .message .message-quote {
   --quote-bar: var(--accent);
-  --quote-bg: rgba(47, 125, 230, 0.13);
-  --quote-bg-hover: rgba(47, 125, 230, 0.2);
-  --quote-shadow: -1px -1px 2px rgba(255, 255, 255, 0.42),
-    1px 1px 2px rgba(117, 136, 160, 0.16);
-  --quote-shadow-hover: -1px -1px 3px rgba(255, 255, 255, 0.45),
-    1px 1px 3px rgba(117, 136, 160, 0.2);
-  --quote-shadow-press: inset -1px -1px 2px rgba(255, 255, 255, 0.34),
-    inset 1px 1px 2px rgba(113, 131, 154, 0.2);
+  --quote-bg: rgba(47, 125, 230, 0.1);
+  --quote-bg-hover: rgba(47, 125, 230, 0.14);
+  --quote-shadow: -0.5px -0.5px 1px rgba(255, 255, 255, 0.28),
+    0.5px 0.5px 1px rgba(117, 136, 160, 0.12);
+  --quote-shadow-hover: -0.5px -0.5px 1px rgba(255, 255, 255, 0.32),
+    0.5px 0.5px 1.5px rgba(117, 136, 160, 0.15);
+  --quote-shadow-press: inset -0.5px -0.5px 1px rgba(255, 255, 255, 0.24),
+    inset 0.5px 0.5px 1px rgba(113, 131, 154, 0.16);
   --quote-author: var(--quote-bar);
   display: flex;
   flex-direction: column;
@@ -114,27 +112,27 @@
 
 .message .message-quote[data-quote-role='user'] {
   --quote-bar: var(--success);
-  --quote-bg: rgba(59, 178, 115, 0.12);
-  --quote-bg-hover: rgba(59, 178, 115, 0.18);
+  --quote-bg: rgba(59, 178, 115, 0.1);
+  --quote-bg-hover: rgba(59, 178, 115, 0.14);
 }
 
 .message .message-quote[data-quote-role='agent'] {
   --quote-bar: var(--accent);
-  --quote-bg: rgba(47, 125, 230, 0.13);
-  --quote-bg-hover: rgba(47, 125, 230, 0.2);
+  --quote-bg: rgba(47, 125, 230, 0.1);
+  --quote-bg-hover: rgba(47, 125, 230, 0.14);
 }
 
 .message .message-quote[data-quote-role='system'] {
   --quote-bar: var(--border);
-  --quote-bg: rgba(102, 120, 140, 0.14);
-  --quote-bg-hover: rgba(102, 120, 140, 0.2);
+  --quote-bg: rgba(102, 120, 140, 0.11);
+  --quote-bg-hover: rgba(102, 120, 140, 0.15);
   --quote-author: var(--muted);
 }
 
 .message .message-quote[data-quote-role='unknown'] {
   --quote-bar: var(--border);
-  --quote-bg: rgba(129, 147, 168, 0.16);
-  --quote-bg-hover: rgba(129, 147, 168, 0.22);
+  --quote-bg: rgba(129, 147, 168, 0.12);
+  --quote-bg-hover: rgba(129, 147, 168, 0.16);
 }
 
 .message .message-quote:hover:not(:disabled) {
@@ -234,7 +232,7 @@
 
 .composer .quote-preview {
   --quote-bar: var(--accent);
-  --quote-bg: rgba(47, 125, 230, 0.14);
+  --quote-bg: rgba(47, 125, 230, 0.1);
   --quote-label: var(--quote-bar);
   flex: 0 0 100%;
   display: flex;
@@ -278,7 +276,8 @@
   transform: translateY(0);
   pointer-events: auto;
   background: var(--quote-bg);
-  box-shadow: var(--shadow-raised-soft);
+  box-shadow: -0.5px -0.5px 1px rgba(255, 255, 255, 0.26),
+    0.5px 0.5px 1px rgba(117, 136, 160, 0.12);
 }
 
 .composer .quote-preview.is-visible::before {
@@ -291,23 +290,23 @@
 
 .composer .quote-preview[data-role='user'] {
   --quote-bar: var(--success);
-  --quote-bg: rgba(59, 178, 115, 0.12);
+  --quote-bg: rgba(59, 178, 115, 0.1);
 }
 
 .composer .quote-preview[data-role='agent'] {
   --quote-bar: var(--accent);
-  --quote-bg: rgba(47, 125, 230, 0.14);
+  --quote-bg: rgba(47, 125, 230, 0.1);
 }
 
 .composer .quote-preview[data-role='system'] {
   --quote-bar: var(--border);
-  --quote-bg: rgba(102, 120, 140, 0.14);
+  --quote-bg: rgba(102, 120, 140, 0.11);
   --quote-label: var(--muted);
 }
 
 .composer .quote-preview[data-role='unknown'] {
   --quote-bar: var(--border);
-  --quote-bg: rgba(129, 147, 168, 0.16);
+  --quote-bg: rgba(129, 147, 168, 0.12);
 }
 
 .composer .quote-label {
