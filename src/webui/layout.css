@@ -51,7 +51,7 @@ main[data-app] {
 
 .tasks-dialog::backdrop,
 .restart-dialog::backdrop {
-  background: rgba(43, 58, 78, 0.24);
+  background: rgba(116, 124, 136, 0.34);
   backdrop-filter: blur(3px);
   animation: dialog-backdrop-in 160ms ease-out;
 }
