@@ -7,7 +7,7 @@ import { appendLog } from '../../log/append.js'
 import { bestEffort, setDefaultLogPath } from '../../log/safe.js'
 import { managerLoop } from '../../manager/loop.js'
 import { newId, nowIso } from '../../shared/utils.js'
-import { readHistory } from '../../storage/jsonl.js'
+import { appendHistory, readHistory } from '../../storage/jsonl.js'
 import { publishUserInput } from '../../streams/queues.js'
 import { cancelTask } from '../../worker/cancel-task.js'
 import { enqueuePendingWorkerTasks } from '../../worker/dispatch.js'
@@ -31,6 +31,17 @@ import type { Task } from '../../types/index.js'
 
 export class Orchestrator {
   private runtime: RuntimeState
+
+  private appendStartupSystemMessage = async (): Promise<void> => {
+    await bestEffort('appendHistory: startup_system_message', () =>
+      appendHistory(this.runtime.paths.history, {
+        id: `sys-startup-${newId()}`,
+        role: 'system',
+        text: '系统已启动',
+        createdAt: nowIso(),
+      }),
+    )
+  }
 
   private persistStopSnapshot = async (): Promise<void> => {
     await bestEffort('persistRuntimeState: stop', () =>
@@ -63,6 +74,7 @@ export class Orchestrator {
 
   async start() {
     await hydrateRuntimeState(this.runtime)
+    await this.appendStartupSystemMessage()
     enqueuePendingWorkerTasks(this.runtime)
     notifyWorkerLoop(this.runtime)
     void managerLoop(this.runtime)
