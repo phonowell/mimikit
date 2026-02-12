@@ -32,6 +32,13 @@ export type TaskStatus =
   | 'failed'
   | 'canceled'
 
+export type TaskCancelSource = 'user' | 'manager' | 'system'
+
+export type TaskCancelMeta = {
+  source: TaskCancelSource
+  reason?: string
+}
+
 export type TaskResultStatus = 'succeeded' | 'failed' | 'canceled'
 
 export type WorkerProfile = 'standard' | 'specialist'
@@ -50,6 +57,7 @@ export type Task = {
   attempts?: number
   usage?: TokenUsage
   archivePath?: string
+  cancel?: TaskCancelMeta
   result?: TaskResult
 }
 
@@ -64,6 +72,7 @@ export type TaskResult = {
   title?: string
   archivePath?: string
   profile?: WorkerProfile
+  cancel?: TaskCancelMeta
 }
 
 export type JsonPacket<TPayload> = {

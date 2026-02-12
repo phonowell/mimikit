@@ -24,6 +24,9 @@ export const buildResult = (
   ...(usage ? { usage } : {}),
   ...(task.title ? { title: task.title } : {}),
   profile: task.profile,
+  ...(status === 'canceled'
+    ? { cancel: task.cancel ?? { source: 'system' } }
+    : {}),
 })
 
 export const finalizeResult = async (

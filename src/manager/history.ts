@@ -86,15 +86,19 @@ export const appendConsumedResultsToHistory = async (
       consumed += 1
       continue
     }
-    const appended =
-      result.status === 'canceled'
-        ? await appendTaskSystemMessage(historyPath, 'canceled', task, {
-            createdAt: result.completedAt,
-          })
-        : await appendTaskSystemMessage(historyPath, 'completed', task, {
-            status: result.status,
-            createdAt: result.completedAt,
-          })
+    let appended = false
+    if (result.status === 'canceled') {
+      const cancel = result.cancel ?? task.cancel
+      appended = await appendTaskSystemMessage(historyPath, 'canceled', task, {
+        createdAt: result.completedAt,
+        ...(cancel ? { cancel } : {}),
+      })
+    } else {
+      appended = await appendTaskSystemMessage(historyPath, 'completed', task, {
+        status: result.status,
+        createdAt: result.completedAt,
+      })
+    }
     if (!appended) break
     task.result = {
       ...result,

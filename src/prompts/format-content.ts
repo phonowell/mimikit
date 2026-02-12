@@ -10,6 +10,7 @@ import {
 import type {
   HistoryMessage,
   Task,
+  TaskCancelMeta,
   TaskResult,
   UserInput,
 } from '../types/index.js'
@@ -102,29 +103,47 @@ export const selectTasksForPrompt = (tasks: Task[]): Task[] => {
   })
 }
 
+const formatCancelMeta = (
+  cancel?: TaskCancelMeta,
+): Record<string, unknown> | undefined =>
+  cancel
+    ? {
+        source: cancel.source,
+        ...(cancel.reason ? { reason: cancel.reason } : {}),
+      }
+    : undefined
+
 const formatTaskEntry = (
   task: Task,
   result: TaskResult | undefined,
-): Record<string, unknown> => ({
-  id: task.id,
-  status: task.status,
-  title: task.title.trim() || task.id,
-  changed_at: resolveTaskChangedAt(task),
-  prompt: task.prompt,
-  ...(result
-    ? {
-        result: {
-          status: result.status,
-          ok: result.ok,
-          completed_at: result.completedAt,
-          duration_ms: result.durationMs,
-          output: result.output,
-          ...(result.archivePath ? { archive_path: result.archivePath } : {}),
-          usage: normalizeYamlUsage(result.usage),
-        },
-      }
-    : {}),
-})
+): Record<string, unknown> => {
+  const taskCancel = formatCancelMeta(task.cancel)
+  const resultCancel = formatCancelMeta(result?.cancel ?? task.cancel)
+  return {
+    id: task.id,
+    status: task.status,
+    title: task.title.trim() || task.id,
+    changed_at: resolveTaskChangedAt(task),
+    prompt: task.prompt,
+    ...(task.status === 'canceled' && taskCancel ? { cancel: taskCancel } : {}),
+    ...(result
+      ? {
+          result: {
+            status: result.status,
+            ok: result.ok,
+            completed_at: result.completedAt,
+            duration_ms: result.durationMs,
+            output: result.output,
+            ...(result.status === 'canceled' && resultCancel
+              ? { cancel: resultCancel }
+              : {}),
+            ...(result.archivePath ? { archive_path: result.archivePath } : {}),
+            usage: normalizeYamlUsage(result.usage),
+          },
+        }
+      : {}),
+  }
+}
 
 export const formatTasksYaml = (
   tasks: Task[],
@@ -183,6 +202,7 @@ export const formatResultsYaml = (
   for (const result of ordered) {
     const task = taskById.get(result.taskId)
     const title = task?.title.trim() ?? result.title?.trim() ?? result.taskId
+    const cancel = formatCancelMeta(result.cancel ?? task?.cancel)
     taskEntries.push({
       id: result.taskId,
       title,
@@ -194,6 +214,7 @@ export const formatResultsYaml = (
         completed_at: result.completedAt,
         duration_ms: result.durationMs,
         output: result.output,
+        ...(result.status === 'canceled' && cancel ? { cancel } : {}),
         ...(result.archivePath ? { archive_path: result.archivePath } : {}),
         usage: normalizeYamlUsage(result.usage),
       },

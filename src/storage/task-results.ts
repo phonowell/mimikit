@@ -12,7 +12,11 @@ import {
   type ReadTaskResultsOptions,
 } from './task-results-read.js'
 
-import type { TaskResultStatus, TokenUsage } from '../types/index.js'
+import type {
+  TaskCancelMeta,
+  TaskResultStatus,
+  TokenUsage,
+} from '../types/index.js'
 
 export type TaskArchiveEntry = {
   taskId?: string
@@ -24,6 +28,7 @@ export type TaskArchiveEntry = {
   completedAt: string
   durationMs: number
   usage?: TokenUsage
+  cancel?: TaskCancelMeta
 }
 
 const TASK_ARCHIVE_DIR = 'tasks'
@@ -78,6 +83,8 @@ const buildArchiveContent = (entry: TaskArchiveEntry): string =>
       ['completed_at', entry.completedAt],
       ['duration_ms', entry.durationMs],
       ['usage', entry.usage ? JSON.stringify(entry.usage) : undefined],
+      ['cancel_source', entry.cancel?.source],
+      ['cancel_reason', entry.cancel?.reason],
     ],
     [
       { marker: '=== PROMPT ===', content: entry.prompt },

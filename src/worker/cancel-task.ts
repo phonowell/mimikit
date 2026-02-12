@@ -9,7 +9,7 @@ import { markTaskCanceled } from '../tasks/queue.js'
 import { archiveTaskResult } from './runtime-utils.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
-import type { Task, TaskResult } from '../types/index.js'
+import type { Task, TaskCancelMeta, TaskResult } from '../types/index.js'
 
 export type CancelMeta = {
   source?: string
@@ -42,8 +42,20 @@ const buildCanceledResult = (task: Task, output: string): TaskResult => {
     completedAt,
     ...(task.title ? { title: task.title } : {}),
     profile: task.profile,
+    ...(task.cancel ? { cancel: task.cancel } : {}),
   }
 }
+
+const normalizeCancelSource = (source?: string): TaskCancelMeta['source'] => {
+  if (source === 'user' || source === 'http') return 'user'
+  if (source === 'manager') return 'manager'
+  return 'system'
+}
+
+const buildCancelMeta = (meta?: CancelMeta): TaskCancelMeta => ({
+  source: normalizeCancelSource(meta?.source),
+  ...(meta?.reason ? { reason: meta.reason } : {}),
+})
 
 const pushCanceledResult = async (
   runtime: RuntimeState,
@@ -63,6 +75,7 @@ const pushCanceledResult = async (
       taskId: task.id,
       status: result.status,
       durationMs: result.durationMs,
+      ...(result.cancel ? { cancelSource: result.cancel.source } : {}),
       ...(archivePath ? { archivePath } : {}),
     }),
   )
@@ -83,11 +96,14 @@ export const cancelTask = async (
     return { ok: false, status: 'already_done', taskId: trimmed }
 
   if (task.status === 'pending') {
+    const cancelMeta = buildCancelMeta(meta)
     const result = buildCanceledResult(task, meta?.reason ?? 'Task canceled')
     markTaskCanceled(runtime.tasks, task.id, {
       completedAt: result.completedAt,
       durationMs: result.durationMs,
+      cancel: cancelMeta,
     })
+    result.cancel = cancelMeta
     await pushCanceledResult(runtime, task, result)
     await bestEffort('persistRuntimeState: cancel_pending', () =>
       persistRuntimeState(runtime),
@@ -103,9 +119,11 @@ export const cancelTask = async (
     Number.isFinite(startedAtMs) && Number.isFinite(canceledAtMs)
       ? Math.max(0, canceledAtMs - startedAtMs)
       : undefined
+  const cancelMeta = buildCancelMeta(meta)
   markTaskCanceled(runtime.tasks, task.id, {
     completedAt: canceledAt,
     ...(durationMs !== undefined ? { durationMs } : {}),
+    cancel: cancelMeta,
   })
   const controller = runtime.runningControllers.get(task.id)
   if (controller && !controller.signal.aborted) controller.abort()
@@ -113,8 +131,8 @@ export const cancelTask = async (
     appendLog(runtime.paths.log, {
       event: 'task_cancel_requested',
       taskId: task.id,
-      ...(meta?.source ? { source: meta.source } : {}),
-      ...(meta?.reason ? { reason: meta.reason } : {}),
+      source: cancelMeta.source,
+      ...(cancelMeta.reason ? { reason: cancelMeta.reason } : {}),
     }),
   )
   await bestEffort('persistRuntimeState: cancel_running', () =>

@@ -21,5 +21,6 @@ export const archiveTaskResult = (
       completedAt: result.completedAt,
       durationMs: result.durationMs,
       ...(result.usage ? { usage: result.usage } : {}),
+      ...(result.cancel ? { cancel: result.cancel } : {}),
     }),
   )

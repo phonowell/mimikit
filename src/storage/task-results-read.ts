@@ -8,13 +8,26 @@ import { safe } from '../log/safe.js'
 import { extractArchiveSection, parseArchiveHeader } from './archive-format.js'
 import { parseTokenUsageJson } from './token-usage.js'
 
-import type { TaskResult, TaskResultStatus } from '../types/index.js'
+import type {
+  TaskCancelMeta,
+  TaskResult,
+  TaskResultStatus,
+} from '../types/index.js'
 
 const parseStatus = (value?: string): TaskResultStatus | null => {
   if (value === 'succeeded' || value === 'failed' || value === 'canceled')
     return value
 
   return null
+}
+
+const parseCancelSource = (
+  value?: string,
+): TaskCancelMeta['source'] | undefined => {
+  if (value === 'user' || value === 'http') return 'user'
+  if (value === 'manager') return 'manager'
+  if (value === 'system') return 'system'
+  return undefined
 }
 
 const parseTaskResultArchive = (
@@ -34,6 +47,13 @@ const parseTaskResultArchive = (
   const normalizedDuration = Number.isFinite(durationMs) ? durationMs : 0
   const output = extractArchiveSection(lines, '=== RESULT ===')
   const usage = parseTokenUsageJson(header.usage)
+  const cancelSource = parseCancelSource(header.cancel_source)
+  const cancel: TaskCancelMeta | undefined = cancelSource
+    ? {
+        source: cancelSource,
+        ...(header.cancel_reason ? { reason: header.cancel_reason } : {}),
+      }
+    : undefined
 
   return {
     taskId,
@@ -45,6 +65,7 @@ const parseTaskResultArchive = (
     ...(usage ? { usage } : {}),
     ...(header.title ? { title: header.title } : {}),
     ...(archivePath ? { archivePath } : {}),
+    ...(cancel ? { cancel } : {}),
   }
 }
 

@@ -12,6 +12,13 @@ export type RuntimeSnapshot = {
   }
 }
 
+const taskCancelSchema = z
+  .object({
+    source: z.enum(['user', 'manager', 'system']),
+    reason: z.string().optional(),
+  })
+  .strict()
+
 const taskRawSchema = z
   .object({
     id: z.string().trim().min(1),
@@ -27,6 +34,7 @@ const taskRawSchema = z
     attempts: z.number().int().nonnegative().optional(),
     usage: tokenUsageSchema.optional(),
     archivePath: z.string().optional(),
+    cancel: taskCancelSchema.optional(),
   })
   .strict()
 
@@ -46,6 +54,15 @@ const runtimeSnapshotRawSchema = z
 
 const toTask = (task: z.infer<typeof taskRawSchema>): Task => {
   const usage = normalizeTokenUsage(task.usage)
+  const cancel =
+    task.cancel !== undefined
+      ? {
+          source: task.cancel.source,
+          ...(task.cancel.reason !== undefined
+            ? { reason: task.cancel.reason }
+            : {}),
+        }
+      : undefined
   return {
     id: task.id,
     fingerprint: task.fingerprint,
@@ -64,6 +81,7 @@ const toTask = (task: z.infer<typeof taskRawSchema>): Task => {
     ...(task.archivePath !== undefined
       ? { archivePath: task.archivePath }
       : {}),
+    ...(cancel !== undefined ? { cancel } : {}),
   }
 }
 

@@ -5,6 +5,7 @@ import { appendHistory } from '../../storage/jsonl.js'
 import type {
   HistoryMessage,
   Task,
+  TaskCancelMeta,
   TaskResultStatus,
 } from '../../types/index.js'
 
@@ -26,9 +27,14 @@ const buildTaskText = (
   event: TaskHistoryEvent,
   label: string,
   status?: TaskResultStatus,
+  cancel?: TaskCancelMeta,
 ): string => {
   if (event === 'created') return `任务已创建：${label}`
-  if (event === 'canceled') return `任务已取消：${label}`
+  if (event === 'canceled') {
+    return cancel?.source === 'user'
+      ? `任务已取消（用户手动）：${label}`
+      : `任务已取消：${label}`
+  }
   const statusLabel = status ? STATUS_LABELS[status] : '未知'
   return `任务已完成：${label}，状态：${statusLabel}`
 }
@@ -37,9 +43,18 @@ export const appendTaskSystemMessage = (
   historyPath: string,
   event: TaskHistoryEvent,
   task: Task,
-  options?: { status?: TaskResultStatus; createdAt?: string },
+  options?: {
+    status?: TaskResultStatus
+    createdAt?: string
+    cancel?: TaskCancelMeta
+  },
 ): Promise<boolean> => {
-  const text = buildTaskText(event, resolveTaskLabel(task), options?.status)
+  const text = buildTaskText(
+    event,
+    resolveTaskLabel(task),
+    options?.status,
+    options?.cancel,
+  )
   const message: HistoryMessage = {
     id: `sys-task-${newId()}`,
     role: 'system',

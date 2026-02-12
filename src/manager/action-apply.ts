@@ -55,11 +55,17 @@ export const collectTaskResultSummaries = (
   return summaries
 }
 
+type ApplyTaskActionsOptions = {
+  suppressCreateTask?: boolean
+}
+
 const applyCreateTask = async (
   runtime: RuntimeState,
   item: Parsed,
   seen: Set<string>,
+  options?: ApplyTaskActionsOptions,
 ): Promise<void> => {
+  if (options?.suppressCreateTask) return
   const parsed = createSchema.safeParse(item.attrs)
   if (!parsed.success) return
   const profile = parsed.data.profile as WorkerProfile
@@ -84,11 +90,12 @@ const applyCreateTask = async (
 export const applyTaskActions = async (
   runtime: RuntimeState,
   items: Parsed[],
+  options?: ApplyTaskActionsOptions,
 ): Promise<void> => {
   const seen = new Set<string>()
   for (const item of items) {
     if (item.name === 'create_task') {
-      await applyCreateTask(runtime, item, seen)
+      await applyCreateTask(runtime, item, seen, options)
       continue
     }
     if (item.name === 'cancel_task') {

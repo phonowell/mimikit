@@ -104,6 +104,10 @@ export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
 
       const parsed = parseActions(managerResult.output)
       const summaries = collectTaskResultSummaries(parsed.actions)
+      const hasManualCanceledResult = results.some(
+        (result) =>
+          result.status === 'canceled' && result.cancel?.source === 'user',
+      )
 
       const consumedInputCount = await appendConsumedInputsToHistory(
         runtime.paths.history,
@@ -121,7 +125,9 @@ export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
       if (consumedResultCount < results.length)
         throw new Error('append_consumed_results_incomplete')
 
-      await applyTaskActions(runtime, parsed.actions)
+      await applyTaskActions(runtime, parsed.actions, {
+        suppressCreateTask: hasManualCanceledResult && inputs.length === 0,
+      })
 
       const responseText =
         parsed.text.trim() ||

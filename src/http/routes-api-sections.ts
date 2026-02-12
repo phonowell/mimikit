@@ -107,7 +107,7 @@ export const registerTaskCancelRoute = (
       return
     }
     const cancelResult = await orchestrator.cancelTask(taskId, {
-      source: 'http',
+      source: 'user',
     })
     if (!cancelResult.ok) {
       const status =
