@@ -17,25 +17,54 @@ type Input = z.infer<typeof schema>
 
 const buildCommand = (workDir: string, command: string): string[] => [
   ...prependWorkDir(workDir, []),
-  `npx -y agent-browser ${command} --json`,
+  `pnpm exec agent-browser ${command} --json`,
 ]
+
+type CommandResult = {
+  code: number
+  last: string
+  output: string
+}
+
+const runCommand = async (command: string[]): Promise<CommandResult> => {
+  const [code, last, all] = await exec(command, { silent: true })
+  return {
+    code,
+    last,
+    output: all.join('\n') || last,
+  }
+}
+
+const toFailure = (
+  code: number,
+  output: string,
+  details: Record<string, unknown>,
+): {
+  ok: false
+  output: string
+  error: string
+  details: Record<string, unknown>
+} => ({
+  ok: false,
+  output,
+  error: `browser_exit_${code}`,
+  details,
+})
 
 export const runBrowserSpec: Spec<Input> = {
   name: 'run_browser',
   schema,
   run: async (context, args) => {
-    const [code, last, all] = await exec(
-      buildCommand(context.workDir, args.command),
-      {
-        silent: true,
-      },
-    )
-    const output = all.join('\n') || last
-    return {
-      ok: code === 0,
-      output,
-      ...(code === 0 ? {} : { error: `browser_exit_${code}` }),
-      details: { command: args.command },
+    const result = await runCommand(buildCommand(context.workDir, args.command))
+    if (result.code === 0) {
+      return {
+        ok: true,
+        output: result.output,
+        details: { command: args.command },
+      }
     }
+    return toFailure(result.code, result.output, {
+      command: args.command,
+    })
   },
 }
