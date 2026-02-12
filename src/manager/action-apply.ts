@@ -1,9 +1,9 @@
 import { z } from 'zod'
 
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
+import { enqueueTask } from '../orchestrator/core/task-state.js'
 import { notifyWorkerLoop } from '../orchestrator/core/worker-signal.js'
 import { appendTaskSystemMessage } from '../orchestrator/read-model/task-history.js'
-import { enqueueTask } from '../tasks/queue.js'
 import { cancelTask } from '../worker/cancel-task.js'
 import { enqueueWorkerTask } from '../worker/dispatch.js'
 

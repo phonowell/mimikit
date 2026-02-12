@@ -1,8 +1,8 @@
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
+import { markTaskRunning } from '../orchestrator/core/task-state.js'
 import { notifyWorkerLoop } from '../orchestrator/core/worker-signal.js'
-import { markTaskRunning } from '../tasks/queue.js'
 
 import { runTask } from './run-task.js'
 

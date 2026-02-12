@@ -1,10 +1,10 @@
 import { appendLog } from '../log/append.js'
-import { notifyWorkerLoop } from '../orchestrator/core/worker-signal.js'
 import {
   markTaskCanceled,
   markTaskFailed,
   markTaskSucceeded,
-} from '../tasks/queue.js'
+} from '../orchestrator/core/task-state.js'
+import { notifyWorkerLoop } from '../orchestrator/core/worker-signal.js'
 
 import { buildResult, finalizeResult } from './result-finalize.js'
 import { runTaskWithRetry } from './run-retry.js'

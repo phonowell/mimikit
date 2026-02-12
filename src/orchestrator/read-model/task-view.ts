@@ -1,4 +1,4 @@
-import { titleFromCandidates } from '../../tasks/queue.js'
+import { titleFromCandidates } from '../../shared/task-title.js'
 
 import type { Task, TaskStatus } from '../../types/index.js'
 

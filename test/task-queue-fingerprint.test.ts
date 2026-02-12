@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 
-import { enqueueTask } from '../src/tasks/queue.js'
+import { enqueueTask } from '../src/orchestrator/core/task-state.js'
 import type { Task } from '../src/types/index.js'
 
 test('enqueueTask dedupes active task by fingerprint', () => {
