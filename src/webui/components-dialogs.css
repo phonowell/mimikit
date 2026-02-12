@@ -63,7 +63,7 @@
   overflow-y: auto;
   min-height: 0;
   background: var(--well-bg);
-  box-shadow: var(--shadow-inset);
+  box-shadow: none;
 }
 
 .task-item,

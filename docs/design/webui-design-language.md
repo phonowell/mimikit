@@ -36,7 +36,7 @@
 
 ## Token 体系
 - 来源：`src/webui/base.css`。
-- 色彩 token：`--bg` `--panel` `--panel-soft` `--panel-strong` `--well-bg` `--text` `--muted`。
+- 色彩 token：`--bg` `--panel` `--panel-soft` `--panel-strong` `--well-bg` `--messages-bg` `--text` `--muted`。
 - 语义色 token：`--accent` `--success` `--warning` `--danger`。
 - 状态色 token：`--status-running` `--status-success` `--status-fail` 等。
 - 阴影 token：`--shadow-raised` `--shadow-raised-soft` `--shadow-inset` `--shadow-inset-soft` `--shadow-floating` `--shadow-dialog`。
@@ -51,7 +51,6 @@
 - 浮动层（Floating）：悬浮快捷按钮。
 - 使用：`--shadow-floating`。
 - 凹陷白名单（当前实现）：
-- `.tasks-list`
 - `.composer textarea`
 - 交互按压态（`:active` / `[aria-pressed='true']`）
 - 禁止凹陷的常规信息区：
@@ -74,7 +73,7 @@
 - `user`：使用 `--bubble-user-bg`，用于轻强调。
 - `agent`：保持中性面板色。
 - `system`：使用 `--bubble-system-bg` 区分系统提示。
-- 颜色参考 Telegram Light 语义：`agent` 近白入站、`user` 浅绿出站、`system` 冷灰服务提示；同时为三类气泡配置独立字体色。
+- 颜色参考 QQ / 企业微信语义：`agent` 近白入站、`user` 浅绿出站、`system` 冷灰服务提示；同时为三类气泡配置独立字体色。
 - 引用块（`.message-quote` / `.quote-preview`）
 - 必须包含竖向角色条（`--quote-bar`）+ 轻量背景。
 - 角色只改语义色，不改结构与层级语法。
@@ -82,7 +81,7 @@
 - `.message-quote` 与 `.quote-preview` 使用弱化凸起阴影，避免喧宾夺主。
 - `.message-quote-btn` 保持凹凸按压反馈，不随气泡平面化被移除。
 - 任务面板（`.tasks-*`）
-- 列表槽位为凹陷层，任务项为凸起层。
+- 列表槽位为平面浅色层，任务项为凸起层。
 - 可点击任务链接需要按压反馈（阴影反转）。
 - `task-profile` 归类为信息标签，保持平面/轻凸起，不使用 inset。
 
@@ -160,6 +159,7 @@
 - 视觉微调（十八）：三类消息气泡接入 Telegram Light 参考色（背景+字体）并统一极细边框；全局按钮禁用文本选中。
 - 视觉微调（十九）：消息气泡高光/阴影再降一档；messages 容器由纯灰单色改为低对比渐变背景，提升通透层次。
 - 视觉微调（二十）：进一步弱化三类气泡边框对比；引用块左侧竖线与正文间距加宽（消息内与输入预览一致）。
+- 视觉微调（二十一）：tasks-list 改为平面层（移除凹陷）；messages 改为极浅灰纯色背景；三类气泡颜色切换为 QQ / 企业微信参考语义。
 
 ## 验收清单
 - 页面背景与主要组件保持同色调。
