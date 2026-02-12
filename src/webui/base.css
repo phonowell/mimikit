@@ -4,7 +4,8 @@
   --panel: #e6ebf2;
   --panel-soft: #e0e6ee;
   --panel-strong: #d8e0ea;
-  --border: rgba(130, 149, 171, 0.22);
+  --border: rgba(130, 149, 171, 0.14);
+  --border-subtle: rgba(130, 149, 171, 0.08);
   --text: #2f3d4f;
   --muted: #68778b;
   --accent: #2f7de6;

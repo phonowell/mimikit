@@ -27,7 +27,7 @@
   padding: 10px 12px;
   border-radius: 16px;
   background: var(--panel);
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
   box-shadow: var(--shadow-raised-soft);
   order: 1;
 }
@@ -58,7 +58,7 @@
 
 .message.system article {
   background: var(--panel-strong);
-  border-color: var(--border);
+  border-color: transparent;
   font-size: 12px;
   color: var(--muted);
 }
@@ -390,7 +390,7 @@
 
 .message-loading article {
   background: var(--panel-soft);
-  border-style: dashed;
+  border-style: none;
 }
 
 .loading-dots {

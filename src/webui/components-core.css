@@ -64,7 +64,7 @@
   min-width: var(--btn-min-width);
   min-height: var(--btn-min-height);
   border-radius: var(--btn-radius);
-  border: 1px solid var(--btn-border, var(--border));
+  border: 1px solid var(--btn-border, transparent);
   background: var(--btn-bg);
   color: var(--btn-color);
   font-size: var(--btn-font);
@@ -218,7 +218,7 @@
   padding: 16px 18px;
   border-radius: var(--radius-sm);
   background: var(--panel);
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
   box-shadow: var(--shadow-inset-soft);
   color: var(--muted);
   text-align: center;
