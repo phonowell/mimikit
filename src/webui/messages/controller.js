@@ -178,6 +178,7 @@ export function createMessagesController({
   })
 
   if (quoteClearBtn) quoteClearBtn.addEventListener('click', quote.clear)
+  if (quotePreview) quotePreview.addEventListener('dblclick', quote.clear)
 
   const lifecycle = createMessagesLifecycle({
     runtime,
