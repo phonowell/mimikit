@@ -16,21 +16,21 @@
   height: 8px;
   border-radius: 50%;
   background: var(--status-idle);
-  box-shadow: -1px -1px 2px rgba(255, 255, 255, 0.78),
-    1px 1px 2px rgba(109, 126, 147, 0.42), 0 0 0 4px rgba(59, 178, 115, 0.17);
+  box-shadow: -1px -1px 2px rgba(255, 226, 191, 0.8),
+    1px 1px 2px rgba(167, 102, 43, 0.36), 0 0 0 4px rgba(59, 178, 115, 0.17);
 }
 
 .status-dot[data-state='running'] {
   background: var(--status-running);
-  box-shadow: -1px -1px 2px rgba(255, 255, 255, 0.8),
-    1px 1px 2px rgba(94, 122, 163, 0.45), 0 0 0 4px rgba(47, 125, 230, 0.18);
+  box-shadow: -1px -1px 2px rgba(255, 228, 196, 0.8),
+    1px 1px 2px rgba(169, 104, 43, 0.38), 0 0 0 4px rgba(47, 125, 230, 0.18);
   animation: statusPulse 1.6s ease-in-out infinite;
 }
 
 .status-dot[data-state='disconnected'] {
   background: var(--status-disconnected);
-  box-shadow: -1px -1px 2px rgba(255, 255, 255, 0.78),
-    1px 1px 2px rgba(110, 124, 142, 0.4), 0 0 0 4px rgba(148, 163, 184, 0.14);
+  box-shadow: -1px -1px 2px rgba(255, 224, 188, 0.78),
+    1px 1px 2px rgba(162, 99, 44, 0.34), 0 0 0 4px rgba(148, 163, 184, 0.14);
 }
 
 @keyframes statusPulse {
@@ -124,12 +124,12 @@
   --btn-hover-color: #ffffff;
   --btn-hover-border: transparent;
   --btn-focus: rgba(47, 125, 230, 0.42);
-  --btn-shadow: -5px -5px 10px rgba(255, 255, 255, 0.4),
-    6px 6px 12px rgba(89, 120, 167, 0.36);
-  --btn-shadow-hover: -6px -6px 12px rgba(255, 255, 255, 0.42),
-    7px 7px 14px rgba(81, 113, 161, 0.38);
-  --btn-shadow-press: inset -3px -3px 6px rgba(104, 157, 237, 0.28),
-    inset 4px 4px 8px rgba(33, 95, 171, 0.42);
+  --btn-shadow: -5px -5px 10px rgba(255, 217, 170, 0.5),
+    6px 6px 12px rgba(168, 100, 40, 0.4);
+  --btn-shadow-hover: -6px -6px 12px rgba(255, 220, 176, 0.54),
+    7px 7px 14px rgba(167, 98, 38, 0.44);
+  --btn-shadow-press: inset -3px -3px 6px rgba(255, 210, 153, 0.36),
+    inset 4px 4px 8px rgba(158, 90, 34, 0.45);
 }
 
 .btn--danger {
@@ -140,12 +140,12 @@
   --btn-hover-color: #d04343;
   --btn-hover-border: transparent;
   --btn-focus: rgba(226, 93, 93, 0.35);
-  --btn-shadow: -4px -4px 8px rgba(255, 255, 255, 0.42),
-    5px 5px 10px rgba(180, 133, 139, 0.34);
-  --btn-shadow-hover: -5px -5px 10px rgba(255, 255, 255, 0.45),
-    6px 6px 12px rgba(177, 124, 132, 0.36);
-  --btn-shadow-press: inset -3px -3px 6px rgba(255, 255, 255, 0.32),
-    inset 3px 3px 6px rgba(173, 116, 124, 0.4);
+  --btn-shadow: -4px -4px 8px rgba(255, 219, 174, 0.48),
+    5px 5px 10px rgba(169, 100, 45, 0.36);
+  --btn-shadow-hover: -5px -5px 10px rgba(255, 223, 181, 0.52),
+    6px 6px 12px rgba(164, 95, 41, 0.4);
+  --btn-shadow-press: inset -3px -3px 6px rgba(255, 212, 160, 0.36),
+    inset 3px 3px 6px rgba(160, 91, 38, 0.42);
 }
 
 .btn--icon {

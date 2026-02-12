@@ -39,7 +39,7 @@
 - 色彩 token：`--bg` `--panel` `--panel-soft` `--panel-strong` `--well-bg` `--text` `--muted`。
 - 语义色 token：`--accent` `--success` `--warning` `--danger`。
 - 状态色 token：`--status-running` `--status-success` `--status-fail` 等。
-- 阴影 token：`--shadow-raised` `--shadow-raised-soft` `--shadow-inset` `--shadow-inset-soft` `--shadow-floating`。
+- 阴影 token：`--shadow-hi` `--shadow-hi-soft` `--shadow-lo` `--shadow-lo-soft` `--shadow-raised` `--shadow-raised-soft` `--shadow-inset` `--shadow-inset-soft` `--shadow-floating` `--shadow-dialog`。
 - 形状 token：`--radius` `--radius-sm`。
 - 焦点 token：`--focus-ring`。
 
@@ -145,6 +145,7 @@
 - 视觉微调（六）：消息气泡从“极轻微凹陷”切换为“极轻微凸起”，并下调引用块的阴影突出度。
 - 视觉微调（七）：`agent` 气泡弱化左上高光并增加细内描边，修复左上边界发虚问题。
 - 视觉微调（八）：移除 `agent` 细描边，统一所有气泡为更轻的 micro raised；引用块/引用预览再降一档突出强度。
+- 视觉微调（九）：全局高光/暗影切换为更明显暖橙色调，并统一消息气泡、引用块、引用预览的局部阴影为同一暖橙语义。
 
 ## 验收清单
 - 页面背景与主要组件保持同色调。
