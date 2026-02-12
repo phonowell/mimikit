@@ -1,20 +1,20 @@
 :root {
   color-scheme: light;
-  --bg: #ebe7df;
-  --panel: #ebe7df;
-  --panel-soft: #e4dfd5;
-  --panel-strong: #d9d2c6;
-  --well-bg: #dfd8cc;
-  --border: rgba(141, 129, 112, 0.14);
-  --border-subtle: rgba(141, 129, 112, 0.08);
-  --border-hairline: rgba(141, 129, 112, 0.04);
-  --text: #3c3630;
-  --muted: #72695e;
+  --bg: #f1efdf;
+  --panel: #f1efdf;
+  --panel-soft: #ece8d6;
+  --panel-strong: #e2dcc6;
+  --well-bg: #e6e0cb;
+  --border: rgba(145, 136, 106, 0.14);
+  --border-subtle: rgba(145, 136, 106, 0.08);
+  --border-hairline: rgba(145, 136, 106, 0.04);
+  --text: #3f3a2f;
+  --muted: #776f5d;
   --accent: #2f7de6;
   --accent-soft: #dce9ff;
-  --bubble-agent-bg: #d2c8ba;
-  --bubble-user-bg: #c7d2e7;
-  --bubble-system-bg: #c2bbaf;
+  --bubble-agent-bg: #dad3bd;
+  --bubble-user-bg: #d1dceb;
+  --bubble-system-bg: #cec7b4;
   --success: #3bb273;
   --warning: #f2b24f;
   --danger: #e25d5d;
@@ -25,18 +25,18 @@
   --status-pending: #b9c5d6;
   --status-idle: #3bb273;
   --status-disconnected: #8a96a8;
-  --shadow-raised: -7px -7px 14px rgba(255, 255, 255, 0.72),
-    7px 7px 14px rgba(147, 135, 119, 0.34);
-  --shadow-raised-soft: -4px -4px 8px rgba(255, 255, 255, 0.68),
-    4px 4px 8px rgba(152, 140, 124, 0.28);
-  --shadow-inset: inset -6px -6px 10px rgba(255, 255, 255, 0.68),
-    inset 6px 6px 10px rgba(147, 135, 119, 0.34);
-  --shadow-inset-soft: inset -3px -3px 6px rgba(255, 255, 255, 0.64),
-    inset 3px 3px 6px rgba(152, 140, 124, 0.3);
-  --shadow-floating: -7px -7px 13px rgba(255, 255, 255, 0.6),
-    9px 9px 16px rgba(131, 119, 103, 0.42);
-  --shadow-dialog: -2px -2px 6px rgba(255, 255, 255, 0.42),
-    10px 12px 22px rgba(107, 96, 82, 0.35);
+  --shadow-raised: -7px -7px 14px rgba(255, 255, 255, 0.74),
+    7px 7px 14px rgba(138, 130, 103, 0.3);
+  --shadow-raised-soft: -4px -4px 8px rgba(255, 255, 255, 0.7),
+    4px 4px 8px rgba(145, 137, 109, 0.26);
+  --shadow-inset: inset -6px -6px 10px rgba(255, 255, 255, 0.7),
+    inset 6px 6px 10px rgba(138, 130, 103, 0.3);
+  --shadow-inset-soft: inset -3px -3px 6px rgba(255, 255, 255, 0.66),
+    inset 3px 3px 6px rgba(145, 137, 109, 0.28);
+  --shadow-floating: -7px -7px 13px rgba(255, 255, 255, 0.62),
+    9px 9px 16px rgba(123, 115, 89, 0.36);
+  --shadow-dialog: -2px -2px 6px rgba(255, 255, 255, 0.44),
+    10px 12px 22px rgba(101, 94, 71, 0.32);
   --shadow: var(--shadow-raised);
   --focus-ring: rgba(47, 125, 230, 0.34);
   --radius: 18px;
@@ -59,9 +59,9 @@ body {
     "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
   background: radial-gradient(
     circle at 18% 12%,
-    #f0ebe2 0%,
-    #ebe7df 42%,
-    #e5dfd4 100%
+    #f6f3e6 0%,
+    #f1efdf 42%,
+    #ece8d6 100%
   );
   color: var(--text);
 }
