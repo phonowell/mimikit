@@ -16,6 +16,9 @@ import {
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { TaskResult, UserInput } from '../types/index.js'
 
+const QUEUE_COMPACT_MIN_PACKETS = 100
+const TASK_SNAPSHOT_MAX_COUNT = 100
+
 type TaskSnapshotEvent = {
   id: string
   createdAt: string
@@ -45,7 +48,7 @@ const appendTaskSnapshot = async (runtime: RuntimeState): Promise<void> => {
     createdAt: nowIso(),
     tasks: runtime.tasks,
   }
-  const keepCount = Math.max(1, runtime.config.manager.taskSnapshotMaxCount)
+  const keepCount = TASK_SNAPSHOT_MAX_COUNT
   await updateJsonl<TaskSnapshotEvent>(runtime.paths.tasksEvents, (current) => {
     const next = [...current, snapshot]
     if (next.length <= keepCount) return next
@@ -63,21 +66,17 @@ const persistQueueStates = async (runtime: RuntimeState): Promise<void> => {
 }
 
 const maybeCompactQueues = async (runtime: RuntimeState): Promise<void> => {
-  const minPacketsToCompact = Math.max(
-    1,
-    runtime.config.manager.queueCompactMinPackets,
-  )
   const compactedInputs = await compactInputQueueIfFullyConsumed({
     paths: runtime.paths,
     cursor: runtime.queues.inputsCursor,
-    minPacketsToCompact,
+    minPacketsToCompact: QUEUE_COMPACT_MIN_PACKETS,
   })
   if (compactedInputs) runtime.queues.inputsCursor = 0
 
   const compactedResults = await compactResultQueueIfFullyConsumed({
     paths: runtime.paths,
     cursor: runtime.queues.resultsCursor,
-    minPacketsToCompact,
+    minPacketsToCompact: QUEUE_COMPACT_MIN_PACKETS,
   })
   if (compactedResults) runtime.queues.resultsCursor = 0
 }

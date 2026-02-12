@@ -13,7 +13,7 @@ import type { Task } from '../src/types/index.js'
 
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-runtime-state-'))
 
-test('selectPersistedTasks keeps pending and recovers running', () => {
+test('selectPersistedTasks keeps all statuses and recovers running', () => {
   const tasks: Task[] = [
     {
       id: 'a',
@@ -42,21 +42,51 @@ test('selectPersistedTasks keeps pending and recovers running', () => {
       profile: 'standard',
       status: 'succeeded',
       createdAt: '2026-02-06T00:00:00.000Z',
+      result: {
+        taskId: 'c',
+        status: 'succeeded',
+        ok: true,
+        output: 'done',
+        durationMs: 12,
+        completedAt: '2026-02-06T00:01:00.000Z',
+      },
     },
   ]
 
   const persisted = selectPersistedTasks(tasks)
-  expect(persisted).toHaveLength(2)
+  expect(persisted).toHaveLength(3)
   expect(persisted[0]?.status).toBe('pending')
   expect(persisted[1]?.id).toBe('b')
   expect(persisted[1]?.status).toBe('pending')
   expect(persisted[1]?.startedAt).toBeUndefined()
+  expect(persisted[1]?.result).toBeUndefined()
+  expect(persisted[2]?.id).toBe('c')
+  expect(persisted[2]?.status).toBe('succeeded')
+  expect(persisted[2]?.result?.output).toBe('done')
 })
 
 test('runtime snapshot accepts queue cursors', async () => {
   const stateDir = await createTmpDir()
   await saveRuntimeSnapshot(stateDir, {
-    tasks: [],
+    tasks: [
+      {
+        id: 'task-1',
+        fingerprint: 'task-1',
+        prompt: 'check',
+        title: 'Check',
+        profile: 'standard',
+        status: 'succeeded',
+        createdAt: '2026-02-06T00:00:00.000Z',
+        result: {
+          taskId: 'task-1',
+          status: 'succeeded',
+          ok: true,
+          output: 'ok',
+          durationMs: 5,
+          completedAt: '2026-02-06T00:00:05.000Z',
+        },
+      },
+    ],
     queues: {
       inputsCursor: 3,
       resultsCursor: 9,
@@ -66,6 +96,7 @@ test('runtime snapshot accepts queue cursors', async () => {
   const loaded = await loadRuntimeSnapshot(stateDir)
   expect(loaded.queues?.resultsCursor).toBe(9)
   expect(loaded.queues?.inputsCursor).toBe(3)
+  expect(loaded.tasks[0]?.result?.output).toBe('ok')
 })
 
 test('runtime snapshot rejects legacy grouped channel shape', async () => {

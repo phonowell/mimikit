@@ -20,12 +20,6 @@ export type AppConfig = {
     pollMs: number
     /** 两次调度最小间隔（毫秒） */
     minIntervalMs: number
-    /** 单次调度最大批量任务数 */
-    maxBatch: number
-    /** 触发队列压缩的最小包数量 */
-    queueCompactMinPackets: number
-    /** 任务快照保留上限（条） */
-    taskSnapshotMaxCount: number
     /** 任务列表保留上限（条） */
     tasksMaxCount: number
     /** 任务列表保留下限（条） */
@@ -91,9 +85,6 @@ export const defaultConfig = (params: DefaultConfigParams): AppConfig => ({
   manager: {
     pollMs: 1_000,
     minIntervalMs: 8_000,
-    maxBatch: 100,
-    queueCompactMinPackets: 1_000,
-    taskSnapshotMaxCount: 2_000,
     tasksMaxCount: 20,
     tasksMinCount: 5,
     tasksMaxBytes: 20 * 1024,

@@ -39,12 +39,10 @@ export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
     const inputPackets = await consumeUserInputs({
       paths: runtime.paths,
       fromCursor: runtime.queues.inputsCursor,
-      limit: runtime.config.manager.maxBatch,
     })
     const resultPackets = await consumeWorkerResults({
       paths: runtime.paths,
       fromCursor: runtime.queues.resultsCursor,
-      limit: runtime.config.manager.maxBatch,
     })
 
     if (inputPackets.length === 0 && resultPackets.length === 0) {

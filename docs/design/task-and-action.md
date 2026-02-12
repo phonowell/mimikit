@@ -23,7 +23,7 @@
 ## 取消与恢复
 - `pending` 取消：立即标记并发布 `canceled`。
 - `running` 取消：触发 `AbortController`，由执行链路收敛到 `canceled`。
-- 启动恢复：`hydrateRuntimeState` 恢复 pending/running；持久化时 running 降级为 pending，重启后重入队列。
+- 启动恢复：`hydrateRuntimeState` 恢复全部任务状态；持久化时 `running` 降级为 `pending`，重启后重入队列，其余状态原样恢复用于历史展示。
 
 ## Action 协议
 协议与解析：`src/actions/protocol/*`

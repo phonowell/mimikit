@@ -39,26 +39,6 @@ const applyLoopEnv = (config: AppConfig): void => {
   if (managerMinIntervalMs !== undefined)
     config.manager.minIntervalMs = managerMinIntervalMs
 
-  const managerMaxBatch = parseEnvPositiveInteger(
-    'MIMIKIT_MANAGER_MAX_BATCH',
-    process.env.MIMIKIT_MANAGER_MAX_BATCH?.trim(),
-  )
-  if (managerMaxBatch !== undefined) config.manager.maxBatch = managerMaxBatch
-
-  const managerQueueCompactMinPackets = parseEnvPositiveInteger(
-    'MIMIKIT_MANAGER_QUEUE_COMPACT_MIN_PACKETS',
-    process.env.MIMIKIT_MANAGER_QUEUE_COMPACT_MIN_PACKETS?.trim(),
-  )
-  if (managerQueueCompactMinPackets !== undefined)
-    config.manager.queueCompactMinPackets = managerQueueCompactMinPackets
-
-  const managerTaskSnapshotMaxCount = parseEnvPositiveInteger(
-    'MIMIKIT_MANAGER_TASK_SNAPSHOT_MAX_COUNT',
-    process.env.MIMIKIT_MANAGER_TASK_SNAPSHOT_MAX_COUNT?.trim(),
-  )
-  if (managerTaskSnapshotMaxCount !== undefined)
-    config.manager.taskSnapshotMaxCount = managerTaskSnapshotMaxCount
-
   const evolverPollMs = parseEnvPositiveInteger(
     'MIMIKIT_EVOLVER_POLL_MS',
     process.env.MIMIKIT_EVOLVER_POLL_MS?.trim(),

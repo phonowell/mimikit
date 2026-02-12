@@ -38,25 +38,22 @@ export const saveRuntimeSnapshot = async (
   await writeJson(runtimePath(stateDir), snapshot)
 }
 
+const toRecoveredPendingTask = (task: Task): Task => {
+  const {
+    startedAt: _startedAt,
+    completedAt: _completedAt,
+    durationMs: _durationMs,
+    result: _result,
+    ...rest
+  } = task
+  return {
+    ...rest,
+    status: 'pending',
+  }
+}
+
 export const selectPersistedTasks = (tasks: Task[]): Task[] =>
-  tasks
-    .filter((task) => task.status === 'pending' || task.status === 'running')
-    .map((task) => {
-      if (task.status === 'running') {
-        const recovered: Task = {
-          id: task.id,
-          fingerprint: task.fingerprint,
-          prompt: task.prompt,
-          title: task.title,
-          profile: task.profile,
-          status: 'pending',
-          createdAt: task.createdAt,
-          ...(typeof task.attempts === 'number'
-            ? { attempts: task.attempts }
-            : {}),
-          ...(task.usage ? { usage: task.usage } : {}),
-        }
-        return recovered
-      }
-      return { ...task }
-    })
+  tasks.map((task) => {
+    if (task.status === 'running') return toRecoveredPendingTask(task)
+    return { ...task }
+  })

@@ -68,9 +68,8 @@
 默认参数（manager）：
 - `pollMs=1000`
 - `minIntervalMs=8000`
-- `maxBatch=100`
-- `queueCompactMinPackets=1000`
-- `taskSnapshotMaxCount=2000`
+- `queueCompactMinPackets=100`（内置常量，不提供 config/env 覆盖）
+- `taskSnapshotMaxCount=100`（内置常量，不提供 config/env 覆盖）
 - `historyMinCount=20` / `historyMaxCount=100` / `historyMaxBytes=20480`
 - `tasksMinCount=5` / `tasksMaxCount=20` / `tasksMaxBytes=20480`
 

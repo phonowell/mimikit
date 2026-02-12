@@ -19,6 +19,22 @@ const taskCancelSchema = z
   })
   .strict()
 
+const taskResultRawSchema = z
+  .object({
+    taskId: z.string().trim().min(1),
+    status: z.enum(['succeeded', 'failed', 'canceled']),
+    ok: z.boolean(),
+    output: z.string(),
+    durationMs: z.number().finite().nonnegative(),
+    completedAt: z.string(),
+    usage: tokenUsageSchema.optional(),
+    title: z.string().optional(),
+    archivePath: z.string().optional(),
+    profile: z.enum(['standard', 'specialist']).optional(),
+    cancel: taskCancelSchema.optional(),
+  })
+  .strict()
+
 const taskRawSchema = z
   .object({
     id: z.string().trim().min(1),
@@ -35,6 +51,7 @@ const taskRawSchema = z
     usage: tokenUsageSchema.optional(),
     archivePath: z.string().optional(),
     cancel: taskCancelSchema.optional(),
+    result: taskResultRawSchema.optional(),
   })
   .strict()
 
@@ -54,6 +71,7 @@ const runtimeSnapshotRawSchema = z
 
 const toTask = (task: z.infer<typeof taskRawSchema>): Task => {
   const usage = normalizeTokenUsage(task.usage)
+  const resultUsage = normalizeTokenUsage(task.result?.usage)
   const cancel =
     task.cancel !== undefined
       ? {
@@ -61,6 +79,37 @@ const toTask = (task: z.infer<typeof taskRawSchema>): Task => {
           ...(task.cancel.reason !== undefined
             ? { reason: task.cancel.reason }
             : {}),
+        }
+      : undefined
+  const resultCancel =
+    task.result?.cancel !== undefined
+      ? {
+          source: task.result.cancel.source,
+          ...(task.result.cancel.reason !== undefined
+            ? { reason: task.result.cancel.reason }
+            : {}),
+        }
+      : undefined
+  const result =
+    task.result !== undefined
+      ? {
+          taskId: task.result.taskId,
+          status: task.result.status,
+          ok: task.result.ok,
+          output: task.result.output,
+          durationMs: task.result.durationMs,
+          completedAt: task.result.completedAt,
+          ...(resultUsage ? { usage: resultUsage } : {}),
+          ...(task.result.title !== undefined
+            ? { title: task.result.title }
+            : {}),
+          ...(task.result.archivePath !== undefined
+            ? { archivePath: task.result.archivePath }
+            : {}),
+          ...(task.result.profile !== undefined
+            ? { profile: task.result.profile }
+            : {}),
+          ...(resultCancel !== undefined ? { cancel: resultCancel } : {}),
         }
       : undefined
   return {
@@ -82,6 +131,7 @@ const toTask = (task: z.infer<typeof taskRawSchema>): Task => {
       ? { archivePath: task.archivePath }
       : {}),
     ...(cancel !== undefined ? { cancel } : {}),
+    ...(result !== undefined ? { result } : {}),
   }
 }
 
