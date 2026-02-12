@@ -7,6 +7,7 @@
 - `docs/design/runners.md`
 - `docs/design/task-and-action.md`
 - `docs/design/interfaces-and-state.md`
+- `docs/design/webui-design-language.md`
 
 ## 设计原则
 1. 一次性全量重构（Big Bang），不保留旧多角色链路与旧队列字段兼容层。

@@ -19,7 +19,7 @@ main[data-app] {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-raised);
 }
 
 .tasks-dialog,
@@ -50,8 +50,8 @@ main[data-app] {
 
 .tasks-dialog::backdrop,
 .restart-dialog::backdrop {
-  background: rgba(15, 23, 42, 0.35);
-  backdrop-filter: blur(2px);
+  background: rgba(43, 58, 78, 0.24);
+  backdrop-filter: blur(3px);
   animation: dialog-backdrop-in 160ms ease-out;
 }
 
@@ -61,10 +61,10 @@ main[data-app] {
 }
 
 .tasks-panel {
-  background: #ffffff;
-  border: 0;
-  border-radius: 16px;
-  box-shadow: var(--shadow);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-raised);
   padding: 0;
   display: flex;
   flex-direction: column;
@@ -77,9 +77,9 @@ main[data-app] {
 
 .restart-panel {
   background: var(--panel);
-  border: 0;
+  border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-raised);
   padding: 16px;
   display: flex;
   flex-direction: column;
@@ -114,7 +114,7 @@ main[data-app] {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-raised);
   overflow: hidden;
   min-height: 0;
   position: relative;
@@ -130,6 +130,7 @@ main[data-app] {
   gap: 10px;
   overflow-y: auto;
   background: var(--panel-soft);
+  box-shadow: var(--shadow-inset-soft);
   min-height: 0;
 }
 
@@ -137,7 +138,7 @@ main[data-app] {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-raised);
   padding: 10px 12px;
 }
 
@@ -154,8 +155,9 @@ main[data-app] {
   max-height: 120px;
   padding: 10px 12px;
   border-radius: var(--radius-sm);
-  background: #ffffff;
-  border: 1px solid var(--border);
+  background: var(--panel-soft);
+  border: 1px solid transparent;
+  box-shadow: var(--shadow-inset-soft);
 }
 
 @keyframes dialog-in {

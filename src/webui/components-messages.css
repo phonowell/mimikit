@@ -26,9 +26,9 @@
   gap: 4px;
   padding: 10px 12px;
   border-radius: 16px;
-  background: #ffffff;
+  background: var(--panel);
   border: 1px solid var(--border);
-  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.05);
+  box-shadow: var(--shadow-raised-soft);
   order: 1;
 }
 
@@ -37,8 +37,10 @@
 }
 
 .message.user article {
-  background: #e6f1ff;
+  background: var(--accent-soft);
   border-color: transparent;
+  box-shadow: -6px -6px 12px rgba(255, 255, 255, 0.52),
+    7px 7px 14px rgba(129, 156, 190, 0.34);
   border-bottom-right-radius: 4px;
 }
 
@@ -55,8 +57,8 @@
 }
 
 .message.system article {
-  background: #f1f3f7;
-  border-color: transparent;
+  background: var(--panel-strong);
+  border-color: var(--border);
   font-size: 12px;
   color: var(--muted);
 }
@@ -69,8 +71,8 @@
 
 .message .message-quote {
   --quote-bar: var(--accent);
-  --quote-bg: rgba(42, 125, 225, 0.1);
-  --quote-bg-hover: rgba(42, 125, 225, 0.12);
+  --quote-bg: rgba(47, 125, 230, 0.13);
+  --quote-bg-hover: rgba(47, 125, 230, 0.2);
   --quote-author: var(--quote-bar);
   display: flex;
   flex-direction: column;
@@ -82,10 +84,12 @@
   background: var(--quote-bg);
   color: inherit;
   text-align: left;
-  border: 0;
+  border: 1px solid transparent;
+  box-shadow: var(--shadow-raised-soft);
   overflow: hidden;
   cursor: pointer;
-  transition: background-color 0.12s ease, box-shadow 0.12s ease;
+  transition: background-color 0.12s ease, box-shadow 0.12s ease,
+    transform 0.12s ease;
 }
 
 .message .message-quote::before {
@@ -101,40 +105,42 @@
 
 .message .message-quote[data-quote-role='user'] {
   --quote-bar: var(--success);
-  --quote-bg: rgba(59, 178, 115, 0.1);
-  --quote-bg-hover: rgba(59, 178, 115, 0.12);
+  --quote-bg: rgba(59, 178, 115, 0.12);
+  --quote-bg-hover: rgba(59, 178, 115, 0.18);
 }
 
 .message .message-quote[data-quote-role='agent'] {
   --quote-bar: var(--accent);
-  --quote-bg: rgba(42, 125, 225, 0.1);
-  --quote-bg-hover: rgba(42, 125, 225, 0.12);
+  --quote-bg: rgba(47, 125, 230, 0.13);
+  --quote-bg-hover: rgba(47, 125, 230, 0.2);
 }
 
 .message .message-quote[data-quote-role='system'] {
   --quote-bar: var(--border);
-  --quote-bg: rgba(92, 107, 122, 0.1);
-  --quote-bg-hover: rgba(92, 107, 122, 0.12);
+  --quote-bg: rgba(102, 120, 140, 0.14);
+  --quote-bg-hover: rgba(102, 120, 140, 0.2);
   --quote-author: var(--muted);
 }
 
 .message .message-quote[data-quote-role='unknown'] {
   --quote-bar: var(--border);
-  --quote-bg: rgba(148, 163, 184, 0.14);
-  --quote-bg-hover: rgba(148, 163, 184, 0.17);
+  --quote-bg: rgba(129, 147, 168, 0.16);
+  --quote-bg-hover: rgba(129, 147, 168, 0.22);
 }
 
 .message .message-quote:hover:not(:disabled) {
   background: var(--quote-bg-hover);
+  box-shadow: var(--shadow-raised);
 }
 
 .message .message-quote:active:not(:disabled) {
   background: var(--quote-bg-hover);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.26);
+  box-shadow: var(--shadow-inset-soft);
+  transform: translate(1px, 1px);
 }
 
 .message .message-quote:focus-visible {
-  outline: 2px solid rgba(42, 125, 225, 0.26);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 1px;
 }
 
@@ -209,7 +215,9 @@
 .message .meta .origin {
   padding: 2px 6px;
   border-radius: 999px;
-  background: #eef2f7;
+  background: var(--panel-soft);
+  border: 1px solid transparent;
+  box-shadow: var(--shadow-inset-soft);
   color: var(--muted);
   font-size: 10px;
   font-weight: 600;
@@ -217,7 +225,7 @@
 
 .composer .quote-preview {
   --quote-bar: var(--accent);
-  --quote-bg: rgba(42, 125, 225, 0.1);
+  --quote-bg: rgba(47, 125, 230, 0.14);
   --quote-label: var(--quote-bar);
   flex: 0 0 100%;
   display: flex;
@@ -261,6 +269,7 @@
   transform: translateY(0);
   pointer-events: auto;
   background: var(--quote-bg);
+  box-shadow: var(--shadow-inset-soft);
 }
 
 .composer .quote-preview.is-visible::before {
@@ -273,23 +282,23 @@
 
 .composer .quote-preview[data-role='user'] {
   --quote-bar: var(--success);
-  --quote-bg: rgba(59, 178, 115, 0.1);
+  --quote-bg: rgba(59, 178, 115, 0.12);
 }
 
 .composer .quote-preview[data-role='agent'] {
   --quote-bar: var(--accent);
-  --quote-bg: rgba(42, 125, 225, 0.1);
+  --quote-bg: rgba(47, 125, 230, 0.14);
 }
 
 .composer .quote-preview[data-role='system'] {
   --quote-bar: var(--border);
-  --quote-bg: rgba(92, 107, 122, 0.1);
+  --quote-bg: rgba(102, 120, 140, 0.14);
   --quote-label: var(--muted);
 }
 
 .composer .quote-preview[data-role='unknown'] {
   --quote-bar: var(--border);
-  --quote-bg: rgba(148, 163, 184, 0.14);
+  --quote-bg: rgba(129, 147, 168, 0.16);
 }
 
 .composer .quote-label {
@@ -341,12 +350,15 @@
 
 .message .message-quote-btn {
   --btn-size: 26px;
-  --btn-bg: rgba(255, 255, 255, 0.92);
-  --btn-border: var(--border);
-  --btn-hover-bg: rgba(15, 23, 42, 0.06);
-  --btn-hover-color: #5e6d80;
-  --btn-focus: rgba(42, 125, 225, 0.28);
-  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.05);
+  --btn-bg: var(--panel);
+  --btn-border: transparent;
+  --btn-hover-bg: var(--panel);
+  --btn-hover-color: #5f7088;
+  --btn-focus: rgba(47, 125, 230, 0.3);
+  --btn-shadow: var(--shadow-raised-soft);
+  --btn-shadow-hover: var(--shadow-raised);
+  --btn-shadow-press: var(--shadow-inset-soft);
+  box-shadow: var(--btn-shadow);
   order: 2;
   opacity: 0;
   transform: translateY(2px) scale(0.96);
@@ -377,7 +389,7 @@
 }
 
 .message-loading article {
-  background: #f7f9fc;
+  background: var(--panel-soft);
   border-style: dashed;
 }
 
