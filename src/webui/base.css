@@ -19,9 +19,9 @@
   --bubble-user-bg: #e4efff;
   --bubble-user-text: #1f3657;
   --bubble-user-border: rgba(120, 151, 198, 0.16);
-  --bubble-system-bg: #dde2e9;
-  --bubble-system-text: #445265;
-  --bubble-system-border: rgba(112, 126, 145, 0.13);
+  --bubble-system-bg: #e7eaef;
+  --bubble-system-text: #556376;
+  --bubble-system-border: rgba(112, 126, 145, 0.09);
   --success: #3bb273;
   --warning: #f2b24f;
   --danger: #e25d5d;
