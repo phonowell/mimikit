@@ -10,6 +10,8 @@ export type ProviderResult = {
   threadId?: string | null
 }
 
+export type UsageListener = (usage: TokenUsage) => void
+
 export type OpenAiChatProviderRequest = {
   provider: 'openai-chat'
   prompt: string
@@ -33,6 +35,7 @@ export type CodexSdkProviderRequest = {
   logPath?: string
   logContext?: Record<string, unknown>
   abortSignal?: AbortSignal
+  onUsage?: UsageListener
 }
 
 export type OpencodeProviderRequest = {
@@ -45,6 +48,7 @@ export type OpencodeProviderRequest = {
   modelReasoningEffort?: ModelReasoningEffort
   threadId?: string | null
   abortSignal?: AbortSignal
+  onUsage?: UsageListener
 }
 
 export type ProviderRequest =

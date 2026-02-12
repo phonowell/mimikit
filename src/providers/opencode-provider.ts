@@ -87,7 +87,10 @@ const runOpencode = async (
     sessionId = sessionId ?? readSessionId(event)
     const text = readEventText(event)
     if (text) outputChunks.push(text)
-    usage = readEventUsage(event) ?? usage
+    const nextUsage = readEventUsage(event)
+    if (!nextUsage) return
+    usage = nextUsage
+    request.onUsage?.(usage)
   }
 
   if (request.timeoutMs > 0) {

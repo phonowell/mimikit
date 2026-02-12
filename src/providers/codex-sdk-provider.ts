@@ -132,6 +132,7 @@ const runCodexProvider = async (request: CodexSdkProviderRequest) => {
       }
       if (event.type === 'turn.completed') {
         usage = normalizeUsage(event.usage)
+        if (usage) request.onUsage?.(usage)
         continue
       }
       if (event.type === 'turn.failed') throw new Error(event.error.message)

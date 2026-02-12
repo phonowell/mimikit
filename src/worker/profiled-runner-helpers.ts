@@ -45,7 +45,10 @@ export const buildRunModel =
     modelReasoningEffort?: ModelReasoningEffort
     abortSignal?: AbortSignal
   }) =>
-  (workerPrompt: string): Promise<ProviderResult> =>
+  (
+    workerPrompt: string,
+    onUsage?: (usage: TokenUsage) => void,
+  ): Promise<ProviderResult> =>
     runWithProvider({
       provider: params.provider,
       role: 'worker',
@@ -57,6 +60,7 @@ export const buildRunModel =
       ...(params.modelReasoningEffort
         ? { modelReasoningEffort: params.modelReasoningEffort }
         : {}),
+      ...(onUsage ? { onUsage } : {}),
     })
 
 export const appendProfileProgress = (params: {

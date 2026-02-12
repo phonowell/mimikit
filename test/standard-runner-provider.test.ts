@@ -36,13 +36,19 @@ beforeEach(() => {
 })
 
 test('runStandardWorker routes to opencode and passes raw output', async () => {
-  vi.mocked(runWithProvider).mockResolvedValue({
-    output: 'plain text output',
-    elapsedMs: 10,
-    usage: { input: 1, output: 1, total: 2 },
+  const task = buildTask()
+  vi.mocked(runWithProvider).mockImplementation(async (request) => {
+    if ('onUsage' in request && typeof request.onUsage === 'function') {
+      request.onUsage({ input: 4, output: 6, total: 10 })
+      expect(task.usage).toMatchObject({ input: 4, output: 6, total: 10 })
+    }
+    return {
+      output: 'plain text output',
+      elapsedMs: 10,
+      usage: { input: 1, output: 1, total: 2 },
+    }
   })
 
-  const task = buildTask()
   const result = await runStandardWorker({
     stateDir: '/tmp/mimikit-test-state',
     workDir: '/tmp/mimikit-test-work',

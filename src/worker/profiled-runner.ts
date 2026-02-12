@@ -44,7 +44,9 @@ export const runProfiledWorker = async (params: {
   })
 
   try {
-    const result = await runModel(prompt)
+    const result = await runModel(prompt, (usage) => {
+      params.task.usage = usage
+    })
     if (result.usage) params.task.usage = result.usage
     await appendProfileProgress({
       stateDir: params.stateDir,
