@@ -113,9 +113,6 @@ const formatCancelMeta = (
       }
     : undefined
 
-const normalizeResultOutputForPrompt = (output: string): string =>
-  output.replace(/\r\n|\r|\n/g, '\\n')
-
 const formatTaskEntry = (
   task: Task,
   result: TaskResult | undefined,
@@ -136,7 +133,7 @@ const formatTaskEntry = (
             ok: result.ok,
             completed_at: result.completedAt,
             duration_ms: result.durationMs,
-            output: normalizeResultOutputForPrompt(result.output),
+            output: result.output,
             ...(result.status === 'canceled' && resultCancel
               ? { cancel: resultCancel }
               : {}),
@@ -216,7 +213,7 @@ export const formatResultsYaml = (
         ok: result.ok,
         completed_at: result.completedAt,
         duration_ms: result.durationMs,
-        output: normalizeResultOutputForPrompt(result.output),
+        output: result.output,
         ...(result.status === 'canceled' && cancel ? { cancel } : {}),
         ...(result.archivePath ? { archive_path: result.archivePath } : {}),
         usage: normalizeYamlUsage(result.usage),

@@ -23,8 +23,6 @@ import { runManager } from './runner.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 
-const DEFAULT_MANAGER_TIMEOUT_MS = 30_000
-
 export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
   while (!runtime.stopped) {
     const now = Date.now()
@@ -93,7 +91,6 @@ export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
         ...(runtime.lastUserMeta
           ? { env: { lastUser: runtime.lastUserMeta } }
           : {}),
-        timeoutMs: DEFAULT_MANAGER_TIMEOUT_MS,
         model: runtime.config.manager.model,
         modelReasoningEffort: runtime.config.manager.modelReasoningEffort,
       })

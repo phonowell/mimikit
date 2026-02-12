@@ -12,6 +12,7 @@ import {
   toError,
   withSampling,
 } from './archive-helpers.js'
+import { resolveManagerTimeoutMs } from './timeout.js'
 
 import type {
   HistoryMessage,
@@ -31,7 +32,6 @@ export const runManager = async (params: {
   tasks: Task[]
   history: HistoryMessage[]
   env?: ManagerEnv
-  timeoutMs: number
   model?: string
   modelReasoningEffort?: ModelReasoningEffort
   seed?: number
@@ -68,6 +68,7 @@ export const runManager = async (params: {
   const fallbackModel = normalizeOptional(
     params.fallbackModel ?? DEFAULT_MANAGER_FALLBACK_MODEL,
   )
+  const timeoutMs = resolveManagerTimeoutMs(prompt)
   const fallbackRequestKey = fallbackModel
     ? buildLlmArchiveLookupKey({
         ...lookup,
@@ -79,7 +80,7 @@ export const runManager = async (params: {
     const r = await runWithProvider({
       provider: 'openai-chat',
       prompt,
-      timeoutMs: params.timeoutMs,
+      timeoutMs,
       ...(model ? { model } : {}),
       ...(params.modelReasoningEffort
         ? { modelReasoningEffort: params.modelReasoningEffort }
@@ -132,7 +133,7 @@ export const runManager = async (params: {
       const r = await runWithProvider({
         provider: 'openai-chat',
         prompt,
-        timeoutMs: params.timeoutMs,
+        timeoutMs,
         model: fallbackModel,
         ...(params.modelReasoningEffort
           ? { modelReasoningEffort: params.modelReasoningEffort }
