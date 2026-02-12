@@ -2,6 +2,7 @@ import { marked } from './vendor/marked/marked.esm.js'
 import createDOMPurify from './vendor/purify/purify.es.mjs'
 
 import { linkifyInlineCode, toArtifactUrl } from './artifact-url.js'
+import { normalizeMarkdownForRender } from './markdown-normalize.js'
 
 const purify = createDOMPurify(window)
 const ALLOWED_TAGS = [
@@ -83,7 +84,7 @@ purify.addHook('afterSanitizeAttributes', (node) => {
 })
 
 export const renderMarkdown = (text) => {
-  const source = typeof text === 'string' ? text : ''
+  const source = normalizeMarkdownForRender(text)
   if (!source.trim()) return document.createDocumentFragment()
   const html = marked.parse(source)
   const clean = purify.sanitize(html, {
