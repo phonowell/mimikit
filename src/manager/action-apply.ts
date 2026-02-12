@@ -1,5 +1,6 @@
 import { z } from 'zod'
 
+import { bestEffort } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import { enqueueTask } from '../orchestrator/core/task-state.js'
 import { notifyWorkerLoop } from '../orchestrator/core/worker-signal.js'
@@ -34,12 +35,27 @@ const cancelSchema = z
   })
   .strict()
 
+const restartSchema = z.object({}).strict()
+
 const parseSummary = (
   item: Parsed,
 ): { taskId: string; summary: string } | undefined => {
   const parsed = summarizeSchema.safeParse(item.attrs)
   if (!parsed.success) return undefined
   return { taskId: parsed.data.task_id, summary: parsed.data.summary }
+}
+
+const requestManagerRestart = (runtime: RuntimeState): void => {
+  setTimeout(() => {
+    void (async () => {
+      runtime.stopped = true
+      notifyWorkerLoop(runtime)
+      await bestEffort('persistRuntimeState: manager_restart', () =>
+        persistRuntimeState(runtime),
+      )
+      process.exit(75)
+    })()
+  }, 100)
 }
 
 export const collectTaskResultSummaries = (
@@ -103,6 +119,12 @@ export const applyTaskActions = async (
       if (!parsed.success) continue
       await cancelTask(runtime, parsed.data.task_id, { source: 'manager' })
       continue
+    }
+    if (item.name === 'restart_server') {
+      const parsed = restartSchema.safeParse(item.attrs)
+      if (!parsed.success) continue
+      requestManagerRestart(runtime)
+      return
     }
   }
 }

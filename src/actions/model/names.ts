@@ -11,6 +11,7 @@ export const PROCESS_ACTION_NAMES = ['exec_shell', 'run_browser'] as const
 export const TASK_ACTION_NAMES = [
   'create_task',
   'cancel_task',
+  'restart_server',
   'summarize_task_result',
 ] as const
 
