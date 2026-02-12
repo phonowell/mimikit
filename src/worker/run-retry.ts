@@ -22,6 +22,11 @@ const isAbortLikeError = (error: unknown): boolean => {
   return error.name === 'AbortError' || /aborted|canceled/i.test(error.message)
 }
 
+const shouldTreatAsTaskCancel = (
+  controller: AbortController,
+  error: unknown,
+): boolean => controller.signal.aborted && isAbortLikeError(error)
+
 const runStandardProfile = (params: {
   runtime: RuntimeState
   task: Task
@@ -83,8 +88,9 @@ const buildRetryOptions = (params: {
     maxTimeout: backoffMs,
     randomize: false,
     signal: controller.signal,
-    shouldConsumeRetry: ({ error }) => !isAbortLikeError(error),
-    shouldRetry: ({ error }) => !isAbortLikeError(error),
+    shouldConsumeRetry: ({ error }) =>
+      !shouldTreatAsTaskCancel(controller, error),
+    shouldRetry: ({ error }) => !shouldTreatAsTaskCancel(controller, error),
     onFailedAttempt: async (attemptError) => {
       if (attemptError.retriesLeft <= 0) return
       await appendLog(runtime.paths.log, {
@@ -125,7 +131,7 @@ export const runTaskWithRetry = (params: {
       try {
         return await runTaskByProfile({ runtime, task, controller })
       } catch (error) {
-        if (isAbortLikeError(error))
+        if (shouldTreatAsTaskCancel(controller, error))
           throw new AbortError(controller.signal.reason ?? 'Task canceled')
         throw toRetryError(error)
       }

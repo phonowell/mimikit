@@ -80,8 +80,9 @@ export const runStandardWorker = async (params: {
 
   while (!state.finalized) {
     if (params.abortSignal?.aborted) throw new Error('standard_aborted')
-    if (Date.now() - startedAt > params.timeoutMs)
-      throw new Error('standard_timeout')
+    const elapsedMs = Date.now() - startedAt
+    if (elapsedMs > params.timeoutMs) throw new Error('standard_timeout')
+    const remainingMs = Math.max(1, params.timeoutMs - elapsedMs)
     if (state.round >= maxRounds)
       throw new Error('standard_max_rounds_exceeded')
 
@@ -97,7 +98,7 @@ export const runStandardWorker = async (params: {
     const planner = await runWithProvider({
       provider: 'openai-chat',
       prompt: plannerPrompt,
-      timeoutMs: Math.max(5_000, Math.min(30_000, params.timeoutMs)),
+      timeoutMs: remainingMs,
       ...(params.model ? { model: params.model } : {}),
       ...(params.modelReasoningEffort
         ? { modelReasoningEffort: params.modelReasoningEffort }

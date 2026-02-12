@@ -111,7 +111,7 @@ export const defaultConfig = (params: DefaultConfigParams): AppConfig => ({
     retryMaxAttempts: 1,
     retryBackoffMs: 5_000,
     standard: {
-      timeoutMs: 5 * 60 * 1_000,
+      timeoutMs: 10 * 60 * 1_000,
       model: 'gpt-5.2-high',
       modelReasoningEffort: 'high',
     },
