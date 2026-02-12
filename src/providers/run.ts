@@ -12,5 +12,7 @@ export const runWithProvider = (
       return getProvider('openai-chat').run(request)
     case 'codex-sdk':
       return getProvider('codex-sdk').run(request)
+    case 'opencode':
+      return getProvider('opencode').run(request)
   }
 }

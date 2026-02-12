@@ -92,6 +92,7 @@
 当前 provider：
 - `openai-chat`：`src/providers/openai-chat-provider.ts`
 - `codex-sdk`：`src/providers/codex-sdk-provider.ts`
+- `opencode`：`src/providers/opencode-provider.ts`
 
 ## OpenAI Chat Provider
 实现：`src/providers/openai-chat-provider.ts`

@@ -1,7 +1,7 @@
 import type { TokenUsage } from '../types/index.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
-export type ProviderKind = 'openai-chat' | 'codex-sdk'
+export type ProviderKind = 'openai-chat' | 'codex-sdk' | 'opencode'
 
 export type ProviderResult = {
   output: string
@@ -35,9 +35,22 @@ export type CodexSdkProviderRequest = {
   abortSignal?: AbortSignal
 }
 
+export type OpencodeProviderRequest = {
+  provider: 'opencode'
+  role: 'manager' | 'worker'
+  prompt: string
+  workDir: string
+  timeoutMs: number
+  model?: string
+  modelReasoningEffort?: ModelReasoningEffort
+  threadId?: string | null
+  abortSignal?: AbortSignal
+}
+
 export type ProviderRequest =
   | OpenAiChatProviderRequest
   | CodexSdkProviderRequest
+  | OpencodeProviderRequest
 
 export type Provider<TRequest extends ProviderRequest> = {
   id: TRequest['provider']
