@@ -45,6 +45,8 @@ export type AppConfig = {
   }
   /** 自演进调度配置 */
   evolver: {
+    /** 是否启用自演进循环 */
+    enabled: boolean
     /** 轮询间隔（毫秒） */
     pollMs: number
     /** 空闲阈值（毫秒） */
@@ -102,6 +104,7 @@ export const defaultConfig = (params: DefaultConfigParams): AppConfig => ({
     modelReasoningEffort: 'high',
   },
   evolver: {
+    enabled: false,
     pollMs: 2_000,
     idleThresholdMs: 60_000,
     minIntervalMs: 5 * 60 * 1_000,

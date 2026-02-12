@@ -1,4 +1,4 @@
-import { parseEnvPositiveInteger } from './env-parse.js'
+import { parseEnvBoolean, parseEnvPositiveInteger } from './env-parse.js'
 import { applyReasoningEnv } from './env-reasoning.js'
 
 import type { AppConfig } from '../config.js'
@@ -22,6 +22,12 @@ const applyModelEnv = (config: AppConfig): void => {
 }
 
 const applyLoopEnv = (config: AppConfig): void => {
+  const evolverEnabled = parseEnvBoolean(
+    'MIMIKIT_EVOLVER_ENABLED',
+    process.env.MIMIKIT_EVOLVER_ENABLED?.trim(),
+  )
+  if (evolverEnabled !== undefined) config.evolver.enabled = evolverEnabled
+
   const managerPollMs = parseEnvPositiveInteger(
     'MIMIKIT_MANAGER_POLL_MS',
     process.env.MIMIKIT_MANAGER_POLL_MS?.trim(),

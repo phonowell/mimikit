@@ -17,7 +17,8 @@
   - 执行后写入 `results/packets.jsonl`。
   - 支持 `standard` 与 `specialist` 两档执行。
 - `evolver`
-  - 仅在系统空闲时触发。
+  - 默认停用（`evolver.enabled=false`）。
+  - 启用后仅在系统空闲时触发。
   - 基于 `history` 与模板内容更新演进文档（`user_profile.md`、`agent_persona.md`）。
 
 ## 启动与运行态
@@ -26,7 +27,8 @@
   1. `ensureStateDirs`
   2. `hydrateRuntimeState`
   3. `enqueuePendingWorkerTasks`
-  4. 并发启动 `managerLoop` / `workerLoop` / `evolverLoop`
+  4. 并发启动 `managerLoop` / `workerLoop`
+  5. 若 `evolver.enabled=true`，额外启动 `evolverLoop`
 
 运行态定义：`src/orchestrator/core/runtime-state.ts`
 
@@ -43,7 +45,7 @@
 2. `manager` 增量消费 `inputs/results`，写入 `history` 并执行任务编排。
 3. `worker` 执行任务后写入 `results/packets.jsonl`。
 4. `manager` 消费结果、更新任务快照并回复用户。
-5. 系统空闲后，`evolver` 执行画像与人格演进。
+5. 若 `evolver.enabled=true` 且系统空闲，`evolver` 执行画像与人格演进。
 
 ## Manager 主循环
 实现：`src/manager/loop.ts`
@@ -116,6 +118,7 @@
 4. 记录 `evolver_end` 日志。
 
 默认参数（evolver）：
+- `enabled=false`
 - `pollMs=2000`
 - `idleThresholdMs=60000`
 - `minIntervalMs=300000`

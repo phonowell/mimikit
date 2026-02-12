@@ -66,7 +66,7 @@ export class Orchestrator {
     enqueuePendingWorkerTasks(this.runtime)
     notifyWorkerLoop(this.runtime)
     void managerLoop(this.runtime)
-    void evolverLoop(this.runtime)
+    if (this.runtime.config.evolver.enabled) void evolverLoop(this.runtime)
     void workerLoop(this.runtime)
   }
 
