@@ -25,10 +25,11 @@ main[data-app] {
 .tasks-dialog,
 .restart-dialog {
   border: 0;
-  padding: 0;
+  padding: 12px;
   margin: auto;
   background: transparent;
   width: min(420px, 92vw);
+  overflow: visible;
   z-index: 10;
 }
 
