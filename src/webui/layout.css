@@ -157,8 +157,8 @@ main[data-app] {
   padding: 10px 12px;
   border-radius: var(--radius-sm);
   background: var(--well-bg);
-  border: 1px solid var(--border-hairline);
-  box-shadow: var(--shadow-inset);
+  border: 1px solid rgba(130, 149, 171, 0.025);
+  box-shadow: var(--shadow-inset-soft);
 }
 
 @keyframes dialog-in {
