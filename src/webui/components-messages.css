@@ -88,7 +88,7 @@
   gap: 3px;
   position: relative;
   isolation: isolate;
-  padding: 7px 10px 7px 12px;
+  padding: 7px 10px 7px 16px;
   border-radius: 10px;
   background: var(--quote-bg);
   color: inherit;
@@ -246,7 +246,7 @@
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  padding: 0 34px 0 12px;
+  padding: 0 34px 0 16px;
   max-height: 0;
   opacity: 0;
   transform: translateY(-2px);
@@ -272,7 +272,7 @@
 }
 
 .composer .quote-preview.is-visible {
-  padding: 7px 34px 7px 12px;
+  padding: 7px 34px 7px 16px;
   max-height: 72px;
   opacity: 1;
   transform: translateY(0);

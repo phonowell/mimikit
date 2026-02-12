@@ -14,13 +14,13 @@
   --accent-soft: #dce9ff;
   --bubble-agent-bg: #ffffff;
   --bubble-agent-text: #1f2d3d;
-  --bubble-agent-border: rgba(148, 166, 191, 0.22);
+  --bubble-agent-border: rgba(148, 166, 191, 0.16);
   --bubble-user-bg: #effdde;
   --bubble-user-text: #21402a;
-  --bubble-user-border: rgba(142, 178, 111, 0.24);
+  --bubble-user-border: rgba(142, 178, 111, 0.18);
   --bubble-system-bg: #eef2f7;
   --bubble-system-text: #607086;
-  --bubble-system-border: rgba(145, 161, 182, 0.22);
+  --bubble-system-border: rgba(145, 161, 182, 0.16);
   --success: #3bb273;
   --warning: #f2b24f;
   --danger: #e25d5d;
