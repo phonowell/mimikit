@@ -51,7 +51,10 @@ export function bindRestart({
           restartBtn.disabled = false
           disableActions(false)
           isBusy = false
-          if (messages) messages.start()
+          if (messages) {
+            messages.clearStatusEtag?.()
+            messages.start()
+          }
           return
         }
       } catch (error) {

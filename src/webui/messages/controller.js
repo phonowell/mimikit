@@ -188,10 +188,14 @@ export function createMessagesController({
   })
   lifecycle.bindVisibility()
   const isFullyIdle = () => isStatusFullyIdle(lastStatus)
+  const clearStatusEtag = () => {
+    lastStatusEtag = null
+  }
 
   return {
     start: lifecycle.start,
     stop: lifecycle.stop,
+    clearStatusEtag,
     sendMessage,
     isFullyIdle,
   }
