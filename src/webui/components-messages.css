@@ -28,8 +28,8 @@
   border-radius: 16px;
   background: var(--bubble-agent-bg);
   border: 1px solid transparent;
-  box-shadow: inset -1px -1px 2px rgba(255, 255, 255, 0.42),
-    inset 1px 1px 2px rgba(123, 142, 166, 0.16);
+  box-shadow: -1px -1px 2px rgba(255, 255, 255, 0.44),
+    1px 1px 2px rgba(123, 142, 166, 0.18);
   order: 1;
 }
 
@@ -40,8 +40,8 @@
 .message.user article {
   background: var(--bubble-user-bg);
   border-color: transparent;
-  box-shadow: inset -1px -1px 2px rgba(255, 255, 255, 0.36),
-    inset 1px 1px 2px rgba(89, 119, 164, 0.2);
+  box-shadow: -1px -1px 2px rgba(255, 255, 255, 0.4),
+    1px 1px 2px rgba(89, 119, 164, 0.22);
   border-bottom-right-radius: 4px;
 }
 
@@ -74,6 +74,12 @@
   --quote-bar: var(--accent);
   --quote-bg: rgba(47, 125, 230, 0.13);
   --quote-bg-hover: rgba(47, 125, 230, 0.2);
+  --quote-shadow: -1px -1px 2px rgba(255, 255, 255, 0.42),
+    1px 1px 2px rgba(117, 136, 160, 0.16);
+  --quote-shadow-hover: -1px -1px 3px rgba(255, 255, 255, 0.45),
+    1px 1px 3px rgba(117, 136, 160, 0.2);
+  --quote-shadow-press: inset -1px -1px 2px rgba(255, 255, 255, 0.34),
+    inset 1px 1px 2px rgba(113, 131, 154, 0.2);
   --quote-author: var(--quote-bar);
   display: flex;
   flex-direction: column;
@@ -86,7 +92,7 @@
   color: inherit;
   text-align: left;
   border: 1px solid transparent;
-  box-shadow: var(--shadow-raised-soft);
+  box-shadow: var(--quote-shadow);
   overflow: hidden;
   cursor: pointer;
   transition: background-color 0.12s ease, box-shadow 0.12s ease,
@@ -131,12 +137,12 @@
 
 .message .message-quote:hover:not(:disabled) {
   background: var(--quote-bg-hover);
-  box-shadow: var(--shadow-raised);
+  box-shadow: var(--quote-shadow-hover);
 }
 
 .message .message-quote:active:not(:disabled) {
   background: var(--quote-bg-hover);
-  box-shadow: var(--shadow-inset-soft);
+  box-shadow: var(--quote-shadow-press);
   transform: translate(0.5px, 0.5px);
 }
 
