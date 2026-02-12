@@ -3,16 +3,12 @@ import { resolve } from 'node:path'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
 export type DefaultConfigParams = {
-  /** 状态目录路径（用于持久化运行状态数据） */
-  stateDir: string
-  /** 工作目录路径（用于执行任务与读写项目文件） */
+  /** 工作目录路径（用于持久化状态、执行任务与读写文件） */
   workDir: string
 }
 
 export type AppConfig = {
-  /** 状态目录绝对路径 */
-  stateDir: string
-  /** 工作目录绝对路径 */
+  /** 工作目录绝对路径（也是状态目录） */
   workDir: string
   /** 管理器调度配置 */
   manager: {
@@ -80,7 +76,6 @@ export type AppConfig = {
 export type OrchestratorConfig = AppConfig
 
 export const defaultConfig = (params: DefaultConfigParams): AppConfig => ({
-  stateDir: resolve(params.stateDir),
   workDir: resolve(params.workDir),
   manager: {
     pollMs: 1_000, // 1秒轮询一次

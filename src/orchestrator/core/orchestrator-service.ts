@@ -39,7 +39,7 @@ export class Orchestrator {
   }
 
   constructor(config: AppConfig) {
-    const paths = buildPaths(config.stateDir)
+    const paths = buildPaths(config.workDir)
     setDefaultLogPath(paths.log)
     this.runtime = {
       config,
@@ -168,7 +168,14 @@ export class Orchestrator {
     const pendingTasks = this.runtime.tasks.filter(
       (task) => task.status === 'pending',
     ).length
-    const activeTasks = this.runtime.runningControllers.size
+    const runningTaskIds = new Set(
+      this.runtime.tasks
+        .filter((task) => task.status === 'running')
+        .map((task) => task.id),
+    )
+    const activeTasks = [...this.runtime.runningControllers.keys()].filter(
+      (taskId) => runningTaskIds.has(taskId),
+    ).length
     const maxWorkers = this.runtime.config.worker.maxConcurrent
     const agentStatus =
       this.runtime.managerRunning || activeTasks > 0 ? 'running' : 'idle'

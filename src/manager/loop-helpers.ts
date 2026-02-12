@@ -26,7 +26,6 @@ type TaskSnapshotEvent = {
 }
 
 export const buildFallbackReply = async (params: {
-  workDir: string
   inputs: UserInput[]
   results: TaskResult[]
 }): Promise<string> => {
@@ -35,7 +34,7 @@ export const buildFallbackReply = async (params: {
   const latestResult = params.results.at(-1)?.output.trim()
   if (latestResult) return latestResult
   const fallback = (
-    await loadPromptTemplate(params.workDir, 'manager/fallback-reply.md')
+    await loadPromptTemplate('manager/fallback-reply.md')
   ).trim()
   if (!fallback)
     throw new Error('missing_prompt_template:manager/fallback-reply.md')

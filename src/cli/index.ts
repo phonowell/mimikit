@@ -13,18 +13,15 @@ import { applyCliEnvOverrides } from './env.js'
 const { values } = parseArgs({
   options: {
     port: { type: 'string', short: 'p', default: '8787' },
-    'state-dir': { type: 'string', default: '.mimikit' },
-    'work-dir': { type: 'string', default: '.' },
+    'work-dir': { type: 'string', default: '.mimikit' },
   },
 })
 
 const portValue = values.port
-const stateDir = values['state-dir']
 const workDir = values['work-dir']
 
-const resolvedStateDir = resolve(stateDir)
 const resolvedWorkDir = resolve(workDir)
-setDefaultLogPath(buildPaths(resolvedStateDir).log)
+setDefaultLogPath(buildPaths(resolvedWorkDir).log)
 await loadCodexSettings()
 
 const parsePort = (value: string): string => {
@@ -39,7 +36,6 @@ const parsePort = (value: string): string => {
 const port = parsePort(portValue)
 
 const config = defaultConfig({
-  stateDir: resolvedStateDir,
   workDir: resolvedWorkDir,
 })
 

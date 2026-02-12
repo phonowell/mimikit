@@ -17,7 +17,7 @@ import type { RuntimeState } from './runtime-state.js'
 export const hydrateRuntimeState = async (
   runtime: RuntimeState,
 ): Promise<void> => {
-  const snapshot = await loadRuntimeSnapshot(runtime.config.stateDir)
+  const snapshot = await loadRuntimeSnapshot(runtime.config.workDir)
   runtime.tasks = snapshot.tasks
   if (snapshot.queues) {
     runtime.queues = {
@@ -50,7 +50,7 @@ export const hydrateRuntimeState = async (
 export const persistRuntimeState = async (
   runtime: RuntimeState,
 ): Promise<void> => {
-  await saveRuntimeSnapshot(runtime.config.stateDir, {
+  await saveRuntimeSnapshot(runtime.config.workDir, {
     tasks: selectPersistedTasks(runtime.tasks),
     queues: runtime.queues,
   })

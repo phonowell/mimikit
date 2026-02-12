@@ -9,7 +9,7 @@ import { createOrchestratorStub } from './helpers/orchestrator-stub.js'
 test('messages route forwards afterId and returns mode', async () => {
   const app = fastify()
   const { orchestrator, calls } = createOrchestratorStub()
-  const config = defaultConfig({ stateDir: '.mimikit', workDir: process.cwd() })
+  const config = defaultConfig({ workDir: '.mimikit' })
   registerApiRoutes(app, orchestrator, config)
 
   const response = await app.inject({
@@ -32,7 +32,7 @@ test('messages route forwards afterId and returns mode', async () => {
 test('input route parses body and calls orchestrator', async () => {
   const app = fastify()
   const { orchestrator, addInputCalls } = createOrchestratorStub()
-  const config = defaultConfig({ stateDir: '.mimikit', workDir: process.cwd() })
+  const config = defaultConfig({ workDir: '.mimikit' })
   registerApiRoutes(app, orchestrator, config)
 
   const response = await app.inject({
@@ -77,7 +77,7 @@ test('input route parses body and calls orchestrator', async () => {
 test('input route rejects invalid payload', async () => {
   const app = fastify()
   const { orchestrator, addInputCalls } = createOrchestratorStub()
-  const config = defaultConfig({ stateDir: '.mimikit', workDir: process.cwd() })
+  const config = defaultConfig({ workDir: '.mimikit' })
   registerApiRoutes(app, orchestrator, config)
 
   const textMissing = await app.inject({
@@ -96,7 +96,7 @@ test('input route rejects invalid payload', async () => {
 test('messages route returns 304 when If-None-Match hits', async () => {
   const app = fastify()
   const { orchestrator } = createOrchestratorStub()
-  const config = defaultConfig({ stateDir: '.mimikit', workDir: process.cwd() })
+  const config = defaultConfig({ workDir: '.mimikit' })
   registerApiRoutes(app, orchestrator, config)
 
   const first = await app.inject({

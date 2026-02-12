@@ -1,8 +1,11 @@
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 import read from 'fire-keeper/read'
 
 import { logSafeError } from '../log/safe.js'
+
+const PROMPTS_ROOT = fileURLToPath(new URL('../../prompts/', import.meta.url))
 
 const readPromptByPath = async (path: string): Promise<string> => {
   try {
@@ -21,29 +24,14 @@ const readPromptByPath = async (path: string): Promise<string> => {
   }
 }
 
-export const loadPromptFile = (
-  workDir: string,
-  role: string,
-  name: string,
-): Promise<string> => {
-  const path = join(workDir, 'prompts', role, `${name}.md`)
-  return readPromptByPath(path)
-}
+export const loadPromptFile = (role: string, name: string): Promise<string> =>
+  readPromptByPath(join(PROMPTS_ROOT, role, `${name}.md`))
 
-export const loadPromptTemplate = (
-  workDir: string,
-  relativePath: string,
-): Promise<string> => {
-  const path = join(workDir, 'prompts', relativePath)
-  return readPromptByPath(path)
-}
+export const loadPromptTemplate = (relativePath: string): Promise<string> =>
+  readPromptByPath(join(PROMPTS_ROOT, relativePath))
 
-export const loadSystemPrompt = (
-  workDir: string,
-  role: string,
-): Promise<string> => loadPromptFile(workDir, role, 'system')
+export const loadSystemPrompt = (role: string): Promise<string> =>
+  loadPromptFile(role, 'system')
 
-export const loadInjectionPrompt = (
-  workDir: string,
-  role: string,
-): Promise<string> => loadPromptFile(workDir, role, 'injection')
+export const loadInjectionPrompt = (role: string): Promise<string> =>
+  loadPromptFile(role, 'injection')

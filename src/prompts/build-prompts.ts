@@ -84,8 +84,8 @@ export const buildManagerPrompt = async (params: {
   const resultsForTasks = mergedResults.filter(
     (result) => !pendingResultIds.has(result.taskId),
   )
-  const system = await loadSystemPrompt(params.workDir, 'manager')
-  const injectionTemplate = await loadInjectionPrompt(params.workDir, 'manager')
+  const system = await loadSystemPrompt('manager')
+  const injectionTemplate = await loadInjectionPrompt('manager')
   const injectionValues = Object.fromEntries<string>([
     [
       'environment',
@@ -136,8 +136,8 @@ export const buildWorkerPrompt = async (params: {
   workDir: string
   task: Task
 }): Promise<string> => {
-  const system = await loadSystemPrompt(params.workDir, 'worker')
-  const injectionTemplate = await loadInjectionPrompt(params.workDir, 'worker')
+  const system = await loadSystemPrompt('worker')
+  const injectionTemplate = await loadInjectionPrompt('worker')
   const injectionValues = Object.fromEntries<string>([
     [
       'environment',

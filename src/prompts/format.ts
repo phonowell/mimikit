@@ -1,3 +1,5 @@
+import { resolve } from 'node:path'
+
 import { normalizeTagName } from './format-base.js'
 
 import type { ManagerEnv } from '../types/index.js'
@@ -34,7 +36,8 @@ export const formatEnvironment = (params?: PromptEnvironmentParams): string => {
     lines.push(`- ${label}: ${value}`)
   }
   push('now_iso', now.toISOString())
-  push('work_dir', params?.workDir)
+  const workDir = params?.workDir?.trim()
+  push('work_dir', workDir ? resolve(workDir) : undefined)
   const last = params?.env?.lastUser
   if (last) {
     push('client_time_zone', last.clientTimeZone)

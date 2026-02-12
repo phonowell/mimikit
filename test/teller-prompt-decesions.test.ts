@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir, writeFile } from 'node:fs/promises'
+import { mkdtemp, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -19,14 +19,6 @@ const getTagContent = (output: string, tag: string): string => {
 
 test('buildManagerPrompt renders results/tasks/history placeholders', async () => {
   const workDir = await createTmpDir()
-  const managerDir = join(workDir, 'prompts', 'manager')
-  await mkdir(managerDir, { recursive: true })
-  await writeFile(join(managerDir, 'system.md'), 'MANAGER_SYS', 'utf8')
-  await writeFile(
-    join(managerDir, 'injection.md'),
-    'R:\n{results}\nI:\n{inputs}\nT:\n{tasks}\nH:\n{history}\nE:\n{environment}\nP:\n{persona}\nU:\n{user_profile}\n',
-    'utf8',
-  )
   await writeFile(join(workDir, 'agent_persona.md'), '# Persona\n\n- direct', 'utf8')
   await writeFile(
     join(workDir, 'user_profile.md'),
@@ -71,7 +63,6 @@ test('buildManagerPrompt renders results/tasks/history placeholders', async () =
 
   const output = await buildManagerPrompt(params)
 
-  expect(output).toContain('MANAGER_SYS')
   expect(output).toContain('<MIMIKIT:results>')
   expect(output).toContain('<MIMIKIT:inputs>')
   expect(output).toContain('<MIMIKIT:tasks>')
@@ -88,14 +79,6 @@ test('buildManagerPrompt renders results/tasks/history placeholders', async () =
 
 test('buildManagerPrompt keeps persona/profile placeholders empty when files are missing', async () => {
   const workDir = await createTmpDir()
-  const managerDir = join(workDir, 'prompts', 'manager')
-  await mkdir(managerDir, { recursive: true })
-  await writeFile(join(managerDir, 'system.md'), 'MANAGER_SYS', 'utf8')
-  await writeFile(
-    join(managerDir, 'injection.md'),
-    'P:\n{persona}\nU:\n{user_profile}\n',
-    'utf8',
-  )
 
   const params: ManagerPromptParams = {
     stateDir: workDir,
@@ -107,11 +90,12 @@ test('buildManagerPrompt keeps persona/profile placeholders empty when files are
   }
 
   const output = await buildManagerPrompt(params)
-  expect(output).toContain('P:')
-  expect(output).toContain('U:')
+  const persona = getTagContent(output, 'persona')
+  const userProfile = getTagContent(output, 'user_profile')
   expect(output).toContain('<MIMIKIT:persona>\n\n</MIMIKIT:persona>')
   expect(output).toContain('<MIMIKIT:user_profile>\n\n</MIMIKIT:user_profile>')
-  expect(output).not.toContain('<![CDATA[')
+  expect(persona).not.toContain('<![CDATA[')
+  expect(userProfile).not.toContain('<![CDATA[')
   expect(output).not.toContain('{persona}')
   expect(output).not.toContain('{user_profile}')
 })

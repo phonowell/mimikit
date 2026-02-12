@@ -11,7 +11,7 @@ export const archiveTaskResult = (
   source: 'worker' | 'cancel',
 ): Promise<string | undefined> =>
   safeOrUndefined(`appendTaskResultArchive: ${source}`, () =>
-    appendTaskResultArchive(runtime.config.stateDir, {
+    appendTaskResultArchive(runtime.config.workDir, {
       taskId: task.id,
       title: task.title,
       status: result.status,

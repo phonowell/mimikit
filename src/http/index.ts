@@ -20,7 +20,7 @@ const registerStaticAssets = (
   config: AppConfig,
 ): void => {
   const { webDir, markedDir, purifyDir } = resolveRoots()
-  const generatedDir = resolve(config.stateDir, 'generated')
+  const generatedDir = resolve(config.workDir, 'generated')
   mkdirSync(generatedDir, { recursive: true })
 
   app.register(fastifyStatic, {

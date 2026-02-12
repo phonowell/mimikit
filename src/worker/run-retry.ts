@@ -34,7 +34,7 @@ const runStandardProfile = (params: {
 }): Promise<WorkerLlmResult> => {
   const { standard } = params.runtime.config.worker
   return runStandardWorker({
-    stateDir: params.runtime.config.stateDir,
+    stateDir: params.runtime.config.workDir,
     workDir: params.runtime.config.workDir,
     task: params.task,
     timeoutMs: standard.timeoutMs,
@@ -58,7 +58,7 @@ const runTaskByProfile = (params: {
   }
   const { specialist } = params.runtime.config.worker
   return runSpecialistWorker({
-    stateDir: params.runtime.config.stateDir,
+    stateDir: params.runtime.config.workDir,
     workDir: params.runtime.config.workDir,
     task: params.task,
     timeoutMs: specialist.timeoutMs,

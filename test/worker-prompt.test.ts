@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir, writeFile } from 'node:fs/promises'
+import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -16,14 +16,6 @@ const getTagContent = (output: string, tag: string): string => {
 
 test('buildWorkerPrompt injects task prompt and environment', async () => {
   const workDir = await createTmpDir()
-  const workerDir = join(workDir, 'prompts', 'worker')
-  await mkdir(workerDir, { recursive: true })
-  await writeFile(join(workerDir, 'system.md'), 'SYS', 'utf8')
-  await writeFile(
-    join(workerDir, 'injection.md'),
-    'Env:\n{environment}\nTask:\n{prompt}\n',
-    'utf8',
-  )
 
   const output = await buildWorkerPrompt({
     workDir,
@@ -39,9 +31,8 @@ test('buildWorkerPrompt injects task prompt and environment', async () => {
   })
 
   const environment = getTagContent(output, 'environment')
-  expect(output).toContain('SYS')
   expect(output).toContain('<MIMIKIT:environment>')
-  expect(output).toContain('Task:\n<MIMIKIT:prompt>\nRun health check\n</MIMIKIT:prompt>')
+  expect(output).toContain('<MIMIKIT:prompt>\nRun health check\n</MIMIKIT:prompt>')
   expect(environment).toContain(`- work_dir: ${workDir}`)
   expect(environment).toContain('- now_iso:')
   expect(output).not.toContain('{prompt}')

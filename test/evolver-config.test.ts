@@ -37,7 +37,7 @@ const withManagedEnv = async (run: () => Promise<void>): Promise<void> => {
 describe.sequential('evolver config', () => {
   test('default config keeps evolver disabled', async () => {
     await withManagedEnv(async () => {
-      const config = defaultConfig({ stateDir: '.mimikit', workDir: process.cwd() })
+      const config = defaultConfig({ workDir: '.mimikit' })
       expect(config.evolver.enabled).toBe(false)
     })
   })
@@ -45,7 +45,7 @@ describe.sequential('evolver config', () => {
   test('env override can enable evolver loop', async () => {
     await withManagedEnv(async () => {
       process.env.MIMIKIT_EVOLVER_ENABLED = 'true'
-      const config = defaultConfig({ stateDir: '.mimikit', workDir: process.cwd() })
+      const config = defaultConfig({ workDir: '.mimikit' })
       applyCliEnvOverrides(config)
       expect(config.evolver.enabled).toBe(true)
     })
@@ -54,7 +54,7 @@ describe.sequential('evolver config', () => {
   test('env override can disable evolver loop', async () => {
     await withManagedEnv(async () => {
       process.env.MIMIKIT_EVOLVER_ENABLED = 'false'
-      const config = defaultConfig({ stateDir: '.mimikit', workDir: process.cwd() })
+      const config = defaultConfig({ workDir: '.mimikit' })
       config.evolver.enabled = true
       applyCliEnvOverrides(config)
       expect(config.evolver.enabled).toBe(false)
@@ -65,16 +65,14 @@ describe.sequential('evolver config', () => {
     await withManagedEnv(async () => {
       process.env.MIMIKIT_EVOLVER_ENABLED = '1'
       const enabledConfig = defaultConfig({
-        stateDir: '.mimikit',
-        workDir: process.cwd(),
+        workDir: '.mimikit',
       })
       applyCliEnvOverrides(enabledConfig)
       expect(enabledConfig.evolver.enabled).toBe(true)
 
       process.env.MIMIKIT_EVOLVER_ENABLED = '0'
       const disabledConfig = defaultConfig({
-        stateDir: '.mimikit',
-        workDir: process.cwd(),
+        workDir: '.mimikit',
       })
       disabledConfig.evolver.enabled = true
       applyCliEnvOverrides(disabledConfig)

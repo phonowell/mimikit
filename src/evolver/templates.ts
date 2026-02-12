@@ -34,12 +34,10 @@ const extractRequiredTemplateBlock = (
   return block
 }
 
-export const loadEvolverTemplates = async (
-  workDir: string,
-): Promise<EvolverTemplates> => {
-  const system = (await loadSystemPrompt(workDir, 'evolver')).trim()
+export const loadEvolverTemplates = async (): Promise<EvolverTemplates> => {
+  const system = (await loadSystemPrompt('evolver')).trim()
   if (!system) throw new Error('missing_evolver_template:evolver/system.md')
-  const injection = (await loadInjectionPrompt(workDir, 'evolver')).trim()
+  const injection = (await loadInjectionPrompt('evolver')).trim()
   if (!injection)
     throw new Error('missing_evolver_template:evolver/injection.md')
   const content = joinPromptSections([system, injection])

@@ -104,7 +104,7 @@ export const evolverLoop = async (runtime: RuntimeState): Promise<void> => {
     runtime.lastEvolverRunAt = now
 
     try {
-      const templates = await loadEvolverTemplates(runtime.config.workDir)
+      const templates = await loadEvolverTemplates()
       await appendMarkdownSection({
         path: runtime.paths.userProfile,
         title: `Profile Update ${stamp}`,

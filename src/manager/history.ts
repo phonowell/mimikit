@@ -20,11 +20,10 @@ const summarizeResultOutput = (
 }
 
 export const appendManagerFallbackReply = async (
-  workDir: string,
   paths: RuntimeState['paths'],
 ): Promise<void> => {
   const fallback = (
-    await loadPromptTemplate(workDir, 'manager/system-fallback-reply.md')
+    await loadPromptTemplate('manager/system-fallback-reply.md')
   ).trim()
   if (!fallback)
     throw new Error('missing_prompt_template:manager/system-fallback-reply.md')

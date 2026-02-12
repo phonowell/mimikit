@@ -49,7 +49,7 @@ describe.sequential('cli env model overrides', () => {
   test('MIMIKIT_MODEL only overrides manager model', async () => {
     await withManagedEnv(async () => {
       process.env.MIMIKIT_MODEL = 'gpt-5.4-manager'
-      const config = defaultConfig({ stateDir: '.mimikit', workDir: process.cwd() })
+      const config = defaultConfig({ workDir: '.mimikit' })
       applyCliEnvOverrides(config)
 
       expect(config.manager.model).toBe('gpt-5.4-manager')

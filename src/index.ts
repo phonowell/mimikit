@@ -29,7 +29,5 @@ export type OrchestratorHistory = Awaited<
 export const createOrchestrator = (config: AppConfig) =>
   new Orchestrator(config)
 
-export const resolveDefaultConfig = (params: {
-  stateDir: string
-  workDir: string
-}): AppConfig => defaultConfig(params)
+export const resolveDefaultConfig = (params: { workDir: string }): AppConfig =>
+  defaultConfig(params)

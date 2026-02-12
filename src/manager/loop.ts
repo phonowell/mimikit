@@ -82,7 +82,7 @@ export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
       })
 
       const managerResult = await runManager({
-        stateDir: runtime.config.stateDir,
+        stateDir: runtime.config.workDir,
         workDir: runtime.config.workDir,
         inputs,
         results,
@@ -125,7 +125,6 @@ export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
       const responseText =
         parsed.text.trim() ||
         (await buildFallbackReply({
-          workDir: runtime.config.workDir,
           inputs,
           results,
         }))
@@ -173,7 +172,7 @@ export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
 
       if (drainedOnError && !assistantAppended && inputs.length > 0) {
         await bestEffort('appendHistory: manager_fallback_reply', () =>
-          appendManagerFallbackReply(runtime.config.workDir, runtime.paths),
+          appendManagerFallbackReply(runtime.paths),
         )
       }
 

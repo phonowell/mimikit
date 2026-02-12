@@ -40,9 +40,9 @@ export const registerTaskArchiveRoute = (
       reply.code(404).send({ error: 'task archive not found' })
       return
     }
-    const resolvedStateDir = resolve(config.stateDir)
+    const resolvedWorkDir = resolve(config.workDir)
     const resolvedArchivePath = resolve(archivePath)
-    if (!isWithinRoot(resolvedStateDir, resolvedArchivePath)) {
+    if (!isWithinRoot(resolvedWorkDir, resolvedArchivePath)) {
       reply.code(400).send({ error: 'invalid archive path' })
       return
     }
@@ -90,7 +90,7 @@ export const registerTaskProgressRoute = (
       reply.code(404).send({ error: 'task not found' })
       return
     }
-    const events = await readTaskProgress(config.stateDir, taskId)
+    const events = await readTaskProgress(config.workDir, taskId)
     reply.send({ taskId, events })
   })
 }
@@ -144,7 +144,7 @@ export const registerControlRoutes = (
       void (async () => {
         await orchestrator.stopAndPersist()
         try {
-          await clearStateDir(config.stateDir)
+          await clearStateDir(config.workDir)
         } catch (error) {
           await logSafeError('http: reset', error)
         }
