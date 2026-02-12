@@ -34,12 +34,6 @@ import type {
 
 export type { ManagerEnv } from '../types/index.js'
 
-type WorkerPromptContext = {
-  checkpointRecovered?: boolean
-  actions?: string[]
-  transcript?: string[]
-}
-
 const readOptionalMarkdown = async (path: string): Promise<string> => {
   await ensureFile(path, '')
   try {
@@ -134,30 +128,13 @@ export const buildManagerPrompt = async (params: {
 export const buildWorkerPrompt = async (params: {
   workDir: string
   task: Task
-  context?: WorkerPromptContext
 }): Promise<string> => {
   const role =
     params.task.profile === 'standard' ? 'worker-standard' : 'worker-specialist'
   const system = await loadSystemPrompt(params.workDir, role)
   const injectionTemplate = await loadInjectionPrompt(params.workDir, role)
-  const checkpointRecovered =
-    params.context?.checkpointRecovered === true ? 'true' : 'false'
-  const availableActions = params.context?.actions?.join(', ') ?? ''
-  const transcript =
-    params.context?.transcript && params.context.transcript.length > 0
-      ? params.context.transcript.join('\n\n')
-      : ''
   const injectionValues = Object.fromEntries<string>([
     ['prompt', buildRawBlock('prompt', params.task.prompt, true)],
-    [
-      'checkpoint_recovered',
-      buildRawBlock('checkpoint_recovered', checkpointRecovered, true),
-    ],
-    [
-      'available_actions',
-      buildRawBlock('available_actions', availableActions, true),
-    ],
-    ['transcript', buildRawBlock('transcript', transcript, true)],
   ])
   const injection = renderPromptTemplate(injectionTemplate, injectionValues)
   return joinPromptSections([system, injection])

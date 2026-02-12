@@ -38,7 +38,7 @@
 实现：`src/worker/standard-runner.ts`
 
 - 导出：`runStandardWorker`
-- 依赖：`runWithProvider(provider='openai-chat')`、`parseStandardStep`、`executeStandardStep`
+- 依赖：`runProfiledWorker(provider='opencode', profile='standard')`
 
 输入：
 - 必填：`stateDir`、`workDir`、`task`、`timeoutMs`
@@ -48,14 +48,14 @@
 - `{ output, elapsedMs, usage? }`
 
 流程：
-1. 加载 checkpoint，恢复 `round/transcript/finalized/finalOutput`。
-2. 循环调用 planner。
-3. `final` 时返回最终文本；`actions` 时按顺序串行执行每个 action，并持续写入 transcript。
-4. 每轮写 `task-progress`，关键节点写 `task-checkpoint`。
-5. 汇总 usage 返回。
+1. 构建 worker prompt。
+2. 调用 `runWithProvider(provider='opencode', role='worker')`。
+3. 原样透传 provider 输出，不做固定 JSON contract 校验或自修复重试。
+4. 记录 `task-progress` 与 llm archive。
+5. 返回 `{ output, elapsedMs, usage? }`。
 
 错误语义：
-- 可能抛错：`standard_aborted`、`standard_timeout`、`standard_max_rounds_exceeded`、`standard_step_parse_failed:*`。
+- 可能抛错：provider 执行错误。
 - 错误上抛给 `runTaskWithRetry` 收敛。
 
 调用方：
@@ -65,7 +65,7 @@
 实现：`src/worker/specialist-runner.ts`
 
 - 导出：`runSpecialistWorker`
-- 依赖：`runWithProvider(provider='codex-sdk')`
+- 依赖：`runProfiledWorker(provider='codex-sdk', profile='specialist')`
 
 输入：
 - 必填：`stateDir`、`workDir`、`task`、`timeoutMs`
@@ -77,8 +77,10 @@
 流程：
 1. 构建 worker prompt。
 2. 调用 `runWithProvider(provider='codex-sdk', role='worker')`。
-3. 成功时归档 `ok=true` 并返回。
-4. 失败时归档 `ok=false` 并抛原始异常。
+3. 原样透传 provider 输出，不做固定 JSON contract 校验或自修复重试。
+4. 记录 `task-progress` 与 llm archive。
+
+共享核心实现：`src/worker/profiled-runner.ts`
 
 调用方：
 - `src/worker/run-retry.ts`（`profile=specialist`）

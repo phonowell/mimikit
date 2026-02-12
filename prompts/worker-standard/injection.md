@@ -1,11 +1,2 @@
-checkpoint_recovered:
-{checkpoint_recovered}
-
-task:
+// 任务描述：
 {prompt}
-
-available_actions:
-{available_actions}
-
-transcript:
-{transcript}

@@ -60,12 +60,11 @@ Action 名称集合（`src/actions/model/names.ts`）：
 - 入参：`task_id`、`summary`
 - 行为：汇总为 `Map<taskId, summary>`，用于结果写入 `history` 时压缩输出。
 
-## Worker Standard 结束规则
-来源：`src/worker/standard-step.ts`
+## Worker 输出规则
+来源：`src/worker/profiled-runner.ts`
 
-- 未完成：可输出一条或多条可执行 action。
-- 若同轮输出多条 action：按输出顺序串行执行；每条 action 完成后再执行下一条。
-- 已完成：输出纯文本最终结果（不输出 action 块）。
+- `standard/specialist` 都执行单次 provider 调用并直接返回原始输出，不要求固定 JSON 格式。
+- 两者执行逻辑一致，唯一差异是 provider：`standard=opencode`、`specialist=codex-sdk`。
 
 ## 核心数据结构
 定义：`src/types/index.ts`

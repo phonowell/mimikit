@@ -115,7 +115,7 @@ export const defaultConfig = (params: DefaultConfigParams): AppConfig => ({
     retryBackoffMs: 5_000,
     standard: {
       timeoutMs: 10 * 60 * 1_000,
-      model: 'gpt-5.2-high',
+      model: 'opencode/big-pickle',
       modelReasoningEffort: 'high',
     },
     specialist: {

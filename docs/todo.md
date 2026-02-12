@@ -14,7 +14,7 @@
 ## worker 层级
 
 ### standard
-- 使用 `runWithProvider(provider='openai-chat')`。
+- 使用 `runWithProvider(provider='opencode', role='worker')`。
 - 低成本，多轮工具交互。
 
 ### specialist

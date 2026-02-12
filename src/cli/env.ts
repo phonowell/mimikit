@@ -5,10 +5,8 @@ import type { AppConfig } from '../config.js'
 
 const applyModelEnv = (config: AppConfig): void => {
   const envModel = process.env.MIMIKIT_MODEL?.trim()
-  if (envModel) {
-    config.manager.model = envModel
-    config.worker.standard.model = envModel
-  }
+  if (envModel) config.manager.model = envModel
+
   const envManagerModel = process.env.MIMIKIT_MANAGER_MODEL?.trim()
   if (envManagerModel) config.manager.model = envManagerModel
   const envWorkerStandardModel =

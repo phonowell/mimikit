@@ -22,10 +22,11 @@
 - `tsx src/cli/index.ts --state-dir .mimikit --work-dir .`
 
 ## 核心环境变量
-- `MIMIKIT_MODEL`（覆盖 `manager + worker.standard`）
+- `MIMIKIT_MODEL`（覆盖 `manager`）
 - `MIMIKIT_MANAGER_MODEL`
 - `MIMIKIT_WORKER_STANDARD_MODEL`
 - `MIMIKIT_WORKER_SPECIALIST_MODEL`
+- `MIMIKIT_OPENCODE_MODEL`
 - `MIMIKIT_REASONING_EFFORT`（覆盖 `manager + worker.*`）
 - `MIMIKIT_MANAGER_REASONING_EFFORT`
 - `MIMIKIT_WORKER_STANDARD_REASONING_EFFORT`
@@ -56,7 +57,6 @@
 - `agent_persona.md`
 - `agent_persona_versions/*.md`
 - `task-progress/{taskId}.jsonl`
-- `task-checkpoints/{taskId}.json`
 - `tasks/YYYY-MM-DD/*.md`（任务结果归档）
 - `llm/YYYY-MM-DD/*.txt`（LLM 调用归档）
 

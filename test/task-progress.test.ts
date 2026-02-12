@@ -9,10 +9,6 @@ import {
   readTaskProgress,
   taskProgressPath,
 } from '../src/storage/task-progress.js'
-import {
-  loadTaskCheckpoint,
-  saveTaskCheckpoint,
-} from '../src/storage/task-checkpoint.js'
 
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-task-progress-'))
 
@@ -64,46 +60,4 @@ test('task progress ignores invalid jsonl entries', async () => {
   const events = await readTaskProgress(stateDir, 'task-raw')
   expect(events).toHaveLength(1)
   expect(events[0]?.type).toBe('standard_start')
-})
-
-test('task checkpoint saves and loads state', async () => {
-  const stateDir = await createTmpDir()
-  await saveTaskCheckpoint({
-    stateDir,
-    checkpoint: {
-      taskId: 'task-2',
-      stage: 'running',
-      updatedAt: '2026-02-08T00:00:00.000Z',
-      state: {
-        round: 2,
-        transcript: ['step1', 'step2'],
-        finalized: false,
-        finalOutput: '',
-      },
-    },
-  })
-
-  const loaded = await loadTaskCheckpoint(stateDir, 'task-2')
-  expect(loaded?.stage).toBe('running')
-  expect(loaded?.state).toMatchObject({ round: 2, finalized: false })
-})
-
-test('task checkpoint rejects invalid shape', async () => {
-  const stateDir = await createTmpDir()
-  const path = join(stateDir, 'task-checkpoints', 'task-3.json')
-  await mkdir(join(stateDir, 'task-checkpoints'), { recursive: true })
-  await writeFile(
-    path,
-    JSON.stringify({
-      taskId: 'task-3',
-      stage: 'running',
-      updatedAt: '2026-02-09T00:00:00.000Z',
-      state: { round: 1 },
-      extra: true,
-    }),
-    'utf8',
-  )
-
-  const loaded = await loadTaskCheckpoint(stateDir, 'task-3')
-  expect(loaded).toBeNull()
 })
