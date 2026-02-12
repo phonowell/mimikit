@@ -28,6 +28,31 @@ const parseJsonRaw = <T>(
   })
 }
 
+const readErrorCode = (error: unknown): string | undefined => {
+  if (!error || typeof error !== 'object' || !('code' in error))
+    return undefined
+  const { code } = error as { code?: unknown }
+  if (typeof code === 'string' && code) return code
+  if (typeof code === 'number') return String(code)
+  return undefined
+}
+
+const inspectBackupError = (
+  error: unknown,
+): { ignorable: boolean; codes: string[] } => {
+  if (error instanceof AggregateError) {
+    const nested = error.errors.map((item) => inspectBackupError(item))
+    if (nested.length === 0) return { ignorable: false, codes: [] }
+    return {
+      ignorable: nested.every((item) => item.ignorable),
+      codes: nested.flatMap((item) => item.codes),
+    }
+  }
+  const code = readErrorCode(error)
+  if (!code) return { ignorable: false, codes: [] }
+  return { ignorable: code === 'ENOENT', codes: [code] }
+}
+
 export const writeFileAtomic = async (
   path: string,
   content: string,
@@ -38,13 +63,13 @@ export const writeFileAtomic = async (
     try {
       await copy(path, `${path}.bak`)
     } catch (error) {
-      const code =
-        typeof error === 'object' && error && 'code' in error
-          ? String((error as { code?: string }).code)
-          : undefined
-      if (code !== 'ENOENT') {
+      const inspected = inspectBackupError(error)
+      if (!inspected.ignorable) {
         await logSafeError('writeFileAtomic: backup', error, {
-          meta: { path },
+          meta:
+            inspected.codes.length > 0
+              ? { path, codes: inspected.codes }
+              : { path },
         })
         throw error
       }
