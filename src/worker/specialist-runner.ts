@@ -11,6 +11,7 @@ import {
   buildFinalOutputRepairHint,
   validateWorkerFinalOutput,
 } from './final-output.js'
+import { mergeUsage } from './task-usage.js'
 
 import type { Task, TokenUsage } from '../types/index.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
@@ -29,16 +30,6 @@ const archiveWorkerResult = (
   prompt: string,
   result: LlmArchiveResult,
 ) => appendLlmArchiveResult(stateDir, base, prompt, result)
-
-const combineUsage = (
-  first?: TokenUsage,
-  second?: TokenUsage,
-): TokenUsage | undefined => {
-  const input = (first?.input ?? 0) + (second?.input ?? 0)
-  const output = (first?.output ?? 0) + (second?.output ?? 0)
-  if (input + output <= 0) return undefined
-  return { input, output, total: input + output }
-}
 
 export const runSpecialistWorker = async (params: {
   stateDir: string
@@ -81,6 +72,7 @@ export const runSpecialistWorker = async (params: {
 
   try {
     const first = await runModel(prompt)
+    if (first.usage) params.task.usage = first.usage
     const firstValidation = validateWorkerFinalOutput({
       raw: first.output,
       profile: 'specialist',
@@ -184,7 +176,8 @@ export const runSpecialistWorker = async (params: {
       repairPrompt,
       { ...repaired, output: repairedValidation.serialized, ok: true },
     )
-    const usage = combineUsage(first.usage, repaired.usage)
+    const usage = mergeUsage(first.usage, repaired.usage)
+    if (usage) params.task.usage = usage
     return {
       output: repairedValidation.serialized,
       elapsedMs: first.elapsedMs + repaired.elapsedMs,

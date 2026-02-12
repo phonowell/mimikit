@@ -113,10 +113,11 @@ test('runStandardWorker executes multi actions sequentially in one round', async
       }),
     })
 
+  const task = buildTask()
   const result = await runStandardWorker({
     stateDir: '/tmp/mimikit-test-state',
     workDir: '/tmp/mimikit-test-work',
-    task: buildTask(),
+    task,
     timeoutMs: 5_000,
     model: 'gpt-5.2-high',
     modelReasoningEffort: 'high',
@@ -126,6 +127,7 @@ test('runStandardWorker executes multi actions sequentially in one round', async
     answer: 'done',
     confidence: 0.9,
   })
+  expect(task.usage).toMatchObject({ input: 2, output: 2, total: 4 })
   expect(vi.mocked(executeStandardStep)).toHaveBeenCalledTimes(2)
   expect(vi.mocked(executeStandardStep).mock.calls[0]?.[0]).toMatchObject({
     round: 1,
@@ -195,10 +197,11 @@ test('runStandardWorker retries once when final output violates contract', async
       }),
     })
 
+  const task = buildTask()
   const result = await runStandardWorker({
     stateDir: '/tmp/mimikit-test-state',
     workDir: '/tmp/mimikit-test-work',
-    task: buildTask(),
+    task,
     timeoutMs: 5_000,
     model: 'gpt-5.2-high',
     modelReasoningEffort: 'high',
@@ -209,4 +212,5 @@ test('runStandardWorker retries once when final output violates contract', async
     answer: 'repaired',
     confidence: 0.95,
   })
+  expect(task.usage).toMatchObject({ input: 3, output: 3, total: 6 })
 })

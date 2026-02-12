@@ -14,6 +14,7 @@ import {
 } from './standard-state.js'
 import { executeStandardStep } from './standard-step-exec.js'
 import { parseStandardStep } from './standard-step.js'
+import { applyTaskUsage } from './task-usage.js'
 
 import type { Task, TokenUsage } from '../types/index.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
@@ -93,6 +94,7 @@ export const runStandardWorker = async (params: {
     })
     usageInput += planner.usage?.input ?? 0
     usageOutput += planner.usage?.output ?? 0
+    applyTaskUsage(params.task, usageInput, usageOutput)
 
     const step = parseStandardStep(planner.output)
     state.round += 1
@@ -174,7 +176,7 @@ export const runStandardWorker = async (params: {
   }
 
   const elapsedMs = Math.max(0, Date.now() - startedAt)
-  const total = usageInput + usageOutput
+  const total = applyTaskUsage(params.task, usageInput, usageOutput)
   return {
     output: state.finalOutput,
     elapsedMs,

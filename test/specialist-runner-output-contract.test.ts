@@ -61,10 +61,11 @@ test('runSpecialistWorker retries once when first output violates contract', asy
       usage: { input: 2, output: 3, total: 5 },
     })
 
+  const task = buildTask()
   const result = await runSpecialistWorker({
     stateDir: '/tmp/mimikit-test-state',
     workDir: '/tmp/mimikit-test-work',
-    task: buildTask(),
+    task,
     timeoutMs: 5_000,
     model: 'gpt-5.3-codex-high',
     modelReasoningEffort: 'high',
@@ -76,4 +77,5 @@ test('runSpecialistWorker retries once when first output violates contract', asy
     confidence: 0.91,
   })
   expect(result.usage).toMatchObject({ input: 3, output: 4, total: 7 })
+  expect(task.usage).toMatchObject({ input: 3, output: 4, total: 7 })
 })
