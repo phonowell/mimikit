@@ -70,7 +70,9 @@
   border-radius: 8px;
   padding: 8px 10px;
   overflow-x: auto;
-  white-space: pre;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .message .content.markdown pre code {
