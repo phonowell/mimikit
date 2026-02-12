@@ -38,6 +38,7 @@ export function createMessagesController({
 }) {
   const ACTIVE_POLL_MS = 2000
   const IDLE_POLL_MS = 30000
+  const HIDDEN_POLL_MS = 30000
   const RETRY_BASE_MS = 1000
   const RETRY_MAX_MS = 30000
   const MESSAGE_LIMIT = 50
@@ -48,7 +49,7 @@ export function createMessagesController({
   let lastMessageCursor = null
   let lastStatusEtag = null
   let lastMessagesEtag = null
-  const runtime = { isPolling: false, pausedByVisibility: false, unbindNotificationPrompt: () => {} }
+  const runtime = { isPolling: false, isPageHidden: false, unbindNotificationPrompt: () => {} }
   const messageState = createMessageState()
   const notifications = createBrowserNotificationController()
 
@@ -80,7 +81,7 @@ export function createMessagesController({
 
   const delay = createPollingDelayController({
     isPolling: () => runtime.isPolling,
-    isPaused: () => runtime.pausedByVisibility,
+    isHidden: () => runtime.isPageHidden,
     schedule: (pollFn, delayMs) => {
       pollTimer = window.setTimeout(pollFn, delayMs)
     },
@@ -92,6 +93,7 @@ export function createMessagesController({
     isFullyIdle: () => isFullyIdle(),
     activePollMs: ACTIVE_POLL_MS,
     idlePollMs: IDLE_POLL_MS,
+    hiddenPollMs: HIDDEN_POLL_MS,
     retryBaseMs: RETRY_BASE_MS,
     retryMaxMs: RETRY_MAX_MS,
     getConsecutiveFailures: () => consecutiveFailures,
@@ -186,6 +188,7 @@ export function createMessagesController({
     notifications,
     poll,
     clearDelay: delay.clear,
+    scheduleNextPoll: () => delay.scheduleNext(poll),
   })
   lifecycle.bindVisibility()
   const isFullyIdle = () => isStatusFullyIdle(lastStatus)

@@ -1,20 +1,18 @@
 export const createMessagesLifecycle = (params) => {
-  const { runtime, scroll, notifications, poll, clearDelay } = params
+  const { runtime, scroll, notifications, poll, clearDelay, scheduleNextPoll } = params
 
   const start = () => {
     if (runtime.isPolling) return
     scroll.bindScrollControls()
     runtime.unbindNotificationPrompt = notifications.bindPermissionPrompt()
     runtime.isPolling = true
-    const hidden = typeof document !== 'undefined' && document.hidden === true
-    runtime.pausedByVisibility = hidden
-    if (hidden) return
+    runtime.isPageHidden = typeof document !== 'undefined' && document.hidden === true
     poll()
   }
 
   const stop = () => {
     runtime.isPolling = false
-    runtime.pausedByVisibility = false
+    runtime.isPageHidden = false
     runtime.unbindNotificationPrompt()
     runtime.unbindNotificationPrompt = () => {}
     clearDelay()
@@ -23,14 +21,14 @@ export const createMessagesLifecycle = (params) => {
   const onVisibilityChange = () => {
     if (!runtime.isPolling) return
     const hidden = typeof document !== 'undefined' && document.hidden === true
+    const wasHidden = runtime.isPageHidden === true
+    runtime.isPageHidden = hidden
     if (hidden) {
-      runtime.pausedByVisibility = true
       clearDelay()
+      scheduleNextPoll()
       return
     }
-    const wasPaused = runtime.pausedByVisibility
-    runtime.pausedByVisibility = false
-    if (!wasPaused) return
+    if (!wasHidden) return
     clearDelay()
     poll()
   }

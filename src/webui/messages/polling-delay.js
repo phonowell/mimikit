@@ -1,20 +1,25 @@
 export const createPollingDelayController = (params) => {
   const {
     isPolling,
-    isPaused,
+    isHidden,
     schedule,
     clear,
     isFullyIdle,
     activePollMs,
     idlePollMs,
+    hiddenPollMs,
     retryBaseMs,
     retryMaxMs,
     getConsecutiveFailures,
   } = params
 
   const scheduleNext = (pollFn) => {
-    if (!isPolling() || isPaused()) return
+    if (!isPolling()) return
     clear()
+    if (isHidden()) {
+      schedule(pollFn, hiddenPollMs)
+      return
+    }
     const failures = getConsecutiveFailures()
     const delayMs =
       failures > 0
