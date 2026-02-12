@@ -1,20 +1,20 @@
 :root {
   color-scheme: light;
-  --bg: #e6ebf2;
-  --panel: #e6ebf2;
-  --panel-soft: #dfe6ef;
-  --panel-strong: #d6dee9;
-  --well-bg: #dbe3ed;
-  --border: rgba(130, 149, 171, 0.14);
-  --border-subtle: rgba(130, 149, 171, 0.08);
-  --border-hairline: rgba(130, 149, 171, 0.04);
-  --text: #2f3d4f;
-  --muted: #68778b;
+  --bg: #ebe7df;
+  --panel: #ebe7df;
+  --panel-soft: #e4dfd5;
+  --panel-strong: #d9d2c6;
+  --well-bg: #dfd8cc;
+  --border: rgba(141, 129, 112, 0.14);
+  --border-subtle: rgba(141, 129, 112, 0.08);
+  --border-hairline: rgba(141, 129, 112, 0.04);
+  --text: #3c3630;
+  --muted: #72695e;
   --accent: #2f7de6;
   --accent-soft: #dce9ff;
-  --bubble-agent-bg: #c8d5e6;
-  --bubble-user-bg: #aec8fa;
-  --bubble-system-bg: #b4c0d4;
+  --bubble-agent-bg: #d2c8ba;
+  --bubble-user-bg: #c7d2e7;
+  --bubble-system-bg: #c2bbaf;
   --success: #3bb273;
   --warning: #f2b24f;
   --danger: #e25d5d;
@@ -26,17 +26,17 @@
   --status-idle: #3bb273;
   --status-disconnected: #8a96a8;
   --shadow-raised: -7px -7px 14px rgba(255, 255, 255, 0.72),
-    7px 7px 14px rgba(152, 168, 189, 0.34);
+    7px 7px 14px rgba(147, 135, 119, 0.34);
   --shadow-raised-soft: -4px -4px 8px rgba(255, 255, 255, 0.68),
-    4px 4px 8px rgba(157, 173, 194, 0.28);
+    4px 4px 8px rgba(152, 140, 124, 0.28);
   --shadow-inset: inset -6px -6px 10px rgba(255, 255, 255, 0.68),
-    inset 6px 6px 10px rgba(152, 168, 189, 0.34);
+    inset 6px 6px 10px rgba(147, 135, 119, 0.34);
   --shadow-inset-soft: inset -3px -3px 6px rgba(255, 255, 255, 0.64),
-    inset 3px 3px 6px rgba(157, 173, 194, 0.3);
+    inset 3px 3px 6px rgba(152, 140, 124, 0.3);
   --shadow-floating: -7px -7px 13px rgba(255, 255, 255, 0.6),
-    9px 9px 16px rgba(136, 152, 173, 0.42);
+    9px 9px 16px rgba(131, 119, 103, 0.42);
   --shadow-dialog: -2px -2px 6px rgba(255, 255, 255, 0.42),
-    10px 12px 22px rgba(112, 129, 151, 0.35);
+    10px 12px 22px rgba(107, 96, 82, 0.35);
   --shadow: var(--shadow-raised);
   --focus-ring: rgba(47, 125, 230, 0.34);
   --radius: 18px;
@@ -59,9 +59,9 @@ body {
     "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
   background: radial-gradient(
     circle at 18% 12%,
-    #edf2f8 0%,
-    #e6ebf2 42%,
-    #e2e8ef 100%
+    #f0ebe2 0%,
+    #ebe7df 42%,
+    #e5dfd4 100%
   );
   color: var(--text);
 }
