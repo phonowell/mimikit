@@ -83,14 +83,14 @@ export const defaultConfig = (params: DefaultConfigParams): AppConfig => ({
   stateDir: resolve(params.stateDir),
   workDir: resolve(params.workDir),
   manager: {
-    pollMs: 1_000,
-    minIntervalMs: 8_000,
-    tasksMaxCount: 20,
-    tasksMinCount: 5,
-    tasksMaxBytes: 20 * 1024,
-    historyMinCount: 20,
-    historyMaxCount: 100,
-    historyMaxBytes: 20 * 1024,
+    pollMs: 1_000, // 1秒轮询一次
+    minIntervalMs: 10_000, // 最小10秒调度间隔
+    tasksMaxCount: 20, // 任务列表最多保留20条
+    tasksMinCount: 5, // 任务列表最少保留5条
+    tasksMaxBytes: 20 * 1024, // 任务列表最多保留20KB
+    historyMinCount: 20, // 历史记录最少保留20条
+    historyMaxCount: 100, // 历史记录最多保留100条
+    historyMaxBytes: 20 * 1024, // 历史记录最多保留20KB
     model: 'gpt-5.2-high',
     modelReasoningEffort: 'high',
   },
@@ -101,16 +101,16 @@ export const defaultConfig = (params: DefaultConfigParams): AppConfig => ({
     minIntervalMs: 5 * 60 * 1_000,
   },
   worker: {
-    maxConcurrent: 3,
-    retryMaxAttempts: 1,
-    retryBackoffMs: 5_000,
+    maxConcurrent: 3, // 最大3个任务并发执行
+    retryMaxAttempts: 1, // 失败重试1次
+    retryBackoffMs: 5_000, // 重试退避5秒
     standard: {
-      timeoutMs: 10 * 60 * 1_000,
+      timeoutMs: 10 * 60 * 1_000, // 标准任务默认10分钟超时
       model: 'opencode/big-pickle',
       modelReasoningEffort: 'high',
     },
     specialist: {
-      timeoutMs: 10 * 60 * 1_000,
+      timeoutMs: 10 * 60 * 1_000, // 专家任务默认10分钟超时
       model: 'gpt-5.3-codex-high',
       modelReasoningEffort: 'high',
     },
