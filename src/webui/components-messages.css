@@ -233,9 +233,10 @@
 }
 
 .composer .quote-preview {
-  --quote-bar: var(--accent);
-  --quote-bg: rgba(47, 125, 230, 0.1);
-  --quote-label: var(--quote-bar);
+  --quote-bar: var(--bubble-agent-text);
+  --quote-bg: var(--bubble-agent-bg);
+  --quote-label: var(--bubble-agent-text);
+  --quote-text: var(--bubble-agent-text);
   flex: 0 0 100%;
   display: flex;
   flex-direction: column;
@@ -291,24 +292,31 @@
 }
 
 .composer .quote-preview[data-role='user'] {
-  --quote-bar: var(--success);
-  --quote-bg: rgba(59, 178, 115, 0.1);
+  --quote-bar: var(--bubble-user-text);
+  --quote-bg: var(--bubble-user-bg);
+  --quote-label: var(--bubble-user-text);
+  --quote-text: var(--bubble-user-text);
 }
 
 .composer .quote-preview[data-role='agent'] {
-  --quote-bar: var(--accent);
-  --quote-bg: rgba(47, 125, 230, 0.1);
+  --quote-bar: var(--bubble-agent-text);
+  --quote-bg: var(--bubble-agent-bg);
+  --quote-label: var(--bubble-agent-text);
+  --quote-text: var(--bubble-agent-text);
 }
 
 .composer .quote-preview[data-role='system'] {
-  --quote-bar: var(--border);
-  --quote-bg: rgba(102, 120, 140, 0.11);
-  --quote-label: var(--muted);
+  --quote-bar: var(--bubble-system-text);
+  --quote-bg: var(--bubble-system-bg);
+  --quote-label: var(--bubble-system-text);
+  --quote-text: var(--bubble-system-text);
 }
 
 .composer .quote-preview[data-role='unknown'] {
-  --quote-bar: var(--border);
-  --quote-bg: rgba(129, 147, 168, 0.12);
+  --quote-bar: var(--bubble-system-text);
+  --quote-bg: var(--bubble-system-bg);
+  --quote-label: var(--bubble-system-text);
+  --quote-text: var(--bubble-system-text);
 }
 
 .composer .quote-label {
@@ -325,7 +333,7 @@
   max-width: 100%;
   font-size: 12px;
   line-height: 1.3;
-  color: var(--text);
+  color: var(--quote-text);
   opacity: 0.78;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -335,6 +343,12 @@
 
 .composer .quote-clear {
   --btn-size: 20px;
+  --btn-shadow: -0.35px -0.35px 0.9px rgba(255, 255, 255, 0.22),
+    0.35px 0.35px 0.9px rgba(122, 141, 165, 0.08);
+  --btn-shadow-hover: -0.4px -0.4px 1px rgba(255, 255, 255, 0.24),
+    0.4px 0.4px 1px rgba(122, 141, 165, 0.1);
+  --btn-shadow-press: inset -0.3px -0.3px 0.8px rgba(255, 255, 255, 0.2),
+    inset 0.3px 0.3px 0.8px rgba(117, 136, 160, 0.12);
   position: absolute;
   top: 50%;
   right: 8px;
@@ -347,11 +361,11 @@
 }
 
 .composer .quote-clear:hover {
-  transform: translateY(-50%) scale(1.03);
+  transform: translateY(-50%) scale(1.01);
 }
 
 .composer .quote-clear:active {
-  transform: translateY(-50%) scale(0.96);
+  transform: translateY(-50%) scale(0.98);
 }
 
 .composer .quote-clear:focus-visible {
