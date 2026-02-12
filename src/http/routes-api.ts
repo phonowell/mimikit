@@ -3,7 +3,6 @@ import { createHash } from 'node:crypto'
 import { parseInputBody, parseMessageLimit, parseTaskLimit } from './helpers.js'
 import {
   registerControlRoutes,
-  registerMessagesExportRoute,
   registerTaskArchiveRoute,
   registerTaskCancelRoute,
   registerTaskProgressRoute,
@@ -94,8 +93,6 @@ export const registerApiRoutes = (
     }
     return payload
   })
-
-  registerMessagesExportRoute(app, orchestrator)
 
   app.get('/api/tasks', (request) => {
     const query = request.query as Record<string, unknown> | undefined

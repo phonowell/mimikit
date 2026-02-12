@@ -5,11 +5,7 @@ import read from 'fire-keeper/read'
 import { logSafeError } from '../log/safe.js'
 import { readTaskProgress } from '../storage/task-progress.js'
 
-import { clearStateDir, parseExportLimit } from './helpers.js'
-import {
-  buildMessagesExportFilename,
-  buildMessagesMarkdownExport,
-} from './messages-export.js'
+import { clearStateDir } from './helpers.js'
 
 import type { AppConfig } from '../config.js'
 import type { Orchestrator } from '../orchestrator/core/orchestrator-service.js'
@@ -155,25 +151,5 @@ export const registerControlRoutes = (
         process.exit(75)
       })()
     }, 100)
-  })
-}
-
-export const registerMessagesExportRoute = (
-  app: FastifyInstance,
-  orchestrator: Orchestrator,
-): void => {
-  app.get('/api/messages/export', async (request, reply) => {
-    const query = request.query as Record<string, unknown> | undefined
-    const limit = parseExportLimit(query?.limit)
-    const messages = await orchestrator.getChatHistory(limit)
-    const exportedAt = new Date().toISOString()
-    const markdown = buildMessagesMarkdownExport({
-      messages,
-      exportedAt,
-      limit,
-    })
-    const filename = buildMessagesExportFilename(exportedAt)
-    reply.header('Content-Disposition', `attachment; filename="${filename}"`)
-    reply.type('text/markdown; charset=utf-8').send(markdown)
   })
 }
