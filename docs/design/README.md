@@ -29,9 +29,7 @@
 - `prompts/manager/injection.md`
 - `prompts/manager/fallback-reply.md`
 - `prompts/manager/system-fallback-reply.md`
-- `prompts/worker-standard/system.md`
-- `prompts/worker-standard/injection.md`
-- `prompts/worker-specialist/system.md`
-- `prompts/worker-specialist/injection.md`
+- `prompts/worker/system.md`
+- `prompts/worker/injection.md`
 - `prompts/evolver/system.md`
 - `prompts/evolver/injection.md`

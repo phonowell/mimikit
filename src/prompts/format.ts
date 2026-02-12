@@ -3,6 +3,10 @@ import { normalizeTagName } from './format-base.js'
 import type { ManagerEnv } from '../types/index.js'
 
 type PromptTemplateValues = Record<string, string>
+type PromptEnvironmentParams = {
+  env?: ManagerEnv
+  workDir?: string
+}
 
 export const renderPromptTemplate = (
   template: string,
@@ -22,7 +26,7 @@ export const joinPromptSections = (sections: string[]): string => {
   return output
 }
 
-export const formatEnvironment = (env?: ManagerEnv): string => {
+export const formatEnvironment = (params?: PromptEnvironmentParams): string => {
   const now = new Date()
   const lines: string[] = []
   const push = (label: string, value: string | number | undefined) => {
@@ -30,7 +34,8 @@ export const formatEnvironment = (env?: ManagerEnv): string => {
     lines.push(`- ${label}: ${value}`)
   }
   push('now_iso', now.toISOString())
-  const last = env?.lastUser
+  push('work_dir', params?.workDir)
+  const last = params?.env?.lastUser
   if (last) {
     push('client_time_zone', last.clientTimeZone)
     push('client_now_iso', last.clientNowIso)

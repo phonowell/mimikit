@@ -89,7 +89,14 @@ export const buildManagerPrompt = async (params: {
   const injectionValues = Object.fromEntries<string>([
     [
       'environment',
-      buildRawBlock('environment', formatEnvironment(params.env), true),
+      buildRawBlock(
+        'environment',
+        formatEnvironment({
+          workDir: params.workDir,
+          ...(params.env ? { env: params.env } : {}),
+        }),
+        true,
+      ),
     ],
     ['inputs', buildCdataBlock('inputs', formatInputs(params.inputs), true)],
     [
@@ -129,11 +136,17 @@ export const buildWorkerPrompt = async (params: {
   workDir: string
   task: Task
 }): Promise<string> => {
-  const role =
-    params.task.profile === 'standard' ? 'worker-standard' : 'worker-specialist'
-  const system = await loadSystemPrompt(params.workDir, role)
-  const injectionTemplate = await loadInjectionPrompt(params.workDir, role)
+  const system = await loadSystemPrompt(params.workDir, 'worker')
+  const injectionTemplate = await loadInjectionPrompt(params.workDir, 'worker')
   const injectionValues = Object.fromEntries<string>([
+    [
+      'environment',
+      buildRawBlock(
+        'environment',
+        formatEnvironment({ workDir: params.workDir }),
+        true,
+      ),
+    ],
     ['prompt', buildRawBlock('prompt', params.task.prompt, true)],
   ])
   const injection = renderPromptTemplate(injectionTemplate, injectionValues)
