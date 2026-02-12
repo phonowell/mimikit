@@ -136,6 +136,7 @@
 - 视觉微调（二）：输入框边框降为 `--border-hairline`，消息纵向间距调至 `14px`。
 - 视觉微调（二）：dialog 面板改用 `--shadow-dialog`，降低半透明背景上的高光突兀感。
 - 视觉微调（二）：`status-dot` 增加凸起高光/暗影，提升质感与可辨识度。
+- 视觉微调（三）：新增 `--bubble-agent-bg / --bubble-user-bg / --bubble-system-bg`，拉大三类消息气泡差分。
 
 ## 验收清单
 - 页面背景与主要组件保持同色调。
