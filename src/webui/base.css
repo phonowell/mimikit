@@ -12,9 +12,15 @@
   --muted: #6d7789;
   --accent: #2f7de6;
   --accent-soft: #dce9ff;
-  --bubble-agent-bg: #f1f4f9;
-  --bubble-user-bg: #e9f0ff;
-  --bubble-system-bg: #e8edf6;
+  --bubble-agent-bg: #ffffff;
+  --bubble-agent-text: #1f2d3d;
+  --bubble-agent-border: rgba(148, 166, 191, 0.22);
+  --bubble-user-bg: #effdde;
+  --bubble-user-text: #21402a;
+  --bubble-user-border: rgba(142, 178, 111, 0.24);
+  --bubble-system-bg: #eef2f7;
+  --bubble-system-text: #607086;
+  --bubble-system-border: rgba(145, 161, 182, 0.22);
   --success: #3bb273;
   --warning: #f2b24f;
   --danger: #e25d5d;
@@ -76,6 +82,9 @@ button {
   background: none;
   color: inherit;
   cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 button:disabled {

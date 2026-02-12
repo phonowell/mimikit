@@ -27,7 +27,8 @@
   padding: 10px 12px;
   border-radius: 16px;
   background: var(--bubble-agent-bg);
-  border: 1px solid transparent;
+  color: var(--bubble-agent-text);
+  border: 1px solid var(--bubble-agent-border);
   box-shadow: -1px -1px 2px rgba(255, 255, 255, 0.38),
     1px 1px 2px rgba(123, 142, 166, 0.14);
   order: 1;
@@ -39,7 +40,8 @@
 
 .message.user article {
   background: var(--bubble-user-bg);
-  border-color: transparent;
+  color: var(--bubble-user-text);
+  border-color: var(--bubble-user-border);
   box-shadow: -1px -1px 2px rgba(255, 255, 255, 0.34),
     1px 1px 2px rgba(89, 119, 164, 0.17);
   border-bottom-right-radius: 4px;
@@ -59,9 +61,9 @@
 
 .message.system article {
   background: var(--bubble-system-bg);
-  border-color: transparent;
+  border-color: var(--bubble-system-border);
   font-size: 12px;
-  color: var(--muted);
+  color: var(--bubble-system-text);
 }
 
 .message .content {
@@ -398,7 +400,7 @@
 
 .message-loading article {
   background: var(--panel-soft);
-  border-style: none;
+  border-color: var(--bubble-agent-border);
 }
 
 .loading-dots {
