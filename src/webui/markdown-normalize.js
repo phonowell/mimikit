@@ -1,5 +1,17 @@
 const normalizeOrderedListLine = (line) => {
-  const normalizedParen = line.replace(/^(\s{0,3}\d+)\)\s*/, '$1. ')
+  const flattenedBulletParen = line.replace(
+    /^(\s{0,3})[-*+]\s+(\d+)\)\s*/,
+    '$1$2. ',
+  )
+  const flattenedBulletDotSpaced = flattenedBulletParen.replace(
+    /^(\s{0,3})[-*+]\s+(\d+)\.\s+/,
+    '$1$2. ',
+  )
+  const flattenedBullet = flattenedBulletDotSpaced.replace(
+    /^(\s{0,3})[-*+]\s+(\d+)\.(?=[^\s\d])/,
+    '$1$2. ',
+  )
+  const normalizedParen = flattenedBullet.replace(/^(\s{0,3}\d+)\)\s*/, '$1. ')
   return normalizedParen.replace(/^(\s{0,3}\d+)\.(?=[^\s\d])/, '$1. ')
 }
 
