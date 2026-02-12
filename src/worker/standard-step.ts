@@ -5,17 +5,19 @@ import { parseArgs } from '../actions/shared/args.js'
 import type { Parsed } from '../actions/model/spec.js'
 import type { InvokableName } from '../actions/registry/index.js'
 
+export type StandardActionCall = {
+  name: InvokableName
+  args: Record<string, unknown>
+}
+
 export type StandardStep =
   | {
       kind: 'final'
       output: string
     }
   | {
-      kind: 'action'
-      actionCall: {
-        name: InvokableName
-        args: Record<string, unknown>
-      }
+      kind: 'actions'
+      actionCalls: StandardActionCall[]
     }
 
 const formatActionError = (error: unknown): string => {
@@ -33,17 +35,14 @@ const formatActionError = (error: unknown): string => {
   return error.message
 }
 
-const parseActionStep = (item: Parsed): StandardStep => {
+const parseActionCall = (item: Parsed): StandardActionCall => {
   const spec = getInvokableSpec(item.name)
   if (!spec) throw new Error(`standard_step_unknown_action:${item.name}`)
   try {
     const args = parseArgs(item.attrs, spec.schema)
     return {
-      kind: 'action',
-      actionCall: {
-        name: spec.name as InvokableName,
-        args,
-      },
+      name: spec.name as InvokableName,
+      args,
     }
   } catch (error) {
     throw new Error(formatActionError(error))
@@ -57,8 +56,12 @@ export const parseStandardStep = (output: string): StandardStep => {
   const parsed = parseActions(raw)
   const sourceActions =
     parsed.actions.length > 0 ? parsed.actions : parseLooseLines(raw)
-  const last = sourceActions[sourceActions.length - 1]
-  if (last) return parseActionStep(last)
+  if (sourceActions.length > 0) {
+    return {
+      kind: 'actions',
+      actionCalls: sourceActions.map((item) => parseActionCall(item)),
+    }
+  }
 
   const finalOutput = parsed.text.trim()
   if (!finalOutput) throw new Error('standard_step_parse_failed:missing_output')

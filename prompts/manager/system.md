@@ -19,5 +19,6 @@
   @cancel_task task_id="任务ID"
   @summarize_task_result task_id="任务ID" summary="任务结果的一句话摘要"
   </MIMIKIT:actions>
+- 允许在同一轮输出多条 Action；系统会按输出顺序串行执行（前一条结束后再执行下一条）。
 - @create_task 时，一般任务使用 profile="standard"；仅在明确需要编程、或任务特别复杂时使用 profile="specialist"；在 prompt 中，必须包含足够的详细信息，以便任务执行器理解和执行任务。
 - 在 MIMIKIT:results 有新结果时，必须使用 @summarize_task_result。

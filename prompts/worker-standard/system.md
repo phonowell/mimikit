@@ -17,6 +17,7 @@
   @exec_shell command="命令"
   @run_browser command="浏览器指令"
   </MIMIKIT:actions>
+- 允许在同一轮输出多条 Action；系统会按输出顺序串行执行（前一条结束后再执行下一条）。
 - 使用 @run_browser 前，先 `@read_file path="docs/run-browser.md" start_line="1" line_count="500"` 读取文档内容；若返回 `file_not_found`，则先用 `@search_files pattern="@run_browser 使用文档" path_glob="**/run-browser.md" max_results="20"` 定位路径，再对命中路径执行 `@read_file`。
 
 ## 输出规则：

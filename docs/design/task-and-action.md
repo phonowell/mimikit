@@ -63,7 +63,8 @@ Action 名称集合（`src/actions/model/names.ts`）：
 ## Worker Standard 结束规则
 来源：`src/worker/standard-step.ts`
 
-- 未完成：输出一条可执行 action。
+- 未完成：可输出一条或多条可执行 action。
+- 若同轮输出多条 action：按输出顺序串行执行；每条 action 完成后再执行下一条。
 - 已完成：输出纯文本最终结果（不输出 action 块）。
 
 ## 核心数据结构
@@ -91,4 +92,3 @@ Action 名称集合（`src/actions/model/names.ts`）：
 ### Queue Packet
 - 结构：`{ id, createdAt, payload }`
 - `inputs/results` 使用统一 packet 包装。
-

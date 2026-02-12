@@ -50,7 +50,7 @@
 流程：
 1. 加载 checkpoint，恢复 `round/transcript/finalized/finalOutput`。
 2. 循环调用 planner。
-3. `final` 时返回最终文本；`action` 时执行动作并写入 transcript。
+3. `final` 时返回最终文本；`actions` 时按顺序串行执行每个 action，并持续写入 transcript。
 4. 每轮写 `task-progress`，关键节点写 `task-checkpoint`。
 5. 汇总 usage 返回。
 

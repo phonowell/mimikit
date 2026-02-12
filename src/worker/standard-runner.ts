@@ -10,7 +10,6 @@ import { appendTaskProgress } from '../storage/task-progress.js'
 import { executeStandardStep } from './standard-step-exec.js'
 import { parseStandardStep } from './standard-step.js'
 
-import type { StandardActionStep } from './standard-step-exec.js'
 import type { Task, TokenUsage } from '../types/index.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
@@ -116,7 +115,10 @@ export const runStandardWorker = async (params: {
       type: 'standard_round',
       payload: {
         round: state.round,
-        kind: step.kind,
+        kind: step.kind === 'final' ? 'final' : 'action',
+        ...(step.kind === 'actions'
+          ? { actionCount: step.actionCalls.length }
+          : {}),
       },
     })
 
@@ -146,24 +148,34 @@ export const runStandardWorker = async (params: {
       break
     }
 
-    const actionStep = step as StandardActionStep
-    const actionCall = await executeStandardStep({
-      stateDir: params.stateDir,
-      taskId: params.task.id,
-      workDir: params.workDir,
-      round: state.round,
-      step: actionStep,
-    })
-    state.transcript.push(actionCall.transcriptEntry)
-    await saveTaskCheckpoint({
-      stateDir: params.stateDir,
-      checkpoint: {
+    const actionCount = step.actionCalls.length
+    for (let index = 0; index < actionCount; index += 1) {
+      if (params.abortSignal?.aborted) throw new Error('standard_aborted')
+      if (Date.now() - startedAt > params.timeoutMs)
+        throw new Error('standard_timeout')
+      const actionCall = step.actionCalls[index]
+      if (!actionCall) throw new Error('standard_action_missing')
+
+      const actionResult = await executeStandardStep({
+        stateDir: params.stateDir,
         taskId: params.task.id,
-        stage: 'running',
-        updatedAt: new Date().toISOString(),
-        state,
-      },
-    })
+        workDir: params.workDir,
+        round: state.round,
+        actionCall,
+        actionIndex: index + 1,
+        actionCount,
+      })
+      state.transcript.push(actionResult.transcriptEntry)
+      await saveTaskCheckpoint({
+        stateDir: params.stateDir,
+        checkpoint: {
+          taskId: params.task.id,
+          stage: 'running',
+          updatedAt: new Date().toISOString(),
+          state,
+        },
+      })
+    }
   }
 
   const elapsedMs = Math.max(0, Date.now() - startedAt)

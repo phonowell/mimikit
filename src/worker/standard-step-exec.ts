@@ -1,12 +1,12 @@
 import { invokeAction } from '../actions/registry/index.js'
 import { appendTaskProgress } from '../storage/task-progress.js'
 
-import type { StandardStep } from './standard-step.js'
-
-export type StandardActionStep = Extract<StandardStep, { kind: 'action' }>
+import type { StandardActionCall } from './standard-step.js'
 
 export type StepExecutionRecord = {
   round: number
+  actionIndex?: number
+  actionCount?: number
   action: string
   ok: boolean
   output: string
@@ -14,6 +14,8 @@ export type StepExecutionRecord = {
 }
 
 const summarizeActionCall = (params: {
+  actionIndex?: number
+  actionCount?: number
   name: string
   args: unknown
   output: string
@@ -22,6 +24,9 @@ const summarizeActionCall = (params: {
 }): string =>
   [
     `action: ${params.name}`,
+    ...(params.actionIndex !== undefined && params.actionCount !== undefined
+      ? [`action_index: ${params.actionIndex}/${params.actionCount}`]
+      : []),
     `ok: ${params.ok}`,
     `args: ${JSON.stringify(params.args ?? {})}`,
     ...(params.error ? [`error: ${params.error}`] : []),
@@ -30,6 +35,12 @@ const summarizeActionCall = (params: {
 
 const toPayload = (record: StepExecutionRecord): Record<string, unknown> => ({
   round: record.round,
+  ...(record.actionIndex !== undefined
+    ? { actionIndex: record.actionIndex }
+    : {}),
+  ...(record.actionCount !== undefined
+    ? { actionCount: record.actionCount }
+    : {}),
   action: record.action,
   ok: record.ok,
   ...(record.error ? { error: record.error } : {}),
@@ -40,9 +51,11 @@ export const executeStandardStep = async (params: {
   taskId: string
   workDir: string
   round: number
-  step: StandardActionStep
+  actionCall: StandardActionCall
+  actionIndex?: number
+  actionCount?: number
 }): Promise<{ record: StepExecutionRecord; transcriptEntry: string }> => {
-  const actionName = params.step.actionCall.name.trim()
+  const actionName = params.actionCall.name.trim()
   if (!actionName) throw new Error('standard_action_name_missing')
 
   await appendTaskProgress({
@@ -51,15 +64,21 @@ export const executeStandardStep = async (params: {
     type: 'action_call_start',
     payload: {
       round: params.round,
+      ...(params.actionIndex !== undefined
+        ? { actionIndex: params.actionIndex }
+        : {}),
+      ...(params.actionCount !== undefined
+        ? { actionCount: params.actionCount }
+        : {}),
       action: actionName,
-      args: params.step.actionCall.args,
+      args: params.actionCall.args,
     },
   })
 
   const actionResult = await invokeAction(
     { workDir: params.workDir },
     actionName,
-    params.step.actionCall.args,
+    params.actionCall.args,
   )
 
   const actionOutput =
@@ -69,6 +88,12 @@ export const executeStandardStep = async (params: {
 
   const record: StepExecutionRecord = {
     round: params.round,
+    ...(params.actionIndex !== undefined
+      ? { actionIndex: params.actionIndex }
+      : {}),
+    ...(params.actionCount !== undefined
+      ? { actionCount: params.actionCount }
+      : {}),
     action: actionName,
     ok: actionResult.ok,
     output: actionOutput,
@@ -81,6 +106,12 @@ export const executeStandardStep = async (params: {
     type: 'action_call_end',
     payload: {
       round: params.round,
+      ...(params.actionIndex !== undefined
+        ? { actionIndex: params.actionIndex }
+        : {}),
+      ...(params.actionCount !== undefined
+        ? { actionCount: params.actionCount }
+        : {}),
       action: actionName,
       ok: actionResult.ok,
       ...(actionResult.error ? { error: actionResult.error } : {}),
@@ -91,8 +122,14 @@ export const executeStandardStep = async (params: {
   return {
     record,
     transcriptEntry: summarizeActionCall({
+      ...(params.actionIndex !== undefined
+        ? { actionIndex: params.actionIndex }
+        : {}),
+      ...(params.actionCount !== undefined
+        ? { actionCount: params.actionCount }
+        : {}),
       name: actionName,
-      args: params.step.actionCall.args,
+      args: params.actionCall.args,
       output: actionOutput,
       ok: actionResult.ok,
       ...(actionResult.error ? { error: actionResult.error } : {}),
