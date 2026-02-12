@@ -35,12 +35,19 @@ const formatMessagesYaml = (
   )
 }
 
+const NEAR_WINDOW_COUNT = 30
+const FAR_ZONE_MAX_CHARS = 120
+
+/** Near zone keeps full text; far zone truncates to save byte budget */
 export const formatHistory = (history: HistoryMessage[]): string => {
   if (history.length === 0) return ''
+  const nearStart = Math.max(0, history.length - NEAR_WINDOW_COUNT)
   const entries = history
-    .map((item) => {
-      const content = item.text.trim()
+    .map((item, index) => {
+      let content = item.text.trim()
       if (!content) return null
+      if (index < nearStart && content.length > FAR_ZONE_MAX_CHARS)
+        content = `${content.slice(0, FAR_ZONE_MAX_CHARS)}…`
       return {
         id: item.id,
         role: mapHistoryRole(item.role),
