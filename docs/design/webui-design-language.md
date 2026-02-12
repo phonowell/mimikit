@@ -69,13 +69,15 @@
 - `btn--danger` 仅用于破坏性操作。
 - `btn--icon-muted` 用于次级图标动作。
 - 消息（`.message article`）
-- `user`：可用 `--accent-soft` 做轻强调，但保持低对比。
+- 三类消息气泡统一使用平面样式（无凸起/凹陷阴影）。
+- `user`：使用 `--bubble-user-bg`，用于轻强调。
 - `agent`：保持中性面板色。
-- `system`：使用更低层级表面（`--panel-strong`）区别系统提示。
+- `system`：使用 `--bubble-system-bg` 区分系统提示。
 - 引用块（`.message-quote` / `.quote-preview`）
 - 必须包含竖向角色条（`--quote-bar`）+ 轻量背景。
 - 角色只改语义色，不改结构与层级语法。
 - `.quote-preview.is-visible` 使用凸起层，不使用凹陷层。
+- `.message-quote-btn` 保持凹凸按压反馈，不随气泡平面化被移除。
 - 任务面板（`.tasks-*`）
 - 列表槽位为凹陷层，任务项为凸起层。
 - 可点击任务链接需要按压反馈（阴影反转）。
@@ -137,6 +139,7 @@
 - 视觉微调（二）：dialog 面板改用 `--shadow-dialog`，降低半透明背景上的高光突兀感。
 - 视觉微调（二）：`status-dot` 增加凸起高光/暗影，提升质感与可辨识度。
 - 视觉微调（三）：新增 `--bubble-agent-bg / --bubble-user-bg / --bubble-system-bg`，拉大三类消息气泡差分。
+- 视觉微调（四）：消息气泡改为平面样式（去除气泡阴影），保留引用块和引用按钮的凹凸反馈。
 
 ## 验收清单
 - 页面背景与主要组件保持同色调。
