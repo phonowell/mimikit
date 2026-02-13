@@ -1,4 +1,4 @@
-import { mkdtemp, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -199,4 +199,50 @@ test('runtime snapshot rejects legacy grouped channel shape and next fields', as
   )
 
   await expect(loadRuntimeSnapshot(stateDir)).rejects.toThrow()
+})
+
+test('loadRuntimeSnapshot falls back to backup file when primary json is broken', async () => {
+  const stateDir = await createTmpDir()
+  const primaryPath = join(stateDir, 'runtime-state.json')
+  const backupPath = `${primaryPath}.bak`
+  await writeFile(primaryPath, '{"broken":', 'utf8')
+  await writeFile(
+    backupPath,
+    JSON.stringify({
+      tasks: [],
+      cronJobs: [],
+      queues: {
+        inputsCursor: 12,
+        resultsCursor: 34,
+      },
+    }),
+    'utf8',
+  )
+
+  const loaded = await loadRuntimeSnapshot(stateDir)
+  expect(loaded.queues.inputsCursor).toBe(12)
+  expect(loaded.queues.resultsCursor).toBe(34)
+})
+
+test('saveRuntimeSnapshot writes previous primary content into .bak', async () => {
+  const stateDir = await createTmpDir()
+  const primaryPath = join(stateDir, 'runtime-state.json')
+  const oldSnapshot = {
+    tasks: [],
+    cronJobs: [],
+    queues: { inputsCursor: 1, resultsCursor: 2 },
+  }
+  await writeFile(primaryPath, JSON.stringify(oldSnapshot), 'utf8')
+  const nextSnapshot = {
+    tasks: [],
+    cronJobs: [],
+    queues: { inputsCursor: 7, resultsCursor: 8 },
+  }
+
+  await saveRuntimeSnapshot(stateDir, nextSnapshot)
+
+  const primaryRaw = await readFile(primaryPath, 'utf8')
+  const backupRaw = await readFile(`${primaryPath}.bak`, 'utf8')
+  expect(JSON.parse(primaryRaw)).toEqual(nextSnapshot)
+  expect(JSON.parse(backupRaw)).toEqual(oldSnapshot)
 })
