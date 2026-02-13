@@ -26,6 +26,12 @@ export type ProviderResult = {
   threadId?: string | null
 }
 
+export type RunModelInput = {
+  prompt: string
+  threadId?: string | null
+  onUsage?: (usage: TokenUsage) => void
+}
+
 const progressType = (profile: WorkerProfile, phase: ProgressPhase): string =>
   `${profile}_${phase}`
 
@@ -45,14 +51,11 @@ export const buildRunModel =
     modelReasoningEffort?: ModelReasoningEffort
     abortSignal?: AbortSignal
   }) =>
-  (
-    workerPrompt: string,
-    onUsage?: (usage: TokenUsage) => void,
-  ): Promise<ProviderResult> =>
+  (input: RunModelInput): Promise<ProviderResult> =>
     runWithProvider({
       provider: params.provider,
       role: 'worker',
-      prompt: workerPrompt,
+      prompt: input.prompt,
       workDir: params.workDir,
       timeoutMs: params.timeoutMs,
       ...(params.abortSignal ? { abortSignal: params.abortSignal } : {}),
@@ -60,7 +63,8 @@ export const buildRunModel =
       ...(params.modelReasoningEffort
         ? { modelReasoningEffort: params.modelReasoningEffort }
         : {}),
-      ...(onUsage ? { onUsage } : {}),
+      ...(input.threadId !== undefined ? { threadId: input.threadId } : {}),
+      ...(input.onUsage ? { onUsage: input.onUsage } : {}),
     })
 
 export const appendProfileProgress = (params: {
