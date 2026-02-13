@@ -1,0 +1,31 @@
+manager:
+  pollMs: 1000
+  tasksMaxCount: 20
+  tasksMinCount: 5
+  tasksMaxBytes: 20480
+  historyMinCount: 20
+  historyMaxCount: 100
+  historyMaxBytes: 20480
+  model: gpt-5.2-high
+  modelReasoningEffort: high
+  task:
+    timeoutMs: 60000
+    model: gpt-5.2-high
+    modelReasoningEffort: high
+evolver:
+  enabled: false
+  pollMs: 2000
+  idleThresholdMs: 60000
+  minIntervalMs: 300000
+worker:
+  maxConcurrent: 3
+  retryMaxAttempts: 1
+  retryBackoffMs: 5000
+  standard:
+    timeoutMs: 600000
+    model: opencode/big-pickle
+    modelReasoningEffort: high
+  specialist:
+    timeoutMs: 600000
+    model: gpt-5.3-codex-high
+    modelReasoningEffort: high

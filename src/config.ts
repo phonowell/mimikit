@@ -1,5 +1,7 @@
 import { resolve } from 'node:path'
 
+import { loadDefaultConfigFromYaml } from './config-default-loader.js'
+
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
 export type DefaultConfigParams = {
@@ -84,41 +86,5 @@ export type OrchestratorConfig = AppConfig
 
 export const defaultConfig = (params: DefaultConfigParams): AppConfig => ({
   workDir: resolve(params.workDir),
-  manager: {
-    pollMs: 1_000, // cron 轮询间隔
-    tasksMaxCount: 20, // 任务列表最多保留20条
-    tasksMinCount: 5, // 任务列表最少保留5条
-    tasksMaxBytes: 20 * 1024, // 任务列表最多保留20KB
-    historyMinCount: 20, // 历史记录最少保留20条
-    historyMaxCount: 100, // 历史记录最多保留100条
-    historyMaxBytes: 20 * 1024, // 历史记录最多保留20KB
-    model: 'gpt-5.2-high',
-    modelReasoningEffort: 'high',
-    task: {
-      timeoutMs: 60_000, // manager profile 任务默认60秒超时
-      model: 'gpt-5.2-high',
-      modelReasoningEffort: 'high',
-    },
-  },
-  evolver: {
-    enabled: false,
-    pollMs: 2_000,
-    idleThresholdMs: 60_000,
-    minIntervalMs: 5 * 60 * 1_000,
-  },
-  worker: {
-    maxConcurrent: 3, // 最大3个任务并发执行
-    retryMaxAttempts: 1, // 失败重试1次
-    retryBackoffMs: 5_000, // 重试退避5秒
-    standard: {
-      timeoutMs: 10 * 60 * 1_000, // 标准任务默认10分钟超时
-      model: 'opencode/big-pickle',
-      modelReasoningEffort: 'high',
-    },
-    specialist: {
-      timeoutMs: 10 * 60 * 1_000, // 专家任务默认10分钟超时
-      model: 'gpt-5.3-codex-high',
-      modelReasoningEffort: 'high',
-    },
-  },
+  ...loadDefaultConfigFromYaml(),
 })
