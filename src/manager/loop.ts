@@ -2,14 +2,15 @@ import { Cron } from 'croner'
 
 import { parseActions } from '../actions/protocol/parse.js'
 import { appendLog } from '../log/append.js'
-import { bestEffort, logSafeError } from '../log/safe.js'
+import { bestEffort, logSafeError, safe } from '../log/safe.js'
+import { waitForManagerLoopSignal } from '../orchestrator/core/manager-signal.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import { enqueueTask } from '../orchestrator/core/task-state.js'
 import { notifyWorkerLoop } from '../orchestrator/core/worker-signal.js'
 import { selectRecentHistory } from '../orchestrator/read-model/history-select.js'
 import { appendTaskSystemMessage } from '../orchestrator/read-model/task-history.js'
 import { selectRecentTasks } from '../orchestrator/read-model/task-select.js'
-import { nowIso, sleep } from '../shared/utils.js'
+import { nowIso } from '../shared/utils.js'
 import { appendHistory, readHistory } from '../storage/jsonl.js'
 import { consumeUserInputs, consumeWorkerResults } from '../streams/queues.js'
 import { enqueueWorkerTask } from '../worker/dispatch.js'
@@ -145,18 +146,6 @@ const checkCronJobs = async (runtime: RuntimeState): Promise<void> => {
 export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
   while (!runtime.stopped) {
     await bestEffort('checkCronJobs', () => checkCronJobs(runtime))
-    await bestEffort('executeManagerProfileTasks', () =>
-      executeManagerProfileTasks(runtime),
-    )
-
-    const now = Date.now()
-    const throttled =
-      runtime.lastManagerRunAt !== undefined &&
-      now - runtime.lastManagerRunAt < runtime.config.manager.minIntervalMs
-    if (throttled) {
-      await sleep(runtime.config.manager.pollMs)
-      continue
-    }
 
     const inputPackets = await consumeUserInputs({
       paths: runtime.paths,
@@ -191,8 +180,15 @@ export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
         await bestEffort('persistRuntimeState: invalid_result_packet', () =>
           persistRuntimeState(runtime),
         )
+        continue
       }
-      await sleep(runtime.config.manager.pollMs)
+      const executedManagerTasks = await safe(
+        'executeManagerProfileTasks',
+        () => executeManagerProfileTasks(runtime),
+        { fallback: 0 },
+      )
+      if (executedManagerTasks > 0) continue
+      await waitForManagerLoopSignal(runtime, runtime.config.manager.pollMs)
       continue
     }
 
@@ -200,7 +196,6 @@ export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
     const results = resultPackets.map((packet) => packet.payload)
 
     runtime.managerRunning = true
-    runtime.lastManagerRunAt = now
     const startedAt = Date.now()
     let assistantAppended = false
 

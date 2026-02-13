@@ -21,8 +21,8 @@ export type RuntimeState = {
   paths: StatePaths
   stopped: boolean
   managerRunning: boolean
+  managerSignalController: AbortController
   inflightInputs: PendingUserInput[]
-  lastManagerRunAt?: number
   queues: {
     inputsCursor: number
     resultsCursor: number

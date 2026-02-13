@@ -14,8 +14,6 @@ export type AppConfig = {
   manager: {
     /** 轮询间隔（毫秒） */
     pollMs: number
-    /** 两次调度最小间隔（毫秒） */
-    minIntervalMs: number
     /** 任务列表保留上限（条） */
     tasksMaxCount: number
     /** 任务列表保留下限（条） */
@@ -87,8 +85,7 @@ export type OrchestratorConfig = AppConfig
 export const defaultConfig = (params: DefaultConfigParams): AppConfig => ({
   workDir: resolve(params.workDir),
   manager: {
-    pollMs: 1_000, // 1秒轮询一次
-    minIntervalMs: 10_000, // 最小10秒调度间隔
+    pollMs: 1_000, // cron 轮询间隔
     tasksMaxCount: 20, // 任务列表最多保留20条
     tasksMinCount: 5, // 任务列表最少保留5条
     tasksMaxBytes: 20 * 1024, // 任务列表最多保留20KB

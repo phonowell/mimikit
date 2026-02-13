@@ -55,12 +55,12 @@ const runManagerProfileTask = async (
 
 export const executeManagerProfileTasks = async (
   runtime: RuntimeState,
-): Promise<void> => {
-  const pending = runtime.tasks.filter(
-    (t) => t.profile === 'manager' && t.status === 'pending',
+): Promise<number> => {
+  const task = runtime.tasks.find(
+    (item) => item.profile === 'manager' && item.status === 'pending',
   )
-  for (const task of pending) {
-    if (runtime.stopped) break
-    await runManagerProfileTask(runtime, task)
-  }
+  if (!task) return 0
+  if (runtime.stopped) return 0
+  await runManagerProfileTask(runtime, task)
+  return 1
 }

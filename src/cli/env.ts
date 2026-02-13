@@ -32,13 +32,6 @@ const applyLoopEnv = (config: AppConfig): void => {
   )
   if (managerPollMs !== undefined) config.manager.pollMs = managerPollMs
 
-  const managerMinIntervalMs = parseEnvPositiveInteger(
-    'MIMIKIT_MANAGER_MIN_INTERVAL_MS',
-    process.env.MIMIKIT_MANAGER_MIN_INTERVAL_MS?.trim(),
-  )
-  if (managerMinIntervalMs !== undefined)
-    config.manager.minIntervalMs = managerMinIntervalMs
-
   const evolverPollMs = parseEnvPositiveInteger(
     'MIMIKIT_EVOLVER_POLL_MS',
     process.env.MIMIKIT_EVOLVER_POLL_MS?.trim(),

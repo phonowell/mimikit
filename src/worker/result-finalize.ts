@@ -1,5 +1,6 @@
 import { appendLog } from '../log/append.js'
 import { bestEffort, safeOrUndefined } from '../log/safe.js'
+import { notifyManagerLoop } from '../orchestrator/core/manager-signal.js'
 import { nowIso } from '../shared/utils.js'
 import { appendTaskResultArchive } from '../storage/task-results.js'
 import { publishWorkerResult } from '../streams/queues.js'
@@ -67,6 +68,7 @@ export const finalizeResult = async (
     paths: runtime.paths,
     payload: result,
   })
+  notifyManagerLoop(runtime)
   await bestEffort('appendLog: worker_end', () =>
     appendLog(runtime.paths.log, {
       event: 'worker_end',

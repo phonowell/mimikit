@@ -19,6 +19,7 @@ import {
 } from '../read-model/chat-view.js'
 import { buildTaskViews } from '../read-model/task-view.js'
 
+import { notifyManagerLoop } from './manager-signal.js'
 import {
   computeOrchestratorStatus,
   type OrchestratorStatus,
@@ -62,8 +63,8 @@ export class Orchestrator {
       paths,
       stopped: false,
       managerRunning: false,
+      managerSignalController: new AbortController(),
       inflightInputs: [],
-      lastManagerRunAt: 0,
       queues: {
         inputsCursor: 0,
         resultsCursor: 0,
@@ -90,12 +91,14 @@ export class Orchestrator {
 
   stop() {
     this.runtime.stopped = true
+    notifyManagerLoop(this.runtime)
     notifyWorkerLoop(this.runtime)
     void this.persistStopSnapshot()
   }
 
   async stopAndPersist(): Promise<void> {
     this.runtime.stopped = true
+    notifyManagerLoop(this.runtime)
     notifyWorkerLoop(this.runtime)
     await this.persistStopSnapshot()
   }
@@ -131,6 +134,7 @@ export class Orchestrator {
         : {}),
       ...(meta?.clientNowIso ? { clientNowIso: meta.clientNowIso } : {}),
     })
+    notifyManagerLoop(this.runtime)
     return id
   }
 
