@@ -49,8 +49,16 @@ const checkCronJobs = async (runtime: RuntimeState): Promise<void> => {
     let matched = false
     try {
       matched = matchCronNow(cronJob.cron, now)
-    } catch {
-      matched = false
+    } catch (error) {
+      await bestEffort('appendLog: cron_expression_error', () =>
+        appendLog(runtime.paths.log, {
+          event: 'cron_expression_error',
+          cronJobId: cronJob.id,
+          cron: cronJob.cron,
+          error: error instanceof Error ? error.message : String(error),
+        }),
+      )
+      continue
     }
     if (!matched) continue
 
