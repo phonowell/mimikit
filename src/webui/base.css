@@ -30,9 +30,9 @@
   --status-fail: #ef4444;
   --status-cancel: #9aa3b2;
   --status-pending: var(--warning);
-  --profile-standard: #94a3b8;
-  --profile-specialist: #0f766e;
-  --profile-manager: #7c3aed;
+  --profile-standard: #1f2937;
+  --profile-specialist: #7c3aed;
+  --profile-manager: #db2777;
   --status-idle: #3bb273;
   --status-disconnected: #8a96a8;
   --shadow-raised: -7px -7px 14px rgba(255, 255, 255, 0.82),

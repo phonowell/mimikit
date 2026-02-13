@@ -121,16 +121,17 @@ export const renderTasks = (tasksList, data) => {
     status.className = 'task-status'
     status.dataset.status = statusValue
     const statusLabel = resolveTaskStatusLabel(statusValue)
+    const dotTitle = `${statusValue}/${profileValue}`
     status.setAttribute('role', 'img')
-    status.setAttribute('aria-label', statusLabel)
-    status.title = statusLabel
+    status.setAttribute('aria-label', `${statusLabel} · profile ${profileValue}`)
+    status.title = dotTitle
 
     const profileDot = document.createElement('span')
     profileDot.className = 'task-profile-dot'
     profileDot.dataset.profile = profileValue
     profileDot.setAttribute('role', 'img')
-    profileDot.setAttribute('aria-label', `profile ${profileValue}`)
-    profileDot.title = `profile ${profileValue}`
+    profileDot.setAttribute('aria-label', `${statusLabel} · profile ${profileValue}`)
+    profileDot.title = dotTitle
 
     if (task.cron) {
       const cronEl = document.createElement('span')
