@@ -84,7 +84,8 @@ export type JsonPacket<TPayload> = {
 
 export type CronJob = {
   id: Id
-  cron: string
+  cron?: string
+  scheduledAt?: ISODate
   prompt: string
   title: string
   profile: WorkerProfile

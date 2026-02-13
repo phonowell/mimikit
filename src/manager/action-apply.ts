@@ -28,8 +28,13 @@ const createSchema = z
     title: nonEmptyString,
     profile: z.enum(['standard', 'specialist']),
     cron: z.string().trim().optional(),
+    scheduled_at: z.string().trim().optional(),
   })
   .strict()
+  .refine(
+    (data) => !(data.cron?.trim() && data.scheduled_at?.trim()),
+    'cron and scheduled_at are mutually exclusive',
+  )
 
 const cancelSchema = z
   .object({
@@ -88,24 +93,38 @@ const applyCreateTask = async (
   if (!parsed.success) return
   const profile = parsed.data.profile as WorkerProfile
   const cron = parsed.data.cron?.trim()
-  const dedupeKey = `${parsed.data.prompt}\n${parsed.data.title}\n${profile}\n${cron ?? ''}`
+  const scheduledAt = parsed.data.scheduled_at?.trim()
+  const scheduleKey = cron ?? scheduledAt ?? ''
+  const dedupeKey = `${parsed.data.prompt}\n${parsed.data.title}\n${profile}\n${scheduleKey}`
   if (seen.has(dedupeKey)) return
   seen.add(dedupeKey)
 
-  if (cron) {
-    const existing = runtime.cronJobs.find(
-      (job) =>
-        job.enabled &&
-        job.cron === cron &&
+  if (cron || scheduledAt) {
+    if (scheduledAt && !Number.isFinite(Date.parse(scheduledAt))) return
+
+    const existing = runtime.cronJobs.find((job) => {
+      if (!job.enabled) return false
+      if (cron) {
+        return (
+          job.cron === cron &&
+          job.prompt === parsed.data.prompt &&
+          job.title === parsed.data.title &&
+          job.profile === profile
+        )
+      }
+      return (
+        job.scheduledAt === scheduledAt &&
         job.prompt === parsed.data.prompt &&
         job.title === parsed.data.title &&
-        job.profile === profile,
-    )
+        job.profile === profile
+      )
+    })
     if (existing) return
 
     const cronJob: CronJob = {
       id: newId(),
-      cron,
+      ...(cron ? { cron } : {}),
+      ...(scheduledAt ? { scheduledAt } : {}),
       prompt: parsed.data.prompt,
       title: parsed.data.title,
       profile,

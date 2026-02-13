@@ -15,7 +15,11 @@ import {
   joinPromptSections,
   renderPromptTemplate,
 } from './format.js'
-import { loadInjectionPrompt, loadSystemPrompt } from './prompt-loader.js'
+import {
+  loadInjectionPrompt,
+  loadPromptFile,
+  loadSystemPrompt,
+} from './prompt-loader.js'
 import {
   buildTaskResultDateHints,
   collectResultTaskIds,
@@ -25,6 +29,7 @@ import {
 } from './task-results-merge.js'
 
 import type {
+  CronJob,
   HistoryMessage,
   ManagerEnv,
   Task,
@@ -57,6 +62,7 @@ export const buildManagerPrompt = async (params: {
   inputs: UserInput[]
   results: TaskResult[]
   tasks: Task[]
+  cronJobs?: CronJob[]
   history: HistoryMessage[]
   env?: ManagerEnv
 }): Promise<string> => {
@@ -111,7 +117,7 @@ export const buildManagerPrompt = async (params: {
       'tasks',
       buildCdataBlock(
         'tasks',
-        formatTasksYaml(tasksForPrompt, resultsForTasks),
+        formatTasksYaml(tasksForPrompt, resultsForTasks, params.cronJobs ?? []),
         true,
       ),
     ],
@@ -138,6 +144,11 @@ export const buildWorkerPrompt = async (params: {
 }): Promise<string> => {
   const system = await loadSystemPrompt('worker')
   const injectionTemplate = await loadInjectionPrompt('worker')
+  let taskPrompt = params.task.prompt
+  if (params.task.cron) {
+    const prefix = await loadPromptFile('worker', 'cron-trigger-context')
+    if (prefix) taskPrompt = `${prefix.trim()}\n\n${taskPrompt}`
+  }
   const injectionValues = Object.fromEntries<string>([
     [
       'environment',
@@ -147,7 +158,7 @@ export const buildWorkerPrompt = async (params: {
         true,
       ),
     ],
-    ['prompt', buildRawBlock('prompt', params.task.prompt, true)],
+    ['prompt', buildRawBlock('prompt', taskPrompt, true)],
   ])
   const injection = renderPromptTemplate(injectionTemplate, injectionValues)
   return joinPromptSections([system, injection])

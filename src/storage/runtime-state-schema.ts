@@ -60,7 +60,8 @@ const taskRawSchema = z
 const cronJobRawSchema = z
   .object({
     id: z.string().trim().min(1),
-    cron: z.string().trim().min(1),
+    cron: z.string().trim().min(1).optional(),
+    scheduledAt: z.string().trim().min(1).optional(),
     prompt: z.string(),
     title: z.string(),
     profile: z.enum(['standard', 'specialist']),
@@ -69,6 +70,15 @@ const cronJobRawSchema = z
     lastTriggeredAt: z.string().optional(),
   })
   .strict()
+  .refine((data) => data.cron !== undefined || data.scheduledAt !== undefined, {
+    message: 'cron or scheduledAt required',
+  })
+  .refine(
+    (data) => !(data.cron !== undefined && data.scheduledAt !== undefined),
+    {
+      message: 'cron and scheduledAt are mutually exclusive',
+    },
+  )
 
 const queueStateSchema = z
   .object({
@@ -154,7 +164,10 @@ const toTask = (task: z.infer<typeof taskRawSchema>): Task => {
 
 const toCronJob = (cronJob: z.infer<typeof cronJobRawSchema>): CronJob => ({
   id: cronJob.id,
-  cron: cronJob.cron,
+  ...(cronJob.cron !== undefined ? { cron: cronJob.cron } : {}),
+  ...(cronJob.scheduledAt !== undefined
+    ? { scheduledAt: cronJob.scheduledAt }
+    : {}),
   prompt: cronJob.prompt,
   title: cronJob.title,
   profile: cronJob.profile,

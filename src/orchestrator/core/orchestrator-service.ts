@@ -175,7 +175,8 @@ export class Orchestrator {
   }
 
   async addCronJob(input: {
-    cron: string
+    cron?: string
+    scheduledAt?: string
     prompt: string
     title?: string
     profile?: WorkerProfile
@@ -183,12 +184,15 @@ export class Orchestrator {
   }): Promise<CronJob> {
     const prompt = input.prompt.trim()
     if (!prompt) throw new Error('add_cron_job_prompt_empty')
-    const cron = input.cron.trim()
-    if (!cron) throw new Error('add_cron_job_cron_empty')
+    const cron = input.cron?.trim()
+    const scheduledAt = input.scheduledAt?.trim()
+    if (!cron && !scheduledAt) throw new Error('add_cron_job_schedule_missing')
+    if (cron && scheduledAt) throw new Error('add_cron_job_schedule_conflict')
     const id = newId()
     const job: CronJob = {
       id,
-      cron,
+      ...(cron ? { cron } : {}),
+      ...(scheduledAt ? { scheduledAt } : {}),
       prompt,
       title: titleFromCandidates(id, [input.title, prompt]),
       profile: input.profile ?? 'standard',

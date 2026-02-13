@@ -6,7 +6,12 @@ import {
   stringifyPromptYaml,
 } from './format-base.js'
 
-import type { Task, TaskCancelMeta, TaskResult } from '../types/index.js'
+import type {
+  CronJob,
+  Task,
+  TaskCancelMeta,
+  TaskResult,
+} from '../types/index.js'
 
 export const selectTasksForPrompt = (tasks: Task[]): Task[] => {
   if (tasks.length === 0) return []
@@ -63,8 +68,10 @@ const formatTaskEntry = (
 export const formatTasksYaml = (
   tasks: Task[],
   results: TaskResult[],
+  cronJobs: CronJob[] = [],
 ): string => {
-  if (tasks.length === 0 && results.length === 0) return ''
+  if (tasks.length === 0 && results.length === 0 && cronJobs.length === 0)
+    return ''
   const resultById = new Map(results.map((result) => [result.taskId, result]))
   const ordered = selectTasksForPrompt(tasks)
   const taskEntries: Array<Record<string, unknown>> = []
@@ -82,10 +89,27 @@ export const formatTasksYaml = (
       }
       taskEntries.push(formatTaskEntry(fallbackTask, result))
     }
-    return escapeCdata(stringifyPromptYaml({ tasks: taskEntries }))
+  } else {
+    for (const task of ordered)
+      taskEntries.push(formatTaskEntry(task, resultById.get(task.id)))
   }
-  for (const task of ordered)
-    taskEntries.push(formatTaskEntry(task, resultById.get(task.id)))
+
+  for (const job of cronJobs) {
+    if (!job.enabled) continue
+    taskEntries.push({
+      id: job.id,
+      type: job.cron ? 'cron' : 'scheduled',
+      title: job.title,
+      ...(job.cron ? { cron: job.cron } : {}),
+      ...(job.scheduledAt ? { scheduled_at: job.scheduledAt } : {}),
+      created_at: job.createdAt,
+      ...(job.lastTriggeredAt
+        ? { last_triggered_at: job.lastTriggeredAt }
+        : {}),
+    })
+  }
+
+  if (taskEntries.length === 0) return ''
 
   return escapeCdata(stringifyPromptYaml({ tasks: taskEntries }))
 }

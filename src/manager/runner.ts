@@ -14,6 +14,7 @@ import {
 } from './archive-helpers.js'
 
 import type {
+  CronJob,
   HistoryMessage,
   ManagerEnv,
   Task,
@@ -44,6 +45,7 @@ export const runManager = async (params: {
   inputs: UserInput[]
   results: TaskResult[]
   tasks: Task[]
+  cronJobs?: CronJob[]
   history: HistoryMessage[]
   env?: ManagerEnv
   model?: string
@@ -63,6 +65,7 @@ export const runManager = async (params: {
     inputs: params.inputs,
     results: params.results,
     tasks: params.tasks,
+    ...(params.cronJobs ? { cronJobs: params.cronJobs } : {}),
     history: params.history,
     ...(params.env ? { env: params.env } : {}),
   })

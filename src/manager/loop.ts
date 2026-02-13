@@ -46,6 +46,34 @@ const checkCronJobs = async (runtime: RuntimeState): Promise<void> => {
   let stateChanged = false
   for (const cronJob of runtime.cronJobs) {
     if (!cronJob.enabled) continue
+
+    if (cronJob.scheduledAt) {
+      const scheduledMs = Date.parse(cronJob.scheduledAt)
+      if (!Number.isFinite(scheduledMs) || now.getTime() < scheduledMs) continue
+      if (cronJob.lastTriggeredAt) continue
+
+      cronJob.lastTriggeredAt = nowAtIso
+      cronJob.enabled = false
+      stateChanged = true
+
+      const { task, created } = enqueueTask(
+        runtime.tasks,
+        cronJob.prompt,
+        cronJob.title,
+        cronJob.profile,
+      )
+      if (!created) continue
+
+      task.cron = cronJob.scheduledAt
+      await appendTaskSystemMessage(runtime.paths.history, 'created', task, {
+        createdAt: task.createdAt,
+      })
+      enqueueWorkerTask(runtime, task)
+      notifyWorkerLoop(runtime)
+      continue
+    }
+
+    if (!cronJob.cron) continue
     if (
       cronJob.lastTriggeredAt &&
       asSecondStamp(cronJob.lastTriggeredAt) === nowSecond
@@ -70,7 +98,6 @@ const checkCronJobs = async (runtime: RuntimeState): Promise<void> => {
 
     cronJob.lastTriggeredAt = nowAtIso
     stateChanged = true
-
     const { task, created } = enqueueTask(
       runtime.tasks,
       cronJob.prompt,
@@ -180,6 +207,7 @@ export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
         inputs,
         results,
         tasks: recentTasks,
+        cronJobs: runtime.cronJobs,
         history: recentHistory,
         ...(runtime.lastUserMeta
           ? { env: { lastUser: runtime.lastUserMeta } }
