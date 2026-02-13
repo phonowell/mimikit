@@ -2,7 +2,7 @@ import { UI_TEXT } from '../system-text.js'
 
 export const isAgentMessage = (msg) => msg?.role === 'assistant'
 
-export const collectAckedUserMessageIds = (messages, loadingActive = false) => {
+export const collectAckedUserMessageIds = (messages) => {
   const acked = new Set()
   let hasAgentAfter = false
   for (let i = messages.length - 1; i >= 0; i -= 1) {
@@ -13,13 +13,6 @@ export const collectAckedUserMessageIds = (messages, loadingActive = false) => {
     }
     if (msg?.role !== 'user' || msg?.id == null) continue
     if (hasAgentAfter) acked.add(String(msg.id))
-  }
-  if (!loadingActive) return acked
-  for (let i = messages.length - 1; i >= 0; i -= 1) {
-    const msg = messages[i]
-    if (isAgentMessage(msg)) break
-    if (msg?.role !== 'user' || msg?.id == null) continue
-    acked.add(String(msg.id))
   }
   return acked
 }

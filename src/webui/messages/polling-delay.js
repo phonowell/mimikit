@@ -4,6 +4,7 @@ export const createPollingDelayController = (params) => {
     isHidden,
     schedule,
     clear,
+    isAwaitingReply,
     isFullyIdle,
     activePollMs,
     idlePollMs,
@@ -21,10 +22,13 @@ export const createPollingDelayController = (params) => {
       return
     }
     const failures = getConsecutiveFailures()
+    const awaitingReply = isAwaitingReply()
     const delayMs =
       failures > 0
         ? Math.min(retryMaxMs, retryBaseMs * 2 ** Math.max(0, failures - 1))
-        : isFullyIdle()
+        : awaitingReply
+          ? activePollMs
+          : isFullyIdle()
           ? idlePollMs
           : activePollMs
     schedule(pollFn, delayMs)

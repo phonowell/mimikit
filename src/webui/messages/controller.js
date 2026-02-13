@@ -68,8 +68,7 @@ export function createMessagesController({
   const { doRender } = rendering
 
   const syncLoadingState = () => {
-    const managerRunning = Boolean(lastStatus?.managerRunning)
-    const shouldWait = messageState.awaitingReply && managerRunning
+    const shouldWait = messageState.awaitingReply
     if (shouldWait && !loading.isLoading()) loading.setLoading(true)
     else if (!shouldWait && loading.isLoading()) loading.setLoading(false)
   }
@@ -85,6 +84,7 @@ export function createMessagesController({
       clearTimeout(pollTimer)
       pollTimer = null
     },
+    isAwaitingReply: () => messageState.awaitingReply,
     isFullyIdle: () => isFullyIdle(),
     activePollMs: ACTIVE_POLL_MS,
     idlePollMs: IDLE_POLL_MS,

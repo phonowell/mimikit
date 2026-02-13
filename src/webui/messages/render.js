@@ -31,10 +31,7 @@ export const renderMessages = (params) => {
   for (const msg of messages) {
     if (msg?.id) messageLookup.set(String(msg.id), msg)
   }
-  const ackedUserMessageIds = collectAckedUserMessageIds(
-    messages,
-    Boolean(loading?.isLoading()),
-  )
+  const ackedUserMessageIds = collectAckedUserMessageIds(messages)
   const renderParams = { ...params, messageLookup, ackedUserMessageIds }
   for (const msg of messages) {
     renderMessage(renderParams, msg)

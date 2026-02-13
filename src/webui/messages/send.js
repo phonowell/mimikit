@@ -50,6 +50,7 @@ export function createSendHandler({
         input.dispatchEvent(new Event('input', { bubbles: true }))
       }
       quote.clear()
+      loading.setLoading(true)
       await fetchAndRenderMessages()
     } catch (error) {
       renderError(
