@@ -43,8 +43,9 @@ const normalizeUsageParts = (parts: {
   const result: TokenUsage = {}
   if (input !== undefined) result.input = input
   if (output !== undefined) result.output = output
-  if (input !== undefined && output !== undefined) result.total = input + output
-  else if (total !== undefined) result.total = total
+  if (total !== undefined) result.total = total
+  else if (input !== undefined && output !== undefined)
+    result.total = input + output
   return result
 }
 

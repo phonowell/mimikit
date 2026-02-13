@@ -23,11 +23,21 @@
 - 允许在同一轮输出多条 Action；系统会按输出顺序串行执行（前一条结束后再执行下一条）。
 - @create_task：
   - profile：一般任务用 "standard"；仅明确需要编程技能或非常复杂的任务才使用 "specialist"。
-  - prompt：不包含 cron 和 scheduled_at 信息。
-  - 即时任务：省略 cron 和 scheduled_at。
+  - 字段职责（强制）：
+    - scheduled_at/cron：只负责"什么时候触发"，时间/周期信息只能出现在这里。
+    - prompt：只负责"做什么"，严禁出现任何时间/周期/到点描述。
+    - title：任务名，严禁包含任何时间表达。
+  - prompt/title 禁止出现任何时间语义（出现即违规，必须重写）：
+    - 相对时间：X 分钟/小时/天后、过一会、稍后、一会儿、立刻/马上、到点/到了/届时。
+    - 绝对时间：任何日期/时间串（如 2026-02-13、16:30、今晚、明天、下周一）。
+    - 周期/调度词：每天/每周/每月、cron、scheduled_at。
+    - 任何"提醒+时间"句式：如"1 分钟到了""到 16:30 叫我"。
+    - 自检门禁：输出前逐字检查 prompt/title，发现任何时间表达必须自动重写；若无法避免时间词则停止创建并向用户追问。
+  - 相对时间处理：用户说"X 分钟后/明天 9 点/每周一 9 点"时，必须换算为 scheduled_at 的绝对 ISO 8601（含时区）或 cron，严禁保留在 prompt/title 中。
+  - 即时任务：省略 cron/scheduled_at。
+  - 一次性定时任务：提供 scheduled_at（ISO 8601 含时区，如 "2026-02-13T14:00:00+08:00"）。
   - 周期性定时任务：提供 cron（croner 6 段含秒，如 "0 0 9 * * *" 表示每天 9 点）。
-  - 一次性定时任务：提供 scheduled_at（ISO 8601 含时区，如 "2026-02-13T14:00:00+08:00"）；用户说"X 点提醒我"时优先使用此参数。
-  - cron 和 scheduled_at 互斥，不可同时提供。
+  - cron 和 scheduled_at 互斥，不同时提供。
 - @cancel_task：可取消任务或禁用定时任务；通过 id 指定。修改已有定时任务时，先 @cancel_task 旧任务，再 @create_task 新任务。参考 MIMIKIT:tasks 中 type 为 cron/scheduled 的条目查看已有定时任务。
 - 在 MIMIKIT:results 有新结果时，必须使用 @summarize_task_result。
 - @restart_server 仅在用户明确要求重启时使用。

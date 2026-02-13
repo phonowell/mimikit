@@ -87,31 +87,23 @@ export const mergeTokenUsage = (
   current: TokenUsage | undefined,
   next: TokenUsage,
 ): TokenUsage => {
-  let input = current?.input
-  if (next.input !== undefined) input = (current?.input ?? 0) + next.input
-
-  let output = current?.output
-  if (next.output !== undefined) output = (current?.output ?? 0) + next.output
-
-  let nextTotal = next.total
-  if (
-    nextTotal === undefined &&
-    next.input !== undefined &&
+  const input =
+    next.input !== undefined
+      ? (current?.input ?? 0) + next.input
+      : current?.input
+  const output =
     next.output !== undefined
-  )
-    nextTotal = next.input + next.output
-
-  let total = current?.total
-  if (nextTotal !== undefined) total = (current?.total ?? 0) + nextTotal
+      ? (current?.output ?? 0) + next.output
+      : current?.output
+  const total =
+    next.total !== undefined
+      ? (current?.total ?? 0) + next.total
+      : current?.total
 
   return {
     ...(input !== undefined ? { input } : {}),
     ...(output !== undefined ? { output } : {}),
-    ...(total !== undefined
-      ? { total }
-      : input !== undefined && output !== undefined
-        ? { total: input + output }
-        : {}),
+    ...(total !== undefined ? { total } : {}),
   }
 }
 
