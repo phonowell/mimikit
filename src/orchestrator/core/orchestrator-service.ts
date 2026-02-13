@@ -215,6 +215,7 @@ export class Orchestrator {
     if (!target) return false
     if (!target.enabled) return true
     target.enabled = false
+    target.disabledReason = 'canceled'
     await persistRuntimeState(this.runtime)
     return true
   }

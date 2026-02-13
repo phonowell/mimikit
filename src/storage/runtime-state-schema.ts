@@ -68,6 +68,7 @@ const cronJobRawSchema = z
     title: z.string(),
     profile: z.enum(['standard', 'specialist', 'manager']),
     enabled: z.boolean(),
+    disabledReason: z.enum(['canceled', 'completed']).optional(),
     createdAt: z.string(),
     lastTriggeredAt: z.string().optional(),
   })
@@ -147,6 +148,7 @@ const toCronJob = (cronJob: z.infer<typeof cronJobRawSchema>): CronJob =>
     title: cronJob.title,
     profile: cronJob.profile,
     enabled: cronJob.enabled,
+    disabledReason: cronJob.disabledReason,
     createdAt: cronJob.createdAt,
     lastTriggeredAt: cronJob.lastTriggeredAt,
   }) as CronJob

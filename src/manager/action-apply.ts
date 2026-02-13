@@ -194,6 +194,7 @@ export const applyTaskActions = async (
       const cronJob = runtime.cronJobs.find((job) => job.id === id)
       if (!cronJob?.enabled) continue
       cronJob.enabled = false
+      cronJob.disabledReason = 'canceled'
       await persistRuntimeState(runtime)
       continue
     }

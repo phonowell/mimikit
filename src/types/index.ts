@@ -82,6 +82,8 @@ export type JsonPacket<TPayload> = {
   payload: TPayload
 }
 
+export type CronJobDisabledReason = 'canceled' | 'completed'
+
 export type CronJob = {
   id: Id
   cron?: string
@@ -90,6 +92,7 @@ export type CronJob = {
   title: string
   profile: WorkerProfile
   enabled: boolean
+  disabledReason?: CronJobDisabledReason
   createdAt: ISODate
   lastTriggeredAt?: ISODate
 }

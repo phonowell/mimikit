@@ -30,11 +30,19 @@ const initCounts = (): TaskCounts => ({
 const resolveTaskChangeAt = (task: Task): string =>
   task.completedAt ?? task.startedAt ?? task.createdAt
 
+const resolveCronJobStatus = (cronJob: CronJob): TaskStatus => {
+  if (cronJob.enabled) return 'pending'
+  if (cronJob.disabledReason === 'completed') return 'succeeded'
+  if (cronJob.disabledReason === 'canceled') return 'canceled'
+  if (cronJob.scheduledAt && cronJob.lastTriggeredAt) return 'succeeded'
+  return 'canceled'
+}
+
 const cronJobToView = (cronJob: CronJob): TaskView => {
   const schedule = cronJob.cron ?? cronJob.scheduledAt ?? ''
   return {
     id: cronJob.id,
-    status: cronJob.enabled ? 'pending' : 'canceled',
+    status: resolveCronJobStatus(cronJob),
     profile: cronJob.profile,
     title: cronJob.title || titleFromCandidates(cronJob.id, [cronJob.prompt]),
     ...(schedule ? { cron: schedule } : {}),

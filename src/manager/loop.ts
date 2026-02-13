@@ -67,6 +67,7 @@ const checkCronJobs = async (runtime: RuntimeState): Promise<void> => {
 
       cronJob.lastTriggeredAt = nowAtIso
       cronJob.enabled = false
+      cronJob.disabledReason = 'completed'
       stateChanged = true
 
       const { task, created } = enqueueTask(
@@ -129,7 +130,10 @@ const checkCronJobs = async (runtime: RuntimeState): Promise<void> => {
       enqueueWorkerTask(runtime, task)
       notifyWorkerLoop(runtime)
     }
-    if (!cronHasNextRun(cronJob.cron)) cronJob.enabled = false
+    if (!cronHasNextRun(cronJob.cron)) {
+      cronJob.enabled = false
+      cronJob.disabledReason = 'completed'
+    }
   }
 
   if (!stateChanged) return

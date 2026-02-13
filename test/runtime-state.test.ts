@@ -4,12 +4,13 @@ import { join } from 'node:path'
 
 import { expect, test } from 'vitest'
 
+import { buildTaskViews } from '../src/orchestrator/read-model/task-view.js'
 import {
   loadRuntimeSnapshot,
   saveRuntimeSnapshot,
   selectPersistedTasks,
 } from '../src/storage/runtime-state.js'
-import type { Task } from '../src/types/index.js'
+import type { CronJob, Task } from '../src/types/index.js'
 
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-runtime-state-'))
 
@@ -97,6 +98,47 @@ test('runtime snapshot accepts queue cursors', async () => {
   expect(loaded.queues?.resultsCursor).toBe(9)
   expect(loaded.queues?.inputsCursor).toBe(3)
   expect(loaded.tasks[0]?.result?.output).toBe('ok')
+
+  const cronJobs: CronJob[] = [
+    {
+      id: 'cron-completed',
+      scheduledAt: '2026-02-13T17:22:20+08:00',
+      prompt: 'remind',
+      title: 'remind',
+      profile: 'manager',
+      enabled: false,
+      disabledReason: 'completed',
+      createdAt: '2026-02-13T09:22:04.602Z',
+      lastTriggeredAt: '2026-02-13T09:22:20.735Z',
+    },
+    {
+      id: 'cron-canceled',
+      scheduledAt: '2026-02-13T17:22:20+08:00',
+      prompt: 'remind',
+      title: 'remind',
+      profile: 'manager',
+      enabled: false,
+      disabledReason: 'canceled',
+      createdAt: '2026-02-13T09:22:04.602Z',
+    },
+    {
+      id: 'cron-legacy-completed',
+      scheduledAt: '2026-02-13T17:22:20+08:00',
+      prompt: 'remind',
+      title: 'remind',
+      profile: 'manager',
+      enabled: false,
+      createdAt: '2026-02-13T09:22:04.602Z',
+      lastTriggeredAt: '2026-02-13T09:22:20.735Z',
+    },
+  ]
+  const { tasks, counts } = buildTaskViews([], cronJobs)
+  const statusById = new Map(tasks.map((item) => [item.id, item.status]))
+  expect(statusById.get('cron-completed')).toBe('succeeded')
+  expect(statusById.get('cron-canceled')).toBe('canceled')
+  expect(statusById.get('cron-legacy-completed')).toBe('succeeded')
+  expect(counts.succeeded).toBe(2)
+  expect(counts.canceled).toBe(1)
 })
 
 test('runtime snapshot rejects legacy grouped channel shape and next fields', async () => {
