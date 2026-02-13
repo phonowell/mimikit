@@ -1,6 +1,7 @@
 import { bindComposer } from './messages/composer.js'
 import { createMessagesController } from './messages/controller.js'
 import { bindRestart } from './restart.js'
+import { UI_TEXT } from './system-text.js'
 import { bindTasksPanel } from './tasks.js'
 
 const $ = (sel) => document.querySelector(sel)
@@ -59,7 +60,9 @@ function syncTitleWithStatus() {
   if (!elements.statusText) return
   const text = elements.statusText.textContent?.trim()
   document.title =
-    text && text.length > 0 ? `${resolveTitleDot()} ${text}` : 'status'
+    text && text.length > 0
+      ? `${resolveTitleDot()} ${text}`
+      : UI_TEXT.statusTitleFallback
 }
 
 syncTitleWithStatus()

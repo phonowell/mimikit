@@ -1,3 +1,5 @@
+import { UI_TEXT } from '../system-text.js'
+
 export const isAgentMessage = (msg) => msg?.role === 'assistant'
 
 export const collectAckedUserMessageIds = (messages, loadingActive = false) => {
@@ -42,7 +44,7 @@ const formatRoleLabel = (role) => {
   if (normalized === 'user') return 'You'
   if (normalized === 'agent') return 'Agent'
   if (normalized === 'system') return 'System'
-  return 'Quoted message'
+  return UI_TEXT.quoteUnknown
 }
 
 const cleanText = (text) => String(text ?? '').replace(/\s+/g, ' ').trim()
@@ -78,10 +80,10 @@ const flashMessage = (target) => {
 export const createQuoteBlock = ({ quoteId, quoteMessage, messagesEl }) => {
   if (!quoteId) return null
   const quoteRole = normalizeRole(quoteMessage?.role)
-  const label = quoteMessage ? formatRoleLabel(quoteMessage.role) : 'Quoted message'
+  const label = quoteMessage ? formatRoleLabel(quoteMessage.role) : UI_TEXT.quoteUnknown
   const preview = quoteMessage
-    ? formatQuotePreview(quoteMessage.text) || 'Message'
-    : 'Message unavailable'
+    ? formatQuotePreview(quoteMessage.text) || UI_TEXT.quoteFallbackMessage
+    : UI_TEXT.quoteMissingMessage
   const quoteEl = document.createElement('button')
   quoteEl.type = 'button'
   quoteEl.className = 'message-quote'
@@ -109,4 +111,3 @@ export const createQuoteBlock = ({ quoteId, quoteMessage, messagesEl }) => {
   quoteEl.append(author, text)
   return quoteEl
 }
-

@@ -1,3 +1,5 @@
+import { UI_TEXT, formatHttpFailure } from '../system-text.js'
+
 export const createMessageFetchers = (params) => {
   const {
     messageState,
@@ -32,9 +34,9 @@ export const createMessageFetchers = (params) => {
         return data.error
       }
     } catch {
-      return `${fallback}: ${response.status}`
+      return formatHttpFailure(fallback, response.status)
     }
-    return `${fallback}: ${response.status}`
+    return formatHttpFailure(fallback, response.status)
   }
 
   const fetchMessages = async () => {
@@ -44,7 +46,7 @@ export const createMessageFetchers = (params) => {
     const msgRes = await fetch(getMessagesUrl(), { headers })
     if (msgRes.status === 304) return null
     if (!msgRes.ok) {
-      throw new Error(await readErrorMessage(msgRes, 'Failed to fetch messages'))
+      throw new Error(await readErrorMessage(msgRes, UI_TEXT.fetchMessagesFailed))
     }
     const nextEtag = msgRes.headers.get('etag')
     if (nextEtag) setMessageEtag(nextEtag)
@@ -58,7 +60,7 @@ export const createMessageFetchers = (params) => {
     const statusRes = await fetch(getStatusUrl(), { headers })
     if (statusRes.status === 304) return null
     if (!statusRes.ok) {
-      throw new Error(await readErrorMessage(statusRes, 'Failed to fetch status'))
+      throw new Error(await readErrorMessage(statusRes, UI_TEXT.fetchStatusFailed))
     }
     const nextEtag = statusRes.headers.get('etag')
     if (nextEtag) setStatusEtag(nextEtag)

@@ -1,3 +1,5 @@
+import { UI_TEXT } from '../system-text.js'
+
 export const createLoadingController = ({
   messagesEl,
   isNearBottom,
@@ -20,7 +22,7 @@ export const createLoadingController = ({
     const content = document.createElement('div')
     content.className = 'content loading-dots'
     content.setAttribute('role', 'status')
-    content.setAttribute('aria-label', 'Loading')
+    content.setAttribute('aria-label', UI_TEXT.loadingAriaLabel)
 
     for (let i = 0; i < 3; i += 1) {
       const dot = document.createElement('span')

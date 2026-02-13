@@ -12,9 +12,9 @@ import type {
 type TaskHistoryEvent = 'created' | 'canceled' | 'completed'
 
 const STATUS_LABELS: Record<TaskResultStatus, string> = {
-  succeeded: '成功',
-  failed: '失败',
-  canceled: '已取消',
+  succeeded: 'done',
+  failed: 'failed',
+  canceled: 'canceled',
 }
 
 const resolveTaskLabel = (task: Task): string => {
@@ -29,14 +29,14 @@ const buildTaskText = (
   status?: TaskResultStatus,
   cancel?: TaskCancelMeta,
 ): string => {
-  if (event === 'created') return `任务已创建：${label}`
+  if (event === 'created') return `Task created · ${label}`
   if (event === 'canceled') {
     return cancel?.source === 'user'
-      ? `任务已取消（用户手动）：${label}`
-      : `任务已取消：${label}`
+      ? `Task canceled by user · ${label}`
+      : `Task canceled · ${label}`
   }
-  const statusLabel = status ? STATUS_LABELS[status] : '未知'
-  return `任务已完成：${label}，状态：${statusLabel}`
+  const statusLabel = status ? STATUS_LABELS[status] : 'completed'
+  return `Task ${statusLabel} · ${label}`
 }
 
 export const appendTaskSystemMessage = (

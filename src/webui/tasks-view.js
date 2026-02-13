@@ -1,4 +1,5 @@
 import { formatElapsedLabel, formatTime, formatUsage } from './messages/format.js'
+import { UI_TEXT, resolveTaskStatusLabel } from './system-text.js'
 
 const ELAPSED_TICK_MS = 1000
 const parseTimeMs = (value) => {
@@ -69,7 +70,7 @@ export const renderTasks = (tasksList, data) => {
     const empty = document.createElement('li')
     empty.className = 'tasks-empty'
     const article = document.createElement('article')
-    article.textContent = 'No tasks'
+    article.textContent = UI_TEXT.noTasks
     empty.appendChild(article)
     tasksList.appendChild(empty)
     return
@@ -105,7 +106,7 @@ export const renderTasks = (tasksList, data) => {
     const titleText =
       typeof task.title === 'string' && task.title.trim() && task.title !== task.id
         ? task.title
-        : 'Untitled task'
+        : UI_TEXT.untitledTask
     title.textContent = titleText
 
     const meta = document.createElement('small')
@@ -114,16 +115,17 @@ export const renderTasks = (tasksList, data) => {
     const status = document.createElement('span')
     status.className = 'task-status'
     status.dataset.status = statusValue
+    const statusLabel = resolveTaskStatusLabel(statusValue)
     status.setAttribute('role', 'img')
-    status.setAttribute('aria-label', statusValue)
-    status.title = statusValue
+    status.setAttribute('aria-label', statusLabel)
+    status.title = statusLabel
     meta.appendChild(status)
 
     const profile = document.createElement('span')
     profile.className = 'task-profile'
     const profileText = resolveProfileText(task)
     profile.textContent = profileText
-    profile.setAttribute('aria-label', `task profile ${profileText}`)
+    profile.setAttribute('aria-label', `profile ${profileText}`)
     meta.appendChild(profile)
 
     if (task.cron) {
@@ -190,8 +192,8 @@ export const renderTasks = (tasksList, data) => {
       cancelBtn.className = 'btn btn--icon btn--icon-muted task-cancel'
       cancelBtn.textContent = '✕'
       cancelBtn.setAttribute('data-task-id', task.id)
-      cancelBtn.setAttribute('title', `Cancel task ${titleText}`)
-      cancelBtn.setAttribute('aria-label', `Cancel task ${titleText}`)
+      cancelBtn.setAttribute('title', `Cancel ${titleText}`)
+      cancelBtn.setAttribute('aria-label', `Cancel ${titleText}`)
       titleRow.appendChild(cancelBtn)
     }
 

@@ -1,3 +1,5 @@
+import { resolveStatusText } from './system-text.js'
+
 const normalizeStatusValue = (value) => {
   if (value == null) return ''
   const text = typeof value === 'string' ? value : String(value)
@@ -6,7 +8,7 @@ const normalizeStatusValue = (value) => {
 
 export const formatStatusText = (value) => {
   const text = normalizeStatusValue(value)
-  return text ? text.toUpperCase() : ''
+  return text ? resolveStatusText(text) : ''
 }
 
 export const setStatusText = (statusText, value) => {

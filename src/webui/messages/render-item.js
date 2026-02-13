@@ -1,4 +1,5 @@
 import { createQuoteBlock, isAgentMessage } from './render-shared.js'
+import { UI_TEXT } from '../system-text.js'
 
 export const renderMessage = (params, msg) => {
   const {
@@ -78,8 +79,8 @@ export const renderMessage = (params, msg) => {
     quoteBtn.type = 'button'
     quoteBtn.className = 'btn btn--icon btn--icon-muted message-quote-btn'
     quoteBtn.textContent = msg.role === 'user' ? '↪' : '↩'
-    quoteBtn.title = 'Quote'
-    quoteBtn.setAttribute('aria-label', 'Quote')
+    quoteBtn.title = UI_TEXT.quote
+    quoteBtn.setAttribute('aria-label', UI_TEXT.quote)
     quoteBtn.addEventListener('click', () => onQuote(msg))
   }
 
@@ -87,8 +88,8 @@ export const renderMessage = (params, msg) => {
     const delivery = document.createElement('span')
     delivery.className = 'delivery'
     delivery.textContent = '✓'
-    delivery.title = 'Seen by agent'
-    delivery.setAttribute('aria-label', 'Seen by agent')
+    delivery.title = UI_TEXT.seenByAgent
+    delivery.setAttribute('aria-label', UI_TEXT.seenByAgent)
     meta.appendChild(delivery)
   }
   if (!isSystemMessage) {

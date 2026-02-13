@@ -34,7 +34,7 @@ const resolveCronJobStatus = (cronJob: CronJob): TaskStatus => {
   if (cronJob.enabled) return 'pending'
   if (cronJob.disabledReason === 'completed') return 'succeeded'
   if (cronJob.disabledReason === 'canceled') return 'canceled'
-  if (cronJob.scheduledAt && cronJob.lastTriggeredAt) return 'succeeded'
+  if (cronJob.lastTriggeredAt) return 'succeeded'
   return 'canceled'
 }
 

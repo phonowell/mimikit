@@ -1,3 +1,5 @@
+import { UI_TEXT } from '../system-text.js'
+
 const cleanText = (text) => String(text ?? '').replace(/\s+/g, ' ').trim()
 
 const normalizeRole = (role) => {
@@ -12,7 +14,7 @@ const formatRoleLabel = (role) => {
   if (normalized === 'user') return 'You'
   if (normalized === 'agent') return 'Agent'
   if (normalized === 'system') return 'System'
-  return 'Quote'
+  return UI_TEXT.quoteUnknown
 }
 
 const formatQuotePreview = (text) => {
@@ -60,7 +62,7 @@ export const createQuoteController = ({
     if (quoteLabel)
       quoteLabel.textContent = activeQuote
         ? formatRoleLabel(activeQuote.role)
-        : 'Quote'
+        : UI_TEXT.quote
     if (quotePreview) {
       if (activeQuote) {
         quotePreview.dataset.role = normalizeRole(activeQuote.role)

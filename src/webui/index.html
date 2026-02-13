@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Loading</title>
+    <title>Status</title>
     <link rel="stylesheet" href="base.css" />
     <link rel="stylesheet" href="layout.css" />
     <link rel="stylesheet" href="components-core.css" />
@@ -15,22 +15,22 @@
   <body>
     <main data-app>
       <header class="app-header">
-        <div class="app-controls" role="group" aria-label="Status and actions">
+        <div class="app-controls" role="group" aria-label="Top controls">
           <div class="status-group" aria-label="Status">
             <p class="status-item">
               <span class="status-dot" data-status-dot></span>
               <span class="status-text" data-status-text aria-live="polite"
-                >LOADING</span
+                >CONNECTING</span
               >
             </p>
           </div>
-          <div class="app-actions" role="toolbar" aria-label="Actions">
+          <div class="app-actions" role="toolbar" aria-label="Controls">
             <button
               class="btn btn--sm tasks-open"
               data-tasks-open
               type="button"
               title="Tasks"
-              aria-label="Open tasks"
+              aria-label="Tasks"
               aria-haspopup="dialog"
               aria-controls="tasks-dialog"
               aria-expanded="false"
@@ -42,8 +42,8 @@
               class="btn btn--sm restart-btn"
               data-restart
               type="button"
-              title="Restart server"
-              aria-label="Restart server"
+              title="Restart"
+              aria-label="Restart"
               aria-haspopup="dialog"
               aria-controls="restart-dialog"
               aria-expanded="false"
@@ -54,15 +54,15 @@
         </div>
       </header>
 
-      <section class="messages-section" aria-label="Messages">
-        <h2 class="visually-hidden">Messages</h2>
+      <section class="messages-section" aria-label="Chat">
+        <h2 class="visually-hidden">Chat</h2>
         <ul class="messages" data-messages></ul>
         <button
           class="btn btn--icon btn--icon-lg scroll-bottom"
           data-scroll-bottom
           type="button"
-          title="Scroll to bottom"
-          aria-label="Scroll to bottom"
+          title="Scroll down"
+          aria-label="Scroll down"
           aria-hidden="true"
           inert
           tabindex="-1"
@@ -71,7 +71,7 @@
         </button>
       </section>
 
-      <section class="composer" aria-label="Composer">
+      <section class="composer" aria-label="Input">
         <form data-form>
           <div class="quote-preview" data-quote-preview hidden>
             <span class="quote-label" data-quote-label>Quote</span>
@@ -80,8 +80,8 @@
               class="btn btn--icon btn--icon-muted quote-clear"
               type="button"
               data-quote-clear
-              title="Clear quote"
-              aria-label="Clear quote"
+              title="Clear"
+              aria-label="Clear"
             >
               &times;
             </button>
@@ -90,7 +90,7 @@
           <textarea
             id="message-input"
             data-input
-            placeholder="Type a message..."
+            placeholder="Message..."
             rows="1"
           ></textarea>
           <button class="btn btn--md btn--primary" type="submit" data-send>
@@ -108,13 +108,13 @@
         <section class="tasks-panel">
           <header class="tasks-header">
             <h2 class="tasks-title" id="tasks-title">Tasks</h2>
-            <div class="tasks-actions" role="group" aria-label="Tasks actions">
+            <div class="tasks-actions" role="group" aria-label="Tasks">
               <button
                 class="btn btn--icon btn--icon-muted tasks-close"
                 data-tasks-close
                 type="button"
-                title="Close tasks"
-                aria-label="Close tasks"
+                title="Close"
+                aria-label="Close"
               >
                 &#x2715;
               </button>
@@ -133,13 +133,12 @@
       >
         <section class="restart-panel">
           <header class="restart-header">
-            <h2 class="restart-title" id="restart-title">Restart server?</h2>
+            <h2 class="restart-title" id="restart-title">Restart?</h2>
           </header>
           <p class="restart-description" id="restart-description">
-            Restart will reload the server. Reset will clear .mimikit state
-            before restarting.
+            Restart keeps state. Reset clears .mimikit first.
           </p>
-          <div class="restart-actions" role="group" aria-label="Restart actions">
+          <div class="restart-actions" role="group" aria-label="Restart">
             <button
               class="btn btn--md btn--dialog btn--danger restart-dialog-btn-danger"
               data-restart-reset

@@ -1,4 +1,5 @@
 import { renderError } from './render.js'
+import { UI_TEXT } from '../system-text.js'
 
 export function createSendHandler({
   sendBtn,
@@ -44,7 +45,7 @@ export function createSendHandler({
         } catch {
           data = null
         }
-        throw new Error(data?.error || 'Failed to send')
+        throw new Error(data?.error || UI_TEXT.sendFailed)
       }
       if (input) {
         input.value = ''

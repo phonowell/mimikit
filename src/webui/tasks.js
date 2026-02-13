@@ -1,4 +1,5 @@
 import { createDialogController } from './dialog.js'
+import { UI_TEXT } from './system-text.js'
 import { createElapsedTicker, renderTasks } from './tasks-view.js'
 
 const TASK_POLL_MS = 5000
@@ -33,7 +34,7 @@ export function bindTasksPanel({
     if (!tasksList) return
     try {
       const res = await fetch('/api/tasks?limit=200')
-      if (!res.ok) throw new Error('Failed to load tasks')
+      if (!res.ok) throw new Error(UI_TEXT.loadTasksFailed)
       const data = await res.json()
       renderTasks(tasksList, data)
       elapsedTicker.update()
@@ -60,8 +61,8 @@ export function bindTasksPanel({
     if (button) {
       button.disabled = true
       button.textContent = '…'
-      button.setAttribute('aria-label', 'Canceling task')
-      button.setAttribute('title', 'Canceling task')
+      button.setAttribute('aria-label', UI_TEXT.cancelingTask)
+      button.setAttribute('title', UI_TEXT.cancelingTask)
     }
     try {
       const res = await fetch(

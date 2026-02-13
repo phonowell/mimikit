@@ -4,6 +4,7 @@ import {
   isAgentMessage,
 } from './render-shared.js'
 import { renderMessage } from './render-item.js'
+import { formatUiError } from '../system-text.js'
 
 export { collectAckedUserMessageIds, findLatestAgentMessage, isAgentMessage }
 
@@ -66,7 +67,7 @@ export const renderError = (params, error) => {
   item.className = 'message system'
   const article = document.createElement('article')
   const message = error instanceof Error ? error.message : String(error)
-  article.textContent = `Error: ${message}`
+  article.textContent = formatUiError(message)
   item.appendChild(article)
   messagesEl.appendChild(item)
   updateScrollButton()

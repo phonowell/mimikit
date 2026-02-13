@@ -42,7 +42,7 @@ export class Orchestrator {
       appendHistory(this.runtime.paths.history, {
         id: `sys-startup-${newId()}`,
         role: 'system',
-        text: '系统已启动',
+        text: 'Started',
         createdAt: nowIso(),
       }),
     )
