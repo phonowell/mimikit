@@ -79,6 +79,7 @@
   align-items: flex-start;
   gap: 10px;
   position: relative;
+  --task-profile-dot: var(--profile-standard);
   box-shadow: var(--shadow-raised-soft);
 }
 
@@ -107,6 +108,12 @@
   align-items: center;
   gap: 8px;
   min-width: 0;
+}
+
+.task-indicators {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .task-link:focus-visible {
@@ -145,21 +152,23 @@
   padding: 0;
   border-radius: 999px;
   background: var(--task-dot, var(--status-pending));
+  position: relative;
+  z-index: 2;
 }
 
-.task-profile {
+.task-profile-dot {
   display: inline-flex;
   align-items: center;
-  height: 18px;
-  padding: 0 6px;
+  justify-content: center;
+  width: 8px;
+  height: 8px;
+  min-width: 8px;
+  padding: 0;
   border-radius: 999px;
-  border: 1px solid transparent;
-  background: var(--panel-strong);
-  color: var(--muted);
-  box-shadow: none;
-  font-size: 10px;
-  letter-spacing: 0.02em;
-  text-transform: lowercase;
+  background: var(--task-profile-dot);
+  margin-left: -4px;
+  position: relative;
+  z-index: 1;
 }
 
 .task-cron {
@@ -206,6 +215,14 @@
 
 .task-item[data-status='canceled'] {
   --task-dot: var(--status-cancel);
+}
+
+.task-item[data-profile='specialist'] {
+  --task-profile-dot: var(--profile-specialist);
+}
+
+.task-item[data-profile='manager'] {
+  --task-profile-dot: var(--profile-manager);
 }
 
 .task-cancel {

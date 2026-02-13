@@ -82,7 +82,9 @@ export const renderTasks = (tasksList, data) => {
     const item = document.createElement('li')
     item.className = 'task-item'
     const statusValue = task.status || 'pending'
+    const profileValue = resolveProfileText(task)
     item.dataset.status = statusValue
+    item.dataset.profile = profileValue
 
     const isCancelable = statusValue === 'pending' || statusValue === 'running'
     const hasArchivePath =
@@ -100,6 +102,9 @@ export const renderTasks = (tasksList, data) => {
 
     const titleRow = document.createElement('div')
     titleRow.className = 'task-title-row'
+
+    const indicators = document.createElement('span')
+    indicators.className = 'task-indicators'
 
     const title = document.createElement('span')
     title.className = 'task-title'
@@ -120,12 +125,12 @@ export const renderTasks = (tasksList, data) => {
     status.setAttribute('aria-label', statusLabel)
     status.title = statusLabel
 
-    const profile = document.createElement('span')
-    profile.className = 'task-profile'
-    const profileText = resolveProfileText(task)
-    profile.textContent = profileText
-    profile.setAttribute('aria-label', `profile ${profileText}`)
-    meta.appendChild(profile)
+    const profileDot = document.createElement('span')
+    profileDot.className = 'task-profile-dot'
+    profileDot.dataset.profile = profileValue
+    profileDot.setAttribute('role', 'img')
+    profileDot.setAttribute('aria-label', `profile ${profileValue}`)
+    profileDot.title = `profile ${profileValue}`
 
     if (task.cron) {
       const cronEl = document.createElement('span')
@@ -183,7 +188,9 @@ export const renderTasks = (tasksList, data) => {
     }
 
 
-    titleRow.appendChild(status)
+    indicators.appendChild(status)
+    indicators.appendChild(profileDot)
+    titleRow.appendChild(indicators)
     titleRow.appendChild(title)
 
     if (isCancelable) {
