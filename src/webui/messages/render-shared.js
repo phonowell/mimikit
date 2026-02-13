@@ -15,9 +15,9 @@ export const collectAckedUserMessageIds = (messages, loadingActive = false) => {
   if (!loadingActive) return acked
   for (let i = messages.length - 1; i >= 0; i -= 1) {
     const msg = messages[i]
+    if (isAgentMessage(msg)) break
     if (msg?.role !== 'user' || msg?.id == null) continue
     acked.add(String(msg.id))
-    break
   }
   return acked
 }
