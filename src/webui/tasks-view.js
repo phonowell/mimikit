@@ -103,9 +103,6 @@ export const renderTasks = (tasksList, data) => {
     const titleRow = document.createElement('div')
     titleRow.className = 'task-title-row'
 
-    const indicators = document.createElement('span')
-    indicators.className = 'task-indicators'
-
     const title = document.createElement('span')
     title.className = 'task-title'
     const titleText =
@@ -125,13 +122,6 @@ export const renderTasks = (tasksList, data) => {
     status.setAttribute('role', 'img')
     status.setAttribute('aria-label', `${statusLabel} · profile ${profileValue}`)
     status.title = dotTitle
-
-    const profileDot = document.createElement('span')
-    profileDot.className = 'task-profile-dot'
-    profileDot.dataset.profile = profileValue
-    profileDot.setAttribute('role', 'img')
-    profileDot.setAttribute('aria-label', `${statusLabel} · profile ${profileValue}`)
-    profileDot.title = dotTitle
 
     if (task.cron) {
       const cronEl = document.createElement('span')
@@ -188,10 +178,7 @@ export const renderTasks = (tasksList, data) => {
       meta.appendChild(timeEl)
     }
 
-
-    indicators.appendChild(status)
-    indicators.appendChild(profileDot)
-    titleRow.appendChild(indicators)
+    titleRow.appendChild(status)
     titleRow.appendChild(title)
 
     if (isCancelable) {
