@@ -68,12 +68,6 @@ export const buildRawBlock = (
   return `<${normalized}>\n${escaped}\n</${normalized}>`
 }
 
-export const formatMarkdownReference = (content: string): string => {
-  const trimmed = content.trim()
-  if (!trimmed) return ''
-  return trimmed
-}
-
 export {
   formatDecesionsYaml,
   formatHistory,

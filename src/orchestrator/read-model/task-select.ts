@@ -1,3 +1,7 @@
+import {
+  parseIsoToMs,
+  resolveTaskChangedAt,
+} from '../../prompts/format-base.js'
 import { selectByWindow } from './select-window.js'
 
 import type { Task } from '../../types/index.js'
@@ -6,14 +10,6 @@ export type TaskSelectParams = {
   minCount: number
   maxCount: number
   maxBytes: number
-}
-
-const resolveTaskChangedAt = (task: Task): string =>
-  task.completedAt ?? task.startedAt ?? task.createdAt
-
-const parseIsoToMs = (value: string): number => {
-  const ts = Date.parse(value)
-  return Number.isFinite(ts) ? ts : 0
 }
 
 export const selectRecentTasks = (

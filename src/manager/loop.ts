@@ -1,3 +1,5 @@
+import { Cron } from 'croner'
+
 import { parseActions } from '../actions/protocol/parse.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort, logSafeError } from '../log/safe.js'
@@ -10,7 +12,6 @@ import { selectRecentTasks } from '../orchestrator/read-model/task-select.js'
 import { nowIso, sleep } from '../shared/utils.js'
 import { appendHistory, readHistory } from '../storage/jsonl.js'
 import { consumeUserInputs, consumeWorkerResults } from '../streams/queues.js'
-import { cronHasNextRun, matchCronNow } from '../tasks/cron.js'
 import { enqueueWorkerTask } from '../worker/dispatch.js'
 
 import { applyTaskActions, collectTaskResultSummaries } from './action-apply.js'
@@ -27,6 +28,17 @@ import {
 import { runManager } from './runner.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
+
+const matchCronNow = (expression: string, at: Date = new Date()): boolean =>
+  new Cron(expression).match(at)
+
+const cronHasNextRun = (expression: string): boolean => {
+  try {
+    return new Cron(expression).nextRun() !== null
+  } catch {
+    return false
+  }
+}
 
 const asSecondStamp = (iso: string): string => iso.slice(0, 19)
 

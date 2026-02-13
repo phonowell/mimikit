@@ -9,7 +9,6 @@ import {
   formatEnvironment,
   formatHistory,
   formatInputs,
-  formatMarkdownReference,
   formatResultsYaml,
   formatTasksYaml,
   joinPromptSections,
@@ -127,11 +126,11 @@ export const buildManagerPrompt = async (params: {
     ],
     [
       'persona',
-      buildRawBlock('persona', formatMarkdownReference(persona), true),
+      buildRawBlock('persona', persona.trim(), true),
     ],
     [
       'user_profile',
-      buildRawBlock('user_profile', formatMarkdownReference(userProfile), true),
+      buildRawBlock('user_profile', userProfile.trim(), true),
     ],
   ])
   const injection = renderPromptTemplate(injectionTemplate, injectionValues)

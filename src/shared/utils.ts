@@ -24,6 +24,13 @@ export const asNumber = (value: unknown): number | undefined =>
 export const sleep = (ms: number) =>
   new Promise((resolve) => setTimeout(resolve, ms))
 
+export const stripUndefined = <T extends Record<string, unknown>>(
+  obj: T,
+): { [K in keyof T]: Exclude<T[K], undefined> } =>
+  Object.fromEntries(
+    Object.entries(obj).filter(([, v]) => v !== undefined),
+  ) as { [K in keyof T]: Exclude<T[K], undefined> }
+
 const normalizeUsageParts = (parts: {
   input?: unknown
   output?: unknown

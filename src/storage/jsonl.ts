@@ -15,7 +15,7 @@ type JsonlReadOptions<T> = {
 
 const updateQueue = new Map<string, Promise<void>>()
 
-const toUtf8Text = (raw: unknown): string => {
+export const toUtf8Text = (raw: unknown): string => {
   if (typeof raw === 'string') return raw
   if (Buffer.isBuffer(raw)) return raw.toString('utf8')
   return ''

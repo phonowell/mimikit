@@ -1,5 +1,6 @@
 import { z } from 'zod'
 
+import { stripUndefined } from '../shared/utils.js'
 import { normalizeTokenUsage, tokenUsageSchema } from './token-usage.js'
 
 import type { CronJob, Task } from '../types/index.js'
@@ -95,88 +96,59 @@ const runtimeSnapshotRawSchema = z
   })
   .strict()
 
+const toCancel = (raw?: z.infer<typeof taskCancelSchema>) =>
+  raw ? stripUndefined({ source: raw.source, reason: raw.reason }) : undefined
+
 const toTask = (task: z.infer<typeof taskRawSchema>): Task => {
   const usage = normalizeTokenUsage(task.usage)
-  const resultUsage = normalizeTokenUsage(task.result?.usage)
-  const cancel =
-    task.cancel !== undefined
-      ? {
-          source: task.cancel.source,
-          ...(task.cancel.reason !== undefined
-            ? { reason: task.cancel.reason }
-            : {}),
-        }
-      : undefined
-  const resultCancel =
-    task.result?.cancel !== undefined
-      ? {
-          source: task.result.cancel.source,
-          ...(task.result.cancel.reason !== undefined
-            ? { reason: task.result.cancel.reason }
-            : {}),
-        }
-      : undefined
-  const result =
-    task.result !== undefined
-      ? {
-          taskId: task.result.taskId,
-          status: task.result.status,
-          ok: task.result.ok,
-          output: task.result.output,
-          durationMs: task.result.durationMs,
-          completedAt: task.result.completedAt,
-          ...(resultUsage ? { usage: resultUsage } : {}),
-          ...(task.result.title !== undefined
-            ? { title: task.result.title }
-            : {}),
-          ...(task.result.archivePath !== undefined
-            ? { archivePath: task.result.archivePath }
-            : {}),
-          ...(task.result.profile !== undefined
-            ? { profile: task.result.profile }
-            : {}),
-          ...(resultCancel !== undefined ? { cancel: resultCancel } : {}),
-        }
-      : undefined
-  return {
+  const cancel = toCancel(task.cancel)
+  const result = task.result
+    ? stripUndefined({
+        taskId: task.result.taskId,
+        status: task.result.status,
+        ok: task.result.ok,
+        output: task.result.output,
+        durationMs: task.result.durationMs,
+        completedAt: task.result.completedAt,
+        usage: normalizeTokenUsage(task.result.usage),
+        title: task.result.title,
+        archivePath: task.result.archivePath,
+        profile: task.result.profile,
+        cancel: toCancel(task.result.cancel),
+      })
+    : undefined
+  return stripUndefined({
     id: task.id,
     fingerprint: task.fingerprint,
     prompt: task.prompt,
     title: task.title,
-    ...(task.cron !== undefined ? { cron: task.cron } : {}),
+    cron: task.cron,
     profile: task.profile,
     status: task.status,
     createdAt: task.createdAt,
-    ...(task.startedAt !== undefined ? { startedAt: task.startedAt } : {}),
-    ...(task.completedAt !== undefined
-      ? { completedAt: task.completedAt }
-      : {}),
-    ...(task.durationMs !== undefined ? { durationMs: task.durationMs } : {}),
-    ...(task.attempts !== undefined ? { attempts: task.attempts } : {}),
-    ...(usage ? { usage } : {}),
-    ...(task.archivePath !== undefined
-      ? { archivePath: task.archivePath }
-      : {}),
-    ...(cancel !== undefined ? { cancel } : {}),
-    ...(result !== undefined ? { result } : {}),
-  }
+    startedAt: task.startedAt,
+    completedAt: task.completedAt,
+    durationMs: task.durationMs,
+    attempts: task.attempts,
+    usage,
+    archivePath: task.archivePath,
+    cancel,
+    result,
+  }) as Task
 }
 
-const toCronJob = (cronJob: z.infer<typeof cronJobRawSchema>): CronJob => ({
-  id: cronJob.id,
-  ...(cronJob.cron !== undefined ? { cron: cronJob.cron } : {}),
-  ...(cronJob.scheduledAt !== undefined
-    ? { scheduledAt: cronJob.scheduledAt }
-    : {}),
-  prompt: cronJob.prompt,
-  title: cronJob.title,
-  profile: cronJob.profile,
-  enabled: cronJob.enabled,
-  createdAt: cronJob.createdAt,
-  ...(cronJob.lastTriggeredAt !== undefined
-    ? { lastTriggeredAt: cronJob.lastTriggeredAt }
-    : {}),
-})
+const toCronJob = (cronJob: z.infer<typeof cronJobRawSchema>): CronJob =>
+  stripUndefined({
+    id: cronJob.id,
+    cron: cronJob.cron,
+    scheduledAt: cronJob.scheduledAt,
+    prompt: cronJob.prompt,
+    title: cronJob.title,
+    profile: cronJob.profile,
+    enabled: cronJob.enabled,
+    createdAt: cronJob.createdAt,
+    lastTriggeredAt: cronJob.lastTriggeredAt,
+  }) as CronJob
 
 export const parseRuntimeSnapshot = (value: unknown): RuntimeSnapshot => {
   const parsed = runtimeSnapshotRawSchema.parse(value)
