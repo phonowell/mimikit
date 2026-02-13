@@ -1,5 +1,4 @@
 import { parseActions } from '../actions/protocol/parse.js'
-import { Cron } from 'croner'
 import { appendLog } from '../log/append.js'
 import { bestEffort, logSafeError } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
@@ -11,7 +10,7 @@ import { selectRecentTasks } from '../orchestrator/read-model/task-select.js'
 import { nowIso, sleep } from '../shared/utils.js'
 import { appendHistory, readHistory } from '../storage/jsonl.js'
 import { consumeUserInputs, consumeWorkerResults } from '../streams/queues.js'
-import { matchCronNow } from '../tasks/cron.js'
+import { cronHasNextRun, matchCronNow } from '../tasks/cron.js'
 import { enqueueWorkerTask } from '../worker/dispatch.js'
 
 import { applyTaskActions, collectTaskResultSummaries } from './action-apply.js'
@@ -87,12 +86,7 @@ const checkCronJobs = async (runtime: RuntimeState): Promise<void> => {
     })
     enqueueWorkerTask(runtime, task)
     notifyWorkerLoop(runtime)
-    try {
-      const nextRun = new Cron(cronJob.cron).nextRun()
-      if (!nextRun) cronJob.enabled = false
-    } catch {
-      // already validated above via matchCronNow
-    }
+    if (!cronHasNextRun(cronJob.cron)) cronJob.enabled = false
   }
 
   if (!stateChanged) return
