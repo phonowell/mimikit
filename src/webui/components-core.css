@@ -216,17 +216,6 @@
   opacity: 1;
 }
 
-.messages .empty-state {
-  margin: auto;
-  padding: 16px 18px;
-  border-radius: var(--radius-sm);
-  background: var(--panel);
-  border: 1px solid transparent;
-  box-shadow: var(--shadow-raised-soft);
-  color: var(--muted);
-  text-align: center;
-}
-
 .scroll-bottom {
   --btn-bg: var(--panel);
   --btn-color: var(--accent);

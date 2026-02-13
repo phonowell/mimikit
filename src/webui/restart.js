@@ -78,7 +78,7 @@ export function bindRestart({
     isBusy = true
     restartBtn.disabled = true
     disableActions(true)
-    const label = mode === 'reset' ? 'resetting...' : 'restarting...'
+    const label = mode === 'reset' ? 'resetting' : 'restarting'
     setStatusText(statusText, label)
     setStatusState(statusDot, '')
     if (messages) messages.stop()

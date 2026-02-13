@@ -5,14 +5,8 @@ import { renderMessages } from './render.js'
 
 export const createMessageRendering = (params) => {
   const { messagesEl, scroll, loading, quote } = params
-  let emptyRemoved = false
 
-  const removeEmpty = () => {
-    if (emptyRemoved) return
-    const el = document.querySelector('[data-empty]')
-    if (el) el.remove()
-    emptyRemoved = true
-  }
+  const removeEmpty = () => {}
 
   const doRender = (messages, enterMessageIds) => {
     if (!messages?.length) return null

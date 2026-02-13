@@ -29,6 +29,16 @@ const elements = {
   tasksList: $('[data-tasks-list]'),
 }
 
+const TITLE_DOT_BY_STATE = {
+  disconnected: '○',
+}
+
+const resolveTitleDot = () => {
+  const state = elements.statusDot?.dataset.state?.trim()
+  if (!state) return '●'
+  return TITLE_DOT_BY_STATE[state] ?? '●'
+}
+
 const messages = createMessagesController({
   messagesEl: elements.messagesEl,
   scrollBottomBtn: elements.scrollBottomBtn,
@@ -46,17 +56,26 @@ const messages = createMessagesController({
 function syncTitleWithStatus() {
   if (!elements.statusText) return
   const text = elements.statusText.textContent?.trim()
-  document.title = text && text.length > 0 ? text : 'status'
+  document.title =
+    text && text.length > 0 ? `${resolveTitleDot()} ${text}` : 'status'
 }
 
 syncTitleWithStatus()
-if (elements.statusText) {
+if (elements.statusText || elements.statusDot) {
   const observer = new MutationObserver(syncTitleWithStatus)
-  observer.observe(elements.statusText, {
-    childList: true,
-    characterData: true,
-    subtree: true,
-  })
+  if (elements.statusText) {
+    observer.observe(elements.statusText, {
+      childList: true,
+      characterData: true,
+      subtree: true,
+    })
+  }
+  if (elements.statusDot) {
+    observer.observe(elements.statusDot, {
+      attributes: true,
+      attributeFilter: ['data-state'],
+    })
+  }
 }
 
 bindComposer({ form: elements.form, input: elements.input, messages })
