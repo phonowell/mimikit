@@ -41,7 +41,7 @@ export type TaskCancelMeta = {
 
 export type TaskResultStatus = 'succeeded' | 'failed' | 'canceled'
 
-export type WorkerProfile = 'standard' | 'specialist'
+export type WorkerProfile = 'standard' | 'specialist' | 'manager'
 
 export type Task = {
   id: Id

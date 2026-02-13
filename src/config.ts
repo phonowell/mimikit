@@ -32,6 +32,15 @@ export type AppConfig = {
     model: string
     /** 默认推理强度 */
     modelReasoningEffort: ModelReasoningEffort
+    /** Manager profile 任务执行配置 */
+    task: {
+      /** 任务超时（毫秒） */
+      timeoutMs: number
+      /** 任务模型 */
+      model: string
+      /** 任务推理强度 */
+      modelReasoningEffort: ModelReasoningEffort
+    }
   }
   /** 自演进调度配置 */
   evolver: {
@@ -88,6 +97,11 @@ export const defaultConfig = (params: DefaultConfigParams): AppConfig => ({
     historyMaxBytes: 20 * 1024, // 历史记录最多保留20KB
     model: 'gpt-5.2-high',
     modelReasoningEffort: 'high',
+    task: {
+      timeoutMs: 60_000, // manager profile 任务默认60秒超时
+      model: 'gpt-5.2-high',
+      modelReasoningEffort: 'high',
+    },
   },
   evolver: {
     enabled: false,

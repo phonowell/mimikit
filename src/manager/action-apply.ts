@@ -29,7 +29,7 @@ const createSchema = z
   .object({
     prompt: nonEmptyString,
     title: nonEmptyString,
-    profile: z.enum(['standard', 'specialist']),
+    profile: z.enum(['standard', 'specialist', 'manager']),
     cron: z.string().trim().optional(),
     scheduled_at: z.string().trim().optional(),
   })
@@ -168,8 +168,10 @@ const applyCreateTask = async (
     createdAt: task.createdAt,
   })
   await persistRuntimeState(runtime)
-  enqueueWorkerTask(runtime, task)
-  notifyWorkerLoop(runtime)
+  if (profile !== 'manager') {
+    enqueueWorkerTask(runtime, task)
+    notifyWorkerLoop(runtime)
+  }
 }
 
 export const applyTaskActions = async (

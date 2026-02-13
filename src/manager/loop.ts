@@ -15,6 +15,7 @@ import { consumeUserInputs, consumeWorkerResults } from '../streams/queues.js'
 import { enqueueWorkerTask } from '../worker/dispatch.js'
 
 import { applyTaskActions, collectTaskResultSummaries } from './action-apply.js'
+import { executeManagerProfileTasks } from './manager-task-runner.js'
 import {
   appendConsumedInputsToHistory,
   appendConsumedResultsToHistory,
@@ -80,8 +81,10 @@ const checkCronJobs = async (runtime: RuntimeState): Promise<void> => {
       await appendTaskSystemMessage(runtime.paths.history, 'created', task, {
         createdAt: task.createdAt,
       })
-      enqueueWorkerTask(runtime, task)
-      notifyWorkerLoop(runtime)
+      if (cronJob.profile !== 'manager') {
+        enqueueWorkerTask(runtime, task)
+        notifyWorkerLoop(runtime)
+      }
       continue
     }
 
@@ -122,8 +125,10 @@ const checkCronJobs = async (runtime: RuntimeState): Promise<void> => {
     await appendTaskSystemMessage(runtime.paths.history, 'created', task, {
       createdAt: task.createdAt,
     })
-    enqueueWorkerTask(runtime, task)
-    notifyWorkerLoop(runtime)
+    if (cronJob.profile !== 'manager') {
+      enqueueWorkerTask(runtime, task)
+      notifyWorkerLoop(runtime)
+    }
     if (!cronHasNextRun(cronJob.cron)) cronJob.enabled = false
   }
 
@@ -136,6 +141,9 @@ const checkCronJobs = async (runtime: RuntimeState): Promise<void> => {
 export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
   while (!runtime.stopped) {
     await bestEffort('checkCronJobs', () => checkCronJobs(runtime))
+    await bestEffort('executeManagerProfileTasks', () =>
+      executeManagerProfileTasks(runtime),
+    )
 
     const now = Date.now()
     const throttled =

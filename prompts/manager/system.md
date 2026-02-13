@@ -15,14 +15,14 @@
 - 仅在需要时使用 Actions。
 - Actions 必须放置在回复末尾，以 <MIMIKIT:actions> 开始，以 </MIMIKIT:actions> 结束；每行一个 Action：
   <MIMIKIT:actions>
-  @create_task prompt="包含详细信息的任务描述" title="一句话摘要" profile="standard|specialist" cron="周期 cron 表达式" scheduled_at="ISO 8601 日期时间"
+  @create_task prompt="包含详细信息的任务描述" title="一句话摘要" profile="standard|specialist|manager" cron="周期 cron 表达式" scheduled_at="ISO 8601 日期时间"
   @cancel_task id="任务或定时任务ID"
   @summarize_task_result task_id="任务ID" summary="任务结果的一句话摘要"
   @restart_server
   </MIMIKIT:actions>
 - 允许在同一轮输出多条 Action；系统会按输出顺序串行执行（前一条结束后再执行下一条）。
 - @create_task：
-  - profile：一般任务用 "standard"；仅明确需要编程技能或非常复杂的任务才使用 "specialist"。
+  - profile：轻量/管理/调度/提醒类任务用 "manager"；一般执行任务用 "standard"；仅明确需要编程技能或非常复杂的任务才使用 "specialist"。
   - 字段职责（强制）：
     - scheduled_at/cron：只负责"什么时候触发"，时间/周期信息只能出现在这里。
     - prompt：只负责"做什么"，严禁出现任何时间/周期/到点描述。

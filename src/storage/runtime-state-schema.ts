@@ -32,7 +32,7 @@ const taskResultRawSchema = z
     usage: tokenUsageSchema.optional(),
     title: z.string().optional(),
     archivePath: z.string().optional(),
-    profile: z.enum(['standard', 'specialist']).optional(),
+    profile: z.enum(['standard', 'specialist', 'manager']).optional(),
     cancel: taskCancelSchema.optional(),
   })
   .strict()
@@ -44,7 +44,7 @@ const taskRawSchema = z
     prompt: z.string(),
     title: z.string(),
     cron: z.string().optional(),
-    profile: z.enum(['standard', 'specialist']),
+    profile: z.enum(['standard', 'specialist', 'manager']),
     status: z.enum(['pending', 'running', 'succeeded', 'failed', 'canceled']),
     createdAt: z.string(),
     startedAt: z.string().optional(),
@@ -65,7 +65,7 @@ const cronJobRawSchema = z
     scheduledAt: z.string().trim().min(1).optional(),
     prompt: z.string(),
     title: z.string(),
-    profile: z.enum(['standard', 'specialist']),
+    profile: z.enum(['standard', 'specialist', 'manager']),
     enabled: z.boolean(),
     createdAt: z.string(),
     lastTriggeredAt: z.string().optional(),
