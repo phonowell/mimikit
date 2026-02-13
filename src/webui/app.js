@@ -30,13 +30,15 @@ const elements = {
 }
 
 const TITLE_DOT_BY_STATE = {
-  disconnected: '○',
+  idle: '🟢',
+  running: '🔵',
+  disconnected: '⚪',
 }
 
 const resolveTitleDot = () => {
-  const state = elements.statusDot?.dataset.state?.trim()
-  if (!state) return '●'
-  return TITLE_DOT_BY_STATE[state] ?? '●'
+  const state = elements.statusDot?.dataset.state?.trim()?.toLowerCase()
+  if (!state) return '⚪'
+  return TITLE_DOT_BY_STATE[state] ?? '⚪'
 }
 
 const messages = createMessagesController({

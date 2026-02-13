@@ -1,10 +1,6 @@
 import { newId, nowIso, titleFromCandidates } from '../../shared/utils.js'
 
-import type {
-  Task,
-  TaskStatus,
-  WorkerProfile,
-} from '../../types/index.js'
+import type { Task, TaskStatus, WorkerProfile } from '../../types/index.js'
 
 export type EnqueueTaskResult = {
   task: Task

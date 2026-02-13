@@ -146,7 +146,7 @@ export const applyTaskActions = async (
     if (item.name === 'cancel_task') {
       const parsed = cancelSchema.safeParse(item.attrs)
       if (!parsed.success) continue
-      const id = parsed.data.id
+      const { id } = parsed.data
       const canceled = await cancelTask(runtime, id, { source: 'manager' })
       if (canceled.ok || canceled.status !== 'not_found') continue
       const cronJob = runtime.cronJobs.find((job) => job.id === id)

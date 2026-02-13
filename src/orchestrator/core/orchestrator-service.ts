@@ -30,11 +30,7 @@ import {
 import { notifyWorkerLoop } from './worker-signal.js'
 
 import type { RuntimeState, UserMeta } from './runtime-state.js'
-import type {
-  CronJob,
-  Task,
-  WorkerProfile,
-} from '../../types/index.js'
+import type { CronJob, Task, WorkerProfile } from '../../types/index.js'
 
 const cloneCronJob = (job: CronJob): CronJob => ({ ...job })
 
