@@ -2,6 +2,7 @@ import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import { markTaskRunning } from '../orchestrator/core/task-state.js'
+import { notifyUiSignal } from '../orchestrator/core/ui-signal.js'
 import {
   notifyWorkerLoop,
   waitForWorkerLoopSignal,
@@ -34,6 +35,7 @@ const runQueuedWorker = async (
   const controller = new AbortController()
   runtime.runningControllers.set(task.id, controller)
   markTaskRunning(runtime.tasks, task.id)
+  notifyUiSignal(runtime)
   await bestEffort('persistRuntimeState: worker_start', () =>
     persistRuntimeState(runtime),
   )

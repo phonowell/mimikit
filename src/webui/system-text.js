@@ -30,6 +30,7 @@ export const UI_TEXT = Object.freeze({
   fetchMessagesFailed: 'Messages failed',
   fetchStatusFailed: 'Status failed',
   loadTasksFailed: 'Tasks failed',
+  connectionLost: 'Connection lost',
   errorPrefix: 'Error',
   errorJoiner: ' · ',
   loadingAriaLabel: 'Loading',

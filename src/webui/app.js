@@ -42,6 +42,13 @@ const resolveTitleDot = () => {
   return TITLE_DOT_BY_STATE[state] ?? '⚪'
 }
 
+const tasksPanel = bindTasksPanel({
+  tasksList: elements.tasksList,
+  tasksDialog: elements.tasksDialog,
+  tasksOpenBtn: elements.tasksOpenBtn,
+  tasksCloseBtn: elements.tasksCloseBtn,
+})
+
 const messages = createMessagesController({
   messagesEl: elements.messagesEl,
   scrollBottomBtn: elements.scrollBottomBtn,
@@ -54,6 +61,8 @@ const messages = createMessagesController({
   quoteLabel: elements.quoteLabel,
   quoteText: elements.quoteText,
   quoteClearBtn: elements.quoteClearBtn,
+  onTasksSnapshot: (tasks) => tasksPanel?.applyTasksSnapshot?.(tasks),
+  onDisconnected: () => tasksPanel?.setDisconnected?.(),
 })
 
 function syncTitleWithStatus() {
@@ -94,12 +103,5 @@ bindRestart({
   statusDot: elements.statusDot,
   messages,
 })
-bindTasksPanel({
-  tasksList: elements.tasksList,
-  tasksDialog: elements.tasksDialog,
-  tasksOpenBtn: elements.tasksOpenBtn,
-  tasksCloseBtn: elements.tasksCloseBtn,
-})
-
 messages.start()
 if (elements.input) elements.input.focus()

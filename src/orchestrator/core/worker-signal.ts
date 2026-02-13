@@ -1,3 +1,5 @@
+import { notifyUiSignal } from './ui-signal.js'
+
 import type { RuntimeState } from './runtime-state.js'
 
 const MAX_WAIT_MS = 24 * 60 * 60 * 1_000
@@ -11,6 +13,7 @@ export const notifyWorkerLoop = (runtime: RuntimeState): void => {
   const previous = runtime.workerSignalController
   runtime.workerSignalController = new AbortController()
   if (!previous.signal.aborted) previous.abort()
+  notifyUiSignal(runtime)
 }
 
 export const waitForWorkerLoopSignal = async (

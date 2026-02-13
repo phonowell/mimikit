@@ -2,7 +2,14 @@ import { createDialogController } from './dialog.js'
 import { UI_TEXT } from './system-text.js'
 import { createElapsedTicker, renderTasks } from './tasks-view.js'
 
-const TASK_POLL_MS = 5000
+const EMPTY_TASKS = { tasks: [], counts: {} }
+
+const normalizeTasksPayload = (value) => {
+  if (!value || typeof value !== 'object') return EMPTY_TASKS
+  const tasks = Array.isArray(value.tasks) ? value.tasks : []
+  const counts = value.counts && typeof value.counts === 'object' ? value.counts : {}
+  return { tasks, counts }
+}
 
 export function bindTasksPanel({
   tasksList,
@@ -10,47 +17,44 @@ export function bindTasksPanel({
   tasksOpenBtn,
   tasksCloseBtn,
 }) {
-  if (!tasksList) return
-  let pollTimer = null
-  let isPolling = false
+  if (!tasksList) {
+    return {
+      applyTasksSnapshot: () => {},
+      setDisconnected: () => {},
+      dispose: () => {},
+    }
+  }
+
+  let latestTasks = EMPTY_TASKS
   const elapsedTicker = createElapsedTicker(tasksList)
 
-  const startPolling = () => {
-    if (isPolling) return
-    isPolling = true
+  const renderLatestTasks = () => {
+    renderTasks(tasksList, latestTasks)
+    elapsedTicker.update()
+  }
+
+  const applyTasksSnapshot = (payload) => {
+    latestTasks = normalizeTasksPayload(payload)
+    renderLatestTasks()
+  }
+
+  const setDisconnected = () => {
+    tasksList.innerHTML = ''
+    const empty = document.createElement('li')
+    empty.className = 'tasks-empty'
+    const article = document.createElement('article')
+    article.textContent = UI_TEXT.connectionLost
+    empty.appendChild(article)
+    tasksList.appendChild(empty)
+  }
+
+  const startTicker = () => {
     elapsedTicker.start()
-    loadTasks()
+    renderLatestTasks()
   }
 
-  const stopPolling = () => {
-    isPolling = false
-    if (pollTimer) clearTimeout(pollTimer)
-    pollTimer = null
+  const stopTicker = () => {
     elapsedTicker.stop()
-  }
-
-  async function loadTasks() {
-    if (!isPolling) return
-    if (!tasksList) return
-    try {
-      const res = await fetch('/api/tasks?limit=200')
-      if (!res.ok) throw new Error(UI_TEXT.loadTasksFailed)
-      const data = await res.json()
-      renderTasks(tasksList, data)
-      elapsedTicker.update()
-    } catch (error) {
-      tasksList.innerHTML = ''
-      const empty = document.createElement('li')
-      empty.className = 'tasks-empty'
-      const article = document.createElement('article')
-      const message = error instanceof Error ? error.message : String(error)
-      article.textContent = message
-      empty.appendChild(article)
-      tasksList.appendChild(empty)
-    }
-
-    if (!isPolling) return
-    pollTimer = window.setTimeout(loadTasks, TASK_POLL_MS)
   }
 
   async function requestCancel(taskId, button) {
@@ -73,16 +77,17 @@ export function bindTasksPanel({
         let data = null
         try {
           data = await res.json()
-        } catch (error) {
+        } catch {
           data = null
         }
         throw new Error(data?.error || 'Failed to cancel task')
       }
-      if (pollTimer) {
-        clearTimeout(pollTimer)
-        pollTimer = null
+      if (button) {
+        button.disabled = false
+        button.textContent = originalText
+        if (originalLabel) button.setAttribute('aria-label', originalLabel)
+        if (originalTitle) button.setAttribute('title', originalTitle)
       }
-      await loadTasks()
     } catch (error) {
       if (button) {
         button.disabled = false
@@ -131,8 +136,8 @@ export function bindTasksPanel({
         trigger: tasksOpenBtn,
         focusOnOpen: tasksCloseBtn,
         focusOnClose: tasksOpenBtn,
-        onOpen: startPolling,
-        onAfterClose: stopPolling,
+        onOpen: startTicker,
+        onAfterClose: stopTicker,
       })
     : null
 
@@ -162,17 +167,21 @@ export function bindTasksPanel({
     tasksDialog.addEventListener('cancel', onDialogCancel)
     tasksDialog.addEventListener('close', onDialogClose)
   } else {
-    startPolling()
+    startTicker()
   }
 
-  return () => {
-    stopPolling()
-    if (dialogEnabled && dialog) {
-      tasksOpenBtn.removeEventListener('click', onOpen)
-      if (tasksCloseBtn) tasksCloseBtn.removeEventListener('click', onClose)
-      tasksDialog.removeEventListener('click', onDialogClick)
-      tasksDialog.removeEventListener('cancel', onDialogCancel)
-      tasksDialog.removeEventListener('close', onDialogClose)
-    }
+  return {
+    applyTasksSnapshot,
+    setDisconnected,
+    dispose: () => {
+      stopTicker()
+      if (dialogEnabled && dialog) {
+        tasksOpenBtn.removeEventListener('click', onOpen)
+        if (tasksCloseBtn) tasksCloseBtn.removeEventListener('click', onClose)
+        tasksDialog.removeEventListener('click', onDialogClick)
+        tasksDialog.removeEventListener('cancel', onDialogCancel)
+        tasksDialog.removeEventListener('close', onDialogClose)
+      }
+    },
   }
 }

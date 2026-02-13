@@ -6,6 +6,7 @@ import { bestEffort, logSafeError, safe } from '../log/safe.js'
 import { waitForManagerLoopSignal } from '../orchestrator/core/manager-signal.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import { enqueueTask } from '../orchestrator/core/task-state.js'
+import { notifyUiSignal } from '../orchestrator/core/ui-signal.js'
 import { notifyWorkerLoop } from '../orchestrator/core/worker-signal.js'
 import { selectRecentHistory } from '../orchestrator/read-model/history-select.js'
 import { appendTaskSystemMessage } from '../orchestrator/read-model/task-history.js'
@@ -198,6 +199,7 @@ export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
     const results = resultPackets.map((packet) => packet.payload)
 
     runtime.managerRunning = true
+    notifyUiSignal(runtime)
     const startedAt = Date.now()
     let assistantAppended = false
 
@@ -334,6 +336,7 @@ export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
       )
     } finally {
       runtime.managerRunning = false
+      notifyUiSignal(runtime)
     }
   }
 }

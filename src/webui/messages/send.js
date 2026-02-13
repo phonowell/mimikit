@@ -7,7 +7,6 @@ export function createSendHandler({
   messageState,
   loading,
   quote,
-  fetchAndRenderMessages,
   scroll,
   messagesEl,
   removeEmpty,
@@ -51,7 +50,6 @@ export function createSendHandler({
       }
       quote.clear()
       loading.setLoading(true)
-      await fetchAndRenderMessages()
     } catch (error) {
       renderError(
         { messagesEl, removeEmpty, updateScrollButton: scroll.updateScrollButton },

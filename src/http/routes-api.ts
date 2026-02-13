@@ -12,6 +12,11 @@ import type { AppConfig } from '../config.js'
 import type { Orchestrator } from '../orchestrator/core/orchestrator-service.js'
 import type { FastifyInstance } from 'fastify'
 
+const SSE_HEARTBEAT_MS = 15_000
+const SSE_RETRY_MS = 1_500
+const SSE_DEFAULT_MESSAGE_LIMIT = 50
+const SSE_DEFAULT_TASK_LIMIT = 200
+
 const comparableEtag = (value: string): string =>
   value.trim().replace(/^W\//, '')
 
@@ -40,6 +45,71 @@ export const registerApiRoutes = (
   orchestrator: Orchestrator,
   _config: AppConfig,
 ): void => {
+  app.get('/api/events', async (request, reply) => {
+    reply.hijack()
+    const res = reply.raw
+    res.statusCode = 200
+    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8')
+    res.setHeader('Cache-Control', 'no-cache, no-transform')
+    res.setHeader('Connection', 'keep-alive')
+    res.setHeader('X-Accel-Buffering', 'no')
+
+    if (typeof res.flushHeaders === 'function') res.flushHeaders()
+    res.write(`retry: ${SSE_RETRY_MS}\n\n`)
+
+    let closed = false
+    const onClosed = () => {
+      closed = true
+    }
+    request.raw.once('aborted', onClosed)
+    request.raw.once('close', onClosed)
+
+    const isStreamClosed = (): boolean =>
+      closed || res.destroyed || res.writableEnded
+
+    const writeSnapshot = (payload: unknown): void => {
+      if (isStreamClosed()) return
+      const body = JSON.stringify(payload)
+      res.write(`event: snapshot\n`)
+      res.write(`data: ${body}\n\n`)
+    }
+
+    let lastSnapshotEtag = ''
+    try {
+      const initial = await orchestrator.getWebUiSnapshot(
+        SSE_DEFAULT_MESSAGE_LIMIT,
+        SSE_DEFAULT_TASK_LIMIT,
+      )
+      lastSnapshotEtag = buildPayloadEtag('events', initial)
+      writeSnapshot(initial)
+
+      for (;;) {
+        if (isStreamClosed()) break
+        await orchestrator.waitForWebUiSignal(SSE_HEARTBEAT_MS)
+        if (isStreamClosed()) break
+        const snapshot = await orchestrator.getWebUiSnapshot(
+          SSE_DEFAULT_MESSAGE_LIMIT,
+          SSE_DEFAULT_TASK_LIMIT,
+        )
+        const snapshotEtag = buildPayloadEtag('events', snapshot)
+        if (snapshotEtag === lastSnapshotEtag) continue
+
+        lastSnapshotEtag = snapshotEtag
+        writeSnapshot(snapshot)
+      }
+    } catch (error) {
+      if (!isStreamClosed()) {
+        const message = error instanceof Error ? error.message : String(error)
+        res.write(`event: error\n`)
+        res.write(`data: ${JSON.stringify({ error: message })}\n\n`)
+      }
+    } finally {
+      request.raw.off('aborted', onClosed)
+      request.raw.off('close', onClosed)
+      if (!isStreamClosed()) res.end()
+    }
+  })
+
   app.get('/api/status', (request, reply) => {
     const payload = orchestrator.getStatus()
     const etag = buildPayloadEtag('status', payload)

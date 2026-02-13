@@ -1,13 +1,10 @@
 import { createLoadingController } from './loading.js'
-import { createControllerCursors } from './controller-cursors.js'
-import { createMessagesLifecycle, runPollLoop } from './lifecycle.js'
-import { createControllerPolling } from './controller-polling.js'
 import {
   createDisconnectHandler,
   isStatusFullyIdle,
+  mergeIncomingMessages,
   updateControllerStatus,
 } from './controller-status.js'
-import { createPollingDelayController } from './polling-delay.js'
 import { createQuoteController } from './quote.js'
 import { createMessageRendering } from './rendering.js'
 import { createScrollController } from './scroll.js'
@@ -22,6 +19,21 @@ import {
   updateMessageState,
 } from './state.js'
 
+const MESSAGE_LIMIT = 50
+const EVENTS_URL = '/api/events'
+
+const isRecord = (value) => value && typeof value === 'object'
+
+const parseSnapshot = (raw) => {
+  if (!raw || typeof raw !== 'string') return null
+  try {
+    const parsed = JSON.parse(raw)
+    return isRecord(parsed) ? parsed : null
+  } catch {
+    return null
+  }
+}
+
 export function createMessagesController({
   messagesEl,
   scrollBottomBtn,
@@ -34,18 +46,12 @@ export function createMessagesController({
   quoteLabel,
   quoteText,
   quoteClearBtn,
+  onTasksSnapshot,
+  onDisconnected,
 }) {
-  const ACTIVE_POLL_MS = 2000
-  const IDLE_POLL_MS = 30000
-  const HIDDEN_POLL_MS = 30000
-  const RETRY_BASE_MS = 1000
-  const RETRY_MAX_MS = 30000
-  const MESSAGE_LIMIT = 50
-
-  let pollTimer = null, consecutiveFailures = 0
-  let lastStatus = null, lastMessageCursor = null
-  let lastStatusEtag = null, lastMessagesEtag = null
-  const runtime = { isPolling: false, isPageHidden: false }
+  let lastStatus = null
+  let eventSource = null
+  let isStarted = false
   const messageState = createMessageState()
 
   const scroll = createScrollController({
@@ -73,42 +79,6 @@ export function createMessagesController({
     else if (!shouldWait && loading.isLoading()) loading.setLoading(false)
   }
 
-  const delay = createPollingDelayController({
-    isPolling: () => runtime.isPolling,
-    isHidden: () => runtime.isPageHidden,
-    schedule: (pollFn, delayMs) => {
-      pollTimer = window.setTimeout(pollFn, delayMs)
-    },
-    clear: () => {
-      if (!pollTimer) return
-      clearTimeout(pollTimer)
-      pollTimer = null
-    },
-    isAwaitingReply: () => messageState.awaitingReply,
-    isFullyIdle: () => isFullyIdle(),
-    activePollMs: ACTIVE_POLL_MS,
-    idlePollMs: IDLE_POLL_MS,
-    hiddenPollMs: HIDDEN_POLL_MS,
-    retryBaseMs: RETRY_BASE_MS,
-    retryMaxMs: RETRY_MAX_MS,
-    getConsecutiveFailures: () => consecutiveFailures,
-  })
-
-  const cursors = createControllerCursors({
-    getLastMessageCursor: () => lastMessageCursor,
-    setLastMessageCursor: (value) => {
-      lastMessageCursor = value
-    },
-    getLastStatusEtag: () => lastStatusEtag,
-    setLastStatusEtag: (value) => {
-      lastStatusEtag = value
-    },
-    getLastMessagesEtag: () => lastMessagesEtag,
-    setLastMessagesEtag: (value) => {
-      lastMessagesEtag = value
-    },
-  })
-
   const updateStatus = (status) => {
     updateControllerStatus({
       status,
@@ -122,43 +92,108 @@ export function createMessagesController({
     })
   }
 
+  const cursors = {
+    message: { set: () => {} },
+    statusEtag: { set: () => {} },
+    messagesEtag: { set: () => {} },
+  }
+
   const setDisconnected = createDisconnectHandler({
     statusDot,
     statusText,
     workerDots,
     messageState,
     loading,
-    setLastStatus: (value) => { lastStatus = value },
+    setLastStatus: (value) => {
+      lastStatus = value
+    },
     cursors,
   })
 
-  const { fetchAndRenderMessages, pollOnce } = createControllerPolling({
-    messageState,
-    loading,
-    doRender,
-    updateStatus,
-    syncLoadingState,
-    setDisconnected,
-    cursors,
-    collectNewMessageIds,
-    hasMessageChange,
-    hasLoadingVisibilityChange,
-    updateMessageState,
-    updateLoadingVisibilityState,
-    applyRenderedState,
-    messageLimit: MESSAGE_LIMIT,
-  })
-
-  const poll = async () =>
-    runPollLoop({
-      runtime,
-      pollOnce,
-      delay,
-      onDisconnected: setDisconnected,
-      consecutiveFailures,
-      setConsecutiveFailures: (value) => { consecutiveFailures = value },
-      poll,
+  const applyMessagesPayload = (msgData) => {
+    if (!isRecord(msgData)) {
+      updateLoadingVisibilityState(messageState, loading.isLoading())
+      return false
+    }
+    const incoming = Array.isArray(msgData.messages) ? msgData.messages : []
+    const mode = typeof msgData.mode === 'string' ? msgData.mode : 'full'
+    const messages = mergeIncomingMessages({
+      mode,
+      lastMessages: messageState.lastMessages,
+      incoming,
+      limit: MESSAGE_LIMIT,
     })
+    const newestId = messages.length > 0 ? messages[messages.length - 1].id : null
+    const loadingVisible = loading.isLoading()
+    const changed =
+      hasMessageChange(messageState, messages, newestId) ||
+      hasLoadingVisibilityChange(messageState, loadingVisible)
+    if (changed) {
+      const enterMessageIds = collectNewMessageIds(messageState, messages)
+      const rendered = doRender(messages, enterMessageIds)
+      if (rendered)
+        applyRenderedState(messageState, rendered, { loading, syncLoadingState })
+    }
+    updateMessageState(messageState, messages, newestId)
+    updateLoadingVisibilityState(messageState, loading.isLoading())
+    return changed
+  }
+
+  const applySnapshot = (snapshot) => {
+    if (!isRecord(snapshot)) return
+    if (isRecord(snapshot.status)) updateStatus(snapshot.status)
+    else syncLoadingState()
+    if (isRecord(snapshot.messages)) applyMessagesPayload(snapshot.messages)
+    else syncLoadingState()
+    if (typeof onTasksSnapshot === 'function' && isRecord(snapshot.tasks)) {
+      onTasksSnapshot(snapshot.tasks)
+    }
+  }
+
+  const closeEvents = () => {
+    if (!eventSource) return
+    eventSource.close()
+    eventSource = null
+  }
+
+  const openEvents = () => {
+    if (eventSource) return
+    const source = new EventSource(EVENTS_URL)
+
+    const onSnapshotEvent = (event) => {
+      const snapshot = parseSnapshot(event.data)
+      if (!snapshot) return
+      applySnapshot(snapshot)
+    }
+
+    const onMessageEvent = (event) => {
+      const snapshot = parseSnapshot(event.data)
+      if (!snapshot) return
+      applySnapshot(snapshot)
+    }
+
+    const onServerErrorEvent = (event) => {
+      try {
+        const payload = parseSnapshot(event.data)
+        if (payload && typeof payload.error === 'string' && payload.error.trim()) {
+          console.warn('[webui] stream error', payload.error)
+        }
+      } catch {
+        // no-op
+      }
+    }
+
+    const onTransportError = () => {
+      setDisconnected()
+      if (typeof onDisconnected === 'function') onDisconnected()
+    }
+
+    source.addEventListener('snapshot', onSnapshotEvent)
+    source.addEventListener('message', onMessageEvent)
+    source.addEventListener('error', onServerErrorEvent)
+    source.onerror = onTransportError
+    eventSource = source
+  }
 
   const sendMessage = createSendHandler({
     sendBtn,
@@ -166,7 +201,6 @@ export function createMessagesController({
     messageState,
     loading,
     quote,
-    fetchAndRenderMessages,
     scroll,
     messagesEl,
     removeEmpty,
@@ -175,20 +209,24 @@ export function createMessagesController({
   if (quoteClearBtn) quoteClearBtn.addEventListener('click', quote.clear)
   if (quotePreview) quotePreview.addEventListener('dblclick', quote.clear)
 
-  const lifecycle = createMessagesLifecycle({
-    runtime,
-    scroll,
-    poll,
-    clearDelay: delay.clear,
-    scheduleNextPoll: () => delay.scheduleNext(poll),
-  })
-  lifecycle.bindVisibility()
+  const start = () => {
+    if (isStarted) return
+    isStarted = true
+    scroll.bindScrollControls()
+    openEvents()
+  }
+
+  const stop = () => {
+    isStarted = false
+    closeEvents()
+  }
+
   const isFullyIdle = () => isStatusFullyIdle(lastStatus)
 
   return {
-    start: lifecycle.start,
-    stop: lifecycle.stop,
-    clearStatusEtag: () => { lastStatusEtag = null },
+    start,
+    stop,
+    clearStatusEtag: () => {},
     sendMessage,
     isFullyIdle,
   }

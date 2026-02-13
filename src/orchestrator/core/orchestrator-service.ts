@@ -28,6 +28,7 @@ import {
   hydrateRuntimeState,
   persistRuntimeState,
 } from './runtime-persistence.js'
+import { notifyUiSignal, waitForUiSignal } from './ui-signal.js'
 import { notifyWorkerLoop } from './worker-signal.js'
 
 import type { RuntimeState, UserMeta } from './runtime-state.js'
@@ -76,6 +77,7 @@ export class Orchestrator {
         concurrency: config.worker.maxConcurrent,
       }),
       workerSignalController: new AbortController(),
+      uiSignalController: new AbortController(),
     }
   }
 
@@ -168,6 +170,22 @@ export class Orchestrator {
     return buildTaskViews(this.runtime.tasks, this.runtime.cronJobs, limit)
   }
 
+  async getWebUiSnapshot(messageLimit = 50, taskLimit = 200) {
+    const [messages, tasks] = await Promise.all([
+      this.getChatMessages(messageLimit),
+      Promise.resolve(this.getTasks(taskLimit)),
+    ])
+    return {
+      status: this.getStatus(),
+      messages,
+      tasks,
+    }
+  }
+
+  waitForWebUiSignal(timeoutMs: number): Promise<void> {
+    return waitForUiSignal(this.runtime, timeoutMs)
+  }
+
   getTaskById(taskId: string): Task | undefined {
     const trimmed = taskId.trim()
     if (!trimmed) return undefined
@@ -205,6 +223,7 @@ export class Orchestrator {
     }
     this.runtime.cronJobs.push(job)
     await persistRuntimeState(this.runtime)
+    notifyUiSignal(this.runtime)
     return cloneCronJob(job)
   }
 
@@ -221,6 +240,7 @@ export class Orchestrator {
     target.enabled = false
     target.disabledReason = 'canceled'
     await persistRuntimeState(this.runtime)
+    notifyUiSignal(this.runtime)
     return true
   }
 
