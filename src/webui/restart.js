@@ -95,13 +95,9 @@ export function bindRestart({
       restoreAfterRequestFailure(mode)
       return
     }
-    if (mode === 'reset') {
-      waitForServer(() => {
-        window.location.reload()
-      })
-      return
-    }
-    waitForServer()
+    waitForServer(() => {
+      window.location.reload()
+    })
   }
 
   const onOpen = (event) => {
