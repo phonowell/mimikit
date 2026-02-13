@@ -6,6 +6,8 @@ import { normalizeTokenUsage, tokenUsageSchema } from './token-usage.js'
 
 import type { CronJob, Task } from '../types/index.js'
 
+import type { FocusState } from '../orchestrator/core/runtime-state.js'
+
 export type RuntimeSnapshot = {
   tasks: Task[]
   cronJobs?: CronJob[]
@@ -13,6 +15,7 @@ export type RuntimeSnapshot = {
     inputsCursor: number
     resultsCursor: number
   }
+  focusState?: FocusState
 }
 
 const taskCancelSchema = z
@@ -90,11 +93,20 @@ const queueStateSchema = z
   })
   .strict()
 
+const focusStateSchema = z
+  .object({
+    intent: z.string().optional(),
+    activeTaskIds: z.array(z.string()).optional(),
+    topic: z.string().optional(),
+  })
+  .strict()
+
 const runtimeSnapshotRawSchema = z
   .object({
     tasks: z.array(taskRawSchema),
     cronJobs: z.array(cronJobRawSchema).optional(),
     queues: queueStateSchema.optional(),
+    focusState: focusStateSchema.optional(),
   })
   .strict()
 
@@ -162,5 +174,20 @@ export const parseRuntimeSnapshot = (value: unknown): RuntimeSnapshot => {
       ? { cronJobs: parsed.cronJobs.map((job) => toCronJob(job)) }
       : {}),
     ...(parsed.queues ? { queues: parsed.queues } : {}),
+    ...(parsed.focusState
+      ? {
+          focusState: {
+            ...(parsed.focusState.intent
+              ? { intent: parsed.focusState.intent }
+              : {}),
+            ...(parsed.focusState.topic
+              ? { topic: parsed.focusState.topic }
+              : {}),
+            ...(parsed.focusState.activeTaskIds
+              ? { activeTaskIds: parsed.focusState.activeTaskIds }
+              : {}),
+          },
+        }
+      : {}),
   }
 }

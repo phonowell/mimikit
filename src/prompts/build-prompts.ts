@@ -23,10 +23,10 @@ import {
   buildTaskResultDateHints,
   collectResultTaskIds,
   collectTaskResults,
-  dedupeTaskResults,
   mergeTaskResults,
 } from './task-results-merge.js'
 
+import type { FocusState } from '../orchestrator/core/runtime-state.js'
 import type {
   CronJob,
   HistoryMessage,
@@ -55,6 +55,16 @@ const readOptionalMarkdown = async (path: string): Promise<string> => {
   }
 }
 
+const formatFocusState = (focus?: FocusState): string => {
+  if (!focus) return ''
+  const lines: string[] = []
+  if (focus.intent) lines.push(`- intent: ${focus.intent}`)
+  if (focus.topic) lines.push(`- topic: ${focus.topic}`)
+  if (focus.activeTaskIds && focus.activeTaskIds.length > 0)
+    lines.push(`- active_tasks: ${focus.activeTaskIds.join(', ')}`)
+  return lines.join('\n')
+}
+
 export const buildManagerPrompt = async (params: {
   stateDir: string
   workDir: string
@@ -64,8 +74,10 @@ export const buildManagerPrompt = async (params: {
   cronJobs?: CronJob[]
   history: HistoryMessage[]
   env?: ManagerEnv
+  focusState?: FocusState
+  compactedContext?: string
 }): Promise<string> => {
-  const pendingResults = dedupeTaskResults(params.results)
+  const pendingResults = mergeTaskResults(params.results, [])
   const persistedResults = collectTaskResults(params.tasks)
   const knownResults = mergeTaskResults(pendingResults, persistedResults)
   const pendingResultIds = new Set(
@@ -126,6 +138,11 @@ export const buildManagerPrompt = async (params: {
     ],
     ['persona', buildRawBlock('persona', persona.trim(), true)],
     ['user_profile', buildRawBlock('user_profile', userProfile.trim(), true)],
+    ['focus', buildRawBlock('focus', formatFocusState(params.focusState))],
+    [
+      'compacted_context',
+      buildRawBlock('compacted_context', params.compactedContext ?? ''),
+    ],
   ])
   const injection = renderPromptTemplate(injectionTemplate, injectionValues)
   return joinPromptSections([system, injection])

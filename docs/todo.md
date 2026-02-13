@@ -46,61 +46,29 @@
 - 关键约束：压缩由 manager 空闲轮次触发，不阻塞在线请求；压缩质量需可审计
 - 参考：pi-mono compaction 机制（summary + readFiles + modifiedFiles）
 
-### P1-A：Prompt 结构化降噪（ROI 8.5）
-- 痛点：prompt 全量注入所有段落（7 段），空段仍占位；worker/evolver 接收不需要的信息
-- 设计方向：
-  - 引入 `promptMode` 概念：`full`（manager）/ `minimal`（worker/evolver）
-  - `minimal` 模式仅注入 environment + task prompt，跳过 history/persona/user_profile 等
-  - 空段不注入（当前 format 层已支持空检测，但 build 层未做条件裁剪）
-  - 增加 prompt 预算日志：按段统计字节占比，写入 log 辅助调优
-- 参考：moltbot 的 promptMode(full/minimal/none) + prompt 报表
-
-### P1-B：Worker 多轮配置化（ROI 8.0）
-- 痛点：`MAX_RUN_ROUNDS=3` 硬编码；简单任务浪费 token，复杂任务可能不够
-- 设计方向：
-  - `MAX_RUN_ROUNDS` 改为配置项，按 profile 区分（standard 默认 2，specialist 默认 5）
-  - continue prompt 中注入已消耗轮次与 token 估算，让 LLM 辅助判断是否继续
-- 关键约束：不改变 DONE_MARKER 协议；配置通过 config 注入
-
-### P2-A：Action 协议统一（ROI 7.5）
+### P1：Action 协议统一（ROI 7.5）
 - 痛点：`parse.ts` 存在双解析路径（loose line + XML tag），正则处理边缘情况脆弱
 - 设计方向：
   - 清理 loose line 后（见 1.2），统一为 XML tag 单路径
   - 后续评估 `htmlparser2` 替代正则，提升容错能力（见 third-party-libraries ROI 报告）
 - 关键约束：保持现有 action 协议格式不变；先统一再替换解析器
 
-### P2-B：Evolver 验证闭环（ROI 7.0）
-- 痛点：evolver 是项目核心差异化能力，但默认关闭且缺乏效果验证机制
-- 设计方向：
-  - 每次 evolver 变更记录 before/after diff + 变更理由
-  - 建立回滚判据：若后续 N 轮 manager 表现下降（用户纠错频率上升），自动回滚
-  - 验证通过后再默认启用
-- 关键约束：遵循 CLAUDE.md 自演进原则（小步变更 + 可回滚 + 可验证）
-
-### P3-A：状态持久化原子写入（ROI 6.5）
+### P2：状态持久化原子写入（ROI 6.5）
 - 痛点：`runtime-state.json` 与队列 cursor 分步写入，崩溃时可能不一致
 - 设计方向：确认 queue cursor 已在 `runtime-state.json` 的 `queues` 子对象中，确保单次原子写入覆盖所有状态
 - 关键约束：不引入新存储引擎（sqlite 迁移成本当前不合理）
-
-### P3-B：结构化可观测性（ROI 6.0）
-- 痛点：仅 JSONL 日志，无法量化每任务 token 成本、延迟分布、fallback 触发率
-- 设计方向：
-  - 在现有 `appendLog` 基础上增加 `metrics` 事件类型（taskId、tokenCost、elapsedMs、provider、model）
-  - 后续可选增加 `/api/metrics` 聚合查询端点
-- 关键约束：不引入 Prometheus/OpenTelemetry 等重依赖
 
 ---
 
 ## 三、执行顺序建议
 
 ```
-清理（1.1-1.4）→ P0-A/B 并行 → P1-A/B 并行 → P2-A → P2-B → P3-A/B
+清理（1.1-1.4）→ P0-A/B 并行 → P1 → P2
 ```
 
 - 清理项无依赖，可一次性完成
 - P0-A（focusState）与 P0-B（历史压缩）独立，可并行开发
-- P1-A（promptMode）依赖 P0 稳定后再调整注入策略
-- P2-A（协议统一）依赖清理 1.2 先完成
+- P1（协议统一）依赖清理 1.2 先完成
 
 ---
 
@@ -109,7 +77,7 @@
 | 来源 | 采纳点 | 未采纳点及原因 |
 |---|---|---|
 | pi-mono | focus state、compaction 结构化摘要 | 直接接入 `pi-ai` 作为 provider 层 — 迁移面过大，当前 provider 抽象已足够 |
-| moltbot | promptMode 分级、prompt 预算报表、head+tail 截断策略 | 全套 prompt 风格迁移 — 投入产出比不明确，按需渐进吸收 |
+| moltbot | head+tail 截断策略 | promptMode 分级 — worker/evolver prompt 已足够精简，分级收益不明确；全套风格迁移 — 按需渐进吸收 |
 | nanobot | 心跳触发 evolver 的思路 | 架构参考价值低（Python、无测试、无锁文件） |
 | js-ecosystem | 重心状态对象概念 | 引入 openai-agents-js/langgraph — 自研 focusState 更可控 |
 | third-party-libraries | htmlparser2（P2 评估） | better-sqlite3 — 当前 JSONL 规模下不值得迁移；ts-morph — 使用场景有限 |

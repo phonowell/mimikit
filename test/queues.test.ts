@@ -10,8 +10,6 @@ import {
   compactResultQueueIfFullyConsumed,
   consumeUserInputs,
   consumeWorkerResults,
-  loadInputQueueState,
-  loadResultQueueState,
   publishUserInput,
   publishWorkerResult,
 } from '../src/streams/queues.js'
@@ -124,9 +122,6 @@ test('input queue compacts only when fully consumed', async () => {
   })
   expect(compacted).toBe(true)
 
-  const state = await loadInputQueueState(paths)
-  expect(state.managerCursor).toBe(0)
-
   const read = await consumeUserInputs({
     paths,
     fromCursor: 0,
@@ -167,9 +162,6 @@ test('result queue compacts only when fully consumed', async () => {
     minPacketsToCompact: 2,
   })
   expect(compacted).toBe(true)
-
-  const state = await loadResultQueueState(paths)
-  expect(state.managerCursor).toBe(0)
 
   const read = await consumeWorkerResults({
     paths,

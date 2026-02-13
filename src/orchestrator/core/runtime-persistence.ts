@@ -5,12 +5,6 @@ import {
   saveRuntimeSnapshot,
   selectPersistedTasks,
 } from '../../storage/runtime-state.js'
-import {
-  loadInputQueueState,
-  loadResultQueueState,
-  saveInputQueueState,
-  saveResultQueueState,
-} from '../../streams/queues.js'
 
 import type { RuntimeState } from './runtime-state.js'
 
@@ -20,23 +14,13 @@ export const hydrateRuntimeState = async (
   const snapshot = await loadRuntimeSnapshot(runtime.config.workDir)
   runtime.tasks = snapshot.tasks
   runtime.cronJobs = snapshot.cronJobs ?? []
+  if (snapshot.focusState) runtime.focusState = snapshot.focusState
   if (snapshot.queues) {
     runtime.queues = {
       inputsCursor: snapshot.queues.inputsCursor,
       resultsCursor: snapshot.queues.resultsCursor,
     }
   }
-
-  const inputQueueState = await loadInputQueueState(runtime.paths)
-  const resultQueueState = await loadResultQueueState(runtime.paths)
-  runtime.queues.inputsCursor = Math.max(
-    runtime.queues.inputsCursor,
-    inputQueueState.managerCursor,
-  )
-  runtime.queues.resultsCursor = Math.max(
-    runtime.queues.resultsCursor,
-    resultQueueState.managerCursor,
-  )
 
   if (snapshot.tasks.length > 0) {
     await bestEffort('appendLog: runtime_hydrated', () =>
@@ -55,11 +39,6 @@ export const persistRuntimeState = async (
     tasks: selectPersistedTasks(runtime.tasks),
     cronJobs: runtime.cronJobs,
     queues: runtime.queues,
-  })
-  await saveInputQueueState(runtime.paths, {
-    managerCursor: runtime.queues.inputsCursor,
-  })
-  await saveResultQueueState(runtime.paths, {
-    managerCursor: runtime.queues.resultsCursor,
+    ...(runtime.focusState ? { focusState: runtime.focusState } : {}),
   })
 }

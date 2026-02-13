@@ -2,12 +2,11 @@ import { buildManagerPrompt } from '../prompts/build-prompts.js'
 import { runWithProvider } from '../providers/registry.js'
 import {
   appendLlmArchiveResult,
-  buildLlmArchiveLookupKey,
   type LlmArchiveEntry,
-  type LlmArchiveLookup,
   type LlmArchiveResult,
 } from '../storage/llm-archive.js'
 
+import type { FocusState } from '../orchestrator/core/runtime-state.js'
 import type {
   CronJob,
   HistoryMessage,
@@ -55,6 +54,8 @@ export const runManager = async (params: {
   cronJobs?: CronJob[]
   history: HistoryMessage[]
   env?: ManagerEnv
+  focusState?: FocusState
+  compactedContext?: string
   model?: string
   modelReasoningEffort?: ModelReasoningEffort
   seed?: number
@@ -75,6 +76,8 @@ export const runManager = async (params: {
     ...(params.cronJobs ? { cronJobs: params.cronJobs } : {}),
     history: params.history,
     ...(params.env ? { env: params.env } : {}),
+    ...(params.focusState ? { focusState: params.focusState } : {}),
+    ...(params.compactedContext ? { compactedContext: params.compactedContext } : {}),
   })
   const model = normalizeOptional(params.model)
   const sampling = {
@@ -83,25 +86,10 @@ export const runManager = async (params: {
       ? { temperature: params.temperature }
       : {}),
   }
-  const lookup: LlmArchiveLookup = {
-    role: 'manager',
-    ...(model ? { model } : {}),
-    prompt,
-    messages: [{ role: 'user', content: prompt }],
-    ...sampling,
-  }
-  const requestKey = buildLlmArchiveLookupKey(lookup)
   const fallbackModel = normalizeOptional(
     params.fallbackModel ?? DEFAULT_FALLBACK_MODEL,
   )
   const timeoutMs = resolveManagerTimeoutMs(prompt)
-  const fallbackRequestKey = fallbackModel
-    ? buildLlmArchiveLookupKey({
-        ...lookup,
-        model: fallbackModel,
-        attempt: 'fallback',
-      })
-    : undefined
 
   type ArchiveBase = Omit<LlmArchiveEntry, 'prompt' | 'output' | 'ok'>
   const archive = (base: ArchiveBase, result: LlmArchiveResult) =>
@@ -110,12 +98,10 @@ export const runManager = async (params: {
   const archiveBase = (
     callModel: string | undefined,
     label: 'primary' | 'fallback',
-    key: string | undefined,
   ): ArchiveBase => ({
     role: 'manager',
     ...(callModel ? { model: callModel } : {}),
     attempt: label,
-    ...(key ? { requestKey: key } : {}),
     ...sampling,
   })
 
@@ -143,11 +129,11 @@ export const runManager = async (params: {
 
   try {
     const r = await callProvider(model)
-    await archive(archiveBase(model, 'primary', requestKey), { ...r, ok: true })
+    await archive(archiveBase(model, 'primary'), { ...r, ok: true })
     return toResult(r, false)
   } catch (error) {
     const err = toError(error)
-    await archive(archiveBase(model, 'primary', requestKey), {
+    await archive(archiveBase(model, 'primary'), {
       output: '',
       ok: false,
       error: err.message,
@@ -156,17 +142,16 @@ export const runManager = async (params: {
     if (!fallbackModel) throw error
     try {
       const r = await callProvider(fallbackModel)
-      await archive(
-        archiveBase(fallbackModel, 'fallback', fallbackRequestKey),
-        { ...r, ok: true },
-      )
+      await archive(archiveBase(fallbackModel, 'fallback'), { ...r, ok: true })
       return toResult(r, true)
     } catch (fallbackError) {
       const fbErr = toError(fallbackError)
-      await archive(
-        archiveBase(fallbackModel, 'fallback', fallbackRequestKey),
-        { output: '', ok: false, error: fbErr.message, errorName: fbErr.name },
-      )
+      await archive(archiveBase(fallbackModel, 'fallback'), {
+        output: '',
+        ok: false,
+        error: fbErr.message,
+        errorName: fbErr.name,
+      })
       throw fallbackError
     }
   }

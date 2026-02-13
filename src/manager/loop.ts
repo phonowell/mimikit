@@ -8,6 +8,12 @@ import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js
 import { enqueueTask } from '../orchestrator/core/task-state.js'
 import { notifyUiSignal } from '../orchestrator/core/ui-signal.js'
 import { notifyWorkerLoop } from '../orchestrator/core/worker-signal.js'
+import {
+  buildCompactedSummary,
+  appendCompactedSummary,
+  readCompactedSummaries,
+  formatCompactedContext,
+} from '../orchestrator/read-model/history-compaction.js'
 import { selectRecentHistory } from '../orchestrator/read-model/history-select.js'
 import { appendTaskSystemMessage } from '../orchestrator/read-model/task-history.js'
 import { selectRecentTasks } from '../orchestrator/read-model/task-select.js'
@@ -17,6 +23,7 @@ import { consumeUserInputs, consumeWorkerResults } from '../streams/queues.js'
 import { enqueueWorkerTask } from '../worker/dispatch.js'
 
 import { applyTaskActions, collectTaskResultSummaries } from './action-apply.js'
+import { extractFocusState, stripFocusBlock } from './focus-extract.js'
 import {
   appendConsumedInputsToHistory,
   appendConsumedResultsToHistory,
@@ -213,11 +220,27 @@ export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
       })
 
       const history = await readHistory(runtime.paths.history)
-      const recentHistory = selectRecentHistory(history, {
-        minCount: runtime.config.manager.historyMinCount,
-        maxCount: runtime.config.manager.historyMaxCount,
-        maxBytes: runtime.config.manager.historyMaxBytes,
-      })
+      const { selected: recentHistory, truncated: truncatedHistory } =
+        selectRecentHistory(history, {
+          minCount: runtime.config.manager.historyMinCount,
+          maxCount: runtime.config.manager.historyMaxCount,
+          maxBytes: runtime.config.manager.historyMaxBytes,
+        })
+      if (truncatedHistory.length > 0) {
+        const compacted = buildCompactedSummary(truncatedHistory)
+        if (compacted)
+          await bestEffort('appendCompactedSummary', () =>
+            appendCompactedSummary(
+              runtime.paths.historyCompacted,
+              compacted,
+            ),
+          )
+      }
+      const compactedSummaries = await readCompactedSummaries(
+        runtime.paths.historyCompacted,
+      )
+      const compactedContext = formatCompactedContext(compactedSummaries)
+
       const recentTasks = selectRecentTasks(runtime.tasks, {
         minCount: runtime.config.manager.tasksMinCount,
         maxCount: runtime.config.manager.tasksMaxCount,
@@ -235,11 +258,16 @@ export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
         ...(runtime.lastUserMeta
           ? { env: { lastUser: runtime.lastUserMeta } }
           : {}),
+        ...(runtime.focusState ? { focusState: runtime.focusState } : {}),
+        ...(compactedContext ? { compactedContext } : {}),
         model: runtime.config.manager.model,
         modelReasoningEffort: runtime.config.manager.modelReasoningEffort,
       })
 
-      const parsed = parseActions(managerResult.output)
+      const focusState = extractFocusState(managerResult.output)
+      if (focusState) runtime.focusState = focusState
+      const strippedOutput = stripFocusBlock(managerResult.output)
+      const parsed = parseActions(strippedOutput)
       const summaries = collectTaskResultSummaries(parsed.actions)
       const hasManualCanceledResult = results.some(
         (result) =>

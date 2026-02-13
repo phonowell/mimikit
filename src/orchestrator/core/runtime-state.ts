@@ -16,6 +16,12 @@ export type UserMeta = {
   clientNowIso?: string
 }
 
+export type FocusState = {
+  intent?: string
+  activeTaskIds?: string[]
+  topic?: string
+}
+
 export type RuntimeState = {
   config: AppConfig
   paths: StatePaths
@@ -29,6 +35,7 @@ export type RuntimeState = {
   }
   tasks: Task[]
   cronJobs: CronJob[]
+  focusState?: FocusState
   runningControllers: Map<string, AbortController>
   workerQueue: PQueue
   workerSignalController: AbortController

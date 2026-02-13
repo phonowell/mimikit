@@ -1,15 +1,12 @@
-import { readJson, writeJson } from '../fs/json.js'
 import { nowIso, shortId } from '../shared/utils.js'
 import { appendJsonl, readJsonl, writeJsonl } from '../storage/jsonl.js'
 
 import type { JsonPacket } from '../types/index.js'
 
-type QueueState = { managerCursor: number }
 export type PacketWithCursor<TPayload> = JsonPacket<TPayload> & {
   cursor: number
 }
 
-const INITIAL_QUEUE_STATE: QueueState = { managerCursor: 0 }
 const queueUpdateLocks = new Map<string, Promise<void>>()
 
 const runSerialized = async <T>(
@@ -36,12 +33,6 @@ export const normalizeCursor = (value: unknown): number => {
   if (typeof value !== 'number') return 0
   if (!Number.isFinite(value)) return 0
   return Math.max(0, Math.floor(value))
-}
-
-const normalizeState = (value: unknown): QueueState => {
-  if (!value || typeof value !== 'object') return { ...INITIAL_QUEUE_STATE }
-  const record = value as { managerCursor?: unknown }
-  return { managerCursor: normalizeCursor(record.managerCursor) }
 }
 
 const makePacket = <TPayload>(payload: TPayload): JsonPacket<TPayload> => ({
@@ -77,29 +68,8 @@ export const appendQueuePacket = <TPayload>(params: {
     appendJsonl(params.path, [makePacket(params.payload)]),
   )
 
-export const loadQueueState = async (statePath: string): Promise<QueueState> =>
-  normalizeState(
-    await readJson<unknown>(
-      statePath,
-      { ...INITIAL_QUEUE_STATE },
-      {
-        ensureFile: true,
-      },
-    ),
-  )
-
-export const saveQueueState = async (
-  statePath: string,
-  state: QueueState,
-): Promise<void> => {
-  await writeJson(statePath, {
-    managerCursor: normalizeCursor(state.managerCursor),
-  })
-}
-
 export const compactQueueIfFullyConsumed = (params: {
   packetsPath: string
-  statePath: string
   cursor: number
   minPacketsToCompact: number
 }): Promise<boolean> =>
@@ -112,7 +82,6 @@ export const compactQueueIfFullyConsumed = (params: {
     if (packets.length < minPackets) return false
     if (cursor < packets.length) return false
     await writeJsonl(params.packetsPath, [])
-    await saveQueueState(params.statePath, { managerCursor: 0 })
     return true
   })
 

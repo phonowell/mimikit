@@ -12,9 +12,6 @@ export const mergeTaskResults = (
   return values
 }
 
-export const dedupeTaskResults = (results: TaskResult[]): TaskResult[] =>
-  mergeTaskResults(results, [])
-
 export const collectTaskResults = (tasks: Task[]): TaskResult[] =>
   tasks
     .filter((task): task is Task & { result: TaskResult } =>

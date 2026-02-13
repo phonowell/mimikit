@@ -4,8 +4,6 @@ import { updateJsonl } from '../storage/jsonl.js'
 import {
   compactInputQueueIfFullyConsumed,
   compactResultQueueIfFullyConsumed,
-  saveInputQueueState,
-  saveResultQueueState,
 } from '../streams/queues.js'
 
 import {
@@ -62,14 +60,6 @@ const appendTaskSnapshot = async (runtime: RuntimeState): Promise<void> => {
   })
 }
 
-const persistQueueStates = async (runtime: RuntimeState): Promise<void> => {
-  await saveInputQueueState(runtime.paths, {
-    managerCursor: runtime.queues.inputsCursor,
-  })
-  await saveResultQueueState(runtime.paths, {
-    managerCursor: runtime.queues.resultsCursor,
-  })
-}
 
 const maybeCompactQueues = async (runtime: RuntimeState): Promise<void> => {
   const compactedInputs = await compactInputQueueIfFullyConsumed({
@@ -106,7 +96,6 @@ export const finalizeBatchProgress = async (params: {
   runtime.inflightInputs = runtime.inflightInputs.filter(
     (item) => !consumedInputIds.has(item.id),
   )
-  await persistQueueStates(runtime)
   await maybeCompactQueues(runtime)
   await appendTaskSnapshot(runtime)
   await persistRuntime(runtime)

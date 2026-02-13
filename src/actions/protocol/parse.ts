@@ -4,7 +4,6 @@ import { collectTagMatches, extractActionText } from './extract-block.js'
 
 import type { Parsed } from '../model/spec.js'
 
-const LINE_RE = /^@([a-zA-Z_][\w-]*)(?:\s+(.+))?$/
 const ATTR_RE = /(\w+)\s*=\s*"((?:\\.|[^"\\])*)"/g
 
 const parsedSchema = z
@@ -41,25 +40,6 @@ const asParsed = (value: Parsed): Parsed | undefined => {
   return parsed.data
 }
 
-const parseLine = (line: string): Parsed | undefined => {
-  const trimmed = line.trim()
-  if (!trimmed.startsWith('@')) return undefined
-  const match = trimmed.match(LINE_RE)
-  if (!match) return undefined
-  return asParsed({
-    name: match[1] ?? '',
-    attrs: parseAttrs(match[2]?.trim() ?? ''),
-  })
-}
-
-export const parseLooseLines = (text: string): Parsed[] => {
-  if (!text) return []
-  return text
-    .split('\n')
-    .map((line) => parseLine(line))
-    .filter((item): item is Parsed => item !== undefined)
-}
-
 const parseTagMatches = (matches: RegExpMatchArray[]): Parsed[] =>
   matches
     .map((match) => {
@@ -78,7 +58,5 @@ export const parseActions = (
 ): { actions: Parsed[]; text: string } => {
   const { actionText, text } = extractActionText(output)
   if (!actionText) return { actions: [], text }
-  const lineActions = parseLooseLines(actionText)
-  if (lineActions.length > 0) return { actions: lineActions, text }
   return { actions: parseTagMatches(collectTagMatches(actionText)), text }
 }
