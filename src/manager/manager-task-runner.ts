@@ -6,12 +6,6 @@ import {
   markTaskRunning,
   markTaskSucceeded,
 } from '../orchestrator/core/task-state.js'
-import { buildWorkerPrompt } from '../prompts/build-prompts.js'
-import { runWithProvider } from '../providers/registry.js'
-import {
-  appendLlmArchiveResult,
-  type LlmArchiveEntry,
-} from '../storage/llm-archive.js'
 import { buildResult, finalizeResult } from '../worker/result-finalize.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
@@ -21,7 +15,6 @@ const runManagerProfileTask = async (
   runtime: RuntimeState,
   task: Task,
 ): Promise<void> => {
-  const { task: taskConfig } = runtime.config.manager
   const startedAt = Date.now()
   const elapsed = () => Math.max(0, Date.now() - startedAt)
 
@@ -39,55 +32,11 @@ const runManagerProfileTask = async (
     }),
   )
 
-  let prompt = ''
   try {
-    prompt = await buildWorkerPrompt({
-      workDir: runtime.config.workDir,
-      task,
-    })
-    const llmResult = await runWithProvider({
-      provider: 'openai-chat',
-      prompt,
-      timeoutMs: taskConfig.timeoutMs,
-      model: taskConfig.model,
-      modelReasoningEffort: taskConfig.modelReasoningEffort,
-    })
-
-    if (llmResult.usage) task.usage = llmResult.usage
-
-    const archiveBase: Omit<LlmArchiveEntry, 'prompt' | 'output' | 'ok'> = {
-      role: 'worker',
-      taskId: task.id,
-      model: taskConfig.model,
-    }
-    await bestEffort('archive: manager_task', () =>
-      appendLlmArchiveResult(runtime.config.workDir, archiveBase, prompt, {
-        ...llmResult,
-        ok: true,
-      }),
-    )
-
-    const result = buildResult(
-      task,
-      'succeeded',
-      llmResult.output,
-      elapsed(),
-      llmResult.usage,
-    )
+    const result = buildResult(task, 'succeeded', task.prompt, elapsed())
     await finalizeResult(runtime, task, result, markTaskSucceeded)
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error))
-
-    if (prompt) {
-      await bestEffort('archive: manager_task_error', () =>
-        appendLlmArchiveResult(
-          runtime.config.workDir,
-          { role: 'worker', taskId: task.id, model: taskConfig.model },
-          prompt,
-          { output: '', ok: false, error: err.message, errorName: err.name },
-        ),
-      )
-    }
 
     const result = buildResult(task, 'failed', err.message, elapsed())
     await finalizeResult(runtime, task, result, markTaskFailed)
