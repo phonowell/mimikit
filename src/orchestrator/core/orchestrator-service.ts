@@ -6,7 +6,7 @@ import { buildPaths } from '../../fs/paths.js'
 import { appendLog } from '../../log/append.js'
 import { bestEffort, setDefaultLogPath } from '../../log/safe.js'
 import { managerLoop } from '../../manager/loop.js'
-import { newId, nowIso } from '../../shared/utils.js'
+import { newId, nowIso, titleFromCandidates } from '../../shared/utils.js'
 import { appendHistory, readHistory } from '../../storage/jsonl.js'
 import { publishUserInput } from '../../streams/queues.js'
 import { cancelTask } from '../../worker/cancel-task.js'
@@ -30,7 +30,17 @@ import {
 import { notifyWorkerLoop } from './worker-signal.js'
 
 import type { RuntimeState, UserMeta } from './runtime-state.js'
-import type { Task } from '../../types/index.js'
+import type {
+  CronJob,
+  Task,
+  TaskNextDef,
+  WorkerProfile,
+} from '../../types/index.js'
+
+const cloneCronJob = (job: CronJob): CronJob => ({
+  ...job,
+  ...(job.next ? { next: { ...job.next } } : {}),
+})
 
 export class Orchestrator {
   private runtime: RuntimeState
@@ -67,6 +77,7 @@ export class Orchestrator {
         resultsCursor: 0,
       },
       tasks: [],
+      cronJobs: [],
       runningControllers: new Map(),
       workerQueue: new PQueue({
         concurrency: config.worker.maxConcurrent,
@@ -169,6 +180,49 @@ export class Orchestrator {
 
   cancelTask(taskId: string, meta?: { source?: string; reason?: string }) {
     return cancelTask(this.runtime, taskId, meta)
+  }
+
+  async addCronJob(input: {
+    cron: string
+    prompt: string
+    title?: string
+    profile?: WorkerProfile
+    enabled?: boolean
+    next?: TaskNextDef
+  }): Promise<CronJob> {
+    const prompt = input.prompt.trim()
+    if (!prompt) throw new Error('add_cron_job_prompt_empty')
+    const cron = input.cron.trim()
+    if (!cron) throw new Error('add_cron_job_cron_empty')
+    const id = newId()
+    const job: CronJob = {
+      id,
+      cron,
+      prompt,
+      title: titleFromCandidates(id, [input.title, prompt]),
+      profile: input.profile ?? 'standard',
+      enabled: input.enabled ?? true,
+      createdAt: nowIso(),
+      ...(input.next ? { next: { ...input.next } } : {}),
+    }
+    this.runtime.cronJobs.push(job)
+    await persistRuntimeState(this.runtime)
+    return cloneCronJob(job)
+  }
+
+  getCronJobs(): CronJob[] {
+    return this.runtime.cronJobs.map((job) => cloneCronJob(job))
+  }
+
+  async cancelCronJob(cronJobId: string): Promise<boolean> {
+    const targetId = cronJobId.trim()
+    if (!targetId) return false
+    const target = this.runtime.cronJobs.find((job) => job.id === targetId)
+    if (!target) return false
+    if (!target.enabled) return true
+    target.enabled = false
+    await persistRuntimeState(this.runtime)
+    return true
   }
 
   getStatus(): OrchestratorStatus {

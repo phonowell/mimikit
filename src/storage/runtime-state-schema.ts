@@ -95,14 +95,14 @@ const runtimeSnapshotRawSchema = z
   })
   .strict()
 
-const toTaskNextDef = (next: z.infer<typeof taskNextRawSchema>): TaskNextDef => {
-  return {
-    prompt: next.prompt,
-    ...(next.title !== undefined ? { title: next.title } : {}),
-    ...(next.profile !== undefined ? { profile: next.profile } : {}),
-    ...(next.condition !== undefined ? { condition: next.condition } : {}),
-  }
-}
+const toTaskNextDef = (
+  next: z.infer<typeof taskNextRawSchema>,
+): TaskNextDef => ({
+  prompt: next.prompt,
+  ...(next.title !== undefined ? { title: next.title } : {}),
+  ...(next.profile !== undefined ? { profile: next.profile } : {}),
+  ...(next.condition !== undefined ? { condition: next.condition } : {}),
+})
 
 const toTask = (task: z.infer<typeof taskRawSchema>): Task => {
   const usage = normalizeTokenUsage(task.usage)
@@ -172,28 +172,28 @@ const toTask = (task: z.infer<typeof taskRawSchema>): Task => {
   }
 }
 
-const toCronJob = (cronJob: z.infer<typeof cronJobRawSchema>): CronJob => {
-  return {
-    id: cronJob.id,
-    cron: cronJob.cron,
-    prompt: cronJob.prompt,
-    title: cronJob.title,
-    profile: cronJob.profile,
-    enabled: cronJob.enabled,
-    createdAt: cronJob.createdAt,
-    ...(cronJob.lastTriggeredAt !== undefined
-      ? { lastTriggeredAt: cronJob.lastTriggeredAt }
-      : {}),
-    ...(cronJob.next !== undefined ? { next: toTaskNextDef(cronJob.next) } : {}),
-  }
-}
+const toCronJob = (cronJob: z.infer<typeof cronJobRawSchema>): CronJob => ({
+  id: cronJob.id,
+  cron: cronJob.cron,
+  prompt: cronJob.prompt,
+  title: cronJob.title,
+  profile: cronJob.profile,
+  enabled: cronJob.enabled,
+  createdAt: cronJob.createdAt,
+  ...(cronJob.lastTriggeredAt !== undefined
+    ? { lastTriggeredAt: cronJob.lastTriggeredAt }
+    : {}),
+  ...(cronJob.next !== undefined ? { next: toTaskNextDef(cronJob.next) } : {}),
+})
 
 export const parseRuntimeSnapshot = (value: unknown): RuntimeSnapshot => {
   const parsed = runtimeSnapshotRawSchema.parse(value)
 
   return {
     tasks: parsed.tasks.map((task) => toTask(task)),
-    ...(parsed.cronJobs ? { cronJobs: parsed.cronJobs.map((job) => toCronJob(job)) } : {}),
+    ...(parsed.cronJobs
+      ? { cronJobs: parsed.cronJobs.map((job) => toCronJob(job)) }
+      : {}),
     ...(parsed.queues ? { queues: parsed.queues } : {}),
   }
 }

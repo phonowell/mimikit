@@ -223,7 +223,7 @@ const applyCancelCronJob = async (
   const cronJob = runtime.cronJobs.find(
     (entry) => entry.id === parsed.data.cron_job_id,
   )
-  if (!cronJob || !cronJob.enabled) return
+  if (!cronJob?.enabled) return
   cronJob.enabled = false
   await persistRuntimeState(runtime)
 }

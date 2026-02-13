@@ -4,8 +4,8 @@ import { bestEffort, logSafeError } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import { enqueueTask } from '../orchestrator/core/task-state.js'
 import { notifyWorkerLoop } from '../orchestrator/core/worker-signal.js'
-import { appendTaskSystemMessage } from '../orchestrator/read-model/task-history.js'
 import { selectRecentHistory } from '../orchestrator/read-model/history-select.js'
+import { appendTaskSystemMessage } from '../orchestrator/read-model/task-history.js'
 import { selectRecentTasks } from '../orchestrator/read-model/task-select.js'
 import { nowIso, sleep } from '../shared/utils.js'
 import { appendHistory, readHistory } from '../storage/jsonl.js'
@@ -43,9 +43,9 @@ const checkCronJobs = async (runtime: RuntimeState): Promise<void> => {
     if (
       cronJob.lastTriggeredAt &&
       asSecondStamp(cronJob.lastTriggeredAt) === nowSecond
-    ) {
+    )
       continue
-    }
+
     let matched = false
     try {
       matched = matchCronNow(cronJob.cron, now)

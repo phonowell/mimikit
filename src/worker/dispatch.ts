@@ -65,8 +65,10 @@ export const enqueuePendingWorkerTasks = (runtime: RuntimeState): void => {
 }
 
 export const workerLoop = async (runtime: RuntimeState): Promise<void> => {
-  while (!runtime.stopped)
+  while (!runtime.stopped) {
+    enqueuePendingWorkerTasks(runtime)
     await waitForWorkerLoopSignal(runtime, Number.POSITIVE_INFINITY)
+  }
 
   runtime.workerQueue.pause()
   runtime.workerQueue.clear()
