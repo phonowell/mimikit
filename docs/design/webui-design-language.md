@@ -14,6 +14,7 @@
 - 引用块：保留左侧竖线；竖线与正文的间距已加宽（消息内与输入预览一致）。
 - 输入框：无边框，仅保留轻微凹陷（micro inset）。
 - 任务弹窗：`tasks-list` 为平面浅色层，不使用凹陷阴影。
+- 任务指示器：`status dot` 为实心状态色；`profile` 使用外侧圆环，不再使用文字胶囊。
 - 弹窗遮罩：使用偏冷灰白半透明底（非黑灰）并叠加密集斜向条纹，保持较低透过度。
 - 按钮：全局不可文本选中/复制（`user-select: none`）。
 
@@ -39,6 +40,7 @@
 - 语义色：`--accent` `--success` `--warning` `--danger`。
 - 气泡色：`--bubble-*-bg` `--bubble-*-text` `--bubble-*-border`（`agent`/`user`/`system`）。
 - 状态色：`--status-running` `--status-success` `--status-fail` 等。
+- Profile 色：`--profile-standard` `--profile-specialist` `--profile-manager`（仅用于任务 profile 圆环）。
 - 阴影：`--shadow-raised` `--shadow-raised-soft` `--shadow-inset` `--shadow-inset-soft` `--shadow-floating` `--shadow-dialog`。
 - 形状：`--radius` `--radius-sm`。
 - 焦点：`--focus-ring`。
@@ -55,6 +57,16 @@
 - 元信息胶囊（如 origin / task profile）
 - 引用预览显示态
 - `tasks-list`
+
+## 任务指示器配色规范
+- 结构：内层 `status dot` + 外层 `profile ring`，共享同一 hover title（`{status}/{profile}`）。
+- 色带隔离：`profile` 禁止使用或逼近 `status` 色相（蓝/绿/红/黄/灰语义色带）。
+- `status` 保留语义：`running/success/failed/pending/canceled` 仅使用 `--status-*` token。
+- `profile` 仅用以下 token：
+- `standard` -> `--profile-standard: #A78BFA`
+- `specialist` -> `--profile-specialist: #C084FC`
+- `manager` -> `--profile-manager: #E879F9`
+- 禁止硬编码：任务指示器颜色必须通过 token 配置，不在组件样式中写死 hex。
 
 ## 组件规范
 - 按钮（`.btn`）：默认凸起；按压切换凹陷 + 微位移。
