@@ -29,7 +29,7 @@
   --status-success: #31c48d;
   --status-fail: #ef4444;
   --status-cancel: #9aa3b2;
-  --status-pending: #b9c5d6;
+  --status-pending: var(--warning);
   --status-idle: #3bb273;
   --status-disconnected: #8a96a8;
   --shadow-raised: -7px -7px 14px rgba(255, 255, 255, 0.82),
