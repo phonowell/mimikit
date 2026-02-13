@@ -2,11 +2,16 @@ import { parseActions } from '../actions/protocol/parse.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort, logSafeError } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
+import { enqueueTask } from '../orchestrator/core/task-state.js'
+import { notifyWorkerLoop } from '../orchestrator/core/worker-signal.js'
+import { appendTaskSystemMessage } from '../orchestrator/read-model/task-history.js'
 import { selectRecentHistory } from '../orchestrator/read-model/history-select.js'
 import { selectRecentTasks } from '../orchestrator/read-model/task-select.js'
 import { nowIso, sleep } from '../shared/utils.js'
 import { appendHistory, readHistory } from '../storage/jsonl.js'
 import { consumeUserInputs, consumeWorkerResults } from '../streams/queues.js'
+import { matchCronNow } from '../tasks/cron.js'
+import { enqueueWorkerTask } from '../worker/dispatch.js'
 
 import { applyTaskActions, collectTaskResultSummaries } from './action-apply.js'
 import {
@@ -23,8 +28,61 @@ import { runManager } from './runner.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 
+const asSecondStamp = (iso: string): string => iso.slice(0, 19)
+
+const checkCronJobs = async (runtime: RuntimeState): Promise<void> => {
+  if (runtime.cronJobs.length === 0) return
+
+  const now = new Date()
+  const nowAtIso = now.toISOString()
+  const nowSecond = asSecondStamp(nowAtIso)
+
+  let stateChanged = false
+  for (const cronJob of runtime.cronJobs) {
+    if (!cronJob.enabled) continue
+    if (
+      cronJob.lastTriggeredAt &&
+      asSecondStamp(cronJob.lastTriggeredAt) === nowSecond
+    ) {
+      continue
+    }
+    let matched = false
+    try {
+      matched = matchCronNow(cronJob.cron, now)
+    } catch {
+      matched = false
+    }
+    if (!matched) continue
+
+    cronJob.lastTriggeredAt = nowAtIso
+    stateChanged = true
+
+    const { task, created } = enqueueTask(
+      runtime.tasks,
+      cronJob.prompt,
+      cronJob.title,
+      cronJob.profile,
+      cronJob.next ? [cronJob.next] : undefined,
+    )
+    if (!created) continue
+
+    await appendTaskSystemMessage(runtime.paths.history, 'created', task, {
+      createdAt: task.createdAt,
+    })
+    enqueueWorkerTask(runtime, task)
+    notifyWorkerLoop(runtime)
+  }
+
+  if (!stateChanged) return
+  await bestEffort('persistRuntimeState: cron_trigger', () =>
+    persistRuntimeState(runtime),
+  )
+}
+
 export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
   while (!runtime.stopped) {
+    await bestEffort('checkCronJobs', () => checkCronJobs(runtime))
+
     const now = Date.now()
     const throttled =
       runtime.lastManagerRunAt !== undefined &&

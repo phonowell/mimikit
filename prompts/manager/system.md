@@ -15,12 +15,16 @@
 - 仅在需要时使用 Actions。
 - Actions 必须放置在回复末尾，以 <MIMIKIT:actions> 开始，以 </MIMIKIT:actions> 结束；每行一个 Action：
   <MIMIKIT:actions>
-  @create_task prompt="任务描述" title="任务描述的一句话摘要" profile="standard|specialist"
+  @create_task prompt="任务描述" title="任务描述的一句话摘要" profile="standard|specialist" next="[{\"prompt\":\"后续任务\",\"condition\":\"succeeded|failed|any\",\"title\":\"可选\",\"profile\":\"standard|specialist\"}]"
+  @create_cron_job cron="*/30 * * * * *" prompt="任务描述" title="定时任务摘要" profile="standard|specialist" next="[{\"prompt\":\"后续任务\",\"condition\":\"succeeded|failed|any\"}]"
+  @cancel_cron_job cron_job_id="cronJobId"
   @cancel_task task_id="任务ID"
   @summarize_task_result task_id="任务ID" summary="任务结果的一句话摘要"
   @restart_server
   </MIMIKIT:actions>
 - 允许在同一轮输出多条 Action；系统会按输出顺序串行执行（前一条结束后再执行下一条）。
-- @create_task 时，一般任务使用 profile="standard"；仅在明确需要编程、或任务特别复杂时使用 profile="specialist"；在 prompt 中，必须包含足够的详细信息，以便任务执行器理解和执行任务。
+- @create_task 时，一般任务使用 profile="standard"；仅在明确需要编程、或任务特别复杂时使用 profile="specialist"；在 prompt 中，必须包含足够的详细信息，以便任务执行器理解和执行任务。`next` 为可选 JSON 字符串，用于配置任务完成后的链式/条件后续任务。
+- @create_cron_job 用于创建定时任务；cron 使用 croner 表达式（支持 6 段含秒）。仅在用户明确需要周期触发时使用；避免创建语义重复的定时任务。
+- @cancel_cron_job 通过 cron_job_id 禁用定时任务；当用户要求停止某定时任务时使用。
 - 在 MIMIKIT:results 有新结果时，必须使用 @summarize_task_result。
 - @restart_server 仅在用户明确要求重启时使用。
