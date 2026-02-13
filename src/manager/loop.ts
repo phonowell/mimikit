@@ -1,4 +1,5 @@
 import { parseActions } from '../actions/protocol/parse.js'
+import { Cron } from 'croner'
 import { appendLog } from '../log/append.js'
 import { bestEffort, logSafeError } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
@@ -29,6 +30,12 @@ import { runManager } from './runner.js'
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 
 const asSecondStamp = (iso: string): string => iso.slice(0, 19)
+
+const hasNonEmptyTaskId = (payload: unknown): boolean => {
+  if (!payload || typeof payload !== 'object') return false
+  const { taskId } = payload as { taskId?: unknown }
+  return typeof taskId === 'string' && taskId.trim().length > 0
+}
 
 const checkCronJobs = async (runtime: RuntimeState): Promise<void> => {
   if (runtime.cronJobs.length === 0) return
@@ -74,11 +81,18 @@ const checkCronJobs = async (runtime: RuntimeState): Promise<void> => {
     )
     if (!created) continue
 
+    task.cron = cronJob.cron
     await appendTaskSystemMessage(runtime.paths.history, 'created', task, {
       createdAt: task.createdAt,
     })
     enqueueWorkerTask(runtime, task)
     notifyWorkerLoop(runtime)
+    try {
+      const nextRun = new Cron(cronJob.cron).nextRun()
+      if (!nextRun) cronJob.enabled = false
+    } catch {
+      // already validated above via matchCronNow
+    }
   }
 
   if (!stateChanged) return
@@ -104,20 +118,40 @@ export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
       paths: runtime.paths,
       fromCursor: runtime.queues.inputsCursor,
     })
-    const resultPackets = await consumeWorkerResults({
+    const allResultPackets = await consumeWorkerResults({
       paths: runtime.paths,
       fromCursor: runtime.queues.resultsCursor,
     })
+    const nextInputsCursor =
+      inputPackets.at(-1)?.cursor ?? runtime.queues.inputsCursor
+    const nextResultsCursor =
+      allResultPackets.at(-1)?.cursor ?? runtime.queues.resultsCursor
+    const resultPackets = []
+    for (const packet of allResultPackets) {
+      if (hasNonEmptyTaskId(packet.payload)) {
+        resultPackets.push(packet)
+        continue
+      }
+      await bestEffort('appendLog: invalid_worker_result_packet', () =>
+        appendLog(runtime.paths.log, {
+          event: 'invalid_worker_result_packet',
+          packetId: packet.id,
+          cursor: packet.cursor,
+        }),
+      )
+    }
 
     if (inputPackets.length === 0 && resultPackets.length === 0) {
+      if (nextResultsCursor !== runtime.queues.resultsCursor) {
+        runtime.queues.resultsCursor = nextResultsCursor
+        await bestEffort('persistRuntimeState: invalid_result_packet', () =>
+          persistRuntimeState(runtime),
+        )
+      }
       await sleep(runtime.config.manager.pollMs)
       continue
     }
 
-    const nextInputsCursor =
-      inputPackets.at(-1)?.cursor ?? runtime.queues.inputsCursor
-    const nextResultsCursor =
-      resultPackets.at(-1)?.cursor ?? runtime.queues.resultsCursor
     const inputs = inputPackets.map((packet) => packet.payload)
     const results = resultPackets.map((packet) => packet.payload)
 

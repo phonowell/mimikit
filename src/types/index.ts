@@ -57,6 +57,7 @@ export type Task = {
   fingerprint: string
   prompt: string
   title: string
+  cron?: string
   profile: WorkerProfile
   status: TaskStatus
   createdAt: ISODate

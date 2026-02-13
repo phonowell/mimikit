@@ -59,6 +59,14 @@ export const enqueueWorkerTask = (runtime: RuntimeState, task: Task): void => {
 
 export const enqueuePendingWorkerTasks = (runtime: RuntimeState): void => {
   for (const task of runtime.tasks) {
+    if (
+      task.status === 'running' &&
+      !runtime.runningControllers.has(task.id) &&
+      runtime.workerQueue.sizeBy({ id: task.id }) === 0
+    ) {
+      task.status = 'pending'
+      delete task.startedAt
+    }
     if (task.status !== 'pending') continue
     enqueueWorkerTask(runtime, task)
   }

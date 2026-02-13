@@ -116,12 +116,25 @@ export const renderTasks = (tasksList, data) => {
     status.title = statusValue
     meta.appendChild(status)
 
+    const statusText = document.createElement('span')
+    statusText.className = 'task-status-text'
+    statusText.textContent = statusValue
+    meta.appendChild(statusText)
+
     const profile = document.createElement('span')
     profile.className = 'task-profile'
     const profileText = resolveProfileText(task)
     profile.textContent = profileText
     profile.setAttribute('aria-label', `task profile ${profileText}`)
     meta.appendChild(profile)
+
+    if (task.cron) {
+      const cronEl = document.createElement('span')
+      cronEl.className = 'task-cron'
+      cronEl.textContent = task.cron
+      cronEl.title = `cron: ${task.cron}`
+      meta.appendChild(cronEl)
+    }
 
     const elapsedEl = document.createElement('span')
     elapsedEl.className = 'task-elapsed'

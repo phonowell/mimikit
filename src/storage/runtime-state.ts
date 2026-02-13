@@ -45,6 +45,8 @@ const toRecoveredPendingTask = (task: Task): Task => {
     completedAt: _completedAt,
     durationMs: _durationMs,
     result: _result,
+    usage: _usage,
+    attempts: _attempts,
     ...rest
   } = task
   return {

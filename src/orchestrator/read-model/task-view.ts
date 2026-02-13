@@ -7,6 +7,7 @@ export type TaskView = {
   status: TaskStatus
   profile: Task['profile']
   title: string
+  cron?: string
   createdAt: string
   changeAt: string
   startedAt?: string
@@ -34,6 +35,7 @@ const taskToView = (task: Task): TaskView => ({
   status: task.status,
   profile: task.profile,
   title: task.title || titleFromCandidates(task.id, [task.prompt]),
+  ...(task.cron ? { cron: task.cron } : {}),
   createdAt: task.createdAt,
   changeAt: resolveTaskChangeAt(task),
   ...(task.startedAt ? { startedAt: task.startedAt } : {}),

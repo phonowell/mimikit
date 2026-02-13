@@ -147,6 +147,10 @@
   background: var(--task-dot, var(--status-pending));
 }
 
+.task-status-text {
+  text-transform: capitalize;
+}
+
 .task-profile {
   display: inline-flex;
   align-items: center;
@@ -160,6 +164,20 @@
   font-size: 10px;
   letter-spacing: 0.02em;
   text-transform: lowercase;
+}
+
+.task-cron {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: var(--panel-strong);
+  color: var(--muted);
+  font-size: 10px;
+  font-family: monospace;
+  letter-spacing: 0.02em;
 }
 
 .task-elapsed {
