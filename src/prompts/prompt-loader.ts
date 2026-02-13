@@ -9,7 +9,7 @@ const PROMPTS_ROOT = fileURLToPath(new URL('../../prompts/', import.meta.url))
 
 const readPromptByPath = async (path: string): Promise<string> => {
   try {
-    const content = await read(path, { raw: true })
+    const content = await read(path, { raw: true, echo: false })
     if (!content) return ''
     if (Buffer.isBuffer(content)) return content.toString('utf8')
     return typeof content === 'string' ? content : ''

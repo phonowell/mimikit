@@ -147,7 +147,7 @@ export const appendLlmArchive = async (
   const path = buildArchivePath(stateDir, timestamp, entry)
   await ensureDir(join(stateDir, 'llm', dateStamp(timestamp)))
   const content = buildArchiveContent(timestamp, entry)
-  await write(path, content, { encoding: 'utf8' })
+  await write(path, content, { encoding: 'utf8' }, { echo: false })
 }
 
 export const appendLlmArchiveResult = (

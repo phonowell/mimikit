@@ -29,7 +29,7 @@ export const patchFileSpec: Spec<Input> = {
   schema,
   run: async (context, args) => {
     const path = resolvePath(context.workDir, args.path)
-    const fileRaw = await read(path, { raw: true })
+    const fileRaw = await read(path, { raw: true, echo: false })
     if (fileRaw === undefined)
       return { ok: false, output: '', error: 'file_not_found' }
 
@@ -42,7 +42,8 @@ export const patchFileSpec: Spec<Input> = {
       return { ok: false, output: '', error: 'patch_apply_failed' }
 
     const changed = patched !== source
-    if (changed) await write(path, patched, { encoding: 'utf8' })
+    if (changed)
+      await write(path, patched, { encoding: 'utf8' }, { echo: false })
 
     return {
       ok: true,

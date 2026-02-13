@@ -52,7 +52,7 @@ export const readJsonl = async <T>(
   options: JsonlReadOptions<T> & { ensureFile?: boolean } = {},
 ): Promise<T[]> => {
   const readRaw = () =>
-    safe('readJsonl: readFile', () => read(path, { raw: true }), {
+    safe('readJsonl: readFile', () => read(path, { raw: true, echo: false }), {
       fallback: null,
       meta: { path },
       ignoreCodes: ['ENOENT'],
@@ -101,7 +101,7 @@ export const appendJsonl = async <T>(
   await ensureDir(dirname(path))
   const body = items.map((item) => JSON.stringify(item)).join('\n')
   const payload = `${body}\n`
-  await write(path, payload, { flag: 'a', encoding: 'utf8' })
+  await write(path, payload, { flag: 'a', encoding: 'utf8' }, { echo: false })
 }
 
 export const updateJsonl = <T>(

@@ -102,7 +102,7 @@ export const appendTaskResultArchive = async (
   const filename = buildFilename(entry)
   const path = await ensureUniquePath(join(dir, filename))
   const content = buildArchiveContent(entry)
-  await write(path, content, { encoding: 'utf8' })
+  await write(path, content, { encoding: 'utf8' }, { echo: false })
   return path
 }
 

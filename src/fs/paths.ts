@@ -49,7 +49,7 @@ export const buildPaths = (stateDir: string): StatePaths => {
 }
 
 export const ensureDir = async (path: string): Promise<void> => {
-  await mkdir(path)
+  await mkdir(path, { echo: false })
 }
 
 const getErrorCode = (error: unknown): string | undefined => {

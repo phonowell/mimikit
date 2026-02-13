@@ -27,7 +27,10 @@ type CommandResult = {
 }
 
 const runCommand = async (command: string[]): Promise<CommandResult> => {
-  const [code, last, all] = await exec(command, { silent: true })
+  const [code, last, all] = await exec(command, {
+    echo: false,
+    silent: true,
+  })
   return {
     code,
     last,

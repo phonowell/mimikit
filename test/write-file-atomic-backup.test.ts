@@ -39,7 +39,9 @@ test('writeFileAtomic ignores aggregate ENOENT backup failure', async () => {
     writeFileAtomic(path, '{"ok":true}\n', { backup: true }),
   ).resolves.toBeUndefined()
   await expect(readFile(path, 'utf8')).resolves.toBe('{"ok":true}\n')
-  expect(vi.mocked(copy)).toHaveBeenCalledWith(path, `${path}.bak`)
+  expect(vi.mocked(copy)).toHaveBeenCalledWith(path, `${path}.bak`, {
+    echo: false,
+  })
 })
 
 test('writeFileAtomic throws when aggregate backup error is not ENOENT', async () => {

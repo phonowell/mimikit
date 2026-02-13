@@ -36,7 +36,7 @@ export const editFileSpec: Spec<Input> = {
   run: async (context, args) => {
     const path = resolvePath(context.workDir, args.path)
 
-    const fileRaw = await read(path, { raw: true })
+    const fileRaw = await read(path, { raw: true, echo: false })
     if (fileRaw === undefined) throw new Error('file_not_found')
     const raw = Buffer.isBuffer(fileRaw)
       ? fileRaw.toString('utf8')
@@ -48,7 +48,7 @@ export const editFileSpec: Spec<Input> = {
     const next = args.replace_all
       ? raw.split(args.old_text).join(args.new_text)
       : replaceFirst(raw, args.old_text, args.new_text)
-    await write(path, next, { encoding: 'utf8' })
+    await write(path, next, { encoding: 'utf8' }, { echo: false })
 
     return {
       ok: true,

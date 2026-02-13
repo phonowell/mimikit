@@ -61,7 +61,7 @@ export const searchFilesSpec: Spec<Input> = {
       if (matches.length >= maxResults) break
       if (isIgnoredPath(absPath)) continue
       scannedFiles += 1
-      const raw = await read(absPath, { raw: true })
+      const raw = await read(absPath, { raw: true, echo: false })
       const text = toText(raw)
       if (text === undefined) continue
       if (text.includes('\u0000')) continue

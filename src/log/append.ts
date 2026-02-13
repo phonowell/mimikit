@@ -12,7 +12,7 @@ const MAX_FILES = Math.max(1, Math.ceil(MAX_TOTAL_BYTES / MAX_BYTES))
 const streams = new Map<string, RotatingFileStream>()
 
 const ensureDir = async (path: string): Promise<void> => {
-  await mkdir(path)
+  await mkdir(path, { echo: false })
 }
 
 const buildStream = async (path: string): Promise<RotatingFileStream> => {

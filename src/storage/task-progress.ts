@@ -34,7 +34,7 @@ export const appendTaskProgress = async (params: {
   payload?: JsonObject
 }): Promise<string> => {
   const path = taskProgressPath(params.stateDir, params.taskId)
-  await mkdir(join(params.stateDir, TASK_PROGRESS_DIR))
+  await mkdir(join(params.stateDir, TASK_PROGRESS_DIR), { echo: false })
   const event = taskProgressEventSchema.parse({
     taskId: params.taskId,
     type: params.type,

@@ -77,7 +77,7 @@ export const readTaskResultArchive = (
   safe(
     'readTaskResultArchive',
     async () => {
-      const raw = await read(path, { raw: true })
+      const raw = await read(path, { raw: true, echo: false })
       const content = toUtf8Text(raw)
       if (!content) return null
       return parseTaskResultArchive(content, fallbackTaskId, path)

@@ -22,6 +22,7 @@ export const execShellSpec: Spec<Input> = {
     const [code, last, all] = await exec(
       prependWorkDir(context.workDir, args.command),
       {
+        echo: false,
         silent: false,
       },
     )

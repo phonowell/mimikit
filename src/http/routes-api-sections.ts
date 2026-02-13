@@ -47,7 +47,7 @@ export const registerTaskArchiveRoute = (
       return
     }
     try {
-      const raw = await read(resolvedArchivePath, { raw: true })
+      const raw = await read(resolvedArchivePath, { raw: true, echo: false })
       if (!raw) {
         reply.code(404).send({ error: 'task archive not found' })
         return

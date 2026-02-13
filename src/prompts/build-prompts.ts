@@ -41,7 +41,7 @@ export type { ManagerEnv } from '../types/index.js'
 const readOptionalMarkdown = async (path: string): Promise<string> => {
   await ensureFile(path, '')
   try {
-    const content = await read(path, { raw: true })
+    const content = await read(path, { raw: true, echo: false })
     if (!content) return ''
     if (Buffer.isBuffer(content)) return content.toString('utf8')
     return typeof content === 'string' ? content : ''

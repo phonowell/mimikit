@@ -50,7 +50,7 @@ export const readFileSpec: Spec<Input> = {
   schema,
   run: async (context, args) => {
     const path = resolvePath(context.workDir, args.path)
-    const value = await read(path, { raw: true })
+    const value = await read(path, { raw: true, echo: false })
     if (value === undefined)
       return { ok: false, output: '', error: 'file_not_found' }
 
@@ -84,7 +84,7 @@ export const writeFileSpec: Spec<WriteInput> = {
   schema: writeSchema,
   run: async (context, args) => {
     const path = resolvePath(context.workDir, args.path)
-    await write(path, args.content, { encoding: 'utf8' })
+    await write(path, args.content, { encoding: 'utf8' }, { echo: false })
     return {
       ok: true,
       output: `write ok: ${path}`,

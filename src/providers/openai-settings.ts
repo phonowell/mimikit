@@ -60,7 +60,7 @@ const readCodexConfig = async (): Promise<Record<string, unknown>> => {
   const path = codexConfigPath()
   const raw = await safe(
     'readCodexConfig: readFile',
-    () => read(path, { raw: true }),
+    () => read(path, { raw: true, echo: false }),
     { fallback: null, meta: { path }, ignoreCodes: ['ENOENT'] },
   )
   if (!raw) return {}

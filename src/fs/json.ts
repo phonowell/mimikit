@@ -61,7 +61,7 @@ export const writeFileAtomic = async (
   await ensureDir(dirname(path))
   if (opts?.backup) {
     try {
-      await copy(path, `${path}.bak`)
+      await copy(path, `${path}.bak`, { echo: false })
     } catch (error) {
       const inspected = inspectBackupError(error)
       if (!inspected.ignorable) {
@@ -87,7 +87,7 @@ export const readJson = async <T>(
   opts?: { useBackup?: boolean; ensureFile?: boolean },
 ): Promise<T> => {
   const readRaw = () =>
-    safe('readJson: readFile', () => read(path, { raw: true }), {
+    safe('readJson: readFile', () => read(path, { raw: true, echo: false }), {
       fallback: null,
       meta: { path },
       ignoreCodes: ['ENOENT'],
@@ -105,7 +105,7 @@ export const readJson = async <T>(
   const backupPath = `${path}.bak`
   const backupRaw = await safe(
     'readJson: readFile backup',
-    () => read(backupPath, { raw: true }),
+    () => read(backupPath, { raw: true, echo: false }),
     { fallback: null, meta: { path: backupPath }, ignoreCodes: ['ENOENT'] },
   )
   const parsedBackup = await parseJsonRaw(backupRaw, fallback, {
