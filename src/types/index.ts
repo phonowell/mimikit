@@ -43,6 +43,15 @@ export type TaskResultStatus = 'succeeded' | 'failed' | 'canceled'
 
 export type WorkerProfile = 'standard' | 'specialist'
 
+export type TaskNextCondition = 'succeeded' | 'failed' | 'any'
+
+export type TaskNextDef = {
+  prompt: string
+  title?: string
+  profile?: WorkerProfile
+  condition?: TaskNextCondition
+}
+
 export type Task = {
   id: Id
   fingerprint: string
@@ -58,6 +67,7 @@ export type Task = {
   usage?: TokenUsage
   archivePath?: string
   cancel?: TaskCancelMeta
+  next?: TaskNextDef[]
   result?: TaskResult
 }
 
@@ -79,6 +89,18 @@ export type JsonPacket<TPayload> = {
   id: string
   createdAt: string
   payload: TPayload
+}
+
+export type CronJob = {
+  id: Id
+  cron: string
+  prompt: string
+  title: string
+  profile: WorkerProfile
+  enabled: boolean
+  createdAt: ISODate
+  lastTriggeredAt?: ISODate
+  next?: TaskNextDef
 }
 
 export type ManagerEnv = {

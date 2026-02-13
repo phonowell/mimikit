@@ -12,6 +12,7 @@ const runtimePath = (stateDir: string): string =>
 
 const initialRuntimeSnapshot = (): RuntimeSnapshot => ({
   tasks: [],
+  cronJobs: [],
   queues: {
     inputsCursor: 0,
     resultsCursor: 0,

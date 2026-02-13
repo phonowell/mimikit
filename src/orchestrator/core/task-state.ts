@@ -1,6 +1,11 @@
 import { newId, nowIso, titleFromCandidates } from '../../shared/utils.js'
 
-import type { Task, TaskStatus, WorkerProfile } from '../../types/index.js'
+import type {
+  Task,
+  TaskNextDef,
+  TaskStatus,
+  WorkerProfile,
+} from '../../types/index.js'
 
 export type EnqueueTaskResult = {
   task: Task
@@ -20,6 +25,7 @@ export const createTask = (
   prompt: string,
   title?: string,
   profile: WorkerProfile = 'standard',
+  next?: TaskNextDef[],
 ): Task => {
   const id = newId()
   return {
@@ -30,6 +36,7 @@ export const createTask = (
     profile,
     status: 'pending',
     createdAt: nowIso(),
+    ...(next !== undefined ? { next } : {}),
   }
 }
 
@@ -38,13 +45,14 @@ export const enqueueTask = (
   prompt: string,
   title?: string,
   profile: WorkerProfile = 'standard',
+  next?: TaskNextDef[],
 ): EnqueueTaskResult => {
   const fingerprint = buildTaskFingerprint(prompt)
   const existing = tasks.find(
     (task) => task.fingerprint === fingerprint && isActiveTask(task),
   )
   if (existing) return { task: existing, created: false }
-  const task = createTask(prompt, title, profile)
+  const task = createTask(prompt, title, profile, next)
   tasks.push(task)
   return { task, created: true }
 }
