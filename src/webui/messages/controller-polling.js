@@ -5,7 +5,6 @@ export const createControllerPolling = (params) => {
   const {
     messageState,
     loading,
-    notifications,
     doRender,
     updateStatus,
     syncLoadingState,
@@ -23,7 +22,6 @@ export const createControllerPolling = (params) => {
   return createMessageFetchers({
     messageState,
     loading,
-    notifications,
     doRender,
     onStatusUpdate: updateStatus,
     onStatusStale: syncLoadingState,

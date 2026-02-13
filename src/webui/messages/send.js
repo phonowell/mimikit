@@ -4,7 +4,6 @@ import { UI_TEXT } from '../system-text.js'
 export function createSendHandler({
   sendBtn,
   input,
-  onUserMessageSubmitted,
   messageState,
   loading,
   quote,
@@ -21,7 +20,6 @@ export function createSendHandler({
     if (input) input.disabled = true
     messageState.awaitingReply = true
     messageState.lastMessageRole = 'user'
-    onUserMessageSubmitted?.()
     try {
       const payload = {
         text: trimmed,

@@ -1,7 +1,6 @@
 import { createLoadingController } from './loading.js'
 import { createControllerCursors } from './controller-cursors.js'
 import { createMessagesLifecycle, runPollLoop } from './lifecycle.js'
-import { createBrowserNotificationController } from './notification.js'
 import { createControllerPolling } from './controller-polling.js'
 import {
   createDisconnectHandler,
@@ -46,9 +45,8 @@ export function createMessagesController({
   let pollTimer = null, consecutiveFailures = 0
   let lastStatus = null, lastMessageCursor = null
   let lastStatusEtag = null, lastMessagesEtag = null
-  const runtime = { isPolling: false, isPageHidden: false, unbindNotificationPrompt: () => {} }
+  const runtime = { isPolling: false, isPageHidden: false }
   const messageState = createMessageState()
-  const notifications = createBrowserNotificationController()
 
   const scroll = createScrollController({
     messagesEl,
@@ -137,7 +135,6 @@ export function createMessagesController({
   const { fetchAndRenderMessages, pollOnce } = createControllerPolling({
     messageState,
     loading,
-    notifications,
     doRender,
     updateStatus,
     syncLoadingState,
@@ -166,7 +163,6 @@ export function createMessagesController({
   const sendMessage = createSendHandler({
     sendBtn,
     input,
-    onUserMessageSubmitted: notifications.primePermission,
     messageState,
     loading,
     quote,
@@ -182,7 +178,6 @@ export function createMessagesController({
   const lifecycle = createMessagesLifecycle({
     runtime,
     scroll,
-    notifications,
     poll,
     clearDelay: delay.clear,
     scheduleNextPoll: () => delay.scheduleNext(poll),

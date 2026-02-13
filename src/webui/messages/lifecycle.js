@@ -1,10 +1,9 @@
 export const createMessagesLifecycle = (params) => {
-  const { runtime, scroll, notifications, poll, clearDelay, scheduleNextPoll } = params
+  const { runtime, scroll, poll, clearDelay, scheduleNextPoll } = params
 
   const start = () => {
     if (runtime.isPolling) return
     scroll.bindScrollControls()
-    runtime.unbindNotificationPrompt = notifications.bindPermissionPrompt()
     runtime.isPolling = true
     runtime.isPageHidden = typeof document !== 'undefined' && document.hidden === true
     poll()
@@ -13,8 +12,6 @@ export const createMessagesLifecycle = (params) => {
   const stop = () => {
     runtime.isPolling = false
     runtime.isPageHidden = false
-    runtime.unbindNotificationPrompt()
-    runtime.unbindNotificationPrompt = () => {}
     clearDelay()
   }
 

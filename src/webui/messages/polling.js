@@ -4,7 +4,6 @@ export const createMessageFetchers = (params) => {
   const {
     messageState,
     loading,
-    notifications,
     doRender,
     onStatusUpdate,
     onStatusStale,
@@ -85,7 +84,6 @@ export const createMessageFetchers = (params) => {
       const rendered = doRender(messages, enterMessageIds)
       if (rendered)
         applyRenderedState(messageState, rendered, { loading, syncLoadingState })
-      notifications.notifyMessages(messages, enterMessageIds)
     }
     updateMessageState(messageState, messages, newestId)
     setLastMessageCursor(newestId)
