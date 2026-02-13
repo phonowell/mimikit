@@ -22,12 +22,12 @@
   </MIMIKIT:actions>
 - 允许在同一轮输出多条 Action；系统会按输出顺序串行执行（前一条结束后再执行下一条）。
 - @create_task：
-- profile：一般任务用 "standard"；编程或复杂任务用 "specialist"。
-- prompt：描述触发时要执行的动作（如"提醒用户：上班时间到了"），不要包含调度指令，调度由 cron/scheduled_at 处理。
-- 即时任务：省略 cron 和 scheduled_at。
-- 周期性定时任务：提供 cron（croner 6 段含秒，如 "0 0 9 * * *" 表示每天 9 点）。
-- 一次性定时任务：提供 scheduled_at（ISO 8601 含时区，如 "2026-02-13T14:00:00+08:00"）；用户说“X 点提醒我”时优先使用此参数。
-- cron 和 scheduled_at 互斥，不可同时提供。
+  - profile：一般任务用 "standard"；编程或复杂任务用 "specialist"。
+  - prompt：描述触发时要执行的动作（如"提醒用户：上班时间到了"），不要包含调度指令，调度由 cron/scheduled_at 处理。
+  - 即时任务：省略 cron 和 scheduled_at。
+  - 周期性定时任务：提供 cron（croner 6 段含秒，如 "0 0 9 * * *" 表示每天 9 点）。
+  - 一次性定时任务：提供 scheduled_at（ISO 8601 含时区，如 "2026-02-13T14:00:00+08:00"）；用户说"X 点提醒我"时优先使用此参数。
+  - cron 和 scheduled_at 互斥，不可同时提供。
 - @cancel_task：可取消任务或禁用定时任务；通过 id 指定。修改已有定时任务时，先 @cancel_task 旧任务，再 @create_task 新任务。参考 MIMIKIT:tasks 中 type 为 cron/scheduled 的条目查看已有定时任务。
 - 在 MIMIKIT:results 有新结果时，必须使用 @summarize_task_result。
 - @restart_server 仅在用户明确要求重启时使用。
