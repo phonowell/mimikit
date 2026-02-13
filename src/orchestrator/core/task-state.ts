@@ -7,8 +7,23 @@ export type EnqueueTaskResult = {
   created: boolean
 }
 
-export const buildTaskFingerprint = (prompt: string): string =>
-  prompt.trim().replace(/\s+/g, ' ').toLowerCase()
+export type TaskFingerprintInput = {
+  prompt: string
+  title: string
+  profile: WorkerProfile
+  schedule?: string
+}
+
+const normalizeFingerprintPart = (value: string): string =>
+  value.trim().replace(/\s+/g, ' ').toLowerCase()
+
+export const buildTaskFingerprint = (input: TaskFingerprintInput): string =>
+  [
+    normalizeFingerprintPart(input.prompt),
+    normalizeFingerprintPart(input.title),
+    input.profile,
+    normalizeFingerprintPart(input.schedule ?? ''),
+  ].join('\n')
 
 const isActiveTask = (task: Task): boolean =>
   task.status === 'pending' || task.status === 'running'
@@ -16,17 +31,33 @@ const isActiveTask = (task: Task): boolean =>
 const resolveTitle = (id: string, prompt: string, title?: string): string =>
   titleFromCandidates(id, [title, prompt])
 
+const resolveFingerprintTitle = (prompt: string, title?: string): string => {
+  const normalizedTitle = title?.trim()
+  if (normalizedTitle) return normalizedTitle
+  const normalizedPrompt = prompt.trim()
+  if (normalizedPrompt) return normalizedPrompt
+  return prompt
+}
+
 export const createTask = (
   prompt: string,
   title?: string,
   profile: WorkerProfile = 'standard',
+  schedule?: string,
 ): Task => {
   const id = newId()
+  const resolvedTitle = resolveTitle(id, prompt, title)
   return {
     id,
-    fingerprint: buildTaskFingerprint(prompt),
+    fingerprint: buildTaskFingerprint({
+      prompt,
+      title: resolvedTitle,
+      profile,
+      ...(schedule ? { schedule } : {}),
+    }),
     prompt,
-    title: resolveTitle(id, prompt, title),
+    title: resolvedTitle,
+    ...(schedule ? { cron: schedule } : {}),
     profile,
     status: 'pending',
     createdAt: nowIso(),
@@ -38,13 +69,26 @@ export const enqueueTask = (
   prompt: string,
   title?: string,
   profile: WorkerProfile = 'standard',
+  schedule?: string,
 ): EnqueueTaskResult => {
-  const fingerprint = buildTaskFingerprint(prompt)
+  const fingerprint = buildTaskFingerprint({
+    prompt,
+    title: resolveFingerprintTitle(prompt, title),
+    profile,
+    ...(schedule ? { schedule } : {}),
+  })
   const existing = tasks.find(
-    (task) => task.fingerprint === fingerprint && isActiveTask(task),
+    (task) =>
+      isActiveTask(task) &&
+      buildTaskFingerprint({
+        prompt: task.prompt,
+        title: task.title,
+        profile: task.profile,
+        ...(task.cron ? { schedule: task.cron } : {}),
+      }) === fingerprint,
   )
   if (existing) return { task: existing, created: false }
-  const task = createTask(prompt, title, profile)
+  const task = createTask(prompt, title, profile, schedule)
   tasks.push(task)
   return { task, created: true }
 }

@@ -137,7 +137,12 @@ const applyCreateTask = async (
     runtime.cronJobs.push(cronJob)
     const scheduledTask: Task = {
       id: cronJob.id,
-      fingerprint: buildTaskFingerprint(parsed.data.prompt),
+      fingerprint: buildTaskFingerprint({
+        prompt: parsed.data.prompt,
+        title: parsed.data.title,
+        profile,
+        schedule: scheduleKey,
+      }),
       prompt: parsed.data.prompt,
       title: parsed.data.title,
       ...(cron ? { cron } : scheduledAt ? { cron: scheduledAt } : {}),
@@ -163,7 +168,12 @@ const applyCreateTask = async (
     parsed.data.title,
     profile,
   )
-  if (!created) return
+  if (!created) {
+    if (task.status !== 'pending' || task.profile === 'manager') return
+    enqueueWorkerTask(runtime, task)
+    notifyWorkerLoop(runtime)
+    return
+  }
   await appendTaskSystemMessage(runtime.paths.history, 'created', task, {
     createdAt: task.createdAt,
   })

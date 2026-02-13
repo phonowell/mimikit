@@ -76,6 +76,7 @@ const checkCronJobs = async (runtime: RuntimeState): Promise<void> => {
         cronJob.prompt,
         cronJob.title,
         cronJob.profile,
+        cronJob.scheduledAt,
       )
       if (!created) continue
 
@@ -120,6 +121,7 @@ const checkCronJobs = async (runtime: RuntimeState): Promise<void> => {
       cronJob.prompt,
       cronJob.title,
       cronJob.profile,
+      cronJob.cron,
     )
     if (!created) continue
 

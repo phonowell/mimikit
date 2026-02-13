@@ -12,7 +12,7 @@
 - `profile`：`standard | specialist`。
 - 去重两层：
   - action 去重键：`prompt + title + profile`
-  - queue 去重键：`task.fingerprint`（仅拦 active 任务）
+  - queue 去重键：`task.fingerprint`（`prompt + title + profile + schedule`，仅拦 active 任务）
 
 ## 执行与回写
 1. `enqueueWorkerTask` 入 `p-queue`。
