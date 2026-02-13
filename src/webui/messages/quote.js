@@ -88,6 +88,7 @@ export const createQuoteController = ({
   const set = (msg) => {
     const id = msg?.id
     if (!id) return
+    if (msg?.role === 'system') return
     activeQuote = {
       id: String(id),
       text: msg?.text ?? '',
@@ -103,4 +104,3 @@ export const createQuoteController = ({
 
   return { clear, set, getActive }
 }
-

@@ -15,10 +15,11 @@ export const renderMessage = (params, msg) => {
   if (!messagesEl) return
   const item = document.createElement('li')
   const roleClass = msg.role === 'assistant' ? 'agent' : msg.role
+  const isSystemMessage = msg?.role === 'system'
   const isEntering = enterMessageIds?.has(msg?.id)
   item.className = `message ${roleClass}${isEntering ? ' message--enter' : ''}`
   if (msg?.id) item.dataset.messageId = String(msg.id)
-  const canQuote = Boolean(onQuote && msg?.id)
+  const canQuote = Boolean(onQuote && msg?.id && !isSystemMessage)
   if (canQuote) {
     item.classList.add('message--quoteable')
     item.tabIndex = 0
@@ -56,7 +57,6 @@ export const renderMessage = (params, msg) => {
 
   const usageText = isAgentMessage(msg) ? formatUsage(msg.usage) : ''
   const elapsedText = isAgentMessage(msg) ? formatElapsedLabel(msg.elapsedMs) : ''
-  const timeText = formatTime(msg.createdAt)
   const meta = document.createElement('small')
   meta.className = 'meta'
   if (usageText) {
@@ -83,9 +83,6 @@ export const renderMessage = (params, msg) => {
     quoteBtn.addEventListener('click', () => onQuote(msg))
   }
 
-  const time = document.createElement('span')
-  time.className = 'time'
-  time.textContent = timeText
   if (msg?.role === 'user' && ackedUserMessageIds?.has(String(msg.id))) {
     const delivery = document.createElement('span')
     delivery.className = 'delivery'
@@ -94,11 +91,17 @@ export const renderMessage = (params, msg) => {
     delivery.setAttribute('aria-label', 'Seen by agent')
     meta.appendChild(delivery)
   }
-  meta.appendChild(time)
-  article.appendChild(meta)
+  if (!isSystemMessage) {
+    const time = document.createElement('span')
+    time.className = 'time'
+    time.textContent = formatTime(msg.createdAt)
+    meta.appendChild(time)
+  }
+  if (meta.childElementCount > 0) {
+    article.appendChild(meta)
+  }
 
   item.appendChild(article)
   if (quoteBtn) item.appendChild(quoteBtn)
   messagesEl.appendChild(item)
 }
-
