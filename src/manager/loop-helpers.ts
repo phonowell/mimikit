@@ -25,6 +25,9 @@ type TaskSnapshotEvent = {
   tasks: RuntimeState['tasks']
 }
 
+const serializeTasks = (tasks: RuntimeState['tasks']): string =>
+  JSON.stringify(tasks)
+
 export const buildFallbackReply = async (params: {
   inputs: UserInput[]
   results: TaskResult[]
@@ -47,8 +50,12 @@ const appendTaskSnapshot = async (runtime: RuntimeState): Promise<void> => {
     createdAt: nowIso(),
     tasks: runtime.tasks,
   }
+  const nextTasksSerialized = serializeTasks(snapshot.tasks)
   const keepCount = TASK_SNAPSHOT_MAX_COUNT
   await updateJsonl<TaskSnapshotEvent>(runtime.paths.tasksEvents, (current) => {
+    const last = current.at(-1)
+    if (last && serializeTasks(last.tasks) === nextTasksSerialized)
+      return current
     const next = [...current, snapshot]
     if (next.length <= keepCount) return next
     return next.slice(next.length - keepCount)
