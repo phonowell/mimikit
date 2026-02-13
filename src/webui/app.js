@@ -30,16 +30,49 @@ const elements = {
   tasksList: $('[data-tasks-list]'),
 }
 
-const TITLE_DOT_BY_STATE = {
-  idle: '🟢',
-  running: '🔵',
-  disconnected: '⚪',
+const FAVICON_COLOR_BY_STATE = {
+  idle: '#22c55e',
+  running: '#0ea5e9',
+  disconnected: '#94a3b8',
 }
 
-const resolveTitleDot = () => {
+const resolveStatusState = () => {
   const state = elements.statusDot?.dataset.state?.trim()?.toLowerCase()
-  if (!state) return '⚪'
-  return TITLE_DOT_BY_STATE[state] ?? '⚪'
+  if (!state) return 'disconnected'
+  return state
+}
+
+let faviconLinkEl = null
+
+const resolveFaviconColor = () => {
+  const state = resolveStatusState()
+  return FAVICON_COLOR_BY_STATE[state] ?? FAVICON_COLOR_BY_STATE.disconnected
+}
+
+const buildStatusFaviconHref = (color) => {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="20" fill="${color}"/></svg>`
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`
+}
+
+const ensureFaviconLink = () => {
+  if (faviconLinkEl instanceof HTMLLinkElement) return faviconLinkEl
+  const existing = document.querySelector('link[rel="icon"]')
+  if (existing instanceof HTMLLinkElement) {
+    faviconLinkEl = existing
+    return faviconLinkEl
+  }
+  const link = document.createElement('link')
+  link.rel = 'icon'
+  document.head.appendChild(link)
+  faviconLinkEl = link
+  return faviconLinkEl
+}
+
+const syncFaviconWithStatus = () => {
+  const link = ensureFaviconLink()
+  const href = buildStatusFaviconHref(resolveFaviconColor())
+  if (link.href === href) return
+  link.href = href
 }
 
 const tasksPanel = bindTasksPanel({
@@ -66,11 +99,12 @@ const messages = createMessagesController({
 })
 
 function syncTitleWithStatus() {
+  syncFaviconWithStatus()
   if (!elements.statusText) return
   const text = elements.statusText.textContent?.trim()
   document.title =
     text && text.length > 0
-      ? `${resolveTitleDot()} ${text}`
+      ? text
       : UI_TEXT.statusTitleFallback
 }
 

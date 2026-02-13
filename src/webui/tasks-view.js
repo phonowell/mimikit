@@ -119,7 +119,6 @@ export const renderTasks = (tasksList, data) => {
     status.setAttribute('role', 'img')
     status.setAttribute('aria-label', statusLabel)
     status.title = statusLabel
-    meta.appendChild(status)
 
     const profile = document.createElement('span')
     profile.className = 'task-profile'
@@ -184,6 +183,7 @@ export const renderTasks = (tasksList, data) => {
     }
 
 
+    titleRow.appendChild(status)
     titleRow.appendChild(title)
 
     if (isCancelable) {
