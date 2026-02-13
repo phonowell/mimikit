@@ -194,22 +194,25 @@
 }
 
 .task-item[data-profile='specialist'] .task-status {
-  width: 10px;
-  height: 8.66px;
-  min-width: 10px;
+  width: 10.4px;
+  height: 12px;
+  min-width: 10.4px;
   border-radius: 0;
   -webkit-clip-path: polygon(
-    25% 0,
-    75% 0,
-    100% 50%,
-    75% 100%,
-    25% 100%,
-    0 50%
+    50% 0,
+    100% 25%,
+    100% 75%,
+    50% 100%,
+    0 75%,
+    0 25%
   );
-  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
 }
 
 .task-item[data-profile='manager'] .task-status {
+  width: 9px;
+  height: 9px;
+  min-width: 9px;
   border-radius: 2px;
 }
 

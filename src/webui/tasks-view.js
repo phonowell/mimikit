@@ -1,7 +1,13 @@
-import { formatElapsedLabel, formatTime, formatUsage } from './messages/format.js'
+import {
+  formatDateTime,
+  formatElapsedLabel,
+  formatTime,
+  formatUsage,
+} from './messages/format.js'
 import { UI_TEXT, resolveTaskStatusLabel } from './system-text.js'
 
 const ELAPSED_TICK_MS = 1000
+const ISO_SCHEDULE_PATTERN = /^\d{4}-\d{2}-\d{2}(?:[T\s].*)?$/
 const parseTimeMs = (value) => {
   if (typeof value === 'number' && Number.isFinite(value)) return value
   if (typeof value !== 'string') return null
@@ -28,6 +34,54 @@ const resolveProfileText = (task) => {
   if (task?.profile === 'manager') return 'manager'
   if (task?.profile === 'specialist') return 'specialist'
   return 'standard'
+}
+
+const parseIsoScheduleDate = (value) => {
+  if (typeof value !== 'string') return null
+  const text = value.trim()
+  if (!text) return null
+  if (!ISO_SCHEDULE_PATTERN.test(text)) return null
+  const parsed = Date.parse(text)
+  if (!Number.isFinite(parsed)) return null
+  return new Date(parsed)
+}
+
+const isSameLocalDay = (left, right) =>
+  left.getFullYear() === right.getFullYear() &&
+  left.getMonth() === right.getMonth() &&
+  left.getDate() === right.getDate()
+
+const formatScheduleText = (value, nowDate) => {
+  const scheduleDate = parseIsoScheduleDate(value)
+  if (!scheduleDate) return ''
+  const baseDate = new Date(nowDate)
+  baseDate.setHours(0, 0, 0, 0)
+  const timeText = scheduleDate.toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+  if (isSameLocalDay(scheduleDate, baseDate)) return `today ${timeText}`
+  const tomorrow = new Date(baseDate)
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  if (isSameLocalDay(scheduleDate, tomorrow)) return `tomorrow ${timeText}`
+  const yesterday = new Date(baseDate)
+  yesterday.setDate(yesterday.getDate() - 1)
+  if (isSameLocalDay(scheduleDate, yesterday)) return `yesterday ${timeText}`
+  const dateText = scheduleDate.toLocaleDateString([], {
+    month: 'short',
+    day: 'numeric',
+  })
+  return `${dateText} ${timeText}`
+}
+
+const resolveCronBadge = (value, nowDate) => {
+  if (typeof value !== 'string') return null
+  const raw = value.trim()
+  if (!raw) return null
+  const scheduleText = formatScheduleText(raw, nowDate)
+  if (!scheduleText) return { text: raw, title: `cron: ${raw}` }
+  const scheduleTitle = formatDateTime(raw) || raw
+  return { text: scheduleText, title: `scheduled: ${scheduleTitle}` }
 }
 
 const updateElapsedTimes = (tasksList) => {
@@ -77,6 +131,7 @@ export const renderTasks = (tasksList, data) => {
   }
 
   const now = Date.now()
+  const nowDate = new Date(now)
 
   for (const task of tasks) {
     const item = document.createElement('li')
@@ -124,11 +179,14 @@ export const renderTasks = (tasksList, data) => {
     status.title = dotTitle
 
     if (task.cron) {
-      const cronEl = document.createElement('span')
-      cronEl.className = 'task-cron'
-      cronEl.textContent = task.cron
-      cronEl.title = `cron: ${task.cron}`
-      meta.appendChild(cronEl)
+      const cronBadge = resolveCronBadge(task.cron, nowDate)
+      if (cronBadge) {
+        const cronEl = document.createElement('span')
+        cronEl.className = 'task-cron'
+        cronEl.textContent = cronBadge.text
+        cronEl.title = cronBadge.title
+        meta.appendChild(cronEl)
+      }
     }
 
     const elapsedEl = document.createElement('span')
