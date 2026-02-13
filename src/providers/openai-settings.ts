@@ -115,7 +115,8 @@ export const loadCodexSettings = async (): Promise<CodexSettings> => {
     model: envString('OPENAI_MODEL') ?? cs.model,
     baseUrl: envString('OPENAI_BASE_URL') ?? cs.baseUrl,
     wireApi: envString('OPENAI_WIRE_API') ?? cs.wireApi,
-    requiresOpenAiAuth: envBoolean('OPENAI_REQUIRES_AUTH') ?? cs.requiresOpenAiAuth,
+    requiresOpenAiAuth:
+      envBoolean('OPENAI_REQUIRES_AUTH') ?? cs.requiresOpenAiAuth,
   })
 }
 

@@ -15,7 +15,6 @@ import { consumeUserInputs, consumeWorkerResults } from '../streams/queues.js'
 import { enqueueWorkerTask } from '../worker/dispatch.js'
 
 import { applyTaskActions, collectTaskResultSummaries } from './action-apply.js'
-import { executeManagerProfileTasks } from './manager-task-runner.js'
 import {
   appendConsumedInputsToHistory,
   appendConsumedResultsToHistory,
@@ -26,6 +25,7 @@ import {
   drainBatchOnFailure,
   finalizeBatchProgress,
 } from './loop-helpers.js'
+import { executeManagerProfileTasks } from './manager-task-runner.js'
 import { runManager } from './runner.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'

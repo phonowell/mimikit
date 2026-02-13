@@ -147,10 +147,6 @@
   background: var(--task-dot, var(--status-pending));
 }
 
-.task-status-text {
-  text-transform: capitalize;
-}
-
 .task-profile {
   display: inline-flex;
   align-items: center;

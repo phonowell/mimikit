@@ -23,8 +23,11 @@ const formatElapsedText = (elapsedMs, hasUsage) => {
   return hasUsage ? `· ${label}` : label
 }
 
-const resolveProfileText = (task) =>
-  task?.profile === 'specialist' ? 'specialist' : 'standard'
+const resolveProfileText = (task) => {
+  if (task?.profile === 'manager') return 'manager'
+  if (task?.profile === 'specialist') return 'specialist'
+  return 'standard'
+}
 
 const updateElapsedTimes = (tasksList) => {
   if (!tasksList) return
@@ -115,11 +118,6 @@ export const renderTasks = (tasksList, data) => {
     status.setAttribute('aria-label', statusValue)
     status.title = statusValue
     meta.appendChild(status)
-
-    const statusText = document.createElement('span')
-    statusText.className = 'task-status-text'
-    statusText.textContent = statusValue
-    meta.appendChild(statusText)
 
     const profile = document.createElement('span')
     profile.className = 'task-profile'

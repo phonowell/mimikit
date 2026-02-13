@@ -124,14 +124,8 @@ export const buildManagerPrompt = async (params: {
       'history',
       buildCdataBlock('history', formatHistory(params.history), true),
     ],
-    [
-      'persona',
-      buildRawBlock('persona', persona.trim(), true),
-    ],
-    [
-      'user_profile',
-      buildRawBlock('user_profile', userProfile.trim(), true),
-    ],
+    ['persona', buildRawBlock('persona', persona.trim(), true)],
+    ['user_profile', buildRawBlock('user_profile', userProfile.trim(), true)],
   ])
   const injection = renderPromptTemplate(injectionTemplate, injectionValues)
   return joinPromptSections([system, injection])

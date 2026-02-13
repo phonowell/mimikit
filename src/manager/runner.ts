@@ -40,7 +40,10 @@ export const resolveManagerTimeoutMs = (prompt: string): number => {
   const promptBytes = Buffer.byteLength(prompt, 'utf8')
   const stepCount = Math.ceil(promptBytes / BYTE_STEP)
   const computed = MIN_MANAGER_TIMEOUT_MS + stepCount * TIMEOUT_STEP_MS
-  return Math.max(MIN_MANAGER_TIMEOUT_MS, Math.min(MAX_MANAGER_TIMEOUT_MS, computed))
+  return Math.max(
+    MIN_MANAGER_TIMEOUT_MS,
+    Math.min(MAX_MANAGER_TIMEOUT_MS, computed),
+  )
 }
 
 export const runManager = async (params: {
