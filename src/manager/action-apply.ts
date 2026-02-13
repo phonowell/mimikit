@@ -2,7 +2,10 @@ import { z } from 'zod'
 
 import { bestEffort } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
-import { enqueueTask } from '../orchestrator/core/task-state.js'
+import {
+  buildTaskFingerprint,
+  enqueueTask,
+} from '../orchestrator/core/task-state.js'
 import { notifyWorkerLoop } from '../orchestrator/core/worker-signal.js'
 import { appendTaskSystemMessage } from '../orchestrator/read-model/task-history.js'
 import { newId, nowIso } from '../shared/utils.js'
@@ -11,7 +14,7 @@ import { enqueueWorkerTask } from '../worker/dispatch.js'
 
 import type { Parsed } from '../actions/model/spec.js'
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
-import type { CronJob, WorkerProfile } from '../types/index.js'
+import type { CronJob, Task, WorkerProfile } from '../types/index.js'
 
 const nonEmptyString = z.string().trim().min(1)
 
@@ -132,6 +135,24 @@ const applyCreateTask = async (
       createdAt: nowIso(),
     }
     runtime.cronJobs.push(cronJob)
+    const scheduledTask: Task = {
+      id: cronJob.id,
+      fingerprint: buildTaskFingerprint(parsed.data.prompt),
+      prompt: parsed.data.prompt,
+      title: parsed.data.title,
+      ...(cron ? { cron } : scheduledAt ? { cron: scheduledAt } : {}),
+      profile,
+      status: 'pending',
+      createdAt: cronJob.createdAt,
+    }
+    await appendTaskSystemMessage(
+      runtime.paths.history,
+      'created',
+      scheduledTask,
+      {
+        createdAt: cronJob.createdAt,
+      },
+    )
     await persistRuntimeState(runtime)
     return
   }

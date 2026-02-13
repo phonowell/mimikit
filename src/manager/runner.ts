@@ -116,7 +116,7 @@ export const runManager = async (params: {
     ...sampling,
   })
 
-  const callProvider = async (callModel: string | undefined) =>
+  const callProvider = (callModel: string | undefined) =>
     runWithProvider({
       provider: 'openai-chat',
       prompt,

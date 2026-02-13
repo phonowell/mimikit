@@ -161,7 +161,7 @@ export class Orchestrator {
   }
 
   getTasks(limit = 200) {
-    return buildTaskViews(this.runtime.tasks, limit)
+    return buildTaskViews(this.runtime.tasks, this.runtime.cronJobs, limit)
   }
 
   getTaskById(taskId: string): Task | undefined {

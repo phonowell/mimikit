@@ -1,6 +1,6 @@
 import { titleFromCandidates } from '../../shared/utils.js'
 
-import type { Task, TaskStatus } from '../../types/index.js'
+import type { CronJob, Task, TaskStatus } from '../../types/index.js'
 
 export type TaskView = {
   id: string
@@ -30,6 +30,19 @@ const initCounts = (): TaskCounts => ({
 const resolveTaskChangeAt = (task: Task): string =>
   task.completedAt ?? task.startedAt ?? task.createdAt
 
+const cronJobToView = (cronJob: CronJob): TaskView => {
+  const schedule = cronJob.cron ?? cronJob.scheduledAt ?? ''
+  return {
+    id: cronJob.id,
+    status: cronJob.enabled ? 'pending' : 'canceled',
+    profile: cronJob.profile,
+    title: cronJob.title || titleFromCandidates(cronJob.id, [cronJob.prompt]),
+    ...(schedule ? { cron: schedule } : {}),
+    createdAt: cronJob.createdAt,
+    changeAt: cronJob.lastTriggeredAt ?? cronJob.createdAt,
+  }
+}
+
 const taskToView = (task: Task): TaskView => ({
   id: task.id,
   status: task.status,
@@ -53,9 +66,10 @@ const taskToView = (task: Task): TaskView => ({
 
 export const buildTaskViews = (
   tasks: Task[],
+  cronJobs: CronJob[] = [],
   limit = 200,
 ): { tasks: TaskView[]; counts: TaskCounts } => {
-  const views = tasks.map(taskToView)
+  const views = [...tasks.map(taskToView), ...cronJobs.map(cronJobToView)]
   views.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
   const limited = views.slice(0, Math.max(0, limit))
   const counts = initCounts()
