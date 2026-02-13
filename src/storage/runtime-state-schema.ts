@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 import { normalizeTokenUsage, tokenUsageSchema } from './token-usage.js'
 
-import type { CronJob, Task, TaskNextDef } from '../types/index.js'
+import type { CronJob, Task } from '../types/index.js'
 
 export type RuntimeSnapshot = {
   tasks: Task[]
@@ -36,15 +36,6 @@ const taskResultRawSchema = z
   })
   .strict()
 
-const taskNextRawSchema = z
-  .object({
-    prompt: z.string().trim().min(1),
-    title: z.string().optional(),
-    profile: z.enum(['standard', 'specialist']).optional(),
-    condition: z.enum(['succeeded', 'failed', 'any']).optional(),
-  })
-  .strict()
-
 const taskRawSchema = z
   .object({
     id: z.string().trim().min(1),
@@ -62,7 +53,6 @@ const taskRawSchema = z
     usage: tokenUsageSchema.optional(),
     archivePath: z.string().optional(),
     cancel: taskCancelSchema.optional(),
-    next: z.array(taskNextRawSchema).optional(),
     result: taskResultRawSchema.optional(),
   })
   .strict()
@@ -77,7 +67,6 @@ const cronJobRawSchema = z
     enabled: z.boolean(),
     createdAt: z.string(),
     lastTriggeredAt: z.string().optional(),
-    next: taskNextRawSchema.optional(),
   })
   .strict()
 
@@ -95,15 +84,6 @@ const runtimeSnapshotRawSchema = z
     queues: queueStateSchema.optional(),
   })
   .strict()
-
-const toTaskNextDef = (
-  next: z.infer<typeof taskNextRawSchema>,
-): TaskNextDef => ({
-  prompt: next.prompt,
-  ...(next.title !== undefined ? { title: next.title } : {}),
-  ...(next.profile !== undefined ? { profile: next.profile } : {}),
-  ...(next.condition !== undefined ? { condition: next.condition } : {}),
-})
 
 const toTask = (task: z.infer<typeof taskRawSchema>): Task => {
   const usage = normalizeTokenUsage(task.usage)
@@ -148,7 +128,6 @@ const toTask = (task: z.infer<typeof taskRawSchema>): Task => {
           ...(resultCancel !== undefined ? { cancel: resultCancel } : {}),
         }
       : undefined
-  const next = task.next?.map((item) => toTaskNextDef(item))
   return {
     id: task.id,
     fingerprint: task.fingerprint,
@@ -169,7 +148,6 @@ const toTask = (task: z.infer<typeof taskRawSchema>): Task => {
       ? { archivePath: task.archivePath }
       : {}),
     ...(cancel !== undefined ? { cancel } : {}),
-    ...(next !== undefined ? { next } : {}),
     ...(result !== undefined ? { result } : {}),
   }
 }
@@ -185,7 +163,6 @@ const toCronJob = (cronJob: z.infer<typeof cronJobRawSchema>): CronJob => ({
   ...(cronJob.lastTriggeredAt !== undefined
     ? { lastTriggeredAt: cronJob.lastTriggeredAt }
     : {}),
-  ...(cronJob.next !== undefined ? { next: toTaskNextDef(cronJob.next) } : {}),
 })
 
 export const parseRuntimeSnapshot = (value: unknown): RuntimeSnapshot => {

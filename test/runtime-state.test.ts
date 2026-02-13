@@ -99,7 +99,7 @@ test('runtime snapshot accepts queue cursors', async () => {
   expect(loaded.tasks[0]?.result?.output).toBe('ok')
 })
 
-test('runtime snapshot rejects legacy grouped channel shape', async () => {
+test('runtime snapshot rejects legacy grouped channel shape and next fields', async () => {
   const stateDir = await createTmpDir()
   await writeFile(
     join(stateDir, 'runtime-state.json'),
@@ -114,6 +114,43 @@ test('runtime snapshot rejects legacy grouped channel shape', async () => {
         thinker: {
           tellerDigestCursor: 6,
         },
+      },
+    }),
+    'utf8',
+  )
+
+  await expect(loadRuntimeSnapshot(stateDir)).rejects.toThrow()
+
+  await writeFile(
+    join(stateDir, 'runtime-state.json'),
+    JSON.stringify({
+      tasks: [
+        {
+          id: 'task-legacy-next',
+          fingerprint: 'task-legacy-next',
+          prompt: 'legacy',
+          title: 'legacy',
+          profile: 'standard',
+          status: 'pending',
+          createdAt: '2026-02-06T00:00:00.000Z',
+          next: [{ prompt: 'next task', condition: 'succeeded' }],
+        },
+      ],
+      cronJobs: [
+        {
+          id: 'cron-legacy-next',
+          cron: '0 0 9 * * *',
+          prompt: 'legacy cron',
+          title: 'legacy cron',
+          profile: 'standard',
+          enabled: true,
+          createdAt: '2026-02-06T00:00:00.000Z',
+          next: { prompt: 'next cron task', condition: 'succeeded' },
+        },
+      ],
+      queues: {
+        inputsCursor: 0,
+        resultsCursor: 0,
       },
     }),
     'utf8',

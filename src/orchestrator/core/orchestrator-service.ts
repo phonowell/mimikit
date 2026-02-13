@@ -33,14 +33,10 @@ import type { RuntimeState, UserMeta } from './runtime-state.js'
 import type {
   CronJob,
   Task,
-  TaskNextDef,
   WorkerProfile,
 } from '../../types/index.js'
 
-const cloneCronJob = (job: CronJob): CronJob => ({
-  ...job,
-  ...(job.next ? { next: { ...job.next } } : {}),
-})
+const cloneCronJob = (job: CronJob): CronJob => ({ ...job })
 
 export class Orchestrator {
   private runtime: RuntimeState
@@ -188,7 +184,6 @@ export class Orchestrator {
     title?: string
     profile?: WorkerProfile
     enabled?: boolean
-    next?: TaskNextDef
   }): Promise<CronJob> {
     const prompt = input.prompt.trim()
     if (!prompt) throw new Error('add_cron_job_prompt_empty')
@@ -203,7 +198,6 @@ export class Orchestrator {
       profile: input.profile ?? 'standard',
       enabled: input.enabled ?? true,
       createdAt: nowIso(),
-      ...(input.next ? { next: { ...input.next } } : {}),
     }
     this.runtime.cronJobs.push(job)
     await persistRuntimeState(this.runtime)

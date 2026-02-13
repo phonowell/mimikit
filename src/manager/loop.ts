@@ -76,7 +76,6 @@ const checkCronJobs = async (runtime: RuntimeState): Promise<void> => {
       cronJob.prompt,
       cronJob.title,
       cronJob.profile,
-      cronJob.next ? [cronJob.next] : undefined,
     )
     if (!created) continue
 
