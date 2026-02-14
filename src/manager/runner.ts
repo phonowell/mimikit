@@ -62,6 +62,7 @@ export const runManager = async (params: {
   temperature?: number
   fallbackModel?: string
   onTextDelta?: (delta: string) => void
+  onUsage?: (usage: TokenUsage) => void
   onStreamReset?: () => void
 }): Promise<{
   output: string
@@ -119,6 +120,7 @@ export const runManager = async (params: {
         ? { modelReasoningEffort: params.modelReasoningEffort }
         : {}),
       ...(params.onTextDelta ? { onTextDelta: params.onTextDelta } : {}),
+      ...(params.onUsage ? { onUsage: params.onUsage } : {}),
       ...sampling,
     })
 

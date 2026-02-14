@@ -22,6 +22,7 @@ export type OpenAiChatProviderRequest = {
   seed?: number
   temperature?: number
   onTextDelta?: TextDeltaListener
+  onUsage?: UsageListener
 }
 
 export type CodexSdkProviderRequest = {

@@ -38,6 +38,7 @@ import { executeManagerProfileTasks } from './manager-task-runner.js'
 import { runManager } from './runner.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
+import type { TokenUsage } from '../types/index.js'
 
 const matchCronNow = (expression: string, at: Date = new Date()): boolean =>
   new Cron(expression).match(at)
@@ -74,6 +75,14 @@ const startUiStream = (runtime: RuntimeState, streamId: string): void => {
   }
 }
 
+const isSameUsage = (
+  left: TokenUsage | undefined,
+  right: TokenUsage | undefined,
+): boolean =>
+  left?.input === right?.input &&
+  left?.output === right?.output &&
+  left?.total === right?.total
+
 const setUiStreamText = (
   runtime: RuntimeState,
   streamId: string,
@@ -91,6 +100,20 @@ const resetUiStream = (runtime: RuntimeState, streamId: string): void => {
   const stream = runtime.uiStream
   if (stream?.id !== streamId) return
   stream.text = ''
+  if ('usage' in stream) delete stream.usage
+  stream.updatedAt = nowIso()
+  notifyUiSignal(runtime)
+}
+
+const setUiStreamUsage = (
+  runtime: RuntimeState,
+  streamId: string,
+  nextUsage: TokenUsage,
+): void => {
+  const stream = runtime.uiStream
+  if (stream?.id !== streamId) return
+  if (isSameUsage(stream.usage, nextUsage)) return
+  stream.usage = nextUsage
   stream.updatedAt = nowIso()
   notifyUiSignal(runtime)
 }
@@ -323,6 +346,9 @@ export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
         onStreamReset: () => {
           streamRawOutput = ''
           resetUiStream(runtime, streamId)
+        },
+        onUsage: (usage) => {
+          setUiStreamUsage(runtime, streamId, usage)
         },
       })
 

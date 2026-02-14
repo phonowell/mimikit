@@ -23,7 +23,16 @@ type RunChatCompletionParams = {
   seed?: number
   temperature?: number
   onTextDelta?: TextDeltaListener
+  onUsage?: (usage: TokenUsage) => void
 }
+
+const isSameUsage = (
+  left: TokenUsage | undefined,
+  right: TokenUsage | undefined,
+): boolean =>
+  left?.input === right?.input &&
+  left?.output === right?.output &&
+  left?.total === right?.total
 
 const normalizeBaseUrl = (value: string): string => {
   const trimmed = value.replace(/\/+$/, '')
@@ -167,7 +176,10 @@ export const runChatCompletion = async (
               total_tokens?: number
             },
           )
-          if (nextUsage) usage = nextUsage
+          if (nextUsage && !isSameUsage(usage, nextUsage)) {
+            usage = nextUsage
+            params.onUsage?.(nextUsage)
+          }
         },
         signal,
       ),

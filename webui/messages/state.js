@@ -39,8 +39,12 @@ const normalizeStreamSignature = (streamMessage) => {
   const id = streamMessage.id == null ? '' : String(streamMessage.id)
   const text =
     typeof streamMessage.text === 'string' ? streamMessage.text : String(streamMessage.text ?? '')
+  const usage =
+    streamMessage.usage && typeof streamMessage.usage === 'object'
+      ? JSON.stringify(streamMessage.usage)
+      : ''
   if (!id && !text) return ''
-  return `${id}\n${text}`
+  return `${id}\n${text}\n${usage}`
 }
 
 export const hasStreamChange = (state, streamMessage) =>

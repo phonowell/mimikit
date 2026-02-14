@@ -3,6 +3,7 @@ import { afterEach, expect, test } from 'vitest'
 import {
   extractOpencodeOutput,
   mapOpencodeUsage,
+  mapOpencodeUsageFromEvent,
   resolveOpencodeModelRef,
 } from '../src/providers/opencode-provider-utils.js'
 
@@ -54,4 +55,59 @@ test('mapOpencodeUsage maps token usage and includes reasoning in total', () => 
     output: 20,
     total: 35,
   })
+})
+
+test('mapOpencodeUsageFromEvent maps assistant message.updated usage', () => {
+  const usage = mapOpencodeUsageFromEvent({
+    type: 'message.updated',
+    properties: {
+      info: {
+        role: 'assistant',
+        sessionID: 's1',
+        time: { created: 100 },
+        tokens: { input: 3, output: 4, reasoning: 2 },
+      },
+    },
+  } as never)
+
+  expect(usage).toEqual({
+    input: 3,
+    output: 4,
+    total: 9,
+  })
+})
+
+test('mapOpencodeUsageFromEvent ignores non-target session and older messages', () => {
+  const wrongSession = mapOpencodeUsageFromEvent(
+    {
+      type: 'message.updated',
+      properties: {
+        info: {
+          role: 'assistant',
+          sessionID: 's2',
+          time: { created: 200 },
+          tokens: { input: 1, output: 2, reasoning: 0 },
+        },
+      },
+    } as never,
+    's1',
+  )
+  const tooOld = mapOpencodeUsageFromEvent(
+    {
+      type: 'message.updated',
+      properties: {
+        info: {
+          role: 'assistant',
+          sessionID: 's1',
+          time: { created: 150 },
+          tokens: { input: 1, output: 2, reasoning: 0 },
+        },
+      },
+    } as never,
+    's1',
+    200,
+  )
+
+  expect(wrongSession).toBeUndefined()
+  expect(tooOld).toBeUndefined()
 })

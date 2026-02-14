@@ -40,6 +40,7 @@ const runOpenAiChat = async (
       ? { temperature: request.temperature }
       : {}),
     ...(request.onTextDelta ? { onTextDelta: request.onTextDelta } : {}),
+    ...(request.onUsage ? { onUsage: request.onUsage } : {}),
   })
   return {
     output: result.output,

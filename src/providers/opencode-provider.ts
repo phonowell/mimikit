@@ -7,6 +7,7 @@ import { createOpencodeClient } from '@opencode-ai/sdk/v2'
 import {
   extractOpencodeOutput,
   mapOpencodeUsage,
+  mapOpencodeUsageFromEvent,
   resolveOpencodeModelRef,
 } from './opencode-provider-utils.js'
 
@@ -23,6 +24,11 @@ const OPENCODE_HOST = '127.0.0.1'
 type StartedServer = {
   url: string
   close: () => void
+}
+
+type UsageStreamMonitor = {
+  stop: () => void
+  done: Promise<void>
 }
 
 const isAbortLikeError = (error: unknown): boolean => {
@@ -161,6 +167,66 @@ const wrapSdkError = (error: unknown): Error => {
   return new Error(`[provider:opencode] sdk run failed: ${message}`)
 }
 
+const isSameUsage = (
+  left: ReturnType<typeof mapOpencodeUsage> | undefined,
+  right: ReturnType<typeof mapOpencodeUsage> | undefined,
+): boolean =>
+  left?.input === right?.input &&
+  left?.output === right?.output &&
+  left?.total === right?.total
+
+const isAbortLikeStreamError = (
+  error: unknown,
+  signal: AbortSignal,
+): boolean => {
+  if (signal.aborted) return true
+  return isAbortLikeError(error)
+}
+
+const startUsageStreamMonitor = (params: {
+  client: ReturnType<typeof createOpencodeClient>
+  workDir: string
+  sessionID: string
+  minCreatedAt: number
+  abortSignal: AbortSignal
+  onUsage: (usage: ReturnType<typeof mapOpencodeUsage>) => void
+}): UsageStreamMonitor => {
+  const streamAbort = new AbortController()
+
+  const forwardAbort = (): void => streamAbort.abort()
+  if (params.abortSignal.aborted) streamAbort.abort()
+  else params.abortSignal.addEventListener('abort', forwardAbort)
+
+  const done = (async () => {
+    try {
+      const eventStream = await params.client.event.subscribe(
+        { directory: params.workDir },
+        {
+          signal: streamAbort.signal,
+          throwOnError: true,
+        },
+      )
+      for await (const event of eventStream.stream) {
+        const usage = mapOpencodeUsageFromEvent(
+          event,
+          params.sessionID,
+          params.minCreatedAt,
+        )
+        if (usage) params.onUsage(usage)
+      }
+    } catch (error) {
+      if (!isAbortLikeStreamError(error, streamAbort.signal)) throw error
+    } finally {
+      params.abortSignal.removeEventListener('abort', forwardAbort)
+    }
+  })()
+
+  return {
+    stop: () => streamAbort.abort(),
+    done,
+  }
+}
+
 const runOpencode = async (
   request: OpencodeProviderRequest,
 ): Promise<ProviderResult> => {
@@ -188,6 +254,7 @@ const runOpencode = async (
   }
 
   let closeServer: (() => void) | undefined
+  let usageMonitor: UsageStreamMonitor | undefined
   try {
     const model = resolveOpencodeModelRef(request.model)
     const server = await startOpencodeServer(
@@ -213,6 +280,22 @@ const runOpencode = async (
     }
     if (!sessionID) throw new Error('[provider:opencode] missing session id')
 
+    let latestUsage: ReturnType<typeof mapOpencodeUsage> | undefined
+    const reportUsage = (usage: ReturnType<typeof mapOpencodeUsage>): void => {
+      if (!usage || isSameUsage(latestUsage, usage)) return
+      latestUsage = usage
+      request.onUsage?.(usage)
+    }
+
+    usageMonitor = startUsageStreamMonitor({
+      client,
+      workDir: request.workDir,
+      sessionID,
+      minCreatedAt: Date.now(),
+      abortSignal: controller.signal,
+      onUsage: reportUsage,
+    })
+
     const response = await client.session.prompt(
       {
         sessionID,
@@ -231,8 +314,9 @@ const runOpencode = async (
     )
     const promptResponse = unwrapSdkData(response)
 
-    const usage = mapOpencodeUsage(promptResponse.info)
-    if (usage) request.onUsage?.(usage)
+    const promptUsage = mapOpencodeUsage(promptResponse.info)
+    reportUsage(promptUsage)
+    const usage = promptUsage ?? latestUsage
     return {
       output: extractOpencodeOutput(promptResponse.parts),
       elapsedMs: Math.max(0, Date.now() - startedAt),
@@ -252,6 +336,10 @@ const runOpencode = async (
     clearTimeout(timeoutTimer)
     if (request.abortSignal)
       request.abortSignal.removeEventListener('abort', onAbort)
+    if (usageMonitor) {
+      usageMonitor.stop()
+      await usageMonitor.done.catch(() => undefined)
+    }
     if (closeServer) closeServer()
   }
 }

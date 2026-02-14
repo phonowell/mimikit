@@ -26,6 +26,22 @@ const EVENTS_URL = '/api/events'
 
 const isRecord = (value) => value && typeof value === 'object'
 
+const asUsageNumber = (value) =>
+  typeof value === 'number' && Number.isFinite(value) ? value : null
+
+const normalizeUsage = (raw) => {
+  if (!isRecord(raw)) return null
+  const input = asUsageNumber(raw.input)
+  const output = asUsageNumber(raw.output)
+  const total = asUsageNumber(raw.total)
+  if (input === null && output === null && total === null) return null
+  return {
+    ...(input !== null ? { input } : {}),
+    ...(output !== null ? { output } : {}),
+    ...(total !== null ? { total } : {}),
+  }
+}
+
 const parseSnapshot = (raw) => {
   if (!raw || typeof raw !== 'string') return null
   try {
@@ -49,10 +65,12 @@ const normalizeStreamMessage = (raw) => {
       : typeof raw.updatedAt === 'string' && raw.updatedAt.trim()
         ? raw.updatedAt
         : new Date().toISOString()
+  const usage = normalizeUsage(raw.usage)
   return {
     id: `stream-${id}`,
     role: 'assistant',
     text,
+    ...(usage ? { usage } : {}),
     createdAt,
     streaming: true,
   }

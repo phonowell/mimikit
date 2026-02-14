@@ -1,6 +1,12 @@
 import type { AppConfig } from '../../config.js'
 import type { StatePaths } from '../../fs/paths.js'
-import type { CronJob, ISODate, Task, UserInput } from '../../types/index.js'
+import type {
+  CronJob,
+  ISODate,
+  Task,
+  TokenUsage,
+  UserInput,
+} from '../../types/index.js'
 import type PQueue from 'p-queue'
 
 export type PendingUserInput = UserInput
@@ -26,6 +32,7 @@ export type UiAgentStream = {
   id: string
   role: 'assistant'
   text: string
+  usage?: TokenUsage
   createdAt: ISODate
   updatedAt: ISODate
 }

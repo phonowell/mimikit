@@ -1,5 +1,5 @@
 import type { TokenUsage } from '../types/index.js'
-import type { AssistantMessage, Part } from '@opencode-ai/sdk/v2'
+import type { AssistantMessage, Event, Part } from '@opencode-ai/sdk/v2'
 
 const readString = (value: unknown): string | undefined => {
   if (typeof value !== 'string') return undefined
@@ -69,4 +69,22 @@ export const mapOpencodeUsage = (
     ...(output !== undefined ? { output } : {}),
     total,
   }
+}
+
+export const mapOpencodeUsageFromEvent = (
+  event: Event | undefined,
+  sessionID?: string,
+  minCreatedAt?: number,
+): TokenUsage | undefined => {
+  if (event?.type !== 'message.updated') return undefined
+  const { info } = event.properties
+  if (info.role !== 'assistant') return undefined
+  if (sessionID && info.sessionID !== sessionID) return undefined
+  if (
+    minCreatedAt !== undefined &&
+    Number.isFinite(minCreatedAt) &&
+    info.time.created < minCreatedAt
+  )
+    return undefined
+  return mapOpencodeUsage(info)
 }

@@ -186,6 +186,7 @@ export class Orchestrator {
             id: stream.id,
             role: stream.role,
             text: stream.text,
+            ...(stream.usage ? { usage: stream.usage } : {}),
             createdAt: stream.createdAt,
             updatedAt: stream.updatedAt,
           }
