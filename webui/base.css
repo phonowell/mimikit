@@ -46,6 +46,11 @@
     10px 12px 22px rgba(136, 145, 160, 0.29);
   --shadow: var(--shadow-raised);
   --focus-ring: rgba(47, 125, 230, 0.34);
+  --scrollbar-size: 8px;
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: rgba(109, 119, 137, 0.28);
+  --scrollbar-thumb-hover: rgba(109, 119, 137, 0.42);
+  --scrollbar-thumb-active: rgba(109, 119, 137, 0.52);
   --radius: 18px;
   --radius-sm: 12px;
   --max-width: 920px;
@@ -99,6 +104,85 @@ textarea {
   color: inherit;
   outline: none;
   resize: none;
+}
+
+:where(
+    .scrollable,
+    .composer textarea,
+    .message .content.markdown pre,
+    .message .content.markdown table
+  ) {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  scrollbar-gutter: stable;
+}
+
+:where(
+    .scrollable,
+    .composer textarea,
+    .message .content.markdown pre,
+    .message .content.markdown table
+  )::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
+}
+
+:where(
+    .scrollable,
+    .composer textarea,
+    .message .content.markdown pre,
+    .message .content.markdown table
+  )::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+  border-radius: 999px;
+}
+
+:where(
+    .scrollable,
+    .composer textarea,
+    .message .content.markdown pre,
+    .message .content.markdown table
+  )::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 999px;
+}
+
+:where(
+    .scrollable,
+    .composer textarea,
+    .message .content.markdown pre,
+    .message .content.markdown table
+  )::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+:where(
+    .scrollable,
+    .composer textarea,
+    .message .content.markdown pre,
+    .message .content.markdown table
+  )::-webkit-scrollbar-thumb:active {
+  background: var(--scrollbar-thumb-active);
+}
+
+:where(
+    .scrollable,
+    .composer textarea,
+    .message .content.markdown pre,
+    .message .content.markdown table
+  )::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+:where(
+    .scrollable,
+    .composer textarea,
+    .message .content.markdown pre,
+    .message .content.markdown table
+  )::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .visually-hidden {
