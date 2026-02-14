@@ -23,6 +23,28 @@ const normalizeEpochMs = (value: unknown): number | undefined => {
   return numeric >= 100_000_000_000 ? numeric : numeric * 1000
 }
 
+const readAssistantMessageFromEvent = (
+  event: Event | undefined,
+  sessionID?: string,
+  minCreatedAt?: number,
+): AssistantMessage | undefined => {
+  if (event?.type !== 'message.updated') return undefined
+  const { info } = event.properties
+  if (info.role !== 'assistant') return undefined
+  if (sessionID && info.sessionID !== sessionID) return undefined
+  if (minCreatedAt !== undefined && Number.isFinite(minCreatedAt)) {
+    const createdAtMs = normalizeEpochMs(info.time.created)
+    const minCreatedAtMs = normalizeEpochMs(minCreatedAt)
+    if (
+      createdAtMs !== undefined &&
+      minCreatedAtMs !== undefined &&
+      createdAtMs < minCreatedAtMs
+    )
+      return undefined
+  }
+  return info
+}
+
 type OpencodeModelRef = {
   providerID: string
   modelID: string
@@ -94,19 +116,27 @@ export const mapOpencodeUsageFromEvent = (
   sessionID?: string,
   minCreatedAt?: number,
 ): TokenUsage | undefined => {
-  if (event?.type !== 'message.updated') return undefined
-  const { info } = event.properties
-  if (info.role !== 'assistant') return undefined
-  if (sessionID && info.sessionID !== sessionID) return undefined
-  if (minCreatedAt !== undefined && Number.isFinite(minCreatedAt)) {
-    const createdAtMs = normalizeEpochMs(info.time.created)
-    const minCreatedAtMs = normalizeEpochMs(minCreatedAt)
-    if (
-      createdAtMs !== undefined &&
-      minCreatedAtMs !== undefined &&
-      createdAtMs < minCreatedAtMs
-    )
-      return undefined
-  }
-  return mapOpencodeUsage(info)
+  const message = readAssistantMessageFromEvent(event, sessionID, minCreatedAt)
+  if (!message) return undefined
+  return mapOpencodeUsage(message)
+}
+
+export const mapOpencodeAssistantMessageIdFromEvent = (
+  event: Event | undefined,
+  sessionID?: string,
+  minCreatedAt?: number,
+): string | undefined =>
+  readAssistantMessageFromEvent(event, sessionID, minCreatedAt)?.id
+
+export const mapOpencodeTextDeltaFromEvent = (
+  event: Event | undefined,
+  sessionID?: string,
+): { messageID: string; delta: string } | undefined => {
+  if (event?.type !== 'message.part.delta') return undefined
+  const { properties } = event
+  if (sessionID && properties.sessionID !== sessionID) return undefined
+  if (properties.field !== 'text') return undefined
+  const { delta } = properties
+  if (typeof delta !== 'string' || delta.length === 0) return undefined
+  return { messageID: properties.messageID, delta }
 }

@@ -1,5 +1,9 @@
 import { isAbortLikeError } from './opencode-provider-bootstrap.js'
-import { mapOpencodeUsageFromEvent } from './opencode-provider-utils.js'
+import {
+  mapOpencodeAssistantMessageIdFromEvent,
+  mapOpencodeTextDeltaFromEvent,
+  mapOpencodeUsageFromEvent,
+} from './opencode-provider-utils.js'
 
 import type { mapOpencodeUsage } from './opencode-provider-utils.js'
 import type { createOpencodeClient } from '@opencode-ai/sdk/v2'
@@ -55,8 +59,11 @@ export const startUsageStreamMonitor = (params: {
   minCreatedAt: number
   abortSignal: AbortSignal
   onUsage: (usage: ReturnType<typeof mapOpencodeUsage>) => void
+  onTextDelta?: (delta: string) => void
 }): UsageStreamMonitor => {
   const streamAbort = new AbortController()
+  const activeMessageIDs = new Set<string>()
+  const pendingDeltas = new Map<string, string[]>()
 
   const forwardAbort = (): void => streamAbort.abort()
   if (params.abortSignal.aborted) streamAbort.abort()
@@ -72,12 +79,39 @@ export const startUsageStreamMonitor = (params: {
         },
       )
       for await (const event of eventStream.stream) {
+        const messageID = mapOpencodeAssistantMessageIdFromEvent(
+          event,
+          params.sessionID,
+          params.minCreatedAt,
+        )
+        if (messageID) {
+          if (!activeMessageIDs.has(messageID)) {
+            activeMessageIDs.add(messageID)
+            const pending = pendingDeltas.get(messageID)
+            if (pending && pending.length > 0)
+              for (const chunk of pending) params.onTextDelta?.(chunk)
+
+            pendingDeltas.clear()
+          }
+        }
+
         const usage = mapOpencodeUsageFromEvent(
           event,
           params.sessionID,
           params.minCreatedAt,
         )
         if (usage) params.onUsage(usage)
+
+        const delta = mapOpencodeTextDeltaFromEvent(event, params.sessionID)
+        if (!delta) continue
+        if (activeMessageIDs.has(delta.messageID)) {
+          params.onTextDelta?.(delta.delta)
+          continue
+        }
+        if (activeMessageIDs.size > 0) continue
+        const existing = pendingDeltas.get(delta.messageID)
+        if (existing) existing.push(delta.delta)
+        else pendingDeltas.set(delta.messageID, [delta.delta])
       }
     } catch (error) {
       if (!isAbortLikeStreamError(error, streamAbort.signal)) throw error

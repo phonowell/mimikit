@@ -39,6 +39,7 @@ export const runManager = async (params: {
   modelReasoningEffort?: ModelReasoningEffort
   sessionId?: string
   maxPromptTokens?: number
+  onTextDelta?: (delta: string) => void
   onUsage?: (usage: TokenUsage) => void
   onStreamReset?: () => void
 }): Promise<{
@@ -96,6 +97,7 @@ export const runManager = async (params: {
       ...(params.modelReasoningEffort
         ? { modelReasoningEffort: params.modelReasoningEffort }
         : {}),
+      ...(params.onTextDelta ? { onTextDelta: params.onTextDelta } : {}),
       ...(params.onUsage ? { onUsage: params.onUsage } : {}),
     })
 

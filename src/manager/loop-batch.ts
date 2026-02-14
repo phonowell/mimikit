@@ -53,6 +53,7 @@ export const processManagerBatch = async (params: {
   notifyUiSignal(runtime)
   const startedAt = Date.now()
   let assistantAppended = false
+  let streamRawOutput = ''
   startUiStream(runtime, streamId)
   try {
     await appendLog(runtime.paths.log, {
@@ -83,14 +84,24 @@ export const processManagerBatch = async (params: {
         ? { sessionId: runtime.plannerSessionId }
         : {}),
       maxPromptTokens: runtime.config.manager.promptMaxTokens,
+      onTextDelta: (delta) => {
+        if (!delta) return
+        streamRawOutput += delta
+        setUiStreamText(
+          runtime,
+          streamId,
+          toVisibleAssistantText(streamRawOutput),
+        )
+      },
       onStreamReset: () => {
+        streamRawOutput = ''
         resetUiStream(runtime, streamId)
       },
       onUsage: (usage) => {
         setUiStreamUsage(runtime, streamId, usage)
       },
     })
-    const streamRawOutput = managerResult.output
+    streamRawOutput = managerResult.output
     setUiStreamText(runtime, streamId, toVisibleAssistantText(streamRawOutput))
     if (managerResult.sessionId)
       runtime.plannerSessionId = managerResult.sessionId

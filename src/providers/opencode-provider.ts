@@ -91,6 +91,7 @@ const runOpencodeOnce = async (
       minCreatedAt: Date.now(),
       abortSignal: controller.signal,
       onUsage: reportUsage,
+      ...(request.onTextDelta ? { onTextDelta: request.onTextDelta } : {}),
     })
     const response = await client.session.prompt(
       {

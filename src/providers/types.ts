@@ -11,6 +11,7 @@ export type ProviderResult = {
 }
 
 export type UsageListener = (usage: TokenUsage) => void
+export type TextDeltaListener = (delta: string) => void
 
 export type CodexSdkProviderRequest = {
   provider: 'codex-sdk'
@@ -39,6 +40,7 @@ export type OpencodeProviderRequest = {
   threadId?: string | null
   abortSignal?: AbortSignal
   onUsage?: UsageListener
+  onTextDelta?: TextDeltaListener
 }
 
 export type ProviderRequest = CodexSdkProviderRequest | OpencodeProviderRequest
