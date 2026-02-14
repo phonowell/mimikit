@@ -13,6 +13,17 @@ import type {
   TaskResult,
 } from '../types/index.js'
 
+const TASK_PROMPT_MAX_CHARS = 240
+const TASK_OUTPUT_MAX_CHARS = 320
+
+const truncateForPrompt = (value: string, maxChars: number): string => {
+  const normalized = value.replace(/\s+/g, ' ').trim()
+  if (normalized.length <= maxChars) return normalized
+  const suffix = '...'
+  const keep = Math.max(0, maxChars - suffix.length)
+  return `${normalized.slice(0, keep).trimEnd()}${suffix}`
+}
+
 export const selectTasksForPrompt = (tasks: Task[]): Task[] => {
   if (tasks.length === 0) return []
   return [...tasks].sort((a, b) => {
@@ -44,7 +55,7 @@ const formatTaskEntry = (
     status: task.status,
     title: task.title.trim() || task.id,
     changed_at: resolveTaskChangedAt(task),
-    prompt: task.prompt,
+    prompt: truncateForPrompt(task.prompt, TASK_PROMPT_MAX_CHARS),
     ...(task.status === 'canceled' && taskCancel ? { cancel: taskCancel } : {}),
     ...(result
       ? {
@@ -53,7 +64,7 @@ const formatTaskEntry = (
             ok: result.ok,
             completed_at: result.completedAt,
             duration_ms: result.durationMs,
-            output: result.output,
+            output: truncateForPrompt(result.output, TASK_OUTPUT_MAX_CHARS),
             ...(result.status === 'canceled' && resultCancel
               ? { cancel: resultCancel }
               : {}),
@@ -145,14 +156,14 @@ export const formatResultsYaml = (
     taskEntries.push({
       id: result.taskId,
       title,
-      prompt: task?.prompt ?? '',
+      prompt: truncateForPrompt(task?.prompt ?? '', TASK_PROMPT_MAX_CHARS),
       changed_at: result.completedAt,
       result: {
         status: result.status,
         ok: result.ok,
         completed_at: result.completedAt,
         duration_ms: result.durationMs,
-        output: result.output,
+        output: truncateForPrompt(result.output, TASK_OUTPUT_MAX_CHARS),
         ...(result.status === 'canceled' && cancel ? { cancel } : {}),
         ...(result.archivePath ? { archive_path: result.archivePath } : {}),
         usage: normalizeYamlUsage(result.usage),

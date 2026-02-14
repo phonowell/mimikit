@@ -334,6 +334,7 @@ export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
         ...(compactedContext ? { compactedContext } : {}),
         model: runtime.config.manager.model,
         modelReasoningEffort: runtime.config.manager.modelReasoningEffort,
+        maxPromptTokens: runtime.config.manager.promptMaxTokens,
         onTextDelta: (delta) => {
           if (!delta) return
           streamRawOutput += delta

@@ -1,8 +1,10 @@
-import { spawn } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import { createRequire } from 'node:module'
 import { createServer } from 'node:net'
 
 import { createOpencodeClient } from '@opencode-ai/sdk/v2'
+import CircuitBreaker from 'opossum'
+import pRetry from 'p-retry'
 
 import {
   extractOpencodeOutput,
@@ -20,6 +22,14 @@ import type {
 const require = createRequire(import.meta.url)
 const OPENCODE_ENTRY = require.resolve('opencode-ai/bin/opencode')
 const OPENCODE_HOST = '127.0.0.1'
+const PREFLIGHT_CACHE_MS = 30_000
+const RETRY_MAX_ATTEMPTS = 3
+
+type PreflightState = {
+  checkedAt: number
+  ok: boolean
+  error?: string
+}
 
 type StartedServer = {
   url: string
@@ -29,6 +39,60 @@ type StartedServer = {
 type UsageStreamMonitor = {
   stop: () => void
   done: Promise<void>
+}
+
+let preflightState: PreflightState | undefined
+
+const readExitCode = (status: number | null): string =>
+  status === null ? 'unknown' : String(status)
+
+const parseStderr = (value: unknown): string => {
+  if (!value) return ''
+  if (typeof value === 'string') return value.trim()
+  if (Buffer.isBuffer(value)) return value.toString('utf8').trim()
+  return String(value)
+}
+
+const runOpencodePreflight = (): PreflightState => {
+  const now = Date.now()
+  const result = spawnSync(process.execPath, [OPENCODE_ENTRY, '--version'], {
+    encoding: 'utf8',
+    timeout: 5_000,
+    windowsHide: true,
+    env: process.env,
+  })
+  const stderr = parseStderr(result.stderr)
+  if (result.error) {
+    return {
+      checkedAt: now,
+      ok: false,
+      error: result.error.message,
+    }
+  }
+  if (result.status !== 0) {
+    return {
+      checkedAt: now,
+      ok: false,
+      error: `exit=${readExitCode(result.status)}${stderr ? ` ${stderr}` : ''}`,
+    }
+  }
+  return { checkedAt: now, ok: true }
+}
+
+const ensureOpencodePreflight = (): void => {
+  const now = Date.now()
+  if (preflightState && now - preflightState.checkedAt < PREFLIGHT_CACHE_MS) {
+    if (preflightState.ok) return
+    throw new Error(
+      `[provider:opencode] preflight failed: ${preflightState.error ?? 'unknown'}`,
+    )
+  }
+  preflightState = runOpencodePreflight()
+  if (!preflightState.ok) {
+    throw new Error(
+      `[provider:opencode] preflight failed: ${preflightState.error ?? 'unknown'}`,
+    )
+  }
 }
 
 const isAbortLikeError = (error: unknown): boolean => {
@@ -167,6 +231,23 @@ const wrapSdkError = (error: unknown): Error => {
   return new Error(`[provider:opencode] sdk run failed: ${message}`)
 }
 
+const isTransientProviderError = (error: unknown): boolean => {
+  const message = error instanceof Error ? error.message : String(error)
+  return (
+    /fetch failed/i.test(message) ||
+    /socket hang up/i.test(message) ||
+    /ECONNRESET/i.test(message) ||
+    /ECONNREFUSED/i.test(message) ||
+    /EAI_AGAIN/i.test(message) ||
+    /ETIMEDOUT/i.test(message) ||
+    /timed out/i.test(message) ||
+    /network/i.test(message)
+  )
+}
+
+const shouldSkipFailureCount = (error: Error): boolean =>
+  isAbortLikeError(error) || /preflight failed/i.test(error.message)
+
 const isSameUsage = (
   left: ReturnType<typeof mapOpencodeUsage> | undefined,
   right: ReturnType<typeof mapOpencodeUsage> | undefined,
@@ -227,7 +308,7 @@ const startUsageStreamMonitor = (params: {
   }
 }
 
-const runOpencode = async (
+const runOpencodeOnce = async (
   request: OpencodeProviderRequest,
 ): Promise<ProviderResult> => {
   const startedAt = Date.now()
@@ -341,6 +422,66 @@ const runOpencode = async (
       await usageMonitor.done.catch(() => undefined)
     }
     if (closeServer) closeServer()
+  }
+}
+
+const runOpencodeWithRetry = (
+  request: OpencodeProviderRequest,
+): Promise<ProviderResult> =>
+  pRetry(() => runOpencodeOnce(request), {
+    retries: Math.max(0, RETRY_MAX_ATTEMPTS - 1),
+    factor: 2,
+    minTimeout: 300,
+    maxTimeout: 3_000,
+    randomize: true,
+    shouldConsumeRetry: ({ error }) =>
+      !(isAbortLikeError(error) || !isTransientProviderError(error)),
+    shouldRetry: ({ error }) =>
+      !isAbortLikeError(error) && isTransientProviderError(error),
+    onFailedAttempt: (attempt) => {
+      if (attempt.retriesLeft <= 0) return
+      const message =
+        attempt.error instanceof Error
+          ? attempt.error.message
+          : String(attempt.error)
+      console.warn(
+        `[provider:opencode] transient failure, retry ${attempt.attemptNumber}/${RETRY_MAX_ATTEMPTS}: ${message}`,
+      )
+    },
+  })
+
+const opencodeBreaker = new CircuitBreaker(runOpencodeWithRetry, {
+  timeout: 0,
+  resetTimeout: 30_000,
+  volumeThreshold: 3,
+  errorThresholdPercentage: 50,
+  errorFilter: shouldSkipFailureCount,
+})
+
+opencodeBreaker.on('open', () => {
+  console.warn('[provider:opencode] circuit opened')
+})
+opencodeBreaker.on('halfOpen', () => {
+  console.warn('[provider:opencode] circuit half-open')
+})
+opencodeBreaker.on('close', () => {
+  console.warn('[provider:opencode] circuit closed')
+})
+
+const runOpencode = async (
+  request: OpencodeProviderRequest,
+): Promise<ProviderResult> => {
+  ensureOpencodePreflight()
+  try {
+    return await opencodeBreaker.fire(request)
+  } catch (error) {
+    if (isAbortLikeError(error)) throw new Error('[provider:opencode] aborted')
+    if (error instanceof Error && /breaker is open/i.test(error.message)) {
+      throw new Error(
+        '[provider:opencode] circuit is open due to consecutive failures',
+      )
+    }
+    throw error
   }
 }
 

@@ -16,6 +16,10 @@ export type AppConfig = {
   manager: {
     /** 轮询间隔（毫秒） */
     pollMs: number
+    /** manager prompt 的硬 token 上限 */
+    promptMaxTokens: number
+    /** create_task 去抖时间窗（毫秒） */
+    createTaskDebounceMs: number
     /** 任务列表保留上限（条） */
     tasksMaxCount: number
     /** 任务列表保留下限（条） */

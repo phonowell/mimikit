@@ -1,10 +1,13 @@
 import { z } from 'zod'
 
+import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import {
   buildTaskFingerprint,
+  buildTaskSemanticKey,
   enqueueTask,
+  findActiveTaskBySemanticKey,
 } from '../orchestrator/core/task-state.js'
 import { notifyWorkerLoop } from '../orchestrator/core/worker-signal.js'
 import { appendTaskSystemMessage } from '../orchestrator/read-model/task-history.js'
@@ -85,6 +88,55 @@ type ApplyTaskActionsOptions = {
   suppressCreateTask?: boolean
 }
 
+const normalizePromptPath = (value: string): string =>
+  value.replace(/\\/g, '/').toLowerCase()
+
+const hasForbiddenWorkerStatePath = (prompt: string): boolean => {
+  const normalized = normalizePromptPath(prompt)
+  if (!normalized.includes('.mimikit')) return false
+  const directDeny =
+    normalized.includes('.mimikit/runtime-state') ||
+    normalized.includes('.mimikit/results/') ||
+    normalized.includes('.mimikit/inputs/') ||
+    normalized.includes('.mimikit/tasks/') ||
+    normalized.includes('.mimikit/log.jsonl') ||
+    normalized.includes('.mimikit/history.jsonl')
+  if (directDeny) return true
+  const pathRefs = normalized.match(
+    /(?:^|[^\p{L}\p{N}_-])(?:\.mimikit\/[^\s"'`)\]]+)/gu,
+  )
+  if (!pathRefs) return false
+  return pathRefs.some((rawRef) => {
+    const ref = rawRef.trim().replace(/^[^.]*/, '')
+    if (ref === '.mimikit/generated' || ref.startsWith('.mimikit/generated/'))
+      return false
+    return true
+  })
+}
+
+const markCreateAttempt = (
+  runtime: RuntimeState,
+  semanticKey: string,
+): { debounced: boolean; waitMs: number } => {
+  const now = Date.now()
+  const debounceMs = Math.max(0, runtime.config.manager.createTaskDebounceMs)
+  const debounceMap = runtime.createTaskDebounce
+  const last = debounceMap.get(semanticKey)
+  debounceMap.set(semanticKey, now)
+  if (debounceMap.size > 1_000) {
+    const cutoff = now - debounceMs * 4
+    for (const [key, value] of debounceMap) {
+      if (value >= cutoff) continue
+      debounceMap.delete(key)
+    }
+  }
+  if (last === undefined || debounceMs === 0)
+    return { debounced: false, waitMs: 0 }
+  const delta = now - last
+  if (delta >= debounceMs) return { debounced: false, waitMs: 0 }
+  return { debounced: true, waitMs: Math.max(0, debounceMs - delta) }
+}
+
 const applyCreateTask = async (
   runtime: RuntimeState,
   item: Parsed,
@@ -95,12 +147,74 @@ const applyCreateTask = async (
   const parsed = createSchema.safeParse(item.attrs)
   if (!parsed.success) return
   const profile = parsed.data.profile as WorkerProfile
+  if (
+    profile !== 'manager' &&
+    hasForbiddenWorkerStatePath(parsed.data.prompt)
+  ) {
+    await bestEffort(
+      'appendLog: create_task_rejected_forbidden_state_path',
+      () =>
+        appendLog(runtime.paths.log, {
+          event: 'create_task_rejected_forbidden_state_path',
+          profile,
+          title: parsed.data.title,
+        }),
+    )
+    return
+  }
   const cron = parsed.data.cron?.trim()
   const scheduledAt = parsed.data.scheduled_at?.trim()
   const scheduleKey = cron ?? scheduledAt ?? ''
+  const semanticKey = buildTaskSemanticKey({
+    prompt: parsed.data.prompt,
+    title: parsed.data.title,
+    profile,
+    ...(scheduleKey ? { schedule: scheduleKey } : {}),
+  })
+  const debounce = markCreateAttempt(runtime, semanticKey)
+  if (debounce.debounced) {
+    await bestEffort('appendLog: create_task_debounced', () =>
+      appendLog(runtime.paths.log, {
+        event: 'create_task_debounced',
+        profile,
+        title: parsed.data.title,
+        waitMs: debounce.waitMs,
+      }),
+    )
+    return
+  }
   const dedupeKey = `${parsed.data.prompt}\n${parsed.data.title}\n${profile}\n${scheduleKey}`
   if (seen.has(dedupeKey)) return
   seen.add(dedupeKey)
+
+  const activeSemanticTask = findActiveTaskBySemanticKey(
+    runtime.tasks,
+    semanticKey,
+  )
+  if (activeSemanticTask) {
+    const activeFingerprint = buildTaskFingerprint({
+      prompt: activeSemanticTask.prompt,
+      title: activeSemanticTask.title,
+      profile: activeSemanticTask.profile,
+      ...(activeSemanticTask.cron ? { schedule: activeSemanticTask.cron } : {}),
+    })
+    const nextFingerprint = buildTaskFingerprint({
+      prompt: parsed.data.prompt,
+      title: parsed.data.title,
+      profile,
+      ...(scheduleKey ? { schedule: scheduleKey } : {}),
+    })
+    if (activeFingerprint !== nextFingerprint) {
+      await cancelTask(runtime, activeSemanticTask.id, {
+        source: 'manager',
+        reason: 'superseded_by_newer_semantic_task',
+      })
+    } else if (activeSemanticTask.status === 'pending') {
+      enqueueWorkerTask(runtime, activeSemanticTask)
+      notifyWorkerLoop(runtime)
+      return
+    } else return
+  }
 
   if (cron || scheduledAt) {
     if (scheduledAt && !Number.isFinite(Date.parse(scheduledAt))) return

@@ -34,6 +34,50 @@ const BYTE_STEP = 1_024
 const TIMEOUT_STEP_MS = 2_500
 export const MIN_MANAGER_TIMEOUT_MS = 60_000
 export const MAX_MANAGER_TIMEOUT_MS = 120_000
+const DEFAULT_MANAGER_PROMPT_MAX_TOKENS = 8_192
+
+const estimatePromptTokens = (prompt: string): number =>
+  Math.max(1, Math.ceil(Buffer.byteLength(prompt, 'utf8') / 4))
+
+const escapeRegExp = (value: string): string =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+const removeTagBlock = (prompt: string, tag: string): string => {
+  const pattern = new RegExp(
+    `<${escapeRegExp(tag)}>[\\s\\S]*?<\\/${escapeRegExp(tag)}>\\n*`,
+    'g',
+  )
+  return prompt.replace(pattern, '').trim()
+}
+
+const enforcePromptBudget = (
+  prompt: string,
+  maxTokens: number,
+): { prompt: string; trimmed: boolean; estimatedTokens: number } => {
+  const budget = Math.max(1, maxTokens)
+  let current = prompt
+  let estimatedTokens = estimatePromptTokens(current)
+  if (estimatedTokens <= budget)
+    return { prompt: current, trimmed: false, estimatedTokens }
+
+  const pruneOrder = [
+    'M:compacted_context',
+    'M:history',
+    'M:tasks',
+    'M:results',
+  ]
+  for (const tag of pruneOrder) {
+    const next = removeTagBlock(current, tag)
+    if (next === current) continue
+    current = next
+    estimatedTokens = estimatePromptTokens(current)
+    if (estimatedTokens <= budget)
+      return { prompt: current, trimmed: true, estimatedTokens }
+  }
+  throw new Error(
+    `[manager] prompt exceeds max token budget (${estimatedTokens}/${budget})`,
+  )
+}
 
 export const resolveManagerTimeoutMs = (prompt: string): number => {
   const promptBytes = Buffer.byteLength(prompt, 'utf8')
@@ -61,6 +105,7 @@ export const runManager = async (params: {
   seed?: number
   temperature?: number
   fallbackModel?: string
+  maxPromptTokens?: number
   onTextDelta?: (delta: string) => void
   onUsage?: (usage: TokenUsage) => void
   onStreamReset?: () => void
@@ -94,11 +139,15 @@ export const runManager = async (params: {
   const fallbackModel = normalizeOptional(
     params.fallbackModel ?? DEFAULT_FALLBACK_MODEL,
   )
-  const timeoutMs = resolveManagerTimeoutMs(prompt)
+  const budgetedPrompt = enforcePromptBudget(
+    prompt,
+    params.maxPromptTokens ?? DEFAULT_MANAGER_PROMPT_MAX_TOKENS,
+  )
+  const timeoutMs = resolveManagerTimeoutMs(budgetedPrompt.prompt)
 
   type ArchiveBase = Omit<LlmArchiveEntry, 'prompt' | 'output' | 'ok'>
   const archive = (base: ArchiveBase, result: LlmArchiveResult) =>
-    appendLlmArchiveResult(params.stateDir, base, prompt, result)
+    appendLlmArchiveResult(params.stateDir, base, budgetedPrompt.prompt, result)
 
   const archiveBase = (
     callModel: string | undefined,
@@ -113,7 +162,7 @@ export const runManager = async (params: {
   const callProvider = (callModel: string | undefined) =>
     runWithProvider({
       provider: 'openai-chat',
-      prompt,
+      prompt: budgetedPrompt.prompt,
       timeoutMs,
       ...(callModel ? { model: callModel } : {}),
       ...(params.modelReasoningEffort

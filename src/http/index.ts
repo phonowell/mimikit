@@ -4,8 +4,6 @@ import { resolve } from 'node:path'
 import fastifyStatic from '@fastify/static'
 import fastify from 'fastify'
 
-import { logSafeError } from '../log/safe.js'
-
 import { registerErrorHandler } from './error-handler.js'
 import { resolveRoots } from './helpers.js'
 import { registerApiRoutes, registerNotFoundHandler } from './routes-api.js'
@@ -45,7 +43,7 @@ const registerStaticAssets = (
   })
 }
 
-export const createHttpServer = (
+export const createHttpServer = async (
   orchestrator: Orchestrator,
   config: AppConfig,
   port: number,
@@ -57,15 +55,8 @@ export const createHttpServer = (
   registerNotFoundHandler(app)
   registerStaticAssets(app, config)
 
-  void app
-    .listen({ port, host: '0.0.0.0' })
-    .then((address) => {
-      console.log(`[http] listening on ${address}`)
-    })
-    .catch(async (error) => {
-      await logSafeError('http: listen', error)
-      process.exit(1)
-    })
+  const address = await app.listen({ port, host: '0.0.0.0' })
+  console.log(`[http] listening on ${address}`)
 
   return app
 }

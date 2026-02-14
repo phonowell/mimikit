@@ -53,6 +53,7 @@ export type RuntimeState = {
   focusState?: FocusState
   uiStream: UiAgentStream | null
   runningControllers: Map<string, AbortController>
+  createTaskDebounce: Map<string, number>
   workerQueue: PQueue
   workerSignalController: AbortController
   uiSignalController?: AbortController

@@ -24,17 +24,20 @@ const createRuntime = async (): Promise<RuntimeState> => {
     paths: buildPaths(workDir),
     stopped: false,
     managerRunning: false,
+    managerSignalController: new AbortController(),
     inflightInputs: [],
-    lastManagerRunAt: 0,
     queues: {
       inputsCursor: 0,
       resultsCursor: 0,
     },
     tasks: [],
     cronJobs: [],
+    uiStream: null,
     runningControllers: new Map(),
+    createTaskDebounce: new Map(),
     workerQueue: queue,
     workerSignalController: new AbortController(),
+    uiSignalController: new AbortController(),
   }
 }
 
@@ -79,4 +82,39 @@ test('create_task dedupe only applies to same fingerprint and still re-enqueues 
   expect(runtime.tasks).toHaveLength(2)
   expect(runtime.tasks[1]?.title).toBe('new title')
   expect(runtime.tasks[1]?.fingerprint).not.toBe(runtime.tasks[0]?.fingerprint)
+})
+
+test('create_task rejects forbidden .mimikit state paths for worker profiles', async () => {
+  const runtime = await createRuntime()
+
+  await applyTaskActions(runtime, [
+    {
+      name: 'create_task',
+      attrs: {
+        prompt: 'Read .mimikit/tasks/task-1.json and summarize',
+        title: 'forbidden',
+        profile: 'standard',
+      },
+    },
+  ])
+
+  expect(runtime.tasks).toHaveLength(0)
+})
+
+test('create_task allows .mimikit/generated path for worker profiles', async () => {
+  const runtime = await createRuntime()
+
+  await applyTaskActions(runtime, [
+    {
+      name: 'create_task',
+      attrs: {
+        prompt: 'Write report to .mimikit/generated',
+        title: 'allowed',
+        profile: 'standard',
+      },
+    },
+  ])
+
+  expect(runtime.tasks).toHaveLength(1)
+  expect(runtime.tasks[0]?.title).toBe('allowed')
 })

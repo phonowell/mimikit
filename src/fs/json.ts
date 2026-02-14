@@ -1,6 +1,7 @@
 import { dirname } from 'node:path'
 
 import read from 'fire-keeper/read'
+import pRetry from 'p-retry'
 import writeFileAtomicLib from 'write-file-atomic'
 
 import { safe } from '../log/safe.js'
@@ -32,7 +33,25 @@ export const writeFileAtomic = async (
   content: string,
 ): Promise<void> => {
   await ensureDir(dirname(path))
-  await writeFileAtomicLib(path, content, { encoding: 'utf8' })
+  const isRetryableFsError = (error: unknown): boolean => {
+    if (!error || typeof error !== 'object' || !('code' in error)) return false
+    const code = String((error as { code?: string }).code)
+    return (
+      code === 'EPERM' ||
+      code === 'EACCES' ||
+      code === 'EBUSY' ||
+      code === 'EMFILE' ||
+      code === 'ENFILE'
+    )
+  }
+  await pRetry(() => writeFileAtomicLib(path, content, { encoding: 'utf8' }), {
+    retries: 5,
+    factor: 2,
+    minTimeout: 20,
+    maxTimeout: 600,
+    randomize: true,
+    shouldRetry: ({ error }) => isRetryableFsError(error),
+  })
 }
 
 const toJsonText = (value: unknown): string =>

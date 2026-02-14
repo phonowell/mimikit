@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { basename, dirname } from 'node:path'
 
 import mkdir from 'fire-keeper/mkdir'
@@ -63,11 +64,61 @@ const writeLine = (stream: RotatingFileStream, line: string): Promise<void> =>
     stream.on('drain', onDrain)
   })
 
+const deriveTraceSeed = (entry: Record<string, unknown>): string => {
+  const { traceId: explicit, taskId, inputIds, resultIds } = entry
+  if (typeof explicit === 'string' && explicit.trim().length > 0)
+    return explicit.trim()
+  if (typeof taskId === 'string' && taskId.trim().length > 0)
+    return `task:${taskId.trim()}`
+  if (Array.isArray(inputIds) && inputIds.length > 0) {
+    const normalized = inputIds
+      .filter((item): item is string => typeof item === 'string')
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0)
+      .join(',')
+    if (normalized) return `inputs:${normalized}`
+  }
+  if (Array.isArray(resultIds) && resultIds.length > 0) {
+    const normalized = resultIds
+      .filter((item): item is string => typeof item === 'string')
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0)
+      .join(',')
+    if (normalized) return `results:${normalized}`
+  }
+  return JSON.stringify(entry)
+}
+
+const deriveTraceId = (entry: Record<string, unknown>): string =>
+  createHash('sha1').update(deriveTraceSeed(entry)).digest('hex').slice(0, 16)
+
+const resolveLevel = (
+  entry: Record<string, unknown>,
+): 'info' | 'warn' | 'error' => {
+  const explicit = entry['level']
+  if (explicit === 'info' || explicit === 'warn' || explicit === 'error')
+    return explicit
+  const event = typeof entry['event'] === 'string' ? entry['event'] : ''
+  if (event === 'error') return 'error'
+  if (/fail|cancel|retry|timeout|invalid|abort|fallback/i.test(event))
+    return 'warn'
+  return 'info'
+}
+
 export const appendLog = async (
   path: string,
   entry: Record<string, unknown>,
 ): Promise<void> => {
   const stream = await getStream(path)
-  const line = `${JSON.stringify({ timestamp: nowIso(), ...entry })}\n`
+  const timestamp = nowIso()
+  const level = resolveLevel(entry)
+  const traceId = deriveTraceId(entry)
+  const line = `${JSON.stringify({
+    timestamp,
+    schema: 'mimikit.log.v2',
+    level,
+    traceId,
+    ...entry,
+  })}\n`
   await writeLine(stream, line)
 }

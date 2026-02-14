@@ -1,5 +1,7 @@
 manager:
   pollMs: 1000
+  promptMaxTokens: 8192
+  createTaskDebounceMs: 4000
   tasksMaxCount: 20
   tasksMinCount: 5
   tasksMaxBytes: 20480

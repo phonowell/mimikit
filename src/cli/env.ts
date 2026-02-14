@@ -1,4 +1,8 @@
-import { parseEnvBoolean, parseEnvPositiveInteger } from './env-parse.js'
+import {
+  parseEnvBoolean,
+  parseEnvNonNegativeInteger,
+  parseEnvPositiveInteger,
+} from './env-parse.js'
 import { applyReasoningEnv } from './env-reasoning.js'
 
 import type { AppConfig } from '../config.js'
@@ -31,6 +35,20 @@ const applyLoopEnv = (config: AppConfig): void => {
     process.env.MIMIKIT_MANAGER_POLL_MS?.trim(),
   )
   if (managerPollMs !== undefined) config.manager.pollMs = managerPollMs
+
+  const managerPromptMaxTokens = parseEnvPositiveInteger(
+    'MIMIKIT_MANAGER_PROMPT_MAX_TOKENS',
+    process.env.MIMIKIT_MANAGER_PROMPT_MAX_TOKENS?.trim(),
+  )
+  if (managerPromptMaxTokens !== undefined)
+    config.manager.promptMaxTokens = managerPromptMaxTokens
+
+  const managerCreateTaskDebounceMs = parseEnvNonNegativeInteger(
+    'MIMIKIT_MANAGER_CREATE_TASK_DEBOUNCE_MS',
+    process.env.MIMIKIT_MANAGER_CREATE_TASK_DEBOUNCE_MS?.trim(),
+  )
+  if (managerCreateTaskDebounceMs !== undefined)
+    config.manager.createTaskDebounceMs = managerCreateTaskDebounceMs
 
   const evolverPollMs = parseEnvPositiveInteger(
     'MIMIKIT_EVOLVER_POLL_MS',

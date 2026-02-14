@@ -38,12 +38,18 @@ importers:
       fastify:
         specifier: ^5.7.4
         version: 5.7.4
+      get-port:
+        specifier: ^7.1.0
+        version: 7.1.0
       marked:
         specifier: ^17.0.2
         version: 17.0.2
       opencode-ai:
         specifier: 1.2.0
         version: 1.2.0
+      opossum:
+        specifier: ^9.0.0
+        version: 9.0.0
       p-queue:
         specifier: ^9.1.0
         version: 9.1.0
@@ -69,6 +75,9 @@ importers:
       '@types/node':
         specifier: ^25.2.3
         version: 25.2.3
+      '@types/opossum':
+        specifier: ^8.1.9
+        version: 8.1.9
       '@types/write-file-atomic':
         specifier: ^4.0.3
         version: 4.0.3
@@ -645,6 +654,9 @@ packages:
 
   '@types/node@25.2.3':
     resolution: {integrity: sha512-m0jEgYlYz+mDJZ2+F4v8D1AyQb+QzsNqRuI7xg1VQX/KlKS0qT9r1Mo16yo5F/MtifXFgaofIFsdFMox2SxIbQ==}
+
+  '@types/opossum@8.1.9':
+    resolution: {integrity: sha512-Jm/tYxuJFefiwRYs+/EOsUP3ktk0c8siMgAHPLnA4PXF4wKghzcjqf88dY+Xii5jId5Txw4JV0FMKTpjbd7KJA==}
 
   '@types/sinonjs__fake-timers@8.1.5':
     resolution: {integrity: sha512-mQkU2jY8jJEF7YHjHvsQO8+3ughTL1mcnn96igfhONmR+fUPSKIkefQYpSe8bsly2Ep7oQbn/6VG5/9/0qcArQ==}
@@ -2239,6 +2251,10 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  opossum@9.0.0:
+    resolution: {integrity: sha512-K76U0QkxOfUZamneQuzz+AP0fyfTJcCplZ2oZL93nxeupuJbN4s6uFNbmVCt4eWqqGqRnnowdFuBicJ1fLMVxw==}
+    engines: {node: ^24 || ^22 || ^20}
+
   optionator@0.9.4:
     resolution: {integrity: sha512-6IpQ7mKUxRcZNLIObR0hz7lxsapSSIYNZJwXPGeF0mTVqGKFIXj1DQcMoT22S3ROcLyY/rz0PWaWZ9ayWmad9g==}
     engines: {node: '>= 0.8.0'}
@@ -3558,6 +3574,10 @@ snapshots:
   '@types/node@25.2.3':
     dependencies:
       undici-types: 7.16.0
+
+  '@types/opossum@8.1.9':
+    dependencies:
+      '@types/node': 25.2.3
 
   '@types/sinonjs__fake-timers@8.1.5': {}
 
@@ -5391,6 +5411,8 @@ snapshots:
 
   opencode-windows-x64@1.2.0:
     optional: true
+
+  opossum@9.0.0: {}
 
   optionator@0.9.4:
     dependencies:
