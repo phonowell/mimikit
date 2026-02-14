@@ -6,20 +6,26 @@ import { buildPaths } from '../../fs/paths.js'
 import { appendLog } from '../../log/append.js'
 import { bestEffort, setDefaultLogPath } from '../../log/safe.js'
 import { managerLoop } from '../../manager/loop.js'
-import { newId, nowIso, titleFromCandidates } from '../../shared/utils.js'
-import { appendHistory, readHistory } from '../../storage/jsonl.js'
-import { publishUserInput } from '../../streams/queues.js'
+import { newId, nowIso } from '../../shared/utils.js'
+import { appendHistory } from '../../storage/jsonl.js'
 import { cancelTask } from '../../worker/cancel-task.js'
 import { enqueuePendingWorkerTasks, workerLoop } from '../../worker/dispatch.js'
-import {
-  type ChatMessage,
-  type ChatMessagesMode,
-  mergeChatMessages,
-  selectChatMessages,
-} from '../read-model/chat-view.js'
-import { buildTaskViews } from '../read-model/task-view.js'
 
 import { notifyManagerLoop } from './manager-signal.js'
+import {
+  addCronJob,
+  cancelCronJob,
+  getCronJobs,
+} from './orchestrator-service-cron.js'
+import {
+  addUserInput,
+  getChatHistory,
+  getChatMessages,
+  getInflightInputs,
+  getTasks,
+  getWebUiSnapshot,
+  waitForWebUiSignal,
+} from './orchestrator-service-read.js'
 import {
   computeOrchestratorStatus,
   type OrchestratorStatus,
@@ -28,13 +34,10 @@ import {
   hydrateRuntimeState,
   persistRuntimeState,
 } from './runtime-persistence.js'
-import { notifyUiSignal, waitForUiSignal } from './ui-signal.js'
 import { notifyWorkerLoop } from './worker-signal.js'
 
 import type { RuntimeState, UserMeta } from './runtime-state.js'
 import type { CronJob, Task, WorkerProfile } from '../../types/index.js'
-
-const cloneCronJob = (job: CronJob): CronJob => ({ ...job })
 
 export class Orchestrator {
   private runtime: RuntimeState
@@ -112,91 +115,40 @@ export class Orchestrator {
     meta?: UserMeta,
     quote?: string,
   ): Promise<string> {
-    const id = newId()
-    const createdAt = nowIso()
-    const input = quote
-      ? { id, text, createdAt, quote }
-      : { id, text, createdAt }
-    await publishUserInput({
-      paths: this.runtime.paths,
-      payload: input,
-    })
-    this.runtime.inflightInputs.push(input)
-    if (meta) this.runtime.lastUserMeta = meta
-    await appendLog(this.runtime.paths.log, {
-      event: 'user_input',
-      id,
-      ...(quote ? { quote } : {}),
-      ...(meta?.source ? { source: meta.source } : {}),
-      ...(meta?.remote ? { remote: meta.remote } : {}),
-      ...(meta?.userAgent ? { userAgent: meta.userAgent } : {}),
-      ...(meta?.language ? { language: meta.language } : {}),
-      ...(meta?.clientLocale ? { clientLocale: meta.clientLocale } : {}),
-      ...(meta?.clientTimeZone ? { clientTimeZone: meta.clientTimeZone } : {}),
-      ...(meta?.clientOffsetMinutes !== undefined
-        ? { clientOffsetMinutes: meta.clientOffsetMinutes }
-        : {}),
-      ...(meta?.clientNowIso ? { clientNowIso: meta.clientNowIso } : {}),
-    })
-    notifyManagerLoop(this.runtime)
-    return id
+    const inputId = await addUserInput(this.runtime, text, meta, quote)
+    return inputId
   }
 
   getInflightInputs() {
-    return [...this.runtime.inflightInputs]
+    return getInflightInputs(this.runtime)
   }
 
-  async getChatHistory(limit = 50): Promise<ChatMessage[]> {
-    const history = await readHistory(this.runtime.paths.history)
-    return mergeChatMessages({
-      history,
-      inflightInputs: this.getInflightInputs(),
-      limit,
-    })
+  async getChatHistory(limit = 50) {
+    const history = await getChatHistory(this.runtime, limit)
+    return history
   }
 
-  async getChatMessages(
-    limit = 50,
-    afterId?: string,
-  ): Promise<{ messages: ChatMessage[]; mode: ChatMessagesMode }> {
-    const history = await readHistory(this.runtime.paths.history)
-    return selectChatMessages({
-      history,
-      inflightInputs: this.getInflightInputs(),
-      limit,
-      ...(afterId ? { afterId } : {}),
-    })
+  async getChatMessages(limit = 50, afterId?: string) {
+    const messages = await getChatMessages(this.runtime, limit, afterId)
+    return messages
   }
 
   getTasks(limit = 200) {
-    return buildTaskViews(this.runtime.tasks, this.runtime.cronJobs, limit)
+    return getTasks(this.runtime, limit)
   }
 
   async getWebUiSnapshot(messageLimit = 50, taskLimit = 200) {
-    const [messages, tasks] = await Promise.all([
-      this.getChatMessages(messageLimit),
-      Promise.resolve(this.getTasks(taskLimit)),
-    ])
-    const stream = this.runtime.uiStream
-    return {
-      status: this.getStatus(),
-      messages,
-      tasks,
-      stream: stream
-        ? {
-            id: stream.id,
-            role: stream.role,
-            text: stream.text,
-            ...(stream.usage ? { usage: stream.usage } : {}),
-            createdAt: stream.createdAt,
-            updatedAt: stream.updatedAt,
-          }
-        : null,
-    }
+    const snapshot = await getWebUiSnapshot(
+      this.runtime,
+      () => this.getStatus(),
+      messageLimit,
+      taskLimit,
+    )
+    return snapshot
   }
 
   waitForWebUiSignal(timeoutMs: number): Promise<void> {
-    return waitForUiSignal(this.runtime, timeoutMs)
+    return waitForWebUiSignal(this.runtime, timeoutMs)
   }
 
   getTaskById(taskId: string): Task | undefined {
@@ -217,44 +169,17 @@ export class Orchestrator {
     profile?: WorkerProfile
     enabled?: boolean
   }): Promise<CronJob> {
-    const prompt = input.prompt.trim()
-    if (!prompt) throw new Error('add_cron_job_prompt_empty')
-    const cron = input.cron?.trim()
-    const scheduledAt = input.scheduledAt?.trim()
-    if (!cron && !scheduledAt) throw new Error('add_cron_job_schedule_missing')
-    if (cron && scheduledAt) throw new Error('add_cron_job_schedule_conflict')
-    const id = newId()
-    const job: CronJob = {
-      id,
-      ...(cron ? { cron } : {}),
-      ...(scheduledAt ? { scheduledAt } : {}),
-      prompt,
-      title: titleFromCandidates(id, [input.title, prompt]),
-      profile: input.profile ?? 'standard',
-      enabled: input.enabled ?? true,
-      createdAt: nowIso(),
-    }
-    this.runtime.cronJobs.push(job)
-    await persistRuntimeState(this.runtime)
-    notifyUiSignal(this.runtime)
-    return cloneCronJob(job)
+    const cronJob = await addCronJob(this.runtime, input)
+    return cronJob
   }
 
   getCronJobs(): CronJob[] {
-    return this.runtime.cronJobs.map((job) => cloneCronJob(job))
+    return getCronJobs(this.runtime)
   }
 
   async cancelCronJob(cronJobId: string): Promise<boolean> {
-    const targetId = cronJobId.trim()
-    if (!targetId) return false
-    const target = this.runtime.cronJobs.find((job) => job.id === targetId)
-    if (!target) return false
-    if (!target.enabled) return true
-    target.enabled = false
-    target.disabledReason = 'canceled'
-    await persistRuntimeState(this.runtime)
-    notifyUiSignal(this.runtime)
-    return true
+    const canceled = await cancelCronJob(this.runtime, cronJobId)
+    return canceled
   }
 
   getStatus(): OrchestratorStatus {

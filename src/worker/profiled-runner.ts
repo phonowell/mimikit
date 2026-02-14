@@ -1,5 +1,4 @@
 import { buildWorkerPrompt } from '../prompts/build-prompts.js'
-import { renderPromptTemplate } from '../prompts/format.js'
 import { loadPromptFile } from '../prompts/prompt-loader.js'
 
 import {
@@ -7,6 +6,15 @@ import {
   archiveWorkerResult,
   buildRunModel,
 } from './profiled-runner-helpers.js'
+import {
+  buildContinuePrompt,
+  DONE_MARKER,
+  hasDoneMarker,
+  isSameUsage,
+  MAX_RUN_ROUNDS,
+  mergeUsage,
+  stripDoneMarker,
+} from './profiled-runner-utils.js'
 
 import type {
   LlmResult,
@@ -16,59 +24,6 @@ import type {
 } from './profiled-runner-helpers.js'
 import type { Task, TokenUsage } from '../types/index.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
-const DONE_MARKER = '<M:TASK_DONE/>'
-const MAX_RUN_ROUNDS = 3
-
-const hasDoneMarker = (output: string): boolean => output.includes(DONE_MARKER)
-
-const stripDoneMarker = (output: string): string =>
-  output.replaceAll(DONE_MARKER, '').trim()
-
-const mergeUsage = (
-  current: TokenUsage | undefined,
-  next: TokenUsage | undefined,
-): TokenUsage | undefined => {
-  if (!next) return current
-  const input =
-    next.input !== undefined
-      ? (current?.input ?? 0) + next.input
-      : current?.input
-  const output =
-    next.output !== undefined
-      ? (current?.output ?? 0) + next.output
-      : current?.output
-  const total =
-    next.total !== undefined
-      ? (current?.total ?? 0) + next.total
-      : current?.total
-  if (input === undefined && output === undefined && total === undefined)
-    return undefined
-  return {
-    ...(input !== undefined ? { input } : {}),
-    ...(output !== undefined ? { output } : {}),
-    ...(total !== undefined ? { total } : {}),
-  }
-}
-
-const isSameUsage = (
-  left: TokenUsage | undefined,
-  right: TokenUsage | undefined,
-): boolean =>
-  left?.input === right?.input &&
-  left?.output === right?.output &&
-  left?.total === right?.total
-
-const buildContinuePrompt = (
-  template: string,
-  latestOutput: string,
-  nextRound: number,
-): string =>
-  renderPromptTemplate(template, {
-    done_marker: DONE_MARKER,
-    latest_output: latestOutput.trim(),
-    next_round: String(nextRound),
-    max_rounds: String(MAX_RUN_ROUNDS),
-  })
 
 export const runStandardWorker = (params: {
   stateDir: string

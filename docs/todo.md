@@ -1,83 +1,113 @@
-# Mimikit 演进计划（2026-02-13）
+# 迁移计划：将 Manager 层迁移至 OpenCode
 
-## 一、清理：移除低价值机制
+## 背景与动机
 
-以下机制经代码审计确认无实际作用，应移除以降低认知负担。
+当前架构中，mimikit 自行实现了完整的 manager 层，负责对话轮询、prompt 构建、动作解析等通用能力。这些功能与 OpenCode 的核心能力高度重叠。为践行"开箱即用、不造轮子"的设计理念，应将 manager 层迁移至 OpenCode，让 mimikit 专注于其独特的任务执行和调度能力。
 
-### 1.1 LLM Archive Lookup Key 基础设施
-- 位置：`src/storage/llm-archive.ts`（`normalizeForKey`、`buildLlmArchiveLookupKey`、`LlmArchiveLookup` 类型）+ `src/manager/runner.ts` 中的调用点
-- 问题：key 算出后写入归档文件，但全系统无读取路径。暗示缓存/去重能力实际不存在
-- 范围：移除 lookup key 生成与 `normalizeForKey`；保留 `appendLlmArchive` / `appendLlmArchiveResult` 写入能力不变
+## 核心理念
 
-### 1.2 Action Loose Line 解析模式
-- 位置：`src/actions/protocol/parse.ts`（`parseLooseLines`、`parseLine`、`LINE_RE`）
-- 问题：manager prompt 明确要求 XML tags（`<M:actions>`），loose line 路径从未实际命中
-- 范围：移除 `parseLooseLines` 及相关正则；`parseActions` 直接走 XML tag 分支
+### 1. 能力边界重新划分
 
-### 1.3 历史选择 System Role Rebalancing
-- 位置：`src/orchestrator/read-model/history-select.ts`（`rebalanceRoles`、`SYSTEM_ROLE_MAX_RATIO`）
-- 问题：system 消息仅在任务状态变更时写入，正常使用比例远低于 40% 阈值，从未触发
-- 范围：移除 `rebalanceRoles` 函数及其在 `selectRecentHistory` 中的调用
+**OpenCode 负责（上层）：**
 
-### 1.4 `dedupeTaskResults` 别名
-- 位置：`src/prompts/task-results-merge.ts`
-- 问题：`dedupeTaskResults(x)` === `mergeTaskResults(x, [])`，纯别名，仅一处调用
-- 范围：调用处内联后删除导出
+- 对话生命周期管理
+- 上下文窗口维护
+- 意图理解与工具调用决策
+- 流式响应输出
+- 错误恢复与降级
 
----
+**mimikit 负责（下层）：**
 
-## 二、增强：按 ROI 排序的演进项
+- 任务队列持久化与状态管理
+- Worker 执行调度（standard/specialist 双档）
+- 定时任务（Cron）管理
+- WebUI 服务与状态可视化
 
-### P0-A：Manager 重心状态（ROI 9.5）
-- 痛点：manager 每轮从头拼装上下文，多轮对话中容易丢失意图焦点
-- 设计方向：
-  - 在 `RuntimeState` 中增加 `focusState` 字段（意图摘要、活跃任务 ID 列表、最近用户主题）
-  - manager 每轮输出后提取/更新 focusState
-  - 下轮 prompt 注入 focusState，使 manager 无需从历史重建上下文
-- 关键约束：focusState 随 runtime-state.json 持久化；格式需 schema 校验
-- 参考：pi-mono 的 steering/follow-up 双队列机制；js-ecosystem research 中的"重心状态对象"
+### 2. 单一主 Session 的贯彻
 
-### P0-B：历史压缩（ROI 9.0）
-- 痛点：`selectRecentHistory` 按条数/字节截断，被裁剪的旧消息无摘要，重要上下文丢失
-- 设计方向：
-  - 历史超出窗口时，将被截断部分压缩为结构化摘要（摘要文本 + 涉及文件 + 关联任务 ID + 时间戳）
-  - 摘要存入 `.mimikit/history-compacted.jsonl`
-  - prompt 注入区增加 `compacted_context` 段，使 manager 保留全局上下文感知
-- 关键约束：压缩由 manager 空闲轮次触发，不阻塞在线请求；压缩质量需可审计
-- 参考：pi-mono compaction 机制（summary + readFiles + modifiedFiles）
+迁移后，OpenCode 的 session 即等同于 mimikit 的 session，无需再维护独立的对话状态。所有用户交互通过 OpenCode 的 session 进行，mimikit 作为工具提供方被调用。
 
-### P1：Action 协议统一（ROI 7.5）
-- 痛点：`parse.ts` 存在双解析路径（loose line + XML tag），正则处理边缘情况脆弱
-- 设计方向：
-  - 清理 loose line 后（见 1.2），统一为 XML tag 单路径
-  - 后续评估 `htmlparser2` 替代正则，提升容错能力（见 third-party-libraries ROI 报告）
-- 关键约束：保持现有 action 协议格式不变；先统一再替换解析器
+### 3. 渐进式迁移策略
 
-### P2：状态持久化原子写入（ROI 6.5）
-- 痛点：`runtime-state.json` 与队列 cursor 分步写入，崩溃时可能不一致
-- 设计方向：确认 queue cursor 已在 `runtime-state.json` 的 `queues` 子对象中，确保单次原子写入覆盖所有状态
-- 关键约束：不引入新存储引擎（sqlite 迁移成本当前不合理）
+不一次性重写，而是逐步替换：
 
----
+1. 先定义工具接口契约
+2. 并行运行验证稳定性
+3. 最后移除冗余代码
 
-## 三、执行顺序建议
+## 架构变化
+
+### 当前架构
 
 ```
-清理（1.1-1.4）→ P0-A/B 并行 → P1 → P2
+用户输入 → Manager Loop → 构建 Prompt → LLM → 解析动作 → 创建任务
+                                                    ↓
+                                              Worker 执行
 ```
 
-- 清理项无依赖，可一次性完成
-- P0-A（focusState）与 P0-B（历史压缩）独立，可并行开发
-- P1（协议统一）依赖清理 1.2 先完成
+### 目标架构
+
+```
+用户输入 → OpenCode Session → 工具调用决策 → mimikit 工具层
+                                                  ↓
+                                           任务队列/Worker/Cron
+```
+
+关键变化：manager 的"轮询-构建-调用-解析"循环被 OpenCode 的内置机制替代，mimikit 退化为纯执行层。
+
+## 保留的核心能力
+
+以下能力 OpenCode 不具备，必须在 mimikit 层保留：
+
+1. **任务队列系统**
+   - 持久化存储（queues.jsonl）
+   - 任务生命周期管理（pending/running/completed/failed）
+   - Worker 并发控制
+
+2. **Worker 调度**
+   - standard/specialist 双档区分
+   - 超时控制
+   - 重试机制
+
+3. **Cron 定时调度**
+   - 定时任务触发
+   - 任务依赖管理
+
+4. **WebUI**
+   - 任务状态可视化
+   - 实时流输出展示
+   - 手动任务干预
+
+## 移除的冗余能力
+
+以下能力 OpenCode 已提供，mimikit 无需再维护：
+
+- 对话轮询与输入消费
+- Prompt 上下文构建
+- LLM 调用与 fallback 逻辑
+- 动作解析与路由
+- Session 状态管理
+
+## 预期收益
+
+1. **代码规模缩减**：预计减少约 1000 行自研代码，更接近万行上限目标
+2. **维护成本降低**：通用对话逻辑由 OpenCode 维护
+3. **能力对齐**：自动获得 OpenCode 的模型切换、流式输出、错误处理等能力
+4. **架构更清晰**：单一职责，mimikit 专注"执行"，OpenCode 专注"编排"
+
+## 风险提示
+
+1. **时序依赖**：当前 manager 对任务完成的时机有精细控制，迁移后需确保 OpenCode 的工具调用等待机制能满足需求
+2. **状态一致性**：需确保 OpenCode session 状态与 mimikit 任务队列状态同步
+3. **WebUI 集成**：流式输出需适配 OpenCode 的 WebSocket 格式
+
+## 下一步行动
+
+1. 详细定义 mimikit 作为 OpenCode agent 的接口契约
+2. 设计工具（tool）的定义和实现策略
+3. 制定并行运行和回滚方案
+4. 规划代码删除范围
 
 ---
 
-## 四、Research 采纳判断
-
-| 来源 | 采纳点 | 未采纳点及原因 |
-|---|---|---|
-| pi-mono | focus state、compaction 结构化摘要 | 直接接入 `pi-ai` 作为 provider 层 — 迁移面过大，当前 provider 抽象已足够 |
-| moltbot | head+tail 截断策略 | promptMode 分级 — worker/evolver prompt 已足够精简，分级收益不明确；全套风格迁移 — 按需渐进吸收 |
-| nanobot | 心跳触发 evolver 的思路 | 架构参考价值低（Python、无测试、无锁文件） |
-| js-ecosystem | 重心状态对象概念 | 引入 openai-agents-js/langgraph — 自研 focusState 更可控 |
-| third-party-libraries | htmlparser2（P2 评估） | better-sqlite3 — 当前 JSONL 规模下不值得迁移；ts-morph — 使用场景有限 |
+_更新时间：2026-02-14_

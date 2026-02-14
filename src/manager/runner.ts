@@ -6,6 +6,13 @@ import {
   type LlmArchiveResult,
 } from '../storage/llm-archive.js'
 
+import {
+  enforcePromptBudget,
+  normalizeOptional,
+  resolveManagerTimeoutMs,
+  toError,
+} from './runner-budget.js'
+
 import type { FocusState } from '../orchestrator/core/runtime-state.js'
 import type {
   CronJob,
@@ -18,76 +25,9 @@ import type {
 } from '../types/index.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
-const normalizeOptional = (value?: string | null): string | undefined => {
-  const trimmed = value?.trim()
-  return trimmed && trimmed.length > 0 ? trimmed : undefined
-}
-
 const DEFAULT_FALLBACK_MODEL = normalizeOptional(
   process.env['MIMIKIT_FALLBACK_MODEL'],
 )
-
-const toError = (err: unknown): Error =>
-  err instanceof Error ? err : new Error(String(err))
-
-const BYTE_STEP = 1_024
-const TIMEOUT_STEP_MS = 2_500
-export const MIN_MANAGER_TIMEOUT_MS = 60_000
-export const MAX_MANAGER_TIMEOUT_MS = 120_000
-const DEFAULT_MANAGER_PROMPT_MAX_TOKENS = 8_192
-
-const estimatePromptTokens = (prompt: string): number =>
-  Math.max(1, Math.ceil(Buffer.byteLength(prompt, 'utf8') / 4))
-
-const escapeRegExp = (value: string): string =>
-  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-
-const removeTagBlock = (prompt: string, tag: string): string => {
-  const pattern = new RegExp(
-    `<${escapeRegExp(tag)}>[\\s\\S]*?<\\/${escapeRegExp(tag)}>\\n*`,
-    'g',
-  )
-  return prompt.replace(pattern, '').trim()
-}
-
-const enforcePromptBudget = (
-  prompt: string,
-  maxTokens: number,
-): { prompt: string; trimmed: boolean; estimatedTokens: number } => {
-  const budget = Math.max(1, maxTokens)
-  let current = prompt
-  let estimatedTokens = estimatePromptTokens(current)
-  if (estimatedTokens <= budget)
-    return { prompt: current, trimmed: false, estimatedTokens }
-
-  const pruneOrder = [
-    'M:compacted_context',
-    'M:history',
-    'M:tasks',
-    'M:results',
-  ]
-  for (const tag of pruneOrder) {
-    const next = removeTagBlock(current, tag)
-    if (next === current) continue
-    current = next
-    estimatedTokens = estimatePromptTokens(current)
-    if (estimatedTokens <= budget)
-      return { prompt: current, trimmed: true, estimatedTokens }
-  }
-  throw new Error(
-    `[manager] prompt exceeds max token budget (${estimatedTokens}/${budget})`,
-  )
-}
-
-export const resolveManagerTimeoutMs = (prompt: string): number => {
-  const promptBytes = Buffer.byteLength(prompt, 'utf8')
-  const stepCount = Math.ceil(promptBytes / BYTE_STEP)
-  const computed = MIN_MANAGER_TIMEOUT_MS + stepCount * TIMEOUT_STEP_MS
-  return Math.max(
-    MIN_MANAGER_TIMEOUT_MS,
-    Math.min(MAX_MANAGER_TIMEOUT_MS, computed),
-  )
-}
 
 export const runManager = async (params: {
   stateDir: string
@@ -139,10 +79,7 @@ export const runManager = async (params: {
   const fallbackModel = normalizeOptional(
     params.fallbackModel ?? DEFAULT_FALLBACK_MODEL,
   )
-  const budgetedPrompt = enforcePromptBudget(
-    prompt,
-    params.maxPromptTokens ?? DEFAULT_MANAGER_PROMPT_MAX_TOKENS,
-  )
+  const budgetedPrompt = enforcePromptBudget(prompt, params.maxPromptTokens)
   const timeoutMs = resolveManagerTimeoutMs(budgetedPrompt.prompt)
 
   type ArchiveBase = Omit<LlmArchiveEntry, 'prompt' | 'output' | 'ok'>
