@@ -53,10 +53,17 @@ export const formatUsage = (usage) => {
   if (!usage) return ''
   const input = asNumber(usage.input)
   const output = asNumber(usage.output)
+  const total = asNumber(usage.total)
   const parts = []
-  if (input !== null) parts.push(`↑ ${formatCount(input)}`)
-  if (output !== null) parts.push(`↓ ${formatCount(output)}`)
-  return parts.join(' · ')
+  if (input !== null) parts.push(`\u2191 ${formatCount(input)}`)
+  if (output !== null) parts.push(`\u2193 ${formatCount(output)}`)
+  const shouldShowTotal =
+    total !== null &&
+    (parts.length === 0 ||
+      (input === 0 && output === 0 && total > 0) ||
+      (input !== null && output !== null && total !== input + output))
+  if (shouldShowTotal) parts.push(`total ${formatCount(total)}`)
+  return parts.join(' \u00b7 ')
 }
 
 export const formatElapsedLabel = (elapsedMs) => {

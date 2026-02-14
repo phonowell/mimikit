@@ -57,6 +57,23 @@ test('mapOpencodeUsage maps token usage and includes reasoning in total', () => 
   })
 })
 
+test('mapOpencodeUsage prefers explicit total token count from provider', () => {
+  const usage = mapOpencodeUsage({
+    tokens: {
+      input: 0,
+      output: 0,
+      reasoning: 0,
+      total: 42,
+    },
+  } as never)
+
+  expect(usage).toEqual({
+    input: 0,
+    output: 0,
+    total: 42,
+  })
+})
+
 test('mapOpencodeUsageFromEvent maps assistant message.updated usage', () => {
   const usage = mapOpencodeUsageFromEvent({
     type: 'message.updated',
@@ -110,4 +127,28 @@ test('mapOpencodeUsageFromEvent ignores non-target session and older messages', 
 
   expect(wrongSession).toBeUndefined()
   expect(tooOld).toBeUndefined()
+})
+
+test('mapOpencodeUsageFromEvent accepts second-based event timestamps', () => {
+  const usage = mapOpencodeUsageFromEvent(
+    {
+      type: 'message.updated',
+      properties: {
+        info: {
+          role: 'assistant',
+          sessionID: 's1',
+          time: { created: 1_701_000_001 },
+          tokens: { input: 2, output: 3, reasoning: 1 },
+        },
+      },
+    } as never,
+    's1',
+    1_701_000_000_000,
+  )
+
+  expect(usage).toEqual({
+    input: 2,
+    output: 3,
+    total: 6,
+  })
 })

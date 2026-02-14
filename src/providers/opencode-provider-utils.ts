@@ -7,8 +7,21 @@ const readString = (value: unknown): string | undefined => {
   return normalized ? normalized : undefined
 }
 
-const readNumber = (value: unknown): number | undefined =>
-  typeof value === 'number' && Number.isFinite(value) ? value : undefined
+const readNumber = (value: unknown): number | undefined => {
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  if (typeof value !== 'string') return undefined
+  const normalized = value.trim()
+  if (!normalized) return undefined
+  const parsed = Number(normalized)
+  return Number.isFinite(parsed) ? parsed : undefined
+}
+
+const normalizeEpochMs = (value: unknown): number | undefined => {
+  const numeric = readNumber(value)
+  if (numeric === undefined) return undefined
+  // opencode timestamps can be second-based; normalize to milliseconds.
+  return numeric >= 100_000_000_000 ? numeric : numeric * 1000
+}
 
 type OpencodeModelRef = {
   providerID: string
@@ -60,14 +73,19 @@ export const mapOpencodeUsage = (
   const input = readNumber(tokens?.input)
   const output = readNumber(tokens?.output)
   const reasoning = readNumber(tokens?.reasoning)
-  if (input === undefined && output === undefined && reasoning === undefined)
+  const totalFromToken = readNumber(tokens?.total)
+  const totalFromParts =
+    input !== undefined || output !== undefined || reasoning !== undefined
+      ? (input ?? 0) + (output ?? 0) + (reasoning ?? 0)
+      : undefined
+  const total = totalFromToken ?? totalFromParts
+  if (input === undefined && output === undefined && total === undefined)
     return undefined
 
-  const total = (input ?? 0) + (output ?? 0) + (reasoning ?? 0)
   return {
     ...(input !== undefined ? { input } : {}),
     ...(output !== undefined ? { output } : {}),
-    total,
+    ...(total !== undefined ? { total } : {}),
   }
 }
 
@@ -80,11 +98,15 @@ export const mapOpencodeUsageFromEvent = (
   const { info } = event.properties
   if (info.role !== 'assistant') return undefined
   if (sessionID && info.sessionID !== sessionID) return undefined
-  if (
-    minCreatedAt !== undefined &&
-    Number.isFinite(minCreatedAt) &&
-    info.time.created < minCreatedAt
-  )
-    return undefined
+  if (minCreatedAt !== undefined && Number.isFinite(minCreatedAt)) {
+    const createdAtMs = normalizeEpochMs(info.time.created)
+    const minCreatedAtMs = normalizeEpochMs(minCreatedAt)
+    if (
+      createdAtMs !== undefined &&
+      minCreatedAtMs !== undefined &&
+      createdAtMs < minCreatedAtMs
+    )
+      return undefined
+  }
   return mapOpencodeUsage(info)
 }
