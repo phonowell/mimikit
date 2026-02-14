@@ -11,7 +11,7 @@
 
 ### 1.2 Action Loose Line 解析模式
 - 位置：`src/actions/protocol/parse.ts`（`parseLooseLines`、`parseLine`、`LINE_RE`）
-- 问题：manager prompt 明确要求 XML tags（`<MIMIKIT:actions>`），loose line 路径从未实际命中
+- 问题：manager prompt 明确要求 XML tags（`<M:actions>`），loose line 路径从未实际命中
 - 范围：移除 `parseLooseLines` 及相关正则；`parseActions` 直接走 XML tag 分支
 
 ### 1.3 历史选择 System Role Rebalancing

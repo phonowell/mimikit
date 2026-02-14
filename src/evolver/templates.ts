@@ -25,9 +25,7 @@ const extractRequiredTemplateBlock = (
   content: string,
   tag: EvolverTemplateTag,
 ): string => {
-  const pattern = new RegExp(
-    `<MIMIKIT:${tag}\\s*>([\\s\\S]*?)<\\/MIMIKIT:${tag}>`,
-  )
+  const pattern = new RegExp(`<M:${tag}\\s*>([\\s\\S]*?)<\\/M:${tag}>`)
   const match = content.match(pattern)
   const block = match?.[1]?.trim()
   if (!block) throw new Error(`missing_evolver_template_tag:${tag}`)

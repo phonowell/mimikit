@@ -1,7 +1,7 @@
-const MIMIKIT_TAG =
-  /<MIMIKIT:(\w+)((?:\s+\w+\s*=\s*"[^"]*")*)\s*(?:\/>|>(?:([\s\S]*?)<\/MIMIKIT:\1>)?)/g
+const M_TAG =
+  /<M:(\w+)((?:\s+\w+\s*=\s*"[^"]*")*)\s*(?:\/>|>(?:([\s\S]*?)<\/M:\1>)?)/g
 
-const ACTIONS_TAG = 'MIMIKIT:actions'
+const ACTIONS_TAG = 'M:actions'
 
 const ACTIONS_BLOCK_RE = new RegExp(
   `<${ACTIONS_TAG}\\s*>([\\s\\S]*?)<\\/${ACTIONS_TAG}>`,
@@ -20,7 +20,7 @@ type Zone = {
   removeEnd: number
 }
 
-const createTagRegExp = (): RegExp => new RegExp(MIMIKIT_TAG.source, 'g')
+const createTagRegExp = (): RegExp => new RegExp(M_TAG.source, 'g')
 
 const isFenceLine = (line: string): boolean =>
   line.trimStart().startsWith('```')

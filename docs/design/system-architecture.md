@@ -99,9 +99,9 @@
 模板来源：`prompts/evolver/system.md` + `prompts/evolver/injection.md`
 
 `injection.md` 必须包含以下块：
-- `<MIMIKIT:persona_update>...</MIMIKIT:persona_update>`
-- `<MIMIKIT:no_recent_user_input>...</MIMIKIT:no_recent_user_input>`
-- `<MIMIKIT:persona_snapshot>...</MIMIKIT:persona_snapshot>`
+- `<M:persona_update>...</M:persona_update>`
+- `<M:no_recent_user_input>...</M:no_recent_user_input>`
+- `<M:persona_snapshot>...</M:persona_snapshot>`
 
 触发条件：
 - `managerRunning=false`

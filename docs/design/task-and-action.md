@@ -8,7 +8,7 @@
 - `succeeded | failed | canceled`：终态。
 
 ## 派发与去重
-- manager 通过 `<MIMIKIT:create_task ... />` 派发任务。
+- manager 通过 `<M:create_task ... />` 派发任务。
 - `profile`：`standard | specialist`。
 - 去重两层：
   - action 去重键：`prompt + title + profile`
@@ -28,8 +28,8 @@
 ## Action 协议
 协议与解析：`src/actions/protocol/*`
 
-- Action 块：`<MIMIKIT:actions> ... </MIMIKIT:actions>`
-- 每行一条：`<MIMIKIT:name key="value" />`
+- Action 块：`<M:actions> ... </M:actions>`
+- 每行一条：`<M:name key="value" />`
 - 参数在传输层统一字符串，执行前做 schema 校验。
 
 Action 名称集合（`src/actions/model/names.ts`）：

@@ -16,7 +16,7 @@ import type {
 } from './profiled-runner-helpers.js'
 import type { Task, TokenUsage } from '../types/index.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
-const DONE_MARKER = '<MIMIKIT:TASK_DONE/>'
+const DONE_MARKER = '<M:TASK_DONE/>'
 const MAX_RUN_ROUNDS = 3
 
 const hasDoneMarker = (output: string): boolean => output.includes(DONE_MARKER)

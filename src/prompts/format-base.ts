@@ -2,7 +2,7 @@ import { stringify as stringifyYaml } from 'yaml'
 
 import type { HistoryMessage, Task } from '../types/index.js'
 
-const TAG_PREFIX = 'MIMIKIT:'
+const TAG_PREFIX = 'M:'
 
 export const escapeCdata = (value: string): string =>
   value.replaceAll(']]>', ']]]]><![CDATA[>')
