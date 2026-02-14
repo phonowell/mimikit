@@ -1,7 +1,7 @@
 # WebUI 设计语言（v1）
 
 ## 适用范围
-- 适用对象：`src/webui/*.css`、`src/webui/index.html`、对应 DOM class 约定。
+- 适用对象：`webui/*.css`、`webui/index.html`、对应 DOM class 约定。
 - 目标：保证后续迭代在视觉、交互、结构上可持续一致。
 - 基线风格：同色调低对比 + 新态拟物（neumorphism）轻量触感。
 
@@ -35,7 +35,7 @@
 - `tasks-dialog` / `restart-dialog`：操作型对话框。
 
 ## Token 体系
-- 来源：`src/webui/base.css`。
+- 来源：`webui/base.css`。
 - 基础色：`--bg` `--panel` `--panel-soft` `--panel-strong` `--well-bg` `--messages-bg` `--text` `--muted`。
 - 语义色：`--accent` `--success` `--warning` `--danger`。
 - 气泡色：`--bubble-*-bg` `--bubble-*-text` `--bubble-*-border`（`agent`/`user`/`system`）。

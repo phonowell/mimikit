@@ -61,7 +61,7 @@
 ## 目录结构
 - 入口：`src/cli/index.ts` · 调度：`src/orchestrator/` · 角色：`src/{teller,thinker,worker}/` · 任务：`src/tasks/`
 - 基础：`src/llm/sdk-runner.ts` + `src/config.ts` + `src/fs/` + `src/storage/` + `src/log/`
-- 服务：`src/http/` + `src/webui/` · 状态：`.mimikit/`（见 `docs/design/interfaces-and-state.md`）
+- 服务：`src/http/` + `webui/` · 状态：`.mimikit/`（见 `docs/design/interfaces-and-state.md`）
 
 ## 文档
 - `docs/design/system-architecture.md` · `docs/design/*` · `docs/codex-sdk.md`

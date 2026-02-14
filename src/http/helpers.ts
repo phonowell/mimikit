@@ -23,7 +23,7 @@ export const resolveRoots = () => {
   const rootDir = resolve(__dirname, '..', '..')
   return {
     rootDir,
-    webDir: resolve(__dirname, '..', 'webui'),
+    webDir: resolve(rootDir, 'webui'),
     markedDir: resolve(rootDir, 'node_modules', 'marked', 'lib'),
     purifyDir: resolve(rootDir, 'node_modules', 'dompurify', 'dist'),
   }
