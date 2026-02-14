@@ -25,6 +25,16 @@ type StartedServer = {
   close: () => void
 }
 
+const isAbortLikeError = (error: unknown): boolean => {
+  if (!(error instanceof Error)) return false
+  if (error.name === 'AbortError') return true
+  return (
+    'code' in error &&
+    typeof (error as { code?: unknown }).code === 'string' &&
+    (error as { code: string }).code === 'ABORT_ERR'
+  )
+}
+
 const unwrapSdkData = <T>(value: T | { data: T }): T => {
   if (
     value &&
@@ -94,7 +104,6 @@ const startOpencodeServer = async (
       clearTimeout(timeout)
       child.stdout.removeAllListeners('data')
       child.stderr.removeAllListeners('data')
-      child.removeAllListeners('error')
       child.removeAllListeners('exit')
       signal.removeEventListener('abort', onAbort)
     }
@@ -134,7 +143,10 @@ const startOpencodeServer = async (
 
     child.stdout.on('data', onData)
     child.stderr.on('data', onData)
-    child.once('error', (error) => fail(error))
+    child.on('error', (error) => {
+      if (done && isAbortLikeError(error)) return
+      fail(error)
+    })
     child.once('exit', (code) => {
       const suffix = output.trim() ? `: ${output.trim()}` : ''
       fail(new Error(`server exited with code ${String(code)}${suffix}`))
