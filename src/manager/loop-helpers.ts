@@ -4,6 +4,7 @@ import { updateJsonl } from '../storage/jsonl.js'
 import {
   compactInputQueueIfFullyConsumed,
   compactResultQueueIfFullyConsumed,
+  compactWakeQueueIfFullyConsumed,
 } from '../streams/queues.js'
 
 import {
@@ -74,12 +75,20 @@ const maybeCompactQueues = async (runtime: RuntimeState): Promise<void> => {
     minPacketsToCompact: QUEUE_COMPACT_MIN_PACKETS,
   })
   if (compactedResults) runtime.queues.resultsCursor = 0
+
+  const compactedWakes = await compactWakeQueueIfFullyConsumed({
+    paths: runtime.paths,
+    cursor: runtime.queues.wakesCursor,
+    minPacketsToCompact: QUEUE_COMPACT_MIN_PACKETS,
+  })
+  if (compactedWakes) runtime.queues.wakesCursor = 0
 }
 
 export const finalizeBatchProgress = async (params: {
   runtime: RuntimeState
   nextInputsCursor: number
   nextResultsCursor: number
+  nextWakesCursor: number
   consumedInputIds: Set<string>
   persistRuntime: (runtime: RuntimeState) => Promise<void>
 }): Promise<void> => {
@@ -87,11 +96,13 @@ export const finalizeBatchProgress = async (params: {
     runtime,
     nextInputsCursor,
     nextResultsCursor,
+    nextWakesCursor,
     consumedInputIds,
     persistRuntime,
   } = params
   runtime.queues.inputsCursor = nextInputsCursor
   runtime.queues.resultsCursor = nextResultsCursor
+  runtime.queues.wakesCursor = nextWakesCursor
   runtime.inflightInputs = runtime.inflightInputs.filter(
     (item) => !consumedInputIds.has(item.id),
   )
@@ -106,6 +117,7 @@ export const drainBatchOnFailure = async (params: {
   results: TaskResult[]
   nextInputsCursor: number
   nextResultsCursor: number
+  nextWakesCursor: number
   persistRuntime: (runtime: RuntimeState) => Promise<void>
 }): Promise<boolean> => {
   const {
@@ -114,6 +126,7 @@ export const drainBatchOnFailure = async (params: {
     results,
     nextInputsCursor,
     nextResultsCursor,
+    nextWakesCursor,
     persistRuntime,
   } = params
   const consumedInputCount = await appendConsumedInputsToHistory(
@@ -133,6 +146,7 @@ export const drainBatchOnFailure = async (params: {
     runtime,
     nextInputsCursor,
     nextResultsCursor,
+    nextWakesCursor,
     consumedInputIds: new Set(inputs.map((item) => item.id)),
     persistRuntime,
   })

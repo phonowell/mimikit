@@ -30,12 +30,6 @@ const applyLoopEnv = (config: AppConfig): void => {
   )
   if (evolverEnabled !== undefined) config.evolver.enabled = evolverEnabled
 
-  const managerPollMs = parseEnvPositiveInteger(
-    'MIMIKIT_MANAGER_POLL_MS',
-    process.env.MIMIKIT_MANAGER_POLL_MS?.trim(),
-  )
-  if (managerPollMs !== undefined) config.manager.pollMs = managerPollMs
-
   const managerPromptMaxTokens = parseEnvPositiveInteger(
     'MIMIKIT_MANAGER_PROMPT_MAX_TOKENS',
     process.env.MIMIKIT_MANAGER_PROMPT_MAX_TOKENS?.trim(),

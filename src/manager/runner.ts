@@ -8,7 +8,6 @@ import {
 
 import {
   enforcePromptBudget,
-  normalizeOptional,
   resolveManagerTimeoutMs,
   toError,
 } from './runner-budget.js'
@@ -25,10 +24,6 @@ import type {
 } from '../types/index.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
-const DEFAULT_FALLBACK_MODEL = normalizeOptional(
-  process.env['MIMIKIT_FALLBACK_MODEL'],
-)
-
 export const runManager = async (params: {
   stateDir: string
   workDir: string
@@ -42,17 +37,14 @@ export const runManager = async (params: {
   compactedContext?: string
   model?: string
   modelReasoningEffort?: ModelReasoningEffort
-  seed?: number
-  temperature?: number
-  fallbackModel?: string
+  sessionId?: string
   maxPromptTokens?: number
-  onTextDelta?: (delta: string) => void
   onUsage?: (usage: TokenUsage) => void
   onStreamReset?: () => void
 }): Promise<{
   output: string
   elapsedMs: number
-  fallbackUsed: boolean
+  sessionId?: string
   usage?: TokenUsage
 }> => {
   const prompt = await buildManagerPrompt({
@@ -69,16 +61,7 @@ export const runManager = async (params: {
       ? { compactedContext: params.compactedContext }
       : {}),
   })
-  const model = normalizeOptional(params.model)
-  const sampling = {
-    ...(params.seed !== undefined ? { seed: params.seed } : {}),
-    ...(params.temperature !== undefined
-      ? { temperature: params.temperature }
-      : {}),
-  }
-  const fallbackModel = normalizeOptional(
-    params.fallbackModel ?? DEFAULT_FALLBACK_MODEL,
-  )
+  const model = params.model?.trim()
   const budgetedPrompt = enforcePromptBudget(prompt, params.maxPromptTokens)
   const timeoutMs = resolveManagerTimeoutMs(budgetedPrompt.prompt)
 
@@ -88,65 +71,80 @@ export const runManager = async (params: {
 
   const archiveBase = (
     callModel: string | undefined,
-    label: 'primary' | 'fallback',
+    sessionId?: string,
   ): ArchiveBase => ({
     role: 'manager',
     ...(callModel ? { model: callModel } : {}),
-    attempt: label,
-    ...sampling,
+    ...(sessionId ? { threadId: sessionId } : {}),
+    attempt: 'primary',
   })
 
-  const callProvider = (callModel: string | undefined) =>
+  const isInvalidSessionError = (error: unknown): boolean => {
+    const message = error instanceof Error ? error.message : String(error)
+    return /session/i.test(message) && /not found|404|unknown/i.test(message)
+  }
+
+  const callProvider = (callModel: string | undefined, sessionId?: string) =>
     runWithProvider({
-      provider: 'openai-chat',
+      provider: 'opencode',
+      role: 'manager',
       prompt: budgetedPrompt.prompt,
+      workDir: params.workDir,
       timeoutMs,
       ...(callModel ? { model: callModel } : {}),
+      ...(sessionId ? { threadId: sessionId } : {}),
       ...(params.modelReasoningEffort
         ? { modelReasoningEffort: params.modelReasoningEffort }
         : {}),
-      ...(params.onTextDelta ? { onTextDelta: params.onTextDelta } : {}),
       ...(params.onUsage ? { onUsage: params.onUsage } : {}),
-      ...sampling,
     })
 
-  const toResult = (
-    r: { output: string; elapsedMs: number; usage?: TokenUsage },
-    fallbackUsed: boolean,
-  ) => ({
+  const toResult = (r: {
+    output: string
+    elapsedMs: number
+    usage?: TokenUsage
+    threadId?: string | null
+  }) => ({
     output: r.output,
     elapsedMs: r.elapsedMs,
-    fallbackUsed,
+    ...(r.threadId ? { sessionId: r.threadId } : {}),
     ...(r.usage ? { usage: r.usage } : {}),
   })
 
+  const callWithSessionRecovery = async (
+    callModel: string | undefined,
+    sessionId: string | undefined,
+  ) => {
+    try {
+      const r = await callProvider(callModel, sessionId)
+      await archive(archiveBase(callModel, r.threadId ?? undefined), {
+        ...r,
+        ok: true,
+      })
+      return r
+    } catch (error) {
+      if (!sessionId || !isInvalidSessionError(error)) throw error
+      params.onStreamReset?.()
+      const recovered = await callProvider(callModel)
+      await archive(archiveBase(callModel, recovered.threadId ?? undefined), {
+        ...recovered,
+        ok: true,
+      })
+      return recovered
+    }
+  }
+
   try {
-    const r = await callProvider(model)
-    await archive(archiveBase(model, 'primary'), { ...r, ok: true })
-    return toResult(r, false)
+    const r = await callWithSessionRecovery(model, params.sessionId)
+    return toResult(r)
   } catch (error) {
     const err = toError(error)
-    await archive(archiveBase(model, 'primary'), {
+    await archive(archiveBase(model, params.sessionId), {
       output: '',
       ok: false,
       error: err.message,
       errorName: err.name,
     })
-    if (!fallbackModel) throw error
-    params.onStreamReset?.()
-    try {
-      const r = await callProvider(fallbackModel)
-      await archive(archiveBase(fallbackModel, 'fallback'), { ...r, ok: true })
-      return toResult(r, true)
-    } catch (fallbackError) {
-      const fbErr = toError(fallbackError)
-      await archive(archiveBase(fallbackModel, 'fallback'), {
-        output: '',
-        ok: false,
-        error: fbErr.message,
-        errorName: fbErr.name,
-      })
-      throw fallbackError
-    }
+    throw error
   }
 }

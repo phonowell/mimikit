@@ -1,5 +1,4 @@
 # 接口与状态目录（当前实现）
-
 > 返回 [系统设计总览](./README.md)
 
 ## HTTP API
@@ -14,56 +13,53 @@
 - `POST /api/restart`
 - `POST /api/reset`
 
-实现位置：`src/http/index.ts`、`src/http/routes-api.ts`
+实现：`src/http/index.ts`、`src/http/routes-api.ts`
 
 ## CLI
 - `tsx src/cli/index.ts`
 - `tsx src/cli/index.ts --port 8787`
-- `tsx src/cli/index.ts --state-dir .mimikit --work-dir .`
+- `tsx src/cli/index.ts --work-dir .mimikit`
 
 ## 核心环境变量
-- `MIMIKIT_MODEL`（覆盖 `manager`）
+- `MIMIKIT_MODEL`
 - `MIMIKIT_MANAGER_MODEL`
 - `MIMIKIT_WORKER_STANDARD_MODEL`
 - `MIMIKIT_WORKER_SPECIALIST_MODEL`
-- `MIMIKIT_OPENCODE_MODEL`
-- `MIMIKIT_REASONING_EFFORT`（覆盖 `manager + worker.*`）
+- `MIMIKIT_REASONING_EFFORT`
 - `MIMIKIT_MANAGER_REASONING_EFFORT`
 - `MIMIKIT_WORKER_STANDARD_REASONING_EFFORT`
 - `MIMIKIT_WORKER_SPECIALIST_REASONING_EFFORT`
-- `MIMIKIT_MANAGER_POLL_MS`
-- `MIMIKIT_MANAGER_MIN_INTERVAL_MS`
-- `MIMIKIT_EVOLVER_ENABLED`（`true/false/1/0`，默认 `false`）
+- `MIMIKIT_MANAGER_PROMPT_MAX_TOKENS`
+- `MIMIKIT_MANAGER_CREATE_TASK_DEBOUNCE_MS`
+- `MIMIKIT_EVOLVER_ENABLED`
 - `MIMIKIT_EVOLVER_POLL_MS`
 - `MIMIKIT_EVOLVER_IDLE_THRESHOLD_MS`
 - `MIMIKIT_EVOLVER_MIN_INTERVAL_MS`
-- `MIMIKIT_FALLBACK_MODEL`
 
 ## 状态目录
 默认目录：`./.mimikit/`
 
-- `history.jsonl`：对话历史
-- `log.jsonl`：运行日志
-- `runtime-state.json`：任务快照 + queue cursor
-- `inputs/packets.jsonl`：待消费用户输入
-- `inputs/state.json`：`managerCursor`
-- `results/packets.jsonl`：待消费任务结果
-- `results/state.json`：`managerCursor`
-- `tasks/tasks.jsonl`：任务快照流
+- `history.jsonl`
+- `history-compacted.jsonl`
+- `log.jsonl`
+- `runtime-state.json`
+- `inputs/packets.jsonl`
+- `results/packets.jsonl`
+- `wakes/packets.jsonl`
+- `tasks/tasks.jsonl`
+- `task-progress/{taskId}.jsonl`
+- `tasks/YYYY-MM-DD/*.md`
+- `llm/YYYY-MM-DD/*.txt`
 - `user_profile.md`
 - `agent_persona.md`
 - `agent_persona_versions/*.md`
-- `task-progress/{taskId}.jsonl`
-- `tasks/YYYY-MM-DD/*.md`（任务结果归档）
-- `llm/YYYY-MM-DD/*.txt`（LLM 调用归档）
 
-## schema 约束
-- runtime-state schema：`src/storage/runtime-state-schema.ts`
+## Runtime Snapshot 约束
+- schema：`src/storage/runtime-state-schema.ts`
 - `runtime-state.queues` 仅包含：
   - `inputsCursor`
   - `resultsCursor`
-- 旧 `channels.*` 字段不再兼容。
-
-queue state 约束：
-- `managerCursor` 必须是非负整数。
-- 落盘：`inputs/state.json`、`results/state.json`。
+  - `wakesCursor`
+- 主会话恢复字段：
+  - `plannerSessionId`
+- 旧 grouped channel 结构不再兼容解析。

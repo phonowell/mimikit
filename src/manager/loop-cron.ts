@@ -6,6 +6,7 @@ import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js
 import { enqueueTask } from '../orchestrator/core/task-state.js'
 import { notifyWorkerLoop } from '../orchestrator/core/worker-signal.js'
 import { appendTaskSystemMessage } from '../orchestrator/read-model/task-history.js'
+import { publishWakeEvent } from '../streams/queues.js'
 import { enqueueWorkerTask } from '../worker/dispatch.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
@@ -23,14 +24,15 @@ const cronHasNextRun = (expression: string): boolean => {
 
 const asSecondStamp = (iso: string): string => iso.slice(0, 19)
 
-export const checkCronJobs = async (runtime: RuntimeState): Promise<void> => {
-  if (runtime.cronJobs.length === 0) return
+export const checkCronJobs = async (runtime: RuntimeState): Promise<number> => {
+  if (runtime.cronJobs.length === 0) return 0
 
   const now = new Date()
   const nowAtIso = now.toISOString()
   const nowSecond = asSecondStamp(nowAtIso)
 
   let stateChanged = false
+  let triggeredCount = 0
   for (const cronJob of runtime.cronJobs) {
     if (!cronJob.enabled) continue
 
@@ -52,6 +54,7 @@ export const checkCronJobs = async (runtime: RuntimeState): Promise<void> => {
         cronJob.scheduledAt,
       )
       if (!created) continue
+      triggeredCount += 1
 
       task.cron = cronJob.scheduledAt
       await appendTaskSystemMessage(runtime.paths.history, 'created', task, {
@@ -97,6 +100,7 @@ export const checkCronJobs = async (runtime: RuntimeState): Promise<void> => {
       cronJob.cron,
     )
     if (!created) continue
+    triggeredCount += 1
 
     task.cron = cronJob.cron
     await appendTaskSystemMessage(runtime.paths.history, 'created', task, {
@@ -112,8 +116,21 @@ export const checkCronJobs = async (runtime: RuntimeState): Promise<void> => {
     }
   }
 
-  if (!stateChanged) return
+  if (!stateChanged) return triggeredCount
   await bestEffort('persistRuntimeState: cron_trigger', () =>
     persistRuntimeState(runtime),
   )
+  if (triggeredCount > 0) {
+    await bestEffort('publishWakeEvent: cron_due', () =>
+      publishWakeEvent({
+        paths: runtime.paths,
+        payload: {
+          type: 'cron_due',
+          cronTriggeredCount: triggeredCount,
+          createdAt: nowAtIso,
+        },
+      }),
+    )
+  }
+  return triggeredCount
 }

@@ -47,9 +47,11 @@ export type RuntimeState = {
   queues: {
     inputsCursor: number
     resultsCursor: number
+    wakesCursor: number
   }
   tasks: Task[]
   cronJobs: CronJob[]
+  plannerSessionId?: string
   focusState?: FocusState
   uiStream: UiAgentStream | null
   runningControllers: Map<string, AbortController>

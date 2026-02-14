@@ -1,5 +1,4 @@
 manager:
-  pollMs: 1000
   promptMaxTokens: 8192
   createTaskDebounceMs: 4000
   tasksMaxCount: 20
@@ -8,7 +7,7 @@ manager:
   historyMinCount: 20
   historyMaxCount: 100
   historyMaxBytes: 20480
-  model: gpt-5.2-high
+  model: opencode/big-pickle
   modelReasoningEffort: high
   task:
     timeoutMs: 60000

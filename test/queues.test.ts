@@ -8,9 +8,12 @@ import { buildPaths } from '../src/fs/paths.js'
 import {
   compactInputQueueIfFullyConsumed,
   compactResultQueueIfFullyConsumed,
+  compactWakeQueueIfFullyConsumed,
+  consumeWakeEvents,
   consumeUserInputs,
   consumeWorkerResults,
   publishUserInput,
+  publishWakeEvent,
   publishWorkerResult,
 } from '../src/streams/queues.js'
 
@@ -164,6 +167,88 @@ test('result queue compacts only when fully consumed', async () => {
   expect(compacted).toBe(true)
 
   const read = await consumeWorkerResults({
+    paths,
+    fromCursor: 0,
+  })
+  expect(read).toHaveLength(0)
+})
+
+test('wake queue append and consume by cursor', async () => {
+  const dir = await createTmpDir()
+  const paths = buildPaths(dir)
+
+  await publishWakeEvent({
+    paths,
+    payload: {
+      type: 'user_input',
+      inputId: 'in-1',
+      createdAt: '2026-02-08T00:00:00.000Z',
+    },
+  })
+  await publishWakeEvent({
+    paths,
+    payload: {
+      type: 'task_done',
+      taskId: 'task-1',
+      taskStatus: 'succeeded',
+      createdAt: '2026-02-08T00:00:01.000Z',
+    },
+  })
+
+  const firstRead = await consumeWakeEvents({
+    paths,
+    fromCursor: 0,
+  })
+  expect(firstRead.map((item) => item.cursor)).toEqual([1, 2])
+  expect(firstRead.map((item) => item.payload.type)).toEqual([
+    'user_input',
+    'task_done',
+  ])
+
+  const secondRead = await consumeWakeEvents({
+    paths,
+    fromCursor: 1,
+  })
+  expect(secondRead).toHaveLength(1)
+  expect(secondRead[0]?.cursor).toBe(2)
+})
+
+test('wake queue compacts only when fully consumed', async () => {
+  const dir = await createTmpDir()
+  const paths = buildPaths(dir)
+
+  await publishWakeEvent({
+    paths,
+    payload: {
+      type: 'cron_due',
+      cronTriggeredCount: 2,
+      createdAt: '2026-02-08T00:00:00.000Z',
+    },
+  })
+  await publishWakeEvent({
+    paths,
+    payload: {
+      type: 'cron_due',
+      cronTriggeredCount: 1,
+      createdAt: '2026-02-08T00:00:01.000Z',
+    },
+  })
+
+  const skipped = await compactWakeQueueIfFullyConsumed({
+    paths,
+    cursor: 1,
+    minPacketsToCompact: 2,
+  })
+  expect(skipped).toBe(false)
+
+  const compacted = await compactWakeQueueIfFullyConsumed({
+    paths,
+    cursor: 2,
+    minPacketsToCompact: 2,
+  })
+  expect(compacted).toBe(true)
+
+  const read = await consumeWakeEvents({
     paths,
     fromCursor: 0,
   })

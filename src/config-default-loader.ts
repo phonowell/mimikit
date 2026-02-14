@@ -24,7 +24,6 @@ const defaultConfigSchema = z
   .object({
     manager: z
       .object({
-        pollMs: z.number().int().positive(),
         promptMaxTokens: z.number().int().positive(),
         createTaskDebounceMs: z.number().int().nonnegative(),
         tasksMaxCount: z.number().int().positive(),

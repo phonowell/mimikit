@@ -37,6 +37,7 @@ export const processManagerBatch = async (params: {
   results: TaskResult[]
   nextInputsCursor: number
   nextResultsCursor: number
+  nextWakesCursor: number
   streamId: string
 }): Promise<void> => {
   const {
@@ -45,13 +46,13 @@ export const processManagerBatch = async (params: {
     results,
     nextInputsCursor,
     nextResultsCursor,
+    nextWakesCursor,
     streamId,
   } = params
   runtime.managerRunning = true
   notifyUiSignal(runtime)
   const startedAt = Date.now()
   let assistantAppended = false
-  let streamRawOutput = ''
   startUiStream(runtime, streamId)
   try {
     await appendLog(runtime.paths.log, {
@@ -78,24 +79,21 @@ export const processManagerBatch = async (params: {
       ...(compactedContext ? { compactedContext } : {}),
       model: runtime.config.manager.model,
       modelReasoningEffort: runtime.config.manager.modelReasoningEffort,
+      ...(runtime.plannerSessionId
+        ? { sessionId: runtime.plannerSessionId }
+        : {}),
       maxPromptTokens: runtime.config.manager.promptMaxTokens,
-      onTextDelta: (delta) => {
-        if (!delta) return
-        streamRawOutput += delta
-        setUiStreamText(
-          runtime,
-          streamId,
-          toVisibleAssistantText(streamRawOutput),
-        )
-      },
       onStreamReset: () => {
-        streamRawOutput = ''
         resetUiStream(runtime, streamId)
       },
       onUsage: (usage) => {
         setUiStreamUsage(runtime, streamId, usage)
       },
     })
+    const streamRawOutput = managerResult.output
+    setUiStreamText(runtime, streamId, toVisibleAssistantText(streamRawOutput))
+    if (managerResult.sessionId)
+      runtime.plannerSessionId = managerResult.sessionId
 
     const focusState = extractFocusState(managerResult.output)
     if (focusState) runtime.focusState = focusState
@@ -147,6 +145,7 @@ export const processManagerBatch = async (params: {
       runtime,
       nextInputsCursor,
       nextResultsCursor,
+      nextWakesCursor,
       consumedInputIds: new Set(inputs.map((item) => item.id)),
       persistRuntime: persistRuntimeState,
     })
@@ -156,7 +155,6 @@ export const processManagerBatch = async (params: {
       status: 'ok',
       elapsedMs: Math.max(0, Date.now() - startedAt),
       ...(managerResult.usage ? { usage: managerResult.usage } : {}),
-      ...(managerResult.fallbackUsed ? { fallbackUsed: true } : {}),
     })
   } catch (error) {
     let drainedOnError = false
@@ -167,6 +165,7 @@ export const processManagerBatch = async (params: {
         results,
         nextInputsCursor,
         nextResultsCursor,
+        nextWakesCursor,
         persistRuntime: persistRuntimeState,
       })
     } catch (drainError) {

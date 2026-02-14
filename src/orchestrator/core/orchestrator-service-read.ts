@@ -1,7 +1,8 @@
 import { appendLog } from '../../log/append.js'
+import { bestEffort } from '../../log/safe.js'
 import { newId, nowIso } from '../../shared/utils.js'
 import { readHistory } from '../../storage/jsonl.js'
-import { publishUserInput } from '../../streams/queues.js'
+import { publishUserInput, publishWakeEvent } from '../../streams/queues.js'
 import {
   type ChatMessage,
   type ChatMessagesMode,
@@ -28,6 +29,16 @@ export const addUserInput = async (
     paths: runtime.paths,
     payload: input,
   })
+  await bestEffort('publishWakeEvent: user_input', () =>
+    publishWakeEvent({
+      paths: runtime.paths,
+      payload: {
+        type: 'user_input',
+        inputId: id,
+        createdAt,
+      },
+    }),
+  )
   runtime.inflightInputs.push(input)
   if (meta) runtime.lastUserMeta = meta
   await appendLog(runtime.paths.log, {

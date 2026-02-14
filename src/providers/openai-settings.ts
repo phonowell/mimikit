@@ -119,18 +119,3 @@ export const loadCodexSettings = async (): Promise<CodexSettings> => {
       envBoolean('OPENAI_REQUIRES_AUTH') ?? cs.requiresOpenAiAuth,
   })
 }
-
-export const resolveOpenAiModel = async (
-  model?: string,
-  settings?: CodexSettings,
-): Promise<string> => {
-  if (model) return model
-  const resolvedSettings = settings ?? (await loadCodexSettings())
-  const resolved = resolvedSettings.model
-  if (!resolved) {
-    throw new Error(
-      '[provider:openai-chat] OpenAI model not configured. Set --model or OPENAI_MODEL.',
-    )
-  }
-  return resolved
-}

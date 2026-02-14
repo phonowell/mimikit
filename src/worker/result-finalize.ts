@@ -3,7 +3,7 @@ import { bestEffort, safeOrUndefined } from '../log/safe.js'
 import { notifyManagerLoop } from '../orchestrator/core/manager-signal.js'
 import { nowIso } from '../shared/utils.js'
 import { appendTaskResultArchive } from '../storage/task-results.js'
-import { publishWorkerResult } from '../streams/queues.js'
+import { publishWakeEvent, publishWorkerResult } from '../streams/queues.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { Task, TaskResult, TokenUsage } from '../types/index.js'
@@ -68,6 +68,17 @@ export const finalizeResult = async (
     paths: runtime.paths,
     payload: result,
   })
+  await bestEffort('publishWakeEvent: task_done', () =>
+    publishWakeEvent({
+      paths: runtime.paths,
+      payload: {
+        type: 'task_done',
+        taskId: task.id,
+        taskStatus: result.status,
+        createdAt: result.completedAt,
+      },
+    }),
+  )
   notifyManagerLoop(runtime)
   await bestEffort('appendLog: worker_end', () =>
     appendLog(runtime.paths.log, {

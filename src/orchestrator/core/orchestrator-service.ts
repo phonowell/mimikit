@@ -5,6 +5,7 @@ import { evolverLoop } from '../../evolver/loop.js'
 import { buildPaths } from '../../fs/paths.js'
 import { appendLog } from '../../log/append.js'
 import { bestEffort, setDefaultLogPath } from '../../log/safe.js'
+import { cronWakeLoop } from '../../manager/cron-wake-loop.js'
 import { managerLoop } from '../../manager/loop.js'
 import { newId, nowIso } from '../../shared/utils.js'
 import { appendHistory } from '../../storage/jsonl.js'
@@ -72,6 +73,7 @@ export class Orchestrator {
       queues: {
         inputsCursor: 0,
         resultsCursor: 0,
+        wakesCursor: 0,
       },
       tasks: [],
       cronJobs: [],
@@ -92,6 +94,7 @@ export class Orchestrator {
     enqueuePendingWorkerTasks(this.runtime)
     notifyWorkerLoop(this.runtime)
     void managerLoop(this.runtime)
+    void cronWakeLoop(this.runtime)
     if (this.runtime.config.evolver.enabled) void evolverLoop(this.runtime)
     void workerLoop(this.runtime)
   }

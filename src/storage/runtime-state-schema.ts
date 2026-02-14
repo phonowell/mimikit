@@ -13,7 +13,9 @@ export type RuntimeSnapshot = {
   queues?: {
     inputsCursor: number
     resultsCursor: number
+    wakesCursor?: number
   }
+  plannerSessionId?: string
   focusState?: FocusState
 }
 
@@ -89,6 +91,7 @@ const queueStateSchema = z
   .object({
     inputsCursor: z.number().int().nonnegative(),
     resultsCursor: z.number().int().nonnegative(),
+    wakesCursor: z.number().int().nonnegative().optional(),
   })
   .strict()
 
@@ -105,6 +108,7 @@ const runtimeSnapshotRawSchema = z
     tasks: z.array(taskRawSchema),
     cronJobs: z.array(cronJobRawSchema).optional(),
     queues: queueStateSchema.optional(),
+    plannerSessionId: z.string().trim().min(1).optional(),
     focusState: focusStateSchema.optional(),
   })
   .strict()
@@ -172,7 +176,18 @@ export const parseRuntimeSnapshot = (value: unknown): RuntimeSnapshot => {
     ...(parsed.cronJobs
       ? { cronJobs: parsed.cronJobs.map((job) => toCronJob(job)) }
       : {}),
-    ...(parsed.queues ? { queues: parsed.queues } : {}),
+    ...(parsed.queues
+      ? {
+          queues: {
+            inputsCursor: parsed.queues.inputsCursor,
+            resultsCursor: parsed.queues.resultsCursor,
+            wakesCursor: parsed.queues.wakesCursor ?? 0,
+          },
+        }
+      : {}),
+    ...(parsed.plannerSessionId
+      ? { plannerSessionId: parsed.plannerSessionId }
+      : {}),
     ...(parsed.focusState
       ? {
           focusState: {

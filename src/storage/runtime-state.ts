@@ -22,6 +22,7 @@ const initialRuntimeSnapshot = (): RuntimeSnapshot => ({
   queues: {
     inputsCursor: 0,
     resultsCursor: 0,
+    wakesCursor: 0,
   },
 })
 

@@ -5,82 +5,62 @@ import { loadDefaultConfigFromYaml } from './config-default-loader.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
 export type DefaultConfigParams = {
-  /** 工作目录路径（用于持久化状态、执行任务与读写文件） */
+  /** Absolute working directory path */
   workDir: string
 }
 
 export type AppConfig = {
-  /** 工作目录绝对路径（也是状态目录） */
+  /** Absolute work directory (also state root) */
   workDir: string
-  /** 管理器调度配置 */
+  /** Manager scheduling and prompt settings */
   manager: {
-    /** 轮询间隔（毫秒） */
-    pollMs: number
-    /** manager prompt 的硬 token 上限 */
+    /** Hard token limit for manager prompt */
     promptMaxTokens: number
-    /** create_task 去抖时间窗（毫秒） */
+    /** Debounce window for create_task dedup (ms) */
     createTaskDebounceMs: number
-    /** 任务列表保留上限（条） */
+    /** Task list retention upper bound */
     tasksMaxCount: number
-    /** 任务列表保留下限（条） */
+    /** Task list retention lower bound */
     tasksMinCount: number
-    /** 任务列表保留上限（字节） */
+    /** Task list retention byte limit */
     tasksMaxBytes: number
-    /** 历史记录保留下限（条） */
+    /** History retention lower bound */
     historyMinCount: number
-    /** 历史记录保留上限（条） */
+    /** History retention upper bound */
     historyMaxCount: number
-    /** 历史记录保留上限（字节） */
+    /** History retention byte limit */
     historyMaxBytes: number
-    /** 默认执行模型 */
+    /** Default manager model */
     model: string
-    /** 默认推理强度 */
+    /** Default manager reasoning effort */
     modelReasoningEffort: ModelReasoningEffort
-    /** Manager profile 任务执行配置 */
+    /** Defaults for manager-profile tasks */
     task: {
-      /** 任务超时（毫秒） */
       timeoutMs: number
-      /** 任务模型 */
       model: string
-      /** 任务推理强度 */
       modelReasoningEffort: ModelReasoningEffort
     }
   }
-  /** 自演进调度配置 */
+  /** Evolver loop configuration */
   evolver: {
-    /** 是否启用自演进循环 */
     enabled: boolean
-    /** 轮询间隔（毫秒） */
     pollMs: number
-    /** 空闲阈值（毫秒） */
     idleThresholdMs: number
-    /** 两次执行最小间隔（毫秒） */
     minIntervalMs: number
   }
-  /** Worker 执行配置 */
+  /** Worker execution configuration */
   worker: {
-    /** 最大并发执行数 */
     maxConcurrent: number
-    /** 失败重试最大次数 */
     retryMaxAttempts: number
-    /** 重试退避时长（毫秒） */
     retryBackoffMs: number
-    /** 标准任务配置 */
     standard: {
-      /** 任务超时（毫秒） */
       timeoutMs: number
-      /** 任务模型 */
       model: string
-      /** 任务推理强度 */
       modelReasoningEffort: ModelReasoningEffort
     }
-    /** 专家任务配置 */
     specialist: {
-      /** 任务超时（毫秒） */
       timeoutMs: number
-      /** 任务模型 */
       model: string
-      /** 任务推理强度 */
       modelReasoningEffort: ModelReasoningEffort
     }
   }
