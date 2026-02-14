@@ -4,6 +4,7 @@ import {
   markTaskFailed,
   markTaskSucceeded,
 } from '../orchestrator/core/task-state.js'
+import { notifyUiSignal } from '../orchestrator/core/ui-signal.js'
 import { notifyWorkerLoop } from '../orchestrator/core/worker-signal.js'
 
 import { buildResult, finalizeResult } from './result-finalize.js'
@@ -26,7 +27,15 @@ export const runTask = async (
       profile: task.profile,
       promptChars: task.prompt.length,
     })
-    const llmResult = await runTaskWithRetry({ runtime, task, controller })
+    const llmResult = await runTaskWithRetry({
+      runtime,
+      task,
+      controller,
+      onUsage: (usage) => {
+        task.usage = usage
+        notifyUiSignal(runtime)
+      },
+    })
     if (task.status === 'canceled') {
       const result = buildResult(
         task,

@@ -50,6 +50,14 @@ const mergeUsage = (
   }
 }
 
+const isSameUsage = (
+  left: TokenUsage | undefined,
+  right: TokenUsage | undefined,
+): boolean =>
+  left?.input === right?.input &&
+  left?.output === right?.output &&
+  left?.total === right?.total
+
 const buildContinuePrompt = (
   template: string,
   latestOutput: string,
@@ -70,6 +78,7 @@ export const runStandardWorker = (params: {
   model?: string
   modelReasoningEffort?: ModelReasoningEffort
   abortSignal?: AbortSignal
+  onUsage?: (usage: TokenUsage) => void
 }): Promise<LlmResult> =>
   runProfiledWorker({
     ...params,
@@ -85,6 +94,7 @@ export const runSpecialistWorker = (params: {
   model?: string
   modelReasoningEffort?: ModelReasoningEffort
   abortSignal?: AbortSignal
+  onUsage?: (usage: TokenUsage) => void
 }): Promise<LlmResult> =>
   runProfiledWorker({
     ...params,
@@ -102,6 +112,7 @@ export const runProfiledWorker = async (params: {
   model?: string
   modelReasoningEffort?: ModelReasoningEffort
   abortSignal?: AbortSignal
+  onUsage?: (usage: TokenUsage) => void
 }): Promise<LlmResult> => {
   const prompt = await buildWorkerPrompt({
     workDir: params.workDir,
@@ -131,16 +142,36 @@ export const runProfiledWorker = async (params: {
     let nextPrompt = prompt
 
     for (let round = 1; round <= MAX_RUN_ROUNDS; round += 1) {
+      const usageBeforeRound = totalUsage
+      let callbackRoundUsage: TokenUsage | undefined
+      let callbackReportedUsage: TokenUsage | undefined
       rounds = round
       const result = await runModel({
         prompt: nextPrompt,
         ...(threadId !== undefined ? { threadId } : {}),
+        onUsage: (usage) => {
+          callbackRoundUsage = usage
+          const previewUsage = mergeUsage(usageBeforeRound, usage)
+          if (!previewUsage) return
+          totalUsage = previewUsage
+          params.task.usage = previewUsage
+          callbackReportedUsage = previewUsage
+          params.onUsage?.(previewUsage)
+        },
       })
       latestResult = result
       totalElapsedMs += result.elapsedMs
       threadId = result.threadId ?? threadId ?? null
-      totalUsage = mergeUsage(totalUsage, result.usage)
-      if (totalUsage) params.task.usage = totalUsage
+      const roundUsage = callbackRoundUsage ?? result.usage
+      const hasRoundUsage = roundUsage !== undefined
+      const mergedUsage = mergeUsage(usageBeforeRound, roundUsage)
+      totalUsage = mergedUsage ?? usageBeforeRound
+      if (totalUsage) {
+        params.task.usage = totalUsage
+        const shouldReportAfterRound =
+          hasRoundUsage && !isSameUsage(callbackReportedUsage, totalUsage)
+        if (shouldReportAfterRound) params.onUsage?.(totalUsage)
+      }
 
       const output = result.output.trim()
       if (hasDoneMarker(output)) {

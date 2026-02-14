@@ -30,6 +30,7 @@ const runStandardProfile = (params: {
   runtime: RuntimeState
   task: Task
   controller: AbortController
+  onUsage?: (usage: TokenUsage) => void
 }): Promise<WorkerLlmResult> => {
   const { standard } = params.runtime.config.worker
   return runStandardWorker({
@@ -40,6 +41,7 @@ const runStandardProfile = (params: {
     model: standard.model,
     modelReasoningEffort: standard.modelReasoningEffort,
     abortSignal: params.controller.signal,
+    ...(params.onUsage ? { onUsage: params.onUsage } : {}),
   })
 }
 
@@ -47,12 +49,14 @@ const runTaskByProfile = (params: {
   runtime: RuntimeState
   task: Task
   controller: AbortController
+  onUsage?: (usage: TokenUsage) => void
 }): Promise<WorkerLlmResult> => {
   if (params.task.profile === 'standard') {
     return runStandardProfile({
       runtime: params.runtime,
       task: params.task,
       controller: params.controller,
+      ...(params.onUsage ? { onUsage: params.onUsage } : {}),
     })
   }
   const { specialist } = params.runtime.config.worker
@@ -64,6 +68,7 @@ const runTaskByProfile = (params: {
     model: specialist.model,
     modelReasoningEffort: specialist.modelReasoningEffort,
     abortSignal: params.controller.signal,
+    ...(params.onUsage ? { onUsage: params.onUsage } : {}),
   })
 }
 
@@ -112,6 +117,7 @@ export const runTaskWithRetry = (params: {
   runtime: RuntimeState
   task: Task
   controller: AbortController
+  onUsage?: (usage: TokenUsage) => void
 }): Promise<WorkerLlmResult> => {
   const { runtime, task, controller } = params
   const retries = Math.max(0, runtime.config.worker.retryMaxAttempts)
@@ -128,7 +134,12 @@ export const runTaskWithRetry = (params: {
       if (controller.signal.aborted)
         throw new AbortError(controller.signal.reason ?? 'Task canceled')
       try {
-        return await runTaskByProfile({ runtime, task, controller })
+        return await runTaskByProfile({
+          runtime,
+          task,
+          controller,
+          ...(params.onUsage ? { onUsage: params.onUsage } : {}),
+        })
       } catch (error) {
         if (shouldTreatAsTaskCancel(controller, error))
           throw new AbortError(controller.signal.reason ?? 'Task canceled')
