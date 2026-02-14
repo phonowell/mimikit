@@ -11,6 +11,7 @@ export { collectAckedUserMessageIds, findLatestAgentMessage, isAgentMessage }
 export const renderMessages = (params) => {
   const {
     messages,
+    streamMessage,
     messagesEl,
     removeEmpty,
     isNearBottom,
@@ -18,24 +19,32 @@ export const renderMessages = (params) => {
     updateScrollButton,
     loading,
   } = params
-  if (!messagesEl || !messages || messages.length === 0)
+  if (!messagesEl || ((!messages || messages.length === 0) && !streamMessage))
     return { latestAgentId: null, lastRole: null, lastIsAgent: false }
   removeEmpty()
-  const latestAgent = findLatestAgentMessage(messages)
+  const safeMessages = Array.isArray(messages) ? messages : []
+  const latestAgent = findLatestAgentMessage(safeMessages)
   const wasNearBottom = isNearBottom()
   const previousScrollTop = messagesEl.scrollTop
   const previousScrollHeight = messagesEl.scrollHeight
   messagesEl.innerHTML = ''
 
   const messageLookup = new Map()
-  for (const msg of messages) {
+  for (const msg of safeMessages) {
     if (msg?.id) messageLookup.set(String(msg.id), msg)
   }
-  const ackedUserMessageIds = collectAckedUserMessageIds(messages)
-  const renderParams = { ...params, messageLookup, ackedUserMessageIds }
-  for (const msg of messages) {
+  const ackedUserMessageIds = collectAckedUserMessageIds(safeMessages)
+  const latestAgentId = latestAgent?.id != null ? String(latestAgent.id) : null
+  const renderParams = {
+    ...params,
+    messageLookup,
+    ackedUserMessageIds,
+    latestAgentId,
+  }
+  for (const msg of safeMessages) {
     renderMessage(renderParams, msg)
   }
+  if (streamMessage) renderMessage(renderParams, streamMessage)
 
   if (loading?.isLoading()) loading.ensureLoadingPlaceholder()
   const newScrollHeight = messagesEl.scrollHeight
@@ -48,7 +57,7 @@ export const renderMessages = (params) => {
   }
   updateScrollButton()
 
-  const last = messages[messages.length - 1]
+  const last = streamMessage ?? safeMessages[safeMessages.length - 1]
   return {
     latestAgentId: latestAgent?.id ?? null,
     lastRole: last?.role ?? null,

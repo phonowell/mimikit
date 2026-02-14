@@ -58,6 +58,54 @@ const hasNonEmptyTaskId = (payload: unknown): boolean => {
   return typeof taskId === 'string' && taskId.trim().length > 0
 }
 
+const createUiStreamId = (
+  inputsCursor: number,
+  resultsCursor: number,
+): string => `manager-stream-${Date.now()}-${inputsCursor}-${resultsCursor}`
+
+const startUiStream = (runtime: RuntimeState, streamId: string): void => {
+  const stamp = nowIso()
+  runtime.uiStream = {
+    id: streamId,
+    role: 'assistant',
+    text: '',
+    createdAt: stamp,
+    updatedAt: stamp,
+  }
+}
+
+const setUiStreamText = (
+  runtime: RuntimeState,
+  streamId: string,
+  nextText: string,
+): void => {
+  const stream = runtime.uiStream
+  if (stream?.id !== streamId) return
+  if (stream.text === nextText) return
+  stream.text = nextText
+  stream.updatedAt = nowIso()
+  notifyUiSignal(runtime)
+}
+
+const resetUiStream = (runtime: RuntimeState, streamId: string): void => {
+  const stream = runtime.uiStream
+  if (stream?.id !== streamId) return
+  stream.text = ''
+  stream.updatedAt = nowIso()
+  notifyUiSignal(runtime)
+}
+
+const stopUiStream = (runtime: RuntimeState, streamId: string): void => {
+  if (runtime.uiStream?.id !== streamId) return
+  runtime.uiStream = null
+}
+
+const toVisibleAssistantText = (rawOutput: string): string => {
+  if (!rawOutput) return ''
+  const stripped = stripFocusBlock(rawOutput)
+  return parseActions(stripped).text
+}
+
 const checkCronJobs = async (runtime: RuntimeState): Promise<void> => {
   if (runtime.cronJobs.length === 0) return
 
@@ -209,6 +257,9 @@ export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
     notifyUiSignal(runtime)
     const startedAt = Date.now()
     let assistantAppended = false
+    const streamId = createUiStreamId(nextInputsCursor, nextResultsCursor)
+    let streamRawOutput = ''
+    startUiStream(runtime, streamId)
 
     try {
       await appendLog(runtime.paths.log, {
@@ -260,6 +311,19 @@ export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
         ...(compactedContext ? { compactedContext } : {}),
         model: runtime.config.manager.model,
         modelReasoningEffort: runtime.config.manager.modelReasoningEffort,
+        onTextDelta: (delta) => {
+          if (!delta) return
+          streamRawOutput += delta
+          setUiStreamText(
+            runtime,
+            streamId,
+            toVisibleAssistantText(streamRawOutput),
+          )
+        },
+        onStreamReset: () => {
+          streamRawOutput = ''
+          resetUiStream(runtime, streamId)
+        },
       })
 
       const focusState = extractFocusState(managerResult.output)
@@ -361,6 +425,7 @@ export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
         persistRuntimeState(runtime),
       )
     } finally {
+      stopUiStream(runtime, streamId)
       runtime.managerRunning = false
       notifyUiSignal(runtime)
     }

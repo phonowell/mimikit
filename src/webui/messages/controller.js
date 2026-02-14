@@ -15,8 +15,10 @@ import {
   createMessageState,
   hasLoadingVisibilityChange,
   hasMessageChange,
+  hasStreamChange,
   updateLoadingVisibilityState,
   updateMessageState,
+  updateStreamState,
 } from './state.js'
 
 const MESSAGE_LIMIT = 50
@@ -31,6 +33,28 @@ const parseSnapshot = (raw) => {
     return isRecord(parsed) ? parsed : null
   } catch {
     return null
+  }
+}
+
+const normalizeStreamMessage = (raw) => {
+  if (!isRecord(raw)) return null
+  const role = typeof raw.role === 'string' ? raw.role : 'assistant'
+  if (role !== 'assistant') return null
+  const id = typeof raw.id === 'string' ? raw.id.trim() : ''
+  const text = typeof raw.text === 'string' ? raw.text : ''
+  if (!id || !text) return null
+  const createdAt =
+    typeof raw.createdAt === 'string' && raw.createdAt.trim()
+      ? raw.createdAt
+      : typeof raw.updatedAt === 'string' && raw.updatedAt.trim()
+        ? raw.updatedAt
+        : new Date().toISOString()
+  return {
+    id: `stream-${id}`,
+    role: 'assistant',
+    text,
+    createdAt,
+    streaming: true,
   }
 }
 
@@ -110,41 +134,48 @@ export function createMessagesController({
     cursors,
   })
 
-  const applyMessagesPayload = (msgData) => {
-    if (!isRecord(msgData)) {
-      updateLoadingVisibilityState(messageState, loading.isLoading())
-      return false
+  const applyMessagesPayload = (msgData, streamPayload) => {
+    const hasMessagesPayload = isRecord(msgData)
+    const streamMessage = normalizeStreamMessage(streamPayload)
+    const incoming = hasMessagesPayload && Array.isArray(msgData.messages) ? msgData.messages : []
+    const mode =
+      hasMessagesPayload && typeof msgData.mode === 'string' ? msgData.mode : 'full'
+    const messages = hasMessagesPayload
+      ? mergeIncomingMessages({
+          mode,
+          lastMessages: messageState.lastMessages,
+          incoming,
+          limit: MESSAGE_LIMIT,
+        })
+      : messageState.lastMessages
+    if (streamMessage) {
+      messageState.awaitingReply = false
+      loading.setLoading(false)
     }
-    const incoming = Array.isArray(msgData.messages) ? msgData.messages : []
-    const mode = typeof msgData.mode === 'string' ? msgData.mode : 'full'
-    const messages = mergeIncomingMessages({
-      mode,
-      lastMessages: messageState.lastMessages,
-      incoming,
-      limit: MESSAGE_LIMIT,
-    })
     const newestId = messages.length > 0 ? messages[messages.length - 1].id : null
     const loadingVisible = loading.isLoading()
     const changed =
       hasMessageChange(messageState, messages, newestId) ||
-      hasLoadingVisibilityChange(messageState, loadingVisible)
+      hasLoadingVisibilityChange(messageState, loadingVisible) ||
+      hasStreamChange(messageState, streamMessage)
     if (changed) {
       const enterMessageIds = collectNewMessageIds(messageState, messages)
-      const rendered = doRender(messages, enterMessageIds)
+      const rendered = doRender(messages, enterMessageIds, streamMessage)
       if (rendered)
         applyRenderedState(messageState, rendered, { loading, syncLoadingState })
     }
     updateMessageState(messageState, messages, newestId)
     updateLoadingVisibilityState(messageState, loading.isLoading())
+    updateStreamState(messageState, streamMessage)
     return changed
   }
 
   const applySnapshot = (snapshot) => {
     if (!isRecord(snapshot)) return
+    const streamPayload = isRecord(snapshot.stream) ? snapshot.stream : null
     if (isRecord(snapshot.status)) updateStatus(snapshot.status)
     else syncLoadingState()
-    if (isRecord(snapshot.messages)) applyMessagesPayload(snapshot.messages)
-    else syncLoadingState()
+    applyMessagesPayload(snapshot.messages, streamPayload)
     if (typeof onTasksSnapshot === 'function' && isRecord(snapshot.tasks)) {
       onTasksSnapshot(snapshot.tasks)
     }

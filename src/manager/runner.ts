@@ -61,6 +61,8 @@ export const runManager = async (params: {
   seed?: number
   temperature?: number
   fallbackModel?: string
+  onTextDelta?: (delta: string) => void
+  onStreamReset?: () => void
 }): Promise<{
   output: string
   elapsedMs: number
@@ -116,6 +118,7 @@ export const runManager = async (params: {
       ...(params.modelReasoningEffort
         ? { modelReasoningEffort: params.modelReasoningEffort }
         : {}),
+      ...(params.onTextDelta ? { onTextDelta: params.onTextDelta } : {}),
       ...sampling,
     })
 
@@ -142,6 +145,7 @@ export const runManager = async (params: {
       errorName: err.name,
     })
     if (!fallbackModel) throw error
+    params.onStreamReset?.()
     try {
       const r = await callProvider(fallbackModel)
       await archive(archiveBase(fallbackModel, 'fallback'), { ...r, ok: true })

@@ -11,6 +11,7 @@ export type ProviderResult = {
 }
 
 export type UsageListener = (usage: TokenUsage) => void
+export type TextDeltaListener = (delta: string) => void
 
 export type OpenAiChatProviderRequest = {
   provider: 'openai-chat'
@@ -20,6 +21,7 @@ export type OpenAiChatProviderRequest = {
   modelReasoningEffort?: ModelReasoningEffort
   seed?: number
   temperature?: number
+  onTextDelta?: TextDeltaListener
 }
 
 export type CodexSdkProviderRequest = {

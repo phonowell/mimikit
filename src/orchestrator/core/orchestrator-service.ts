@@ -72,6 +72,7 @@ export class Orchestrator {
       },
       tasks: [],
       cronJobs: [],
+      uiStream: null,
       runningControllers: new Map(),
       workerQueue: new PQueue({
         concurrency: config.worker.maxConcurrent,
@@ -175,10 +176,20 @@ export class Orchestrator {
       this.getChatMessages(messageLimit),
       Promise.resolve(this.getTasks(taskLimit)),
     ])
+    const stream = this.runtime.uiStream
     return {
       status: this.getStatus(),
       messages,
       tasks,
+      stream: stream
+        ? {
+            id: stream.id,
+            role: stream.role,
+            text: stream.text,
+            createdAt: stream.createdAt,
+            updatedAt: stream.updatedAt,
+          }
+        : null,
     }
   }
 

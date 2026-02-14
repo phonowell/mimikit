@@ -17,10 +17,11 @@ export const renderMessage = (params, msg) => {
   const item = document.createElement('li')
   const roleClass = msg.role === 'assistant' ? 'agent' : msg.role
   const isSystemMessage = msg?.role === 'system'
+  const isStreamingMessage = Boolean(msg?.streaming)
   const isEntering = enterMessageIds?.has(msg?.id)
-  item.className = `message ${roleClass}${isEntering ? ' message--enter' : ''}`
+  item.className = `message ${roleClass}${isStreamingMessage ? ' message--streaming' : ''}${isEntering ? ' message--enter' : ''}`
   if (msg?.id) item.dataset.messageId = String(msg.id)
-  const canQuote = Boolean(onQuote && msg?.id && !isSystemMessage)
+  const canQuote = Boolean(onQuote && msg?.id && !isSystemMessage && !isStreamingMessage)
   if (canQuote) {
     item.classList.add('message--quoteable')
     item.tabIndex = 0
@@ -49,15 +50,21 @@ export const renderMessage = (params, msg) => {
     if (quoteBlock) article.appendChild(quoteBlock)
   }
   if (isAgentMessage(msg)) {
-    content.classList.add('markdown')
-    content.appendChild(renderMarkdown(text))
+    if (isStreamingMessage) {
+      content.textContent = text
+    } else {
+      content.classList.add('markdown')
+      content.appendChild(renderMarkdown(text))
+    }
   } else {
     content.textContent = text
   }
   article.appendChild(content)
 
-  const usageText = isAgentMessage(msg) ? formatUsage(msg.usage) : ''
-  const elapsedText = isAgentMessage(msg) ? formatElapsedLabel(msg.elapsedMs) : ''
+  const usageText =
+    isAgentMessage(msg) && !isStreamingMessage ? formatUsage(msg.usage) : ''
+  const elapsedText =
+    isAgentMessage(msg) && !isStreamingMessage ? formatElapsedLabel(msg.elapsedMs) : ''
   const meta = document.createElement('small')
   meta.className = 'meta'
   if (usageText) {
@@ -92,7 +99,7 @@ export const renderMessage = (params, msg) => {
     delivery.setAttribute('aria-label', UI_TEXT.seenByAgent)
     meta.appendChild(delivery)
   }
-  if (!isSystemMessage) {
+  if (!isSystemMessage && !isStreamingMessage) {
     const time = document.createElement('span')
     time.className = 'time'
     time.textContent = formatTime(msg.createdAt)

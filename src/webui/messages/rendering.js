@@ -8,8 +8,8 @@ export const createMessageRendering = (params) => {
 
   const removeEmpty = () => {}
 
-  const doRender = (messages, enterMessageIds) => {
-    if (!messages?.length) return null
+  const doRender = (messages, enterMessageIds, streamMessage) => {
+    if (!messages?.length && !streamMessage) return null
     return renderMessages({
       messages,
       messagesEl,
@@ -24,6 +24,7 @@ export const createMessageRendering = (params) => {
       loading,
       enterMessageIds,
       onQuote: quote.set,
+      streamMessage,
     })
   }
 
