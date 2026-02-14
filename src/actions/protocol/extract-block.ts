@@ -142,6 +142,21 @@ const removeTagsOutsideCodeBlocks = (text: string): string => {
   return result.trim()
 }
 
+const stripTrailingMetaTagFragment = (text: string): string => {
+  if (!text) return text
+  const ranges = findCodeBlockRanges(text)
+  const lastOpen = text.lastIndexOf('<M:')
+  const lastClose = text.lastIndexOf('</M:')
+  const start = Math.max(lastOpen, lastClose)
+  if (start < 0) return text
+  if (isIndexInRanges(start, ranges)) return text
+
+  const tail = text.slice(start)
+  if (tail.includes('>')) return text
+  if (!/^<\/?M:\w*/.test(tail)) return text
+  return text.slice(0, start).trimEnd()
+}
+
 export const collectTagMatches = (text: string): RegExpMatchArray[] => {
   const ranges = findCodeBlockRanges(text)
   return [...text.matchAll(createTagRegExp())].filter((match) => {
@@ -158,6 +173,8 @@ export const extractActionText = (
   const withoutActions = zone
     ? output.slice(0, zone.removeStart) + output.slice(zone.removeEnd)
     : output
-  const text = removeTagsOutsideCodeBlocks(withoutActions)
+  const text = stripTrailingMetaTagFragment(
+    removeTagsOutsideCodeBlocks(withoutActions),
+  )
   return { actionText, text }
 }
