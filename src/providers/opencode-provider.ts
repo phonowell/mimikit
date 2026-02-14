@@ -1,12 +1,13 @@
 import { spawn } from 'node:child_process'
+import { createRequire } from 'node:module'
+import { createServer } from 'node:net'
+
+import { createOpencodeClient } from '@opencode-ai/sdk/v2'
 
 import {
-  mergeTokenUsage,
-  parseJsonLine,
-  readEventText,
-  readEventUsage,
-  readSessionId,
-  resolveOpencodeModel,
+  extractOpencodeOutput,
+  mapOpencodeUsage,
+  resolveOpencodeModelRef,
 } from './opencode-provider-utils.js'
 
 import type {
@@ -14,90 +15,159 @@ import type {
   Provider,
   ProviderResult,
 } from './types.js'
-import type { TokenUsage } from '../types/index.js'
 
-const OPENCODE_BIN = 'opencode'
-const STDERR_MAX_CHUNKS = 12
-const STDOUT_MAX_CHUNKS = 12
+const require = createRequire(import.meta.url)
+const OPENCODE_ENTRY = require.resolve('opencode-ai/bin/opencode')
+const OPENCODE_HOST = '127.0.0.1'
+
+type StartedServer = {
+  url: string
+  close: () => void
+}
+
+const unwrapSdkData = <T>(value: T | { data: T }): T => {
+  if (
+    value &&
+    typeof value === 'object' &&
+    'data' in value &&
+    (value as { data?: T }).data !== undefined
+  )
+    return (value as { data: T }).data
+  return value as T
+}
+
+const resolveServerTimeout = (requestTimeoutMs: number): number => {
+  if (requestTimeoutMs <= 0) return 5_000
+  return Math.max(1_000, Math.min(requestTimeoutMs, 15_000))
+}
+
+const parseServerUrl = (line: string): string | undefined => {
+  const normalized = line.trim()
+  if (!normalized.startsWith('opencode server listening')) return undefined
+  const match = normalized.match(/on\s+(https?:\/\/[^\s]+)/)
+  return match?.[1]
+}
+
+const allocatePort = (): Promise<number> =>
+  new Promise((resolve, reject) => {
+    const server = createServer()
+    server.once('error', reject)
+    server.listen(0, OPENCODE_HOST, () => {
+      const address = server.address()
+      if (!address || typeof address === 'string') {
+        server.close(() => reject(new Error('failed to allocate server port')))
+        return
+      }
+      const { port } = address
+      server.close((error) => {
+        if (error) {
+          reject(error)
+          return
+        }
+        resolve(port)
+      })
+    })
+  })
+
+const startOpencodeServer = async (
+  signal: AbortSignal,
+  timeoutMs: number,
+): Promise<StartedServer> => {
+  const port = await allocatePort()
+  const args = [
+    OPENCODE_ENTRY,
+    'serve',
+    `--hostname=${OPENCODE_HOST}`,
+    `--port=${port}`,
+    '--log-level=ERROR',
+  ]
+  const child = spawn(process.execPath, args, {
+    signal,
+    stdio: ['ignore', 'pipe', 'pipe'],
+    env: process.env,
+  })
+
+  return new Promise<StartedServer>((resolve, reject) => {
+    let done = false
+    let output = ''
+    const cleanup = (): void => {
+      clearTimeout(timeout)
+      child.stdout.removeAllListeners('data')
+      child.stderr.removeAllListeners('data')
+      child.removeAllListeners('error')
+      child.removeAllListeners('exit')
+      signal.removeEventListener('abort', onAbort)
+    }
+    const fail = (error: Error): void => {
+      if (done) return
+      done = true
+      cleanup()
+      reject(error)
+    }
+    const succeed = (url: string): void => {
+      if (done) return
+      done = true
+      cleanup()
+      resolve({
+        url,
+        close: () => {
+          if (!child.killed) child.kill('SIGTERM')
+        },
+      })
+    }
+    const onData = (chunk: Buffer | string): void => {
+      const text = chunk.toString()
+      output += text
+      for (const line of text.split('\n')) {
+        const url = parseServerUrl(line)
+        if (url) {
+          succeed(url)
+          return
+        }
+      }
+    }
+    const onAbort = (): void => fail(new Error('aborted'))
+
+    const timeout = setTimeout(() => {
+      fail(new Error(`timeout waiting for server after ${timeoutMs}ms`))
+    }, timeoutMs)
+
+    child.stdout.on('data', onData)
+    child.stderr.on('data', onData)
+    child.once('error', (error) => fail(error))
+    child.once('exit', (code) => {
+      const suffix = output.trim() ? `: ${output.trim()}` : ''
+      fail(new Error(`server exited with code ${String(code)}${suffix}`))
+    })
+    signal.addEventListener('abort', onAbort)
+  })
+}
+
+const wrapSdkError = (error: unknown): Error => {
+  const message = error instanceof Error ? error.message : String(error)
+  if (message.startsWith('[provider:opencode]')) return new Error(message)
+  return new Error(`[provider:opencode] sdk run failed: ${message}`)
+}
 
 const runOpencode = async (
   request: OpencodeProviderRequest,
 ): Promise<ProviderResult> => {
   const startedAt = Date.now()
-  const args: string[] = [
-    'run',
-    request.prompt,
-    '--format',
-    'json',
-    '--log-level',
-    'ERROR',
-    '--model',
-    resolveOpencodeModel(request.model),
-  ]
-  if (request.threadId) args.push('--session', request.threadId)
-  if (request.modelReasoningEffort)
-    args.push('--variant', request.modelReasoningEffort)
-
-  const child = spawn(OPENCODE_BIN, args, {
-    cwd: request.workDir,
-    stdio: ['ignore', 'pipe', 'pipe'],
-    env: process.env,
-  })
-
+  const controller = new AbortController()
   const lifecycle = {
     timedOut: false,
     externallyAborted: false,
   }
-  let done = false
-  let timeoutTimer: ReturnType<typeof setTimeout> | undefined
-  let killTimer: ReturnType<typeof setTimeout> | undefined
-  const stderrChunks: string[] = []
-  const rawStdoutChunks: string[] = []
-  const outputChunks: string[] = []
-  let usage: TokenUsage | undefined
-  let sessionId: string | undefined
-  let stdoutBuffer = ''
-
-  const stopChild = (): void => {
-    if (done || child.killed) return
-    child.kill('SIGTERM')
-    killTimer = setTimeout(() => {
-      if (!done && !child.killed) child.kill('SIGKILL')
-    }, 1_500)
-  }
-
   const onAbort = (): void => {
     lifecycle.externallyAborted = true
-    stopChild()
+    controller.abort()
   }
 
-  const storeChunk = (list: string[], value: string, max: number): void => {
-    if (!value) return
-    list.push(value)
-    if (list.length > max) list.splice(0, list.length - max)
-  }
-
-  const processStdoutLine = (line: string): void => {
-    const normalized = line.trim()
-    if (!normalized) return
-    const event = parseJsonLine(normalized)
-    if (!event) {
-      storeChunk(rawStdoutChunks, normalized, STDOUT_MAX_CHUNKS)
-      return
-    }
-    sessionId = sessionId ?? readSessionId(event)
-    const text = readEventText(event)
-    if (text) outputChunks.push(text)
-    const nextUsage = readEventUsage(event)
-    if (!nextUsage) return
-    usage = mergeTokenUsage(usage, nextUsage)
-    request.onUsage?.(usage)
-  }
-
+  let timeoutTimer: ReturnType<typeof setTimeout> | undefined
   if (request.timeoutMs > 0) {
     timeoutTimer = setTimeout(() => {
       lifecycle.timedOut = true
-      stopChild()
+      controller.abort()
     }, request.timeoutMs)
   }
   if (request.abortSignal) {
@@ -105,70 +175,72 @@ const runOpencode = async (
     else request.abortSignal.addEventListener('abort', onAbort)
   }
 
-  child.stdout.setEncoding('utf8')
-  child.stdout.on('data', (chunk: string) => {
-    stdoutBuffer += chunk
-    for (;;) {
-      const index = stdoutBuffer.indexOf('\n')
-      if (index < 0) break
-      processStdoutLine(stdoutBuffer.slice(0, index))
-      stdoutBuffer = stdoutBuffer.slice(index + 1)
-    }
-  })
-
-  child.stderr.setEncoding('utf8')
-  child.stderr.on('data', (chunk: string) => {
-    storeChunk(stderrChunks, chunk.trim(), STDERR_MAX_CHUNKS)
-  })
-
-  let exitCode: number | null = null
-  let exitSignal: NodeJS.Signals | null = null
+  let closeServer: (() => void) | undefined
   try {
-    const result = await new Promise<{
-      code: number | null
-      signal: NodeJS.Signals | null
-    }>((resolve, reject) => {
-      child.once('error', reject)
-      child.once('close', (code, signal) => resolve({ code, signal }))
-    })
-    exitCode = result.code
-    exitSignal = result.signal
+    const model = resolveOpencodeModelRef(request.model)
+    const server = await startOpencodeServer(
+      controller.signal,
+      resolveServerTimeout(request.timeoutMs),
+    )
+    closeServer = server.close
+    const client = createOpencodeClient({ baseUrl: server.url })
+
+    let sessionID = request.threadId ?? undefined
+    if (!sessionID) {
+      const created = await client.session.create(
+        {
+          directory: request.workDir,
+        },
+        {
+          signal: controller.signal,
+          responseStyle: 'data',
+          throwOnError: true,
+        },
+      )
+      sessionID = unwrapSdkData(created).id
+    }
+    if (!sessionID) throw new Error('[provider:opencode] missing session id')
+
+    const response = await client.session.prompt(
+      {
+        sessionID,
+        directory: request.workDir,
+        model,
+        ...(request.modelReasoningEffort
+          ? { variant: request.modelReasoningEffort }
+          : {}),
+        parts: [{ type: 'text', text: request.prompt }],
+      },
+      {
+        signal: controller.signal,
+        responseStyle: 'data',
+        throwOnError: true,
+      },
+    )
+    const promptResponse = unwrapSdkData(response)
+
+    const usage = mapOpencodeUsage(promptResponse.info)
+    if (usage) request.onUsage?.(usage)
+    return {
+      output: extractOpencodeOutput(promptResponse.parts),
+      elapsedMs: Math.max(0, Date.now() - startedAt),
+      ...(usage ? { usage } : {}),
+      threadId: sessionID,
+    }
+  } catch (error) {
+    if (lifecycle.timedOut) {
+      throw new Error(
+        `[provider:opencode] timed out after ${request.timeoutMs}ms`,
+      )
+    }
+    if (lifecycle.externallyAborted || controller.signal.aborted)
+      throw new Error('[provider:opencode] aborted')
+    throw wrapSdkError(error)
   } finally {
-    done = true
     clearTimeout(timeoutTimer)
-    clearTimeout(killTimer)
     if (request.abortSignal)
       request.abortSignal.removeEventListener('abort', onAbort)
-  }
-
-  if (stdoutBuffer.trim()) processStdoutLine(stdoutBuffer)
-  const elapsedMs = Math.max(0, Date.now() - startedAt)
-  if (lifecycle.timedOut) {
-    throw new Error(
-      `[provider:opencode] timed out after ${request.timeoutMs}ms`,
-    )
-  }
-
-  if (lifecycle.externallyAborted)
-    throw new Error('[provider:opencode] aborted')
-  if (exitCode !== 0) {
-    const details = [...stderrChunks, ...rawStdoutChunks]
-      .filter(Boolean)
-      .join('\n')
-      .trim()
-    const suffix = details ? `: ${details}` : ''
-    const signalSuffix = exitSignal ? ` signal=${exitSignal}` : ''
-    throw new Error(
-      `[provider:opencode] opencode run failed (exit=${String(exitCode)}${signalSuffix})${suffix}`,
-    )
-  }
-
-  const output = outputChunks.join('').trim()
-  return {
-    output,
-    elapsedMs,
-    ...(usage ? { usage } : {}),
-    threadId: sessionId ?? request.threadId ?? null,
+    if (closeServer) closeServer()
   }
 }
 
