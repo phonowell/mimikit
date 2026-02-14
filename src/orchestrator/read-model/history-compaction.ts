@@ -71,9 +71,7 @@ export const appendCompactedSummary = async (
   if (existing.length >= MAX_COMPACTED_ENTRIES) {
     const kept = existing.slice(existing.length - MAX_COMPACTED_ENTRIES + 1)
     await writeJsonl(path, [...kept, summary])
-  } else {
-    await appendJsonl(path, [summary])
-  }
+  } else await appendJsonl(path, [summary])
 }
 
 export const readCompactedSummaries = (

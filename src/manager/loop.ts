@@ -9,10 +9,10 @@ import { enqueueTask } from '../orchestrator/core/task-state.js'
 import { notifyUiSignal } from '../orchestrator/core/ui-signal.js'
 import { notifyWorkerLoop } from '../orchestrator/core/worker-signal.js'
 import {
-  buildCompactedSummary,
   appendCompactedSummary,
-  readCompactedSummaries,
+  buildCompactedSummary,
   formatCompactedContext,
+  readCompactedSummaries,
 } from '../orchestrator/read-model/history-compaction.js'
 import { selectRecentHistory } from '../orchestrator/read-model/history-select.js'
 import { appendTaskSystemMessage } from '../orchestrator/read-model/task-history.js'
@@ -228,13 +228,11 @@ export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
         })
       if (truncatedHistory.length > 0) {
         const compacted = buildCompactedSummary(truncatedHistory)
-        if (compacted)
+        if (compacted) {
           await bestEffort('appendCompactedSummary', () =>
-            appendCompactedSummary(
-              runtime.paths.historyCompacted,
-              compacted,
-            ),
+            appendCompactedSummary(runtime.paths.historyCompacted, compacted),
           )
+        }
       }
       const compactedSummaries = await readCompactedSummaries(
         runtime.paths.historyCompacted,

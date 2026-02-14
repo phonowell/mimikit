@@ -77,7 +77,9 @@ export const runManager = async (params: {
     history: params.history,
     ...(params.env ? { env: params.env } : {}),
     ...(params.focusState ? { focusState: params.focusState } : {}),
-    ...(params.compactedContext ? { compactedContext: params.compactedContext } : {}),
+    ...(params.compactedContext
+      ? { compactedContext: params.compactedContext }
+      : {}),
   })
   const model = normalizeOptional(params.model)
   const sampling = {

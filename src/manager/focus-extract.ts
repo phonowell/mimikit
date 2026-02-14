@@ -1,12 +1,11 @@
 import type { FocusState } from '../orchestrator/core/runtime-state.js'
 
-const FOCUS_RE =
-  /<MIMIKIT:focus\s*>([\s\S]*?)<\/MIMIKIT:focus>/
+const FOCUS_RE = /<MIMIKIT:focus\s*>([\s\S]*?)<\/MIMIKIT:focus>/
 
 const extractField = (text: string, key: string): string | undefined => {
   const re = new RegExp(`^\\s*${key}\\s*[:：]\\s*(.+)$`, 'm')
   const match = text.match(re)
-  return match?.[1]?.trim() || undefined
+  return match?.[1]?.trim() ?? undefined
 }
 
 export const extractFocusState = (output: string): FocusState | undefined => {

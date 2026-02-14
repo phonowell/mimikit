@@ -60,7 +60,6 @@ const appendTaskSnapshot = async (runtime: RuntimeState): Promise<void> => {
   })
 }
 
-
 const maybeCompactQueues = async (runtime: RuntimeState): Promise<void> => {
   const compactedInputs = await compactInputQueueIfFullyConsumed({
     paths: runtime.paths,
