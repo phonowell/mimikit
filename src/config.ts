@@ -32,13 +32,10 @@ export type AppConfig = {
     historyMaxBytes: number
     /** Default manager model */
     model: string
-    /** Default manager reasoning effort */
-    modelReasoningEffort: ModelReasoningEffort
     /** Defaults for manager-profile tasks */
     task: {
       timeoutMs: number
       model: string
-      modelReasoningEffort: ModelReasoningEffort
     }
   }
   /** Evolver loop configuration */
@@ -56,7 +53,6 @@ export type AppConfig = {
     standard: {
       timeoutMs: number
       model: string
-      modelReasoningEffort: ModelReasoningEffort
     }
     specialist: {
       timeoutMs: number

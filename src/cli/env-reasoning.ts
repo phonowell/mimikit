@@ -27,22 +27,27 @@ export const applyReasoningEnv = (config: AppConfig): void => {
     'MIMIKIT_REASONING_EFFORT',
     process.env.MIMIKIT_REASONING_EFFORT,
   )
-  if (global) {
-    config.manager.modelReasoningEffort = global
-    config.worker.standard.modelReasoningEffort = global
-    config.worker.specialist.modelReasoningEffort = global
-  }
+  if (global) config.worker.specialist.modelReasoningEffort = global
+
   const manager = parseReasoning(
     'MIMIKIT_MANAGER_REASONING_EFFORT',
     process.env.MIMIKIT_MANAGER_REASONING_EFFORT,
   )
-  if (manager) config.manager.modelReasoningEffort = manager
+  if (manager) {
+    console.warn(
+      '[cli] ignored MIMIKIT_MANAGER_REASONING_EFFORT: manager uses opencode and does not support modelReasoningEffort',
+    )
+  }
 
   const standard = parseReasoning(
     'MIMIKIT_WORKER_STANDARD_REASONING_EFFORT',
     process.env.MIMIKIT_WORKER_STANDARD_REASONING_EFFORT,
   )
-  if (standard) config.worker.standard.modelReasoningEffort = standard
+  if (standard) {
+    console.warn(
+      '[cli] ignored MIMIKIT_WORKER_STANDARD_REASONING_EFFORT: standard worker uses opencode and does not support modelReasoningEffort',
+    )
+  }
 
   const specialist = parseReasoning(
     'MIMIKIT_WORKER_SPECIALIST_REASONING_EFFORT',

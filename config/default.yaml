@@ -8,11 +8,9 @@ manager:
   historyMaxCount: 100
   historyMaxBytes: 20480
   model: opencode/big-pickle
-  modelReasoningEffort: high
   task:
     timeoutMs: 60000
     model: gpt-5.2-high
-    modelReasoningEffort: high
 evolver:
   enabled: false
   pollMs: 2000
@@ -25,7 +23,6 @@ worker:
   standard:
     timeoutMs: 600000
     model: opencode/big-pickle
-    modelReasoningEffort: high
   specialist:
     timeoutMs: 600000
     model: gpt-5.3-codex-high

@@ -16,6 +16,13 @@ const taskDefaultsSchema = z
   .object({
     timeoutMs: z.number().int().positive(),
     model: z.string().min(1),
+  })
+  .strict()
+
+const codexTaskDefaultsSchema = z
+  .object({
+    timeoutMs: z.number().int().positive(),
+    model: z.string().min(1),
     modelReasoningEffort: modelReasoningEffortSchema,
   })
   .strict()
@@ -33,7 +40,6 @@ const defaultConfigSchema = z
         historyMaxCount: z.number().int().positive(),
         historyMaxBytes: z.number().int().positive(),
         model: z.string().min(1),
-        modelReasoningEffort: modelReasoningEffortSchema,
         task: taskDefaultsSchema,
       })
       .strict(),
@@ -51,7 +57,7 @@ const defaultConfigSchema = z
         retryMaxAttempts: z.number().int().nonnegative(),
         retryBackoffMs: z.number().int().nonnegative(),
         standard: taskDefaultsSchema,
-        specialist: taskDefaultsSchema,
+        specialist: codexTaskDefaultsSchema,
       })
       .strict(),
   })
