@@ -39,7 +39,6 @@ const runStandardProfile = (params: {
     task: params.task,
     timeoutMs: standard.timeoutMs,
     model: standard.model,
-    modelReasoningEffort: standard.modelReasoningEffort,
     abortSignal: params.controller.signal,
     ...(params.onUsage ? { onUsage: params.onUsage } : {}),
   })

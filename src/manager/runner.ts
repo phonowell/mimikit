@@ -22,7 +22,6 @@ import type {
   TokenUsage,
   UserInput,
 } from '../types/index.js'
-import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
 export const runManager = async (params: {
   stateDir: string
@@ -36,7 +35,6 @@ export const runManager = async (params: {
   focusState?: FocusState
   compactedContext?: string
   model?: string
-  modelReasoningEffort?: ModelReasoningEffort
   sessionId?: string
   maxPromptTokens?: number
   onTextDelta?: (delta: string) => void
@@ -94,9 +92,6 @@ export const runManager = async (params: {
       timeoutMs,
       ...(callModel ? { model: callModel } : {}),
       ...(sessionId ? { threadId: sessionId } : {}),
-      ...(params.modelReasoningEffort
-        ? { modelReasoningEffort: params.modelReasoningEffort }
-        : {}),
       ...(params.onTextDelta ? { onTextDelta: params.onTextDelta } : {}),
       ...(params.onUsage ? { onUsage: params.onUsage } : {}),
     })

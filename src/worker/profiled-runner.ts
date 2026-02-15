@@ -16,14 +16,34 @@ import {
   stripDoneMarker,
 } from './profiled-runner-utils.js'
 
-import type {
-  LlmResult,
-  ProviderResult,
-  WorkerProfile,
-  WorkerProvider,
-} from './profiled-runner-helpers.js'
+import type { LlmResult, ProviderResult } from './profiled-runner-helpers.js'
 import type { Task, TokenUsage } from '../types/index.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
+
+type ProfiledWorkerBaseParams = {
+  stateDir: string
+  workDir: string
+  task: Task
+  timeoutMs: number
+  model?: string
+  abortSignal?: AbortSignal
+  onUsage?: (usage: TokenUsage) => void
+}
+
+type StandardProfiledWorkerParams = ProfiledWorkerBaseParams & {
+  provider: 'opencode'
+  profile: 'standard'
+}
+
+type SpecialistProfiledWorkerParams = ProfiledWorkerBaseParams & {
+  provider: 'codex-sdk'
+  profile: 'specialist'
+  modelReasoningEffort?: ModelReasoningEffort
+}
+
+type ProfiledWorkerParams =
+  | StandardProfiledWorkerParams
+  | SpecialistProfiledWorkerParams
 
 export const runStandardWorker = (params: {
   stateDir: string
@@ -31,7 +51,6 @@ export const runStandardWorker = (params: {
   task: Task
   timeoutMs: number
   model?: string
-  modelReasoningEffort?: ModelReasoningEffort
   abortSignal?: AbortSignal
   onUsage?: (usage: TokenUsage) => void
 }): Promise<LlmResult> =>
@@ -57,18 +76,9 @@ export const runSpecialistWorker = (params: {
     profile: 'specialist',
   })
 
-export const runProfiledWorker = async (params: {
-  stateDir: string
-  workDir: string
-  task: Task
-  timeoutMs: number
-  provider: WorkerProvider
-  profile: WorkerProfile
-  model?: string
-  modelReasoningEffort?: ModelReasoningEffort
-  abortSignal?: AbortSignal
-  onUsage?: (usage: TokenUsage) => void
-}): Promise<LlmResult> => {
+export const runProfiledWorker = async (
+  params: ProfiledWorkerParams,
+): Promise<LlmResult> => {
   const prompt = await buildWorkerPrompt({
     workDir: params.workDir,
     task: params.task,

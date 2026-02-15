@@ -98,9 +98,6 @@ const runOpencodeOnce = async (
         sessionID,
         directory: request.workDir,
         model,
-        ...(request.modelReasoningEffort
-          ? { variant: request.modelReasoningEffort }
-          : {}),
         parts: [{ type: 'text', text: request.prompt }],
       },
       {

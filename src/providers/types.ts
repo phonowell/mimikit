@@ -13,34 +13,33 @@ export type ProviderResult = {
 export type UsageListener = (usage: TokenUsage) => void
 export type TextDeltaListener = (delta: string) => void
 
-export type CodexSdkProviderRequest = {
-  provider: 'codex-sdk'
+type ProviderRequestBase = {
   role: 'manager' | 'worker'
   prompt: string
   workDir: string
   timeoutMs: number
   model?: string
-  modelReasoningEffort?: ModelReasoningEffort
   threadId?: string | null
-  outputSchema?: unknown
-  logPath?: string
-  logContext?: Record<string, unknown>
   abortSignal?: AbortSignal
   onUsage?: UsageListener
 }
 
-export type OpencodeProviderRequest = {
-  provider: 'opencode'
-  role: 'manager' | 'worker'
-  prompt: string
-  workDir: string
-  timeoutMs: number
-  model?: string
+export type CodexSdkProviderRequest = ProviderRequestBase & {
+  provider: 'codex-sdk'
   modelReasoningEffort?: ModelReasoningEffort
-  threadId?: string | null
-  abortSignal?: AbortSignal
-  onUsage?: UsageListener
+  outputSchema?: unknown
+  logPath?: string
+  logContext?: Record<string, unknown>
+  onTextDelta?: never
+}
+
+export type OpencodeProviderRequest = ProviderRequestBase & {
+  provider: 'opencode'
   onTextDelta?: TextDeltaListener
+  modelReasoningEffort?: never
+  outputSchema?: never
+  logPath?: never
+  logContext?: never
 }
 
 export type ProviderRequest = CodexSdkProviderRequest | OpencodeProviderRequest

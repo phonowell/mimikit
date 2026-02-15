@@ -79,7 +79,6 @@ export const processManagerBatch = async (params: {
       ...(runtime.focusState ? { focusState: runtime.focusState } : {}),
       ...(compactedContext ? { compactedContext } : {}),
       model: runtime.config.manager.model,
-      modelReasoningEffort: runtime.config.manager.modelReasoningEffort,
       ...(runtime.plannerSessionId
         ? { sessionId: runtime.plannerSessionId }
         : {}),
