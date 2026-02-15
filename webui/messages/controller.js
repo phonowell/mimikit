@@ -58,14 +58,14 @@ const normalizeStreamMessage = (raw) => {
   if (role !== 'assistant') return null
   const id = typeof raw.id === 'string' ? raw.id.trim() : ''
   const text = typeof raw.text === 'string' ? raw.text : ''
-  if (!id || !text) return null
+  const usage = normalizeUsage(raw.usage)
+  if (!id || (text.length === 0 && !usage)) return null
   const createdAt =
     typeof raw.createdAt === 'string' && raw.createdAt.trim()
       ? raw.createdAt
       : typeof raw.updatedAt === 'string' && raw.updatedAt.trim()
         ? raw.updatedAt
         : new Date().toISOString()
-  const usage = normalizeUsage(raw.usage)
   return {
     id: `stream-${id}`,
     role: 'assistant',

@@ -94,6 +94,19 @@ export const mapOpencodeUsage = (
   message: AssistantMessage | undefined,
 ): TokenUsage | undefined => {
   const tokens = message?.tokens
+  return mapOpencodeUsageFromTokens(tokens)
+}
+
+const mapOpencodeUsageFromTokens = (
+  tokens:
+    | {
+        input?: unknown
+        output?: unknown
+        reasoning?: unknown
+        total?: unknown
+      }
+    | undefined,
+): TokenUsage | undefined => {
   const input = readNumber(tokens?.input)
   const output = readNumber(tokens?.output)
   const reasoning = readNumber(tokens?.reasoning)
@@ -104,6 +117,8 @@ export const mapOpencodeUsage = (
       : undefined
   const total = totalFromToken ?? totalFromParts
   if (input === undefined && output === undefined && total === undefined)
+    return undefined
+  if ((input ?? 0) === 0 && (output ?? 0) === 0 && (total ?? 0) === 0)
     return undefined
 
   return {
@@ -119,8 +134,12 @@ export const mapOpencodeUsageFromEvent = (
   minCreatedAt?: number,
 ): TokenUsage | undefined => {
   const message = readAssistantMessageFromEvent(event, sessionID, minCreatedAt)
-  if (!message) return undefined
-  return mapOpencodeUsage(message)
+  if (message) return mapOpencodeUsage(message)
+  if (event?.type !== 'message.part.updated') return undefined
+  const { part } = event.properties
+  if (part.type !== 'step-finish') return undefined
+  if (sessionID && part.sessionID !== sessionID) return undefined
+  return mapOpencodeUsageFromTokens(part.tokens)
 }
 
 export const mapOpencodeAssistantMessageIdFromEvent = (

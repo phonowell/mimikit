@@ -57,12 +57,7 @@ export const formatUsage = (usage) => {
   const parts = []
   if (input !== null) parts.push(`\u2191 ${formatCount(input)}`)
   if (output !== null) parts.push(`\u2193 ${formatCount(output)}`)
-  const shouldShowTotal =
-    total !== null &&
-    (parts.length === 0 ||
-      (input === 0 && output === 0 && total > 0) ||
-      (input !== null && output !== null && total !== input + output))
-  if (shouldShowTotal) parts.push(`total ${formatCount(total)}`)
+  if (parts.length === 0 && total !== null) parts.push(`\u2195 ${formatCount(total)}`)
   return parts.join(' \u00b7 ')
 }
 
