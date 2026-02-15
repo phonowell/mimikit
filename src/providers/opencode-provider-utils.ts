@@ -78,12 +78,14 @@ export const resolveOpencodeModelRef = (
   return { providerID: 'opencode', modelID: 'big-pickle' }
 }
 
+export const isVisibleOpencodeTextPart = (
+  part: Part,
+): part is Extract<Part, { type: 'text' }> =>
+  part.type === 'text' && !part.ignored
+
 export const extractOpencodeOutput = (parts: Part[]): string =>
   parts
-    .filter(
-      (part): part is Extract<Part, { type: 'text' }> => part.type === 'text',
-    )
-    .filter((part) => !part.ignored)
+    .filter((part) => isVisibleOpencodeTextPart(part))
     .map((part) => part.text)
     .join('')
     .trim()
@@ -131,12 +133,28 @@ export const mapOpencodeAssistantMessageIdFromEvent = (
 export const mapOpencodeTextDeltaFromEvent = (
   event: Event | undefined,
   sessionID?: string,
-): { messageID: string; delta: string } | undefined => {
+): { messageID: string; partID: string; delta: string } | undefined => {
   if (event?.type !== 'message.part.delta') return undefined
   const { properties } = event
   if (sessionID && properties.sessionID !== sessionID) return undefined
   if (properties.field !== 'text') return undefined
+  if (typeof properties.partID !== 'string' || properties.partID.length === 0)
+    return undefined
   const { delta } = properties
   if (typeof delta !== 'string' || delta.length === 0) return undefined
-  return { messageID: properties.messageID, delta }
+  return { messageID: properties.messageID, partID: properties.partID, delta }
+}
+
+export const mapOpencodeTextPartStateFromEvent = (
+  event: Event | undefined,
+  sessionID?: string,
+): { messageID: string; partID: string; visible: boolean } | undefined => {
+  if (event?.type !== 'message.part.updated') return undefined
+  const { part } = event.properties
+  if (sessionID && part.sessionID !== sessionID) return undefined
+  return {
+    messageID: part.messageID,
+    partID: part.id,
+    visible: isVisibleOpencodeTextPart(part),
+  }
 }

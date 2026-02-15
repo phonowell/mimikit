@@ -2,6 +2,7 @@ import { isAbortLikeError } from './opencode-provider-bootstrap.js'
 import {
   mapOpencodeAssistantMessageIdFromEvent,
   mapOpencodeTextDeltaFromEvent,
+  mapOpencodeTextPartStateFromEvent,
   mapOpencodeUsageFromEvent,
 } from './opencode-provider-utils.js'
 
@@ -63,7 +64,23 @@ export const startUsageStreamMonitor = (params: {
 }): UsageStreamMonitor => {
   const streamAbort = new AbortController()
   const activeMessageIDs = new Set<string>()
-  const pendingDeltas = new Map<string, string[]>()
+  const visibleTextPartIDs = new Set<string>()
+  const pendingDeltas = new Map<
+    string,
+    {
+      messageID: string
+      chunks: string[]
+    }
+  >()
+
+  const flushPartDeltas = (partID: string): void => {
+    const pending = pendingDeltas.get(partID)
+    if (!pending) return
+    if (!activeMessageIDs.has(pending.messageID)) return
+    if (!visibleTextPartIDs.has(partID)) return
+    for (const chunk of pending.chunks) params.onTextDelta?.(chunk)
+    pendingDeltas.delete(partID)
+  }
 
   const forwardAbort = (): void => streamAbort.abort()
   if (params.abortSignal.aborted) streamAbort.abort()
@@ -87,11 +104,32 @@ export const startUsageStreamMonitor = (params: {
         if (messageID) {
           if (!activeMessageIDs.has(messageID)) {
             activeMessageIDs.add(messageID)
-            const pending = pendingDeltas.get(messageID)
-            if (pending && pending.length > 0)
-              for (const chunk of pending) params.onTextDelta?.(chunk)
+            for (const [partID, pending] of pendingDeltas) {
+              if (pending.messageID !== messageID) {
+                pendingDeltas.delete(partID)
+                continue
+              }
+              flushPartDeltas(partID)
+            }
+          }
+        }
 
-            pendingDeltas.clear()
+        const textPartState = mapOpencodeTextPartStateFromEvent(
+          event,
+          params.sessionID,
+        )
+        if (textPartState) {
+          if (
+            activeMessageIDs.size > 0 &&
+            !activeMessageIDs.has(textPartState.messageID)
+          )
+            continue
+          if (textPartState.visible) {
+            visibleTextPartIDs.add(textPartState.partID)
+            flushPartDeltas(textPartState.partID)
+          } else {
+            visibleTextPartIDs.delete(textPartState.partID)
+            pendingDeltas.delete(textPartState.partID)
           }
         }
 
@@ -104,14 +142,25 @@ export const startUsageStreamMonitor = (params: {
 
         const delta = mapOpencodeTextDeltaFromEvent(event, params.sessionID)
         if (!delta) continue
-        if (activeMessageIDs.has(delta.messageID)) {
+        if (activeMessageIDs.size > 0 && !activeMessageIDs.has(delta.messageID))
+          continue
+        if (
+          activeMessageIDs.has(delta.messageID) &&
+          visibleTextPartIDs.has(delta.partID)
+        ) {
           params.onTextDelta?.(delta.delta)
           continue
         }
-        if (activeMessageIDs.size > 0) continue
-        const existing = pendingDeltas.get(delta.messageID)
-        if (existing) existing.push(delta.delta)
-        else pendingDeltas.set(delta.messageID, [delta.delta])
+        const existing = pendingDeltas.get(delta.partID)
+        if (existing?.messageID === delta.messageID)
+          existing.chunks.push(delta.delta)
+        else {
+          pendingDeltas.set(delta.partID, {
+            messageID: delta.messageID,
+            chunks: [delta.delta],
+          })
+        }
+        flushPartDeltas(delta.partID)
       }
     } catch (error) {
       if (!isAbortLikeStreamError(error, streamAbort.signal)) throw error
