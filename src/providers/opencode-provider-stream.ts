@@ -53,6 +53,8 @@ const isAbortLikeStreamError = (
   return isAbortLikeError(error)
 }
 
+const UNKNOWN_TEXT_PART_FLUSH_DELAY_MS = 300
+
 export const startUsageStreamMonitor = (params: {
   client: ReturnType<typeof createOpencodeClient>
   workDir: string
@@ -65,21 +67,34 @@ export const startUsageStreamMonitor = (params: {
   const streamAbort = new AbortController()
   const activeMessageIDs = new Set<string>()
   const visibleTextPartIDs = new Set<string>()
+  const hiddenTextPartIDs = new Set<string>()
   const pendingDeltas = new Map<
     string,
     {
       messageID: string
       chunks: string[]
+      firstSeenAt: number
     }
   >()
 
-  const flushPartDeltas = (partID: string): void => {
+  const flushPartDeltas = (partID: string, now = Date.now()): void => {
     const pending = pendingDeltas.get(partID)
     if (!pending) return
     if (!activeMessageIDs.has(pending.messageID)) return
-    if (!visibleTextPartIDs.has(partID)) return
+    if (hiddenTextPartIDs.has(partID)) return
+    if (
+      !visibleTextPartIDs.has(partID) &&
+      now - pending.firstSeenAt < UNKNOWN_TEXT_PART_FLUSH_DELAY_MS
+    )
+      return
     for (const chunk of pending.chunks) params.onTextDelta?.(chunk)
     pendingDeltas.delete(partID)
+  }
+  const flushEligiblePending = (now = Date.now()): void => {
+    for (const [partID, pending] of pendingDeltas) {
+      if (!activeMessageIDs.has(pending.messageID)) continue
+      flushPartDeltas(partID, now)
+    }
   }
 
   const forwardAbort = (): void => streamAbort.abort()
@@ -96,6 +111,7 @@ export const startUsageStreamMonitor = (params: {
         },
       )
       for await (const event of eventStream.stream) {
+        const now = Date.now()
         const messageID = mapOpencodeAssistantMessageIdFromEvent(
           event,
           params.sessionID,
@@ -109,7 +125,7 @@ export const startUsageStreamMonitor = (params: {
                 pendingDeltas.delete(partID)
                 continue
               }
-              flushPartDeltas(partID)
+              flushPartDeltas(partID, now)
             }
           }
         }
@@ -120,16 +136,18 @@ export const startUsageStreamMonitor = (params: {
         )
         if (textPartState) {
           if (
-            activeMessageIDs.size > 0 &&
-            !activeMessageIDs.has(textPartState.messageID)
-          )
-            continue
-          if (textPartState.visible) {
-            visibleTextPartIDs.add(textPartState.partID)
-            flushPartDeltas(textPartState.partID)
-          } else {
-            visibleTextPartIDs.delete(textPartState.partID)
-            pendingDeltas.delete(textPartState.partID)
+            activeMessageIDs.size === 0 ||
+            activeMessageIDs.has(textPartState.messageID)
+          ) {
+            if (textPartState.visible) {
+              visibleTextPartIDs.add(textPartState.partID)
+              hiddenTextPartIDs.delete(textPartState.partID)
+              flushPartDeltas(textPartState.partID, now)
+            } else {
+              hiddenTextPartIDs.add(textPartState.partID)
+              visibleTextPartIDs.delete(textPartState.partID)
+              pendingDeltas.delete(textPartState.partID)
+            }
           }
         }
 
@@ -141,7 +159,10 @@ export const startUsageStreamMonitor = (params: {
         if (usage) params.onUsage(usage)
 
         const delta = mapOpencodeTextDeltaFromEvent(event, params.sessionID)
-        if (!delta) continue
+        if (!delta) {
+          flushEligiblePending(now)
+          continue
+        }
         if (activeMessageIDs.size > 0 && !activeMessageIDs.has(delta.messageID))
           continue
         if (
@@ -151,6 +172,7 @@ export const startUsageStreamMonitor = (params: {
           params.onTextDelta?.(delta.delta)
           continue
         }
+        if (hiddenTextPartIDs.has(delta.partID)) continue
         const existing = pendingDeltas.get(delta.partID)
         if (existing?.messageID === delta.messageID)
           existing.chunks.push(delta.delta)
@@ -158,9 +180,11 @@ export const startUsageStreamMonitor = (params: {
           pendingDeltas.set(delta.partID, {
             messageID: delta.messageID,
             chunks: [delta.delta],
+            firstSeenAt: now,
           })
         }
-        flushPartDeltas(delta.partID)
+        flushPartDeltas(delta.partID, now)
+        flushEligiblePending(now)
       }
     } catch (error) {
       if (!isAbortLikeStreamError(error, streamAbort.signal)) throw error

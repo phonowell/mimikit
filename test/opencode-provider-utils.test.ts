@@ -2,9 +2,13 @@ import { expect, test } from 'vitest'
 
 import {
   extractOpencodeOutput,
-  mapOpencodeTextDeltaFromEvent,
-  mapOpencodeTextPartStateFromEvent,
 } from '../src/providers/opencode-provider-utils.js'
+import { startUsageStreamMonitor } from '../src/providers/opencode-provider-stream.js'
+import {
+  createMessageState,
+  hasStreamChange,
+  updateStreamState,
+} from '../webui/messages/state.js'
 
 import type { Event, Part } from '@opencode-ai/sdk/v2'
 
@@ -45,69 +49,140 @@ test('extractOpencodeOutput excludes reasoning and ignored text parts', () => {
   expect(extractOpencodeOutput(parts)).toBe('Final answer')
 })
 
-test('part state + delta mapping keep part-level data for stream filtering', () => {
-  const reasoningUpdated: Event = {
-    type: 'message.part.updated',
-    properties: {
-      part: {
-        id: 'part-reasoning',
-        sessionID: 'session-1',
-        messageID: 'message-1',
-        type: 'reasoning',
-        text: 'hidden thought',
-        time: { start: 1 },
-      },
+test('stream monitor restores visible streaming while filtering hidden parts and triggers webui stream state', async () => {
+  const now = Date.now()
+  const script: Array<{ delayMs?: number; event: Event }> = [
+    {
+      event: {
+        type: 'message.updated',
+        properties: {
+          info: {
+            id: 'message-1',
+            role: 'assistant',
+            sessionID: 'session-1',
+            time: { created: now },
+          },
+        },
+      } as unknown as Event,
     },
-  }
-  expect(mapOpencodeTextPartStateFromEvent(reasoningUpdated, 'session-1')).toEqual({
-    messageID: 'message-1',
-    partID: 'part-reasoning',
-    visible: false,
-  })
+    {
+      event: {
+        type: 'message.part.delta',
+        properties: {
+          sessionID: 'session-1',
+          messageID: 'message-1',
+          partID: 'part-unknown',
+          field: 'text',
+          delta: 'Hello ',
+        },
+      } as unknown as Event,
+    },
+    {
+      delayMs: 360,
+      event: {
+        type: 'message.updated',
+        properties: {
+          info: {
+            id: 'message-1',
+            role: 'assistant',
+            sessionID: 'session-1',
+            time: { created: now },
+          },
+        },
+      } as unknown as Event,
+    },
+    {
+      event: {
+        type: 'message.part.updated',
+        properties: {
+          part: {
+            id: 'part-hidden',
+            sessionID: 'session-1',
+            messageID: 'message-1',
+            type: 'text',
+            text: 'secret',
+            ignored: true,
+          },
+        },
+      } as unknown as Event,
+    },
+    {
+      event: {
+        type: 'message.part.delta',
+        properties: {
+          sessionID: 'session-1',
+          messageID: 'message-1',
+          partID: 'part-hidden',
+          field: 'text',
+          delta: 'secret',
+        },
+      } as unknown as Event,
+    },
+    {
+      event: {
+        type: 'message.part.updated',
+        properties: {
+          part: {
+            id: 'part-visible',
+            sessionID: 'session-1',
+            messageID: 'message-1',
+            type: 'text',
+            text: 'world',
+          },
+        },
+      } as unknown as Event,
+    },
+    {
+      event: {
+        type: 'message.part.delta',
+        properties: {
+          sessionID: 'session-1',
+          messageID: 'message-1',
+          partID: 'part-visible',
+          field: 'text',
+          delta: 'world',
+        },
+      } as unknown as Event,
+    },
+  ]
 
-  const visibleTextUpdated: Event = {
-    type: 'message.part.updated',
-    properties: {
-      part: {
-        id: 'part-text',
-        sessionID: 'session-1',
-        messageID: 'message-1',
-        type: 'text',
-        text: 'answer',
-      },
+  const client = {
+    event: {
+      subscribe: async () => ({
+        stream: (async function* () {
+          for (const step of script) {
+            if (step.delayMs && step.delayMs > 0)
+              await new Promise((resolve) => setTimeout(resolve, step.delayMs))
+            yield step.event
+          }
+        })(),
+      }),
     },
   }
-  expect(mapOpencodeTextPartStateFromEvent(visibleTextUpdated, 'session-1')).toEqual({
-    messageID: 'message-1',
-    partID: 'part-text',
-    visible: true,
-  })
 
-  const textDelta: Event = {
-    type: 'message.part.delta',
-    properties: {
-      sessionID: 'session-1',
-      messageID: 'message-1',
-      partID: 'part-text',
-      field: 'text',
-      delta: 'hi',
-    },
-  }
-  expect(mapOpencodeTextDeltaFromEvent(textDelta, 'session-1')).toEqual({
-    messageID: 'message-1',
-    partID: 'part-text',
-    delta: 'hi',
+  const streamedDeltas: string[] = []
+  const monitor = startUsageStreamMonitor({
+    client: client as never,
+    workDir: process.cwd(),
+    sessionID: 'session-1',
+    minCreatedAt: now,
+    abortSignal: new AbortController().signal,
+    onUsage: () => undefined,
+    onTextDelta: (delta) => streamedDeltas.push(delta),
   })
+  await monitor.done
 
-  const nonTextDelta: Event = {
-    type: 'message.part.delta',
-    properties: {
-      sessionID: 'session-1',
-      messageID: 'message-1',
-      partID: 'part-reasoning',
-      field: 'reasoning_content',
-      delta: 'hidden thought',
-    },
+  expect(streamedDeltas).toEqual(['Hello ', 'world'])
+
+  const webuiState = createMessageState()
+  let streamedText = ''
+  for (const delta of streamedDeltas) {
+    streamedText += delta
+    const streamPayload = { id: 'manager-stream', text: streamedText }
+    expect(hasStreamChange(webuiState, streamPayload)).toBe(true)
+    updateStreamState(webuiState, streamPayload)
   }
-  expect(mapOpencodeTextDeltaFromEvent(nonTextDelta, 'session-1')).toBeUndefined()
+  expect(
+    hasStreamChange(webuiState, { id: 'manager-stream', text: streamedText }),
+  ).toBe(false)
 })
