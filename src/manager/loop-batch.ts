@@ -30,7 +30,7 @@ import {
 import { runManager } from './runner.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
-import type { TaskResult, UserInput } from '../types/index.js'
+import type { TaskResult, TokenUsage, UserInput } from '../types/index.js'
 export const processManagerBatch = async (params: {
   runtime: RuntimeState
   inputs: UserInput[]
@@ -54,6 +54,7 @@ export const processManagerBatch = async (params: {
   const startedAt = Date.now()
   let assistantAppended = false
   let streamRawOutput = ''
+  let streamUsage: TokenUsage | undefined
   startUiStream(runtime, streamId)
   try {
     await appendLog(runtime.paths.log, {
@@ -97,13 +98,18 @@ export const processManagerBatch = async (params: {
         resetUiStream(runtime, streamId)
       },
       onUsage: (usage) => {
-        setUiStreamUsage(runtime, streamId, usage)
+        streamUsage = setUiStreamUsage(runtime, streamId, usage) ?? streamUsage
       },
     })
     streamRawOutput = managerResult.output
     setUiStreamText(runtime, streamId, toVisibleAssistantText(streamRawOutput))
+    if (managerResult.usage) {
+      streamUsage =
+        setUiStreamUsage(runtime, streamId, managerResult.usage) ?? streamUsage
+    }
     if (managerResult.sessionId)
       runtime.plannerSessionId = managerResult.sessionId
+    const resolvedUsage = streamUsage ?? managerResult.usage
 
     const focusState = extractFocusState(managerResult.output)
     if (focusState) runtime.focusState = focusState
@@ -144,7 +150,7 @@ export const processManagerBatch = async (params: {
       role: 'assistant',
       text: responseText,
       createdAt: nowIso(),
-      ...(managerResult.usage ? { usage: managerResult.usage } : {}),
+      ...(resolvedUsage ? { usage: resolvedUsage } : {}),
       ...(managerResult.elapsedMs >= 0
         ? { elapsedMs: managerResult.elapsedMs }
         : {}),
@@ -164,7 +170,7 @@ export const processManagerBatch = async (params: {
       event: 'manager_end',
       status: 'ok',
       elapsedMs: Math.max(0, Date.now() - startedAt),
-      ...(managerResult.usage ? { usage: managerResult.usage } : {}),
+      ...(resolvedUsage ? { usage: resolvedUsage } : {}),
     })
   } catch (error) {
     let drainedOnError = false

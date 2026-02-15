@@ -37,6 +37,40 @@ export const mergeUsage = (
   }
 }
 
+const asFiniteNumber = (value: unknown): number | undefined =>
+  typeof value === 'number' && Number.isFinite(value) ? value : undefined
+
+const keepMonotonicUsageValue = (
+  current: number | undefined,
+  next: number | undefined,
+): number | undefined => {
+  if (next === undefined) return current
+  if (current === undefined) return next
+  return Math.max(current, next)
+}
+
+export const mergeUsageMonotonic = (
+  current: TokenUsage | undefined,
+  next: TokenUsage | undefined,
+): TokenUsage | undefined => {
+  const currentInput = asFiniteNumber(current?.input)
+  const currentOutput = asFiniteNumber(current?.output)
+  const currentTotal = asFiniteNumber(current?.total)
+  const nextInput = asFiniteNumber(next?.input)
+  const nextOutput = asFiniteNumber(next?.output)
+  const nextTotal = asFiniteNumber(next?.total)
+  const input = keepMonotonicUsageValue(currentInput, nextInput)
+  const output = keepMonotonicUsageValue(currentOutput, nextOutput)
+  const total = keepMonotonicUsageValue(currentTotal, nextTotal)
+  if (input === undefined && output === undefined && total === undefined)
+    return undefined
+  return {
+    ...(input !== undefined ? { input } : {}),
+    ...(output !== undefined ? { output } : {}),
+    ...(total !== undefined ? { total } : {}),
+  }
+}
+
 export const isSameUsage = (
   left: TokenUsage | undefined,
   right: TokenUsage | undefined,

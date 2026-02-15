@@ -34,6 +34,63 @@ const isSameUsage = (
   left?.output === right?.output &&
   left?.total === right?.total
 
+const asUsageNumber = (value: unknown): number | undefined =>
+  typeof value === 'number' && Number.isFinite(value) ? value : undefined
+
+const sanitizeUsage = (
+  usage: TokenUsage | undefined,
+): TokenUsage | undefined => {
+  if (!usage) return undefined
+  const input = asUsageNumber(usage.input)
+  const output = asUsageNumber(usage.output)
+  const total = asUsageNumber(usage.total)
+  if (input === undefined && output === undefined && total === undefined)
+    return undefined
+  return {
+    ...(input !== undefined ? { input } : {}),
+    ...(output !== undefined ? { output } : {}),
+    ...(total !== undefined ? { total } : {}),
+  }
+}
+
+const keepMonotonicUsageValue = (
+  current: number | undefined,
+  next: number | undefined,
+): number | undefined => {
+  if (next === undefined) return current
+  if (current === undefined) return next
+  return Math.max(current, next)
+}
+
+const mergeStreamUsage = (
+  current: TokenUsage | undefined,
+  next: TokenUsage,
+): TokenUsage | undefined => {
+  const normalizedNext = sanitizeUsage(next)
+  if (!normalizedNext) return sanitizeUsage(current)
+  const normalizedCurrent = sanitizeUsage(current)
+  if (!normalizedCurrent) return normalizedNext
+  const input = keepMonotonicUsageValue(
+    normalizedCurrent.input,
+    normalizedNext.input,
+  )
+  const output = keepMonotonicUsageValue(
+    normalizedCurrent.output,
+    normalizedNext.output,
+  )
+  const total = keepMonotonicUsageValue(
+    normalizedCurrent.total,
+    normalizedNext.total,
+  )
+  if (input === undefined && output === undefined && total === undefined)
+    return undefined
+  return {
+    ...(input !== undefined ? { input } : {}),
+    ...(output !== undefined ? { output } : {}),
+    ...(total !== undefined ? { total } : {}),
+  }
+}
+
 export const setUiStreamText = (
   runtime: RuntimeState,
   streamId: string,
@@ -54,7 +111,6 @@ export const resetUiStream = (
   const stream = runtime.uiStream
   if (stream?.id !== streamId) return
   stream.text = ''
-  if ('usage' in stream) delete stream.usage
   stream.updatedAt = nowIso()
   notifyUiSignal(runtime)
 }
@@ -63,13 +119,16 @@ export const setUiStreamUsage = (
   runtime: RuntimeState,
   streamId: string,
   nextUsage: TokenUsage,
-): void => {
+): TokenUsage | undefined => {
   const stream = runtime.uiStream
-  if (stream?.id !== streamId) return
-  if (isSameUsage(stream.usage, nextUsage)) return
-  stream.usage = nextUsage
+  if (stream?.id !== streamId) return undefined
+  const mergedUsage = mergeStreamUsage(stream.usage, nextUsage)
+  if (isSameUsage(stream.usage, mergedUsage)) return stream.usage
+  if (mergedUsage) stream.usage = mergedUsage
+  else if ('usage' in stream) delete stream.usage
   stream.updatedAt = nowIso()
   notifyUiSignal(runtime)
+  return mergedUsage
 }
 
 export const stopUiStream = (runtime: RuntimeState, streamId: string): void => {

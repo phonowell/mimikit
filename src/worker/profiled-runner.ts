@@ -13,6 +13,7 @@ import {
   isSameUsage,
   MAX_RUN_ROUNDS,
   mergeUsage,
+  mergeUsageMonotonic,
   stripDoneMarker,
 } from './profiled-runner-utils.js'
 
@@ -115,9 +116,10 @@ export const runProfiledWorker = async (
         prompt: nextPrompt,
         ...(threadId !== undefined ? { threadId } : {}),
         onUsage: (usage) => {
-          callbackRoundUsage = usage
-          const previewUsage = mergeUsage(usageBeforeRound, usage)
+          callbackRoundUsage = mergeUsageMonotonic(callbackRoundUsage, usage)
+          const previewUsage = mergeUsage(usageBeforeRound, callbackRoundUsage)
           if (!previewUsage) return
+          if (isSameUsage(totalUsage, previewUsage)) return
           totalUsage = previewUsage
           params.task.usage = previewUsage
           callbackReportedUsage = previewUsage
@@ -127,7 +129,7 @@ export const runProfiledWorker = async (
       latestResult = result
       totalElapsedMs += result.elapsedMs
       threadId = result.threadId ?? threadId ?? null
-      const roundUsage = callbackRoundUsage ?? result.usage
+      const roundUsage = mergeUsageMonotonic(callbackRoundUsage, result.usage)
       const hasRoundUsage = roundUsage !== undefined
       const mergedUsage = mergeUsage(usageBeforeRound, roundUsage)
       totalUsage = mergedUsage ?? usageBeforeRound
