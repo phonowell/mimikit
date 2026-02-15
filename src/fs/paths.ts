@@ -37,7 +37,7 @@ export const buildPaths = (stateDir: string): StatePaths => {
     resultsDir,
     wakesDir,
     tasksDir,
-    history: join(root, 'history.jsonl'),
+    history: join(root, 'history'),
     log: join(root, 'log.jsonl'),
     inputsPackets: join(inputsDir, 'packets.jsonl'),
     resultsPackets: join(resultsDir, 'packets.jsonl'),

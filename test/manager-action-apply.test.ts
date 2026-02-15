@@ -91,7 +91,7 @@ test('create_task rejects forbidden .mimikit state paths for worker profiles', a
     {
       name: 'create_task',
       attrs: {
-        prompt: 'Read .mimikit/tasks/task-1.json and summarize',
+        prompt: 'Read .mimikit/history/2026-02-15.jsonl and summarize',
         title: 'forbidden',
         profile: 'standard',
       },

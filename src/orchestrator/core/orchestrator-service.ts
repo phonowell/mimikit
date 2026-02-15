@@ -8,7 +8,7 @@ import { bestEffort, setDefaultLogPath } from '../../log/safe.js'
 import { cronWakeLoop } from '../../manager/loop-cron.js'
 import { managerLoop } from '../../manager/loop.js'
 import { newId, nowIso } from '../../shared/utils.js'
-import { appendHistory } from '../../storage/jsonl.js'
+import { appendHistory } from '../../storage/history-jsonl.js'
 import { cancelTask } from '../../worker/cancel-task.js'
 import { enqueuePendingWorkerTasks, workerLoop } from '../../worker/dispatch.js'
 

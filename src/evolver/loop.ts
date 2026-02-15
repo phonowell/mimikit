@@ -6,7 +6,7 @@ import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { renderPromptTemplate } from '../prompts/format.js'
 import { nowIso, sleep } from '../shared/utils.js'
-import { readHistory } from '../storage/jsonl.js'
+import { readHistory } from '../storage/history-jsonl.js'
 
 import { loadEvolverTemplates } from './templates.js'
 

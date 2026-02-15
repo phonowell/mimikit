@@ -3,7 +3,7 @@ import { bestEffort, logSafeError } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import { notifyUiSignal } from '../orchestrator/core/ui-signal.js'
 import { nowIso } from '../shared/utils.js'
-import { appendHistory } from '../storage/jsonl.js'
+import { appendHistory } from '../storage/history-jsonl.js'
 
 import { applyTaskActions, collectTaskResultSummaries } from './action-apply.js'
 import {

@@ -2,7 +2,7 @@ import { safe } from '../log/safe.js'
 import { appendTaskSystemMessage } from '../orchestrator/read-model/task-history.js'
 import { loadPromptTemplate } from '../prompts/prompt-loader.js'
 import { nowIso } from '../shared/utils.js'
-import { appendHistory, readHistory } from '../storage/jsonl.js'
+import { appendHistory, readHistory } from '../storage/history-jsonl.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { TaskResult, UserInput } from '../types/index.js'

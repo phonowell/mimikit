@@ -1,7 +1,7 @@
 import { appendLog } from '../../log/append.js'
 import { bestEffort } from '../../log/safe.js'
 import { newId, nowIso } from '../../shared/utils.js'
-import { readHistory } from '../../storage/jsonl.js'
+import { readHistory } from '../../storage/history-jsonl.js'
 import { publishUserInput, publishWakeEvent } from '../../streams/queues.js'
 import {
   type ChatMessage,

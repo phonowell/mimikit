@@ -1,7 +1,7 @@
 import { parseActions } from '../actions/protocol/parse.js'
 import { appendLog } from '../log/append.js'
 import { selectRecentTasks } from '../orchestrator/read-model/task-select.js'
-import { readHistory } from '../storage/jsonl.js'
+import { readHistory } from '../storage/history-jsonl.js'
 
 import { pickQueryHistoryRequest, queryHistory } from './history-query.js'
 import {
@@ -120,6 +120,10 @@ export const runManagerBatch = async (params: {
     roleCount: queryRequest.roles.length,
     resultCount: lookup.length,
     ...(queryRequest.beforeId ? { beforeId: queryRequest.beforeId } : {}),
+    ...(queryRequest.fromMs !== undefined
+      ? { fromMs: queryRequest.fromMs }
+      : {}),
+    ...(queryRequest.toMs !== undefined ? { toMs: queryRequest.toMs } : {}),
   })
 
   streamRawOutput = ''

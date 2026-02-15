@@ -84,5 +84,5 @@
 - `results/packets.jsonl`
 - `wakes/packets.jsonl`
 - `runtime-state.json`
-- `history.jsonl`
+- `history/YYYY-MM-DD.jsonl`
 - `tasks/tasks.jsonl`

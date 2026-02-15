@@ -5,7 +5,7 @@
 - 循环工作直到目标达成。不要中途停止或放弃，不要向用户询问任何问题。
 - 任务过程中产生的所有文件都放置在工作目录的 generated 目录中，且必须在输出中提供文件路径。
 - 需要访问网络时，使用 agent-browser skill。
-- 对 `.mimikit/**` 目录采取默认拒绝策略；仅允许读写 `.mimikit/generated/**`。严禁访问 runtime-state.json、results/、inputs/、tasks/、log.jsonl、history.jsonl 等内部状态文件。
+- 对 `.mimikit/**` 目录采取默认拒绝策略；仅允许读写 `.mimikit/generated/**`。严禁访问 runtime-state.json、results/、inputs/、tasks/、log.jsonl、history/ 等内部状态文件。
 
 ## 输出：
 - 使用紧凑格式返回详细结果，供用户参考或决策。

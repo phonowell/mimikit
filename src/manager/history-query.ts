@@ -1,33 +1,17 @@
 import bm25 from 'wink-bm25-text-search'
-import { z } from 'zod'
 
-import type { Parsed } from '../actions/model/spec.js'
+import { parseIsoMs } from './history-query-request.js'
+
+import type { QueryHistoryRequest } from './history-query-request.js'
 import type {
   HistoryLookupMessage,
   HistoryMessage,
   Role,
 } from '../types/index.js'
 
-const DEFAULT_LIMIT = 6
-const MAX_LIMIT = 20
-const MIN_LIMIT = 1
+export { pickQueryHistoryRequest } from './history-query-request.js'
+
 const LOOKUP_MAX_CHARS = 480
-
-type QueryHistoryRequest = {
-  query: string
-  limit: number
-  roles: Role[]
-  beforeId?: string
-}
-
-const queryHistorySchema = z
-  .object({
-    query: z.string().trim().min(1),
-    limit: z.string().trim().optional(),
-    roles: z.string().trim().optional(),
-    before_id: z.string().trim().min(1).optional(),
-  })
-  .strict()
 
 const normalizeSpace = (value: string): string =>
   value.replace(/\s+/g, ' ').trim()
@@ -43,32 +27,6 @@ const toTokens = (value: string): string[] =>
     .toLowerCase()
     .match(/[\p{L}\p{N}_-]+/gu) ?? []
 
-const parseLimit = (raw?: string): number => {
-  if (!raw) return DEFAULT_LIMIT
-  const value = Number.parseInt(raw, 10)
-  if (!Number.isFinite(value)) return DEFAULT_LIMIT
-  return Math.max(MIN_LIMIT, Math.min(MAX_LIMIT, value))
-}
-
-const isRole = (value: string): value is Role =>
-  value === 'user' || value === 'assistant' || value === 'system'
-
-const parseRoles = (raw?: string): Role[] => {
-  if (!raw) return ['user', 'assistant']
-  const unique = new Set<Role>()
-  for (const part of raw.split(',')) {
-    const role = part.trim()
-    if (!isRole(role)) continue
-    unique.add(role)
-  }
-  return unique.size > 0 ? Array.from(unique) : ['user', 'assistant']
-}
-
-const parseIsoMs = (value: string): number => {
-  const ts = Date.parse(value)
-  return Number.isFinite(ts) ? ts : 0
-}
-
 const beforeIndex = (
   history: HistoryMessage[],
   beforeId?: string,
@@ -78,29 +36,12 @@ const beforeIndex = (
   return index >= 0 ? index : undefined
 }
 
-export const pickQueryHistoryRequest = (
-  actions: Parsed[],
-): QueryHistoryRequest | undefined => {
-  for (const item of actions) {
-    if (item.name !== 'query_history') continue
-    const parsed = queryHistorySchema.safeParse(item.attrs)
-    if (!parsed.success) continue
-    const limit = parseLimit(parsed.data.limit)
-    return {
-      query: parsed.data.query,
-      limit,
-      roles: parseRoles(parsed.data.roles),
-      ...(parsed.data.before_id ? { beforeId: parsed.data.before_id } : {}),
-    }
-  }
-  return undefined
-}
-
 type QueryDoc = {
   id: string
   role: Role
   createdAt: string
   text: string
+  ts: number
 }
 
 const collectDocs = (
@@ -113,6 +54,12 @@ const collectDocs = (
   const docs: QueryDoc[] = []
   for (const item of source) {
     if (!allowed.has(item.role)) continue
+    const parsedTime = parseIsoMs(item.createdAt)
+    if (request.fromMs !== undefined || request.toMs !== undefined) {
+      if (parsedTime === undefined) continue
+      if (request.fromMs !== undefined && parsedTime < request.fromMs) continue
+      if (request.toMs !== undefined && parsedTime > request.toMs) continue
+    }
     const text = normalizeSpace(item.text)
     if (!text) continue
     docs.push({
@@ -120,6 +67,7 @@ const collectDocs = (
       role: item.role,
       createdAt: item.createdAt,
       text,
+      ts: parsedTime ?? 0,
     })
   }
   return docs
@@ -137,6 +85,36 @@ const createEngine = (docs: QueryDoc[]) => {
   return engine
 }
 
+const sortRanked = (
+  items: Array<{ doc: QueryDoc; score: number; ts: number }>,
+): Array<{ doc: QueryDoc; score: number; ts: number }> =>
+  items.sort((a, b) => {
+    if (a.score !== b.score) return b.score - a.score
+    if (a.ts !== b.ts) return b.ts - a.ts
+    return a.doc.id.localeCompare(b.doc.id)
+  })
+
+const fallbackSearch = (
+  docs: QueryDoc[],
+  request: QueryHistoryRequest,
+): Array<{ doc: QueryDoc; score: number; ts: number }> => {
+  const queryTokens = new Set(toTokens(request.query))
+  const newest = Math.max(...docs.map((doc) => doc.ts))
+  const oldest = Math.min(...docs.map((doc) => doc.ts))
+  return sortRanked(
+    docs.map((doc) => {
+      const hits = toTokens(doc.text).filter((token) =>
+        queryTokens.has(token),
+      ).length
+      const recency =
+        newest <= oldest
+          ? 1
+          : Math.max(0, (doc.ts - oldest) / (newest - oldest))
+      return { doc, score: hits + recency * 0.05, ts: doc.ts }
+    }),
+  )
+}
+
 export const queryHistory = (
   history: HistoryMessage[],
   request: QueryHistoryRequest,
@@ -144,8 +122,19 @@ export const queryHistory = (
   const docs = collectDocs(history, request)
   if (docs.length === 0) return []
   const docsById = new Map(docs.map((doc) => [doc.id, doc]))
-  const newest = Math.max(...docs.map((doc) => parseIsoMs(doc.createdAt)))
-  const oldest = Math.min(...docs.map((doc) => parseIsoMs(doc.createdAt)))
+  if (docs.length < 4) {
+    return fallbackSearch(docs, request)
+      .slice(0, request.limit)
+      .map((item) => ({
+        id: item.doc.id,
+        role: item.doc.role,
+        time: item.doc.createdAt,
+        content: clip(item.doc.text, LOOKUP_MAX_CHARS),
+        score: Number(item.score.toFixed(4)),
+      }))
+  }
+  const newest = Math.max(...docs.map((doc) => doc.ts))
+  const oldest = Math.min(...docs.map((doc) => doc.ts))
   const searchLimit = Math.max(request.limit * 4, request.limit)
   const engine = createEngine(docs)
   const raw = engine.search(
@@ -158,22 +147,20 @@ export const queryHistory = (
     { roles: new Set(request.roles) },
   )
 
-  const ranked = raw
-    .map(([docId, score]) => {
-      const doc = docsById.get(String(docId))
-      if (!doc) return undefined
-      const ts = parseIsoMs(doc.createdAt)
-      const recency =
-        newest <= oldest ? 1 : Math.max(0, (ts - oldest) / (newest - oldest))
-      const weightedScore = score + recency * 0.05
-      return { doc, score: weightedScore, ts }
-    })
-    .filter((item): item is NonNullable<typeof item> => item !== undefined)
-    .sort((a, b) => {
-      if (a.score !== b.score) return b.score - a.score
-      if (a.ts !== b.ts) return b.ts - a.ts
-      return a.doc.id.localeCompare(b.doc.id)
-    })
+  const ranked = sortRanked(
+    raw
+      .map(([docId, score]) => {
+        const doc = docsById.get(String(docId))
+        if (!doc) return undefined
+        const recency =
+          newest <= oldest
+            ? 1
+            : Math.max(0, (doc.ts - oldest) / (newest - oldest))
+        const weightedScore = score + recency * 0.05
+        return { doc, score: weightedScore, ts: doc.ts }
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== undefined),
+  )
 
   return ranked.slice(0, request.limit).map((item) => ({
     id: item.doc.id,

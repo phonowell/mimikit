@@ -7,8 +7,6 @@ import { writeFileAtomic } from '../fs/json.js'
 import { ensureDir, ensureFile } from '../fs/paths.js'
 import { logSafeError, safe } from '../log/safe.js'
 
-import type { HistoryMessage } from '../types/index.js'
-
 type JsonlReadOptions<T> = {
   validate?: (value: unknown) => T | undefined | null
 }
@@ -114,22 +112,3 @@ export const updateJsonl = <T>(
     await writeJsonl(path, next)
     return next
   })
-
-const MAX_HISTORY_ITEMS = 1000
-
-const capHistory = (items: HistoryMessage[]): HistoryMessage[] => {
-  if (items.length <= MAX_HISTORY_ITEMS) return items
-  return items.slice(Math.max(0, items.length - MAX_HISTORY_ITEMS))
-}
-
-export const readHistory = (path: string): Promise<HistoryMessage[]> =>
-  readJsonl<HistoryMessage>(path, { ensureFile: true })
-
-export const appendHistory = async (
-  path: string,
-  message: HistoryMessage,
-): Promise<void> => {
-  await updateJsonl<HistoryMessage>(path, (current) =>
-    capHistory([...current, message]),
-  )
-}

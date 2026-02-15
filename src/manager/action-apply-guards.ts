@@ -12,7 +12,8 @@ export const hasForbiddenWorkerStatePath = (prompt: string): boolean => {
     normalized.includes('.mimikit/inputs/') ||
     normalized.includes('.mimikit/tasks/') ||
     normalized.includes('.mimikit/log.jsonl') ||
-    normalized.includes('.mimikit/history.jsonl')
+    normalized.includes('.mimikit/history/') ||
+    normalized.endsWith('.mimikit/history')
   if (directDeny) return true
   const pathRefs = normalized.match(
     /(?:^|[^\p{L}\p{N}_-])(?:\.mimikit\/[^\s"'`)\]]+)/gu,

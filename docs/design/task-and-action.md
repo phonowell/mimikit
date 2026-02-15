@@ -45,7 +45,11 @@ Action 名称集合（`src/actions/model/names.ts`）：
 - 未注册 action 返回：`unknown_action:{name}`
 
 ## Manager 消费的编排 Action
-实现：`src/manager/action-apply.ts`
+实现：`src/manager/action-apply.ts`、`src/manager/loop-batch-run-manager.ts`、`src/manager/history-query.ts`
+
+### `query_history`
+- 入参：`query`、`limit?`、`roles?`、`before_id?`、`from?`、`to?`
+- 行为：触发历史检索并进入下一轮 manager 推理；`from/to` 为 ISO 8601 时间范围（含端点，顺序可颠倒）。
 
 ### `create_task`
 - 入参：`prompt`、`title`、`profile`
@@ -86,7 +90,7 @@ Action 名称集合（`src/actions/model/names.ts`）：
 ### HistoryMessage
 - 字段：`id`、`role(user|assistant|system)`、`text`、`createdAt`
 - 可选：`usage`、`elapsedMs`、`quote`
-- 写入：`history.jsonl`
+- 写入：`history/YYYY-MM-DD.jsonl`
 
 ### Queue Packet
 - 结构：`{ id, createdAt, payload }`

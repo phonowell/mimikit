@@ -1,6 +1,6 @@
 import { safe } from '../../log/safe.js'
 import { newId, nowIso } from '../../shared/utils.js'
-import { appendHistory } from '../../storage/jsonl.js'
+import { appendHistory } from '../../storage/history-jsonl.js'
 
 import type {
   HistoryMessage,

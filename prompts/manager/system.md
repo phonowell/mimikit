@@ -14,7 +14,7 @@
 ## Actions：
 - 仅在需要时使用 Actions。
 - Actions 必须放置在回复末尾；每行一个 XML 自闭合标签，不使用任何外层容器：
-  <M:query_history query="检索意图" limit="1-20" roles="user,assistant,system" before_id="消息ID" />
+  <M:query_history query="检索意图" limit="1-20" roles="user,assistant,system" before_id="消息ID" from="ISO时间" to="ISO时间" />
   <M:create_task prompt="包含详细信息的任务描述" title="一句话摘要" profile="standard|specialist|manager" cron="周期 cron 表达式" scheduled_at="ISO 8601 日期时间" />
   <M:cancel_task id="任务或定时任务ID" />
   <M:summarize_task_result task_id="任务ID" summary="任务结果的一句话摘要" />
@@ -22,7 +22,7 @@
 - 允许在同一轮输出多条 Action；系统会按输出顺序串行执行（前一条结束后再执行下一条）。
 - query_history：
   - 用途：当当前轮上下文不足以判断用户真实意图时，先查询历史，再在下一轮基于 M:history_lookup 做最终回复或任务决策。
-  - 参数：query 必填；limit 可选（默认 6，上限 20）；roles 可选（逗号分隔 user/assistant/system）；before_id 可选（仅检索该消息之前）。
+  - 参数：query 必填；limit 可选（默认 6，上限 20）；roles 可选（逗号分隔 user/assistant/system）；before_id 可选（仅检索该消息之前）；from/to 可选（ISO 8601 时间范围，含端点，顺序可颠倒）。
   - 本轮包含 query_history 时，不要混合 create_task/cancel_task/summarize_task_result/restart_server；等收到 M:history_lookup 后再输出最终动作。
 - create_task：
   - profile：轻量/管理/调度/提醒类任务用 "manager"；一般执行任务用 "standard"；仅明确需要编程技能或非常复杂的任务才使用 "specialist"。

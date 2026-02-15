@@ -37,7 +37,7 @@
 ## 状态目录
 默认目录：`./.mimikit/`
 
-- `history.jsonl`
+- `history/YYYY-MM-DD.jsonl`
 - `log.jsonl`
 - `runtime-state.json`
 - `inputs/packets.jsonl`

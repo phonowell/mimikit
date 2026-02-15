@@ -148,24 +148,20 @@ test('exec action runs command in workdir', async () => {
   expect(result.output).toContain('beta')
 })
 
-test('action args reject unknown keys', async () => {
+test('action args reject unknown and missing required fields', async () => {
   const workDir = await createTmpDir()
-  const result = await invokeAction(
+  const unknownKey = await invokeAction(
     { workDir },
     'write_file',
     { path: 'notes.txt', content: 'hello', extra: true },
   )
-  expect(result.ok).toBe(false)
-  expect(result.error).toBe('action_arg_invalid:extra')
-})
-
-test('action args reject missing required fields', async () => {
-  const workDir = await createTmpDir()
-  const result = await invokeAction(
+  expect(unknownKey.ok).toBe(false)
+  expect(unknownKey.error).toBe('action_arg_invalid:extra')
+  const missingRequired = await invokeAction(
     { workDir },
     'edit_file',
     { path: 'a.txt', old_text: 'a', new_text: 'b' },
   )
-  expect(result.ok).toBe(false)
-  expect(result.error).toBe('action_arg_invalid:replace_all')
+  expect(missingRequired.ok).toBe(false)
+  expect(missingRequired.error).toBe('action_arg_invalid:replace_all')
 })
