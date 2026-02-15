@@ -38,7 +38,6 @@
 默认目录：`./.mimikit/`
 
 - `history.jsonl`
-- `history-compacted.jsonl`
 - `log.jsonl`
 - `runtime-state.json`
 - `inputs/packets.jsonl`

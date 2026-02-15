@@ -6,9 +6,6 @@
 // - CDATA 中为 tasks 列表，按 change_at 倒序
 {results}
 
-// 早期对话摘要（被截断的历史）；供参考，不主动提及
-{compacted_context}
-
 // 历史对话；供参考，不主动提及
 // - CDATA 中为 messages 列表，按 time 倒序
 {history}
@@ -25,6 +22,3 @@
 
 // 用户画像；供参考，不主动提及
 {user_profile}
-
-// 上一轮重心状态；据此保持意图连贯
-{focus}

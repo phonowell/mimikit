@@ -14,7 +14,6 @@ export type StatePaths = {
   wakesDir: string
   tasksDir: string
   history: string
-  historyCompacted: string
   log: string
   inputsPackets: string
   resultsPackets: string
@@ -39,7 +38,6 @@ export const buildPaths = (stateDir: string): StatePaths => {
     wakesDir,
     tasksDir,
     history: join(root, 'history.jsonl'),
-    historyCompacted: join(root, 'history-compacted.jsonl'),
     log: join(root, 'log.jsonl'),
     inputsPackets: join(inputsDir, 'packets.jsonl'),
     resultsPackets: join(resultsDir, 'packets.jsonl'),

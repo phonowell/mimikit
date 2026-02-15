@@ -17,7 +17,6 @@ export const hydrateRuntimeState = async (
   if (snapshot.plannerSessionId)
     runtime.plannerSessionId = snapshot.plannerSessionId
   else delete runtime.plannerSessionId
-  if (snapshot.focusState) runtime.focusState = snapshot.focusState
   if (snapshot.queues) {
     runtime.queues = {
       inputsCursor: snapshot.queues.inputsCursor,
@@ -46,6 +45,5 @@ export const persistRuntimeState = async (
     ...(runtime.plannerSessionId
       ? { plannerSessionId: runtime.plannerSessionId }
       : {}),
-    ...(runtime.focusState ? { focusState: runtime.focusState } : {}),
   })
 }

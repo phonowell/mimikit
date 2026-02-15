@@ -22,12 +22,6 @@ export type UserMeta = {
   clientNowIso?: string
 }
 
-export type FocusState = {
-  intent?: string
-  activeTaskIds?: string[]
-  topic?: string
-}
-
 export type UiAgentStream = {
   id: string
   role: 'assistant'
@@ -52,7 +46,6 @@ export type RuntimeState = {
   tasks: Task[]
   cronJobs: CronJob[]
   plannerSessionId?: string
-  focusState?: FocusState
   uiStream: UiAgentStream | null
   runningControllers: Map<string, AbortController>
   createTaskDebounce: Map<string, number>

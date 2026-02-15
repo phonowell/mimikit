@@ -12,7 +12,6 @@ import {
   toError,
 } from './runner-budget.js'
 
-import type { FocusState } from '../orchestrator/core/runtime-state.js'
 import type {
   CronJob,
   HistoryMessage,
@@ -32,8 +31,6 @@ export const runManager = async (params: {
   cronJobs?: CronJob[]
   history: HistoryMessage[]
   env?: ManagerEnv
-  focusState?: FocusState
-  compactedContext?: string
   model?: string
   sessionId?: string
   maxPromptTokens?: number
@@ -55,10 +52,6 @@ export const runManager = async (params: {
     ...(params.cronJobs ? { cronJobs: params.cronJobs } : {}),
     history: params.history,
     ...(params.env ? { env: params.env } : {}),
-    ...(params.focusState ? { focusState: params.focusState } : {}),
-    ...(params.compactedContext
-      ? { compactedContext: params.compactedContext }
-      : {}),
   })
   const model = params.model?.trim()
   const budgetedPrompt = enforcePromptBudget(prompt, params.maxPromptTokens)

@@ -2,8 +2,6 @@ import { parseActions } from '../actions/protocol/parse.js'
 import { notifyUiSignal } from '../orchestrator/core/ui-signal.js'
 import { nowIso } from '../shared/utils.js'
 
-import { stripFocusBlock } from './focus-extract.js'
-
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { TokenUsage } from '../types/index.js'
 
@@ -138,6 +136,5 @@ export const stopUiStream = (runtime: RuntimeState, streamId: string): void => {
 
 export const toVisibleAssistantText = (rawOutput: string): string => {
   if (!rawOutput) return ''
-  const stripped = stripFocusBlock(rawOutput)
-  return parseActions(stripped).text
+  return parseActions(rawOutput).text
 }

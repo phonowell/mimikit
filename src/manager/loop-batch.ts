@@ -7,7 +7,6 @@ import { nowIso } from '../shared/utils.js'
 import { appendHistory } from '../storage/jsonl.js'
 
 import { applyTaskActions, collectTaskResultSummaries } from './action-apply.js'
-import { extractFocusState, stripFocusBlock } from './focus-extract.js'
 import {
   appendConsumedInputsToHistory,
   appendConsumedResultsToHistory,
@@ -64,8 +63,7 @@ export const processManagerBatch = async (params: {
       inputIds: inputs.map((item) => item.id),
       resultIds: results.map((item) => item.taskId),
     })
-    const { recentHistory, recentTasks, compactedContext } =
-      await buildManagerContext(runtime)
+    const { recentHistory, recentTasks } = await buildManagerContext(runtime)
     const managerResult = await runManager({
       stateDir: runtime.config.workDir,
       workDir: runtime.config.workDir,
@@ -77,8 +75,6 @@ export const processManagerBatch = async (params: {
       ...(runtime.lastUserMeta
         ? { env: { lastUser: runtime.lastUserMeta } }
         : {}),
-      ...(runtime.focusState ? { focusState: runtime.focusState } : {}),
-      ...(compactedContext ? { compactedContext } : {}),
       model: runtime.config.manager.model,
       ...(runtime.plannerSessionId
         ? { sessionId: runtime.plannerSessionId }
@@ -111,10 +107,7 @@ export const processManagerBatch = async (params: {
       runtime.plannerSessionId = managerResult.sessionId
     const resolvedUsage = streamUsage ?? managerResult.usage
 
-    const focusState = extractFocusState(managerResult.output)
-    if (focusState) runtime.focusState = focusState
-    const strippedOutput = stripFocusBlock(managerResult.output)
-    const parsed = parseActions(strippedOutput)
+    const parsed = parseActions(managerResult.output)
     const summaries = collectTaskResultSummaries(parsed.actions)
     const hasManualCanceledResult = results.some(
       (result) =>
