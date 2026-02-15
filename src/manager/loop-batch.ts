@@ -1,4 +1,3 @@
-import { parseActions } from '../actions/protocol/parse.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort, logSafeError } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
@@ -12,21 +11,13 @@ import {
   appendConsumedResultsToHistory,
   appendManagerFallbackReply,
 } from './history.js'
-import { buildManagerContext } from './loop-context.js'
+import { runManagerBatch } from './loop-batch-run-manager.js'
 import {
   buildFallbackReply,
   drainBatchOnFailure,
   finalizeBatchProgress,
 } from './loop-helpers.js'
-import {
-  resetUiStream,
-  setUiStreamText,
-  setUiStreamUsage,
-  startUiStream,
-  stopUiStream,
-  toVisibleAssistantText,
-} from './loop-ui-stream.js'
-import { runManager } from './runner.js'
+import { startUiStream, stopUiStream } from './loop-ui-stream.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { TaskResult, TokenUsage, UserInput } from '../types/index.js'
@@ -52,62 +43,16 @@ export const processManagerBatch = async (params: {
   notifyUiSignal(runtime)
   const startedAt = Date.now()
   let assistantAppended = false
-  let streamRawOutput = ''
-  let streamUsage: TokenUsage | undefined
   startUiStream(runtime, streamId)
   try {
-    await appendLog(runtime.paths.log, {
-      event: 'manager_start',
-      inputCount: inputs.length,
-      resultCount: results.length,
-      inputIds: inputs.map((item) => item.id),
-      resultIds: results.map((item) => item.taskId),
-    })
-    const { recentHistory, recentTasks } = await buildManagerContext(runtime)
-    const managerResult = await runManager({
-      stateDir: runtime.config.workDir,
-      workDir: runtime.config.workDir,
+    const managerRun = await runManagerBatch({
+      runtime,
       inputs,
       results,
-      tasks: recentTasks,
-      cronJobs: runtime.cronJobs,
-      history: recentHistory,
-      ...(runtime.lastUserMeta
-        ? { env: { lastUser: runtime.lastUserMeta } }
-        : {}),
-      model: runtime.config.manager.model,
-      ...(runtime.plannerSessionId
-        ? { sessionId: runtime.plannerSessionId }
-        : {}),
-      maxPromptTokens: runtime.config.manager.promptMaxTokens,
-      onTextDelta: (delta) => {
-        if (!delta) return
-        streamRawOutput += delta
-        setUiStreamText(
-          runtime,
-          streamId,
-          toVisibleAssistantText(streamRawOutput),
-        )
-      },
-      onStreamReset: () => {
-        streamRawOutput = ''
-        resetUiStream(runtime, streamId)
-      },
-      onUsage: (usage) => {
-        streamUsage = setUiStreamUsage(runtime, streamId, usage) ?? streamUsage
-      },
+      streamId,
     })
-    streamRawOutput = managerResult.output
-    setUiStreamText(runtime, streamId, toVisibleAssistantText(streamRawOutput))
-    if (managerResult.usage) {
-      streamUsage =
-        setUiStreamUsage(runtime, streamId, managerResult.usage) ?? streamUsage
-    }
-    if (managerResult.sessionId)
-      runtime.plannerSessionId = managerResult.sessionId
-    const resolvedUsage = streamUsage ?? managerResult.usage
-
-    const parsed = parseActions(managerResult.output)
+    const resolvedUsage: TokenUsage | undefined = managerRun.usage
+    const { parsed } = managerRun
     const summaries = collectTaskResultSummaries(parsed.actions)
     const hasManualCanceledResult = results.some(
       (result) =>
@@ -144,9 +89,7 @@ export const processManagerBatch = async (params: {
       text: responseText,
       createdAt: nowIso(),
       ...(resolvedUsage ? { usage: resolvedUsage } : {}),
-      ...(managerResult.elapsedMs >= 0
-        ? { elapsedMs: managerResult.elapsedMs }
-        : {}),
+      ...(managerRun.elapsedMs >= 0 ? { elapsedMs: managerRun.elapsedMs } : {}),
     })
     assistantAppended = true
 

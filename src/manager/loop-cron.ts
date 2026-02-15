@@ -2,6 +2,7 @@ import { Cron } from 'croner'
 
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
+import { notifyManagerLoop } from '../orchestrator/core/manager-signal.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import { enqueueTask } from '../orchestrator/core/task-state.js'
 import { notifyWorkerLoop } from '../orchestrator/core/worker-signal.js'
@@ -23,6 +24,10 @@ const cronHasNextRun = (expression: string): boolean => {
 }
 
 const asSecondStamp = (iso: string): string => iso.slice(0, 19)
+const CRON_TICK_MS = 1_000
+
+const sleep = (ms: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, ms))
 
 export const checkCronJobs = async (runtime: RuntimeState): Promise<number> => {
   if (runtime.cronJobs.length === 0) return 0
@@ -133,4 +138,21 @@ export const checkCronJobs = async (runtime: RuntimeState): Promise<number> => {
     )
   }
   return triggeredCount
+}
+
+export const cronWakeLoop = async (runtime: RuntimeState): Promise<void> => {
+  while (!runtime.stopped) {
+    try {
+      const triggered = await checkCronJobs(runtime)
+      if (triggered > 0) notifyManagerLoop(runtime)
+    } catch (error) {
+      await bestEffort('appendLog: cron_wake_error', () =>
+        appendLog(runtime.paths.log, {
+          event: 'cron_wake_error',
+          error: error instanceof Error ? error.message : String(error),
+        }),
+      )
+    }
+    await sleep(CRON_TICK_MS)
+  }
 }
