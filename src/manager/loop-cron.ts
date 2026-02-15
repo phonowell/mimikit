@@ -3,6 +3,7 @@ import { Cron } from 'croner'
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { notifyManagerLoop } from '../orchestrator/core/manager-signal.js'
+import { shouldWakeManagerForCronTrigger } from '../orchestrator/core/manager-wake-policy.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import { enqueueTask } from '../orchestrator/core/task-state.js'
 import { notifyWorkerLoop } from '../orchestrator/core/worker-signal.js'
@@ -29,8 +30,16 @@ const CRON_TICK_MS = 1_000
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms))
 
-export const checkCronJobs = async (runtime: RuntimeState): Promise<number> => {
-  if (runtime.cronJobs.length === 0) return 0
+type CronCheckResult = {
+  triggeredCount: number
+  shouldWakeManager: boolean
+}
+
+export const checkCronJobs = async (
+  runtime: RuntimeState,
+): Promise<CronCheckResult> => {
+  if (runtime.cronJobs.length === 0)
+    return { triggeredCount: 0, shouldWakeManager: false }
 
   const now = new Date()
   const nowAtIso = now.toISOString()
@@ -38,6 +47,7 @@ export const checkCronJobs = async (runtime: RuntimeState): Promise<number> => {
 
   let stateChanged = false
   let triggeredCount = 0
+  let managerTriggeredCount = 0
   for (const cronJob of runtime.cronJobs) {
     if (!cronJob.enabled) continue
 
@@ -60,6 +70,7 @@ export const checkCronJobs = async (runtime: RuntimeState): Promise<number> => {
       )
       if (!created) continue
       triggeredCount += 1
+      if (cronJob.profile === 'manager') managerTriggeredCount += 1
 
       task.cron = cronJob.scheduledAt
       await appendTaskSystemMessage(runtime.paths.history, 'created', task, {
@@ -106,6 +117,7 @@ export const checkCronJobs = async (runtime: RuntimeState): Promise<number> => {
     )
     if (!created) continue
     triggeredCount += 1
+    if (cronJob.profile === 'manager') managerTriggeredCount += 1
 
     task.cron = cronJob.cron
     await appendTaskSystemMessage(runtime.paths.history, 'created', task, {
@@ -121,7 +133,12 @@ export const checkCronJobs = async (runtime: RuntimeState): Promise<number> => {
     }
   }
 
-  if (!stateChanged) return triggeredCount
+  if (!stateChanged) {
+    return {
+      triggeredCount,
+      shouldWakeManager: shouldWakeManagerForCronTrigger(managerTriggeredCount),
+    }
+  }
   await bestEffort('persistRuntimeState: cron_trigger', () =>
     persistRuntimeState(runtime),
   )
@@ -137,14 +154,17 @@ export const checkCronJobs = async (runtime: RuntimeState): Promise<number> => {
       }),
     )
   }
-  return triggeredCount
+  return {
+    triggeredCount,
+    shouldWakeManager: shouldWakeManagerForCronTrigger(managerTriggeredCount),
+  }
 }
 
 export const cronWakeLoop = async (runtime: RuntimeState): Promise<void> => {
   while (!runtime.stopped) {
     try {
-      const triggered = await checkCronJobs(runtime)
-      if (triggered > 0) notifyManagerLoop(runtime)
+      const checked = await checkCronJobs(runtime)
+      if (checked.shouldWakeManager) notifyManagerLoop(runtime)
     } catch (error) {
       await bestEffort('appendLog: cron_wake_error', () =>
         appendLog(runtime.paths.log, {

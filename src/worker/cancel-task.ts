@@ -1,6 +1,7 @@
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { notifyManagerLoop } from '../orchestrator/core/manager-signal.js'
+import { shouldWakeManagerForTaskTerminalEvent } from '../orchestrator/core/manager-wake-policy.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import { markTaskCanceled } from '../orchestrator/core/task-state.js'
 import { notifyWorkerLoop } from '../orchestrator/core/worker-signal.js'
@@ -70,7 +71,8 @@ const pushCanceledResult = async (
     paths: runtime.paths,
     payload: result,
   })
-  notifyManagerLoop(runtime)
+  if (shouldWakeManagerForTaskTerminalEvent(task.profile))
+    notifyManagerLoop(runtime)
   await bestEffort('appendLog: task_canceled', () =>
     appendLog(runtime.paths.log, {
       event: 'task_canceled',

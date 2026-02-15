@@ -15,10 +15,10 @@
 - `worker`
   - 执行 manager 下发任务。
   - 回写 `results` 与任务终态。
-  - 发布 `task_done` 唤醒事件。
+  - 发布 `task_done` 事件；仅 `manager` 任务终态即时唤醒 manager。
 - `cron-wake-loop`
   - 持续检查 cron。
-  - 触发本地任务创建并发布 `cron_due` 唤醒事件。
+  - 触发本地任务创建并发布 `cron_due` 事件；仅存在 `manager` 任务触发时即时唤醒 manager。
 - `evolver`
   - 默认关闭；仅在空闲窗口执行画像/人格演进。
 
@@ -48,7 +48,7 @@
 2. manager 被唤醒，消费输入/结果并调用 `runManager`（OpenCode）。
 3. manager 解析动作并更新任务状态，写 assistant 回复。
 4. worker 执行任务后写入 `results/packets.jsonl`，并发布 `task_done`。
-5. manager 再次被唤醒，消费结果并继续编排。
+5. 非 `manager` 任务默认不即时唤醒；manager 在后续触发（如用户输入）时拉取并消费结果。
 
 唤醒事件统一为三类：
 - `user_input`
@@ -62,6 +62,7 @@
 - 无可处理 batch 时进入 `waitForManagerLoopSignal(..., Infinity)`。
 - 保持单飞：同一时刻仅一个活跃 manager 执行。
 - 唤醒事件先持久化，处理成功后推进 cursor，保证可恢复。
+- 即时唤醒分级：`user_input` 始终唤醒；`task_done/cron_due` 仅在 `manager` 任务相关时即时唤醒。
 
 ## Session 恢复机制
 实现：`src/manager/runner.ts`、`src/orchestrator/core/runtime-persistence.ts`
@@ -76,7 +77,7 @@
 - `standard` -> `opencode`
 - `specialist` -> `codex-sdk`
 - 统一收敛终态：`succeeded/failed/canceled`
-- 完成后发布 `task_done` 唤醒 manager
+- 完成后发布 `task_done`；`standard/specialist` 终态默认不即时唤醒 manager
 
 ## 状态与队列落盘
 主要路径：

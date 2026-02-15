@@ -18,10 +18,10 @@
 1. `enqueueWorkerTask` 入 `p-queue`。
 2. `runTaskWithRetry` 执行并收敛错误。
 3. `finalizeResult` 更新任务状态并归档。
-4. 结果发布到 `results`，由 manager 消费。
+4. 结果发布到 `results`，由 manager 在后续轮次消费（非 `manager` 任务默认不即时唤醒）。
 
 ## 取消与恢复
-- `pending` 取消：立即标记并发布 `canceled`。
+- `pending` 取消：立即标记并发布 `canceled`（非 `manager` 任务默认不即时唤醒）。
 - `running` 取消：触发 `AbortController`，由执行链路收敛到 `canceled`。
 - 启动恢复：`hydrateRuntimeState` 恢复全部任务状态；持久化时 `running` 降级为 `pending`，重启后重入队列，其余状态原样恢复用于历史展示。
 

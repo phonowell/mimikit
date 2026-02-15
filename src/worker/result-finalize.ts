@@ -1,6 +1,7 @@
 import { appendLog } from '../log/append.js'
 import { bestEffort, safeOrUndefined } from '../log/safe.js'
 import { notifyManagerLoop } from '../orchestrator/core/manager-signal.js'
+import { shouldWakeManagerForTaskTerminalEvent } from '../orchestrator/core/manager-wake-policy.js'
 import { nowIso } from '../shared/utils.js'
 import { appendTaskResultArchive } from '../storage/task-results.js'
 import { publishWakeEvent, publishWorkerResult } from '../streams/queues.js'
@@ -79,7 +80,8 @@ export const finalizeResult = async (
       },
     }),
   )
-  notifyManagerLoop(runtime)
+  if (shouldWakeManagerForTaskTerminalEvent(task.profile))
+    notifyManagerLoop(runtime)
   await bestEffort('appendLog: worker_end', () =>
     appendLog(runtime.paths.log, {
       event: 'worker_end',
