@@ -51,7 +51,6 @@ const parseTagMatches = (matches: RegExpMatchArray[]): Parsed[] =>
       })
     })
     .filter((item): item is Parsed => item !== undefined)
-    .filter((item) => item.name !== 'actions')
 
 export const parseActions = (
   output: string,

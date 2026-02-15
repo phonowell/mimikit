@@ -1,9 +1,9 @@
 import { parseActions } from '../actions/protocol/parse.js'
 import { appendLog } from '../log/append.js'
-import { selectRecentHistory } from '../orchestrator/read-model/history-select.js'
 import { selectRecentTasks } from '../orchestrator/read-model/task-select.js'
 import { readHistory } from '../storage/jsonl.js'
 
+import { pickQueryHistoryRequest, queryHistory } from './history-query.js'
 import {
   resetUiStream,
   setUiStreamText,
@@ -13,22 +13,20 @@ import {
 import { runManager } from './runner.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
-import type { TaskResult, TokenUsage, UserInput } from '../types/index.js'
+import type {
+  HistoryLookupMessage,
+  TaskResult,
+  TokenUsage,
+  UserInput,
+} from '../types/index.js'
 
-const buildManagerContext = async (runtime: RuntimeState) => {
-  const history = await readHistory(runtime.paths.history)
-  const { selected: recentHistory } = selectRecentHistory(history, {
-    minCount: runtime.config.manager.historyMinCount,
-    maxCount: runtime.config.manager.historyMaxCount,
-    maxBytes: runtime.config.manager.historyMaxBytes,
-  })
+const buildManagerContext = (runtime: RuntimeState) => {
   const recentTasks = selectRecentTasks(runtime.tasks, {
     minCount: runtime.config.manager.tasksMinCount,
     maxCount: runtime.config.manager.tasksMaxCount,
     maxBytes: runtime.config.manager.tasksMaxBytes,
   })
-
-  return { recentHistory, recentTasks }
+  return { recentTasks }
 }
 
 export const runManagerBatch = async (params: {
@@ -51,60 +49,88 @@ export const runManagerBatch = async (params: {
     resultIds: results.map((item) => item.taskId),
   })
 
-  const { recentHistory, recentTasks } = await buildManagerContext(runtime)
+  const { recentTasks } = buildManagerContext(runtime)
 
   let streamRawOutput = ''
   let streamUsage: TokenUsage | undefined
-  const managerResult = await runManager({
-    stateDir: runtime.config.workDir,
-    workDir: runtime.config.workDir,
-    inputs,
-    results,
-    tasks: recentTasks,
-    cronJobs: runtime.cronJobs,
-    history: recentHistory,
-    ...(runtime.lastUserMeta
-      ? { env: { lastUser: runtime.lastUserMeta } }
-      : {}),
-    model: runtime.config.manager.model,
-    ...(runtime.plannerSessionId
-      ? { sessionId: runtime.plannerSessionId }
-      : {}),
-    maxPromptTokens: runtime.config.manager.promptMaxTokens,
-    onTextDelta: (delta) => {
-      if (!delta) return
-      streamRawOutput += delta
-      setUiStreamText(
-        runtime,
-        streamId,
-        toVisibleAssistantText(streamRawOutput),
-      )
-    },
-    onStreamReset: () => {
-      streamRawOutput = ''
-      resetUiStream(runtime, streamId)
-    },
-    onUsage: (usage) => {
-      streamUsage = setUiStreamUsage(runtime, streamId, usage) ?? streamUsage
-    },
+  const runOnce = async (
+    historyLookup?: HistoryLookupMessage[],
+  ): Promise<Awaited<ReturnType<typeof runManager>>> => {
+    const managerResult = await runManager({
+      stateDir: runtime.config.workDir,
+      workDir: runtime.config.workDir,
+      inputs,
+      results,
+      tasks: recentTasks,
+      cronJobs: runtime.cronJobs,
+      ...(historyLookup ? { historyLookup } : {}),
+      ...(runtime.lastUserMeta
+        ? { env: { lastUser: runtime.lastUserMeta } }
+        : {}),
+      model: runtime.config.manager.model,
+      ...(runtime.plannerSessionId
+        ? { sessionId: runtime.plannerSessionId }
+        : {}),
+      maxPromptTokens: runtime.config.manager.promptMaxTokens,
+      onTextDelta: (delta) => {
+        if (!delta) return
+        streamRawOutput += delta
+        setUiStreamText(
+          runtime,
+          streamId,
+          toVisibleAssistantText(streamRawOutput),
+        )
+      },
+      onStreamReset: () => {
+        streamRawOutput = ''
+        resetUiStream(runtime, streamId)
+      },
+      onUsage: (usage) => {
+        streamUsage = setUiStreamUsage(runtime, streamId, usage) ?? streamUsage
+      },
+    })
+    if (managerResult.sessionId)
+      runtime.plannerSessionId = managerResult.sessionId
+    if (managerResult.usage) {
+      streamUsage =
+        setUiStreamUsage(runtime, streamId, managerResult.usage) ?? streamUsage
+    }
+    return managerResult
+  }
+
+  const first = await runOnce()
+  const firstParsed = parseActions(first.output)
+  const queryRequest = pickQueryHistoryRequest(firstParsed.actions)
+  if (!queryRequest) {
+    setUiStreamText(runtime, streamId, toVisibleAssistantText(first.output))
+    const usage = streamUsage ?? first.usage
+    return {
+      parsed: firstParsed,
+      elapsedMs: first.elapsedMs,
+      ...(usage ? { usage } : {}),
+    }
+  }
+
+  const history = await readHistory(runtime.paths.history)
+  const lookup = queryHistory(history, queryRequest)
+  await appendLog(runtime.paths.log, {
+    event: 'manager_query_history',
+    queryChars: queryRequest.query.length,
+    limit: queryRequest.limit,
+    roleCount: queryRequest.roles.length,
+    resultCount: lookup.length,
+    ...(queryRequest.beforeId ? { beforeId: queryRequest.beforeId } : {}),
   })
 
-  setUiStreamText(
-    runtime,
-    streamId,
-    toVisibleAssistantText(managerResult.output),
-  )
-  if (managerResult.usage) {
-    streamUsage =
-      setUiStreamUsage(runtime, streamId, managerResult.usage) ?? streamUsage
-  }
-  if (managerResult.sessionId)
-    runtime.plannerSessionId = managerResult.sessionId
-
-  const usage = streamUsage ?? managerResult.usage
+  streamRawOutput = ''
+  resetUiStream(runtime, streamId)
+  const second = await runOnce(lookup)
+  const secondParsed = parseActions(second.output)
+  setUiStreamText(runtime, streamId, toVisibleAssistantText(second.output))
+  const usage = streamUsage ?? second.usage ?? first.usage
   return {
-    parsed: parseActions(managerResult.output),
-    elapsedMs: managerResult.elapsedMs,
+    parsed: secondParsed,
+    elapsedMs: first.elapsedMs + second.elapsedMs,
     ...(usage ? { usage } : {}),
   }
 }

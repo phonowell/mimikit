@@ -36,9 +36,6 @@ const defaultConfigSchema = z
         tasksMaxCount: z.number().int().positive(),
         tasksMinCount: z.number().int().positive(),
         tasksMaxBytes: z.number().int().positive(),
-        historyMinCount: z.number().int().positive(),
-        historyMaxCount: z.number().int().positive(),
-        historyMaxBytes: z.number().int().positive(),
         model: z.string().min(1),
         task: taskDefaultsSchema,
       })
@@ -79,14 +76,6 @@ const parseDefaultConfigYaml = (source: string): AppDefaults => {
     ) {
       throw new Error(
         '[config] invalid yaml defaults: manager.tasksMinCount must be <= manager.tasksMaxCount',
-      )
-    }
-    if (
-      validated.data.manager.historyMinCount >
-      validated.data.manager.historyMaxCount
-    ) {
-      throw new Error(
-        '[config] invalid yaml defaults: manager.historyMinCount must be <= manager.historyMaxCount',
       )
     }
     return validated.data

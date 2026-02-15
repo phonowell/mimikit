@@ -14,7 +14,7 @@ import {
 
 import type {
   CronJob,
-  HistoryMessage,
+  HistoryLookupMessage,
   ManagerEnv,
   Task,
   TaskResult,
@@ -29,7 +29,7 @@ export const runManager = async (params: {
   results: TaskResult[]
   tasks: Task[]
   cronJobs?: CronJob[]
-  history: HistoryMessage[]
+  historyLookup?: HistoryLookupMessage[]
   env?: ManagerEnv
   model?: string
   sessionId?: string
@@ -50,7 +50,7 @@ export const runManager = async (params: {
     results: params.results,
     tasks: params.tasks,
     ...(params.cronJobs ? { cronJobs: params.cronJobs } : {}),
-    history: params.history,
+    ...(params.historyLookup ? { historyLookup: params.historyLookup } : {}),
     ...(params.env ? { env: params.env } : {}),
   })
   const model = params.model?.trim()

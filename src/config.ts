@@ -24,12 +24,6 @@ export type AppConfig = {
     tasksMinCount: number
     /** Task list retention byte limit */
     tasksMaxBytes: number
-    /** History retention lower bound */
-    historyMinCount: number
-    /** History retention upper bound */
-    historyMaxCount: number
-    /** History retention byte limit */
-    historyMaxBytes: number
     /** Default manager model */
     model: string
     /** Defaults for manager-profile tasks */

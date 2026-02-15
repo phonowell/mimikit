@@ -18,6 +18,14 @@ export type HistoryMessage = {
   quote?: Id
 }
 
+export type HistoryLookupMessage = {
+  id: Id
+  role: Role
+  time: ISODate
+  content: string
+  score: number
+}
+
 export type UserInput = {
   id: Id
   text: string

@@ -70,7 +70,7 @@ export const buildRawBlock = (
 
 export {
   formatDecesionsYaml,
-  formatHistory,
+  formatHistoryLookup,
   formatInputs,
 } from './format-messages.js'
 export {

@@ -4,9 +4,6 @@ manager:
   tasksMaxCount: 20
   tasksMinCount: 5
   tasksMaxBytes: 20480
-  historyMinCount: 20
-  historyMaxCount: 100
-  historyMaxBytes: 20480
   model: opencode/big-pickle
   task:
     timeoutMs: 60000

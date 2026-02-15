@@ -1,6 +1,6 @@
 import { stringify as stringifyYaml } from 'yaml'
 
-import type { HistoryMessage, Task } from '../types/index.js'
+import type { Task } from '../types/index.js'
 
 const TAG_PREFIX = 'M:'
 
@@ -20,19 +20,6 @@ export const parseIsoToMs = (value: string): number => {
 
 export const resolveTaskChangedAt = (task: Task): string =>
   task.completedAt ?? task.startedAt ?? task.createdAt
-
-export const mapHistoryRole = (role: HistoryMessage['role']): string => {
-  switch (role) {
-    case 'user':
-      return 'user'
-    case 'assistant':
-      return 'agent'
-    case 'system':
-      return 'system'
-    default:
-      return 'unknown'
-  }
-}
 
 export const normalizeYamlUsage = (
   usage?: Task['usage'],

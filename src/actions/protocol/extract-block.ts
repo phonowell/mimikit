@@ -1,13 +1,6 @@
 const M_TAG =
   /<M:(\w+)((?:\s+\w+\s*=\s*"[^"]*")*)\s*(?:\/>|>(?:([\s\S]*?)<\/M:\1>)?)/g
 
-const ACTIONS_TAG = 'M:actions'
-
-const ACTIONS_BLOCK_RE = new RegExp(
-  `<${ACTIONS_TAG}\\s*>([\\s\\S]*?)<\\/${ACTIONS_TAG}>`,
-  'g',
-)
-
 type Range = {
   start: number
   end: number
@@ -72,31 +65,9 @@ const isIndexInRanges = (index: number, ranges: Range[]): boolean => {
   return false
 }
 
-const findActionsBlock = (masked: string): Zone | undefined => {
-  const matches = [...masked.matchAll(ACTIONS_BLOCK_RE)]
-  if (matches.length === 0) return undefined
-  const match = matches[matches.length - 1]
-  if (!match) return undefined
-  const full = match[0]
-  if (!full) return undefined
-  const start = match.index
-  const openEnd = full.indexOf('>')
-  const closeTag = `</${ACTIONS_TAG}>`
-  const closeStart = full.lastIndexOf(closeTag)
-  if (openEnd < 0 || closeStart < 0) return undefined
-  return {
-    parseStart: start + openEnd + 1,
-    parseEnd: start + closeStart,
-    removeStart: start,
-    removeEnd: start + full.length,
-  }
-}
-
 const findZone = (output: string): Zone | undefined => {
   const codeBlocks = findCodeBlockRanges(output)
   const masked = maskRanges(output, codeBlocks, 'x')
-  const actionsBlock = findActionsBlock(masked)
-  if (actionsBlock) return actionsBlock
 
   const matches = [...masked.matchAll(createTagRegExp())]
   if (matches.length === 0) return undefined

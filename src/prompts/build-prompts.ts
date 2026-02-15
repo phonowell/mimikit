@@ -7,7 +7,7 @@ import {
   buildCdataBlock,
   buildRawBlock,
   formatEnvironment,
-  formatHistory,
+  formatHistoryLookup,
   formatInputs,
   formatResultsYaml,
   formatTasksYaml,
@@ -28,7 +28,7 @@ import {
 
 import type {
   CronJob,
-  HistoryMessage,
+  HistoryLookupMessage,
   ManagerEnv,
   Task,
   TaskResult,
@@ -61,7 +61,7 @@ export const buildManagerPrompt = async (params: {
   results: TaskResult[]
   tasks: Task[]
   cronJobs?: CronJob[]
-  history: HistoryMessage[]
+  historyLookup?: HistoryLookupMessage[]
   env?: ManagerEnv
 }): Promise<string> => {
   const pendingResults = mergeTaskResults(params.results, [])
@@ -120,8 +120,11 @@ export const buildManagerPrompt = async (params: {
       ),
     ],
     [
-      'history',
-      buildCdataBlock('history', formatHistory(params.history), true),
+      'history_lookup',
+      buildCdataBlock(
+        'history_lookup',
+        formatHistoryLookup(params.historyLookup ?? []),
+      ),
     ],
     ['persona', buildRawBlock('persona', persona.trim(), true)],
     ['user_profile', buildRawBlock('user_profile', userProfile.trim(), true)],

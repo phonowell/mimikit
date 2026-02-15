@@ -1,11 +1,10 @@
 import {
   escapeCdata,
-  mapHistoryRole,
   parseIsoToMs,
   stringifyPromptYaml,
 } from './format-base.js'
 
-import type { HistoryMessage, UserInput } from '../types/index.js'
+import type { HistoryLookupMessage, UserInput } from '../types/index.js'
 
 const sortByTimeAndIdDesc = <T extends { time: string; id: string }>(
   entries: T[],
@@ -35,34 +34,6 @@ const formatMessagesYaml = (
   )
 }
 
-const NEAR_WINDOW_COUNT = 16
-const NEAR_ZONE_MAX_CHARS = 480
-const FAR_ZONE_MAX_CHARS = 96
-
-/** Both zones are bounded to keep prompt size predictable. */
-export const formatHistory = (history: HistoryMessage[]): string => {
-  if (history.length === 0) return ''
-  const nearStart = Math.max(0, history.length - NEAR_WINDOW_COUNT)
-  const entries = history
-    .map((item, index) => {
-      let content = item.text.trim()
-      if (!content) return null
-      if (index >= nearStart && content.length > NEAR_ZONE_MAX_CHARS)
-        content = `${content.slice(0, NEAR_ZONE_MAX_CHARS)}...`
-      if (index < nearStart && content.length > FAR_ZONE_MAX_CHARS)
-        content = `${content.slice(0, FAR_ZONE_MAX_CHARS)}...`
-      return {
-        id: item.id,
-        role: mapHistoryRole(item.role),
-        time: item.createdAt,
-        ...(item.quote ? { quote: item.quote } : {}),
-        content,
-      }
-    })
-    .filter((item): item is NonNullable<typeof item> => Boolean(item))
-  return formatMessagesYaml(entries)
-}
-
 export const formatInputs = (inputs: UserInput[]): string => {
   if (inputs.length === 0) return ''
   const entries = inputs
@@ -79,6 +50,35 @@ export const formatInputs = (inputs: UserInput[]): string => {
     })
     .filter((item): item is NonNullable<typeof item> => Boolean(item))
   return formatMessagesYaml(entries)
+}
+
+const mapLookupRole = (role: HistoryLookupMessage['role']): string => {
+  if (role === 'assistant') return 'agent'
+  return role
+}
+
+export const formatHistoryLookup = (lookup: HistoryLookupMessage[]): string => {
+  if (lookup.length === 0) return ''
+  const entries = lookup
+    .map((item) => {
+      const content = item.content.trim()
+      if (!content) return null
+      return {
+        id: item.id,
+        role: mapLookupRole(item.role),
+        time: item.time,
+        score: item.score,
+        content,
+      }
+    })
+    .filter((item): item is NonNullable<typeof item> => item !== null)
+  if (entries.length === 0) return ''
+  const sorted = sortByTimeAndIdDesc(entries)
+  return escapeCdata(
+    stringifyPromptYaml({
+      messages: sorted,
+    }),
+  )
 }
 
 export const formatDecesionsYaml = (decesions: string[]): string => {
