@@ -1,10 +1,10 @@
 import { runWithProvider } from '../providers/registry.js'
-import {
-  appendLlmArchiveResult,
-  type LlmArchiveEntry,
-  type LlmArchiveResult,
-} from '../storage/llm-archive.js'
 import { appendTaskProgress } from '../storage/task-progress.js'
+import {
+  appendTraceArchiveResult,
+  type TraceArchiveEntry,
+  type TraceArchiveResult,
+} from '../storage/traces-archive.js'
 
 import type { TokenUsage } from '../types/index.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
@@ -55,10 +55,10 @@ const progressType = (profile: WorkerProfile, phase: ProgressPhase): string =>
 
 export const archiveWorkerResult = (
   stateDir: string,
-  base: Omit<LlmArchiveEntry, 'prompt' | 'output' | 'ok'>,
+  base: Omit<TraceArchiveEntry, 'prompt' | 'output' | 'ok'>,
   prompt: string,
-  result: LlmArchiveResult,
-) => appendLlmArchiveResult(stateDir, base, prompt, result)
+  result: TraceArchiveResult,
+) => appendTraceArchiveResult(stateDir, base, prompt, result)
 
 export const buildRunModel =
   (params: BuildRunModelParams) =>

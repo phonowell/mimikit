@@ -45,7 +45,7 @@
 - `tasks/tasks.jsonl`
 - `task-progress/{taskId}.jsonl`
 - `tasks/YYYY-MM-DD/*.md`
-- `llm/YYYY-MM-DD/*.txt`
+- `traces/YYYY-MM-DD/*.txt`
 - `user_profile.md`
 - `agent_persona.md`
 - `agent_persona_versions/*.md`

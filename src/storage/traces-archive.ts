@@ -9,7 +9,7 @@ import { buildArchiveDocument, dateStamp } from './archive-format.js'
 
 import type { TokenUsage } from '../types/index.js'
 
-export type LlmArchiveEntry = {
+export type TraceArchiveEntry = {
   role: 'manager' | 'worker'
   prompt: string
   output: string
@@ -26,7 +26,7 @@ export type LlmArchiveEntry = {
   threadId?: string | null
 }
 
-export type LlmArchiveResult = {
+export type TraceArchiveResult = {
   output: string
   ok: boolean
   elapsedMs?: number
@@ -41,7 +41,7 @@ const timeStamp = (iso: string): string =>
 const buildArchivePath = (
   stateDir: string,
   iso: string,
-  entry: LlmArchiveEntry,
+  entry: TraceArchiveEntry,
 ): string => {
   const dateDir = dateStamp(iso)
   const time = timeStamp(iso)
@@ -49,12 +49,12 @@ const buildArchivePath = (
   if (entry.attempt) parts.push(entry.attempt)
   parts.push(shortId())
   const filename = `${parts.join('-')}.txt`
-  return join(stateDir, 'llm', dateDir, filename)
+  return join(stateDir, 'traces', dateDir, filename)
 }
 
 const buildArchiveContent = (
   timestamp: string,
-  entry: LlmArchiveEntry,
+  entry: TraceArchiveEntry,
 ): string =>
   buildArchiveDocument(
     [
@@ -80,24 +80,24 @@ const buildArchiveContent = (
     ],
   )
 
-export const appendLlmArchive = async (
+export const appendTraceArchive = async (
   stateDir: string,
-  entry: LlmArchiveEntry,
+  entry: TraceArchiveEntry,
 ): Promise<void> => {
   const timestamp = nowIso()
   const path = buildArchivePath(stateDir, timestamp, entry)
-  await ensureDir(join(stateDir, 'llm', dateStamp(timestamp)))
+  await ensureDir(join(stateDir, 'traces', dateStamp(timestamp)))
   const content = buildArchiveContent(timestamp, entry)
   await write(path, content, { encoding: 'utf8' }, { echo: false })
 }
 
-export const appendLlmArchiveResult = (
+export const appendTraceArchiveResult = (
   stateDir: string,
-  base: Omit<LlmArchiveEntry, 'prompt' | 'output' | 'ok'>,
+  base: Omit<TraceArchiveEntry, 'prompt' | 'output' | 'ok'>,
   prompt: string,
-  result: LlmArchiveResult,
+  result: TraceArchiveResult,
 ): Promise<void> =>
-  appendLlmArchive(stateDir, {
+  appendTraceArchive(stateDir, {
     ...base,
     prompt,
     output: result.output,

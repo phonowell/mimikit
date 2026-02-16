@@ -1,10 +1,10 @@
 import { buildManagerPrompt } from '../prompts/build-prompts.js'
 import { runWithProvider } from '../providers/registry.js'
 import {
-  appendLlmArchiveResult,
-  type LlmArchiveEntry,
-  type LlmArchiveResult,
-} from '../storage/llm-archive.js'
+  appendTraceArchiveResult,
+  type TraceArchiveEntry,
+  type TraceArchiveResult,
+} from '../storage/traces-archive.js'
 
 import {
   enforcePromptBudget,
@@ -57,9 +57,14 @@ export const runManager = async (params: {
   const budgetedPrompt = enforcePromptBudget(prompt, params.maxPromptTokens)
   const timeoutMs = resolveManagerTimeoutMs(budgetedPrompt.prompt)
 
-  type ArchiveBase = Omit<LlmArchiveEntry, 'prompt' | 'output' | 'ok'>
-  const archive = (base: ArchiveBase, result: LlmArchiveResult) =>
-    appendLlmArchiveResult(params.stateDir, base, budgetedPrompt.prompt, result)
+  type ArchiveBase = Omit<TraceArchiveEntry, 'prompt' | 'output' | 'ok'>
+  const archive = (base: ArchiveBase, result: TraceArchiveResult) =>
+    appendTraceArchiveResult(
+      params.stateDir,
+      base,
+      budgetedPrompt.prompt,
+      result,
+    )
 
   const archiveBase = (
     callModel: string | undefined,
