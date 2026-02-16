@@ -27,7 +27,6 @@ export const processManagerBatch = async (params: {
   results: TaskResult[]
   nextInputsCursor: number
   nextResultsCursor: number
-  nextWakesCursor: number
   streamId: string
 }): Promise<void> => {
   const {
@@ -36,7 +35,6 @@ export const processManagerBatch = async (params: {
     results,
     nextInputsCursor,
     nextResultsCursor,
-    nextWakesCursor,
     streamId,
   } = params
   runtime.managerRunning = true
@@ -97,7 +95,6 @@ export const processManagerBatch = async (params: {
       runtime,
       nextInputsCursor,
       nextResultsCursor,
-      nextWakesCursor,
       consumedInputIds: new Set(inputs.map((item) => item.id)),
       persistRuntime: persistRuntimeState,
     })
@@ -117,7 +114,6 @@ export const processManagerBatch = async (params: {
         results,
         nextInputsCursor,
         nextResultsCursor,
-        nextWakesCursor,
         persistRuntime: persistRuntimeState,
       })
     } catch (drainError) {

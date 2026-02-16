@@ -37,11 +37,11 @@ export type RuntimeState = {
   stopped: boolean
   managerRunning: boolean
   managerSignalController: AbortController
+  managerWakePending: boolean
   inflightInputs: PendingUserInput[]
   queues: {
     inputsCursor: number
     resultsCursor: number
-    wakesCursor: number
   }
   tasks: Task[]
   cronJobs: CronJob[]

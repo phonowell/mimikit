@@ -2,15 +2,11 @@ import { Cron } from 'croner'
 
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
-import {
-  notifyManagerLoop,
-  shouldWakeManagerForCronTrigger,
-} from '../orchestrator/core/manager-signal.js'
+import { notifyManagerLoop } from '../orchestrator/core/manager-signal.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import { enqueueTask } from '../orchestrator/core/task-state.js'
 import { notifyWorkerLoop } from '../orchestrator/core/worker-signal.js'
 import { appendTaskSystemMessage } from '../orchestrator/read-model/task-history.js'
-import { publishWakeEvent } from '../streams/queues.js'
 import { enqueueWorkerTask } from '../worker/dispatch.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
@@ -34,14 +30,12 @@ const sleep = (ms: number): Promise<void> =>
 
 type CronCheckResult = {
   triggeredCount: number
-  shouldWakeManager: boolean
 }
 
 export const checkCronJobs = async (
   runtime: RuntimeState,
 ): Promise<CronCheckResult> => {
-  if (runtime.cronJobs.length === 0)
-    return { triggeredCount: 0, shouldWakeManager: false }
+  if (runtime.cronJobs.length === 0) return { triggeredCount: 0 }
 
   const now = new Date()
   const nowAtIso = now.toISOString()
@@ -49,7 +43,6 @@ export const checkCronJobs = async (
 
   let stateChanged = false
   let triggeredCount = 0
-  let deferredTriggeredCount = 0
   for (const cronJob of runtime.cronJobs) {
     if (!cronJob.enabled) continue
 
@@ -72,7 +65,6 @@ export const checkCronJobs = async (
       )
       if (!created) continue
       triggeredCount += 1
-      if (cronJob.profile === 'deferred') deferredTriggeredCount += 1
 
       task.cron = cronJob.scheduledAt
       await appendTaskSystemMessage(runtime.paths.history, 'created', task, {
@@ -117,7 +109,6 @@ export const checkCronJobs = async (
     )
     if (!created) continue
     triggeredCount += 1
-    if (cronJob.profile === 'deferred') deferredTriggeredCount += 1
 
     task.cron = cronJob.cron
     await appendTaskSystemMessage(runtime.paths.history, 'created', task, {
@@ -131,40 +122,18 @@ export const checkCronJobs = async (
     }
   }
 
-  if (!stateChanged) {
-    return {
-      triggeredCount,
-      shouldWakeManager: shouldWakeManagerForCronTrigger(
-        deferredTriggeredCount,
-      ),
-    }
-  }
+  if (!stateChanged) return { triggeredCount }
   await bestEffort('persistRuntimeState: cron_trigger', () =>
     persistRuntimeState(runtime),
   )
-  if (triggeredCount > 0) {
-    await bestEffort('publishWakeEvent: cron_due', () =>
-      publishWakeEvent({
-        paths: runtime.paths,
-        payload: {
-          type: 'cron_due',
-          cronTriggeredCount: triggeredCount,
-          createdAt: nowAtIso,
-        },
-      }),
-    )
-  }
-  return {
-    triggeredCount,
-    shouldWakeManager: shouldWakeManagerForCronTrigger(deferredTriggeredCount),
-  }
+  return { triggeredCount }
 }
 
 export const cronWakeLoop = async (runtime: RuntimeState): Promise<void> => {
   while (!runtime.stopped) {
     try {
       const checked = await checkCronJobs(runtime)
-      if (checked.shouldWakeManager) notifyManagerLoop(runtime)
+      if (checked.triggeredCount > 0) notifyManagerLoop(runtime)
     } catch (error) {
       await bestEffort('appendLog: cron_wake_error', () =>
         appendLog(runtime.paths.log, {

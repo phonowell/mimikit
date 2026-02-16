@@ -11,13 +11,11 @@ export type StatePaths = {
   root: string
   inputsDir: string
   resultsDir: string
-  wakesDir: string
   tasksDir: string
   history: string
   log: string
   inputsPackets: string
   resultsPackets: string
-  wakesPackets: string
   tasksEvents: string
   userProfile: string
   agentPersona: string
@@ -28,20 +26,17 @@ export const buildPaths = (stateDir: string): StatePaths => {
   const root = stateDir
   const inputsDir = join(root, 'inputs')
   const resultsDir = join(root, 'results')
-  const wakesDir = join(root, 'wakes')
   const tasksDir = join(root, 'tasks')
   const agentPersonaVersionsDir = join(root, 'agent_persona_versions')
   return {
     root,
     inputsDir,
     resultsDir,
-    wakesDir,
     tasksDir,
     history: join(root, 'history'),
     log: join(root, 'log.jsonl'),
     inputsPackets: join(inputsDir, 'packets.jsonl'),
     resultsPackets: join(resultsDir, 'packets.jsonl'),
-    wakesPackets: join(wakesDir, 'packets.jsonl'),
     tasksEvents: join(tasksDir, 'tasks.jsonl'),
     userProfile: join(root, 'user_profile.md'),
     agentPersona: join(root, 'agent_persona.md'),

@@ -21,7 +21,6 @@ export const hydrateRuntimeState = async (
     runtime.queues = {
       inputsCursor: snapshot.queues.inputsCursor,
       resultsCursor: snapshot.queues.resultsCursor,
-      wakesCursor: snapshot.queues.wakesCursor ?? 0,
     }
   }
 

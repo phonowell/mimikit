@@ -42,7 +42,6 @@
 - `runtime-state.json`
 - `inputs/packets.jsonl`
 - `results/packets.jsonl`
-- `wakes/packets.jsonl`
 - `tasks/tasks.jsonl`
 - `task-progress/{taskId}.jsonl`
 - `tasks/YYYY-MM-DD/*.md`
@@ -51,12 +50,16 @@
 - `agent_persona.md`
 - `agent_persona_versions/*.md`
 
+## Manager 唤醒约束
+- 唤醒来源仅三类：`user_input`、`task_result`、`cron`
+- 三类均为实时 signal（`notifyManagerLoop`）
+- manager 推理输入来自 `inputs/results/history`
+
 ## Runtime Snapshot 约束
 - schema：`src/storage/runtime-state-schema.ts`
 - `runtime-state.queues` 仅包含：
   - `inputsCursor`
   - `resultsCursor`
-  - `wakesCursor`
 - 主会话恢复字段：
   - `plannerSessionId`
 - 旧 grouped channel 结构不再兼容解析。

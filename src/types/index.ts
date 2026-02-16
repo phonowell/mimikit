@@ -111,14 +111,3 @@ export type ManagerEnv = {
     clientNowIso?: string
   }
 }
-
-export type WakeEventType = 'user_input' | 'task_done' | 'cron_due'
-
-export type WakeEvent = {
-  type: WakeEventType
-  inputId?: Id
-  taskId?: Id
-  taskStatus?: TaskResultStatus
-  cronTriggeredCount?: number
-  createdAt?: ISODate
-}

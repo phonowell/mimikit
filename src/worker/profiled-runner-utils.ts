@@ -2,7 +2,7 @@ import { renderPromptTemplate } from '../prompts/format.js'
 
 import type { TokenUsage } from '../types/index.js'
 
-export const DONE_MARKER = '<M:TASK_DONE/>'
+export const DONE_MARKER = '<M:task_done/>'
 export const MAX_RUN_ROUNDS = 3
 
 export const hasDoneMarker = (output: string): boolean =>

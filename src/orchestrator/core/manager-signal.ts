@@ -10,9 +10,9 @@ const clampWaitMs = (timeoutMs: number): number => {
 }
 
 export const notifyManagerLoop = (runtime: RuntimeState): void => {
-  const previous = runtime.managerSignalController
-  runtime.managerSignalController = new AbortController()
-  if (!previous.signal.aborted) previous.abort()
+  runtime.managerWakePending = true
+  if (!runtime.managerSignalController.signal.aborted)
+    runtime.managerSignalController.abort()
   notifyUiSignal(runtime)
 }
 
@@ -20,10 +20,15 @@ export const waitForManagerLoopSignal = async (
   runtime: RuntimeState,
   timeoutMs: number,
 ): Promise<void> => {
-  const { signal } = runtime.managerSignalController
-  if (signal.aborted) return
+  if (runtime.managerWakePending) {
+    runtime.managerWakePending = false
+    return
+  }
   const waitMs = clampWaitMs(timeoutMs)
   if (waitMs <= 0) return
+  const controller = new AbortController()
+  runtime.managerSignalController = controller
+  const { signal } = controller
   await new Promise<void>((resolve) => {
     const done = () => {
       clearTimeout(timer)
@@ -32,13 +37,7 @@ export const waitForManagerLoopSignal = async (
     }
     const timer = setTimeout(done, waitMs)
     signal.addEventListener('abort', done, { once: true })
+    if (signal.aborted || runtime.managerWakePending) done()
   })
+  runtime.managerWakePending = false
 }
-
-export const shouldWakeManagerForCronTrigger = (
-  deferredTriggeredCount: number,
-): boolean => deferredTriggeredCount > 0
-
-export const shouldWakeManagerForTaskTerminalEvent = (
-  profile: string,
-): boolean => profile === 'deferred'

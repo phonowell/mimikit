@@ -69,11 +69,11 @@ export class Orchestrator {
       stopped: false,
       managerRunning: false,
       managerSignalController: new AbortController(),
+      managerWakePending: false,
       inflightInputs: [],
       queues: {
         inputsCursor: 0,
         resultsCursor: 0,
-        wakesCursor: 0,
       },
       tasks: [],
       cronJobs: [],

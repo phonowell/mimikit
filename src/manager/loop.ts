@@ -2,11 +2,7 @@ import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { waitForManagerLoopSignal } from '../orchestrator/core/manager-signal.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
-import {
-  consumeUserInputs,
-  consumeWakeEvents,
-  consumeWorkerResults,
-} from '../streams/queues.js'
+import { consumeUserInputs, consumeWorkerResults } from '../streams/queues.js'
 
 import { processManagerBatch } from './loop-batch.js'
 import { createUiStreamId } from './loop-ui-stream.js'
@@ -21,10 +17,6 @@ const hasNonEmptyTaskId = (payload: unknown): boolean => {
 
 export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
   while (!runtime.stopped) {
-    const wakePackets = await consumeWakeEvents({
-      paths: runtime.paths,
-      fromCursor: runtime.queues.wakesCursor,
-    })
     const inputPackets = await consumeUserInputs({
       paths: runtime.paths,
       fromCursor: runtime.queues.inputsCursor,
@@ -37,8 +29,6 @@ export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
       inputPackets.at(-1)?.cursor ?? runtime.queues.inputsCursor
     const nextResultsCursor =
       allResultPackets.at(-1)?.cursor ?? runtime.queues.resultsCursor
-    const nextWakesCursor =
-      wakePackets.at(-1)?.cursor ?? runtime.queues.wakesCursor
 
     const resultPackets = []
     for (const packet of allResultPackets) {
@@ -56,14 +46,6 @@ export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
     }
 
     if (inputPackets.length === 0 && resultPackets.length === 0) {
-      let wakeProgressed = false
-      if (nextWakesCursor !== runtime.queues.wakesCursor) {
-        runtime.queues.wakesCursor = nextWakesCursor
-        await bestEffort('persistRuntimeState: wake_packet', () =>
-          persistRuntimeState(runtime),
-        )
-        wakeProgressed = true
-      }
       if (nextResultsCursor !== runtime.queues.resultsCursor) {
         runtime.queues.resultsCursor = nextResultsCursor
         await bestEffort('persistRuntimeState: invalid_result_packet', () =>
@@ -71,7 +53,6 @@ export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
         )
         continue
       }
-      if (wakeProgressed) continue
       await waitForManagerLoopSignal(runtime, Number.POSITIVE_INFINITY)
       continue
     }
@@ -82,7 +63,6 @@ export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
       results: resultPackets.map((packet) => packet.payload),
       nextInputsCursor,
       nextResultsCursor,
-      nextWakesCursor,
       streamId: createUiStreamId(nextInputsCursor, nextResultsCursor),
     })
   }

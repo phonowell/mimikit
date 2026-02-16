@@ -25,6 +25,7 @@ const createRuntime = async (): Promise<RuntimeState> => {
     stopped: false,
     managerRunning: false,
     managerSignalController: new AbortController(),
+    managerWakePending: false,
     inflightInputs: [],
     queues: {
       inputsCursor: 0,

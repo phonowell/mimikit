@@ -4,14 +4,14 @@
 
 ## 任务生命周期
 
-- `pending`：deferred 已派发，等待执行。
+- `pending`：manager 已派发，等待执行。
 - `running`：worker 执行中。
 - `succeeded | failed | canceled`：终态。
 
 ## 派发与去重
 
-- deferred 通过 `<M:create_task ... />` 派发任务。
-- `profile`：`standard | specialist`。
+- manager 通过 `<M:create_task ... />` 派发任务。
+- `profile`：`deferred | standard | specialist`。
 - 去重两层：
   - action 去重键：`prompt + title + profile`
   - queue 去重键：`task.fingerprint`（`prompt + title + profile + schedule`，仅拦 active 任务）
@@ -21,11 +21,12 @@
 1. `enqueueWorkerTask` 入 `p-queue`。
 2. `runTaskWithRetry` 执行并收敛错误。
 3. `finalizeResult` 更新任务状态并归档。
-4. 结果发布到 `results`，由 deferred 在后续轮次消费（非 `deferred` 任务默认不即时唤醒）。
+4. 常规终态：发布到 `results`，并立即唤醒 manager 消费结果。
+5. `pending` 快速取消：发布 `canceled` 到 `results`，并立即唤醒 manager。
 
 ## 取消与恢复
 
-- `pending` 取消：立即标记并发布 `canceled`（非 `deferred` 任务默认不即时唤醒）。
+- `pending` 取消：立即标记并发布 `canceled`，随后立即唤醒 manager。
 - `running` 取消：触发 `AbortController`，由执行链路收敛到 `canceled`。
 - 启动恢复：`hydrateRuntimeState` 恢复全部任务状态；持久化时 `running` 降级为 `pending`，重启后重入队列，其余状态原样恢复用于历史展示。
 
@@ -51,19 +52,19 @@ Action 名称集合（`src/actions/model/names.ts`）：
 - `invokeAction()`：查 spec → 参数校验 → 执行 → `safeRun` 包装异常
 - 未注册 action 返回：`unknown_action:{name}`
 
-## Deferred 消费的编排 Action
+## Manager 消费的编排 Action
 
 实现：`src/manager/action-apply.ts`、`src/manager/loop-batch-run-manager.ts`、`src/manager/history-query.ts`
 
 ### `query_history`
 
 - 入参：`query`、`limit?`、`roles?`、`before_id?`、`from?`、`to?`
-- 行为：触发历史检索并进入下一轮 deferred 推理；`from/to` 为 ISO 8601 时间范围（含端点，顺序可颠倒）。
+- 行为：触发历史检索并进入下一轮 manager 推理；`from/to` 为 ISO 8601 时间范围（含端点，顺序可颠倒）。
 
 ### `create_task`
 
 - 入参：`prompt`、`title`、`profile`
-- 约束：`profile ∈ {standard, specialist}`
+- 约束：`profile ∈ {deferred, standard, specialist}`
 - 去重：`prompt + title + profile`
 
 ### `cancel_task`
@@ -96,7 +97,7 @@ Action 名称集合（`src/actions/model/names.ts`）：
 
 - 字段：`id`、`fingerprint`、`prompt`、`title`、`profile`、`status`
 - 运行字段：`startedAt?`、`completedAt?`、`durationMs?`、`attempts?`
-- `profile`：`standard | specialist`
+- `profile`：`deferred | standard | specialist`
 
 ### TaskResult
 

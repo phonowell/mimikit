@@ -12,7 +12,6 @@ export type RuntimeSnapshot = {
   queues?: {
     inputsCursor: number
     resultsCursor: number
-    wakesCursor?: number
   }
   plannerSessionId?: string
 }
@@ -89,7 +88,6 @@ const queueStateSchema = z
   .object({
     inputsCursor: z.number().int().nonnegative(),
     resultsCursor: z.number().int().nonnegative(),
-    wakesCursor: z.number().int().nonnegative().optional(),
   })
   .strict()
 
@@ -170,7 +168,6 @@ export const parseRuntimeSnapshot = (value: unknown): RuntimeSnapshot => {
           queues: {
             inputsCursor: parsed.queues.inputsCursor,
             resultsCursor: parsed.queues.resultsCursor,
-            wakesCursor: parsed.queues.wakesCursor ?? 0,
           },
         }
       : {}),
