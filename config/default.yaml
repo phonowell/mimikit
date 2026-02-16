@@ -1,4 +1,4 @@
-manager:
+deferred:
   promptMaxTokens: 8192
   createTaskDebounceMs: 4000
   tasksMaxCount: 20

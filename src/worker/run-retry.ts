@@ -50,6 +50,12 @@ const runTaskByProfile = (params: {
   controller: AbortController
   onUsage?: (usage: TokenUsage) => void
 }): Promise<WorkerLlmResult> => {
+  if (params.task.profile === 'deferred') {
+    return Promise.resolve({
+      output: params.task.prompt,
+      elapsedMs: 0,
+    })
+  }
   if (params.task.profile === 'standard') {
     return runStandardProfile({
       runtime: params.runtime,

@@ -52,7 +52,7 @@ const buildCanceledResult = (task: Task, output: string): TaskResult => {
 
 const normalizeCancelSource = (source?: string): TaskCancelMeta['source'] => {
   if (source === 'user' || source === 'http') return 'user'
-  if (source === 'manager') return 'manager'
+  if (source === 'deferred') return 'deferred'
   return 'system'
 }
 

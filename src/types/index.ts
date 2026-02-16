@@ -40,7 +40,7 @@ export type TaskStatus =
   | 'failed'
   | 'canceled'
 
-export type TaskCancelSource = 'user' | 'manager' | 'system'
+export type TaskCancelSource = 'user' | 'deferred' | 'system'
 
 export type TaskCancelMeta = {
   source: TaskCancelSource
@@ -49,7 +49,7 @@ export type TaskCancelMeta = {
 
 export type TaskResultStatus = 'succeeded' | 'failed' | 'canceled'
 
-export type WorkerProfile = 'standard' | 'specialist' | 'manager'
+export type WorkerProfile = 'standard' | 'specialist' | 'deferred'
 
 export type Task = {
   id: Id

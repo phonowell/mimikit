@@ -15,7 +15,7 @@ export const createSchema = z
   .object({
     prompt: nonEmptyString,
     title: nonEmptyString,
-    profile: z.enum(['standard', 'specialist', 'manager']),
+    profile: z.enum(['standard', 'specialist', 'deferred']),
     cron: z.string().trim().optional(),
     scheduled_at: z.string().trim().optional(),
   })

@@ -12,9 +12,9 @@ export type DefaultConfigParams = {
 export type AppConfig = {
   /** Absolute work directory (also state root) */
   workDir: string
-  /** Manager scheduling and prompt settings */
-  manager: {
-    /** Hard token limit for manager prompt */
+  /** Deferred scheduling and prompt settings */
+  deferred: {
+    /** Hard token limit for deferred prompt */
     promptMaxTokens: number
     /** Debounce window for create_task dedup (ms) */
     createTaskDebounceMs: number
@@ -24,9 +24,9 @@ export type AppConfig = {
     tasksMinCount: number
     /** Task list retention byte limit */
     tasksMaxBytes: number
-    /** Default manager model */
+    /** Default deferred model */
     model: string
-    /** Defaults for manager-profile tasks */
+    /** Defaults for deferred-profile tasks */
     task: {
       timeoutMs: number
       model: string

@@ -38,7 +38,7 @@ export const applyCreateTask = async (
   if (!parsed.success) return
   const profile = parsed.data.profile as WorkerProfile
   if (
-    profile !== 'manager' &&
+    profile !== 'deferred' &&
     hasForbiddenWorkerStatePath(parsed.data.prompt)
   ) {
     await bestEffort(
@@ -96,7 +96,7 @@ export const applyCreateTask = async (
     })
     if (activeFingerprint !== nextFingerprint) {
       await cancelTask(runtime, activeSemanticTask.id, {
-        source: 'manager',
+        source: 'deferred',
         reason: 'superseded_by_newer_semantic_task',
       })
     } else if (activeSemanticTask.status === 'pending') {
@@ -173,7 +173,7 @@ export const applyCreateTask = async (
     profile,
   )
   if (!created) {
-    if (task.status !== 'pending' || task.profile === 'manager') return
+    if (task.status !== 'pending' || task.profile === 'deferred') return
     enqueueWorkerTask(runtime, task)
     notifyWorkerLoop(runtime)
     return
@@ -182,8 +182,6 @@ export const applyCreateTask = async (
     createdAt: task.createdAt,
   })
   await persistRuntimeState(runtime)
-  if (profile !== 'manager') {
-    enqueueWorkerTask(runtime, task)
-    notifyWorkerLoop(runtime)
-  }
+  enqueueWorkerTask(runtime, task)
+  notifyWorkerLoop(runtime)
 }

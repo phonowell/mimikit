@@ -26,7 +26,7 @@ const parseCancelSource = (
   value?: string,
 ): TaskCancelMeta['source'] | undefined => {
   if (value === 'user' || value === 'http') return 'user'
-  if (value === 'manager') return 'manager'
+  if (value === 'deferred') return 'deferred'
   if (value === 'system') return 'system'
   return undefined
 }

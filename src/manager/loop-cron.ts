@@ -49,7 +49,7 @@ export const checkCronJobs = async (
 
   let stateChanged = false
   let triggeredCount = 0
-  let managerTriggeredCount = 0
+  let deferredTriggeredCount = 0
   for (const cronJob of runtime.cronJobs) {
     if (!cronJob.enabled) continue
 
@@ -72,16 +72,14 @@ export const checkCronJobs = async (
       )
       if (!created) continue
       triggeredCount += 1
-      if (cronJob.profile === 'manager') managerTriggeredCount += 1
+      if (cronJob.profile === 'deferred') deferredTriggeredCount += 1
 
       task.cron = cronJob.scheduledAt
       await appendTaskSystemMessage(runtime.paths.history, 'created', task, {
         createdAt: task.createdAt,
       })
-      if (cronJob.profile !== 'manager') {
-        enqueueWorkerTask(runtime, task)
-        notifyWorkerLoop(runtime)
-      }
+      enqueueWorkerTask(runtime, task)
+      notifyWorkerLoop(runtime)
       continue
     }
 
@@ -119,16 +117,14 @@ export const checkCronJobs = async (
     )
     if (!created) continue
     triggeredCount += 1
-    if (cronJob.profile === 'manager') managerTriggeredCount += 1
+    if (cronJob.profile === 'deferred') deferredTriggeredCount += 1
 
     task.cron = cronJob.cron
     await appendTaskSystemMessage(runtime.paths.history, 'created', task, {
       createdAt: task.createdAt,
     })
-    if (cronJob.profile !== 'manager') {
-      enqueueWorkerTask(runtime, task)
-      notifyWorkerLoop(runtime)
-    }
+    enqueueWorkerTask(runtime, task)
+    notifyWorkerLoop(runtime)
     if (!cronHasNextRun(cronJob.cron)) {
       cronJob.enabled = false
       cronJob.disabledReason = 'completed'
@@ -138,7 +134,9 @@ export const checkCronJobs = async (
   if (!stateChanged) {
     return {
       triggeredCount,
-      shouldWakeManager: shouldWakeManagerForCronTrigger(managerTriggeredCount),
+      shouldWakeManager: shouldWakeManagerForCronTrigger(
+        deferredTriggeredCount,
+      ),
     }
   }
   await bestEffort('persistRuntimeState: cron_trigger', () =>
@@ -158,7 +156,7 @@ export const checkCronJobs = async (
   }
   return {
     triggeredCount,
-    shouldWakeManager: shouldWakeManagerForCronTrigger(managerTriggeredCount),
+    shouldWakeManager: shouldWakeManagerForCronTrigger(deferredTriggeredCount),
   }
 }
 

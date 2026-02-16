@@ -1,7 +1,6 @@
 import { notifyUiSignal } from './ui-signal.js'
 
 import type { RuntimeState } from './runtime-state.js'
-import type { WorkerProfile } from '../../types/index.js'
 
 const MAX_WAIT_MS = 24 * 60 * 60 * 1_000
 
@@ -36,10 +35,10 @@ export const waitForManagerLoopSignal = async (
   })
 }
 
-export const shouldWakeManagerForTaskTerminalEvent = (
-  profile: WorkerProfile | undefined,
-): boolean => profile === 'manager'
-
 export const shouldWakeManagerForCronTrigger = (
-  managerTriggeredCount: number,
-): boolean => managerTriggeredCount > 0
+  deferredTriggeredCount: number,
+): boolean => deferredTriggeredCount > 0
+
+export const shouldWakeManagerForTaskTerminalEvent = (
+  profile: string,
+): boolean => profile === 'deferred'

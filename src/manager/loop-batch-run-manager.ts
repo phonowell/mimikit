@@ -22,9 +22,9 @@ import type {
 
 const buildManagerContext = (runtime: RuntimeState) => {
   const recentTasks = selectRecentTasks(runtime.tasks, {
-    minCount: runtime.config.manager.tasksMinCount,
-    maxCount: runtime.config.manager.tasksMaxCount,
-    maxBytes: runtime.config.manager.tasksMaxBytes,
+    minCount: runtime.config.deferred.tasksMinCount,
+    maxCount: runtime.config.deferred.tasksMaxCount,
+    maxBytes: runtime.config.deferred.tasksMaxBytes,
   })
   return { recentTasks }
 }
@@ -67,11 +67,11 @@ export const runManagerBatch = async (params: {
       ...(runtime.lastUserMeta
         ? { env: { lastUser: runtime.lastUserMeta } }
         : {}),
-      model: runtime.config.manager.model,
+      model: runtime.config.deferred.model,
       ...(runtime.plannerSessionId
         ? { sessionId: runtime.plannerSessionId }
         : {}),
-      maxPromptTokens: runtime.config.manager.promptMaxTokens,
+      maxPromptTokens: runtime.config.deferred.promptMaxTokens,
       onTextDelta: (delta) => {
         if (!delta) return
         streamRawOutput += delta

@@ -29,7 +29,7 @@ const codexTaskDefaultsSchema = z
 
 const defaultConfigSchema = z
   .object({
-    manager: z
+    deferred: z
       .object({
         promptMaxTokens: z.number().int().positive(),
         createTaskDebounceMs: z.number().int().nonnegative(),
@@ -71,11 +71,11 @@ const parseDefaultConfigYaml = (source: string): AppDefaults => {
   const validated = defaultConfigSchema.safeParse(parsed)
   if (validated.success) {
     if (
-      validated.data.manager.tasksMinCount >
-      validated.data.manager.tasksMaxCount
+      validated.data.deferred.tasksMinCount >
+      validated.data.deferred.tasksMaxCount
     ) {
       throw new Error(
-        '[config] invalid yaml defaults: manager.tasksMinCount must be <= manager.tasksMaxCount',
+        '[config] invalid yaml defaults: deferred.tasksMinCount must be <= deferred.tasksMaxCount',
       )
     }
     return validated.data

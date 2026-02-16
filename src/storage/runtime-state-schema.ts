@@ -19,7 +19,7 @@ export type RuntimeSnapshot = {
 
 const taskCancelSchema = z
   .object({
-    source: z.enum(['user', 'manager', 'system']),
+    source: z.enum(['user', 'deferred', 'system']),
     reason: z.string().optional(),
   })
   .strict()
@@ -35,7 +35,7 @@ const taskResultRawSchema = z
     usage: tokenUsageSchema.optional(),
     title: z.string().optional(),
     archivePath: z.string().optional(),
-    profile: z.enum(['standard', 'specialist', 'manager']).optional(),
+    profile: z.enum(['standard', 'specialist', 'deferred']).optional(),
     cancel: taskCancelSchema.optional(),
   })
   .strict()
@@ -47,7 +47,7 @@ const taskRawSchema = z
     prompt: z.string(),
     title: z.string(),
     cron: z.string().optional(),
-    profile: z.enum(['standard', 'specialist', 'manager']),
+    profile: z.enum(['standard', 'specialist', 'deferred']),
     status: z.enum(['pending', 'running', 'succeeded', 'failed', 'canceled']),
     createdAt: z.string(),
     startedAt: z.string().optional(),
@@ -68,7 +68,7 @@ const cronJobRawSchema = z
     scheduledAt: z.string().trim().min(1).optional(),
     prompt: z.string(),
     title: z.string(),
-    profile: z.enum(['standard', 'specialist', 'manager']),
+    profile: z.enum(['standard', 'specialist', 'deferred']),
     enabled: z.boolean(),
     disabledReason: z.enum(['canceled', 'completed']).optional(),
     createdAt: z.string(),
