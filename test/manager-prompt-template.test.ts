@@ -4,7 +4,8 @@ import { renderPromptTemplate } from '../src/prompts/format.js'
 import { loadSystemPrompt } from '../src/prompts/prompt-loader.js'
 
 const baseTemplateValues = {
-  environment: '- now_iso: 2026-02-16T00:00:00.000Z',
+  environment:
+    '- client_time_zone: Asia/Shanghai\n- client_now_iso: 2026-02-16T00:00:00.000+08:00',
   inputs: '',
   results: '',
   history_lookup: '',

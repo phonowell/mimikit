@@ -133,13 +133,11 @@ export const joinPromptSections = (sections: string[]): string => {
 }
 
 export const formatEnvironment = (params?: PromptEnvironmentParams): string => {
-  const now = new Date()
   const lines: string[] = []
   const push = (label: string, value: string | number | undefined) => {
     if (value === undefined || value === '') return
     lines.push(`- ${label}: ${value}`)
   }
-  push('now_iso', now.toISOString())
   const workDir = params?.workDir?.trim()
   push('work_dir', workDir ? resolve(workDir) : undefined)
   const last = params?.env?.lastUser

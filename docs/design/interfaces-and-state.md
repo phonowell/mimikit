@@ -55,6 +55,14 @@
 - 三类均为实时 signal（`notifyManagerLoop`）
 - manager 推理输入来自 `inputs/results/history`
 
+## Prompt 环境注入
+- 位置：`M:environment`（manager/worker 系统提示）
+- 字段：
+  - `work_dir`：当前工作目录绝对路径
+  - `client_time_zone`：客户端时区（若可用）
+  - `client_now_iso`：客户端当前时间 ISO 8601（若可用）
+- 约束：不再注入 `now_iso`
+
 ## Runtime Snapshot 约束
 - schema：`src/storage/runtime-state-schema.ts`
 - `runtime-state.queues` 仅包含：
