@@ -2,8 +2,10 @@ import { Cron } from 'croner'
 
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
-import { notifyManagerLoop } from '../orchestrator/core/manager-signal.js'
-import { shouldWakeManagerForCronTrigger } from '../orchestrator/core/manager-wake-policy.js'
+import {
+  notifyManagerLoop,
+  shouldWakeManagerForCronTrigger,
+} from '../orchestrator/core/manager-signal.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import { enqueueTask } from '../orchestrator/core/task-state.js'
 import { notifyWorkerLoop } from '../orchestrator/core/worker-signal.js'
