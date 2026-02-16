@@ -6,6 +6,8 @@
 
 - 导出：`runManager`
 - Prompt 组装：`buildManagerPrompt`
+- 模板来源：`prompts/manager/system.md`（单模板渲染，支持 `{#if}` 条件块）
+- 注入策略：代码仅注入内容；`<M:...>` 标签与结构由模板声明
 - Provider 路径：`runWithProvider(provider='opencode')`
 - 会话连续性：持久化并复用 `plannerSessionId`；若 session 无效自动重建
 - 输出：`{ output, elapsedMs, sessionId?, usage? }`
@@ -23,6 +25,8 @@
 - `runStandardWorker` -> provider `opencode`
 - `runSpecialistWorker` -> provider `codex-sdk`
 - 共享核心：`runProfiledWorker`
+- Prompt 组装：`buildWorkerPrompt` -> `prompts/worker/system.md`（同 manager 单模板流程）
+- 注入策略：代码仅注入内容；`<M:...>` 标签与结构由模板声明
 - 输出：`{ output, elapsedMs, usage? }`
 
 流程：

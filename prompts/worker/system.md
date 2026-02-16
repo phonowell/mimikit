@@ -11,3 +11,17 @@
 - 使用紧凑格式返回详细结果，供用户参考或决策。
 - 返回任务执行途中遇到的问题及解决方案。
 - 仅当任务目标已全部完成时，才在最后一行追加 `<M:TASK_DONE/>`（不可提前输出）。
+
+// 任务描述：
+<M:prompt>
+<![CDATA[
+{prompt}
+]]>
+</M:prompt>
+
+// 环境信息；供参考，不主动提及
+<M:environment>
+<![CDATA[
+{environment}
+]]>
+</M:environment>

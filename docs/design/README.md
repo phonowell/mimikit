@@ -26,10 +26,15 @@
 
 ## 提示词目录（当前实现）
 - `prompts/manager/system.md`
-- `prompts/manager/injection.md`
 - `prompts/manager/fallback-reply.md`
 - `prompts/manager/system-fallback-reply.md`
 - `prompts/worker/system.md`
-- `prompts/worker/injection.md`
 - `prompts/evolver/system.md`
 - `prompts/evolver/injection.md`
+
+补充说明：
+- `manager/worker` 采用单模板流程：仅渲染 `system.md`，不再拼接 `injection.md`。
+- 模板支持条件块语法：`{#if key}` / `{#else}` / `{/if}`，变量占位符保持 `{key}`。
+- 模板支持 include 语法：`{#include xxx}`（同层 `xxx.md`）与 `{#include ../xxx}`（上一层 `xxx.md`）。
+- include 在模板加载阶段展开，因此可在 `{#if}` 块内使用。
+- `manager/worker` 的 `<M:...>` 标签由模板文件定义；代码只注入内容，不再拼装标签。

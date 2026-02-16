@@ -43,3 +43,62 @@
   - cron 和 scheduled_at 互斥，不同时提供。
 - 在 M:results 有新结果时，必须使用 M:summarize_task_result。
 - M:restart_server 仅在用户明确要求重启时使用。
+
+// 用户最近新输入
+// - CDATA 中为 messages 列表，按 time 倒序
+<M:inputs>
+<![CDATA[
+{inputs}
+]]>
+</M:inputs>
+
+// 待处理的新任务结果
+// - CDATA 中为 tasks 列表，按 change_at 倒序
+<M:results>
+<![CDATA[
+{results}
+]]>
+</M:results>
+
+{#if history_lookup}
+// 按需历史检索结果；仅在调用 M:query_history 后出现
+// - CDATA 中为 messages 列表，按 time 倒序
+<M:history_lookup>
+<![CDATA[
+{history_lookup}
+]]>
+</M:history_lookup>
+{/if}
+
+// 当前任务列表；供参考，不主动提及
+// - CDATA 中为 tasks 列表，按 create_at 倒序
+<M:tasks>
+<![CDATA[
+{tasks}
+]]>
+</M:tasks>
+
+// 环境信息；供参考，不主动提及
+<M:environment>
+<![CDATA[
+{environment}
+]]>
+</M:environment>
+
+{#if persona}
+// 你的身份信息；供参考，不主动提及
+<M:persona>
+<![CDATA[
+{persona}
+]]>
+</M:persona>
+{/if}
+
+{#if user_profile}
+// 用户画像；供参考，不主动提及
+<M:user_profile>
+<![CDATA[
+{user_profile}
+]]>
+</M:user_profile>
+{/if}

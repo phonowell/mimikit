@@ -3,22 +3,16 @@ import read from 'fire-keeper/read'
 import { buildPaths, ensureFile } from '../fs/paths.js'
 import { readTaskResultsForTasks } from '../storage/task-results.js'
 
+import { escapeCdata } from './format-base.js'
 import {
-  buildCdataBlock,
-  buildRawBlock,
   formatEnvironment,
   formatHistoryLookup,
   formatInputs,
   formatResultsYaml,
   formatTasksYaml,
-  joinPromptSections,
   renderPromptTemplate,
 } from './format.js'
-import {
-  loadInjectionPrompt,
-  loadPromptFile,
-  loadSystemPrompt,
-} from './prompt-loader.js'
+import { loadPromptFile, loadSystemPrompt } from './prompt-loader.js'
 import {
   buildTaskResultDateHints,
   collectResultTaskIds,
@@ -88,73 +82,51 @@ export const buildManagerPrompt = async (params: {
   const resultsForTasks = mergedResults.filter(
     (result) => !pendingResultIds.has(result.taskId),
   )
-  const system = await loadSystemPrompt('manager')
-  const injectionTemplate = await loadInjectionPrompt('manager')
-  const injectionValues = Object.fromEntries<string>([
+  const systemTemplate = await loadSystemPrompt('manager')
+  const templateValues = Object.fromEntries<string>([
     [
       'environment',
-      buildRawBlock(
-        'environment',
+      escapeCdata(
         formatEnvironment({
           workDir: params.workDir,
           ...(params.env ? { env: params.env } : {}),
         }),
-        true,
       ),
     ],
-    ['inputs', buildCdataBlock('inputs', formatInputs(params.inputs), true)],
-    [
-      'results',
-      buildCdataBlock(
-        'results',
-        formatResultsYaml(params.tasks, pendingResults),
-        true,
-      ),
-    ],
+    ['inputs', escapeCdata(formatInputs(params.inputs))],
+    ['results', escapeCdata(formatResultsYaml(params.tasks, pendingResults))],
     [
       'tasks',
-      buildCdataBlock(
-        'tasks',
+      escapeCdata(
         formatTasksYaml(tasksForPrompt, resultsForTasks, params.cronJobs ?? []),
-        true,
       ),
     ],
     [
       'history_lookup',
-      buildCdataBlock(
-        'history_lookup',
-        formatHistoryLookup(params.historyLookup ?? []),
-      ),
+      escapeCdata(formatHistoryLookup(params.historyLookup ?? [])),
     ],
-    ['persona', buildRawBlock('persona', persona.trim(), true)],
-    ['user_profile', buildRawBlock('user_profile', userProfile.trim(), true)],
+    ['persona', escapeCdata(persona.trim())],
+    ['user_profile', escapeCdata(userProfile.trim())],
   ])
-  const injection = renderPromptTemplate(injectionTemplate, injectionValues)
-  return joinPromptSections([system, injection])
+  return renderPromptTemplate(systemTemplate, templateValues)
 }
 
 export const buildWorkerPrompt = async (params: {
   workDir: string
   task: Task
 }): Promise<string> => {
-  const system = await loadSystemPrompt('worker')
-  const injectionTemplate = await loadInjectionPrompt('worker')
+  const systemTemplate = await loadSystemPrompt('worker')
   let taskPrompt = params.task.prompt
   if (params.task.cron) {
     const prefix = await loadPromptFile('worker', 'cron-trigger-context')
     if (prefix) taskPrompt = `${prefix.trim()}\n\n${taskPrompt}`
   }
-  const injectionValues = Object.fromEntries<string>([
+  const templateValues = Object.fromEntries<string>([
     [
       'environment',
-      buildRawBlock(
-        'environment',
-        formatEnvironment({ workDir: params.workDir }),
-        true,
-      ),
+      escapeCdata(formatEnvironment({ workDir: params.workDir })),
     ],
-    ['prompt', buildRawBlock('prompt', taskPrompt, true)],
+    ['prompt', escapeCdata(taskPrompt)],
   ])
-  const injection = renderPromptTemplate(injectionTemplate, injectionValues)
-  return joinPromptSections([system, injection])
+  return renderPromptTemplate(systemTemplate, templateValues)
 }

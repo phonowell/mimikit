@@ -2,16 +2,8 @@ import { stringify as stringifyYaml } from 'yaml'
 
 import type { Task } from '../types/index.js'
 
-const TAG_PREFIX = 'M:'
-
 export const escapeCdata = (value: string): string =>
   value.replaceAll(']]>', ']]]]><![CDATA[>')
-
-export const normalizeTagName = (tag: string): string => {
-  const trimmed = tag.trim()
-  if (!trimmed) return TAG_PREFIX
-  return trimmed.startsWith(TAG_PREFIX) ? trimmed : `${TAG_PREFIX}${trimmed}`
-}
 
 export const parseIsoToMs = (value: string): number => {
   const ts = Date.parse(value)
