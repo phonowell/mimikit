@@ -2,21 +2,22 @@
 
 > 返回 [系统设计总览](./README.md)
 
-## Deferred Runner
+## Manager Runner
 
 实现：`src/manager/runner.ts`
 
-- 导出：`runDeferred`
-- Prompt 组装：`buildDeferredPrompt`
+- 导出：`runManager`
+- Prompt 组装：`buildManagerPrompt`
 - 模板来源：`prompts/manager/system.md`（单模板渲染，支持 `{#if}` 条件块）
 - 注入策略：代码仅注入内容；`<M:...>` 标签与结构由模板声明
 - Provider 路径：`runWithProvider(provider='opencode')`
+- Provider role：`manager`
 - 会话连续性：持久化并复用 `plannerSessionId`；若 session 无效自动重建
 - 输出：`{ output, elapsedMs, sessionId?, usage? }`
 
 流程：
 
-1. 基于 inputs/results/tasks/history/cron 上下文构造 deferred prompt。
+1. 基于 inputs/results/tasks/history/cron 上下文构造 manager prompt。
 2. 执行 prompt 预算限制并计算 timeout。
 3. 调用 OpenCode provider。
 4. 若恢复 session 失败则重建新 session 重试。
@@ -29,7 +30,7 @@
 - `runStandardWorker` -> provider `opencode`
 - `runSpecialistWorker` -> provider `codex-sdk`
 - 共享核心：`runProfiledWorker`
-- Prompt 组装：`buildWorkerPrompt` -> `prompts/worker/system.md`（同 deferred 单模板流程）
+- Prompt 组装：`buildWorkerPrompt` -> `prompts/worker/system.md`（同 manager 单模板流程）
 - 注入策略：代码仅注入内容；`<M:...>` 标签与结构由模板声明
 - 输出：`{ output, elapsedMs, usage? }`
 

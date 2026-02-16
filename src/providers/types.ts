@@ -14,7 +14,7 @@ export type UsageListener = (usage: TokenUsage) => void
 export type TextDeltaListener = (delta: string) => void
 
 type ProviderRequestBase = {
-  role: 'deferred' | 'worker'
+  role: 'manager' | 'worker'
   prompt: string
   workDir: string
   timeoutMs: number

@@ -5,23 +5,23 @@
 ## 架构边界
 
 - 一次性全量切换，不保留运行期兼容层。
-- `OpenCode` 作为主 session 编排引擎（deferred 主路径）。
+- `OpenCode` 作为主 session 编排引擎（manager role 主路径）。
 - `Codex` 作为能力增强（worker specialist 路径）。
 - `mimikit` 负责本地持久化执行系统：队列、状态机、调度、可观测性。
 
 ## 组件职责
 
-- `deferred`
+- `manager`（deferred loop）
   - 消费 `inputs/results/wakes` 增量事件。
   - 生成用户回复并创建任务动作（不直接执行）。
   - 维护 `plannerSessionId`（主会话恢复）。
 - `worker`
   - 执行所有 profile 任务（deferred/standard/specialist）。
   - 回写 `results` 与任务终态。
-  - 发布 `task_done` 事件；仅 `deferred` 任务终态即时唤醒 deferred。
+  - 发布 `task_done` 事件；仅 `deferred` profile 任务终态即时唤醒 manager。
 - `cron-wake-loop`
   - 持续检查 cron。
-  - 触发本地任务创建并发布 `cron_due` 事件；仅存在 `deferred` 任务触发时即时唤醒 deferred。
+  - 触发本地任务创建并发布 `cron_due` 事件；仅存在 `deferred` profile 任务触发时即时唤醒 manager。
 - `evolver`
   - 默认关闭；仅在空闲窗口执行画像/人格演进。
 
@@ -51,10 +51,10 @@
 ## 主链路（事件驱动）
 
 1. 用户输入写入 `inputs/packets.jsonl`，并发布 `user_input`。
-2. deferred 被唤醒，消费输入/结果并调用 `runDeferred`（OpenCode）。
-3. deferred 解析动作并更新任务状态，写 assistant 回复。
+2. manager 被唤醒，消费输入/结果并调用 `runManager`（OpenCode）。
+3. manager 解析动作并更新任务状态，写 assistant 回复。
 4. worker 执行任务后写入 `results/packets.jsonl`，并发布 `task_done`。
-5. 非 `deferred` 任务默认不即时唤醒；deferred 在后续触发（如用户输入）时拉取并消费结果。
+5. 非 `deferred` profile 任务默认不即时唤醒；manager 在后续触发（如用户输入）时拉取并消费结果。
 
 唤醒事件统一为三类：
 
@@ -62,15 +62,15 @@
 - `task_done`
 - `cron_due`
 
-## Deferred 循环语义
+## Manager 循环语义（deferred loop）
 
 实现：`src/manager/loop.ts`
 
 - 主循环按 cursor 拉取 `inputs/results/wakes`。
 - 无可处理 batch 时进入 `waitForDeferredLoopSignal(..., Infinity)`。
-- 保持单飞：同一时刻仅一个活跃 deferred 执行。
+- 保持单飞：同一时刻仅一个活跃 manager 执行。
 - 唤醒事件先持久化，处理成功后推进 cursor，保证可恢复。
-- 即时唤醒分级：`user_input` 始终唤醒；`task_done/cron_due` 仅在 `deferred` 任务相关时即时唤醒。
+- 即时唤醒分级：`user_input` 始终唤醒；`task_done/cron_due` 仅在 `deferred` profile 任务相关时即时唤醒。
 
 ## Session 恢复机制
 
@@ -85,7 +85,7 @@
 实现：`src/worker/profiled-runner.ts`、`src/worker/result-finalize.ts`
 
 - `manager` -> `deferred`（轻量管理任务）
-- `deferred` -> 直接执行轻量管理任务
+- `deferred`（worker profile）-> 直接执行轻量管理任务
 - `standard` -> `opencode`
 - `specialist` -> `codex-sdk`
 - 统一收敛终态：`succeeded/failed/canceled`

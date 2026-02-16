@@ -65,7 +65,7 @@ export const runManager = async (params: {
     callModel: string | undefined,
     sessionId?: string,
   ): ArchiveBase => ({
-    role: 'deferred',
+    role: 'manager',
     ...(callModel ? { model: callModel } : {}),
     ...(sessionId ? { threadId: sessionId } : {}),
     attempt: 'primary',
@@ -79,7 +79,7 @@ export const runManager = async (params: {
   const callProvider = (callModel: string | undefined, sessionId?: string) =>
     runWithProvider({
       provider: 'opencode',
-      role: 'deferred',
+      role: 'manager',
       prompt: budgetedPrompt.prompt,
       workDir: params.workDir,
       timeoutMs,

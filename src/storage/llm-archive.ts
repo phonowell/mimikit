@@ -10,7 +10,7 @@ import { buildArchiveDocument, dateStamp } from './archive-format.js'
 import type { TokenUsage } from '../types/index.js'
 
 export type LlmArchiveEntry = {
-  role: 'deferred' | 'worker'
+  role: 'manager' | 'worker'
   prompt: string
   output: string
   ok: boolean

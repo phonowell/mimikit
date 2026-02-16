@@ -1,6 +1,6 @@
 # 系统设计（v6）
 
-> 当前架构：`deferred / worker`（`evolver` 默认停用，可配置启用）。
+> 当前架构：`manager(role) / worker(profile)`（`evolver` 默认停用，可配置启用）。
 
 ## 阅读路径
 
@@ -13,7 +13,7 @@
 ## 设计原则
 
 1. 一次性全量重构（Big Bang），不保留旧多角色链路与旧队列字段兼容层。
-2. `deferred` 是唯一对话与编排入口，直接消费 `inputs/results`。
+2. `manager` 是唯一对话与编排入口（运行态沿用 deferred loop 命名），直接消费 `inputs/results`。
 3. `worker` 分层：`standard`（低成本）与 `specialist`（高能力）。
 4. 队列语义固定：`inputs -> history`、`results -> tasks`。
 5. `evolver` 默认停用；启用后仅在空闲窗口触发，不阻塞在线请求。
