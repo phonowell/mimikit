@@ -51,7 +51,6 @@ const runQueuedWorker = async (
 }
 
 export const enqueueWorkerTask = (runtime: RuntimeState, task: Task): void => {
-  if (task.profile === 'manager') return
   if (task.status !== 'pending') return
   if (runtime.runningControllers.has(task.id)) return
   if (runtime.workerQueue.sizeBy({ id: task.id }) > 0) return
@@ -71,7 +70,6 @@ export const enqueuePendingWorkerTasks = (runtime: RuntimeState): void => {
       delete task.startedAt
     }
     if (task.status !== 'pending') continue
-    if (task.profile === 'manager') continue
     enqueueWorkerTask(runtime, task)
   }
 }

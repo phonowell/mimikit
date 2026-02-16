@@ -1,5 +1,5 @@
 import { appendLog } from '../log/append.js'
-import { bestEffort, safe } from '../log/safe.js'
+import { bestEffort } from '../log/safe.js'
 import { waitForManagerLoopSignal } from '../orchestrator/core/manager-signal.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import {
@@ -10,7 +10,6 @@ import {
 
 import { processManagerBatch } from './loop-batch.js'
 import { createUiStreamId } from './loop-ui-stream.js'
-import { executeManagerProfileTasks } from './manager-task-runner.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 
@@ -72,12 +71,6 @@ export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
         )
         continue
       }
-      const executedManagerTasks = await safe(
-        'executeManagerProfileTasks',
-        () => executeManagerProfileTasks(runtime),
-        { fallback: 0 },
-      )
-      if (executedManagerTasks > 0) continue
       if (wakeProgressed) continue
       await waitForManagerLoopSignal(runtime, Number.POSITIVE_INFINITY)
       continue

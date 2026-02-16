@@ -1,19 +1,22 @@
 # 系统架构总览（当前实现）
+
 > 返回 [系统设计总览](./README.md)
 
 ## 架构边界
+
 - 一次性全量切换，不保留运行期兼容层。
 - `OpenCode` 作为主 session 编排引擎（manager 主路径）。
 - `Codex` 作为能力增强（worker specialist 路径）。
 - `mimikit` 负责本地持久化执行系统：队列、状态机、调度、可观测性。
 
 ## 组件职责
+
 - `manager`
   - 消费 `inputs/results/wakes` 增量事件。
-  - 生成用户回复并执行任务编排动作。
+  - 生成用户回复并创建任务动作（不直接执行）。
   - 维护 `plannerSessionId`（主会话恢复）。
 - `worker`
-  - 执行 manager 下发任务。
+  - 执行所有 profile 任务（manager/standard/specialist）。
   - 回写 `results` 与任务终态。
   - 发布 `task_done` 事件；仅 `manager` 任务终态即时唤醒 manager。
 - `cron-wake-loop`
@@ -23,6 +26,7 @@
   - 默认关闭；仅在空闲窗口执行画像/人格演进。
 
 ## 启动顺序
+
 实现：`src/orchestrator/core/orchestrator-service.ts`
 
 1. `hydrateRuntimeState`
@@ -33,6 +37,7 @@
 6. 若启用，启动 `evolverLoop`
 
 ## 运行态关键字段
+
 定义：`src/orchestrator/core/runtime-state.ts`
 
 - `managerRunning`
@@ -44,6 +49,7 @@
 - `workerQueue` / `runningControllers`
 
 ## 主链路（事件驱动）
+
 1. 用户输入写入 `inputs/packets.jsonl`，并发布 `user_input`。
 2. manager 被唤醒，消费输入/结果并调用 `runManager`（OpenCode）。
 3. manager 解析动作并更新任务状态，写 assistant 回复。
@@ -51,11 +57,13 @@
 5. 非 `manager` 任务默认不即时唤醒；manager 在后续触发（如用户输入）时拉取并消费结果。
 
 唤醒事件统一为三类：
+
 - `user_input`
 - `task_done`
 - `cron_due`
 
 ## Manager 循环语义
+
 实现：`src/manager/loop.ts`
 
 - 主循环按 cursor 拉取 `inputs/results/wakes`。
@@ -65,6 +73,7 @@
 - 即时唤醒分级：`user_input` 始终唤醒；`task_done/cron_due` 仅在 `manager` 任务相关时即时唤醒。
 
 ## Session 恢复机制
+
 实现：`src/manager/runner.ts`、`src/orchestrator/core/runtime-persistence.ts`
 
 - 持久化主会话 `plannerSessionId`。
@@ -72,15 +81,19 @@
 - 若 session 无效，自动重建并继续服务。
 
 ## Worker 执行链路
+
 实现：`src/worker/profiled-runner.ts`、`src/worker/result-finalize.ts`
 
+- `manager` -> 直接执行轻量管理任务
 - `standard` -> `opencode`
 - `specialist` -> `codex-sdk`
 - 统一收敛终态：`succeeded/failed/canceled`
 - 完成后发布 `task_done`；`standard/specialist` 终态默认不即时唤醒 manager
 
 ## 状态与队列落盘
+
 主要路径：
+
 - `inputs/packets.jsonl`
 - `results/packets.jsonl`
 - `wakes/packets.jsonl`
