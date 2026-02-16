@@ -68,6 +68,7 @@ const runOpencodeOnce = async (
       const created = await client.session.create(
         {
           directory: request.workDir,
+          permission: [{ permission: '*', pattern: '*', action: 'allow' }],
         },
         {
           signal: controller.signal,
