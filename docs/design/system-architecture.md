@@ -121,6 +121,6 @@
 
 - `inputs/packets.jsonl`
 - `results/packets.jsonl`
-- `runtime-state.json`
+- `runtime-snapshot.json`
 - `history/YYYY-MM-DD.jsonl`
 - `tasks/tasks.jsonl`

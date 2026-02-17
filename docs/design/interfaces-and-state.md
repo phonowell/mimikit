@@ -39,7 +39,7 @@ HTTP 路由共享约束：
 
 - `history/YYYY-MM-DD.jsonl`
 - `log.jsonl`
-- `runtime-state.json`
+- `runtime-snapshot.json`
 - `inputs/packets.jsonl`
 - `results/packets.jsonl`
 - `tasks/tasks.jsonl`
@@ -68,8 +68,8 @@ HTTP 路由共享约束：
 - 约束：不再注入 `now_iso`
 
 ## Runtime Snapshot 约束
-- schema：`src/storage/runtime-state-schema.ts`
-- `runtime-state.queues` 仅包含：
+- schema：`src/storage/runtime-snapshot-schema.ts`
+- `runtime-snapshot.queues` 仅包含：
   - `inputsCursor`
   - `resultsCursor`
 - 主会话恢复字段：

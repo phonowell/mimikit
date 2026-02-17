@@ -7,7 +7,7 @@ export const hasForbiddenWorkerStatePath = (prompt: string): boolean => {
   const normalized = normalizePromptPath(prompt)
   if (!normalized.includes('.mimikit')) return false
   const directDeny =
-    normalized.includes('.mimikit/runtime-state') ||
+    normalized.includes('.mimikit/runtime-snapshot') ||
     normalized.includes('.mimikit/results/') ||
     normalized.includes('.mimikit/inputs/') ||
     normalized.includes('.mimikit/tasks/') ||

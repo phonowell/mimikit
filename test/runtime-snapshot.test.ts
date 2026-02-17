@@ -9,10 +9,10 @@ import {
   loadRuntimeSnapshot,
   saveRuntimeSnapshot,
   selectPersistedTasks,
-} from '../src/storage/runtime-state.js'
+} from '../src/storage/runtime-snapshot.js'
 import type { CronJob, Task } from '../src/types/index.js'
 
-const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-runtime-state-'))
+const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-runtime-snapshot-'))
 
 test('selectPersistedTasks keeps all statuses and recovers running', () => {
   const tasks: Task[] = [
@@ -144,7 +144,7 @@ test('runtime snapshot accepts queue cursors', async () => {
 test('runtime snapshot rejects legacy grouped channel shape and next fields', async () => {
   const stateDir = await createTmpDir()
   await writeFile(
-    join(stateDir, 'runtime-state.json'),
+    join(stateDir, 'runtime-snapshot.json'),
     JSON.stringify({
       tasks: [],
       channels: {
@@ -164,7 +164,7 @@ test('runtime snapshot rejects legacy grouped channel shape and next fields', as
   await expect(loadRuntimeSnapshot(stateDir)).rejects.toThrow()
 
   await writeFile(
-    join(stateDir, 'runtime-state.json'),
+    join(stateDir, 'runtime-snapshot.json'),
     JSON.stringify({
       tasks: [
         {
@@ -203,7 +203,7 @@ test('runtime snapshot rejects legacy grouped channel shape and next fields', as
 
 test('loadRuntimeSnapshot falls back to backup file when primary json is broken', async () => {
   const stateDir = await createTmpDir()
-  const primaryPath = join(stateDir, 'runtime-state.json')
+  const primaryPath = join(stateDir, 'runtime-snapshot.json')
   const backupPath = `${primaryPath}.bak`
   await writeFile(primaryPath, '{"broken":', 'utf8')
   await writeFile(
@@ -226,7 +226,7 @@ test('loadRuntimeSnapshot falls back to backup file when primary json is broken'
 
 test('saveRuntimeSnapshot writes previous primary content into .bak', async () => {
   const stateDir = await createTmpDir()
-  const primaryPath = join(stateDir, 'runtime-state.json')
+  const primaryPath = join(stateDir, 'runtime-snapshot.json')
   const oldSnapshot = {
     tasks: [],
     cronJobs: [],

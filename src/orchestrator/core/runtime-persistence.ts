@@ -4,7 +4,7 @@ import {
   loadRuntimeSnapshot,
   saveRuntimeSnapshot,
   selectPersistedTasks,
-} from '../../storage/runtime-state.js'
+} from '../../storage/runtime-snapshot.js'
 
 import type { RuntimeState } from './runtime-state.js'
 

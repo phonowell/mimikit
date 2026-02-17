@@ -6,13 +6,13 @@ import { readJson, writeJson } from '../fs/json.js'
 import { ensureFile } from '../fs/paths.js'
 import { logSafeError } from '../log/safe.js'
 
-import { parseRuntimeSnapshot } from './runtime-state-schema.js'
+import { parseRuntimeSnapshot } from './runtime-snapshot-schema.js'
 
-import type { RuntimeSnapshot } from './runtime-state-schema.js'
+import type { RuntimeSnapshot } from './runtime-snapshot-schema.js'
 import type { Task } from '../types/index.js'
 
 const runtimePath = (stateDir: string): string =>
-  join(stateDir, 'runtime-state.json')
+  join(stateDir, 'runtime-snapshot.json')
 const runtimeBackupPath = (stateDir: string): string =>
   `${runtimePath(stateDir)}.bak`
 
