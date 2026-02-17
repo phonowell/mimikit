@@ -1,7 +1,6 @@
 import PQueue from 'p-queue'
 
 import { type AppConfig } from '../../config.js'
-import { evolverLoop } from '../../evolver/loop.js'
 import { buildPaths } from '../../fs/paths.js'
 import { appendLog } from '../../log/append.js'
 import { bestEffort, setDefaultLogPath } from '../../log/safe.js'
@@ -95,7 +94,6 @@ export class Orchestrator {
     notifyWorkerLoop(this.runtime)
     void managerLoop(this.runtime)
     void cronWakeLoop(this.runtime)
-    if (this.runtime.config.evolver.enabled) void evolverLoop(this.runtime)
     void workerLoop(this.runtime)
   }
 

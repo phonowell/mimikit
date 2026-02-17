@@ -36,21 +36,7 @@
 
 - Action 块：`<M:actions> ... </M:actions>`
 - 每行一条：`<M:name key="value" />`
-- 参数在传输层统一字符串，执行前做 schema 校验。
-
-Action 名称集合（`src/actions/model/names.ts`）：
-
-- 文件类：`read_file` `search_files` `write_file` `edit_file` `patch_file`
-- 进程类：`exec_shell` `run_browser`
-- 编排类：`create_task` `cancel_task` `summarize_task_result`
-
-## 可执行 Action（registry）
-
-实现：`src/actions/defs/*` + `src/actions/registry/index.ts`
-
-- 已注册：`read_file` `search_files` `write_file` `edit_file` `patch_file` `exec_shell` `run_browser`
-- `invokeAction()`：查 spec → 参数校验 → 执行 → `safeRun` 包装异常
-- 未注册 action 返回：`unknown_action:{name}`
+- 参数在传输层统一字符串，由 manager 侧 schema 校验后再执行编排动作。
 
 ## Manager 消费的编排 Action
 
@@ -69,7 +55,7 @@ Action 名称集合（`src/actions/model/names.ts`）：
 
 ### `cancel_task`
 
-- 入参：`task_id`
+- 入参：`id`
 - 行为：`cancelTask(..., { source: 'deferred' })`
 
 ### `summarize_task_result`

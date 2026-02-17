@@ -7,11 +7,11 @@ import { writeFileAtomic } from '../fs/json.js'
 import { ensureDir, ensureFile } from '../fs/paths.js'
 import { logSafeError, safe } from '../log/safe.js'
 
+import { runSerialized } from './serialized-lock.js'
+
 type JsonlReadOptions<T> = {
   validate?: (value: unknown) => T | undefined | null
 }
-
-const updateQueue = new Map<string, Promise<void>>()
 
 export const toUtf8Text = (raw: unknown): string => {
   if (typeof raw === 'string') return raw
@@ -24,26 +24,6 @@ const splitNonEmptyLines = (text: string): string[] =>
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter((line) => line.length > 0)
-
-const runSerialized = async <T>(
-  path: string,
-  fn: () => Promise<T>,
-): Promise<T> => {
-  const previous = updateQueue.get(path) ?? Promise.resolve()
-  const safePrevious = previous.catch(() => undefined)
-  let release!: () => void
-  const next = new Promise<void>((resolve) => {
-    release = resolve
-  })
-  updateQueue.set(path, next)
-  await safePrevious
-  try {
-    return await fn()
-  } finally {
-    release()
-    if (updateQueue.get(path) === next) updateQueue.delete(path)
-  }
-}
 
 export const readJsonl = async <T>(
   path: string,

@@ -23,8 +23,6 @@
   - 持续检查 cron。
   - 触发本地任务创建。
   - 只要本次有触发就即时唤醒 manager。
-- `evolver`
-  - 默认关闭；仅在空闲窗口执行画像/人格演进。
 
 ## 启动顺序
 
@@ -35,7 +33,6 @@
 3. 启动 `managerLoop`
 4. 启动 `cronWakeLoop`
 5. 启动 `workerLoop`
-6. 若启用，启动 `evolverLoop`
 
 ## 运行态关键字段
 
@@ -47,6 +44,15 @@
 - `plannerSessionId`
 - `tasks` / `cronJobs`
 - `workerQueue` / `runningControllers`
+
+## 共享原语（去重后）
+
+- signal 等待与唤醒基元：`src/orchestrator/core/signal-primitives.ts`
+  - `manager/worker/ui` 均复用同一套 `waitForSignal`、controller 重置与超时裁剪逻辑。
+- manager 批次消费基元：`src/manager/loop-helpers.ts`
+  - `consumeBatchHistory` 同时服务成功路径与失败兜底路径，避免双份消费逻辑漂移。
+- 时间解析与新近度评分：`src/shared/time.ts`
+  - `history-query` 与 `history-jsonl` 共用 `parseIsoMs`；检索评分共用 `computeRecencyWeight`。
 
 ## 主链路（事件驱动）
 

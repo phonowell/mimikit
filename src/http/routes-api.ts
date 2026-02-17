@@ -1,5 +1,4 @@
-import { createHash } from 'node:crypto'
-
+import { buildPayloadEtag, replyWithEtag } from './etag.js'
 import { parseInputBody, parseMessageLimit, parseTaskLimit } from './helpers.js'
 import {
   registerControlRoutes,
@@ -10,34 +9,46 @@ import {
 
 import type { AppConfig } from '../config.js'
 import type { Orchestrator } from '../orchestrator/core/orchestrator-service.js'
-import type { FastifyInstance } from 'fastify'
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 
 const SSE_HEARTBEAT_MS = 15_000
 const SSE_RETRY_MS = 1_500
 const SSE_DEFAULT_MESSAGE_LIMIT = 50
 const SSE_DEFAULT_TASK_LIMIT = 200
 
-const comparableEtag = (value: string): string =>
-  value.trim().replace(/^W\//, '')
-
-const matchesIfNoneMatch = (ifNoneMatch: unknown, etag: string): boolean => {
-  if (typeof ifNoneMatch !== 'string') return false
-  const candidates = ifNoneMatch
-    .split(',')
-    .map((part) => part.trim())
-    .filter((part) => part.length > 0)
-  if (candidates.includes('*')) return true
-  const normalizedEtag = comparableEtag(etag)
-  return candidates.some(
-    (candidate) => comparableEtag(candidate) === normalizedEtag,
-  )
-}
-
-const buildPayloadEtag = (prefix: string, payload: unknown): string => {
-  const digest = createHash('sha1')
-    .update(JSON.stringify(payload))
-    .digest('base64url')
-  return `W/"${prefix}-${digest}"`
+const createSseStream = (params: {
+  request: FastifyRequest
+  reply: FastifyReply
+}) => {
+  params.reply.hijack()
+  const response = params.reply.raw
+  response.statusCode = 200
+  response.setHeader('Content-Type', 'text/event-stream; charset=utf-8')
+  response.setHeader('Cache-Control', 'no-cache, no-transform')
+  response.setHeader('Connection', 'keep-alive')
+  response.setHeader('X-Accel-Buffering', 'no')
+  if (typeof response.flushHeaders === 'function') response.flushHeaders()
+  response.write(`retry: ${SSE_RETRY_MS}\n\n`)
+  let closed = false
+  const markClosed = () => {
+    closed = true
+  }
+  params.request.raw.once('aborted', markClosed)
+  params.request.raw.once('close', markClosed)
+  const isClosed = (): boolean =>
+    closed || response.destroyed || response.writableEnded
+  const writeEvent = (event: string, payload: unknown): boolean => {
+    if (isClosed()) return false
+    response.write(`event: ${event}\n`)
+    response.write(`data: ${JSON.stringify(payload)}\n\n`)
+    return true
+  }
+  const cleanup = () => {
+    params.request.raw.off('aborted', markClosed)
+    params.request.raw.off('close', markClosed)
+    if (!isClosed()) response.end()
+  }
+  return { isClosed, writeEvent, cleanup }
 }
 
 export const registerApiRoutes = (
@@ -46,34 +57,7 @@ export const registerApiRoutes = (
   _config: AppConfig,
 ): void => {
   app.get('/api/events', async (request, reply) => {
-    reply.hijack()
-    const res = reply.raw
-    res.statusCode = 200
-    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8')
-    res.setHeader('Cache-Control', 'no-cache, no-transform')
-    res.setHeader('Connection', 'keep-alive')
-    res.setHeader('X-Accel-Buffering', 'no')
-
-    if (typeof res.flushHeaders === 'function') res.flushHeaders()
-    res.write(`retry: ${SSE_RETRY_MS}\n\n`)
-
-    let closed = false
-    const onClosed = () => {
-      closed = true
-    }
-    request.raw.once('aborted', onClosed)
-    request.raw.once('close', onClosed)
-
-    const isStreamClosed = (): boolean =>
-      closed || res.destroyed || res.writableEnded
-
-    const writeSnapshot = (payload: unknown): void => {
-      if (isStreamClosed()) return
-      const body = JSON.stringify(payload)
-      res.write(`event: snapshot\n`)
-      res.write(`data: ${body}\n\n`)
-    }
-
+    const stream = createSseStream({ request, reply })
     let lastSnapshotEtag = ''
     try {
       const initial = await orchestrator.getWebUiSnapshot(
@@ -81,12 +65,12 @@ export const registerApiRoutes = (
         SSE_DEFAULT_TASK_LIMIT,
       )
       lastSnapshotEtag = buildPayloadEtag('events', initial)
-      writeSnapshot(initial)
+      stream.writeEvent('snapshot', initial)
 
       for (;;) {
-        if (isStreamClosed()) break
+        if (stream.isClosed()) break
         await orchestrator.waitForWebUiSignal(SSE_HEARTBEAT_MS)
-        if (isStreamClosed()) break
+        if (stream.isClosed()) break
         const snapshot = await orchestrator.getWebUiSnapshot(
           SSE_DEFAULT_MESSAGE_LIMIT,
           SSE_DEFAULT_TASK_LIMIT,
@@ -95,30 +79,24 @@ export const registerApiRoutes = (
         if (snapshotEtag === lastSnapshotEtag) continue
 
         lastSnapshotEtag = snapshotEtag
-        writeSnapshot(snapshot)
+        if (!stream.writeEvent('snapshot', snapshot)) break
       }
     } catch (error) {
-      if (!isStreamClosed()) {
-        const message = error instanceof Error ? error.message : String(error)
-        res.write(`event: error\n`)
-        res.write(`data: ${JSON.stringify({ error: message })}\n\n`)
-      }
+      const message = error instanceof Error ? error.message : String(error)
+      stream.writeEvent('error', { error: message })
     } finally {
-      request.raw.off('aborted', onClosed)
-      request.raw.off('close', onClosed)
-      if (!isStreamClosed()) res.end()
+      stream.cleanup()
     }
   })
 
   app.get('/api/status', (request, reply) => {
     const payload = orchestrator.getStatus()
-    const etag = buildPayloadEtag('status', payload)
-    reply.header('ETag', etag)
-    if (matchesIfNoneMatch(request.headers['if-none-match'], etag)) {
-      reply.code(304).send()
-      return
-    }
-    return payload
+    return replyWithEtag({
+      request,
+      reply,
+      prefix: 'status',
+      payload,
+    })
   })
 
   app.post('/api/input', async (request, reply) => {
@@ -155,13 +133,12 @@ export const registerApiRoutes = (
       afterId,
     )
     const payload = { messages, mode }
-    const etag = buildPayloadEtag('messages', payload)
-    reply.header('ETag', etag)
-    if (matchesIfNoneMatch(request.headers['if-none-match'], etag)) {
-      reply.code(304).send()
-      return
-    }
-    return payload
+    return replyWithEtag({
+      request,
+      reply,
+      prefix: 'messages',
+      payload,
+    })
   })
 
   app.get('/api/tasks', (request) => {

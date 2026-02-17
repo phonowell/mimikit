@@ -1,6 +1,6 @@
 import bm25 from 'wink-bm25-text-search'
 
-import { parseIsoMs } from './history-query-request.js'
+import { computeRecencyWeight, parseIsoMs } from '../shared/time.js'
 
 import type { QueryHistoryRequest } from './history-query-request.js'
 import type {
@@ -106,10 +106,7 @@ const fallbackSearch = (
       const hits = toTokens(doc.text).filter((token) =>
         queryTokens.has(token),
       ).length
-      const recency =
-        newest <= oldest
-          ? 1
-          : Math.max(0, (doc.ts - oldest) / (newest - oldest))
+      const recency = computeRecencyWeight(doc.ts, oldest, newest)
       return { doc, score: hits + recency * 0.05, ts: doc.ts }
     }),
   )
@@ -152,10 +149,7 @@ export const queryHistory = (
       .map(([docId, score]) => {
         const doc = docsById.get(String(docId))
         if (!doc) return undefined
-        const recency =
-          newest <= oldest
-            ? 1
-            : Math.max(0, (doc.ts - oldest) / (newest - oldest))
+        const recency = computeRecencyWeight(doc.ts, oldest, newest)
         const weightedScore = score + recency * 0.05
         return { doc, score: weightedScore, ts: doc.ts }
       })

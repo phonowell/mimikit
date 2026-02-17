@@ -40,14 +40,6 @@ const defaultConfigSchema = z
         task: taskDefaultsSchema,
       })
       .strict(),
-    evolver: z
-      .object({
-        enabled: z.boolean(),
-        pollMs: z.number().int().positive(),
-        idleThresholdMs: z.number().int().positive(),
-        minIntervalMs: z.number().int().positive(),
-      })
-      .strict(),
     worker: z
       .object({
         maxConcurrent: z.number().int().positive(),

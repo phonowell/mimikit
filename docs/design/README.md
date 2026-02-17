@@ -1,6 +1,6 @@
 # 系统设计（v6）
 
-> 当前架构：`manager(role) / worker(profile)`（`evolver` 默认停用，可配置启用）。
+> 当前架构：`manager(role) / worker(profile)`。
 
 ## 阅读路径
 
@@ -16,14 +16,12 @@
 2. `manager` 是唯一对话与编排入口，直接消费 `inputs/results`。
 3. `worker` 分层：`standard`（低成本）与 `specialist`（高能力）。
 4. 队列语义固定：`inputs -> history`、`results -> tasks`。
-5. `evolver` 默认停用；启用后仅在空闲窗口触发，不阻塞在线请求。
-6. 提示词仅放在 `prompts/`，业务代码不硬编码长提示词。
+5. 提示词仅放在 `prompts/`，业务代码不硬编码长提示词。
 
 ## 关联目录
 
 - `src/orchestrator/*`
 - `src/manager/*`
-- `src/evolver/*`
 - `src/worker/*`
 - `src/streams/*`
 
@@ -33,8 +31,6 @@
 - `prompts/manager/fallback-reply.md`
 - `prompts/manager/system-fallback-reply.md`
 - `prompts/worker/system.md`
-- `prompts/evolver/system.md`
-- `prompts/evolver/injection.md`
 
 补充说明：
 

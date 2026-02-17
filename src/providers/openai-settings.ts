@@ -6,6 +6,7 @@ import read from 'fire-keeper/read'
 
 import { readJson } from '../fs/json.js'
 import { safe } from '../log/safe.js'
+import { readBooleanFlag, readNonEmptyString } from '../shared/input-parsing.js'
 import { stripUndefined } from '../shared/utils.js'
 
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
@@ -20,26 +21,11 @@ export type CodexSettings = {
 
 export const HARDCODED_MODEL_REASONING_EFFORT: ModelReasoningEffort = 'high'
 
-const valueString = (value: unknown): string | undefined => {
-  if (typeof value !== 'string') return undefined
-  const normalized = value.trim()
-  return normalized ? normalized : undefined
-}
-
-const valueBoolean = (value: unknown): boolean | undefined => {
-  if (typeof value === 'boolean') return value
-  if (typeof value === 'string') {
-    if (/^(1|true|yes|on)$/i.test(value)) return true
-    if (/^(0|false|no|off)$/i.test(value)) return false
-  }
-  return undefined
-}
-
 const envString = (key: string): string | undefined =>
-  valueString(process.env[key])
+  readNonEmptyString(process.env[key])
 
 const envBoolean = (key: string): boolean | undefined =>
-  valueBoolean(envString(key))
+  readBooleanFlag(envString(key))
 
 const resolveHomeDir = (): string =>
   envString('HOME') ?? envString('USERPROFILE') ?? homedir()
@@ -85,16 +71,18 @@ const resolveProviderSettings = (
   CodexSettings,
   'model' | 'baseUrl' | 'wireApi' | 'requiresOpenAiAuth'
 > => {
-  const model = valueString(config.model)
-  const providerName = valueString(config.model_provider)
+  const model = readNonEmptyString(config.model)
+  const providerName = readNonEmptyString(config.model_provider)
   const providerMap = valueRecord(config.model_providers)
   const providerConfig =
     providerName && providerMap
       ? valueRecord(providerMap[providerName])
       : undefined
-  const baseUrl = valueString(providerConfig?.base_url)
-  const wireApi = valueString(providerConfig?.wire_api)
-  const requiresOpenAiAuth = valueBoolean(providerConfig?.requires_openai_auth)
+  const baseUrl = readNonEmptyString(providerConfig?.base_url)
+  const wireApi = readNonEmptyString(providerConfig?.wire_api)
+  const requiresOpenAiAuth = readBooleanFlag(
+    providerConfig?.requires_openai_auth,
+  )
 
   return stripUndefined({ model, baseUrl, wireApi, requiresOpenAiAuth })
 }

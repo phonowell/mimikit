@@ -8,11 +8,6 @@ deferred:
   task:
     timeoutMs: 60000
     model: gpt-5.2-high
-evolver:
-  enabled: false
-  pollMs: 2000
-  idleThresholdMs: 60000
-  minIntervalMs: 300000
 worker:
   maxConcurrent: 3
   retryMaxAttempts: 1

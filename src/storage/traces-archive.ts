@@ -1,11 +1,7 @@
-import { join } from 'node:path'
-
-import write from 'fire-keeper/write'
-
-import { ensureDir } from '../fs/paths.js'
 import { nowIso } from '../shared/utils.js'
 
-import { buildArchiveDocument, dateStamp } from './archive-format.js'
+import { buildArchiveDocument } from './archive-format.js'
+import { writeDatedArchiveFile } from './archive-write.js'
 
 import type { TokenUsage } from '../types/index.js'
 
@@ -52,17 +48,10 @@ const attemptCode = (
   return 'n'
 }
 
-const buildArchivePath = (
-  stateDir: string,
-  iso: string,
-  entry: TraceArchiveEntry,
-): string => {
-  const dateDir = dateStamp(iso)
-  const filename = `${compactTimestamp36(iso)}${roleCode(entry.role)}${attemptCode(
+const buildArchiveFilename = (iso: string, entry: TraceArchiveEntry): string =>
+  `${compactTimestamp36(iso)}${roleCode(entry.role)}${attemptCode(
     entry.attempt,
   )}.txt`
-  return join(stateDir, 'traces', dateDir, filename)
-}
 
 const buildArchiveContent = (
   timestamp: string,
@@ -97,10 +86,13 @@ export const appendTraceArchive = async (
   entry: TraceArchiveEntry,
 ): Promise<void> => {
   const timestamp = nowIso()
-  const path = buildArchivePath(stateDir, timestamp, entry)
-  await ensureDir(join(stateDir, 'traces', dateStamp(timestamp)))
-  const content = buildArchiveContent(timestamp, entry)
-  await write(path, content, { encoding: 'utf8' }, { echo: false })
+  await writeDatedArchiveFile({
+    stateDir,
+    archiveSubDir: 'traces',
+    timestamp,
+    filename: buildArchiveFilename(timestamp, entry),
+    content: buildArchiveContent(timestamp, entry),
+  })
 }
 
 export const appendTraceArchiveResult = (

@@ -15,6 +15,10 @@
 
 实现：`src/http/index.ts`、`src/http/routes-api.ts`
 
+HTTP 路由共享约束：
+- ETag 逻辑统一在 `src/http/etag.ts`（`/api/status`、`/api/messages` 同源行为）。
+- `:id` 参数校验与任务存在性校验统一在 `src/http/routes-api-sections.ts` 内部 helper。
+
 ## CLI
 - `tsx src/cli/index.ts`
 - `tsx src/cli/index.ts --port 8787`
@@ -29,10 +33,6 @@
 - `MIMIKIT_WORKER_SPECIALIST_REASONING_EFFORT`
 - `MIMIKIT_MANAGER_PROMPT_MAX_TOKENS`
 - `MIMIKIT_MANAGER_CREATE_TASK_DEBOUNCE_MS`
-- `MIMIKIT_EVOLVER_ENABLED`
-- `MIMIKIT_EVOLVER_POLL_MS`
-- `MIMIKIT_EVOLVER_IDLE_THRESHOLD_MS`
-- `MIMIKIT_EVOLVER_MIN_INTERVAL_MS`
 
 ## 状态目录
 默认目录：`./.mimikit/`
@@ -49,6 +49,10 @@
 - `user_profile.md`
 - `agent_persona.md`
 - `agent_persona_versions/*.md`
+
+状态写入共享约束：
+- JSONL 串行写锁：`src/storage/serialized-lock.ts`（`jsonl` 与 `history` 复用）。
+- 按日期归档写入：`src/storage/archive-write.ts`（`tasks` 与 `traces` 复用）。
 
 ## Manager 唤醒约束
 - 唤醒来源仅三类：`user_input`、`task_result`、`cron`

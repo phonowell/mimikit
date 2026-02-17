@@ -1,11 +1,7 @@
+import { readNonEmptyString } from '../shared/input-parsing.js'
+
 import type { TokenUsage } from '../types/index.js'
 import type { AssistantMessage, Event, Part } from '@opencode-ai/sdk/v2'
-
-const readString = (value: unknown): string | undefined => {
-  if (typeof value !== 'string') return undefined
-  const normalized = value.trim()
-  return normalized ? normalized : undefined
-}
 
 const readNumber = (value: unknown): number | undefined => {
   if (typeof value === 'number' && Number.isFinite(value)) return value
@@ -54,9 +50,9 @@ const resolveOpencodeModel = (
   requested?: string,
   fallback = 'opencode/big-pickle',
 ): string => {
-  const fromRequest = readString(requested)
+  const fromRequest = readNonEmptyString(requested)
   if (fromRequest?.includes('/')) return fromRequest
-  const fromEnv = readString(process.env.MIMIKIT_OPENCODE_MODEL)
+  const fromEnv = readNonEmptyString(process.env.MIMIKIT_OPENCODE_MODEL)
   if (fromEnv?.includes('/')) return fromEnv
   return fallback
 }

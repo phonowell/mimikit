@@ -1,11 +1,9 @@
-import { extname, join } from 'node:path'
+import { extname } from 'node:path'
 
 import isExist from 'fire-keeper/isExist'
-import write from 'fire-keeper/write'
 
-import { ensureDir } from '../fs/paths.js'
-
-import { buildArchiveDocument, dateStamp } from './archive-format.js'
+import { buildArchiveDocument } from './archive-format.js'
+import { writeDatedArchiveFile } from './archive-write.js'
 import {
   readTaskResultArchive,
   readTaskResultsForTasks,
@@ -92,19 +90,18 @@ const buildArchiveContent = (entry: TaskArchiveEntry): string =>
     ],
   )
 
-export const appendTaskResultArchive = async (
+export const appendTaskResultArchive = (
   stateDir: string,
   entry: TaskArchiveEntry,
-): Promise<string> => {
-  const dateDir = dateStamp(entry.completedAt)
-  const dir = join(stateDir, TASK_ARCHIVE_DIR, dateDir)
-  await ensureDir(dir)
-  const filename = buildFilename(entry)
-  const path = await ensureUniquePath(join(dir, filename))
-  const content = buildArchiveContent(entry)
-  await write(path, content, { encoding: 'utf8' }, { echo: false })
-  return path
-}
+): Promise<string> =>
+  writeDatedArchiveFile({
+    stateDir,
+    archiveSubDir: TASK_ARCHIVE_DIR,
+    timestamp: entry.completedAt,
+    filename: buildFilename(entry),
+    content: buildArchiveContent(entry),
+    resolvePath: ensureUniquePath,
+  })
 
 export { readTaskResultArchive, readTaskResultsForTasks }
 export type { ReadTaskResultsOptions }

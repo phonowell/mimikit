@@ -100,6 +100,44 @@ export const finalizeBatchProgress = async (params: {
   await persistRuntime(runtime)
 }
 
+type ConsumeBatchHistoryResult =
+  | {
+      ok: true
+      consumedInputIds: Set<string>
+    }
+  | {
+      ok: false
+      reason:
+        | 'append_consumed_inputs_incomplete'
+        | 'append_consumed_results_incomplete'
+    }
+
+export const consumeBatchHistory = async (params: {
+  runtime: RuntimeState
+  inputs: UserInput[]
+  results: TaskResult[]
+  summaries?: Map<string, string>
+}): Promise<ConsumeBatchHistoryResult> => {
+  const consumedInputIds = new Set(params.inputs.map((item) => item.id))
+  const consumedInputCount = await appendConsumedInputsToHistory(
+    params.runtime.paths.history,
+    params.inputs,
+  )
+  if (consumedInputCount < params.inputs.length)
+    return { ok: false, reason: 'append_consumed_inputs_incomplete' }
+
+  const consumedResultCount = await appendConsumedResultsToHistory(
+    params.runtime.paths.history,
+    params.runtime.tasks,
+    params.results,
+    params.summaries,
+  )
+  if (consumedResultCount < params.results.length)
+    return { ok: false, reason: 'append_consumed_results_incomplete' }
+
+  return { ok: true, consumedInputIds }
+}
+
 export const drainBatchOnFailure = async (params: {
   runtime: RuntimeState
   inputs: UserInput[]
@@ -116,24 +154,18 @@ export const drainBatchOnFailure = async (params: {
     nextResultsCursor,
     persistRuntime,
   } = params
-  const consumedInputCount = await appendConsumedInputsToHistory(
-    runtime.paths.history,
+  const consumed = await consumeBatchHistory({
+    runtime,
     inputs,
-  )
-  if (consumedInputCount < inputs.length) return false
-
-  const consumedResultCount = await appendConsumedResultsToHistory(
-    runtime.paths.history,
-    runtime.tasks,
     results,
-  )
-  if (consumedResultCount < results.length) return false
+  })
+  if (!consumed.ok) return false
 
   await finalizeBatchProgress({
     runtime,
     nextInputsCursor,
     nextResultsCursor,
-    consumedInputIds: new Set(inputs.map((item) => item.id)),
+    consumedInputIds: consumed.consumedInputIds,
     persistRuntime,
   })
   return true

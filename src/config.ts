@@ -32,13 +32,6 @@ export type AppConfig = {
       model: string
     }
   }
-  /** Evolver loop configuration */
-  evolver: {
-    enabled: boolean
-    pollMs: number
-    idleThresholdMs: number
-    minIntervalMs: number
-  }
   /** Worker execution configuration */
   worker: {
     maxConcurrent: number

@@ -3,41 +3,16 @@ import { join } from 'node:path'
 
 import { ensureDir, listFiles } from '../fs/paths.js'
 import { safe } from '../log/safe.js'
+import { parseIsoMs } from '../shared/time.js'
 
 import { readJsonl, writeJsonl } from './jsonl.js'
+import { runSerialized } from './serialized-lock.js'
 
 import type { HistoryMessage } from '../types/index.js'
-
-const updateQueue = new Map<string, Promise<void>>()
 
 const MAX_HISTORY_ITEMS = 1000
 const HISTORY_FILE_NAME_PATTERN = /^\d{4}-\d{2}-\d{2}\.jsonl$/
 const FALLBACK_HISTORY_DATE = '1970-01-01'
-
-const runSerialized = async <T>(
-  path: string,
-  fn: () => Promise<T>,
-): Promise<T> => {
-  const previous = updateQueue.get(path) ?? Promise.resolve()
-  const safePrevious = previous.catch(() => undefined)
-  let release!: () => void
-  const next = new Promise<void>((resolve) => {
-    release = resolve
-  })
-  updateQueue.set(path, next)
-  await safePrevious
-  try {
-    return await fn()
-  } finally {
-    release()
-    if (updateQueue.get(path) === next) updateQueue.delete(path)
-  }
-}
-
-const parseIsoMs = (value: string): number | undefined => {
-  const ts = Date.parse(value)
-  return Number.isFinite(ts) ? ts : undefined
-}
 
 const compareHistoryMessage = (
   a: HistoryMessage,

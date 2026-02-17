@@ -49,5 +49,9 @@
 - 当前注册 provider：
   - `opencode`：`src/providers/opencode-provider.ts`
   - `codex-sdk`：`src/providers/codex-sdk-provider.ts`
+- 共享 provider 运行时基元：`src/providers/provider-runtime.ts`
+  - 统一超时/外部中断绑定、耗时计算与结果封装，避免双份实现漂移。
+- provider 输入解析共享：`src/shared/input-parsing.ts`
+  - 环境/配置字符串与布尔值解析统一复用。
 
 不保留旧 chat-completions 运行时兼容 provider。

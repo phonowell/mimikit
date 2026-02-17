@@ -22,6 +22,12 @@ import {
   mapOpencodeUsage,
   resolveOpencodeModelRef,
 } from './opencode-provider-utils.js'
+import {
+  bindExternalAbort,
+  buildProviderResult,
+  createProviderLifecycle,
+  createTimeoutGuard,
+} from './provider-runtime.js'
 
 import type {
   OpencodeProviderRequest,
@@ -34,25 +40,22 @@ const runOpencodeOnce = async (
 ): Promise<ProviderResult> => {
   const startedAt = Date.now()
   const controller = new AbortController()
-  const lifecycle = {
-    timedOut: false,
-    externallyAborted: false,
-  }
-  const onAbort = (): void => {
-    lifecycle.externallyAborted = true
-    controller.abort()
-  }
-  let timeoutTimer: ReturnType<typeof setTimeout> | undefined
-  if (request.timeoutMs > 0) {
-    timeoutTimer = setTimeout(() => {
+  const lifecycle = createProviderLifecycle()
+  const releaseExternalAbort = bindExternalAbort({
+    controller,
+    ...(request.abortSignal ? { abortSignal: request.abortSignal } : {}),
+    onAbort: () => {
+      lifecycle.externallyAborted = true
+    },
+  })
+  const timeoutGuard = createTimeoutGuard({
+    controller,
+    timeoutMs: request.timeoutMs,
+    onTimeout: () => {
       lifecycle.timedOut = true
-      controller.abort()
-    }, request.timeoutMs)
-  }
-  if (request.abortSignal) {
-    if (request.abortSignal.aborted) onAbort()
-    else request.abortSignal.addEventListener('abort', onAbort)
-  }
+    },
+  })
+  timeoutGuard.arm()
   let closeServer: (() => void) | undefined
   let usageMonitor: UsageStreamMonitor | undefined
   try {
@@ -111,12 +114,12 @@ const runOpencodeOnce = async (
     const promptUsage = mapOpencodeUsage(promptResponse.info)
     reportUsage(promptUsage)
     const usage = promptUsage ?? latestUsage
-    return {
+    return buildProviderResult({
+      startedAt,
       output: extractOpencodeOutput(promptResponse.parts),
-      elapsedMs: Math.max(0, Date.now() - startedAt),
       ...(usage ? { usage } : {}),
       threadId: sessionID,
-    }
+    })
   } catch (error) {
     if (lifecycle.timedOut) {
       throw new Error(
@@ -127,9 +130,8 @@ const runOpencodeOnce = async (
       throw new Error('[provider:opencode] aborted')
     throw wrapSdkError(error)
   } finally {
-    clearTimeout(timeoutTimer)
-    if (request.abortSignal)
-      request.abortSignal.removeEventListener('abort', onAbort)
+    timeoutGuard.clear()
+    releaseExternalAbort()
     if (usageMonitor) {
       usageMonitor.stop()
       await usageMonitor.done.catch(() => undefined)

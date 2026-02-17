@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { parseIsoMs } from '../shared/time.js'
+
 import type { Parsed } from '../actions/model/spec.js'
 import type { Role } from '../types/index.js'
 
@@ -46,11 +48,6 @@ const parseRoles = (raw?: string): Role[] => {
     unique.add(role)
   }
   return unique.size > 0 ? Array.from(unique) : ['user', 'assistant']
-}
-
-export const parseIsoMs = (value: string): number | undefined => {
-  const ts = Date.parse(value)
-  return Number.isFinite(ts) ? ts : undefined
 }
 
 export const pickQueryHistoryRequest = (

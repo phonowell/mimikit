@@ -9,7 +9,8 @@ import { clearStateDir } from './helpers.js'
 
 import type { AppConfig } from '../config.js'
 import type { Orchestrator } from '../orchestrator/core/orchestrator-service.js'
-import type { FastifyInstance } from 'fastify'
+import type { Task } from '../types/index.js'
+import type { FastifyInstance, FastifyReply } from 'fastify'
 
 const isWithinRoot = (root: string, path: string): boolean => {
   const rel = relative(root, path)
@@ -18,23 +19,44 @@ const isWithinRoot = (root: string, path: string): boolean => {
   return !isAbsolute(rel)
 }
 
+const resolveTaskId = (
+  params: unknown,
+  reply: FastifyReply,
+): string | undefined => {
+  const id =
+    params && typeof params === 'object' && 'id' in params
+      ? (params as { id?: unknown }).id
+      : undefined
+  const taskId = typeof id === 'string' ? id.trim() : ''
+  if (taskId) return taskId
+  reply.code(400).send({ error: 'task id is required' })
+  return undefined
+}
+
+const resolveTask = (
+  params: unknown,
+  reply: FastifyReply,
+  orchestrator: Orchestrator,
+): { taskId: string; task: Task } | undefined => {
+  const taskId = resolveTaskId(params, reply)
+  if (!taskId) return undefined
+  const task = orchestrator.getTaskById(taskId)
+  if (!task) {
+    reply.code(404).send({ error: 'task not found' })
+    return undefined
+  }
+  return { taskId, task }
+}
+
 export const registerTaskArchiveRoute = (
   app: FastifyInstance,
   orchestrator: Orchestrator,
   config: AppConfig,
 ): void => {
   app.get('/api/tasks/:id/archive', async (request, reply) => {
-    const params = request.params as { id?: string } | undefined
-    const taskId = typeof params?.id === 'string' ? params.id.trim() : ''
-    if (!taskId) {
-      reply.code(400).send({ error: 'task id is required' })
-      return
-    }
-    const task = orchestrator.getTaskById(taskId)
-    if (!task) {
-      reply.code(404).send({ error: 'task not found' })
-      return
-    }
+    const resolved = resolveTask(request.params, reply, orchestrator)
+    if (!resolved) return
+    const { task } = resolved
     const archivePath = task.archivePath ?? task.result?.archivePath
     if (!archivePath) {
       reply.code(404).send({ error: 'task archive not found' })
@@ -79,17 +101,9 @@ export const registerTaskProgressRoute = (
   config: AppConfig,
 ): void => {
   app.get('/api/tasks/:id/progress', async (request, reply) => {
-    const params = request.params as { id?: string } | undefined
-    const taskId = typeof params?.id === 'string' ? params.id.trim() : ''
-    if (!taskId) {
-      reply.code(400).send({ error: 'task id is required' })
-      return
-    }
-    const task = orchestrator.getTaskById(taskId)
-    if (!task) {
-      reply.code(404).send({ error: 'task not found' })
-      return
-    }
+    const resolved = resolveTask(request.params, reply, orchestrator)
+    if (!resolved) return
+    const { taskId } = resolved
     const events = await readTaskProgress(config.workDir, taskId)
     reply.send({ taskId, events })
   })
@@ -100,12 +114,8 @@ export const registerTaskCancelRoute = (
   orchestrator: Orchestrator,
 ): void => {
   app.post('/api/tasks/:id/cancel', async (request, reply) => {
-    const params = request.params as { id?: string } | undefined
-    const taskId = typeof params?.id === 'string' ? params.id.trim() : ''
-    if (!taskId) {
-      reply.code(400).send({ error: 'task id is required' })
-      return
-    }
+    const taskId = resolveTaskId(request.params, reply)
+    if (!taskId) return
     const cancelResult = await orchestrator.cancelTask(taskId, {
       source: 'user',
     })

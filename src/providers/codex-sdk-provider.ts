@@ -8,6 +8,12 @@ import {
   HARDCODED_MODEL_REASONING_EFFORT,
   loadCodexSettings,
 } from './openai-settings.js'
+import {
+  bindExternalAbort,
+  buildProviderResult,
+  createTimeoutGuard,
+  elapsedMsSince,
+} from './provider-runtime.js'
 
 import type { CodexSdkProviderRequest, Provider } from './types.js'
 
@@ -94,33 +100,28 @@ const runCodexProvider = async (request: CodexSdkProviderRequest) => {
 
   const { thread } = createThread(request)
 
-  const controller =
-    request.timeoutMs > 0 || request.abortSignal ? new AbortController() : null
-  let idleTimer: ReturnType<typeof setTimeout> | undefined
   const startedAt = Date.now()
+  const controller = new AbortController()
   let lastActivityAt = startedAt
-
-  const onExternalAbort = () => {
-    if (controller && !controller.signal.aborted) controller.abort()
-  }
+  const releaseExternalAbort = bindExternalAbort({
+    controller,
+    ...(request.abortSignal ? { abortSignal: request.abortSignal } : {}),
+  })
+  const idleTimeout = createTimeoutGuard({
+    controller,
+    timeoutMs: request.timeoutMs,
+  })
 
   const resetIdle = () => {
     lastActivityAt = Date.now()
-    if (!controller || request.timeoutMs <= 0) return
-    clearTimeout(idleTimer)
-    idleTimer = setTimeout(() => controller.abort(), request.timeoutMs)
-  }
-
-  if (request.abortSignal) {
-    if (request.abortSignal.aborted) onExternalAbort()
-    else request.abortSignal.addEventListener('abort', onExternalAbort)
+    idleTimeout.arm()
   }
 
   try {
     resetIdle()
     const stream = await thread.runStreamed(request.prompt, {
       ...(request.outputSchema ? { outputSchema: request.outputSchema } : {}),
-      ...(controller ? { signal: controller.signal } : {}),
+      signal: controller.signal,
     })
     let output = ''
     let usage: ReturnType<typeof normalizeUsage> | undefined
@@ -138,7 +139,7 @@ const runCodexProvider = async (request: CodexSdkProviderRequest) => {
       if (event.type === 'turn.failed') throw new Error(event.error.message)
       if (event.type === 'error') throw new Error(event.message)
     }
-    const elapsedMs = Math.max(0, Date.now() - startedAt)
+    const elapsedMs = elapsedMsSince(startedAt)
     await appendLlmLog(request, {
       event: 'llm_call_finished',
       elapsedMs,
@@ -146,14 +147,14 @@ const runCodexProvider = async (request: CodexSdkProviderRequest) => {
       idleTimeoutMs: request.timeoutMs,
       timeoutType: 'idle',
     })
-    return {
+    return buildProviderResult({
+      startedAt,
       output,
-      elapsedMs,
       ...(usage ? { usage } : {}),
       threadId: thread.id ?? request.threadId ?? null,
-    }
+    })
   } catch (error) {
-    const elapsedMs = Math.max(0, Date.now() - startedAt)
+    const elapsedMs = elapsedMsSince(startedAt)
     const err = error instanceof Error ? error : new Error(String(error))
     await appendLlmLog(request, {
       event: 'llm_call_failed',
@@ -167,9 +168,8 @@ const runCodexProvider = async (request: CodexSdkProviderRequest) => {
     })
     throw error
   } finally {
-    clearTimeout(idleTimer)
-    if (request.abortSignal)
-      request.abortSignal.removeEventListener('abort', onExternalAbort)
+    idleTimeout.clear()
+    releaseExternalAbort()
   }
 }
 

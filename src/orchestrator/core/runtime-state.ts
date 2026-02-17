@@ -53,5 +53,4 @@ export type RuntimeState = {
   workerSignalController: AbortController
   uiSignalController?: AbortController
   lastUserMeta?: UserMeta
-  lastEvolverRunAt?: number
 }

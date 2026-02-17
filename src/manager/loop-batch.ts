@@ -6,14 +6,11 @@ import { nowIso } from '../shared/utils.js'
 import { appendHistory } from '../storage/history-jsonl.js'
 
 import { applyTaskActions, collectTaskResultSummaries } from './action-apply.js'
-import {
-  appendConsumedInputsToHistory,
-  appendConsumedResultsToHistory,
-  appendManagerFallbackReply,
-} from './history.js'
+import { appendManagerFallbackReply } from './history.js'
 import { runManagerBatch } from './loop-batch-run-manager.js'
 import {
   buildFallbackReply,
+  consumeBatchHistory,
   drainBatchOnFailure,
   finalizeBatchProgress,
 } from './loop-helpers.js'
@@ -56,21 +53,13 @@ export const processManagerBatch = async (params: {
       (result) =>
         result.status === 'canceled' && result.cancel?.source === 'user',
     )
-    const consumedInputCount = await appendConsumedInputsToHistory(
-      runtime.paths.history,
+    const consumed = await consumeBatchHistory({
+      runtime,
       inputs,
-    )
-    if (consumedInputCount < inputs.length)
-      throw new Error('append_consumed_inputs_incomplete')
-
-    const consumedResultCount = await appendConsumedResultsToHistory(
-      runtime.paths.history,
-      runtime.tasks,
       results,
       summaries,
-    )
-    if (consumedResultCount < results.length)
-      throw new Error('append_consumed_results_incomplete')
+    })
+    if (!consumed.ok) throw new Error(consumed.reason)
     await applyTaskActions(runtime, parsed.actions, {
       suppressCreateTask: hasManualCanceledResult && inputs.length === 0,
     })
@@ -95,7 +84,7 @@ export const processManagerBatch = async (params: {
       runtime,
       nextInputsCursor,
       nextResultsCursor,
-      consumedInputIds: new Set(inputs.map((item) => item.id)),
+      consumedInputIds: consumed.consumedInputIds,
       persistRuntime: persistRuntimeState,
     })
 

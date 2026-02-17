@@ -32,6 +32,30 @@ type CronCheckResult = {
   triggeredCount: number
 }
 
+const triggerCronJobTask = async (params: {
+  runtime: RuntimeState
+  prompt: string
+  title: string
+  profile: RuntimeState['cronJobs'][number]['profile']
+  cronLabel: string
+}): Promise<boolean> => {
+  const { task, created } = enqueueTask(
+    params.runtime.tasks,
+    params.prompt,
+    params.title,
+    params.profile,
+    params.cronLabel,
+  )
+  if (!created) return false
+  task.cron = params.cronLabel
+  await appendTaskSystemMessage(params.runtime.paths.history, 'created', task, {
+    createdAt: task.createdAt,
+  })
+  enqueueWorkerTask(params.runtime, task)
+  notifyWorkerLoop(params.runtime)
+  return true
+}
+
 export const checkCronJobs = async (
   runtime: RuntimeState,
 ): Promise<CronCheckResult> => {
@@ -55,23 +79,15 @@ export const checkCronJobs = async (
       cronJob.enabled = false
       cronJob.disabledReason = 'completed'
       stateChanged = true
-
-      const { task, created } = enqueueTask(
-        runtime.tasks,
-        cronJob.prompt,
-        cronJob.title,
-        cronJob.profile,
-        cronJob.scheduledAt,
-      )
+      const created = await triggerCronJobTask({
+        runtime,
+        prompt: cronJob.prompt,
+        title: cronJob.title,
+        profile: cronJob.profile,
+        cronLabel: cronJob.scheduledAt,
+      })
       if (!created) continue
       triggeredCount += 1
-
-      task.cron = cronJob.scheduledAt
-      await appendTaskSystemMessage(runtime.paths.history, 'created', task, {
-        createdAt: task.createdAt,
-      })
-      enqueueWorkerTask(runtime, task)
-      notifyWorkerLoop(runtime)
       continue
     }
 
@@ -100,22 +116,15 @@ export const checkCronJobs = async (
 
     cronJob.lastTriggeredAt = nowAtIso
     stateChanged = true
-    const { task, created } = enqueueTask(
-      runtime.tasks,
-      cronJob.prompt,
-      cronJob.title,
-      cronJob.profile,
-      cronJob.cron,
-    )
+    const created = await triggerCronJobTask({
+      runtime,
+      prompt: cronJob.prompt,
+      title: cronJob.title,
+      profile: cronJob.profile,
+      cronLabel: cronJob.cron,
+    })
     if (!created) continue
     triggeredCount += 1
-
-    task.cron = cronJob.cron
-    await appendTaskSystemMessage(runtime.paths.history, 'created', task, {
-      createdAt: task.createdAt,
-    })
-    enqueueWorkerTask(runtime, task)
-    notifyWorkerLoop(runtime)
     if (!cronHasNextRun(cronJob.cron)) {
       cronJob.enabled = false
       cronJob.disabledReason = 'completed'
