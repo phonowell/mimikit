@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import write from 'fire-keeper/write'
 
 import { ensureDir } from '../fs/paths.js'
-import { nowIso, shortId } from '../shared/utils.js'
+import { nowIso } from '../shared/utils.js'
 
 import { buildArchiveDocument, dateStamp } from './archive-format.js'
 
@@ -35,8 +35,22 @@ export type TraceArchiveResult = {
   errorName?: string
 }
 
-const timeStamp = (iso: string): string =>
-  iso.slice(11, 23).replace(/:/g, '').replace('.', '-')
+const compactTimestamp36 = (iso: string): string => {
+  const ms = Date.parse(iso)
+  if (!Number.isFinite(ms)) return Date.now().toString(36).padStart(9, '0')
+  return Math.trunc(ms).toString(36).padStart(9, '0')
+}
+
+const roleCode = (role: TraceArchiveEntry['role']): 'm' | 'w' =>
+  role === 'manager' ? 'm' : 'w'
+
+const attemptCode = (
+  attempt: TraceArchiveEntry['attempt'],
+): 'p' | 'f' | 'n' => {
+  if (attempt === 'primary') return 'p'
+  if (attempt === 'fallback') return 'f'
+  return 'n'
+}
 
 const buildArchivePath = (
   stateDir: string,
@@ -44,11 +58,9 @@ const buildArchivePath = (
   entry: TraceArchiveEntry,
 ): string => {
   const dateDir = dateStamp(iso)
-  const time = timeStamp(iso)
-  const parts = [time, entry.role]
-  if (entry.attempt) parts.push(entry.attempt)
-  parts.push(shortId())
-  const filename = `${parts.join('-')}.txt`
+  const filename = `${compactTimestamp36(iso)}${roleCode(entry.role)}${attemptCode(
+    entry.attempt,
+  )}.txt`
   return join(stateDir, 'traces', dateDir, filename)
 }
 

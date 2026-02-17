@@ -21,7 +21,7 @@
 2. 执行 prompt 预算限制并计算 timeout。
 3. 调用 OpenCode provider。
 4. 若恢复 session 失败则重建新 session 重试。
-5. 成功/失败都归档到 `traces/YYYY-MM-DD/*.txt`。
+5. 成功/失败都归档到 `traces/YYYY-MM-DD/<ts36><ra>.txt`（按文件名字典序即时间增序）。
 
 ## Worker Runner
 

@@ -45,7 +45,7 @@
 - `tasks/tasks.jsonl`
 - `task-progress/{taskId}.jsonl`
 - `tasks/YYYY-MM-DD/*.md`
-- `traces/YYYY-MM-DD/*.txt`
+- `traces/YYYY-MM-DD/<ts36><ra>.txt`（`ts36`=9 位毫秒时间戳 base36；`ra`=`m|w` + `p|f|n`）
 - `user_profile.md`
 - `agent_persona.md`
 - `agent_persona_versions/*.md`
