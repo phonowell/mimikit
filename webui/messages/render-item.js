@@ -34,9 +34,9 @@ export const renderMessage = (params, msg) => {
         typeof window !== 'undefined' &&
         typeof window.matchMedia === 'function' &&
         window.matchMedia('(max-width: 640px)').matches
-      ) {
+      ) 
         return
-      }
+      
       onQuote(msg)
     })
   }
@@ -50,15 +50,15 @@ export const renderMessage = (params, msg) => {
     if (quoteBlock) article.appendChild(quoteBlock)
   }
   if (isAgentMessage(msg)) {
-    if (isStreamingMessage) {
+    if (isStreamingMessage) 
       content.textContent = text
-    } else {
+     else {
       content.classList.add('markdown')
       content.appendChild(renderMarkdown(text))
     }
-  } else {
+  } else 
     content.textContent = text
-  }
+  
   article.appendChild(content)
 
   const usageText = isAgentMessage(msg) ? formatUsage(msg.usage) : ''
@@ -104,9 +104,9 @@ export const renderMessage = (params, msg) => {
     time.textContent = formatTime(msg.createdAt)
     meta.appendChild(time)
   }
-  if (meta.childElementCount > 0) {
+  if (meta.childElementCount > 0) 
     article.appendChild(meta)
-  }
+  
 
   item.appendChild(article)
   if (quoteBtn) item.appendChild(quoteBtn)

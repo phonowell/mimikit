@@ -47,9 +47,9 @@ export const createDialogController = ({
 
   const performClose = () => {
     if (!dialog) return
-    if (typeof dialog.close === 'function') {
+    if (typeof dialog.close === 'function') 
       dialog.close()
-    } else {
+     else {
       dialog.removeAttribute('open')
       finalizeClose()
     }
@@ -64,9 +64,9 @@ export const createDialogController = ({
     if (isOpen) return
     if (typeof dialog.showModal === 'function') {
       if (!dialog.open) dialog.showModal()
-    } else {
+    } else 
       dialog.setAttribute('open', '')
-    }
+    
     isOpen = true
     setExpanded(true)
     if (typeof onOpen === 'function') onOpen()

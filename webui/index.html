@@ -56,7 +56,14 @@
 
       <section class="messages-section" aria-label="Chat">
         <h2 class="visually-hidden">Chat</h2>
-        <ul class="messages scrollable" data-messages></ul>
+        <ul
+          class="messages scrollable"
+          data-messages
+          role="log"
+          aria-live="polite"
+          aria-relevant="additions text"
+          aria-atomic="false"
+        ></ul>
         <button
           class="btn btn--icon btn--icon-lg scroll-bottom"
           data-scroll-bottom

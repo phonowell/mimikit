@@ -113,7 +113,7 @@ export function createMessagesController({
 
   const rendering = createMessageRendering({ messagesEl, scroll, loading, quote })
   removeEmpty = rendering.removeEmpty
-  const { doRender } = rendering
+  const { doRender, doRenderStream } = rendering
 
   const syncLoadingState = () => {
     const shouldWait = messageState.awaitingReply
@@ -134,12 +134,6 @@ export function createMessagesController({
     })
   }
 
-  const cursors = {
-    message: { set: () => {} },
-    statusEtag: { set: () => {} },
-    messagesEtag: { set: () => {} },
-  }
-
   const setDisconnected = createDisconnectHandler({
     statusDot,
     statusText,
@@ -149,7 +143,6 @@ export function createMessagesController({
     setLastStatus: (value) => {
       lastStatus = value
     },
-    cursors,
   })
 
   const applyMessagesPayload = (msgData, streamPayload) => {
@@ -172,16 +165,18 @@ export function createMessagesController({
     }
     const newestId = messages.length > 0 ? messages[messages.length - 1].id : null
     const loadingVisible = loading.isLoading()
-    const changed =
-      hasMessageChange(messageState, messages, newestId) ||
-      hasLoadingVisibilityChange(messageState, loadingVisible) ||
-      hasStreamChange(messageState, streamMessage)
-    if (changed) {
+    const messageChanged = hasMessageChange(messageState, messages, newestId)
+    const loadingChanged = hasLoadingVisibilityChange(messageState, loadingVisible)
+    const streamChanged = hasStreamChange(messageState, streamMessage)
+    const changed = messageChanged || loadingChanged || streamChanged
+    if (messageChanged || loadingChanged) {
       const enterMessageIds = collectNewMessageIds(messageState, messages)
       const rendered = doRender(messages, enterMessageIds, streamMessage)
       if (rendered)
         applyRenderedState(messageState, rendered, { loading, syncLoadingState })
-    }
+    } else if (streamChanged) 
+      doRenderStream(streamMessage)
+    
     updateMessageState(messageState, messages, newestId)
     updateLoadingVisibilityState(messageState, loading.isLoading())
     updateStreamState(messageState, streamMessage)
@@ -194,9 +189,9 @@ export function createMessagesController({
     if (isRecord(snapshot.status)) updateStatus(snapshot.status)
     else syncLoadingState()
     applyMessagesPayload(snapshot.messages, streamPayload)
-    if (typeof onTasksSnapshot === 'function' && isRecord(snapshot.tasks)) {
+    if (typeof onTasksSnapshot === 'function' && isRecord(snapshot.tasks)) 
       onTasksSnapshot(snapshot.tasks)
-    }
+    
   }
 
   const closeEvents = () => {
@@ -224,9 +219,9 @@ export function createMessagesController({
     const onServerErrorEvent = (event) => {
       try {
         const payload = parseSnapshot(event.data)
-        if (payload && typeof payload.error === 'string' && payload.error.trim()) {
+        if (payload && typeof payload.error === 'string' && payload.error.trim()) 
           console.warn('[webui] stream error', payload.error)
-        }
+        
       } catch {
         // no-op
       }
@@ -275,7 +270,6 @@ export function createMessagesController({
   return {
     start,
     stop,
-    clearStatusEtag: () => {},
     sendMessage,
     isFullyIdle,
   }

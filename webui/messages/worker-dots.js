@@ -26,8 +26,8 @@ export function updateWorkerDots(workerDots, status) {
   const dots = workerDots.querySelectorAll('.worker-dot')
   for (let i = 0; i < dots.length; i += 1) {
     const dot = dots[i]
-    if (dot instanceof HTMLElement) {
+    if (dot instanceof HTMLElement) 
       dot.dataset.active = i < activeWorkers ? 'true' : 'false'
-    }
+    
   }
 }

@@ -31,9 +31,9 @@ const extractGeneratedRelative = (value) => {
 const normalizeRelativePath = (value) => {
   const parts = value.split('/').filter((part) => part.length > 0)
   if (parts.length === 0) return null
-  for (const part of parts) {
+  for (const part of parts) 
     if (part === '.' || part === '..') return null
-  }
+  
   return parts.join('/')
 }
 

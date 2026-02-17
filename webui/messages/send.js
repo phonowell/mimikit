@@ -1,5 +1,8 @@
 import { renderError } from './render.js'
+import { fetchWithTimeout } from '../fetch-with-timeout.js'
 import { UI_TEXT } from '../system-text.js'
+
+const SEND_REQUEST_TIMEOUT_MS = 45000
 
 export function createSendHandler({
   sendBtn,
@@ -30,11 +33,15 @@ export function createSendHandler({
       }
       const activeQuote = quote.getActive()
       if (activeQuote?.id) payload.quote = activeQuote.id
-      const res = await fetch('/api/input', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
+      const res = await fetchWithTimeout(
+        '/api/input',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        },
+        SEND_REQUEST_TIMEOUT_MS,
+      )
       if (!res.ok) {
         let data = null
         try {
@@ -51,9 +58,13 @@ export function createSendHandler({
       quote.clear()
       loading.setLoading(true)
     } catch (error) {
+      const isAbortError = error instanceof DOMException && error.name === 'AbortError'
+      const renderTargetError = isAbortError
+        ? new Error('Send timeout')
+        : error
       renderError(
         { messagesEl, removeEmpty, updateScrollButton: scroll.updateScrollButton },
-        error,
+        renderTargetError,
       )
       messageState.awaitingReply = false
       messageState.lastMessageRole = 'system'

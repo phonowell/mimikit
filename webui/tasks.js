@@ -121,11 +121,11 @@ export function bindTasksPanel({
       const taskId = link.getAttribute('data-task-id') || ''
       const archiveUrl = `/api/tasks/${encodeURIComponent(taskId)}/archive`
       const opened = window.open(archiveUrl, '_blank', 'noopener,noreferrer')
-      if (!opened) {
+      if (!opened) 
         console.warn('[webui] open task archive failed', 'popup blocked')
-        return
-      }
-      return
+        
+      
+      
     }
   })
 
@@ -166,9 +166,9 @@ export function bindTasksPanel({
     tasksDialog.addEventListener('click', onDialogClick)
     tasksDialog.addEventListener('cancel', onDialogCancel)
     tasksDialog.addEventListener('close', onDialogClose)
-  } else {
+  } else 
     startTicker()
-  }
+  
 
   return {
     applyTasksSnapshot,

@@ -8,6 +8,23 @@ import { formatUiError } from '../system-text.js'
 
 export { collectAckedUserMessageIds, findLatestAgentMessage, isAgentMessage }
 
+const preserveScrollPosition = ({
+  messagesEl,
+  wasNearBottom,
+  previousScrollTop,
+  previousScrollHeight,
+  scrollToBottom,
+}) => {
+  const newScrollHeight = messagesEl.scrollHeight
+  if (wasNearBottom) {
+    scrollToBottom({ smooth: false })
+    return
+  }
+  const delta = newScrollHeight - previousScrollHeight
+  const nextTop = previousScrollTop + delta
+  messagesEl.scrollTop = nextTop < 0 ? 0 : nextTop
+}
+
 export const renderMessages = (params) => {
   const {
     messages,
@@ -30,31 +47,33 @@ export const renderMessages = (params) => {
   messagesEl.innerHTML = ''
 
   const messageLookup = new Map()
-  for (const msg of safeMessages) {
+  for (const msg of safeMessages) 
     if (msg?.id) messageLookup.set(String(msg.id), msg)
-  }
+  
   const ackedUserMessageIds = collectAckedUserMessageIds(safeMessages)
-  const latestAgentId = latestAgent?.id != null ? String(latestAgent.id) : null
+  const latestAgentId =
+    latestAgent?.id !== null && latestAgent?.id !== undefined
+      ? String(latestAgent.id)
+      : null
   const renderParams = {
     ...params,
     messageLookup,
     ackedUserMessageIds,
     latestAgentId,
   }
-  for (const msg of safeMessages) {
+  for (const msg of safeMessages) 
     renderMessage(renderParams, msg)
-  }
+  
   if (streamMessage) renderMessage(renderParams, streamMessage)
 
   if (loading?.isLoading()) loading.ensureLoadingPlaceholder()
-  const newScrollHeight = messagesEl.scrollHeight
-  if (wasNearBottom) {
-    scrollToBottom({ smooth: false })
-  } else {
-    const delta = newScrollHeight - previousScrollHeight
-    const nextTop = previousScrollTop + delta
-    messagesEl.scrollTop = nextTop < 0 ? 0 : nextTop
-  }
+  preserveScrollPosition({
+    messagesEl,
+    wasNearBottom,
+    previousScrollTop,
+    previousScrollHeight,
+    scrollToBottom,
+  })
   updateScrollButton()
 
   const last = streamMessage ?? safeMessages[safeMessages.length - 1]
@@ -63,6 +82,43 @@ export const renderMessages = (params) => {
     lastRole: last?.role ?? null,
     lastIsAgent: last ? isAgentMessage(last) : false,
   }
+}
+
+export const renderStreamMessage = (params) => {
+  const {
+    streamMessage,
+    messagesEl,
+    removeEmpty,
+    isNearBottom,
+    scrollToBottom,
+    updateScrollButton,
+  } = params
+  if (!messagesEl) return
+  removeEmpty()
+  const wasNearBottom = isNearBottom()
+  const previousScrollTop = messagesEl.scrollTop
+  const previousScrollHeight = messagesEl.scrollHeight
+  const existingStreamItems = messagesEl.querySelectorAll('.message--streaming')
+  for (const item of existingStreamItems) item.remove()
+  if (streamMessage) {
+    renderMessage(
+      {
+        ...params,
+        messageLookup: new Map(),
+        ackedUserMessageIds: new Set(),
+        latestAgentId: null,
+      },
+      streamMessage,
+    )
+  }
+  preserveScrollPosition({
+    messagesEl,
+    wasNearBottom,
+    previousScrollTop,
+    previousScrollHeight,
+    scrollToBottom,
+  })
+  updateScrollButton()
 }
 
 export const renderError = (params, error) => {

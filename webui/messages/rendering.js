@@ -1,7 +1,7 @@
 import { renderMarkdown } from '../markdown.js'
 
 import { formatElapsedLabel, formatTime, formatUsage } from './format.js'
-import { renderMessages } from './render.js'
+import { renderMessages, renderStreamMessage } from './render.js'
 
 export const createMessageRendering = (params) => {
   const { messagesEl, scroll, loading, quote } = params
@@ -28,8 +28,27 @@ export const createMessageRendering = (params) => {
     })
   }
 
+  const doRenderStream = (streamMessage) => {
+    renderStreamMessage({
+      messagesEl,
+      removeEmpty,
+      renderMarkdown,
+      formatTime,
+      formatUsage,
+      formatElapsedLabel,
+      isNearBottom: scroll.isNearBottom,
+      scrollToBottom: scroll.scrollToBottom,
+      updateScrollButton: scroll.updateScrollButton,
+      loading,
+      enterMessageIds: new Set(),
+      onQuote: quote.set,
+      streamMessage,
+    })
+  }
+
   return {
     removeEmpty,
     doRender,
+    doRenderStream,
   }
 }

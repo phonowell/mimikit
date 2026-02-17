@@ -1,28 +1,5 @@
 import { UI_TEXT } from '../system-text.js'
-
-const cleanText = (text) => String(text ?? '').replace(/\s+/g, ' ').trim()
-
-const normalizeRole = (role) => {
-  if (role === 'assistant') return 'agent'
-  if (role === 'user') return 'user'
-  if (role === 'system') return 'system'
-  return 'unknown'
-}
-
-const formatRoleLabel = (role) => {
-  const normalized = normalizeRole(role)
-  if (normalized === 'user') return 'You'
-  if (normalized === 'agent') return 'Agent'
-  if (normalized === 'system') return 'System'
-  return UI_TEXT.quoteUnknown
-}
-
-const formatQuotePreview = (text) => {
-  const cleaned = cleanText(text)
-  if (!cleaned) return ''
-  const max = 120
-  return cleaned.length > max ? `${cleaned.slice(0, max)}...` : cleaned
-}
+import { formatQuotePreview, formatRoleLabel, normalizeRole } from './quote-utils.js'
 
 export const createQuoteController = ({
   quotePreview,
@@ -60,15 +37,15 @@ export const createQuoteController = ({
 
   const updateQuotePreview = () => {
     if (quoteLabel)
-      quoteLabel.textContent = activeQuote
+      {quoteLabel.textContent = activeQuote
         ? formatRoleLabel(activeQuote.role)
-        : UI_TEXT.quote
+        : UI_TEXT.quote}
     if (quotePreview) {
-      if (activeQuote) {
+      if (activeQuote) 
         quotePreview.dataset.role = normalizeRole(activeQuote.role)
-      } else {
+       else 
         quotePreview.removeAttribute('data-role')
-      }
+      
     }
     if (!quotePreview || !quoteText) return
     if (!activeQuote) {

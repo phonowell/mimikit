@@ -25,9 +25,9 @@ export const createScrollController = ({
 
   const setScrollButtonVisible = (visible) => {
     if (!scrollBottomBtn) return
-    if (!visible && document.activeElement === scrollBottomBtn) {
+    if (!visible && document.activeElement === scrollBottomBtn) 
       scrollBottomBtn.blur()
-    }
+    
     scrollBottomBtn.classList.toggle('is-visible', visible)
     if (visible) {
       scrollBottomBtn.removeAttribute('aria-hidden')

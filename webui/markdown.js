@@ -58,9 +58,9 @@ purify.addHook('afterSanitizeAttributes', (node) => {
     if (finalHref && isSafeHref(finalHref)) {
       node.setAttribute('target', '_blank')
       node.setAttribute('rel', 'noopener noreferrer')
-    } else {
+    } else 
       node.removeAttribute('href')
-    }
+    
   }
 
   if (node.tagName === 'IMG') {
@@ -68,9 +68,9 @@ purify.addHook('afterSanitizeAttributes', (node) => {
     const rewritten = src ? toArtifactUrl(src) : null
     if (rewritten) node.setAttribute('src', rewritten)
     const finalSrc = node.getAttribute('src')
-    if (!finalSrc || !isSafeSrc(finalSrc)) {
+    if (!finalSrc || !isSafeSrc(finalSrc)) 
       node.removeAttribute('src')
-    }
+    
   }
 
   if (node.tagName === 'INPUT') {

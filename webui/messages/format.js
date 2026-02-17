@@ -74,9 +74,9 @@ export const formatElapsedLabel = (elapsedMs) => {
   if (totalHours > 0) {
     parts.push(`${totalHours}h`)
     parts.push(`${minutes}m`)
-  } else {
+  } else 
     parts.push(`${totalMinutes}m`)
-  }
+  
   parts.push(`${seconds}s`)
   return parts.join(' ')
 }

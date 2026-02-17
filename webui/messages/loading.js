@@ -46,11 +46,11 @@ export const createLoadingController = ({
 
   const setLoading = (active) => {
     showLoading = active
-    if (active) {
+    if (active) 
       ensureLoadingPlaceholder()
-    } else {
+     else 
       removeLoadingPlaceholder()
-    }
+    
   }
 
   const isLoading = () => showLoading

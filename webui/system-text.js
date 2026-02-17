@@ -38,7 +38,7 @@ export const UI_TEXT = Object.freeze({
 })
 
 export const resolveStatusText = (value) => {
-  if (value == null) return ''
+  if (value === null || value === undefined) return ''
   const raw = typeof value === 'string' ? value : String(value)
   const text = raw.trim()
   if (!text) return ''

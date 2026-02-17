@@ -18,14 +18,6 @@ export const updateControllerStatus = (params) => {
   syncLoadingState()
 }
 
-export const buildMessagesUrl = (params) => {
-  const { cursor, limit } = params
-  const query = cursor
-    ? `?limit=${limit}&afterId=${encodeURIComponent(cursor)}`
-    : `?limit=${limit}`
-  return `/api/messages${query}`
-}
-
 export const mergeIncomingMessages = (params) => {
   const { mode, lastMessages, incoming, limit } = params
   const merged =
@@ -43,15 +35,11 @@ export const disconnectMessages = (params) => {
     messageState,
     loading,
     setLastStatus,
-    cursors,
   } = params
   applyStatus({ statusDot, statusText }, 'disconnected')
   setLastStatus(null)
   clearWorkerDots(workerDots)
   clearMessageState(messageState)
-  cursors.message.set(null)
-  cursors.statusEtag.set(null)
-  cursors.messagesEtag.set(null)
   loading.setLoading(false)
 }
 

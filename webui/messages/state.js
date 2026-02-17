@@ -12,9 +12,9 @@ export const createMessageState = () => ({
 
 const collectMessageIds = (messages) => {
   const ids = new Set()
-  for (const msg of messages) {
-    if (msg?.id != null) ids.add(msg.id)
-  }
+  for (const msg of messages) 
+    if (msg?.id !== null && msg?.id !== undefined) ids.add(msg.id)
+  
   return ids
 }
 
@@ -23,7 +23,7 @@ export const collectNewMessageIds = (state, messages) => {
   const ids = new Set()
   for (const msg of messages) {
     const id = msg?.id
-    if (id != null && !state.lastMessageIds.has(id)) ids.add(id)
+    if (id !== null && id !== undefined && !state.lastMessageIds.has(id)) ids.add(id)
   }
   return ids
 }
@@ -36,7 +36,10 @@ export const hasLoadingVisibilityChange = (state, loadingVisible) =>
 
 const normalizeStreamSignature = (streamMessage) => {
   if (!streamMessage || typeof streamMessage !== 'object') return ''
-  const id = streamMessage.id == null ? '' : String(streamMessage.id)
+  const id =
+    streamMessage.id === null || streamMessage.id === undefined
+      ? ''
+      : String(streamMessage.id)
   const text =
     typeof streamMessage.text === 'string' ? streamMessage.text : String(streamMessage.text ?? '')
   const usage =
@@ -71,7 +74,8 @@ export const applyRenderedState = (state, rendered, { loading, syncLoadingState 
     state.awaitingReply = false
     loading.setLoading(false)
   }
-  if (rendered?.lastRole != null) state.lastMessageRole = rendered.lastRole
+  if (rendered?.lastRole !== null && rendered?.lastRole !== undefined)
+    state.lastMessageRole = rendered.lastRole
   if (rendered?.lastIsAgent) state.awaitingReply = false
   syncLoadingState()
 }

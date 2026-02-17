@@ -1,4 +1,5 @@
 import { UI_TEXT } from '../system-text.js'
+import { formatQuotePreview, formatRoleLabel, normalizeRole } from './quote-utils.js'
 
 export const isAgentMessage = (msg) => msg?.role === 'assistant'
 
@@ -11,7 +12,7 @@ export const collectAckedUserMessageIds = (messages) => {
       hasAgentAfter = true
       continue
     }
-    if (msg?.role !== 'user' || msg?.id == null) continue
+    if (msg?.role !== 'user' || msg?.id === null || msg?.id === undefined) continue
     if (hasAgentAfter) acked.add(String(msg.id))
   }
   return acked
@@ -25,34 +26,10 @@ export const findLatestAgentMessage = (messages) => {
   return null
 }
 
-const normalizeRole = (role) => {
-  if (role === 'assistant') return 'agent'
-  if (role === 'user') return 'user'
-  if (role === 'system') return 'system'
-  return 'unknown'
-}
-
-const formatRoleLabel = (role) => {
-  const normalized = normalizeRole(role)
-  if (normalized === 'user') return 'You'
-  if (normalized === 'agent') return 'Agent'
-  if (normalized === 'system') return 'System'
-  return UI_TEXT.quoteUnknown
-}
-
-const cleanText = (text) => String(text ?? '').replace(/\s+/g, ' ').trim()
-
-const formatQuotePreview = (text) => {
-  const cleaned = cleanText(text)
-  if (!cleaned) return ''
-  const max = 140
-  return cleaned.length > max ? `${cleaned.slice(0, max)}...` : cleaned
-}
-
 const escapeSelectorValue = (value) => {
-  if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') {
+  if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') 
     return CSS.escape(value)
-  }
+  
   return value.replace(/"/g, '\\"')
 }
 
@@ -92,9 +69,9 @@ export const createQuoteBlock = ({ quoteId, quoteMessage, messagesEl }) => {
       target.scrollIntoView({ block: 'center', behavior: 'smooth' })
       flashMessage(target)
     })
-  } else {
+  } else 
     quoteEl.disabled = true
-  }
+  
   const author = document.createElement('span')
   author.className = 'message-quote-author'
   author.textContent = label

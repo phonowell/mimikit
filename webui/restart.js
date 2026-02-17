@@ -1,5 +1,10 @@
 import { createDialogController } from './dialog.js'
+import { delay, fetchWithTimeout } from './fetch-with-timeout.js'
 import { setStatusState, setStatusText } from './status.js'
+
+const RESTART_REQUEST_TIMEOUT_MS = 12000
+const STATUS_POLL_TIMEOUT_MS = 60000
+const STATUS_POLL_INTERVAL_MS = 1000
 
 export function bindRestart({
   restartBtn,
@@ -39,29 +44,27 @@ export function bindRestart({
     if (restartResetBtn) restartResetBtn.disabled = disabled
   }
 
-  const waitForServer = (onReady) => {
-    setTimeout(async () => {
+  const waitForServer = async (onReady) => {
+    const deadline = Date.now() + STATUS_POLL_TIMEOUT_MS
+    while (Date.now() < deadline) {
       try {
-        const res = await fetch('/api/status')
+        const res = await fetchWithTimeout('/api/status', {}, RESTART_REQUEST_TIMEOUT_MS)
         if (res.ok) {
-          if (typeof onReady === 'function') {
-            onReady()
-            return
+          if (typeof onReady === 'function') onReady()
+          else {
+            restartBtn.disabled = false
+            disableActions(false)
+            isBusy = false
+            if (messages) messages.start()
           }
-          restartBtn.disabled = false
-          disableActions(false)
-          isBusy = false
-          if (messages) {
-            messages.clearStatusEtag?.()
-            messages.start()
-          }
-          return
+          return true
         }
       } catch (error) {
         console.warn('[webui] status check failed', error)
       }
-      waitForServer(onReady)
-    }, 1000)
+      await delay(STATUS_POLL_INTERVAL_MS)
+    }
+    return false
   }
 
   const restoreAfterRequestFailure = (mode) => {
@@ -84,20 +87,23 @@ export function bindRestart({
     if (messages) messages.stop()
     if (dialog) dialog.close()
     try {
-      const response = await fetch(mode === 'reset' ? '/api/reset' : '/api/restart', {
-        method: 'POST',
-      })
-      if (!response.ok) {
+      const response = await fetchWithTimeout(
+        mode === 'reset' ? '/api/reset' : '/api/restart',
+        { method: 'POST' },
+        RESTART_REQUEST_TIMEOUT_MS,
+      )
+      if (!response.ok) 
         throw new Error(`restart request failed: ${response.status}`)
-      }
+      
     } catch (error) {
       console.warn('[webui] restart request failed', error)
       restoreAfterRequestFailure(mode)
       return
     }
-    waitForServer(() => {
+    const recovered = await waitForServer(() => {
       window.location.reload()
     })
+    if (!recovered) restoreAfterRequestFailure(mode)
   }
 
   const onOpen = (event) => {
@@ -139,7 +145,7 @@ export function bindRestart({
     restartDialog.addEventListener('click', onDialogClick)
     restartDialog.addEventListener('cancel', onDialogCancel)
     restartDialog.addEventListener('close', onDialogClose)
-  } else {
+  } else 
     restartBtn.addEventListener('click', onOpen)
-  }
+  
 }

@@ -1,7 +1,7 @@
 import { resolveStatusText } from './system-text.js'
 
 const normalizeStatusValue = (value) => {
-  if (value == null) return ''
+  if (value === null || value === undefined) return ''
   const text = typeof value === 'string' ? value : String(value)
   return text.trim()
 }
