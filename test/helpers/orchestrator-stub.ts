@@ -4,6 +4,7 @@ import type { Orchestrator } from '../../src/orchestrator/core/orchestrator-serv
 
 export const createOrchestratorStub = () => {
   const calls: Array<{ limit: number; afterId?: string }> = []
+  const taskLimitCalls: number[] = []
   const addInputCalls: Array<{ text: string; meta: InputMeta; quote?: string }> =
     []
   const orchestrator = {
@@ -32,10 +33,13 @@ export const createOrchestratorStub = () => {
       const mode: ChatMessagesMode = afterId ? 'delta' : 'full'
       return { messages: [message], mode }
     },
-    getTasks: () => ({ tasks: [], counts: {} }),
+    getTasks: (limit: number) => {
+      taskLimitCalls.push(limit)
+      return { tasks: [], counts: {} }
+    },
     getTaskById: () => undefined,
     cancelTask: async () => ({ ok: false, status: 'not_found' as const }),
     stopAndPersist: async () => undefined,
   } as unknown as Orchestrator
-  return { orchestrator, calls, addInputCalls }
+  return { orchestrator, calls, taskLimitCalls, addInputCalls }
 }

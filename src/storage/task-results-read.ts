@@ -5,7 +5,10 @@ import read from 'fire-keeper/read'
 import { listFiles } from '../fs/paths.js'
 import { safe } from '../log/safe.js'
 
-import { extractArchiveSection, parseArchiveHeader } from './archive-format.js'
+import {
+  extractArchiveSection,
+  parseArchiveDocument,
+} from './archive-format.js'
 import { toUtf8Text } from './jsonl.js'
 import { parseTokenUsageJson } from './token-usage.js'
 
@@ -36,8 +39,8 @@ const parseTaskResultArchive = (
   fallbackTaskId?: string,
   archivePath?: string,
 ): TaskResult | null => {
-  const lines = content.split(/\r?\n/)
-  const header = parseArchiveHeader(lines)
+  const parsed = parseArchiveDocument(content)
+  const { header } = parsed
   const taskId = header.task_id ?? fallbackTaskId
   if (!taskId) return null
   const status = parseStatus(header.status)
@@ -46,7 +49,7 @@ const parseTaskResultArchive = (
   if (!completedAt) return null
   const durationMs = Number(header.duration_ms)
   const normalizedDuration = Number.isFinite(durationMs) ? durationMs : 0
-  const output = extractArchiveSection(lines, '=== RESULT ===')
+  const output = extractArchiveSection(parsed, '=== RESULT ===')
   const usage = parseTokenUsageJson(header.usage)
   const cancelSource = parseCancelSource(header.cancel_source)
   const cancel: TaskCancelMeta | undefined = cancelSource

@@ -46,6 +46,7 @@
 
 - 入参：`query`、`limit?`、`roles?`、`before_id?`、`from?`、`to?`
 - 行为：触发历史检索并进入下一轮 manager 推理；`from/to` 为 ISO 8601 时间范围（含端点，顺序可颠倒）。
+- 实现：`flexsearch` + 新近度加权（不再保留 BM25 回退分支）。
 
 ### `create_task`
 

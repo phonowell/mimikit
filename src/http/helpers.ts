@@ -6,17 +6,25 @@ import { z } from 'zod'
 
 import { ensureDir } from '../fs/paths.js'
 
-export const parseTaskLimit = (value: unknown): number => {
+const DEFAULT_TASK_LIMIT = 200
+const MAX_TASK_LIMIT = 500
+const DEFAULT_MESSAGE_LIMIT = 50
+
+const parseLimit = (
+  value: unknown,
+  fallback: number,
+  max = Infinity,
+): number => {
   const parsed = Number(value)
-  if (!Number.isFinite(parsed) || parsed <= 0) return 200
-  return Math.min(Math.floor(parsed), 500)
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback
+  return Math.min(Math.floor(parsed), max)
 }
 
-export const parseMessageLimit = (value: unknown): number => {
-  const parsed = Number(value)
-  if (!Number.isFinite(parsed) || parsed <= 0) return 50
-  return Math.floor(parsed)
-}
+export const parseTaskLimit = (value: unknown): number =>
+  parseLimit(value, DEFAULT_TASK_LIMIT, MAX_TASK_LIMIT)
+
+export const parseMessageLimit = (value: unknown): number =>
+  parseLimit(value, DEFAULT_MESSAGE_LIMIT)
 
 export const resolveRoots = () => {
   const __dirname = fileURLToPath(new URL('.', import.meta.url))
@@ -53,21 +61,17 @@ const trimmedStringOrUndefinedSchema = z.preprocess((value) => {
   return trimmed.length > 0 ? trimmed : undefined
 }, z.string().optional())
 
-const finiteNumberSchema = z.number().finite()
-
-const inputTextSchema = z.preprocess(
-  (value) => (typeof value === 'string' ? value.trim() : value),
-  z.string().min(1),
-)
-
 const inputBodySchema = z
   .object({
-    text: inputTextSchema,
+    text: z.preprocess(
+      (value) => (typeof value === 'string' ? value.trim() : value),
+      z.string().min(1),
+    ),
     quote: trimmedStringOrUndefinedSchema.optional(),
     language: trimmedStringOrUndefinedSchema.optional(),
     clientLocale: trimmedStringOrUndefinedSchema.optional(),
     clientTimeZone: trimmedStringOrUndefinedSchema.optional(),
-    clientOffsetMinutes: finiteNumberSchema.optional(),
+    clientOffsetMinutes: z.number().finite().optional(),
     clientNowIso: trimmedStringOrUndefinedSchema.optional(),
   })
   .strict()
@@ -91,9 +95,9 @@ export const parseInputBody = (
     acceptLanguage?: string | undefined
   },
 ): { text: string; meta: InputMeta; quote?: string } | { error: string } => {
-  const parsedBody = inputBodySchema.safeParse(body)
-  if (!parsedBody.success) {
-    const hasTextIssue = parsedBody.error.issues.some(
+  const parsed = inputBodySchema.safeParse(body)
+  if (!parsed.success) {
+    const hasTextIssue = parsed.error.issues.some(
       (issue) => issue.path[0] === 'text',
     )
     return { error: hasTextIssue ? 'text is required' : 'invalid JSON' }
@@ -103,18 +107,20 @@ export const parseInputBody = (
     language: bodyLanguage,
     clientLocale,
     clientTimeZone,
-    clientOffsetMinutes: clientOffset,
-    clientNowIso: clientNow,
+    clientOffsetMinutes,
+    clientNowIso,
     quote,
-  } = parsedBody.data
-  const language = bodyLanguage ?? request.acceptLanguage
+  } = parsed.data
+
   const meta: InputMeta = { source: 'http' }
   if (request.remoteAddress) meta.remote = request.remoteAddress
   if (request.userAgent) meta.userAgent = request.userAgent
+  const language = bodyLanguage ?? request.acceptLanguage
   if (language) meta.language = language
   if (clientLocale) meta.clientLocale = clientLocale
   if (clientTimeZone) meta.clientTimeZone = clientTimeZone
-  if (clientOffset !== undefined) meta.clientOffsetMinutes = clientOffset
-  if (clientNow) meta.clientNowIso = clientNow
+  if (clientOffsetMinutes !== undefined)
+    meta.clientOffsetMinutes = clientOffsetMinutes
+  if (clientNowIso) meta.clientNowIso = clientNowIso
   return quote ? { text, meta, quote } : { text, meta }
 }

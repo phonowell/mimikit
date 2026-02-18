@@ -29,6 +29,23 @@ test('messages route forwards afterId and returns mode', async () => {
   await app.close()
 })
 
+test('messages route falls back to default limit on invalid query value', async () => {
+  const app = fastify()
+  const { orchestrator, calls } = createOrchestratorStub()
+  const config = defaultConfig({ workDir: '.mimikit' })
+  registerApiRoutes(app, orchestrator, config)
+
+  const response = await app.inject({
+    method: 'GET',
+    url: '/api/messages?limit=abc&unexpected=1',
+  })
+
+  expect(response.statusCode).toBe(200)
+  expect(calls).toEqual([{ limit: 50, afterId: undefined }])
+
+  await app.close()
+})
+
 test('input route parses body and calls orchestrator', async () => {
   const app = fastify()
   const { orchestrator, addInputCalls } = createOrchestratorStub()
@@ -113,6 +130,23 @@ test('messages route returns 304 when If-None-Match hits', async () => {
     headers: { 'if-none-match': String(etag) },
   })
   expect(second.statusCode).toBe(304)
+
+  await app.close()
+})
+
+test('tasks route falls back to default limit on invalid query value', async () => {
+  const app = fastify()
+  const { orchestrator, taskLimitCalls } = createOrchestratorStub()
+  const config = defaultConfig({ workDir: '.mimikit' })
+  registerApiRoutes(app, orchestrator, config)
+
+  const response = await app.inject({
+    method: 'GET',
+    url: '/api/tasks?limit=abc&unexpected=1',
+  })
+
+  expect(response.statusCode).toBe(200)
+  expect(taskLimitCalls).toEqual([200])
 
   await app.close()
 })

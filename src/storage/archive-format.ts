@@ -1,3 +1,5 @@
+import matter from 'gray-matter'
+
 export type ArchiveHeaderLine = readonly [
   label: string,
   value: string | number | undefined,
@@ -10,46 +12,76 @@ export type ArchiveSection = {
 
 export const dateStamp = (iso: string): string => iso.slice(0, 10)
 
-export const formatSection = (marker: string, content: string): string =>
-  `${marker}\n${content}`
+export type ParsedArchiveDocument = {
+  header: Record<string, string>
+  sections: Map<string, string>
+}
+
+const normalizeHeaderValue = (value: unknown): string | undefined => {
+  if (value === undefined || value === null) return
+  if (typeof value === 'number' || typeof value === 'boolean')
+    return String(value)
+  if (typeof value !== 'string') return
+  const trimmed = value.trim()
+  return trimmed.length > 0 ? trimmed : undefined
+}
 
 export const buildArchiveDocument = (
   headers: ArchiveHeaderLine[],
   sections: ArchiveSection[],
 ): string => {
-  const lines: string[] = []
+  const data: Record<string, string | number> = {}
   for (const [label, value] of headers) {
     if (value === undefined || value === '') continue
-    lines.push(`${label}: ${value}`)
+    data[label] = value
   }
-  const serializedSections = sections
-    .map((section) => formatSection(section.marker, section.content))
+  const content = sections
+    .map((section) => `${section.marker}\n${section.content}`)
     .join('\n\n')
-  return `${lines.join('\n')}\n\n${serializedSections}\n`
+  return `${matter.stringify(content, data).replace(/\s+$/u, '')}\n`
 }
 
-export const parseArchiveHeader = (lines: string[]): Record<string, string> => {
-  const header: Record<string, string> = {}
+const parseSections = (content: string): Map<string, string> => {
+  const sections = new Map<string, string>()
+  const lines = content.split(/\r?\n/)
+  let marker: string | undefined
+  let bucket: string[] = []
+  const flush = () => {
+    if (!marker) return
+    sections.set(marker, bucket.join('\n').replace(/\s+$/u, ''))
+    bucket = []
+  }
   for (const line of lines) {
     const trimmed = line.trim()
-    if (!trimmed) break
-    const colon = line.indexOf(':')
-    if (colon <= 0) continue
-    const key = line.slice(0, colon).trim()
-    if (!key) continue
-    header[key] = line.slice(colon + 1).trim()
+    if (/^===\s+.+\s+===$/u.test(trimmed)) {
+      flush()
+      marker = trimmed
+      continue
+    }
+    bucket.push(line)
   }
-  return header
+  flush()
+  return sections
+}
+
+export const parseArchiveDocument = (
+  content: string,
+): ParsedArchiveDocument => {
+  const header: Record<string, string> = {}
+  const parsed = matter(content)
+  for (const [key, value] of Object.entries(parsed.data)) {
+    if (!key) continue
+    const normalized = normalizeHeaderValue(value)
+    if (!normalized) continue
+    header[key] = normalized
+  }
+  return {
+    header,
+    sections: parseSections(parsed.content),
+  }
 }
 
 export const extractArchiveSection = (
-  lines: string[],
+  doc: ParsedArchiveDocument,
   marker: string,
-): string => {
-  const index = lines.findIndex((line) => line.trim() === marker)
-  if (index < 0) return ''
-  return lines
-    .slice(index + 1)
-    .join('\n')
-    .replace(/\s+$/u, '')
-}
+): string => doc.sections.get(marker) ?? ''

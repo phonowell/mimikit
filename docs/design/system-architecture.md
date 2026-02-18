@@ -8,6 +8,8 @@
 - `OpenCode` 作为主 session 编排引擎（manager role 主路径）。
 - `Codex` 作为能力增强（worker specialist 路径）。
 - `mimikit` 负责本地持久化执行系统：队列、状态机、调度、可观测性。
+- HTTP 校验与参数归一化集中在 `helpers`（input: zod `safeParse`；query/params: helper 早返回）。
+- 持久化锁基于进程内串行 + 文件锁（`proper-lockfile`）。
 
 ## 组件职责
 
@@ -53,6 +55,10 @@
   - `consumeBatchHistory` 同时服务成功路径与失败兜底路径，避免双份消费逻辑漂移。
 - 时间解析与新近度评分：`src/shared/time.ts`
   - `history-query` 与 `history-jsonl` 共用 `parseIsoMs`；检索评分共用 `computeRecencyWeight`。
+- 历史检索：`src/manager/history-query.ts`
+  - 基于 `flexsearch` 构建即时索引，不保留 BM25 回退分支。
+- 日志写入：`src/log/append.ts`
+  - 基于 `pino` 输出结构化日志，沿用轮转文件策略。
 
 ## 主链路（事件驱动）
 

@@ -19,6 +19,11 @@ const isWithinRoot = (root: string, path: string): boolean => {
   return !isAbsolute(rel)
 }
 
+const readErrorCode = (error: unknown): string | undefined =>
+  typeof error === 'object' && error && 'code' in error
+    ? String((error as { code?: unknown }).code)
+    : undefined
+
 const resolveTaskId = (
   params: unknown,
   reply: FastifyReply,
@@ -39,13 +44,26 @@ const resolveTask = (
   orchestrator: Orchestrator,
 ): { taskId: string; task: Task } | undefined => {
   const taskId = resolveTaskId(params, reply)
-  if (!taskId) return undefined
+  if (!taskId) return
   const task = orchestrator.getTaskById(taskId)
   if (!task) {
     reply.code(404).send({ error: 'task not found' })
-    return undefined
+    return
   }
   return { taskId, task }
+}
+
+const scheduleExit = (
+  orchestrator: Orchestrator,
+  afterPersist?: () => Promise<void>,
+): void => {
+  setTimeout(() => {
+    void (async () => {
+      await orchestrator.stopAndPersist()
+      if (afterPersist) await afterPersist()
+      process.exit(75)
+    })()
+  }, 100)
 }
 
 export const registerTaskArchiveRoute = (
@@ -56,8 +74,8 @@ export const registerTaskArchiveRoute = (
   app.get('/api/tasks/:id/archive', async (request, reply) => {
     const resolved = resolveTask(request.params, reply, orchestrator)
     if (!resolved) return
-    const { task } = resolved
-    const archivePath = task.archivePath ?? task.result?.archivePath
+    const archivePath =
+      resolved.task.archivePath ?? resolved.task.result?.archivePath
     if (!archivePath) {
       reply.code(404).send({ error: 'task archive not found' })
       return
@@ -82,11 +100,7 @@ export const registerTaskArchiveRoute = (
             : ''
       reply.type('text/markdown; charset=utf-8').send(content)
     } catch (error) {
-      const code =
-        typeof error === 'object' && error && 'code' in error
-          ? String((error as { code?: string }).code)
-          : undefined
-      if (code === 'ENOENT') {
+      if (readErrorCode(error) === 'ENOENT') {
         reply.code(404).send({ error: 'task archive not found' })
         return
       }
@@ -103,9 +117,8 @@ export const registerTaskProgressRoute = (
   app.get('/api/tasks/:id/progress', async (request, reply) => {
     const resolved = resolveTask(request.params, reply, orchestrator)
     if (!resolved) return
-    const { taskId } = resolved
-    const events = await readTaskProgress(config.workDir, taskId)
-    reply.send({ taskId, events })
+    const events = await readTaskProgress(config.workDir, resolved.taskId)
+    reply.send({ taskId: resolved.taskId, events })
   })
 }
 
@@ -147,26 +160,17 @@ export const registerControlRoutes = (
 ): void => {
   app.post('/api/restart', (_request, reply) => {
     reply.send({ ok: true })
-    setTimeout(() => {
-      void (async () => {
-        await orchestrator.stopAndPersist()
-        process.exit(75)
-      })()
-    }, 100)
+    scheduleExit(orchestrator)
   })
 
   app.post('/api/reset', (_request, reply) => {
     reply.send({ ok: true })
-    setTimeout(() => {
-      void (async () => {
-        await orchestrator.stopAndPersist()
-        try {
-          await clearStateDir(config.workDir)
-        } catch (error) {
-          await logSafeError('http: reset', error)
-        }
-        process.exit(75)
-      })()
-    }, 100)
+    scheduleExit(orchestrator, async () => {
+      try {
+        await clearStateDir(config.workDir)
+      } catch (error) {
+        await logSafeError('http: reset', error)
+      }
+    })
   })
 }

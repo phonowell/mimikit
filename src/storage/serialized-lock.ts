@@ -1,4 +1,26 @@
+import { createRequire } from 'node:module'
+
+import { ensureFile } from '../fs/paths.js'
+
+type LockRelease = () => Promise<void>
+
+const require = createRequire(import.meta.url)
+const lockfile = require('proper-lockfile') as {
+  lock: (file: string, options: Record<string, unknown>) => Promise<LockRelease>
+}
 const updateQueue = new Map<string, Promise<void>>()
+
+const LOCK_OPTIONS = {
+  realpath: false,
+  stale: 10_000,
+  update: 2_000,
+  retries: {
+    retries: 8,
+    factor: 1.5,
+    minTimeout: 20,
+    maxTimeout: 500,
+  },
+} as const
 
 export const runSerialized = async <T>(
   key: string,
@@ -6,16 +28,20 @@ export const runSerialized = async <T>(
 ): Promise<T> => {
   const previous = updateQueue.get(key) ?? Promise.resolve()
   const safePrevious = previous.catch(() => undefined)
-  let release!: () => void
+  let releaseQueue!: () => void
   const next = new Promise<void>((resolve) => {
-    release = resolve
+    releaseQueue = resolve
   })
   updateQueue.set(key, next)
   await safePrevious
+  const lockPath = `${key}.lock`
+  await ensureFile(lockPath, '')
+  const releaseLock = await lockfile.lock(lockPath, LOCK_OPTIONS)
   try {
     return await fn()
   } finally {
-    release()
+    await releaseLock()
+    releaseQueue()
     if (updateQueue.get(key) === next) updateQueue.delete(key)
   }
 }

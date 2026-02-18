@@ -1,22 +1,27 @@
 import { createHash } from 'node:crypto'
+import { once } from 'node:events'
 import { basename, dirname } from 'node:path'
 
 import mkdir from 'fire-keeper/mkdir'
+import pino, { type Logger } from 'pino'
 import { createStream, type RotatingFileStream } from 'rotating-file-stream'
-
-import { nowIso } from '../shared/utils.js'
 
 const MAX_BYTES = 10 * 1024 * 1024
 const MAX_TOTAL_BYTES = 500 * 1024 * 1024
 const MAX_FILES = Math.max(1, Math.ceil(MAX_TOTAL_BYTES / MAX_BYTES))
 
-const streams = new Map<string, RotatingFileStream>()
+type LoggerBundle = {
+  logger: Logger
+  stream: RotatingFileStream
+}
+
+const loggers = new Map<string, LoggerBundle>()
 
 const ensureDir = async (path: string): Promise<void> => {
   await mkdir(path, { echo: false })
 }
 
-const buildStream = async (path: string): Promise<RotatingFileStream> => {
+const buildBundle = async (path: string): Promise<LoggerBundle> => {
   const dir = dirname(path)
   await ensureDir(dir)
   const stream = createStream(basename(path), {
@@ -29,40 +34,38 @@ const buildStream = async (path: string): Promise<RotatingFileStream> => {
   stream.on('error', (error) => {
     console.error('[log] stream error', error)
   })
-  return stream
+  const logger = pino(
+    {
+      base: { schema: 'mimikit.log.v2' },
+      timestamp: pino.stdTimeFunctions.isoTime,
+    },
+    stream,
+  )
+  return { logger, stream }
 }
 
-const getStream = async (path: string): Promise<RotatingFileStream> => {
-  const existing = streams.get(path)
+const getBundle = async (path: string): Promise<LoggerBundle> => {
+  const existing = loggers.get(path)
   if (existing) return existing
-  const stream = await buildStream(path)
-  streams.set(path, stream)
-  return stream
+  const bundle = await buildBundle(path)
+  loggers.set(path, bundle)
+  return bundle
 }
 
-const writeLine = (stream: RotatingFileStream, line: string): Promise<void> =>
-  new Promise((resolve, reject) => {
-    const onError = (error: Error) => {
-      cleanup()
-      reject(error)
-    }
-    const onDrain = () => {
-      cleanup()
-      resolve()
-    }
-    const cleanup = () => {
-      stream.off('error', onError)
-      stream.off('drain', onDrain)
-    }
-    stream.on('error', onError)
-    const ok = stream.write(line, 'utf8')
-    if (ok) {
-      cleanup()
-      resolve()
-      return
-    }
-    stream.on('drain', onDrain)
-  })
+const flushIfNeeded = async (stream: RotatingFileStream): Promise<void> => {
+  if (!stream.writableNeedDrain) return
+  await once(stream, 'drain')
+}
+
+const normalizeStringList = (value: unknown): string | undefined => {
+  if (!Array.isArray(value) || value.length === 0) return undefined
+  const normalized = value
+    .filter((item): item is string => typeof item === 'string')
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0)
+    .join(',')
+  return normalized || undefined
+}
 
 const deriveTraceSeed = (entry: Record<string, unknown>): string => {
   const { traceId: explicit, taskId, inputIds, resultIds } = entry
@@ -70,22 +73,10 @@ const deriveTraceSeed = (entry: Record<string, unknown>): string => {
     return explicit.trim()
   if (typeof taskId === 'string' && taskId.trim().length > 0)
     return `task:${taskId.trim()}`
-  if (Array.isArray(inputIds) && inputIds.length > 0) {
-    const normalized = inputIds
-      .filter((item): item is string => typeof item === 'string')
-      .map((item) => item.trim())
-      .filter((item) => item.length > 0)
-      .join(',')
-    if (normalized) return `inputs:${normalized}`
-  }
-  if (Array.isArray(resultIds) && resultIds.length > 0) {
-    const normalized = resultIds
-      .filter((item): item is string => typeof item === 'string')
-      .map((item) => item.trim())
-      .filter((item) => item.length > 0)
-      .join(',')
-    if (normalized) return `results:${normalized}`
-  }
+  const normalizedInputIds = normalizeStringList(inputIds)
+  if (normalizedInputIds) return `inputs:${normalizedInputIds}`
+  const normalizedResultIds = normalizeStringList(resultIds)
+  if (normalizedResultIds) return `results:${normalizedResultIds}`
   return JSON.stringify(entry)
 }
 
@@ -109,16 +100,13 @@ export const appendLog = async (
   path: string,
   entry: Record<string, unknown>,
 ): Promise<void> => {
-  const stream = await getStream(path)
-  const timestamp = nowIso()
+  const { logger, stream } = await getBundle(path)
   const level = resolveLevel(entry)
   const traceId = deriveTraceId(entry)
-  const line = `${JSON.stringify({
-    timestamp,
-    schema: 'mimikit.log.v2',
-    level,
+  const { level: _ignoredLevel, ...payload } = entry
+  logger[level]({
     traceId,
-    ...entry,
-  })}\n`
-  await writeLine(stream, line)
+    ...payload,
+  })
+  await flushIfNeeded(stream)
 }

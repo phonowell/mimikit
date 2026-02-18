@@ -1,32 +1,11 @@
 import { nowIso, shortId } from '../shared/utils.js'
 import { appendJsonl, readJsonl, writeJsonl } from '../storage/jsonl.js'
+import { runSerialized } from '../storage/serialized-lock.js'
 
 import type { JsonPacket } from '../types/index.js'
 
 export type PacketWithCursor<TPayload> = JsonPacket<TPayload> & {
   cursor: number
-}
-
-const queueUpdateLocks = new Map<string, Promise<void>>()
-
-const runSerialized = async <T>(
-  key: string,
-  fn: () => Promise<T>,
-): Promise<T> => {
-  const previous = queueUpdateLocks.get(key) ?? Promise.resolve()
-  const safePrevious = previous.catch(() => undefined)
-  let release!: () => void
-  const next = new Promise<void>((resolve) => {
-    release = resolve
-  })
-  queueUpdateLocks.set(key, next)
-  await safePrevious
-  try {
-    return await fn()
-  } finally {
-    release()
-    if (queueUpdateLocks.get(key) === next) queueUpdateLocks.delete(key)
-  }
 }
 
 export const normalizeCursor = (value: unknown): number => {

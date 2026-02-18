@@ -1,8 +1,8 @@
 import { join } from 'node:path'
 
-import mkdir from 'fire-keeper/mkdir'
 import { z } from 'zod'
 
+import { ensureDir } from '../fs/paths.js'
 import { nowIso } from '../shared/utils.js'
 
 import { appendJsonl, readJsonl } from './jsonl.js'
@@ -34,7 +34,7 @@ export const appendTaskProgress = async (params: {
   payload?: JsonObject
 }): Promise<string> => {
   const path = taskProgressPath(params.stateDir, params.taskId)
-  await mkdir(join(params.stateDir, TASK_PROGRESS_DIR), { echo: false })
+  await ensureDir(join(params.stateDir, TASK_PROGRESS_DIR))
   const event = taskProgressEventSchema.parse({
     taskId: params.taskId,
     type: params.type,

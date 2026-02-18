@@ -1,7 +1,7 @@
+import { createReadStream } from 'node:fs'
+import { appendFile } from 'node:fs/promises'
+import { createRequire } from 'node:module'
 import { dirname } from 'node:path'
-
-import read from 'fire-keeper/read'
-import write from 'fire-keeper/write'
 
 import { writeFileAtomic } from '../fs/json.js'
 import { ensureDir, ensureFile } from '../fs/paths.js'
@@ -13,51 +13,65 @@ type JsonlReadOptions<T> = {
   validate?: (value: unknown) => T | undefined | null
 }
 
+const require = createRequire(import.meta.url)
+const jsonlParserFactory = require('stream-json/jsonl/Parser') as {
+  parser: (options?: {
+    errorIndicator?: (error: unknown, input: string) => unknown
+  }) => NodeJS.ReadWriteStream
+}
+
 export const toUtf8Text = (raw: unknown): string => {
   if (typeof raw === 'string') return raw
   if (Buffer.isBuffer(raw)) return raw.toString('utf8')
   return ''
 }
 
-const splitNonEmptyLines = (text: string): string[] =>
-  text
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0)
+const readJsonlValues = async (path: string): Promise<unknown[]> => {
+  const parserErrors: Array<{ error: unknown; line: string }> = []
+  const values: unknown[] = []
+  await new Promise<void>((resolve, reject) => {
+    const source = createReadStream(path, { encoding: 'utf8' })
+    const parser = jsonlParserFactory.parser({
+      errorIndicator: (error, input) => {
+        parserErrors.push({ error, line: String(input) })
+        return undefined
+      },
+    })
+    source.once('error', reject)
+    parser.once('error', reject)
+    parser.once('end', resolve)
+    parser.on('data', (chunk: unknown) => {
+      if (!chunk || typeof chunk !== 'object') return
+      const { value } = chunk as { value?: unknown }
+      if (value === undefined) return
+      values.push(value)
+    })
+    source.pipe(parser)
+  })
+  for (const item of parserErrors) {
+    await logSafeError('readJsonl: parse', item.error, {
+      meta: { path, line: item.line },
+    })
+  }
+  return values
+}
 
 export const readJsonl = async <T>(
   path: string,
   options: JsonlReadOptions<T> & { ensureFile?: boolean } = {},
 ): Promise<T[]> => {
-  const readRaw = () =>
-    safe('readJsonl: readFile', () => read(path, { raw: true, echo: false }), {
-      fallback: null,
-      meta: { path },
-      ignoreCodes: ['ENOENT'],
-    })
+  if (options.ensureFile) await ensureFile(path, '')
 
-  let raw = await readRaw()
-  if (!raw && options.ensureFile) {
-    await ensureFile(path, '')
-    raw = await readRaw()
-  }
-
-  const text = toUtf8Text(raw)
-  if (!text) return []
-  const lines = splitNonEmptyLines(text)
-  if (lines.length === 0) return []
+  const values = await safe('readJsonl: stream', () => readJsonlValues(path), {
+    fallback: [],
+    meta: { path },
+    ignoreCodes: ['ENOENT'],
+  })
+  if (values.length === 0) return []
   const items: T[] = []
-  for (const line of lines) {
-    try {
-      const parsed = JSON.parse(line) as unknown
-      const normalized = options.validate
-        ? options.validate(parsed)
-        : (parsed as T)
-      if (normalized !== undefined && normalized !== null)
-        items.push(normalized)
-    } catch (error) {
-      await logSafeError('readJsonl: parse', error, { meta: { path, line } })
-    }
+  for (const value of values) {
+    const normalized = options.validate ? options.validate(value) : (value as T)
+    if (normalized !== undefined && normalized !== null) items.push(normalized)
   }
   return items
 }
@@ -79,7 +93,7 @@ export const appendJsonl = async <T>(
   await ensureDir(dirname(path))
   const body = items.map((item) => JSON.stringify(item)).join('\n')
   const payload = `${body}\n`
-  await write(path, payload, { flag: 'a', encoding: 'utf8' }, { echo: false })
+  await appendFile(path, payload, { encoding: 'utf8' })
 }
 
 export const updateJsonl = <T>(

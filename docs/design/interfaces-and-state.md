@@ -13,10 +13,12 @@
 - `POST /api/restart`
 - `POST /api/reset`
 
-实现：`src/http/index.ts`、`src/http/routes-api.ts`
+实现：`src/http/index.ts`、`src/http/routes-api.ts`、`src/http/routes-api-sections.ts`
 
 HTTP 路由共享约束：
 - ETag 逻辑统一在 `src/http/etag.ts`（`/api/status`、`/api/messages` 同源行为）。
+- `POST /api/input` 的 body 校验统一在 `src/http/helpers.ts`（zod `safeParse`）。
+- `messages/tasks` 的 `limit` 归一化统一在 `src/http/helpers.ts`（容错回退默认值）。
 - `:id` 参数校验与任务存在性校验统一在 `src/http/routes-api-sections.ts` 内部 helper。
 
 ## CLI
@@ -61,8 +63,10 @@ HTTP 路由共享约束：
 - `agent_persona_versions/*.md`
 
 状态写入共享约束：
-- JSONL 串行写锁：`src/storage/serialized-lock.ts`（`jsonl` 与 `history` 复用）。
+- JSONL 串行写锁：`src/storage/serialized-lock.ts`（进程内串行 + `proper-lockfile` 文件锁）。
+- JSONL 读取：`src/storage/jsonl.ts` 使用 `stream-json` 流式解析。
 - 按日期归档写入：`src/storage/archive-write.ts`（`tasks` 与 `traces` 复用）。
+- 归档元数据：`src/storage/archive-format.ts` 使用 front matter（`gray-matter`）。
 
 ## Manager 唤醒约束
 - 唤醒来源仅三类：`user_input`、`task_result`、`cron`

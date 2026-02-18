@@ -16,12 +16,9 @@ const SSE_RETRY_MS = 1_500
 const SSE_DEFAULT_MESSAGE_LIMIT = 50
 const SSE_DEFAULT_TASK_LIMIT = 200
 
-const createSseStream = (params: {
-  request: FastifyRequest
-  reply: FastifyReply
-}) => {
-  params.reply.hijack()
-  const response = params.reply.raw
+const createSseStream = (request: FastifyRequest, reply: FastifyReply) => {
+  reply.hijack()
+  const response = reply.raw
   response.statusCode = 200
   response.setHeader('Content-Type', 'text/event-stream; charset=utf-8')
   response.setHeader('Cache-Control', 'no-cache, no-transform')
@@ -29,35 +26,46 @@ const createSseStream = (params: {
   response.setHeader('X-Accel-Buffering', 'no')
   if (typeof response.flushHeaders === 'function') response.flushHeaders()
   response.write(`retry: ${SSE_RETRY_MS}\n\n`)
+
   let closed = false
   const markClosed = () => {
     closed = true
   }
-  params.request.raw.once('aborted', markClosed)
-  params.request.raw.once('close', markClosed)
+  request.raw.once('aborted', markClosed)
+  request.raw.once('close', markClosed)
+
   const isClosed = (): boolean =>
     closed || response.destroyed || response.writableEnded
-  const writeEvent = (event: string, payload: unknown): boolean => {
-    if (isClosed()) return false
-    response.write(`event: ${event}\n`)
-    response.write(`data: ${JSON.stringify(payload)}\n\n`)
-    return true
+
+  return {
+    isClosed,
+    writeEvent: (event: string, payload: unknown): boolean => {
+      if (isClosed()) return false
+      response.write(`event: ${event}\n`)
+      response.write(`data: ${JSON.stringify(payload)}\n\n`)
+      return true
+    },
+    cleanup: () => {
+      request.raw.off('aborted', markClosed)
+      request.raw.off('close', markClosed)
+      if (!isClosed()) response.end()
+    },
   }
-  const cleanup = () => {
-    params.request.raw.off('aborted', markClosed)
-    params.request.raw.off('close', markClosed)
-    if (!isClosed()) response.end()
-  }
-  return { isClosed, writeEvent, cleanup }
 }
+
+const readHeader = (
+  headers: FastifyRequest['headers'],
+  key: string,
+): string | undefined =>
+  typeof headers[key] === 'string' ? headers[key] : undefined
 
 export const registerApiRoutes = (
   app: FastifyInstance,
   orchestrator: Orchestrator,
-  _config: AppConfig,
+  config: AppConfig,
 ): void => {
   app.get('/api/events', async (request, reply) => {
-    const stream = createSseStream({ request, reply })
+    const stream = createSseStream(request, reply)
     let lastSnapshotEtag = ''
     try {
       const initial = await orchestrator.getWebUiSnapshot(
@@ -77,39 +85,32 @@ export const registerApiRoutes = (
         )
         const snapshotEtag = buildPayloadEtag('events', snapshot)
         if (snapshotEtag === lastSnapshotEtag) continue
-
         lastSnapshotEtag = snapshotEtag
         if (!stream.writeEvent('snapshot', snapshot)) break
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      stream.writeEvent('error', { error: message })
+      stream.writeEvent('error', {
+        error: error instanceof Error ? error.message : String(error),
+      })
     } finally {
       stream.cleanup()
     }
   })
 
-  app.get('/api/status', (request, reply) => {
-    const payload = orchestrator.getStatus()
-    return replyWithEtag({
+  app.get('/api/status', (request, reply) =>
+    replyWithEtag({
       request,
       reply,
       prefix: 'status',
-      payload,
-    })
-  })
+      payload: orchestrator.getStatus(),
+    }),
+  )
 
   app.post('/api/input', async (request, reply) => {
     const result = parseInputBody(request.body, {
       remoteAddress: request.raw.socket.remoteAddress ?? undefined,
-      userAgent:
-        typeof request.headers['user-agent'] === 'string'
-          ? request.headers['user-agent']
-          : undefined,
-      acceptLanguage:
-        typeof request.headers['accept-language'] === 'string'
-          ? request.headers['accept-language']
-          : undefined,
+      userAgent: readHeader(request.headers, 'user-agent'),
+      acceptLanguage: readHeader(request.headers, 'accept-language'),
     })
     if ('error' in result) {
       reply.code(400).send({ error: result.error })
@@ -125,32 +126,27 @@ export const registerApiRoutes = (
 
   app.get('/api/messages', async (request, reply) => {
     const query = request.query as Record<string, unknown> | undefined
-    const limit = parseMessageLimit(query?.limit)
-    const afterId =
-      typeof query?.afterId === 'string' ? query.afterId.trim() : undefined
     const { messages, mode } = await orchestrator.getChatMessages(
-      limit,
-      afterId,
+      parseMessageLimit(query?.limit),
+      typeof query?.afterId === 'string' ? query.afterId.trim() : undefined,
     )
-    const payload = { messages, mode }
     return replyWithEtag({
       request,
       reply,
       prefix: 'messages',
-      payload,
+      payload: { messages, mode },
     })
   })
 
   app.get('/api/tasks', (request) => {
     const query = request.query as Record<string, unknown> | undefined
-    const limit = parseTaskLimit(query?.limit)
-    return orchestrator.getTasks(limit)
+    return orchestrator.getTasks(parseTaskLimit(query?.limit))
   })
 
-  registerTaskArchiveRoute(app, orchestrator, _config)
-  registerTaskProgressRoute(app, orchestrator, _config)
+  registerTaskArchiveRoute(app, orchestrator, config)
+  registerTaskProgressRoute(app, orchestrator, config)
   registerTaskCancelRoute(app, orchestrator)
-  registerControlRoutes(app, orchestrator, _config)
+  registerControlRoutes(app, orchestrator, config)
 }
 
 export const registerNotFoundHandler = (app: FastifyInstance): void => {
