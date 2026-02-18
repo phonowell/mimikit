@@ -34,6 +34,16 @@ HTTP 路由共享约束：
 - `MIMIKIT_MANAGER_PROMPT_MAX_TOKENS`
 - `MIMIKIT_MANAGER_CREATE_TASK_DEBOUNCE_MS`
 
+## 桌面通知（Node）
+- 通知实现：`src/notify/node-notifier.ts`
+- 触发来源：`src/worker/result-finalize.ts` 与 `src/worker/cancel-task.ts`
+- 策略：
+  - `failed`/`canceled` 立即通知
+  - `succeeded` 仅 `specialist` 或耗时 `>=60s`
+  - `deferred` 成功不通知
+  - 成功通知 5 秒聚合窗口 + 1.5 秒最小间隔
+- 约束：不暴露配置项，运行时始终尝试发送；系统不支持时仅记录日志，不影响主流程
+
 ## 状态目录
 默认目录：`./.mimikit/`
 

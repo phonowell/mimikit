@@ -69,6 +69,7 @@ export const finalizeResult = async (
     payload: result,
   })
   notifyManagerLoop(runtime)
+  await runtime.taskResultNotifier.notifyTaskResult(task, result)
   await bestEffort('appendLog: worker_end', () =>
     appendLog(runtime.paths.log, {
       event: 'worker_end',

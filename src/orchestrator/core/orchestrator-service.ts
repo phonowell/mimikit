@@ -6,6 +6,7 @@ import { appendLog } from '../../log/append.js'
 import { bestEffort, setDefaultLogPath } from '../../log/safe.js'
 import { cronWakeLoop } from '../../manager/loop-cron.js'
 import { managerLoop } from '../../manager/loop.js'
+import { createTaskResultNotifier } from '../../notify/node-notifier.js'
 import { newId, nowIso } from '../../shared/utils.js'
 import { appendHistory } from '../../storage/history-jsonl.js'
 import { cancelTask } from '../../worker/cancel-task.js'
@@ -84,6 +85,7 @@ export class Orchestrator {
       }),
       workerSignalController: new AbortController(),
       uiSignalController: new AbortController(),
+      taskResultNotifier: createTaskResultNotifier(paths.log),
     }
   }
 
@@ -99,6 +101,7 @@ export class Orchestrator {
 
   stop() {
     this.runtime.stopped = true
+    this.runtime.taskResultNotifier.stop()
     notifyManagerLoop(this.runtime)
     notifyWorkerLoop(this.runtime)
     void this.persistStopSnapshot()
@@ -106,6 +109,7 @@ export class Orchestrator {
 
   async stopAndPersist(): Promise<void> {
     this.runtime.stopped = true
+    this.runtime.taskResultNotifier.stop()
     notifyManagerLoop(this.runtime)
     notifyWorkerLoop(this.runtime)
     await this.persistStopSnapshot()

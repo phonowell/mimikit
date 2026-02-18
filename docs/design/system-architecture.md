@@ -114,6 +114,11 @@
 - 统一收敛终态：`succeeded/failed/canceled`
 - 常规终态写 result 并即时唤醒 manager
 - `pending` 快速取消同样写 result 并即时唤醒 manager
+- 任务终态触发桌面通知（Node `node-notifier`）：
+  - `failed`/`canceled`：立即通知
+  - `succeeded`：仅 `specialist` 或耗时 `>=60s` 的任务通知
+  - `deferred` 成功默认不通知
+  - 5 秒窗口聚合成功通知，最小发送间隔 1.5 秒
 
 ## 状态与队列落盘
 
