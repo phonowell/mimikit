@@ -6,7 +6,10 @@ import { nowIso } from '../shared/utils.js'
 import { appendHistory } from '../storage/history-jsonl.js'
 
 import { applyTaskActions, collectTaskResultSummaries } from './action-apply.js'
-import { appendManagerFallbackReply } from './history.js'
+import {
+  appendManagerErrorSystemMessage,
+  appendManagerFallbackReply,
+} from './history.js'
 import { runManagerBatch } from './loop-batch-run-manager.js'
 import {
   buildFallbackReply,
@@ -95,6 +98,7 @@ export const processManagerBatch = async (params: {
       ...(resolvedUsage ? { usage: resolvedUsage } : {}),
     })
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
     let drainedOnError = false
     try {
       drainedOnError = await drainBatchOnFailure({
@@ -114,12 +118,15 @@ export const processManagerBatch = async (params: {
         appendManagerFallbackReply(runtime.paths),
       )
     }
+    await bestEffort('appendHistory: manager_error_system_message', () =>
+      appendManagerErrorSystemMessage(runtime.paths, errorMessage),
+    )
 
     await bestEffort('appendLog: manager_end_error', () =>
       appendLog(runtime.paths.log, {
         event: 'manager_end',
         status: 'error',
-        error: error instanceof Error ? error.message : String(error),
+        error: errorMessage,
         elapsedMs: Math.max(0, Date.now() - startedAt),
         drainedOnError,
         assistantAppended,

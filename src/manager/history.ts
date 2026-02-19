@@ -39,6 +39,23 @@ export const appendManagerFallbackReply = async (
   })
 }
 
+const compactManagerErrorText = (value: string): string =>
+  value.replace(/\s+/g, ' ').trim()
+
+export const appendManagerErrorSystemMessage = async (
+  paths: RuntimeState['paths'],
+  error: string,
+): Promise<void> => {
+  const detail = compactManagerErrorText(error)
+  const text = detail ? `Manager failed · ${detail}` : 'Manager failed'
+  await appendHistory(paths.history, {
+    id: `sys-manager-error-${Date.now()}`,
+    role: 'system',
+    text,
+    createdAt: nowIso(),
+  })
+}
+
 const compactActionFeedbackText = (value: string): string =>
   value.replace(/\s+/g, ' ').trim()
 

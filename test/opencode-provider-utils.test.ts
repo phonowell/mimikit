@@ -3,7 +3,14 @@ import { expect, test } from 'vitest'
 import {
   extractOpencodeOutput,
 } from '../src/providers/opencode-provider-utils.js'
-import { startUsageStreamMonitor } from '../src/providers/opencode-provider-stream.js'
+import {
+  isTransientProviderError,
+  startUsageStreamMonitor,
+} from '../src/providers/opencode-provider-stream.js'
+import {
+  ProviderError,
+  readProviderErrorCode,
+} from '../src/providers/provider-error.js'
 import {
   createMessageState,
   hasStreamChange,
@@ -47,6 +54,22 @@ test('extractOpencodeOutput excludes reasoning and ignored text parts', () => {
   ]
 
   expect(extractOpencodeOutput(parts)).toBe('Final answer')
+
+  const timeoutError = new ProviderError({
+    code: 'provider_timeout',
+    message: '[provider:opencode] timed out after 90000ms',
+    retryable: true,
+  })
+  expect(readProviderErrorCode(timeoutError)).toBe('provider_timeout')
+  expect(isTransientProviderError(timeoutError)).toBe(true)
+
+  const sdkError = new ProviderError({
+    code: 'provider_sdk_failure',
+    message: '[provider:opencode] sdk run failed: invalid response',
+    retryable: false,
+  })
+  expect(readProviderErrorCode(sdkError)).toBe('provider_sdk_failure')
+  expect(isTransientProviderError(sdkError)).toBe(false)
 })
 
 test('stream monitor restores visible streaming while filtering hidden parts and triggers webui stream state', async () => {

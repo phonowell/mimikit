@@ -22,6 +22,7 @@ import {
   mapOpencodeUsage,
   resolveOpencodeModelRef,
 } from './opencode-provider-utils.js'
+import { ProviderError, readProviderErrorCode } from './provider-error.js'
 import {
   bindExternalAbort,
   buildProviderResult,
@@ -35,6 +36,35 @@ import type {
   ProviderResult,
 } from './types.js'
 const RETRY_MAX_ATTEMPTS = 3
+const MANAGER_TIMEOUT_RETRY_MAX_ATTEMPTS = 2
+
+const isProviderTimeoutError = (error: unknown): boolean =>
+  readProviderErrorCode(error) === 'provider_timeout'
+
+const resolveRetryMaxAttempts = (
+  request: OpencodeProviderRequest,
+  error: unknown,
+): number => {
+  if (request.role === 'manager' && isProviderTimeoutError(error))
+    return MANAGER_TIMEOUT_RETRY_MAX_ATTEMPTS
+  return RETRY_MAX_ATTEMPTS
+}
+
+const shouldRetryRequest = (params: {
+  request: OpencodeProviderRequest
+  error: unknown
+  attemptNumber: number
+}): boolean => {
+  const { request, error, attemptNumber } = params
+  if (error instanceof ProviderError) {
+    if (!error.retryable) return false
+    return attemptNumber < resolveRetryMaxAttempts(request, error)
+  }
+  if (isAbortLikeError(error)) return false
+  if (!isTransientProviderError(error)) return false
+  return attemptNumber < resolveRetryMaxAttempts(request, error)
+}
+
 const runOpencodeOnce = async (
   request: OpencodeProviderRequest,
 ): Promise<ProviderResult> => {
@@ -122,12 +152,19 @@ const runOpencodeOnce = async (
     })
   } catch (error) {
     if (lifecycle.timedOut) {
-      throw new Error(
-        `[provider:opencode] timed out after ${request.timeoutMs}ms`,
-      )
+      throw new ProviderError({
+        code: 'provider_timeout',
+        message: `[provider:opencode] timed out after ${request.timeoutMs}ms`,
+        retryable: true,
+      })
     }
-    if (lifecycle.externallyAborted || controller.signal.aborted)
-      throw new Error('[provider:opencode] aborted')
+    if (lifecycle.externallyAborted || controller.signal.aborted) {
+      throw new ProviderError({
+        code: 'provider_aborted',
+        message: '[provider:opencode] aborted',
+        retryable: false,
+      })
+    }
     throw wrapSdkError(error)
   } finally {
     timeoutGuard.clear()
@@ -148,18 +185,24 @@ const runOpencodeWithRetry = (
     minTimeout: 300,
     maxTimeout: 3_000,
     randomize: true,
-    shouldConsumeRetry: ({ error }) =>
-      !(isAbortLikeError(error) || !isTransientProviderError(error)),
-    shouldRetry: ({ error }) =>
-      !isAbortLikeError(error) && isTransientProviderError(error),
+    shouldConsumeRetry: ({ error, attemptNumber }) =>
+      shouldRetryRequest({ request, error, attemptNumber }),
+    shouldRetry: ({ error, attemptNumber }) =>
+      shouldRetryRequest({ request, error, attemptNumber }),
     onFailedAttempt: (attempt) => {
-      if (attempt.retriesLeft <= 0) return
+      const shouldRetry = shouldRetryRequest({
+        request,
+        error: attempt.error,
+        attemptNumber: attempt.attemptNumber,
+      })
+      if (!shouldRetry || attempt.retriesLeft <= 0) return
+      const retryMaxAttempts = resolveRetryMaxAttempts(request, attempt.error)
       const message =
         attempt.error instanceof Error
           ? attempt.error.message
           : String(attempt.error)
       console.warn(
-        `[provider:opencode] transient failure, retry ${attempt.attemptNumber}/${RETRY_MAX_ATTEMPTS}: ${message}`,
+        `[provider:opencode] transient failure, retry ${attempt.attemptNumber}/${retryMaxAttempts}: ${message}`,
       )
     },
   })
@@ -182,15 +225,37 @@ opencodeBreaker.on('close', () => {
 const runOpencode = async (
   request: OpencodeProviderRequest,
 ): Promise<ProviderResult> => {
-  ensureOpencodePreflight()
+  try {
+    ensureOpencodePreflight()
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    const normalizedMessage = message.startsWith('[provider:opencode]')
+      ? message
+      : `[provider:opencode] preflight failed: ${message}`
+    throw new ProviderError({
+      code: 'provider_preflight_failed',
+      message: normalizedMessage,
+      retryable: false,
+    })
+  }
   try {
     return await opencodeBreaker.fire(request)
   } catch (error) {
-    if (isAbortLikeError(error)) throw new Error('[provider:opencode] aborted')
+    if (error instanceof ProviderError) throw error
+    if (isAbortLikeError(error)) {
+      throw new ProviderError({
+        code: 'provider_aborted',
+        message: '[provider:opencode] aborted',
+        retryable: false,
+      })
+    }
     if (error instanceof Error && /breaker is open/i.test(error.message)) {
-      throw new Error(
-        '[provider:opencode] circuit is open due to consecutive failures',
-      )
+      throw new ProviderError({
+        code: 'provider_circuit_open',
+        message:
+          '[provider:opencode] circuit is open due to consecutive failures',
+        retryable: false,
+      })
     }
     throw error
   }

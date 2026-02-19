@@ -5,6 +5,11 @@ import {
   mapOpencodeTextPartStateFromEvent,
   mapOpencodeUsageFromEvent,
 } from './opencode-provider-utils.js'
+import {
+  isRetryableProviderError,
+  ProviderError,
+  readProviderErrorCode,
+} from './provider-error.js'
 export { isSameUsage } from '../shared/token-usage.js'
 
 import type { mapOpencodeUsage } from './opencode-provider-utils.js'
@@ -16,12 +21,32 @@ export type UsageStreamMonitor = {
 }
 
 export const wrapSdkError = (error: unknown): Error => {
+  if (error instanceof ProviderError) return error
   const message = error instanceof Error ? error.message : String(error)
-  if (message.startsWith('[provider:opencode]')) return new Error(message)
-  return new Error(`[provider:opencode] sdk run failed: ${message}`)
+  if (message.startsWith('[provider:opencode]')) {
+    return new ProviderError({
+      code: 'provider_sdk_failure',
+      message,
+      retryable: false,
+    })
+  }
+  const wrappedMessage = `[provider:opencode] sdk run failed: ${message}`
+  if (isTransientProviderError(error)) {
+    return new ProviderError({
+      code: 'provider_transient_network',
+      message: wrappedMessage,
+      retryable: true,
+    })
+  }
+  return new ProviderError({
+    code: 'provider_sdk_failure',
+    message: wrappedMessage,
+    retryable: false,
+  })
 }
 
 export const isTransientProviderError = (error: unknown): boolean => {
+  if (isRetryableProviderError(error)) return true
   const message = error instanceof Error ? error.message : String(error)
   return (
     /fetch failed/i.test(message) ||
@@ -36,7 +61,9 @@ export const isTransientProviderError = (error: unknown): boolean => {
 }
 
 export const shouldSkipFailureCount = (error: Error): boolean =>
-  isAbortLikeError(error) || /preflight failed/i.test(error.message)
+  isAbortLikeError(error) ||
+  readProviderErrorCode(error) === 'provider_preflight_failed' ||
+  /preflight failed/i.test(error.message)
 
 const isAbortLikeStreamError = (
   error: unknown,
