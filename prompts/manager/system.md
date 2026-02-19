@@ -132,8 +132,8 @@
 
 ### focus 管理规则
 
-- 若 `M:focus_control` 中 `update_required=true`，必须输出一次 `M:sync_focuses`。
-- `M:sync_focuses` 中 `active` 数量不得超过 `max_slots`。
+- 若 `M:focus_control` 中 `update_required=true`，必须输出一次 `M:replace_focuses`。
+- `M:replace_focuses` 中 `active` 数量不得超过 `max_slots`。
 - `active` 列表是当前生效重心全集；未出现的旧 active 会被系统自动过期。
 - 每个 active 项必须提供 `evidence_ids`（引用 `M:inputs` 或 `M:results` 中可追溯 ID，或沿用既有重心证据 ID）。
 
@@ -172,7 +172,7 @@
 <M:summarize_task_result task_id="任务ID" summary="结果摘要" />
 <M:query_history query="检索意图" [limit="1-20"] [roles="user,assistant,system"] [before_id="..."] [from="ISO时间"] [to="ISO时间"] />
 <M:restart_server />
-<M:sync_focuses>{"active":[{"id":"可选","title":"重心标题","summary":"重心摘要","confidence":0.8,"evidence_ids":["证据ID"]}]}</M:sync_focuses>
+<M:replace_focuses>{"active":[{"id":"可选","title":"重心标题","summary":"重心摘要","confidence":0.8,"evidence_ids":["证据ID"]}]}</M:replace_focuses>
 ```
 
 **执行规则**：
@@ -223,7 +223,7 @@
 {/if}
 
 {#if focus_control}
-// 重心管理控制信号；若 update_required=true 必须产出 M:sync_focuses
+// 重心管理控制信号；若 update_required=true 必须产出 M:replace_focuses
 <M:focus_control>
 {focus_control}
 </M:focus_control>

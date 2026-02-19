@@ -1,4 +1,4 @@
-import { parseSyncFocusesPayload } from '../focus/state.js'
+import { parseReplaceFocusesPayload } from '../focus/state.js'
 import { parseIsoMs } from '../shared/time.js'
 
 import { hasForbiddenWorkerStatePath } from './action-apply-guards.js'
@@ -20,7 +20,7 @@ export const REGISTERED_MANAGER_ACTIONS = new Set([
   'summarize_task_result',
   'query_history',
   'restart_server',
-  'sync_focuses',
+  'replace_focuses',
 ])
 
 export type FeedbackContext = {
@@ -148,16 +148,16 @@ const validateQueryHistory = (item: Parsed): ValidationIssue[] => {
   return []
 }
 
-const validateSyncFocuses = (
+const validateReplaceFocuses = (
   item: Parsed,
   context: FeedbackContext,
 ): ValidationIssue[] => {
-  const parsed = parseSyncFocusesPayload(item)
+  const parsed = parseReplaceFocusesPayload(item)
   if (!parsed.ok) {
     return [
       {
         error: INVALID_ACTION_ARGS,
-        hint: `参数校验失败：sync_focuses 内容不是合法 JSON。${parsed.error}`,
+        hint: `参数校验失败：replace_focuses 内容不是合法 JSON。${parsed.error}`,
       },
     ]
   }
@@ -168,7 +168,7 @@ const validateSyncFocuses = (
     return [
       {
         error: ACTION_EXECUTION_REJECTED,
-        hint: `sync_focuses 执行失败：active 数量不能超过 worker 插槽上限 ${context.focusSlots}。`,
+        hint: `replace_focuses 执行失败：active 数量不能超过 worker 插槽上限 ${context.focusSlots}。`,
       },
     ]
   }
@@ -183,7 +183,8 @@ export const validateRegisteredManagerAction = (
   if (item.name === 'create_task') return validateCreateTask(item)
   if (item.name === 'cancel_task') return validateCancelTask(item, context)
   if (item.name === 'query_history') return validateQueryHistory(item)
-  if (item.name === 'sync_focuses') return validateSyncFocuses(item, context)
+  if (item.name === 'replace_focuses')
+    return validateReplaceFocuses(item, context)
   if (item.name === 'summarize_task_result')
     return validateWithSchema(item, summarizeSchema)
   if (item.name === 'restart_server')

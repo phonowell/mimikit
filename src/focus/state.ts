@@ -3,9 +3,9 @@ export {
   type FocusManagerContext,
 } from './context.js'
 export {
-  applyManagerFocusSync,
+  applyManagerFocusReplace,
   expireFocus,
   getFocusSnapshot,
   restoreFocus,
 } from './mutations.js'
-export { isSyncFocusesAction, parseSyncFocusesPayload } from './sync-action.js'
+export { isReplaceFocusesAction, parseReplaceFocusesPayload } from './replace-action.js'

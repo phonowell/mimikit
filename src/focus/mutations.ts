@@ -11,7 +11,7 @@ import {
   resolveFocusSlots,
   trimExpiredByLru,
 } from './common.js'
-import { parseSyncFocusesPayload } from './sync-action.js'
+import { parseReplaceFocusesPayload } from './replace-action.js'
 
 import type { Parsed } from '../actions/model/spec.js'
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
@@ -89,12 +89,12 @@ const replaceFocuses = (
   ]
 }
 
-export const applyManagerFocusSync = (params: {
+export const applyManagerFocusReplace = (params: {
   runtime: RuntimeState
   action: Parsed
   batchEvidenceIds: Set<string>
 }): { ok: true; changed: boolean } | { ok: false; error: string } => {
-  const parsed = parseSyncFocusesPayload(params.action)
+  const parsed = parseReplaceFocusesPayload(params.action)
   if (!parsed.ok) return { ok: false, error: parsed.error }
 
   const maxSlots = resolveFocusSlots(params.runtime)

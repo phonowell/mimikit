@@ -1,4 +1,4 @@
-import { applyManagerFocusSync } from '../focus/state.js'
+import { applyManagerFocusReplace } from '../focus/state.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
@@ -63,16 +63,16 @@ export const applyTaskActions = async (
       requestManagerRestart(runtime)
       return
     }
-    if (item.name === 'sync_focuses') {
-      const applied = applyManagerFocusSync({
+    if (item.name === 'replace_focuses') {
+      const applied = applyManagerFocusReplace({
         runtime,
         action: item,
         batchEvidenceIds: options?.focusEvidenceIds ?? new Set(),
       })
       if (!applied.ok) {
-        await bestEffort('appendLog: sync_focuses_rejected', () =>
+        await bestEffort('appendLog: replace_focuses_rejected', () =>
           appendLog(runtime.paths.log, {
-            event: 'sync_focuses_rejected',
+            event: 'replace_focuses_rejected',
             reason: applied.error,
           }),
         )

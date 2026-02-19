@@ -72,7 +72,7 @@
 - 入参：`task_id`、`summary`
 - 行为：汇总为 `Map<taskId, summary>`，用于结果写入 `history` 时压缩输出。
 
-### `sync_focuses`
+### `replace_focuses`
 
 - 入参：标签内容为 JSON，结构：`{ "active": FocusDraft[] }`
 - `FocusDraft`：`id?`、`title`、`summary`、`confidence?`、`evidence_ids[]`

@@ -14,22 +14,22 @@ const focusDraftSchema = z
   })
   .strict()
 
-const focusSyncPayloadSchema = z
+const focusReplacePayloadSchema = z
   .object({
     active: z.array(focusDraftSchema),
   })
   .strict()
 
-export type FocusSyncDraft = z.infer<typeof focusDraftSchema>
+export type FocusReplaceDraft = z.infer<typeof focusDraftSchema>
 
-export type FocusSyncPayload = z.infer<typeof focusSyncPayloadSchema>
+export type FocusReplacePayload = z.infer<typeof focusReplacePayloadSchema>
 
-export const isSyncFocusesAction = (item: Parsed): boolean =>
-  item.name === 'sync_focuses'
+export const isReplaceFocusesAction = (item: Parsed): boolean =>
+  item.name === 'replace_focuses'
 
-export const parseSyncFocusesPayload = (
+export const parseReplaceFocusesPayload = (
   item: Parsed,
-): { ok: true; payload: FocusSyncPayload } | { ok: false; error: string } => {
+): { ok: true; payload: FocusReplacePayload } | { ok: false; error: string } => {
   const raw = item.content?.trim()
   if (!raw) return { ok: false, error: 'content is required' }
   let parsedJson: unknown
@@ -41,7 +41,7 @@ export const parseSyncFocusesPayload = (
       error: error instanceof Error ? error.message : String(error),
     }
   }
-  const parsed = focusSyncPayloadSchema.safeParse(parsedJson)
+  const parsed = focusReplacePayloadSchema.safeParse(parsedJson)
   if (!parsed.success) {
     const details = parsed.error.issues
       .slice(0, 3)
