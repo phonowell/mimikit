@@ -66,38 +66,14 @@
   box-shadow: none;
 }
 
-.focuses-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 16px;
-  background: var(--panel);
-}
-
-.focuses-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.focuses-dialog-title {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-}
-
 .focuses-panel {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  background: var(--well-bg);
+  display: block;
 }
 
 .focuses-body {
   display: grid;
   gap: 10px;
-  padding: 12px;
+  padding: 0;
 }
 
 .focuses-group {
@@ -181,11 +157,6 @@
 .focus-empty {
   color: var(--muted);
   font-size: 12px;
-}
-
-.focuses-actions {
-  display: flex;
-  justify-content: flex-end;
 }
 
 .task-item,

@@ -42,13 +42,14 @@
               class="btn btn--sm focuses-open"
               data-focuses-open
               type="button"
-              title="Focus"
-              aria-label="Focus"
+              title="Focuses"
+              aria-label="Focuses"
               aria-haspopup="dialog"
               aria-controls="focuses-dialog"
               aria-expanded="false"
             >
-              Focus
+              <span class="focuses-label">Focuses</span>
+              <span class="focuses-count" data-focuses-count aria-hidden="true" hidden>0</span>
             </button>
             <button
               class="btn btn--sm restart-btn"
@@ -150,9 +151,9 @@
         aria-labelledby="focuses-title"
       >
         <section class="focuses-dialog-panel">
-          <header class="focuses-header">
-            <h2 class="focuses-dialog-title" id="focuses-title">Conversation Focuses</h2>
-            <div class="focuses-header-actions" role="group" aria-label="Focuses">
+          <header class="tasks-header">
+            <h2 class="tasks-title" id="focuses-title">Focuses</h2>
+            <div class="tasks-actions" role="group" aria-label="Focuses">
               <button
                 class="btn btn--icon btn--icon-muted focuses-close"
                 data-focuses-close
@@ -164,7 +165,11 @@
               </button>
             </div>
           </header>
-          <section class="focuses-panel" data-focuses-panel aria-label="Conversation Focuses">
+          <section
+            class="tasks-list scrollable focuses-panel"
+            data-focuses-panel
+            aria-label="Focuses"
+          >
             <div class="focuses-body">
               <section class="focuses-group" aria-label="Active focuses">
                 <h3 class="focuses-title">Active</h3>
@@ -174,16 +179,6 @@
                 <h3 class="focuses-title">Expired</h3>
                 <ul class="focuses-list" data-focuses-expired-list></ul>
               </section>
-              <div class="focuses-actions">
-                <button
-                  class="btn btn--xs"
-                  data-focuses-rollback
-                  type="button"
-                  title="Rollback latest focus update"
-                >
-                  Rollback
-                </button>
-              </div>
             </div>
           </section>
         </section>

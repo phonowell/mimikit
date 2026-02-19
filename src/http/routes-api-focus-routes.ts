@@ -37,13 +37,4 @@ export const registerFocusRoutes = (
     }
     reply.send({ ok: true, status: result.status, focusId })
   })
-
-  app.post('/api/focuses/rollback', async (_request, reply) => {
-    const result = await orchestrator.rollbackFocuses()
-    if (!result.ok) {
-      reply.code(409).send({ error: result.status })
-      return
-    }
-    reply.send(result)
-  })
 }

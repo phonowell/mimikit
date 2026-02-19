@@ -13,7 +13,6 @@
 - `GET /api/focuses`
 - `POST /api/focuses/:id/expire`
 - `POST /api/focuses/:id/restore`
-- `POST /api/focuses/rollback`
 - `POST /api/restart`
 - `POST /api/reset`
 

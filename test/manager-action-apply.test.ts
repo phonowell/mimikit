@@ -6,7 +6,7 @@ import PQueue from 'p-queue'
 import { expect, test } from 'vitest'
 
 import { defaultConfig } from '../src/config.js'
-import { expireFocus, rollbackFocuses } from '../src/focus/state.js'
+import { expireFocus } from '../src/focus/state.js'
 import { buildPaths } from '../src/fs/paths.js'
 import { applyTaskActions } from '../src/manager/action-apply.js'
 
@@ -35,7 +35,6 @@ const createRuntime = async (): Promise<RuntimeState> => {
     tasks: [],
     cronJobs: [],
     focuses: [],
-    focusRollbackStack: [],
     managerTurn: 0,
     uiStream: null,
     runningControllers: new Map(),
@@ -179,6 +178,4 @@ test('create_task allows .mimikit/generated path for worker profiles', async () 
   const expired = expireFocus(runtime, focusId)
   expect(expired.ok).toBe(true)
   expect(runtime.focuses[0]?.status).toBe('expired')
-  expect(rollbackFocuses(runtime)).toBe(true)
-  expect(runtime.focuses[0]?.status).toBe('active')
 })

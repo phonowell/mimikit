@@ -4,7 +4,6 @@ import {
   byUpdatedDesc,
   cloneFocuses,
   FOCUS_DRIFT_SIMILARITY_THRESHOLD,
-  FOCUS_ROLLBACK_MAX,
   focusSimilarity,
   hasEvidenceIntersection,
   normalizeEvidenceIds,
@@ -20,12 +19,6 @@ import type {
   ConversationFocus,
   ConversationFocusSource,
 } from '../types/index.js'
-
-const pushRollback = (runtime: RuntimeState): void => {
-  runtime.focusRollbackStack.push(cloneFocuses(runtime.focuses))
-  while (runtime.focusRollbackStack.length > FOCUS_ROLLBACK_MAX)
-    runtime.focusRollbackStack.shift()
-}
 
 const hasSemanticDrift = (params: {
   previousActive: ConversationFocus[]
@@ -146,7 +139,6 @@ export const applyManagerFocusSync = (params: {
   )
     return { ok: false, error: 'focus semantic drift too large' }
 
-  pushRollback(params.runtime)
   replaceFocuses(params.runtime, nextActive)
   return {
     ok: true,
@@ -180,7 +172,6 @@ const updateFocusStatus = (
   )
     return { ok: false, status: 'active_full' }
 
-  pushRollback(runtime)
   const now = nowIso()
   runtime.focuses[index] = {
     ...current,
@@ -206,13 +197,6 @@ export const expireFocus = (runtime: RuntimeState, id: string) =>
 
 export const restoreFocus = (runtime: RuntimeState, id: string) =>
   updateFocusStatus(runtime, id, 'active', 'user')
-
-export const rollbackFocuses = (runtime: RuntimeState): boolean => {
-  const snapshot = runtime.focusRollbackStack.pop()
-  if (!snapshot) return false
-  runtime.focuses = cloneFocuses(snapshot)
-  return true
-}
 
 export const getFocusSnapshot = (runtime: RuntimeState) => {
   const limit = resolveFocusSlots(runtime)

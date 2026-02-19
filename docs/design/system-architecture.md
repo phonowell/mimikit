@@ -45,7 +45,7 @@
 - `queues.resultsCursor`
 - `plannerSessionId`
 - `tasks` / `cronJobs`
-- `focuses` / `focusRollbackStack` / `managerTurn`
+- `focuses` / `managerTurn`
 - `workerQueue` / `runningControllers`
 
 ## 共享原语（去重后）

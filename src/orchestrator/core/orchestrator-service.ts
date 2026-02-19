@@ -5,7 +5,6 @@ import {
   expireFocus,
   getFocusSnapshot,
   restoreFocus,
-  rollbackFocuses,
 } from '../../focus/state.js'
 import { buildPaths } from '../../fs/paths.js'
 import { bestEffort, setDefaultLogPath } from '../../log/safe.js'
@@ -63,7 +62,6 @@ export class Orchestrator {
       tasks: [],
       cronJobs: [],
       focuses: [],
-      focusRollbackStack: [],
       managerTurn: 0,
       uiStream: null,
       runningControllers: new Map(),
@@ -172,14 +170,6 @@ export class Orchestrator {
     await persistRuntimeState(this.runtime)
     notifyUiSignal(this.runtime)
     return result
-  }
-
-  async rollbackFocuses() {
-    if (!rollbackFocuses(this.runtime))
-      return { ok: false as const, status: 'empty' as const }
-    await persistRuntimeState(this.runtime)
-    notifyUiSignal(this.runtime)
-    return { ok: true as const, status: 'updated' as const }
   }
 
   addCronJob(input: {

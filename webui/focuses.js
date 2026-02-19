@@ -29,10 +29,10 @@ const requestAction = async (url) => {
 export const bindFocusPanel = ({
   focusesDialog,
   focusesOpenBtn,
+  focusesCountEl,
   focusesCloseBtn,
   activeList,
   expiredList,
-  rollbackBtn,
   panel,
 }) => {
   if (!activeList || !expiredList) {
@@ -55,6 +55,7 @@ export const bindFocusPanel = ({
 
   const applyFocusSnapshot = (payload) => {
     latest = normalizePayload(payload)
+    syncActiveCountLabel(latest.active.length)
     render()
   }
 
@@ -75,6 +76,20 @@ export const bindFocusPanel = ({
     item.className = 'focus-empty'
     item.textContent = UI_TEXT.connectionLost
     activeList.appendChild(item)
+    syncActiveCountLabel(0)
+  }
+
+  const syncActiveCountLabel = (activeCount) => {
+    const count = Number.isFinite(activeCount) ? Math.max(0, activeCount) : 0
+    if (focusesCountEl) {
+      focusesCountEl.textContent = String(count)
+      focusesCountEl.hidden = count === 0
+    }
+    if (focusesOpenBtn) {
+      const label = count > 0 ? `Focuses (${count} active)` : 'Focuses'
+      focusesOpenBtn.setAttribute('title', label)
+      focusesOpenBtn.setAttribute('aria-label', label)
+    }
   }
 
   const onClick = (event) => {
@@ -99,24 +114,6 @@ export const bindFocusPanel = ({
         .finally(() => {
           actionButton.disabled = false
         })
-      return
-    }
-
-    if (
-      rollbackBtn &&
-      target instanceof Element &&
-      target.closest('[data-focuses-rollback]')
-    ) {
-      event.preventDefault()
-      rollbackBtn.disabled = true
-      void requestAction('/api/focuses/rollback')
-        .catch((error) => {
-          const message = error instanceof Error ? error.message : String(error)
-          console.warn('[webui] focus rollback failed', message)
-        })
-        .finally(() => {
-          rollbackBtn.disabled = false
-        })
     }
   }
 
@@ -139,6 +136,7 @@ export const bindFocusPanel = ({
   }
 
   panel?.addEventListener('click', onClick)
+  syncActiveCountLabel(0)
   if (dialogEnabled && dialog) {
     dialog.setExpanded(false)
     focusesOpenBtn.addEventListener('click', onOpen)

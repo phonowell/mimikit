@@ -15,7 +15,6 @@ export const hydrateRuntimeState = async (
   runtime.tasks = snapshot.tasks
   runtime.cronJobs = snapshot.cronJobs ?? []
   runtime.focuses = snapshot.focuses ?? []
-  runtime.focusRollbackStack = []
   runtime.managerTurn = snapshot.managerTurn ?? 0
   if (snapshot.plannerSessionId)
     runtime.plannerSessionId = snapshot.plannerSessionId

@@ -48,7 +48,6 @@ export type RuntimeState = {
   tasks: Task[]
   cronJobs: CronJob[]
   focuses: ConversationFocus[]
-  focusRollbackStack: ConversationFocus[][]
   managerTurn: number
   plannerSessionId?: string
   uiStream: UiAgentStream | null

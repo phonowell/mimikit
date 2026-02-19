@@ -40,7 +40,6 @@ export const createOrchestratorStub = () => {
     getFocuses: () => ({ limit: 1, active: [], expired: [] }),
     expireFocus: async () => ({ ok: false as const, status: 'not_found' as const }),
     restoreFocus: async () => ({ ok: false as const, status: 'not_found' as const }),
-    rollbackFocuses: async () => ({ ok: false as const, status: 'empty' as const }),
     getTaskById: () => undefined,
     cancelTask: async () => ({ ok: false, status: 'not_found' as const }),
     stopAndPersist: async () => undefined,

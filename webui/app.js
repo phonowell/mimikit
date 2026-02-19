@@ -31,11 +31,11 @@ const elements = {
   tasksList: $('[data-tasks-list]'),
   focusesDialog: $('[data-focuses-dialog]'),
   focusesOpenBtn: $('[data-focuses-open]'),
+  focusesCountEl: $('[data-focuses-count]'),
   focusesCloseBtn: $('[data-focuses-close]'),
   focusesPanel: $('[data-focuses-panel]'),
   focusesList: $('[data-focuses-list]'),
   focusesExpiredList: $('[data-focuses-expired-list]'),
-  focusesRollbackBtn: $('[data-focuses-rollback]'),
 }
 
 const FAVICON_COLOR_BY_STATE = {
@@ -122,11 +122,11 @@ const tasksPanel = bindTasksPanel({
 const focusPanel = bindFocusPanel({
   focusesDialog: elements.focusesDialog,
   focusesOpenBtn: elements.focusesOpenBtn,
+  focusesCountEl: elements.focusesCountEl,
   focusesCloseBtn: elements.focusesCloseBtn,
   panel: elements.focusesPanel,
   activeList: elements.focusesList,
   expiredList: elements.focusesExpiredList,
-  rollbackBtn: elements.focusesRollbackBtn,
 })
 
 const messages = createMessagesController({

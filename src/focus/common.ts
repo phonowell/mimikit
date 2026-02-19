@@ -6,7 +6,6 @@ import type {
 } from '../types/index.js'
 
 export const FOCUS_SYNC_INTERVAL = 10
-export const FOCUS_ROLLBACK_MAX = 6
 export const FOCUS_DRIFT_SIMILARITY_THRESHOLD = 0.14
 
 const TOKEN_RE = /[\p{L}\p{N}_-]+/gu

@@ -7,6 +7,5 @@ export {
   expireFocus,
   getFocusSnapshot,
   restoreFocus,
-  rollbackFocuses,
 } from './mutations.js'
 export { isSyncFocusesAction, parseSyncFocusesPayload } from './sync-action.js'
