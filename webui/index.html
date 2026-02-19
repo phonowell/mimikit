@@ -39,6 +39,18 @@
               <span class="tasks-worker-dots" data-worker-dots aria-hidden="true"></span>
             </button>
             <button
+              class="btn btn--sm focuses-open"
+              data-focuses-open
+              type="button"
+              title="Focus"
+              aria-label="Focus"
+              aria-haspopup="dialog"
+              aria-controls="focuses-dialog"
+              aria-expanded="false"
+            >
+              Focus
+            </button>
+            <button
               class="btn btn--sm restart-btn"
               data-restart
               type="button"
@@ -127,8 +139,32 @@
               </button>
             </div>
           </header>
-          <details class="focuses-panel" data-focuses-panel>
-            <summary class="focuses-toggle">Conversation Focuses</summary>
+          <ul class="tasks-list scrollable" data-tasks-list></ul>
+        </section>
+      </dialog>
+
+      <dialog
+        class="focuses-dialog"
+        data-focuses-dialog
+        id="focuses-dialog"
+        aria-labelledby="focuses-title"
+      >
+        <section class="focuses-dialog-panel">
+          <header class="focuses-header">
+            <h2 class="focuses-dialog-title" id="focuses-title">Conversation Focuses</h2>
+            <div class="focuses-header-actions" role="group" aria-label="Focuses">
+              <button
+                class="btn btn--icon btn--icon-muted focuses-close"
+                data-focuses-close
+                type="button"
+                title="Close"
+                aria-label="Close"
+              >
+                &#x2715;
+              </button>
+            </div>
+          </header>
+          <section class="focuses-panel" data-focuses-panel aria-label="Conversation Focuses">
             <div class="focuses-body">
               <section class="focuses-group" aria-label="Active focuses">
                 <h3 class="focuses-title">Active</h3>
@@ -149,8 +185,7 @@
                 </button>
               </div>
             </div>
-          </details>
-          <ul class="tasks-list scrollable" data-tasks-list></ul>
+          </section>
         </section>
       </dialog>
 

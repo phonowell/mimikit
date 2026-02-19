@@ -1,3 +1,4 @@
+import { createDialogController } from './dialog.js'
 import { UI_TEXT } from './system-text.js'
 import { renderFocuses } from './focuses-view.js'
 
@@ -26,6 +27,9 @@ const requestAction = async (url) => {
 }
 
 export const bindFocusPanel = ({
+  focusesDialog,
+  focusesOpenBtn,
+  focusesCloseBtn,
   activeList,
   expiredList,
   rollbackBtn,
@@ -53,6 +57,16 @@ export const bindFocusPanel = ({
     latest = normalizePayload(payload)
     render()
   }
+
+  const dialogEnabled = Boolean(focusesDialog && focusesOpenBtn)
+  const dialog = dialogEnabled
+    ? createDialogController({
+        dialog: focusesDialog,
+        trigger: focusesOpenBtn,
+        focusOnOpen: focusesCloseBtn,
+        focusOnClose: focusesOpenBtn,
+      })
+    : null
 
   const setDisconnected = () => {
     activeList.innerHTML = ''
@@ -106,11 +120,46 @@ export const bindFocusPanel = ({
     }
   }
 
+  const onOpen = (event) => {
+    event.preventDefault()
+    if (dialog) dialog.open()
+  }
+  const onClose = (event) => {
+    event.preventDefault()
+    if (dialog) dialog.close()
+  }
+  const onDialogClick = (event) => {
+    if (dialog) dialog.handleDialogClick(event)
+  }
+  const onDialogClose = () => {
+    if (dialog) dialog.handleDialogClose()
+  }
+  const onDialogCancel = (event) => {
+    if (dialog) dialog.handleDialogCancel(event)
+  }
+
   panel?.addEventListener('click', onClick)
+  if (dialogEnabled && dialog) {
+    dialog.setExpanded(false)
+    focusesOpenBtn.addEventListener('click', onOpen)
+    if (focusesCloseBtn) focusesCloseBtn.addEventListener('click', onClose)
+    focusesDialog.addEventListener('click', onDialogClick)
+    focusesDialog.addEventListener('cancel', onDialogCancel)
+    focusesDialog.addEventListener('close', onDialogClose)
+  }
 
   return {
     applyFocusSnapshot,
     setDisconnected,
-    dispose: () => panel?.removeEventListener('click', onClick),
+    dispose: () => {
+      panel?.removeEventListener('click', onClick)
+      if (dialogEnabled && dialog) {
+        focusesOpenBtn.removeEventListener('click', onOpen)
+        if (focusesCloseBtn) focusesCloseBtn.removeEventListener('click', onClose)
+        focusesDialog.removeEventListener('click', onDialogClick)
+        focusesDialog.removeEventListener('cancel', onDialogCancel)
+        focusesDialog.removeEventListener('close', onDialogClose)
+      }
+    },
   }
 }

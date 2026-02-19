@@ -66,40 +66,38 @@
   box-shadow: none;
 }
 
-.focuses-panel {
-  border-top: 1px solid rgba(152, 167, 190, 0.22);
-  border-bottom: 1px solid rgba(152, 167, 190, 0.22);
+.focuses-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
   background: var(--panel);
 }
 
-.focuses-toggle {
-  cursor: pointer;
-  list-style: none;
-  padding: 10px 14px;
-  font-size: 12px;
+.focuses-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.focuses-dialog-title {
+  margin: 0;
+  font-size: 14px;
   font-weight: 600;
-  color: var(--muted);
 }
 
-.focuses-toggle::-webkit-details-marker {
-  display: none;
-}
-
-.focuses-toggle::before {
-  content: '▸';
-  display: inline-block;
-  margin-right: 8px;
-  transition: transform 0.16s ease;
-}
-
-.focuses-panel[open] .focuses-toggle::before {
-  transform: rotate(90deg);
+.focuses-panel {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  background: var(--well-bg);
 }
 
 .focuses-body {
   display: grid;
-  gap: 8px;
-  padding: 0 12px 12px;
+  gap: 10px;
+  padding: 12px;
 }
 
 .focuses-group {
@@ -128,7 +126,7 @@
 .focus-empty {
   border-radius: 10px;
   padding: 8px 10px;
-  background: var(--well-bg);
+  background: var(--panel);
 }
 
 .focus-row {

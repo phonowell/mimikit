@@ -29,6 +29,9 @@ const elements = {
   workerDots: $('[data-worker-dots]'),
   tasksCloseBtn: $('[data-tasks-close]'),
   tasksList: $('[data-tasks-list]'),
+  focusesDialog: $('[data-focuses-dialog]'),
+  focusesOpenBtn: $('[data-focuses-open]'),
+  focusesCloseBtn: $('[data-focuses-close]'),
   focusesPanel: $('[data-focuses-panel]'),
   focusesList: $('[data-focuses-list]'),
   focusesExpiredList: $('[data-focuses-expired-list]'),
@@ -117,6 +120,9 @@ const tasksPanel = bindTasksPanel({
 })
 
 const focusPanel = bindFocusPanel({
+  focusesDialog: elements.focusesDialog,
+  focusesOpenBtn: elements.focusesOpenBtn,
+  focusesCloseBtn: elements.focusesCloseBtn,
   panel: elements.focusesPanel,
   activeList: elements.focusesList,
   expiredList: elements.focusesExpiredList,
