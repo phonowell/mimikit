@@ -92,7 +92,10 @@
 ## 响应式与可访问性
 
 - 断点：`max-width: 640px`。
+- 手机模式判定：视口宽度 `<= 640px`（CSS `@media (max-width: 640px)`）。
+- 非手机模式判定：视口宽度 `>= 641px`。
 - 移动端：消息气泡宽度放宽；composer 按钮纵向铺满；悬浮按钮位置收紧。
+- 任务弹窗宽度：`tasks-dialog` 在手机模式为 `min(420px, 92vw)`，在非手机模式为 `min(560px, 90vw)`。
 - 所有图标按钮必须有 `aria-label`。
 - 对话框必须有 `aria-labelledby`，必要时补 `aria-describedby`。
 - 状态文本需可被读屏感知（如 `aria-live="polite"`）。

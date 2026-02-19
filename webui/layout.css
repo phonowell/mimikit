@@ -220,6 +220,12 @@ main[data-app] {
   }
 }
 
+@media (min-width: 641px) {
+  .tasks-dialog {
+    width: min(560px, 90vw);
+  }
+}
+
 @media (max-width: 640px) {
   main[data-app] {
     padding: 12px 10px;
