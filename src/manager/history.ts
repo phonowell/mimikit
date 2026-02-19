@@ -5,7 +5,11 @@ import { nowIso } from '../shared/utils.js'
 import { appendHistory, readHistory } from '../storage/history-jsonl.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
-import type { TaskResult, UserInput } from '../types/index.js'
+import type {
+  ManagerActionFeedback,
+  TaskResult,
+  UserInput,
+} from '../types/index.js'
 
 const summarizeResultOutput = (
   result: TaskResult,
@@ -33,6 +37,53 @@ export const appendManagerFallbackReply = async (
     text: fallback,
     createdAt: nowIso(),
   })
+}
+
+const compactActionFeedbackText = (value: string): string =>
+  value.replace(/\s+/g, ' ').trim()
+
+const formatActionFeedbackSystemText = (
+  feedback: ManagerActionFeedback[],
+): string => {
+  const details = feedback
+    .map((item, index) => {
+      const action = compactActionFeedbackText(item.action)
+      const error = compactActionFeedbackText(item.error)
+      const hint = compactActionFeedbackText(item.hint)
+      if (!action || !error || !hint) return null
+      return `${index + 1}. action=${action} error=${error} hint=${hint}`
+    })
+    .filter((line): line is string => Boolean(line))
+  if (details.length === 0) return ''
+  return ['M:action_feedback', ...details].join('\n')
+}
+
+export const appendActionFeedbackSystemMessage = (
+  historyPath: string,
+  feedback: ManagerActionFeedback[],
+): Promise<boolean> => {
+  const text = formatActionFeedbackSystemText(feedback)
+  if (!text) return Promise.resolve(false)
+  return safe(
+    'appendHistory: manager_action_feedback',
+    async () => {
+      await appendHistory(historyPath, {
+        id: `sys-action-feedback-${Date.now()}`,
+        role: 'system',
+        text,
+        createdAt: nowIso(),
+      })
+      return true
+    },
+    {
+      fallback: false,
+      meta: {
+        count: feedback.length,
+        names: feedback.map((item) => item.action),
+        errors: feedback.map((item) => item.error),
+      },
+    },
+  )
 }
 
 export const appendConsumedInputsToHistory = async (

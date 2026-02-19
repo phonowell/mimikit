@@ -5,6 +5,7 @@ import { readHistory } from '../storage/history-jsonl.js'
 
 import { collectManagerActionFeedback } from './action-feedback.js'
 import { pickQueryHistoryRequest, queryHistory } from './history-query.js'
+import { appendActionFeedbackSystemMessage } from './history.js'
 import {
   resetUiStream,
   setUiStreamText,
@@ -149,6 +150,10 @@ export const runManagerBatch = async (params: {
       errors: actionFeedback.map((item) => item.error),
       names: actionFeedback.map((item) => item.action),
     })
+    await appendActionFeedbackSystemMessage(
+      runtime.paths.history,
+      actionFeedback,
+    )
   }
 
   streamRawOutput = ''
