@@ -9,6 +9,11 @@ import {
   loadCodexSettings,
 } from './openai-settings.js'
 import {
+  isTransientProviderMessage,
+  ProviderError,
+  readProviderErrorCode,
+} from './provider-error.js'
+import {
   bindExternalAbort,
   buildProviderResult,
   createTimeoutGuard,
@@ -19,6 +24,49 @@ import type { CodexSdkProviderRequest, Provider } from './types.js'
 
 const codex = new Codex()
 const approvalPolicy = 'never' as const
+
+const buildCodexProviderError = (params: {
+  error: Error
+  timeoutMs: number
+  timedOut: boolean
+  externallyAborted: boolean
+}): ProviderError => {
+  const { error, timeoutMs, timedOut, externallyAborted } = params
+  if (timedOut) {
+    return new ProviderError({
+      code: 'provider_timeout',
+      message: `[provider:codex-sdk] timed out after ${timeoutMs}ms`,
+      retryable: true,
+    })
+  }
+  if (
+    externallyAborted ||
+    error.name === 'AbortError' ||
+    /aborted|canceled/i.test(error.message)
+  ) {
+    return new ProviderError({
+      code: 'provider_aborted',
+      message: '[provider:codex-sdk] aborted',
+      retryable: false,
+    })
+  }
+  const message = error.message.trim()
+  const normalizedMessage = message.startsWith('[provider:codex-sdk]')
+    ? message
+    : `[provider:codex-sdk] sdk run failed: ${message}`
+  if (isTransientProviderMessage(message)) {
+    return new ProviderError({
+      code: 'provider_transient_network',
+      message: normalizedMessage,
+      retryable: true,
+    })
+  }
+  return new ProviderError({
+    code: 'provider_sdk_failure',
+    message: normalizedMessage,
+    retryable: false,
+  })
+}
 
 const toLogContext = (
   request: CodexSdkProviderRequest,
@@ -103,13 +151,21 @@ const runCodexProvider = async (request: CodexSdkProviderRequest) => {
   const startedAt = Date.now()
   const controller = new AbortController()
   let lastActivityAt = startedAt
+  let externallyAborted = false
+  let timedOut = false
   const releaseExternalAbort = bindExternalAbort({
     controller,
     ...(request.abortSignal ? { abortSignal: request.abortSignal } : {}),
+    onAbort: () => {
+      externallyAborted = true
+    },
   })
   const idleTimeout = createTimeoutGuard({
     controller,
     timeoutMs: request.timeoutMs,
+    onTimeout: () => {
+      timedOut = true
+    },
   })
 
   const resetIdle = () => {
@@ -156,17 +212,28 @@ const runCodexProvider = async (request: CodexSdkProviderRequest) => {
   } catch (error) {
     const elapsedMs = elapsedMsSince(startedAt)
     const err = error instanceof Error ? error : new Error(String(error))
+    const mappedError =
+      err instanceof ProviderError
+        ? err
+        : buildCodexProviderError({
+            error: err,
+            timeoutMs: request.timeoutMs,
+            timedOut,
+            externallyAborted,
+          })
+    const errorCode = readProviderErrorCode(mappedError)
     await appendLlmLog(request, {
       event: 'llm_call_failed',
       elapsedMs,
-      error: err.message,
-      errorName: err.name,
-      aborted: err.name === 'AbortError' || /aborted/i.test(err.message),
+      error: mappedError.message,
+      errorName: mappedError.name,
+      ...(errorCode ? { errorCode } : {}),
+      aborted: errorCode === 'provider_aborted',
       idleElapsedMs: Math.max(0, Date.now() - lastActivityAt),
       idleTimeoutMs: request.timeoutMs,
       timeoutType: 'idle',
     })
-    throw error
+    throw mappedError
   } finally {
     idleTimeout.clear()
     releaseExternalAbort()

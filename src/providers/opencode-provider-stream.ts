@@ -7,6 +7,7 @@ import {
 } from './opencode-provider-utils.js'
 import {
   isRetryableProviderError,
+  isTransientProviderFailure,
   ProviderError,
   readProviderErrorCode,
 } from './provider-error.js'
@@ -47,17 +48,7 @@ export const wrapSdkError = (error: unknown): Error => {
 
 export const isTransientProviderError = (error: unknown): boolean => {
   if (isRetryableProviderError(error)) return true
-  const message = error instanceof Error ? error.message : String(error)
-  return (
-    /fetch failed/i.test(message) ||
-    /socket hang up/i.test(message) ||
-    /ECONNRESET/i.test(message) ||
-    /ECONNREFUSED/i.test(message) ||
-    /EAI_AGAIN/i.test(message) ||
-    /ETIMEDOUT/i.test(message) ||
-    /timed out/i.test(message) ||
-    /network/i.test(message)
-  )
+  return isTransientProviderFailure(error)
 }
 
 export const shouldSkipFailureCount = (error: Error): boolean =>

@@ -48,3 +48,23 @@ export const isRetryableProviderError = (error: unknown): boolean => {
   if (!code) return false
   return code === 'provider_timeout' || code === 'provider_transient_network'
 }
+
+const TRANSIENT_PROVIDER_MESSAGE_PATTERNS = [
+  /fetch failed/i,
+  /socket hang up/i,
+  /ECONNRESET/i,
+  /ECONNREFUSED/i,
+  /EAI_AGAIN/i,
+  /ETIMEDOUT/i,
+  /timed out/i,
+  /network/i,
+]
+
+export const isTransientProviderMessage = (message: string): boolean =>
+  TRANSIENT_PROVIDER_MESSAGE_PATTERNS.some((pattern) => pattern.test(message))
+
+export const isTransientProviderFailure = (error: unknown): boolean => {
+  if (isRetryableProviderError(error)) return true
+  const message = error instanceof Error ? error.message : String(error)
+  return isTransientProviderMessage(message)
+}
