@@ -271,12 +271,12 @@
 
 .task-menu-item:hover:not(:disabled),
 .task-menu-item:focus-visible:not(:disabled) {
-  background: rgba(133, 146, 166, 0.08);
+  background: rgba(133, 146, 166, 0.06);
   outline: none;
 }
 
 .task-menu-item:active:not(:disabled) {
-  background: rgba(133, 146, 166, 0.12);
+  background: rgba(133, 146, 166, 0.1);
 }
 
 .task-cancel {
