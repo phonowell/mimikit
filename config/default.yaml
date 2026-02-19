@@ -4,7 +4,7 @@ deferred:
   tasksMaxCount: 20
   tasksMinCount: 5
   tasksMaxBytes: 20480
-  model: opencode/kimi-k2.5-free
+  model: opencode/minimax-m2.5-free
   task:
     timeoutMs: 60000
     model: gpt-5.2-high
@@ -14,7 +14,7 @@ worker:
   retryBackoffMs: 5000
   standard:
     timeoutMs: 600000
-    model: opencode/kimi-k2.5-free
+    model: opencode/minimax-m2.5-free
   specialist:
     timeoutMs: 600000
     model: gpt-5.3-codex-high
