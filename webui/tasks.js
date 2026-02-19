@@ -27,6 +27,21 @@ export function bindTasksPanel({
 
   let latestTasks = EMPTY_TASKS
   const elapsedTicker = createElapsedTicker(tasksList)
+  const setTaskMenuOpen = (menuRoot, open) => {
+    if (!(menuRoot instanceof HTMLElement)) return
+    menuRoot.classList.toggle('is-open', open)
+    const trigger = menuRoot.querySelector('.task-more')
+    if (trigger instanceof HTMLButtonElement)
+      trigger.setAttribute('aria-expanded', open ? 'true' : 'false')
+  }
+  const closeTaskMenus = (exceptRoot = null) => {
+    const opened = tasksList.querySelectorAll('.task-item-actions.is-open')
+    for (const root of opened) {
+      if (!(root instanceof HTMLElement)) continue
+      if (exceptRoot && root === exceptRoot) continue
+      setTaskMenuOpen(root, false)
+    }
+  }
 
   const renderLatestTasks = () => {
     renderTasks(tasksList, latestTasks)
@@ -104,10 +119,24 @@ export function bindTasksPanel({
     const target = event.target
     if (!(target instanceof Element)) return
 
+    const moreButton = target.closest('.task-more')
+    if (moreButton instanceof HTMLButtonElement) {
+      event.preventDefault()
+      event.stopPropagation()
+      const menuRoot = moreButton.closest('.task-item-actions')
+      if (!(menuRoot instanceof HTMLElement)) return
+      const nextOpen = !menuRoot.classList.contains('is-open')
+      closeTaskMenus(menuRoot)
+      setTaskMenuOpen(menuRoot, nextOpen)
+      return
+    }
+
     const button = target.closest('.task-cancel')
     if (button instanceof HTMLButtonElement) {
       event.preventDefault()
       event.stopPropagation()
+      const menuRoot = button.closest('.task-item-actions')
+      if (menuRoot instanceof HTMLElement) setTaskMenuOpen(menuRoot, false)
       const taskId = button.getAttribute('data-task-id') || ''
       void requestCancel(taskId, button)
       return
@@ -115,6 +144,7 @@ export function bindTasksPanel({
 
     const link = target.closest('.task-link')
     if (link) {
+      closeTaskMenus()
       const openable = link.getAttribute('data-archive-openable') === 'true'
       if (!openable) return
       event.preventDefault()
@@ -128,6 +158,13 @@ export function bindTasksPanel({
       
     }
   })
+  const onOutsidePointerDown = (event) => {
+    const target = event.target
+    if (!(target instanceof Element)) return
+    if (target.closest('.task-item-actions')) return
+    closeTaskMenus()
+  }
+  document.addEventListener('pointerdown', onOutsidePointerDown, true)
 
   const dialogEnabled = Boolean(tasksDialog && tasksOpenBtn)
   const dialog = dialogEnabled
@@ -175,6 +212,7 @@ export function bindTasksPanel({
     setDisconnected,
     dispose: () => {
       stopTicker()
+      document.removeEventListener('pointerdown', onOutsidePointerDown, true)
       if (dialogEnabled && dialog) {
         tasksOpenBtn.removeEventListener('click', onOpen)
         if (tasksCloseBtn) tasksCloseBtn.removeEventListener('click', onClose)

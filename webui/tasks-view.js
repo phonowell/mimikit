@@ -138,20 +138,20 @@ export const renderTasks = (tasksList, data) => {
     item.className = 'task-item'
     const statusValue = task.status || 'pending'
     const profileValue = resolveProfileText(task)
+    const taskId = typeof task.id === 'string' ? task.id.trim() : ''
     item.dataset.status = statusValue
     item.dataset.profile = profileValue
 
     const isCancelable = statusValue === 'pending' || statusValue === 'running'
     const isTaskRecord = task.kind !== 'cron'
-    const canOpenArchive =
-      isTaskRecord && typeof task.id === 'string' && task.id.trim().length > 0
+    const canOpenArchive = isTaskRecord && taskId.length > 0
 
     const link = document.createElement(canOpenArchive ? 'a' : 'div')
     link.className = 'task-link'
     link.dataset.status = statusValue
     if (canOpenArchive) {
       link.href = '#'
-      link.setAttribute('data-task-id', task.id)
+      link.setAttribute('data-task-id', taskId)
       link.setAttribute('data-archive-openable', 'true')
     }
 
@@ -238,17 +238,36 @@ export const renderTasks = (tasksList, data) => {
 
     titleRow.appendChild(status)
     titleRow.appendChild(title)
+    const actions = document.createElement('div')
+    actions.className = 'task-item-actions'
 
-    if (isCancelable) {
-      const cancelBtn = document.createElement('button')
-      cancelBtn.type = 'button'
-      cancelBtn.className = 'btn btn--icon btn--icon-muted task-cancel'
-      cancelBtn.textContent = '✕'
-      cancelBtn.setAttribute('data-task-id', task.id)
-      cancelBtn.setAttribute('title', `Cancel ${titleText}`)
-      cancelBtn.setAttribute('aria-label', `Cancel ${titleText}`)
-      titleRow.appendChild(cancelBtn)
-    }
+    const moreBtn = document.createElement('button')
+    moreBtn.type = 'button'
+    moreBtn.className = 'btn btn--icon btn--icon-muted task-more'
+    moreBtn.textContent = '⋯'
+    moreBtn.setAttribute('aria-label', `More actions for ${titleText}`)
+    moreBtn.setAttribute('title', `More actions for ${titleText}`)
+    moreBtn.setAttribute('aria-haspopup', 'menu')
+    moreBtn.setAttribute('aria-expanded', 'false')
+
+    const menu = document.createElement('div')
+    menu.className = 'task-menu'
+    menu.setAttribute('role', 'menu')
+
+    const cancelBtn = document.createElement('button')
+    cancelBtn.type = 'button'
+    cancelBtn.className = 'task-menu-item task-cancel'
+    cancelBtn.textContent = 'Cancel'
+    cancelBtn.setAttribute('role', 'menuitem')
+    cancelBtn.setAttribute('data-task-id', taskId)
+    cancelBtn.setAttribute('title', `Cancel ${titleText}`)
+    cancelBtn.setAttribute('aria-label', `Cancel ${titleText}`)
+    if (!isCancelable || taskId.length === 0) cancelBtn.disabled = true
+
+    menu.appendChild(cancelBtn)
+    actions.appendChild(moreBtn)
+    actions.appendChild(menu)
+    titleRow.appendChild(actions)
 
     link.appendChild(titleRow)
     link.appendChild(meta)
