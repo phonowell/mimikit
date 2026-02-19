@@ -1,6 +1,7 @@
 import { expect, test } from 'vitest'
 
 import { collectManagerActionFeedback } from '../src/manager/action-feedback.js'
+import { parseActions } from '../src/actions/protocol/parse.js'
 
 test('collectManagerActionFeedback reports unregistered, invalid args, and rejected actions', () => {
   const feedback = collectManagerActionFeedback([
@@ -88,16 +89,17 @@ test('collectManagerActionFeedback reports unregistered, invalid args, and rejec
 })
 
 test('collectManagerActionFeedback ignores valid registered actions', () => {
+  const output =
+    '好的，我先创建一个任务。\\n\\n<M:create_task prompt="读取文件，根据反馈补充\\\"编排引擎\\\"定位；短时间定义为<30秒；禁止>50条词表规则。" title="第一轮优化 manager prompt" profile="standard" />'
+  const parsed = parseActions(output)
+  expect(parsed.actions).toHaveLength(1)
+  expect(parsed.actions[0]?.attrs.title).toBe('第一轮优化 manager prompt')
+  expect(parsed.actions[0]?.attrs.profile).toBe('standard')
+  expect(parsed.text).not.toContain('<M:create_task')
+
   const feedback = collectManagerActionFeedback(
     [
-      {
-        name: 'create_task',
-        attrs: {
-          prompt: 'x',
-          title: 'y',
-          profile: 'standard',
-        },
-      },
+      ...(parsed.actions[0] ? [parsed.actions[0]] : []),
       {
         name: 'summarize_task_result',
         attrs: {

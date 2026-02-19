@@ -34,8 +34,14 @@
 
 协议与解析：`src/actions/protocol/*`
 
-- Action 块：`<M:actions> ... </M:actions>`
-- 每行一条：`<M:name key="value" />`
+- Action 行格式：`<M:name key="value" />`
+- 解析链路（无正则主解析）：
+  - `micromark` 先标注 Markdown 代码块范围（忽略 fenced/indented code 内的伪 action）。
+  - `htmlparser2` 负责扫描标签起点，动作标签范围由状态机按字符流收敛。
+  - 属性值由独立属性解析器处理，支持 `\"`、`\'` 等转义并保留换行。
+- 输出清洗规则：
+  - 仅解析末尾连续 action 区（尾部除空白外无其他内容）。
+  - 可见文本会剥离非代码块中的 `M:` 标签，避免 WebUI 渲染残留协议标签。
 - 参数在传输层统一字符串，由 manager 侧 schema 校验后再执行编排动作。
 
 ## Manager 消费的编排 Action
