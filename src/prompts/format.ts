@@ -123,14 +123,8 @@ export const renderPromptTemplate = (
     },
   )
 
-export const joinPromptSections = (sections: string[]): string => {
-  let output = ''
-  for (const section of sections) {
-    if (!section) continue
-    output = output ? `${output}\n\n${section}` : section
-  }
-  return output
-}
+export const joinPromptSections = (sections: string[]): string =>
+  sections.filter(Boolean).join('\n\n')
 
 export const formatEnvironment = (params?: PromptEnvironmentParams): string => {
   const lines: string[] = []

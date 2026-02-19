@@ -5,6 +5,7 @@ import {
   mapOpencodeTextPartStateFromEvent,
   mapOpencodeUsageFromEvent,
 } from './opencode-provider-utils.js'
+export { isSameUsage } from '../shared/token-usage.js'
 
 import type { mapOpencodeUsage } from './opencode-provider-utils.js'
 import type { createOpencodeClient } from '@opencode-ai/sdk/v2'
@@ -36,14 +37,6 @@ export const isTransientProviderError = (error: unknown): boolean => {
 
 export const shouldSkipFailureCount = (error: Error): boolean =>
   isAbortLikeError(error) || /preflight failed/i.test(error.message)
-
-export const isSameUsage = (
-  left: ReturnType<typeof mapOpencodeUsage> | undefined,
-  right: ReturnType<typeof mapOpencodeUsage> | undefined,
-): boolean =>
-  left?.input === right?.input &&
-  left?.output === right?.output &&
-  left?.total === right?.total
 
 const isAbortLikeStreamError = (
   error: unknown,

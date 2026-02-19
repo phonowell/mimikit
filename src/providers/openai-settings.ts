@@ -89,9 +89,7 @@ const resolveProviderSettings = (
 
 const readAuthApiKey = async (): Promise<string | undefined> => {
   const auth = await readJson<{ OPENAI_API_KEY?: string }>(codexAuthPath(), {})
-  if (typeof auth.OPENAI_API_KEY !== 'string') return undefined
-  const key = auth.OPENAI_API_KEY.trim()
-  return key || undefined
+  return readNonEmptyString(auth.OPENAI_API_KEY)
 }
 
 export const loadCodexSettings = async (): Promise<CodexSettings> => {

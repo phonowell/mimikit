@@ -1,3 +1,5 @@
+import { parseIsoMs } from './time.js'
+
 import type { TokenUsage } from '../types/index.js'
 
 export const newId = (): string => crypto.randomUUID().replace(/-/g, '')
@@ -13,8 +15,8 @@ export const addSeconds = (iso: string, seconds: number): string => {
 }
 
 export const isExpired = (iso: string, now = new Date()): boolean => {
-  const ts = Date.parse(iso)
-  if (!Number.isFinite(ts)) return true
+  const ts = parseIsoMs(iso)
+  if (ts === undefined) return true
   return ts <= now.getTime()
 }
 

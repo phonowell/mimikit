@@ -78,10 +78,5 @@ export const readJson = async <T>(
   return parseJsonRaw(raw, fallback, { path })
 }
 
-export const writeJson = async (
-  path: string,
-  value: unknown,
-): Promise<void> => {
-  const raw = JSON.stringify(value, null, 2)
-  await writeFileAtomic(path, `${raw}\n`)
-}
+export const writeJson = (path: string, value: unknown): Promise<void> =>
+  writeFileAtomic(path, toJsonText(value))

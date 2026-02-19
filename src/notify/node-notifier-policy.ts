@@ -27,11 +27,8 @@ export const formatDuration = (ms: number): string => {
   return `${minutes}m${seconds}s`
 }
 
-export const normalizeTitle = (task: Task): string => {
-  const trimmed = task.title.trim()
-  if (trimmed.length > 0) return trimmed
-  return task.id
-}
+export const normalizeTitle = (task: Task): string =>
+  task.title.trim() || task.id
 
 export const shouldNotifySucceeded = (
   task: Task,

@@ -67,9 +67,9 @@ export const compactQueueIfFullyConsumed = (params: {
 export const countPacketsPending = async (
   path: string,
   cursor: number,
-): Promise<number> => {
-  const packets = await readJsonl<JsonPacket<unknown>>(path, {
-    ensureFile: true,
-  })
-  return Math.max(0, packets.length - normalizeCursor(cursor))
-}
+): Promise<number> =>
+  Math.max(
+    0,
+    (await readJsonl<JsonPacket<unknown>>(path, { ensureFile: true })).length -
+      normalizeCursor(cursor),
+  )

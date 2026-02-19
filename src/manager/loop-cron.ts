@@ -14,14 +14,6 @@ import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 const matchCronNow = (expression: string, at: Date = new Date()): boolean =>
   new Cron(expression).match(at)
 
-const cronHasNextRun = (expression: string): boolean => {
-  try {
-    return new Cron(expression).nextRun() !== null
-  } catch {
-    return false
-  }
-}
-
 const asSecondStamp = (iso: string): string => iso.slice(0, 19)
 const CRON_TICK_MS = 1_000
 
@@ -125,7 +117,13 @@ export const checkCronJobs = async (
     })
     if (!created) continue
     triggeredCount += 1
-    if (!cronHasNextRun(cronJob.cron)) {
+    let hasNextRun = false
+    try {
+      hasNextRun = new Cron(cronJob.cron).nextRun() !== null
+    } catch {
+      hasNextRun = false
+    }
+    if (!hasNextRun) {
       cronJob.enabled = false
       cronJob.disabledReason = 'completed'
     }

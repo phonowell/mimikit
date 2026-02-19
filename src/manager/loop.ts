@@ -9,12 +9,6 @@ import { createUiStreamId } from './loop-ui-stream.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 
-const hasNonEmptyTaskId = (payload: unknown): boolean => {
-  if (!payload || typeof payload !== 'object') return false
-  const { taskId } = payload as { taskId?: unknown }
-  return typeof taskId === 'string' && taskId.trim().length > 0
-}
-
 export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
   while (!runtime.stopped) {
     const inputPackets = await consumeUserInputs({
@@ -32,7 +26,9 @@ export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
 
     const resultPackets = []
     for (const packet of allResultPackets) {
-      if (hasNonEmptyTaskId(packet.payload)) {
+      const { taskId } = packet.payload as { taskId?: unknown }
+      const hasTaskId = typeof taskId === 'string' && taskId.trim().length > 0
+      if (hasTaskId) {
         resultPackets.push(packet)
         continue
       }

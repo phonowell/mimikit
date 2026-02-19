@@ -47,7 +47,10 @@ export type TaskCancelMeta = {
   reason?: string
 }
 
-export type TaskResultStatus = 'succeeded' | 'failed' | 'canceled'
+export type TaskResultStatus = Extract<
+  TaskStatus,
+  'succeeded' | 'failed' | 'canceled'
+>
 
 export type WorkerProfile = 'standard' | 'specialist' | 'deferred'
 

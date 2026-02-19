@@ -37,15 +37,13 @@ const toHistoryDate = (createdAt: string): string => {
 
 const readHistoryPartitionFileNames = async (
   historyDir: string,
-): Promise<string[]> => {
-  const entries = await listFiles(historyDir)
-  return entries
+): Promise<string[]> =>
+  (await listFiles(historyDir))
     .filter(
       (entry) => entry.isFile() && HISTORY_FILE_NAME_PATTERN.test(entry.name),
     )
     .map((entry) => entry.name)
     .sort((a, b) => a.localeCompare(b))
-}
 
 const writeHistory = async (
   historyDir: string,

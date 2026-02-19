@@ -42,10 +42,8 @@ const removeByTags = (
   return result
 }
 
-const removeTagsOutsideCodeBlocks = (text: string, tags: MetaTag[]): string => {
-  if (tags.length === 0) return text.trim()
-  return removeByTags(text, tags).trim()
-}
+const removeTagsOutsideCodeBlocks = (text: string, tags: MetaTag[]): string =>
+  removeByTags(text, tags).trim()
 
 const stripTrailingMetaTagFragment = (
   text: string,
