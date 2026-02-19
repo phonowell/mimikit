@@ -17,15 +17,6 @@ import type { TaskResult, UserInput } from '../types/index.js'
 const QUEUE_COMPACT_MIN_PACKETS = 100
 const TASK_SNAPSHOT_MAX_COUNT = 100
 
-type TaskSnapshotEvent = {
-  id: string
-  createdAt: string
-  tasks: RuntimeState['tasks']
-}
-
-const serializeTasks = (tasks: RuntimeState['tasks']): string =>
-  JSON.stringify(tasks)
-
 export const buildFallbackReply = async (params: {
   inputs: UserInput[]
   results: TaskResult[]
@@ -43,20 +34,20 @@ export const buildFallbackReply = async (params: {
 }
 
 const appendTaskSnapshot = async (runtime: RuntimeState): Promise<void> => {
-  const snapshot: TaskSnapshotEvent = {
+  const snapshot = {
     id: `task-snapshot-${Date.now()}`,
     createdAt: nowIso(),
     tasks: runtime.tasks,
   }
-  const nextTasksSerialized = serializeTasks(snapshot.tasks)
-  const keepCount = TASK_SNAPSHOT_MAX_COUNT
-  await updateJsonl<TaskSnapshotEvent>(runtime.paths.tasksEvents, (current) => {
+  const nextTasksSerialized = JSON.stringify(snapshot.tasks)
+  await updateJsonl<typeof snapshot>(runtime.paths.tasksEvents, (current) => {
     const last = current.at(-1)
-    if (last && serializeTasks(last.tasks) === nextTasksSerialized)
+    if (last && JSON.stringify(last.tasks) === nextTasksSerialized)
       return current
     const next = [...current, snapshot]
-    if (next.length <= keepCount) return next
-    return next.slice(next.length - keepCount)
+    return next.length <= TASK_SNAPSHOT_MAX_COUNT
+      ? next
+      : next.slice(next.length - TASK_SNAPSHOT_MAX_COUNT)
   })
 }
 
@@ -100,24 +91,20 @@ export const finalizeBatchProgress = async (params: {
   await persistRuntime(runtime)
 }
 
-type ConsumeBatchHistoryResult =
-  | {
-      ok: true
-      consumedInputIds: Set<string>
-    }
+export const consumeBatchHistory = async (params: {
+  runtime: RuntimeState
+  inputs: UserInput[]
+  results: TaskResult[]
+  summaries?: Map<string, string>
+}): Promise<
+  | { ok: true; consumedInputIds: Set<string> }
   | {
       ok: false
       reason:
         | 'append_consumed_inputs_incomplete'
         | 'append_consumed_results_incomplete'
     }
-
-export const consumeBatchHistory = async (params: {
-  runtime: RuntimeState
-  inputs: UserInput[]
-  results: TaskResult[]
-  summaries?: Map<string, string>
-}): Promise<ConsumeBatchHistoryResult> => {
+> => {
   const consumedInputIds = new Set(params.inputs.map((item) => item.id))
   const consumedInputCount = await appendConsumedInputsToHistory(
     params.runtime.paths.history,

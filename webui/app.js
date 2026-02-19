@@ -1,4 +1,5 @@
 import { bindComposer } from './messages/composer.js'
+import { bindFocusPanel } from './focuses.js'
 import { createMessagesController } from './messages/controller.js'
 import { bindRestart } from './restart.js'
 import { UI_TEXT } from './system-text.js'
@@ -28,6 +29,10 @@ const elements = {
   workerDots: $('[data-worker-dots]'),
   tasksCloseBtn: $('[data-tasks-close]'),
   tasksList: $('[data-tasks-list]'),
+  focusesPanel: $('[data-focuses-panel]'),
+  focusesList: $('[data-focuses-list]'),
+  focusesExpiredList: $('[data-focuses-expired-list]'),
+  focusesRollbackBtn: $('[data-focuses-rollback]'),
 }
 
 const FAVICON_COLOR_BY_STATE = {
@@ -111,6 +116,13 @@ const tasksPanel = bindTasksPanel({
   tasksCloseBtn: elements.tasksCloseBtn,
 })
 
+const focusPanel = bindFocusPanel({
+  panel: elements.focusesPanel,
+  activeList: elements.focusesList,
+  expiredList: elements.focusesExpiredList,
+  rollbackBtn: elements.focusesRollbackBtn,
+})
+
 const messages = createMessagesController({
   messagesEl: elements.messagesEl,
   scrollBottomBtn: elements.scrollBottomBtn,
@@ -124,7 +136,11 @@ const messages = createMessagesController({
   quoteText: elements.quoteText,
   quoteClearBtn: elements.quoteClearBtn,
   onTasksSnapshot: (tasks) => tasksPanel?.applyTasksSnapshot?.(tasks),
-  onDisconnected: () => tasksPanel?.setDisconnected?.(),
+  onFocusSnapshot: (focuses) => focusPanel?.applyFocusSnapshot?.(focuses),
+  onDisconnected: () => {
+    tasksPanel?.setDisconnected?.()
+    focusPanel?.setDisconnected?.()
+  },
 })
 
 syncFaviconWithStatus()

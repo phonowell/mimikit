@@ -18,12 +18,10 @@ import type {
   TaskResultStatus,
 } from '../types/index.js'
 
-const parseStatus = (value?: string): TaskResultStatus | null => {
-  if (value === 'succeeded' || value === 'failed' || value === 'canceled')
-    return value
-
-  return null
-}
+const parseStatus = (value?: string): TaskResultStatus | null =>
+  value === 'succeeded' || value === 'failed' || value === 'canceled'
+    ? value
+    : null
 
 const parseCancelSource = (
   value?: string,
@@ -40,22 +38,20 @@ const parseTaskResultArchive = (
   archivePath?: string,
 ): TaskResult | null => {
   const parsed = parseArchiveDocument(content)
-  const { header } = parsed
-  const taskId = header.task_id ?? fallbackTaskId
-  if (!taskId) return null
-  const status = parseStatus(header.status)
-  if (!status) return null
-  const completedAt = header.completed_at ?? header.created_at
-  if (!completedAt) return null
-  const durationMs = Number(header.duration_ms)
-  const normalizedDuration = Number.isFinite(durationMs) ? durationMs : 0
-  const output = extractArchiveSection(parsed, '=== RESULT ===')
-  const usage = parseTokenUsageJson(header.usage)
-  const cancelSource = parseCancelSource(header.cancel_source)
+  const taskId = parsed.header.task_id ?? fallbackTaskId
+  const status = parseStatus(parsed.header.status)
+  const completedAt = parsed.header.completed_at ?? parsed.header.created_at
+  if (!taskId || !status || !completedAt) return null
+
+  const durationMs = Number(parsed.header.duration_ms)
+  const usage = parseTokenUsageJson(parsed.header.usage)
+  const cancelSource = parseCancelSource(parsed.header.cancel_source)
   const cancel: TaskCancelMeta | undefined = cancelSource
     ? {
         source: cancelSource,
-        ...(header.cancel_reason ? { reason: header.cancel_reason } : {}),
+        ...(parsed.header.cancel_reason
+          ? { reason: parsed.header.cancel_reason }
+          : {}),
       }
     : undefined
 
@@ -63,11 +59,11 @@ const parseTaskResultArchive = (
     taskId,
     status,
     ok: status === 'succeeded',
-    output,
-    durationMs: normalizedDuration,
+    output: extractArchiveSection(parsed, '=== RESULT ==='),
+    durationMs: Number.isFinite(durationMs) ? durationMs : 0,
     completedAt,
     ...(usage ? { usage } : {}),
-    ...(header.title ? { title: header.title } : {}),
+    ...(parsed.header.title ? { title: parsed.header.title } : {}),
     ...(archivePath ? { archivePath } : {}),
     ...(cancel ? { cancel } : {}),
   }
@@ -93,95 +89,62 @@ export type ReadTaskResultsOptions = {
   dateHints?: Record<string, string>
 }
 
-type SearchPlan = {
-  idSet: Set<string>
-  hintedDirs: Map<string, Set<string>>
-  shouldScanAll: boolean
-}
+const sortedDirNames = (names: string[]): string[] =>
+  [...names].sort().reverse()
 
-const buildSearchPlan = (
+const resolveDateDirs = (
   taskIds: string[],
+  allDirs: string[],
   dateHints?: Record<string, string>,
-): SearchPlan => {
-  const trimmedIds = taskIds
-    .map((id) => id.trim())
-    .filter((id) => id.length > 0)
-  const idSet = new Set(trimmedIds)
-  const hintedDirs = new Map<string, Set<string>>()
-  const unhinted = new Set<string>()
-
-  for (const id of trimmedIds) {
-    const hint = dateHints?.[id]
+): string[] => {
+  if (!dateHints) return allDirs
+  const hinted = new Set<string>()
+  let missingHint = false
+  for (const id of taskIds) {
+    const hint = dateHints[id]
     if (!hint) {
-      unhinted.add(id)
-      continue
+      missingHint = true
+      break
     }
-    if (!hintedDirs.has(hint)) hintedDirs.set(hint, new Set())
-    hintedDirs.get(hint)?.add(id)
+    hinted.add(hint)
   }
-
-  return {
-    idSet,
-    hintedDirs,
-    shouldScanAll: unhinted.size > 0 || hintedDirs.size === 0,
-  }
+  return missingHint ? allDirs : sortedDirNames(Array.from(hinted))
 }
-
-const sortedDirNames = (names: string[]): string[] => names.sort().reverse()
 
 export const readTaskResultsForTasks = async (
   stateDir: string,
   taskIds: string[],
   options: ReadTaskResultsOptions = {},
 ): Promise<TaskResult[]> => {
-  const searchPlan = buildSearchPlan(taskIds, options.dateHints)
-  if (searchPlan.idSet.size === 0) return []
+  const ids = taskIds.map((id) => id.trim()).filter(Boolean)
+  const idSet = new Set(ids)
+  if (idSet.size === 0) return []
 
-  const maxFiles =
-    options.maxFiles ??
-    (searchPlan.shouldScanAll ? 500 : Number.POSITIVE_INFINITY)
+  const maxFiles = options.maxFiles ?? Number.POSITIVE_INFINITY
   const found = new Map<string, TaskResult>()
-  let scanned = 0
   const archiveRoot = join(stateDir, 'tasks')
-
   const allDateDirs = sortedDirNames(
     (await listFiles(archiveRoot))
       .filter((entry) => entry.isDirectory())
       .map((entry) => entry.name),
   )
-  const dateDirs = searchPlan.shouldScanAll
-    ? allDateDirs
-    : sortedDirNames(Array.from(searchPlan.hintedDirs.keys()))
 
-  for (const dateDir of dateDirs) {
-    if (found.size >= searchPlan.idSet.size) break
-
-    const targetIds = searchPlan.shouldScanAll
-      ? searchPlan.idSet
-      : searchPlan.hintedDirs.get(dateDir)
-    if (!targetIds || targetIds.size === 0) continue
-
-    const dirPath = join(archiveRoot, dateDir)
-    const entries = await listFiles(dirPath)
-
+  for (const dateDir of resolveDateDirs(ids, allDateDirs, options.dateHints)) {
+    if (found.size >= idSet.size) break
+    const entries = await listFiles(join(archiveRoot, dateDir))
     for (const entry of entries) {
-      if (found.size >= searchPlan.idSet.size) break
       if (!entry.isFile()) continue
-
-      scanned += 1
-      if (scanned > maxFiles) break
-
+      if (found.size >= idSet.size || found.size >= maxFiles) break
       const underscore = entry.name.indexOf('_')
       if (underscore <= 0) continue
       const taskId = entry.name.slice(0, underscore)
-      if (!targetIds.has(taskId) || found.has(taskId)) continue
-
-      const path = join(dirPath, entry.name)
-      const result = await readTaskResultArchive(path, taskId)
+      if (!idSet.has(taskId) || found.has(taskId)) continue
+      const result = await readTaskResultArchive(
+        join(archiveRoot, dateDir, entry.name),
+        taskId,
+      )
       if (result) found.set(taskId, result)
     }
-
-    if (scanned > maxFiles) break
   }
 
   return Array.from(found.values())

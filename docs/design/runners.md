@@ -17,11 +17,17 @@
 
 流程：
 
-1. 基于 inputs/results/tasks/history/cron 上下文构造 manager prompt。
+1. 基于 inputs/results/tasks/history/cron/focus 上下文构造 manager prompt。
 2. 执行 prompt 预算限制并计算 timeout。
 3. 调用 OpenCode provider。
 4. 若恢复 session 失败则重建新 session 重试。
 5. 成功/失败都归档到 `traces/YYYY-MM-DD/<ts36><ra>.txt`（按文件名字典序即时间增序）。
+
+focus 注入（manager）：
+
+- `M:focus_control`：`turn/max_slots/update_required/reason`
+- `M:focuses`：当前 active 重心
+- `M:focus_memory`：过期重心回捞摘要
 
 ## Worker Runner
 

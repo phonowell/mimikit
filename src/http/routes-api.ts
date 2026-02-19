@@ -2,6 +2,7 @@ import { buildPayloadEtag, replyWithEtag } from './etag.js'
 import { parseInputBody, parseMessageLimit, parseTaskLimit } from './helpers.js'
 import {
   registerControlRoutes,
+  registerFocusRoutes,
   registerTaskArchiveRoute,
   registerTaskCancelRoute,
   registerTaskProgressRoute,
@@ -15,6 +16,11 @@ const SSE_HEARTBEAT_MS = 15_000
 const SSE_RETRY_MS = 1_500
 const SSE_DEFAULT_MESSAGE_LIMIT = 50
 const SSE_DEFAULT_TASK_LIMIT = 200
+const getDefaultSnapshot = (orchestrator: Orchestrator) =>
+  orchestrator.getWebUiSnapshot(
+    SSE_DEFAULT_MESSAGE_LIMIT,
+    SSE_DEFAULT_TASK_LIMIT,
+  )
 
 const createSseStream = (request: FastifyRequest, reply: FastifyReply) => {
   reply.hijack()
@@ -53,12 +59,6 @@ const createSseStream = (request: FastifyRequest, reply: FastifyReply) => {
   }
 }
 
-const readHeader = (
-  headers: FastifyRequest['headers'],
-  key: string,
-): string | undefined =>
-  typeof headers[key] === 'string' ? headers[key] : undefined
-
 export const registerApiRoutes = (
   app: FastifyInstance,
   orchestrator: Orchestrator,
@@ -68,10 +68,7 @@ export const registerApiRoutes = (
     const stream = createSseStream(request, reply)
     let lastSnapshotEtag = ''
     try {
-      const initial = await orchestrator.getWebUiSnapshot(
-        SSE_DEFAULT_MESSAGE_LIMIT,
-        SSE_DEFAULT_TASK_LIMIT,
-      )
+      const initial = await getDefaultSnapshot(orchestrator)
       lastSnapshotEtag = buildPayloadEtag('events', initial)
       stream.writeEvent('snapshot', initial)
 
@@ -79,10 +76,7 @@ export const registerApiRoutes = (
         if (stream.isClosed()) break
         await orchestrator.waitForWebUiSignal(SSE_HEARTBEAT_MS)
         if (stream.isClosed()) break
-        const snapshot = await orchestrator.getWebUiSnapshot(
-          SSE_DEFAULT_MESSAGE_LIMIT,
-          SSE_DEFAULT_TASK_LIMIT,
-        )
+        const snapshot = await getDefaultSnapshot(orchestrator)
         const snapshotEtag = buildPayloadEtag('events', snapshot)
         if (snapshotEtag === lastSnapshotEtag) continue
         lastSnapshotEtag = snapshotEtag
@@ -109,8 +103,14 @@ export const registerApiRoutes = (
   app.post('/api/input', async (request, reply) => {
     const result = parseInputBody(request.body, {
       remoteAddress: request.raw.socket.remoteAddress ?? undefined,
-      userAgent: readHeader(request.headers, 'user-agent'),
-      acceptLanguage: readHeader(request.headers, 'accept-language'),
+      userAgent:
+        typeof request.headers['user-agent'] === 'string'
+          ? request.headers['user-agent']
+          : undefined,
+      acceptLanguage:
+        typeof request.headers['accept-language'] === 'string'
+          ? request.headers['accept-language']
+          : undefined,
     })
     if ('error' in result) {
       reply.code(400).send({ error: result.error })
@@ -146,6 +146,7 @@ export const registerApiRoutes = (
   registerTaskArchiveRoute(app, orchestrator, config)
   registerTaskProgressRoute(app, orchestrator, config)
   registerTaskCancelRoute(app, orchestrator)
+  registerFocusRoutes(app, orchestrator)
   registerControlRoutes(app, orchestrator, config)
 }
 

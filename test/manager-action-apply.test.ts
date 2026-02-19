@@ -6,6 +6,7 @@ import PQueue from 'p-queue'
 import { expect, test } from 'vitest'
 
 import { defaultConfig } from '../src/config.js'
+import { expireFocus, rollbackFocuses } from '../src/focus/state.js'
 import { buildPaths } from '../src/fs/paths.js'
 import { applyTaskActions } from '../src/manager/action-apply.js'
 
@@ -33,6 +34,9 @@ const createRuntime = async (): Promise<RuntimeState> => {
     },
     tasks: [],
     cronJobs: [],
+    focuses: [],
+    focusRollbackStack: [],
+    managerTurn: 0,
     uiStream: null,
     runningControllers: new Map(),
     createTaskDebounce: new Map(),
@@ -118,4 +122,63 @@ test('create_task allows .mimikit/generated path for worker profiles', async () 
 
   expect(runtime.tasks).toHaveLength(1)
   expect(runtime.tasks[0]?.title).toBe('allowed')
+
+  await applyTaskActions(
+    runtime,
+    [
+      {
+        name: 'sync_focuses',
+        attrs: {},
+        content: JSON.stringify({
+          active: [
+            {
+              title: 'write report',
+              summary: 'deliver generated report',
+              confidence: 0.7,
+              evidence_ids: ['input-1'],
+            },
+          ],
+        }),
+      },
+    ],
+    { focusEvidenceIds: new Set(['input-1']) },
+  )
+
+  expect(runtime.focuses).toHaveLength(1)
+  expect(runtime.focuses[0]?.status).toBe('active')
+  expect(runtime.focuses[0]?.title).toBe('write report')
+
+  const focusId = runtime.focuses[0]?.id
+  if (!focusId) throw new Error('focus id must exist')
+  const snapshotBeforeDrift = JSON.stringify(runtime.focuses)
+
+  await applyTaskActions(
+    runtime,
+    [
+      {
+        name: 'sync_focuses',
+        attrs: {},
+        content: JSON.stringify({
+          active: [
+            {
+              id: focusId,
+              title: 'totally different',
+              summary: 'unrelated topic without shared evidence',
+              confidence: 0.2,
+              evidence_ids: ['other-evidence'],
+            },
+          ],
+        }),
+      },
+    ],
+    { focusEvidenceIds: new Set() },
+  )
+
+  expect(JSON.stringify(runtime.focuses)).toBe(snapshotBeforeDrift)
+
+  const expired = expireFocus(runtime, focusId)
+  expect(expired.ok).toBe(true)
+  expect(runtime.focuses[0]?.status).toBe('expired')
+  expect(rollbackFocuses(runtime)).toBe(true)
+  expect(runtime.focuses[0]?.status).toBe('active')
 })

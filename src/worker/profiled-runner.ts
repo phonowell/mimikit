@@ -10,10 +10,8 @@ import {
   buildContinuePrompt,
   DONE_MARKER,
   hasDoneMarker,
-  isSameUsage,
   MAX_RUN_ROUNDS,
   mergeUsage,
-  mergeUsageMonotonic,
   stripDoneMarker,
 } from './profiled-runner-utils.js'
 
@@ -55,11 +53,7 @@ export const runStandardWorker = (params: {
   abortSignal?: AbortSignal
   onUsage?: (usage: TokenUsage) => void
 }): Promise<LlmResult> =>
-  runProfiledWorker({
-    ...params,
-    provider: 'opencode',
-    profile: 'standard',
-  })
+  runProfiledWorker({ ...params, provider: 'opencode', profile: 'standard' })
 
 export const runSpecialistWorker = (params: {
   stateDir: string
@@ -71,11 +65,7 @@ export const runSpecialistWorker = (params: {
   abortSignal?: AbortSignal
   onUsage?: (usage: TokenUsage) => void
 }): Promise<LlmResult> =>
-  runProfiledWorker({
-    ...params,
-    provider: 'codex-sdk',
-    profile: 'specialist',
-  })
+  runProfiledWorker({ ...params, provider: 'codex-sdk', profile: 'specialist' })
 
 export const runProfiledWorker = async (
   params: ProfiledWorkerParams,
@@ -85,12 +75,13 @@ export const runProfiledWorker = async (
     task: params.task,
   })
   const continueTemplate = await loadPromptFile('worker', 'continue-until-done')
-  const base = {
+  const runModel = buildRunModel(params)
+  const archiveBase = {
     role: 'worker' as const,
     taskId: params.task.id,
     ...(params.model ? { model: params.model } : {}),
   }
-  const runModel = buildRunModel(params)
+
   await appendProfileProgress({
     stateDir: params.stateDir,
     taskId: params.task.id,
@@ -100,44 +91,30 @@ export const runProfiledWorker = async (
   })
 
   let threadId: string | null | undefined
-  try {
-    let totalUsage: TokenUsage | undefined
-    let totalElapsedMs = 0
-    let rounds = 0
-    let latestResult: ProviderResult | undefined
-    let nextPrompt = prompt
+  let totalUsage: TokenUsage | undefined
+  let totalElapsedMs = 0
+  let latestResult: ProviderResult | undefined
+  let nextPrompt = prompt
 
+  try {
     for (let round = 1; round <= MAX_RUN_ROUNDS; round += 1) {
-      const usageBeforeRound = totalUsage
-      let callbackRoundUsage: TokenUsage | undefined
-      let callbackReportedUsage: TokenUsage | undefined
-      rounds = round
       const result = await runModel({
         prompt: nextPrompt,
         ...(threadId !== undefined ? { threadId } : {}),
         onUsage: (usage) => {
-          callbackRoundUsage = mergeUsageMonotonic(callbackRoundUsage, usage)
-          const previewUsage = mergeUsage(usageBeforeRound, callbackRoundUsage)
-          if (!previewUsage) return
-          if (isSameUsage(totalUsage, previewUsage)) return
-          totalUsage = previewUsage
-          params.task.usage = previewUsage
-          callbackReportedUsage = previewUsage
-          params.onUsage?.(previewUsage)
+          totalUsage = mergeUsage(totalUsage, usage)
+          if (!totalUsage) return
+          params.task.usage = totalUsage
+          params.onUsage?.(totalUsage)
         },
       })
       latestResult = result
       totalElapsedMs += result.elapsedMs
       threadId = result.threadId ?? threadId ?? null
-      const roundUsage = mergeUsageMonotonic(callbackRoundUsage, result.usage)
-      const hasRoundUsage = roundUsage !== undefined
-      const mergedUsage = mergeUsage(usageBeforeRound, roundUsage)
-      totalUsage = mergedUsage ?? usageBeforeRound
+      totalUsage = mergeUsage(totalUsage, result.usage)
       if (totalUsage) {
         params.task.usage = totalUsage
-        const shouldReportAfterRound =
-          hasRoundUsage && !isSameUsage(callbackReportedUsage, totalUsage)
-        if (shouldReportAfterRound) params.onUsage?.(totalUsage)
+        params.onUsage?.(totalUsage)
       }
 
       const output = result.output.trim()
@@ -148,14 +125,11 @@ export const runProfiledWorker = async (
           taskId: params.task.id,
           profile: params.profile,
           phase: 'done',
-          payload: { elapsedMs: totalElapsedMs, rounds },
+          payload: { elapsedMs: totalElapsedMs, rounds: round },
         })
         await archiveWorkerResult(
           params.stateDir,
-          {
-            ...base,
-            threadId,
-          },
+          { ...archiveBase, threadId },
           prompt,
           {
             output: finalOutput,
@@ -171,29 +145,20 @@ export const runProfiledWorker = async (
         }
       }
 
-      if (round === MAX_RUN_ROUNDS) break
-      nextPrompt = buildContinuePrompt(continueTemplate, output, round + 1)
+      if (round < MAX_RUN_ROUNDS)
+        nextPrompt = buildContinuePrompt(continueTemplate, output, round + 1)
     }
 
-    const detail = latestResult?.output.trim() ?? 'empty_output'
     throw new Error(
-      `[worker:${params.profile}] task incomplete after ${MAX_RUN_ROUNDS} rounds: missing ${DONE_MARKER}; last_output=${JSON.stringify(detail)}`,
+      `[worker:${params.profile}] task incomplete after ${MAX_RUN_ROUNDS} rounds: missing ${DONE_MARKER}; last_output=${JSON.stringify(latestResult?.output.trim() ?? 'empty_output')}`,
     )
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error))
     await archiveWorkerResult(
       params.stateDir,
-      {
-        ...base,
-        ...(threadId !== undefined ? { threadId } : {}),
-      },
+      { ...archiveBase, ...(threadId !== undefined ? { threadId } : {}) },
       prompt,
-      {
-        output: '',
-        ok: false,
-        error: err.message,
-        errorName: err.name,
-      },
+      { output: '', ok: false, error: err.message, errorName: err.name },
     )
     throw error
   }

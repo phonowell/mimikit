@@ -1,5 +1,3 @@
-import { appendLog } from '../log/append.js'
-import { bestEffort } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import {
   buildTaskFingerprint,
@@ -37,21 +35,8 @@ export const applyCreateTask = async (
   const parsed = createSchema.safeParse(item.attrs)
   if (!parsed.success) return
   const profile = parsed.data.profile as WorkerProfile
-  if (
-    profile !== 'deferred' &&
-    hasForbiddenWorkerStatePath(parsed.data.prompt)
-  ) {
-    await bestEffort(
-      'appendLog: create_task_rejected_forbidden_state_path',
-      () =>
-        appendLog(runtime.paths.log, {
-          event: 'create_task_rejected_forbidden_state_path',
-          profile,
-          title: parsed.data.title,
-        }),
-    )
+  if (profile !== 'deferred' && hasForbiddenWorkerStatePath(parsed.data.prompt))
     return
-  }
   const cron = parsed.data.cron?.trim()
   const scheduledAt = parsed.data.scheduled_at?.trim()
   const scheduleKey = cron ?? scheduledAt ?? ''
@@ -62,17 +47,7 @@ export const applyCreateTask = async (
     ...(scheduleKey ? { schedule: scheduleKey } : {}),
   })
   const debounce = markCreateAttempt(runtime, semanticKey)
-  if (debounce.debounced) {
-    await bestEffort('appendLog: create_task_debounced', () =>
-      appendLog(runtime.paths.log, {
-        event: 'create_task_debounced',
-        profile,
-        title: parsed.data.title,
-        waitMs: debounce.waitMs,
-      }),
-    )
-    return
-  }
+  if (debounce.debounced) return
   const dedupeKey = `${parsed.data.prompt}\n${parsed.data.title}\n${profile}\n${scheduleKey}`
   if (seen.has(dedupeKey)) return
   seen.add(dedupeKey)

@@ -1,8 +1,5 @@
 import notifier from 'node-notifier'
 
-import { appendLog } from '../log/append.js'
-import { bestEffort } from '../log/safe.js'
-
 import {
   formatDuration,
   normalizeTitle,
@@ -37,51 +34,48 @@ const sendDesktopNotification = (
       }
       resolve()
     }
-
     const watchdog = setTimeout(() => settle(), 2_000)
     const done = (error?: unknown) => {
       clearTimeout(watchdog)
       settle(error)
     }
-
     try {
-      notifier.notify(
-        {
-          title,
-          message,
-          wait: false,
-          timeout: 5,
-        },
-        (error) => done(error),
-      )
+      notifier.notify({ title, message, wait: false, timeout: 5 }, (error) => {
+        done(error)
+      })
     } catch (error) {
       done(error)
     }
   })
 
+const sendFailed = (task: Task, result: TaskResult) =>
+  sendDesktopNotification(
+    `[failed] ${normalizeTitle(task)}`,
+    `profile=${task.profile} duration=${formatDuration(result.durationMs)} error=${sanitizeLine(result.output, 160)}`,
+  )
+
+const sendCanceled = (task: Task, result: TaskResult) => {
+  const source = result.cancel?.source ?? 'system'
+  const reason = result.cancel?.reason
+    ? ` reason=${sanitizeLine(result.cancel.reason)}`
+    : ''
+  return sendDesktopNotification(
+    `[canceled] ${normalizeTitle(task)}`,
+    `profile=${task.profile} duration=${formatDuration(result.durationMs)} source=${source}${reason}`,
+  )
+}
+
 export const createTaskResultNotifier = (
-  logPath: string,
+  _logPath: string,
 ): TaskResultNotifier => {
   let pendingSuccesses: SuccessItem[] = []
   let flushTimer: NodeJS.Timeout | null = null
   let lastSentAt = 0
   let flushing = false
 
-  const logEvent = async (entry: Record<string, unknown>): Promise<void> => {
-    await bestEffort('appendLog: desktop_notification', () =>
-      appendLog(logPath, { event: 'desktop_notification', ...entry }),
-    )
-  }
-
-  const send = async (
-    kind: 'urgent' | 'success',
-    title: string,
-    message: string,
-    meta: Record<string, unknown>,
-  ): Promise<void> => {
+  const send = async (title: string, message: string): Promise<void> => {
     await sendDesktopNotification(title, message)
     lastSentAt = Date.now()
-    await logEvent({ kind, title, ...meta })
   }
 
   const scheduleFlush = (delayMs: number): void => {
@@ -99,108 +93,70 @@ export const createTaskResultNotifier = (
       scheduleFlush(SUCCESS_MIN_INTERVAL_MS - elapsed)
       return
     }
-
     flushing = true
-    if (flushTimer) {
-      clearTimeout(flushTimer)
-      flushTimer = null
-    }
-
     const batch = pendingSuccesses
     pendingSuccesses = []
-    if (batch.length === 1) {
-      const single = batch[0]
-      if (!single) {
-        flushing = false
-        return
-      }
-      await bestEffort('desktop_notification: success_single', () =>
-        send(
-          'success',
-          `[succeeded] ${single.title}`,
-          `profile=${single.profile} duration=${formatDuration(single.durationMs)}`,
-          { count: 1, profile: single.profile, durationMs: single.durationMs },
-        ),
-      )
-      flushing = false
-      return
-    }
-
-    const titles = batch
-      .slice(0, SUCCESS_BATCH_TITLES_LIMIT)
-      .map((item) => sanitizeLine(item.title, 24))
-      .join(', ')
-    const more =
-      batch.length > SUCCESS_BATCH_TITLES_LIMIT
-        ? ` +${batch.length - SUCCESS_BATCH_TITLES_LIMIT} more`
-        : ''
-    const summary = summarizeProfiles(batch)
-    await bestEffort('desktop_notification: success_batch', () =>
-      send(
-        'success',
-        `[succeeded] ${batch.length} tasks completed`,
-        `profiles=${summary} titles=${titles}${more}`,
-        { count: batch.length, profiles: summary },
-      ),
-    )
-    flushing = false
-  }
-
-  const notifyTaskResult = async (
-    task: Task,
-    result: TaskResult,
-  ): Promise<void> => {
-    if (result.status === 'failed') {
-      const reason = sanitizeLine(result.output, 160)
-      await bestEffort('desktop_notification: failed', () =>
-        send(
-          'urgent',
-          `[failed] ${normalizeTitle(task)}`,
-          `profile=${task.profile} duration=${formatDuration(result.durationMs)} error=${reason}`,
-          { status: result.status, taskId: task.id, profile: task.profile },
-        ),
-      )
-      return
-    }
-
-    if (result.status === 'canceled') {
-      const source = result.cancel?.source ?? 'system'
-      const reason = result.cancel?.reason
-        ? sanitizeLine(result.cancel.reason)
-        : ''
-      const suffix = reason ? ` reason=${reason}` : ''
-      await bestEffort('desktop_notification: canceled', () =>
-        send(
-          'urgent',
-          `[canceled] ${normalizeTitle(task)}`,
-          `profile=${task.profile} duration=${formatDuration(result.durationMs)} source=${source}${suffix}`,
-          {
-            status: result.status,
-            taskId: task.id,
-            profile: task.profile,
-            source,
-          },
-        ),
-      )
-      return
-    }
-
-    if (!shouldNotifySucceeded(task, result)) return
-
-    pendingSuccesses.push({
-      title: normalizeTitle(task),
-      profile: task.profile,
-      durationMs: result.durationMs,
-    })
-    if (pendingSuccesses.length !== 1) return
-    scheduleFlush(SUCCESS_BATCH_WINDOW_MS)
-  }
-
-  const stop = (): void => {
     if (flushTimer) clearTimeout(flushTimer)
     flushTimer = null
-    pendingSuccesses = []
+    try {
+      if (batch.length === 1) {
+        const one = batch[0]
+        if (!one) return
+        await send(
+          `[succeeded] ${one.title}`,
+          `profile=${one.profile} duration=${formatDuration(one.durationMs)}`,
+        )
+        return
+      }
+      const titles = batch
+        .slice(0, SUCCESS_BATCH_TITLES_LIMIT)
+        .map((item) => sanitizeLine(item.title, 24))
+        .join(', ')
+      const more =
+        batch.length > SUCCESS_BATCH_TITLES_LIMIT
+          ? ` +${batch.length - SUCCESS_BATCH_TITLES_LIMIT} more`
+          : ''
+      await send(
+        `[succeeded] ${batch.length} tasks completed`,
+        `profiles=${summarizeProfiles(batch)} titles=${titles}${more}`,
+      )
+    } finally {
+      flushing = false
+    }
   }
 
-  return { notifyTaskResult, stop }
+  return {
+    notifyTaskResult: async (task: Task, result: TaskResult) => {
+      if (result.status === 'failed') {
+        await sendFailed(task, result)
+          .then(() => {
+            lastSentAt = Date.now()
+          })
+          .catch(() => undefined)
+        return
+      }
+      if (result.status === 'canceled') {
+        await sendCanceled(task, result)
+          .then(() => {
+            lastSentAt = Date.now()
+          })
+          .catch(() => undefined)
+        return
+      }
+      if (!shouldNotifySucceeded(task, result)) return
+
+      pendingSuccesses.push({
+        title: normalizeTitle(task),
+        profile: task.profile,
+        durationMs: result.durationMs,
+      })
+      if (pendingSuccesses.length !== 1) return
+      scheduleFlush(SUCCESS_BATCH_WINDOW_MS)
+    },
+    stop: () => {
+      if (flushTimer) clearTimeout(flushTimer)
+      flushTimer = null
+      pendingSuccesses = []
+    },
+  }
 }

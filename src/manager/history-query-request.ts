@@ -8,6 +8,7 @@ import type { Role } from '../types/index.js'
 const DEFAULT_LIMIT = 6
 const MAX_LIMIT = 20
 const MIN_LIMIT = 1
+const DEFAULT_ROLES: Role[] = ['user', 'assistant']
 
 export type QueryHistoryRequest = {
   query: string
@@ -29,25 +30,23 @@ export const queryHistorySchema = z
   })
   .strict()
 
-const parseLimit = (raw?: string): number => {
-  if (!raw) return DEFAULT_LIMIT
-  const value = Number.parseInt(raw, 10)
-  if (!Number.isFinite(value)) return DEFAULT_LIMIT
-  return Math.max(MIN_LIMIT, Math.min(MAX_LIMIT, value))
-}
+const parseLimit = (raw?: string): number =>
+  Math.max(
+    MIN_LIMIT,
+    Math.min(MAX_LIMIT, Number.parseInt(raw ?? '', 10) || DEFAULT_LIMIT),
+  )
 
 const isRole = (value: string): value is Role =>
   value === 'user' || value === 'assistant' || value === 'system'
 
 const parseRoles = (raw?: string): Role[] => {
-  if (!raw) return ['user', 'assistant']
+  if (!raw) return DEFAULT_ROLES
   const unique = new Set<Role>()
   for (const part of raw.split(',')) {
     const role = part.trim()
-    if (!isRole(role)) continue
-    unique.add(role)
+    if (isRole(role)) unique.add(role)
   }
-  return unique.size > 0 ? Array.from(unique) : ['user', 'assistant']
+  return unique.size > 0 ? Array.from(unique) : DEFAULT_ROLES
 }
 
 export const pickQueryHistoryRequest = (

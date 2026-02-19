@@ -119,8 +119,22 @@ test('collectManagerActionFeedback ignores valid registered actions', () => {
           query: 'history',
         },
       },
+      {
+        name: 'sync_focuses',
+        attrs: {},
+        content: JSON.stringify({
+          active: [
+            {
+              title: 'focus',
+              summary: 'sync',
+              confidence: 0.8,
+              evidence_ids: ['u-1'],
+            },
+          ],
+        }),
+      },
     ],
-    { taskStatusById: new Map([['t1', 'pending']]) },
+    { taskStatusById: new Map([['t1', 'pending']]), focusSlots: 3 },
   )
 
   expect(feedback).toHaveLength(0)

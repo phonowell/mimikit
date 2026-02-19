@@ -4,11 +4,13 @@ import { stripUndefined } from '../shared/utils.js'
 
 import { normalizeTokenUsage, tokenUsageSchema } from './token-usage.js'
 
-import type { CronJob, Task } from '../types/index.js'
+import type { ConversationFocus, CronJob, Task } from '../types/index.js'
 
 export type RuntimeSnapshot = {
   tasks: Task[]
   cronJobs?: CronJob[]
+  focuses?: ConversationFocus[]
+  managerTurn?: number
   queues?: {
     inputsCursor: number
     resultsCursor: number
@@ -23,7 +25,7 @@ const taskCancelSchema = z
   })
   .strict()
 
-const taskResultRawSchema = z
+const taskResultSchema = z
   .object({
     taskId: z.string().trim().min(1),
     status: z.enum(['succeeded', 'failed', 'canceled']),
@@ -39,7 +41,7 @@ const taskResultRawSchema = z
   })
   .strict()
 
-const taskRawSchema = z
+const taskSchema = z
   .object({
     id: z.string().trim().min(1),
     fingerprint: z.string().trim().min(1),
@@ -56,11 +58,11 @@ const taskRawSchema = z
     usage: tokenUsageSchema.optional(),
     archivePath: z.string().optional(),
     cancel: taskCancelSchema.optional(),
-    result: taskResultRawSchema.optional(),
+    result: taskResultSchema.optional(),
   })
   .strict()
 
-const cronJobRawSchema = z
+const cronJobSchema = z
   .object({
     id: z.string().trim().min(1),
     cron: z.string().trim().min(1).optional(),
@@ -79,98 +81,74 @@ const cronJobRawSchema = z
   })
   .refine(
     (data) => !(data.cron !== undefined && data.scheduledAt !== undefined),
-    {
-      message: 'cron and scheduledAt are mutually exclusive',
-    },
+    { message: 'cron and scheduledAt are mutually exclusive' },
   )
 
-const queueStateSchema = z
+const focusSchema = z
   .object({
-    inputsCursor: z.number().int().nonnegative(),
-    resultsCursor: z.number().int().nonnegative(),
+    id: z.string().trim().min(1),
+    title: z.string().trim().min(1),
+    summary: z.string().trim().min(1),
+    status: z.enum(['active', 'expired']),
+    confidence: z.number().finite().min(0).max(1),
+    evidenceIds: z.array(z.string().trim().min(1)),
+    createdAt: z.string().trim().min(1),
+    updatedAt: z.string().trim().min(1),
+    lastReferencedAt: z.string().trim().min(1),
+    source: z.enum(['manager', 'user']),
   })
   .strict()
 
-const runtimeSnapshotRawSchema = z
+const runtimeSnapshotSchema = z
   .object({
-    tasks: z.array(taskRawSchema),
-    cronJobs: z.array(cronJobRawSchema).optional(),
-    queues: queueStateSchema.optional(),
+    tasks: z.array(taskSchema),
+    cronJobs: z.array(cronJobSchema).optional(),
+    focuses: z.array(focusSchema).optional(),
+    managerTurn: z.number().int().nonnegative().optional(),
+    queues: z
+      .object({
+        inputsCursor: z.number().int().nonnegative(),
+        resultsCursor: z.number().int().nonnegative(),
+      })
+      .strict()
+      .optional(),
     plannerSessionId: z.string().trim().min(1).optional(),
   })
   .strict()
 
-const toCancel = (raw?: z.infer<typeof taskCancelSchema>) =>
-  raw ? stripUndefined({ source: raw.source, reason: raw.reason }) : undefined
-
-const toTask = (task: z.infer<typeof taskRawSchema>): Task => {
-  const usage = normalizeTokenUsage(task.usage)
-  const cancel = toCancel(task.cancel)
-  const result = task.result
-    ? stripUndefined({
-        taskId: task.result.taskId,
-        status: task.result.status,
-        ok: task.result.ok,
-        output: task.result.output,
-        durationMs: task.result.durationMs,
-        completedAt: task.result.completedAt,
-        usage: normalizeTokenUsage(task.result.usage),
-        title: task.result.title,
-        archivePath: task.result.archivePath,
-        profile: task.result.profile,
-        cancel: toCancel(task.result.cancel),
-      })
-    : undefined
-  return stripUndefined({
-    id: task.id,
-    fingerprint: task.fingerprint,
-    prompt: task.prompt,
-    title: task.title,
-    cron: task.cron,
-    profile: task.profile,
-    status: task.status,
-    createdAt: task.createdAt,
-    startedAt: task.startedAt,
-    completedAt: task.completedAt,
-    durationMs: task.durationMs,
-    attempts: task.attempts,
-    usage,
-    archivePath: task.archivePath,
-    cancel,
-    result,
-  }) as Task
-}
-
-const toCronJob = (cronJob: z.infer<typeof cronJobRawSchema>): CronJob =>
+const normalizeTask = (task: z.infer<typeof taskSchema>): Task =>
   stripUndefined({
-    id: cronJob.id,
-    cron: cronJob.cron,
-    scheduledAt: cronJob.scheduledAt,
-    prompt: cronJob.prompt,
-    title: cronJob.title,
-    profile: cronJob.profile,
-    enabled: cronJob.enabled,
-    disabledReason: cronJob.disabledReason,
-    createdAt: cronJob.createdAt,
-    lastTriggeredAt: cronJob.lastTriggeredAt,
-  }) as CronJob
-
-export const parseRuntimeSnapshot = (value: unknown): RuntimeSnapshot => {
-  const parsed = runtimeSnapshotRawSchema.parse(value)
-
-  return {
-    tasks: parsed.tasks.map((task) => toTask(task)),
-    ...(parsed.cronJobs
-      ? { cronJobs: parsed.cronJobs.map((job) => toCronJob(job)) }
-      : {}),
-    ...(parsed.queues
+    ...task,
+    usage: normalizeTokenUsage(task.usage),
+    ...(task.result
       ? {
-          queues: {
-            inputsCursor: parsed.queues.inputsCursor,
-            resultsCursor: parsed.queues.resultsCursor,
-          },
+          result: stripUndefined({
+            ...task.result,
+            usage: normalizeTokenUsage(task.result.usage),
+          }),
         }
       : {}),
+  }) as Task
+
+const normalizeCronJob = (cronJob: z.infer<typeof cronJobSchema>): CronJob =>
+  stripUndefined({ ...cronJob }) as CronJob
+
+const normalizeFocus = (
+  focus: z.infer<typeof focusSchema>,
+): ConversationFocus => stripUndefined({ ...focus }) as ConversationFocus
+
+export const parseRuntimeSnapshot = (value: unknown): RuntimeSnapshot => {
+  const parsed = runtimeSnapshotSchema.parse(value)
+  return {
+    tasks: parsed.tasks.map(normalizeTask),
+    ...(parsed.cronJobs
+      ? { cronJobs: parsed.cronJobs.map(normalizeCronJob) }
+      : {}),
+    ...(parsed.focuses ? { focuses: parsed.focuses.map(normalizeFocus) } : {}),
+    ...(parsed.managerTurn !== undefined
+      ? { managerTurn: parsed.managerTurn }
+      : {}),
+    ...(parsed.queues ? { queues: parsed.queues } : {}),
     ...(parsed.plannerSessionId
       ? { plannerSessionId: parsed.plannerSessionId }
       : {}),

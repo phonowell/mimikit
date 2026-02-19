@@ -2,7 +2,6 @@ import { buildManagerPrompt } from '../prompts/build-prompts.js'
 import { runWithProvider } from '../providers/registry.js'
 import {
   appendTraceArchiveResult,
-  type TraceArchiveEntry,
   type TraceArchiveResult,
 } from '../storage/traces-archive.js'
 
@@ -13,6 +12,7 @@ import {
 } from './runner-budget.js'
 
 import type {
+  ConversationFocus,
   CronJob,
   HistoryLookupMessage,
   ManagerActionFeedback,
@@ -29,6 +29,14 @@ export const runManager = async (params: {
   inputs: UserInput[]
   results: TaskResult[]
   tasks: Task[]
+  focuses?: ConversationFocus[]
+  focusMemory?: ConversationFocus[]
+  focusControl?: {
+    turn: number
+    maxSlots: number
+    updateRequired: boolean
+    reason: 'periodic' | 'result_event' | 'bootstrap' | 'idle'
+  }
   cronJobs?: CronJob[]
   historyLookup?: HistoryLookupMessage[]
   actionFeedback?: ManagerActionFeedback[]
@@ -51,6 +59,9 @@ export const runManager = async (params: {
     inputs: params.inputs,
     results: params.results,
     tasks: params.tasks,
+    ...(params.focuses ? { focuses: params.focuses } : {}),
+    ...(params.focusMemory ? { focusMemory: params.focusMemory } : {}),
+    ...(params.focusControl ? { focusControl: params.focusControl } : {}),
     ...(params.cronJobs ? { cronJobs: params.cronJobs } : {}),
     ...(params.historyLookup ? { historyLookup: params.historyLookup } : {}),
     ...(params.actionFeedback ? { actionFeedback: params.actionFeedback } : {}),
@@ -60,84 +71,58 @@ export const runManager = async (params: {
   const budgetedPrompt = enforcePromptBudget(prompt, params.maxPromptTokens)
   const timeoutMs = resolveManagerTimeoutMs(budgetedPrompt.prompt)
 
-  type ArchiveBase = Omit<TraceArchiveEntry, 'prompt' | 'output' | 'ok'>
-  const archive = (base: ArchiveBase, result: TraceArchiveResult) =>
+  const archive = (
+    threadId: string | null | undefined,
+    data: TraceArchiveResult,
+  ) =>
     appendTraceArchiveResult(
       params.stateDir,
-      base,
+      {
+        role: 'manager',
+        ...(model ? { model } : {}),
+        ...(threadId ? { threadId } : {}),
+        attempt: 'primary',
+      },
       budgetedPrompt.prompt,
-      result,
+      data,
     )
 
-  const archiveBase = (
-    callModel: string | undefined,
-    sessionId?: string,
-  ): ArchiveBase => ({
-    role: 'manager',
-    ...(callModel ? { model: callModel } : {}),
-    ...(sessionId ? { threadId: sessionId } : {}),
-    attempt: 'primary',
-  })
-
-  const isInvalidSessionError = (error: unknown): boolean => {
-    const message = error instanceof Error ? error.message : String(error)
-    return /session/i.test(message) && /not found|404|unknown/i.test(message)
-  }
-
-  const callProvider = (callModel: string | undefined, sessionId?: string) =>
+  const callProvider = (threadId?: string) =>
     runWithProvider({
       provider: 'opencode',
       role: 'manager',
       prompt: budgetedPrompt.prompt,
       workDir: params.workDir,
       timeoutMs,
-      ...(callModel ? { model: callModel } : {}),
-      ...(sessionId ? { threadId: sessionId } : {}),
+      ...(model ? { model } : {}),
+      ...(threadId ? { threadId } : {}),
       ...(params.onTextDelta ? { onTextDelta: params.onTextDelta } : {}),
       ...(params.onUsage ? { onUsage: params.onUsage } : {}),
     })
 
-  const toResult = (r: {
-    output: string
-    elapsedMs: number
-    usage?: TokenUsage
-    threadId?: string | null
-  }) => ({
-    output: r.output,
-    elapsedMs: r.elapsedMs,
-    ...(r.threadId ? { sessionId: r.threadId } : {}),
-    ...(r.usage ? { usage: r.usage } : {}),
-  })
-
-  const callWithSessionRecovery = async (
-    callModel: string | undefined,
-    sessionId: string | undefined,
-  ) => {
-    try {
-      const r = await callProvider(callModel, sessionId)
-      await archive(archiveBase(callModel, r.threadId ?? undefined), {
-        ...r,
-        ok: true,
-      })
-      return r
-    } catch (error) {
-      if (!sessionId || !isInvalidSessionError(error)) throw error
-      params.onStreamReset?.()
-      const recovered = await callProvider(callModel)
-      await archive(archiveBase(callModel, recovered.threadId ?? undefined), {
-        ...recovered,
-        ok: true,
-      })
-      return recovered
-    }
-  }
-
   try {
-    const r = await callWithSessionRecovery(model, params.sessionId)
-    return toResult(r)
+    let result
+    try {
+      result = await callProvider(params.sessionId)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      const invalidSession =
+        /session/i.test(message) && /not found|404|unknown/i.test(message)
+      if (!params.sessionId || !invalidSession) throw error
+      params.onStreamReset?.()
+      result = await callProvider()
+    }
+
+    await archive(result.threadId ?? undefined, { ...result, ok: true })
+    return {
+      output: result.output,
+      elapsedMs: result.elapsedMs,
+      ...(result.threadId ? { sessionId: result.threadId } : {}),
+      ...(result.usage ? { usage: result.usage } : {}),
+    }
   } catch (error) {
     const err = toError(error)
-    await archive(archiveBase(model, params.sessionId), {
+    await archive(params.sessionId, {
       output: '',
       ok: false,
       error: err.message,

@@ -1,3 +1,5 @@
+import { applyManagerFocusSync } from '../focus/state.js'
+import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import { notifyWorkerLoop } from '../orchestrator/core/worker-signal.js'
@@ -34,7 +36,7 @@ export { collectTaskResultSummaries }
 export const applyTaskActions = async (
   runtime: RuntimeState,
   items: Parsed[],
-  options?: ApplyTaskActionsOptions,
+  options?: ApplyTaskActionsOptions & { focusEvidenceIds?: Set<string> },
 ): Promise<void> => {
   const seen = new Set<string>()
   for (const item of items) {
@@ -60,6 +62,25 @@ export const applyTaskActions = async (
       if (!parsed.success) continue
       requestManagerRestart(runtime)
       return
+    }
+    if (item.name === 'sync_focuses') {
+      const applied = applyManagerFocusSync({
+        runtime,
+        action: item,
+        batchEvidenceIds: options?.focusEvidenceIds ?? new Set(),
+      })
+      if (!applied.ok) {
+        await bestEffort('appendLog: sync_focuses_rejected', () =>
+          appendLog(runtime.paths.log, {
+            event: 'sync_focuses_rejected',
+            reason: applied.error,
+          }),
+        )
+        continue
+      }
+      if (!applied.changed) continue
+      await persistRuntimeState(runtime)
+      continue
     }
   }
 }

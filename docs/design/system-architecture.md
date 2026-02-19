@@ -45,6 +45,7 @@
 - `queues.resultsCursor`
 - `plannerSessionId`
 - `tasks` / `cronJobs`
+- `focuses` / `focusRollbackStack` / `managerTurn`
 - `workerQueue` / `runningControllers`
 
 ## 共享原语（去重后）
@@ -64,7 +65,7 @@
 
 1. 用户输入写入 `inputs/packets.jsonl`，并实时唤醒 manager。
 2. manager 被唤醒，消费输入/结果并调用 `runManager`（OpenCode）。
-3. manager 解析动作并更新任务状态，写 assistant 回复。
+3. manager 解析动作并更新任务状态/对话重心（`sync_focuses`），写 assistant 回复。
 4. worker 执行任务终态后写入 `results/packets.jsonl`。
 5. 任务终态会触发 manager signal，manager 会立即拉取并消费 results。
 
@@ -135,3 +136,9 @@
 - `runtime-snapshot.json`
 - `history/YYYY-MM-DD.jsonl`
 - `tasks/tasks.jsonl`
+
+重心机制：
+
+- manager 每 10 轮或事件触发时要求输出 `M:sync_focuses`（active 重心全集）。
+- active 上限与 `worker.maxConcurrent` 一致。
+- 过期重心摘要池按 LRU 保留，容量同 `worker.maxConcurrent`。

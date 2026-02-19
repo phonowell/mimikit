@@ -27,6 +27,51 @@ test('messages route forwards afterId and returns mode', async () => {
   expect(body.messages[0]?.id).toBe('delta-1')
   expect(calls).toEqual([{ limit: 20, afterId: 'msg-123' }])
 
+  let expiredId = ''
+  ;(
+    orchestrator as unknown as {
+      getFocuses: () => { limit: number; active: Array<{ id: string }>; expired: Array<{ id: string }> }
+      expireFocus: (focusId: string) => Promise<{ ok: true; status: 'updated' }>
+      restoreFocus: (focusId: string) => Promise<{ ok: true; status: 'updated' }>
+      rollbackFocuses: () => Promise<{ ok: true; status: 'updated' }>
+    }
+  ).getFocuses = () => ({ limit: 2, active: [{ id: 'focus-1' }], expired: [] })
+  ;(
+    orchestrator as unknown as {
+      expireFocus: (focusId: string) => Promise<{ ok: true; status: 'updated' }>
+      restoreFocus: (focusId: string) => Promise<{ ok: true; status: 'updated' }>
+      rollbackFocuses: () => Promise<{ ok: true; status: 'updated' }>
+    }
+  ).expireFocus = async (focusId) => {
+    expiredId = focusId
+    return { ok: true, status: 'updated' }
+  }
+  ;(
+    orchestrator as unknown as {
+      restoreFocus: (focusId: string) => Promise<{ ok: true; status: 'updated' }>
+      rollbackFocuses: () => Promise<{ ok: true; status: 'updated' }>
+    }
+  ).restoreFocus = async () => ({ ok: true, status: 'updated' })
+  ;(
+    orchestrator as unknown as {
+      rollbackFocuses: () => Promise<{ ok: true; status: 'updated' }>
+    }
+  ).rollbackFocuses = async () => ({ ok: true, status: 'updated' })
+
+  const focusesRes = await app.inject({ method: 'GET', url: '/api/focuses' })
+  expect(focusesRes.statusCode).toBe(200)
+  expect(focusesRes.json()).toEqual({ limit: 2, active: [{ id: 'focus-1' }], expired: [] })
+
+  const expireRes = await app.inject({ method: 'POST', url: '/api/focuses/focus-1/expire' })
+  expect(expireRes.statusCode).toBe(200)
+  expect(expiredId).toBe('focus-1')
+
+  const restoreRes = await app.inject({ method: 'POST', url: '/api/focuses/focus-1/restore' })
+  expect(restoreRes.statusCode).toBe(200)
+
+  const rollbackRes = await app.inject({ method: 'POST', url: '/api/focuses/rollback' })
+  expect(rollbackRes.statusCode).toBe(200)
+
   await app.close()
 })
 

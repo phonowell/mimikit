@@ -72,6 +72,17 @@
 - 入参：`task_id`、`summary`
 - 行为：汇总为 `Map<taskId, summary>`，用于结果写入 `history` 时压缩输出。
 
+### `sync_focuses`
+
+- 入参：标签内容为 JSON，结构：`{ "active": FocusDraft[] }`
+- `FocusDraft`：`id?`、`title`、`summary`、`confidence?`、`evidence_ids[]`
+- 约束：
+  - `active` 数量 `<= worker.maxConcurrent`
+  - `active` 视为当前重心全集；未出现的旧 active 自动过期
+- 行为：
+  - 直接更新运行态对话重心
+  - 触发语义漂移保护；异常时回退到上一个稳定快照
+
 ## Worker 输出规则
 
 来源：`src/worker/profiled-runner.ts`
@@ -110,3 +121,10 @@
 
 - 结构：`{ id, createdAt, payload }`
 - `inputs/results` 使用统一 packet 包装。
+
+### ConversationFocus
+
+- 字段：`id`、`title`、`summary`、`status(active|expired)`、`confidence`
+- 证据：`evidenceIds[]`
+- 时间：`createdAt`、`updatedAt`、`lastReferencedAt`
+- 来源：`source(manager|user)`

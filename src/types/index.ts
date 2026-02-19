@@ -121,3 +121,20 @@ export type ManagerActionFeedback = {
   hint: string
   attempted?: string
 }
+
+export type ConversationFocusStatus = 'active' | 'expired'
+
+export type ConversationFocusSource = 'manager' | 'user'
+
+export type ConversationFocus = {
+  id: Id
+  title: string
+  summary: string
+  status: ConversationFocusStatus
+  confidence: number
+  evidenceIds: Id[]
+  createdAt: ISODate
+  updatedAt: ISODate
+  lastReferencedAt: ISODate
+  source: ConversationFocusSource
+}

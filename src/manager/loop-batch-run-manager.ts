@@ -1,4 +1,8 @@
 import { parseActions } from '../actions/protocol/parse.js'
+import {
+  buildFocusManagerContext,
+  isSyncFocusesAction,
+} from '../focus/state.js'
 import { appendLog } from '../log/append.js'
 import { selectRecentTasks } from '../orchestrator/read-model/task-select.js'
 import { readHistory } from '../storage/history-jsonl.js'
@@ -23,15 +27,6 @@ import type {
   UserInput,
 } from '../types/index.js'
 
-const buildManagerContext = (runtime: RuntimeState) => {
-  const recentTasks = selectRecentTasks(runtime.tasks, {
-    minCount: runtime.config.deferred.tasksMinCount,
-    maxCount: runtime.config.deferred.tasksMaxCount,
-    maxBytes: runtime.config.deferred.tasksMaxBytes,
-  })
-  return { recentTasks }
-}
-
 export const runManagerBatch = async (params: {
   runtime: RuntimeState
   inputs: UserInput[]
@@ -43,7 +38,6 @@ export const runManagerBatch = async (params: {
   elapsedMs: number
 }> => {
   const { runtime, inputs, results, streamId } = params
-
   await appendLog(runtime.paths.log, {
     event: 'manager_start',
     inputCount: inputs.length,
@@ -52,24 +46,32 @@ export const runManagerBatch = async (params: {
     resultIds: results.map((item) => item.taskId),
   })
 
-  const { recentTasks } = buildManagerContext(runtime)
+  const tasks = selectRecentTasks(runtime.tasks, {
+    minCount: runtime.config.deferred.tasksMinCount,
+    maxCount: runtime.config.deferred.tasksMaxCount,
+    maxBytes: runtime.config.deferred.tasksMaxBytes,
+  })
+  const focus = buildFocusManagerContext({ runtime, inputs, results })
 
   let streamRawOutput = ''
   let streamUsage: TokenUsage | undefined
-  const runOnce = async (params?: {
+  const runOnce = async (extra?: {
     historyLookup?: HistoryLookupMessage[]
     actionFeedback?: ManagerActionFeedback[]
-  }): Promise<Awaited<ReturnType<typeof runManager>>> => {
-    const managerResult = await runManager({
+  }) => {
+    const result = await runManager({
       stateDir: runtime.config.workDir,
       workDir: runtime.config.workDir,
       inputs,
       results,
-      tasks: recentTasks,
+      tasks,
+      focuses: focus.active,
+      focusMemory: focus.memory,
+      focusControl: focus.control,
       cronJobs: runtime.cronJobs,
-      ...(params?.historyLookup ? { historyLookup: params.historyLookup } : {}),
-      ...(params?.actionFeedback
-        ? { actionFeedback: params.actionFeedback }
+      ...(extra?.historyLookup ? { historyLookup: extra.historyLookup } : {}),
+      ...(extra?.actionFeedback
+        ? { actionFeedback: extra.actionFeedback }
         : {}),
       ...(runtime.lastUserMeta
         ? { env: { lastUser: runtime.lastUserMeta } }
@@ -96,13 +98,12 @@ export const runManagerBatch = async (params: {
         streamUsage = setUiStreamUsage(runtime, streamId, usage) ?? streamUsage
       },
     })
-    if (managerResult.sessionId)
-      runtime.plannerSessionId = managerResult.sessionId
-    if (managerResult.usage) {
+    if (result.sessionId) runtime.plannerSessionId = result.sessionId
+    if (result.usage) {
       streamUsage =
-        setUiStreamUsage(runtime, streamId, managerResult.usage) ?? streamUsage
+        setUiStreamUsage(runtime, streamId, result.usage) ?? streamUsage
     }
-    return managerResult
+    return result
   }
 
   const first = await runOnce()
@@ -114,15 +115,28 @@ export const runManagerBatch = async (params: {
     enabledCronJobIds: new Set(
       runtime.cronJobs.filter((job) => job.enabled).map((job) => job.id),
     ),
+    focusSlots: focus.control.maxSlots,
   })
+  if (
+    focus.control.updateRequired &&
+    !firstParsed.actions.some((item) => isSyncFocusesAction(item))
+  ) {
+    actionFeedback.push({
+      action: 'sync_focuses',
+      error: 'action_execution_rejected',
+      hint: `本轮必须输出 M:sync_focuses（reason=${focus.control.reason}）。`,
+    })
+  }
+
   const queryRequest = pickQueryHistoryRequest(firstParsed.actions)
   if (!queryRequest && actionFeedback.length === 0) {
     setUiStreamText(runtime, streamId, toVisibleAssistantText(first.output))
-    const usage = streamUsage ?? first.usage
     return {
       parsed: firstParsed,
       elapsedMs: first.elapsedMs,
-      ...(usage ? { usage } : {}),
+      ...((streamUsage ?? first.usage)
+        ? { usage: streamUsage ?? first.usage }
+        : {}),
     }
   }
 
@@ -164,10 +178,11 @@ export const runManagerBatch = async (params: {
   })
   const secondParsed = parseActions(second.output)
   setUiStreamText(runtime, streamId, toVisibleAssistantText(second.output))
-  const usage = streamUsage ?? second.usage ?? first.usage
   return {
     parsed: secondParsed,
     elapsedMs: first.elapsedMs + second.elapsedMs,
-    ...(usage ? { usage } : {}),
+    ...((streamUsage ?? second.usage ?? first.usage)
+      ? { usage: streamUsage ?? second.usage ?? first.usage }
+      : {}),
   }
 }

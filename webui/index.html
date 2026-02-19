@@ -127,6 +127,29 @@
               </button>
             </div>
           </header>
+          <details class="focuses-panel" data-focuses-panel>
+            <summary class="focuses-toggle">Conversation Focuses</summary>
+            <div class="focuses-body">
+              <section class="focuses-group" aria-label="Active focuses">
+                <h3 class="focuses-title">Active</h3>
+                <ul class="focuses-list" data-focuses-list></ul>
+              </section>
+              <section class="focuses-group" aria-label="Expired focuses">
+                <h3 class="focuses-title">Expired</h3>
+                <ul class="focuses-list" data-focuses-expired-list></ul>
+              </section>
+              <div class="focuses-actions">
+                <button
+                  class="btn btn--xs"
+                  data-focuses-rollback
+                  type="button"
+                  title="Rollback latest focus update"
+                >
+                  Rollback
+                </button>
+              </div>
+            </div>
+          </details>
           <ul class="tasks-list scrollable" data-tasks-list></ul>
         </section>
       </dialog>

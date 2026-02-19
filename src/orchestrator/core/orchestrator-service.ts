@@ -1,8 +1,13 @@
 import PQueue from 'p-queue'
 
 import { type AppConfig } from '../../config.js'
+import {
+  expireFocus,
+  getFocusSnapshot,
+  restoreFocus,
+  rollbackFocuses,
+} from '../../focus/state.js'
 import { buildPaths } from '../../fs/paths.js'
-import { appendLog } from '../../log/append.js'
 import { bestEffort, setDefaultLogPath } from '../../log/safe.js'
 import { cronWakeLoop } from '../../manager/loop-cron.js'
 import { managerLoop } from '../../manager/loop.js'
@@ -22,7 +27,6 @@ import {
   addUserInput,
   getChatHistory,
   getChatMessages,
-  getInflightInputs,
   getTasks,
   getWebUiSnapshot,
   waitForWebUiSignal,
@@ -35,6 +39,7 @@ import {
   hydrateRuntimeState,
   persistRuntimeState,
 } from './runtime-persistence.js'
+import { notifyUiSignal } from './ui-signal.js'
 import { notifyWorkerLoop } from './worker-signal.js'
 
 import type { RuntimeState, UserMeta } from './runtime-state.js'
@@ -42,30 +47,6 @@ import type { CronJob, Task, WorkerProfile } from '../../types/index.js'
 
 export class Orchestrator {
   private runtime: RuntimeState
-
-  private appendStartupSystemMessage = async (): Promise<void> => {
-    await bestEffort('appendHistory: startup_system_message', () =>
-      appendHistory(this.runtime.paths.history, {
-        id: `sys-startup-${newId()}`,
-        role: 'system',
-        text: 'Started',
-        createdAt: nowIso(),
-      }),
-    )
-  }
-
-  private persistStopSnapshot = async (): Promise<void> => {
-    await bestEffort('persistRuntimeState: stop', () =>
-      persistRuntimeState(this.runtime),
-    )
-  }
-
-  private prepareStop = (): void => {
-    this.runtime.stopped = true
-    this.runtime.taskResultNotifier.stop()
-    notifyManagerLoop(this.runtime)
-    notifyWorkerLoop(this.runtime)
-  }
 
   constructor(config: AppConfig) {
     const paths = buildPaths(config.workDir)
@@ -78,27 +59,45 @@ export class Orchestrator {
       managerSignalController: new AbortController(),
       managerWakePending: false,
       inflightInputs: [],
-      queues: {
-        inputsCursor: 0,
-        resultsCursor: 0,
-      },
+      queues: { inputsCursor: 0, resultsCursor: 0 },
       tasks: [],
       cronJobs: [],
+      focuses: [],
+      focusRollbackStack: [],
+      managerTurn: 0,
       uiStream: null,
       runningControllers: new Map(),
       createTaskDebounce: new Map(),
-      workerQueue: new PQueue({
-        concurrency: config.worker.maxConcurrent,
-      }),
+      workerQueue: new PQueue({ concurrency: config.worker.maxConcurrent }),
       workerSignalController: new AbortController(),
       uiSignalController: new AbortController(),
       taskResultNotifier: createTaskResultNotifier(paths.log),
     }
   }
 
+  private async persistStopSnapshot(): Promise<void> {
+    await bestEffort('persistRuntimeState: stop', () =>
+      persistRuntimeState(this.runtime),
+    )
+  }
+
+  private prepareStop(): void {
+    this.runtime.stopped = true
+    this.runtime.taskResultNotifier.stop()
+    notifyManagerLoop(this.runtime)
+    notifyWorkerLoop(this.runtime)
+  }
+
   async start() {
     await hydrateRuntimeState(this.runtime)
-    await this.appendStartupSystemMessage()
+    await bestEffort('appendHistory: startup_system_message', () =>
+      appendHistory(this.runtime.paths.history, {
+        id: `sys-startup-${newId()}`,
+        role: 'system',
+        text: 'Started',
+        createdAt: nowIso(),
+      }),
+    )
     enqueuePendingWorkerTasks(this.runtime)
     notifyWorkerLoop(this.runtime)
     void managerLoop(this.runtime)
@@ -120,10 +119,6 @@ export class Orchestrator {
     return addUserInput(this.runtime, text, meta, quote)
   }
 
-  getInflightInputs() {
-    return getInflightInputs(this.runtime)
-  }
-
   getChatHistory(limit = 50) {
     return getChatHistory(this.runtime, limit)
   }
@@ -134,6 +129,10 @@ export class Orchestrator {
 
   getTasks(limit = 200) {
     return getTasks(this.runtime, limit)
+  }
+
+  getFocuses() {
+    return getFocusSnapshot(this.runtime)
   }
 
   getWebUiSnapshot(messageLimit = 50, taskLimit = 200) {
@@ -150,13 +149,37 @@ export class Orchestrator {
   }
 
   getTaskById(taskId: string): Task | undefined {
-    const trimmed = taskId.trim()
-    if (!trimmed) return undefined
-    return this.runtime.tasks.find((task) => task.id === trimmed)
+    const id = taskId.trim()
+    if (!id) return undefined
+    return this.runtime.tasks.find((task) => task.id === id)
   }
 
   cancelTask(taskId: string, meta?: { source?: string; reason?: string }) {
     return cancelTask(this.runtime, taskId, meta)
+  }
+
+  async expireFocus(focusId: string) {
+    const result = expireFocus(this.runtime, focusId)
+    if (!result.ok) return result
+    await persistRuntimeState(this.runtime)
+    notifyUiSignal(this.runtime)
+    return result
+  }
+
+  async restoreFocus(focusId: string) {
+    const result = restoreFocus(this.runtime, focusId)
+    if (!result.ok) return result
+    await persistRuntimeState(this.runtime)
+    notifyUiSignal(this.runtime)
+    return result
+  }
+
+  async rollbackFocuses() {
+    if (!rollbackFocuses(this.runtime))
+      return { ok: false as const, status: 'empty' as const }
+    await persistRuntimeState(this.runtime)
+    notifyUiSignal(this.runtime)
+    return { ok: true as const, status: 'updated' as const }
   }
 
   addCronJob(input: {
@@ -182,12 +205,6 @@ export class Orchestrator {
     return computeOrchestratorStatus(
       this.runtime,
       this.runtime.inflightInputs.length,
-    )
-  }
-
-  async logEvent(entry: Record<string, unknown>) {
-    await bestEffort('appendLog: event', () =>
-      appendLog(this.runtime.paths.log, entry),
     )
   }
 }

@@ -1,3 +1,4 @@
+import { parseSyncFocusesPayload } from '../focus/state.js'
 import { parseIsoMs } from '../shared/time.js'
 
 import { hasForbiddenWorkerStatePath } from './action-apply-guards.js'
@@ -11,7 +12,7 @@ import { queryHistorySchema } from './history-query-request.js'
 
 import type { Parsed } from '../actions/model/spec.js'
 import type { TaskStatus } from '../types/index.js'
-import type { ZodError } from 'zod'
+import type { ZodError, ZodSchema } from 'zod'
 
 export const REGISTERED_MANAGER_ACTIONS = new Set([
   'create_task',
@@ -19,11 +20,13 @@ export const REGISTERED_MANAGER_ACTIONS = new Set([
   'summarize_task_result',
   'query_history',
   'restart_server',
+  'sync_focuses',
 ])
 
 export type FeedbackContext = {
   taskStatusById?: Map<string, TaskStatus>
   enabledCronJobIds?: Set<string>
+  focusSlots?: number
 }
 
 export type ValidationIssue = {
@@ -34,29 +37,35 @@ export type ValidationIssue = {
 const INVALID_ACTION_ARGS = 'invalid_action_args'
 const ACTION_EXECUTION_REJECTED = 'action_execution_rejected'
 
-const formatIssuePath = (path: readonly PropertyKey[]): string => {
-  if (path.length === 0) return '(root)'
-  return path
-    .map((segment) =>
-      typeof segment === 'symbol'
-        ? (segment.description ?? 'symbol')
-        : String(segment),
-    )
-    .join('.')
-}
-
-const formatZodError = (error: ZodError): string => {
-  const issues = error.issues
-    .slice(0, 3)
-    .map((issue) => `${formatIssuePath(issue.path)}: ${issue.message}`)
-  if (issues.length === 0) return '参数格式不符合要求。'
-  return `参数校验失败：${issues.join('；')}`
-}
+const formatIssuePath = (path: readonly PropertyKey[]): string =>
+  path.length === 0
+    ? '(root)'
+    : path
+        .map((segment) =>
+          typeof segment === 'symbol'
+            ? (segment.description ?? 'symbol')
+            : String(segment),
+        )
+        .join('.')
 
 const invalidArgsIssue = (error: ZodError): ValidationIssue => ({
   error: INVALID_ACTION_ARGS,
-  hint: formatZodError(error),
+  hint:
+    error.issues.length === 0
+      ? '参数格式不符合要求。'
+      : `参数校验失败：${error.issues
+          .slice(0, 3)
+          .map((issue) => `${formatIssuePath(issue.path)}: ${issue.message}`)
+          .join('；')}`,
 })
+
+const validateWithSchema = (
+  item: Parsed,
+  schema: ZodSchema,
+): ValidationIssue[] => {
+  const parsed = schema.safeParse(item.attrs)
+  return parsed.success ? [] : [invalidArgsIssue(parsed.error)]
+}
 
 const validateCreateTask = (item: Parsed): ValidationIssue[] => {
   const parsed = createSchema.safeParse(item.attrs)
@@ -90,8 +99,7 @@ const validateCancelTask = (
   if (!parsed.success) return [invalidArgsIssue(parsed.error)]
 
   const { id } = parsed.data
-  const cronExists = context.enabledCronJobIds?.has(id) ?? false
-  if (cronExists) return []
+  if (context.enabledCronJobIds?.has(id)) return []
 
   const taskStatus = context.taskStatusById?.get(id)
   if (!taskStatus) {
@@ -102,6 +110,7 @@ const validateCancelTask = (
       },
     ]
   }
+
   if (taskStatus === 'pending' || taskStatus === 'running') return []
   if (taskStatus === 'canceled') {
     return [
@@ -111,6 +120,7 @@ const validateCancelTask = (
       },
     ]
   }
+
   return [
     {
       error: ACTION_EXECUTION_REJECTED,
@@ -119,40 +129,49 @@ const validateCancelTask = (
   ]
 }
 
-const validateSummarizeTaskResult = (item: Parsed): ValidationIssue[] => {
-  const parsed = summarizeSchema.safeParse(item.attrs)
-  if (!parsed.success) return [invalidArgsIssue(parsed.error)]
-  return []
-}
-
 const validateQueryHistory = (item: Parsed): ValidationIssue[] => {
   const parsed = queryHistorySchema.safeParse(item.attrs)
   if (!parsed.success) return [invalidArgsIssue(parsed.error)]
-
-  const from = parsed.data.from?.trim()
-  if (from && parseIsoMs(from) === undefined) {
-    return [
-      {
-        error: INVALID_ACTION_ARGS,
-        hint: '参数校验失败：from 必须是合法 ISO 8601 时间。',
-      },
-    ]
-  }
-  const to = parsed.data.to?.trim()
-  if (to && parseIsoMs(to) === undefined) {
-    return [
-      {
-        error: INVALID_ACTION_ARGS,
-        hint: '参数校验失败：to 必须是合法 ISO 8601 时间。',
-      },
-    ]
+  for (const [field, value] of [
+    ['from', parsed.data.from],
+    ['to', parsed.data.to],
+  ] as const) {
+    if (value?.trim() && parseIsoMs(value) === undefined) {
+      return [
+        {
+          error: INVALID_ACTION_ARGS,
+          hint: `参数校验失败：${field} 必须是合法 ISO 8601 时间。`,
+        },
+      ]
+    }
   }
   return []
 }
 
-const validateRestartServer = (item: Parsed): ValidationIssue[] => {
-  const parsed = restartSchema.safeParse(item.attrs)
-  if (!parsed.success) return [invalidArgsIssue(parsed.error)]
+const validateSyncFocuses = (
+  item: Parsed,
+  context: FeedbackContext,
+): ValidationIssue[] => {
+  const parsed = parseSyncFocusesPayload(item)
+  if (!parsed.ok) {
+    return [
+      {
+        error: INVALID_ACTION_ARGS,
+        hint: `参数校验失败：sync_focuses 内容不是合法 JSON。${parsed.error}`,
+      },
+    ]
+  }
+  if (
+    context.focusSlots !== undefined &&
+    parsed.payload.active.length > context.focusSlots
+  ) {
+    return [
+      {
+        error: ACTION_EXECUTION_REJECTED,
+        hint: `sync_focuses 执行失败：active 数量不能超过 worker 插槽上限 ${context.focusSlots}。`,
+      },
+    ]
+  }
   return []
 }
 
@@ -163,9 +182,11 @@ export const validateRegisteredManagerAction = (
   if (!REGISTERED_MANAGER_ACTIONS.has(item.name)) return []
   if (item.name === 'create_task') return validateCreateTask(item)
   if (item.name === 'cancel_task') return validateCancelTask(item, context)
-  if (item.name === 'summarize_task_result')
-    return validateSummarizeTaskResult(item)
   if (item.name === 'query_history') return validateQueryHistory(item)
-  if (item.name === 'restart_server') return validateRestartServer(item)
+  if (item.name === 'sync_focuses') return validateSyncFocuses(item, context)
+  if (item.name === 'summarize_task_result')
+    return validateWithSchema(item, summarizeSchema)
+  if (item.name === 'restart_server')
+    return validateWithSchema(item, restartSchema)
   return []
 }

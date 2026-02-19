@@ -14,6 +14,9 @@ export const hydrateRuntimeState = async (
   const snapshot = await loadRuntimeSnapshot(runtime.config.workDir)
   runtime.tasks = snapshot.tasks
   runtime.cronJobs = snapshot.cronJobs ?? []
+  runtime.focuses = snapshot.focuses ?? []
+  runtime.focusRollbackStack = []
+  runtime.managerTurn = snapshot.managerTurn ?? 0
   if (snapshot.plannerSessionId)
     runtime.plannerSessionId = snapshot.plannerSessionId
   else delete runtime.plannerSessionId
@@ -40,6 +43,8 @@ export const persistRuntimeState = async (
   await saveRuntimeSnapshot(runtime.config.workDir, {
     tasks: selectPersistedTasks(runtime.tasks),
     cronJobs: runtime.cronJobs,
+    focuses: runtime.focuses,
+    managerTurn: runtime.managerTurn,
     queues: runtime.queues,
     ...(runtime.plannerSessionId
       ? { plannerSessionId: runtime.plannerSessionId }

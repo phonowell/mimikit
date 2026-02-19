@@ -1,4 +1,3 @@
-import { safe } from '../log/safe.js'
 import { appendTaskSystemMessage } from '../orchestrator/read-model/task-history.js'
 import { loadPromptTemplate } from '../prompts/prompt-loader.js'
 import { nowIso } from '../shared/utils.js'
@@ -18,9 +17,9 @@ const summarizeResultOutput = (
   const summary = summaries?.get(result.taskId)?.trim()
   if (summary) return summary
   const compacted = result.output.replace(/\s+/g, ' ').trim()
-  const maxChars = 280
-  if (compacted.length <= maxChars) return compacted
-  return `${compacted.slice(0, maxChars - 1).trimEnd()}…`
+  return compacted.length <= 280
+    ? compacted
+    : `${compacted.slice(0, 279).trimEnd()}…`
 }
 
 export const appendManagerFallbackReply = async (
@@ -55,24 +54,21 @@ export const appendManagerErrorSystemMessage = async (
     createdAt: nowIso(),
   })
 }
-
-const compactActionFeedbackText = (value: string): string =>
-  value.replace(/\s+/g, ' ').trim()
-
 const formatActionFeedbackSystemText = (
   feedback: ManagerActionFeedback[],
 ): string => {
   const details = feedback
     .map((item, index) => {
-      const action = compactActionFeedbackText(item.action)
-      const error = compactActionFeedbackText(item.error)
-      const hint = compactActionFeedbackText(item.hint)
+      const action = item.action.replace(/\s+/g, ' ').trim()
+      const error = item.error.replace(/\s+/g, ' ').trim()
+      const hint = item.hint.replace(/\s+/g, ' ').trim()
       if (!action || !error || !hint) return null
       return `${index + 1}. action=${action} error=${error} hint=${hint}`
     })
     .filter((line): line is string => Boolean(line))
-  if (details.length === 0) return ''
-  return ['M:action_feedback', ...details].join('\n')
+  return details.length === 0
+    ? ''
+    : ['M:action_feedback', ...details].join('\n')
 }
 
 export const appendActionFeedbackSystemMessage = (
@@ -81,55 +77,34 @@ export const appendActionFeedbackSystemMessage = (
 ): Promise<boolean> => {
   const text = formatActionFeedbackSystemText(feedback)
   if (!text) return Promise.resolve(false)
-  return safe(
-    'appendHistory: manager_action_feedback',
-    async () => {
-      await appendHistory(historyPath, {
-        id: `sys-action-feedback-${Date.now()}`,
-        role: 'system',
-        text,
-        createdAt: nowIso(),
-      })
-      return true
-    },
-    {
-      fallback: false,
-      meta: {
-        count: feedback.length,
-        names: feedback.map((item) => item.action),
-        errors: feedback.map((item) => item.error),
-      },
-    },
-  )
+  return appendHistory(historyPath, {
+    id: `sys-action-feedback-${Date.now()}`,
+    role: 'system',
+    text,
+    createdAt: nowIso(),
+  }).then(() => true)
 }
 
 export const appendConsumedInputsToHistory = async (
   historyPath: string,
   inputs: UserInput[],
 ): Promise<number> => {
-  const existing = await readHistory(historyPath)
-  const existingIds = new Set(existing.map((item) => item.id))
+  const existingIds = new Set(
+    (await readHistory(historyPath)).map((item) => item.id),
+  )
   let consumed = 0
   for (const input of inputs) {
     if (existingIds.has(input.id)) {
       consumed += 1
       continue
     }
-    const appended = await safe(
-      'appendHistory: consumed_input',
-      async () => {
-        await appendHistory(historyPath, {
-          id: input.id,
-          role: 'user',
-          text: input.text,
-          createdAt: input.createdAt,
-          ...(input.quote ? { quote: input.quote } : {}),
-        })
-        return true
-      },
-      { fallback: false, meta: { inputId: input.id } },
-    )
-    if (!appended) break
+    await appendHistory(historyPath, {
+      id: input.id,
+      role: 'user',
+      text: input.text,
+      createdAt: input.createdAt,
+      ...(input.quote ? { quote: input.quote } : {}),
+    })
     existingIds.add(input.id)
     consumed += 1
   }
@@ -145,27 +120,24 @@ export const appendConsumedResultsToHistory = async (
   let consumed = 0
   for (const result of results) {
     const task = tasks.find((item) => item.id === result.taskId)
-    if (!task) {
+    if (!task || task.result) {
       consumed += 1
       continue
     }
-    if (task.result) {
-      consumed += 1
-      continue
-    }
-    let appended = false
-    if (result.status === 'canceled') {
-      const cancel = result.cancel ?? task.cancel
-      appended = await appendTaskSystemMessage(historyPath, 'canceled', task, {
-        createdAt: result.completedAt,
-        ...(cancel ? { cancel } : {}),
-      })
-    } else {
-      appended = await appendTaskSystemMessage(historyPath, 'completed', task, {
-        status: result.status,
-        createdAt: result.completedAt,
-      })
-    }
+
+    const appended =
+      result.status === 'canceled'
+        ? await appendTaskSystemMessage(historyPath, 'canceled', task, {
+            createdAt: result.completedAt,
+            ...((result.cancel ?? task.cancel)
+              ? { cancel: result.cancel ?? task.cancel }
+              : {}),
+          })
+        : await appendTaskSystemMessage(historyPath, 'completed', task, {
+            status: result.status,
+            createdAt: result.completedAt,
+          })
+
     if (!appended) break
     task.result = {
       ...result,

@@ -1,3 +1,4 @@
+import { getFocusSnapshot } from '../../focus/state.js'
 import { appendLog } from '../../log/append.js'
 import { newId, nowIso } from '../../shared/utils.js'
 import { readHistory } from '../../storage/history-jsonl.js'
@@ -105,6 +106,7 @@ export const getWebUiSnapshot = async (
   status: unknown
   messages: Awaited<ReturnType<typeof getChatMessages>>
   tasks: ReturnType<typeof getTasks>
+  focuses: ReturnType<typeof getFocusSnapshot>
   stream: RuntimeState['uiStream']
 }> => {
   const messages = await getChatMessages(runtime, messageLimit)
@@ -112,6 +114,7 @@ export const getWebUiSnapshot = async (
     status: getStatus(),
     messages,
     tasks: getTasks(runtime, taskLimit),
+    focuses: getFocusSnapshot(runtime),
     stream: runtime.uiStream ? { ...runtime.uiStream } : null,
   }
 }
