@@ -111,3 +111,10 @@ export type ManagerEnv = {
     clientNowIso?: string
   }
 }
+
+export type ManagerActionFeedback = {
+  action: string
+  error: string
+  hint: string
+  attempted?: string
+}

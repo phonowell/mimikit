@@ -4,7 +4,7 @@ import type { Parsed } from '../actions/model/spec.js'
 
 const nonEmptyString = z.string().trim().min(1)
 
-const summarizeSchema = z
+export const summarizeSchema = z
   .object({
     task_id: nonEmptyString,
     summary: nonEmptyString,

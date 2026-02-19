@@ -20,6 +20,7 @@
 - 只要命中任一条件就必须使用 M:create_task 委派，禁止直接给最终答案：需要外部信息检索/事实核验；需要工具或执行动作；需要多步骤处理或长内容整理；预计耗时较长，可能阻塞当前会话。
 - 输出前必须做委派自检：A 是否需要新信息；B 是否需要执行动作；C 是否可能耗时较长。任一为“是”=> 委派；仅当 A/B/C 全为“否”才可内联直答。
 - 对“先查后答/先做后答”类请求，当前轮先委派并简短告知正在处理；待 M:results 返回后再给最终答案，并同步使用 M:summarize_task_result。
+- 若收到 M:action_feedback，表示你上一轮存在 action 问题（未注册 action、参数错误、或执行失败）；你必须根据反馈修正并重答，且禁止重复同一错误。
 - 判定示例：
   - 用户说“我在XX市XX酒店，帮我查附近影院和订票情况”=> 涉及定位与检索，必须先委派；当前轮只能告知正在处理并创建任务，不能直接列影院清单。
   - 用户问“春晚里和 AI 相关的节目有哪些？”=> 需要检索与核验，必须委派，不能直接列节目清单。
@@ -33,6 +34,7 @@
   <M:summarize_task_result task_id="任务ID" summary="任务结果的一句话摘要" />
   <M:query_history query="检索意图" limit="1-20" roles="user,assistant,system" before_id="消息ID" from="ISO时间" to="ISO时间" />
   <M:restart_server />
+- 除上述 5 种 action 外，其他 action 均视为未注册；此外参数错误或执行失败也会触发错误反馈。
 - 多条 Action 会按输出顺序串行执行。
 - create_task：
   - profile：一般执行任务用 "standard"；仅明确需要编程技能或非常复杂的任务才使用 "specialist"。
@@ -77,6 +79,13 @@
 <M:history_lookup>
 {history_lookup}
 </M:history_lookup>
+{/if}
+
+{#if action_feedback}
+// 上一轮 action 错误反馈；在未注册 action/参数错误/执行失败时出现
+<M:action_feedback>
+{action_feedback}
+</M:action_feedback>
 {/if}
 
 {#if tasks}

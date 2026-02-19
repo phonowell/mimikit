@@ -3,6 +3,7 @@ import { appendLog } from '../log/append.js'
 import { selectRecentTasks } from '../orchestrator/read-model/task-select.js'
 import { readHistory } from '../storage/history-jsonl.js'
 
+import { collectManagerActionFeedback } from './action-feedback.js'
 import { pickQueryHistoryRequest, queryHistory } from './history-query.js'
 import {
   resetUiStream,
@@ -15,6 +16,7 @@ import { runManager } from './runner.js'
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type {
   HistoryLookupMessage,
+  ManagerActionFeedback,
   TaskResult,
   TokenUsage,
   UserInput,
@@ -53,9 +55,10 @@ export const runManagerBatch = async (params: {
 
   let streamRawOutput = ''
   let streamUsage: TokenUsage | undefined
-  const runOnce = async (
-    historyLookup?: HistoryLookupMessage[],
-  ): Promise<Awaited<ReturnType<typeof runManager>>> => {
+  const runOnce = async (params?: {
+    historyLookup?: HistoryLookupMessage[]
+    actionFeedback?: ManagerActionFeedback[]
+  }): Promise<Awaited<ReturnType<typeof runManager>>> => {
     const managerResult = await runManager({
       stateDir: runtime.config.workDir,
       workDir: runtime.config.workDir,
@@ -63,7 +66,10 @@ export const runManagerBatch = async (params: {
       results,
       tasks: recentTasks,
       cronJobs: runtime.cronJobs,
-      ...(historyLookup ? { historyLookup } : {}),
+      ...(params?.historyLookup ? { historyLookup: params.historyLookup } : {}),
+      ...(params?.actionFeedback
+        ? { actionFeedback: params.actionFeedback }
+        : {}),
       ...(runtime.lastUserMeta
         ? { env: { lastUser: runtime.lastUserMeta } }
         : {}),
@@ -100,8 +106,16 @@ export const runManagerBatch = async (params: {
 
   const first = await runOnce()
   const firstParsed = parseActions(first.output)
+  const actionFeedback = collectManagerActionFeedback(firstParsed.actions, {
+    taskStatusById: new Map(
+      runtime.tasks.map((task) => [task.id, task.status]),
+    ),
+    enabledCronJobIds: new Set(
+      runtime.cronJobs.filter((job) => job.enabled).map((job) => job.id),
+    ),
+  })
   const queryRequest = pickQueryHistoryRequest(firstParsed.actions)
-  if (!queryRequest) {
+  if (!queryRequest && actionFeedback.length === 0) {
     setUiStreamText(runtime, streamId, toVisibleAssistantText(first.output))
     const usage = streamUsage ?? first.usage
     return {
@@ -111,24 +125,38 @@ export const runManagerBatch = async (params: {
     }
   }
 
-  const history = await readHistory(runtime.paths.history)
-  const lookup = queryHistory(history, queryRequest)
-  await appendLog(runtime.paths.log, {
-    event: 'manager_query_history',
-    queryChars: queryRequest.query.length,
-    limit: queryRequest.limit,
-    roleCount: queryRequest.roles.length,
-    resultCount: lookup.length,
-    ...(queryRequest.beforeId ? { beforeId: queryRequest.beforeId } : {}),
-    ...(queryRequest.fromMs !== undefined
-      ? { fromMs: queryRequest.fromMs }
-      : {}),
-    ...(queryRequest.toMs !== undefined ? { toMs: queryRequest.toMs } : {}),
-  })
+  let lookup: HistoryLookupMessage[] | undefined
+  if (queryRequest) {
+    const history = await readHistory(runtime.paths.history)
+    lookup = queryHistory(history, queryRequest)
+    await appendLog(runtime.paths.log, {
+      event: 'manager_query_history',
+      queryChars: queryRequest.query.length,
+      limit: queryRequest.limit,
+      roleCount: queryRequest.roles.length,
+      resultCount: lookup.length,
+      ...(queryRequest.beforeId ? { beforeId: queryRequest.beforeId } : {}),
+      ...(queryRequest.fromMs !== undefined
+        ? { fromMs: queryRequest.fromMs }
+        : {}),
+      ...(queryRequest.toMs !== undefined ? { toMs: queryRequest.toMs } : {}),
+    })
+  }
+  if (actionFeedback.length > 0) {
+    await appendLog(runtime.paths.log, {
+      event: 'manager_action_feedback',
+      count: actionFeedback.length,
+      errors: actionFeedback.map((item) => item.error),
+      names: actionFeedback.map((item) => item.action),
+    })
+  }
 
   streamRawOutput = ''
   resetUiStream(runtime, streamId)
-  const second = await runOnce(lookup)
+  const second = await runOnce({
+    ...(lookup ? { historyLookup: lookup } : {}),
+    ...(actionFeedback.length > 0 ? { actionFeedback } : {}),
+  })
   const secondParsed = parseActions(second.output)
   setUiStreamText(runtime, streamId, toVisibleAssistantText(second.output))
   const usage = streamUsage ?? second.usage ?? first.usage

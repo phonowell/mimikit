@@ -5,6 +5,7 @@ import { readTaskResultsForTasks } from '../storage/task-results.js'
 
 import { escapeCdata } from './format-base.js'
 import {
+  formatActionFeedback,
   formatEnvironment,
   formatHistoryLookup,
   formatInputs,
@@ -23,6 +24,7 @@ import {
 import type {
   CronJob,
   HistoryLookupMessage,
+  ManagerActionFeedback,
   ManagerEnv,
   Task,
   TaskResult,
@@ -56,6 +58,7 @@ export const buildManagerPrompt = async (params: {
   tasks: Task[]
   cronJobs?: CronJob[]
   historyLookup?: HistoryLookupMessage[]
+  actionFeedback?: ManagerActionFeedback[]
   env?: ManagerEnv
 }): Promise<string> => {
   const pendingResults = mergeTaskResults(params.results, [])
@@ -104,6 +107,10 @@ export const buildManagerPrompt = async (params: {
     [
       'history_lookup',
       escapeCdata(formatHistoryLookup(params.historyLookup ?? [])),
+    ],
+    [
+      'action_feedback',
+      escapeCdata(formatActionFeedback(params.actionFeedback ?? [])),
     ],
     ['persona', escapeCdata(persona.trim())],
     ['user_profile', escapeCdata(userProfile.trim())],

@@ -150,6 +150,7 @@ export const formatEnvironment = (params?: PromptEnvironmentParams): string => {
 }
 
 export {
+  formatActionFeedback,
   formatDecesionsYaml,
   formatHistoryLookup,
   formatInputs,

@@ -4,7 +4,11 @@ import {
   stringifyPromptYaml,
 } from './format-base.js'
 
-import type { HistoryLookupMessage, UserInput } from '../types/index.js'
+import type {
+  HistoryLookupMessage,
+  ManagerActionFeedback,
+  UserInput,
+} from '../types/index.js'
 
 const sortByTimeAndIdDesc = <T extends { time: string; id: string }>(
   entries: T[],
@@ -91,6 +95,33 @@ export const formatDecesionsYaml = (decesions: string[]): string => {
   return escapeCdata(
     stringifyPromptYaml({
       decesions: entries,
+    }),
+  )
+}
+
+export const formatActionFeedback = (
+  feedback: ManagerActionFeedback[],
+): string => {
+  if (feedback.length === 0) return ''
+  const entries = feedback
+    .map((item) => {
+      const action = item.action.trim()
+      const error = item.error.trim()
+      const hint = item.hint.trim()
+      if (!action || !error || !hint) return null
+      const attempted = item.attempted?.trim()
+      return {
+        action,
+        error,
+        hint,
+        ...(attempted ? { attempted } : {}),
+      }
+    })
+    .filter((item): item is NonNullable<typeof item> => item !== null)
+  if (entries.length === 0) return ''
+  return escapeCdata(
+    stringifyPromptYaml({
+      items: entries,
     }),
   )
 }

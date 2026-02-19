@@ -42,6 +42,8 @@
 
 实现：`src/manager/action-apply.ts`、`src/manager/loop-batch-run-manager.ts`、`src/manager/history-query.ts`
 
+当 manager 输出未注册 action、action 参数不合法、或可判定的执行失败（如 `cancel_task` 目标不存在）时，系统会在下一次同批次重试中注入 `M:action_feedback`，显式告知错误并要求修正后重试。
+
 ### `query_history`
 
 - 入参：`query`、`limit?`、`roles?`、`before_id?`、`from?`、`to?`

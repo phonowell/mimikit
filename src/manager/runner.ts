@@ -15,6 +15,7 @@ import {
 import type {
   CronJob,
   HistoryLookupMessage,
+  ManagerActionFeedback,
   ManagerEnv,
   Task,
   TaskResult,
@@ -30,6 +31,7 @@ export const runManager = async (params: {
   tasks: Task[]
   cronJobs?: CronJob[]
   historyLookup?: HistoryLookupMessage[]
+  actionFeedback?: ManagerActionFeedback[]
   env?: ManagerEnv
   model?: string
   sessionId?: string
@@ -51,6 +53,7 @@ export const runManager = async (params: {
     tasks: params.tasks,
     ...(params.cronJobs ? { cronJobs: params.cronJobs } : {}),
     ...(params.historyLookup ? { historyLookup: params.historyLookup } : {}),
+    ...(params.actionFeedback ? { actionFeedback: params.actionFeedback } : {}),
     ...(params.env ? { env: params.env } : {}),
   })
   const model = params.model?.trim()

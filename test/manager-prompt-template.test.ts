@@ -9,6 +9,7 @@ const baseTemplateValues = {
   inputs: '',
   results: '',
   history_lookup: '',
+  action_feedback: '',
   tasks: '',
   persona: '',
   user_profile: '',
@@ -29,4 +30,15 @@ test('manager template renders persona and user_profile blocks independently', a
   })
   expect(userProfileOnly).not.toContain('<M:persona>')
   expect(userProfileOnly).toContain('<M:user_profile>')
+})
+
+test('manager template renders action_feedback block when provided', async () => {
+  const template = await loadSystemPrompt('manager')
+  const withActionFeedback = renderPromptTemplate(template, {
+    ...baseTemplateValues,
+    action_feedback:
+      'items:\n  - action: read\n    error: unregistered_action\n    hint: only registered actions are allowed',
+  })
+  expect(withActionFeedback).toContain('<M:action_feedback>')
+  expect(withActionFeedback).toContain('unregistered_action')
 })

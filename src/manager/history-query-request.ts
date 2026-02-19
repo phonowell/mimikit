@@ -18,7 +18,7 @@ export type QueryHistoryRequest = {
   toMs?: number
 }
 
-const queryHistorySchema = z
+export const queryHistorySchema = z
   .object({
     query: z.string().trim().min(1),
     limit: z.string().trim().optional(),
