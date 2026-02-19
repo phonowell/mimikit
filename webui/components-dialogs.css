@@ -94,12 +94,13 @@
 
 .task-link[data-archive-openable='true'] {
   border-radius: 10px;
-  transition: box-shadow 0.12s ease, transform 0.12s ease;
+  box-shadow: none;
+  transform: none;
 }
 
 .task-link[data-archive-openable='true']:active {
-  box-shadow: var(--shadow-inset-soft);
-  transform: translate(0.5px, 0.5px);
+  box-shadow: none;
+  transform: none;
 }
 
 .task-title-row {
