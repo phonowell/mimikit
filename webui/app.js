@@ -31,7 +31,7 @@ const elements = {
   tasksList: $('[data-tasks-list]'),
   focusesDialog: $('[data-focuses-dialog]'),
   focusesOpenBtn: $('[data-focuses-open]'),
-  focusesCountEl: $('[data-focuses-count]'),
+  focusesDotsEl: $('[data-focuses-dots]'),
   focusesCloseBtn: $('[data-focuses-close]'),
   focusesPanel: $('[data-focuses-panel]'),
   focusesList: $('[data-focuses-list]'),
@@ -122,7 +122,7 @@ const tasksPanel = bindTasksPanel({
 const focusPanel = bindFocusPanel({
   focusesDialog: elements.focusesDialog,
   focusesOpenBtn: elements.focusesOpenBtn,
-  focusesCountEl: elements.focusesCountEl,
+  focusesDotsEl: elements.focusesDotsEl,
   focusesCloseBtn: elements.focusesCloseBtn,
   panel: elements.focusesPanel,
   activeList: elements.focusesList,

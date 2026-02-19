@@ -29,7 +29,7 @@ const requestAction = async (url) => {
 export const bindFocusPanel = ({
   focusesDialog,
   focusesOpenBtn,
-  focusesCountEl,
+  focusesDotsEl,
   focusesCloseBtn,
   activeList,
   expiredList,
@@ -55,7 +55,7 @@ export const bindFocusPanel = ({
 
   const applyFocusSnapshot = (payload) => {
     latest = normalizePayload(payload)
-    syncActiveCountLabel(latest.active.length)
+    syncActiveCountIndicator(latest.limit, latest.active.length)
     render()
   }
 
@@ -76,17 +76,38 @@ export const bindFocusPanel = ({
     item.className = 'focus-empty'
     item.textContent = UI_TEXT.connectionLost
     activeList.appendChild(item)
-    syncActiveCountLabel(0)
+    syncActiveCountIndicator(0, 0)
   }
 
-  const syncActiveCountLabel = (activeCount) => {
-    const count = Number.isFinite(activeCount) ? Math.max(0, activeCount) : 0
-    if (focusesCountEl) {
-      focusesCountEl.textContent = String(count)
-      focusesCountEl.hidden = count === 0
+  const normalizeCount = (value) =>
+    typeof value === 'number' && Number.isFinite(value)
+      ? Math.max(0, Math.floor(value))
+      : 0
+
+  const syncActiveCountIndicator = (limitValue, activeValue) => {
+    const activeCount = normalizeCount(activeValue)
+    const limitCount = normalizeCount(limitValue)
+    const dotsCount = Math.max(limitCount, activeCount)
+    if (focusesDotsEl) {
+      if (dotsCount <= 0) focusesDotsEl.innerHTML = ''
+      else if (focusesDotsEl.childElementCount !== dotsCount) {
+        focusesDotsEl.innerHTML = ''
+        for (let index = 0; index < dotsCount; index += 1) {
+          const dot = document.createElement('span')
+          dot.className = 'worker-dot'
+          focusesDotsEl.appendChild(dot)
+        }
+      }
+      const activeDots = Math.min(activeCount, dotsCount)
+      const dots = focusesDotsEl.querySelectorAll('.worker-dot')
+      for (let index = 0; index < dots.length; index += 1) {
+        const dot = dots[index]
+        if (!(dot instanceof HTMLElement)) continue
+        dot.dataset.active = index < activeDots ? 'true' : 'false'
+      }
     }
     if (focusesOpenBtn) {
-      const label = count > 0 ? `Focuses (${count} active)` : 'Focuses'
+      const label = activeCount > 0 ? `Focuses (${activeCount} active)` : 'Focuses'
       focusesOpenBtn.setAttribute('title', label)
       focusesOpenBtn.setAttribute('aria-label', label)
     }
@@ -136,7 +157,7 @@ export const bindFocusPanel = ({
   }
 
   panel?.addEventListener('click', onClick)
-  syncActiveCountLabel(0)
+  syncActiveCountIndicator(0, 0)
   if (dialogEnabled && dialog) {
     dialog.setExpanded(false)
     focusesOpenBtn.addEventListener('click', onOpen)
