@@ -35,6 +35,7 @@ const FAVICON_COLOR_BY_STATE = {
   running: '#0ea5e9',
   disconnected: '#94a3b8',
 }
+const TITLE_MAX_CHARS = 52
 
 const resolveStatusState = () => {
   const state = elements.statusDot?.dataset.state?.trim()?.toLowerCase()
@@ -75,6 +76,34 @@ const syncFaviconWithStatus = () => {
   link.href = href
 }
 
+const normalizeTitleText = (value) => {
+  if (typeof value !== 'string') return ''
+  const compact = value.replace(/\s+/g, ' ').trim()
+  if (!compact) return ''
+  if (compact.length <= TITLE_MAX_CHARS) return compact
+  return `${compact.slice(0, TITLE_MAX_CHARS - 1).trimEnd()}…`
+}
+
+const resolveConversationFocus = () => {
+  if (!elements.messagesEl) return ''
+  const selectors = ['.message.user .content', '.message:not(.system) .content']
+  for (const selector of selectors) {
+    const nodes = elements.messagesEl.querySelectorAll(selector)
+    for (let index = nodes.length - 1; index >= 0; index -= 1) {
+      const node = nodes[index]
+      if (!(node instanceof HTMLElement)) continue
+      const text = normalizeTitleText(node.textContent ?? '')
+      if (text) return text
+    }
+  }
+  return ''
+}
+
+const syncTitleWithConversationFocus = () => {
+  const focus = resolveConversationFocus()
+  document.title = focus || UI_TEXT.conversationTitleFallback
+}
+
 const tasksPanel = bindTasksPanel({
   tasksList: elements.tasksList,
   tasksDialog: elements.tasksDialog,
@@ -98,32 +127,22 @@ const messages = createMessagesController({
   onDisconnected: () => tasksPanel?.setDisconnected?.(),
 })
 
-function syncTitleWithStatus() {
-  syncFaviconWithStatus()
-  if (!elements.statusText) return
-  const text = elements.statusText.textContent?.trim()
-  document.title =
-    text && text.length > 0
-      ? text
-      : UI_TEXT.statusTitleFallback
+syncFaviconWithStatus()
+syncTitleWithConversationFocus()
+if (elements.statusDot) {
+  const statusObserver = new MutationObserver(syncFaviconWithStatus)
+  statusObserver.observe(elements.statusDot, {
+    attributes: true,
+    attributeFilter: ['data-state'],
+  })
 }
-
-syncTitleWithStatus()
-if (elements.statusText || elements.statusDot) {
-  const observer = new MutationObserver(syncTitleWithStatus)
-  if (elements.statusText) {
-    observer.observe(elements.statusText, {
-      childList: true,
-      characterData: true,
-      subtree: true,
-    })
-  }
-  if (elements.statusDot) {
-    observer.observe(elements.statusDot, {
-      attributes: true,
-      attributeFilter: ['data-state'],
-    })
-  }
+if (elements.messagesEl) {
+  const messagesObserver = new MutationObserver(syncTitleWithConversationFocus)
+  messagesObserver.observe(elements.messagesEl, {
+    childList: true,
+    characterData: true,
+    subtree: true,
+  })
 }
 
 bindComposer({ form: elements.form, input: elements.input, messages })
