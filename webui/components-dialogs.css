@@ -135,6 +135,15 @@
 .task-more {
   flex-shrink: 0;
   margin-right: -2px;
+  --btn-bg: transparent;
+  --btn-color: var(--muted);
+  --btn-border: transparent;
+  --btn-hover-bg: var(--well-bg);
+  --btn-hover-color: var(--text);
+  --btn-hover-border: transparent;
+  --btn-shadow: none;
+  --btn-shadow-hover: none;
+  --btn-shadow-press: none;
 }
 
 .task-meta {
@@ -237,7 +246,7 @@
   min-width: 112px;
   padding: 4px;
   border-radius: 10px;
-  border: 1px solid var(--border);
+  border: 0;
   background: var(--panel);
   box-shadow: var(--shadow-raised);
   z-index: 3;
