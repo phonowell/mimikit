@@ -142,9 +142,9 @@ export const renderTasks = (tasksList, data) => {
     item.dataset.profile = profileValue
 
     const isCancelable = statusValue === 'pending' || statusValue === 'running'
-    const hasArchivePath =
-      typeof task.archivePath === 'string' && task.archivePath.trim().length > 0
-    const canOpenArchive = hasArchivePath && !isCancelable
+    const isTaskRecord = task.kind !== 'cron'
+    const canOpenArchive =
+      isTaskRecord && typeof task.id === 'string' && task.id.trim().length > 0
 
     const link = document.createElement(canOpenArchive ? 'a' : 'div')
     link.className = 'task-link'

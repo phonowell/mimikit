@@ -3,7 +3,11 @@ import { isAbsolute, relative, resolve } from 'node:path'
 import read from 'fire-keeper/read'
 
 import { logSafeError } from '../log/safe.js'
-import { readTaskProgress } from '../storage/task-progress.js'
+import { buildArchiveDocument } from '../storage/archive-format.js'
+import {
+  readTaskProgress,
+  type TaskProgressEvent,
+} from '../storage/task-progress.js'
 
 import { clearStateDir } from './helpers.js'
 
@@ -53,6 +57,82 @@ const resolveTask = (
   return { taskId, task }
 }
 
+const MARKDOWN_CONTENT_TYPE = 'text/markdown; charset=utf-8'
+
+const hasText = (value: unknown): value is string =>
+  typeof value === 'string' && value.trim().length > 0
+
+const formatProgressEvents = (events: TaskProgressEvent[]): string => {
+  if (events.length === 0) return ''
+  return events
+    .map((event) => {
+      const payloadKeys = Object.keys(event.payload)
+      const payloadText =
+        payloadKeys.length > 0 ? ` ${JSON.stringify(event.payload)}` : ''
+      return `- ${event.createdAt} · ${event.type}${payloadText}`
+    })
+    .join('\n')
+}
+
+const buildLiveArchiveResult = (
+  task: Task,
+  progressEvents: TaskProgressEvent[],
+): string => {
+  if (hasText(task.result?.output)) return task.result.output
+  const statusText =
+    task.status === 'pending'
+      ? 'Task is queued. Final archive is not available yet.'
+      : task.status === 'running'
+        ? 'Task is running. Final archive is not available yet.'
+        : 'Task archive file is missing. Showing live snapshot.'
+  const progressText = formatProgressEvents(progressEvents)
+  if (!progressText) return statusText
+  return `${statusText}\n\n=== PROGRESS ===\n${progressText}`
+}
+
+const buildLiveTaskArchive = (
+  task: Task,
+  progressEvents: TaskProgressEvent[],
+): string => {
+  const usage = task.result?.usage ?? task.usage
+  const cancel = task.result?.cancel ?? task.cancel
+  const resultStatus = task.result?.status ?? task.status
+  const resultDuration = task.result?.durationMs ?? task.durationMs
+  const promptText = hasText(task.prompt) ? task.prompt : '(empty prompt)'
+  return buildArchiveDocument(
+    [
+      ['task_id', task.id],
+      ['title', task.title],
+      ['status', resultStatus],
+      ['created_at', task.createdAt],
+      ['started_at', task.startedAt],
+      ['completed_at', task.result?.completedAt ?? task.completedAt],
+      ['duration_ms', resultDuration],
+      ['usage', usage ? JSON.stringify(usage) : undefined],
+      ['cancel_source', cancel?.source],
+      ['cancel_reason', cancel?.reason],
+    ],
+    [
+      { marker: '=== PROMPT ===', content: promptText },
+      {
+        marker: '=== RESULT ===',
+        content: buildLiveArchiveResult(task, progressEvents),
+      },
+    ],
+  )
+}
+
+const sendLiveArchive = async (
+  reply: FastifyReply,
+  task: Task,
+  taskId: string,
+  stateDir: string,
+): Promise<void> => {
+  const progressEvents = await readTaskProgress(stateDir, taskId)
+  const content = buildLiveTaskArchive(task, progressEvents)
+  reply.type(MARKDOWN_CONTENT_TYPE).send(content)
+}
+
 const scheduleExit = (
   orchestrator: Orchestrator,
   afterPersist?: () => Promise<void>,
@@ -77,7 +157,12 @@ export const registerTaskArchiveRoute = (
     const archivePath =
       resolved.task.archivePath ?? resolved.task.result?.archivePath
     if (!archivePath) {
-      reply.code(404).send({ error: 'task archive not found' })
+      await sendLiveArchive(
+        reply,
+        resolved.task,
+        resolved.taskId,
+        config.workDir,
+      )
       return
     }
     const resolvedWorkDir = resolve(config.workDir)
@@ -89,7 +174,12 @@ export const registerTaskArchiveRoute = (
     try {
       const raw = await read(resolvedArchivePath, { raw: true, echo: false })
       if (!raw) {
-        reply.code(404).send({ error: 'task archive not found' })
+        await sendLiveArchive(
+          reply,
+          resolved.task,
+          resolved.taskId,
+          config.workDir,
+        )
         return
       }
       const content =
@@ -98,10 +188,15 @@ export const registerTaskArchiveRoute = (
           : Buffer.isBuffer(raw)
             ? raw.toString('utf8')
             : ''
-      reply.type('text/markdown; charset=utf-8').send(content)
+      reply.type(MARKDOWN_CONTENT_TYPE).send(content)
     } catch (error) {
       if (readErrorCode(error) === 'ENOENT') {
-        reply.code(404).send({ error: 'task archive not found' })
+        await sendLiveArchive(
+          reply,
+          resolved.task,
+          resolved.taskId,
+          config.workDir,
+        )
         return
       }
       throw error

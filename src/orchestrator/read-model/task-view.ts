@@ -4,6 +4,7 @@ import type { CronJob, Task, TaskStatus } from '../../types/index.js'
 
 export type TaskView = {
   id: string
+  kind: 'task' | 'cron'
   status: TaskStatus
   profile: Task['profile']
   title: string
@@ -42,6 +43,7 @@ const cronJobToView = (cronJob: CronJob): TaskView => {
   const schedule = cronJob.cron ?? cronJob.scheduledAt ?? ''
   return {
     id: cronJob.id,
+    kind: 'cron',
     status: resolveCronJobStatus(cronJob),
     profile: cronJob.profile,
     title: cronJob.title || titleFromCandidates(cronJob.id, [cronJob.prompt]),
@@ -53,6 +55,7 @@ const cronJobToView = (cronJob: CronJob): TaskView => {
 
 const taskToView = (task: Task): TaskView => ({
   id: task.id,
+  kind: 'task',
   status: task.status,
   profile: task.profile,
   title: task.title || titleFromCandidates(task.id, [task.prompt]),

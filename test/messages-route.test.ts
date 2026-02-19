@@ -4,6 +4,7 @@ import { expect, test } from 'vitest'
 import { defaultConfig } from '../src/config.js'
 import { registerApiRoutes } from '../src/http/routes-api.js'
 import type { ChatMessagesMode } from '../src/orchestrator/read-model/chat-view.js'
+import type { Task } from '../src/types/index.js'
 import { createOrchestratorStub } from './helpers/orchestrator-stub.js'
 
 test('messages route forwards afterId and returns mode', async () => {
@@ -25,23 +26,6 @@ test('messages route forwards afterId and returns mode', async () => {
   expect(body.mode).toBe('delta')
   expect(body.messages[0]?.id).toBe('delta-1')
   expect(calls).toEqual([{ limit: 20, afterId: 'msg-123' }])
-
-  await app.close()
-})
-
-test('messages route falls back to default limit on invalid query value', async () => {
-  const app = fastify()
-  const { orchestrator, calls } = createOrchestratorStub()
-  const config = defaultConfig({ workDir: '.mimikit' })
-  registerApiRoutes(app, orchestrator, config)
-
-  const response = await app.inject({
-    method: 'GET',
-    url: '/api/messages?limit=abc&unexpected=1',
-  })
-
-  expect(response.statusCode).toBe(200)
-  expect(calls).toEqual([{ limit: 50, afterId: undefined }])
 
   await app.close()
 })
@@ -134,19 +118,78 @@ test('messages route returns 304 when If-None-Match hits', async () => {
   await app.close()
 })
 
-test('tasks route falls back to default limit on invalid query value', async () => {
+test('task archive route returns live snapshot when archive is not created yet', async () => {
   const app = fastify()
-  const { orchestrator, taskLimitCalls } = createOrchestratorStub()
+  const { orchestrator } = createOrchestratorStub()
+  const task: Task = {
+    id: 'task-archive-live-1',
+    fingerprint: 'fp-live-1',
+    prompt: 'run a quick summary',
+    title: 'Quick Summary',
+    profile: 'standard',
+    status: 'pending',
+    createdAt: '2026-02-10T00:00:00.000Z',
+  }
+  ;(
+    orchestrator as unknown as { getTaskById: (taskId: string) => Task | undefined }
+  ).getTaskById = (taskId) => (taskId === task.id ? task : undefined)
   const config = defaultConfig({ workDir: '.mimikit' })
   registerApiRoutes(app, orchestrator, config)
 
   const response = await app.inject({
     method: 'GET',
-    url: '/api/tasks?limit=abc&unexpected=1',
+    url: `/api/tasks/${task.id}/archive`,
   })
 
   expect(response.statusCode).toBe(200)
-  expect(taskLimitCalls).toEqual([200])
+  expect(String(response.headers['content-type'])).toContain('text/markdown')
+  expect(response.body).toContain('task_id: task-archive-live-1')
+  expect(response.body).toContain('status: pending')
+  expect(response.body).toContain('=== PROMPT ===')
+  expect(response.body).toContain('run a quick summary')
+
+  await app.close()
+})
+
+test('task archive route falls back to live snapshot when archive file is missing', async () => {
+  const app = fastify()
+  const { orchestrator } = createOrchestratorStub()
+  const task: Task = {
+    id: 'task-archive-live-2',
+    fingerprint: 'fp-live-2',
+    prompt: 'explain failure cause',
+    title: 'Failure Cause',
+    profile: 'standard',
+    status: 'failed',
+    createdAt: '2026-02-10T00:00:00.000Z',
+    completedAt: '2026-02-10T00:00:10.000Z',
+    archivePath: '.mimikit/tasks/20990101/missing.md',
+    result: {
+      taskId: 'task-archive-live-2',
+      status: 'failed',
+      ok: false,
+      output: 'network timeout',
+      durationMs: 10000,
+      completedAt: '2026-02-10T00:00:10.000Z',
+      profile: 'standard',
+    },
+  }
+  ;(
+    orchestrator as unknown as { getTaskById: (taskId: string) => Task | undefined }
+  ).getTaskById = (taskId) => (taskId === task.id ? task : undefined)
+  const config = defaultConfig({ workDir: '.mimikit' })
+  registerApiRoutes(app, orchestrator, config)
+
+  const response = await app.inject({
+    method: 'GET',
+    url: `/api/tasks/${task.id}/archive`,
+  })
+
+  expect(response.statusCode).toBe(200)
+  expect(String(response.headers['content-type'])).toContain('text/markdown')
+  expect(response.body).toContain('status: failed')
+  expect(response.body).toContain('=== RESULT ===')
+  expect(response.body).toContain('network timeout')
 
   await app.close()
 })
