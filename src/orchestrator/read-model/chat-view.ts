@@ -20,16 +20,21 @@ const tailWithLimit = (
   return messages.slice(Math.max(0, messages.length - limit))
 }
 
+const withTailAndMode = (
+  messages: ChatMessage[],
+  limit: number,
+  mode: ChatMessagesMode,
+): { messages: ChatMessage[]; mode: ChatMessagesMode } => ({
+  messages: tailWithLimit(messages, limit),
+  mode,
+})
+
 const mergeChatMessagesWithoutLimit = (params: {
   history: HistoryMessage[]
   inflightInputs: UserInput[]
 }): ChatMessage[] => {
-  const merged: ChatMessage[] = []
-  const seenIds = new Set<string>()
-  for (const message of params.history) {
-    merged.push(message)
-    seenIds.add(message.id)
-  }
+  const merged: ChatMessage[] = [...params.history]
+  const seenIds = new Set(merged.map((message) => message.id))
   for (const input of params.inflightInputs) {
     if (seenIds.has(input.id)) continue
     merged.push(toInflightChatMessage(input))
@@ -55,19 +60,9 @@ export const selectChatMessages = (params: {
 }): { messages: ChatMessage[]; mode: ChatMessagesMode } => {
   const merged = mergeChatMessagesWithoutLimit(params)
   const afterId = params.afterId?.trim()
-  if (!afterId) {
-    return {
-      messages: tailWithLimit(merged, params.limit),
-      mode: 'full',
-    }
-  }
+  if (!afterId) return withTailAndMode(merged, params.limit, 'full')
   const afterIndex = merged.findIndex((item) => item.id === afterId)
-  if (afterIndex < 0) {
-    return {
-      messages: tailWithLimit(merged, params.limit),
-      mode: 'reset',
-    }
-  }
+  if (afterIndex < 0) return withTailAndMode(merged, params.limit, 'reset')
   return {
     messages: merged.slice(afterIndex + 1),
     mode: 'delta',

@@ -60,6 +60,13 @@ export class Orchestrator {
     )
   }
 
+  private prepareStop = (): void => {
+    this.runtime.stopped = true
+    this.runtime.taskResultNotifier.stop()
+    notifyManagerLoop(this.runtime)
+    notifyWorkerLoop(this.runtime)
+  }
+
   constructor(config: AppConfig) {
     const paths = buildPaths(config.workDir)
     setDefaultLogPath(paths.log)
@@ -100,56 +107,42 @@ export class Orchestrator {
   }
 
   stop() {
-    this.runtime.stopped = true
-    this.runtime.taskResultNotifier.stop()
-    notifyManagerLoop(this.runtime)
-    notifyWorkerLoop(this.runtime)
+    this.prepareStop()
     void this.persistStopSnapshot()
   }
 
   async stopAndPersist(): Promise<void> {
-    this.runtime.stopped = true
-    this.runtime.taskResultNotifier.stop()
-    notifyManagerLoop(this.runtime)
-    notifyWorkerLoop(this.runtime)
+    this.prepareStop()
     await this.persistStopSnapshot()
   }
 
-  async addUserInput(
-    text: string,
-    meta?: UserMeta,
-    quote?: string,
-  ): Promise<string> {
-    const inputId = await addUserInput(this.runtime, text, meta, quote)
-    return inputId
+  addUserInput(text: string, meta?: UserMeta, quote?: string): Promise<string> {
+    return addUserInput(this.runtime, text, meta, quote)
   }
 
   getInflightInputs() {
     return getInflightInputs(this.runtime)
   }
 
-  async getChatHistory(limit = 50) {
-    const history = await getChatHistory(this.runtime, limit)
-    return history
+  getChatHistory(limit = 50) {
+    return getChatHistory(this.runtime, limit)
   }
 
-  async getChatMessages(limit = 50, afterId?: string) {
-    const messages = await getChatMessages(this.runtime, limit, afterId)
-    return messages
+  getChatMessages(limit = 50, afterId?: string) {
+    return getChatMessages(this.runtime, limit, afterId)
   }
 
   getTasks(limit = 200) {
     return getTasks(this.runtime, limit)
   }
 
-  async getWebUiSnapshot(messageLimit = 50, taskLimit = 200) {
-    const snapshot = await getWebUiSnapshot(
+  getWebUiSnapshot(messageLimit = 50, taskLimit = 200) {
+    return getWebUiSnapshot(
       this.runtime,
       () => this.getStatus(),
       messageLimit,
       taskLimit,
     )
-    return snapshot
   }
 
   waitForWebUiSignal(timeoutMs: number): Promise<void> {
@@ -166,7 +159,7 @@ export class Orchestrator {
     return cancelTask(this.runtime, taskId, meta)
   }
 
-  async addCronJob(input: {
+  addCronJob(input: {
     cron?: string
     scheduledAt?: string
     prompt: string
@@ -174,23 +167,21 @@ export class Orchestrator {
     profile?: WorkerProfile
     enabled?: boolean
   }): Promise<CronJob> {
-    const cronJob = await addCronJob(this.runtime, input)
-    return cronJob
+    return addCronJob(this.runtime, input)
   }
 
   getCronJobs(): CronJob[] {
     return getCronJobs(this.runtime)
   }
 
-  async cancelCronJob(cronJobId: string): Promise<boolean> {
-    const canceled = await cancelCronJob(this.runtime, cronJobId)
-    return canceled
+  cancelCronJob(cronJobId: string): Promise<boolean> {
+    return cancelCronJob(this.runtime, cronJobId)
   }
 
   getStatus(): OrchestratorStatus {
     return computeOrchestratorStatus(
       this.runtime,
-      this.getInflightInputs().length,
+      this.runtime.inflightInputs.length,
     )
   }
 

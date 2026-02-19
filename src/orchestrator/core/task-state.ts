@@ -54,6 +54,15 @@ const resolveFingerprintTitle = (prompt: string, title?: string): string => {
   return prompt
 }
 
+const taskToFingerprintInput = (
+  task: Pick<Task, 'prompt' | 'title' | 'profile' | 'cron'>,
+): TaskFingerprintInput => ({
+  prompt: task.prompt,
+  title: task.title,
+  profile: task.profile,
+  ...(task.cron ? { schedule: task.cron } : {}),
+})
+
 export const createTask = (
   prompt: string,
   title?: string,
@@ -95,12 +104,7 @@ export const enqueueTask = (
   const existing = tasks.find(
     (task) =>
       isActiveTask(task) &&
-      buildTaskFingerprint({
-        prompt: task.prompt,
-        title: task.title,
-        profile: task.profile,
-        ...(task.cron ? { schedule: task.cron } : {}),
-      }) === fingerprint,
+      buildTaskFingerprint(taskToFingerprintInput(task)) === fingerprint,
   )
   if (existing) return { task: existing, created: false }
   const task = createTask(prompt, title, profile, schedule)
@@ -115,12 +119,7 @@ export const findActiveTaskBySemanticKey = (
   tasks.find(
     (task) =>
       isActiveTask(task) &&
-      buildTaskSemanticKey({
-        prompt: task.prompt,
-        title: task.title,
-        profile: task.profile,
-        ...(task.cron ? { schedule: task.cron } : {}),
-      }) === semanticKey,
+      buildTaskSemanticKey(taskToFingerprintInput(task)) === semanticKey,
   )
 
 const updateTaskStatus = (
@@ -165,8 +164,11 @@ export const markTaskCanceled = (
 ): Task | null => {
   const task = tasks.find((item) => item.id === taskId)
   if (!task) return null
-  const nextPatch: Partial<Task> = { ...patch }
-  if (task.completedAt) nextPatch.completedAt = task.completedAt
-  if (task.durationMs !== undefined) nextPatch.durationMs = task.durationMs
-  return updateTaskStatus(tasks, taskId, 'canceled', nextPatch)
+  task.status = 'canceled'
+  Object.assign(task, {
+    ...patch,
+    ...(task.completedAt ? { completedAt: task.completedAt } : {}),
+    ...(task.durationMs !== undefined ? { durationMs: task.durationMs } : {}),
+  })
+  return task
 }

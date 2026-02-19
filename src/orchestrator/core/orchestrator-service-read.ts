@@ -15,6 +15,29 @@ import { waitForUiSignal } from './ui-signal.js'
 
 import type { RuntimeState, UserMeta } from './runtime-state.js'
 
+const USER_META_STRING_KEYS = [
+  'source',
+  'remote',
+  'userAgent',
+  'language',
+  'clientLocale',
+  'clientTimeZone',
+  'clientNowIso',
+] as const
+
+const toUserInputLogMeta = (meta?: UserMeta): Partial<UserMeta> => {
+  if (!meta) return {}
+  const output: Partial<UserMeta> = {}
+  for (const key of USER_META_STRING_KEYS) {
+    const value = meta[key]
+    if (value) output[key] = value
+  }
+  if (meta.clientOffsetMinutes !== undefined)
+    output.clientOffsetMinutes = meta.clientOffsetMinutes
+
+  return output
+}
+
 export const addUserInput = async (
   runtime: RuntimeState,
   text: string,
@@ -34,16 +57,7 @@ export const addUserInput = async (
     event: 'user_input',
     id,
     ...(quote ? { quote } : {}),
-    ...(meta?.source ? { source: meta.source } : {}),
-    ...(meta?.remote ? { remote: meta.remote } : {}),
-    ...(meta?.userAgent ? { userAgent: meta.userAgent } : {}),
-    ...(meta?.language ? { language: meta.language } : {}),
-    ...(meta?.clientLocale ? { clientLocale: meta.clientLocale } : {}),
-    ...(meta?.clientTimeZone ? { clientTimeZone: meta.clientTimeZone } : {}),
-    ...(meta?.clientOffsetMinutes !== undefined
-      ? { clientOffsetMinutes: meta.clientOffsetMinutes }
-      : {}),
-    ...(meta?.clientNowIso ? { clientNowIso: meta.clientNowIso } : {}),
+    ...toUserInputLogMeta(meta),
   })
   notifyManagerLoop(runtime)
   return id
@@ -93,25 +107,12 @@ export const getWebUiSnapshot = async (
   tasks: ReturnType<typeof getTasks>
   stream: RuntimeState['uiStream']
 }> => {
-  const [messages, tasks] = await Promise.all([
-    getChatMessages(runtime, messageLimit),
-    Promise.resolve(getTasks(runtime, taskLimit)),
-  ])
-  const stream = runtime.uiStream
+  const messages = await getChatMessages(runtime, messageLimit)
   return {
     status: getStatus(),
     messages,
-    tasks,
-    stream: stream
-      ? {
-          id: stream.id,
-          role: stream.role,
-          text: stream.text,
-          ...(stream.usage ? { usage: stream.usage } : {}),
-          createdAt: stream.createdAt,
-          updatedAt: stream.updatedAt,
-        }
-      : null,
+    tasks: getTasks(runtime, taskLimit),
+    stream: runtime.uiStream ? { ...runtime.uiStream } : null,
   }
 }
 
