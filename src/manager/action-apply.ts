@@ -98,7 +98,6 @@ export const applyTaskActions = async (
         workDir: runtime.config.workDir,
         sessionId,
         timeoutMs,
-        abortSignal: runtime.managerSignalController.signal,
       })
       continue
     }

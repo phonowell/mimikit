@@ -166,7 +166,6 @@ test('create_task allows .mimikit/generated path for worker profiles and infers 
     workDir: runtime.config.workDir,
     sessionId: 'planner-session-1',
     timeoutMs: Math.max(15_000, runtime.config.deferred.task.timeoutMs),
-    abortSignal: runtime.managerSignalController.signal,
   })
   spy.mockRestore()
 })
