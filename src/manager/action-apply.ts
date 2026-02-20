@@ -1,6 +1,8 @@
 import { bestEffort } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import { notifyWorkerLoop } from '../orchestrator/core/worker-signal.js'
+import { newId, nowIso } from '../shared/utils.js'
+import { appendHistory } from '../storage/history-jsonl.js'
 import { cancelTask } from '../worker/cancel-task.js'
 
 import {
@@ -29,6 +31,21 @@ const requestManagerRestart = (runtime: RuntimeState): void => {
   }, 100)
 }
 
+const appendCronCanceledSystemMessage = async (
+  runtime: RuntimeState,
+  cronJobId: string,
+  title: string,
+): Promise<void> => {
+  const label = title.trim() || cronJobId
+  await appendHistory(runtime.paths.history, {
+    id: `sys-cron-canceled-${newId()}`,
+    role: 'system',
+    visibility: 'user',
+    text: `Task canceled · ${label}`,
+    createdAt: nowIso(),
+  })
+}
+
 export { collectTaskResultSummaries }
 
 export const applyTaskActions = async (
@@ -53,6 +70,9 @@ export const applyTaskActions = async (
       cronJob.enabled = false
       cronJob.disabledReason = 'canceled'
       await persistRuntimeState(runtime)
+      await bestEffort('appendHistory: cron_task_canceled', () =>
+        appendCronCanceledSystemMessage(runtime, cronJob.id, cronJob.title),
+      )
       continue
     }
     if (item.name === 'restart_server') {
