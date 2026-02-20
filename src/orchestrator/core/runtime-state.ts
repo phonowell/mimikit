@@ -56,6 +56,7 @@ export type RuntimeState = {
   createTaskDebounce: Map<string, number>
   workerQueue: PQueue
   workerSignalController: AbortController
+  uiWakePending: boolean
   uiSignalController?: AbortController
   lastUserMeta?: UserMeta
   taskResultNotifier: TaskResultNotifier

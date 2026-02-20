@@ -67,6 +67,7 @@ export class Orchestrator {
       createTaskDebounce: new Map(),
       workerQueue: new PQueue({ concurrency: config.worker.maxConcurrent }),
       workerSignalController: new AbortController(),
+      uiWakePending: false,
       uiSignalController: new AbortController(),
       taskResultNotifier: createTaskResultNotifier(paths.log),
     }
