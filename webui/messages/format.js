@@ -19,73 +19,67 @@ export function formatDateTime(iso) {
 const asNumber = (value) =>
   typeof value === 'number' && Number.isFinite(value) ? value : null
 
-const COUNT_SUFFIXES = ['', 'k', 'M', 'B', 'T']
-
 const integerFormatter = new Intl.NumberFormat('en-US')
-
 const compactFormatter = new Intl.NumberFormat('en-US', {
+  notation: 'compact',
+  compactDisplay: 'short',
   maximumFractionDigits: 1,
 })
 
-const formatCount = (value) => {
+const formatIntegerCount = (value) => {
   if (value === null) return ''
-  const rounded = Math.round(value)
-  let scaled = rounded
-  let suffixIndex = 0
+  return integerFormatter.format(Math.round(value))
+}
 
-  while (Math.abs(scaled) >= 1000 && suffixIndex < COUNT_SUFFIXES.length - 1) {
-    scaled /= 1000
-    suffixIndex += 1
-  }
-
-  if (suffixIndex === 0) return integerFormatter.format(rounded)
-
-  let normalized = Math.round(scaled * 10) / 10
-  if (Math.abs(normalized) >= 1000 && suffixIndex < COUNT_SUFFIXES.length - 1) {
-    normalized /= 1000
-    suffixIndex += 1
-  }
-
-  return `${compactFormatter.format(normalized)}${COUNT_SUFFIXES[suffixIndex]}`
+const formatCompactCount = (value) => {
+  if (value === null) return ''
+  return compactFormatter.format(Math.round(value))
 }
 
 export const formatUsage = (usage) => {
-  if (!usage) return ''
+  if (!usage) return null
   const input = asNumber(usage.input)
   const output = asNumber(usage.output)
   const inputCacheRead = asNumber(usage.inputCacheRead)
   const inputCacheWrite = asNumber(usage.inputCacheWrite)
   const outputCache = asNumber(usage.outputCache)
+  const hasInputSide =
+    input !== null || inputCacheRead !== null || inputCacheWrite !== null
+  const hasOutputSide = output !== null || outputCache !== null
 
-  const formatInputSide = () => {
-    const cacheParts = []
-    if (inputCacheRead !== null && inputCacheRead > 0)
-      cacheParts.push(`r${formatCount(inputCacheRead)}`)
-    if (inputCacheWrite !== null && inputCacheWrite > 0)
-      cacheParts.push(`w${formatCount(inputCacheWrite)}`)
-    if (cacheParts.length > 0) {
-      const base = input === null ? 0 : input
-      return `${cacheParts.join('+')}+${formatCount(base)}`
-    }
-    if (input !== null) return formatCount(input)
-    return ''
-  }
+  if (!hasInputSide && !hasOutputSide) return null
 
-  const formatOutputSide = () => {
-    if (outputCache !== null && outputCache > 0) {
-      const base = output === null ? 0 : output
-      return `c${formatCount(outputCache)}+${formatCount(base)}`
-    }
-    if (output !== null) return formatCount(output)
-    return ''
-  }
+  const inputTotal = hasInputSide
+    ? Math.round(input ?? 0) +
+      Math.round(inputCacheRead ?? 0) +
+      Math.round(inputCacheWrite ?? 0)
+    : null
+  const outputTotal = hasOutputSide
+    ? Math.round(output ?? 0) + Math.round(outputCache ?? 0)
+    : null
 
-  const inputText = formatInputSide()
-  const outputText = formatOutputSide()
-  const parts = []
-  if (inputText) parts.push(`\u2191 ${inputText}`)
-  if (outputText) parts.push(`\u2193 ${outputText}`)
-  return parts.join(' \u00b7 ')
+  const textParts = []
+  if (inputTotal !== null) textParts.push(`\u2191 ${formatIntegerCount(inputTotal)}`)
+  if (outputTotal !== null) textParts.push(`\u2193 ${formatIntegerCount(outputTotal)}`)
+  const text = textParts.join(' \u00b7 ')
+  const title = [
+    ...(inputTotal !== null
+      ? [
+          `Input total tokens: ${formatCompactCount(inputTotal)}`,
+          `Input tokens: ${formatCompactCount(input ?? 0)}`,
+          `Input cache read tokens: ${formatCompactCount(inputCacheRead ?? 0)}`,
+          `Input cache write tokens: ${formatCompactCount(inputCacheWrite ?? 0)}`,
+        ]
+      : []),
+    ...(outputTotal !== null
+      ? [
+          `Output total tokens: ${formatCompactCount(outputTotal)}`,
+          `Output tokens: ${formatCompactCount(output ?? 0)}`,
+          `Output cache tokens: ${formatCompactCount(outputCache ?? 0)}`,
+        ]
+      : []),
+  ].join('\n')
+  return { text, title }
 }
 
 export const formatElapsedLabel = (elapsedMs) => {

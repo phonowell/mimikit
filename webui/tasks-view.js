@@ -200,13 +200,15 @@ export const renderTasks = (tasksList, data) => {
         ? task.durationMs
         : resolveDurationMs(startMs, completedAt)
 
-    const usageText = formatUsage(task.usage)
+    const usageDisplay = formatUsage(task.usage)
+    const usageText = usageDisplay?.text ?? ''
     const hasUsage = Boolean(usageText)
 
     if (usageText) {
       const tokensEl = document.createElement('span')
       tokensEl.className = 'task-tokens'
       tokensEl.textContent = usageText
+      if (usageDisplay?.title) tokensEl.title = usageDisplay.title
       meta.appendChild(tokensEl)
     }
 

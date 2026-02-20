@@ -61,7 +61,8 @@ export const renderMessage = (params, msg) => {
   
   article.appendChild(content)
 
-  const usageText = isAgentMessage(msg) ? formatUsage(msg.usage) : ''
+  const usageDisplay = isAgentMessage(msg) ? formatUsage(msg.usage) : null
+  const usageText = usageDisplay?.text ?? ''
   const elapsedText =
     isAgentMessage(msg) && !isStreamingMessage ? formatElapsedLabel(msg.elapsedMs) : ''
   const meta = document.createElement('small')
@@ -70,6 +71,7 @@ export const renderMessage = (params, msg) => {
     const usage = document.createElement('span')
     usage.className = 'usage'
     usage.textContent = usageText
+    if (usageDisplay?.title) usage.title = usageDisplay.title
     meta.appendChild(usage)
   }
   if (elapsedText) {
