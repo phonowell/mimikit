@@ -71,7 +71,6 @@ const pushCanceledResult = async (
     payload: result,
   })
   notifyManagerLoop(runtime)
-  await runtime.taskResultNotifier.notifyTaskResult(task, result)
   await bestEffort('appendLog: task_canceled', () =>
     appendLog(runtime.paths.log, {
       event: 'task_canceled',

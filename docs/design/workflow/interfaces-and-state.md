@@ -58,16 +58,6 @@ HTTP 路由共享约束：
 配置约束：
 - 不保留旧键兼容层；`deferred.*`、`worker.retryMaxAttempts`、`worker.retryBackoffMs`、`worker.standard`、`worker.specialist` 均为历史路径。
 
-## 桌面通知（Node）
-- 通知实现：`src/notify/node-notifier.ts`
-- 触发来源：`src/worker/result-finalize.ts` 与 `src/worker/cancel-task.ts`
-- 策略：
-  - `failed`/`canceled` 立即通知
-  - `succeeded` 仅 `specialist` 或耗时 `>=60s`
-  - `deferred` 成功不通知
-  - 成功通知 5 秒聚合窗口 + 1.5 秒最小间隔
-- 约束：不暴露配置项，运行时始终尝试发送；系统不支持时忽略错误，不影响主流程
-
 ## 状态目录
 默认目录：`./.mimikit/`
 

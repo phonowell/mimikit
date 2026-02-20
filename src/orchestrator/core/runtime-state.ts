@@ -1,6 +1,5 @@
 import type { AppConfig } from '../../config.js'
 import type { StatePaths } from '../../fs/paths.js'
-import type { TaskResultNotifier } from '../../notify/node-notifier.js'
 import type {
   CronJob,
   ISODate,
@@ -59,5 +58,4 @@ export type RuntimeState = {
   uiWakePending: boolean
   uiSignalController?: AbortController
   lastUserMeta?: UserMeta
-  taskResultNotifier: TaskResultNotifier
 }

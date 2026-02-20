@@ -6,7 +6,6 @@ import { bestEffort, setDefaultLogPath } from '../../log/safe.js'
 import { cronWakeLoop } from '../../manager/loop-cron.js'
 import { idleWakeLoop } from '../../manager/loop-idle.js'
 import { managerLoop } from '../../manager/loop.js'
-import { createTaskResultNotifier } from '../../notify/node-notifier.js'
 import { formatSystemEventText } from '../../shared/system-event.js'
 import { newId, nowIso } from '../../shared/utils.js'
 import { appendHistory } from '../../storage/history-jsonl.js'
@@ -70,7 +69,6 @@ export class Orchestrator {
       workerSignalController: new AbortController(),
       uiWakePending: false,
       uiSignalController: new AbortController(),
-      taskResultNotifier: createTaskResultNotifier(paths.log),
     }
   }
 
@@ -90,7 +88,6 @@ export class Orchestrator {
 
   private prepareStop(): void {
     this.runtime.stopped = true
-    this.runtime.taskResultNotifier.stop()
     notifyManagerLoop(this.runtime)
     notifyWorkerLoop(this.runtime)
   }
