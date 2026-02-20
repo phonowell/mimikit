@@ -76,7 +76,6 @@ export const applyRenderedState = (state, rendered, { loading, syncLoadingState 
   }
   if (rendered?.lastRole !== null && rendered?.lastRole !== undefined)
     state.lastMessageRole = rendered.lastRole
-  if (rendered?.lastIsAgent) state.awaitingReply = false
   syncLoadingState()
 }
 

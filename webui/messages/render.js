@@ -37,7 +37,7 @@ export const renderMessages = (params) => {
     loading,
   } = params
   if (!messagesEl || ((!messages || messages.length === 0) && !streamMessage))
-    return { latestAgentId: null, lastRole: null, lastIsAgent: false }
+    return { latestAgentId: null, lastRole: null }
   removeEmpty()
   const safeMessages = Array.isArray(messages) ? messages : []
   const latestAgent = findLatestAgentMessage(safeMessages)
@@ -80,7 +80,6 @@ export const renderMessages = (params) => {
   return {
     latestAgentId: latestAgent?.id ?? null,
     lastRole: last?.role ?? null,
-    lastIsAgent: last ? isAgentMessage(last) : false,
   }
 }
 
