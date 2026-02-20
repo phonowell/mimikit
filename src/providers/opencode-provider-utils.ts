@@ -8,6 +8,10 @@ type OpencodeTokens = {
   output?: unknown
   reasoning?: unknown
   total?: unknown
+  cache?: {
+    read?: unknown
+    write?: unknown
+  }
 }
 
 type OpencodeAgentMessage = {
@@ -133,6 +137,8 @@ const mapOpencodeUsageFromTokens = (
   const output = readNumber(tokens?.output)
   const reasoning = readNumber(tokens?.reasoning)
   const sessionTotal = readNumber(tokens?.total)
+  const cacheRead = readNumber(tokens?.cache?.read)
+  const cacheWrite = readNumber(tokens?.cache?.write)
   const totalFromParts =
     input !== undefined || output !== undefined || reasoning !== undefined
       ? (input ?? 0) + (output ?? 0) + (reasoning ?? 0)
@@ -142,11 +148,15 @@ const mapOpencodeUsageFromTokens = (
     (input === undefined &&
       output === undefined &&
       total === undefined &&
-      sessionTotal === undefined) ||
+      sessionTotal === undefined &&
+      cacheRead === undefined &&
+      cacheWrite === undefined) ||
     ((input ?? 0) === 0 &&
       (output ?? 0) === 0 &&
       (total ?? 0) === 0 &&
-      (sessionTotal ?? 0) === 0)
+      (sessionTotal ?? 0) === 0 &&
+      (cacheRead ?? 0) === 0 &&
+      (cacheWrite ?? 0) === 0)
   )
     return undefined
 
@@ -155,6 +165,8 @@ const mapOpencodeUsageFromTokens = (
     ...(output !== undefined ? { output } : {}),
     ...(total !== undefined ? { total } : {}),
     ...(sessionTotal !== undefined ? { sessionTotal } : {}),
+    ...(cacheRead !== undefined ? { cacheRead } : {}),
+    ...(cacheWrite !== undefined ? { cacheWrite } : {}),
   }
 }
 

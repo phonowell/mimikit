@@ -32,11 +32,21 @@ export const mergeUsageMonotonic = (
     asFiniteNumber(current?.sessionTotal),
     asFiniteNumber(next?.sessionTotal),
   )
+  const cacheRead = keepMonotonicUsageValue(
+    asFiniteNumber(current?.cacheRead),
+    asFiniteNumber(next?.cacheRead),
+  )
+  const cacheWrite = keepMonotonicUsageValue(
+    asFiniteNumber(current?.cacheWrite),
+    asFiniteNumber(next?.cacheWrite),
+  )
   if (
     input === undefined &&
     output === undefined &&
     total === undefined &&
-    sessionTotal === undefined
+    sessionTotal === undefined &&
+    cacheRead === undefined &&
+    cacheWrite === undefined
   )
     return undefined
   return {
@@ -44,6 +54,8 @@ export const mergeUsageMonotonic = (
     ...(output !== undefined ? { output } : {}),
     ...(total !== undefined ? { total } : {}),
     ...(sessionTotal !== undefined ? { sessionTotal } : {}),
+    ...(cacheRead !== undefined ? { cacheRead } : {}),
+    ...(cacheWrite !== undefined ? { cacheWrite } : {}),
   }
 }
 
@@ -54,4 +66,6 @@ export const isSameUsage = (
   left?.input === right?.input &&
   left?.output === right?.output &&
   left?.total === right?.total &&
-  left?.sessionTotal === right?.sessionTotal
+  left?.sessionTotal === right?.sessionTotal &&
+  left?.cacheRead === right?.cacheRead &&
+  left?.cacheWrite === right?.cacheWrite

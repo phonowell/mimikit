@@ -6,6 +6,8 @@ export type TokenUsage = {
   output?: number
   total?: number
   sessionTotal?: number
+  cacheRead?: number
+  cacheWrite?: number
 }
 
 export type Role = 'user' | 'agent' | 'system'
