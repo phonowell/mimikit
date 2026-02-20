@@ -140,9 +140,31 @@ test('task archive route returns live snapshot when archive is not created yet',
     status: 'pending',
     createdAt: '2026-02-10T00:00:00.000Z',
   }
+  const cronJob = {
+    id: 'cron-archive-live-1',
+    prompt: 'daily digest',
+    title: 'Daily Digest',
+    profile: 'deferred',
+    enabled: true,
+    createdAt: '2026-02-10T00:00:00.000Z',
+    cron: '0 9 * * *',
+  }
   ;(
     orchestrator as unknown as { getTaskById: (taskId: string) => Task | undefined }
   ).getTaskById = (taskId) => (taskId === task.id ? task : undefined)
+  ;(
+    orchestrator as unknown as {
+      getCronJobs: () => Array<{
+        id: string
+        prompt: string
+        title: string
+        profile: 'deferred'
+        enabled: boolean
+        createdAt: string
+        cron: string
+      }>
+    }
+  ).getCronJobs = () => [cronJob]
   const config = defaultConfig({ workDir: '.mimikit' })
   registerApiRoutes(app, orchestrator, config)
 
@@ -157,6 +179,17 @@ test('task archive route returns live snapshot when archive is not created yet',
   expect(response.body).toContain('status: pending')
   expect(response.body).toContain('=== PROMPT ===')
   expect(response.body).toContain('run a quick summary')
+
+  const cronResponse = await app.inject({
+    method: 'GET',
+    url: `/api/tasks/${cronJob.id}/archive`,
+  })
+  expect(cronResponse.statusCode).toBe(200)
+  expect(String(cronResponse.headers['content-type'])).toContain('text/markdown')
+  expect(cronResponse.body).toContain('task_id: cron-archive-live-1')
+  expect(cronResponse.body).toContain('kind: cron')
+  expect(cronResponse.body).toContain('status: pending')
+  expect(cronResponse.body).toContain('daily digest')
 
   await app.close()
 })
