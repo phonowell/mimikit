@@ -65,7 +65,7 @@ export const idleWakeLoop = async (runtime: RuntimeState): Promise<void> => {
       const triggeredAt = new Date(nowMs).toISOString()
       await publishManagerSystemEventInput({
         runtime,
-        summary: '[系统] 当前处于闲暇状态。',
+        summary: '当前处于闲暇状态。',
         event: 'idle',
         visibility: 'all',
         payload: {

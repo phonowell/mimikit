@@ -63,7 +63,7 @@ const publishCronTriggerSystemInput = async (params: {
   const label = params.title.trim() || params.cronJobId
   await publishManagerSystemEventInput({
     runtime: params.runtime,
-    summary: `[系统] 定时任务已触发：${label}`,
+    summary: `定时任务已触发：${label}`,
     event: 'cron_trigger',
     visibility: 'all',
     payload: toCronTriggerPayload(params),
