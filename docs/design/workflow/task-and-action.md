@@ -80,7 +80,10 @@
 ### `compress_context`
 
 - 入参：无
-- 行为：对当前 manager 会话执行一次 OpenCode `session.summarize`，压缩历史上下文并保留关键信息。
+- 行为：对当前 manager 会话执行 OpenCode `session.summarize`，压缩历史上下文并保留关键信息。
+- Provider 参数：`providerID/modelID` 由 `runtime.config.manager.model` 统一解析后传入，避免 SDK 参数缺失。
+- 重试：由 `src/providers/opencode-session.ts` 统一处理，最多 2 次（首轮 + 1 次重试）。
+- 失败处理：若 provider 连续失败，manager 追加一条 `M:action_feedback`（`action=compress_context`）并继续主流程，不中断整轮 manager。
 - 约束：仅当存在 `plannerSessionId` 时可执行；否则会返回 `system_event.name=action_feedback` 要求修正。
 
 ## Worker 输出规则

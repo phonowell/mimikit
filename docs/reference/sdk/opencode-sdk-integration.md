@@ -6,6 +6,13 @@
 
 - `@opencode-ai/sdk@1.2.0` 已安装
 - `src/providers/opencode-provider.ts` 集成中
+- `src/providers/opencode-session.ts` 已用于 manager `compress_context` 的 `session.summarize`
+
+### 当前实现约束（Mimikit）
+
+- 调用 `session.summarize` 时必须显式提供 `providerID/modelID`。
+- `providerID/modelID` 统一由 `runtime.config.manager.model` 解析，不在 manager 层分散拼装。
+- summarize 的重试策略统一收敛在 provider session 层（最多 2 次）。
 
 ### 未使用但可直接接入
 

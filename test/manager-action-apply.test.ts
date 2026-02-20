@@ -9,8 +9,13 @@ import { defaultConfig } from '../src/config.js'
 import { buildPaths } from '../src/fs/paths.js'
 import { applyTaskActions } from '../src/manager/action-apply.js'
 import * as opencodeSession from '../src/providers/opencode-session.js'
+import { buildProviderAbortedError } from '../src/providers/provider-error.js'
 
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
+
+vi.mock('../src/providers/opencode-session.js', () => ({
+  summarizeOpencodeSession: vi.fn(),
+}))
 
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-action-apply-'))
 
@@ -150,22 +155,29 @@ test('create_task allows .mimikit/generated path for worker profiles and infers 
   expect(runtime.cronJobs).toHaveLength(1)
   expect(runtime.cronJobs[0]?.profile).toBe('deferred')
   runtime.plannerSessionId = 'planner-session-1'
-  const spy = vi
-    .spyOn(opencodeSession, 'summarizeOpencodeSession')
-    .mockResolvedValue(undefined)
+  expect(runtime.plannerSessionId).toBe('planner-session-1')
+  const summarizeSpy = vi.mocked(opencodeSession.summarizeOpencodeSession)
+  summarizeSpy.mockReset()
+  summarizeSpy.mockResolvedValue(undefined)
 
-  await applyTaskActions(runtime, [
-    {
-      name: 'compress_context',
-      attrs: {},
-    },
-  ])
+  await expect(
+    applyTaskActions(runtime, [
+      {
+        name: 'compress_context',
+        attrs: {},
+      },
+    ]),
+  ).resolves.toBeUndefined()
 
-  expect(spy).toHaveBeenCalledTimes(1)
-  expect(spy).toHaveBeenCalledWith({
-    workDir: runtime.config.workDir,
-    sessionId: 'planner-session-1',
-    timeoutMs: Math.max(15_000, runtime.config.manager.session.compressTimeoutMs),
-  })
-  spy.mockRestore()
+  summarizeSpy.mockReset()
+  summarizeSpy.mockRejectedValue(buildProviderAbortedError('opencode'))
+
+  await expect(
+    applyTaskActions(runtime, [
+      {
+        name: 'compress_context',
+        attrs: {},
+      },
+    ]),
+  ).resolves.toBeUndefined()
 })

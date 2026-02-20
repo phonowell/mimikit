@@ -17,6 +17,7 @@ import {
   compressSchema,
   restartSchema,
 } from './action-apply-schema.js'
+import { appendActionFeedbackSystemMessage } from './history.js'
 
 import type { Parsed } from '../actions/model/spec.js'
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
@@ -104,11 +105,34 @@ export const applyTaskActions = async (
         COMPRESS_CONTEXT_TIMEOUT_FLOOR_MS,
         runtime.config.manager.session.compressTimeoutMs,
       )
-      await summarizeOpencodeSession({
-        workDir: runtime.config.workDir,
-        sessionId,
-        timeoutMs,
-      })
+      try {
+        await summarizeOpencodeSession({
+          workDir: runtime.config.workDir,
+          sessionId,
+          timeoutMs,
+          model: runtime.config.manager.model,
+        })
+        continue
+      } catch (error) {
+        const errorDetail = (
+          error instanceof Error ? error.message : String(error)
+        )
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 180)
+        await bestEffort(
+          'appendHistory: compress_context_action_feedback',
+          () =>
+            appendActionFeedbackSystemMessage(runtime.paths.history, [
+              {
+                action: 'compress_context',
+                error: 'action_execution_rejected',
+                hint: `compress_context 执行失败：${errorDetail || 'unknown_error'}`,
+                attempted: '<M:compress_context />',
+              },
+            ]),
+        )
+      }
       continue
     }
   }
