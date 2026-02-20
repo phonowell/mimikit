@@ -22,7 +22,7 @@ import {
   mapOpencodeUsage,
   resolveOpencodeModelRef,
 } from './opencode-provider-utils.js'
-import { ProviderError, readProviderErrorCode } from './provider-error.js'
+import { ProviderError } from './provider-error.js'
 import {
   bindExternalAbort,
   buildProviderResult,
@@ -36,17 +36,10 @@ import type {
   ProviderResult,
 } from './types.js'
 const RETRY_MAX_ATTEMPTS = 3
-const MANAGER_TIMEOUT_RETRY_MAX_ATTEMPTS = 2
+const MANAGER_RETRY_MAX_ATTEMPTS = 2
 
-const isProviderTimeoutError = (error: unknown): boolean =>
-  readProviderErrorCode(error) === 'provider_timeout'
-
-const resolveRetryMaxAttempts = (
-  request: OpencodeProviderRequest,
-  error: unknown,
-): number => {
-  if (request.role === 'manager' && isProviderTimeoutError(error))
-    return MANAGER_TIMEOUT_RETRY_MAX_ATTEMPTS
+const resolveRetryMaxAttempts = (request: OpencodeProviderRequest): number => {
+  if (request.role === 'manager') return MANAGER_RETRY_MAX_ATTEMPTS
   return RETRY_MAX_ATTEMPTS
 }
 
@@ -58,11 +51,11 @@ const shouldRetryRequest = (params: {
   const { request, error, attemptNumber } = params
   if (error instanceof ProviderError) {
     if (!error.retryable) return false
-    return attemptNumber < resolveRetryMaxAttempts(request, error)
+    return attemptNumber < resolveRetryMaxAttempts(request)
   }
   if (isAbortLikeError(error)) return false
   if (!isTransientProviderError(error)) return false
-  return attemptNumber < resolveRetryMaxAttempts(request, error)
+  return attemptNumber < resolveRetryMaxAttempts(request)
 }
 
 const runOpencodeOnce = async (
@@ -196,7 +189,7 @@ const runOpencodeWithRetry = (
         attemptNumber: attempt.attemptNumber,
       })
       if (!shouldRetry || attempt.retriesLeft <= 0) return
-      const retryMaxAttempts = resolveRetryMaxAttempts(request, attempt.error)
+      const retryMaxAttempts = resolveRetryMaxAttempts(request)
       const message =
         attempt.error instanceof Error
           ? attempt.error.message
