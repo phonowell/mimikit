@@ -33,7 +33,7 @@ const formatIntegerCount = (value) => {
 
 const formatCompactCount = (value) => {
   if (value === null) return ''
-  return compactFormatter.format(Math.round(value))
+  return compactFormatter.format(Math.round(value)).replace(/K$/u, 'k')
 }
 
 export const formatUsage = (usage) => {
@@ -59,8 +59,8 @@ export const formatUsage = (usage) => {
     : null
 
   const textParts = []
-  if (inputTotal !== null) textParts.push(`\u2191 ${formatIntegerCount(inputTotal)}`)
-  if (outputTotal !== null) textParts.push(`\u2193 ${formatIntegerCount(outputTotal)}`)
+  if (inputTotal !== null) textParts.push(`\u2191 ${formatCompactCount(inputTotal)}`)
+  if (outputTotal !== null) textParts.push(`\u2193 ${formatCompactCount(outputTotal)}`)
   const text = textParts.join(' \u00b7 ')
   const title = [
     ...(inputTotal !== null
