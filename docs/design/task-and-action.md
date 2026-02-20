@@ -90,7 +90,8 @@
 
 ### UserInput
 
-- 字段：`id`、`text`、`createdAt`、`quote?`
+- `role=user`：字段为 `id`、`role`、`text`、`createdAt`、`quote?`（不含 `visibility`）。
+- `role=system`：字段为 `id`、`role`、`visibility(user|agent|all)`、`text`、`createdAt`、`quote?`。
 - 写入：`inputs/packets.jsonl`
 
 ### Task
@@ -107,9 +108,21 @@
 
 ### HistoryMessage
 
-- 字段：`id`、`role(user|assistant|system)`、`text`、`createdAt`
+- `role=user|agent`：字段为 `id`、`role`、`text`、`createdAt`（不含 `visibility`）。
+- `role=system`：字段为 `id`、`role`、`visibility(user|agent|all)`、`text`、`createdAt`。
 - 可选：`usage`、`elapsedMs`、`quote`
 - 写入：`history/YYYY-MM-DD.jsonl`
+
+### System 会话消息清单
+
+| 消息 | 来源 | 可见性 | 说明 |
+| --- | --- | --- | --- |
+| `startup_system_message` | `src/orchestrator/core/orchestrator-service.ts` | `visibility=user` | 服务启动提示。 |
+| `task_system_message(created|completed|canceled)` | `src/orchestrator/read-model/task-history.ts` | `visibility=user` | 任务状态提示。 |
+| `manager_fallback_reply` | `src/manager/history.ts` | `visibility=user` | manager 异常兜底回复。 |
+| `manager_error_system_message` | `src/manager/history.ts` | `visibility=all` | manager 内部错误反馈。 |
+| `action_feedback_system_message` (`M:action_feedback`) | `src/manager/history.ts` | `visibility=all` | action 校验错误反馈，下一轮 manager 消费。 |
+| `cron_trigger_system_input` (`M:cron_trigger`) | `src/manager/loop-cron.ts` | `visibility=all` | cron 到期事件，交由 manager 消费决策。 |
 
 ### Queue Packet
 

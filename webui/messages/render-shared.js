@@ -1,7 +1,7 @@
 import { UI_TEXT } from '../system-text.js'
 import { formatQuotePreview, formatRoleLabel, normalizeRole } from './quote-utils.js'
 
-export const isAgentMessage = (msg) => msg?.role === 'assistant'
+export const isAgentMessage = (msg) => msg?.role === 'agent'
 
 export const collectAckedUserMessageIds = (messages) => {
   const acked = new Set()

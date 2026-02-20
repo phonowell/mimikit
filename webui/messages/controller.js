@@ -54,8 +54,8 @@ const parseSnapshot = (raw) => {
 
 const normalizeStreamMessage = (raw) => {
   if (!isRecord(raw)) return null
-  const role = typeof raw.role === 'string' ? raw.role : 'assistant'
-  if (role !== 'assistant') return null
+  const role = typeof raw.role === 'string' ? raw.role : 'agent'
+  if (role !== 'agent') return null
   const id = typeof raw.id === 'string' ? raw.id.trim() : ''
   const text = typeof raw.text === 'string' ? raw.text : ''
   const usage = normalizeUsage(raw.usage)
@@ -68,7 +68,7 @@ const normalizeStreamMessage = (raw) => {
         : new Date().toISOString()
   return {
     id: `stream-${id}`,
-    role: 'assistant',
+    role: 'agent',
     text,
     ...(usage ? { usage } : {}),
     createdAt,

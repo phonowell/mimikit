@@ -1,7 +1,7 @@
 import { UI_TEXT } from '../system-text.js'
 
 export const normalizeRole = (role) => {
-  if (role === 'assistant') return 'agent'
+  if (role === 'agent') return 'agent'
   if (role === 'user') return 'user'
   if (role === 'system') return 'system'
   return 'unknown'

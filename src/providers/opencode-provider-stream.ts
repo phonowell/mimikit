@@ -1,6 +1,6 @@
 import { isAbortLikeError } from './opencode-provider-bootstrap.js'
 import {
-  mapOpencodeAssistantMessageIdFromEvent,
+  mapOpencodeAgentMessageIdFromEvent,
   mapOpencodeTextDeltaFromEvent,
   mapOpencodeTextPartStateFromEvent,
   mapOpencodeUsageFromEvent,
@@ -123,7 +123,7 @@ export const startUsageStreamMonitor = (params: {
       )
       for await (const event of eventStream.stream) {
         const now = Date.now()
-        const messageID = mapOpencodeAssistantMessageIdFromEvent(
+        const messageID = mapOpencodeAgentMessageIdFromEvent(
           event,
           params.sessionID,
           params.minCreatedAt,

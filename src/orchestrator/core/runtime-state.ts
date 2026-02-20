@@ -25,7 +25,7 @@ export type UserMeta = {
 
 export type UiAgentStream = {
   id: string
-  role: 'assistant'
+  role: 'agent'
   text: string
   usage?: TokenUsage
   createdAt: ISODate

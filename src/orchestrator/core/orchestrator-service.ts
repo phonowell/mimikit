@@ -96,6 +96,7 @@ export class Orchestrator {
       appendHistory(this.runtime.paths.history, {
         id: `sys-startup-${newId()}`,
         role: 'system',
+        visibility: 'user',
         text: 'Started',
         createdAt: nowIso(),
       }),

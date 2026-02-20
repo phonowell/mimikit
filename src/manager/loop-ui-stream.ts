@@ -18,7 +18,7 @@ export const startUiStream = (
   const stamp = nowIso()
   runtime.uiStream = {
     id: streamId,
-    role: 'assistant',
+    role: 'agent',
     text: '',
     createdAt: stamp,
     updatedAt: stamp,
@@ -70,7 +70,7 @@ export const stopUiStream = (runtime: RuntimeState, streamId: string): void => {
   runtime.uiStream = null
 }
 
-export const toVisibleAssistantText = (rawOutput: string): string => {
+export const toVisibleAgentText = (rawOutput: string): string => {
   if (!rawOutput) return ''
   return parseActions(rawOutput).text
 }

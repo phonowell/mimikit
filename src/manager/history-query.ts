@@ -1,5 +1,6 @@
 import { createRequire } from 'node:module'
 
+import { isVisibleToAgent } from '../shared/message-visibility.js'
 import { computeRecencyWeight, parseIsoMs } from '../shared/time.js'
 
 import type { QueryHistoryRequest } from './history-query-request.js'
@@ -62,6 +63,7 @@ const collectDocs = (
   const allowed = new Set(request.roles)
   const docs: QueryDoc[] = []
   for (const item of source) {
+    if (!isVisibleToAgent(item)) continue
     if (!allowed.has(item.role)) continue
     const parsedTime = parseIsoMs(item.createdAt)
     if (request.fromMs !== undefined || request.toMs !== undefined) {

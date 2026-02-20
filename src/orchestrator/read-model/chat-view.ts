@@ -1,16 +1,30 @@
+import { isVisibleToUser } from '../../shared/message-visibility.js'
+
 import type { HistoryMessage, UserInput } from '../../types/index.js'
 
 export type ChatMessage = HistoryMessage
 
 export type ChatMessagesMode = 'full' | 'delta' | 'reset'
 
-const toInflightChatMessage = (input: UserInput): ChatMessage => ({
-  id: input.id,
-  role: 'user',
-  text: input.text,
-  createdAt: input.createdAt,
-  ...(input.quote ? { quote: input.quote } : {}),
-})
+const toInflightChatMessage = (input: UserInput): ChatMessage => {
+  if (input.role === 'system') {
+    return {
+      id: input.id,
+      role: input.role,
+      visibility: input.visibility,
+      text: input.text,
+      createdAt: input.createdAt,
+      ...(input.quote ? { quote: input.quote } : {}),
+    }
+  }
+  return {
+    id: input.id,
+    role: input.role,
+    text: input.text,
+    createdAt: input.createdAt,
+    ...(input.quote ? { quote: input.quote } : {}),
+  }
+}
 
 const tailWithLimit = (
   messages: ChatMessage[],
@@ -33,9 +47,12 @@ const mergeChatMessagesWithoutLimit = (params: {
   history: HistoryMessage[]
   inflightInputs: UserInput[]
 }): ChatMessage[] => {
-  const merged: ChatMessage[] = [...params.history]
+  const merged: ChatMessage[] = params.history.filter((message) =>
+    isVisibleToUser(message),
+  )
   const seenIds = new Set(merged.map((message) => message.id))
   for (const input of params.inflightInputs) {
+    if (!isVisibleToUser(input)) continue
     if (seenIds.has(input.id)) continue
     merged.push(toInflightChatMessage(input))
     seenIds.add(input.id)

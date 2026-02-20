@@ -1,7 +1,22 @@
 import { readNonEmptyString } from '../shared/input-parsing.js'
 
 import type { TokenUsage } from '../types/index.js'
-import type { AssistantMessage, Event, Part } from '@opencode-ai/sdk/v2'
+import type { Event, Part } from '@opencode-ai/sdk/v2'
+
+type OpencodeAgentMessage = {
+  id: string
+  role: 'agent'
+  sessionID: string
+  time: {
+    created: unknown
+  }
+  tokens?: {
+    input?: unknown
+    output?: unknown
+    reasoning?: unknown
+    total?: unknown
+  }
+}
 
 const readNumber = (value: unknown): number | undefined => {
   if (typeof value === 'number' && Number.isFinite(value)) return value
@@ -19,14 +34,34 @@ const normalizeEpochMs = (value: unknown): number | undefined => {
   return numeric >= 100_000_000_000 ? numeric : numeric * 1000
 }
 
-const readAssistantMessageFromEvent = (
+const readAgentMessageFromEvent = (
   event: Event | undefined,
   sessionID?: string,
   minCreatedAt?: number,
-): AssistantMessage | undefined => {
+): OpencodeAgentMessage | undefined => {
   if (event?.type !== 'message.updated') return undefined
-  const { info } = event.properties
-  if (info.role !== 'assistant') return undefined
+  const info = (event.properties as { info?: unknown }).info as
+    | {
+        id?: unknown
+        role?: unknown
+        sessionID?: unknown
+        time?: { created?: unknown }
+        tokens?: {
+          input?: unknown
+          output?: unknown
+          reasoning?: unknown
+          total?: unknown
+        }
+      }
+    | undefined
+  if (!info) return undefined
+  if (typeof info.role !== 'string') return undefined
+  if (info.role === 'user' || info.role === 'system' || info.role === 'tool')
+    return undefined
+  if (typeof info.id !== 'string' || !info.id.trim()) return undefined
+  if (typeof info.sessionID !== 'string' || !info.sessionID.trim())
+    return undefined
+  if (!info.time || !('created' in info.time)) return undefined
   if (sessionID && info.sessionID !== sessionID) return undefined
   if (minCreatedAt !== undefined && Number.isFinite(minCreatedAt)) {
     const createdAtMs = normalizeEpochMs(info.time.created)
@@ -38,7 +73,13 @@ const readAssistantMessageFromEvent = (
     )
       return undefined
   }
-  return info
+  return {
+    id: info.id,
+    role: 'agent',
+    sessionID: info.sessionID,
+    time: { created: info.time.created },
+    ...(info.tokens ? { tokens: info.tokens } : {}),
+  }
 }
 
 type OpencodeModelRef = {
@@ -87,7 +128,16 @@ export const extractOpencodeOutput = (parts: Part[]): string =>
     .trim()
 
 export const mapOpencodeUsage = (
-  message: AssistantMessage | undefined,
+  message:
+    | {
+        tokens?: {
+          input?: unknown
+          output?: unknown
+          reasoning?: unknown
+          total?: unknown
+        }
+      }
+    | undefined,
 ): TokenUsage | undefined => {
   const tokens = message?.tokens
   return mapOpencodeUsageFromTokens(tokens)
@@ -129,7 +179,7 @@ export const mapOpencodeUsageFromEvent = (
   sessionID?: string,
   minCreatedAt?: number,
 ): TokenUsage | undefined => {
-  const message = readAssistantMessageFromEvent(event, sessionID, minCreatedAt)
+  const message = readAgentMessageFromEvent(event, sessionID, minCreatedAt)
   if (message) return mapOpencodeUsage(message)
   if (event?.type !== 'message.part.updated') return undefined
   const { part } = event.properties
@@ -138,12 +188,12 @@ export const mapOpencodeUsageFromEvent = (
   return mapOpencodeUsageFromTokens(part.tokens)
 }
 
-export const mapOpencodeAssistantMessageIdFromEvent = (
+export const mapOpencodeAgentMessageIdFromEvent = (
   event: Event | undefined,
   sessionID?: string,
   minCreatedAt?: number,
 ): string | undefined =>
-  readAssistantMessageFromEvent(event, sessionID, minCreatedAt)?.id
+  readAgentMessageFromEvent(event, sessionID, minCreatedAt)?.id
 
 export const mapOpencodeTextDeltaFromEvent = (
   event: Event | undefined,

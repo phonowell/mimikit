@@ -185,7 +185,7 @@ interface Session {
 interface Message {
   id: string;
   sessionId: string;
-  role: "user" | "assistant" | "system" | "tool";
+  role: "user" | "agent" | "system" | "tool";
   content: string;
   parts: Part[];
   createdAt: string;

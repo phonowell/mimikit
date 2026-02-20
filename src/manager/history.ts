@@ -33,6 +33,7 @@ export const appendManagerFallbackReply = async (
   await appendHistory(paths.history, {
     id: `sys-${Date.now()}`,
     role: 'system',
+    visibility: 'user',
     text: fallback,
     createdAt: nowIso(),
   })
@@ -50,6 +51,7 @@ export const appendManagerErrorSystemMessage = async (
   await appendHistory(paths.history, {
     id: `sys-manager-error-${Date.now()}`,
     role: 'system',
+    visibility: 'all',
     text,
     createdAt: nowIso(),
   })
@@ -80,6 +82,7 @@ export const appendActionFeedbackSystemMessage = (
   return appendHistory(historyPath, {
     id: `sys-action-feedback-${Date.now()}`,
     role: 'system',
+    visibility: 'all',
     text,
     createdAt: nowIso(),
   }).then(() => true)
@@ -98,13 +101,24 @@ export const appendConsumedInputsToHistory = async (
       consumed += 1
       continue
     }
-    await appendHistory(historyPath, {
-      id: input.id,
-      role: 'user',
-      text: input.text,
-      createdAt: input.createdAt,
-      ...(input.quote ? { quote: input.quote } : {}),
-    })
+    if (input.role === 'system') {
+      await appendHistory(historyPath, {
+        id: input.id,
+        role: input.role,
+        visibility: input.visibility,
+        text: input.text,
+        createdAt: input.createdAt,
+        ...(input.quote ? { quote: input.quote } : {}),
+      })
+    } else {
+      await appendHistory(historyPath, {
+        id: input.id,
+        role: input.role,
+        text: input.text,
+        createdAt: input.createdAt,
+        ...(input.quote ? { quote: input.quote } : {}),
+      })
+    }
     existingIds.add(input.id)
     consumed += 1
   }

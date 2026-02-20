@@ -27,7 +27,7 @@ export const createOrchestratorStub = () => {
       calls.push({ limit, afterId })
       const message: ChatMessage = {
         id: afterId ? 'delta-1' : 'full-1',
-        role: 'assistant',
+        role: 'agent',
         text: 'ok',
         createdAt: '2026-02-08T00:00:00.000Z',
       }

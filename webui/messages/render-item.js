@@ -15,7 +15,7 @@ export const renderMessage = (params, msg) => {
   } = params
   if (!messagesEl) return
   const item = document.createElement('li')
-  const roleClass = msg.role === 'assistant' ? 'agent' : msg.role
+  const roleClass = msg.role === 'agent' ? 'agent' : msg.role
   const isSystemMessage = msg?.role === 'system'
   const isStreamingMessage = Boolean(msg?.streaming)
   const isEntering = enterMessageIds?.has(msg?.id)

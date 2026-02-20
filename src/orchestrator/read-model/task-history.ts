@@ -58,6 +58,7 @@ export const appendTaskSystemMessage = (
   const message: HistoryMessage = {
     id: `sys-task-${newId()}`,
     role: 'system',
+    visibility: 'user',
     text,
     createdAt: options?.createdAt ?? nowIso(),
   }

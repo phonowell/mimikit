@@ -4,10 +4,8 @@ import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { notifyManagerLoop } from '../orchestrator/core/manager-signal.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
-import { enqueueTask } from '../orchestrator/core/task-state.js'
-import { notifyWorkerLoop } from '../orchestrator/core/worker-signal.js'
-import { appendTaskSystemMessage } from '../orchestrator/read-model/task-history.js'
-import { enqueueWorkerTask } from '../worker/dispatch.js'
+import { newId } from '../shared/utils.js'
+import { publishUserInput } from '../streams/queues.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 
@@ -24,28 +22,54 @@ type CronCheckResult = {
   triggeredCount: number
 }
 
-const triggerCronJobTask = async (params: {
-  runtime: RuntimeState
+const toCronTriggerSystemText = (params: {
+  cronJobId: string
   prompt: string
   title: string
   profile: RuntimeState['cronJobs'][number]['profile']
   cronLabel: string
-}): Promise<boolean> => {
-  const { task, created } = enqueueTask(
-    params.runtime.tasks,
-    params.prompt,
-    params.title,
-    params.profile,
-    params.cronLabel,
-  )
-  if (!created) return false
-  task.cron = params.cronLabel
-  await appendTaskSystemMessage(params.runtime.paths.history, 'created', task, {
-    createdAt: task.createdAt,
+  triggeredAt: string
+}): string =>
+  `M:cron_trigger\n${JSON.stringify({
+    cron_job_id: params.cronJobId,
+    title: params.title,
+    prompt: params.prompt,
+    profile: params.profile,
+    schedule: params.cronLabel,
+    triggered_at: params.triggeredAt,
+  })}`
+
+const publishCronTriggerSystemInput = async (params: {
+  runtime: RuntimeState
+  cronJobId: string
+  prompt: string
+  title: string
+  profile: RuntimeState['cronJobs'][number]['profile']
+  cronLabel: string
+  triggeredAt: string
+}): Promise<void> => {
+  const input = {
+    id: newId(),
+    role: 'system' as const,
+    visibility: 'all' as const,
+    text: toCronTriggerSystemText(params),
+    createdAt: params.triggeredAt,
+  }
+  await publishUserInput({
+    paths: params.runtime.paths,
+    payload: input,
   })
-  enqueueWorkerTask(params.runtime, task)
-  notifyWorkerLoop(params.runtime)
-  return true
+  params.runtime.inflightInputs.push(input)
+  await bestEffort('appendLog: cron_trigger_input', () =>
+    appendLog(params.runtime.paths.log, {
+      event: 'cron_trigger_input',
+      inputId: input.id,
+      cronJobId: params.cronJobId,
+      profile: params.profile,
+      schedule: params.cronLabel,
+      triggeredAt: params.triggeredAt,
+    }),
+  )
 }
 
 export const checkCronJobs = async (
@@ -71,14 +95,15 @@ export const checkCronJobs = async (
       cronJob.enabled = false
       cronJob.disabledReason = 'completed'
       stateChanged = true
-      const created = await triggerCronJobTask({
+      await publishCronTriggerSystemInput({
         runtime,
+        cronJobId: cronJob.id,
         prompt: cronJob.prompt,
         title: cronJob.title,
         profile: cronJob.profile,
         cronLabel: cronJob.scheduledAt,
+        triggeredAt: nowAtIso,
       })
-      if (!created) continue
       triggeredCount += 1
       continue
     }
@@ -108,14 +133,15 @@ export const checkCronJobs = async (
 
     cronJob.lastTriggeredAt = nowAtIso
     stateChanged = true
-    const created = await triggerCronJobTask({
+    await publishCronTriggerSystemInput({
       runtime,
+      cronJobId: cronJob.id,
       prompt: cronJob.prompt,
       title: cronJob.title,
       profile: cronJob.profile,
       cronLabel: cronJob.cron,
+      triggeredAt: nowAtIso,
     })
-    if (!created) continue
     triggeredCount += 1
     let hasNextRun = false
     try {

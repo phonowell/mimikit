@@ -8,7 +8,7 @@ import type { Role } from '../types/index.js'
 const DEFAULT_LIMIT = 6
 const MAX_LIMIT = 20
 const MIN_LIMIT = 1
-const DEFAULT_ROLES: Role[] = ['user', 'assistant']
+const DEFAULT_ROLES: Role[] = ['user', 'agent']
 
 export type QueryHistoryRequest = {
   query: string
@@ -37,7 +37,7 @@ const parseLimit = (raw?: string): number =>
   )
 
 const isRole = (value: string): value is Role =>
-  value === 'user' || value === 'assistant' || value === 'system'
+  value === 'user' || value === 'agent' || value === 'system'
 
 const parseRoles = (raw?: string): Role[] => {
   if (!raw) return DEFAULT_ROLES

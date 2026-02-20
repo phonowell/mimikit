@@ -21,7 +21,10 @@ export const buildFallbackReply = async (params: {
   inputs: UserInput[]
   results: TaskResult[]
 }): Promise<string> => {
-  const latestInput = params.inputs.at(-1)?.text.trim()
+  const latestInput = [...params.inputs]
+    .reverse()
+    .find((item) => item.role === 'user')
+    ?.text.trim()
   if (latestInput) return latestInput
   const latestResult = params.results.at(-1)?.output.trim()
   if (latestResult) return latestResult

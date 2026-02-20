@@ -24,6 +24,7 @@ test('input queue append and consume by cursor', async () => {
     paths,
     payload: {
       id: 'in-1',
+      role: 'user',
       text: 'a',
       createdAt: '2026-02-08T00:00:00.000Z',
     },
@@ -32,6 +33,7 @@ test('input queue append and consume by cursor', async () => {
     paths,
     payload: {
       id: 'in-2',
+      role: 'user',
       text: 'b',
       createdAt: '2026-02-08T00:00:01.000Z',
     },
@@ -95,6 +97,7 @@ test('input queue compacts only when fully consumed', async () => {
     paths,
     payload: {
       id: 'in-1',
+      role: 'user',
       text: 'a',
       createdAt: '2026-02-08T00:00:00.000Z',
     },
@@ -103,6 +106,7 @@ test('input queue compacts only when fully consumed', async () => {
     paths,
     payload: {
       id: 'in-2',
+      role: 'user',
       text: 'b',
       createdAt: '2026-02-08T00:00:01.000Z',
     },

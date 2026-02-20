@@ -120,6 +120,13 @@
 | `M:results` | 任务执行器 | tasks列表（新结果） | change_at倒序 | 响应任务完成事件 |
 | `M:tasks`   | 系统状态   | tasks列表（全部）   | create_at倒序 | 参考当前任务全景 |
 
+### 系统输入事件（role=system）
+
+- `M:inputs` 里的 message 可能由系统产生（`role=system`），不是用户提问。
+- 当 `content` 以 `M:cron_trigger` 开头时，下一行是 JSON，字段包含：
+  - `cron_job_id` `title` `prompt` `profile` `schedule` `triggered_at`
+- 处理规则：这类事件表示“定时任务已触发”，按既有决策树执行该事件携带的 `prompt/title`（可内联直答，也可委派任务）；不要向用户追问，不要把该事件误判为用户新提问。
+
 ### query_history 触发条件
 
 必须同时满足：
@@ -163,7 +170,7 @@
 <M:create_task prompt="任务描述" title="摘要" scheduled_at="..." />
 <M:cancel_task id="任务ID" />
 <M:summarize_task_result task_id="任务ID" summary="结果摘要" />
-<M:query_history query="检索意图" [limit="1-20"] [roles="user,assistant,system"] [before_id="..."] [from="ISO时间"] [to="ISO时间"] />
+<M:query_history query="检索意图" [limit="1-20"] [roles="user,agent,system"] [before_id="..."] [from="ISO时间"] [to="ISO时间"] />
 <M:restart_server />
 ```
 

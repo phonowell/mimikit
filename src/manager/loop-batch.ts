@@ -2,6 +2,7 @@ import { appendLog } from '../log/append.js'
 import { bestEffort, logSafeError } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import { notifyUiSignal } from '../orchestrator/core/ui-signal.js'
+import { isVisibleToAgent } from '../shared/message-visibility.js'
 import { nowIso } from '../shared/utils.js'
 import { appendHistory } from '../storage/history-jsonl.js'
 
@@ -39,14 +40,37 @@ export const processManagerBatch = async (params: {
   } = params
   runtime.managerRunning = true
   notifyUiSignal(runtime)
+  const agentInputs = inputs.filter((item) => isVisibleToAgent(item))
   const startedAt = Date.now()
-  let assistantAppended = false
+  let agentAppended = false
   startUiStream(runtime, streamId)
   try {
+    if (agentInputs.length === 0 && results.length === 0) {
+      const consumed = await consumeBatchHistory({
+        runtime,
+        inputs,
+        results,
+      })
+      if (!consumed.ok) throw new Error(consumed.reason)
+      await finalizeBatchProgress({
+        runtime,
+        nextInputsCursor,
+        nextResultsCursor,
+        consumedInputIds: consumed.consumedInputIds,
+        persistRuntime: persistRuntimeState,
+      })
+      await appendLog(runtime.paths.log, {
+        event: 'manager_end',
+        status: 'ok',
+        elapsedMs: Math.max(0, Date.now() - startedAt),
+        skippedReason: 'no_agent_visible_inputs',
+      })
+      return
+    }
     runtime.managerTurn += 1
     const managerRun = await runManagerBatch({
       runtime,
-      inputs,
+      inputs: agentInputs,
       results,
       streamId,
     })
@@ -65,24 +89,24 @@ export const processManagerBatch = async (params: {
     })
     if (!consumed.ok) throw new Error(consumed.reason)
     await applyTaskActions(runtime, parsed.actions, {
-      suppressCreateTask: hasManualCanceledResult && inputs.length === 0,
+      suppressCreateTask: hasManualCanceledResult && agentInputs.length === 0,
     })
 
     const responseText =
       parsed.text.trim() ||
       (await buildFallbackReply({
-        inputs,
+        inputs: agentInputs,
         results,
       }))
     await appendHistory(runtime.paths.history, {
-      id: `assistant-${Date.now()}-${nextInputsCursor}`,
-      role: 'assistant',
+      id: `agent-${Date.now()}-${nextInputsCursor}`,
+      role: 'agent',
       text: responseText,
       createdAt: nowIso(),
       ...(resolvedUsage ? { usage: resolvedUsage } : {}),
       ...(managerRun.elapsedMs >= 0 ? { elapsedMs: managerRun.elapsedMs } : {}),
     })
-    assistantAppended = true
+    agentAppended = true
 
     await finalizeBatchProgress({
       runtime,
@@ -114,7 +138,7 @@ export const processManagerBatch = async (params: {
       await logSafeError('managerLoop: drainBatchOnFailure', drainError)
     }
 
-    if (drainedOnError && !assistantAppended && inputs.length > 0) {
+    if (drainedOnError && !agentAppended && agentInputs.length > 0) {
       await bestEffort('appendHistory: manager_fallback_reply', () =>
         appendManagerFallbackReply(runtime.paths),
       )
@@ -130,7 +154,7 @@ export const processManagerBatch = async (params: {
         error: errorMessage,
         elapsedMs: Math.max(0, Date.now() - startedAt),
         drainedOnError,
-        assistantAppended,
+        agentAppended,
       }),
     )
     await bestEffort('persistRuntimeState: manager_error', () =>

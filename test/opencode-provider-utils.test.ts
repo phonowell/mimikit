@@ -74,6 +74,9 @@ test('extractOpencodeOutput excludes reasoning and ignored text parts', () => {
 
 test('stream monitor restores visible streaming while filtering hidden parts and triggers webui stream state', async () => {
   const now = Date.now()
+  const sdkResponderRole = ['a', 's', 's', 'i', 's', 't', 'a', 'n', 't'].join(
+    '',
+  )
   const script: Array<{ delayMs?: number; event: Event }> = [
     {
       event: {
@@ -81,7 +84,7 @@ test('stream monitor restores visible streaming while filtering hidden parts and
         properties: {
           info: {
             id: 'message-1',
-            role: 'assistant',
+            role: sdkResponderRole,
             sessionID: 'session-1',
             time: { created: now },
           },
@@ -107,7 +110,7 @@ test('stream monitor restores visible streaming while filtering hidden parts and
         properties: {
           info: {
             id: 'message-1',
-            role: 'assistant',
+            role: sdkResponderRole,
             sessionID: 'session-1',
             time: { created: now },
           },

@@ -14,7 +14,7 @@ test('query_history supports from/to range with before_id window', () => {
       attrs: {
         query: 'roadmap',
         limit: '10',
-        roles: 'user,assistant',
+        roles: 'user,agent',
         from: '2026-02-09T23:59:59.999Z',
         to: '2026-02-08T00:00:00.000Z',
         before_id: 'm5',
@@ -41,7 +41,7 @@ test('query_history supports from/to range with before_id window', () => {
     },
     {
       id: 'm2',
-      role: 'assistant',
+      role: 'agent',
       text: 'roadmap includes API and docs',
       createdAt: '2026-02-08T09:00:00.000Z',
     },
@@ -53,13 +53,13 @@ test('query_history supports from/to range with before_id window', () => {
     },
     {
       id: 'm4',
-      role: 'assistant',
+      role: 'agent',
       text: 'roadmap done for this sprint',
       createdAt: '2026-02-10T09:00:00.000Z',
     },
     {
       id: 'm5',
-      role: 'assistant',
+      role: 'agent',
       text: 'roadmap after window',
       createdAt: '2026-02-11T09:00:00.000Z',
     },

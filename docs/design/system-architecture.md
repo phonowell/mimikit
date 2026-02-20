@@ -23,7 +23,7 @@
   - 任务终态（含 `pending` 快速取消）都会即时唤醒 manager。
 - `cron-wake-loop`
   - 持续检查 cron。
-  - 触发本地任务创建。
+  - 到期后发布系统输入事件（`role=system, visibility=all`），交由 manager 消费决策。
   - 只要本次有触发就即时唤醒 manager。
 
 ## 启动顺序
@@ -66,7 +66,7 @@
 
 1. 用户输入写入 `inputs/packets.jsonl`，并实时唤醒 manager。
 2. manager 被唤醒，消费输入/结果并调用 `runManager`（OpenCode）。
-3. manager 解析动作并更新任务状态，写 assistant 回复。
+3. manager 解析动作并更新任务状态，写 agent 回复。
 4. worker 执行任务终态后写入 `results/packets.jsonl`。
 5. 任务终态会触发 manager signal，manager 会立即拉取并消费 results。
 
@@ -75,6 +75,13 @@
 - `user_input`
 - `task_result`
 - `cron`
+
+消息可见性约束：
+
+- 只有 `role=system` 消息带 `visibility(user|agent|all)` 字段。
+- `role=user|agent` 消息不带 `visibility`，默认同时对 user 与 agent 可见。
+- 用户视图消费：全部非 system 消息 + `visibility=user|all` 的 system 消息。
+- manager/history-query 消费：全部非 system 消息 + `visibility=agent|all` 的 system 消息。
 
 ## Manager 循环语义（manager loop）
 

@@ -10,7 +10,7 @@ import {
   resetUiStream,
   setUiStreamText,
   setUiStreamUsage,
-  toVisibleAssistantText,
+  toVisibleAgentText,
 } from './loop-ui-stream.js'
 import { runManager } from './runner.js'
 
@@ -76,11 +76,7 @@ export const runManagerBatch = async (params: {
       onTextDelta: (delta) => {
         if (!delta) return
         streamRawOutput += delta
-        setUiStreamText(
-          runtime,
-          streamId,
-          toVisibleAssistantText(streamRawOutput),
-        )
+        setUiStreamText(runtime, streamId, toVisibleAgentText(streamRawOutput))
       },
       onStreamReset: () => {
         streamRawOutput = ''
@@ -111,7 +107,7 @@ export const runManagerBatch = async (params: {
 
   const queryRequest = pickQueryHistoryRequest(firstParsed.actions)
   if (!queryRequest && actionFeedback.length === 0) {
-    setUiStreamText(runtime, streamId, toVisibleAssistantText(first.output))
+    setUiStreamText(runtime, streamId, toVisibleAgentText(first.output))
     return {
       parsed: firstParsed,
       elapsedMs: first.elapsedMs,
@@ -158,7 +154,7 @@ export const runManagerBatch = async (params: {
     ...(actionFeedback.length > 0 ? { actionFeedback } : {}),
   })
   const secondParsed = parseActions(second.output)
-  setUiStreamText(runtime, streamId, toVisibleAssistantText(second.output))
+  setUiStreamText(runtime, streamId, toVisibleAgentText(second.output))
   return {
     parsed: secondParsed,
     elapsedMs: first.elapsedMs + second.elapsedMs,

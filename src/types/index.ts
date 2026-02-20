@@ -7,16 +7,30 @@ export type TokenUsage = {
   total?: number
 }
 
-export type Role = 'user' | 'assistant' | 'system'
-export type HistoryMessage = {
+export type Role = 'user' | 'agent' | 'system'
+export type MessageVisibility = 'user' | 'agent' | 'all'
+type NonSystemHistoryMessage = {
   id: Id
-  role: Role
+  role: Exclude<Role, 'system'>
   text: string
   createdAt: ISODate
   usage?: TokenUsage
   elapsedMs?: number
   quote?: Id
 }
+
+type SystemHistoryMessage = {
+  id: Id
+  role: 'system'
+  visibility: MessageVisibility
+  text: string
+  createdAt: ISODate
+  usage?: TokenUsage
+  elapsedMs?: number
+  quote?: Id
+}
+
+export type HistoryMessage = NonSystemHistoryMessage | SystemHistoryMessage
 
 export type HistoryLookupMessage = {
   id: Id
@@ -26,12 +40,24 @@ export type HistoryLookupMessage = {
   score: number
 }
 
-export type UserInput = {
+type UserInputUser = {
   id: Id
+  role: 'user'
   text: string
   createdAt: ISODate
   quote?: Id
 }
+
+type UserInputSystem = {
+  id: Id
+  role: 'system'
+  visibility: MessageVisibility
+  text: string
+  createdAt: ISODate
+  quote?: Id
+}
+
+export type UserInput = UserInputUser | UserInputSystem
 
 export type TaskStatus =
   | 'pending'

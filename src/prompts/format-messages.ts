@@ -1,3 +1,5 @@
+import { isVisibleToAgent } from '../shared/message-visibility.js'
+
 import {
   escapeCdata,
   parseIsoToMs,
@@ -42,11 +44,12 @@ export const formatInputs = (inputs: UserInput[]): string => {
   if (inputs.length === 0) return ''
   const entries = inputs
     .map((input) => {
+      if (!isVisibleToAgent(input)) return null
       const content = input.text.trim()
       if (!content) return null
       return {
         id: input.id,
-        role: 'user',
+        role: input.role,
         time: input.createdAt,
         ...(input.quote ? { quote: input.quote } : {}),
         content,
@@ -57,7 +60,7 @@ export const formatInputs = (inputs: UserInput[]): string => {
 }
 
 const mapLookupRole = (role: HistoryLookupMessage['role']): string => {
-  if (role === 'assistant') return 'agent'
+  if (role === 'agent') return 'agent'
   return role
 }
 

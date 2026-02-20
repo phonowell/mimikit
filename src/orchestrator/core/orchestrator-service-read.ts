@@ -46,7 +46,13 @@ export const addUserInput = async (
 ): Promise<string> => {
   const id = newId()
   const createdAt = nowIso()
-  const input = quote ? { id, text, createdAt, quote } : { id, text, createdAt }
+  const baseInput = {
+    id,
+    role: 'user' as const,
+    text,
+    createdAt,
+  }
+  const input = quote ? { ...baseInput, quote } : baseInput
   await publishUserInput({
     paths: runtime.paths,
     payload: input,
