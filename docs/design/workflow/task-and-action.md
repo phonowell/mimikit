@@ -104,7 +104,11 @@
 
 - 字段：`taskId`、`status`、`ok`、`output`、`durationMs`、`completedAt`
 - 可选：`usage`、`title`、`archivePath`、`profile`
-- usage 字段：`input/output/total` 表示单轮；`sessionTotal` 表示会话累计（可缺省）
+- usage 字段：
+  - `input/output/total`：单轮 token
+  - `sessionTotal`：会话累计（可缺省）
+  - `inputCacheRead/inputCacheWrite`：输入缓存读/写 token
+  - `outputCache`：输出缓存 token（provider 支持时）
 - 写入：`results/packets.jsonl`
 
 ### HistoryMessage
@@ -112,7 +116,11 @@
 - `role=user|agent`：字段为 `id`、`role`、`text`、`createdAt`（不含 `visibility`）。
 - `role=system`：字段为 `id`、`role`、`visibility(user|agent|all)`、`text`、`createdAt`。
 - 可选：`usage`、`elapsedMs`、`quote`
-- usage 字段：`input/output/total` 表示单轮；`sessionTotal` 表示会话累计（可缺省）
+- usage 字段：
+  - `input/output/total`：单轮 token
+  - `sessionTotal`：会话累计（可缺省）
+  - `inputCacheRead/inputCacheWrite`：输入缓存读/写 token
+  - `outputCache`：输出缓存 token（provider 支持时）
 - 写入：`history/YYYY-MM-DD.jsonl`
 
 ### System 会话消息清单

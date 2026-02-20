@@ -27,8 +27,16 @@ export const normalizeYamlUsage = (
   if (!usage) return
   const normalized: Task['usage'] = {}
   if (typeof usage.input === 'number') normalized.input = usage.input
+  if (typeof usage.inputCacheRead === 'number')
+    normalized.inputCacheRead = usage.inputCacheRead
+  if (typeof usage.inputCacheWrite === 'number')
+    normalized.inputCacheWrite = usage.inputCacheWrite
   if (typeof usage.output === 'number') normalized.output = usage.output
+  if (typeof usage.outputCache === 'number')
+    normalized.outputCache = usage.outputCache
   if (typeof usage.total === 'number') normalized.total = usage.total
+  if (typeof usage.sessionTotal === 'number')
+    normalized.sessionTotal = usage.sessionTotal
   if (Object.keys(normalized).length === 0) return undefined
   return normalized
 }

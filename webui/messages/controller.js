@@ -33,32 +33,23 @@ const normalizeUsage = (raw) => {
   if (!isRecord(raw)) return null
   const input = asUsageNumber(raw.input)
   const output = asUsageNumber(raw.output)
-  const cacheRead = asUsageNumber(
-    raw.cacheRead ??
-      raw.cache_read ??
-      raw.inputCache ??
-      raw.cacheInput ??
-      raw.cachedInput,
-  )
-  const cacheWrite = asUsageNumber(
-    raw.cacheWrite ??
-      raw.cache_write ??
-      raw.outputCache ??
-      raw.cacheOutput ??
-      raw.cachedOutput,
-  )
+  const inputCacheRead = asUsageNumber(raw.inputCacheRead)
+  const inputCacheWrite = asUsageNumber(raw.inputCacheWrite)
+  const outputCache = asUsageNumber(raw.outputCache)
   if (
     input === null &&
     output === null &&
-    cacheRead === null &&
-    cacheWrite === null
+    inputCacheRead === null &&
+    inputCacheWrite === null &&
+    outputCache === null
   )
     return null
   return {
     ...(input !== null ? { input } : {}),
     ...(output !== null ? { output } : {}),
-    ...(cacheRead !== null ? { cacheRead } : {}),
-    ...(cacheWrite !== null ? { cacheWrite } : {}),
+    ...(inputCacheRead !== null ? { inputCacheRead } : {}),
+    ...(inputCacheWrite !== null ? { inputCacheWrite } : {}),
+    ...(outputCache !== null ? { outputCache } : {}),
   }
 }
 

@@ -24,6 +24,18 @@ export const mergeUsageMonotonic = (
     asFiniteNumber(current?.output),
     asFiniteNumber(next?.output),
   )
+  const inputCacheRead = keepMonotonicUsageValue(
+    asFiniteNumber(current?.inputCacheRead),
+    asFiniteNumber(next?.inputCacheRead),
+  )
+  const inputCacheWrite = keepMonotonicUsageValue(
+    asFiniteNumber(current?.inputCacheWrite),
+    asFiniteNumber(next?.inputCacheWrite),
+  )
+  const outputCache = keepMonotonicUsageValue(
+    asFiniteNumber(current?.outputCache),
+    asFiniteNumber(next?.outputCache),
+  )
   const total = keepMonotonicUsageValue(
     asFiniteNumber(current?.total),
     asFiniteNumber(next?.total),
@@ -32,30 +44,24 @@ export const mergeUsageMonotonic = (
     asFiniteNumber(current?.sessionTotal),
     asFiniteNumber(next?.sessionTotal),
   )
-  const cacheRead = keepMonotonicUsageValue(
-    asFiniteNumber(current?.cacheRead),
-    asFiniteNumber(next?.cacheRead),
-  )
-  const cacheWrite = keepMonotonicUsageValue(
-    asFiniteNumber(current?.cacheWrite),
-    asFiniteNumber(next?.cacheWrite),
-  )
   if (
     input === undefined &&
     output === undefined &&
+    inputCacheRead === undefined &&
+    inputCacheWrite === undefined &&
+    outputCache === undefined &&
     total === undefined &&
-    sessionTotal === undefined &&
-    cacheRead === undefined &&
-    cacheWrite === undefined
+    sessionTotal === undefined
   )
     return undefined
   return {
     ...(input !== undefined ? { input } : {}),
     ...(output !== undefined ? { output } : {}),
+    ...(inputCacheRead !== undefined ? { inputCacheRead } : {}),
+    ...(inputCacheWrite !== undefined ? { inputCacheWrite } : {}),
+    ...(outputCache !== undefined ? { outputCache } : {}),
     ...(total !== undefined ? { total } : {}),
     ...(sessionTotal !== undefined ? { sessionTotal } : {}),
-    ...(cacheRead !== undefined ? { cacheRead } : {}),
-    ...(cacheWrite !== undefined ? { cacheWrite } : {}),
   }
 }
 
@@ -65,7 +71,8 @@ export const isSameUsage = (
 ): boolean =>
   left?.input === right?.input &&
   left?.output === right?.output &&
+  left?.inputCacheRead === right?.inputCacheRead &&
+  left?.inputCacheWrite === right?.inputCacheWrite &&
+  left?.outputCache === right?.outputCache &&
   left?.total === right?.total &&
-  left?.sessionTotal === right?.sessionTotal &&
-  left?.cacheRead === right?.cacheRead &&
-  left?.cacheWrite === right?.cacheWrite
+  left?.sessionTotal === right?.sessionTotal

@@ -22,15 +22,31 @@ export const stripUndefined = <T extends Record<string, unknown>>(
 const normalizeUsageParts = (parts: {
   input?: unknown
   output?: unknown
+  inputCacheRead?: unknown
+  inputCacheWrite?: unknown
+  outputCache?: unknown
   total?: unknown
 }): TokenUsage | undefined => {
   const input = asNumber(parts.input)
   const output = asNumber(parts.output)
-  if (input === undefined && output === undefined) return undefined
+  const inputCacheRead = asNumber(parts.inputCacheRead)
+  const inputCacheWrite = asNumber(parts.inputCacheWrite)
+  const outputCache = asNumber(parts.outputCache)
+  if (
+    input === undefined &&
+    output === undefined &&
+    inputCacheRead === undefined &&
+    inputCacheWrite === undefined &&
+    outputCache === undefined
+  )
+    return undefined
   const total = asNumber(parts.total)
   const result: TokenUsage = {}
   if (input !== undefined) result.input = input
   if (output !== undefined) result.output = output
+  if (inputCacheRead !== undefined) result.inputCacheRead = inputCacheRead
+  if (inputCacheWrite !== undefined) result.inputCacheWrite = inputCacheWrite
+  if (outputCache !== undefined) result.outputCache = outputCache
   if (total !== undefined) result.total = total
   else if (input !== undefined && output !== undefined)
     result.total = input + output
@@ -40,14 +56,20 @@ const normalizeUsageParts = (parts: {
 export const normalizeUsage = (
   usage?: {
     input_tokens?: number
+    cached_input_tokens?: number
+    cache_write_input_tokens?: number
     output_tokens?: number
+    cached_output_tokens?: number
     total_tokens?: number
   } | null,
 ): TokenUsage | undefined => {
   if (!usage) return undefined
   return normalizeUsageParts({
     input: usage.input_tokens,
+    inputCacheRead: usage.cached_input_tokens,
+    inputCacheWrite: usage.cache_write_input_tokens,
     output: usage.output_tokens,
+    outputCache: usage.cached_output_tokens,
     total: usage.total_tokens,
   })
 }
