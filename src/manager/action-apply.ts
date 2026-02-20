@@ -92,7 +92,7 @@ export const applyTaskActions = async (
       if (!sessionId) continue
       const timeoutMs = Math.max(
         COMPRESS_CONTEXT_TIMEOUT_FLOOR_MS,
-        runtime.config.deferred.task.timeoutMs,
+        runtime.config.manager.session.compressTimeoutMs,
       )
       await summarizeOpencodeSession({
         workDir: runtime.config.workDir,

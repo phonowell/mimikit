@@ -42,6 +42,22 @@ HTTP 路由共享约束：
 - `MIMIKIT_MANAGER_PROMPT_MAX_TOKENS`
 - `MIMIKIT_MANAGER_CREATE_TASK_DEBOUNCE_MS`
 
+## 配置结构（`config/default.yaml`）
+- `manager`
+  - `model`：manager 默认模型（`MIMIKIT_MODEL`/`MIMIKIT_MANAGER_MODEL` 覆盖）
+  - `prompt.maxTokens`：manager prompt token 上限（`MIMIKIT_MANAGER_PROMPT_MAX_TOKENS` 覆盖）
+  - `taskCreate.debounceMs`：`create_task` 去抖窗口（`MIMIKIT_MANAGER_CREATE_TASK_DEBOUNCE_MS` 覆盖）
+  - `taskWindow.{minCount,maxCount,maxBytes}`：manager 每轮注入任务窗口
+  - `session.compressTimeoutMs`：`compress_context` 会话压缩超时
+- `worker`
+  - `maxConcurrent`：并发 worker 上限
+  - `retry.{maxAttempts,backoffMs}`：worker 重试策略
+  - `profiles.standard.{timeoutMs,model}`（`MIMIKIT_WORKER_STANDARD_MODEL` 覆盖模型）
+  - `profiles.specialist.{timeoutMs,model,modelReasoningEffort}`（`MIMIKIT_WORKER_SPECIALIST_MODEL` 与 `MIMIKIT_WORKER_SPECIALIST_REASONING_EFFORT` 覆盖）
+
+配置约束：
+- 不保留旧键兼容层；`deferred.*`、`worker.retryMaxAttempts`、`worker.retryBackoffMs`、`worker.standard`、`worker.specialist` 均为历史路径。
+
 ## 桌面通知（Node）
 - 通知实现：`src/notify/node-notifier.ts`
 - 触发来源：`src/worker/result-finalize.ts` 与 `src/worker/cancel-task.ts`

@@ -27,7 +27,7 @@ export const applyReasoningEnv = (config: AppConfig): void => {
     'MIMIKIT_REASONING_EFFORT',
     process.env.MIMIKIT_REASONING_EFFORT,
   )
-  if (global) config.worker.specialist.modelReasoningEffort = global
+  if (global) config.worker.profiles.specialist.modelReasoningEffort = global
 
   const manager = parseReasoning(
     'MIMIKIT_MANAGER_REASONING_EFFORT',
@@ -53,5 +53,6 @@ export const applyReasoningEnv = (config: AppConfig): void => {
     'MIMIKIT_WORKER_SPECIALIST_REASONING_EFFORT',
     process.env.MIMIKIT_WORKER_SPECIALIST_REASONING_EFFORT,
   )
-  if (specialist) config.worker.specialist.modelReasoningEffort = specialist
+  if (specialist)
+    config.worker.profiles.specialist.modelReasoningEffort = specialist
 }

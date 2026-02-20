@@ -29,24 +29,48 @@ const codexTaskDefaultsSchema = z
 
 const defaultConfigSchema = z
   .object({
-    deferred: z
+    manager: z
       .object({
-        promptMaxTokens: z.number().int().positive(),
-        createTaskDebounceMs: z.number().int().nonnegative(),
-        tasksMaxCount: z.number().int().positive(),
-        tasksMinCount: z.number().int().positive(),
-        tasksMaxBytes: z.number().int().positive(),
         model: z.string().min(1),
-        task: taskDefaultsSchema,
+        prompt: z
+          .object({
+            maxTokens: z.number().int().positive(),
+          })
+          .strict(),
+        taskCreate: z
+          .object({
+            debounceMs: z.number().int().nonnegative(),
+          })
+          .strict(),
+        taskWindow: z
+          .object({
+            maxCount: z.number().int().positive(),
+            minCount: z.number().int().positive(),
+            maxBytes: z.number().int().positive(),
+          })
+          .strict(),
+        session: z
+          .object({
+            compressTimeoutMs: z.number().int().positive(),
+          })
+          .strict(),
       })
       .strict(),
     worker: z
       .object({
         maxConcurrent: z.number().int().positive(),
-        retryMaxAttempts: z.number().int().nonnegative(),
-        retryBackoffMs: z.number().int().nonnegative(),
-        standard: taskDefaultsSchema,
-        specialist: codexTaskDefaultsSchema,
+        retry: z
+          .object({
+            maxAttempts: z.number().int().nonnegative(),
+            backoffMs: z.number().int().nonnegative(),
+          })
+          .strict(),
+        profiles: z
+          .object({
+            standard: taskDefaultsSchema,
+            specialist: codexTaskDefaultsSchema,
+          })
+          .strict(),
       })
       .strict(),
   })
@@ -63,11 +87,11 @@ const parseDefaultConfigYaml = (source: string): AppDefaults => {
   const validated = defaultConfigSchema.safeParse(parsed)
   if (validated.success) {
     if (
-      validated.data.deferred.tasksMinCount >
-      validated.data.deferred.tasksMaxCount
+      validated.data.manager.taskWindow.minCount >
+      validated.data.manager.taskWindow.maxCount
     ) {
       throw new Error(
-        '[config] invalid yaml defaults: deferred.tasksMinCount must be <= deferred.tasksMaxCount',
+        '[config] invalid yaml defaults: manager.taskWindow.minCount must be <= manager.taskWindow.maxCount',
       )
     }
     return validated.data

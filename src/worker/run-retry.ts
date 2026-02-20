@@ -32,7 +32,7 @@ const runStandardProfile = (params: {
   controller: AbortController
   onUsage?: (usage: TokenUsage) => void
 }): Promise<WorkerLlmResult> => {
-  const { standard } = params.runtime.config.worker
+  const { standard } = params.runtime.config.worker.profiles
   return runStandardWorker({
     stateDir: params.runtime.config.workDir,
     workDir: params.runtime.config.workDir,
@@ -64,7 +64,7 @@ const runTaskByProfile = (params: {
       ...(params.onUsage ? { onUsage: params.onUsage } : {}),
     })
   }
-  const { specialist } = params.runtime.config.worker
+  const { specialist } = params.runtime.config.worker.profiles
   return runSpecialistWorker({
     stateDir: params.runtime.config.workDir,
     workDir: params.runtime.config.workDir,
@@ -125,8 +125,8 @@ export const runTaskWithRetry = (params: {
   onUsage?: (usage: TokenUsage) => void
 }): Promise<WorkerLlmResult> => {
   const { runtime, task, controller } = params
-  const retries = Math.max(0, runtime.config.worker.retryMaxAttempts)
-  const backoffMs = Math.max(0, runtime.config.worker.retryBackoffMs)
+  const retries = Math.max(0, runtime.config.worker.retry.maxAttempts)
+  const backoffMs = Math.max(0, runtime.config.worker.retry.backoffMs)
   const retryOptions = buildRetryOptions({
     runtime,
     task,

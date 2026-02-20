@@ -43,9 +43,9 @@ export const runManagerBatch = async (params: {
   })
 
   const tasks = selectRecentTasks(runtime.tasks, {
-    minCount: runtime.config.deferred.tasksMinCount,
-    maxCount: runtime.config.deferred.tasksMaxCount,
-    maxBytes: runtime.config.deferred.tasksMaxBytes,
+    minCount: runtime.config.manager.taskWindow.minCount,
+    maxCount: runtime.config.manager.taskWindow.maxCount,
+    maxBytes: runtime.config.manager.taskWindow.maxBytes,
   })
 
   let streamRawOutput = ''
@@ -68,11 +68,11 @@ export const runManagerBatch = async (params: {
       ...(runtime.lastUserMeta
         ? { env: { lastUser: runtime.lastUserMeta } }
         : {}),
-      model: runtime.config.deferred.model,
+      model: runtime.config.manager.model,
       ...(runtime.plannerSessionId
         ? { sessionId: runtime.plannerSessionId }
         : {}),
-      maxPromptTokens: runtime.config.deferred.promptMaxTokens,
+      maxPromptTokens: runtime.config.manager.prompt.maxTokens,
       onTextDelta: (delta) => {
         if (!delta) return
         streamRawOutput += delta

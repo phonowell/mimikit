@@ -15,7 +15,7 @@
 - 架构边界、启动顺序、一致性目标：`architecture/system-architecture.md`
 - provider/runner 细节与输出结构：`architecture/runners.md`
 - 任务生命周期、Action 协议、核心数据结构：`workflow/task-and-action.md`
-- HTTP/CLI、环境变量、状态目录、重启语义：`workflow/interfaces-and-state.md`
+- HTTP/CLI、环境变量、配置结构、状态目录、重启语义：`workflow/interfaces-and-state.md`
 
 ## 设计原则
 

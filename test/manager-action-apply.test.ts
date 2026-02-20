@@ -165,7 +165,7 @@ test('create_task allows .mimikit/generated path for worker profiles and infers 
   expect(spy).toHaveBeenCalledWith({
     workDir: runtime.config.workDir,
     sessionId: 'planner-session-1',
-    timeoutMs: Math.max(15_000, runtime.config.deferred.task.timeoutMs),
+    timeoutMs: Math.max(15_000, runtime.config.manager.session.compressTimeoutMs),
   })
   spy.mockRestore()
 })

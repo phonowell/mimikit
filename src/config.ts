@@ -12,39 +12,48 @@ export type DefaultConfigParams = {
 export type AppConfig = {
   /** Absolute work directory (also state root) */
   workDir: string
-  /** Deferred scheduling and prompt settings */
-  deferred: {
-    /** Hard token limit for deferred prompt */
-    promptMaxTokens: number
-    /** Debounce window for create_task dedup (ms) */
-    createTaskDebounceMs: number
-    /** Task list retention upper bound */
-    tasksMaxCount: number
-    /** Task list retention lower bound */
-    tasksMinCount: number
-    /** Task list retention byte limit */
-    tasksMaxBytes: number
-    /** Default deferred model */
+  /** Manager scheduling and prompt settings */
+  manager: {
+    /** Default manager model */
     model: string
-    /** Defaults for deferred-profile tasks */
-    task: {
-      timeoutMs: number
-      model: string
+    prompt: {
+      /** Hard token limit for manager prompt */
+      maxTokens: number
+    }
+    taskCreate: {
+      /** Debounce window for create_task dedup (ms) */
+      debounceMs: number
+    }
+    taskWindow: {
+      /** Task list retention upper bound */
+      maxCount: number
+      /** Task list retention lower bound */
+      minCount: number
+      /** Task list retention byte limit */
+      maxBytes: number
+    }
+    session: {
+      /** Timeout for manager session summarize operations (ms) */
+      compressTimeoutMs: number
     }
   }
   /** Worker execution configuration */
   worker: {
     maxConcurrent: number
-    retryMaxAttempts: number
-    retryBackoffMs: number
-    standard: {
-      timeoutMs: number
-      model: string
+    retry: {
+      maxAttempts: number
+      backoffMs: number
     }
-    specialist: {
-      timeoutMs: number
-      model: string
-      modelReasoningEffort: ModelReasoningEffort
+    profiles: {
+      standard: {
+        timeoutMs: number
+        model: string
+      }
+      specialist: {
+        timeoutMs: number
+        model: string
+        modelReasoningEffort: ModelReasoningEffort
+      }
     }
   }
 }

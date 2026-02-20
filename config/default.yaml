@@ -1,21 +1,25 @@
-deferred:
-  promptMaxTokens: 8192
-  createTaskDebounceMs: 4000
-  tasksMaxCount: 20
-  tasksMinCount: 5
-  tasksMaxBytes: 20480
+manager:
   model: opencode/minimax-m2.5-free
-  task:
-    timeoutMs: 60000
-    model: gpt-5.2-high
+  prompt:
+    maxTokens: 8192
+  taskCreate:
+    debounceMs: 4000
+  taskWindow:
+    maxCount: 20
+    minCount: 5
+    maxBytes: 20480
+  session:
+    compressTimeoutMs: 60000
 worker:
   maxConcurrent: 3
-  retryMaxAttempts: 1
-  retryBackoffMs: 5000
-  standard:
-    timeoutMs: 600000
-    model: opencode/minimax-m2.5-free
-  specialist:
-    timeoutMs: 600000
-    model: gpt-5.3-codex-high
-    modelReasoningEffort: high
+  retry:
+    maxAttempts: 1
+    backoffMs: 5000
+  profiles:
+    standard:
+      timeoutMs: 600000
+      model: opencode/minimax-m2.5-free
+    specialist:
+      timeoutMs: 600000
+      model: gpt-5.3-codex-high
+      modelReasoningEffort: high
