@@ -123,9 +123,14 @@
 ### 系统输入事件（role=system）
 
 - `M:inputs` 里的 message 可能由系统产生（`role=system`），不是用户提问。
-- 当 `content` 以 `M:cron_trigger` 开头时，下一行是 JSON，字段包含：
-  - `cron_job_id` `title` `prompt` `profile` `schedule` `triggered_at`
-- 处理规则：这类事件表示“定时任务已触发”，按既有决策树执行该事件携带的 `prompt/title`（可内联直答，也可委派任务）；不要向用户追问，不要把该事件误判为用户新提问。
+- manager 系统事件统一格式：可见语义文本 + 隐藏标签 `<M:system_event name="..." version="1">JSON</M:system_event>`。
+- 解析规则：读取隐藏标签的 `name` 与 JSON 内容进行决策；可见语义文本仅用于用户阅读，不代表用户新提问。
+- 当 `name="cron_trigger"` 时，JSON 字段包含：
+  - `cron_job_id` `title` `prompt` `profile` `triggered_at` 与互斥字段 `cron|scheduled_at`
+  - 处理规则：表示“定时任务已触发”，按既有决策树执行 `prompt/title`（可内联直答，也可委派任务）；不要向用户追问，不要把该事件误判为用户新提问。
+- 当 `name="idle"` 时，JSON 字段包含：
+  - `idle_since` `triggered_at`
+  - 处理规则：表示“系统处于闲暇窗口”，不是用户提问；禁止创建任务，默认给出简短状态型回复。
 
 ### query_history 触发条件
 

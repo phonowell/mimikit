@@ -122,7 +122,10 @@
 | `manager_fallback_reply` | `src/manager/history.ts` | `visibility=user` | manager 异常兜底回复。 |
 | `manager_error_system_message` | `src/manager/history.ts` | `visibility=all` | manager 内部错误反馈。 |
 | `action_feedback_system_message` (`M:action_feedback`) | `src/manager/history.ts` | `visibility=all` | action 校验错误反馈，下一轮 manager 消费。 |
-| `cron_trigger_system_input` (`M:cron_trigger`) | `src/manager/loop-cron.ts` | `visibility=all` | cron 到期事件，交由 manager 消费决策。 |
+| `cron_trigger_system_input` (`system_event.name=cron_trigger`) | `src/manager/loop-cron.ts` | `visibility=all` | cron 到期事件（`cron`/`scheduled_at` 二选一），交由 manager 消费决策。 |
+| `idle_system_input` (`system_event.name=idle`) | `src/manager/loop-idle.ts` | `visibility=all` | 系统连续闲暇一段时间后发布的状态事件，交由 manager 消费。 |
+
+manager 系统输入事件协议统一为：可见语义文本 + 隐藏标签 `<M:system_event name="..." version="1">JSON</M:system_event>`。
 
 ### Queue Packet
 

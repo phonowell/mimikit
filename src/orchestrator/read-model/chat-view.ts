@@ -1,3 +1,4 @@
+import { parseActions } from '../../actions/protocol/parse.js'
 import { isVisibleToUser } from '../../shared/message-visibility.js'
 
 import type { HistoryMessage, UserInput } from '../../types/index.js'
@@ -6,13 +7,17 @@ export type ChatMessage = HistoryMessage
 
 export type ChatMessagesMode = 'full' | 'delta' | 'reset'
 
+const toUserVisibleSystemText = (text: string): string =>
+  parseActions(text).text.trim()
+
 const toInflightChatMessage = (input: UserInput): ChatMessage => {
   if (input.role === 'system') {
+    const visibleText = toUserVisibleSystemText(input.text)
     return {
       id: input.id,
       role: input.role,
       visibility: input.visibility,
-      text: input.text,
+      text: visibleText,
       createdAt: input.createdAt,
       ...(input.quote ? { quote: input.quote } : {}),
     }
@@ -47,14 +52,27 @@ const mergeChatMessagesWithoutLimit = (params: {
   history: HistoryMessage[]
   inflightInputs: UserInput[]
 }): ChatMessage[] => {
-  const merged: ChatMessage[] = params.history.filter((message) =>
-    isVisibleToUser(message),
-  )
+  const merged: ChatMessage[] = []
+  for (const message of params.history) {
+    if (!isVisibleToUser(message)) continue
+    if (message.role !== 'system') {
+      merged.push(message)
+      continue
+    }
+    const visibleText = toUserVisibleSystemText(message.text)
+    if (!visibleText) continue
+    merged.push({
+      ...message,
+      text: visibleText,
+    })
+  }
   const seenIds = new Set(merged.map((message) => message.id))
   for (const input of params.inflightInputs) {
     if (!isVisibleToUser(input)) continue
     if (seenIds.has(input.id)) continue
-    merged.push(toInflightChatMessage(input))
+    const message = toInflightChatMessage(input)
+    if (message.role === 'system' && !message.text) continue
+    merged.push(message)
     seenIds.add(input.id)
   }
   return merged

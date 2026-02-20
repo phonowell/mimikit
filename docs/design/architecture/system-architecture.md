@@ -15,6 +15,7 @@
 - `manager`：消费 `inputs/results`，输出用户回复与编排动作。
 - `worker`：执行 `deferred/standard/specialist` 任务，回写结果。
 - `cron-wake-loop`：触发定时任务并发布 system 输入事件。
+- `idle-wake-loop`：系统闲暇窗口到达后发布 `system_event.name=idle` 的 system 输入事件。
 
 ## 启动顺序
 
@@ -24,7 +25,8 @@
 2. `enqueuePendingWorkerTasks`
 3. 启动 `managerLoop`
 4. 启动 `cronWakeLoop`
-5. 启动 `workerLoop`
+5. 启动 `idleWakeLoop`
+6. 启动 `workerLoop`
 
 ## 主链路（事件驱动）
 
@@ -33,7 +35,7 @@
 3. 若产生任务，worker 执行并写入 `results/packets.jsonl`。
 4. 结果回写后再次唤醒 manager，形成闭环。
 
-实时唤醒来源仅三类：`user_input`、`task_result`、`cron`。
+实时唤醒来源四类：`user_input`、`task_result`、`cron`、`idle`。
 
 ## 一致性与恢复
 

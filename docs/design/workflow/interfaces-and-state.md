@@ -20,6 +20,7 @@ HTTP 路由共享约束：
 - `POST /api/input` 的 body 校验统一在 `src/http/helpers.ts`（zod `safeParse`）。
 - `messages/tasks` 的 `limit` 归一化统一在 `src/http/helpers.ts`（容错回退默认值）。
 - `GET /api/messages` 返回：全部非 system 消息 + `visibility=user|all` 的 system 消息。
+- 对 `role=system` 消息，WebUI 展示层会去除隐藏的 `<M:...>` 标签，仅显示语义文本。
 - `:id` 参数校验与任务存在性校验统一在 `src/http/routes-api-sections.ts` 内部 helper。
 
 `GET /api/status` 响应关键字段：
@@ -74,8 +75,9 @@ HTTP 路由共享约束：
 - 归档元数据：`src/storage/archive-format.ts` 使用 front matter（`gray-matter`）。
 
 ## Manager 唤醒约束
-- 唤醒来源仅三类：`user_input`、`task_result`、`cron`
-- 三类均为实时 signal（`notifyManagerLoop`）
+- 唤醒来源四类：`user_input`、`task_result`、`cron`、`idle`
+- 四类均为实时 signal（`notifyManagerLoop`）
+- `idle` 由 `idle-wake-loop` 在持续闲暇窗口内按阈值触发（单次）
 - manager 推理输入来自 `inputs/results/history`，并遵循可见性过滤：全部非 system 消息 + `visibility=agent|all` 的 system 消息。
 
 ## Prompt 环境注入

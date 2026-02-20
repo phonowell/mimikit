@@ -4,6 +4,7 @@ import { type AppConfig } from '../../config.js'
 import { buildPaths } from '../../fs/paths.js'
 import { bestEffort, setDefaultLogPath } from '../../log/safe.js'
 import { cronWakeLoop } from '../../manager/loop-cron.js'
+import { idleWakeLoop } from '../../manager/loop-idle.js'
 import { managerLoop } from '../../manager/loop.js'
 import { createTaskResultNotifier } from '../../notify/node-notifier.js'
 import { newId, nowIso } from '../../shared/utils.js'
@@ -105,6 +106,7 @@ export class Orchestrator {
     notifyWorkerLoop(this.runtime)
     void managerLoop(this.runtime)
     void cronWakeLoop(this.runtime)
+    void idleWakeLoop(this.runtime)
     void workerLoop(this.runtime)
   }
 

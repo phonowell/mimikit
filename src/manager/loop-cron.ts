@@ -4,8 +4,8 @@ import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { notifyManagerLoop } from '../orchestrator/core/manager-signal.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
-import { newId } from '../shared/utils.js'
-import { publishUserInput } from '../streams/queues.js'
+
+import { publishManagerSystemEventInput } from './system-input-event.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 
@@ -22,22 +22,34 @@ type CronCheckResult = {
   triggeredCount: number
 }
 
-const toCronTriggerSystemText = (params: {
+type CronTriggerSchedule =
+  | {
+      cron: string
+      scheduledAt?: undefined
+    }
+  | {
+      cron?: undefined
+      scheduledAt: string
+    }
+
+const toCronTriggerPayload = (params: {
   cronJobId: string
   prompt: string
   title: string
   profile: RuntimeState['cronJobs'][number]['profile']
-  cronLabel: string
+  schedule: CronTriggerSchedule
   triggeredAt: string
-}): string =>
-  `M:cron_trigger\n${JSON.stringify({
-    cron_job_id: params.cronJobId,
-    title: params.title,
-    prompt: params.prompt,
-    profile: params.profile,
-    schedule: params.cronLabel,
-    triggered_at: params.triggeredAt,
-  })}`
+}): Record<string, unknown> => ({
+  cron_job_id: params.cronJobId,
+  title: params.title,
+  prompt: params.prompt,
+  profile: params.profile,
+  triggered_at: params.triggeredAt,
+  ...(params.schedule.cron ? { cron: params.schedule.cron } : {}),
+  ...(params.schedule.scheduledAt
+    ? { scheduled_at: params.schedule.scheduledAt }
+    : {}),
+})
 
 const publishCronTriggerSystemInput = async (params: {
   runtime: RuntimeState
@@ -45,31 +57,25 @@ const publishCronTriggerSystemInput = async (params: {
   prompt: string
   title: string
   profile: RuntimeState['cronJobs'][number]['profile']
-  cronLabel: string
+  schedule: CronTriggerSchedule
   triggeredAt: string
 }): Promise<void> => {
-  const input = {
-    id: newId(),
-    role: 'system' as const,
-    visibility: 'all' as const,
-    text: toCronTriggerSystemText(params),
+  const label = params.title.trim() || params.cronJobId
+  await publishManagerSystemEventInput({
+    runtime: params.runtime,
+    summary: `[系统] 定时任务已触发：${label}`,
+    event: 'cron_trigger',
+    visibility: 'all',
+    payload: toCronTriggerPayload(params),
     createdAt: params.triggeredAt,
-  }
-  await publishUserInput({
-    paths: params.runtime.paths,
-    payload: input,
-  })
-  params.runtime.inflightInputs.push(input)
-  await bestEffort('appendLog: cron_trigger_input', () =>
-    appendLog(params.runtime.paths.log, {
-      event: 'cron_trigger_input',
-      inputId: input.id,
+    logEvent: 'cron_trigger_input',
+    logMeta: {
       cronJobId: params.cronJobId,
       profile: params.profile,
-      schedule: params.cronLabel,
+      schedule: params.schedule.cron ?? params.schedule.scheduledAt,
       triggeredAt: params.triggeredAt,
-    }),
-  )
+    },
+  })
 }
 
 export const checkCronJobs = async (
@@ -101,7 +107,7 @@ export const checkCronJobs = async (
         prompt: cronJob.prompt,
         title: cronJob.title,
         profile: cronJob.profile,
-        cronLabel: cronJob.scheduledAt,
+        schedule: { scheduledAt: cronJob.scheduledAt },
         triggeredAt: nowAtIso,
       })
       triggeredCount += 1
@@ -139,7 +145,7 @@ export const checkCronJobs = async (
       prompt: cronJob.prompt,
       title: cronJob.title,
       profile: cronJob.profile,
-      cronLabel: cronJob.cron,
+      schedule: { cron: cronJob.cron },
       triggeredAt: nowAtIso,
     })
     triggeredCount += 1
