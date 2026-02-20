@@ -4,7 +4,34 @@ import { setStatusState, setStatusText } from './status.js'
 
 const RESTART_REQUEST_TIMEOUT_MS = 12000
 const STATUS_POLL_TIMEOUT_MS = 60000
-const STATUS_POLL_INTERVAL_MS = 1000
+const STATUS_POLL_INTERVAL_MS = 300
+const STATUS_REQUEST_OPTIONS = { cache: 'no-store' }
+
+const isRecord = (value) => Boolean(value) && typeof value === 'object'
+
+const readRuntimeIdFromStatus = (raw) => {
+  if (!isRecord(raw)) return ''
+  const runtimeId = raw.runtimeId
+  if (typeof runtimeId !== 'string') return ''
+  const trimmed = runtimeId.trim()
+  return trimmed.length > 0 ? trimmed : ''
+}
+
+const fetchStatusRuntimeId = async () => {
+  const response = await fetchWithTimeout(
+    '/api/status',
+    STATUS_REQUEST_OPTIONS,
+    RESTART_REQUEST_TIMEOUT_MS,
+  )
+  if (!response.ok) return ''
+  let payload = null
+  try {
+    payload = await response.json()
+  } catch {
+    payload = null
+  }
+  return readRuntimeIdFromStatus(payload)
+}
 
 export function bindRestart({
   restartBtn,
@@ -44,12 +71,35 @@ export function bindRestart({
     if (restartResetBtn) restartResetBtn.disabled = disabled
   }
 
-  const waitForServer = async (onReady) => {
+  const waitForServer = async ({ onReady, previousRuntimeId }) => {
     const deadline = Date.now() + STATUS_POLL_TIMEOUT_MS
+    const previousId =
+      typeof previousRuntimeId === 'string' ? previousRuntimeId.trim() : ''
+    if (!previousId) return false
+
     while (Date.now() < deadline) {
       try {
-        const res = await fetchWithTimeout('/api/status', {}, RESTART_REQUEST_TIMEOUT_MS)
-        if (res.ok) {
+        const res = await fetchWithTimeout(
+          '/api/status',
+          STATUS_REQUEST_OPTIONS,
+          RESTART_REQUEST_TIMEOUT_MS,
+        )
+        if (!res.ok) {
+          await delay(STATUS_POLL_INTERVAL_MS)
+          continue
+        }
+
+        let payload = null
+        try {
+          payload = await res.json()
+        } catch {
+          payload = null
+        }
+
+        const runtimeId = readRuntimeIdFromStatus(payload)
+        const runtimeChanged = runtimeId.length > 0 && runtimeId !== previousId
+
+        if (runtimeChanged) {
           if (typeof onReady === 'function') onReady()
           else {
             restartBtn.disabled = false
@@ -86,22 +136,37 @@ export function bindRestart({
     setStatusState(statusDot, '')
     if (messages) messages.stop()
     if (dialog) dialog.close()
+
+    let previousRuntimeId = ''
+    try {
+      previousRuntimeId = await fetchStatusRuntimeId()
+    } catch {
+      previousRuntimeId = ''
+    }
+    if (!previousRuntimeId) {
+      restoreAfterRequestFailure(mode)
+      return
+    }
+
     try {
       const response = await fetchWithTimeout(
         mode === 'reset' ? '/api/reset' : '/api/restart',
         { method: 'POST' },
         RESTART_REQUEST_TIMEOUT_MS,
       )
-      if (!response.ok) 
+      if (!response.ok)
         throw new Error(`restart request failed: ${response.status}`)
-      
     } catch (error) {
       console.warn('[webui] restart request failed', error)
       restoreAfterRequestFailure(mode)
       return
     }
-    const recovered = await waitForServer(() => {
-      window.location.reload()
+
+    const recovered = await waitForServer({
+      previousRuntimeId,
+      onReady: () => {
+        window.location.reload()
+      },
     })
     if (!recovered) restoreAfterRequestFailure(mode)
   }
@@ -145,7 +210,6 @@ export function bindRestart({
     restartDialog.addEventListener('click', onDialogClick)
     restartDialog.addEventListener('cancel', onDialogCancel)
     restartDialog.addEventListener('close', onDialogClose)
-  } else 
+  } else
     restartBtn.addEventListener('click', onOpen)
-  
 }

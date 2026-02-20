@@ -2,6 +2,7 @@ import type { RuntimeState } from './runtime-state.js'
 
 export type OrchestratorStatus = {
   ok: boolean
+  runtimeId: string
   agentStatus: 'idle' | 'running'
   activeTasks: number
   pendingTasks: number
@@ -30,6 +31,7 @@ export const computeOrchestratorStatus = (
     runtime.managerRunning || activeTasks > 0 ? 'running' : 'idle'
   return {
     ok: true,
+    runtimeId: runtime.runtimeId,
     agentStatus,
     activeTasks,
     pendingTasks,

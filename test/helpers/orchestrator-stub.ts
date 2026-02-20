@@ -10,6 +10,7 @@ export const createOrchestratorStub = () => {
   const orchestrator = {
     getStatus: () => ({
       ok: true,
+      runtimeId: 'runtime-stub-1',
       agentStatus: 'idle',
       activeTasks: 0,
       pendingTasks: 0,

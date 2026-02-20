@@ -38,6 +38,8 @@ import { notifyWorkerLoop } from './worker-signal.js'
 import type { RuntimeState, UserMeta } from './runtime-state.js'
 import type { CronJob, Task, WorkerProfile } from '../../types/index.js'
 
+const SHUTDOWN_MANAGER_WAIT_POLL_MS = 50
+
 export class Orchestrator {
   private runtime: RuntimeState
 
@@ -45,6 +47,7 @@ export class Orchestrator {
     const paths = buildPaths(config.workDir)
     setDefaultLogPath(paths.log)
     this.runtime = {
+      runtimeId: newId(),
       config,
       paths,
       stopped: false,
@@ -63,6 +66,14 @@ export class Orchestrator {
       workerSignalController: new AbortController(),
       uiSignalController: new AbortController(),
       taskResultNotifier: createTaskResultNotifier(paths.log),
+    }
+  }
+
+  private async waitForManagerDrain(): Promise<void> {
+    while (this.runtime.managerRunning) {
+      await new Promise<void>((resolve) =>
+        setTimeout(resolve, SHUTDOWN_MANAGER_WAIT_POLL_MS),
+      )
     }
   }
 
@@ -103,6 +114,7 @@ export class Orchestrator {
 
   async stopAndPersist(): Promise<void> {
     this.prepareStop()
+    await this.waitForManagerDrain()
     await this.persistStopSnapshot()
   }
 

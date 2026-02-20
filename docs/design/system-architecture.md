@@ -41,6 +41,7 @@
 定义：`src/orchestrator/core/runtime-state.ts`
 
 - `managerRunning`
+- `runtimeId`（进程实例标识，重启后变化）
 - `queues.inputsCursor`
 - `queues.resultsCursor`
 - `plannerSessionId`
@@ -136,3 +137,9 @@
 - `runtime-snapshot.json`
 - `history/YYYY-MM-DD.jsonl`
 - `tasks/tasks.jsonl`
+
+## Restart 与一致性
+
+- 控制接口：`POST /api/restart`、`POST /api/reset`（`src/http/routes-api-control-routes.ts`）。
+- 执行顺序：回包 -> 置 `runtime.stopped` -> 等待 in-flight manager 批次收敛 -> `persistRuntimeState` -> `exit(75)`。
+- 目标：避免 manager 已开始处理但 cursor 尚未持久化时直接退出，导致同一输入在重启后被重复消费。

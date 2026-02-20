@@ -33,6 +33,7 @@ export type UiAgentStream = {
 }
 
 export type RuntimeState = {
+  runtimeId: string
   config: AppConfig
   paths: StatePaths
   stopped: boolean

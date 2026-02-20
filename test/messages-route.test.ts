@@ -13,6 +13,16 @@ test('messages route forwards afterId and returns mode', async () => {
   const config = defaultConfig({ workDir: '.mimikit' })
   registerApiRoutes(app, orchestrator, config)
 
+  const statusResponse = await app.inject({
+    method: 'GET',
+    url: '/api/status',
+  })
+  expect(statusResponse.statusCode).toBe(200)
+  expect(statusResponse.json()).toMatchObject({
+    ok: true,
+    runtimeId: 'runtime-stub-1',
+  })
+
   const response = await app.inject({
     method: 'GET',
     url: '/api/messages?limit=20&afterId=msg-123',

@@ -21,6 +21,10 @@ HTTP 路由共享约束：
 - `messages/tasks` 的 `limit` 归一化统一在 `src/http/helpers.ts`（容错回退默认值）。
 - `:id` 参数校验与任务存在性校验统一在 `src/http/routes-api-sections.ts` 内部 helper。
 
+`GET /api/status` 响应关键字段：
+- `runtimeId`：当前进程实例标识；每次进程重启都会变化，可用于前端判定“是否已切换到新实例”。
+- `agentStatus` / `managerRunning` / `pendingInputs`：用于 WebUI 运行态与恢复态渲染。
+
 ## CLI
 - `tsx src/cli/index.ts`
 - `tsx src/cli/index.ts --port 8787`
@@ -90,3 +94,8 @@ HTTP 路由共享约束：
 - 主会话恢复字段：
   - `plannerSessionId`
 - 旧 grouped channel 结构不再兼容解析。
+
+## Restart 语义
+- `POST /api/restart` 与 `POST /api/reset` 均为“先响应请求，再异步停机”。
+- 停机阶段会等待 in-flight manager 批次结束，再持久化 snapshot 并退出。
+- WebUI 重启判定优先使用 `/api/status.runtimeId` 变更，避免旧实例短暂存活导致的误判刷新。
