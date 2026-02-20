@@ -61,7 +61,7 @@ export const appendManagerErrorSystemMessage = async (
     role: 'system',
     visibility: 'all',
     text: formatSystemEventText({
-      summary: detail ? `Manager failed · ${detail}` : 'Manager failed',
+      summary: detail ? `Manager failed: ${detail}` : 'Manager failed.',
       event: 'manager_error',
       payload: detail ? { error: detail } : {},
     }),
@@ -99,14 +99,14 @@ const formatActionFeedbackSummary = (
   entries: ActionFeedbackEntry[],
 ): string => {
   if (entries.length === 0) return ''
-  const header = `Action 执行反馈 · ${entries.length} 条`
-  const details = entries.map((item, index) =>
-    [
-      `${index + 1}. action: ${item.action}`,
-      `   error: ${item.error}`,
-      `   hint: ${item.hint}`,
-      ...(item.attempted ? [`   attempted: ${item.attempted}`] : []),
-    ].join('\n'),
+  const header = `Received ${entries.length} action feedback item${
+    entries.length === 1 ? '' : 's'
+  }.`
+  const details = entries.map(
+    (item, index) =>
+      `${index + 1}. Action "${item.action}" failed with "${item.error}". Suggested fix: ${item.hint}${
+        item.attempted ? ` Attempted: ${item.attempted}.` : ''
+      }`,
   )
   return [header, ...details].join('\n')
 }

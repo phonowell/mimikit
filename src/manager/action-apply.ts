@@ -47,7 +47,7 @@ const appendCronCanceledSystemMessage = async (
     role: 'system',
     visibility: 'user',
     text: formatSystemEventText({
-      summary: `Task canceled · ${label}`,
+      summary: `Canceled task "${label}".`,
       event: 'cron_canceled',
       payload: {
         cron_job_id: cronJobId,

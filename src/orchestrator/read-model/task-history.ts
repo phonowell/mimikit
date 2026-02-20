@@ -12,17 +12,13 @@ import type {
 
 type TaskHistoryEvent = 'created' | 'canceled' | 'completed'
 
-const STATUS_LABELS: Record<TaskResultStatus, string> = {
-  succeeded: 'done',
-  failed: 'failed',
-  canceled: 'canceled',
-}
-
 const resolveTaskLabel = (task: Task): string => {
   const title = task.title.trim()
   if (title && title !== task.id) return title
   return task.id
 }
+
+const formatTaskLabel = (label: string): string => `"${label}"`
 
 const buildTaskText = (
   event: TaskHistoryEvent,
@@ -30,14 +26,17 @@ const buildTaskText = (
   status?: TaskResultStatus,
   cancel?: TaskCancelMeta,
 ): string => {
-  if (event === 'created') return `Task created · ${label}`
+  const taskLabel = formatTaskLabel(label)
+  if (event === 'created') return `Created task ${taskLabel}.`
   if (event === 'canceled') {
     return cancel?.source === 'user'
-      ? `Task canceled by user · ${label}`
-      : `Task canceled · ${label}`
+      ? `Canceled task ${taskLabel} at the user's request.`
+      : `Canceled task ${taskLabel}.`
   }
-  const statusLabel = status ? STATUS_LABELS[status] : 'completed'
-  return `Task ${statusLabel} · ${label}`
+  if (status === 'succeeded') return `Task ${taskLabel} completed successfully.`
+  if (status === 'failed') return `Task ${taskLabel} failed.`
+  if (status === 'canceled') return `Task ${taskLabel} was canceled.`
+  return `Task ${taskLabel} completed.`
 }
 
 const TASK_EVENT_NAME: Record<

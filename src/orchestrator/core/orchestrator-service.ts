@@ -102,7 +102,7 @@ export class Orchestrator {
         role: 'system',
         visibility: 'user',
         text: formatSystemEventText({
-          summary: 'Started',
+          summary: 'Session started.',
           event: 'startup',
           payload: {
             runtime_id: this.runtime.runtimeId,
