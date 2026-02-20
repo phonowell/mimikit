@@ -72,19 +72,48 @@ export const startUsageStreamMonitor = (params: {
       firstSeenAt: number
     }
   >()
+  const pendingFlushTimers = new Map<string, ReturnType<typeof setTimeout>>()
+
+  const clearPendingFlushTimer = (partID: string): void => {
+    const timer = pendingFlushTimers.get(partID)
+    if (!timer) return
+    clearTimeout(timer)
+    pendingFlushTimers.delete(partID)
+  }
+
+  const schedulePendingFlush = (partID: string): void => {
+    if (pendingFlushTimers.has(partID)) return
+    const timer = setTimeout(() => {
+      pendingFlushTimers.delete(partID)
+      const now = Date.now()
+      flushPartDeltas(partID, now)
+      flushEligiblePending(now)
+    }, UNKNOWN_TEXT_PART_FLUSH_DELAY_MS)
+    pendingFlushTimers.set(partID, timer)
+  }
 
   const flushPartDeltas = (partID: string, now = Date.now()): void => {
     const pending = pendingDeltas.get(partID)
-    if (!pending) return
+    if (!pending) {
+      clearPendingFlushTimer(partID)
+      return
+    }
     if (!activeMessageIDs.has(pending.messageID)) return
-    if (hiddenTextPartIDs.has(partID)) return
+    if (hiddenTextPartIDs.has(partID)) {
+      pendingDeltas.delete(partID)
+      clearPendingFlushTimer(partID)
+      return
+    }
     if (
       !visibleTextPartIDs.has(partID) &&
       now - pending.firstSeenAt < UNKNOWN_TEXT_PART_FLUSH_DELAY_MS
-    )
+    ) {
+      schedulePendingFlush(partID)
       return
+    }
     for (const chunk of pending.chunks) params.onTextDelta?.(chunk)
     pendingDeltas.delete(partID)
+    clearPendingFlushTimer(partID)
   }
   const flushEligiblePending = (now = Date.now()): void => {
     for (const [partID, pending] of pendingDeltas) {
@@ -119,6 +148,7 @@ export const startUsageStreamMonitor = (params: {
             for (const [partID, pending] of pendingDeltas) {
               if (pending.messageID !== messageID) {
                 pendingDeltas.delete(partID)
+                clearPendingFlushTimer(partID)
                 continue
               }
               flushPartDeltas(partID, now)
@@ -143,6 +173,7 @@ export const startUsageStreamMonitor = (params: {
               hiddenTextPartIDs.add(textPartState.partID)
               visibleTextPartIDs.delete(textPartState.partID)
               pendingDeltas.delete(textPartState.partID)
+              clearPendingFlushTimer(textPartState.partID)
             }
           }
         }
@@ -178,6 +209,7 @@ export const startUsageStreamMonitor = (params: {
             chunks: [delta.delta],
             firstSeenAt: now,
           })
+          schedulePendingFlush(delta.partID)
         }
         flushPartDeltas(delta.partID, now)
         flushEligiblePending(now)
@@ -186,6 +218,8 @@ export const startUsageStreamMonitor = (params: {
       if (!isAbortLikeStreamError(error, streamAbort.signal)) throw error
     } finally {
       params.abortSignal.removeEventListener('abort', forwardAbort)
+      for (const timer of pendingFlushTimers.values()) clearTimeout(timer)
+      pendingFlushTimers.clear()
     }
   })()
 

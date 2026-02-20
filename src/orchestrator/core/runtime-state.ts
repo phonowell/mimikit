@@ -31,6 +31,8 @@ export type UiAgentStream = {
   updatedAt: ISODate
 }
 
+export type UiWakeKind = 'snapshot' | 'stream'
+
 export type RuntimeState = {
   runtimeId: string
   config: AppConfig
@@ -56,6 +58,7 @@ export type RuntimeState = {
   workerQueue: PQueue
   workerSignalController: AbortController
   uiWakePending: boolean
+  uiWakeKind: UiWakeKind | null
   uiSignalController?: AbortController
   lastUserMeta?: UserMeta
 }

@@ -35,7 +35,7 @@ import {
 import { waitForUiSignal } from './ui-signal.js'
 import { notifyWorkerLoop } from './worker-signal.js'
 
-import type { RuntimeState, UserMeta } from './runtime-state.js'
+import type { RuntimeState, UiWakeKind, UserMeta } from './runtime-state.js'
 import type { CronJob, Task, WorkerProfile } from '../../types/index.js'
 
 const SHUTDOWN_MANAGER_WAIT_POLL_MS = 50
@@ -68,6 +68,7 @@ export class Orchestrator {
       workerQueue: new PQueue({ concurrency: config.worker.maxConcurrent }),
       workerSignalController: new AbortController(),
       uiWakePending: false,
+      uiWakeKind: null,
       uiSignalController: new AbortController(),
     }
   }
@@ -159,7 +160,11 @@ export class Orchestrator {
     }))()
   }
 
-  waitForWebUiSignal(timeoutMs: number): Promise<void> {
+  getWebUiStreamSnapshot() {
+    return this.runtime.uiStream ? { ...this.runtime.uiStream } : null
+  }
+
+  waitForWebUiSignal(timeoutMs: number): Promise<UiWakeKind | 'timeout'> {
     return waitForUiSignal(this.runtime, timeoutMs)
   }
 

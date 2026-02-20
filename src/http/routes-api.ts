@@ -30,6 +30,7 @@ const createSseStream = (request: FastifyRequest, reply: FastifyReply) => {
   response.setHeader('Cache-Control', 'no-cache, no-transform')
   response.setHeader('Connection', 'keep-alive')
   response.setHeader('X-Accel-Buffering', 'no')
+  response.socket?.setNoDelay(true)
   if (typeof response.flushHeaders === 'function') response.flushHeaders()
   response.write(`retry: ${SSE_RETRY_MS}\n\n`)
 
@@ -47,9 +48,12 @@ const createSseStream = (request: FastifyRequest, reply: FastifyReply) => {
     isClosed,
     writeEvent: (event: string, payload: unknown): boolean => {
       if (isClosed()) return false
-      response.write(`event: ${event}\n`)
-      response.write(`data: ${JSON.stringify(payload)}\n\n`)
-      return true
+      const wrote = response.write(
+        `event: ${event}\ndata: ${JSON.stringify(payload)}\n\n`,
+      )
+      const { flush } = response as { flush?: () => void }
+      if (typeof flush === 'function') flush.call(response)
+      return wrote
     },
     cleanup: () => {
       request.raw.off('aborted', markClosed)
@@ -67,19 +71,31 @@ export const registerApiRoutes = (
   app.get('/api/events', async (request, reply) => {
     const stream = createSseStream(request, reply)
     let lastSnapshotEtag = ''
+    let lastStreamEtag = ''
     try {
       const initial = await getDefaultSnapshot(orchestrator)
       lastSnapshotEtag = buildPayloadEtag('events', initial)
+      lastStreamEtag = buildPayloadEtag('stream', initial.stream)
       stream.writeEvent('snapshot', initial)
 
       for (;;) {
         if (stream.isClosed()) break
-        await orchestrator.waitForWebUiSignal(SSE_HEARTBEAT_MS)
+        const signal = await orchestrator.waitForWebUiSignal(SSE_HEARTBEAT_MS)
         if (stream.isClosed()) break
+        if (signal === 'timeout') continue
+        if (signal === 'stream') {
+          const streamPayload = orchestrator.getWebUiStreamSnapshot()
+          const streamEtag = buildPayloadEtag('stream', streamPayload)
+          if (streamEtag === lastStreamEtag) continue
+          lastStreamEtag = streamEtag
+          if (!stream.writeEvent('message', { stream: streamPayload })) break
+          continue
+        }
         const snapshot = await getDefaultSnapshot(orchestrator)
         const snapshotEtag = buildPayloadEtag('events', snapshot)
         if (snapshotEtag === lastSnapshotEtag) continue
         lastSnapshotEtag = snapshotEtag
+        lastStreamEtag = buildPayloadEtag('stream', snapshot.stream)
         if (!stream.writeEvent('snapshot', snapshot)) break
       }
     } catch (error) {

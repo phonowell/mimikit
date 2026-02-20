@@ -35,7 +35,7 @@ export const setUiStreamText = (
   if (stream.text === nextText) return
   stream.text = nextText
   stream.updatedAt = nowIso()
-  notifyUiSignal(runtime)
+  notifyUiSignal(runtime, 'stream')
 }
 
 export const resetUiStream = (
@@ -46,7 +46,7 @@ export const resetUiStream = (
   if (stream?.id !== streamId) return
   stream.text = ''
   stream.updatedAt = nowIso()
-  notifyUiSignal(runtime)
+  notifyUiSignal(runtime, 'stream')
 }
 
 export const setUiStreamUsage = (
@@ -61,7 +61,7 @@ export const setUiStreamUsage = (
   if (mergedUsage) stream.usage = mergedUsage
   else if ('usage' in stream) delete stream.usage
   stream.updatedAt = nowIso()
-  notifyUiSignal(runtime)
+  notifyUiSignal(runtime, 'stream')
   return mergedUsage
 }
 
