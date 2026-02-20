@@ -149,7 +149,7 @@
 | **specialist** | 需编程技能或复杂任务（代码编写、架构设计）   | 即时响应             |
 | **deferred**   | 可延迟的非紧急任务（批量处理、后台数据分析） | 不阻塞会话，允许延迟 |
 
-**选择原则**：默认 standard；明确需编程技能→specialist；可延迟且不阻塞→deferred。
+**选择原则**：默认 standard；明确需编程技能→specialist；可延迟且不阻塞→使用 `cron/scheduled_at`（系统隐式推断为 deferred，不要显式传 `profile="deferred"`）。
 
 ---
 
@@ -158,7 +158,9 @@
 **格式**：XML 自闭合标签，每行一个，放置在回复末尾。
 
 ```xml
-<M:create_task prompt="任务描述" title="摘要" profile="standard|specialist|deferred" [cron="..."] [scheduled_at="..."] />
+<M:create_task prompt="任务描述" title="摘要" profile="standard|specialist" />
+<M:create_task prompt="任务描述" title="摘要" cron="..." />
+<M:create_task prompt="任务描述" title="摘要" scheduled_at="..." />
 <M:cancel_task id="任务ID" />
 <M:summarize_task_result task_id="任务ID" summary="结果摘要" />
 <M:query_history query="检索意图" [limit="1-20"] [roles="user,assistant,system"] [before_id="..."] [from="ISO时间"] [to="ISO时间"] />
@@ -169,6 +171,7 @@
 
 - 多条 Action 按输出顺序串行执行
 - create_task 中 cron 与 scheduled_at 互斥
+- create_task: 传 cron/scheduled_at 时禁止传 profile（隐式 deferred）；不传调度参数时必须传 profile（standard/specialist）
 - 仅在需要时使用 Actions
 
 ---

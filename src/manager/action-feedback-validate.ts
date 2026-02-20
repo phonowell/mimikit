@@ -68,7 +68,10 @@ const validateCreateTask = (item: Parsed): ValidationIssue[] => {
   const parsed = createSchema.safeParse(item.attrs)
   if (!parsed.success) return [invalidArgsIssue(parsed.error)]
   const { data } = parsed
-  if (data.profile !== 'deferred' && hasForbiddenWorkerStatePath(data.prompt)) {
+  const cron = data.cron?.trim()
+  const scheduledAt = data.scheduled_at?.trim()
+  const isDeferred = Boolean(cron ?? scheduledAt)
+  if (!isDeferred && hasForbiddenWorkerStatePath(data.prompt)) {
     return [
       {
         error: ACTION_EXECUTION_REJECTED,
@@ -76,7 +79,6 @@ const validateCreateTask = (item: Parsed): ValidationIssue[] => {
       },
     ]
   }
-  const scheduledAt = data.scheduled_at?.trim()
   if (scheduledAt && !Number.isFinite(Date.parse(scheduledAt))) {
     return [
       {

@@ -84,6 +84,20 @@ test('create_task dedupe only applies to same fingerprint and still re-enqueues 
   expect(runtime.tasks).toHaveLength(2)
   expect(runtime.tasks[1]?.title).toBe('new title')
   expect(runtime.tasks[1]?.fingerprint).not.toBe(runtime.tasks[0]?.fingerprint)
+
+  await applyTaskActions(runtime, [
+    {
+      name: 'create_task',
+      attrs: {
+        prompt: 'scheduled with profile',
+        title: 'invalid',
+        profile: 'standard',
+        cron: '0 0 9 * * *',
+      },
+    },
+  ])
+
+  expect(runtime.cronJobs).toHaveLength(0)
 })
 
 test('create_task rejects forbidden .mimikit state paths for worker profiles', async () => {
@@ -103,7 +117,7 @@ test('create_task rejects forbidden .mimikit state paths for worker profiles', a
   expect(runtime.tasks).toHaveLength(0)
 })
 
-test('create_task allows .mimikit/generated path for worker profiles', async () => {
+test('create_task allows .mimikit/generated path for worker profiles and infers deferred for scheduled tasks', async () => {
   const runtime = await createRuntime()
 
   await applyTaskActions(runtime, [
@@ -119,4 +133,18 @@ test('create_task allows .mimikit/generated path for worker profiles', async () 
 
   expect(runtime.tasks).toHaveLength(1)
   expect(runtime.tasks[0]?.title).toBe('allowed')
+
+  await applyTaskActions(runtime, [
+    {
+      name: 'create_task',
+      attrs: {
+        prompt: 'Read .mimikit/history/2026-02-15.jsonl and summarize',
+        title: 'scheduled',
+        cron: '0 0 9 * * *',
+      },
+    },
+  ])
+
+  expect(runtime.cronJobs).toHaveLength(1)
+  expect(runtime.cronJobs[0]?.profile).toBe('deferred')
 })

@@ -15,15 +15,37 @@ export const createSchema = z
   .object({
     prompt: nonEmptyString,
     title: nonEmptyString,
-    profile: z.enum(['standard', 'specialist', 'deferred']),
+    profile: z.enum(['standard', 'specialist']).optional(),
     cron: z.string().trim().optional(),
     scheduled_at: z.string().trim().optional(),
   })
   .strict()
-  .refine(
-    (data) => !(data.cron?.trim() && data.scheduled_at?.trim()),
-    'cron and scheduled_at are mutually exclusive',
-  )
+  .superRefine((data, ctx) => {
+    const hasCron = Boolean(data.cron?.trim())
+    const hasScheduledAt = Boolean(data.scheduled_at?.trim())
+    const hasSchedule = hasCron || hasScheduledAt
+    if (hasCron && hasScheduledAt) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'cron and scheduled_at are mutually exclusive',
+        path: ['cron'],
+      })
+    }
+    if (hasSchedule && data.profile !== undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'profile must be omitted when cron or scheduled_at is set',
+        path: ['profile'],
+      })
+    }
+    if (!hasSchedule && data.profile === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'profile is required when cron and scheduled_at are absent',
+        path: ['profile'],
+      })
+    }
+  })
 
 export const cancelSchema = z
   .object({

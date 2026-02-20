@@ -11,7 +11,9 @@
 ## 派发与去重
 
 - manager 通过 `<M:create_task ... />` 派发任务。
-- `profile`：`deferred | standard | specialist`。
+- `profile` 推断：
+  - 无 `cron/scheduled_at`：必须显式 `standard | specialist`
+  - 有 `cron/scheduled_at`：隐式 `deferred`（禁止显式传 `profile`）
 - 去重两层：
   - action 去重键：`prompt + title + profile`
   - queue 去重键：`task.fingerprint`（`prompt + title + profile + schedule`，仅拦 active 任务）
@@ -58,8 +60,11 @@
 
 ### `create_task`
 
-- 入参：`prompt`、`title`、`profile`
-- 约束：`profile ∈ {deferred, standard, specialist}`
+- 入参：`prompt`、`title`、`profile?`、`cron?`、`scheduled_at?`
+- 约束：
+  - `cron` 与 `scheduled_at` 互斥
+  - 有 `cron/scheduled_at` 时禁止传 `profile`，系统隐式推断 `profile=deferred`
+  - 无 `cron/scheduled_at` 时必须传 `profile ∈ {standard, specialist}`
 - 去重：`prompt + title + profile`
 
 ### `cancel_task`

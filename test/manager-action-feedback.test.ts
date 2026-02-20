@@ -29,6 +29,14 @@ test('collectManagerActionFeedback reports unregistered, invalid args, and rejec
       },
     },
     {
+      name: 'create_task',
+      attrs: {
+        prompt: 'scheduled task',
+        title: 'legacy deferred profile',
+        profile: 'deferred',
+      },
+    },
+    {
       name: 'cancel_task',
       attrs: {
         id: 'missing-id',
@@ -51,7 +59,7 @@ test('collectManagerActionFeedback reports unregistered, invalid args, and rejec
     taskStatusById: new Map([['done-id', 'succeeded']]),
   })
 
-  expect(feedback).toHaveLength(6)
+  expect(feedback).toHaveLength(7)
   expect(feedback[0]?.action).toBe('read')
   expect(feedback[0]?.error).toBe('unregistered_action')
   expect(feedback[0]?.attempted).toContain('<M:read')
@@ -63,6 +71,14 @@ test('collectManagerActionFeedback reports unregistered, invalid args, and rejec
       (item) =>
         item.action === 'create_task' &&
         item.error === 'action_execution_rejected',
+    ),
+  ).toBe(true)
+  expect(
+    feedback.some(
+      (item) =>
+        item.action === 'create_task' &&
+        item.error === 'invalid_action_args' &&
+        item.attempted.includes('profile="deferred"'),
     ),
   ).toBe(true)
   expect(

@@ -34,11 +34,18 @@ export const applyCreateTask = async (
   if (options?.suppressCreateTask) return
   const parsed = createSchema.safeParse(item.attrs)
   if (!parsed.success) return
-  const profile = parsed.data.profile as WorkerProfile
-  if (profile !== 'deferred' && hasForbiddenWorkerStatePath(parsed.data.prompt))
-    return
   const cron = parsed.data.cron?.trim()
   const scheduledAt = parsed.data.scheduled_at?.trim()
+  const hasSchedule = Boolean(cron ?? scheduledAt)
+  const profileFromInput = parsed.data.profile
+  if (!hasSchedule && !profileFromInput) return
+  const profile: WorkerProfile = hasSchedule
+    ? 'deferred'
+    : profileFromInput === 'specialist'
+      ? 'specialist'
+      : 'standard'
+  if (profile !== 'deferred' && hasForbiddenWorkerStatePath(parsed.data.prompt))
+    return
   const scheduleKey = cron ?? scheduledAt ?? ''
   const semanticKey = buildTaskSemanticKey({
     prompt: parsed.data.prompt,
