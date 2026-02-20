@@ -50,7 +50,7 @@
 
 实现：`src/manager/action-apply.ts`、`src/manager/loop-batch-run-manager.ts`、`src/manager/history-query.ts`
 
-当 manager 输出未注册 action、action 参数不合法、或可判定的执行失败（如 `cancel_task` 目标不存在）时，系统会在下一次同批次重试中注入 `M:action_feedback`，显式告知错误并要求修正后重试。
+当 manager 输出未注册 action、action 参数不合法、或可判定的执行失败（如 `cancel_task` 目标不存在）时，系统会在下一次同批次重试中注入 `system_event.name=action_feedback`，显式告知错误并要求修正后重试。
 
 ### `query_history`
 
@@ -81,7 +81,7 @@
 
 - 入参：无
 - 行为：对当前 manager 会话执行一次 OpenCode `session.summarize`，压缩历史上下文并保留关键信息。
-- 约束：仅当存在 `plannerSessionId` 时可执行；否则会返回 `action_feedback` 要求修正。
+- 约束：仅当存在 `plannerSessionId` 时可执行；否则会返回 `system_event.name=action_feedback` 要求修正。
 
 ## Worker 输出规则
 
@@ -133,15 +133,18 @@
 
 | 消息 | 来源 | 可见性 | 说明 |
 | --- | --- | --- | --- |
-| `startup_system_message` | `src/orchestrator/core/orchestrator-service.ts` | `visibility=user` | 服务启动提示。 |
-| `task_system_message(created|completed|canceled)` | `src/orchestrator/read-model/task-history.ts` | `visibility=user` | 任务状态提示。 |
-| `manager_fallback_reply` | `src/manager/history.ts` | `visibility=user` | manager 异常兜底回复。 |
-| `manager_error_system_message` | `src/manager/history.ts` | `visibility=all` | manager 内部错误反馈。 |
-| `action_feedback_system_message` (`M:action_feedback`) | `src/manager/history.ts` | `visibility=all` | action 校验错误反馈，下一轮 manager 消费。 |
+| `startup_system_message` (`system_event.name=startup`) | `src/orchestrator/core/orchestrator-service.ts` | `visibility=user` | 服务启动提示。 |
+| `task_system_message(created)` (`system_event.name=task_created`) | `src/orchestrator/read-model/task-history.ts` | `visibility=user` | 任务创建提示。 |
+| `task_system_message(completed)` (`system_event.name=task_completed`) | `src/orchestrator/read-model/task-history.ts` | `visibility=user` | 任务完成提示。 |
+| `task_system_message(canceled)` (`system_event.name=task_canceled`) | `src/orchestrator/read-model/task-history.ts` | `visibility=user` | 任务取消提示。 |
+| `cron_task_canceled_system_message` (`system_event.name=cron_canceled`) | `src/manager/action-apply.ts` | `visibility=user` | manager 取消 cron 后写回提示。 |
+| `manager_fallback_reply` (`system_event.name=manager_fallback_reply`) | `src/manager/history.ts` | `visibility=user` | manager 异常兜底回复。 |
+| `manager_error_system_message` (`system_event.name=manager_error`) | `src/manager/history.ts` | `visibility=all` | manager 内部错误反馈。 |
+| `action_feedback_system_message` (`system_event.name=action_feedback`) | `src/manager/history.ts` | `visibility=all` | action 校验错误反馈，下一轮 manager 消费。 |
 | `cron_trigger_system_input` (`system_event.name=cron_trigger`) | `src/manager/loop-cron.ts` | `visibility=all` | cron 到期事件（`cron`/`scheduled_at` 二选一），交由 manager 消费决策。 |
 | `idle_system_input` (`system_event.name=idle`) | `src/manager/loop-idle.ts` | `visibility=all` | 系统连续闲暇一段时间后发布的状态事件，交由 manager 消费。 |
 
-manager 系统输入事件协议统一为：可见语义文本 + 隐藏标签 `<M:system_event name="..." version="1">JSON</M:system_event>`。
+所有 system 会话消息统一协议为：可见语义文本 + 隐藏标签 `<M:system_event name="..." version="1">JSON</M:system_event>`。
 
 ### Queue Packet
 

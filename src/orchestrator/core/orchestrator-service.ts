@@ -7,6 +7,7 @@ import { cronWakeLoop } from '../../manager/loop-cron.js'
 import { idleWakeLoop } from '../../manager/loop-idle.js'
 import { managerLoop } from '../../manager/loop.js'
 import { createTaskResultNotifier } from '../../notify/node-notifier.js'
+import { formatSystemEventText } from '../../shared/system-event.js'
 import { newId, nowIso } from '../../shared/utils.js'
 import { appendHistory } from '../../storage/history-jsonl.js'
 import { cancelTask } from '../../worker/cancel-task.js'
@@ -96,13 +97,21 @@ export class Orchestrator {
 
   async start() {
     await hydrateRuntimeState(this.runtime)
+    const startedAt = nowIso()
     await bestEffort('appendHistory: startup_system_message', () =>
       appendHistory(this.runtime.paths.history, {
         id: `sys-startup-${newId()}`,
         role: 'system',
         visibility: 'user',
-        text: 'Started',
-        createdAt: nowIso(),
+        text: formatSystemEventText({
+          summary: 'Started',
+          event: 'startup',
+          payload: {
+            runtime_id: this.runtime.runtimeId,
+            started_at: startedAt,
+          },
+        }),
+        createdAt: startedAt,
       }),
     )
     enqueuePendingWorkerTasks(this.runtime)

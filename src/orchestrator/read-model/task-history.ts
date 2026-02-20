@@ -1,4 +1,5 @@
 import { safe } from '../../log/safe.js'
+import { formatSystemEventText } from '../../shared/system-event.js'
 import { newId, nowIso } from '../../shared/utils.js'
 import { appendHistory } from '../../storage/history-jsonl.js'
 
@@ -39,6 +40,32 @@ const buildTaskText = (
   return `Task ${statusLabel} · ${label}`
 }
 
+const TASK_EVENT_NAME: Record<
+  TaskHistoryEvent,
+  'task_created' | 'task_canceled' | 'task_completed'
+> = {
+  created: 'task_created',
+  canceled: 'task_canceled',
+  completed: 'task_completed',
+}
+
+const buildTaskPayload = (
+  event: TaskHistoryEvent,
+  task: Task,
+  label: string,
+  status?: TaskResultStatus,
+  cancel?: TaskCancelMeta,
+): Record<string, unknown> => ({
+  task_id: task.id,
+  label,
+  ...(task.title.trim() ? { title: task.title.trim() } : {}),
+  ...(event === 'created' ? { status: 'pending' } : {}),
+  ...(event === 'completed' ? { status: status ?? 'completed' } : {}),
+  ...(event === 'canceled' ? { status: 'canceled' } : {}),
+  ...(cancel?.source ? { cancel_source: cancel.source } : {}),
+  ...(cancel?.reason ? { cancel_reason: cancel.reason } : {}),
+})
+
 export const appendTaskSystemMessage = (
   historyPath: string,
   event: TaskHistoryEvent,
@@ -49,12 +76,18 @@ export const appendTaskSystemMessage = (
     cancel?: TaskCancelMeta
   },
 ): Promise<boolean> => {
-  const text = buildTaskText(
-    event,
-    resolveTaskLabel(task),
-    options?.status,
-    options?.cancel,
-  )
+  const label = resolveTaskLabel(task)
+  const text = formatSystemEventText({
+    summary: buildTaskText(event, label, options?.status, options?.cancel),
+    event: TASK_EVENT_NAME[event],
+    payload: buildTaskPayload(
+      event,
+      task,
+      label,
+      options?.status,
+      options?.cancel,
+    ),
+  })
   const message: HistoryMessage = {
     id: `sys-task-${newId()}`,
     role: 'system',

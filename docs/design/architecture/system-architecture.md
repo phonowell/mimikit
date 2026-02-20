@@ -14,8 +14,10 @@
 
 - `manager`：消费 `inputs/results`，输出用户回复与编排动作。
 - `worker`：执行 `deferred/standard/specialist` 任务，回写结果。
-- `cron-wake-loop`：触发定时任务并发布 system 输入事件。
+- `cron-wake-loop`：触发定时任务并发布 `system_event` 协议 system 输入事件。
 - `idle-wake-loop`：系统闲暇窗口到达后发布 `system_event.name=idle` 的 system 输入事件。
+
+system 消息协议统一为：`summary + <M:system_event name="..." version="1">JSON</M:system_event>`。
 
 ## 启动顺序
 

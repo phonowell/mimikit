@@ -1,30 +1,30 @@
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
+import {
+  formatSystemEventText,
+  type SystemEventName,
+} from '../shared/system-event.js'
 import { newId } from '../shared/utils.js'
 import { publishUserInput } from '../streams/queues.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { MessageVisibility } from '../types/index.js'
 
-export type ManagerSystemEventName = 'cron_trigger' | 'idle'
-
-const toInlineJson = (payload: Record<string, unknown>): string =>
-  JSON.stringify(payload).replace(/[<>&]/g, (char) => {
-    if (char === '<') return '\\u003c'
-    if (char === '>') return '\\u003e'
-    return '\\u0026'
-  })
+export type ManagerSystemEventName = Extract<
+  SystemEventName,
+  'cron_trigger' | 'idle'
+>
 
 export const formatManagerSystemEventText = (params: {
   summary: string
   event: ManagerSystemEventName
   payload: Record<string, unknown>
-}): string => {
-  const summary = params.summary.trim()
-  const metaTag = `<M:system_event name="${params.event}" version="1">${toInlineJson(params.payload)}</M:system_event>`
-  if (!summary) return metaTag
-  return `${summary}\n\n${metaTag}`
-}
+}): string =>
+  formatSystemEventText({
+    summary: params.summary,
+    event: params.event,
+    payload: params.payload,
+  })
 
 export const publishManagerSystemEventInput = async (params: {
   runtime: RuntimeState

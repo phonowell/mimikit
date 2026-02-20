@@ -2,6 +2,7 @@ import { bestEffort } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import { notifyWorkerLoop } from '../orchestrator/core/worker-signal.js'
 import { summarizeOpencodeSession } from '../providers/opencode-session.js'
+import { formatSystemEventText } from '../shared/system-event.js'
 import { newId, nowIso } from '../shared/utils.js'
 import { appendHistory } from '../storage/history-jsonl.js'
 import { cancelTask } from '../worker/cancel-task.js'
@@ -39,12 +40,21 @@ const appendCronCanceledSystemMessage = async (
   title: string,
 ): Promise<void> => {
   const label = title.trim() || cronJobId
+  const createdAt = nowIso()
   await appendHistory(runtime.paths.history, {
     id: `sys-cron-canceled-${newId()}`,
     role: 'system',
     visibility: 'user',
-    text: `Task canceled · ${label}`,
-    createdAt: nowIso(),
+    text: formatSystemEventText({
+      summary: `Task canceled · ${label}`,
+      event: 'cron_canceled',
+      payload: {
+        cron_job_id: cronJobId,
+        label,
+        ...(title.trim() ? { title: title.trim() } : {}),
+      },
+    }),
+    createdAt,
   })
 }
 

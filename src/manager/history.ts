@@ -1,5 +1,6 @@
 import { appendTaskSystemMessage } from '../orchestrator/read-model/task-history.js'
 import { loadPromptTemplate } from '../prompts/prompt-loader.js'
+import { formatSystemEventText } from '../shared/system-event.js'
 import { nowIso } from '../shared/utils.js'
 import { appendHistory, readHistory } from '../storage/history-jsonl.js'
 
@@ -30,12 +31,19 @@ export const appendManagerFallbackReply = async (
   ).trim()
   if (!fallback)
     throw new Error('missing_prompt_template:manager/system-fallback-reply.md')
+  const createdAt = nowIso()
   await appendHistory(paths.history, {
     id: `sys-${Date.now()}`,
     role: 'system',
     visibility: 'user',
-    text: fallback,
-    createdAt: nowIso(),
+    text: formatSystemEventText({
+      summary: fallback,
+      event: 'manager_fallback_reply',
+      payload: {
+        reply: fallback,
+      },
+    }),
+    createdAt,
   })
 }
 
@@ -47,30 +55,75 @@ export const appendManagerErrorSystemMessage = async (
   error: string,
 ): Promise<void> => {
   const detail = compactManagerErrorText(error)
-  const text = detail ? `Manager failed · ${detail}` : 'Manager failed'
+  const createdAt = nowIso()
   await appendHistory(paths.history, {
     id: `sys-manager-error-${Date.now()}`,
     role: 'system',
     visibility: 'all',
-    text,
-    createdAt: nowIso(),
+    text: formatSystemEventText({
+      summary: detail ? `Manager failed · ${detail}` : 'Manager failed',
+      event: 'manager_error',
+      payload: detail ? { error: detail } : {},
+    }),
+    createdAt,
   })
 }
-const formatActionFeedbackSystemText = (
+
+type ActionFeedbackEntry = {
+  action: string
+  error: string
+  hint: string
+  attempted?: string
+}
+
+const toActionFeedbackEntries = (
   feedback: ManagerActionFeedback[],
-): string => {
-  const details = feedback
-    .map((item, index) => {
+): ActionFeedbackEntry[] =>
+  feedback
+    .map((item) => {
       const action = item.action.replace(/\s+/g, ' ').trim()
       const error = item.error.replace(/\s+/g, ' ').trim()
       const hint = item.hint.replace(/\s+/g, ' ').trim()
       if (!action || !error || !hint) return null
-      return `${index + 1}. action=${action} error=${error} hint=${hint}`
+      const attempted = item.attempted?.replace(/\s+/g, ' ').trim()
+      return {
+        action,
+        error,
+        hint,
+        ...(attempted ? { attempted } : {}),
+      }
     })
-    .filter((line): line is string => Boolean(line))
-  return details.length === 0
-    ? ''
-    : ['M:action_feedback', ...details].join('\n')
+    .filter((item): item is ActionFeedbackEntry => Boolean(item))
+
+const formatActionFeedbackSummary = (
+  entries: ActionFeedbackEntry[],
+): string => {
+  if (entries.length === 0) return ''
+  const header = `Action 执行反馈 · ${entries.length} 条`
+  const details = entries.map((item, index) =>
+    [
+      `${index + 1}. action: ${item.action}`,
+      `   error: ${item.error}`,
+      `   hint: ${item.hint}`,
+      ...(item.attempted ? [`   attempted: ${item.attempted}`] : []),
+    ].join('\n'),
+  )
+  return [header, ...details].join('\n')
+}
+
+const formatActionFeedbackSystemText = (
+  feedback: ManagerActionFeedback[],
+): string => {
+  const entries = toActionFeedbackEntries(feedback)
+  if (entries.length === 0) return ''
+  return formatSystemEventText({
+    summary: formatActionFeedbackSummary(entries),
+    event: 'action_feedback',
+    payload: {
+      count: entries.length,
+      items: entries,
+    },
+  })
 }
 
 export const appendActionFeedbackSystemMessage = (
