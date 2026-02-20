@@ -19,6 +19,15 @@ export function formatDateTime(iso) {
 const asNumber = (value) =>
   typeof value === 'number' && Number.isFinite(value) ? value : null
 
+const pickNumber = (usage, keys) => {
+  if (!usage || typeof usage !== 'object') return null
+  for (const key of keys) {
+    const value = asNumber(usage[key])
+    if (value !== null) return value
+  }
+  return null
+}
+
 const COUNT_SUFFIXES = ['', 'k', 'M', 'B', 'T']
 
 const integerFormatter = new Intl.NumberFormat('en-US')
@@ -51,11 +60,37 @@ const formatCount = (value) => {
 
 export const formatUsage = (usage) => {
   if (!usage) return ''
-  const input = asNumber(usage.input)
-  const output = asNumber(usage.output)
+  const input = pickNumber(usage, ['input'])
+  const output = pickNumber(usage, ['output'])
+  const inputCache = pickNumber(usage, [
+    'cacheRead',
+    'cache_read',
+    'inputCache',
+    'cacheInput',
+    'cachedInput',
+  ])
+  const outputCache = pickNumber(usage, [
+    'cacheWrite',
+    'cache_write',
+    'outputCache',
+    'cacheOutput',
+    'cachedOutput',
+  ])
+
+  const formatSide = (base, cache) => {
+    if (cache !== null && cache > 0) {
+      const baseValue = base === null ? 0 : base
+      return `${formatCount(baseValue)}+${formatCount(cache)}`
+    }
+    if (base !== null) return formatCount(base)
+    return ''
+  }
+
+  const inputText = formatSide(input, inputCache)
+  const outputText = formatSide(output, outputCache)
   const parts = []
-  if (input !== null) parts.push(`\u2191 ${formatCount(input)}`)
-  if (output !== null) parts.push(`\u2193 ${formatCount(output)}`)
+  if (inputText) parts.push(`\u2191 ${inputText}`)
+  if (outputText) parts.push(`\u2193 ${outputText}`)
   return parts.join(' \u00b7 ')
 }
 
