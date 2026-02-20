@@ -32,6 +32,7 @@ const runQueuedWorker = async (
 ): Promise<void> => {
   if (task.status !== 'pending') return
   if (runtime.runningControllers.has(task.id)) return
+  runtime.lastWorkerActivityAtMs = Date.now()
   const controller = new AbortController()
   runtime.runningControllers.set(task.id, controller)
   markTaskRunning(runtime.tasks, task.id)

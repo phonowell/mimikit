@@ -56,6 +56,7 @@ export const finalizeResult = async (
   result: TaskResult,
   markFn: (tasks: Task[], taskId: string, patch?: Partial<Task>) => void,
 ): Promise<void> => {
+  runtime.lastWorkerActivityAtMs = Date.now()
   const archivePath = await archiveTaskResult(runtime, task, result, 'worker')
   if (archivePath) result.archivePath = archivePath
   markFn(runtime.tasks, task.id, {

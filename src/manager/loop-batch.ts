@@ -21,6 +21,13 @@ import { startUiStream, stopUiStream } from './loop-ui-stream.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { TaskResult, TokenUsage, UserInput } from '../types/index.js'
+
+const isIdleSystemInput = (input: UserInput): boolean =>
+  input.role === 'system' && input.text.includes('name="idle"')
+
+const hasNonIdleManagerInput = (inputs: UserInput[]): boolean =>
+  inputs.some((input) => input.role !== 'system' || !isIdleSystemInput(input))
+
 export const processManagerBatch = async (params: {
   runtime: RuntimeState
   inputs: UserInput[]
@@ -37,6 +44,8 @@ export const processManagerBatch = async (params: {
     nextResultsCursor,
     streamId,
   } = params
+  if (results.length > 0 || hasNonIdleManagerInput(inputs))
+    runtime.lastManagerActivityAtMs = Date.now()
   runtime.managerRunning = true
   notifyUiSignal(runtime)
   const agentInputs = inputs.filter((item) => isVisibleToAgent(item))

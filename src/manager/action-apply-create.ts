@@ -89,8 +89,6 @@ export const applyCreateTask = async (
   }
 
   if (cron || scheduledAt) {
-    if (scheduledAt && !Number.isFinite(Date.parse(scheduledAt))) return
-
     const existing = runtime.cronJobs.find((job) => {
       if (!job.enabled) return false
       if (cron) {

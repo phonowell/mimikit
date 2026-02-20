@@ -137,7 +137,9 @@ export type CronJob = {
 
 export type ManagerEnv = {
   lastUser?: {
+    clientLocale?: string
     clientTimeZone?: string
+    clientOffsetMinutes?: number
     clientNowIso?: string
   }
 }

@@ -99,6 +99,7 @@ export const cancelTask = async (
     return { ok: false, status: 'already_done', taskId: trimmed }
 
   if (task.status === 'pending') {
+    runtime.lastWorkerActivityAtMs = Date.now()
     const cancelMeta = buildCancelMeta(meta)
     const result = buildCanceledResult(task, meta?.reason ?? 'Task canceled')
     markTaskCanceled(runtime.tasks, task.id, {
@@ -116,6 +117,7 @@ export const cancelTask = async (
   }
 
   const canceledAt = nowIso()
+  runtime.lastWorkerActivityAtMs = Date.now()
   const canceledAtMs = Date.parse(canceledAt)
   const startedAtMs = task.startedAt ? Date.parse(task.startedAt) : NaN
   const durationMs =

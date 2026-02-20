@@ -76,6 +76,15 @@
 | 每天/每周/每月      | 换算为 cron（6段含秒，如"0 0 9 \* \* \*"） |
 | 立即/现在           | 省略 cron/scheduled_at                     |
 
+时间基准优先级（严格执行）：
+1. 若 `M:environment` 提供 `client_now_local_iso`，所有相对时间一律基于它计算。
+2. 否则若提供 `client_time_zone + client_now_iso`，先换算到客户端本地时间再计算。
+3. 若无客户端时间信息，才回退 `server_now_iso/server_time_zone`。
+
+硬约束：
+- `scheduled_at` 必须是未来时间，必须晚于“当前基准时间”。
+- `scheduled_at` 必须带时区（`Z` 或 `±HH:MM`），禁止输出无时区时间串。
+
 **红线**：prompt/title 严禁出现任何时间语义（相对/绝对/周期词），自检逐字检查。
 
 ---

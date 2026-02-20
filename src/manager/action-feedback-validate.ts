@@ -24,6 +24,7 @@ export const REGISTERED_MANAGER_ACTIONS = new Set([
 export type FeedbackContext = {
   taskStatusById?: Map<string, TaskStatus>
   enabledCronJobIds?: Set<string>
+  scheduleNowIso?: string
 }
 
 export type ValidationIssue = {
@@ -33,6 +34,7 @@ export type ValidationIssue = {
 
 const INVALID_ACTION_ARGS = 'invalid_action_args'
 const ACTION_EXECUTION_REJECTED = 'action_execution_rejected'
+const SCHEDULED_AT_PAST_TOLERANCE_MS = 5_000
 
 const formatIssuePath = (path: readonly PropertyKey[]): string =>
   path.length === 0
@@ -64,7 +66,10 @@ const validateWithSchema = (
   return parsed.success ? [] : [invalidArgsIssue(parsed.error)]
 }
 
-const validateCreateTask = (item: Parsed): ValidationIssue[] => {
+const validateCreateTask = (
+  item: Parsed,
+  context: FeedbackContext,
+): ValidationIssue[] => {
   const parsed = createSchema.safeParse(item.attrs)
   if (!parsed.success) return [invalidArgsIssue(parsed.error)]
   const { data } = parsed
@@ -86,6 +91,20 @@ const validateCreateTask = (item: Parsed): ValidationIssue[] => {
         hint: 'create_task 执行失败：scheduled_at 不是合法 ISO 8601 时间。',
       },
     ]
+  }
+  if (scheduledAt) {
+    const scheduledMs = parseIsoMs(scheduledAt)
+    if (scheduledMs !== undefined) {
+      const nowMs = parseIsoMs(context.scheduleNowIso ?? '') ?? Date.now()
+      if (scheduledMs <= nowMs - SCHEDULED_AT_PAST_TOLERANCE_MS) {
+        return [
+          {
+            error: ACTION_EXECUTION_REJECTED,
+            hint: `create_task 执行失败：scheduled_at 必须晚于当前时间（now=${new Date(nowMs).toISOString()}）。`,
+          },
+        ]
+      }
+    }
   }
   return []
 }
@@ -152,7 +171,7 @@ export const validateRegisteredManagerAction = (
   context: FeedbackContext = {},
 ): ValidationIssue[] => {
   if (!REGISTERED_MANAGER_ACTIONS.has(item.name)) return []
-  if (item.name === 'create_task') return validateCreateTask(item)
+  if (item.name === 'create_task') return validateCreateTask(item, context)
   if (item.name === 'cancel_task') return validateCancelTask(item, context)
   if (item.name === 'query_history') return validateQueryHistory(item)
   if (item.name === 'summarize_task_result')

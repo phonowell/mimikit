@@ -37,6 +37,22 @@ test('collectManagerActionFeedback reports unregistered, invalid args, and rejec
       },
     },
     {
+      name: 'create_task',
+      attrs: {
+        prompt: 'past schedule',
+        title: 'invalid past schedule',
+        scheduled_at: '2000-01-01T00:00:00.000Z',
+      },
+    },
+    {
+      name: 'create_task',
+      attrs: {
+        prompt: 'schedule judged by env now',
+        title: 'invalid by env now',
+        scheduled_at: '2099-01-01T00:00:00.000Z',
+      },
+    },
+    {
       name: 'cancel_task',
       attrs: {
         id: 'missing-id',
@@ -57,9 +73,10 @@ test('collectManagerActionFeedback reports unregistered, invalid args, and rejec
     },
   ], {
     taskStatusById: new Map([['done-id', 'succeeded']]),
+    scheduleNowIso: '2100-01-01T00:00:00.000Z',
   })
 
-  expect(feedback).toHaveLength(7)
+  expect(feedback).toHaveLength(9)
   expect(feedback[0]?.action).toBe('read')
   expect(feedback[0]?.error).toBe('unregistered_action')
   expect(feedback[0]?.attempted).toContain('<M:read')
@@ -71,6 +88,13 @@ test('collectManagerActionFeedback reports unregistered, invalid args, and rejec
       (item) =>
         item.action === 'create_task' &&
         item.error === 'action_execution_rejected',
+    ),
+  ).toBe(true)
+  expect(
+    feedback.some(
+      (item) =>
+        item.action === 'create_task' &&
+        item.hint.includes('scheduled_at 必须晚于当前时间'),
     ),
   ).toBe(true)
   expect(

@@ -93,73 +93,93 @@ export const runManagerBatch = async (params: {
     }
     return result
   }
+  let elapsedMs = 0
+  let previousQueryKey: string | undefined
+  let extra: {
+    historyLookup?: HistoryLookupMessage[]
+    actionFeedback?: ManagerActionFeedback[]
+  } = {}
 
-  const first = await runOnce()
-  const firstParsed = parseActions(first.output)
-  const actionFeedback = collectManagerActionFeedback(firstParsed.actions, {
-    taskStatusById: new Map(
-      runtime.tasks.map((task) => [task.id, task.status]),
-    ),
-    enabledCronJobIds: new Set(
-      runtime.cronJobs.filter((job) => job.enabled).map((job) => job.id),
-    ),
-  })
+  for (;;) {
+    const runResult = await runOnce(extra)
+    elapsedMs += runResult.elapsedMs
+    const parsed = parseActions(runResult.output)
+    const scheduleNowIso =
+      runtime.lastUserMeta?.clientNowIso ?? new Date().toISOString()
+    const actionFeedback = collectManagerActionFeedback(parsed.actions, {
+      taskStatusById: new Map(
+        runtime.tasks.map((task) => [task.id, task.status]),
+      ),
+      enabledCronJobIds: new Set(
+        runtime.cronJobs.filter((job) => job.enabled).map((job) => job.id),
+      ),
+      scheduleNowIso,
+    })
+    const queryRequest = pickQueryHistoryRequest(parsed.actions)
+    const queryKey = queryRequest
+      ? [
+          queryRequest.query,
+          String(queryRequest.limit),
+          queryRequest.roles.join(','),
+          queryRequest.beforeId ?? '',
+          String(queryRequest.fromMs ?? ''),
+          String(queryRequest.toMs ?? ''),
+        ].join('\n')
+      : undefined
 
-  const queryRequest = pickQueryHistoryRequest(firstParsed.actions)
-  if (!queryRequest && actionFeedback.length === 0) {
-    setUiStreamText(runtime, streamId, toVisibleAgentText(first.output))
-    return {
-      parsed: firstParsed,
-      elapsedMs: first.elapsedMs,
-      ...((streamUsage ?? first.usage)
-        ? { usage: streamUsage ?? first.usage }
-        : {}),
+    if (!queryRequest && actionFeedback.length === 0) {
+      setUiStreamText(runtime, streamId, toVisibleAgentText(runResult.output))
+      return {
+        parsed,
+        elapsedMs,
+        ...((streamUsage ?? runResult.usage)
+          ? { usage: streamUsage ?? runResult.usage }
+          : {}),
+      }
     }
-  }
-
-  let lookup: HistoryLookupMessage[] | undefined
-  if (queryRequest) {
-    const history = await readHistory(runtime.paths.history)
-    lookup = queryHistory(history, queryRequest)
-    await appendLog(runtime.paths.log, {
-      event: 'manager_query_history',
-      queryChars: queryRequest.query.length,
-      limit: queryRequest.limit,
-      roleCount: queryRequest.roles.length,
-      resultCount: lookup.length,
-      ...(queryRequest.beforeId ? { beforeId: queryRequest.beforeId } : {}),
-      ...(queryRequest.fromMs !== undefined
-        ? { fromMs: queryRequest.fromMs }
-        : {}),
-      ...(queryRequest.toMs !== undefined ? { toMs: queryRequest.toMs } : {}),
-    })
-  }
-  if (actionFeedback.length > 0) {
-    await appendLog(runtime.paths.log, {
-      event: 'manager_action_feedback',
-      count: actionFeedback.length,
-      errors: actionFeedback.map((item) => item.error),
-      names: actionFeedback.map((item) => item.action),
-    })
-    await appendActionFeedbackSystemMessage(
-      runtime.paths.history,
-      actionFeedback,
+    if (
+      queryKey &&
+      actionFeedback.length === 0 &&
+      previousQueryKey === queryKey
     )
-  }
+      throw new Error('manager_query_history_repeated_without_progress')
+    previousQueryKey = queryKey
 
-  streamRawOutput = ''
-  resetUiStream(runtime, streamId)
-  const second = await runOnce({
-    ...(lookup ? { historyLookup: lookup } : {}),
-    ...(actionFeedback.length > 0 ? { actionFeedback } : {}),
-  })
-  const secondParsed = parseActions(second.output)
-  setUiStreamText(runtime, streamId, toVisibleAgentText(second.output))
-  return {
-    parsed: secondParsed,
-    elapsedMs: first.elapsedMs + second.elapsedMs,
-    ...((streamUsage ?? second.usage ?? first.usage)
-      ? { usage: streamUsage ?? second.usage ?? first.usage }
-      : {}),
+    let historyLookup: HistoryLookupMessage[] | undefined
+    if (queryRequest) {
+      const history = await readHistory(runtime.paths.history)
+      historyLookup = queryHistory(history, queryRequest)
+      await appendLog(runtime.paths.log, {
+        event: 'manager_query_history',
+        queryChars: queryRequest.query.length,
+        limit: queryRequest.limit,
+        roleCount: queryRequest.roles.length,
+        resultCount: historyLookup.length,
+        ...(queryRequest.beforeId ? { beforeId: queryRequest.beforeId } : {}),
+        ...(queryRequest.fromMs !== undefined
+          ? { fromMs: queryRequest.fromMs }
+          : {}),
+        ...(queryRequest.toMs !== undefined ? { toMs: queryRequest.toMs } : {}),
+      })
+    }
+    if (actionFeedback.length > 0) {
+      await appendLog(runtime.paths.log, {
+        event: 'manager_action_feedback',
+        count: actionFeedback.length,
+        errors: actionFeedback.map((item) => item.error),
+        names: actionFeedback.map((item) => item.action),
+      })
+      await appendActionFeedbackSystemMessage(
+        runtime.paths.history,
+        actionFeedback,
+      )
+    }
+
+    streamRawOutput = ''
+    resetUiStream(runtime, streamId)
+    extra = {
+      ...(historyLookup ? { historyLookup } : {}),
+      ...(actionFeedback.length > 0 ? { actionFeedback } : {}),
+    }
   }
 }

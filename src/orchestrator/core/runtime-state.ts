@@ -40,6 +40,8 @@ export type RuntimeState = {
   managerRunning: boolean
   managerSignalController: AbortController
   managerWakePending: boolean
+  lastManagerActivityAtMs: number
+  lastWorkerActivityAtMs: number
   inflightInputs: PendingUserInput[]
   queues: {
     inputsCursor: number

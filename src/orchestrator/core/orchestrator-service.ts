@@ -46,6 +46,7 @@ export class Orchestrator {
   constructor(config: AppConfig) {
     const paths = buildPaths(config.workDir)
     setDefaultLogPath(paths.log)
+    const nowMs = Date.now()
     this.runtime = {
       runtimeId: newId(),
       config,
@@ -54,6 +55,8 @@ export class Orchestrator {
       managerRunning: false,
       managerSignalController: new AbortController(),
       managerWakePending: false,
+      lastManagerActivityAtMs: nowMs,
+      lastWorkerActivityAtMs: nowMs,
       inflightInputs: [],
       queues: { inputsCursor: 0, resultsCursor: 0 },
       tasks: [],
