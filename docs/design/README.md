@@ -1,41 +1,25 @@
-# 系统设计（v6）
+# 系统设计（v7）
 
 > 当前架构：`manager(role) / worker(profile)`。
 
 ## 阅读路径
 
-- `docs/design/system-architecture.md`
-- `docs/design/runners.md`
-- `docs/design/task-and-action.md`
-- `docs/design/interfaces-and-state.md`
-- `docs/design/webui-design-language.md`
+- 架构总览：`./architecture/system-architecture.md`
+- 运行时执行：`./architecture/runners.md`
+- 任务协议：`./workflow/task-and-action.md`
+- 接口与状态：`./workflow/interfaces-and-state.md`
+- WebUI 规范：`./ui/webui-design-language.md`
+
+## 单一事实源
+
+- 架构边界、启动顺序、一致性目标：`architecture/system-architecture.md`
+- provider/runner 细节与输出结构：`architecture/runners.md`
+- 任务生命周期、Action 协议、核心数据结构：`workflow/task-and-action.md`
+- HTTP/CLI、环境变量、状态目录、重启语义：`workflow/interfaces-and-state.md`
 
 ## 设计原则
 
-1. 一次性全量重构（Big Bang），不保留旧多角色链路与旧队列字段兼容层。
-2. `manager` 是唯一对话与编排入口，直接消费 `inputs/results`。
-3. `worker` 分层：`standard`（低成本）与 `specialist`（高能力）。
+1. 一次性全量切换，不保留运行期兼容层。
+2. `manager` 负责对话与编排，`worker` 负责执行。
+3. 提示词只放 `prompts/`，业务代码不硬编码长提示词。
 4. 队列语义固定：`inputs -> history`、`results -> tasks`。
-5. 提示词仅放在 `prompts/`，业务代码不硬编码长提示词。
-
-## 关联目录
-
-- `src/orchestrator/*`
-- `src/manager/*`
-- `src/worker/*`
-- `src/streams/*`
-
-## 提示词目录（当前实现）
-
-- `prompts/manager/system.md`
-- `prompts/manager/fallback-reply.md`
-- `prompts/manager/system-fallback-reply.md`
-- `prompts/worker/system.md`
-
-补充说明：
-
-- `manager/worker` 采用单模板流程：仅渲染 `system.md`，不再拼接 `injection.md`。
-- 模板支持条件块语法：`{#if key}` / `{#else}` / `{/if}`，变量占位符保持 `{key}`。
-- 模板支持 include 语法：`{#include xxx}`（同层 `xxx.md`）与 `{#include ../xxx}`（上一层 `xxx.md`）。
-- include 在模板加载阶段展开，因此可在 `{#if}` 块内使用。
-- `manager/worker` 的 `<M:...>` 标签由模板文件定义；代码只注入内容，不再拼装标签。

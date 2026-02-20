@@ -1,5 +1,5 @@
 # 接口与状态目录（当前实现）
-> 返回 [系统设计总览](./README.md)
+> 返回 [系统设计总览](../README.md)
 
 ## HTTP API
 - `GET /api/status`

@@ -1,6 +1,6 @@
 # Runner 参考（当前实现）
 
-> 返回 [系统设计总览](./README.md)
+> 返回 [系统设计总览](../README.md)
 
 ## Manager Runner
 
