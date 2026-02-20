@@ -9,7 +9,6 @@ import {
 import type { TokenUsage } from '../types/index.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
-export type WorkerProvider = 'codex-sdk' | 'opencode'
 export type WorkerProfile = 'standard' | 'specialist'
 type ProgressPhase = 'start' | 'done'
 

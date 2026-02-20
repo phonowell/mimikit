@@ -86,6 +86,3 @@ export const loadPromptTemplate = (relativePath: string): Promise<string> =>
 
 export const loadSystemPrompt = (role: string): Promise<string> =>
   loadPromptFile(role, 'system')
-
-export const loadInjectionPrompt = (role: string): Promise<string> =>
-  loadPromptFile(role, 'injection')

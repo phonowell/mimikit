@@ -1,7 +1,4 @@
-import {
-  parseIsoToMs,
-  resolveTaskChangedAt,
-} from '../../prompts/format-base.js'
+import { sortTasksByChangedAt } from '../../prompts/format-base.js'
 
 import { selectByWindow } from './select-window.js'
 
@@ -18,12 +15,7 @@ export const selectRecentTasks = (
   params: TaskSelectParams,
 ): Task[] => {
   if (tasks.length === 0) return []
-  const sorted = [...tasks].sort((a, b) => {
-    const aTs = parseIsoToMs(resolveTaskChangedAt(a))
-    const bTs = parseIsoToMs(resolveTaskChangedAt(b))
-    if (aTs !== bTs) return bTs - aTs
-    return a.id.localeCompare(b.id)
-  })
+  const sorted = sortTasksByChangedAt(tasks)
   return selectByWindow(sorted, params, (task) =>
     Buffer.byteLength(JSON.stringify(task), 'utf8'),
   )

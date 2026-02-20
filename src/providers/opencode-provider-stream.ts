@@ -6,6 +6,7 @@ import {
   mapOpencodeUsageFromEvent,
 } from './opencode-provider-utils.js'
 import {
+  buildProviderSdkError,
   isRetryableProviderError,
   isTransientProviderFailure,
   ProviderError,
@@ -23,26 +24,10 @@ export type UsageStreamMonitor = {
 
 export const wrapSdkError = (error: unknown): Error => {
   if (error instanceof ProviderError) return error
-  const message = error instanceof Error ? error.message : String(error)
-  if (message.startsWith('[provider:opencode]')) {
-    return new ProviderError({
-      code: 'provider_sdk_failure',
-      message,
-      retryable: false,
-    })
-  }
-  const wrappedMessage = `[provider:opencode] sdk run failed: ${message}`
-  if (isTransientProviderError(error)) {
-    return new ProviderError({
-      code: 'provider_transient_network',
-      message: wrappedMessage,
-      retryable: true,
-    })
-  }
-  return new ProviderError({
-    code: 'provider_sdk_failure',
-    message: wrappedMessage,
-    retryable: false,
+  return buildProviderSdkError({
+    providerId: 'opencode',
+    message: error instanceof Error ? error.message : String(error),
+    transient: isTransientProviderError(error),
   })
 }
 

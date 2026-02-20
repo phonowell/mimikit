@@ -1,11 +1,17 @@
 import { buildPayloadEtag, replyWithEtag } from './etag.js'
-import { parseInputBody, parseMessageLimit, parseTaskLimit } from './helpers.js'
 import {
-  registerControlRoutes,
+  DEFAULT_MESSAGE_LIMIT,
+  DEFAULT_TASK_LIMIT,
+  parseInputBody,
+  parseMessageLimit,
+  parseTaskLimit,
+} from './helpers.js'
+import { registerControlRoutes } from './routes-api-control-routes.js'
+import {
   registerTaskArchiveRoute,
   registerTaskCancelRoute,
   registerTaskProgressRoute,
-} from './routes-api-sections.js'
+} from './routes-api-task-routes.js'
 
 import type { AppConfig } from '../config.js'
 import type { Orchestrator } from '../orchestrator/core/orchestrator-service.js'
@@ -13,13 +19,8 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 
 const SSE_HEARTBEAT_MS = 15_000
 const SSE_RETRY_MS = 1_500
-const SSE_DEFAULT_MESSAGE_LIMIT = 50
-const SSE_DEFAULT_TASK_LIMIT = 200
 const getDefaultSnapshot = (orchestrator: Orchestrator) =>
-  orchestrator.getWebUiSnapshot(
-    SSE_DEFAULT_MESSAGE_LIMIT,
-    SSE_DEFAULT_TASK_LIMIT,
-  )
+  orchestrator.getWebUiSnapshot(DEFAULT_MESSAGE_LIMIT, DEFAULT_TASK_LIMIT)
 
 const createSseStream = (request: FastifyRequest, reply: FastifyReply) => {
   reply.hijack()
@@ -127,7 +128,7 @@ export const registerApiRoutes = (
     const query = request.query as Record<string, unknown> | undefined
     const { messages, mode } = await orchestrator.getChatMessages(
       parseMessageLimit(query?.limit),
-      typeof query?.afterId === 'string' ? query.afterId.trim() : undefined,
+      typeof query?.afterId === 'string' ? query.afterId : undefined,
     )
     return replyWithEtag({
       request,

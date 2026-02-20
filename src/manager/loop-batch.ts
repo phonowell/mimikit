@@ -15,7 +15,6 @@ import { runManagerBatch } from './loop-batch-run-manager.js'
 import {
   buildFallbackReply,
   consumeBatchHistory,
-  drainBatchOnFailure,
   finalizeBatchProgress,
 } from './loop-helpers.js'
 import { startUiStream, stopUiStream } from './loop-ui-stream.js'
@@ -126,16 +125,23 @@ export const processManagerBatch = async (params: {
     const errorMessage = error instanceof Error ? error.message : String(error)
     let drainedOnError = false
     try {
-      drainedOnError = await drainBatchOnFailure({
+      const consumed = await consumeBatchHistory({
         runtime,
         inputs,
         results,
-        nextInputsCursor,
-        nextResultsCursor,
-        persistRuntime: persistRuntimeState,
       })
+      if (consumed.ok) {
+        await finalizeBatchProgress({
+          runtime,
+          nextInputsCursor,
+          nextResultsCursor,
+          consumedInputIds: consumed.consumedInputIds,
+          persistRuntime: persistRuntimeState,
+        })
+        drainedOnError = true
+      }
     } catch (drainError) {
-      await logSafeError('managerLoop: drainBatchOnFailure', drainError)
+      await logSafeError('managerLoop: drain batch on failure', drainError)
     }
 
     if (drainedOnError && !agentAppended && agentInputs.length > 0) {

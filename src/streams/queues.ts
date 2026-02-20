@@ -2,7 +2,6 @@ import {
   appendQueuePacket,
   compactQueueIfFullyConsumed,
   consumeQueuePackets,
-  countPacketsPending,
   type PacketWithCursor,
 } from './queue-primitives.js'
 
@@ -44,9 +43,3 @@ export const compactInputQueueIfFullyConsumed = input.compact
 export const publishWorkerResult = result.publish
 export const consumeWorkerResults = result.consume
 export const compactResultQueueIfFullyConsumed = result.compact
-
-export const countPendingUserInputs = (params: {
-  paths: StatePaths
-  cursor: number
-}): Promise<number> =>
-  countPacketsPending(params.paths.inputsPackets, params.cursor)

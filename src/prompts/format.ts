@@ -123,9 +123,6 @@ export const renderPromptTemplate = (
     },
   )
 
-export const joinPromptSections = (sections: string[]): string =>
-  sections.filter(Boolean).join('\n\n')
-
 export const formatEnvironment = (params?: PromptEnvironmentParams): string => {
   const lines: string[] = []
   const push = (label: string, value: string | number | undefined) => {
@@ -145,12 +142,7 @@ export const formatEnvironment = (params?: PromptEnvironmentParams): string => {
 
 export {
   formatActionFeedback,
-  formatDecesionsYaml,
   formatHistoryLookup,
   formatInputs,
 } from './format-messages.js'
-export {
-  formatResultsYaml,
-  formatTasksYaml,
-  selectTasksForPrompt,
-} from './format-content.js'
+export { formatResultsYaml, formatTasksYaml } from './format-content.js'

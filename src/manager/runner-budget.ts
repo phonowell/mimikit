@@ -3,13 +3,6 @@ const TIMEOUT_STEP_MS = 2_500
 const DEFAULT_MANAGER_PROMPT_MAX_TOKENS = 8_192
 const PRUNE_ORDER = ['M:tasks', 'M:results']
 
-export const normalizeOptional = (
-  value?: string | null,
-): string | undefined => {
-  const trimmed = value?.trim()
-  return trimmed && trimmed.length > 0 ? trimmed : undefined
-}
-
 export const toError = (err: unknown): Error =>
   err instanceof Error ? err : new Error(String(err))
 

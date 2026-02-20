@@ -8,11 +8,8 @@ export type PacketWithCursor<TPayload> = JsonPacket<TPayload> & {
   cursor: number
 }
 
-export const normalizeCursor = (value: unknown): number => {
-  if (typeof value !== 'number') return 0
-  if (!Number.isFinite(value)) return 0
-  return Math.max(0, Math.floor(value))
-}
+const normalizeCursor = (value: number): number =>
+  Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0
 
 const makePacket = <TPayload>(payload: TPayload): JsonPacket<TPayload> => ({
   id: `${shortId()}-${Date.now()}`,
@@ -63,13 +60,3 @@ export const compactQueueIfFullyConsumed = (params: {
     await writeJsonl(params.packetsPath, [])
     return true
   })
-
-export const countPacketsPending = async (
-  path: string,
-  cursor: number,
-): Promise<number> =>
-  Math.max(
-    0,
-    (await readJsonl<JsonPacket<unknown>>(path, { ensureFile: true })).length -
-      normalizeCursor(cursor),
-  )

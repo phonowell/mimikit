@@ -88,20 +88,6 @@ export const formatHistoryLookup = (lookup: HistoryLookupMessage[]): string => {
   )
 }
 
-export const formatDecesionsYaml = (decesions: string[]): string => {
-  if (decesions.length === 0) return ''
-  const entries = decesions
-    .map((decesion) => decesion.trim())
-    .filter((decesion) => decesion.length > 0)
-    .map((content) => ({ content }))
-  if (entries.length === 0) return ''
-  return escapeCdata(
-    stringifyPromptYaml({
-      decesions: entries,
-    }),
-  )
-}
-
 export const formatActionFeedback = (
   feedback: ManagerActionFeedback[],
 ): string => {

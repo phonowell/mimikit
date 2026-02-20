@@ -20,14 +20,3 @@ export type {
   TokenUsage,
   UserInput,
 }
-
-export type OrchestratorStatus = ReturnType<Orchestrator['getStatus']>
-export type OrchestratorHistory = Awaited<
-  ReturnType<Orchestrator['getChatHistory']>
->
-
-export const createOrchestrator = (config: AppConfig) =>
-  new Orchestrator(config)
-
-export const resolveDefaultConfig = (params: { workDir: string }): AppConfig =>
-  defaultConfig(params)

@@ -1,20 +1,15 @@
 const MAX_WAIT_MS = 24 * 60 * 60 * 1_000
 
-export const clampWaitMs = (timeoutMs: number): number => {
-  if (!Number.isFinite(timeoutMs)) return MAX_WAIT_MS
-  return Math.min(MAX_WAIT_MS, Math.max(0, timeoutMs))
-}
-
 export const abortController = (controller: AbortController): void => {
   if (!controller.signal.aborted) controller.abort()
 }
 
-export const replaceAbortController = (
-  controller: AbortController,
-): AbortController => {
-  abortController(controller)
-  return new AbortController()
-}
+export const replaceOrCreateAbortController = (
+  controller?: AbortController,
+): AbortController =>
+  controller
+    ? (abortController(controller), new AbortController())
+    : new AbortController()
 
 export const waitForSignal = async (params: {
   signal: AbortSignal
@@ -23,7 +18,9 @@ export const waitForSignal = async (params: {
 }): Promise<void> => {
   const { signal, isResolved } = params
   if (signal.aborted || isResolved?.()) return
-  const waitMs = clampWaitMs(params.timeoutMs)
+  const waitMs = Number.isFinite(params.timeoutMs)
+    ? Math.min(MAX_WAIT_MS, Math.max(0, params.timeoutMs))
+    : MAX_WAIT_MS
   if (waitMs <= 0) return
   await new Promise<void>((resolve) => {
     let done = false

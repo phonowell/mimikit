@@ -1,20 +1,19 @@
-export const PROVIDER_ERROR_CODES = [
+type ProviderErrorCode =
+  | 'provider_timeout'
+  | 'provider_aborted'
+  | 'provider_preflight_failed'
+  | 'provider_circuit_open'
+  | 'provider_transient_network'
+  | 'provider_sdk_failure'
+
+const PROVIDER_ERROR_CODE_SET = new Set<ProviderErrorCode>([
   'provider_timeout',
   'provider_aborted',
   'provider_preflight_failed',
   'provider_circuit_open',
   'provider_transient_network',
   'provider_sdk_failure',
-] as const
-
-export type ProviderErrorCode = (typeof PROVIDER_ERROR_CODES)[number]
-
-const PROVIDER_ERROR_CODE_SET = new Set<string>(PROVIDER_ERROR_CODES)
-
-export const isProviderErrorCode = (
-  value: unknown,
-): value is ProviderErrorCode =>
-  typeof value === 'string' && PROVIDER_ERROR_CODE_SET.has(value)
+])
 
 export class ProviderError extends Error {
   readonly code: ProviderErrorCode
@@ -32,14 +31,86 @@ export class ProviderError extends Error {
   }
 }
 
+const providerTag = (providerId: string): string => `[provider:${providerId}]`
+
+const normalizeProviderErrorMessage = (params: {
+  providerId: string
+  message: string
+  label: string
+}): string => {
+  const normalized = params.message.trim()
+  const prefix = providerTag(params.providerId)
+  if (normalized.startsWith(prefix)) return normalized
+  return `${prefix} ${params.label}: ${normalized}`
+}
+
+export const buildProviderTimeoutError = (
+  providerId: string,
+  timeoutMs: number,
+): ProviderError =>
+  new ProviderError({
+    code: 'provider_timeout',
+    message: `${providerTag(providerId)} timed out after ${timeoutMs}ms`,
+    retryable: true,
+  })
+
+export const buildProviderAbortedError = (providerId: string): ProviderError =>
+  new ProviderError({
+    code: 'provider_aborted',
+    message: `${providerTag(providerId)} aborted`,
+    retryable: false,
+  })
+
+export const buildProviderSdkError = (params: {
+  providerId: string
+  message: string
+  transient: boolean
+}): ProviderError =>
+  new ProviderError({
+    code: params.transient
+      ? 'provider_transient_network'
+      : 'provider_sdk_failure',
+    message: normalizeProviderErrorMessage({
+      providerId: params.providerId,
+      message: params.message,
+      label: 'sdk run failed',
+    }),
+    retryable: params.transient,
+  })
+
+export const buildProviderPreflightError = (params: {
+  providerId: string
+  message: string
+}): ProviderError =>
+  new ProviderError({
+    code: 'provider_preflight_failed',
+    message: normalizeProviderErrorMessage({
+      providerId: params.providerId,
+      message: params.message,
+      label: 'preflight failed',
+    }),
+    retryable: false,
+  })
+
+export const buildProviderCircuitOpenError = (
+  providerId: string,
+): ProviderError =>
+  new ProviderError({
+    code: 'provider_circuit_open',
+    message: `${providerTag(providerId)} circuit is open due to consecutive failures`,
+    retryable: false,
+  })
+
 export const readProviderErrorCode = (
   error: unknown,
 ): ProviderErrorCode | undefined => {
   if (error instanceof ProviderError) return error.code
   if (!error || typeof error !== 'object') return undefined
   const maybeCode = (error as Record<string, unknown>)['code']
-  if (!isProviderErrorCode(maybeCode)) return undefined
-  return maybeCode
+  if (typeof maybeCode !== 'string') return undefined
+  return PROVIDER_ERROR_CODE_SET.has(maybeCode as ProviderErrorCode)
+    ? (maybeCode as ProviderErrorCode)
+    : undefined
 }
 
 export const isRetryableProviderError = (error: unknown): boolean => {

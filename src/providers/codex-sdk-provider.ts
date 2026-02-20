@@ -9,6 +9,9 @@ import {
   loadCodexSettings,
 } from './openai-settings.js'
 import {
+  buildProviderAbortedError,
+  buildProviderSdkError,
+  buildProviderTimeoutError,
   isTransientProviderMessage,
   ProviderError,
   readProviderErrorCode,
@@ -32,39 +35,17 @@ const buildCodexProviderError = (params: {
   externallyAborted: boolean
 }): ProviderError => {
   const { error, timeoutMs, timedOut, externallyAborted } = params
-  if (timedOut) {
-    return new ProviderError({
-      code: 'provider_timeout',
-      message: `[provider:codex-sdk] timed out after ${timeoutMs}ms`,
-      retryable: true,
-    })
-  }
+  if (timedOut) return buildProviderTimeoutError('codex-sdk', timeoutMs)
   if (
     externallyAborted ||
     error.name === 'AbortError' ||
     /aborted|canceled/i.test(error.message)
-  ) {
-    return new ProviderError({
-      code: 'provider_aborted',
-      message: '[provider:codex-sdk] aborted',
-      retryable: false,
-    })
-  }
-  const message = error.message.trim()
-  const normalizedMessage = message.startsWith('[provider:codex-sdk]')
-    ? message
-    : `[provider:codex-sdk] sdk run failed: ${message}`
-  if (isTransientProviderMessage(message)) {
-    return new ProviderError({
-      code: 'provider_transient_network',
-      message: normalizedMessage,
-      retryable: true,
-    })
-  }
-  return new ProviderError({
-    code: 'provider_sdk_failure',
-    message: normalizedMessage,
-    retryable: false,
+  )
+    return buildProviderAbortedError('codex-sdk')
+  return buildProviderSdkError({
+    providerId: 'codex-sdk',
+    message: error.message,
+    transient: isTransientProviderMessage(error.message),
   })
 }
 

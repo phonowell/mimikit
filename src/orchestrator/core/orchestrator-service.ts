@@ -11,6 +11,7 @@ import { newId, nowIso } from '../../shared/utils.js'
 import { appendHistory } from '../../storage/history-jsonl.js'
 import { cancelTask } from '../../worker/cancel-task.js'
 import { enqueuePendingWorkerTasks, workerLoop } from '../../worker/dispatch.js'
+import { buildTaskViews } from '../read-model/task-view.js'
 
 import { notifyManagerLoop } from './manager-signal.js'
 import {
@@ -22,9 +23,6 @@ import {
   addUserInput,
   getChatHistory,
   getChatMessages,
-  getTasks,
-  getWebUiSnapshot,
-  waitForWebUiSignal,
 } from './orchestrator-service-read.js'
 import {
   computeOrchestratorStatus,
@@ -34,6 +32,7 @@ import {
   hydrateRuntimeState,
   persistRuntimeState,
 } from './runtime-persistence.js'
+import { waitForUiSignal } from './ui-signal.js'
 import { notifyWorkerLoop } from './worker-signal.js'
 
 import type { RuntimeState, UserMeta } from './runtime-state.js'
@@ -134,20 +133,24 @@ export class Orchestrator {
   }
 
   getTasks(limit = 200) {
-    return getTasks(this.runtime, limit)
+    return buildTaskViews(this.runtime.tasks, this.runtime.cronJobs, limit)
   }
 
   getWebUiSnapshot(messageLimit = 50, taskLimit = 200) {
-    return getWebUiSnapshot(
-      this.runtime,
-      () => this.getStatus(),
-      messageLimit,
-      taskLimit,
-    )
+    return (async () => ({
+      status: this.getStatus(),
+      messages: await getChatMessages(this.runtime, messageLimit),
+      tasks: buildTaskViews(
+        this.runtime.tasks,
+        this.runtime.cronJobs,
+        taskLimit,
+      ),
+      stream: this.runtime.uiStream ? { ...this.runtime.uiStream } : null,
+    }))()
   }
 
   waitForWebUiSignal(timeoutMs: number): Promise<void> {
-    return waitForWebUiSignal(this.runtime, timeoutMs)
+    return waitForUiSignal(this.runtime, timeoutMs)
   }
 
   getTaskById(taskId: string): Task | undefined {

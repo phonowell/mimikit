@@ -13,6 +13,14 @@ export const parseIsoToMs = (value: string): number => {
 export const resolveTaskChangedAt = (task: Task): string =>
   task.completedAt ?? task.startedAt ?? task.createdAt
 
+export const sortTasksByChangedAt = (tasks: Task[]): Task[] =>
+  [...tasks].sort((a, b) => {
+    const aTs = parseIsoToMs(resolveTaskChangedAt(a))
+    const bTs = parseIsoToMs(resolveTaskChangedAt(b))
+    if (aTs !== bTs) return bTs - aTs
+    return a.id.localeCompare(b.id)
+  })
+
 export const normalizeYamlUsage = (
   usage?: Task['usage'],
 ): Task['usage'] | undefined => {

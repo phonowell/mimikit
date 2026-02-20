@@ -22,7 +22,13 @@ import {
   mapOpencodeUsage,
   resolveOpencodeModelRef,
 } from './opencode-provider-utils.js'
-import { ProviderError } from './provider-error.js'
+import {
+  buildProviderAbortedError,
+  buildProviderCircuitOpenError,
+  buildProviderPreflightError,
+  buildProviderTimeoutError,
+  ProviderError,
+} from './provider-error.js'
 import {
   bindExternalAbort,
   buildProviderResult,
@@ -144,20 +150,10 @@ const runOpencodeOnce = async (
       threadId: sessionID,
     })
   } catch (error) {
-    if (lifecycle.timedOut) {
-      throw new ProviderError({
-        code: 'provider_timeout',
-        message: `[provider:opencode] timed out after ${request.timeoutMs}ms`,
-        retryable: true,
-      })
-    }
-    if (lifecycle.externallyAborted || controller.signal.aborted) {
-      throw new ProviderError({
-        code: 'provider_aborted',
-        message: '[provider:opencode] aborted',
-        retryable: false,
-      })
-    }
+    if (lifecycle.timedOut)
+      throw buildProviderTimeoutError('opencode', request.timeoutMs)
+    if (lifecycle.externallyAborted || controller.signal.aborted)
+      throw buildProviderAbortedError('opencode')
     throw wrapSdkError(error)
   } finally {
     timeoutGuard.clear()
@@ -221,35 +217,18 @@ const runOpencode = async (
   try {
     ensureOpencodePreflight()
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    const normalizedMessage = message.startsWith('[provider:opencode]')
-      ? message
-      : `[provider:opencode] preflight failed: ${message}`
-    throw new ProviderError({
-      code: 'provider_preflight_failed',
-      message: normalizedMessage,
-      retryable: false,
+    throw buildProviderPreflightError({
+      providerId: 'opencode',
+      message: error instanceof Error ? error.message : String(error),
     })
   }
   try {
     return await opencodeBreaker.fire(request)
   } catch (error) {
     if (error instanceof ProviderError) throw error
-    if (isAbortLikeError(error)) {
-      throw new ProviderError({
-        code: 'provider_aborted',
-        message: '[provider:opencode] aborted',
-        retryable: false,
-      })
-    }
-    if (error instanceof Error && /breaker is open/i.test(error.message)) {
-      throw new ProviderError({
-        code: 'provider_circuit_open',
-        message:
-          '[provider:opencode] circuit is open due to consecutive failures',
-        retryable: false,
-      })
-    }
+    if (isAbortLikeError(error)) throw buildProviderAbortedError('opencode')
+    if (error instanceof Error && /breaker is open/i.test(error.message))
+      throw buildProviderCircuitOpenError('opencode')
     throw error
   }
 }

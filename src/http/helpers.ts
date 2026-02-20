@@ -6,9 +6,9 @@ import { z } from 'zod'
 
 import { ensureDir } from '../fs/paths.js'
 
-const DEFAULT_TASK_LIMIT = 200
+export const DEFAULT_TASK_LIMIT = 200
 const MAX_TASK_LIMIT = 500
-const DEFAULT_MESSAGE_LIMIT = 50
+export const DEFAULT_MESSAGE_LIMIT = 50
 
 const parseLimit = (
   value: unknown,

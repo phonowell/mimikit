@@ -1,12 +1,14 @@
-import { replaceAbortController, waitForSignal } from './signal-primitives.js'
+import {
+  replaceOrCreateAbortController,
+  waitForSignal,
+} from './signal-primitives.js'
 
 import type { RuntimeState } from './runtime-state.js'
 
 export const notifyUiSignal = (runtime: RuntimeState): void => {
-  const previous = runtime.uiSignalController
-  runtime.uiSignalController = previous
-    ? replaceAbortController(previous)
-    : new AbortController()
+  runtime.uiSignalController = replaceOrCreateAbortController(
+    runtime.uiSignalController,
+  )
 }
 
 export const waitForUiSignal = async (

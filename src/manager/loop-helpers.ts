@@ -36,40 +36,6 @@ export const buildFallbackReply = async (params: {
   return fallback
 }
 
-const appendTaskSnapshot = async (runtime: RuntimeState): Promise<void> => {
-  const snapshot = {
-    id: `task-snapshot-${Date.now()}`,
-    createdAt: nowIso(),
-    tasks: runtime.tasks,
-  }
-  const nextTasksSerialized = JSON.stringify(snapshot.tasks)
-  await updateJsonl<typeof snapshot>(runtime.paths.tasksEvents, (current) => {
-    const last = current.at(-1)
-    if (last && JSON.stringify(last.tasks) === nextTasksSerialized)
-      return current
-    const next = [...current, snapshot]
-    return next.length <= TASK_SNAPSHOT_MAX_COUNT
-      ? next
-      : next.slice(next.length - TASK_SNAPSHOT_MAX_COUNT)
-  })
-}
-
-const maybeCompactQueues = async (runtime: RuntimeState): Promise<void> => {
-  const compactedInputs = await compactInputQueueIfFullyConsumed({
-    paths: runtime.paths,
-    cursor: runtime.queues.inputsCursor,
-    minPacketsToCompact: QUEUE_COMPACT_MIN_PACKETS,
-  })
-  if (compactedInputs) runtime.queues.inputsCursor = 0
-
-  const compactedResults = await compactResultQueueIfFullyConsumed({
-    paths: runtime.paths,
-    cursor: runtime.queues.resultsCursor,
-    minPacketsToCompact: QUEUE_COMPACT_MIN_PACKETS,
-  })
-  if (compactedResults) runtime.queues.resultsCursor = 0
-}
-
 export const finalizeBatchProgress = async (params: {
   runtime: RuntimeState
   nextInputsCursor: number
@@ -89,8 +55,35 @@ export const finalizeBatchProgress = async (params: {
   runtime.inflightInputs = runtime.inflightInputs.filter(
     (item) => !consumedInputIds.has(item.id),
   )
-  await maybeCompactQueues(runtime)
-  await appendTaskSnapshot(runtime)
+  const compactedInputs = await compactInputQueueIfFullyConsumed({
+    paths: runtime.paths,
+    cursor: runtime.queues.inputsCursor,
+    minPacketsToCompact: QUEUE_COMPACT_MIN_PACKETS,
+  })
+  if (compactedInputs) runtime.queues.inputsCursor = 0
+
+  const compactedResults = await compactResultQueueIfFullyConsumed({
+    paths: runtime.paths,
+    cursor: runtime.queues.resultsCursor,
+    minPacketsToCompact: QUEUE_COMPACT_MIN_PACKETS,
+  })
+  if (compactedResults) runtime.queues.resultsCursor = 0
+
+  const snapshot = {
+    id: `task-snapshot-${Date.now()}`,
+    createdAt: nowIso(),
+    tasks: runtime.tasks,
+  }
+  const nextTasksSerialized = JSON.stringify(snapshot.tasks)
+  await updateJsonl<typeof snapshot>(runtime.paths.tasksEvents, (current) => {
+    const last = current.at(-1)
+    if (last && JSON.stringify(last.tasks) === nextTasksSerialized)
+      return current
+    const next = [...current, snapshot]
+    return next.length <= TASK_SNAPSHOT_MAX_COUNT
+      ? next
+      : next.slice(next.length - TASK_SNAPSHOT_MAX_COUNT)
+  })
   await persistRuntime(runtime)
 }
 
@@ -126,37 +119,4 @@ export const consumeBatchHistory = async (params: {
     return { ok: false, reason: 'append_consumed_results_incomplete' }
 
   return { ok: true, consumedInputIds }
-}
-
-export const drainBatchOnFailure = async (params: {
-  runtime: RuntimeState
-  inputs: UserInput[]
-  results: TaskResult[]
-  nextInputsCursor: number
-  nextResultsCursor: number
-  persistRuntime: (runtime: RuntimeState) => Promise<void>
-}): Promise<boolean> => {
-  const {
-    runtime,
-    inputs,
-    results,
-    nextInputsCursor,
-    nextResultsCursor,
-    persistRuntime,
-  } = params
-  const consumed = await consumeBatchHistory({
-    runtime,
-    inputs,
-    results,
-  })
-  if (!consumed.ok) return false
-
-  await finalizeBatchProgress({
-    runtime,
-    nextInputsCursor,
-    nextResultsCursor,
-    consumedInputIds: consumed.consumedInputIds,
-    persistRuntime,
-  })
-  return true
 }

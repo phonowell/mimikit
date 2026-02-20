@@ -3,6 +3,7 @@ import {
   normalizeYamlUsage,
   parseIsoToMs,
   resolveTaskChangedAt,
+  sortTasksByChangedAt,
   stringifyPromptYaml,
 } from './format-base.js'
 
@@ -23,12 +24,7 @@ const truncateForPrompt = (value: string, maxChars: number): string => {
 }
 
 export const selectTasksForPrompt = (tasks: Task[]): Task[] =>
-  [...tasks].sort((a, b) => {
-    const aTs = parseIsoToMs(resolveTaskChangedAt(a))
-    const bTs = parseIsoToMs(resolveTaskChangedAt(b))
-    if (aTs !== bTs) return bTs - aTs
-    return a.id.localeCompare(b.id)
-  })
+  sortTasksByChangedAt(tasks)
 
 const toCancelMeta = (
   cancel?: TaskCancelMeta,

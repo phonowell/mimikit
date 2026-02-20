@@ -8,10 +8,8 @@ import {
   mergeChatMessages,
   selectChatMessages,
 } from '../read-model/chat-view.js'
-import { buildTaskViews } from '../read-model/task-view.js'
 
 import { notifyManagerLoop } from './manager-signal.js'
-import { waitForUiSignal } from './ui-signal.js'
 
 import type { RuntimeState, UserMeta } from './runtime-state.js'
 
@@ -69,10 +67,6 @@ export const addUserInput = async (
   return id
 }
 
-export const getInflightInputs = (runtime: RuntimeState) => [
-  ...runtime.inflightInputs,
-]
-
 export const getChatHistory = async (
   runtime: RuntimeState,
   limit = 50,
@@ -80,7 +74,7 @@ export const getChatHistory = async (
   const history = await readHistory(runtime.paths.history)
   return mergeChatMessages({
     history,
-    inflightInputs: getInflightInputs(runtime),
+    inflightInputs: [...runtime.inflightInputs],
     limit,
   })
 }
@@ -93,36 +87,8 @@ export const getChatMessages = async (
   const history = await readHistory(runtime.paths.history)
   return selectChatMessages({
     history,
-    inflightInputs: getInflightInputs(runtime),
+    inflightInputs: [...runtime.inflightInputs],
     limit,
     ...(afterId ? { afterId } : {}),
   })
 }
-
-export const getTasks = (runtime: RuntimeState, limit = 200) =>
-  buildTaskViews(runtime.tasks, runtime.cronJobs, limit)
-
-export const getWebUiSnapshot = async (
-  runtime: RuntimeState,
-  getStatus: () => unknown,
-  messageLimit = 50,
-  taskLimit = 200,
-): Promise<{
-  status: unknown
-  messages: Awaited<ReturnType<typeof getChatMessages>>
-  tasks: ReturnType<typeof getTasks>
-  stream: RuntimeState['uiStream']
-}> => {
-  const messages = await getChatMessages(runtime, messageLimit)
-  return {
-    status: getStatus(),
-    messages,
-    tasks: getTasks(runtime, taskLimit),
-    stream: runtime.uiStream ? { ...runtime.uiStream } : null,
-  }
-}
-
-export const waitForWebUiSignal = (
-  runtime: RuntimeState,
-  timeoutMs: number,
-): Promise<void> => waitForUiSignal(runtime, timeoutMs)
