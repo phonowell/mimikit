@@ -53,11 +53,9 @@ export const formatUsage = (usage) => {
   if (!usage) return ''
   const input = asNumber(usage.input)
   const output = asNumber(usage.output)
-  const total = asNumber(usage.total)
   const parts = []
   if (input !== null) parts.push(`\u2191 ${formatCount(input)}`)
   if (output !== null) parts.push(`\u2193 ${formatCount(output)}`)
-  if (parts.length === 0 && total !== null) parts.push(`\u2195 ${formatCount(total)}`)
   return parts.join(' \u00b7 ')
 }
 

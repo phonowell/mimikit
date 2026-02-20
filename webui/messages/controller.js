@@ -33,12 +33,10 @@ const normalizeUsage = (raw) => {
   if (!isRecord(raw)) return null
   const input = asUsageNumber(raw.input)
   const output = asUsageNumber(raw.output)
-  const total = asUsageNumber(raw.total)
-  if (input === null && output === null && total === null) return null
+  if (input === null && output === null) return null
   return {
     ...(input !== null ? { input } : {}),
     ...(output !== null ? { output } : {}),
-    ...(total !== null ? { total } : {}),
   }
 }
 

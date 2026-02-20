@@ -14,6 +14,7 @@
 - Provider role：`manager`
 - 会话连续性：持久化并复用 `plannerSessionId`；若 session 无效自动重建
 - 输出：`{ output, elapsedMs, sessionId?, usage? }`
+- usage 口径：`usage.input/output/total` 为单轮；`usage.sessionTotal` 为会话累计（provider 可选）。
 
 流程：
 

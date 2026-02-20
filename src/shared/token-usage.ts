@@ -28,12 +28,22 @@ export const mergeUsageMonotonic = (
     asFiniteNumber(current?.total),
     asFiniteNumber(next?.total),
   )
-  if (input === undefined && output === undefined && total === undefined)
+  const sessionTotal = keepMonotonicUsageValue(
+    asFiniteNumber(current?.sessionTotal),
+    asFiniteNumber(next?.sessionTotal),
+  )
+  if (
+    input === undefined &&
+    output === undefined &&
+    total === undefined &&
+    sessionTotal === undefined
+  )
     return undefined
   return {
     ...(input !== undefined ? { input } : {}),
     ...(output !== undefined ? { output } : {}),
     ...(total !== undefined ? { total } : {}),
+    ...(sessionTotal !== undefined ? { sessionTotal } : {}),
   }
 }
 
@@ -43,4 +53,5 @@ export const isSameUsage = (
 ): boolean =>
   left?.input === right?.input &&
   left?.output === right?.output &&
-  left?.total === right?.total
+  left?.total === right?.total &&
+  left?.sessionTotal === right?.sessionTotal

@@ -3,6 +3,13 @@ import { readNonEmptyString } from '../shared/input-parsing.js'
 import type { TokenUsage } from '../types/index.js'
 import type { Event, Part } from '@opencode-ai/sdk/v2'
 
+type OpencodeTokens = {
+  input?: unknown
+  output?: unknown
+  reasoning?: unknown
+  total?: unknown
+}
+
 type OpencodeAgentMessage = {
   id: string
   role: 'agent'
@@ -10,12 +17,7 @@ type OpencodeAgentMessage = {
   time: {
     created: unknown
   }
-  tokens?: {
-    input?: unknown
-    output?: unknown
-    reasoning?: unknown
-    total?: unknown
-  }
+  tokens?: OpencodeTokens
 }
 
 const readNumber = (value: unknown): number | undefined => {
@@ -46,12 +48,7 @@ const readAgentMessageFromEvent = (
         role?: unknown
         sessionID?: unknown
         time?: { created?: unknown }
-        tokens?: {
-          input?: unknown
-          output?: unknown
-          reasoning?: unknown
-          total?: unknown
-        }
+        tokens?: OpencodeTokens
       }
     | undefined
   if (!info) return undefined
@@ -81,7 +78,6 @@ const readAgentMessageFromEvent = (
     ...(info.tokens ? { tokens: info.tokens } : {}),
   }
 }
-
 type OpencodeModelRef = {
   providerID: string
   modelID: string
@@ -128,49 +124,37 @@ export const extractOpencodeOutput = (parts: Part[]): string =>
     .trim()
 
 export const mapOpencodeUsage = (
-  message:
-    | {
-        tokens?: {
-          input?: unknown
-          output?: unknown
-          reasoning?: unknown
-          total?: unknown
-        }
-      }
-    | undefined,
-): TokenUsage | undefined => {
-  const tokens = message?.tokens
-  return mapOpencodeUsageFromTokens(tokens)
-}
-
+  message: { tokens?: OpencodeTokens } | undefined,
+): TokenUsage | undefined => mapOpencodeUsageFromTokens(message?.tokens)
 const mapOpencodeUsageFromTokens = (
-  tokens:
-    | {
-        input?: unknown
-        output?: unknown
-        reasoning?: unknown
-        total?: unknown
-      }
-    | undefined,
+  tokens: OpencodeTokens | undefined,
 ): TokenUsage | undefined => {
   const input = readNumber(tokens?.input)
   const output = readNumber(tokens?.output)
   const reasoning = readNumber(tokens?.reasoning)
-  const totalFromToken = readNumber(tokens?.total)
+  const sessionTotal = readNumber(tokens?.total)
   const totalFromParts =
     input !== undefined || output !== undefined || reasoning !== undefined
       ? (input ?? 0) + (output ?? 0) + (reasoning ?? 0)
       : undefined
-  const total = totalFromToken ?? totalFromParts
-  if (input === undefined && output === undefined && total === undefined)
-    return undefined
-  if ((input ?? 0) === 0 && (output ?? 0) === 0 && (total ?? 0) === 0)
+  const total = totalFromParts
+  if (
+    (input === undefined &&
+      output === undefined &&
+      total === undefined &&
+      sessionTotal === undefined) ||
+    ((input ?? 0) === 0 &&
+      (output ?? 0) === 0 &&
+      (total ?? 0) === 0 &&
+      (sessionTotal ?? 0) === 0)
+  )
     return undefined
 
   return {
     ...(input !== undefined ? { input } : {}),
     ...(output !== undefined ? { output } : {}),
     ...(total !== undefined ? { total } : {}),
+    ...(sessionTotal !== undefined ? { sessionTotal } : {}),
   }
 }
 

@@ -7,6 +7,7 @@ export const tokenUsageSchema = z
     input: z.number().finite().nonnegative().optional(),
     output: z.number().finite().nonnegative().optional(),
     total: z.number().finite().nonnegative().optional(),
+    sessionTotal: z.number().finite().nonnegative().optional(),
   })
   .strict()
 
@@ -20,6 +21,9 @@ export const normalizeTokenUsage = (
     ...(usage.input !== undefined ? { input: usage.input } : {}),
     ...(usage.output !== undefined ? { output: usage.output } : {}),
     ...(usage.total !== undefined ? { total: usage.total } : {}),
+    ...(usage.sessionTotal !== undefined
+      ? { sessionTotal: usage.sessionTotal }
+      : {}),
   }
   return Object.keys(normalized).length > 0 ? normalized : undefined
 }
