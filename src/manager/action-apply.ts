@@ -1,5 +1,3 @@
-import { applyManagerFocusReplace } from '../focus/state.js'
-import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import { notifyWorkerLoop } from '../orchestrator/core/worker-signal.js'
@@ -36,7 +34,7 @@ export { collectTaskResultSummaries }
 export const applyTaskActions = async (
   runtime: RuntimeState,
   items: Parsed[],
-  options?: ApplyTaskActionsOptions & { focusEvidenceIds?: Set<string> },
+  options?: ApplyTaskActionsOptions,
 ): Promise<void> => {
   const seen = new Set<string>()
   for (const item of items) {
@@ -62,25 +60,6 @@ export const applyTaskActions = async (
       if (!parsed.success) continue
       requestManagerRestart(runtime)
       return
-    }
-    if (item.name === 'replace_focuses') {
-      const applied = applyManagerFocusReplace({
-        runtime,
-        action: item,
-        batchEvidenceIds: options?.focusEvidenceIds ?? new Set(),
-      })
-      if (!applied.ok) {
-        await bestEffort('appendLog: replace_focuses_rejected', () =>
-          appendLog(runtime.paths.log, {
-            event: 'replace_focuses_rejected',
-            reason: applied.error,
-          }),
-        )
-        continue
-      }
-      if (!applied.changed) continue
-      await persistRuntimeState(runtime)
-      continue
     }
   }
 }

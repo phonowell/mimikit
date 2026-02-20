@@ -2,7 +2,6 @@ import { buildPayloadEtag, replyWithEtag } from './etag.js'
 import { parseInputBody, parseMessageLimit, parseTaskLimit } from './helpers.js'
 import {
   registerControlRoutes,
-  registerFocusRoutes,
   registerTaskArchiveRoute,
   registerTaskCancelRoute,
   registerTaskProgressRoute,
@@ -146,7 +145,6 @@ export const registerApiRoutes = (
   registerTaskArchiveRoute(app, orchestrator, config)
   registerTaskProgressRoute(app, orchestrator, config)
   registerTaskCancelRoute(app, orchestrator)
-  registerFocusRoutes(app, orchestrator)
   registerControlRoutes(app, orchestrator, config)
 }
 

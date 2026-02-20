@@ -37,9 +37,6 @@ export const createOrchestratorStub = () => {
       taskLimitCalls.push(limit)
       return { tasks: [], counts: {} }
     },
-    getFocuses: () => ({ limit: 1, active: [], expired: [] }),
-    expireFocus: async () => ({ ok: false as const, status: 'not_found' as const }),
-    restoreFocus: async () => ({ ok: false as const, status: 'not_found' as const }),
     getTaskById: () => undefined,
     cancelTask: async () => ({ ok: false, status: 'not_found' as const }),
     stopAndPersist: async () => undefined,

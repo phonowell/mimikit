@@ -2,7 +2,6 @@ import type { AppConfig } from '../../config.js'
 import type { StatePaths } from '../../fs/paths.js'
 import type { TaskResultNotifier } from '../../notify/node-notifier.js'
 import type {
-  ConversationFocus,
   CronJob,
   ISODate,
   Task,
@@ -47,7 +46,6 @@ export type RuntimeState = {
   }
   tasks: Task[]
   cronJobs: CronJob[]
-  focuses: ConversationFocus[]
   managerTurn: number
   plannerSessionId?: string
   uiStream: UiAgentStream | null

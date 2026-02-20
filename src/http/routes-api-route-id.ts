@@ -3,7 +3,7 @@ import type { FastifyReply } from 'fastify'
 export const resolveRouteId = (
   params: unknown,
   reply: FastifyReply,
-  field: 'task' | 'focus',
+  field: 'task',
 ): string | undefined => {
   const id =
     params && typeof params === 'object' && 'id' in params

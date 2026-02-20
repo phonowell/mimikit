@@ -1,4 +1,3 @@
-import { collectBatchEvidenceIds } from '../focus/common.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort, logSafeError } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
@@ -67,7 +66,6 @@ export const processManagerBatch = async (params: {
     if (!consumed.ok) throw new Error(consumed.reason)
     await applyTaskActions(runtime, parsed.actions, {
       suppressCreateTask: hasManualCanceledResult && inputs.length === 0,
-      focusEvidenceIds: collectBatchEvidenceIds(inputs, results),
     })
 
     const responseText =

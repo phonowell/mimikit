@@ -39,23 +39,6 @@
               <span class="tasks-worker-dots" data-worker-dots aria-hidden="true"></span>
             </button>
             <button
-              class="btn btn--sm tasks-open"
-              data-focuses-open
-              type="button"
-              title="Focuses"
-              aria-label="Focuses"
-              aria-haspopup="dialog"
-              aria-controls="focuses-dialog"
-              aria-expanded="false"
-            >
-              <span class="tasks-label">Focuses</span>
-              <span
-                class="tasks-worker-dots"
-                data-focuses-dots
-                aria-hidden="true"
-              ></span>
-            </button>
-            <button
               class="btn btn--sm restart-btn"
               data-restart
               type="button"
@@ -145,46 +128,6 @@
             </div>
           </header>
           <ul class="tasks-list scrollable" data-tasks-list></ul>
-        </section>
-      </dialog>
-
-      <dialog
-        class="focuses-dialog"
-        data-focuses-dialog
-        id="focuses-dialog"
-        aria-labelledby="focuses-title"
-      >
-        <section class="focuses-dialog-panel">
-          <header class="tasks-header">
-            <h2 class="tasks-title" id="focuses-title">Focuses</h2>
-            <div class="tasks-actions" role="group" aria-label="Focuses">
-              <button
-                class="btn btn--icon btn--icon-muted focuses-close"
-                data-focuses-close
-                type="button"
-                title="Close"
-                aria-label="Close"
-              >
-                &#x2715;
-              </button>
-            </div>
-          </header>
-          <section
-            class="tasks-list scrollable focuses-panel"
-            data-focuses-panel
-            aria-label="Focuses"
-          >
-            <div class="focuses-body">
-              <section class="focuses-group" aria-label="Active focuses">
-                <h3 class="focuses-title">Active</h3>
-                <ul class="focuses-list" data-focuses-list></ul>
-              </section>
-              <section class="focuses-group" aria-label="Expired focuses">
-                <h3 class="focuses-title">Expired</h3>
-                <ul class="focuses-list" data-focuses-expired-list></ul>
-              </section>
-            </div>
-          </section>
         </section>
       </dialog>
 

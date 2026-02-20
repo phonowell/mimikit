@@ -4,12 +4,11 @@ import { stripUndefined } from '../shared/utils.js'
 
 import { normalizeTokenUsage, tokenUsageSchema } from './token-usage.js'
 
-import type { ConversationFocus, CronJob, Task } from '../types/index.js'
+import type { CronJob, Task } from '../types/index.js'
 
 export type RuntimeSnapshot = {
   tasks: Task[]
   cronJobs?: CronJob[]
-  focuses?: ConversationFocus[]
   managerTurn?: number
   queues?: {
     inputsCursor: number
@@ -84,26 +83,10 @@ const cronJobSchema = z
     { message: 'cron and scheduledAt are mutually exclusive' },
   )
 
-const focusSchema = z
-  .object({
-    id: z.string().trim().min(1),
-    title: z.string().trim().min(1),
-    summary: z.string().trim().min(1),
-    status: z.enum(['active', 'expired']),
-    confidence: z.number().finite().min(0).max(1),
-    evidenceIds: z.array(z.string().trim().min(1)),
-    createdAt: z.string().trim().min(1),
-    updatedAt: z.string().trim().min(1),
-    lastReferencedAt: z.string().trim().min(1),
-    source: z.enum(['manager', 'user']),
-  })
-  .strict()
-
 const runtimeSnapshotSchema = z
   .object({
     tasks: z.array(taskSchema),
     cronJobs: z.array(cronJobSchema).optional(),
-    focuses: z.array(focusSchema).optional(),
     managerTurn: z.number().int().nonnegative().optional(),
     queues: z
       .object({
@@ -133,10 +116,6 @@ const normalizeTask = (task: z.infer<typeof taskSchema>): Task =>
 const normalizeCronJob = (cronJob: z.infer<typeof cronJobSchema>): CronJob =>
   stripUndefined({ ...cronJob }) as CronJob
 
-const normalizeFocus = (
-  focus: z.infer<typeof focusSchema>,
-): ConversationFocus => stripUndefined({ ...focus }) as ConversationFocus
-
 export const parseRuntimeSnapshot = (value: unknown): RuntimeSnapshot => {
   const parsed = runtimeSnapshotSchema.parse(value)
   return {
@@ -144,7 +123,6 @@ export const parseRuntimeSnapshot = (value: unknown): RuntimeSnapshot => {
     ...(parsed.cronJobs
       ? { cronJobs: parsed.cronJobs.map(normalizeCronJob) }
       : {}),
-    ...(parsed.focuses ? { focuses: parsed.focuses.map(normalizeFocus) } : {}),
     ...(parsed.managerTurn !== undefined
       ? { managerTurn: parsed.managerTurn }
       : {}),

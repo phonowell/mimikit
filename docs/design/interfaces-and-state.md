@@ -10,9 +10,6 @@
 - `GET /api/tasks/:id/archive`
 - `GET /api/tasks/:id/progress`
 - `POST /api/tasks/:id/cancel`
-- `GET /api/focuses`
-- `POST /api/focuses/:id/expire`
-- `POST /api/focuses/:id/restore`
 - `POST /api/restart`
 - `POST /api/reset`
 
@@ -89,9 +86,7 @@ HTTP 路由共享约束：
 - `runtime-snapshot.queues` 仅包含：
   - `inputsCursor`
   - `resultsCursor`
-- 对话重心字段：
-  - `focuses[]`：`active|expired` 重心集合
-  - `managerTurn`：manager 会话轮次计数
+- `managerTurn`：manager 会话轮次计数
 - 主会话恢复字段：
   - `plannerSessionId`
 - 旧 grouped channel 结构不再兼容解析。

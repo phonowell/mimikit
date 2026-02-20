@@ -7,8 +7,6 @@ import { escapeCdata } from './format-base.js'
 import {
   formatActionFeedback,
   formatEnvironment,
-  formatFocusControlYaml,
-  formatFocusesYaml,
   formatHistoryLookup,
   formatInputs,
   formatResultsYaml,
@@ -24,7 +22,6 @@ import {
 } from './task-results-merge.js'
 
 import type {
-  ConversationFocus,
   CronJob,
   HistoryLookupMessage,
   ManagerActionFeedback,
@@ -58,14 +55,6 @@ export const buildManagerPrompt = async (params: {
   inputs: UserInput[]
   results: TaskResult[]
   tasks: Task[]
-  focuses?: ConversationFocus[]
-  focusMemory?: ConversationFocus[]
-  focusControl?: {
-    turn: number
-    maxSlots: number
-    updateRequired: boolean
-    reason: 'periodic' | 'result_event' | 'bootstrap' | 'idle'
-  }
   cronJobs?: CronJob[]
   historyLookup?: HistoryLookupMessage[]
   actionFeedback?: ManagerActionFeedback[]
@@ -109,11 +98,6 @@ export const buildManagerPrompt = async (params: {
     tasks: escapeCdata(
       formatTasksYaml(params.tasks, resultsForTasks, params.cronJobs ?? []),
     ),
-    focuses: escapeCdata(formatFocusesYaml(params.focuses ?? [])),
-    focus_memory: escapeCdata(formatFocusesYaml(params.focusMemory ?? [])),
-    focus_control: params.focusControl
-      ? escapeCdata(formatFocusControlYaml(params.focusControl))
-      : '',
     history_lookup: escapeCdata(
       formatHistoryLookup(params.historyLookup ?? []),
     ),

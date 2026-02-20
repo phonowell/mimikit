@@ -89,7 +89,6 @@ export function createMessagesController({
   quoteText,
   quoteClearBtn,
   onTasksSnapshot,
-  onFocusSnapshot,
   onDisconnected,
 }) {
   let lastStatus = null
@@ -192,8 +191,6 @@ export function createMessagesController({
     applyMessagesPayload(snapshot.messages, streamPayload)
     if (typeof onTasksSnapshot === 'function' && isRecord(snapshot.tasks)) 
       onTasksSnapshot(snapshot.tasks)
-    if (typeof onFocusSnapshot === 'function' && isRecord(snapshot.focuses))
-      onFocusSnapshot(snapshot.focuses)
   }
 
   const closeEvents = () => {

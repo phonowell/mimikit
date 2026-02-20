@@ -12,7 +12,6 @@ import {
 } from './runner-budget.js'
 
 import type {
-  ConversationFocus,
   CronJob,
   HistoryLookupMessage,
   ManagerActionFeedback,
@@ -29,14 +28,6 @@ export const runManager = async (params: {
   inputs: UserInput[]
   results: TaskResult[]
   tasks: Task[]
-  focuses?: ConversationFocus[]
-  focusMemory?: ConversationFocus[]
-  focusControl?: {
-    turn: number
-    maxSlots: number
-    updateRequired: boolean
-    reason: 'periodic' | 'result_event' | 'bootstrap' | 'idle'
-  }
   cronJobs?: CronJob[]
   historyLookup?: HistoryLookupMessage[]
   actionFeedback?: ManagerActionFeedback[]
@@ -59,9 +50,6 @@ export const runManager = async (params: {
     inputs: params.inputs,
     results: params.results,
     tasks: params.tasks,
-    ...(params.focuses ? { focuses: params.focuses } : {}),
-    ...(params.focusMemory ? { focusMemory: params.focusMemory } : {}),
-    ...(params.focusControl ? { focusControl: params.focusControl } : {}),
     ...(params.cronJobs ? { cronJobs: params.cronJobs } : {}),
     ...(params.historyLookup ? { historyLookup: params.historyLookup } : {}),
     ...(params.actionFeedback ? { actionFeedback: params.actionFeedback } : {}),

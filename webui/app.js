@@ -1,5 +1,4 @@
 import { bindComposer } from './messages/composer.js'
-import { bindFocusPanel } from './focuses.js'
 import { createMessagesController } from './messages/controller.js'
 import { bindRestart } from './restart.js'
 import { UI_TEXT } from './system-text.js'
@@ -29,13 +28,6 @@ const elements = {
   workerDots: $('[data-worker-dots]'),
   tasksCloseBtn: $('[data-tasks-close]'),
   tasksList: $('[data-tasks-list]'),
-  focusesDialog: $('[data-focuses-dialog]'),
-  focusesOpenBtn: $('[data-focuses-open]'),
-  focusesDotsEl: $('[data-focuses-dots]'),
-  focusesCloseBtn: $('[data-focuses-close]'),
-  focusesPanel: $('[data-focuses-panel]'),
-  focusesList: $('[data-focuses-list]'),
-  focusesExpiredList: $('[data-focuses-expired-list]'),
 }
 
 const FAVICON_COLOR_BY_STATE = {
@@ -92,7 +84,7 @@ const normalizeTitleText = (value) => {
   return `${compact.slice(0, TITLE_MAX_CHARS - 1).trimEnd()}…`
 }
 
-const resolveConversationFocus = () => {
+const resolveConversationTitleCandidate = () => {
   if (!elements.messagesEl) return ''
   const selectors = ['.message.user .content', '.message:not(.system) .content']
   for (const selector of selectors) {
@@ -107,9 +99,9 @@ const resolveConversationFocus = () => {
   return ''
 }
 
-const syncTitleWithConversationFocus = () => {
-  const focus = resolveConversationFocus()
-  document.title = focus || UI_TEXT.conversationTitleFallback
+const syncTitleWithConversationTitleCandidate = () => {
+  const titleCandidate = resolveConversationTitleCandidate()
+  document.title = titleCandidate || UI_TEXT.conversationTitleFallback
 }
 
 const tasksPanel = bindTasksPanel({
@@ -117,16 +109,6 @@ const tasksPanel = bindTasksPanel({
   tasksDialog: elements.tasksDialog,
   tasksOpenBtn: elements.tasksOpenBtn,
   tasksCloseBtn: elements.tasksCloseBtn,
-})
-
-const focusPanel = bindFocusPanel({
-  focusesDialog: elements.focusesDialog,
-  focusesOpenBtn: elements.focusesOpenBtn,
-  focusesDotsEl: elements.focusesDotsEl,
-  focusesCloseBtn: elements.focusesCloseBtn,
-  panel: elements.focusesPanel,
-  activeList: elements.focusesList,
-  expiredList: elements.focusesExpiredList,
 })
 
 const messages = createMessagesController({
@@ -142,15 +124,13 @@ const messages = createMessagesController({
   quoteText: elements.quoteText,
   quoteClearBtn: elements.quoteClearBtn,
   onTasksSnapshot: (tasks) => tasksPanel?.applyTasksSnapshot?.(tasks),
-  onFocusSnapshot: (focuses) => focusPanel?.applyFocusSnapshot?.(focuses),
   onDisconnected: () => {
     tasksPanel?.setDisconnected?.()
-    focusPanel?.setDisconnected?.()
   },
 })
 
 syncFaviconWithStatus()
-syncTitleWithConversationFocus()
+syncTitleWithConversationTitleCandidate()
 if (elements.statusDot) {
   const statusObserver = new MutationObserver(syncFaviconWithStatus)
   statusObserver.observe(elements.statusDot, {
@@ -159,7 +139,9 @@ if (elements.statusDot) {
   })
 }
 if (elements.messagesEl) {
-  const messagesObserver = new MutationObserver(syncTitleWithConversationFocus)
+  const messagesObserver = new MutationObserver(
+    syncTitleWithConversationTitleCandidate,
+  )
   messagesObserver.observe(elements.messagesEl, {
     childList: true,
     characterData: true,

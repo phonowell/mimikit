@@ -1,8 +1,4 @@
 import { parseActions } from '../actions/protocol/parse.js'
-import {
-  buildFocusManagerContext,
-  isReplaceFocusesAction,
-} from '../focus/state.js'
 import { appendLog } from '../log/append.js'
 import { selectRecentTasks } from '../orchestrator/read-model/task-select.js'
 import { readHistory } from '../storage/history-jsonl.js'
@@ -51,7 +47,6 @@ export const runManagerBatch = async (params: {
     maxCount: runtime.config.deferred.tasksMaxCount,
     maxBytes: runtime.config.deferred.tasksMaxBytes,
   })
-  const focus = buildFocusManagerContext({ runtime, inputs, results })
 
   let streamRawOutput = ''
   let streamUsage: TokenUsage | undefined
@@ -65,9 +60,6 @@ export const runManagerBatch = async (params: {
       inputs,
       results,
       tasks,
-      focuses: focus.active,
-      focusMemory: focus.memory,
-      focusControl: focus.control,
       cronJobs: runtime.cronJobs,
       ...(extra?.historyLookup ? { historyLookup: extra.historyLookup } : {}),
       ...(extra?.actionFeedback
@@ -115,18 +107,7 @@ export const runManagerBatch = async (params: {
     enabledCronJobIds: new Set(
       runtime.cronJobs.filter((job) => job.enabled).map((job) => job.id),
     ),
-    focusSlots: focus.control.maxSlots,
   })
-  if (
-    focus.control.updateRequired &&
-    !firstParsed.actions.some((item) => isReplaceFocusesAction(item))
-  ) {
-    actionFeedback.push({
-      action: 'replace_focuses',
-      error: 'action_execution_rejected',
-      hint: `本轮必须输出 M:replace_focuses（reason=${focus.control.reason}）。`,
-    })
-  }
 
   const queryRequest = pickQueryHistoryRequest(firstParsed.actions)
   if (!queryRequest && actionFeedback.length === 0) {

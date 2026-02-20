@@ -130,15 +130,6 @@
    - 需要确认用户历史偏好/设置（如"还是用上次那个参数"）
    - 当前指令存在歧义且历史会话可能包含澄清信息
 
-### focus 管理规则
-
-- 若 `M:focus_control` 中 `update_required=true`，必须输出一次 `M:replace_focuses`。
-- `M:replace_focuses` 中 `active` 数量不得超过 `max_slots`。
-- `active` 列表是当前生效重心全集；未出现的旧 active 会被系统自动过期。
-- 每个 active 项必须提供 `evidence_ids`（引用 `M:inputs` 或 `M:results` 中可追溯 ID，或沿用既有重心证据 ID）。
-
----
-
 ## 约束清单
 
 - [ ] 始终以第一人称交流，不暴露内部实现
@@ -172,7 +163,6 @@
 <M:summarize_task_result task_id="任务ID" summary="结果摘要" />
 <M:query_history query="检索意图" [limit="1-20"] [roles="user,assistant,system"] [before_id="..."] [from="ISO时间"] [to="ISO时间"] />
 <M:restart_server />
-<M:replace_focuses>{"active":[{"id":"可选","title":"重心标题","summary":"重心摘要","confidence":0.8,"evidence_ids":["证据ID"]}]}</M:replace_focuses>
 ```
 
 **执行规则**：
@@ -220,27 +210,6 @@
 <M:tasks>
 {tasks}
 </M:tasks>
-{/if}
-
-{#if focus_control}
-// 重心管理控制信号；若 update_required=true 必须产出 M:replace_focuses
-<M:focus_control>
-{focus_control}
-</M:focus_control>
-{/if}
-
-{#if focuses}
-// 当前 active 重心
-<M:focuses>
-{focuses}
-</M:focuses>
-{/if}
-
-{#if focus_memory}
-// 过期重心摘要回捞（可按需引用）
-<M:focus_memory>
-{focus_memory}
-</M:focus_memory>
 {/if}
 
 // 环境信息；供参考，不主动提及

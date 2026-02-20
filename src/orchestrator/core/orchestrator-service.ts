@@ -1,11 +1,6 @@
 import PQueue from 'p-queue'
 
 import { type AppConfig } from '../../config.js'
-import {
-  expireFocus,
-  getFocusSnapshot,
-  restoreFocus,
-} from '../../focus/state.js'
 import { buildPaths } from '../../fs/paths.js'
 import { bestEffort, setDefaultLogPath } from '../../log/safe.js'
 import { cronWakeLoop } from '../../manager/loop-cron.js'
@@ -38,7 +33,6 @@ import {
   hydrateRuntimeState,
   persistRuntimeState,
 } from './runtime-persistence.js'
-import { notifyUiSignal } from './ui-signal.js'
 import { notifyWorkerLoop } from './worker-signal.js'
 
 import type { RuntimeState, UserMeta } from './runtime-state.js'
@@ -61,7 +55,6 @@ export class Orchestrator {
       queues: { inputsCursor: 0, resultsCursor: 0 },
       tasks: [],
       cronJobs: [],
-      focuses: [],
       managerTurn: 0,
       uiStream: null,
       runningControllers: new Map(),
@@ -129,10 +122,6 @@ export class Orchestrator {
     return getTasks(this.runtime, limit)
   }
 
-  getFocuses() {
-    return getFocusSnapshot(this.runtime)
-  }
-
   getWebUiSnapshot(messageLimit = 50, taskLimit = 200) {
     return getWebUiSnapshot(
       this.runtime,
@@ -154,22 +143,6 @@ export class Orchestrator {
 
   cancelTask(taskId: string, meta?: { source?: string; reason?: string }) {
     return cancelTask(this.runtime, taskId, meta)
-  }
-
-  async expireFocus(focusId: string) {
-    const result = expireFocus(this.runtime, focusId)
-    if (!result.ok) return result
-    await persistRuntimeState(this.runtime)
-    notifyUiSignal(this.runtime)
-    return result
-  }
-
-  async restoreFocus(focusId: string) {
-    const result = restoreFocus(this.runtime, focusId)
-    if (!result.ok) return result
-    await persistRuntimeState(this.runtime)
-    notifyUiSignal(this.runtime)
-    return result
   }
 
   addCronJob(input: {
