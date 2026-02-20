@@ -8,6 +8,11 @@ while ($true) {
 
   if ($exitCode -eq 75) {
     Write-Host "[mimikit] restarting..."
+    & pnpm i
+    if ($LASTEXITCODE -ne 0) {
+      Write-Host "[mimikit] pnpm i failed, exit 1"
+      exit 1
+    }
     Start-Sleep -Seconds 1
     continue
   }
