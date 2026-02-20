@@ -77,6 +77,12 @@
 - 入参：`task_id`、`summary`
 - 行为：汇总为 `Map<taskId, summary>`，用于结果写入 `history` 时压缩输出。
 
+### `compress_context`
+
+- 入参：无
+- 行为：对当前 manager 会话执行一次 OpenCode `session.summarize`，压缩历史上下文并保留关键信息。
+- 约束：仅当存在 `plannerSessionId` 时可执行；否则会返回 `action_feedback` 要求修正。
+
 ## Worker 输出规则
 
 来源：`src/worker/profiled-runner.ts`

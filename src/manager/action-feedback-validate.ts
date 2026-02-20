@@ -3,6 +3,7 @@ import { parseIsoMs } from '../shared/time.js'
 import { hasForbiddenWorkerStatePath } from './action-apply-guards.js'
 import {
   cancelSchema,
+  compressSchema,
   createSchema,
   restartSchema,
   summarizeSchema,
@@ -17,6 +18,7 @@ export const REGISTERED_MANAGER_ACTIONS = new Set([
   'create_task',
   'cancel_task',
   'summarize_task_result',
+  'compress_context',
   'query_history',
   'restart_server',
 ])
@@ -25,6 +27,7 @@ export type FeedbackContext = {
   taskStatusById?: Map<string, TaskStatus>
   enabledCronJobIds?: Set<string>
   scheduleNowIso?: string
+  managerSessionId?: string
 }
 
 export type ValidationIssue = {
@@ -166,6 +169,21 @@ const validateQueryHistory = (item: Parsed): ValidationIssue[] => {
   return []
 }
 
+const validateCompressContext = (
+  item: Parsed,
+  context: FeedbackContext,
+): ValidationIssue[] => {
+  const parsed = compressSchema.safeParse(item.attrs)
+  if (!parsed.success) return [invalidArgsIssue(parsed.error)]
+  if (context.managerSessionId?.trim()) return []
+  return [
+    {
+      error: ACTION_EXECUTION_REJECTED,
+      hint: 'compress_context 执行失败：当前会话缺少可压缩的 session_id。',
+    },
+  ]
+}
+
 export const validateRegisteredManagerAction = (
   item: Parsed,
   context: FeedbackContext = {},
@@ -173,6 +191,8 @@ export const validateRegisteredManagerAction = (
   if (!REGISTERED_MANAGER_ACTIONS.has(item.name)) return []
   if (item.name === 'create_task') return validateCreateTask(item, context)
   if (item.name === 'cancel_task') return validateCancelTask(item, context)
+  if (item.name === 'compress_context')
+    return validateCompressContext(item, context)
   if (item.name === 'query_history') return validateQueryHistory(item)
   if (item.name === 'summarize_task_result')
     return validateWithSchema(item, summarizeSchema)

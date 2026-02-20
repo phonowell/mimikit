@@ -3,11 +3,12 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import PQueue from 'p-queue'
-import { expect, test } from 'vitest'
+import { expect, test, vi } from 'vitest'
 
 import { defaultConfig } from '../src/config.js'
 import { buildPaths } from '../src/fs/paths.js'
 import { applyTaskActions } from '../src/manager/action-apply.js'
+import * as opencodeSession from '../src/providers/opencode-session.js'
 
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
 
@@ -148,4 +149,24 @@ test('create_task allows .mimikit/generated path for worker profiles and infers 
 
   expect(runtime.cronJobs).toHaveLength(1)
   expect(runtime.cronJobs[0]?.profile).toBe('deferred')
+  runtime.plannerSessionId = 'planner-session-1'
+  const spy = vi
+    .spyOn(opencodeSession, 'summarizeOpencodeSession')
+    .mockResolvedValue(undefined)
+
+  await applyTaskActions(runtime, [
+    {
+      name: 'compress_context',
+      attrs: {},
+    },
+  ])
+
+  expect(spy).toHaveBeenCalledTimes(1)
+  expect(spy).toHaveBeenCalledWith({
+    workDir: runtime.config.workDir,
+    sessionId: 'planner-session-1',
+    timeoutMs: Math.max(15_000, runtime.config.deferred.task.timeoutMs),
+    abortSignal: runtime.managerSignalController.signal,
+  })
+  spy.mockRestore()
 })

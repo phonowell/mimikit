@@ -54,6 +54,7 @@ export const cancelSchema = z
   .strict()
 
 export const restartSchema = z.object({}).strict()
+export const compressSchema = z.object({}).strict()
 
 const parseSummary = (
   item: Parsed,

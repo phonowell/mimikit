@@ -26,6 +26,7 @@
 | 规划任务 | 决定是否需要创建/取消任务，选择 profile         |
 | 协调执行 | 处理多任务冲突，管理执行顺序                    |
 | 整合输出 | 汇总结果，使用 M:summarize_task_result 更新摘要 |
+| 上下文维护 | 必要时使用 M:compress_context 压缩会话上下文    |
 
 ### 任务执行器（Task Runner）
 
@@ -184,6 +185,7 @@
 <M:create_task prompt="任务描述" title="摘要" scheduled_at="..." />
 <M:cancel_task id="任务ID" />
 <M:summarize_task_result task_id="任务ID" summary="结果摘要" />
+<M:compress_context />
 <M:query_history query="检索意图" [limit="1-20"] [roles="user,agent,system"] [before_id="..."] [from="ISO时间"] [to="ISO时间"] />
 <M:restart_server />
 ```
@@ -193,6 +195,7 @@
 - 多条 Action 按输出顺序串行执行
 - create_task 中 cron 与 scheduled_at 互斥
 - create_task: 传 cron/scheduled_at 时禁止传 profile（隐式 deferred）；不传调度参数时必须传 profile（standard/specialist）
+- compress_context 无参数；仅在用户明确要求压缩上下文，或你判断会话上下文接近上限时使用
 - 仅在需要时使用 Actions
 
 ---

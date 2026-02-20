@@ -114,6 +114,9 @@ export const runManagerBatch = async (params: {
         runtime.cronJobs.filter((job) => job.enabled).map((job) => job.id),
       ),
       scheduleNowIso,
+      ...(runtime.plannerSessionId
+        ? { managerSessionId: runtime.plannerSessionId }
+        : {}),
     })
     const queryRequest = pickQueryHistoryRequest(parsed.actions)
     const queryKey = queryRequest

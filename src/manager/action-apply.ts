@@ -1,6 +1,7 @@
 import { bestEffort } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import { notifyWorkerLoop } from '../orchestrator/core/worker-signal.js'
+import { summarizeOpencodeSession } from '../providers/opencode-session.js'
 import { newId, nowIso } from '../shared/utils.js'
 import { appendHistory } from '../storage/history-jsonl.js'
 import { cancelTask } from '../worker/cancel-task.js'
@@ -12,6 +13,7 @@ import {
 import {
   cancelSchema,
   collectTaskResultSummaries,
+  compressSchema,
   restartSchema,
 } from './action-apply-schema.js'
 
@@ -48,6 +50,8 @@ const appendCronCanceledSystemMessage = async (
 
 export { collectTaskResultSummaries }
 
+const COMPRESS_CONTEXT_TIMEOUT_FLOOR_MS = 15_000
+
 export const applyTaskActions = async (
   runtime: RuntimeState,
   items: Parsed[],
@@ -80,6 +84,23 @@ export const applyTaskActions = async (
       if (!parsed.success) continue
       requestManagerRestart(runtime)
       return
+    }
+    if (item.name === 'compress_context') {
+      const parsed = compressSchema.safeParse(item.attrs)
+      if (!parsed.success) continue
+      const sessionId = runtime.plannerSessionId?.trim()
+      if (!sessionId) continue
+      const timeoutMs = Math.max(
+        COMPRESS_CONTEXT_TIMEOUT_FLOOR_MS,
+        runtime.config.deferred.task.timeoutMs,
+      )
+      await summarizeOpencodeSession({
+        workDir: runtime.config.workDir,
+        sessionId,
+        timeoutMs,
+        abortSignal: runtime.managerSignalController.signal,
+      })
+      continue
     }
   }
 }

@@ -71,12 +71,16 @@ test('collectManagerActionFeedback reports unregistered, invalid args, and rejec
         from: 'not-a-date',
       },
     },
+    {
+      name: 'compress_context',
+      attrs: {},
+    },
   ], {
     taskStatusById: new Map([['done-id', 'succeeded']]),
     scheduleNowIso: '2100-01-01T00:00:00.000Z',
   })
 
-  expect(feedback).toHaveLength(9)
+  expect(feedback).toHaveLength(10)
   expect(feedback[0]?.action).toBe('read')
   expect(feedback[0]?.error).toBe('unregistered_action')
   expect(feedback[0]?.attempted).toContain('<M:read')
@@ -126,6 +130,13 @@ test('collectManagerActionFeedback reports unregistered, invalid args, and rejec
         item.error === 'invalid_action_args',
     ),
   ).toBe(true)
+  expect(
+    feedback.some(
+      (item) =>
+        item.action === 'compress_context' &&
+        item.error === 'action_execution_rejected',
+    ),
+  ).toBe(true)
 })
 
 test('collectManagerActionFeedback ignores valid registered actions', () => {
@@ -159,8 +170,15 @@ test('collectManagerActionFeedback ignores valid registered actions', () => {
           query: 'history',
         },
       },
+      {
+        name: 'compress_context',
+        attrs: {},
+      },
     ],
-    { taskStatusById: new Map([['t1', 'pending']]) },
+    {
+      taskStatusById: new Map([['t1', 'pending']]),
+      managerSessionId: 'session-1',
+    },
   )
 
   expect(feedback).toHaveLength(0)
