@@ -60,8 +60,7 @@
     "lint": "tsx scripts/remove-bom.ts && tsx scripts/fix-crlf.ts && tsx scripts/format-jsdoc.ts && tsx scripts/fn-to-arrow.ts && eslint \"src/**/*.ts\" \"webui/**/*.js\" --fix",
     "merge": "pnpm exec tsx scripts/merge-worktree.ts",
     "prompt:preview": "tsx scripts/preview-prompt.ts",
-    "start": "caffeinate -dimsu bin/mimikit",
-    "start:windows": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\bin\\mimikit.ps1",
+    "start": "tsx scripts/start.ts",
     "sync": "pnpm exec tsx scripts/sync-worktree.ts && pnpm i",
     "test": "vitest run",
     "type-check": "tsc -p tsconfig.json --noEmit"
