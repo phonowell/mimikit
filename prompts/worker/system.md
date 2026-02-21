@@ -9,6 +9,7 @@
 ## 输出：
 - 使用紧凑格式返回详细结果，供用户参考或决策。
 - 返回任务执行途中遇到的问题及解决方案。
+- 在最终输出中追加 `<M:skill_usage>...</M:skill_usage>`，内容为本次实际使用的 skill 名称，多个 skill 用英文逗号分隔且不加空格（如 `skill-a,skill-b,skill-c`）；若未使用任何 skill，输出 `<M:skill_usage></M:skill_usage>`。
 - 仅当任务目标已全部完成时，才在最后一行追加 `<M:task_done/>`（不可提前输出）。
 
 // 任务描述：
