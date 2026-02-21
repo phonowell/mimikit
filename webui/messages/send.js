@@ -21,7 +21,6 @@ export function createSendHandler({
     if (sendBtn) sendBtn.disabled = true
     if (input) input.disabled = true
     messageState.awaitingReply = true
-    messageState.lastMessageRole = 'user'
     try {
       const payload = {
         text: trimmed,
@@ -67,7 +66,6 @@ export function createSendHandler({
         renderTargetError,
       )
       messageState.awaitingReply = false
-      messageState.lastMessageRole = 'system'
       loading.setLoading(false)
     } finally {
       if (sendBtn) sendBtn.disabled = false

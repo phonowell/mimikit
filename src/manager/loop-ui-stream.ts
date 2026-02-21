@@ -9,7 +9,8 @@ import type { TokenUsage } from '../types/index.js'
 export const createUiStreamId = (
   inputsCursor: number,
   resultsCursor: number,
-): string => `manager-stream-${Date.now()}-${inputsCursor}-${resultsCursor}`
+): string =>
+  `manager-stream-${Date.now()}-${inputsCursor}-${resultsCursor}-${globalThis.crypto.randomUUID()}`
 
 export const startUiStream = (
   runtime: RuntimeState,

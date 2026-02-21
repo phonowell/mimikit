@@ -35,9 +35,10 @@ export const renderMessages = (params) => {
     scrollToBottom,
     updateScrollButton,
     loading,
+    streamingItemRef,
   } = params
   if (!messagesEl || ((!messages || messages.length === 0) && !streamMessage))
-    return { latestAgentId: null, lastRole: null }
+    return { latestAgentId: null }
   removeEmpty()
   const safeMessages = Array.isArray(messages) ? messages : []
   const latestAgent = findLatestAgentMessage(safeMessages)
@@ -64,7 +65,10 @@ export const renderMessages = (params) => {
   for (const msg of safeMessages) 
     renderMessage(renderParams, msg)
   
-  if (streamMessage) renderMessage(renderParams, streamMessage)
+  if (streamMessage) {
+    const streamItem = renderMessage(renderParams, streamMessage)
+    if (streamingItemRef) streamingItemRef.current = streamItem
+  } else if (streamingItemRef) streamingItemRef.current = null
 
   if (loading?.isLoading()) loading.ensureLoadingPlaceholder()
   preserveScrollPosition({
@@ -76,11 +80,24 @@ export const renderMessages = (params) => {
   })
   updateScrollButton()
 
-  const last = streamMessage ?? safeMessages[safeMessages.length - 1]
   return {
     latestAgentId: latestAgent?.id ?? null,
-    lastRole: last?.role ?? null,
   }
+}
+
+const getCurrentStreamingItem = ({ messagesEl, streamingItemRef }) => {
+  const cachedItem = streamingItemRef?.current ?? null
+  if (
+    cachedItem &&
+    cachedItem.parentElement === messagesEl &&
+    cachedItem.classList?.contains('message--streaming')
+  )
+    return cachedItem
+
+  const fallback = messagesEl.querySelector('.message--streaming')
+  const nextItem = fallback || null
+  if (streamingItemRef) streamingItemRef.current = nextItem
+  return nextItem
 }
 
 const updateExistingStreamItem = ({
@@ -120,41 +137,68 @@ export const renderStreamMessage = (params) => {
     scrollToBottom,
     updateScrollButton,
     formatUsage,
+    streamingItemRef,
   } = params
   if (!messagesEl) return
   removeEmpty()
   const wasNearBottom = isNearBottom()
   const previousScrollTop = messagesEl.scrollTop
   const previousScrollHeight = messagesEl.scrollHeight
-  const existingStreamItems = messagesEl.querySelectorAll('.message--streaming')
-  let hasMatchedStreamItem = false
-  for (const item of existingStreamItems) {
-    if (
-      streamMessage &&
-      !hasMatchedStreamItem &&
-      item.dataset.messageId === String(streamMessage.id)
-    ) {
-      hasMatchedStreamItem = updateExistingStreamItem({
-        streamItem: item,
-        streamMessage,
-        formatUsage,
-      })
-      if (!hasMatchedStreamItem) item.remove()
-      continue
-    }
-    item.remove()
+  const existingStreamItem = getCurrentStreamingItem({
+    messagesEl,
+    streamingItemRef,
+  })
+  if (!streamMessage) {
+    if (existingStreamItem) existingStreamItem.remove()
+    if (streamingItemRef) streamingItemRef.current = null
+    preserveScrollPosition({
+      messagesEl,
+      wasNearBottom,
+      previousScrollTop,
+      previousScrollHeight,
+      scrollToBottom,
+    })
+    updateScrollButton()
+    return
   }
-  if (streamMessage && !hasMatchedStreamItem) {
-    renderMessage(
-      {
-        ...params,
-        messageLookup: new Map(),
-        ackedUserMessageIds: new Set(),
-        latestAgentId: null,
-      },
+
+  if (
+    existingStreamItem &&
+    existingStreamItem.dataset.messageId === String(streamMessage.id)
+  ) {
+    const updated = updateExistingStreamItem({
+      streamItem: existingStreamItem,
       streamMessage,
-    )
-  }
+      formatUsage,
+    })
+    if (updated) {
+      preserveScrollPosition({
+        messagesEl,
+        wasNearBottom,
+        previousScrollTop,
+        previousScrollHeight,
+        scrollToBottom,
+      })
+      updateScrollButton()
+      return
+    }
+    existingStreamItem.remove()
+  } else if (existingStreamItem) 
+    existingStreamItem.remove()
+  
+
+  const streamItem = renderMessage(
+    {
+      ...params,
+      messageLookup: new Map(),
+      ackedUserMessageIds: new Set(),
+      latestAgentId: null,
+    },
+    streamMessage,
+  )
+  if (streamingItemRef) 
+    streamingItemRef.current = streamItem
+  
   preserveScrollPosition({
     messagesEl,
     wasNearBottom,

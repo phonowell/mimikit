@@ -1,7 +1,6 @@
 export const createMessageState = () => ({
   lastMessageCount: 0,
   lastMessageId: null,
-  lastMessageRole: null,
   lastAgentMessageId: null,
   lastLoadingVisible: false,
   awaitingReply: false,
@@ -74,8 +73,6 @@ export const applyRenderedState = (state, rendered, { loading, syncLoadingState 
     state.awaitingReply = false
     loading.setLoading(false)
   }
-  if (rendered?.lastRole !== null && rendered?.lastRole !== undefined)
-    state.lastMessageRole = rendered.lastRole
   syncLoadingState()
 }
 
@@ -83,7 +80,6 @@ export const clearMessageState = (state) => {
   state.lastMessageCount = 0
   state.lastMessageId = null
   state.lastAgentMessageId = null
-  state.lastMessageRole = null
   state.lastMessageIds = new Set()
   state.lastMessages = []
   state.lastStreamSignature = ''

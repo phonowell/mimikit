@@ -7,9 +7,13 @@ export const createMessageRendering = (params) => {
   const { messagesEl, scroll, loading, quote } = params
 
   const removeEmpty = () => {}
+  const streamingItemRef = { current: null }
 
   const doRender = (messages, enterMessageIds, streamMessage) => {
-    if (!messages?.length && !streamMessage) return null
+    if (!messages?.length && !streamMessage) {
+      streamingItemRef.current = null
+      return null
+    }
     return renderMessages({
       messages,
       messagesEl,
@@ -25,6 +29,7 @@ export const createMessageRendering = (params) => {
       enterMessageIds,
       onQuote: quote.set,
       streamMessage,
+      streamingItemRef,
     })
   }
 
@@ -43,6 +48,7 @@ export const createMessageRendering = (params) => {
       enterMessageIds: new Set(),
       onQuote: quote.set,
       streamMessage,
+      streamingItemRef,
     })
   }
 

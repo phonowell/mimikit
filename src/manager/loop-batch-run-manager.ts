@@ -23,7 +23,7 @@ import type {
   UserInput,
 } from '../types/index.js'
 
-const STREAM_TEXT_FLUSH_MS = 24
+const STREAM_TEXT_FLUSH_MS = 64
 
 export const runManagerBatch = async (params: {
   runtime: RuntimeState
@@ -64,9 +64,13 @@ export const runManagerBatch = async (params: {
   const flushVisibleStream = (): void => {
     streamFlushTimer = null
     const nextVisible = toVisibleAgentText(streamRawOutput)
-    if (nextVisible === streamVisibleOutput) return
-    streamVisibleOutput = nextVisible
-    setUiStreamText(runtime, streamId, nextVisible)
+    if (nextVisible !== streamVisibleOutput) {
+      streamVisibleOutput = nextVisible
+      setUiStreamText(runtime, streamId, nextVisible)
+    }
+    if (!streamUsage) return
+    streamUsage =
+      setUiStreamUsage(runtime, streamId, streamUsage) ?? streamUsage
   }
 
   const scheduleVisibleStreamFlush = (): void => {
@@ -109,13 +113,14 @@ export const runManagerBatch = async (params: {
         resetUiStream(runtime, streamId)
       },
       onUsage: (usage) => {
-        streamUsage = setUiStreamUsage(runtime, streamId, usage) ?? streamUsage
+        streamUsage = usage
+        scheduleVisibleStreamFlush()
       },
     })
     if (result.sessionId) runtime.plannerSessionId = result.sessionId
     if (result.usage) {
-      streamUsage =
-        setUiStreamUsage(runtime, streamId, result.usage) ?? streamUsage
+      streamUsage = result.usage
+      scheduleVisibleStreamFlush()
     }
     return result
   }
@@ -133,6 +138,7 @@ export const runManagerBatch = async (params: {
       const parsed = parseActions(runResult.output)
       if (streamVisibleOutput !== parsed.text) {
         clearStreamFlushTimer()
+        flushVisibleStream()
         streamVisibleOutput = parsed.text
         setUiStreamText(runtime, streamId, parsed.text)
       }
@@ -164,6 +170,7 @@ export const runManagerBatch = async (params: {
 
       if (!queryRequest && actionFeedback.length === 0) {
         clearStreamFlushTimer()
+        flushVisibleStream()
         if (streamVisibleOutput !== parsed.text) {
           streamVisibleOutput = parsed.text
           setUiStreamText(runtime, streamId, parsed.text)
@@ -217,6 +224,7 @@ export const runManagerBatch = async (params: {
       }
 
       clearStreamFlushTimer()
+      flushVisibleStream()
       streamRawOutput = ''
       streamVisibleOutput = ''
       resetUiStream(runtime, streamId)

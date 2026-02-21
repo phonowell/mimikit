@@ -113,4 +113,5 @@ export const renderMessage = (params, msg) => {
   item.appendChild(article)
   if (quoteBtn) item.appendChild(quoteBtn)
   messagesEl.appendChild(item)
+  return item
 }

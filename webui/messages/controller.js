@@ -126,9 +126,7 @@ const normalizeStreamPatch = (raw) => {
   }
 }
 
-const applyStreamPatch = (currentStreamMessage, rawPatch) => {
-  const patch = normalizeStreamPatch(rawPatch)
-  if (!patch) return currentStreamMessage
+const applyStreamPatch = (currentStreamMessage, patch) => {
   if (patch.mode === 'clear') return null
   if (patch.mode === 'replace') return normalizeStreamMessage(patch.stream)
 
@@ -156,8 +154,24 @@ const applyStreamPatch = (currentStreamMessage, rawPatch) => {
         : {}
       : normalizedUsage
         ? { usage: normalizedUsage }
-        : {}),
+      : {}),
   }
+}
+
+const mergeStreamPatches = (rawPatches) => {
+  const merged = []
+  for (const rawPatch of rawPatches) {
+    const patch = normalizeStreamPatch(rawPatch)
+    if (!patch) continue
+    const previous = merged[merged.length - 1]
+    if (patch.mode !== 'delta' || previous?.mode !== 'delta' || previous.id !== patch.id) {
+      merged.push(patch)
+      continue
+    }
+    previous.delta += patch.delta
+    if (Object.prototype.hasOwnProperty.call(patch, 'usage')) previous.usage = patch.usage
+  }
+  return merged
 }
 
 export function createMessagesController({
@@ -297,8 +311,9 @@ export function createMessagesController({
     pendingEvents.length = 0
 
     if (lastSnapshot) applySnapshot(lastSnapshot)
-    if (streamPatches.length === 0) return
-    for (const patch of streamPatches)
+    const mergedStreamPatches = mergeStreamPatches(streamPatches)
+    if (mergedStreamPatches.length === 0) return
+    for (const patch of mergedStreamPatches)
       currentStreamMessage = applyStreamPatch(currentStreamMessage, patch)
     applyMessagesPayload(null, currentStreamMessage)
   }

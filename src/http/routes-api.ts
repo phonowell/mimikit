@@ -24,6 +24,12 @@ const SSE_RETRY_MS = 1_500
 const getDefaultSnapshot = (orchestrator: Orchestrator) =>
   orchestrator.getWebUiSnapshot(DEFAULT_MESSAGE_LIMIT, DEFAULT_TASK_LIMIT)
 
+const buildSnapshotHint = (orchestrator: Orchestrator) => ({
+  status: orchestrator.getStatus(),
+  tasks: orchestrator.getTasks(DEFAULT_TASK_LIMIT),
+  stream: cloneUiStream(orchestrator.getWebUiStreamSnapshot()),
+})
+
 type StreamPatch =
   | { mode: 'clear' }
   | { mode: 'replace'; stream: UiAgentStream }
@@ -115,10 +121,16 @@ export const registerApiRoutes = (
   app.get('/api/events', async (request, reply) => {
     const stream = createSseStream(request, reply)
     let lastSnapshotEtag = ''
+    let lastSnapshotHintEtag = ''
     let lastStream = cloneUiStream(null)
     try {
       const initial = await getDefaultSnapshot(orchestrator)
       lastSnapshotEtag = buildPayloadEtag('events', initial)
+      lastSnapshotHintEtag = buildPayloadEtag('events:hint', {
+        status: initial.status,
+        tasks: initial.tasks,
+        stream: initial.stream,
+      })
       lastStream = cloneUiStream(initial.stream)
       stream.writeEvent('snapshot', initial)
 
@@ -137,9 +149,16 @@ export const registerApiRoutes = (
           if (!stream.writeEvent('stream', patch)) break
           continue
         }
+        const snapshotHint = buildSnapshotHint(orchestrator)
+        const snapshotHintEtag = buildPayloadEtag('events:hint', snapshotHint)
+        if (snapshotHintEtag === lastSnapshotHintEtag) continue
         const snapshot = await getDefaultSnapshot(orchestrator)
         const snapshotEtag = buildPayloadEtag('events', snapshot)
-        if (snapshotEtag === lastSnapshotEtag) continue
+        if (snapshotEtag === lastSnapshotEtag) {
+          lastSnapshotHintEtag = snapshotHintEtag
+          continue
+        }
+        lastSnapshotHintEtag = snapshotHintEtag
         lastSnapshotEtag = snapshotEtag
         lastStream = cloneUiStream(snapshot.stream)
         if (!stream.writeEvent('snapshot', snapshot)) break

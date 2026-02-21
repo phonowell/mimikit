@@ -113,8 +113,10 @@ HTTP 路由共享约束：
 
 ## WebUI 流式渲染约束
 - 事件消费：`snapshot` 与 `stream` 进入同一帧队列，按 `requestAnimationFrame` 合帧处理。
-- DOM 策略：streaming message 节点走就地更新（文本/usage），避免每次增量都删建节点。
-- manager 流式文本由后端做时间片 flush（默认 24ms），避免每 token 全量解析。
+- stream 合并：同帧内连续 `stream.mode=delta` 且 `id` 相同的 patch 在前端先合并，再应用到状态，减少重复拼接与渲染计算。
+- DOM 策略：streaming message 节点使用缓存引用原位更新（文本/usage）；仅在 `stream.id` 变化或 clear 时替换节点。
+- snapshot 发送：SSE 在构建全量 snapshot 前先比较轻量 hint（`status/tasks/stream`）；未变化则跳过全量快照构建。
+- manager 流式 flush：后端按时间片合并文本与 usage 推送（默认 64ms），避免高频空增量事件。
 
 ## Restart 语义
 - `POST /api/restart` 与 `POST /api/reset` 均为“先响应请求，再异步停机”。
