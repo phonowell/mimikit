@@ -15,7 +15,7 @@ const baseTemplateValues = {
   user_profile: '',
 }
 
-test('manager template renders persona and user_profile blocks independently', async () => {
+test('manager template renders persona block when persona is provided', async () => {
   const template = await loadSystemPrompt('manager')
   const personaOnly = renderPromptTemplate(template, {
     ...baseTemplateValues,
@@ -23,7 +23,10 @@ test('manager template renders persona and user_profile blocks independently', a
   })
   expect(personaOnly).toContain('<M:persona>')
   expect(personaOnly).not.toContain('<M:user_profile>')
+})
 
+test('manager template renders user_profile block without persona block', async () => {
+  const template = await loadSystemPrompt('manager')
   const userProfileOnly = renderPromptTemplate(template, {
     ...baseTemplateValues,
     user_profile: 'tone: concise',

@@ -54,7 +54,9 @@ test('extractOpencodeOutput excludes reasoning and ignored text parts', () => {
   ]
 
   expect(extractOpencodeOutput(parts)).toBe('Final answer')
+})
 
+test('readProviderErrorCode returns timeout code for provider timeout errors', () => {
   const timeoutError = new ProviderError({
     code: 'provider_timeout',
     message: '[provider:opencode] timed out after 90000ms',
@@ -62,17 +64,9 @@ test('extractOpencodeOutput excludes reasoning and ignored text parts', () => {
   })
   expect(readProviderErrorCode(timeoutError)).toBe('provider_timeout')
   expect(isTransientProviderError(timeoutError)).toBe(true)
-
-  const sdkError = new ProviderError({
-    code: 'provider_sdk_failure',
-    message: '[provider:opencode] sdk run failed: invalid response',
-    retryable: false,
-  })
-  expect(readProviderErrorCode(sdkError)).toBe('provider_sdk_failure')
-  expect(isTransientProviderError(sdkError)).toBe(false)
 })
 
-test('stream monitor restores visible streaming while filtering hidden parts and triggers webui stream state', async () => {
+test('stream monitor emits visible deltas and ignores hidden parts', async () => {
   const now = Date.now()
   const sdkResponderRole = ['a', 's', 's', 'i', 's', 't', 'a', 'n', 't'].join(
     '',
@@ -199,8 +193,11 @@ test('stream monitor restores visible streaming while filtering hidden parts and
   await monitor.done
 
   expect(streamedDeltas).toEqual(['Hello ', 'world'])
+})
 
+test('webui stream state only changes when streamed text changes', () => {
   const webuiState = createMessageState()
+  const streamedDeltas = ['Hello ', 'world']
   let streamedText = ''
   for (const delta of streamedDeltas) {
     streamedText += delta

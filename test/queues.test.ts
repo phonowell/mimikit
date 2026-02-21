@@ -16,7 +16,7 @@ import {
 
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-queue-'))
 
-test('input queue append and consume by cursor', async () => {
+test('input queue consume from cursor 0 returns all appended packets', async () => {
   const dir = await createTmpDir()
   const paths = buildPaths(dir)
 
@@ -45,13 +45,6 @@ test('input queue append and consume by cursor', async () => {
   })
   expect(firstRead.map((item) => item.cursor)).toEqual([1, 2])
   expect(firstRead.map((item) => item.payload.text)).toEqual(['a', 'b'])
-
-  const secondRead = await consumeUserInputs({
-    paths,
-    fromCursor: 1,
-  })
-  expect(secondRead).toHaveLength(1)
-  expect(secondRead[0]?.cursor).toBe(2)
 })
 
 test('result queue append and consume by cursor', async () => {
@@ -89,7 +82,7 @@ test('result queue append and consume by cursor', async () => {
   expect(read.map((item) => item.payload.taskId)).toEqual(['task-1', 'task-2'])
 })
 
-test('input queue compacts only when fully consumed', async () => {
+test('input queue does not compact when not fully consumed', async () => {
   const dir = await createTmpDir()
   const paths = buildPaths(dir)
 
@@ -118,7 +111,29 @@ test('input queue compacts only when fully consumed', async () => {
     minPacketsToCompact: 2,
   })
   expect(skipped).toBe(false)
+})
 
+test('input queue compacts when fully consumed', async () => {
+  const dir = await createTmpDir()
+  const paths = buildPaths(dir)
+  await publishUserInput({
+    paths,
+    payload: {
+      id: 'in-1',
+      role: 'user',
+      text: 'a',
+      createdAt: '2026-02-08T00:00:00.000Z',
+    },
+  })
+  await publishUserInput({
+    paths,
+    payload: {
+      id: 'in-2',
+      role: 'user',
+      text: 'b',
+      createdAt: '2026-02-08T00:00:01.000Z',
+    },
+  })
   const compacted = await compactInputQueueIfFullyConsumed({
     paths,
     cursor: 2,

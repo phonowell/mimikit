@@ -50,7 +50,7 @@ const createRuntime = async (): Promise<RuntimeState> => {
   }
 }
 
-test('create_task dedupe only applies to same fingerprint and still re-enqueues pending task', async () => {
+test('create_task re-enqueues pending task when fingerprint matches exactly', async () => {
   const runtime = await createRuntime()
   runtime.tasks.push({
     id: 'task-pending',
@@ -76,6 +76,19 @@ test('create_task dedupe only applies to same fingerprint and still re-enqueues 
   expect(runtime.tasks).toHaveLength(1)
   expect(runtime.tasks[0]?.id).toBe('task-pending')
   expect(runtime.workerQueue.size).toBe(1)
+})
+
+test('create_task dedupe does not block task creation when fingerprint differs', async () => {
+  const runtime = await createRuntime()
+  runtime.tasks.push({
+    id: 'task-pending',
+    fingerprint: 'same prompt',
+    prompt: 'same prompt',
+    title: 'old title',
+    profile: 'standard',
+    status: 'pending',
+    createdAt: '2026-02-13T00:00:00.000Z',
+  })
 
   await applyTaskActions(runtime, [
     {
@@ -91,7 +104,10 @@ test('create_task dedupe only applies to same fingerprint and still re-enqueues 
   expect(runtime.tasks).toHaveLength(2)
   expect(runtime.tasks[1]?.title).toBe('new title')
   expect(runtime.tasks[1]?.fingerprint).not.toBe(runtime.tasks[0]?.fingerprint)
+})
 
+test('create_task rejects scheduled worker-profile task', async () => {
+  const runtime = await createRuntime()
   await applyTaskActions(runtime, [
     {
       name: 'create_task',
@@ -124,7 +140,7 @@ test('create_task rejects forbidden .mimikit state paths for worker profiles', a
   expect(runtime.tasks).toHaveLength(0)
 })
 
-test('create_task allows .mimikit/generated path for worker profiles and infers deferred for scheduled tasks', async () => {
+test('create_task allows .mimikit/generated path for worker profiles', async () => {
   const runtime = await createRuntime()
 
   await applyTaskActions(runtime, [
@@ -140,7 +156,10 @@ test('create_task allows .mimikit/generated path for worker profiles and infers 
 
   expect(runtime.tasks).toHaveLength(1)
   expect(runtime.tasks[0]?.title).toBe('allowed')
+})
 
+test('create_task infers deferred profile for scheduled history task', async () => {
+  const runtime = await createRuntime()
   await applyTaskActions(runtime, [
     {
       name: 'create_task',
@@ -154,8 +173,11 @@ test('create_task allows .mimikit/generated path for worker profiles and infers 
 
   expect(runtime.cronJobs).toHaveLength(1)
   expect(runtime.cronJobs[0]?.profile).toBe('deferred')
+})
+
+test('compress_context summarizes planner session when provider succeeds', async () => {
+  const runtime = await createRuntime()
   runtime.plannerSessionId = 'planner-session-1'
-  expect(runtime.plannerSessionId).toBe('planner-session-1')
   const summarizeSpy = vi.mocked(opencodeSession.summarizeOpencodeSession)
   summarizeSpy.mockReset()
   summarizeSpy.mockResolvedValue(undefined)
@@ -168,7 +190,12 @@ test('create_task allows .mimikit/generated path for worker profiles and infers 
       },
     ]),
   ).resolves.toBeUndefined()
+})
 
+test('compress_context ignores provider aborted errors', async () => {
+  const runtime = await createRuntime()
+  runtime.plannerSessionId = 'planner-session-1'
+  const summarizeSpy = vi.mocked(opencodeSession.summarizeOpencodeSession)
   summarizeSpy.mockReset()
   summarizeSpy.mockRejectedValue(buildProviderAbortedError('opencode'))
 

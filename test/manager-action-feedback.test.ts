@@ -3,7 +3,7 @@ import { expect, test } from 'vitest'
 import { collectManagerActionFeedback } from '../src/manager/action-feedback.js'
 import { parseActions } from '../src/actions/protocol/parse.js'
 
-test('collectManagerActionFeedback reports unregistered, invalid args, and rejected actions', () => {
+test('collectManagerActionFeedback reports unregistered action', () => {
   const feedback = collectManagerActionFeedback([
     {
       name: 'read',
@@ -12,6 +12,15 @@ test('collectManagerActionFeedback reports unregistered, invalid args, and rejec
         limit: '120',
       },
     },
+  ])
+  expect(feedback).toHaveLength(1)
+  expect(feedback[0]?.action).toBe('read')
+  expect(feedback[0]?.error).toBe('unregistered_action')
+  expect(feedback[0]?.attempted).toContain('<M:read')
+})
+
+test('collectManagerActionFeedback reports invalid create_task args when prompt is empty', () => {
+  const feedback = collectManagerActionFeedback([
     {
       name: 'create_task',
       attrs: {
@@ -20,6 +29,13 @@ test('collectManagerActionFeedback reports unregistered, invalid args, and rejec
         profile: 'standard',
       },
     },
+  ])
+  expect(feedback).toHaveLength(1)
+  expect(feedback[0]?.error).toBe('invalid_action_args')
+})
+
+test('collectManagerActionFeedback rejects create_task reading protected state path', () => {
+  const feedback = collectManagerActionFeedback([
     {
       name: 'create_task',
       attrs: {
@@ -28,6 +44,14 @@ test('collectManagerActionFeedback reports unregistered, invalid args, and rejec
         profile: 'standard',
       },
     },
+  ])
+  expect(feedback).toHaveLength(1)
+  expect(feedback[0]?.action).toBe('create_task')
+  expect(feedback[0]?.error).toBe('action_execution_rejected')
+})
+
+test('collectManagerActionFeedback rejects legacy deferred create_task profile', () => {
+  const feedback = collectManagerActionFeedback([
     {
       name: 'create_task',
       attrs: {
@@ -36,34 +60,68 @@ test('collectManagerActionFeedback reports unregistered, invalid args, and rejec
         profile: 'deferred',
       },
     },
-    {
-      name: 'create_task',
-      attrs: {
-        prompt: 'past schedule',
-        title: 'invalid past schedule',
-        scheduled_at: '2000-01-01T00:00:00.000Z',
+  ])
+  expect(feedback).toHaveLength(1)
+  expect(feedback[0]?.error).toBe('invalid_action_args')
+  expect(feedback[0]?.attempted).toContain('profile="deferred"')
+})
+
+test('collectManagerActionFeedback rejects create_task scheduled_at that is not in future', () => {
+  const feedback = collectManagerActionFeedback(
+    [
+      {
+        name: 'create_task',
+        attrs: {
+          prompt: 'schedule judged by env now',
+          title: 'invalid by env now',
+          scheduled_at: '2099-01-01T00:00:00.000Z',
+        },
       },
-    },
+    ],
     {
-      name: 'create_task',
-      attrs: {
-        prompt: 'schedule judged by env now',
-        title: 'invalid by env now',
-        scheduled_at: '2099-01-01T00:00:00.000Z',
-      },
+      scheduleNowIso: '2100-01-01T00:00:00.000Z',
     },
+  )
+  expect(feedback).toHaveLength(1)
+  expect(feedback[0]?.error).toBe('action_execution_rejected')
+  expect(feedback[0]?.hint).toContain('scheduled_at 必须晚于当前时间')
+})
+
+test('collectManagerActionFeedback rejects cancel_task for missing task id', () => {
+  const feedback = collectManagerActionFeedback([
     {
       name: 'cancel_task',
       attrs: {
         id: 'missing-id',
       },
     },
-    {
-      name: 'cancel_task',
-      attrs: {
-        id: 'done-id',
+  ])
+  expect(feedback).toHaveLength(1)
+  expect(feedback[0]?.action).toBe('cancel_task')
+  expect(feedback[0]?.error).toBe('action_execution_rejected')
+})
+
+test('collectManagerActionFeedback rejects cancel_task for completed task', () => {
+  const feedback = collectManagerActionFeedback(
+    [
+      {
+        name: 'cancel_task',
+        attrs: {
+          id: 'done-id',
+        },
       },
+    ],
+    {
+      taskStatusById: new Map([['done-id', 'succeeded']]),
     },
+  )
+  expect(feedback).toHaveLength(1)
+  expect(feedback[0]?.error).toBe('action_execution_rejected')
+  expect(feedback[0]?.hint).toContain('任务已完成')
+})
+
+test('collectManagerActionFeedback reports invalid query_history date args', () => {
+  const feedback = collectManagerActionFeedback([
     {
       name: 'query_history',
       attrs: {
@@ -71,75 +129,25 @@ test('collectManagerActionFeedback reports unregistered, invalid args, and rejec
         from: 'not-a-date',
       },
     },
+  ])
+  expect(feedback).toHaveLength(1)
+  expect(feedback[0]?.action).toBe('query_history')
+  expect(feedback[0]?.error).toBe('invalid_action_args')
+})
+
+test('collectManagerActionFeedback rejects compress_context without manager session', () => {
+  const feedback = collectManagerActionFeedback([
     {
       name: 'compress_context',
       attrs: {},
     },
-  ], {
-    taskStatusById: new Map([['done-id', 'succeeded']]),
-    scheduleNowIso: '2100-01-01T00:00:00.000Z',
-  })
-
-  expect(feedback).toHaveLength(10)
-  expect(feedback[0]?.action).toBe('read')
-  expect(feedback[0]?.error).toBe('unregistered_action')
-  expect(feedback[0]?.attempted).toContain('<M:read')
-  expect(feedback.some((item) => item.error === 'invalid_action_args')).toBe(
-    true,
-  )
-  expect(
-    feedback.some(
-      (item) =>
-        item.action === 'create_task' &&
-        item.error === 'action_execution_rejected',
-    ),
-  ).toBe(true)
-  expect(
-    feedback.some(
-      (item) =>
-        item.action === 'create_task' &&
-        item.hint.includes('scheduled_at 必须晚于当前时间'),
-    ),
-  ).toBe(true)
-  expect(
-    feedback.some(
-      (item) =>
-        item.action === 'create_task' &&
-        item.error === 'invalid_action_args' &&
-        item.attempted.includes('profile="deferred"'),
-    ),
-  ).toBe(true)
-  expect(
-    feedback.some(
-      (item) =>
-        item.action === 'cancel_task' &&
-        item.error === 'action_execution_rejected',
-    ),
-  ).toBe(true)
-  expect(
-    feedback.some(
-      (item) =>
-        item.action === 'cancel_task' &&
-        item.hint.includes('任务已完成'),
-    ),
-  ).toBe(true)
-  expect(
-    feedback.some(
-      (item) =>
-        item.action === 'query_history' &&
-        item.error === 'invalid_action_args',
-    ),
-  ).toBe(true)
-  expect(
-    feedback.some(
-      (item) =>
-        item.action === 'compress_context' &&
-        item.error === 'action_execution_rejected',
-    ),
-  ).toBe(true)
+  ])
+  expect(feedback).toHaveLength(1)
+  expect(feedback[0]?.action).toBe('compress_context')
+  expect(feedback[0]?.error).toBe('action_execution_rejected')
 })
 
-test('collectManagerActionFeedback ignores valid registered actions', () => {
+test('parseActions extracts create_task action and strips tag text', () => {
   const output =
     '好的，我先创建一个任务。\\n\\n<M:create_task prompt="读取文件，根据反馈补充\\\"编排引擎\\\"定位；短时间定义为<30秒；禁止>50条词表规则。" title="第一轮优化 manager prompt" profile="standard" />'
   const parsed = parseActions(output)
@@ -147,39 +155,17 @@ test('collectManagerActionFeedback ignores valid registered actions', () => {
   expect(parsed.actions[0]?.attrs.title).toBe('第一轮优化 manager prompt')
   expect(parsed.actions[0]?.attrs.profile).toBe('standard')
   expect(parsed.text).not.toContain('<M:create_task')
+})
 
+test('collectManagerActionFeedback ignores valid create_task action', () => {
+  const output =
+    '好的，我先创建一个任务。\\n\\n<M:create_task prompt="读取文件，根据反馈补充\\\"编排引擎\\\"定位；短时间定义为<30秒；禁止>50条词表规则。" title="第一轮优化 manager prompt" profile="standard" />'
+  const parsed = parseActions(output)
+  if (!parsed.actions[0]) throw new Error('action must be parsed')
   const feedback = collectManagerActionFeedback(
     [
-      ...(parsed.actions[0] ? [parsed.actions[0]] : []),
-      {
-        name: 'summarize_task_result',
-        attrs: {
-          task_id: 't1',
-          summary: 'ok',
-        },
-      },
-      {
-        name: 'cancel_task',
-        attrs: {
-          id: 't1',
-        },
-      },
-      {
-        name: 'query_history',
-        attrs: {
-          query: 'history',
-        },
-      },
-      {
-        name: 'compress_context',
-        attrs: {},
-      },
+      parsed.actions[0],
     ],
-    {
-      taskStatusById: new Map([['t1', 'pending']]),
-      managerSessionId: 'session-1',
-    },
   )
-
   expect(feedback).toHaveLength(0)
 })

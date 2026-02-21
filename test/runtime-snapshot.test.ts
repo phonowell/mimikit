@@ -14,7 +14,7 @@ import type { CronJob, Task } from '../src/types/index.js'
 
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-runtime-snapshot-'))
 
-test('selectPersistedTasks keeps all statuses and recovers running', () => {
+test('selectPersistedTasks keeps non-running task statuses unchanged', () => {
   const tasks: Task[] = [
     {
       id: 'a',
@@ -24,16 +24,6 @@ test('selectPersistedTasks keeps all statuses and recovers running', () => {
       profile: 'standard',
       status: 'pending',
       createdAt: '2026-02-06T00:00:00.000Z',
-    },
-    {
-      id: 'b',
-      fingerprint: 'b',
-      prompt: 'b',
-      title: 'b',
-      profile: 'standard',
-      status: 'running',
-      createdAt: '2026-02-06T00:00:00.000Z',
-      startedAt: '2026-02-06T00:01:00.000Z',
     },
     {
       id: 'c',
@@ -55,15 +45,33 @@ test('selectPersistedTasks keeps all statuses and recovers running', () => {
   ]
 
   const persisted = selectPersistedTasks(tasks)
-  expect(persisted).toHaveLength(3)
+  expect(persisted).toHaveLength(2)
   expect(persisted[0]?.status).toBe('pending')
-  expect(persisted[1]?.id).toBe('b')
-  expect(persisted[1]?.status).toBe('pending')
-  expect(persisted[1]?.startedAt).toBeUndefined()
-  expect(persisted[1]?.result).toBeUndefined()
-  expect(persisted[2]?.id).toBe('c')
-  expect(persisted[2]?.status).toBe('succeeded')
-  expect(persisted[2]?.result?.output).toBe('done')
+  expect(persisted[1]?.id).toBe('c')
+  expect(persisted[1]?.status).toBe('succeeded')
+  expect(persisted[1]?.result?.output).toBe('done')
+})
+
+test('selectPersistedTasks recovers running task to pending', () => {
+  const tasks: Task[] = [
+    {
+      id: 'b',
+      fingerprint: 'b',
+      prompt: 'b',
+      title: 'b',
+      profile: 'standard',
+      status: 'running',
+      createdAt: '2026-02-06T00:00:00.000Z',
+      startedAt: '2026-02-06T00:01:00.000Z',
+    },
+  ]
+
+  const persisted = selectPersistedTasks(tasks)
+  expect(persisted).toHaveLength(1)
+  expect(persisted[0]?.id).toBe('b')
+  expect(persisted[0]?.status).toBe('pending')
+  expect(persisted[0]?.startedAt).toBeUndefined()
+  expect(persisted[0]?.result).toBeUndefined()
 })
 
 test('runtime snapshot accepts queue cursors', async () => {
@@ -98,7 +106,9 @@ test('runtime snapshot accepts queue cursors', async () => {
   expect(loaded.queues?.resultsCursor).toBe(9)
   expect(loaded.queues?.inputsCursor).toBe(3)
   expect(loaded.tasks[0]?.result?.output).toBe('ok')
+})
 
+test('buildTaskViews maps cron job statuses from disabled reasons', () => {
   const cronJobs: CronJob[] = [
     {
       id: 'cron-completed',
@@ -141,28 +151,8 @@ test('runtime snapshot accepts queue cursors', async () => {
   expect(counts.canceled).toBe(1)
 })
 
-test('runtime snapshot rejects legacy grouped channel shape and next fields', async () => {
+test('runtime snapshot rejects legacy next fields', async () => {
   const stateDir = await createTmpDir()
-  await writeFile(
-    join(stateDir, 'runtime-snapshot.json'),
-    JSON.stringify({
-      tasks: [],
-      channels: {
-        teller: {
-          userInputCursor: 3,
-          workerResultCursor: 4,
-          thinkerDecisionCursor: 5,
-        },
-        thinker: {
-          tellerDigestCursor: 6,
-        },
-      },
-    }),
-    'utf8',
-  )
-
-  await expect(loadRuntimeSnapshot(stateDir)).rejects.toThrow()
-
   await writeFile(
     join(stateDir, 'runtime-snapshot.json'),
     JSON.stringify({

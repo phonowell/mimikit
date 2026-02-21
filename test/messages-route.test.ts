@@ -7,9 +7,9 @@ import type { ChatMessagesMode } from '../src/orchestrator/read-model/chat-view.
 import type { Task } from '../src/types/index.js'
 import { createOrchestratorStub } from './helpers/orchestrator-stub.js'
 
-test('messages route forwards afterId and returns mode', async () => {
+test('status route returns runtime id', async () => {
   const app = fastify()
-  const { orchestrator, calls } = createOrchestratorStub()
+  const { orchestrator } = createOrchestratorStub()
   const config = defaultConfig({ workDir: '.mimikit' })
   registerApiRoutes(app, orchestrator, config)
 
@@ -22,7 +22,14 @@ test('messages route forwards afterId and returns mode', async () => {
     ok: true,
     runtimeId: 'runtime-stub-1',
   })
+  await app.close()
+})
 
+test('messages route forwards afterId and returns mode', async () => {
+  const app = fastify()
+  const { orchestrator, calls } = createOrchestratorStub()
+  const config = defaultConfig({ workDir: '.mimikit' })
+  registerApiRoutes(app, orchestrator, config)
   const response = await app.inject({
     method: 'GET',
     url: '/api/messages?limit=20&afterId=msg-123',
@@ -140,6 +147,29 @@ test('task archive route returns live snapshot when archive is not created yet',
     status: 'pending',
     createdAt: '2026-02-10T00:00:00.000Z',
   }
+  ;(
+    orchestrator as unknown as { getTaskById: (taskId: string) => Task | undefined }
+  ).getTaskById = (taskId) => (taskId === task.id ? task : undefined)
+  const config = defaultConfig({ workDir: '.mimikit' })
+  registerApiRoutes(app, orchestrator, config)
+
+  const response = await app.inject({
+    method: 'GET',
+    url: `/api/tasks/${task.id}/archive`,
+  })
+
+  expect(response.statusCode).toBe(200)
+  expect(String(response.headers['content-type'])).toContain('text/markdown')
+  expect(response.body).toContain('task_id: task-archive-live-1')
+  expect(response.body).toContain('status: pending')
+  expect(response.body).toContain('=== PROMPT ===')
+  expect(response.body).toContain('run a quick summary')
+  await app.close()
+})
+
+test('task archive route returns live cron snapshot when archive is not created yet', async () => {
+  const app = fastify()
+  const { orchestrator } = createOrchestratorStub()
   const cronJob = {
     id: 'cron-archive-live-1',
     prompt: 'daily digest',
@@ -149,9 +179,6 @@ test('task archive route returns live snapshot when archive is not created yet',
     createdAt: '2026-02-10T00:00:00.000Z',
     cron: '0 9 * * *',
   }
-  ;(
-    orchestrator as unknown as { getTaskById: (taskId: string) => Task | undefined }
-  ).getTaskById = (taskId) => (taskId === task.id ? task : undefined)
   ;(
     orchestrator as unknown as {
       getCronJobs: () => Array<{
@@ -167,18 +194,6 @@ test('task archive route returns live snapshot when archive is not created yet',
   ).getCronJobs = () => [cronJob]
   const config = defaultConfig({ workDir: '.mimikit' })
   registerApiRoutes(app, orchestrator, config)
-
-  const response = await app.inject({
-    method: 'GET',
-    url: `/api/tasks/${task.id}/archive`,
-  })
-
-  expect(response.statusCode).toBe(200)
-  expect(String(response.headers['content-type'])).toContain('text/markdown')
-  expect(response.body).toContain('task_id: task-archive-live-1')
-  expect(response.body).toContain('status: pending')
-  expect(response.body).toContain('=== PROMPT ===')
-  expect(response.body).toContain('run a quick summary')
 
   const cronResponse = await app.inject({
     method: 'GET',

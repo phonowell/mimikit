@@ -4,10 +4,11 @@ import {
   pickQueryHistoryRequest,
   queryHistory,
 } from '../src/manager/history-query.js'
+import type { QueryHistoryRequest } from '../src/manager/history-query-request.js'
 
 import type { HistoryMessage } from '../src/types/index.js'
 
-test('query_history supports from/to range with before_id window', () => {
+test('pickQueryHistoryRequest normalizes inverted from/to range', () => {
   const request = pickQueryHistoryRequest([
     {
       name: 'query_history',
@@ -24,8 +25,18 @@ test('query_history supports from/to range with before_id window', () => {
 
   expect(request).toBeDefined()
   expect(request?.fromMs).toBeLessThanOrEqual(request?.toMs ?? Number.MAX_SAFE_INTEGER)
-  if (!request) throw new Error('request must be parsed')
+  expect(request?.beforeId).toBe('m5')
+})
 
+test('queryHistory applies before_id window and time range filters', () => {
+  const request: QueryHistoryRequest = {
+    query: 'roadmap',
+    limit: 10,
+    roles: ['user', 'agent'],
+    beforeId: 'm5',
+    fromMs: Date.parse('2026-02-08T00:00:00.000Z'),
+    toMs: Date.parse('2026-02-09T23:59:59.999Z'),
+  }
   const history: HistoryMessage[] = [
     {
       id: 'm0',
