@@ -83,6 +83,34 @@ export const renderMessages = (params) => {
   }
 }
 
+const updateExistingStreamItem = ({
+  streamItem,
+  streamMessage,
+  formatUsage,
+}) => {
+  const article = streamItem.querySelector('article')
+  const content = article?.querySelector('.content')
+  if (!article || !content) return false
+  const nextText =
+    typeof streamMessage?.text === 'string' ? streamMessage.text : ''
+  if (content.textContent !== nextText) content.textContent = nextText
+
+  const existingMeta = article.querySelector('small.meta')
+  if (existingMeta) existingMeta.remove()
+  const usageDisplay = formatUsage(streamMessage?.usage)
+  if (usageDisplay?.text) {
+    const meta = document.createElement('small')
+    meta.className = 'meta'
+    const usage = document.createElement('span')
+    usage.className = 'usage'
+    usage.textContent = usageDisplay.text
+    if (usageDisplay.title) usage.title = usageDisplay.title
+    meta.appendChild(usage)
+    article.appendChild(meta)
+  }
+  return true
+}
+
 export const renderStreamMessage = (params) => {
   const {
     streamMessage,
@@ -91,6 +119,7 @@ export const renderStreamMessage = (params) => {
     isNearBottom,
     scrollToBottom,
     updateScrollButton,
+    formatUsage,
   } = params
   if (!messagesEl) return
   removeEmpty()
@@ -98,8 +127,24 @@ export const renderStreamMessage = (params) => {
   const previousScrollTop = messagesEl.scrollTop
   const previousScrollHeight = messagesEl.scrollHeight
   const existingStreamItems = messagesEl.querySelectorAll('.message--streaming')
-  for (const item of existingStreamItems) item.remove()
-  if (streamMessage) {
+  let hasMatchedStreamItem = false
+  for (const item of existingStreamItems) {
+    if (
+      streamMessage &&
+      !hasMatchedStreamItem &&
+      item.dataset.messageId === String(streamMessage.id)
+    ) {
+      hasMatchedStreamItem = updateExistingStreamItem({
+        streamItem: item,
+        streamMessage,
+        formatUsage,
+      })
+      if (!hasMatchedStreamItem) item.remove()
+      continue
+    }
+    item.remove()
+  }
+  if (streamMessage && !hasMatchedStreamItem) {
     renderMessage(
       {
         ...params,

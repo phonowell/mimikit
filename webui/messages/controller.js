@@ -63,6 +63,23 @@ const parseSnapshot = (raw) => {
   }
 }
 
+const STREAM_FRAME_MS = 16
+
+const scheduleFrame = (callback) => {
+  if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function')
+    return window.requestAnimationFrame(callback)
+  return setTimeout(() => callback(Date.now()), STREAM_FRAME_MS)
+}
+
+const cancelFrame = (handle) => {
+  if (handle === null || handle === undefined) return
+  if (typeof window !== 'undefined' && typeof window.cancelAnimationFrame === 'function') {
+    window.cancelAnimationFrame(handle)
+    return
+  }
+  clearTimeout(handle)
+}
+
 const normalizeStreamMessage = (raw) => {
   if (!isRecord(raw)) return null
   const role = typeof raw.role === 'string' ? raw.role : 'agent'
@@ -87,6 +104,62 @@ const normalizeStreamMessage = (raw) => {
   }
 }
 
+const normalizeStreamPatch = (raw) => {
+  if (!isRecord(raw)) return null
+  const mode = typeof raw.mode === 'string' ? raw.mode.trim().toLowerCase() : ''
+  if (mode === 'clear') return { mode: 'clear' }
+  if (mode === 'replace') {
+    if (!isRecord(raw.stream)) return null
+    return { mode: 'replace', stream: raw.stream }
+  }
+  if (mode !== 'delta') return null
+  const id = typeof raw.id === 'string' ? raw.id.trim() : ''
+  if (!id) return null
+  const delta = typeof raw.delta === 'string' ? raw.delta : ''
+  return {
+    mode: 'delta',
+    id,
+    delta,
+    ...(Object.prototype.hasOwnProperty.call(raw, 'usage')
+      ? { usage: raw.usage }
+      : {}),
+  }
+}
+
+const applyStreamPatch = (currentStreamMessage, rawPatch) => {
+  const patch = normalizeStreamPatch(rawPatch)
+  if (!patch) return currentStreamMessage
+  if (patch.mode === 'clear') return null
+  if (patch.mode === 'replace') return normalizeStreamMessage(patch.stream)
+
+  const streamId = `stream-${patch.id}`
+  const base =
+    currentStreamMessage?.id === streamId
+      ? currentStreamMessage
+      : {
+          id: streamId,
+          role: 'agent',
+          text: '',
+          createdAt: new Date().toISOString(),
+          streaming: true,
+        }
+  const normalizedUsage = Object.prototype.hasOwnProperty.call(patch, 'usage')
+    ? normalizeUsage(patch.usage)
+    : undefined
+  const nextText = `${base.text}${patch.delta}`
+  return {
+    ...base,
+    text: nextText,
+    ...(normalizedUsage === undefined
+      ? 'usage' in base
+        ? { usage: base.usage }
+        : {}
+      : normalizedUsage
+        ? { usage: normalizedUsage }
+        : {}),
+  }
+}
+
 export function createMessagesController({
   messagesEl,
   scrollBottomBtn,
@@ -105,6 +178,9 @@ export function createMessagesController({
   let lastStatus = null
   let eventSource = null
   let isStarted = false
+  let currentStreamMessage = null
+  const pendingEvents = []
+  let pendingFrame = null
   const messageState = createMessageState()
 
   const scroll = createScrollController({
@@ -156,9 +232,8 @@ export function createMessagesController({
     },
   })
 
-  const applyMessagesPayload = (msgData, streamPayload) => {
+  const applyMessagesPayload = (msgData, streamMessage) => {
     const hasMessagesPayload = isRecord(msgData)
-    const streamMessage = normalizeStreamMessage(streamPayload)
     const incoming = hasMessagesPayload && Array.isArray(msgData.messages) ? msgData.messages : []
     const mode =
       hasMessagesPayload && typeof msgData.mode === 'string' ? msgData.mode : 'full'
@@ -197,14 +272,49 @@ export function createMessagesController({
   const applySnapshot = (snapshot) => {
     if (!isRecord(snapshot)) return
     const streamPayload = isRecord(snapshot.stream) ? snapshot.stream : null
+    currentStreamMessage = normalizeStreamMessage(streamPayload)
     if (isRecord(snapshot.status)) updateStatus(snapshot.status)
     else syncLoadingState()
-    applyMessagesPayload(snapshot.messages, streamPayload)
+    applyMessagesPayload(snapshot.messages, currentStreamMessage)
     if (typeof onTasksSnapshot === 'function' && isRecord(snapshot.tasks)) 
       onTasksSnapshot(snapshot.tasks)
   }
 
+  const flushPendingEvents = () => {
+    pendingFrame = null
+    if (pendingEvents.length === 0) return
+
+    let lastSnapshot = null
+    const streamPatches = []
+    for (const event of pendingEvents) {
+      if (event.type === 'snapshot') {
+        lastSnapshot = event.payload
+        streamPatches.length = 0
+        continue
+      }
+      if (event.type === 'stream') streamPatches.push(event.payload)
+    }
+    pendingEvents.length = 0
+
+    if (lastSnapshot) applySnapshot(lastSnapshot)
+    if (streamPatches.length === 0) return
+    for (const patch of streamPatches)
+      currentStreamMessage = applyStreamPatch(currentStreamMessage, patch)
+    applyMessagesPayload(null, currentStreamMessage)
+  }
+
+  const enqueueEvent = (event) => {
+    pendingEvents.push(event)
+    if (pendingFrame !== null) return
+    pendingFrame = scheduleFrame(flushPendingEvents)
+  }
+
   const closeEvents = () => {
+    if (pendingFrame !== null) {
+      cancelFrame(pendingFrame)
+      pendingFrame = null
+    }
+    pendingEvents.length = 0
     if (!eventSource) return
     eventSource.close()
     eventSource = null
@@ -217,13 +327,13 @@ export function createMessagesController({
     const onSnapshotEvent = (event) => {
       const snapshot = parseSnapshot(event.data)
       if (!snapshot) return
-      applySnapshot(snapshot)
+      enqueueEvent({ type: 'snapshot', payload: snapshot })
     }
 
-    const onMessageEvent = (event) => {
-      const snapshot = parseSnapshot(event.data)
-      if (!snapshot) return
-      applySnapshot(snapshot)
+    const onStreamEvent = (event) => {
+      const patch = parseSnapshot(event.data)
+      if (!patch) return
+      enqueueEvent({ type: 'stream', payload: patch })
     }
 
     const onServerErrorEvent = (event) => {
@@ -243,7 +353,7 @@ export function createMessagesController({
     }
 
     source.addEventListener('snapshot', onSnapshotEvent)
-    source.addEventListener('message', onMessageEvent)
+    source.addEventListener('stream', onStreamEvent)
     source.addEventListener('error', onServerErrorEvent)
     source.onerror = onTransportError
     eventSource = source

@@ -23,6 +23,8 @@ import type {
   UserInput,
 } from '../types/index.js'
 
+const STREAM_TEXT_FLUSH_MS = 24
+
 export const runManagerBatch = async (params: {
   runtime: RuntimeState
   inputs: UserInput[]
@@ -49,7 +51,29 @@ export const runManagerBatch = async (params: {
   })
 
   let streamRawOutput = ''
+  let streamVisibleOutput = ''
   let streamUsage: TokenUsage | undefined
+  let streamFlushTimer: ReturnType<typeof setTimeout> | null = null
+
+  const clearStreamFlushTimer = (): void => {
+    if (!streamFlushTimer) return
+    clearTimeout(streamFlushTimer)
+    streamFlushTimer = null
+  }
+
+  const flushVisibleStream = (): void => {
+    streamFlushTimer = null
+    const nextVisible = toVisibleAgentText(streamRawOutput)
+    if (nextVisible === streamVisibleOutput) return
+    streamVisibleOutput = nextVisible
+    setUiStreamText(runtime, streamId, nextVisible)
+  }
+
+  const scheduleVisibleStreamFlush = (): void => {
+    if (streamFlushTimer) return
+    streamFlushTimer = setTimeout(flushVisibleStream, STREAM_TEXT_FLUSH_MS)
+  }
+
   const runOnce = async (extra?: {
     historyLookup?: HistoryLookupMessage[]
     actionFeedback?: ManagerActionFeedback[]
@@ -76,10 +100,12 @@ export const runManagerBatch = async (params: {
       onTextDelta: (delta) => {
         if (!delta) return
         streamRawOutput += delta
-        setUiStreamText(runtime, streamId, toVisibleAgentText(streamRawOutput))
+        scheduleVisibleStreamFlush()
       },
       onStreamReset: () => {
+        clearStreamFlushTimer()
         streamRawOutput = ''
+        streamVisibleOutput = ''
         resetUiStream(runtime, streamId)
       },
       onUsage: (usage) => {
@@ -100,89 +126,106 @@ export const runManagerBatch = async (params: {
     actionFeedback?: ManagerActionFeedback[]
   } = {}
 
-  for (;;) {
-    const runResult = await runOnce(extra)
-    elapsedMs += runResult.elapsedMs
-    const parsed = parseActions(runResult.output)
-    const scheduleNowIso =
-      runtime.lastUserMeta?.clientNowIso ?? new Date().toISOString()
-    const actionFeedback = collectManagerActionFeedback(parsed.actions, {
-      taskStatusById: new Map(
-        runtime.tasks.map((task) => [task.id, task.status]),
-      ),
-      enabledCronJobIds: new Set(
-        runtime.cronJobs.filter((job) => job.enabled).map((job) => job.id),
-      ),
-      scheduleNowIso,
-      ...(runtime.plannerSessionId
-        ? { managerSessionId: runtime.plannerSessionId }
-        : {}),
-    })
-    const queryRequest = pickQueryHistoryRequest(parsed.actions)
-    const queryKey = queryRequest
-      ? [
-          queryRequest.query,
-          String(queryRequest.limit),
-          queryRequest.roles.join(','),
-          queryRequest.beforeId ?? '',
-          String(queryRequest.fromMs ?? ''),
-          String(queryRequest.toMs ?? ''),
-        ].join('\n')
-      : undefined
-
-    if (!queryRequest && actionFeedback.length === 0) {
-      setUiStreamText(runtime, streamId, toVisibleAgentText(runResult.output))
-      return {
-        parsed,
-        elapsedMs,
-        ...((streamUsage ?? runResult.usage)
-          ? { usage: streamUsage ?? runResult.usage }
+  try {
+    for (;;) {
+      const runResult = await runOnce(extra)
+      elapsedMs += runResult.elapsedMs
+      const parsed = parseActions(runResult.output)
+      if (streamVisibleOutput !== parsed.text) {
+        clearStreamFlushTimer()
+        streamVisibleOutput = parsed.text
+        setUiStreamText(runtime, streamId, parsed.text)
+      }
+      const scheduleNowIso =
+        runtime.lastUserMeta?.clientNowIso ?? new Date().toISOString()
+      const actionFeedback = collectManagerActionFeedback(parsed.actions, {
+        taskStatusById: new Map(
+          runtime.tasks.map((task) => [task.id, task.status]),
+        ),
+        enabledCronJobIds: new Set(
+          runtime.cronJobs.filter((job) => job.enabled).map((job) => job.id),
+        ),
+        scheduleNowIso,
+        ...(runtime.plannerSessionId
+          ? { managerSessionId: runtime.plannerSessionId }
           : {}),
+      })
+      const queryRequest = pickQueryHistoryRequest(parsed.actions)
+      const queryKey = queryRequest
+        ? [
+            queryRequest.query,
+            String(queryRequest.limit),
+            queryRequest.roles.join(','),
+            queryRequest.beforeId ?? '',
+            String(queryRequest.fromMs ?? ''),
+            String(queryRequest.toMs ?? ''),
+          ].join('\n')
+        : undefined
+
+      if (!queryRequest && actionFeedback.length === 0) {
+        clearStreamFlushTimer()
+        if (streamVisibleOutput !== parsed.text) {
+          streamVisibleOutput = parsed.text
+          setUiStreamText(runtime, streamId, parsed.text)
+        }
+        return {
+          parsed,
+          elapsedMs,
+          ...((streamUsage ?? runResult.usage)
+            ? { usage: streamUsage ?? runResult.usage }
+            : {}),
+        }
+      }
+      if (
+        queryKey &&
+        actionFeedback.length === 0 &&
+        previousQueryKey === queryKey
+      )
+        throw new Error('manager_query_history_repeated_without_progress')
+      previousQueryKey = queryKey
+
+      let historyLookup: HistoryLookupMessage[] | undefined
+      if (queryRequest) {
+        const history = await readHistory(runtime.paths.history)
+        historyLookup = queryHistory(history, queryRequest)
+        await appendLog(runtime.paths.log, {
+          event: 'manager_query_history',
+          queryChars: queryRequest.query.length,
+          limit: queryRequest.limit,
+          roleCount: queryRequest.roles.length,
+          resultCount: historyLookup.length,
+          ...(queryRequest.beforeId ? { beforeId: queryRequest.beforeId } : {}),
+          ...(queryRequest.fromMs !== undefined
+            ? { fromMs: queryRequest.fromMs }
+            : {}),
+          ...(queryRequest.toMs !== undefined
+            ? { toMs: queryRequest.toMs }
+            : {}),
+        })
+      }
+      if (actionFeedback.length > 0) {
+        await appendLog(runtime.paths.log, {
+          event: 'manager_action_feedback',
+          count: actionFeedback.length,
+          errors: actionFeedback.map((item) => item.error),
+          names: actionFeedback.map((item) => item.action),
+        })
+        await appendActionFeedbackSystemMessage(
+          runtime.paths.history,
+          actionFeedback,
+        )
+      }
+
+      clearStreamFlushTimer()
+      streamRawOutput = ''
+      streamVisibleOutput = ''
+      resetUiStream(runtime, streamId)
+      extra = {
+        ...(historyLookup ? { historyLookup } : {}),
+        ...(actionFeedback.length > 0 ? { actionFeedback } : {}),
       }
     }
-    if (
-      queryKey &&
-      actionFeedback.length === 0 &&
-      previousQueryKey === queryKey
-    )
-      throw new Error('manager_query_history_repeated_without_progress')
-    previousQueryKey = queryKey
-
-    let historyLookup: HistoryLookupMessage[] | undefined
-    if (queryRequest) {
-      const history = await readHistory(runtime.paths.history)
-      historyLookup = queryHistory(history, queryRequest)
-      await appendLog(runtime.paths.log, {
-        event: 'manager_query_history',
-        queryChars: queryRequest.query.length,
-        limit: queryRequest.limit,
-        roleCount: queryRequest.roles.length,
-        resultCount: historyLookup.length,
-        ...(queryRequest.beforeId ? { beforeId: queryRequest.beforeId } : {}),
-        ...(queryRequest.fromMs !== undefined
-          ? { fromMs: queryRequest.fromMs }
-          : {}),
-        ...(queryRequest.toMs !== undefined ? { toMs: queryRequest.toMs } : {}),
-      })
-    }
-    if (actionFeedback.length > 0) {
-      await appendLog(runtime.paths.log, {
-        event: 'manager_action_feedback',
-        count: actionFeedback.length,
-        errors: actionFeedback.map((item) => item.error),
-        names: actionFeedback.map((item) => item.action),
-      })
-      await appendActionFeedbackSystemMessage(
-        runtime.paths.history,
-        actionFeedback,
-      )
-    }
-
-    streamRawOutput = ''
-    resetUiStream(runtime, streamId)
-    extra = {
-      ...(historyLookup ? { historyLookup } : {}),
-      ...(actionFeedback.length > 0 ? { actionFeedback } : {}),
-    }
+  } finally {
+    clearStreamFlushTimer()
   }
 }

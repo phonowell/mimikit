@@ -13,6 +13,7 @@
 - Provider 路径：`runWithProvider(provider='opencode')`
 - Provider role：`manager`
 - 会话连续性：持久化并复用 `plannerSessionId`；若 session 无效自动重建
+- OpenCode server：进程级共享复用（不再每次请求启动/关闭）
 - 输出：`{ output, elapsedMs, sessionId?, usage? }`
 - usage 口径：
   - `usage.input/output/total` 为单轮
@@ -54,6 +55,7 @@
 - 当前注册 provider：
   - `opencode`：`src/providers/opencode-provider.ts`
   - `codex-sdk`：`src/providers/codex-sdk-provider.ts`
+- OpenCode server 生命周期：`src/providers/opencode-provider-bootstrap.ts` 负责共享实例获取与失效重建（`getSharedOpencodeServer` / `resetSharedOpencodeServer`）。
 - 共享 provider 运行时基元：`src/providers/provider-runtime.ts`
   - 统一超时/外部中断绑定、耗时计算与结果封装，避免双份实现漂移。
 - provider 输入解析共享：`src/shared/input-parsing.ts`

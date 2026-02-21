@@ -88,6 +88,8 @@
 - `disabled`：降低透明度并禁用 pointer 语义。
 - 动效基线：`120ms ~ 220ms`，以 `ease-out` 为主。
 - 动效降级：`prefers-reduced-motion: reduce` 下关闭动画与 transform 过渡。
+- 流式更新：消息流渲染按帧合并（`requestAnimationFrame`），避免高频增量直接打满主线程。
+- streaming 节点：同一条流式消息应就地更新文本与 usage，不做逐增量删建 DOM。
 
 ## 响应式与可访问性
 

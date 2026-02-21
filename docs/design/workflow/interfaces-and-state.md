@@ -2,6 +2,7 @@
 > 返回 [系统设计总览](../README.md)
 
 ## HTTP API
+- `GET /api/events`
 - `GET /api/status`
 - `POST /api/input`
 - `GET /api/messages?limit=...`
@@ -22,6 +23,12 @@ HTTP 路由共享约束：
 - `GET /api/messages` 返回：全部非 system 消息 + `visibility=user|all` 的 system 消息。
 - 对 `role=system` 消息，WebUI 展示层会去除隐藏的 `<M:...>` 标签，仅显示语义文本。
 - `:id` 参数校验与任务存在性校验统一在 `src/http/routes-api-sections.ts` 内部 helper。
+
+`GET /api/events`（SSE）事件约束：
+- `snapshot`：全量状态（`status/messages/tasks/stream`），用于初始化与状态收敛。
+- `stream`：仅发送 manager 流式 patch（`mode=clear|replace|delta`）。
+- `stream.mode=delta` 仅包含增量文本（`delta`）与可选 usage，WebUI 端自行累积。
+- 不保留旧 `message` 事件兼容层，前后端需同批发布。
 
 `GET /api/status` 响应关键字段：
 - `runtimeId`：当前进程实例标识；每次进程重启都会变化，可用于前端判定“是否已切换到新实例”。
@@ -103,6 +110,11 @@ HTTP 路由共享约束：
 - 主会话恢复字段：
   - `plannerSessionId`
 - 旧 grouped channel 结构不再兼容解析。
+
+## WebUI 流式渲染约束
+- 事件消费：`snapshot` 与 `stream` 进入同一帧队列，按 `requestAnimationFrame` 合帧处理。
+- DOM 策略：streaming message 节点走就地更新（文本/usage），避免每次增量都删建节点。
+- manager 流式文本由后端做时间片 flush（默认 24ms），避免每 token 全量解析。
 
 ## Restart 语义
 - `POST /api/restart` 与 `POST /api/reset` 均为“先响应请求，再异步停机”。

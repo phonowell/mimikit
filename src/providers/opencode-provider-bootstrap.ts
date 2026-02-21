@@ -14,7 +14,19 @@ export type StartedServer = {
   url: string
   close: () => void
 }
+
+type SharedServerState = {
+  server: StartedServer | null
+  pending: Promise<StartedServer> | null
+  cleanupRegistered: boolean
+}
+
 let preflightState: PreflightState | undefined
+const sharedServerState: SharedServerState = {
+  server: null,
+  pending: null,
+  cleanupRegistered: false,
+}
 const readExitCode = (status: number | null): string =>
   status === null ? 'unknown' : String(status)
 
@@ -91,6 +103,14 @@ export const unwrapSdkData = <T>(value: T | { data: T }): T => {
 export const resolveServerTimeout = (requestTimeoutMs: number): number => {
   if (requestTimeoutMs <= 0) return 5_000
   return Math.max(1_000, Math.min(requestTimeoutMs, 15_000))
+}
+
+const OPENCODE_SERVER_FAILURE_PATTERN =
+  /(ECONNREFUSED|ECONNRESET|EPIPE|ENOTFOUND|socket hang up|fetch failed|server exited|connection refused|connect ECONN)/i
+
+export const isOpencodeServerFailure = (error: unknown): boolean => {
+  const message = error instanceof Error ? error.message : String(error)
+  return OPENCODE_SERVER_FAILURE_PATTERN.test(message)
 }
 
 const parseServerUrl = (line: string): string | undefined => {
@@ -195,4 +215,64 @@ export const startOpencodeServer = async (
     })
     signal.addEventListener('abort', onAbort)
   })
+}
+
+const clearSharedServerState = (): void => {
+  sharedServerState.server = null
+  sharedServerState.pending = null
+}
+
+const registerSharedServerCleanup = (): void => {
+  if (sharedServerState.cleanupRegistered) return
+  sharedServerState.cleanupRegistered = true
+  process.once('exit', () => {
+    if (sharedServerState.server) sharedServerState.server.close()
+  })
+}
+
+const wrapSharedServer = (server: StartedServer): StartedServer => {
+  let closed = false
+  return {
+    url: server.url,
+    close: () => {
+      if (closed) return
+      closed = true
+      clearSharedServerState()
+      server.close()
+    },
+  }
+}
+
+export const getSharedOpencodeServer = (
+  timeoutMs: number,
+): Promise<StartedServer> => {
+  if (sharedServerState.server) return Promise.resolve(sharedServerState.server)
+  if (!sharedServerState.pending) {
+    registerSharedServerCleanup()
+    const controller = new AbortController()
+    sharedServerState.pending = startOpencodeServer(
+      controller.signal,
+      timeoutMs,
+    )
+      .then((server) => {
+        const wrapped = wrapSharedServer(server)
+        sharedServerState.server = wrapped
+        sharedServerState.pending = null
+        return wrapped
+      })
+      .catch((error) => {
+        sharedServerState.pending = null
+        throw error
+      })
+  }
+  if (sharedServerState.pending) return sharedServerState.pending
+  return Promise.reject(
+    new Error('[provider:opencode] shared server is unavailable'),
+  )
+}
+
+export const resetSharedOpencodeServer = (): void => {
+  const { server } = sharedServerState
+  clearSharedServerState()
+  if (server) server.close()
 }

@@ -15,12 +15,56 @@ import {
 
 import type { AppConfig } from '../config.js'
 import type { Orchestrator } from '../orchestrator/core/orchestrator-service.js'
+import type { UiAgentStream } from '../orchestrator/core/runtime-state.js'
+import type { TokenUsage } from '../types/index.js'
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 
 const SSE_HEARTBEAT_MS = 15_000
 const SSE_RETRY_MS = 1_500
 const getDefaultSnapshot = (orchestrator: Orchestrator) =>
   orchestrator.getWebUiSnapshot(DEFAULT_MESSAGE_LIMIT, DEFAULT_TASK_LIMIT)
+
+type StreamPatch =
+  | { mode: 'clear' }
+  | { mode: 'replace'; stream: UiAgentStream }
+  | {
+      mode: 'delta'
+      id: string
+      delta: string
+      updatedAt: string
+      usage?: TokenUsage | null
+    }
+
+const cloneUiStream = (stream: UiAgentStream | null): UiAgentStream | null =>
+  stream
+    ? {
+        ...stream,
+        ...(stream.usage ? { usage: { ...stream.usage } } : {}),
+      }
+    : null
+
+const usageKey = (usage?: TokenUsage): string =>
+  usage ? JSON.stringify(usage) : ''
+
+const buildStreamPatch = (
+  prev: UiAgentStream | null,
+  next: UiAgentStream | null,
+): StreamPatch | null => {
+  if (!next) return prev ? { mode: 'clear' } : null
+  if (!prev) return { mode: 'replace', stream: next }
+  if (prev.id !== next.id) return { mode: 'replace', stream: next }
+  if (!next.text.startsWith(prev.text)) return { mode: 'replace', stream: next }
+  const delta = next.text.slice(prev.text.length)
+  const usageChanged = usageKey(prev.usage) !== usageKey(next.usage)
+  if (!delta && !usageChanged) return null
+  return {
+    mode: 'delta',
+    id: next.id,
+    delta,
+    updatedAt: next.updatedAt,
+    ...(usageChanged ? { usage: next.usage ?? null } : {}),
+  }
+}
 
 const createSseStream = (request: FastifyRequest, reply: FastifyReply) => {
   reply.hijack()
@@ -71,11 +115,11 @@ export const registerApiRoutes = (
   app.get('/api/events', async (request, reply) => {
     const stream = createSseStream(request, reply)
     let lastSnapshotEtag = ''
-    let lastStreamEtag = ''
+    let lastStream = cloneUiStream(null)
     try {
       const initial = await getDefaultSnapshot(orchestrator)
       lastSnapshotEtag = buildPayloadEtag('events', initial)
-      lastStreamEtag = buildPayloadEtag('stream', initial.stream)
+      lastStream = cloneUiStream(initial.stream)
       stream.writeEvent('snapshot', initial)
 
       for (;;) {
@@ -84,18 +128,20 @@ export const registerApiRoutes = (
         if (stream.isClosed()) break
         if (signal === 'timeout') continue
         if (signal === 'stream') {
-          const streamPayload = orchestrator.getWebUiStreamSnapshot()
-          const streamEtag = buildPayloadEtag('stream', streamPayload)
-          if (streamEtag === lastStreamEtag) continue
-          lastStreamEtag = streamEtag
-          if (!stream.writeEvent('message', { stream: streamPayload })) break
+          const nextStream = cloneUiStream(
+            orchestrator.getWebUiStreamSnapshot(),
+          )
+          const patch = buildStreamPatch(lastStream, nextStream)
+          if (!patch) continue
+          lastStream = nextStream
+          if (!stream.writeEvent('stream', patch)) break
           continue
         }
         const snapshot = await getDefaultSnapshot(orchestrator)
         const snapshotEtag = buildPayloadEtag('events', snapshot)
         if (snapshotEtag === lastSnapshotEtag) continue
         lastSnapshotEtag = snapshotEtag
-        lastStreamEtag = buildPayloadEtag('stream', snapshot.stream)
+        lastStream = cloneUiStream(snapshot.stream)
         if (!stream.writeEvent('snapshot', snapshot)) break
       }
     } catch (error) {

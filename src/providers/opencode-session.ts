@@ -2,9 +2,11 @@ import { createOpencodeClient } from '@opencode-ai/sdk/v2'
 
 import {
   ensureOpencodePreflight,
+  getSharedOpencodeServer,
   isAbortLikeError,
+  isOpencodeServerFailure,
+  resetSharedOpencodeServer,
   resolveServerTimeout,
-  startOpencodeServer,
 } from './opencode-provider-bootstrap.js'
 import { resolveOpencodeModelRef } from './opencode-provider-utils.js'
 import {
@@ -61,14 +63,11 @@ export const summarizeOpencodeSession = async (params: {
         },
       })
       timeoutGuard.arm()
-      let closeServer: (() => void) | undefined
       try {
         const model = resolveOpencodeModelRef(params.model)
-        const server = await startOpencodeServer(
-          controller.signal,
+        const server = await getSharedOpencodeServer(
           resolveServerTimeout(params.timeoutMs),
         )
-        closeServer = server.close
         const client = createOpencodeClient({ baseUrl: server.url })
         await client.session.summarize(
           {
@@ -90,6 +89,7 @@ export const summarizeOpencodeSession = async (params: {
         if (lifecycle.externallyAborted || controller.signal.aborted)
           throw buildProviderAbortedError('opencode')
         if (isAbortLikeError(error)) throw buildProviderAbortedError('opencode')
+        if (isOpencodeServerFailure(error)) resetSharedOpencodeServer()
         throw buildProviderSdkError({
           providerId: 'opencode',
           message: error instanceof Error ? error.message : String(error),
@@ -100,7 +100,6 @@ export const summarizeOpencodeSession = async (params: {
       } finally {
         timeoutGuard.clear()
         releaseExternalAbort()
-        if (closeServer) closeServer()
       }
       return
     } catch (error) {

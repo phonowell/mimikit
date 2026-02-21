@@ -4,9 +4,11 @@ import pRetry from 'p-retry'
 
 import {
   ensureOpencodePreflight,
+  getSharedOpencodeServer,
   isAbortLikeError,
+  isOpencodeServerFailure,
+  resetSharedOpencodeServer,
   resolveServerTimeout,
-  startOpencodeServer,
   unwrapSdkData,
 } from './opencode-provider-bootstrap.js'
 import {
@@ -85,15 +87,12 @@ const runOpencodeOnce = async (
     },
   })
   timeoutGuard.arm()
-  let closeServer: (() => void) | undefined
   let usageMonitor: UsageStreamMonitor | undefined
   try {
     const model = resolveOpencodeModelRef(request.model)
-    const server = await startOpencodeServer(
-      controller.signal,
+    const server = await getSharedOpencodeServer(
       resolveServerTimeout(request.timeoutMs),
     )
-    closeServer = server.close
     const client = createOpencodeClient({ baseUrl: server.url })
     let sessionID = request.threadId ?? undefined
     if (!sessionID) {
@@ -154,6 +153,7 @@ const runOpencodeOnce = async (
       throw buildProviderTimeoutError('opencode', request.timeoutMs)
     if (lifecycle.externallyAborted || controller.signal.aborted)
       throw buildProviderAbortedError('opencode')
+    if (isOpencodeServerFailure(error)) resetSharedOpencodeServer()
     throw wrapSdkError(error)
   } finally {
     timeoutGuard.clear()
@@ -162,7 +162,6 @@ const runOpencodeOnce = async (
       usageMonitor.stop()
       await usageMonitor.done.catch(() => undefined)
     }
-    if (closeServer) closeServer()
   }
 }
 const runOpencodeWithRetry = (
