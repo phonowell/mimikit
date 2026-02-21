@@ -1,5 +1,4 @@
 import { codexSdkProvider } from './codex-sdk-provider.js'
-import { opencodeProvider } from './opencode-provider.js'
 
 import type {
   Provider,
@@ -34,7 +33,6 @@ let registered = false
 const ensureDefaultProvidersRegistered = (): void => {
   if (registered) return
   registerProvider(codexSdkProvider)
-  registerProvider(opencodeProvider)
   registered = true
 }
 

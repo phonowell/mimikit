@@ -1,12 +1,12 @@
 import { bestEffort } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import { notifyWorkerLoop } from '../orchestrator/core/worker-signal.js'
-import { summarizeOpencodeSession } from '../providers/opencode-session.js'
 import { formatSystemEventText } from '../shared/system-event.js'
 import { newId, nowIso } from '../shared/utils.js'
 import { appendHistory } from '../storage/history-jsonl.js'
 import { cancelTask } from '../worker/cancel-task.js'
 
+import { applyCompressContext } from './action-apply-compress.js'
 import {
   applyCreateTask,
   type ApplyTaskActionsOptions,
@@ -14,10 +14,8 @@ import {
 import {
   cancelSchema,
   collectTaskResultSummaries,
-  compressSchema,
   restartSchema,
 } from './action-apply-schema.js'
-import { appendActionFeedbackSystemMessage } from './history.js'
 
 import type { Parsed } from '../actions/model/spec.js'
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
@@ -61,8 +59,6 @@ const appendCronCanceledSystemMessage = async (
 
 export { collectTaskResultSummaries }
 
-const COMPRESS_CONTEXT_TIMEOUT_FLOOR_MS = 15_000
-
 export const applyTaskActions = async (
   runtime: RuntimeState,
   items: Parsed[],
@@ -90,50 +86,15 @@ export const applyTaskActions = async (
       )
       continue
     }
+    if (item.name === 'compress_context') {
+      await applyCompressContext(runtime, item)
+      continue
+    }
     if (item.name === 'restart_server') {
       const parsed = restartSchema.safeParse(item.attrs)
       if (!parsed.success) continue
       requestManagerRestart(runtime)
       return
-    }
-    if (item.name === 'compress_context') {
-      const parsed = compressSchema.safeParse(item.attrs)
-      if (!parsed.success) continue
-      const sessionId = runtime.plannerSessionId?.trim()
-      if (!sessionId) continue
-      const timeoutMs = Math.max(
-        COMPRESS_CONTEXT_TIMEOUT_FLOOR_MS,
-        runtime.config.manager.session.compressTimeoutMs,
-      )
-      try {
-        await summarizeOpencodeSession({
-          workDir: runtime.config.workDir,
-          sessionId,
-          timeoutMs,
-          model: runtime.config.manager.model,
-        })
-        continue
-      } catch (error) {
-        const errorDetail = (
-          error instanceof Error ? error.message : String(error)
-        )
-          .replace(/\s+/g, ' ')
-          .trim()
-          .slice(0, 180)
-        await bestEffort(
-          'appendHistory: compress_context_action_feedback',
-          () =>
-            appendActionFeedbackSystemMessage(runtime.paths.history, [
-              {
-                action: 'compress_context',
-                error: 'action_execution_rejected',
-                hint: `compress_context 执行失败：${errorDetail || 'unknown_error'}`,
-                attempted: '<M:compress_context />',
-              },
-            ]),
-        )
-      }
-      continue
     }
   }
 }

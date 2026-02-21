@@ -16,7 +16,7 @@
 - 引用块：保留左侧竖线；竖线与正文的间距已加宽（消息内与输入预览一致）。
 - 输入框：无边框，仅保留轻微凹陷（micro inset）。
 - 任务弹窗：`tasks-list` 为平面浅色层，不使用凹陷阴影。
-- 任务指示器：仅保留一个 `status dot`；颜色表达 status，形状表达 profile。
+- 任务指示器：仅保留一个 `status dot`；颜色表达 status，形状固定。
 - 弹窗遮罩：使用偏冷灰白半透明底（非黑灰）并叠加密集斜向条纹，保持较低透过度。
 - 按钮：全局不可文本选中/复制（`user-select: none`）。
 
@@ -59,18 +59,15 @@
 - 交互按压态（`:active` / `[aria-pressed='true']`）
 - 禁止凹陷的常规信息区：
 - 消息气泡主体
-- 元信息胶囊（如 origin / task profile）
+- 元信息胶囊（如 origin / task id）
 - 引用预览显示态
 - `tasks-list`
 
-## 任务指示器形状规范
+## 任务指示器规范
 
-- 结构：单个 `status dot`，共享 hover title（`{status}/{profile}`）。
+- 结构：单个圆形 `status dot`，共享 hover title（`{status}/worker`）。
 - 颜色语义：`running/success/failed/pending/canceled` 仅使用 `--status-*` token。
-- 形状语义：`profile` 仅通过形状区分，不参与配色。
-- 映射：`standard`=圆形、`specialist`=正六边形、`deferred`=圆角方形。
-- specialist 实现：使用 `clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%)`。
-- 禁止项：不得新增 profile 独立 dot/ring，不得用 profile 颜色替代 status 颜色。
+- 禁止项：不得新增额外 dot/ring，不得用非状态颜色替代 status 颜色。
 
 ## 组件规范
 

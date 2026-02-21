@@ -15,7 +15,6 @@ export const createSchema = z
   .object({
     prompt: nonEmptyString,
     title: nonEmptyString,
-    profile: z.enum(['standard', 'specialist']).optional(),
     cron: z.string().trim().optional(),
     scheduled_at: z.string().trim().optional(),
   })
@@ -23,26 +22,11 @@ export const createSchema = z
   .superRefine((data, ctx) => {
     const hasCron = Boolean(data.cron?.trim())
     const hasScheduledAt = Boolean(data.scheduled_at?.trim())
-    const hasSchedule = hasCron || hasScheduledAt
     if (hasCron && hasScheduledAt) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'cron and scheduled_at are mutually exclusive',
         path: ['cron'],
-      })
-    }
-    if (hasSchedule && data.profile !== undefined) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'profile must be omitted when cron or scheduled_at is set',
-        path: ['profile'],
-      })
-    }
-    if (!hasSchedule && data.profile === undefined) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'profile is required when cron and scheduled_at are absent',
-        path: ['profile'],
       })
     }
   })
@@ -53,8 +37,9 @@ export const cancelSchema = z
   })
   .strict()
 
+export const compressContextSchema = z.object({}).strict()
+
 export const restartSchema = z.object({}).strict()
-export const compressSchema = z.object({}).strict()
 
 const parseSummary = (
   item: Parsed,

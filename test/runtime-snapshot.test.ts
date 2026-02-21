@@ -21,7 +21,7 @@ test('selectPersistedTasks keeps non-running task statuses unchanged', () => {
       fingerprint: 'a',
       prompt: 'a',
       title: 'a',
-      profile: 'standard',
+      profile: 'worker',
       status: 'pending',
       createdAt: '2026-02-06T00:00:00.000Z',
     },
@@ -30,7 +30,7 @@ test('selectPersistedTasks keeps non-running task statuses unchanged', () => {
       fingerprint: 'c',
       prompt: 'c',
       title: 'c',
-      profile: 'standard',
+      profile: 'worker',
       status: 'succeeded',
       createdAt: '2026-02-06T00:00:00.000Z',
       result: {
@@ -59,7 +59,7 @@ test('selectPersistedTasks recovers running task to pending', () => {
       fingerprint: 'b',
       prompt: 'b',
       title: 'b',
-      profile: 'standard',
+      profile: 'worker',
       status: 'running',
       createdAt: '2026-02-06T00:00:00.000Z',
       startedAt: '2026-02-06T00:01:00.000Z',
@@ -83,7 +83,7 @@ test('runtime snapshot accepts queue cursors', async () => {
         fingerprint: 'task-1',
         prompt: 'check',
         title: 'Check',
-        profile: 'standard',
+        profile: 'worker',
         status: 'succeeded',
         createdAt: '2026-02-06T00:00:00.000Z',
         result: {
@@ -100,11 +100,15 @@ test('runtime snapshot accepts queue cursors', async () => {
       inputsCursor: 3,
       resultsCursor: 9,
     },
+    plannerSessionId: 'planner-thread-1',
+    managerCompressedContext: 'Goals\n- keep codex-only',
   })
 
   const loaded = await loadRuntimeSnapshot(stateDir)
   expect(loaded.queues?.resultsCursor).toBe(9)
   expect(loaded.queues?.inputsCursor).toBe(3)
+  expect(loaded.plannerSessionId).toBe('planner-thread-1')
+  expect(loaded.managerCompressedContext).toContain('keep codex-only')
   expect(loaded.tasks[0]?.result?.output).toBe('ok')
 })
 
@@ -115,7 +119,7 @@ test('buildTaskViews maps cron job statuses from disabled reasons', () => {
       scheduledAt: '2026-02-13T17:22:20+08:00',
       prompt: 'remind',
       title: 'remind',
-      profile: 'manager',
+      profile: 'worker',
       enabled: false,
       disabledReason: 'completed',
       createdAt: '2026-02-13T09:22:04.602Z',
@@ -126,7 +130,7 @@ test('buildTaskViews maps cron job statuses from disabled reasons', () => {
       scheduledAt: '2026-02-13T17:22:20+08:00',
       prompt: 'remind',
       title: 'remind',
-      profile: 'manager',
+      profile: 'worker',
       enabled: false,
       disabledReason: 'canceled',
       createdAt: '2026-02-13T09:22:04.602Z',
@@ -136,7 +140,7 @@ test('buildTaskViews maps cron job statuses from disabled reasons', () => {
       scheduledAt: '2026-02-13T17:22:20+08:00',
       prompt: 'remind',
       title: 'remind',
-      profile: 'manager',
+      profile: 'worker',
       enabled: false,
       createdAt: '2026-02-13T09:22:04.602Z',
       lastTriggeredAt: '2026-02-13T09:22:20.735Z',
@@ -162,7 +166,7 @@ test('runtime snapshot rejects legacy next fields', async () => {
           fingerprint: 'task-legacy-next',
           prompt: 'legacy',
           title: 'legacy',
-          profile: 'standard',
+          profile: 'worker',
           status: 'pending',
           createdAt: '2026-02-06T00:00:00.000Z',
           next: [{ prompt: 'next task', condition: 'succeeded' }],
@@ -174,7 +178,7 @@ test('runtime snapshot rejects legacy next fields', async () => {
           cron: '0 0 9 * * *',
           prompt: 'legacy cron',
           title: 'legacy cron',
-          profile: 'standard',
+          profile: 'worker',
           enabled: true,
           createdAt: '2026-02-06T00:00:00.000Z',
           next: { prompt: 'next cron task', condition: 'succeeded' },

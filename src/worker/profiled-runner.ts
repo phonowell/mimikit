@@ -2,7 +2,7 @@ import { buildWorkerPrompt } from '../prompts/build-prompts.js'
 import { loadPromptFile } from '../prompts/prompt-loader.js'
 
 import {
-  appendProfileProgress,
+  appendWorkerProgress,
   archiveWorkerResult,
   buildRunModel,
 } from './profiled-runner-helpers.js'
@@ -19,43 +19,7 @@ import type { LlmResult, ProviderResult } from './profiled-runner-helpers.js'
 import type { Task, TokenUsage } from '../types/index.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
-type ProfiledWorkerBaseParams = {
-  stateDir: string
-  workDir: string
-  task: Task
-  timeoutMs: number
-  model?: string
-  abortSignal?: AbortSignal
-  onUsage?: (usage: TokenUsage) => void
-}
-
-type StandardProfiledWorkerParams = ProfiledWorkerBaseParams & {
-  provider: 'opencode'
-  profile: 'standard'
-}
-
-type SpecialistProfiledWorkerParams = ProfiledWorkerBaseParams & {
-  provider: 'codex-sdk'
-  profile: 'specialist'
-  modelReasoningEffort?: ModelReasoningEffort
-}
-
-type ProfiledWorkerParams =
-  | StandardProfiledWorkerParams
-  | SpecialistProfiledWorkerParams
-
-export const runStandardWorker = (params: {
-  stateDir: string
-  workDir: string
-  task: Task
-  timeoutMs: number
-  model?: string
-  abortSignal?: AbortSignal
-  onUsage?: (usage: TokenUsage) => void
-}): Promise<LlmResult> =>
-  runProfiledWorker({ ...params, provider: 'opencode', profile: 'standard' })
-
-export const runSpecialistWorker = (params: {
+type WorkerRunnerParams = {
   stateDir: string
   workDir: string
   task: Task
@@ -64,11 +28,10 @@ export const runSpecialistWorker = (params: {
   modelReasoningEffort?: ModelReasoningEffort
   abortSignal?: AbortSignal
   onUsage?: (usage: TokenUsage) => void
-}): Promise<LlmResult> =>
-  runProfiledWorker({ ...params, provider: 'codex-sdk', profile: 'specialist' })
+}
 
-export const runProfiledWorker = async (
-  params: ProfiledWorkerParams,
+export const runWorker = async (
+  params: WorkerRunnerParams,
 ): Promise<LlmResult> => {
   const prompt = await buildWorkerPrompt({
     workDir: params.workDir,
@@ -82,10 +45,9 @@ export const runProfiledWorker = async (
     ...(params.model ? { model: params.model } : {}),
   }
 
-  await appendProfileProgress({
+  await appendWorkerProgress({
     stateDir: params.stateDir,
     taskId: params.task.id,
-    profile: params.profile,
     phase: 'start',
     payload: {},
   })
@@ -120,10 +82,9 @@ export const runProfiledWorker = async (
       const output = result.output.trim()
       if (hasDoneMarker(output)) {
         const finalOutput = stripDoneMarker(output)
-        await appendProfileProgress({
+        await appendWorkerProgress({
           stateDir: params.stateDir,
           taskId: params.task.id,
-          profile: params.profile,
           phase: 'done',
           payload: { elapsedMs: totalElapsedMs, rounds: round },
         })
@@ -150,7 +111,7 @@ export const runProfiledWorker = async (
     }
 
     throw new Error(
-      `[worker:${params.profile}] task incomplete after ${MAX_RUN_ROUNDS} rounds: missing ${DONE_MARKER}; last_output=${JSON.stringify(latestResult?.output.trim() ?? 'empty_output')}`,
+      `[worker] task incomplete after ${MAX_RUN_ROUNDS} rounds: missing ${DONE_MARKER}; last_output=${JSON.stringify(latestResult?.output.trim() ?? 'empty_output')}`,
     )
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error))

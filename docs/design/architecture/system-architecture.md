@@ -5,7 +5,7 @@
 ## 架构边界
 
 - 一次性全量切换，不保留旧多角色链路与旧队列字段兼容层。
-- `OpenCode` 是 manager 主路径；`Codex` 是 worker specialist 路径。
+- manager 与 worker 全量使用 `Codex SDK`。
 - `mimikit` 负责本地执行系统：状态机、队列、调度、可观测性。
 - HTTP 输入校验与参数归一化集中在 `src/http/helpers.ts`。
 - 本地持久化遵循进程内串行 + 文件锁（`proper-lockfile`）。
@@ -13,7 +13,7 @@
 ## 组件职责
 
 - `manager`：消费 `inputs/results`，输出用户回复与编排动作。
-- `worker`：执行 `deferred/standard/specialist` 任务，回写结果。
+- `worker`：执行统一 `worker` 任务，回写结果。
 - `cron-wake-loop`：触发定时任务并发布 `system_event` 协议 system 输入事件。
 - `idle-wake-loop`：系统闲暇窗口到达后发布 `system_event.name=idle` 的 system 输入事件。
 

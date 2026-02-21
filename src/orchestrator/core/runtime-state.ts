@@ -52,6 +52,7 @@ export type RuntimeState = {
   cronJobs: CronJob[]
   managerTurn: number
   plannerSessionId?: string
+  managerCompressedContext?: string
   uiStream: UiAgentStream | null
   runningControllers: Map<string, AbortController>
   createTaskDebounce: Map<string, number>

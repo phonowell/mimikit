@@ -3,7 +3,7 @@ import { parseIsoMs } from '../shared/time.js'
 import { hasForbiddenWorkerStatePath } from './action-apply-guards.js'
 import {
   cancelSchema,
-  compressSchema,
+  compressContextSchema,
   createSchema,
   restartSchema,
   summarizeSchema,
@@ -17,8 +17,8 @@ import type { ZodError, ZodSchema } from 'zod'
 export const REGISTERED_MANAGER_ACTIONS = new Set([
   'create_task',
   'cancel_task',
-  'summarize_task_result',
   'compress_context',
+  'summarize_task_result',
   'query_history',
   'restart_server',
 ])
@@ -26,8 +26,8 @@ export const REGISTERED_MANAGER_ACTIONS = new Set([
 export type FeedbackContext = {
   taskStatusById?: Map<string, TaskStatus>
   enabledCronJobIds?: Set<string>
+  hasPlannerSession?: boolean
   scheduleNowIso?: string
-  managerSessionId?: string
 }
 
 export type ValidationIssue = {
@@ -173,13 +173,13 @@ const validateCompressContext = (
   item: Parsed,
   context: FeedbackContext,
 ): ValidationIssue[] => {
-  const parsed = compressSchema.safeParse(item.attrs)
-  if (!parsed.success) return [invalidArgsIssue(parsed.error)]
-  if (context.managerSessionId?.trim()) return []
+  const issues = validateWithSchema(item, compressContextSchema)
+  if (issues.length > 0) return issues
+  if (context.hasPlannerSession) return []
   return [
     {
       error: ACTION_EXECUTION_REJECTED,
-      hint: 'compress_context 执行失败：当前会话缺少可压缩的 session_id。',
+      hint: 'compress_context 执行失败：当前无可压缩的 manager 会话。',
     },
   ]
 }

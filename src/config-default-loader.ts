@@ -16,13 +16,6 @@ const taskDefaultsSchema = z
   .object({
     timeoutMs: z.number().int().positive(),
     model: z.string().min(1),
-  })
-  .strict()
-
-const codexTaskDefaultsSchema = z
-  .object({
-    timeoutMs: z.number().int().positive(),
-    model: z.string().min(1),
     modelReasoningEffort: modelReasoningEffortSchema,
   })
   .strict()
@@ -32,6 +25,7 @@ const defaultConfigSchema = z
     manager: z
       .object({
         model: z.string().min(1),
+        modelReasoningEffort: modelReasoningEffortSchema,
         prompt: z
           .object({
             maxTokens: z.number().int().positive(),
@@ -49,11 +43,6 @@ const defaultConfigSchema = z
             maxBytes: z.number().int().positive(),
           })
           .strict(),
-        session: z
-          .object({
-            compressTimeoutMs: z.number().int().positive(),
-          })
-          .strict(),
       })
       .strict(),
     worker: z
@@ -65,12 +54,7 @@ const defaultConfigSchema = z
             backoffMs: z.number().int().nonnegative(),
           })
           .strict(),
-        profiles: z
-          .object({
-            standard: taskDefaultsSchema,
-            specialist: codexTaskDefaultsSchema,
-          })
-          .strict(),
+        ...taskDefaultsSchema.shape,
       })
       .strict(),
   })

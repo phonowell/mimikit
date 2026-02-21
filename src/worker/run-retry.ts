@@ -4,7 +4,7 @@ import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 
-import { runSpecialistWorker, runStandardWorker } from './profiled-runner.js'
+import { runWorker } from './profiled-runner.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { Task, TokenUsage } from '../types/index.js'
@@ -26,56 +26,37 @@ const shouldTreatAsTaskCancel = (
   error: unknown,
 ): boolean => controller.signal.aborted && isAbortLikeError(error)
 
-const runStandardProfile = (params: {
+const runWorkerModel = (params: {
   runtime: RuntimeState
   task: Task
   controller: AbortController
   onUsage?: (usage: TokenUsage) => void
 }): Promise<WorkerLlmResult> => {
-  const { standard } = params.runtime.config.worker.profiles
-  return runStandardWorker({
+  const { worker } = params.runtime.config
+  return runWorker({
     stateDir: params.runtime.config.workDir,
     workDir: params.runtime.config.workDir,
     task: params.task,
-    timeoutMs: standard.timeoutMs,
-    model: standard.model,
+    timeoutMs: worker.timeoutMs,
+    model: worker.model,
+    modelReasoningEffort: worker.modelReasoningEffort,
     abortSignal: params.controller.signal,
     ...(params.onUsage ? { onUsage: params.onUsage } : {}),
   })
 }
 
-const runTaskByProfile = (params: {
+const runTaskModel = (params: {
   runtime: RuntimeState
   task: Task
   controller: AbortController
   onUsage?: (usage: TokenUsage) => void
-}): Promise<WorkerLlmResult> => {
-  if (params.task.profile === 'deferred') {
-    return Promise.resolve({
-      output: params.task.prompt,
-      elapsedMs: 0,
-    })
-  }
-  if (params.task.profile === 'standard') {
-    return runStandardProfile({
-      runtime: params.runtime,
-      task: params.task,
-      controller: params.controller,
-      ...(params.onUsage ? { onUsage: params.onUsage } : {}),
-    })
-  }
-  const { specialist } = params.runtime.config.worker.profiles
-  return runSpecialistWorker({
-    stateDir: params.runtime.config.workDir,
-    workDir: params.runtime.config.workDir,
+}): Promise<WorkerLlmResult> =>
+  runWorkerModel({
+    runtime: params.runtime,
     task: params.task,
-    timeoutMs: specialist.timeoutMs,
-    model: specialist.model,
-    modelReasoningEffort: specialist.modelReasoningEffort,
-    abortSignal: params.controller.signal,
+    controller: params.controller,
     ...(params.onUsage ? { onUsage: params.onUsage } : {}),
   })
-}
 
 const toRetryError = (error: unknown): Error => {
   if (error instanceof Error) return error
@@ -139,7 +120,7 @@ export const runTaskWithRetry = (params: {
       if (controller.signal.aborted)
         throw new AbortError(controller.signal.reason ?? 'Task canceled')
       try {
-        return await runTaskByProfile({
+        return await runTaskModel({
           runtime,
           task,
           controller,

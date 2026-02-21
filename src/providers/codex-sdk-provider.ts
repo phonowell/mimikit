@@ -161,11 +161,21 @@ const runCodexProvider = async (request: CodexSdkProviderRequest) => {
       signal: controller.signal,
     })
     let output = ''
+    let streamedOutput = ''
     let usage: ReturnType<typeof normalizeUsage> | undefined
     for await (const event of stream.events) {
       resetIdle()
-      if (event.type === 'item.completed') {
-        if (event.item.type === 'agent_message') output = event.item.text
+      if (event.type === 'item.updated' || event.type === 'item.completed') {
+        if (event.item.type !== 'agent_message') continue
+        const nextOutput = event.item.text
+        if (request.onTextDelta) {
+          const delta = nextOutput.startsWith(streamedOutput)
+            ? nextOutput.slice(streamedOutput.length)
+            : nextOutput
+          if (delta) request.onTextDelta(delta)
+        }
+        streamedOutput = nextOutput
+        if (event.type === 'item.completed') output = nextOutput
         continue
       }
       if (event.type === 'turn.completed') {

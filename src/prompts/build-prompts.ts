@@ -58,6 +58,7 @@ export const buildManagerPrompt = async (params: {
   cronJobs?: CronJob[]
   historyLookup?: HistoryLookupMessage[]
   actionFeedback?: ManagerActionFeedback[]
+  compressedContext?: string
   env?: ManagerEnv
 }): Promise<string> => {
   const pendingResults = mergeTaskResults(params.results, [])
@@ -104,6 +105,7 @@ export const buildManagerPrompt = async (params: {
     action_feedback: escapeCdata(
       formatActionFeedback(params.actionFeedback ?? []),
     ),
+    compressed_context: escapeCdata(params.compressedContext?.trim() ?? ''),
     persona: escapeCdata(persona.trim()),
     user_profile: escapeCdata(userProfile.trim()),
   }

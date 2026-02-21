@@ -47,7 +47,7 @@
 | 维度 | Mimikit | OpenClaw | Nanobot |
 | --- | --- | --- | --- |
 | 主要语言 | TypeScript (ESM) | TypeScript/Swift/Kotlin | Python/TypeScript |
-| LLM SDK | codex-sdk + opencode-sdk | 多 provider | LiteLLM + 多 provider |
+| LLM SDK | codex-sdk | 多 provider | LiteLLM + 多 provider |
 | 存储 | JSONL + Markdown | Markdown + 向量 DB | 内存 + 文件 |
 | 队列 | `p-queue` | 内置 | 自研 |
 | 类型安全 | Zod + 严格 TS | 未知 | Pydantic |

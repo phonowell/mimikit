@@ -36,16 +36,8 @@ export const applyCreateTask = async (
   if (!parsed.success) return
   const cron = parsed.data.cron?.trim()
   const scheduledAt = parsed.data.scheduled_at?.trim()
-  const hasSchedule = Boolean(cron ?? scheduledAt)
-  const profileFromInput = parsed.data.profile
-  if (!hasSchedule && !profileFromInput) return
-  const profile: WorkerProfile = hasSchedule
-    ? 'deferred'
-    : profileFromInput === 'specialist'
-      ? 'specialist'
-      : 'standard'
-  if (profile !== 'deferred' && hasForbiddenWorkerStatePath(parsed.data.prompt))
-    return
+  const profile: WorkerProfile = 'worker'
+  if (hasForbiddenWorkerStatePath(parsed.data.prompt)) return
   const scheduleKey = cron ?? scheduledAt ?? ''
   const semanticKey = buildTaskSemanticKey({
     prompt: parsed.data.prompt,
@@ -95,15 +87,13 @@ export const applyCreateTask = async (
         return (
           job.cron === cron &&
           job.prompt === parsed.data.prompt &&
-          job.title === parsed.data.title &&
-          job.profile === profile
+          job.title === parsed.data.title
         )
       }
       return (
         job.scheduledAt === scheduledAt &&
         job.prompt === parsed.data.prompt &&
-        job.title === parsed.data.title &&
-        job.profile === profile
+        job.title === parsed.data.title
       )
     })
     if (existing) return
@@ -153,7 +143,7 @@ export const applyCreateTask = async (
     profile,
   )
   if (!created) {
-    if (task.status !== 'pending' || task.profile === 'deferred') return
+    if (task.status !== 'pending') return
     enqueueWorkerTask(runtime, task)
     notifyWorkerLoop(runtime)
     return

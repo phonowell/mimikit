@@ -21,6 +21,7 @@ import type {
   TokenUsage,
   UserInput,
 } from '../types/index.js'
+import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
 export const runManager = async (params: {
   stateDir: string
@@ -31,8 +32,10 @@ export const runManager = async (params: {
   cronJobs?: CronJob[]
   historyLookup?: HistoryLookupMessage[]
   actionFeedback?: ManagerActionFeedback[]
+  compressedContext?: string
   env?: ManagerEnv
   model?: string
+  modelReasoningEffort?: ModelReasoningEffort
   sessionId?: string
   maxPromptTokens?: number
   onTextDelta?: (delta: string) => void
@@ -53,6 +56,9 @@ export const runManager = async (params: {
     ...(params.cronJobs ? { cronJobs: params.cronJobs } : {}),
     ...(params.historyLookup ? { historyLookup: params.historyLookup } : {}),
     ...(params.actionFeedback ? { actionFeedback: params.actionFeedback } : {}),
+    ...(params.compressedContext
+      ? { compressedContext: params.compressedContext }
+      : {}),
     ...(params.env ? { env: params.env } : {}),
   })
   const model = params.model?.trim()
@@ -77,12 +83,15 @@ export const runManager = async (params: {
 
   const callProvider = (threadId?: string) =>
     runWithProvider({
-      provider: 'opencode',
+      provider: 'codex-sdk',
       role: 'manager',
       prompt: budgetedPrompt.prompt,
       workDir: params.workDir,
       timeoutMs,
       ...(model ? { model } : {}),
+      ...(params.modelReasoningEffort
+        ? { modelReasoningEffort: params.modelReasoningEffort }
+        : {}),
       ...(threadId ? { threadId } : {}),
       ...(params.onTextDelta ? { onTextDelta: params.onTextDelta } : {}),
       ...(params.onUsage ? { onUsage: params.onUsage } : {}),
@@ -95,7 +104,8 @@ export const runManager = async (params: {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       const invalidSession =
-        /session/i.test(message) && /not found|404|unknown/i.test(message)
+        /session|thread/i.test(message) &&
+        /not found|404|unknown/i.test(message)
       if (!params.sessionId || !invalidSession) throw error
       params.onStreamReset?.()
       result = await callProvider()

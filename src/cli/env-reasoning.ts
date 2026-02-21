@@ -27,32 +27,20 @@ export const applyReasoningEnv = (config: AppConfig): void => {
     'MIMIKIT_REASONING_EFFORT',
     process.env.MIMIKIT_REASONING_EFFORT,
   )
-  if (global) config.worker.profiles.specialist.modelReasoningEffort = global
+  if (global) {
+    config.manager.modelReasoningEffort = global
+    config.worker.modelReasoningEffort = global
+  }
 
   const manager = parseReasoning(
     'MIMIKIT_MANAGER_REASONING_EFFORT',
     process.env.MIMIKIT_MANAGER_REASONING_EFFORT,
   )
-  if (manager) {
-    console.warn(
-      '[cli] ignored MIMIKIT_MANAGER_REASONING_EFFORT: manager uses opencode and does not support modelReasoningEffort',
-    )
-  }
+  if (manager) config.manager.modelReasoningEffort = manager
 
-  const standard = parseReasoning(
-    'MIMIKIT_WORKER_STANDARD_REASONING_EFFORT',
-    process.env.MIMIKIT_WORKER_STANDARD_REASONING_EFFORT,
+  const worker = parseReasoning(
+    'MIMIKIT_WORKER_REASONING_EFFORT',
+    process.env.MIMIKIT_WORKER_REASONING_EFFORT,
   )
-  if (standard) {
-    console.warn(
-      '[cli] ignored MIMIKIT_WORKER_STANDARD_REASONING_EFFORT: standard worker uses opencode and does not support modelReasoningEffort',
-    )
-  }
-
-  const specialist = parseReasoning(
-    'MIMIKIT_WORKER_SPECIALIST_REASONING_EFFORT',
-    process.env.MIMIKIT_WORKER_SPECIALIST_REASONING_EFFORT,
-  )
-  if (specialist)
-    config.worker.profiles.specialist.modelReasoningEffort = specialist
+  if (worker) config.worker.modelReasoningEffort = worker
 }

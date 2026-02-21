@@ -74,7 +74,7 @@ const buildFallbackTask = (result: TaskResult): Task => ({
   fingerprint: '',
   prompt: '',
   title: result.title ?? result.taskId,
-  profile: result.profile === 'specialist' ? 'specialist' : 'standard',
+  profile: 'worker',
   status: result.status,
   createdAt: result.completedAt,
   completedAt: result.completedAt,

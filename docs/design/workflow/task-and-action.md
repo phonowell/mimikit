@@ -11,11 +11,9 @@
 ## 派发与去重
 
 - manager 通过 `<M:create_task ... />` 派发任务。
-- `profile` 推断：
-  - 无 `cron/scheduled_at`：必须显式 `standard | specialist`
-  - 有 `cron/scheduled_at`：隐式 `deferred`（禁止显式传 `profile`）
+- worker 任务 profile 固定为 `worker`。
 - 去重两层：
-  - action 去重键：`prompt + title + profile`
+  - action 去重键：`prompt + title + profile(worker)`
   - queue 去重键：`task.fingerprint`（`prompt + title + profile + schedule`，仅拦 active 任务）
 
 ## 执行与回写
@@ -60,38 +58,37 @@
 
 ### `create_task`
 
-- 入参：`prompt`、`title`、`profile?`、`cron?`、`scheduled_at?`
+- 入参：`prompt`、`title`、`cron?`、`scheduled_at?`
 - 约束：
   - `cron` 与 `scheduled_at` 互斥
-  - 有 `cron/scheduled_at` 时禁止传 `profile`，系统隐式推断 `profile=deferred`
-  - 无 `cron/scheduled_at` 时必须传 `profile ∈ {standard, specialist}`
-- 去重：`prompt + title + profile`
+  - 不允许传 `profile`
+- 去重：`prompt + title + profile(worker)`
 
 ### `cancel_task`
 
 - 入参：`id`
 - 行为：`cancelTask(..., { source: 'deferred' })`
 
+### `compress_context`
+
+- 入参：无（严格空对象）
+- 行为：
+  1. 复用当前 `plannerSessionId` 对应 thread 调用 Codex 产出会话压缩摘要
+  2. 将摘要写入 runtime `managerCompressedContext`
+  3. 清空 `plannerSessionId`，下一轮 manager 进入新 thread 继续执行
+- 约束：无可用 `plannerSessionId` 时拒绝执行并返回 `action_feedback`
+
 ### `summarize_task_result`
 
 - 入参：`task_id`、`summary`
 - 行为：汇总为 `Map<taskId, summary>`，用于结果写入 `history` 时压缩输出。
 
-### `compress_context`
-
-- 入参：无
-- 行为：对当前 manager 会话执行 OpenCode `session.summarize`，压缩历史上下文并保留关键信息。
-- Provider 参数：`providerID/modelID` 由 `runtime.config.manager.model` 统一解析后传入，避免 SDK 参数缺失。
-- 重试：由 `src/providers/opencode-session.ts` 统一处理，最多 2 次（首轮 + 1 次重试）。
-- 失败处理：若 provider 连续失败，manager 追加一条 `M:action_feedback`（`action=compress_context`）并继续主流程，不中断整轮 manager。
-- 约束：仅当存在 `plannerSessionId` 时可执行；否则会返回 `system_event.name=action_feedback` 要求修正。
-
 ## Worker 输出规则
 
 来源：`src/worker/profiled-runner.ts`
 
-- `standard/specialist` 都执行单次 provider 调用并直接返回原始输出，不要求固定 JSON 格式。
-- 两者执行逻辑一致，唯一差异是 provider：`standard=opencode`、`specialist=codex-sdk`。
+- worker 执行 Codex provider 调用并返回原始输出，不要求固定 JSON 格式。
+- 多轮执行直到出现 `DONE` 标记或到达上限轮次。
 
 ## 核心数据结构
 
@@ -107,7 +104,7 @@
 
 - 字段：`id`、`fingerprint`、`prompt`、`title`、`profile`、`status`
 - 运行字段：`startedAt?`、`completedAt?`、`durationMs?`、`attempts?`
-- `profile`：`deferred | standard | specialist`
+- `profile`：`worker`
 
 ### TaskResult
 
@@ -119,37 +116,3 @@
   - `inputCacheRead/inputCacheWrite`：输入缓存读/写 token
   - `outputCache`：输出缓存 token（provider 支持时）
 - 写入：`results/packets.jsonl`
-
-### HistoryMessage
-
-- `role=user|agent`：字段为 `id`、`role`、`text`、`createdAt`（不含 `visibility`）。
-- `role=system`：字段为 `id`、`role`、`visibility(user|agent|all)`、`text`、`createdAt`。
-- 可选：`usage`、`elapsedMs`、`quote`
-- usage 字段：
-  - `input/output/total`：单轮 token
-  - `sessionTotal`：会话累计（可缺省）
-  - `inputCacheRead/inputCacheWrite`：输入缓存读/写 token
-  - `outputCache`：输出缓存 token（provider 支持时）
-- 写入：`history/YYYY-MM-DD.jsonl`
-
-### System 会话消息清单
-
-| 消息 | 来源 | 可见性 | 说明 |
-| --- | --- | --- | --- |
-| `startup_system_message` (`system_event.name=startup`) | `src/orchestrator/core/orchestrator-service.ts` | `visibility=user` | 服务启动提示。 |
-| `task_system_message(created)` (`system_event.name=task_created`) | `src/orchestrator/read-model/task-history.ts` | `visibility=user` | 任务创建提示。 |
-| `task_system_message(completed)` (`system_event.name=task_completed`) | `src/orchestrator/read-model/task-history.ts` | `visibility=user` | 任务完成提示。 |
-| `task_system_message(canceled)` (`system_event.name=task_canceled`) | `src/orchestrator/read-model/task-history.ts` | `visibility=user` | 任务取消提示。 |
-| `cron_task_canceled_system_message` (`system_event.name=cron_canceled`) | `src/manager/action-apply.ts` | `visibility=user` | manager 取消 cron 后写回提示。 |
-| `manager_fallback_reply` (`system_event.name=manager_fallback_reply`) | `src/manager/history.ts` | `visibility=user` | manager 异常兜底回复。 |
-| `manager_error_system_message` (`system_event.name=manager_error`) | `src/manager/history.ts` | `visibility=all` | manager 内部错误反馈。 |
-| `action_feedback_system_message` (`system_event.name=action_feedback`) | `src/manager/history.ts` | `visibility=all` | action 校验错误反馈，下一轮 manager 消费。 |
-| `cron_trigger_system_input` (`system_event.name=cron_trigger`) | `src/manager/loop-cron.ts` | `visibility=all` | cron 到期事件（`cron`/`scheduled_at` 二选一），交由 manager 消费决策。 |
-| `idle_system_input` (`system_event.name=idle`) | `src/manager/loop-idle.ts` | `visibility=all` | 系统连续闲暇一段时间后发布的状态事件，交由 manager 消费。 |
-
-所有 system 会话消息统一协议为：可见语义文本 + 隐藏标签 `<M:system_event name="..." version="1">JSON</M:system_event>`。
-
-### Queue Packet
-
-- 结构：`{ id, createdAt, payload }`
-- `inputs/results` 使用统一 packet 包装。

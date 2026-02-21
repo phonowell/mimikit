@@ -23,9 +23,6 @@ importers:
       '@openai/codex-sdk':
         specifier: ^0.101.0
         version: 0.101.0
-      '@opencode-ai/sdk':
-        specifier: 1.2.0
-        version: 1.2.0
       croner:
         specifier: ^10.0.1
         version: 10.0.1
@@ -56,12 +53,6 @@ importers:
       micromark:
         specifier: ^4.0.2
         version: 4.0.2
-      opencode-ai:
-        specifier: 1.2.0
-        version: 1.2.0
-      opossum:
-        specifier: ^9.0.0
-        version: 9.0.0
       p-queue:
         specifier: ^9.1.0
         version: 9.1.0
@@ -93,9 +84,6 @@ importers:
       '@types/node':
         specifier: ^25.2.3
         version: 25.2.3
-      '@types/opossum':
-        specifier: ^8.1.9
-        version: 8.1.9
       '@types/write-file-atomic':
         specifier: ^4.0.3
         version: 4.0.3
@@ -141,10 +129,6 @@ importers:
       vitest:
         specifier: ^4.0.18
         version: 4.0.18(@types/node@25.2.3)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2)
-    optionalDependencies:
-      opencode-windows-x64:
-        specifier: 1.2.0
-        version: 1.2.0
 
 packages:
 
@@ -476,9 +460,6 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@opencode-ai/sdk@1.2.0':
-    resolution: {integrity: sha512-8NH7yFxmMFTrcYODptgoWBp6g3liB7dmpM52mMAuOheDo1v4I6BZOwzKzRMGlCSuEASH5HDjZgrJBsOD9yMjxg==}
-
   '@pinojs/redact@0.4.0':
     resolution: {integrity: sha512-k2ENnmBugE/rzQfEcdWHcCY+/FM3VLzH9cYEsbdsoqrvzAKRhUZeRNhAZvB8OitQJ1TBed3yqWtdjzS6wJKBwg==}
 
@@ -674,9 +655,6 @@ packages:
 
   '@types/node@25.2.3':
     resolution: {integrity: sha512-m0jEgYlYz+mDJZ2+F4v8D1AyQb+QzsNqRuI7xg1VQX/KlKS0qT9r1Mo16yo5F/MtifXFgaofIFsdFMox2SxIbQ==}
-
-  '@types/opossum@8.1.9':
-    resolution: {integrity: sha512-Jm/tYxuJFefiwRYs+/EOsUP3ktk0c8siMgAHPLnA4PXF4wKghzcjqf88dY+Xii5jId5Txw4JV0FMKTpjbd7KJA==}
 
   '@types/sinonjs__fake-timers@8.1.5':
     resolution: {integrity: sha512-mQkU2jY8jJEF7YHjHvsQO8+3ughTL1mcnn96igfhONmR+fUPSKIkefQYpSe8bsly2Ep7oQbn/6VG5/9/0qcArQ==}
@@ -2307,69 +2285,6 @@ packages:
   once@1.4.0:
     resolution: {integrity: sha512-lNaJgI+2Q5URQBkccEKHTQOPaXdUxnZZElQTZY0MFUAuaEqe1E+Nyvgdz/aIyNi6Z9MzO5dv1H8n58/GELp3+w==}
 
-  opencode-ai@1.2.0:
-    resolution: {integrity: sha512-wEjOhlcPZ+83b+Bhn1V/203p4jDEKNHWpNRwuHj5wl/qPZt5YSHVzWTl0+TlUhBl3URcsF6Rq0+d2FXYswP+kg==}
-    hasBin: true
-
-  opencode-darwin-arm64@1.2.0:
-    resolution: {integrity: sha512-L//Xukvy2z6Iw/3U8d6xENL/wdIroegWuL1aBJ5w4EpcbXFwX6PSUpPEbLalWqJTqNgqt8V0ZC1nplHShNTEwg==}
-    cpu: [arm64]
-    os: [darwin]
-
-  opencode-darwin-x64-baseline@1.2.0:
-    resolution: {integrity: sha512-qSxlVLJLeDFVvS1Sr1+0eZthDgG4E4j7aXmups3c4LlipG+SrxKGeDHZbB4IB6RWYAij7kYNDBLCUnj39aymiQ==}
-    cpu: [x64]
-    os: [darwin]
-
-  opencode-darwin-x64@1.2.0:
-    resolution: {integrity: sha512-0cnEXQHceiJFRBtObDEcJs95NroUKFAPAAz5ZhipSamowCEi51zBNJZV4pmvQ/7ejbPzLj+tC4zvorWE1k5flA==}
-    cpu: [x64]
-    os: [darwin]
-
-  opencode-linux-arm64-musl@1.2.0:
-    resolution: {integrity: sha512-JnxH1ArLLH6qGHWbdscEexIJw5Mfb8owWXzlcksOhazaPfzqLBfzt4lMUDHlRWF45RDzHmU0tOVjNiumsUgd+g==}
-    cpu: [arm64]
-    os: [linux]
-
-  opencode-linux-arm64@1.2.0:
-    resolution: {integrity: sha512-0q7n6TAuJe0Gxt30USGlHP8O4cogzSAsAPrZjOhyyJ0LV1XOfbix5tP3e1C+GfMau7LZ4jsQ0pgrD4JRDj2Zow==}
-    cpu: [arm64]
-    os: [linux]
-
-  opencode-linux-x64-baseline-musl@1.2.0:
-    resolution: {integrity: sha512-15FMWbwmB1F2F+N1d0hN9o0ktHCBUE0mJ1IMUUf+vXWq3PbYSdqbiweyfOgfT1DW3GtzSN+UNECkRoB+bVdVaQ==}
-    cpu: [x64]
-    os: [linux]
-
-  opencode-linux-x64-baseline@1.2.0:
-    resolution: {integrity: sha512-xfX46Fgy8Zss7NNmwnnQnZk7dKMG45O3ZrBMF1mopg25fgUqCNk7e9nooe3DqTDjBfBnn4yL3OBBRzG/sj+lgA==}
-    cpu: [x64]
-    os: [linux]
-
-  opencode-linux-x64-musl@1.2.0:
-    resolution: {integrity: sha512-BxvLDSLXAYv9/MKc2sshRHDpSwP42Fsp7srZ2dZWgTxMVFDrNW2Ts0AJQsFVWFzJ63chgsFa4ak+/TO23SfZaQ==}
-    cpu: [x64]
-    os: [linux]
-
-  opencode-linux-x64@1.2.0:
-    resolution: {integrity: sha512-+e+BOZ6v+MLq4k55uFfQ+OJzShEF73Ie/juaUUwxlLLlwtBFHfkmibIodnLkTSLSlnUBPANEAZdxWGgyU8GC3A==}
-    cpu: [x64]
-    os: [linux]
-
-  opencode-windows-x64-baseline@1.2.0:
-    resolution: {integrity: sha512-ohcP6Pn6RHC5cEVFoca6zeia1VXb3BWL9pMg6fPpZiDAuhArFw9uA5v8SdIlkpUe6VGCI1Nc9N7xucAIPNdN1Q==}
-    cpu: [x64]
-    os: [win32]
-
-  opencode-windows-x64@1.2.0:
-    resolution: {integrity: sha512-2QfUU1gNKquZYE83f08GgEzPGrP+cJj7lhetvmVjgZeK3PMLS5idjQEceFX4tLcHg/GpQmd5yC7jz1S61c/I9g==}
-    cpu: [x64]
-    os: [win32]
-
-  opossum@9.0.0:
-    resolution: {integrity: sha512-K76U0QkxOfUZamneQuzz+AP0fyfTJcCplZ2oZL93nxeupuJbN4s6uFNbmVCt4eWqqGqRnnowdFuBicJ1fLMVxw==}
-    engines: {node: ^24 || ^22 || ^20}
-
   optionator@0.9.4:
     resolution: {integrity: sha512-6IpQ7mKUxRcZNLIObR0hz7lxsapSSIYNZJwXPGeF0mTVqGKFIXj1DQcMoT22S3ROcLyY/rz0PWaWZ9ayWmad9g==}
     engines: {node: '>= 0.8.0'}
@@ -3554,8 +3469,6 @@ snapshots:
   '@openai/codex@0.101.0-win32-x64':
     optional: true
 
-  '@opencode-ai/sdk@1.2.0': {}
-
   '@pinojs/redact@0.4.0': {}
 
   '@pkgjs/parseargs@0.11.0':
@@ -3695,10 +3608,6 @@ snapshots:
   '@types/node@25.2.3':
     dependencies:
       undici-types: 7.16.0
-
-  '@types/opossum@8.1.9':
-    dependencies:
-      '@types/node': 25.2.3
 
   '@types/sinonjs__fake-timers@8.1.5': {}
 
@@ -5644,55 +5553,6 @@ snapshots:
   once@1.4.0:
     dependencies:
       wrappy: 1.0.2
-
-  opencode-ai@1.2.0:
-    optionalDependencies:
-      opencode-darwin-arm64: 1.2.0
-      opencode-darwin-x64: 1.2.0
-      opencode-darwin-x64-baseline: 1.2.0
-      opencode-linux-arm64: 1.2.0
-      opencode-linux-arm64-musl: 1.2.0
-      opencode-linux-x64: 1.2.0
-      opencode-linux-x64-baseline: 1.2.0
-      opencode-linux-x64-baseline-musl: 1.2.0
-      opencode-linux-x64-musl: 1.2.0
-      opencode-windows-x64: 1.2.0
-      opencode-windows-x64-baseline: 1.2.0
-
-  opencode-darwin-arm64@1.2.0:
-    optional: true
-
-  opencode-darwin-x64-baseline@1.2.0:
-    optional: true
-
-  opencode-darwin-x64@1.2.0:
-    optional: true
-
-  opencode-linux-arm64-musl@1.2.0:
-    optional: true
-
-  opencode-linux-arm64@1.2.0:
-    optional: true
-
-  opencode-linux-x64-baseline-musl@1.2.0:
-    optional: true
-
-  opencode-linux-x64-baseline@1.2.0:
-    optional: true
-
-  opencode-linux-x64-musl@1.2.0:
-    optional: true
-
-  opencode-linux-x64@1.2.0:
-    optional: true
-
-  opencode-windows-x64-baseline@1.2.0:
-    optional: true
-
-  opencode-windows-x64@1.2.0:
-    optional: true
-
-  opossum@9.0.0: {}
 
   optionator@0.9.4:
     dependencies:

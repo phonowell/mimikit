@@ -66,7 +66,7 @@ const taskToFingerprintInput = (
 export const createTask = (
   prompt: string,
   title?: string,
-  profile: WorkerProfile = 'standard',
+  profile: WorkerProfile = 'worker',
   schedule?: string,
 ): Task => {
   const id = newId()
@@ -92,7 +92,7 @@ export const enqueueTask = (
   tasks: Task[],
   prompt: string,
   title?: string,
-  profile: WorkerProfile = 'standard',
+  profile: WorkerProfile = 'worker',
   schedule?: string,
 ): EnqueueTaskResult => {
   const fingerprint = buildTaskFingerprint({

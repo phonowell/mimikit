@@ -82,7 +82,7 @@ export type TaskResultStatus = Extract<
   'succeeded' | 'failed' | 'canceled'
 >
 
-export type WorkerProfile = 'standard' | 'specialist' | 'deferred'
+export type WorkerProfile = 'worker'
 
 export type Task = {
   id: Id

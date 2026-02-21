@@ -10,6 +10,7 @@ const baseTemplateValues = {
   results: '',
   history_lookup: '',
   action_feedback: '',
+  compressed_context: '',
   tasks: '',
   persona: '',
   user_profile: '',
@@ -44,4 +45,14 @@ test('manager template renders action_feedback block when provided', async () =>
   })
   expect(withActionFeedback).toContain('<M:action_feedback>')
   expect(withActionFeedback).toContain('unregistered_action')
+})
+
+test('manager template renders compressed_context block when provided', async () => {
+  const template = await loadSystemPrompt('manager')
+  const withCompressedContext = renderPromptTemplate(template, {
+    ...baseTemplateValues,
+    compressed_context: 'Goals\\n- keep codex-only',
+  })
+  expect(withCompressedContext).toContain('<M:compressed_context>')
+  expect(withCompressedContext).toContain('keep codex-only')
 })

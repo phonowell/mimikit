@@ -12,14 +12,8 @@ const applyModelEnv = (config: AppConfig): void => {
 
   const envManagerModel = process.env.MIMIKIT_MANAGER_MODEL?.trim()
   if (envManagerModel) config.manager.model = envManagerModel
-  const envWorkerStandardModel =
-    process.env.MIMIKIT_WORKER_STANDARD_MODEL?.trim()
-  if (envWorkerStandardModel)
-    config.worker.profiles.standard.model = envWorkerStandardModel
-  const envWorkerSpecialistModel =
-    process.env.MIMIKIT_WORKER_SPECIALIST_MODEL?.trim()
-  if (envWorkerSpecialistModel)
-    config.worker.profiles.specialist.model = envWorkerSpecialistModel
+  const envWorkerModel = process.env.MIMIKIT_WORKER_MODEL?.trim()
+  if (envWorkerModel) config.worker.model = envWorkerModel
 }
 
 const applyLoopEnv = (config: AppConfig): void => {

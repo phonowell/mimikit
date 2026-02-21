@@ -18,6 +18,9 @@ export const hydrateRuntimeState = async (
   if (snapshot.plannerSessionId)
     runtime.plannerSessionId = snapshot.plannerSessionId
   else delete runtime.plannerSessionId
+  if (snapshot.managerCompressedContext)
+    runtime.managerCompressedContext = snapshot.managerCompressedContext
+  else delete runtime.managerCompressedContext
   if (snapshot.queues) {
     runtime.queues = {
       inputsCursor: snapshot.queues.inputsCursor,
@@ -45,6 +48,9 @@ export const persistRuntimeState = async (
     queues: runtime.queues,
     ...(runtime.plannerSessionId
       ? { plannerSessionId: runtime.plannerSessionId }
+      : {}),
+    ...(runtime.managerCompressedContext
+      ? { managerCompressedContext: runtime.managerCompressedContext }
       : {}),
   })
 }

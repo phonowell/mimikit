@@ -4,7 +4,7 @@ import { persistRuntimeState } from './runtime-persistence.js'
 import { notifyUiSignal } from './ui-signal.js'
 
 import type { RuntimeState } from './runtime-state.js'
-import type { CronJob, WorkerProfile } from '../../types/index.js'
+import type { CronJob } from '../../types/index.js'
 
 const cloneCronJob = (job: CronJob): CronJob => ({ ...job })
 
@@ -15,7 +15,6 @@ export const addCronJob = async (
     scheduledAt?: string
     prompt: string
     title?: string
-    profile?: WorkerProfile
     enabled?: boolean
   },
 ): Promise<CronJob> => {
@@ -32,7 +31,7 @@ export const addCronJob = async (
     ...(scheduledAt ? { scheduledAt } : {}),
     prompt,
     title: titleFromCandidates(id, [input.title, prompt]),
-    profile: input.profile ?? 'standard',
+    profile: 'worker',
     enabled: input.enabled ?? true,
     createdAt: nowIso(),
   }

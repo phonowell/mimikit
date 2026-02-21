@@ -26,7 +26,6 @@ test('collectManagerActionFeedback reports invalid create_task args when prompt 
       attrs: {
         prompt: '',
         title: 'invalid',
-        profile: 'standard',
       },
     },
   ])
@@ -41,7 +40,6 @@ test('collectManagerActionFeedback rejects create_task reading protected state p
       attrs: {
         prompt: 'Read .mimikit/history/2026-02-15.jsonl',
         title: 'forbidden',
-        profile: 'standard',
       },
     },
   ])
@@ -135,7 +133,7 @@ test('collectManagerActionFeedback reports invalid query_history date args', () 
   expect(feedback[0]?.error).toBe('invalid_action_args')
 })
 
-test('collectManagerActionFeedback rejects compress_context without manager session', () => {
+test('collectManagerActionFeedback rejects compress_context when session is unavailable', () => {
   const feedback = collectManagerActionFeedback([
     {
       name: 'compress_context',
@@ -145,21 +143,37 @@ test('collectManagerActionFeedback rejects compress_context without manager sess
   expect(feedback).toHaveLength(1)
   expect(feedback[0]?.action).toBe('compress_context')
   expect(feedback[0]?.error).toBe('action_execution_rejected')
+  expect(feedback[0]?.hint).toContain('无可压缩的 manager 会话')
+})
+
+test('collectManagerActionFeedback accepts compress_context with active session', () => {
+  const feedback = collectManagerActionFeedback(
+    [
+      {
+        name: 'compress_context',
+        attrs: {},
+      },
+    ],
+    {
+      hasPlannerSession: true,
+    },
+  )
+  expect(feedback).toHaveLength(0)
 })
 
 test('parseActions extracts create_task action and strips tag text', () => {
   const output =
-    '好的，我先创建一个任务。\\n\\n<M:create_task prompt="读取文件，根据反馈补充\\\"编排引擎\\\"定位；短时间定义为<30秒；禁止>50条词表规则。" title="第一轮优化 manager prompt" profile="standard" />'
+    '好的，我先创建一个任务。\\n\\n<M:create_task prompt="读取文件，根据反馈补充\\\"编排引擎\\\"定位；短时间定义为<30秒；禁止>50条词表规则。" title="第一轮优化 manager prompt" />'
   const parsed = parseActions(output)
   expect(parsed.actions).toHaveLength(1)
   expect(parsed.actions[0]?.attrs.title).toBe('第一轮优化 manager prompt')
-  expect(parsed.actions[0]?.attrs.profile).toBe('standard')
+  expect(parsed.actions[0]?.attrs.profile).toBeUndefined()
   expect(parsed.text).not.toContain('<M:create_task')
 })
 
 test('collectManagerActionFeedback ignores valid create_task action', () => {
   const output =
-    '好的，我先创建一个任务。\\n\\n<M:create_task prompt="读取文件，根据反馈补充\\\"编排引擎\\\"定位；短时间定义为<30秒；禁止>50条词表规则。" title="第一轮优化 manager prompt" profile="standard" />'
+    '好的，我先创建一个任务。\\n\\n<M:create_task prompt="读取文件，根据反馈补充\\\"编排引擎\\\"定位；短时间定义为<30秒；禁止>50条词表规则。" title="第一轮优化 manager prompt" />'
   const parsed = parseActions(output)
   if (!parsed.actions[0]) throw new Error('action must be parsed')
   const feedback = collectManagerActionFeedback(

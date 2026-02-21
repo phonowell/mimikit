@@ -15,6 +15,7 @@ export type RuntimeSnapshot = {
     resultsCursor: number
   }
   plannerSessionId?: string
+  managerCompressedContext?: string
 }
 
 const taskCancelSchema = z
@@ -35,7 +36,7 @@ const taskResultSchema = z
     usage: tokenUsageSchema.optional(),
     title: z.string().optional(),
     archivePath: z.string().optional(),
-    profile: z.enum(['standard', 'specialist', 'deferred']).optional(),
+    profile: z.enum(['worker']).optional(),
     cancel: taskCancelSchema.optional(),
   })
   .strict()
@@ -47,7 +48,7 @@ const taskSchema = z
     prompt: z.string(),
     title: z.string(),
     cron: z.string().optional(),
-    profile: z.enum(['standard', 'specialist', 'deferred']),
+    profile: z.enum(['worker']),
     status: z.enum(['pending', 'running', 'succeeded', 'failed', 'canceled']),
     createdAt: z.string(),
     startedAt: z.string().optional(),
@@ -68,7 +69,7 @@ const cronJobSchema = z
     scheduledAt: z.string().trim().min(1).optional(),
     prompt: z.string(),
     title: z.string(),
-    profile: z.enum(['standard', 'specialist', 'deferred']),
+    profile: z.enum(['worker']),
     enabled: z.boolean(),
     disabledReason: z.enum(['canceled', 'completed']).optional(),
     createdAt: z.string(),
@@ -96,6 +97,7 @@ const runtimeSnapshotSchema = z
       .strict()
       .optional(),
     plannerSessionId: z.string().trim().min(1).optional(),
+    managerCompressedContext: z.string().trim().min(1).optional(),
   })
   .strict()
 
@@ -129,6 +131,9 @@ export const parseRuntimeSnapshot = (value: unknown): RuntimeSnapshot => {
     ...(parsed.queues ? { queues: parsed.queues } : {}),
     ...(parsed.plannerSessionId
       ? { plannerSessionId: parsed.plannerSessionId }
+      : {}),
+    ...(parsed.managerCompressedContext
+      ? { managerCompressedContext: parsed.managerCompressedContext }
       : {}),
   }
 }

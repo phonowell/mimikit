@@ -30,11 +30,7 @@ const formatElapsedText = (elapsedMs, hasUsage) => {
   return hasUsage ? `· ${label}` : label
 }
 
-const resolveProfileText = (task) => {
-  if (task?.profile === 'manager') return 'manager'
-  if (task?.profile === 'specialist') return 'specialist'
-  return 'standard'
-}
+const resolveProfileText = () => 'worker'
 
 const parseIsoScheduleDate = (value) => {
   if (typeof value !== 'string') return null

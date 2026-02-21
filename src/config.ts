@@ -16,6 +16,8 @@ export type AppConfig = {
   manager: {
     /** Default manager model */
     model: string
+    /** Manager reasoning effort */
+    modelReasoningEffort: ModelReasoningEffort
     prompt: {
       /** Hard token limit for manager prompt */
       maxTokens: number
@@ -32,10 +34,6 @@ export type AppConfig = {
       /** Task list retention byte limit */
       maxBytes: number
     }
-    session: {
-      /** Timeout for manager session summarize operations (ms) */
-      compressTimeoutMs: number
-    }
   }
   /** Worker execution configuration */
   worker: {
@@ -44,17 +42,9 @@ export type AppConfig = {
       maxAttempts: number
       backoffMs: number
     }
-    profiles: {
-      standard: {
-        timeoutMs: number
-        model: string
-      }
-      specialist: {
-        timeoutMs: number
-        model: string
-        modelReasoningEffort: ModelReasoningEffort
-      }
-    }
+    timeoutMs: number
+    model: string
+    modelReasoningEffort: ModelReasoningEffort
   }
 }
 

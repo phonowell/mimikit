@@ -93,10 +93,14 @@ export const runManagerBatch = async (params: {
       ...(extra?.actionFeedback
         ? { actionFeedback: extra.actionFeedback }
         : {}),
+      ...(runtime.managerCompressedContext
+        ? { compressedContext: runtime.managerCompressedContext }
+        : {}),
       ...(runtime.lastUserMeta
         ? { env: { lastUser: runtime.lastUserMeta } }
         : {}),
       model: runtime.config.manager.model,
+      modelReasoningEffort: runtime.config.manager.modelReasoningEffort,
       ...(runtime.plannerSessionId
         ? { sessionId: runtime.plannerSessionId }
         : {}),
@@ -151,10 +155,8 @@ export const runManagerBatch = async (params: {
         enabledCronJobIds: new Set(
           runtime.cronJobs.filter((job) => job.enabled).map((job) => job.id),
         ),
+        hasPlannerSession: Boolean(runtime.plannerSessionId),
         scheduleNowIso,
-        ...(runtime.plannerSessionId
-          ? { managerSessionId: runtime.plannerSessionId }
-          : {}),
       })
       const queryRequest = pickQueryHistoryRequest(parsed.actions)
       const queryKey = queryRequest

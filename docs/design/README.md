@@ -1,6 +1,6 @@
 # 系统设计（v7）
 
-> 当前架构：`manager(role) / worker(profile)`。
+> 当前架构：`manager(role) / worker(single)`。
 
 ## 阅读路径
 

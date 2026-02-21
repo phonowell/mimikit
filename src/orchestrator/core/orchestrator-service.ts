@@ -36,7 +36,7 @@ import { waitForUiSignal } from './ui-signal.js'
 import { notifyWorkerLoop } from './worker-signal.js'
 
 import type { RuntimeState, UiWakeKind, UserMeta } from './runtime-state.js'
-import type { CronJob, Task, WorkerProfile } from '../../types/index.js'
+import type { CronJob, Task } from '../../types/index.js'
 
 const SHUTDOWN_MANAGER_WAIT_POLL_MS = 50
 
@@ -183,7 +183,6 @@ export class Orchestrator {
     scheduledAt?: string
     prompt: string
     title?: string
-    profile?: WorkerProfile
     enabled?: boolean
   }): Promise<CronJob> {
     return addCronJob(this.runtime, input)

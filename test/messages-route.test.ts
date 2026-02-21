@@ -143,7 +143,7 @@ test('task archive route returns live snapshot when archive is not created yet',
     fingerprint: 'fp-live-1',
     prompt: 'run a quick summary',
     title: 'Quick Summary',
-    profile: 'standard',
+    profile: 'worker',
     status: 'pending',
     createdAt: '2026-02-10T00:00:00.000Z',
   }
@@ -174,7 +174,7 @@ test('task archive route returns live cron snapshot when archive is not created 
     id: 'cron-archive-live-1',
     prompt: 'daily digest',
     title: 'Daily Digest',
-    profile: 'deferred',
+    profile: 'worker',
     enabled: true,
     createdAt: '2026-02-10T00:00:00.000Z',
     cron: '0 9 * * *',
@@ -185,7 +185,7 @@ test('task archive route returns live cron snapshot when archive is not created 
         id: string
         prompt: string
         title: string
-        profile: 'deferred'
+        profile: 'worker'
         enabled: boolean
         createdAt: string
         cron: string
@@ -217,7 +217,7 @@ test('task archive route falls back to live snapshot when archive file is missin
     fingerprint: 'fp-live-2',
     prompt: 'explain failure cause',
     title: 'Failure Cause',
-    profile: 'standard',
+    profile: 'worker',
     status: 'failed',
     createdAt: '2026-02-10T00:00:00.000Z',
     completedAt: '2026-02-10T00:00:10.000Z',
@@ -229,7 +229,7 @@ test('task archive route falls back to live snapshot when archive file is missin
       output: 'network timeout',
       durationMs: 10000,
       completedAt: '2026-02-10T00:00:10.000Z',
-      profile: 'standard',
+      profile: 'worker',
     },
   }
   ;(
