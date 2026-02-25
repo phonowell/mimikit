@@ -1,7 +1,7 @@
 import { appendLog } from '../log/append.js'
 import { bestEffort, logSafeError } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
-import { notifyUiSignal } from '../orchestrator/core/ui-signal.js'
+import { notifyUiSignal } from '../orchestrator/core/signals.js'
 import { isVisibleToAgent } from '../shared/message-visibility.js'
 import { nowIso } from '../shared/utils.js'
 import { appendHistory } from '../storage/history-jsonl.js'

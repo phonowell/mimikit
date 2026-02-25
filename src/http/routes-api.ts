@@ -1,16 +1,10 @@
-import { buildPayloadEtag, replyWithEtag } from './etag.js'
-import {
-  DEFAULT_MESSAGE_LIMIT,
-  DEFAULT_TASK_LIMIT,
-  parseInputBody,
-  parseMessageLimit,
-  parseTaskLimit,
-} from './helpers.js'
-import { registerControlRoutes } from './routes-api-control-routes.js'
+import { createHash } from 'node:crypto'
+
+import { logSafeError } from '../log/safe.js'
+import { clearStateDir, parseInputBody } from './helpers.js'
 import {
   registerTaskArchiveRoute,
   registerTaskCancelRoute,
-  registerTaskProgressRoute,
 } from './routes-api-task-routes.js'
 
 import type { AppConfig } from '../config.js'
@@ -19,15 +13,53 @@ import type { UiAgentStream } from '../orchestrator/core/runtime-state.js'
 import type { TokenUsage } from '../types/index.js'
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 
+const comparableEtag = (value: string): string =>
+  value.trim().replace(/^W\//, '')
+
+const matchesIfNoneMatch = (ifNoneMatch: unknown, etag: string): boolean => {
+  if (typeof ifNoneMatch !== 'string') return false
+  const candidates = ifNoneMatch
+    .split(',')
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0)
+  if (candidates.includes('*')) return true
+  const normalizedEtag = comparableEtag(etag)
+  return candidates.some(
+    (candidate) => comparableEtag(candidate) === normalizedEtag,
+  )
+}
+
+const buildPayloadEtag = (prefix: string, payload: unknown): string => {
+  const digest = createHash('sha1')
+    .update(JSON.stringify(payload))
+    .digest('base64url')
+  return `W/"${prefix}-${digest}"`
+}
+
+const replyWithEtag = <TPayload>(params: {
+  request: FastifyRequest
+  reply: FastifyReply
+  prefix: string
+  payload: TPayload
+}): TPayload | undefined => {
+  const etag = buildPayloadEtag(params.prefix, params.payload)
+  params.reply.header('ETag', etag)
+  if (matchesIfNoneMatch(params.request.headers['if-none-match'], etag)) {
+    params.reply.code(304).send()
+    return undefined
+  }
+  return params.payload
+}
+
 const SSE_HEARTBEAT_MS = 15_000
 const SSE_RETRY_MS = 1_500
 const getDefaultSnapshot = (orchestrator: Orchestrator) =>
-  orchestrator.getWebUiSnapshot(DEFAULT_MESSAGE_LIMIT, DEFAULT_TASK_LIMIT)
+  orchestrator.getWebUiSnapshot()
 
 const buildSnapshotHint = (orchestrator: Orchestrator) => ({
   status: orchestrator.getStatus(),
-  tasks: orchestrator.getTasks(DEFAULT_TASK_LIMIT),
-  todos: orchestrator.getTodos(DEFAULT_TASK_LIMIT),
+  tasks: orchestrator.getTasks(),
+  todos: orchestrator.getTodos(),
   stream: cloneUiStream(orchestrator.getWebUiStreamSnapshot()),
 })
 
@@ -207,34 +239,34 @@ export const registerApiRoutes = (
     reply.send({ id })
   })
 
-  app.get('/api/messages', async (request, reply) => {
-    const query = request.query as Record<string, unknown> | undefined
-    const { messages, mode } = await orchestrator.getChatMessages(
-      parseMessageLimit(query?.limit),
-      typeof query?.afterId === 'string' ? query.afterId : undefined,
-    )
-    return replyWithEtag({
-      request,
-      reply,
-      prefix: 'messages',
-      payload: { messages, mode },
+  registerTaskArchiveRoute(app, orchestrator, config)
+  registerTaskCancelRoute(app, orchestrator)
+
+  const scheduleExit = (afterPersist?: () => Promise<void>): void => {
+    setTimeout(() => {
+      void (async () => {
+        await orchestrator.stopAndPersist()
+        if (afterPersist) await afterPersist()
+        process.exit(75)
+      })()
+    }, 100)
+  }
+
+  app.post('/api/restart', (_request, reply) => {
+    reply.send({ ok: true })
+    scheduleExit()
+  })
+
+  app.post('/api/reset', (_request, reply) => {
+    reply.send({ ok: true })
+    scheduleExit(async () => {
+      try {
+        await clearStateDir(config.workDir)
+      } catch (error) {
+        await logSafeError('http: reset', error)
+      }
     })
   })
-
-  app.get('/api/tasks', (request) => {
-    const query = request.query as Record<string, unknown> | undefined
-    return orchestrator.getTasks(parseTaskLimit(query?.limit))
-  })
-
-  app.get('/api/todos', (request) => {
-    const query = request.query as Record<string, unknown> | undefined
-    return orchestrator.getTodos(parseTaskLimit(query?.limit))
-  })
-
-  registerTaskArchiveRoute(app, orchestrator, config)
-  registerTaskProgressRoute(app, orchestrator, config)
-  registerTaskCancelRoute(app, orchestrator)
-  registerControlRoutes(app, orchestrator, config)
 }
 
 export const registerNotFoundHandler = (app: FastifyInstance): void => {

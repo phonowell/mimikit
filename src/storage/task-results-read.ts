@@ -47,12 +47,7 @@ const parseTaskResultArchive = (
   const usage = parseTokenUsageJson(parsed.header.usage)
   const cancelSource = parseCancelSource(parsed.header.cancel_source)
   const cancel: TaskCancelMeta | undefined = cancelSource
-    ? {
-        source: cancelSource,
-        ...(parsed.header.cancel_reason
-          ? { reason: parsed.header.cancel_reason }
-          : {}),
-      }
+    ? { source: cancelSource, ...(parsed.header.cancel_reason ? { reason: parsed.header.cancel_reason } : {}) }
     : undefined
 
   return {

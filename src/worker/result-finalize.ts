@@ -1,6 +1,6 @@
 import { appendLog } from '../log/append.js'
 import { bestEffort, safeOrUndefined } from '../log/safe.js'
-import { notifyManagerLoop } from '../orchestrator/core/manager-signal.js'
+import { notifyManagerLoop } from '../orchestrator/core/signals.js'
 import { nowIso } from '../shared/utils.js'
 import { appendTaskResultArchive } from '../storage/task-results.js'
 import { publishWorkerResult } from '../streams/queues.js'

@@ -3,6 +3,11 @@ export const parseIsoMs = (value: string): number | undefined => {
   return Number.isFinite(timestamp) ? timestamp : undefined
 }
 
+export const parseIsoToMs = (value: string): number => {
+  const ts = Date.parse(value)
+  return Number.isFinite(ts) ? ts : 0
+}
+
 export const computeRecencyWeight = (
   timestampMs: number,
   oldestMs: number,

@@ -49,13 +49,12 @@ const buildCodexProviderError = (params: {
   })
 }
 
+const sandboxModeFor = (role: string) =>
+  role === 'worker' ? ('danger-full-access' as const) : ('read-only' as const)
+
 const toLogContext = (
   request: CodexSdkProviderRequest,
 ): Record<string, unknown> => {
-  const sandboxMode =
-    request.role === 'worker'
-      ? ('danger-full-access' as const)
-      : ('read-only' as const)
   return {
     role: request.role,
     timeoutMs: request.timeoutMs,
@@ -65,7 +64,7 @@ const toLogContext = (
     promptLines: request.prompt.split(/\r?\n/).length,
     outputSchema: Boolean(request.outputSchema),
     workingDirectory: request.workDir,
-    sandboxMode,
+    sandboxMode: sandboxModeFor(request.role),
     approvalPolicy,
     ...(request.model ? { model: request.model } : {}),
     ...(request.logContext ?? {}),
@@ -84,17 +83,13 @@ const appendLlmLog = async (
 }
 
 const createThread = (request: CodexSdkProviderRequest) => {
-  const sandboxMode =
-    request.role === 'worker'
-      ? ('danger-full-access' as const)
-      : ('read-only' as const)
   const modelReasoningEffort =
     request.modelReasoningEffort ?? HARDCODED_MODEL_REASONING_EFFORT
   const threadOptions = {
     workingDirectory: request.workDir,
     ...(request.model ? { model: request.model } : {}),
     modelReasoningEffort,
-    sandboxMode,
+    sandboxMode: sandboxModeFor(request.role),
     approvalPolicy,
   }
   const thread = request.threadId

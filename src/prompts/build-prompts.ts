@@ -15,12 +15,6 @@ import {
   renderPromptTemplate,
 } from './format.js'
 import { loadPromptFile, loadSystemPrompt } from './prompt-loader.js'
-import {
-  buildTaskResultDateHints,
-  collectResultTaskIds,
-  collectTaskResults,
-  mergeTaskResults,
-} from './task-results-merge.js'
 
 import type {
   CronJob,
@@ -34,6 +28,40 @@ import type {
 } from '../types/index.js'
 
 export type { ManagerEnv } from '../types/index.js'
+
+const mergeTaskResults = (
+  primary: TaskResult[],
+  secondary: TaskResult[],
+): TaskResult[] => {
+  const merged = new Map<string, TaskResult>()
+  for (const result of secondary) merged.set(result.taskId, result)
+  for (const result of primary) merged.set(result.taskId, result)
+  const values = Array.from(merged.values())
+  values.sort((a, b) => Date.parse(b.completedAt) - Date.parse(a.completedAt))
+  return values
+}
+
+const collectTaskResults = (tasks: Task[]): TaskResult[] =>
+  tasks
+    .filter((task): task is Task & { result: TaskResult } =>
+      Boolean(task.result),
+    )
+    .map((task) => task.result)
+
+const collectResultTaskIds = (tasks: Task[]): string[] =>
+  tasks
+    .filter((task) => task.status !== 'pending' && task.status !== 'running')
+    .map((task) => task.id)
+
+const buildTaskResultDateHints = (tasks: Task[]): Record<string, string> =>
+  Object.fromEntries(
+    tasks
+      .filter(
+        (task): task is Task & { completedAt: string } =>
+          typeof task.completedAt === 'string' && task.completedAt.length > 0,
+      )
+      .map((task) => [task.id, task.completedAt.slice(0, 10)]),
+  )
 
 const readOptionalMarkdown = async (path: string): Promise<string> => {
   try {

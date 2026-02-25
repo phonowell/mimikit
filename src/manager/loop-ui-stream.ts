@@ -1,5 +1,5 @@
 import { parseActions } from '../actions/protocol/parse.js'
-import { notifyUiSignal } from '../orchestrator/core/ui-signal.js'
+import { notifyUiSignal } from '../orchestrator/core/signals.js'
 import { isSameUsage, mergeUsageMonotonic } from '../shared/token-usage.js'
 import { nowIso } from '../shared/utils.js'
 

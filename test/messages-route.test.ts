@@ -3,7 +3,6 @@ import { expect, test } from 'vitest'
 
 import { defaultConfig } from '../src/config.js'
 import { registerApiRoutes } from '../src/http/routes-api.js'
-import type { ChatMessagesMode } from '../src/orchestrator/read-model/chat-view.js'
 import type { Task } from '../src/types/index.js'
 import { createOrchestratorStub } from './helpers/orchestrator-stub.js'
 
@@ -35,28 +34,6 @@ test('status route returns runtime id', async () => {
     ok: true,
     runtimeId: 'runtime-stub-1',
   })
-  await app.close()
-})
-
-test('messages route forwards afterId and returns mode', async () => {
-  const app = fastify()
-  const { orchestrator, calls } = createOrchestratorStub()
-  const config = defaultConfig({ workDir: '.mimikit' })
-  registerApiRoutes(app, orchestrator, config)
-  const response = await app.inject({
-    method: 'GET',
-    url: '/api/messages?limit=20&afterId=msg-123',
-  })
-
-  expect(response.statusCode).toBe(200)
-  const body = response.json() as {
-    messages: Array<{ id: string }>
-    mode: ChatMessagesMode
-  }
-  expect(body.mode).toBe('delta')
-  expect(body.messages[0]?.id).toBe('delta-1')
-  expect(calls).toEqual([{ limit: 20, afterId: 'msg-123' }])
-
   await app.close()
 })
 
@@ -120,48 +97,6 @@ test('input route rejects invalid payload', async () => {
   expect(textMissing.json()).toEqual({ error: 'text is required' })
 
   expect(addInputCalls).toHaveLength(0)
-
-  await app.close()
-})
-
-test('messages route returns 304 when If-None-Match hits', async () => {
-  const app = fastify()
-  const { orchestrator } = createOrchestratorStub()
-  const config = defaultConfig({ workDir: '.mimikit' })
-  registerApiRoutes(app, orchestrator, config)
-
-  const first = await app.inject({
-    method: 'GET',
-    url: '/api/messages?limit=20',
-  })
-  expect(first.statusCode).toBe(200)
-  const etag = first.headers.etag
-  expect(typeof etag).toBe('string')
-
-  const second = await app.inject({
-    method: 'GET',
-    url: '/api/messages?limit=20',
-    headers: { 'if-none-match': String(etag) },
-  })
-  expect(second.statusCode).toBe(304)
-
-  await app.close()
-})
-
-test('todos route forwards limit and returns items payload', async () => {
-  const app = fastify()
-  const { orchestrator, todoLimitCalls } = createOrchestratorStub()
-  const config = defaultConfig({ workDir: '.mimikit' })
-  registerApiRoutes(app, orchestrator, config)
-
-  const response = await app.inject({
-    method: 'GET',
-    url: '/api/todos?limit=12',
-  })
-
-  expect(response.statusCode).toBe(200)
-  expect(response.json()).toEqual({ items: [] })
-  expect(todoLimitCalls).toEqual([12])
 
   await app.close()
 })

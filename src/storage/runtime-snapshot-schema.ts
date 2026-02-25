@@ -124,14 +124,9 @@ const normalizeTask = (task: z.infer<typeof taskSchema>): Task =>
   stripUndefined({
     ...task,
     usage: normalizeTokenUsage(task.usage),
-    ...(task.result
-      ? {
-          result: stripUndefined({
-            ...task.result,
-            usage: normalizeTokenUsage(task.result.usage),
-          }),
-        }
-      : {}),
+    result: task.result
+      ? stripUndefined({ ...task.result, usage: normalizeTokenUsage(task.result.usage) })
+      : undefined,
   }) as Task
 
 const normalizeCronJob = (cronJob: z.infer<typeof cronJobSchema>): CronJob =>
@@ -143,25 +138,13 @@ const normalizeIdleIntent = (
 
 export const parseRuntimeSnapshot = (value: unknown): RuntimeSnapshot => {
   const parsed = runtimeSnapshotSchema.parse(value)
-  return {
+  return stripUndefined({
     tasks: parsed.tasks.map(normalizeTask),
-    ...(parsed.cronJobs
-      ? { cronJobs: parsed.cronJobs.map(normalizeCronJob) }
-      : {}),
-    ...(parsed.idleIntents
-      ? { idleIntents: parsed.idleIntents.map(normalizeIdleIntent) }
-      : {}),
-    ...(parsed.idleIntentArchive
-      ? {
-          idleIntentArchive: parsed.idleIntentArchive.map(normalizeIdleIntent),
-        }
-      : {}),
-    ...(parsed.managerTurn !== undefined
-      ? { managerTurn: parsed.managerTurn }
-      : {}),
-    ...(parsed.queues ? { queues: parsed.queues } : {}),
-    ...(parsed.managerCompressedContext
-      ? { managerCompressedContext: parsed.managerCompressedContext }
-      : {}),
-  }
+    cronJobs: parsed.cronJobs?.map(normalizeCronJob),
+    idleIntents: parsed.idleIntents?.map(normalizeIdleIntent),
+    idleIntentArchive: parsed.idleIntentArchive?.map(normalizeIdleIntent),
+    managerTurn: parsed.managerTurn,
+    queues: parsed.queues,
+    managerCompressedContext: parsed.managerCompressedContext,
+  }) as RuntimeSnapshot
 }

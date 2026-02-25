@@ -1,104 +1,44 @@
 import type { TokenUsage } from '../types/index.js'
 
-const asFiniteNumber = (value: unknown): number | undefined =>
-  typeof value === 'number' && Number.isFinite(value) ? value : undefined
+type UsageKey = keyof TokenUsage
 
-const keepMonotonicUsageValue = (
-  current: number | undefined,
-  next: number | undefined,
-): number | undefined => {
-  if (next === undefined) return current
-  if (current === undefined) return next
-  return Math.max(current, next)
-}
+const USAGE_KEYS: UsageKey[] = [
+  'input',
+  'output',
+  'inputCacheRead',
+  'inputCacheWrite',
+  'outputCache',
+  'total',
+  'sessionTotal',
+]
 
-const toTokenUsage = (params: {
-  input: number | undefined
-  output: number | undefined
-  inputCacheRead: number | undefined
-  inputCacheWrite: number | undefined
-  outputCache: number | undefined
-  total: number | undefined
-  sessionTotal: number | undefined
-}): TokenUsage | undefined => {
-  if (
-    params.input === undefined &&
-    params.output === undefined &&
-    params.inputCacheRead === undefined &&
-    params.inputCacheWrite === undefined &&
-    params.outputCache === undefined &&
-    params.total === undefined &&
-    params.sessionTotal === undefined
-  )
-    return undefined
-  return {
-    ...(params.input !== undefined ? { input: params.input } : {}),
-    ...(params.output !== undefined ? { output: params.output } : {}),
-    ...(params.inputCacheRead !== undefined
-      ? { inputCacheRead: params.inputCacheRead }
-      : {}),
-    ...(params.inputCacheWrite !== undefined
-      ? { inputCacheWrite: params.inputCacheWrite }
-      : {}),
-    ...(params.outputCache !== undefined
-      ? { outputCache: params.outputCache }
-      : {}),
-    ...(params.total !== undefined ? { total: params.total } : {}),
-    ...(params.sessionTotal !== undefined
-      ? { sessionTotal: params.sessionTotal }
-      : {}),
+const fin = (v: unknown): number | undefined =>
+  typeof v === 'number' && Number.isFinite(v) ? v : undefined
+
+const toTokenUsage = (
+  values: Partial<Record<UsageKey, number | undefined>>,
+): TokenUsage | undefined => {
+  const result: TokenUsage = {}
+  for (const key of USAGE_KEYS) {
+    const v = values[key]
+    if (v !== undefined) result[key] = v
   }
+  return Object.keys(result).length > 0 ? result : undefined
 }
 
 export const mergeUsageMonotonic = (
   current: TokenUsage | undefined,
   next: TokenUsage | undefined,
 ): TokenUsage | undefined => {
-  const input = keepMonotonicUsageValue(
-    asFiniteNumber(current?.input),
-    asFiniteNumber(next?.input),
-  )
-  const output = keepMonotonicUsageValue(
-    asFiniteNumber(current?.output),
-    asFiniteNumber(next?.output),
-  )
-  const inputCacheRead = keepMonotonicUsageValue(
-    asFiniteNumber(current?.inputCacheRead),
-    asFiniteNumber(next?.inputCacheRead),
-  )
-  const inputCacheWrite = keepMonotonicUsageValue(
-    asFiniteNumber(current?.inputCacheWrite),
-    asFiniteNumber(next?.inputCacheWrite),
-  )
-  const outputCache = keepMonotonicUsageValue(
-    asFiniteNumber(current?.outputCache),
-    asFiniteNumber(next?.outputCache),
-  )
-  const total = keepMonotonicUsageValue(
-    asFiniteNumber(current?.total),
-    asFiniteNumber(next?.total),
-  )
-  const sessionTotal = keepMonotonicUsageValue(
-    asFiniteNumber(current?.sessionTotal),
-    asFiniteNumber(next?.sessionTotal),
-  )
-  return toTokenUsage({
-    input,
-    output,
-    inputCacheRead,
-    inputCacheWrite,
-    outputCache,
-    total,
-    sessionTotal,
-  })
-}
-
-const sumUsageValue = (
-  current: number | undefined,
-  next: number | undefined,
-): number | undefined => {
-  if (next === undefined) return current
-  return (current ?? 0) + next
+  const values: Partial<Record<UsageKey, number | undefined>> = {}
+  for (const key of USAGE_KEYS) {
+    const c = fin(current?.[key])
+    const n = fin(next?.[key])
+    if (n === undefined) values[key] = c
+    else if (c === undefined) values[key] = n
+    else values[key] = Math.max(c, n)
+  }
+  return toTokenUsage(values)
 }
 
 export const mergeUsageAdditive = (
@@ -106,53 +46,17 @@ export const mergeUsageAdditive = (
   next: TokenUsage | undefined,
 ): TokenUsage | undefined => {
   if (!next) return current
-  const input = sumUsageValue(
-    asFiniteNumber(current?.input),
-    asFiniteNumber(next.input),
-  )
-  const output = sumUsageValue(
-    asFiniteNumber(current?.output),
-    asFiniteNumber(next.output),
-  )
-  const inputCacheRead = sumUsageValue(
-    asFiniteNumber(current?.inputCacheRead),
-    asFiniteNumber(next.inputCacheRead),
-  )
-  const inputCacheWrite = sumUsageValue(
-    asFiniteNumber(current?.inputCacheWrite),
-    asFiniteNumber(next.inputCacheWrite),
-  )
-  const outputCache = sumUsageValue(
-    asFiniteNumber(current?.outputCache),
-    asFiniteNumber(next.outputCache),
-  )
-  const total = sumUsageValue(
-    asFiniteNumber(current?.total),
-    asFiniteNumber(next.total),
-  )
-  const sessionTotal = sumUsageValue(
-    asFiniteNumber(current?.sessionTotal),
-    asFiniteNumber(next.sessionTotal),
-  )
-  return toTokenUsage({
-    input,
-    output,
-    inputCacheRead,
-    inputCacheWrite,
-    outputCache,
-    total,
-    sessionTotal,
-  })
+  const values: Partial<Record<UsageKey, number | undefined>> = {}
+  for (const key of USAGE_KEYS) {
+    const c = fin(current?.[key])
+    const n = fin(next[key])
+    if (n === undefined) values[key] = c
+    else values[key] = (c ?? 0) + n
+  }
+  return toTokenUsage(values)
 }
 
 export const isSameUsage = (
   left: TokenUsage | undefined,
   right: TokenUsage | undefined,
-): boolean =>
-  left?.input === right?.input &&
-  left?.output === right?.output &&
-  left?.inputCacheRead === right?.inputCacheRead &&
-  left?.inputCacheWrite === right?.inputCacheWrite &&
-  left?.outputCache === right?.outputCache &&
-  left?.total === right?.total &&
-  left?.sessionTotal === right?.sessionTotal
+): boolean => USAGE_KEYS.every((key) => left?.[key] === right?.[key])

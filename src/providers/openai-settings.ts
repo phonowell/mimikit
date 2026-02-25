@@ -6,7 +6,6 @@ import read from 'fire-keeper/read'
 
 import { readJson } from '../fs/json.js'
 import { safe } from '../log/safe.js'
-import { readBooleanFlag, readNonEmptyString } from '../shared/input-parsing.js'
 import { stripUndefined } from '../shared/utils.js'
 
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
@@ -20,6 +19,22 @@ export type CodexSettings = {
 }
 
 export const HARDCODED_MODEL_REASONING_EFFORT: ModelReasoningEffort = 'high'
+
+const readNonEmptyString = (value: unknown): string | undefined => {
+  if (typeof value !== 'string') return undefined
+  const normalized = value.trim()
+  return normalized.length > 0 ? normalized : undefined
+}
+
+const readBooleanFlag = (value: unknown): boolean | undefined => {
+  if (typeof value === 'boolean') return value
+  if (typeof value !== 'string') return undefined
+  const normalized = value.trim()
+  if (!normalized) return undefined
+  if (/^(1|true|yes|on)$/i.test(normalized)) return true
+  if (/^(0|false|no|off)$/i.test(normalized)) return false
+  return undefined
+}
 
 const envString = (key: string): string | undefined =>
   readNonEmptyString(process.env[key])

@@ -1,6 +1,6 @@
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
-import { notifyManagerLoop } from '../orchestrator/core/manager-signal.js'
+import { notifyManagerLoop } from '../orchestrator/core/signals.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import { selectIdleIntentForTrigger } from '../orchestrator/read-model/intent-select.js'
 import { formatSystemEventText } from '../shared/system-event.js'
@@ -94,16 +94,12 @@ export const idleWakeLoop = async (runtime: RuntimeState): Promise<void> => {
         await sleep(IDLE_CHECK_INTERVAL_MS)
         continue
       }
-      if (isManagerBusy(runtime) || isWorkerBusy(runtime)) {
-        await sleep(IDLE_CHECK_INTERVAL_MS)
-        continue
-      }
       const idleSinceMs = Math.max(
         runtime.lastManagerActivityAtMs,
         runtime.lastWorkerActivityAtMs,
       )
       const idleForMs = nowMs - idleSinceMs
-      if (idleForMs < IDLE_TRIGGER_DELAY_MS) {
+      if (isManagerBusy(runtime) || isWorkerBusy(runtime) || idleForMs < IDLE_TRIGGER_DELAY_MS) {
         await sleep(IDLE_CHECK_INTERVAL_MS)
         continue
       }

@@ -1,9 +1,8 @@
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
-import { notifyManagerLoop } from '../orchestrator/core/manager-signal.js'
+import { notifyManagerLoop, notifyWorkerLoop } from '../orchestrator/core/signals.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import { markTaskCanceled } from '../orchestrator/core/task-state.js'
-import { notifyWorkerLoop } from '../orchestrator/core/worker-signal.js'
 import { nowIso } from '../shared/utils.js'
 import { publishWorkerResult } from '../streams/queues.js'
 
@@ -64,8 +63,7 @@ const pushCanceledResult = async (
   result: TaskResult,
 ) => {
   const archivePath = await archiveTaskResult(runtime, task, result, 'cancel')
-  if (archivePath) result.archivePath = archivePath
-  if (archivePath) task.archivePath = archivePath
+  if (archivePath) result.archivePath = task.archivePath = archivePath
   await publishWorkerResult({
     paths: runtime.paths,
     payload: result,

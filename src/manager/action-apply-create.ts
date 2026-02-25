@@ -5,7 +5,7 @@ import {
   enqueueTask,
   findActiveTaskBySemanticKey,
 } from '../orchestrator/core/task-state.js'
-import { notifyWorkerLoop } from '../orchestrator/core/worker-signal.js'
+import { notifyWorkerLoop } from '../orchestrator/core/signals.js'
 import { appendTaskSystemMessage } from '../orchestrator/read-model/task-history.js'
 import { newId, nowIso } from '../shared/utils.js'
 import { cancelTask } from '../worker/cancel-task.js'

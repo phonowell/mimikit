@@ -1,12 +1,42 @@
-import { selectByWindow } from './select-window.js'
+import { sortTasksByChangedAt } from '../../prompts/format-base.js'
 
-import type { IdleIntent, IntentPriority } from '../../types/index.js'
+import type { IdleIntent, IntentPriority, Task } from '../../types/index.js'
 
-export type IntentSelectParams = {
+export type WindowSelectParams = {
   minCount: number
   maxCount: number
   maxBytes: number
 }
+
+const normalizeWindowParams = (params: WindowSelectParams): WindowSelectParams => {
+  const minCount = Math.max(0, params.minCount)
+  const maxCount = Math.max(minCount, params.maxCount)
+  const maxBytes = Math.max(0, params.maxBytes)
+  return { minCount, maxCount, maxBytes }
+}
+
+export const selectByWindow = <T>(
+  items: T[],
+  params: WindowSelectParams,
+  estimateBytes: (item: T) => number,
+): T[] => {
+  const normalized = normalizeWindowParams(params)
+  if (items.length === 0 || normalized.maxCount === 0) return []
+  const selected: T[] = []
+  let totalBytes = 0
+  for (const item of items) {
+    const rawBytes = estimateBytes(item)
+    const itemBytes = Number.isFinite(rawBytes) && rawBytes > 0 ? rawBytes : 0
+    totalBytes += itemBytes
+    selected.push(item)
+    if (selected.length >= normalized.maxCount) break
+    if (normalized.maxBytes > 0 && totalBytes > normalized.maxBytes)
+      if (selected.length >= normalized.minCount) break
+  }
+  return selected
+}
+
+export type IntentSelectParams = WindowSelectParams
 
 const PRIORITY_RANK: Record<IntentPriority, number> = {
   high: 0,
@@ -69,3 +99,14 @@ export const selectIdleIntentForTrigger = (
         intent.status === 'pending' && intent.attempts < intent.maxAttempts,
     )
     .sort(comparePriorityFifo)[0]
+
+export const selectRecentTasks = (
+  tasks: Task[],
+  params: WindowSelectParams,
+): Task[] => {
+  if (tasks.length === 0) return []
+  const sorted = sortTasksByChangedAt(tasks)
+  return selectByWindow(sorted, params, (task) =>
+    Buffer.byteLength(JSON.stringify(task), 'utf8'),
+  )
+}

@@ -1,6 +1,6 @@
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
-import { waitForManagerLoopSignal } from '../orchestrator/core/manager-signal.js'
+import { waitForManagerLoopSignal } from '../orchestrator/core/signals.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import { consumeUserInputs, consumeWorkerResults } from '../streams/queues.js'
 

@@ -26,7 +26,7 @@ const shouldTreatAsTaskCancel = (
   error: unknown,
 ): boolean => controller.signal.aborted && isAbortLikeError(error)
 
-const runWorkerModel = (params: {
+const runTaskModel = (params: {
   runtime: RuntimeState
   task: Task
   controller: AbortController
@@ -44,19 +44,6 @@ const runWorkerModel = (params: {
     ...(params.onUsage ? { onUsage: params.onUsage } : {}),
   })
 }
-
-const runTaskModel = (params: {
-  runtime: RuntimeState
-  task: Task
-  controller: AbortController
-  onUsage?: (usage: TokenUsage) => void
-}): Promise<WorkerLlmResult> =>
-  runWorkerModel({
-    runtime: params.runtime,
-    task: params.task,
-    controller: params.controller,
-    ...(params.onUsage ? { onUsage: params.onUsage } : {}),
-  })
 
 const toRetryError = (error: unknown): Error => {
   if (error instanceof Error) return error

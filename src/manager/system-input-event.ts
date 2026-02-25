@@ -15,17 +15,6 @@ export type ManagerSystemEventName = Extract<
   'cron_trigger' | 'idle' | 'intent_trigger'
 >
 
-export const formatManagerSystemEventText = (params: {
-  summary: string
-  event: ManagerSystemEventName
-  payload: Record<string, unknown>
-}): string =>
-  formatSystemEventText({
-    summary: params.summary,
-    event: params.event,
-    payload: params.payload,
-  })
-
 export const publishManagerSystemEventInput = async (params: {
   runtime: RuntimeState
   summary: string
@@ -40,7 +29,7 @@ export const publishManagerSystemEventInput = async (params: {
     id: newId(),
     role: 'system' as const,
     visibility: params.visibility,
-    text: formatManagerSystemEventText({
+    text: formatSystemEventText({
       summary: params.summary,
       event: params.event,
       payload: params.payload,

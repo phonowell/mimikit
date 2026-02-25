@@ -1,23 +1,106 @@
+import { runWithProvider } from '../providers/registry.js'
 import { buildWorkerPrompt } from '../prompts/build-prompts.js'
 import { loadPromptFile } from '../prompts/prompt-loader.js'
-
+import { renderPromptTemplate } from '../prompts/format.js'
+import { mergeUsageAdditive } from '../shared/token-usage.js'
+import { appendTaskProgress } from '../storage/task-progress.js'
 import {
-  appendWorkerProgress,
-  archiveWorkerResult,
-  buildRunModel,
-} from './profiled-runner-helpers.js'
-import {
-  buildContinuePrompt,
-  DONE_MARKER,
-  hasDoneMarker,
-  MAX_RUN_ROUNDS,
-  mergeUsage,
-  stripDoneMarker,
-} from './profiled-runner-utils.js'
+  appendTraceArchiveResult,
+  type TraceArchiveEntry,
+  type TraceArchiveResult,
+} from '../storage/traces-archive.js'
 
-import type { LlmResult, ProviderResult } from './profiled-runner-helpers.js'
 import type { Task, TokenUsage } from '../types/index.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
+
+type LlmResult = {
+  output: string
+  elapsedMs: number
+  usage?: TokenUsage
+}
+
+type ProviderResult = {
+  output: string
+  elapsedMs: number
+  usage?: TokenUsage
+  threadId?: string | null
+}
+
+type RunModelInput = {
+  prompt: string
+  threadId?: string | null
+  onUsage?: (usage: TokenUsage) => void
+}
+
+type BuildRunModelParams = {
+  workDir: string
+  timeoutMs: number
+  model?: string
+  modelReasoningEffort?: ModelReasoningEffort
+  abortSignal?: AbortSignal
+}
+
+const progressType = (phase: 'start' | 'done'): string => `worker_${phase}`
+
+const archiveWorkerResult = (
+  stateDir: string,
+  base: Omit<TraceArchiveEntry, 'prompt' | 'output' | 'ok'>,
+  prompt: string,
+  result: TraceArchiveResult,
+) => appendTraceArchiveResult(stateDir, base, prompt, result)
+
+const buildRunModel =
+  (params: BuildRunModelParams) =>
+  (input: RunModelInput): Promise<ProviderResult> =>
+    runWithProvider({
+      provider: 'codex-sdk',
+      role: 'worker',
+      prompt: input.prompt,
+      workDir: params.workDir,
+      timeoutMs: params.timeoutMs,
+      ...(params.abortSignal ? { abortSignal: params.abortSignal } : {}),
+      ...(params.model ? { model: params.model } : {}),
+      ...(params.modelReasoningEffort
+        ? { modelReasoningEffort: params.modelReasoningEffort }
+        : {}),
+      ...(input.threadId !== undefined ? { threadId: input.threadId } : {}),
+      ...(input.onUsage ? { onUsage: input.onUsage } : {}),
+    })
+
+const appendWorkerProgress = (params: {
+  stateDir: string
+  taskId: string
+  phase: 'start' | 'done'
+  payload: Record<string, unknown>
+}) =>
+  appendTaskProgress({
+    stateDir: params.stateDir,
+    taskId: params.taskId,
+    type: progressType(params.phase),
+    payload: params.payload,
+  })
+
+const DONE_MARKER = '<M:task_done/>'
+const MAX_RUN_ROUNDS = 3
+
+const hasDoneMarker = (output: string): boolean =>
+  output.includes(DONE_MARKER)
+
+const stripDoneMarker = (output: string): string =>
+  output.replaceAll(DONE_MARKER, '').trim()
+
+
+const buildContinuePrompt = (
+  template: string,
+  latestOutput: string,
+  nextRound: number,
+): string =>
+  renderPromptTemplate(template, {
+    done_marker: DONE_MARKER,
+    latest_output: latestOutput.trim(),
+    next_round: String(nextRound),
+    max_rounds: String(MAX_RUN_ROUNDS),
+  })
 
 type WorkerRunnerParams = {
   stateDir: string
@@ -64,7 +147,7 @@ export const runWorker = async (
         prompt: nextPrompt,
         ...(threadId !== undefined ? { threadId } : {}),
         onUsage: (usage) => {
-          totalUsage = mergeUsage(totalUsage, usage)
+          totalUsage = mergeUsageAdditive(totalUsage, usage)
           if (!totalUsage) return
           params.task.usage = totalUsage
           params.onUsage?.(totalUsage)
@@ -73,7 +156,7 @@ export const runWorker = async (
       latestResult = result
       totalElapsedMs += result.elapsedMs
       threadId = result.threadId ?? threadId ?? null
-      totalUsage = mergeUsage(totalUsage, result.usage)
+      totalUsage = mergeUsageAdditive(totalUsage, result.usage)
       if (totalUsage) {
         params.task.usage = totalUsage
         params.onUsage?.(totalUsage)

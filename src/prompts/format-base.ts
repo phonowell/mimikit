@@ -1,14 +1,12 @@
 import { stringify as stringifyYaml } from 'yaml'
 
+import { parseIsoToMs } from '../shared/time.js'
 import type { Task } from '../types/index.js'
+
+export { parseIsoToMs }
 
 export const escapeCdata = (value: string): string =>
   value.replaceAll(']]>', ']]]]><![CDATA[>')
-
-export const parseIsoToMs = (value: string): number => {
-  const ts = Date.parse(value)
-  return Number.isFinite(ts) ? ts : 0
-}
 
 export const resolveTaskChangedAt = (task: Task): string =>
   task.completedAt ?? task.startedAt ?? task.createdAt
@@ -25,20 +23,16 @@ export const normalizeYamlUsage = (
   usage?: Task['usage'],
 ): Task['usage'] | undefined => {
   if (!usage) return
+  const fields = [
+    'input', 'inputCacheRead', 'inputCacheWrite',
+    'output', 'outputCache', 'total', 'sessionTotal',
+  ] as const
   const normalized: Task['usage'] = {}
-  if (typeof usage.input === 'number') normalized.input = usage.input
-  if (typeof usage.inputCacheRead === 'number')
-    normalized.inputCacheRead = usage.inputCacheRead
-  if (typeof usage.inputCacheWrite === 'number')
-    normalized.inputCacheWrite = usage.inputCacheWrite
-  if (typeof usage.output === 'number') normalized.output = usage.output
-  if (typeof usage.outputCache === 'number')
-    normalized.outputCache = usage.outputCache
-  if (typeof usage.total === 'number') normalized.total = usage.total
-  if (typeof usage.sessionTotal === 'number')
-    normalized.sessionTotal = usage.sessionTotal
-  if (Object.keys(normalized).length === 0) return undefined
-  return normalized
+  for (const key of fields) {
+    const v = usage[key]
+    if (typeof v === 'number') normalized[key] = v
+  }
+  return Object.keys(normalized).length > 0 ? normalized : undefined
 }
 
 const yamlReplacer = (_key: unknown, value: unknown): unknown => {

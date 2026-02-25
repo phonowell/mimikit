@@ -3,9 +3,6 @@ import { isAbsolute, relative, resolve } from 'node:path'
 import read from 'fire-keeper/read'
 
 import { buildArchiveDocument } from '../storage/archive-format.js'
-import { readTaskProgress } from '../storage/task-progress.js'
-
-import { resolveRouteId } from './routes-api-route-id.js'
 
 import type { AppConfig } from '../config.js'
 import type { Orchestrator } from '../orchestrator/core/orchestrator-service.js'
@@ -13,6 +10,21 @@ import type { CronJob, Task } from '../types/index.js'
 import type { FastifyInstance, FastifyReply } from 'fastify'
 
 const MARKDOWN_CONTENT_TYPE = 'text/markdown; charset=utf-8'
+
+const resolveRouteId = (
+  params: unknown,
+  reply: FastifyReply,
+  field: 'task',
+): string | undefined => {
+  const id =
+    params && typeof params === 'object' && 'id' in params
+      ? (params as { id?: unknown }).id
+      : undefined
+  const value = typeof id === 'string' ? id.trim() : ''
+  if (value) return value
+  reply.code(400).send({ error: `${field} id is required` })
+  return undefined
+}
 
 const isWithinRoot = (root: string, path: string): boolean => {
   const rel = relative(root, path)
@@ -25,21 +37,6 @@ const readErrorCode = (error: unknown): string | undefined =>
   typeof error === 'object' && error && 'code' in error
     ? String((error as { code?: unknown }).code)
     : undefined
-
-const resolveTask = (
-  params: unknown,
-  reply: FastifyReply,
-  orchestrator: Orchestrator,
-): { taskId: string; task: Task } | undefined => {
-  const taskId = resolveRouteId(params, reply, 'task')
-  if (!taskId) return
-  const task = orchestrator.getTaskById(taskId)
-  if (!task) {
-    reply.code(404).send({ error: 'task not found' })
-    return
-  }
-  return { taskId, task }
-}
 
 const resolveTaskArchiveTarget = (
   params: unknown,
@@ -225,18 +222,5 @@ export const registerTaskCancelRoute = (
     }
 
     reply.send({ ok: true, status: result.status, taskId })
-  })
-}
-
-export const registerTaskProgressRoute = (
-  app: FastifyInstance,
-  orchestrator: Orchestrator,
-  config: AppConfig,
-): void => {
-  app.get('/api/tasks/:id/progress', async (request, reply) => {
-    const resolved = resolveTask(request.params, reply, orchestrator)
-    if (!resolved) return
-    const events = await readTaskProgress(config.workDir, resolved.taskId)
-    reply.send({ taskId: resolved.taskId, events })
   })
 }

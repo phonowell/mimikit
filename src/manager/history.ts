@@ -154,24 +154,7 @@ export const appendConsumedInputsToHistory = async (
       consumed += 1
       continue
     }
-    if (input.role === 'system') {
-      await appendHistory(historyPath, {
-        id: input.id,
-        role: input.role,
-        visibility: input.visibility,
-        text: input.text,
-        createdAt: input.createdAt,
-        ...(input.quote ? { quote: input.quote } : {}),
-      })
-    } else {
-      await appendHistory(historyPath, {
-        id: input.id,
-        role: input.role,
-        text: input.text,
-        createdAt: input.createdAt,
-        ...(input.quote ? { quote: input.quote } : {}),
-      })
-    }
+    await appendHistory(historyPath, { ...input })
     existingIds.add(input.id)
     consumed += 1
   }

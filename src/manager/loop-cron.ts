@@ -2,8 +2,9 @@ import { Cron } from 'croner'
 
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
-import { notifyManagerLoop } from '../orchestrator/core/manager-signal.js'
+import { notifyManagerLoop } from '../orchestrator/core/signals.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
+import { sleep } from '../shared/utils.js'
 
 import { publishManagerSystemEventInput } from './system-input-event.js'
 
@@ -14,9 +15,6 @@ const matchCronNow = (expression: string, at: Date = new Date()): boolean =>
 
 const asSecondStamp = (iso: string): string => iso.slice(0, 19)
 const CRON_TICK_MS = 1_000
-
-const sleep = (ms: number): Promise<void> =>
-  new Promise((resolve) => setTimeout(resolve, ms))
 
 type CronCheckResult = {
   triggeredCount: number
@@ -31,25 +29,6 @@ type CronTriggerSchedule =
       cron?: undefined
       scheduledAt: string
     }
-
-const toCronTriggerPayload = (params: {
-  cronJobId: string
-  prompt: string
-  title: string
-  profile: RuntimeState['cronJobs'][number]['profile']
-  schedule: CronTriggerSchedule
-  triggeredAt: string
-}): Record<string, unknown> => ({
-  cron_job_id: params.cronJobId,
-  title: params.title,
-  prompt: params.prompt,
-  profile: params.profile,
-  triggered_at: params.triggeredAt,
-  ...(params.schedule.cron ? { cron: params.schedule.cron } : {}),
-  ...(params.schedule.scheduledAt
-    ? { scheduled_at: params.schedule.scheduledAt }
-    : {}),
-})
 
 const publishCronTriggerSystemInput = async (params: {
   runtime: RuntimeState
@@ -66,7 +45,15 @@ const publishCronTriggerSystemInput = async (params: {
     summary: `Scheduled task "${label}" was triggered.`,
     event: 'cron_trigger',
     visibility: 'all',
-    payload: toCronTriggerPayload(params),
+    payload: {
+      cron_job_id: params.cronJobId,
+      title: params.title,
+      prompt: params.prompt,
+      profile: params.profile,
+      triggered_at: params.triggeredAt,
+      ...(params.schedule.cron ? { cron: params.schedule.cron } : {}),
+      ...(params.schedule.scheduledAt ? { scheduled_at: params.schedule.scheduledAt } : {}),
+    },
     createdAt: params.triggeredAt,
     logEvent: 'cron_trigger_input',
     logMeta: {

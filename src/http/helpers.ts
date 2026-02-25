@@ -6,26 +6,6 @@ import { z } from 'zod'
 
 import { ensureDir } from '../fs/paths.js'
 
-export const DEFAULT_TASK_LIMIT = 200
-const MAX_TASK_LIMIT = 500
-export const DEFAULT_MESSAGE_LIMIT = 50
-
-const parseLimit = (
-  value: unknown,
-  fallback: number,
-  max = Infinity,
-): number => {
-  const parsed = Number(value)
-  if (!Number.isFinite(parsed) || parsed <= 0) return fallback
-  return Math.min(Math.floor(parsed), max)
-}
-
-export const parseTaskLimit = (value: unknown): number =>
-  parseLimit(value, DEFAULT_TASK_LIMIT, MAX_TASK_LIMIT)
-
-export const parseMessageLimit = (value: unknown): number =>
-  parseLimit(value, DEFAULT_MESSAGE_LIMIT)
-
 export const resolveRoots = () => {
   const __dirname = fileURLToPath(new URL('.', import.meta.url))
   const rootDir = resolve(__dirname, '..', '..')

@@ -1,16 +1,88 @@
 import { createRequire } from 'node:module'
 
+import { z } from 'zod'
+
 import { isVisibleToAgent } from '../shared/message-visibility.js'
 import { computeRecencyWeight, parseIsoMs } from '../shared/time.js'
 
-import type { QueryHistoryRequest } from './history-query-request.js'
+import type { Parsed } from '../actions/model/spec.js'
 import type {
   HistoryLookupMessage,
   HistoryMessage,
   Role,
 } from '../types/index.js'
 
-export { pickQueryHistoryRequest } from './history-query-request.js'
+const DEFAULT_LIMIT = 6
+const MAX_LIMIT = 20
+const MIN_LIMIT = 1
+const DEFAULT_ROLES: Role[] = ['user', 'agent']
+
+export type QueryHistoryRequest = {
+  query: string
+  limit: number
+  roles: Role[]
+  beforeId?: string
+  fromMs?: number
+  toMs?: number
+}
+
+export const queryHistorySchema = z
+  .object({
+    query: z.string().trim().min(1),
+    limit: z.string().trim().optional(),
+    roles: z.string().trim().optional(),
+    before_id: z.string().trim().min(1).optional(),
+    from: z.string().trim().min(1).optional(),
+    to: z.string().trim().min(1).optional(),
+  })
+  .strict()
+
+const parseLimit = (raw?: string): number =>
+  Math.max(
+    MIN_LIMIT,
+    Math.min(MAX_LIMIT, Number.parseInt(raw ?? '', 10) || DEFAULT_LIMIT),
+  )
+
+const isRole = (value: string): value is Role =>
+  value === 'user' || value === 'agent' || value === 'system'
+
+const parseRoles = (raw?: string): Role[] => {
+  if (!raw) return DEFAULT_ROLES
+  const unique = new Set<Role>()
+  for (const part of raw.split(',')) {
+    const role = part.trim()
+    if (isRole(role)) unique.add(role)
+  }
+  return unique.size > 0 ? Array.from(unique) : DEFAULT_ROLES
+}
+
+export const pickQueryHistoryRequest = (
+  actions: Parsed[],
+): QueryHistoryRequest | undefined => {
+  for (const item of actions) {
+    if (item.name !== 'query_history') continue
+    const parsed = queryHistorySchema.safeParse(item.attrs)
+    if (!parsed.success) continue
+    const limit = parseLimit(parsed.data.limit)
+    const fromMs = parsed.data.from ? parseIsoMs(parsed.data.from) : undefined
+    const toMs = parsed.data.to ? parseIsoMs(parsed.data.to) : undefined
+    const rangeStart =
+      fromMs !== undefined && toMs !== undefined
+        ? Math.min(fromMs, toMs)
+        : fromMs
+    const rangeEnd =
+      fromMs !== undefined && toMs !== undefined ? Math.max(fromMs, toMs) : toMs
+    return {
+      query: parsed.data.query,
+      limit,
+      roles: parseRoles(parsed.data.roles),
+      ...(parsed.data.before_id ? { beforeId: parsed.data.before_id } : {}),
+      ...(rangeStart !== undefined ? { fromMs: rangeStart } : {}),
+      ...(rangeEnd !== undefined ? { toMs: rangeEnd } : {}),
+    }
+  }
+  return undefined
+}
 
 const LOOKUP_MAX_CHARS = 480
 const require = createRequire(import.meta.url)
