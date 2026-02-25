@@ -10,6 +10,7 @@ import {
 } from '../read-model/chat-view.js'
 
 import { notifyManagerLoop } from './manager-signal.js'
+import { notifyUiSignal } from './ui-signal.js'
 
 import type { RuntimeState, UserMeta } from './runtime-state.js'
 
@@ -56,6 +57,7 @@ export const addUserInput = async (
     payload: input,
   })
   runtime.inflightInputs.push(input)
+  notifyUiSignal(runtime)
   if (meta) runtime.lastUserMeta = meta
   await appendLog(runtime.paths.log, {
     event: 'user_input',

@@ -12,6 +12,7 @@ export const renderMessage = (params, msg) => {
     onQuote,
     messageLookup,
     ackedUserMessageIds,
+    appendTarget,
   } = params
   if (!messagesEl) return
   const item = document.createElement('li')
@@ -112,6 +113,7 @@ export const renderMessage = (params, msg) => {
 
   item.appendChild(article)
   if (quoteBtn) item.appendChild(quoteBtn)
-  messagesEl.appendChild(item)
+  const target = appendTarget ?? messagesEl
+  target.appendChild(item)
   return item
 }

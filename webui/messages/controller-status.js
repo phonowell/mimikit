@@ -1,6 +1,5 @@
 import { applyStatus } from '../status.js'
 
-import { clearMessageState } from './state.js'
 import { clearWorkerDots, updateWorkerDots } from './worker-dots.js'
 
 export const updateControllerStatus = (params) => {
@@ -39,7 +38,7 @@ export const disconnectMessages = (params) => {
   applyStatus({ statusDot, statusText }, 'disconnected')
   setLastStatus(null)
   clearWorkerDots(workerDots)
-  clearMessageState(messageState)
+  messageState.awaitingReply = false
   loading.setLoading(false)
 }
 

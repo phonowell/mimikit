@@ -23,6 +23,8 @@ import {
 
 const MESSAGE_LIMIT = 50
 const EVENTS_URL = '/api/events'
+const RECONNECT_BASE_DELAY_MS = 1200
+const RECONNECT_MAX_DELAY_MS = 12000
 
 const isRecord = (value) => value && typeof value === 'object'
 
@@ -36,12 +38,16 @@ const normalizeUsage = (raw) => {
   const inputCacheRead = asUsageNumber(raw.inputCacheRead)
   const inputCacheWrite = asUsageNumber(raw.inputCacheWrite)
   const outputCache = asUsageNumber(raw.outputCache)
+  const total = asUsageNumber(raw.total)
+  const sessionTotal = asUsageNumber(raw.sessionTotal)
   if (
     input === null &&
     output === null &&
     inputCacheRead === null &&
     inputCacheWrite === null &&
-    outputCache === null
+    outputCache === null &&
+    total === null &&
+    sessionTotal === null
   )
     return null
   return {
@@ -50,6 +56,8 @@ const normalizeUsage = (raw) => {
     ...(inputCacheRead !== null ? { inputCacheRead } : {}),
     ...(inputCacheWrite !== null ? { inputCacheWrite } : {}),
     ...(outputCache !== null ? { outputCache } : {}),
+    ...(total !== null ? { total } : {}),
+    ...(sessionTotal !== null ? { sessionTotal } : {}),
   }
 }
 
@@ -195,6 +203,8 @@ export function createMessagesController({
   let currentStreamMessage = null
   const pendingEvents = []
   let pendingFrame = null
+  let reconnectTimer = null
+  let reconnectAttempts = 0
   const messageState = createMessageState()
 
   const scroll = createScrollController({
@@ -324,7 +334,28 @@ export function createMessagesController({
     pendingFrame = scheduleFrame(flushPendingEvents)
   }
 
+  const clearReconnectTimer = () => {
+    if (reconnectTimer === null) return
+    clearTimeout(reconnectTimer)
+    reconnectTimer = null
+  }
+
+  const scheduleReconnect = () => {
+    if (!isStarted || eventSource || reconnectTimer !== null) return
+    const delayMs = Math.min(
+      RECONNECT_MAX_DELAY_MS,
+      RECONNECT_BASE_DELAY_MS * Math.max(1, 2 ** reconnectAttempts),
+    )
+    reconnectAttempts += 1
+    reconnectTimer = setTimeout(() => {
+      reconnectTimer = null
+      if (!isStarted || eventSource) return
+      openEvents()
+    }, delayMs)
+  }
+
   const closeEvents = () => {
+    clearReconnectTimer()
     if (pendingFrame !== null) {
       cancelFrame(pendingFrame)
       pendingFrame = null
@@ -335,9 +366,12 @@ export function createMessagesController({
     eventSource = null
   }
 
-  const openEvents = () => {
+  function openEvents() {
     if (eventSource) return
     const source = new EventSource(EVENTS_URL)
+    const handleConnected = () => {
+      reconnectAttempts = 0
+    }
 
     const onSnapshotEvent = (event) => {
       const snapshot = parseSnapshot(event.data)
@@ -363,10 +397,15 @@ export function createMessagesController({
     }
 
     const onTransportError = () => {
+      if (eventSource !== source) return
       setDisconnected()
       if (typeof onDisconnected === 'function') onDisconnected()
+      source.close()
+      eventSource = null
+      scheduleReconnect()
     }
 
+    source.onopen = handleConnected
     source.addEventListener('snapshot', onSnapshotEvent)
     source.addEventListener('stream', onStreamEvent)
     source.addEventListener('error', onServerErrorEvent)
@@ -391,6 +430,7 @@ export function createMessagesController({
   const start = () => {
     if (isStarted) return
     isStarted = true
+    reconnectAttempts = 0
     scroll.bindScrollControls()
     openEvents()
   }

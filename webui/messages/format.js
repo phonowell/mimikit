@@ -43,11 +43,14 @@ export const formatUsage = (usage) => {
   const inputCacheRead = asNumber(usage.inputCacheRead)
   const inputCacheWrite = asNumber(usage.inputCacheWrite)
   const outputCache = asNumber(usage.outputCache)
+  const total = asNumber(usage.total)
+  const sessionTotal = asNumber(usage.sessionTotal)
   const hasInputSide =
     input !== null || inputCacheRead !== null || inputCacheWrite !== null
   const hasOutputSide = output !== null || outputCache !== null
 
-  if (!hasInputSide && !hasOutputSide) return null
+  if (!hasInputSide && !hasOutputSide && total === null && sessionTotal === null)
+    return null
 
   const inputTotal = hasInputSide
     ? Math.round(input ?? 0) +
@@ -61,6 +64,9 @@ export const formatUsage = (usage) => {
   const textParts = []
   if (inputTotal !== null) textParts.push(`\u2191 ${formatCompactCount(inputTotal)}`)
   if (outputTotal !== null) textParts.push(`\u2193 ${formatCompactCount(outputTotal)}`)
+  if (inputTotal === null && outputTotal === null && total !== null)
+    textParts.push(`\u03a3 ${formatCompactCount(total)}`)
+  if (sessionTotal !== null) textParts.push(`S ${formatCompactCount(sessionTotal)}`)
   const text = textParts.join(' \u00b7 ')
   const title = [
     ...(inputTotal !== null
@@ -77,6 +83,10 @@ export const formatUsage = (usage) => {
           `Output tokens: ${formatCompactCount(output ?? 0)}`,
           `Output cache tokens: ${formatCompactCount(outputCache ?? 0)}`,
         ]
+      : []),
+    ...(total !== null ? [`Total tokens: ${formatIntegerCount(total)}`] : []),
+    ...(sessionTotal !== null
+      ? [`Session total tokens: ${formatIntegerCount(sessionTotal)}`]
       : []),
   ].join('\n')
   return { text, title }

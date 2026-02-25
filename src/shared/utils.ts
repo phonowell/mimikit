@@ -26,21 +26,25 @@ const normalizeUsageParts = (parts: {
   inputCacheWrite?: unknown
   outputCache?: unknown
   total?: unknown
+  sessionTotal?: unknown
 }): TokenUsage | undefined => {
   const input = asNumber(parts.input)
   const output = asNumber(parts.output)
   const inputCacheRead = asNumber(parts.inputCacheRead)
   const inputCacheWrite = asNumber(parts.inputCacheWrite)
   const outputCache = asNumber(parts.outputCache)
+  const total = asNumber(parts.total)
+  const sessionTotal = asNumber(parts.sessionTotal)
   if (
     input === undefined &&
     output === undefined &&
     inputCacheRead === undefined &&
     inputCacheWrite === undefined &&
-    outputCache === undefined
+    outputCache === undefined &&
+    total === undefined &&
+    sessionTotal === undefined
   )
     return undefined
-  const total = asNumber(parts.total)
   const result: TokenUsage = {}
   if (input !== undefined) result.input = input
   if (output !== undefined) result.output = output
@@ -50,6 +54,7 @@ const normalizeUsageParts = (parts: {
   if (total !== undefined) result.total = total
   else if (input !== undefined && output !== undefined)
     result.total = input + output
+  if (sessionTotal !== undefined) result.sessionTotal = sessionTotal
   return result
 }
 

@@ -25,6 +25,26 @@ const preserveScrollPosition = ({
   messagesEl.scrollTop = nextTop < 0 ? 0 : nextTop
 }
 
+const streamItemText = (streamItem) => {
+  if (!streamItem) return ''
+  const content = streamItem.querySelector('article .content')
+  if (!content) return ''
+  return content.textContent ?? ''
+}
+
+const buildDetachedMessageItem = (renderParams, msg) => {
+  const appendTarget = document.createDocumentFragment()
+  return renderMessage({ ...renderParams, appendTarget }, msg)
+}
+
+const syncItemFromTemplate = (target, template) => {
+  const normalizedClassName = template.className.replace(/\smessage--enter\b/g, '')
+  target.className = normalizedClassName
+  if (template.dataset.messageId) target.dataset.messageId = template.dataset.messageId
+  else delete target.dataset.messageId
+  target.replaceChildren(...template.childNodes)
+}
+
 export const renderMessages = (params) => {
   const {
     messages,
@@ -42,6 +62,20 @@ export const renderMessages = (params) => {
   removeEmpty()
   const safeMessages = Array.isArray(messages) ? messages : []
   const latestAgent = findLatestAgentMessage(safeMessages)
+  const existingStreamItem =
+    streamMessage === null || streamMessage === undefined
+      ? getCurrentStreamingItem({
+          messagesEl,
+          streamingItemRef,
+        })
+      : null
+  const canPromoteStreamItem =
+    existingStreamItem &&
+    latestAgent?.id !== null &&
+    latestAgent?.id !== undefined &&
+    latestAgent?.role === 'agent' &&
+    streamItemText(existingStreamItem) ===
+      (typeof latestAgent.text === 'string' ? latestAgent.text : '')
   const wasNearBottom = isNearBottom()
   const previousScrollTop = messagesEl.scrollTop
   const previousScrollHeight = messagesEl.scrollHeight
@@ -62,8 +96,23 @@ export const renderMessages = (params) => {
     ackedUserMessageIds,
     latestAgentId,
   }
-  for (const msg of safeMessages) 
+  for (const msg of safeMessages) {
+    const shouldPromoteStreamItem =
+      Boolean(canPromoteStreamItem) &&
+      latestAgentId !== null &&
+      msg?.id !== null &&
+      msg?.id !== undefined &&
+      String(msg.id) === latestAgentId
+    if (shouldPromoteStreamItem && existingStreamItem) {
+      const template = buildDetachedMessageItem(renderParams, msg)
+      if (template) {
+        syncItemFromTemplate(existingStreamItem, template)
+        messagesEl.appendChild(existingStreamItem)
+        continue
+      }
+    }
     renderMessage(renderParams, msg)
+  }
   
   if (streamMessage) {
     const streamItem = renderMessage(renderParams, streamMessage)
