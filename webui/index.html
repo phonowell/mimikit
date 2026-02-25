@@ -26,6 +26,18 @@
           </div>
           <div class="app-actions" role="toolbar" aria-label="Controls">
             <button
+              class="btn btn--sm todos-open"
+              data-todos-open
+              type="button"
+              title="Todos"
+              aria-label="Todos"
+              aria-haspopup="dialog"
+              aria-controls="todos-dialog"
+              aria-expanded="false"
+            >
+              <span class="todos-label">Todos</span>
+            </button>
+            <button
               class="btn btn--sm tasks-open"
               data-tasks-open
               type="button"
@@ -37,18 +49,6 @@
             >
               <span class="tasks-label">Tasks</span>
               <span class="tasks-worker-dots" data-worker-dots aria-hidden="true"></span>
-            </button>
-            <button
-              class="btn btn--sm todos-open"
-              data-todos-open
-              type="button"
-              title="Todos"
-              aria-label="Todos"
-              aria-haspopup="dialog"
-              aria-controls="todos-dialog"
-              aria-expanded="false"
-            >
-              <span class="todos-label">Todos</span>
             </button>
             <button
               class="btn btn--sm restart-btn"
@@ -119,31 +119,6 @@
       </section>
 
       <dialog
-        class="tasks-dialog"
-        data-tasks-dialog
-        id="tasks-dialog"
-        aria-labelledby="tasks-title"
-      >
-        <section class="tasks-panel">
-          <header class="tasks-header">
-            <h2 class="tasks-title" id="tasks-title">Tasks</h2>
-            <div class="tasks-actions" role="group" aria-label="Tasks">
-              <button
-                class="btn btn--icon btn--icon-muted tasks-close"
-                data-tasks-close
-                type="button"
-                title="Close"
-                aria-label="Close"
-              >
-                &#x2715;
-              </button>
-            </div>
-          </header>
-          <ul class="tasks-list scrollable" data-tasks-list></ul>
-        </section>
-      </dialog>
-
-      <dialog
         class="todos-dialog"
         data-todos-dialog
         id="todos-dialog"
@@ -165,6 +140,31 @@
             </div>
           </header>
           <ul class="todos-list scrollable" data-todos-list></ul>
+        </section>
+      </dialog>
+
+      <dialog
+        class="tasks-dialog"
+        data-tasks-dialog
+        id="tasks-dialog"
+        aria-labelledby="tasks-title"
+      >
+        <section class="tasks-panel">
+          <header class="tasks-header">
+            <h2 class="tasks-title" id="tasks-title">Tasks</h2>
+            <div class="tasks-actions" role="group" aria-label="Tasks">
+              <button
+                class="btn btn--icon btn--icon-muted tasks-close"
+                data-tasks-close
+                type="button"
+                title="Close"
+                aria-label="Close"
+              >
+                &#x2715;
+              </button>
+            </div>
+          </header>
+          <ul class="tasks-list scrollable" data-tasks-list></ul>
         </section>
       </dialog>
 
