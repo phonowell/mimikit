@@ -15,7 +15,7 @@
 - `manager`：消费 `inputs/results`，输出用户回复与编排动作。
 - `worker`：执行统一 `worker` 任务，回写结果。
 - `cron-wake-loop`：触发定时任务并发布 `system_event` 协议 system 输入事件。
-- `idle-wake-loop`：系统闲暇窗口到达后发布 `system_event.name=idle` 的 system 输入事件。
+- `idle-wake-loop`：系统闲暇窗口到达后优先发布 `system_event.name=intent_trigger`，否则发布 `system_event.name=idle`。
 
 system 消息协议统一为：`summary + <M:system_event name="..." version="1">JSON</M:system_event>`。
 
@@ -43,7 +43,7 @@ system 消息协议统一为：`summary + <M:system_event name="..." version="1"
 
 - manager loop 单飞，同一时刻仅一个活跃批次。
 - 队列 compact 仅在“已完全消费且达到阈值”时执行。
-- manager 上下文连续性通过 `history + tasks + managerCompressedContext` 保持，不依赖 provider thread。
+- manager 上下文连续性通过 `history + tasks + intents + managerCompressedContext` 保持，不依赖 provider thread。
 - `restart/reset` 先回包，再等待 in-flight manager 批次收敛后持久化并退出。
 
 ## 细节索引

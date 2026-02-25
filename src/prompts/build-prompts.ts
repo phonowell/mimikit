@@ -9,6 +9,7 @@ import {
   formatEnvironment,
   formatHistoryLookup,
   formatInputs,
+  formatIntentsYaml,
   formatResultsYaml,
   formatTasksYaml,
   renderPromptTemplate,
@@ -24,6 +25,7 @@ import {
 import type {
   CronJob,
   HistoryLookupMessage,
+  IdleIntent,
   ManagerActionFeedback,
   ManagerEnv,
   Task,
@@ -55,6 +57,7 @@ export const buildManagerPrompt = async (params: {
   inputs: UserInput[]
   results: TaskResult[]
   tasks: Task[]
+  intents?: IdleIntent[]
   cronJobs?: CronJob[]
   historyLookup?: HistoryLookupMessage[]
   actionFeedback?: ManagerActionFeedback[]
@@ -99,6 +102,7 @@ export const buildManagerPrompt = async (params: {
     tasks: escapeCdata(
       formatTasksYaml(params.tasks, resultsForTasks, params.cronJobs ?? []),
     ),
+    intents: escapeCdata(formatIntentsYaml(params.intents ?? [])),
     history_lookup: escapeCdata(
       formatHistoryLookup(params.historyLookup ?? []),
     ),

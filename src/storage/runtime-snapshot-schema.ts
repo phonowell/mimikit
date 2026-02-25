@@ -4,11 +4,13 @@ import { stripUndefined } from '../shared/utils.js'
 
 import { normalizeTokenUsage, tokenUsageSchema } from './token-usage.js'
 
-import type { CronJob, Task } from '../types/index.js'
+import type { CronJob, IdleIntent, Task } from '../types/index.js'
 
 export type RuntimeSnapshot = {
   tasks: Task[]
   cronJobs?: CronJob[]
+  idleIntents?: IdleIntent[]
+  idleIntentArchive?: IdleIntent[]
   managerTurn?: number
   queues?: {
     inputsCursor: number
@@ -83,10 +85,29 @@ const cronJobSchema = z
     { message: 'cron and scheduledAt are mutually exclusive' },
   )
 
+const idleIntentSchema = z
+  .object({
+    id: z.string().trim().min(1),
+    prompt: z.string(),
+    title: z.string(),
+    priority: z.enum(['high', 'normal', 'low']),
+    status: z.enum(['pending', 'blocked', 'done']),
+    source: z.enum(['user_request', 'agent_auto', 'retry_decision']),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+    attempts: z.number().int().nonnegative(),
+    maxAttempts: z.number().int().positive(),
+    lastTaskId: z.string().trim().min(1).optional(),
+    archivedAt: z.string().optional(),
+  })
+  .strict()
+
 const runtimeSnapshotSchema = z
   .object({
     tasks: z.array(taskSchema),
     cronJobs: z.array(cronJobSchema).optional(),
+    idleIntents: z.array(idleIntentSchema).optional(),
+    idleIntentArchive: z.array(idleIntentSchema).optional(),
     managerTurn: z.number().int().nonnegative().optional(),
     queues: z
       .object({
@@ -116,12 +137,24 @@ const normalizeTask = (task: z.infer<typeof taskSchema>): Task =>
 const normalizeCronJob = (cronJob: z.infer<typeof cronJobSchema>): CronJob =>
   stripUndefined({ ...cronJob }) as CronJob
 
+const normalizeIdleIntent = (
+  intent: z.infer<typeof idleIntentSchema>,
+): IdleIntent => stripUndefined({ ...intent }) as IdleIntent
+
 export const parseRuntimeSnapshot = (value: unknown): RuntimeSnapshot => {
   const parsed = runtimeSnapshotSchema.parse(value)
   return {
     tasks: parsed.tasks.map(normalizeTask),
     ...(parsed.cronJobs
       ? { cronJobs: parsed.cronJobs.map(normalizeCronJob) }
+      : {}),
+    ...(parsed.idleIntents
+      ? { idleIntents: parsed.idleIntents.map(normalizeIdleIntent) }
+      : {}),
+    ...(parsed.idleIntentArchive
+      ? {
+          idleIntentArchive: parsed.idleIntentArchive.map(normalizeIdleIntent),
+        }
       : {}),
     ...(parsed.managerTurn !== undefined
       ? { managerTurn: parsed.managerTurn }

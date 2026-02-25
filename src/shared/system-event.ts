@@ -9,6 +9,10 @@ export type SystemEventName =
   | 'cron_trigger'
   | 'idle'
   | 'cron_canceled'
+  | 'intent_trigger'
+  | 'intent_created'
+  | 'intent_updated'
+  | 'intent_deleted'
 
 const toInlineJson = (payload: Record<string, unknown>): string =>
   JSON.stringify(payload).replace(/[<>&]/g, (char) => {

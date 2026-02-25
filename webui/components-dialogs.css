@@ -265,3 +265,122 @@
   color: var(--muted);
   cursor: not-allowed;
 }
+
+.todos-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 0;
+  background: var(--panel);
+}
+
+.todos-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.todos-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.todos-list {
+  margin: 0;
+  padding: 12px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  background: var(--well-bg);
+  box-shadow: none;
+}
+
+.todo-item,
+.todos-empty {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: var(--panel);
+}
+
+.todo-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: var(--shadow-raised-soft);
+}
+
+.todo-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.todo-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 10px;
+  height: 10px;
+  min-width: 10px;
+  border-radius: 999px;
+  background: var(--todo-dot, var(--status-pending));
+}
+
+.todo-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.todo-priority {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: var(--panel-strong);
+  color: var(--muted);
+  font-size: 10px;
+  font-family: monospace;
+  letter-spacing: 0.02em;
+}
+
+.todo-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--muted);
+  width: 100%;
+}
+
+.todo-time {
+  margin-left: auto;
+}
+
+.todo-item[data-status='pending'] {
+  --todo-dot: var(--status-pending);
+}
+
+.todo-item[data-status='blocked'] {
+  --todo-dot: var(--status-fail);
+}
+
+.todo-item[data-status='done'] {
+  --todo-dot: var(--status-success);
+}

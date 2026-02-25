@@ -42,6 +42,13 @@ const defaultConfigSchema = z
             maxBytes: z.number().int().positive(),
           })
           .strict(),
+        intentWindow: z
+          .object({
+            maxCount: z.number().int().positive(),
+            minCount: z.number().int().positive(),
+            maxBytes: z.number().int().positive(),
+          })
+          .strict(),
       })
       .strict(),
     worker: z
@@ -75,6 +82,14 @@ const parseDefaultConfigYaml = (source: string): AppDefaults => {
     ) {
       throw new Error(
         '[config] invalid yaml defaults: manager.taskWindow.minCount must be <= manager.taskWindow.maxCount',
+      )
+    }
+    if (
+      validated.data.manager.intentWindow.minCount >
+      validated.data.manager.intentWindow.maxCount
+    ) {
+      throw new Error(
+        '[config] invalid yaml defaults: manager.intentWindow.minCount must be <= manager.intentWindow.maxCount',
       )
     }
     return validated.data

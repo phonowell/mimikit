@@ -30,6 +30,27 @@ const applyLoopEnv = (config: AppConfig): void => {
   )
   if (managerCreateTaskDebounceMs !== undefined)
     config.manager.taskCreate.debounceMs = managerCreateTaskDebounceMs
+
+  const managerIntentWindowMaxCount = parseEnvPositiveInteger(
+    'MIMIKIT_MANAGER_INTENT_WINDOW_MAX_COUNT',
+    process.env.MIMIKIT_MANAGER_INTENT_WINDOW_MAX_COUNT?.trim(),
+  )
+  if (managerIntentWindowMaxCount !== undefined)
+    config.manager.intentWindow.maxCount = managerIntentWindowMaxCount
+
+  const managerIntentWindowMinCount = parseEnvPositiveInteger(
+    'MIMIKIT_MANAGER_INTENT_WINDOW_MIN_COUNT',
+    process.env.MIMIKIT_MANAGER_INTENT_WINDOW_MIN_COUNT?.trim(),
+  )
+  if (managerIntentWindowMinCount !== undefined)
+    config.manager.intentWindow.minCount = managerIntentWindowMinCount
+
+  const managerIntentWindowMaxBytes = parseEnvPositiveInteger(
+    'MIMIKIT_MANAGER_INTENT_WINDOW_MAX_BYTES',
+    process.env.MIMIKIT_MANAGER_INTENT_WINDOW_MAX_BYTES?.trim(),
+  )
+  if (managerIntentWindowMaxBytes !== undefined)
+    config.manager.intentWindow.maxBytes = managerIntentWindowMaxBytes
 }
 
 export const applyCliEnvOverrides = (config: AppConfig): void => {

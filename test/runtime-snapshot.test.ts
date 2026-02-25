@@ -96,6 +96,35 @@ test('runtime snapshot accepts queue cursors', async () => {
         },
       },
     ],
+    idleIntents: [
+      {
+        id: 'intent-1',
+        prompt: 'summarize',
+        title: 'summarize',
+        priority: 'high',
+        status: 'pending',
+        source: 'user_request',
+        createdAt: '2026-02-06T00:00:00.000Z',
+        updatedAt: '2026-02-06T00:00:00.000Z',
+        attempts: 0,
+        maxAttempts: 2,
+      },
+    ],
+    idleIntentArchive: [
+      {
+        id: 'intent-2',
+        prompt: 'done',
+        title: 'done',
+        priority: 'normal',
+        status: 'done',
+        source: 'agent_auto',
+        createdAt: '2026-02-06T00:00:00.000Z',
+        updatedAt: '2026-02-06T00:10:00.000Z',
+        archivedAt: '2026-02-06T00:10:00.000Z',
+        attempts: 1,
+        maxAttempts: 2,
+      },
+    ],
     queues: {
       inputsCursor: 3,
       resultsCursor: 9,
@@ -108,6 +137,8 @@ test('runtime snapshot accepts queue cursors', async () => {
   expect(loaded.queues?.inputsCursor).toBe(3)
   expect(loaded.managerCompressedContext).toContain('keep codex-only')
   expect(loaded.tasks[0]?.result?.output).toBe('ok')
+  expect(loaded.idleIntents?.[0]?.id).toBe('intent-1')
+  expect(loaded.idleIntentArchive?.[0]?.status).toBe('done')
 })
 
 test('buildTaskViews maps cron job statuses from disabled reasons', () => {

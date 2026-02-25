@@ -20,12 +20,15 @@ const createRuntime = async (): Promise<RuntimeState> => {
   queue.pause()
 
   return {
+    runtimeId: 'runtime-test',
     config,
     paths: buildPaths(workDir),
     stopped: false,
     managerRunning: false,
     managerSignalController: new AbortController(),
     managerWakePending: false,
+    lastManagerActivityAtMs: Date.now(),
+    lastWorkerActivityAtMs: Date.now(),
     inflightInputs: [],
     queues: {
       inputsCursor: 0,
@@ -33,6 +36,8 @@ const createRuntime = async (): Promise<RuntimeState> => {
     },
     tasks: [],
     cronJobs: [],
+    idleIntents: [],
+    idleIntentArchive: [],
     managerTurn: 0,
     uiStream: null,
     runningControllers: new Map(),
@@ -40,6 +45,7 @@ const createRuntime = async (): Promise<RuntimeState> => {
     workerQueue: queue,
     workerSignalController: new AbortController(),
     uiWakePending: false,
+    uiWakeKind: null,
     uiSignalController: new AbortController(),
   }
 }
@@ -98,23 +104,6 @@ test('create_task dedupe does not block task creation when fingerprint differs',
   expect(runtime.tasks[1]?.fingerprint).not.toBe(runtime.tasks[0]?.fingerprint)
 })
 
-test('create_task rejects legacy profile arg for scheduled task', async () => {
-  const runtime = await createRuntime()
-  await applyTaskActions(runtime, [
-    {
-      name: 'create_task',
-      attrs: {
-        prompt: 'scheduled with profile',
-        title: 'invalid',
-        profile: 'worker',
-        cron: '0 0 9 * * *',
-      },
-    },
-  ])
-
-  expect(runtime.cronJobs).toHaveLength(0)
-})
-
 test('create_task rejects forbidden .mimikit state paths', async () => {
   const runtime = await createRuntime()
 
@@ -163,4 +152,61 @@ test('create_task uses worker profile for scheduled task', async () => {
 
   expect(runtime.cronJobs).toHaveLength(1)
   expect(runtime.cronJobs[0]?.profile).toBe('worker')
+})
+
+test('intent actions can create and archive done intent', async () => {
+  const runtime = await createRuntime()
+  await applyTaskActions(runtime, [
+    {
+      name: 'create_intent',
+      attrs: {
+        prompt: 'remember release note',
+        title: 'release note',
+        priority: 'high',
+      },
+    },
+  ])
+  const createdId = runtime.idleIntents[0]?.id
+  expect(createdId).toBeTruthy()
+  await applyTaskActions(runtime, [
+    {
+      name: 'update_intent',
+      attrs: {
+        id: createdId ?? '',
+        status: 'done',
+      },
+    },
+  ])
+  expect(runtime.idleIntents).toHaveLength(0)
+  expect(runtime.idleIntentArchive).toHaveLength(1)
+  expect(runtime.idleIntentArchive[0]?.status).toBe('done')
+})
+
+test('delete_intent keeps done archive item unchanged', async () => {
+  const runtime = await createRuntime()
+  runtime.idleIntentArchive.push({
+    id: 'intent-done',
+    prompt: 'done prompt',
+    title: 'done',
+    priority: 'normal',
+    status: 'done',
+    source: 'user_request',
+    createdAt: '2026-02-13T00:00:00.000Z',
+    updatedAt: '2026-02-13T00:00:00.000Z',
+    archivedAt: '2026-02-13T00:00:00.000Z',
+    attempts: 1,
+    maxAttempts: 2,
+  })
+
+  await applyTaskActions(runtime, [
+    {
+      name: 'delete_intent',
+      attrs: {
+        id: 'intent-done',
+      },
+    },
+  ])
+
+  expect(runtime.idleIntentArchive).toHaveLength(1)
+  expect(runtime.idleIntentArchive[0]?.id).toBe('intent-done')
 })

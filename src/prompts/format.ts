@@ -190,4 +190,8 @@ export {
   formatHistoryLookup,
   formatInputs,
 } from './format-messages.js'
-export { formatResultsYaml, formatTasksYaml } from './format-content.js'
+export {
+  formatIntentsYaml,
+  formatResultsYaml,
+  formatTasksYaml,
+} from './format-content.js'

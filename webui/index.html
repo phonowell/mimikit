@@ -39,6 +39,18 @@
               <span class="tasks-worker-dots" data-worker-dots aria-hidden="true"></span>
             </button>
             <button
+              class="btn btn--sm todos-open"
+              data-todos-open
+              type="button"
+              title="Todos"
+              aria-label="Todos"
+              aria-haspopup="dialog"
+              aria-controls="todos-dialog"
+              aria-expanded="false"
+            >
+              <span class="todos-label">Todos</span>
+            </button>
+            <button
               class="btn btn--sm restart-btn"
               data-restart
               type="button"
@@ -128,6 +140,31 @@
             </div>
           </header>
           <ul class="tasks-list scrollable" data-tasks-list></ul>
+        </section>
+      </dialog>
+
+      <dialog
+        class="todos-dialog"
+        data-todos-dialog
+        id="todos-dialog"
+        aria-labelledby="todos-title"
+      >
+        <section class="todos-panel">
+          <header class="todos-header">
+            <h2 class="todos-title" id="todos-title">Todos</h2>
+            <div class="todos-actions" role="group" aria-label="Todos">
+              <button
+                class="btn btn--icon btn--icon-muted todos-close"
+                data-todos-close
+                type="button"
+                title="Close"
+                aria-label="Close"
+              >
+                &#x2715;
+              </button>
+            </div>
+          </header>
+          <ul class="todos-list scrollable" data-todos-list></ul>
         </section>
       </dialog>
 

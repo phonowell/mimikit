@@ -14,6 +14,7 @@ import {
 import type {
   CronJob,
   HistoryLookupMessage,
+  IdleIntent,
   ManagerActionFeedback,
   ManagerEnv,
   Task,
@@ -28,6 +29,7 @@ export const runManager = async (params: {
   inputs: UserInput[]
   results: TaskResult[]
   tasks: Task[]
+  intents?: IdleIntent[]
   cronJobs?: CronJob[]
   historyLookup?: HistoryLookupMessage[]
   actionFeedback?: ManagerActionFeedback[]
@@ -48,6 +50,7 @@ export const runManager = async (params: {
     inputs: params.inputs,
     results: params.results,
     tasks: params.tasks,
+    ...(params.intents ? { intents: params.intents } : {}),
     ...(params.cronJobs ? { cronJobs: params.cronJobs } : {}),
     ...(params.historyLookup ? { historyLookup: params.historyLookup } : {}),
     ...(params.actionFeedback ? { actionFeedback: params.actionFeedback } : {}),

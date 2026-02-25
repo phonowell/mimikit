@@ -84,6 +84,25 @@ export type TaskResultStatus = Extract<
 
 export type WorkerProfile = 'worker'
 
+export type IntentPriority = 'high' | 'normal' | 'low'
+export type IdleIntentStatus = 'pending' | 'blocked' | 'done'
+export type IntentSource = 'user_request' | 'agent_auto' | 'retry_decision'
+
+export type IdleIntent = {
+  id: Id
+  prompt: string
+  title: string
+  priority: IntentPriority
+  status: IdleIntentStatus
+  source: IntentSource
+  createdAt: ISODate
+  updatedAt: ISODate
+  attempts: number
+  maxAttempts: number
+  lastTaskId?: Id
+  archivedAt?: ISODate
+}
+
 export type Task = {
   id: Id
   fingerprint: string

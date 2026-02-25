@@ -12,6 +12,11 @@ import {
   type ApplyTaskActionsOptions,
 } from './action-apply-create.js'
 import {
+  applyCreateIntent,
+  applyDeleteIntent,
+  applyUpdateIntent,
+} from './action-apply-intent.js'
+import {
   cancelSchema,
   collectTaskResultSummaries,
   restartSchema,
@@ -66,6 +71,18 @@ export const applyTaskActions = async (
 ): Promise<void> => {
   const seen = new Set<string>()
   for (const item of items) {
+    if (item.name === 'create_intent') {
+      await applyCreateIntent(runtime, item)
+      continue
+    }
+    if (item.name === 'update_intent') {
+      await applyUpdateIntent(runtime, item)
+      continue
+    }
+    if (item.name === 'delete_intent') {
+      await applyDeleteIntent(runtime, item)
+      continue
+    }
     if (item.name === 'create_task') {
       await applyCreateTask(runtime, item, seen, options)
       continue

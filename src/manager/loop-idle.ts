@@ -1,7 +1,11 @@
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { notifyManagerLoop } from '../orchestrator/core/manager-signal.js'
-import { sleep } from '../shared/utils.js'
+import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
+import { selectIdleIntentForTrigger } from '../orchestrator/read-model/intent-select.js'
+import { formatSystemEventText } from '../shared/system-event.js'
+import { newId, sleep } from '../shared/utils.js'
+import { appendHistory } from '../storage/history-jsonl.js'
 
 import { publishManagerSystemEventInput } from './system-input-event.js'
 
@@ -31,6 +35,48 @@ const isManagerBusy = (runtime: RuntimeState): boolean =>
   runtime.managerRunning ||
   runtime.managerWakePending ||
   hasNonIdleInflightInputs(runtime)
+
+const markExhaustedIntentsBlocked = (
+  runtime: RuntimeState,
+  updatedAt: string,
+): RuntimeState['idleIntents'] => {
+  const changed: RuntimeState['idleIntents'] = []
+  for (const intent of runtime.idleIntents) {
+    if (intent.status !== 'pending') continue
+    if (intent.attempts < intent.maxAttempts) continue
+    intent.status = 'blocked'
+    intent.updatedAt = updatedAt
+    changed.push(intent)
+  }
+  return changed
+}
+
+const appendIntentBlockedSystemMessage = async (
+  runtime: RuntimeState,
+  intent: RuntimeState['idleIntents'][number],
+  createdAt: string,
+): Promise<void> => {
+  const label = intent.title.trim() || intent.id
+  await appendHistory(runtime.paths.history, {
+    id: `sys-intent-${newId()}`,
+    role: 'system',
+    visibility: 'user',
+    text: formatSystemEventText({
+      summary: `Intent changed: "${label}" (updated).`,
+      event: 'intent_updated',
+      payload: {
+        intent_id: intent.id,
+        title: label,
+        status: intent.status,
+        priority: intent.priority,
+        source: intent.source,
+        attempts: intent.attempts,
+        max_attempts: intent.maxAttempts,
+      },
+    }),
+    createdAt,
+  })
+}
 
 export const idleWakeLoop = async (runtime: RuntimeState): Promise<void> => {
   let publishedForCurrentIdleWindow = false
@@ -63,6 +109,52 @@ export const idleWakeLoop = async (runtime: RuntimeState): Promise<void> => {
       }
       const idleSince = new Date(idleSinceMs).toISOString()
       const triggeredAt = new Date(nowMs).toISOString()
+      const exhausted = markExhaustedIntentsBlocked(runtime, triggeredAt)
+      for (const intent of exhausted) {
+        await bestEffort('appendHistory: intent_auto_blocked', () =>
+          appendIntentBlockedSystemMessage(runtime, intent, triggeredAt),
+        )
+      }
+      if (exhausted.length > 0) {
+        await bestEffort('persistRuntimeState: intent_exhausted', () =>
+          persistRuntimeState(runtime),
+        )
+      }
+      const nextIntent = selectIdleIntentForTrigger(runtime.idleIntents)
+      if (nextIntent) {
+        nextIntent.attempts += 1
+        nextIntent.updatedAt = triggeredAt
+        await publishManagerSystemEventInput({
+          runtime,
+          summary: `Idle intent "${nextIntent.title.trim() || nextIntent.id}" was triggered.`,
+          event: 'intent_trigger',
+          visibility: 'all',
+          payload: {
+            intent_id: nextIntent.id,
+            title: nextIntent.title,
+            prompt: nextIntent.prompt,
+            priority: nextIntent.priority,
+            source: nextIntent.source,
+            attempt: nextIntent.attempts,
+            max_attempts: nextIntent.maxAttempts,
+            triggered_at: triggeredAt,
+          },
+          createdAt: triggeredAt,
+          logEvent: 'intent_trigger_input',
+          logMeta: {
+            intentId: nextIntent.id,
+            attempt: nextIntent.attempts,
+            maxAttempts: nextIntent.maxAttempts,
+            priority: nextIntent.priority,
+          },
+        })
+        await bestEffort('persistRuntimeState: intent_trigger', () =>
+          persistRuntimeState(runtime),
+        )
+        publishedForCurrentIdleWindow = true
+        notifyManagerLoop(runtime)
+        continue
+      }
       await publishManagerSystemEventInput({
         runtime,
         summary: 'The system is currently idle.',

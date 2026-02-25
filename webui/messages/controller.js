@@ -195,6 +195,7 @@ export function createMessagesController({
   quoteText,
   quoteClearBtn,
   onTasksSnapshot,
+  onTodosSnapshot,
   onDisconnected,
 }) {
   let lastStatus = null
@@ -302,6 +303,8 @@ export function createMessagesController({
     applyMessagesPayload(snapshot.messages, currentStreamMessage)
     if (typeof onTasksSnapshot === 'function' && isRecord(snapshot.tasks)) 
       onTasksSnapshot(snapshot.tasks)
+    if (typeof onTodosSnapshot === 'function' && isRecord(snapshot.todos))
+      onTodosSnapshot(snapshot.todos)
   }
 
   const flushPendingEvents = () => {

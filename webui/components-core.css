@@ -182,7 +182,16 @@
   white-space: nowrap;
 }
 
+.todos-open {
+  gap: 8px;
+  white-space: nowrap;
+}
+
 .tasks-label {
+  line-height: 1;
+}
+
+.todos-label {
   line-height: 1;
 }
 

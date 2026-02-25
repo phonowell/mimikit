@@ -19,6 +19,8 @@ const runtimeBackupPath = (stateDir: string): string =>
 const initialRuntimeSnapshot = (): RuntimeSnapshot => ({
   tasks: [],
   cronJobs: [],
+  idleIntents: [],
+  idleIntentArchive: [],
   managerTurn: 0,
   queues: {
     inputsCursor: 0,

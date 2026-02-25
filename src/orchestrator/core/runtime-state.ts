@@ -2,6 +2,7 @@ import type { AppConfig } from '../../config.js'
 import type { StatePaths } from '../../fs/paths.js'
 import type {
   CronJob,
+  IdleIntent,
   ISODate,
   Task,
   TokenUsage,
@@ -50,6 +51,8 @@ export type RuntimeState = {
   }
   tasks: Task[]
   cronJobs: CronJob[]
+  idleIntents: IdleIntent[]
+  idleIntentArchive: IdleIntent[]
   managerTurn: number
   managerCompressedContext?: string
   uiStream: UiAgentStream | null

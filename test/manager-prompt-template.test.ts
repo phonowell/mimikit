@@ -12,6 +12,7 @@ const baseTemplateValues = {
   action_feedback: '',
   compressed_context: '',
   tasks: '',
+  intents: '',
   persona: '',
   user_profile: '',
 }
@@ -55,4 +56,15 @@ test('manager template renders compressed_context block when provided', async ()
   })
   expect(withCompressedContext).toContain('<M:compressed_context>')
   expect(withCompressedContext).toContain('keep codex-only')
+})
+
+test('manager template renders intents block when provided', async () => {
+  const template = await loadSystemPrompt('manager')
+  const withIntents = renderPromptTemplate(template, {
+    ...baseTemplateValues,
+    intents:
+      'intents:\n  - id: intent-1\n    status: done\n    priority: high\n    title: Finish report',
+  })
+  expect(withIntents).toContain('<M:intents>')
+  expect(withIntents).toContain('intent-1')
 })

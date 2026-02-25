@@ -10,6 +10,7 @@
 - `GET /api/messages?limit=...`
 - `GET /api/messages/export?limit=...`
 - `GET /api/tasks?limit=...`
+- `GET /api/todos?limit=...`
 - `GET /api/tasks/:id/archive`
 - `GET /api/tasks/:id/progress`
 - `POST /api/tasks/:id/cancel`
@@ -33,6 +34,9 @@
 - `MIMIKIT_WORKER_REASONING_EFFORT`
 - `MIMIKIT_MANAGER_PROMPT_MAX_TOKENS`
 - `MIMIKIT_MANAGER_CREATE_TASK_DEBOUNCE_MS`
+- `MIMIKIT_MANAGER_INTENT_WINDOW_MAX_COUNT`
+- `MIMIKIT_MANAGER_INTENT_WINDOW_MIN_COUNT`
+- `MIMIKIT_MANAGER_INTENT_WINDOW_MAX_BYTES`
 
 ## 配置结构（`config/default.yaml`）
 
@@ -41,6 +45,7 @@
   - `prompt.maxTokens`：manager prompt token 上限（`MIMIKIT_MANAGER_PROMPT_MAX_TOKENS` 覆盖）
   - `taskCreate.debounceMs`：`create_task` 去抖窗口（`MIMIKIT_MANAGER_CREATE_TASK_DEBOUNCE_MS` 覆盖）
   - `taskWindow.{minCount,maxCount,maxBytes}`：manager 每轮注入任务窗口
+  - `intentWindow.{minCount,maxCount,maxBytes}`：manager 每轮注入 intent 窗口
 - `worker`
   - `maxConcurrent`：并发 worker 上限
   - `retry.{maxAttempts,backoffMs}`：worker 重试策略
@@ -70,6 +75,7 @@
 - 唤醒来源四类：`user_input`、`task_result`、`cron`、`idle`
 - 四类均为实时 signal（`notifyManagerLoop`）
 - `idle` 由 `idle-wake-loop` 在持续闲暇窗口内按阈值触发（单次）
+- 当存在可触发 intent 时，`idle-wake-loop` 会优先发布 `system_event.name=intent_trigger`
 - manager 推理输入来自 `inputs/results/history`，并遵循可见性过滤：全部非 system 消息 + `visibility=agent|all` 的 system 消息。
 - 若存在 `managerCompressedContext`，会通过 `M:compressed_context` 注入 manager prompt，作为跨 thread 压缩记忆。
 
@@ -90,6 +96,8 @@
   - `resultsCursor`
 - `managerTurn`：manager 会话轮次计数
 - `managerCompressedContext`：`compress_context` 生成的跨轮摘要
+- `idleIntents`：活跃 intent（`pending|blocked`）
+- `idleIntentArchive`：归档 intent（`done`）
 - 旧 grouped channel 结构不再兼容解析。
 
 ## Restart 语义

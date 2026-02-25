@@ -27,6 +27,7 @@ const getDefaultSnapshot = (orchestrator: Orchestrator) =>
 const buildSnapshotHint = (orchestrator: Orchestrator) => ({
   status: orchestrator.getStatus(),
   tasks: orchestrator.getTasks(DEFAULT_TASK_LIMIT),
+  todos: orchestrator.getTodos(DEFAULT_TASK_LIMIT),
   stream: cloneUiStream(orchestrator.getWebUiStreamSnapshot()),
 })
 
@@ -129,6 +130,7 @@ export const registerApiRoutes = (
       lastSnapshotHintEtag = buildPayloadEtag('events:hint', {
         status: initial.status,
         tasks: initial.tasks,
+        todos: initial.todos,
         stream: initial.stream,
       })
       lastStream = cloneUiStream(initial.stream)
@@ -222,6 +224,11 @@ export const registerApiRoutes = (
   app.get('/api/tasks', (request) => {
     const query = request.query as Record<string, unknown> | undefined
     return orchestrator.getTasks(parseTaskLimit(query?.limit))
+  })
+
+  app.get('/api/todos', (request) => {
+    const query = request.query as Record<string, unknown> | undefined
+    return orchestrator.getTodos(parseTaskLimit(query?.limit))
   })
 
   registerTaskArchiveRoute(app, orchestrator, config)

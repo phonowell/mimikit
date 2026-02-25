@@ -41,6 +41,55 @@ export const compressContextSchema = z.object({}).strict()
 
 export const restartSchema = z.object({}).strict()
 
+const intentPrioritySchema = z.enum(['high', 'normal', 'low'])
+const intentStatusSchema = z.enum(['pending', 'blocked', 'done'])
+const intentSourceSchema = z.enum([
+  'user_request',
+  'agent_auto',
+  'retry_decision',
+])
+
+export const createIntentSchema = z
+  .object({
+    prompt: nonEmptyString,
+    title: nonEmptyString,
+    priority: intentPrioritySchema.optional(),
+    source: intentSourceSchema.optional(),
+  })
+  .strict()
+
+export const updateIntentSchema = z
+  .object({
+    id: nonEmptyString,
+    prompt: nonEmptyString.optional(),
+    title: nonEmptyString.optional(),
+    priority: intentPrioritySchema.optional(),
+    status: intentStatusSchema.optional(),
+    last_task_id: nonEmptyString.optional(),
+  })
+  .strict()
+  .superRefine((data, ctx) => {
+    if (
+      data.prompt === undefined &&
+      data.title === undefined &&
+      data.priority === undefined &&
+      data.status === undefined &&
+      data.last_task_id === undefined
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'at least one editable field is required',
+        path: ['id'],
+      })
+    }
+  })
+
+export const deleteIntentSchema = z
+  .object({
+    id: nonEmptyString,
+  })
+  .strict()
+
 const parseSummary = (
   item: Parsed,
 ): { taskId: string; summary: string } | undefined => {

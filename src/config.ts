@@ -32,6 +32,14 @@ export type AppConfig = {
       /** Task list retention byte limit */
       maxBytes: number
     }
+    intentWindow: {
+      /** Intent list retention upper bound */
+      maxCount: number
+      /** Intent list retention lower bound */
+      minCount: number
+      /** Intent list retention byte limit */
+      maxBytes: number
+    }
   }
   /** Worker execution configuration */
   worker: {

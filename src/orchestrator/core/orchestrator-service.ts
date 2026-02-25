@@ -11,6 +11,7 @@ import { newId, nowIso } from '../../shared/utils.js'
 import { appendHistory } from '../../storage/history-jsonl.js'
 import { cancelTask } from '../../worker/cancel-task.js'
 import { enqueuePendingWorkerTasks, workerLoop } from '../../worker/dispatch.js'
+import { sortIdleIntents } from '../read-model/intent-select.js'
 import { buildTaskViews } from '../read-model/task-view.js'
 
 import { notifyManagerLoop } from './manager-signal.js'
@@ -36,7 +37,7 @@ import { waitForUiSignal } from './ui-signal.js'
 import { notifyWorkerLoop } from './worker-signal.js'
 
 import type { RuntimeState, UiWakeKind, UserMeta } from './runtime-state.js'
-import type { CronJob, Task } from '../../types/index.js'
+import type { CronJob, IdleIntent, Task } from '../../types/index.js'
 
 const SHUTDOWN_MANAGER_WAIT_POLL_MS = 50
 
@@ -61,6 +62,8 @@ export class Orchestrator {
       queues: { inputsCursor: 0, resultsCursor: 0 },
       tasks: [],
       cronJobs: [],
+      idleIntents: [],
+      idleIntentArchive: [],
       managerTurn: 0,
       uiStream: null,
       runningControllers: new Map(),
@@ -147,6 +150,16 @@ export class Orchestrator {
     return buildTaskViews(this.runtime.tasks, this.runtime.cronJobs, limit)
   }
 
+  getTodos(limit = 200): { items: IdleIntent[] } {
+    const items = sortIdleIntents([
+      ...this.runtime.idleIntents,
+      ...this.runtime.idleIntentArchive,
+    ])
+      .slice(0, Math.max(0, limit))
+      .map((item) => ({ ...item }))
+    return { items }
+  }
+
   getWebUiSnapshot(messageLimit = 50, taskLimit = 200) {
     return (async () => ({
       status: this.getStatus(),
@@ -156,6 +169,7 @@ export class Orchestrator {
         this.runtime.cronJobs,
         taskLimit,
       ),
+      todos: this.getTodos(taskLimit),
       stream: this.runtime.uiStream ? { ...this.runtime.uiStream } : null,
     }))()
   }

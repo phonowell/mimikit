@@ -9,6 +9,7 @@ import {
 
 import type {
   CronJob,
+  IdleIntent,
   Task,
   TaskCancelMeta,
   TaskResult,
@@ -16,6 +17,7 @@ import type {
 
 const TASK_PROMPT_MAX_CHARS = 240
 const TASK_OUTPUT_MAX_CHARS = 320
+const INTENT_PROMPT_MAX_CHARS = 220
 
 const truncateForPrompt = (value: string, maxChars: number): string => {
   const normalized = value.replace(/\s+/g, ' ').trim()
@@ -154,4 +156,28 @@ export const formatResultsYaml = (
     })
 
   return escapeCdata(stringifyPromptYaml({ tasks: entries }))
+}
+
+const formatIntentEntry = (intent: IdleIntent): Record<string, unknown> => ({
+  id: intent.id,
+  status: intent.status,
+  priority: intent.priority,
+  source: intent.source,
+  title: intent.title.trim() || intent.id,
+  prompt: truncateForPrompt(intent.prompt, INTENT_PROMPT_MAX_CHARS),
+  created_at: intent.createdAt,
+  updated_at: intent.updatedAt,
+  attempts: intent.attempts,
+  max_attempts: intent.maxAttempts,
+  ...(intent.lastTaskId ? { last_task_id: intent.lastTaskId } : {}),
+  ...(intent.archivedAt ? { archived_at: intent.archivedAt } : {}),
+})
+
+export const formatIntentsYaml = (intents: IdleIntent[]): string => {
+  if (intents.length === 0) return ''
+  return escapeCdata(
+    stringifyPromptYaml({
+      intents: intents.map(formatIntentEntry),
+    }),
+  )
 }

@@ -20,7 +20,7 @@ const renderAttemptedAction = (item: Parsed): string => {
 }
 
 const buildUnknownActionHint = (): string =>
-  '仅可使用已注册 action：M:create_task, M:cancel_task, M:compress_context, M:summarize_task_result, M:query_history, M:restart_server。'
+  '仅可使用已注册 action：M:create_intent, M:update_intent, M:delete_intent, M:create_task, M:cancel_task, M:compress_context, M:summarize_task_result, M:query_history, M:restart_server。'
 
 const pushFeedback = (
   feedback: ManagerActionFeedback[],

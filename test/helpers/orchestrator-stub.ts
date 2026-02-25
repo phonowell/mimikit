@@ -5,6 +5,7 @@ import type { Orchestrator } from '../../src/orchestrator/core/orchestrator-serv
 export const createOrchestratorStub = () => {
   const calls: Array<{ limit: number; afterId?: string }> = []
   const taskLimitCalls: number[] = []
+  const todoLimitCalls: number[] = []
   const addInputCalls: Array<{ text: string; meta: InputMeta; quote?: string }> =
     []
   const orchestrator = {
@@ -38,9 +39,13 @@ export const createOrchestratorStub = () => {
       taskLimitCalls.push(limit)
       return { tasks: [], counts: {} }
     },
+    getTodos: (limit: number) => {
+      todoLimitCalls.push(limit)
+      return { items: [] }
+    },
     getTaskById: () => undefined,
     cancelTask: async () => ({ ok: false, status: 'not_found' as const }),
     stopAndPersist: async () => undefined,
   } as unknown as Orchestrator
-  return { orchestrator, calls, taskLimitCalls, addInputCalls }
+  return { orchestrator, calls, taskLimitCalls, todoLimitCalls, addInputCalls }
 }

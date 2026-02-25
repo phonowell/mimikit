@@ -3,6 +3,7 @@ import { createMessagesController } from './messages/controller.js'
 import { bindRestart } from './restart.js'
 import { UI_TEXT } from './system-text.js'
 import { bindTasksPanel } from './tasks.js'
+import { bindTodosPanel } from './todos.js'
 
 const $ = (sel) => document.querySelector(sel)
 
@@ -28,6 +29,10 @@ const elements = {
   workerDots: $('[data-worker-dots]'),
   tasksCloseBtn: $('[data-tasks-close]'),
   tasksList: $('[data-tasks-list]'),
+  todosDialog: $('[data-todos-dialog]'),
+  todosOpenBtn: $('[data-todos-open]'),
+  todosCloseBtn: $('[data-todos-close]'),
+  todosList: $('[data-todos-list]'),
 }
 
 const FAVICON_COLOR_BY_STATE = {
@@ -110,6 +115,12 @@ const tasksPanel = bindTasksPanel({
   tasksOpenBtn: elements.tasksOpenBtn,
   tasksCloseBtn: elements.tasksCloseBtn,
 })
+const todosPanel = bindTodosPanel({
+  todosList: elements.todosList,
+  todosDialog: elements.todosDialog,
+  todosOpenBtn: elements.todosOpenBtn,
+  todosCloseBtn: elements.todosCloseBtn,
+})
 
 const messages = createMessagesController({
   messagesEl: elements.messagesEl,
@@ -124,8 +135,10 @@ const messages = createMessagesController({
   quoteText: elements.quoteText,
   quoteClearBtn: elements.quoteClearBtn,
   onTasksSnapshot: (tasks) => tasksPanel?.applyTasksSnapshot?.(tasks),
+  onTodosSnapshot: (todos) => todosPanel?.applyTodosSnapshot?.(todos),
   onDisconnected: () => {
     tasksPanel?.setDisconnected?.()
+    todosPanel?.setDisconnected?.()
   },
 })
 

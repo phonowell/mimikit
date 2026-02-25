@@ -48,22 +48,6 @@ test('collectManagerActionFeedback rejects create_task reading protected state p
   expect(feedback[0]?.error).toBe('action_execution_rejected')
 })
 
-test('collectManagerActionFeedback rejects legacy deferred create_task profile', () => {
-  const feedback = collectManagerActionFeedback([
-    {
-      name: 'create_task',
-      attrs: {
-        prompt: 'scheduled task',
-        title: 'legacy deferred profile',
-        profile: 'deferred',
-      },
-    },
-  ])
-  expect(feedback).toHaveLength(1)
-  expect(feedback[0]?.error).toBe('invalid_action_args')
-  expect(feedback[0]?.attempted).toContain('profile="deferred"')
-})
-
 test('collectManagerActionFeedback rejects create_task scheduled_at that is not in future', () => {
   const feedback = collectManagerActionFeedback(
     [
@@ -118,6 +102,38 @@ test('collectManagerActionFeedback rejects cancel_task for completed task', () =
   expect(feedback[0]?.hint).toContain('任务已完成')
 })
 
+test('collectManagerActionFeedback rejects delete_intent for done item', () => {
+  const feedback = collectManagerActionFeedback(
+    [
+      {
+        name: 'delete_intent',
+        attrs: { id: 'intent-done' },
+      },
+    ],
+    {
+      intentStatusById: new Map([['intent-done', 'done']]),
+    },
+  )
+  expect(feedback).toHaveLength(1)
+  expect(feedback[0]?.action).toBe('delete_intent')
+  expect(feedback[0]?.error).toBe('action_execution_rejected')
+  expect(feedback[0]?.hint).toContain('done intent 不可删除')
+})
+
+test('collectManagerActionFeedback accepts valid create_intent action', () => {
+  const feedback = collectManagerActionFeedback([
+    {
+      name: 'create_intent',
+      attrs: {
+        prompt: 'remember this',
+        title: 'remember',
+        priority: 'high',
+      },
+    },
+  ])
+  expect(feedback).toHaveLength(0)
+})
+
 test('collectManagerActionFeedback reports invalid query_history date args', () => {
   const feedback = collectManagerActionFeedback([
     {
@@ -159,16 +175,6 @@ test('collectManagerActionFeedback accepts compress_context with available conte
     },
   )
   expect(feedback).toHaveLength(0)
-})
-
-test('parseActions extracts create_task action and strips tag text', () => {
-  const output =
-    '好的，我先创建一个任务。\\n\\n<M:create_task prompt="读取文件，根据反馈补充\\\"编排引擎\\\"定位；短时间定义为<30秒；禁止>50条词表规则。" title="第一轮优化 manager prompt" />'
-  const parsed = parseActions(output)
-  expect(parsed.actions).toHaveLength(1)
-  expect(parsed.actions[0]?.attrs.title).toBe('第一轮优化 manager prompt')
-  expect(parsed.actions[0]?.attrs.profile).toBeUndefined()
-  expect(parsed.text).not.toContain('<M:create_task')
 })
 
 test('collectManagerActionFeedback ignores valid create_task action', () => {

@@ -1,5 +1,6 @@
 import { parseActions } from '../actions/protocol/parse.js'
 import { appendLog } from '../log/append.js'
+import { selectRecentIntents } from '../orchestrator/read-model/intent-select.js'
 import { selectRecentTasks } from '../orchestrator/read-model/task-select.js'
 import { mergeUsageAdditive } from '../shared/token-usage.js'
 import { readHistory } from '../storage/history-jsonl.js'
@@ -25,6 +26,33 @@ import type {
 } from '../types/index.js'
 
 const STREAM_TEXT_FLUSH_MS = 64
+const INTENT_TRIGGER_EVENT_RE =
+  /<M:system_event[^>]*name="intent_trigger"[^>]*>([\s\S]*?)<\/M:system_event>/g
+
+const collectTriggeredIntentIds = (inputs: UserInput[]): Set<string> => {
+  const ids = new Set<string>()
+  for (const input of inputs) {
+    if (input.role !== 'system') continue
+    if (!input.text.includes('name="intent_trigger"')) continue
+    INTENT_TRIGGER_EVENT_RE.lastIndex = 0
+    let match = INTENT_TRIGGER_EVENT_RE.exec(input.text)
+    while (match) {
+      const raw = match[1]?.trim()
+      if (raw) {
+        try {
+          const payload = JSON.parse(raw) as { intent_id?: unknown }
+          const id =
+            typeof payload.intent_id === 'string'
+              ? payload.intent_id.trim()
+              : ''
+          if (id) ids.add(id)
+        } catch {}
+      }
+      match = INTENT_TRIGGER_EVENT_RE.exec(input.text)
+    }
+  }
+  return ids
+}
 
 export const runManagerBatch = async (params: {
   runtime: RuntimeState
@@ -49,6 +77,16 @@ export const runManagerBatch = async (params: {
     minCount: runtime.config.manager.taskWindow.minCount,
     maxCount: runtime.config.manager.taskWindow.maxCount,
     maxBytes: runtime.config.manager.taskWindow.maxBytes,
+  })
+  const triggerIntentIds = collectTriggeredIntentIds(inputs)
+  const intentsSource = [
+    ...runtime.idleIntents,
+    ...runtime.idleIntentArchive,
+  ].filter((intent) => !triggerIntentIds.has(intent.id))
+  const intents = selectRecentIntents(intentsSource, {
+    minCount: runtime.config.manager.intentWindow.minCount,
+    maxCount: runtime.config.manager.intentWindow.maxCount,
+    maxBytes: runtime.config.manager.intentWindow.maxBytes,
   })
 
   let streamRawOutput = ''
@@ -90,6 +128,7 @@ export const runManagerBatch = async (params: {
       inputs,
       results,
       tasks,
+      intents,
       cronJobs: runtime.cronJobs,
       ...(extra?.historyLookup ? { historyLookup: extra.historyLookup } : {}),
       ...(extra?.actionFeedback
@@ -152,6 +191,11 @@ export const runManagerBatch = async (params: {
         ),
         enabledCronJobIds: new Set(
           runtime.cronJobs.filter((job) => job.enabled).map((job) => job.id),
+        ),
+        intentStatusById: new Map(
+          [...runtime.idleIntents, ...runtime.idleIntentArchive].map(
+            (intent) => [intent.id, intent.status],
+          ),
         ),
         hasCompressibleContext:
           Boolean(runtime.managerCompressedContext?.trim()) ||

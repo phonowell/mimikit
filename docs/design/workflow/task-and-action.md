@@ -8,6 +8,13 @@
 - `running`：worker 执行中。
 - `succeeded | failed | canceled`：终态。
 
+## Idle Intent（Todos）生命周期
+
+- 对外名称：Todos；后端领域名：`idle_intents`。
+- 状态：`pending | blocked | done`。
+- `done` 归档存储在 `idleIntentArchive`，并继续注入 manager 上下文用于防重复创建。
+- `idle-wake-loop` 到达闲暇阈值后，优先触发一条 `pending` intent（按 `priority + FIFO`），发布 `system_event.name=intent_trigger`。
+
 ## 派发与去重
 
 - manager 通过 `<M:create_task ... />` 派发任务。
@@ -63,6 +70,25 @@
   - `cron` 与 `scheduled_at` 互斥
   - 不允许传 `profile`
 - 去重：`prompt + title + profile(worker)`
+
+### `create_intent`
+
+- 入参：`prompt`、`title`、`priority?`、`source?`
+- 默认：`priority=normal`、`source=user_request`
+- 行为：新增 `pending` intent，写入系统消息 `intent_created`
+
+### `update_intent`
+
+- 入参：`id` + 至少一个更新字段（`prompt/title/priority/status/last_task_id`）
+- 行为：
+  - 常规更新写入系统消息 `intent_updated`
+  - 当 `status=done` 时从活跃队列移入归档
+
+### `delete_intent`
+
+- 入参：`id`
+- 约束：仅允许删除 `pending|blocked`；禁止删除 `done`
+- 行为：删除成功写入系统消息 `intent_deleted`
 
 ### `cancel_task`
 

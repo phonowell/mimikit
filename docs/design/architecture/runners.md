@@ -12,13 +12,13 @@
 - 注入策略：代码仅注入内容；`<M:...>` 标签与结构由模板声明
 - Provider 路径：`runWithProvider(provider='openai-chat')`
 - Provider role：`manager`
-- 会话连续性：依赖本地 `history/tasks/managerCompressedContext`，不依赖 provider thread
+- 会话连续性：依赖本地 `history/tasks/intents/managerCompressedContext`，不依赖 provider thread
 - 应用层压缩：`compress_context` 基于本地上下文生成摘要并写入 `managerCompressedContext`
 - 输出：`{ output, elapsedMs, usage? }`
 
 流程：
 
-1. 基于 inputs/results/tasks/history/cron 上下文构造 manager prompt。
+1. 基于 inputs/results/tasks/intents/history/cron 上下文构造 manager prompt。
 2. 执行 prompt 预算限制并计算 timeout。
 3. 调用 OpenAI-compatible `chat/completions`（流式 SSE）。
 4. 若出现 action_feedback/query_history，则在同批次内继续下一轮推理。

@@ -20,6 +20,7 @@ const TASK_STATUS_LABEL_MAP = Object.freeze({
 export const UI_TEXT = Object.freeze({
   conversationTitleFallback: 'Mimikit',
   noTasks: 'No tasks',
+  noTodos: 'No todos',
   untitledTask: 'Untitled',
   cancelingTask: 'Canceling',
   quote: 'Quote',

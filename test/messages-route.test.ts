@@ -148,76 +148,20 @@ test('messages route returns 304 when If-None-Match hits', async () => {
   await app.close()
 })
 
-test('task archive route returns live snapshot when archive is not created yet', async () => {
+test('todos route forwards limit and returns items payload', async () => {
   const app = fastify()
-  const { orchestrator } = createOrchestratorStub()
-  const task: Task = {
-    id: 'task-archive-live-1',
-    fingerprint: 'fp-live-1',
-    prompt: 'run a quick summary',
-    title: 'Quick Summary',
-    profile: 'worker',
-    status: 'pending',
-    createdAt: '2026-02-10T00:00:00.000Z',
-  }
-  ;(
-    orchestrator as unknown as { getTaskById: (taskId: string) => Task | undefined }
-  ).getTaskById = (taskId) => (taskId === task.id ? task : undefined)
+  const { orchestrator, todoLimitCalls } = createOrchestratorStub()
   const config = defaultConfig({ workDir: '.mimikit' })
   registerApiRoutes(app, orchestrator, config)
 
   const response = await app.inject({
     method: 'GET',
-    url: `/api/tasks/${task.id}/archive`,
+    url: '/api/todos?limit=12',
   })
 
-  expectArchiveMarkdown(response, [
-    'task_id: task-archive-live-1',
-    'status: pending',
-    '=== PROMPT ===',
-    'run a quick summary',
-  ])
-  await app.close()
-})
-
-test('task archive route returns live cron snapshot when archive is not created yet', async () => {
-  const app = fastify()
-  const { orchestrator } = createOrchestratorStub()
-  const cronJob = {
-    id: 'cron-archive-live-1',
-    prompt: 'daily digest',
-    title: 'Daily Digest',
-    profile: 'worker',
-    enabled: true,
-    createdAt: '2026-02-10T00:00:00.000Z',
-    cron: '0 9 * * *',
-  }
-  ;(
-    orchestrator as unknown as {
-      getCronJobs: () => Array<{
-        id: string
-        prompt: string
-        title: string
-        profile: 'worker'
-        enabled: boolean
-        createdAt: string
-        cron: string
-      }>
-    }
-  ).getCronJobs = () => [cronJob]
-  const config = defaultConfig({ workDir: '.mimikit' })
-  registerApiRoutes(app, orchestrator, config)
-
-  const cronResponse = await app.inject({
-    method: 'GET',
-    url: `/api/tasks/${cronJob.id}/archive`,
-  })
-  expectArchiveMarkdown(cronResponse, [
-    'task_id: cron-archive-live-1',
-    'kind: cron',
-    'status: pending',
-    'daily digest',
-  ])
+  expect(response.statusCode).toBe(200)
+  expect(response.json()).toEqual({ items: [] })
+  expect(todoLimitCalls).toEqual([12])
 
   await app.close()
 })

@@ -14,6 +14,8 @@ export const hydrateRuntimeState = async (
   const snapshot = await loadRuntimeSnapshot(runtime.config.workDir)
   runtime.tasks = snapshot.tasks
   runtime.cronJobs = snapshot.cronJobs ?? []
+  runtime.idleIntents = snapshot.idleIntents ?? []
+  runtime.idleIntentArchive = snapshot.idleIntentArchive ?? []
   runtime.managerTurn = snapshot.managerTurn ?? 0
   if (snapshot.managerCompressedContext)
     runtime.managerCompressedContext = snapshot.managerCompressedContext
@@ -41,6 +43,8 @@ export const persistRuntimeState = async (
   await saveRuntimeSnapshot(runtime.config.workDir, {
     tasks: selectPersistedTasks(runtime.tasks),
     cronJobs: runtime.cronJobs,
+    idleIntents: runtime.idleIntents,
+    idleIntentArchive: runtime.idleIntentArchive,
     managerTurn: runtime.managerTurn,
     queues: runtime.queues,
     ...(runtime.managerCompressedContext

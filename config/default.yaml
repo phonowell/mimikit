@@ -8,6 +8,10 @@ manager:
     maxCount: 20
     minCount: 5
     maxBytes: 20480
+  intentWindow:
+    maxCount: 20
+    minCount: 5
+    maxBytes: 12288
 worker:
   maxConcurrent: 3
   retry:

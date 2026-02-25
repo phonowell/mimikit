@@ -12,7 +12,7 @@ import type { MessageVisibility } from '../types/index.js'
 
 export type ManagerSystemEventName = Extract<
   SystemEventName,
-  'cron_trigger' | 'idle'
+  'cron_trigger' | 'idle' | 'intent_trigger'
 >
 
 export const formatManagerSystemEventText = (params: {

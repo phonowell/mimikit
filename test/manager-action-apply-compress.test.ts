@@ -46,6 +46,8 @@ const createRuntime = async (): Promise<RuntimeState> => {
     },
     tasks: [],
     cronJobs: [],
+    idleIntents: [],
+    idleIntentArchive: [],
     managerTurn: 0,
     uiStream: null,
     runningControllers: new Map(),

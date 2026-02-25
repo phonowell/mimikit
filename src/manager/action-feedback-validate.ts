@@ -4,17 +4,23 @@ import { hasForbiddenWorkerStatePath } from './action-apply-guards.js'
 import {
   cancelSchema,
   compressContextSchema,
+  createIntentSchema,
   createSchema,
+  deleteIntentSchema,
   restartSchema,
   summarizeSchema,
+  updateIntentSchema,
 } from './action-apply-schema.js'
 import { queryHistorySchema } from './history-query-request.js'
 
 import type { Parsed } from '../actions/model/spec.js'
-import type { TaskStatus } from '../types/index.js'
+import type { IdleIntentStatus, TaskStatus } from '../types/index.js'
 import type { ZodError, ZodSchema } from 'zod'
 
 export const REGISTERED_MANAGER_ACTIONS = new Set([
+  'create_intent',
+  'update_intent',
+  'delete_intent',
   'create_task',
   'cancel_task',
   'compress_context',
@@ -25,6 +31,7 @@ export const REGISTERED_MANAGER_ACTIONS = new Set([
 
 export type FeedbackContext = {
   taskStatusById?: Map<string, TaskStatus>
+  intentStatusById?: Map<string, IdleIntentStatus>
   enabledCronJobIds?: Set<string>
   hasCompressibleContext?: boolean
   scheduleNowIso?: string
@@ -184,11 +191,69 @@ const validateCompressContext = (
   ]
 }
 
+const validateCreateIntent = (item: Parsed): ValidationIssue[] =>
+  validateWithSchema(item, createIntentSchema)
+
+const validateUpdateIntent = (
+  item: Parsed,
+  context: FeedbackContext,
+): ValidationIssue[] => {
+  const parsed = updateIntentSchema.safeParse(item.attrs)
+  if (!parsed.success) return [invalidArgsIssue(parsed.error)]
+  const intentStatus = context.intentStatusById?.get(parsed.data.id)
+  if (!intentStatus) {
+    return [
+      {
+        error: ACTION_EXECUTION_REJECTED,
+        hint: 'update_intent 执行失败：未找到 intent ID。',
+      },
+    ]
+  }
+  if (intentStatus === 'done') {
+    return [
+      {
+        error: ACTION_EXECUTION_REJECTED,
+        hint: 'update_intent 执行失败：done intent 不可修改。',
+      },
+    ]
+  }
+  return []
+}
+
+const validateDeleteIntent = (
+  item: Parsed,
+  context: FeedbackContext,
+): ValidationIssue[] => {
+  const parsed = deleteIntentSchema.safeParse(item.attrs)
+  if (!parsed.success) return [invalidArgsIssue(parsed.error)]
+  const intentStatus = context.intentStatusById?.get(parsed.data.id)
+  if (!intentStatus) {
+    return [
+      {
+        error: ACTION_EXECUTION_REJECTED,
+        hint: 'delete_intent 执行失败：未找到 intent ID。',
+      },
+    ]
+  }
+  if (intentStatus === 'done') {
+    return [
+      {
+        error: ACTION_EXECUTION_REJECTED,
+        hint: 'delete_intent 执行失败：done intent 不可删除。',
+      },
+    ]
+  }
+  return []
+}
+
 export const validateRegisteredManagerAction = (
   item: Parsed,
   context: FeedbackContext = {},
 ): ValidationIssue[] => {
   if (!REGISTERED_MANAGER_ACTIONS.has(item.name)) return []
+  if (item.name === 'create_intent') return validateCreateIntent(item)
+  if (item.name === 'update_intent') return validateUpdateIntent(item, context)
+  if (item.name === 'delete_intent') return validateDeleteIntent(item, context)
   if (item.name === 'create_task') return validateCreateTask(item, context)
   if (item.name === 'cancel_task') return validateCancelTask(item, context)
   if (item.name === 'compress_context')
