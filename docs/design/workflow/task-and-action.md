@@ -73,10 +73,10 @@
 
 - 入参：无（严格空对象）
 - 行为：
-  1. 复用当前 `plannerSessionId` 对应 thread 调用 Codex 产出会话压缩摘要
-  2. 将摘要写入 runtime `managerCompressedContext`
-  3. 清空 `plannerSessionId`，下一轮 manager 进入新 thread 继续执行
-- 约束：无可用 `plannerSessionId` 时拒绝执行并返回 `action_feedback`
+  1. 基于本地 `history + tasks + managerCompressedContext` 组装压缩上下文
+  2. 调用 manager provider 产出结构化摘要
+  3. 将摘要写入 runtime `managerCompressedContext`
+- 约束：无可压缩上下文时拒绝执行并返回 `action_feedback`
 
 ### `summarize_task_result`
 

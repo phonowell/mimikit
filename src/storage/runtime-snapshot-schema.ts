@@ -14,7 +14,6 @@ export type RuntimeSnapshot = {
     inputsCursor: number
     resultsCursor: number
   }
-  plannerSessionId?: string
   managerCompressedContext?: string
 }
 
@@ -96,7 +95,6 @@ const runtimeSnapshotSchema = z
       })
       .strict()
       .optional(),
-    plannerSessionId: z.string().trim().min(1).optional(),
     managerCompressedContext: z.string().trim().min(1).optional(),
   })
   .strict()
@@ -129,9 +127,6 @@ export const parseRuntimeSnapshot = (value: unknown): RuntimeSnapshot => {
       ? { managerTurn: parsed.managerTurn }
       : {}),
     ...(parsed.queues ? { queues: parsed.queues } : {}),
-    ...(parsed.plannerSessionId
-      ? { plannerSessionId: parsed.plannerSessionId }
-      : {}),
     ...(parsed.managerCompressedContext
       ? { managerCompressedContext: parsed.managerCompressedContext }
       : {}),

@@ -1,8 +1,7 @@
 manager:
   model: gpt-5.2-high
-  modelReasoningEffort: high
   prompt:
-    maxTokens: 8192
+    maxTokens: 4096
   taskCreate:
     debounceMs: 4000
   taskWindow:

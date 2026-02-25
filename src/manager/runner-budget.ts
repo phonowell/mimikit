@@ -1,7 +1,13 @@
 const BYTE_STEP = 1_024
 const TIMEOUT_STEP_MS = 2_500
 const DEFAULT_MANAGER_PROMPT_MAX_TOKENS = 8_192
-const PRUNE_ORDER = ['M:tasks', 'M:results']
+const PRUNE_ORDER = [
+  'M:tasks',
+  'M:results',
+  'M:history_lookup',
+  'M:user_profile',
+  'M:persona',
+]
 
 export const toError = (err: unknown): Error =>
   err instanceof Error ? err : new Error(String(err))

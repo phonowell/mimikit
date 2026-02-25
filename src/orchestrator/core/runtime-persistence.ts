@@ -15,9 +15,6 @@ export const hydrateRuntimeState = async (
   runtime.tasks = snapshot.tasks
   runtime.cronJobs = snapshot.cronJobs ?? []
   runtime.managerTurn = snapshot.managerTurn ?? 0
-  if (snapshot.plannerSessionId)
-    runtime.plannerSessionId = snapshot.plannerSessionId
-  else delete runtime.plannerSessionId
   if (snapshot.managerCompressedContext)
     runtime.managerCompressedContext = snapshot.managerCompressedContext
   else delete runtime.managerCompressedContext
@@ -46,9 +43,6 @@ export const persistRuntimeState = async (
     cronJobs: runtime.cronJobs,
     managerTurn: runtime.managerTurn,
     queues: runtime.queues,
-    ...(runtime.plannerSessionId
-      ? { plannerSessionId: runtime.plannerSessionId }
-      : {}),
     ...(runtime.managerCompressedContext
       ? { managerCompressedContext: runtime.managerCompressedContext }
       : {}),

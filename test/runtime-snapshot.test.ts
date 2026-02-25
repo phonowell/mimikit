@@ -100,14 +100,12 @@ test('runtime snapshot accepts queue cursors', async () => {
       inputsCursor: 3,
       resultsCursor: 9,
     },
-    plannerSessionId: 'planner-thread-1',
     managerCompressedContext: 'Goals\n- keep codex-only',
   })
 
   const loaded = await loadRuntimeSnapshot(stateDir)
   expect(loaded.queues?.resultsCursor).toBe(9)
   expect(loaded.queues?.inputsCursor).toBe(3)
-  expect(loaded.plannerSessionId).toBe('planner-thread-1')
   expect(loaded.managerCompressedContext).toContain('keep codex-only')
   expect(loaded.tasks[0]?.result?.output).toBe('ok')
 })

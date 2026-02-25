@@ -133,7 +133,7 @@ test('collectManagerActionFeedback reports invalid query_history date args', () 
   expect(feedback[0]?.error).toBe('invalid_action_args')
 })
 
-test('collectManagerActionFeedback rejects compress_context when session is unavailable', () => {
+test('collectManagerActionFeedback rejects compress_context when context is unavailable', () => {
   const feedback = collectManagerActionFeedback([
     {
       name: 'compress_context',
@@ -143,10 +143,10 @@ test('collectManagerActionFeedback rejects compress_context when session is unav
   expect(feedback).toHaveLength(1)
   expect(feedback[0]?.action).toBe('compress_context')
   expect(feedback[0]?.error).toBe('action_execution_rejected')
-  expect(feedback[0]?.hint).toContain('无可压缩的 manager 会话')
+  expect(feedback[0]?.hint).toContain('无可压缩上下文')
 })
 
-test('collectManagerActionFeedback accepts compress_context with active session', () => {
+test('collectManagerActionFeedback accepts compress_context with available context', () => {
   const feedback = collectManagerActionFeedback(
     [
       {
@@ -155,7 +155,7 @@ test('collectManagerActionFeedback accepts compress_context with active session'
       },
     ],
     {
-      hasPlannerSession: true,
+      hasCompressibleContext: true,
     },
   )
   expect(feedback).toHaveLength(0)

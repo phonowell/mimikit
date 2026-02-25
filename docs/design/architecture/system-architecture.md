@@ -5,7 +5,7 @@
 ## 架构边界
 
 - 一次性全量切换，不保留旧多角色链路与旧队列字段兼容层。
-- manager 与 worker 全量使用 `Codex SDK`。
+- manager 使用第三方 OpenAI-compatible `chat/completions`；worker 继续使用 `Codex SDK`。
 - `mimikit` 负责本地执行系统：状态机、队列、调度、可观测性。
 - HTTP 输入校验与参数归一化集中在 `src/http/helpers.ts`。
 - 本地持久化遵循进程内串行 + 文件锁（`proper-lockfile`）。
@@ -43,7 +43,7 @@ system 消息协议统一为：`summary + <M:system_event name="..." version="1"
 
 - manager loop 单飞，同一时刻仅一个活跃批次。
 - 队列 compact 仅在“已完全消费且达到阈值”时执行。
-- 持久化 `plannerSessionId`，启动后优先恢复会话；失效时自动重建。
+- manager 上下文连续性通过 `history + tasks + managerCompressedContext` 保持，不依赖 provider thread。
 - `restart/reset` 先回包，再等待 in-flight manager 批次收敛后持久化并退出。
 
 ## 细节索引

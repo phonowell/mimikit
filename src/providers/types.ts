@@ -1,7 +1,7 @@
 import type { TokenUsage } from '../types/index.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
-export type ProviderKind = 'codex-sdk'
+export type ProviderKind = 'codex-sdk' | 'openai-chat'
 
 export type ProviderResult = {
   output: string
@@ -33,7 +33,16 @@ export type CodexSdkProviderRequest = ProviderRequestBase & {
   onTextDelta?: TextDeltaListener
 }
 
-export type ProviderRequest = CodexSdkProviderRequest
+export type OpenAiChatProviderRequest = ProviderRequestBase & {
+  provider: 'openai-chat'
+  logPath?: string
+  logContext?: Record<string, unknown>
+  onTextDelta?: TextDeltaListener
+}
+
+export type ProviderRequest =
+  | CodexSdkProviderRequest
+  | OpenAiChatProviderRequest
 
 export type Provider<TRequest extends ProviderRequest> = {
   id: TRequest['provider']

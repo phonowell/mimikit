@@ -47,7 +47,6 @@ const createRuntime = async (): Promise<RuntimeState> => {
     tasks: [],
     cronJobs: [],
     managerTurn: 0,
-    plannerSessionId: 'thread-1',
     uiStream: null,
     runningControllers: new Map(),
     createTaskDebounce: new Map(),
@@ -63,12 +62,11 @@ beforeEach(() => {
   runWithProviderMock.mockReset()
 })
 
-test('compress_context stores summary and clears planner session', async () => {
+test('compress_context stores summary with local context', async () => {
   const runtime = await createRuntime()
   runWithProviderMock.mockResolvedValue({
     output: 'Goals\n- keep codex-only',
     elapsedMs: 10,
-    threadId: 'thread-1',
   })
 
   await applyTaskActions(runtime, [
@@ -81,21 +79,21 @@ test('compress_context stores summary and clears planner session', async () => {
   expect(runWithProviderMock).toHaveBeenCalledTimes(1)
   expect(runWithProviderMock).toHaveBeenCalledWith(
     expect.objectContaining({
-      provider: 'codex-sdk',
+      provider: 'openai-chat',
       role: 'manager',
-      threadId: 'thread-1',
     }),
   )
   expect(runtime.managerCompressedContext).toContain('Goals')
-  expect(runtime.plannerSessionId).toBeUndefined()
   const snapshot = await loadRuntimeSnapshot(runtime.config.workDir)
   expect(snapshot.managerCompressedContext).toContain('keep codex-only')
-  expect(snapshot.plannerSessionId).toBeUndefined()
 })
 
-test('compress_context is ignored when planner session is missing', async () => {
+test('compress_context runs even when there is no session thread', async () => {
   const runtime = await createRuntime()
-  delete runtime.plannerSessionId
+  runWithProviderMock.mockResolvedValue({
+    output: 'Goals\n- local only',
+    elapsedMs: 7,
+  })
 
   await applyTaskActions(runtime, [
     {
@@ -104,8 +102,8 @@ test('compress_context is ignored when planner session is missing', async () => 
     },
   ])
 
-  expect(runWithProviderMock).not.toHaveBeenCalled()
-  expect(runtime.managerCompressedContext).toBeUndefined()
+  expect(runWithProviderMock).toHaveBeenCalledTimes(1)
+  expect(runtime.managerCompressedContext).toContain('local only')
 })
 
 test('compress_context throws when summary is empty', async () => {
@@ -113,7 +111,6 @@ test('compress_context throws when summary is empty', async () => {
   runWithProviderMock.mockResolvedValue({
     output: '   ',
     elapsedMs: 8,
-    threadId: 'thread-1',
   })
 
   await expect(
@@ -126,5 +123,4 @@ test('compress_context throws when summary is empty', async () => {
   ).rejects.toThrow('compress_context_empty_summary')
 
   expect(runtime.managerCompressedContext).toBeUndefined()
-  expect(runtime.plannerSessionId).toBe('thread-1')
 })

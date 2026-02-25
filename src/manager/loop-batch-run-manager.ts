@@ -1,6 +1,7 @@
 import { parseActions } from '../actions/protocol/parse.js'
 import { appendLog } from '../log/append.js'
 import { selectRecentTasks } from '../orchestrator/read-model/task-select.js'
+import { mergeUsageAdditive } from '../shared/token-usage.js'
 import { readHistory } from '../storage/history-jsonl.js'
 
 import { collectManagerActionFeedback } from './action-feedback.js'
@@ -82,6 +83,7 @@ export const runManagerBatch = async (params: {
     historyLookup?: HistoryLookupMessage[]
     actionFeedback?: ManagerActionFeedback[]
   }) => {
+    let callUsage: TokenUsage | undefined
     const result = await runManager({
       stateDir: runtime.config.workDir,
       workDir: runtime.config.workDir,
@@ -100,35 +102,30 @@ export const runManagerBatch = async (params: {
         ? { env: { lastUser: runtime.lastUserMeta } }
         : {}),
       model: runtime.config.manager.model,
-      modelReasoningEffort: runtime.config.manager.modelReasoningEffort,
-      ...(runtime.plannerSessionId
-        ? { sessionId: runtime.plannerSessionId }
-        : {}),
       maxPromptTokens: runtime.config.manager.prompt.maxTokens,
       onTextDelta: (delta) => {
         if (!delta) return
         streamRawOutput += delta
         scheduleVisibleStreamFlush()
       },
-      onStreamReset: () => {
-        clearStreamFlushTimer()
-        streamRawOutput = ''
-        streamVisibleOutput = ''
-        resetUiStream(runtime, streamId)
-      },
       onUsage: (usage) => {
+        callUsage = usage
         streamUsage = usage
         scheduleVisibleStreamFlush()
       },
     })
-    if (result.sessionId) runtime.plannerSessionId = result.sessionId
-    if (result.usage) {
-      streamUsage = result.usage
+    const resolvedUsage = result.usage ?? callUsage
+    if (resolvedUsage) {
+      streamUsage = resolvedUsage
       scheduleVisibleStreamFlush()
     }
-    return result
+    return {
+      ...result,
+      ...(resolvedUsage ? { usage: resolvedUsage } : {}),
+    }
   }
   let elapsedMs = 0
+  let batchUsage: TokenUsage | undefined
   let previousQueryKey: string | undefined
   let extra: {
     historyLookup?: HistoryLookupMessage[]
@@ -139,6 +136,7 @@ export const runManagerBatch = async (params: {
     for (;;) {
       const runResult = await runOnce(extra)
       elapsedMs += runResult.elapsedMs
+      batchUsage = mergeUsageAdditive(batchUsage, runResult.usage)
       const parsed = parseActions(runResult.output)
       if (streamVisibleOutput !== parsed.text) {
         clearStreamFlushTimer()
@@ -155,7 +153,13 @@ export const runManagerBatch = async (params: {
         enabledCronJobIds: new Set(
           runtime.cronJobs.filter((job) => job.enabled).map((job) => job.id),
         ),
-        hasPlannerSession: Boolean(runtime.plannerSessionId),
+        hasCompressibleContext:
+          Boolean(runtime.managerCompressedContext?.trim()) ||
+          runtime.tasks.length > 0 ||
+          inputs.length > 0 ||
+          results.length > 0 ||
+          runtime.queues.inputsCursor > 0 ||
+          runtime.queues.resultsCursor > 0,
         scheduleNowIso,
       })
       const queryRequest = pickQueryHistoryRequest(parsed.actions)
@@ -180,9 +184,7 @@ export const runManagerBatch = async (params: {
         return {
           parsed,
           elapsedMs,
-          ...((streamUsage ?? runResult.usage)
-            ? { usage: streamUsage ?? runResult.usage }
-            : {}),
+          ...(batchUsage ? { usage: batchUsage } : {}),
         }
       }
       if (

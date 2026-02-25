@@ -30,7 +30,6 @@
 - `MIMIKIT_MANAGER_MODEL`
 - `MIMIKIT_WORKER_MODEL`
 - `MIMIKIT_REASONING_EFFORT`
-- `MIMIKIT_MANAGER_REASONING_EFFORT`
 - `MIMIKIT_WORKER_REASONING_EFFORT`
 - `MIMIKIT_MANAGER_PROMPT_MAX_TOKENS`
 - `MIMIKIT_MANAGER_CREATE_TASK_DEBOUNCE_MS`
@@ -39,7 +38,6 @@
 
 - `manager`
   - `model`：manager 默认模型（`MIMIKIT_MODEL`/`MIMIKIT_MANAGER_MODEL` 覆盖）
-  - `modelReasoningEffort`：manager 推理强度（`MIMIKIT_REASONING_EFFORT`/`MIMIKIT_MANAGER_REASONING_EFFORT` 覆盖）
   - `prompt.maxTokens`：manager prompt token 上限（`MIMIKIT_MANAGER_PROMPT_MAX_TOKENS` 覆盖）
   - `taskCreate.debounceMs`：`create_task` 去抖窗口（`MIMIKIT_MANAGER_CREATE_TASK_DEBOUNCE_MS` 覆盖）
   - `taskWindow.{minCount,maxCount,maxBytes}`：manager 每轮注入任务窗口
@@ -91,8 +89,7 @@
   - `inputsCursor`
   - `resultsCursor`
 - `managerTurn`：manager 会话轮次计数
-- `plannerSessionId`：manager 主会话线程 ID
-- `managerCompressedContext`：`compress_context` 生成的跨 thread 摘要
+- `managerCompressedContext`：`compress_context` 生成的跨轮摘要
 - 旧 grouped channel 结构不再兼容解析。
 
 ## Restart 语义

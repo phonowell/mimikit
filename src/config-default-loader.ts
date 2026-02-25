@@ -25,7 +25,6 @@ const defaultConfigSchema = z
     manager: z
       .object({
         model: z.string().min(1),
-        modelReasoningEffort: modelReasoningEffortSchema,
         prompt: z
           .object({
             maxTokens: z.number().int().positive(),

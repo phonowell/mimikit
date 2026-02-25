@@ -16,8 +16,6 @@ export type AppConfig = {
   manager: {
     /** Default manager model */
     model: string
-    /** Manager reasoning effort */
-    modelReasoningEffort: ModelReasoningEffort
     prompt: {
       /** Hard token limit for manager prompt */
       maxTokens: number

@@ -26,7 +26,7 @@ export const REGISTERED_MANAGER_ACTIONS = new Set([
 export type FeedbackContext = {
   taskStatusById?: Map<string, TaskStatus>
   enabledCronJobIds?: Set<string>
-  hasPlannerSession?: boolean
+  hasCompressibleContext?: boolean
   scheduleNowIso?: string
 }
 
@@ -175,11 +175,11 @@ const validateCompressContext = (
 ): ValidationIssue[] => {
   const issues = validateWithSchema(item, compressContextSchema)
   if (issues.length > 0) return issues
-  if (context.hasPlannerSession) return []
+  if (context.hasCompressibleContext) return []
   return [
     {
       error: ACTION_EXECUTION_REJECTED,
-      hint: 'compress_context 执行失败：当前无可压缩的 manager 会话。',
+      hint: 'compress_context 执行失败：当前无可压缩上下文。',
     },
   ]
 }

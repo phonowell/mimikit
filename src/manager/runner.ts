@@ -21,7 +21,6 @@ import type {
   TokenUsage,
   UserInput,
 } from '../types/index.js'
-import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
 export const runManager = async (params: {
   stateDir: string
@@ -35,16 +34,12 @@ export const runManager = async (params: {
   compressedContext?: string
   env?: ManagerEnv
   model?: string
-  modelReasoningEffort?: ModelReasoningEffort
-  sessionId?: string
   maxPromptTokens?: number
   onTextDelta?: (delta: string) => void
   onUsage?: (usage: TokenUsage) => void
-  onStreamReset?: () => void
 }): Promise<{
   output: string
   elapsedMs: number
-  sessionId?: string
   usage?: TokenUsage
 }> => {
   const prompt = await buildManagerPrompt({
@@ -81,46 +76,29 @@ export const runManager = async (params: {
       data,
     )
 
-  const callProvider = (threadId?: string) =>
+  const callProvider = () =>
     runWithProvider({
-      provider: 'codex-sdk',
+      provider: 'openai-chat',
       role: 'manager',
       prompt: budgetedPrompt.prompt,
       workDir: params.workDir,
       timeoutMs,
       ...(model ? { model } : {}),
-      ...(params.modelReasoningEffort
-        ? { modelReasoningEffort: params.modelReasoningEffort }
-        : {}),
-      ...(threadId ? { threadId } : {}),
       ...(params.onTextDelta ? { onTextDelta: params.onTextDelta } : {}),
       ...(params.onUsage ? { onUsage: params.onUsage } : {}),
     })
 
   try {
-    let result
-    try {
-      result = await callProvider(params.sessionId)
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      const invalidSession =
-        /session|thread/i.test(message) &&
-        /not found|404|unknown/i.test(message)
-      if (!params.sessionId || !invalidSession) throw error
-      params.onStreamReset?.()
-      result = await callProvider()
-    }
-
+    const result = await callProvider()
     await archive(result.threadId ?? undefined, { ...result, ok: true })
     return {
       output: result.output,
       elapsedMs: result.elapsedMs,
-      ...(result.threadId ? { sessionId: result.threadId } : {}),
       ...(result.usage ? { usage: result.usage } : {}),
     }
   } catch (error) {
     const err = toError(error)
-    await archive(params.sessionId, {
+    await archive(undefined, {
       output: '',
       ok: false,
       error: err.message,
