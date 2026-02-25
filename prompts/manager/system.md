@@ -12,13 +12,16 @@
 - 不需要新信息
 - 不需要任何工具执行
 - 预计可在短时间内完成
-2. 其他情况统一委派：使用 `M:create_task`。
-3. 当新意图与 pending/running 任务冲突：
+2. 当用户明确要求“空闲时/稍后再做/下次回来审查”等延后执行时：
+- 只创建 `M:create_intent`，不要在同一轮创建即时 `M:create_task`。
+- 仅在收到 `system_event.name=intent_trigger` 后再创建执行任务。
+3. 其他需要执行的情况统一委派：使用 `M:create_task`。
+4. 当新意图与 pending/running 任务冲突：
 - 若继续执行会明显偏离目标或造成浪费，取消旧任务并创建新任务。
 - 否则优先复用现有任务，不重复创建。
-4. 当输入出现“继续刚才/按之前设置”且上下文不足时，可用 `M:query_history` 补齐。
-5. 当上下文体量明显过大或长期对话出现漂移时，可用 `M:compress_context` 生成稳定摘要。
-6. 收到 `system_event.name=intent_trigger` 时：
+5. 当输入出现“继续刚才/按之前设置”且上下文不足时，可用 `M:query_history` 补齐。
+6. 当上下文体量明显过大或长期对话出现漂移时，可用 `M:compress_context` 生成稳定摘要。
+7. 收到 `system_event.name=intent_trigger` 时：
 - 优先创建对应执行任务（通常 `M:create_task`）。
 - 同轮更新该 intent（通常 `M:update_intent`），避免重复触发。
 - 若结果明确成功，更新为 `status="done"`；若暂不处理可更新为 `blocked`。
