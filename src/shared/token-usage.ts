@@ -12,6 +12,44 @@ const keepMonotonicUsageValue = (
   return Math.max(current, next)
 }
 
+const toTokenUsage = (params: {
+  input: number | undefined
+  output: number | undefined
+  inputCacheRead: number | undefined
+  inputCacheWrite: number | undefined
+  outputCache: number | undefined
+  total: number | undefined
+  sessionTotal: number | undefined
+}): TokenUsage | undefined => {
+  if (
+    params.input === undefined &&
+    params.output === undefined &&
+    params.inputCacheRead === undefined &&
+    params.inputCacheWrite === undefined &&
+    params.outputCache === undefined &&
+    params.total === undefined &&
+    params.sessionTotal === undefined
+  )
+    return undefined
+  return {
+    ...(params.input !== undefined ? { input: params.input } : {}),
+    ...(params.output !== undefined ? { output: params.output } : {}),
+    ...(params.inputCacheRead !== undefined
+      ? { inputCacheRead: params.inputCacheRead }
+      : {}),
+    ...(params.inputCacheWrite !== undefined
+      ? { inputCacheWrite: params.inputCacheWrite }
+      : {}),
+    ...(params.outputCache !== undefined
+      ? { outputCache: params.outputCache }
+      : {}),
+    ...(params.total !== undefined ? { total: params.total } : {}),
+    ...(params.sessionTotal !== undefined
+      ? { sessionTotal: params.sessionTotal }
+      : {}),
+  }
+}
+
 export const mergeUsageMonotonic = (
   current: TokenUsage | undefined,
   next: TokenUsage | undefined,
@@ -44,25 +82,15 @@ export const mergeUsageMonotonic = (
     asFiniteNumber(current?.sessionTotal),
     asFiniteNumber(next?.sessionTotal),
   )
-  if (
-    input === undefined &&
-    output === undefined &&
-    inputCacheRead === undefined &&
-    inputCacheWrite === undefined &&
-    outputCache === undefined &&
-    total === undefined &&
-    sessionTotal === undefined
-  )
-    return undefined
-  return {
-    ...(input !== undefined ? { input } : {}),
-    ...(output !== undefined ? { output } : {}),
-    ...(inputCacheRead !== undefined ? { inputCacheRead } : {}),
-    ...(inputCacheWrite !== undefined ? { inputCacheWrite } : {}),
-    ...(outputCache !== undefined ? { outputCache } : {}),
-    ...(total !== undefined ? { total } : {}),
-    ...(sessionTotal !== undefined ? { sessionTotal } : {}),
-  }
+  return toTokenUsage({
+    input,
+    output,
+    inputCacheRead,
+    inputCacheWrite,
+    outputCache,
+    total,
+    sessionTotal,
+  })
 }
 
 const sumUsageValue = (
@@ -106,25 +134,15 @@ export const mergeUsageAdditive = (
     asFiniteNumber(current?.sessionTotal),
     asFiniteNumber(next.sessionTotal),
   )
-  if (
-    input === undefined &&
-    output === undefined &&
-    inputCacheRead === undefined &&
-    inputCacheWrite === undefined &&
-    outputCache === undefined &&
-    total === undefined &&
-    sessionTotal === undefined
-  )
-    return undefined
-  return {
-    ...(input !== undefined ? { input } : {}),
-    ...(output !== undefined ? { output } : {}),
-    ...(inputCacheRead !== undefined ? { inputCacheRead } : {}),
-    ...(inputCacheWrite !== undefined ? { inputCacheWrite } : {}),
-    ...(outputCache !== undefined ? { outputCache } : {}),
-    ...(total !== undefined ? { total } : {}),
-    ...(sessionTotal !== undefined ? { sessionTotal } : {}),
-  }
+  return toTokenUsage({
+    input,
+    output,
+    inputCacheRead,
+    inputCacheWrite,
+    outputCache,
+    total,
+    sessionTotal,
+  })
 }
 
 export const isSameUsage = (

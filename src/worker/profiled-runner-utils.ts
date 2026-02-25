@@ -1,5 +1,4 @@
 import { renderPromptTemplate } from '../prompts/format.js'
-export { isSameUsage, mergeUsageMonotonic } from '../shared/token-usage.js'
 
 import type { TokenUsage } from '../types/index.js'
 

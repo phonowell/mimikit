@@ -1,16 +1,6 @@
 import type { ProviderResult } from './types.js'
 import type { TokenUsage } from '../types/index.js'
 
-export type ProviderLifecycle = {
-  timedOut: boolean
-  externallyAborted: boolean
-}
-
-export const createProviderLifecycle = (): ProviderLifecycle => ({
-  timedOut: false,
-  externallyAborted: false,
-})
-
 export const elapsedMsSince = (startedAt: number): number =>
   Math.max(0, Date.now() - startedAt)
 

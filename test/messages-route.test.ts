@@ -7,6 +7,19 @@ import type { ChatMessagesMode } from '../src/orchestrator/read-model/chat-view.
 import type { Task } from '../src/types/index.js'
 import { createOrchestratorStub } from './helpers/orchestrator-stub.js'
 
+const expectArchiveMarkdown = (
+  response: {
+    statusCode: number
+    headers: Record<string, unknown>
+    body: string
+  },
+  markers: string[],
+): void => {
+  expect(response.statusCode).toBe(200)
+  expect(String(response.headers['content-type'])).toContain('text/markdown')
+  for (const marker of markers) expect(response.body).toContain(marker)
+}
+
 test('status route returns runtime id', async () => {
   const app = fastify()
   const { orchestrator } = createOrchestratorStub()
@@ -158,12 +171,12 @@ test('task archive route returns live snapshot when archive is not created yet',
     url: `/api/tasks/${task.id}/archive`,
   })
 
-  expect(response.statusCode).toBe(200)
-  expect(String(response.headers['content-type'])).toContain('text/markdown')
-  expect(response.body).toContain('task_id: task-archive-live-1')
-  expect(response.body).toContain('status: pending')
-  expect(response.body).toContain('=== PROMPT ===')
-  expect(response.body).toContain('run a quick summary')
+  expectArchiveMarkdown(response, [
+    'task_id: task-archive-live-1',
+    'status: pending',
+    '=== PROMPT ===',
+    'run a quick summary',
+  ])
   await app.close()
 })
 
@@ -199,12 +212,12 @@ test('task archive route returns live cron snapshot when archive is not created 
     method: 'GET',
     url: `/api/tasks/${cronJob.id}/archive`,
   })
-  expect(cronResponse.statusCode).toBe(200)
-  expect(String(cronResponse.headers['content-type'])).toContain('text/markdown')
-  expect(cronResponse.body).toContain('task_id: cron-archive-live-1')
-  expect(cronResponse.body).toContain('kind: cron')
-  expect(cronResponse.body).toContain('status: pending')
-  expect(cronResponse.body).toContain('daily digest')
+  expectArchiveMarkdown(cronResponse, [
+    'task_id: cron-archive-live-1',
+    'kind: cron',
+    'status: pending',
+    'daily digest',
+  ])
 
   await app.close()
 })
@@ -243,11 +256,11 @@ test('task archive route falls back to live snapshot when archive file is missin
     url: `/api/tasks/${task.id}/archive`,
   })
 
-  expect(response.statusCode).toBe(200)
-  expect(String(response.headers['content-type'])).toContain('text/markdown')
-  expect(response.body).toContain('status: failed')
-  expect(response.body).toContain('=== RESULT ===')
-  expect(response.body).toContain('network timeout')
+  expectArchiveMarkdown(response, [
+    'status: failed',
+    '=== RESULT ===',
+    'network timeout',
+  ])
 
   await app.close()
 })

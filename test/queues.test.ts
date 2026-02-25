@@ -15,11 +15,9 @@ import {
 } from '../src/streams/queues.js'
 
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-queue-'))
+type QueuePaths = ReturnType<typeof buildPaths>
 
-test('input queue consume from cursor 0 returns all appended packets', async () => {
-  const dir = await createTmpDir()
-  const paths = buildPaths(dir)
-
+const publishTwoUserInputs = async (paths: QueuePaths): Promise<void> => {
   await publishUserInput({
     paths,
     payload: {
@@ -38,19 +36,9 @@ test('input queue consume from cursor 0 returns all appended packets', async () 
       createdAt: '2026-02-08T00:00:01.000Z',
     },
   })
+}
 
-  const firstRead = await consumeUserInputs({
-    paths,
-    fromCursor: 0,
-  })
-  expect(firstRead.map((item) => item.cursor)).toEqual([1, 2])
-  expect(firstRead.map((item) => item.payload.text)).toEqual(['a', 'b'])
-})
-
-test('result queue append and consume by cursor', async () => {
-  const dir = await createTmpDir()
-  const paths = buildPaths(dir)
-
+const publishTwoWorkerResults = async (paths: QueuePaths): Promise<void> => {
   await publishWorkerResult({
     paths,
     payload: {
@@ -73,6 +61,27 @@ test('result queue append and consume by cursor', async () => {
       completedAt: '2026-02-08T00:00:01.000Z',
     },
   })
+}
+
+test('input queue consume from cursor 0 returns all appended packets', async () => {
+  const dir = await createTmpDir()
+  const paths = buildPaths(dir)
+
+  await publishTwoUserInputs(paths)
+
+  const firstRead = await consumeUserInputs({
+    paths,
+    fromCursor: 0,
+  })
+  expect(firstRead.map((item) => item.cursor)).toEqual([1, 2])
+  expect(firstRead.map((item) => item.payload.text)).toEqual(['a', 'b'])
+})
+
+test('result queue append and consume by cursor', async () => {
+  const dir = await createTmpDir()
+  const paths = buildPaths(dir)
+
+  await publishTwoWorkerResults(paths)
 
   const read = await consumeWorkerResults({
     paths,
@@ -86,24 +95,7 @@ test('input queue does not compact when not fully consumed', async () => {
   const dir = await createTmpDir()
   const paths = buildPaths(dir)
 
-  await publishUserInput({
-    paths,
-    payload: {
-      id: 'in-1',
-      role: 'user',
-      text: 'a',
-      createdAt: '2026-02-08T00:00:00.000Z',
-    },
-  })
-  await publishUserInput({
-    paths,
-    payload: {
-      id: 'in-2',
-      role: 'user',
-      text: 'b',
-      createdAt: '2026-02-08T00:00:01.000Z',
-    },
-  })
+  await publishTwoUserInputs(paths)
 
   const skipped = await compactInputQueueIfFullyConsumed({
     paths,
@@ -116,24 +108,7 @@ test('input queue does not compact when not fully consumed', async () => {
 test('input queue compacts when fully consumed', async () => {
   const dir = await createTmpDir()
   const paths = buildPaths(dir)
-  await publishUserInput({
-    paths,
-    payload: {
-      id: 'in-1',
-      role: 'user',
-      text: 'a',
-      createdAt: '2026-02-08T00:00:00.000Z',
-    },
-  })
-  await publishUserInput({
-    paths,
-    payload: {
-      id: 'in-2',
-      role: 'user',
-      text: 'b',
-      createdAt: '2026-02-08T00:00:01.000Z',
-    },
-  })
+  await publishTwoUserInputs(paths)
   const compacted = await compactInputQueueIfFullyConsumed({
     paths,
     cursor: 2,
@@ -152,28 +127,7 @@ test('result queue compacts only when fully consumed', async () => {
   const dir = await createTmpDir()
   const paths = buildPaths(dir)
 
-  await publishWorkerResult({
-    paths,
-    payload: {
-      taskId: 'task-1',
-      status: 'succeeded',
-      ok: true,
-      output: 'ok-1',
-      durationMs: 10,
-      completedAt: '2026-02-08T00:00:00.000Z',
-    },
-  })
-  await publishWorkerResult({
-    paths,
-    payload: {
-      taskId: 'task-2',
-      status: 'succeeded',
-      ok: true,
-      output: 'ok-2',
-      durationMs: 10,
-      completedAt: '2026-02-08T00:00:01.000Z',
-    },
-  })
+  await publishTwoWorkerResults(paths)
 
   const compacted = await compactResultQueueIfFullyConsumed({
     paths,

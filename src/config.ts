@@ -46,8 +46,6 @@ export type AppConfig = {
   }
 }
 
-export type OrchestratorConfig = AppConfig
-
 export const defaultConfig = (params: DefaultConfigParams): AppConfig => ({
   workDir: resolve(params.workDir),
   ...loadDefaultConfigFromYaml(),

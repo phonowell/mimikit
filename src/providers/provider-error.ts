@@ -92,15 +92,6 @@ export const buildProviderPreflightError = (params: {
     retryable: false,
   })
 
-export const buildProviderCircuitOpenError = (
-  providerId: string,
-): ProviderError =>
-  new ProviderError({
-    code: 'provider_circuit_open',
-    message: `${providerTag(providerId)} circuit is open due to consecutive failures`,
-    retryable: false,
-  })
-
 export const readProviderErrorCode = (
   error: unknown,
 ): ProviderErrorCode | undefined => {
@@ -111,13 +102,6 @@ export const readProviderErrorCode = (
   return PROVIDER_ERROR_CODE_SET.has(maybeCode as ProviderErrorCode)
     ? (maybeCode as ProviderErrorCode)
     : undefined
-}
-
-export const isRetryableProviderError = (error: unknown): boolean => {
-  if (error instanceof ProviderError) return error.retryable
-  const code = readProviderErrorCode(error)
-  if (!code) return false
-  return code === 'provider_timeout' || code === 'provider_transient_network'
 }
 
 const TRANSIENT_PROVIDER_MESSAGE_PATTERNS = [
@@ -133,9 +117,3 @@ const TRANSIENT_PROVIDER_MESSAGE_PATTERNS = [
 
 export const isTransientProviderMessage = (message: string): boolean =>
   TRANSIENT_PROVIDER_MESSAGE_PATTERNS.some((pattern) => pattern.test(message))
-
-export const isTransientProviderFailure = (error: unknown): boolean => {
-  if (isRetryableProviderError(error)) return true
-  const message = error instanceof Error ? error.message : String(error)
-  return isTransientProviderMessage(message)
-}
