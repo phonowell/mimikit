@@ -7,6 +7,8 @@ import {
 import type { Parsed } from '../actions/model/spec.js'
 import type { ManagerActionFeedback } from '../types/index.js'
 
+const UNREGISTERED_ACTION_HINT = `仅可使用已注册 action：${[...REGISTERED_MANAGER_ACTIONS].map((name) => `M:${name}`).join(', ')}。`
+
 const escapeAttr = (value: string): string =>
   value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
 
@@ -46,7 +48,7 @@ export const collectManagerActionFeedback = (
         seen,
         item,
         'unregistered_action',
-        '仅可使用已注册 action：M:create_focus, M:update_focus, M:assign_focus, M:create_intent, M:update_intent, M:delete_intent, M:run_task, M:schedule_task, M:cancel_task, M:compress_context, M:summarize_task_result, M:query_history, M:restart_runtime。',
+        UNREGISTERED_ACTION_HINT,
       )
     }
   }
