@@ -10,18 +10,14 @@ import {
   selectRecentTasks,
 } from '../orchestrator/read-model/intent-select.js'
 import { mergeUsageAdditive } from '../shared/token-usage.js'
-import { readHistory } from '../history/store.js'
 
 import { collectManagerActionFeedback } from './action-feedback-collect.js'
-import { pickQueryHistoryRequest, queryHistory } from '../history/query.js'
+import { pickQueryHistoryRequest } from '../history/query.js'
 import { appendActionFeedbackSystemMessage } from '../history/manager-events.js'
-import {
-  resetUiStream,
-  setUiStreamText,
-  setUiStreamUsage,
-  toVisibleAgentText,
-} from './loop-ui-stream.js'
-import { runManager } from './runner.js'
+import { buildHistoryQueryKey, queryHistoryLookup } from './loop-batch-history.js'
+import { collectTriggeredIntentIds } from './loop-batch-intent.js'
+import { runManagerBatchOnce } from './loop-batch-run-once.js'
+import { createManagerStreamController } from './loop-batch-stream.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type {
@@ -31,35 +27,6 @@ import type {
   TokenUsage,
   UserInput,
 } from '../types/index.js'
-
-const STREAM_TEXT_FLUSH_MS = 64
-const INTENT_TRIGGER_EVENT_RE =
-  /<M:system_event[^>]*name="intent_trigger"[^>]*>([\s\S]*?)<\/M:system_event>/g
-
-const collectTriggeredIntentIds = (inputs: UserInput[]): Set<string> => {
-  const ids = new Set<string>()
-  for (const input of inputs) {
-    if (input.role !== 'system') continue
-    if (!input.text.includes('name="intent_trigger"')) continue
-    INTENT_TRIGGER_EVENT_RE.lastIndex = 0
-    let match = INTENT_TRIGGER_EVENT_RE.exec(input.text)
-    while (match) {
-      const raw = match[1]?.trim()
-      if (raw) {
-        try {
-          const payload = JSON.parse(raw) as { intent_id?: unknown }
-          const id =
-            typeof payload.intent_id === 'string'
-              ? payload.intent_id.trim()
-              : ''
-          if (id) ids.add(id)
-        } catch {}
-      }
-      match = INTENT_TRIGGER_EVENT_RE.exec(input.text)
-    }
-  }
-  return ids
-}
 
 export const runManagerBatch = async (params: {
   runtime: RuntimeState
@@ -97,85 +64,7 @@ export const runManagerBatch = async (params: {
   })
   const preferredFocusIds = collectPreferredFocusIds(runtime, inputs, results)
   const workingFocusIds = selectWorkingFocusIds(runtime, preferredFocusIds)
-
-  let streamRawOutput = ''
-  let streamVisibleOutput = ''
-  let streamUsage: TokenUsage | undefined
-  let streamFlushTimer: ReturnType<typeof setTimeout> | null = null
-
-  const clearStreamFlushTimer = (): void => {
-    if (!streamFlushTimer) return
-    clearTimeout(streamFlushTimer)
-    streamFlushTimer = null
-  }
-
-  const flushVisibleStream = (): void => {
-    streamFlushTimer = null
-    const nextVisible = toVisibleAgentText(streamRawOutput)
-    if (nextVisible !== streamVisibleOutput) {
-      streamVisibleOutput = nextVisible
-      setUiStreamText(runtime, streamId, nextVisible)
-    }
-    if (!streamUsage) return
-    streamUsage =
-      setUiStreamUsage(runtime, streamId, streamUsage) ?? streamUsage
-  }
-
-  const scheduleVisibleStreamFlush = (): void => {
-    if (streamFlushTimer) return
-    streamFlushTimer = setTimeout(flushVisibleStream, STREAM_TEXT_FLUSH_MS)
-  }
-
-  const runOnce = async (extra?: {
-    historyLookup?: HistoryLookupMessage[]
-    actionFeedback?: ManagerActionFeedback[]
-  }) => {
-    let callUsage: TokenUsage | undefined
-    const result = await runManager({
-      stateDir: runtime.config.workDir,
-      workDir: runtime.config.workDir,
-      inputs,
-      results,
-      tasks,
-      intents,
-      cronJobs: runtime.cronJobs,
-      focuses: runtime.focuses,
-      focusContexts: runtime.focusContexts,
-      activeFocusIds: runtime.activeFocusIds,
-      workingFocusIds,
-      ...(extra?.historyLookup ? { historyLookup: extra.historyLookup } : {}),
-      ...(extra?.actionFeedback
-        ? { actionFeedback: extra.actionFeedback }
-        : {}),
-      ...(runtime.managerCompressedContext
-        ? { compressedContext: runtime.managerCompressedContext }
-        : {}),
-      ...(runtime.lastUserMeta
-        ? { env: { lastUser: runtime.lastUserMeta } }
-        : {}),
-      model: runtime.config.manager.model,
-      maxPromptTokens: runtime.config.manager.prompt.maxTokens,
-      onTextDelta: (delta) => {
-        if (!delta) return
-        streamRawOutput += delta
-        scheduleVisibleStreamFlush()
-      },
-      onUsage: (usage) => {
-        callUsage = usage
-        streamUsage = usage
-        scheduleVisibleStreamFlush()
-      },
-    })
-    const resolvedUsage = result.usage ?? callUsage
-    if (resolvedUsage) {
-      streamUsage = resolvedUsage
-      scheduleVisibleStreamFlush()
-    }
-    return {
-      ...result,
-      ...(resolvedUsage ? { usage: resolvedUsage } : {}),
-    }
-  }
+  const stream = createManagerStreamController({ runtime, streamId })
 
   let elapsedMs = 0
   let batchUsage: TokenUsage | undefined
@@ -187,16 +76,22 @@ export const runManagerBatch = async (params: {
 
   try {
     for (;;) {
-      const runResult = await runOnce(extra)
+      const runResult = await runManagerBatchOnce({
+        runtime,
+        inputs,
+        results,
+        tasks,
+        intents,
+        workingFocusIds,
+        extra,
+        onTextDelta: stream.appendDelta,
+        onUsage: stream.setUsage,
+      })
+      if (runResult.usage) stream.setUsage(runResult.usage)
       elapsedMs += runResult.elapsedMs
       batchUsage = mergeUsageAdditive(batchUsage, runResult.usage)
       const parsed = parseActions(runResult.output)
-      if (streamVisibleOutput !== parsed.text) {
-        clearStreamFlushTimer()
-        flushVisibleStream()
-        streamVisibleOutput = parsed.text
-        setUiStreamText(runtime, streamId, parsed.text)
-      }
+      stream.commitParsedText(parsed.text)
       const scheduleNowIso =
         runtime.lastUserMeta?.clientNowIso ?? new Date().toISOString()
       const actionFeedback = collectManagerActionFeedback(parsed.actions, {
@@ -221,24 +116,10 @@ export const runManagerBatch = async (params: {
         scheduleNowIso,
       })
       const queryRequest = pickQueryHistoryRequest(parsed.actions)
-      const queryKey = queryRequest
-        ? [
-            queryRequest.query,
-            String(queryRequest.limit),
-            queryRequest.roles.join(','),
-            queryRequest.beforeId ?? '',
-            String(queryRequest.fromMs ?? ''),
-            String(queryRequest.toMs ?? ''),
-          ].join('\n')
-        : undefined
+      const queryKey = buildHistoryQueryKey(queryRequest)
 
       if (!queryRequest && actionFeedback.length === 0) {
-        clearStreamFlushTimer()
-        flushVisibleStream()
-        if (streamVisibleOutput !== parsed.text) {
-          streamVisibleOutput = parsed.text
-          setUiStreamText(runtime, streamId, parsed.text)
-        }
+        stream.commitParsedText(parsed.text)
         return {
           parsed,
           elapsedMs,
@@ -253,25 +134,7 @@ export const runManagerBatch = async (params: {
         throw new Error('manager_query_history_repeated_without_progress')
       previousQueryKey = queryKey
 
-      let historyLookup: HistoryLookupMessage[] | undefined
-      if (queryRequest) {
-        const history = await readHistory(runtime.paths.history)
-        historyLookup = queryHistory(history, queryRequest)
-        await appendLog(runtime.paths.log, {
-          event: 'manager_query_history',
-          queryChars: queryRequest.query.length,
-          limit: queryRequest.limit,
-          roleCount: queryRequest.roles.length,
-          resultCount: historyLookup.length,
-          ...(queryRequest.beforeId ? { beforeId: queryRequest.beforeId } : {}),
-          ...(queryRequest.fromMs !== undefined
-            ? { fromMs: queryRequest.fromMs }
-            : {}),
-          ...(queryRequest.toMs !== undefined
-            ? { toMs: queryRequest.toMs }
-            : {}),
-        })
-      }
+      const historyLookup = await queryHistoryLookup(runtime, queryRequest)
       if (actionFeedback.length > 0) {
         await appendLog(runtime.paths.log, {
           event: 'manager_action_feedback',
@@ -285,18 +148,13 @@ export const runManagerBatch = async (params: {
           resolveDefaultFocusId(runtime),
         )
       }
-
-      clearStreamFlushTimer()
-      flushVisibleStream()
-      streamRawOutput = ''
-      streamVisibleOutput = ''
-      resetUiStream(runtime, streamId)
+      stream.resetCycle()
       extra = {
         ...(historyLookup ? { historyLookup } : {}),
         ...(actionFeedback.length > 0 ? { actionFeedback } : {}),
       }
     }
   } finally {
-    clearStreamFlushTimer()
+    stream.teardown()
   }
 }

@@ -37,12 +37,12 @@ const isActiveTask = (task: Task): boolean =>
   task.status === 'pending' || task.status === 'running'
 
 const taskToFingerprintInput = (
-  task: Pick<Task, 'prompt' | 'title' | 'profile' | 'cron'>,
+  task: Pick<Task, 'prompt' | 'title' | 'profile' | 'cron' | 'scheduledAt'>,
 ): TaskFingerprintInput => ({
   prompt: task.prompt,
   title: task.title,
   profile: task.profile,
-  ...(task.cron ? { schedule: task.cron } : {}),
+  ...(task.cron ? { schedule: task.cron } : task.scheduledAt ? { schedule: task.scheduledAt } : {}),
 })
 
 export const findActiveTaskBySemanticKey = (

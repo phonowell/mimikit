@@ -9,7 +9,7 @@ import {
 import {
   appendConsumedInputsToHistory,
   appendConsumedResultsToHistory,
-} from '../history/manager-events.js'
+} from '../history/result-events.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { TaskResult, UserInput } from '../types/index.js'

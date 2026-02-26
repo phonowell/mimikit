@@ -24,13 +24,13 @@ const resolveFingerprintTitle = (prompt: string, title?: string): string => {
 const isActiveTask = (task: Task): boolean =>
   task.status === 'pending' || task.status === 'running'
 
-type TaskFingerprintInput = Pick<Task, 'prompt' | 'title' | 'profile' | 'cron'>
+type TaskFingerprintInput = Pick<Task, 'prompt' | 'title' | 'profile' | 'cron' | 'scheduledAt'>
 
 const taskToFingerprintInput = (task: TaskFingerprintInput) => ({
   prompt: task.prompt,
   title: task.title,
   profile: task.profile,
-  ...(task.cron ? { schedule: task.cron } : {}),
+  ...(task.cron ? { schedule: task.cron } : task.scheduledAt ? { schedule: task.scheduledAt } : {}),
 })
 
 export const createTask = (

@@ -183,7 +183,7 @@ export const buildWorkerPrompt = async (params: {
 }): Promise<string> => {
   const systemSource = await loadPromptSource('worker/system.md')
   let taskPrompt = params.task.prompt
-  if (params.task.cron) {
+  if (params.task.cron || params.task.scheduledAt) {
     const prefix = await loadPromptFile('worker', 'cron-trigger-context')
     if (prefix) taskPrompt = `${prefix.trim()}\n\n${taskPrompt}`
   }

@@ -18,44 +18,14 @@ import {
   consumeBatchHistory,
   finalizeBatchProgress,
 } from './loop-helpers.js'
+import {
+  applyIntentCompletionCooldown,
+  hasNonIdleManagerInput,
+} from './loop-batch-pre.js'
 import { startUiStream, stopUiStream } from './loop-ui-stream.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { TaskResult, TokenUsage, UserInput } from '../types/index.js'
-
-const isIdleSystemInput = (input: UserInput): boolean =>
-  input.role === 'system' && input.text.includes('name="idle"')
-
-const hasNonIdleManagerInput = (inputs: UserInput[]): boolean =>
-  inputs.some((input) => input.role !== 'system' || !isIdleSystemInput(input))
-
-const toMs = (value: string | undefined): number => {
-  if (!value) return 0
-  const parsed = Date.parse(value)
-  return Number.isFinite(parsed) ? parsed : 0
-}
-
-const applyIntentCompletionCooldown = (
-  runtime: RuntimeState,
-  results: TaskResult[],
-): void => {
-  if (results.length === 0) return
-  const latestByTaskId = new Map<string, TaskResult>()
-  for (const result of results) {
-    const existing = latestByTaskId.get(result.taskId)
-    if (!existing || toMs(result.completedAt) >= toMs(existing.completedAt))
-      latestByTaskId.set(result.taskId, result)
-  }
-  for (const intent of runtime.idleIntents) {
-    if (intent.triggerPolicy.mode !== 'on_idle') continue
-    const taskId = intent.lastTaskId?.trim()
-    if (!taskId) continue
-    const matched = latestByTaskId.get(taskId)
-    if (!matched) continue
-    intent.triggerState.lastCompletedAt = matched.completedAt
-    intent.updatedAt = matched.completedAt
-  }
-}
 
 export const processManagerBatch = async (params: {
   runtime: RuntimeState

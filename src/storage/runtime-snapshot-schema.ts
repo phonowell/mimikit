@@ -4,38 +4,15 @@ import { stripUndefined } from '../shared/utils.js'
 
 import { normalizeTokenUsage, tokenUsageSchema } from './token-usage.js'
 
-import type {
-  CronJob,
-  FocusContext,
-  FocusMeta,
-  IdleIntent,
-  Task,
-} from '../types/index.js'
 
-export type RuntimeSnapshot = {
-  tasks: Task[]
-  cronJobs?: CronJob[]
-  idleIntents?: IdleIntent[]
-  idleIntentArchive?: IdleIntent[]
-  focuses?: FocusMeta[]
-  focusContexts?: FocusContext[]
-  activeFocusIds?: string[]
-  managerTurn?: number
-  queues?: {
-    inputsCursor: number
-    resultsCursor: number
-  }
-  managerCompressedContext?: string
-}
-
-const taskCancelSchema = z
+export const taskCancelSchema = z
   .object({
     source: z.enum(['user', 'deferred', 'system']),
     reason: z.string().optional(),
   })
   .strict()
 
-const taskResultSchema = z
+export const taskResultSchema = z
   .object({
     taskId: z.string().trim().min(1),
     status: z.enum(['succeeded', 'failed', 'canceled']),
@@ -51,7 +28,7 @@ const taskResultSchema = z
   })
   .strict()
 
-const taskSchema = z
+export const taskSchema = z
   .object({
     id: z.string().trim().min(1),
     fingerprint: z.string().trim().min(1),
@@ -59,6 +36,7 @@ const taskSchema = z
     title: z.string(),
     focusId: z.string().trim().min(1),
     cron: z.string().optional(),
+    scheduledAt: z.string().optional(),
     profile: z.enum(['worker']),
     status: z.enum(['pending', 'running', 'succeeded', 'failed', 'canceled']),
     createdAt: z.string(),
@@ -72,8 +50,12 @@ const taskSchema = z
     result: taskResultSchema.optional(),
   })
   .strict()
+  .refine(
+    (data) => !(data.cron !== undefined && data.scheduledAt !== undefined),
+    { message: 'task cron and scheduledAt are mutually exclusive' },
+  )
 
-const cronJobSchema = z
+export const cronJobSchema = z
   .object({
     id: z.string().trim().min(1),
     cron: z.string().trim().min(1).optional(),
@@ -96,21 +78,21 @@ const cronJobSchema = z
     { message: 'cron and scheduledAt are mutually exclusive' },
   )
 
-const intentTriggerPolicySchema = z
+export const intentTriggerPolicySchema = z
   .object({
     mode: z.enum(['one_shot', 'on_idle']),
     cooldownMs: z.number().int().nonnegative(),
   })
   .strict()
 
-const intentTriggerStateSchema = z
+export const intentTriggerStateSchema = z
   .object({
     totalTriggered: z.number().int().nonnegative(),
     lastCompletedAt: z.string().optional(),
   })
   .strict()
 
-const idleIntentSchema = z
+export const idleIntentSchema = z
   .object({
     id: z.string().trim().min(1),
     prompt: z.string(),
@@ -130,7 +112,7 @@ const idleIntentSchema = z
   })
   .strict()
 
-const focusMetaSchema = z
+export const focusMetaSchema = z
   .object({
     id: z.string().trim().min(1),
     title: z.string(),
@@ -141,7 +123,7 @@ const focusMetaSchema = z
   })
   .strict()
 
-const focusContextSchema = z
+export const focusContextSchema = z
   .object({
     focusId: z.string().trim().min(1),
     summary: z.string().optional(),
@@ -171,29 +153,31 @@ const runtimeSnapshotSchema = z
   })
   .strict()
 
-const normalizeTask = (task: z.infer<typeof taskSchema>): Task =>
+export type RuntimeSnapshot = z.infer<typeof runtimeSnapshotSchema>
+
+const normalizeTask = (task: z.infer<typeof taskSchema>): z.infer<typeof taskSchema> =>
   stripUndefined({
     ...task,
     usage: normalizeTokenUsage(task.usage),
     result: task.result
       ? stripUndefined({ ...task.result, usage: normalizeTokenUsage(task.result.usage) })
       : undefined,
-  }) as Task
+  }) as z.infer<typeof taskSchema>
 
-const normalizeCronJob = (cronJob: z.infer<typeof cronJobSchema>): CronJob =>
-  stripUndefined({ ...cronJob }) as CronJob
+const normalizeCronJob = (cronJob: z.infer<typeof cronJobSchema>): z.infer<typeof cronJobSchema> =>
+  stripUndefined({ ...cronJob }) as z.infer<typeof cronJobSchema>
 
 const normalizeIdleIntent = (
   intent: z.infer<typeof idleIntentSchema>,
-): IdleIntent => stripUndefined({ ...intent }) as IdleIntent
+): z.infer<typeof idleIntentSchema> => stripUndefined({ ...intent }) as z.infer<typeof idleIntentSchema>
 
 const normalizeFocusMeta = (
   focus: z.infer<typeof focusMetaSchema>,
-): FocusMeta => stripUndefined({ ...focus }) as FocusMeta
+): z.infer<typeof focusMetaSchema> => stripUndefined({ ...focus }) as z.infer<typeof focusMetaSchema>
 
 const normalizeFocusContext = (
   focusContext: z.infer<typeof focusContextSchema>,
-): FocusContext => stripUndefined({ ...focusContext }) as FocusContext
+): z.infer<typeof focusContextSchema> => stripUndefined({ ...focusContext }) as z.infer<typeof focusContextSchema>
 
 export const parseRuntimeSnapshot = (value: unknown): RuntimeSnapshot => {
   const parsed = runtimeSnapshotSchema.parse(value)

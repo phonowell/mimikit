@@ -1,15 +1,29 @@
+import { z } from 'zod'
+
+import {
+  cronJobSchema,
+  focusContextSchema,
+  focusMetaSchema,
+  idleIntentSchema,
+  intentTriggerPolicySchema,
+  intentTriggerStateSchema,
+  taskCancelSchema,
+  taskResultSchema,
+  taskSchema,
+} from '../storage/runtime-snapshot-schema.js'
+
 export type ISODate = string
 export type Id = string
 export type FocusId = string
 
 export type TokenUsage = {
-  input?: number
-  inputCacheRead?: number
-  inputCacheWrite?: number
-  output?: number
-  outputCache?: number
-  total?: number
-  sessionTotal?: number
+  input?: number | undefined
+  inputCacheRead?: number | undefined
+  inputCacheWrite?: number | undefined
+  output?: number | undefined
+  outputCache?: number | undefined
+  total?: number | undefined
+  sessionTotal?: number | undefined
 }
 
 export type Role = 'user' | 'agent' | 'system'
@@ -76,17 +90,7 @@ export type TaskStatus =
   | 'canceled'
 
 export type TaskCancelSource = 'user' | 'deferred' | 'system'
-
-export type TaskCancelMeta = {
-  source: TaskCancelSource
-  reason?: string
-}
-
-export type TaskResultStatus = Extract<
-  TaskStatus,
-  'succeeded' | 'failed' | 'canceled'
->
-
+export type TaskResultStatus = Extract<TaskStatus, 'succeeded' | 'failed' | 'canceled'>
 export type WorkerProfile = 'worker'
 
 export type IntentPriority = 'high' | 'normal' | 'low'
@@ -95,83 +99,15 @@ export type IntentSource = 'user_request' | 'agent_auto' | 'retry_decision'
 export type IntentTriggerMode = 'one_shot' | 'on_idle'
 export type FocusStatus = 'active' | 'idle' | 'done' | 'archived'
 
-export type IdleIntentTriggerPolicy = {
-  mode: IntentTriggerMode
-  cooldownMs: number
-}
-
-export type IdleIntentTriggerState = {
-  totalTriggered: number
-  lastCompletedAt?: ISODate
-}
-
-export type FocusMeta = {
-  id: FocusId
-  title: string
-  status: FocusStatus
-  createdAt: ISODate
-  updatedAt: ISODate
-  lastActivityAt: ISODate
-}
-
-export type FocusContext = {
-  focusId: FocusId
-  summary?: string
-  openItems?: string[]
-  updatedAt: ISODate
-}
-
-export type IdleIntent = {
-  id: Id
-  prompt: string
-  title: string
-  focusId: FocusId
-  priority: IntentPriority
-  status: IdleIntentStatus
-  source: IntentSource
-  createdAt: ISODate
-  updatedAt: ISODate
-  attempts: number
-  maxAttempts: number
-  triggerPolicy: IdleIntentTriggerPolicy
-  triggerState: IdleIntentTriggerState
-  lastTaskId?: Id
-  archivedAt?: ISODate
-}
-
-export type Task = {
-  id: Id
-  fingerprint: string
-  prompt: string
-  title: string
-  focusId: FocusId
-  cron?: string
-  profile: WorkerProfile
-  status: TaskStatus
-  createdAt: ISODate
-  startedAt?: ISODate
-  completedAt?: ISODate
-  durationMs?: number
-  attempts?: number
-  usage?: TokenUsage
-  archivePath?: string
-  cancel?: TaskCancelMeta
-  result?: TaskResult
-}
-
-export type TaskResult = {
-  taskId: Id
-  status: TaskResultStatus
-  ok: boolean
-  output: string
-  durationMs: number
-  completedAt: ISODate
-  usage?: TokenUsage
-  title?: string
-  archivePath?: string
-  profile?: WorkerProfile
-  cancel?: TaskCancelMeta
-}
+export type TaskCancelMeta = z.infer<typeof taskCancelSchema>
+export type TaskResult = z.infer<typeof taskResultSchema>
+export type Task = z.infer<typeof taskSchema>
+export type IdleIntentTriggerPolicy = z.infer<typeof intentTriggerPolicySchema>
+export type IdleIntentTriggerState = z.infer<typeof intentTriggerStateSchema>
+export type FocusMeta = z.infer<typeof focusMetaSchema>
+export type FocusContext = z.infer<typeof focusContextSchema>
+export type IdleIntent = z.infer<typeof idleIntentSchema>
+export type CronJob = z.infer<typeof cronJobSchema>
 
 export type JsonPacket<TPayload> = {
   id: string
@@ -180,20 +116,6 @@ export type JsonPacket<TPayload> = {
 }
 
 export type CronJobDisabledReason = 'canceled' | 'completed'
-
-export type CronJob = {
-  id: Id
-  cron?: string
-  scheduledAt?: ISODate
-  prompt: string
-  title: string
-  focusId: FocusId
-  profile: WorkerProfile
-  enabled: boolean
-  disabledReason?: CronJobDisabledReason
-  createdAt: ISODate
-  lastTriggeredAt?: ISODate
-}
 
 export type ManagerEnv = {
   lastUser?: {

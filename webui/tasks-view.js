@@ -70,14 +70,23 @@ const formatScheduleText = (value, nowDate) => {
   return `${dateText} ${timeText}`
 }
 
-const resolveCronBadge = (value, nowDate) => {
+const resolveCronBadge = (value) => {
+  if (typeof value !== 'string') return null
+  const raw = value.trim()
+  if (!raw) return null
+  return { text: raw, title: `cron: ${raw}` }
+}
+
+const resolveScheduledBadge = (value, nowDate) => {
   if (typeof value !== 'string') return null
   const raw = value.trim()
   if (!raw) return null
   const scheduleText = formatScheduleText(raw, nowDate)
-  if (!scheduleText) return { text: raw, title: `cron: ${raw}` }
   const scheduleTitle = formatDateTime(raw) || raw
-  return { text: scheduleText, title: `scheduled: ${scheduleTitle}` }
+  return {
+    text: scheduleText || raw,
+    title: `scheduled: ${scheduleTitle}`,
+  }
 }
 
 const updateElapsedTimes = (tasksList) => {
@@ -173,8 +182,17 @@ export const renderTasks = (tasksList, data) => {
     status.setAttribute('aria-label', `${statusLabel} · profile ${profileValue}`)
     status.title = dotTitle
 
-    if (task.cron) {
-      const cronBadge = resolveCronBadge(task.cron, nowDate)
+    if (task.scheduledAt) {
+      const scheduledBadge = resolveScheduledBadge(task.scheduledAt, nowDate)
+      if (scheduledBadge) {
+        const cronEl = document.createElement('span')
+        cronEl.className = 'task-cron'
+        cronEl.textContent = scheduledBadge.text
+        cronEl.title = scheduledBadge.title
+        meta.appendChild(cronEl)
+      }
+    } else if (task.cron) {
+      const cronBadge = resolveCronBadge(task.cron)
       if (cronBadge) {
         const cronEl = document.createElement('span')
         cronEl.className = 'task-cron'

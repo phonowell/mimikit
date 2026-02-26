@@ -1,18 +1,12 @@
 import { Codex } from '@openai/codex-sdk'
 
-import { appendLog } from '../log/append.js'
-import { bestEffort, logSafeError } from '../log/safe.js'
-import { normalizeUsage } from '../shared/utils.js'
+import { logSafeError } from '../log/safe.js'
 
 import {
   HARDCODED_MODEL_REASONING_EFFORT,
   loadCodexSettings,
 } from './openai-settings.js'
 import {
-  buildProviderAbortedError,
-  buildProviderSdkError,
-  buildProviderTimeoutError,
-  isTransientProviderMessage,
   ProviderError,
   readProviderErrorCode,
 } from './provider-error.js'
@@ -22,87 +16,22 @@ import {
   createTimeoutGuard,
   elapsedMsSince,
 } from './provider-runtime.js'
+import { runCodexStream } from './codex-stream.js'
+import {
+  appendCodexLlmLog,
+  buildCodexProviderError,
+  createCodexThread,
+} from './codex-sdk-provider-helpers.js'
 
 import type { CodexSdkProviderRequest, Provider } from './types.js'
 
 const codex = new Codex()
-const approvalPolicy = 'never' as const
-
-const buildCodexProviderError = (params: {
-  error: Error
-  timeoutMs: number
-  timedOut: boolean
-  externallyAborted: boolean
-}): ProviderError => {
-  const { error, timeoutMs, timedOut, externallyAborted } = params
-  if (timedOut) return buildProviderTimeoutError('codex-sdk', timeoutMs)
-  if (
-    externallyAborted ||
-    error.name === 'AbortError' ||
-    /aborted|canceled/i.test(error.message)
-  )
-    return buildProviderAbortedError('codex-sdk')
-  return buildProviderSdkError({
-    providerId: 'codex-sdk',
-    message: error.message,
-    transient: isTransientProviderMessage(error.message),
-  })
-}
-
-const sandboxModeFor = (role: string) =>
-  role === 'worker' ? ('danger-full-access' as const) : ('read-only' as const)
-
-const toLogContext = (
-  request: CodexSdkProviderRequest,
-): Record<string, unknown> => {
-  return {
-    role: request.role,
-    timeoutMs: request.timeoutMs,
-    idleTimeoutMs: request.timeoutMs,
-    timeoutType: 'idle',
-    promptChars: request.prompt.length,
-    promptLines: request.prompt.split(/\r?\n/).length,
-    outputSchema: Boolean(request.outputSchema),
-    workingDirectory: request.workDir,
-    sandboxMode: sandboxModeFor(request.role),
-    approvalPolicy,
-    ...(request.model ? { model: request.model } : {}),
-    ...(request.logContext ?? {}),
-  }
-}
-
-const appendLlmLog = async (
-  request: CodexSdkProviderRequest,
-  entry: Record<string, unknown>,
-): Promise<void> => {
-  if (!request.logPath) return
-  const context = toLogContext(request)
-  await bestEffort('appendLog: llm_call', () =>
-    appendLog(request.logPath as string, { ...entry, ...context }),
-  )
-}
-
-const createThread = (request: CodexSdkProviderRequest) => {
-  const modelReasoningEffort =
-    request.modelReasoningEffort ?? HARDCODED_MODEL_REASONING_EFFORT
-  const threadOptions = {
-    workingDirectory: request.workDir,
-    ...(request.model ? { model: request.model } : {}),
-    modelReasoningEffort,
-    sandboxMode: sandboxModeFor(request.role),
-    approvalPolicy,
-  }
-  const thread = request.threadId
-    ? codex.resumeThread(request.threadId, threadOptions)
-    : codex.startThread(threadOptions)
-  return { thread }
-}
 
 const runCodexProvider = async (request: CodexSdkProviderRequest) => {
   if (request.logPath) {
     try {
       const settings = await loadCodexSettings()
-      await appendLlmLog(request, {
+      await appendCodexLlmLog(request, {
         event: 'llm_call_started',
         ...(settings.model ? { modelResolved: settings.model } : {}),
         ...(settings.baseUrl ? { baseUrl: settings.baseUrl } : {}),
@@ -118,11 +47,11 @@ const runCodexProvider = async (request: CodexSdkProviderRequest) => {
       await logSafeError('provider:codex-sdk loadCodexSettings', error, {
         logPath: request.logPath,
       })
-      await appendLlmLog(request, { event: 'llm_call_started' })
+      await appendCodexLlmLog(request, { event: 'llm_call_started' })
     }
   }
 
-  const { thread } = createThread(request)
+  const { thread } = createCodexThread(codex, request)
 
   const startedAt = Date.now()
   const controller = new AbortController()
@@ -151,38 +80,14 @@ const runCodexProvider = async (request: CodexSdkProviderRequest) => {
 
   try {
     resetIdle()
-    const stream = await thread.runStreamed(request.prompt, {
-      ...(request.outputSchema ? { outputSchema: request.outputSchema } : {}),
-      signal: controller.signal,
-    })
-    let output = ''
-    let streamedOutput = ''
-    let usage: ReturnType<typeof normalizeUsage> | undefined
-    for await (const event of stream.events) {
-      resetIdle()
-      if (event.type === 'item.updated' || event.type === 'item.completed') {
-        if (event.item.type !== 'agent_message') continue
-        const nextOutput = event.item.text
-        if (request.onTextDelta) {
-          const delta = nextOutput.startsWith(streamedOutput)
-            ? nextOutput.slice(streamedOutput.length)
-            : nextOutput
-          if (delta) request.onTextDelta(delta)
-        }
-        streamedOutput = nextOutput
-        if (event.type === 'item.completed') output = nextOutput
-        continue
-      }
-      if (event.type === 'turn.completed') {
-        usage = normalizeUsage(event.usage)
-        if (usage) request.onUsage?.(usage)
-        continue
-      }
-      if (event.type === 'turn.failed') throw new Error(event.error.message)
-      if (event.type === 'error') throw new Error(event.message)
-    }
+    const { output, usage } = await runCodexStream(
+      thread,
+      request,
+      controller.signal,
+      resetIdle,
+    )
     const elapsedMs = elapsedMsSince(startedAt)
-    await appendLlmLog(request, {
+    await appendCodexLlmLog(request, {
       event: 'llm_call_finished',
       elapsedMs,
       ...(usage ? { usage } : {}),
@@ -208,7 +113,7 @@ const runCodexProvider = async (request: CodexSdkProviderRequest) => {
             externallyAborted,
           })
     const errorCode = readProviderErrorCode(mappedError)
-    await appendLlmLog(request, {
+    await appendCodexLlmLog(request, {
       event: 'llm_call_failed',
       elapsedMs,
       error: mappedError.message,

@@ -9,6 +9,7 @@ export type TaskView = {
   profile: Task['profile']
   title: string
   cron?: string
+  scheduledAt?: string
   createdAt: string
   changeAt: string
   startedAt?: string
@@ -40,14 +41,14 @@ const resolveCronJobStatus = (cronJob: CronJob): TaskStatus => {
 }
 
 const cronJobToView = (cronJob: CronJob): TaskView => {
-  const schedule = cronJob.cron ?? cronJob.scheduledAt ?? ''
   return {
     id: cronJob.id,
     kind: 'cron',
     status: resolveCronJobStatus(cronJob),
     profile: cronJob.profile,
     title: cronJob.title || titleFromCandidates(cronJob.id, [cronJob.prompt]),
-    ...(schedule ? { cron: schedule } : {}),
+    ...(cronJob.cron ? { cron: cronJob.cron } : {}),
+    ...(cronJob.scheduledAt ? { scheduledAt: cronJob.scheduledAt } : {}),
     createdAt: cronJob.createdAt,
     changeAt: cronJob.lastTriggeredAt ?? cronJob.createdAt,
   }
@@ -60,6 +61,7 @@ const taskToView = (task: Task): TaskView => ({
   profile: task.profile,
   title: task.title || titleFromCandidates(task.id, [task.prompt]),
   ...(task.cron ? { cron: task.cron } : {}),
+  ...(task.scheduledAt ? { scheduledAt: task.scheduledAt } : {}),
   createdAt: task.createdAt,
   changeAt: resolveTaskChangeAt(task),
   ...(task.startedAt ? { startedAt: task.startedAt } : {}),

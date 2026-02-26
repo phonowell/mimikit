@@ -178,7 +178,7 @@ export const applyScheduleTask = async (
     prompt: parsed.data.prompt,
     title: parsed.data.title,
     focusId,
-    ...(cron ? { cron } : scheduledAt ? { cron: scheduledAt } : {}),
+    ...(cron ? { cron } : scheduledAt ? { scheduledAt } : {}),
     profile,
     status: 'pending',
     createdAt,

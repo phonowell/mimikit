@@ -1,7 +1,7 @@
 # 代码质量改进清单
 
 更新时间：2026-02-26
-范围：`src/`（当前约 `11182` 行）
+范围：`src/`（当前约 `11309` 行）
 依据：全量代码审查（`/review-code-changes 审查 src 下的所有代码`）
 
 ---
@@ -14,65 +14,42 @@
 
 ---
 
-### 2. 超 200 行文件拆分（CLAUDE.md 硬性规则）
+### 2. 超 200 行文件拆分（CLAUDE.md 硬性规则）【已完成 2026-02-26】
 
-**违规文件（10 个）：**
+**结果：`src/**/*.ts` 当前最大文件 199 行。**
 
-| 文件 | 行数 | 建议拆法 |
-| --- | --- | --- |
-| `src/orchestrator/core/orchestrator-service.ts` | 403 | 抽出 cron 操作（`addCronJob/cancelCronJob/cloneCronJob`）到 `orchestrator-cron.ts`；辅助函数（`computeOrchestratorStatus`/`toUserInputLogMeta`）到 `orchestrator-helpers.ts` |
-| `src/manager/loop-batch-run-manager.ts` | 302 | 抽出 intent 触发逻辑到 `loop-batch-intent.ts`；history lookup 调用到 `loop-batch-history.ts` |
-| `src/providers/codex-sdk-provider.ts` | 232 | 抽出 Codex 流式处理到 `codex-stream.ts`；工具解析到 `codex-tool-call.ts` |
-| `src/http/routes-api-task-routes.ts` | 226 | 抽出归档路由到 `routes-api-task-archive.ts`；取消路由到 `routes-api-task-cancel.ts` |
-| `src/manager/loop-batch.ts` | 217 | 抽出 batch 前处理（intent/history 解析）到 `loop-batch-pre.ts` |
-| `src/types/index.ts` | 212 | 按领域拆分：`types/task.ts` / `types/focus.ts` / `types/intent.ts` / `types/provider.ts`，再由 `types/index.ts` re-export |
-| `src/storage/runtime-snapshot-schema.ts` | 212 | 随 #1 SQLite 迁移一并解决；迁移前可按 task/focus/intent 拆子 schema |
-| `src/history/manager-events.ts` | 207 | 抽出 result 历史写入到 `history/result-events.ts` |
-| `src/worker/profiled-runner.ts` | 205 | 抽出工具调用循环到 `profiled-runner-loop.ts` |
-| `src/history/query.ts` | 204 | 抽出 tokenization/scoring 到 `history/query-score.ts` |
+**本轮关键拆分：**
 
-**操作原则：** 仅移动，不改逻辑；每次只拆一个文件并同步更新 imports。
-
----
-
-### 3. `Task.cron` 双语义污染
-
-**位置：** `src/types/index.ts`、`src/orchestrator/core/task-lifecycle.ts`、`src/manager/action-apply-create.ts:181`
-
-**问题：**
-`Task.cron` 字段同时承载两种含义：
-- cron 表达式（`* * * * *`）
-- `scheduledAt` ISO 字符串（`2026-03-01T09:00:00.000Z`）
-
-`action-apply-create.ts:181` 里 `...(cron ? { cron } : scheduledAt ? { cron: scheduledAt } : {})` 将 scheduledAt 塞入 `cron` 字段，语义混淆，未来调试困难。
-
-**建议修复：**
-```ts
-// types/index.ts
-export type Task = {
-  // 改为语义更准确的 schedule 字段，值可为 cron 表达式或 ISO 时间
-  schedule?: string
-  // 移除 cron
-}
-```
-或拆为两个可选字段 `cronExpr?: string` + `scheduledAt?: string`，在 `task-state.ts`、`loop-cron.ts`、`profiled-runner.ts`、`format-content.ts` 相应处理分支。
+| 原文件 | 旧行数 | 新行数 | 新增文件 |
+| --- | --- | --- | --- |
+| `src/orchestrator/core/orchestrator-service.ts` | 403 | 179 | `orchestrator-cron.ts` / `orchestrator-helpers.ts` / `orchestrator-runtime-ops.ts` |
+| `src/manager/loop-batch-run-manager.ts` | 302 | 160 | `loop-batch-intent.ts` / `loop-batch-history.ts` / `loop-batch-run-once.ts` / `loop-batch-stream.ts` |
+| `src/providers/codex-sdk-provider.ts` | 232 | 137 | `codex-stream.ts` / `codex-sdk-provider-helpers.ts` |
+| `src/http/routes-api-task-routes.ts` | 226 | 2 | `routes-api-task-archive.ts` / `routes-api-task-cancel.ts` |
+| `src/manager/loop-batch.ts` | 217 | 187 | `loop-batch-pre.ts` |
+| `src/history/manager-events.ts` | 207 | 132 | `history/result-events.ts` |
+| `src/worker/profiled-runner.ts` | 205 | 84 | `profiled-runner-loop.ts` |
+| `src/history/query.ts` | 204 | 112 | `history/query-score.ts` |
+| `src/types/index.ts` | 212 | 134 | 结合 #4 自动降行 |
+| `src/storage/runtime-snapshot-schema.ts` | 212 | 192 | 结合 #4 自动降行 |
 
 ---
 
-### 4. `types/index.ts` 与 `runtime-snapshot-schema.ts` 双源维护
+### 3. `Task.cron` 双语义污染【已完成 2026-02-26】
 
-**位置：** `src/types/index.ts`（212 行）、`src/storage/runtime-snapshot-schema.ts`（212 行）
+**结果：**
+- `Task` 明确双字段语义：`cron` 仅 cron 表达式，`scheduledAt` 仅 ISO 时间。
+- 已移除 `scheduledAt -> cron` 映射兼容层（读写侧统一）。
+- 关键修复点：`action-apply-create.ts`、`task-view.ts`、`webui/tasks-view.js`。
 
-**问题：**
-两文件结构高度镜像（35 个 TS type vs 30 个 Zod schema），每次新增字段需同步改两处，容易遗漏。
+---
 
-**建议修复（短期）：**
-从 Zod schema 自动推导 TS 类型，删除 `types/index.ts` 中重复的手写类型：
-```ts
-// 以 Zod 为单一源
-export type Task = z.infer<typeof taskSchema>
-```
-中期配合 #1 SQLite 迁移时，schema 改为 SQL DDL + Zod 解析层，彻底消除双源。
+### 4. `types/index.ts` 与 `runtime-snapshot-schema.ts` 双源维护【已完成 2026-02-26】
+
+**结果：**
+- 以 `runtime-snapshot-schema.ts` 为单一结构源。
+- `types/index.ts` 中任务/焦点/意图等核心结构改为 `z.infer<typeof ...Schema>` 推导。
+- `runtime-snapshot-schema.ts` 的 normalize 逻辑改为 `z.infer` 类型闭环，删除跨文件镜像维护。
 
 ---
 
@@ -99,3 +76,6 @@ Worker 多轮执行上限 `MAX_RUN_ROUNDS = 3` 硬编码，无法通过 `config.
 ## 已完成项（本次审查修复）
 
 - ✓ `src/manager/action-feedback-collect.ts` — 硬编码 action 列表改为从 `REGISTERED_MANAGER_ACTIONS` 动态生成，消除偏移风险。
+- ✓ #2 超 200 行文件拆分完成（当前最大 199 行）。
+- ✓ #3 `Task.cron` 双语义修复完成，移除兼容映射层。
+- ✓ #4 `types/index.ts` 与 `runtime-snapshot-schema.ts` 双源消除完成（`z.infer` 单源）。
