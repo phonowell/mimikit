@@ -15,7 +15,7 @@ import {
   updateFocusSchema,
   updateIntentSchema,
 } from './action-apply-schema.js'
-import { queryHistorySchema } from './history-query.js'
+import { queryHistorySchema } from '../history/query.js'
 
 import type { Parsed } from '../actions/model/spec.js'
 import type { IdleIntentStatus, TaskStatus } from '../types/index.js'

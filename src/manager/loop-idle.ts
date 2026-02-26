@@ -5,7 +5,7 @@ import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js
 import { selectIdleIntentForTrigger } from '../orchestrator/read-model/intent-select.js'
 import { formatSystemEventText } from '../shared/system-event.js'
 import { newId, sleep } from '../shared/utils.js'
-import { appendHistory } from '../storage/history-jsonl.js'
+import { appendHistory } from '../history/store.js'
 
 import { publishManagerSystemEventInput } from './system-input-event.js'
 

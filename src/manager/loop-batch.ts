@@ -5,13 +5,13 @@ import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js
 import { notifyUiSignal } from '../orchestrator/core/signals.js'
 import { isVisibleToAgent } from '../shared/message-visibility.js'
 import { nowIso } from '../shared/utils.js'
-import { appendHistory } from '../storage/history-jsonl.js'
+import { appendHistory } from '../history/store.js'
 
 import { applyTaskActions, collectTaskResultSummaries } from './action-apply.js'
 import {
   appendManagerErrorSystemMessage,
   appendManagerFallbackReply,
-} from './history.js'
+} from '../history/manager-events.js'
 import { runManagerBatch } from './loop-batch-run-manager.js'
 import {
   buildFallbackReply,

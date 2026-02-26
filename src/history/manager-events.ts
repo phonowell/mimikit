@@ -1,9 +1,9 @@
 import { GLOBAL_FOCUS_ID } from '../focus/index.js'
-import { appendTaskSystemMessage } from '../orchestrator/read-model/task-history.js'
 import { loadPromptTemplate } from '../prompts/prompt-loader.js'
 import { formatSystemEventText } from '../shared/system-event.js'
 import { nowIso } from '../shared/utils.js'
-import { appendHistory, readHistory } from '../storage/history-jsonl.js'
+import { appendHistory, readHistory } from './store.js'
+import { appendTaskSystemMessage } from './task-events.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type {

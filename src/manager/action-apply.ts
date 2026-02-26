@@ -15,7 +15,7 @@ import { runWithProvider } from '../providers/registry.js'
 import { formatSystemEventText } from '../shared/system-event.js'
 import { isVisibleToAgent } from '../shared/message-visibility.js'
 import { newId, nowIso } from '../shared/utils.js'
-import { appendHistory, readHistory } from '../storage/history-jsonl.js'
+import { appendHistory, readHistory } from '../history/store.js'
 import { cancelTask } from '../worker/cancel-task.js'
 
 import {

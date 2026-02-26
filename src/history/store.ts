@@ -5,8 +5,8 @@ import { ensureDir, listFiles } from '../fs/paths.js'
 import { safe } from '../log/safe.js'
 import { parseIsoMs } from '../shared/time.js'
 
-import { readJsonl, writeJsonl } from './jsonl.js'
-import { runSerialized } from './serialized-lock.js'
+import { readJsonl, writeJsonl } from '../storage/jsonl.js'
+import { runSerialized } from '../storage/serialized-lock.js'
 
 import type { HistoryMessage } from '../types/index.js'
 

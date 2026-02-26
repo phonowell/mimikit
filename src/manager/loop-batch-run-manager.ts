@@ -10,15 +10,15 @@ import {
   selectRecentTasks,
 } from '../orchestrator/read-model/intent-select.js'
 import { mergeUsageAdditive } from '../shared/token-usage.js'
-import { readHistory } from '../storage/history-jsonl.js'
+import { readHistory } from '../history/store.js'
 
 import {
   type FeedbackContext,
   REGISTERED_MANAGER_ACTIONS,
   validateRegisteredManagerAction,
 } from './action-feedback-validate.js'
-import { pickQueryHistoryRequest, queryHistory } from './history-query.js'
-import { appendActionFeedbackSystemMessage } from './history.js'
+import { pickQueryHistoryRequest, queryHistory } from '../history/query.js'
+import { appendActionFeedbackSystemMessage } from '../history/manager-events.js'
 import {
   resetUiStream,
   setUiStreamText,

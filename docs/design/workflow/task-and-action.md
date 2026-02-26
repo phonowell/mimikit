@@ -64,7 +64,7 @@
 
 ## Manager 消费的编排 Action
 
-实现：`src/manager/action-apply.ts`、`src/manager/loop-batch-run-manager.ts`、`src/manager/history-query.ts`
+实现：`src/manager/action-apply.ts`、`src/manager/loop-batch-run-manager.ts`、`src/history/query.ts`
 
 当 manager 输出未注册 action、参数不合法、或可判定执行失败时，系统会注入 `system_event.name=action_feedback`，要求修正后重试。
 

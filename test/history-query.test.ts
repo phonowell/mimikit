@@ -3,8 +3,8 @@ import { expect, test } from 'vitest'
 import {
   pickQueryHistoryRequest,
   queryHistory,
-} from '../src/manager/history-query.js'
-import type { QueryHistoryRequest } from '../src/manager/history-query-request.js'
+} from '../src/history/query.js'
+import type { QueryHistoryRequest } from '../src/history/query.js'
 
 import type { HistoryMessage } from '../src/types/index.js'
 

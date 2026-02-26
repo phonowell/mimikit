@@ -2,7 +2,7 @@ import read from 'fire-keeper/read'
 
 import { buildFocusPromptPayload } from '../focus/index.js'
 import { buildPaths } from '../fs/paths.js'
-import { readHistory } from '../storage/history-jsonl.js'
+import { readHistory } from '../history/store.js'
 import { readTaskResultsForTasks } from '../storage/task-results.js'
 
 import { escapeCdata } from './format-base.js'

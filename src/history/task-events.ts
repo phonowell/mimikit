@@ -1,14 +1,14 @@
-import { safe } from '../../log/safe.js'
-import { formatSystemEventText } from '../../shared/system-event.js'
-import { newId, nowIso } from '../../shared/utils.js'
-import { appendHistory } from '../../storage/history-jsonl.js'
+import { safe } from '../log/safe.js'
+import { formatSystemEventText } from '../shared/system-event.js'
+import { newId, nowIso } from '../shared/utils.js'
+import { appendHistory } from './store.js'
 
 import type {
   HistoryMessage,
   Task,
   TaskCancelMeta,
   TaskResultStatus,
-} from '../../types/index.js'
+} from '../types/index.js'
 
 type TaskHistoryEvent = 'created' | 'canceled' | 'completed'
 

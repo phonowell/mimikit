@@ -92,7 +92,7 @@
 | `src/http/routes-api-task-routes.ts` | 242 | 归档/取消/进度路由合并 |
 | `src/providers/codex-sdk-provider.ts` | 237 | Provider 包装器过大 |
 | `src/orchestrator/core/orchestrator-service.ts` | 219 | 11 项职责集中 |
-| `src/manager/history.ts` | 216 | 历史管理 + 系统消息 + 模板加载混合 |
+| `src/history/manager-events.ts` | 207 | 历史管理 + 系统消息 + 模板加载混合 |
 
 ### 4.2 WebUI 过大文件
 

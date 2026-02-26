@@ -6,7 +6,7 @@ import {
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import { formatSystemEventText } from '../shared/system-event.js'
 import { newId, nowIso } from '../shared/utils.js'
-import { appendHistory } from '../storage/history-jsonl.js'
+import { appendHistory } from '../history/store.js'
 
 import {
   createIntentSchema,

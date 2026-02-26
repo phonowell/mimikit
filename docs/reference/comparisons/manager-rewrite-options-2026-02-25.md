@@ -10,7 +10,7 @@
 - 主链路：`src/manager/loop.ts` → `src/manager/loop-batch.ts` → `src/manager/loop-batch-run-manager.ts` → `src/manager/runner.ts`
 - codex 耦合核心：`src/manager/runner.ts` 固定 `provider: 'codex-sdk'`
 - 成本守卫已存在：`src/manager/runner-budget.ts`（默认 maxTokens=8192，超限裁剪 `tasks/results`）
-- 历史/压缩机制：`src/manager/history-query.ts`、`src/manager/action-apply-compress.ts`
+- 历史/压缩机制：`src/history/query.ts`、`src/manager/action-apply-compress.ts`
 
 ## 外部实现（pi-mono）
 
