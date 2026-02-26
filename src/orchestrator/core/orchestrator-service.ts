@@ -28,6 +28,7 @@ import {
   selectChatMessages,
 } from '../read-model/chat-view.js'
 import { sortIdleIntents } from '../read-model/intent-select.js'
+import { buildFocusViews } from '../read-model/focus-view.js'
 import { buildTaskViews } from '../read-model/task-view.js'
 
 import {
@@ -333,6 +334,15 @@ export class Orchestrator {
     return { items }
   }
 
+  getFocuses(limit = 200) {
+    return buildFocusViews(
+      this.runtime.focuses,
+      this.runtime.focusContexts,
+      this.runtime.activeFocusIds,
+      limit,
+    )
+  }
+
   getWebUiSnapshot(messageLimit = 50, taskLimit = 200) {
     return (async () => ({
       status: this.getStatus(),
@@ -343,6 +353,7 @@ export class Orchestrator {
         taskLimit,
       ),
       todos: this.getTodos(taskLimit),
+      focuses: this.getFocuses(taskLimit),
       stream: this.runtime.uiStream ? { ...this.runtime.uiStream } : null,
     }))()
   }

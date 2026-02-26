@@ -60,6 +60,7 @@ const buildSnapshotHint = (orchestrator: Orchestrator) => ({
   status: orchestrator.getStatus(),
   tasks: orchestrator.getTasks(),
   todos: orchestrator.getTodos(),
+  focuses: orchestrator.getFocuses(),
   stream: cloneUiStream(orchestrator.getWebUiStreamSnapshot()),
 })
 
@@ -163,6 +164,7 @@ export const registerApiRoutes = (
         status: initial.status,
         tasks: initial.tasks,
         todos: initial.todos,
+        focuses: initial.focuses,
         stream: initial.stream,
       })
       lastStream = cloneUiStream(initial.stream)

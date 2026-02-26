@@ -21,6 +21,7 @@ export const UI_TEXT = Object.freeze({
   conversationTitleFallback: 'Mimikit',
   noTasks: 'No tasks',
   noTodos: 'No todos',
+  noFocuses: 'No focus',
   untitledTask: 'Untitled',
   cancelingTask: 'Canceling',
   quote: 'Quote',

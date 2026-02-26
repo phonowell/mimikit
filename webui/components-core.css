@@ -187,11 +187,20 @@
   white-space: nowrap;
 }
 
+.focuses-open {
+  gap: 8px;
+  white-space: nowrap;
+}
+
 .tasks-label {
   line-height: 1;
 }
 
 .todos-label {
+  line-height: 1;
+}
+
+.focuses-label {
   line-height: 1;
 }
 

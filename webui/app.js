@@ -1,4 +1,5 @@
 import { bindComposer } from './messages/composer.js'
+import { bindFocusPanel } from './focus.js'
 import { createMessagesController } from './messages/controller.js'
 import { bindRestart } from './restart.js'
 import { UI_TEXT } from './system-text.js'
@@ -33,6 +34,10 @@ const elements = {
   todosOpenBtn: $('[data-todos-open]'),
   todosCloseBtn: $('[data-todos-close]'),
   todosList: $('[data-todos-list]'),
+  focusesDialog: $('[data-focuses-dialog]'),
+  focusesOpenBtn: $('[data-focuses-open]'),
+  focusesCloseBtn: $('[data-focuses-close]'),
+  focusesList: $('[data-focuses-list]'),
 }
 
 const FAVICON_COLOR_BY_STATE = {
@@ -121,6 +126,12 @@ const todosPanel = bindTodosPanel({
   todosOpenBtn: elements.todosOpenBtn,
   todosCloseBtn: elements.todosCloseBtn,
 })
+const focusPanel = bindFocusPanel({
+  focusesList: elements.focusesList,
+  focusesDialog: elements.focusesDialog,
+  focusesOpenBtn: elements.focusesOpenBtn,
+  focusesCloseBtn: elements.focusesCloseBtn,
+})
 
 const messages = createMessagesController({
   messagesEl: elements.messagesEl,
@@ -136,9 +147,11 @@ const messages = createMessagesController({
   quoteClearBtn: elements.quoteClearBtn,
   onTasksSnapshot: (tasks) => tasksPanel?.applyTasksSnapshot?.(tasks),
   onTodosSnapshot: (todos) => todosPanel?.applyTodosSnapshot?.(todos),
+  onFocusesSnapshot: (focuses) => focusPanel?.applyFocusesSnapshot?.(focuses),
   onDisconnected: () => {
     tasksPanel?.setDisconnected?.()
     todosPanel?.setDisconnected?.()
+    focusPanel?.setDisconnected?.()
   },
 })
 
