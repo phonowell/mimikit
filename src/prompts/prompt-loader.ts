@@ -46,43 +46,23 @@ const normalizeIncludePath = (
   return resolvedInclude
 }
 
-const expandPromptIncludesByPath = async (
-  path: string,
-  includeStack: string[],
-): Promise<string> => {
-  if (includeStack.includes(path)) {
-    throw new Error(
-      `prompt_include_cycle:${[...includeStack, path]
-        .map((current) => relative(PROMPTS_ROOT, current))
-        .join(' -> ')}`,
-    )
-  }
-  const content = await readPromptByPath(path, includeStack.length === 0)
-  if (!content) return ''
-  const nextStack = [...includeStack, path]
-  let output = ''
-  let cursor = 0
-  const includeRe = /\{#include\s+([^}\s]+)\s*\}/g
-  let match = includeRe.exec(content)
-  while (match) {
-    output += content.slice(cursor, match.index)
-    const includeRef = match.at(1)
-    if (!includeRef) throw new Error('prompt_include_path_empty')
-    const includePath = normalizeIncludePath(path, includeRef)
-    const included = await expandPromptIncludesByPath(includePath, nextStack)
-    output += included
-    cursor = match.index + match[0].length
-    match = includeRe.exec(content)
-  }
-  output += content.slice(cursor)
-  return output
-}
+const resolvePromptPath = (relativePath: string): string =>
+  normalizeIncludePath(join(PROMPTS_ROOT, '_.md'), relativePath)
 
 export const loadPromptFile = (role: string, name: string): Promise<string> =>
-  expandPromptIncludesByPath(join(PROMPTS_ROOT, role, `${name}.md`), [])
+  readPromptByPath(resolvePromptPath(`${role}/${name}.md`))
 
 export const loadPromptTemplate = (relativePath: string): Promise<string> =>
-  expandPromptIncludesByPath(join(PROMPTS_ROOT, relativePath), [])
+  readPromptByPath(resolvePromptPath(relativePath))
+
+export const loadPromptSource = async (
+  relativePath: string,
+): Promise<{ path: string; template: string }> => {
+  const path = resolvePromptPath(relativePath)
+  return { path, template: await readPromptByPath(path) }
+}
 
 export const loadSystemPrompt = (role: string): Promise<string> =>
   loadPromptFile(role, 'system')
+
+export { PROMPTS_ROOT, resolvePromptPath }

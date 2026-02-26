@@ -19,7 +19,7 @@ import {
   formatTasksYaml,
   renderPromptTemplate,
 } from './format.js'
-import { loadPromptFile, loadSystemPrompt } from './prompt-loader.js'
+import { loadPromptFile, loadPromptSource } from './prompt-loader.js'
 
 import type {
   CronJob,
@@ -139,7 +139,7 @@ export const buildManagerPrompt = async (params: {
     workingFocusIds: params.workingFocusIds ?? [],
   })
 
-  const systemTemplate = await loadSystemPrompt('manager')
+  const systemSource = await loadPromptSource('manager/system.md')
   const templateValues: Record<string, string> = {
     environment: escapeCdata(
       formatEnvironment({
@@ -170,21 +170,29 @@ export const buildManagerPrompt = async (params: {
     persona: escapeCdata(persona.trim()),
     user_profile: escapeCdata(userProfile.trim()),
   }
-  return renderPromptTemplate(systemTemplate, templateValues)
+  return renderPromptTemplate(
+    systemSource.template,
+    templateValues,
+    systemSource.path,
+  )
 }
 
 export const buildWorkerPrompt = async (params: {
   workDir: string
   task: Task
 }): Promise<string> => {
-  const systemTemplate = await loadSystemPrompt('worker')
+  const systemSource = await loadPromptSource('worker/system.md')
   let taskPrompt = params.task.prompt
   if (params.task.cron) {
     const prefix = await loadPromptFile('worker', 'cron-trigger-context')
     if (prefix) taskPrompt = `${prefix.trim()}\n\n${taskPrompt}`
   }
-  return renderPromptTemplate(systemTemplate, {
-    environment: escapeCdata(formatEnvironment({ workDir: params.workDir })),
-    prompt: escapeCdata(taskPrompt),
-  })
+  return renderPromptTemplate(
+    systemSource.template,
+    {
+      environment: escapeCdata(formatEnvironment({ workDir: params.workDir })),
+      prompt: escapeCdata(taskPrompt),
+    },
+    systemSource.path,
+  )
 }

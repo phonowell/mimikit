@@ -1,8 +1,10 @@
 import { mkdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 
+import fastifyEtag from '@fastify/etag'
 import fastifyStatic from '@fastify/static'
 import fastify from 'fastify'
+import { FastifySSEPlugin } from 'fastify-sse-v2'
 
 import { logSafeError } from '../log/safe.js'
 import { resolveRoots } from './helpers.js'
@@ -82,6 +84,8 @@ export const createHttpServer = async (
   port: number,
 ) => {
   const app = fastify({ bodyLimit: MAX_BODY_BYTES })
+  await app.register(fastifyEtag)
+  await app.register(FastifySSEPlugin, { retryDelay: 1500 })
 
   registerErrorHandler(app)
   registerApiRoutes(app, orchestrator, config)

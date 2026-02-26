@@ -56,8 +56,8 @@
 
 - Action 行格式：`<M:name key="value" />`
 - 解析链路（无正则主解析）：
-  - `micromark` 标注 Markdown 代码块范围（忽略 fenced/indented code 内伪 action）
-  - `htmlparser2` 扫描标签起点
+  - `remark-parse` 构建 Markdown AST
+  - `unist-util-visit` 遍历 HTML 节点，抽取 `<M:...>` 标签
   - 属性解析器处理 `\"`、`\'` 转义并保留换行
 - 输出清洗：
   - 仅解析末尾连续 action 区

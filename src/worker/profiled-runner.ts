@@ -1,6 +1,6 @@
 import { runWithProvider } from '../providers/registry.js'
 import { buildWorkerPrompt } from '../prompts/build-prompts.js'
-import { loadPromptFile } from '../prompts/prompt-loader.js'
+import { loadPromptSource } from '../prompts/prompt-loader.js'
 import { renderPromptTemplate } from '../prompts/format.js'
 import { mergeUsageAdditive } from '../shared/token-usage.js'
 import { appendTaskProgress } from '../storage/task-progress.js'
@@ -78,15 +78,20 @@ const isAbortLikeError = (error: Error): boolean =>
 
 const buildContinuePrompt = (
   template: string,
+  templatePath: string,
   latestOutput: string,
   nextRound: number,
 ): string =>
-  renderPromptTemplate(template, {
-    done_marker: DONE_MARKER,
-    latest_output: latestOutput.trim(),
-    next_round: String(nextRound),
-    max_rounds: String(MAX_RUN_ROUNDS),
-  })
+  renderPromptTemplate(
+    template,
+    {
+      done_marker: DONE_MARKER,
+      latest_output: latestOutput.trim(),
+      next_round: String(nextRound),
+      max_rounds: String(MAX_RUN_ROUNDS),
+    },
+    templatePath,
+  )
 
 type WorkerRunnerParams = {
   stateDir: string
@@ -106,7 +111,7 @@ export const runWorker = async (
     workDir: params.workDir,
     task: params.task,
   })
-  const continueTemplate = await loadPromptFile('worker', 'continue-until-done')
+  const continueTemplate = await loadPromptSource('worker/continue-until-done.md')
   const runModel = buildRunModel(params)
   const archiveBase = {
     role: 'worker' as const,
@@ -169,7 +174,12 @@ export const runWorker = async (
       }
 
       if (round < MAX_RUN_ROUNDS)
-        nextPrompt = buildContinuePrompt(continueTemplate, output, round + 1)
+        nextPrompt = buildContinuePrompt(
+          continueTemplate.template,
+          continueTemplate.path,
+          output,
+          round + 1,
+        )
     }
 
     throw new Error(

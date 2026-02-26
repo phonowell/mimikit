@@ -8,7 +8,7 @@
 
 - 导出：`runManager`
 - Prompt 组装：`buildManagerPrompt`
-- 模板来源：`prompts/manager/system.md`（单模板渲染，支持 `{#if}` 条件块）
+- 模板来源：`prompts/manager/system.md`（`nunjucks` 渲染，支持 `if/include`）
 - 注入策略：代码仅注入内容；`<M:...>` 标签与结构由模板声明
 - Provider 路径：`runWithProvider(provider='openai-chat')`
 - Provider role：`manager`
@@ -20,7 +20,7 @@
 
 1. 基于 inputs/results/tasks/intents/history/cron 上下文构造 manager prompt。
 2. 执行 prompt 预算限制并计算 timeout。
-3. 调用 OpenAI-compatible `chat/completions`（流式 SSE）。
+3. 调用 OpenAI 官方 SDK `chat.completions.stream`。
 4. 若出现 action_feedback/query_history，则在同批次内继续下一轮推理。
 5. 成功/失败都归档到 `traces/YYYY-MM-DD/<ts36><ra>.txt`。
 

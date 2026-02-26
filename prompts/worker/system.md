@@ -43,10 +43,10 @@
 
 // 任务描述：
 <M:prompt>
-{prompt}
+{{ prompt }}
 </M:prompt>
 
 // 环境信息；供参考，不主动提及
 <M:environment>
-{environment}
+{{ environment }}
 </M:environment>

@@ -87,66 +87,66 @@
 - `M:history_lookup`：仅在 `M:query_history` 后回填的命中历史。
 - `M:compressed_context`：长会话压缩摘要。
 
-{#if inputs}
+{% if inputs %}
 <M:inputs>
-{inputs}
+{{ inputs }}
 </M:inputs>
-{/if}
-{#if batch_results}
+{% endif %}
+{% if batch_results %}
 <M:batch_results>
-{batch_results}
+{{ batch_results }}
 </M:batch_results>
-{/if}
-{#if focus_list}
+{% endif %}
+{% if focus_list %}
 <M:focus_list>
-{focus_list}
+{{ focus_list }}
 </M:focus_list>
-{/if}
-{#if focus_contexts}
+{% endif %}
+{% if focus_contexts %}
 <M:focus_contexts>
-{focus_contexts}
+{{ focus_contexts }}
 </M:focus_contexts>
-{/if}
-{#if recent_history}
+{% endif %}
+{% if recent_history %}
 <M:recent_history>
-{recent_history}
+{{ recent_history }}
 </M:recent_history>
-{/if}
-{#if history_lookup}
+{% endif %}
+{% if history_lookup %}
 <M:history_lookup>
-{history_lookup}
+{{ history_lookup }}
 </M:history_lookup>
-{/if}
-{#if action_feedback}
+{% endif %}
+{% if action_feedback %}
 <M:action_feedback>
-{action_feedback}
+{{ action_feedback }}
 </M:action_feedback>
-{/if}
-{#if compressed_context}
+{% endif %}
+{% if compressed_context %}
 <M:compressed_context>
-{compressed_context}
+{{ compressed_context }}
 </M:compressed_context>
-{/if}
-{#if tasks}
+{% endif %}
+{% if tasks %}
 <M:tasks>
-{tasks}
+{{ tasks }}
 </M:tasks>
-{/if}
-{#if intents}
+{% endif %}
+{% if intents %}
 <M:intents>
-{intents}
+{{ intents }}
 </M:intents>
-{/if}
+{% endif %}
 <M:environment>
-{environment}
+{{ environment }}
 </M:environment>
-{#if persona}
+{% if persona %}
 <M:persona>
-{persona}
+{{ persona }}
 </M:persona>
-{/if}
-{#if user_profile}
+{% endif %}
+{% if user_profile %}
 <M:user_profile>
-{user_profile}
+{{ user_profile }}
 </M:user_profile>
-{/if}
+{% endif %}

@@ -1,9 +1,21 @@
-import { parse, postprocess, preprocess } from 'micromark'
+import remarkParse from 'remark-parse'
+import { unified } from 'unified'
+import { visit } from 'unist-util-visit'
 
 type Range = {
   start: number
   end: number
 }
+
+type PositionedNode = {
+  type?: string
+  position?: {
+    start?: { offset?: number | null } | null
+    end?: { offset?: number | null } | null
+  } | null
+}
+
+const markdownParser = unified().use(remarkParse)
 
 const hasRange = (range: Partial<Range>): range is Range =>
   Number.isFinite(range.start) &&
@@ -25,24 +37,25 @@ const mergeRanges = (ranges: Range[]): Range[] => {
   return merged
 }
 
-const isCodeBlockToken = (tokenType: string): boolean =>
-  tokenType === 'codeFenced' || tokenType === 'codeIndented'
+const offsetsOf = (node: PositionedNode): Range | undefined => {
+  const start = node.position?.start?.offset
+  const end = node.position?.end?.offset
+  if (typeof start !== 'number' || typeof end !== 'number') return
+  if (!hasRange({ start, end })) return
+  return { start, end }
+}
 
 export const findMarkdownCodeRanges = (text: string): Range[] => {
   if (!text) return []
-  const parser = parse()
-  const events = postprocess(
-    parser.document().write(preprocess()(text, 'utf8', true)),
-  )
+  const tree = markdownParser.parse(text)
   const ranges: Range[] = []
-  for (const [phase, token] of events) {
-    if (phase !== 'enter') continue
-    if (!isCodeBlockToken(token.type)) continue
-    const start = token.start.offset
-    const end = token.end.offset
-    if (!hasRange({ start, end })) continue
-    ranges.push({ start, end })
-  }
+  visit(tree, (node) => {
+    const typed = node as PositionedNode
+    if (typed.type !== 'code' && typed.type !== 'inlineCode') return
+    const range = offsetsOf(typed)
+    if (!range) return
+    ranges.push(range)
+  })
   return mergeRanges(ranges)
 }
 

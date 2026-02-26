@@ -5,7 +5,7 @@
 ## 架构边界
 
 - 一次性全量切换，不保留旧多角色链路与旧队列字段兼容层。
-- manager 使用第三方 OpenAI-compatible `chat/completions`；worker 继续使用 `Codex SDK`。
+- manager 使用 OpenAI 官方 SDK（`chat.completions.stream`）；worker 继续使用 `Codex SDK`。
 - `mimikit` 负责本地执行系统：状态机、队列、调度、可观测性。
 - HTTP 输入校验与参数归一化集中在 `src/http/helpers.ts`。
 - 本地持久化遵循进程内串行 + 文件锁（`proper-lockfile`）。

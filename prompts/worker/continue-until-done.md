@@ -4,9 +4,9 @@
 
 约束：
 - 如果尚未完成，继续执行，不要提前收尾。
-- 如果已完成，仅输出最终结果，并在最后一行追加 `{done_marker}`。
+- 如果已完成，仅输出最终结果，并在最后一行追加 `{{ done_marker }}`。
 - 严禁输出“下一步再做”之类未完成结论。
 
-当前轮次：{next_round}/{max_rounds}
+当前轮次：{{ next_round }}/{{ max_rounds }}
 上一轮输出：
-{latest_output}
+{{ latest_output }}

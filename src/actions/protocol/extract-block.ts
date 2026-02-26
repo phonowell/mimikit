@@ -1,14 +1,120 @@
 import {
+  extractAttrText,
+  extractTagNameFromRaw,
+  findTagEnd,
+  isSelfClosingTag,
+  parseAttributes,
+  parseMetaTagName,
+} from './meta-tag-attrs.js'
+import {
   findMarkdownCodeRanges,
   isIndexInRanges,
+  type Range,
 } from './markdown-code-ranges.js'
-import { collectMetaTags, type MetaTag } from './meta-tag-scan.js'
+import remarkParse from 'remark-parse'
+import { unified } from 'unified'
+import { visit } from 'unist-util-visit'
 
 type Zone = {
   parseStart: number
 }
 
+type MetaTag = {
+  fullName: string
+  name: string
+  attrs: Record<string, string>
+  start: number
+  end: number
+  content?: string
+}
+
+type PositionedHtmlNode = {
+  type?: string
+  value?: string
+  position?: {
+    start?: { offset?: number | null } | null
+  } | null
+}
+
+const markdownParser = unified().use(remarkParse)
+
 const hasOnlyWhitespace = (value: string): boolean => value.trim().length === 0
+
+const parseMetaTagsInHtml = (html: string, offsetBase: number): MetaTag[] => {
+  const tags: MetaTag[] = []
+  let cursor = 0
+  for (;;) {
+    const openStart = html.indexOf('<M:', cursor)
+    if (openStart < 0) break
+    const openEnd = findTagEnd(html, openStart)
+    if (!openEnd || openEnd <= openStart) break
+    const rawOpenTag = html.slice(openStart, openEnd)
+    const tagName = extractTagNameFromRaw(rawOpenTag)
+    if (!tagName) {
+      cursor = openStart + 3
+      continue
+    }
+    const name = parseMetaTagName(tagName)
+    if (!name) {
+      cursor = openStart + 3
+      continue
+    }
+    const attrs = parseAttributes(extractAttrText(rawOpenTag, tagName))
+    if (isSelfClosingTag(rawOpenTag)) {
+      tags.push({
+        fullName: tagName,
+        name,
+        attrs,
+        start: offsetBase + openStart,
+        end: offsetBase + openEnd,
+      })
+      cursor = openEnd
+      continue
+    }
+    const closeToken = `</${tagName}>`
+    const closeStart = html.indexOf(closeToken, openEnd)
+    if (closeStart < 0) {
+      cursor = openEnd
+      continue
+    }
+    const closeEnd = closeStart + closeToken.length
+    const content = html.slice(openEnd, closeStart).trim()
+    tags.push({
+      fullName: tagName,
+      name,
+      attrs,
+      start: offsetBase + openStart,
+      end: offsetBase + closeEnd,
+      ...(content ? { content } : {}),
+    })
+    cursor = closeEnd
+  }
+  return tags
+}
+
+const collectMetaTagsFromMarkdown = (
+  text: string,
+  codeRanges: Range[],
+): MetaTag[] => {
+  if (!text) return []
+  const tree = markdownParser.parse(text)
+  const tags = new Map<string, MetaTag>()
+  const pushTag = (tag: MetaTag) => {
+    if (isIndexInRanges(tag.start, codeRanges)) return
+    tags.set(`${tag.start}:${tag.end}:${tag.name}`, tag)
+  }
+  visit(tree, 'html', (node) => {
+    const htmlNode = node as PositionedHtmlNode
+    const value = typeof htmlNode.value === 'string' ? htmlNode.value : ''
+    if (!value) return
+    const startOffset = htmlNode.position?.start?.offset
+    if (!Number.isFinite(startOffset)) return
+    for (const tag of parseMetaTagsInHtml(value, Number(startOffset)))
+      pushTag(tag)
+  })
+  for (const tag of parseMetaTagsInHtml(text, 0)) pushTag(tag)
+  return Array.from(tags.values()).sort((left, right) => left.start - right.start)
+}
 
 const findZone = (output: string, tags: MetaTag[]): Zone | undefined => {
   if (tags.length === 0) return undefined
@@ -63,14 +169,14 @@ const stripTrailingMetaTagFragment = (
 
 export const collectTagMatches = (text: string): MetaTag[] => {
   const codeRanges = findMarkdownCodeRanges(text)
-  return collectMetaTags(text, codeRanges)
+  return collectMetaTagsFromMarkdown(text, codeRanges)
 }
 
 export const extractActionText = (
   output: string,
 ): { actionText: string; text: string } => {
   const codeRanges = findMarkdownCodeRanges(output)
-  const tags = collectMetaTags(output, codeRanges)
+  const tags = collectMetaTagsFromMarkdown(output, codeRanges)
   const zone = findZone(output, tags)
   const actionText = zone ? output.slice(zone.parseStart) : ''
   const withoutActions = zone ? output.slice(0, zone.parseStart) : output
