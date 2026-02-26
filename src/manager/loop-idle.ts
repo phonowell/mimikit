@@ -75,6 +75,7 @@ const appendIntentBlockedSystemMessage = async (
       },
     }),
     createdAt,
+    focusId: intent.focusId,
   })
 }
 

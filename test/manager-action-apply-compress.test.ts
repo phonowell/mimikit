@@ -12,6 +12,8 @@ import { loadRuntimeSnapshot } from '../src/storage/runtime-snapshot.js'
 
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
 
+const GLOBAL_FOCUS_ID = 'focus-global'
+
 const { runWithProviderMock } = vi.hoisted(() => ({
   runWithProviderMock: vi.fn(),
 }))
@@ -29,6 +31,7 @@ const createRuntime = async (): Promise<RuntimeState> => {
   const queue = new PQueue({ concurrency: config.worker.maxConcurrent })
   queue.pause()
   const nowMs = Date.now()
+  const now = new Date(nowMs).toISOString()
   return {
     runtimeId: 'runtime-test',
     config,
@@ -48,6 +51,18 @@ const createRuntime = async (): Promise<RuntimeState> => {
     cronJobs: [],
     idleIntents: [],
     idleIntentArchive: [],
+    focuses: [
+      {
+        id: GLOBAL_FOCUS_ID,
+        title: 'Global',
+        status: 'active',
+        createdAt: now,
+        updatedAt: now,
+        lastActivityAt: now,
+      },
+    ],
+    focusContexts: [],
+    activeFocusIds: [GLOBAL_FOCUS_ID],
     managerTurn: 0,
     uiStream: null,
     runningControllers: new Map(),

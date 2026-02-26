@@ -1,3 +1,4 @@
+import { resolveDefaultFocusId } from '../focus/index.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import {
@@ -26,7 +27,7 @@ export const publishManagerSystemEventInput = async (params: {
   logMeta?: Record<string, unknown>
 }): Promise<string> => {
   const input = {
-    id: newId(),
+    id: `input-${newId()}`,
     role: 'system' as const,
     visibility: params.visibility,
     text: formatSystemEventText({
@@ -35,6 +36,7 @@ export const publishManagerSystemEventInput = async (params: {
       payload: params.payload,
     }),
     createdAt: params.createdAt,
+    focusId: resolveDefaultFocusId(params.runtime),
   }
   await publishUserInput({
     paths: params.runtime.paths,

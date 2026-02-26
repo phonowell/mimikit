@@ -11,6 +11,8 @@ import { applyTaskActions } from '../src/manager/action-apply.js'
 
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
 
+const GLOBAL_FOCUS_ID = 'focus-global'
+
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-action-apply-'))
 
 const createRuntime = async (): Promise<RuntimeState> => {
@@ -18,6 +20,7 @@ const createRuntime = async (): Promise<RuntimeState> => {
   const config = defaultConfig({ workDir })
   const queue = new PQueue({ concurrency: config.worker.maxConcurrent })
   queue.pause()
+  const now = new Date().toISOString()
 
   return {
     runtimeId: 'runtime-test',
@@ -38,6 +41,18 @@ const createRuntime = async (): Promise<RuntimeState> => {
     cronJobs: [],
     idleIntents: [],
     idleIntentArchive: [],
+    focuses: [
+      {
+        id: GLOBAL_FOCUS_ID,
+        title: 'Global',
+        status: 'active',
+        createdAt: now,
+        updatedAt: now,
+        lastActivityAt: now,
+      },
+    ],
+    focusContexts: [],
+    activeFocusIds: [GLOBAL_FOCUS_ID],
     managerTurn: 0,
     uiStream: null,
     runningControllers: new Map(),
@@ -50,13 +65,14 @@ const createRuntime = async (): Promise<RuntimeState> => {
   }
 }
 
-test('create_task re-enqueues pending task when fingerprint matches exactly', async () => {
+test('run_task re-enqueues pending task when fingerprint matches exactly', async () => {
   const runtime = await createRuntime()
   runtime.tasks.push({
     id: 'task-pending',
     fingerprint: 'same prompt',
     prompt: 'same prompt',
     title: 'old title',
+    focusId: GLOBAL_FOCUS_ID,
     profile: 'worker',
     status: 'pending',
     createdAt: '2026-02-13T00:00:00.000Z',
@@ -64,7 +80,7 @@ test('create_task re-enqueues pending task when fingerprint matches exactly', as
 
   await applyTaskActions(runtime, [
     {
-      name: 'create_task',
+      name: 'run_task',
       attrs: {
         prompt: 'same prompt',
         title: 'old title',
@@ -77,13 +93,14 @@ test('create_task re-enqueues pending task when fingerprint matches exactly', as
   expect(runtime.workerQueue.size).toBe(1)
 })
 
-test('create_task dedupe does not block task creation when fingerprint differs', async () => {
+test('run_task dedupe does not block task creation when fingerprint differs', async () => {
   const runtime = await createRuntime()
   runtime.tasks.push({
     id: 'task-pending',
     fingerprint: 'same prompt',
     prompt: 'same prompt',
     title: 'old title',
+    focusId: GLOBAL_FOCUS_ID,
     profile: 'worker',
     status: 'pending',
     createdAt: '2026-02-13T00:00:00.000Z',
@@ -91,7 +108,7 @@ test('create_task dedupe does not block task creation when fingerprint differs',
 
   await applyTaskActions(runtime, [
     {
-      name: 'create_task',
+      name: 'run_task',
       attrs: {
         prompt: 'same prompt',
         title: 'new title',
@@ -104,12 +121,12 @@ test('create_task dedupe does not block task creation when fingerprint differs',
   expect(runtime.tasks[1]?.fingerprint).not.toBe(runtime.tasks[0]?.fingerprint)
 })
 
-test('create_task rejects forbidden .mimikit state paths', async () => {
+test('run_task rejects forbidden .mimikit state paths', async () => {
   const runtime = await createRuntime()
 
   await applyTaskActions(runtime, [
     {
-      name: 'create_task',
+      name: 'run_task',
       attrs: {
         prompt: 'Read .mimikit/history/2026-02-15.jsonl and summarize',
         title: 'forbidden',
@@ -120,12 +137,12 @@ test('create_task rejects forbidden .mimikit state paths', async () => {
   expect(runtime.tasks).toHaveLength(0)
 })
 
-test('create_task allows .mimikit/generated path', async () => {
+test('run_task allows .mimikit/generated path', async () => {
   const runtime = await createRuntime()
 
   await applyTaskActions(runtime, [
     {
-      name: 'create_task',
+      name: 'run_task',
       attrs: {
         prompt: 'Write report to .mimikit/generated',
         title: 'allowed',
@@ -137,11 +154,11 @@ test('create_task allows .mimikit/generated path', async () => {
   expect(runtime.tasks[0]?.title).toBe('allowed')
 })
 
-test('create_task uses worker profile for scheduled task', async () => {
+test('schedule_task uses worker profile for scheduled task', async () => {
   const runtime = await createRuntime()
   await applyTaskActions(runtime, [
     {
-      name: 'create_task',
+      name: 'schedule_task',
       attrs: {
         prompt: 'Summarize daily build status',
         title: 'scheduled',
@@ -188,6 +205,7 @@ test('delete_intent keeps done archive item unchanged', async () => {
     id: 'intent-done',
     prompt: 'done prompt',
     title: 'done',
+    focusId: GLOBAL_FOCUS_ID,
     priority: 'normal',
     status: 'done',
     source: 'user_request',

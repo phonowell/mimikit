@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest'
 
-import { collectManagerActionFeedback } from '../src/manager/loop-batch-run-manager.js'
 import { parseActions } from '../src/actions/protocol/parse.js'
+import { collectManagerActionFeedback } from '../src/manager/loop-batch-run-manager.js'
 
 test('collectManagerActionFeedback reports unregistered action', () => {
   const feedback = collectManagerActionFeedback([
@@ -19,10 +19,10 @@ test('collectManagerActionFeedback reports unregistered action', () => {
   expect(feedback[0]?.attempted).toContain('<M:read')
 })
 
-test('collectManagerActionFeedback reports invalid create_task args when prompt is empty', () => {
+test('collectManagerActionFeedback reports invalid run_task args when prompt is empty', () => {
   const feedback = collectManagerActionFeedback([
     {
-      name: 'create_task',
+      name: 'run_task',
       attrs: {
         prompt: '',
         title: 'invalid',
@@ -33,10 +33,10 @@ test('collectManagerActionFeedback reports invalid create_task args when prompt 
   expect(feedback[0]?.error).toBe('invalid_action_args')
 })
 
-test('collectManagerActionFeedback rejects create_task reading protected state path', () => {
+test('collectManagerActionFeedback rejects run_task reading protected state path', () => {
   const feedback = collectManagerActionFeedback([
     {
-      name: 'create_task',
+      name: 'run_task',
       attrs: {
         prompt: 'Read .mimikit/history/2026-02-15.jsonl',
         title: 'forbidden',
@@ -44,15 +44,15 @@ test('collectManagerActionFeedback rejects create_task reading protected state p
     },
   ])
   expect(feedback).toHaveLength(1)
-  expect(feedback[0]?.action).toBe('create_task')
+  expect(feedback[0]?.action).toBe('run_task')
   expect(feedback[0]?.error).toBe('action_execution_rejected')
 })
 
-test('collectManagerActionFeedback rejects create_task scheduled_at that is not in future', () => {
+test('collectManagerActionFeedback rejects schedule_task scheduled_at that is not in future', () => {
   const feedback = collectManagerActionFeedback(
     [
       {
-        name: 'create_task',
+        name: 'schedule_task',
         attrs: {
           prompt: 'schedule judged by env now',
           title: 'invalid by env now',
@@ -177,15 +177,11 @@ test('collectManagerActionFeedback accepts compress_context with available conte
   expect(feedback).toHaveLength(0)
 })
 
-test('collectManagerActionFeedback ignores valid create_task action', () => {
+test('collectManagerActionFeedback ignores valid run_task action', () => {
   const output =
-    '好的，我先创建一个任务。\\n\\n<M:create_task prompt="读取文件，根据反馈补充\\\"编排引擎\\\"定位；短时间定义为<30秒；禁止>50条词表规则。" title="第一轮优化 manager prompt" />'
+    '好的，我先创建一个任务。\\n\\n<M:run_task prompt="读取文件，根据反馈补充\\"编排引擎\\"定位；短时间定义为<30秒；禁止>50条词表规则。" title="第一轮优化 manager prompt" />'
   const parsed = parseActions(output)
   if (!parsed.actions[0]) throw new Error('action must be parsed')
-  const feedback = collectManagerActionFeedback(
-    [
-      parsed.actions[0],
-    ],
-  )
+  const feedback = collectManagerActionFeedback([parsed.actions[0]])
   expect(feedback).toHaveLength(0)
 })

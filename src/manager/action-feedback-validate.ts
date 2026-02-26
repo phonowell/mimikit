@@ -2,13 +2,17 @@ import { parseIsoMs } from '../shared/time.js'
 
 import { hasForbiddenWorkerStatePath } from './action-apply-guards.js'
 import {
+  assignFocusSchema,
   cancelSchema,
   compressContextSchema,
+  createFocusSchema,
   createIntentSchema,
-  createSchema,
   deleteIntentSchema,
   restartSchema,
+  runTaskSchema,
+  scheduleTaskSchema,
   summarizeSchema,
+  updateFocusSchema,
   updateIntentSchema,
 } from './action-apply-schema.js'
 import { queryHistorySchema } from './history-query.js'
@@ -21,12 +25,16 @@ export const REGISTERED_MANAGER_ACTIONS = new Set([
   'create_intent',
   'update_intent',
   'delete_intent',
-  'create_task',
+  'run_task',
+  'schedule_task',
   'cancel_task',
   'compress_context',
   'summarize_task_result',
   'query_history',
-  'restart_server',
+  'restart_runtime',
+  'create_focus',
+  'update_focus',
+  'assign_focus',
 ])
 
 export type FeedbackContext = {
@@ -80,26 +88,29 @@ const validateWithSchema = (
   return parsed.success ? [] : [invalidArgsIssue(parsed.error)]
 }
 
-const validateCreateTask = (
+const validateRunTask = (item: Parsed): ValidationIssue[] => {
+  const parsed = runTaskSchema.safeParse(item.attrs)
+  if (!parsed.success) return [invalidArgsIssue(parsed.error)]
+  if (hasForbiddenWorkerStatePath(parsed.data.prompt))
+    return rejected('run_task 被策略拒绝：禁止访问 .mimikit 受保护路径（仅允许 .mimikit/generated）。')
+  return []
+}
+
+const validateScheduleTask = (
   item: Parsed,
   context: FeedbackContext,
 ): ValidationIssue[] => {
-  const parsed = createSchema.safeParse(item.attrs)
+  const parsed = scheduleTaskSchema.safeParse(item.attrs)
   if (!parsed.success) return [invalidArgsIssue(parsed.error)]
-  const { data } = parsed
-  const cron = data.cron?.trim()
-  const scheduledAt = data.scheduled_at?.trim()
-  const isDeferred = Boolean(cron ?? scheduledAt)
-  if (!isDeferred && hasForbiddenWorkerStatePath(data.prompt))
-    return rejected('create_task 被策略拒绝：禁止访问 .mimikit 受保护路径（仅允许 .mimikit/generated）。')
+  const scheduledAt = parsed.data.scheduled_at?.trim()
   if (scheduledAt && !Number.isFinite(Date.parse(scheduledAt)))
-    return rejected('create_task 执行失败：scheduled_at 不是合法 ISO 8601 时间。')
+    return rejected('schedule_task 执行失败：scheduled_at 不是合法 ISO 8601 时间。')
   if (scheduledAt) {
     const scheduledMs = parseIsoMs(scheduledAt)
     if (scheduledMs !== undefined) {
       const nowMs = parseIsoMs(context.scheduleNowIso ?? '') ?? Date.now()
       if (scheduledMs <= nowMs - SCHEDULED_AT_PAST_TOLERANCE_MS)
-        return rejected(`create_task 执行失败：scheduled_at 必须晚于当前时间（now=${new Date(nowMs).toISOString()}）。`)
+        return rejected(`schedule_task 执行失败：scheduled_at 必须晚于当前时间（now=${new Date(nowMs).toISOString()}）。`)
     }
   }
   return []
@@ -162,14 +173,24 @@ export const validateRegisteredManagerAction = (
   context: FeedbackContext = {},
 ): ValidationIssue[] => {
   if (!REGISTERED_MANAGER_ACTIONS.has(item.name)) return []
-  if (item.name === 'create_intent') return validateWithSchema(item, createIntentSchema)
-  if (item.name === 'update_intent') return validateIntentById('update_intent', item, updateIntentSchema, context)
-  if (item.name === 'delete_intent') return validateIntentById('delete_intent', item, deleteIntentSchema, context)
-  if (item.name === 'create_task') return validateCreateTask(item, context)
+  if (item.name === 'create_intent')
+    return validateWithSchema(item, createIntentSchema)
+  if (item.name === 'update_intent')
+    return validateIntentById('update_intent', item, updateIntentSchema, context)
+  if (item.name === 'delete_intent')
+    return validateIntentById('delete_intent', item, deleteIntentSchema, context)
+  if (item.name === 'run_task') return validateRunTask(item)
+  if (item.name === 'schedule_task') return validateScheduleTask(item, context)
   if (item.name === 'cancel_task') return validateCancelTask(item, context)
-  if (item.name === 'compress_context') return validateCompressContext(item, context)
+  if (item.name === 'compress_context')
+    return validateCompressContext(item, context)
   if (item.name === 'query_history') return validateQueryHistory(item)
-  if (item.name === 'summarize_task_result') return validateWithSchema(item, summarizeSchema)
-  if (item.name === 'restart_server') return validateWithSchema(item, restartSchema)
+  if (item.name === 'summarize_task_result')
+    return validateWithSchema(item, summarizeSchema)
+  if (item.name === 'restart_runtime')
+    return validateWithSchema(item, restartSchema)
+  if (item.name === 'create_focus') return validateWithSchema(item, createFocusSchema)
+  if (item.name === 'update_focus') return validateWithSchema(item, updateFocusSchema)
+  if (item.name === 'assign_focus') return validateWithSchema(item, assignFocusSchema)
   return []
 }

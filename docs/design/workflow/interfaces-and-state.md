@@ -43,7 +43,7 @@
 - `manager`
   - `model`：manager 默认模型（`MIMIKIT_MODEL`/`MIMIKIT_MANAGER_MODEL` 覆盖）
   - `prompt.maxTokens`：manager prompt token 上限（`MIMIKIT_MANAGER_PROMPT_MAX_TOKENS` 覆盖）
-  - `taskCreate.debounceMs`：`create_task` 去抖窗口（`MIMIKIT_MANAGER_CREATE_TASK_DEBOUNCE_MS` 覆盖）
+  - `taskCreate.debounceMs`：`run_task` 去抖窗口（`MIMIKIT_MANAGER_CREATE_TASK_DEBOUNCE_MS` 覆盖）
   - `taskWindow.{minCount,maxCount,maxBytes}`：manager 每轮注入任务窗口
   - `intentWindow.{minCount,maxCount,maxBytes}`：manager 每轮注入 intent 窗口
 - `worker`
@@ -75,9 +75,26 @@
 - 唤醒来源四类：`user_input`、`task_result`、`cron`、`idle`
 - 四类均为实时 signal（`notifyManagerLoop`）
 - `idle` 由 `idle-wake-loop` 在持续闲暇窗口内按阈值触发（单次）
-- 当存在可触发 intent 时，`idle-wake-loop` 会优先发布 `system_event.name=intent_trigger`
-- manager 推理输入来自 `inputs/results/history`，并遵循可见性过滤：全部非 system 消息 + `visibility=agent|all` 的 system 消息。
-- 若存在 `managerCompressedContext`，会通过 `M:compressed_context` 注入 manager prompt，作为跨 thread 压缩记忆。
+- 存在可触发 intent 时，`idle-wake-loop` 优先发布 `system_event.name=intent_trigger`
+- manager 推理输入来自 `inputs/results/history`，并遵循可见性过滤：全部非 system + `visibility=agent|all` 的 system
+- manager prompt 注入标签：
+  - `M:inputs`：当前批次输入
+  - `M:batch_results`：当前批次结果
+  - `M:focus_list`：focus 元信息
+  - `M:focus_contexts`：focus 摘要与 recent messages
+  - `M:recent_history`：最近可见历史窗口（裁剪后）
+  - `M:history_lookup`：`query_history` 命中回填
+- 若存在 `managerCompressedContext`，会通过 `M:compressed_context` 注入 manager prompt。
+
+## Focus 与历史裁剪
+
+- `activeFocusIds` 上限 = `worker.maxConcurrent`
+- `archived` focus 保留上限 = `2 * worker.maxConcurrent`
+- 淘汰策略：`lastActivityAt` LRU
+- `M:recent_history`：最小 5 条，预算 4KB
+- `M:focus_contexts[*].recent_messages`：最小 5 条，单 focus 预算 2KB
+- 预算冲突时优先保留最小窗口（允许超预算）
+- `recent_history` 与 focus recent 通过 `message.id` 去重
 
 ## Prompt 环境注入
 
@@ -98,7 +115,9 @@
 - `managerCompressedContext`：`compress_context` 生成的跨轮摘要
 - `idleIntents`：活跃 intent（`pending|blocked`）
 - `idleIntentArchive`：归档 intent（`done`）
-- 旧 grouped channel 结构不再兼容解析。
+- `focuses`：focus 元信息列表
+- `focusContexts`：focus 摘要与 open items
+- `activeFocusIds`：活跃 focus 集合
 
 ## Restart 语义
 

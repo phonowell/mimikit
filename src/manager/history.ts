@@ -1,3 +1,4 @@
+import { GLOBAL_FOCUS_ID } from '../focus/index.js'
 import { appendTaskSystemMessage } from '../orchestrator/read-model/task-history.js'
 import { loadPromptTemplate } from '../prompts/prompt-loader.js'
 import { formatSystemEventText } from '../shared/system-event.js'
@@ -6,6 +7,7 @@ import { appendHistory, readHistory } from '../storage/history-jsonl.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type {
+  FocusId,
   ManagerActionFeedback,
   TaskResult,
   UserInput,
@@ -25,6 +27,7 @@ const summarizeResultOutput = (
 
 export const appendManagerFallbackReply = async (
   paths: RuntimeState['paths'],
+  focusId: FocusId = GLOBAL_FOCUS_ID,
 ): Promise<void> => {
   const fallback = (
     await loadPromptTemplate('manager/system-fallback-reply.md')
@@ -44,6 +47,7 @@ export const appendManagerFallbackReply = async (
       },
     }),
     createdAt,
+    focusId,
   })
 }
 
@@ -53,6 +57,7 @@ const compactManagerErrorText = (value: string): string =>
 export const appendManagerErrorSystemMessage = async (
   paths: RuntimeState['paths'],
   error: string,
+  focusId: FocusId = GLOBAL_FOCUS_ID,
 ): Promise<void> => {
   const detail = compactManagerErrorText(error)
   const createdAt = nowIso()
@@ -66,6 +71,7 @@ export const appendManagerErrorSystemMessage = async (
       payload: detail ? { error: detail } : {},
     }),
     createdAt,
+    focusId,
   })
 }
 
@@ -129,6 +135,7 @@ const formatActionFeedbackSystemText = (
 export const appendActionFeedbackSystemMessage = (
   historyPath: string,
   feedback: ManagerActionFeedback[],
+  focusId: FocusId = GLOBAL_FOCUS_ID,
 ): Promise<boolean> => {
   const text = formatActionFeedbackSystemText(feedback)
   if (!text) return Promise.resolve(false)
@@ -138,6 +145,7 @@ export const appendActionFeedbackSystemMessage = (
     visibility: 'all',
     text,
     createdAt: nowIso(),
+    focusId,
   }).then(() => true)
 }
 

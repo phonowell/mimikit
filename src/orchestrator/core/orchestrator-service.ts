@@ -1,6 +1,14 @@
 import PQueue from 'p-queue'
 
 import { type AppConfig } from '../../config.js'
+import {
+  GLOBAL_FOCUS_ID,
+  enforceFocusCapacity,
+  ensureGlobalFocus,
+  resolveDefaultFocusId,
+  resolveFocusByQuote,
+  touchFocus,
+} from '../../focus/index.js'
 import { buildPaths } from '../../fs/paths.js'
 import { appendLog } from '../../log/append.js'
 import { bestEffort, setDefaultLogPath } from '../../log/safe.js'
@@ -104,10 +112,16 @@ const addUserInput = async (
   meta?: UserMeta,
   quote?: string,
 ): Promise<string> => {
-  const id = newId()
+  const id = `input-${newId()}`
   const createdAt = nowIso()
-  const baseInput = { id, role: 'user' as const, text, createdAt }
-  const input = quote ? { ...baseInput, quote } : baseInput
+  const quoteId = quote?.trim()
+  const inherited = quoteId
+    ? await resolveFocusByQuote(runtime, quoteId)
+    : undefined
+  const focusId = inherited ?? resolveDefaultFocusId(runtime)
+  touchFocus(runtime, focusId)
+  const baseInput = { id, role: 'user' as const, text, createdAt, focusId }
+  const input = quoteId ? { ...baseInput, quote: quoteId } : baseInput
   await publishUserInput({ paths: runtime.paths, payload: input })
   runtime.inflightInputs.push(input)
   notifyUiSignal(runtime)
@@ -115,7 +129,8 @@ const addUserInput = async (
   await appendLog(runtime.paths.log, {
     event: 'user_input',
     id,
-    ...(quote ? { quote } : {}),
+    focusId,
+    ...(quoteId ? { quote: quoteId } : {}),
     ...toUserInputLogMeta(meta),
   })
   notifyManagerLoop(runtime)
@@ -154,13 +169,14 @@ const addCronJob = async (
   const scheduledAt = input.scheduledAt?.trim()
   if (!cron && !scheduledAt) throw new Error('add_cron_job_schedule_missing')
   if (cron && scheduledAt) throw new Error('add_cron_job_schedule_conflict')
-  const id = newId()
+  const id = `cron-${newId()}`
   const job: CronJob = {
     id,
     ...(cron ? { cron } : {}),
     ...(scheduledAt ? { scheduledAt } : {}),
     prompt,
     title: titleFromCandidates(id, [input.title, prompt]),
+    focusId: resolveDefaultFocusId(runtime),
     profile: 'worker',
     enabled: input.enabled ?? true,
     createdAt: nowIso(),
@@ -210,6 +226,9 @@ export class Orchestrator {
       cronJobs: [],
       idleIntents: [],
       idleIntentArchive: [],
+      focuses: [],
+      focusContexts: [],
+      activeFocusIds: [],
       managerTurn: 0,
       uiStream: null,
       runningControllers: new Map(),
@@ -244,6 +263,8 @@ export class Orchestrator {
 
   async start() {
     await hydrateRuntimeState(this.runtime)
+    ensureGlobalFocus(this.runtime)
+    enforceFocusCapacity(this.runtime)
     const startedAt = nowIso()
     await bestEffort('appendHistory: startup_system_message', () =>
       appendHistory(this.runtime.paths.history, {
@@ -259,6 +280,7 @@ export class Orchestrator {
           },
         }),
         createdAt: startedAt,
+        focusId: GLOBAL_FOCUS_ID,
       }),
     )
     enqueuePendingWorkerTasks(this.runtime)

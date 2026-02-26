@@ -7,6 +7,7 @@ import {
 } from './format-base.js'
 
 import type {
+  HistoryMessage,
   HistoryLookupMessage,
   ManagerActionFeedback,
   UserInput,
@@ -27,6 +28,7 @@ const formatMessagesYaml = (
     id: string
     role: string
     time: string
+    focus_id: string
     quote?: string
     content: string
   }>,
@@ -51,11 +53,31 @@ export const formatInputs = (inputs: UserInput[]): string => {
         id: input.id,
         role: input.role,
         time: input.createdAt,
+        focus_id: input.focusId,
         ...(input.quote ? { quote: input.quote } : {}),
         content,
       }
     })
     .filter((item): item is NonNullable<typeof item> => Boolean(item))
+  return formatMessagesYaml(entries)
+}
+
+export const formatRecentHistory = (history: HistoryMessage[]): string => {
+  if (history.length === 0) return ''
+  const entries = history
+    .map((item) => {
+      const content = item.text.trim()
+      if (!content) return null
+      return {
+        id: item.id,
+        role: item.role,
+        time: item.createdAt,
+        focus_id: item.focusId,
+        ...(item.quote ? { quote: item.quote } : {}),
+        content,
+      }
+    })
+    .filter((item): item is NonNullable<typeof item> => item !== null)
   return formatMessagesYaml(entries)
 }
 

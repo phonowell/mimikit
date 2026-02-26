@@ -1,3 +1,12 @@
+import {
+  assignFocusByTargetId,
+  enforceFocusCapacity,
+  ensureFocus,
+  resolveDefaultFocusId,
+  touchFocus,
+  updateFocus,
+  parseFocusOpenItems,
+} from '../focus/index.js'
 import { bestEffort } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import { notifyWorkerLoop } from '../orchestrator/core/signals.js'
@@ -10,7 +19,8 @@ import { appendHistory, readHistory } from '../storage/history-jsonl.js'
 import { cancelTask } from '../worker/cancel-task.js'
 
 import {
-  applyCreateTask,
+  applyRunTask,
+  applyScheduleTask,
   type ApplyTaskActionsOptions,
 } from './action-apply-create.js'
 import {
@@ -19,10 +29,13 @@ import {
   applyUpdateIntent,
 } from './action-apply-intent.js'
 import {
+  assignFocusSchema,
   cancelSchema,
   collectTaskResultSummaries,
   compressContextSchema,
+  createFocusSchema,
   restartSchema,
+  updateFocusSchema,
 } from './action-apply-schema.js'
 import { resolveManagerTimeoutMs } from './runner.js'
 
@@ -147,6 +160,7 @@ const appendCronCanceledSystemMessage = async (
   runtime: RuntimeState,
   cronJobId: string,
   title: string,
+  focusId: string,
 ): Promise<void> => {
   const label = title.trim() || cronJobId
   const createdAt = nowIso()
@@ -164,7 +178,67 @@ const appendCronCanceledSystemMessage = async (
       },
     }),
     createdAt,
+    focusId,
   })
+}
+
+const applyCreateFocus = async (
+  runtime: RuntimeState,
+  item: Parsed,
+): Promise<void> => {
+  const parsed = createFocusSchema.safeParse(item.attrs)
+  if (!parsed.success) return
+  ensureFocus(runtime, parsed.data.id, parsed.data.title)
+  if (
+    parsed.data.status !== undefined ||
+    parsed.data.summary !== undefined ||
+    parsed.data.open_items !== undefined
+  ) {
+    const openItems = parseFocusOpenItems(parsed.data.open_items)
+    updateFocus(runtime, {
+      id: parsed.data.id,
+      ...(parsed.data.status !== undefined ? { status: parsed.data.status } : {}),
+      ...(parsed.data.summary !== undefined ? { summary: parsed.data.summary } : {}),
+      ...(openItems !== undefined ? { openItems } : {}),
+    })
+  }
+  touchFocus(runtime, parsed.data.id)
+  enforceFocusCapacity(runtime)
+  await persistRuntimeState(runtime)
+}
+
+const applyUpdateFocus = async (
+  runtime: RuntimeState,
+  item: Parsed,
+): Promise<void> => {
+  const parsed = updateFocusSchema.safeParse(item.attrs)
+  if (!parsed.success) return
+  const openItems = parseFocusOpenItems(parsed.data.open_items)
+  updateFocus(runtime, {
+    id: parsed.data.id,
+    ...(parsed.data.title !== undefined ? { title: parsed.data.title } : {}),
+    ...(parsed.data.status !== undefined ? { status: parsed.data.status } : {}),
+    ...(parsed.data.summary !== undefined ? { summary: parsed.data.summary } : {}),
+    ...(openItems !== undefined ? { openItems } : {}),
+  })
+  enforceFocusCapacity(runtime)
+  await persistRuntimeState(runtime)
+}
+
+const applyAssignFocus = async (
+  runtime: RuntimeState,
+  item: Parsed,
+): Promise<void> => {
+  const parsed = assignFocusSchema.safeParse(item.attrs)
+  if (!parsed.success) return
+  const assigned = await assignFocusByTargetId(
+    runtime,
+    parsed.data.target_id,
+    parsed.data.focus_id,
+  )
+  if (!assigned) return
+  enforceFocusCapacity(runtime)
+  await persistRuntimeState(runtime)
 }
 
 export const applyTaskActions = async (
@@ -186,8 +260,12 @@ export const applyTaskActions = async (
       await applyDeleteIntent(runtime, item)
       continue
     }
-    if (item.name === 'create_task') {
-      await applyCreateTask(runtime, item, seen, options)
+    if (item.name === 'run_task') {
+      await applyRunTask(runtime, item, seen, options)
+      continue
+    }
+    if (item.name === 'schedule_task') {
+      await applyScheduleTask(runtime, item, seen)
       continue
     }
     if (item.name === 'cancel_task') {
@@ -202,7 +280,12 @@ export const applyTaskActions = async (
       cronJob.disabledReason = 'canceled'
       await persistRuntimeState(runtime)
       await bestEffort('appendHistory: cron_task_canceled', () =>
-        appendCronCanceledSystemMessage(runtime, cronJob.id, cronJob.title),
+        appendCronCanceledSystemMessage(
+          runtime,
+          cronJob.id,
+          cronJob.title,
+          cronJob.focusId,
+        ),
       )
       continue
     }
@@ -210,11 +293,25 @@ export const applyTaskActions = async (
       await applyCompressContext(runtime, item)
       continue
     }
-    if (item.name === 'restart_server') {
+    if (item.name === 'create_focus') {
+      await applyCreateFocus(runtime, item)
+      continue
+    }
+    if (item.name === 'update_focus') {
+      await applyUpdateFocus(runtime, item)
+      continue
+    }
+    if (item.name === 'assign_focus') {
+      await applyAssignFocus(runtime, item)
+      continue
+    }
+    if (item.name === 'restart_runtime') {
       const parsed = restartSchema.safeParse(item.attrs)
       if (!parsed.success) continue
       requestManagerRestart(runtime)
       return
     }
   }
+  ensureFocus(runtime, resolveDefaultFocusId(runtime))
+  enforceFocusCapacity(runtime)
 }

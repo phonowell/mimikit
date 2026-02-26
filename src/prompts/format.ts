@@ -189,7 +189,9 @@ export {
   formatActionFeedback,
   formatHistoryLookup,
   formatInputs,
+  formatRecentHistory,
 } from './format-messages.js'
+export { formatFocusContexts, formatFocusList } from './format-focus.js'
 export {
   formatIntentsYaml,
   formatResultsYaml,

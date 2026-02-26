@@ -2,6 +2,9 @@ import type { AppConfig } from '../../config.js'
 import type { StatePaths } from '../../fs/paths.js'
 import type {
   CronJob,
+  FocusContext,
+  FocusId,
+  FocusMeta,
   IdleIntent,
   ISODate,
   Task,
@@ -53,6 +56,9 @@ export type RuntimeState = {
   cronJobs: CronJob[]
   idleIntents: IdleIntent[]
   idleIntentArchive: IdleIntent[]
+  focuses: FocusMeta[]
+  focusContexts: FocusContext[]
+  activeFocusIds: FocusId[]
   managerTurn: number
   managerCompressedContext?: string
   uiStream: UiAgentStream | null

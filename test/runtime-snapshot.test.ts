@@ -12,6 +12,8 @@ import {
 } from '../src/storage/runtime-snapshot.js'
 import type { CronJob, Task } from '../src/types/index.js'
 
+const GLOBAL_FOCUS_ID = 'focus-global'
+
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-runtime-snapshot-'))
 
 test('selectPersistedTasks keeps non-running task statuses unchanged', () => {
@@ -21,6 +23,7 @@ test('selectPersistedTasks keeps non-running task statuses unchanged', () => {
       fingerprint: 'a',
       prompt: 'a',
       title: 'a',
+      focusId: GLOBAL_FOCUS_ID,
       profile: 'worker',
       status: 'pending',
       createdAt: '2026-02-06T00:00:00.000Z',
@@ -30,6 +33,7 @@ test('selectPersistedTasks keeps non-running task statuses unchanged', () => {
       fingerprint: 'c',
       prompt: 'c',
       title: 'c',
+      focusId: GLOBAL_FOCUS_ID,
       profile: 'worker',
       status: 'succeeded',
       createdAt: '2026-02-06T00:00:00.000Z',
@@ -59,6 +63,7 @@ test('selectPersistedTasks recovers running task to pending', () => {
       fingerprint: 'b',
       prompt: 'b',
       title: 'b',
+      focusId: GLOBAL_FOCUS_ID,
       profile: 'worker',
       status: 'running',
       createdAt: '2026-02-06T00:00:00.000Z',
@@ -83,6 +88,7 @@ test('runtime snapshot accepts queue cursors', async () => {
         fingerprint: 'task-1',
         prompt: 'check',
         title: 'Check',
+        focusId: GLOBAL_FOCUS_ID,
         profile: 'worker',
         status: 'succeeded',
         createdAt: '2026-02-06T00:00:00.000Z',
@@ -101,6 +107,7 @@ test('runtime snapshot accepts queue cursors', async () => {
         id: 'intent-1',
         prompt: 'summarize',
         title: 'summarize',
+        focusId: GLOBAL_FOCUS_ID,
         priority: 'high',
         status: 'pending',
         source: 'user_request',
@@ -115,6 +122,7 @@ test('runtime snapshot accepts queue cursors', async () => {
         id: 'intent-2',
         prompt: 'done',
         title: 'done',
+        focusId: GLOBAL_FOCUS_ID,
         priority: 'normal',
         status: 'done',
         source: 'agent_auto',
@@ -148,6 +156,7 @@ test('buildTaskViews maps cron job statuses from disabled reasons', () => {
       scheduledAt: '2026-02-13T17:22:20+08:00',
       prompt: 'remind',
       title: 'remind',
+      focusId: GLOBAL_FOCUS_ID,
       profile: 'worker',
       enabled: false,
       disabledReason: 'completed',
@@ -159,6 +168,7 @@ test('buildTaskViews maps cron job statuses from disabled reasons', () => {
       scheduledAt: '2026-02-13T17:22:20+08:00',
       prompt: 'remind',
       title: 'remind',
+      focusId: GLOBAL_FOCUS_ID,
       profile: 'worker',
       enabled: false,
       disabledReason: 'canceled',
@@ -169,6 +179,7 @@ test('buildTaskViews maps cron job statuses from disabled reasons', () => {
       scheduledAt: '2026-02-13T17:22:20+08:00',
       prompt: 'remind',
       title: 'remind',
+      focusId: GLOBAL_FOCUS_ID,
       profile: 'worker',
       enabled: false,
       createdAt: '2026-02-13T09:22:04.602Z',
@@ -195,6 +206,7 @@ test('runtime snapshot rejects legacy next fields', async () => {
           fingerprint: 'task-legacy-next',
           prompt: 'legacy',
           title: 'legacy',
+          focusId: GLOBAL_FOCUS_ID,
           profile: 'worker',
           status: 'pending',
           createdAt: '2026-02-06T00:00:00.000Z',
@@ -207,6 +219,7 @@ test('runtime snapshot rejects legacy next fields', async () => {
           cron: '0 0 9 * * *',
           prompt: 'legacy cron',
           title: 'legacy cron',
+          focusId: GLOBAL_FOCUS_ID,
           profile: 'worker',
           enabled: true,
           createdAt: '2026-02-06T00:00:00.000Z',

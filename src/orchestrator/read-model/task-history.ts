@@ -93,6 +93,7 @@ export const appendTaskSystemMessage = (
     visibility: 'user',
     text,
     createdAt: options?.createdAt ?? nowIso(),
+    focusId: task.focusId,
   }
   return safe(
     'appendHistory: task_system_message',

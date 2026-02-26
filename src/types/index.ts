@@ -1,5 +1,6 @@
 export type ISODate = string
 export type Id = string
+export type FocusId = string
 
 export type TokenUsage = {
   input?: number
@@ -18,6 +19,7 @@ type NonSystemHistoryMessage = {
   role: Exclude<Role, 'system'>
   text: string
   createdAt: ISODate
+  focusId: FocusId
   usage?: TokenUsage
   elapsedMs?: number
   quote?: Id
@@ -29,6 +31,7 @@ type SystemHistoryMessage = {
   visibility: MessageVisibility
   text: string
   createdAt: ISODate
+  focusId: FocusId
   usage?: TokenUsage
   elapsedMs?: number
   quote?: Id
@@ -49,6 +52,7 @@ type UserInputUser = {
   role: 'user'
   text: string
   createdAt: ISODate
+  focusId: FocusId
   quote?: Id
 }
 
@@ -58,6 +62,7 @@ type UserInputSystem = {
   visibility: MessageVisibility
   text: string
   createdAt: ISODate
+  focusId: FocusId
   quote?: Id
 }
 
@@ -87,11 +92,29 @@ export type WorkerProfile = 'worker'
 export type IntentPriority = 'high' | 'normal' | 'low'
 export type IdleIntentStatus = 'pending' | 'blocked' | 'done'
 export type IntentSource = 'user_request' | 'agent_auto' | 'retry_decision'
+export type FocusStatus = 'active' | 'idle' | 'done' | 'archived'
+
+export type FocusMeta = {
+  id: FocusId
+  title: string
+  status: FocusStatus
+  createdAt: ISODate
+  updatedAt: ISODate
+  lastActivityAt: ISODate
+}
+
+export type FocusContext = {
+  focusId: FocusId
+  summary?: string
+  openItems?: string[]
+  updatedAt: ISODate
+}
 
 export type IdleIntent = {
   id: Id
   prompt: string
   title: string
+  focusId: FocusId
   priority: IntentPriority
   status: IdleIntentStatus
   source: IntentSource
@@ -108,6 +131,7 @@ export type Task = {
   fingerprint: string
   prompt: string
   title: string
+  focusId: FocusId
   cron?: string
   profile: WorkerProfile
   status: TaskStatus
@@ -150,6 +174,7 @@ export type CronJob = {
   scheduledAt?: ISODate
   prompt: string
   title: string
+  focusId: FocusId
   profile: WorkerProfile
   enabled: boolean
   disabledReason?: CronJobDisabledReason

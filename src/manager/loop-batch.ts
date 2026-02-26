@@ -1,3 +1,4 @@
+import { resolveDefaultFocusId, touchFocus } from '../focus/index.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort, logSafeError } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
@@ -97,7 +98,7 @@ export const processManagerBatch = async (params: {
     })
     if (!consumed.ok) throw new Error(consumed.reason)
     await applyTaskActions(runtime, parsed.actions, {
-      suppressCreateTask: hasManualCanceledResult && agentInputs.length === 0,
+      suppressRunTask: hasManualCanceledResult && agentInputs.length === 0,
     })
 
     const responseText =
@@ -106,11 +107,14 @@ export const processManagerBatch = async (params: {
         inputs: agentInputs,
         results,
       }))
+    const replyFocusId = resolveDefaultFocusId(runtime)
+    touchFocus(runtime, replyFocusId)
     await appendHistory(runtime.paths.history, {
       id: `agent-${Date.now()}-${nextInputsCursor}`,
       role: 'agent',
       text: responseText,
       createdAt: nowIso(),
+      focusId: replyFocusId,
       ...(resolvedUsage ? { usage: resolvedUsage } : {}),
       ...(managerRun.elapsedMs >= 0 ? { elapsedMs: managerRun.elapsedMs } : {}),
     })
@@ -153,13 +157,14 @@ export const processManagerBatch = async (params: {
       await logSafeError('managerLoop: drain batch on failure', drainError)
     }
 
+    const errorFocusId = resolveDefaultFocusId(runtime)
     if (drainedOnError && !agentAppended && agentInputs.length > 0) {
       await bestEffort('appendHistory: manager_fallback_reply', () =>
-        appendManagerFallbackReply(runtime.paths),
+        appendManagerFallbackReply(runtime.paths, errorFocusId),
       )
     }
     await bestEffort('appendHistory: manager_error_system_message', () =>
-      appendManagerErrorSystemMessage(runtime.paths, errorMessage),
+      appendManagerErrorSystemMessage(runtime.paths, errorMessage, errorFocusId),
     )
 
     await bestEffort('appendLog: manager_end_error', () =>

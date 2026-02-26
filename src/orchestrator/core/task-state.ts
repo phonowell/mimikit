@@ -1,6 +1,7 @@
+import { GLOBAL_FOCUS_ID } from '../../focus/index.js'
 import { newId, nowIso, titleFromCandidates } from '../../shared/utils.js'
 
-import type { Task, TaskStatus, WorkerProfile } from '../../types/index.js'
+import type { FocusId, Task, TaskStatus, WorkerProfile } from '../../types/index.js'
 
 export type EnqueueTaskResult = {
   task: Task
@@ -68,8 +69,9 @@ export const createTask = (
   title?: string,
   profile: WorkerProfile = 'worker',
   schedule?: string,
+  focusId: FocusId = GLOBAL_FOCUS_ID,
 ): Task => {
-  const id = newId()
+  const id = `task-${newId()}`
   const resolvedTitle = resolveTitle(id, prompt, title)
   return {
     id,
@@ -85,6 +87,7 @@ export const createTask = (
     profile,
     status: 'pending',
     createdAt: nowIso(),
+    focusId,
   }
 }
 
@@ -94,6 +97,7 @@ export const enqueueTask = (
   title?: string,
   profile: WorkerProfile = 'worker',
   schedule?: string,
+  focusId: FocusId = GLOBAL_FOCUS_ID,
 ): EnqueueTaskResult => {
   const fingerprint = buildTaskFingerprint({
     prompt,
@@ -107,7 +111,7 @@ export const enqueueTask = (
       buildTaskFingerprint(taskToFingerprintInput(task)) === fingerprint,
   )
   if (existing) return { task: existing, created: false }
-  const task = createTask(prompt, title, profile, schedule)
+  const task = createTask(prompt, title, profile, schedule, focusId)
   tasks.push(task)
   return { task, created: true }
 }

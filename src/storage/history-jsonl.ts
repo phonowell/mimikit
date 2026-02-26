@@ -95,6 +95,16 @@ export const readHistory = async (
   return partitions.flat().sort(compareHistoryMessage)
 }
 
+export const rewriteHistory = async (
+  historyDir: string,
+  items: HistoryMessage[],
+): Promise<void> => {
+  await runSerialized(historyDir, async () => {
+    const next = [...items].sort(compareHistoryMessage)
+    await writeHistory(historyDir, capHistory(next))
+  })
+}
+
 export const appendHistory = async (
   historyDir: string,
   message: HistoryMessage,

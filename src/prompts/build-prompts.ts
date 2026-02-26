@@ -1,15 +1,20 @@
 import read from 'fire-keeper/read'
 
+import { buildFocusPromptPayload } from '../focus/index.js'
 import { buildPaths } from '../fs/paths.js'
+import { readHistory } from '../storage/history-jsonl.js'
 import { readTaskResultsForTasks } from '../storage/task-results.js'
 
 import { escapeCdata } from './format-base.js'
 import {
   formatActionFeedback,
   formatEnvironment,
+  formatFocusContexts,
+  formatFocusList,
   formatHistoryLookup,
   formatInputs,
   formatIntentsYaml,
+  formatRecentHistory,
   formatResultsYaml,
   formatTasksYaml,
   renderPromptTemplate,
@@ -18,6 +23,9 @@ import { loadPromptFile, loadSystemPrompt } from './prompt-loader.js'
 
 import type {
   CronJob,
+  FocusContext,
+  FocusId,
+  FocusMeta,
   HistoryLookupMessage,
   IdleIntent,
   ManagerActionFeedback,
@@ -91,6 +99,10 @@ export const buildManagerPrompt = async (params: {
   actionFeedback?: ManagerActionFeedback[]
   compressedContext?: string
   env?: ManagerEnv
+  focuses?: FocusMeta[]
+  focusContexts?: FocusContext[]
+  activeFocusIds?: FocusId[]
+  workingFocusIds?: FocusId[]
 }): Promise<string> => {
   const pendingResults = mergeTaskResults(params.results, [])
   const knownResults = mergeTaskResults(
@@ -107,6 +119,7 @@ export const buildManagerPrompt = async (params: {
     readOptionalMarkdown(statePaths.agentPersona),
     readOptionalMarkdown(statePaths.userProfile),
   ])
+  const history = await readHistory(statePaths.history)
   const archivedResults =
     resultTaskIds.length > 0
       ? await readTaskResultsForTasks(params.stateDir, resultTaskIds, {
@@ -117,6 +130,15 @@ export const buildManagerPrompt = async (params: {
   const resultsForTasks = mergedResults.filter(
     (result) => !pendingResultIds.has(result.taskId),
   )
+
+  const focusPayload = buildFocusPromptPayload({
+    focuses: params.focuses ?? [],
+    focusContexts: params.focusContexts ?? [],
+    activeFocusIds: params.activeFocusIds ?? [],
+    history,
+    workingFocusIds: params.workingFocusIds ?? [],
+  })
+
   const systemTemplate = await loadSystemPrompt('manager')
   const templateValues: Record<string, string> = {
     environment: escapeCdata(
@@ -126,11 +148,18 @@ export const buildManagerPrompt = async (params: {
       }),
     ),
     inputs: escapeCdata(formatInputs(params.inputs)),
-    results: escapeCdata(formatResultsYaml(params.tasks, pendingResults)),
+    batch_results: escapeCdata(
+      formatResultsYaml(params.tasks, pendingResults),
+    ),
     tasks: escapeCdata(
       formatTasksYaml(params.tasks, resultsForTasks, params.cronJobs ?? []),
     ),
     intents: escapeCdata(formatIntentsYaml(params.intents ?? [])),
+    recent_history: escapeCdata(formatRecentHistory(focusPayload.recentHistory)),
+    focus_list: escapeCdata(formatFocusList(focusPayload.focusList)),
+    focus_contexts: escapeCdata(
+      formatFocusContexts(focusPayload.focusContexts),
+    ),
     history_lookup: escapeCdata(
       formatHistoryLookup(params.historyLookup ?? []),
     ),

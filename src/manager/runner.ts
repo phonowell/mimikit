@@ -7,6 +7,9 @@ import {
 
 import type {
   CronJob,
+  FocusContext,
+  FocusId,
+  FocusMeta,
   HistoryLookupMessage,
   IdleIntent,
   ManagerActionFeedback,
@@ -23,7 +26,10 @@ const DEFAULT_MANAGER_PROMPT_MAX_TOKENS = 8_192
 const PRUNE_ORDER = [
   'M:intents',
   'M:tasks',
-  'M:results',
+  'M:focus_contexts',
+  'M:recent_history',
+  'M:focus_list',
+  'M:batch_results',
   'M:history_lookup',
   'M:user_profile',
   'M:persona',
@@ -94,6 +100,10 @@ export const runManager = async (params: {
   actionFeedback?: ManagerActionFeedback[]
   compressedContext?: string
   env?: ManagerEnv
+  focuses?: FocusMeta[]
+  focusContexts?: FocusContext[]
+  activeFocusIds?: FocusId[]
+  workingFocusIds?: FocusId[]
   model?: string
   maxPromptTokens?: number
   onTextDelta?: (delta: string) => void
@@ -117,6 +127,14 @@ export const runManager = async (params: {
       ? { compressedContext: params.compressedContext }
       : {}),
     ...(params.env ? { env: params.env } : {}),
+    ...(params.focuses ? { focuses: params.focuses } : {}),
+    ...(params.focusContexts ? { focusContexts: params.focusContexts } : {}),
+    ...(params.activeFocusIds
+      ? { activeFocusIds: params.activeFocusIds }
+      : {}),
+    ...(params.workingFocusIds
+      ? { workingFocusIds: params.workingFocusIds }
+      : {}),
   })
   const model = params.model?.trim()
   const budgetedPrompt = enforcePromptBudget(prompt, params.maxPromptTokens)

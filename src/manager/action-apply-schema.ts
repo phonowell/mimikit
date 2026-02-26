@@ -3,6 +3,7 @@ import { z } from 'zod'
 import type { Parsed } from '../actions/model/spec.js'
 
 const nonEmptyString = z.string().trim().min(1)
+const focusIdSchema = nonEmptyString.regex(/^focus-[a-zA-Z0-9._-]+$/)
 
 export const summarizeSchema = z
   .object({
@@ -11,24 +12,40 @@ export const summarizeSchema = z
   })
   .strict()
 
-export const createSchema = z
+export const runTaskSchema = z
+  .object({
+    prompt: nonEmptyString,
+    title: nonEmptyString,
+    focus_id: focusIdSchema.optional(),
+  })
+  .strict()
+
+export const scheduleTaskSchema = z
   .object({
     prompt: nonEmptyString,
     title: nonEmptyString,
     cron: z.string().trim().optional(),
     scheduled_at: z.string().trim().optional(),
+    focus_id: focusIdSchema.optional(),
   })
   .strict()
   .superRefine((data, ctx) => {
     const hasCron = Boolean(data.cron?.trim())
     const hasScheduledAt = Boolean(data.scheduled_at?.trim())
-    if (hasCron && hasScheduledAt) {
+    if (!hasCron && !hasScheduledAt) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'cron or scheduled_at is required',
+        path: ['cron'],
+      })
+      return
+    }
+    if (hasCron && hasScheduledAt)
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'cron and scheduled_at are mutually exclusive',
         path: ['cron'],
       })
-    }
   })
 
 export const cancelSchema = z
@@ -55,6 +72,7 @@ export const createIntentSchema = z
     title: nonEmptyString,
     priority: intentPrioritySchema.optional(),
     source: intentSourceSchema.optional(),
+    focus_id: focusIdSchema.optional(),
   })
   .strict()
 
@@ -66,6 +84,7 @@ export const updateIntentSchema = z
     priority: intentPrioritySchema.optional(),
     status: intentStatusSchema.optional(),
     last_task_id: nonEmptyString.optional(),
+    focus_id: focusIdSchema.optional(),
   })
   .strict()
   .superRefine((data, ctx) => {
@@ -74,7 +93,8 @@ export const updateIntentSchema = z
       data.title === undefined &&
       data.priority === undefined &&
       data.status === undefined &&
-      data.last_task_id === undefined
+      data.last_task_id === undefined &&
+      data.focus_id === undefined
     ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -87,6 +107,47 @@ export const updateIntentSchema = z
 export const deleteIntentSchema = z
   .object({
     id: nonEmptyString,
+  })
+  .strict()
+
+export const createFocusSchema = z
+  .object({
+    id: focusIdSchema,
+    title: nonEmptyString.optional(),
+    status: z.enum(['active', 'idle', 'done', 'archived']).optional(),
+    summary: z.string().trim().optional(),
+    open_items: z.string().trim().optional(),
+  })
+  .strict()
+
+export const updateFocusSchema = z
+  .object({
+    id: focusIdSchema,
+    title: nonEmptyString.optional(),
+    status: z.enum(['active', 'idle', 'done', 'archived']).optional(),
+    summary: z.string().trim().optional(),
+    open_items: z.string().trim().optional(),
+  })
+  .strict()
+  .superRefine((data, ctx) => {
+    if (
+      data.title === undefined &&
+      data.status === undefined &&
+      data.summary === undefined &&
+      data.open_items === undefined
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'at least one editable field is required',
+        path: ['id'],
+      })
+    }
+  })
+
+export const assignFocusSchema = z
+  .object({
+    target_id: nonEmptyString,
+    focus_id: focusIdSchema,
   })
   .strict()
 

@@ -19,6 +19,7 @@ const toInflightChatMessage = (input: UserInput): ChatMessage => {
       visibility: input.visibility,
       text: visibleText,
       createdAt: input.createdAt,
+      focusId: input.focusId,
       ...(input.quote ? { quote: input.quote } : {}),
     }
   }
@@ -27,6 +28,7 @@ const toInflightChatMessage = (input: UserInput): ChatMessage => {
     role: input.role,
     text: input.text,
     createdAt: input.createdAt,
+    focusId: input.focusId,
     ...(input.quote ? { quote: input.quote } : {}),
   }
 }

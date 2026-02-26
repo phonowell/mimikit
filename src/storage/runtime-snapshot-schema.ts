@@ -4,13 +4,22 @@ import { stripUndefined } from '../shared/utils.js'
 
 import { normalizeTokenUsage, tokenUsageSchema } from './token-usage.js'
 
-import type { CronJob, IdleIntent, Task } from '../types/index.js'
+import type {
+  CronJob,
+  FocusContext,
+  FocusMeta,
+  IdleIntent,
+  Task,
+} from '../types/index.js'
 
 export type RuntimeSnapshot = {
   tasks: Task[]
   cronJobs?: CronJob[]
   idleIntents?: IdleIntent[]
   idleIntentArchive?: IdleIntent[]
+  focuses?: FocusMeta[]
+  focusContexts?: FocusContext[]
+  activeFocusIds?: string[]
   managerTurn?: number
   queues?: {
     inputsCursor: number
@@ -48,6 +57,7 @@ const taskSchema = z
     fingerprint: z.string().trim().min(1),
     prompt: z.string(),
     title: z.string(),
+    focusId: z.string().trim().min(1),
     cron: z.string().optional(),
     profile: z.enum(['worker']),
     status: z.enum(['pending', 'running', 'succeeded', 'failed', 'canceled']),
@@ -70,6 +80,7 @@ const cronJobSchema = z
     scheduledAt: z.string().trim().min(1).optional(),
     prompt: z.string(),
     title: z.string(),
+    focusId: z.string().trim().min(1),
     profile: z.enum(['worker']),
     enabled: z.boolean(),
     disabledReason: z.enum(['canceled', 'completed']).optional(),
@@ -90,6 +101,7 @@ const idleIntentSchema = z
     id: z.string().trim().min(1),
     prompt: z.string(),
     title: z.string(),
+    focusId: z.string().trim().min(1),
     priority: z.enum(['high', 'normal', 'low']),
     status: z.enum(['pending', 'blocked', 'done']),
     source: z.enum(['user_request', 'agent_auto', 'retry_decision']),
@@ -102,12 +114,35 @@ const idleIntentSchema = z
   })
   .strict()
 
+const focusMetaSchema = z
+  .object({
+    id: z.string().trim().min(1),
+    title: z.string(),
+    status: z.enum(['active', 'idle', 'done', 'archived']),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+    lastActivityAt: z.string(),
+  })
+  .strict()
+
+const focusContextSchema = z
+  .object({
+    focusId: z.string().trim().min(1),
+    summary: z.string().optional(),
+    openItems: z.array(z.string()).optional(),
+    updatedAt: z.string(),
+  })
+  .strict()
+
 const runtimeSnapshotSchema = z
   .object({
     tasks: z.array(taskSchema),
     cronJobs: z.array(cronJobSchema).optional(),
     idleIntents: z.array(idleIntentSchema).optional(),
     idleIntentArchive: z.array(idleIntentSchema).optional(),
+    focuses: z.array(focusMetaSchema).optional(),
+    focusContexts: z.array(focusContextSchema).optional(),
+    activeFocusIds: z.array(z.string().trim().min(1)).optional(),
     managerTurn: z.number().int().nonnegative().optional(),
     queues: z
       .object({
@@ -136,6 +171,14 @@ const normalizeIdleIntent = (
   intent: z.infer<typeof idleIntentSchema>,
 ): IdleIntent => stripUndefined({ ...intent }) as IdleIntent
 
+const normalizeFocusMeta = (
+  focus: z.infer<typeof focusMetaSchema>,
+): FocusMeta => stripUndefined({ ...focus }) as FocusMeta
+
+const normalizeFocusContext = (
+  focusContext: z.infer<typeof focusContextSchema>,
+): FocusContext => stripUndefined({ ...focusContext }) as FocusContext
+
 export const parseRuntimeSnapshot = (value: unknown): RuntimeSnapshot => {
   const parsed = runtimeSnapshotSchema.parse(value)
   return stripUndefined({
@@ -143,6 +186,9 @@ export const parseRuntimeSnapshot = (value: unknown): RuntimeSnapshot => {
     cronJobs: parsed.cronJobs?.map(normalizeCronJob),
     idleIntents: parsed.idleIntents?.map(normalizeIdleIntent),
     idleIntentArchive: parsed.idleIntentArchive?.map(normalizeIdleIntent),
+    focuses: parsed.focuses?.map(normalizeFocusMeta),
+    focusContexts: parsed.focusContexts?.map(normalizeFocusContext),
+    activeFocusIds: parsed.activeFocusIds,
     managerTurn: parsed.managerTurn,
     queues: parsed.queues,
     managerCompressedContext: parsed.managerCompressedContext,

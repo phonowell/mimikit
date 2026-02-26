@@ -1,6 +1,14 @@
 import { parseActions } from '../actions/protocol/parse.js'
+import {
+  collectPreferredFocusIds,
+  resolveDefaultFocusId,
+  selectWorkingFocusIds,
+} from '../focus/index.js'
 import { appendLog } from '../log/append.js'
-import { selectRecentIntents, selectRecentTasks } from '../orchestrator/read-model/intent-select.js'
+import {
+  selectRecentIntents,
+  selectRecentTasks,
+} from '../orchestrator/read-model/intent-select.js'
 import { mergeUsageAdditive } from '../shared/token-usage.js'
 import { readHistory } from '../storage/history-jsonl.js'
 
@@ -72,7 +80,7 @@ export const collectManagerActionFeedback = (
         seen,
         item,
         'unregistered_action',
-        '仅可使用已注册 action：M:create_intent, M:update_intent, M:delete_intent, M:create_task, M:cancel_task, M:compress_context, M:summarize_task_result, M:query_history, M:restart_server。',
+        '仅可使用已注册 action：M:create_focus, M:update_focus, M:assign_focus, M:create_intent, M:update_intent, M:delete_intent, M:run_task, M:schedule_task, M:cancel_task, M:compress_context, M:summarize_task_result, M:query_history, M:restart_runtime。',
       )
     }
   }
@@ -147,6 +155,8 @@ export const runManagerBatch = async (params: {
     maxCount: runtime.config.manager.intentWindow.maxCount,
     maxBytes: runtime.config.manager.intentWindow.maxBytes,
   })
+  const preferredFocusIds = collectPreferredFocusIds(runtime, inputs, results)
+  const workingFocusIds = selectWorkingFocusIds(runtime, preferredFocusIds)
 
   let streamRawOutput = ''
   let streamVisibleOutput = ''
@@ -189,6 +199,10 @@ export const runManagerBatch = async (params: {
       tasks,
       intents,
       cronJobs: runtime.cronJobs,
+      focuses: runtime.focuses,
+      focusContexts: runtime.focusContexts,
+      activeFocusIds: runtime.activeFocusIds,
+      workingFocusIds,
       ...(extra?.historyLookup ? { historyLookup: extra.historyLookup } : {}),
       ...(extra?.actionFeedback
         ? { actionFeedback: extra.actionFeedback }
@@ -222,6 +236,7 @@ export const runManagerBatch = async (params: {
       ...(resolvedUsage ? { usage: resolvedUsage } : {}),
     }
   }
+
   let elapsedMs = 0
   let batchUsage: TokenUsage | undefined
   let previousQueryKey: string | undefined
@@ -327,6 +342,7 @@ export const runManagerBatch = async (params: {
         await appendActionFeedbackSystemMessage(
           runtime.paths.history,
           actionFeedback,
+          resolveDefaultFocusId(runtime),
         )
       }
 

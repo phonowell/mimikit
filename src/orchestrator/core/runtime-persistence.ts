@@ -16,6 +16,9 @@ export const hydrateRuntimeState = async (
   runtime.cronJobs = snapshot.cronJobs ?? []
   runtime.idleIntents = snapshot.idleIntents ?? []
   runtime.idleIntentArchive = snapshot.idleIntentArchive ?? []
+  runtime.focuses = snapshot.focuses ?? []
+  runtime.focusContexts = snapshot.focusContexts ?? []
+  runtime.activeFocusIds = snapshot.activeFocusIds ?? []
   runtime.managerTurn = snapshot.managerTurn ?? 0
   if (snapshot.managerCompressedContext)
     runtime.managerCompressedContext = snapshot.managerCompressedContext
@@ -45,6 +48,9 @@ export const persistRuntimeState = async (
     cronJobs: runtime.cronJobs,
     idleIntents: runtime.idleIntents,
     idleIntentArchive: runtime.idleIntentArchive,
+    focuses: runtime.focuses,
+    focusContexts: runtime.focusContexts,
+    activeFocusIds: runtime.activeFocusIds,
     managerTurn: runtime.managerTurn,
     queues: runtime.queues,
     ...(runtime.managerCompressedContext

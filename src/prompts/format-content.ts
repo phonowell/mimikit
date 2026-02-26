@@ -1,3 +1,5 @@
+import { GLOBAL_FOCUS_ID } from '../focus/index.js'
+
 import {
   escapeCdata,
   normalizeYamlUsage,
@@ -78,6 +80,7 @@ const buildFallbackTask = (result: TaskResult): Task => ({
   title: result.title ?? result.taskId,
   profile: 'worker',
   status: result.status,
+  focusId: GLOBAL_FOCUS_ID,
   createdAt: result.completedAt,
   completedAt: result.completedAt,
 })

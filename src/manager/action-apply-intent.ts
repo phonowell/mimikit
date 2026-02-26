@@ -1,3 +1,8 @@
+import {
+  ensureFocus,
+  resolveDefaultFocusId,
+  touchFocus,
+} from '../focus/index.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import { formatSystemEventText } from '../shared/system-event.js'
 import { newId, nowIso } from '../shared/utils.js'
@@ -11,7 +16,7 @@ import {
 
 import type { Parsed } from '../actions/model/spec.js'
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
-import type { IdleIntent } from '../types/index.js'
+import type { FocusId, IdleIntent } from '../types/index.js'
 
 const resolveIntentLabel = (intent: IdleIntent): string =>
   intent.title.trim() || intent.id
@@ -45,6 +50,7 @@ const appendIntentSystemMessage = async (
       },
     }),
     createdAt: nowIso(),
+    focusId: intent.focusId,
   })
 }
 
@@ -53,6 +59,16 @@ const normalizeIntentKey = (prompt: string, title: string): string =>
     .trim()
     .replace(/\s+/g, ' ')
     .toLowerCase()}`
+
+const resolveIntentFocusId = (
+  runtime: RuntimeState,
+  focusId?: string,
+): FocusId => {
+  const resolved = focusId?.trim() || resolveDefaultFocusId(runtime)
+  ensureFocus(runtime, resolved)
+  touchFocus(runtime, resolved)
+  return resolved
+}
 
 export const applyCreateIntent = async (
   runtime: RuntimeState,
@@ -73,10 +89,12 @@ export const applyCreateIntent = async (
   )
     return
   const timestamp = nowIso()
+  const focusId = resolveIntentFocusId(runtime, parsed.data.focus_id)
   const intent: IdleIntent = {
-    id: newId(),
+    id: `intent-${newId()}`,
     prompt: parsed.data.prompt,
     title: parsed.data.title,
+    focusId,
     priority: parsed.data.priority ?? 'normal',
     status: 'pending',
     source: parsed.data.source ?? 'user_request',
@@ -103,6 +121,10 @@ export const applyUpdateIntent = async (
   const current = runtime.idleIntents[index]
   if (!current || current.status === 'done') return
   const timestamp = nowIso()
+  const nextFocusId =
+    parsed.data.focus_id !== undefined
+      ? resolveIntentFocusId(runtime, parsed.data.focus_id)
+      : current.focusId
   const next: IdleIntent = {
     ...current,
     ...(parsed.data.prompt !== undefined ? { prompt: parsed.data.prompt } : {}),
@@ -114,6 +136,7 @@ export const applyUpdateIntent = async (
     ...(parsed.data.last_task_id !== undefined
       ? { lastTaskId: parsed.data.last_task_id }
       : {}),
+    focusId: nextFocusId,
     updatedAt: timestamp,
   }
   if (next.status === 'done') {

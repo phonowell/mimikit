@@ -21,7 +21,7 @@ export type AppConfig = {
       maxTokens: number
     }
     taskCreate: {
-      /** Debounce window for create_task dedup (ms) */
+      /** Debounce window for run_task dedup (ms) */
       debounceMs: number
     }
     taskWindow: {
