@@ -40,8 +40,6 @@ type BuildRunModelParams = {
   abortSignal?: AbortSignal
 }
 
-const progressType = (phase: 'start' | 'done'): string => `worker_${phase}`
-
 const archiveWorkerResult = (
   stateDir: string,
   base: Omit<TraceArchiveEntry, 'prompt' | 'output' | 'ok'>,
@@ -67,28 +65,16 @@ const buildRunModel =
       ...(input.onUsage ? { onUsage: input.onUsage } : {}),
     })
 
-const appendWorkerProgress = (params: {
-  stateDir: string
-  taskId: string
-  phase: 'start' | 'done'
-  payload: Record<string, unknown>
-}) =>
-  appendTaskProgress({
-    stateDir: params.stateDir,
-    taskId: params.taskId,
-    type: progressType(params.phase),
-    payload: params.payload,
-  })
-
 const DONE_MARKER = '<M:task_done/>'
 const MAX_RUN_ROUNDS = 3
-
 const hasDoneMarker = (output: string): boolean =>
   output.includes(DONE_MARKER)
 
 const stripDoneMarker = (output: string): string =>
   output.replaceAll(DONE_MARKER, '').trim()
 
+const isAbortLikeError = (error: Error): boolean =>
+  error.name === 'AbortError' || /aborted|canceled/i.test(error.message)
 
 const buildContinuePrompt = (
   template: string,
@@ -128,11 +114,10 @@ export const runWorker = async (
     ...(params.model ? { model: params.model } : {}),
   }
 
-  await appendWorkerProgress({
+  await appendTaskProgress({
     stateDir: params.stateDir,
     taskId: params.task.id,
-    phase: 'start',
-    payload: {},
+    type: 'worker_start',
   })
 
   let threadId: string | null | undefined
@@ -165,12 +150,6 @@ export const runWorker = async (
       const output = result.output.trim()
       if (hasDoneMarker(output)) {
         const finalOutput = stripDoneMarker(output)
-        await appendWorkerProgress({
-          stateDir: params.stateDir,
-          taskId: params.task.id,
-          phase: 'done',
-          payload: { elapsedMs: totalElapsedMs, rounds: round },
-        })
         await archiveWorkerResult(
           params.stateDir,
           { ...archiveBase, threadId },
@@ -198,11 +177,18 @@ export const runWorker = async (
     )
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error))
+    const canceled =
+      Boolean(params.abortSignal?.aborted) && isAbortLikeError(err)
     await archiveWorkerResult(
       params.stateDir,
       { ...archiveBase, ...(threadId !== undefined ? { threadId } : {}) },
       prompt,
-      { output: '', ok: false, error: err.message, errorName: err.name },
+      {
+        output: '',
+        ok: false,
+        error: canceled ? 'Task canceled' : err.message,
+        errorName: canceled ? 'TaskCanceledError' : err.name,
+      },
     )
     throw error
   }

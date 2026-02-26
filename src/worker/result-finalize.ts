@@ -2,6 +2,7 @@ import { appendLog } from '../log/append.js'
 import { bestEffort, safeOrUndefined } from '../log/safe.js'
 import { notifyManagerLoop } from '../orchestrator/core/signals.js'
 import { nowIso } from '../shared/utils.js'
+import { appendTaskProgress } from '../storage/task-progress.js'
 import { appendTaskResultArchive } from '../storage/task-results.js'
 import { publishWorkerResult } from '../streams/queues.js'
 
@@ -65,6 +66,19 @@ export const finalizeResult = async (
     ...(result.usage ? { usage: result.usage } : {}),
     ...(archivePath ? { archivePath } : {}),
   })
+  await bestEffort('appendTaskProgress: worker_end', () =>
+    appendTaskProgress({
+      stateDir: runtime.config.workDir,
+      taskId: task.id,
+      type: 'worker_end',
+      payload: {
+        status: result.status,
+        durationMs: result.durationMs,
+        ...(result.cancel ? { cancel: result.cancel } : {}),
+        ...(archivePath ? { archivePath } : {}),
+      },
+    }),
+  )
   await publishWorkerResult({
     paths: runtime.paths,
     payload: result,
