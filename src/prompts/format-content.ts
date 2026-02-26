@@ -172,6 +172,12 @@ const formatIntentEntry = (intent: IdleIntent): Record<string, unknown> => ({
   updated_at: intent.updatedAt,
   attempts: intent.attempts,
   max_attempts: intent.maxAttempts,
+  trigger_mode: intent.triggerPolicy.mode,
+  cooldown_ms: intent.triggerPolicy.cooldownMs,
+  total_triggered: intent.triggerState.totalTriggered,
+  ...(intent.triggerState.lastCompletedAt
+    ? { last_completed_at: intent.triggerState.lastCompletedAt }
+    : {}),
   ...(intent.lastTaskId ? { last_task_id: intent.lastTaskId } : {}),
   ...(intent.archivedAt ? { archived_at: intent.archivedAt } : {}),
 })

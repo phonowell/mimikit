@@ -13,7 +13,8 @@
 - 对外名称：Todos；后端领域名：`idle_intents`。
 - 状态：`pending | blocked | done`。
 - `done` 归档存储在 `idleIntentArchive`，并继续注入 manager 上下文用于防重复创建。
-- `idle-wake-loop` 到达闲暇阈值后，优先触发一条 `pending` intent（按 `priority + FIFO`），发布 `system_event.name=intent_trigger`。
+- `idle-wake-loop` 到达闲暇阈值后，按 `priority + FIFO` 触发全部可执行 `pending` intent，逐条发布 `system_event.name=intent_trigger`。
+- `on_idle` intent 的 CD 基于任务完成时间：`now - lastCompletedAt >= cooldownMs`。
 
 ## Focus 生命周期
 
@@ -28,7 +29,8 @@
 ## 派发与去重
 
 - 立即执行：`<M:run_task ... />`。
-- 定时/周期执行：`<M:schedule_task ... />`。
+- 定时执行：`<M:schedule_task ... />`。
+- idle 周期执行：`<M:create_intent ... trigger_mode="on_idle" ... />`。
 - worker 任务 profile 固定为 `worker`。
 - 去重两层：
   - action 去重键：`prompt + title + profile(+schedule)`
@@ -90,10 +92,10 @@
   - 约束：`cron` 与 `scheduled_at` 互斥，且至少一个必填。
   - 行为：创建定时任务（cronJob）并写入系统历史。
 - `create_intent`
-  - 入参：`prompt`、`title`、`priority?`、`source?`、`focus_id?`
+  - 入参：`prompt`、`title`、`priority?`、`source?`、`trigger_mode?`、`cooldown_ms?`、`focus_id?`
   - 默认：`priority=normal`、`source=user_request`
 - `update_intent`
-  - 入参：`id` + 至少一个更新字段（含 `focus_id`）
+  - 入参：`id` + 至少一个更新字段（含 `trigger_mode|cooldown_ms|focus_id`）
   - `status=done` 时从活跃队列移入归档。
 - `delete_intent`
   - 入参：`id`
@@ -144,6 +146,6 @@
 
 - `UserInput`：`id`、`role`、`text`、`createdAt`、`focusId`、`quote?`
 - `Task`：`id`、`prompt`、`title`、`status`、`focusId`、`profile` ...
-- `IdleIntent`：`id`、`prompt`、`title`、`status`、`focusId` ...
+- `IdleIntent`：`id`、`prompt`、`title`、`status`、`focusId`、`triggerPolicy`、`triggerState` ...
 - `CronJob`：`id`、`prompt`、`title`、`focusId`、`cron|scheduledAt` ...
 - `HistoryMessage`：`id`、`role`、`text`、`createdAt`、`focusId` ...

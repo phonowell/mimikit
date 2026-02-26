@@ -45,6 +45,12 @@ const appendIntentSystemMessage = async (
         status: intent.status,
         priority: intent.priority,
         source: intent.source,
+        trigger_mode: intent.triggerPolicy.mode,
+        cooldown_ms: intent.triggerPolicy.cooldownMs,
+        total_triggered: intent.triggerState.totalTriggered,
+        ...(intent.triggerState.lastCompletedAt
+          ? { last_completed_at: intent.triggerState.lastCompletedAt }
+          : {}),
         ...(intent.lastTaskId ? { last_task_id: intent.lastTaskId } : {}),
         ...(intent.archivedAt ? { archived_at: intent.archivedAt } : {}),
       },
@@ -90,6 +96,9 @@ export const applyCreateIntent = async (
     return
   const timestamp = nowIso()
   const focusId = resolveIntentFocusId(runtime, parsed.data.focus_id)
+  const triggerMode =
+    parsed.data.trigger_mode ??
+    (parsed.data.cooldown_ms !== undefined ? 'on_idle' : 'one_shot')
   const intent: IdleIntent = {
     id: `intent-${newId()}`,
     prompt: parsed.data.prompt,
@@ -102,6 +111,13 @@ export const applyCreateIntent = async (
     updatedAt: timestamp,
     attempts: 0,
     maxAttempts: 2,
+    triggerPolicy: {
+      mode: triggerMode,
+      cooldownMs: triggerMode === 'on_idle' ? (parsed.data.cooldown_ms ?? 0) : 0,
+    },
+    triggerState: {
+      totalTriggered: 0,
+    },
   }
   runtime.idleIntents.push(intent)
   await persistRuntimeState(runtime)
@@ -125,6 +141,17 @@ export const applyUpdateIntent = async (
     parsed.data.focus_id !== undefined
       ? resolveIntentFocusId(runtime, parsed.data.focus_id)
       : current.focusId
+  const nextTriggerPolicy = {
+    ...current.triggerPolicy,
+  }
+  if (parsed.data.trigger_mode !== undefined) {
+    nextTriggerPolicy.mode = parsed.data.trigger_mode
+    if (parsed.data.trigger_mode === 'one_shot') nextTriggerPolicy.cooldownMs = 0
+  }
+  if (parsed.data.cooldown_ms !== undefined) {
+    nextTriggerPolicy.mode = 'on_idle'
+    nextTriggerPolicy.cooldownMs = parsed.data.cooldown_ms
+  }
   const next: IdleIntent = {
     ...current,
     ...(parsed.data.prompt !== undefined ? { prompt: parsed.data.prompt } : {}),
@@ -136,6 +163,7 @@ export const applyUpdateIntent = async (
     ...(parsed.data.last_task_id !== undefined
       ? { lastTaskId: parsed.data.last_task_id }
       : {}),
+    triggerPolicy: nextTriggerPolicy,
     focusId: nextFocusId,
     updatedAt: timestamp,
   }

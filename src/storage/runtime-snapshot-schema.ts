@@ -96,6 +96,20 @@ const cronJobSchema = z
     { message: 'cron and scheduledAt are mutually exclusive' },
   )
 
+const intentTriggerPolicySchema = z
+  .object({
+    mode: z.enum(['one_shot', 'on_idle']),
+    cooldownMs: z.number().int().nonnegative(),
+  })
+  .strict()
+
+const intentTriggerStateSchema = z
+  .object({
+    totalTriggered: z.number().int().nonnegative(),
+    lastCompletedAt: z.string().optional(),
+  })
+  .strict()
+
 const idleIntentSchema = z
   .object({
     id: z.string().trim().min(1),
@@ -109,6 +123,8 @@ const idleIntentSchema = z
     updatedAt: z.string(),
     attempts: z.number().int().nonnegative(),
     maxAttempts: z.number().int().positive(),
+    triggerPolicy: intentTriggerPolicySchema,
+    triggerState: intentTriggerStateSchema,
     lastTaskId: z.string().trim().min(1).optional(),
     archivedAt: z.string().optional(),
   })

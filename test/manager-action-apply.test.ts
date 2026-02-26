@@ -185,6 +185,8 @@ test('intent actions can create and archive done intent', async () => {
   ])
   const createdId = runtime.idleIntents[0]?.id
   expect(createdId).toBeTruthy()
+  expect(runtime.idleIntents[0]?.triggerPolicy.mode).toBe('one_shot')
+  expect(runtime.idleIntents[0]?.triggerPolicy.cooldownMs).toBe(0)
   await applyTaskActions(runtime, [
     {
       name: 'update_intent',
@@ -214,6 +216,13 @@ test('delete_intent keeps done archive item unchanged', async () => {
     archivedAt: '2026-02-13T00:00:00.000Z',
     attempts: 1,
     maxAttempts: 2,
+    triggerPolicy: {
+      mode: 'one_shot',
+      cooldownMs: 0,
+    },
+    triggerState: {
+      totalTriggered: 1,
+    },
   })
 
   await applyTaskActions(runtime, [

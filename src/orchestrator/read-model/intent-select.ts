@@ -90,15 +90,24 @@ export const selectRecentIntents = (
   )
 }
 
-export const selectIdleIntentForTrigger = (
+const isOnIdleIntentEligible = (intent: IdleIntent, nowMs: number): boolean => {
+  if (intent.status !== 'pending') return false
+  if (intent.triggerPolicy.mode !== 'on_idle')
+    return intent.attempts < intent.maxAttempts
+  const cooldownMs = Math.max(0, intent.triggerPolicy.cooldownMs)
+  if (cooldownMs === 0) return true
+  const lastCompletedMs = toMs(intent.triggerState.lastCompletedAt)
+  if (lastCompletedMs <= 0) return true
+  return nowMs - lastCompletedMs >= cooldownMs
+}
+
+export const selectIdleIntentsForTrigger = (
   intents: IdleIntent[],
-): IdleIntent | undefined =>
+  nowMs: number = Date.now(),
+): IdleIntent[] =>
   [...intents]
-    .filter(
-      (intent) =>
-        intent.status === 'pending' && intent.attempts < intent.maxAttempts,
-    )
-    .sort(comparePriorityFifo)[0]
+    .filter((intent) => isOnIdleIntentEligible(intent, nowMs))
+    .sort(comparePriorityFifo)
 
 export const selectRecentTasks = (
   tasks: Task[],

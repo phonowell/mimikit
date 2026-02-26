@@ -65,6 +65,8 @@ const intentSourceSchema = z.enum([
   'agent_auto',
   'retry_decision',
 ])
+const intentTriggerModeSchema = z.enum(['one_shot', 'on_idle'])
+const cooldownMsSchema = z.coerce.number().int().nonnegative()
 
 export const createIntentSchema = z
   .object({
@@ -72,9 +74,20 @@ export const createIntentSchema = z
     title: nonEmptyString,
     priority: intentPrioritySchema.optional(),
     source: intentSourceSchema.optional(),
+    trigger_mode: intentTriggerModeSchema.optional(),
+    cooldown_ms: cooldownMsSchema.optional(),
     focus_id: focusIdSchema.optional(),
   })
   .strict()
+  .superRefine((data, ctx) => {
+    if (data.cooldown_ms === undefined) return
+    if (data.trigger_mode === 'one_shot')
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'cooldown_ms cannot be used with trigger_mode="one_shot"',
+        path: ['cooldown_ms'],
+      })
+  })
 
 export const updateIntentSchema = z
   .object({
@@ -83,16 +96,26 @@ export const updateIntentSchema = z
     title: nonEmptyString.optional(),
     priority: intentPrioritySchema.optional(),
     status: intentStatusSchema.optional(),
+    trigger_mode: intentTriggerModeSchema.optional(),
+    cooldown_ms: cooldownMsSchema.optional(),
     last_task_id: nonEmptyString.optional(),
     focus_id: focusIdSchema.optional(),
   })
   .strict()
   .superRefine((data, ctx) => {
+    if (data.cooldown_ms !== undefined && data.trigger_mode === 'one_shot')
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'cooldown_ms cannot be used with trigger_mode="one_shot"',
+        path: ['cooldown_ms'],
+      })
     if (
       data.prompt === undefined &&
       data.title === undefined &&
       data.priority === undefined &&
       data.status === undefined &&
+      data.trigger_mode === undefined &&
+      data.cooldown_ms === undefined &&
       data.last_task_id === undefined &&
       data.focus_id === undefined
     ) {

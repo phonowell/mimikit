@@ -2,7 +2,7 @@ import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { notifyManagerLoop } from '../orchestrator/core/signals.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
-import { selectIdleIntentForTrigger } from '../orchestrator/read-model/intent-select.js'
+import { selectIdleIntentsForTrigger } from '../orchestrator/read-model/intent-select.js'
 import { formatSystemEventText } from '../shared/system-event.js'
 import { newId, sleep } from '../shared/utils.js'
 import { appendHistory } from '../history/store.js'
@@ -43,6 +43,7 @@ const markExhaustedIntentsBlocked = (
   const changed: RuntimeState['idleIntents'] = []
   for (const intent of runtime.idleIntents) {
     if (intent.status !== 'pending') continue
+    if (intent.triggerPolicy.mode !== 'one_shot') continue
     if (intent.attempts < intent.maxAttempts) continue
     intent.status = 'blocked'
     intent.updatedAt = updatedAt
@@ -117,34 +118,46 @@ export const idleWakeLoop = async (runtime: RuntimeState): Promise<void> => {
           persistRuntimeState(runtime),
         )
       }
-      const nextIntent = selectIdleIntentForTrigger(runtime.idleIntents)
-      if (nextIntent) {
-        nextIntent.attempts += 1
-        nextIntent.updatedAt = triggeredAt
-        await publishManagerSystemEventInput({
-          runtime,
-          summary: `Idle intent "${nextIntent.title.trim() || nextIntent.id}" was triggered.`,
-          event: 'intent_trigger',
-          visibility: 'all',
-          payload: {
-            intent_id: nextIntent.id,
-            title: nextIntent.title,
-            prompt: nextIntent.prompt,
-            priority: nextIntent.priority,
-            source: nextIntent.source,
-            attempt: nextIntent.attempts,
-            max_attempts: nextIntent.maxAttempts,
-            triggered_at: triggeredAt,
-          },
-          createdAt: triggeredAt,
-          logEvent: 'intent_trigger_input',
-          logMeta: {
-            intentId: nextIntent.id,
-            attempt: nextIntent.attempts,
-            maxAttempts: nextIntent.maxAttempts,
-            priority: nextIntent.priority,
-          },
-        })
+      const intentsToTrigger = selectIdleIntentsForTrigger(
+        runtime.idleIntents,
+        nowMs,
+      )
+      if (intentsToTrigger.length > 0) {
+        for (const intent of intentsToTrigger) {
+          intent.triggerState.totalTriggered += 1
+          if (intent.triggerPolicy.mode === 'one_shot') intent.attempts += 1
+          intent.updatedAt = triggeredAt
+          await publishManagerSystemEventInput({
+            runtime,
+            summary: `Idle intent "${intent.title.trim() || intent.id}" was triggered.`,
+            event: 'intent_trigger',
+            visibility: 'all',
+            payload: {
+              intent_id: intent.id,
+              title: intent.title,
+              prompt: intent.prompt,
+              priority: intent.priority,
+              source: intent.source,
+              attempt: intent.attempts,
+              max_attempts: intent.maxAttempts,
+              trigger_mode: intent.triggerPolicy.mode,
+              cooldown_ms: intent.triggerPolicy.cooldownMs,
+              ...(intent.triggerState.lastCompletedAt
+                ? { last_completed_at: intent.triggerState.lastCompletedAt }
+                : {}),
+              triggered_at: triggeredAt,
+            },
+            createdAt: triggeredAt,
+            logEvent: 'intent_trigger_input',
+            logMeta: {
+              intentId: intent.id,
+              attempt: intent.attempts,
+              maxAttempts: intent.maxAttempts,
+              priority: intent.priority,
+              triggerMode: intent.triggerPolicy.mode,
+            },
+          })
+        }
         await bestEffort('persistRuntimeState: intent_trigger', () =>
           persistRuntimeState(runtime),
         )

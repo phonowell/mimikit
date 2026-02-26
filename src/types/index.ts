@@ -92,7 +92,18 @@ export type WorkerProfile = 'worker'
 export type IntentPriority = 'high' | 'normal' | 'low'
 export type IdleIntentStatus = 'pending' | 'blocked' | 'done'
 export type IntentSource = 'user_request' | 'agent_auto' | 'retry_decision'
+export type IntentTriggerMode = 'one_shot' | 'on_idle'
 export type FocusStatus = 'active' | 'idle' | 'done' | 'archived'
+
+export type IdleIntentTriggerPolicy = {
+  mode: IntentTriggerMode
+  cooldownMs: number
+}
+
+export type IdleIntentTriggerState = {
+  totalTriggered: number
+  lastCompletedAt?: ISODate
+}
 
 export type FocusMeta = {
   id: FocusId
@@ -122,6 +133,8 @@ export type IdleIntent = {
   updatedAt: ISODate
   attempts: number
   maxAttempts: number
+  triggerPolicy: IdleIntentTriggerPolicy
+  triggerState: IdleIntentTriggerState
   lastTaskId?: Id
   archivedAt?: ISODate
 }

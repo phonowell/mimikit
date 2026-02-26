@@ -15,7 +15,7 @@
 - `manager`：消费 `inputs/results`，输出用户回复与编排动作。
 - `worker`：执行统一 `worker` 任务，回写结果。
 - `cron-wake-loop`：触发定时任务并发布 `system_event` 协议 system 输入事件。
-- `idle-wake-loop`：系统闲暇窗口到达后优先发布 `system_event.name=intent_trigger`，否则发布 `system_event.name=idle`。
+- `idle-wake-loop`：系统闲暇窗口到达后，按 `priority + FIFO` 发布全部可执行 `system_event.name=intent_trigger`；若无可执行项则发布 `system_event.name=idle`。
 
 system 消息协议统一为：`summary + <M:system_event name="..." version="1">JSON</M:system_event>`。
 

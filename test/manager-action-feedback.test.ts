@@ -128,6 +128,8 @@ test('collectManagerActionFeedback accepts valid create_intent action', () => {
         prompt: 'remember this',
         title: 'remember',
         priority: 'high',
+        trigger_mode: 'on_idle',
+        cooldown_ms: '60000',
       },
     },
   ])

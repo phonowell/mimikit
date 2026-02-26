@@ -115,6 +115,13 @@ test('runtime snapshot accepts queue cursors', async () => {
         updatedAt: '2026-02-06T00:00:00.000Z',
         attempts: 0,
         maxAttempts: 2,
+        triggerPolicy: {
+          mode: 'one_shot',
+          cooldownMs: 0,
+        },
+        triggerState: {
+          totalTriggered: 0,
+        },
       },
     ],
     idleIntentArchive: [
@@ -131,6 +138,14 @@ test('runtime snapshot accepts queue cursors', async () => {
         archivedAt: '2026-02-06T00:10:00.000Z',
         attempts: 1,
         maxAttempts: 2,
+        triggerPolicy: {
+          mode: 'one_shot',
+          cooldownMs: 0,
+        },
+        triggerState: {
+          totalTriggered: 1,
+          lastCompletedAt: '2026-02-06T00:10:00.000Z',
+        },
       },
     ],
     queues: {

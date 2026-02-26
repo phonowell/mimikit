@@ -75,7 +75,8 @@
 - 唤醒来源四类：`user_input`、`task_result`、`cron`、`idle`
 - 四类均为实时 signal（`notifyManagerLoop`）
 - `idle` 由 `idle-wake-loop` 在持续闲暇窗口内按阈值触发（单次）
-- 存在可触发 intent 时，`idle-wake-loop` 优先发布 `system_event.name=intent_trigger`
+- 存在可触发 intent 时，`idle-wake-loop` 会按 `priority + FIFO` 发布全部可执行 `system_event.name=intent_trigger`
+- `on_idle` intent 准入仅看 CD：`now - lastCompletedAt >= cooldownMs`
 - manager 推理输入来自 `inputs/results/history`，并遵循可见性过滤：全部非 system + `visibility=agent|all` 的 system
 - manager prompt 注入标签：
   - `M:inputs`：当前批次输入
