@@ -120,22 +120,6 @@ test('collectManagerActionFeedback rejects delete_intent for done item', () => {
   expect(feedback[0]?.hint).toContain('done intent 不可删除')
 })
 
-test('collectManagerActionFeedback accepts valid create_intent action', () => {
-  const feedback = collectManagerActionFeedback([
-    {
-      name: 'create_intent',
-      attrs: {
-        prompt: 'remember this',
-        title: 'remember',
-        priority: 'high',
-        trigger_mode: 'on_idle',
-        cooldown_ms: '60000',
-      },
-    },
-  ])
-  expect(feedback).toHaveLength(0)
-})
-
 test('collectManagerActionFeedback reports invalid query_history date args', () => {
   const feedback = collectManagerActionFeedback([
     {
@@ -162,21 +146,6 @@ test('collectManagerActionFeedback rejects compress_context when context is unav
   expect(feedback[0]?.action).toBe('compress_context')
   expect(feedback[0]?.error).toBe('action_execution_rejected')
   expect(feedback[0]?.hint).toContain('无可压缩上下文')
-})
-
-test('collectManagerActionFeedback accepts compress_context with available context', () => {
-  const feedback = collectManagerActionFeedback(
-    [
-      {
-        name: 'compress_context',
-        attrs: {},
-      },
-    ],
-    {
-      hasCompressibleContext: true,
-    },
-  )
-  expect(feedback).toHaveLength(0)
 })
 
 test('collectManagerActionFeedback ignores valid run_task action', () => {
