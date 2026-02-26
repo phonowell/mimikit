@@ -7,9 +7,9 @@ import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js
 import {
   buildTaskFingerprint,
   buildTaskSemanticKey,
-  enqueueTask,
   findActiveTaskBySemanticKey,
 } from '../orchestrator/core/task-state.js'
+import { enqueueTask } from '../orchestrator/core/task-lifecycle.js'
 import { notifyWorkerLoop } from '../orchestrator/core/signals.js'
 import { appendTaskSystemMessage } from '../history/task-events.js'
 import { newId, nowIso } from '../shared/utils.js'

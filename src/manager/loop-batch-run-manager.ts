@@ -12,11 +12,7 @@ import {
 import { mergeUsageAdditive } from '../shared/token-usage.js'
 import { readHistory } from '../history/store.js'
 
-import {
-  type FeedbackContext,
-  REGISTERED_MANAGER_ACTIONS,
-  validateRegisteredManagerAction,
-} from './action-feedback-validate.js'
+import { collectManagerActionFeedback } from './action-feedback-collect.js'
 import { pickQueryHistoryRequest, queryHistory } from '../history/query.js'
 import { appendActionFeedbackSystemMessage } from '../history/manager-events.js'
 import {
@@ -27,7 +23,6 @@ import {
 } from './loop-ui-stream.js'
 import { runManager } from './runner.js'
 
-import type { Parsed } from '../actions/model/spec.js'
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type {
   HistoryLookupMessage,
@@ -40,61 +35,6 @@ import type {
 const STREAM_TEXT_FLUSH_MS = 64
 const INTENT_TRIGGER_EVENT_RE =
   /<M:system_event[^>]*name="intent_trigger"[^>]*>([\s\S]*?)<\/M:system_event>/g
-
-const escapeAttr = (value: string): string =>
-  value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
-
-const renderAttemptedAction = (item: Parsed): string => {
-  const attrs = Object.entries(item.attrs)
-  if (attrs.length === 0) return `<M:${item.name} />`
-  const attrsText = attrs
-    .map(([key, value]) => `${key}="${escapeAttr(value)}"`)
-    .join(' ')
-  return `<M:${item.name} ${attrsText} />`
-}
-
-const pushFeedback = (
-  feedback: ManagerActionFeedback[],
-  seen: Set<string>,
-  item: Parsed,
-  error: string,
-  hint: string,
-): void => {
-  const attempted = renderAttemptedAction(item)
-  const key = `${error}\n${attempted}`
-  if (seen.has(key)) return
-  seen.add(key)
-  feedback.push({ action: item.name, error, hint, attempted })
-}
-
-export const collectManagerActionFeedback = (
-  items: Parsed[],
-  context: FeedbackContext = {},
-): ManagerActionFeedback[] => {
-  const feedback: ManagerActionFeedback[] = []
-  const seen = new Set<string>()
-  for (const item of items) {
-    if (!REGISTERED_MANAGER_ACTIONS.has(item.name)) {
-      pushFeedback(
-        feedback,
-        seen,
-        item,
-        'unregistered_action',
-        '仅可使用已注册 action：M:create_focus, M:update_focus, M:assign_focus, M:create_intent, M:update_intent, M:delete_intent, M:run_task, M:schedule_task, M:cancel_task, M:compress_context, M:summarize_task_result, M:query_history, M:restart_runtime。',
-      )
-    }
-  }
-  const seenWithUnknown = new Set(
-    feedback.map((item) => `${item.error}\n${item.attempted ?? ''}`),
-  )
-  for (const item of items) {
-    if (!REGISTERED_MANAGER_ACTIONS.has(item.name)) continue
-    const issues = validateRegisteredManagerAction(item, context)
-    for (const issue of issues)
-      pushFeedback(feedback, seenWithUnknown, item, issue.error, issue.hint)
-  }
-  return feedback
-}
 
 const collectTriggeredIntentIds = (inputs: UserInput[]): Set<string> => {
   const ids = new Set<string>()

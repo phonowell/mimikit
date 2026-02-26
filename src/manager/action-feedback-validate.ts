@@ -1,3 +1,4 @@
+import { queryHistorySchema } from '../history/query.js'
 import { parseIsoMs } from '../shared/time.js'
 
 import { hasForbiddenWorkerStatePath } from './action-apply-guards.js'
@@ -15,10 +16,12 @@ import {
   updateFocusSchema,
   updateIntentSchema,
 } from './action-apply-schema.js'
-import { queryHistorySchema } from '../history/query.js'
 
 import type { Parsed } from '../actions/model/spec.js'
-import type { IdleIntentStatus, TaskStatus } from '../types/index.js'
+import type {
+  IdleIntentStatus,
+  TaskStatus,
+} from '../types/index.js'
 import type { ZodError, ZodSchema } from 'zod'
 
 export const REGISTERED_MANAGER_ACTIONS = new Set([

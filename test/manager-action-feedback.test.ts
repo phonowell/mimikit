@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest'
 
 import { parseActions } from '../src/actions/protocol/parse.js'
-import { collectManagerActionFeedback } from '../src/manager/loop-batch-run-manager.js'
+import { collectManagerActionFeedback } from '../src/manager/action-feedback-collect.js'
 
 test('collectManagerActionFeedback reports unregistered action', () => {
   const feedback = collectManagerActionFeedback([

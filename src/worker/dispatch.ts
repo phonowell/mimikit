@@ -6,7 +6,7 @@ import {
   markTaskFailed,
   markTaskRunning,
   markTaskSucceeded,
-} from '../orchestrator/core/task-state.js'
+} from '../orchestrator/core/task-lifecycle.js'
 import {
   notifyUiSignal,
   notifyWorkerLoop,
