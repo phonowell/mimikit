@@ -6,9 +6,13 @@ import { parseIsoMs } from '../shared/time.js'
 
 import { collectDocs, scoreAndRankDocs, toTokens } from './query-score.js'
 
-import type { Parsed } from '../actions/model/spec.js'
-import type { HistoryLookupMessage, HistoryMessage, Role } from '../types/index.js'
 import type { QueryHistoryRequest } from './query-score.js'
+import type { Parsed } from '../actions/model/spec.js'
+import type {
+  HistoryLookupMessage,
+  HistoryMessage,
+  Role,
+} from '../types/index.js'
 
 export type { QueryHistoryRequest } from './query-score.js'
 
@@ -16,6 +20,7 @@ const DEFAULT_LIMIT = 6
 const MAX_LIMIT = 20
 const MIN_LIMIT = 1
 const DEFAULT_ROLES: Role[] = ['user', 'agent']
+const DECIMAL_PREFIX_RE = /^[+-]?\d+/
 
 export const queryHistorySchema = z
   .object({
@@ -28,11 +33,15 @@ export const queryHistorySchema = z
   })
   .strict()
 
-const parseLimit = (raw?: string): number =>
-  Math.max(
-    MIN_LIMIT,
-    Math.min(MAX_LIMIT, Number.parseInt(raw ?? '', 10) || DEFAULT_LIMIT),
-  )
+const parseLimit = (raw?: string): number => {
+  if (!raw) return DEFAULT_LIMIT
+  const decimalPrefix = raw.match(DECIMAL_PREFIX_RE)?.[0]
+  if (!decimalPrefix) return DEFAULT_LIMIT
+  const parsed = Number(decimalPrefix)
+  if (!Number.isFinite(parsed) || parsed === 0) return DEFAULT_LIMIT
+  const normalized = Math.trunc(parsed)
+  return Math.max(MIN_LIMIT, Math.min(MAX_LIMIT, normalized))
+}
 
 const isRole = (value: string): value is Role =>
   value === 'user' || value === 'agent' || value === 'system'

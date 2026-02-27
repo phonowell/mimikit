@@ -28,6 +28,20 @@ test('pickQueryHistoryRequest normalizes inverted from/to range', () => {
   expect(request?.beforeId).toBe('m5')
 })
 
+test('pickQueryHistoryRequest keeps decimal-prefix limit parsing behavior', () => {
+  const request = pickQueryHistoryRequest([
+    {
+      name: 'query_history',
+      attrs: {
+        query: 'roadmap',
+        limit: '1e2',
+      },
+    },
+  ])
+
+  expect(request?.limit).toBe(1)
+})
+
 test('queryHistory applies before_id window and time range filters', () => {
   const request: QueryHistoryRequest = {
     query: 'roadmap',

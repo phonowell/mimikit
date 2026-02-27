@@ -10,11 +10,67 @@ import {
   saveRuntimeSnapshot,
   selectPersistedTasks,
 } from '../src/storage/runtime-snapshot.js'
-import type { CronJob, Task } from '../src/types/index.js'
+import type { CronJob, IdleIntent, Task } from '../src/types/index.js'
 
 const GLOBAL_FOCUS_ID = 'focus-global'
+const SNAPSHOT_BASE_TIME = '2026-02-06T00:00:00.000Z'
+const SNAPSHOT_DONE_TIME = '2026-02-06T00:10:00.000Z'
 
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-runtime-snapshot-'))
+
+const createTaskFixture = (overrides: Partial<Task> = {}): Task => ({
+  id: 'task-1',
+  fingerprint: 'task-1',
+  prompt: 'check',
+  title: 'Check',
+  focusId: GLOBAL_FOCUS_ID,
+  profile: 'worker',
+  status: 'pending',
+  createdAt: SNAPSHOT_BASE_TIME,
+  ...overrides,
+})
+
+const createIdleIntentFixture = (
+  overrides: Partial<IdleIntent> = {},
+): IdleIntent => ({
+  id: 'intent-1',
+  prompt: 'summarize',
+  title: 'summarize',
+  focusId: GLOBAL_FOCUS_ID,
+  priority: 'high',
+  status: 'pending',
+  source: 'user_request',
+  createdAt: SNAPSHOT_BASE_TIME,
+  updatedAt: SNAPSHOT_BASE_TIME,
+  attempts: 0,
+  maxAttempts: 2,
+  triggerPolicy: {
+    mode: 'one_shot',
+    cooldownMs: 0,
+  },
+  triggerState: {
+    totalTriggered: 0,
+  },
+  ...overrides,
+})
+
+const createArchivedIntentFixture = () => ({
+  ...createIdleIntentFixture({
+    id: 'intent-2',
+    prompt: 'done',
+    title: 'done',
+    priority: 'normal',
+    source: 'agent_auto',
+    status: 'done',
+    updatedAt: SNAPSHOT_DONE_TIME,
+    attempts: 1,
+    triggerState: {
+      totalTriggered: 1,
+      lastCompletedAt: SNAPSHOT_DONE_TIME,
+    },
+  }),
+  archivedAt: SNAPSHOT_DONE_TIME,
+})
 
 test('selectPersistedTasks recovers running task to pending', () => {
   const tasks: Task[] = [
@@ -43,15 +99,8 @@ test('runtime snapshot accepts queue cursors', async () => {
   const stateDir = await createTmpDir()
   await saveRuntimeSnapshot(stateDir, {
     tasks: [
-      {
-        id: 'task-1',
-        fingerprint: 'task-1',
-        prompt: 'check',
-        title: 'Check',
-        focusId: GLOBAL_FOCUS_ID,
-        profile: 'worker',
+      createTaskFixture({
         status: 'succeeded',
-        createdAt: '2026-02-06T00:00:00.000Z',
         result: {
           taskId: 'task-1',
           status: 'succeeded',
@@ -60,54 +109,10 @@ test('runtime snapshot accepts queue cursors', async () => {
           durationMs: 5,
           completedAt: '2026-02-06T00:00:05.000Z',
         },
-      },
+      }),
     ],
-    idleIntents: [
-      {
-        id: 'intent-1',
-        prompt: 'summarize',
-        title: 'summarize',
-        focusId: GLOBAL_FOCUS_ID,
-        priority: 'high',
-        status: 'pending',
-        source: 'user_request',
-        createdAt: '2026-02-06T00:00:00.000Z',
-        updatedAt: '2026-02-06T00:00:00.000Z',
-        attempts: 0,
-        maxAttempts: 2,
-        triggerPolicy: {
-          mode: 'one_shot',
-          cooldownMs: 0,
-        },
-        triggerState: {
-          totalTriggered: 0,
-        },
-      },
-    ],
-    idleIntentArchive: [
-      {
-        id: 'intent-2',
-        prompt: 'done',
-        title: 'done',
-        focusId: GLOBAL_FOCUS_ID,
-        priority: 'normal',
-        status: 'done',
-        source: 'agent_auto',
-        createdAt: '2026-02-06T00:00:00.000Z',
-        updatedAt: '2026-02-06T00:10:00.000Z',
-        archivedAt: '2026-02-06T00:10:00.000Z',
-        attempts: 1,
-        maxAttempts: 2,
-        triggerPolicy: {
-          mode: 'one_shot',
-          cooldownMs: 0,
-        },
-        triggerState: {
-          totalTriggered: 1,
-          lastCompletedAt: '2026-02-06T00:10:00.000Z',
-        },
-      },
-    ],
+    idleIntents: [createIdleIntentFixture()],
+    idleIntentArchive: [createArchivedIntentFixture()],
     queues: {
       inputsCursor: 3,
       resultsCursor: 9,
