@@ -2,7 +2,6 @@ import { bestEffort } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import { notifyWorkerLoop } from '../orchestrator/core/signals.js'
 import { loadPromptFile } from '../prompts/prompt-loader.js'
-import { runWithProvider } from '../providers/registry.js'
 import { isVisibleToAgent } from '../shared/message-visibility.js'
 import { formatSystemEventText } from '../shared/system-event.js'
 import { newId, nowIso } from '../shared/utils.js'
@@ -14,7 +13,7 @@ import {
   compressContextSchema,
   restartSchema,
 } from './action-apply-schema.js'
-import { resolveManagerTimeoutMs } from './runner.js'
+import { runManagerLlmCall } from './manager-llm-call.js'
 
 import type { Parsed } from '../actions/model/spec.js'
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
@@ -148,30 +147,35 @@ export const applyCancelTaskAction = async (
   )
 }
 
-export const applyCompressContextAction = async (
+export const compressManagerContext = async (
   runtime: RuntimeState,
-  item: Parsed,
+  options?: { reason?: string },
 ): Promise<void> => {
-  const parsed = compressContextSchema.safeParse(item.attrs)
-  if (!parsed.success) return
   const prompt = await buildCompressPrompt(runtime)
-  const timeoutMs = resolveManagerTimeoutMs(prompt)
-  const result = await runWithProvider({
-    provider: 'openai-chat',
-    role: 'manager',
+  const result = await runManagerLlmCall({
     prompt,
     workDir: runtime.config.workDir,
-    timeoutMs,
     model: runtime.config.manager.model,
+    maxPromptTokens: runtime.config.manager.prompt.maxTokens,
     logPath: runtime.paths.log,
     logContext: {
       action: 'compress_context',
+      ...(options?.reason ? { reason: options.reason } : {}),
     },
   })
   const compressed = normalizeCompressedContext(result.output)
   if (!compressed) throw new Error('compress_context_empty_summary')
   runtime.managerCompressedContext = compressed
   await persistRuntimeState(runtime)
+}
+
+export const applyCompressContextAction = async (
+  runtime: RuntimeState,
+  item: Parsed,
+): Promise<void> => {
+  const parsed = compressContextSchema.safeParse(item.attrs)
+  if (!parsed.success) return
+  await compressManagerContext(runtime, { reason: 'action' })
 }
 
 export const applyRestartRuntimeAction = async (

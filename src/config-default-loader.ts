@@ -25,6 +25,7 @@ const defaultConfigSchema = z
     manager: z
       .object({
         model: z.string().min(1),
+        maxCorrectionRounds: z.number().int().positive(),
         prompt: z
           .object({
             maxTokens: z.number().int().positive(),

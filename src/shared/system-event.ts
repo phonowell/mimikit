@@ -4,6 +4,7 @@ export type SystemEventName =
   | 'task_canceled'
   | 'task_completed'
   | 'manager_fallback_reply'
+  | 'manager_round_limit'
   | 'manager_error'
   | 'action_feedback'
   | 'cron_trigger'

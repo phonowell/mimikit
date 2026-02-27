@@ -117,6 +117,13 @@ export type JsonPacket<TPayload> = {
 
 export type CronJobDisabledReason = 'canceled' | 'completed'
 
+export type ManagerWakeProfile =
+  | 'user_input'
+  | 'task_result'
+  | 'cron'
+  | 'idle'
+  | 'mixed'
+
 export type ManagerEnv = {
   lastUser?: {
     clientLocale?: string
@@ -124,6 +131,7 @@ export type ManagerEnv = {
     clientOffsetMinutes?: number
     clientNowIso?: string
   }
+  wakeProfile?: ManagerWakeProfile
 }
 
 export type ManagerActionFeedback = {

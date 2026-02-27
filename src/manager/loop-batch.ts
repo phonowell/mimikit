@@ -11,6 +11,7 @@ import { applyTaskActions, collectTaskResultSummaries } from './action-apply.js'
 import {
   appendManagerErrorSystemMessage,
   appendManagerFallbackReply,
+  appendManagerCorrectionLimitSystemMessage,
 } from '../history/manager-events.js'
 import { runManagerBatch } from './loop-batch-run-manager.js'
 import {
@@ -82,6 +83,15 @@ export const processManagerBatch = async (params: {
       results,
       streamId,
     })
+    if (managerRun.roundLimitReached) {
+      await bestEffort('appendHistory: manager_round_limit', () =>
+        appendManagerCorrectionLimitSystemMessage(
+          runtime.paths,
+          runtime.config.manager.maxCorrectionRounds,
+          resolveDefaultFocusId(runtime),
+        ),
+      )
+    }
     const resolvedUsage: TokenUsage | undefined = managerRun.usage
     const { parsed } = managerRun
     const summaries = collectTaskResultSummaries(parsed.actions)

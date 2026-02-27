@@ -63,6 +63,7 @@ export const formatEnvironment = (params?: PromptEnvironmentParams): string => {
   }
   const workDir = params?.workDir?.trim()
   push('work_dir', workDir ? resolve(workDir) : undefined)
+  push('wake_profile', params?.env?.wakeProfile)
   const last = params?.env?.lastUser
   if (last) {
     push('client_locale', last.clientLocale)

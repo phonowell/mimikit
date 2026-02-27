@@ -1,5 +1,6 @@
 manager:
   model: gpt-5.2-high
+  maxCorrectionRounds: 4
   prompt:
     maxTokens: 4096
   taskCreate:

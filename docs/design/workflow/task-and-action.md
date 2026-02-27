@@ -66,9 +66,16 @@
 
 ## Manager 消费的编排 Action
 
-实现：`src/manager/action-apply.ts`、`src/manager/loop-batch-run-manager.ts`、`src/history/query.ts`
+实现：`src/manager/action-registry.ts`、`src/manager/action-validation.ts`、`src/manager/action-apply.ts`、`src/manager/loop-batch-run-manager.ts`、`src/history/query.ts`
 
 当 manager 输出未注册 action、参数不合法、或可判定执行失败时，系统会注入 `system_event.name=action_feedback`，要求修正后重试。
+action 名称、validate、apply 由 registry 单源维护，避免多文件枚举漂移。
+
+## Manager 修正回合
+
+- 每批次最多执行 `manager.maxCorrectionRounds` 次修正回合（配置项）。
+- 若达到上限仍未收敛，系统返回 best-effort 文本，清空 action 执行，并写入 `system_event.name=manager_round_limit`。
+- 当 provider 返回 context/token 类错误时，会自动执行一次压缩（`compressManagerContext`）后重试当前回合。
 
 ### Focus Action
 

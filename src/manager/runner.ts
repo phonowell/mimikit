@@ -1,9 +1,10 @@
 import { buildManagerPrompt } from '../prompts/build-prompts.js'
-import { runWithProvider } from '../providers/registry.js'
 import {
   appendTraceArchiveResult,
   type TraceArchiveResult,
 } from '../storage/traces-archive.js'
+
+import { runManagerLlmCall } from './manager-llm-call.js'
 
 import type {
   CronJob,
@@ -20,73 +21,8 @@ import type {
   UserInput,
 } from '../types/index.js'
 
-const BYTE_STEP = 1_024
-const TIMEOUT_STEP_MS = 2_500
-const DEFAULT_MANAGER_PROMPT_MAX_TOKENS = 8_192
-const PRUNE_ORDER = [
-  'M:intents',
-  'M:tasks',
-  'M:focus_contexts',
-  'M:recent_history',
-  'M:focus_list',
-  'M:batch_results',
-  'M:history_lookup',
-  'M:user_profile',
-  'M:persona',
-]
-
-export const toError = (err: unknown): Error =>
-  err instanceof Error ? err : new Error(String(err))
-
-const estimatePromptTokens = (prompt: string): number =>
-  Math.max(1, Math.ceil(Buffer.byteLength(prompt, 'utf8') / 4))
-
-const escapeRegExp = (value: string): string =>
-  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-
-const removeTagBlock = (prompt: string, tag: string): string => {
-  const pattern = new RegExp(
-    `<${escapeRegExp(tag)}>[\\s\\S]*?<\\/${escapeRegExp(tag)}>\\n*`,
-    'g',
-  )
-  return prompt.replace(pattern, '').trim()
-}
-
-export const MIN_MANAGER_TIMEOUT_MS = 60_000
-export const MAX_MANAGER_TIMEOUT_MS = 120_000
-
-export const resolveManagerTimeoutMs = (prompt: string): number => {
-  const promptBytes = Buffer.byteLength(prompt, 'utf8')
-  const stepCount = Math.ceil(promptBytes / BYTE_STEP)
-  const computed = MIN_MANAGER_TIMEOUT_MS + stepCount * TIMEOUT_STEP_MS
-  return Math.max(
-    MIN_MANAGER_TIMEOUT_MS,
-    Math.min(MAX_MANAGER_TIMEOUT_MS, computed),
-  )
-}
-
-export const enforcePromptBudget = (
-  prompt: string,
-  maxTokens: number = DEFAULT_MANAGER_PROMPT_MAX_TOKENS,
-): { prompt: string; trimmed: boolean; estimatedTokens: number } => {
-  const budget = Math.max(1, maxTokens)
-  let current = prompt
-  let estimatedTokens = estimatePromptTokens(current)
-  if (estimatedTokens <= budget)
-    return { prompt: current, trimmed: false, estimatedTokens }
-
-  for (const tag of PRUNE_ORDER) {
-    const next = removeTagBlock(current, tag)
-    if (next === current) continue
-    current = next
-    estimatedTokens = estimatePromptTokens(current)
-    if (estimatedTokens <= budget)
-      return { prompt: current, trimmed: true, estimatedTokens }
-  }
-  throw new Error(
-    `[manager] prompt exceeds max token budget (${estimatedTokens}/${budget})`,
-  )
-}
+const toError = (error: unknown): Error =>
+  error instanceof Error ? error : new Error(String(error))
 
 export const runManager = async (params: {
   stateDir: string
@@ -129,20 +65,17 @@ export const runManager = async (params: {
     ...(params.env ? { env: params.env } : {}),
     ...(params.focuses ? { focuses: params.focuses } : {}),
     ...(params.focusContexts ? { focusContexts: params.focusContexts } : {}),
-    ...(params.activeFocusIds
-      ? { activeFocusIds: params.activeFocusIds }
-      : {}),
+    ...(params.activeFocusIds ? { activeFocusIds: params.activeFocusIds } : {}),
     ...(params.workingFocusIds
       ? { workingFocusIds: params.workingFocusIds }
       : {}),
   })
-  const model = params.model?.trim()
-  const budgetedPrompt = enforcePromptBudget(prompt, params.maxPromptTokens)
-  const timeoutMs = resolveManagerTimeoutMs(budgetedPrompt.prompt)
 
+  const model = params.model?.trim()
   const archive = (
     threadId: string | null | undefined,
     data: TraceArchiveResult,
+    promptText: string,
   ) =>
     appendTraceArchiveResult(
       params.stateDir,
@@ -152,25 +85,22 @@ export const runManager = async (params: {
         ...(threadId ? { threadId } : {}),
         attempt: 'primary',
       },
-      budgetedPrompt.prompt,
+      promptText,
       data,
     )
 
-  const callProvider = () =>
-    runWithProvider({
-      provider: 'openai-chat',
-      role: 'manager',
-      prompt: budgetedPrompt.prompt,
+  try {
+    const result = await runManagerLlmCall({
+      prompt,
       workDir: params.workDir,
-      timeoutMs,
       ...(model ? { model } : {}),
+      ...(params.maxPromptTokens
+        ? { maxPromptTokens: params.maxPromptTokens }
+        : {}),
       ...(params.onTextDelta ? { onTextDelta: params.onTextDelta } : {}),
       ...(params.onUsage ? { onUsage: params.onUsage } : {}),
     })
-
-  try {
-    const result = await callProvider()
-    await archive(result.threadId ?? undefined, { ...result, ok: true })
+    await archive(result.threadId ?? undefined, { ...result, ok: true }, result.prompt)
     return {
       output: result.output,
       elapsedMs: result.elapsedMs,
@@ -178,12 +108,16 @@ export const runManager = async (params: {
     }
   } catch (error) {
     const err = toError(error)
-    await archive(undefined, {
-      output: '',
-      ok: false,
-      error: err.message,
-      errorName: err.name,
-    })
+    await archive(
+      undefined,
+      {
+        output: '',
+        ok: false,
+        error: err.message,
+        errorName: err.name,
+      },
+      prompt,
+    )
     throw error
   }
 }

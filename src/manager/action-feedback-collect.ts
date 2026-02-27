@@ -2,7 +2,7 @@ import {
   REGISTERED_MANAGER_ACTIONS,
   type FeedbackContext,
   validateRegisteredManagerAction,
-} from './action-feedback-validate.js'
+} from './action-registry.js'
 
 import type { Parsed } from '../actions/model/spec.js'
 import type { ManagerActionFeedback } from '../types/index.js'

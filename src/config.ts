@@ -16,6 +16,8 @@ export type AppConfig = {
   manager: {
     /** Default manager model */
     model: string
+    /** Max rounds for manager correction loop */
+    maxCorrectionRounds: number
     prompt: {
       /** Hard token limit for manager prompt */
       maxTokens: number

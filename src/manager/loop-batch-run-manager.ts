@@ -16,7 +16,7 @@ import { pickQueryHistoryRequest } from '../history/query.js'
 import { appendActionFeedbackSystemMessage } from '../history/manager-events.js'
 import { buildHistoryQueryKey, queryHistoryLookup } from './loop-batch-history.js'
 import { collectTriggeredIntentIds } from './loop-batch-intent.js'
-import { runManagerBatchOnce } from './loop-batch-run-once.js'
+import { runManagerRoundWithRecovery } from './loop-batch-manager-call.js'
 import { createManagerStreamController } from './loop-batch-stream.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
@@ -37,6 +37,7 @@ export const runManagerBatch = async (params: {
   parsed: ReturnType<typeof parseActions>
   usage?: TokenUsage
   elapsedMs: number
+  roundLimitReached?: boolean
 }> => {
   const { runtime, inputs, results, streamId } = params
   await appendLog(runtime.paths.log, {
@@ -73,11 +74,17 @@ export const runManagerBatch = async (params: {
     historyLookup?: HistoryLookupMessage[]
     actionFeedback?: ManagerActionFeedback[]
   } = {}
+  let lastParsed = parseActions('')
+  const maxCorrectionRounds = Math.max(
+    1,
+    runtime.config.manager.maxCorrectionRounds,
+  )
 
   try {
-    for (;;) {
-      const runResult = await runManagerBatchOnce({
+    for (let round = 1; round <= maxCorrectionRounds; round++) {
+      const runResult = await runManagerRoundWithRecovery({
         runtime,
+        round,
         inputs,
         results,
         tasks,
@@ -87,13 +94,17 @@ export const runManagerBatch = async (params: {
         onTextDelta: stream.appendDelta,
         onUsage: stream.setUsage,
       })
+
       if (runResult.usage) stream.setUsage(runResult.usage)
       elapsedMs += runResult.elapsedMs
       batchUsage = mergeUsageAdditive(batchUsage, runResult.usage)
+
       const parsed = parseActions(runResult.output)
+      lastParsed = parsed
       stream.commitParsedText(parsed.text)
       const scheduleNowIso =
         runtime.lastUserMeta?.clientNowIso ?? new Date().toISOString()
+
       const actionFeedback = collectManagerActionFeedback(parsed.actions, {
         taskStatusById: new Map(
           runtime.tasks.map((task) => [task.id, task.status]),
@@ -115,6 +126,7 @@ export const runManagerBatch = async (params: {
           runtime.queues.resultsCursor > 0,
         scheduleNowIso,
       })
+
       const queryRequest = pickQueryHistoryRequest(parsed.actions)
       const queryKey = buildHistoryQueryKey(queryRequest)
 
@@ -126,12 +138,14 @@ export const runManagerBatch = async (params: {
           ...(batchUsage ? { usage: batchUsage } : {}),
         }
       }
+
       if (
         queryKey &&
         actionFeedback.length === 0 &&
         previousQueryKey === queryKey
-      )
+      ) {
         throw new Error('manager_query_history_repeated_without_progress')
+      }
       previousQueryKey = queryKey
 
       const historyLookup = await queryHistoryLookup(runtime, queryRequest)
@@ -148,11 +162,26 @@ export const runManagerBatch = async (params: {
           resolveDefaultFocusId(runtime),
         )
       }
+
       stream.resetCycle()
       extra = {
         ...(historyLookup ? { historyLookup } : {}),
         ...(actionFeedback.length > 0 ? { actionFeedback } : {}),
       }
+    }
+
+    await appendLog(runtime.paths.log, {
+      event: 'manager_correction_round_limit_reached',
+      maxCorrectionRounds,
+    })
+    return {
+      parsed: {
+        text: lastParsed.text,
+        actions: [],
+      },
+      elapsedMs,
+      ...(batchUsage ? { usage: batchUsage } : {}),
+      roundLimitReached: true,
     }
   } finally {
     stream.teardown()

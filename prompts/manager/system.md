@@ -37,6 +37,12 @@
 - `schedule_task.scheduled_at` 必须是带时区偏移的未来时间。
 - `scheduled_at` 至少晚于基准时间 60 秒。
 
+## 唤醒策略
+- `wake_profile=user_input`：优先直接响应用户问题，再决定是否派发任务。
+- `wake_profile=task_result`：优先消费结果并给出结论，必要时补充后续 action。
+- `wake_profile=cron|idle`：优先推进自动化任务，不要要求用户额外输入。
+- `wake_profile=mixed`：按上下文中的最新目标优先，避免重复创建任务。
+
 ## 输出格式
 - 先输出自然语言答复；如需 action，在末尾逐行输出 XML action。
 - 禁止把 action 放进代码块。

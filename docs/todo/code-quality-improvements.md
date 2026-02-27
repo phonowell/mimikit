@@ -1,7 +1,7 @@
 # 代码质量改进清单
 
 更新时间：2026-02-26
-范围：`src/`（当前约 `11309` 行）
+范围：`src/`（当前约 `11629` 行）
 依据：全量代码审查（`/review-code-changes 审查 src 下的所有代码`）
 
 ---
@@ -23,7 +23,7 @@
 | 原文件 | 旧行数 | 新行数 | 新增文件 |
 | --- | --- | --- | --- |
 | `src/orchestrator/core/orchestrator-service.ts` | 403 | 179 | `orchestrator-cron.ts` / `orchestrator-helpers.ts` / `orchestrator-runtime-ops.ts` |
-| `src/manager/loop-batch-run-manager.ts` | 302 | 160 | `loop-batch-intent.ts` / `loop-batch-history.ts` / `loop-batch-run-once.ts` / `loop-batch-stream.ts` |
+| `src/manager/loop-batch-run-manager.ts` | 302 | 189 | `loop-batch-intent.ts` / `loop-batch-history.ts` / `loop-batch-manager-call.ts` / `loop-batch-stream.ts` |
 | `src/providers/codex-sdk-provider.ts` | 232 | 137 | `codex-stream.ts` / `codex-sdk-provider-helpers.ts` |
 | `src/http/routes-api-task-routes.ts` | 226 | 2 | `routes-api-task-archive.ts` / `routes-api-task-cancel.ts` |
 | `src/manager/loop-batch.ts` | 217 | 187 | `loop-batch-pre.ts` |
