@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { logSafeError } from '../log/safe.js'
+
 import type { TokenUsage } from '../types/index.js'
 
 export const tokenUsageSchema = z
@@ -39,7 +41,11 @@ export const parseTokenUsageJson = (raw?: string): TokenUsage | undefined => {
     const validated = tokenUsageSchema.safeParse(parsed)
     if (!validated.success) return undefined
     return normalizeTokenUsage(validated.data)
-  } catch {
+  } catch (error) {
+    const rawPreview = raw.length > 120 ? `${raw.slice(0, 120)}...` : raw
+    void logSafeError('parseTokenUsageJson:json_parse', error, {
+      meta: { rawPreview },
+    })
     return undefined
   }
 }

@@ -1,3 +1,5 @@
+import { logSafeError } from '../log/safe.js'
+
 export const parseFocusOpenItems = (value?: string): string[] | undefined => {
   const normalized = value?.trim()
   if (!normalized) return undefined
@@ -8,7 +10,13 @@ export const parseFocusOpenItems = (value?: string): string[] | undefined => {
         return parsed
           .map((item) => String(item).trim())
           .filter((item) => item.length > 0)
-    } catch {}
+    } catch (error) {
+      const rawPreview =
+        normalized.length > 120 ? `${normalized.slice(0, 120)}...` : normalized
+      void logSafeError('parseFocusOpenItems:json_parse', error, {
+        meta: { rawPreview },
+      })
+    }
   }
   return normalized
     .split('||')

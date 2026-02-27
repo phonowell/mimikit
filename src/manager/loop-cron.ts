@@ -139,7 +139,15 @@ export const checkCronJobs = async (
     let hasNextRun = false
     try {
       hasNextRun = new Cron(cronJob.cron).nextRun() !== null
-    } catch {
+    } catch (error) {
+      await bestEffort('appendLog: cron_next_run_error', () =>
+        appendLog(runtime.paths.log, {
+          event: 'cron_next_run_error',
+          cronJobId: cronJob.id,
+          cron: cronJob.cron,
+          error: error instanceof Error ? error.message : String(error),
+        }),
+      )
       hasNextRun = false
     }
     if (!hasNextRun) {

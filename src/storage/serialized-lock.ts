@@ -1,6 +1,7 @@
 import { createRequire } from 'node:module'
 
 import { ensureFile } from '../fs/paths.js'
+import { logSafeError } from '../log/safe.js'
 
 type LockRelease = () => Promise<void>
 
@@ -27,7 +28,9 @@ export const runSerialized = async <T>(
   fn: () => Promise<T>,
 ): Promise<T> => {
   const previous = updateQueue.get(key) ?? Promise.resolve()
-  const safePrevious = previous.catch(() => undefined)
+  const safePrevious = previous.catch((error) =>
+    logSafeError('runSerialized:previous_failed', error, { meta: { key } }),
+  )
   let releaseQueue!: () => void
   const next = new Promise<void>((resolve) => {
     releaseQueue = resolve

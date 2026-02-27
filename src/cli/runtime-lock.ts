@@ -4,6 +4,8 @@ import { join } from 'node:path'
 
 import type { FileHandle } from 'node:fs/promises'
 
+import { bestEffort, logSafeError } from '../log/safe.js'
+
 type LockRecord = {
   pid: number
   token: string
@@ -16,6 +18,11 @@ export type RuntimeLock = {
 }
 
 const LOCK_FILE_NAME = '.instance.lock'
+
+const getErrorCode = (error: unknown): string =>
+  typeof error === 'object' && error && 'code' in error
+    ? String((error as { code?: string }).code)
+    : ''
 
 const readLockRecord = async (
   path: string,
@@ -41,7 +48,11 @@ const readLockRecord = async (
       token: parsed.token,
       createdAt: parsed.createdAt,
     }
-  } catch {
+  } catch (error) {
+    if (getErrorCode(error) === 'ENOENT') return undefined
+    await logSafeError('runtime_lock:read_lock_record', error, {
+      meta: { path },
+    })
     return undefined
   }
 }
@@ -51,10 +62,7 @@ const isPidAlive = (pid: number): boolean => {
     process.kill(pid, 0)
     return true
   } catch (error) {
-    const code =
-      typeof error === 'object' && error && 'code' in error
-        ? String((error as { code?: string }).code)
-        : ''
+    const code = getErrorCode(error)
     if (code === 'EPERM') return true
     return false
   }
@@ -99,10 +107,7 @@ export const acquireRuntimeLock = async (
       token = acquired.token
       break
     } catch (error) {
-      const code =
-        typeof error === 'object' && error && 'code' in error
-          ? String((error as { code?: string }).code)
-          : ''
+      const code = getErrorCode(error)
       if (code !== 'EEXIST') throw error
       const record = await readLockRecord(lockPath)
       const stale = !record || !isPidAlive(record.pid)
@@ -123,10 +128,16 @@ export const acquireRuntimeLock = async (
     release: async () => {
       if (released) return
       released = true
-      await handle.close().catch(() => undefined)
+      await bestEffort('runtime_lock:close_handle', () => handle.close(), {
+        meta: { lockPath },
+      })
       const record = await readLockRecord(lockPath)
       if (record?.token === token)
-        await rm(lockPath, { force: true }).catch(() => undefined)
+        await bestEffort(
+          'runtime_lock:remove_lock_file',
+          () => rm(lockPath, { force: true }),
+          { meta: { lockPath } },
+        )
     },
   }
 }

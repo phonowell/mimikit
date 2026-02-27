@@ -6,7 +6,7 @@ import getPort, { portNumbers } from 'get-port'
 import { defaultConfig } from '../config.js'
 import { buildPaths } from '../fs/paths.js'
 import { createHttpServer } from '../http/index.js'
-import { setDefaultLogPath } from '../log/safe.js'
+import { bestEffort, setDefaultLogPath } from '../log/safe.js'
 import { Orchestrator } from '../orchestrator/core/orchestrator-service.js'
 import { loadCodexSettings } from '../providers/openai-settings.js'
 
@@ -59,8 +59,12 @@ const resolveHttpPort = async (target: number): Promise<number> => {
 
 const shutdown = async (reason: string, code = 0): Promise<never> => {
   console.log(`\n[cli] ${reason}`)
-  await runtimeLock.release().catch(() => undefined)
-  await orchestrator.stopAndPersist().catch(() => undefined)
+  await bestEffort('cli:release_runtime_lock', () => runtimeLock.release(), {
+    meta: { reason },
+  })
+  await bestEffort('cli:stop_and_persist', () => orchestrator.stopAndPersist(), {
+    meta: { reason },
+  })
   process.exit(code)
 }
 
