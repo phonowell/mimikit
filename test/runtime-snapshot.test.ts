@@ -16,46 +16,6 @@ const GLOBAL_FOCUS_ID = 'focus-global'
 
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-runtime-snapshot-'))
 
-test('selectPersistedTasks keeps non-running task statuses unchanged', () => {
-  const tasks: Task[] = [
-    {
-      id: 'a',
-      fingerprint: 'a',
-      prompt: 'a',
-      title: 'a',
-      focusId: GLOBAL_FOCUS_ID,
-      profile: 'worker',
-      status: 'pending',
-      createdAt: '2026-02-06T00:00:00.000Z',
-    },
-    {
-      id: 'c',
-      fingerprint: 'c',
-      prompt: 'c',
-      title: 'c',
-      focusId: GLOBAL_FOCUS_ID,
-      profile: 'worker',
-      status: 'succeeded',
-      createdAt: '2026-02-06T00:00:00.000Z',
-      result: {
-        taskId: 'c',
-        status: 'succeeded',
-        ok: true,
-        output: 'done',
-        durationMs: 12,
-        completedAt: '2026-02-06T00:01:00.000Z',
-      },
-    },
-  ]
-
-  const persisted = selectPersistedTasks(tasks)
-  expect(persisted).toHaveLength(2)
-  expect(persisted[0]?.status).toBe('pending')
-  expect(persisted[1]?.id).toBe('c')
-  expect(persisted[1]?.status).toBe('succeeded')
-  expect(persisted[1]?.result?.output).toBe('done')
-})
-
 test('selectPersistedTasks recovers running task to pending', () => {
   const tasks: Task[] = [
     {

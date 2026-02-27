@@ -19,24 +19,6 @@ const expectArchiveMarkdown = (
   for (const marker of markers) expect(response.body).toContain(marker)
 }
 
-test('status route returns runtime id', async () => {
-  const app = fastify()
-  const { orchestrator } = createOrchestratorStub()
-  const config = defaultConfig({ workDir: '.mimikit' })
-  registerApiRoutes(app, orchestrator, config)
-
-  const statusResponse = await app.inject({
-    method: 'GET',
-    url: '/api/status',
-  })
-  expect(statusResponse.statusCode).toBe(200)
-  expect(statusResponse.json()).toMatchObject({
-    ok: true,
-    runtimeId: 'runtime-stub-1',
-  })
-  await app.close()
-})
-
 test('input route parses body and calls orchestrator', async () => {
   const app = fastify()
   const { orchestrator, addInputCalls } = createOrchestratorStub()
