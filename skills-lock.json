@@ -5,11 +5,6 @@
       "source": "jgeurts/eslint-config-decent",
       "sourceType": "github",
       "computedHash": "f70bef61146827be70d782e576a44a04fd5646cef8fa5d0c012dac9ed450d9c4"
-    },
-    "typescript-unit-testing": {
-      "source": "bmad-labs/skills",
-      "sourceType": "github",
-      "computedHash": "13bda3f4a1bf2dec1d4d6ed5bfd550691f4703d6cdeba40eb7f1c4895bc067aa"
     }
   }
 }
