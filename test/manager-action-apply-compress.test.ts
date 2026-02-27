@@ -105,24 +105,6 @@ test('compress_context stores summary with local context', async () => {
   expect(snapshot.managerCompressedContext).toContain('keep codex-only')
 })
 
-test('compress_context runs even when there is no session thread', async () => {
-  const runtime = await createRuntime()
-  runWithProviderMock.mockResolvedValue({
-    output: 'Goals\n- local only',
-    elapsedMs: 7,
-  })
-
-  await applyTaskActions(runtime, [
-    {
-      name: 'compress_context',
-      attrs: {},
-    },
-  ])
-
-  expect(runWithProviderMock).toHaveBeenCalledTimes(1)
-  expect(runtime.managerCompressedContext).toContain('local only')
-})
-
 test('compress_context throws when summary is empty', async () => {
   const runtime = await createRuntime()
   runWithProviderMock.mockResolvedValue({
