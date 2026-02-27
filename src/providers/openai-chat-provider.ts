@@ -86,7 +86,7 @@ export const openAiChatProvider: Provider<OpenAiChatProviderRequest> = {
       let output = ''
       let usage: TokenUsage | undefined
       resetIdle()
-      const stream = client.chat.completions.stream(
+      const stream = await client.chat.completions.create(
         {
           model,
           messages: [{ role: 'user', content: request.prompt }],
@@ -95,42 +95,18 @@ export const openAiChatProvider: Provider<OpenAiChatProviderRequest> = {
         },
         { signal: controller.signal },
       )
-      stream.on('content.delta', (event) => {
-        const delta = event.delta
-        if (!delta) return
-        output += delta
-        request.onTextDelta?.(delta)
-        resetIdle()
-      })
-      stream.on('chunk', (chunk) => {
+      for await (const chunk of stream) {
+        const delta = chunk.choices[0]?.delta?.content
+        if (typeof delta === 'string' && delta.length > 0) {
+          output += delta
+          request.onTextDelta?.(delta)
+        }
         const nextUsage = normalizeOpenAiChatUsage(chunk.usage)
-        if (!nextUsage) {
-          resetIdle()
-          return
+        if (nextUsage) {
+          usage = nextUsage
+          request.onUsage?.(nextUsage)
         }
-        usage = nextUsage
-        request.onUsage?.(nextUsage)
         resetIdle()
-      })
-      stream.on('totalUsage', (totalUsage) => {
-        const nextUsage = normalizeOpenAiChatUsage(totalUsage)
-        if (!nextUsage) {
-          resetIdle()
-          return
-        }
-        usage = nextUsage
-        request.onUsage?.(nextUsage)
-        resetIdle()
-      })
-
-      const completion = await stream.finalChatCompletion()
-      const finalOutput = completion.choices[0]?.message?.content
-      if (typeof finalOutput === 'string' && finalOutput.length > 0)
-        output = finalOutput
-      const finalUsage = normalizeOpenAiChatUsage(completion.usage)
-      if (finalUsage) {
-        usage = finalUsage
-        request.onUsage?.(finalUsage)
       }
 
       const elapsedMs = elapsedMsSince(startedAt)
