@@ -6,14 +6,27 @@ import { isAbortLikeError } from './error-utils.js'
 import type { Task, TokenUsage } from '../types/index.js'
 import type { TraceArchiveEntry, TraceArchiveResult } from '../storage/traces-archive.js'
 
-export const DONE_MARKER = '<M:task_done/>'
+export const SKILL_USAGE_DONE_TAG_PATTERN =
+  '<M:skill_usage status="done">{skill-a,skill-b}</M:skill_usage>'
 export const MAX_RUN_ROUNDS = 3
+export const MAX_CONTINUE_LATEST_OUTPUT_CHARS = 1_600
+
+const SKILL_USAGE_DONE_TEST_RE = /<M:skill_usage\b[^>]*\bstatus\s*=\s*(['"])done\1[^>]*>[\s\S]*?<\/M:skill_usage>/i
+const SKILL_USAGE_DONE_STRIP_RE = /<M:skill_usage\b[^>]*\bstatus\s*=\s*(['"])done\1[^>]*>[\s\S]*?<\/M:skill_usage>/gi
 
 export const hasDoneMarker = (output: string): boolean =>
-  output.includes(DONE_MARKER)
+  SKILL_USAGE_DONE_TEST_RE.test(output)
 
 export const stripDoneMarker = (output: string): string =>
-  output.replaceAll(DONE_MARKER, '').trim()
+  output.replace(SKILL_USAGE_DONE_STRIP_RE, '').trim()
+
+const clipLatestOutput = (value: string): string => {
+  const normalized = value.trim()
+  if (normalized.length <= MAX_CONTINUE_LATEST_OUTPUT_CHARS) return normalized
+  return `${normalized
+    .slice(0, MAX_CONTINUE_LATEST_OUTPUT_CHARS - 3)
+    .trimEnd()}...`
+}
 
 export const buildContinuePrompt = (
   template: string,
@@ -24,8 +37,8 @@ export const buildContinuePrompt = (
   renderPromptTemplate(
     template,
     {
-      done_marker: DONE_MARKER,
-      latest_output: latestOutput.trim(),
+      done_tag_pattern: SKILL_USAGE_DONE_TAG_PATTERN,
+      latest_output: clipLatestOutput(latestOutput),
       next_round: String(nextRound),
       max_rounds: String(MAX_RUN_ROUNDS),
     },
@@ -124,7 +137,7 @@ export const runWorkerLoop = async (params: RunLoopParams): Promise<{
     }
 
     throw new Error(
-      `[worker] task incomplete after ${MAX_RUN_ROUNDS} rounds: missing ${DONE_MARKER}; last_output=${JSON.stringify(latestResult?.output.trim() ?? 'empty_output')}`,
+      `[worker] task incomplete after ${MAX_RUN_ROUNDS} rounds: missing M:skill_usage status="done"; last_output=${JSON.stringify(latestResult?.output.trim() ?? 'empty_output')}`,
     )
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error))

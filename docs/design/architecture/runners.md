@@ -37,7 +37,7 @@
 
 1. 构造 worker prompt。
 2. 执行 provider。
-3. 多轮执行直到出现 `DONE` 标记或到达上限轮次。
+3. 多轮执行直到输出出现 `M:skill_usage status="done"` 结束标签或到达上限轮次。
 4. 记录进度并归档最终结果。
 
 ## Provider Runtime

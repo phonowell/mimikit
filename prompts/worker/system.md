@@ -35,7 +35,7 @@
 <M:skill_usage status="{done|blocked|failed}">{skill-a,skill-b}</M:skill_usage>
 ```
 - 模板字段不得缺失；无内容字段统一写“无”。
-- 最后一行必须是 `<M:skill_usage ...>...</M:skill_usage>`；`status=done` 等价于原 `<M:task_done/>` 语义。
+- 最后一行必须是 `<M:skill_usage ...>...</M:skill_usage>`；`status=done` 表示任务已完成。
 - `status` 判定：`done`=目标已完成且无阻塞；`blocked`=存在外部依赖/缺失信息导致无法继续；`failed`=已尝试但发生未解决错误。
 - 一致性约束：`status=done` 时「结论」必须为已完成且「待补充信息」必须为“无”；`status=blocked|failed` 时「结论」必须为未完成。
 - `blocked|failed` 时「问题与解决」至少 1 条；`done` 时可写“无”。
