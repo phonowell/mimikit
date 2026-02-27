@@ -1,15 +1,13 @@
 import { join } from 'node:path'
 
-import read from 'fire-keeper/read'
-
 import { listFiles } from '../fs/paths.js'
+import { readTextFile } from '../fs/read-text.js'
 import { safe } from '../log/safe.js'
 
 import {
   extractArchiveSection,
   parseArchiveDocument,
 } from './archive-format.js'
-import { toUtf8Text } from './jsonl.js'
 import { parseTokenUsageJson } from './token-usage.js'
 
 import type {
@@ -71,8 +69,7 @@ export const readTaskResultArchive = (
   safe(
     'readTaskResultArchive',
     async () => {
-      const raw = await read(path, { raw: true, echo: false })
-      const content = toUtf8Text(raw)
+      const content = await readTextFile(path)
       if (!content) return null
       return parseTaskResultArchive(content, fallbackTaskId, path)
     },

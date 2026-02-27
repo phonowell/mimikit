@@ -33,10 +33,10 @@ export const buildTaskFingerprint = (input: TaskFingerprintInput): string =>
     normalizeFingerprintPart(input.schedule ?? ''),
   ].join('\n')
 
-const isActiveTask = (task: Task): boolean =>
+export const isActiveTask = (task: Task): boolean =>
   task.status === 'pending' || task.status === 'running'
 
-const taskToFingerprintInput = (
+export const taskToFingerprintInput = (
   task: Pick<Task, 'prompt' | 'title' | 'profile' | 'cron' | 'scheduledAt'>,
 ): TaskFingerprintInput => ({
   prompt: task.prompt,

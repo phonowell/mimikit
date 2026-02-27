@@ -1,10 +1,8 @@
 import { logSafeError } from '../log/safe.js'
 import { clearStateDir, parseInputBody } from './helpers.js'
 import { registerEventsRoute } from './routes-api-events.js'
-import {
-  registerTaskArchiveRoute,
-  registerTaskCancelRoute,
-} from './routes-api-task-routes.js'
+import { registerTaskArchiveRoute } from './routes-api-task-archive.js'
+import { registerTaskCancelRoute } from './routes-api-task-cancel.js'
 
 import type { AppConfig } from '../config.js'
 import type { Orchestrator } from '../orchestrator/core/orchestrator-service.js'

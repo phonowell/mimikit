@@ -5,6 +5,7 @@ import backup from 'fire-keeper/backup'
 import { readJson, writeJson } from '../fs/json.js'
 import { ensureFile } from '../fs/paths.js'
 import { logSafeError } from '../log/safe.js'
+import { readErrorCode } from '../shared/error-code.js'
 
 import { parseRuntimeSnapshot } from './runtime-snapshot-schema.js'
 
@@ -30,15 +31,6 @@ const initialRuntimeSnapshot = (): RuntimeSnapshot => ({
 
 const toJsonText = (value: unknown): string =>
   `${JSON.stringify(value, null, 2)}\n`
-
-const readErrorCode = (error: unknown): string | undefined => {
-  if (!error || typeof error !== 'object' || !('code' in error))
-    return undefined
-  const { code } = error as { code?: unknown }
-  if (typeof code === 'string' && code) return code
-  if (typeof code === 'number') return String(code)
-  return undefined
-}
 
 const inspectBackupError = (
   error: unknown,

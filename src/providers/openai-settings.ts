@@ -2,9 +2,9 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 
 import TOML from '@iarna/toml'
-import read from 'fire-keeper/read'
 
 import { readJson } from '../fs/json.js'
+import { readTextFileIfExists } from '../fs/read-text.js'
 import { safe } from '../log/safe.js'
 import { stripUndefined } from '../shared/utils.js'
 
@@ -59,18 +59,11 @@ const valueRecord = (value: unknown): Record<string, unknown> | undefined => {
 
 const readCodexConfig = async (): Promise<Record<string, unknown>> => {
   const path = codexConfigPath()
-  const raw = await safe(
+  const text = await safe(
     'readCodexConfig: readFile',
-    () => read(path, { raw: true, echo: false }),
-    { fallback: null, meta: { path }, ignoreCodes: ['ENOENT'] },
+    () => readTextFileIfExists(path),
+    { fallback: '', meta: { path } },
   )
-  if (!raw) return {}
-  const text =
-    typeof raw === 'string'
-      ? raw
-      : Buffer.isBuffer(raw)
-        ? raw.toString('utf8')
-        : ''
   if (!text.trim()) return {}
   const parsed = await safe(
     'readCodexConfig: parseToml',

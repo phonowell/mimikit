@@ -1,4 +1,9 @@
-import { resetUiStream, setUiStreamText, setUiStreamUsage, toVisibleAgentText } from './loop-ui-stream.js'
+import {
+  resetUiStream,
+  setUiStreamText,
+  setUiStreamUsage,
+  toVisibleAgentText,
+} from './loop-ui-stream.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { TokenUsage } from '../types/index.js'
@@ -14,12 +19,6 @@ export const createManagerStreamController = (params: {
   let streamUsage: TokenUsage | undefined
   let streamFlushTimer: ReturnType<typeof setTimeout> | null = null
 
-  const clearStreamFlushTimer = (): void => {
-    if (!streamFlushTimer) return
-    clearTimeout(streamFlushTimer)
-    streamFlushTimer = null
-  }
-
   const flushVisibleStream = (): void => {
     streamFlushTimer = null
     const nextVisible = toVisibleAgentText(streamRawOutput)
@@ -31,6 +30,12 @@ export const createManagerStreamController = (params: {
     streamUsage =
       setUiStreamUsage(params.runtime, params.streamId, streamUsage) ??
       streamUsage
+  }
+
+  const clearStreamFlushTimer = (): void => {
+    if (!streamFlushTimer) return
+    clearTimeout(streamFlushTimer)
+    streamFlushTimer = null
   }
 
   const scheduleVisibleStreamFlush = (): void => {

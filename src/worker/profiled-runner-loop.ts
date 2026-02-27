@@ -1,6 +1,7 @@
 import { mergeUsageAdditive } from '../shared/token-usage.js'
 import { appendTraceArchiveResult } from '../storage/traces-archive.js'
 import { renderPromptTemplate } from '../prompts/format.js'
+import { isAbortLikeError } from './error-utils.js'
 
 import type { Task, TokenUsage } from '../types/index.js'
 import type { TraceArchiveEntry, TraceArchiveResult } from '../storage/traces-archive.js'
@@ -13,9 +14,6 @@ export const hasDoneMarker = (output: string): boolean =>
 
 export const stripDoneMarker = (output: string): string =>
   output.replaceAll(DONE_MARKER, '').trim()
-
-export const isAbortLikeError = (error: Error): boolean =>
-  error.name === 'AbortError' || /aborted|canceled/i.test(error.message)
 
 export const buildContinuePrompt = (
   template: string,

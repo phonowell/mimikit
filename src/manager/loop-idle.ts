@@ -7,6 +7,7 @@ import { formatSystemEventText } from '../shared/system-event.js'
 import { newId, sleep } from '../shared/utils.js'
 import { appendHistory } from '../history/store.js'
 
+import { hasNonIdleManagerInput } from './idle-input.js'
 import { publishManagerSystemEventInput } from './system-input-event.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
@@ -19,13 +20,6 @@ const hasPendingOrRunningTask = (runtime: RuntimeState): boolean =>
     (task) => task.status === 'pending' || task.status === 'running',
   )
 
-const isIdleSystemInput = (
-  input: RuntimeState['inflightInputs'][number],
-): boolean => input.role === 'system' && input.text.includes('name="idle"')
-
-const hasNonIdleInflightInputs = (runtime: RuntimeState): boolean =>
-  runtime.inflightInputs.some((input) => !isIdleSystemInput(input))
-
 const isWorkerBusy = (runtime: RuntimeState): boolean =>
   runtime.runningControllers.size > 0 ||
   runtime.workerQueue.size > 0 ||
@@ -34,7 +28,7 @@ const isWorkerBusy = (runtime: RuntimeState): boolean =>
 const isManagerBusy = (runtime: RuntimeState): boolean =>
   runtime.managerRunning ||
   runtime.managerWakePending ||
-  hasNonIdleInflightInputs(runtime)
+  hasNonIdleManagerInput(runtime.inflightInputs)
 
 const markExhaustedIntentsBlocked = (
   runtime: RuntimeState,

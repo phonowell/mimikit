@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import type { FileHandle } from 'node:fs/promises'
 
 import { bestEffort, logSafeError } from '../log/safe.js'
+import { readErrorCode } from '../shared/error-code.js'
 
 type LockRecord = {
   pid: number
@@ -18,11 +19,6 @@ export type RuntimeLock = {
 }
 
 const LOCK_FILE_NAME = '.instance.lock'
-
-const getErrorCode = (error: unknown): string =>
-  typeof error === 'object' && error && 'code' in error
-    ? String((error as { code?: string }).code)
-    : ''
 
 const readLockRecord = async (
   path: string,
@@ -49,7 +45,7 @@ const readLockRecord = async (
       createdAt: parsed.createdAt,
     }
   } catch (error) {
-    if (getErrorCode(error) === 'ENOENT') return undefined
+    if (readErrorCode(error) === 'ENOENT') return undefined
     await logSafeError('runtime_lock:read_lock_record', error, {
       meta: { path },
     })
@@ -62,7 +58,7 @@ const isPidAlive = (pid: number): boolean => {
     process.kill(pid, 0)
     return true
   } catch (error) {
-    const code = getErrorCode(error)
+    const code = readErrorCode(error) ?? ''
     if (code === 'EPERM') return true
     return false
   }
@@ -107,7 +103,7 @@ export const acquireRuntimeLock = async (
       token = acquired.token
       break
     } catch (error) {
-      const code = getErrorCode(error)
+      const code = readErrorCode(error) ?? ''
       if (code !== 'EEXIST') throw error
       const record = await readLockRecord(lockPath)
       const stale = !record || !isPidAlive(record.pid)

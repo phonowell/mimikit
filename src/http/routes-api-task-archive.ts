@@ -1,8 +1,9 @@
 import { isAbsolute, relative, resolve } from 'node:path'
 
-import read from 'fire-keeper/read'
-
+import { readTextFile } from '../fs/read-text.js'
 import { buildArchiveDocument } from '../storage/archive-format.js'
+import { readErrorCode } from '../shared/error-code.js'
+import { resolveRouteId } from './route-params.js'
 
 import type { AppConfig } from '../config.js'
 import type { Orchestrator } from '../orchestrator/core/orchestrator-service.js'
@@ -11,32 +12,12 @@ import type { FastifyInstance, FastifyReply } from 'fastify'
 
 const MARKDOWN_CONTENT_TYPE = 'text/markdown; charset=utf-8'
 
-const resolveRouteId = (
-  params: unknown,
-  reply: FastifyReply,
-  field: 'task',
-): string | undefined => {
-  const id =
-    params && typeof params === 'object' && 'id' in params
-      ? (params as { id?: unknown }).id
-      : undefined
-  const value = typeof id === 'string' ? id.trim() : ''
-  if (value) return value
-  reply.code(400).send({ error: `${field} id is required` })
-  return undefined
-}
-
 const isWithinRoot = (root: string, path: string): boolean => {
   const rel = relative(root, path)
   if (!rel) return true
   if (rel.startsWith('..')) return false
   return !isAbsolute(rel)
 }
-
-const readErrorCode = (error: unknown): string | undefined =>
-  typeof error === 'object' && error && 'code' in error
-    ? String((error as { code?: unknown }).code)
-    : undefined
 
 const resolveTaskArchiveTarget = (
   params: unknown,
@@ -172,17 +153,11 @@ export const registerTaskArchiveRoute = (
     }
 
     try {
-      const raw = await read(resolvedArchivePath, { raw: true, echo: false })
-      if (!raw) {
+      const content = await readTextFile(resolvedArchivePath)
+      if (!content) {
         sendLiveArchive(reply, resolved.task)
         return
       }
-      const content =
-        typeof raw === 'string'
-          ? raw
-          : Buffer.isBuffer(raw)
-            ? raw.toString('utf8')
-            : ''
       reply.type(MARKDOWN_CONTENT_TYPE).send(content)
     } catch (error) {
       if (readErrorCode(error) === 'ENOENT') {

@@ -20,12 +20,6 @@ const jsonlParserFactory = require('stream-json/jsonl/Parser') as {
   }) => NodeJS.ReadWriteStream
 }
 
-export const toUtf8Text = (raw: unknown): string => {
-  if (typeof raw === 'string') return raw
-  if (Buffer.isBuffer(raw)) return raw.toString('utf8')
-  return ''
-}
-
 const readJsonlValues = async (path: string): Promise<unknown[]> => {
   const parserErrors: Array<{ error: unknown; line: string }> = []
   const values: unknown[] = []

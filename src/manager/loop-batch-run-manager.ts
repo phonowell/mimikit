@@ -14,10 +14,15 @@ import { mergeUsageAdditive } from '../shared/token-usage.js'
 import { collectManagerActionFeedback } from './action-feedback-collect.js'
 import { pickQueryHistoryRequest } from '../history/query.js'
 import { appendActionFeedbackSystemMessage } from '../history/manager-events.js'
-import { buildHistoryQueryKey, queryHistoryLookup } from './loop-batch-history.js'
-import { collectTriggeredIntentIds } from './loop-batch-intent.js'
-import { runManagerRoundWithRecovery } from './loop-batch-manager-call.js'
-import { createManagerStreamController } from './loop-batch-stream.js'
+import {
+  buildHistoryQueryKey,
+  collectTriggeredIntentIds,
+  queryHistoryLookup,
+} from './loop-batch-context.js'
+import {
+  runManagerRoundWithRecovery,
+} from './loop-batch-exec.js'
+import { createManagerStreamController } from './loop-batch-stream-controller.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type {

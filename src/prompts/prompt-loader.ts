@@ -1,8 +1,7 @@
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import read from 'fire-keeper/read'
-
+import { readTextFile } from '../fs/read-text.js'
 import { logSafeError } from '../log/safe.js'
 
 const PROMPTS_ROOT = fileURLToPath(new URL('../../prompts/', import.meta.url))
@@ -12,10 +11,7 @@ const readPromptByPath = async (
   allowMissing = true,
 ): Promise<string> => {
   try {
-    const content = await read(path, { raw: true, echo: false })
-    if (!content) return ''
-    if (Buffer.isBuffer(content)) return content.toString('utf8')
-    return typeof content === 'string' ? content : ''
+    return await readTextFile(path)
   } catch (error) {
     const code =
       typeof error === 'object' && error && 'code' in error

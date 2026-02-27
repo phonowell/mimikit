@@ -4,6 +4,7 @@ import { dirname, join } from 'node:path'
 import mkdir from 'fire-keeper/mkdir'
 
 import { safe } from '../log/safe.js'
+import { readErrorCode } from '../shared/error-code.js'
 
 import type { Dirent } from 'node:fs'
 
@@ -48,13 +49,6 @@ export const ensureDir = async (path: string): Promise<void> => {
   await mkdir(path, { echo: false })
 }
 
-const getErrorCode = (error: unknown): string | undefined => {
-  if (!error || typeof error !== 'object' || !('code' in error))
-    return undefined
-  const { code } = error as { code?: unknown }
-  return typeof code === 'string' ? code : undefined
-}
-
 export const ensureFile = async (
   path: string,
   initialContent: string,
@@ -63,7 +57,7 @@ export const ensureFile = async (
   try {
     await access(path)
   } catch (error) {
-    const code = getErrorCode(error)
+    const code = readErrorCode(error)
     if (code && code !== 'ENOENT') throw error
     await writeFile(path, initialContent, 'utf8')
   }

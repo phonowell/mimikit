@@ -1,7 +1,11 @@
 import { GLOBAL_FOCUS_ID } from '../../focus/index.js'
 import { newId, nowIso, titleFromCandidates } from '../../shared/utils.js'
 
-import { buildTaskFingerprint } from './task-state.js'
+import {
+  buildTaskFingerprint,
+  isActiveTask,
+  taskToFingerprintInput,
+} from './task-state.js'
 
 import type { FocusId, Task, TaskStatus, WorkerProfile } from '../../types/index.js'
 
@@ -20,18 +24,6 @@ const resolveFingerprintTitle = (prompt: string, title?: string): string => {
   if (normalizedPrompt) return normalizedPrompt
   return prompt
 }
-
-const isActiveTask = (task: Task): boolean =>
-  task.status === 'pending' || task.status === 'running'
-
-type TaskFingerprintInput = Pick<Task, 'prompt' | 'title' | 'profile' | 'cron' | 'scheduledAt'>
-
-const taskToFingerprintInput = (task: TaskFingerprintInput) => ({
-  prompt: task.prompt,
-  title: task.title,
-  profile: task.profile,
-  ...(task.cron ? { schedule: task.cron } : task.scheduledAt ? { schedule: task.scheduledAt } : {}),
-})
 
 export const createTask = (
   prompt: string,

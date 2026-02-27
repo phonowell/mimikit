@@ -1,9 +1,9 @@
-import read from 'fire-keeper/read'
-
 import { buildFocusPromptPayload } from '../focus/index.js'
 import { buildPaths } from '../fs/paths.js'
+import { readTextFileIfExists } from '../fs/read-text.js'
 import { readHistory } from '../history/store.js'
 import { readTaskResultsForTasks } from '../storage/task-results.js'
+import { readErrorCode } from '../shared/error-code.js'
 
 import { escapeCdata } from './format-base.js'
 import {
@@ -73,16 +73,9 @@ const buildTaskResultDateHints = (tasks: Task[]): Record<string, string> =>
 
 const readOptionalMarkdown = async (path: string): Promise<string> => {
   try {
-    const content = await read(path, { raw: true, echo: false })
-    if (!content) return ''
-    if (Buffer.isBuffer(content)) return content.toString('utf8')
-    return typeof content === 'string' ? content : ''
+    return await readTextFileIfExists(path)
   } catch (error) {
-    const code =
-      typeof error === 'object' && error && 'code' in error
-        ? String((error as { code?: string }).code)
-        : undefined
-    if (code === 'ENOENT') return ''
+    if (readErrorCode(error) === 'ENOENT') return ''
     throw error
   }
 }

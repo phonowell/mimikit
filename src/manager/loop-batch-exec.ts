@@ -42,14 +42,12 @@ const resolveWakeProfile = (
   const hasIdleWake = inputs.some(
     (item) => hasSystemEvent(item, 'idle') || hasSystemEvent(item, 'intent_trigger'),
   )
-
   const activeKinds = [
     hasUserInput,
     hasTaskResult,
     hasCronWake,
     hasIdleWake,
   ].filter(Boolean).length
-
   if (activeKinds !== 1) return 'mixed'
   if (hasUserInput) return 'user_input'
   if (hasTaskResult) return 'task_result'
@@ -87,55 +85,47 @@ export const runManagerRoundWithRecovery = async (params: {
 }): Promise<{ output: string; elapsedMs: number; usage?: TokenUsage }> => {
   const wakeProfile = resolveWakeProfile(params.inputs, params.results)
   const managerEnv = buildManagerEnv(params.runtime, wakeProfile)
-
-  const runSingleRound = async (): Promise<{
-    output: string
-    elapsedMs: number
-    usage?: TokenUsage
-  }> => {
-    let callUsage: TokenUsage | undefined
-    const result = await runManager({
-      stateDir: params.runtime.config.workDir,
-      workDir: params.runtime.config.workDir,
-      inputs: params.inputs,
-      results: params.results,
-      tasks: params.tasks,
-      intents: params.intents,
-      cronJobs: params.runtime.cronJobs,
-      focuses: params.runtime.focuses,
-      focusContexts: params.runtime.focusContexts,
-      activeFocusIds: params.runtime.activeFocusIds,
-      workingFocusIds: params.workingFocusIds,
-      ...(params.extra.historyLookup
-        ? { historyLookup: params.extra.historyLookup }
-        : {}),
-      ...(params.extra.actionFeedback
-        ? { actionFeedback: params.extra.actionFeedback }
-        : {}),
-      ...(params.runtime.managerCompressedContext
-        ? { compressedContext: params.runtime.managerCompressedContext }
-        : {}),
-      ...(managerEnv ? { env: managerEnv } : {}),
-      model: params.runtime.config.manager.model,
-      maxPromptTokens: params.runtime.config.manager.prompt.maxTokens,
-      onTextDelta: params.onTextDelta,
-      onUsage: (usage) => {
-        callUsage = usage
-        params.onUsage(usage)
-      },
-    })
-    const resolvedUsage = result.usage ?? callUsage
-    return {
-      output: result.output,
-      elapsedMs: result.elapsedMs,
-      ...(resolvedUsage !== undefined ? { usage: resolvedUsage } : {}),
-    }
-  }
-
   let attemptedAutoCompress = false
+
   for (;;) {
     try {
-      return await runSingleRound()
+      let callUsage: TokenUsage | undefined
+      const result = await runManager({
+        stateDir: params.runtime.config.workDir,
+        workDir: params.runtime.config.workDir,
+        inputs: params.inputs,
+        results: params.results,
+        tasks: params.tasks,
+        intents: params.intents,
+        cronJobs: params.runtime.cronJobs,
+        focuses: params.runtime.focuses,
+        focusContexts: params.runtime.focusContexts,
+        activeFocusIds: params.runtime.activeFocusIds,
+        workingFocusIds: params.workingFocusIds,
+        ...(params.extra.historyLookup
+          ? { historyLookup: params.extra.historyLookup }
+          : {}),
+        ...(params.extra.actionFeedback
+          ? { actionFeedback: params.extra.actionFeedback }
+          : {}),
+        ...(params.runtime.managerCompressedContext
+          ? { compressedContext: params.runtime.managerCompressedContext }
+          : {}),
+        ...(managerEnv ? { env: managerEnv } : {}),
+        model: params.runtime.config.manager.model,
+        maxPromptTokens: params.runtime.config.manager.prompt.maxTokens,
+        onTextDelta: params.onTextDelta,
+        onUsage: (usage) => {
+          callUsage = usage
+          params.onUsage(usage)
+        },
+      })
+      const resolvedUsage = result.usage ?? callUsage
+      return {
+        output: result.output,
+        elapsedMs: result.elapsedMs,
+        ...(resolvedUsage ? { usage: resolvedUsage } : {}),
+      }
     } catch (error) {
       if (attemptedAutoCompress || !isContextLimitError(error)) throw error
       attemptedAutoCompress = true

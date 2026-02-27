@@ -1,4 +1,5 @@
 import { appendLog } from './append.js'
+import { readErrorCode } from '../shared/error-code.js'
 
 type SafeErrorInfo = {
   message: string
@@ -44,15 +45,6 @@ const normalizeError = (error: unknown): SafeErrorInfo => {
   return { message: String(error) }
 }
 
-const getErrorCode = (error: unknown): string | undefined => {
-  if (!error || typeof error !== 'object' || !('code' in error))
-    return undefined
-  const { code } = error as { code?: unknown }
-  if (typeof code === 'string' && code) return code
-  if (typeof code === 'number') return String(code)
-  return undefined
-}
-
 export const logSafeError = async (
   context: string,
   error: unknown,
@@ -87,7 +79,7 @@ export const safe = async <T>(
   try {
     return await fn()
   } catch (error) {
-    const code = getErrorCode(error)
+    const code = readErrorCode(error)
     const shouldIgnore =
       code && options.ignoreCodes ? options.ignoreCodes.includes(code) : false
     if (!shouldIgnore) await logSafeError(context, error, options)

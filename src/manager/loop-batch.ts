@@ -21,8 +21,8 @@ import {
 } from './loop-helpers.js'
 import {
   applyIntentCompletionCooldown,
-  hasNonIdleManagerInput,
 } from './loop-batch-pre.js'
+import { hasNonIdleManagerInput } from './idle-input.js'
 import { startUiStream, stopUiStream } from './loop-ui-stream.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
