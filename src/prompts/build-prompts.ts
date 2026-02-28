@@ -14,6 +14,7 @@ import {
   formatHistoryLookup,
   formatInputs,
   formatIntentsYaml,
+  formatReadFileLookup,
   formatRecentHistory,
   formatResultsYaml,
   formatTasksYaml,
@@ -30,6 +31,7 @@ import type {
   IdleIntent,
   ManagerActionFeedback,
   ManagerEnv,
+  ReadFileLookupMessage,
   Task,
   TaskResult,
   UserInput,
@@ -89,6 +91,7 @@ export const buildManagerPrompt = async (params: {
   intents?: IdleIntent[]
   cronJobs?: CronJob[]
   historyLookup?: HistoryLookupMessage[]
+  readFileLookup?: ReadFileLookupMessage[]
   actionFeedback?: ManagerActionFeedback[]
   compressedContext?: string
   env?: ManagerEnv
@@ -156,6 +159,7 @@ export const buildManagerPrompt = async (params: {
     history_lookup: escapeCdata(
       formatHistoryLookup(params.historyLookup ?? []),
     ),
+    file_lookup: escapeCdata(formatReadFileLookup(params.readFileLookup ?? [])),
     action_feedback: escapeCdata(
       formatActionFeedback(params.actionFeedback ?? []),
     ),

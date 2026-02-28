@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { readFileToolSchema } from './read-file-tool.js'
+
 import type { Parsed } from '../actions/model/spec.js'
 
 const nonEmptyString = z.string().trim().min(1)
@@ -54,6 +56,8 @@ export const cancelSchema = z
     id: nonEmptyString,
   })
   .strict()
+
+export const readFileSchema = readFileToolSchema
 
 export const compressContextSchema = z.object({}).strict()
 

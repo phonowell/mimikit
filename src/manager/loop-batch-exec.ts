@@ -10,6 +10,7 @@ import type {
   ManagerActionFeedback,
   ManagerEnv,
   ManagerWakeProfile,
+  ReadFileLookupMessage,
   Task,
   TaskResult,
   TokenUsage,
@@ -80,6 +81,7 @@ export const runManagerRoundWithRecovery = async (params: {
   workingFocusIds: string[]
   extra: {
     historyLookup?: HistoryLookupMessage[]
+    readFileLookup?: ReadFileLookupMessage[]
     actionFeedback?: ManagerActionFeedback[]
   }
   onTextDelta: (delta: string) => void
@@ -106,6 +108,9 @@ export const runManagerRoundWithRecovery = async (params: {
         workingFocusIds: params.workingFocusIds,
         ...(params.extra.historyLookup
           ? { historyLookup: params.extra.historyLookup }
+          : {}),
+        ...(params.extra.readFileLookup
+          ? { readFileLookup: params.extra.readFileLookup }
           : {}),
         ...(params.extra.actionFeedback
           ? { actionFeedback: params.extra.actionFeedback }

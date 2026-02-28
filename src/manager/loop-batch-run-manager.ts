@@ -17,8 +17,11 @@ import { mergeUsageAdditive } from '../shared/token-usage.js'
 import { collectManagerActionFeedback } from './action-feedback-collect.js'
 import {
   buildHistoryQueryKey,
+  buildReadFileLookupKey,
   collectTriggeredIntentIds,
+  pickReadFileRequest,
   queryHistoryLookup,
+  queryReadFileLookup,
 } from './loop-batch-context.js'
 import { runManagerRoundWithRecovery } from './loop-batch-exec.js'
 import { createManagerStreamController } from './loop-batch-stream-controller.js'
@@ -27,6 +30,7 @@ import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type {
   HistoryLookupMessage,
   ManagerActionFeedback,
+  ReadFileLookupMessage,
   TaskResult,
   TokenUsage,
   UserInput,
@@ -73,9 +77,10 @@ export const runManagerBatch = async (params: {
 
   let elapsedMs = 0
   let batchUsage: TokenUsage | undefined
-  let previousQueryKey: string | undefined
+  let previousLookupKey: string | undefined
   let extra: {
     historyLookup?: HistoryLookupMessage[]
+    readFileLookup?: ReadFileLookupMessage[]
     actionFeedback?: ManagerActionFeedback[]
   } = {}
   let lastParsed = parseActions('')
@@ -131,9 +136,15 @@ export const runManagerBatch = async (params: {
       })
 
       const queryRequest = pickQueryHistoryRequest(parsed.actions)
+      const readFileRequest = pickReadFileRequest(parsed.actions)
       const queryKey = buildHistoryQueryKey(queryRequest)
+      const readFileKey = buildReadFileLookupKey(readFileRequest)
+      const lookupKey =
+        queryKey || readFileKey
+          ? `${queryKey ?? ''}\n---\n${readFileKey ?? ''}`
+          : undefined
 
-      if (!queryRequest && actionFeedback.length === 0) {
+      if (!queryRequest && !readFileRequest && actionFeedback.length === 0) {
         stream.commitParsedText(parsed.text)
         return {
           parsed,
@@ -143,15 +154,18 @@ export const runManagerBatch = async (params: {
       }
 
       if (
-        queryKey &&
+        lookupKey &&
         actionFeedback.length === 0 &&
-        previousQueryKey === queryKey
+        previousLookupKey === lookupKey
       )
-        throw new Error('manager_query_history_repeated_without_progress')
+        throw new Error('manager_internal_lookup_repeated_without_progress')
 
-      previousQueryKey = queryKey
+      previousLookupKey = lookupKey
 
-      const historyLookup = await queryHistoryLookup(runtime, queryRequest)
+      const [historyLookup, readFileLookup] = await Promise.all([
+        queryHistoryLookup(runtime, queryRequest),
+        queryReadFileLookup(runtime, readFileRequest),
+      ])
       if (actionFeedback.length > 0) {
         await appendLog(runtime.paths.log, {
           event: 'manager_action_feedback',
@@ -169,6 +183,7 @@ export const runManagerBatch = async (params: {
       stream.resetCycle()
       extra = {
         ...(historyLookup ? { historyLookup } : {}),
+        ...(readFileLookup ? { readFileLookup } : {}),
         ...(actionFeedback.length > 0 ? { actionFeedback } : {}),
       }
     }

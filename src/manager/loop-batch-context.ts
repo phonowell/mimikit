@@ -3,9 +3,22 @@ import { readHistory } from '../history/store.js'
 import { appendLog } from '../log/append.js'
 import { logSafeError } from '../log/safe.js'
 
+import { runReadFileTool } from './read-file-tool.js'
+
+import type { ReadFileRequest } from './read-file-tool.js'
 import type { QueryHistoryRequest } from '../history/query.js'
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
-import type { HistoryLookupMessage, UserInput } from '../types/index.js'
+import type {
+  HistoryLookupMessage,
+  ReadFileLookupMessage,
+  UserInput,
+} from '../types/index.js'
+
+export {
+  buildReadFileLookupKey,
+  pickReadFileRequest,
+  type ReadFileRequest,
+} from './read-file-tool.js'
 
 const INTENT_TRIGGER_EVENT_RE =
   /<M:system_event[^>]*name="intent_trigger"[^>]*>([\s\S]*?)<\/M:system_event>/g
@@ -74,4 +87,32 @@ export const queryHistoryLookup = async (
     ...(queryRequest.toMs !== undefined ? { toMs: queryRequest.toMs } : {}),
   })
   return historyLookup
+}
+
+export const queryReadFileLookup = async (
+  runtime: RuntimeState,
+  request?: ReadFileRequest,
+): Promise<ReadFileLookupMessage[] | undefined> => {
+  if (!request) return undefined
+  const result = await runReadFileTool({
+    workDir: runtime.config.workDir,
+    request,
+  })
+  await appendLog(runtime.paths.log, {
+    event: 'manager_read_file',
+    path: result.path,
+    status: result.status,
+    fromLine: request.fromLine,
+    maxLines: request.maxLines,
+    maxChars: request.maxChars,
+    ...(result.status === 'ok'
+      ? {
+          lineCount: result.lineCount ?? 0,
+          totalLines: result.totalLines ?? 0,
+          chars: result.chars ?? 0,
+          truncated: result.truncated ?? false,
+        }
+      : { error: result.error ?? 'unknown_error' }),
+  })
+  return [result]
 }

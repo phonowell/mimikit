@@ -15,6 +15,7 @@ import type {
   IdleIntent,
   ManagerActionFeedback,
   ManagerEnv,
+  ReadFileLookupMessage,
   Task,
   TaskResult,
   TokenUsage,
@@ -33,6 +34,7 @@ export const runManager = async (params: {
   intents?: IdleIntent[]
   cronJobs?: CronJob[]
   historyLookup?: HistoryLookupMessage[]
+  readFileLookup?: ReadFileLookupMessage[]
   actionFeedback?: ManagerActionFeedback[]
   compressedContext?: string
   env?: ManagerEnv
@@ -58,6 +60,7 @@ export const runManager = async (params: {
     ...(params.intents ? { intents: params.intents } : {}),
     ...(params.cronJobs ? { cronJobs: params.cronJobs } : {}),
     ...(params.historyLookup ? { historyLookup: params.historyLookup } : {}),
+    ...(params.readFileLookup ? { readFileLookup: params.readFileLookup } : {}),
     ...(params.actionFeedback ? { actionFeedback: params.actionFeedback } : {}),
     ...(params.compressedContext
       ? { compressedContext: params.compressedContext }

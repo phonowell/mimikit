@@ -101,6 +101,20 @@ test('collectManagerActionFeedback reports invalid query_history date args', () 
   expect(feedback[0]?.error).toBe('invalid_action_args')
 })
 
+test('collectManagerActionFeedback reports invalid read_file args when path is empty', () => {
+  const feedback = collectManagerActionFeedback([
+    {
+      name: 'read_file',
+      attrs: {
+        path: '',
+      },
+    },
+  ])
+  expect(feedback).toHaveLength(1)
+  expect(feedback[0]?.action).toBe('read_file')
+  expect(feedback[0]?.error).toBe('invalid_action_args')
+})
+
 test('collectManagerActionFeedback rejects compress_context when context is unavailable', () => {
   const feedback = collectManagerActionFeedback([
     {

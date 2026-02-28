@@ -10,6 +10,7 @@ import type {
   HistoryLookupMessage,
   HistoryMessage,
   ManagerActionFeedback,
+  ReadFileLookupMessage,
   UserInput,
 } from '../types/index.js'
 
@@ -106,6 +107,38 @@ export const formatHistoryLookup = (lookup: HistoryLookupMessage[]): string => {
   return escapeCdata(
     stringifyPromptYaml({
       messages: sorted,
+    }),
+  )
+}
+
+export const formatReadFileLookup = (
+  lookup: ReadFileLookupMessage[],
+): string => {
+  if (lookup.length === 0) return ''
+  const entries = lookup
+    .map((item) => {
+      const path = item.path.trim()
+      if (!path) return null
+      return {
+        path,
+        status: item.status,
+        encoding: item.encoding,
+        ...(item.chars !== undefined ? { chars: item.chars } : {}),
+        ...(item.fromLine !== undefined ? { from_line: item.fromLine } : {}),
+        ...(item.lineCount !== undefined ? { line_count: item.lineCount } : {}),
+        ...(item.totalLines !== undefined
+          ? { total_lines: item.totalLines }
+          : {}),
+        ...(item.truncated !== undefined ? { truncated: item.truncated } : {}),
+        ...(item.error ? { error: item.error.trim() } : {}),
+        ...(item.content !== undefined ? { content: item.content } : {}),
+      }
+    })
+    .filter((item): item is NonNullable<typeof item> => item !== null)
+  if (entries.length === 0) return ''
+  return escapeCdata(
+    stringifyPromptYaml({
+      files: entries,
     }),
   )
 }

@@ -5,6 +5,7 @@ import { hasForbiddenWorkerStatePath } from './action-apply-guards.js'
 import {
   cancelSchema,
   compressContextSchema,
+  readFileSchema,
   runTaskSchema,
   scheduleTaskSchema,
 } from './action-apply-schema.js'
@@ -138,6 +139,11 @@ export const validateQueryHistory = (item: Parsed): ValidationIssue[] => {
     }
   }
   return []
+}
+
+export const validateReadFile = (item: Parsed): ValidationIssue[] => {
+  const parsed = readFileSchema.safeParse(item.attrs)
+  return parsed.success ? [] : [invalidArgsIssue(parsed.error)]
 }
 
 export const validateCompressContext = (

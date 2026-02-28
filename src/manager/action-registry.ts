@@ -34,6 +34,7 @@ import {
   validateCompressContext,
   validateIntentById,
   validateQueryHistory,
+  validateReadFile,
   validateRunTask,
   validateScheduleTask,
   validateWithSchema,
@@ -146,6 +147,11 @@ const ACTION_DEFINITIONS = [
     apply: continueApply,
   },
   {
+    name: 'read_file',
+    validate: (item: Parsed) => validateReadFile(item),
+    apply: continueApply,
+  },
+  {
     name: 'restart_runtime',
     validate: (item: Parsed) => validateWithSchema(item, restartSchema),
     apply: async (runtime: RuntimeState, item: Parsed) => {
@@ -202,6 +208,6 @@ export const applyRegisteredManagerAction = (
   context: ApplyContext,
 ): Promise<ApplyResult> => {
   const definition = MANAGER_ACTION_REGISTRY.get(item.name)
-  if (!definition) return 'continue'
+  if (!definition) return Promise.resolve('continue')
   return definition.apply(runtime, item, context)
 }
