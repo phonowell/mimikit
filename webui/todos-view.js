@@ -1,4 +1,4 @@
-import { formatTime } from './messages/format.js'
+import { formatDisplayTime } from './messages/format.js'
 import { UI_TEXT } from './system-text.js'
 
 const PRIORITY_TEXT = Object.freeze({
@@ -102,7 +102,7 @@ export const renderTodos = (todosList, data) => {
     if (changedAt) {
       const time = document.createElement('span')
       time.className = 'todo-time'
-      time.textContent = formatTime(changedAt)
+      time.textContent = formatDisplayTime(changedAt)
       meta.appendChild(time)
     }
 

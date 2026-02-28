@@ -1,20 +1,215 @@
-export function formatTime(iso) {
+const DEFAULT_LOCALE = 'en-US'
+const DAY_MS = 24 * 60 * 60 * 1000
+const numericPattern = /^-?\d+(?:\.\d+)?$/u
+const localDateTimePattern =
+  /^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2})(?::(\d{2}))?)?$/u
+const trailingTimeZonePattern = /(?:Z|[+-]\d{2}:?\d{2})$/iu
+
+const resolvedTimeZone = (() => {
   try {
-    return new Date(iso).toLocaleTimeString()
-  } catch (error) {
-    console.warn('[webui] formatTime failed', error)
-    return ''
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+  } catch {
+    return 'UTC'
   }
+})()
+
+const getFormatterKey = (locale, timeZone) => `${locale}::${timeZone}`
+const timeFormatterCache = new Map()
+const weekdayFormatterCache = new Map()
+const datePartsFormatterCache = new Map()
+
+const getTimeFormatter = (locale, timeZone) => {
+  const key = getFormatterKey(locale, timeZone)
+  const cached = timeFormatterCache.get(key)
+  if (cached) return cached
+  const formatter = new Intl.DateTimeFormat(locale, {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone,
+  })
+  timeFormatterCache.set(key, formatter)
+  return formatter
 }
 
-export function formatDateTime(iso) {
-  try {
-    return new Date(iso).toLocaleString()
-  } catch (error) {
-    console.warn('[webui] formatDateTime failed', error)
-    return ''
-  }
+const getWeekdayFormatter = (locale, timeZone) => {
+  const key = getFormatterKey(locale, timeZone)
+  const cached = weekdayFormatterCache.get(key)
+  if (cached) return cached
+  const formatter = new Intl.DateTimeFormat(locale, {
+    weekday: 'short',
+    timeZone,
+  })
+  weekdayFormatterCache.set(key, formatter)
+  return formatter
 }
+
+const getDatePartsFormatter = (locale, timeZone) => {
+  const key = getFormatterKey(locale, timeZone)
+  const cached = datePartsFormatterCache.get(key)
+  if (cached) return cached
+  const formatter = new Intl.DateTimeFormat(locale, {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    timeZone,
+  })
+  datePartsFormatterCache.set(key, formatter)
+  return formatter
+}
+
+const resolveLocale = (locale) =>
+  typeof locale === 'string' && locale.trim() ? locale.trim() : DEFAULT_LOCALE
+
+const resolveTimeZone = (timeZone) =>
+  typeof timeZone === 'string' && timeZone.trim()
+    ? timeZone.trim()
+    : resolvedTimeZone
+
+const resolveNowDate = (now) => {
+  const parsed = parseTimeInput(now)
+  return parsed || new Date()
+}
+
+const resolveLocalDateTime = (text) => {
+  const match = localDateTimePattern.exec(text)
+  if (!match) return null
+  if (trailingTimeZonePattern.test(text)) return null
+  const year = Number(match[1])
+  const month = Number(match[2])
+  const day = Number(match[3])
+  const hour = Number(match[4] ?? 0)
+  const minute = Number(match[5] ?? 0)
+  const second = Number(match[6] ?? 0)
+  const candidate = new Date(year, month - 1, day, hour, minute, second, 0)
+  if (
+    candidate.getFullYear() !== year ||
+    candidate.getMonth() !== month - 1 ||
+    candidate.getDate() !== day ||
+    candidate.getHours() !== hour ||
+    candidate.getMinutes() !== minute ||
+    candidate.getSeconds() !== second
+  )
+    return null
+  return candidate
+}
+
+export const parseTimeInput = (input) => {
+  if (input instanceof Date) {
+    const time = input.getTime()
+    return Number.isFinite(time) ? new Date(time) : null
+  }
+  if (typeof input === 'number' && Number.isFinite(input)) {
+    const candidate = new Date(input)
+    return Number.isFinite(candidate.getTime()) ? candidate : null
+  }
+  if (typeof input !== 'string') return null
+  const text = input.trim()
+  if (!text) return null
+  if (numericPattern.test(text)) {
+    const asNumber = Number(text)
+    if (!Number.isFinite(asNumber)) return null
+    const candidate = new Date(asNumber)
+    return Number.isFinite(candidate.getTime()) ? candidate : null
+  }
+  const localDateTime = resolveLocalDateTime(text)
+  if (localDateTime) return localDateTime
+  const parsed = Date.parse(text)
+  if (!Number.isFinite(parsed)) return null
+  return new Date(parsed)
+}
+
+const getZonedDateParts = (date, locale, timeZone) => {
+  const formatter = getDatePartsFormatter(locale, timeZone)
+  const parts = formatter.formatToParts(date)
+  const result = { year: 0, month: 0, day: 0 }
+  for (const part of parts) {
+    if (part.type === 'year') result.year = Number(part.value)
+    else if (part.type === 'month') result.month = Number(part.value)
+    else if (part.type === 'day') result.day = Number(part.value)
+  }
+  return result
+}
+
+const getZonedDayIndex = (date, locale, timeZone) => {
+  const parts = getZonedDateParts(date, locale, timeZone)
+  return Math.floor(Date.UTC(parts.year, parts.month - 1, parts.day) / DAY_MS)
+}
+
+const formatWeekday = (date, locale, timeZone) => {
+  const weekday = getWeekdayFormatter(locale, timeZone).format(date)
+  return weekday
+}
+
+const formatTimeOfDay = (date, locale, timeZone) =>
+  getTimeFormatter(locale, timeZone).format(date)
+
+const formatMonthDay = (date, locale, timeZone) => {
+  const parts = getZonedDateParts(date, locale, timeZone)
+  const month = String(parts.month).padStart(2, '0')
+  const day = String(parts.day).padStart(2, '0')
+  return `${month}-${day}`
+}
+
+const formatYearMonthDay = (date, locale, timeZone) => {
+  const parts = getZonedDateParts(date, locale, timeZone)
+  const month = String(parts.month).padStart(2, '0')
+  const day = String(parts.day).padStart(2, '0')
+  return `${parts.year}-${month}-${day}`
+}
+
+export const formatAbsoluteDateTime = (input, options = {}) => {
+  const date = parseTimeInput(input)
+  if (!date) return ''
+  const locale = resolveLocale(options.locale)
+  const timeZone = resolveTimeZone(options.timeZone)
+  const dateText = formatYearMonthDay(date, locale, timeZone)
+  const timeText = formatTimeOfDay(date, locale, timeZone)
+  return `${dateText} ${timeText}`
+}
+
+export const formatDisplayTime = (input, options = {}) => {
+  const target = parseTimeInput(input)
+  if (!target) return ''
+  const now = resolveNowDate(options.now)
+  const locale = resolveLocale(options.locale)
+  const timeZone = resolveTimeZone(options.timeZone)
+  const relative = options.relative !== false
+  const calendarWords = options.calendarWords === true
+
+  const diffMs = now.getTime() - target.getTime()
+  if (relative && diffMs >= 0) {
+    if (diffMs < 60 * 1000) return 'just now'
+    if (diffMs < 60 * 60 * 1000) {
+      const minutes = Math.floor(diffMs / (60 * 1000))
+      return `${minutes} min ago`
+    }
+  }
+
+  const dayDelta =
+    getZonedDayIndex(now, locale, timeZone) -
+    getZonedDayIndex(target, locale, timeZone)
+  const timeText = formatTimeOfDay(target, locale, timeZone)
+
+  if (dayDelta === 0) return calendarWords ? `today ${timeText}` : timeText
+  if (dayDelta === 1) return `yesterday ${timeText}`
+  if (dayDelta === -1 && calendarWords) return `tomorrow ${timeText}`
+
+  const withinWeek =
+    (dayDelta > 1 && dayDelta < 7) || (dayDelta < -1 && dayDelta > -7)
+  if (withinWeek) return `${formatWeekday(target, locale, timeZone)} ${timeText}`
+
+  const nowYear = getZonedDateParts(now, locale, timeZone).year
+  const targetYear = getZonedDateParts(target, locale, timeZone).year
+  if (nowYear === targetYear)
+    return `${formatMonthDay(target, locale, timeZone)} ${timeText}`
+  return `${formatYearMonthDay(target, locale, timeZone)} ${timeText}`
+}
+
+export const formatTime = (input, options = {}) => formatDisplayTime(input, options)
+
+export const formatDateTime = (input, options = {}) =>
+  formatAbsoluteDateTime(input, options)
 
 const asNumber = (value) =>
   typeof value === 'number' && Number.isFinite(value) ? value : null

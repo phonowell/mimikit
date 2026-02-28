@@ -1,22 +1,16 @@
 import {
-  formatDateTime,
+  formatAbsoluteDateTime,
+  formatDisplayTime,
   formatElapsedLabel,
-  formatTime,
+  parseTimeInput,
   formatUsage,
 } from './messages/format.js'
 import { UI_TEXT, resolveTaskStatusLabel } from './system-text.js'
 
 const ELAPSED_TICK_MS = 1000
-const ISO_SCHEDULE_PATTERN = /^\d{4}-\d{2}-\d{2}(?:[T\s].*)?$/
-const parseTimeMs = (value) => {
-  if (typeof value === 'number' && Number.isFinite(value)) return value
-  if (typeof value !== 'string') return null
-  const trimmed = value.trim()
-  if (!trimmed) return null
-  const parsed = Date.parse(trimmed)
-  if (Number.isFinite(parsed)) return parsed
-  const asNumber = Number(trimmed)
-  return Number.isFinite(asNumber) ? asNumber : null
+const toTimeMs = (value) => {
+  const parsed = parseTimeInput(value)
+  return parsed ? parsed.getTime() : null
 }
 
 const resolveDurationMs = (startMs, endMs) => {
@@ -32,44 +26,6 @@ const formatElapsedText = (elapsedMs, hasUsage) => {
 
 const resolveProfileText = () => 'worker'
 
-const parseIsoScheduleDate = (value) => {
-  if (typeof value !== 'string') return null
-  const text = value.trim()
-  if (!text) return null
-  if (!ISO_SCHEDULE_PATTERN.test(text)) return null
-  const parsed = Date.parse(text)
-  if (!Number.isFinite(parsed)) return null
-  return new Date(parsed)
-}
-
-const isSameLocalDay = (left, right) =>
-  left.getFullYear() === right.getFullYear() &&
-  left.getMonth() === right.getMonth() &&
-  left.getDate() === right.getDate()
-
-const formatScheduleText = (value, nowDate) => {
-  const scheduleDate = parseIsoScheduleDate(value)
-  if (!scheduleDate) return ''
-  const baseDate = new Date(nowDate)
-  baseDate.setHours(0, 0, 0, 0)
-  const timeText = scheduleDate.toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-  if (isSameLocalDay(scheduleDate, baseDate)) return `today ${timeText}`
-  const tomorrow = new Date(baseDate)
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  if (isSameLocalDay(scheduleDate, tomorrow)) return `tomorrow ${timeText}`
-  const yesterday = new Date(baseDate)
-  yesterday.setDate(yesterday.getDate() - 1)
-  if (isSameLocalDay(scheduleDate, yesterday)) return `yesterday ${timeText}`
-  const dateText = scheduleDate.toLocaleDateString([], {
-    month: 'short',
-    day: 'numeric',
-  })
-  return `${dateText} ${timeText}`
-}
-
 const resolveCronBadge = (value) => {
   if (typeof value !== 'string') return null
   const raw = value.trim()
@@ -81,8 +37,12 @@ const resolveScheduledBadge = (value, nowDate) => {
   if (typeof value !== 'string') return null
   const raw = value.trim()
   if (!raw) return null
-  const scheduleText = formatScheduleText(raw, nowDate)
-  const scheduleTitle = formatDateTime(raw) || raw
+  const scheduleText = formatDisplayTime(raw, {
+    now: nowDate,
+    relative: false,
+    calendarWords: true,
+  })
+  const scheduleTitle = formatAbsoluteDateTime(raw) || raw
   return {
     text: scheduleText || raw,
     title: `scheduled: ${scheduleTitle}`,
@@ -205,9 +165,9 @@ export const renderTasks = (tasksList, data) => {
     const elapsedEl = document.createElement('span')
     elapsedEl.className = 'task-elapsed'
 
-    const createdAt = parseTimeMs(task.createdAt)
-    const startedAt = parseTimeMs(task.startedAt)
-    const completedAt = parseTimeMs(task.completedAt)
+    const createdAt = toTimeMs(task.createdAt)
+    const startedAt = toTimeMs(task.startedAt)
+    const completedAt = toTimeMs(task.completedAt)
     const startMs = Number.isFinite(startedAt) ? startedAt : createdAt
     const durationMs =
       typeof task.durationMs === 'number' && Number.isFinite(task.durationMs)
@@ -247,7 +207,7 @@ export const renderTasks = (tasksList, data) => {
     if (changeAt) {
       const timeEl = document.createElement('span')
       timeEl.className = 'task-time'
-      timeEl.textContent = formatTime(changeAt)
+      timeEl.textContent = formatDisplayTime(changeAt)
       meta.appendChild(timeEl)
     }
 

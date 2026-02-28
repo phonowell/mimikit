@@ -5,7 +5,7 @@ export const renderMessage = (params, msg) => {
   const {
     messagesEl,
     renderMarkdown,
-    formatTime,
+    formatDisplayTime,
     formatUsage,
     formatElapsedLabel,
     enterMessageIds,
@@ -104,7 +104,7 @@ export const renderMessage = (params, msg) => {
   if (!isSystemMessage && !isStreamingMessage) {
     const time = document.createElement('span')
     time.className = 'time'
-    time.textContent = formatTime(msg.createdAt)
+    time.textContent = formatDisplayTime(msg.createdAt)
     meta.appendChild(time)
   }
   if (meta.childElementCount > 0) 

@@ -1,4 +1,4 @@
-import { formatTime } from './messages/format.js'
+import { formatDisplayTime } from './messages/format.js'
 import { UI_TEXT } from './system-text.js'
 
 const STATUS_TEXT = Object.freeze({
@@ -107,7 +107,7 @@ export const renderFocuses = (focusesList, data) => {
     if (changedAt) {
       const time = document.createElement('span')
       time.className = 'focus-time'
-      time.textContent = formatTime(changedAt)
+      time.textContent = formatDisplayTime(changedAt)
       meta.appendChild(time)
     }
 
