@@ -62,7 +62,9 @@
     "start": "tsx scripts/start.ts",
     "sync": "pnpm exec tsx scripts/sync-worktree.ts && pnpm i",
     "test": "vitest run",
-    "type-check": "tsc -p tsconfig.json --noEmit"
+    "type-check": "tsc -p tsconfig.json --noEmit",
+    "wt-rebase": "node scripts/worktree/rebase-worktree.js --base main",
+    "wt-land": "node scripts/worktree/land-worktree.js --base main --plans-dir plans"
   },
   "type": "module",
   "version": "0.1.0"
