@@ -22,6 +22,7 @@ const parseArgs = (argv) => {
   const options = { base: "main", plansDir: "plans" };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
+    if (arg === "--") continue;
     if (arg === "--help" || arg === "-h") {
       const scriptPath = process.argv[1] ?? "land-worktree.js";
       console.log(`Usage: node ${scriptPath} [--base <branch>] [--plans-dir <dir>]`);
@@ -94,18 +95,6 @@ if (!mainWorktree) exitWith(`${base} worktree not found`);
 const mainStatus = runGitCapture(["status", "--porcelain"], mainWorktree.path);
 if (mainStatus.length > 0) exitWith(`${base} worktree is not clean`);
 
-runGitFast({
-  args: ["fetch", "--prune"],
-  cwd: mainWorktree.path,
-  context: `fetch origin (${base})`,
-  tag: "land",
-});
-runGitFast({
-  args: ["merge", "--ff-only", `origin/${base}`],
-  cwd: mainWorktree.path,
-  context: `ff merge origin/${base}`,
-  tag: "land",
-});
 runGitFast({
   args: ["rebase", base],
   context: `rebase ${base} (${currentBranch})`,

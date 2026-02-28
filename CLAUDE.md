@@ -50,10 +50,10 @@
 ## Worktree 工作流
 
 - 角色分工：`~/Projects/mimikit` 固定 `main`（汇总/发布）；`~/Projects/mimikit-worktree-{1,2,3}` 对应 `worktree-{1,2,3}`（并行槽位）
-- 槽位限制：`pnpm run sync` / `pnpm run merge` 仅允许在 `worktree-1/2/3` 执行，禁止在 `main`
-- 日常同步：在槽位运行 `pnpm run sync`（`fetch --prune` + `rebase main`）
-- 合并流程：先运行 `review-code-changes` skill，再运行 `pnpm run merge`（自动提交→同步 `main`→squash 合并）
-- 合并后保留槽位分支与 worktree；`pnpm run merge` 会清空 `plans/`；发布/推送仅在 `main`
+- 槽位限制：`pnpm run wt-rebase` / `pnpm run wt-land` 仅允许在 `worktree-1/2/3` 执行，禁止在 `main`
+- 日常同步：在槽位运行 `pnpm run wt-rebase`（`rebase main`）
+- 合并流程：先运行 `review-code-changes` skill，再运行 `pnpm run wt-land`（自动提交→同步 `main`→squash 合并）
+- 合并后保留槽位分支与 worktree；`pnpm run wt-land` 会清空 `plans/`；发布/推送仅在 `main`
 
 ## 目录结构
 

@@ -24,6 +24,7 @@ const parseArgs = (argv) => {
   const options = { base: "main" };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
+    if (arg === "--") continue;
     if (arg === "--help" || arg === "-h") {
       const scriptPath = process.argv[1] ?? "rebase-worktree.js";
       console.log(`Usage: node ${scriptPath} [--base <branch>]`);
@@ -50,11 +51,6 @@ if (!ALLOWED_BRANCHES.has(currentBranch)) exitWith("run from worktree-1/2/3 only
 ensureNoInProgressState();
 ensureClean(process.cwd(), currentBranch);
 
-runGitFast({
-  args: ["fetch", "--prune"],
-  context: `fetch origin (${currentBranch})`,
-  tag: "rebase",
-});
 runGitFast({
   args: ["rebase", base],
   context: `rebase ${base} (${currentBranch})`,
