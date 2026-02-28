@@ -40,19 +40,17 @@ const resolveCronJobStatus = (cronJob: CronJob): TaskStatus => {
   return 'canceled'
 }
 
-const cronJobToView = (cronJob: CronJob): TaskView => {
-  return {
-    id: cronJob.id,
-    kind: 'cron',
-    status: resolveCronJobStatus(cronJob),
-    profile: cronJob.profile,
-    title: cronJob.title || titleFromCandidates(cronJob.id, [cronJob.prompt]),
-    ...(cronJob.cron ? { cron: cronJob.cron } : {}),
-    ...(cronJob.scheduledAt ? { scheduledAt: cronJob.scheduledAt } : {}),
-    createdAt: cronJob.createdAt,
-    changeAt: cronJob.lastTriggeredAt ?? cronJob.createdAt,
-  }
-}
+const cronJobToView = (cronJob: CronJob): TaskView => ({
+  id: cronJob.id,
+  kind: 'cron',
+  status: resolveCronJobStatus(cronJob),
+  profile: cronJob.profile,
+  title: cronJob.title || titleFromCandidates(cronJob.id, [cronJob.prompt]),
+  ...(cronJob.cron ? { cron: cronJob.cron } : {}),
+  ...(cronJob.scheduledAt ? { scheduledAt: cronJob.scheduledAt } : {}),
+  createdAt: cronJob.createdAt,
+  changeAt: cronJob.lastTriggeredAt ?? cronJob.createdAt,
+})
 
 const taskToView = (task: Task): TaskView => ({
   id: task.id,

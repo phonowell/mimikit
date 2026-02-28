@@ -1,5 +1,6 @@
-import { appendLog } from './append.js'
 import { readErrorCode } from '../shared/error-code.js'
+
+import { appendLog } from './append.js'
 
 type SafeErrorInfo = {
   message: string

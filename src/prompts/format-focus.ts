@@ -4,10 +4,7 @@ import {
   stringifyPromptYaml,
 } from './format-base.js'
 
-import type {
-  FocusListEntry,
-  FocusPromptContextEntry,
-} from '../focus/index.js'
+import type { FocusListEntry, FocusPromptContextEntry } from '../focus/index.js'
 
 const sortMessagesDesc = <T extends { time: string; id: string }>(
   entries: T[],

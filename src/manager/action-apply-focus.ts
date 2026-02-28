@@ -32,8 +32,12 @@ export const applyCreateFocusAction = async (
     const openItems = parseFocusOpenItems(parsed.data.open_items)
     updateFocus(runtime, {
       id: parsed.data.id,
-      ...(parsed.data.status !== undefined ? { status: parsed.data.status } : {}),
-      ...(parsed.data.summary !== undefined ? { summary: parsed.data.summary } : {}),
+      ...(parsed.data.status !== undefined
+        ? { status: parsed.data.status }
+        : {}),
+      ...(parsed.data.summary !== undefined
+        ? { summary: parsed.data.summary }
+        : {}),
       ...(openItems !== undefined ? { openItems } : {}),
     })
   }
@@ -53,7 +57,9 @@ export const applyUpdateFocusAction = async (
     id: parsed.data.id,
     ...(parsed.data.title !== undefined ? { title: parsed.data.title } : {}),
     ...(parsed.data.status !== undefined ? { status: parsed.data.status } : {}),
-    ...(parsed.data.summary !== undefined ? { summary: parsed.data.summary } : {}),
+    ...(parsed.data.summary !== undefined
+      ? { summary: parsed.data.summary }
+      : {}),
     ...(openItems !== undefined ? { openItems } : {}),
   })
   enforceFocusCapacity(runtime)

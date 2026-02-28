@@ -1,11 +1,11 @@
-import { appendLog } from '../log/append.js'
-import { logSafeError } from '../log/safe.js'
 import { queryHistory } from '../history/query.js'
 import { readHistory } from '../history/store.js'
+import { appendLog } from '../log/append.js'
+import { logSafeError } from '../log/safe.js'
 
+import type { QueryHistoryRequest } from '../history/query.js'
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { HistoryLookupMessage, UserInput } from '../types/index.js'
-import type { QueryHistoryRequest } from '../history/query.js'
 
 const INTENT_TRIGGER_EVENT_RE =
   /<M:system_event[^>]*name="intent_trigger"[^>]*>([\s\S]*?)<\/M:system_event>/g
@@ -28,8 +28,7 @@ export const collectTriggeredIntentIds = (inputs: UserInput[]): Set<string> => {
               : ''
           if (id) ids.add(id)
         } catch (error) {
-          const rawPreview =
-            raw.length > 120 ? `${raw.slice(0, 120)}...` : raw
+          const rawPreview = raw.length > 120 ? `${raw.slice(0, 120)}...` : raw
           void logSafeError('collectTriggeredIntentIds:parse_payload', error, {
             meta: { rawPreview },
           })
@@ -69,7 +68,9 @@ export const queryHistoryLookup = async (
     roleCount: queryRequest.roles.length,
     resultCount: historyLookup.length,
     ...(queryRequest.beforeId ? { beforeId: queryRequest.beforeId } : {}),
-    ...(queryRequest.fromMs !== undefined ? { fromMs: queryRequest.fromMs } : {}),
+    ...(queryRequest.fromMs !== undefined
+      ? { fromMs: queryRequest.fromMs }
+      : {}),
     ...(queryRequest.toMs !== undefined ? { toMs: queryRequest.toMs } : {}),
   })
   return historyLookup

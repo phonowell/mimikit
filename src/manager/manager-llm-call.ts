@@ -31,7 +31,10 @@ const removeTagBlock = (prompt: string, tag: string): string => {
   return prompt.replace(pattern, '').trim()
 }
 
-const truncatePromptToBudget = (prompt: string, budgetTokens: number): string => {
+const truncatePromptToBudget = (
+  prompt: string,
+  budgetTokens: number,
+): string => {
   const maxBytes = Math.max(1, budgetTokens) * 4
   const buffer = Buffer.from(prompt, 'utf8')
   if (buffer.byteLength <= maxBytes) return prompt
@@ -58,25 +61,22 @@ export const enforcePromptBudget = (
   const budget = Math.max(1, maxTokens)
   let current = prompt
   let estimatedTokens = estimatePromptTokens(current)
-  if (estimatedTokens <= budget) {
+  if (estimatedTokens <= budget)
     return { prompt: current, trimmed: false, estimatedTokens }
-  }
 
   for (const tag of PRUNE_ORDER) {
     const next = removeTagBlock(current, tag)
     if (next === current) continue
     current = next
     estimatedTokens = estimatePromptTokens(current)
-    if (estimatedTokens <= budget) {
+    if (estimatedTokens <= budget)
       return { prompt: current, trimmed: true, estimatedTokens }
-    }
   }
 
   const truncated = truncatePromptToBudget(current, budget)
   estimatedTokens = estimatePromptTokens(truncated)
-  if (truncated && estimatedTokens <= budget) {
+  if (truncated && estimatedTokens <= budget)
     return { prompt: truncated, trimmed: true, estimatedTokens }
-  }
 
   throw new Error(
     `[manager] prompt exceeds max token budget (${estimatedTokens}/${budget})`,

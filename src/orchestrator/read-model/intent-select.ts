@@ -8,7 +8,9 @@ export type WindowSelectParams = {
   maxBytes: number
 }
 
-const normalizeWindowParams = (params: WindowSelectParams): WindowSelectParams => {
+const normalizeWindowParams = (
+  params: WindowSelectParams,
+): WindowSelectParams => {
   const minCount = Math.max(0, params.minCount)
   const maxCount = Math.max(minCount, params.maxCount)
   const maxBytes = Math.max(0, params.maxBytes)

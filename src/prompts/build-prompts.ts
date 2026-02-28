@@ -2,8 +2,8 @@ import { buildFocusPromptPayload } from '../focus/index.js'
 import { buildPaths } from '../fs/paths.js'
 import { readTextFileIfExists } from '../fs/read-text.js'
 import { readHistory } from '../history/store.js'
-import { readTaskResultsForTasks } from '../storage/task-results.js'
 import { readErrorCode } from '../shared/error-code.js'
+import { readTaskResultsForTasks } from '../storage/task-results.js'
 
 import { escapeCdata } from './format-base.js'
 import {
@@ -141,14 +141,14 @@ export const buildManagerPrompt = async (params: {
       }),
     ),
     inputs: escapeCdata(formatInputs(params.inputs)),
-    batch_results: escapeCdata(
-      formatResultsYaml(params.tasks, pendingResults),
-    ),
+    batch_results: escapeCdata(formatResultsYaml(params.tasks, pendingResults)),
     tasks: escapeCdata(
       formatTasksYaml(params.tasks, resultsForTasks, params.cronJobs ?? []),
     ),
     intents: escapeCdata(formatIntentsYaml(params.intents ?? [])),
-    recent_history: escapeCdata(formatRecentHistory(focusPayload.recentHistory)),
+    recent_history: escapeCdata(
+      formatRecentHistory(focusPayload.recentHistory),
+    ),
     focus_list: escapeCdata(formatFocusList(focusPayload.focusList)),
     focus_contexts: escapeCdata(
       formatFocusContexts(focusPayload.focusContexts),

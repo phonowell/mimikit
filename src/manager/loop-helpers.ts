@@ -1,3 +1,7 @@
+import {
+  appendConsumedInputsToHistory,
+  appendConsumedResultsToHistory,
+} from '../history/result-events.js'
 import { loadPromptTemplate } from '../prompts/prompt-loader.js'
 import { nowIso } from '../shared/utils.js'
 import { updateJsonl } from '../storage/jsonl.js'
@@ -5,11 +9,6 @@ import {
   compactInputQueueIfFullyConsumed,
   compactResultQueueIfFullyConsumed,
 } from '../streams/queues.js'
-
-import {
-  appendConsumedInputsToHistory,
-  appendConsumedResultsToHistory,
-} from '../history/result-events.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { TaskResult, UserInput } from '../types/index.js'

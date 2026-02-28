@@ -1,4 +1,5 @@
 import { logSafeError } from '../log/safe.js'
+
 import { clearStateDir, parseInputBody } from './helpers.js'
 import { registerEventsRoute } from './routes-api-events.js'
 import { registerTaskArchiveRoute } from './routes-api-task-archive.js'
@@ -15,7 +16,9 @@ export const registerApiRoutes = (
 ): void => {
   registerEventsRoute(app, orchestrator)
 
-  app.get('/api/status', (_request, reply) => reply.send(orchestrator.getStatus()))
+  app.get('/api/status', (_request, reply) =>
+    reply.send(orchestrator.getStatus()),
+  )
 
   app.post('/api/input', async (request, reply) => {
     const result = parseInputBody(request.body, {

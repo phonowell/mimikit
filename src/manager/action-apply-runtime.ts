@@ -1,3 +1,4 @@
+import { appendHistory, readHistory } from '../history/store.js'
 import { bestEffort } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import { notifyWorkerLoop } from '../orchestrator/core/signals.js'
@@ -5,7 +6,6 @@ import { loadPromptFile } from '../prompts/prompt-loader.js'
 import { isVisibleToAgent } from '../shared/message-visibility.js'
 import { formatSystemEventText } from '../shared/system-event.js'
 import { newId, nowIso } from '../shared/utils.js'
-import { appendHistory, readHistory } from '../history/store.js'
 import { cancelTask } from '../worker/cancel-task.js'
 
 import {
@@ -57,7 +57,9 @@ const formatTasksSection = (runtime: RuntimeState): string => {
   return runtime.tasks
     .slice(Math.max(0, runtime.tasks.length - MAX_TASK_ITEMS))
     .map((task, index) => {
-      const resultSummary = task.result?.output ? clip(task.result.output, 120) : ''
+      const resultSummary = task.result?.output
+        ? clip(task.result.output, 120)
+        : ''
       return `${index + 1}. [${task.status}] id=${task.id} title=${clip(task.title, 80)}${resultSummary ? ` result=${resultSummary}` : ''}`
     })
     .join('\n')
@@ -143,7 +145,12 @@ export const applyCancelTaskAction = async (
   cronJob.disabledReason = 'canceled'
   await persistRuntimeState(runtime)
   await bestEffort('appendHistory: cron_task_canceled', () =>
-    appendCronCanceledSystemMessage(runtime, cronJob.id, cronJob.title, cronJob.focusId),
+    appendCronCanceledSystemMessage(
+      runtime,
+      cronJob.id,
+      cronJob.title,
+      cronJob.focusId,
+    ),
   )
 }
 
@@ -178,12 +185,12 @@ export const applyCompressContextAction = async (
   await compressManagerContext(runtime, { reason: 'action' })
 }
 
-export const applyRestartRuntimeAction = async (
+export const applyRestartRuntimeAction = (
   runtime: RuntimeState,
   item: Parsed,
 ): Promise<boolean> => {
   const parsed = restartSchema.safeParse(item.attrs)
-  if (!parsed.success) return false
+  if (!parsed.success) return Promise.resolve(false)
   requestManagerRestart(runtime)
-  return true
+  return Promise.resolve(true)
 }

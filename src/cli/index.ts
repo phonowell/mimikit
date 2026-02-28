@@ -62,9 +62,13 @@ const shutdown = async (reason: string, code = 0): Promise<never> => {
   await bestEffort('cli:release_runtime_lock', () => runtimeLock.release(), {
     meta: { reason },
   })
-  await bestEffort('cli:stop_and_persist', () => orchestrator.stopAndPersist(), {
-    meta: { reason },
-  })
+  await bestEffort(
+    'cli:stop_and_persist',
+    () => orchestrator.stopAndPersist(),
+    {
+      meta: { reason },
+    },
+  )
   process.exit(code)
 }
 

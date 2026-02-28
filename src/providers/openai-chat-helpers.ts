@@ -70,7 +70,9 @@ export const normalizeOpenAiChatUsage = (
   }
 }
 
-export const resolveOpenAiChatBaseUrl = (baseUrl: string | undefined): string => {
+export const resolveOpenAiChatBaseUrl = (
+  baseUrl: string | undefined,
+): string => {
   const trimmed = baseUrl?.trim().replace(/\/+$/g, '')
   if (!trimmed) {
     throw buildProviderPreflightError({
@@ -115,10 +117,9 @@ export const resolveOpenAiChatModel = (
 export const ensureError = (error: unknown): Error =>
   error instanceof Error ? error : new Error(String(error))
 
-export const buildFetchWithoutAuthHeader = (): typeof fetch =>
-  async (input, init) => {
-    const request =
-      input instanceof Request ? input : new Request(input, init)
+export const buildFetchWithoutAuthHeader =
+  (): typeof fetch => (input, init) => {
+    const request = input instanceof Request ? input : new Request(input, init)
     const headers = new Headers(request.headers)
     headers.delete('authorization')
     return fetch(new Request(request, { headers }))

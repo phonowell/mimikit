@@ -21,7 +21,9 @@ export const hasForbiddenWorkerStatePath = (prompt: string): boolean => {
   if (!pathRefs) return false
   return pathRefs.some((rawRef) => {
     const ref = rawRef.trim().replace(/^[^.]*/, '')
-    return ref !== '.mimikit/generated' && !ref.startsWith('.mimikit/generated/')
+    return (
+      ref !== '.mimikit/generated' && !ref.startsWith('.mimikit/generated/')
+    )
   })
 }
 

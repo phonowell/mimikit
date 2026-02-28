@@ -2,8 +2,8 @@ import { Cron } from 'croner'
 
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
-import { notifyManagerLoop } from '../orchestrator/core/signals.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
+import { notifyManagerLoop } from '../orchestrator/core/signals.js'
 import { sleep } from '../shared/utils.js'
 
 import { publishManagerSystemEventInput } from './system-input-event.js'
@@ -52,7 +52,9 @@ const publishCronTriggerSystemInput = async (params: {
       profile: params.profile,
       triggered_at: params.triggeredAt,
       ...(params.schedule.cron ? { cron: params.schedule.cron } : {}),
-      ...(params.schedule.scheduledAt ? { scheduled_at: params.schedule.scheduledAt } : {}),
+      ...(params.schedule.scheduledAt
+        ? { scheduled_at: params.schedule.scheduledAt }
+        : {}),
     },
     createdAt: params.triggeredAt,
     logEvent: 'cron_trigger_input',

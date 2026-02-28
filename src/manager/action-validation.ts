@@ -83,8 +83,11 @@ export const validateScheduleTask = (
   if (!parsed.success) return [invalidArgsIssue(parsed.error)]
   const scheduledAt = parsed.data.scheduled_at?.trim()
   if (scheduledAt && !Number.isFinite(Date.parse(scheduledAt))) {
-    return rejected('schedule_task 执行失败：scheduled_at 不是合法 ISO 8601 时间。')
+    return rejected(
+      'schedule_task 执行失败：scheduled_at 不是合法 ISO 8601 时间。',
+    )
   }
+
   if (scheduledAt) {
     const scheduledMs = parseIsoMs(scheduledAt)
     if (scheduledMs !== undefined) {
@@ -108,13 +111,13 @@ export const validateCancelTask = (
   const { id } = parsed.data
   if (context.enabledCronJobIds?.has(id)) return []
   const taskStatus = context.taskStatusById?.get(id)
-  if (!taskStatus) {
+  if (!taskStatus)
     return rejected('cancel_task 执行失败：未找到可取消的任务或定时任务 ID。')
-  }
+
   if (taskStatus === 'pending' || taskStatus === 'running') return []
-  if (taskStatus === 'canceled') {
+  if (taskStatus === 'canceled')
     return rejected('cancel_task 执行失败：任务已是 canceled 状态。')
-  }
+
   return rejected('cancel_task 执行失败：任务已完成，无法取消。')
 }
 

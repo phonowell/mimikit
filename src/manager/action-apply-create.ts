@@ -3,15 +3,15 @@ import {
   resolveDefaultFocusId,
   touchFocus,
 } from '../focus/index.js'
+import { appendTaskSystemMessage } from '../history/task-events.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
+import { notifyWorkerLoop } from '../orchestrator/core/signals.js'
+import { enqueueTask } from '../orchestrator/core/task-lifecycle.js'
 import {
   buildTaskFingerprint,
   buildTaskSemanticKey,
   findActiveTaskBySemanticKey,
 } from '../orchestrator/core/task-state.js'
-import { enqueueTask } from '../orchestrator/core/task-lifecycle.js'
-import { notifyWorkerLoop } from '../orchestrator/core/signals.js'
-import { appendTaskSystemMessage } from '../history/task-events.js'
 import { newId, nowIso } from '../shared/utils.js'
 import { cancelTask } from '../worker/cancel-task.js'
 import { enqueueWorkerTask } from '../worker/dispatch.js'
@@ -24,12 +24,7 @@ import { runTaskSchema, scheduleTaskSchema } from './action-apply-schema.js'
 
 import type { Parsed } from '../actions/model/spec.js'
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
-import type {
-  CronJob,
-  FocusId,
-  Task,
-  WorkerProfile,
-} from '../types/index.js'
+import type { CronJob, FocusId, Task, WorkerProfile } from '../types/index.js'
 
 export type ApplyTaskActionsOptions = {
   suppressRunTask?: boolean
@@ -184,8 +179,13 @@ export const applyScheduleTask = async (
     createdAt,
   }
 
-  await appendTaskSystemMessage(runtime.paths.history, 'created', scheduledTask, {
-    createdAt,
-  })
+  await appendTaskSystemMessage(
+    runtime.paths.history,
+    'created',
+    scheduledTask,
+    {
+      createdAt,
+    },
+  )
   await persistRuntimeState(runtime)
 }

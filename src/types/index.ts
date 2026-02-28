@@ -1,6 +1,4 @@
-import { z } from 'zod'
-
-import {
+import type {
   cronJobSchema,
   focusContextSchema,
   focusMetaSchema,
@@ -11,6 +9,7 @@ import {
   taskResultSchema,
   taskSchema,
 } from '../storage/runtime-snapshot-schema.js'
+import type { z } from 'zod'
 
 export type ISODate = string
 export type Id = string
@@ -90,7 +89,10 @@ export type TaskStatus =
   | 'canceled'
 
 export type TaskCancelSource = 'user' | 'deferred' | 'system'
-export type TaskResultStatus = Extract<TaskStatus, 'succeeded' | 'failed' | 'canceled'>
+export type TaskResultStatus = Extract<
+  TaskStatus,
+  'succeeded' | 'failed' | 'canceled'
+>
 export type WorkerProfile = 'worker'
 
 export type IntentPriority = 'high' | 'normal' | 'low'

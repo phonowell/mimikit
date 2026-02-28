@@ -1,11 +1,12 @@
 import {
-  GLOBAL_FOCUS_ID,
   enforceFocusCapacity,
   ensureGlobalFocus,
+  GLOBAL_FOCUS_ID,
   resolveDefaultFocusId,
   resolveFocusByQuote,
   touchFocus,
 } from '../../focus/index.js'
+import { appendHistory, readHistory } from '../../history/store.js'
 import { appendLog } from '../../log/append.js'
 import { bestEffort } from '../../log/safe.js'
 import { cronWakeLoop } from '../../manager/loop-cron.js'
@@ -13,14 +14,23 @@ import { idleWakeLoop } from '../../manager/loop-idle.js'
 import { managerLoop } from '../../manager/loop.js'
 import { formatSystemEventText } from '../../shared/system-event.js'
 import { newId, nowIso } from '../../shared/utils.js'
-import { readHistory, appendHistory } from '../../history/store.js'
 import { publishUserInput } from '../../streams/queues.js'
 import { enqueuePendingWorkerTasks, workerLoop } from '../../worker/dispatch.js'
-import { mergeChatMessages, selectChatMessages } from '../read-model/chat-view.js'
+import {
+  mergeChatMessages,
+  selectChatMessages,
+} from '../read-model/chat-view.js'
 
 import { toUserInputLogMeta } from './orchestrator-helpers.js'
-import { notifyManagerLoop, notifyUiSignal, notifyWorkerLoop } from './signals.js'
-import { hydrateRuntimeState, persistRuntimeState } from './runtime-persistence.js'
+import {
+  hydrateRuntimeState,
+  persistRuntimeState,
+} from './runtime-persistence.js'
+import {
+  notifyManagerLoop,
+  notifyUiSignal,
+  notifyWorkerLoop,
+} from './signals.js'
 
 import type { RuntimeState, UserMeta } from './runtime-state.js'
 import type { ChatMessage, ChatMessagesMode } from '../read-model/chat-view.js'
@@ -135,5 +145,7 @@ export const waitForManagerDrain = async (
 export const persistStopSnapshot = async (
   runtime: RuntimeState,
 ): Promise<void> => {
-  await bestEffort('persistRuntimeState: stop', () => persistRuntimeState(runtime))
+  await bestEffort('persistRuntimeState: stop', () =>
+    persistRuntimeState(runtime),
+  )
 }

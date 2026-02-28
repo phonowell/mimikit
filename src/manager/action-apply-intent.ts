@@ -3,10 +3,10 @@ import {
   resolveDefaultFocusId,
   touchFocus,
 } from '../focus/index.js'
+import { appendHistory } from '../history/store.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import { formatSystemEventText } from '../shared/system-event.js'
 import { newId, nowIso } from '../shared/utils.js'
-import { appendHistory } from '../history/store.js'
 
 import {
   createIntentSchema,
@@ -113,7 +113,8 @@ export const applyCreateIntent = async (
     maxAttempts: 2,
     triggerPolicy: {
       mode: triggerMode,
-      cooldownMs: triggerMode === 'on_idle' ? (parsed.data.cooldown_ms ?? 0) : 0,
+      cooldownMs:
+        triggerMode === 'on_idle' ? (parsed.data.cooldown_ms ?? 0) : 0,
     },
     triggerState: {
       totalTriggered: 0,
@@ -146,7 +147,8 @@ export const applyUpdateIntent = async (
   }
   if (parsed.data.trigger_mode !== undefined) {
     nextTriggerPolicy.mode = parsed.data.trigger_mode
-    if (parsed.data.trigger_mode === 'one_shot') nextTriggerPolicy.cooldownMs = 0
+    if (parsed.data.trigger_mode === 'one_shot')
+      nextTriggerPolicy.cooldownMs = 0
   }
   if (parsed.data.cooldown_ms !== undefined) {
     nextTriggerPolicy.mode = 'on_idle'

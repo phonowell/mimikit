@@ -4,7 +4,6 @@ import { stripUndefined } from '../shared/utils.js'
 
 import { normalizeTokenUsage, tokenUsageSchema } from './token-usage.js'
 
-
 export const taskCancelSchema = z
   .object({
     source: z.enum(['user', 'deferred', 'system']),
@@ -155,29 +154,39 @@ const runtimeSnapshotSchema = z
 
 export type RuntimeSnapshot = z.infer<typeof runtimeSnapshotSchema>
 
-const normalizeTask = (task: z.infer<typeof taskSchema>): z.infer<typeof taskSchema> =>
+const normalizeTask = (
+  task: z.infer<typeof taskSchema>,
+): z.infer<typeof taskSchema> =>
   stripUndefined({
     ...task,
     usage: normalizeTokenUsage(task.usage),
     result: task.result
-      ? stripUndefined({ ...task.result, usage: normalizeTokenUsage(task.result.usage) })
+      ? stripUndefined({
+          ...task.result,
+          usage: normalizeTokenUsage(task.result.usage),
+        })
       : undefined,
   }) as z.infer<typeof taskSchema>
 
-const normalizeCronJob = (cronJob: z.infer<typeof cronJobSchema>): z.infer<typeof cronJobSchema> =>
+const normalizeCronJob = (
+  cronJob: z.infer<typeof cronJobSchema>,
+): z.infer<typeof cronJobSchema> =>
   stripUndefined({ ...cronJob }) as z.infer<typeof cronJobSchema>
 
 const normalizeIdleIntent = (
   intent: z.infer<typeof idleIntentSchema>,
-): z.infer<typeof idleIntentSchema> => stripUndefined({ ...intent }) as z.infer<typeof idleIntentSchema>
+): z.infer<typeof idleIntentSchema> =>
+  stripUndefined({ ...intent }) as z.infer<typeof idleIntentSchema>
 
 const normalizeFocusMeta = (
   focus: z.infer<typeof focusMetaSchema>,
-): z.infer<typeof focusMetaSchema> => stripUndefined({ ...focus }) as z.infer<typeof focusMetaSchema>
+): z.infer<typeof focusMetaSchema> =>
+  stripUndefined({ ...focus }) as z.infer<typeof focusMetaSchema>
 
 const normalizeFocusContext = (
   focusContext: z.infer<typeof focusContextSchema>,
-): z.infer<typeof focusContextSchema> => stripUndefined({ ...focusContext }) as z.infer<typeof focusContextSchema>
+): z.infer<typeof focusContextSchema> =>
+  stripUndefined({ ...focusContext }) as z.infer<typeof focusContextSchema>
 
 export const parseRuntimeSnapshot = (value: unknown): RuntimeSnapshot => {
   const parsed = runtimeSnapshotSchema.parse(value)

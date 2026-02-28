@@ -7,8 +7,8 @@ import {
 } from './format-base.js'
 
 import type {
-  HistoryMessage,
   HistoryLookupMessage,
+  HistoryMessage,
   ManagerActionFeedback,
   UserInput,
 } from '../types/index.js'

@@ -8,20 +8,21 @@ import { safe } from '../log/safe.js'
 
 import { ensureDir, ensureFile } from './paths.js'
 
-const parseJsonRaw = async <T>(
+const parseJsonRaw = <T>(
   raw: unknown,
   fallback: T,
   meta: { path: string },
 ): Promise<T> => {
-  if (!raw) return fallback
-  if (typeof raw === 'object' && !Buffer.isBuffer(raw)) return raw as T
+  if (!raw) return Promise.resolve(fallback)
+  if (typeof raw === 'object' && !Buffer.isBuffer(raw))
+    return Promise.resolve(raw as T)
   const text =
     typeof raw === 'string'
       ? raw
       : Buffer.isBuffer(raw)
         ? raw.toString('utf8')
         : ''
-  if (!text.trim()) return fallback
+  if (!text.trim()) return Promise.resolve(fallback)
   return safe('readJson: parse', () => JSON.parse(text) as T, {
     fallback,
     meta,

@@ -100,7 +100,11 @@ export const runManager = async (params: {
       ...(params.onTextDelta ? { onTextDelta: params.onTextDelta } : {}),
       ...(params.onUsage ? { onUsage: params.onUsage } : {}),
     })
-    await archive(result.threadId ?? undefined, { ...result, ok: true }, result.prompt)
+    await archive(
+      result.threadId ?? undefined,
+      { ...result, ok: true },
+      result.prompt,
+    )
     return {
       output: result.output,
       elapsedMs: result.elapsedMs,

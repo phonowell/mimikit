@@ -9,9 +9,9 @@ import {
   isTransientProviderMessage,
 } from './provider-error.js'
 
-import type { Codex } from '@openai/codex-sdk'
 import type { ProviderError } from './provider-error.js'
 import type { CodexSdkProviderRequest } from './types.js'
+import type { Codex } from '@openai/codex-sdk'
 
 export const approvalPolicy = 'never' as const
 

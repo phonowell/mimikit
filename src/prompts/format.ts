@@ -1,8 +1,10 @@
 import { resolve } from 'node:path'
+
 import { Environment, FileSystemLoader, Template } from 'nunjucks'
 
-import type { ManagerEnv } from '../types/index.js'
 import { PROMPTS_ROOT } from './prompt-loader.js'
+
+import type { ManagerEnv } from '../types/index.js'
 
 type PromptTemplateValues = Record<string, string>
 type PromptEnvironmentParams = {

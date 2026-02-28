@@ -1,6 +1,6 @@
-import { runWithProvider } from '../providers/registry.js'
 import { buildWorkerPrompt } from '../prompts/build-prompts.js'
 import { loadPromptSource } from '../prompts/prompt-loader.js'
+import { runWithProvider } from '../providers/registry.js'
 import { appendTaskProgress } from '../storage/task-progress.js'
 
 import { runWorkerLoop } from './profiled-runner-loop.js'
@@ -24,7 +24,11 @@ type BuildRunModelParams = {
 
 const buildRunModel =
   (params: BuildRunModelParams) =>
-  (input: { prompt: string; threadId?: string | null; onUsage?: (usage: TokenUsage) => void }) =>
+  (input: {
+    prompt: string
+    threadId?: string | null
+    onUsage?: (usage: TokenUsage) => void
+  }) =>
     runWithProvider({
       provider: 'codex-sdk',
       role: 'worker',

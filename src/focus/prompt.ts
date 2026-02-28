@@ -137,7 +137,11 @@ export const buildFocusPromptPayload = (params: {
       MAX_FOCUS_RECENT_BYTES,
     )
     for (const message of recentMessages) recentFocusMessageIds.add(message.id)
-    if (!summary && (!openItems || openItems.length === 0) && recentMessages.length === 0)
+    if (
+      !summary &&
+      (!openItems || openItems.length === 0) &&
+      recentMessages.length === 0
+    )
       continue
     focusContexts.push({
       focusId,

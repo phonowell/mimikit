@@ -29,8 +29,7 @@ const buildManagerEnv = (
 }
 
 const hasSystemEvent = (item: UserInput, name: string): boolean =>
-  item.role === 'system' &&
-  item.text.includes(`<M:system_event name="${name}"`)
+  item.role === 'system' && item.text.includes(`<M:system_event name="${name}"`)
 
 const resolveWakeProfile = (
   inputs: UserInput[],
@@ -38,9 +37,12 @@ const resolveWakeProfile = (
 ): ManagerWakeProfile => {
   const hasUserInput = inputs.some((item) => item.role === 'user')
   const hasTaskResult = results.length > 0
-  const hasCronWake = inputs.some((item) => hasSystemEvent(item, 'cron_trigger'))
+  const hasCronWake = inputs.some((item) =>
+    hasSystemEvent(item, 'cron_trigger'),
+  )
   const hasIdleWake = inputs.some(
-    (item) => hasSystemEvent(item, 'idle') || hasSystemEvent(item, 'intent_trigger'),
+    (item) =>
+      hasSystemEvent(item, 'idle') || hasSystemEvent(item, 'intent_trigger'),
   )
   const activeKinds = [
     hasUserInput,

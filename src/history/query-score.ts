@@ -1,7 +1,11 @@
 import { isVisibleToAgent } from '../shared/message-visibility.js'
 import { computeRecencyWeight, parseIsoMs } from '../shared/time.js'
 
-import type { HistoryLookupMessage, HistoryMessage, Role } from '../types/index.js'
+import type {
+  HistoryLookupMessage,
+  HistoryMessage,
+  Role,
+} from '../types/index.js'
 
 export type QueryHistoryRequest = {
   query: string

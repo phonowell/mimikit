@@ -14,6 +14,11 @@ import {
   applyUpdateIntent,
 } from './action-apply-intent.js'
 import {
+  applyCancelTaskAction,
+  applyCompressContextAction,
+  applyRestartRuntimeAction,
+} from './action-apply-runtime.js'
+import {
   assignFocusSchema,
   createFocusSchema,
   createIntentSchema,
@@ -24,13 +29,7 @@ import {
   updateIntentSchema,
 } from './action-apply-schema.js'
 import {
-  applyCancelTaskAction,
-  applyCompressContextAction,
-  applyRestartRuntimeAction,
-} from './action-apply-runtime.js'
-import {
   type FeedbackContext,
-  type ValidationIssue,
   validateCancelTask,
   validateCompressContext,
   validateIntentById,
@@ -38,6 +37,7 @@ import {
   validateRunTask,
   validateScheduleTask,
   validateWithSchema,
+  type ValidationIssue,
 } from './action-validation.js'
 
 import type { Parsed } from '../actions/model/spec.js'
@@ -63,7 +63,7 @@ type ManagerActionDefinition = {
   ) => Promise<ApplyResult>
 }
 
-const continueApply = async (): Promise<ApplyResult> => 'continue'
+const continueApply = (): Promise<ApplyResult> => Promise.resolve('continue')
 
 const ACTION_DEFINITIONS = [
   {
@@ -95,7 +95,11 @@ const ACTION_DEFINITIONS = [
   {
     name: 'run_task',
     validate: (item: Parsed) => validateRunTask(item),
-    apply: async (runtime: RuntimeState, item: Parsed, context: ApplyContext) => {
+    apply: async (
+      runtime: RuntimeState,
+      item: Parsed,
+      context: ApplyContext,
+    ) => {
       await applyRunTask(runtime, item, context.seen, context.options)
       return 'continue'
     },
@@ -104,7 +108,11 @@ const ACTION_DEFINITIONS = [
     name: 'schedule_task',
     validate: (item: Parsed, context: FeedbackContext) =>
       validateScheduleTask(item, context),
-    apply: async (runtime: RuntimeState, item: Parsed, context: ApplyContext) => {
+    apply: async (
+      runtime: RuntimeState,
+      item: Parsed,
+      context: ApplyContext,
+    ) => {
       await applyScheduleTask(runtime, item, context.seen)
       return 'continue'
     },
@@ -188,7 +196,7 @@ export const validateRegisteredManagerAction = (
   return definition.validate(item, context)
 }
 
-export const applyRegisteredManagerAction = async (
+export const applyRegisteredManagerAction = (
   runtime: RuntimeState,
   item: Parsed,
   context: ApplyContext,

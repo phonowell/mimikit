@@ -40,12 +40,13 @@ export const scheduleTaskSchema = z
       })
       return
     }
-    if (hasCron && hasScheduledAt)
+    if (hasCron && hasScheduledAt) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'cron and scheduled_at are mutually exclusive',
         path: ['cron'],
       })
+    }
   })
 
 export const cancelSchema = z
@@ -81,12 +82,13 @@ export const createIntentSchema = z
   .strict()
   .superRefine((data, ctx) => {
     if (data.cooldown_ms === undefined) return
-    if (data.trigger_mode === 'one_shot')
+    if (data.trigger_mode === 'one_shot') {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'cooldown_ms cannot be used with trigger_mode="one_shot"',
         path: ['cooldown_ms'],
       })
+    }
   })
 
 export const updateIntentSchema = z
@@ -103,12 +105,13 @@ export const updateIntentSchema = z
   })
   .strict()
   .superRefine((data, ctx) => {
-    if (data.cooldown_ms !== undefined && data.trigger_mode === 'one_shot')
+    if (data.cooldown_ms !== undefined && data.trigger_mode === 'one_shot') {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'cooldown_ms cannot be used with trigger_mode="one_shot"',
         path: ['cooldown_ms'],
       })
+    }
     if (
       data.prompt === undefined &&
       data.title === undefined &&

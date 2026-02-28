@@ -4,12 +4,10 @@ import {
   resolveDefaultFocusId,
 } from '../focus/index.js'
 
+import { collectTaskResultSummaries } from './action-apply-schema.js'
 import {
-  collectTaskResultSummaries,
-} from './action-apply-schema.js'
-import {
-  applyRegisteredManagerAction,
   type ApplyContext,
+  applyRegisteredManagerAction,
   type ApplyTaskActionsOptions,
 } from './action-registry.js'
 

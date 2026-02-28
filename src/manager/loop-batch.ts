@@ -1,28 +1,26 @@
 import { resolveDefaultFocusId, touchFocus } from '../focus/index.js'
+import {
+  appendManagerCorrectionLimitSystemMessage,
+  appendManagerErrorSystemMessage,
+  appendManagerFallbackReply,
+} from '../history/manager-events.js'
+import { appendHistory } from '../history/store.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort, logSafeError } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import { notifyUiSignal } from '../orchestrator/core/signals.js'
 import { isVisibleToAgent } from '../shared/message-visibility.js'
 import { nowIso } from '../shared/utils.js'
-import { appendHistory } from '../history/store.js'
 
 import { applyTaskActions, collectTaskResultSummaries } from './action-apply.js'
-import {
-  appendManagerErrorSystemMessage,
-  appendManagerFallbackReply,
-  appendManagerCorrectionLimitSystemMessage,
-} from '../history/manager-events.js'
+import { hasNonIdleManagerInput } from './idle-input.js'
+import { applyIntentCompletionCooldown } from './loop-batch-pre.js'
 import { runManagerBatch } from './loop-batch-run-manager.js'
 import {
   buildFallbackReply,
   consumeBatchHistory,
   finalizeBatchProgress,
 } from './loop-helpers.js'
-import {
-  applyIntentCompletionCooldown,
-} from './loop-batch-pre.js'
-import { hasNonIdleManagerInput } from './idle-input.js'
 import { startUiStream, stopUiStream } from './loop-ui-stream.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
@@ -173,7 +171,11 @@ export const processManagerBatch = async (params: {
       )
     }
     await bestEffort('appendHistory: manager_error_system_message', () =>
-      appendManagerErrorSystemMessage(runtime.paths, errorMessage, errorFocusId),
+      appendManagerErrorSystemMessage(
+        runtime.paths,
+        errorMessage,
+        errorFocusId,
+      ),
     )
 
     await bestEffort('appendLog: manager_end_error', () =>

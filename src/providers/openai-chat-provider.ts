@@ -5,6 +5,17 @@ import OpenAI, {
 } from 'openai'
 
 import {
+  appendOpenAiChatLog,
+  buildFetchWithoutAuthHeader,
+  ensureError,
+  normalizeOpenAiChatUsage,
+  resolveOpenAiApiKey,
+  resolveOpenAiChatBaseUrl,
+  resolveOpenAiChatModel,
+  STREAM_OPTIONS,
+} from './openai-chat-helpers.js'
+import { loadCodexSettings } from './openai-settings.js'
+import {
   buildProviderAbortedError,
   buildProviderSdkError,
   buildProviderTimeoutError,
@@ -18,17 +29,6 @@ import {
   createTimeoutGuard,
   elapsedMsSince,
 } from './provider-runtime.js'
-import { loadCodexSettings } from './openai-settings.js'
-import {
-  appendOpenAiChatLog,
-  buildFetchWithoutAuthHeader,
-  ensureError,
-  normalizeOpenAiChatUsage,
-  resolveOpenAiApiKey,
-  resolveOpenAiChatBaseUrl,
-  resolveOpenAiChatModel,
-  STREAM_OPTIONS,
-} from './openai-chat-helpers.js'
 
 import type { OpenAiChatProviderRequest, Provider } from './types.js'
 import type { TokenUsage } from '../types/index.js'
@@ -68,7 +68,7 @@ export const openAiChatProvider: Provider<OpenAiChatProviderRequest> = {
       const model = resolveOpenAiChatModel(request, settings.model)
       const shouldStripAuthorizationHeader =
         settings.requiresOpenAiAuth === false &&
-        !(settings.apiKey?.trim()?.length)
+        !settings.apiKey?.trim()?.length
       const client = new OpenAI({
         apiKey,
         baseURL,

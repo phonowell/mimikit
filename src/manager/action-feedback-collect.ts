@@ -1,6 +1,6 @@
 import {
-  REGISTERED_MANAGER_ACTIONS,
   type FeedbackContext,
+  REGISTERED_MANAGER_ACTIONS,
   validateRegisteredManagerAction,
 } from './action-registry.js'
 

@@ -6,20 +6,19 @@ import { setDefaultLogPath } from '../../log/safe.js'
 import { newId } from '../../shared/utils.js'
 import { cancelTask } from '../../worker/cancel-task.js'
 import { type ChatMessage } from '../read-model/chat-view.js'
-import { sortIdleIntents } from '../read-model/intent-select.js'
 import { buildFocusViews } from '../read-model/focus-view.js'
+import { sortIdleIntents } from '../read-model/intent-select.js'
 import { buildTaskViews } from '../read-model/task-view.js'
 
-import { waitForUiSignal } from './signals.js'
 import {
-  type AddCronJobInput,
   addCronJob,
+  type AddCronJobInput,
   cancelCronJob,
   cloneCronJob,
 } from './orchestrator-cron.js'
 import {
-  type OrchestratorStatus,
   computeOrchestratorStatus,
+  type OrchestratorStatus,
 } from './orchestrator-helpers.js'
 import {
   addUserInput,
@@ -30,6 +29,7 @@ import {
   startOrchestratorRuntime,
   waitForManagerDrain,
 } from './orchestrator-runtime-ops.js'
+import { waitForUiSignal } from './signals.js'
 
 import type { RuntimeState, UiWakeKind, UserMeta } from './runtime-state.js'
 import type { CronJob, IdleIntent, Task } from '../../types/index.js'
@@ -93,7 +93,7 @@ export class Orchestrator {
     return addUserInput(this.runtime, text, meta, quote)
   }
 
-  async getChatHistory(limit = 50): Promise<ChatMessage[]> {
+  getChatHistory(limit = 50): Promise<ChatMessage[]> {
     return getChatHistory(this.runtime, limit)
   }
 

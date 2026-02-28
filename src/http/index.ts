@@ -7,6 +7,7 @@ import fastify from 'fastify'
 import { FastifySSEPlugin } from 'fastify-sse-v2'
 
 import { logSafeError } from '../log/safe.js'
+
 import { resolveRoots } from './helpers.js'
 import { registerApiRoutes, registerNotFoundHandler } from './routes-api.js'
 

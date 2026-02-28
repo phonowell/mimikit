@@ -7,7 +7,12 @@ import {
   taskToFingerprintInput,
 } from './task-state.js'
 
-import type { FocusId, Task, TaskStatus, WorkerProfile } from '../../types/index.js'
+import type {
+  FocusId,
+  Task,
+  TaskStatus,
+  WorkerProfile,
+} from '../../types/index.js'
 
 export type EnqueueTaskResult = {
   task: Task

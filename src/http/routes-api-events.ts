@@ -1,7 +1,7 @@
-import type { FastifyInstance, FastifyReply } from 'fastify'
 import type { Orchestrator } from '../orchestrator/core/orchestrator-service.js'
 import type { UiAgentStream } from '../orchestrator/core/runtime-state.js'
 import type { TokenUsage } from '../types/index.js'
+import type { FastifyInstance, FastifyReply } from 'fastify'
 
 const SSE_HEARTBEAT_MS = 15_000
 const getDefaultSnapshot = (orchestrator: Orchestrator) =>
@@ -109,7 +109,9 @@ export const registerEventsRoute = (
         if (closed) break
         if (signal === 'timeout') continue
         if (signal === 'stream') {
-          const nextStream = cloneUiStream(orchestrator.getWebUiStreamSnapshot())
+          const nextStream = cloneUiStream(
+            orchestrator.getWebUiStreamSnapshot(),
+          )
           const patch = buildStreamPatch(lastStream, nextStream)
           if (!patch) continue
           lastStream = nextStream

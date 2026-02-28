@@ -2,16 +2,16 @@ import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import {
+  notifyUiSignal,
+  notifyWorkerLoop,
+  waitForWorkerLoopSignal,
+} from '../orchestrator/core/signals.js'
+import {
   markTaskCanceled,
   markTaskFailed,
   markTaskRunning,
   markTaskSucceeded,
 } from '../orchestrator/core/task-lifecycle.js'
-import {
-  notifyUiSignal,
-  notifyWorkerLoop,
-  waitForWorkerLoopSignal,
-} from '../orchestrator/core/signals.js'
 
 import { buildResult, finalizeResult } from './result-finalize.js'
 import { runTaskWithRetry } from './run-retry.js'

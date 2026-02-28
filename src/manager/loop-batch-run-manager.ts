@@ -4,6 +4,8 @@ import {
   resolveDefaultFocusId,
   selectWorkingFocusIds,
 } from '../focus/index.js'
+import { appendActionFeedbackSystemMessage } from '../history/manager-events.js'
+import { pickQueryHistoryRequest } from '../history/query.js'
 import { appendLog } from '../log/append.js'
 import {
   selectRecentIntents,
@@ -12,16 +14,12 @@ import {
 import { mergeUsageAdditive } from '../shared/token-usage.js'
 
 import { collectManagerActionFeedback } from './action-feedback-collect.js'
-import { pickQueryHistoryRequest } from '../history/query.js'
-import { appendActionFeedbackSystemMessage } from '../history/manager-events.js'
 import {
   buildHistoryQueryKey,
   collectTriggeredIntentIds,
   queryHistoryLookup,
 } from './loop-batch-context.js'
-import {
-  runManagerRoundWithRecovery,
-} from './loop-batch-exec.js'
+import { runManagerRoundWithRecovery } from './loop-batch-exec.js'
 import { createManagerStreamController } from './loop-batch-stream-controller.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
@@ -148,9 +146,9 @@ export const runManagerBatch = async (params: {
         queryKey &&
         actionFeedback.length === 0 &&
         previousQueryKey === queryKey
-      ) {
+      )
         throw new Error('manager_query_history_repeated_without_progress')
-      }
+
       previousQueryKey = queryKey
 
       const historyLookup = await queryHistoryLookup(runtime, queryRequest)

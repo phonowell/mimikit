@@ -1,6 +1,7 @@
 import { stringify as stringifyYaml } from 'yaml'
 
 import { parseIsoToMs } from '../shared/time.js'
+
 import type { Task } from '../types/index.js'
 
 export { parseIsoToMs }
@@ -24,8 +25,13 @@ export const normalizeYamlUsage = (
 ): Task['usage'] | undefined => {
   if (!usage) return
   const fields = [
-    'input', 'inputCacheRead', 'inputCacheWrite',
-    'output', 'outputCache', 'total', 'sessionTotal',
+    'input',
+    'inputCacheRead',
+    'inputCacheWrite',
+    'output',
+    'outputCache',
+    'total',
+    'sessionTotal',
   ] as const
   const normalized: Task['usage'] = {}
   for (const key of fields) {

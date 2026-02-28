@@ -1,6 +1,7 @@
+import { resolveRouteId } from './route-params.js'
+
 import type { Orchestrator } from '../orchestrator/core/orchestrator-service.js'
 import type { FastifyInstance } from 'fastify'
-import { resolveRouteId } from './route-params.js'
 
 export const registerTaskCancelRoute = (
   app: FastifyInstance,

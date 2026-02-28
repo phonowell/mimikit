@@ -1,18 +1,24 @@
+import { renderPromptTemplate } from '../prompts/format.js'
 import { mergeUsageAdditive } from '../shared/token-usage.js'
 import { appendTraceArchiveResult } from '../storage/traces-archive.js'
-import { renderPromptTemplate } from '../prompts/format.js'
+
 import { isAbortLikeError } from './error-utils.js'
 
+import type {
+  TraceArchiveEntry,
+  TraceArchiveResult,
+} from '../storage/traces-archive.js'
 import type { Task, TokenUsage } from '../types/index.js'
-import type { TraceArchiveEntry, TraceArchiveResult } from '../storage/traces-archive.js'
 
 export const SKILL_USAGE_DONE_TAG_PATTERN =
   '<M:skill_usage status="done">{skill-a,skill-b}</M:skill_usage>'
 export const MAX_RUN_ROUNDS = 3
 export const MAX_CONTINUE_LATEST_OUTPUT_CHARS = 1_600
 
-const SKILL_USAGE_DONE_TEST_RE = /<M:skill_usage\b[^>]*\bstatus\s*=\s*(['"])done\1[^>]*>[\s\S]*?<\/M:skill_usage>/i
-const SKILL_USAGE_DONE_STRIP_RE = /<M:skill_usage\b[^>]*\bstatus\s*=\s*(['"])done\1[^>]*>[\s\S]*?<\/M:skill_usage>/gi
+const SKILL_USAGE_DONE_TEST_RE =
+  /<M:skill_usage\b[^>]*\bstatus\s*=\s*(['"])done\1[^>]*>[\s\S]*?<\/M:skill_usage>/i
+const SKILL_USAGE_DONE_STRIP_RE =
+  /<M:skill_usage\b[^>]*\bstatus\s*=\s*(['"])done\1[^>]*>[\s\S]*?<\/M:skill_usage>/gi
 
 export const hasDoneMarker = (output: string): boolean =>
   SKILL_USAGE_DONE_TEST_RE.test(output)
@@ -70,7 +76,9 @@ export type RunLoopParams = {
   abortSignal?: AbortSignal
 }
 
-export const runWorkerLoop = async (params: RunLoopParams): Promise<{
+export const runWorkerLoop = async (
+  params: RunLoopParams,
+): Promise<{
   output: string
   elapsedMs: number
   usage?: TokenUsage
@@ -127,13 +135,14 @@ export const runWorkerLoop = async (params: RunLoopParams): Promise<{
         }
       }
 
-      if (round < MAX_RUN_ROUNDS)
+      if (round < MAX_RUN_ROUNDS) {
         nextPrompt = buildContinuePrompt(
           params.continueTemplate,
           params.continueTemplatePath,
           output,
           round + 1,
         )
+      }
     }
 
     throw new Error(

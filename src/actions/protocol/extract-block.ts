@@ -1,3 +1,12 @@
+import remarkParse from 'remark-parse'
+import { unified } from 'unified'
+import { visit } from 'unist-util-visit'
+
+import {
+  findMarkdownCodeRanges,
+  isIndexInRanges,
+  type Range,
+} from './markdown-code-ranges.js'
 import {
   extractAttrText,
   extractTagNameFromRaw,
@@ -6,14 +15,6 @@ import {
   parseAttributes,
   parseMetaTagName,
 } from './meta-tag-attrs.js'
-import {
-  findMarkdownCodeRanges,
-  isIndexInRanges,
-  type Range,
-} from './markdown-code-ranges.js'
-import remarkParse from 'remark-parse'
-import { unified } from 'unified'
-import { visit } from 'unist-util-visit'
 
 type Zone = {
   parseStart: number
@@ -113,7 +114,9 @@ const collectMetaTagsFromMarkdown = (
       pushTag(tag)
   })
   for (const tag of parseMetaTagsInHtml(text, 0)) pushTag(tag)
-  return Array.from(tags.values()).sort((left, right) => left.start - right.start)
+  return Array.from(tags.values()).sort(
+    (left, right) => left.start - right.start,
+  )
 }
 
 const findZone = (output: string, tags: MetaTag[]): Zone | undefined => {

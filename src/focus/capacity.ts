@@ -30,16 +30,21 @@ const activeCount = (runtime: RuntimeState): number =>
 export const enforceFocusCapacity = (runtime: RuntimeState): void => {
   ensureGlobalFocus(runtime)
 
-  runtime.activeFocusIds = runtime.activeFocusIds.filter((id, index, source) => {
-    if (source.indexOf(id) !== index) return false
-    const focus = findFocus(runtime, id)
-    return Boolean(focus && focus.status === 'active')
-  })
+  runtime.activeFocusIds = runtime.activeFocusIds.filter(
+    (id, index, source) => {
+      if (source.indexOf(id) !== index) return false
+      const focus = findFocus(runtime, id)
+      return Boolean(focus?.status === 'active')
+    },
+  )
 
   const demoteCandidates = runtime.focuses
     .filter((item) => item.status === 'active' && item.id !== GLOBAL_FOCUS_ID)
     .sort(compareByActivityAsc)
-  while (activeCount(runtime) > maxActive(runtime) && demoteCandidates.length > 0) {
+  while (
+    activeCount(runtime) > maxActive(runtime) &&
+    demoteCandidates.length > 0
+  ) {
     const oldest = demoteCandidates.shift()
     if (!oldest) break
     setFocusStatus(runtime, oldest.id, 'idle')
@@ -55,7 +60,9 @@ export const enforceFocusCapacity = (runtime: RuntimeState): void => {
     runtime.focusContexts = runtime.focusContexts.filter(
       (item) => item.focusId !== oldest.id,
     )
-    runtime.activeFocusIds = runtime.activeFocusIds.filter((id) => id !== oldest.id)
+    runtime.activeFocusIds = runtime.activeFocusIds.filter(
+      (id) => id !== oldest.id,
+    )
   }
 
   if (!runtime.activeFocusIds.includes(GLOBAL_FOCUS_ID))

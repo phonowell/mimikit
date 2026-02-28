@@ -6,10 +6,11 @@ export const parseFocusOpenItems = (value?: string): string[] | undefined => {
   if (normalized.startsWith('[')) {
     try {
       const parsed = JSON.parse(normalized) as unknown
-      if (Array.isArray(parsed))
+      if (Array.isArray(parsed)) {
         return parsed
           .map((item) => String(item).trim())
           .filter((item) => item.length > 0)
+      }
     } catch (error) {
       const rawPreview =
         normalized.length > 120 ? `${normalized.slice(0, 120)}...` : normalized

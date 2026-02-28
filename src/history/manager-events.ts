@@ -2,6 +2,7 @@ import { GLOBAL_FOCUS_ID } from '../focus/index.js'
 import { loadPromptTemplate } from '../prompts/prompt-loader.js'
 import { formatSystemEventText } from '../shared/system-event.js'
 import { nowIso } from '../shared/utils.js'
+
 import { appendHistory } from './store.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'

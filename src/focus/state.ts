@@ -3,7 +3,12 @@ import { nowIso } from '../shared/utils.js'
 import { GLOBAL_FOCUS_ID, MAX_FOCUS_OPEN_ITEMS } from './constants.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
-import type { FocusContext, FocusId, FocusMeta, FocusStatus } from '../types/index.js'
+import type {
+  FocusContext,
+  FocusId,
+  FocusMeta,
+  FocusStatus,
+} from '../types/index.js'
 
 const normalizeOpenItems = (value?: string[]): string[] | undefined => {
   if (!value) return undefined
@@ -73,7 +78,8 @@ export const setFocusStatus = (
   focus.updatedAt = timestamp
   focus.lastActivityAt = timestamp
   if (status === 'active') {
-    if (!runtime.activeFocusIds.includes(focusId)) runtime.activeFocusIds.push(focusId)
+    if (!runtime.activeFocusIds.includes(focusId))
+      runtime.activeFocusIds.push(focusId)
     return
   }
   runtime.activeFocusIds = runtime.activeFocusIds.filter((id) => id !== focusId)
@@ -100,7 +106,10 @@ export const upsertFocusContext = (
     params.openItems !== undefined
       ? normalizeOpenItems(params.openItems)
       : current?.openItems
-  if (!normalizedSummary && (!normalizedOpenItems || normalizedOpenItems.length === 0)) {
+  if (
+    !normalizedSummary &&
+    (!normalizedOpenItems || normalizedOpenItems.length === 0)
+  ) {
     if (index >= 0) runtime.focusContexts.splice(index, 1)
     return
   }
@@ -126,15 +135,20 @@ export const updateFocus = (
 ): void => {
   const focus = findFocus(runtime, params.id) ?? ensureFocus(runtime, params.id)
   const timestamp = nowIso()
-  if (params.title !== undefined) focus.title = params.title.trim() || focus.title
+  if (params.title !== undefined)
+    focus.title = params.title.trim() || focus.title
   if (params.status !== undefined) focus.status = params.status
   focus.updatedAt = timestamp
   focus.lastActivityAt = timestamp
-  if (params.status !== undefined) setFocusStatus(runtime, params.id, params.status)
-  if (params.summary !== undefined || params.openItems !== undefined)
+  if (params.status !== undefined)
+    setFocusStatus(runtime, params.id, params.status)
+  if (params.summary !== undefined || params.openItems !== undefined) {
     upsertFocusContext(runtime, {
       focusId: params.id,
       ...(params.summary !== undefined ? { summary: params.summary } : {}),
-      ...(params.openItems !== undefined ? { openItems: params.openItems } : {}),
+      ...(params.openItems !== undefined
+        ? { openItems: params.openItems }
+        : {}),
     })
+  }
 }

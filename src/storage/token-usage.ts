@@ -19,8 +19,13 @@ export const tokenUsageSchema = z
 type TokenUsageInput = z.infer<typeof tokenUsageSchema>
 
 const USAGE_KEYS = [
-  'input', 'inputCacheRead', 'inputCacheWrite',
-  'output', 'outputCache', 'total', 'sessionTotal',
+  'input',
+  'inputCacheRead',
+  'inputCacheWrite',
+  'output',
+  'outputCache',
+  'total',
+  'sessionTotal',
 ] as const
 
 export const normalizeTokenUsage = (
@@ -28,9 +33,9 @@ export const normalizeTokenUsage = (
 ): TokenUsage | undefined => {
   if (!usage) return undefined
   const result: TokenUsage = {}
-  for (const key of USAGE_KEYS) {
+  for (const key of USAGE_KEYS)
     if (usage[key] !== undefined) result[key] = usage[key]
-  }
+
   return Object.keys(result).length > 0 ? result : undefined
 }
 

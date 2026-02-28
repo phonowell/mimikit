@@ -42,7 +42,11 @@ export const taskToFingerprintInput = (
   prompt: task.prompt,
   title: task.title,
   profile: task.profile,
-  ...(task.cron ? { schedule: task.cron } : task.scheduledAt ? { schedule: task.scheduledAt } : {}),
+  ...(task.cron
+    ? { schedule: task.cron }
+    : task.scheduledAt
+      ? { schedule: task.scheduledAt }
+      : {}),
 })
 
 export const findActiveTaskBySemanticKey = (

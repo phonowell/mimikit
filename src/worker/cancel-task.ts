@@ -1,7 +1,10 @@
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
-import { notifyManagerLoop, notifyWorkerLoop } from '../orchestrator/core/signals.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
+import {
+  notifyManagerLoop,
+  notifyWorkerLoop,
+} from '../orchestrator/core/signals.js'
 import { markTaskCanceled } from '../orchestrator/core/task-lifecycle.js'
 import { nowIso } from '../shared/utils.js'
 import { publishWorkerResult } from '../streams/queues.js'

@@ -2,10 +2,10 @@ import { randomUUID } from 'node:crypto'
 import { mkdir, open, readFile, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 
-import type { FileHandle } from 'node:fs/promises'
-
 import { bestEffort, logSafeError } from '../log/safe.js'
 import { readErrorCode } from '../shared/error-code.js'
+
+import type { FileHandle } from 'node:fs/promises'
 
 type LockRecord = {
   pid: number
@@ -128,12 +128,13 @@ export const acquireRuntimeLock = async (
         meta: { lockPath },
       })
       const record = await readLockRecord(lockPath)
-      if (record?.token === token)
+      if (record?.token === token) {
         await bestEffort(
           'runtime_lock:remove_lock_file',
           () => rm(lockPath, { force: true }),
           { meta: { lockPath } },
         )
+      }
     },
   }
 }
