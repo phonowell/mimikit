@@ -1,10 +1,4 @@
 {
   "version": 1,
-  "skills": {
-    "enforcing-typescript-standards": {
-      "source": "jgeurts/eslint-config-decent",
-      "sourceType": "github",
-      "computedHash": "f70bef61146827be70d782e576a44a04fd5646cef8fa5d0c012dac9ed450d9c4"
-    }
-  }
+  "skills": {}
 }
