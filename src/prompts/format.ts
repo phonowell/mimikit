@@ -3,6 +3,7 @@ import { resolve } from 'node:path'
 import { Environment, FileSystemLoader, Template } from 'nunjucks'
 
 import { PROMPTS_ROOT } from './prompt-loader.js'
+import { toClientNowLocalIso, toUtcOffsetText } from '../shared/time.js'
 
 import type { ManagerEnv } from '../types/index.js'
 
@@ -28,35 +29,6 @@ export const renderPromptTemplate = (
 ): string =>
   new Template(template, PROMPT_TEMPLATE_ENV, templatePath).render(values)
 
-const padNum = (value: number, width = 2): string =>
-  String(value).padStart(width, '0')
-
-const toUtcOffsetText = (clientOffsetMinutes: number): string => {
-  const offsetMinutes = -Math.trunc(clientOffsetMinutes)
-  const sign = offsetMinutes >= 0 ? '+' : '-'
-  const absMinutes = Math.abs(offsetMinutes)
-  const hours = Math.floor(absMinutes / 60)
-  const minutes = absMinutes % 60
-  return `${sign}${padNum(hours)}:${padNum(minutes)}`
-}
-
-const toClientNowLocalIso = (
-  clientNowIso: string,
-  clientOffsetMinutes: number,
-): string | undefined => {
-  const utcMs = Date.parse(clientNowIso)
-  if (!Number.isFinite(utcMs)) return undefined
-  const localMs = utcMs - Math.trunc(clientOffsetMinutes) * 60_000
-  const localDate = new Date(localMs)
-  const utcOffset = toUtcOffsetText(clientOffsetMinutes)
-  return `${localDate.getUTCFullYear()}-${padNum(
-    localDate.getUTCMonth() + 1,
-  )}-${padNum(localDate.getUTCDate())}T${padNum(
-    localDate.getUTCHours(),
-  )}:${padNum(localDate.getUTCMinutes())}:${padNum(
-    localDate.getUTCSeconds(),
-  )}.${padNum(localDate.getUTCMilliseconds(), 3)}${utcOffset}`
-}
 export const formatEnvironment = (params?: PromptEnvironmentParams): string => {
   const lines: string[] = []
   const push = (label: string, value: string | number | undefined) => {

@@ -11,6 +11,7 @@ import {
   selectRecentIntents,
   selectRecentTasks,
 } from '../orchestrator/read-model/intent-select.js'
+import { resolveScheduleNowIso } from '../shared/time.js'
 import { mergeUsageAdditive } from '../shared/token-usage.js'
 
 import { collectManagerActionFeedback } from './action-feedback-collect.js'
@@ -105,8 +106,7 @@ export const runManagerBatch = async (params: {
       const parsed = parseActions(runResult.output)
       lastParsed = parsed
       stream.commitParsedText(parsed.text)
-      const scheduleNowIso =
-        runtime.lastUserMeta?.clientNowIso ?? new Date().toISOString()
+      const scheduleNowIso = resolveScheduleNowIso(runtime.lastUserMeta)
 
       const actionFeedback = collectManagerActionFeedback(parsed.actions, {
         taskStatusById: new Map(

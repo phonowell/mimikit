@@ -1,0 +1,55 @@
+﻿diff --git a/prompts/manager/system.md b/prompts/manager/system.md
+--- a/prompts/manager/system.md
++++ b/prompts/manager/system.md
+@@ -56,9 +56,9 @@
+ 
+ ## 时间与唤醒规则
+ - 时间基准优先级：`client_now_local_iso` > `client_now_iso` > `server_now_iso`。
+-- `schedule_task.scheduled_at` 必须是 ISO 8601 时间；建议始终带时区偏移（如 `+08:00`）。
+-- `scheduled_at` 应至少晚于时间基准 60 秒，且不得早于当前时间。
++- `schedule_task.scheduled_at` 需可被 `Date.parse` 解析；建议使用 ISO 8601 且带时区偏移（如 `+08:00`）。
++- 运行时仅拒绝“明显早于当前时间”的 `scheduled_at`（约 5 秒容差），不强制“至少晚于当前时间 60 秒”。
+ - `wake_profile=user_input`：优先回答用户，再决定是否派发任务。
+ - `wake_profile=task_result`：优先消费结果并给结论，必要时补后续 action。
+ - `wake_profile=cron|idle`：优先推进自动化任务，不要向用户额外索取输入。
+@@ -66,13 +66,14 @@
+ ## 参数枚举与格式
+ - `focus_id`：可选；若提供，格式必须为 `focus-[a-zA-Z0-9._-]+`。
+ - `priority`：`high | normal | low`。
++- `source`：`user_request | agent_auto | retry_decision`。
+ - `intent.status`：`pending | blocked | done`。
+ - `trigger_mode`：`one_shot | on_idle`。
+ - `focus.status`：`active | idle | done | archived`。
+-- `query_history.roles`：逗号分隔子集，元素仅可为 `user | agent | system`（如 `user,agent`）。
++- `query_history.roles`：逗号分隔子集，元素仅可为 `user | agent | system`（如 `user,agent`）；无效角色会被忽略，若过滤后为空则回退为 `user,agent`。
+ - `query_history.limit`：解析后范围 `1..20`，默认 `6`。
+-- `cron`：Croner 表达式，必须是 5/6/7 段空格分隔；建议统一使用 6 段（含秒）以减少歧义。
++- `cron`：建议使用 Croner 的 5/6/7 段空格分隔表达式（建议 6 段含秒）；当前 action 校验阶段不做段数校验。
+ - `open_items`：支持 `a||b||c` 或 JSON 数组字符串（如 `["a","b"]`）。
+ - `summary` 允许空字符串（可用于清空摘要）；`open_items` 若要清空请传 `[]`，空字符串会被视为“不更新”。
+ 
+@@ -78,17 +79,20 @@
+ ## 参数约束（可执行）
+ - `run_task`：必填 `prompt`, `title`；可选 `focus_id`。
++- `run_task` 额外策略：`prompt` 禁止访问 `.mimikit` 受保护路径（仅允许 `.mimikit/generated`）。
+ - `schedule_task`：必填 `prompt`, `title`；`cron` 与 `scheduled_at` 二选一且互斥；可选 `focus_id`。
+ - `create_focus`：必填 `id`；可选 `title`, `status`, `summary`, `open_items`。
+ - `update_focus`：必填 `id`；且至少更新一个字段：`title | status | summary | open_items`。
+ - `assign_focus`：必填 `target_id`, `focus_id`。
+ - `create_intent`：必填 `prompt`, `title`；可选 `priority`, `source`, `trigger_mode`, `cooldown_ms`, `focus_id`。
+-- `update_intent`：必填 `id`；且至少提供一个可编辑字段：`prompt | title | priority | status | trigger_mode | cooldown_ms | last_task_id | focus_id`。
++- `update_intent`：必填 `id`；且至少提供一个可编辑字段：`prompt | title | priority | status | trigger_mode | cooldown_ms | last_task_id | focus_id`；`done` intent 不可修改。
+ - `delete_intent`：必填 `id`；`done` intent 不可删除。
+ - `cancel_task`：必填 `id`（任务 ID 或已启用 cron job ID）。
+-- `compress_context`：无参数。
++- `compress_context`：无参数；且当前上下文需可压缩。
+ - `summarize_task_result`：必填 `task_id`, `summary`。
+ - `query_history`：必填 `query`；可选 `limit`, `roles`, `before_id`, `from`, `to`（`from/to` 需合法 ISO 8601）。
+ - `restart_runtime`：无参数。
+ - 组合约束：`trigger_mode="one_shot"` 时不得同时提供 `cooldown_ms`。
++- 参数属性顺序：XML 属性按键名解析，顺序不参与校验。
+ 
+-合法 action（示例）
++参考 action（示例）
+ ```xml
+ <M:create_focus id="focus-release-plan" title="发布计划" status="active" />
