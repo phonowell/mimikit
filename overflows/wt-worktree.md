@@ -1,44 +1,41 @@
-# 工作流：评审与合并
+# 工作流：评审与合并（worktree）
 
 ## 目的
-- 记录本地评审、提交、同步与合并流程
 
-## 脚本
-- 路径：`./scripts/worktree/land-worktree.js`
-- 运行：`pnpm run wt-land`
-- 限制：只能在 `worktree-1/2/3` 执行，禁止在 `main`
+- 记录本地评审、同步 main、合并到 main 的标准流程。
 
-## 同步 main → 当前槽位
-- 路径：`./scripts/worktree/rebase-worktree.js`
-- 运行：`pnpm run wt-rebase`
-- 限制：只能在 `worktree-1/2/3` 执行，禁止在 `main`
+## 脚本入口
 
-## 步骤
-1. 运行 `review-code-changes` skill，确保通过
-2. 确保 main worktree 干净后运行脚本，完成自动提交、同步 main、squash 合并到 main
-3. 脚本优先走纯代码快速路径；若提示冲突，再使用 LLM 处理后重跑
-4. 保留当前分支与 worktree
+- 合并脚本：`./scripts/worktree/land-worktree.js`（命令：`pnpm run wt-land`）
+- 同步脚本：`./scripts/worktree/rebase-worktree.js`（命令：`pnpm run wt-rebase`）
+- 限制：仅在 `worktree-1/2/3` 执行，禁止在 `main` 直接执行。
 
-## 脚本行为
-- 当前分支：自动提交未提交改动（自动消息）
-- 同步：`rebase main`
-- main worktree：`merge --squash` 当前分支并提交
-- 合并前：自动清空 `plans/` 目录内容
+## 标准步骤
 
-## 快速路径与 LLM
-- 快速路径：全部 git 操作可自动完成
-- 失败处理：仅在冲突阻塞时提示使用 LLM 介入
+1. 先完成代码复审（建议运行 `review-code-changes`）。
+2. 在当前 worktree 运行 `pnpm run wt-rebase`，确保基于最新 `origin/main`。
+3. 在当前 worktree 运行 `pnpm run wt-land`，执行自动提交、squash 合并到 `main`。
+4. 若脚本提示冲突，先解决冲突再重跑。
 
-## 当前工作状态
-- worktree-1/2/3 为本地开发槽位，不推送远端
-- 开发完成后运行 `pnpm run wt-land` 合并到 main
-- 脚本会自动将当前槽位 rebase 到 `main`
-- 如需与最新远端对齐，先 `git push origin main`
+## 脚本行为摘要
+
+- 当前分支自动提交未提交改动（自动消息）。
+- 当前分支执行 `rebase main`。
+- main worktree 执行 `merge --squash` 并提交。
+- 合并前清空 `plans/` 目录内容。
+
+## 当前协作约定
+
+- `worktree-1/2/3` 作为本地开发槽位，不直接推远端。
+- 开发完成后统一通过 `pnpm run wt-land` 汇入 `main`。
+- 需要对齐远端最新 `main` 时，先执行 `git push origin main`。
 
 ## 禁推送（worktree 槽位）
+
 - 初始化：`git -C <repo-root> config extensions.worktreeConfig true`
 - 槽位配置：`git -C <worktree-path> config --worktree remote.origin.pushurl "disabled://no-push"`
 - 解除禁推送：`git -C <worktree-path> config --worktree --unset remote.origin.pushurl`
 
 ## 禁 publish（可选）
-- `package.json` 加 `prepublishOnly`，仅允许在 `main` 执行发布
+
+- 在 `package.json` 增加 `prepublishOnly`，限制仅 `main` 可发布。

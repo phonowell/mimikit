@@ -8,20 +8,17 @@
 
 - 导出：`runManager`
 - Prompt 组装：`buildManagerPrompt`
-- 模板来源：`prompts/manager/system.md`（`nunjucks` 渲染，支持 `if/include`）
-- 注入策略：代码仅注入内容；`<M:...>` 标签与结构由模板声明
-- Provider 路径：`runWithProvider(provider='openai-chat')`
-- Provider role：`manager`
+- 模板：`prompts/manager/system.md`（`nunjucks` 渲染）
+- Provider：`runWithProvider({ provider: 'openai-chat', role: 'manager' })`
 - 会话连续性：依赖本地 `history/tasks/intents/managerCompressedContext`，不依赖 provider thread
-- 应用层压缩：`compress_context` 基于本地上下文生成摘要并写入 `managerCompressedContext`
 - 输出：`{ output, elapsedMs, usage? }`
 
-流程：
+主流程：
 
-1. 基于 inputs/results/tasks/intents/history/cron 上下文构造 manager prompt。
-2. 执行 prompt 预算限制并计算 timeout。
-3. 调用 OpenAI 官方 SDK `chat.completions.stream`。
-4. 若出现 action_feedback/query_history，则在同批次内继续下一轮推理。
+1. 根据输入、任务、意图、历史、cron 组装 prompt。
+2. 执行 token 预算与超时控制。
+3. 调用 OpenAI Chat 流式接口。
+4. 遇到 `action_feedback/query_history` 在同批次继续修正回合。
 5. 成功/失败都归档到 `traces/YYYY-MM-DD/<ts36><ra>.txt`。
 
 ## Worker Runner
@@ -33,12 +30,12 @@
 - Provider：`codex-sdk`
 - 输出：`{ output, elapsedMs, usage? }`
 
-流程：
+主流程：
 
 1. 构造 worker prompt。
-2. 执行 provider。
-3. 多轮执行直到输出出现 `M:skill_usage status="done"` 结束标签或到达上限轮次。
-4. 记录进度并归档最终结果。
+2. 调用 provider 执行。
+3. 多轮执行直到检测到结束标签或达到轮次上限。
+4. 记录进度并归档任务结果。
 
 ## Provider Runtime
 
@@ -48,7 +45,7 @@
 - 当前注册 provider：
   - `openai-chat`：`src/providers/openai-chat-provider.ts`
   - `codex-sdk`：`src/providers/codex-sdk-provider.ts`
-- 共享 provider 运行时基元：`src/providers/provider-runtime.ts`
-- provider 输入解析共享：`src/shared/input-parsing.ts`
+- 共享运行时工具：`src/providers/provider-runtime.ts`
+- 共享错误建模：`src/providers/provider-error.ts`
 
 不保留旧 provider 兼容层。
