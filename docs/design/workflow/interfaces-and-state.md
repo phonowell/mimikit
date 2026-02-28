@@ -24,11 +24,11 @@
 
 ## SSE 事件模型（`GET /api/events`）
 
-- `snapshot`：全量快照，包含 `status/messages/tasks/todos/focuses/stream`。
+- `snapshot`：全量快照，包含 `status/messages/tasks/intents/focuses/stream`。
 - `stream`：流式文本 patch（`clear | replace | delta`）。
 - `error`：SSE 连接内错误反馈。
 
-说明：当前实现通过 SSE 下发消息、任务、todos 与 focus，不再提供独立 `messages/tasks/todos` HTTP 查询接口。
+说明：当前实现通过 SSE 下发消息、任务、intents 与 focus，不再提供独立 `messages/tasks/intents` HTTP 查询接口。
 
 ## 输入协议（`POST /api/input`）
 

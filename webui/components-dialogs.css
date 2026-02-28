@@ -266,7 +266,7 @@
   cursor: not-allowed;
 }
 
-.todos-header {
+.intents-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -276,19 +276,19 @@
   background: var(--panel);
 }
 
-.todos-actions {
+.intents-actions {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.todos-title {
+.intents-title {
   margin: 0;
   font-size: 14px;
   font-weight: 600;
 }
 
-.todos-list {
+.intents-list {
   margin: 0;
   padding: 12px;
   list-style: none;
@@ -302,29 +302,29 @@
   box-shadow: none;
 }
 
-.todo-item,
-.todos-empty {
+.intent-item,
+.intents-empty {
   padding: 10px 12px;
   border-radius: 12px;
   border: 1px solid transparent;
   background: var(--panel);
 }
 
-.todo-item {
+.intent-item {
   display: flex;
   flex-direction: column;
   gap: 6px;
   box-shadow: var(--shadow-raised-soft);
 }
 
-.todo-title-row {
+.intent-title-row {
   display: flex;
   align-items: center;
   gap: 8px;
   min-width: 0;
 }
 
-.todo-status {
+.intent-status {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -332,10 +332,10 @@
   height: 10px;
   min-width: 10px;
   border-radius: 999px;
-  background: var(--todo-dot, var(--status-pending));
+  background: var(--intent-dot, var(--status-pending));
 }
 
-.todo-title {
+.intent-title {
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -345,7 +345,7 @@
   font-size: 13px;
 }
 
-.todo-priority {
+.intent-priority {
   display: inline-flex;
   align-items: center;
   height: 18px;
@@ -359,7 +359,7 @@
   letter-spacing: 0.02em;
 }
 
-.todo-meta {
+.intent-meta {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -369,20 +369,20 @@
   width: 100%;
 }
 
-.todo-time {
+.intent-time {
   margin-left: auto;
 }
 
-.todo-item[data-status='pending'] {
-  --todo-dot: var(--status-pending);
+.intent-item[data-status='pending'] {
+  --intent-dot: var(--status-pending);
 }
 
-.todo-item[data-status='blocked'] {
-  --todo-dot: var(--status-fail);
+.intent-item[data-status='blocked'] {
+  --intent-dot: var(--status-fail);
 }
 
-.todo-item[data-status='done'] {
-  --todo-dot: var(--status-success);
+.intent-item[data-status='done'] {
+  --intent-dot: var(--status-success);
 }
 
 .focuses-header {
@@ -547,3 +547,4 @@
 .focus-item[data-active='true'] {
   border-color: rgba(47, 125, 230, 0.24);
 }
+

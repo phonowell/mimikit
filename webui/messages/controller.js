@@ -195,7 +195,7 @@ export function createMessagesController({
   quoteText,
   quoteClearBtn,
   onTasksSnapshot,
-  onTodosSnapshot,
+  onIntentsSnapshot,
   onFocusesSnapshot,
   onDisconnected,
 }) {
@@ -304,8 +304,8 @@ export function createMessagesController({
     applyMessagesPayload(snapshot.messages, currentStreamMessage)
     if (typeof onTasksSnapshot === 'function' && isRecord(snapshot.tasks)) 
       onTasksSnapshot(snapshot.tasks)
-    if (typeof onTodosSnapshot === 'function' && isRecord(snapshot.todos))
-      onTodosSnapshot(snapshot.todos)
+    if (typeof onIntentsSnapshot === 'function' && isRecord(snapshot.intents))
+      onIntentsSnapshot(snapshot.intents)
     if (typeof onFocusesSnapshot === 'function' && isRecord(snapshot.focuses))
       onFocusesSnapshot(snapshot.focuses)
   }
@@ -455,3 +455,4 @@ export function createMessagesController({
     isFullyIdle,
   }
 }
+

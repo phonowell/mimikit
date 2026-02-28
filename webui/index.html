@@ -26,16 +26,16 @@
           </div>
           <div class="app-actions" role="toolbar" aria-label="Controls">
             <button
-              class="btn btn--sm todos-open"
-              data-todos-open
+              class="btn btn--sm intents-open"
+              data-intents-open
               type="button"
-              title="Todos"
-              aria-label="Todos"
+              title="Intents"
+              aria-label="Intents"
               aria-haspopup="dialog"
-              aria-controls="todos-dialog"
+              aria-controls="intents-dialog"
               aria-expanded="false"
             >
-              <span class="todos-label">Todos</span>
+              <span class="intents-label">Intents</span>
             </button>
             <button
               class="btn btn--sm tasks-open"
@@ -131,18 +131,18 @@
       </section>
 
       <dialog
-        class="todos-dialog"
-        data-todos-dialog
-        id="todos-dialog"
-        aria-labelledby="todos-title"
+        class="intents-dialog"
+        data-intents-dialog
+        id="intents-dialog"
+        aria-labelledby="intents-title"
       >
-        <section class="todos-panel">
-          <header class="todos-header">
-            <h2 class="todos-title" id="todos-title">Todos</h2>
-            <div class="todos-actions" role="group" aria-label="Todos">
+        <section class="intents-panel">
+          <header class="intents-header">
+            <h2 class="intents-title" id="intents-title">Intents</h2>
+            <div class="intents-actions" role="group" aria-label="Intents">
               <button
-                class="btn btn--icon btn--icon-muted todos-close"
-                data-todos-close
+                class="btn btn--icon btn--icon-muted intents-close"
+                data-intents-close
                 type="button"
                 title="Close"
                 aria-label="Close"
@@ -151,7 +151,7 @@
               </button>
             </div>
           </header>
-          <ul class="todos-list scrollable" data-todos-list></ul>
+          <ul class="intents-list scrollable" data-intents-list></ul>
         </section>
       </dialog>
 
@@ -245,3 +245,4 @@
     <script type="module" src="app.js"></script>
   </body>
 </html>
+

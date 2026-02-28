@@ -182,7 +182,7 @@
   white-space: nowrap;
 }
 
-.todos-open {
+.intents-open {
   gap: 8px;
   white-space: nowrap;
 }
@@ -196,7 +196,7 @@
   line-height: 1;
 }
 
-.todos-label {
+.intents-label {
   line-height: 1;
 }
 
@@ -248,3 +248,4 @@
   pointer-events: auto;
   transform: translateY(0);
 }
+

@@ -26,44 +26,44 @@ const formatAttempt = (item) => {
   return `${attempts}/${maxAttempts}`
 }
 
-export const renderTodos = (todosList, data) => {
-  if (!todosList) return
+export const renderIntents = (intentsList, data) => {
+  if (!intentsList) return
   const items = data?.items || []
-  todosList.innerHTML = ''
+  intentsList.innerHTML = ''
 
   if (items.length === 0) {
     const empty = document.createElement('li')
-    empty.className = 'todos-empty'
+    empty.className = 'intents-empty'
     const article = document.createElement('article')
-    article.textContent = UI_TEXT.noTodos
+    article.textContent = UI_TEXT.noIntents
     empty.appendChild(article)
-    todosList.appendChild(empty)
+    intentsList.appendChild(empty)
     return
   }
 
   for (const item of items) {
     const node = document.createElement('li')
-    node.className = 'todo-item'
+    node.className = 'intent-item'
     const status = typeof item.status === 'string' ? item.status : 'pending'
     node.dataset.status = status
 
     const header = document.createElement('div')
-    header.className = 'todo-title-row'
+    header.className = 'intent-title-row'
 
     const dot = document.createElement('span')
-    dot.className = 'todo-status'
+    dot.className = 'intent-status'
     dot.dataset.status = status
     dot.setAttribute('aria-hidden', 'true')
 
     const title = document.createElement('span')
-    title.className = 'todo-title'
+    title.className = 'intent-title'
     title.textContent =
       typeof item.title === 'string' && item.title.trim()
         ? item.title
         : UI_TEXT.untitledTask
 
     const priority = document.createElement('span')
-    priority.className = 'todo-priority'
+    priority.className = 'intent-priority'
     priority.textContent =
       PRIORITY_TEXT[
         typeof item.priority === 'string' ? item.priority : 'normal'
@@ -74,7 +74,7 @@ export const renderTodos = (todosList, data) => {
     header.appendChild(priority)
 
     const meta = document.createElement('small')
-    meta.className = 'todo-meta'
+    meta.className = 'intent-meta'
 
     const statusEl = document.createElement('span')
     statusEl.textContent = STATUS_TEXT[status] ?? status
@@ -101,14 +101,15 @@ export const renderTodos = (todosList, data) => {
           : ''
     if (changedAt) {
       const time = document.createElement('span')
-      time.className = 'todo-time'
+      time.className = 'intent-time'
       time.textContent = formatDisplayTime(changedAt)
       meta.appendChild(time)
     }
 
     node.appendChild(header)
     node.appendChild(meta)
-    todosList.appendChild(node)
+    intentsList.appendChild(node)
   }
 }
+
 

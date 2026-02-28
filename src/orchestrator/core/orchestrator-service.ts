@@ -105,7 +105,7 @@ export class Orchestrator {
     return buildTaskViews(this.runtime.tasks, this.runtime.cronJobs, limit)
   }
 
-  getTodos(limit = 200): { items: IdleIntent[] } {
+  getIntents(limit = 200): { items: IdleIntent[] } {
     const items = sortIdleIntents([
       ...this.runtime.idleIntents,
       ...this.runtime.idleIntentArchive,
@@ -133,7 +133,7 @@ export class Orchestrator {
         this.runtime.cronJobs,
         taskLimit,
       ),
-      todos: this.getTodos(taskLimit),
+      intents: this.getIntents(taskLimit),
       focuses: this.getFocuses(taskLimit),
       stream: this.runtime.uiStream ? { ...this.runtime.uiStream } : null,
     }))()

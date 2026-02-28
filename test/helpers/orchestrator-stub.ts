@@ -22,10 +22,11 @@ export const createOrchestratorStub = () => {
     getChatHistory: async () => [],
     getChatMessages: async () => ({ messages: [], mode: 'full' as const }),
     getTasks: () => ({ tasks: [], counts: {} }),
-    getTodos: () => ({ items: [] }),
+    getIntents: () => ({ items: [] }),
     getTaskById: () => undefined,
     cancelTask: async () => ({ ok: false, status: 'not_found' as const }),
     stopAndPersist: async () => undefined,
   } as unknown as Orchestrator
   return { orchestrator, addInputCalls }
 }
+

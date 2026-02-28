@@ -4,7 +4,7 @@ import { createMessagesController } from './messages/controller.js'
 import { bindRestart } from './restart.js'
 import { UI_TEXT } from './system-text.js'
 import { bindTasksPanel } from './tasks.js'
-import { bindTodosPanel } from './todos.js'
+import { bindIntentsPanel } from './intents.js'
 
 const $ = (sel) => document.querySelector(sel)
 
@@ -30,10 +30,10 @@ const elements = {
   workerDots: $('[data-worker-dots]'),
   tasksCloseBtn: $('[data-tasks-close]'),
   tasksList: $('[data-tasks-list]'),
-  todosDialog: $('[data-todos-dialog]'),
-  todosOpenBtn: $('[data-todos-open]'),
-  todosCloseBtn: $('[data-todos-close]'),
-  todosList: $('[data-todos-list]'),
+  intentsDialog: $('[data-intents-dialog]'),
+  intentsOpenBtn: $('[data-intents-open]'),
+  intentsCloseBtn: $('[data-intents-close]'),
+  intentsList: $('[data-intents-list]'),
   focusesDialog: $('[data-focuses-dialog]'),
   focusesOpenBtn: $('[data-focuses-open]'),
   focusesCloseBtn: $('[data-focuses-close]'),
@@ -120,11 +120,11 @@ const tasksPanel = bindTasksPanel({
   tasksOpenBtn: elements.tasksOpenBtn,
   tasksCloseBtn: elements.tasksCloseBtn,
 })
-const todosPanel = bindTodosPanel({
-  todosList: elements.todosList,
-  todosDialog: elements.todosDialog,
-  todosOpenBtn: elements.todosOpenBtn,
-  todosCloseBtn: elements.todosCloseBtn,
+const intentsPanel = bindIntentsPanel({
+  intentsList: elements.intentsList,
+  intentsDialog: elements.intentsDialog,
+  intentsOpenBtn: elements.intentsOpenBtn,
+  intentsCloseBtn: elements.intentsCloseBtn,
 })
 const focusPanel = bindFocusPanel({
   focusesList: elements.focusesList,
@@ -146,11 +146,11 @@ const messages = createMessagesController({
   quoteText: elements.quoteText,
   quoteClearBtn: elements.quoteClearBtn,
   onTasksSnapshot: (tasks) => tasksPanel?.applyTasksSnapshot?.(tasks),
-  onTodosSnapshot: (todos) => todosPanel?.applyTodosSnapshot?.(todos),
+  onIntentsSnapshot: (intents) => intentsPanel?.applyIntentsSnapshot?.(intents),
   onFocusesSnapshot: (focuses) => focusPanel?.applyFocusesSnapshot?.(focuses),
   onDisconnected: () => {
     tasksPanel?.setDisconnected?.()
-    todosPanel?.setDisconnected?.()
+    intentsPanel?.setDisconnected?.()
     focusPanel?.setDisconnected?.()
   },
 })
@@ -188,3 +188,4 @@ bindRestart({
 })
 messages.start()
 if (elements.input) elements.input.focus()
+

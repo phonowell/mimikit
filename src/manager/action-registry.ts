@@ -208,6 +208,6 @@ export const applyRegisteredManagerAction = (
   context: ApplyContext,
 ): Promise<ApplyResult> => {
   const definition = MANAGER_ACTION_REGISTRY.get(item.name)
-  if (!definition) return Promise.resolve('continue')
+  if (!definition) return continueApply()
   return definition.apply(runtime, item, context)
 }

@@ -8,9 +8,9 @@
 - `running`：worker 执行中。
 - `succeeded | failed | canceled`：终态。
 
-## Idle Intent（Todos）生命周期
+## Idle Intent（Intents）生命周期
 
-- 对外名称：Todos；后端领域名：`idle_intents`。
+- 对外名称：Intents；后端领域名：`idle_intents`。
 - 状态：`pending | blocked | done`。
 - `done` 归档存储在 `idleIntentArchive`，并继续注入 manager 上下文用于防重复创建。
 - `idle-wake-loop` 到达闲暇阈值后，按 `priority + FIFO` 触发全部可执行 `pending` intent，逐条发布 `system_event.name=intent_trigger`。

@@ -20,7 +20,7 @@ const TASK_STATUS_LABEL_MAP = Object.freeze({
 export const UI_TEXT = Object.freeze({
   conversationTitleFallback: 'Mimikit',
   noTasks: 'No tasks',
-  noTodos: 'No todos',
+  noIntents: 'No intents',
   noFocuses: 'No focus',
   untitledTask: 'Untitled',
   cancelingTask: 'Canceling',
@@ -59,3 +59,4 @@ export const formatHttpFailure = (fallback, status) =>
 
 export const formatUiError = (message) =>
   `${UI_TEXT.errorPrefix}${UI_TEXT.errorJoiner}${message}`
+
