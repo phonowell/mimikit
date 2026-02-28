@@ -27,8 +27,11 @@ const runCommand = (
   return result.status ?? 1
 }
 
-const pnpmCommand = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
-const installExitCode = runCommand(pnpmCommand, ['i'], { cwd: rootDir })
+const installExitCode =
+  process.platform === 'win32'
+    ? runCommand('cmd.exe', ['/d', '/s', '/c', 'pnpm i'], { cwd: rootDir })
+    : runCommand('pnpm', ['i'], { cwd: rootDir })
+
 if (installExitCode !== 0) {
   process.exit(installExitCode)
 }
