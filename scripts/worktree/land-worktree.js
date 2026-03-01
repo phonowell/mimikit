@@ -54,6 +54,19 @@ const ensureNoInProgressState = (cwd) => {
   if (state.conflicts) exitWith("conflicts detected: resolve first");
 };
 
+const clearStaleRebaseHead = (cwd) => {
+  const rebaseHeadPath = runGitCapture(["rev-parse", "--git-path", "REBASE_HEAD"], cwd);
+  if (!existsSync(rebaseHeadPath)) return;
+
+  const rebaseMergePath = runGitCapture(["rev-parse", "--git-path", "rebase-merge"], cwd);
+  const rebaseApplyPath = runGitCapture(["rev-parse", "--git-path", "rebase-apply"], cwd);
+  const hasRebaseMetadata = existsSync(rebaseMergePath) || existsSync(rebaseApplyPath);
+  if (hasRebaseMetadata) return;
+
+  rmSync(rebaseHeadPath, { force: true });
+  console.log("[land] cleared stale REBASE_HEAD marker");
+};
+
 const clearPlansDirectory = (repoRoot, plansDirName) => {
   const plansDir = join(repoRoot, plansDirName);
   if (!existsSync(plansDir)) return;
@@ -76,6 +89,7 @@ if (currentBranch === "HEAD") exitWith("detached HEAD is not supported");
 if (currentBranch === base) exitWith(`run from a non-${base} branch`);
 if (!ALLOWED_BRANCHES.has(currentBranch)) exitWith("run from worktree-1/2/3 only");
 
+clearStaleRebaseHead();
 ensureNoInProgressState();
 clearPlansDirectory(repoRoot, plansDir);
 
