@@ -22,6 +22,7 @@ import {
 } from './format.js'
 import { loadPromptFile, loadPromptSource } from './prompt-loader.js'
 
+import type { AppConfig } from '../config.js'
 import type {
   CronJob,
   FocusContext,
@@ -38,6 +39,18 @@ import type {
 } from '../types/index.js'
 
 export type { ManagerEnv } from '../types/index.js'
+
+export type PromptSectionLimits = AppConfig['manager']['promptSections']
+
+const clipUtf8ByBytes = (value: string, maxBytes: number): string => {
+  if (maxBytes <= 0) return ''
+  const buffer = Buffer.from(value, 'utf8')
+  if (buffer.byteLength <= maxBytes) return value
+  return buffer.subarray(0, maxBytes).toString('utf8').trimEnd()
+}
+
+const encodePromptSection = (value: string, maxBytes: number): string =>
+  escapeCdata(clipUtf8ByBytes(value, maxBytes))
 
 const mergeTaskResults = (
   primary: TaskResult[],
@@ -88,6 +101,7 @@ export const buildManagerPrompt = async (params: {
   inputs: UserInput[]
   results: TaskResult[]
   tasks: Task[]
+  promptSectionLimits: PromptSectionLimits
   intents?: IdleIntent[]
   cronJobs?: CronJob[]
   historyLookup?: HistoryLookupMessage[]
@@ -137,35 +151,65 @@ export const buildManagerPrompt = async (params: {
 
   const systemSource = await loadPromptSource('manager/system.md')
   const templateValues: Record<string, string> = {
-    environment: escapeCdata(
+    environment: encodePromptSection(
       formatEnvironment({
         workDir: params.workDir,
         ...(params.env ? { env: params.env } : {}),
       }),
+      params.promptSectionLimits.environmentMaxBytes,
     ),
-    inputs: escapeCdata(formatInputs(params.inputs)),
-    batch_results: escapeCdata(formatResultsYaml(params.tasks, pendingResults)),
-    tasks: escapeCdata(
+    inputs: encodePromptSection(
+      formatInputs(params.inputs),
+      params.promptSectionLimits.inputsMaxBytes,
+    ),
+    batch_results: encodePromptSection(
+      formatResultsYaml(params.tasks, pendingResults),
+      params.promptSectionLimits.batchResultsMaxBytes,
+    ),
+    tasks: encodePromptSection(
       formatTasksYaml(params.tasks, resultsForTasks, params.cronJobs ?? []),
+      params.promptSectionLimits.tasksMaxBytes,
     ),
-    intents: escapeCdata(formatIntentsYaml(params.intents ?? [])),
-    recent_history: escapeCdata(
+    intents: encodePromptSection(
+      formatIntentsYaml(params.intents ?? []),
+      params.promptSectionLimits.intentsMaxBytes,
+    ),
+    recent_history: encodePromptSection(
       formatRecentHistory(focusPayload.recentHistory),
+      params.promptSectionLimits.recentHistoryMaxBytes,
     ),
-    focus_list: escapeCdata(formatFocusList(focusPayload.focusList)),
-    focus_contexts: escapeCdata(
+    focus_list: encodePromptSection(
+      formatFocusList(focusPayload.focusList),
+      params.promptSectionLimits.focusListMaxBytes,
+    ),
+    focus_contexts: encodePromptSection(
       formatFocusContexts(focusPayload.focusContexts),
+      params.promptSectionLimits.focusContextsMaxBytes,
     ),
-    history_lookup: escapeCdata(
+    history_lookup: encodePromptSection(
       formatHistoryLookup(params.historyLookup ?? []),
+      params.promptSectionLimits.historyLookupMaxBytes,
     ),
-    file_lookup: escapeCdata(formatReadFileLookup(params.readFileLookup ?? [])),
-    action_feedback: escapeCdata(
+    file_lookup: encodePromptSection(
+      formatReadFileLookup(params.readFileLookup ?? []),
+      params.promptSectionLimits.fileLookupMaxBytes,
+    ),
+    action_feedback: encodePromptSection(
       formatActionFeedback(params.actionFeedback ?? []),
+      params.promptSectionLimits.actionFeedbackMaxBytes,
     ),
-    compressed_context: escapeCdata(params.compressedContext?.trim() ?? ''),
-    persona: escapeCdata(persona.trim()),
-    user_profile: escapeCdata(userProfile.trim()),
+    compressed_context: encodePromptSection(
+      params.compressedContext?.trim() ?? '',
+      params.promptSectionLimits.compressedContextMaxBytes,
+    ),
+    persona: encodePromptSection(
+      persona.trim(),
+      params.promptSectionLimits.personaMaxBytes,
+    ),
+    user_profile: encodePromptSection(
+      userProfile.trim(),
+      params.promptSectionLimits.userProfileMaxBytes,
+    ),
   }
   return renderPromptTemplate(
     systemSource.template,

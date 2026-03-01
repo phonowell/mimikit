@@ -1,8 +1,21 @@
 manager:
   model: gpt-5.2-high
   maxCorrectionRounds: 4
-  prompt:
-    maxTokens: 4096
+  promptSections:
+    actionFeedbackMaxBytes: 8192
+    batchResultsMaxBytes: 20480
+    compressedContextMaxBytes: 12288
+    environmentMaxBytes: 4096
+    fileLookupMaxBytes: 20480
+    focusContextsMaxBytes: 20480
+    focusListMaxBytes: 8192
+    historyLookupMaxBytes: 20480
+    inputsMaxBytes: 8192
+    intentsMaxBytes: 16384
+    personaMaxBytes: 8192
+    recentHistoryMaxBytes: 8192
+    tasksMaxBytes: 24576
+    userProfileMaxBytes: 8192
   taskCreate:
     debounceMs: 4000
   taskWindow:

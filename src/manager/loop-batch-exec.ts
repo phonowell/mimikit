@@ -100,6 +100,7 @@ export const runManagerRoundWithRecovery = async (params: {
         inputs: params.inputs,
         results: params.results,
         tasks: params.tasks,
+        promptSectionLimits: params.runtime.config.manager.promptSections,
         intents: params.intents,
         cronJobs: params.runtime.cronJobs,
         focuses: params.runtime.focuses,
@@ -120,7 +121,6 @@ export const runManagerRoundWithRecovery = async (params: {
           : {}),
         ...(managerEnv ? { env: managerEnv } : {}),
         model: params.runtime.config.manager.model,
-        maxPromptTokens: params.runtime.config.manager.prompt.maxTokens,
         onTextDelta: params.onTextDelta,
         onUsage: (usage) => {
           callUsage = usage

@@ -1,3 +1,4 @@
+import { defaultConfig } from '../src/config.js'
 import { buildManagerPrompt, buildWorkerPrompt } from '../src/prompts/build-prompts.js'
 
 const usage = () => {
@@ -21,6 +22,7 @@ const main = async () => {
 
   switch (role) {
     case 'manager': {
+      const config = defaultConfig({ workDir })
       const prompt = await buildManagerPrompt({
         stateDir: workDir,
         workDir,
@@ -31,6 +33,7 @@ const main = async () => {
         })),
         results: [],
         tasks: [],
+        promptSectionLimits: config.manager.promptSections,
       })
       console.log(prompt)
       return

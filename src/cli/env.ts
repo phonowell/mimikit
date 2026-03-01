@@ -69,13 +69,6 @@ const applyReasoningEnv = (config: AppConfig): void => {
 }
 
 const applyLoopEnv = (config: AppConfig): void => {
-  const managerPromptMaxTokens = parseEnvPositiveInteger(
-    'MIMIKIT_MANAGER_PROMPT_MAX_TOKENS',
-    process.env.MIMIKIT_MANAGER_PROMPT_MAX_TOKENS?.trim(),
-  )
-  if (managerPromptMaxTokens !== undefined)
-    config.manager.prompt.maxTokens = managerPromptMaxTokens
-
   const managerCreateTaskDebounceMs = parseEnvNonNegativeInteger(
     'MIMIKIT_MANAGER_CREATE_TASK_DEBOUNCE_MS',
     process.env.MIMIKIT_MANAGER_CREATE_TASK_DEBOUNCE_MS?.trim(),

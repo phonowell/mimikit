@@ -6,6 +6,7 @@ import {
 
 import { runManagerLlmCall } from './manager-llm-call.js'
 
+import type { AppConfig } from '../config.js'
 import type {
   CronJob,
   FocusContext,
@@ -31,6 +32,7 @@ export const runManager = async (params: {
   inputs: UserInput[]
   results: TaskResult[]
   tasks: Task[]
+  promptSectionLimits: AppConfig['manager']['promptSections']
   intents?: IdleIntent[]
   cronJobs?: CronJob[]
   historyLookup?: HistoryLookupMessage[]
@@ -43,7 +45,6 @@ export const runManager = async (params: {
   activeFocusIds?: FocusId[]
   workingFocusIds?: FocusId[]
   model?: string
-  maxPromptTokens?: number
   onTextDelta?: (delta: string) => void
   onUsage?: (usage: TokenUsage) => void
 }): Promise<{
@@ -57,6 +58,7 @@ export const runManager = async (params: {
     inputs: params.inputs,
     results: params.results,
     tasks: params.tasks,
+    promptSectionLimits: params.promptSectionLimits,
     ...(params.intents ? { intents: params.intents } : {}),
     ...(params.cronJobs ? { cronJobs: params.cronJobs } : {}),
     ...(params.historyLookup ? { historyLookup: params.historyLookup } : {}),
@@ -97,9 +99,6 @@ export const runManager = async (params: {
       prompt,
       workDir: params.workDir,
       ...(model ? { model } : {}),
-      ...(params.maxPromptTokens
-        ? { maxPromptTokens: params.maxPromptTokens }
-        : {}),
       ...(params.onTextDelta ? { onTextDelta: params.onTextDelta } : {}),
       ...(params.onUsage ? { onUsage: params.onUsage } : {}),
     })

@@ -26,9 +26,22 @@ const defaultConfigSchema = z
       .object({
         model: z.string().min(1),
         maxCorrectionRounds: z.number().int().positive(),
-        prompt: z
+        promptSections: z
           .object({
-            maxTokens: z.number().int().positive(),
+            actionFeedbackMaxBytes: z.number().int().positive(),
+            batchResultsMaxBytes: z.number().int().positive(),
+            compressedContextMaxBytes: z.number().int().positive(),
+            environmentMaxBytes: z.number().int().positive(),
+            fileLookupMaxBytes: z.number().int().positive(),
+            focusContextsMaxBytes: z.number().int().positive(),
+            focusListMaxBytes: z.number().int().positive(),
+            historyLookupMaxBytes: z.number().int().positive(),
+            inputsMaxBytes: z.number().int().positive(),
+            intentsMaxBytes: z.number().int().positive(),
+            personaMaxBytes: z.number().int().positive(),
+            recentHistoryMaxBytes: z.number().int().positive(),
+            tasksMaxBytes: z.number().int().positive(),
+            userProfileMaxBytes: z.number().int().positive(),
           })
           .strict(),
         taskCreate: z

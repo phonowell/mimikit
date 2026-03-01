@@ -163,7 +163,6 @@ export const compressManagerContext = async (
     prompt,
     workDir: runtime.config.workDir,
     model: runtime.config.manager.model,
-    maxPromptTokens: runtime.config.manager.prompt.maxTokens,
     logPath: runtime.paths.log,
     logContext: {
       action: 'compress_context',

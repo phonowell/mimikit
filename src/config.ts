@@ -18,9 +18,21 @@ export type AppConfig = {
     model: string
     /** Max rounds for manager correction loop */
     maxCorrectionRounds: number
-    prompt: {
-      /** Hard token limit for manager prompt */
-      maxTokens: number
+    promptSections: {
+      actionFeedbackMaxBytes: number
+      batchResultsMaxBytes: number
+      compressedContextMaxBytes: number
+      environmentMaxBytes: number
+      fileLookupMaxBytes: number
+      focusContextsMaxBytes: number
+      focusListMaxBytes: number
+      historyLookupMaxBytes: number
+      inputsMaxBytes: number
+      intentsMaxBytes: number
+      personaMaxBytes: number
+      recentHistoryMaxBytes: number
+      tasksMaxBytes: number
+      userProfileMaxBytes: number
     }
     taskCreate: {
       /** Debounce window for run_task dedup (ms) */
