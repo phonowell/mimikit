@@ -1,4 +1,4 @@
-﻿# wt-2 Manager Prompt 优化说明（2026-02-28）
+# wt-2 Manager Prompt 优化说明（2026-02-28）
 
 ## 1. 链路核对结果
 - 运行入口：`src/manager/runner.ts` 调用 `buildManagerPrompt`。

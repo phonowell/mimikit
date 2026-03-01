@@ -1,4 +1,4 @@
-﻿diff --git a/prompts/manager/system.md b/prompts/manager/system.md
+diff --git a/prompts/manager/system.md b/prompts/manager/system.md
 --- a/prompts/manager/system.md
 +++ b/prompts/manager/system.md
 @@ -56,9 +56,9 @@

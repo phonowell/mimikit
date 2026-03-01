@@ -9,7 +9,8 @@
 5. WebUI 设计语言：`./design/ui/webui-design-language.md`
 6. SDK 接入现状：`./reference/sdk/codex-sdk.md`
 7. 外部对比结论：`./reference/comparisons/known.md`
-8. 工程 ROI backlog：`./todo/engineering-roi-backlog.md`
+8. CoPaw QQ 渠道调研：`./reference/comparisons/copaw-qq-channel-research.md`
+9. 工程 ROI backlog：`./todo/engineering-roi-backlog.md`
 
 ## 目录职责
 
