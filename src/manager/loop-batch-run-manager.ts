@@ -133,7 +133,7 @@ export const runManagerBatch = async (params: {
           runtime.queues.inputsCursor > 0 ||
           runtime.queues.resultsCursor > 0,
         scheduleNowIso,
-      })
+      }, runResult.output)
 
       const queryRequest = pickQueryHistoryRequest(parsed.actions)
       const readFileRequest = pickReadFileRequest(parsed.actions)

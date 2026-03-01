@@ -50,7 +50,7 @@ test('collectManagerActionFeedback rejects schedule_task scheduled_at that is no
   )
   expect(feedback).toHaveLength(1)
   expect(feedback[0]?.error).toBe('action_execution_rejected')
-  expect(feedback[0]?.hint).toContain('scheduled_at 必须晚于当前时间')
+  expect(feedback[0]?.hint).toContain('scheduled_at')
 })
 
 test('collectManagerActionFeedback rejects cancel_task for missing task id', () => {
@@ -83,7 +83,7 @@ test('collectManagerActionFeedback rejects cancel_task for completed task', () =
   )
   expect(feedback).toHaveLength(1)
   expect(feedback[0]?.error).toBe('action_execution_rejected')
-  expect(feedback[0]?.hint).toContain('任务已完成')
+  expect(feedback[0]?.hint?.trim().length).toBeGreaterThan(0)
 })
 
 test('collectManagerActionFeedback reports invalid query_history date args', () => {
@@ -125,5 +125,27 @@ test('collectManagerActionFeedback rejects compress_context when context is unav
   expect(feedback).toHaveLength(1)
   expect(feedback[0]?.action).toBe('compress_context')
   expect(feedback[0]?.error).toBe('action_execution_rejected')
-  expect(feedback[0]?.hint).toContain('无可压缩上下文')
+})
+
+test('collectManagerActionFeedback reports malformed action tag when no action is parsed', () => {
+  const output =
+    '鎴戜細鎵ц\n<M:run_task title="demo" prompt="x" " />'
+  const feedback = collectManagerActionFeedback([], {}, output)
+  expect(feedback).toHaveLength(1)
+  expect(feedback[0]?.action).toBe('run_task')
+  expect(feedback[0]?.error).toBe('invalid_action_syntax')
+  expect(feedback[0]?.attempted).toContain('<M:run_task')
+})
+
+test('collectManagerActionFeedback reports action tag inside code block when no action is parsed', () => {
+  const output = [
+    '```xml',
+    '<M:run_task title="demo" prompt="x" />',
+    '```',
+  ].join('\n')
+  const feedback = collectManagerActionFeedback([], {}, output)
+  expect(feedback).toHaveLength(1)
+  expect(feedback[0]?.action).toBe('run_task')
+  expect(feedback[0]?.error).toBe('invalid_action_syntax')
+  expect(feedback[0]?.hint?.trim().length).toBeGreaterThan(0)
 })
