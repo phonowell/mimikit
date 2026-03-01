@@ -1,5 +1,5 @@
 import fastify from 'fastify'
-import { expect, test } from 'vitest'
+import { expect, test, vi } from 'vitest'
 
 import { defaultConfig } from '../src/config.js'
 import { registerApiRoutes } from '../src/http/routes-api.js'
@@ -123,5 +123,30 @@ test('task archive route falls back to live snapshot when archive file is missin
     'network timeout',
   ])
 
+  await app.close()
+})
+
+test('restart route requests orchestrator exit after persistence', async () => {
+  const app = fastify()
+  const { orchestrator, exitRequests } = createOrchestratorStub()
+  const stopAndPersist = vi.fn(async () => undefined)
+  ;(orchestrator as unknown as { stopAndPersist: () => Promise<void> }).stopAndPersist =
+    stopAndPersist
+  const config = defaultConfig({ workDir: '.mimikit' })
+  registerApiRoutes(app, orchestrator, config)
+  vi.useFakeTimers()
+  try {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/restart',
+    })
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toEqual({ ok: true })
+    await vi.advanceTimersByTimeAsync(150)
+  } finally {
+    vi.useRealTimers()
+  }
+  expect(stopAndPersist).toHaveBeenCalledTimes(1)
+  expect(exitRequests).toEqual([{ code: 75, reason: 'http_api_restart' }])
   await app.close()
 })

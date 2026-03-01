@@ -37,6 +37,11 @@ export type UiAgentStream = {
 
 export type UiWakeKind = 'snapshot' | 'stream'
 
+export type ExitRequest = {
+  code: number
+  reason: string
+}
+
 export type RuntimeState = {
   runtimeId: string
   config: AppConfig
@@ -66,8 +71,9 @@ export type RuntimeState = {
   createTaskDebounce: Map<string, number>
   workerQueue: PQueue
   workerSignalController: AbortController
-  uiWakePending: boolean
-  uiWakeKind: UiWakeKind | null
-  uiSignalController?: AbortController
+  uiWakeVersion: number
+  uiWakeEvents: Map<number, UiWakeKind>
+  uiSignalControllers: Set<AbortController>
   lastUserMeta?: UserMeta
+  requestExit?: (request: ExitRequest) => void
 }

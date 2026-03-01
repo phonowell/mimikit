@@ -1,4 +1,4 @@
-import { formatDisplayTime } from './messages/format.js'
+import { formatDisplayTimeWithFull } from './messages/format.js'
 import { UI_TEXT } from './system-text.js'
 
 const PRIORITY_TEXT = Object.freeze({
@@ -100,9 +100,11 @@ export const renderIntents = (intentsList, data) => {
           ? item.updatedAt
           : ''
     if (changedAt) {
+      const changedDisplay = formatDisplayTimeWithFull(changedAt)
       const time = document.createElement('span')
       time.className = 'intent-time'
-      time.textContent = formatDisplayTime(changedAt)
+      time.textContent = changedDisplay.displayText || changedAt
+      time.title = changedDisplay.fullText || changedAt
       meta.appendChild(time)
     }
 
@@ -111,5 +113,4 @@ export const renderIntents = (intentsList, data) => {
     intentsList.appendChild(node)
   }
 }
-
 

@@ -1,6 +1,7 @@
 import type { RuntimeState, UiWakeKind } from './runtime-state.js'
 
 const MAX_WAIT_MS = 24 * 60 * 60 * 1_000
+const MAX_UI_WAKE_EVENTS = 64
 
 const abortController = (controller: AbortController): void => {
   if (!controller.signal.aborted) controller.abort()
@@ -41,49 +42,68 @@ const waitForSignal = async (params: {
 
 // --- UI signal ---
 
-const consumeUiWake = (runtime: RuntimeState): UiWakeKind | undefined => {
-  if (!runtime.uiWakePending) return undefined
-  runtime.uiWakePending = false
-  const kind = runtime.uiWakeKind === 'stream' ? 'stream' : 'snapshot'
-  runtime.uiWakeKind = null
-  return kind
+const trimUiWakeHistory = (runtime: RuntimeState): void => {
+  while (runtime.uiWakeEvents.size > MAX_UI_WAKE_EVENTS) {
+    const oldest = runtime.uiWakeEvents.keys().next().value as number | undefined
+    if (oldest === undefined) break
+    runtime.uiWakeEvents.delete(oldest)
+  }
 }
 
-const mergeUiWakeKind = (
-  current: UiWakeKind | null,
-  next: UiWakeKind,
-): UiWakeKind => {
-  if (current === 'snapshot' || next === 'snapshot') return 'snapshot'
-  return 'stream'
+const resolveNextUiWake = (
+  runtime: RuntimeState,
+  sinceVersion: number,
+): { kind: UiWakeKind; version: number } | undefined => {
+  const normalizedVersion =
+    Number.isFinite(sinceVersion) && sinceVersion > 0
+      ? Math.floor(sinceVersion)
+      : 0
+  for (const [version, kind] of runtime.uiWakeEvents) {
+    if (version > normalizedVersion) return { kind, version }
+  }
+  return undefined
 }
 
 export const notifyUiSignal = (
   runtime: RuntimeState,
   kind: UiWakeKind = 'snapshot',
 ): void => {
-  runtime.uiWakeKind = mergeUiWakeKind(
-    runtime.uiWakePending ? runtime.uiWakeKind : null,
-    kind,
-  )
-  runtime.uiWakePending = true
-  runtime.uiSignalController ??= new AbortController()
-  abortController(runtime.uiSignalController)
+  runtime.uiWakeVersion += 1
+  runtime.uiWakeEvents.set(runtime.uiWakeVersion, kind)
+  trimUiWakeHistory(runtime)
+  for (const controller of runtime.uiSignalControllers) {
+    abortController(controller)
+  }
 }
 
 export const waitForUiSignal = async (
   runtime: RuntimeState,
   timeoutMs: number,
-): Promise<UiWakeKind | 'timeout'> => {
-  const pending = consumeUiWake(runtime)
+  sinceVersion = 0,
+): Promise<{ kind: UiWakeKind | 'timeout'; version: number }> => {
+  const normalizedSinceVersion =
+    Number.isFinite(sinceVersion) && sinceVersion > 0
+      ? Math.floor(sinceVersion)
+      : 0
+  const pending = resolveNextUiWake(runtime, normalizedSinceVersion)
   if (pending) return pending
   const controller = new AbortController()
-  runtime.uiSignalController = controller
-  await waitForSignal({
-    signal: controller.signal,
-    timeoutMs,
-    isResolved: () => runtime.uiWakePending,
-  })
-  return consumeUiWake(runtime) ?? 'timeout'
+  runtime.uiSignalControllers.add(controller)
+  try {
+    await waitForSignal({
+      signal: controller.signal,
+      timeoutMs,
+      isResolved: () => runtime.uiWakeVersion > normalizedSinceVersion,
+    })
+    return (
+      resolveNextUiWake(runtime, normalizedSinceVersion) ?? {
+        kind: 'timeout',
+        version: normalizedSinceVersion,
+      }
+    )
+  } finally {
+    runtime.uiSignalControllers.delete(controller)
+  }
 }
 
 // --- Manager signal ---

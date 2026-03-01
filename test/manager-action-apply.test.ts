@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import PQueue from 'p-queue'
-import { expect, test } from 'vitest'
+import { expect, test, vi } from 'vitest'
 
 import { defaultConfig } from '../src/config.js'
 import { buildPaths } from '../src/fs/paths.js'
@@ -59,9 +59,9 @@ const createRuntime = async (): Promise<RuntimeState> => {
     createTaskDebounce: new Map(),
     workerQueue: queue,
     workerSignalController: new AbortController(),
-    uiWakePending: false,
-    uiWakeKind: null,
-    uiSignalController: new AbortController(),
+    uiWakeVersion: 0,
+    uiWakeEvents: new Map(),
+    uiSignalControllers: new Set(),
   }
 }
 
@@ -236,4 +236,26 @@ test('delete_intent keeps done archive item unchanged', async () => {
 
   expect(runtime.idleIntentArchive).toHaveLength(1)
   expect(runtime.idleIntentArchive[0]?.id).toBe('intent-done')
+})
+
+test('restart_runtime requests exit through runtime hook', async () => {
+  const runtime = await createRuntime()
+  const requests: Array<{ code: number; reason: string }> = []
+  runtime.requestExit = (request) => {
+    requests.push(request)
+  }
+  vi.useFakeTimers()
+  try {
+    await applyTaskActions(runtime, [
+      {
+        name: 'restart_runtime',
+        attrs: {},
+      },
+    ])
+    await vi.runAllTimersAsync()
+  } finally {
+    vi.useRealTimers()
+  }
+  expect(runtime.stopped).toBe(true)
+  expect(requests).toEqual([{ code: 75, reason: 'manager_restart' }])
 })

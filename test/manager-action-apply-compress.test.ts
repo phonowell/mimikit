@@ -69,9 +69,9 @@ const createRuntime = async (): Promise<RuntimeState> => {
     createTaskDebounce: new Map(),
     workerQueue: queue,
     workerSignalController: new AbortController(),
-    uiWakePending: false,
-    uiWakeKind: null,
-    uiSignalController: new AbortController(),
+    uiWakeVersion: 0,
+    uiWakeEvents: new Map(),
+    uiSignalControllers: new Set(),
   }
 }
 

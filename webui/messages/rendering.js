@@ -1,6 +1,10 @@
 import { renderMarkdown } from '../markdown.js'
 
-import { formatDisplayTime, formatElapsedLabel, formatUsage } from './format.js'
+import {
+  formatDisplayTimeWithFull,
+  formatElapsedLabel,
+  formatUsage,
+} from './format.js'
 import { renderMessages, renderStreamMessage } from './render.js'
 
 export const createMessageRendering = (params) => {
@@ -19,7 +23,7 @@ export const createMessageRendering = (params) => {
       messagesEl,
       removeEmpty,
       renderMarkdown,
-      formatDisplayTime,
+      formatDisplayTimeWithFull,
       formatUsage,
       formatElapsedLabel,
       isNearBottom: scroll.isNearBottom,
@@ -38,7 +42,7 @@ export const createMessageRendering = (params) => {
       messagesEl,
       removeEmpty,
       renderMarkdown,
-      formatDisplayTime,
+      formatDisplayTimeWithFull,
       formatUsage,
       formatElapsedLabel,
       isNearBottom: scroll.isNearBottom,

@@ -9,6 +9,7 @@ import { createQuoteController } from './quote.js'
 import { createMessageRendering } from './rendering.js'
 import { createScrollController } from './scroll.js'
 import { createSendHandler } from './send.js'
+import { subscribeTimeTick } from '../time-tick.js'
 import {
   applyRenderedState,
   collectNewMessageIds,
@@ -206,6 +207,7 @@ export function createMessagesController({
   const pendingEvents = []
   let pendingFrame = null
   let reconnectTimer = null
+  let unsubscribeTimeTick = null
   let reconnectAttempts = 0
   const messageState = createMessageState()
 
@@ -433,16 +435,33 @@ export function createMessagesController({
   if (quoteClearBtn) quoteClearBtn.addEventListener('click', quote.clear)
   if (quotePreview) quotePreview.addEventListener('dblclick', quote.clear)
 
+  const refreshRenderedTimes = () => {
+    const messages = Array.isArray(messageState.lastMessages)
+      ? messageState.lastMessages
+      : []
+    if (messages.length === 0 && !currentStreamMessage) return
+    doRender(messages, new Set(), currentStreamMessage)
+  }
+
   const start = () => {
     if (isStarted) return
     isStarted = true
     reconnectAttempts = 0
+    if (!unsubscribeTimeTick) {
+      unsubscribeTimeTick = subscribeTimeTick(() => {
+        refreshRenderedTimes()
+      })
+    }
     scroll.bindScrollControls()
     openEvents()
   }
 
   const stop = () => {
     isStarted = false
+    if (unsubscribeTimeTick) {
+      unsubscribeTimeTick()
+      unsubscribeTimeTick = null
+    }
     closeEvents()
   }
 
@@ -455,4 +474,3 @@ export function createMessagesController({
     isFullyIdle,
   }
 }
-

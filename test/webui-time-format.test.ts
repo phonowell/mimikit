@@ -2,7 +2,9 @@ import { describe, expect, test } from 'vitest'
 
 import {
   formatAbsoluteDateTime,
+  formatDateTimeFull,
   formatDisplayTime,
+  formatDisplayTimeWithFull,
   parseTimeInput,
 } from '../webui/messages/format.js'
 
@@ -118,4 +120,36 @@ test('formatAbsoluteDateTime returns normalized datetime', () => {
       timeZone: 'UTC',
     }),
   ).toBe('2026-02-28 09:10')
+})
+
+test('formatDateTimeFull includes seconds and timezone', () => {
+  const full = formatDateTimeFull('2026-02-28T09:10:00.000Z', {
+    locale: 'en-US',
+    timeZone: 'UTC',
+  })
+  expect(full).toContain('09:10:00')
+  expect(full).toContain('UTC')
+})
+
+test('formatDisplayTimeWithFull returns display and full text', () => {
+  expect(
+    formatDisplayTimeWithFull('2026-02-28T09:10:00.000Z', {
+      ...BASE_OPTIONS,
+      relative: false,
+    }),
+  ).toMatchObject({
+    displayText: '09:10',
+  })
+
+  expect(
+    formatDisplayTimeWithFull('2026-02-28T09:10:00.000Z', {
+      ...BASE_OPTIONS,
+      relative: false,
+    }).fullText,
+  ).toContain('09:10:00')
+
+  expect(formatDisplayTimeWithFull('invalid')).toMatchObject({
+    displayText: '',
+    fullText: '',
+  })
 })

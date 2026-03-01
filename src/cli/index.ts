@@ -47,7 +47,7 @@ applyCliEnvOverrides(config)
 console.log('[cli] config:', config)
 
 const runtimeLock = await acquireRuntimeLock(resolvedWorkDir)
-const orchestrator = new Orchestrator(config)
+let shutdownPromise: Promise<never> | null = null
 
 const resolveHttpPort = async (target: number): Promise<number> => {
   const max = Math.min(65535, target + 20)
@@ -57,20 +57,30 @@ const resolveHttpPort = async (target: number): Promise<number> => {
   return port
 }
 
-const shutdown = async (reason: string, code = 0): Promise<never> => {
-  console.log(`\n[cli] ${reason}`)
-  await bestEffort('cli:release_runtime_lock', () => runtimeLock.release(), {
-    meta: { reason },
-  })
-  await bestEffort(
-    'cli:stop_and_persist',
-    () => orchestrator.stopAndPersist(),
-    {
+const shutdown = (reason: string, code = 0): Promise<never> => {
+  if (shutdownPromise) return shutdownPromise
+  shutdownPromise = (async () => {
+    console.log(`\n[cli] ${reason}`)
+    await bestEffort('cli:release_runtime_lock', () => runtimeLock.release(), {
       meta: { reason },
-    },
-  )
-  process.exit(code)
+    })
+    await bestEffort(
+      'cli:stop_and_persist',
+      () => orchestrator.stopAndPersist(),
+      {
+        meta: { reason },
+      },
+    )
+    process.exit(code)
+  })()
+  return shutdownPromise
 }
+
+const orchestrator = new Orchestrator(config, {
+  onExitRequested: ({ code, reason }) => {
+    void shutdown(`orchestrator exit requested: ${reason}`, code)
+  },
+})
 
 try {
   await orchestrator.start()

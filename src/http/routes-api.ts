@@ -52,7 +52,7 @@ export const registerApiRoutes = (
       void (async () => {
         await orchestrator.stopAndPersist()
         if (afterPersist) await afterPersist()
-        process.exit(75)
+        orchestrator.requestExit(75, 'http_api_restart')
       })()
     }, 100)
   }

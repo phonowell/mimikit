@@ -1,21 +1,22 @@
-import { resolveDefaultFocusId, touchFocus } from '../focus/index.js'
+import { resolveDefaultFocusId } from '../focus/index.js'
 import {
   appendManagerCorrectionLimitSystemMessage,
-  appendManagerErrorSystemMessage,
-  appendManagerFallbackReply,
 } from '../history/manager-events.js'
-import { appendHistory } from '../history/store.js'
 import { appendLog } from '../log/append.js'
-import { bestEffort, logSafeError } from '../log/safe.js'
+import { bestEffort } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import { notifyUiSignal } from '../orchestrator/core/signals.js'
 import { isVisibleToAgent } from '../shared/message-visibility.js'
-import { nowIso } from '../shared/utils.js'
 
 import { applyTaskActions, collectTaskResultSummaries } from './action-apply.js'
 import { hasNonIdleManagerInput } from './idle-input.js'
 import { applyIntentCompletionCooldown } from './loop-batch-pre.js'
 import { runManagerBatch } from './loop-batch-run-manager.js'
+import {
+  appendManagerReply,
+  finishBatchWithoutAgentReply,
+  recoverManagerBatchFailure,
+} from './loop-batch-flow.js'
 import {
   buildFallbackReply,
   consumeBatchHistory,
@@ -53,24 +54,13 @@ export const processManagerBatch = async (params: {
   startUiStream(runtime, streamId)
   try {
     if (agentInputs.length === 0 && results.length === 0) {
-      const consumed = await consumeBatchHistory({
+      await finishBatchWithoutAgentReply({
         runtime,
         inputs,
         results,
-      })
-      if (!consumed.ok) throw new Error(consumed.reason)
-      await finalizeBatchProgress({
-        runtime,
         nextInputsCursor,
         nextResultsCursor,
-        consumedInputIds: consumed.consumedInputIds,
-        persistRuntime: persistRuntimeState,
-      })
-      await appendLog(runtime.paths.log, {
-        event: 'manager_end',
-        status: 'ok',
-        elapsedMs: Math.max(0, Date.now() - startedAt),
-        skippedReason: 'no_agent_visible_inputs',
+        startedAt,
       })
       return
     }
@@ -114,14 +104,10 @@ export const processManagerBatch = async (params: {
         inputs: agentInputs,
         results,
       }))
-    const replyFocusId = resolveDefaultFocusId(runtime)
-    touchFocus(runtime, replyFocusId)
-    await appendHistory(runtime.paths.history, {
-      id: `agent-${Date.now()}-${nextInputsCursor}`,
-      role: 'agent',
+    await appendManagerReply({
+      runtime,
       text: responseText,
-      createdAt: nowIso(),
-      focusId: replyFocusId,
+      nextInputsCursor,
       ...(resolvedUsage ? { usage: resolvedUsage } : {}),
       ...(managerRun.elapsedMs >= 0 ? { elapsedMs: managerRun.elapsedMs } : {}),
     })
@@ -142,55 +128,17 @@ export const processManagerBatch = async (params: {
       ...(resolvedUsage ? { usage: resolvedUsage } : {}),
     })
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error)
-    let drainedOnError = false
-    try {
-      const consumed = await consumeBatchHistory({
-        runtime,
-        inputs,
-        results,
-      })
-      if (consumed.ok) {
-        await finalizeBatchProgress({
-          runtime,
-          nextInputsCursor,
-          nextResultsCursor,
-          consumedInputIds: consumed.consumedInputIds,
-          persistRuntime: persistRuntimeState,
-        })
-        drainedOnError = true
-      }
-    } catch (drainError) {
-      await logSafeError('managerLoop: drain batch on failure', drainError)
-    }
-
-    const errorFocusId = resolveDefaultFocusId(runtime)
-    if (drainedOnError && !agentAppended && agentInputs.length > 0) {
-      await bestEffort('appendHistory: manager_fallback_reply', () =>
-        appendManagerFallbackReply(runtime.paths, errorFocusId),
-      )
-    }
-    await bestEffort('appendHistory: manager_error_system_message', () =>
-      appendManagerErrorSystemMessage(
-        runtime.paths,
-        errorMessage,
-        errorFocusId,
-      ),
-    )
-
-    await bestEffort('appendLog: manager_end_error', () =>
-      appendLog(runtime.paths.log, {
-        event: 'manager_end',
-        status: 'error',
-        error: errorMessage,
-        elapsedMs: Math.max(0, Date.now() - startedAt),
-        drainedOnError,
-        agentAppended,
-      }),
-    )
-    await bestEffort('persistRuntimeState: manager_error', () =>
-      persistRuntimeState(runtime),
-    )
+    await recoverManagerBatchFailure({
+      runtime,
+      error,
+      inputs,
+      results,
+      nextInputsCursor,
+      nextResultsCursor,
+      agentInputsCount: agentInputs.length,
+      agentAppended,
+      startedAt,
+    })
   } finally {
     stopUiStream(runtime, streamId)
     runtime.managerRunning = false

@@ -1,6 +1,7 @@
 import { createDialogController } from './dialog.js'
 import { UI_TEXT } from './system-text.js'
 import { renderFocuses } from './focus-view.js'
+import { subscribeTimeTick } from './time-tick.js'
 
 const EMPTY_FOCUSES = { items: [] }
 
@@ -25,9 +26,23 @@ export function bindFocusPanel({
   }
 
   let latestFocuses = EMPTY_FOCUSES
+  let unsubscribeTimeTick = null
 
   const renderLatestFocuses = () => {
     renderFocuses(focusesList, latestFocuses)
+  }
+
+  const startTimeTick = () => {
+    if (unsubscribeTimeTick) return
+    unsubscribeTimeTick = subscribeTimeTick(() => {
+      renderLatestFocuses()
+    })
+  }
+
+  const stopTimeTick = () => {
+    if (!unsubscribeTimeTick) return
+    unsubscribeTimeTick()
+    unsubscribeTimeTick = null
   }
 
   const applyFocusesSnapshot = (payload) => {
@@ -52,7 +67,11 @@ export function bindFocusPanel({
         trigger: focusesOpenBtn,
         focusOnOpen: focusesCloseBtn,
         focusOnClose: focusesOpenBtn,
-        onOpen: renderLatestFocuses,
+        onOpen: () => {
+          startTimeTick()
+          renderLatestFocuses()
+        },
+        onAfterClose: stopTimeTick,
       })
     : null
 
@@ -81,12 +100,16 @@ export function bindFocusPanel({
     focusesDialog.addEventListener('click', onDialogClick)
     focusesDialog.addEventListener('cancel', onDialogCancel)
     focusesDialog.addEventListener('close', onDialogClose)
-  } else renderLatestFocuses()
+  } else {
+    startTimeTick()
+    renderLatestFocuses()
+  }
 
   return {
     applyFocusesSnapshot,
     setDisconnected,
     dispose: () => {
+      stopTimeTick()
       if (dialogEnabled && dialog) {
         focusesOpenBtn.removeEventListener('click', onOpen)
         if (focusesCloseBtn) focusesCloseBtn.removeEventListener('click', onClose)

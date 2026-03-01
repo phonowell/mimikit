@@ -1,6 +1,7 @@
 import { createDialogController } from './dialog.js'
 import { UI_TEXT } from './system-text.js'
 import { renderIntents } from './intents-view.js'
+import { subscribeTimeTick } from './time-tick.js'
 
 const EMPTY_INTENTS = { items: [] }
 
@@ -25,9 +26,23 @@ export function bindIntentsPanel({
   }
 
   let latestIntents = EMPTY_INTENTS
+  let unsubscribeTimeTick = null
 
   const renderLatestIntents = () => {
     renderIntents(intentsList, latestIntents)
+  }
+
+  const startTimeTick = () => {
+    if (unsubscribeTimeTick) return
+    unsubscribeTimeTick = subscribeTimeTick(() => {
+      renderLatestIntents()
+    })
+  }
+
+  const stopTimeTick = () => {
+    if (!unsubscribeTimeTick) return
+    unsubscribeTimeTick()
+    unsubscribeTimeTick = null
   }
 
   const applyIntentsSnapshot = (payload) => {
@@ -52,7 +67,11 @@ export function bindIntentsPanel({
         trigger: intentsOpenBtn,
         focusOnOpen: intentsCloseBtn,
         focusOnClose: intentsOpenBtn,
-        onOpen: renderLatestIntents,
+        onOpen: () => {
+          startTimeTick()
+          renderLatestIntents()
+        },
+        onAfterClose: stopTimeTick,
       })
     : null
 
@@ -81,12 +100,16 @@ export function bindIntentsPanel({
     intentsDialog.addEventListener('click', onDialogClick)
     intentsDialog.addEventListener('cancel', onDialogCancel)
     intentsDialog.addEventListener('close', onDialogClose)
-  } else renderLatestIntents()
+  } else {
+    startTimeTick()
+    renderLatestIntents()
+  }
 
   return {
     applyIntentsSnapshot,
     setDisconnected,
     dispose: () => {
+      stopTimeTick()
       if (dialogEnabled && dialog) {
         intentsOpenBtn.removeEventListener('click', onOpen)
         if (intentsCloseBtn) intentsCloseBtn.removeEventListener('click', onClose)
@@ -97,5 +120,4 @@ export function bindIntentsPanel({
     },
   }
 }
-
 

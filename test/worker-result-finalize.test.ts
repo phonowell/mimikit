@@ -44,8 +44,9 @@ test('finalizeResult appends worker_end progress for canceled task', async () =>
     lastWorkerActivityAtMs: 0,
     managerWakePending: false,
     managerSignalController: new AbortController(),
-    uiWakePending: false,
-    uiWakeKind: null,
+    uiWakeVersion: 0,
+    uiWakeEvents: new Map(),
+    uiSignalControllers: new Set(),
   } as unknown as RuntimeState
   const result: TaskResult = {
     taskId: task.id,

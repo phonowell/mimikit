@@ -1,6 +1,7 @@
 import { createDialogController } from './dialog.js'
 import { UI_TEXT } from './system-text.js'
 import { createElapsedTicker, renderTasks } from './tasks-view.js'
+import { subscribeTimeTick } from './time-tick.js'
 
 const EMPTY_TASKS = { tasks: [], counts: {} }
 
@@ -27,6 +28,7 @@ export function bindTasksPanel({
 
   let latestTasks = EMPTY_TASKS
   const elapsedTicker = createElapsedTicker(tasksList)
+  let unsubscribeTimeTick = null
   const setTaskMenuOpen = (menuRoot, open) => {
     if (!(menuRoot instanceof HTMLElement)) return
     menuRoot.classList.toggle('is-open', open)
@@ -65,11 +67,20 @@ export function bindTasksPanel({
 
   const startTicker = () => {
     elapsedTicker.start()
+    if (!unsubscribeTimeTick) {
+      unsubscribeTimeTick = subscribeTimeTick(() => {
+        renderLatestTasks()
+      })
+    }
     renderLatestTasks()
   }
 
   const stopTicker = () => {
     elapsedTicker.stop()
+    if (unsubscribeTimeTick) {
+      unsubscribeTimeTick()
+      unsubscribeTimeTick = null
+    }
   }
 
   async function requestCancel(taskId, button) {

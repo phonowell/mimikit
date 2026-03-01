@@ -17,6 +17,7 @@ const getFormatterKey = (locale, timeZone) => `${locale}::${timeZone}`
 const timeFormatterCache = new Map()
 const weekdayFormatterCache = new Map()
 const datePartsFormatterCache = new Map()
+const fullDateTimeFormatterCache = new Map()
 
 const getTimeFormatter = (locale, timeZone) => {
   const key = getFormatterKey(locale, timeZone)
@@ -55,6 +56,25 @@ const getDatePartsFormatter = (locale, timeZone) => {
     timeZone,
   })
   datePartsFormatterCache.set(key, formatter)
+  return formatter
+}
+
+const getFullDateTimeFormatter = (locale, timeZone) => {
+  const key = getFormatterKey(locale, timeZone)
+  const cached = fullDateTimeFormatterCache.get(key)
+  if (cached) return cached
+  const formatter = new Intl.DateTimeFormat(locale, {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+    timeZone,
+    timeZoneName: 'short',
+  })
+  fullDateTimeFormatterCache.set(key, formatter)
   return formatter
 }
 
@@ -168,6 +188,14 @@ export const formatAbsoluteDateTime = (input, options = {}) => {
   return `${dateText} ${timeText}`
 }
 
+export const formatDateTimeFull = (input, options = {}) => {
+  const date = parseTimeInput(input)
+  if (!date) return ''
+  const locale = resolveLocale(options.locale)
+  const timeZone = resolveTimeZone(options.timeZone)
+  return getFullDateTimeFormatter(locale, timeZone).format(date)
+}
+
 export const formatDisplayTime = (input, options = {}) => {
   const target = parseTimeInput(input)
   if (!target) return ''
@@ -204,6 +232,17 @@ export const formatDisplayTime = (input, options = {}) => {
   if (nowYear === targetYear)
     return `${formatMonthDay(target, locale, timeZone)} ${timeText}`
   return `${formatYearMonthDay(target, locale, timeZone)} ${timeText}`
+}
+
+export const formatDisplayTimeWithFull = (input, options = {}) => {
+  const target = parseTimeInput(input)
+  if (!target) return { displayText: '', fullText: '' }
+  const now = resolveNowDate(options.now)
+  const locale = resolveLocale(options.locale)
+  const timeZone = resolveTimeZone(options.timeZone)
+  const displayText = formatDisplayTime(target, { ...options, now, locale, timeZone })
+  const fullText = formatDateTimeFull(target, { locale, timeZone })
+  return { displayText, fullText }
 }
 
 export const formatTime = (input, options = {}) => formatDisplayTime(input, options)

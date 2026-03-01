@@ -93,14 +93,15 @@ const buildCompressPrompt = async (runtime: RuntimeState): Promise<string> => {
 
 const requestManagerRestart = (runtime: RuntimeState): void => {
   setTimeout(() => {
-    void (async () => {
-      runtime.stopped = true
-      notifyWorkerLoop(runtime)
-      await bestEffort('persistRuntimeState: manager_restart', () =>
-        persistRuntimeState(runtime),
-      )
-      process.exit(75)
-    })()
+    runtime.stopped = true
+    notifyWorkerLoop(runtime)
+    runtime.requestExit?.({
+      code: 75,
+      reason: 'manager_restart',
+    })
+    void bestEffort('persistRuntimeState: manager_restart', () =>
+      persistRuntimeState(runtime),
+    )
   }, 100)
 }
 

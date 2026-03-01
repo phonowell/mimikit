@@ -1,0 +1,39 @@
+import { expect, test } from 'vitest'
+
+import { notifyUiSignal, waitForUiSignal } from '../src/orchestrator/core/signals.js'
+
+import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
+
+const createRuntime = (): RuntimeState =>
+  ({
+    uiWakeVersion: 0,
+    uiWakeEvents: new Map(),
+    uiSignalControllers: new Set(),
+    managerWakePending: false,
+    managerSignalController: new AbortController(),
+    workerSignalController: new AbortController(),
+  }) as unknown as RuntimeState
+
+test('waitForUiSignal wakes all concurrent listeners', async () => {
+  const runtime = createRuntime()
+  const wait1 = waitForUiSignal(runtime, 1000, 0)
+  const wait2 = waitForUiSignal(runtime, 1000, 0)
+  await Promise.resolve()
+  notifyUiSignal(runtime, 'stream')
+  await expect(wait1).resolves.toEqual({ kind: 'stream', version: 1 })
+  await expect(wait2).resolves.toEqual({ kind: 'stream', version: 1 })
+})
+
+test('waitForUiSignal consumes unseen versions in order', async () => {
+  const runtime = createRuntime()
+  notifyUiSignal(runtime, 'snapshot')
+  notifyUiSignal(runtime, 'stream')
+  await expect(waitForUiSignal(runtime, 1, 0)).resolves.toEqual({
+    kind: 'snapshot',
+    version: 1,
+  })
+  await expect(waitForUiSignal(runtime, 1, 1)).resolves.toEqual({
+    kind: 'stream',
+    version: 2,
+  })
+})

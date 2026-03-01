@@ -5,7 +5,7 @@ export const renderMessage = (params, msg) => {
   const {
     messagesEl,
     renderMarkdown,
-    formatDisplayTime,
+    formatDisplayTimeWithFull,
     formatUsage,
     formatElapsedLabel,
     enterMessageIds,
@@ -102,10 +102,16 @@ export const renderMessage = (params, msg) => {
     meta.appendChild(delivery)
   }
   if (!isSystemMessage && !isStreamingMessage) {
-    const time = document.createElement('span')
-    time.className = 'time'
-    time.textContent = formatDisplayTime(msg.createdAt)
-    meta.appendChild(time)
+    const timeDisplay = formatDisplayTimeWithFull(msg.createdAt)
+    if (timeDisplay.displayText) {
+      const time = document.createElement('span')
+      time.className = 'time'
+      time.textContent = timeDisplay.displayText
+      time.title =
+        timeDisplay.fullText ||
+        (typeof msg.createdAt === 'string' ? msg.createdAt : '')
+      meta.appendChild(time)
+    }
   }
   if (meta.childElementCount > 0) 
     article.appendChild(meta)

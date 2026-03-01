@@ -31,15 +31,24 @@ import {
 } from './orchestrator-runtime-ops.js'
 import { waitForUiSignal } from './signals.js'
 
-import type { RuntimeState, UiWakeKind, UserMeta } from './runtime-state.js'
+import type {
+  ExitRequest,
+  RuntimeState,
+  UiWakeKind,
+  UserMeta,
+} from './runtime-state.js'
 import type { CronJob, IdleIntent, Task } from '../../types/index.js'
 
 export type { OrchestratorStatus } from './orchestrator-helpers.js'
 
+type OrchestratorOptions = {
+  onExitRequested?: (request: ExitRequest) => void
+}
+
 export class Orchestrator {
   private runtime: RuntimeState
 
-  constructor(config: AppConfig) {
+  constructor(config: AppConfig, options: OrchestratorOptions = {}) {
     const paths = buildPaths(config.workDir)
     setDefaultLogPath(paths.log)
     const nowMs = Date.now()
@@ -68,9 +77,12 @@ export class Orchestrator {
       createTaskDebounce: new Map(),
       workerQueue: new PQueue({ concurrency: config.worker.maxConcurrent }),
       workerSignalController: new AbortController(),
-      uiWakePending: false,
-      uiWakeKind: null,
-      uiSignalController: new AbortController(),
+      uiWakeVersion: 0,
+      uiWakeEvents: new Map(),
+      uiSignalControllers: new Set(),
+      ...(options.onExitRequested
+        ? { requestExit: options.onExitRequested }
+        : {}),
     }
   }
 
@@ -143,8 +155,19 @@ export class Orchestrator {
     return this.runtime.uiStream ? { ...this.runtime.uiStream } : null
   }
 
-  waitForWebUiSignal(timeoutMs: number): Promise<UiWakeKind | 'timeout'> {
-    return waitForUiSignal(this.runtime, timeoutMs)
+  getWebUiWakeVersion(): number {
+    return this.runtime.uiWakeVersion
+  }
+
+  waitForWebUiSignal(
+    timeoutMs: number,
+    sinceVersion = 0,
+  ): Promise<{ kind: UiWakeKind | 'timeout'; version: number }> {
+    return waitForUiSignal(this.runtime, timeoutMs, sinceVersion)
+  }
+
+  requestExit(code: number, reason: string): void {
+    this.runtime.requestExit?.({ code, reason })
   }
 
   getTaskById(taskId: string): Task | undefined {

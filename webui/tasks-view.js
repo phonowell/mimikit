@@ -1,6 +1,6 @@
 import {
-  formatAbsoluteDateTime,
-  formatDisplayTime,
+  formatDateTimeFull,
+  formatDisplayTimeWithFull,
   formatElapsedLabel,
   parseTimeInput,
   formatUsage,
@@ -37,14 +37,14 @@ const resolveScheduledBadge = (value, nowDate) => {
   if (typeof value !== 'string') return null
   const raw = value.trim()
   if (!raw) return null
-  const scheduleText = formatDisplayTime(raw, {
+  const schedulePair = formatDisplayTimeWithFull(raw, {
     now: nowDate,
     relative: false,
     calendarWords: true,
   })
-  const scheduleTitle = formatAbsoluteDateTime(raw) || raw
+  const scheduleTitle = formatDateTimeFull(raw) || raw
   return {
-    text: scheduleText || raw,
+    text: schedulePair.displayText || raw,
     title: `scheduled: ${scheduleTitle}`,
   }
 }
@@ -205,9 +205,11 @@ export const renderTasks = (tasksList, data) => {
           : ''
 
     if (changeAt) {
+      const changeDisplay = formatDisplayTimeWithFull(changeAt)
       const timeEl = document.createElement('span')
       timeEl.className = 'task-time'
-      timeEl.textContent = formatDisplayTime(changeAt)
+      timeEl.textContent = changeDisplay.displayText || changeAt
+      timeEl.title = changeDisplay.fullText || changeAt
       meta.appendChild(timeEl)
     }
 

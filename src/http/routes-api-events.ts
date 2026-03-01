@@ -90,6 +90,7 @@ export const registerEventsRoute = (
     let lastSnapshotKey = ''
     let lastSnapshotHintKey = ''
     let lastStream = cloneUiStream(null)
+    let uiWakeVersion = orchestrator.getWebUiWakeVersion()
     try {
       const initial = await getDefaultSnapshot(orchestrator)
       lastSnapshotKey = asStableJson(initial)
@@ -105,10 +106,14 @@ export const registerEventsRoute = (
 
       for (;;) {
         if (closed) break
-        const signal = await orchestrator.waitForWebUiSignal(SSE_HEARTBEAT_MS)
+        const signal = await orchestrator.waitForWebUiSignal(
+          SSE_HEARTBEAT_MS,
+          uiWakeVersion,
+        )
         if (closed) break
-        if (signal === 'timeout') continue
-        if (signal === 'stream') {
+        if (signal.kind === 'timeout') continue
+        uiWakeVersion = signal.version
+        if (signal.kind === 'stream') {
           const nextStream = cloneUiStream(
             orchestrator.getWebUiStreamSnapshot(),
           )
