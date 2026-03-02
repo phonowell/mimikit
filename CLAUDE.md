@@ -6,6 +6,13 @@
 - 定位：小助手；要能揣测用户意图，并准确、高效、低成本地完成任务。
 - 特点：单一主 session 架构，内置 WebUI 界面；复用生态能力，避免重复造轮子。
 
+## 参考项目
+
+- 固定参考：`nanobot`、`picoclaw`、`mimiclaw`、`copaw`
+- 本地路径（相对 `.`）：`../nanobot`、`../picoclaw`、`../mimiclaw`、`../copaw`
+- 远端仓库：`HKUDS/nanobot`、`sipeed/picoclaw`、`memovai/mimiclaw`、`agentscope-ai/CoPaw`
+- 同步要求：执行任务前确保上述仓库可访问且与各自 `origin/main` 同步
+
 ## 关键规则
 
 - 元原则：精简冗余 · 冲突信代码
