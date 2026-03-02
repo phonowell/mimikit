@@ -4,13 +4,17 @@
 
 1. 系统设计总览：`./design/README.md`
 2. 架构与运行时：`./design/architecture/system-architecture.md`
-3. 任务协议：`./design/workflow/task-and-action.md`
-4. 接口与状态：`./design/workflow/interfaces-and-state.md`
-5. WebUI 设计语言：`./design/ui/webui-design-language.md`
-6. SDK 接入现状：`./reference/sdk/codex-sdk.md`
-7. 外部对比结论：`./reference/comparisons/known.md`
-8. CoPaw QQ 渠道调研：`./reference/comparisons/copaw-qq-channel-research.md`
-9. 工程 ROI backlog：`./todo/engineering-roi-backlog.md`
+3. Workflow 索引：`./design/workflow/task-and-action.md`
+4. 任务概念：`./design/workflow/task.md`
+5. 动作协议：`./design/workflow/action.md`
+6. 计划机制：`./design/workflow/plan.md`
+7. 焦点机制：`./design/workflow/focus.md`
+8. 接口与状态：`./design/workflow/interfaces-and-state.md`
+9. WebUI 设计语言：`./design/ui/webui-design-language.md`
+10. SDK 接入现状：`./reference/sdk/codex-sdk.md`
+11. 外部对比结论：`./reference/comparisons/known.md`
+12. CoPaw QQ 渠道调研：`./reference/comparisons/copaw-qq-channel-research.md`
+13. 工程 ROI backlog：`./todo/engineering-roi-backlog.md`
 
 ## 目录职责
 
