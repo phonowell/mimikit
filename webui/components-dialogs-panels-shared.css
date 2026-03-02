@@ -95,7 +95,7 @@
   flex-wrap: wrap;
   gap: 10px;
   font-size: 11px;
-  color: var(--muted);
+  color: var(--muted-contrast, var(--muted));
   width: 100%;
 }
 
@@ -111,7 +111,7 @@
   border-radius: 999px;
   border: 1px solid transparent;
   background: var(--panel-strong);
-  color: var(--muted);
+  color: var(--muted-contrast, var(--muted));
   font-size: 10px;
   font-family: monospace;
   letter-spacing: 0.02em;

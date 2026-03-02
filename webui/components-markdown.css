@@ -51,7 +51,7 @@
 }
 
 .message .content.markdown a {
-  color: var(--accent);
+  color: var(--link, var(--accent));
   text-decoration: underline;
 }
 

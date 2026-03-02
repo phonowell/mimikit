@@ -11,7 +11,9 @@
   --border-hairline: rgba(133, 146, 166, 0.04);
   --text: #323b49;
   --muted: #6d7789;
+  --muted-contrast: #5e6879;
   --accent: #2f7de6;
+  --link: #1f5fbf;
   --accent-soft: #dce9ff;
   --bubble-agent-bg: #ffffff;
   --bubble-agent-text: #1f2a36;

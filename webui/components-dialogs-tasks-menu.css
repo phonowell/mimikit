@@ -1,7 +1,14 @@
-}
-
-.task-item-actions.is-open .task-menu {
-  display: block;
+.task-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 128px;
+  padding: 6px;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  background: var(--panel);
+  box-shadow: var(--shadow-dialog);
+  z-index: 3;
 }
 
 .task-menu-item {

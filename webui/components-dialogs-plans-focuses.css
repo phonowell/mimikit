@@ -76,7 +76,7 @@
   border-radius: 999px;
   border: 1px solid transparent;
   background: var(--panel-strong);
-  color: var(--muted);
+  color: var(--muted-contrast, var(--muted));
   font-size: 10px;
   line-height: 1.2;
 }

@@ -3,7 +3,7 @@
   align-items: center;
   gap: 8px;
   margin: 0;
-  color: var(--muted);
+  color: var(--muted-contrast, var(--muted));
   font-size: 13px;
 }
 
@@ -248,4 +248,3 @@
   pointer-events: auto;
   transform: translateY(0);
 }
-

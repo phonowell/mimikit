@@ -38,3 +38,11 @@
   outline-offset: 1px;
 }
 
+@media (hover: none), (pointer: coarse) {
+  .message .message-quote-btn {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+    transition-delay: 0s;
+  }
+}
