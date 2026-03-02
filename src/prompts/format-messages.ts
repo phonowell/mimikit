@@ -10,6 +10,7 @@ import type {
   HistoryLookupMessage,
   HistoryMessage,
   ManagerActionFeedback,
+  MemoryLookupMessage,
   ReadFileLookupMessage,
   UserInput,
 } from '../types/index.js'
@@ -139,6 +140,31 @@ export const formatReadFileLookup = (
   return escapeCdata(
     stringifyPromptYaml({
       files: entries,
+    }),
+  )
+}
+
+export const formatMemoryLookup = (lookup: MemoryLookupMessage[]): string => {
+  if (lookup.length === 0) return ''
+  const entries = lookup
+    .map((item) => {
+      const content = item.content.trim()
+      if (!content) return null
+      return {
+        id: item.id,
+        time: item.time,
+        source: item.source,
+        score: item.score,
+        ...(item.tags.length > 0 ? { tags: item.tags } : {}),
+        content,
+      }
+    })
+    .filter((item): item is NonNullable<typeof item> => item !== null)
+  if (entries.length === 0) return ''
+  const sorted = sortByTimeAndIdDesc(entries)
+  return escapeCdata(
+    stringifyPromptYaml({
+      memories: sorted,
     }),
   )
 }

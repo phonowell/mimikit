@@ -13,6 +13,7 @@ import {
   formatFocusList,
   formatHistoryLookup,
   formatInputs,
+  formatMemoryLookup,
   formatReadFileLookup,
   formatRecentHistory,
   formatResultsYaml,
@@ -30,6 +31,7 @@ import type {
   HistoryLookupMessage,
   ManagerActionFeedback,
   ManagerEnv,
+  MemoryLookupMessage,
   ReadFileLookupMessage,
   Task,
   TaskResult,
@@ -103,6 +105,7 @@ export const buildManagerPrompt = async (params: {
   promptSectionLimits: PromptSectionLimits
   plans?: TaskPlan[]
   historyLookup?: HistoryLookupMessage[]
+  memoryLookup?: MemoryLookupMessage[]
   readFileLookup?: ReadFileLookupMessage[]
   actionFeedback?: ManagerActionFeedback[]
   compressedContext?: string
@@ -187,6 +190,10 @@ export const buildManagerPrompt = async (params: {
     history_lookup: encodePromptSection(
       formatHistoryLookup(params.historyLookup ?? []),
       params.promptSectionLimits.historyLookupMaxBytes,
+    ),
+    memory_lookup: encodePromptSection(
+      formatMemoryLookup(params.memoryLookup ?? []),
+      params.promptSectionLimits.memoryLookupMaxBytes,
     ),
     file_lookup: encodePromptSection(
       formatReadFileLookup(params.readFileLookup ?? []),

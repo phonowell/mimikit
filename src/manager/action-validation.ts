@@ -1,4 +1,5 @@
 import { queryHistorySchema } from '../history/query.js'
+import { queryMemorySchema } from '../memory/query.js'
 import { parseIsoMs } from '../shared/time.js'
 
 import {
@@ -8,6 +9,7 @@ import {
   readFileSchema,
   runTaskSchema,
   updatePlanSchema,
+  writeMemorySchema,
   writePersonaSchema,
   writeUserProfileSchema,
 } from './action-apply-schema.js'
@@ -143,11 +145,47 @@ export const validateReadFile = (item: Parsed): ValidationIssue[] => {
   return parsed.success ? [] : [invalidArgsIssue(parsed.error)]
 }
 
+export const validateQueryMemory = (item: Parsed): ValidationIssue[] => {
+  const parsed = queryMemorySchema.safeParse(item.attrs)
+  if (!parsed.success) return [invalidArgsIssue(parsed.error)]
+  for (const [field, value] of [
+    ['from', parsed.data.from],
+    ['to', parsed.data.to],
+  ] as const) {
+    if (value?.trim() && parseIsoMs(value) === undefined) {
+      return [
+        {
+          error: INVALID_ACTION_ARGS,
+          hint: `参数校验失败：${field} 必须是合法 ISO 8601 时间。`,
+        },
+      ]
+    }
+  }
+  return []
+}
+
 export const validateWritePersona = (item: Parsed): ValidationIssue[] =>
   validateWithSchema(item, writePersonaSchema)
 
 export const validateWriteUserProfile = (item: Parsed): ValidationIssue[] =>
   validateWithSchema(item, writeUserProfileSchema)
+
+export const validateWriteMemory = (item: Parsed): ValidationIssue[] => {
+  const parsed = writeMemorySchema.safeParse(item.attrs)
+  if (!parsed.success) return [invalidArgsIssue(parsed.error)]
+  if (
+    parsed.data.expires_at?.trim() &&
+    parseIsoMs(parsed.data.expires_at) === undefined
+  ) {
+    return [
+      {
+        error: INVALID_ACTION_ARGS,
+        hint: '参数校验失败：expires_at 必须是合法 ISO 8601 时间。',
+      },
+    ]
+  }
+  return []
+}
 
 export const validateCompressContext = (
   item: Parsed,

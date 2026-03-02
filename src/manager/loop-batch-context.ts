@@ -1,15 +1,19 @@
 import { queryHistory } from '../history/query.js'
 import { readHistory } from '../history/store.js'
 import { appendLog } from '../log/append.js'
+import { queryMemory } from '../memory/query.js'
+import { readMemoryRecords } from '../memory/store.js'
 import { logSafeError } from '../log/safe.js'
 
 import { runReadFileTool } from './read-file-tool.js'
 
 import type { ReadFileRequest } from './read-file-tool.js'
 import type { QueryHistoryRequest } from '../history/query.js'
+import type { QueryMemoryRequest } from '../memory/query.js'
 import type { RuntimeState } from './runtime-adapter.js'
 import type {
   HistoryLookupMessage,
+  MemoryLookupMessage,
   ReadFileLookupMessage,
   UserInput,
 } from '../types/index.js'
@@ -67,6 +71,21 @@ export const buildHistoryQueryKey = (
   ].join('\n')
 }
 
+export const buildMemoryQueryKey = (
+  queryRequest?: QueryMemoryRequest,
+): string | undefined => {
+  if (!queryRequest) return undefined
+  return [
+    queryRequest.query,
+    String(queryRequest.limit),
+    queryRequest.tags.join(','),
+    queryRequest.source ?? '',
+    String(queryRequest.minScore ?? ''),
+    String(queryRequest.fromMs ?? ''),
+    String(queryRequest.toMs ?? ''),
+  ].join('\n')
+}
+
 export const queryHistoryLookup = async (
   runtime: RuntimeState,
   queryRequest?: QueryHistoryRequest,
@@ -87,6 +106,31 @@ export const queryHistoryLookup = async (
     ...(queryRequest.toMs !== undefined ? { toMs: queryRequest.toMs } : {}),
   })
   return historyLookup
+}
+
+export const queryMemoryLookup = async (
+  runtime: RuntimeState,
+  queryRequest?: QueryMemoryRequest,
+): Promise<MemoryLookupMessage[] | undefined> => {
+  if (!queryRequest) return undefined
+  const records = await readMemoryRecords(runtime.paths.memoryRecords)
+  const memoryLookup = queryMemory(records, queryRequest)
+  await appendLog(runtime.paths.log, {
+    event: 'manager_query_memory',
+    queryChars: queryRequest.query.length,
+    limit: queryRequest.limit,
+    tagCount: queryRequest.tags.length,
+    ...(queryRequest.source ? { source: queryRequest.source } : {}),
+    ...(queryRequest.minScore !== undefined
+      ? { minScore: queryRequest.minScore }
+      : {}),
+    resultCount: memoryLookup.length,
+    ...(queryRequest.fromMs !== undefined
+      ? { fromMs: queryRequest.fromMs }
+      : {}),
+    ...(queryRequest.toMs !== undefined ? { toMs: queryRequest.toMs } : {}),
+  })
+  return memoryLookup
 }
 
 export const queryReadFileLookup = async (

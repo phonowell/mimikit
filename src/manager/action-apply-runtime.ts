@@ -5,6 +5,7 @@ import { ensureDir } from '../fs/paths.js'
 import { readTextFileIfExists } from '../fs/read-text.js'
 import { readHistory } from '../history/store.js'
 import { bestEffort } from '../log/safe.js'
+import { upsertMemoryRecord } from '../memory/store.js'
 import {
   cancelTask,
   notifyWorkerLoop,
@@ -20,6 +21,7 @@ import {
   cancelSchema,
   compressContextSchema,
   restartSchema,
+  writeMemorySchema,
   writePersonaSchema,
   writeUserProfileSchema,
 } from './action-apply-schema.js'
@@ -219,4 +221,34 @@ export const applyWriteUserProfileAction = async (
   const current = await readTextFileIfExists(runtime.paths.userProfile)
   if (current === next) return
   await writeStateMarkdown(runtime.paths.userProfile, next)
+}
+
+const parseTags = (raw: string | undefined): string[] => {
+  if (!raw) return []
+  const unique = new Set<string>()
+  for (const part of raw.split(',')) {
+    const tag = part.replace(/\s+/g, ' ').trim()
+    if (!tag) continue
+    unique.add(tag)
+  }
+  return Array.from(unique)
+}
+
+export const applyWriteMemoryAction = async (
+  runtime: RuntimeState,
+  item: Parsed,
+): Promise<void> => {
+  const parsed = writeMemorySchema.safeParse(item.attrs)
+  if (!parsed.success) return
+  const payload = {
+    content: parsed.data.content,
+    tags: parseTags(parsed.data.tags),
+    ...(parsed.data.source ? { source: parsed.data.source } : {}),
+    ...(parsed.data.score ? { score: Number(parsed.data.score) } : {}),
+    ...(parsed.data.ttl_days ? { ttlDays: Number(parsed.data.ttl_days) } : {}),
+    ...(parsed.data.expires_at ? { expiresAt: parsed.data.expires_at } : {}),
+  }
+  await upsertMemoryRecord(runtime.paths.memoryRecords, {
+    ...payload,
+  })
 }

@@ -13,6 +13,7 @@ import {
   applyCancelTaskAction,
   applyCompressContextAction,
   applyRestartRuntimeAction,
+  applyWriteMemoryAction,
   applyWritePersonaAction,
   applyWriteUserProfileAction,
 } from './action-apply-runtime.js'
@@ -31,11 +32,13 @@ import {
   validateCompressContext,
   validateCreatePlan,
   validateQueryHistory,
+  validateQueryMemory,
   validateReadFile,
   validateRunTask,
   validatePlanById,
   validateUpdatePlan,
   validateWithSchema,
+  validateWriteMemory,
   validateWritePersona,
   validateWriteUserProfile,
   type ValidationIssue,
@@ -143,6 +146,11 @@ const ACTION_DEFINITIONS = [
     apply: continueApply,
   },
   {
+    name: 'query_memory',
+    validate: (item: Parsed) => validateQueryMemory(item),
+    apply: continueApply,
+  },
+  {
     name: 'read_file',
     validate: (item: Parsed) => validateReadFile(item),
     apply: continueApply,
@@ -160,6 +168,14 @@ const ACTION_DEFINITIONS = [
     validate: (item: Parsed) => validateWriteUserProfile(item),
     apply: async (runtime: RuntimeState, item: Parsed) => {
       await applyWriteUserProfileAction(runtime, item)
+      return 'continue'
+    },
+  },
+  {
+    name: 'write_memory',
+    validate: (item: Parsed) => validateWriteMemory(item),
+    apply: async (runtime: RuntimeState, item: Parsed) => {
+      await applyWriteMemoryAction(runtime, item)
       return 'continue'
     },
   },

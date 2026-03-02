@@ -14,19 +14,23 @@ import { mergeUsageAdditive } from '../shared/token-usage.js'
 import { collectManagerActionFeedback } from './action-feedback-collect.js'
 import {
   buildHistoryQueryKey,
+  buildMemoryQueryKey,
   buildReadFileLookupKey,
   collectTriggeredPlanIds,
   pickReadFileRequest,
   queryHistoryLookup,
+  queryMemoryLookup,
   queryReadFileLookup,
 } from './loop-batch-context.js'
 import { runManagerRoundWithRecovery } from './loop-batch-exec.js'
 import { createManagerStreamController } from './loop-batch-stream-controller.js'
 import { selectRecentTasks, type RuntimeState } from './runtime-adapter.js'
+import { pickQueryMemoryRequest } from '../memory/query.js'
 
 import type {
   HistoryLookupMessage,
   ManagerActionFeedback,
+  MemoryLookupMessage,
   ReadFileLookupMessage,
   TaskResult,
   TokenUsage,
@@ -76,6 +80,7 @@ export const runManagerBatch = async (params: {
   let previousLookupKey: string | undefined
   let extra: {
     historyLookup?: HistoryLookupMessage[]
+    memoryLookup?: MemoryLookupMessage[]
     readFileLookup?: ReadFileLookupMessage[]
     actionFeedback?: ManagerActionFeedback[]
   } = {}
@@ -132,15 +137,22 @@ export const runManagerBatch = async (params: {
       )
 
       const queryRequest = pickQueryHistoryRequest(parsed.actions)
+      const memoryRequest = pickQueryMemoryRequest(parsed.actions)
       const readFileRequest = pickReadFileRequest(parsed.actions)
       const queryKey = buildHistoryQueryKey(queryRequest)
+      const memoryKey = buildMemoryQueryKey(memoryRequest)
       const readFileKey = buildReadFileLookupKey(readFileRequest)
       const lookupKey =
-        queryKey || readFileKey
-          ? `${queryKey ?? ''}\n---\n${readFileKey ?? ''}`
+        queryKey || memoryKey || readFileKey
+          ? `${queryKey ?? ''}\n---\n${memoryKey ?? ''}\n---\n${readFileKey ?? ''}`
           : undefined
 
-      if (!queryRequest && !readFileRequest && actionFeedback.length === 0) {
+      if (
+        !queryRequest &&
+        !memoryRequest &&
+        !readFileRequest &&
+        actionFeedback.length === 0
+      ) {
         stream.commitParsedText(parsed.text)
         return {
           parsed,
@@ -158,8 +170,9 @@ export const runManagerBatch = async (params: {
 
       previousLookupKey = lookupKey
 
-      const [historyLookup, readFileLookup] = await Promise.all([
+      const [historyLookup, memoryLookup, readFileLookup] = await Promise.all([
         queryHistoryLookup(runtime, queryRequest),
+        queryMemoryLookup(runtime, memoryRequest),
         queryReadFileLookup(runtime, readFileRequest),
       ])
       if (actionFeedback.length > 0) {
@@ -179,6 +192,7 @@ export const runManagerBatch = async (params: {
       stream.resetCycle()
       extra = {
         ...(historyLookup ? { historyLookup } : {}),
+        ...(memoryLookup ? { memoryLookup } : {}),
         ...(readFileLookup ? { readFileLookup } : {}),
         ...(actionFeedback.length > 0 ? { actionFeedback } : {}),
       }

@@ -87,6 +87,9 @@
 - `query_history`
   - 入参：`query`、`limit?`、`roles?`、`before_id?`、`from?`、`to?`
   - 注入关系：基础窗口在 `M:recent_history`，检索命中回填到 `M:history_lookup`。
+- `query_memory`
+  - 入参：`query`、`limit?`、`tags?`、`source?`、`min_score?`、`from?`、`to?`
+  - 注入关系：长期记忆检索命中回填到 `M:memory_lookup`。
 - `read_file`
   - 入参：`path`、`from_line?`、`max_lines?`、`max_chars?`
   - 注入关系：读取结果回填到 `M:file_lookup`。
@@ -96,6 +99,9 @@
 - `write_user_profile`
   - 入参：`content`
   - 行为：写入 `.mimikit/user_profile.md`。
+- `write_memory`
+  - 入参：`content`、`tags?`、`source?`、`score?`、`ttl_days?`、`expires_at?`
+  - 行为：写入 `.mimikit/memory/records.jsonl`，用于长期记忆检索。
 - `compress_context`
   - 入参：无（严格空对象）
   - 行为：压缩 `history + tasks + managerCompressedContext`。
@@ -116,6 +122,7 @@
 - `M:focus_contexts`
 - `M:recent_history`
 - `M:history_lookup`
+- `M:memory_lookup`
 - `M:compressed_context`
 
 ## 核心数据结构

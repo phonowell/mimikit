@@ -67,6 +67,7 @@ export {
   formatActionFeedback,
   formatHistoryLookup,
   formatInputs,
+  formatMemoryLookup,
   formatReadFileLookup,
   formatRecentHistory,
 } from './format-messages.js'
