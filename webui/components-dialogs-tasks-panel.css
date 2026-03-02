@@ -34,21 +34,22 @@
 
 .task-more-toggle {
   --btn-size: 24px;
-  --btn-icon-size: 11px;
-  --btn-radius: 8px;
-  --btn-bg: var(--panel-soft);
-  --btn-color: var(--muted-contrast, var(--muted));
-  --btn-border: rgba(133, 146, 166, 0.22);
-  --btn-hover-bg: var(--panel);
-  --btn-hover-color: var(--accent);
-  --btn-hover-border: rgba(47, 125, 230, 0.28);
-  --btn-shadow: var(--shadow-raised-soft);
+  --btn-icon-size: 13px;
+  --btn-radius: 50%;
+  --btn-bg: transparent;
+  --btn-color: #7f8ea3;
+  --btn-border: transparent;
+  --btn-hover-bg: var(--panel-soft);
+  --btn-hover-color: #5f7088;
+  --btn-hover-border: transparent;
+  --btn-shadow: none;
   --btn-shadow-hover: var(--shadow-raised-soft);
   --btn-shadow-press: var(--shadow-inset-soft);
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 600;
   line-height: 1;
   letter-spacing: 0;
+  text-align: center;
 }
 
 .task-more-menu {
