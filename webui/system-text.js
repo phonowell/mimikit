@@ -30,6 +30,7 @@ export const UI_TEXT = Object.freeze({
   quoteMissingMessage: 'Unavailable',
   quoteFallbackMessage: 'Message',
   deleteFailed: 'Delete failed',
+  deleteConfirmPrompt: 'Delete this message?',
   sendFailed: 'Send failed',
   fetchMessagesFailed: 'Messages failed',
   fetchStatusFailed: 'Status failed',

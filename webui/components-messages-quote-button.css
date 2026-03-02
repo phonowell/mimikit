@@ -10,7 +10,6 @@
   --btn-shadow-hover: var(--shadow-raised);
   --btn-shadow-press: var(--shadow-inset-soft);
   box-shadow: var(--btn-shadow);
-  order: 2;
   opacity: 0;
   transform: translateY(2px) scale(0.96);
   pointer-events: none;
@@ -19,12 +18,20 @@
   transition-delay: 0s;
 }
 
+.message .message-quote-btn {
+  order: 2;
+}
+
 .message .message-delete-btn {
+  order: 3;
   --btn-hover-color: var(--danger);
 }
 
-.message.user .message-quote-btn,
 .message.user .message-delete-btn {
+  order: -1;
+}
+
+.message.user .message-quote-btn {
   order: 0;
 }
 

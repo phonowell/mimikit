@@ -25,7 +25,8 @@ main[data-app] {
 .tasks-dialog,
 .plans-dialog,
 .focuses-dialog,
-.restart-dialog {
+.restart-dialog,
+.message-delete-dialog {
   border: 0;
   padding: 12px;
   margin: auto;
@@ -38,14 +39,16 @@ main[data-app] {
 .tasks-dialog[open],
 .plans-dialog[open],
 .focuses-dialog[open],
-.restart-dialog[open] {
+.restart-dialog[open],
+.message-delete-dialog[open] {
   animation: dialog-in 160ms ease-out;
 }
 
 .tasks-dialog.is-closing,
 .plans-dialog.is-closing,
 .focuses-dialog.is-closing,
-.restart-dialog.is-closing {
+.restart-dialog.is-closing,
+.message-delete-dialog.is-closing {
   animation: dialog-out 140ms ease-in forwards;
   pointer-events: none;
 }
@@ -53,14 +56,16 @@ main[data-app] {
 .tasks-dialog:not([open]),
 .plans-dialog:not([open]),
 .focuses-dialog:not([open]),
-.restart-dialog:not([open]) {
+.restart-dialog:not([open]),
+.message-delete-dialog:not([open]) {
   display: none;
 }
 
 .tasks-dialog::backdrop,
 .plans-dialog::backdrop,
 .focuses-dialog::backdrop,
-.restart-dialog::backdrop {
+.restart-dialog::backdrop,
+.message-delete-dialog::backdrop {
   background: repeating-linear-gradient(
       135deg,
       rgba(255, 255, 255, 0.2) 0 3px,
@@ -74,7 +79,8 @@ main[data-app] {
 .tasks-dialog.is-closing::backdrop,
 .plans-dialog.is-closing::backdrop,
 .focuses-dialog.is-closing::backdrop,
-.restart-dialog.is-closing::backdrop {
+.restart-dialog.is-closing::backdrop,
+.message-delete-dialog.is-closing::backdrop {
   animation: dialog-backdrop-out 140ms ease-in forwards;
 }
 
@@ -95,7 +101,8 @@ main[data-app] {
   overflow: hidden;
 }
 
-.restart-panel {
+.restart-panel,
+.message-delete-panel {
   background: var(--panel);
   border: 1px solid transparent;
   border-radius: var(--radius);
@@ -226,18 +233,22 @@ main[data-app] {
   .plans-dialog[open],
   .focuses-dialog[open],
   .restart-dialog[open],
+  .message-delete-dialog[open],
   .tasks-dialog.is-closing,
   .plans-dialog.is-closing,
   .focuses-dialog.is-closing,
   .restart-dialog.is-closing,
+  .message-delete-dialog.is-closing,
   .tasks-dialog::backdrop,
   .plans-dialog::backdrop,
   .focuses-dialog::backdrop,
   .restart-dialog::backdrop,
+  .message-delete-dialog::backdrop,
   .tasks-dialog.is-closing::backdrop,
   .plans-dialog.is-closing::backdrop,
   .focuses-dialog.is-closing::backdrop,
-  .restart-dialog.is-closing::backdrop {
+  .restart-dialog.is-closing::backdrop,
+  .message-delete-dialog.is-closing::backdrop {
     animation: none;
   }
 }

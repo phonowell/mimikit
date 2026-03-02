@@ -248,6 +248,41 @@
           </div>
         </section>
       </dialog>
+
+      <dialog
+        class="message-delete-dialog"
+        data-message-delete-dialog
+        id="message-delete-dialog"
+        aria-labelledby="message-delete-title"
+        aria-describedby="message-delete-description"
+      >
+        <section class="message-delete-panel">
+          <header class="message-delete-header">
+            <h2 class="message-delete-title" id="message-delete-title">
+              Delete Message?
+            </h2>
+          </header>
+          <p class="message-delete-description" id="message-delete-description">
+            This will replace the original content with a system message.
+          </p>
+          <div class="message-delete-actions" role="group" aria-label="Delete message">
+            <button
+              class="btn btn--md btn--dialog"
+              data-message-delete-cancel
+              type="button"
+            >
+              Cancel
+            </button>
+            <button
+              class="btn btn--md btn--dialog btn--danger"
+              data-message-delete-confirm
+              type="button"
+            >
+              Delete
+            </button>
+          </div>
+        </section>
+      </dialog>
     </main>
 
     <script type="module" src="app.js"></script>

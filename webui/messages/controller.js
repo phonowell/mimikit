@@ -1,6 +1,7 @@
 import { createLoadingController } from './loading.js'
 import { fetchWithTimeout } from '../fetch-with-timeout.js'
 import { renderError } from './render-list.js'
+import { createDialogController } from '../dialog.js'
 import {
   createDisconnectHandler,
   isStatusFullyIdle,
@@ -34,6 +35,9 @@ export function createMessagesController({
   quoteLabel,
   quoteText,
   quoteClearBtn,
+  deleteConfirmDialog,
+  deleteConfirmCancelBtn,
+  deleteConfirmBtn,
   onTasksSnapshot,
   onPlansSnapshot,
   onFocusesSnapshot,
@@ -59,9 +63,30 @@ export function createMessagesController({
     removeEmpty: () => removeEmpty(),
   })
   const quote = createQuoteController({ quotePreview, quoteLabel, quoteText, input })
-  const deleteMessage = async (msg) => {
-    const id = typeof msg?.id === 'string' ? msg.id.trim() : ''
-    if (!id) return
+  const deleteDialogEnabled = Boolean(
+    deleteConfirmDialog && deleteConfirmCancelBtn && deleteConfirmBtn,
+  )
+  let pendingDeleteId = ''
+  let isDeletePending = false
+
+  const deleteDialog = deleteDialogEnabled
+    ? createDialogController({
+        dialog: deleteConfirmDialog,
+        focusOnOpen: deleteConfirmCancelBtn,
+        onAfterClose: () => {
+          if (isDeletePending) return
+          pendingDeleteId = ''
+        },
+      })
+    : null
+
+  const setDeleteActionsDisabled = (disabled) => {
+    if (deleteConfirmCancelBtn) deleteConfirmCancelBtn.disabled = disabled
+    if (deleteConfirmBtn) deleteConfirmBtn.disabled = disabled
+  }
+
+  const requestDeleteMessage = async (id) => {
+    if (!id) return false
     try {
       const res = await fetchWithTimeout(
         `/api/messages/${encodeURIComponent(id)}`,
@@ -79,12 +104,42 @@ export function createMessagesController({
       }
       const activeQuote = quote.getActive()
       if (activeQuote?.id === id) quote.clear()
+      return true
     } catch (error) {
       renderError(
         { messagesEl, removeEmpty, updateScrollButton: scroll.updateScrollButton },
         error,
       )
+      return false
     }
+  }
+
+  const confirmDelete = async () => {
+    if (!pendingDeleteId || isDeletePending) return
+    isDeletePending = true
+    setDeleteActionsDisabled(true)
+    const deleted = await requestDeleteMessage(pendingDeleteId)
+    isDeletePending = false
+    setDeleteActionsDisabled(false)
+    if (!deleted) return
+    pendingDeleteId = ''
+    if (deleteDialog) deleteDialog.close()
+  }
+
+  const deleteMessage = async (msg) => {
+    const id = typeof msg?.id === 'string' ? msg.id.trim() : ''
+    if (!id) return
+    if (deleteDialogEnabled && deleteDialog) {
+      pendingDeleteId = id
+      deleteDialog.open()
+      return
+    }
+    const shouldDelete =
+      typeof window === 'undefined' ||
+      typeof window.confirm !== 'function' ||
+      window.confirm(UI_TEXT.deleteConfirmPrompt)
+    if (!shouldDelete) return
+    await requestDeleteMessage(id)
   }
 
   const rendering = createMessageRendering({
@@ -182,6 +237,34 @@ export function createMessagesController({
 
   if (quoteClearBtn) quoteClearBtn.addEventListener('click', quote.clear)
   if (quotePreview) quotePreview.addEventListener('dblclick', quote.clear)
+  if (deleteDialogEnabled && deleteDialog && deleteConfirmDialog) {
+    const onDialogClick = (event) => {
+      deleteDialog.handleDialogClick(event)
+    }
+    const onDialogClose = () => {
+      deleteDialog.handleDialogClose()
+    }
+    const onDialogCancel = (event) => {
+      deleteDialog.handleDialogCancel(event)
+    }
+    const onDeleteCancel = (event) => {
+      event.preventDefault()
+      if (isDeletePending) return
+      pendingDeleteId = ''
+      deleteDialog.close()
+    }
+    const onDeleteConfirm = (event) => {
+      event.preventDefault()
+      if (isDeletePending) return
+      void confirmDelete()
+    }
+
+    deleteConfirmDialog.addEventListener('click', onDialogClick)
+    deleteConfirmDialog.addEventListener('close', onDialogClose)
+    deleteConfirmDialog.addEventListener('cancel', onDialogCancel)
+    deleteConfirmCancelBtn.addEventListener('click', onDeleteCancel)
+    deleteConfirmBtn.addEventListener('click', onDeleteConfirm)
+  }
 
   const refreshRenderedTimes = () => {
     const messages = Array.isArray(messageState.lastMessages)
