@@ -7,7 +7,7 @@ const toMs = (value: string | undefined): number => {
   return Number.isFinite(parsed) ? parsed : 0
 }
 
-export const applyTemplateCompletionState = (
+export const applyPlanCompletionState = (
   runtime: RuntimeState,
   results: TaskResult[],
 ): void => {
@@ -18,12 +18,12 @@ export const applyTemplateCompletionState = (
     if (!existing || toMs(result.completedAt) >= toMs(existing.completedAt))
       latestByTaskId.set(result.taskId, result)
   }
-  for (const template of runtime.taskTemplates) {
-    const taskId = template.lastTaskId?.trim()
+  for (const plan of runtime.taskPlans) {
+    const taskId = plan.lastTaskId?.trim()
     if (!taskId) continue
     const matched = latestByTaskId.get(taskId)
     if (!matched) continue
-    template.lastCompletedAt = matched.completedAt
-    template.updatedAt = matched.completedAt
+    plan.lastCompletedAt = matched.completedAt
+    plan.updatedAt = matched.completedAt
   }
 }

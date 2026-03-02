@@ -37,7 +37,7 @@ const defaultConfigSchema = z
             focusListMaxBytes: z.number().int().positive(),
             historyLookupMaxBytes: z.number().int().positive(),
             inputsMaxBytes: z.number().int().positive(),
-            templatesMaxBytes: z.number().int().positive(),
+            plansMaxBytes: z.number().int().positive(),
             personaMaxBytes: z.number().int().positive(),
             recentHistoryMaxBytes: z.number().int().positive(),
             tasksMaxBytes: z.number().int().positive(),
@@ -56,7 +56,7 @@ const defaultConfigSchema = z
             maxBytes: z.number().int().positive(),
           })
           .strict(),
-        templateWindow: z
+        planWindow: z
           .object({
             maxCount: z.number().int().positive(),
             minCount: z.number().int().positive(),
@@ -99,11 +99,11 @@ const parseDefaultConfigYaml = (source: string): AppDefaults => {
       )
     }
     if (
-      validated.data.manager.templateWindow.minCount >
-      validated.data.manager.templateWindow.maxCount
+      validated.data.manager.planWindow.minCount >
+      validated.data.manager.planWindow.maxCount
     ) {
       throw new Error(
-        '[config] invalid yaml defaults: manager.templateWindow.minCount must be <= manager.templateWindow.maxCount',
+        '[config] invalid yaml defaults: manager.planWindow.minCount must be <= manager.planWindow.maxCount',
       )
     }
     return validated.data

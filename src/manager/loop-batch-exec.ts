@@ -12,7 +12,7 @@ import type {
   ReadFileLookupMessage,
   Task,
   TaskResult,
-  TaskTemplate,
+  TaskPlan,
   TokenUsage,
   UserInput,
 } from '../types/index.js'
@@ -72,7 +72,7 @@ export const runManagerRoundWithRecovery = async (params: {
   inputs: UserInput[]
   results: TaskResult[]
   tasks: Task[]
-  templates: TaskTemplate[]
+  plans: TaskPlan[]
   workingFocusIds: string[]
   extra: {
     historyLookup?: HistoryLookupMessage[]
@@ -96,7 +96,7 @@ export const runManagerRoundWithRecovery = async (params: {
         results: params.results,
         tasks: params.tasks,
         promptSectionLimits: params.runtime.config.manager.promptSections,
-        templates: params.templates,
+        plans: params.plans,
         focuses: params.runtime.focuses,
         focusContexts: params.runtime.focusContexts,
         activeFocusIds: params.runtime.activeFocusIds,

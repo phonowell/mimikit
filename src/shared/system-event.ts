@@ -9,9 +9,9 @@ export type SystemEventName =
   | 'action_feedback'
   | 'trigger_fire'
   | 'idle'
-  | 'template_created'
-  | 'template_updated'
-  | 'template_deleted'
+  | 'plan_created'
+  | 'plan_updated'
+  | 'plan_deleted'
 
 const toInlineJson = (payload: Record<string, unknown>): string =>
   JSON.stringify(payload).replace(/[<>&]/g, (char) => {

@@ -76,26 +76,26 @@ const applyLoopEnv = (config: AppConfig): void => {
   if (managerCreateTaskDebounceMs !== undefined)
     config.manager.taskCreate.debounceMs = managerCreateTaskDebounceMs
 
-  const managerTemplateWindowMaxCount = parseEnvPositiveInteger(
-    'MIMIKIT_MANAGER_TEMPLATE_WINDOW_MAX_COUNT',
-    process.env.MIMIKIT_MANAGER_TEMPLATE_WINDOW_MAX_COUNT?.trim(),
+  const managerPlanWindowMaxCount = parseEnvPositiveInteger(
+    'MIMIKIT_MANAGER_PLAN_WINDOW_MAX_COUNT',
+    process.env.MIMIKIT_MANAGER_PLAN_WINDOW_MAX_COUNT?.trim(),
   )
-  if (managerTemplateWindowMaxCount !== undefined)
-    config.manager.templateWindow.maxCount = managerTemplateWindowMaxCount
+  if (managerPlanWindowMaxCount !== undefined)
+    config.manager.planWindow.maxCount = managerPlanWindowMaxCount
 
-  const managerTemplateWindowMinCount = parseEnvPositiveInteger(
-    'MIMIKIT_MANAGER_TEMPLATE_WINDOW_MIN_COUNT',
-    process.env.MIMIKIT_MANAGER_TEMPLATE_WINDOW_MIN_COUNT?.trim(),
+  const managerPlanWindowMinCount = parseEnvPositiveInteger(
+    'MIMIKIT_MANAGER_PLAN_WINDOW_MIN_COUNT',
+    process.env.MIMIKIT_MANAGER_PLAN_WINDOW_MIN_COUNT?.trim(),
   )
-  if (managerTemplateWindowMinCount !== undefined)
-    config.manager.templateWindow.minCount = managerTemplateWindowMinCount
+  if (managerPlanWindowMinCount !== undefined)
+    config.manager.planWindow.minCount = managerPlanWindowMinCount
 
-  const managerTemplateWindowMaxBytes = parseEnvPositiveInteger(
-    'MIMIKIT_MANAGER_TEMPLATE_WINDOW_MAX_BYTES',
-    process.env.MIMIKIT_MANAGER_TEMPLATE_WINDOW_MAX_BYTES?.trim(),
+  const managerPlanWindowMaxBytes = parseEnvPositiveInteger(
+    'MIMIKIT_MANAGER_PLAN_WINDOW_MAX_BYTES',
+    process.env.MIMIKIT_MANAGER_PLAN_WINDOW_MAX_BYTES?.trim(),
   )
-  if (managerTemplateWindowMaxBytes !== undefined)
-    config.manager.templateWindow.maxBytes = managerTemplateWindowMaxBytes
+  if (managerPlanWindowMaxBytes !== undefined)
+    config.manager.planWindow.maxBytes = managerPlanWindowMaxBytes
 }
 
 export const applyCliEnvOverrides = (config: AppConfig): void => {

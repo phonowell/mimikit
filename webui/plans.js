@@ -1,41 +1,41 @@
 import { createDialogController } from './dialog.js'
 import { UI_TEXT } from './system-text.js'
-import { renderIntents } from './intents-view.js'
+import { renderPlans } from './plans-view.js'
 import { subscribeTimeTick } from './time-tick.js'
 
-const EMPTY_INTENTS = { items: [] }
+const EMPTY_PLANS = { items: [] }
 
-const normalizeIntentsPayload = (value) => {
-  if (!value || typeof value !== 'object') return EMPTY_INTENTS
+const normalizePlansPayload = (value) => {
+  if (!value || typeof value !== 'object') return EMPTY_PLANS
   const items = Array.isArray(value.items) ? value.items : []
   return { items }
 }
 
-export function bindIntentsPanel({
-  intentsList,
-  intentsDialog,
-  intentsOpenBtn,
-  intentsCloseBtn,
+export function bindPlansPanel({
+  plansList,
+  plansDialog,
+  plansOpenBtn,
+  plansCloseBtn,
 }) {
-  if (!intentsList) {
+  if (!plansList) {
     return {
-      applyIntentsSnapshot: () => {},
+      applyPlansSnapshot: () => {},
       setDisconnected: () => {},
       dispose: () => {},
     }
   }
 
-  let latestIntents = EMPTY_INTENTS
+  let latestPlans = EMPTY_PLANS
   let unsubscribeTimeTick = null
 
-  const renderLatestIntents = () => {
-    renderIntents(intentsList, latestIntents)
+  const renderLatestPlans = () => {
+    renderPlans(plansList, latestPlans)
   }
 
   const startTimeTick = () => {
     if (unsubscribeTimeTick) return
     unsubscribeTimeTick = subscribeTimeTick(() => {
-      renderLatestIntents()
+      renderLatestPlans()
     })
   }
 
@@ -45,31 +45,31 @@ export function bindIntentsPanel({
     unsubscribeTimeTick = null
   }
 
-  const applyIntentsSnapshot = (payload) => {
-    latestIntents = normalizeIntentsPayload(payload)
-    renderLatestIntents()
+  const applyPlansSnapshot = (payload) => {
+    latestPlans = normalizePlansPayload(payload)
+    renderLatestPlans()
   }
 
   const setDisconnected = () => {
-    intentsList.innerHTML = ''
+    plansList.innerHTML = ''
     const empty = document.createElement('li')
-    empty.className = 'intents-empty'
+    empty.className = 'plans-empty'
     const article = document.createElement('article')
     article.textContent = UI_TEXT.connectionLost
     empty.appendChild(article)
-    intentsList.appendChild(empty)
+    plansList.appendChild(empty)
   }
 
-  const dialogEnabled = Boolean(intentsDialog && intentsOpenBtn)
+  const dialogEnabled = Boolean(plansDialog && plansOpenBtn)
   const dialog = dialogEnabled
     ? createDialogController({
-        dialog: intentsDialog,
-        trigger: intentsOpenBtn,
-        focusOnOpen: intentsCloseBtn,
-        focusOnClose: intentsOpenBtn,
+        dialog: plansDialog,
+        trigger: plansOpenBtn,
+        focusOnOpen: plansCloseBtn,
+        focusOnClose: plansOpenBtn,
         onOpen: () => {
           startTimeTick()
-          renderLatestIntents()
+          renderLatestPlans()
         },
         onAfterClose: stopTimeTick,
       })
@@ -95,29 +95,28 @@ export function bindIntentsPanel({
 
   if (dialogEnabled && dialog) {
     dialog.setExpanded(false)
-    intentsOpenBtn.addEventListener('click', onOpen)
-    if (intentsCloseBtn) intentsCloseBtn.addEventListener('click', onClose)
-    intentsDialog.addEventListener('click', onDialogClick)
-    intentsDialog.addEventListener('cancel', onDialogCancel)
-    intentsDialog.addEventListener('close', onDialogClose)
+    plansOpenBtn.addEventListener('click', onOpen)
+    if (plansCloseBtn) plansCloseBtn.addEventListener('click', onClose)
+    plansDialog.addEventListener('click', onDialogClick)
+    plansDialog.addEventListener('cancel', onDialogCancel)
+    plansDialog.addEventListener('close', onDialogClose)
   } else {
     startTimeTick()
-    renderLatestIntents()
+    renderLatestPlans()
   }
 
   return {
-    applyIntentsSnapshot,
+    applyPlansSnapshot,
     setDisconnected,
     dispose: () => {
       stopTimeTick()
       if (dialogEnabled && dialog) {
-        intentsOpenBtn.removeEventListener('click', onOpen)
-        if (intentsCloseBtn) intentsCloseBtn.removeEventListener('click', onClose)
-        intentsDialog.removeEventListener('click', onDialogClick)
-        intentsDialog.removeEventListener('cancel', onDialogCancel)
-        intentsDialog.removeEventListener('close', onDialogClose)
+        plansOpenBtn.removeEventListener('click', onOpen)
+        if (plansCloseBtn) plansCloseBtn.removeEventListener('click', onClose)
+        plansDialog.removeEventListener('click', onDialogClick)
+        plansDialog.removeEventListener('cancel', onDialogCancel)
+        plansDialog.removeEventListener('close', onDialogClose)
       }
     },
   }
 }
-

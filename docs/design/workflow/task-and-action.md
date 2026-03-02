@@ -8,16 +8,16 @@
 - `running`：worker 执行中。
 - `succeeded | failed | canceled`：终态。
 
-## Task Template 生命周期
+## Task Plan 生命周期
 
-- 对外名称：Templates；后端领域名：`taskTemplates`。
+- 对外名称：Plans；后端领域名：`taskPlans`。
 - 状态：`active | blocked | done`。
 - 触发策略：`trigger.mode = cron | scheduled_at | on_idle`。
-- `trigger-wake-loop` 每秒检查模板：
+- `trigger-wake-loop` 每秒检查 plan：
   - `cron/scheduled_at`：命中即发布 `system_event.name=trigger_fire`。
   - `on_idle`：达到闲暇窗口后按 `priority + FIFO` 触发。
 - `on_idle` 冷却：`now - lastCompletedAt >= cooldownMs`。
-- 每条 `UserInput/HistoryMessage/Task/TaskTemplate` 必带 `focusId`。
+- 每条 `UserInput/HistoryMessage/Task/TaskPlan` 必带 `focusId`。
 
 ## Focus 生命周期
 
@@ -31,10 +31,10 @@
 ## 派发与去重
 
 - 立即执行：`<M:run_task ... />`。
-- 自动化/定时/空闲触发：`<M:create_template ... trigger_mode="..." />`。
+- 自动化/定时/空闲触发：`<M:create_plan ... trigger_mode="..." />`。
 - worker 任务 profile 固定为 `worker`。
 - 去重两层：
-  - action 去重键：`prompt + title + profile + focusId`（模板额外包含 trigger 签名）
+  - action 去重键：`prompt + title + profile + focusId`（plan 额外包含 trigger 签名）
   - queue 去重键：`task.fingerprint`（仅拦 active 任务）
 
 ## 执行与回写
@@ -64,15 +64,15 @@
 
 实现：`src/manager/action-registry.ts`、`src/manager/action-validation.ts`、`src/manager/action-apply.ts`、`src/manager/loop-batch-run-manager.ts`、`src/manager/runtime-adapter.ts`、`src/history/query.ts`
 
-### Template Action
+### Plan Action
 
-- `create_template`
+- `create_plan`
   - 入参：`prompt`、`title`、`trigger_mode`、`focus_id?`、`priority?`、`source?`
   - 触发参数：`cron? | scheduled_at? | cooldown_ms? | max_runs?`
-- `update_template`
+- `update_plan`
   - 入参：`id` + 至少一个更新字段
   - 可更新：`prompt|title|trigger_mode|cron|scheduled_at|cooldown_ms|max_runs|priority|source|status|last_task_id|focus_id`
-- `delete_template`
+- `delete_plan`
   - 入参：`id`
 
 ### 任务 Action
@@ -111,7 +111,7 @@
 - `M:inputs`
 - `M:batch_results`
 - `M:tasks`
-- `M:templates`
+- `M:plans`
 - `M:focus_list`
 - `M:focus_contexts`
 - `M:recent_history`
@@ -124,6 +124,6 @@
 
 - `UserInput`
 - `Task`
-- `TaskTemplate`
+- `TaskPlan`
 - `HistoryMessage`
 - `FocusMeta` / `FocusContext`

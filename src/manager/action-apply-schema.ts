@@ -22,18 +22,18 @@ export const runTaskSchema = z
   })
   .strict()
 
-const templatePrioritySchema = z.enum(['high', 'normal', 'low'])
-const templateStatusSchema = z.enum(['active', 'blocked', 'done'])
-const templateSourceSchema = z.enum([
+const planPrioritySchema = z.enum(['high', 'normal', 'low'])
+const planStatusSchema = z.enum(['active', 'blocked', 'done'])
+const planSourceSchema = z.enum([
   'user_request',
   'agent_auto',
   'retry_decision',
 ])
-const templateTriggerModeSchema = z.enum(['cron', 'scheduled_at', 'on_idle'])
+const planTriggerModeSchema = z.enum(['cron', 'scheduled_at', 'on_idle'])
 const cooldownMsSchema = z.coerce.number().int().nonnegative()
 const maxRunsSchema = z.coerce.number().int().positive()
 
-const validateTemplateTriggerFields = (
+const validatePlanTriggerFields = (
   data: {
     trigger_mode?: 'cron' | 'scheduled_at' | 'on_idle' | undefined
     cron?: string | undefined
@@ -107,37 +107,37 @@ const validateTemplateTriggerFields = (
   }
 }
 
-export const createTemplateSchema = z
+export const createPlanSchema = z
   .object({
     prompt: nonEmptyString,
     title: nonEmptyString,
-    trigger_mode: templateTriggerModeSchema,
+    trigger_mode: planTriggerModeSchema,
     cron: z.string().trim().optional(),
     scheduled_at: z.string().trim().optional(),
     cooldown_ms: cooldownMsSchema.optional(),
     max_runs: maxRunsSchema.optional(),
-    priority: templatePrioritySchema.optional(),
-    source: templateSourceSchema.optional(),
+    priority: planPrioritySchema.optional(),
+    source: planSourceSchema.optional(),
     focus_id: focusIdSchema.optional(),
   })
   .strict()
   .superRefine((data, ctx) => {
-    validateTemplateTriggerFields(data, ctx)
+    validatePlanTriggerFields(data, ctx)
   })
 
-export const updateTemplateSchema = z
+export const updatePlanSchema = z
   .object({
     id: nonEmptyString,
     prompt: nonEmptyString.optional(),
     title: nonEmptyString.optional(),
-    trigger_mode: templateTriggerModeSchema.optional(),
+    trigger_mode: planTriggerModeSchema.optional(),
     cron: z.string().trim().optional(),
     scheduled_at: z.string().trim().optional(),
     cooldown_ms: cooldownMsSchema.optional(),
     max_runs: maxRunsSchema.optional(),
-    priority: templatePrioritySchema.optional(),
-    source: templateSourceSchema.optional(),
-    status: templateStatusSchema.optional(),
+    priority: planPrioritySchema.optional(),
+    source: planSourceSchema.optional(),
+    status: planStatusSchema.optional(),
     last_task_id: nonEmptyString.optional(),
     focus_id: focusIdSchema.optional(),
   })
@@ -176,7 +176,7 @@ export const updateTemplateSchema = z
             : undefined)
 
     if (inferredMode !== undefined)
-      validateTemplateTriggerFields(
+      validatePlanTriggerFields(
         {
           trigger_mode: inferredMode,
           cron: data.cron,
@@ -187,7 +187,7 @@ export const updateTemplateSchema = z
       )
   })
 
-export const deleteTemplateSchema = z
+export const deletePlanSchema = z
   .object({
     id: nonEmptyString,
   })

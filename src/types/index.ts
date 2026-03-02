@@ -4,8 +4,8 @@ import type {
   taskCancelSchema,
   taskResultSchema,
   taskSchema,
-  taskTemplateSchema,
-  taskTemplateTriggerSchema,
+  taskPlanSchema,
+  taskPlanTriggerSchema,
 } from '../storage/runtime-snapshot-schema.js'
 import type { z } from 'zod'
 
@@ -107,18 +107,18 @@ export type TaskResultStatus = Extract<
 >
 export type WorkerProfile = 'worker'
 
-export type TemplatePriority = 'high' | 'normal' | 'low'
-export type TemplateSource = 'user_request' | 'agent_auto' | 'retry_decision'
-export type TaskTemplateStatus = 'active' | 'blocked' | 'done'
-export type TaskTemplateDoneReason = 'canceled' | 'completed' | 'exhausted'
-export type TaskTemplateTriggerMode = 'cron' | 'scheduled_at' | 'on_idle'
+export type PlanPriority = 'high' | 'normal' | 'low'
+export type PlanSource = 'user_request' | 'agent_auto' | 'retry_decision'
+export type TaskPlanStatus = 'active' | 'blocked' | 'done'
+export type TaskPlanDoneReason = 'canceled' | 'completed' | 'exhausted'
+export type TaskPlanTriggerMode = 'cron' | 'scheduled_at' | 'on_idle'
 export type FocusStatus = 'active' | 'idle' | 'done' | 'archived'
 
 export type TaskCancelMeta = z.infer<typeof taskCancelSchema>
 export type TaskResult = z.infer<typeof taskResultSchema>
 export type Task = z.infer<typeof taskSchema>
-export type TaskTemplateTrigger = z.infer<typeof taskTemplateTriggerSchema>
-export type TaskTemplate = z.infer<typeof taskTemplateSchema>
+export type TaskPlanTrigger = z.infer<typeof taskPlanTriggerSchema>
+export type TaskPlan = z.infer<typeof taskPlanSchema>
 export type FocusMeta = z.infer<typeof focusMetaSchema>
 export type FocusContext = z.infer<typeof focusContextSchema>
 

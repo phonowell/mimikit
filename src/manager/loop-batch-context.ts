@@ -20,34 +20,34 @@ export {
   type ReadFileRequest,
 } from './read-file-tool.js'
 
-const TEMPLATE_TRIGGER_EVENT_RE =
+const PLAN_TRIGGER_EVENT_RE =
   /<M:system_event[^>]*name="trigger_fire"[^>]*>([\s\S]*?)<\/M:system_event>/g
 
-export const collectTriggeredTemplateIds = (inputs: UserInput[]): Set<string> => {
+export const collectTriggeredPlanIds = (inputs: UserInput[]): Set<string> => {
   const ids = new Set<string>()
   for (const input of inputs) {
     if (input.role !== 'system') continue
     if (!input.text.includes('name="trigger_fire"')) continue
-    TEMPLATE_TRIGGER_EVENT_RE.lastIndex = 0
-    let match = TEMPLATE_TRIGGER_EVENT_RE.exec(input.text)
+    PLAN_TRIGGER_EVENT_RE.lastIndex = 0
+    let match = PLAN_TRIGGER_EVENT_RE.exec(input.text)
     while (match) {
       const raw = match[1]?.trim()
       if (raw) {
         try {
-          const payload = JSON.parse(raw) as { template_id?: unknown }
+          const payload = JSON.parse(raw) as { plan_id?: unknown }
           const id =
-            typeof payload.template_id === 'string'
-              ? payload.template_id.trim()
+            typeof payload.plan_id === 'string'
+              ? payload.plan_id.trim()
               : ''
           if (id) ids.add(id)
         } catch (error) {
           const rawPreview = raw.length > 120 ? `${raw.slice(0, 120)}...` : raw
-          void logSafeError('collectTriggeredTemplateIds:parse_payload', error, {
+          void logSafeError('collectTriggeredPlanIds:parse_payload', error, {
             meta: { rawPreview },
           })
         }
       }
-      match = TEMPLATE_TRIGGER_EVENT_RE.exec(input.text)
+      match = PLAN_TRIGGER_EVENT_RE.exec(input.text)
     }
   }
   return ids

@@ -13,12 +13,12 @@ import type {
   Task,
   TaskCancelMeta,
   TaskResult,
-  TaskTemplate,
+  TaskPlan,
 } from '../types/index.js'
 
 const TASK_PROMPT_MAX_CHARS = 240
 const TASK_OUTPUT_MAX_CHARS = 320
-const TEMPLATE_PROMPT_MAX_CHARS = 220
+const PLAN_PROMPT_MAX_CHARS = 220
 
 const truncateForPrompt = (value: string, maxChars: number): string => {
   const normalized = value.replace(/\s+/g, ' ').trim()
@@ -145,43 +145,43 @@ export const formatResultsYaml = (
   return escapeCdata(stringifyPromptYaml({ tasks: entries }))
 }
 
-const formatTemplateEntry = (
-  template: TaskTemplate,
+const formatPlanEntry = (
+  plan: TaskPlan,
 ): Record<string, unknown> => ({
-  id: template.id,
-  status: template.status,
-  priority: template.priority,
-  source: template.source,
-  title: template.title.trim() || template.id,
-  prompt: truncateForPrompt(template.prompt, TEMPLATE_PROMPT_MAX_CHARS),
-  created_at: template.createdAt,
-  updated_at: template.updatedAt,
-  run_count: template.runCount,
-  ...(template.maxRuns !== undefined ? { max_runs: template.maxRuns } : {}),
-  trigger_mode: template.trigger.mode,
-  ...(template.trigger.mode === 'cron' ? { cron: template.trigger.cron } : {}),
-  ...(template.trigger.mode === 'scheduled_at'
-    ? { scheduled_at: template.trigger.scheduledAt }
+  id: plan.id,
+  status: plan.status,
+  priority: plan.priority,
+  source: plan.source,
+  title: plan.title.trim() || plan.id,
+  prompt: truncateForPrompt(plan.prompt, PLAN_PROMPT_MAX_CHARS),
+  created_at: plan.createdAt,
+  updated_at: plan.updatedAt,
+  run_count: plan.runCount,
+  ...(plan.maxRuns !== undefined ? { max_runs: plan.maxRuns } : {}),
+  trigger_mode: plan.trigger.mode,
+  ...(plan.trigger.mode === 'cron' ? { cron: plan.trigger.cron } : {}),
+  ...(plan.trigger.mode === 'scheduled_at'
+    ? { scheduled_at: plan.trigger.scheduledAt }
     : {}),
-  ...(template.trigger.mode === 'on_idle'
-    ? { cooldown_ms: template.trigger.cooldownMs }
+  ...(plan.trigger.mode === 'on_idle'
+    ? { cooldown_ms: plan.trigger.cooldownMs }
     : {}),
-  ...(template.lastTriggeredAt
-    ? { last_triggered_at: template.lastTriggeredAt }
+  ...(plan.lastTriggeredAt
+    ? { last_triggered_at: plan.lastTriggeredAt }
     : {}),
-  ...(template.lastCompletedAt
-    ? { last_completed_at: template.lastCompletedAt }
+  ...(plan.lastCompletedAt
+    ? { last_completed_at: plan.lastCompletedAt }
     : {}),
-  ...(template.lastTaskId ? { last_task_id: template.lastTaskId } : {}),
-  ...(template.archivedAt ? { archived_at: template.archivedAt } : {}),
-  ...(template.doneReason ? { done_reason: template.doneReason } : {}),
+  ...(plan.lastTaskId ? { last_task_id: plan.lastTaskId } : {}),
+  ...(plan.archivedAt ? { archived_at: plan.archivedAt } : {}),
+  ...(plan.doneReason ? { done_reason: plan.doneReason } : {}),
 })
 
-export const formatTemplatesYaml = (templates: TaskTemplate[]): string => {
-  if (templates.length === 0) return ''
+export const formatPlansYaml = (plans: TaskPlan[]): string => {
+  if (plans.length === 0) return ''
   return escapeCdata(
     stringifyPromptYaml({
-      templates: templates.map(formatTemplateEntry),
+      plans: plans.map(formatPlanEntry),
     }),
   )
 }

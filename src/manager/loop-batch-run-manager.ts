@@ -7,7 +7,7 @@ import {
 import { appendActionFeedbackSystemMessage } from '../history/manager-events.js'
 import { pickQueryHistoryRequest } from '../history/query.js'
 import { appendLog } from '../log/append.js'
-import { selectRecentTemplates } from '../orchestrator/read-model/template-select.js'
+import { selectRecentPlans } from '../orchestrator/read-model/plan-select.js'
 import { resolveScheduleNowIso } from '../shared/time.js'
 import { mergeUsageAdditive } from '../shared/token-usage.js'
 
@@ -15,7 +15,7 @@ import { collectManagerActionFeedback } from './action-feedback-collect.js'
 import {
   buildHistoryQueryKey,
   buildReadFileLookupKey,
-  collectTriggeredTemplateIds,
+  collectTriggeredPlanIds,
   pickReadFileRequest,
   queryHistoryLookup,
   queryReadFileLookup,
@@ -58,14 +58,14 @@ export const runManagerBatch = async (params: {
     maxCount: runtime.config.manager.taskWindow.maxCount,
     maxBytes: runtime.config.manager.taskWindow.maxBytes,
   })
-  const triggeredTemplateIds = collectTriggeredTemplateIds(inputs)
-  const templatesSource = runtime.taskTemplates.filter(
-    (template) => !triggeredTemplateIds.has(template.id),
+  const triggeredPlanIds = collectTriggeredPlanIds(inputs)
+  const plansSource = runtime.taskPlans.filter(
+    (plan) => !triggeredPlanIds.has(plan.id),
   )
-  const templates = selectRecentTemplates(templatesSource, {
-    minCount: runtime.config.manager.templateWindow.minCount,
-    maxCount: runtime.config.manager.templateWindow.maxCount,
-    maxBytes: runtime.config.manager.templateWindow.maxBytes,
+  const plans = selectRecentPlans(plansSource, {
+    minCount: runtime.config.manager.planWindow.minCount,
+    maxCount: runtime.config.manager.planWindow.maxCount,
+    maxBytes: runtime.config.manager.planWindow.maxBytes,
   })
   const preferredFocusIds = collectPreferredFocusIds(runtime, inputs, results)
   const workingFocusIds = selectWorkingFocusIds(runtime, preferredFocusIds)
@@ -93,7 +93,7 @@ export const runManagerBatch = async (params: {
         inputs,
         results,
         tasks,
-        templates,
+        plans,
         workingFocusIds,
         extra,
         onTextDelta: stream.appendDelta,
@@ -115,13 +115,13 @@ export const runManagerBatch = async (params: {
           taskStatusById: new Map(
             runtime.tasks.map((task) => [task.id, task.status]),
           ),
-          templateStatusById: new Map(
-            runtime.taskTemplates.map((template) => [template.id, template.status]),
+          planStatusById: new Map(
+            runtime.taskPlans.map((plan) => [plan.id, plan.status]),
           ),
           hasCompressibleContext:
             Boolean(runtime.managerCompressedContext?.trim()) ||
             runtime.tasks.length > 0 ||
-            runtime.taskTemplates.length > 0 ||
+            runtime.taskPlans.length > 0 ||
             inputs.length > 0 ||
             results.length > 0 ||
             runtime.queues.inputsCursor > 0 ||

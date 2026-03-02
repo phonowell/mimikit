@@ -4,26 +4,26 @@ import { formatSystemEventText } from '../shared/system-event.js'
 import { newId, nowIso } from '../shared/utils.js'
 
 import {
-  createTemplateSchema,
-  deleteTemplateSchema,
-  updateTemplateSchema,
+  createPlanSchema,
+  deletePlanSchema,
+  updatePlanSchema,
 } from './action-apply-schema.js'
 import { resolveActionFocusId } from './action-apply-create.js'
 
 import type { Parsed } from '../actions/model/spec.js'
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type {
-  TaskTemplate,
-  TaskTemplateTrigger,
-  TemplatePriority,
-  TemplateSource,
+  TaskPlan,
+  TaskPlanTrigger,
+  PlanPriority,
+  PlanSource,
 } from '../types/index.js'
 
-const resolveTemplateLabel = (item: TaskTemplate): string =>
+const resolvePlanLabel = (item: TaskPlan): string =>
   item.title.trim() || item.id
 
-const templateTriggerPayload = (
-  trigger: TaskTemplateTrigger,
+const planTriggerPayload = (
+  trigger: TaskPlanTrigger,
 ): Record<string, unknown> => {
   if (trigger.mode === 'cron') return { trigger_mode: 'cron', cron: trigger.cron }
   if (trigger.mode === 'scheduled_at')
@@ -31,54 +31,54 @@ const templateTriggerPayload = (
   return { trigger_mode: 'on_idle', cooldown_ms: trigger.cooldownMs }
 }
 
-const appendTemplateSystemMessage = async (
+const appendPlanSystemMessage = async (
   runtime: RuntimeState,
-  event: 'template_created' | 'template_updated' | 'template_deleted',
-  template: TaskTemplate,
+  event: 'plan_created' | 'plan_updated' | 'plan_deleted',
+  plan: TaskPlan,
 ): Promise<void> => {
-  const label = resolveTemplateLabel(template)
+  const label = resolvePlanLabel(plan)
   await appendHistory(runtime.paths.history, {
-    id: `sys-template-${newId()}`,
+    id: `sys-plan-${newId()}`,
     role: 'system',
     visibility: 'user',
     text: formatSystemEventText({
       summary:
-        event === 'template_created'
-          ? `Template changed: "${label}" (created).`
-          : event === 'template_updated'
-            ? `Template changed: "${label}" (updated).`
-            : `Template changed: "${label}" (deleted).`,
+        event === 'plan_created'
+          ? `Plan changed: "${label}" (created).`
+          : event === 'plan_updated'
+            ? `Plan changed: "${label}" (updated).`
+            : `Plan changed: "${label}" (deleted).`,
       event,
       payload: {
-        template_id: template.id,
+        plan_id: plan.id,
         title: label,
-        status: template.status,
-        priority: template.priority,
-        source: template.source,
-        run_count: template.runCount,
-        ...(template.maxRuns !== undefined ? { max_runs: template.maxRuns } : {}),
-        ...(template.lastTriggeredAt
-          ? { last_triggered_at: template.lastTriggeredAt }
+        status: plan.status,
+        priority: plan.priority,
+        source: plan.source,
+        run_count: plan.runCount,
+        ...(plan.maxRuns !== undefined ? { max_runs: plan.maxRuns } : {}),
+        ...(plan.lastTriggeredAt
+          ? { last_triggered_at: plan.lastTriggeredAt }
           : {}),
-        ...(template.lastCompletedAt
-          ? { last_completed_at: template.lastCompletedAt }
+        ...(plan.lastCompletedAt
+          ? { last_completed_at: plan.lastCompletedAt }
           : {}),
-        ...(template.lastTaskId ? { last_task_id: template.lastTaskId } : {}),
-        ...(template.archivedAt ? { archived_at: template.archivedAt } : {}),
-        ...templateTriggerPayload(template.trigger),
+        ...(plan.lastTaskId ? { last_task_id: plan.lastTaskId } : {}),
+        ...(plan.archivedAt ? { archived_at: plan.archivedAt } : {}),
+        ...planTriggerPayload(plan.trigger),
       },
     }),
     createdAt: nowIso(),
-    focusId: template.focusId,
+    focusId: plan.focusId,
   })
 }
 
-const normalizeTemplateKey = (params: {
+const normalizePlanKey = (params: {
   prompt: string
   title: string
   focusId: string
   profile: string
-  trigger: TaskTemplateTrigger
+  trigger: TaskPlanTrigger
 }): string => {
   const base = `${params.prompt.trim().replace(/\s+/g, ' ').toLowerCase()}\n${params.title
     .trim()
@@ -95,16 +95,16 @@ const buildTrigger = (params: {
   cron?: string | undefined
   scheduledAt?: string | undefined
   cooldownMs?: number | undefined
-}): TaskTemplateTrigger => {
+}): TaskPlanTrigger => {
   if (params.triggerMode === 'cron') {
     const cron = params.cron?.trim()
-    if (!cron) throw new Error('invalid_template_trigger: cron required')
+    if (!cron) throw new Error('invalid_plan_trigger: cron required')
     return { mode: 'cron', cron }
   }
   if (params.triggerMode === 'scheduled_at') {
     const scheduledAt = params.scheduledAt?.trim()
     if (!scheduledAt)
-      throw new Error('invalid_template_trigger: scheduled_at required')
+      throw new Error('invalid_plan_trigger: scheduled_at required')
     return { mode: 'scheduled_at', scheduledAt }
   }
   return {
@@ -114,14 +114,14 @@ const buildTrigger = (params: {
 }
 
 const resolveUpdatedTrigger = (
-  current: TaskTemplateTrigger,
+  current: TaskPlanTrigger,
   update: {
     triggerMode?: 'cron' | 'scheduled_at' | 'on_idle' | undefined
     cron?: string | undefined
     scheduledAt?: string | undefined
     cooldownMs?: number | undefined
   },
-): TaskTemplateTrigger => {
+): TaskPlanTrigger => {
   const hasTriggerPatch =
     update.triggerMode !== undefined ||
     update.cron !== undefined ||
@@ -151,11 +151,11 @@ const resolveUpdatedTrigger = (
   })
 }
 
-export const applyCreateTemplate = async (
+export const applyCreatePlan = async (
   runtime: RuntimeState,
   item: Parsed,
 ): Promise<void> => {
-  const parsed = createTemplateSchema.safeParse(item.attrs)
+  const parsed = createPlanSchema.safeParse(item.attrs)
   if (!parsed.success) return
 
   const trigger = buildTrigger({
@@ -165,22 +165,22 @@ export const applyCreateTemplate = async (
     cooldownMs: parsed.data.cooldown_ms,
   })
   const focusId = resolveActionFocusId(runtime, parsed.data.focus_id)
-  const key = normalizeTemplateKey({
+  const key = normalizePlanKey({
     prompt: parsed.data.prompt,
     title: parsed.data.title,
     focusId,
     profile: 'worker',
     trigger,
   })
-  const exists = runtime.taskTemplates.some(
-    (template) =>
-      template.status !== 'done' &&
-      normalizeTemplateKey({
-        prompt: template.prompt,
-        title: template.title,
-        focusId: template.focusId,
-        profile: template.profile,
-        trigger: template.trigger,
+  const exists = runtime.taskPlans.some(
+    (plan) =>
+      plan.status !== 'done' &&
+      normalizePlanKey({
+        prompt: plan.prompt,
+        title: plan.title,
+        focusId: plan.focusId,
+        profile: plan.profile,
+        trigger: plan.trigger,
       }) === key,
   )
   if (exists) return
@@ -190,14 +190,14 @@ export const applyCreateTemplate = async (
     parsed.data.max_runs ??
     (trigger.mode === 'on_idle' ? 1 : undefined)
 
-  const template: TaskTemplate = {
-    id: `tpl-${newId()}`,
+  const plan: TaskPlan = {
+    id: `plan-${newId()}`,
     prompt: parsed.data.prompt,
     title: parsed.data.title,
     focusId,
     profile: 'worker',
-    priority: (parsed.data.priority ?? 'normal') as TemplatePriority,
-    source: (parsed.data.source ?? 'user_request') as TemplateSource,
+    priority: (parsed.data.priority ?? 'normal') as PlanPriority,
+    source: (parsed.data.source ?? 'user_request') as PlanSource,
     status: 'active',
     trigger,
     createdAt: timestamp,
@@ -206,22 +206,22 @@ export const applyCreateTemplate = async (
     ...(maxRuns !== undefined ? { maxRuns } : {}),
   }
 
-  runtime.taskTemplates.push(template)
+  runtime.taskPlans.push(plan)
   await persistRuntimeState(runtime)
-  await appendTemplateSystemMessage(runtime, 'template_created', template)
+  await appendPlanSystemMessage(runtime, 'plan_created', plan)
 }
 
-export const applyUpdateTemplate = async (
+export const applyUpdatePlan = async (
   runtime: RuntimeState,
   item: Parsed,
 ): Promise<void> => {
-  const parsed = updateTemplateSchema.safeParse(item.attrs)
+  const parsed = updatePlanSchema.safeParse(item.attrs)
   if (!parsed.success) return
-  const index = runtime.taskTemplates.findIndex(
-    (template) => template.id === parsed.data.id,
+  const index = runtime.taskPlans.findIndex(
+    (plan) => plan.id === parsed.data.id,
   )
   if (index < 0) return
-  const current = runtime.taskTemplates[index]
+  const current = runtime.taskPlans[index]
   if (!current) return
   const isDoneLastTaskPatch =
     current.status === 'done' &&
@@ -251,7 +251,7 @@ export const applyUpdateTemplate = async (
   })
 
   const updatedAt = nowIso()
-  const next: TaskTemplate = {
+  const next: TaskPlan = {
     ...current,
     ...(parsed.data.prompt !== undefined ? { prompt: parsed.data.prompt } : {}),
     ...(parsed.data.title !== undefined ? { title: parsed.data.title } : {}),
@@ -272,23 +272,23 @@ export const applyUpdateTemplate = async (
     next.archivedAt = updatedAt
     next.doneReason = next.doneReason ?? 'completed'
   }
-  runtime.taskTemplates[index] = next
+  runtime.taskPlans[index] = next
   await persistRuntimeState(runtime)
-  await appendTemplateSystemMessage(runtime, 'template_updated', next)
+  await appendPlanSystemMessage(runtime, 'plan_updated', next)
 }
 
-export const applyDeleteTemplate = async (
+export const applyDeletePlan = async (
   runtime: RuntimeState,
   item: Parsed,
 ): Promise<void> => {
-  const parsed = deleteTemplateSchema.safeParse(item.attrs)
+  const parsed = deletePlanSchema.safeParse(item.attrs)
   if (!parsed.success) return
-  const index = runtime.taskTemplates.findIndex(
-    (template) => template.id === parsed.data.id,
+  const index = runtime.taskPlans.findIndex(
+    (plan) => plan.id === parsed.data.id,
   )
   if (index < 0) return
-  const [removed] = runtime.taskTemplates.splice(index, 1)
+  const [removed] = runtime.taskPlans.splice(index, 1)
   if (!removed) return
   await persistRuntimeState(runtime)
-  await appendTemplateSystemMessage(runtime, 'template_deleted', removed)
+  await appendPlanSystemMessage(runtime, 'plan_deleted', removed)
 }

@@ -14,11 +14,11 @@
 
 ## SSE 事件模型（`GET /api/events`）
 
-- `snapshot`：全量快照，包含 `status/messages/tasks/templates/focuses/stream`。
+- `snapshot`：全量快照，包含 `status/messages/tasks/plans/focuses/stream`。
 - `stream`：流式文本 patch（`clear | replace | delta`）。
 - `error`：SSE 连接内错误反馈。
 
-说明：当前实现通过 SSE 下发消息、任务、templates 与 focus，不提供独立 `messages/tasks/templates` HTTP 查询接口。
+说明：当前实现通过 SSE 下发消息、任务、plans 与 focus，不提供独立 `messages/tasks/plans` HTTP 查询接口。
 
 ## 输入协议（`POST /api/input`）
 
@@ -41,9 +41,9 @@
 - `MIMIKIT_REASONING_EFFORT`
 - `MIMIKIT_WORKER_REASONING_EFFORT`
 - `MIMIKIT_MANAGER_CREATE_TASK_DEBOUNCE_MS`
-- `MIMIKIT_MANAGER_TEMPLATE_WINDOW_MAX_COUNT`
-- `MIMIKIT_MANAGER_TEMPLATE_WINDOW_MIN_COUNT`
-- `MIMIKIT_MANAGER_TEMPLATE_WINDOW_MAX_BYTES`
+- `MIMIKIT_MANAGER_PLAN_WINDOW_MAX_COUNT`
+- `MIMIKIT_MANAGER_PLAN_WINDOW_MIN_COUNT`
+- `MIMIKIT_MANAGER_PLAN_WINDOW_MAX_BYTES`
 
 ## 配置结构（`config/default.yaml`）
 
@@ -52,7 +52,7 @@
 - `manager.promptSections.*`
 - `manager.taskCreate.debounceMs`
 - `manager.taskWindow.{maxCount,minCount,maxBytes}`
-- `manager.templateWindow.{maxCount,minCount,maxBytes}`
+- `manager.planWindow.{maxCount,minCount,maxBytes}`
 - `worker.maxConcurrent`
 - `worker.retry.{maxAttempts,backoffMs}`
 - `worker.timeoutMs`
@@ -84,7 +84,7 @@
 schema：`src/storage/runtime-snapshot-schema.ts`
 
 - `tasks`
-- `taskTemplates`
+- `taskPlans`
 - `focuses`、`focusContexts`、`activeFocusIds`
 - `managerTurn`、`managerCompressedContext`
 - `queues.inputsCursor`、`queues.resultsCursor`

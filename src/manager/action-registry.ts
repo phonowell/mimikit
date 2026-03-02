@@ -5,10 +5,10 @@ import {
   applyUpdateFocusAction,
 } from './action-apply-focus.js'
 import {
-  applyCreateTemplate,
-  applyDeleteTemplate,
-  applyUpdateTemplate,
-} from './action-apply-template.js'
+  applyCreatePlan,
+  applyDeletePlan,
+  applyUpdatePlan,
+} from './action-apply-plan.js'
 import {
   applyCancelTaskAction,
   applyCompressContextAction,
@@ -19,22 +19,22 @@ import {
 import {
   assignFocusSchema,
   createFocusSchema,
-  deleteTemplateSchema,
+  deletePlanSchema,
   restartSchema,
   summarizeSchema,
   updateFocusSchema,
-  updateTemplateSchema,
+  updatePlanSchema,
 } from './action-apply-schema.js'
 import {
   type FeedbackContext,
   validateCancelTask,
   validateCompressContext,
-  validateCreateTemplate,
+  validateCreatePlan,
   validateQueryHistory,
   validateReadFile,
   validateRunTask,
-  validateTemplateById,
-  validateUpdateTemplate,
+  validatePlanById,
+  validateUpdatePlan,
   validateWithSchema,
   validateWritePersona,
   validateWriteUserProfile,
@@ -68,37 +68,37 @@ const continueApply = (): Promise<ApplyResult> => Promise.resolve('continue')
 
 const ACTION_DEFINITIONS = [
   {
-    name: 'create_template',
+    name: 'create_plan',
     validate: (item: Parsed, context: FeedbackContext) =>
-      validateCreateTemplate(item, context),
+      validateCreatePlan(item, context),
     apply: async (runtime: RuntimeState, item: Parsed) => {
-      await applyCreateTemplate(runtime, item)
+      await applyCreatePlan(runtime, item)
       return 'continue'
     },
   },
   {
-    name: 'update_template',
+    name: 'update_plan',
     validate: (item: Parsed, context: FeedbackContext) => {
-      const byIdIssues = validateTemplateById(
-        'update_template',
+      const byIdIssues = validatePlanById(
+        'update_plan',
         item,
-        updateTemplateSchema,
+        updatePlanSchema,
         context,
       )
       if (byIdIssues.length > 0) return byIdIssues
-      return validateUpdateTemplate(item, context)
+      return validateUpdatePlan(item, context)
     },
     apply: async (runtime: RuntimeState, item: Parsed) => {
-      await applyUpdateTemplate(runtime, item)
+      await applyUpdatePlan(runtime, item)
       return 'continue'
     },
   },
   {
-    name: 'delete_template',
+    name: 'delete_plan',
     validate: (item: Parsed, context: FeedbackContext) =>
-      validateTemplateById('delete_template', item, deleteTemplateSchema, context),
+      validatePlanById('delete_plan', item, deletePlanSchema, context),
     apply: async (runtime: RuntimeState, item: Parsed) => {
-      await applyDeleteTemplate(runtime, item)
+      await applyDeletePlan(runtime, item)
       return 'continue'
     },
   },

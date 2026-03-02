@@ -5,21 +5,21 @@ import { hasForbiddenWorkerStatePath } from './action-apply-guards.js'
 import {
   cancelSchema,
   compressContextSchema,
-  createTemplateSchema,
+  createPlanSchema,
   readFileSchema,
   runTaskSchema,
-  updateTemplateSchema,
+  updatePlanSchema,
   writePersonaSchema,
   writeUserProfileSchema,
 } from './action-apply-schema.js'
 
 import type { Parsed } from '../actions/model/spec.js'
-import type { TaskStatus, TaskTemplateStatus } from '../types/index.js'
+import type { TaskStatus, TaskPlanStatus } from '../types/index.js'
 import type { ZodError, ZodSchema } from 'zod'
 
 export type FeedbackContext = {
   taskStatusById?: Map<string, TaskStatus>
-  templateStatusById?: Map<string, TaskTemplateStatus>
+  planStatusById?: Map<string, TaskPlanStatus>
   hasCompressibleContext?: boolean
   scheduleNowIso?: string
 }
@@ -78,11 +78,11 @@ export const validateRunTask = (item: Parsed): ValidationIssue[] => {
   return []
 }
 
-export const validateCreateTemplate = (
+export const validateCreatePlan = (
   item: Parsed,
   context: FeedbackContext,
 ): ValidationIssue[] => {
-  const parsed = createTemplateSchema.safeParse(item.attrs)
+  const parsed = createPlanSchema.safeParse(item.attrs)
   if (!parsed.success) return [invalidArgsIssue(parsed.error)]
   if (
     parsed.data.trigger_mode === 'scheduled_at' &&
@@ -91,7 +91,7 @@ export const validateCreateTemplate = (
     const scheduledAt = parsed.data.scheduled_at.trim()
     if (!Number.isFinite(Date.parse(scheduledAt))) {
       return rejected(
-        'create_template 执行失败：scheduled_at 不是合法 ISO 8601 时间。',
+        'create_plan 执行失败：scheduled_at 不是合法 ISO 8601 时间。',
       )
     }
     const scheduledMs = parseIsoMs(scheduledAt)
@@ -99,7 +99,7 @@ export const validateCreateTemplate = (
       const nowMs = parseIsoMs(context.scheduleNowIso ?? '') ?? Date.now()
       if (scheduledMs <= nowMs - SCHEDULED_AT_PAST_TOLERANCE_MS) {
         return rejected(
-          `create_template 执行失败：scheduled_at 必须晚于当前时间（now=${new Date(nowMs).toISOString()}）。`,
+          `create_plan 执行失败：scheduled_at 必须晚于当前时间（now=${new Date(nowMs).toISOString()}）。`,
         )
       }
     }
@@ -165,17 +165,17 @@ export const validateCompressContext = (
   return rejected('compress_context 执行失败：当前无可压缩上下文。')
 }
 
-export const validateTemplateById = (
-  action: 'update_template' | 'delete_template',
+export const validatePlanById = (
+  action: 'update_plan' | 'delete_plan',
   item: Parsed,
   schema: ZodSchema<{ id: string }>,
   context: FeedbackContext,
 ): ValidationIssue[] => {
   const parsed = schema.safeParse(item.attrs)
   if (!parsed.success) return [invalidArgsIssue(parsed.error)]
-  const status = context.templateStatusById?.get(parsed.data.id)
-  if (!status) return rejected(`${action} 执行失败：未找到 template ID。`)
-  if (action === 'update_template' && status === 'done') {
+  const status = context.planStatusById?.get(parsed.data.id)
+  if (!status) return rejected(`${action} 执行失败：未找到 plan ID。`)
+  if (action === 'update_plan' && status === 'done') {
     const keys = new Set(Object.keys(item.attrs))
     const isLastTaskPatch =
       keys.size > 0 &&
@@ -183,18 +183,18 @@ export const validateTemplateById = (
       typeof item.attrs.last_task_id === 'string' &&
       item.attrs.last_task_id.trim().length > 0
     if (isLastTaskPatch) return []
-    return rejected('update_template 执行失败：done template 不可修改。')
+    return rejected('update_plan 执行失败：done plan 不可修改。')
   }
-  if (action === 'delete_template' && status === 'done') return []
-  if (action === 'delete_template') return []
+  if (action === 'delete_plan' && status === 'done') return []
+  if (action === 'delete_plan') return []
   return []
 }
 
-export const validateUpdateTemplate = (
+export const validateUpdatePlan = (
   item: Parsed,
   context: FeedbackContext,
 ): ValidationIssue[] => {
-  const parsed = updateTemplateSchema.safeParse(item.attrs)
+  const parsed = updatePlanSchema.safeParse(item.attrs)
   if (!parsed.success) return [invalidArgsIssue(parsed.error)]
   const scheduledAt = parsed.data.scheduled_at?.trim()
   const resolvedMode =
@@ -210,7 +210,7 @@ export const validateUpdateTemplate = (
   if (resolvedMode === 'scheduled_at' && scheduledAt) {
     if (!Number.isFinite(Date.parse(scheduledAt))) {
       return rejected(
-        'update_template 执行失败：scheduled_at 不是合法 ISO 8601 时间。',
+        'update_plan 执行失败：scheduled_at 不是合法 ISO 8601 时间。',
       )
     }
     const scheduledMs = parseIsoMs(scheduledAt)
@@ -218,7 +218,7 @@ export const validateUpdateTemplate = (
       const nowMs = parseIsoMs(context.scheduleNowIso ?? '') ?? Date.now()
       if (scheduledMs <= nowMs - SCHEDULED_AT_PAST_TOLERANCE_MS) {
         return rejected(
-          `update_template 执行失败：scheduled_at 必须晚于当前时间（now=${new Date(nowMs).toISOString()}）。`,
+          `update_plan 执行失败：scheduled_at 必须晚于当前时间（now=${new Date(nowMs).toISOString()}）。`,
         )
       }
     }

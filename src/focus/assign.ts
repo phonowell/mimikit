@@ -29,9 +29,9 @@ export const assignFocusByTargetId = async (
     return true
   }
 
-  const template = runtime.taskTemplates.find((item) => item.id === targetId)
-  if (template) {
-    template.focusId = focusId
+  const plan = runtime.taskPlans.find((item) => item.id === targetId)
+  if (plan) {
+    plan.focusId = focusId
     touchFocus(runtime, focusId)
     await persistRuntimeState(runtime)
     return true

@@ -12,9 +12,9 @@ export {
   findActiveTaskBySemanticKey,
 } from '../orchestrator/core/task-state.js'
 export {
-  selectRecentTemplates,
+  selectRecentPlans,
   selectRecentTasks,
-} from '../orchestrator/read-model/template-select.js'
+} from '../orchestrator/read-model/plan-select.js'
 export { cancelTask } from '../worker/cancel-task.js'
 export { enqueueWorkerTask } from '../worker/dispatch.js'
 

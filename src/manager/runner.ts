@@ -17,7 +17,7 @@ import type {
   ReadFileLookupMessage,
   Task,
   TaskResult,
-  TaskTemplate,
+  TaskPlan,
   TokenUsage,
   UserInput,
 } from '../types/index.js'
@@ -32,7 +32,7 @@ export const runManager = async (params: {
   results: TaskResult[]
   tasks: Task[]
   promptSectionLimits: AppConfig['manager']['promptSections']
-  templates?: TaskTemplate[]
+  plans?: TaskPlan[]
   historyLookup?: HistoryLookupMessage[]
   readFileLookup?: ReadFileLookupMessage[]
   actionFeedback?: ManagerActionFeedback[]
@@ -57,7 +57,7 @@ export const runManager = async (params: {
     results: params.results,
     tasks: params.tasks,
     promptSectionLimits: params.promptSectionLimits,
-    ...(params.templates ? { templates: params.templates } : {}),
+    ...(params.plans ? { plans: params.plans } : {}),
     ...(params.historyLookup ? { historyLookup: params.historyLookup } : {}),
     ...(params.readFileLookup ? { readFileLookup: params.readFileLookup } : {}),
     ...(params.actionFeedback ? { actionFeedback: params.actionFeedback } : {}),

@@ -48,7 +48,7 @@ const createRuntime = async (): Promise<RuntimeState> => {
       resultsCursor: 0,
     },
     tasks: [],
-    taskTemplates: [],
+    taskPlans: [],
     focuses: [
       {
         id: GLOBAL_FOCUS_ID,

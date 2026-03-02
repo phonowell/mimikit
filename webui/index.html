@@ -26,16 +26,16 @@
           </div>
           <div class="app-actions" role="toolbar" aria-label="Controls">
             <button
-              class="btn btn--sm intents-open"
-              data-intents-open
+              class="btn btn--sm plans-open"
+              data-plans-open
               type="button"
-              title="Intents"
-              aria-label="Intents"
+              title="Plans"
+              aria-label="Plans"
               aria-haspopup="dialog"
-              aria-controls="intents-dialog"
+              aria-controls="plans-dialog"
               aria-expanded="false"
             >
-              <span class="intents-label">Templates</span>
+              <span class="plans-label">Plans</span>
             </button>
             <button
               class="btn btn--sm tasks-open"
@@ -131,18 +131,18 @@
       </section>
 
       <dialog
-        class="intents-dialog"
-        data-intents-dialog
-        id="intents-dialog"
-        aria-labelledby="intents-title"
+        class="plans-dialog"
+        data-plans-dialog
+        id="plans-dialog"
+        aria-labelledby="plans-title"
       >
-        <section class="intents-panel">
-          <header class="intents-header">
-            <h2 class="intents-title" id="intents-title">Templates</h2>
-            <div class="intents-actions" role="group" aria-label="Templates">
+        <section class="plans-panel">
+          <header class="plans-header">
+            <h2 class="plans-title" id="plans-title">Plans</h2>
+            <div class="plans-actions" role="group" aria-label="Plans">
               <button
-                class="btn btn--icon btn--icon-muted intents-close"
-                data-intents-close
+                class="btn btn--icon btn--icon-muted plans-close"
+                data-plans-close
                 type="button"
                 title="Close"
                 aria-label="Close"
@@ -151,7 +151,7 @@
               </button>
             </div>
           </header>
-          <ul class="intents-list scrollable" data-intents-list></ul>
+          <ul class="plans-list scrollable" data-plans-list></ul>
         </section>
       </dialog>
 

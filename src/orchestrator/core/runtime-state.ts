@@ -6,7 +6,7 @@ import type {
   FocusMeta,
   ISODate,
   Task,
-  TaskTemplate,
+  TaskPlan,
   TokenUsage,
   UserInput,
 } from '../../types/index.js'
@@ -57,7 +57,7 @@ export type RuntimeState = {
     resultsCursor: number
   }
   tasks: Task[]
-  taskTemplates: TaskTemplate[]
+  taskPlans: TaskPlan[]
   focuses: FocusMeta[]
   focusContexts: FocusContext[]
   activeFocusIds: FocusId[]

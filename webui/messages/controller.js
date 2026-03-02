@@ -196,7 +196,7 @@ export function createMessagesController({
   quoteText,
   quoteClearBtn,
   onTasksSnapshot,
-  onTemplatesSnapshot,
+  onPlansSnapshot,
   onFocusesSnapshot,
   onDisconnected,
 }) {
@@ -306,8 +306,8 @@ export function createMessagesController({
     applyMessagesPayload(snapshot.messages, currentStreamMessage)
     if (typeof onTasksSnapshot === 'function' && isRecord(snapshot.tasks)) 
       onTasksSnapshot(snapshot.tasks)
-    if (typeof onTemplatesSnapshot === 'function' && isRecord(snapshot.templates))
-      onTemplatesSnapshot(snapshot.templates)
+    if (typeof onPlansSnapshot === 'function' && isRecord(snapshot.plans))
+      onPlansSnapshot(snapshot.plans)
     if (typeof onFocusesSnapshot === 'function' && isRecord(snapshot.focuses))
       onFocusesSnapshot(snapshot.focuses)
   }

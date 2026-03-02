@@ -16,7 +16,7 @@ import {
   formatReadFileLookup,
   formatRecentHistory,
   formatResultsYaml,
-  formatTemplatesYaml,
+  formatPlansYaml,
   formatTasksYaml,
   renderPromptTemplate,
 } from './format.js'
@@ -33,7 +33,7 @@ import type {
   ReadFileLookupMessage,
   Task,
   TaskResult,
-  TaskTemplate,
+  TaskPlan,
   UserInput,
 } from '../types/index.js'
 
@@ -101,7 +101,7 @@ export const buildManagerPrompt = async (params: {
   results: TaskResult[]
   tasks: Task[]
   promptSectionLimits: PromptSectionLimits
-  templates?: TaskTemplate[]
+  plans?: TaskPlan[]
   historyLookup?: HistoryLookupMessage[]
   readFileLookup?: ReadFileLookupMessage[]
   actionFeedback?: ManagerActionFeedback[]
@@ -168,9 +168,9 @@ export const buildManagerPrompt = async (params: {
       formatTasksYaml(params.tasks, resultsForTasks),
       params.promptSectionLimits.tasksMaxBytes,
     ),
-    templates: encodePromptSection(
-      formatTemplatesYaml(params.templates ?? []),
-      params.promptSectionLimits.templatesMaxBytes,
+    plans: encodePromptSection(
+      formatPlansYaml(params.plans ?? []),
+      params.promptSectionLimits.plansMaxBytes,
     ),
     recent_history: encodePromptSection(
       formatRecentHistory(focusPayload.recentHistory),

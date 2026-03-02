@@ -72,7 +72,7 @@ export {
 } from './format-messages.js'
 export { formatFocusContexts, formatFocusList } from './format-focus.js'
 export {
-  formatTemplatesYaml,
+  formatPlansYaml,
   formatResultsYaml,
   formatTasksYaml,
 } from './format-content.js'

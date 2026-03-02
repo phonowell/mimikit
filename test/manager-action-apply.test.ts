@@ -10,7 +10,7 @@ import { buildPaths } from '../src/fs/paths.js'
 import { applyTaskActions } from '../src/manager/action-apply.js'
 
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
-import type { TaskTemplate } from '../src/types/index.js'
+import type { TaskPlan } from '../src/types/index.js'
 
 const GLOBAL_FOCUS_ID = 'focus-global'
 
@@ -39,7 +39,7 @@ const createRuntime = async (): Promise<RuntimeState> => {
       resultsCursor: 0,
     },
     tasks: [],
-    taskTemplates: [],
+    taskPlans: [],
     focuses: [
       {
         id: GLOBAL_FOCUS_ID,
@@ -153,11 +153,11 @@ test('run_task allows .mimikit/generated path', async () => {
   expect(runtime.tasks[0]?.title).toBe('allowed')
 })
 
-test('create_template uses worker profile for cron template', async () => {
+test('create_plan uses worker profile for cron plan', async () => {
   const runtime = await createRuntime()
   await applyTaskActions(runtime, [
     {
-      name: 'create_template',
+      name: 'create_plan',
       attrs: {
         prompt: 'Summarize daily build status',
         title: 'scheduled',
@@ -167,9 +167,9 @@ test('create_template uses worker profile for cron template', async () => {
     },
   ])
 
-  expect(runtime.taskTemplates).toHaveLength(1)
-  expect(runtime.taskTemplates[0]?.profile).toBe('worker')
-  expect(runtime.taskTemplates[0]?.trigger.mode).toBe('cron')
+  expect(runtime.taskPlans).toHaveLength(1)
+  expect(runtime.taskPlans[0]?.profile).toBe('worker')
+  expect(runtime.taskPlans[0]?.trigger.mode).toBe('cron')
 })
 
 test('write_user_profile writes utf8 content to state file', async () => {
@@ -211,11 +211,11 @@ test('write_persona snapshots old version before overwrite', async () => {
   expect(snapshot).toBe('old persona')
 })
 
-test('template actions can create and archive done template', async () => {
+test('plan actions can create and archive done plan', async () => {
   const runtime = await createRuntime()
   await applyTaskActions(runtime, [
     {
-      name: 'create_template',
+      name: 'create_plan',
       attrs: {
         prompt: 'remember release note',
         title: 'release note',
@@ -224,14 +224,14 @@ test('template actions can create and archive done template', async () => {
       },
     },
   ])
-  const createdId = runtime.taskTemplates[0]?.id
+  const createdId = runtime.taskPlans[0]?.id
   expect(createdId).toBeTruthy()
-  expect(runtime.taskTemplates[0]?.trigger.mode).toBe('on_idle')
-  expect(runtime.taskTemplates[0]?.status).toBe('active')
+  expect(runtime.taskPlans[0]?.trigger.mode).toBe('on_idle')
+  expect(runtime.taskPlans[0]?.status).toBe('active')
 
   await applyTaskActions(runtime, [
     {
-      name: 'update_template',
+      name: 'update_plan',
       attrs: {
         id: createdId ?? '',
         status: 'done',
@@ -239,15 +239,15 @@ test('template actions can create and archive done template', async () => {
     },
   ])
 
-  expect(runtime.taskTemplates).toHaveLength(1)
-  expect(runtime.taskTemplates[0]?.status).toBe('done')
-  expect(runtime.taskTemplates[0]?.archivedAt).toBeTruthy()
+  expect(runtime.taskPlans).toHaveLength(1)
+  expect(runtime.taskPlans[0]?.status).toBe('done')
+  expect(runtime.taskPlans[0]?.archivedAt).toBeTruthy()
 })
 
-test('delete_template removes done template', async () => {
+test('delete_plan removes done plan', async () => {
   const runtime = await createRuntime()
-  const doneTemplate: TaskTemplate = {
-    id: 'tpl-done',
+  const donePlan: TaskPlan = {
+    id: 'plan-done',
     prompt: 'done prompt',
     title: 'done',
     focusId: GLOBAL_FOCUS_ID,
@@ -266,24 +266,24 @@ test('delete_template removes done template', async () => {
     maxRuns: 1,
     doneReason: 'completed',
   }
-  runtime.taskTemplates.push(doneTemplate)
+  runtime.taskPlans.push(donePlan)
 
   await applyTaskActions(runtime, [
     {
-      name: 'delete_template',
+      name: 'delete_plan',
       attrs: {
-        id: 'tpl-done',
+        id: 'plan-done',
       },
     },
   ])
 
-  expect(runtime.taskTemplates).toHaveLength(0)
+  expect(runtime.taskPlans).toHaveLength(0)
 })
 
-test('update_template allows last_task_id patch for done template', async () => {
+test('update_plan allows last_task_id patch for done plan', async () => {
   const runtime = await createRuntime()
-  runtime.taskTemplates.push({
-    id: 'tpl-done-bind',
+  runtime.taskPlans.push({
+    id: 'plan-done-bind',
     prompt: 'scheduled prompt',
     title: 'scheduled title',
     focusId: GLOBAL_FOCUS_ID,
@@ -304,18 +304,18 @@ test('update_template allows last_task_id patch for done template', async () => 
 
   await applyTaskActions(runtime, [
     {
-      name: 'update_template',
+      name: 'update_plan',
       attrs: {
-        id: 'tpl-done-bind',
+        id: 'plan-done-bind',
         last_task_id: 'task-after-trigger',
       },
     },
   ])
 
-  expect(runtime.taskTemplates).toHaveLength(1)
-  expect(runtime.taskTemplates[0]?.status).toBe('done')
-  expect(runtime.taskTemplates[0]?.lastTaskId).toBe('task-after-trigger')
-  expect(runtime.taskTemplates[0]?.archivedAt).toBe('2026-02-13T00:00:00.000Z')
+  expect(runtime.taskPlans).toHaveLength(1)
+  expect(runtime.taskPlans[0]?.status).toBe('done')
+  expect(runtime.taskPlans[0]?.lastTaskId).toBe('task-after-trigger')
+  expect(runtime.taskPlans[0]?.archivedAt).toBe('2026-02-13T00:00:00.000Z')
 })
 
 test('restart_runtime requests exit through runtime hook', async () => {

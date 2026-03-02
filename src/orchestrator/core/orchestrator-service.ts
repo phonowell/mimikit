@@ -7,7 +7,7 @@ import { newId } from '../../shared/utils.js'
 import { cancelTask } from '../../worker/cancel-task.js'
 import { type ChatMessage } from '../read-model/chat-view.js'
 import { buildFocusViews } from '../read-model/focus-view.js'
-import { sortTaskTemplates } from '../read-model/template-select.js'
+import { sortTaskPlans } from '../read-model/plan-select.js'
 import { buildTaskViews } from '../read-model/task-view.js'
 
 import {
@@ -31,7 +31,7 @@ import type {
   UiWakeKind,
   UserMeta,
 } from './runtime-state.js'
-import type { Task, TaskTemplate } from '../../types/index.js'
+import type { Task, TaskPlan } from '../../types/index.js'
 
 export type { OrchestratorStatus } from './orchestrator-helpers.js'
 
@@ -59,7 +59,7 @@ export class Orchestrator {
       inflightInputs: [],
       queues: { inputsCursor: 0, resultsCursor: 0 },
       tasks: [],
-      taskTemplates: [],
+      taskPlans: [],
       focuses: [],
       focusContexts: [],
       activeFocusIds: [],
@@ -109,8 +109,8 @@ export class Orchestrator {
     return buildTaskViews(this.runtime.tasks, limit)
   }
 
-  getTemplates(limit = 200): { items: TaskTemplate[] } {
-    const items = sortTaskTemplates(this.runtime.taskTemplates)
+  getPlans(limit = 200): { items: TaskPlan[] } {
+    const items = sortTaskPlans(this.runtime.taskPlans)
       .slice(0, Math.max(0, limit))
       .map((item) => ({ ...item }))
     return { items }
@@ -130,7 +130,7 @@ export class Orchestrator {
       status: this.getStatus(),
       messages: await getChatMessages(this.runtime, messageLimit),
       tasks: buildTaskViews(this.runtime.tasks, taskLimit),
-      templates: this.getTemplates(taskLimit),
+      plans: this.getPlans(taskLimit),
       focuses: this.getFocuses(taskLimit),
       stream: this.runtime.uiStream ? { ...this.runtime.uiStream } : null,
     }))()

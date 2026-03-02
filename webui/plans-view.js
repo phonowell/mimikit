@@ -26,44 +26,44 @@ const formatAttempt = (item) => {
   return `${runCount}/${maxRuns}`
 }
 
-export const renderIntents = (intentsList, data) => {
-  if (!intentsList) return
+export const renderPlans = (plansList, data) => {
+  if (!plansList) return
   const items = data?.items || []
-  intentsList.innerHTML = ''
+  plansList.innerHTML = ''
 
   if (items.length === 0) {
     const empty = document.createElement('li')
-    empty.className = 'intents-empty'
+    empty.className = 'plans-empty'
     const article = document.createElement('article')
-    article.textContent = UI_TEXT.noIntents
+    article.textContent = UI_TEXT.noPlans
     empty.appendChild(article)
-    intentsList.appendChild(empty)
+    plansList.appendChild(empty)
     return
   }
 
   for (const item of items) {
     const node = document.createElement('li')
-    node.className = 'intent-item'
+    node.className = 'plan-item'
     const status = typeof item.status === 'string' ? item.status : 'active'
     node.dataset.status = status
 
     const header = document.createElement('div')
-    header.className = 'intent-title-row'
+    header.className = 'plan-title-row'
 
     const dot = document.createElement('span')
-    dot.className = 'intent-status'
+    dot.className = 'plan-status'
     dot.dataset.status = status
     dot.setAttribute('aria-hidden', 'true')
 
     const title = document.createElement('span')
-    title.className = 'intent-title'
+    title.className = 'plan-title'
     title.textContent =
       typeof item.title === 'string' && item.title.trim()
         ? item.title
         : UI_TEXT.untitledTask
 
     const priority = document.createElement('span')
-    priority.className = 'intent-priority'
+    priority.className = 'plan-priority'
     priority.textContent =
       PRIORITY_TEXT[
         typeof item.priority === 'string' ? item.priority : 'normal'
@@ -74,7 +74,7 @@ export const renderIntents = (intentsList, data) => {
     header.appendChild(priority)
 
     const meta = document.createElement('small')
-    meta.className = 'intent-meta'
+    meta.className = 'plan-meta'
 
     const statusEl = document.createElement('span')
     statusEl.textContent = STATUS_TEXT[status] ?? status
@@ -102,7 +102,7 @@ export const renderIntents = (intentsList, data) => {
     if (changedAt) {
       const changedDisplay = formatDisplayTimeWithFull(changedAt)
       const time = document.createElement('span')
-      time.className = 'intent-time'
+      time.className = 'plan-time'
       time.textContent = changedDisplay.displayText || changedAt
       time.title = changedDisplay.fullText || changedAt
       meta.appendChild(time)
@@ -110,6 +110,6 @@ export const renderIntents = (intentsList, data) => {
 
     node.appendChild(header)
     node.appendChild(meta)
-    intentsList.appendChild(node)
+    plansList.appendChild(node)
   }
 }

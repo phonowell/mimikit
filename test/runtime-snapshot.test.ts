@@ -10,7 +10,7 @@ import {
   saveRuntimeSnapshot,
   selectPersistedTasks,
 } from '../src/storage/runtime-snapshot.js'
-import type { Task, TaskTemplate } from '../src/types/index.js'
+import type { Task, TaskPlan } from '../src/types/index.js'
 
 const GLOBAL_FOCUS_ID = 'focus-global'
 const SNAPSHOT_BASE_TIME = '2026-02-06T00:00:00.000Z'
@@ -29,10 +29,10 @@ const createTaskFixture = (overrides: Partial<Task> = {}): Task => ({
   ...overrides,
 })
 
-const createTemplateFixture = (
-  overrides: Partial<TaskTemplate> = {},
-): TaskTemplate => ({
-  id: 'tpl-1',
+const createPlanFixture = (
+  overrides: Partial<TaskPlan> = {},
+): TaskPlan => ({
+  id: 'plan-1',
   prompt: 'summarize',
   title: 'summarize',
   focusId: GLOBAL_FOCUS_ID,
@@ -90,7 +90,7 @@ test('runtime snapshot accepts queue cursors', async () => {
         },
       }),
     ],
-    taskTemplates: [createTemplateFixture()],
+    taskPlans: [createPlanFixture()],
     queues: {
       inputsCursor: 3,
       resultsCursor: 9,
@@ -103,7 +103,7 @@ test('runtime snapshot accepts queue cursors', async () => {
   expect(loaded.queues?.inputsCursor).toBe(3)
   expect(loaded.managerCompressedContext).toContain('keep codex-only')
   expect(loaded.tasks[0]?.result?.output).toBe('ok')
-  expect(loaded.taskTemplates[0]?.id).toBe('tpl-1')
+  expect(loaded.taskPlans[0]?.id).toBe('plan-1')
 })
 
 test('buildTaskViews returns task statuses and counts', () => {
@@ -140,7 +140,7 @@ test('runtime snapshot rejects legacy next fields', async () => {
           next: [{ prompt: 'next task', condition: 'succeeded' }],
         },
       ],
-      taskTemplates: [],
+      taskPlans: [],
       queues: {
         inputsCursor: 0,
         resultsCursor: 0,
@@ -161,7 +161,7 @@ test('loadRuntimeSnapshot falls back to backup file when primary json is broken'
     backupPath,
     JSON.stringify({
       tasks: [],
-      taskTemplates: [],
+      taskPlans: [],
       queues: {
         inputsCursor: 12,
         resultsCursor: 34,
@@ -180,13 +180,13 @@ test('saveRuntimeSnapshot writes previous primary content into .bak', async () =
   const primaryPath = join(stateDir, 'runtime-snapshot.json')
   const oldSnapshot = {
     tasks: [],
-    taskTemplates: [],
+    taskPlans: [],
     queues: { inputsCursor: 1, resultsCursor: 2 },
   }
   await writeFile(primaryPath, JSON.stringify(oldSnapshot), 'utf8')
   const nextSnapshot = {
     tasks: [],
-    taskTemplates: [],
+    taskPlans: [],
     queues: { inputsCursor: 7, resultsCursor: 8 },
   }
 

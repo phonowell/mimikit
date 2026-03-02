@@ -13,7 +13,7 @@ export const hydrateRuntimeState = async (
 ): Promise<void> => {
   const snapshot = await loadRuntimeSnapshot(runtime.config.workDir)
   runtime.tasks = snapshot.tasks
-  runtime.taskTemplates = snapshot.taskTemplates
+  runtime.taskPlans = snapshot.taskPlans
   runtime.focuses = snapshot.focuses ?? []
   runtime.focusContexts = snapshot.focusContexts ?? []
   runtime.activeFocusIds = snapshot.activeFocusIds ?? []
@@ -43,7 +43,7 @@ export const persistRuntimeState = async (
 ): Promise<void> => {
   await saveRuntimeSnapshot(runtime.config.workDir, {
     tasks: selectPersistedTasks(runtime.tasks),
-    taskTemplates: runtime.taskTemplates,
+    taskPlans: runtime.taskPlans,
     focuses: runtime.focuses,
     focusContexts: runtime.focusContexts,
     activeFocusIds: runtime.activeFocusIds,

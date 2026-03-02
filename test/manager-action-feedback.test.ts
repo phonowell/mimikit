@@ -18,11 +18,11 @@ test('collectManagerActionFeedback reports unregistered action', () => {
   expect(feedback[0]?.attempted).toContain('<M:read')
 })
 
-test('collectManagerActionFeedback rejects create_template scheduled_at that is not in future', () => {
+test('collectManagerActionFeedback rejects create_plan scheduled_at that is not in future', () => {
   const feedback = collectManagerActionFeedback(
     [
       {
-        name: 'create_template',
+        name: 'create_plan',
         attrs: {
           prompt: 'schedule judged by env now',
           title: 'invalid by env now',
@@ -73,37 +73,37 @@ test('collectManagerActionFeedback rejects cancel_task for completed task', () =
   expect(feedback[0]?.hint?.trim().length).toBeGreaterThan(0)
 })
 
-test('collectManagerActionFeedback allows update_template last_task_id on done template', () => {
+test('collectManagerActionFeedback allows update_plan last_task_id on done plan', () => {
   const feedback = collectManagerActionFeedback(
     [
       {
-        name: 'update_template',
+        name: 'update_plan',
         attrs: {
-          id: 'tpl-done',
+          id: 'plan-done',
           last_task_id: 'task-123',
         },
       },
     ],
     {
-      templateStatusById: new Map([['tpl-done', 'done']]),
+      planStatusById: new Map([['plan-done', 'done']]),
     },
   )
   expect(feedback).toHaveLength(0)
 })
 
-test('collectManagerActionFeedback rejects update_template non-last_task patch on done template', () => {
+test('collectManagerActionFeedback rejects update_plan non-last_task patch on done plan', () => {
   const feedback = collectManagerActionFeedback(
     [
       {
-        name: 'update_template',
+        name: 'update_plan',
         attrs: {
-          id: 'tpl-done',
+          id: 'plan-done',
           title: 'new title',
         },
       },
     ],
     {
-      templateStatusById: new Map([['tpl-done', 'done']]),
+      planStatusById: new Map([['plan-done', 'done']]),
     },
   )
   expect(feedback).toHaveLength(1)

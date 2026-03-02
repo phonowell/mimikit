@@ -4,7 +4,7 @@
 
 ## 架构边界
 
-- 一次性全量切换到统一模型：`Task + TaskTemplate + Focus`。
+- 一次性全量切换到统一模型：`Task + TaskPlan + Focus`。
 - 不保留旧链路兼容层（intent/cron-job 体系已移除）。
 - manager 使用 OpenAI 官方 SDK（`chat.completions.stream`）；worker 使用 `Codex SDK`。
 - manager 对 orchestrator/worker 依赖收敛在 `src/manager/runtime-adapter.ts`。
@@ -46,7 +46,7 @@
 
 - manager loop 单飞，同一时刻仅一个活跃批次。
 - 队列 compact 仅在“已完全消费且达到阈值”时执行。
-- manager 上下文连续性通过 `history + tasks + templates + managerCompressedContext` 保持。
+- manager 上下文连续性通过 `history + tasks + plans + managerCompressedContext` 保持。
 - `restart/reset` 先回包，再等待 in-flight manager 批次收敛后持久化并退出。
 
 ## 细节索引

@@ -266,7 +266,7 @@
   cursor: not-allowed;
 }
 
-.intents-header {
+.plans-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -276,19 +276,19 @@
   background: var(--panel);
 }
 
-.intents-actions {
+.plans-actions {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.intents-title {
+.plans-title {
   margin: 0;
   font-size: 14px;
   font-weight: 600;
 }
 
-.intents-list {
+.plans-list {
   margin: 0;
   padding: 12px;
   list-style: none;
@@ -302,29 +302,29 @@
   box-shadow: none;
 }
 
-.intent-item,
-.intents-empty {
+.plan-item,
+.plans-empty {
   padding: 10px 12px;
   border-radius: 12px;
   border: 1px solid transparent;
   background: var(--panel);
 }
 
-.intent-item {
+.plan-item {
   display: flex;
   flex-direction: column;
   gap: 6px;
   box-shadow: var(--shadow-raised-soft);
 }
 
-.intent-title-row {
+.plan-title-row {
   display: flex;
   align-items: center;
   gap: 8px;
   min-width: 0;
 }
 
-.intent-status {
+.plan-status {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -332,10 +332,10 @@
   height: 10px;
   min-width: 10px;
   border-radius: 999px;
-  background: var(--intent-dot, var(--status-pending));
+  background: var(--plan-dot, var(--status-pending));
 }
 
-.intent-title {
+.plan-title {
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -345,7 +345,7 @@
   font-size: 13px;
 }
 
-.intent-priority {
+.plan-priority {
   display: inline-flex;
   align-items: center;
   height: 18px;
@@ -359,7 +359,7 @@
   letter-spacing: 0.02em;
 }
 
-.intent-meta {
+.plan-meta {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -369,20 +369,20 @@
   width: 100%;
 }
 
-.intent-time {
+.plan-time {
   margin-left: auto;
 }
 
-.intent-item[data-status='active'] {
-  --intent-dot: var(--status-pending);
+.plan-item[data-status='active'] {
+  --plan-dot: var(--status-pending);
 }
 
-.intent-item[data-status='blocked'] {
-  --intent-dot: var(--status-fail);
+.plan-item[data-status='blocked'] {
+  --plan-dot: var(--status-fail);
 }
 
-.intent-item[data-status='done'] {
-  --intent-dot: var(--status-success);
+.plan-item[data-status='done'] {
+  --plan-dot: var(--status-success);
 }
 
 .focuses-header {

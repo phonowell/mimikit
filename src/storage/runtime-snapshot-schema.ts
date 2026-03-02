@@ -54,34 +54,34 @@ export const taskSchema = z
     { message: 'task cron and scheduledAt are mutually exclusive' },
   )
 
-const templateTriggerCronSchema = z
+const planTriggerCronSchema = z
   .object({
     mode: z.literal('cron'),
     cron: z.string().trim().min(1),
   })
   .strict()
 
-const templateTriggerScheduledAtSchema = z
+const planTriggerScheduledAtSchema = z
   .object({
     mode: z.literal('scheduled_at'),
     scheduledAt: z.string().trim().min(1),
   })
   .strict()
 
-const templateTriggerOnIdleSchema = z
+const planTriggerOnIdleSchema = z
   .object({
     mode: z.literal('on_idle'),
     cooldownMs: z.number().int().nonnegative(),
   })
   .strict()
 
-export const taskTemplateTriggerSchema = z.discriminatedUnion('mode', [
-  templateTriggerCronSchema,
-  templateTriggerScheduledAtSchema,
-  templateTriggerOnIdleSchema,
+export const taskPlanTriggerSchema = z.discriminatedUnion('mode', [
+  planTriggerCronSchema,
+  planTriggerScheduledAtSchema,
+  planTriggerOnIdleSchema,
 ])
 
-export const taskTemplateSchema = z
+export const taskPlanSchema = z
   .object({
     id: z.string().trim().min(1),
     prompt: z.string(),
@@ -91,7 +91,7 @@ export const taskTemplateSchema = z
     priority: z.enum(['high', 'normal', 'low']),
     source: z.enum(['user_request', 'agent_auto', 'retry_decision']),
     status: z.enum(['active', 'blocked', 'done']),
-    trigger: taskTemplateTriggerSchema,
+    trigger: taskPlanTriggerSchema,
     createdAt: z.string(),
     updatedAt: z.string(),
     runCount: z.number().int().nonnegative(),
@@ -127,7 +127,7 @@ export const focusContextSchema = z
 const runtimeSnapshotSchema = z
   .object({
     tasks: z.array(taskSchema),
-    taskTemplates: z.array(taskTemplateSchema),
+    taskPlans: z.array(taskPlanSchema),
     focuses: z.array(focusMetaSchema).optional(),
     focusContexts: z.array(focusContextSchema).optional(),
     activeFocusIds: z.array(z.string().trim().min(1)).optional(),
@@ -159,10 +159,10 @@ const normalizeTask = (
       : undefined,
   }) as z.infer<typeof taskSchema>
 
-const normalizeTaskTemplate = (
-  item: z.infer<typeof taskTemplateSchema>,
-): z.infer<typeof taskTemplateSchema> =>
-  stripUndefined({ ...item }) as z.infer<typeof taskTemplateSchema>
+const normalizeTaskPlan = (
+  item: z.infer<typeof taskPlanSchema>,
+): z.infer<typeof taskPlanSchema> =>
+  stripUndefined({ ...item }) as z.infer<typeof taskPlanSchema>
 
 const normalizeFocusMeta = (
   focus: z.infer<typeof focusMetaSchema>,
@@ -178,7 +178,7 @@ export const parseRuntimeSnapshot = (value: unknown): RuntimeSnapshot => {
   const parsed = runtimeSnapshotSchema.parse(value)
   return stripUndefined({
     tasks: parsed.tasks.map(normalizeTask),
-    taskTemplates: parsed.taskTemplates.map(normalizeTaskTemplate),
+    taskPlans: parsed.taskPlans.map(normalizeTaskPlan),
     focuses: parsed.focuses?.map(normalizeFocusMeta),
     focusContexts: parsed.focusContexts?.map(normalizeFocusContext),
     activeFocusIds: parsed.activeFocusIds,

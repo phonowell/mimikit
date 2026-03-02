@@ -4,7 +4,7 @@ import { createMessagesController } from './messages/controller.js'
 import { bindRestart } from './restart.js'
 import { UI_TEXT } from './system-text.js'
 import { bindTasksPanel } from './tasks.js'
-import { bindIntentsPanel } from './intents.js'
+import { bindPlansPanel } from './plans.js'
 
 const $ = (sel) => document.querySelector(sel)
 
@@ -30,10 +30,10 @@ const elements = {
   workerDots: $('[data-worker-dots]'),
   tasksCloseBtn: $('[data-tasks-close]'),
   tasksList: $('[data-tasks-list]'),
-  intentsDialog: $('[data-intents-dialog]'),
-  intentsOpenBtn: $('[data-intents-open]'),
-  intentsCloseBtn: $('[data-intents-close]'),
-  intentsList: $('[data-intents-list]'),
+  plansDialog: $('[data-plans-dialog]'),
+  plansOpenBtn: $('[data-plans-open]'),
+  plansCloseBtn: $('[data-plans-close]'),
+  plansList: $('[data-plans-list]'),
   focusesDialog: $('[data-focuses-dialog]'),
   focusesOpenBtn: $('[data-focuses-open]'),
   focusesCloseBtn: $('[data-focuses-close]'),
@@ -120,11 +120,11 @@ const tasksPanel = bindTasksPanel({
   tasksOpenBtn: elements.tasksOpenBtn,
   tasksCloseBtn: elements.tasksCloseBtn,
 })
-const intentsPanel = bindIntentsPanel({
-  intentsList: elements.intentsList,
-  intentsDialog: elements.intentsDialog,
-  intentsOpenBtn: elements.intentsOpenBtn,
-  intentsCloseBtn: elements.intentsCloseBtn,
+const plansPanel = bindPlansPanel({
+  plansList: elements.plansList,
+  plansDialog: elements.plansDialog,
+  plansOpenBtn: elements.plansOpenBtn,
+  plansCloseBtn: elements.plansCloseBtn,
 })
 const focusPanel = bindFocusPanel({
   focusesList: elements.focusesList,
@@ -146,12 +146,12 @@ const messages = createMessagesController({
   quoteText: elements.quoteText,
   quoteClearBtn: elements.quoteClearBtn,
   onTasksSnapshot: (tasks) => tasksPanel?.applyTasksSnapshot?.(tasks),
-  onTemplatesSnapshot: (templates) =>
-    intentsPanel?.applyIntentsSnapshot?.(templates),
+  onPlansSnapshot: (plans) =>
+    plansPanel?.applyPlansSnapshot?.(plans),
   onFocusesSnapshot: (focuses) => focusPanel?.applyFocusesSnapshot?.(focuses),
   onDisconnected: () => {
     tasksPanel?.setDisconnected?.()
-    intentsPanel?.setDisconnected?.()
+    plansPanel?.setDisconnected?.()
     focusPanel?.setDisconnected?.()
   },
 })

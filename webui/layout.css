@@ -23,7 +23,7 @@ main[data-app] {
 }
 
 .tasks-dialog,
-.intents-dialog,
+.plans-dialog,
 .focuses-dialog,
 .restart-dialog {
   border: 0;
@@ -36,14 +36,14 @@ main[data-app] {
 }
 
 .tasks-dialog[open],
-.intents-dialog[open],
+.plans-dialog[open],
 .focuses-dialog[open],
 .restart-dialog[open] {
   animation: dialog-in 160ms ease-out;
 }
 
 .tasks-dialog.is-closing,
-.intents-dialog.is-closing,
+.plans-dialog.is-closing,
 .focuses-dialog.is-closing,
 .restart-dialog.is-closing {
   animation: dialog-out 140ms ease-in forwards;
@@ -51,14 +51,14 @@ main[data-app] {
 }
 
 .tasks-dialog:not([open]),
-.intents-dialog:not([open]),
+.plans-dialog:not([open]),
 .focuses-dialog:not([open]),
 .restart-dialog:not([open]) {
   display: none;
 }
 
 .tasks-dialog::backdrop,
-.intents-dialog::backdrop,
+.plans-dialog::backdrop,
 .focuses-dialog::backdrop,
 .restart-dialog::backdrop {
   background: repeating-linear-gradient(
@@ -72,7 +72,7 @@ main[data-app] {
 }
 
 .tasks-dialog.is-closing::backdrop,
-.intents-dialog.is-closing::backdrop,
+.plans-dialog.is-closing::backdrop,
 .focuses-dialog.is-closing::backdrop,
 .restart-dialog.is-closing::backdrop {
   animation: dialog-backdrop-out 140ms ease-in forwards;
@@ -93,7 +93,7 @@ main[data-app] {
   overflow: hidden;
 }
 
-.intents-panel {
+.plans-panel {
   background: var(--panel);
   border: 1px solid transparent;
   border-radius: var(--radius);
@@ -251,19 +251,19 @@ main[data-app] {
 
 @media (prefers-reduced-motion: reduce) {
   .tasks-dialog[open],
-  .intents-dialog[open],
+  .plans-dialog[open],
   .focuses-dialog[open],
   .restart-dialog[open],
   .tasks-dialog.is-closing,
-  .intents-dialog.is-closing,
+  .plans-dialog.is-closing,
   .focuses-dialog.is-closing,
   .restart-dialog.is-closing,
   .tasks-dialog::backdrop,
-  .intents-dialog::backdrop,
+  .plans-dialog::backdrop,
   .focuses-dialog::backdrop,
   .restart-dialog::backdrop,
   .tasks-dialog.is-closing::backdrop,
-  .intents-dialog.is-closing::backdrop,
+  .plans-dialog.is-closing::backdrop,
   .focuses-dialog.is-closing::backdrop,
   .restart-dialog.is-closing::backdrop {
     animation: none;
@@ -275,7 +275,7 @@ main[data-app] {
     width: min(560px, 90vw);
   }
 
-  .intents-dialog {
+  .plans-dialog {
     width: min(560px, 90vw);
   }
 

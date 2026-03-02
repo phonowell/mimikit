@@ -1,6 +1,6 @@
 import { sortTasksByChangedAt } from '../../prompts/format-base.js'
 
-import type { Task, TaskTemplate, TemplatePriority } from '../../types/index.js'
+import type { Task, TaskPlan, PlanPriority } from '../../types/index.js'
 
 export type WindowSelectParams = {
   minCount: number
@@ -38,7 +38,7 @@ export const selectByWindow = <T>(
   return selected
 }
 
-const PRIORITY_RANK: Record<TemplatePriority, number> = {
+const PRIORITY_RANK: Record<PlanPriority, number> = {
   high: 0,
   normal: 1,
   low: 2,
@@ -50,7 +50,7 @@ const toMs = (value: string | undefined): number => {
   return Number.isFinite(parsed) ? parsed : 0
 }
 
-const comparePriorityFifo = (a: TaskTemplate, b: TaskTemplate): number => {
+const comparePriorityFifo = (a: TaskPlan, b: TaskPlan): number => {
   const priorityRank = PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority]
   if (priorityRank !== 0) return priorityRank
   const createdDiff = toMs(a.createdAt) - toMs(b.createdAt)
@@ -58,51 +58,51 @@ const comparePriorityFifo = (a: TaskTemplate, b: TaskTemplate): number => {
   return a.id.localeCompare(b.id)
 }
 
-const compareDoneDesc = (a: TaskTemplate, b: TaskTemplate): number => {
+const compareDoneDesc = (a: TaskPlan, b: TaskPlan): number => {
   const aChanged = toMs(a.archivedAt ?? a.updatedAt)
   const bChanged = toMs(b.archivedAt ?? b.updatedAt)
   if (aChanged !== bChanged) return bChanged - aChanged
   return a.id.localeCompare(b.id)
 }
 
-const statusRank = (status: TaskTemplate['status']): number => {
+const statusRank = (status: TaskPlan['status']): number => {
   if (status === 'active') return 0
   if (status === 'blocked') return 1
   return 2
 }
 
-export const sortTaskTemplates = (templates: TaskTemplate[]): TaskTemplate[] =>
-  [...templates].sort((a, b) => {
+export const sortTaskPlans = (plans: TaskPlan[]): TaskPlan[] =>
+  [...plans].sort((a, b) => {
     const rankDiff = statusRank(a.status) - statusRank(b.status)
     if (rankDiff !== 0) return rankDiff
     if (a.status === 'done') return compareDoneDesc(a, b)
     return comparePriorityFifo(a, b)
   })
 
-export const selectRecentTemplates = (
-  templates: TaskTemplate[],
+export const selectRecentPlans = (
+  plans: TaskPlan[],
   params: WindowSelectParams,
-): TaskTemplate[] => {
-  if (templates.length === 0) return []
-  const sorted = sortTaskTemplates(templates)
+): TaskPlan[] => {
+  if (plans.length === 0) return []
+  const sorted = sortTaskPlans(plans)
   return selectByWindow(sorted, params, (item) =>
     Buffer.byteLength(JSON.stringify(item), 'utf8'),
   )
 }
 
-export const selectOnIdleTemplatesForTrigger = (
-  templates: TaskTemplate[],
+export const selectOnIdlePlansForTrigger = (
+  plans: TaskPlan[],
   nowMs: number = Date.now(),
-): TaskTemplate[] =>
-  [...templates]
-    .filter((template) => {
-      if (template.status !== 'active') return false
-      if (template.trigger.mode !== 'on_idle') return false
-      if (template.maxRuns !== undefined && template.runCount >= template.maxRuns)
+): TaskPlan[] =>
+  [...plans]
+    .filter((plan) => {
+      if (plan.status !== 'active') return false
+      if (plan.trigger.mode !== 'on_idle') return false
+      if (plan.maxRuns !== undefined && plan.runCount >= plan.maxRuns)
         return false
-      const cooldownMs = Math.max(0, template.trigger.cooldownMs)
+      const cooldownMs = Math.max(0, plan.trigger.cooldownMs)
       if (cooldownMs === 0) return true
-      const lastCompletedMs = toMs(template.lastCompletedAt)
+      const lastCompletedMs = toMs(plan.lastCompletedAt)
       if (lastCompletedMs <= 0) return true
       return nowMs - lastCompletedMs >= cooldownMs
     })

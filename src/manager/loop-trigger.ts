@@ -10,7 +10,7 @@ import { hasNonIdleManagerInput } from './idle-input.js'
 import { publishManagerSystemEventInput } from './system-input-event.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
-import type { TaskTemplate } from '../types/index.js'
+import type { TaskPlan } from '../types/index.js'
 
 const IDLE_CHECK_INTERVAL_MS = 1_000
 const IDLE_TRIGGER_DELAY_MS = 15 * 60_000
@@ -34,92 +34,92 @@ const isManagerBusy = (runtime: RuntimeState): boolean =>
 const matchesCronNow = (expression: string, at: Date = new Date()): boolean =>
   new Cron(expression).match(at)
 
-const markTemplateDone = (
-  template: TaskTemplate,
+const markPlanDone = (
+  plan: TaskPlan,
   doneAt: string,
-  reason: TaskTemplate['doneReason'],
+  reason: TaskPlan['doneReason'],
 ): void => {
-  template.status = 'done'
-  template.updatedAt = doneAt
-  template.archivedAt = doneAt
-  template.doneReason = reason
+  plan.status = 'done'
+  plan.updatedAt = doneAt
+  plan.archivedAt = doneAt
+  plan.doneReason = reason
 }
 
-const maybeMarkTemplateExhausted = (
-  template: TaskTemplate,
+const maybeMarkPlanExhausted = (
+  plan: TaskPlan,
   nowIso: string,
 ): boolean => {
-  if (template.status !== 'active') return false
-  if (template.maxRuns === undefined) return false
-  if (template.runCount < template.maxRuns) return false
-  markTemplateDone(template, nowIso, 'exhausted')
+  if (plan.status !== 'active') return false
+  if (plan.maxRuns === undefined) return false
+  if (plan.runCount < plan.maxRuns) return false
+  markPlanDone(plan, nowIso, 'exhausted')
   return true
 }
 
-const fireTemplate = async (params: {
+const firePlan = async (params: {
   runtime: RuntimeState
-  template: TaskTemplate
+  plan: TaskPlan
   nowIso: string
   reason: 'cron' | 'scheduled_at' | 'on_idle'
 }): Promise<void> => {
-  const { runtime, template, nowIso } = params
-  template.runCount += 1
-  template.lastTriggeredAt = nowIso
-  template.updatedAt = nowIso
+  const { runtime, plan, nowIso } = params
+  plan.runCount += 1
+  plan.lastTriggeredAt = nowIso
+  plan.updatedAt = nowIso
 
-  if (template.trigger.mode === 'scheduled_at') {
-    markTemplateDone(template, nowIso, 'completed')
+  if (plan.trigger.mode === 'scheduled_at') {
+    markPlanDone(plan, nowIso, 'completed')
   }
 
   await publishManagerSystemEventInput({
     runtime,
-    summary: `Task template "${template.title.trim() || template.id}" was triggered.`,
+    summary: `Task plan "${plan.title.trim() || plan.id}" was triggered.`,
     event: 'trigger_fire',
     visibility: 'all',
     payload: {
-      template_id: template.id,
-      title: template.title,
-      prompt: template.prompt,
-      trigger_mode: template.trigger.mode,
-      priority: template.priority,
-      source: template.source,
-      run_count: template.runCount,
-      ...(template.maxRuns !== undefined ? { max_runs: template.maxRuns } : {}),
+      plan_id: plan.id,
+      title: plan.title,
+      prompt: plan.prompt,
+      trigger_mode: plan.trigger.mode,
+      priority: plan.priority,
+      source: plan.source,
+      run_count: plan.runCount,
+      ...(plan.maxRuns !== undefined ? { max_runs: plan.maxRuns } : {}),
       triggered_at: nowIso,
-      ...(template.trigger.mode === 'cron' ? { cron: template.trigger.cron } : {}),
-      ...(template.trigger.mode === 'scheduled_at'
-        ? { scheduled_at: template.trigger.scheduledAt }
+      ...(plan.trigger.mode === 'cron' ? { cron: plan.trigger.cron } : {}),
+      ...(plan.trigger.mode === 'scheduled_at'
+        ? { scheduled_at: plan.trigger.scheduledAt }
         : {}),
-      ...(template.trigger.mode === 'on_idle'
-        ? { cooldown_ms: template.trigger.cooldownMs }
+      ...(plan.trigger.mode === 'on_idle'
+        ? { cooldown_ms: plan.trigger.cooldownMs }
         : {}),
     },
     createdAt: nowIso,
-    focusId: template.focusId,
+    focusId: plan.focusId,
     logEvent: 'trigger_fire_input',
     logMeta: {
-      templateId: template.id,
-      triggerMode: template.trigger.mode,
-      focusId: template.focusId,
-      runCount: template.runCount,
+      planId: plan.id,
+      triggerMode: plan.trigger.mode,
+      focusId: plan.focusId,
+      runCount: plan.runCount,
     },
   })
 }
 
-const canFireOnIdle = (template: TaskTemplate, nowMs: number): boolean => {
-  if (template.status !== 'active') return false
-  if (template.trigger.mode !== 'on_idle') return false
-  if (template.maxRuns !== undefined && template.runCount >= template.maxRuns)
+const canFireOnIdle = (plan: TaskPlan, nowMs: number): boolean => {
+  if (plan.status !== 'active') return false
+  if (plan.trigger.mode !== 'on_idle') return false
+  if (plan.maxRuns !== undefined && plan.runCount >= plan.maxRuns)
     return false
-  const cooldownMs = Math.max(0, template.trigger.cooldownMs)
+  const cooldownMs = Math.max(0, plan.trigger.cooldownMs)
   if (cooldownMs === 0) return true
-  if (!template.lastCompletedAt) return true
-  const lastCompletedMs = Date.parse(template.lastCompletedAt)
+  if (!plan.lastCompletedAt) return true
+  const lastCompletedMs = Date.parse(plan.lastCompletedAt)
   if (!Number.isFinite(lastCompletedMs)) return true
   return nowMs - lastCompletedMs >= cooldownMs
 }
 
-const checkScheduledTriggers = async (
+const checkScheduledPlans = async (
   runtime: RuntimeState,
   now: Date,
 ): Promise<{ triggeredCount: number; stateChanged: boolean }> => {
@@ -128,20 +128,20 @@ const checkScheduledTriggers = async (
   let triggeredCount = 0
   let stateChanged = false
 
-  for (const template of runtime.taskTemplates) {
-    if (template.status !== 'active') continue
-    if (maybeMarkTemplateExhausted(template, nowIso)) {
+  for (const plan of runtime.taskPlans) {
+    if (plan.status !== 'active') continue
+    if (maybeMarkPlanExhausted(plan, nowIso)) {
       stateChanged = true
       continue
     }
 
-    if (template.trigger.mode === 'scheduled_at') {
-      const scheduledMs = Date.parse(template.trigger.scheduledAt)
+    if (plan.trigger.mode === 'scheduled_at') {
+      const scheduledMs = Date.parse(plan.trigger.scheduledAt)
       if (!Number.isFinite(scheduledMs) || now.getTime() < scheduledMs) continue
-      if (template.lastTriggeredAt) continue
-      await fireTemplate({
+      if (plan.lastTriggeredAt) continue
+      await firePlan({
         runtime,
-        template,
+        plan,
         nowIso,
         reason: 'scheduled_at',
       })
@@ -150,14 +150,14 @@ const checkScheduledTriggers = async (
       continue
     }
 
-    if (template.trigger.mode !== 'cron') continue
+    if (plan.trigger.mode !== 'cron') continue
     if (
-      template.lastTriggeredAt &&
-      asSecondStamp(template.lastTriggeredAt) === nowSecond
+      plan.lastTriggeredAt &&
+      asSecondStamp(plan.lastTriggeredAt) === nowSecond
     )
       continue
 
-    const cron = template.trigger.cron
+    const cron = plan.trigger.cron
     let matched = false
     try {
       matched = matchesCronNow(cron, now)
@@ -165,7 +165,7 @@ const checkScheduledTriggers = async (
       await bestEffort('appendLog: trigger_expression_error', () =>
         appendLog(runtime.paths.log, {
           event: 'trigger_expression_error',
-          templateId: template.id,
+          planId: plan.id,
           cron,
           error: error instanceof Error ? error.message : String(error),
         }),
@@ -174,7 +174,7 @@ const checkScheduledTriggers = async (
     }
     if (!matched) continue
 
-    await fireTemplate({ runtime, template, nowIso, reason: 'cron' })
+    await firePlan({ runtime, plan, nowIso, reason: 'cron' })
     triggeredCount += 1
     stateChanged = true
 
@@ -185,7 +185,7 @@ const checkScheduledTriggers = async (
       await bestEffort('appendLog: trigger_next_run_error', () =>
         appendLog(runtime.paths.log, {
           event: 'trigger_next_run_error',
-          templateId: template.id,
+          planId: plan.id,
           cron,
           error: error instanceof Error ? error.message : String(error),
         }),
@@ -193,7 +193,7 @@ const checkScheduledTriggers = async (
       hasNextRun = false
     }
     if (!hasNextRun) {
-      markTemplateDone(template, nowIso, 'completed')
+      markPlanDone(plan, nowIso, 'completed')
       stateChanged = true
     }
   }
@@ -201,13 +201,13 @@ const checkScheduledTriggers = async (
   return { triggeredCount, stateChanged }
 }
 
-const triggerOnIdleTemplates = async (
+const triggerOnIdlePlans = async (
   runtime: RuntimeState,
   nowMs: number,
 ): Promise<{ triggeredCount: number; stateChanged: boolean }> => {
   const nowIso = new Date(nowMs).toISOString()
-  const items = runtime.taskTemplates
-    .filter((template) => canFireOnIdle(template, nowMs))
+  const items = runtime.taskPlans
+    .filter((plan) => canFireOnIdle(plan, nowMs))
     .sort((a, b) => {
       const p =
         (a.priority === 'high' ? 0 : a.priority === 'normal' ? 1 : 2) -
@@ -220,10 +220,10 @@ const triggerOnIdleTemplates = async (
 
   let triggeredCount = 0
   let stateChanged = false
-  for (const template of items) {
-    await fireTemplate({ runtime, template, nowIso, reason: 'on_idle' })
-    if (template.maxRuns !== undefined && template.runCount >= template.maxRuns)
-      markTemplateDone(template, nowIso, 'completed')
+  for (const plan of items) {
+    await firePlan({ runtime, plan, nowIso, reason: 'on_idle' })
+    if (plan.maxRuns !== undefined && plan.runCount >= plan.maxRuns)
+      markPlanDone(plan, nowIso, 'completed')
     triggeredCount += 1
     stateChanged = true
   }
@@ -248,7 +248,7 @@ export const triggerWakeLoop = async (runtime: RuntimeState): Promise<void> => {
       let stateChanged = false
       let triggeredCount = 0
 
-      const scheduled = await checkScheduledTriggers(runtime, now)
+      const scheduled = await checkScheduledPlans(runtime, now)
       stateChanged = stateChanged || scheduled.stateChanged
       triggeredCount += scheduled.triggeredCount
 
@@ -263,7 +263,7 @@ export const triggerWakeLoop = async (runtime: RuntimeState): Promise<void> => {
         idleForMs >= IDLE_TRIGGER_DELAY_MS
 
       if (!publishedIdleForCurrentWindow && idleReady) {
-        const idleTriggered = await triggerOnIdleTemplates(runtime, nowMs)
+        const idleTriggered = await triggerOnIdlePlans(runtime, nowMs)
         stateChanged = stateChanged || idleTriggered.stateChanged
         triggeredCount += idleTriggered.triggeredCount
 
