@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="base.css" />
     <link rel="stylesheet" href="layout.css" />
     <link rel="stylesheet" href="components-core.css" />
+    <link rel="stylesheet" href="components-choice.css" />
     <link rel="stylesheet" href="components-messages-bubble.css" />
     <link rel="stylesheet" href="components-messages-quote.css" />
     <link rel="stylesheet" href="components-messages-meta.css" />
@@ -108,6 +109,18 @@
         >
           &#x2193;
         </button>
+      </section>
+
+      <section
+        class="choice-panel"
+        data-choice-panel
+        aria-live="polite"
+        aria-label="Pending question"
+        hidden
+      >
+        <p class="choice-question" data-choice-question></p>
+        <div class="choice-options" role="tablist" data-choice-options></div>
+        <p class="choice-meta" data-choice-meta></p>
       </section>
 
       <section class="composer" aria-label="Input">

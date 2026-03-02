@@ -25,6 +25,7 @@
 
 - `run_task`
 - `cancel_task`
+- `ask_user_choice`
 
 ### 查询类
 

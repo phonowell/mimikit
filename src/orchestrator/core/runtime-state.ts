@@ -5,6 +5,7 @@ import type {
   FocusId,
   FocusMeta,
   ISODate,
+  PendingUserChoice,
   Task,
   TaskPlan,
   TokenUsage,
@@ -82,6 +83,7 @@ export type RuntimeState = {
   uiWakeVersion: number
   uiWakeEvents: Map<number, UiWakeKind>
   uiSignalControllers: Set<AbortController>
+  pendingUserChoice: PendingUserChoice | null
   lastUserMeta?: UserMeta
   requestExit?: (request: ExitRequest) => void
 }

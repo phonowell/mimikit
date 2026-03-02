@@ -10,12 +10,13 @@
 - `DELETE /api/messages/:id`
 - `GET /api/tasks/:id/archive`
 - `POST /api/tasks/:id/cancel`
+- `POST /api/choices/:id/select`
 - `POST /api/restart`
 - `POST /api/reset`
 
 ## SSE 事件模型（`GET /api/events`）
 
-- `snapshot`：全量快照，包含 `status/messages/tasks/plans/focuses/stream`。
+- `snapshot`：全量快照，包含 `status/messages/tasks/plans/focuses/choice/stream`。
 - `stream`：流式文本 patch（`clear | replace | delta`）。
 - `error`：SSE 连接内错误反馈。
 
@@ -89,6 +90,7 @@ schema：`src/storage/runtime-snapshot-schema.ts`
 - `managerTurn`、`managerCompressedContext`
 - `memoryRefresh`（刷新检查点）
 - `queues.inputsCursor`、`queues.resultsCursor`
+- `pendingUserChoice`
 
 ## 重启语义
 

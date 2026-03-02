@@ -124,6 +124,34 @@ export const focusContextSchema = z
   })
   .strict()
 
+export const userChoiceOptionSchema = z
+  .object({
+    id: z.string().trim().regex(/^option-[a-zA-Z0-9._-]+$/),
+    label: z.string().trim().min(1),
+    reason: z.string().trim().min(1),
+  })
+  .strict()
+
+export const pendingUserChoiceSchema = z
+  .object({
+    id: z.string().trim().regex(/^choice-[a-zA-Z0-9._-]+$/),
+    question: z.string().trim().min(1),
+    options: z.array(userChoiceOptionSchema).min(2),
+    defaultOptionId: z.string().trim().regex(/^option-[a-zA-Z0-9._-]+$/),
+    createdAt: z.string().trim().min(1),
+    expiresAt: z.string().trim().min(1),
+    focusId: z.string().trim().regex(/^focus-[a-zA-Z0-9._-]+$/),
+  })
+  .strict()
+  .superRefine((value, context) => {
+    if (!value.options.some((item) => item.id === value.defaultOptionId)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'pendingUserChoice defaultOptionId must exist in options',
+      })
+    }
+  })
+
 const memoryRefreshSchema = z
   .object({
     lastCompletedTurn: z.number().int().nonnegative(),
@@ -149,6 +177,7 @@ const runtimeSnapshotSchema = z
       })
       .strict()
       .optional(),
+    pendingUserChoice: pendingUserChoiceSchema.optional(),
     memoryRefresh: memoryRefreshSchema.optional(),
     managerCompressedContext: z.string().trim().min(1).optional(),
   })
@@ -185,6 +214,14 @@ const normalizeFocusContext = (
 ): z.infer<typeof focusContextSchema> =>
   stripUndefined({ ...focusContext }) as z.infer<typeof focusContextSchema>
 
+const normalizePendingUserChoice = (
+  choice: z.infer<typeof pendingUserChoiceSchema>,
+): z.infer<typeof pendingUserChoiceSchema> =>
+  stripUndefined({
+    ...choice,
+    options: choice.options.map((item) => stripUndefined({ ...item })),
+  }) as z.infer<typeof pendingUserChoiceSchema>
+
 export const parseRuntimeSnapshot = (value: unknown): RuntimeSnapshot => {
   const parsed = runtimeSnapshotSchema.parse(value)
   return stripUndefined({
@@ -195,6 +232,9 @@ export const parseRuntimeSnapshot = (value: unknown): RuntimeSnapshot => {
     activeFocusIds: parsed.activeFocusIds,
     managerTurn: parsed.managerTurn,
     queues: parsed.queues,
+    pendingUserChoice: parsed.pendingUserChoice
+      ? normalizePendingUserChoice(parsed.pendingUserChoice)
+      : undefined,
     memoryRefresh: parsed.memoryRefresh,
     managerCompressedContext: parsed.managerCompressedContext,
   }) as RuntimeSnapshot

@@ -57,6 +57,7 @@ const getDeltaSnapshot = async (
   tasks: orchestrator.getTasks(),
   plans: orchestrator.getPlans(),
   focuses: orchestrator.getFocuses(),
+  choice: orchestrator.getPendingUserChoice(),
   stream: cloneUiStream(orchestrator.getWebUiStreamSnapshot()),
 })
 
@@ -65,6 +66,7 @@ const buildSnapshotHint = (orchestrator: Orchestrator) => ({
   tasks: orchestrator.getTasks(),
   plans: orchestrator.getPlans(),
   focuses: orchestrator.getFocuses(),
+  choice: orchestrator.getPendingUserChoice(),
   stream: cloneUiStream(orchestrator.getWebUiStreamSnapshot()),
 })
 
@@ -145,6 +147,7 @@ export const registerEventsRoute = (
         tasks: initial.tasks,
         plans: initial.plans,
         focuses: initial.focuses,
+        choice: initial.choice,
         stream: initial.stream,
       })
       lastStream = cloneUiStream(initial.stream)

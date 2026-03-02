@@ -41,6 +41,7 @@ export function createMessagesController({
   onTasksSnapshot,
   onPlansSnapshot,
   onFocusesSnapshot,
+  onChoiceSnapshot,
   onDisconnected,
 }) {
   let lastStatus = null
@@ -192,6 +193,7 @@ export function createMessagesController({
     onTasksSnapshot,
     onPlansSnapshot,
     onFocusesSnapshot,
+    onChoiceSnapshot,
     getCurrentStreamMessage: () => currentStreamMessage,
     setCurrentStreamMessage: (value) => {
       currentStreamMessage = value

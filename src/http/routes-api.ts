@@ -1,6 +1,7 @@
 import { logSafeError } from '../log/safe.js'
 
 import { clearStateDir, parseInputBody } from './helpers.js'
+import { registerChoiceSelectRoute } from './routes-api-choice-select.js'
 import { registerEventsRoute } from './routes-api-events.js'
 import { registerTaskArchiveRoute } from './routes-api-task-archive.js'
 import { registerTaskCancelRoute } from './routes-api-task-cancel.js'
@@ -65,6 +66,7 @@ export const registerApiRoutes = (
 
   registerTaskArchiveRoute(app, orchestrator, config)
   registerTaskCancelRoute(app, orchestrator)
+  registerChoiceSelectRoute(app, orchestrator)
 
   const scheduleExit = (afterPersist?: () => Promise<void>): void => {
     setTimeout(() => {

@@ -23,10 +23,12 @@ import {
   getChatMessages,
   persistStopSnapshot,
   prepareStop,
+  selectPendingUserChoiceFromUser,
   startOrchestratorRuntime,
   waitForManagerDrain,
 } from './orchestrator-runtime-ops.js'
 import { waitForUiSignal } from './signals.js'
+import { clonePendingUserChoice } from './user-choice.js'
 
 import type {
   ExitRequest,
@@ -35,6 +37,7 @@ import type {
   UserMeta,
 } from './runtime-state.js'
 import type { Task, TaskPlan } from '../../types/index.js'
+import type { SelectPendingUserChoiceResult } from './user-choice.js'
 
 export type { OrchestratorStatus } from './orchestrator-helpers.js'
 
@@ -76,6 +79,7 @@ export class Orchestrator {
       uiWakeVersion: 0,
       uiWakeEvents: new Map(),
       uiSignalControllers: new Set(),
+      pendingUserChoice: null,
       ...(options.onExitRequested
         ? { requestExit: options.onExitRequested }
         : {}),
@@ -140,6 +144,7 @@ export class Orchestrator {
       tasks: buildTaskViews(this.runtime.tasks, taskLimit),
       plans: this.getPlans(taskLimit),
       focuses: this.getFocuses(taskLimit),
+      choice: clonePendingUserChoice(this.runtime.pendingUserChoice),
       stream: this.runtime.uiStream ? { ...this.runtime.uiStream } : null,
     }))()
   }
@@ -171,6 +176,17 @@ export class Orchestrator {
 
   cancelTask(taskId: string, meta?: { source?: string; reason?: string }) {
     return cancelTask(this.runtime, taskId, meta)
+  }
+
+  getPendingUserChoice() {
+    return clonePendingUserChoice(this.runtime.pendingUserChoice)
+  }
+
+  selectPendingUserChoice(
+    choiceId: string,
+    optionId: string,
+  ): Promise<SelectPendingUserChoiceResult> {
+    return selectPendingUserChoiceFromUser(this.runtime, choiceId, optionId)
   }
 
   getStatus(): OrchestratorStatus {

@@ -1,11 +1,13 @@
 import type {
   focusContextSchema,
+  pendingUserChoiceSchema,
   focusMetaSchema,
   taskCancelSchema,
   taskResultSchema,
   taskSchema,
   taskPlanSchema,
   taskPlanTriggerSchema,
+  userChoiceOptionSchema,
 } from '../storage/runtime-snapshot-schema.js'
 import type { z } from 'zod'
 
@@ -121,6 +123,9 @@ export type TaskPlanTrigger = z.infer<typeof taskPlanTriggerSchema>
 export type TaskPlan = z.infer<typeof taskPlanSchema>
 export type FocusMeta = z.infer<typeof focusMetaSchema>
 export type FocusContext = z.infer<typeof focusContextSchema>
+export type UserChoiceOption = z.infer<typeof userChoiceOptionSchema>
+export type PendingUserChoice = z.infer<typeof pendingUserChoiceSchema>
+export type UserChoiceSelectionSource = 'user' | 'timeout'
 
 export type JsonPacket<TPayload> = {
   id: string

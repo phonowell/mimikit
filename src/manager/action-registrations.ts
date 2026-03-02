@@ -22,7 +22,9 @@ import {
   updatePlanSchema,
   upsertFocusSchema,
 } from './action-apply-schema.js'
+import { applyAskUserChoiceAction } from './action-apply-choice.js'
 import {
+  validateAskUserChoice,
   validateCancelTask,
   validateCompressContext,
   validateCreatePlan,
@@ -86,6 +88,11 @@ const applyRestartRuntime: ManagerActionDefinition['apply'] = async (
   item,
 ) => ((await applyRestartRuntimeAction(runtime, item)) ? 'stop' : 'continue')
 
+const applyAskUserChoiceAndStop: ManagerActionDefinition['apply'] = async (
+  runtime,
+  item,
+) => (await applyAskUserChoiceAction(runtime, item), 'stop')
+
 const createNoopAction = (
   name: string,
   validate: (item: Parsed) => ValidationIssue[],
@@ -130,6 +137,11 @@ export const ACTION_DEFINITIONS = [
     name: 'cancel_task',
     validate: (item, context) => validateCancelTask(item, context),
     apply: applyAndContinue(applyCancelTaskAction),
+  },
+  {
+    name: 'ask_user_choice',
+    validate: (item) => validateAskUserChoice(item),
+    apply: applyAskUserChoiceAndStop,
   },
   {
     name: 'compress_context',

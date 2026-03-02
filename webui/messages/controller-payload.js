@@ -23,6 +23,7 @@ export const createPayloadController = ({
   onTasksSnapshot,
   onPlansSnapshot,
   onFocusesSnapshot,
+  onChoiceSnapshot,
   getCurrentStreamMessage,
   setCurrentStreamMessage,
 }) => {
@@ -77,6 +78,8 @@ export const createPayloadController = ({
       onPlansSnapshot(snapshot.plans)
     if (typeof onFocusesSnapshot === 'function' && isRecord(snapshot.focuses))
       onFocusesSnapshot(snapshot.focuses)
+    if (typeof onChoiceSnapshot === 'function')
+      onChoiceSnapshot(snapshot.choice ?? null)
   }
 
   return {

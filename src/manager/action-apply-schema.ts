@@ -8,9 +8,12 @@ import {
 import { readFileToolSchema } from './read-file-tool.js'
 
 import type { Parsed } from '../actions/model/spec.js'
+import type { UserChoiceOption } from '../types/index.js'
 
 const nonEmptyString = z.string().trim().min(1)
 const focusIdSchema = nonEmptyString.regex(/^focus-[a-zA-Z0-9._-]+$/)
+const choiceIdSchema = nonEmptyString.regex(/^choice-[a-zA-Z0-9._-]+$/)
+const optionIdSchema = nonEmptyString.regex(/^option-[a-zA-Z0-9._-]+$/)
 
 export { createPlanSchema, deletePlanSchema, updatePlanSchema }
 
@@ -57,6 +60,80 @@ export const assignFocusSchema = z
     focus_id: focusIdSchema,
   })
   .strict()
+
+const choiceOptionSchema = z
+  .object({
+    id: optionIdSchema,
+    label: nonEmptyString,
+    reason: nonEmptyString,
+  })
+  .strict()
+
+const choiceOptionsSchema = z
+  .array(choiceOptionSchema)
+  .min(2)
+  .superRefine((items, context) => {
+    const seen = new Set<string>()
+    for (const item of items) {
+      if (!seen.has(item.id)) {
+        seen.add(item.id)
+        continue
+      }
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `duplicate option id: ${item.id}`,
+      })
+    }
+  })
+
+export const askUserChoiceSchema = z
+  .object({
+    id: choiceIdSchema,
+    question: nonEmptyString,
+    options_json: nonEmptyString,
+    default_option_id: optionIdSchema,
+    focus_id: focusIdSchema.optional(),
+  })
+  .strict()
+
+const parseChoiceOptions = (
+  raw: string,
+): { ok: true; value: UserChoiceOption[] } | { ok: false } => {
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    const validated = choiceOptionsSchema.safeParse(parsed)
+    if (!validated.success) return { ok: false }
+    return { ok: true, value: validated.data }
+  } catch {
+    return { ok: false }
+  }
+}
+
+export const parseAskUserChoiceAttrs = (
+  attrs: Record<string, string>,
+):
+  | {
+      id: string
+      question: string
+      options: UserChoiceOption[]
+      defaultOptionId: string
+      focusId?: string
+    }
+  | undefined => {
+  const parsed = askUserChoiceSchema.safeParse(attrs)
+  if (!parsed.success) return undefined
+  const optionsParsed = parseChoiceOptions(parsed.data.options_json)
+  if (!optionsParsed.ok) return undefined
+  if (!optionsParsed.value.some((item) => item.id === parsed.data.default_option_id))
+    return undefined
+  return {
+    id: parsed.data.id,
+    question: parsed.data.question,
+    options: optionsParsed.value,
+    defaultOptionId: parsed.data.default_option_id,
+    ...(parsed.data.focus_id ? { focusId: parsed.data.focus_id } : {}),
+  }
+}
 
 const parseSummary = (
   item: Parsed,

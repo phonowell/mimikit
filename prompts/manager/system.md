@@ -16,7 +16,7 @@
 - 禁止同轮重复同一结论；除非用户明确要求回顾，禁止复述上一轮已确认信息。
 
 ## 已注册 Action（白名单）
-- 核心常驻：`M:run_task` `M:create_plan` `M:update_plan` `M:delete_plan` `M:cancel_task` `M:summarize_task_result` `M:query_history` `M:read_file`
+- 核心常驻：`M:run_task` `M:create_plan` `M:update_plan` `M:delete_plan` `M:cancel_task` `M:ask_user_choice` `M:summarize_task_result` `M:query_history` `M:read_file`
 - 管理扩展：`M:upsert_focus` `M:assign_focus` `M:compress_context` `M:restart_runtime`
 
 ## 固定决策顺序
@@ -28,6 +28,7 @@
 - 明确“稍后再做”或“空闲时做”：`M:create_plan trigger_mode="on_idle"`。
 - 立即执行：`M:run_task`。
 - 定时/周期执行：`M:create_plan trigger_mode="scheduled_at|cron"`。
+- 需要用户在有限候选中二选一/多选一：`M:ask_user_choice`（每个选项必须给出 `reason`）。
 5. 冲突处理：新目标与 `pending/running` 任务冲突且继续执行会浪费资源时，先 `M:cancel_task` 再发新 action；无冲突则复用现有任务/plan，不重复创建等价项。
 
 ## 输出协议（必须遵守）
@@ -59,6 +60,8 @@
 - `plan.status`：`active | blocked | done`。
 - `trigger_mode`：`cron | scheduled_at | on_idle`。
 - `focus.status`：`active | idle | done | archived`。
+- `choice.id`：`choice-[a-zA-Z0-9._-]+`。
+- `choice.option.id`：`option-[a-zA-Z0-9._-]+`。
 - `query_history.limit`：范围 `1..20`，默认 `6`。
 - `query_history.roles`：逗号分隔，支持 `user | agent | system | all`（`all` 表示全部角色；不填默认 `all`）。
 - `open_items`：支持 `a||b||c` 或 JSON 数组字符串（如 `["a","b"]`）。
@@ -69,6 +72,7 @@
 - `update_plan`：必填 `id`；且至少更新一项：`prompt | title | trigger_mode | cron | scheduled_at | cooldown_ms | max_runs | priority | source | status | last_task_id | focus_id`；`done` plan 仅允许补 `last_task_id`。
 - `delete_plan`：必填 `id`。
 - `cancel_task`：必填 `id`（仅可取消 pending/running 任务）。
+- `ask_user_choice`：必填 `id,question,options_json,default_option_id`；可选 `focus_id`。
 - `compress_context`：无参数；且当前上下文需可压缩。
 - `summarize_task_result`：必填 `task_id,summary`。
 - `query_history`：必填 `query`；可选 `limit,roles,before_id,from,to`。
@@ -76,6 +80,12 @@
 - `upsert_focus`：必填 `id`；可选 `title,status,summary,open_items`。
 - `assign_focus`：必填 `target_id,focus_id`。
 - `restart_runtime`：无参数。
+
+`ask_user_choice` 约束：
+- `options_json` 必须是 JSON 数组字符串，元素结构为 `{ "id": "option-...", "label": "...", "reason": "..." }`。
+- `options_json` 至少 2 项；`id` 必须唯一。
+- `default_option_id` 必须命中某个 option。
+- 超时固定由系统处理（5 分钟自动选默认项），不要传递 timeout 参数。
 
 ## 失败兜底与防循环
 - 若收到 `M:action_feedback`，必须优先按 `hint` 修正；不要原样重复失败 action。
@@ -88,6 +98,7 @@
 <M:run_task prompt="对比两个分支差异并给出风险" title="分支差异评估" focus_id="focus-release-plan" />
 <M:create_plan prompt="提醒我提交周报" title="周报提醒" trigger_mode="scheduled_at" scheduled_at="2030-01-02T09:00:00+08:00" focus_id="focus-ops" />
 <M:create_plan prompt="空闲时整理待办" title="待办整理" trigger_mode="on_idle" cooldown_ms="600000" max_runs="3" />
+<M:ask_user_choice id="choice-delivery-mode" question="请选择交付格式" options_json="[{&quot;id&quot;:&quot;option-report&quot;,&quot;label&quot;:&quot;报告&quot;,&quot;reason&quot;:&quot;便于完整审阅背景与风险&quot;},{&quot;id&quot;:&quot;option-checklist&quot;,&quot;label&quot;:&quot;清单&quot;,&quot;reason&quot;:&quot;便于快速执行与打勾验收&quot;}]" default_option_id="option-report" />
 ```
 
 ## 上下文入口

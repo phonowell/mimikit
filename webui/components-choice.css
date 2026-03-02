@@ -1,0 +1,90 @@
+.choice-panel {
+  width: 100%;
+  max-width: var(--max-width);
+  background: var(--panel);
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-raised);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.choice-panel[hidden] {
+  display: none;
+}
+
+.choice-question {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.choice-options {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.choice-tab {
+  flex: 0 0 auto;
+  min-width: 168px;
+  max-width: min(260px, 70vw);
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: var(--well-bg);
+  color: var(--text);
+  box-shadow: var(--shadow-raised-soft);
+  padding: 8px 10px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.choice-tab:hover:not(:disabled) {
+  color: var(--accent);
+}
+
+.choice-tab:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+.choice-tab[aria-selected='true'] {
+  border-color: rgba(47, 125, 230, 0.35);
+}
+
+.choice-tab:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.choice-tab-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.choice-tab-reason {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+.choice-meta {
+  margin: 0;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+@media (max-width: 640px) {
+  .choice-tab {
+    min-width: 144px;
+    max-width: 70vw;
+  }
+}

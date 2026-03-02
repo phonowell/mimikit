@@ -18,6 +18,7 @@ export const isWorkerBusy = (runtime: RuntimeState): boolean =>
   hasPendingOrRunningTask(runtime)
 
 export const isManagerBusy = (runtime: RuntimeState): boolean =>
+  runtime.pendingUserChoice !== null ||
   runtime.managerRunning ||
   runtime.managerWakePending ||
   hasNonIdleManagerInput(runtime.inflightInputs)

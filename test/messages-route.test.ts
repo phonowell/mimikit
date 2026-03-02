@@ -83,6 +83,48 @@ test('input route rejects invalid payload', async () => {
   await app.close()
 })
 
+test('choice select route forwards valid selection request', async () => {
+  const app = fastify()
+  const { orchestrator } = createOrchestratorStub()
+  const selectPendingUserChoice = vi.fn(async () => ({
+    ok: true as const,
+    choiceId: 'choice-demo',
+    optionId: 'option-a',
+    source: 'user' as const,
+  }))
+  ;(
+    orchestrator as unknown as {
+      selectPendingUserChoice: (
+        choiceId: string,
+        optionId: string,
+      ) => Promise<{
+        ok: true
+        choiceId: string
+        optionId: string
+        source: 'user'
+      }>
+    }
+  ).selectPendingUserChoice = selectPendingUserChoice
+  const config = defaultConfig({ workDir: '.mimikit' })
+  registerApiRoutes(app, orchestrator, config)
+
+  const response = await app.inject({
+    method: 'POST',
+    url: '/api/choices/choice-demo/select',
+    payload: { optionId: 'option-a' },
+  })
+
+  expect(response.statusCode).toBe(200)
+  expect(response.json()).toEqual({
+    ok: true,
+    choiceId: 'choice-demo',
+    optionId: 'option-a',
+    source: 'user',
+  })
+  expect(selectPendingUserChoice).toHaveBeenCalledWith('choice-demo', 'option-a')
+  await app.close()
+})
+
 test('task archive route falls back to live snapshot when archive file is missing', async () => {
   const app = fastify()
   const { orchestrator } = createOrchestratorStub()

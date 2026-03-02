@@ -98,6 +98,7 @@ const createRuntime = async (): Promise<RuntimeState> => {
     uiWakeVersion: 0,
     uiWakeEvents: new Map(),
     uiSignalControllers: new Set(),
+    pendingUserChoice: null,
   }
 }
 

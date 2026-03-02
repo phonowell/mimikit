@@ -24,6 +24,8 @@ export const createOrchestratorStub = () => {
     getChatMessages: async () => ({ messages: [], mode: 'full' as const }),
     getTasks: () => ({ tasks: [], counts: {} }),
     getPlans: () => ({ items: [] }),
+    getFocuses: () => ({ items: [] }),
+    getPendingUserChoice: () => null,
     getWebUiWakeVersion: () => 0,
     waitForWebUiSignal: async () =>
       ({ kind: 'timeout', version: 0 }) as const,
@@ -42,11 +44,14 @@ export const createOrchestratorStub = () => {
       tasks: { tasks: [], counts: {} },
       plans: { items: [] },
       focuses: { items: [] },
+      choice: null,
       stream: null,
     }),
     getWebUiStreamSnapshot: () => null,
     getTaskById: () => undefined,
     cancelTask: async () => ({ ok: false, status: 'not_found' as const }),
+    selectPendingUserChoice: async () =>
+      ({ ok: false, reason: 'not_found' as const }),
     stopAndPersist: async () => undefined,
     requestExit: (code: number, reason: string) => {
       exitRequests.push({ code, reason })

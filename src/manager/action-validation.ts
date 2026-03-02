@@ -8,9 +8,11 @@ import {
   type ValidationIssue,
 } from './action-validation-helpers.js'
 import {
+  askUserChoiceSchema,
   cancelSchema,
   compressContextSchema,
   createPlanSchema,
+  parseAskUserChoiceAttrs,
   readFileSchema,
   runTaskSchema,
   updatePlanSchema,
@@ -113,6 +115,15 @@ export const validateCompressContext = (
   if (issues.length > 0) return issues
   if (context.hasCompressibleContext) return []
   return rejected('compress_context 执行失败：当前无可压缩上下文。')
+}
+
+export const validateAskUserChoice = (item: Parsed): ValidationIssue[] => {
+  const issues = validateWithSchema(item, askUserChoiceSchema)
+  if (issues.length > 0) return issues
+  if (parseAskUserChoiceAttrs(item.attrs)) return []
+  return rejected(
+    'ask_user_choice 执行失败：options_json 非法，或 default_option_id 不在 options 中。',
+  )
 }
 
 export const validatePlanById = (

@@ -1,7 +1,8 @@
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
-import { notifyManagerLoop } from '../orchestrator/core/signals.js'
+import { notifyManagerLoop, notifyUiSignal } from '../orchestrator/core/signals.js'
+import { resolvePendingUserChoiceTimeout } from '../orchestrator/core/user-choice.js'
 import { sleep } from '../shared/utils.js'
 
 import { checkScheduledPlans, triggerOnIdlePlans } from './loop-trigger-plans.js'
@@ -31,6 +32,12 @@ export const triggerWakeLoop = async (runtime: RuntimeState): Promise<void> => {
 
       let stateChanged = false
       let triggeredCount = 0
+
+      if (await resolvePendingUserChoiceTimeout(runtime, nowMs)) {
+        stateChanged = true
+        triggeredCount += 1
+        notifyUiSignal(runtime)
+      }
 
       const scheduled = await checkScheduledPlans(runtime, now)
       stateChanged = stateChanged || scheduled.stateChanged

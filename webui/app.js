@@ -1,4 +1,5 @@
 import { bindComposer } from './messages/composer.js'
+import { bindChoicePanel } from './choice.js'
 import { createMessagesController } from './messages/controller.js'
 import { bindFocusPanel, bindPlansPanel } from './panels.js'
 import { bindRestart } from './restart.js'
@@ -27,6 +28,10 @@ const elements = {
   messageDeleteDialog: $('[data-message-delete-dialog]'),
   messageDeleteCancelBtn: $('[data-message-delete-cancel]'),
   messageDeleteConfirmBtn: $('[data-message-delete-confirm]'),
+  choicePanel: $('[data-choice-panel]'),
+  choiceQuestion: $('[data-choice-question]'),
+  choiceOptions: $('[data-choice-options]'),
+  choiceMeta: $('[data-choice-meta]'),
   tasksDialog: $('[data-tasks-dialog]'),
   tasksOpenBtn: $('[data-tasks-open]'),
   workerDots: $('[data-worker-dots]'),
@@ -134,6 +139,12 @@ const focusPanel = bindFocusPanel({
   focusesOpenBtn: elements.focusesOpenBtn,
   focusesCloseBtn: elements.focusesCloseBtn,
 })
+const choicePanel = bindChoicePanel({
+  panel: elements.choicePanel,
+  questionEl: elements.choiceQuestion,
+  optionsEl: elements.choiceOptions,
+  metaEl: elements.choiceMeta,
+})
 
 const messages = createMessagesController({
   messagesEl: elements.messagesEl,
@@ -154,10 +165,12 @@ const messages = createMessagesController({
   onPlansSnapshot: (plans) =>
     plansPanel?.applyPlansSnapshot?.(plans),
   onFocusesSnapshot: (focuses) => focusPanel?.applyFocusesSnapshot?.(focuses),
+  onChoiceSnapshot: (choice) => choicePanel?.applyChoiceSnapshot?.(choice),
   onDisconnected: () => {
     tasksPanel?.setDisconnected?.()
     plansPanel?.setDisconnected?.()
     focusPanel?.setDisconnected?.()
+    choicePanel?.setDisconnected?.()
   },
 })
 

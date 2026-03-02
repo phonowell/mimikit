@@ -34,9 +34,11 @@ import {
   notifyUiSignal,
   notifyWorkerLoop,
 } from './signals.js'
+import { selectPendingUserChoice } from './user-choice.js'
 
 import type { RuntimeState, UserMeta } from './runtime-state.js'
 import type { ChatMessage, ChatMessagesMode } from '../read-model/chat-view.js'
+import type { SelectPendingUserChoiceResult } from './user-choice.js'
 
 const SHUTDOWN_MANAGER_WAIT_POLL_MS = 50
 const DELETED_MESSAGE_TEXT = 'Message deleted.'
@@ -123,6 +125,29 @@ export const deleteChatMessage = async (
   })
   notifyUiSignal(runtime, 'messages')
   return { ok: true, id }
+}
+
+export const selectPendingUserChoiceFromUser = async (
+  runtime: RuntimeState,
+  choiceId: string,
+  optionId: string,
+): Promise<SelectPendingUserChoiceResult> => {
+  const result = await selectPendingUserChoice({
+    runtime,
+    choiceId,
+    optionId,
+    source: 'user',
+  })
+  if (!result.ok) {
+    if (result.reason === 'expired') {
+      notifyUiSignal(runtime)
+      notifyManagerLoop(runtime)
+    }
+    return result
+  }
+  notifyUiSignal(runtime)
+  notifyManagerLoop(runtime)
+  return result
 }
 
 export const getChatHistory = async (

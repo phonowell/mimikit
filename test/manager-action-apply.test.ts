@@ -68,6 +68,7 @@ const createRuntime = async (): Promise<RuntimeState> => {
     uiWakeVersion: 0,
     uiWakeEvents: new Map(),
     uiSignalControllers: new Set(),
+    pendingUserChoice: null,
   }
 }
 
@@ -135,6 +136,34 @@ test('run_task dedupe does not block task creation when fingerprint differs', as
   expect(runtime.tasks).toHaveLength(2)
   expect(runtime.tasks[1]?.title).toBe('new title')
   expect(runtime.tasks[1]?.fingerprint).not.toBe(runtime.tasks[0]?.fingerprint)
+})
+
+test('ask_user_choice stores pending choice and stops later actions in same batch', async () => {
+  const runtime = await createRuntime()
+  await applyTaskActions(runtime, [
+    {
+      name: 'ask_user_choice',
+      attrs: {
+        id: 'choice-delivery',
+        question: 'Choose output format',
+        options_json:
+          '[{"id":"option-report","label":"Report","reason":"Need full context"},{"id":"option-checklist","label":"Checklist","reason":"Need quick execution"}]',
+        default_option_id: 'option-report',
+      },
+    },
+    {
+      name: 'run_task',
+      attrs: {
+        prompt: 'this should not run before user picks',
+        title: 'blocked by pending choice',
+      },
+    },
+  ])
+
+  expect(runtime.pendingUserChoice?.id).toBe('choice-delivery')
+  expect(runtime.pendingUserChoice?.options).toHaveLength(2)
+  expect(runtime.pendingUserChoice?.options[0]?.reason).toBe('Need full context')
+  expect(runtime.tasks).toHaveLength(0)
 })
 
 test('create_plan uses worker profile for cron plan', async () => {
