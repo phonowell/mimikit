@@ -8,14 +8,14 @@ import type { QueryHistoryRequest } from '../src/history/query.js'
 
 import type { HistoryMessage } from '../src/types/index.js'
 
-test('pickQueryHistoryRequest normalizes inverted from/to range', () => {
+test('pickQueryHistoryRequest normalizes inverted from/to range and expands roles=all', () => {
   const request = pickQueryHistoryRequest([
     {
       name: 'query_history',
       attrs: {
         query: 'roadmap',
         limit: '10',
-        roles: 'user,agent',
+        roles: 'all',
         from: '2026-02-09T23:59:59.999Z',
         to: '2026-02-08T00:00:00.000Z',
         before_id: 'm5',
@@ -26,6 +26,28 @@ test('pickQueryHistoryRequest normalizes inverted from/to range', () => {
   expect(request).toBeDefined()
   expect(request?.fromMs).toBeLessThanOrEqual(request?.toMs ?? Number.MAX_SAFE_INTEGER)
   expect(request?.beforeId).toBe('m5')
+  expect(request?.roles).toEqual(['user', 'agent', 'system'])
+
+  const requestWithOmittedRoles = pickQueryHistoryRequest([
+    {
+      name: 'query_history',
+      attrs: {
+        query: 'roadmap',
+      },
+    },
+  ])
+  expect(requestWithOmittedRoles?.roles).toEqual(['user', 'agent', 'system'])
+
+  const requestWithEmptyRoles = pickQueryHistoryRequest([
+    {
+      name: 'query_history',
+      attrs: {
+        query: 'roadmap',
+        roles: '',
+      },
+    },
+  ])
+  expect(requestWithEmptyRoles?.roles).toEqual(['user', 'agent', 'system'])
 })
 
 test('pickQueryHistoryRequest rejects invalid limit format', () => {

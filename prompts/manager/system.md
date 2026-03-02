@@ -58,6 +58,7 @@
 - `trigger_mode`：`cron | scheduled_at | on_idle`。
 - `focus.status`：`active | idle | done | archived`。
 - `query_history.limit`：范围 `1..20`，默认 `6`。
+- `query_history.roles`：逗号分隔，支持 `user | agent | system | all`（`all` 表示全部角色；不填默认 `all`）。
 - `open_items`：支持 `a||b||c` 或 JSON 数组字符串（如 `["a","b"]`）。
 
 ## 参数约束（可执行）

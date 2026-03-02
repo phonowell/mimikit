@@ -23,16 +23,24 @@ export type { QueryHistoryRequest } from './query-score.js'
 const DEFAULT_LIMIT = 6
 const MAX_LIMIT = 20
 const MIN_LIMIT = 1
-const DEFAULT_ROLES: Role[] = ['user', 'agent']
+const ALL_ROLES: Role[] = ['user', 'agent', 'system']
+const DEFAULT_ROLES: Role[] = ALL_ROLES
 const INTEGER_STRING_RE = /^[+-]?\d+$/
 
 const isRole = (value: string): value is Role =>
   value === 'user' || value === 'agent' || value === 'system'
 
+const normalizeOptionalString = (value: unknown): unknown =>
+  typeof value === 'string' && value.trim().length === 0 ? undefined : value
+
 const parseRolesRaw = (raw: string): Role[] | undefined => {
   const unique = new Set<Role>()
   for (const part of raw.split(',')) {
     const role = part.trim()
+    if (role === 'all') {
+      for (const knownRole of ALL_ROLES) unique.add(knownRole)
+      continue
+    }
     if (!isRole(role)) return undefined
     unique.add(role)
   }
@@ -47,25 +55,24 @@ export const queryHistorySchema = z
       .trim()
       .regex(INTEGER_STRING_RE, 'limit must be an integer string')
       .refine(
-        (value) => {
-          const parsed = Number(value)
-          return (
-            Number.isSafeInteger(parsed) &&
-            parsed >= MIN_LIMIT &&
-            parsed <= MAX_LIMIT
-          )
-        },
+        (value) =>
+          Number.isSafeInteger(Number(value)) &&
+          Number(value) >= MIN_LIMIT &&
+          Number(value) <= MAX_LIMIT,
         `limit must be in range [${MIN_LIMIT}, ${MAX_LIMIT}]`,
       )
       .optional(),
-    roles: z
-      .string()
-      .trim()
-      .refine(
-        (value) => parseRolesRaw(value) !== undefined,
-        'roles must be a comma-separated list of user|agent|system',
-      )
-      .optional(),
+    roles: z.preprocess(
+      normalizeOptionalString,
+      z
+        .string()
+        .trim()
+        .refine(
+          (value) => parseRolesRaw(value) !== undefined,
+          'roles must be a comma-separated list of user|agent|system|all',
+        )
+        .optional(),
+    ),
     before_id: z.string().trim().min(1).optional(),
     from: z.string().trim().min(1).optional(),
     to: z.string().trim().min(1).optional(),
