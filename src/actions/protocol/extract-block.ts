@@ -63,7 +63,6 @@ const stripTrailingMetaTagFragment = (
   if (start < 0) return text
   if (isIndexInRanges(start, codeRanges)) return text
   const tail = text.slice(start)
-  if (tail.includes('>')) return text
   if (!(tail.startsWith('<M:') || tail.startsWith('</M:'))) return text
   return text.slice(0, start).trimEnd()
 }

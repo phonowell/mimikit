@@ -14,30 +14,32 @@ export const createControllerQueue = ({
   const pendingEvents = []
   let pendingFrame = null
 
-  const flushPendingEvents = () => {
-    pendingFrame = null
-    if (pendingEvents.length === 0) return
-
-    let lastSnapshot = null
-    const streamPatches = []
-    for (const event of pendingEvents) {
-      if (event.type === 'snapshot') {
-        lastSnapshot = event.payload
-        streamPatches.length = 0
-        continue
-      }
-      if (event.type === 'stream') streamPatches.push(event.payload)
-    }
-    pendingEvents.length = 0
-
-    if (lastSnapshot) applySnapshot(lastSnapshot)
+  const flushStreamPatches = (streamPatches) => {
     const mergedStreamPatches = mergeStreamPatches(streamPatches)
+    streamPatches.length = 0
     if (mergedStreamPatches.length === 0) return
     let nextStreamMessage = getCurrentStreamMessage()
     for (const patch of mergedStreamPatches)
       nextStreamMessage = applyStreamPatch(nextStreamMessage, patch)
     setCurrentStreamMessage(nextStreamMessage)
     applyMessagesPayload(null, nextStreamMessage)
+  }
+
+  const flushPendingEvents = () => {
+    pendingFrame = null
+    if (pendingEvents.length === 0) return
+
+    const streamPatches = []
+    for (const event of pendingEvents) {
+      if (event.type === 'snapshot') {
+        flushStreamPatches(streamPatches)
+        applySnapshot(event.payload)
+        continue
+      }
+      if (event.type === 'stream') streamPatches.push(event.payload)
+    }
+    pendingEvents.length = 0
+    flushStreamPatches(streamPatches)
   }
 
   const enqueueEvent = (event) => {

@@ -19,10 +19,16 @@ export const createManagerStreamController = (params: {
   let streamUsage: TokenUsage | undefined
   let streamFlushTimer: ReturnType<typeof setTimeout> | null = null
 
+  const shouldApplyVisibleUpdate = (nextVisible: string): boolean => {
+    if (nextVisible === streamVisibleOutput) return false
+    if (nextVisible.length < streamVisibleOutput.length) return false
+    return true
+  }
+
   const flushVisibleStream = (): void => {
     streamFlushTimer = null
     const nextVisible = toVisibleAgentText(streamRawOutput)
-    if (nextVisible !== streamVisibleOutput) {
+    if (shouldApplyVisibleUpdate(nextVisible)) {
       streamVisibleOutput = nextVisible
       setUiStreamText(params.runtime, params.streamId, nextVisible)
     }

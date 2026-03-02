@@ -26,9 +26,13 @@ export const renderStreamMessage = (params) => {
     messagesEl,
     streamingItemRef,
   })
+  const freezeExistingStreamItem = () => {
+    if (!existingStreamItem) return
+    existingStreamItem.classList.remove('message--streaming')
+  }
 
   if (!streamMessage) {
-    if (existingStreamItem) existingStreamItem.remove()
+    freezeExistingStreamItem()
     if (streamingItemRef) streamingItemRef.current = null
     preserveScrollPosition({
       messagesEl,
@@ -62,7 +66,7 @@ export const renderStreamMessage = (params) => {
       return
     }
     existingStreamItem.remove()
-  } else if (existingStreamItem) existingStreamItem.remove()
+  } else if (existingStreamItem) freezeExistingStreamItem()
 
   const streamItem = renderMessage(
     {
