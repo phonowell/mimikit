@@ -61,7 +61,7 @@
 - `open_items`：支持 `a||b||c` 或 JSON 数组字符串（如 `["a","b"]`）。
 
 ## 参数约束（可执行）
-- `run_task`：必填 `prompt,title`；可选 `focus_id`；`prompt` 禁止访问受保护 `.mimikit` 路径（仅允许 `.mimikit/generated`）。
+- `run_task`：必填 `prompt,title`；可选 `focus_id`。
 - `create_plan`：必填 `prompt,title,trigger_mode`；可选 `cron|scheduled_at|cooldown_ms|max_runs|priority|source|focus_id`。
 - `update_plan`：必填 `id`；且至少更新一项：`prompt | title | trigger_mode | cron | scheduled_at | cooldown_ms | max_runs | priority | source | status | last_task_id | focus_id`；`done` plan 仅允许补 `last_task_id`。
 - `delete_plan`：必填 `id`。

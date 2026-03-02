@@ -78,15 +78,26 @@ export const extractAttrText = (
   return body.replace(/\/?\s*>$/, '')
 }
 
-export const parseAttributes = (raw: string): Record<string, string> => {
+export const parseAttributes = (
+  raw: string,
+): Record<string, string> | undefined => {
   const attrs: Record<string, string> = {}
-  if (!raw) return attrs
-  for (const match of raw.matchAll(ATTR_RE)) {
+  if (!raw || raw.trim().length === 0) return attrs
+  const attrRe = new RegExp(ATTR_RE.source, 'g')
+  let cursor = 0
+  let match = attrRe.exec(raw)
+  while (match) {
+    const start = match.index
+    if (raw.slice(cursor, start).trim().length > 0) return undefined
     const key = match[1]
-    if (!key) continue
+    if (!key) return undefined
+    if (Object.hasOwn(attrs, key)) return undefined
     const value = match[2] ?? match[3] ?? match[4] ?? ''
     attrs[key] = unescapeAttrValue(value)
+    cursor = start + match[0].length
+    match = attrRe.exec(raw)
   }
+  if (raw.slice(cursor).trim().length > 0) return undefined
   return attrs
 }
 

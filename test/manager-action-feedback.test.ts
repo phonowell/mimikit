@@ -122,6 +122,20 @@ test('collectManagerActionFeedback reports invalid write_user_profile args when 
   expect(feedback[0]?.error).toBe('invalid_action_args')
 })
 
+test('collectManagerActionFeedback reports invalid write_user_profile args when content is blank', () => {
+  const feedback = collectManagerActionFeedback([
+    {
+      name: 'write_user_profile',
+      attrs: {
+        content: '   ',
+      },
+    },
+  ])
+  expect(feedback).toHaveLength(1)
+  expect(feedback[0]?.action).toBe('write_user_profile')
+  expect(feedback[0]?.error).toBe('invalid_action_args')
+})
+
 test('collectManagerActionFeedback rejects compress_context when context is unavailable', () => {
   const feedback = collectManagerActionFeedback([
     {
@@ -155,4 +169,82 @@ test('collectManagerActionFeedback reports action tag inside code block when no 
   expect(feedback[0]?.action).toBe('run_task')
   expect(feedback[0]?.error).toBe('invalid_action_syntax')
   expect(feedback[0]?.hint?.trim().length).toBeGreaterThan(0)
+})
+
+test('collectManagerActionFeedback reports malformed tag even when another action is valid', () => {
+  const output = [
+    '我会先执行一个任务。',
+    '<M:run_task prompt="valid" title="valid" />',
+    '<M:run_task title="broken" prompt="oops" " />',
+  ].join('\n')
+  const feedback = collectManagerActionFeedback(
+    [
+      {
+        name: 'run_task',
+        attrs: {
+          prompt: 'valid',
+          title: 'valid',
+        },
+      },
+    ],
+    {},
+    output,
+  )
+  expect(feedback).toHaveLength(1)
+  expect(feedback[0]?.error).toBe('invalid_action_syntax')
+  expect(feedback[0]?.action).toBe('run_task')
+})
+
+test('collectManagerActionFeedback reports action markup outside trailing action zone', () => {
+  const output = [
+    '我先描述一下：<M:run_task prompt="outside" title="outside" />',
+    '然后在末尾放真实 action',
+    '<M:run_task prompt="tail" title="tail" />',
+  ].join('\n')
+  const feedback = collectManagerActionFeedback(
+    [
+      {
+        name: 'run_task',
+        attrs: {
+          prompt: 'tail',
+          title: 'tail',
+        },
+      },
+    ],
+    {},
+    output,
+  )
+  expect(feedback).toHaveLength(1)
+  expect(feedback[0]?.error).toBe('invalid_action_syntax')
+  expect(feedback[0]?.attempted).toContain('outside')
+})
+
+test('collectManagerActionFeedback reports invalid read_file optional arg value', () => {
+  const feedback = collectManagerActionFeedback([
+    {
+      name: 'read_file',
+      attrs: {
+        path: 'README.md',
+        max_lines: 'abc',
+      },
+    },
+  ])
+  expect(feedback).toHaveLength(1)
+  expect(feedback[0]?.action).toBe('read_file')
+  expect(feedback[0]?.error).toBe('invalid_action_args')
+})
+
+test('collectManagerActionFeedback reports invalid query_history roles value', () => {
+  const feedback = collectManagerActionFeedback([
+    {
+      name: 'query_history',
+      attrs: {
+        query: 'release',
+        roles: 'user,invalid',
+      },
+    },
+  ])
+  expect(feedback).toHaveLength(1)
+  expect(feedback[0]?.action).toBe('query_history')
+  expect(feedback[0]?.error).toBe('invalid_action_args')
 })

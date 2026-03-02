@@ -17,7 +17,6 @@ import {
 } from './runtime-adapter.js'
 
 import {
-  hasForbiddenWorkerStatePath,
   markCreateAttempt,
 } from './action-apply-guards.js'
 import { runTaskSchema } from './action-apply-schema.js'
@@ -50,7 +49,6 @@ export const applyRunTask = async (
   if (options?.suppressRunTask) return
   const parsed = runTaskSchema.safeParse(item.attrs)
   if (!parsed.success) return
-  if (hasForbiddenWorkerStatePath(parsed.data.prompt)) return
   const profile: WorkerProfile = 'worker'
   const focusId = resolveActionFocusId(runtime, parsed.data.focus_id)
   const semanticKey = buildTaskSemanticKey({

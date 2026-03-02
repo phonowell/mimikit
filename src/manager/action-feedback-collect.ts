@@ -1,4 +1,8 @@
 import {
+  collectTagMatches,
+  extractActionText,
+} from '../actions/protocol/extract-block.js'
+import {
   findMarkdownCodeRanges,
   isIndexInRanges,
 } from '../actions/protocol/markdown-code-ranges.js'
@@ -69,10 +73,20 @@ const detectActionSnippet = (output: string, index: number): string => {
 
 const detectUnparsedActionIssue = (
   output: string,
+  hasParsedActions: boolean,
 ): ManagerActionFeedback | undefined => {
   const codeRanges = findMarkdownCodeRanges(output)
-  const tagRe = /<\s*\/?\s*M:([A-Za-z_][\w:-]*)/g
+  const actionText = extractActionText(output).actionText
+  const zoneStart = actionText ? output.lastIndexOf(actionText) : -1
+  const parsedTagStarts = new Set(collectTagMatches(output).map((tag) => tag.start))
+  const tagRe = /<\s*M:([A-Za-z_][\w:-]*)/g
   let outside:
+    | { action: string; attempted: string }
+    | undefined
+  let outsideBeforeZone:
+    | { action: string; attempted: string }
+    | undefined
+  let outsideUnparsed:
     | { action: string; attempted: string }
     | undefined
   let inCode:
@@ -86,11 +100,29 @@ const detectUnparsedActionIssue = (
     const attempted = detectActionSnippet(output, index)
     if (isIndexInRanges(index, codeRanges)) {
       if (!inCode) inCode = { action, attempted }
-    } else if (!outside) outside = { action, attempted }
+    } else {
+      if (!outside) outside = { action, attempted }
+      if (
+        zoneStart >= 0 &&
+        index < zoneStart &&
+        !outsideBeforeZone
+      )
+        outsideBeforeZone = { action, attempted }
+      if (!parsedTagStarts.has(index) && !outsideUnparsed)
+        outsideUnparsed = { action, attempted }
+    }
     match = tagRe.exec(output)
   }
 
-  if (outside) {
+  if (outsideUnparsed) {
+    return {
+      action: outsideUnparsed.action,
+      error: INVALID_ACTION_SYNTAX_ERROR,
+      hint: INVALID_ACTION_SYNTAX_HINT,
+      attempted: outsideUnparsed.attempted,
+    }
+  }
+  if (!hasParsedActions && outside) {
     return {
       action: outside.action,
       error: INVALID_ACTION_SYNTAX_ERROR,
@@ -98,7 +130,15 @@ const detectUnparsedActionIssue = (
       attempted: outside.attempted,
     }
   }
-  if (!inCode) return undefined
+  if (hasParsedActions && outsideBeforeZone) {
+    return {
+      action: outsideBeforeZone.action,
+      error: INVALID_ACTION_SYNTAX_ERROR,
+      hint: INVALID_ACTION_SYNTAX_HINT,
+      attempted: outsideBeforeZone.attempted,
+    }
+  }
+  if (hasParsedActions || !inCode) return undefined
   return {
     action: inCode.action,
     error: INVALID_ACTION_SYNTAX_ERROR,
@@ -115,8 +155,8 @@ export const collectManagerActionFeedback = (
   const feedback: ManagerActionFeedback[] = []
   const seen = new Set<string>()
 
-  if (items.length === 0 && output.trim().length > 0) {
-    const syntaxIssue = detectUnparsedActionIssue(output)
+  if (output.trim().length > 0) {
+    const syntaxIssue = detectUnparsedActionIssue(output, items.length > 0)
     if (syntaxIssue) pushRawFeedback(feedback, seen, syntaxIssue)
   }
 

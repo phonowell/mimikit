@@ -28,7 +28,7 @@ test('pickQueryHistoryRequest normalizes inverted from/to range', () => {
   expect(request?.beforeId).toBe('m5')
 })
 
-test('pickQueryHistoryRequest keeps decimal-prefix limit parsing behavior', () => {
+test('pickQueryHistoryRequest rejects invalid limit format', () => {
   const request = pickQueryHistoryRequest([
     {
       name: 'query_history',
@@ -39,7 +39,7 @@ test('pickQueryHistoryRequest keeps decimal-prefix limit parsing behavior', () =
     },
   ])
 
-  expect(request?.limit).toBe(1)
+  expect(request).toBeUndefined()
 })
 
 test('queryHistory applies before_id window and time range filters', () => {

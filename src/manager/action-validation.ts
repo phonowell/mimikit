@@ -1,7 +1,6 @@
 import { queryHistorySchema } from '../history/query.js'
 import { parseIsoMs } from '../shared/time.js'
 
-import { hasForbiddenWorkerStatePath } from './action-apply-guards.js'
 import {
   cancelSchema,
   compressContextSchema,
@@ -70,11 +69,6 @@ export const validateWithSchema = (
 export const validateRunTask = (item: Parsed): ValidationIssue[] => {
   const parsed = runTaskSchema.safeParse(item.attrs)
   if (!parsed.success) return [invalidArgsIssue(parsed.error)]
-  if (hasForbiddenWorkerStatePath(parsed.data.prompt)) {
-    return rejected(
-      'run_task 被策略拒绝：禁止访问 .mimikit 受保护路径（仅允许 .mimikit/generated）。',
-    )
-  }
   return []
 }
 

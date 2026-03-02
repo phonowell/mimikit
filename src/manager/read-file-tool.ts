@@ -19,15 +19,48 @@ const MIN_MAX_LINES = 1
 const MAX_FILE_BYTES = 256 * 1_024
 
 const nonEmptyString = z.string().trim().min(1)
-const decimalPrefixRe = /^[+-]?\d+/
+const integerStringRe = /^[+-]?\d+$/
 const utf8Decoder = new TextDecoder('utf-8', { fatal: true })
+
+const boundedIntegerString = (params: {
+  min: number
+  max: number
+  field: string
+}) =>
+  z
+    .string()
+    .trim()
+    .regex(integerStringRe, `${params.field} must be an integer string`)
+    .refine(
+      (value) => {
+        const parsed = Number(value)
+        return (
+          Number.isSafeInteger(parsed) &&
+          parsed >= params.min &&
+          parsed <= params.max
+        )
+      },
+      `${params.field} must be in range [${params.min}, ${params.max}]`,
+    )
 
 export const readFileToolSchema = z
   .object({
     path: nonEmptyString,
-    from_line: z.string().trim().optional(),
-    max_lines: z.string().trim().optional(),
-    max_chars: z.string().trim().optional(),
+    from_line: boundedIntegerString({
+      min: MIN_FROM_LINE,
+      max: Number.MAX_SAFE_INTEGER,
+      field: 'from_line',
+    }).optional(),
+    max_lines: boundedIntegerString({
+      min: MIN_MAX_LINES,
+      max: MAX_MAX_LINES,
+      field: 'max_lines',
+    }).optional(),
+    max_chars: boundedIntegerString({
+      min: MIN_MAX_CHARS,
+      max: MAX_MAX_CHARS,
+      field: 'max_chars',
+    }).optional(),
   })
   .strict()
 
@@ -41,41 +74,28 @@ export type ReadFileRequest = {
 const parseBoundedInt = (params: {
   raw: string | undefined
   defaultValue: number
-  minValue: number
-  maxValue: number
 }): number => {
-  const { raw, defaultValue, minValue, maxValue } = params
+  const { raw, defaultValue } = params
   if (!raw) return defaultValue
-  const decimalPrefix = raw.match(decimalPrefixRe)?.[0]
-  if (!decimalPrefix) return defaultValue
-  const parsed = Number(decimalPrefix)
-  if (!Number.isFinite(parsed) || parsed === 0) return defaultValue
-  const normalized = Math.trunc(parsed)
-  return Math.max(minValue, Math.min(maxValue, normalized))
+  return Number(raw)
 }
 
 const parseFromLine = (raw?: string): number =>
   parseBoundedInt({
     raw,
     defaultValue: DEFAULT_FROM_LINE,
-    minValue: MIN_FROM_LINE,
-    maxValue: Number.MAX_SAFE_INTEGER,
   })
 
 const parseMaxLines = (raw?: string): number =>
   parseBoundedInt({
     raw,
     defaultValue: DEFAULT_MAX_LINES,
-    minValue: MIN_MAX_LINES,
-    maxValue: MAX_MAX_LINES,
   })
 
 const parseMaxChars = (raw?: string): number =>
   parseBoundedInt({
     raw,
     defaultValue: DEFAULT_MAX_CHARS,
-    minValue: MIN_MAX_CHARS,
-    maxValue: MAX_MAX_CHARS,
   })
 
 const toReadFileRequest = (item: Parsed): ReadFileRequest | undefined => {
@@ -111,17 +131,6 @@ const toRepoRelativePath = (
   if (relativePath.startsWith('..') || isAbsolute(relativePath))
     return undefined
   return relativePath
-}
-
-const isProtectedStatePath = (repoRelativePath: string): boolean => {
-  const normalized = repoRelativePath.replace(/\\/g, '/').toLowerCase()
-  const isMimikitStatePath =
-    normalized === '.mimikit' || normalized.startsWith('.mimikit/')
-  if (!isMimikitStatePath) return false
-  return (
-    normalized !== '.mimikit/generated' &&
-    !normalized.startsWith('.mimikit/generated/')
-  )
 }
 
 const formatPathForPrompt = (repoRelativePath: string): string =>
@@ -211,12 +220,6 @@ export const runReadFileTool = async (params: {
     return buildReadFileError(
       displayPath,
       'read_file failed: path is outside repository work_dir',
-    )
-  }
-  if (isProtectedStatePath(repoRelativePath)) {
-    return buildReadFileError(
-      displayPath,
-      'read_file failed: path is protected under .mimikit',
     )
   }
 

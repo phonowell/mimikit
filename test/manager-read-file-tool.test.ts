@@ -33,8 +33,8 @@ test('pickReadFileRequest parses read_file attrs', () => {
       attrs: {
         path: 'docs/plan.md',
         from_line: '3',
-        max_lines: '700',
-        max_chars: '1e2',
+        max_lines: '500',
+        max_chars: '100',
       },
     },
   ])
@@ -42,9 +42,22 @@ test('pickReadFileRequest parses read_file attrs', () => {
     path: 'docs/plan.md',
     fromLine: 3,
     maxLines: 500,
-    maxChars: 1,
+    maxChars: 100,
   })
-  expect(buildReadFileLookupKey(request)).toBe('docs/plan.md\n3\n500\n1')
+  expect(buildReadFileLookupKey(request)).toBe('docs/plan.md\n3\n500\n100')
+})
+
+test('pickReadFileRequest rejects invalid optional numeric attrs', () => {
+  const request = pickReadFileRequest([
+    {
+      name: 'read_file',
+      attrs: {
+        path: 'docs/plan.md',
+        max_lines: '1e2',
+      },
+    },
+  ])
+  expect(request).toBeUndefined()
 })
 
 test('pickReadFileRequest applies default line window', () => {
@@ -129,7 +142,7 @@ test('runReadFileTool rejects paths outside work_dir', async () => {
   expect(result.error).toContain('outside repository')
 })
 
-test('runReadFileTool rejects protected .mimikit paths', async () => {
+test('runReadFileTool allows .mimikit paths', async () => {
   const workDir = await createTempRepo()
   await writeFile(
     join(workDir, '.mimikit', 'history', '2026-01-01.jsonl'),
@@ -145,8 +158,8 @@ test('runReadFileTool rejects protected .mimikit paths', async () => {
       maxChars: 100,
     },
   })
-  expect(result.status).toBe('error')
-  expect(result.error).toContain('protected under .mimikit')
+  expect(result.status).toBe('ok')
+  expect(result.content).toBe('secret')
 })
 
 test('runReadFileTool allows non-state paths that only share .mimikit prefix', async () => {

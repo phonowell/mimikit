@@ -5,6 +5,12 @@ import { readFileToolSchema } from './read-file-tool.js'
 import type { Parsed } from '../actions/model/spec.js'
 
 const nonEmptyString = z.string().trim().min(1)
+const nonBlankString = z
+  .string()
+  .refine(
+    (value) => value.trim().length > 0,
+    'must contain at least one non-whitespace character',
+  )
 const focusIdSchema = nonEmptyString.regex(/^focus-[a-zA-Z0-9._-]+$/)
 
 export const summarizeSchema = z
@@ -202,12 +208,12 @@ export const cancelSchema = z
 export const readFileSchema = readFileToolSchema
 export const writePersonaSchema = z
   .object({
-    content: z.string(),
+    content: nonBlankString,
   })
   .strict()
 export const writeUserProfileSchema = z
   .object({
-    content: z.string(),
+    content: nonBlankString,
   })
   .strict()
 

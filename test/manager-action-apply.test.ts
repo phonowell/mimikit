@@ -120,7 +120,7 @@ test('run_task dedupe does not block task creation when fingerprint differs', as
   expect(runtime.tasks[1]?.fingerprint).not.toBe(runtime.tasks[0]?.fingerprint)
 })
 
-test('run_task rejects forbidden .mimikit state paths', async () => {
+test('run_task allows .mimikit state paths', async () => {
   const runtime = await createRuntime()
 
   await applyTaskActions(runtime, [
@@ -128,22 +128,6 @@ test('run_task rejects forbidden .mimikit state paths', async () => {
       name: 'run_task',
       attrs: {
         prompt: 'Read .mimikit/history/2026-02-15.jsonl and summarize',
-        title: 'forbidden',
-      },
-    },
-  ])
-
-  expect(runtime.tasks).toHaveLength(0)
-})
-
-test('run_task allows .mimikit/generated path', async () => {
-  const runtime = await createRuntime()
-
-  await applyTaskActions(runtime, [
-    {
-      name: 'run_task',
-      attrs: {
-        prompt: 'Write report to .mimikit/generated',
         title: 'allowed',
       },
     },

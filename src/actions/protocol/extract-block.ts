@@ -61,6 +61,10 @@ const parseMetaTagsInHtml = (html: string, offsetBase: number): MetaTag[] => {
       continue
     }
     const attrs = parseAttributes(extractAttrText(rawOpenTag, tagName))
+    if (!attrs) {
+      cursor = openEnd
+      continue
+    }
     if (isSelfClosingTag(rawOpenTag)) {
       tags.push({
         fullName: tagName,

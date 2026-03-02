@@ -20,13 +20,48 @@ const DEFAULT_LIMIT = 6
 const MAX_LIMIT = 20
 const MIN_LIMIT = 1
 const DEFAULT_ROLES: Role[] = ['user', 'agent']
-const DECIMAL_PREFIX_RE = /^[+-]?\d+/
+const INTEGER_STRING_RE = /^[+-]?\d+$/
+
+const isRole = (value: string): value is Role =>
+  value === 'user' || value === 'agent' || value === 'system'
+
+const parseRolesRaw = (raw: string): Role[] | undefined => {
+  const unique = new Set<Role>()
+  for (const part of raw.split(',')) {
+    const role = part.trim()
+    if (!isRole(role)) return undefined
+    unique.add(role)
+  }
+  return unique.size > 0 ? Array.from(unique) : undefined
+}
 
 export const queryHistorySchema = z
   .object({
     query: z.string().trim().min(1),
-    limit: z.string().trim().optional(),
-    roles: z.string().trim().optional(),
+    limit: z
+      .string()
+      .trim()
+      .regex(INTEGER_STRING_RE, 'limit must be an integer string')
+      .refine(
+        (value) => {
+          const parsed = Number(value)
+          return (
+            Number.isSafeInteger(parsed) &&
+            parsed >= MIN_LIMIT &&
+            parsed <= MAX_LIMIT
+          )
+        },
+        `limit must be in range [${MIN_LIMIT}, ${MAX_LIMIT}]`,
+      )
+      .optional(),
+    roles: z
+      .string()
+      .trim()
+      .refine(
+        (value) => parseRolesRaw(value) !== undefined,
+        'roles must be a comma-separated list of user|agent|system',
+      )
+      .optional(),
     before_id: z.string().trim().min(1).optional(),
     from: z.string().trim().min(1).optional(),
     to: z.string().trim().min(1).optional(),
@@ -35,25 +70,12 @@ export const queryHistorySchema = z
 
 const parseLimit = (raw?: string): number => {
   if (!raw) return DEFAULT_LIMIT
-  const decimalPrefix = raw.match(DECIMAL_PREFIX_RE)?.[0]
-  if (!decimalPrefix) return DEFAULT_LIMIT
-  const parsed = Number(decimalPrefix)
-  if (!Number.isFinite(parsed) || parsed === 0) return DEFAULT_LIMIT
-  const normalized = Math.trunc(parsed)
-  return Math.max(MIN_LIMIT, Math.min(MAX_LIMIT, normalized))
+  return Number(raw)
 }
-
-const isRole = (value: string): value is Role =>
-  value === 'user' || value === 'agent' || value === 'system'
 
 const parseRoles = (raw?: string): Role[] => {
   if (!raw) return DEFAULT_ROLES
-  const unique = new Set<Role>()
-  for (const part of raw.split(',')) {
-    const role = part.trim()
-    if (isRole(role)) unique.add(role)
-  }
-  return unique.size > 0 ? Array.from(unique) : DEFAULT_ROLES
+  return parseRolesRaw(raw) ?? DEFAULT_ROLES
 }
 
 export const pickQueryHistoryRequest = (
