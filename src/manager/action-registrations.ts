@@ -12,8 +12,6 @@ import {
   applyUpdatePlan,
 } from './action-apply-plan.js'
 import { applyCompressContextAction } from './action-runtime-compress.js'
-import { applyAppendMemoryAction } from './action-runtime-memory.js'
-import { applyWriteProfileAction } from './action-runtime-profile.js'
 import { applyRestartRuntimeAction } from './action-runtime-restart.js'
 import {
   assignFocusSchema,
@@ -34,8 +32,6 @@ import {
   validateRunTask,
   validateUpdatePlan,
   validateWithSchema,
-  validateAppendMemory,
-  validateWriteProfile,
   type FeedbackContext,
   type ValidationIssue,
 } from './action-validation.js'
@@ -145,16 +141,6 @@ export const ACTION_DEFINITIONS = [
   ),
   createNoopAction('query_history', validateQueryHistory),
   createNoopAction('read_file', validateReadFile),
-  {
-    name: 'write_profile',
-    validate: (item) => validateWriteProfile(item),
-    apply: applyAndContinue(applyWriteProfileAction),
-  },
-  {
-    name: 'append_memory',
-    validate: (item) => validateAppendMemory(item),
-    apply: applyAndContinue(applyAppendMemoryAction),
-  },
   {
     name: 'restart_runtime',
     validate: (item) => validateWithSchema(item, restartSchema),

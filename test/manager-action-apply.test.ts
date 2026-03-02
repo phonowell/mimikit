@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, readdir, writeFile } from 'node:fs/promises'
+import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -53,6 +53,13 @@ const createRuntime = async (): Promise<RuntimeState> => {
     focusContexts: [],
     activeFocusIds: [GLOBAL_FOCUS_ID],
     managerTurn: 0,
+    memoryRefresh: {
+      lastCompletedTurn: 0,
+      lastProcessedInputsCursor: 0,
+      lastProcessedResultsCursor: 0,
+      running: false,
+      pending: false,
+    },
     uiStream: null,
     runningControllers: new Map(),
     createTaskDebounce: new Map(),
@@ -137,47 +144,6 @@ test('create_plan uses worker profile for cron plan', async () => {
   expect(runtime.taskPlans).toHaveLength(1)
   expect(runtime.taskPlans[0]?.profile).toBe('worker')
   expect(runtime.taskPlans[0]?.trigger.mode).toBe('cron')
-})
-
-test('write_profile(target=user) writes utf8 content to state file', async () => {
-  const runtime = await createRuntime()
-  const content = '- 偏好中文\n- 先给结论'
-  await applyTaskActions(runtime, [
-    {
-      name: 'write_profile',
-      attrs: {
-        target: 'user',
-        content,
-      },
-    },
-  ])
-
-  const saved = await readFile(runtime.paths.userProfile, 'utf8')
-  expect(saved).toBe(content)
-})
-
-test('write_profile(target=persona) snapshots old version before overwrite', async () => {
-  const runtime = await createRuntime()
-  await writeFile(runtime.paths.agentPersona, 'old persona', 'utf8')
-  await applyTaskActions(runtime, [
-    {
-      name: 'write_profile',
-      attrs: {
-        target: 'persona',
-        content: 'new persona',
-      },
-    },
-  ])
-
-  const current = await readFile(runtime.paths.agentPersona, 'utf8')
-  const versions = await readdir(runtime.paths.agentPersonaVersionsDir)
-  const snapshot = await readFile(
-    join(runtime.paths.agentPersonaVersionsDir, versions[0] ?? ''),
-    'utf8',
-  )
-  expect(current).toBe('new persona')
-  expect(versions.length).toBe(1)
-  expect(snapshot).toBe('old persona')
 })
 
 test('plan actions can create and archive done plan', async () => {

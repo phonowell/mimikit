@@ -83,6 +83,13 @@ const createRuntime = async (): Promise<RuntimeState> => {
     focusContexts: [],
     activeFocusIds: ['focus-global', 'focus-a', 'focus-b'],
     managerTurn: 0,
+    memoryRefresh: {
+      lastCompletedTurn: 0,
+      lastProcessedInputsCursor: 0,
+      lastProcessedResultsCursor: 0,
+      running: false,
+      pending: false,
+    },
     uiStream: null,
     runningControllers: new Map(),
     createTaskDebounce: new Map(),

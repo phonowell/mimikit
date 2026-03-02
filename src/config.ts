@@ -30,10 +30,8 @@ export type AppConfig = {
       inputsMaxBytes: number
       memoryMaxBytes: number
       plansMaxBytes: number
-      personaMaxBytes: number
       recentHistoryMaxBytes: number
       tasksMaxBytes: number
-      userProfileMaxBytes: number
     }
     taskCreate: {
       /** Debounce window for run_task dedup (ms) */

@@ -11,6 +11,7 @@
 - 动作协议：`./workflow/action.md`
 - 计划机制：`./workflow/plan.md`
 - 焦点机制：`./workflow/focus.md`
+- 记忆机制：`./workflow/memory.md`
 - 接口与状态：`./workflow/interfaces-and-state.md`
 - WebUI 规范：`./ui/webui-design-language.md`
 
@@ -22,6 +23,7 @@
 - Action 协议与动作清单：`workflow/action.md`
 - Plan 生命周期与触发机制：`workflow/plan.md`
 - Focus 生命周期与归属规则：`workflow/focus.md`
+- Memory 后台维护策略：`workflow/memory.md`
 - HTTP/CLI、环境变量、配置结构、状态目录、重启语义：`workflow/interfaces-and-state.md`
 
 ## 设计原则

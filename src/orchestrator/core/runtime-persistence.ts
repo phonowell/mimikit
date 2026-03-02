@@ -1,6 +1,10 @@
 import { appendLog } from '../../log/append.js'
 import { bestEffort } from '../../log/safe.js'
 import {
+  hydrateMemoryRefreshState,
+  toPersistedMemoryRefreshState,
+} from '../../memory/refresh/state.js'
+import {
   loadRuntimeSnapshot,
   saveRuntimeSnapshot,
   selectPersistedTasks,
@@ -18,6 +22,7 @@ export const hydrateRuntimeState = async (
   runtime.focusContexts = snapshot.focusContexts ?? []
   runtime.activeFocusIds = snapshot.activeFocusIds ?? []
   runtime.managerTurn = snapshot.managerTurn ?? 0
+  runtime.memoryRefresh = hydrateMemoryRefreshState(snapshot)
   if (snapshot.managerCompressedContext)
     runtime.managerCompressedContext = snapshot.managerCompressedContext
   else delete runtime.managerCompressedContext
@@ -49,6 +54,7 @@ export const persistRuntimeState = async (
     activeFocusIds: runtime.activeFocusIds,
     managerTurn: runtime.managerTurn,
     queues: runtime.queues,
+    memoryRefresh: toPersistedMemoryRefreshState(runtime.memoryRefresh),
     ...(runtime.managerCompressedContext
       ? { managerCompressedContext: runtime.managerCompressedContext }
       : {}),

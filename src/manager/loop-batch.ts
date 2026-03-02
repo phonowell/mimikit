@@ -4,6 +4,7 @@ import {
 } from '../history/manager-events.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
+import { requestMemoryRefresh } from '../memory/refresh/singleflight.js'
 import {
   notifyUiSignal,
   persistRuntimeState,
@@ -129,6 +130,7 @@ export const processManagerBatch = async (params: {
       elapsedMs: Math.max(0, Date.now() - startedAt),
       ...(resolvedUsage ? { usage: resolvedUsage } : {}),
     })
+    requestMemoryRefresh(runtime)
   } catch (error) {
     await recoverManagerBatchFailure({
       runtime,

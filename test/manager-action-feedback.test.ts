@@ -110,7 +110,7 @@ test('collectManagerActionFeedback rejects update_plan non-last_task patch on do
   expect(feedback[0]?.error).toBe('action_execution_rejected')
 })
 
-test('collectManagerActionFeedback reports invalid write_profile args when content is missing', () => {
+test('collectManagerActionFeedback treats write_profile as unregistered action', () => {
   const feedback = collectManagerActionFeedback([
     {
       name: 'write_profile',
@@ -121,22 +121,7 @@ test('collectManagerActionFeedback reports invalid write_profile args when conte
   ])
   expect(feedback).toHaveLength(1)
   expect(feedback[0]?.action).toBe('write_profile')
-  expect(feedback[0]?.error).toBe('invalid_action_args')
-})
-
-test('collectManagerActionFeedback reports invalid write_profile args when content is blank', () => {
-  const feedback = collectManagerActionFeedback([
-    {
-      name: 'write_profile',
-      attrs: {
-        target: 'user',
-        content: '   ',
-      },
-    },
-  ])
-  expect(feedback).toHaveLength(1)
-  expect(feedback[0]?.action).toBe('write_profile')
-  expect(feedback[0]?.error).toBe('invalid_action_args')
+  expect(feedback[0]?.error).toBe('unregistered_action')
 })
 
 test('collectManagerActionFeedback rejects compress_context when context is unavailable', () => {

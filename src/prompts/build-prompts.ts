@@ -76,10 +76,6 @@ export const buildManagerPrompt = async (params: {
   const resultTaskIds = collectResultTaskIds(params.tasks)
   const dateHints = buildTaskResultDateHints(params.tasks)
   const statePaths = buildPaths(params.stateDir)
-  const [persona, userProfile] = await Promise.all([
-    readOptionalMarkdown(statePaths.agentPersona),
-    readOptionalMarkdown(statePaths.userProfile),
-  ])
   const memory = await readOptionalMarkdown(statePaths.memoryFile)
   const history = await readHistory(statePaths.history)
   const archivedResults =
@@ -152,8 +148,6 @@ export const buildManagerPrompt = async (params: {
       params.compressedContext?.trim() ?? '',
       limits.compressedContextMaxBytes,
     ),
-    persona: section(persona.trim(), limits.personaMaxBytes),
-    user_profile: section(userProfile.trim(), limits.userProfileMaxBytes),
   }
 
   return renderPromptTemplate(

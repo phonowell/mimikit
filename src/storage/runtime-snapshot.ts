@@ -26,6 +26,11 @@ const initialRuntimeSnapshot = (): RuntimeSnapshot => ({
     inputsCursor: 0,
     resultsCursor: 0,
   },
+  memoryRefresh: {
+    lastCompletedTurn: 0,
+    lastProcessedInputsCursor: 0,
+    lastProcessedResultsCursor: 0,
+  },
 })
 
 const inspectBackupError = (

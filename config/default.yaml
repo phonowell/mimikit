@@ -13,10 +13,8 @@ manager:
     inputsMaxBytes: 8192
     memoryMaxBytes: 8192
     plansMaxBytes: 16384
-    personaMaxBytes: 8192
     recentHistoryMaxBytes: 8192
     tasksMaxBytes: 24576
-    userProfileMaxBytes: 8192
   taskCreate:
     debounceMs: 4000
   idleTrigger:

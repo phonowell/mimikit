@@ -39,10 +39,8 @@ const defaultConfigSchema = z
             inputsMaxBytes: z.number().int().positive(),
             memoryMaxBytes: z.number().int().positive(),
             plansMaxBytes: z.number().int().positive(),
-            personaMaxBytes: z.number().int().positive(),
             recentHistoryMaxBytes: z.number().int().positive(),
             tasksMaxBytes: z.number().int().positive(),
-            userProfileMaxBytes: z.number().int().positive(),
           })
           .strict(),
         taskCreate: z

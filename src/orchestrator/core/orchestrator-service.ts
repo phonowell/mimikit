@@ -3,6 +3,7 @@ import PQueue from 'p-queue'
 import { type AppConfig } from '../../config.js'
 import { buildPaths } from '../../fs/paths.js'
 import { setDefaultLogPath } from '../../log/safe.js'
+import { createDefaultMemoryRefreshState } from '../../memory/refresh/state.js'
 import { newId } from '../../shared/utils.js'
 import { cancelTask } from '../../worker/cancel-task.js'
 import { type ChatMessage } from '../read-model/chat-view.js'
@@ -64,6 +65,7 @@ export class Orchestrator {
       focusContexts: [],
       activeFocusIds: [],
       managerTurn: 0,
+      memoryRefresh: createDefaultMemoryRefreshState(),
       uiStream: null,
       runningControllers: new Map(),
       createTaskDebounce: new Map(),

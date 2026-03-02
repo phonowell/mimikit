@@ -74,14 +74,10 @@
 - `runtime-snapshot.json`
 - `runtime-snapshot.json.bak`
 - `log.jsonl`
-- `user_profile.md`
-- `agent_persona.md`
-- `agent_persona_versions/*.md`
 
 说明：
-- `M:write_profile target="user"` 写入 `user_profile.md`
-- `M:write_profile target="persona"` 写入 `agent_persona.md`，并在内容变化时落 `agent_persona_versions/*.md` 版本备份
-- `M:append_memory` 追加写入 `memory/MEMORY.md`；manager 每轮会直接注入 `M:memory`
+- manager 每轮会直接注入 `M:memory`
+- `memory/MEMORY.md` 由后台 memory 刷新子进程维护（`>=20` 轮触发，单飞执行）
 
 ## Runtime Snapshot 关键字段
 
@@ -91,6 +87,7 @@ schema：`src/storage/runtime-snapshot-schema.ts`
 - `taskPlans`
 - `focuses`、`focusContexts`、`activeFocusIds`
 - `managerTurn`、`managerCompressedContext`
+- `memoryRefresh`（刷新检查点）
 - `queues.inputsCursor`、`queues.resultsCursor`
 
 ## 重启语义

@@ -124,6 +124,16 @@ export const focusContextSchema = z
   })
   .strict()
 
+const memoryRefreshSchema = z
+  .object({
+    lastCompletedTurn: z.number().int().nonnegative(),
+    lastProcessedInputsCursor: z.number().int().nonnegative(),
+    lastProcessedResultsCursor: z.number().int().nonnegative(),
+    lastProcessedPlanUpdatedAt: z.string().trim().min(1).optional(),
+    lastRunAt: z.string().trim().min(1).optional(),
+  })
+  .strict()
+
 const runtimeSnapshotSchema = z
   .object({
     tasks: z.array(taskSchema),
@@ -139,6 +149,7 @@ const runtimeSnapshotSchema = z
       })
       .strict()
       .optional(),
+    memoryRefresh: memoryRefreshSchema.optional(),
     managerCompressedContext: z.string().trim().min(1).optional(),
   })
   .strict()
@@ -184,6 +195,7 @@ export const parseRuntimeSnapshot = (value: unknown): RuntimeSnapshot => {
     activeFocusIds: parsed.activeFocusIds,
     managerTurn: parsed.managerTurn,
     queues: parsed.queues,
+    memoryRefresh: parsed.memoryRefresh,
     managerCompressedContext: parsed.managerCompressedContext,
   }) as RuntimeSnapshot
 }

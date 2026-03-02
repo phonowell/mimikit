@@ -10,12 +10,6 @@ import { readFileToolSchema } from './read-file-tool.js'
 import type { Parsed } from '../actions/model/spec.js'
 
 const nonEmptyString = z.string().trim().min(1)
-const nonBlankString = z
-  .string()
-  .refine(
-    (value) => value.trim().length > 0,
-    'must contain at least one non-whitespace character',
-  )
 const focusIdSchema = nonEmptyString.regex(/^focus-[a-zA-Z0-9._-]+$/)
 
 export { createPlanSchema, deletePlanSchema, updatePlanSchema }
@@ -42,20 +36,6 @@ export const cancelSchema = z
   .strict()
 
 export const readFileSchema = readFileToolSchema
-
-export const writeProfileSchema = z
-  .object({
-    target: z.enum(['persona', 'user']),
-    content: nonBlankString,
-  })
-  .strict()
-
-export const appendMemorySchema = z
-  .object({
-    content: nonBlankString,
-    entry_title: z.string().trim().optional(),
-  })
-  .strict()
 
 export const compressContextSchema = z.object({}).strict()
 

@@ -8,14 +8,12 @@ import {
   type ValidationIssue,
 } from './action-validation-helpers.js'
 import {
-  appendMemorySchema,
   cancelSchema,
   compressContextSchema,
   createPlanSchema,
   readFileSchema,
   runTaskSchema,
   updatePlanSchema,
-  writeProfileSchema,
 } from './action-apply-schema.js'
 
 import type { Parsed } from '../actions/model/spec.js'
@@ -106,12 +104,6 @@ export const validateQueryHistory = (item: Parsed): ValidationIssue[] =>
 
 export const validateReadFile = (item: Parsed): ValidationIssue[] =>
   validateWithSchema(item, readFileSchema)
-
-export const validateWriteProfile = (item: Parsed): ValidationIssue[] =>
-  validateWithSchema(item, writeProfileSchema)
-
-export const validateAppendMemory = (item: Parsed): ValidationIssue[] =>
-  validateWithSchema(item, appendMemorySchema)
 
 export const validateCompressContext = (
   item: Parsed,

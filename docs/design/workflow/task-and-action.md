@@ -8,6 +8,7 @@
 - [动作（Action）](./action.md)
 - [计划（Plan / TaskPlan）](./plan.md)
 - [焦点（Focus）](./focus.md)
+- [记忆机制（Memory）](./memory.md)
 
 ## 关系图
 
@@ -22,3 +23,4 @@
 - Action 协议与动作清单：`./action.md`
 - Plan 生命周期与触发机制：`./plan.md`
 - Focus 生命周期与归属规则：`./focus.md`
+- Memory 后台维护策略：`./memory.md`

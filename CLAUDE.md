@@ -11,7 +11,9 @@
 - 固定参考：`nanobot`、`picoclaw`、`mimiclaw`、`copaw`、`pi-mono`
 - 本地路径（相对 `.`）：`../nanobot`、`../picoclaw`、`../mimiclaw`、`../copaw`、`../pi-mono`
 - 远端仓库：`HKUDS/nanobot`、`sipeed/picoclaw`、`memovai/mimiclaw`、`agentscope-ai/CoPaw`、`badlogic/pi-mono`
-- 同步要求：执行任务前确保上述仓库可访问且与各自 `origin/main` 同步
+- 触发条件：仅当用户明确提到参考项目或要求参考对比时才进行探索；未提及时不主动查看参考项目
+- 探索策略：默认以本地快照为准，不要求每次任务前检查远端最新状态
+- 调研范围：探索参考项目时仅读取文档（README/docs/*.md/SKILL.md）；除非用户明确要求，否则不读取参考项目源码
 
 ## 关键规则
 

@@ -41,6 +41,16 @@ export type ExitRequest = {
   reason: string
 }
 
+export type RuntimeMemoryRefreshState = {
+  lastCompletedTurn: number
+  lastProcessedInputsCursor: number
+  lastProcessedResultsCursor: number
+  lastProcessedPlanUpdatedAt?: ISODate
+  lastRunAt?: ISODate
+  running: boolean
+  pending: boolean
+}
+
 export type RuntimeState = {
   runtimeId: string
   config: AppConfig
@@ -62,6 +72,7 @@ export type RuntimeState = {
   focusContexts: FocusContext[]
   activeFocusIds: FocusId[]
   managerTurn: number
+  memoryRefresh: RuntimeMemoryRefreshState
   managerCompressedContext?: string
   uiStream: UiAgentStream | null
   runningControllers: Map<string, AbortController>
