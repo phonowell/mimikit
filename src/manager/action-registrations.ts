@@ -12,7 +12,7 @@ import {
   applyUpdatePlan,
 } from './action-apply-plan.js'
 import { applyCompressContextAction } from './action-runtime-compress.js'
-import { applyWriteMemoryAction } from './action-runtime-memory.js'
+import { applyAppendMemoryAction } from './action-runtime-memory.js'
 import { applyWriteProfileAction } from './action-runtime-profile.js'
 import { applyRestartRuntimeAction } from './action-runtime-restart.js'
 import {
@@ -30,12 +30,11 @@ import {
   validateCreatePlan,
   validatePlanById,
   validateQueryHistory,
-  validateQueryMemory,
   validateReadFile,
   validateRunTask,
   validateUpdatePlan,
   validateWithSchema,
-  validateWriteMemory,
+  validateAppendMemory,
   validateWriteProfile,
   type FeedbackContext,
   type ValidationIssue,
@@ -145,7 +144,6 @@ export const ACTION_DEFINITIONS = [
     validateWithSchema(item, summarizeSchema),
   ),
   createNoopAction('query_history', validateQueryHistory),
-  createNoopAction('query_memory', validateQueryMemory),
   createNoopAction('read_file', validateReadFile),
   {
     name: 'write_profile',
@@ -153,9 +151,9 @@ export const ACTION_DEFINITIONS = [
     apply: applyAndContinue(applyWriteProfileAction),
   },
   {
-    name: 'write_memory',
-    validate: (item) => validateWriteMemory(item),
-    apply: applyAndContinue(applyWriteMemoryAction),
+    name: 'append_memory',
+    validate: (item) => validateAppendMemory(item),
+    apply: applyAndContinue(applyAppendMemoryAction),
   },
   {
     name: 'restart_runtime',

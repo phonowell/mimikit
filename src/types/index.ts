@@ -72,17 +72,6 @@ export type ReadFileLookupMessage = {
   error?: string
 }
 
-export type MemorySource = 'user' | 'agent' | 'system'
-
-export type MemoryLookupMessage = {
-  id: Id
-  source: MemorySource
-  tags: string[]
-  time: ISODate
-  content: string
-  score: number
-}
-
 type UserInputUser = {
   id: Id
   role: 'user'

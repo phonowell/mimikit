@@ -37,7 +37,7 @@ const defaultConfigSchema = z
             focusListMaxBytes: z.number().int().positive(),
             historyLookupMaxBytes: z.number().int().positive(),
             inputsMaxBytes: z.number().int().positive(),
-            memoryLookupMaxBytes: z.number().int().positive(),
+            memoryMaxBytes: z.number().int().positive(),
             plansMaxBytes: z.number().int().positive(),
             personaMaxBytes: z.number().int().positive(),
             recentHistoryMaxBytes: z.number().int().positive(),

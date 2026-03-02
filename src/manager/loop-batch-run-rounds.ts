@@ -2,18 +2,15 @@ import { parseActions } from '../actions/protocol/parse.js'
 import { appendActionFeedbackSystemMessage } from '../history/manager-events.js'
 import { pickQueryHistoryRequest } from '../history/query.js'
 import { appendLog } from '../log/append.js'
-import { pickQueryMemoryRequest } from '../memory/query.js'
 import { resolveScheduleNowIso } from '../shared/time.js'
 import { mergeUsageAdditive } from '../shared/token-usage.js'
 
 import { collectManagerActionFeedback } from './action-feedback-collect.js'
 import {
   buildHistoryQueryKey,
-  buildMemoryQueryKey,
   buildReadFileLookupKey,
   pickReadFileRequest,
   queryHistoryLookup,
-  queryMemoryLookup,
   queryReadFileLookup,
 } from './loop-batch-context.js'
 import { runManagerRoundWithRecovery } from './loop-batch-exec.js'
@@ -112,21 +109,17 @@ export const runManagerCorrectionRounds = async (params: {
     )
 
     const queryRequest = pickQueryHistoryRequest(parsed.actions)
-    const memoryRequest = pickQueryMemoryRequest(parsed.actions)
     const readFileRequest = pickReadFileRequest(parsed.actions)
     const queryKey = buildHistoryQueryKey(queryRequest)
-    const memoryKey = buildMemoryQueryKey(memoryRequest)
     const readFileKey = buildReadFileLookupKey(readFileRequest)
     const lookupKey = buildLookupKey({
       ...(queryKey !== undefined ? { queryKey } : {}),
-      ...(memoryKey !== undefined ? { memoryKey } : {}),
       ...(readFileKey !== undefined ? { readFileKey } : {}),
     })
 
     if (
       hasNoFollowupRequests({
         hasQueryRequest: Boolean(queryRequest),
-        hasMemoryRequest: Boolean(memoryRequest),
         hasReadFileRequest: Boolean(readFileRequest),
         feedbackCount: actionFeedback.length,
       })
@@ -149,9 +142,8 @@ export const runManagerCorrectionRounds = async (params: {
 
     previousLookupKey = lookupKey
 
-    const [historyLookup, memoryLookup, readFileLookup] = await Promise.all([
+    const [historyLookup, readFileLookup] = await Promise.all([
       queryHistoryLookup(runtime, queryRequest),
-      queryMemoryLookup(runtime, memoryRequest),
       queryReadFileLookup(runtime, readFileRequest),
     ])
 
@@ -172,7 +164,6 @@ export const runManagerCorrectionRounds = async (params: {
     stream.resetCycle()
     extra = {
       ...(historyLookup ? { historyLookup } : {}),
-      ...(memoryLookup ? { memoryLookup } : {}),
       ...(readFileLookup ? { readFileLookup } : {}),
       ...(actionFeedback.length > 0 ? { actionFeedback } : {}),
     }

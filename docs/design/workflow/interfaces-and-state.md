@@ -68,7 +68,7 @@
 - `tasks/YYYY-MM-DD/*.md`
 - `traces/YYYY-MM-DD/<ts36><ra>.txt`
 - `history/YYYY-MM-DD.jsonl`
-- `memory/records.jsonl`
+- `memory/MEMORY.md`
 - `runtime-snapshot.json`
 - `runtime-snapshot.json.bak`
 - `log.jsonl`
@@ -79,7 +79,7 @@
 说明：
 - `M:write_profile target="user"` 写入 `user_profile.md`
 - `M:write_profile target="persona"` 写入 `agent_persona.md`，并在内容变化时落 `agent_persona_versions/*.md` 版本备份
-- `M:write_memory` 写入 `memory/records.jsonl`，供 `M:query_memory` 检索并回填 `M:memory_lookup`
+- `M:append_memory` 追加写入 `memory/MEMORY.md`；manager 每轮会直接注入 `M:memory`
 
 ## Runtime Snapshot 关键字段
 

@@ -11,7 +11,7 @@ manager:
     focusListMaxBytes: 8192
     historyLookupMaxBytes: 20480
     inputsMaxBytes: 8192
-    memoryLookupMaxBytes: 8192
+    memoryMaxBytes: 8192
     plansMaxBytes: 16384
     personaMaxBytes: 8192
     recentHistoryMaxBytes: 8192

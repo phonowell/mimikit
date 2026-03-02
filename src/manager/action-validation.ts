@@ -1,5 +1,4 @@
 import { queryHistorySchema } from '../history/query.js'
-import { queryMemorySchema } from '../memory/query.js'
 
 import {
   invalidArgsIssue,
@@ -9,13 +8,13 @@ import {
   type ValidationIssue,
 } from './action-validation-helpers.js'
 import {
+  appendMemorySchema,
   cancelSchema,
   compressContextSchema,
   createPlanSchema,
   readFileSchema,
   runTaskSchema,
   updatePlanSchema,
-  writeMemorySchema,
   writeProfileSchema,
 } from './action-apply-schema.js'
 
@@ -108,20 +107,11 @@ export const validateQueryHistory = (item: Parsed): ValidationIssue[] =>
 export const validateReadFile = (item: Parsed): ValidationIssue[] =>
   validateWithSchema(item, readFileSchema)
 
-export const validateQueryMemory = (item: Parsed): ValidationIssue[] =>
-  validateRangeQueryWithSchema(item, queryMemorySchema)
-
 export const validateWriteProfile = (item: Parsed): ValidationIssue[] =>
   validateWithSchema(item, writeProfileSchema)
 
-export const validateWriteMemory = (item: Parsed): ValidationIssue[] => {
-  const parsed = writeMemorySchema.safeParse(item.attrs)
-  if (!parsed.success) return [invalidArgsIssue(parsed.error)]
-  const expiresAt = parsed.data.expires_at?.trim()
-  if (!expiresAt) return []
-  if (validateIsoRangeField('to', expiresAt).length === 0) return []
-  return [{ error: 'invalid_action_args', hint: '参数校验失败：expires_at 必须是合法 ISO 8601 时间。' }]
-}
+export const validateAppendMemory = (item: Parsed): ValidationIssue[] =>
+  validateWithSchema(item, appendMemorySchema)
 
 export const validateCompressContext = (
   item: Parsed,

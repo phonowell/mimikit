@@ -3,7 +3,6 @@ import { appendLog } from '../log/append.js'
 import type {
   HistoryLookupMessage,
   ManagerActionFeedback,
-  MemoryLookupMessage,
   ReadFileLookupMessage,
   TaskPlanStatus,
   TaskStatus,
@@ -13,39 +12,26 @@ import type { TokenUsage } from '../types/index.js'
 
 export type ManagerRoundExtra = {
   historyLookup?: HistoryLookupMessage[]
-  memoryLookup?: MemoryLookupMessage[]
   readFileLookup?: ReadFileLookupMessage[]
   actionFeedback?: ManagerActionFeedback[]
 }
 
 export const buildLookupKey = (params: {
   queryKey?: string
-  memoryKey?: string
   readFileKey?: string
 }): string | undefined => {
-  const { queryKey, memoryKey, readFileKey } = params
-  if (!queryKey && !memoryKey && !readFileKey) return undefined
-  return `${queryKey ?? ''}\n---\n${memoryKey ?? ''}\n---\n${readFileKey ?? ''}`
+  const { queryKey, readFileKey } = params
+  if (!queryKey && !readFileKey) return undefined
+  return `${queryKey ?? ''}\n---\n${readFileKey ?? ''}`
 }
 
 export const hasNoFollowupRequests = (params: {
   hasQueryRequest: boolean
-  hasMemoryRequest: boolean
   hasReadFileRequest: boolean
   feedbackCount: number
 }): boolean => {
-  const {
-    hasQueryRequest,
-    hasMemoryRequest,
-    hasReadFileRequest,
-    feedbackCount,
-  } = params
-  return (
-    !hasQueryRequest &&
-    !hasMemoryRequest &&
-    !hasReadFileRequest &&
-    feedbackCount === 0
-  )
+  const { hasQueryRequest, hasReadFileRequest, feedbackCount } = params
+  return !hasQueryRequest && !hasReadFileRequest && feedbackCount === 0
 }
 
 export const buildActionFeedbackContext = (params: {

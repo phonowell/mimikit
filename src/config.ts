@@ -28,7 +28,7 @@ export type AppConfig = {
       focusListMaxBytes: number
       historyLookupMaxBytes: number
       inputsMaxBytes: number
-      memoryLookupMaxBytes: number
+      memoryMaxBytes: number
       plansMaxBytes: number
       personaMaxBytes: number
       recentHistoryMaxBytes: number

@@ -9,7 +9,6 @@ import type {
   ManagerActionFeedback,
   ManagerEnv,
   ManagerWakeProfile,
-  MemoryLookupMessage,
   ReadFileLookupMessage,
   Task,
   TaskResult,
@@ -77,7 +76,6 @@ export const runManagerRoundWithRecovery = async (params: {
   workingFocusIds: string[]
   extra: {
     historyLookup?: HistoryLookupMessage[]
-    memoryLookup?: MemoryLookupMessage[]
     readFileLookup?: ReadFileLookupMessage[]
     actionFeedback?: ManagerActionFeedback[]
   }
@@ -105,9 +103,6 @@ export const runManagerRoundWithRecovery = async (params: {
         workingFocusIds: params.workingFocusIds,
         ...(params.extra.historyLookup
           ? { historyLookup: params.extra.historyLookup }
-          : {}),
-        ...(params.extra.memoryLookup
-          ? { memoryLookup: params.extra.memoryLookup }
           : {}),
         ...(params.extra.readFileLookup
           ? { readFileLookup: params.extra.readFileLookup }

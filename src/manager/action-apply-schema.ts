@@ -16,10 +16,7 @@ const nonBlankString = z
     (value) => value.trim().length > 0,
     'must contain at least one non-whitespace character',
   )
-const integerStringRe = /^[+-]?\d+$/
-const decimalStringRe = /^(?:0(?:\.\d+)?|1(?:\.0+)?)$/
 const focusIdSchema = nonEmptyString.regex(/^focus-[a-zA-Z0-9._-]+$/)
-const memorySourceSchema = z.enum(['user', 'agent', 'system'])
 
 export { createPlanSchema, deletePlanSchema, updatePlanSchema }
 
@@ -53,37 +50,12 @@ export const writeProfileSchema = z
   })
   .strict()
 
-export const writeMemorySchema = z
+export const appendMemorySchema = z
   .object({
     content: nonBlankString,
-    tags: z.string().trim().optional(),
-    source: memorySourceSchema.optional(),
-    score: z
-      .string()
-      .trim()
-      .regex(decimalStringRe, 'score must be in range [0, 1]')
-      .optional(),
-    ttl_days: z
-      .string()
-      .trim()
-      .regex(integerStringRe, 'ttl_days must be an integer string')
-      .refine((value) => {
-        const parsed = Number(value)
-        return Number.isSafeInteger(parsed) && parsed >= 1 && parsed <= 3650
-      }, 'ttl_days must be in range [1, 3650]')
-      .optional(),
-    expires_at: z.string().trim().min(1).optional(),
+    entry_title: z.string().trim().optional(),
   })
   .strict()
-  .superRefine((data, ctx) => {
-    if (data.ttl_days && data.expires_at) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'ttl_days and expires_at cannot be used together',
-        path: ['ttl_days'],
-      })
-    }
-  })
 
 export const compressContextSchema = z.object({}).strict()
 
