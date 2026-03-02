@@ -1,11 +1,16 @@
 import { buildFocusPromptPayload } from '../focus/index.js'
 import { buildPaths } from '../fs/paths.js'
-import { readTextFileIfExists } from '../fs/read-text.js'
 import { readHistory } from '../history/store.js'
-import { readErrorCode } from '../shared/error-code.js'
 import { readTaskResultsForTasks } from '../storage/task-results.js'
 
-import { escapeCdata } from './format-base.js'
+import {
+  buildTaskResultDateHints,
+  collectResultTaskIds,
+  collectTaskResults,
+  encodePromptSection,
+  mergeTaskResults,
+  readOptionalMarkdown,
+} from './build-prompts-helpers.js'
 import {
   formatActionFeedback,
   formatEnvironment,
@@ -14,13 +19,14 @@ import {
   formatHistoryLookup,
   formatInputs,
   formatMemoryLookup,
+  formatPlansYaml,
   formatReadFileLookup,
   formatRecentHistory,
   formatResultsYaml,
-  formatPlansYaml,
   formatTasksYaml,
   renderPromptTemplate,
 } from './format.js'
+import { escapeCdata } from './format-base.js'
 import { loadPromptFile, loadPromptSource } from './prompt-loader.js'
 
 import type { AppConfig } from '../config.js'
@@ -34,67 +40,14 @@ import type {
   MemoryLookupMessage,
   ReadFileLookupMessage,
   Task,
-  TaskResult,
   TaskPlan,
+  TaskResult,
   UserInput,
 } from '../types/index.js'
 
 export type { ManagerEnv } from '../types/index.js'
 
 export type PromptSectionLimits = AppConfig['manager']['promptSections']
-
-const clipUtf8ByBytes = (value: string, maxBytes: number): string => {
-  if (maxBytes <= 0) return ''
-  const buffer = Buffer.from(value, 'utf8')
-  if (buffer.byteLength <= maxBytes) return value
-  return buffer.subarray(0, maxBytes).toString('utf8').trimEnd()
-}
-
-const encodePromptSection = (value: string, maxBytes: number): string =>
-  escapeCdata(clipUtf8ByBytes(value, maxBytes))
-
-const mergeTaskResults = (
-  primary: TaskResult[],
-  secondary: TaskResult[],
-): TaskResult[] => {
-  const merged = new Map<string, TaskResult>()
-  for (const result of secondary) merged.set(result.taskId, result)
-  for (const result of primary) merged.set(result.taskId, result)
-  const values = Array.from(merged.values())
-  values.sort((a, b) => Date.parse(b.completedAt) - Date.parse(a.completedAt))
-  return values
-}
-
-const collectTaskResults = (tasks: Task[]): TaskResult[] =>
-  tasks
-    .filter((task): task is Task & { result: TaskResult } =>
-      Boolean(task.result),
-    )
-    .map((task) => task.result)
-
-const collectResultTaskIds = (tasks: Task[]): string[] =>
-  tasks
-    .filter((task) => task.status !== 'pending' && task.status !== 'running')
-    .map((task) => task.id)
-
-const buildTaskResultDateHints = (tasks: Task[]): Record<string, string> =>
-  Object.fromEntries(
-    tasks
-      .filter(
-        (task): task is Task & { completedAt: string } =>
-          typeof task.completedAt === 'string' && task.completedAt.length > 0,
-      )
-      .map((task) => [task.id, task.completedAt.slice(0, 10)]),
-  )
-
-const readOptionalMarkdown = async (path: string): Promise<string> => {
-  try {
-    return await readTextFileIfExists(path)
-  } catch (error) {
-    if (readErrorCode(error) === 'ENOENT') return ''
-    throw error
-  }
-}
 
 export const buildManagerPrompt = async (params: {
   stateDir: string
@@ -151,71 +104,63 @@ export const buildManagerPrompt = async (params: {
   })
 
   const systemSource = await loadPromptSource('manager/system.md')
+  const limits = params.promptSectionLimits
+  const section = (value: string, maxBytes: number): string =>
+    encodePromptSection(value, maxBytes)
   const templateValues: Record<string, string> = {
-    environment: encodePromptSection(
+    environment: section(
       formatEnvironment({
         workDir: params.workDir,
         ...(params.env ? { env: params.env } : {}),
       }),
-      params.promptSectionLimits.environmentMaxBytes,
+      limits.environmentMaxBytes,
     ),
-    inputs: encodePromptSection(
-      formatInputs(params.inputs),
-      params.promptSectionLimits.inputsMaxBytes,
-    ),
-    batch_results: encodePromptSection(
+    inputs: section(formatInputs(params.inputs), limits.inputsMaxBytes),
+    batch_results: section(
       formatResultsYaml(params.tasks, pendingResults),
-      params.promptSectionLimits.batchResultsMaxBytes,
+      limits.batchResultsMaxBytes,
     ),
-    tasks: encodePromptSection(
+    tasks: section(
       formatTasksYaml(params.tasks, resultsForTasks),
-      params.promptSectionLimits.tasksMaxBytes,
+      limits.tasksMaxBytes,
     ),
-    plans: encodePromptSection(
-      formatPlansYaml(params.plans ?? []),
-      params.promptSectionLimits.plansMaxBytes,
-    ),
-    recent_history: encodePromptSection(
+    plans: section(formatPlansYaml(params.plans ?? []), limits.plansMaxBytes),
+    recent_history: section(
       formatRecentHistory(focusPayload.recentHistory),
-      params.promptSectionLimits.recentHistoryMaxBytes,
+      limits.recentHistoryMaxBytes,
     ),
-    focus_list: encodePromptSection(
+    focus_list: section(
       formatFocusList(focusPayload.focusList),
-      params.promptSectionLimits.focusListMaxBytes,
+      limits.focusListMaxBytes,
     ),
-    focus_contexts: encodePromptSection(
+    focus_contexts: section(
       formatFocusContexts(focusPayload.focusContexts),
-      params.promptSectionLimits.focusContextsMaxBytes,
+      limits.focusContextsMaxBytes,
     ),
-    history_lookup: encodePromptSection(
+    history_lookup: section(
       formatHistoryLookup(params.historyLookup ?? []),
-      params.promptSectionLimits.historyLookupMaxBytes,
+      limits.historyLookupMaxBytes,
     ),
-    memory_lookup: encodePromptSection(
+    memory_lookup: section(
       formatMemoryLookup(params.memoryLookup ?? []),
-      params.promptSectionLimits.memoryLookupMaxBytes,
+      limits.memoryLookupMaxBytes,
     ),
-    file_lookup: encodePromptSection(
+    file_lookup: section(
       formatReadFileLookup(params.readFileLookup ?? []),
-      params.promptSectionLimits.fileLookupMaxBytes,
+      limits.fileLookupMaxBytes,
     ),
-    action_feedback: encodePromptSection(
+    action_feedback: section(
       formatActionFeedback(params.actionFeedback ?? []),
-      params.promptSectionLimits.actionFeedbackMaxBytes,
+      limits.actionFeedbackMaxBytes,
     ),
-    compressed_context: encodePromptSection(
+    compressed_context: section(
       params.compressedContext?.trim() ?? '',
-      params.promptSectionLimits.compressedContextMaxBytes,
+      limits.compressedContextMaxBytes,
     ),
-    persona: encodePromptSection(
-      persona.trim(),
-      params.promptSectionLimits.personaMaxBytes,
-    ),
-    user_profile: encodePromptSection(
-      userProfile.trim(),
-      params.promptSectionLimits.userProfileMaxBytes,
-    ),
+    persona: section(persona.trim(), limits.personaMaxBytes),
+    user_profile: section(userProfile.trim(), limits.userProfileMaxBytes),
   }
+
   return renderPromptTemplate(
     systemSource.template,
     templateValues,

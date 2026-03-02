@@ -4,59 +4,36 @@ import {
   resolveDefaultFocusId,
   selectWorkingFocusIds,
 } from '../focus/index.js'
-import { appendActionFeedbackSystemMessage } from '../history/manager-events.js'
-import { pickQueryHistoryRequest } from '../history/query.js'
-import { appendLog } from '../log/append.js'
 import { selectRecentPlans } from '../orchestrator/read-model/plan-select.js'
-import { resolveScheduleNowIso } from '../shared/time.js'
-import { mergeUsageAdditive } from '../shared/token-usage.js'
 
-import { collectManagerActionFeedback } from './action-feedback-collect.js'
+import { collectTriggeredPlanIds } from './loop-batch-context.js'
+import { runManagerCorrectionRounds } from './loop-batch-run-rounds.js'
 import {
-  buildHistoryQueryKey,
-  buildMemoryQueryKey,
-  buildReadFileLookupKey,
-  collectTriggeredPlanIds,
-  pickReadFileRequest,
-  queryHistoryLookup,
-  queryMemoryLookup,
-  queryReadFileLookup,
-} from './loop-batch-context.js'
-import { runManagerRoundWithRecovery } from './loop-batch-exec.js'
-import { createManagerStreamController } from './loop-batch-stream-controller.js'
+  createManagerStreamController,
+  type ManagerStreamController,
+} from './loop-batch-stream-controller.js'
 import { selectRecentTasks, type RuntimeState } from './runtime-adapter.js'
-import { pickQueryMemoryRequest } from '../memory/query.js'
+import { logManagerBatchStart } from './loop-batch-run-helpers.js'
 
 import type {
-  HistoryLookupMessage,
-  ManagerActionFeedback,
-  MemoryLookupMessage,
-  ReadFileLookupMessage,
   TaskResult,
   TokenUsage,
   UserInput,
 } from '../types/index.js'
 
-export const runManagerBatch = async (params: {
+const runRounds = (params: {
   runtime: RuntimeState
   inputs: UserInput[]
   results: TaskResult[]
-  streamId: string
+  stream: ManagerStreamController
+  maxCorrectionRounds: number
 }): Promise<{
   parsed: ReturnType<typeof parseActions>
   usage?: TokenUsage
   elapsedMs: number
   roundLimitReached?: boolean
 }> => {
-  const { runtime, inputs, results, streamId } = params
-  await appendLog(runtime.paths.log, {
-    event: 'manager_start',
-    inputCount: inputs.length,
-    resultCount: results.length,
-    inputIds: inputs.map((item) => item.id),
-    resultIds: results.map((item) => item.taskId),
-  })
-
+  const { runtime, inputs, results, stream, maxCorrectionRounds } = params
   const tasks = selectRecentTasks(runtime.tasks, {
     minCount: runtime.config.manager.taskWindow.minCount,
     maxCount: runtime.config.manager.taskWindow.maxCount,
@@ -73,144 +50,52 @@ export const runManagerBatch = async (params: {
   })
   const preferredFocusIds = collectPreferredFocusIds(runtime, inputs, results)
   const workingFocusIds = selectWorkingFocusIds(runtime, preferredFocusIds)
-  const stream = createManagerStreamController({ runtime, streamId })
 
-  let elapsedMs = 0
-  let batchUsage: TokenUsage | undefined
-  let previousLookupKey: string | undefined
-  let extra: {
-    historyLookup?: HistoryLookupMessage[]
-    memoryLookup?: MemoryLookupMessage[]
-    readFileLookup?: ReadFileLookupMessage[]
-    actionFeedback?: ManagerActionFeedback[]
-  } = {}
-  let lastParsed = parseActions('')
+  return runManagerCorrectionRounds({
+    runtime,
+    inputs,
+    results,
+    tasks,
+    plans,
+    workingFocusIds,
+    maxCorrectionRounds,
+    stream,
+    resolveFocusId: () => resolveDefaultFocusId(runtime),
+  })
+}
+
+export const runManagerBatch = async (params: {
+  runtime: RuntimeState
+  inputs: UserInput[]
+  results: TaskResult[]
+  streamId: string
+}): Promise<{
+  parsed: ReturnType<typeof parseActions>
+  usage?: TokenUsage
+  elapsedMs: number
+  roundLimitReached?: boolean
+}> => {
+  const { runtime, inputs, results, streamId } = params
+  await logManagerBatchStart(
+    runtime,
+    inputs.map((item) => item.id),
+    results.map((item) => item.taskId),
+  )
+
   const maxCorrectionRounds = Math.max(
     1,
     runtime.config.manager.maxCorrectionRounds,
   )
+  const stream = createManagerStreamController({ runtime, streamId })
 
   try {
-    for (let round = 1; round <= maxCorrectionRounds; round++) {
-      const runResult = await runManagerRoundWithRecovery({
-        runtime,
-        round,
-        inputs,
-        results,
-        tasks,
-        plans,
-        workingFocusIds,
-        extra,
-        onTextDelta: stream.appendDelta,
-        onUsage: stream.setUsage,
-      })
-
-      if (runResult.usage) stream.setUsage(runResult.usage)
-      elapsedMs += runResult.elapsedMs
-      batchUsage = mergeUsageAdditive(batchUsage, runResult.usage)
-
-      const parsed = parseActions(runResult.output)
-      lastParsed = parsed
-      stream.commitParsedText(parsed.text)
-      const scheduleNowIso = resolveScheduleNowIso(runtime.lastUserMeta)
-
-      const actionFeedback = collectManagerActionFeedback(
-        parsed.actions,
-        {
-          taskStatusById: new Map(
-            runtime.tasks.map((task) => [task.id, task.status]),
-          ),
-          planStatusById: new Map(
-            runtime.taskPlans.map((plan) => [plan.id, plan.status]),
-          ),
-          hasCompressibleContext:
-            Boolean(runtime.managerCompressedContext?.trim()) ||
-            runtime.tasks.length > 0 ||
-            runtime.taskPlans.length > 0 ||
-            inputs.length > 0 ||
-            results.length > 0 ||
-            runtime.queues.inputsCursor > 0 ||
-            runtime.queues.resultsCursor > 0,
-          scheduleNowIso,
-        },
-        runResult.output,
-      )
-
-      const queryRequest = pickQueryHistoryRequest(parsed.actions)
-      const memoryRequest = pickQueryMemoryRequest(parsed.actions)
-      const readFileRequest = pickReadFileRequest(parsed.actions)
-      const queryKey = buildHistoryQueryKey(queryRequest)
-      const memoryKey = buildMemoryQueryKey(memoryRequest)
-      const readFileKey = buildReadFileLookupKey(readFileRequest)
-      const lookupKey =
-        queryKey || memoryKey || readFileKey
-          ? `${queryKey ?? ''}\n---\n${memoryKey ?? ''}\n---\n${readFileKey ?? ''}`
-          : undefined
-
-      if (
-        !queryRequest &&
-        !memoryRequest &&
-        !readFileRequest &&
-        actionFeedback.length === 0
-      ) {
-        stream.commitParsedText(parsed.text)
-        return {
-          parsed,
-          elapsedMs,
-          ...(batchUsage ? { usage: batchUsage } : {}),
-        }
-      }
-
-      if (
-        lookupKey &&
-        actionFeedback.length === 0 &&
-        previousLookupKey === lookupKey
-      )
-        throw new Error('manager_internal_lookup_repeated_without_progress')
-
-      previousLookupKey = lookupKey
-
-      const [historyLookup, memoryLookup, readFileLookup] = await Promise.all([
-        queryHistoryLookup(runtime, queryRequest),
-        queryMemoryLookup(runtime, memoryRequest),
-        queryReadFileLookup(runtime, readFileRequest),
-      ])
-      if (actionFeedback.length > 0) {
-        await appendLog(runtime.paths.log, {
-          event: 'manager_action_feedback',
-          count: actionFeedback.length,
-          errors: actionFeedback.map((item) => item.error),
-          names: actionFeedback.map((item) => item.action),
-        })
-        await appendActionFeedbackSystemMessage(
-          runtime.paths.history,
-          actionFeedback,
-          resolveDefaultFocusId(runtime),
-        )
-      }
-
-      stream.resetCycle()
-      extra = {
-        ...(historyLookup ? { historyLookup } : {}),
-        ...(memoryLookup ? { memoryLookup } : {}),
-        ...(readFileLookup ? { readFileLookup } : {}),
-        ...(actionFeedback.length > 0 ? { actionFeedback } : {}),
-      }
-    }
-
-    await appendLog(runtime.paths.log, {
-      event: 'manager_correction_round_limit_reached',
+    return await runRounds({
+      runtime,
+      inputs,
+      results,
+      stream,
       maxCorrectionRounds,
     })
-    return {
-      parsed: {
-        text: lastParsed.text,
-        actions: [],
-      },
-      elapsedMs,
-      ...(batchUsage ? { usage: batchUsage } : {}),
-      roundLimitReached: true,
-    }
   } finally {
     stream.teardown()
   }

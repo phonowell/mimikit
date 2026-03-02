@@ -1,5 +1,6 @@
-import { isAbsolute, relative, resolve } from 'node:path'
+import { resolve } from 'node:path'
 
+import { checkExistingPathBoundary } from '../fs/path-safety.js'
 import { readTextFile } from '../fs/read-text.js'
 import { readErrorCode } from '../shared/error-code.js'
 import { buildArchiveDocument } from '../storage/archive-format.js'
@@ -12,13 +13,6 @@ import type { Task } from '../types/index.js'
 import type { FastifyInstance, FastifyReply } from 'fastify'
 
 const MARKDOWN_CONTENT_TYPE = 'text/markdown; charset=utf-8'
-
-const isWithinRoot = (root: string, path: string): boolean => {
-  const rel = relative(root, path)
-  if (!rel) return true
-  if (rel.startsWith('..')) return false
-  return !isAbsolute(rel)
-}
 
 const resolveTaskArchiveTarget = (
   params: unknown,
@@ -88,7 +82,8 @@ export const registerTaskArchiveRoute = (
     )
     if (!resolved) return
 
-    const archivePath = resolved.task.archivePath ?? resolved.task.result?.archivePath
+    const archivePath =
+      resolved.task.archivePath ?? resolved.task.result?.archivePath
     if (!archivePath) {
       sendLiveArchive(reply, resolved.task)
       return
@@ -96,8 +91,18 @@ export const registerTaskArchiveRoute = (
 
     const resolvedWorkDir = resolve(config.workDir)
     const resolvedArchivePath = resolve(archivePath)
-    if (!isWithinRoot(resolvedWorkDir, resolvedArchivePath)) {
+    const boundary = await checkExistingPathBoundary({
+      rootPath: resolvedWorkDir,
+      targetPath: resolvedArchivePath,
+    })
+
+    if (boundary === 'outside') {
       reply.code(400).send({ error: 'invalid archive path' })
+      return
+    }
+
+    if (boundary === 'missing') {
+      sendLiveArchive(reply, resolved.task)
       return
     }
 

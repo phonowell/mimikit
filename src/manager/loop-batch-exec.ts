@@ -1,6 +1,6 @@
 import { appendLog } from '../log/append.js'
 
-import { compressManagerContext } from './action-apply-runtime.js'
+import { compressManagerContext } from './action-runtime-compress.js'
 import { runManager } from './runner.js'
 
 import type { RuntimeState } from './runtime-adapter.js'

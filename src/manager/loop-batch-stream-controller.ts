@@ -70,3 +70,7 @@ export const createManagerStreamController = (params: {
     teardown: clearStreamFlushTimer,
   }
 }
+
+export type ManagerStreamController = ReturnType<
+  typeof createManagerStreamController
+>

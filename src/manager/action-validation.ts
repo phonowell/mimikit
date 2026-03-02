@@ -1,7 +1,13 @@
 import { queryHistorySchema } from '../history/query.js'
 import { queryMemorySchema } from '../memory/query.js'
-import { parseIsoMs } from '../shared/time.js'
 
+import {
+  invalidArgsIssue,
+  rejected,
+  validateIsoRangeField,
+  validateScheduledAtNotPast,
+  type ValidationIssue,
+} from './action-validation-helpers.js'
 import {
   cancelSchema,
   compressContextSchema,
@@ -15,7 +21,7 @@ import {
 
 import type { Parsed } from '../actions/model/spec.js'
 import type { TaskPlanStatus, TaskStatus } from '../types/index.js'
-import type { ZodError, ZodSchema } from 'zod'
+import type { ZodSchema } from 'zod'
 
 export type FeedbackContext = {
   taskStatusById?: Map<string, TaskStatus>
@@ -24,40 +30,7 @@ export type FeedbackContext = {
   scheduleNowIso?: string
 }
 
-export type ValidationIssue = {
-  error: string
-  hint: string
-}
-
-const INVALID_ACTION_ARGS = 'invalid_action_args'
-const ACTION_EXECUTION_REJECTED = 'action_execution_rejected'
-const SCHEDULED_AT_PAST_TOLERANCE_MS = 5_000
-
-const rejected = (hint: string): ValidationIssue[] => [
-  { error: ACTION_EXECUTION_REJECTED, hint },
-]
-
-const formatIssuePath = (path: readonly PropertyKey[]): string =>
-  path.length === 0
-    ? '(root)'
-    : path
-        .map((segment) =>
-          typeof segment === 'symbol'
-            ? (segment.description ?? 'symbol')
-            : String(segment),
-        )
-        .join('.')
-
-const invalidArgsIssue = (error: ZodError): ValidationIssue => ({
-  error: INVALID_ACTION_ARGS,
-  hint:
-    error.issues.length === 0
-      ? '参数格式不符合要求。'
-      : `参数校验失败：${error.issues
-          .slice(0, 3)
-          .map((issue) => `${formatIssuePath(issue.path)}: ${issue.message}`)
-          .join('；')}`,
-})
+export type { ValidationIssue } from './action-validation-helpers.js'
 
 export const validateWithSchema = (
   item: Parsed,
@@ -67,11 +40,30 @@ export const validateWithSchema = (
   return parsed.success ? [] : [invalidArgsIssue(parsed.error)]
 }
 
-export const validateRunTask = (item: Parsed): ValidationIssue[] => {
-  const parsed = runTaskSchema.safeParse(item.attrs)
-  if (!parsed.success) return [invalidArgsIssue(parsed.error)]
-  return []
+const resolveScheduleNowOption = (
+  context: FeedbackContext,
+): { scheduleNowIso?: string } =>
+  context.scheduleNowIso !== undefined ? { scheduleNowIso: context.scheduleNowIso } : {}
+
+const validateIsoRange = (
+  from: string | undefined,
+  to: string | undefined,
+): ValidationIssue[] => {
+  const fromIssues = validateIsoRangeField('from', from)
+  return fromIssues.length > 0 ? fromIssues : validateIsoRangeField('to', to)
 }
+
+const validateRangeQueryWithSchema = (
+  item: Parsed,
+  schema: ZodSchema<{ from?: string | undefined; to?: string | undefined }>,
+): ValidationIssue[] => {
+  const parsed = schema.safeParse(item.attrs)
+  if (!parsed.success) return [invalidArgsIssue(parsed.error)]
+  return validateIsoRange(parsed.data.from, parsed.data.to)
+}
+
+export const validateRunTask = (item: Parsed): ValidationIssue[] =>
+  validateWithSchema(item, runTaskSchema)
 
 export const validateCreatePlan = (
   item: Parsed,
@@ -80,26 +72,16 @@ export const validateCreatePlan = (
   const parsed = createPlanSchema.safeParse(item.attrs)
   if (!parsed.success) return [invalidArgsIssue(parsed.error)]
   if (
-    parsed.data.trigger_mode === 'scheduled_at' &&
-    parsed.data.scheduled_at?.trim()
-  ) {
-    const scheduledAt = parsed.data.scheduled_at.trim()
-    if (!Number.isFinite(Date.parse(scheduledAt))) {
-      return rejected(
-        'create_plan 执行失败：scheduled_at 不是合法 ISO 8601 时间。',
-      )
-    }
-    const scheduledMs = parseIsoMs(scheduledAt)
-    if (scheduledMs !== undefined) {
-      const nowMs = parseIsoMs(context.scheduleNowIso ?? '') ?? Date.now()
-      if (scheduledMs <= nowMs - SCHEDULED_AT_PAST_TOLERANCE_MS) {
-        return rejected(
-          `create_plan 执行失败：scheduled_at 必须晚于当前时间（now=${new Date(nowMs).toISOString()}）。`,
-        )
-      }
-    }
-  }
-  return []
+    parsed.data.trigger_mode !== 'scheduled_at' ||
+    !parsed.data.scheduled_at?.trim()
+  )
+    return []
+
+  return validateScheduledAtNotPast({
+    action: 'create_plan',
+    scheduledAt: parsed.data.scheduled_at,
+    ...resolveScheduleNowOption(context),
+  })
 }
 
 export const validateCancelTask = (
@@ -120,48 +102,14 @@ export const validateCancelTask = (
   return rejected('cancel_task 执行失败：任务已完成，无法取消。')
 }
 
-export const validateQueryHistory = (item: Parsed): ValidationIssue[] => {
-  const parsed = queryHistorySchema.safeParse(item.attrs)
-  if (!parsed.success) return [invalidArgsIssue(parsed.error)]
-  for (const [field, value] of [
-    ['from', parsed.data.from],
-    ['to', parsed.data.to],
-  ] as const) {
-    if (value?.trim() && parseIsoMs(value) === undefined) {
-      return [
-        {
-          error: INVALID_ACTION_ARGS,
-          hint: `参数校验失败：${field} 必须是合法 ISO 8601 时间。`,
-        },
-      ]
-    }
-  }
-  return []
-}
+export const validateQueryHistory = (item: Parsed): ValidationIssue[] =>
+  validateRangeQueryWithSchema(item, queryHistorySchema)
 
-export const validateReadFile = (item: Parsed): ValidationIssue[] => {
-  const parsed = readFileSchema.safeParse(item.attrs)
-  return parsed.success ? [] : [invalidArgsIssue(parsed.error)]
-}
+export const validateReadFile = (item: Parsed): ValidationIssue[] =>
+  validateWithSchema(item, readFileSchema)
 
-export const validateQueryMemory = (item: Parsed): ValidationIssue[] => {
-  const parsed = queryMemorySchema.safeParse(item.attrs)
-  if (!parsed.success) return [invalidArgsIssue(parsed.error)]
-  for (const [field, value] of [
-    ['from', parsed.data.from],
-    ['to', parsed.data.to],
-  ] as const) {
-    if (value?.trim() && parseIsoMs(value) === undefined) {
-      return [
-        {
-          error: INVALID_ACTION_ARGS,
-          hint: `参数校验失败：${field} 必须是合法 ISO 8601 时间。`,
-        },
-      ]
-    }
-  }
-  return []
-}
+export const validateQueryMemory = (item: Parsed): ValidationIssue[] =>
+  validateRangeQueryWithSchema(item, queryMemorySchema)
 
 export const validateWriteProfile = (item: Parsed): ValidationIssue[] =>
   validateWithSchema(item, writeProfileSchema)
@@ -169,18 +117,10 @@ export const validateWriteProfile = (item: Parsed): ValidationIssue[] =>
 export const validateWriteMemory = (item: Parsed): ValidationIssue[] => {
   const parsed = writeMemorySchema.safeParse(item.attrs)
   if (!parsed.success) return [invalidArgsIssue(parsed.error)]
-  if (
-    parsed.data.expires_at?.trim() &&
-    parseIsoMs(parsed.data.expires_at) === undefined
-  ) {
-    return [
-      {
-        error: INVALID_ACTION_ARGS,
-        hint: '参数校验失败：expires_at 必须是合法 ISO 8601 时间。',
-      },
-    ]
-  }
-  return []
+  const expiresAt = parsed.data.expires_at?.trim()
+  if (!expiresAt) return []
+  if (validateIsoRangeField('to', expiresAt).length === 0) return []
+  return [{ error: 'invalid_action_args', hint: '参数校验失败：expires_at 必须是合法 ISO 8601 时间。' }]
 }
 
 export const validateCompressContext = (
@@ -203,6 +143,7 @@ export const validatePlanById = (
   if (!parsed.success) return [invalidArgsIssue(parsed.error)]
   const status = context.planStatusById?.get(parsed.data.id)
   if (!status) return rejected(`${action} 执行失败：未找到 plan ID。`)
+
   if (action === 'update_plan' && status === 'done') {
     const keys = new Set(Object.keys(item.attrs))
     const isLastTaskPatch =
@@ -213,8 +154,7 @@ export const validatePlanById = (
     if (isLastTaskPatch) return []
     return rejected('update_plan 执行失败：done plan 不可修改。')
   }
-  if (action === 'delete_plan' && status === 'done') return []
-  if (action === 'delete_plan') return []
+
   return []
 }
 
@@ -235,21 +175,11 @@ export const validateUpdatePlan = (
           ? 'on_idle'
           : undefined)
 
-  if (resolvedMode === 'scheduled_at' && scheduledAt) {
-    if (!Number.isFinite(Date.parse(scheduledAt))) {
-      return rejected(
-        'update_plan 执行失败：scheduled_at 不是合法 ISO 8601 时间。',
-      )
-    }
-    const scheduledMs = parseIsoMs(scheduledAt)
-    if (scheduledMs !== undefined) {
-      const nowMs = parseIsoMs(context.scheduleNowIso ?? '') ?? Date.now()
-      if (scheduledMs <= nowMs - SCHEDULED_AT_PAST_TOLERANCE_MS) {
-        return rejected(
-          `update_plan 执行失败：scheduled_at 必须晚于当前时间（now=${new Date(nowMs).toISOString()}）。`,
-        )
-      }
-    }
-  }
-  return []
+  if (resolvedMode !== 'scheduled_at' || !scheduledAt) return []
+
+  return validateScheduledAtNotPast({
+    action: 'update_plan',
+    scheduledAt,
+    ...resolveScheduleNowOption(context),
+  })
 }

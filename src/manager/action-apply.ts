@@ -9,7 +9,7 @@ import {
   type ApplyContext,
   applyRegisteredManagerAction,
   type ApplyTaskActionsOptions,
-} from './action-registry.js'
+} from './action-registrations.js'
 
 import type { Parsed } from '../actions/model/spec.js'
 import type { RuntimeState } from './runtime-adapter.js'

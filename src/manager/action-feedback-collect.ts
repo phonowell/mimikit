@@ -8,10 +8,10 @@ import {
 } from '../actions/protocol/markdown-code-ranges.js'
 
 import {
-  type FeedbackContext,
   REGISTERED_MANAGER_ACTIONS,
   validateRegisteredManagerAction,
-} from './action-registry.js'
+} from './action-registrations.js'
+import type { FeedbackContext } from './action-validation.js'
 
 import type { Parsed } from '../actions/model/spec.js'
 import type { ManagerActionFeedback } from '../types/index.js'
@@ -172,14 +172,11 @@ export const collectManagerActionFeedback = (
     }
   }
 
-  const seenWithUnknown = new Set(
-    feedback.map((item) => `${item.error}\n${item.attempted ?? ''}`),
-  )
   for (const item of items) {
     if (!REGISTERED_MANAGER_ACTIONS.has(item.name)) continue
     const issues = validateRegisteredManagerAction(item, context)
     for (const issue of issues)
-      pushFeedback(feedback, seenWithUnknown, item, issue.error, issue.hint)
+      pushFeedback(feedback, seen, item, issue.error, issue.hint)
   }
   return feedback
 }
