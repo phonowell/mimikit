@@ -49,11 +49,29 @@
 }
 
 .task-item[data-focus-id] .task-title {
-  color: var(--focus-mark-ink);
+  padding-left: 10px;
+  position: relative;
 }
 
-.task-item[data-focus-id] .task-meta {
-  color: var(--focus-mark-muted);
+.task-item[data-focus-id] .task-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  transform: translateY(-50%);
+  background: var(--focus-mark-dot);
+}
+
+.task-item[data-focus-id] .task-meta::before {
+  content: '';
+  width: 4px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--focus-mark-dot);
+  opacity: 0.82;
 }
 
 .task-meta .task-time {

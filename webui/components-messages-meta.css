@@ -8,8 +8,13 @@
   justify-content: flex-start;
 }
 
-.message[data-focus-id] .meta {
-  color: var(--focus-mark-muted);
+.message[data-focus-id] .meta::before {
+  content: '';
+  width: 4px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--focus-mark-dot);
+  opacity: 0.82;
 }
 
 .message .meta .time {

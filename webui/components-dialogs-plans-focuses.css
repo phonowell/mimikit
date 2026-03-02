@@ -62,15 +62,29 @@
   min-height: 18px;
   padding: 0 6px;
   border-radius: 999px;
-  border: 1px solid var(--focus-mark-chip-border);
-  background: var(--focus-mark-chip-bg);
-  color: var(--focus-mark-muted);
+  border: 1px solid var(--border-subtle);
+  background: var(--panel-strong);
+  color: var(--muted-contrast, var(--muted));
+  box-shadow: inset 2px 0 0 var(--focus-mark-chip-accent);
   font-size: 10px;
   line-height: 1.2;
 }
 
 .focus-item[data-focus-id] .focus-title {
-  color: var(--focus-mark-ink);
+  padding-left: 10px;
+  position: relative;
+}
+
+.focus-item[data-focus-id] .focus-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  transform: translateY(-50%);
+  background: var(--focus-mark-dot);
 }
 
 .focus-item[data-status='active'] {
