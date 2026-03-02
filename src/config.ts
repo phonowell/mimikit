@@ -46,16 +46,12 @@ export type AppConfig = {
       maxCount: number
       /** Task list retention lower bound */
       minCount: number
-      /** Task list retention byte limit */
-      maxBytes: number
     }
     planWindow: {
       /** Plan list retention upper bound */
       maxCount: number
       /** Plan list retention lower bound */
       minCount: number
-      /** Plan list retention byte limit */
-      maxBytes: number
     }
   }
   /** Worker execution configuration */

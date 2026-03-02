@@ -6,7 +6,6 @@ import type { Task, TaskPlan, PlanPriority } from '../../types/index.js'
 export type WindowSelectParams = {
   minCount: number
   maxCount: number
-  maxBytes: number
 }
 
 const normalizeWindowParams = (
@@ -14,27 +13,19 @@ const normalizeWindowParams = (
 ): WindowSelectParams => {
   const minCount = Math.max(0, params.minCount)
   const maxCount = Math.max(minCount, params.maxCount)
-  const maxBytes = Math.max(0, params.maxBytes)
-  return { minCount, maxCount, maxBytes }
+  return { minCount, maxCount }
 }
 
 export const selectByWindow = <T>(
   items: T[],
   params: WindowSelectParams,
-  estimateBytes: (item: T) => number,
 ): T[] => {
   const normalized = normalizeWindowParams(params)
   if (items.length === 0 || normalized.maxCount === 0) return []
   const selected: T[] = []
-  let totalBytes = 0
   for (const item of items) {
-    const rawBytes = estimateBytes(item)
-    const itemBytes = Number.isFinite(rawBytes) && rawBytes > 0 ? rawBytes : 0
-    totalBytes += itemBytes
     selected.push(item)
     if (selected.length >= normalized.maxCount) break
-    if (normalized.maxBytes > 0 && totalBytes > normalized.maxBytes)
-      if (selected.length >= normalized.minCount) break
   }
   return selected
 }
@@ -80,9 +71,7 @@ export const selectRecentPlans = (
 ): TaskPlan[] => {
   if (plans.length === 0) return []
   const sorted = sortTaskPlans(plans)
-  return selectByWindow(sorted, params, (item) =>
-    Buffer.byteLength(JSON.stringify(item), 'utf8'),
-  )
+  return selectByWindow(sorted, params)
 }
 
 export const selectOnIdlePlansForTrigger = (
@@ -109,7 +98,5 @@ export const selectRecentTasks = (
 ): Task[] => {
   if (tasks.length === 0) return []
   const sorted = sortTasksByChangedAt(tasks)
-  return selectByWindow(sorted, params, (task) =>
-    Buffer.byteLength(JSON.stringify(task), 'utf8'),
-  )
+  return selectByWindow(sorted, params)
 }

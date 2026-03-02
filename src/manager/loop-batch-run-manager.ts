@@ -37,7 +37,6 @@ const runRounds = (params: {
   const tasks = selectRecentTasks(runtime.tasks, {
     minCount: runtime.config.manager.taskWindow.minCount,
     maxCount: runtime.config.manager.taskWindow.maxCount,
-    maxBytes: runtime.config.manager.taskWindow.maxBytes,
   })
   const triggeredPlanIds = collectTriggeredPlanIds(inputs)
   const plansSource = runtime.taskPlans.filter(
@@ -46,7 +45,6 @@ const runRounds = (params: {
   const plans = selectRecentPlans(plansSource, {
     minCount: runtime.config.manager.planWindow.minCount,
     maxCount: runtime.config.manager.planWindow.maxCount,
-    maxBytes: runtime.config.manager.planWindow.maxBytes,
   })
   const preferredFocusIds = collectPreferredFocusIds(runtime, inputs, results)
   const workingFocusIds = selectWorkingFocusIds(runtime, preferredFocusIds)

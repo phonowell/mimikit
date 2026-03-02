@@ -57,14 +57,12 @@ const defaultConfigSchema = z
           .object({
             maxCount: z.number().int().positive(),
             minCount: z.number().int().positive(),
-            maxBytes: z.number().int().positive(),
           })
           .strict(),
         planWindow: z
           .object({
             maxCount: z.number().int().positive(),
             minCount: z.number().int().positive(),
-            maxBytes: z.number().int().positive(),
           })
           .strict(),
       })

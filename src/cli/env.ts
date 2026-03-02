@@ -95,13 +95,6 @@ const applyLoopEnv = (config: AppConfig): void => {
   )
   if (managerPlanWindowMinCount !== undefined)
     config.manager.planWindow.minCount = managerPlanWindowMinCount
-
-  const managerPlanWindowMaxBytes = parseEnvPositiveInteger(
-    'MIMIKIT_MANAGER_PLAN_WINDOW_MAX_BYTES',
-    process.env.MIMIKIT_MANAGER_PLAN_WINDOW_MAX_BYTES?.trim(),
-  )
-  if (managerPlanWindowMaxBytes !== undefined)
-    config.manager.planWindow.maxBytes = managerPlanWindowMaxBytes
 }
 
 export const applyCliEnvOverrides = (config: AppConfig): void => {
