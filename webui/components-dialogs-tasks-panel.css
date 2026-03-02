@@ -45,11 +45,6 @@
 
 .task-meta {
   margin-top: 4px;
-  justify-content: flex-end;
-}
-
-.task-meta .task-time {
-  margin-left: 0;
 }
 
 .task-status {
