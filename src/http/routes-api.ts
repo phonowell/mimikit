@@ -68,12 +68,15 @@ export const registerApiRoutes = (
   registerTaskCancelRoute(app, orchestrator)
   registerChoiceSelectRoute(app, orchestrator)
 
-  const scheduleExit = (afterPersist?: () => Promise<void>): void => {
+  const scheduleExit = (params?: {
+    afterPersist?: () => Promise<void>
+    exitReason?: string
+  }): void => {
     setTimeout(() => {
       void (async () => {
         await orchestrator.stopAndPersist()
-        if (afterPersist) await afterPersist()
-        orchestrator.requestExit(75, 'http_api_restart')
+        if (params?.afterPersist) await params.afterPersist()
+        orchestrator.requestExit(75, params?.exitReason ?? 'http_api_restart')
       })()
     }, 100)
   }
@@ -85,12 +88,15 @@ export const registerApiRoutes = (
 
   app.post('/api/reset', (_request, reply) => {
     reply.send({ ok: true })
-    scheduleExit(async () => {
-      try {
-        await clearStateDir(config.workDir)
-      } catch (error) {
-        await logSafeError('http: reset', error)
-      }
+    scheduleExit({
+      exitReason: 'http_api_reset',
+      afterPersist: async () => {
+        try {
+          await clearStateDir(config.workDir)
+        } catch (error) {
+          await logSafeError('http: reset', error)
+        }
+      },
     })
   })
 }

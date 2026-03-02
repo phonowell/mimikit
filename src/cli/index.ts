@@ -57,20 +57,26 @@ const resolveHttpPort = async (target: number): Promise<number> => {
   return port
 }
 
-const shutdown = (reason: string, code = 0): Promise<never> => {
+const shutdown = (
+  reason: string,
+  code = 0,
+  options?: { skipPersist?: boolean },
+): Promise<never> => {
   if (shutdownPromise) return shutdownPromise
   shutdownPromise = (async () => {
     console.log(`\n[cli] ${reason}`)
     await bestEffort('cli:release_runtime_lock', () => runtimeLock.release(), {
       meta: { reason },
     })
-    await bestEffort(
-      'cli:stop_and_persist',
-      () => orchestrator.stopAndPersist(),
-      {
-        meta: { reason },
-      },
-    )
+    if (!options?.skipPersist) {
+      await bestEffort(
+        'cli:stop_and_persist',
+        () => orchestrator.stopAndPersist(),
+        {
+          meta: { reason },
+        },
+      )
+    }
     process.exit(code)
   })()
   return shutdownPromise
@@ -78,7 +84,9 @@ const shutdown = (reason: string, code = 0): Promise<never> => {
 
 const orchestrator = new Orchestrator(config, {
   onExitRequested: ({ code, reason }) => {
-    void shutdown(`orchestrator exit requested: ${reason}`, code)
+    void shutdown(`orchestrator exit requested: ${reason}`, code, {
+      skipPersist: reason === 'http_api_reset',
+    })
   },
 })
 

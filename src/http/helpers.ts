@@ -1,5 +1,5 @@
-import { rm } from 'node:fs/promises'
-import { parse, resolve } from 'node:path'
+import { readdir, rm } from 'node:fs/promises'
+import { join, parse, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { z } from 'zod'
@@ -31,8 +31,13 @@ export const clearStateDir = async (stateDir: string): Promise<void> => {
   if (!isSafeStateDir(resolved))
     throw new Error(`refusing to clear unsafe state dir: ${resolved}`)
 
-  await rm(resolved, { recursive: true, force: true })
   await ensureDir(resolved)
+  const entries = await readdir(resolved, { withFileTypes: true })
+  await Promise.all(
+    entries.map((entry) =>
+      rm(join(resolved, entry.name), { recursive: true, force: true }),
+    ),
+  )
 }
 
 const trimmedStringOrUndefinedSchema = z.preprocess((value) => {
