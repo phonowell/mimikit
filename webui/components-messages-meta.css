@@ -12,6 +12,10 @@
   margin-left: 0;
 }
 
+.message.agent .meta .time {
+  margin-left: auto;
+}
+
 .message.user .meta .delivery {
   margin-left: 0;
 }
