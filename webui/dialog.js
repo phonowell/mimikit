@@ -134,3 +134,61 @@ export const createDialogController = ({
     isOpen: () => isOpen,
   }
 }
+
+export const bindDialogControls = ({
+  dialog,
+  openBtn,
+  closeBtn,
+  controller,
+  onOpen,
+  onClose,
+} = {}) => {
+  if (!openBtn || !controller) return () => {}
+
+  const handleOpen = (event) => {
+    event.preventDefault()
+    if (typeof onOpen === 'function') {
+      onOpen(event)
+      return
+    }
+    controller.open()
+  }
+
+  const handleClose = (event) => {
+    event.preventDefault()
+    if (typeof onClose === 'function') {
+      onClose(event)
+      return
+    }
+    controller.close()
+  }
+
+  const handleDialogClick = (event) => {
+    controller.handleDialogClick(event)
+  }
+
+  const handleDialogClose = () => {
+    controller.handleDialogClose()
+  }
+
+  const handleDialogCancel = (event) => {
+    controller.handleDialogCancel(event)
+  }
+
+  openBtn.addEventListener('click', handleOpen)
+  if (closeBtn) closeBtn.addEventListener('click', handleClose)
+  if (dialog) {
+    dialog.addEventListener('click', handleDialogClick)
+    dialog.addEventListener('cancel', handleDialogCancel)
+    dialog.addEventListener('close', handleDialogClose)
+  }
+
+  return () => {
+    openBtn.removeEventListener('click', handleOpen)
+    if (closeBtn) closeBtn.removeEventListener('click', handleClose)
+    if (!dialog) return
+    dialog.removeEventListener('click', handleDialogClick)
+    dialog.removeEventListener('cancel', handleDialogCancel)
+    dialog.removeEventListener('close', handleDialogClose)
+  }
+}

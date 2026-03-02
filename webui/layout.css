@@ -78,36 +78,8 @@ main[data-app] {
   animation: dialog-backdrop-out 140ms ease-in forwards;
 }
 
-.tasks-panel {
-  background: var(--panel);
-  border: 1px solid transparent;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-dialog);
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  width: 100%;
-  max-height: min(70vh, 640px);
-  min-height: 0;
-  overflow: hidden;
-}
-
-.plans-panel {
-  background: var(--panel);
-  border: 1px solid transparent;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-dialog);
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  width: 100%;
-  max-height: min(70vh, 640px);
-  min-height: 0;
-  overflow: hidden;
-}
-
+.tasks-panel,
+.plans-panel,
 .focuses-panel {
   background: var(--panel);
   border: 1px solid transparent;
@@ -316,4 +288,3 @@ main[data-app] {
     width: 100%;
   }
 }
-

@@ -1,4 +1,5 @@
-import { createDialogController } from './dialog.js'
+import { bindDialogControls, createDialogController } from './dialog.js'
+import { renderEmptyListState } from './list-empty.js'
 import { UI_TEXT } from './system-text.js'
 import { subscribeTimeTick } from './time-tick.js'
 
@@ -46,13 +47,7 @@ export const bindSnapshotPanel = ({
   }
 
   const setDisconnected = () => {
-    list.innerHTML = ''
-    const empty = document.createElement('li')
-    empty.className = emptyClass
-    const article = document.createElement('article')
-    article.textContent = UI_TEXT.connectionLost
-    empty.appendChild(article)
-    list.appendChild(empty)
+    renderEmptyListState(list, emptyClass, UI_TEXT.connectionLost)
   }
 
   const dialogEnabled = Boolean(dialog && openBtn)
@@ -69,32 +64,16 @@ export const bindSnapshotPanel = ({
         onAfterClose: stopTimeTick,
       })
     : null
-
-  const onOpen = (event) => {
-    event.preventDefault()
-    if (controller) controller.open()
-  }
-  const onClose = (event) => {
-    event.preventDefault()
-    if (controller) controller.close()
-  }
-  const onDialogClick = (event) => {
-    if (controller) controller.handleDialogClick(event)
-  }
-  const onDialogClose = () => {
-    if (controller) controller.handleDialogClose()
-  }
-  const onDialogCancel = (event) => {
-    if (controller) controller.handleDialogCancel(event)
-  }
+  let unbindDialogControls = () => {}
 
   if (dialogEnabled && controller) {
     controller.setExpanded(false)
-    openBtn.addEventListener('click', onOpen)
-    if (closeBtn) closeBtn.addEventListener('click', onClose)
-    dialog.addEventListener('click', onDialogClick)
-    dialog.addEventListener('cancel', onDialogCancel)
-    dialog.addEventListener('close', onDialogClose)
+    unbindDialogControls = bindDialogControls({
+      dialog,
+      openBtn,
+      closeBtn,
+      controller,
+    })
   } else {
     startTimeTick()
     renderLatest()
@@ -105,13 +84,7 @@ export const bindSnapshotPanel = ({
     setDisconnected,
     dispose: () => {
       stopTimeTick()
-      if (dialogEnabled && controller) {
-        openBtn.removeEventListener('click', onOpen)
-        if (closeBtn) closeBtn.removeEventListener('click', onClose)
-        dialog.removeEventListener('click', onDialogClick)
-        dialog.removeEventListener('cancel', onDialogCancel)
-        dialog.removeEventListener('close', onDialogClose)
-      }
+      unbindDialogControls()
     },
   }
 }

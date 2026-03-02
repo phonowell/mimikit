@@ -1,4 +1,5 @@
-import { createDialogController } from './dialog.js'
+import { bindDialogControls, createDialogController } from './dialog.js'
+import { renderEmptyListState } from './list-empty.js'
 import { UI_TEXT } from './system-text.js'
 import { bindTaskInteractions } from './tasks-interactions.js'
 import { renderTasks } from './tasks-view-render.js'
@@ -43,13 +44,7 @@ export function bindTasksPanel({
   }
 
   const setDisconnected = () => {
-    tasksList.innerHTML = ''
-    const empty = document.createElement('li')
-    empty.className = 'tasks-empty'
-    const article = document.createElement('article')
-    article.textContent = UI_TEXT.connectionLost
-    empty.appendChild(article)
-    tasksList.appendChild(empty)
+    renderEmptyListState(tasksList, 'tasks-empty', UI_TEXT.connectionLost)
   }
 
   const startTicker = () => {
@@ -81,35 +76,18 @@ export function bindTasksPanel({
         onAfterClose: stopTicker,
       })
     : null
-
-  const onOpen = (event) => {
-    event.preventDefault()
-    if (dialog) dialog.open()
-  }
-  const onClose = (event) => {
-    event.preventDefault()
-    if (dialog) dialog.close()
-  }
-  const onDialogClick = (event) => {
-    if (dialog) dialog.handleDialogClick(event)
-  }
-  const onDialogClose = () => {
-    if (dialog) dialog.handleDialogClose()
-  }
-  const onDialogCancel = (event) => {
-    if (dialog) dialog.handleDialogCancel(event)
-  }
+  let unbindDialogControls = () => {}
 
   if (dialogEnabled && dialog) {
     dialog.setExpanded(false)
-    tasksOpenBtn.addEventListener('click', onOpen)
-    if (tasksCloseBtn) tasksCloseBtn.addEventListener('click', onClose)
-    tasksDialog.addEventListener('click', onDialogClick)
-    tasksDialog.addEventListener('cancel', onDialogCancel)
-    tasksDialog.addEventListener('close', onDialogClose)
-  } else 
+    unbindDialogControls = bindDialogControls({
+      dialog: tasksDialog,
+      openBtn: tasksOpenBtn,
+      closeBtn: tasksCloseBtn,
+      controller: dialog,
+    })
+  } else
     startTicker()
-  
 
   return {
     applyTasksSnapshot,
@@ -117,13 +95,7 @@ export function bindTasksPanel({
     dispose: () => {
       stopTicker()
       unbindTaskInteractions()
-      if (dialogEnabled && dialog) {
-        tasksOpenBtn.removeEventListener('click', onOpen)
-        if (tasksCloseBtn) tasksCloseBtn.removeEventListener('click', onClose)
-        tasksDialog.removeEventListener('click', onDialogClick)
-        tasksDialog.removeEventListener('cancel', onDialogCancel)
-        tasksDialog.removeEventListener('close', onDialogClose)
-      }
+      unbindDialogControls()
     },
   }
 }

@@ -24,29 +24,23 @@ marked.setOptions({
   mangle: false,
 })
 
-const isSafeHref = (value) => {
+const resolveUrlProtocol = (value, sourceLabel) => {
   const raw = value?.trim() ?? ''
-  if (!raw) return false
+  if (!raw) return ''
   try {
     const url = new URL(raw, window.location.origin)
-    if (url.protocol === 'mailto:') return true
-    return SAFE_PROTOCOLS.has(url.protocol)
+    return url.protocol
   } catch (error) {
-    console.warn('[webui] isSafeHref failed', error)
-    return false
+    console.warn(`[webui] ${sourceLabel} failed`, error)
+    return ''
   }
 }
 
-const isSafeSrc = (value) => {
-  const raw = value?.trim() ?? ''
-  if (!raw) return false
-  try {
-    const url = new URL(raw, window.location.origin)
-    return SAFE_PROTOCOLS.has(url.protocol)
-  } catch (error) {
-    console.warn('[webui] isSafeSrc failed', error)
-    return false
-  }
+const isSafeProtocol = (value, { allowMailto, sourceLabel }) => {
+  const protocol = resolveUrlProtocol(value, sourceLabel)
+  if (!protocol) return false
+  if (allowMailto && protocol === 'mailto:') return true
+  return SAFE_PROTOCOLS.has(protocol)
 }
 
 purify.addHook('afterSanitizeAttributes', (node) => {
@@ -55,7 +49,10 @@ purify.addHook('afterSanitizeAttributes', (node) => {
     const rewritten = href ? toArtifactUrl(href) : null
     if (rewritten) node.setAttribute('href', rewritten)
     const finalHref = node.getAttribute('href')
-    if (finalHref && isSafeHref(finalHref)) {
+    if (
+      finalHref &&
+      isSafeProtocol(finalHref, { allowMailto: true, sourceLabel: 'isSafeHref' })
+    ) {
       node.setAttribute('target', '_blank')
       node.setAttribute('rel', 'noopener noreferrer')
     } else 
@@ -68,7 +65,13 @@ purify.addHook('afterSanitizeAttributes', (node) => {
     const rewritten = src ? toArtifactUrl(src) : null
     if (rewritten) node.setAttribute('src', rewritten)
     const finalSrc = node.getAttribute('src')
-    if (!finalSrc || !isSafeSrc(finalSrc)) 
+    if (
+      !finalSrc ||
+      !isSafeProtocol(finalSrc, {
+        allowMailto: false,
+        sourceLabel: 'isSafeSrc',
+      })
+    )
       node.removeAttribute('src')
     
   }

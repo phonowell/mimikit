@@ -4,6 +4,8 @@ import {
   parseTimeInput,
 } from './messages/format-time.js'
 import { formatUsage } from './messages/format-usage.js'
+import { renderEmptyListState } from './list-empty.js'
+import { appendMetaTime } from './meta-time.js'
 import { UI_TEXT, resolveTaskStatusLabel } from './system-text.js'
 import { createTaskActions } from './tasks-view-actions.js'
 import { formatElapsedText } from './tasks-view-time.js'
@@ -45,17 +47,12 @@ export const renderTasks = (tasksList, data) => {
   if (!tasksList) return
   const previousScrollTop = tasksList.scrollTop
   const tasks = data?.tasks || []
-  tasksList.innerHTML = ''
 
   if (tasks.length === 0) {
-    const empty = document.createElement('li')
-    empty.className = 'tasks-empty'
-    const article = document.createElement('article')
-    article.textContent = UI_TEXT.noTasks
-    empty.appendChild(article)
-    tasksList.appendChild(empty)
+    renderEmptyListState(tasksList, 'tasks-empty', UI_TEXT.noTasks)
     return
   }
+  tasksList.innerHTML = ''
 
   const now = Date.now()
   const nowDate = new Date(now)
@@ -163,14 +160,7 @@ export const renderTasks = (tasksList, data) => {
           ? task.change_at
           : ''
 
-    if (changeAt) {
-      const changeDisplay = formatDisplayTimeWithFull(changeAt)
-      const timeEl = document.createElement('span')
-      timeEl.className = 'task-time'
-      timeEl.textContent = changeDisplay.displayText || changeAt
-      timeEl.title = changeDisplay.fullText || changeAt
-      meta.appendChild(timeEl)
-    }
+    appendMetaTime(meta, 'task-time', changeAt)
 
     titleRow.appendChild(status)
     titleRow.appendChild(title)

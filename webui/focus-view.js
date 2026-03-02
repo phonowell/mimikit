@@ -1,4 +1,5 @@
-import { formatDisplayTimeWithFull } from './messages/format-time.js'
+import { renderEmptyListState } from './list-empty.js'
+import { appendMetaTime } from './meta-time.js'
 import { UI_TEXT } from './system-text.js'
 
 const STATUS_TEXT = Object.freeze({
@@ -18,17 +19,11 @@ const normalizeOpenItems = (items) =>
 export const renderFocuses = (focusesList, data) => {
   if (!focusesList) return
   const items = data?.items || []
-  focusesList.innerHTML = ''
-
   if (items.length === 0) {
-    const empty = document.createElement('li')
-    empty.className = 'focuses-empty'
-    const article = document.createElement('article')
-    article.textContent = UI_TEXT.noFocuses
-    empty.appendChild(article)
-    focusesList.appendChild(empty)
+    renderEmptyListState(focusesList, 'focuses-empty', UI_TEXT.noFocuses)
     return
   }
+  focusesList.innerHTML = ''
 
   for (const item of items) {
     const node = document.createElement('li')
@@ -104,14 +99,7 @@ export const renderFocuses = (focusesList, data) => {
         : typeof item.updatedAt === 'string' && item.updatedAt.trim()
           ? item.updatedAt
           : ''
-    if (changedAt) {
-      const changedDisplay = formatDisplayTimeWithFull(changedAt)
-      const time = document.createElement('span')
-      time.className = 'focus-time'
-      time.textContent = changedDisplay.displayText || changedAt
-      time.title = changedDisplay.fullText || changedAt
-      meta.appendChild(time)
-    }
+    appendMetaTime(meta, 'focus-time', changedAt)
 
     node.appendChild(meta)
     focusesList.appendChild(node)

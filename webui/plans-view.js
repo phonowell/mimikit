@@ -1,4 +1,5 @@
-import { formatDisplayTimeWithFull } from './messages/format-time.js'
+import { renderEmptyListState } from './list-empty.js'
+import { appendMetaTime } from './meta-time.js'
 import { UI_TEXT } from './system-text.js'
 
 const PRIORITY_TEXT = Object.freeze({
@@ -29,17 +30,11 @@ const formatAttempt = (item) => {
 export const renderPlans = (plansList, data) => {
   if (!plansList) return
   const items = data?.items || []
-  plansList.innerHTML = ''
-
   if (items.length === 0) {
-    const empty = document.createElement('li')
-    empty.className = 'plans-empty'
-    const article = document.createElement('article')
-    article.textContent = UI_TEXT.noPlans
-    empty.appendChild(article)
-    plansList.appendChild(empty)
+    renderEmptyListState(plansList, 'plans-empty', UI_TEXT.noPlans)
     return
   }
+  plansList.innerHTML = ''
 
   for (const item of items) {
     const node = document.createElement('li')
@@ -99,14 +94,7 @@ export const renderPlans = (plansList, data) => {
         : typeof item.updatedAt === 'string' && item.updatedAt.trim()
           ? item.updatedAt
           : ''
-    if (changedAt) {
-      const changedDisplay = formatDisplayTimeWithFull(changedAt)
-      const time = document.createElement('span')
-      time.className = 'plan-time'
-      time.textContent = changedDisplay.displayText || changedAt
-      time.title = changedDisplay.fullText || changedAt
-      meta.appendChild(time)
-    }
+    appendMetaTime(meta, 'plan-time', changedAt)
 
     node.appendChild(header)
     node.appendChild(meta)

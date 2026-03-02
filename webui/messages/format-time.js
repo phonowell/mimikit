@@ -18,6 +18,14 @@ const resolveNowDate = (now) => {
   return parsed || new Date()
 }
 
+const resolveFormatContext = (input, options = {}) => {
+  const date = parseTimeInput(input)
+  if (!date) return null
+  const locale = resolveLocale(options.locale)
+  const timeZone = resolveTimeZone(options.timeZone)
+  return { date, locale, timeZone }
+}
+
 const resolveLocalDateTime = (text) => {
   const match = localDateTimePattern.exec(text)
   if (!match) return null
@@ -81,20 +89,18 @@ const formatYearMonthDay = (date, locale, timeZone) => {
 }
 
 export const formatAbsoluteDateTime = (input, options = {}) => {
-  const date = parseTimeInput(input)
-  if (!date) return ''
-  const locale = resolveLocale(options.locale)
-  const timeZone = resolveTimeZone(options.timeZone)
+  const context = resolveFormatContext(input, options)
+  if (!context) return ''
+  const { date, locale, timeZone } = context
   const dateText = formatYearMonthDay(date, locale, timeZone)
   const timeText = formatTimeOfDay(date, locale, timeZone)
   return `${dateText} ${timeText}`
 }
 
 export const formatDateTimeFull = (input, options = {}) => {
-  const date = parseTimeInput(input)
-  if (!date) return ''
-  const locale = resolveLocale(options.locale)
-  const timeZone = resolveTimeZone(options.timeZone)
+  const context = resolveFormatContext(input, options)
+  if (!context) return ''
+  const { date, locale, timeZone } = context
   return getFullDateTimeFormatter(locale, timeZone).format(date)
 }
 

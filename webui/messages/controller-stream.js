@@ -1,6 +1,8 @@
+import { isRecord as isObjectRecord } from '../value.js'
+
 const STREAM_FRAME_MS = 16
 
-export const isRecord = (value) => Boolean(value) && typeof value === 'object'
+export const isRecord = isObjectRecord
 
 const asUsageNumber = (value) =>
   typeof value === 'number' && Number.isFinite(value) ? value : null

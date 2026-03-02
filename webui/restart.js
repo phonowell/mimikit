@@ -1,13 +1,12 @@
-import { createDialogController } from './dialog.js'
+import { bindDialogControls, createDialogController } from './dialog.js'
 import { delay, fetchWithTimeout } from './fetch-with-timeout.js'
 import { setStatusState, setStatusText } from './status.js'
+import { isRecord } from './value.js'
 
 const RESTART_REQUEST_TIMEOUT_MS = 12000
 const STATUS_POLL_TIMEOUT_MS = 60000
 const STATUS_POLL_INTERVAL_MS = 300
 const STATUS_REQUEST_OPTIONS = { cache: 'no-store' }
-
-const isRecord = (value) => Boolean(value) && typeof value === 'object'
 
 const readRuntimeIdFromStatus = (raw) => {
   if (!isRecord(raw)) return ''
@@ -192,24 +191,29 @@ export function bindRestart({
     if (isBusy) return
     void requestRestart('reset')
   }
-  const onDialogClick = (event) => {
-    if (dialog) dialog.handleDialogClick(event)
-  }
-  const onDialogClose = () => {
-    if (dialog) dialog.handleDialogClose()
-  }
-  const onDialogCancel = (event) => {
-    if (dialog) dialog.handleDialogCancel(event)
-  }
+  let unbindDialogControls = () => {}
 
   if (dialogEnabled && dialog) {
-    restartBtn.addEventListener('click', onOpen)
-    restartCancelBtn.addEventListener('click', onCancel)
+    unbindDialogControls = bindDialogControls({
+      dialog: restartDialog,
+      openBtn: restartBtn,
+      closeBtn: restartCancelBtn,
+      controller: dialog,
+      onOpen,
+      onClose: onCancel,
+    })
     restartConfirmBtn.addEventListener('click', onRestart)
     restartResetBtn.addEventListener('click', onReset)
-    restartDialog.addEventListener('click', onDialogClick)
-    restartDialog.addEventListener('cancel', onDialogCancel)
-    restartDialog.addEventListener('close', onDialogClose)
   } else
     restartBtn.addEventListener('click', onOpen)
+
+  return {
+    dispose: () => {
+      unbindDialogControls()
+      if (!dialogEnabled) restartBtn.removeEventListener('click', onOpen)
+      if (!restartConfirmBtn || !restartResetBtn) return
+      restartConfirmBtn.removeEventListener('click', onRestart)
+      restartResetBtn.removeEventListener('click', onReset)
+    },
+  }
 }
