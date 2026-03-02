@@ -15,16 +15,16 @@
 - 接口与状态：`./workflow/interfaces-and-state.md`
 - WebUI 规范：`./ui/webui-design-language.md`
 
-## 单一事实源
+## 文档分工
 
 - 架构边界、启动顺序、一致性目标：`architecture/system-architecture.md`
 - provider/runner 细节与输出结构：`architecture/runners.md`
 - Task 生命周期与执行链路：`workflow/task.md`
-- Action 协议与动作清单：`workflow/action.md`
+- Action 协议与执行语义：`workflow/action.md`
 - Plan 生命周期与触发机制：`workflow/plan.md`
 - Focus 生命周期与归属规则：`workflow/focus.md`
-- Memory 后台维护策略：`workflow/memory.md`
-- HTTP/CLI、环境变量、配置结构、状态目录、重启语义：`workflow/interfaces-and-state.md`
+- Memory 刷新策略：`workflow/memory.md`
+- HTTP/CLI、配置与状态目录：`workflow/interfaces-and-state.md`
 
 ## 设计原则
 

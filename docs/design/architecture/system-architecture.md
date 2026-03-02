@@ -16,7 +16,7 @@
 
 - `manager`：消费 `inputs/results`，输出用户回复与编排动作。
 - `worker`：执行任务并回写结果。
-- `trigger-wake-loop`：统一处理 `cron/scheduled_at/on_idle` 触发并发布 `system_event.name=trigger_fire`。
+- `triggerWakeLoop`：统一处理 `cron/scheduled_at/on_idle` 触发并发布 `system_event.name=trigger_fire`。
 
 补充：
 
@@ -26,12 +26,15 @@
 ## 启动顺序
 
 实现：`src/orchestrator/core/orchestrator-service.ts`
+链路：`src/orchestrator/core/orchestrator-runtime-ops.ts`
 
 1. `hydrateRuntimeState`
-2. `enqueuePendingWorkerTasks`
-3. 启动 `managerLoop`
-4. 启动 `triggerWakeLoop`
-5. 启动 `workerLoop`
+2. `ensureGlobalFocus` + `enforceFocusCapacity`
+3. 写入 startup system message（`Session started.`）
+4. `enqueuePendingWorkerTasks` + `notifyWorkerLoop`
+5. 启动 `managerLoop`
+6. 启动 `triggerWakeLoop`
+7. 启动 `workerLoop`
 
 ## 主链路（事件驱动）
 

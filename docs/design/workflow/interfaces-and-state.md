@@ -72,6 +72,7 @@
 - `traces/YYYY-MM-DD/<ts36><ra>.txt`
 - `history/YYYY-MM-DD.jsonl`
 - `memory/MEMORY.md`
+- `generated/*`（由 `/artifacts/*` 静态路由暴露）
 - `runtime-snapshot.json`
 - `runtime-snapshot.json.bak`
 - `log.jsonl`

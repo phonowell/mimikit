@@ -10,7 +10,7 @@
 
 ## 触发机制
 
-- `trigger-wake-loop` 每秒检查 plan
+- `triggerWakeLoop`（`src/manager/loop-trigger.ts`）每秒检查 plan
 - `cron/scheduled_at`：命中即发布 `system_event.name=trigger_fire`
 - `on_idle`：达到闲暇窗口后按 `priority + FIFO` 触发
 - `on_idle` 冷却：`now - lastCompletedAt >= cooldownMs`
