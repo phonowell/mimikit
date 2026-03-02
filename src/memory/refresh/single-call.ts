@@ -11,6 +11,8 @@ import type {
   MemoryRefreshSubprocessResult,
 } from './types.js'
 
+const MAX_SINGLE_CALL_ENTRIES = 60
+
 const entrySchema = z
   .object({
     title: z.string().trim().min(1),
@@ -33,7 +35,7 @@ const singleCallOutputSchema = z
     harvest: stageSummarySchema,
     curate: stageSummarySchema,
     compress: stageSummarySchema,
-    entries: z.array(entrySchema).max(20).optional(),
+    entries: z.array(entrySchema).max(MAX_SINGLE_CALL_ENTRIES).optional(),
   })
   .strict()
 
@@ -53,6 +55,37 @@ const toStageSummary = (
   reason: summary.reason,
 })
 
+const collectAllowedEvidenceIds = (payload: MemoryRefreshPayload): Set<string> => {
+  const ids = new Set<string>()
+  for (const item of payload.signals) ids.add(item.id)
+  for (const item of payload.tasks) ids.add(item.id)
+  for (const item of payload.plans) ids.add(item.id)
+  return ids
+}
+
+const sanitizeEntries = (
+  payload: MemoryRefreshPayload,
+  parsed: z.infer<typeof singleCallOutputSchema>,
+): { entries: MemoryRefreshSubprocessResult['entries']; droppedInvalidEvidence: boolean } => {
+  if (parsed.mode === 'noop') return { entries: [], droppedInvalidEvidence: false }
+  const allowedEvidenceIds = collectAllowedEvidenceIds(payload)
+  const sanitized: MemoryRefreshSubprocessResult['entries'] = []
+  let droppedInvalidEvidence = false
+  for (const item of parsed.entries ?? []) {
+    const evidenceIds = item.evidence_ids ?? []
+    if (evidenceIds.some((id) => !allowedEvidenceIds.has(id))) {
+      droppedInvalidEvidence = true
+      continue
+    }
+    sanitized.push({
+      title: item.title,
+      content: item.content,
+      evidenceIds,
+    })
+  }
+  return { entries: sanitized, droppedInvalidEvidence }
+}
+
 export const runMemoryRefreshSingleCall = async (params: {
   payload: MemoryRefreshPayload
 }): Promise<MemoryRefreshSubprocessResult> => {
@@ -67,20 +100,17 @@ export const runMemoryRefreshSingleCall = async (params: {
     singleCallOutputSchema,
     'single_call',
   )
-  const entries =
-    parsed.mode === 'noop'
-      ? []
-      : (parsed.entries ?? []).map((item) => ({
-          title: item.title,
-          content: item.content,
-          evidenceIds: item.evidence_ids ?? [],
-        }))
+  const sanitized = sanitizeEntries(params.payload, parsed)
+  const entries = sanitized.entries
   const mode = parsed.mode === 'patch' && entries.length > 0 ? 'patch' : 'noop'
-  const reason =
-    parsed.mode === 'patch' && entries.length === 0 ? 'empty_entries' : parsed.reason
+  const reason = (() => {
+    if (parsed.mode !== 'patch' || entries.length > 0) return parsed.reason
+    if (sanitized.droppedInvalidEvidence) return 'invalid_evidence_ids'
+    return 'empty_entries'
+  })()
   const compress =
     parsed.mode === 'patch' && entries.length === 0
-      ? { mode: 'noop' as const, reason: 'empty_entries' }
+      ? { mode: 'noop' as const, reason }
       : toStageSummary(parsed.compress)
   return {
     mode,
