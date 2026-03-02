@@ -27,8 +27,15 @@
   padding: 10px 12px;
   border-radius: 16px;
   position: relative;
+  --focus-glow-x: 16%;
+  --focus-glow-y: 90%;
   background:
-    linear-gradient(120deg, var(--focus-soft) 0%, transparent 56%),
+    radial-gradient(
+      44% 36% at var(--focus-glow-x) var(--focus-glow-y),
+      var(--focus-tint) 0%,
+      transparent 76%
+    ),
+    linear-gradient(150deg, var(--focus-haze) 0%, transparent 34%),
     var(--bubble-agent-bg);
   color: var(--bubble-agent-text);
   border: 1px solid var(--bubble-agent-border);
@@ -37,24 +44,19 @@
   order: 1;
 }
 
-.message:not(.system) article::before {
-  content: '';
-  position: absolute;
-  left: 6px;
-  top: 8px;
-  bottom: 8px;
-  width: 3px;
-  border-radius: 999px;
-  background: var(--focus-accent);
-}
-
 .message.user {
   justify-content: flex-end;
 }
 
 .message.user article {
+  --focus-glow-x: 86%;
   background:
-    linear-gradient(120deg, var(--focus-soft) 0%, transparent 56%),
+    radial-gradient(
+      44% 36% at var(--focus-glow-x) var(--focus-glow-y),
+      var(--focus-tint) 0%,
+      transparent 76%
+    ),
+    linear-gradient(30deg, var(--focus-haze) 0%, transparent 34%),
     var(--bubble-user-bg);
   color: var(--bubble-user-text);
   border-color: var(--bubble-user-border);

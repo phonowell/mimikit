@@ -3,10 +3,15 @@
   align-items: flex-start;
   gap: 10px;
   position: relative;
-  border-left-width: 3px;
-  border-left-color: var(--focus-accent);
+  --focus-glow-x: 86%;
+  --focus-glow-y: 88%;
   background:
-    linear-gradient(120deg, var(--focus-soft) 0%, transparent 58%),
+    radial-gradient(
+      44% 36% at var(--focus-glow-x) var(--focus-glow-y),
+      var(--focus-tint) 0%,
+      transparent 78%
+    ),
+    linear-gradient(30deg, var(--focus-haze) 0%, transparent 36%),
     var(--panel);
   box-shadow: var(--shadow-raised-soft);
 }
@@ -49,6 +54,11 @@
 
 .task-meta {
   margin-top: 4px;
+  justify-content: flex-end;
+}
+
+.task-meta .task-time {
+  margin-left: 0;
 }
 
 .task-status {

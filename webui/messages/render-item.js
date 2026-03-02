@@ -74,13 +74,6 @@ export const renderMessage = (params, msg) => {
     isAgentMessage(msg) && !isStreamingMessage ? formatElapsedLabel(msg.elapsedMs) : ''
   const meta = document.createElement('small')
   meta.className = 'meta'
-  if (focusLabel && !isSystemMessage) {
-    const focus = document.createElement('span')
-    focus.className = 'focus-chip'
-    focus.textContent = focusLabel
-    focus.title = focusLabel
-    meta.appendChild(focus)
-  }
   if (usageText) {
     const usage = document.createElement('span')
     usage.className = 'usage'

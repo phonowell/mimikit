@@ -100,7 +100,6 @@
 }
 
 .task-cron,
-.task-focus,
 .plan-priority,
 .plan-trigger,
 .focus-state,
@@ -116,16 +115,6 @@
   font-size: 10px;
   font-family: monospace;
   letter-spacing: 0.02em;
-}
-
-.task-focus {
-  background: var(--focus-chip-bg);
-  border-color: var(--focus-chip-border);
-  color: var(--focus-chip-text);
-  max-width: min(34vw, 240px);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .task-meta .task-time,

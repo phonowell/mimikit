@@ -1,5 +1,6 @@
 import { renderEmptyListState } from './list-empty.js'
 import { appendMetaTime } from './meta-time.js'
+import { applyFocusToneClass, resolveFocusLabel } from './focus-color.js'
 import { UI_TEXT } from './system-text.js'
 
 const STATUS_TEXT = Object.freeze({
@@ -28,9 +29,14 @@ export const renderFocuses = (focusesList, data) => {
   for (const item of items) {
     const node = document.createElement('li')
     node.className = 'focus-item'
+    const focusLabel = resolveFocusLabel(item.id)
     const status = typeof item.status === 'string' ? item.status : 'idle'
     node.dataset.status = status
     if (item.isActive) node.dataset.active = 'true'
+    if (focusLabel) {
+      node.dataset.focusId = focusLabel
+      applyFocusToneClass(node, focusLabel)
+    }
 
     const header = document.createElement('div')
     header.className = 'focus-title-row'

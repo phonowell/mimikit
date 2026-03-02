@@ -104,14 +104,6 @@ export const renderTasks = (tasksList, data) => {
     status.setAttribute('aria-label', statusLabel)
     status.title = statusValue
 
-    if (focusLabel) {
-      const focusEl = document.createElement('span')
-      focusEl.className = 'task-focus'
-      focusEl.textContent = focusLabel
-      focusEl.title = focusLabel
-      meta.appendChild(focusEl)
-    }
-
     if (task.scheduledAt) {
       const scheduledBadge = resolveScheduledBadge(task.scheduledAt, nowDate)
       if (scheduledBadge) {

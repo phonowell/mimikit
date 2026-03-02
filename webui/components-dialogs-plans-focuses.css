@@ -25,6 +25,16 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  --focus-glow-x: 86%;
+  --focus-glow-y: 88%;
+  background:
+    radial-gradient(
+      44% 36% at var(--focus-glow-x) var(--focus-glow-y),
+      var(--focus-tint) 0%,
+      transparent 78%
+    ),
+    linear-gradient(30deg, var(--focus-haze) 0%, transparent 36%),
+    var(--panel);
   box-shadow: var(--shadow-raised-soft);
 }
 
@@ -84,5 +94,5 @@
 }
 
 .focus-item[data-active='true'] {
-  border-color: rgba(47, 125, 230, 0.24);
+  border-color: transparent;
 }
