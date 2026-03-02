@@ -1,13 +1,11 @@
 import type {
-  cronJobSchema,
   focusContextSchema,
   focusMetaSchema,
-  idleIntentSchema,
-  intentTriggerPolicySchema,
-  intentTriggerStateSchema,
   taskCancelSchema,
   taskResultSchema,
   taskSchema,
+  taskTemplateSchema,
+  taskTemplateTriggerSchema,
 } from '../storage/runtime-snapshot-schema.js'
 import type { z } from 'zod'
 
@@ -27,6 +25,7 @@ export type TokenUsage = {
 
 export type Role = 'user' | 'agent' | 'system'
 export type MessageVisibility = 'user' | 'agent' | 'all'
+
 type NonSystemHistoryMessage = {
   id: Id
   role: Exclude<Role, 'system'>
@@ -108,21 +107,20 @@ export type TaskResultStatus = Extract<
 >
 export type WorkerProfile = 'worker'
 
-export type IntentPriority = 'high' | 'normal' | 'low'
-export type IdleIntentStatus = 'pending' | 'blocked' | 'done'
-export type IntentSource = 'user_request' | 'agent_auto' | 'retry_decision'
-export type IntentTriggerMode = 'one_shot' | 'on_idle'
+export type TemplatePriority = 'high' | 'normal' | 'low'
+export type TemplateSource = 'user_request' | 'agent_auto' | 'retry_decision'
+export type TaskTemplateStatus = 'active' | 'blocked' | 'done'
+export type TaskTemplateDoneReason = 'canceled' | 'completed' | 'exhausted'
+export type TaskTemplateTriggerMode = 'cron' | 'scheduled_at' | 'on_idle'
 export type FocusStatus = 'active' | 'idle' | 'done' | 'archived'
 
 export type TaskCancelMeta = z.infer<typeof taskCancelSchema>
 export type TaskResult = z.infer<typeof taskResultSchema>
 export type Task = z.infer<typeof taskSchema>
-export type IdleIntentTriggerPolicy = z.infer<typeof intentTriggerPolicySchema>
-export type IdleIntentTriggerState = z.infer<typeof intentTriggerStateSchema>
+export type TaskTemplateTrigger = z.infer<typeof taskTemplateTriggerSchema>
+export type TaskTemplate = z.infer<typeof taskTemplateSchema>
 export type FocusMeta = z.infer<typeof focusMetaSchema>
 export type FocusContext = z.infer<typeof focusContextSchema>
-export type IdleIntent = z.infer<typeof idleIntentSchema>
-export type CronJob = z.infer<typeof cronJobSchema>
 
 export type JsonPacket<TPayload> = {
   id: string
@@ -130,12 +128,10 @@ export type JsonPacket<TPayload> = {
   payload: TPayload
 }
 
-export type CronJobDisabledReason = 'canceled' | 'completed'
-
 export type ManagerWakeProfile =
   | 'user_input'
   | 'task_result'
-  | 'cron'
+  | 'trigger'
   | 'idle'
   | 'mixed'
 

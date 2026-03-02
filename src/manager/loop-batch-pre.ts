@@ -7,7 +7,7 @@ const toMs = (value: string | undefined): number => {
   return Number.isFinite(parsed) ? parsed : 0
 }
 
-export const applyIntentCompletionCooldown = (
+export const applyTemplateCompletionState = (
   runtime: RuntimeState,
   results: TaskResult[],
 ): void => {
@@ -18,13 +18,12 @@ export const applyIntentCompletionCooldown = (
     if (!existing || toMs(result.completedAt) >= toMs(existing.completedAt))
       latestByTaskId.set(result.taskId, result)
   }
-  for (const intent of runtime.idleIntents) {
-    if (intent.triggerPolicy.mode !== 'on_idle') continue
-    const taskId = intent.lastTaskId?.trim()
+  for (const template of runtime.taskTemplates) {
+    const taskId = template.lastTaskId?.trim()
     if (!taskId) continue
     const matched = latestByTaskId.get(taskId)
     if (!matched) continue
-    intent.triggerState.lastCompletedAt = matched.completedAt
-    intent.updatedAt = matched.completedAt
+    template.lastCompletedAt = matched.completedAt
+    template.updatedAt = matched.completedAt
   }
 }

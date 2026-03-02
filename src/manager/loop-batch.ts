@@ -13,7 +13,7 @@ import { isVisibleToAgent } from '../shared/message-visibility.js'
 
 import { applyTaskActions, collectTaskResultSummaries } from './action-apply.js'
 import { hasNonIdleManagerInput } from './idle-input.js'
-import { applyIntentCompletionCooldown } from './loop-batch-pre.js'
+import { applyTemplateCompletionState } from './loop-batch-pre.js'
 import { runManagerBatch } from './loop-batch-run-manager.js'
 import {
   appendManagerReply,
@@ -45,7 +45,7 @@ export const processManagerBatch = async (params: {
     nextResultsCursor,
     streamId,
   } = params
-  applyIntentCompletionCooldown(runtime, results)
+  applyTemplateCompletionState(runtime, results)
   if (results.length > 0 || hasNonIdleManagerInput(inputs))
     runtime.lastManagerActivityAtMs = Date.now()
   runtime.managerRunning = true

@@ -4,23 +4,24 @@
 
 ## 架构边界
 
-- 一次性全量切换，不保留旧多角色链路与旧队列字段兼容层。
-- manager 使用 OpenAI 官方 SDK（`chat.completions.stream`）；worker 继续使用 `Codex SDK`。
-- manager 对 `orchestrator/worker` 的运行时依赖统一收敛在 `src/manager/runtime-adapter.ts`；manager 其余模块不直接导入这两层。
-- `mimikit` 负责本地执行系统：状态机、队列、调度、可观测性。
+- 一次性全量切换到统一模型：`Task + TaskTemplate + Focus`。
+- 不保留旧链路兼容层（intent/cron-job 体系已移除）。
+- manager 使用 OpenAI 官方 SDK（`chat.completions.stream`）；worker 使用 `Codex SDK`。
+- manager 对 orchestrator/worker 依赖收敛在 `src/manager/runtime-adapter.ts`。
+- `mimikit` 负责本地状态机、队列、调度、可观测性。
 - HTTP 输入校验与参数归一化集中在 `src/http/helpers.ts`。
-- 本地持久化遵循进程内串行 + 文件锁（`proper-lockfile`）。
+- 本地持久化采用进程内串行 + 文件锁（`proper-lockfile`）。
 
 ## 组件职责
 
 - `manager`：消费 `inputs/results`，输出用户回复与编排动作。
-- manager 回合采用 `maxCorrectionRounds` 硬上限；超过上限写入 `system_event.name=manager_round_limit` 并返回 best-effort 文本。
-- manager 在 context/token 类错误时会自动触发一次压缩重试（`compressManagerContext`）。
-- `worker`：执行统一 `worker` 任务，回写结果。
-- `cron-wake-loop`：触发定时任务并发布 `system_event` 协议 system 输入事件。
-- `idle-wake-loop`：系统闲暇窗口到达后，按 `priority + FIFO` 发布全部可执行 `system_event.name=intent_trigger`；若无可执行项则发布 `system_event.name=idle`。
+- `worker`：执行任务并回写结果。
+- `trigger-wake-loop`：统一处理 `cron/scheduled_at/on_idle` 触发并发布 `system_event.name=trigger_fire`。
 
-system 消息协议统一为：`summary + <M:system_event name="..." version="1">JSON</M:system_event>`。
+补充：
+
+- manager 回合采用 `maxCorrectionRounds` 硬上限；超过上限写入 `system_event.name=manager_round_limit` 并返回 best-effort 文本。
+- manager 在 context/token 类错误时自动执行一次压缩重试（`compressManagerContext`）。
 
 ## 启动顺序
 
@@ -29,9 +30,8 @@ system 消息协议统一为：`summary + <M:system_event name="..." version="1"
 1. `hydrateRuntimeState`
 2. `enqueuePendingWorkerTasks`
 3. 启动 `managerLoop`
-4. 启动 `cronWakeLoop`
-5. 启动 `idleWakeLoop`
-6. 启动 `workerLoop`
+4. 启动 `triggerWakeLoop`
+5. 启动 `workerLoop`
 
 ## 主链路（事件驱动）
 
@@ -40,14 +40,13 @@ system 消息协议统一为：`summary + <M:system_event name="..." version="1"
 3. 若产生任务，worker 执行并写入 `results/packets.jsonl`。
 4. 结果回写后再次唤醒 manager，形成闭环。
 
-实时唤醒来源四类：`user_input`、`task_result`、`cron`、`idle`。
-manager 会基于唤醒来源注入 `wake_profile` 到环境区，指导同一套 prompt 在不同唤醒场景下调整决策重心。
+实时唤醒来源：`user_input`、`task_result`、`trigger`、`idle`。
 
 ## 一致性与恢复
 
 - manager loop 单飞，同一时刻仅一个活跃批次。
 - 队列 compact 仅在“已完全消费且达到阈值”时执行。
-- manager 上下文连续性通过 `history + tasks + intents + managerCompressedContext` 保持，不依赖 provider thread。
+- manager 上下文连续性通过 `history + tasks + templates + managerCompressedContext` 保持。
 - `restart/reset` 先回包，再等待 in-flight manager 批次收敛后持久化并退出。
 
 ## 细节索引

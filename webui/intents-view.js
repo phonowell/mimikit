@@ -8,22 +8,22 @@ const PRIORITY_TEXT = Object.freeze({
 })
 
 const STATUS_TEXT = Object.freeze({
-  pending: 'pending',
+  active: 'active',
   blocked: 'blocked',
   done: 'done',
 })
 
 const formatAttempt = (item) => {
-  const attempts =
-    typeof item?.attempts === 'number' && Number.isFinite(item.attempts)
-      ? item.attempts
+  const runCount =
+    typeof item?.runCount === 'number' && Number.isFinite(item.runCount)
+      ? item.runCount
       : 0
-  const maxAttempts =
-    typeof item?.maxAttempts === 'number' && Number.isFinite(item.maxAttempts)
-      ? item.maxAttempts
+  const maxRuns =
+    typeof item?.maxRuns === 'number' && Number.isFinite(item.maxRuns)
+      ? item.maxRuns
       : 0
-  if (maxAttempts <= 0) return ''
-  return `${attempts}/${maxAttempts}`
+  if (maxRuns <= 0) return ''
+  return `${runCount}/${maxRuns}`
 }
 
 export const renderIntents = (intentsList, data) => {
@@ -44,7 +44,7 @@ export const renderIntents = (intentsList, data) => {
   for (const item of items) {
     const node = document.createElement('li')
     node.className = 'intent-item'
-    const status = typeof item.status === 'string' ? item.status : 'pending'
+    const status = typeof item.status === 'string' ? item.status : 'active'
     node.dataset.status = status
 
     const header = document.createElement('div')
@@ -113,4 +113,3 @@ export const renderIntents = (intentsList, data) => {
     intentsList.appendChild(node)
   }
 }
-

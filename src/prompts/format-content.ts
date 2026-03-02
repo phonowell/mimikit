@@ -10,16 +10,15 @@ import {
 } from './format-base.js'
 
 import type {
-  CronJob,
-  IdleIntent,
   Task,
   TaskCancelMeta,
   TaskResult,
+  TaskTemplate,
 } from '../types/index.js'
 
 const TASK_PROMPT_MAX_CHARS = 240
 const TASK_OUTPUT_MAX_CHARS = 320
-const INTENT_PROMPT_MAX_CHARS = 220
+const TEMPLATE_PROMPT_MAX_CHARS = 220
 
 const truncateForPrompt = (value: string, maxChars: number): string => {
   const normalized = value.replace(/\s+/g, ' ').trim()
@@ -65,6 +64,8 @@ const formatTaskEntry = (
   title: task.title.trim() || task.id,
   changed_at: resolveTaskChangedAt(task),
   prompt: truncateForPrompt(task.prompt, TASK_PROMPT_MAX_CHARS),
+  ...(task.cron ? { cron: task.cron } : {}),
+  ...(task.scheduledAt ? { scheduled_at: task.scheduledAt } : {}),
   ...(task.status === 'canceled' && task.cancel
     ? { cancel: toCancelMeta(task.cancel) }
     : {}),
@@ -88,10 +89,8 @@ const buildFallbackTask = (result: TaskResult): Task => ({
 export const formatTasksYaml = (
   tasks: Task[],
   results: TaskResult[],
-  cronJobs: CronJob[] = [],
 ): string => {
-  if (tasks.length === 0 && results.length === 0 && cronJobs.length === 0)
-    return ''
+  if (tasks.length === 0 && results.length === 0) return ''
 
   const resultById = new Map(results.map((result) => [result.taskId, result]))
   const orderedTasks = selectTasksForPrompt(tasks)
@@ -103,21 +102,6 @@ export const formatTasksYaml = (
       : orderedTasks.map((task) =>
           formatTaskEntry(task, resultById.get(task.id)),
         )
-
-  for (const job of cronJobs) {
-    if (!job.enabled) continue
-    entries.push({
-      id: job.id,
-      type: job.cron ? 'cron' : 'scheduled',
-      title: job.title,
-      ...(job.cron ? { cron: job.cron } : {}),
-      ...(job.scheduledAt ? { scheduled_at: job.scheduledAt } : {}),
-      created_at: job.createdAt,
-      ...(job.lastTriggeredAt
-        ? { last_triggered_at: job.lastTriggeredAt }
-        : {}),
-    })
-  }
 
   return entries.length === 0
     ? ''
@@ -161,32 +145,43 @@ export const formatResultsYaml = (
   return escapeCdata(stringifyPromptYaml({ tasks: entries }))
 }
 
-const formatIntentEntry = (intent: IdleIntent): Record<string, unknown> => ({
-  id: intent.id,
-  status: intent.status,
-  priority: intent.priority,
-  source: intent.source,
-  title: intent.title.trim() || intent.id,
-  prompt: truncateForPrompt(intent.prompt, INTENT_PROMPT_MAX_CHARS),
-  created_at: intent.createdAt,
-  updated_at: intent.updatedAt,
-  attempts: intent.attempts,
-  max_attempts: intent.maxAttempts,
-  trigger_mode: intent.triggerPolicy.mode,
-  cooldown_ms: intent.triggerPolicy.cooldownMs,
-  total_triggered: intent.triggerState.totalTriggered,
-  ...(intent.triggerState.lastCompletedAt
-    ? { last_completed_at: intent.triggerState.lastCompletedAt }
+const formatTemplateEntry = (
+  template: TaskTemplate,
+): Record<string, unknown> => ({
+  id: template.id,
+  status: template.status,
+  priority: template.priority,
+  source: template.source,
+  title: template.title.trim() || template.id,
+  prompt: truncateForPrompt(template.prompt, TEMPLATE_PROMPT_MAX_CHARS),
+  created_at: template.createdAt,
+  updated_at: template.updatedAt,
+  run_count: template.runCount,
+  ...(template.maxRuns !== undefined ? { max_runs: template.maxRuns } : {}),
+  trigger_mode: template.trigger.mode,
+  ...(template.trigger.mode === 'cron' ? { cron: template.trigger.cron } : {}),
+  ...(template.trigger.mode === 'scheduled_at'
+    ? { scheduled_at: template.trigger.scheduledAt }
     : {}),
-  ...(intent.lastTaskId ? { last_task_id: intent.lastTaskId } : {}),
-  ...(intent.archivedAt ? { archived_at: intent.archivedAt } : {}),
+  ...(template.trigger.mode === 'on_idle'
+    ? { cooldown_ms: template.trigger.cooldownMs }
+    : {}),
+  ...(template.lastTriggeredAt
+    ? { last_triggered_at: template.lastTriggeredAt }
+    : {}),
+  ...(template.lastCompletedAt
+    ? { last_completed_at: template.lastCompletedAt }
+    : {}),
+  ...(template.lastTaskId ? { last_task_id: template.lastTaskId } : {}),
+  ...(template.archivedAt ? { archived_at: template.archivedAt } : {}),
+  ...(template.doneReason ? { done_reason: template.doneReason } : {}),
 })
 
-export const formatIntentsYaml = (intents: IdleIntent[]): string => {
-  if (intents.length === 0) return ''
+export const formatTemplatesYaml = (templates: TaskTemplate[]): string => {
+  if (templates.length === 0) return ''
   return escapeCdata(
     stringifyPromptYaml({
-      intents: intents.map(formatIntentEntry),
+      templates: templates.map(formatTemplateEntry),
     }),
   )
 }

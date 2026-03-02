@@ -9,12 +9,9 @@ import { newId } from '../shared/utils.js'
 import { publishUserInput } from '../streams/queues.js'
 
 import type { RuntimeState } from './runtime-adapter.js'
-import type { MessageVisibility } from '../types/index.js'
+import type { FocusId, MessageVisibility } from '../types/index.js'
 
-export type ManagerSystemEventName = Extract<
-  SystemEventName,
-  'cron_trigger' | 'idle' | 'intent_trigger'
->
+export type ManagerSystemEventName = Extract<SystemEventName, 'trigger_fire' | 'idle'>
 
 export const publishManagerSystemEventInput = async (params: {
   runtime: RuntimeState
@@ -25,7 +22,9 @@ export const publishManagerSystemEventInput = async (params: {
   createdAt: string
   logEvent: string
   logMeta?: Record<string, unknown>
+  focusId?: FocusId
 }): Promise<string> => {
+  const focusId = params.focusId ?? resolveDefaultFocusId(params.runtime)
   const input = {
     id: `input-${newId()}`,
     role: 'system' as const,
@@ -36,7 +35,7 @@ export const publishManagerSystemEventInput = async (params: {
       payload: params.payload,
     }),
     createdAt: params.createdAt,
-    focusId: resolveDefaultFocusId(params.runtime),
+    focusId,
   }
   await publishUserInput({
     paths: params.runtime.paths,
@@ -47,6 +46,7 @@ export const publishManagerSystemEventInput = async (params: {
     appendLog(params.runtime.paths.log, {
       event: params.logEvent,
       inputId: input.id,
+      focusId,
       ...(params.logMeta ?? {}),
     }),
   )

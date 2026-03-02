@@ -1,10 +1,10 @@
 import { titleFromCandidates } from '../../shared/utils.js'
 
-import type { CronJob, Task, TaskStatus } from '../../types/index.js'
+import type { Task, TaskStatus } from '../../types/index.js'
 
 export type TaskView = {
   id: string
-  kind: 'task' | 'cron'
+  kind: 'task'
   status: TaskStatus
   profile: Task['profile']
   title: string
@@ -32,26 +32,6 @@ const initCounts = (): TaskCounts => ({
 const resolveTaskChangeAt = (task: Task): string =>
   task.completedAt ?? task.startedAt ?? task.createdAt
 
-const resolveCronJobStatus = (cronJob: CronJob): TaskStatus => {
-  if (cronJob.enabled) return 'pending'
-  if (cronJob.disabledReason === 'completed') return 'succeeded'
-  if (cronJob.disabledReason === 'canceled') return 'canceled'
-  if (cronJob.lastTriggeredAt) return 'succeeded'
-  return 'canceled'
-}
-
-const cronJobToView = (cronJob: CronJob): TaskView => ({
-  id: cronJob.id,
-  kind: 'cron',
-  status: resolveCronJobStatus(cronJob),
-  profile: cronJob.profile,
-  title: cronJob.title || titleFromCandidates(cronJob.id, [cronJob.prompt]),
-  ...(cronJob.cron ? { cron: cronJob.cron } : {}),
-  ...(cronJob.scheduledAt ? { scheduledAt: cronJob.scheduledAt } : {}),
-  createdAt: cronJob.createdAt,
-  changeAt: cronJob.lastTriggeredAt ?? cronJob.createdAt,
-})
-
 const taskToView = (task: Task): TaskView => ({
   id: task.id,
   kind: 'task',
@@ -77,10 +57,9 @@ const taskToView = (task: Task): TaskView => ({
 
 export const buildTaskViews = (
   tasks: Task[],
-  cronJobs: CronJob[] = [],
   limit = 200,
 ): { tasks: TaskView[]; counts: TaskCounts } => {
-  const views = [...tasks.map(taskToView), ...cronJobs.map(cronJobToView)]
+  const views = tasks.map(taskToView)
   views.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
   const limited = views.slice(0, Math.max(0, limit))
   const counts = initCounts()

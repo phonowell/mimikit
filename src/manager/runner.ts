@@ -8,17 +8,16 @@ import { runManagerLlmCall } from './manager-llm-call.js'
 
 import type { AppConfig } from '../config.js'
 import type {
-  CronJob,
   FocusContext,
   FocusId,
   FocusMeta,
   HistoryLookupMessage,
-  IdleIntent,
   ManagerActionFeedback,
   ManagerEnv,
   ReadFileLookupMessage,
   Task,
   TaskResult,
+  TaskTemplate,
   TokenUsage,
   UserInput,
 } from '../types/index.js'
@@ -33,8 +32,7 @@ export const runManager = async (params: {
   results: TaskResult[]
   tasks: Task[]
   promptSectionLimits: AppConfig['manager']['promptSections']
-  intents?: IdleIntent[]
-  cronJobs?: CronJob[]
+  templates?: TaskTemplate[]
   historyLookup?: HistoryLookupMessage[]
   readFileLookup?: ReadFileLookupMessage[]
   actionFeedback?: ManagerActionFeedback[]
@@ -59,8 +57,7 @@ export const runManager = async (params: {
     results: params.results,
     tasks: params.tasks,
     promptSectionLimits: params.promptSectionLimits,
-    ...(params.intents ? { intents: params.intents } : {}),
-    ...(params.cronJobs ? { cronJobs: params.cronJobs } : {}),
+    ...(params.templates ? { templates: params.templates } : {}),
     ...(params.historyLookup ? { historyLookup: params.historyLookup } : {}),
     ...(params.readFileLookup ? { readFileLookup: params.readFileLookup } : {}),
     ...(params.actionFeedback ? { actionFeedback: params.actionFeedback } : {}),

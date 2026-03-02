@@ -5,21 +5,21 @@ import { hasForbiddenWorkerStatePath } from './action-apply-guards.js'
 import {
   cancelSchema,
   compressContextSchema,
+  createTemplateSchema,
   readFileSchema,
   runTaskSchema,
-  scheduleTaskSchema,
+  updateTemplateSchema,
   writePersonaSchema,
   writeUserProfileSchema,
 } from './action-apply-schema.js'
 
 import type { Parsed } from '../actions/model/spec.js'
-import type { IdleIntentStatus, TaskStatus } from '../types/index.js'
+import type { TaskStatus, TaskTemplateStatus } from '../types/index.js'
 import type { ZodError, ZodSchema } from 'zod'
 
 export type FeedbackContext = {
   taskStatusById?: Map<string, TaskStatus>
-  intentStatusById?: Map<string, IdleIntentStatus>
-  enabledCronJobIds?: Set<string>
+  templateStatusById?: Map<string, TaskTemplateStatus>
   hasCompressibleContext?: boolean
   scheduleNowIso?: string
 }
@@ -78,26 +78,28 @@ export const validateRunTask = (item: Parsed): ValidationIssue[] => {
   return []
 }
 
-export const validateScheduleTask = (
+export const validateCreateTemplate = (
   item: Parsed,
   context: FeedbackContext,
 ): ValidationIssue[] => {
-  const parsed = scheduleTaskSchema.safeParse(item.attrs)
+  const parsed = createTemplateSchema.safeParse(item.attrs)
   if (!parsed.success) return [invalidArgsIssue(parsed.error)]
-  const scheduledAt = parsed.data.scheduled_at?.trim()
-  if (scheduledAt && !Number.isFinite(Date.parse(scheduledAt))) {
-    return rejected(
-      'schedule_task 执行失败：scheduled_at 不是合法 ISO 8601 时间。',
-    )
-  }
-
-  if (scheduledAt) {
+  if (
+    parsed.data.trigger_mode === 'scheduled_at' &&
+    parsed.data.scheduled_at?.trim()
+  ) {
+    const scheduledAt = parsed.data.scheduled_at.trim()
+    if (!Number.isFinite(Date.parse(scheduledAt))) {
+      return rejected(
+        'create_template 执行失败：scheduled_at 不是合法 ISO 8601 时间。',
+      )
+    }
     const scheduledMs = parseIsoMs(scheduledAt)
     if (scheduledMs !== undefined) {
       const nowMs = parseIsoMs(context.scheduleNowIso ?? '') ?? Date.now()
       if (scheduledMs <= nowMs - SCHEDULED_AT_PAST_TOLERANCE_MS) {
         return rejected(
-          `schedule_task 执行失败：scheduled_at 必须晚于当前时间（now=${new Date(nowMs).toISOString()}）。`,
+          `create_template 执行失败：scheduled_at 必须晚于当前时间（now=${new Date(nowMs).toISOString()}）。`,
         )
       }
     }
@@ -112,10 +114,9 @@ export const validateCancelTask = (
   const parsed = cancelSchema.safeParse(item.attrs)
   if (!parsed.success) return [invalidArgsIssue(parsed.error)]
   const { id } = parsed.data
-  if (context.enabledCronJobIds?.has(id)) return []
   const taskStatus = context.taskStatusById?.get(id)
   if (!taskStatus)
-    return rejected('cancel_task 执行失败：未找到可取消的任务或定时任务 ID。')
+    return rejected('cancel_task 执行失败：未找到可取消的任务 ID。')
 
   if (taskStatus === 'pending' || taskStatus === 'running') return []
   if (taskStatus === 'canceled')
@@ -164,20 +165,63 @@ export const validateCompressContext = (
   return rejected('compress_context 执行失败：当前无可压缩上下文。')
 }
 
-export const validateIntentById = (
-  action: string,
+export const validateTemplateById = (
+  action: 'update_template' | 'delete_template',
   item: Parsed,
   schema: ZodSchema<{ id: string }>,
   context: FeedbackContext,
 ): ValidationIssue[] => {
   const parsed = schema.safeParse(item.attrs)
   if (!parsed.success) return [invalidArgsIssue(parsed.error)]
-  const intentStatus = context.intentStatusById?.get(parsed.data.id)
-  if (!intentStatus) return rejected(`${action} 执行失败：未找到 intent ID。`)
-  if (intentStatus === 'done') {
-    return rejected(
-      `${action} 执行失败：done intent 不可${action === 'update_intent' ? '修改' : '删除'}。`,
-    )
+  const status = context.templateStatusById?.get(parsed.data.id)
+  if (!status) return rejected(`${action} 执行失败：未找到 template ID。`)
+  if (action === 'update_template' && status === 'done') {
+    const keys = new Set(Object.keys(item.attrs))
+    const isLastTaskPatch =
+      keys.size > 0 &&
+      [...keys].every((key) => key === 'id' || key === 'last_task_id') &&
+      typeof item.attrs.last_task_id === 'string' &&
+      item.attrs.last_task_id.trim().length > 0
+    if (isLastTaskPatch) return []
+    return rejected('update_template 执行失败：done template 不可修改。')
+  }
+  if (action === 'delete_template' && status === 'done') return []
+  if (action === 'delete_template') return []
+  return []
+}
+
+export const validateUpdateTemplate = (
+  item: Parsed,
+  context: FeedbackContext,
+): ValidationIssue[] => {
+  const parsed = updateTemplateSchema.safeParse(item.attrs)
+  if (!parsed.success) return [invalidArgsIssue(parsed.error)]
+  const scheduledAt = parsed.data.scheduled_at?.trim()
+  const resolvedMode =
+    parsed.data.trigger_mode ??
+    (parsed.data.cron !== undefined
+      ? 'cron'
+      : parsed.data.scheduled_at !== undefined
+        ? 'scheduled_at'
+        : parsed.data.cooldown_ms !== undefined
+          ? 'on_idle'
+          : undefined)
+
+  if (resolvedMode === 'scheduled_at' && scheduledAt) {
+    if (!Number.isFinite(Date.parse(scheduledAt))) {
+      return rejected(
+        'update_template 执行失败：scheduled_at 不是合法 ISO 8601 时间。',
+      )
+    }
+    const scheduledMs = parseIsoMs(scheduledAt)
+    if (scheduledMs !== undefined) {
+      const nowMs = parseIsoMs(context.scheduleNowIso ?? '') ?? Date.now()
+      if (scheduledMs <= nowMs - SCHEDULED_AT_PAST_TOLERANCE_MS) {
+        return rejected(
+          `update_template 执行失败：scheduled_at 必须晚于当前时间（now=${new Date(nowMs).toISOString()}）。`,
+        )
+      }
+    }
   }
   return []
 }

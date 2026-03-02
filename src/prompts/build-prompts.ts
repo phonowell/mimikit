@@ -13,10 +13,10 @@ import {
   formatFocusList,
   formatHistoryLookup,
   formatInputs,
-  formatIntentsYaml,
   formatReadFileLookup,
   formatRecentHistory,
   formatResultsYaml,
+  formatTemplatesYaml,
   formatTasksYaml,
   renderPromptTemplate,
 } from './format.js'
@@ -24,17 +24,16 @@ import { loadPromptFile, loadPromptSource } from './prompt-loader.js'
 
 import type { AppConfig } from '../config.js'
 import type {
-  CronJob,
   FocusContext,
   FocusId,
   FocusMeta,
   HistoryLookupMessage,
-  IdleIntent,
   ManagerActionFeedback,
   ManagerEnv,
   ReadFileLookupMessage,
   Task,
   TaskResult,
+  TaskTemplate,
   UserInput,
 } from '../types/index.js'
 
@@ -102,8 +101,7 @@ export const buildManagerPrompt = async (params: {
   results: TaskResult[]
   tasks: Task[]
   promptSectionLimits: PromptSectionLimits
-  intents?: IdleIntent[]
-  cronJobs?: CronJob[]
+  templates?: TaskTemplate[]
   historyLookup?: HistoryLookupMessage[]
   readFileLookup?: ReadFileLookupMessage[]
   actionFeedback?: ManagerActionFeedback[]
@@ -167,12 +165,12 @@ export const buildManagerPrompt = async (params: {
       params.promptSectionLimits.batchResultsMaxBytes,
     ),
     tasks: encodePromptSection(
-      formatTasksYaml(params.tasks, resultsForTasks, params.cronJobs ?? []),
+      formatTasksYaml(params.tasks, resultsForTasks),
       params.promptSectionLimits.tasksMaxBytes,
     ),
-    intents: encodePromptSection(
-      formatIntentsYaml(params.intents ?? []),
-      params.promptSectionLimits.intentsMaxBytes,
+    templates: encodePromptSection(
+      formatTemplatesYaml(params.templates ?? []),
+      params.promptSectionLimits.templatesMaxBytes,
     ),
     recent_history: encodePromptSection(
       formatRecentHistory(focusPayload.recentHistory),

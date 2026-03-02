@@ -76,26 +76,26 @@ const applyLoopEnv = (config: AppConfig): void => {
   if (managerCreateTaskDebounceMs !== undefined)
     config.manager.taskCreate.debounceMs = managerCreateTaskDebounceMs
 
-  const managerIntentWindowMaxCount = parseEnvPositiveInteger(
-    'MIMIKIT_MANAGER_INTENT_WINDOW_MAX_COUNT',
-    process.env.MIMIKIT_MANAGER_INTENT_WINDOW_MAX_COUNT?.trim(),
+  const managerTemplateWindowMaxCount = parseEnvPositiveInteger(
+    'MIMIKIT_MANAGER_TEMPLATE_WINDOW_MAX_COUNT',
+    process.env.MIMIKIT_MANAGER_TEMPLATE_WINDOW_MAX_COUNT?.trim(),
   )
-  if (managerIntentWindowMaxCount !== undefined)
-    config.manager.intentWindow.maxCount = managerIntentWindowMaxCount
+  if (managerTemplateWindowMaxCount !== undefined)
+    config.manager.templateWindow.maxCount = managerTemplateWindowMaxCount
 
-  const managerIntentWindowMinCount = parseEnvPositiveInteger(
-    'MIMIKIT_MANAGER_INTENT_WINDOW_MIN_COUNT',
-    process.env.MIMIKIT_MANAGER_INTENT_WINDOW_MIN_COUNT?.trim(),
+  const managerTemplateWindowMinCount = parseEnvPositiveInteger(
+    'MIMIKIT_MANAGER_TEMPLATE_WINDOW_MIN_COUNT',
+    process.env.MIMIKIT_MANAGER_TEMPLATE_WINDOW_MIN_COUNT?.trim(),
   )
-  if (managerIntentWindowMinCount !== undefined)
-    config.manager.intentWindow.minCount = managerIntentWindowMinCount
+  if (managerTemplateWindowMinCount !== undefined)
+    config.manager.templateWindow.minCount = managerTemplateWindowMinCount
 
-  const managerIntentWindowMaxBytes = parseEnvPositiveInteger(
-    'MIMIKIT_MANAGER_INTENT_WINDOW_MAX_BYTES',
-    process.env.MIMIKIT_MANAGER_INTENT_WINDOW_MAX_BYTES?.trim(),
+  const managerTemplateWindowMaxBytes = parseEnvPositiveInteger(
+    'MIMIKIT_MANAGER_TEMPLATE_WINDOW_MAX_BYTES',
+    process.env.MIMIKIT_MANAGER_TEMPLATE_WINDOW_MAX_BYTES?.trim(),
   )
-  if (managerIntentWindowMaxBytes !== undefined)
-    config.manager.intentWindow.maxBytes = managerIntentWindowMaxBytes
+  if (managerTemplateWindowMaxBytes !== undefined)
+    config.manager.templateWindow.maxBytes = managerTemplateWindowMaxBytes
 }
 
 export const applyCliEnvOverrides = (config: AppConfig): void => {

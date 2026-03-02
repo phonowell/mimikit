@@ -28,7 +28,7 @@ export type AppConfig = {
       focusListMaxBytes: number
       historyLookupMaxBytes: number
       inputsMaxBytes: number
-      intentsMaxBytes: number
+      templatesMaxBytes: number
       personaMaxBytes: number
       recentHistoryMaxBytes: number
       tasksMaxBytes: number
@@ -46,12 +46,12 @@ export type AppConfig = {
       /** Task list retention byte limit */
       maxBytes: number
     }
-    intentWindow: {
-      /** Intent list retention upper bound */
+    templateWindow: {
+      /** Template list retention upper bound */
       maxCount: number
-      /** Intent list retention lower bound */
+      /** Template list retention lower bound */
       minCount: number
-      /** Intent list retention byte limit */
+      /** Template list retention byte limit */
       maxBytes: number
     }
   }

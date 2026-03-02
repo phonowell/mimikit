@@ -146,7 +146,8 @@ const messages = createMessagesController({
   quoteText: elements.quoteText,
   quoteClearBtn: elements.quoteClearBtn,
   onTasksSnapshot: (tasks) => tasksPanel?.applyTasksSnapshot?.(tasks),
-  onIntentsSnapshot: (intents) => intentsPanel?.applyIntentsSnapshot?.(intents),
+  onTemplatesSnapshot: (templates) =>
+    intentsPanel?.applyIntentsSnapshot?.(templates),
   onFocusesSnapshot: (focuses) => focusPanel?.applyFocusesSnapshot?.(focuses),
   onDisconnected: () => {
     tasksPanel?.setDisconnected?.()
@@ -188,4 +189,3 @@ bindRestart({
 })
 messages.start()
 if (elements.input) elements.input.focus()
-

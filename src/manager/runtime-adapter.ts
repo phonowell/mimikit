@@ -12,10 +12,9 @@ export {
   findActiveTaskBySemanticKey,
 } from '../orchestrator/core/task-state.js'
 export {
-  selectIdleIntentsForTrigger,
-  selectRecentIntents,
+  selectRecentTemplates,
   selectRecentTasks,
-} from '../orchestrator/read-model/intent-select.js'
+} from '../orchestrator/read-model/template-select.js'
 export { cancelTask } from '../worker/cancel-task.js'
 export { enqueueWorkerTask } from '../worker/dispatch.js'
 

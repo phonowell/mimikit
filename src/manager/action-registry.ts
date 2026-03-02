@@ -1,18 +1,14 @@
-import {
-  applyRunTask,
-  applyScheduleTask,
-  type ApplyTaskActionsOptions,
-} from './action-apply-create.js'
+import { applyRunTask, type ApplyTaskActionsOptions } from './action-apply-create.js'
 import {
   applyAssignFocusAction,
   applyCreateFocusAction,
   applyUpdateFocusAction,
 } from './action-apply-focus.js'
 import {
-  applyCreateIntent,
-  applyDeleteIntent,
-  applyUpdateIntent,
-} from './action-apply-intent.js'
+  applyCreateTemplate,
+  applyDeleteTemplate,
+  applyUpdateTemplate,
+} from './action-apply-template.js'
 import {
   applyCancelTaskAction,
   applyCompressContextAction,
@@ -23,22 +19,22 @@ import {
 import {
   assignFocusSchema,
   createFocusSchema,
-  createIntentSchema,
-  deleteIntentSchema,
+  deleteTemplateSchema,
   restartSchema,
   summarizeSchema,
   updateFocusSchema,
-  updateIntentSchema,
+  updateTemplateSchema,
 } from './action-apply-schema.js'
 import {
   type FeedbackContext,
   validateCancelTask,
   validateCompressContext,
-  validateIntentById,
+  validateCreateTemplate,
   validateQueryHistory,
   validateReadFile,
   validateRunTask,
-  validateScheduleTask,
+  validateTemplateById,
+  validateUpdateTemplate,
   validateWithSchema,
   validateWritePersona,
   validateWriteUserProfile,
@@ -72,28 +68,37 @@ const continueApply = (): Promise<ApplyResult> => Promise.resolve('continue')
 
 const ACTION_DEFINITIONS = [
   {
-    name: 'create_intent',
-    validate: (item: Parsed) => validateWithSchema(item, createIntentSchema),
+    name: 'create_template',
+    validate: (item: Parsed, context: FeedbackContext) =>
+      validateCreateTemplate(item, context),
     apply: async (runtime: RuntimeState, item: Parsed) => {
-      await applyCreateIntent(runtime, item)
+      await applyCreateTemplate(runtime, item)
       return 'continue'
     },
   },
   {
-    name: 'update_intent',
-    validate: (item: Parsed, context: FeedbackContext) =>
-      validateIntentById('update_intent', item, updateIntentSchema, context),
+    name: 'update_template',
+    validate: (item: Parsed, context: FeedbackContext) => {
+      const byIdIssues = validateTemplateById(
+        'update_template',
+        item,
+        updateTemplateSchema,
+        context,
+      )
+      if (byIdIssues.length > 0) return byIdIssues
+      return validateUpdateTemplate(item, context)
+    },
     apply: async (runtime: RuntimeState, item: Parsed) => {
-      await applyUpdateIntent(runtime, item)
+      await applyUpdateTemplate(runtime, item)
       return 'continue'
     },
   },
   {
-    name: 'delete_intent',
+    name: 'delete_template',
     validate: (item: Parsed, context: FeedbackContext) =>
-      validateIntentById('delete_intent', item, deleteIntentSchema, context),
+      validateTemplateById('delete_template', item, deleteTemplateSchema, context),
     apply: async (runtime: RuntimeState, item: Parsed) => {
-      await applyDeleteIntent(runtime, item)
+      await applyDeleteTemplate(runtime, item)
       return 'continue'
     },
   },
@@ -106,19 +111,6 @@ const ACTION_DEFINITIONS = [
       context: ApplyContext,
     ) => {
       await applyRunTask(runtime, item, context.seen, context.options)
-      return 'continue'
-    },
-  },
-  {
-    name: 'schedule_task',
-    validate: (item: Parsed, context: FeedbackContext) =>
-      validateScheduleTask(item, context),
-    apply: async (
-      runtime: RuntimeState,
-      item: Parsed,
-      context: ApplyContext,
-    ) => {
-      await applyScheduleTask(runtime, item, context.seen)
       return 'continue'
     },
   },

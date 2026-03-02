@@ -11,7 +11,7 @@ manager:
     focusListMaxBytes: 8192
     historyLookupMaxBytes: 20480
     inputsMaxBytes: 8192
-    intentsMaxBytes: 16384
+    templatesMaxBytes: 16384
     personaMaxBytes: 8192
     recentHistoryMaxBytes: 8192
     tasksMaxBytes: 24576
@@ -22,7 +22,7 @@ manager:
     maxCount: 20
     minCount: 5
     maxBytes: 20480
-  intentWindow:
+  templateWindow:
     maxCount: 20
     minCount: 5
     maxBytes: 12288

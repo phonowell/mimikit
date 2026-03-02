@@ -45,6 +45,7 @@ export const createTask = (
       prompt,
       title: resolvedTitle,
       profile,
+      focusId,
       ...(schedule ? { schedule } : {}),
     }),
     prompt,
@@ -69,6 +70,7 @@ export const enqueueTask = (
     prompt,
     title: resolveFingerprintTitle(prompt, title),
     profile,
+    focusId,
     ...(schedule ? { schedule } : {}),
   })
   const existing = tasks.find(

@@ -54,60 +54,53 @@ export const taskSchema = z
     { message: 'task cron and scheduledAt are mutually exclusive' },
   )
 
-export const cronJobSchema = z
+const templateTriggerCronSchema = z
   .object({
-    id: z.string().trim().min(1),
-    cron: z.string().trim().min(1).optional(),
-    scheduledAt: z.string().trim().min(1).optional(),
-    prompt: z.string(),
-    title: z.string(),
-    focusId: z.string().trim().min(1),
-    profile: z.enum(['worker']),
-    enabled: z.boolean(),
-    disabledReason: z.enum(['canceled', 'completed']).optional(),
-    createdAt: z.string(),
-    lastTriggeredAt: z.string().optional(),
+    mode: z.literal('cron'),
+    cron: z.string().trim().min(1),
   })
   .strict()
-  .refine((data) => data.cron !== undefined || data.scheduledAt !== undefined, {
-    message: 'cron or scheduledAt required',
-  })
-  .refine(
-    (data) => !(data.cron !== undefined && data.scheduledAt !== undefined),
-    { message: 'cron and scheduledAt are mutually exclusive' },
-  )
 
-export const intentTriggerPolicySchema = z
+const templateTriggerScheduledAtSchema = z
   .object({
-    mode: z.enum(['one_shot', 'on_idle']),
+    mode: z.literal('scheduled_at'),
+    scheduledAt: z.string().trim().min(1),
+  })
+  .strict()
+
+const templateTriggerOnIdleSchema = z
+  .object({
+    mode: z.literal('on_idle'),
     cooldownMs: z.number().int().nonnegative(),
   })
   .strict()
 
-export const intentTriggerStateSchema = z
-  .object({
-    totalTriggered: z.number().int().nonnegative(),
-    lastCompletedAt: z.string().optional(),
-  })
-  .strict()
+export const taskTemplateTriggerSchema = z.discriminatedUnion('mode', [
+  templateTriggerCronSchema,
+  templateTriggerScheduledAtSchema,
+  templateTriggerOnIdleSchema,
+])
 
-export const idleIntentSchema = z
+export const taskTemplateSchema = z
   .object({
     id: z.string().trim().min(1),
     prompt: z.string(),
     title: z.string(),
     focusId: z.string().trim().min(1),
+    profile: z.enum(['worker']),
     priority: z.enum(['high', 'normal', 'low']),
-    status: z.enum(['pending', 'blocked', 'done']),
     source: z.enum(['user_request', 'agent_auto', 'retry_decision']),
+    status: z.enum(['active', 'blocked', 'done']),
+    trigger: taskTemplateTriggerSchema,
     createdAt: z.string(),
     updatedAt: z.string(),
-    attempts: z.number().int().nonnegative(),
-    maxAttempts: z.number().int().positive(),
-    triggerPolicy: intentTriggerPolicySchema,
-    triggerState: intentTriggerStateSchema,
+    runCount: z.number().int().nonnegative(),
+    maxRuns: z.number().int().positive().optional(),
+    lastTriggeredAt: z.string().optional(),
+    lastCompletedAt: z.string().optional(),
     lastTaskId: z.string().trim().min(1).optional(),
     archivedAt: z.string().optional(),
+    doneReason: z.enum(['canceled', 'completed', 'exhausted']).optional(),
   })
   .strict()
 
@@ -134,9 +127,7 @@ export const focusContextSchema = z
 const runtimeSnapshotSchema = z
   .object({
     tasks: z.array(taskSchema),
-    cronJobs: z.array(cronJobSchema).optional(),
-    idleIntents: z.array(idleIntentSchema).optional(),
-    idleIntentArchive: z.array(idleIntentSchema).optional(),
+    taskTemplates: z.array(taskTemplateSchema),
     focuses: z.array(focusMetaSchema).optional(),
     focusContexts: z.array(focusContextSchema).optional(),
     activeFocusIds: z.array(z.string().trim().min(1)).optional(),
@@ -168,15 +159,10 @@ const normalizeTask = (
       : undefined,
   }) as z.infer<typeof taskSchema>
 
-const normalizeCronJob = (
-  cronJob: z.infer<typeof cronJobSchema>,
-): z.infer<typeof cronJobSchema> =>
-  stripUndefined({ ...cronJob }) as z.infer<typeof cronJobSchema>
-
-const normalizeIdleIntent = (
-  intent: z.infer<typeof idleIntentSchema>,
-): z.infer<typeof idleIntentSchema> =>
-  stripUndefined({ ...intent }) as z.infer<typeof idleIntentSchema>
+const normalizeTaskTemplate = (
+  item: z.infer<typeof taskTemplateSchema>,
+): z.infer<typeof taskTemplateSchema> =>
+  stripUndefined({ ...item }) as z.infer<typeof taskTemplateSchema>
 
 const normalizeFocusMeta = (
   focus: z.infer<typeof focusMetaSchema>,
@@ -192,9 +178,7 @@ export const parseRuntimeSnapshot = (value: unknown): RuntimeSnapshot => {
   const parsed = runtimeSnapshotSchema.parse(value)
   return stripUndefined({
     tasks: parsed.tasks.map(normalizeTask),
-    cronJobs: parsed.cronJobs?.map(normalizeCronJob),
-    idleIntents: parsed.idleIntents?.map(normalizeIdleIntent),
-    idleIntentArchive: parsed.idleIntentArchive?.map(normalizeIdleIntent),
+    taskTemplates: parsed.taskTemplates.map(normalizeTaskTemplate),
     focuses: parsed.focuses?.map(normalizeFocusMeta),
     focusContexts: parsed.focusContexts?.map(normalizeFocusContext),
     activeFocusIds: parsed.activeFocusIds,

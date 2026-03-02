@@ -13,9 +13,7 @@ export const hydrateRuntimeState = async (
 ): Promise<void> => {
   const snapshot = await loadRuntimeSnapshot(runtime.config.workDir)
   runtime.tasks = snapshot.tasks
-  runtime.cronJobs = snapshot.cronJobs ?? []
-  runtime.idleIntents = snapshot.idleIntents ?? []
-  runtime.idleIntentArchive = snapshot.idleIntentArchive ?? []
+  runtime.taskTemplates = snapshot.taskTemplates
   runtime.focuses = snapshot.focuses ?? []
   runtime.focusContexts = snapshot.focusContexts ?? []
   runtime.activeFocusIds = snapshot.activeFocusIds ?? []
@@ -45,9 +43,7 @@ export const persistRuntimeState = async (
 ): Promise<void> => {
   await saveRuntimeSnapshot(runtime.config.workDir, {
     tasks: selectPersistedTasks(runtime.tasks),
-    cronJobs: runtime.cronJobs,
-    idleIntents: runtime.idleIntents,
-    idleIntentArchive: runtime.idleIntentArchive,
+    taskTemplates: runtime.taskTemplates,
     focuses: runtime.focuses,
     focusContexts: runtime.focusContexts,
     activeFocusIds: runtime.activeFocusIds,

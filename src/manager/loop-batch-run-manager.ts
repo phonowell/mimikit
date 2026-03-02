@@ -7,11 +7,7 @@ import {
 import { appendActionFeedbackSystemMessage } from '../history/manager-events.js'
 import { pickQueryHistoryRequest } from '../history/query.js'
 import { appendLog } from '../log/append.js'
-import {
-  selectRecentIntents,
-  selectRecentTasks,
-  type RuntimeState,
-} from './runtime-adapter.js'
+import { selectRecentTemplates } from '../orchestrator/read-model/template-select.js'
 import { resolveScheduleNowIso } from '../shared/time.js'
 import { mergeUsageAdditive } from '../shared/token-usage.js'
 
@@ -19,13 +15,14 @@ import { collectManagerActionFeedback } from './action-feedback-collect.js'
 import {
   buildHistoryQueryKey,
   buildReadFileLookupKey,
-  collectTriggeredIntentIds,
+  collectTriggeredTemplateIds,
   pickReadFileRequest,
   queryHistoryLookup,
   queryReadFileLookup,
 } from './loop-batch-context.js'
 import { runManagerRoundWithRecovery } from './loop-batch-exec.js'
 import { createManagerStreamController } from './loop-batch-stream-controller.js'
+import { selectRecentTasks, type RuntimeState } from './runtime-adapter.js'
 
 import type {
   HistoryLookupMessage,
@@ -61,15 +58,14 @@ export const runManagerBatch = async (params: {
     maxCount: runtime.config.manager.taskWindow.maxCount,
     maxBytes: runtime.config.manager.taskWindow.maxBytes,
   })
-  const triggerIntentIds = collectTriggeredIntentIds(inputs)
-  const intentsSource = [
-    ...runtime.idleIntents,
-    ...runtime.idleIntentArchive,
-  ].filter((intent) => !triggerIntentIds.has(intent.id))
-  const intents = selectRecentIntents(intentsSource, {
-    minCount: runtime.config.manager.intentWindow.minCount,
-    maxCount: runtime.config.manager.intentWindow.maxCount,
-    maxBytes: runtime.config.manager.intentWindow.maxBytes,
+  const triggeredTemplateIds = collectTriggeredTemplateIds(inputs)
+  const templatesSource = runtime.taskTemplates.filter(
+    (template) => !triggeredTemplateIds.has(template.id),
+  )
+  const templates = selectRecentTemplates(templatesSource, {
+    minCount: runtime.config.manager.templateWindow.minCount,
+    maxCount: runtime.config.manager.templateWindow.maxCount,
+    maxBytes: runtime.config.manager.templateWindow.maxBytes,
   })
   const preferredFocusIds = collectPreferredFocusIds(runtime, inputs, results)
   const workingFocusIds = selectWorkingFocusIds(runtime, preferredFocusIds)
@@ -97,7 +93,7 @@ export const runManagerBatch = async (params: {
         inputs,
         results,
         tasks,
-        intents,
+        templates,
         workingFocusIds,
         extra,
         onTextDelta: stream.appendDelta,
@@ -113,27 +109,27 @@ export const runManagerBatch = async (params: {
       stream.commitParsedText(parsed.text)
       const scheduleNowIso = resolveScheduleNowIso(runtime.lastUserMeta)
 
-      const actionFeedback = collectManagerActionFeedback(parsed.actions, {
-        taskStatusById: new Map(
-          runtime.tasks.map((task) => [task.id, task.status]),
-        ),
-        enabledCronJobIds: new Set(
-          runtime.cronJobs.filter((job) => job.enabled).map((job) => job.id),
-        ),
-        intentStatusById: new Map(
-          [...runtime.idleIntents, ...runtime.idleIntentArchive].map(
-            (intent) => [intent.id, intent.status],
+      const actionFeedback = collectManagerActionFeedback(
+        parsed.actions,
+        {
+          taskStatusById: new Map(
+            runtime.tasks.map((task) => [task.id, task.status]),
           ),
-        ),
-        hasCompressibleContext:
-          Boolean(runtime.managerCompressedContext?.trim()) ||
-          runtime.tasks.length > 0 ||
-          inputs.length > 0 ||
-          results.length > 0 ||
-          runtime.queues.inputsCursor > 0 ||
-          runtime.queues.resultsCursor > 0,
-        scheduleNowIso,
-      }, runResult.output)
+          templateStatusById: new Map(
+            runtime.taskTemplates.map((template) => [template.id, template.status]),
+          ),
+          hasCompressibleContext:
+            Boolean(runtime.managerCompressedContext?.trim()) ||
+            runtime.tasks.length > 0 ||
+            runtime.taskTemplates.length > 0 ||
+            inputs.length > 0 ||
+            results.length > 0 ||
+            runtime.queues.inputsCursor > 0 ||
+            runtime.queues.resultsCursor > 0,
+          scheduleNowIso,
+        },
+        runResult.output,
+      )
 
       const queryRequest = pickQueryHistoryRequest(parsed.actions)
       const readFileRequest = pickReadFileRequest(parsed.actions)

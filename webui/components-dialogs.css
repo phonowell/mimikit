@@ -373,7 +373,7 @@
   margin-left: auto;
 }
 
-.intent-item[data-status='pending'] {
+.intent-item[data-status='active'] {
   --intent-dot: var(--status-pending);
 }
 
@@ -547,4 +547,3 @@
 .focus-item[data-active='true'] {
   border-color: rgba(47, 125, 230, 0.24);
 }
-

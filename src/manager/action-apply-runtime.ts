@@ -3,7 +3,7 @@ import { dirname, join } from 'node:path'
 
 import { ensureDir } from '../fs/paths.js'
 import { readTextFileIfExists } from '../fs/read-text.js'
-import { appendHistory, readHistory } from '../history/store.js'
+import { readHistory } from '../history/store.js'
 import { bestEffort } from '../log/safe.js'
 import {
   cancelTask,
@@ -14,7 +14,6 @@ import {
 import { loadPromptFile } from '../prompts/prompt-loader.js'
 import { readErrorCode } from '../shared/error-code.js'
 import { isVisibleToAgent } from '../shared/message-visibility.js'
-import { formatSystemEventText } from '../shared/system-event.js'
 import { newId, nowIso } from '../shared/utils.js'
 
 import {
@@ -118,32 +117,6 @@ const requestManagerRestart = (runtime: RuntimeState): void => {
   }, 100)
 }
 
-const appendCronCanceledSystemMessage = async (
-  runtime: RuntimeState,
-  cronJobId: string,
-  title: string,
-  focusId: string,
-): Promise<void> => {
-  const label = title.trim() || cronJobId
-  const createdAt = nowIso()
-  await appendHistory(runtime.paths.history, {
-    id: `sys-cron-canceled-${newId()}`,
-    role: 'system',
-    visibility: 'user',
-    text: formatSystemEventText({
-      summary: `Canceled task "${label}".`,
-      event: 'cron_canceled',
-      payload: {
-        cron_job_id: cronJobId,
-        label,
-        ...(title.trim() ? { title: title.trim() } : {}),
-      },
-    }),
-    createdAt,
-    focusId,
-  })
-}
-
 const writeStateMarkdown = async (
   path: string,
   content: string,
@@ -173,7 +146,6 @@ const backupPersonaVersion = async (
   )
   await writeFile(versionFile, previous, 'utf8')
 }
-
 export const applyCancelTaskAction = async (
   runtime: RuntimeState,
   item: Parsed,
@@ -181,21 +153,7 @@ export const applyCancelTaskAction = async (
   const parsed = cancelSchema.safeParse(item.attrs)
   if (!parsed.success) return
   const { id } = parsed.data
-  const canceled = await cancelTask(runtime, id, { source: 'deferred' })
-  if (canceled.ok || canceled.status !== 'not_found') return
-  const cronJob = runtime.cronJobs.find((job) => job.id === id)
-  if (!cronJob?.enabled) return
-  cronJob.enabled = false
-  cronJob.disabledReason = 'canceled'
-  await persistRuntimeState(runtime)
-  await bestEffort('appendHistory: cron_task_canceled', () =>
-    appendCronCanceledSystemMessage(
-      runtime,
-      cronJob.id,
-      cronJob.title,
-      cronJob.focusId,
-    ),
-  )
+  await cancelTask(runtime, id, { source: 'deferred' })
 }
 
 export const compressManagerContext = async (

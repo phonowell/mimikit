@@ -10,6 +10,7 @@ import { buildPaths } from '../src/fs/paths.js'
 import { applyTaskActions } from '../src/manager/action-apply.js'
 
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
+import type { TaskTemplate } from '../src/types/index.js'
 
 const GLOBAL_FOCUS_ID = 'focus-global'
 
@@ -38,9 +39,7 @@ const createRuntime = async (): Promise<RuntimeState> => {
       resultsCursor: 0,
     },
     tasks: [],
-    cronJobs: [],
-    idleIntents: [],
-    idleIntentArchive: [],
+    taskTemplates: [],
     focuses: [
       {
         id: GLOBAL_FOCUS_ID,
@@ -154,21 +153,23 @@ test('run_task allows .mimikit/generated path', async () => {
   expect(runtime.tasks[0]?.title).toBe('allowed')
 })
 
-test('schedule_task uses worker profile for scheduled task', async () => {
+test('create_template uses worker profile for cron template', async () => {
   const runtime = await createRuntime()
   await applyTaskActions(runtime, [
     {
-      name: 'schedule_task',
+      name: 'create_template',
       attrs: {
         prompt: 'Summarize daily build status',
         title: 'scheduled',
+        trigger_mode: 'cron',
         cron: '0 0 9 * * *',
       },
     },
   ])
 
-  expect(runtime.cronJobs).toHaveLength(1)
-  expect(runtime.cronJobs[0]?.profile).toBe('worker')
+  expect(runtime.taskTemplates).toHaveLength(1)
+  expect(runtime.taskTemplates[0]?.profile).toBe('worker')
+  expect(runtime.taskTemplates[0]?.trigger.mode).toBe('cron')
 })
 
 test('write_user_profile writes utf8 content to state file', async () => {
@@ -210,71 +211,111 @@ test('write_persona snapshots old version before overwrite', async () => {
   expect(snapshot).toBe('old persona')
 })
 
-test('intent actions can create and archive done intent', async () => {
+test('template actions can create and archive done template', async () => {
   const runtime = await createRuntime()
   await applyTaskActions(runtime, [
     {
-      name: 'create_intent',
+      name: 'create_template',
       attrs: {
         prompt: 'remember release note',
         title: 'release note',
+        trigger_mode: 'on_idle',
         priority: 'high',
       },
     },
   ])
-  const createdId = runtime.idleIntents[0]?.id
+  const createdId = runtime.taskTemplates[0]?.id
   expect(createdId).toBeTruthy()
-  expect(runtime.idleIntents[0]?.triggerPolicy.mode).toBe('one_shot')
-  expect(runtime.idleIntents[0]?.triggerPolicy.cooldownMs).toBe(0)
+  expect(runtime.taskTemplates[0]?.trigger.mode).toBe('on_idle')
+  expect(runtime.taskTemplates[0]?.status).toBe('active')
+
   await applyTaskActions(runtime, [
     {
-      name: 'update_intent',
+      name: 'update_template',
       attrs: {
         id: createdId ?? '',
         status: 'done',
       },
     },
   ])
-  expect(runtime.idleIntents).toHaveLength(0)
-  expect(runtime.idleIntentArchive).toHaveLength(1)
-  expect(runtime.idleIntentArchive[0]?.status).toBe('done')
+
+  expect(runtime.taskTemplates).toHaveLength(1)
+  expect(runtime.taskTemplates[0]?.status).toBe('done')
+  expect(runtime.taskTemplates[0]?.archivedAt).toBeTruthy()
 })
 
-test('delete_intent keeps done archive item unchanged', async () => {
+test('delete_template removes done template', async () => {
   const runtime = await createRuntime()
-  runtime.idleIntentArchive.push({
-    id: 'intent-done',
+  const doneTemplate: TaskTemplate = {
+    id: 'tpl-done',
     prompt: 'done prompt',
     title: 'done',
     focusId: GLOBAL_FOCUS_ID,
+    profile: 'worker',
     priority: 'normal',
-    status: 'done',
     source: 'user_request',
+    status: 'done',
+    trigger: {
+      mode: 'on_idle',
+      cooldownMs: 0,
+    },
     createdAt: '2026-02-13T00:00:00.000Z',
     updatedAt: '2026-02-13T00:00:00.000Z',
     archivedAt: '2026-02-13T00:00:00.000Z',
-    attempts: 1,
-    maxAttempts: 2,
-    triggerPolicy: {
-      mode: 'one_shot',
-      cooldownMs: 0,
-    },
-    triggerState: {
-      totalTriggered: 1,
-    },
-  })
+    runCount: 1,
+    maxRuns: 1,
+    doneReason: 'completed',
+  }
+  runtime.taskTemplates.push(doneTemplate)
 
   await applyTaskActions(runtime, [
     {
-      name: 'delete_intent',
+      name: 'delete_template',
       attrs: {
-        id: 'intent-done',
+        id: 'tpl-done',
       },
     },
   ])
 
-  expect(runtime.idleIntentArchive).toHaveLength(1)
-  expect(runtime.idleIntentArchive[0]?.id).toBe('intent-done')
+  expect(runtime.taskTemplates).toHaveLength(0)
+})
+
+test('update_template allows last_task_id patch for done template', async () => {
+  const runtime = await createRuntime()
+  runtime.taskTemplates.push({
+    id: 'tpl-done-bind',
+    prompt: 'scheduled prompt',
+    title: 'scheduled title',
+    focusId: GLOBAL_FOCUS_ID,
+    profile: 'worker',
+    priority: 'normal',
+    source: 'user_request',
+    status: 'done',
+    trigger: {
+      mode: 'scheduled_at',
+      scheduledAt: '2026-02-13T00:00:00.000Z',
+    },
+    createdAt: '2026-02-13T00:00:00.000Z',
+    updatedAt: '2026-02-13T00:00:00.000Z',
+    archivedAt: '2026-02-13T00:00:00.000Z',
+    runCount: 1,
+    doneReason: 'completed',
+  })
+
+  await applyTaskActions(runtime, [
+    {
+      name: 'update_template',
+      attrs: {
+        id: 'tpl-done-bind',
+        last_task_id: 'task-after-trigger',
+      },
+    },
+  ])
+
+  expect(runtime.taskTemplates).toHaveLength(1)
+  expect(runtime.taskTemplates[0]?.status).toBe('done')
+  expect(runtime.taskTemplates[0]?.lastTaskId).toBe('task-after-trigger')
+  expect(runtime.taskTemplates[0]?.archivedAt).toBe('2026-02-13T00:00:00.000Z')
 })
 
 test('restart_runtime requests exit through runtime hook', async () => {

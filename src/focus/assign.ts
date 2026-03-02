@@ -29,27 +29,9 @@ export const assignFocusByTargetId = async (
     return true
   }
 
-  const cronJob = runtime.cronJobs.find((item) => item.id === targetId)
-  if (cronJob) {
-    cronJob.focusId = focusId
-    touchFocus(runtime, focusId)
-    await persistRuntimeState(runtime)
-    return true
-  }
-
-  const intent = runtime.idleIntents.find((item) => item.id === targetId)
-  if (intent) {
-    intent.focusId = focusId
-    touchFocus(runtime, focusId)
-    await persistRuntimeState(runtime)
-    return true
-  }
-
-  const archivedIntent = runtime.idleIntentArchive.find(
-    (item) => item.id === targetId,
-  )
-  if (archivedIntent) {
-    archivedIntent.focusId = focusId
+  const template = runtime.taskTemplates.find((item) => item.id === targetId)
+  if (template) {
+    template.focusId = focusId
     touchFocus(runtime, focusId)
     await persistRuntimeState(runtime)
     return true

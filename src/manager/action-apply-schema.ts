@@ -22,34 +22,176 @@ export const runTaskSchema = z
   })
   .strict()
 
-export const scheduleTaskSchema = z
+const templatePrioritySchema = z.enum(['high', 'normal', 'low'])
+const templateStatusSchema = z.enum(['active', 'blocked', 'done'])
+const templateSourceSchema = z.enum([
+  'user_request',
+  'agent_auto',
+  'retry_decision',
+])
+const templateTriggerModeSchema = z.enum(['cron', 'scheduled_at', 'on_idle'])
+const cooldownMsSchema = z.coerce.number().int().nonnegative()
+const maxRunsSchema = z.coerce.number().int().positive()
+
+const validateTemplateTriggerFields = (
+  data: {
+    trigger_mode?: 'cron' | 'scheduled_at' | 'on_idle' | undefined
+    cron?: string | undefined
+    scheduled_at?: string | undefined
+    cooldown_ms?: number | undefined
+  },
+  ctx: z.RefinementCtx,
+): void => {
+  const mode = data.trigger_mode
+  const cron = data.cron?.trim()
+  const scheduledAt = data.scheduled_at?.trim()
+  const hasCooldown = data.cooldown_ms !== undefined
+
+  if (mode === 'cron') {
+    if (!cron)
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'cron is required when trigger_mode="cron"',
+        path: ['cron'],
+      })
+    if (scheduledAt)
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'scheduled_at cannot be used when trigger_mode="cron"',
+        path: ['scheduled_at'],
+      })
+    if (hasCooldown)
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'cooldown_ms cannot be used when trigger_mode="cron"',
+        path: ['cooldown_ms'],
+      })
+    return
+  }
+
+  if (mode === 'scheduled_at') {
+    if (!scheduledAt)
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'scheduled_at is required when trigger_mode="scheduled_at"',
+        path: ['scheduled_at'],
+      })
+    if (cron)
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'cron cannot be used when trigger_mode="scheduled_at"',
+        path: ['cron'],
+      })
+    if (hasCooldown)
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'cooldown_ms cannot be used when trigger_mode="scheduled_at"',
+        path: ['cooldown_ms'],
+      })
+    return
+  }
+
+  if (mode === 'on_idle') {
+    if (cron)
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'cron cannot be used when trigger_mode="on_idle"',
+        path: ['cron'],
+      })
+    if (scheduledAt)
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'scheduled_at cannot be used when trigger_mode="on_idle"',
+        path: ['scheduled_at'],
+      })
+  }
+}
+
+export const createTemplateSchema = z
   .object({
     prompt: nonEmptyString,
     title: nonEmptyString,
+    trigger_mode: templateTriggerModeSchema,
     cron: z.string().trim().optional(),
     scheduled_at: z.string().trim().optional(),
+    cooldown_ms: cooldownMsSchema.optional(),
+    max_runs: maxRunsSchema.optional(),
+    priority: templatePrioritySchema.optional(),
+    source: templateSourceSchema.optional(),
     focus_id: focusIdSchema.optional(),
   })
   .strict()
   .superRefine((data, ctx) => {
-    const hasCron = Boolean(data.cron?.trim())
-    const hasScheduledAt = Boolean(data.scheduled_at?.trim())
-    if (!hasCron && !hasScheduledAt) {
+    validateTemplateTriggerFields(data, ctx)
+  })
+
+export const updateTemplateSchema = z
+  .object({
+    id: nonEmptyString,
+    prompt: nonEmptyString.optional(),
+    title: nonEmptyString.optional(),
+    trigger_mode: templateTriggerModeSchema.optional(),
+    cron: z.string().trim().optional(),
+    scheduled_at: z.string().trim().optional(),
+    cooldown_ms: cooldownMsSchema.optional(),
+    max_runs: maxRunsSchema.optional(),
+    priority: templatePrioritySchema.optional(),
+    source: templateSourceSchema.optional(),
+    status: templateStatusSchema.optional(),
+    last_task_id: nonEmptyString.optional(),
+    focus_id: focusIdSchema.optional(),
+  })
+  .strict()
+  .superRefine((data, ctx) => {
+    if (
+      data.prompt === undefined &&
+      data.title === undefined &&
+      data.trigger_mode === undefined &&
+      data.cron === undefined &&
+      data.scheduled_at === undefined &&
+      data.cooldown_ms === undefined &&
+      data.max_runs === undefined &&
+      data.priority === undefined &&
+      data.source === undefined &&
+      data.status === undefined &&
+      data.last_task_id === undefined &&
+      data.focus_id === undefined
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'cron or scheduled_at is required',
-        path: ['cron'],
+        message: 'at least one editable field is required',
+        path: ['id'],
       })
       return
     }
-    if (hasCron && hasScheduledAt) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'cron and scheduled_at are mutually exclusive',
-        path: ['cron'],
-      })
-    }
+
+    const inferredMode =
+      data.trigger_mode ??
+      (data.cron !== undefined
+        ? 'cron'
+        : data.scheduled_at !== undefined
+          ? 'scheduled_at'
+          : data.cooldown_ms !== undefined
+            ? 'on_idle'
+            : undefined)
+
+    if (inferredMode !== undefined)
+      validateTemplateTriggerFields(
+        {
+          trigger_mode: inferredMode,
+          cron: data.cron,
+          scheduled_at: data.scheduled_at,
+          cooldown_ms: data.cooldown_ms,
+        },
+        ctx,
+      )
   })
+
+export const deleteTemplateSchema = z
+  .object({
+    id: nonEmptyString,
+  })
+  .strict()
 
 export const cancelSchema = z
   .object({
@@ -72,83 +214,6 @@ export const writeUserProfileSchema = z
 export const compressContextSchema = z.object({}).strict()
 
 export const restartSchema = z.object({}).strict()
-
-const intentPrioritySchema = z.enum(['high', 'normal', 'low'])
-const intentStatusSchema = z.enum(['pending', 'blocked', 'done'])
-const intentSourceSchema = z.enum([
-  'user_request',
-  'agent_auto',
-  'retry_decision',
-])
-const intentTriggerModeSchema = z.enum(['one_shot', 'on_idle'])
-const cooldownMsSchema = z.coerce.number().int().nonnegative()
-
-export const createIntentSchema = z
-  .object({
-    prompt: nonEmptyString,
-    title: nonEmptyString,
-    priority: intentPrioritySchema.optional(),
-    source: intentSourceSchema.optional(),
-    trigger_mode: intentTriggerModeSchema.optional(),
-    cooldown_ms: cooldownMsSchema.optional(),
-    focus_id: focusIdSchema.optional(),
-  })
-  .strict()
-  .superRefine((data, ctx) => {
-    if (data.cooldown_ms === undefined) return
-    if (data.trigger_mode === 'one_shot') {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'cooldown_ms cannot be used with trigger_mode="one_shot"',
-        path: ['cooldown_ms'],
-      })
-    }
-  })
-
-export const updateIntentSchema = z
-  .object({
-    id: nonEmptyString,
-    prompt: nonEmptyString.optional(),
-    title: nonEmptyString.optional(),
-    priority: intentPrioritySchema.optional(),
-    status: intentStatusSchema.optional(),
-    trigger_mode: intentTriggerModeSchema.optional(),
-    cooldown_ms: cooldownMsSchema.optional(),
-    last_task_id: nonEmptyString.optional(),
-    focus_id: focusIdSchema.optional(),
-  })
-  .strict()
-  .superRefine((data, ctx) => {
-    if (data.cooldown_ms !== undefined && data.trigger_mode === 'one_shot') {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'cooldown_ms cannot be used with trigger_mode="one_shot"',
-        path: ['cooldown_ms'],
-      })
-    }
-    if (
-      data.prompt === undefined &&
-      data.title === undefined &&
-      data.priority === undefined &&
-      data.status === undefined &&
-      data.trigger_mode === undefined &&
-      data.cooldown_ms === undefined &&
-      data.last_task_id === undefined &&
-      data.focus_id === undefined
-    ) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'at least one editable field is required',
-        path: ['id'],
-      })
-    }
-  })
-
-export const deleteIntentSchema = z
-  .object({
-    id: nonEmptyString,
-  })
-  .strict()
 
 export const createFocusSchema = z
   .object({

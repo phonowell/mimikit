@@ -13,13 +13,6 @@ export const registerTaskCancelRoute = (
 
     const result = await orchestrator.cancelTask(taskId, { source: 'user' })
     if (!result.ok) {
-      if (result.status === 'not_found') {
-        const canceledCron = await orchestrator.cancelCronJob(taskId)
-        if (canceledCron) {
-          reply.send({ ok: true, status: 'canceled', taskId })
-          return
-        }
-      }
       const status =
         result.status === 'not_found'
           ? 404

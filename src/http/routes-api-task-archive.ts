@@ -8,7 +8,7 @@ import { resolveRouteId } from './route-params.js'
 
 import type { AppConfig } from '../config.js'
 import type { Orchestrator } from '../orchestrator/core/orchestrator-service.js'
-import type { CronJob, Task } from '../types/index.js'
+import type { Task } from '../types/index.js'
 import type { FastifyInstance, FastifyReply } from 'fastify'
 
 const MARKDOWN_CONTENT_TYPE = 'text/markdown; charset=utf-8'
@@ -24,16 +24,11 @@ const resolveTaskArchiveTarget = (
   params: unknown,
   reply: FastifyReply,
   orchestrator: Orchestrator,
-):
-  | { kind: 'task'; taskId: string; task: Task }
-  | { kind: 'cron'; taskId: string; cronJob: CronJob }
-  | undefined => {
+): { taskId: string; task: Task } | undefined => {
   const taskId = resolveRouteId(params, reply, 'task')
   if (!taskId) return
   const task = orchestrator.getTaskById(taskId)
-  if (task) return { kind: 'task', taskId, task }
-  const cronJob = orchestrator.getCronJobs().find((job) => job.id === taskId)
-  if (cronJob) return { kind: 'cron', taskId, cronJob }
+  if (task) return { taskId, task }
   reply.code(404).send({ error: 'task not found' })
   return undefined
 }
@@ -80,48 +75,6 @@ const sendLiveArchive = (reply: FastifyReply, task: Task): void => {
   reply.type(MARKDOWN_CONTENT_TYPE).send(buildLiveArchive(task))
 }
 
-const resolveCronStatus = (cronJob: CronJob): Task['status'] => {
-  if (cronJob.enabled) return 'pending'
-  if (cronJob.disabledReason === 'completed') return 'succeeded'
-  if (cronJob.disabledReason === 'canceled') return 'canceled'
-  if (cronJob.lastTriggeredAt) return 'succeeded'
-  return 'canceled'
-}
-
-const buildCronArchive = (cronJob: CronJob): string => {
-  const schedule = cronJob.cron ?? cronJob.scheduledAt
-  const result = cronJob.enabled
-    ? 'Cron task is waiting for next trigger.'
-    : cronJob.disabledReason === 'canceled'
-      ? 'Cron task was canceled by user or system.'
-      : 'Cron task is completed or inactive.'
-  return buildArchiveDocument(
-    [
-      ['task_id', cronJob.id],
-      ['kind', 'cron'],
-      ['title', cronJob.title],
-      ['status', resolveCronStatus(cronJob)],
-      ['created_at', cronJob.createdAt],
-      ['last_triggered_at', cronJob.lastTriggeredAt],
-      ['schedule', schedule],
-      ['profile', cronJob.profile],
-      ['enabled', String(cronJob.enabled)],
-      ['disabled_reason', cronJob.disabledReason],
-    ],
-    [
-      {
-        marker: '=== PROMPT ===',
-        content: cronJob.prompt.trim() || '(empty prompt)',
-      },
-      { marker: '=== RESULT ===', content: result },
-    ],
-  )
-}
-
-const sendCronArchive = (reply: FastifyReply, cronJob: CronJob): void => {
-  reply.type(MARKDOWN_CONTENT_TYPE).send(buildCronArchive(cronJob))
-}
-
 export const registerTaskArchiveRoute = (
   app: FastifyInstance,
   orchestrator: Orchestrator,
@@ -134,13 +87,8 @@ export const registerTaskArchiveRoute = (
       orchestrator,
     )
     if (!resolved) return
-    if (resolved.kind === 'cron') {
-      sendCronArchive(reply, resolved.cronJob)
-      return
-    }
 
-    const archivePath =
-      resolved.task.archivePath ?? resolved.task.result?.archivePath
+    const archivePath = resolved.task.archivePath ?? resolved.task.result?.archivePath
     if (!archivePath) {
       sendLiveArchive(reply, resolved.task)
       return

@@ -6,13 +6,13 @@ import { runManager } from './runner.js'
 import type { RuntimeState } from './runtime-adapter.js'
 import type {
   HistoryLookupMessage,
-  IdleIntent,
   ManagerActionFeedback,
   ManagerEnv,
   ManagerWakeProfile,
   ReadFileLookupMessage,
   Task,
   TaskResult,
+  TaskTemplate,
   TokenUsage,
   UserInput,
 } from '../types/index.js'
@@ -38,23 +38,18 @@ const resolveWakeProfile = (
 ): ManagerWakeProfile => {
   const hasUserInput = inputs.some((item) => item.role === 'user')
   const hasTaskResult = results.length > 0
-  const hasCronWake = inputs.some((item) =>
-    hasSystemEvent(item, 'cron_trigger'),
-  )
-  const hasIdleWake = inputs.some(
-    (item) =>
-      hasSystemEvent(item, 'idle') || hasSystemEvent(item, 'intent_trigger'),
-  )
+  const hasTriggerWake = inputs.some((item) => hasSystemEvent(item, 'trigger_fire'))
+  const hasIdleWake = inputs.some((item) => hasSystemEvent(item, 'idle'))
   const activeKinds = [
     hasUserInput,
     hasTaskResult,
-    hasCronWake,
+    hasTriggerWake,
     hasIdleWake,
   ].filter(Boolean).length
   if (activeKinds !== 1) return 'mixed'
   if (hasUserInput) return 'user_input'
   if (hasTaskResult) return 'task_result'
-  if (hasCronWake) return 'cron'
+  if (hasTriggerWake) return 'trigger'
   return 'idle'
 }
 
@@ -77,7 +72,7 @@ export const runManagerRoundWithRecovery = async (params: {
   inputs: UserInput[]
   results: TaskResult[]
   tasks: Task[]
-  intents: IdleIntent[]
+  templates: TaskTemplate[]
   workingFocusIds: string[]
   extra: {
     historyLookup?: HistoryLookupMessage[]
@@ -101,8 +96,7 @@ export const runManagerRoundWithRecovery = async (params: {
         results: params.results,
         tasks: params.tasks,
         promptSectionLimits: params.runtime.config.manager.promptSections,
-        intents: params.intents,
-        cronJobs: params.runtime.cronJobs,
+        templates: params.templates,
         focuses: params.runtime.focuses,
         focusContexts: params.runtime.focusContexts,
         activeFocusIds: params.runtime.activeFocusIds,

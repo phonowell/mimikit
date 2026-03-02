@@ -12,27 +12,17 @@
 - `POST /api/restart`
 - `POST /api/reset`
 
-实现入口：
-
-- `src/http/index.ts`
-- `src/http/routes-api.ts`
-- `src/http/routes-api-events.ts`
-- `src/http/routes-api-task-archive.ts`
-- `src/http/routes-api-task-cancel.ts`
-- `src/http/route-params.ts`
-- `src/http/helpers.ts`
-
 ## SSE 事件模型（`GET /api/events`）
 
-- `snapshot`：全量快照，包含 `status/messages/tasks/intents/focuses/stream`。
+- `snapshot`：全量快照，包含 `status/messages/tasks/templates/focuses/stream`。
 - `stream`：流式文本 patch（`clear | replace | delta`）。
 - `error`：SSE 连接内错误反馈。
 
-说明：当前实现通过 SSE 下发消息、任务、intents 与 focus，不再提供独立 `messages/tasks/intents` HTTP 查询接口。
+说明：当前实现通过 SSE 下发消息、任务、templates 与 focus，不提供独立 `messages/tasks/templates` HTTP 查询接口。
 
 ## 输入协议（`POST /api/input`）
 
-请求体（见 `parseInputBody`）：
+请求体（`parseInputBody`）：
 
 - 必填：`text`
 - 可选：`quote`、`language`
@@ -50,20 +40,19 @@
 - `MIMIKIT_WORKER_MODEL`
 - `MIMIKIT_REASONING_EFFORT`
 - `MIMIKIT_WORKER_REASONING_EFFORT`
-- `MIMIKIT_MANAGER_PROMPT_MAX_TOKENS`
 - `MIMIKIT_MANAGER_CREATE_TASK_DEBOUNCE_MS`
-- `MIMIKIT_MANAGER_INTENT_WINDOW_MAX_COUNT`
-- `MIMIKIT_MANAGER_INTENT_WINDOW_MIN_COUNT`
-- `MIMIKIT_MANAGER_INTENT_WINDOW_MAX_BYTES`
+- `MIMIKIT_MANAGER_TEMPLATE_WINDOW_MAX_COUNT`
+- `MIMIKIT_MANAGER_TEMPLATE_WINDOW_MIN_COUNT`
+- `MIMIKIT_MANAGER_TEMPLATE_WINDOW_MAX_BYTES`
 
 ## 配置结构（`config/default.yaml`）
 
 - `manager.model`
 - `manager.maxCorrectionRounds`
-- `manager.prompt.maxTokens`
+- `manager.promptSections.*`
 - `manager.taskCreate.debounceMs`
 - `manager.taskWindow.{maxCount,minCount,maxBytes}`
-- `manager.intentWindow.{maxCount,minCount,maxBytes}`
+- `manager.templateWindow.{maxCount,minCount,maxBytes}`
 - `worker.maxConcurrent`
 - `worker.retry.{maxAttempts,backoffMs}`
 - `worker.timeoutMs`
@@ -94,8 +83,8 @@
 
 schema：`src/storage/runtime-snapshot-schema.ts`
 
-- `tasks`、`cronJobs`
-- `idleIntents`、`idleIntentArchive`
+- `tasks`
+- `taskTemplates`
 - `focuses`、`focusContexts`、`activeFocusIds`
 - `managerTurn`、`managerCompressedContext`
 - `queues.inputsCursor`、`queues.resultsCursor`

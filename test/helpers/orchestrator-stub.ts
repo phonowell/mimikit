@@ -23,7 +23,7 @@ export const createOrchestratorStub = () => {
     getChatHistory: async () => [],
     getChatMessages: async () => ({ messages: [], mode: 'full' as const }),
     getTasks: () => ({ tasks: [], counts: {} }),
-    getIntents: () => ({ items: [] }),
+    getTemplates: () => ({ items: [] }),
     getWebUiWakeVersion: () => 0,
     waitForWebUiSignal: async () =>
       ({ kind: 'timeout', version: 0 }) as const,
@@ -40,7 +40,7 @@ export const createOrchestratorStub = () => {
       },
       messages: [],
       tasks: { tasks: [], counts: {} },
-      intents: { items: [] },
+      templates: { items: [] },
       focuses: { items: [] },
       stream: null,
     }),

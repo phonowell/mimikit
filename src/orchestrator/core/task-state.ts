@@ -4,6 +4,7 @@ export type TaskFingerprintInput = {
   prompt: string
   title: string
   profile: WorkerProfile
+  focusId?: string
   schedule?: string
 }
 
@@ -21,8 +22,9 @@ const normalizeSemanticPart = (value: string): string =>
 export const buildTaskSemanticKey = (input: TaskFingerprintInput): string => {
   const prompt = normalizeSemanticPart(input.prompt).slice(0, 180)
   const title = normalizeSemanticPart(input.title).slice(0, 96)
+  const focusId = normalizeSemanticPart(input.focusId ?? '')
   const schedule = normalizeSemanticPart(input.schedule ?? '')
-  return [input.profile, title, prompt, schedule].join('\n')
+  return [input.profile, focusId, title, prompt, schedule].join('\n')
 }
 
 export const buildTaskFingerprint = (input: TaskFingerprintInput): string =>
@@ -30,6 +32,7 @@ export const buildTaskFingerprint = (input: TaskFingerprintInput): string =>
     normalizeFingerprintPart(input.prompt),
     normalizeFingerprintPart(input.title),
     input.profile,
+    normalizeFingerprintPart(input.focusId ?? ''),
     normalizeFingerprintPart(input.schedule ?? ''),
   ].join('\n')
 
@@ -37,11 +40,15 @@ export const isActiveTask = (task: Task): boolean =>
   task.status === 'pending' || task.status === 'running'
 
 export const taskToFingerprintInput = (
-  task: Pick<Task, 'prompt' | 'title' | 'profile' | 'cron' | 'scheduledAt'>,
+  task: Pick<
+    Task,
+    'prompt' | 'title' | 'profile' | 'focusId' | 'cron' | 'scheduledAt'
+  >,
 ): TaskFingerprintInput => ({
   prompt: task.prompt,
   title: task.title,
   profile: task.profile,
+  focusId: task.focusId,
   ...(task.cron
     ? { schedule: task.cron }
     : task.scheduledAt

@@ -18,28 +18,15 @@ test('collectManagerActionFeedback reports unregistered action', () => {
   expect(feedback[0]?.attempted).toContain('<M:read')
 })
 
-test('collectManagerActionFeedback reports invalid run_task args when prompt is empty', () => {
-  const feedback = collectManagerActionFeedback([
-    {
-      name: 'run_task',
-      attrs: {
-        prompt: '',
-        title: 'invalid',
-      },
-    },
-  ])
-  expect(feedback).toHaveLength(1)
-  expect(feedback[0]?.error).toBe('invalid_action_args')
-})
-
-test('collectManagerActionFeedback rejects schedule_task scheduled_at that is not in future', () => {
+test('collectManagerActionFeedback rejects create_template scheduled_at that is not in future', () => {
   const feedback = collectManagerActionFeedback(
     [
       {
-        name: 'schedule_task',
+        name: 'create_template',
         attrs: {
           prompt: 'schedule judged by env now',
           title: 'invalid by env now',
+          trigger_mode: 'scheduled_at',
           scheduled_at: '2099-01-01T00:00:00.000Z',
         },
       },
@@ -86,33 +73,41 @@ test('collectManagerActionFeedback rejects cancel_task for completed task', () =
   expect(feedback[0]?.hint?.trim().length).toBeGreaterThan(0)
 })
 
-test('collectManagerActionFeedback reports invalid query_history date args', () => {
-  const feedback = collectManagerActionFeedback([
-    {
-      name: 'query_history',
-      attrs: {
-        query: 'history',
-        from: 'not-a-date',
+test('collectManagerActionFeedback allows update_template last_task_id on done template', () => {
+  const feedback = collectManagerActionFeedback(
+    [
+      {
+        name: 'update_template',
+        attrs: {
+          id: 'tpl-done',
+          last_task_id: 'task-123',
+        },
       },
+    ],
+    {
+      templateStatusById: new Map([['tpl-done', 'done']]),
     },
-  ])
-  expect(feedback).toHaveLength(1)
-  expect(feedback[0]?.action).toBe('query_history')
-  expect(feedback[0]?.error).toBe('invalid_action_args')
+  )
+  expect(feedback).toHaveLength(0)
 })
 
-test('collectManagerActionFeedback reports invalid read_file args when path is empty', () => {
-  const feedback = collectManagerActionFeedback([
-    {
-      name: 'read_file',
-      attrs: {
-        path: '',
+test('collectManagerActionFeedback rejects update_template non-last_task patch on done template', () => {
+  const feedback = collectManagerActionFeedback(
+    [
+      {
+        name: 'update_template',
+        attrs: {
+          id: 'tpl-done',
+          title: 'new title',
+        },
       },
+    ],
+    {
+      templateStatusById: new Map([['tpl-done', 'done']]),
     },
-  ])
+  )
   expect(feedback).toHaveLength(1)
-  expect(feedback[0]?.action).toBe('read_file')
-  expect(feedback[0]?.error).toBe('invalid_action_args')
+  expect(feedback[0]?.error).toBe('action_execution_rejected')
 })
 
 test('collectManagerActionFeedback reports invalid write_user_profile args when content is missing', () => {

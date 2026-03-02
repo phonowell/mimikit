@@ -48,9 +48,7 @@ const createRuntime = async (): Promise<RuntimeState> => {
       resultsCursor: 0,
     },
     tasks: [],
-    cronJobs: [],
-    idleIntents: [],
-    idleIntentArchive: [],
+    taskTemplates: [],
     focuses: [
       {
         id: GLOBAL_FOCUS_ID,

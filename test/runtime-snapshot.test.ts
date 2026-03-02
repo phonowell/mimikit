@@ -10,11 +10,10 @@ import {
   saveRuntimeSnapshot,
   selectPersistedTasks,
 } from '../src/storage/runtime-snapshot.js'
-import type { CronJob, IdleIntent, Task } from '../src/types/index.js'
+import type { Task, TaskTemplate } from '../src/types/index.js'
 
 const GLOBAL_FOCUS_ID = 'focus-global'
 const SNAPSHOT_BASE_TIME = '2026-02-06T00:00:00.000Z'
-const SNAPSHOT_DONE_TIME = '2026-02-06T00:10:00.000Z'
 
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-runtime-snapshot-'))
 
@@ -30,46 +29,26 @@ const createTaskFixture = (overrides: Partial<Task> = {}): Task => ({
   ...overrides,
 })
 
-const createIdleIntentFixture = (
-  overrides: Partial<IdleIntent> = {},
-): IdleIntent => ({
-  id: 'intent-1',
+const createTemplateFixture = (
+  overrides: Partial<TaskTemplate> = {},
+): TaskTemplate => ({
+  id: 'tpl-1',
   prompt: 'summarize',
   title: 'summarize',
   focusId: GLOBAL_FOCUS_ID,
+  profile: 'worker',
   priority: 'high',
-  status: 'pending',
   source: 'user_request',
-  createdAt: SNAPSHOT_BASE_TIME,
-  updatedAt: SNAPSHOT_BASE_TIME,
-  attempts: 0,
-  maxAttempts: 2,
-  triggerPolicy: {
-    mode: 'one_shot',
+  status: 'active',
+  trigger: {
+    mode: 'on_idle',
     cooldownMs: 0,
   },
-  triggerState: {
-    totalTriggered: 0,
-  },
+  createdAt: SNAPSHOT_BASE_TIME,
+  updatedAt: SNAPSHOT_BASE_TIME,
+  runCount: 0,
+  maxRuns: 1,
   ...overrides,
-})
-
-const createArchivedIntentFixture = () => ({
-  ...createIdleIntentFixture({
-    id: 'intent-2',
-    prompt: 'done',
-    title: 'done',
-    priority: 'normal',
-    source: 'agent_auto',
-    status: 'done',
-    updatedAt: SNAPSHOT_DONE_TIME,
-    attempts: 1,
-    triggerState: {
-      totalTriggered: 1,
-      lastCompletedAt: SNAPSHOT_DONE_TIME,
-    },
-  }),
-  archivedAt: SNAPSHOT_DONE_TIME,
 })
 
 test('selectPersistedTasks recovers running task to pending', () => {
@@ -111,8 +90,7 @@ test('runtime snapshot accepts queue cursors', async () => {
         },
       }),
     ],
-    idleIntents: [createIdleIntentFixture()],
-    idleIntentArchive: [createArchivedIntentFixture()],
+    taskTemplates: [createTemplateFixture()],
     queues: {
       inputsCursor: 3,
       resultsCursor: 9,
@@ -125,54 +103,23 @@ test('runtime snapshot accepts queue cursors', async () => {
   expect(loaded.queues?.inputsCursor).toBe(3)
   expect(loaded.managerCompressedContext).toContain('keep codex-only')
   expect(loaded.tasks[0]?.result?.output).toBe('ok')
-  expect(loaded.idleIntents?.[0]?.id).toBe('intent-1')
-  expect(loaded.idleIntentArchive?.[0]?.status).toBe('done')
+  expect(loaded.taskTemplates[0]?.id).toBe('tpl-1')
 })
 
-test('buildTaskViews maps cron job statuses from disabled reasons', () => {
-  const cronJobs: CronJob[] = [
-    {
-      id: 'cron-completed',
-      scheduledAt: '2026-02-13T17:22:20+08:00',
-      prompt: 'remind',
-      title: 'remind',
-      focusId: GLOBAL_FOCUS_ID,
-      profile: 'worker',
-      enabled: false,
-      disabledReason: 'completed',
-      createdAt: '2026-02-13T09:22:04.602Z',
-      lastTriggeredAt: '2026-02-13T09:22:20.735Z',
-    },
-    {
-      id: 'cron-canceled',
-      scheduledAt: '2026-02-13T17:22:20+08:00',
-      prompt: 'remind',
-      title: 'remind',
-      focusId: GLOBAL_FOCUS_ID,
-      profile: 'worker',
-      enabled: false,
-      disabledReason: 'canceled',
-      createdAt: '2026-02-13T09:22:04.602Z',
-    },
-    {
-      id: 'cron-legacy-completed',
-      scheduledAt: '2026-02-13T17:22:20+08:00',
-      prompt: 'remind',
-      title: 'remind',
-      focusId: GLOBAL_FOCUS_ID,
-      profile: 'worker',
-      enabled: false,
-      createdAt: '2026-02-13T09:22:04.602Z',
-      lastTriggeredAt: '2026-02-13T09:22:20.735Z',
-    },
+test('buildTaskViews returns task statuses and counts', () => {
+  const tasks: Task[] = [
+    createTaskFixture({ id: 'task-done', status: 'succeeded' }),
+    createTaskFixture({ id: 'task-failed', status: 'failed' }),
+    createTaskFixture({ id: 'task-running', status: 'running' }),
   ]
-  const { tasks, counts } = buildTaskViews([], cronJobs)
-  const statusById = new Map(tasks.map((item) => [item.id, item.status]))
-  expect(statusById.get('cron-completed')).toBe('succeeded')
-  expect(statusById.get('cron-canceled')).toBe('canceled')
-  expect(statusById.get('cron-legacy-completed')).toBe('succeeded')
-  expect(counts.succeeded).toBe(2)
-  expect(counts.canceled).toBe(1)
+  const { tasks: views, counts } = buildTaskViews(tasks)
+  const statusById = new Map(views.map((item) => [item.id, item.status]))
+  expect(statusById.get('task-done')).toBe('succeeded')
+  expect(statusById.get('task-failed')).toBe('failed')
+  expect(statusById.get('task-running')).toBe('running')
+  expect(counts.succeeded).toBe(1)
+  expect(counts.failed).toBe(1)
+  expect(counts.running).toBe(1)
 })
 
 test('runtime snapshot rejects legacy next fields', async () => {
@@ -193,19 +140,7 @@ test('runtime snapshot rejects legacy next fields', async () => {
           next: [{ prompt: 'next task', condition: 'succeeded' }],
         },
       ],
-      cronJobs: [
-        {
-          id: 'cron-legacy-next',
-          cron: '0 0 9 * * *',
-          prompt: 'legacy cron',
-          title: 'legacy cron',
-          focusId: GLOBAL_FOCUS_ID,
-          profile: 'worker',
-          enabled: true,
-          createdAt: '2026-02-06T00:00:00.000Z',
-          next: { prompt: 'next cron task', condition: 'succeeded' },
-        },
-      ],
+      taskTemplates: [],
       queues: {
         inputsCursor: 0,
         resultsCursor: 0,
@@ -226,7 +161,7 @@ test('loadRuntimeSnapshot falls back to backup file when primary json is broken'
     backupPath,
     JSON.stringify({
       tasks: [],
-      cronJobs: [],
+      taskTemplates: [],
       queues: {
         inputsCursor: 12,
         resultsCursor: 34,
@@ -245,13 +180,13 @@ test('saveRuntimeSnapshot writes previous primary content into .bak', async () =
   const primaryPath = join(stateDir, 'runtime-snapshot.json')
   const oldSnapshot = {
     tasks: [],
-    cronJobs: [],
+    taskTemplates: [],
     queues: { inputsCursor: 1, resultsCursor: 2 },
   }
   await writeFile(primaryPath, JSON.stringify(oldSnapshot), 'utf8')
   const nextSnapshot = {
     tasks: [],
-    cronJobs: [],
+    taskTemplates: [],
     queues: { inputsCursor: 7, resultsCursor: 8 },
   }
 

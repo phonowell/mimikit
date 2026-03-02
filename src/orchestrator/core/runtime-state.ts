@@ -1,13 +1,12 @@
 import type { AppConfig } from '../../config.js'
 import type { StatePaths } from '../../fs/paths.js'
 import type {
-  CronJob,
   FocusContext,
   FocusId,
   FocusMeta,
-  IdleIntent,
   ISODate,
   Task,
+  TaskTemplate,
   TokenUsage,
   UserInput,
 } from '../../types/index.js'
@@ -58,9 +57,7 @@ export type RuntimeState = {
     resultsCursor: number
   }
   tasks: Task[]
-  cronJobs: CronJob[]
-  idleIntents: IdleIntent[]
-  idleIntentArchive: IdleIntent[]
+  taskTemplates: TaskTemplate[]
   focuses: FocusMeta[]
   focusContexts: FocusContext[]
   activeFocusIds: FocusId[]

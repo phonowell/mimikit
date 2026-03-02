@@ -10,7 +10,7 @@ const getDefaultSnapshot = (orchestrator: Orchestrator) =>
 const buildSnapshotHint = (orchestrator: Orchestrator) => ({
   status: orchestrator.getStatus(),
   tasks: orchestrator.getTasks(),
-  intents: orchestrator.getIntents(),
+  templates: orchestrator.getTemplates(),
   focuses: orchestrator.getFocuses(),
   stream: cloneUiStream(orchestrator.getWebUiStreamSnapshot()),
 })
@@ -97,7 +97,7 @@ export const registerEventsRoute = (
       lastSnapshotHintKey = asStableJson({
         status: initial.status,
         tasks: initial.tasks,
-        intents: initial.intents,
+        templates: initial.templates,
         focuses: initial.focuses,
         stream: initial.stream,
       })

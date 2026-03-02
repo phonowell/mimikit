@@ -15,22 +15,21 @@ import {
   persistRuntimeState,
   type RuntimeState,
 } from './runtime-adapter.js'
-import { newId, nowIso } from '../shared/utils.js'
 
 import {
   hasForbiddenWorkerStatePath,
   markCreateAttempt,
 } from './action-apply-guards.js'
-import { runTaskSchema, scheduleTaskSchema } from './action-apply-schema.js'
+import { runTaskSchema } from './action-apply-schema.js'
 
 import type { Parsed } from '../actions/model/spec.js'
-import type { CronJob, FocusId, Task, WorkerProfile } from '../types/index.js'
+import type { FocusId, WorkerProfile } from '../types/index.js'
 
 export type ApplyTaskActionsOptions = {
   suppressRunTask?: boolean
 }
 
-const resolveActionFocusId = (
+export const resolveActionFocusId = (
   runtime: RuntimeState,
   actionFocusId?: string,
 ): FocusId => {
@@ -58,10 +57,11 @@ export const applyRunTask = async (
     prompt: parsed.data.prompt,
     title: parsed.data.title,
     profile,
+    focusId,
   })
   const debounce = markCreateAttempt(runtime, semanticKey)
   if (debounce.debounced) return
-  const dedupeKey = `${parsed.data.prompt}\n${parsed.data.title}\n${profile}`
+  const dedupeKey = `${parsed.data.prompt}\n${parsed.data.title}\n${profile}\n${focusId}`
   if (seen.has(dedupeKey)) return
   seen.add(dedupeKey)
 
@@ -74,11 +74,13 @@ export const applyRunTask = async (
       prompt: activeSemanticTask.prompt,
       title: activeSemanticTask.title,
       profile: activeSemanticTask.profile,
+      focusId: activeSemanticTask.focusId,
     })
     const nextFingerprint = buildTaskFingerprint({
       prompt: parsed.data.prompt,
       title: parsed.data.title,
       profile,
+      focusId,
     })
     if (activeFingerprint !== nextFingerprint) {
       await cancelTask(runtime, activeSemanticTask.id, {
@@ -112,80 +114,4 @@ export const applyRunTask = async (
   await persistRuntimeState(runtime)
   enqueueWorkerTask(runtime, task)
   notifyWorkerLoop(runtime)
-}
-
-export const applyScheduleTask = async (
-  runtime: RuntimeState,
-  item: Parsed,
-  seen: Set<string>,
-): Promise<void> => {
-  const parsed = scheduleTaskSchema.safeParse(item.attrs)
-  if (!parsed.success) return
-  const cron = parsed.data.cron?.trim()
-  const scheduledAt = parsed.data.scheduled_at?.trim()
-  if (!cron && !scheduledAt) return
-  const profile: WorkerProfile = 'worker'
-  const focusId = resolveActionFocusId(runtime, parsed.data.focus_id)
-  const scheduleKey = cron ?? scheduledAt ?? ''
-  const dedupeKey = `${parsed.data.prompt}\n${parsed.data.title}\n${profile}\n${scheduleKey}\n${focusId}`
-  if (seen.has(dedupeKey)) return
-  seen.add(dedupeKey)
-
-  const existing = runtime.cronJobs.find((job) => {
-    if (!job.enabled || job.focusId !== focusId) return false
-    if (cron) {
-      return (
-        job.cron === cron &&
-        job.prompt === parsed.data.prompt &&
-        job.title === parsed.data.title
-      )
-    }
-    return (
-      job.scheduledAt === scheduledAt &&
-      job.prompt === parsed.data.prompt &&
-      job.title === parsed.data.title
-    )
-  })
-  if (existing) return
-
-  const createdAt = nowIso()
-  const cronJob: CronJob = {
-    id: `cron-${newId()}`,
-    ...(cron ? { cron } : {}),
-    ...(scheduledAt ? { scheduledAt } : {}),
-    prompt: parsed.data.prompt,
-    title: parsed.data.title,
-    focusId,
-    profile,
-    enabled: true,
-    createdAt,
-  }
-  runtime.cronJobs.push(cronJob)
-
-  const scheduledTask: Task = {
-    id: cronJob.id,
-    fingerprint: buildTaskFingerprint({
-      prompt: parsed.data.prompt,
-      title: parsed.data.title,
-      profile,
-      schedule: scheduleKey,
-    }),
-    prompt: parsed.data.prompt,
-    title: parsed.data.title,
-    focusId,
-    ...(cron ? { cron } : scheduledAt ? { scheduledAt } : {}),
-    profile,
-    status: 'pending',
-    createdAt,
-  }
-
-  await appendTaskSystemMessage(
-    runtime.paths.history,
-    'created',
-    scheduledTask,
-    {
-      createdAt,
-    },
-  )
-  await persistRuntimeState(runtime)
 }

@@ -7,15 +7,9 @@ import { newId } from '../../shared/utils.js'
 import { cancelTask } from '../../worker/cancel-task.js'
 import { type ChatMessage } from '../read-model/chat-view.js'
 import { buildFocusViews } from '../read-model/focus-view.js'
-import { sortIdleIntents } from '../read-model/intent-select.js'
+import { sortTaskTemplates } from '../read-model/template-select.js'
 import { buildTaskViews } from '../read-model/task-view.js'
 
-import {
-  addCronJob,
-  type AddCronJobInput,
-  cancelCronJob,
-  cloneCronJob,
-} from './orchestrator-cron.js'
 import {
   computeOrchestratorStatus,
   type OrchestratorStatus,
@@ -37,7 +31,7 @@ import type {
   UiWakeKind,
   UserMeta,
 } from './runtime-state.js'
-import type { CronJob, IdleIntent, Task } from '../../types/index.js'
+import type { Task, TaskTemplate } from '../../types/index.js'
 
 export type { OrchestratorStatus } from './orchestrator-helpers.js'
 
@@ -65,9 +59,7 @@ export class Orchestrator {
       inflightInputs: [],
       queues: { inputsCursor: 0, resultsCursor: 0 },
       tasks: [],
-      cronJobs: [],
-      idleIntents: [],
-      idleIntentArchive: [],
+      taskTemplates: [],
       focuses: [],
       focusContexts: [],
       activeFocusIds: [],
@@ -114,14 +106,11 @@ export class Orchestrator {
   }
 
   getTasks(limit = 200) {
-    return buildTaskViews(this.runtime.tasks, this.runtime.cronJobs, limit)
+    return buildTaskViews(this.runtime.tasks, limit)
   }
 
-  getIntents(limit = 200): { items: IdleIntent[] } {
-    const items = sortIdleIntents([
-      ...this.runtime.idleIntents,
-      ...this.runtime.idleIntentArchive,
-    ])
+  getTemplates(limit = 200): { items: TaskTemplate[] } {
+    const items = sortTaskTemplates(this.runtime.taskTemplates)
       .slice(0, Math.max(0, limit))
       .map((item) => ({ ...item }))
     return { items }
@@ -140,12 +129,8 @@ export class Orchestrator {
     return (async () => ({
       status: this.getStatus(),
       messages: await getChatMessages(this.runtime, messageLimit),
-      tasks: buildTaskViews(
-        this.runtime.tasks,
-        this.runtime.cronJobs,
-        taskLimit,
-      ),
-      intents: this.getIntents(taskLimit),
+      tasks: buildTaskViews(this.runtime.tasks, taskLimit),
+      templates: this.getTemplates(taskLimit),
       focuses: this.getFocuses(taskLimit),
       stream: this.runtime.uiStream ? { ...this.runtime.uiStream } : null,
     }))()
@@ -178,18 +163,6 @@ export class Orchestrator {
 
   cancelTask(taskId: string, meta?: { source?: string; reason?: string }) {
     return cancelTask(this.runtime, taskId, meta)
-  }
-
-  addCronJob(input: AddCronJobInput): Promise<CronJob> {
-    return addCronJob(this.runtime, input)
-  }
-
-  getCronJobs(): CronJob[] {
-    return this.runtime.cronJobs.map((job) => cloneCronJob(job))
-  }
-
-  cancelCronJob(cronJobId: string): Promise<boolean> {
-    return cancelCronJob(this.runtime, cronJobId)
   }
 
   getStatus(): OrchestratorStatus {

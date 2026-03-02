@@ -7,13 +7,11 @@ export type SystemEventName =
   | 'manager_round_limit'
   | 'manager_error'
   | 'action_feedback'
-  | 'cron_trigger'
+  | 'trigger_fire'
   | 'idle'
-  | 'cron_canceled'
-  | 'intent_trigger'
-  | 'intent_created'
-  | 'intent_updated'
-  | 'intent_deleted'
+  | 'template_created'
+  | 'template_updated'
+  | 'template_deleted'
 
 const toInlineJson = (payload: Record<string, unknown>): string =>
   JSON.stringify(payload).replace(/[<>&]/g, (char) => {

@@ -9,8 +9,7 @@ import {
 import { appendHistory, readHistory } from '../../history/store.js'
 import { appendLog } from '../../log/append.js'
 import { bestEffort } from '../../log/safe.js'
-import { cronWakeLoop } from '../../manager/loop-cron.js'
-import { idleWakeLoop } from '../../manager/loop-idle.js'
+import { triggerWakeLoop } from '../../manager/loop-trigger.js'
 import { managerLoop } from '../../manager/loop.js'
 import { formatSystemEventText } from '../../shared/system-event.js'
 import { newId, nowIso } from '../../shared/utils.js'
@@ -121,8 +120,7 @@ export const startOrchestratorRuntime = async (
   enqueuePendingWorkerTasks(runtime)
   notifyWorkerLoop(runtime)
   void managerLoop(runtime)
-  void cronWakeLoop(runtime)
-  void idleWakeLoop(runtime)
+  void triggerWakeLoop(runtime)
   void workerLoop(runtime)
 }
 
