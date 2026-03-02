@@ -1,51 +1,77 @@
 :root {
-  --focus-dot-marker: transparent;
+  --focus-mark-wash: transparent;
+  --focus-mark-chip-bg: var(--panel-strong);
+  --focus-mark-chip-border: transparent;
 }
 
 .focus-tone-0 {
-  --focus-dot-marker: hsl(6 66% 50% / 0.28);
+  --focus-mark-wash: hsl(6 66% 50% / 0.12);
+  --focus-mark-chip-bg: hsl(6 66% 50% / 0.11);
+  --focus-mark-chip-border: hsl(6 66% 50% / 0.2);
 }
 
 .focus-tone-1 {
-  --focus-dot-marker: hsl(24 68% 48% / 0.28);
+  --focus-mark-wash: hsl(24 68% 48% / 0.12);
+  --focus-mark-chip-bg: hsl(24 68% 48% / 0.11);
+  --focus-mark-chip-border: hsl(24 68% 48% / 0.2);
 }
 
 .focus-tone-2 {
-  --focus-dot-marker: hsl(42 66% 46% / 0.28);
+  --focus-mark-wash: hsl(42 66% 46% / 0.11);
+  --focus-mark-chip-bg: hsl(42 66% 46% / 0.1);
+  --focus-mark-chip-border: hsl(42 66% 46% / 0.18);
 }
 
 .focus-tone-3 {
-  --focus-dot-marker: hsl(78 54% 42% / 0.28);
+  --focus-mark-wash: hsl(78 54% 42% / 0.11);
+  --focus-mark-chip-bg: hsl(78 54% 42% / 0.1);
+  --focus-mark-chip-border: hsl(78 54% 42% / 0.18);
 }
 
 .focus-tone-4 {
-  --focus-dot-marker: hsl(118 50% 40% / 0.28);
+  --focus-mark-wash: hsl(118 50% 40% / 0.11);
+  --focus-mark-chip-bg: hsl(118 50% 40% / 0.1);
+  --focus-mark-chip-border: hsl(118 50% 40% / 0.18);
 }
 
 .focus-tone-5 {
-  --focus-dot-marker: hsl(160 52% 38% / 0.28);
+  --focus-mark-wash: hsl(160 52% 38% / 0.11);
+  --focus-mark-chip-bg: hsl(160 52% 38% / 0.1);
+  --focus-mark-chip-border: hsl(160 52% 38% / 0.18);
 }
 
 .focus-tone-6 {
-  --focus-dot-marker: hsl(188 60% 42% / 0.28);
+  --focus-mark-wash: hsl(188 60% 42% / 0.12);
+  --focus-mark-chip-bg: hsl(188 60% 42% / 0.11);
+  --focus-mark-chip-border: hsl(188 60% 42% / 0.2);
 }
 
 .focus-tone-7 {
-  --focus-dot-marker: hsl(208 62% 44% / 0.28);
+  --focus-mark-wash: hsl(208 62% 44% / 0.12);
+  --focus-mark-chip-bg: hsl(208 62% 44% / 0.11);
+  --focus-mark-chip-border: hsl(208 62% 44% / 0.2);
 }
 
 .focus-tone-8 {
-  --focus-dot-marker: hsl(224 58% 46% / 0.28);
+  --focus-mark-wash: hsl(224 58% 46% / 0.12);
+  --focus-mark-chip-bg: hsl(224 58% 46% / 0.11);
+  --focus-mark-chip-border: hsl(224 58% 46% / 0.2);
 }
 
 .focus-tone-9 {
-  --focus-dot-marker: hsl(246 52% 48% / 0.28);
+  --focus-mark-wash: hsl(246 52% 48% / 0.12);
+  --focus-mark-chip-bg: hsl(246 52% 48% / 0.11);
+  --focus-mark-chip-border: hsl(246 52% 48% / 0.2);
 }
 
 .focus-tone-10 {
-  --focus-dot-marker: hsl(286 50% 46% / 0.28);
+  --focus-mark-wash: hsl(286 50% 46% / 0.12);
+  --focus-mark-chip-bg: hsl(286 50% 46% / 0.11);
+  --focus-mark-chip-border: hsl(286 50% 46% / 0.2);
 }
 
 .focus-tone-11 {
-  --focus-dot-marker: hsl(332 60% 48% / 0.28);
+  --focus-mark-wash: hsl(332 60% 48% / 0.12);
+  --focus-mark-chip-bg: hsl(332 60% 48% / 0.11);
+  --focus-mark-chip-border: hsl(332 60% 48% / 0.2);
 }

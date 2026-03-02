@@ -33,17 +33,15 @@
   box-shadow: -0.5px -0.5px 1.5px rgba(255, 255, 255, 0.24),
     0.5px 0.5px 1.5px rgba(123, 142, 166, 0.09);
   order: 1;
+  overflow: hidden;
 }
 
-.message:not(.system) article::after {
+.message:not(.system) article::before {
   content: '';
   position: absolute;
-  left: 8px;
-  bottom: 8px;
-  width: 6px;
-  height: 6px;
-  border-radius: 999px;
-  background: var(--focus-dot-marker);
+  inset: 0 0 auto 0;
+  height: 10px;
+  background: linear-gradient(180deg, var(--focus-mark-wash), transparent 78%);
   pointer-events: none;
 }
 
@@ -58,11 +56,6 @@
   box-shadow: -0.5px -0.5px 1.5px rgba(255, 255, 255, 0.2),
     0.5px 0.5px 1.5px rgba(89, 119, 164, 0.1);
   border-bottom-right-radius: 4px;
-}
-
-.message.user article::after {
-  left: auto;
-  right: 8px;
 }
 
 .message.agent {

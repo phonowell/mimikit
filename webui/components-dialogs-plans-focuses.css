@@ -28,17 +28,15 @@
   position: relative;
   background: var(--panel);
   box-shadow: var(--shadow-raised-soft);
+  overflow: hidden;
 }
 
-.focus-item::after {
+.focus-item::before {
   content: '';
   position: absolute;
-  right: 8px;
-  bottom: 8px;
-  width: 6px;
-  height: 6px;
-  border-radius: 999px;
-  background: var(--focus-dot-marker);
+  inset: 0 0 auto 0;
+  height: 10px;
+  background: linear-gradient(180deg, var(--focus-mark-wash), transparent 78%);
   pointer-events: none;
 }
 
@@ -74,8 +72,8 @@
   min-height: 18px;
   padding: 0 6px;
   border-radius: 999px;
-  border: 1px solid transparent;
-  background: var(--panel-strong);
+  border: 1px solid var(--focus-mark-chip-border);
+  background: var(--focus-mark-chip-bg);
   color: var(--muted-contrast, var(--muted));
   font-size: 10px;
   line-height: 1.2;

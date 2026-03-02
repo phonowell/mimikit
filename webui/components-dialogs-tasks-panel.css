@@ -5,17 +5,15 @@
   position: relative;
   background: var(--panel);
   box-shadow: var(--shadow-raised-soft);
+  overflow: hidden;
 }
 
-.task-item::after {
+.task-item::before {
   content: '';
   position: absolute;
-  right: 8px;
-  bottom: 8px;
-  width: 6px;
-  height: 6px;
-  border-radius: 999px;
-  background: var(--focus-dot-marker);
+  inset: 0 0 auto 0;
+  height: 10px;
+  background: linear-gradient(180deg, var(--focus-mark-wash), transparent 78%);
   pointer-events: none;
 }
 
