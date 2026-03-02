@@ -2,20 +2,6 @@ import { renderEmptyListState } from './list-empty.js'
 import { appendMetaTime } from './meta-time.js'
 import { UI_TEXT } from './system-text.js'
 
-const STATUS_TEXT = Object.freeze({
-  active: 'active',
-  idle: 'idle',
-  done: 'done',
-  archived: 'archived',
-})
-
-const normalizeOpenItems = (items) =>
-  Array.isArray(items)
-    ? items
-        .map((item) => (typeof item === 'string' ? item.trim() : ''))
-        .filter((item) => item.length > 0)
-    : []
-
 export const renderFocuses = (focusesList, data) => {
   if (!focusesList) return
   const items = data?.items || []
@@ -49,13 +35,8 @@ export const renderFocuses = (focusesList, data) => {
           ? item.id
           : UI_TEXT.untitledTask
 
-    const state = document.createElement('span')
-    state.className = 'focus-state'
-    state.textContent = STATUS_TEXT[status] ?? status
-
     header.appendChild(dot)
     header.appendChild(title)
-    header.appendChild(state)
 
     if (item.isActive) {
       const active = document.createElement('span')
@@ -66,32 +47,8 @@ export const renderFocuses = (focusesList, data) => {
 
     node.appendChild(header)
 
-    if (typeof item.summary === 'string' && item.summary.trim()) {
-      const summary = document.createElement('p')
-      summary.className = 'focus-summary'
-      summary.textContent = item.summary
-      node.appendChild(summary)
-    }
-
-    const openItems = normalizeOpenItems(item.openItems)
-    if (openItems.length > 0) {
-      const openList = document.createElement('ul')
-      openList.className = 'focus-open-items'
-      for (const openItemText of openItems) {
-        const openItem = document.createElement('li')
-        openItem.className = 'focus-open-item'
-        openItem.textContent = openItemText
-        openList.appendChild(openItem)
-      }
-      node.appendChild(openList)
-    }
-
     const meta = document.createElement('small')
     meta.className = 'focus-meta'
-
-    const id = document.createElement('span')
-    id.textContent = typeof item.id === 'string' ? item.id : ''
-    meta.appendChild(id)
 
     const changedAt =
       typeof item.lastActivityAt === 'string' && item.lastActivityAt.trim()
@@ -101,7 +58,7 @@ export const renderFocuses = (focusesList, data) => {
           : ''
     appendMetaTime(meta, 'focus-time', changedAt)
 
-    node.appendChild(meta)
+    if (meta.childElementCount > 0) node.appendChild(meta)
     focusesList.appendChild(node)
   }
 }

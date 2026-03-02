@@ -39,36 +39,6 @@
   background: var(--accent-soft);
 }
 
-.focus-summary {
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.45;
-  color: var(--text);
-}
-
-.focus-open-items {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.focus-open-item {
-  display: inline-flex;
-  align-items: center;
-  max-width: 100%;
-  min-height: 18px;
-  padding: 0 6px;
-  border-radius: 999px;
-  border: 1px solid transparent;
-  background: var(--panel-strong);
-  color: var(--muted-contrast, var(--muted));
-  font-size: 10px;
-  line-height: 1.2;
-}
-
 .focus-item[data-status='active'] {
   --focus-dot: var(--status-running);
 }
