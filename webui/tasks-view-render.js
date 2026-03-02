@@ -169,7 +169,7 @@ export const renderTasks = (tasksList, data) => {
     link.appendChild(titleRow)
     link.appendChild(meta)
     item.appendChild(link)
-    item.appendChild(actions)
+    if (actions) item.appendChild(actions)
 
     tasksList.appendChild(item)
   }
