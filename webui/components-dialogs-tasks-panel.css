@@ -33,26 +33,22 @@
 }
 
 .task-more-toggle {
-  width: 28px;
-  height: 24px;
-  border: 1px solid rgba(122, 137, 158, 0.34);
-  border-radius: 8px;
-  background: #eef2f7;
-  color: #52647d;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    "Liberation Mono", "Courier New", monospace;
+  --btn-size: 24px;
+  --btn-icon-size: 11px;
+  --btn-radius: 8px;
+  --btn-bg: var(--panel-soft);
+  --btn-color: var(--muted-contrast, var(--muted));
+  --btn-border: rgba(133, 146, 166, 0.22);
+  --btn-hover-bg: var(--panel);
+  --btn-hover-color: var(--accent);
+  --btn-hover-border: rgba(47, 125, 230, 0.28);
+  --btn-shadow: var(--shadow-raised-soft);
+  --btn-shadow-hover: var(--shadow-raised-soft);
+  --btn-shadow-press: var(--shadow-inset-soft);
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
-  letter-spacing: -0.02em;
-  box-shadow: -1px -1px 2px rgba(255, 255, 255, 0.72),
-    1px 1px 2px rgba(151, 164, 184, 0.34);
-}
-
-.task-more-toggle:hover {
-  border-color: rgba(47, 125, 230, 0.28);
-  background: #f5f8fe;
-  color: var(--accent);
+  letter-spacing: 0;
 }
 
 .task-more-menu {
@@ -62,9 +58,9 @@
   min-width: 106px;
   padding: 6px;
   border-radius: 10px;
-  border: 1px solid rgba(141, 154, 173, 0.2);
-  background: rgba(245, 247, 250, 0.98);
-  box-shadow: var(--shadow-floating);
+  border: 1px solid var(--border, rgba(133, 146, 166, 0.14));
+  background: var(--panel);
+  box-shadow: var(--shadow-raised-soft);
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -89,7 +85,7 @@
 }
 
 .task-menu-item:hover:not(:disabled) {
-  border-color: rgba(226, 93, 93, 0.24);
+  border-color: rgba(226, 93, 93, 0.2);
   background: rgba(226, 93, 93, 0.1);
   color: var(--danger);
 }
@@ -100,9 +96,9 @@
 }
 
 .task-menu-item:disabled {
-  border-color: rgba(133, 146, 166, 0.12);
-  background: rgba(226, 230, 236, 0.74);
-  color: rgba(109, 119, 137, 0.68);
+  border-color: var(--border-subtle, rgba(133, 146, 166, 0.08));
+  background: var(--panel-strong);
+  color: var(--status-cancel);
   cursor: not-allowed;
 }
 
