@@ -6,7 +6,7 @@ export const createTaskActions = ({ titleText, taskId, isCancelable }) => {
   const moreBtn = document.createElement('button')
   moreBtn.type = 'button'
   moreBtn.className = 'btn btn--icon btn--icon-muted task-more-toggle'
-  moreBtn.textContent = '...'
+  moreBtn.textContent = '⋯'
   moreBtn.setAttribute('data-task-more-toggle', 'true')
   moreBtn.setAttribute('aria-label', `More actions for ${titleText}`)
   moreBtn.setAttribute('aria-haspopup', 'menu')
