@@ -1,6 +1,7 @@
 import { nowIso } from '../shared/utils.js'
 
 import { GLOBAL_FOCUS_ID, MAX_FOCUS_OPEN_ITEMS } from './constants.js'
+import { normalizeFocusOpenItems } from './open-items.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type {
@@ -9,15 +10,6 @@ import type {
   FocusMeta,
   FocusStatus,
 } from '../types/index.js'
-
-const normalizeOpenItems = (value?: string[]): string[] | undefined => {
-  if (!value) return undefined
-  const next = value
-    .map((item) => item.trim())
-    .filter((item) => item.length > 0)
-    .slice(0, MAX_FOCUS_OPEN_ITEMS)
-  return next.length > 0 ? next : undefined
-}
 
 export const resolveDefaultFocusId = (runtime: RuntimeState): FocusId =>
   runtime.activeFocusIds?.[0] ?? GLOBAL_FOCUS_ID
@@ -104,7 +96,9 @@ export const upsertFocusContext = (
       : current?.summary
   const normalizedOpenItems =
     params.openItems !== undefined
-      ? normalizeOpenItems(params.openItems)
+      ? normalizeFocusOpenItems(params.openItems, {
+          maxItems: MAX_FOCUS_OPEN_ITEMS,
+        })
       : current?.openItems
   if (
     !normalizedSummary &&

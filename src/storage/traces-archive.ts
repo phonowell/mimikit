@@ -1,3 +1,4 @@
+import { parseIsoMs } from '../shared/time.js'
 import { nowIso } from '../shared/utils.js'
 
 import { buildArchiveDocument } from './archive-format.js'
@@ -32,8 +33,8 @@ export type TraceArchiveResult = {
 }
 
 const compactTimestamp36 = (iso: string): string => {
-  const ms = Date.parse(iso)
-  if (!Number.isFinite(ms)) return Date.now().toString(36).padStart(9, '0')
+  const ms = parseIsoMs(iso)
+  if (ms === undefined) return Date.now().toString(36).padStart(9, '0')
   return Math.trunc(ms).toString(36).padStart(9, '0')
 }
 

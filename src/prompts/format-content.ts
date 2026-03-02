@@ -1,4 +1,5 @@
 import { GLOBAL_FOCUS_ID } from '../focus/index.js'
+import { truncateText } from '../shared/text.js'
 
 import {
   escapeCdata,
@@ -19,12 +20,6 @@ import type {
 const TASK_PROMPT_MAX_CHARS = 240
 const TASK_OUTPUT_MAX_CHARS = 320
 const PLAN_PROMPT_MAX_CHARS = 220
-
-const truncateForPrompt = (value: string, maxChars: number): string => {
-  const normalized = value.replace(/\s+/g, ' ').trim()
-  if (normalized.length <= maxChars) return normalized
-  return `${normalized.slice(0, Math.max(0, maxChars - 3)).trimEnd()}...`
-}
 
 export const selectTasksForPrompt = (tasks: Task[]): Task[] =>
   sortTasksByChangedAt(tasks)
@@ -47,7 +42,9 @@ const toResultPayload = (
   ok: result.ok,
   completed_at: result.completedAt,
   duration_ms: result.durationMs,
-  output: truncateForPrompt(result.output, TASK_OUTPUT_MAX_CHARS),
+  output: truncateText(result.output, TASK_OUTPUT_MAX_CHARS, {
+    normalizeWhitespace: true,
+  }),
   ...(result.status === 'canceled' && cancel
     ? { cancel: toCancelMeta(cancel) }
     : {}),
@@ -63,7 +60,9 @@ const formatTaskEntry = (
   status: task.status,
   title: task.title.trim() || task.id,
   changed_at: resolveTaskChangedAt(task),
-  prompt: truncateForPrompt(task.prompt, TASK_PROMPT_MAX_CHARS),
+  prompt: truncateText(task.prompt, TASK_PROMPT_MAX_CHARS, {
+    normalizeWhitespace: true,
+  }),
   ...(task.cron ? { cron: task.cron } : {}),
   ...(task.scheduledAt ? { scheduled_at: task.scheduledAt } : {}),
   ...(task.status === 'canceled' && task.cancel
@@ -136,7 +135,9 @@ export const formatResultsYaml = (
       return {
         id: result.taskId,
         title: task?.title.trim() ?? result.title?.trim() ?? result.taskId,
-        prompt: truncateForPrompt(task?.prompt ?? '', TASK_PROMPT_MAX_CHARS),
+        prompt: truncateText(task?.prompt ?? '', TASK_PROMPT_MAX_CHARS, {
+          normalizeWhitespace: true,
+        }),
         changed_at: result.completedAt,
         result: toResultPayload(result, result.cancel ?? task?.cancel),
       }
@@ -153,7 +154,9 @@ const formatPlanEntry = (
   priority: plan.priority,
   source: plan.source,
   title: plan.title.trim() || plan.id,
-  prompt: truncateForPrompt(plan.prompt, PLAN_PROMPT_MAX_CHARS),
+  prompt: truncateText(plan.prompt, PLAN_PROMPT_MAX_CHARS, {
+    normalizeWhitespace: true,
+  }),
   created_at: plan.createdAt,
   updated_at: plan.updatedAt,
   run_count: plan.runCount,

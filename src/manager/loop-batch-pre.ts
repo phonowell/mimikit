@@ -1,11 +1,7 @@
+import { parseIsoToMsOrZero } from '../shared/time.js'
+
 import type { RuntimeState } from './runtime-adapter.js'
 import type { TaskResult } from '../types/index.js'
-
-const toMs = (value: string | undefined): number => {
-  if (!value) return 0
-  const parsed = Date.parse(value)
-  return Number.isFinite(parsed) ? parsed : 0
-}
 
 export const applyPlanCompletionState = (
   runtime: RuntimeState,
@@ -15,7 +11,11 @@ export const applyPlanCompletionState = (
   const latestByTaskId = new Map<string, TaskResult>()
   for (const result of results) {
     const existing = latestByTaskId.get(result.taskId)
-    if (!existing || toMs(result.completedAt) >= toMs(existing.completedAt))
+    if (
+      !existing ||
+      parseIsoToMsOrZero(result.completedAt) >=
+        parseIsoToMsOrZero(existing.completedAt)
+    )
       latestByTaskId.set(result.taskId, result)
   }
   for (const plan of runtime.taskPlans) {

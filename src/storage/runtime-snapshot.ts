@@ -6,6 +6,7 @@ import { readJson, writeJson } from '../fs/json.js'
 import { ensureFile } from '../fs/paths.js'
 import { logSafeError } from '../log/safe.js'
 import { readErrorCode } from '../shared/error-code.js'
+import { toPrettyJsonText } from '../shared/json.js'
 
 import { parseRuntimeSnapshot } from './runtime-snapshot-schema.js'
 
@@ -26,9 +27,6 @@ const initialRuntimeSnapshot = (): RuntimeSnapshot => ({
     resultsCursor: 0,
   },
 })
-
-const toJsonText = (value: unknown): string =>
-  `${JSON.stringify(value, null, 2)}\n`
 
 const inspectBackupError = (
   error: unknown,
@@ -68,7 +66,7 @@ export const loadRuntimeSnapshot = async (
   const path = runtimePath(stateDir)
   const backupPath = runtimeBackupPath(stateDir)
   const initial = initialRuntimeSnapshot()
-  await ensureFile(path, toJsonText(initial))
+  await ensureFile(path, toPrettyJsonText(initial))
   const fallback = Symbol('runtime-snapshot-read-fallback')
   const primary = await readJson<unknown | typeof fallback>(path, fallback)
   if (primary !== fallback) return parseRuntimeSnapshot(primary)

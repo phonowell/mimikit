@@ -1,3 +1,4 @@
+import { compareIsoDesc } from '../../shared/time.js'
 import { titleFromCandidates } from '../../shared/utils.js'
 
 import type { Task, TaskStatus } from '../../types/index.js'
@@ -60,7 +61,7 @@ export const buildTaskViews = (
   limit = 200,
 ): { tasks: TaskView[]; counts: TaskCounts } => {
   const views = tasks.map(taskToView)
-  views.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
+  views.sort((a, b) => compareIsoDesc(a.createdAt, b.createdAt))
   const limited = views.slice(0, Math.max(0, limit))
   const counts = initCounts()
   for (const view of limited) counts[view.status] += 1

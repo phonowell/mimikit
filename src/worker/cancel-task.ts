@@ -6,6 +6,7 @@ import {
   notifyWorkerLoop,
 } from '../orchestrator/core/signals.js'
 import { markTaskCanceled } from '../orchestrator/core/task-lifecycle.js'
+import { parseIsoMs } from '../shared/time.js'
 import { nowIso } from '../shared/utils.js'
 import { publishWorkerResult } from '../streams/queues.js'
 
@@ -32,8 +33,8 @@ export type CancelResult = {
 
 const buildCanceledResult = (task: Task, output: string): TaskResult => {
   const completedAt = nowIso()
-  const startedAtMs = task.startedAt ? Date.parse(task.startedAt) : NaN
-  const durationMs = Number.isFinite(startedAtMs)
+  const startedAtMs = parseIsoMs(task.startedAt ?? '')
+  const durationMs = startedAtMs !== undefined
     ? Math.max(0, Date.now() - startedAtMs)
     : 0
   return {
@@ -118,10 +119,10 @@ export const cancelTask = async (
 
   const canceledAt = nowIso()
   runtime.lastWorkerActivityAtMs = Date.now()
-  const canceledAtMs = Date.parse(canceledAt)
-  const startedAtMs = task.startedAt ? Date.parse(task.startedAt) : NaN
+  const canceledAtMs = parseIsoMs(canceledAt)
+  const startedAtMs = parseIsoMs(task.startedAt ?? '')
   const durationMs =
-    Number.isFinite(startedAtMs) && Number.isFinite(canceledAtMs)
+    startedAtMs !== undefined && canceledAtMs !== undefined
       ? Math.max(0, canceledAtMs - startedAtMs)
       : undefined
   const cancelMeta = buildCancelMeta(meta)

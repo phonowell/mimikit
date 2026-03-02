@@ -1,7 +1,9 @@
 import { createRequire } from 'node:module'
 
 import { toTokens } from '../history/query-score.js'
-import { computeRecencyWeight, parseIsoMs } from '../shared/time.js'
+import { rankLookupResults } from '../shared/search-rank.js'
+import { truncateText } from '../shared/text.js'
+import { parseIsoMs } from '../shared/time.js'
 
 import type {
   MemoryLookupMessage,
@@ -31,11 +33,6 @@ type MemoryDoc = {
   content: string
   createdAt: ISODate
   ts: number
-}
-
-const clip = (value: string): string => {
-  if (value.length <= LOOKUP_MAX_CHARS) return value
-  return `${value.slice(0, LOOKUP_MAX_CHARS - 3).trimEnd()}...`
 }
 
 const toMemoryTokens = (value: string): string[] => {
@@ -121,34 +118,21 @@ export const queryMemoryRecords = (
     limit: Math.max(request.limit * 4, request.limit),
   })
   if (rankedIds.length === 0) return []
-  const docsById = new Map(docs.map((doc) => [doc.id, doc]))
-  const newest = Math.max(...docs.map((doc) => doc.ts))
-  const oldest = Math.min(...docs.map((doc) => doc.ts))
-  const scoreBase = Math.max(1, rankedIds.length)
-
-  return rankedIds
-    .map((id, index) => {
-      const doc = docsById.get(String(id))
-      if (!doc) return undefined
-      const baseScore = (scoreBase - index) / scoreBase
-      const recency = computeRecencyWeight(doc.ts, oldest, newest)
+  return rankLookupResults({
+    docs,
+    rankedIds,
+    limit: request.limit,
+    build: ({ doc, baseScore, recency }) => {
       const mergedScore = baseScore + recency * 0.05 + doc.score * 0.2
       return {
         id: doc.id,
         source: doc.source,
         tags: doc.tags,
         time: doc.createdAt,
-        content: clip(doc.content),
+        content: truncateText(doc.content, LOOKUP_MAX_CHARS),
         score: Number(mergedScore.toFixed(4)),
         ts: doc.ts,
       }
-    })
-    .filter((item): item is NonNullable<typeof item> => item !== undefined)
-    .sort((a, b) => {
-      if (a.score !== b.score) return b.score - a.score
-      if (a.ts !== b.ts) return b.ts - a.ts
-      return a.id.localeCompare(b.id)
-    })
-    .slice(0, request.limit)
-    .map(({ ts: _ts, ...item }) => item)
+    },
+  })
 }

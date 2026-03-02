@@ -1,20 +1,10 @@
 import { upsertMemoryRecord } from '../memory/store.js'
+import { parseCommaTagList } from '../shared/tag-list.js'
 
 import { writeMemorySchema } from './action-apply-schema.js'
 
 import type { Parsed } from '../actions/model/spec.js'
 import type { RuntimeState } from './runtime-adapter.js'
-
-const parseTags = (raw: string | undefined): string[] => {
-  if (!raw) return []
-  const unique = new Set<string>()
-  for (const part of raw.split(',')) {
-    const tag = part.replace(/\s+/g, ' ').trim()
-    if (!tag) continue
-    unique.add(tag)
-  }
-  return Array.from(unique)
-}
 
 export const applyWriteMemoryAction = async (
   runtime: RuntimeState,
@@ -25,7 +15,7 @@ export const applyWriteMemoryAction = async (
 
   const payload = {
     content: parsed.data.content,
-    tags: parseTags(parsed.data.tags),
+    tags: parseCommaTagList(parsed.data.tags),
     ...(parsed.data.source ? { source: parsed.data.source } : {}),
     ...(parsed.data.score ? { score: Number(parsed.data.score) } : {}),
     ...(parsed.data.ttl_days ? { ttlDays: Number(parsed.data.ttl_days) } : {}),

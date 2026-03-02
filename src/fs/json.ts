@@ -5,6 +5,7 @@ import pRetry from 'p-retry'
 import writeFileAtomicLib from 'write-file-atomic'
 
 import { safe } from '../log/safe.js'
+import { toPrettyJsonText } from '../shared/json.js'
 
 import { ensureDir, ensureFile } from './paths.js'
 
@@ -55,9 +56,6 @@ export const writeFileAtomic = async (
   })
 }
 
-const toJsonText = (value: unknown): string =>
-  `${JSON.stringify(value, null, 2)}\n`
-
 export const readJson = async <T>(
   path: string,
   fallback: T,
@@ -72,7 +70,7 @@ export const readJson = async <T>(
 
   let raw = await readRaw()
   if (!raw && opts?.ensureFile) {
-    await ensureFile(path, toJsonText(fallback))
+    await ensureFile(path, toPrettyJsonText(fallback))
     raw = await readRaw()
   }
 
@@ -80,4 +78,4 @@ export const readJson = async <T>(
 }
 
 export const writeJson = (path: string, value: unknown): Promise<void> =>
-  writeFileAtomic(path, toJsonText(value))
+  writeFileAtomic(path, toPrettyJsonText(value))

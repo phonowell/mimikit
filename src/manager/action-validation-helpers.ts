@@ -59,12 +59,6 @@ export const validateScheduledAtNotPast = (params: {
   const { action, scheduledAt, scheduleNowIso } = params
   const trimmed = scheduledAt.trim()
 
-  if (!Number.isFinite(Date.parse(trimmed))) {
-    return rejected(
-      `${action} 执行失败：scheduled_at 不是合法 ISO 8601 时间。`,
-    )
-  }
-
   const scheduledMs = parseIsoMs(trimmed)
   if (scheduledMs === undefined) {
     return rejected(

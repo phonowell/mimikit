@@ -2,6 +2,10 @@ import { createRequire } from 'node:module'
 
 import { z } from 'zod'
 
+import {
+  normalizeMsRange,
+  parseOptionalNumber,
+} from '../shared/query-params.js'
 import { parseIsoMs } from '../shared/time.js'
 
 import { collectDocs, scoreAndRankDocs, toTokens } from './query-score.js'
@@ -68,11 +72,6 @@ export const queryHistorySchema = z
   })
   .strict()
 
-const parseLimit = (raw?: string): number => {
-  if (!raw) return DEFAULT_LIMIT
-  return Number(raw)
-}
-
 const parseRoles = (raw?: string): Role[] => {
   if (!raw) return DEFAULT_ROLES
   return parseRolesRaw(raw) ?? DEFAULT_ROLES
@@ -85,22 +84,16 @@ export const pickQueryHistoryRequest = (
     if (item.name !== 'query_history') continue
     const parsed = queryHistorySchema.safeParse(item.attrs)
     if (!parsed.success) continue
-    const limit = parseLimit(parsed.data.limit)
+    const limit = parseOptionalNumber(parsed.data.limit, DEFAULT_LIMIT)
     const fromMs = parsed.data.from ? parseIsoMs(parsed.data.from) : undefined
     const toMs = parsed.data.to ? parseIsoMs(parsed.data.to) : undefined
-    const rangeStart =
-      fromMs !== undefined && toMs !== undefined
-        ? Math.min(fromMs, toMs)
-        : fromMs
-    const rangeEnd =
-      fromMs !== undefined && toMs !== undefined ? Math.max(fromMs, toMs) : toMs
+    const range = normalizeMsRange(fromMs, toMs)
     return {
       query: parsed.data.query,
       limit,
       roles: parseRoles(parsed.data.roles),
       ...(parsed.data.before_id ? { beforeId: parsed.data.before_id } : {}),
-      ...(rangeStart !== undefined ? { fromMs: rangeStart } : {}),
-      ...(rangeEnd !== undefined ? { toMs: rangeEnd } : {}),
+      ...range,
     }
   }
   return undefined

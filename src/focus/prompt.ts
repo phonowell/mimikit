@@ -1,4 +1,5 @@
 import { isVisibleToAgent } from '../shared/message-visibility.js'
+import { compareIsoDesc } from '../shared/time.js'
 
 import {
   MAX_FOCUS_OPEN_ITEMS,
@@ -6,6 +7,7 @@ import {
   MAX_RECENT_HISTORY_BYTES,
   MIN_RECENT_MESSAGES,
 } from './constants.js'
+import { normalizeFocusOpenItems } from './open-items.js'
 
 import type {
   FocusContext,
@@ -44,9 +46,8 @@ type MessageWithBytes = {
 }
 
 const compareMessageDesc = (a: HistoryMessage, b: HistoryMessage): number => {
-  const at = Date.parse(a.createdAt)
-  const bt = Date.parse(b.createdAt)
-  if (at !== bt) return bt - at
+  const diff = compareIsoDesc(a.createdAt, b.createdAt)
+  if (diff !== 0) return diff
   return b.id.localeCompare(a.id)
 }
 
@@ -89,9 +90,8 @@ const selectRecentMessagesByBudget = (
 }
 
 const compareFocusByActivityDesc = (a: FocusMeta, b: FocusMeta): number => {
-  const at = Date.parse(a.lastActivityAt)
-  const bt = Date.parse(b.lastActivityAt)
-  if (at !== bt) return bt - at
+  const diff = compareIsoDesc(a.lastActivityAt, b.lastActivityAt)
+  if (diff !== 0) return diff
   return a.id.localeCompare(b.id)
 }
 
@@ -127,10 +127,9 @@ export const buildFocusPromptPayload = (params: {
     if (!focus || focus.status === 'archived') continue
     const context = focusContextById.get(focusId)
     const summary = context?.summary?.trim()
-    const openItems = context?.openItems
-      ?.map((item) => item.trim())
-      .filter((item) => item.length > 0)
-      .slice(0, MAX_FOCUS_OPEN_ITEMS)
+    const openItems = normalizeFocusOpenItems(context?.openItems, {
+      maxItems: MAX_FOCUS_OPEN_ITEMS,
+    })
     const focusMessages = visible.filter((item) => item.focusId === focusId)
     const recentMessages = selectRecentMessagesByBudget(
       focusMessages,

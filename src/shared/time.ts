@@ -8,6 +8,17 @@ export const parseIsoToMs = (value: string): number => {
   return Number.isFinite(ts) ? ts : 0
 }
 
+export const parseIsoToMsOrZero = (value?: string): number => {
+  if (!value) return 0
+  return parseIsoToMs(value)
+}
+
+export const compareIsoAsc = (a?: string, b?: string): number =>
+  parseIsoToMsOrZero(a) - parseIsoToMsOrZero(b)
+
+export const compareIsoDesc = (a?: string, b?: string): number =>
+  parseIsoToMsOrZero(b) - parseIsoToMsOrZero(a)
+
 type ScheduleNowSource = {
   clientNowIso?: string
   clientOffsetMinutes?: number

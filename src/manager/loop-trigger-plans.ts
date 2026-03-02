@@ -2,6 +2,7 @@ import { Cron } from 'croner'
 
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
+import { compareIsoAsc, parseIsoMs } from '../shared/time.js'
 
 import {
   canFireOnIdle,
@@ -34,8 +35,8 @@ export const checkScheduledPlans = async (
     }
 
     if (plan.trigger.mode === 'scheduled_at') {
-      const scheduledMs = Date.parse(plan.trigger.scheduledAt)
-      if (!Number.isFinite(scheduledMs) || now.getTime() < scheduledMs) continue
+      const scheduledMs = parseIsoMs(plan.trigger.scheduledAt)
+      if (scheduledMs === undefined || now.getTime() < scheduledMs) continue
       if (plan.lastTriggeredAt) continue
       await firePlan({
         runtime,
@@ -111,7 +112,7 @@ export const triggerOnIdlePlans = async (
         (a.priority === 'high' ? 0 : a.priority === 'normal' ? 1 : 2) -
         (b.priority === 'high' ? 0 : b.priority === 'normal' ? 1 : 2)
       if (priorityRank !== 0) return priorityRank
-      return Date.parse(a.createdAt) - Date.parse(b.createdAt)
+      return compareIsoAsc(a.createdAt, b.createdAt)
     })
 
   if (items.length === 0) return { triggeredCount: 0, stateChanged: false }

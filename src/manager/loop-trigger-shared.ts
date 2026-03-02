@@ -1,5 +1,6 @@
 import { publishManagerSystemEventInput } from './system-input-event.js'
 import { hasNonIdleManagerInput } from './idle-input.js'
+import { parseIsoMs } from '../shared/time.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { TaskPlan } from '../types/index.js'
@@ -52,8 +53,8 @@ export const canFireOnIdle = (plan: TaskPlan, nowMs: number): boolean => {
   const cooldownMs = Math.max(0, plan.trigger.cooldownMs)
   if (cooldownMs === 0) return true
   if (!plan.lastCompletedAt) return true
-  const lastCompletedMs = Date.parse(plan.lastCompletedAt)
-  if (!Number.isFinite(lastCompletedMs)) return true
+  const lastCompletedMs = parseIsoMs(plan.lastCompletedAt)
+  if (lastCompletedMs === undefined) return true
   return nowMs - lastCompletedMs >= cooldownMs
 }
 

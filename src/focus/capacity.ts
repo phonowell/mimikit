@@ -1,20 +1,19 @@
 import { GLOBAL_FOCUS_ID, MAX_WORKING_FOCUSES } from './constants.js'
+import { compareIsoAsc, compareIsoDesc } from '../shared/time.js'
 import { ensureGlobalFocus, findFocus, setFocusStatus } from './state.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { FocusId, FocusMeta } from '../types/index.js'
 
 const compareByActivityAsc = (a: FocusMeta, b: FocusMeta): number => {
-  const at = Date.parse(a.lastActivityAt)
-  const bt = Date.parse(b.lastActivityAt)
-  if (at !== bt) return at - bt
+  const diff = compareIsoAsc(a.lastActivityAt, b.lastActivityAt)
+  if (diff !== 0) return diff
   return a.id.localeCompare(b.id)
 }
 
 const compareByActivityDesc = (a: FocusMeta, b: FocusMeta): number => {
-  const at = Date.parse(a.lastActivityAt)
-  const bt = Date.parse(b.lastActivityAt)
-  if (at !== bt) return bt - at
+  const diff = compareIsoDesc(a.lastActivityAt, b.lastActivityAt)
+  if (diff !== 0) return diff
   return a.id.localeCompare(b.id)
 }
 

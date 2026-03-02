@@ -1,5 +1,10 @@
 import { z } from 'zod'
 
+import {
+  normalizeMsRange,
+  parseOptionalNumber,
+} from '../shared/query-params.js'
+import { parseCommaTagList } from '../shared/tag-list.js'
 import { parseIsoMs } from '../shared/time.js'
 
 import { queryMemoryRecords } from './query-score.js'
@@ -15,16 +20,6 @@ const INTEGER_STRING_RE = /^[+-]?\d+$/
 const DECIMAL_STRING_RE = /^(?:0(?:\.\d+)?|1(?:\.0+)?)$/
 
 const memorySourceSchema = z.enum(['user', 'agent', 'system'])
-
-const parseTagList = (raw: string): string[] => {
-  const unique = new Set<string>()
-  for (const part of raw.split(',')) {
-    const tag = part.replace(/\s+/g, ' ').trim().toLowerCase()
-    if (!tag) continue
-    unique.add(tag)
-  }
-  return Array.from(unique)
-}
 
 export const queryMemorySchema = z
   .object({
@@ -45,7 +40,10 @@ export const queryMemorySchema = z
     tags: z
       .string()
       .trim()
-      .refine((value) => parseTagList(value).length > 0, 'tags must not be empty')
+      .refine(
+        (value) => parseCommaTagList(value, { lowercase: true }).length > 0,
+        'tags must not be empty',
+      )
       .optional(),
     source: memorySourceSchema.optional(),
     min_score: z
@@ -58,8 +56,6 @@ export const queryMemorySchema = z
   })
   .strict()
 
-const parseLimit = (raw?: string): number => (raw ? Number(raw) : DEFAULT_LIMIT)
-
 export const pickQueryMemoryRequest = (
   actions: Parsed[],
 ): QueryMemoryRequest | undefined => {
@@ -69,20 +65,14 @@ export const pickQueryMemoryRequest = (
     if (!parsed.success) continue
     const fromMs = parsed.data.from ? parseIsoMs(parsed.data.from) : undefined
     const toMs = parsed.data.to ? parseIsoMs(parsed.data.to) : undefined
-    const rangeStart =
-      fromMs !== undefined && toMs !== undefined
-        ? Math.min(fromMs, toMs)
-        : fromMs
-    const rangeEnd =
-      fromMs !== undefined && toMs !== undefined ? Math.max(fromMs, toMs) : toMs
+    const range = normalizeMsRange(fromMs, toMs)
     return {
       query: parsed.data.query,
-      limit: parseLimit(parsed.data.limit),
-      tags: parseTagList(parsed.data.tags ?? ''),
+      limit: parseOptionalNumber(parsed.data.limit, DEFAULT_LIMIT),
+      tags: parseCommaTagList(parsed.data.tags, { lowercase: true }),
       ...(parsed.data.source ? { source: parsed.data.source } : {}),
       ...(parsed.data.min_score ? { minScore: Number(parsed.data.min_score) } : {}),
-      ...(rangeStart !== undefined ? { fromMs: rangeStart } : {}),
-      ...(rangeEnd !== undefined ? { toMs: rangeEnd } : {}),
+      ...range,
     }
   }
   return undefined

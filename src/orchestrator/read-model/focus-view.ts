@@ -1,3 +1,6 @@
+import { normalizeFocusOpenItems } from '../../focus/open-items.js'
+import { compareIsoDesc } from '../../shared/time.js'
+
 import type { FocusContext, FocusMeta } from '../../types/index.js'
 
 export type FocusView = {
@@ -12,9 +15,8 @@ export type FocusView = {
 }
 
 const sortByLastActivityDesc = (a: FocusMeta, b: FocusMeta): number => {
-  const at = Date.parse(a.lastActivityAt)
-  const bt = Date.parse(b.lastActivityAt)
-  if (at !== bt) return bt - at
+  const diff = compareIsoDesc(a.lastActivityAt, b.lastActivityAt)
+  if (diff !== 0) return diff
   return a.id.localeCompare(b.id)
 }
 
@@ -22,14 +24,6 @@ const normalizeSummary = (value?: string): string | undefined => {
   if (typeof value !== 'string') return undefined
   const trimmed = value.trim()
   return trimmed || undefined
-}
-
-const normalizeOpenItems = (value?: string[]): string[] | undefined => {
-  if (!Array.isArray(value)) return undefined
-  const items = value
-    .map((item) => (typeof item === 'string' ? item.trim() : ''))
-    .filter((item) => item.length > 0)
-  return items.length > 0 ? items : undefined
 }
 
 export const buildFocusViews = (
@@ -49,7 +43,7 @@ export const buildFocusViews = (
     .map((focus) => {
       const context = contextById.get(focus.id)
       const summary = normalizeSummary(context?.summary)
-      const openItems = normalizeOpenItems(context?.openItems)
+      const openItems = normalizeFocusOpenItems(context?.openItems)
       return {
         id: focus.id,
         title: focus.title,

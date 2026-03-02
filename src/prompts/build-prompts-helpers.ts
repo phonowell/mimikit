@@ -1,5 +1,6 @@
 import { readTextFileIfExists } from '../fs/read-text.js'
 import { readErrorCode } from '../shared/error-code.js'
+import { compareIsoDesc } from '../shared/time.js'
 
 import { escapeCdata } from './format-base.js'
 
@@ -23,7 +24,7 @@ export const mergeTaskResults = (
   for (const result of secondary) merged.set(result.taskId, result)
   for (const result of primary) merged.set(result.taskId, result)
   const values = Array.from(merged.values())
-  values.sort((a, b) => Date.parse(b.completedAt) - Date.parse(a.completedAt))
+  values.sort((a, b) => compareIsoDesc(a.completedAt, b.completedAt))
   return values
 }
 

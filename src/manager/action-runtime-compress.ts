@@ -1,5 +1,6 @@
 import { readHistory } from '../history/store.js'
 import { isVisibleToAgent } from '../shared/message-visibility.js'
+import { truncateText } from '../shared/text.js'
 
 import {
   compressContextSchema,
@@ -25,15 +26,6 @@ const normalizeCompressedContext = (value: string): string => {
   return `${normalized.slice(0, MAX_COMPRESSED_CONTEXT_CHARS - 1).trimEnd()}…`
 }
 
-const normalizeInline = (value: string): string =>
-  value.replace(/\s+/g, ' ').trim()
-
-const clip = (value: string, maxChars: number): string => {
-  const normalized = normalizeInline(value)
-  if (normalized.length <= maxChars) return normalized
-  return `${normalized.slice(0, Math.max(0, maxChars - 3)).trimEnd()}...`
-}
-
 const formatHistorySection = async (runtime: RuntimeState): Promise<string> => {
   const history = await readHistory(runtime.paths.history)
   const visible = history.filter((item) => isVisibleToAgent(item))
@@ -42,7 +34,7 @@ const formatHistorySection = async (runtime: RuntimeState): Promise<string> => {
   return recent
     .map(
       (item, index) =>
-        `${index + 1}. [${item.createdAt}] (${item.role}) ${clip(item.text, MAX_HISTORY_LINE_CHARS)}`,
+        `${index + 1}. [${item.createdAt}] (${item.role}) ${truncateText(item.text, MAX_HISTORY_LINE_CHARS, { normalizeWhitespace: true })}`,
     )
     .join('\n')
 }
@@ -53,9 +45,9 @@ const formatTasksSection = (runtime: RuntimeState): string => {
     .slice(Math.max(0, runtime.tasks.length - MAX_TASK_ITEMS))
     .map((task, index) => {
       const resultSummary = task.result?.output
-        ? clip(task.result.output, 120)
+        ? truncateText(task.result.output, 120, { normalizeWhitespace: true })
         : ''
-      return `${index + 1}. [${task.status}] id=${task.id} title=${clip(task.title, 80)}${resultSummary ? ` result=${resultSummary}` : ''}`
+      return `${index + 1}. [${task.status}] id=${task.id} title=${truncateText(task.title, 80, { normalizeWhitespace: true })}${resultSummary ? ` result=${resultSummary}` : ''}`
     })
     .join('\n')
 }

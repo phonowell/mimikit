@@ -1,4 +1,5 @@
 import { sortTasksByChangedAt } from '../../prompts/format-base.js'
+import { parseIsoToMsOrZero } from '../../shared/time.js'
 
 import type { Task, TaskPlan, PlanPriority } from '../../types/index.js'
 
@@ -44,23 +45,17 @@ const PRIORITY_RANK: Record<PlanPriority, number> = {
   low: 2,
 }
 
-const toMs = (value: string | undefined): number => {
-  if (!value) return 0
-  const parsed = Date.parse(value)
-  return Number.isFinite(parsed) ? parsed : 0
-}
-
 const comparePriorityFifo = (a: TaskPlan, b: TaskPlan): number => {
   const priorityRank = PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority]
   if (priorityRank !== 0) return priorityRank
-  const createdDiff = toMs(a.createdAt) - toMs(b.createdAt)
+  const createdDiff = parseIsoToMsOrZero(a.createdAt) - parseIsoToMsOrZero(b.createdAt)
   if (createdDiff !== 0) return createdDiff
   return a.id.localeCompare(b.id)
 }
 
 const compareDoneDesc = (a: TaskPlan, b: TaskPlan): number => {
-  const aChanged = toMs(a.archivedAt ?? a.updatedAt)
-  const bChanged = toMs(b.archivedAt ?? b.updatedAt)
+  const aChanged = parseIsoToMsOrZero(a.archivedAt ?? a.updatedAt)
+  const bChanged = parseIsoToMsOrZero(b.archivedAt ?? b.updatedAt)
   if (aChanged !== bChanged) return bChanged - aChanged
   return a.id.localeCompare(b.id)
 }
@@ -102,7 +97,7 @@ export const selectOnIdlePlansForTrigger = (
         return false
       const cooldownMs = Math.max(0, plan.trigger.cooldownMs)
       if (cooldownMs === 0) return true
-      const lastCompletedMs = toMs(plan.lastCompletedAt)
+      const lastCompletedMs = parseIsoToMsOrZero(plan.lastCompletedAt)
       if (lastCompletedMs <= 0) return true
       return nowMs - lastCompletedMs >= cooldownMs
     })
