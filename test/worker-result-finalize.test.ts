@@ -41,6 +41,18 @@ test('finalizeResult appends worker_end progress for canceled task', async () =>
     config: { workDir: stateDir },
     paths: buildPaths(stateDir),
     tasks: [task],
+    focuses: [
+      {
+        id: 'focus-global',
+        title: 'Global',
+        status: 'active',
+        createdAt: '2026-02-26T10:00:00.000Z',
+        updatedAt: '2026-02-26T10:00:00.000Z',
+        lastActivityAt: '2026-02-26T10:00:00.000Z',
+      },
+    ],
+    focusContexts: [],
+    activeFocusIds: ['focus-global'],
     lastWorkerActivityAtMs: 0,
     managerWakePending: false,
     managerSignalController: new AbortController(),
@@ -68,4 +80,21 @@ test('finalizeResult appends worker_end progress for canceled task', async () =>
     durationMs: 12,
     cancel: { source: 'deferred' },
   })
+  expect(runtime.focusContexts).toHaveLength(1)
+  expect(runtime.focusContexts[0]).toMatchObject({
+    focusId: 'focus-global',
+  })
+  expect(runtime.focusContexts[0]?.summary).toContain('Cancel Me')
+  expect(runtime.focusContexts[0]?.openItems?.[0]).toContain('Resume')
+
+  const succeeded: TaskResult = {
+    taskId: task.id,
+    status: 'succeeded',
+    ok: true,
+    output: 'Done without checklist',
+    durationMs: 20,
+    completedAt: '2026-02-26T10:00:33.000Z',
+  }
+  await finalizeResult(runtime, task, succeeded, mergeTaskPatch)
+  expect(runtime.focusContexts[0]?.openItems?.[0]).toContain('Resume')
 })

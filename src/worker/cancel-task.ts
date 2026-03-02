@@ -9,6 +9,7 @@ import { markTaskCanceled } from '../orchestrator/core/task-lifecycle.js'
 import { parseIsoMs } from '../shared/time.js'
 import { nowIso } from '../shared/utils.js'
 import { publishWorkerResult } from '../streams/queues.js'
+import { syncFocusContextFromTaskResult } from '../focus/result-feedback.js'
 
 import { archiveTaskResult } from './result-finalize.js'
 
@@ -66,6 +67,7 @@ const pushCanceledResult = async (
   task: Task,
   result: TaskResult,
 ) => {
+  syncFocusContextFromTaskResult(runtime, task, result)
   const archivePath = await archiveTaskResult(runtime, task, result, 'cancel')
   if (archivePath) result.archivePath = task.archivePath = archivePath
   await publishWorkerResult({

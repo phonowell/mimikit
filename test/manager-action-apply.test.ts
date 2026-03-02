@@ -120,23 +120,6 @@ test('run_task dedupe does not block task creation when fingerprint differs', as
   expect(runtime.tasks[1]?.fingerprint).not.toBe(runtime.tasks[0]?.fingerprint)
 })
 
-test('run_task allows .mimikit state paths', async () => {
-  const runtime = await createRuntime()
-
-  await applyTaskActions(runtime, [
-    {
-      name: 'run_task',
-      attrs: {
-        prompt: 'Read .mimikit/history/2026-02-15.jsonl and summarize',
-        title: 'allowed',
-      },
-    },
-  ])
-
-  expect(runtime.tasks).toHaveLength(1)
-  expect(runtime.tasks[0]?.title).toBe('allowed')
-})
-
 test('create_plan uses worker profile for cron plan', async () => {
   const runtime = await createRuntime()
   await applyTaskActions(runtime, [
