@@ -26,7 +26,10 @@
   gap: 4px;
   padding: 10px 12px;
   border-radius: 16px;
-  background: var(--bubble-agent-bg);
+  position: relative;
+  background:
+    linear-gradient(120deg, var(--focus-soft) 0%, transparent 56%),
+    var(--bubble-agent-bg);
   color: var(--bubble-agent-text);
   border: 1px solid var(--bubble-agent-border);
   box-shadow: -0.5px -0.5px 1.5px rgba(255, 255, 255, 0.24),
@@ -34,12 +37,25 @@
   order: 1;
 }
 
+.message:not(.system) article::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--focus-accent);
+}
+
 .message.user {
   justify-content: flex-end;
 }
 
 .message.user article {
-  background: var(--bubble-user-bg);
+  background:
+    linear-gradient(120deg, var(--focus-soft) 0%, transparent 56%),
+    var(--bubble-user-bg);
   color: var(--bubble-user-text);
   border-color: var(--bubble-user-border);
   box-shadow: -0.5px -0.5px 1.5px rgba(255, 255, 255, 0.2),

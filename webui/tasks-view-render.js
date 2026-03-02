@@ -6,6 +6,7 @@ import {
 import { formatUsage } from './messages/format-usage.js'
 import { renderEmptyListState } from './list-empty.js'
 import { appendMetaTime } from './meta-time.js'
+import { applyFocusToneClass, resolveFocusLabel } from './focus-color.js'
 import { UI_TEXT, resolveTaskStatusLabel } from './system-text.js'
 import { createTaskActions } from './tasks-view-actions.js'
 import { formatElapsedText } from './tasks-view-time.js'
@@ -62,7 +63,12 @@ export const renderTasks = (tasksList, data) => {
     item.className = 'task-item'
     const statusValue = task.status || 'pending'
     const taskId = typeof task.id === 'string' ? task.id.trim() : ''
+    const focusLabel = resolveFocusLabel(task.focusId ?? task.focus_id)
     item.dataset.status = statusValue
+    if (focusLabel) {
+      item.dataset.focusId = focusLabel
+      applyFocusToneClass(item, focusLabel)
+    }
 
     const isCancelable = statusValue === 'pending' || statusValue === 'running'
     const canOpenArchive = taskId.length > 0
@@ -97,6 +103,14 @@ export const renderTasks = (tasksList, data) => {
     status.setAttribute('role', 'img')
     status.setAttribute('aria-label', statusLabel)
     status.title = statusValue
+
+    if (focusLabel) {
+      const focusEl = document.createElement('span')
+      focusEl.className = 'task-focus'
+      focusEl.textContent = focusLabel
+      focusEl.title = focusLabel
+      meta.appendChild(focusEl)
+    }
 
     if (task.scheduledAt) {
       const scheduledBadge = resolveScheduledBadge(task.scheduledAt, nowDate)

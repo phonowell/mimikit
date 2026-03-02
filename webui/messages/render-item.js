@@ -1,4 +1,5 @@
 import { createQuoteBlock, isAgentMessage } from './render-shared.js'
+import { applyFocusToneClass, resolveFocusLabel } from '../focus-color.js'
 import { UI_TEXT } from '../system-text.js'
 
 export const renderMessage = (params, msg) => {
@@ -19,6 +20,7 @@ export const renderMessage = (params, msg) => {
   const roleClass = msg.role === 'agent' ? 'agent' : msg.role
   const isSystemMessage = msg?.role === 'system'
   const isStreamingMessage = Boolean(msg?.streaming)
+  const focusLabel = resolveFocusLabel(msg?.focusId)
   const isEntering = enterMessageIds?.has(msg?.id)
   item.className = `message ${roleClass}${isStreamingMessage ? ' message--streaming' : ''}${isEntering ? ' message--enter' : ''}`
   if (msg?.id) item.dataset.messageId = String(msg.id)
@@ -29,6 +31,10 @@ export const renderMessage = (params, msg) => {
   }
 
   const article = document.createElement('article')
+  if (focusLabel && !isSystemMessage) {
+    item.dataset.focusId = focusLabel
+    applyFocusToneClass(item, focusLabel)
+  }
   if (canQuote) {
     article.addEventListener('dblclick', () => {
       if (
@@ -68,6 +74,13 @@ export const renderMessage = (params, msg) => {
     isAgentMessage(msg) && !isStreamingMessage ? formatElapsedLabel(msg.elapsedMs) : ''
   const meta = document.createElement('small')
   meta.className = 'meta'
+  if (focusLabel && !isSystemMessage) {
+    const focus = document.createElement('span')
+    focus.className = 'focus-chip'
+    focus.textContent = focusLabel
+    focus.title = focusLabel
+    meta.appendChild(focus)
+  }
   if (usageText) {
     const usage = document.createElement('span')
     usage.className = 'usage'

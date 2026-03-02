@@ -3,6 +3,11 @@
   align-items: flex-start;
   gap: 10px;
   position: relative;
+  border-left-width: 3px;
+  border-left-color: var(--focus-accent);
+  background:
+    linear-gradient(120deg, var(--focus-soft) 0%, transparent 58%),
+    var(--panel);
   box-shadow: var(--shadow-raised-soft);
 }
 

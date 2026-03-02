@@ -1,0 +1,103 @@
+:root {
+  --focus-accent: transparent;
+  --focus-soft: transparent;
+  --focus-chip-bg: var(--panel-strong);
+  --focus-chip-border: transparent;
+  --focus-chip-text: var(--muted);
+}
+
+.focus-tone-0 {
+  --focus-accent: hsl(6, 76%, 42%);
+  --focus-soft: hsl(6, 84%, 95%);
+  --focus-chip-bg: hsl(6, 80%, 94%);
+  --focus-chip-border: hsl(6, 54%, 72%);
+  --focus-chip-text: hsl(6, 62%, 26%);
+}
+
+.focus-tone-1 {
+  --focus-accent: hsl(24, 78%, 42%);
+  --focus-soft: hsl(24, 86%, 95%);
+  --focus-chip-bg: hsl(24, 82%, 94%);
+  --focus-chip-border: hsl(24, 56%, 72%);
+  --focus-chip-text: hsl(24, 64%, 25%);
+}
+
+.focus-tone-2 {
+  --focus-accent: hsl(42, 76%, 40%);
+  --focus-soft: hsl(42, 86%, 94%);
+  --focus-chip-bg: hsl(42, 82%, 93%);
+  --focus-chip-border: hsl(42, 54%, 70%);
+  --focus-chip-text: hsl(42, 66%, 24%);
+}
+
+.focus-tone-3 {
+  --focus-accent: hsl(78, 68%, 38%);
+  --focus-soft: hsl(78, 78%, 93%);
+  --focus-chip-bg: hsl(78, 74%, 92%);
+  --focus-chip-border: hsl(78, 48%, 66%);
+  --focus-chip-text: hsl(78, 60%, 23%);
+}
+
+.focus-tone-4 {
+  --focus-accent: hsl(118, 62%, 36%);
+  --focus-soft: hsl(118, 72%, 93%);
+  --focus-chip-bg: hsl(118, 68%, 92%);
+  --focus-chip-border: hsl(118, 44%, 64%);
+  --focus-chip-text: hsl(118, 56%, 22%);
+}
+
+.focus-tone-5 {
+  --focus-accent: hsl(160, 66%, 36%);
+  --focus-soft: hsl(160, 74%, 93%);
+  --focus-chip-bg: hsl(160, 70%, 92%);
+  --focus-chip-border: hsl(160, 44%, 64%);
+  --focus-chip-text: hsl(160, 56%, 22%);
+}
+
+.focus-tone-6 {
+  --focus-accent: hsl(188, 72%, 38%);
+  --focus-soft: hsl(188, 82%, 94%);
+  --focus-chip-bg: hsl(188, 78%, 93%);
+  --focus-chip-border: hsl(188, 50%, 68%);
+  --focus-chip-text: hsl(188, 58%, 24%);
+}
+
+.focus-tone-7 {
+  --focus-accent: hsl(208, 76%, 40%);
+  --focus-soft: hsl(208, 84%, 95%);
+  --focus-chip-bg: hsl(208, 80%, 94%);
+  --focus-chip-border: hsl(208, 54%, 70%);
+  --focus-chip-text: hsl(208, 62%, 24%);
+}
+
+.focus-tone-8 {
+  --focus-accent: hsl(224, 72%, 42%);
+  --focus-soft: hsl(224, 82%, 95%);
+  --focus-chip-bg: hsl(224, 78%, 94%);
+  --focus-chip-border: hsl(224, 54%, 72%);
+  --focus-chip-text: hsl(224, 60%, 26%);
+}
+
+.focus-tone-9 {
+  --focus-accent: hsl(246, 66%, 44%);
+  --focus-soft: hsl(246, 76%, 95%);
+  --focus-chip-bg: hsl(246, 72%, 94%);
+  --focus-chip-border: hsl(246, 50%, 72%);
+  --focus-chip-text: hsl(246, 58%, 28%);
+}
+
+.focus-tone-10 {
+  --focus-accent: hsl(286, 64%, 42%);
+  --focus-soft: hsl(286, 74%, 95%);
+  --focus-chip-bg: hsl(286, 70%, 94%);
+  --focus-chip-border: hsl(286, 50%, 72%);
+  --focus-chip-text: hsl(286, 56%, 26%);
+}
+
+.focus-tone-11 {
+  --focus-accent: hsl(332, 72%, 42%);
+  --focus-soft: hsl(332, 82%, 95%);
+  --focus-chip-bg: hsl(332, 78%, 94%);
+  --focus-chip-border: hsl(332, 52%, 72%);
+  --focus-chip-text: hsl(332, 60%, 26%);
+}
