@@ -1,7 +1,8 @@
 import { parseActions } from '../actions/protocol/parse.js'
-import { notifyUiSignal, type RuntimeState } from './runtime-adapter.js'
 import { isSameUsage, mergeUsageMonotonic } from '../shared/token-usage.js'
 import { nowIso } from '../shared/utils.js'
+
+import { notifyUiSignal, type RuntimeState } from './runtime-adapter.js'
 
 import type { TokenUsage } from '../types/index.js'
 
@@ -68,6 +69,7 @@ export const setUiStreamUsage = (
 export const stopUiStream = (runtime: RuntimeState, streamId: string): void => {
   if (runtime.uiStream?.id !== streamId) return
   runtime.uiStream = null
+  notifyUiSignal(runtime, 'stream')
 }
 
 export const toVisibleAgentText = (rawOutput: string): string => {
