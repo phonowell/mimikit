@@ -1,6 +1,6 @@
 # CoPaw QQ 渠道调研（用于 Mimikit 对接前）
 
-更新时间：2026-03-01  
+更新时间：2026-03-02  
 范围：仅覆盖 CoPaw 当前 QQ 渠道实现与可复用结论，不扩展到其他渠道。
 
 ## 核心结论
@@ -59,6 +59,16 @@
 3. 建议显式保留 `message_id/msg_seq` 语义（CoPaw 已做去重序列处理），降低重复回包风险。  
 4. 对外配置使用 `app_id/client_secret` 二元凭证模型，避免抽象成单 token。  
 
+## 2026-03-02 决策补充（Mimikit 当前口径）
+
+1. 输入来源按“用户入口”计为两类：`WebUI` 与 `QQ`。  
+   - `WebUI`：`POST /api/input` + `GET /api/events`（SSE）。  
+   - `QQ`：Webhook 入站（计划 `POST /api/qq/events`），不走 SSE。  
+   - 目标运行模式：`WebUI` 与 `QQ` 同时启用，不是二选一。  
+2. QQ 单聊输出第一期固定纯文本（`msg_type=0`），不启用 markdown。  
+3. QQ 单聊接口技术上支持 markdown（`msg_type=2` + `markdown` 字段），但文档标注需要开通；且“被动 MD”需单独申请。  
+4. `ask_user_choice` 在 QQ 链路禁用：当前选择提交仅有 WebUI 路由 `POST /api/choices/:id/select`，QQ 侧无对等回传通道。  
+
 ## 已知风险点
 
 1. 仓库仍处于 `0.0.x` 早期，接口与行为可能快速变化。  
@@ -71,4 +81,5 @@
 - QQ 频道代码：https://github.com/agentscope-ai/CoPaw/blob/main/src/copaw/app/channels/qq/channel.py  
 - QQ 频道文档（中文）：https://github.com/agentscope-ai/CoPaw/blob/main/website/public/docs/channels.zh.md  
 - 配置模型：https://github.com/agentscope-ai/CoPaw/blob/main/src/copaw/config/config.py  
-
+- QQ 机器人文档（发送消息）：https://github.com/tencent-connect/bot-docs/blob/master/docs/develop/api-v2/server-inter/message/send-receive/send.md  
+- QQ 机器人文档（Markdown 消息）：https://github.com/tencent-connect/bot-docs/blob/master/docs/develop/api-v2/server-inter/message/type/markdown.md  
