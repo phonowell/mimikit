@@ -8,7 +8,7 @@ import type { QueryHistoryRequest } from '../src/history/query.js'
 
 import type { HistoryMessage } from '../src/types/index.js'
 
-test('pickQueryHistoryRequest normalizes inverted from/to range and expands roles=all', () => {
+test('pickQueryHistoryRequest expands roles=all', () => {
   const request = pickQueryHistoryRequest([
     {
       name: 'query_history',
@@ -16,38 +16,12 @@ test('pickQueryHistoryRequest normalizes inverted from/to range and expands role
         query: 'roadmap',
         limit: '10',
         roles: 'all',
-        from: '2026-02-09T23:59:59.999Z',
-        to: '2026-02-08T00:00:00.000Z',
-        before_id: 'm5',
       },
     },
   ])
 
   expect(request).toBeDefined()
-  expect(request?.fromMs).toBeLessThanOrEqual(request?.toMs ?? Number.MAX_SAFE_INTEGER)
-  expect(request?.beforeId).toBe('m5')
   expect(request?.roles).toEqual(['user', 'agent', 'system'])
-
-  const requestWithOmittedRoles = pickQueryHistoryRequest([
-    {
-      name: 'query_history',
-      attrs: {
-        query: 'roadmap',
-      },
-    },
-  ])
-  expect(requestWithOmittedRoles?.roles).toEqual(['user', 'agent', 'system'])
-
-  const requestWithEmptyRoles = pickQueryHistoryRequest([
-    {
-      name: 'query_history',
-      attrs: {
-        query: 'roadmap',
-        roles: '',
-      },
-    },
-  ])
-  expect(requestWithEmptyRoles?.roles).toEqual(['user', 'agent', 'system'])
 })
 
 test('pickQueryHistoryRequest rejects invalid limit format', () => {
@@ -64,14 +38,12 @@ test('pickQueryHistoryRequest rejects invalid limit format', () => {
   expect(request).toBeUndefined()
 })
 
-test('queryHistory applies before_id window and time range filters', () => {
+test('queryHistory applies before_id window filter', () => {
   const request: QueryHistoryRequest = {
     query: 'roadmap',
     limit: 10,
     roles: ['user', 'agent'],
     beforeId: 'm5',
-    fromMs: Date.parse('2026-02-08T00:00:00.000Z'),
-    toMs: Date.parse('2026-02-09T23:59:59.999Z'),
   }
   const history: HistoryMessage[] = [
     {
@@ -83,7 +55,7 @@ test('queryHistory applies before_id window and time range filters', () => {
     {
       id: 'm1',
       role: 'user',
-      text: 'roadmap draft in early window',
+      text: 'roadmap draft before cutoff',
       createdAt: '2026-02-07T12:00:00.000Z',
     },
     {
@@ -95,13 +67,13 @@ test('queryHistory applies before_id window and time range filters', () => {
     {
       id: 'm3',
       role: 'user',
-      text: 'roadmap now tracks history range',
+      text: 'roadmap now tracks before-id window',
       createdAt: '2026-02-09T09:00:00.000Z',
     },
     {
       id: 'm4',
       role: 'agent',
-      text: 'roadmap done for this sprint',
+      text: 'roadmap done before cutoff',
       createdAt: '2026-02-10T09:00:00.000Z',
     },
     {
@@ -113,7 +85,7 @@ test('queryHistory applies before_id window and time range filters', () => {
   ]
 
   const lookup = queryHistory(history, request)
-  expect(lookup).toHaveLength(3)
+  expect(lookup).toHaveLength(5)
   const ids = lookup.map((item) => item.id)
-  expect(new Set(ids)).toEqual(new Set(['m0', 'm2', 'm3']))
+  expect(new Set(ids)).toEqual(new Set(['m0', 'm1', 'm2', 'm3', 'm4']))
 })

@@ -19,7 +19,7 @@ const expectArchiveMarkdown = (
   for (const marker of markers) expect(response.body).toContain(marker)
 }
 
-test('input route parses body and calls orchestrator', async () => {
+test('input route forwards normalized payload to orchestrator', async () => {
   const app = fastify()
   const { orchestrator, addInputCalls } = createOrchestratorStub()
   const config = defaultConfig({ workDir: '.mimikit' })

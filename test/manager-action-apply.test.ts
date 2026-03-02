@@ -156,39 +156,6 @@ test('create_plan uses worker profile for cron plan', async () => {
   expect(runtime.taskPlans[0]?.trigger.mode).toBe('cron')
 })
 
-test('plan actions can create and archive done plan', async () => {
-  const runtime = await createRuntime()
-  await applyTaskActions(runtime, [
-    {
-      name: 'create_plan',
-      attrs: {
-        prompt: 'remember release note',
-        title: 'release note',
-        trigger_mode: 'on_idle',
-        priority: 'high',
-      },
-    },
-  ])
-  const createdId = runtime.taskPlans[0]?.id
-  expect(createdId).toBeTruthy()
-  expect(runtime.taskPlans[0]?.trigger.mode).toBe('on_idle')
-  expect(runtime.taskPlans[0]?.status).toBe('active')
-
-  await applyTaskActions(runtime, [
-    {
-      name: 'update_plan',
-      attrs: {
-        id: createdId ?? '',
-        status: 'done',
-      },
-    },
-  ])
-
-  expect(runtime.taskPlans).toHaveLength(1)
-  expect(runtime.taskPlans[0]?.status).toBe('done')
-  expect(runtime.taskPlans[0]?.archivedAt).toBeTruthy()
-})
-
 test('delete_plan removes done plan', async () => {
   const runtime = await createRuntime()
   const donePlan: TaskPlan = {

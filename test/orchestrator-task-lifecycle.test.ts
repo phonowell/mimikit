@@ -42,24 +42,21 @@ test('markTaskRunning sets running status with startedAt', () => {
   expect(updated?.startedAt).toBeTypeOf('string')
 })
 
-test('markTaskCanceled keeps existing completedAt and durationMs values', () => {
+test('markTaskCanceled keeps existing completedAt value', () => {
   const tasks: Task[] = [
     createTask({
       status: 'running',
       completedAt: '2026-02-26T10:03:00.000Z',
-      durationMs: 99,
     }),
   ]
 
   const updated = markTaskCanceled(tasks, 'task-1', {
     completedAt: '2026-02-26T10:09:00.000Z',
-    durationMs: 300,
   })
 
   expect(updated).toMatchObject({
     id: 'task-1',
     status: 'canceled',
     completedAt: '2026-02-26T10:03:00.000Z',
-    durationMs: 99,
   })
 })

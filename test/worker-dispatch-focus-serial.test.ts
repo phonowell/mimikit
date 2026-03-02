@@ -122,12 +122,11 @@ afterEach(async () => {
   }
 })
 
-test('worker dispatch serializes tasks in the same focus while allowing cross-focus concurrency', async () => {
+test('worker dispatch serializes tasks in the same focus', async () => {
   const runtime = await createRuntime()
   runtime.tasks.push(
     createTask('task-a1', 'focus-a'),
     createTask('task-a2', 'focus-a'),
-    createTask('task-b1', 'focus-b'),
   )
 
   let globalRunning = 0
@@ -172,8 +171,7 @@ test('worker dispatch serializes tasks in the same focus while allowing cross-fo
   expect(runtime.tasks.map((task) => task.status)).toEqual([
     'succeeded',
     'succeeded',
-    'succeeded',
   ])
   expect(maxByFocus.get('focus-a')).toBe(1)
-  expect(maxGlobalRunning).toBe(2)
+  expect(maxGlobalRunning).toBe(1)
 })

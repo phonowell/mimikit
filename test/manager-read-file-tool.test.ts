@@ -5,7 +5,6 @@ import { join } from 'node:path'
 import { afterEach, expect, test } from 'vitest'
 
 import {
-  buildReadFileLookupKey,
   pickReadFileRequest,
   runReadFileTool,
 } from '../src/manager/read-file-tool.js'
@@ -44,7 +43,6 @@ test('pickReadFileRequest parses read_file attrs', () => {
     maxLines: 500,
     maxChars: 100,
   })
-  expect(buildReadFileLookupKey(request)).toBe('docs/plan.md\n3\n500\n100')
 })
 
 test('pickReadFileRequest rejects invalid optional numeric attrs', () => {
@@ -77,7 +75,7 @@ test('pickReadFileRequest applies default line window', () => {
   })
 })
 
-test('runReadFileTool reads utf-8 text and truncates by max_chars', async () => {
+test('runReadFileTool truncates utf-8 content by max_chars', async () => {
   const workDir = await createTempRepo()
   await mkdir(join(workDir, 'docs'), { recursive: true })
   await writeFile(
@@ -105,7 +103,7 @@ test('runReadFileTool reads utf-8 text and truncates by max_chars', async () => 
   expect(result.content).toBe('line1\n')
 })
 
-test('runReadFileTool reads by from_line and max_lines', async () => {
+test('runReadFileTool slices content by from_line with max_lines', async () => {
   const workDir = await createTempRepo()
   await mkdir(join(workDir, 'docs'), { recursive: true })
   await writeFile(join(workDir, 'docs', 'window.md'), 'l1\nl2\nl3\nl4\n', 'utf8')

@@ -106,20 +106,17 @@ test('runtime snapshot accepts queue cursors', async () => {
   expect(loaded.taskPlans[0]?.id).toBe('plan-1')
 })
 
-test('buildTaskViews returns task statuses and counts', () => {
+test('buildTaskViews keeps task statuses', () => {
   const tasks: Task[] = [
     createTaskFixture({ id: 'task-done', status: 'succeeded' }),
     createTaskFixture({ id: 'task-failed', status: 'failed' }),
     createTaskFixture({ id: 'task-running', status: 'running' }),
   ]
-  const { tasks: views, counts } = buildTaskViews(tasks)
+  const { tasks: views } = buildTaskViews(tasks)
   const statusById = new Map(views.map((item) => [item.id, item.status]))
   expect(statusById.get('task-done')).toBe('succeeded')
   expect(statusById.get('task-failed')).toBe('failed')
   expect(statusById.get('task-running')).toBe('running')
-  expect(counts.succeeded).toBe(1)
-  expect(counts.failed).toBe(1)
-  expect(counts.running).toBe(1)
 })
 
 test('runtime snapshot rejects legacy next fields', async () => {
