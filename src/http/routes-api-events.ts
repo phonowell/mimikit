@@ -169,10 +169,17 @@ export const registerEventsRoute = (
           sendSseEvent(reply, 'stream', patch)
           continue
         }
+        const forceFullMessagesSnapshot = signal.kind === 'messages'
         const snapshotHint = buildSnapshotHint(orchestrator)
         const snapshotHintKey = asStableJson(snapshotHint)
-        if (snapshotHintKey === lastSnapshotHintKey) continue
-        const snapshot = await getDeltaSnapshot(orchestrator, lastMessageCursor)
+        if (
+          !forceFullMessagesSnapshot &&
+          snapshotHintKey === lastSnapshotHintKey
+        )
+          continue
+        const snapshot = forceFullMessagesSnapshot
+          ? await getDefaultSnapshot(orchestrator)
+          : await getDeltaSnapshot(orchestrator, lastMessageCursor)
         lastSnapshotHintKey = snapshotHintKey
         lastStream = cloneUiStream(snapshot.stream)
         lastMessageCursor = resolveMessageCursor(

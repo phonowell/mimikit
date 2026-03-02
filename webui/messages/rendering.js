@@ -6,7 +6,7 @@ import { renderMessages } from './render-list.js'
 import { renderStreamMessage } from './render-stream.js'
 
 export const createMessageRendering = (params) => {
-  const { messagesEl, scroll, loading, quote } = params
+  const { messagesEl, scroll, loading, quote, onDelete } = params
 
   const removeEmpty = () => {}
   const streamingItemRef = { current: null }
@@ -30,6 +30,7 @@ export const createMessageRendering = (params) => {
       loading,
       enterMessageIds,
       onQuote: quote.set,
+      onDelete,
       streamMessage,
       streamingItemRef,
     })
@@ -49,6 +50,7 @@ export const createMessageRendering = (params) => {
       loading,
       enterMessageIds: new Set(),
       onQuote: quote.set,
+      onDelete,
       streamMessage,
       streamingItemRef,
     })

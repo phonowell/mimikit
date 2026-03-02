@@ -17,6 +17,8 @@ import {
 } from './orchestrator-helpers.js'
 import {
   addUserInput,
+  deleteChatMessage,
+  type DeleteChatMessageResult,
   getChatHistory,
   getChatMessages,
   persistStopSnapshot,
@@ -97,6 +99,10 @@ export class Orchestrator {
 
   addUserInput(text: string, meta?: UserMeta, quote?: string): Promise<string> {
     return addUserInput(this.runtime, text, meta, quote)
+  }
+
+  deleteChatMessage(messageId: string): Promise<DeleteChatMessageResult> {
+    return deleteChatMessage(this.runtime, messageId)
   }
 
   getChatHistory(limit = 50): Promise<ChatMessage[]> {

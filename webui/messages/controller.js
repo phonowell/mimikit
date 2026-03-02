@@ -1,4 +1,6 @@
 import { createLoadingController } from './loading.js'
+import { fetchWithTimeout } from '../fetch-with-timeout.js'
+import { renderError } from './render-list.js'
 import {
   createDisconnectHandler,
   isStatusFullyIdle,
@@ -13,10 +15,12 @@ import { createMessageState } from './state.js'
 import { createControllerQueue } from './controller-queue.js'
 import { createSseController } from './controller-sse.js'
 import { createPayloadController } from './controller-payload.js'
+import { UI_TEXT } from '../system-text.js'
 
 const EVENTS_URL = '/api/events'
 const RECONNECT_BASE_DELAY_MS = 1200
 const RECONNECT_MAX_DELAY_MS = 12000
+const DELETE_REQUEST_TIMEOUT_MS = 15000
 
 export function createMessagesController({
   messagesEl,
@@ -55,8 +59,41 @@ export function createMessagesController({
     removeEmpty: () => removeEmpty(),
   })
   const quote = createQuoteController({ quotePreview, quoteLabel, quoteText, input })
+  const deleteMessage = async (msg) => {
+    const id = typeof msg?.id === 'string' ? msg.id.trim() : ''
+    if (!id) return
+    try {
+      const res = await fetchWithTimeout(
+        `/api/messages/${encodeURIComponent(id)}`,
+        { method: 'DELETE' },
+        DELETE_REQUEST_TIMEOUT_MS,
+      )
+      if (!res.ok) {
+        let data = null
+        try {
+          data = await res.json()
+        } catch {
+          data = null
+        }
+        throw new Error(data?.error || UI_TEXT.deleteFailed)
+      }
+      const activeQuote = quote.getActive()
+      if (activeQuote?.id === id) quote.clear()
+    } catch (error) {
+      renderError(
+        { messagesEl, removeEmpty, updateScrollButton: scroll.updateScrollButton },
+        error,
+      )
+    }
+  }
 
-  const rendering = createMessageRendering({ messagesEl, scroll, loading, quote })
+  const rendering = createMessageRendering({
+    messagesEl,
+    scroll,
+    loading,
+    quote,
+    onDelete: deleteMessage,
+  })
   removeEmpty = rendering.removeEmpty
   const { doRender, doRenderStream } = rendering
 

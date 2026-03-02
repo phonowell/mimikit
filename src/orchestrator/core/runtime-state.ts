@@ -34,7 +34,7 @@ export type UiAgentStream = {
   updatedAt: ISODate
 }
 
-export type UiWakeKind = 'snapshot' | 'stream'
+export type UiWakeKind = 'snapshot' | 'stream' | 'messages'
 
 export type ExitRequest = {
   code: number

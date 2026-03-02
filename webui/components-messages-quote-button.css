@@ -1,4 +1,5 @@
-.message .message-quote-btn {
+.message .message-quote-btn,
+.message .message-delete-btn {
   --btn-size: 26px;
   --btn-bg: var(--panel);
   --btn-border: transparent;
@@ -18,28 +19,38 @@
   transition-delay: 0s;
 }
 
-.message.user .message-quote-btn {
+.message .message-delete-btn {
+  --btn-hover-color: var(--danger);
+}
+
+.message.user .message-quote-btn,
+.message.user .message-delete-btn {
   order: 0;
 }
 
 .message:hover .message-quote-btn,
-.message:focus-within .message-quote-btn {
+.message:hover .message-delete-btn,
+.message:focus-within .message-quote-btn,
+.message:focus-within .message-delete-btn {
   opacity: 1;
   transform: translateY(0) scale(1);
   pointer-events: auto;
   transition-delay: 0.06s;
 }
 
-.message .message-quote-btn:active {
+.message .message-quote-btn:active,
+.message .message-delete-btn:active {
   transform: translateY(0) scale(0.96);
 }
 
-.message .message-quote-btn:focus-visible {
+.message .message-quote-btn:focus-visible,
+.message .message-delete-btn:focus-visible {
   outline-offset: 1px;
 }
 
 @media (hover: none), (pointer: coarse) {
-  .message .message-quote-btn {
+  .message .message-quote-btn,
+  .message .message-delete-btn {
     opacity: 1;
     transform: translateY(0) scale(1);
     pointer-events: auto;

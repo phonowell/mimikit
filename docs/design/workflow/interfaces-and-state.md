@@ -7,6 +7,7 @@
 - `GET /api/events`
 - `GET /api/status`
 - `POST /api/input`
+- `DELETE /api/messages/:id`
 - `GET /api/tasks/:id/archive`
 - `POST /api/tasks/:id/cancel`
 - `POST /api/restart`

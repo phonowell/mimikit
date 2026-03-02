@@ -1,6 +1,7 @@
 export const createMessageState = () => ({
   lastMessageCount: 0,
   lastMessageId: null,
+  lastMessageSignature: '',
   lastAgentMessageId: null,
   lastLoadingVisible: false,
   awaitingReply: false,
@@ -27,8 +28,25 @@ export const collectNewMessageIds = (state, messages) => {
   return ids
 }
 
+const toMessageSignature = (messages) =>
+  JSON.stringify(
+    messages.map((message) => ({
+      id: message?.id ?? null,
+      role: message?.role ?? null,
+      visibility: message?.visibility ?? null,
+      text: message?.text ?? '',
+      createdAt: message?.createdAt ?? null,
+      quote: message?.quote ?? null,
+      focusId: message?.focusId ?? null,
+      usage: message?.usage ?? null,
+      elapsedMs: message?.elapsedMs ?? null,
+    })),
+  )
+
 export const hasMessageChange = (state, messages, newestId) =>
-  messages.length !== state.lastMessageCount || newestId !== state.lastMessageId
+  messages.length !== state.lastMessageCount ||
+  newestId !== state.lastMessageId ||
+  toMessageSignature(messages) !== state.lastMessageSignature
 
 export const hasLoadingVisibilityChange = (state, loadingVisible) =>
   state.lastLoadingVisible !== loadingVisible
@@ -55,6 +73,7 @@ export const hasStreamChange = (state, streamMessage) =>
 export const updateMessageState = (state, messages, newestId) => {
   state.lastMessageCount = messages.length
   state.lastMessageId = newestId
+  state.lastMessageSignature = toMessageSignature(messages)
   state.lastMessageIds = collectMessageIds(messages)
   state.lastMessages = [...messages]
 }
@@ -79,6 +98,7 @@ export const applyRenderedState = (state, rendered, { loading, syncLoadingState 
 export const clearMessageState = (state) => {
   state.lastMessageCount = 0
   state.lastMessageId = null
+  state.lastMessageSignature = ''
   state.lastAgentMessageId = null
   state.lastMessageIds = new Set()
   state.lastMessages = []

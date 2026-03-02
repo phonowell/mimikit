@@ -10,6 +10,7 @@ export const renderMessage = (params, msg) => {
     formatElapsedLabel,
     enterMessageIds,
     onQuote,
+    onDelete,
     messageLookup,
     ackedUserMessageIds,
     appendTarget,
@@ -23,6 +24,7 @@ export const renderMessage = (params, msg) => {
   item.className = `message ${roleClass}${isStreamingMessage ? ' message--streaming' : ''}${isEntering ? ' message--enter' : ''}`
   if (msg?.id) item.dataset.messageId = String(msg.id)
   const canQuote = Boolean(onQuote && msg?.id && !isSystemMessage && !isStreamingMessage)
+  const canDelete = Boolean(onDelete && msg?.id && !isSystemMessage && !isStreamingMessage)
   if (canQuote) {
     item.classList.add('message--quoteable')
     item.tabIndex = 0
@@ -92,6 +94,16 @@ export const renderMessage = (params, msg) => {
     quoteBtn.setAttribute('aria-label', UI_TEXT.quote)
     quoteBtn.addEventListener('click', () => onQuote(msg))
   }
+  let deleteBtn = null
+  if (canDelete) {
+    deleteBtn = document.createElement('button')
+    deleteBtn.type = 'button'
+    deleteBtn.className = 'btn btn--icon btn--icon-muted message-delete-btn'
+    deleteBtn.textContent = '✕'
+    deleteBtn.title = UI_TEXT.delete
+    deleteBtn.setAttribute('aria-label', UI_TEXT.delete)
+    deleteBtn.addEventListener('click', () => onDelete(msg))
+  }
 
   if (msg?.role === 'user' && ackedUserMessageIds?.has(String(msg.id))) {
     const delivery = document.createElement('span')
@@ -119,6 +131,7 @@ export const renderMessage = (params, msg) => {
 
   item.appendChild(article)
   if (quoteBtn) item.appendChild(quoteBtn)
+  if (deleteBtn) item.appendChild(deleteBtn)
   const target = appendTarget ?? messagesEl
   target.appendChild(item)
   return item

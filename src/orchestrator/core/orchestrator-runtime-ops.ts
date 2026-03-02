@@ -6,7 +6,11 @@ import {
   resolveFocusByQuote,
   touchFocus,
 } from '../../focus/index.js'
-import { appendHistory, readHistory } from '../../history/store.js'
+import {
+  appendHistory,
+  readHistory,
+  rewriteHistory,
+} from '../../history/store.js'
 import { appendLog } from '../../log/append.js'
 import { bestEffort } from '../../log/safe.js'
 import { triggerWakeLoop } from '../../manager/loop-trigger.js'
@@ -35,6 +39,11 @@ import type { RuntimeState, UserMeta } from './runtime-state.js'
 import type { ChatMessage, ChatMessagesMode } from '../read-model/chat-view.js'
 
 const SHUTDOWN_MANAGER_WAIT_POLL_MS = 50
+const DELETED_MESSAGE_TEXT = 'Message deleted.'
+
+export type DeleteChatMessageResult =
+  | { ok: true; id: string }
+  | { ok: false; reason: 'not_found' | 'not_allowed' }
 
 export const addUserInput = async (
   runtime: RuntimeState,
@@ -79,6 +88,41 @@ export const getChatMessages = async (
     limit,
     ...(afterId ? { afterId } : {}),
   })
+}
+
+export const deleteChatMessage = async (
+  runtime: RuntimeState,
+  messageId: string,
+): Promise<DeleteChatMessageResult> => {
+  const id = messageId.trim()
+  if (!id) return { ok: false, reason: 'not_found' }
+
+  const history = await readHistory(runtime.paths.history)
+  const targetIndex = history.findIndex((message) => message.id === id)
+  if (targetIndex < 0) return { ok: false, reason: 'not_found' }
+
+  const target = history[targetIndex]
+  if (!target) return { ok: false, reason: 'not_found' }
+  if (target.role === 'system') return { ok: false, reason: 'not_allowed' }
+
+  const nextHistory = [...history]
+  nextHistory[targetIndex] = {
+    id: target.id,
+    role: 'system' as const,
+    visibility: 'user' as const,
+    text: DELETED_MESSAGE_TEXT,
+    createdAt: target.createdAt,
+    focusId: target.focusId,
+  }
+
+  await rewriteHistory(runtime.paths.history, nextHistory)
+  await appendLog(runtime.paths.log, {
+    event: 'message_deleted',
+    id,
+    role: target.role,
+  })
+  notifyUiSignal(runtime, 'messages')
+  return { ok: true, id }
 }
 
 export const getChatHistory = async (

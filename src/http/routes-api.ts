@@ -44,6 +44,25 @@ export const registerApiRoutes = (
     reply.send({ id })
   })
 
+  app.delete('/api/messages/:id', async (request, reply) => {
+    const params = request.params as { id?: unknown }
+    const id = typeof params.id === 'string' ? params.id.trim() : ''
+    if (!id) {
+      reply.code(400).send({ error: 'id is required' })
+      return
+    }
+    const result = await orchestrator.deleteChatMessage(id)
+    if (!result.ok) {
+      if (result.reason === 'not_allowed') {
+        reply.code(400).send({ error: 'system message cannot be deleted' })
+        return
+      }
+      reply.code(404).send({ error: 'message not found' })
+      return
+    }
+    reply.send(result)
+  })
+
   registerTaskArchiveRoute(app, orchestrator, config)
   registerTaskCancelRoute(app, orchestrator)
 
