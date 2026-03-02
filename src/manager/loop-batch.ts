@@ -16,6 +16,7 @@ import { applyTaskActions, collectTaskResultSummaries } from './action-apply.js'
 import { hasNonIdleManagerInput } from './idle-input.js'
 import { applyPlanCompletionState } from './loop-batch-pre.js'
 import { runManagerBatch } from './loop-batch-run-manager.js'
+import { normalizeManagerReplyText } from './reply-normalize.js'
 import {
   appendManagerReply,
   finishBatchWithoutAgentReply,
@@ -101,12 +102,15 @@ export const processManagerBatch = async (params: {
       suppressRunTask: hasManualCanceledResult && agentInputs.length === 0,
     })
 
+    const normalizedReplyText = normalizeManagerReplyText(parsed.text)
     const responseText =
-      parsed.text.trim() ||
-      (await buildFallbackReply({
-        inputs: agentInputs,
-        results,
-      }))
+      normalizedReplyText ||
+      normalizeManagerReplyText(
+        await buildFallbackReply({
+          inputs: agentInputs,
+          results,
+        }),
+      )
     await appendManagerReply({
       runtime,
       text: responseText,
