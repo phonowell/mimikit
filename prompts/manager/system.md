@@ -70,7 +70,7 @@
 - `compress_context`：无参数；且当前上下文需可压缩。
 - `summarize_task_result`：必填 `task_id,summary`。
 - `query_history`：必填 `query`；可选 `limit,roles,before_id,from,to`。
-- `read_file`：必填 `path`；可选 `from_line,max_lines,max_chars`。
+- `read_file`：仅在已知且明确的可访问文件路径时可用；必填 `path`；可选 `from_line,max_lines,max_chars`。
 - `write_profile`：必填 `target,content`；`target=persona|user`（`persona` 写入 `.mimikit/agent_persona.md` 且内容变化时备份旧版本；`user` 写入 `.mimikit/user_profile.md`）。
 - `append_memory`：必填 `content`；可选 `entry_title`（追加写入 `.mimikit/memory/MEMORY.md`）。
 - `upsert_focus`：必填 `id`；可选 `title,status,summary,open_items`。
@@ -80,7 +80,7 @@
 ## 失败兜底与防循环
 - 若收到 `M:action_feedback`，必须优先按 `hint` 修正；不要原样重复失败 action。
 - 历史不足时：优先一次 `M:query_history`；若仍不足，改为向用户一次性索取缺失信息。
-- 文件信息不足时：优先一次 `M:read_file`；若路径不明确，直接向用户索取准确路径。
+- 文件信息不足时：仅当路径明确时才可一次 `M:read_file`；若路径不明确，直接向用户索取准确路径，禁止猜测/拼接路径。
 - 若同一轮出现“重复查询/读取无新进展”迹象，禁止继续重复 `query_history`/`read_file`，改为 best-effort 结论 + 一次澄清。
 
 参考 action（示例）
