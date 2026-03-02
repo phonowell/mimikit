@@ -9,7 +9,8 @@ import {
   updateStreamState,
 } from './state.js'
 import { mergeIncomingMessages } from './controller-status.js'
-import { isRecord, normalizeStreamMessage } from './controller-stream.js'
+import { isRecord } from '../value.js'
+import { normalizeStreamMessage } from './controller-stream.js'
 
 const MESSAGE_LIMIT = 50
 
@@ -45,9 +46,8 @@ export const createPayloadController = ({
       messageState.awaitingReply = false
       loading.setLoading(false)
     }
-    const newestId = messages.length > 0 ? messages[messages.length - 1].id : null
     const loadingVisible = loading.isLoading()
-    const messageChanged = hasMessageChange(messageState, messages, newestId)
+    const messageChanged = hasMessageChange(messageState, messages)
     const loadingChanged = hasLoadingVisibilityChange(messageState, loadingVisible)
     const streamChanged = hasStreamChange(messageState, streamMessage)
     const changed = messageChanged || loadingChanged || streamChanged
@@ -58,7 +58,7 @@ export const createPayloadController = ({
         applyRenderedState(messageState, rendered, { loading, syncLoadingState })
     } else if (streamChanged) doRenderStream(streamMessage)
 
-    updateMessageState(messageState, messages, newestId)
+    updateMessageState(messageState, messages)
     updateLoadingVisibilityState(messageState, loading.isLoading())
     updateStreamState(messageState, streamMessage)
     return changed

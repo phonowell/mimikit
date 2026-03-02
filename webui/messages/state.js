@@ -1,6 +1,4 @@
 export const createMessageState = () => ({
-  lastMessageCount: 0,
-  lastMessageId: null,
   lastMessageSignature: '',
   lastAgentMessageId: null,
   lastLoadingVisible: false,
@@ -43,9 +41,7 @@ const toMessageSignature = (messages) =>
     })),
   )
 
-export const hasMessageChange = (state, messages, newestId) =>
-  messages.length !== state.lastMessageCount ||
-  newestId !== state.lastMessageId ||
+export const hasMessageChange = (state, messages) =>
   toMessageSignature(messages) !== state.lastMessageSignature
 
 export const hasLoadingVisibilityChange = (state, loadingVisible) =>
@@ -70,9 +66,7 @@ const normalizeStreamSignature = (streamMessage) => {
 export const hasStreamChange = (state, streamMessage) =>
   state.lastStreamSignature !== normalizeStreamSignature(streamMessage)
 
-export const updateMessageState = (state, messages, newestId) => {
-  state.lastMessageCount = messages.length
-  state.lastMessageId = newestId
+export const updateMessageState = (state, messages) => {
   state.lastMessageSignature = toMessageSignature(messages)
   state.lastMessageIds = collectMessageIds(messages)
   state.lastMessages = [...messages]
@@ -93,16 +87,4 @@ export const applyRenderedState = (state, rendered, { loading, syncLoadingState 
     loading.setLoading(false)
   }
   syncLoadingState()
-}
-
-export const clearMessageState = (state) => {
-  state.lastMessageCount = 0
-  state.lastMessageId = null
-  state.lastMessageSignature = ''
-  state.lastAgentMessageId = null
-  state.lastMessageIds = new Set()
-  state.lastMessages = []
-  state.lastStreamSignature = ''
-  state.lastLoadingVisible = false
-  state.awaitingReply = false
 }

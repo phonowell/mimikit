@@ -1,8 +1,6 @@
-import { isRecord as isObjectRecord } from '../value.js'
+import { isRecord } from '../value.js'
 
 const STREAM_FRAME_MS = 16
-
-export const isRecord = isObjectRecord
 
 const asUsageNumber = (value) =>
   typeof value === 'number' && Number.isFinite(value) ? value : null
@@ -34,16 +32,6 @@ const normalizeUsage = (raw) => {
     ...(outputCache !== null ? { outputCache } : {}),
     ...(total !== null ? { total } : {}),
     ...(sessionTotal !== null ? { sessionTotal } : {}),
-  }
-}
-
-export const parseSnapshot = (raw) => {
-  if (!raw || typeof raw !== 'string') return null
-  try {
-    const parsed = JSON.parse(raw)
-    return isRecord(parsed) ? parsed : null
-  } catch {
-    return null
   }
 }
 

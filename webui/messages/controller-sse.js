@@ -1,5 +1,3 @@
-import { parseSnapshot } from './controller-stream.js'
-
 export const createSseController = ({
   eventsUrl,
   reconnectBaseDelayMs,
@@ -12,6 +10,17 @@ export const createSseController = ({
   let eventSource = null
   let reconnectTimer = null
   let reconnectAttempts = 0
+  let generation = 0
+
+  const parseJsonRecord = (raw) => {
+    if (!raw || typeof raw !== 'string') return null
+    try {
+      const parsed = JSON.parse(raw)
+      return parsed && typeof parsed === 'object' ? parsed : null
+    } catch {
+      return null
+    }
+  }
 
   const clearReconnectTimer = () => {
     if (reconnectTimer === null) return
@@ -41,31 +50,36 @@ export const createSseController = ({
   }
 
   function openEvents() {
-    if (eventSource) return
+    if (!isStarted() || eventSource) return
+    const currentGeneration = generation
     const source = new EventSource(eventsUrl)
 
     source.onopen = () => {
+      if (currentGeneration !== generation || eventSource !== source) return
       reconnectAttempts = 0
     }
 
     source.addEventListener('snapshot', (event) => {
-      const snapshot = parseSnapshot(event.data)
+      if (currentGeneration !== generation || eventSource !== source) return
+      const snapshot = parseJsonRecord(event.data)
       if (!snapshot) return
       onSnapshotEvent(snapshot)
     })
     source.addEventListener('stream', (event) => {
-      const patch = parseSnapshot(event.data)
+      if (currentGeneration !== generation || eventSource !== source) return
+      const patch = parseJsonRecord(event.data)
       if (!patch) return
       onStreamEvent(patch)
     })
     source.addEventListener('error', (event) => {
-      const payload = parseSnapshot(event.data)
+      if (currentGeneration !== generation || eventSource !== source) return
+      const payload = parseJsonRecord(event.data)
       if (!payload || typeof payload.error !== 'string' || !payload.error.trim())
         return
       console.warn('[webui] stream error', payload.error)
     })
     source.onerror = () => {
-      if (eventSource !== source) return
+      if (currentGeneration !== generation || eventSource !== source) return
       onDisconnected()
       source.close()
       eventSource = null
@@ -76,12 +90,17 @@ export const createSseController = ({
   }
 
   const start = () => {
+    clearReconnectTimer()
     reconnectAttempts = 0
+    generation += 1
     openEvents()
   }
 
   return {
     start,
-    stop: closeEvents,
+    stop: () => {
+      generation += 1
+      closeEvents()
+    },
   }
 }
