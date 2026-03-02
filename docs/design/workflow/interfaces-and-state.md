@@ -93,6 +93,12 @@ schema：`src/storage/runtime-snapshot-schema.ts`
 - `queues.inputsCursor`、`queues.resultsCursor`
 - `pendingUserChoice`
 
+恢复一致性规则（启动阶段）：
+- 若 `queues.inputsCursor` 大于 `inputs/packets.jsonl` 当前包数，重置为 `0`
+- 若 `queues.resultsCursor` 大于 `results/packets.jsonl` 当前包数，重置为 `0`
+- 若 `memoryRefresh.lastProcessedInputsCursor` / `lastProcessedResultsCursor` 超过对应队列包数，同步重置为 `0`
+- 发生校正时写入 `log.jsonl` 事件：`runtime_queue_state_reconciled`
+
 ## 重启语义
 
 - `POST /api/restart` 与 `POST /api/reset` 都是“先回包，再异步停机”。
