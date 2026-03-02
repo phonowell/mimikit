@@ -3,18 +3,6 @@ import { formatDisplayTimeWithFull } from './messages/format-time.js'
 import { appendMetaTime } from './meta-time.js'
 import { UI_TEXT } from './system-text.js'
 
-const PRIORITY_TEXT = Object.freeze({
-  high: 'HIGH',
-  normal: 'NORMAL',
-  low: 'LOW',
-})
-
-const STATUS_TEXT = Object.freeze({
-  active: 'active',
-  blocked: 'blocked',
-  done: 'done',
-})
-
 const resolveTriggerLabel = (item) => {
   const trigger = item?.trigger
   if (!trigger || typeof trigger !== 'object') return null
@@ -27,14 +15,14 @@ const resolveTriggerLabel = (item) => {
       calendarWords: true,
     })
     return {
-      text: `trigger:${display.displayText || scheduledAt}`,
+      text: display.displayText || scheduledAt,
       title: display.fullText || scheduledAt,
     }
   }
   if (trigger.mode === 'cron') {
     const cron = typeof trigger.cron === 'string' ? trigger.cron.trim() : ''
     if (!cron) return null
-    return { text: `trigger:${cron}`, title: `cron: ${cron}` }
+    return { text: `cron:${cron}`, title: `cron: ${cron}` }
   }
   if (trigger.mode === 'on_idle') {
     const cooldownMs =
@@ -43,24 +31,11 @@ const resolveTriggerLabel = (item) => {
         : 0
     const cooldownSeconds = Math.floor(cooldownMs / 1000)
     return {
-      text: `trigger:idle/${cooldownSeconds}s`,
+      text: `idle/${cooldownSeconds}s`,
       title: `on_idle cooldown: ${cooldownMs}ms`,
     }
   }
   return null
-}
-
-const formatAttempt = (item) => {
-  const runCount =
-    typeof item?.runCount === 'number' && Number.isFinite(item.runCount)
-      ? item.runCount
-      : 0
-  const maxRuns =
-    typeof item?.maxRuns === 'number' && Number.isFinite(item.maxRuns)
-      ? item.maxRuns
-      : 0
-  if (maxRuns <= 0) return ''
-  return `${runCount}/${maxRuns}`
 }
 
 export const renderPlans = (plansList, data) => {
@@ -93,36 +68,11 @@ export const renderPlans = (plansList, data) => {
         ? item.title
         : UI_TEXT.untitledTask
 
-    const priority = document.createElement('span')
-    priority.className = 'plan-priority'
-    priority.textContent =
-      PRIORITY_TEXT[
-        typeof item.priority === 'string' ? item.priority : 'normal'
-      ] ?? 'NORMAL'
-
     header.appendChild(dot)
     header.appendChild(title)
-    header.appendChild(priority)
 
     const meta = document.createElement('small')
     meta.className = 'plan-meta'
-
-    const statusEl = document.createElement('span')
-    statusEl.textContent = STATUS_TEXT[status] ?? status
-    meta.appendChild(statusEl)
-
-    if (typeof item.source === 'string' && item.source.trim()) {
-      const source = document.createElement('span')
-      source.textContent = item.source
-      meta.appendChild(source)
-    }
-
-    const attempt = formatAttempt(item)
-    if (attempt) {
-      const attemptEl = document.createElement('span')
-      attemptEl.textContent = attempt
-      meta.appendChild(attemptEl)
-    }
 
     const triggerLabel = resolveTriggerLabel(item)
     if (triggerLabel) {
@@ -133,12 +83,6 @@ export const renderPlans = (plansList, data) => {
       meta.appendChild(triggerEl)
     }
 
-    const lastTriggeredAt =
-      typeof item.lastTriggeredAt === 'string' && item.lastTriggeredAt.trim()
-        ? item.lastTriggeredAt
-        : ''
-    appendMetaTime(meta, 'plan-trigger-time', lastTriggeredAt)
-
     const changedAt =
       typeof item.archivedAt === 'string' && item.archivedAt.trim()
         ? item.archivedAt
@@ -148,7 +92,7 @@ export const renderPlans = (plansList, data) => {
     appendMetaTime(meta, 'plan-time', changedAt)
 
     node.appendChild(header)
-    node.appendChild(meta)
+    if (meta.childElementCount > 0) node.appendChild(meta)
     plansList.appendChild(node)
   }
 }
