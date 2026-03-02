@@ -1,55 +1,20 @@
 import {
   assignFocusByTargetId,
   enforceFocusCapacity,
-  ensureFocus,
   parseFocusOpenItems,
-  touchFocus,
   updateFocus,
 } from '../focus/index.js'
-import { persistRuntimeState, type RuntimeState } from './runtime-adapter.js'
 
-import {
-  assignFocusSchema,
-  createFocusSchema,
-  updateFocusSchema,
-} from './action-apply-schema.js'
+import { assignFocusSchema, upsertFocusSchema } from './action-apply-schema.js'
+import { persistRuntimeState, type RuntimeState } from './runtime-adapter.js'
 
 import type { Parsed } from '../actions/model/spec.js'
 
-export const applyCreateFocusAction = async (
+export const applyUpsertFocusAction = async (
   runtime: RuntimeState,
   item: Parsed,
 ): Promise<void> => {
-  const parsed = createFocusSchema.safeParse(item.attrs)
-  if (!parsed.success) return
-  ensureFocus(runtime, parsed.data.id, parsed.data.title)
-  if (
-    parsed.data.status !== undefined ||
-    parsed.data.summary !== undefined ||
-    parsed.data.open_items !== undefined
-  ) {
-    const openItems = parseFocusOpenItems(parsed.data.open_items)
-    updateFocus(runtime, {
-      id: parsed.data.id,
-      ...(parsed.data.status !== undefined
-        ? { status: parsed.data.status }
-        : {}),
-      ...(parsed.data.summary !== undefined
-        ? { summary: parsed.data.summary }
-        : {}),
-      ...(openItems !== undefined ? { openItems } : {}),
-    })
-  }
-  touchFocus(runtime, parsed.data.id)
-  enforceFocusCapacity(runtime)
-  await persistRuntimeState(runtime)
-}
-
-export const applyUpdateFocusAction = async (
-  runtime: RuntimeState,
-  item: Parsed,
-): Promise<void> => {
-  const parsed = updateFocusSchema.safeParse(item.attrs)
+  const parsed = upsertFocusSchema.safeParse(item.attrs)
   if (!parsed.success) return
   const openItems = parseFocusOpenItems(parsed.data.open_items)
   updateFocus(runtime, {

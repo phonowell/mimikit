@@ -156,13 +156,14 @@ test('create_plan uses worker profile for cron plan', async () => {
   expect(runtime.taskPlans[0]?.trigger.mode).toBe('cron')
 })
 
-test('write_user_profile writes utf8 content to state file', async () => {
+test('write_profile(target=user) writes utf8 content to state file', async () => {
   const runtime = await createRuntime()
   const content = '- 偏好中文\n- 先给结论'
   await applyTaskActions(runtime, [
     {
-      name: 'write_user_profile',
+      name: 'write_profile',
       attrs: {
+        target: 'user',
         content,
       },
     },
@@ -172,13 +173,14 @@ test('write_user_profile writes utf8 content to state file', async () => {
   expect(saved).toBe(content)
 })
 
-test('write_persona snapshots old version before overwrite', async () => {
+test('write_profile(target=persona) snapshots old version before overwrite', async () => {
   const runtime = await createRuntime()
   await writeFile(runtime.paths.agentPersona, 'old persona', 'utf8')
   await applyTaskActions(runtime, [
     {
-      name: 'write_persona',
+      name: 'write_profile',
       attrs: {
+        target: 'persona',
         content: 'new persona',
       },
     },

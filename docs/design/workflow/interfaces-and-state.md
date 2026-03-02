@@ -77,8 +77,8 @@
 - `agent_persona_versions/*.md`
 
 说明：
-- `M:write_user_profile` 写入 `user_profile.md`
-- `M:write_persona` 写入 `agent_persona.md`，并在内容变化时落 `agent_persona_versions/*.md` 版本备份
+- `M:write_profile target="user"` 写入 `user_profile.md`
+- `M:write_profile target="persona"` 写入 `agent_persona.md`，并在内容变化时落 `agent_persona_versions/*.md` 版本备份
 - `M:write_memory` 写入 `memory/records.jsonl`，供 `M:query_memory` 检索并回填 `M:memory_lookup`
 
 ## Runtime Snapshot 关键字段

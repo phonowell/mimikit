@@ -10,12 +10,11 @@ import {
   runTaskSchema,
   updatePlanSchema,
   writeMemorySchema,
-  writePersonaSchema,
-  writeUserProfileSchema,
+  writeProfileSchema,
 } from './action-apply-schema.js'
 
 import type { Parsed } from '../actions/model/spec.js'
-import type { TaskStatus, TaskPlanStatus } from '../types/index.js'
+import type { TaskPlanStatus, TaskStatus } from '../types/index.js'
 import type { ZodError, ZodSchema } from 'zod'
 
 export type FeedbackContext = {
@@ -164,11 +163,8 @@ export const validateQueryMemory = (item: Parsed): ValidationIssue[] => {
   return []
 }
 
-export const validateWritePersona = (item: Parsed): ValidationIssue[] =>
-  validateWithSchema(item, writePersonaSchema)
-
-export const validateWriteUserProfile = (item: Parsed): ValidationIssue[] =>
-  validateWithSchema(item, writeUserProfileSchema)
+export const validateWriteProfile = (item: Parsed): ValidationIssue[] =>
+  validateWithSchema(item, writeProfileSchema)
 
 export const validateWriteMemory = (item: Parsed): ValidationIssue[] => {
   const parsed = writeMemorySchema.safeParse(item.attrs)

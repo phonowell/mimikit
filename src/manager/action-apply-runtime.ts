@@ -6,12 +6,6 @@ import { readTextFileIfExists } from '../fs/read-text.js'
 import { readHistory } from '../history/store.js'
 import { bestEffort } from '../log/safe.js'
 import { upsertMemoryRecord } from '../memory/store.js'
-import {
-  cancelTask,
-  notifyWorkerLoop,
-  persistRuntimeState,
-  type RuntimeState,
-} from './runtime-adapter.js'
 import { loadPromptFile } from '../prompts/prompt-loader.js'
 import { readErrorCode } from '../shared/error-code.js'
 import { isVisibleToAgent } from '../shared/message-visibility.js'
@@ -22,10 +16,15 @@ import {
   compressContextSchema,
   restartSchema,
   writeMemorySchema,
-  writePersonaSchema,
-  writeUserProfileSchema,
+  writeProfileSchema,
 } from './action-apply-schema.js'
 import { runManagerLlmCall } from './manager-llm-call.js'
+import {
+  cancelTask,
+  notifyWorkerLoop,
+  persistRuntimeState,
+  type RuntimeState,
+} from './runtime-adapter.js'
 
 import type { Parsed } from '../actions/model/spec.js'
 
@@ -198,26 +197,20 @@ export const applyRestartRuntimeAction = (
   return Promise.resolve(true)
 }
 
-export const applyWritePersonaAction = async (
+export const applyWriteProfileAction = async (
   runtime: RuntimeState,
   item: Parsed,
 ): Promise<void> => {
-  const parsed = writePersonaSchema.safeParse(item.attrs)
+  const parsed = writeProfileSchema.safeParse(item.attrs)
   if (!parsed.success) return
   const next = normalizeProfileContent(parsed.data.content)
-  const current = await readCurrentPersona(runtime.paths.agentPersona)
-  if (current === next) return
-  await backupPersonaVersion(runtime, current)
-  await writeStateMarkdown(runtime.paths.agentPersona, next)
-}
-
-export const applyWriteUserProfileAction = async (
-  runtime: RuntimeState,
-  item: Parsed,
-): Promise<void> => {
-  const parsed = writeUserProfileSchema.safeParse(item.attrs)
-  if (!parsed.success) return
-  const next = normalizeProfileContent(parsed.data.content)
+  if (parsed.data.target === 'persona') {
+    const current = await readCurrentPersona(runtime.paths.agentPersona)
+    if (current === next) return
+    await backupPersonaVersion(runtime, current)
+    await writeStateMarkdown(runtime.paths.agentPersona, next)
+    return
+  }
   const current = await readTextFileIfExists(runtime.paths.userProfile)
   if (current === next) return
   await writeStateMarkdown(runtime.paths.userProfile, next)

@@ -57,62 +57,70 @@ const validatePlanTriggerFields = (
   const hasCooldown = data.cooldown_ms !== undefined
 
   if (mode === 'cron') {
-    if (!cron)
+    if (!cron) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'cron is required when trigger_mode="cron"',
         path: ['cron'],
       })
-    if (scheduledAt)
+    }
+    if (scheduledAt) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'scheduled_at cannot be used when trigger_mode="cron"',
         path: ['scheduled_at'],
       })
-    if (hasCooldown)
+    }
+    if (hasCooldown) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'cooldown_ms cannot be used when trigger_mode="cron"',
         path: ['cooldown_ms'],
       })
+    }
     return
   }
 
   if (mode === 'scheduled_at') {
-    if (!scheduledAt)
+    if (!scheduledAt) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'scheduled_at is required when trigger_mode="scheduled_at"',
         path: ['scheduled_at'],
       })
-    if (cron)
+    }
+    if (cron) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'cron cannot be used when trigger_mode="scheduled_at"',
         path: ['cron'],
       })
-    if (hasCooldown)
+    }
+    if (hasCooldown) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'cooldown_ms cannot be used when trigger_mode="scheduled_at"',
         path: ['cooldown_ms'],
       })
+    }
     return
   }
 
   if (mode === 'on_idle') {
-    if (cron)
+    if (cron) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'cron cannot be used when trigger_mode="on_idle"',
         path: ['cron'],
       })
-    if (scheduledAt)
+    }
+    if (scheduledAt) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'scheduled_at cannot be used when trigger_mode="on_idle"',
         path: ['scheduled_at'],
       })
+    }
   }
 }
 
@@ -184,7 +192,7 @@ export const updatePlanSchema = z
             ? 'on_idle'
             : undefined)
 
-    if (inferredMode !== undefined)
+    if (inferredMode !== undefined) {
       validatePlanTriggerFields(
         {
           trigger_mode: inferredMode,
@@ -194,6 +202,7 @@ export const updatePlanSchema = z
         },
         ctx,
       )
+    }
   })
 
 export const deletePlanSchema = z
@@ -209,13 +218,9 @@ export const cancelSchema = z
   .strict()
 
 export const readFileSchema = readFileToolSchema
-export const writePersonaSchema = z
+export const writeProfileSchema = z
   .object({
-    content: nonBlankString,
-  })
-  .strict()
-export const writeUserProfileSchema = z
-  .object({
+    target: z.enum(['persona', 'user']),
     content: nonBlankString,
   })
   .strict()
@@ -255,7 +260,7 @@ export const compressContextSchema = z.object({}).strict()
 
 export const restartSchema = z.object({}).strict()
 
-export const createFocusSchema = z
+export const upsertFocusSchema = z
   .object({
     id: focusIdSchema,
     title: nonEmptyString.optional(),
@@ -264,30 +269,6 @@ export const createFocusSchema = z
     open_items: z.string().trim().optional(),
   })
   .strict()
-
-export const updateFocusSchema = z
-  .object({
-    id: focusIdSchema,
-    title: nonEmptyString.optional(),
-    status: z.enum(['active', 'idle', 'done', 'archived']).optional(),
-    summary: z.string().trim().optional(),
-    open_items: z.string().trim().optional(),
-  })
-  .strict()
-  .superRefine((data, ctx) => {
-    if (
-      data.title === undefined &&
-      data.status === undefined &&
-      data.summary === undefined &&
-      data.open_items === undefined
-    ) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'at least one editable field is required',
-        path: ['id'],
-      })
-    }
-  })
 
 export const assignFocusSchema = z
   .object({

@@ -1,8 +1,10 @@
-import { applyRunTask, type ApplyTaskActionsOptions } from './action-apply-create.js'
+import {
+  applyRunTask,
+  type ApplyTaskActionsOptions,
+} from './action-apply-create.js'
 import {
   applyAssignFocusAction,
-  applyCreateFocusAction,
-  applyUpdateFocusAction,
+  applyUpsertFocusAction,
 } from './action-apply-focus.js'
 import {
   applyCreatePlan,
@@ -14,38 +16,35 @@ import {
   applyCompressContextAction,
   applyRestartRuntimeAction,
   applyWriteMemoryAction,
-  applyWritePersonaAction,
-  applyWriteUserProfileAction,
+  applyWriteProfileAction,
 } from './action-apply-runtime.js'
 import {
   assignFocusSchema,
-  createFocusSchema,
   deletePlanSchema,
   restartSchema,
   summarizeSchema,
-  updateFocusSchema,
   updatePlanSchema,
+  upsertFocusSchema,
 } from './action-apply-schema.js'
 import {
   type FeedbackContext,
   validateCancelTask,
   validateCompressContext,
   validateCreatePlan,
+  validatePlanById,
   validateQueryHistory,
   validateQueryMemory,
   validateReadFile,
   validateRunTask,
-  validatePlanById,
   validateUpdatePlan,
   validateWithSchema,
   validateWriteMemory,
-  validateWritePersona,
-  validateWriteUserProfile,
+  validateWriteProfile,
   type ValidationIssue,
 } from './action-validation.js'
 
-import type { Parsed } from '../actions/model/spec.js'
 import type { RuntimeState } from './runtime-adapter.js'
+import type { Parsed } from '../actions/model/spec.js'
 
 export type { ApplyTaskActionsOptions } from './action-apply-create.js'
 export type { FeedbackContext, ValidationIssue } from './action-validation.js'
@@ -156,18 +155,10 @@ const ACTION_DEFINITIONS = [
     apply: continueApply,
   },
   {
-    name: 'write_persona',
-    validate: (item: Parsed) => validateWritePersona(item),
+    name: 'write_profile',
+    validate: (item: Parsed) => validateWriteProfile(item),
     apply: async (runtime: RuntimeState, item: Parsed) => {
-      await applyWritePersonaAction(runtime, item)
-      return 'continue'
-    },
-  },
-  {
-    name: 'write_user_profile',
-    validate: (item: Parsed) => validateWriteUserProfile(item),
-    apply: async (runtime: RuntimeState, item: Parsed) => {
-      await applyWriteUserProfileAction(runtime, item)
+      await applyWriteProfileAction(runtime, item)
       return 'continue'
     },
   },
@@ -188,18 +179,10 @@ const ACTION_DEFINITIONS = [
     },
   },
   {
-    name: 'create_focus',
-    validate: (item: Parsed) => validateWithSchema(item, createFocusSchema),
+    name: 'upsert_focus',
+    validate: (item: Parsed) => validateWithSchema(item, upsertFocusSchema),
     apply: async (runtime: RuntimeState, item: Parsed) => {
-      await applyCreateFocusAction(runtime, item)
-      return 'continue'
-    },
-  },
-  {
-    name: 'update_focus',
-    validate: (item: Parsed) => validateWithSchema(item, updateFocusSchema),
-    apply: async (runtime: RuntimeState, item: Parsed) => {
-      await applyUpdateFocusAction(runtime, item)
+      await applyUpsertFocusAction(runtime, item)
       return 'continue'
     },
   },
