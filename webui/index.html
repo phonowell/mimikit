@@ -26,6 +26,18 @@
           </div>
           <div class="app-actions" role="toolbar" aria-label="Controls">
             <button
+              class="btn btn--sm focuses-open"
+              data-focuses-open
+              type="button"
+              title="Focus"
+              aria-label="Focus"
+              aria-haspopup="dialog"
+              aria-controls="focuses-dialog"
+              aria-expanded="false"
+            >
+              <span class="focuses-label">Focus</span>
+            </button>
+            <button
               class="btn btn--sm plans-open"
               data-plans-open
               type="button"
@@ -49,18 +61,6 @@
             >
               <span class="tasks-label">Tasks</span>
               <span class="tasks-worker-dots" data-worker-dots aria-hidden="true"></span>
-            </button>
-            <button
-              class="btn btn--sm focuses-open"
-              data-focuses-open
-              type="button"
-              title="Focus"
-              aria-label="Focus"
-              aria-haspopup="dialog"
-              aria-controls="focuses-dialog"
-              aria-expanded="false"
-            >
-              <span class="focuses-label">Focus</span>
             </button>
             <button
               class="btn btn--sm restart-btn"
