@@ -207,20 +207,40 @@
 .tasks-worker-dots {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 0;
 }
 
 .tasks-worker-dots .worker-dot {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   border-radius: 999px;
-  background: var(--status-idle);
-  opacity: 0.7;
+  background: var(--status-pending);
+  box-shadow: -1px -1px 2px rgba(255, 255, 255, 0.78),
+    1px 1px 2px rgba(109, 126, 147, 0.35);
 }
 
-.tasks-worker-dots .worker-dot[data-active='true'] {
+.tasks-worker-dots .worker-dot[data-state='running'] {
   background: var(--status-running);
-  opacity: 1;
+}
+
+.tasks-worker-dots .worker-dot[data-state='success'] {
+  background: var(--status-success);
+}
+
+.tasks-worker-dots .worker-dot[data-state='failed'] {
+  background: var(--status-fail);
+}
+
+.tasks-worker-dots .worker-dot[data-state='pending'] {
+  background: var(--status-pending);
+}
+
+.tasks-worker-dots .worker-dot[data-state='canceled'] {
+  background: var(--status-cancel);
+}
+
+.tasks-worker-dots .worker-dot[data-state='disconnected'] {
+  background: var(--status-disconnected);
 }
 
 .scroll-bottom {

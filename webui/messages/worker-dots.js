@@ -4,30 +4,33 @@ export const normalizeCount = (value) =>
     : 0
 
 export function clearWorkerDots(workerDots) {
-  if (workerDots) workerDots.innerHTML = ''
+  if (!workerDots) return
+  workerDots.innerHTML = ''
+  workerDots.removeAttribute('title')
+}
+
+const resolveWorkerDotState = (status) => {
+  if (!status || typeof status !== 'object') return 'disconnected'
+  if (status.agentStatus === 'disconnected') return 'disconnected'
+  const activeTasks = normalizeCount(status.activeTasks)
+  const pendingTasks = normalizeCount(status.pendingTasks)
+  if (activeTasks > 0) return 'running'
+  if (pendingTasks > 0) return 'pending'
+  if (status.agentStatus === 'running') return 'running'
+  return 'success'
 }
 
 export function updateWorkerDots(workerDots, status) {
   if (!workerDots) return
-  const maxWorkers = normalizeCount(status?.maxWorkers ?? status?.maxConcurrent)
-  if (maxWorkers <= 0) {
+  const state = resolveWorkerDotState(status)
+  let dot = workerDots.querySelector('.worker-dot')
+  if (!(dot instanceof HTMLElement)) {
     workerDots.innerHTML = ''
-    return
+    dot = document.createElement('span')
+    dot.className = 'worker-dot'
+    workerDots.appendChild(dot)
   }
-  if (workerDots.childElementCount !== maxWorkers) {
-    workerDots.innerHTML = ''
-    for (let i = 0; i < maxWorkers; i += 1) {
-      const dot = document.createElement('span')
-      dot.className = 'worker-dot'
-      workerDots.appendChild(dot)
-    }
-  }
-  const activeWorkers = Math.min(normalizeCount(status?.activeTasks), maxWorkers)
-  const dots = workerDots.querySelectorAll('.worker-dot')
-  for (let i = 0; i < dots.length; i += 1) {
-    const dot = dots[i]
-    if (dot instanceof HTMLElement) 
-      dot.dataset.active = i < activeWorkers ? 'true' : 'false'
-    
-  }
+  dot.dataset.state = state
+  dot.title = `${state}/worker`
+  workerDots.title = `${state}/worker`
 }

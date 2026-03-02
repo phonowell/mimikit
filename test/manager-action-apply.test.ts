@@ -146,8 +146,12 @@ test('ask_user_choice stores pending choice and stops later actions in same batc
       attrs: {
         id: 'choice-delivery',
         question: 'Choose output format',
-        options_json:
-          '[{"id":"option-report","label":"Report","reason":"Need full context"},{"id":"option-checklist","label":"Checklist","reason":"Need quick execution"}]',
+        option_1_id: 'option-report',
+        option_1_label: 'Report',
+        option_1_reason: 'Need full context',
+        option_2_id: 'option-checklist',
+        option_2_label: 'Checklist',
+        option_2_reason: 'Need quick execution',
         default_option_id: 'option-report',
       },
     },

@@ -62,36 +62,16 @@
 
 .message.system article {
   max-width: min(92%, 720px);
-  width: 100%;
-  align-items: center;
-  gap: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  color: var(--muted);
+  background: var(--bubble-system-bg);
+  color: var(--bubble-system-text);
+  border-color: var(--bubble-system-border);
+  box-shadow: -0.5px -0.5px 1.5px rgba(255, 255, 255, 0.2),
+    0.5px 0.5px 1.5px rgba(117, 136, 160, 0.1);
 }
 
 .message.system .content {
-  width: 100%;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
   text-align: center;
-  font-size: 12px;
-  line-height: 1.35;
-  color: var(--muted);
-}
-
-.message.system .content::before,
-.message.system .content::after {
-  content: '';
-  flex: 1 1 auto;
-  height: 1px;
-  background: rgba(112, 126, 145, 0.26);
+  color: inherit;
 }
 
 .message .content {

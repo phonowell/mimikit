@@ -34,7 +34,10 @@ import {
   notifyUiSignal,
   notifyWorkerLoop,
 } from './signals.js'
-import { selectPendingUserChoice } from './user-choice.js'
+import {
+  cancelPendingUserChoiceByUserInput,
+  selectPendingUserChoice,
+} from './user-choice.js'
 
 import type { RuntimeState, UserMeta } from './runtime-state.js'
 import type { ChatMessage, ChatMessagesMode } from '../read-model/chat-view.js'
@@ -73,6 +76,11 @@ export const addUserInput = async (
     focusId,
     ...(quoteId ? { quote: quoteId } : {}),
     ...toUserInputLogMeta(meta),
+  })
+  await cancelPendingUserChoiceByUserInput({
+    runtime,
+    triggerInputId: id,
+    createdAt,
   })
   notifyManagerLoop(runtime)
   return id

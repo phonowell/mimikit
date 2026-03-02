@@ -43,6 +43,9 @@ const resolveUserSummary = (
   option: UserChoiceOption,
 ): string => `Selected option "${option.label}" for "${choice.question}".`
 
+const resolveSkipSummary = (choice: PendingUserChoice): string =>
+  `Received a new user message before selecting an option for "${choice.question}". Canceled this choice as no option selected.`
+
 const publishChoiceSystemInput = async (params: {
   runtime: RuntimeState
   choice: PendingUserChoice
@@ -88,6 +91,50 @@ const publishChoiceSystemInput = async (params: {
     source,
   })
   return input.id
+}
+
+export const cancelPendingUserChoiceByUserInput = async (params: {
+  runtime: RuntimeState
+  triggerInputId: string
+  createdAt?: string
+}): Promise<boolean> => {
+  const { runtime, triggerInputId } = params
+  const choice = runtime.pendingUserChoice
+  if (!choice) return false
+  const canceledAt = params.createdAt ?? nowIso()
+  runtime.pendingUserChoice = null
+  const input = {
+    id: `input-${newId()}`,
+    role: 'system' as const,
+    visibility: 'all' as const,
+    text: formatSystemEventText({
+      summary: resolveSkipSummary(choice),
+      event: 'user_choice_skipped',
+      payload: {
+        choice_id: choice.id,
+        question: choice.question,
+        default_option_id: choice.defaultOptionId,
+        source: 'user_input',
+        trigger_input_id: triggerInputId,
+        canceled_at: canceledAt,
+      },
+    }),
+    createdAt: canceledAt,
+    focusId: choice.focusId,
+  }
+  await publishUserInput({
+    paths: runtime.paths,
+    payload: input,
+  })
+  runtime.inflightInputs.push(input)
+  await appendLog(runtime.paths.log, {
+    event: 'user_choice_skipped',
+    inputId: input.id,
+    choiceId: choice.id,
+    source: 'user_input',
+    triggerInputId,
+  })
+  return true
 }
 
 const isExpired = (choice: PendingUserChoice, nowMs: number): boolean => {

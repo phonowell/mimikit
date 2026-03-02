@@ -41,6 +41,8 @@
   padding: 8px 10px;
   text-align: left;
   cursor: pointer;
+  transition: color 0.16s ease-out, box-shadow 0.16s ease-out,
+    transform 0.16s ease-out, border-color 0.16s ease-out;
 }
 
 .choice-tab:hover:not(:disabled) {
@@ -54,6 +56,11 @@
 
 .choice-tab[aria-selected='true'] {
   border-color: rgba(47, 125, 230, 0.35);
+}
+
+.choice-tab:active:not(:disabled) {
+  box-shadow: var(--shadow-inset-soft);
+  transform: translate(0.5px, 0.5px);
 }
 
 .choice-tab:disabled {

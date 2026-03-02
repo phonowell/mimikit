@@ -122,7 +122,7 @@ export const validateAskUserChoice = (item: Parsed): ValidationIssue[] => {
   if (issues.length > 0) return issues
   if (parseAskUserChoiceAttrs(item.attrs)) return []
   return rejected(
-    'ask_user_choice 执行失败：options_json 非法，或 default_option_id 不在 options 中。',
+    'ask_user_choice 执行失败：option_{n}_id/label/reason 参数非法，或 default_option_id 不在 options 中。',
   )
 }
 

@@ -10,6 +10,7 @@ export type SystemEventName =
   | 'trigger_fire'
   | 'idle'
   | 'user_choice'
+  | 'user_choice_skipped'
   | 'plan_created'
   | 'plan_updated'
   | 'plan_deleted'
