@@ -86,6 +86,10 @@
 - `agent_persona.md`
 - `agent_persona_versions/*.md`
 
+说明：
+- `M:write_user_profile` 写入 `user_profile.md`
+- `M:write_persona` 写入 `agent_persona.md`，并在内容变化时落 `agent_persona_versions/*.md` 版本备份
+
 ## Runtime Snapshot 关键字段
 
 schema：`src/storage/runtime-snapshot-schema.ts`

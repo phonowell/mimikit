@@ -8,6 +8,8 @@ import {
   readFileSchema,
   runTaskSchema,
   scheduleTaskSchema,
+  writePersonaSchema,
+  writeUserProfileSchema,
 } from './action-apply-schema.js'
 
 import type { Parsed } from '../actions/model/spec.js'
@@ -145,6 +147,12 @@ export const validateReadFile = (item: Parsed): ValidationIssue[] => {
   const parsed = readFileSchema.safeParse(item.attrs)
   return parsed.success ? [] : [invalidArgsIssue(parsed.error)]
 }
+
+export const validateWritePersona = (item: Parsed): ValidationIssue[] =>
+  validateWithSchema(item, writePersonaSchema)
+
+export const validateWriteUserProfile = (item: Parsed): ValidationIssue[] =>
+  validateWithSchema(item, writeUserProfileSchema)
 
 export const validateCompressContext = (
   item: Parsed,

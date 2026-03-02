@@ -17,6 +17,8 @@ import {
   applyCancelTaskAction,
   applyCompressContextAction,
   applyRestartRuntimeAction,
+  applyWritePersonaAction,
+  applyWriteUserProfileAction,
 } from './action-apply-runtime.js'
 import {
   assignFocusSchema,
@@ -38,6 +40,8 @@ import {
   validateRunTask,
   validateScheduleTask,
   validateWithSchema,
+  validateWritePersona,
+  validateWriteUserProfile,
   type ValidationIssue,
 } from './action-validation.js'
 
@@ -150,6 +154,22 @@ const ACTION_DEFINITIONS = [
     name: 'read_file',
     validate: (item: Parsed) => validateReadFile(item),
     apply: continueApply,
+  },
+  {
+    name: 'write_persona',
+    validate: (item: Parsed) => validateWritePersona(item),
+    apply: async (runtime: RuntimeState, item: Parsed) => {
+      await applyWritePersonaAction(runtime, item)
+      return 'continue'
+    },
+  },
+  {
+    name: 'write_user_profile',
+    validate: (item: Parsed) => validateWriteUserProfile(item),
+    apply: async (runtime: RuntimeState, item: Parsed) => {
+      await applyWriteUserProfileAction(runtime, item)
+      return 'continue'
+    },
   },
   {
     name: 'restart_runtime',

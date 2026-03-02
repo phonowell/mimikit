@@ -116,6 +116,15 @@ action 名称、validate、apply 由 registry 单源维护，避免多文件枚�
 - `query_history`
   - 入参：`query`、`limit?`、`roles?`、`before_id?`、`from?`、`to?`
   - 注入关系：基础窗口在 `M:recent_history`，检索命中回填到 `M:history_lookup`。
+- `read_file`
+  - 入参：`path`、`from_line?`、`max_lines?`、`max_chars?`
+  - 注入关系：读取结果回填到 `M:file_lookup`。
+- `write_persona`
+  - 入参：`content`
+  - 行为：写入 `.mimikit/agent_persona.md`；内容变化时自动备份旧版本到 `.mimikit/agent_persona_versions/*.md`。
+- `write_user_profile`
+  - 入参：`content`
+  - 行为：写入 `.mimikit/user_profile.md`。
 - `compress_context`
   - 入参：无（严格空对象）
   - 行为：压缩 `history + tasks + managerCompressedContext`。

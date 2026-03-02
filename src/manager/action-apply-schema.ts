@@ -58,6 +58,16 @@ export const cancelSchema = z
   .strict()
 
 export const readFileSchema = readFileToolSchema
+export const writePersonaSchema = z
+  .object({
+    content: z.string(),
+  })
+  .strict()
+export const writeUserProfileSchema = z
+  .object({
+    content: z.string(),
+  })
+  .strict()
 
 export const compressContextSchema = z.object({}).strict()
 

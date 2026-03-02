@@ -1,8 +1,14 @@
+import { readFile, writeFile } from 'node:fs/promises'
+import { dirname, join } from 'node:path'
+
+import { ensureDir } from '../fs/paths.js'
+import { readTextFileIfExists } from '../fs/read-text.js'
 import { appendHistory, readHistory } from '../history/store.js'
 import { bestEffort } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import { notifyWorkerLoop } from '../orchestrator/core/signals.js'
 import { loadPromptFile } from '../prompts/prompt-loader.js'
+import { readErrorCode } from '../shared/error-code.js'
 import { isVisibleToAgent } from '../shared/message-visibility.js'
 import { formatSystemEventText } from '../shared/system-event.js'
 import { newId, nowIso } from '../shared/utils.js'
@@ -12,6 +18,8 @@ import {
   cancelSchema,
   compressContextSchema,
   restartSchema,
+  writePersonaSchema,
+  writeUserProfileSchema,
 } from './action-apply-schema.js'
 import { runManagerLlmCall } from './manager-llm-call.js'
 
@@ -23,6 +31,9 @@ const MAX_HISTORY_ITEMS = 40
 const MAX_HISTORY_LINE_CHARS = 220
 const MAX_TASK_ITEMS = 20
 const MAX_PROMPT_CHARS = 16_000
+
+const normalizeProfileContent = (value: string): string =>
+  value.replace(/\r\n/g, '\n')
 
 const normalizeCompressedContext = (value: string): string => {
   const normalized = value.trim().replace(/\r\n/g, '\n')
@@ -131,6 +142,36 @@ const appendCronCanceledSystemMessage = async (
   })
 }
 
+const writeStateMarkdown = async (
+  path: string,
+  content: string,
+): Promise<void> => {
+  await ensureDir(dirname(path))
+  await writeFile(path, content, 'utf8')
+}
+
+const readCurrentPersona = async (path: string): Promise<string> => {
+  try {
+    return await readFile(path, 'utf8')
+  } catch (error) {
+    if (readErrorCode(error) === 'ENOENT') return ''
+    throw error
+  }
+}
+
+const backupPersonaVersion = async (
+  runtime: RuntimeState,
+  previous: string,
+): Promise<void> => {
+  if (!previous) return
+  await ensureDir(runtime.paths.agentPersonaVersionsDir)
+  const versionFile = join(
+    runtime.paths.agentPersonaVersionsDir,
+    `${nowIso().replace(/[:.]/g, '-')}-${newId()}.md`,
+  )
+  await writeFile(versionFile, previous, 'utf8')
+}
+
 export const applyCancelTaskAction = async (
   runtime: RuntimeState,
   item: Parsed,
@@ -193,4 +234,29 @@ export const applyRestartRuntimeAction = (
   if (!parsed.success) return Promise.resolve(false)
   requestManagerRestart(runtime)
   return Promise.resolve(true)
+}
+
+export const applyWritePersonaAction = async (
+  runtime: RuntimeState,
+  item: Parsed,
+): Promise<void> => {
+  const parsed = writePersonaSchema.safeParse(item.attrs)
+  if (!parsed.success) return
+  const next = normalizeProfileContent(parsed.data.content)
+  const current = await readCurrentPersona(runtime.paths.agentPersona)
+  if (current === next) return
+  await backupPersonaVersion(runtime, current)
+  await writeStateMarkdown(runtime.paths.agentPersona, next)
+}
+
+export const applyWriteUserProfileAction = async (
+  runtime: RuntimeState,
+  item: Parsed,
+): Promise<void> => {
+  const parsed = writeUserProfileSchema.safeParse(item.attrs)
+  if (!parsed.success) return
+  const next = normalizeProfileContent(parsed.data.content)
+  const current = await readTextFileIfExists(runtime.paths.userProfile)
+  if (current === next) return
+  await writeStateMarkdown(runtime.paths.userProfile, next)
 }

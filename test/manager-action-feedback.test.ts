@@ -115,6 +115,18 @@ test('collectManagerActionFeedback reports invalid read_file args when path is e
   expect(feedback[0]?.error).toBe('invalid_action_args')
 })
 
+test('collectManagerActionFeedback reports invalid write_user_profile args when content is missing', () => {
+  const feedback = collectManagerActionFeedback([
+    {
+      name: 'write_user_profile',
+      attrs: {},
+    },
+  ])
+  expect(feedback).toHaveLength(1)
+  expect(feedback[0]?.action).toBe('write_user_profile')
+  expect(feedback[0]?.error).toBe('invalid_action_args')
+})
+
 test('collectManagerActionFeedback rejects compress_context when context is unavailable', () => {
   const feedback = collectManagerActionFeedback([
     {

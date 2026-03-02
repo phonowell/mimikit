@@ -1,4 +1,4 @@
-import { mkdtemp } from 'node:fs/promises'
+import { mkdtemp, readFile, readdir, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -169,6 +169,45 @@ test('schedule_task uses worker profile for scheduled task', async () => {
 
   expect(runtime.cronJobs).toHaveLength(1)
   expect(runtime.cronJobs[0]?.profile).toBe('worker')
+})
+
+test('write_user_profile writes utf8 content to state file', async () => {
+  const runtime = await createRuntime()
+  const content = '- 偏好中文\n- 先给结论'
+  await applyTaskActions(runtime, [
+    {
+      name: 'write_user_profile',
+      attrs: {
+        content,
+      },
+    },
+  ])
+
+  const saved = await readFile(runtime.paths.userProfile, 'utf8')
+  expect(saved).toBe(content)
+})
+
+test('write_persona snapshots old version before overwrite', async () => {
+  const runtime = await createRuntime()
+  await writeFile(runtime.paths.agentPersona, 'old persona', 'utf8')
+  await applyTaskActions(runtime, [
+    {
+      name: 'write_persona',
+      attrs: {
+        content: 'new persona',
+      },
+    },
+  ])
+
+  const current = await readFile(runtime.paths.agentPersona, 'utf8')
+  const versions = await readdir(runtime.paths.agentPersonaVersionsDir)
+  const snapshot = await readFile(
+    join(runtime.paths.agentPersonaVersionsDir, versions[0] ?? ''),
+    'utf8',
+  )
+  expect(current).toBe('new persona')
+  expect(versions.length).toBe(1)
+  expect(snapshot).toBe('old persona')
 })
 
 test('intent actions can create and archive done intent', async () => {
