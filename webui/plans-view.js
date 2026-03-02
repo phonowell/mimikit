@@ -1,4 +1,5 @@
 import { renderEmptyListState } from './list-empty.js'
+import { formatDisplayTimeWithFull } from './messages/format-time.js'
 import { appendMetaTime } from './meta-time.js'
 import { UI_TEXT } from './system-text.js'
 
@@ -13,6 +14,41 @@ const STATUS_TEXT = Object.freeze({
   blocked: 'blocked',
   done: 'done',
 })
+
+const resolveTriggerLabel = (item) => {
+  const trigger = item?.trigger
+  if (!trigger || typeof trigger !== 'object') return null
+  if (trigger.mode === 'scheduled_at') {
+    const scheduledAt =
+      typeof trigger.scheduledAt === 'string' ? trigger.scheduledAt.trim() : ''
+    if (!scheduledAt) return null
+    const display = formatDisplayTimeWithFull(scheduledAt, {
+      relative: false,
+      calendarWords: true,
+    })
+    return {
+      text: `trigger:${display.displayText || scheduledAt}`,
+      title: display.fullText || scheduledAt,
+    }
+  }
+  if (trigger.mode === 'cron') {
+    const cron = typeof trigger.cron === 'string' ? trigger.cron.trim() : ''
+    if (!cron) return null
+    return { text: `trigger:${cron}`, title: `cron: ${cron}` }
+  }
+  if (trigger.mode === 'on_idle') {
+    const cooldownMs =
+      typeof trigger.cooldownMs === 'number' && Number.isFinite(trigger.cooldownMs)
+        ? Math.max(0, Math.floor(trigger.cooldownMs))
+        : 0
+    const cooldownSeconds = Math.floor(cooldownMs / 1000)
+    return {
+      text: `trigger:idle/${cooldownSeconds}s`,
+      title: `on_idle cooldown: ${cooldownMs}ms`,
+    }
+  }
+  return null
+}
 
 const formatAttempt = (item) => {
   const runCount =
@@ -87,6 +123,21 @@ export const renderPlans = (plansList, data) => {
       attemptEl.textContent = attempt
       meta.appendChild(attemptEl)
     }
+
+    const triggerLabel = resolveTriggerLabel(item)
+    if (triggerLabel) {
+      const triggerEl = document.createElement('span')
+      triggerEl.className = 'plan-trigger'
+      triggerEl.textContent = triggerLabel.text
+      triggerEl.title = triggerLabel.title
+      meta.appendChild(triggerEl)
+    }
+
+    const lastTriggeredAt =
+      typeof item.lastTriggeredAt === 'string' && item.lastTriggeredAt.trim()
+        ? item.lastTriggeredAt
+        : ''
+    appendMetaTime(meta, 'plan-trigger-time', lastTriggeredAt)
 
     const changedAt =
       typeof item.archivedAt === 'string' && item.archivedAt.trim()
