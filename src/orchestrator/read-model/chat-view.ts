@@ -41,6 +41,27 @@ const tailWithLimit = (
   return messages.slice(Math.max(0, messages.length - limit))
 }
 
+const toTimestamp = (iso: string): number | null => {
+  const value = Date.parse(iso)
+  return Number.isFinite(value) ? value : null
+}
+
+const sortMessagesByCreatedAt = (messages: ChatMessage[]): ChatMessage[] => {
+  if (messages.length < 2) return messages
+  return messages
+    .map((message, index) => ({ message, index }))
+    .sort((a, b) => {
+      const aTime = toTimestamp(a.message.createdAt)
+      const bTime = toTimestamp(b.message.createdAt)
+      if (aTime !== null && bTime !== null && aTime !== bTime)
+        return aTime - bTime
+      if (aTime !== null && bTime === null) return -1
+      if (aTime === null && bTime !== null) return 1
+      return a.index - b.index
+    })
+    .map((item) => item.message)
+}
+
 const withTailAndMode = (
   messages: ChatMessage[],
   limit: number,
@@ -77,7 +98,7 @@ const mergeChatMessagesWithoutLimit = (params: {
     merged.push(message)
     seenIds.add(input.id)
   }
-  return merged
+  return sortMessagesByCreatedAt(merged)
 }
 
 export const mergeChatMessages = (params: {
