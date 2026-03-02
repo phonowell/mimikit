@@ -5,16 +5,6 @@
   position: relative;
   background: var(--panel);
   box-shadow: var(--shadow-raised-soft);
-  overflow: hidden;
-}
-
-.task-item::before {
-  content: '';
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 10px;
-  background: linear-gradient(180deg, var(--focus-mark-wash), transparent 78%);
-  pointer-events: none;
 }
 
 .task-link {
@@ -56,6 +46,14 @@
 .task-meta {
   margin-top: 4px;
   justify-content: flex-end;
+}
+
+.task-item[data-focus-id] .task-title {
+  color: var(--focus-mark-ink);
+}
+
+.task-item[data-focus-id] .task-meta {
+  color: var(--focus-mark-muted);
 }
 
 .task-meta .task-time {

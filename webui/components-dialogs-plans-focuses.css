@@ -28,16 +28,6 @@
   position: relative;
   background: var(--panel);
   box-shadow: var(--shadow-raised-soft);
-  overflow: hidden;
-}
-
-.focus-item::before {
-  content: '';
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 10px;
-  background: linear-gradient(180deg, var(--focus-mark-wash), transparent 78%);
-  pointer-events: none;
 }
 
 .focus-status {
@@ -74,9 +64,13 @@
   border-radius: 999px;
   border: 1px solid var(--focus-mark-chip-border);
   background: var(--focus-mark-chip-bg);
-  color: var(--muted-contrast, var(--muted));
+  color: var(--focus-mark-muted);
   font-size: 10px;
   line-height: 1.2;
+}
+
+.focus-item[data-focus-id] .focus-title {
+  color: var(--focus-mark-ink);
 }
 
 .focus-item[data-status='active'] {

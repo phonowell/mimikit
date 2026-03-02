@@ -33,16 +33,6 @@
   box-shadow: -0.5px -0.5px 1.5px rgba(255, 255, 255, 0.24),
     0.5px 0.5px 1.5px rgba(123, 142, 166, 0.09);
   order: 1;
-  overflow: hidden;
-}
-
-.message:not(.system) article::before {
-  content: '';
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 10px;
-  background: linear-gradient(180deg, var(--focus-mark-wash), transparent 78%);
-  pointer-events: none;
 }
 
 .message.user {

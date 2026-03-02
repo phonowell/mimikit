@@ -8,6 +8,10 @@
   justify-content: flex-start;
 }
 
+.message[data-focus-id] .meta {
+  color: var(--focus-mark-muted);
+}
+
 .message .meta .time {
   margin-left: 0;
 }
