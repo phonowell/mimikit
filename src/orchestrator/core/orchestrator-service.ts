@@ -47,7 +47,7 @@ export class Orchestrator {
     setDefaultLogPath(paths.log)
     const nowMs = Date.now()
     this.runtime = {
-      runtimeId: newId(),
+      runtimeId: `runtime-${newId()}`,
       config,
       paths,
       stopped: false,

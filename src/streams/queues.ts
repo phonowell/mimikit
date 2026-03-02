@@ -11,7 +11,7 @@ const normalizeCursor = (value: number): number =>
   Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0
 
 const makePacket = <TPayload>(payload: TPayload): JsonPacket<TPayload> => ({
-  id: `${shortId()}-${Date.now()}`,
+  id: `packet-${shortId()}-${Date.now()}`,
   createdAt: nowIso(),
   payload,
 })
