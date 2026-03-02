@@ -10,7 +10,8 @@ import { appendLog } from '../log/append.js'
 import {
   selectRecentIntents,
   selectRecentTasks,
-} from '../orchestrator/read-model/intent-select.js'
+  type RuntimeState,
+} from './runtime-adapter.js'
 import { resolveScheduleNowIso } from '../shared/time.js'
 import { mergeUsageAdditive } from '../shared/token-usage.js'
 
@@ -26,7 +27,6 @@ import {
 import { runManagerRoundWithRecovery } from './loop-batch-exec.js'
 import { createManagerStreamController } from './loop-batch-stream-controller.js'
 
-import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type {
   HistoryLookupMessage,
   ManagerActionFeedback,

@@ -1,16 +1,17 @@
 import { appendHistory } from '../history/store.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
-import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
-import { notifyManagerLoop } from '../orchestrator/core/signals.js'
-import { selectIdleIntentsForTrigger } from '../orchestrator/read-model/intent-select.js'
+import {
+  notifyManagerLoop,
+  persistRuntimeState,
+  selectIdleIntentsForTrigger,
+  type RuntimeState,
+} from './runtime-adapter.js'
 import { formatSystemEventText } from '../shared/system-event.js'
 import { newId, sleep } from '../shared/utils.js'
 
 import { hasNonIdleManagerInput } from './idle-input.js'
 import { publishManagerSystemEventInput } from './system-input-event.js'
-
-import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 
 const IDLE_CHECK_INTERVAL_MS = 1_000
 const IDLE_TRIGGER_DELAY_MS = 15 * 60_000

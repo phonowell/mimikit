@@ -6,7 +6,7 @@ import {
   touchFocus,
   updateFocus,
 } from '../focus/index.js'
-import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
+import { persistRuntimeState, type RuntimeState } from './runtime-adapter.js'
 
 import {
   assignFocusSchema,
@@ -15,7 +15,6 @@ import {
 } from './action-apply-schema.js'
 
 import type { Parsed } from '../actions/model/spec.js'
-import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 
 export const applyCreateFocusAction = async (
   runtime: RuntimeState,

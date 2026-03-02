@@ -5,7 +5,7 @@ import {
   toVisibleAgentText,
 } from './loop-ui-stream.js'
 
-import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
+import type { RuntimeState } from './runtime-adapter.js'
 import type { TokenUsage } from '../types/index.js'
 
 const STREAM_TEXT_FLUSH_MS = 64

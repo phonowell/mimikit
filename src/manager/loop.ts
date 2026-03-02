@@ -1,13 +1,14 @@
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
-import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
-import { waitForManagerLoopSignal } from '../orchestrator/core/signals.js'
+import {
+  persistRuntimeState,
+  type RuntimeState,
+  waitForManagerLoopSignal,
+} from './runtime-adapter.js'
 import { consumeUserInputs, consumeWorkerResults } from '../streams/queues.js'
 
 import { processManagerBatch } from './loop-batch.js'
 import { createUiStreamId } from './loop-ui-stream.js'
-
-import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 
 export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
   while (!runtime.stopped) {

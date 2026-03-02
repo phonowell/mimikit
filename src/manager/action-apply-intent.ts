@@ -4,7 +4,7 @@ import {
   touchFocus,
 } from '../focus/index.js'
 import { appendHistory } from '../history/store.js'
-import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
+import { persistRuntimeState, type RuntimeState } from './runtime-adapter.js'
 import { formatSystemEventText } from '../shared/system-event.js'
 import { newId, nowIso } from '../shared/utils.js'
 
@@ -15,7 +15,6 @@ import {
 } from './action-apply-schema.js'
 
 import type { Parsed } from '../actions/model/spec.js'
-import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { FocusId, IdleIntent } from '../types/index.js'
 
 const resolveIntentLabel = (intent: IdleIntent): string =>

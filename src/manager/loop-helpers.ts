@@ -10,7 +10,7 @@ import {
   compactResultQueueIfFullyConsumed,
 } from '../streams/queues.js'
 
-import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
+import type { RuntimeState } from './runtime-adapter.js'
 import type { TaskResult, UserInput } from '../types/index.js'
 
 const QUEUE_COMPACT_MIN_PACKETS = 100

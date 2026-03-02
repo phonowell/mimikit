@@ -46,7 +46,7 @@ import {
 } from './action-validation.js'
 
 import type { Parsed } from '../actions/model/spec.js'
-import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
+import type { RuntimeState } from './runtime-adapter.js'
 
 export type { ApplyTaskActionsOptions } from './action-apply-create.js'
 export type { FeedbackContext, ValidationIssue } from './action-validation.js'

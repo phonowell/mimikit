@@ -3,7 +3,7 @@ import { appendLog } from '../log/append.js'
 import { compressManagerContext } from './action-apply-runtime.js'
 import { runManager } from './runner.js'
 
-import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
+import type { RuntimeState } from './runtime-adapter.js'
 import type {
   HistoryLookupMessage,
   IdleIntent,

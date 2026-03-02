@@ -1,9 +1,8 @@
 import { parseActions } from '../actions/protocol/parse.js'
-import { notifyUiSignal } from '../orchestrator/core/signals.js'
+import { notifyUiSignal, type RuntimeState } from './runtime-adapter.js'
 import { isSameUsage, mergeUsageMonotonic } from '../shared/token-usage.js'
 import { nowIso } from '../shared/utils.js'
 
-import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { TokenUsage } from '../types/index.js'
 
 export const createUiStreamId = (

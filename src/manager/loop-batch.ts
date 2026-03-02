@@ -4,8 +4,11 @@ import {
 } from '../history/manager-events.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
-import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
-import { notifyUiSignal } from '../orchestrator/core/signals.js'
+import {
+  notifyUiSignal,
+  persistRuntimeState,
+  type RuntimeState,
+} from './runtime-adapter.js'
 import { isVisibleToAgent } from '../shared/message-visibility.js'
 
 import { applyTaskActions, collectTaskResultSummaries } from './action-apply.js'
@@ -24,7 +27,6 @@ import {
 } from './loop-helpers.js'
 import { startUiStream, stopUiStream } from './loop-ui-stream.js'
 
-import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { TaskResult, TokenUsage, UserInput } from '../types/index.js'
 
 export const processManagerBatch = async (params: {

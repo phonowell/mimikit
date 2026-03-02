@@ -7,7 +7,7 @@ import { runReadFileTool } from './read-file-tool.js'
 
 import type { ReadFileRequest } from './read-file-tool.js'
 import type { QueryHistoryRequest } from '../history/query.js'
-import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
+import type { RuntimeState } from './runtime-adapter.js'
 import type {
   HistoryLookupMessage,
   ReadFileLookupMessage,

@@ -4,17 +4,18 @@ import {
   touchFocus,
 } from '../focus/index.js'
 import { appendTaskSystemMessage } from '../history/task-events.js'
-import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
-import { notifyWorkerLoop } from '../orchestrator/core/signals.js'
-import { enqueueTask } from '../orchestrator/core/task-lifecycle.js'
 import {
   buildTaskFingerprint,
   buildTaskSemanticKey,
+  cancelTask,
+  enqueueTask,
+  enqueueWorkerTask,
   findActiveTaskBySemanticKey,
-} from '../orchestrator/core/task-state.js'
+  notifyWorkerLoop,
+  persistRuntimeState,
+  type RuntimeState,
+} from './runtime-adapter.js'
 import { newId, nowIso } from '../shared/utils.js'
-import { cancelTask } from '../worker/cancel-task.js'
-import { enqueueWorkerTask } from '../worker/dispatch.js'
 
 import {
   hasForbiddenWorkerStatePath,
@@ -23,7 +24,6 @@ import {
 import { runTaskSchema, scheduleTaskSchema } from './action-apply-schema.js'
 
 import type { Parsed } from '../actions/model/spec.js'
-import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { CronJob, FocusId, Task, WorkerProfile } from '../types/index.js'
 
 export type ApplyTaskActionsOptions = {

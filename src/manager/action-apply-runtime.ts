@@ -5,14 +5,17 @@ import { ensureDir } from '../fs/paths.js'
 import { readTextFileIfExists } from '../fs/read-text.js'
 import { appendHistory, readHistory } from '../history/store.js'
 import { bestEffort } from '../log/safe.js'
-import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
-import { notifyWorkerLoop } from '../orchestrator/core/signals.js'
+import {
+  cancelTask,
+  notifyWorkerLoop,
+  persistRuntimeState,
+  type RuntimeState,
+} from './runtime-adapter.js'
 import { loadPromptFile } from '../prompts/prompt-loader.js'
 import { readErrorCode } from '../shared/error-code.js'
 import { isVisibleToAgent } from '../shared/message-visibility.js'
 import { formatSystemEventText } from '../shared/system-event.js'
 import { newId, nowIso } from '../shared/utils.js'
-import { cancelTask } from '../worker/cancel-task.js'
 
 import {
   cancelSchema,
@@ -24,7 +27,6 @@ import {
 import { runManagerLlmCall } from './manager-llm-call.js'
 
 import type { Parsed } from '../actions/model/spec.js'
-import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 
 const MAX_COMPRESSED_CONTEXT_CHARS = 4_000
 const MAX_HISTORY_ITEMS = 40

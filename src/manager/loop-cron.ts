@@ -2,13 +2,14 @@ import { Cron } from 'croner'
 
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
-import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
-import { notifyManagerLoop } from '../orchestrator/core/signals.js'
+import {
+  notifyManagerLoop,
+  persistRuntimeState,
+  type RuntimeState,
+} from './runtime-adapter.js'
 import { sleep } from '../shared/utils.js'
 
 import { publishManagerSystemEventInput } from './system-input-event.js'
-
-import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 
 const matchCronNow = (expression: string, at: Date = new Date()): boolean =>
   new Cron(expression).match(at)

@@ -6,12 +6,11 @@ import {
 import { appendHistory } from '../history/store.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort, logSafeError } from '../log/safe.js'
-import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
+import { persistRuntimeState, type RuntimeState } from './runtime-adapter.js'
 import { nowIso } from '../shared/utils.js'
 
 import { consumeBatchHistory, finalizeBatchProgress } from './loop-helpers.js'
 
-import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { TokenUsage, TaskResult, UserInput } from '../types/index.js'
 
 export const finishBatchWithoutAgentReply = async (params: {

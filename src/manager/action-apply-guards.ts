@@ -1,4 +1,4 @@
-import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
+import type { RuntimeState } from './runtime-adapter.js'
 
 const normalizePromptPath = (value: string): string =>
   value.replace(/\\/g, '/').toLowerCase()

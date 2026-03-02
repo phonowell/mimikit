@@ -8,7 +8,7 @@ import {
 import { newId } from '../shared/utils.js'
 import { publishUserInput } from '../streams/queues.js'
 
-import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
+import type { RuntimeState } from './runtime-adapter.js'
 import type { MessageVisibility } from '../types/index.js'
 
 export type ManagerSystemEventName = Extract<
