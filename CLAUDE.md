@@ -8,9 +8,9 @@
 
 ## 参考项目
 
-- 固定参考：`nanobot`、`picoclaw`、`mimiclaw`、`copaw`
-- 本地路径（相对 `.`）：`../nanobot`、`../picoclaw`、`../mimiclaw`、`../copaw`
-- 远端仓库：`HKUDS/nanobot`、`sipeed/picoclaw`、`memovai/mimiclaw`、`agentscope-ai/CoPaw`
+- 固定参考：`nanobot`、`picoclaw`、`mimiclaw`、`copaw`、`pi-mono`
+- 本地路径（相对 `.`）：`../nanobot`、`../picoclaw`、`../mimiclaw`、`../copaw`、`../pi-mono`
+- 远端仓库：`HKUDS/nanobot`、`sipeed/picoclaw`、`memovai/mimiclaw`、`agentscope-ai/CoPaw`、`badlogic/pi-mono`
 - 同步要求：执行任务前确保上述仓库可访问且与各自 `origin/main` 同步
 
 ## 关键规则
