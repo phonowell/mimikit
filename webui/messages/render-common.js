@@ -8,11 +8,11 @@ export const preserveScrollPosition = ({
   scrollToBottom,
 }) => {
   const newScrollHeight = messagesEl.scrollHeight
-  if (wasNearBottom) {
+  const delta = newScrollHeight - previousScrollHeight
+  if (wasNearBottom && delta > 0) {
     scrollToBottom({ smooth: false })
     return
   }
-  const delta = newScrollHeight - previousScrollHeight
   const nextTop = previousScrollTop + delta
   messagesEl.scrollTop = nextTop < 0 ? 0 : nextTop
 }
