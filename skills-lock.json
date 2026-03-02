@@ -5,6 +5,11 @@
       "source": "alinaqi/claude-bootstrap",
       "sourceType": "github",
       "computedHash": "0297f1519e54d37e5a3f271ad45ac019966b8106c4f7e412a3370c35b8a17b61"
+    },
+    "frontend-design": {
+      "source": "buildermethods/design-os",
+      "sourceType": "github",
+      "computedHash": "ef27b958d3a46961a63a15fcb55de729d447d34e8cc868d46679f47b2ab31573"
     }
   }
 }
