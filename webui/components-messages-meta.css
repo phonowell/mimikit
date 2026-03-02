@@ -1,0 +1,43 @@
+.message .meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--muted);
+  width: 100%;
+}
+
+.message .meta .time {
+  margin-left: auto;
+}
+
+.message.user .meta .delivery {
+  margin-left: 0;
+}
+
+.message.user .meta .time {
+  margin-left: 0;
+}
+
+.message.user .meta {
+  justify-content: flex-end;
+  gap: 3px;
+}
+
+.message .meta .delivery {
+  font-size: 12px;
+  line-height: 1;
+  color: var(--muted);
+}
+
+.message .meta .origin {
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--panel-strong);
+  border: 1px solid transparent;
+  box-shadow: none;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+}
+

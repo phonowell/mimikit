@@ -1,0 +1,126 @@
+.composer .quote-preview {
+  --quote-bar: var(--bubble-agent-text);
+  --quote-bg: var(--bubble-agent-bg);
+  --quote-label: var(--bubble-agent-text);
+  --quote-text: var(--bubble-agent-text);
+  flex: 0 0 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 0 34px 0 16px;
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-2px);
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: 10px;
+  background: transparent;
+  transition: max-height 0.16s ease, opacity 0.16s ease, transform 0.16s ease,
+    padding 0.16s ease, background-color 0.16s ease;
+}
+
+.composer .quote-preview::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 7px;
+  bottom: 7px;
+  width: 2px;
+  border-radius: 999px;
+  background: var(--quote-bar);
+  opacity: 0;
+  transition: opacity 0.16s ease;
+}
+
+.composer .quote-preview.is-visible {
+  padding: 7px 34px 7px 16px;
+  max-height: 72px;
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+  background: var(--quote-bg);
+  box-shadow: -0.5px -0.5px 1px rgba(255, 255, 255, 0.26),
+    0.5px 0.5px 1px rgba(117, 136, 160, 0.12);
+}
+
+.composer .quote-preview.is-visible::before {
+  opacity: 1;
+}
+
+.composer .quote-preview[hidden] {
+  display: none;
+}
+
+.composer .quote-preview[data-role='user'] {
+  --quote-bar: var(--bubble-user-text);
+  --quote-bg: var(--bubble-user-bg);
+  --quote-label: var(--bubble-user-text);
+  --quote-text: var(--bubble-user-text);
+}
+
+.composer .quote-preview[data-role='system'],
+.composer .quote-preview[data-role='unknown'] {
+  --quote-bar: var(--bubble-system-text);
+  --quote-bg: var(--bubble-system-bg);
+  --quote-label: var(--bubble-system-text);
+  --quote-text: var(--bubble-system-text);
+}
+
+.composer .quote-label {
+  font-weight: 600;
+  font-size: 11px;
+  line-height: 1.2;
+  color: var(--quote-label);
+}
+
+.composer .quote-text {
+  flex: 0 0 auto;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--quote-text);
+  opacity: 0.78;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.composer .quote-clear {
+  --btn-size: 20px;
+  --btn-shadow: -0.35px -0.35px 0.9px rgba(255, 255, 255, 0.22),
+    0.35px 0.35px 0.9px rgba(122, 141, 165, 0.08);
+  --btn-shadow-hover: -0.4px -0.4px 1px rgba(255, 255, 255, 0.24),
+    0.4px 0.4px 1px rgba(122, 141, 165, 0.1);
+  --btn-shadow-press: inset -0.3px -0.3px 0.8px rgba(255, 255, 255, 0.2),
+    inset 0.3px 0.3px 0.8px rgba(117, 136, 160, 0.12);
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.12s ease, color 0.12s ease,
+    border-color 0.12s ease, transform 0.12s ease;
+}
+
+.composer .quote-clear:hover {
+  transform: translateY(-50%) scale(1.01);
+}
+
+.composer .quote-clear:active {
+  transform: translateY(-50%) scale(0.98);
+}
+
+.composer .quote-clear:focus-visible {
+  outline-offset: 1px;
+}

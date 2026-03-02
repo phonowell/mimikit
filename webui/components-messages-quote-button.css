@@ -1,0 +1,40 @@
+.message .message-quote-btn {
+  --btn-size: 26px;
+  --btn-bg: var(--panel);
+  --btn-border: transparent;
+  --btn-hover-bg: var(--panel);
+  --btn-hover-color: #5f7088;
+  --btn-focus: rgba(47, 125, 230, 0.3);
+  --btn-shadow: var(--shadow-raised-soft);
+  --btn-shadow-hover: var(--shadow-raised);
+  --btn-shadow-press: var(--shadow-inset-soft);
+  box-shadow: var(--btn-shadow);
+  order: 2;
+  opacity: 0;
+  transform: translateY(2px) scale(0.96);
+  pointer-events: none;
+  transition: opacity 0.12s ease, transform 0.12s ease, background-color 0.12s ease,
+    color 0.12s ease, border-color 0.12s ease;
+  transition-delay: 0s;
+}
+
+.message.user .message-quote-btn {
+  order: 0;
+}
+
+.message:hover .message-quote-btn,
+.message:focus-within .message-quote-btn {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+  transition-delay: 0.06s;
+}
+
+.message .message-quote-btn:active {
+  transform: translateY(0) scale(0.96);
+}
+
+.message .message-quote-btn:focus-visible {
+  outline-offset: 1px;
+}
+

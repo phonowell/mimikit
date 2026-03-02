@@ -1,11 +1,9 @@
 import { renderMarkdown } from '../markdown.js'
 
-import {
-  formatDisplayTimeWithFull,
-  formatElapsedLabel,
-  formatUsage,
-} from './format.js'
-import { renderMessages, renderStreamMessage } from './render.js'
+import { formatDisplayTimeWithFull } from './format-time.js'
+import { formatElapsedLabel, formatUsage } from './format-usage.js'
+import { renderMessages } from './render-list.js'
+import { renderStreamMessage } from './render-stream.js'
 
 export const createMessageRendering = (params) => {
   const { messagesEl, scroll, loading, quote } = params

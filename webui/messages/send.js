@@ -1,4 +1,4 @@
-import { renderError } from './render.js'
+import { renderError } from './render-list.js'
 import { fetchWithTimeout } from '../fetch-with-timeout.js'
 import { UI_TEXT } from '../system-text.js'
 

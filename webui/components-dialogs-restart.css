@@ -1,0 +1,31 @@
+.restart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.restart-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.restart-description {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.restart-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.restart-dialog-btn-danger {
+  margin-right: auto;
+}

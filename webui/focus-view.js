@@ -1,4 +1,4 @@
-import { formatDisplayTimeWithFull } from './messages/format.js'
+import { formatDisplayTimeWithFull } from './messages/format-time.js'
 import { UI_TEXT } from './system-text.js'
 
 const STATUS_TEXT = Object.freeze({

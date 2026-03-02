@@ -1,10 +1,9 @@
 import { bindComposer } from './messages/composer.js'
-import { bindFocusPanel } from './focus.js'
 import { createMessagesController } from './messages/controller.js'
+import { bindFocusPanel, bindPlansPanel } from './panels.js'
 import { bindRestart } from './restart.js'
 import { UI_TEXT } from './system-text.js'
 import { bindTasksPanel } from './tasks.js'
-import { bindPlansPanel } from './plans.js'
 
 const $ = (sel) => document.querySelector(sel)
 

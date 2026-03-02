@@ -6,7 +6,7 @@ import {
   formatDisplayTime,
   formatDisplayTimeWithFull,
   parseTimeInput,
-} from '../webui/messages/format.js'
+} from '../webui/messages/format-time.js'
 
 const BASE_OPTIONS = {
   locale: 'en-US',
