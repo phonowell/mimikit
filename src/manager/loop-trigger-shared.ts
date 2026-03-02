@@ -6,7 +6,6 @@ import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { TaskPlan } from '../types/index.js'
 
 export const IDLE_CHECK_INTERVAL_MS = 1_000
-export const IDLE_TRIGGER_DELAY_MS = 15 * 60_000
 
 const hasPendingOrRunningTask = (runtime: RuntimeState): boolean =>
   runtime.tasks.some(

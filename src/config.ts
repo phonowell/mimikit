@@ -39,6 +39,10 @@ export type AppConfig = {
       /** Debounce window for run_task dedup (ms) */
       debounceMs: number
     }
+    idleTrigger: {
+      /** Idle duration before on_idle plans can be triggered (ms) */
+      delayMs: number
+    }
     taskWindow: {
       /** Task list retention upper bound */
       maxCount: number

@@ -19,6 +19,8 @@ manager:
     userProfileMaxBytes: 8192
   taskCreate:
     debounceMs: 4000
+  idleTrigger:
+    delayMs: 900000
   taskWindow:
     maxCount: 20
     minCount: 5

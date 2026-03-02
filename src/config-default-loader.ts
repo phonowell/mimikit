@@ -50,6 +50,11 @@ const defaultConfigSchema = z
             debounceMs: z.number().int().nonnegative(),
           })
           .strict(),
+        idleTrigger: z
+          .object({
+            delayMs: z.number().int().nonnegative(),
+          })
+          .strict(),
         taskWindow: z
           .object({
             maxCount: z.number().int().positive(),

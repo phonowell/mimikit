@@ -41,6 +41,7 @@
 - `MIMIKIT_REASONING_EFFORT`
 - `MIMIKIT_WORKER_REASONING_EFFORT`
 - `MIMIKIT_MANAGER_CREATE_TASK_DEBOUNCE_MS`
+- `MIMIKIT_MANAGER_IDLE_TRIGGER_DELAY_MS`
 - `MIMIKIT_MANAGER_PLAN_WINDOW_MAX_COUNT`
 - `MIMIKIT_MANAGER_PLAN_WINDOW_MIN_COUNT`
 - `MIMIKIT_MANAGER_PLAN_WINDOW_MAX_BYTES`
@@ -51,6 +52,7 @@
 - `manager.maxCorrectionRounds`
 - `manager.promptSections.*`
 - `manager.taskCreate.debounceMs`
+- `manager.idleTrigger.delayMs`
 - `manager.taskWindow.{maxCount,minCount,maxBytes}`
 - `manager.planWindow.{maxCount,minCount,maxBytes}`
 - `worker.maxConcurrent`

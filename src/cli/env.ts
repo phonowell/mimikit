@@ -75,6 +75,12 @@ const applyLoopEnv = (config: AppConfig): void => {
   )
   if (managerCreateTaskDebounceMs !== undefined)
     config.manager.taskCreate.debounceMs = managerCreateTaskDebounceMs
+  const managerIdleTriggerDelayMs = parseEnvNonNegativeInteger(
+    'MIMIKIT_MANAGER_IDLE_TRIGGER_DELAY_MS',
+    process.env.MIMIKIT_MANAGER_IDLE_TRIGGER_DELAY_MS?.trim(),
+  )
+  if (managerIdleTriggerDelayMs !== undefined)
+    config.manager.idleTrigger.delayMs = managerIdleTriggerDelayMs
 
   const managerPlanWindowMaxCount = parseEnvPositiveInteger(
     'MIMIKIT_MANAGER_PLAN_WINDOW_MAX_COUNT',

@@ -7,7 +7,6 @@ import { sleep } from '../shared/utils.js'
 import { checkScheduledPlans, triggerOnIdlePlans } from './loop-trigger-plans.js'
 import {
   IDLE_CHECK_INTERVAL_MS,
-  IDLE_TRIGGER_DELAY_MS,
   isManagerBusy,
   isWorkerBusy,
 } from './loop-trigger-shared.js'
@@ -18,6 +17,7 @@ import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 export const triggerWakeLoop = async (runtime: RuntimeState): Promise<void> => {
   let publishedIdleForCurrentWindow = false
   let lastActivityKey = ''
+  const idleTriggerDelayMs = Math.max(0, runtime.config.manager.idleTrigger.delayMs)
 
   while (!runtime.stopped) {
     try {
@@ -44,7 +44,7 @@ export const triggerWakeLoop = async (runtime: RuntimeState): Promise<void> => {
       const idleReady =
         !isManagerBusy(runtime) &&
         !isWorkerBusy(runtime) &&
-        idleForMs >= IDLE_TRIGGER_DELAY_MS
+        idleForMs >= idleTriggerDelayMs
 
       if (!publishedIdleForCurrentWindow && idleReady) {
         const idleTriggered = await triggerOnIdlePlans(runtime, nowMs)
