@@ -1,3 +1,0 @@
-interface:
-  display_name: "Skills.sh Project Governor"
-  short_description: "Govern project skill lifecycle with scoring, gate, and cleanup"
