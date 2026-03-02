@@ -73,12 +73,21 @@ const createRuntime = async (): Promise<RuntimeState> => {
 
 test('run_task re-enqueues pending task when fingerprint matches exactly', async () => {
   const runtime = await createRuntime()
+  runtime.focuses.push({
+    id: 'focus-local',
+    title: 'Local',
+    status: 'active',
+    createdAt: '2026-02-13T00:00:00.000Z',
+    updatedAt: '2026-02-13T00:00:00.000Z',
+    lastActivityAt: '2026-02-13T00:00:01.000Z',
+  })
+  runtime.activeFocusIds.push('focus-local')
   runtime.tasks.push({
     id: 'task-pending',
     fingerprint: 'same prompt',
     prompt: 'same prompt',
     title: 'old title',
-    focusId: GLOBAL_FOCUS_ID,
+    focusId: 'focus-local',
     profile: 'worker',
     status: 'pending',
     createdAt: '2026-02-13T00:00:00.000Z',
@@ -96,6 +105,7 @@ test('run_task re-enqueues pending task when fingerprint matches exactly', async
 
   expect(runtime.tasks).toHaveLength(1)
   expect(runtime.tasks[0]?.id).toBe('task-pending')
+  expect(runtime.tasks[0]?.focusId).toBe('focus-local')
   expect(runtime.workerQueue.size).toBe(1)
 })
 

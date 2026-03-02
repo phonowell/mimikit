@@ -1,4 +1,5 @@
 import { nowIso } from '../shared/utils.js'
+import { compareIsoDesc } from '../shared/time.js'
 
 import { GLOBAL_FOCUS_ID, MAX_FOCUS_OPEN_ITEMS } from './constants.js'
 import { normalizeFocusOpenItems } from './open-items.js'
@@ -11,8 +12,23 @@ import type {
   FocusStatus,
 } from '../types/index.js'
 
-export const resolveDefaultFocusId = (runtime: RuntimeState): FocusId =>
-  runtime.activeFocusIds?.[0] ?? GLOBAL_FOCUS_ID
+export const resolveDefaultFocusId = (runtime: RuntimeState): FocusId => {
+  const activeNonGlobal = runtime.focuses
+    .filter(
+      (item) => item.status === 'active' && item.id !== GLOBAL_FOCUS_ID,
+    )
+    .sort((a, b) => {
+      const diff = compareIsoDesc(a.lastActivityAt, b.lastActivityAt)
+      if (diff !== 0) return diff
+      return a.id.localeCompare(b.id)
+    })
+  const primaryActiveFocus = activeNonGlobal.at(0)
+  if (primaryActiveFocus) return primaryActiveFocus.id
+  const activeFallback = runtime.activeFocusIds.find((id) =>
+    runtime.focuses.some((item) => item.id === id && item.status === 'active'),
+  )
+  return activeFallback ?? GLOBAL_FOCUS_ID
+}
 
 export const findFocus = (
   runtime: RuntimeState,
