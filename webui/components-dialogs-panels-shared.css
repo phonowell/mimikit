@@ -100,8 +100,7 @@
 }
 
 .task-cron,
-.plan-trigger,
-.focus-active-badge {
+.plan-trigger {
   display: inline-flex;
   align-items: center;
   height: 18px;

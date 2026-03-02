@@ -16,7 +16,6 @@ export const renderFocuses = (focusesList, data) => {
     node.className = 'focus-item'
     const status = typeof item.status === 'string' ? item.status : 'idle'
     node.dataset.status = status
-    if (item.isActive) node.dataset.active = 'true'
 
     const header = document.createElement('div')
     header.className = 'focus-title-row'
@@ -37,13 +36,6 @@ export const renderFocuses = (focusesList, data) => {
 
     header.appendChild(dot)
     header.appendChild(title)
-
-    if (item.isActive) {
-      const active = document.createElement('span')
-      active.className = 'focus-active-badge'
-      active.textContent = 'ACTIVE'
-      header.appendChild(active)
-    }
 
     node.appendChild(header)
 

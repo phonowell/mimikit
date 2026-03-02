@@ -34,11 +34,6 @@
   background: var(--focus-dot, var(--status-pending));
 }
 
-.focus-active-badge {
-  color: var(--accent);
-  background: var(--accent-soft);
-}
-
 .focus-item[data-status='active'] {
   --focus-dot: var(--status-running);
 }
@@ -53,8 +48,4 @@
 
 .focus-item[data-status='archived'] {
   --focus-dot: var(--status-cancel);
-}
-
-.focus-item[data-active='true'] {
-  border-color: transparent;
 }
