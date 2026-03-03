@@ -43,6 +43,7 @@
 
 - `query_history` / `read_file`：仅做 schema 校验，不直接改状态；结果通过下一纠错回合注入 `M:history_lookup` / `M:file_lookup`。
 - `summarize_task_result`：保留为兼容占位（仅校验，不执行状态写入）。
+- `compress_context`：按 focus 维度写入压缩摘要（`managerFocusCompressedContexts`），prompt 仅注入 working focus 对应条目。
 - memory 写入不再通过 action；由后台 memory 刷新子进程负责。
 
 ## Prompt 注入标签

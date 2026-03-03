@@ -72,7 +72,11 @@ export {
   formatReadFileLookup,
   formatRecentHistory,
 } from './format-messages.js'
-export { formatFocusContexts, formatFocusList } from './format-focus.js'
+export {
+  formatCompressedFocusContexts,
+  formatFocusContexts,
+  formatFocusList,
+} from './format-focus.js'
 export {
   formatPlansYaml,
   formatResultsYaml,

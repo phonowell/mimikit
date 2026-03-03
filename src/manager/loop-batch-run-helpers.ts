@@ -51,7 +51,7 @@ export const buildActionFeedbackContext = (params: {
       runtime.taskPlans.map((plan) => [plan.id, plan.status]),
     ),
     hasCompressibleContext:
-      Boolean(runtime.managerCompressedContext?.trim()) ||
+      runtime.managerFocusCompressedContexts.length > 0 ||
       runtime.tasks.length > 0 ||
       runtime.taskPlans.length > 0 ||
       hasQueryData ||

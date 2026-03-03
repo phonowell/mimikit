@@ -1,6 +1,10 @@
 import { appendLog } from '../log/append.js'
+import { selectFocusCompressedContexts } from '../focus/index.js'
 
-import { compressManagerContext } from './action-runtime-compress.js'
+import {
+  compressManagerContext,
+  proactiveCompressManagerContext,
+} from './action-runtime-compress.js'
 import { runManager } from './runner.js'
 
 import type { RuntimeState } from './runtime-adapter.js'
@@ -85,10 +89,29 @@ export const runManagerRoundWithRecovery = async (params: {
   const wakeProfile = resolveWakeProfile(params.inputs, params.results)
   const managerEnv = buildManagerEnv(params.runtime, wakeProfile)
   let attemptedAutoCompress = false
+  let attemptedProactiveCompress = false
 
   for (;;) {
     try {
+      if (!attemptedProactiveCompress) {
+        attemptedProactiveCompress = true
+        const compressedFocusIds = await proactiveCompressManagerContext(
+          params.runtime,
+          params.workingFocusIds,
+        )
+        if (compressedFocusIds.length > 0) {
+          await appendLog(params.runtime.paths.log, {
+            event: 'manager_auto_compress_preflight',
+            round: params.round,
+            focusIds: compressedFocusIds,
+          })
+        }
+      }
       let callUsage: TokenUsage | undefined
+      const compressedFocusContexts = selectFocusCompressedContexts(
+        params.runtime,
+        params.workingFocusIds,
+      )
       const result = await runManager({
         stateDir: params.runtime.config.workDir,
         workDir: params.runtime.config.workDir,
@@ -110,8 +133,8 @@ export const runManagerRoundWithRecovery = async (params: {
         ...(params.extra.actionFeedback
           ? { actionFeedback: params.extra.actionFeedback }
           : {}),
-        ...(params.runtime.managerCompressedContext
-          ? { compressedContext: params.runtime.managerCompressedContext }
+        ...(compressedFocusContexts.length > 0
+          ? { compressedFocusContexts }
           : {}),
         ...(managerEnv ? { env: managerEnv } : {}),
         model: params.runtime.config.manager.model,
@@ -136,6 +159,7 @@ export const runManagerRoundWithRecovery = async (params: {
       })
       await compressManagerContext(params.runtime, {
         reason: 'auto_context_limit_retry',
+        focusIds: params.workingFocusIds,
       })
     }
   }

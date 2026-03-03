@@ -5,6 +5,7 @@ import { stripUndefined } from '../shared/utils.js'
 import {
   focusContextSchema,
   focusMetaSchema,
+  managerFocusCompressedContextSchema,
   pendingUserChoiceSchema,
   runtimeSnapshotSchema,
   taskPlanSchema,
@@ -17,6 +18,9 @@ type SnapshotTask = z.infer<typeof taskSchema>
 type SnapshotTaskPlan = z.infer<typeof taskPlanSchema>
 type SnapshotFocusMeta = z.infer<typeof focusMetaSchema>
 type SnapshotFocusContext = z.infer<typeof focusContextSchema>
+type SnapshotManagerFocusCompressedContext = z.infer<
+  typeof managerFocusCompressedContextSchema
+>
 type SnapshotPendingUserChoice = z.infer<typeof pendingUserChoiceSchema>
 
 const normalizeTask = (task: SnapshotTask): SnapshotTask =>
@@ -42,6 +46,11 @@ const normalizeFocusContext = (
 ): SnapshotFocusContext =>
   stripUndefined({ ...focusContext }) as SnapshotFocusContext
 
+const normalizeManagerFocusCompressedContext = (
+  item: SnapshotManagerFocusCompressedContext,
+): SnapshotManagerFocusCompressedContext =>
+  stripUndefined({ ...item }) as SnapshotManagerFocusCompressedContext
+
 const normalizePendingUserChoice = (
   choice: SnapshotPendingUserChoice,
 ): SnapshotPendingUserChoice =>
@@ -60,10 +69,13 @@ export const parseRuntimeSnapshot = (value: unknown): RuntimeSnapshot => {
     activeFocusIds: parsed.activeFocusIds,
     managerTurn: parsed.managerTurn,
     queues: parsed.queues,
+    managerFocusCompressedContexts:
+      parsed.managerFocusCompressedContexts?.map(
+        normalizeManagerFocusCompressedContext,
+      ),
     pendingUserChoice: parsed.pendingUserChoice
       ? normalizePendingUserChoice(parsed.pendingUserChoice)
       : undefined,
     memoryRefresh: parsed.memoryRefresh,
-    managerCompressedContext: parsed.managerCompressedContext,
   }) as RuntimeSnapshot
 }

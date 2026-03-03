@@ -1,8 +1,9 @@
 import { readTextFileIfExists } from '../fs/read-text.js'
 import { readErrorCode } from '../shared/error-code.js'
 import { compareIsoDesc } from '../shared/time.js'
+import { parse as parseYaml } from 'yaml'
 
-import { escapeCdata } from './format-base.js'
+import { escapeCdata, stringifyPromptYaml } from './format-base.js'
 
 import type { Task, TaskResult } from '../types/index.js'
 
@@ -13,8 +14,51 @@ const clipUtf8ByBytes = (value: string, maxBytes: number): string => {
   return buffer.subarray(0, maxBytes).toString('utf8').trimEnd()
 }
 
-export const encodePromptSection = (value: string, maxBytes: number): string =>
+const parseYamlListSection = (
+  value: string,
+): { key: string; entries: unknown[] } | undefined => {
+  const trimmed = value.trim()
+  if (!trimmed) return undefined
+  let parsed: unknown
+  try {
+    parsed = parseYaml(trimmed)
+  } catch {
+    return undefined
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed))
+    return undefined
+  const keys = Object.keys(parsed as Record<string, unknown>)
+  if (keys.length !== 1) return undefined
+  const key = keys[0]
+  if (!key) return undefined
+  const entries = (parsed as Record<string, unknown>)[key]
+  if (!Array.isArray(entries)) return undefined
+  return { key, entries }
+}
+
+export const encodePromptTextSection = (
+  value: string,
+  maxBytes: number,
+): string =>
   escapeCdata(clipUtf8ByBytes(value, maxBytes))
+
+export const encodePromptYamlSection = (
+  value: string,
+  maxBytes: number,
+): string => {
+  if (maxBytes <= 0) return ''
+  const parsed = parseYamlListSection(value)
+  if (!parsed) return ''
+  const selected = [...parsed.entries]
+  while (selected.length > 0) {
+    const yaml = stringifyPromptYaml({
+      [parsed.key]: selected,
+    })
+    if (Buffer.byteLength(yaml, 'utf8') <= maxBytes) return escapeCdata(yaml)
+    selected.pop()
+  }
+  return ''
+}
 
 export const mergeTaskResults = (
   primary: TaskResult[],

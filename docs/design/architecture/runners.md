@@ -10,7 +10,7 @@
 - Prompt 组装：`buildManagerPrompt`
 - 模板：`prompts/manager/system.md`（`nunjucks` 渲染）
 - Provider：`runWithProvider({ provider: 'openai-chat', role: 'manager' })`
-- 会话连续性：依赖本地 `history/tasks/plans/managerCompressedContext`
+- 会话连续性：依赖本地 `history/tasks/plans/managerFocusCompressedContexts`
 - 输出：`{ output, elapsedMs, usage? }`
 
 主流程：

@@ -21,7 +21,7 @@
 补充：
 
 - manager 回合采用 `maxCorrectionRounds` 硬上限；超过上限写入 `system_event.name=manager_round_limit` 并返回 best-effort 文本。
-- manager 在 context/token 类错误时自动执行一次压缩重试（`compressManagerContext`）。
+- manager 在发起主调用前会按 working focus 主动触发压缩；context/token 类错误仍保留一次压缩重试（`compressManagerContext`）。
 
 ## 启动顺序
 
@@ -49,7 +49,7 @@
 
 - manager loop 单飞，同一时刻仅一个活跃批次。
 - 队列 compact 仅在“已完全消费且达到阈值”时执行。
-- manager 上下文连续性通过 `history + tasks + plans + managerCompressedContext` 保持。
+- manager 上下文连续性通过 `history + tasks + plans + managerFocusCompressedContexts` 保持。
 - `restart/reset` 先回包，再等待 in-flight manager 批次收敛后持久化并退出。
 
 ## 细节索引

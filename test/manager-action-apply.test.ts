@@ -60,6 +60,7 @@ const createRuntime = async (): Promise<RuntimeState> => {
       running: false,
       pending: false,
     },
+    managerFocusCompressedContexts: [],
     uiStream: null,
     runningControllers: new Map(),
     createTaskDebounce: new Map(),

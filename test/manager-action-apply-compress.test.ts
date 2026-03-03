@@ -8,6 +8,7 @@ import { beforeEach, expect, test, vi } from 'vitest'
 import { defaultConfig } from '../src/config.js'
 import { buildPaths } from '../src/fs/paths.js'
 import { applyTaskActions } from '../src/manager/action-apply.js'
+import { proactiveCompressManagerContext } from '../src/manager/action-runtime-compress.js'
 import { loadRuntimeSnapshot } from '../src/storage/runtime-snapshot.js'
 
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
@@ -47,7 +48,27 @@ const createRuntime = async (): Promise<RuntimeState> => {
       inputsCursor: 0,
       resultsCursor: 0,
     },
-    tasks: [],
+    tasks: [
+      {
+        id: 'task-seed',
+        fingerprint: 'task-seed',
+        prompt: 'seed prompt',
+        title: 'seed',
+        focusId: GLOBAL_FOCUS_ID,
+        profile: 'worker',
+        status: 'succeeded',
+        createdAt: now,
+        completedAt: now,
+        result: {
+          taskId: 'task-seed',
+          status: 'succeeded',
+          ok: true,
+          output: 'seed output',
+          durationMs: 1,
+          completedAt: now,
+        },
+      },
+    ],
     taskPlans: [],
     focuses: [
       {
@@ -69,6 +90,7 @@ const createRuntime = async (): Promise<RuntimeState> => {
       running: false,
       pending: false,
     },
+    managerFocusCompressedContexts: [],
     uiStream: null,
     runningControllers: new Map(),
     createTaskDebounce: new Map(),
@@ -106,9 +128,16 @@ test('compress_context stores summary with local context', async () => {
       role: 'manager',
     }),
   )
-  expect(runtime.managerCompressedContext).toContain('Goals')
+  expect(runtime.managerFocusCompressedContexts).toHaveLength(1)
+  expect(runtime.managerFocusCompressedContexts[0]).toMatchObject({
+    focusId: GLOBAL_FOCUS_ID,
+  })
+  expect(runtime.managerFocusCompressedContexts[0]?.summary).toContain('Goals')
   const snapshot = await loadRuntimeSnapshot(runtime.config.workDir)
-  expect(snapshot.managerCompressedContext).toContain('keep codex-only')
+  expect(snapshot.managerFocusCompressedContexts).toHaveLength(1)
+  expect(snapshot.managerFocusCompressedContexts?.[0]?.summary).toContain(
+    'keep codex-only',
+  )
 })
 
 test('compress_context throws when summary is empty', async () => {
@@ -127,5 +156,51 @@ test('compress_context throws when summary is empty', async () => {
     ]),
   ).rejects.toThrow('compress_context_empty_summary')
 
-  expect(runtime.managerCompressedContext).toBeUndefined()
+  expect(runtime.managerFocusCompressedContexts).toHaveLength(0)
+})
+
+test('proactive compression targets working focus and skips fresh summary', async () => {
+  const runtime = await createRuntime()
+  runtime.managerTurn = 1
+  runtime.focuses.push({
+    id: 'focus-local',
+    title: 'Local',
+    status: 'active',
+    createdAt: '2026-03-03T00:00:00.000Z',
+    updatedAt: '2026-03-03T00:00:00.000Z',
+    lastActivityAt: '2026-03-03T00:00:01.000Z',
+  })
+  runtime.tasks.push({
+    id: 'task-local',
+    fingerprint: 'task-local',
+    prompt: 'collect local context',
+    title: 'local task',
+    focusId: 'focus-local',
+    profile: 'worker',
+    status: 'succeeded',
+    createdAt: '2026-03-03T00:00:00.000Z',
+    completedAt: '2026-03-03T00:00:01.000Z',
+    result: {
+      taskId: 'task-local',
+      status: 'succeeded',
+      ok: true,
+      output: 'local output',
+      durationMs: 10,
+      completedAt: '2026-03-03T00:00:01.000Z',
+    },
+  })
+  runWithProviderMock.mockResolvedValue({
+    output: 'Goals\n- local summary',
+    elapsedMs: 9,
+  })
+
+  const first = await proactiveCompressManagerContext(runtime, ['focus-local'])
+  expect(first).toEqual(['focus-local'])
+  expect(runtime.managerFocusCompressedContexts[0]?.focusId).toBe('focus-local')
+  expect(runWithProviderMock).toHaveBeenCalledTimes(1)
+
+  runWithProviderMock.mockReset()
+  const second = await proactiveCompressManagerContext(runtime, ['focus-local'])
+  expect(second).toEqual([])
+  expect(runWithProviderMock).not.toHaveBeenCalled()
 })

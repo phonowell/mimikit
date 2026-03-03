@@ -1,6 +1,11 @@
 import { GLOBAL_FOCUS_ID, MAX_WORKING_FOCUSES } from './constants.js'
 import { compareIsoAsc, compareIsoDesc } from '../shared/time.js'
-import { ensureGlobalFocus, findFocus, setFocusStatus } from './state.js'
+import {
+  ensureGlobalFocus,
+  findFocus,
+  removeFocusCompressedContexts,
+  setFocusStatus,
+} from './state.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { FocusId, FocusMeta } from '../types/index.js'
@@ -59,6 +64,7 @@ export const enforceFocusCapacity = (runtime: RuntimeState): void => {
     runtime.focusContexts = runtime.focusContexts.filter(
       (item) => item.focusId !== oldest.id,
     )
+    removeFocusCompressedContexts(runtime, [oldest.id])
     runtime.activeFocusIds = runtime.activeFocusIds.filter(
       (id) => id !== oldest.id,
     )

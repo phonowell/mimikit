@@ -7,12 +7,14 @@ import {
   buildTaskResultDateHints,
   collectResultTaskIds,
   collectTaskResults,
-  encodePromptSection,
+  encodePromptTextSection,
+  encodePromptYamlSection,
   mergeTaskResults,
   readOptionalMarkdown,
 } from './build-prompts-helpers.js'
 import {
   formatActionFeedback,
+  formatCompressedFocusContexts,
   formatEnvironment,
   formatFocusContexts,
   formatFocusList,
@@ -29,6 +31,7 @@ import { escapeCdata } from './format-base.js'
 import { loadPromptFile, loadPromptSource } from './prompt-loader.js'
 
 import type { AppConfig } from '../config.js'
+import type { ManagerFocusCompressedContext } from '../orchestrator/core/runtime-state.js'
 import type {
   FocusContext,
   FocusId,
@@ -58,7 +61,7 @@ export const buildManagerPrompt = async (params: {
   historyLookup?: HistoryLookupMessage[]
   readFileLookup?: ReadFileLookupMessage[]
   actionFeedback?: ManagerActionFeedback[]
-  compressedContext?: string
+  compressedFocusContexts?: ManagerFocusCompressedContext[]
   env?: ManagerEnv
   focuses?: FocusMeta[]
   focusContexts?: FocusContext[]
@@ -99,53 +102,55 @@ export const buildManagerPrompt = async (params: {
 
   const systemSource = await loadPromptSource('manager/system.md')
   const limits = params.promptSectionLimits
-  const section = (value: string, maxBytes: number): string =>
-    encodePromptSection(value, maxBytes)
+  const sectionText = (value: string, maxBytes: number): string =>
+    encodePromptTextSection(value, maxBytes)
+  const sectionYaml = (value: string, maxBytes: number): string =>
+    encodePromptYamlSection(value, maxBytes)
   const templateValues: Record<string, string> = {
-    environment: section(
+    environment: sectionText(
       formatEnvironment({
         workDir: params.workDir,
         ...(params.env ? { env: params.env } : {}),
       }),
       limits.environmentMaxBytes,
     ),
-    inputs: section(formatInputs(params.inputs), limits.inputsMaxBytes),
-    batch_results: section(
+    inputs: sectionYaml(formatInputs(params.inputs), limits.inputsMaxBytes),
+    batch_results: sectionYaml(
       formatResultsYaml(params.tasks, pendingResults),
       limits.batchResultsMaxBytes,
     ),
-    tasks: section(
+    tasks: sectionYaml(
       formatTasksYaml(params.tasks, resultsForTasks),
       limits.tasksMaxBytes,
     ),
-    plans: section(formatPlansYaml(params.plans ?? []), limits.plansMaxBytes),
-    recent_history: section(
+    plans: sectionYaml(formatPlansYaml(params.plans ?? []), limits.plansMaxBytes),
+    recent_history: sectionYaml(
       formatRecentHistory(focusPayload.recentHistory),
       limits.recentHistoryMaxBytes,
     ),
-    focus_list: section(
+    focus_list: sectionYaml(
       formatFocusList(focusPayload.focusList),
       limits.focusListMaxBytes,
     ),
-    focus_contexts: section(
+    focus_contexts: sectionYaml(
       formatFocusContexts(focusPayload.focusContexts),
       limits.focusContextsMaxBytes,
     ),
-    history_lookup: section(
+    history_lookup: sectionYaml(
       formatHistoryLookup(params.historyLookup ?? []),
       limits.historyLookupMaxBytes,
     ),
-    memory: section(memory.trim(), limits.memoryMaxBytes),
-    file_lookup: section(
+    memory: sectionText(memory.trim(), limits.memoryMaxBytes),
+    file_lookup: sectionYaml(
       formatReadFileLookup(params.readFileLookup ?? []),
       limits.fileLookupMaxBytes,
     ),
-    action_feedback: section(
+    action_feedback: sectionYaml(
       formatActionFeedback(params.actionFeedback ?? []),
       limits.actionFeedbackMaxBytes,
     ),
-    compressed_context: section(
-      params.compressedContext?.trim() ?? '',
+    compressed_context: sectionYaml(
+      formatCompressedFocusContexts(params.compressedFocusContexts ?? []),
       limits.compressedContextMaxBytes,
     ),
   }

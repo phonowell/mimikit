@@ -121,6 +121,14 @@ export const focusContextSchema = z
   })
   .strict()
 
+export const managerFocusCompressedContextSchema = z
+  .object({
+    focusId: z.string().trim().regex(/^focus-[a-zA-Z0-9._-]+$/),
+    summary: z.string().trim().min(1),
+    updatedAt: z.string().trim().min(1),
+  })
+  .strict()
+
 export const userChoiceOptionSchema = z
   .object({
     id: z.string().trim().regex(/^option-[a-zA-Z0-9._-]+$/),
@@ -176,7 +184,9 @@ export const runtimeSnapshotSchema = z
       .optional(),
     pendingUserChoice: pendingUserChoiceSchema.optional(),
     memoryRefresh: memoryRefreshSchema.optional(),
-    managerCompressedContext: z.string().trim().min(1).optional(),
+    managerFocusCompressedContexts: z
+      .array(managerFocusCompressedContextSchema)
+      .optional(),
   })
   .strict()
 

@@ -71,6 +71,7 @@ export class Orchestrator {
       activeFocusIds: [],
       managerTurn: 0,
       memoryRefresh: createDefaultMemoryRefreshState(),
+      managerFocusCompressedContexts: [],
       uiStream: null,
       runningControllers: new Map(),
       createTaskDebounce: new Map(),

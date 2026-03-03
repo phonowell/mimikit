@@ -7,6 +7,7 @@ import {
 import { runManagerLlmCall } from './manager-llm-call.js'
 
 import type { AppConfig } from '../config.js'
+import type { ManagerFocusCompressedContext } from '../orchestrator/core/runtime-state.js'
 import type {
   FocusContext,
   FocusId,
@@ -36,7 +37,7 @@ export const runManager = async (params: {
   historyLookup?: HistoryLookupMessage[]
   readFileLookup?: ReadFileLookupMessage[]
   actionFeedback?: ManagerActionFeedback[]
-  compressedContext?: string
+  compressedFocusContexts?: ManagerFocusCompressedContext[]
   env?: ManagerEnv
   focuses?: FocusMeta[]
   focusContexts?: FocusContext[]
@@ -61,8 +62,8 @@ export const runManager = async (params: {
     ...(params.historyLookup ? { historyLookup: params.historyLookup } : {}),
     ...(params.readFileLookup ? { readFileLookup: params.readFileLookup } : {}),
     ...(params.actionFeedback ? { actionFeedback: params.actionFeedback } : {}),
-    ...(params.compressedContext
-      ? { compressedContext: params.compressedContext }
+    ...(params.compressedFocusContexts
+      ? { compressedFocusContexts: params.compressedFocusContexts }
       : {}),
     ...(params.env ? { env: params.env } : {}),
     ...(params.focuses ? { focuses: params.focuses } : {}),

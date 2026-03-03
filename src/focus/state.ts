@@ -133,6 +133,67 @@ export const upsertFocusContext = (
   else runtime.focusContexts.push(next)
 }
 
+export const findFocusCompressedContext = (
+  runtime: RuntimeState,
+  focusId: FocusId,
+): RuntimeState['managerFocusCompressedContexts'][number] | undefined =>
+  runtime.managerFocusCompressedContexts.find((item) => item.focusId === focusId)
+
+export const upsertFocusCompressedContext = (
+  runtime: RuntimeState,
+  params: {
+    focusId: FocusId
+    summary: string
+  },
+): void => {
+  const summary = params.summary.trim()
+  if (!summary) return
+  const now = nowIso()
+  const next = {
+    focusId: params.focusId,
+    summary,
+    updatedAt: now,
+  }
+  const index = runtime.managerFocusCompressedContexts.findIndex(
+    (item) => item.focusId === params.focusId,
+  )
+  if (index >= 0) runtime.managerFocusCompressedContexts[index] = next
+  else runtime.managerFocusCompressedContexts.push(next)
+}
+
+export const removeFocusCompressedContexts = (
+  runtime: RuntimeState,
+  focusIds: FocusId[],
+): void => {
+  if (focusIds.length === 0) return
+  const excluded = new Set(focusIds)
+  runtime.managerFocusCompressedContexts =
+    runtime.managerFocusCompressedContexts.filter(
+      (item) => !excluded.has(item.focusId),
+    )
+}
+
+export const selectFocusCompressedContexts = (
+  runtime: RuntimeState,
+  focusIds: FocusId[],
+): RuntimeState['managerFocusCompressedContexts'] => {
+  if (focusIds.length === 0) return []
+  const wanted = new Set(focusIds)
+  const entries = runtime.managerFocusCompressedContexts.filter((item) =>
+    wanted.has(item.focusId),
+  )
+  if (entries.length === 0) return []
+  const rank = new Map(focusIds.map((id, index) => [id, index] as const))
+  return [...entries].sort((a, b) => {
+    const aRank = rank.get(a.focusId) ?? Number.MAX_SAFE_INTEGER
+    const bRank = rank.get(b.focusId) ?? Number.MAX_SAFE_INTEGER
+    if (aRank !== bRank) return aRank - bRank
+    const timeDiff = compareIsoDesc(a.updatedAt, b.updatedAt)
+    if (timeDiff !== 0) return timeDiff
+    return a.focusId.localeCompare(b.focusId)
+  })
+}
+
 export const updateFocus = (
   runtime: RuntimeState,
   params: {

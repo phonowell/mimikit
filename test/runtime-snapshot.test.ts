@@ -95,13 +95,21 @@ test('runtime snapshot accepts queue cursors', async () => {
       inputsCursor: 3,
       resultsCursor: 9,
     },
-    managerCompressedContext: 'Goals\n- keep codex-only',
+    managerFocusCompressedContexts: [
+      {
+        focusId: GLOBAL_FOCUS_ID,
+        summary: 'Goals\n- keep codex-only',
+        updatedAt: SNAPSHOT_BASE_TIME,
+      },
+    ],
   })
 
   const loaded = await loadRuntimeSnapshot(stateDir)
   expect(loaded.queues?.resultsCursor).toBe(9)
   expect(loaded.queues?.inputsCursor).toBe(3)
-  expect(loaded.managerCompressedContext).toContain('keep codex-only')
+  expect(loaded.managerFocusCompressedContexts?.[0]?.summary).toContain(
+    'keep codex-only',
+  )
   expect(loaded.tasks[0]?.result?.output).toBe('ok')
   expect(loaded.taskPlans[0]?.id).toBe('plan-1')
 })
@@ -142,6 +150,21 @@ test('runtime snapshot rejects legacy next fields', async () => {
         inputsCursor: 0,
         resultsCursor: 0,
       },
+    }),
+    'utf8',
+  )
+
+  await expect(loadRuntimeSnapshot(stateDir)).rejects.toThrow()
+})
+
+test('runtime snapshot rejects legacy managerCompressedContext field', async () => {
+  const stateDir = await createTmpDir()
+  await writeFile(
+    join(stateDir, 'runtime-snapshot.json'),
+    JSON.stringify({
+      tasks: [],
+      taskPlans: [],
+      managerCompressedContext: 'legacy',
     }),
     'utf8',
   )

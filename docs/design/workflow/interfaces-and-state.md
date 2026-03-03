@@ -112,7 +112,7 @@ schema：`src/storage/runtime-snapshot-schema.ts`
 - `tasks`
 - `taskPlans`
 - `focuses`、`focusContexts`、`activeFocusIds`
-- `managerTurn`、`managerCompressedContext`
+- `managerTurn`、`managerFocusCompressedContexts`
 - `memoryRefresh`（刷新检查点）
 - `queues.inputsCursor`、`queues.resultsCursor`
 - `pendingUserChoice`

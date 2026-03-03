@@ -20,6 +20,7 @@
 
 - `M:focus_list`
 - `M:focus_contexts`
+- `M:compressed_context`（仅注入当前 `workingFocusIds` 对应的压缩摘要）
 
 ## 关联数据结构
 

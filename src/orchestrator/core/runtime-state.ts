@@ -57,6 +57,12 @@ export type RuntimeMemoryRefreshState = {
   pending: boolean
 }
 
+export type ManagerFocusCompressedContext = {
+  focusId: FocusId
+  summary: string
+  updatedAt: ISODate
+}
+
 export type RuntimeState = {
   runtimeId: string
   config: AppConfig
@@ -79,6 +85,7 @@ export type RuntimeState = {
   activeFocusIds: FocusId[]
   managerTurn: number
   memoryRefresh: RuntimeMemoryRefreshState
+  managerFocusCompressedContexts: ManagerFocusCompressedContext[]
   managerCompressedContext?: string
   uiStream: UiAgentStream | null
   runningControllers: Map<string, AbortController>

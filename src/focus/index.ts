@@ -24,9 +24,13 @@ export {
   ensureFocus,
   ensureGlobalFocus,
   findFocus,
+  findFocusCompressedContext,
+  removeFocusCompressedContexts,
   resolveDefaultFocusId,
+  selectFocusCompressedContexts,
   setFocusStatus,
   touchFocus,
   updateFocus,
+  upsertFocusCompressedContext,
   upsertFocusContext,
 } from './state.js'
