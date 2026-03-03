@@ -52,7 +52,6 @@ const FAVICON_COLOR_BY_STATE = {
   running: '#0ea5e9',
   disconnected: '#94a3b8',
 }
-const TITLE_MAX_CHARS = 52
 
 const resolveStatusState = () => {
   const state = elements.statusDot?.dataset.state?.trim()?.toLowerCase()
@@ -93,31 +92,66 @@ const syncFaviconWithStatus = () => {
   link.href = href
 }
 
-const normalizeTitleText = (value) => {
+const normalizeFocusTitle = (value) => {
   if (typeof value !== 'string') return ''
   const compact = value.replace(/\s+/g, ' ').trim()
-  if (!compact) return ''
-  if (compact.length <= TITLE_MAX_CHARS) return compact
-  return `${compact.slice(0, TITLE_MAX_CHARS - 1).trimEnd()}…`
+  return compact || ''
 }
 
-const resolveConversationTitleCandidate = () => {
-  if (!elements.messagesEl) return ''
-  const selectors = ['.message.user .content', '.message:not(.system) .content']
-  for (const selector of selectors) {
-    const nodes = elements.messagesEl.querySelectorAll(selector)
-    for (let index = nodes.length - 1; index >= 0; index -= 1) {
-      const node = nodes[index]
-      if (!(node instanceof HTMLElement)) continue
-      const text = normalizeTitleText(node.textContent ?? '')
-      if (text) return text
-    }
+const resolveFocusActivityAtMs = (item) => {
+  const lastActivityAt =
+    typeof item?.lastActivityAt === 'string' && item.lastActivityAt.trim()
+      ? item.lastActivityAt
+      : typeof item?.updatedAt === 'string' && item.updatedAt.trim()
+        ? item.updatedAt
+        : ''
+  if (!lastActivityAt) return Number.NEGATIVE_INFINITY
+  const parsed = Date.parse(lastActivityAt)
+  return Number.isFinite(parsed) ? parsed : Number.NEGATIVE_INFINITY
+}
+
+const resolveMostActiveFocusTitle = (focusesSnapshot) => {
+  const rawItems = Array.isArray(focusesSnapshot?.items) ? focusesSnapshot.items : []
+  if (rawItems.length === 0) return ''
+
+  const activeCandidates = []
+  const fallbackCandidates = []
+
+  for (let index = 0; index < rawItems.length; index += 1) {
+    const item = rawItems[index]
+    if (!item || typeof item !== 'object') continue
+    const title = normalizeFocusTitle(item.title)
+    if (!title) continue
+
+    const candidate = { item, index, title }
+    fallbackCandidates.push(candidate)
+    if (typeof item.status === 'string' && item.status.trim().toLowerCase() === 'active')
+      activeCandidates.push(candidate)
   }
-  return ''
+
+  const candidates = activeCandidates.length > 0 ? activeCandidates : fallbackCandidates
+  if (candidates.length === 0) return ''
+
+  let latestCandidate = candidates[0]
+  let latestActivityAtMs = resolveFocusActivityAtMs(latestCandidate.item)
+
+  for (let index = 1; index < candidates.length; index += 1) {
+    const candidate = candidates[index]
+    const activityAtMs = resolveFocusActivityAtMs(candidate.item)
+    if (activityAtMs > latestActivityAtMs) {
+      latestCandidate = candidate
+      latestActivityAtMs = activityAtMs
+      continue
+    }
+    if (activityAtMs === latestActivityAtMs && candidate.index > latestCandidate.index)
+      latestCandidate = candidate
+  }
+
+  return latestCandidate.title
 }
 
-const syncTitleWithConversationTitleCandidate = () => {
-  const titleCandidate = resolveConversationTitleCandidate()
+const syncTitleWithFocusesSnapshot = (focusesSnapshot) => {
+  const titleCandidate = resolveMostActiveFocusTitle(focusesSnapshot)
   document.title = titleCandidate || UI_TEXT.conversationTitleFallback
 }
 
@@ -171,7 +205,10 @@ messages = createMessagesController({
   onTasksSnapshot: (tasks) => tasksPanel?.applyTasksSnapshot?.(tasks),
   onPlansSnapshot: (plans) =>
     plansPanel?.applyPlansSnapshot?.(plans),
-  onFocusesSnapshot: (focuses) => focusPanel?.applyFocusesSnapshot?.(focuses),
+  onFocusesSnapshot: (focuses) => {
+    focusPanel?.applyFocusesSnapshot?.(focuses)
+    syncTitleWithFocusesSnapshot(focuses)
+  },
   onChoiceSnapshot: (choice) => choicePanel?.applyChoiceSnapshot?.(choice),
   onDisconnected: () => {
     tasksPanel?.setDisconnected?.()
@@ -182,22 +219,12 @@ messages = createMessagesController({
 })
 
 syncFaviconWithStatus()
-syncTitleWithConversationTitleCandidate()
+syncTitleWithFocusesSnapshot(null)
 if (elements.statusDot) {
   const statusObserver = new MutationObserver(syncFaviconWithStatus)
   statusObserver.observe(elements.statusDot, {
     attributes: true,
     attributeFilter: ['data-state'],
-  })
-}
-if (elements.messagesEl) {
-  const messagesObserver = new MutationObserver(
-    syncTitleWithConversationTitleCandidate,
-  )
-  messagesObserver.observe(elements.messagesEl, {
-    childList: true,
-    characterData: true,
-    subtree: true,
   })
 }
 
