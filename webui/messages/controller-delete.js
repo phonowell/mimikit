@@ -28,6 +28,7 @@ export const createDeleteMessageController = ({
   let pendingDeleteId = ''
   let isDeletePending = false
   let deleteModeEnabled = false
+  let deleteModeConfirmed = false
 
   const deleteDialog = deleteDialogEnabled
     ? createDialogController({
@@ -80,6 +81,7 @@ export const createDeleteMessageController = ({
 
   const confirmDelete = async () => {
     if (!pendingDeleteId || isDeletePending) return
+    deleteModeConfirmed = deleteModeEnabled
     isDeletePending = true
     setDeleteActionsDisabled(true)
     const deleted = await requestDeleteMessage(pendingDeleteId)
@@ -94,6 +96,19 @@ export const createDeleteMessageController = ({
     const id = readMessageId(message)
     if (!id) return
     if (deleteModeEnabled) {
+      if (!deleteModeConfirmed) {
+        if (deleteDialogEnabled && deleteDialog) {
+          pendingDeleteId = id
+          deleteDialog.open()
+          return
+        }
+        const shouldDelete =
+          typeof window === 'undefined' ||
+          typeof window.confirm !== 'function' ||
+          window.confirm(UI_TEXT.deleteConfirmPrompt)
+        if (!shouldDelete) return
+        deleteModeConfirmed = true
+      }
       await requestDeleteMessage(id)
       return
     }
@@ -141,6 +156,7 @@ export const createDeleteMessageController = ({
 
   const setDeleteMode = (enabled) => {
     deleteModeEnabled = Boolean(enabled)
+    deleteModeConfirmed = false
     if (!deleteModeEnabled) return
     pendingDeleteId = ''
     if (deleteDialog?.isOpen()) deleteDialog.close()

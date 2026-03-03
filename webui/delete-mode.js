@@ -1,10 +1,3 @@
-import { UI_TEXT } from './system-text.js'
-
-const defaultConfirmDeleteModeEntry = () => {
-  if (typeof window === 'undefined' || typeof window.confirm !== 'function') return true
-  return window.confirm(UI_TEXT.deleteModeConfirmPrompt)
-}
-
 const setSectionVisible = (section, visible) => {
   if (!section) return
   section.hidden = !visible
@@ -27,7 +20,6 @@ export const bindDeleteMode = ({
   deleteModeExitBtn,
   input,
   messages,
-  confirmDeleteModeEntry = defaultConfirmDeleteModeEntry,
 } = {}) => {
   if (
     !toolsDeleteBtn ||
@@ -51,11 +43,6 @@ export const bindDeleteMode = ({
 
   const enterDeleteMode = () => {
     if (isDeleteMode) return true
-    const confirmed =
-      typeof confirmDeleteModeEntry === 'function'
-        ? Boolean(confirmDeleteModeEntry())
-        : true
-    if (!confirmed) return false
     isDeleteMode = true
     messages.setDeleteMode(true)
     setSectionVisible(composerSection, false)

@@ -21,7 +21,7 @@ class ElementStub extends EventTarget {
   }
 }
 
-const setup = (confirmDeleteModeEntry: () => boolean) => {
+const setup = () => {
   const toolsDeleteBtn = new ElementStub()
   const toolsToggleBtn = new ElementStub()
   const composerSection = new ElementStub()
@@ -47,7 +47,6 @@ const setup = (confirmDeleteModeEntry: () => boolean) => {
     deleteModeExitBtn,
     input,
     messages,
-    confirmDeleteModeEntry,
   })
 
   return {
@@ -63,12 +62,10 @@ const setup = (confirmDeleteModeEntry: () => boolean) => {
 }
 
 test('entering delete mode toggles composer/exit sections', () => {
-  const confirmDeleteModeEntry = vi.fn(() => true)
-  const context = setup(confirmDeleteModeEntry)
+  const context = setup()
 
   context.toolsDeleteBtn.click()
 
-  expect(confirmDeleteModeEntry).toHaveBeenCalledTimes(1)
   expect(context.toolsToggleClick).toHaveBeenCalledTimes(1)
   expect(context.messages.setDeleteMode).toHaveBeenCalledTimes(1)
   expect(context.messages.setDeleteMode).toHaveBeenCalledWith(true)
@@ -77,18 +74,15 @@ test('entering delete mode toggles composer/exit sections', () => {
   expect(context.deleteModeExitBtn.focus).toHaveBeenCalledTimes(1)
 })
 
-test('confirmation appears once per entry and reappears after exit', () => {
-  const confirmDeleteModeEntry = vi.fn(() => true)
-  const context = setup(confirmDeleteModeEntry)
+test('re-entering delete mode toggles state after exit', () => {
+  const context = setup()
 
   context.toolsDeleteBtn.click()
   context.toolsDeleteBtn.click()
-  expect(confirmDeleteModeEntry).toHaveBeenCalledTimes(1)
 
   context.deleteModeExitBtn.click()
   context.toolsDeleteBtn.click()
 
-  expect(confirmDeleteModeEntry).toHaveBeenCalledTimes(2)
   expect(context.messages.setDeleteMode.mock.calls).toEqual([
     [true],
     [false],
@@ -97,13 +91,12 @@ test('confirmation appears once per entry and reappears after exit', () => {
   expect(context.input.focus).toHaveBeenCalledTimes(1)
 })
 
-test('canceling confirmation keeps default mode', () => {
-  const confirmDeleteModeEntry = vi.fn(() => false)
-  const context = setup(confirmDeleteModeEntry)
+test('disabled delete mode trigger does not enter delete mode', () => {
+  const context = setup()
+  context.toolsDeleteBtn.disabled = true
 
   context.toolsDeleteBtn.click()
 
-  expect(confirmDeleteModeEntry).toHaveBeenCalledTimes(1)
   expect(context.messages.setDeleteMode).not.toHaveBeenCalled()
   expect(context.composerSection.hidden).toBe(false)
   expect(context.deleteModeExitSection.hidden).toBe(true)
