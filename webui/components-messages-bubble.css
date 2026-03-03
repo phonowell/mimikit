@@ -63,7 +63,7 @@
 .message.system article {
   max-width: min(92%, 720px);
   background: transparent;
-  color: #8a9099;
+  color: var(--bubble-system-text);
   border: 0;
   box-shadow: none;
 }

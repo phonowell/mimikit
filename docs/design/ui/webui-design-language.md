@@ -11,8 +11,8 @@
 - 全局色调：近白冷中性；主背景与主面板同色系。
 - 光源语义：统一左上高光、右下暗影；按压时阴影反转。
 - 消息区容器：`messages` 使用极浅灰纯色（无渐变）。
-- 气泡语义：消息区背景灰；`agent` 近白、`user` 浅蓝、`system` 略深于背景的中灰。
-- 气泡边界：三类消息气泡统一 `1px` 极细边框；当前策略为 `agent` 边框略强于 `system`。
+- 气泡语义：消息区背景灰；`agent` 近白、`user` 浅蓝、`system` 为中性灰文字提示。
+- 气泡边界：`agent`/`user` 使用 `1px` 极细边框；`system` 为无边框无背景的例外样式。
 - 引用块：保留左侧竖线；竖线与正文的间距已加宽（消息内与输入预览一致）。
 - 输入框：无边框，仅保留轻微凹陷（micro inset）。
 - 任务弹窗：`tasks-list` 为平面浅色层，不使用凹陷阴影。
@@ -50,6 +50,18 @@
 - 形状：`--radius` `--radius-sm`。
 - 焦点：`--focus-ring`。
 
+## 色表与层级映射
+
+| 语义 | Token | 值 | 使用位置 |
+| --- | --- | --- | --- |
+| 页面底色 | `--bg` | `#f5f7fa` | 全局背景基线 |
+| 消息区底色 | `--messages-bg` | `#f2f3f5` | `messages` 容器平面底 |
+| Agent 气泡 | `--bubble-agent-bg/text/border` | `#ffffff / #1f2a36 / rgba(134,151,173,.18)` | `.message.agent article` |
+| User 气泡 | `--bubble-user-bg/text/border` | `#e4efff / #1f3657 / rgba(120,151,198,.16)` | `.message.user article` |
+| System 文本 | `--bubble-system-text` | `#7b8390` | `.message.system article` 文本颜色 |
+| System 结构例外 | `--bubble-system-bg` `--bubble-system-border` | `#e7eaef / rgba(112,126,145,.09)` | 保留 token；`system` 消息主体当前不使用背景与边框 |
+| 主体文字层级 | `--text` / `--muted` | `#323b49 / #6d7789` | 默认正文 / 次要信息 |
+
 ## 层级语法
 
 - 凸起层（Raised）：卡片、面板、默认按钮；使用 `--shadow-raised` / `--shadow-raised-soft`。
@@ -73,7 +85,7 @@
 ## 组件规范
 
 - 按钮（`.btn`）：默认凸起；按压切换凹陷 + 微位移。
-- 消息气泡（`.message article`）：极轻微凸起，统一极细边框，按角色使用独立 bg/text/border token。
+- 消息气泡（`.message article`）：`agent`/`user` 使用极轻微凸起 + 极细边框并按角色使用 `bg/text/border` token；`system` 为无边框无背景例外样式，仅使用 `--bubble-system-text`。
 - 引用块（`.message-quote` / `.quote-preview`）：保留竖向角色条与弱化凸起阴影；不使用凹陷显示态；`.quote-preview` 的角色 `bg/text` 必须复用 `--bubble-*` token 与消息气泡对齐。
 - 引用按钮（`.message-quote-btn`）：保留凹凸按压反馈。
 - 清除引用按钮（`.quote-clear`）：凸起阴影需弱于常规图标按钮，仅保留轻微触感。
