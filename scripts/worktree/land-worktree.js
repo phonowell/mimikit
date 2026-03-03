@@ -25,7 +25,9 @@ const parseArgs = (argv) => {
     if (arg === "--") continue;
     if (arg === "--help" || arg === "-h") {
       const scriptPath = process.argv[1] ?? "land-worktree.js";
-      console.log(`Usage: node ${scriptPath} [--base <branch>] [--plans-dir <dir>]`);
+      console.log(
+        `Usage: node ${scriptPath} [--base <branch>] [--plans-dir <dir>] [--message <text>]`,
+      );
       process.exit(0);
     }
     if (arg === "--base") {
@@ -39,6 +41,13 @@ const parseArgs = (argv) => {
       const value = argv[i + 1];
       if (!value) exitWith("missing value for --plans-dir");
       options.plansDir = value;
+      i += 1;
+      continue;
+    }
+    if (arg === "--message") {
+      const value = argv[i + 1];
+      if (!value) exitWith("missing value for --message");
+      options.message = value;
       i += 1;
       continue;
     }
@@ -81,7 +90,7 @@ const clearPlansDirectory = (repoRoot, plansDirName) => {
   }
 };
 
-const { base, plansDir } = parseArgs(process.argv.slice(2));
+const { base, plansDir, message } = parseArgs(process.argv.slice(2));
 const repoRoot = runGitCapture(["rev-parse", "--show-toplevel"]);
 const currentBranch = runGitCapture(["rev-parse", "--abbrev-ref", "HEAD"]);
 
@@ -96,8 +105,9 @@ clearPlansDirectory(repoRoot, plansDir);
 const status = runGitCapture(["status", "--porcelain"]);
 if (status.length > 0) {
   const today = new Date().toISOString().slice(0, 10);
+  const autoCommitMessage = message ?? `auto: ${currentBranch} ${today}`;
   runGit(["add", "-A"]);
-  runGit(["commit", "-m", `auto: ${currentBranch} ${today}`]);
+  runGit(["commit", "-m", autoCommitMessage]);
 }
 
 ensureClean(process.cwd(), currentBranch);
@@ -135,8 +145,9 @@ const lastSubject = runGitCapture(
   ["log", "-1", "--pretty=%s", currentBranch],
   mainWorktree.path,
 );
-const landMessage =
-  lastSubject.length > 0
+const landMessage = message
+  ? message
+  : lastSubject.length > 0
     ? `land(${currentBranch}): ${lastSubject}`
     : `land(${currentBranch})`;
 runGit(["commit", "-m", landMessage], mainWorktree.path);
