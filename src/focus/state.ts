@@ -1,5 +1,5 @@
-import { nowIso } from '../shared/utils.js'
 import { compareIsoDesc } from '../shared/time.js'
+import { nowIso } from '../shared/utils.js'
 
 import { GLOBAL_FOCUS_ID, MAX_FOCUS_OPEN_ITEMS } from './constants.js'
 import { normalizeFocusOpenItems } from './open-items.js'
@@ -14,9 +14,7 @@ import type {
 
 export const resolveDefaultFocusId = (runtime: RuntimeState): FocusId => {
   const activeNonGlobal = runtime.focuses
-    .filter(
-      (item) => item.status === 'active' && item.id !== GLOBAL_FOCUS_ID,
-    )
+    .filter((item) => item.status === 'active' && item.id !== GLOBAL_FOCUS_ID)
     .sort((a, b) => {
       const diff = compareIsoDesc(a.lastActivityAt, b.lastActivityAt)
       if (diff !== 0) return diff
@@ -35,6 +33,27 @@ export const findFocus = (
   focusId: FocusId,
 ): FocusMeta | undefined => runtime.focuses.find((item) => item.id === focusId)
 
+const normalizeFocusSummary = (value?: string): string | undefined => {
+  if (typeof value !== 'string') return undefined
+  const trimmed = value.trim()
+  return trimmed || undefined
+}
+
+const syncFocusTitleFromSummary = (
+  runtime: RuntimeState,
+  focusId: FocusId,
+  summary?: string,
+): void => {
+  if (!summary) return
+  const focus =
+    findFocus(runtime, focusId) ?? ensureFocus(runtime, focusId, summary)
+  if (focus.title === summary) return
+  const timestamp = nowIso()
+  focus.title = summary
+  focus.updatedAt = timestamp
+  focus.lastActivityAt = timestamp
+}
+
 export const ensureFocus = (
   runtime: RuntimeState,
   focusId: FocusId,
@@ -43,9 +62,10 @@ export const ensureFocus = (
   const existing = findFocus(runtime, focusId)
   if (existing) return existing
   const timestamp = nowIso()
+  const normalizedTitle = normalizeFocusSummary(title) ?? focusId
   const next: FocusMeta = {
     id: focusId,
-    title: title?.trim() || focusId,
+    title: normalizedTitle,
     status: focusId === GLOBAL_FOCUS_ID ? 'active' : 'idle',
     createdAt: timestamp,
     updatedAt: timestamp,
@@ -108,8 +128,8 @@ export const upsertFocusContext = (
     index >= 0 ? runtime.focusContexts[index] : undefined
   const normalizedSummary =
     params.summary !== undefined
-      ? params.summary.trim() || undefined
-      : current?.summary
+      ? normalizeFocusSummary(params.summary)
+      : normalizeFocusSummary(current?.summary)
   const normalizedOpenItems =
     params.openItems !== undefined
       ? normalizeFocusOpenItems(params.openItems, {
@@ -131,13 +151,16 @@ export const upsertFocusContext = (
   }
   if (index >= 0) runtime.focusContexts[index] = next
   else runtime.focusContexts.push(next)
+  syncFocusTitleFromSummary(runtime, params.focusId, normalizedSummary)
 }
 
 export const findFocusCompressedContext = (
   runtime: RuntimeState,
   focusId: FocusId,
 ): RuntimeState['managerFocusCompressedContexts'][number] | undefined =>
-  runtime.managerFocusCompressedContexts.find((item) => item.focusId === focusId)
+  runtime.managerFocusCompressedContexts.find(
+    (item) => item.focusId === focusId,
+  )
 
 export const upsertFocusCompressedContext = (
   runtime: RuntimeState,
@@ -205,18 +228,31 @@ export const updateFocus = (
   },
 ): void => {
   const focus = findFocus(runtime, params.id) ?? ensureFocus(runtime, params.id)
+  const normalizedTitle = params.title?.trim()
+  const nextTitle =
+    normalizedTitle && normalizedTitle.length > 0 ? normalizedTitle : undefined
+  const normalizedSummary = normalizeFocusSummary(params.summary)
+  const summaryForContext =
+    normalizedSummary ??
+    nextTitle ??
+    (params.summary !== undefined ? '' : undefined)
   const timestamp = nowIso()
-  if (params.title !== undefined)
-    focus.title = params.title.trim() || focus.title
+  if (nextTitle) focus.title = nextTitle
   if (params.status !== undefined) focus.status = params.status
   focus.updatedAt = timestamp
   focus.lastActivityAt = timestamp
   if (params.status !== undefined)
     setFocusStatus(runtime, params.id, params.status)
-  if (params.summary !== undefined || params.openItems !== undefined) {
+  if (
+    params.summary !== undefined ||
+    params.openItems !== undefined ||
+    nextTitle !== undefined
+  ) {
     upsertFocusContext(runtime, {
       focusId: params.id,
-      ...(params.summary !== undefined ? { summary: params.summary } : {}),
+      ...(summaryForContext !== undefined
+        ? { summary: summaryForContext }
+        : {}),
       ...(params.openItems !== undefined
         ? { openItems: params.openItems }
         : {}),

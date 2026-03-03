@@ -43,15 +43,18 @@ export const buildFocusViews = (
     .map((focus) => {
       const context = contextById.get(focus.id)
       const summary = normalizeSummary(context?.summary)
+      const titleFallback = normalizeSummary(focus.title)
+      const title = summary ?? titleFallback ?? focus.id
+      const resolvedSummary = summary ?? titleFallback
       const openItems = normalizeFocusOpenItems(context?.openItems)
       return {
         id: focus.id,
-        title: focus.title,
+        title,
         status: focus.status,
         isActive: activeSet.has(focus.id),
         updatedAt: focus.updatedAt,
         lastActivityAt: focus.lastActivityAt,
-        ...(summary ? { summary } : {}),
+        ...(resolvedSummary ? { summary: resolvedSummary } : {}),
         ...(openItems ? { openItems } : {}),
       }
     })
