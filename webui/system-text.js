@@ -20,7 +20,6 @@ const TASK_STATUS_LABEL_MAP = Object.freeze({
 })
 
 const TASK_PENDING_REASON_LABEL_MAP = Object.freeze({
-  waiting_same_focus_running_task: 'Waiting: same focus running',
   waiting_capacity: 'Waiting: capacity',
 })
 

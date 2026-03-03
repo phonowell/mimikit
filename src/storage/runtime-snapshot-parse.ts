@@ -23,47 +23,6 @@ type SnapshotManagerFocusCompressedContext = z.infer<
 >
 type SnapshotPendingUserChoice = z.infer<typeof pendingUserChoiceSchema>
 
-type ParseRuntimeSnapshotResult = {
-  snapshot: RuntimeSnapshot
-  migratedLegacyPlanTriggerMode: boolean
-}
-
-const LEGACY_TRIGGER_MODE = 'on_worker_slot_available'
-const NEXT_TRIGGER_MODE = 'on_worker_slot_freed'
-
-const migrateLegacyPlanTriggerMode = (
-  value: unknown,
-): { value: unknown; migrated: boolean } => {
-  if (!value || typeof value !== 'object') return { value, migrated: false }
-  const root = value as { taskPlans?: unknown }
-  if (!Array.isArray(root.taskPlans)) return { value, migrated: false }
-
-  let migrated = false
-  const taskPlans = root.taskPlans.map((entry) => {
-    if (!entry || typeof entry !== 'object') return entry
-    const plan = entry as { trigger?: unknown }
-    if (!plan.trigger || typeof plan.trigger !== 'object') return entry
-    const trigger = plan.trigger as { mode?: unknown }
-    if (trigger.mode !== LEGACY_TRIGGER_MODE) return entry
-    migrated = true
-    return {
-      ...(entry as Record<string, unknown>),
-      trigger: {
-        ...(trigger as Record<string, unknown>),
-        mode: NEXT_TRIGGER_MODE,
-      },
-    }
-  })
-  if (!migrated) return { value, migrated: false }
-  return {
-    value: {
-      ...(value as Record<string, unknown>),
-      taskPlans,
-    },
-    migrated: true,
-  }
-}
-
 const normalizeTask = (task: SnapshotTask): SnapshotTask =>
   stripUndefined({
     ...task,
@@ -118,13 +77,5 @@ const normalizeRuntimeSnapshot = (value: RuntimeSnapshot): RuntimeSnapshot =>
     memoryRefresh: value.memoryRefresh,
   }) as RuntimeSnapshot
 
-export const parseRuntimeSnapshot = (value: unknown): ParseRuntimeSnapshotResult => {
-  const migrated = migrateLegacyPlanTriggerMode(value)
-  const parsed = runtimeSnapshotSchema.parse(migrated.value)
-  return {
-    snapshot: normalizeRuntimeSnapshot(parsed),
-    migratedLegacyPlanTriggerMode: migrated.migrated,
-  }
-}
-
-export type { ParseRuntimeSnapshotResult }
+export const parseRuntimeSnapshot = (value: unknown): RuntimeSnapshot =>
+  normalizeRuntimeSnapshot(runtimeSnapshotSchema.parse(value))

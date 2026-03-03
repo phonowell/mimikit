@@ -4,7 +4,6 @@ import { titleFromCandidates } from '../../shared/utils.js'
 import type { Task, TaskStatus } from '../../types/index.js'
 
 export type TaskPendingReason =
-  | 'waiting_same_focus_running_task'
   | 'waiting_capacity'
 
 export type TaskViewRuntimeSnapshot = {

@@ -11,7 +11,7 @@
 ## 调度语义（仅 plan/scheduler 任务）：
 - 语义文档：`docs/design/workflow/plan.md`。
 - `on_idle`：仅在 `global idle=true`（manager+worker 都 idle 且达到 idle 窗口）触发。
-- `worker_slot_available`：仅表示 `available_slots > 0`，不要求 `global idle=true`。
+- `worker_slot_freed`：仅表示 `available_slots > 0`，不要求 `global idle=true`。
 
 ## 输出：
 - 仅输出最终结果；无法继续时允许一次阻塞说明：`阻塞：{原因}｜需要：{信息}｜已尝试：{动作}`（不含元标签）。

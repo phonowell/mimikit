@@ -23,8 +23,8 @@
 - `global idle`：`manager idle` + `worker idle` + `idleForMs >= idleTriggerDelayMs`。
 - `manager idle`：无 pending user choice、`managerRunning=false`、`managerWakePending=false`、无非 idle manager 输入。
 - `worker idle`：无 running controller、`workerQueue.size=0`、且无 `pending/running task`。
-- `worker_slot_available`：只表示容量可用（`available_slots > 0`），不要求 `global idle=true`。
-- 非 idle 但 `worker_slot_available=true` 示例：
+- `worker_slot_freed`：只表示容量可用（`available_slots > 0`），不要求 `global idle=true`。
+- 非 idle 但 `worker_slot_freed=true` 示例：
 - `managerRunning=true` 且 worker 当前空闲。
 - `maxConcurrent=4`、`occupiedSlots=2`（仍有任务在跑/排队）。
 
@@ -39,7 +39,7 @@
 4. 普通请求分流：
 - 无需外部信息与执行：直答。
 - 明确“稍后再做”或“完全空闲时做”：`M:create_plan trigger_mode="on_idle"`。
-- 需要“有空闲 worker 槽位就继续推进队列”：`M:create_plan trigger_mode="on_worker_slot_available"`。
+- 需要“有空闲 worker 槽位就继续推进队列”：`M:create_plan trigger_mode="on_worker_slot_freed"`。
 - 立即执行：`M:run_task`。
 - 定时/周期执行：`M:create_plan trigger_mode="scheduled_at|cron"`。
 - 需要用户在有限候选中二选一/多选一：优先使用 `M:ask_user_choice`（每个选项必须给出 `reason`）。
@@ -73,7 +73,7 @@
 - `priority`：`high | normal | low`。
 - `source`：`user_request | agent_auto | retry_decision`。
 - `plan.status`：`active | blocked | done`。
-- `trigger_mode`：`cron | scheduled_at | on_idle | on_worker_slot_available`。
+- `trigger_mode`：`cron | scheduled_at | on_idle | on_worker_slot_freed`。
 - `focus.status`：`active | idle | done | archived`。
 - `choice.id`：`choice-[a-zA-Z0-9._-]+`。
 - `choice.option.id`：`option-[a-zA-Z0-9._-]+`。
@@ -113,7 +113,7 @@
 <M:run_task prompt="对比两个分支差异并给出风险" title="分支差异评估" focus_id="focus-release-plan" />
 <M:create_plan prompt="提醒我提交周报" title="周报提醒" trigger_mode="scheduled_at" scheduled_at="2030-01-02T09:00:00+08:00" focus_id="focus-ops" />
 <M:create_plan prompt="空闲时整理待办" title="待办整理" trigger_mode="on_idle" cooldown_ms="600000" max_runs="3" />
-<M:create_plan prompt="worker有空位就继续处理积压任务" title="队列续跑" trigger_mode="on_worker_slot_available" max_runs="10" />
+<M:create_plan prompt="worker有空位就继续处理积压任务" title="队列续跑" trigger_mode="on_worker_slot_freed" max_runs="10" />
 <M:ask_user_choice id="choice-delivery-mode" question="请选择交付格式" option_1_id="option-report" option_1_label="报告" option_1_reason="便于完整审阅背景与风险" option_2_id="option-checklist" option_2_label="清单" option_2_reason="便于快速执行与打勾验收" default_option_id="option-report" />
 ```
 

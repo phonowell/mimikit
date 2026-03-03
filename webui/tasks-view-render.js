@@ -167,11 +167,7 @@ export const renderTasks = (tasksList, data) => {
     meta.appendChild(tokensEl)
 
     const pendingReasonRaw =
-      typeof task.pending_reason === 'string'
-        ? task.pending_reason
-        : typeof task.pendingReason === 'string'
-          ? task.pendingReason
-          : ''
+      typeof task.pending_reason === 'string' ? task.pending_reason : ''
     const pendingReasonLabel =
       statusValue === 'pending'
         ? resolveTaskPendingReasonLabel(pendingReasonRaw)
@@ -198,9 +194,7 @@ export const renderTasks = (tasksList, data) => {
     const changeAt =
       typeof task.changeAt === 'string' && task.changeAt.trim()
         ? task.changeAt
-        : typeof task.change_at === 'string' && task.change_at.trim()
-          ? task.change_at
-          : ''
+        : ''
 
     appendMetaTime(meta, 'task-time', changeAt)
 

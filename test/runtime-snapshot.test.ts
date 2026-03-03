@@ -133,7 +133,7 @@ test('runtime snapshot accepts on_worker_slot_freed trigger', async () => {
   expect(loaded.taskPlans[0]?.trigger.mode).toBe('on_worker_slot_freed')
 })
 
-test('loadRuntimeSnapshot migrates legacy worker-slot trigger mode once', async () => {
+test('loadRuntimeSnapshot rejects legacy worker-slot trigger mode', async () => {
   const stateDir = await createTmpDir()
   const snapshotPath = join(stateDir, 'runtime-snapshot.json')
   await writeFile(
@@ -162,12 +162,7 @@ test('loadRuntimeSnapshot migrates legacy worker-slot trigger mode once', async 
     'utf8',
   )
 
-  const loaded = await loadRuntimeSnapshot(stateDir)
-  expect(loaded.taskPlans[0]?.trigger.mode).toBe('on_worker_slot_freed')
-  const persisted = JSON.parse(await readFile(snapshotPath, 'utf8')) as {
-    taskPlans?: Array<{ trigger?: { mode?: string } }>
-  }
-  expect(persisted.taskPlans?.[0]?.trigger?.mode).toBe('on_worker_slot_freed')
+  await expect(loadRuntimeSnapshot(stateDir)).rejects.toThrow()
 })
 
 test('buildTaskViews keeps task statuses', () => {
