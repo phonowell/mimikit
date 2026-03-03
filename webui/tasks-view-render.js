@@ -38,7 +38,7 @@ const resolveScheduledBadge = (value, nowDate) => {
   })
   const scheduleTitle = formatDateTimeFull(raw) || raw
   return {
-    text: schedulePair.displayText || raw,
+    text: schedulePair.displayText || (schedulePair.fullText ? '' : raw),
     title: `scheduled: ${scheduleTitle}`,
   }
 }

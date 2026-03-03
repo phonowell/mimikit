@@ -7,7 +7,8 @@ export const appendMetaTime = (meta, className, value) => {
   const changedDisplay = formatDisplayTimeWithFull(changedAt)
   const time = document.createElement('span')
   time.className = className
-  time.textContent = changedDisplay.displayText || changedAt
+  time.textContent =
+    changedDisplay.displayText || (changedDisplay.fullText ? '' : changedAt)
   time.title = changedDisplay.fullText || changedAt
   meta.appendChild(time)
 }

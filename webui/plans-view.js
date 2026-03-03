@@ -15,7 +15,7 @@ const resolveTriggerLabel = (item) => {
       calendarWords: true,
     })
     return {
-      text: display.displayText || scheduledAt,
+      text: display.displayText || (display.fullText ? '' : scheduledAt),
       title: display.fullText || scheduledAt,
     }
   }
