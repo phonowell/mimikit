@@ -1,25 +1,12 @@
 import { parseActions } from '../actions/protocol/parse.js'
 import { hasQqUserInput } from '../channels/qq/index.js'
-import { appendActionFeedbackSystemMessage } from '../history/manager-events.js'
-import { pickQueryHistoryRequest } from '../history/query.js'
 import { appendLog } from '../log/append.js'
-import { resolveScheduleNowIso } from '../shared/time.js'
 import { mergeUsageAdditive } from '../shared/token-usage.js'
-import { collectManagerActionFeedback } from './action-feedback-collect.js'
-import {
-  buildHistoryQueryKey,
-  buildReadFileLookupKey,
-  pickReadFileRequest,
-  queryHistoryLookup,
-  queryReadFileLookup,
-} from './loop-batch-context.js'
 import { runManagerRoundWithRecovery } from './loop-batch-exec.js'
+import { resolveRoundFollowup } from './loop-batch-round-followup.js'
 import {
-  buildActionFeedbackContext,
   buildBatchSuccessResult,
-  buildLookupKey,
   buildRoundLimitResult,
-  hasNoFollowupRequests,
   type ManagerRoundExtra,
 } from './loop-batch-run-helpers.js'
 import type { RuntimeState } from './runtime-adapter.js'
@@ -90,72 +77,25 @@ export const runManagerCorrectionRounds = async (params: {
     const parsed = parseActions(runResult.output)
     lastParsed = parsed
     stream.commitParsedText(parsed.text)
-    const scheduleNowIso = resolveScheduleNowIso(runtime.lastUserMeta)
-    const actionFeedback = collectManagerActionFeedback(
-      parsed.actions,
-      {
-        ...buildActionFeedbackContext({
-          runtime,
-          hasQueryData,
-          allowAskUserChoice,
-        }),
-        scheduleNowIso,
-      },
-      runResult.output,
-    )
-    const queryRequest = pickQueryHistoryRequest(parsed.actions)
-    const readFileRequest = pickReadFileRequest(parsed.actions)
-    const queryKey = buildHistoryQueryKey(queryRequest)
-    const readFileKey = buildReadFileLookupKey(readFileRequest)
-    const lookupKey = buildLookupKey({
-      ...(queryKey !== undefined ? { queryKey } : {}),
-      ...(readFileKey !== undefined ? { readFileKey } : {}),
+    const followup = await resolveRoundFollowup({
+      runtime,
+      parsed: parsed.actions,
+      output: runResult.output,
+      hasQueryData,
+      allowAskUserChoice,
+      resolveFocusId,
+      ...(previousLookupKey ? { previousLookupKey } : {}),
     })
-    if (
-      hasNoFollowupRequests({
-        hasQueryRequest: Boolean(queryRequest),
-        hasReadFileRequest: Boolean(readFileRequest),
-        feedbackCount: actionFeedback.length,
-      })
-    ) {
-      stream.commitParsedText(parsed.text)
+    if (followup.done) {
       return buildBatchSuccessResult({
         parsed,
         elapsedMs,
         ...(batchUsage ? { usage: batchUsage } : {}),
       })
     }
-    if (
-      lookupKey &&
-      actionFeedback.length === 0 &&
-      previousLookupKey === lookupKey
-    ) {
-      throw new Error('manager_internal_lookup_repeated_without_progress')
-    }
-    previousLookupKey = lookupKey
-    const [historyLookup, readFileLookup] = await Promise.all([
-      queryHistoryLookup(runtime, queryRequest),
-      queryReadFileLookup(runtime, readFileRequest),
-    ])
-    if (actionFeedback.length > 0) {
-      await appendLog(runtime.paths.log, {
-        event: 'manager_action_feedback',
-        count: actionFeedback.length,
-        errors: actionFeedback.map((item) => item.error),
-        names: actionFeedback.map((item) => item.action),
-      })
-      await appendActionFeedbackSystemMessage(
-        runtime.paths.history,
-        actionFeedback,
-        resolveFocusId(),
-      )
-    }
+    previousLookupKey = followup.lookupKey
     stream.resetCycle()
-    extra = {
-      ...(historyLookup ? { historyLookup } : {}),
-      ...(readFileLookup ? { readFileLookup } : {}),
-      ...(actionFeedback.length > 0 ? { actionFeedback } : {}),
-    }
+    extra = followup.extra
   }
   await appendLog(runtime.paths.log, {
     event: 'manager_correction_round_limit_reached',
