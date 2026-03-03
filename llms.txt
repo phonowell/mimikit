@@ -1,0 +1,37 @@
+# Mimikit
+
+> Lightweight single-session AI assistant runtime in TypeScript, with manager/worker orchestration, WebUI, SSE, and local state files.
+
+## Project
+
+- Name: Mimikit
+- Repo: https://github.com/phonowell/mimikit
+- Language: TypeScript (ESM, strict)
+- License: MIT
+- Primary audience: developers building controllable local AI assistant runtimes
+
+## Quickstart
+
+```bash
+git clone https://github.com/phonowell/mimikit.git
+cd mimikit
+pnpm i
+OPENAI_API_KEY=your_key pnpm start
+```
+
+## Entry Points
+
+- CLI: `src/cli/index.ts`
+- Orchestrator: `src/orchestrator/`
+- Manager: `src/manager/`
+- Worker: `src/worker/`
+- HTTP + WebUI: `src/http/` and `webui/`
+- Workflow docs: `docs/design/workflow/`
+
+## Core Capabilities
+
+- Single-session manager/worker orchestration
+- Structured plan triggers (`cron`, `scheduled_at`, `on_idle`, `on_worker_slot_freed`)
+- SSE event stream for UI sync
+- File-backed runtime state (`history`, `tasks`, `results`, `runtime-snapshot`)
+- Optional QQ webhook and passive reply pipeline
