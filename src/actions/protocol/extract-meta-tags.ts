@@ -1,8 +1,7 @@
-import remarkParse from 'remark-parse'
-import { unified } from 'unified'
 import { visit } from 'unist-util-visit'
 
 import { isIndexInRanges, type Range } from './markdown-code-ranges.js'
+import { parseMarkdown, type MarkdownTree } from './markdown-parse.js'
 import {
   extractAttrText,
   extractTagNameFromRaw,
@@ -28,8 +27,6 @@ type PositionedHtmlNode = {
     start?: { offset?: number | null } | null
   } | null
 }
-
-const markdownParser = unified().use(remarkParse)
 
 const parseMetaTagsInHtml = (html: string, offsetBase: number): MetaTag[] => {
   const tags: MetaTag[] = []
@@ -98,10 +95,9 @@ const parseMetaTagsInHtml = (html: string, offsetBase: number): MetaTag[] => {
 export const collectMetaTagsFromMarkdown = (
   text: string,
   codeRanges: Range[],
+  tree: MarkdownTree = parseMarkdown(text),
 ): MetaTag[] => {
   if (!text) return []
-
-  const tree = markdownParser.parse(text)
   const tags = new Map<string, MetaTag>()
   const pushTag = (tag: MetaTag) => {
     if (isIndexInRanges(tag.start, codeRanges)) return

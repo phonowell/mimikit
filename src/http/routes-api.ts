@@ -2,6 +2,7 @@ import { assertEnabledQqConfig, registerQqWebhookRoute } from '../channels/qq/in
 import { logSafeError } from '../log/safe.js'
 
 import { clearStateDir, parseInputBody } from './helpers.js'
+import { resolveRouteId } from './route-params.js'
 import { registerChoiceSelectRoute } from './routes-api-choice-select.js'
 import { registerEventsRoute } from './routes-api-events.js'
 import { registerTaskArchiveRoute } from './routes-api-task-archive.js'
@@ -51,12 +52,8 @@ export const registerApiRoutes = (
   })
 
   app.delete('/api/messages/:id', async (request, reply) => {
-    const params = request.params as { id?: unknown }
-    const id = typeof params.id === 'string' ? params.id.trim() : ''
-    if (!id) {
-      reply.code(400).send({ error: 'id is required' })
-      return
-    }
+    const id = resolveRouteId(request.params, reply, 'message', 'id is required')
+    if (!id) return
     const result = await orchestrator.deleteChatMessage(id)
     if (!result.ok) {
       if (result.reason === 'not_allowed') {

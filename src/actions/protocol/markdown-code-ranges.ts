@@ -1,6 +1,6 @@
-import remarkParse from 'remark-parse'
-import { unified } from 'unified'
 import { visit } from 'unist-util-visit'
+
+import { parseMarkdown, type MarkdownTree } from './markdown-parse.js'
 
 type Range = {
   start: number
@@ -14,8 +14,6 @@ type PositionedNode = {
     end?: { offset?: number | null } | null
   } | null
 }
-
-const markdownParser = unified().use(remarkParse)
 
 const hasRange = (range: Partial<Range>): range is Range =>
   Number.isFinite(range.start) &&
@@ -45,9 +43,11 @@ const offsetsOf = (node: PositionedNode): Range | undefined => {
   return { start, end }
 }
 
-export const findMarkdownCodeRanges = (text: string): Range[] => {
+export const findMarkdownCodeRanges = (
+  text: string,
+  tree: MarkdownTree = parseMarkdown(text),
+): Range[] => {
   if (!text) return []
-  const tree = markdownParser.parse(text)
   const ranges: Range[] = []
   visit(tree, (node) => {
     const typed = node as PositionedNode

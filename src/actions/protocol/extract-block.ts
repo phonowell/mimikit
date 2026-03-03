@@ -2,6 +2,7 @@ import {
   findMarkdownCodeRanges,
   isIndexInRanges,
 } from './markdown-code-ranges.js'
+import { parseMarkdown } from './markdown-parse.js'
 import {
   collectMetaTagsFromMarkdown,
   type MetaTag,
@@ -68,15 +69,17 @@ const stripTrailingMetaTagFragment = (
 }
 
 export const collectTagMatches = (text: string): MetaTag[] => {
-  const codeRanges = findMarkdownCodeRanges(text)
-  return collectMetaTagsFromMarkdown(text, codeRanges)
+  const tree = parseMarkdown(text)
+  const codeRanges = findMarkdownCodeRanges(text, tree)
+  return collectMetaTagsFromMarkdown(text, codeRanges, tree)
 }
 
 export const extractActionText = (
   output: string,
 ): { actionText: string; text: string } => {
-  const codeRanges = findMarkdownCodeRanges(output)
-  const tags = collectMetaTagsFromMarkdown(output, codeRanges)
+  const tree = parseMarkdown(output)
+  const codeRanges = findMarkdownCodeRanges(output, tree)
+  const tags = collectMetaTagsFromMarkdown(output, codeRanges, tree)
   const zone = findZone(output, tags)
   const actionText = zone ? output.slice(zone.parseStart) : ''
   const withoutActions = zone ? output.slice(0, zone.parseStart) : output

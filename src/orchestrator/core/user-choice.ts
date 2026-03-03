@@ -1,8 +1,10 @@
-import { appendLog } from '../../log/append.js'
 import { parseIsoMs } from '../../shared/time.js'
-import { formatSystemEventText } from '../../shared/system-event.js'
-import { newId, nowIso } from '../../shared/utils.js'
-import { publishUserInput } from '../../streams/queues.js'
+import { nowIso } from '../../shared/utils.js'
+
+import {
+  publishChoiceSelectionInput,
+  publishChoiceSkippedInput,
+} from './user-choice-input.js'
 
 import type { RuntimeState } from './runtime-state.js'
 import type {
@@ -32,67 +34,6 @@ export const clonePendingUserChoice = (
       }
     : null
 
-const resolveTimeoutSummary = (
-  choice: PendingUserChoice,
-  option: UserChoiceOption,
-): string =>
-  `No selection was made for "${choice.question}" within 5 minutes. Applied default option "${option.label}".`
-
-const resolveUserSummary = (
-  choice: PendingUserChoice,
-  option: UserChoiceOption,
-): string => `Selected option "${option.label}" for "${choice.question}".`
-
-const resolveSkipSummary = (choice: PendingUserChoice): string =>
-  `Received a new user message before selecting an option for "${choice.question}". Canceled this choice as no option selected.`
-
-const publishChoiceSystemInput = async (params: {
-  runtime: RuntimeState
-  choice: PendingUserChoice
-  option: UserChoiceOption
-  source: UserChoiceSelectionSource
-  selectedAt: string
-}): Promise<string> => {
-  const { runtime, choice, option, source, selectedAt } = params
-  const input = {
-    id: `input-${newId()}`,
-    role: 'system' as const,
-    visibility: 'all' as const,
-    text: formatSystemEventText({
-      summary:
-        source === 'timeout'
-          ? resolveTimeoutSummary(choice, option)
-          : resolveUserSummary(choice, option),
-      event: 'user_choice',
-      payload: {
-        choice_id: choice.id,
-        question: choice.question,
-        selected_option_id: option.id,
-        selected_option_label: option.label,
-        selected_option_reason: option.reason,
-        default_option_id: choice.defaultOptionId,
-        source,
-        selected_at: selectedAt,
-      },
-    }),
-    createdAt: selectedAt,
-    focusId: choice.focusId,
-  }
-  await publishUserInput({
-    paths: runtime.paths,
-    payload: input,
-  })
-  runtime.inflightInputs.push(input)
-  await appendLog(runtime.paths.log, {
-    event: source === 'timeout' ? 'user_choice_timeout_default' : 'user_choice',
-    inputId: input.id,
-    choiceId: choice.id,
-    optionId: option.id,
-    source,
-  })
-  return input.id
-}
-
 export const cancelPendingUserChoiceByUserInput = async (params: {
   runtime: RuntimeState
   triggerInputId: string
@@ -103,35 +44,10 @@ export const cancelPendingUserChoiceByUserInput = async (params: {
   if (!choice) return false
   const canceledAt = params.createdAt ?? nowIso()
   runtime.pendingUserChoice = null
-  const input = {
-    id: `input-${newId()}`,
-    role: 'system' as const,
-    visibility: 'all' as const,
-    text: formatSystemEventText({
-      summary: resolveSkipSummary(choice),
-      event: 'user_choice_skipped',
-      payload: {
-        choice_id: choice.id,
-        question: choice.question,
-        default_option_id: choice.defaultOptionId,
-        source: 'user_input',
-        trigger_input_id: triggerInputId,
-        canceled_at: canceledAt,
-      },
-    }),
-    createdAt: canceledAt,
-    focusId: choice.focusId,
-  }
-  await publishUserInput({
-    paths: runtime.paths,
-    payload: input,
-  })
-  runtime.inflightInputs.push(input)
-  await appendLog(runtime.paths.log, {
-    event: 'user_choice_skipped',
-    inputId: input.id,
-    choiceId: choice.id,
-    source: 'user_input',
+  await publishChoiceSkippedInput({
+    runtime,
+    choice,
+    canceledAt,
     triggerInputId,
   })
   return true
@@ -161,7 +77,7 @@ const commitSelection = async (params: {
   source: UserChoiceSelectionSource
   selectedAt: string
 }): Promise<SelectPendingUserChoiceResult> => {
-  await publishChoiceSystemInput(params)
+  await publishChoiceSelectionInput(params)
   params.runtime.pendingUserChoice = null
   return {
     ok: true,

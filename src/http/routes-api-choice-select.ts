@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { parseBodyWithSchema, resolveRouteId } from './route-params.js'
+
 import type { Orchestrator } from '../orchestrator/core/orchestrator-service.js'
 import type { FastifyInstance } from 'fastify'
 
@@ -17,22 +19,18 @@ export const registerChoiceSelectRoute = (
   orchestrator: Orchestrator,
 ): void => {
   app.post('/api/choices/:id/select', async (request, reply) => {
-    const params = request.params as { id?: unknown }
-    const choiceId = typeof params.id === 'string' ? params.id.trim() : ''
-    if (!choiceId) {
-      reply.code(400).send({ error: 'choice id is required' })
-      return
-    }
+    const choiceId = resolveRouteId(request.params, reply, 'choice')
+    if (!choiceId) return
 
-    const parsedBody = selectChoiceBodySchema.safeParse(request.body)
-    if (!parsedBody.success) {
+    const parsedBody = parseBodyWithSchema(request.body, selectChoiceBodySchema)
+    if (!parsedBody) {
       reply.code(400).send({ error: 'optionId is required' })
       return
     }
 
     const result = await orchestrator.selectPendingUserChoice(
       choiceId,
-      parsedBody.data.optionId,
+      parsedBody.optionId,
     )
     if (!result.ok) {
       if (result.reason === 'not_found') {
