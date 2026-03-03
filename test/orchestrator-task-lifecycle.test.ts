@@ -33,28 +33,21 @@ test('enqueueTask returns existing active task by fingerprint', () => {
   expect(result).toMatchObject({ created: false, task: { id: existing.id } })
 })
 
-test('markTaskRunning sets running status with startedAt', () => {
+test('task status transitions keep expected timestamps', () => {
   const tasks: Task[] = [createTask()]
 
-  const updated = markTaskRunning(tasks, 'task-1')
+  const running = markTaskRunning(tasks, 'task-1')
+  expect(running).toMatchObject({ id: 'task-1', status: 'running' })
+  expect(running?.startedAt).toBeTypeOf('string')
 
-  expect(updated).toMatchObject({ id: 'task-1', status: 'running' })
-  expect(updated?.startedAt).toBeTypeOf('string')
-})
-
-test('markTaskCanceled keeps existing completedAt value', () => {
-  const tasks: Task[] = [
-    createTask({
-      status: 'running',
-      completedAt: '2026-02-26T10:03:00.000Z',
-    }),
-  ]
-
-  const updated = markTaskCanceled(tasks, 'task-1', {
+  const task = tasks[0]
+  if (!task) throw new Error('task fixture missing')
+  task.completedAt = '2026-02-26T10:03:00.000Z'
+  const canceled = markTaskCanceled(tasks, 'task-1', {
     completedAt: '2026-02-26T10:09:00.000Z',
   })
 
-  expect(updated).toMatchObject({
+  expect(canceled).toMatchObject({
     id: 'task-1',
     status: 'canceled',
     completedAt: '2026-02-26T10:03:00.000Z',

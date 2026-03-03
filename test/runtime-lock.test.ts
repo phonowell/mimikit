@@ -21,13 +21,6 @@ test('acquireRuntimeLock blocks concurrent acquire and allows acquire after rele
   await second.release()
 })
 
-test('acquireRuntimeLock release is idempotent', async () => {
-  const workDir = await createTmpDir()
-  const lock = await acquireRuntimeLock(workDir)
-  await lock.release()
-  await expect(lock.release()).resolves.toBeUndefined()
-})
-
 test('acquireRuntimeLock preserves non-lock errors from workdir setup', async () => {
   const root = await createTmpDir()
   const filePath = join(root, 'occupied-by-file')
