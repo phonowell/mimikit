@@ -67,5 +67,13 @@ export const resolveTaskStatusLabel = (value) => {
 export const formatHttpFailure = (fallback, status) =>
   `${fallback} (${status})`
 
+export const formatSystemBubbleText = (message) => {
+  const normalized = String(message ?? '').trim()
+  if (!normalized) return ''
+  const withoutPrefix = normalized.replace(/^system:\s*/i, '').trim()
+  if (!withoutPrefix) return ''
+  return `System: ${withoutPrefix}`
+}
+
 export const formatUiError = (message) =>
-  `${UI_TEXT.errorPrefix}${UI_TEXT.errorJoiner}${message}`
+  formatSystemBubbleText(`${UI_TEXT.errorPrefix}: ${String(message ?? '').trim() || 'Unknown error.'}`)

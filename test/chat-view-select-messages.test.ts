@@ -50,3 +50,53 @@ test('selectChatMessages keeps delta continuity when inflight input arrives mid-
     ],
   })
 })
+
+test('selectChatMessages normalizes system text to canonical system bubble format', () => {
+  const selected = selectChatMessages({
+    history: [
+      {
+        id: 'sys-1',
+        role: 'system',
+        visibility: 'user',
+        text: 'Session started.\n\n<M:system_event name="startup" version="1">{}</M:system_event>',
+        createdAt: '2026-03-02T08:00:00.000Z',
+        focusId: 'focus-global',
+      },
+    ],
+    inflightInputs: [],
+    limit: 50,
+  })
+
+  expect(selected).toEqual({
+    mode: 'full',
+    messages: [
+      {
+        id: 'sys-1',
+        role: 'system',
+        visibility: 'user',
+        text: 'System: Session started.',
+        createdAt: '2026-03-02T08:00:00.000Z',
+        focusId: 'focus-global',
+      },
+    ],
+  })
+})
+
+test('selectChatMessages avoids double system prefix on system text', () => {
+  const selected = selectChatMessages({
+    history: [
+      {
+        id: 'sys-2',
+        role: 'system',
+        visibility: 'user',
+        text: 'System: Message deleted.',
+        createdAt: '2026-03-02T08:00:01.000Z',
+        focusId: 'focus-global',
+      },
+    ],
+    inflightInputs: [],
+    limit: 50,
+  })
+
+  expect(selected.messages[0]?.text).toBe('System: Message deleted.')
+})
