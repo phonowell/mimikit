@@ -106,7 +106,6 @@ export function bindRestart({
   toolsMenu,
   toolsRestartBtn,
   toolsResetBtn,
-  toolsIdleHint,
   restartDialog,
   restartCancelBtn,
   restartConfirmBtn,
@@ -231,8 +230,7 @@ export function bindRestart({
     setBlockedTitle(toolsResetBtn, blockedByIdle)
     setBlockedTitle(restartConfirmBtn, blockedByIdle)
     setBlockedTitle(resetConfirmBtn, blockedByIdle)
-
-    if (toolsIdleHint) toolsIdleHint.hidden = !blockedByIdle
+    setBlockedTitle(toolsToggleBtn, blockedByIdle)
 
     if (blockedByIdle) {
       closeToolsMenu()

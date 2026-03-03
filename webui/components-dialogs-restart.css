@@ -37,10 +37,3 @@
 .restart-dialog-btn-danger {
   margin-right: auto;
 }
-
-.tools-idle-hint {
-  margin: 6px 2px 0;
-  font-size: 11px;
-  line-height: 1.35;
-  color: var(--muted);
-}

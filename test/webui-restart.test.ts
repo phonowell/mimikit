@@ -5,6 +5,9 @@ const { fetchWithTimeoutMock, delayMock } = vi.hoisted(() => ({
   delayMock: vi.fn(async () => undefined),
 }))
 
+const NON_IDLE_UI_HINT =
+  'Restart and reset are available only when manager and workers are idle.'
+
 vi.mock('../webui/fetch-with-timeout.js', () => ({
   fetchWithTimeout: fetchWithTimeoutMock,
   delay: delayMock,
@@ -198,7 +201,6 @@ const createFixture = (idle = true) => {
   const toolsMenu = new FakeElement()
   const toolsRestartBtn = new FakeElement('Restart')
   const toolsResetBtn = new FakeElement('Reset')
-  const toolsIdleHint = new FakeElement()
   const restartDialog = new FakeElement()
   const restartCancelBtn = new FakeElement('Cancel restart')
   const restartConfirmBtn = new FakeElement('Confirm restart')
@@ -227,7 +229,6 @@ const createFixture = (idle = true) => {
     toolsMenu,
     toolsRestartBtn,
     toolsResetBtn,
-    toolsIdleHint,
     restartDialog,
     restartCancelBtn,
     restartConfirmBtn,
@@ -245,7 +246,6 @@ const createFixture = (idle = true) => {
     toolsMenu,
     toolsRestartBtn,
     toolsResetBtn,
-    toolsIdleHint,
     restartDialog,
     restartCancelBtn,
     restartConfirmBtn,
@@ -271,13 +271,14 @@ afterEach(() => {
   restoreDomStubs()
 })
 
-test('non-idle state disables tools actions and shows inline hint', () => {
+test('non-idle state disables tools actions and exposes reason via tooltip', () => {
   const fixture = createFixture(false)
   try {
     expect(fixture.toolsRestartBtn.disabled).toBe(true)
     expect(fixture.toolsResetBtn.disabled).toBe(true)
-    expect(fixture.toolsIdleHint.hidden).toBe(false)
-    expect(fixture.toolsIdleHint.getAttribute('title')).toBe(null)
+    expect(fixture.toolsToggleBtn.getAttribute('title')).toBe(NON_IDLE_UI_HINT)
+    expect(fixture.toolsRestartBtn.getAttribute('title')).toBe(NON_IDLE_UI_HINT)
+    expect(fixture.toolsResetBtn.getAttribute('title')).toBe(NON_IDLE_UI_HINT)
 
     fixture.toolsRestartBtn.dispatchEvent('click')
     fixture.toolsResetBtn.dispatchEvent('click')
