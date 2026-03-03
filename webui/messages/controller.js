@@ -58,9 +58,8 @@ export function createMessagesController({
   }
 
   const endChoicePanelLayoutShift = () => {
-    if (stickBottomAfterChoicePanelShift) scroll.scrollToBottom({ smooth: false })
+    scroll.syncAfterLayoutShift({ stickToBottom: stickBottomAfterChoicePanelShift })
     stickBottomAfterChoicePanelShift = false
-    scroll.updateScrollButton()
   }
 
   let removeEmpty = () => {}
@@ -217,6 +216,8 @@ export function createMessagesController({
     stop,
     sendMessage,
     isFullyIdle,
+    isNearBottom: scroll.isNearBottom,
+    syncAfterLayoutShift: scroll.syncAfterLayoutShift,
     beginChoicePanelLayoutShift,
     endChoicePanelLayoutShift,
   }

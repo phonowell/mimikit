@@ -4,6 +4,7 @@ export const createScrollController = ({
   scrollBottomMultiplier = 1.5,
 }) => {
   let scrollBound = false
+  let lastClientHeight = 0
 
   const getScrollState = () => {
     if (!messagesEl) return null
@@ -59,9 +60,27 @@ export const createScrollController = ({
     messagesEl.scrollTo({ top: messagesEl.scrollHeight, behavior })
   }
 
+  const syncAfterLayoutShift = ({ stickToBottom = false } = {}) => {
+    if (!messagesEl) return
+    const state = getScrollState()
+    if (!state) return
+    const previousClientHeight =
+      lastClientHeight > 0 ? lastClientHeight : state.clientHeight
+    const didHeightChange = state.clientHeight !== previousClientHeight
+    const previousDistance =
+      state.distance + (state.clientHeight - previousClientHeight)
+    const previousThreshold = getBottomThreshold(previousClientHeight)
+    const shouldStickByResize =
+      didHeightChange && previousDistance <= previousThreshold
+    lastClientHeight = state.clientHeight
+    if (stickToBottom || shouldStickByResize) scrollToBottom({ smooth: false })
+    updateScrollButton()
+  }
+
   const bindScrollControls = () => {
     if (!messagesEl || scrollBound) return
     scrollBound = true
+    lastClientHeight = messagesEl.clientHeight
     messagesEl.addEventListener(
       'scroll',
       () => {
@@ -69,15 +88,29 @@ export const createScrollController = ({
       },
       { passive: true },
     )
-    window.addEventListener('resize', updateScrollButton)
+    window.addEventListener('resize', () => {
+      syncAfterLayoutShift()
+    })
+    if (typeof ResizeObserver === 'function') {
+      const observer = new ResizeObserver(() => {
+        syncAfterLayoutShift()
+      })
+      observer.observe(messagesEl)
+    }
     if (scrollBottomBtn) {
       scrollBottomBtn.addEventListener('click', () => {
         scrollToBottom({ smooth: true })
         setScrollButtonVisible(false)
       })
     }
-    updateScrollButton()
+    syncAfterLayoutShift()
   }
 
-  return { isNearBottom, scrollToBottom, updateScrollButton, bindScrollControls }
+  return {
+    isNearBottom,
+    scrollToBottom,
+    updateScrollButton,
+    bindScrollControls,
+    syncAfterLayoutShift,
+  }
 }

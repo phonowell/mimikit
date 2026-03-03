@@ -31,6 +31,20 @@ const writeDraft = (value) => {
 export function bindComposer({ form, input, messages }) {
   if (!form || !input || !messages) return
 
+  const resizeInputAndSyncScroll = () => {
+    const stickToBottom =
+      typeof messages.isNearBottom === 'function' ? messages.isNearBottom() : false
+    resizeInput()
+    if (typeof messages.syncAfterLayoutShift === 'function') {
+      messages.syncAfterLayoutShift({ stickToBottom })
+      return
+    }
+    if (stickToBottom && typeof messages.scrollToBottom === 'function')
+      messages.scrollToBottom({ smooth: false })
+    if (typeof messages.updateScrollButton === 'function')
+      messages.updateScrollButton()
+  }
+
   const resizeInput = () => {
     input.style.height = 'auto'
     const computed = window.getComputedStyle(input)
@@ -55,9 +69,9 @@ export function bindComposer({ form, input, messages }) {
 
   const draft = readDraft()
   if (!input.value && draft) input.value = draft
-  resizeInput()
+  resizeInputAndSyncScroll()
   input.addEventListener('input', () => {
-    resizeInput()
+    resizeInputAndSyncScroll()
     writeDraft(input.value)
   })
 
