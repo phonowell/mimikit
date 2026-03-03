@@ -36,7 +36,12 @@ export const formatEnvironment = (params?: PromptEnvironmentParams): string => {
     lines.push(`- ${label}: ${value}`)
   }
   const workDir = params?.workDir?.trim()
-  push('work_dir', workDir ? resolve(workDir) : undefined)
+  const resolvedWorkDir = workDir ? resolve(workDir) : undefined
+  push('work_dir', resolvedWorkDir)
+  push(
+    'generated_dir',
+    resolvedWorkDir ? resolve(resolvedWorkDir, 'generated') : undefined,
+  )
   push('wake_profile', params?.env?.wakeProfile)
   const last = params?.env?.lastUser
   if (last) {
