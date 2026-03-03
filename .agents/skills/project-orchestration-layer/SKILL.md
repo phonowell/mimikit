@@ -44,7 +44,7 @@ description: 项目级多 worktree 编排与低 token 协议，use when user exp
 3. 同步：开工前执行 `pnpm run wt-rebase`；落地前再执行一次。
 4. 执行：agent 在各自槽位完成改动与自检。
 5. 收敛：统一执行 `review-code-changes`，再跑全量门禁（`lint/type-check/test`）；任一门禁未通过禁止进入 `wt-land`。
-6. 回主线：`pnpm run wt-land` 必须串行执行，固定顺序 `worktree-1 -> worktree-2 -> worktree-3`；任一槽位未完成前禁止启动下一槽位。槽位改动 `land` 回 `main` 后不再重复执行额外门禁。
+6. 回主线：每个槽位执行 `wt-land` 时均使用 `pnpm run wt-land -- --message "..."`；必须串行执行，固定顺序 `worktree-1 -> worktree-2 -> worktree-3`；任一槽位未完成前禁止启动下一槽位。槽位改动 `land` 回 `main` 后不再重复执行额外门禁。
 
 ## 能力缺口处理
 - 若出现 skill 生命周期问题（搜索/新增/替换/移除），立即调用 `audit-skill-lifecycle`。
