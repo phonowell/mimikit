@@ -183,6 +183,19 @@ test('buildTaskViews keeps task statuses', () => {
   expect(statusById.get('task-running')).toBe('running')
 })
 
+test('buildTaskViews marks pending reason as waiting_capacity when worker slots are full', () => {
+  const tasks: Task[] = [
+    createTaskFixture({ id: 'task-running', status: 'running' }),
+    createTaskFixture({ id: 'task-pending', status: 'pending' }),
+  ]
+  const { tasks: views } = buildTaskViews(tasks, 200, {
+    maxConcurrentWorkers: 1,
+    runningTaskCount: 1,
+  })
+  const pending = views.find((item) => item.id === 'task-pending')
+  expect(pending?.pending_reason).toBe('waiting_capacity')
+})
+
 test('runtime snapshot rejects legacy next fields', async () => {
   const stateDir = await createTmpDir()
   await writeFile(

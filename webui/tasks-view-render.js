@@ -7,7 +7,11 @@ import { formatUsage } from './messages/format-usage.js'
 import { renderEmptyListState } from './list-empty.js'
 import { appendMetaTime } from './meta-time.js'
 import { captureListScrollState, restoreListScrollState } from './list-scroll-sync.js'
-import { UI_TEXT, resolveTaskStatusLabel } from './system-text.js'
+import {
+  UI_TEXT,
+  resolveTaskPendingReasonLabel,
+  resolveTaskStatusLabel,
+} from './system-text.js'
 import { createTaskActions } from './tasks-view-actions.js'
 import { formatElapsedText } from './tasks-view-time.js'
 
@@ -161,6 +165,24 @@ export const renderTasks = (tasksList, data) => {
     tokensEl.textContent = usageDisplay.text
     if (usageDisplay.title) tokensEl.title = usageDisplay.title
     meta.appendChild(tokensEl)
+
+    const pendingReasonRaw =
+      typeof task.pending_reason === 'string'
+        ? task.pending_reason
+        : typeof task.pendingReason === 'string'
+          ? task.pendingReason
+          : ''
+    const pendingReasonLabel =
+      statusValue === 'pending'
+        ? resolveTaskPendingReasonLabel(pendingReasonRaw)
+        : ''
+    if (pendingReasonLabel) {
+      const pendingReasonEl = document.createElement('span')
+      pendingReasonEl.className = 'task-pending-reason'
+      pendingReasonEl.textContent = pendingReasonLabel
+      pendingReasonEl.title = pendingReasonRaw
+      meta.appendChild(pendingReasonEl)
+    }
 
     if (task.status === 'running' && Number.isFinite(startMs)) {
       elapsedEl.dataset.startedAt = String(startMs)

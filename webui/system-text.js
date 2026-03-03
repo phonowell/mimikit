@@ -19,6 +19,11 @@ const TASK_STATUS_LABEL_MAP = Object.freeze({
   canceled: 'canceled',
 })
 
+const TASK_PENDING_REASON_LABEL_MAP = Object.freeze({
+  waiting_same_focus_running_task: 'Waiting: same focus running',
+  waiting_capacity: 'Waiting: capacity',
+})
+
 export const UI_TEXT = Object.freeze({
   conversationTitleFallback: 'Mimikit',
   noTasks: 'No tasks',
@@ -67,6 +72,12 @@ export const resolveTaskStatusLabel = (value) => {
   const raw = typeof value === 'string' ? value.trim().toLowerCase() : ''
   if (!raw) return 'unknown'
   return TASK_STATUS_LABEL_MAP[raw] ?? raw
+}
+
+export const resolveTaskPendingReasonLabel = (value) => {
+  const raw = typeof value === 'string' ? value.trim().toLowerCase() : ''
+  if (!raw) return ''
+  return TASK_PENDING_REASON_LABEL_MAP[raw] ?? ''
 }
 
 export const formatHttpFailure = (fallback, status) =>
