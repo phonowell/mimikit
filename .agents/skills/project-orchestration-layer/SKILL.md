@@ -1,75 +1,87 @@
 ---
 name: project-orchestration-layer
-description: 项目级多 worktree 编排与低 token 协议，invoke by explicit user call without condition checks; available on main/worktree-1/2/3 with equivalent slot intelligence and minimal orchestration actions.
+description: 项目级多 worktree 编排与低 token 协议，invoke by explicit user call; enforce hard gates for main/worktree execution.
 ---
 
 # Project Orchestration Layer
 
-## 调用方式
-- 用户显式调用后生效。
-- 不做条件判定，不依赖关键词/分支/上下文推断。
+## 调用条件
+- 仅在用户显式调用后生效。
+- 不依赖关键词、分支名或上下文猜测触发。
 
-## 角色边界
-- `main` 仅编排，禁止业务实现。
-- 业务实现仅在 `worktree-1/2/3`；并行上限 `3`。
-- 槽位智能与编排层等价；默认全量更新，不留兼容层。
+## 术语与边界
+- `main`：编排层；只做拆解、派发、汇报。
+- `worktree-1/2/3`：实现槽位；只在槽位做业务实现与提交。
+- `topic-*`：主题台账主键；每个需求只绑定一个主题。
+- `req-*`：需求台账主键；记录需求状态与证据。
+- `agent-*`：Agent 台账主键；记录任务、边界、状态。
 
-## 执行前硬闸门
-- 编辑前必跑：`git rev-parse --abbrev-ref HEAD && pwd`。
-- 放行条件：目录命中 `~/Projects/mimikit-worktree-{1,2,3}` 且分支命中 `worktree-{1,2,3}`。
-- 未通过：降级“仅编排模式”，仅允许拆解/派发/汇报，禁止实现与提交。
+## 编辑前硬闸门
+1. 每次准备编辑前执行：`git rev-parse --abbrev-ref HEAD && pwd`。
+2. 放行条件同时满足：
+- 目录命中 `~/Projects/mimikit-worktree-{1,2,3}`。
+- 分支命中 `worktree-{1,2,3}`。
+3. 未通过时：强制降级为“仅编排模式”，禁止实现、提交、`wt-land`。
+4. `main` 永远禁止实现；只允许派发与汇总。
 
-## 防漂移机制
-- 每轮声明：`模式=<编排|实现> | 分支=<branch> | 槽位=<worktree-x|none>`。
-- 声明缺失、字段不全、或与硬闸门冲突：本轮降级仅编排。
-- 切任务/切槽位/准备编辑时，必须重跑硬闸门。
+## 单 Session 多主题并行闸门
+- 默认并行：不同 `topic-*` 默认并行执行。
+- 并行前必须建账并保持一致：
+- `topic` 台账：`topic_id/objective/active_topic/status`。
+- `req` 台账：`req_id/topic_id/status/evidence/source`。
+- `agent` 台账：`agent_id/topic_id/task/file_boundary/status`。
+- 可验证定义：
+- `合法 active_topic`：存在于 `topic` 台账且 `status=active`。
+- `file_boundary`：每个 agent 的仓内相对路径前缀集合。
+- `同一验收项`：相同 `acceptance_id` 的需求项。
+- 并行放行条件（全部满足）：
+- 每个并行单元声明合法 `active_topic`。
+- 每个并行单元独立 `agent-*` 与独立 `file_boundary`。
+- 所有 `req-*` 可映射到唯一 `topic-*`。
+- 并行阻断条件（命中任一即转串行）：
+- 文件边界重叠（任意两个 `file_boundary` 前缀集有交集）。
+- 同一验收项或同一发布动作存在依赖冲突。
+- 任一台账字段缺失或映射不一致。
+- 跨主题执行限制：
+- 执行单元只能处理其 `active_topic` 绑定的 `req-*`。
+- 切换主题前必须登记：`from_topic/to_topic/reason/open_reqs`。
 
-## Plan 隔离
-- `main` 与 `worktree-1/2/3` 的 `plans/` 相互独立，禁止跨槽位当真相源。
-- 派发任务卡必须包含：`plan_id/当前步骤/已完成/下一步/阻塞`。
-- 是否可 `wt-land` 只看本槽位证据：`git status --short`、`git diff --stat`、`lint/type-check/test`。
+## 多 Agent 强制闸门
+- 进入实现模式后，编辑前默认先派发 `>=2` 个 Agent。
+- 最小角色集合：`1` 个实现 Agent + `1` 个评审 Agent。
+- 受限降级：仅当并发/额度限制导致无法满足 `>=2` 时，可临时降级为 `1` 实现 Agent + 主控复核；必须登记 `degrade_reason/补审时间点`，并在收敛前补做独立评审。
+- 主控（编排层）直接改实现文件视为违例。
+- 每轮必须记录 Agent 台账字段：
+- `agent_id/role/topic_id/req_ids/file_boundary/status/evidence`。
+- 任一字段缺失：禁止进入编辑。
 
-## 分配防抖策略
-- 默认防抖窗口：`30s`。
-- `30s` 内有新增约束/补充需求：重置为新的 `30s`。
-- 提前派发例外：用户要求立即执行、下游阻塞等待、防抖到点。
-- 每次分配记录：`是否触发防抖/等待时长/触发派发原因`。
+## 违例自动处置闭环
+- 触发条件：
+- 漏记需求、跨主题执行、未满足多 Agent、主控直接实现、台账缺失。
+- 闭环步骤（固定顺序）：
+1. `停止`：立即停写、停提、停收尾。
+2. `预检`：先执行 `git rev-parse --abbrev-ref HEAD && pwd`；仅当分支/目录命中“编辑前硬闸门”才允许自动回滚，否则转人工确认。
+3. `回滚`：默认非破坏回滚：`git restore --staged --worktree <scope>` → `git status --short`。
+4. `彻底回滚（可选）`：仅在用户明确要求时执行 `git reset --hard HEAD` → `git clean -fd`。
+5. `重建台账`：补齐 `topic/req/agent` 缺失字段与映射。
+6. `重派发`：按最新台账重新派发 Agent，重划文件边界。
+7. `复验`：完成放行证据后才恢复执行。
+- 复验放行证据（缺一不可）：
+- `需求一致性`：`req-*` 与用户最新要求一致。
+- `主题一致性`：`active_topic` 与执行动作一致。
+- `Agent 一致性`：最小双 Agent 与台账字段完整；若已登记降级，则需补审完成证据。
+- `环境一致性`：分支/目录再次通过“编辑前硬闸门”。
 
-## 里程碑检查
-- 分配前：槽位可访问且边界无交叉；任务卡字段完整。
-- 编辑前：首步 `pnpm run wt-rebase`；通过硬闸门；声明 `模式/分支/槽位`。
-- 提交前：全量改动已审阅，受影响测试通过，提交信息可追溯 `task-...`。
-
-## 收敛门禁
-- `wt-land` 前必须完成 `review-code-changes` 闭环。
-- 全量 `lint/type-check/test` 通过后才可 land。
-- 无依赖可并行 land；有依赖按拓扑顺序串行 land。
-
-## 违例自动处置
-1. 立即停止：发现 `main` 出现实现改动即停写停提。
-2. 立即回滚：仅回滚本次越界实现改动到 `HEAD` 干净状态。
-3. 记录根因：`触发任务/越界文件/绕过硬闸门原因/防再发措施`。
-4. 重新派发：生成新槽位任务卡并指派到 `worktree-1/2/3`。
-5. 恢复执行：从“执行前硬闸门”重新开始。
-
-## 低 Token 协议
-- 禁用 `fork_context`，每个 agent 只发最小任务卡。
-- 默认少中断：仅阻塞或目标变化时中断，并记录原因与成本。
-- 编排层按需加载 skill，优先必要编排动作，延后高耗时任务到收敛阶段。
-- 状态仅在里程碑汇报：`完成/阻塞/待合并`。
-- 对话输出仅四项：`files changed`、`diff --stat`、`3 条关键点`、`命令结论`。
-- 测试策略：槽位优先受影响测试；收敛阶段跑一次全量门禁。
-
-## 工作流
-1. 预检：确认槽位可用。
-2. 分配：按目录边界分槽，避免交叉编辑。
-3. 同步：槽位收到任务卡先跑 `pnpm run wt-rebase`。
-4. 执行：在各自槽位实现与自检。
-5. 收敛：执行 `review-code-changes` + 全量门禁。
-6. 回主线：`pnpm run wt-land -- --message "..."`，依赖链按拓扑 land。
+## 里程碑与输出
+- 分配前：确认边界无交叉、台账完整。
+- 编辑前：任务开始后的首次编辑前跑一次 `pnpm run wt-rebase`，后续仅在同步主线时再跑。
+- 收敛前：完成 `review-code-changes`。
+- `wt-land` 前：`lint/type-check/test` 全通过；有依赖按拓扑串行 land。
+- 对外里程碑摘要只保留四项：`files changed`、`diff --stat`、`3 key points`、`command verdicts`。
+- 台账与复验证据不因“四项摘要”而省略；需在 `command verdicts` 中给出证据路径或核验结果。
 
 ## 禁止事项
-- 禁止把完整会话上下文广播给全部 agent。
-- 禁止重复输出背景信息与长日志。
-- 禁止未过门禁直接 `wt-land`。
-- 禁止忽略依赖关系并发 land。
+- 禁止在 `main` 做业务实现。
+- 禁止未过硬闸门直接编辑或提交。
+- 禁止跳过多 Agent 派发直接进入实现。
+- 禁止忽略依赖关系并发 `wt-land`。
