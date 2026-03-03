@@ -10,7 +10,12 @@ const planSourceSchema = z.enum([
   'agent_auto',
   'retry_decision',
 ])
-const planTriggerModeSchema = z.enum(['cron', 'scheduled_at', 'on_idle'])
+const planTriggerModeSchema = z.enum([
+  'cron',
+  'scheduled_at',
+  'on_idle',
+  'on_worker_slot_available',
+])
 const cooldownMsSchema = z.coerce.number().int().nonnegative()
 const maxRunsSchema = z.coerce.number().int().positive()
 
@@ -28,7 +33,12 @@ const addCustomIssue = (
 
 const validatePlanTriggerFields = (
   data: {
-    trigger_mode?: 'cron' | 'scheduled_at' | 'on_idle' | undefined
+    trigger_mode?:
+      | 'cron'
+      | 'scheduled_at'
+      | 'on_idle'
+      | 'on_worker_slot_available'
+      | undefined
     cron?: string | undefined
     scheduled_at?: string | undefined
     cooldown_ms?: number | undefined
@@ -82,6 +92,28 @@ const validatePlanTriggerFields = (
         ctx,
         'scheduled_at',
         'scheduled_at cannot be used when trigger_mode="on_idle"',
+      )
+    return
+  }
+
+  if (mode === 'on_worker_slot_available') {
+    if (cron)
+      addCustomIssue(
+        ctx,
+        'cron',
+        'cron cannot be used when trigger_mode="on_worker_slot_available"',
+      )
+    if (scheduledAt)
+      addCustomIssue(
+        ctx,
+        'scheduled_at',
+        'scheduled_at cannot be used when trigger_mode="on_worker_slot_available"',
+      )
+    if (hasCooldown)
+      addCustomIssue(
+        ctx,
+        'cooldown_ms',
+        'cooldown_ms cannot be used when trigger_mode="on_worker_slot_available"',
       )
   }
 }

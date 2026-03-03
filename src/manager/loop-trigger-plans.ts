@@ -6,6 +6,7 @@ import { compareIsoAsc, parseIsoMs } from '../shared/time.js'
 
 import {
   canFireOnIdle,
+  canFireOnWorkerSlotAvailable,
   firePlan,
   markPlanDone,
   maybeMarkPlanExhausted,
@@ -121,6 +122,41 @@ export const triggerOnIdlePlans = async (
   let stateChanged = false
   for (const plan of items) {
     await firePlan({ runtime, plan, nowIso, reason: 'on_idle' })
+    if (plan.maxRuns !== undefined && plan.runCount >= plan.maxRuns)
+      markPlanDone(plan, nowIso, 'completed')
+    triggeredCount += 1
+    stateChanged = true
+  }
+
+  return { triggeredCount, stateChanged }
+}
+
+export const triggerOnWorkerSlotAvailablePlans = async (
+  runtime: RuntimeState,
+  nowMs: number,
+): Promise<{ triggeredCount: number; stateChanged: boolean }> => {
+  const nowIso = new Date(nowMs).toISOString()
+  const items = runtime.taskPlans
+    .filter((plan) => canFireOnWorkerSlotAvailable(plan))
+    .sort((a, b) => {
+      const priorityRank =
+        (a.priority === 'high' ? 0 : a.priority === 'normal' ? 1 : 2) -
+        (b.priority === 'high' ? 0 : b.priority === 'normal' ? 1 : 2)
+      if (priorityRank !== 0) return priorityRank
+      return compareIsoAsc(a.createdAt, b.createdAt)
+    })
+
+  if (items.length === 0) return { triggeredCount: 0, stateChanged: false }
+
+  let triggeredCount = 0
+  let stateChanged = false
+  for (const plan of items) {
+    await firePlan({
+      runtime,
+      plan,
+      nowIso,
+      reason: 'on_worker_slot_available',
+    })
     if (plan.maxRuns !== undefined && plan.runCount >= plan.maxRuns)
       markPlanDone(plan, nowIso, 'completed')
     triggeredCount += 1

@@ -114,6 +114,25 @@ test('runtime snapshot accepts queue cursors', async () => {
   expect(loaded.taskPlans[0]?.id).toBe('plan-1')
 })
 
+test('runtime snapshot accepts on_worker_slot_available trigger', async () => {
+  const stateDir = await createTmpDir()
+  await saveRuntimeSnapshot(stateDir, {
+    tasks: [],
+    taskPlans: [
+      createPlanFixture({
+        id: 'plan-capacity',
+        trigger: {
+          mode: 'on_worker_slot_available',
+        },
+      }),
+    ],
+  })
+
+  const loaded = await loadRuntimeSnapshot(stateDir)
+  expect(loaded.taskPlans).toHaveLength(1)
+  expect(loaded.taskPlans[0]?.trigger.mode).toBe('on_worker_slot_available')
+})
+
 test('buildTaskViews keeps task statuses', () => {
   const tasks: Task[] = [
     createTaskFixture({ id: 'task-done', status: 'succeeded' }),

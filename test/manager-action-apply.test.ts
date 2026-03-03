@@ -190,6 +190,24 @@ test('create_plan uses worker profile for cron plan', async () => {
   expect(runtime.taskPlans[0]?.trigger.mode).toBe('cron')
 })
 
+test('create_plan accepts on_worker_slot_available trigger mode', async () => {
+  const runtime = await createRuntime()
+  await applyTaskActions(runtime, [
+    {
+      name: 'create_plan',
+      attrs: {
+        prompt: 'Consume queue when capacity is available',
+        title: 'capacity trigger',
+        trigger_mode: 'on_worker_slot_available',
+      },
+    },
+  ])
+
+  expect(runtime.taskPlans).toHaveLength(1)
+  expect(runtime.taskPlans[0]?.trigger.mode).toBe('on_worker_slot_available')
+  expect(runtime.taskPlans[0]?.profile).toBe('worker')
+})
+
 test('delete_plan removes done plan', async () => {
   const runtime = await createRuntime()
   const donePlan: TaskPlan = {

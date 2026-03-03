@@ -72,10 +72,17 @@ const planTriggerOnIdleSchema = z
   })
   .strict()
 
+const planTriggerOnWorkerSlotAvailableSchema = z
+  .object({
+    mode: z.literal('on_worker_slot_available'),
+  })
+  .strict()
+
 export const taskPlanTriggerSchema = z.discriminatedUnion('mode', [
   planTriggerCronSchema,
   planTriggerScheduledAtSchema,
   planTriggerOnIdleSchema,
+  planTriggerOnWorkerSlotAvailableSchema,
 ])
 
 export const taskPlanSchema = z

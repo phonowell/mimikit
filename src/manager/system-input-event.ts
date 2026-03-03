@@ -11,7 +11,10 @@ import { publishUserInput } from '../streams/queues.js'
 import type { RuntimeState } from './runtime-adapter.js'
 import type { FocusId, MessageVisibility } from '../types/index.js'
 
-export type ManagerSystemEventName = Extract<SystemEventName, 'trigger_fire' | 'idle'>
+export type ManagerSystemEventName = Extract<
+  SystemEventName,
+  'trigger_fire' | 'idle' | 'worker_slot_available'
+>
 
 export const publishManagerSystemEventInput = async (params: {
   runtime: RuntimeState

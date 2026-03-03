@@ -105,7 +105,11 @@ export type PlanPriority = 'high' | 'normal' | 'low'
 export type PlanSource = 'user_request' | 'agent_auto' | 'retry_decision'
 export type TaskPlanStatus = 'active' | 'blocked' | 'done'
 export type TaskPlanDoneReason = 'canceled' | 'completed' | 'exhausted'
-export type TaskPlanTriggerMode = 'cron' | 'scheduled_at' | 'on_idle'
+export type TaskPlanTriggerMode =
+  | 'cron'
+  | 'scheduled_at'
+  | 'on_idle'
+  | 'on_worker_slot_available'
 export type FocusStatus = 'active' | 'idle' | 'done' | 'archived'
 export type TaskCancelMeta = z.infer<typeof taskCancelSchema>
 export type TaskResult = z.infer<typeof taskResultSchema>
@@ -126,6 +130,7 @@ export type ManagerWakeProfile =
   | 'user_input'
   | 'task_result'
   | 'trigger'
+  | 'capacity'
   | 'idle'
   | 'mixed'
 export type ManagerEnv = {

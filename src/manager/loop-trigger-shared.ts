@@ -6,11 +6,37 @@ import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { TaskPlan } from '../types/index.js'
 
 export const IDLE_CHECK_INTERVAL_MS = 1_000
+export const WORKER_SLOT_EVENT_COOLDOWN_MS = 1_000
 
 const hasPendingOrRunningTask = (runtime: RuntimeState): boolean =>
   runtime.tasks.some(
     (task) => task.status === 'pending' || task.status === 'running',
   )
+
+export type WorkerSlotCapacity = {
+  maxSlots: number
+  occupiedSlots: number
+  availableSlots: number
+}
+
+export const resolveWorkerSlotCapacity = (
+  runtime: RuntimeState,
+): WorkerSlotCapacity => {
+  const maxSlots = Math.max(1, runtime.config.worker.maxConcurrent)
+  const occupied = Math.max(
+    runtime.workerQueue.pending,
+    runtime.runningControllers.size,
+  )
+  const occupiedSlots = Math.min(maxSlots, Math.max(0, occupied))
+  return {
+    maxSlots,
+    occupiedSlots,
+    availableSlots: Math.max(0, maxSlots - occupiedSlots),
+  }
+}
+
+export const hasWorkerSlotAvailable = (runtime: RuntimeState): boolean =>
+  resolveWorkerSlotCapacity(runtime).availableSlots > 0
 
 export const isWorkerBusy = (runtime: RuntimeState): boolean =>
   runtime.runningControllers.size > 0 ||
@@ -58,11 +84,19 @@ export const canFireOnIdle = (plan: TaskPlan, nowMs: number): boolean => {
   return nowMs - lastCompletedMs >= cooldownMs
 }
 
+export const canFireOnWorkerSlotAvailable = (plan: TaskPlan): boolean => {
+  if (plan.status !== 'active') return false
+  if (plan.trigger.mode !== 'on_worker_slot_available') return false
+  if (plan.maxRuns !== undefined && plan.runCount >= plan.maxRuns)
+    return false
+  return true
+}
+
 export const firePlan = async (params: {
   runtime: RuntimeState
   plan: TaskPlan
   nowIso: string
-  reason: 'cron' | 'scheduled_at' | 'on_idle'
+  reason: 'cron' | 'scheduled_at' | 'on_idle' | 'on_worker_slot_available'
 }): Promise<void> => {
   const { runtime, plan, nowIso } = params
   plan.runCount += 1

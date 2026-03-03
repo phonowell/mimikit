@@ -16,7 +16,7 @@
 
 - `manager`：消费 `inputs/results`，输出用户回复与编排动作。
 - `worker`：执行任务并回写结果。
-- `triggerWakeLoop`：统一处理 `cron/scheduled_at/on_idle` 触发并发布 `system_event.name=trigger_fire`。
+- `triggerWakeLoop`：统一处理 `cron/scheduled_at/on_idle/on_worker_slot_available` 触发并发布 `system_event.name=trigger_fire`。
 
 补充：
 
@@ -43,7 +43,7 @@
 3. 若产生任务，worker 执行并写入 `results/packets.jsonl`。
 4. 结果回写后再次唤醒 manager，形成闭环。
 
-实时唤醒来源：`user_input`、`task_result`、`trigger`、`idle`。
+实时唤醒来源：`user_input`、`task_result`、`trigger`、`capacity`、`idle`。
 
 ## 一致性与恢复
 

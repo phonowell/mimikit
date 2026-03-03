@@ -1,7 +1,6 @@
 import { appendHistory } from '../history/store.js'
 import { formatSystemEventText } from '../shared/system-event.js'
 import { newId, nowIso } from '../shared/utils.js'
-
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type {
   TaskPlan,
@@ -17,7 +16,9 @@ const planTriggerPayload = (
   if (trigger.mode === 'cron') return { trigger_mode: 'cron', cron: trigger.cron }
   if (trigger.mode === 'scheduled_at')
     return { trigger_mode: 'scheduled_at', scheduled_at: trigger.scheduledAt }
-  return { trigger_mode: 'on_idle', cooldown_ms: trigger.cooldownMs }
+  if (trigger.mode === 'on_idle')
+    return { trigger_mode: 'on_idle', cooldown_ms: trigger.cooldownMs }
+  return { trigger_mode: 'on_worker_slot_available' }
 }
 
 export const appendPlanSystemMessage = async (
@@ -77,11 +78,17 @@ export const normalizePlanKey = (params: {
   if (params.trigger.mode === 'cron') return `${base}\ncron:${params.trigger.cron}`
   if (params.trigger.mode === 'scheduled_at')
     return `${base}\nscheduled_at:${params.trigger.scheduledAt}`
-  return `${base}\non_idle:${params.trigger.cooldownMs}`
+  if (params.trigger.mode === 'on_idle')
+    return `${base}\non_idle:${params.trigger.cooldownMs}`
+  return `${base}\non_worker_slot_available`
 }
 
 export const buildTrigger = (params: {
-  triggerMode: 'cron' | 'scheduled_at' | 'on_idle'
+  triggerMode:
+    | 'cron'
+    | 'scheduled_at'
+    | 'on_idle'
+    | 'on_worker_slot_available'
   cron?: string | undefined
   scheduledAt?: string | undefined
   cooldownMs?: number | undefined
@@ -99,6 +106,9 @@ export const buildTrigger = (params: {
     return { mode: 'scheduled_at', scheduledAt }
   }
 
+  if (params.triggerMode === 'on_worker_slot_available')
+    return { mode: 'on_worker_slot_available' }
+
   return {
     mode: 'on_idle',
     cooldownMs: Math.max(0, params.cooldownMs ?? 0),
@@ -108,7 +118,12 @@ export const buildTrigger = (params: {
 export const resolveUpdatedTrigger = (
   current: TaskPlanTrigger,
   update: {
-    triggerMode?: 'cron' | 'scheduled_at' | 'on_idle' | undefined
+    triggerMode?:
+      | 'cron'
+      | 'scheduled_at'
+      | 'on_idle'
+      | 'on_worker_slot_available'
+      | undefined
     cron?: string | undefined
     scheduledAt?: string | undefined
     cooldownMs?: number | undefined
@@ -150,7 +165,12 @@ export const isDoneLastTaskPatch = (params: {
     last_task_id?: string | undefined
     prompt?: string | undefined
     title?: string | undefined
-    trigger_mode?: 'cron' | 'scheduled_at' | 'on_idle' | undefined
+    trigger_mode?:
+      | 'cron'
+      | 'scheduled_at'
+      | 'on_idle'
+      | 'on_worker_slot_available'
+      | undefined
     cron?: string | undefined
     scheduled_at?: string | undefined
     cooldown_ms?: number | undefined

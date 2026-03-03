@@ -5,11 +5,18 @@ import { notifyManagerLoop, notifyUiSignal } from '../orchestrator/core/signals.
 import { resolvePendingUserChoiceTimeout } from '../orchestrator/core/user-choice.js'
 import { sleep } from '../shared/utils.js'
 
-import { checkScheduledPlans, triggerOnIdlePlans } from './loop-trigger-plans.js'
+import {
+  checkScheduledPlans,
+  triggerOnIdlePlans,
+  triggerOnWorkerSlotAvailablePlans,
+} from './loop-trigger-plans.js'
 import {
   IDLE_CHECK_INTERVAL_MS,
+  WORKER_SLOT_EVENT_COOLDOWN_MS,
+  hasWorkerSlotAvailable,
   isManagerBusy,
   isWorkerBusy,
+  resolveWorkerSlotCapacity,
 } from './loop-trigger-shared.js'
 import { publishManagerSystemEventInput } from './system-input-event.js'
 
@@ -18,6 +25,9 @@ import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 export const triggerWakeLoop = async (runtime: RuntimeState): Promise<void> => {
   let publishedIdleForCurrentWindow = false
   let lastActivityKey = ''
+  let lastWorkerSlotAvailable: boolean | null = null
+  let workerSlotEventPending = false
+  let lastWorkerSlotEventAtMs = 0
   const idleTriggerDelayMs = Math.max(0, runtime.config.manager.idleTrigger.delayMs)
 
   while (!runtime.stopped) {
@@ -42,6 +52,51 @@ export const triggerWakeLoop = async (runtime: RuntimeState): Promise<void> => {
       const scheduled = await checkScheduledPlans(runtime, now)
       stateChanged = stateChanged || scheduled.stateChanged
       triggeredCount += scheduled.triggeredCount
+
+      const workerSlotAvailable = hasWorkerSlotAvailable(runtime)
+      if (lastWorkerSlotAvailable === null) {
+        lastWorkerSlotAvailable = workerSlotAvailable
+      } else if (lastWorkerSlotAvailable !== workerSlotAvailable) {
+        lastWorkerSlotAvailable = workerSlotAvailable
+        if (workerSlotAvailable) workerSlotEventPending = true
+      }
+
+      if (
+        workerSlotEventPending &&
+        workerSlotAvailable &&
+        nowMs - lastWorkerSlotEventAtMs >= WORKER_SLOT_EVENT_COOLDOWN_MS
+      ) {
+        const slotTriggered = await triggerOnWorkerSlotAvailablePlans(runtime, nowMs)
+        stateChanged = stateChanged || slotTriggered.stateChanged
+        triggeredCount += slotTriggered.triggeredCount
+
+        if (slotTriggered.triggeredCount === 0) {
+          const capacity = resolveWorkerSlotCapacity(runtime)
+          await publishManagerSystemEventInput({
+            runtime,
+            summary: 'A worker slot is available for new tasks.',
+            event: 'worker_slot_available',
+            visibility: 'all',
+            payload: {
+              available_slots: capacity.availableSlots,
+              occupied_slots: capacity.occupiedSlots,
+              max_slots: capacity.maxSlots,
+              triggered_at: now.toISOString(),
+            },
+            createdAt: now.toISOString(),
+            logEvent: 'worker_slot_available_input',
+            logMeta: {
+              availableSlots: capacity.availableSlots,
+              occupiedSlots: capacity.occupiedSlots,
+              maxSlots: capacity.maxSlots,
+            },
+          })
+          triggeredCount += 1
+        }
+
+        workerSlotEventPending = false
+        lastWorkerSlotEventAtMs = nowMs
+      }
 
       const idleSinceMs = Math.max(
         runtime.lastManagerActivityAtMs,

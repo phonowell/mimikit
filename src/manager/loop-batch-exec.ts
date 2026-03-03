@@ -36,17 +36,22 @@ const resolveWakeProfile = (
   const hasUserInput = inputs.some((item) => item.role === 'user')
   const hasTaskResult = results.length > 0
   const hasTriggerWake = inputs.some((item) => hasSystemEvent(item, 'trigger_fire'))
+  const hasCapacityWake = inputs.some((item) =>
+    hasSystemEvent(item, 'worker_slot_available'),
+  )
   const hasIdleWake = inputs.some((item) => hasSystemEvent(item, 'idle'))
   const activeKinds = [
     hasUserInput,
     hasTaskResult,
     hasTriggerWake,
+    hasCapacityWake,
     hasIdleWake,
   ].filter(Boolean).length
   if (activeKinds !== 1) return 'mixed'
   if (hasUserInput) return 'user_input'
   if (hasTaskResult) return 'task_result'
   if (hasTriggerWake) return 'trigger'
+  if (hasCapacityWake) return 'capacity'
   return 'idle'
 }
 

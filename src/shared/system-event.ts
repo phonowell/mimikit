@@ -9,6 +9,7 @@ export type SystemEventName =
   | 'action_feedback'
   | 'trigger_fire'
   | 'idle'
+  | 'worker_slot_available'
   | 'user_choice'
   | 'user_choice_skipped'
   | 'plan_created'
