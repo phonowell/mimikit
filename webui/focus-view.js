@@ -2,6 +2,47 @@ import { renderEmptyListState } from './list-empty.js'
 import { appendMetaTime } from './meta-time.js'
 import { UI_TEXT } from './system-text.js'
 
+const normalizeText = (value) => {
+  if (typeof value !== 'string') return ''
+  return value.trim()
+}
+
+const resolveSnapshot = (item) => {
+  if (item?.snapshot && typeof item.snapshot === 'object') return item.snapshot
+  if (item && typeof item === 'object') return item
+  return null
+}
+
+const resolveSummary = (item) => {
+  const snapshot = resolveSnapshot(item)
+  const summary = normalizeText(snapshot?.summary)
+  return summary || ''
+}
+
+const resolveOpenItems = (item) => {
+  const snapshot = resolveSnapshot(item)
+  const openItemsRaw = Array.isArray(snapshot?.openItems) ? snapshot.openItems : []
+  const openItems = []
+  for (const entry of openItemsRaw) {
+    if (typeof entry === 'string') {
+      const normalized = normalizeText(entry)
+      if (normalized) openItems.push(normalized)
+      continue
+    }
+    if (!entry || typeof entry !== 'object') continue
+    const objectEntry = entry
+    const normalized = normalizeText(
+      objectEntry.text ??
+        objectEntry.title ??
+        objectEntry.label ??
+        objectEntry.detail ??
+        objectEntry.summary,
+    )
+    if (normalized) openItems.push(normalized)
+  }
+  return openItems
+}
+
 export const renderFocuses = (focusesList, data) => {
   if (!focusesList) return
   const items = data?.items || []
@@ -36,8 +77,33 @@ export const renderFocuses = (focusesList, data) => {
 
     header.appendChild(dot)
     header.appendChild(title)
-
     node.appendChild(header)
+
+    const summary = resolveSummary(item)
+    if (summary) {
+      const summaryEl = document.createElement('p')
+      summaryEl.className = 'focus-summary'
+      summaryEl.textContent = `${UI_TEXT.focusSummaryLabel} ${summary}`
+      node.appendChild(summaryEl)
+    }
+
+    const openItems = resolveOpenItems(item)
+    if (openItems.length > 0) {
+      const openItemsTitle = document.createElement('p')
+      openItemsTitle.className = 'focus-open-items-title'
+      openItemsTitle.textContent = UI_TEXT.focusOpenItemsLabel
+      node.appendChild(openItemsTitle)
+
+      const openItemsList = document.createElement('ul')
+      openItemsList.className = 'focus-open-items'
+      for (const openItem of openItems) {
+        const openItemNode = document.createElement('li')
+        openItemNode.className = 'focus-open-item'
+        openItemNode.textContent = openItem
+        openItemsList.appendChild(openItemNode)
+      }
+      node.appendChild(openItemsList)
+    }
 
     const meta = document.createElement('small')
     meta.className = 'focus-meta'

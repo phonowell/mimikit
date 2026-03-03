@@ -14,6 +14,16 @@ const normalizeChoiceOption = (value) => {
   return { id, label, reason }
 }
 
+const reorderOptionsWithDefaultFirst = (options, defaultOptionId) => {
+  const defaultIndex = options.findIndex((item) => item.id === defaultOptionId)
+  if (defaultIndex <= 0) return options
+  return [
+    options[defaultIndex],
+    ...options.slice(0, defaultIndex),
+    ...options.slice(defaultIndex + 1),
+  ]
+}
+
 const normalizeChoicePayload = (value) => {
   if (!value || typeof value !== 'object') return null
   const payload = value
@@ -33,10 +43,11 @@ const normalizeChoicePayload = (value) => {
   if (!id || !question || !defaultOptionId || !expiresAt || options.length < 2)
     return null
   if (!options.some((item) => item.id === defaultOptionId)) return null
+  const orderedOptions = reorderOptionsWithDefaultFirst(options, defaultOptionId)
   return {
     id,
     question,
-    options,
+    options: orderedOptions,
     defaultOptionId,
     expiresAt,
   }
@@ -61,6 +72,8 @@ export const bindChoicePanel = ({
   questionEl,
   optionsEl,
   metaEl,
+  onPanelVisibilityWillChange,
+  onPanelVisibilityDidChange,
 }) => {
   if (!(panel instanceof HTMLElement)) {
     return {
@@ -78,6 +91,16 @@ export const bindChoicePanel = ({
     if (timer === null) return
     window.clearInterval(timer)
     timer = null
+  }
+
+  const setPanelVisibility = (visible) => {
+    const nextHidden = !visible
+    if (panel.hidden === nextHidden) return
+    if (typeof onPanelVisibilityWillChange === 'function')
+      onPanelVisibilityWillChange({ visible })
+    panel.hidden = nextHidden
+    if (typeof onPanelVisibilityDidChange === 'function')
+      onPanelVisibilityDidChange({ visible })
   }
 
   const updateMeta = () => {
@@ -102,6 +125,7 @@ export const bindChoicePanel = ({
     optionsEl.replaceChildren()
     if (!choice) return
     for (const option of choice.options) {
+      const isDefaultOption = option.id === choice.defaultOptionId
       const button = document.createElement('button')
       button.type = 'button'
       button.className = 'choice-tab'
@@ -110,12 +134,28 @@ export const bindChoicePanel = ({
         'aria-selected',
         pendingOptionId === option.id ? 'true' : 'false',
       )
+      if (isDefaultOption) button.dataset.recommended = 'true'
+      if (isDefaultOption) {
+        button.setAttribute(
+          'aria-label',
+          `${option.label} (${UI_TEXT.choiceRecommended})`,
+        )
+      }
       if (pendingOptionId) button.disabled = true
       button.dataset.optionId = option.id
 
       const label = document.createElement('span')
       label.className = 'choice-tab-label'
-      label.textContent = option.label
+      const labelText = document.createElement('span')
+      labelText.className = 'choice-tab-label-text'
+      labelText.textContent = option.label
+      label.appendChild(labelText)
+      if (isDefaultOption) {
+        const badge = document.createElement('span')
+        badge.className = 'choice-tab-badge'
+        badge.textContent = UI_TEXT.choiceRecommended
+        label.appendChild(badge)
+      }
       const reason = document.createElement('span')
       reason.className = 'choice-tab-reason'
       reason.textContent = option.reason
@@ -131,11 +171,11 @@ export const bindChoicePanel = ({
 
   const render = () => {
     if (!choice) {
-      panel.hidden = true
+      setPanelVisibility(false)
       clearTicker()
       return
     }
-    panel.hidden = false
+    setPanelVisibility(true)
     if (questionEl instanceof HTMLElement) questionEl.textContent = choice.question
     renderOptions()
     updateMeta()

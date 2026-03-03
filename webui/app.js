@@ -139,14 +139,21 @@ const focusPanel = bindFocusPanel({
   focusesOpenBtn: elements.focusesOpenBtn,
   focusesCloseBtn: elements.focusesCloseBtn,
 })
+let messages = null
 const choicePanel = bindChoicePanel({
   panel: elements.choicePanel,
   questionEl: elements.choiceQuestion,
   optionsEl: elements.choiceOptions,
   metaEl: elements.choiceMeta,
+  onPanelVisibilityWillChange: () => {
+    messages?.beginChoicePanelLayoutShift?.()
+  },
+  onPanelVisibilityDidChange: () => {
+    messages?.endChoicePanelLayoutShift?.()
+  },
 })
 
-const messages = createMessagesController({
+messages = createMessagesController({
   messagesEl: elements.messagesEl,
   scrollBottomBtn: elements.scrollBottomBtn,
   statusDot: elements.statusDot,

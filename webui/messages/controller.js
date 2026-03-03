@@ -51,6 +51,18 @@ export function createMessagesController({
     scrollBottomBtn,
     scrollBottomMultiplier: 1.5,
   })
+  let stickBottomAfterChoicePanelShift = false
+
+  const beginChoicePanelLayoutShift = () => {
+    stickBottomAfterChoicePanelShift = scroll.isNearBottom()
+  }
+
+  const endChoicePanelLayoutShift = () => {
+    if (stickBottomAfterChoicePanelShift) scroll.scrollToBottom({ smooth: false })
+    stickBottomAfterChoicePanelShift = false
+    scroll.updateScrollButton()
+  }
+
   let removeEmpty = () => {}
   const loading = createLoadingController({
     messagesEl,
@@ -205,5 +217,7 @@ export function createMessagesController({
     stop,
     sendMessage,
     isFullyIdle,
+    beginChoicePanelLayoutShift,
+    endChoicePanelLayoutShift,
   }
 }

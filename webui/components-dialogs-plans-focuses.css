@@ -49,3 +49,33 @@
 .focus-item[data-status='archived'] {
   --focus-dot: var(--status-cancel);
 }
+
+.focus-summary {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text);
+}
+
+.focus-open-items-title {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted-contrast, var(--muted));
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.focus-open-items {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.focus-open-item {
+  color: var(--muted-contrast, var(--muted));
+  font-size: 12px;
+  line-height: 1.35;
+}

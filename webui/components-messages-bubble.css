@@ -62,11 +62,10 @@
 
 .message.system article {
   max-width: min(92%, 720px);
-  background: var(--bubble-system-bg);
-  color: var(--bubble-system-text);
-  border-color: var(--bubble-system-border);
-  box-shadow: -0.5px -0.5px 1.5px rgba(255, 255, 255, 0.2),
-    0.5px 0.5px 1.5px rgba(117, 136, 160, 0.1);
+  background: transparent;
+  color: #5f6d80;
+  border: 0;
+  box-shadow: none;
 }
 
 .message.system .content {
