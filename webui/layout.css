@@ -241,6 +241,14 @@ main[data-app] {
   width: 100%;
 }
 
+.composer [data-send],
+.delete-mode-exit-btn {
+  box-sizing: border-box;
+  height: 40px;
+  line-height: 1.2;
+  padding: 8px 16px;
+}
+
 .composer form {
   display: flex;
   align-items: center;
