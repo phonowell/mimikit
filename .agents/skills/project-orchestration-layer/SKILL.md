@@ -14,6 +14,7 @@ description: 项目级多 worktree 编排与低 token 协议，use when user exp
 - 默认只做编排，不直接写业务代码。
 - 只有用户明确授权时，才由编排层直接改业务代码。
 - 并行上限固定为 `3`，与 `worktree-1/2/3` 一一对应。
+- 所有实现默认全量更新，不留兼容层；如有必要需同步更新相关文档。
 
 ## 低 Token 协议
 - 禁用 `fork_context`，每个 agent 只发最小任务卡。
@@ -31,7 +32,7 @@ description: 项目级多 worktree 编排与低 token 协议，use when user exp
 3. 同步：开工前执行 `pnpm run wt-rebase`；落地前再执行一次。
 4. 执行：agent 在各自槽位完成改动与自检。
 5. 收敛：统一执行 `review-code-changes`，再跑全量门禁。
-6. 回主线：按顺序执行 `pnpm run wt-land`，最后在 `main` 做一次最终验证。
+6. 回主线：`pnpm run wt-land` 必须串行执行，固定顺序 `worktree-1 -> worktree-2 -> worktree-3`；任一槽位未完成前禁止启动下一槽位，最后在 `main` 做一次最终验证。
 
 ## 能力缺口处理
 - 若出现 skill 生命周期问题（搜索/新增/替换/移除），立即调用 `audit-skill-lifecycle`。
@@ -46,3 +47,4 @@ description: 项目级多 worktree 编排与低 token 协议，use when user exp
 - 禁止把完整会话上下文广播给全部 agent。
 - 禁止重复输出相同背景信息与长篇日志。
 - 禁止未过门禁直接 `wt-land`。
+- 禁止并发执行 `wt-land`（仅允许按槽位顺序串行执行）。
