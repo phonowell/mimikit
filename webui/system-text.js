@@ -34,7 +34,7 @@ export const UI_TEXT = Object.freeze({
   sendFailed: 'Send failed',
   choiceDefaultIn: 'Default in',
   choiceDefaultOption: 'Default:',
-  choiceRecommended: 'Recommended',
+  choiceDefaultBadge: 'Default',
   choiceSubmitting: 'Submitting choice...',
   choiceSubmitted: 'Choice submitted. Waiting for agent.',
   choiceSelectFailed: 'Select failed',

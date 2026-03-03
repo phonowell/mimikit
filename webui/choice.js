@@ -134,11 +134,10 @@ export const bindChoicePanel = ({
         'aria-selected',
         pendingOptionId === option.id ? 'true' : 'false',
       )
-      if (isDefaultOption) button.dataset.recommended = 'true'
       if (isDefaultOption) {
         button.setAttribute(
           'aria-label',
-          `${option.label} (${UI_TEXT.choiceRecommended})`,
+          `${option.label} (${UI_TEXT.choiceDefaultBadge})`,
         )
       }
       if (pendingOptionId) button.disabled = true
@@ -153,7 +152,7 @@ export const bindChoicePanel = ({
       if (isDefaultOption) {
         const badge = document.createElement('span')
         badge.className = 'choice-tab-badge'
-        badge.textContent = UI_TEXT.choiceRecommended
+        badge.textContent = UI_TEXT.choiceDefaultBadge
         label.appendChild(badge)
       }
       const reason = document.createElement('span')
