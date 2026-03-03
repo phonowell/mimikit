@@ -124,7 +124,7 @@ afterEach(async () => {
   }
 })
 
-test('worker dispatch serializes tasks in the same focus', async () => {
+test('worker dispatch allows tasks in the same focus to run in parallel when slots are free', async () => {
   const runtime = await createRuntime()
   runtime.tasks.push(
     createTask('task-a1', 'focus-a'),
@@ -174,6 +174,6 @@ test('worker dispatch serializes tasks in the same focus', async () => {
     'succeeded',
     'succeeded',
   ])
-  expect(maxByFocus.get('focus-a')).toBe(1)
-  expect(maxGlobalRunning).toBe(1)
+  expect(maxByFocus.get('focus-a')).toBe(2)
+  expect(maxGlobalRunning).toBe(2)
 })

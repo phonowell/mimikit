@@ -93,23 +93,12 @@ const reportWorkerQueueError = async (
   )
 }
 
-const hasFocusRunningTask = (runtime: RuntimeState, task: Task): boolean => {
-  for (const runningTaskId of runtime.runningControllers.keys()) {
-    if (runningTaskId === task.id) continue
-    const runningTask = runtime.tasks.find((item) => item.id === runningTaskId)
-    if (!runningTask || runningTask.status !== 'running') continue
-    if (runningTask.focusId === task.focusId) return true
-  }
-  return false
-}
-
 const runQueuedWorker = async (
   runtime: RuntimeState,
   task: Task,
 ): Promise<void> => {
   if (task.status !== 'pending') return
   if (runtime.runningControllers.has(task.id)) return
-  if (hasFocusRunningTask(runtime, task)) return
   runtime.lastWorkerActivityAtMs = Date.now()
   const controller = new AbortController()
   runtime.runningControllers.set(task.id, controller)
