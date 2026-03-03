@@ -21,6 +21,10 @@ const elements = {
   quoteText: $('[data-quote-text]'),
   quoteClearBtn: $('[data-quote-clear]'),
   restartBtn: $('[data-restart]'),
+  toolsToggleBtn: $('[data-tools-toggle]'),
+  toolsMenu: $('[data-tools-menu]'),
+  toolsRestartBtn: $('[data-tools-restart]'),
+  toolsResetBtn: $('[data-tools-reset]'),
   restartDialog: $('[data-restart-dialog]'),
   restartCancelBtn: $('[data-restart-cancel]'),
   restartConfirmBtn: $('[data-restart-confirm]'),
@@ -231,6 +235,10 @@ if (elements.statusDot) {
 bindComposer({ form: elements.form, input: elements.input, messages })
 bindRestart({
   restartBtn: elements.restartBtn,
+  toolsToggleBtn: elements.toolsToggleBtn,
+  toolsMenu: elements.toolsMenu,
+  toolsRestartBtn: elements.toolsRestartBtn,
+  toolsResetBtn: elements.toolsResetBtn,
   restartDialog: elements.restartDialog,
   restartCancelBtn: elements.restartCancelBtn,
   restartConfirmBtn: elements.restartConfirmBtn,

@@ -71,18 +71,42 @@
               <span class="tasks-label">Tasks</span>
               <span class="tasks-worker-dots" data-worker-dots aria-hidden="true"></span>
             </button>
-            <button
-              class="btn btn--sm restart-btn"
-              data-restart
-              type="button"
-              title="Restart"
-              aria-label="Restart"
-              aria-haspopup="dialog"
-              aria-controls="restart-dialog"
-              aria-expanded="false"
-            >
-              Restart
-            </button>
+            <div class="tools-menu-wrap">
+              <button
+                class="btn btn--sm tools-toggle"
+                data-tools-toggle
+                type="button"
+                title="Tools"
+                aria-label="Tools"
+                aria-haspopup="menu"
+                aria-controls="tools-menu"
+                aria-expanded="false"
+              >
+                Tools
+              </button>
+              <div class="tools-menu" data-tools-menu id="tools-menu" role="menu" hidden>
+                <button
+                  class="tools-menu-item"
+                  data-tools-restart
+                  type="button"
+                  role="menuitem"
+                  title="Restart"
+                  aria-label="Restart"
+                >
+                  Restart
+                </button>
+                <button
+                  class="tools-menu-item tools-menu-item--danger"
+                  data-tools-reset
+                  type="button"
+                  role="menuitem"
+                  title="Reset"
+                  aria-label="Reset"
+                >
+                  Reset
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </header>

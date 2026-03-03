@@ -34,6 +34,10 @@ const fetchStatusRuntimeId = async () => {
 
 export function bindRestart({
   restartBtn,
+  toolsToggleBtn,
+  toolsMenu,
+  toolsRestartBtn,
+  toolsResetBtn,
   restartDialog,
   restartCancelBtn,
   restartConfirmBtn,
@@ -42,22 +46,49 @@ export function bindRestart({
   statusDot,
   messages,
 }) {
-  if (!restartBtn) return
+  const toolsEnabled = Boolean(
+    toolsToggleBtn &&
+      toolsMenu &&
+      toolsRestartBtn &&
+      toolsResetBtn,
+  )
+  const fallbackEnabled = Boolean(restartBtn)
+  if (!toolsEnabled && !fallbackEnabled) return
+
+  const dialogOpenBtn = toolsEnabled ? toolsRestartBtn : restartBtn
+  const focusRestoreBtn = toolsEnabled ? toolsToggleBtn : dialogOpenBtn
   const dialogEnabled = Boolean(
     restartDialog &&
+      dialogOpenBtn &&
       restartCancelBtn &&
       restartConfirmBtn &&
       restartResetBtn,
   )
   let isBusy = false
+  let isToolsMenuOpen = false
+
+  const setToolsMenuOpen = (open) => {
+    if (!toolsEnabled || !toolsToggleBtn || !toolsMenu) return
+    isToolsMenuOpen = open
+    toolsToggleBtn.setAttribute('aria-expanded', open ? 'true' : 'false')
+    toolsMenu.hidden = !open
+  }
+
+  const closeToolsMenu = ({ focusTrigger = false } = {}) => {
+    if (!toolsEnabled || !toolsToggleBtn || !isToolsMenuOpen) return
+    setToolsMenuOpen(false)
+    if (focusTrigger && !isBusy) toolsToggleBtn.focus()
+  }
+
+  if (toolsEnabled) setToolsMenuOpen(false)
 
   const dialog = dialogEnabled
     ? createDialogController({
         dialog: restartDialog,
-        trigger: restartBtn,
+        trigger: dialogOpenBtn,
         focusOnOpen: restartCancelBtn,
         onAfterClose: () => {
-          if (!isBusy) restartBtn.focus()
+          if (!isBusy && focusRestoreBtn) focusRestoreBtn.focus()
         },
       })
     : null
@@ -65,6 +96,10 @@ export function bindRestart({
   if (dialogEnabled && dialog) dialog.setExpanded(false)
 
   const disableActions = (disabled) => {
+    if (restartBtn) restartBtn.disabled = disabled
+    if (toolsToggleBtn) toolsToggleBtn.disabled = disabled
+    if (toolsRestartBtn) toolsRestartBtn.disabled = disabled
+    if (toolsResetBtn) toolsResetBtn.disabled = disabled
     if (restartCancelBtn) restartCancelBtn.disabled = disabled
     if (restartConfirmBtn) restartConfirmBtn.disabled = disabled
     if (restartResetBtn) restartResetBtn.disabled = disabled
@@ -101,7 +136,6 @@ export function bindRestart({
         if (runtimeChanged) {
           if (typeof onReady === 'function') onReady()
           else {
-            restartBtn.disabled = false
             disableActions(false)
             isBusy = false
             if (messages) messages.start()
@@ -117,7 +151,6 @@ export function bindRestart({
   }
 
   const restoreAfterRequestFailure = (mode) => {
-    restartBtn.disabled = false
     disableActions(false)
     isBusy = false
     setStatusText(statusText, `${mode} failed`)
@@ -128,7 +161,7 @@ export function bindRestart({
   const requestRestart = async (mode) => {
     if (isBusy) return
     isBusy = true
-    restartBtn.disabled = true
+    closeToolsMenu()
     disableActions(true)
     const label = mode === 'reset' ? 'resetting' : 'restarting'
     setStatusText(statusText, label)
@@ -173,6 +206,7 @@ export function bindRestart({
   const onOpen = (event) => {
     event.preventDefault()
     if (isBusy) return
+    closeToolsMenu()
     if (dialogEnabled && dialog) dialog.open()
     else void requestRestart('restart')
   }
@@ -189,14 +223,40 @@ export function bindRestart({
   const onReset = (event) => {
     event.preventDefault()
     if (isBusy) return
+    closeToolsMenu()
     void requestRestart('reset')
   }
+  const onToolsToggle = (event) => {
+    event.preventDefault()
+    if (!toolsEnabled || isBusy) return
+    if (isToolsMenuOpen) closeToolsMenu()
+    else setToolsMenuOpen(true)
+  }
+  const onDocumentClick = (event) => {
+    if (!toolsEnabled || !toolsToggleBtn || !toolsMenu || !isToolsMenuOpen) return
+    const target = event.target
+    if (!(target instanceof Node)) return
+    if (toolsToggleBtn.contains(target) || toolsMenu.contains(target)) return
+    closeToolsMenu()
+  }
+  const onDocumentKeydown = (event) => {
+    if (event.key !== 'Escape') return
+    closeToolsMenu({ focusTrigger: true })
+  }
   let unbindDialogControls = () => {}
+  let unbindOpenControl = () => {}
 
-  if (dialogEnabled && dialog) {
+  if (toolsEnabled && toolsToggleBtn && toolsResetBtn) {
+    toolsToggleBtn.addEventListener('click', onToolsToggle)
+    toolsResetBtn.addEventListener('click', onReset)
+    document.addEventListener('click', onDocumentClick)
+    document.addEventListener('keydown', onDocumentKeydown)
+  }
+
+  if (dialogEnabled && dialog && dialogOpenBtn) {
     unbindDialogControls = bindDialogControls({
       dialog: restartDialog,
-      openBtn: restartBtn,
+      openBtn: dialogOpenBtn,
       closeBtn: restartCancelBtn,
       controller: dialog,
       onOpen,
@@ -204,16 +264,30 @@ export function bindRestart({
     })
     restartConfirmBtn.addEventListener('click', onRestart)
     restartResetBtn.addEventListener('click', onReset)
-  } else
+  } else if (toolsEnabled && toolsRestartBtn) {
+    toolsRestartBtn.addEventListener('click', onRestart)
+    unbindOpenControl = () => {
+      toolsRestartBtn.removeEventListener('click', onRestart)
+    }
+  } else if (restartBtn) {
     restartBtn.addEventListener('click', onOpen)
+    unbindOpenControl = () => {
+      restartBtn.removeEventListener('click', onOpen)
+    }
+  }
 
   return {
     dispose: () => {
+      unbindOpenControl()
       unbindDialogControls()
-      if (!dialogEnabled) restartBtn.removeEventListener('click', onOpen)
-      if (!restartConfirmBtn || !restartResetBtn) return
-      restartConfirmBtn.removeEventListener('click', onRestart)
-      restartResetBtn.removeEventListener('click', onReset)
+      if (toolsEnabled && toolsToggleBtn && toolsResetBtn) {
+        toolsToggleBtn.removeEventListener('click', onToolsToggle)
+        toolsResetBtn.removeEventListener('click', onReset)
+        document.removeEventListener('click', onDocumentClick)
+        document.removeEventListener('keydown', onDocumentKeydown)
+      }
+      if (restartConfirmBtn) restartConfirmBtn.removeEventListener('click', onRestart)
+      if (restartResetBtn) restartResetBtn.removeEventListener('click', onReset)
     },
   }
 }
