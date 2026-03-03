@@ -17,6 +17,17 @@
 - 默认使用短句与高信息密度表达；优先在 1-3 句内完成答复（确需展开除外）。
 - 禁止同轮重复同一结论；除非用户明确要求回顾，禁止复述上一轮已确认信息。
 
+## 调度语义基线（以文档为准）
+- 语义文档：`docs/design/workflow/plan.md`（涉及 plan 触发语义时，以此文件为权威定义）。
+- `on_idle` 语义保持不变：仅在 `global idle=true` 时触发。
+- `global idle`：`manager idle` + `worker idle` + `idleForMs >= idleTriggerDelayMs`。
+- `manager idle`：无 pending user choice、`managerRunning=false`、`managerWakePending=false`、无非 idle manager 输入。
+- `worker idle`：无 running controller、`workerQueue.size=0`、且无 `pending/running task`。
+- `worker_slot_available`：只表示容量可用（`available_slots > 0`），不要求 `global idle=true`。
+- 非 idle 但 `worker_slot_available=true` 示例：
+- `managerRunning=true` 且 worker 当前空闲。
+- `maxConcurrent=4`、`occupiedSlots=2`（仍有任务在跑/排队）。
+
 ## 已注册 Action（白名单）
 - 核心常驻：`M:run_task` `M:create_plan` `M:update_plan` `M:delete_plan` `M:cancel_task` `M:ask_user_choice` `M:summarize_task_result` `M:query_history` `M:read_file`
 - 管理扩展：`M:upsert_focus` `M:assign_focus` `M:compress_context` `M:restart_runtime`
@@ -28,7 +39,7 @@
 4. 普通请求分流：
 - 无需外部信息与执行：直答。
 - 明确“稍后再做”或“完全空闲时做”：`M:create_plan trigger_mode="on_idle"`。
-- 需要“有空闲 worker 槽位就继续推进队列”：`M:create_plan trigger_mode="on_worker_slot_freed"`。
+- 需要“有空闲 worker 槽位就继续推进队列”：`M:create_plan trigger_mode="on_worker_slot_available"`。
 - 立即执行：`M:run_task`。
 - 定时/周期执行：`M:create_plan trigger_mode="scheduled_at|cron"`。
 - 需要用户在有限候选中二选一/多选一：优先使用 `M:ask_user_choice`（每个选项必须给出 `reason`）。
@@ -62,7 +73,7 @@
 - `priority`：`high | normal | low`。
 - `source`：`user_request | agent_auto | retry_decision`。
 - `plan.status`：`active | blocked | done`。
-- `trigger_mode`：`cron | scheduled_at | on_idle | on_worker_slot_freed`。
+- `trigger_mode`：`cron | scheduled_at | on_idle | on_worker_slot_available`。
 - `focus.status`：`active | idle | done | archived`。
 - `choice.id`：`choice-[a-zA-Z0-9._-]+`。
 - `choice.option.id`：`option-[a-zA-Z0-9._-]+`。
@@ -102,7 +113,7 @@
 <M:run_task prompt="对比两个分支差异并给出风险" title="分支差异评估" focus_id="focus-release-plan" />
 <M:create_plan prompt="提醒我提交周报" title="周报提醒" trigger_mode="scheduled_at" scheduled_at="2030-01-02T09:00:00+08:00" focus_id="focus-ops" />
 <M:create_plan prompt="空闲时整理待办" title="待办整理" trigger_mode="on_idle" cooldown_ms="600000" max_runs="3" />
-<M:create_plan prompt="worker有空位就继续处理积压任务" title="队列续跑" trigger_mode="on_worker_slot_freed" max_runs="10" />
+<M:create_plan prompt="worker有空位就继续处理积压任务" title="队列续跑" trigger_mode="on_worker_slot_available" max_runs="10" />
 <M:ask_user_choice id="choice-delivery-mode" question="请选择交付格式" option_1_id="option-report" option_1_label="报告" option_1_reason="便于完整审阅背景与风险" option_2_id="option-checklist" option_2_label="清单" option_2_reason="便于快速执行与打勾验收" default_option_id="option-report" />
 ```
 

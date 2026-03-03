@@ -10,9 +10,9 @@ import { buildPaths } from '../src/fs/paths.js'
 import { triggerWakeLoop } from '../src/manager/loop-trigger.js'
 import {
   triggerOnIdlePlans,
-  triggerOnWorkerSlotFreedPlans,
+  triggerOnWorkerSlotAvailablePlans,
 } from '../src/manager/loop-trigger-plans.js'
-import { hasFreeWorkerSlot } from '../src/manager/loop-trigger-shared.js'
+import { hasWorkerSlotAvailable } from '../src/manager/loop-trigger-shared.js'
 
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
 import type { TaskPlan } from '../src/types/index.js'
@@ -128,7 +128,7 @@ const createPlan = (
 
 test('worker slot availability tracks queue capacity transitions', async () => {
   const runtime = await createRuntime({ maxConcurrent: 2 })
-  expect(hasFreeWorkerSlot(runtime)).toBe(true)
+  expect(hasWorkerSlotAvailable(runtime)).toBe(true)
 
   const releases: Array<() => void> = []
   void runtime.workerQueue.add(
@@ -147,24 +147,24 @@ test('worker slot availability tracks queue capacity transitions', async () => {
   )
 
   await waitFor(() => runtime.workerQueue.pending === 2)
-  expect(hasFreeWorkerSlot(runtime)).toBe(false)
+  expect(hasWorkerSlotAvailable(runtime)).toBe(false)
 
   releases.shift()?.()
   await waitFor(() => runtime.workerQueue.pending === 1)
-  expect(hasFreeWorkerSlot(runtime)).toBe(true)
+  expect(hasWorkerSlotAvailable(runtime)).toBe(true)
 
   releases.shift()?.()
   await runtime.workerQueue.onIdle()
 })
 
-test('on_worker_slot_freed plans trigger without regressing on_idle', async () => {
+test('on_worker_slot_available plans trigger without regressing on_idle', async () => {
   const runtime = await createRuntime({ maxConcurrent: 2 })
   runtime.taskPlans.push(
-    createPlan('plan-capacity', { mode: 'on_worker_slot_freed' }),
+    createPlan('plan-capacity', { mode: 'on_worker_slot_available' }),
     createPlan('plan-idle', { mode: 'on_idle', cooldownMs: 0 }),
   )
 
-  const capacityTriggered = await triggerOnWorkerSlotFreedPlans(
+  const capacityTriggered = await triggerOnWorkerSlotAvailablePlans(
     runtime,
     Date.now(),
   )
@@ -178,24 +178,54 @@ test('on_worker_slot_freed plans trigger without regressing on_idle', async () =
   expect(runtime.taskPlans[1]?.runCount).toBe(1)
 })
 
-test('triggerWakeLoop emits worker_slot_freed on full-to-free transition only once', async () => {
+test('worker_slot_available can trigger while global idle is false', async () => {
+  const runtime = await createRuntime({ maxConcurrent: 1, idleDelayMs: 0 })
+  runtime.taskPlans.push(
+    createPlan('plan-capacity', { mode: 'on_worker_slot_available' }),
+    createPlan('plan-idle', { mode: 'on_idle', cooldownMs: 0 }),
+  )
+  runtime.managerRunning = true
+  runtime.runningControllers.set('task-busy', new AbortController())
+
+  const loopPromise = triggerWakeLoop(runtime)
+  try {
+    await new Promise<void>((resolve) => setTimeout(resolve, 1_200))
+    expect(runtime.taskPlans[0]?.runCount).toBe(0)
+    expect(runtime.taskPlans[1]?.runCount).toBe(0)
+
+    runtime.runningControllers.clear()
+    runtime.lastWorkerActivityAtMs = Date.now()
+
+    await waitFor(() => (runtime.taskPlans[0]?.runCount ?? 0) >= 1, 4_000)
+    await new Promise<void>((resolve) => setTimeout(resolve, 1_200))
+
+    expect(runtime.taskPlans[0]?.runCount).toBe(1)
+    expect(runtime.taskPlans[1]?.runCount).toBe(0)
+    expect(countSystemEvent(runtime, 'idle')).toBe(0)
+  } finally {
+    runtime.stopped = true
+    await loopPromise
+  }
+})
+
+test('triggerWakeLoop emits worker_slot_available on full-to-free transition only once', async () => {
   const runtime = await createRuntime({ maxConcurrent: 1, idleDelayMs: 60_000 })
   runtime.runningControllers.set('task-busy', new AbortController())
 
   const loopPromise = triggerWakeLoop(runtime)
   try {
     await new Promise<void>((resolve) => setTimeout(resolve, 1_200))
-    expect(countSystemEvent(runtime, 'worker_slot_freed')).toBe(0)
+    expect(countSystemEvent(runtime, 'worker_slot_available')).toBe(0)
 
     runtime.runningControllers.clear()
     runtime.lastWorkerActivityAtMs = Date.now()
 
     await waitFor(
-      () => countSystemEvent(runtime, 'worker_slot_freed') >= 1,
+      () => countSystemEvent(runtime, 'worker_slot_available') >= 1,
       4_000,
     )
     await new Promise<void>((resolve) => setTimeout(resolve, 1_300))
-    expect(countSystemEvent(runtime, 'worker_slot_freed')).toBe(1)
+    expect(countSystemEvent(runtime, 'worker_slot_available')).toBe(1)
   } finally {
     runtime.stopped = true
     await loopPromise

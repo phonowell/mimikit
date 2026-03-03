@@ -8,6 +8,12 @@
 - 需要访问网络时优先使用 agent-browser skill；若不可用，则使用可用替代能力，并在输出中说明原因与替代方案。
 - 规则冲突时按优先级执行：事实与安全 > 任务目标 > 输出格式。
 
+## 调度语义（涉及 plan/scheduler 任务时）
+- 语义文档：`docs/design/workflow/plan.md`。
+- `on_idle` 语义保持不变：仅在 `global idle=true`（manager+worker 都 idle，且达到 idle 窗口）触发。
+- `worker_slot_available` 仅表示容量可用（`available_slots > 0`），不要求 `global idle=true`。
+- 非 idle 但 `worker_slot_available=true` 示例：`managerRunning=true` 且 worker 有空槽位。
+
 ## 输出：
 - 最终输出定义：本次任务对外返回的最后一条消息；必须包含固定模板全部字段，并以单个元标签收尾。
 - 非最终输出：默认不输出。仅在无法继续执行时，允许一次阻塞说明，格式为 `阻塞：{原因}｜需要：{信息}｜已尝试：{动作}`（不得包含元标签）。
