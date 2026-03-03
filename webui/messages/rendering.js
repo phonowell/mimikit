@@ -6,7 +6,7 @@ import { renderMessages } from './render-list.js'
 import { renderStreamMessage } from './render-stream.js'
 
 export const createMessageRendering = (params) => {
-  const { messagesEl, scroll, loading, quote, onDelete } = params
+  const { messagesEl, scroll, loading, quote, onDelete, isDeleteMode } = params
 
   const removeEmpty = () => {}
   const streamingItemRef = { current: null }
@@ -31,6 +31,7 @@ export const createMessageRendering = (params) => {
       enterMessageIds,
       onQuote: quote.set,
       onDelete,
+      isDeleteMode: typeof isDeleteMode === 'function' ? isDeleteMode() : Boolean(isDeleteMode),
       streamMessage,
       streamingItemRef,
     })
@@ -51,6 +52,7 @@ export const createMessageRendering = (params) => {
       enterMessageIds: new Set(),
       onQuote: quote.set,
       onDelete,
+      isDeleteMode: typeof isDeleteMode === 'function' ? isDeleteMode() : Boolean(isDeleteMode),
       streamMessage,
       streamingItemRef,
     })

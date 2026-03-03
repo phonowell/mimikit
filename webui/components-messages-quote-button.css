@@ -1,15 +1,16 @@
 .message .message-quote-btn,
 .message .message-delete-btn {
-  --btn-size: 26px;
   --btn-bg: var(--panel);
+  --btn-color: #64768f;
   --btn-border: transparent;
-  --btn-hover-bg: var(--panel);
-  --btn-hover-color: #5f7088;
+  --btn-hover-bg: var(--panel-soft);
+  --btn-hover-color: var(--accent);
+  --btn-hover-border: transparent;
   --btn-focus: rgba(47, 125, 230, 0.3);
   --btn-shadow: var(--shadow-raised-soft);
   --btn-shadow-hover: var(--shadow-raised);
   --btn-shadow-press: var(--shadow-inset-soft);
-  box-shadow: var(--btn-shadow);
+  min-height: 24px;
   opacity: 0;
   transform: translateY(2px) scale(0.96);
   pointer-events: none;
@@ -24,7 +25,9 @@
 
 .message .message-delete-btn {
   order: 3;
+  --btn-color: var(--danger);
   --btn-hover-color: var(--danger);
+  --btn-hover-bg: rgba(226, 93, 93, 0.1);
 }
 
 .message.user .message-delete-btn {

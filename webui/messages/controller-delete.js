@@ -27,6 +27,7 @@ export const createDeleteMessageController = ({
   )
   let pendingDeleteId = ''
   let isDeletePending = false
+  let deleteModeEnabled = false
 
   const deleteDialog = deleteDialogEnabled
     ? createDialogController({
@@ -92,6 +93,10 @@ export const createDeleteMessageController = ({
   const deleteMessage = async (message) => {
     const id = readMessageId(message)
     if (!id) return
+    if (deleteModeEnabled) {
+      await requestDeleteMessage(id)
+      return
+    }
     if (deleteDialogEnabled && deleteDialog) {
       pendingDeleteId = id
       deleteDialog.open()
@@ -134,8 +139,16 @@ export const createDeleteMessageController = ({
     deleteConfirmBtn.addEventListener('click', onDeleteConfirm)
   }
 
+  const setDeleteMode = (enabled) => {
+    deleteModeEnabled = Boolean(enabled)
+    if (!deleteModeEnabled) return
+    pendingDeleteId = ''
+    if (deleteDialog?.isOpen()) deleteDialog.close()
+  }
+
   return {
     deleteMessage,
+    setDeleteMode,
     bindDialogEvents: bindDialogHandlers,
     bindDialogHandlers,
   }

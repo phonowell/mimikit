@@ -1,5 +1,6 @@
 import { bindComposer } from './messages/composer.js'
 import { bindChoicePanel } from './choice.js'
+import { bindDeleteMode } from './delete-mode.js'
 import { createMessagesController } from './messages/controller.js'
 import { bindFocusPanel, bindPlansPanel } from './panels.js'
 import { bindRestart } from './restart.js'
@@ -13,6 +14,7 @@ const elements = {
   statusText: $('[data-status-text]'),
   messagesEl: $('[data-messages]'),
   scrollBottomBtn: $('[data-scroll-bottom]'),
+  composerSection: $('[data-composer]'),
   form: $('[data-form]'),
   input: $('[data-input]'),
   sendBtn: $('[data-send]'),
@@ -23,9 +25,12 @@ const elements = {
   restartBtn: $('[data-restart]'),
   toolsToggleBtn: $('[data-tools-toggle]'),
   toolsMenu: $('[data-tools-menu]'),
+  toolsDeleteBtn: $('[data-tools-delete]'),
   toolsRestartBtn: $('[data-tools-restart]'),
   toolsResetBtn: $('[data-tools-reset]'),
   toolsIdleHint: $('[data-tools-idle-hint]'),
+  deleteModeExitSection: $('[data-delete-mode-exit]'),
+  deleteModeExitBtn: $('[data-delete-mode-exit-btn]'),
   restartDialog: $('[data-restart-dialog]'),
   restartCancelBtn: $('[data-restart-cancel]'),
   restartConfirmBtn: $('[data-restart-confirm]'),
@@ -251,6 +256,15 @@ bindRestart({
   resetConfirmBtn: elements.resetConfirmBtn,
   statusText: elements.statusText,
   statusDot: elements.statusDot,
+  messages,
+})
+bindDeleteMode({
+  toolsDeleteBtn: elements.toolsDeleteBtn,
+  toolsToggleBtn: elements.toolsToggleBtn,
+  composerSection: elements.composerSection,
+  deleteModeExitSection: elements.deleteModeExitSection,
+  deleteModeExitBtn: elements.deleteModeExitBtn,
+  input: elements.input,
   messages,
 })
 messages.start()

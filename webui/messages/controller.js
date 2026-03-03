@@ -44,6 +44,7 @@ export function createMessagesController({
   let isStarted = false
   let currentStreamMessage = null
   let unsubscribeTimeTick = null
+  let deleteModeEnabled = false
   const messageState = createMessageState()
 
   const scroll = createScrollController({
@@ -87,6 +88,7 @@ export function createMessagesController({
     loading,
     quote,
     onDelete: deleteMessages.deleteMessage,
+    isDeleteMode: () => deleteModeEnabled,
   })
   removeEmpty = rendering.removeEmpty
   const { doRender, doRenderStream } = rendering
@@ -191,6 +193,19 @@ export function createMessagesController({
     doRender(messages, new Set(), currentStreamMessage)
   }
 
+  const setDeleteMode = (enabled) => {
+    const nextDeleteMode = Boolean(enabled)
+    if (deleteModeEnabled === nextDeleteMode) return deleteModeEnabled
+    deleteModeEnabled = nextDeleteMode
+    deleteMessages.setDeleteMode(nextDeleteMode)
+    if (nextDeleteMode) quote.clear()
+    const messages = Array.isArray(messageState.lastMessages)
+      ? messageState.lastMessages
+      : []
+    doRender(messages, new Set(), currentStreamMessage)
+    return deleteModeEnabled
+  }
+
   const start = () => {
     if (isStarted) return
     isStarted = true
@@ -224,5 +239,7 @@ export function createMessagesController({
     syncAfterLayoutShift: scroll.syncAfterLayoutShift,
     beginChoicePanelLayoutShift,
     endChoicePanelLayoutShift,
+    setDeleteMode,
+    isDeleteMode: () => deleteModeEnabled,
   }
 }

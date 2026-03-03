@@ -13,8 +13,10 @@ export const renderMessage = (params, msg) => {
     onDelete,
     messageLookup,
     appendTarget,
+    isDeleteMode,
   } = params
   if (!messagesEl) return
+
   const item = document.createElement('li')
   const roleClass = msg.role === 'agent' ? 'agent' : msg.role
   const isSystemMessage = msg?.role === 'system'
@@ -22,8 +24,14 @@ export const renderMessage = (params, msg) => {
   const isEntering = enterMessageIds?.has(msg?.id)
   item.className = `message ${roleClass}${isStreamingMessage ? ' message--streaming' : ''}${isEntering ? ' message--enter' : ''}`
   if (msg?.id) item.dataset.messageId = String(msg.id)
-  const canQuote = Boolean(onQuote && msg?.id && !isSystemMessage && !isStreamingMessage)
-  const canDelete = Boolean(onDelete && msg?.id && !isSystemMessage && !isStreamingMessage)
+
+  const quoteModeEnabled = !isDeleteMode
+  const canQuote = Boolean(
+    quoteModeEnabled && onQuote && msg?.id && !isSystemMessage && !isStreamingMessage,
+  )
+  const canDelete = Boolean(
+    isDeleteMode && onDelete && msg?.id && !isSystemMessage && !isStreamingMessage,
+  )
   if (canQuote) {
     item.classList.add('message--quoteable')
     item.tabIndex = 0
@@ -36,9 +44,9 @@ export const renderMessage = (params, msg) => {
         typeof window !== 'undefined' &&
         typeof window.matchMedia === 'function' &&
         window.matchMedia('(max-width: 640px)').matches
-      ) 
+      ) {
         return
-      
+      }
       onQuote(msg)
     })
   }
@@ -52,15 +60,13 @@ export const renderMessage = (params, msg) => {
     if (quoteBlock) article.appendChild(quoteBlock)
   }
   if (isAgentMessage(msg)) {
-    if (isStreamingMessage) 
-      content.textContent = text
-     else {
+    if (isStreamingMessage) content.textContent = text
+    else {
       content.classList.add('markdown')
       content.appendChild(renderMarkdown(text))
     }
-  } else 
-    content.textContent = text
-  
+  } else content.textContent = text
+
   article.appendChild(content)
 
   const usageDisplay = isAgentMessage(msg) ? formatUsage(msg.usage) : null
@@ -87,18 +93,19 @@ export const renderMessage = (params, msg) => {
   if (canQuote) {
     quoteBtn = document.createElement('button')
     quoteBtn.type = 'button'
-    quoteBtn.className = 'btn btn--icon btn--icon-muted message-quote-btn'
-    quoteBtn.textContent = msg.role === 'user' ? '↪' : '↩'
+    quoteBtn.className = 'btn btn--xs message-quote-btn'
+    quoteBtn.textContent = UI_TEXT.quote
     quoteBtn.title = UI_TEXT.quote
     quoteBtn.setAttribute('aria-label', UI_TEXT.quote)
     quoteBtn.addEventListener('click', () => onQuote(msg))
   }
+
   let deleteBtn = null
   if (canDelete) {
     deleteBtn = document.createElement('button')
     deleteBtn.type = 'button'
-    deleteBtn.className = 'btn btn--icon btn--icon-muted message-delete-btn'
-    deleteBtn.textContent = '✕'
+    deleteBtn.className = 'btn btn--xs message-delete-btn'
+    deleteBtn.textContent = UI_TEXT.delete
     deleteBtn.title = UI_TEXT.delete
     deleteBtn.setAttribute('aria-label', UI_TEXT.delete)
     deleteBtn.addEventListener('click', () => onDelete(msg))
@@ -116,9 +123,7 @@ export const renderMessage = (params, msg) => {
       meta.appendChild(time)
     }
   }
-  if (meta.childElementCount > 0) 
-    article.appendChild(meta)
-  
+  if (meta.childElementCount > 0) article.appendChild(meta)
 
   item.appendChild(article)
   if (quoteBtn) item.appendChild(quoteBtn)

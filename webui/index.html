@@ -87,6 +87,16 @@
               <div class="tools-menu" data-tools-menu id="tools-menu" role="menu" hidden>
                 <button
                   class="tools-menu-item"
+                  data-tools-delete
+                  type="button"
+                  role="menuitem"
+                  title="Delete messages"
+                  aria-label="Delete messages"
+                >
+                  Delete messages
+                </button>
+                <button
+                  class="tools-menu-item"
                   data-tools-restart
                   type="button"
                   role="menuitem"
@@ -150,7 +160,7 @@
         <p class="choice-meta" data-choice-meta></p>
       </section>
 
-      <section class="composer" aria-label="Input">
+      <section class="composer" data-composer aria-label="Input">
         <form data-form>
           <div class="quote-preview" data-quote-preview hidden>
             <span class="quote-label" data-quote-label>Quote</span>
@@ -176,6 +186,16 @@
             Send
           </button>
         </form>
+      </section>
+
+      <section class="delete-mode-exit" data-delete-mode-exit aria-label="Delete mode" hidden>
+        <button
+          class="btn btn--md btn--danger delete-mode-exit-btn"
+          data-delete-mode-exit-btn
+          type="button"
+        >
+          Exit delete mode
+        </button>
       </section>
 
       <dialog

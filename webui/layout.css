@@ -10,7 +10,8 @@ main[data-app] {
 
 .app-header,
 .messages-section,
-.composer {
+.composer,
+.delete-mode-exit {
   width: 100%;
   max-width: var(--max-width);
 }
@@ -144,7 +145,7 @@ main[data-app] {
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
-  min-width: 112px;
+  min-width: 150px;
   padding: 6px;
   border-radius: 10px;
   border: 0;
@@ -226,6 +227,19 @@ main[data-app] {
   border-radius: var(--radius);
   box-shadow: var(--shadow-raised);
   padding: 10px 12px;
+}
+
+.delete-mode-exit {
+  background: var(--panel);
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-raised);
+  padding: 10px 12px;
+}
+
+.delete-mode-exit-btn {
+  width: 100%;
+  min-height: 44px;
 }
 
 .composer form {
