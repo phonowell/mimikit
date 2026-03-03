@@ -7,7 +7,7 @@ import { logSafeError } from '../log/safe.js'
 import { readErrorCode } from '../shared/error-code.js'
 import { toPrettyJsonText } from '../shared/json.js'
 
-import { parseRuntimeSnapshot } from './runtime-snapshot-schema.js'
+import { parseRuntimeSnapshot } from './runtime-snapshot-parse.js'
 
 import type { RuntimeSnapshot } from './runtime-snapshot-schema.js'
 import type { Task } from '../types/index.js'

@@ -1,8 +1,5 @@
 import { z } from 'zod'
-
-import { stripUndefined } from '../shared/utils.js'
-
-import { normalizeTokenUsage, tokenUsageSchema } from './token-usage.js'
+import { tokenUsageSchema } from './token-usage.js'
 
 export const taskCancelSchema = z
   .object({
@@ -162,7 +159,7 @@ const memoryRefreshSchema = z
   })
   .strict()
 
-const runtimeSnapshotSchema = z
+export const runtimeSnapshotSchema = z
   .object({
     tasks: z.array(taskSchema),
     taskPlans: z.array(taskPlanSchema),
@@ -184,58 +181,3 @@ const runtimeSnapshotSchema = z
   .strict()
 
 export type RuntimeSnapshot = z.infer<typeof runtimeSnapshotSchema>
-
-const normalizeTask = (
-  task: z.infer<typeof taskSchema>,
-): z.infer<typeof taskSchema> =>
-  stripUndefined({
-    ...task,
-    usage: normalizeTokenUsage(task.usage),
-    result: task.result
-      ? stripUndefined({
-          ...task.result,
-          usage: normalizeTokenUsage(task.result.usage),
-        })
-      : undefined,
-  }) as z.infer<typeof taskSchema>
-
-const normalizeTaskPlan = (
-  item: z.infer<typeof taskPlanSchema>,
-): z.infer<typeof taskPlanSchema> =>
-  stripUndefined({ ...item }) as z.infer<typeof taskPlanSchema>
-
-const normalizeFocusMeta = (
-  focus: z.infer<typeof focusMetaSchema>,
-): z.infer<typeof focusMetaSchema> =>
-  stripUndefined({ ...focus }) as z.infer<typeof focusMetaSchema>
-
-const normalizeFocusContext = (
-  focusContext: z.infer<typeof focusContextSchema>,
-): z.infer<typeof focusContextSchema> =>
-  stripUndefined({ ...focusContext }) as z.infer<typeof focusContextSchema>
-
-const normalizePendingUserChoice = (
-  choice: z.infer<typeof pendingUserChoiceSchema>,
-): z.infer<typeof pendingUserChoiceSchema> =>
-  stripUndefined({
-    ...choice,
-    options: choice.options.map((item) => stripUndefined({ ...item })),
-  }) as z.infer<typeof pendingUserChoiceSchema>
-
-export const parseRuntimeSnapshot = (value: unknown): RuntimeSnapshot => {
-  const parsed = runtimeSnapshotSchema.parse(value)
-  return stripUndefined({
-    tasks: parsed.tasks.map(normalizeTask),
-    taskPlans: parsed.taskPlans.map(normalizeTaskPlan),
-    focuses: parsed.focuses?.map(normalizeFocusMeta),
-    focusContexts: parsed.focusContexts?.map(normalizeFocusContext),
-    activeFocusIds: parsed.activeFocusIds,
-    managerTurn: parsed.managerTurn,
-    queues: parsed.queues,
-    pendingUserChoice: parsed.pendingUserChoice
-      ? normalizePendingUserChoice(parsed.pendingUserChoice)
-      : undefined,
-    memoryRefresh: parsed.memoryRefresh,
-    managerCompressedContext: parsed.managerCompressedContext,
-  }) as RuntimeSnapshot
-}

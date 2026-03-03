@@ -50,6 +50,12 @@ const readJsonlValues = async (path: string): Promise<unknown[]> => {
   return values
 }
 
+const toJsonlPayload = <T>(items: T[], options?: { trailingNewline?: boolean }) => {
+  if (items.length === 0) return ''
+  const body = items.map((item) => JSON.stringify(item)).join('\n')
+  return options?.trailingNewline === false ? body : `${body}\n`
+}
+
 export const readJsonl = async <T>(
   path: string,
   options: JsonlReadOptions<T> & { ensureFile?: boolean } = {},
@@ -74,19 +80,16 @@ export const writeJsonl = async <T>(
   path: string,
   items: T[],
 ): Promise<void> => {
-  const body = items.map((item) => JSON.stringify(item)).join('\n')
-  const payload = body.length > 0 ? `${body}\n` : ''
-  await writeFileAtomic(path, payload)
+  await writeFileAtomic(path, toJsonlPayload(items))
 }
 
 export const appendJsonl = async <T>(
   path: string,
   items: T[],
 ): Promise<void> => {
-  if (items.length === 0) return
+  const payload = toJsonlPayload(items)
+  if (!payload) return
   await ensureDir(dirname(path))
-  const body = items.map((item) => JSON.stringify(item)).join('\n')
-  const payload = `${body}\n`
   await appendFile(path, payload, { encoding: 'utf8' })
 }
 

@@ -6,6 +6,23 @@ const toIsoOrUndefined = (value: string | undefined): string | undefined => {
   return normalized ? normalized : undefined
 }
 
+const toOptionalIsoState = (params: {
+  lastProcessedPlanUpdatedAt: string | undefined
+  lastRunAt: string | undefined
+}): {
+  lastProcessedPlanUpdatedAt?: string
+  lastRunAt?: string
+} => {
+  const lastProcessedPlanUpdatedAt = toIsoOrUndefined(
+    params.lastProcessedPlanUpdatedAt,
+  )
+  const lastRunAt = toIsoOrUndefined(params.lastRunAt)
+  return {
+    ...(lastProcessedPlanUpdatedAt ? { lastProcessedPlanUpdatedAt } : {}),
+    ...(lastRunAt ? { lastRunAt } : {}),
+  }
+}
+
 export const createDefaultMemoryRefreshState =
   (): RuntimeMemoryRefreshState => ({
     lastCompletedTurn: 0,
@@ -20,16 +37,14 @@ export const hydrateMemoryRefreshState = (
 ): RuntimeMemoryRefreshState => {
   const current = snapshot.memoryRefresh
   if (!current) return createDefaultMemoryRefreshState()
-  const lastProcessedPlanUpdatedAt = toIsoOrUndefined(
-    current.lastProcessedPlanUpdatedAt,
-  )
-  const lastRunAt = toIsoOrUndefined(current.lastRunAt)
   return {
     lastCompletedTurn: current.lastCompletedTurn,
     lastProcessedInputsCursor: current.lastProcessedInputsCursor,
     lastProcessedResultsCursor: current.lastProcessedResultsCursor,
-    ...(lastProcessedPlanUpdatedAt ? { lastProcessedPlanUpdatedAt } : {}),
-    ...(lastRunAt ? { lastRunAt } : {}),
+    ...toOptionalIsoState({
+      lastProcessedPlanUpdatedAt: current.lastProcessedPlanUpdatedAt,
+      lastRunAt: current.lastRunAt,
+    }),
     running: false,
     pending: false,
   }
@@ -38,12 +53,10 @@ export const hydrateMemoryRefreshState = (
 export const toPersistedMemoryRefreshState = (
   state: RuntimeMemoryRefreshState,
 ): NonNullable<RuntimeSnapshot['memoryRefresh']> => ({
-  ...(toIsoOrUndefined(state.lastProcessedPlanUpdatedAt)
-    ? { lastProcessedPlanUpdatedAt: toIsoOrUndefined(state.lastProcessedPlanUpdatedAt) }
-    : {}),
-  ...(toIsoOrUndefined(state.lastRunAt)
-    ? { lastRunAt: toIsoOrUndefined(state.lastRunAt) }
-    : {}),
+  ...toOptionalIsoState({
+    lastProcessedPlanUpdatedAt: state.lastProcessedPlanUpdatedAt,
+    lastRunAt: state.lastRunAt,
+  }),
   lastCompletedTurn: state.lastCompletedTurn,
   lastProcessedInputsCursor: state.lastProcessedInputsCursor,
   lastProcessedResultsCursor: state.lastProcessedResultsCursor,

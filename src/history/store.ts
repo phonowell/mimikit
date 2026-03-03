@@ -28,6 +28,9 @@ const capHistory = (items: HistoryMessage[]): HistoryMessage[] => {
   return items.slice(Math.max(0, items.length - MAX_HISTORY_ITEMS))
 }
 
+const normalizeHistory = (items: HistoryMessage[]): HistoryMessage[] =>
+  capHistory([...items].sort(compareHistoryMessage))
+
 const toHistoryDate = (createdAt: string): string => {
   const ts = parseIsoMs(createdAt)
   if (ts === undefined) return FALLBACK_HISTORY_DATE
@@ -99,8 +102,7 @@ export const rewriteHistory = async (
   items: HistoryMessage[],
 ): Promise<void> => {
   await runSerialized(historyDir, async () => {
-    const next = [...items].sort(compareHistoryMessage)
-    await writeHistory(historyDir, capHistory(next))
+    await writeHistory(historyDir, normalizeHistory(items))
   })
 }
 
@@ -110,7 +112,6 @@ export const appendHistory = async (
 ): Promise<void> => {
   await runSerialized(historyDir, async () => {
     const current = await readHistory(historyDir)
-    const next = [...current, message].sort(compareHistoryMessage)
-    await writeHistory(historyDir, capHistory(next))
+    await writeHistory(historyDir, normalizeHistory([...current, message]))
   })
 }

@@ -1,12 +1,10 @@
 import { createLoadingController } from './loading.js'
-import { fetchWithTimeout } from '../fetch-with-timeout.js'
-import { renderError } from './render-list.js'
-import { createDialogController } from '../dialog.js'
 import {
   createDisconnectHandler,
   isStatusFullyIdle,
   updateControllerStatus,
 } from './controller-status.js'
+import { createDeleteMessageController } from './controller-delete.js'
 import { createQuoteController } from './quote.js'
 import { createMessageRendering } from './rendering.js'
 import { createScrollController } from './scroll.js'
@@ -16,12 +14,10 @@ import { createMessageState } from './state.js'
 import { createControllerQueue } from './controller-queue.js'
 import { createSseController } from './controller-sse.js'
 import { createPayloadController } from './controller-payload.js'
-import { UI_TEXT } from '../system-text.js'
 
 const EVENTS_URL = '/api/events'
 const RECONNECT_BASE_DELAY_MS = 1200
 const RECONNECT_MAX_DELAY_MS = 12000
-const DELETE_REQUEST_TIMEOUT_MS = 15000
 
 export function createMessagesController({
   messagesEl,
@@ -64,91 +60,22 @@ export function createMessagesController({
     removeEmpty: () => removeEmpty(),
   })
   const quote = createQuoteController({ quotePreview, quoteLabel, quoteText, input })
-  const deleteDialogEnabled = Boolean(
-    deleteConfirmDialog && deleteConfirmCancelBtn && deleteConfirmBtn,
-  )
-  let pendingDeleteId = ''
-  let isDeletePending = false
-
-  const deleteDialog = deleteDialogEnabled
-    ? createDialogController({
-        dialog: deleteConfirmDialog,
-        focusOnOpen: deleteConfirmCancelBtn,
-        onAfterClose: () => {
-          if (isDeletePending) return
-          pendingDeleteId = ''
-        },
-      })
-    : null
-
-  const setDeleteActionsDisabled = (disabled) => {
-    if (deleteConfirmCancelBtn) deleteConfirmCancelBtn.disabled = disabled
-    if (deleteConfirmBtn) deleteConfirmBtn.disabled = disabled
-  }
-
-  const requestDeleteMessage = async (id) => {
-    if (!id) return false
-    try {
-      const res = await fetchWithTimeout(
-        `/api/messages/${encodeURIComponent(id)}`,
-        { method: 'DELETE' },
-        DELETE_REQUEST_TIMEOUT_MS,
-      )
-      if (!res.ok) {
-        let data = null
-        try {
-          data = await res.json()
-        } catch {
-          data = null
-        }
-        throw new Error(data?.error || UI_TEXT.deleteFailed)
-      }
-      const activeQuote = quote.getActive()
-      if (activeQuote?.id === id) quote.clear()
-      return true
-    } catch (error) {
-      renderError(
-        { messagesEl, removeEmpty, updateScrollButton: scroll.updateScrollButton },
-        error,
-      )
-      return false
-    }
-  }
-
-  const confirmDelete = async () => {
-    if (!pendingDeleteId || isDeletePending) return
-    isDeletePending = true
-    setDeleteActionsDisabled(true)
-    const deleted = await requestDeleteMessage(pendingDeleteId)
-    isDeletePending = false
-    setDeleteActionsDisabled(false)
-    if (!deleted) return
-    pendingDeleteId = ''
-    if (deleteDialog) deleteDialog.close()
-  }
-
-  const deleteMessage = async (msg) => {
-    const id = typeof msg?.id === 'string' ? msg.id.trim() : ''
-    if (!id) return
-    if (deleteDialogEnabled && deleteDialog) {
-      pendingDeleteId = id
-      deleteDialog.open()
-      return
-    }
-    const shouldDelete =
-      typeof window === 'undefined' ||
-      typeof window.confirm !== 'function' ||
-      window.confirm(UI_TEXT.deleteConfirmPrompt)
-    if (!shouldDelete) return
-    await requestDeleteMessage(id)
-  }
+  const deleteMessages = createDeleteMessageController({
+    messagesEl,
+    removeEmpty: () => removeEmpty(),
+    updateScrollButton: scroll.updateScrollButton,
+    quote,
+    deleteConfirmDialog,
+    deleteConfirmCancelBtn,
+    deleteConfirmBtn,
+  })
 
   const rendering = createMessageRendering({
     messagesEl,
     scroll,
     loading,
     quote,
-    onDelete: deleteMessage,
+    onDelete: deleteMessages.deleteMessage,
   })
   removeEmpty = rendering.removeEmpty
   const { doRender, doRenderStream } = rendering
@@ -239,34 +166,7 @@ export function createMessagesController({
 
   if (quoteClearBtn) quoteClearBtn.addEventListener('click', quote.clear)
   if (quotePreview) quotePreview.addEventListener('dblclick', quote.clear)
-  if (deleteDialogEnabled && deleteDialog && deleteConfirmDialog) {
-    const onDialogClick = (event) => {
-      deleteDialog.handleDialogClick(event)
-    }
-    const onDialogClose = () => {
-      deleteDialog.handleDialogClose()
-    }
-    const onDialogCancel = (event) => {
-      deleteDialog.handleDialogCancel(event)
-    }
-    const onDeleteCancel = (event) => {
-      event.preventDefault()
-      if (isDeletePending) return
-      pendingDeleteId = ''
-      deleteDialog.close()
-    }
-    const onDeleteConfirm = (event) => {
-      event.preventDefault()
-      if (isDeletePending) return
-      void confirmDelete()
-    }
-
-    deleteConfirmDialog.addEventListener('click', onDialogClick)
-    deleteConfirmDialog.addEventListener('close', onDialogClose)
-    deleteConfirmDialog.addEventListener('cancel', onDialogCancel)
-    deleteConfirmCancelBtn.addEventListener('click', onDeleteCancel)
-    deleteConfirmBtn.addEventListener('click', onDeleteConfirm)
-  }
+  deleteMessages.bindDialogEvents()
 
   const refreshRenderedTimes = () => {
     const messages = Array.isArray(messageState.lastMessages)
