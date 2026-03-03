@@ -46,6 +46,24 @@ const resolveScheduledBadge = (value, nowDate) => {
 
 const BOTTOM_SCROLL_THRESHOLD_MULTIPLIER = 0.1
 
+export const resolveTaskUsageDisplay = (usage) => {
+  const usageDisplay = formatUsage(usage)
+  const formatted = usageDisplay?.text ?? ''
+  const text = formatted.trim()
+  if (text) {
+    return {
+      text,
+      title: usageDisplay?.title ?? '',
+      hasUsage: true,
+    }
+  }
+  return {
+    text: '-',
+    title: '',
+    hasUsage: false,
+  }
+}
+
 export const renderTasks = (tasksList, data) => {
   if (!tasksList) return
   const previousScrollState = captureListScrollState(tasksList, {
@@ -136,17 +154,13 @@ export const renderTasks = (tasksList, data) => {
         ? task.durationMs
         : resolveDurationMs(startMs, completedAt)
 
-    const usageDisplay = formatUsage(task.usage)
-    const usageText = usageDisplay?.text ?? ''
-    const hasUsage = Boolean(usageText)
-
-    if (usageText) {
-      const tokensEl = document.createElement('span')
-      tokensEl.className = 'task-tokens'
-      tokensEl.textContent = usageText
-      if (usageDisplay?.title) tokensEl.title = usageDisplay.title
-      meta.appendChild(tokensEl)
-    }
+    const usageDisplay = resolveTaskUsageDisplay(task.usage)
+    const hasUsage = usageDisplay.hasUsage
+    const tokensEl = document.createElement('span')
+    tokensEl.className = 'task-tokens'
+    tokensEl.textContent = usageDisplay.text
+    if (usageDisplay.title) tokensEl.title = usageDisplay.title
+    meta.appendChild(tokensEl)
 
     if (task.status === 'running' && Number.isFinite(startMs)) {
       elapsedEl.dataset.startedAt = String(startMs)
