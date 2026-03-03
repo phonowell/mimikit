@@ -1,10 +1,10 @@
 import { parseActions } from '../actions/protocol/parse.js'
+import { hasQqUserInput } from '../channels/qq/index.js'
 import { appendActionFeedbackSystemMessage } from '../history/manager-events.js'
 import { pickQueryHistoryRequest } from '../history/query.js'
 import { appendLog } from '../log/append.js'
 import { resolveScheduleNowIso } from '../shared/time.js'
 import { mergeUsageAdditive } from '../shared/token-usage.js'
-
 import { collectManagerActionFeedback } from './action-feedback-collect.js'
 import {
   buildHistoryQueryKey,
@@ -23,7 +23,6 @@ import {
   type ManagerRoundExtra,
 } from './loop-batch-run-helpers.js'
 import type { RuntimeState } from './runtime-adapter.js'
-
 import type {
   FocusId,
   Task,
@@ -32,7 +31,6 @@ import type {
   TokenUsage,
   UserInput,
 } from '../types/index.js'
-
 export const runManagerCorrectionRounds = async (params: {
   runtime: RuntimeState
   inputs: UserInput[]
@@ -65,14 +63,14 @@ export const runManagerCorrectionRounds = async (params: {
     stream,
     resolveFocusId,
   } = params
-
   let elapsedMs = 0
   let batchUsage: TokenUsage | undefined
   let previousLookupKey: string | undefined
   let extra: ManagerRoundExtra = {}
   let lastParsed = parseActions('')
   const hasQueryData = inputs.length > 0 || results.length > 0
-
+  const allowAskUserChoice =
+    !hasQqUserInput(inputs) && runtime.lastUserMeta?.source !== 'qq'
   for (let round = 1; round <= maxCorrectionRounds; round++) {
     const runResult = await runManagerRoundWithRecovery({
       runtime,
@@ -86,28 +84,25 @@ export const runManagerCorrectionRounds = async (params: {
       onTextDelta: stream.appendDelta,
       onUsage: stream.setUsage,
     })
-
     if (runResult.usage) stream.setUsage(runResult.usage)
     elapsedMs += runResult.elapsedMs
     batchUsage = mergeUsageAdditive(batchUsage, runResult.usage)
-
     const parsed = parseActions(runResult.output)
     lastParsed = parsed
     stream.commitParsedText(parsed.text)
     const scheduleNowIso = resolveScheduleNowIso(runtime.lastUserMeta)
-
     const actionFeedback = collectManagerActionFeedback(
       parsed.actions,
       {
         ...buildActionFeedbackContext({
           runtime,
           hasQueryData,
+          allowAskUserChoice,
         }),
         scheduleNowIso,
       },
       runResult.output,
     )
-
     const queryRequest = pickQueryHistoryRequest(parsed.actions)
     const readFileRequest = pickReadFileRequest(parsed.actions)
     const queryKey = buildHistoryQueryKey(queryRequest)
@@ -116,7 +111,6 @@ export const runManagerCorrectionRounds = async (params: {
       ...(queryKey !== undefined ? { queryKey } : {}),
       ...(readFileKey !== undefined ? { readFileKey } : {}),
     })
-
     if (
       hasNoFollowupRequests({
         hasQueryRequest: Boolean(queryRequest),
@@ -131,7 +125,6 @@ export const runManagerCorrectionRounds = async (params: {
         ...(batchUsage ? { usage: batchUsage } : {}),
       })
     }
-
     if (
       lookupKey &&
       actionFeedback.length === 0 &&
@@ -139,14 +132,11 @@ export const runManagerCorrectionRounds = async (params: {
     ) {
       throw new Error('manager_internal_lookup_repeated_without_progress')
     }
-
     previousLookupKey = lookupKey
-
     const [historyLookup, readFileLookup] = await Promise.all([
       queryHistoryLookup(runtime, queryRequest),
       queryReadFileLookup(runtime, readFileRequest),
     ])
-
     if (actionFeedback.length > 0) {
       await appendLog(runtime.paths.log, {
         event: 'manager_action_feedback',
@@ -160,7 +150,6 @@ export const runManagerCorrectionRounds = async (params: {
         resolveFocusId(),
       )
     }
-
     stream.resetCycle()
     extra = {
       ...(historyLookup ? { historyLookup } : {}),
@@ -168,7 +157,6 @@ export const runManagerCorrectionRounds = async (params: {
       ...(actionFeedback.length > 0 ? { actionFeedback } : {}),
     }
   }
-
   await appendLog(runtime.paths.log, {
     event: 'manager_correction_round_limit_reached',
     maxCorrectionRounds,

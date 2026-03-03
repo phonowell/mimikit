@@ -2,13 +2,12 @@ import { resolve } from 'node:path'
 
 import { loadDefaultConfigFromYaml } from './config-default-loader.js'
 
+import type { QqConfig } from './channels/qq/config.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
-
 export type DefaultConfigParams = {
   /** Absolute working directory path */
   workDir: string
 }
-
 export type AppConfig = {
   /** Absolute work directory (also state root) */
   workDir: string
@@ -65,8 +64,9 @@ export type AppConfig = {
     model: string
     modelReasoningEffort: ModelReasoningEffort
   }
+  /** QQ webhook + C2C passive reply settings */
+  qq: QqConfig
 }
-
 export const defaultConfig = (params: DefaultConfigParams): AppConfig => ({
   workDir: resolve(params.workDir),
   ...loadDefaultConfigFromYaml(),

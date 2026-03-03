@@ -1,3 +1,4 @@
+import { assertEnabledQqConfig, registerQqWebhookRoute } from '../channels/qq/index.js'
 import { logSafeError } from '../log/safe.js'
 
 import { clearStateDir, parseInputBody } from './helpers.js'
@@ -16,6 +17,10 @@ export const registerApiRoutes = (
   config: AppConfig,
 ): void => {
   registerEventsRoute(app, orchestrator)
+  if (config.qq.enabled) {
+    assertEnabledQqConfig(config.qq)
+    registerQqWebhookRoute(app, orchestrator, config)
+  }
 
   app.get('/api/status', (_request, reply) =>
     reply.send(orchestrator.getStatus()),

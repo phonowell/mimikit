@@ -33,3 +33,11 @@ worker:
   timeoutMs: 600000
   model: gpt-5.3-codex-high
   modelReasoningEffort: high
+qq:
+  enabled: false
+  appId: ''
+  appSecret: ''
+  apiBase: https://api.sgroup.qq.com
+  callbackPath: /api/qq/events
+  verifySign: true
+  clockSkewMs: 300000

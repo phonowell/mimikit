@@ -37,17 +37,13 @@ import {
   type FeedbackContext,
   type ValidationIssue,
 } from './action-validation.js'
-
 import type { Parsed } from '../actions/model/spec.js'
 import { cancelTask, type RuntimeState } from './runtime-adapter.js'
-
 export type ApplyContext = {
   seen: Set<string>
   options?: ApplyTaskActionsOptions
 }
-
 export type ApplyResult = 'continue' | 'stop'
-
 export type ManagerActionDefinition = {
   name: string
   validate: (item: Parsed, context: FeedbackContext) => ValidationIssue[]
@@ -57,12 +53,9 @@ export type ManagerActionDefinition = {
     context: ApplyContext,
   ) => Promise<ApplyResult>
 }
-
 export const continueApply = (): Promise<ApplyResult> => Promise.resolve('continue')
-
 export type { ApplyTaskActionsOptions } from './action-apply-create.js'
 export type { FeedbackContext, ValidationIssue } from './action-validation.js'
-
 const applyCancelTaskAction = async (
   runtime: RuntimeState,
   item: Parsed,
@@ -71,28 +64,23 @@ const applyCancelTaskAction = async (
   if (!parsed.success) return
   await cancelTask(runtime, parsed.data.id, { source: 'deferred' })
 }
-
 const applyAndContinue = (
   apply: (runtime: RuntimeState, item: Parsed) => Promise<void>,
 ): ManagerActionDefinition['apply'] =>
   async (runtime, item) => (await apply(runtime, item), 'continue')
-
 const applyRunTaskAndContinue: ManagerActionDefinition['apply'] = async (
   runtime,
   item,
   context,
 ) => (await applyRunTask(runtime, item, context.seen, context.options), 'continue')
-
 const applyRestartRuntime: ManagerActionDefinition['apply'] = async (
   runtime,
   item,
 ) => ((await applyRestartRuntimeAction(runtime, item)) ? 'stop' : 'continue')
-
 const applyAskUserChoiceAndStop: ManagerActionDefinition['apply'] = async (
   runtime,
   item,
 ) => (await applyAskUserChoiceAction(runtime, item), 'stop')
-
 const createNoopAction = (
   name: string,
   validate: (item: Parsed) => ValidationIssue[],
@@ -101,7 +89,6 @@ const createNoopAction = (
   validate: (item) => validate(item),
   apply: continueApply,
 })
-
 export const ACTION_DEFINITIONS = [
   {
     name: 'create_plan',
@@ -140,7 +127,7 @@ export const ACTION_DEFINITIONS = [
   },
   {
     name: 'ask_user_choice',
-    validate: (item) => validateAskUserChoice(item),
+    validate: (item, context) => validateAskUserChoice(item, context),
     apply: applyAskUserChoiceAndStop,
   },
   {
@@ -169,11 +156,8 @@ export const ACTION_DEFINITIONS = [
     apply: applyAndContinue(applyAssignFocusAction),
   },
 ] satisfies ManagerActionDefinition[]
-
 export const MANAGER_ACTION_REGISTRY = new Map(ACTION_DEFINITIONS.map((definition) => [definition.name, definition]))
-
 export const REGISTERED_MANAGER_ACTIONS = new Set(ACTION_DEFINITIONS.map((definition) => definition.name))
-
 export const validateRegisteredManagerAction = (
   item: Parsed,
   context: FeedbackContext = {},
@@ -182,7 +166,6 @@ export const validateRegisteredManagerAction = (
   if (!definition) return []
   return definition.validate(item, context)
 }
-
 export const applyRegisteredManagerAction = (
   runtime: RuntimeState,
   item: Parsed,

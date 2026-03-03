@@ -1,5 +1,4 @@
 import { queryHistorySchema } from '../history/query.js'
-
 import {
   invalidArgsIssue,
   rejected,
@@ -17,20 +16,17 @@ import {
   runTaskSchema,
   updatePlanSchema,
 } from './action-apply-schema.js'
-
 import type { Parsed } from '../actions/model/spec.js'
 import type { TaskPlanStatus, TaskStatus } from '../types/index.js'
 import type { ZodSchema } from 'zod'
-
 export type FeedbackContext = {
   taskStatusById?: Map<string, TaskStatus>
   planStatusById?: Map<string, TaskPlanStatus>
   hasCompressibleContext?: boolean
   scheduleNowIso?: string
+  allowAskUserChoice?: boolean
 }
-
 export type { ValidationIssue } from './action-validation-helpers.js'
-
 export const validateWithSchema = (
   item: Parsed,
   schema: ZodSchema,
@@ -38,12 +34,10 @@ export const validateWithSchema = (
   const parsed = schema.safeParse(item.attrs)
   return parsed.success ? [] : [invalidArgsIssue(parsed.error)]
 }
-
 const resolveScheduleNowOption = (
   context: FeedbackContext,
 ): { scheduleNowIso?: string } =>
   context.scheduleNowIso !== undefined ? { scheduleNowIso: context.scheduleNowIso } : {}
-
 const validateIsoRange = (
   from: string | undefined,
   to: string | undefined,
@@ -51,7 +45,6 @@ const validateIsoRange = (
   const fromIssues = validateIsoRangeField('from', from)
   return fromIssues.length > 0 ? fromIssues : validateIsoRangeField('to', to)
 }
-
 const validateRangeQueryWithSchema = (
   item: Parsed,
   schema: ZodSchema<{ from?: string | undefined; to?: string | undefined }>,
@@ -60,10 +53,8 @@ const validateRangeQueryWithSchema = (
   if (!parsed.success) return [invalidArgsIssue(parsed.error)]
   return validateIsoRange(parsed.data.from, parsed.data.to)
 }
-
 export const validateRunTask = (item: Parsed): ValidationIssue[] =>
   validateWithSchema(item, runTaskSchema)
-
 export const validateCreatePlan = (
   item: Parsed,
   context: FeedbackContext,
@@ -75,14 +66,12 @@ export const validateCreatePlan = (
     !parsed.data.scheduled_at?.trim()
   )
     return []
-
   return validateScheduledAtNotPast({
     action: 'create_plan',
     scheduledAt: parsed.data.scheduled_at,
     ...resolveScheduleNowOption(context),
   })
 }
-
 export const validateCancelTask = (
   item: Parsed,
   context: FeedbackContext,
@@ -93,20 +82,15 @@ export const validateCancelTask = (
   const taskStatus = context.taskStatusById?.get(id)
   if (!taskStatus)
     return rejected('cancel_task 执行失败：未找到可取消的任务 ID。')
-
   if (taskStatus === 'pending' || taskStatus === 'running') return []
   if (taskStatus === 'canceled')
     return rejected('cancel_task 执行失败：任务已是 canceled 状态。')
-
   return rejected('cancel_task 执行失败：任务已完成，无法取消。')
 }
-
 export const validateQueryHistory = (item: Parsed): ValidationIssue[] =>
   validateRangeQueryWithSchema(item, queryHistorySchema)
-
 export const validateReadFile = (item: Parsed): ValidationIssue[] =>
   validateWithSchema(item, readFileSchema)
-
 export const validateCompressContext = (
   item: Parsed,
   context: FeedbackContext,
@@ -116,8 +100,15 @@ export const validateCompressContext = (
   if (context.hasCompressibleContext) return []
   return rejected('compress_context 执行失败：当前无可压缩上下文。')
 }
-
-export const validateAskUserChoice = (item: Parsed): ValidationIssue[] => {
+export const validateAskUserChoice = (
+  item: Parsed,
+  context: FeedbackContext,
+): ValidationIssue[] => {
+  if (context.allowAskUserChoice === false) {
+    return rejected(
+      'ask_user_choice 执行失败：当前批次来源包含 QQ 单聊输入，QQ 链路不支持选项回传。',
+    )
+  }
   const issues = validateWithSchema(item, askUserChoiceSchema)
   if (issues.length > 0) return issues
   if (parseAskUserChoiceAttrs(item.attrs)) return []
@@ -125,7 +116,6 @@ export const validateAskUserChoice = (item: Parsed): ValidationIssue[] => {
     'ask_user_choice 执行失败：option_{n}_id/label/reason 参数非法，或 default_option_id 不在 options 中。',
   )
 }
-
 export const validatePlanById = (
   action: 'update_plan' | 'delete_plan',
   item: Parsed,
@@ -136,7 +126,6 @@ export const validatePlanById = (
   if (!parsed.success) return [invalidArgsIssue(parsed.error)]
   const status = context.planStatusById?.get(parsed.data.id)
   if (!status) return rejected(`${action} 执行失败：未找到 plan ID。`)
-
   if (action === 'update_plan' && status === 'done') {
     const keys = new Set(Object.keys(item.attrs))
     const isLastTaskPatch =
@@ -147,10 +136,8 @@ export const validatePlanById = (
     if (isLastTaskPatch) return []
     return rejected('update_plan 执行失败：done plan 不可修改。')
   }
-
   return []
 }
-
 export const validateUpdatePlan = (
   item: Parsed,
   context: FeedbackContext,
@@ -167,9 +154,7 @@ export const validateUpdatePlan = (
         : parsed.data.cooldown_ms !== undefined
           ? 'on_idle'
           : undefined)
-
   if (resolvedMode !== 'scheduled_at' || !scheduledAt) return []
-
   return validateScheduledAtNotPast({
     action: 'update_plan',
     scheduledAt,

@@ -1,4 +1,5 @@
 import { resolveDefaultFocusId } from '../focus/index.js'
+import { dispatchQqPassiveReply } from '../channels/qq/index.js'
 import {
   appendManagerCorrectionLimitSystemMessage,
 } from '../history/manager-events.js'
@@ -118,6 +119,13 @@ export const processManagerBatch = async (params: {
       ...(resolvedUsage ? { usage: resolvedUsage } : {}),
       ...(managerRun.elapsedMs >= 0 ? { elapsedMs: managerRun.elapsedMs } : {}),
     })
+    await bestEffort('qq:dispatch_passive_reply', () =>
+      dispatchQqPassiveReply({
+        runtime,
+        inputs: agentInputs,
+        replyText: responseText,
+      }),
+    )
     agentAppended = true
 
     await finalizeBatchProgress({

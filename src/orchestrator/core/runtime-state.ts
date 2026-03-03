@@ -17,6 +17,7 @@ export type PendingUserInput = UserInput
 
 export type UserMeta = {
   source?: string
+  platform?: string
   remote?: string
   userAgent?: string
   language?: string
@@ -24,6 +25,10 @@ export type UserMeta = {
   clientTimeZone?: string
   clientOffsetMinutes?: number
   clientNowIso?: string
+  qqOpenid?: string
+  qqMessageId?: string
+  qqEventId?: string
+  qqTimestamp?: string
 }
 
 export type UiAgentStream = {

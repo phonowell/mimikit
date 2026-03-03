@@ -63,6 +63,7 @@ const inputBodySchema = z
 
 export type InputMeta = {
   source: string
+  platform?: string
   remote?: string
   userAgent?: string
   language?: string
@@ -97,7 +98,7 @@ export const parseInputBody = (
     quote,
   } = parsed.data
 
-  const meta: InputMeta = { source: 'http' }
+  const meta: InputMeta = { source: 'webui', platform: 'webui' }
   if (request.remoteAddress) meta.remote = request.remoteAddress
   if (request.userAgent) meta.userAgent = request.userAgent
   const language = bodyLanguage ?? request.acceptLanguage

@@ -1,8 +1,8 @@
-import type { InputMeta } from '../../src/http/helpers.js'
 import type { Orchestrator } from '../../src/orchestrator/core/orchestrator-service.js'
+import type { UserMeta } from '../../src/orchestrator/core/runtime-state.js'
 
 export const createOrchestratorStub = () => {
-  const addInputCalls: Array<{ text: string; meta: InputMeta; quote?: string }> =
+  const addInputCalls: Array<{ text: string; meta: UserMeta; quote?: string }> =
     []
   const exitRequests: Array<{ code: number; reason: string }> = []
   const orchestrator = {
@@ -16,7 +16,7 @@ export const createOrchestratorStub = () => {
       managerRunning: false,
       maxWorkers: 1,
     }),
-    addUserInput: async (text: string, meta: InputMeta, quote?: string) => {
+    addUserInput: async (text: string, meta: UserMeta, quote?: string) => {
       addInputCalls.push({ text, meta, quote })
       return 'input-1'
     },

@@ -13,12 +13,17 @@ export type OrchestratorStatus = {
 
 const USER_META_STRING_KEYS = [
   'source',
+  'platform',
   'remote',
   'userAgent',
   'language',
   'clientLocale',
   'clientTimeZone',
   'clientNowIso',
+  'qqOpenid',
+  'qqMessageId',
+  'qqEventId',
+  'qqTimestamp',
 ] as const
 
 export const computeOrchestratorStatus = (

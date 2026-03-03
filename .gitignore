@@ -15,6 +15,7 @@ junit.xml
 !.env.example
 .env
 .env.*
+/config.yaml
 /.vscode
 
 # Runtime state

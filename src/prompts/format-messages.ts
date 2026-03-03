@@ -30,6 +30,8 @@ const formatMessagesYaml = (
     role: string
     time: string
     focus_id: string
+    source?: string
+    platform?: string
     quote?: string
     content: string
   }>,
@@ -55,6 +57,12 @@ export const formatInputs = (inputs: UserInput[]): string => {
         role: input.role,
         time: input.createdAt,
         focus_id: input.focusId,
+        ...(input.role === 'user' && input.source
+          ? { source: input.source }
+          : {}),
+        ...(input.role === 'user' && input.platform
+          ? { platform: input.platform }
+          : {}),
         ...(input.quote ? { quote: input.quote } : {}),
         content,
       }

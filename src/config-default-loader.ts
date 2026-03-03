@@ -1,9 +1,10 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 import { parse as parseYaml } from 'yaml'
 import { z } from 'zod'
 
+import { qqConfigSchema } from './channels/qq/config.js'
 const modelReasoningEffortSchema = z.enum([
   'minimal',
   'low',
@@ -11,7 +12,6 @@ const modelReasoningEffortSchema = z.enum([
   'high',
   'xhigh',
 ])
-
 const taskDefaultsSchema = z
   .object({
     timeoutMs: z.number().int().positive(),
@@ -19,7 +19,6 @@ const taskDefaultsSchema = z
     modelReasoningEffort: modelReasoningEffortSchema,
   })
   .strict()
-
 const defaultConfigSchema = z
   .object({
     manager: z
@@ -79,15 +78,33 @@ const defaultConfigSchema = z
         ...taskDefaultsSchema.shape,
       })
       .strict(),
+    qq: qqConfigSchema,
   })
   .strict()
-
 type AppDefaults = z.infer<typeof defaultConfigSchema>
-
 export const DEFAULT_CONFIG_PATH = fileURLToPath(
-  new URL('../config/default.yaml', import.meta.url),
+  new URL('../config.yaml', import.meta.url),
 )
-
+export const DEFAULT_CONFIG_TEMPLATE_PATH = fileURLToPath(
+  new URL('../config.yaml.default', import.meta.url),
+)
+const readOrCreateConfigSource = (path: string): string => {
+  try {
+    return readFileSync(path, 'utf8')
+  } catch (error) {
+    const { code } = error as NodeJS.ErrnoException
+    if (code !== 'ENOENT') throw error
+  }
+  const fallbackSource = readFileSync(DEFAULT_CONFIG_TEMPLATE_PATH, 'utf8')
+  try {
+    writeFileSync(path, fallbackSource, { encoding: 'utf8', flag: 'wx' })
+    return fallbackSource
+  } catch (error) {
+    const { code } = error as NodeJS.ErrnoException
+    if (code !== 'EEXIST') throw error
+    return readFileSync(path, 'utf8')
+  }
+}
 const parseDefaultConfigYaml = (source: string): AppDefaults => {
   const parsed = parseYaml(source) as unknown
   const validated = defaultConfigSchema.safeParse(parsed)
@@ -110,16 +127,14 @@ const parseDefaultConfigYaml = (source: string): AppDefaults => {
     }
     return validated.data
   }
-
   const issues = validated.error.issues
     .map((issue) => `${issue.path.join('.') || '<root>'}: ${issue.message}`)
     .join('; ')
   throw new Error(`[config] invalid yaml defaults: ${issues}`)
 }
-
 export const loadDefaultConfigFromYaml = (
   path = DEFAULT_CONFIG_PATH,
 ): AppDefaults => {
-  const source = readFileSync(path, 'utf8')
+  const source = readOrCreateConfigSource(path)
   return parseDefaultConfigYaml(source)
 }

@@ -69,6 +69,15 @@
 3. QQ 单聊接口技术上支持 markdown（`msg_type=2` + `markdown` 字段），但文档标注需要开通；且“被动 MD”需单独申请。  
 4. `ask_user_choice` 在 QQ 链路禁用：当前选择提交仅有 WebUI 路由 `POST /api/choices/:id/select`，QQ 侧无对等回传通道。  
 
+## 2026-03-02 实现落地（Mimikit）
+
+1. 已支持 QQ Webhook 入站（`POST /api/qq/events`，需 `qq.enabled=true`）。  
+2. 已支持 QQ 单聊被动文本回复（`/v2/users/{openid}/messages`，`msg_type=0`）。  
+3. 已实现入站去重与 `msg_seq` 递增持久化（`.mimikit/qq/event-state.json`）。  
+4. 已实现 QQ 被动回复窗口守卫（`60 分钟`）与单消息回复上限（`5`）。  
+5. 已新增配置项：`qq.enabled/appId/appSecret/apiBase/callbackPath/verifySign/clockSkewMs` 与环境变量 `QQ_*` 覆写。  
+6. 已完成代码层目录隔离：QQ 实现集中在 `src/channels/qq/*`，核心层仅通过 `src/channels/qq/index.ts` 集成。  
+
 ## 已知风险点
 
 1. 仓库仍处于 `0.0.x` 早期，接口与行为可能快速变化。  

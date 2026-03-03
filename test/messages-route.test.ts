@@ -50,7 +50,8 @@ test('input route forwards normalized payload to orchestrator', async () => {
     text: 'hello',
     quote: 'q-1',
     meta: {
-      source: 'http',
+      source: 'webui',
+      platform: 'webui',
       remote: '127.0.0.1',
       userAgent: 'vitest-agent',
       language: 'zh-CN',

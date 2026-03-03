@@ -7,6 +7,7 @@
 - `GET /api/events`
 - `GET /api/status`
 - `POST /api/input`
+- `POST /api/qq/events`（启用 `qq.enabled=true` 时注册）
 - `DELETE /api/messages/:id`
 - `GET /api/tasks/:id/archive`
 - `POST /api/tasks/:id/cancel`
@@ -46,8 +47,13 @@
 - `MIMIKIT_MANAGER_IDLE_TRIGGER_DELAY_MS`
 - `MIMIKIT_MANAGER_PLAN_WINDOW_MAX_COUNT`
 - `MIMIKIT_MANAGER_PLAN_WINDOW_MIN_COUNT`
+- `QQ_CHANNEL_ENABLED`
+- `QQ_APP_ID`
+- `QQ_CLIENT_SECRET`
+- `QQ_API_BASE`
+- `QQ_CALLBACK_PATH`
 
-## 配置结构（`config/default.yaml`）
+## 配置结构（`config.yaml`）
 
 - `manager.model`
 - `manager.maxCorrectionRounds`
@@ -61,6 +67,23 @@
 - `worker.timeoutMs`
 - `worker.model`
 - `worker.modelReasoningEffort`
+- `qq.enabled`
+- `qq.appId`
+- `qq.appSecret`
+- `qq.apiBase`
+- `qq.callbackPath`
+- `qq.verifySign`
+- `qq.clockSkewMs`
+
+## QQ 模块边界（`src/channels/qq/*`）
+
+- `config.ts`：QQ 配置 schema、环境变量覆写、启用态配置校验
+- `http-webhook.ts`：QQ webhook 入站与验签/ACK/C2C 入队
+- `signature.ts`：QQ 回调签名验签与 challenge 签名
+- `client.ts`：QQ OpenAPI token 获取与被动文本发送
+- `state.ts` + `state-schema.ts`：QQ 事件去重与 `msg_seq` 持久化
+- `passive-reply.ts`：manager 回复后的 QQ 被动发送守卫（60 分钟 + 5 条上限）
+- `index.ts`：对核心层暴露统一集成入口
 
 ## 状态目录（默认 `./.mimikit/`）
 
@@ -73,6 +96,7 @@
 - `history/YYYY-MM-DD.jsonl`
 - `memory/MEMORY.md`
 - `generated/*`（由 `/artifacts/*` 静态路由暴露）
+- `qq/event-state.json`
 - `runtime-snapshot.json`
 - `runtime-snapshot.json.bak`
 - `log.jsonl`

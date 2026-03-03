@@ -23,7 +23,6 @@ import {
   mergeChatMessages,
   selectChatMessages,
 } from '../read-model/chat-view.js'
-
 import { toUserInputLogMeta } from './orchestrator-helpers.js'
 import {
   hydrateRuntimeState,
@@ -38,18 +37,14 @@ import {
   cancelPendingUserChoiceByUserInput,
   selectPendingUserChoice,
 } from './user-choice.js'
-
 import type { RuntimeState, UserMeta } from './runtime-state.js'
 import type { ChatMessage, ChatMessagesMode } from '../read-model/chat-view.js'
 import type { SelectPendingUserChoiceResult } from './user-choice.js'
-
 const SHUTDOWN_MANAGER_WAIT_POLL_MS = 50
 const DELETED_MESSAGE_TEXT = 'Message deleted.'
-
 export type DeleteChatMessageResult =
   | { ok: true; id: string }
   | { ok: false; reason: 'not_found' | 'not_allowed' }
-
 export const addUserInput = async (
   runtime: RuntimeState,
   text: string,
@@ -64,7 +59,25 @@ export const addUserInput = async (
     : undefined
   const focusId = inherited ?? resolveDefaultFocusId(runtime)
   touchFocus(runtime, focusId)
-  const baseInput = { id, role: 'user' as const, text, createdAt, focusId }
+  const source = meta?.source?.trim()
+  const platform = meta?.platform?.trim()
+  const qqOpenid = meta?.qqOpenid?.trim()
+  const qqMessageId = meta?.qqMessageId?.trim()
+  const qqEventId = meta?.qqEventId?.trim()
+  const qqTimestamp = meta?.qqTimestamp?.trim()
+  const baseInput = {
+    id,
+    role: 'user' as const,
+    text,
+    createdAt,
+    focusId,
+    ...(source ? { source } : {}),
+    ...(platform ? { platform } : {}),
+    ...(qqOpenid ? { qqOpenid } : {}),
+    ...(qqMessageId ? { qqMessageId } : {}),
+    ...(qqEventId ? { qqEventId } : {}),
+    ...(qqTimestamp ? { qqTimestamp } : {}),
+  }
   const input = quoteId ? { ...baseInput, quote: quoteId } : baseInput
   await publishUserInput({ paths: runtime.paths, payload: input })
   runtime.inflightInputs.push(input)
@@ -85,7 +98,6 @@ export const addUserInput = async (
   notifyManagerLoop(runtime)
   return id
 }
-
 export const getChatMessages = async (
   runtime: RuntimeState,
   limit = 50,
@@ -99,22 +111,18 @@ export const getChatMessages = async (
     ...(afterId ? { afterId } : {}),
   })
 }
-
 export const deleteChatMessage = async (
   runtime: RuntimeState,
   messageId: string,
 ): Promise<DeleteChatMessageResult> => {
   const id = messageId.trim()
   if (!id) return { ok: false, reason: 'not_found' }
-
   const history = await readHistory(runtime.paths.history)
   const targetIndex = history.findIndex((message) => message.id === id)
   if (targetIndex < 0) return { ok: false, reason: 'not_found' }
-
   const target = history[targetIndex]
   if (!target) return { ok: false, reason: 'not_found' }
   if (target.role === 'system') return { ok: false, reason: 'not_allowed' }
-
   const nextHistory = [...history]
   nextHistory[targetIndex] = {
     id: target.id,
@@ -124,7 +132,6 @@ export const deleteChatMessage = async (
     createdAt: target.createdAt,
     focusId: target.focusId,
   }
-
   await rewriteHistory(runtime.paths.history, nextHistory)
   await appendLog(runtime.paths.log, {
     event: 'message_deleted',
@@ -134,7 +141,6 @@ export const deleteChatMessage = async (
   notifyUiSignal(runtime, 'messages')
   return { ok: true, id }
 }
-
 export const selectPendingUserChoiceFromUser = async (
   runtime: RuntimeState,
   choiceId: string,
@@ -157,7 +163,6 @@ export const selectPendingUserChoiceFromUser = async (
   notifyManagerLoop(runtime)
   return result
 }
-
 export const getChatHistory = async (
   runtime: RuntimeState,
   limit = 50,
@@ -169,7 +174,6 @@ export const getChatHistory = async (
     limit,
   })
 }
-
 export const startOrchestratorRuntime = async (
   runtime: RuntimeState,
 ): Promise<void> => {
@@ -200,13 +204,11 @@ export const startOrchestratorRuntime = async (
   void triggerWakeLoop(runtime)
   void workerLoop(runtime)
 }
-
 export const prepareStop = (runtime: RuntimeState): void => {
   runtime.stopped = true
   notifyManagerLoop(runtime)
   notifyWorkerLoop(runtime)
 }
-
 export const waitForManagerDrain = async (
   runtime: RuntimeState,
 ): Promise<void> => {
@@ -216,7 +218,6 @@ export const waitForManagerDrain = async (
     )
   }
 }
-
 export const persistStopSnapshot = async (
   runtime: RuntimeState,
 ): Promise<void> => {

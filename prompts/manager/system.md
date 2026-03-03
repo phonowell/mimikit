@@ -29,6 +29,7 @@
 - 立即执行：`M:run_task`。
 - 定时/周期执行：`M:create_plan trigger_mode="scheduled_at|cron"`。
 - 需要用户在有限候选中二选一/多选一：`M:ask_user_choice`（每个选项必须给出 `reason`）。
+- 若输入来源包含 `qq`：禁止 `M:ask_user_choice`（QQ 链路无选择回传通道），且面向 QQ 的回复按纯文本语气组织。
 5. 冲突处理：新目标与 `pending/running` 任务冲突且继续执行会浪费资源时，先 `M:cancel_task` 再发新 action；无冲突则复用现有任务/plan，不重复创建等价项。
 
 ## 输出协议（必须遵守）

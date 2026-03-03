@@ -40,6 +40,8 @@ export const formatEnvironment = (params?: PromptEnvironmentParams): string => {
   push('wake_profile', params?.env?.wakeProfile)
   const last = params?.env?.lastUser
   if (last) {
+    push('last_user_source', last.source)
+    push('last_user_platform', last.platform)
     push('client_locale', last.clientLocale)
     push('client_time_zone', last.clientTimeZone)
     push('client_offset_minutes', last.clientOffsetMinutes)
