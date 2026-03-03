@@ -14,7 +14,7 @@ const planTriggerModeSchema = z.enum([
   'cron',
   'scheduled_at',
   'on_idle',
-  'on_worker_slot_available',
+  'on_worker_slot_freed',
 ])
 const cooldownMsSchema = z.coerce.number().int().nonnegative()
 const maxRunsSchema = z.coerce.number().int().positive()
@@ -37,7 +37,7 @@ const validatePlanTriggerFields = (
       | 'cron'
       | 'scheduled_at'
       | 'on_idle'
-      | 'on_worker_slot_available'
+      | 'on_worker_slot_freed'
       | undefined
     cron?: string | undefined
     scheduled_at?: string | undefined
@@ -96,24 +96,24 @@ const validatePlanTriggerFields = (
     return
   }
 
-  if (mode === 'on_worker_slot_available') {
+  if (mode === 'on_worker_slot_freed') {
     if (cron)
       addCustomIssue(
         ctx,
         'cron',
-        'cron cannot be used when trigger_mode="on_worker_slot_available"',
+        'cron cannot be used when trigger_mode="on_worker_slot_freed"',
       )
     if (scheduledAt)
       addCustomIssue(
         ctx,
         'scheduled_at',
-        'scheduled_at cannot be used when trigger_mode="on_worker_slot_available"',
+        'scheduled_at cannot be used when trigger_mode="on_worker_slot_freed"',
       )
     if (hasCooldown)
       addCustomIssue(
         ctx,
         'cooldown_ms',
-        'cooldown_ms cannot be used when trigger_mode="on_worker_slot_available"',
+        'cooldown_ms cannot be used when trigger_mode="on_worker_slot_freed"',
       )
   }
 }

@@ -114,7 +114,7 @@ test('runtime snapshot accepts queue cursors', async () => {
   expect(loaded.taskPlans[0]?.id).toBe('plan-1')
 })
 
-test('runtime snapshot accepts on_worker_slot_available trigger', async () => {
+test('runtime snapshot accepts on_worker_slot_freed trigger', async () => {
   const stateDir = await createTmpDir()
   await saveRuntimeSnapshot(stateDir, {
     tasks: [],
@@ -122,7 +122,7 @@ test('runtime snapshot accepts on_worker_slot_available trigger', async () => {
       createPlanFixture({
         id: 'plan-capacity',
         trigger: {
-          mode: 'on_worker_slot_available',
+          mode: 'on_worker_slot_freed',
         },
       }),
     ],
@@ -130,7 +130,44 @@ test('runtime snapshot accepts on_worker_slot_available trigger', async () => {
 
   const loaded = await loadRuntimeSnapshot(stateDir)
   expect(loaded.taskPlans).toHaveLength(1)
-  expect(loaded.taskPlans[0]?.trigger.mode).toBe('on_worker_slot_available')
+  expect(loaded.taskPlans[0]?.trigger.mode).toBe('on_worker_slot_freed')
+})
+
+test('loadRuntimeSnapshot migrates legacy worker-slot trigger mode once', async () => {
+  const stateDir = await createTmpDir()
+  const snapshotPath = join(stateDir, 'runtime-snapshot.json')
+  await writeFile(
+    snapshotPath,
+    JSON.stringify({
+      tasks: [],
+      taskPlans: [
+        {
+          id: 'plan-legacy-capacity',
+          prompt: 'legacy',
+          title: 'legacy',
+          focusId: GLOBAL_FOCUS_ID,
+          profile: 'worker',
+          priority: 'normal',
+          source: 'user_request',
+          status: 'active',
+          trigger: {
+            mode: 'on_worker_slot_available',
+          },
+          createdAt: SNAPSHOT_BASE_TIME,
+          updatedAt: SNAPSHOT_BASE_TIME,
+          runCount: 0,
+        },
+      ],
+    }),
+    'utf8',
+  )
+
+  const loaded = await loadRuntimeSnapshot(stateDir)
+  expect(loaded.taskPlans[0]?.trigger.mode).toBe('on_worker_slot_freed')
+  const persisted = JSON.parse(await readFile(snapshotPath, 'utf8')) as {
+    taskPlans?: Array<{ trigger?: { mode?: string } }>
+  }
+  expect(persisted.taskPlans?.[0]?.trigger?.mode).toBe('on_worker_slot_freed')
 })
 
 test('buildTaskViews keeps task statuses', () => {

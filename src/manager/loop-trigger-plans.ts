@@ -6,7 +6,7 @@ import { compareIsoAsc, parseIsoMs } from '../shared/time.js'
 
 import {
   canFireOnIdle,
-  canFireOnWorkerSlotAvailable,
+  canFireOnWorkerSlotFreed,
   firePlan,
   markPlanDone,
   maybeMarkPlanExhausted,
@@ -131,13 +131,13 @@ export const triggerOnIdlePlans = async (
   return { triggeredCount, stateChanged }
 }
 
-export const triggerOnWorkerSlotAvailablePlans = async (
+export const triggerOnWorkerSlotFreedPlans = async (
   runtime: RuntimeState,
   nowMs: number,
 ): Promise<{ triggeredCount: number; stateChanged: boolean }> => {
   const nowIso = new Date(nowMs).toISOString()
   const items = runtime.taskPlans
-    .filter((plan) => canFireOnWorkerSlotAvailable(plan))
+    .filter((plan) => canFireOnWorkerSlotFreed(plan))
     .sort((a, b) => {
       const priorityRank =
         (a.priority === 'high' ? 0 : a.priority === 'normal' ? 1 : 2) -
@@ -155,7 +155,7 @@ export const triggerOnWorkerSlotAvailablePlans = async (
       runtime,
       plan,
       nowIso,
-      reason: 'on_worker_slot_available',
+      reason: 'on_worker_slot_freed',
     })
     if (plan.maxRuns !== undefined && plan.runCount >= plan.maxRuns)
       markPlanDone(plan, nowIso, 'completed')

@@ -18,7 +18,7 @@ const planTriggerPayload = (
     return { trigger_mode: 'scheduled_at', scheduled_at: trigger.scheduledAt }
   if (trigger.mode === 'on_idle')
     return { trigger_mode: 'on_idle', cooldown_ms: trigger.cooldownMs }
-  return { trigger_mode: 'on_worker_slot_available' }
+  return { trigger_mode: 'on_worker_slot_freed' }
 }
 
 export const appendPlanSystemMessage = async (
@@ -80,7 +80,7 @@ export const normalizePlanKey = (params: {
     return `${base}\nscheduled_at:${params.trigger.scheduledAt}`
   if (params.trigger.mode === 'on_idle')
     return `${base}\non_idle:${params.trigger.cooldownMs}`
-  return `${base}\non_worker_slot_available`
+  return `${base}\non_worker_slot_freed`
 }
 
 export const buildTrigger = (params: {
@@ -88,7 +88,7 @@ export const buildTrigger = (params: {
     | 'cron'
     | 'scheduled_at'
     | 'on_idle'
-    | 'on_worker_slot_available'
+    | 'on_worker_slot_freed'
   cron?: string | undefined
   scheduledAt?: string | undefined
   cooldownMs?: number | undefined
@@ -106,8 +106,8 @@ export const buildTrigger = (params: {
     return { mode: 'scheduled_at', scheduledAt }
   }
 
-  if (params.triggerMode === 'on_worker_slot_available')
-    return { mode: 'on_worker_slot_available' }
+  if (params.triggerMode === 'on_worker_slot_freed')
+    return { mode: 'on_worker_slot_freed' }
 
   return {
     mode: 'on_idle',
@@ -122,7 +122,7 @@ export const resolveUpdatedTrigger = (
       | 'cron'
       | 'scheduled_at'
       | 'on_idle'
-      | 'on_worker_slot_available'
+      | 'on_worker_slot_freed'
       | undefined
     cron?: string | undefined
     scheduledAt?: string | undefined
@@ -169,7 +169,7 @@ export const isDoneLastTaskPatch = (params: {
       | 'cron'
       | 'scheduled_at'
       | 'on_idle'
-      | 'on_worker_slot_available'
+      | 'on_worker_slot_freed'
       | undefined
     cron?: string | undefined
     scheduled_at?: string | undefined

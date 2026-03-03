@@ -64,6 +64,30 @@ const backupRuntimeState = async (path: string): Promise<void> => {
   }
 }
 
+const migrationErrorMessage = (path: string, error: unknown): string => {
+  const detail = error instanceof Error ? error.message : String(error)
+  return [
+    'runtime_snapshot_migration_failed:',
+    `failed to persist migrated trigger_mode in ${path}.`,
+    'Replace every plan trigger mode "on_worker_slot_available" with "on_worker_slot_freed" and retry.',
+    `cause=${detail}`,
+  ].join(' ')
+}
+
+const parseAndMigrateRuntimeSnapshot = async (
+  value: unknown,
+  path: string,
+): Promise<RuntimeSnapshot> => {
+  const parsed = parseRuntimeSnapshot(value)
+  if (!parsed.migratedLegacyPlanTriggerMode) return parsed.snapshot
+  try {
+    await writeJson(path, parsed.snapshot)
+  } catch (error) {
+    throw new Error(migrationErrorMessage(path, error))
+  }
+  return parsed.snapshot
+}
+
 export const loadRuntimeSnapshot = async (
   stateDir: string,
 ): Promise<RuntimeSnapshot> => {
@@ -73,9 +97,9 @@ export const loadRuntimeSnapshot = async (
   await ensureFile(path, toPrettyJsonText(initial))
   const fallback = Symbol('runtime-snapshot-read-fallback')
   const primary = await readJson<unknown | typeof fallback>(path, fallback)
-  if (primary !== fallback) return parseRuntimeSnapshot(primary)
+  if (primary !== fallback) return parseAndMigrateRuntimeSnapshot(primary, path)
   const backup = await readJson<unknown | typeof fallback>(backupPath, fallback)
-  if (backup !== fallback) return parseRuntimeSnapshot(backup)
+  if (backup !== fallback) return parseAndMigrateRuntimeSnapshot(backup, path)
   return initial
 }
 

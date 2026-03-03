@@ -16,7 +16,7 @@
 
 - `manager`：消费 `inputs/results`，输出用户回复与编排动作。
 - `worker`：执行任务并回写结果。
-- `triggerWakeLoop`：统一处理 `cron/scheduled_at/on_idle/on_worker_slot_available` 触发并发布 `system_event.name=trigger_fire`。
+- `triggerWakeLoop`：统一处理 `cron/scheduled_at/on_idle/on_worker_slot_freed` 触发并发布 `system_event.name=trigger_fire`。
 
 补充：
 

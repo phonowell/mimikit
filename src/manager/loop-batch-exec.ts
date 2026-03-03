@@ -37,7 +37,7 @@ const resolveWakeProfile = (
   const hasTaskResult = results.length > 0
   const hasTriggerWake = inputs.some((item) => hasSystemEvent(item, 'trigger_fire'))
   const hasCapacityWake = inputs.some((item) =>
-    hasSystemEvent(item, 'worker_slot_available'),
+    hasSystemEvent(item, 'worker_slot_freed'),
   )
   const hasIdleWake = inputs.some((item) => hasSystemEvent(item, 'idle'))
   const activeKinds = [

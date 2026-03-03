@@ -35,7 +35,7 @@ export const resolveWorkerSlotCapacity = (
   }
 }
 
-export const hasWorkerSlotAvailable = (runtime: RuntimeState): boolean =>
+export const hasFreeWorkerSlot = (runtime: RuntimeState): boolean =>
   resolveWorkerSlotCapacity(runtime).availableSlots > 0
 
 export const isWorkerBusy = (runtime: RuntimeState): boolean =>
@@ -84,9 +84,9 @@ export const canFireOnIdle = (plan: TaskPlan, nowMs: number): boolean => {
   return nowMs - lastCompletedMs >= cooldownMs
 }
 
-export const canFireOnWorkerSlotAvailable = (plan: TaskPlan): boolean => {
+export const canFireOnWorkerSlotFreed = (plan: TaskPlan): boolean => {
   if (plan.status !== 'active') return false
-  if (plan.trigger.mode !== 'on_worker_slot_available') return false
+  if (plan.trigger.mode !== 'on_worker_slot_freed') return false
   if (plan.maxRuns !== undefined && plan.runCount >= plan.maxRuns)
     return false
   return true
@@ -96,7 +96,7 @@ export const firePlan = async (params: {
   runtime: RuntimeState
   plan: TaskPlan
   nowIso: string
-  reason: 'cron' | 'scheduled_at' | 'on_idle' | 'on_worker_slot_available'
+  reason: 'cron' | 'scheduled_at' | 'on_idle' | 'on_worker_slot_freed'
 }): Promise<void> => {
   const { runtime, plan, nowIso } = params
   plan.runCount += 1

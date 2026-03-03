@@ -109,7 +109,7 @@ export type TaskPlanTriggerMode =
   | 'cron'
   | 'scheduled_at'
   | 'on_idle'
-  | 'on_worker_slot_available'
+  | 'on_worker_slot_freed'
 export type FocusStatus = 'active' | 'idle' | 'done' | 'archived'
 export type TaskCancelMeta = z.infer<typeof taskCancelSchema>
 export type TaskResult = z.infer<typeof taskResultSchema>
