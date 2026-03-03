@@ -27,6 +27,7 @@ import {
   renderPromptTemplate,
 } from './format.js'
 import { escapeCdata } from './format-base.js'
+import { prepareWorkerTaskPrompt } from './build-worker-task-prompt.js'
 import { loadPromptFile, loadPromptSource } from './prompt-loader.js'
 
 import type { AppConfig } from '../config.js'
@@ -160,7 +161,11 @@ export const buildWorkerPrompt = async (params: {
   task: Task
 }): Promise<string> => {
   const systemSource = await loadPromptSource('worker/system.md')
-  let taskPrompt = params.task.prompt
+  let taskPrompt = await prepareWorkerTaskPrompt({
+    workDir: params.workDir,
+    taskId: params.task.id,
+    taskPrompt: params.task.prompt,
+  })
   if (params.task.cron || params.task.scheduledAt) {
     const prefix = await loadPromptFile('worker', 'cron-trigger-context')
     if (prefix) taskPrompt = `${prefix.trim()}\n\n${taskPrompt}`
