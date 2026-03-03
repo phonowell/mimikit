@@ -14,6 +14,7 @@ export type SystemEventName =
   | 'plan_created'
   | 'plan_updated'
   | 'plan_deleted'
+  | 'session_summary_restored'
 
 const toInlineJson = (payload: Record<string, unknown>): string =>
   JSON.stringify(payload).replace(/[<>&]/g, (char) => {

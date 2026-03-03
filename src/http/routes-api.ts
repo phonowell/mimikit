@@ -1,5 +1,6 @@
 import { assertEnabledQqConfig, registerQqWebhookRoute } from '../channels/qq/index.js'
 import { logSafeError } from '../log/safe.js'
+import { stagePendingRestartSummary } from '../orchestrator/core/restart-summary.js'
 
 import { clearStateDir, parseInputBody } from './helpers.js'
 import { resolveRouteId } from './route-params.js'
@@ -94,13 +95,21 @@ export const registerApiRoutes = (
 
   const rejectWhenBusy = (
     reply: FastifyReply,
-    action: 'restart' | 'reset',
+    action: 'restart' | 'reset' | 'reset-with-summary',
   ): boolean => {
     if (isRuntimeIdleForControlAction()) return false
     reply.code(409).send({
       error: `${action} requires idle state: wait for manager and workers to become idle`,
     })
     return true
+  }
+
+  const clearStateDirSafely = async (reason: string): Promise<void> => {
+    try {
+      await clearStateDir(config.workDir)
+    } catch (error) {
+      await logSafeError(reason, error)
+    }
   }
 
   app.post('/api/restart', (_request, reply) => {
@@ -114,13 +123,34 @@ export const registerApiRoutes = (
     reply.send({ ok: true })
     scheduleExit({
       exitReason: 'http_api_reset',
-      afterPersist: async () => {
-        try {
-          await clearStateDir(config.workDir)
-        } catch (error) {
-          await logSafeError('http: reset', error)
-        }
-      },
+      afterPersist: async () => clearStateDirSafely('http: reset'),
+    })
+  })
+
+  app.post('/api/reset-with-summary', async (_request, reply) => {
+    if (rejectWhenBusy(reply, 'reset-with-summary')) return
+
+    try {
+      const status = orchestrator.getStatus()
+      const history = await orchestrator.getChatHistory(100)
+      await stagePendingRestartSummary({
+        stateDir: config.workDir,
+        runtimeId: status.runtimeId,
+        messages: history,
+      })
+    } catch (error) {
+      await logSafeError('http: reset-with-summary: stage', error)
+      reply.code(500).send({
+        error: 'reset-with-summary failed: unable to stage conversation summary',
+      })
+      return
+    }
+
+    reply.send({ ok: true })
+    scheduleExit({
+      exitReason: 'http_api_reset_with_summary',
+      afterPersist: async () =>
+        clearStateDirSafely('http: reset-with-summary: clear_state'),
     })
   })
 }

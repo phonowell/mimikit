@@ -14,7 +14,6 @@ import {
 } from './build-prompts-helpers.js'
 import {
   formatActionFeedback,
-  formatCompressedFocusContexts,
   formatEnvironment,
   formatFocusContexts,
   formatFocusList,
@@ -31,7 +30,6 @@ import { escapeCdata } from './format-base.js'
 import { loadPromptFile, loadPromptSource } from './prompt-loader.js'
 
 import type { AppConfig } from '../config.js'
-import type { ManagerFocusCompressedContext } from '../orchestrator/core/runtime-state.js'
 import type {
   FocusContext,
   FocusId,
@@ -61,7 +59,6 @@ export const buildManagerPrompt = async (params: {
   historyLookup?: HistoryLookupMessage[]
   readFileLookup?: ReadFileLookupMessage[]
   actionFeedback?: ManagerActionFeedback[]
-  compressedFocusContexts?: ManagerFocusCompressedContext[]
   env?: ManagerEnv
   focuses?: FocusMeta[]
   focusContexts?: FocusContext[]
@@ -148,10 +145,6 @@ export const buildManagerPrompt = async (params: {
     action_feedback: sectionYaml(
       formatActionFeedback(params.actionFeedback ?? []),
       limits.actionFeedbackMaxBytes,
-    ),
-    compressed_context: sectionYaml(
-      formatCompressedFocusContexts(params.compressedFocusContexts ?? []),
-      limits.compressedContextMaxBytes,
     ),
   }
 

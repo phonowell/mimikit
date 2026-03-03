@@ -200,10 +200,14 @@ const createFixture = (idle = true) => {
   const toolsToggleBtn = new FakeElement('Tools')
   const toolsMenu = new FakeElement()
   const toolsRestartBtn = new FakeElement('Restart')
+  const toolsResetWithSummaryBtn = new FakeElement('Summarize + Reset')
   const toolsResetBtn = new FakeElement('Reset')
   const restartDialog = new FakeElement()
   const restartCancelBtn = new FakeElement('Cancel restart')
   const restartConfirmBtn = new FakeElement('Confirm restart')
+  const summaryResetDialog = new FakeElement()
+  const summaryResetCancelBtn = new FakeElement('Cancel summarize reset')
+  const summaryResetConfirmBtn = new FakeElement('Confirm summarize reset')
   const resetDialog = new FakeElement()
   const resetCancelBtn = new FakeElement('Cancel reset')
   const resetConfirmBtn = new FakeElement('Confirm reset')
@@ -228,10 +232,14 @@ const createFixture = (idle = true) => {
     toolsToggleBtn,
     toolsMenu,
     toolsRestartBtn,
+    toolsResetWithSummaryBtn,
     toolsResetBtn,
     restartDialog,
     restartCancelBtn,
     restartConfirmBtn,
+    summaryResetDialog,
+    summaryResetCancelBtn,
+    summaryResetConfirmBtn,
     resetDialog,
     resetCancelBtn,
     resetConfirmBtn,
@@ -245,10 +253,14 @@ const createFixture = (idle = true) => {
     toolsToggleBtn,
     toolsMenu,
     toolsRestartBtn,
+    toolsResetWithSummaryBtn,
     toolsResetBtn,
     restartDialog,
     restartCancelBtn,
     restartConfirmBtn,
+    summaryResetDialog,
+    summaryResetCancelBtn,
+    summaryResetConfirmBtn,
     resetDialog,
     resetCancelBtn,
     resetConfirmBtn,
@@ -275,12 +287,14 @@ test('non-idle state disables tools actions and exposes reason via tooltip', () 
   const fixture = createFixture(false)
   try {
     expect(fixture.toolsRestartBtn.disabled).toBe(true)
+    expect(fixture.toolsResetWithSummaryBtn.disabled).toBe(true)
     expect(fixture.toolsResetBtn.disabled).toBe(true)
     expect(fixture.toolsToggleBtn.getAttribute('title')).toBe(NON_IDLE_UI_HINT)
     expect(fixture.toolsRestartBtn.getAttribute('title')).toBe(NON_IDLE_UI_HINT)
     expect(fixture.toolsResetBtn.getAttribute('title')).toBe(NON_IDLE_UI_HINT)
 
     fixture.toolsRestartBtn.dispatchEvent('click')
+    fixture.toolsResetWithSummaryBtn.dispatchEvent('click')
     fixture.toolsResetBtn.dispatchEvent('click')
 
     expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(0)
@@ -289,24 +303,38 @@ test('non-idle state disables tools actions and exposes reason via tooltip', () 
   }
 })
 
-test('restart and reset dialogs are isolated and never open together', () => {
+test('restart, summarize-reset, and reset dialogs are isolated', () => {
   const fixture = createFixture(true)
   try {
     fixture.toolsRestartBtn.dispatchEvent('click')
     expect(fixture.restartDialog.open).toBe(true)
+    expect(fixture.summaryResetDialog.open).toBe(false)
+    expect(fixture.resetDialog.open).toBe(false)
+
+    fixture.toolsResetWithSummaryBtn.dispatchEvent('click')
+    expect(fixture.summaryResetDialog.open).toBe(true)
+    expect(fixture.restartDialog.open).toBe(false)
     expect(fixture.resetDialog.open).toBe(false)
 
     fixture.toolsResetBtn.dispatchEvent('click')
     expect(fixture.resetDialog.open).toBe(true)
     expect(fixture.restartDialog.open).toBe(false)
+    expect(fixture.summaryResetDialog.open).toBe(false)
   } finally {
     fixture.dispose()
   }
 })
 
-test('restart and reset confirm actions call separate endpoints', async () => {
+test('restart, summarize-reset, and reset confirm actions call separate endpoints', async () => {
   const calledUrls: string[] = []
-  const runtimeIds = ['runtime-1', 'runtime-2', 'runtime-3', 'runtime-4']
+  const runtimeIds = [
+    'runtime-1',
+    'runtime-2',
+    'runtime-3',
+    'runtime-4',
+    'runtime-5',
+    'runtime-6',
+  ]
   fetchWithTimeoutMock.mockImplementation(async (url) => {
     calledUrls.push(String(url))
     if (url === '/api/status') {
@@ -318,15 +346,25 @@ test('restart and reset confirm actions call separate endpoints', async () => {
         pendingTasks: 0,
       })
     }
-    if (url === '/api/restart' || url === '/api/reset') return createResponse({ ok: true })
+    if (
+      url === '/api/restart' ||
+      url === '/api/reset' ||
+      url === '/api/reset-with-summary'
+    )
+      return createResponse({ ok: true })
     throw new Error(`unexpected url: ${String(url)}`)
   })
 
   const restartFixture = createFixture(true)
+  const summaryResetFixture = createFixture(true)
   const resetFixture = createFixture(true)
   try {
     restartFixture.toolsRestartBtn.dispatchEvent('click')
     restartFixture.restartConfirmBtn.dispatchEvent('click')
+    await flush()
+
+    summaryResetFixture.toolsResetWithSummaryBtn.dispatchEvent('click')
+    summaryResetFixture.summaryResetConfirmBtn.dispatchEvent('click')
     await flush()
 
     resetFixture.toolsResetBtn.dispatchEvent('click')
@@ -334,9 +372,11 @@ test('restart and reset confirm actions call separate endpoints', async () => {
     await flush()
 
     expect(calledUrls.filter((url) => url === '/api/restart')).toHaveLength(1)
+    expect(calledUrls.filter((url) => url === '/api/reset-with-summary')).toHaveLength(1)
     expect(calledUrls.filter((url) => url === '/api/reset')).toHaveLength(1)
   } finally {
     restartFixture.dispose()
+    summaryResetFixture.dispose()
     resetFixture.dispose()
   }
 })

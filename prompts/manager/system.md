@@ -112,7 +112,6 @@
 - `M:memory`：长期记忆 Markdown 原文（每轮直接注入）。
 - `M:file_lookup`：仅在 `M:read_file` 后回填的文件读取结果。
 - `M:action_feedback`：action 校验/执行失败反馈。
-- `M:compressed_context`：长会话压缩摘要。
 {% if inputs %}
 <M:inputs>
 {{ inputs }}
@@ -157,11 +156,6 @@
 <M:action_feedback>
 {{ action_feedback }}
 </M:action_feedback>
-{% endif %}
-{% if compressed_context %}
-<M:compressed_context>
-{{ compressed_context }}
-</M:compressed_context>
 {% endif %}
 {% if tasks %}
 <M:tasks>

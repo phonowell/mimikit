@@ -1,6 +1,6 @@
-import { mkdtemp } from 'node:fs/promises'
+import { mkdtemp, readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { basename, dirname, join } from 'node:path'
 
 import fastify from 'fastify'
 import { expect, test, vi } from 'vitest'
@@ -308,5 +308,50 @@ test('reset route rejects when manager or worker is not idle', async () => {
   })
   expect(stopAndPersist).toHaveBeenCalledTimes(0)
   expect(exitRequests).toHaveLength(0)
+  await app.close()
+})
+
+test('reset-with-summary route stages summary and requests orchestrator exit', async () => {
+  const app = fastify()
+  const { orchestrator, exitRequests } = createOrchestratorStub()
+  const stopAndPersist = vi.fn(async () => undefined)
+  ;(orchestrator as unknown as { stopAndPersist: () => Promise<void> }).stopAndPersist =
+    stopAndPersist
+  ;(
+    orchestrator as unknown as {
+      getChatHistory: (limit?: number) => Promise<
+        Array<{ id: string; role: 'user' | 'agent' | 'system'; text: string }>
+      >
+    }
+  ).getChatHistory = async () => [
+    { id: 'input-1', role: 'user', text: 'Need a concise release checklist.' },
+    { id: 'input-2', role: 'agent', text: 'Drafted checklist with 5 items.' },
+  ]
+  const workDir = await mkdtemp(join(tmpdir(), 'mimikit-reset-summary-route-'))
+  const config = defaultConfig({ workDir })
+  registerApiRoutes(app, orchestrator, config)
+
+  const response = await app.inject({
+    method: 'POST',
+    url: '/api/reset-with-summary',
+  })
+  expect(response.statusCode).toBe(200)
+  expect(response.json()).toEqual({ ok: true })
+  await new Promise((resolve) => setTimeout(resolve, 180))
+
+  expect(stopAndPersist).toHaveBeenCalledTimes(1)
+  expect(exitRequests).toEqual([
+    { code: 75, reason: 'http_api_reset_with_summary' },
+  ])
+  const pendingPath = join(
+    dirname(workDir),
+    `${basename(workDir)}.pending-summary.json`,
+  )
+  const staged = JSON.parse(await readFile(pendingPath, 'utf8')) as {
+    consumed?: boolean
+    summary?: string
+  }
+  expect(staged.consumed).toBe(false)
+  expect(staged.summary).toContain('Conversation highlights before reset')
   await app.close()
 })

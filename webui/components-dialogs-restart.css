@@ -1,4 +1,5 @@
 .restart-header,
+.summary-reset-header,
 .reset-header,
 .message-delete-header {
   display: flex;
@@ -8,6 +9,7 @@
 }
 
 .restart-title,
+.summary-reset-title,
 .reset-title,
 .message-delete-title {
   margin: 0;
@@ -16,6 +18,7 @@
 }
 
 .restart-description,
+.summary-reset-description,
 .reset-description,
 .message-delete-description {
   margin: 0;
@@ -25,6 +28,7 @@
 }
 
 .restart-actions,
+.summary-reset-actions,
 .reset-actions,
 .message-delete-actions {
   display: flex;

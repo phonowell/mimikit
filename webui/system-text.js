@@ -5,8 +5,10 @@ const STATUS_TEXT_MAP = Object.freeze({
   disconnected: 'OFFLINE',
   restarting: 'RESTARTING',
   resetting: 'RESETTING',
+  'summarizing and resetting': 'SUMMARIZE+RESET',
   'restart failed': 'RESTART ERROR',
   'reset failed': 'RESET ERROR',
+  'summarize-reset failed': 'SUMMARY RESET ERROR',
 })
 
 const TASK_STATUS_LABEL_MAP = Object.freeze({

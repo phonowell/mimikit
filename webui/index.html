@@ -107,6 +107,16 @@
                 </button>
                 <button
                   class="tools-menu-item tools-menu-item--danger"
+                  data-tools-reset-with-summary
+                  type="button"
+                  role="menuitem"
+                  title="Summarize + Reset"
+                  aria-label="Summarize + Reset"
+                >
+                  Summarize + Reset
+                </button>
+                <button
+                  class="tools-menu-item tools-menu-item--danger"
                   data-tools-reset
                   type="button"
                   role="menuitem"
@@ -116,6 +126,9 @@
                   Reset
                 </button>
               </div>
+              <p class="tools-idle-hint" data-tools-idle-hint hidden>
+                Restart tools are available only when manager and workers are idle.
+              </p>
             </div>
           </div>
         </div>
@@ -294,6 +307,46 @@
               type="button"
             >
               Restart
+            </button>
+          </div>
+        </section>
+      </dialog>
+
+      <dialog
+        class="summary-reset-dialog"
+        data-summary-reset-dialog
+        id="summary-reset-dialog"
+        aria-labelledby="summary-reset-title"
+        aria-describedby="summary-reset-description"
+      >
+        <section class="summary-reset-panel">
+          <header class="summary-reset-header">
+            <h2 class="summary-reset-title" id="summary-reset-title">
+              Summarize and Reset Runtime?
+            </h2>
+          </header>
+          <p class="summary-reset-description" id="summary-reset-description">
+            A conversation summary will be generated before reset and restored as a
+            system message after restart.
+          </p>
+          <div
+            class="summary-reset-actions"
+            role="group"
+            aria-label="Summarize and reset"
+          >
+            <button
+              class="btn btn--md btn--dialog"
+              data-summary-reset-cancel
+              type="button"
+            >
+              Cancel
+            </button>
+            <button
+              class="btn btn--md btn--dialog btn--danger"
+              data-summary-reset-confirm
+              type="button"
+            >
+              Summarize and Reset
             </button>
           </div>
         </section>
