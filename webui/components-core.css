@@ -219,7 +219,7 @@
 }
 
 .tasks-worker-dots .worker-dot[data-state='running'] {
-  background: var(--status-success);
+  background: var(--status-running);
 }
 
 .tasks-worker-dots .worker-dot[data-state='idle'] {
