@@ -27,7 +27,7 @@ export const UI_TEXT = Object.freeze({
   untitledTask: 'Untitled',
   cancelingTask: 'Canceling',
   deleteMessages: 'Delete messages',
-  deleteModeExit: 'Exit delete mode',
+  deleteModeExit: 'Exit delete messages',
   deleteModeConfirmPrompt: 'Enter delete mode?',
   quote: 'Quote',
   delete: 'Delete',
