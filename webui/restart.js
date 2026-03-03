@@ -7,6 +7,35 @@ const RESTART_REQUEST_TIMEOUT_MS = 12000
 const STATUS_POLL_TIMEOUT_MS = 60000
 const STATUS_POLL_INTERVAL_MS = 300
 const STATUS_REQUEST_OPTIONS = { cache: 'no-store' }
+const NON_IDLE_UI_HINT =
+  'Restart and reset are available only when manager and workers are idle.'
+const NON_IDLE_BLOCK_REASON =
+  'system is busy; wait for manager and workers to become idle'
+
+const normalizeTaskCount = (value) => {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return null
+  if (value <= 0) return 0
+  return Math.floor(value)
+}
+
+const isStatusIdle = (raw) => {
+  if (!isRecord(raw)) return false
+  const managerRunning = raw.managerRunning
+  const activeTasks = normalizeTaskCount(raw.activeTasks)
+  const pendingTasks = normalizeTaskCount(raw.pendingTasks)
+
+  if (
+    typeof managerRunning === 'boolean' &&
+    activeTasks !== null &&
+    pendingTasks !== null
+  ) 
+    return !managerRunning && activeTasks === 0 && pendingTasks === 0
+  
+
+  const agentStatus =
+    typeof raw.agentStatus === 'string' ? raw.agentStatus.trim().toLowerCase() : ''
+  return agentStatus === 'idle'
+}
 
 const readRuntimeIdFromStatus = (raw) => {
   if (!isRecord(raw)) return ''
@@ -16,20 +45,59 @@ const readRuntimeIdFromStatus = (raw) => {
   return trimmed.length > 0 ? trimmed : ''
 }
 
-const fetchStatusRuntimeId = async () => {
-  const response = await fetchWithTimeout(
-    '/api/status',
-    STATUS_REQUEST_OPTIONS,
-    RESTART_REQUEST_TIMEOUT_MS,
-  )
-  if (!response.ok) return ''
+const readStatusError = (raw) => {
+  if (!isRecord(raw)) return ''
+  const error = raw.error
+  if (typeof error !== 'string') return ''
+  const trimmed = error.trim()
+  return trimmed.length > 0 ? trimmed : ''
+}
+
+const readResponseError = async (response, fallback) => {
   let payload = null
   try {
     payload = await response.json()
   } catch {
     payload = null
   }
-  return readRuntimeIdFromStatus(payload)
+  const detail = readStatusError(payload)
+  return detail || fallback
+}
+
+const fetchStatusSnapshot = async () => {
+  try {
+    const response = await fetchWithTimeout(
+      '/api/status',
+      STATUS_REQUEST_OPTIONS,
+      RESTART_REQUEST_TIMEOUT_MS,
+    )
+    if (!response.ok) {
+      return {
+        runtimeId: '',
+        isIdle: false,
+        error: `status request failed (${response.status})`,
+      }
+    }
+
+    let payload = null
+    try {
+      payload = await response.json()
+    } catch {
+      payload = null
+    }
+
+    return {
+      runtimeId: readRuntimeIdFromStatus(payload),
+      isIdle: isStatusIdle(payload),
+      error: readStatusError(payload),
+    }
+  } catch {
+    return {
+      runtimeId: '',
+      isIdle: false,
+      error: 'status request failed',
+    }
+  }
 }
 
 export function bindRestart({
@@ -38,34 +106,65 @@ export function bindRestart({
   toolsMenu,
   toolsRestartBtn,
   toolsResetBtn,
+  toolsIdleHint,
   restartDialog,
   restartCancelBtn,
   restartConfirmBtn,
-  restartResetBtn,
+  resetDialog,
+  resetCancelBtn,
+  resetConfirmBtn,
   statusText,
   statusDot,
   messages,
 }) {
   const toolsEnabled = Boolean(
-    toolsToggleBtn &&
-      toolsMenu &&
-      toolsRestartBtn &&
-      toolsResetBtn,
+    toolsToggleBtn && toolsMenu && toolsRestartBtn && toolsResetBtn,
   )
   const fallbackEnabled = Boolean(restartBtn)
   if (!toolsEnabled && !fallbackEnabled) return
 
-  const dialogOpenBtn = toolsEnabled ? toolsRestartBtn : restartBtn
-  const focusRestoreBtn = toolsEnabled ? toolsToggleBtn : dialogOpenBtn
-  const dialogEnabled = Boolean(
-    restartDialog &&
-      dialogOpenBtn &&
-      restartCancelBtn &&
-      restartConfirmBtn &&
-      restartResetBtn,
+  const restartOpenBtn = toolsEnabled ? toolsRestartBtn : restartBtn
+  const resetOpenBtn = toolsEnabled ? toolsResetBtn : null
+
+  const restartDialogEnabled = Boolean(
+    restartDialog && restartOpenBtn && restartCancelBtn && restartConfirmBtn,
   )
+  const resetDialogEnabled = Boolean(
+    resetDialog && resetOpenBtn && resetCancelBtn && resetConfirmBtn,
+  )
+
   let isBusy = false
   let isToolsMenuOpen = false
+  let isRuntimeIdle = true
+
+  const titleByElement = new Map()
+  const rememberDefaultTitle = (element) => {
+    if (!element || titleByElement.has(element)) return
+    const current = element.getAttribute('title')
+    titleByElement.set(element, typeof current === 'string' ? current : '')
+  }
+
+  const restoreDefaultTitle = (element) => {
+    if (!element) return
+    const original = titleByElement.get(element) ?? ''
+    if (original) element.setAttribute('title', original)
+    else element.removeAttribute('title')
+  }
+
+  const setBlockedTitle = (element, blocked) => {
+    if (!element) return
+    if (blocked) element.setAttribute('title', NON_IDLE_UI_HINT)
+    else restoreDefaultTitle(element)
+  }
+
+  ;[
+    restartBtn,
+    toolsToggleBtn,
+    toolsRestartBtn,
+    toolsResetBtn,
+    restartConfirmBtn,
+    resetConfirmBtn,
+  ].forEach(rememberDefaultTitle)
 
   const setToolsMenuOpen = (open) => {
     if (!toolsEnabled || !toolsToggleBtn || !toolsMenu) return
@@ -82,10 +181,12 @@ export function bindRestart({
 
   if (toolsEnabled) setToolsMenuOpen(false)
 
-  const dialog = dialogEnabled
+  const focusRestoreBtn = toolsEnabled ? toolsToggleBtn : restartOpenBtn
+
+  const restartDialogController = restartDialogEnabled
     ? createDialogController({
         dialog: restartDialog,
-        trigger: dialogOpenBtn,
+        trigger: restartOpenBtn,
         focusOnOpen: restartCancelBtn,
         onAfterClose: () => {
           if (!isBusy && focusRestoreBtn) focusRestoreBtn.focus()
@@ -93,16 +194,83 @@ export function bindRestart({
       })
     : null
 
-  if (dialogEnabled && dialog) dialog.setExpanded(false)
+  const resetDialogController = resetDialogEnabled
+    ? createDialogController({
+        dialog: resetDialog,
+        trigger: resetOpenBtn,
+        focusOnOpen: resetCancelBtn,
+        onAfterClose: () => {
+          if (!isBusy && focusRestoreBtn) focusRestoreBtn.focus()
+        },
+      })
+    : null
 
-  const disableActions = (disabled) => {
-    if (restartBtn) restartBtn.disabled = disabled
-    if (toolsToggleBtn) toolsToggleBtn.disabled = disabled
-    if (toolsRestartBtn) toolsRestartBtn.disabled = disabled
-    if (toolsResetBtn) toolsResetBtn.disabled = disabled
-    if (restartCancelBtn) restartCancelBtn.disabled = disabled
-    if (restartConfirmBtn) restartConfirmBtn.disabled = disabled
-    if (restartResetBtn) restartResetBtn.disabled = disabled
+  if (restartDialogController) restartDialogController.setExpanded(false)
+  if (resetDialogController) resetDialogController.setExpanded(false)
+
+  const closeAllDialogs = () => {
+    if (restartDialogController) restartDialogController.close()
+    if (resetDialogController) resetDialogController.close()
+  }
+
+  const syncControlState = () => {
+    const blockedByIdle = !isRuntimeIdle
+    const disableActions = isBusy || blockedByIdle
+
+    if (restartBtn) restartBtn.disabled = disableActions
+    if (toolsRestartBtn) toolsRestartBtn.disabled = disableActions
+    if (toolsResetBtn) toolsResetBtn.disabled = disableActions
+    if (toolsToggleBtn) toolsToggleBtn.disabled = isBusy
+    if (restartCancelBtn) restartCancelBtn.disabled = isBusy
+    if (restartConfirmBtn) restartConfirmBtn.disabled = disableActions
+    if (resetCancelBtn) resetCancelBtn.disabled = isBusy
+    if (resetConfirmBtn) resetConfirmBtn.disabled = disableActions
+
+    setBlockedTitle(restartBtn, blockedByIdle)
+    setBlockedTitle(toolsRestartBtn, blockedByIdle)
+    setBlockedTitle(toolsResetBtn, blockedByIdle)
+    setBlockedTitle(restartConfirmBtn, blockedByIdle)
+    setBlockedTitle(resetConfirmBtn, blockedByIdle)
+
+    if (toolsIdleHint) toolsIdleHint.hidden = !blockedByIdle
+
+    if (blockedByIdle) {
+      closeToolsMenu()
+      closeAllDialogs()
+    }
+  }
+
+  const readUiIdleState = () => {
+    if (messages && typeof messages.isFullyIdle === 'function')
+      return messages.isFullyIdle()
+    const state = statusDot?.dataset?.state?.trim().toLowerCase()
+    return state === 'idle'
+  }
+
+  const refreshUiIdleState = () => {
+    isRuntimeIdle = readUiIdleState()
+    syncControlState()
+    return isRuntimeIdle
+  }
+
+  const restoreAfterRequestFailure = (mode, reason = '') => {
+    isBusy = false
+    refreshUiIdleState()
+    const fallback = mode === 'reset' ? 'reset failed' : 'restart failed'
+    setStatusText(statusText, reason || fallback)
+    setStatusState(statusDot, 'disconnected')
+    if (messages) messages.start()
+  }
+
+  const restoreAfterBlockedByBusyState = (mode, reason = '') => {
+    isBusy = false
+    isRuntimeIdle = false
+    syncControlState()
+    const label = mode === 'reset' ? 'reset blocked' : 'restart blocked'
+    const detail = reason.trim() || NON_IDLE_BLOCK_REASON
+    setStatusText(statusText, `${label}: ${detail}`)
+    setStatusState(statusDot, 'running')
+    if (messages) messages.start()
   }
 
   const waitForServer = async ({ onReady, previousRuntimeId }) => {
@@ -113,19 +281,19 @@ export function bindRestart({
 
     while (Date.now() < deadline) {
       try {
-        const res = await fetchWithTimeout(
+        const response = await fetchWithTimeout(
           '/api/status',
           STATUS_REQUEST_OPTIONS,
           RESTART_REQUEST_TIMEOUT_MS,
         )
-        if (!res.ok) {
+        if (!response.ok) {
           await delay(STATUS_POLL_INTERVAL_MS)
           continue
         }
 
         let payload = null
         try {
-          payload = await res.json()
+          payload = await response.json()
         } catch {
           payload = null
         }
@@ -136,8 +304,8 @@ export function bindRestart({
         if (runtimeChanged) {
           if (typeof onReady === 'function') onReady()
           else {
-            disableActions(false)
             isBusy = false
+            refreshUiIdleState()
             if (messages) messages.start()
           }
           return true
@@ -150,33 +318,30 @@ export function bindRestart({
     return false
   }
 
-  const restoreAfterRequestFailure = (mode) => {
-    disableActions(false)
-    isBusy = false
-    setStatusText(statusText, `${mode} failed`)
-    setStatusState(statusDot, 'disconnected')
-    if (messages) messages.start()
-  }
-
   const requestRestart = async (mode) => {
     if (isBusy) return
+    if (!refreshUiIdleState()) {
+      restoreAfterBlockedByBusyState(mode)
+      return
+    }
+
     isBusy = true
     closeToolsMenu()
-    disableActions(true)
+    syncControlState()
+
     const label = mode === 'reset' ? 'resetting' : 'restarting'
     setStatusText(statusText, label)
     setStatusState(statusDot, '')
     if (messages) messages.stop()
-    if (dialog) dialog.close()
+    closeAllDialogs()
 
-    let previousRuntimeId = ''
-    try {
-      previousRuntimeId = await fetchStatusRuntimeId()
-    } catch {
-      previousRuntimeId = ''
-    }
-    if (!previousRuntimeId) {
+    const preflight = await fetchStatusSnapshot()
+    if (!preflight.runtimeId) {
       restoreAfterRequestFailure(mode)
+      return
+    }
+    if (!preflight.isIdle) {
+      restoreAfterBlockedByBusyState(mode, preflight.error)
       return
     }
 
@@ -186,16 +351,24 @@ export function bindRestart({
         { method: 'POST' },
         RESTART_REQUEST_TIMEOUT_MS,
       )
-      if (!response.ok)
-        throw new Error(`restart request failed: ${response.status}`)
+      if (!response.ok) {
+        const fallback = `${mode} failed (${response.status})`
+        const detail = await readResponseError(response, fallback)
+        if (response.status === 409 || response.status === 423) {
+          restoreAfterBlockedByBusyState(mode, detail)
+          return
+        }
+        throw new Error(detail)
+      }
     } catch (error) {
       console.warn('[webui] restart request failed', error)
-      restoreAfterRequestFailure(mode)
+      const reason = error instanceof Error ? error.message : ''
+      restoreAfterRequestFailure(mode, reason)
       return
     }
 
     const recovered = await waitForServer({
-      previousRuntimeId,
+      previousRuntimeId: preflight.runtimeId,
       onReady: () => {
         window.location.reload()
       },
@@ -203,35 +376,65 @@ export function bindRestart({
     if (!recovered) restoreAfterRequestFailure(mode)
   }
 
-  const onOpen = (event) => {
+  const onOpenRestart = (event) => {
     event.preventDefault()
     if (isBusy) return
+    if (!refreshUiIdleState()) {
+      restoreAfterBlockedByBusyState('restart')
+      return
+    }
+
     closeToolsMenu()
-    if (dialogEnabled && dialog) dialog.open()
+    if (resetDialogController) resetDialogController.close()
+    if (restartDialogController) restartDialogController.open()
     else void requestRestart('restart')
   }
-  const onCancel = (event) => {
+
+  const onOpenReset = (event) => {
     event.preventDefault()
     if (isBusy) return
-    if (dialog) dialog.close()
+    if (!refreshUiIdleState()) {
+      restoreAfterBlockedByBusyState('reset')
+      return
+    }
+
+    closeToolsMenu()
+    if (restartDialogController) restartDialogController.close()
+    if (resetDialogController) resetDialogController.open()
+    else void requestRestart('reset')
   }
-  const onRestart = (event) => {
+
+  const onCancelRestart = (event) => {
+    event.preventDefault()
+    if (isBusy || !restartDialogController) return
+    restartDialogController.close()
+  }
+
+  const onCancelReset = (event) => {
+    event.preventDefault()
+    if (isBusy || !resetDialogController) return
+    resetDialogController.close()
+  }
+
+  const onConfirmRestart = (event) => {
     event.preventDefault()
     if (isBusy) return
     void requestRestart('restart')
   }
-  const onReset = (event) => {
+
+  const onConfirmReset = (event) => {
     event.preventDefault()
     if (isBusy) return
-    closeToolsMenu()
     void requestRestart('reset')
   }
+
   const onToolsToggle = (event) => {
     event.preventDefault()
     if (!toolsEnabled || isBusy) return
     if (isToolsMenuOpen) closeToolsMenu()
     else setToolsMenuOpen(true)
   }
+
   const onDocumentClick = (event) => {
     if (!toolsEnabled || !toolsToggleBtn || !toolsMenu || !isToolsMenuOpen) return
     const target = event.target
@@ -239,55 +442,88 @@ export function bindRestart({
     if (toolsToggleBtn.contains(target) || toolsMenu.contains(target)) return
     closeToolsMenu()
   }
+
   const onDocumentKeydown = (event) => {
     if (event.key !== 'Escape') return
     closeToolsMenu({ focusTrigger: true })
   }
-  let unbindDialogControls = () => {}
-  let unbindOpenControl = () => {}
 
-  if (toolsEnabled && toolsToggleBtn && toolsResetBtn) {
+  let unbindRestartDialogControls = () => {}
+  let unbindResetDialogControls = () => {}
+  let unbindRestartOpenControl = () => {}
+  let unbindResetOpenControl = () => {}
+
+  if (toolsEnabled && toolsToggleBtn) {
     toolsToggleBtn.addEventListener('click', onToolsToggle)
-    toolsResetBtn.addEventListener('click', onReset)
     document.addEventListener('click', onDocumentClick)
     document.addEventListener('keydown', onDocumentKeydown)
   }
 
-  if (dialogEnabled && dialog && dialogOpenBtn) {
-    unbindDialogControls = bindDialogControls({
+  if (restartDialogController && restartDialog && restartOpenBtn) {
+    unbindRestartDialogControls = bindDialogControls({
       dialog: restartDialog,
-      openBtn: dialogOpenBtn,
+      openBtn: restartOpenBtn,
       closeBtn: restartCancelBtn,
-      controller: dialog,
-      onOpen,
-      onClose: onCancel,
+      controller: restartDialogController,
+      onOpen: onOpenRestart,
+      onClose: onCancelRestart,
     })
-    restartConfirmBtn.addEventListener('click', onRestart)
-    restartResetBtn.addEventListener('click', onReset)
-  } else if (toolsEnabled && toolsRestartBtn) {
-    toolsRestartBtn.addEventListener('click', onRestart)
-    unbindOpenControl = () => {
-      toolsRestartBtn.removeEventListener('click', onRestart)
-    }
-  } else if (restartBtn) {
-    restartBtn.addEventListener('click', onOpen)
-    unbindOpenControl = () => {
-      restartBtn.removeEventListener('click', onOpen)
+    if (restartConfirmBtn)
+      restartConfirmBtn.addEventListener('click', onConfirmRestart)
+  } else if (restartOpenBtn) {
+    restartOpenBtn.addEventListener('click', onOpenRestart)
+    unbindRestartOpenControl = () => {
+      restartOpenBtn.removeEventListener('click', onOpenRestart)
     }
   }
 
+  if (resetDialogController && resetDialog && resetOpenBtn) {
+    unbindResetDialogControls = bindDialogControls({
+      dialog: resetDialog,
+      openBtn: resetOpenBtn,
+      closeBtn: resetCancelBtn,
+      controller: resetDialogController,
+      onOpen: onOpenReset,
+      onClose: onCancelReset,
+    })
+    if (resetConfirmBtn) resetConfirmBtn.addEventListener('click', onConfirmReset)
+  } else if (resetOpenBtn) {
+    resetOpenBtn.addEventListener('click', onOpenReset)
+    unbindResetOpenControl = () => {
+      resetOpenBtn.removeEventListener('click', onOpenReset)
+    }
+  }
+
+  let statusObserver = null
+  if (statusDot && typeof MutationObserver === 'function') {
+    statusObserver = new MutationObserver(() => {
+      refreshUiIdleState()
+    })
+    statusObserver.observe(statusDot, {
+      attributes: true,
+      attributeFilter: ['data-state'],
+    })
+  }
+
+  refreshUiIdleState()
+
   return {
     dispose: () => {
-      unbindOpenControl()
-      unbindDialogControls()
-      if (toolsEnabled && toolsToggleBtn && toolsResetBtn) {
+      unbindRestartOpenControl()
+      unbindResetOpenControl()
+      unbindRestartDialogControls()
+      unbindResetDialogControls()
+
+      if (toolsEnabled && toolsToggleBtn) {
         toolsToggleBtn.removeEventListener('click', onToolsToggle)
-        toolsResetBtn.removeEventListener('click', onReset)
         document.removeEventListener('click', onDocumentClick)
         document.removeEventListener('keydown', onDocumentKeydown)
       }
-      if (restartConfirmBtn) restartConfirmBtn.removeEventListener('click', onRestart)
-      if (restartResetBtn) restartResetBtn.removeEventListener('click', onReset)
+
+      if (restartConfirmBtn)
+        restartConfirmBtn.removeEventListener('click', onConfirmRestart)
+      if (resetConfirmBtn) resetConfirmBtn.removeEventListener('click', onConfirmReset)
+      if (statusObserver) statusObserver.disconnect()
     },
   }
 }

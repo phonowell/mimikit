@@ -10,7 +10,7 @@ import { registerTaskCancelRoute } from './routes-api-task-cancel.js'
 
 import type { AppConfig } from '../config.js'
 import type { Orchestrator } from '../orchestrator/core/orchestrator-service.js'
-import type { FastifyInstance } from 'fastify'
+import type { FastifyInstance, FastifyReply } from 'fastify'
 
 export const registerApiRoutes = (
   app: FastifyInstance,
@@ -83,12 +83,34 @@ export const registerApiRoutes = (
     }, 100)
   }
 
+  const isRuntimeIdleForControlAction = (): boolean => {
+    const status = orchestrator.getStatus()
+    return (
+      status.managerRunning === false &&
+      status.activeTasks === 0 &&
+      status.pendingTasks === 0
+    )
+  }
+
+  const rejectWhenBusy = (
+    reply: FastifyReply,
+    action: 'restart' | 'reset',
+  ): boolean => {
+    if (isRuntimeIdleForControlAction()) return false
+    reply.code(409).send({
+      error: `${action} requires idle state: wait for manager and workers to become idle`,
+    })
+    return true
+  }
+
   app.post('/api/restart', (_request, reply) => {
+    if (rejectWhenBusy(reply, 'restart')) return
     reply.send({ ok: true })
     scheduleExit()
   })
 
   app.post('/api/reset', (_request, reply) => {
+    if (rejectWhenBusy(reply, 'reset')) return
     reply.send({ ok: true })
     scheduleExit({
       exitReason: 'http_api_reset',

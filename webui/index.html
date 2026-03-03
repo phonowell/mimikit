@@ -106,6 +106,9 @@
                   Reset
                 </button>
               </div>
+              <p class="tools-idle-hint" data-tools-idle-hint hidden>
+                Restart and reset are available only when manager and workers are idle.
+              </p>
             </div>
           </div>
         </div>
@@ -259,19 +262,12 @@
       >
         <section class="restart-panel">
           <header class="restart-header">
-            <h2 class="restart-title" id="restart-title">Restart?</h2>
+            <h2 class="restart-title" id="restart-title">Restart Runtime?</h2>
           </header>
           <p class="restart-description" id="restart-description">
-            Restart keeps state. Reset clears .mimikit first.
+            Restart keeps current state and reconnects the runtime.
           </p>
           <div class="restart-actions" role="group" aria-label="Restart">
-            <button
-              class="btn btn--md btn--dialog btn--danger restart-dialog-btn-danger"
-              data-restart-reset
-              type="button"
-            >
-              Reset
-            </button>
             <button class="btn btn--md btn--dialog" data-restart-cancel type="button">
               Cancel
             </button>
@@ -281,6 +277,35 @@
               type="button"
             >
               Restart
+            </button>
+          </div>
+        </section>
+      </dialog>
+
+      <dialog
+        class="reset-dialog"
+        data-reset-dialog
+        id="reset-dialog"
+        aria-labelledby="reset-title"
+        aria-describedby="reset-description"
+      >
+        <section class="reset-panel">
+          <header class="reset-header">
+            <h2 class="reset-title" id="reset-title">Reset Runtime?</h2>
+          </header>
+          <p class="reset-description" id="reset-description">
+            Reset clears the .mimikit state directory before restarting.
+          </p>
+          <div class="reset-actions" role="group" aria-label="Reset">
+            <button class="btn btn--md btn--dialog" data-reset-cancel type="button">
+              Cancel
+            </button>
+            <button
+              class="btn btn--md btn--dialog btn--danger"
+              data-reset-confirm
+              type="button"
+            >
+              Reset and Clear State
             </button>
           </div>
         </section>

@@ -1,3 +1,7 @@
+import { mkdtemp } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
 import fastify from 'fastify'
 import { expect, test, vi } from 'vitest'
 
@@ -191,5 +195,118 @@ test('restart route requests orchestrator exit after persistence', async () => {
   }
   expect(stopAndPersist).toHaveBeenCalledTimes(1)
   expect(exitRequests).toEqual([{ code: 75, reason: 'http_api_restart' }])
+  await app.close()
+})
+
+test('restart route rejects when manager or worker is not idle', async () => {
+  const app = fastify()
+  const { orchestrator, exitRequests } = createOrchestratorStub()
+  const stopAndPersist = vi.fn(async () => undefined)
+  ;(orchestrator as unknown as { stopAndPersist: () => Promise<void> }).stopAndPersist =
+    stopAndPersist
+  ;(
+    orchestrator as unknown as {
+      getStatus: () => {
+        ok: boolean
+        runtimeId: string
+        agentStatus: 'idle' | 'running'
+        activeTasks: number
+        pendingTasks: number
+        pendingInputs: number
+        managerRunning: boolean
+        maxWorkers: number
+      }
+    }
+  ).getStatus = () => ({
+    ok: true,
+    runtimeId: 'runtime-stub-busy',
+    agentStatus: 'running',
+    activeTasks: 1,
+    pendingTasks: 0,
+    pendingInputs: 0,
+    managerRunning: true,
+    maxWorkers: 1,
+  })
+  const config = defaultConfig({ workDir: '.mimikit' })
+  registerApiRoutes(app, orchestrator, config)
+
+  const response = await app.inject({
+    method: 'POST',
+    url: '/api/restart',
+  })
+
+  expect(response.statusCode).toBe(409)
+  expect(response.json()).toEqual({
+    error: 'restart requires idle state: wait for manager and workers to become idle',
+  })
+  expect(stopAndPersist).toHaveBeenCalledTimes(0)
+  expect(exitRequests).toHaveLength(0)
+  await app.close()
+})
+
+test('reset route requests orchestrator exit after persistence', async () => {
+  const app = fastify()
+  const { orchestrator, exitRequests } = createOrchestratorStub()
+  const stopAndPersist = vi.fn(async () => undefined)
+  ;(orchestrator as unknown as { stopAndPersist: () => Promise<void> }).stopAndPersist =
+    stopAndPersist
+  const workDir = await mkdtemp(join(tmpdir(), 'mimikit-reset-route-'))
+  const config = defaultConfig({ workDir })
+  registerApiRoutes(app, orchestrator, config)
+  const response = await app.inject({
+    method: 'POST',
+    url: '/api/reset',
+  })
+  expect(response.statusCode).toBe(200)
+  expect(response.json()).toEqual({ ok: true })
+  await new Promise((resolve) => setTimeout(resolve, 180))
+  expect(stopAndPersist).toHaveBeenCalledTimes(1)
+  expect(exitRequests).toEqual([{ code: 75, reason: 'http_api_reset' }])
+  await app.close()
+})
+
+test('reset route rejects when manager or worker is not idle', async () => {
+  const app = fastify()
+  const { orchestrator, exitRequests } = createOrchestratorStub()
+  const stopAndPersist = vi.fn(async () => undefined)
+  ;(orchestrator as unknown as { stopAndPersist: () => Promise<void> }).stopAndPersist =
+    stopAndPersist
+  ;(
+    orchestrator as unknown as {
+      getStatus: () => {
+        ok: boolean
+        runtimeId: string
+        agentStatus: 'idle' | 'running'
+        activeTasks: number
+        pendingTasks: number
+        pendingInputs: number
+        managerRunning: boolean
+        maxWorkers: number
+      }
+    }
+  ).getStatus = () => ({
+    ok: true,
+    runtimeId: 'runtime-stub-busy',
+    agentStatus: 'running',
+    activeTasks: 0,
+    pendingTasks: 1,
+    pendingInputs: 0,
+    managerRunning: false,
+    maxWorkers: 1,
+  })
+  const config = defaultConfig({ workDir: '.mimikit' })
+  registerApiRoutes(app, orchestrator, config)
+
+  const response = await app.inject({
+    method: 'POST',
+    url: '/api/reset',
+  })
+
+  expect(response.statusCode).toBe(409)
+  expect(response.json()).toEqual({
+    error: 'reset requires idle state: wait for manager and workers to become idle',
+  })
+  expect(stopAndPersist).toHaveBeenCalledTimes(0)
+  expect(exitRequests).toHaveLength(0)
   await app.close()
 })
