@@ -12,7 +12,6 @@ export const renderMessage = (params, msg) => {
     onQuote,
     onDelete,
     messageLookup,
-    ackedUserMessageIds,
     appendTarget,
   } = params
   if (!messagesEl) return
@@ -105,14 +104,6 @@ export const renderMessage = (params, msg) => {
     deleteBtn.addEventListener('click', () => onDelete(msg))
   }
 
-  if (msg?.role === 'user' && ackedUserMessageIds?.has(String(msg.id))) {
-    const delivery = document.createElement('span')
-    delivery.className = 'delivery'
-    delivery.textContent = '✓'
-    delivery.title = UI_TEXT.seenByAgent
-    delivery.setAttribute('aria-label', UI_TEXT.seenByAgent)
-    meta.appendChild(delivery)
-  }
   if (!isSystemMessage && !isStreamingMessage) {
     const timeDisplay = formatDisplayTimeWithFull(msg.createdAt)
     if (timeDisplay.displayText) {

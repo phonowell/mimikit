@@ -44,7 +44,6 @@ export const UI_TEXT = Object.freeze({
   errorPrefix: 'Error',
   errorJoiner: ' · ',
   loadingAriaLabel: 'Loading',
-  seenByAgent: 'Seen',
 })
 
 export const resolveStatusText = (value) => {

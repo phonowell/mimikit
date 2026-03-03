@@ -207,16 +207,16 @@
 .tasks-worker-dots {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
 }
 
 .tasks-worker-dots .worker-dot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 999px;
-  background: var(--status-disconnected);
-  box-shadow: -1px -1px 2px rgba(255, 255, 255, 0.78),
-    1px 1px 2px rgba(109, 126, 147, 0.35);
+  background: color-mix(in srgb, var(--status-disconnected) 36%, #ffffff);
+  box-shadow: inset 1px 1px 2px rgba(101, 116, 137, 0.32),
+    inset -1px -1px 2px rgba(255, 255, 255, 0.72);
 }
 
 .tasks-worker-dots .worker-dot[data-state='running'] {
@@ -224,7 +224,7 @@
 }
 
 .tasks-worker-dots .worker-dot[data-state='idle'] {
-  background: var(--status-disconnected);
+  background: color-mix(in srgb, var(--status-disconnected) 36%, #ffffff);
 }
 
 .tasks-worker-dots .worker-dot[data-state='success'] {

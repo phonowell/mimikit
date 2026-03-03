@@ -72,7 +72,6 @@ export const renderStreamMessage = (params) => {
     {
       ...params,
       messageLookup: new Map(),
-      ackedUserMessageIds: new Set(),
       latestAgentId: null,
     },
     streamMessage,

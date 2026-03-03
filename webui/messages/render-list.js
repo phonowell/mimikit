@@ -1,7 +1,4 @@
-import {
-  collectAckedUserMessageIds,
-  findLatestAgentMessage,
-} from './render-shared.js'
+import { findLatestAgentMessage } from './render-shared.js'
 import { renderMessage } from './render-item.js'
 import {
   canPromoteStreamItemToLatestAgent,
@@ -51,7 +48,6 @@ export const renderMessages = (params) => {
   for (const msg of safeMessages)
     if (msg?.id) messageLookup.set(String(msg.id), msg)
 
-  const ackedUserMessageIds = collectAckedUserMessageIds(safeMessages)
   const latestAgentId =
     latestAgent?.id !== null && latestAgent?.id !== undefined
       ? String(latestAgent.id)
@@ -59,7 +55,6 @@ export const renderMessages = (params) => {
   const renderParams = {
     ...params,
     messageLookup,
-    ackedUserMessageIds,
     latestAgentId,
   }
 

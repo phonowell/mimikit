@@ -3,21 +3,6 @@ import { formatQuotePreview, formatRoleLabel, normalizeRole } from './quote-util
 
 export const isAgentMessage = (msg) => msg?.role === 'agent'
 
-export const collectAckedUserMessageIds = (messages) => {
-  const acked = new Set()
-  let hasAgentAfter = false
-  for (let i = messages.length - 1; i >= 0; i -= 1) {
-    const msg = messages[i]
-    if (isAgentMessage(msg)) {
-      hasAgentAfter = true
-      continue
-    }
-    if (msg?.role !== 'user' || msg?.id === null || msg?.id === undefined) continue
-    if (hasAgentAfter) acked.add(String(msg.id))
-  }
-  return acked
-}
-
 export const findLatestAgentMessage = (messages) => {
   for (let i = messages.length - 1; i >= 0; i -= 1) {
     const msg = messages[i]
