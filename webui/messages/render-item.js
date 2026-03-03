@@ -94,7 +94,7 @@ export const renderMessage = (params, msg) => {
     quoteBtn = document.createElement('button')
     quoteBtn.type = 'button'
     quoteBtn.className = 'btn btn--xs message-quote-btn'
-    quoteBtn.textContent = UI_TEXT.quote
+    quoteBtn.textContent = msg.role === 'user' ? '↪' : '↩'
     quoteBtn.title = UI_TEXT.quote
     quoteBtn.setAttribute('aria-label', UI_TEXT.quote)
     quoteBtn.addEventListener('click', () => onQuote(msg))
@@ -105,7 +105,7 @@ export const renderMessage = (params, msg) => {
     deleteBtn = document.createElement('button')
     deleteBtn.type = 'button'
     deleteBtn.className = 'btn btn--xs message-delete-btn'
-    deleteBtn.textContent = UI_TEXT.delete
+    deleteBtn.textContent = '✕'
     deleteBtn.title = UI_TEXT.delete
     deleteBtn.setAttribute('aria-label', UI_TEXT.delete)
     deleteBtn.addEventListener('click', () => onDelete(msg))

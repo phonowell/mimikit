@@ -74,13 +74,11 @@ test('entering delete mode toggles composer/exit sections', () => {
   expect(context.deleteModeExitBtn.focus).toHaveBeenCalledTimes(1)
 })
 
-test('re-entering delete mode toggles state after exit', () => {
+test('tools delete menu item toggles delete mode on repeated clicks', () => {
   const context = setup()
 
   context.toolsDeleteBtn.click()
   context.toolsDeleteBtn.click()
-
-  context.deleteModeExitBtn.click()
   context.toolsDeleteBtn.click()
 
   expect(context.messages.setDeleteMode.mock.calls).toEqual([

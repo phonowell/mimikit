@@ -61,10 +61,14 @@ export const bindDeleteMode = ({
     return true
   }
 
-  const onOpenDeleteMode = (event) => {
+  const onToggleDeleteMode = (event) => {
     event.preventDefault()
     if (toolsDeleteBtn.disabled) return
     closeToolsMenu(toolsToggleBtn)
+    if (isDeleteMode) {
+      exitDeleteMode()
+      return
+    }
     enterDeleteMode()
   }
 
@@ -74,7 +78,7 @@ export const bindDeleteMode = ({
     exitDeleteMode()
   }
 
-  toolsDeleteBtn.addEventListener('click', onOpenDeleteMode)
+  toolsDeleteBtn.addEventListener('click', onToggleDeleteMode)
   deleteModeExitBtn.addEventListener('click', onExitDeleteMode)
 
   return {
@@ -82,7 +86,7 @@ export const bindDeleteMode = ({
     enterDeleteMode,
     exitDeleteMode,
     dispose: () => {
-      toolsDeleteBtn.removeEventListener('click', onOpenDeleteMode)
+      toolsDeleteBtn.removeEventListener('click', onToggleDeleteMode)
       deleteModeExitBtn.removeEventListener('click', onExitDeleteMode)
     },
   }
