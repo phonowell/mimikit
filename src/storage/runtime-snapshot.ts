@@ -1,6 +1,5 @@
+import { copyFile } from 'node:fs/promises'
 import { join } from 'node:path'
-
-import backup from 'fire-keeper/backup'
 
 import { readJson, writeJson } from '../fs/json.js'
 import { ensureFile } from '../fs/paths.js'
@@ -51,7 +50,7 @@ const inspectBackupError = (
 
 const backupRuntimeState = async (path: string): Promise<void> => {
   try {
-    await backup(path, { echo: false })
+    await copyFile(path, `${path}.bak`)
   } catch (error) {
     const inspected = inspectBackupError(error)
     if (inspected.ignorable) return

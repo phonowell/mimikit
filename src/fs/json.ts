@@ -1,6 +1,6 @@
+import { readFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 
-import read from 'fire-keeper/read'
 import pRetry from 'p-retry'
 import writeFileAtomicLib from 'write-file-atomic'
 
@@ -62,7 +62,7 @@ export const readJson = async <T>(
   opts?: { ensureFile?: boolean },
 ): Promise<T> => {
   const readRaw = () =>
-    safe('readJson: readFile', () => read(path, { raw: true, echo: false }), {
+    safe('readJson: readFile', () => readFile(path), {
       fallback: null,
       meta: { path },
       ignoreCodes: ['ENOENT'],

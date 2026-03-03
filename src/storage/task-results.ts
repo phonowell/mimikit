@@ -1,6 +1,5 @@
+import { access } from 'node:fs/promises'
 import { extname } from 'node:path'
-
-import isExist from 'fire-keeper/isExist'
 
 import { buildArchiveDocument } from './archive-format.js'
 import { writeDatedArchiveFile } from './archive-write.js'
@@ -9,6 +8,7 @@ import {
   readTaskResultsForTasks,
   type ReadTaskResultsOptions,
 } from './task-results-read.js'
+import { readErrorCode } from '../shared/error-code.js'
 
 import type {
   TaskCancelMeta,
@@ -57,7 +57,15 @@ const buildFilename = (entry: TaskArchiveEntry): string => {
   return `${id}_${safeTitle}.md`
 }
 
-const pathExists = (path: string): Promise<boolean> => isExist(path)
+const pathExists = async (path: string): Promise<boolean> => {
+  try {
+    await access(path)
+    return true
+  } catch (error) {
+    if (readErrorCode(error) === 'ENOENT') return false
+    throw error
+  }
+}
 
 const ensureUniquePath = async (basePath: string): Promise<string> => {
   if (!(await pathExists(basePath))) return basePath

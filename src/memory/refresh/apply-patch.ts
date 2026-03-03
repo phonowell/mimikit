@@ -1,6 +1,5 @@
+import { writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
-
-import write from 'fire-keeper/write'
 
 import { ensureDir } from '../../fs/paths.js'
 import { readTextFileIfExists } from '../../fs/read-text.js'
@@ -66,6 +65,6 @@ export const applyMemoryPatch = async (
       ? `${current.trimEnd()}\n\n${next.rendered.join('\n\n')}\n`
       : `${next.rendered.join('\n\n')}\n`
     await ensureDir(dirname(memoryPath))
-    await write(memoryPath, merged, { encoding: 'utf8' }, { echo: false })
+    await writeFile(memoryPath, merged, { encoding: 'utf8' })
     return { written: next.rendered.length, skipped: next.skipped }
   })

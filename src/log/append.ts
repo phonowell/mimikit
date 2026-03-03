@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto'
 import { once } from 'node:events'
+import { mkdir } from 'node:fs/promises'
 import { basename, dirname } from 'node:path'
 
-import mkdir from 'fire-keeper/mkdir'
 import pino, { type Logger } from 'pino'
 import { createStream, type RotatingFileStream } from 'rotating-file-stream'
 
@@ -18,7 +18,7 @@ type LoggerBundle = {
 const loggers = new Map<string, LoggerBundle>()
 
 const ensureDir = async (path: string): Promise<void> => {
-  await mkdir(path, { echo: false })
+  await mkdir(path, { recursive: true })
 }
 
 const buildBundle = async (path: string): Promise<LoggerBundle> => {

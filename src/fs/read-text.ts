@@ -1,4 +1,4 @@
-import read from 'fire-keeper/read'
+import { readFile } from 'node:fs/promises'
 
 import { readErrorCode } from '../shared/error-code.js'
 
@@ -10,7 +10,7 @@ export const toUtf8Text = (raw: unknown): string => {
 }
 
 export const readTextFile = async (path: string): Promise<string> =>
-  toUtf8Text(await read(path, { raw: true, echo: false }))
+  toUtf8Text(await readFile(path))
 
 export const readTextFileIfExists = async (path: string): Promise<string> => {
   try {

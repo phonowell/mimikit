@@ -1,6 +1,5 @@
+import { writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-
-import write from 'fire-keeper/write'
 
 import { ensureDir } from '../fs/paths.js'
 
@@ -25,6 +24,6 @@ export const writeDatedArchiveFile = async (
   const targetPath = params.resolvePath
     ? await params.resolvePath(basePath)
     : basePath
-  await write(targetPath, params.content, { encoding: 'utf8' }, { echo: false })
+  await writeFile(targetPath, params.content, { encoding: 'utf8' })
   return targetPath
 }
