@@ -44,9 +44,13 @@ const resolveScheduledBadge = (value, nowDate) => {
   }
 }
 
+const BOTTOM_SCROLL_THRESHOLD_MULTIPLIER = 0.1
+
 export const renderTasks = (tasksList, data) => {
   if (!tasksList) return
-  const previousScrollState = captureListScrollState(tasksList)
+  const previousScrollState = captureListScrollState(tasksList, {
+    bottomThresholdMultiplier: BOTTOM_SCROLL_THRESHOLD_MULTIPLIER,
+  })
   const tasks = data?.tasks || []
 
   if (tasks.length === 0) {

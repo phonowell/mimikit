@@ -39,9 +39,13 @@ const resolveTriggerLabel = (item) => {
   return null
 }
 
+const BOTTOM_SCROLL_THRESHOLD_MULTIPLIER = 0.1
+
 export const renderPlans = (plansList, data) => {
   if (!plansList) return
-  const previousScrollState = captureListScrollState(plansList)
+  const previousScrollState = captureListScrollState(plansList, {
+    bottomThresholdMultiplier: BOTTOM_SCROLL_THRESHOLD_MULTIPLIER,
+  })
   const items = data?.items || []
   if (items.length === 0) {
     renderEmptyListState(plansList, 'plans-empty', UI_TEXT.noPlans)

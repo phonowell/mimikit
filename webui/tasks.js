@@ -8,6 +8,7 @@ import { createElapsedTicker } from './tasks-view-time.js'
 import { subscribeTimeTick } from './time-tick.js'
 
 const EMPTY_TASKS = { tasks: [] }
+const BOTTOM_SCROLL_THRESHOLD_MULTIPLIER = 0.1
 
 const normalizeTasksPayload = (value) => {
   if (!value || typeof value !== 'object') return EMPTY_TASKS
@@ -31,7 +32,10 @@ export function bindTasksPanel({
 
   let latestTasks = EMPTY_TASKS
   const elapsedTicker = createElapsedTicker(tasksList)
-  const scrollSync = createListLayoutShiftSync({ listEl: tasksList })
+  const scrollSync = createListLayoutShiftSync({
+    listEl: tasksList,
+    bottomThresholdMultiplier: BOTTOM_SCROLL_THRESHOLD_MULTIPLIER,
+  })
   let unsubscribeTimeTick = null
   const unbindTaskInteractions = bindTaskInteractions(tasksList)
 

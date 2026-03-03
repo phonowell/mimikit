@@ -44,9 +44,13 @@ const resolveOpenItems = (item) => {
   return openItems
 }
 
+const BOTTOM_SCROLL_THRESHOLD_MULTIPLIER = 0.1
+
 export const renderFocuses = (focusesList, data) => {
   if (!focusesList) return
-  const previousScrollState = captureListScrollState(focusesList)
+  const previousScrollState = captureListScrollState(focusesList, {
+    bottomThresholdMultiplier: BOTTOM_SCROLL_THRESHOLD_MULTIPLIER,
+  })
   const items = data?.items || []
   if (items.length === 0) {
     renderEmptyListState(focusesList, 'focuses-empty', UI_TEXT.noFocuses)
