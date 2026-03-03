@@ -6,6 +6,7 @@ import {
 import { formatUsage } from './messages/format-usage.js'
 import { renderEmptyListState } from './list-empty.js'
 import { appendMetaTime } from './meta-time.js'
+import { captureListScrollState, restoreListScrollState } from './list-scroll-sync.js'
 import { UI_TEXT, resolveTaskStatusLabel } from './system-text.js'
 import { createTaskActions } from './tasks-view-actions.js'
 import { formatElapsedText } from './tasks-view-time.js'
@@ -45,11 +46,12 @@ const resolveScheduledBadge = (value, nowDate) => {
 
 export const renderTasks = (tasksList, data) => {
   if (!tasksList) return
-  const previousScrollTop = tasksList.scrollTop
+  const previousScrollState = captureListScrollState(tasksList)
   const tasks = data?.tasks || []
 
   if (tasks.length === 0) {
     renderEmptyListState(tasksList, 'tasks-empty', UI_TEXT.noTasks)
+    restoreListScrollState(tasksList, previousScrollState)
     return
   }
   tasksList.innerHTML = ''
@@ -173,10 +175,5 @@ export const renderTasks = (tasksList, data) => {
 
     tasksList.appendChild(item)
   }
-
-  if (previousScrollTop > 0) {
-    const maxTop = Math.max(0, tasksList.scrollHeight - tasksList.clientHeight)
-    const nextTop = Math.min(maxTop, previousScrollTop)
-    tasksList.scrollTop = nextTop
-  }
+  restoreListScrollState(tasksList, previousScrollState)
 }

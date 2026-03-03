@@ -5,6 +5,9 @@ export const createScrollController = ({
 }) => {
   let scrollBound = false
   let lastClientHeight = 0
+  let lastScrollHeight = 0
+  let syncQueued = false
+  let pendingStickToBottom = false
 
   const getScrollState = () => {
     if (!messagesEl) return null
@@ -17,6 +20,26 @@ export const createScrollController = ({
 
   const getBottomThreshold = (clientHeight) =>
     clientHeight * scrollBottomMultiplier
+
+  const scheduleSyncAfterLayoutShift = ({ stickToBottom = false } = {}) => {
+    if (stickToBottom) pendingStickToBottom = true
+    if (syncQueued) return
+    syncQueued = true
+    const flush = () => {
+      syncQueued = false
+      const shouldStick = pendingStickToBottom
+      pendingStickToBottom = false
+      syncAfterLayoutShift({ stickToBottom: shouldStick })
+    }
+    if (
+      typeof window !== 'undefined' &&
+      typeof window.requestAnimationFrame === 'function'
+    ) {
+      window.requestAnimationFrame(flush)
+      return
+    }
+    flush()
+  }
 
   const isNearBottom = () => {
     const state = getScrollState()
@@ -66,14 +89,21 @@ export const createScrollController = ({
     if (!state) return
     const previousClientHeight =
       lastClientHeight > 0 ? lastClientHeight : state.clientHeight
+    const previousScrollHeight =
+      lastScrollHeight > 0 ? lastScrollHeight : state.scrollHeight
     const didHeightChange = state.clientHeight !== previousClientHeight
+    const didScrollHeightChange = state.scrollHeight !== previousScrollHeight
     const previousDistance =
-      state.distance + (state.clientHeight - previousClientHeight)
+      state.distance -
+      (state.scrollHeight - previousScrollHeight) +
+      (state.clientHeight - previousClientHeight)
     const previousThreshold = getBottomThreshold(previousClientHeight)
-    const shouldStickByResize =
-      didHeightChange && previousDistance <= previousThreshold
+    const shouldStickByLayoutShift =
+      (didHeightChange || didScrollHeightChange) &&
+      previousDistance <= previousThreshold
     lastClientHeight = state.clientHeight
-    if (stickToBottom || shouldStickByResize) scrollToBottom({ smooth: false })
+    lastScrollHeight = state.scrollHeight
+    if (stickToBottom || shouldStickByLayoutShift) scrollToBottom({ smooth: false })
     updateScrollButton()
   }
 
@@ -81,6 +111,10 @@ export const createScrollController = ({
     if (!messagesEl || scrollBound) return
     scrollBound = true
     lastClientHeight = messagesEl.clientHeight
+    lastScrollHeight = messagesEl.scrollHeight
+    const onLayoutShift = () => {
+      scheduleSyncAfterLayoutShift()
+    }
     messagesEl.addEventListener(
       'scroll',
       () => {
@@ -88,14 +122,24 @@ export const createScrollController = ({
       },
       { passive: true },
     )
-    window.addEventListener('resize', () => {
-      syncAfterLayoutShift()
-    })
+    window.addEventListener('resize', onLayoutShift, { passive: true })
     if (typeof ResizeObserver === 'function') {
-      const observer = new ResizeObserver(() => {
-        syncAfterLayoutShift()
-      })
+      const observer = new ResizeObserver(onLayoutShift)
       observer.observe(messagesEl)
+    }
+    if (typeof MutationObserver === 'function') {
+      const mutationObserver = new MutationObserver(onLayoutShift)
+      mutationObserver.observe(messagesEl, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+      })
+    }
+    messagesEl.addEventListener('load', onLayoutShift, true)
+    const fonts = typeof document !== 'undefined' ? document.fonts : null
+    if (fonts && typeof fonts.addEventListener === 'function') {
+      fonts.addEventListener('loadingdone', onLayoutShift)
+      fonts.addEventListener('loadingerror', onLayoutShift)
     }
     if (scrollBottomBtn) {
       scrollBottomBtn.addEventListener('click', () => {
@@ -103,7 +147,7 @@ export const createScrollController = ({
         setScrollButtonVisible(false)
       })
     }
-    syncAfterLayoutShift()
+    scheduleSyncAfterLayoutShift()
   }
 
   return {

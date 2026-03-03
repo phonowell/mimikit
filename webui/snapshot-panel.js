@@ -1,5 +1,6 @@
 import { bindDialogControls, createDialogController } from './dialog.js'
 import { renderEmptyListState } from './list-empty.js'
+import { createListLayoutShiftSync } from './list-scroll-sync.js'
 import { UI_TEXT } from './system-text.js'
 import { subscribeTimeTick } from './time-tick.js'
 
@@ -23,6 +24,7 @@ export const bindSnapshotPanel = ({
 
   let latestPayload = normalizePayload(null)
   let unsubscribeTimeTick = null
+  const scrollSync = createListLayoutShiftSync({ listEl: list })
 
   const renderLatest = () => {
     render(list, latestPayload)
@@ -79,12 +81,15 @@ export const bindSnapshotPanel = ({
     renderLatest()
   }
 
+  scrollSync.bind()
+
   return {
     applySnapshot,
     setDisconnected,
     dispose: () => {
       stopTimeTick()
       unbindDialogControls()
+      scrollSync.dispose()
     },
   }
 }

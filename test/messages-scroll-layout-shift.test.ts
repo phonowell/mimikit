@@ -5,14 +5,19 @@ import { createScrollController } from '../webui/messages/scroll.js'
 const originalWindow = globalThis.window
 const originalDocument = globalThis.document
 const originalResizeObserver = globalThis.ResizeObserver
+const originalMutationObserver = globalThis.MutationObserver
 
 const installDomStubs = () => {
   const windowStub = {
     addEventListener: vi.fn(),
     matchMedia: () => ({ matches: false }),
+    requestAnimationFrame: (callback) => callback(),
   }
   const documentStub = { activeElement: null }
   class ResizeObserverStub {
+    observe() {}
+  }
+  class MutationObserverStub {
     observe() {}
   }
   Object.defineProperty(globalThis, 'window', {
@@ -27,6 +32,11 @@ const installDomStubs = () => {
   })
   Object.defineProperty(globalThis, 'ResizeObserver', {
     value: ResizeObserverStub,
+    configurable: true,
+    writable: true,
+  })
+  Object.defineProperty(globalThis, 'MutationObserver', {
+    value: MutationObserverStub,
     configurable: true,
     writable: true,
   })
@@ -45,6 +55,11 @@ const restoreDomStubs = () => {
   })
   Object.defineProperty(globalThis, 'ResizeObserver', {
     value: originalResizeObserver,
+    configurable: true,
+    writable: true,
+  })
+  Object.defineProperty(globalThis, 'MutationObserver', {
+    value: originalMutationObserver,
     configurable: true,
     writable: true,
   })
@@ -101,6 +116,55 @@ test('does not force jump to bottom after container resize when user is browsing
 
   scroll.bindScrollControls()
   messagesEl.clientHeight = 400
+
+  scroll.syncAfterLayoutShift()
+
+  expect(messagesEl.scrollTo).not.toHaveBeenCalled()
+})
+
+test('keeps bottom pinned when content height grows after initial render', () => {
+  const messagesEl = {
+    scrollHeight: 1200,
+    clientHeight: 500,
+    scrollTop: 700,
+    addEventListener: vi.fn(),
+    scrollTo: vi.fn(),
+  }
+
+  const scroll = createScrollController({
+    messagesEl,
+    scrollBottomBtn: null,
+    scrollBottomMultiplier: 1.5,
+  })
+
+  scroll.bindScrollControls()
+  messagesEl.scrollHeight = 1500
+
+  scroll.syncAfterLayoutShift()
+
+  expect(messagesEl.scrollTo).toHaveBeenCalledWith({
+    top: 1500,
+    behavior: 'auto',
+  })
+})
+
+test('does not force jump when content height grows while user is reading history', () => {
+  const messagesEl = {
+    scrollHeight: 3000,
+    clientHeight: 500,
+    scrollTop: 1000,
+    addEventListener: vi.fn(),
+    scrollTo: vi.fn(),
+  }
+
+  const scroll = createScrollController({
+    messagesEl,
+    scrollBottomBtn: null,
+    scrollBottomMultiplier: 1.5,
+  })
+
+  scroll.bindScrollControls()
+  messagesEl.scrollHeight = 3400
 
   scroll.syncAfterLayoutShift()
 

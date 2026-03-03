@@ -1,4 +1,5 @@
 import { renderEmptyListState } from './list-empty.js'
+import { captureListScrollState, restoreListScrollState } from './list-scroll-sync.js'
 import { appendMetaTime } from './meta-time.js'
 import { UI_TEXT } from './system-text.js'
 
@@ -45,9 +46,11 @@ const resolveOpenItems = (item) => {
 
 export const renderFocuses = (focusesList, data) => {
   if (!focusesList) return
+  const previousScrollState = captureListScrollState(focusesList)
   const items = data?.items || []
   if (items.length === 0) {
     renderEmptyListState(focusesList, 'focuses-empty', UI_TEXT.noFocuses)
+    restoreListScrollState(focusesList, previousScrollState)
     return
   }
   focusesList.innerHTML = ''
@@ -119,4 +122,6 @@ export const renderFocuses = (focusesList, data) => {
     if (meta.childElementCount > 0) node.appendChild(meta)
     focusesList.appendChild(node)
   }
+
+  restoreListScrollState(focusesList, previousScrollState)
 }

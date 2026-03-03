@@ -1,4 +1,5 @@
 import { renderEmptyListState } from './list-empty.js'
+import { captureListScrollState, restoreListScrollState } from './list-scroll-sync.js'
 import { formatDisplayTimeWithFull } from './messages/format-time.js'
 import { appendMetaTime } from './meta-time.js'
 import { UI_TEXT } from './system-text.js'
@@ -40,9 +41,11 @@ const resolveTriggerLabel = (item) => {
 
 export const renderPlans = (plansList, data) => {
   if (!plansList) return
+  const previousScrollState = captureListScrollState(plansList)
   const items = data?.items || []
   if (items.length === 0) {
     renderEmptyListState(plansList, 'plans-empty', UI_TEXT.noPlans)
+    restoreListScrollState(plansList, previousScrollState)
     return
   }
   plansList.innerHTML = ''
@@ -95,4 +98,6 @@ export const renderPlans = (plansList, data) => {
     if (meta.childElementCount > 0) node.appendChild(meta)
     plansList.appendChild(node)
   }
+
+  restoreListScrollState(plansList, previousScrollState)
 }

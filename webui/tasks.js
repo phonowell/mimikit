@@ -1,5 +1,6 @@
 import { bindDialogControls, createDialogController } from './dialog.js'
 import { renderEmptyListState } from './list-empty.js'
+import { createListLayoutShiftSync } from './list-scroll-sync.js'
 import { UI_TEXT } from './system-text.js'
 import { bindTaskInteractions } from './tasks-interactions.js'
 import { renderTasks } from './tasks-view-render.js'
@@ -30,6 +31,7 @@ export function bindTasksPanel({
 
   let latestTasks = EMPTY_TASKS
   const elapsedTicker = createElapsedTicker(tasksList)
+  const scrollSync = createListLayoutShiftSync({ listEl: tasksList })
   let unsubscribeTimeTick = null
   const unbindTaskInteractions = bindTaskInteractions(tasksList)
 
@@ -89,6 +91,8 @@ export function bindTasksPanel({
   } else
     startTicker()
 
+  scrollSync.bind()
+
   return {
     applyTasksSnapshot,
     setDisconnected,
@@ -96,6 +100,7 @@ export function bindTasksPanel({
       stopTicker()
       unbindTaskInteractions()
       unbindDialogControls()
+      scrollSync.dispose()
     },
   }
 }
