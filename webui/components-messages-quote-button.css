@@ -9,6 +9,18 @@
   --btn-shadow: var(--shadow-raised-soft);
   --btn-shadow-hover: var(--shadow-raised);
   --btn-shadow-press: var(--shadow-inset-soft);
+  inline-size: var(--btn-size);
+  block-size: var(--btn-size);
+  min-width: var(--btn-size);
+  min-height: var(--btn-size);
+  aspect-ratio: 1 / 1;
+  padding: 0;
+  border-radius: 9999px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
   box-shadow: var(--btn-shadow);
   opacity: 0;
   transform: translateY(2px) scale(0.96);
