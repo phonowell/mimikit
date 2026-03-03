@@ -140,6 +140,7 @@ export function createMessagesController({
 
   const queue = createControllerQueue({
     applySnapshot: payload.applySnapshot,
+    applyTasksSnapshot: payload.applyTasksSnapshot,
     applyMessagesPayload: payload.applyMessagesPayload,
     getCurrentStreamMessage: () => currentStreamMessage,
     setCurrentStreamMessage: (value) => {
@@ -154,6 +155,9 @@ export function createMessagesController({
     isStarted: () => isStarted,
     onSnapshotEvent: (snapshot) => {
       queue.enqueueEvent({ type: 'snapshot', payload: snapshot })
+    },
+    onTasksEvent: (tasks) => {
+      queue.enqueueEvent({ type: 'tasks', payload: tasks })
     },
     onStreamEvent: (patch) => {
       queue.enqueueEvent({ type: 'stream', payload: patch })

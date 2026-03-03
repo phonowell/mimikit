@@ -4,6 +4,7 @@ export const createSseController = ({
   reconnectMaxDelayMs,
   isStarted,
   onSnapshotEvent,
+  onTasksEvent,
   onStreamEvent,
   onDisconnected,
 }) => {
@@ -70,6 +71,12 @@ export const createSseController = ({
       const patch = parseJsonRecord(event.data)
       if (!patch) return
       onStreamEvent(patch)
+    })
+    source.addEventListener('tasks', (event) => {
+      if (currentGeneration !== generation || eventSource !== source) return
+      const tasks = parseJsonRecord(event.data)
+      if (!tasks) return
+      if (typeof onTasksEvent === 'function') onTasksEvent(tasks)
     })
     source.addEventListener('error', (event) => {
       if (currentGeneration !== generation || eventSource !== source) return

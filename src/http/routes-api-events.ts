@@ -64,6 +64,11 @@ export const registerEventsRoute = (
           if (!sendSseEvent(reply, 'stream', patch)) break
           continue
         }
+        if (signal.kind === 'tasks') {
+          const tasks = orchestrator.getTasks()
+          if (!sendSseEvent(reply, 'tasks', tasks)) break
+          continue
+        }
 
         const forceFullMessagesSnapshot = signal.kind === 'messages'
         const snapshot = forceFullMessagesSnapshot

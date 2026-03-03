@@ -7,6 +7,7 @@ import {
 
 export const createControllerQueue = ({
   applySnapshot,
+  applyTasksSnapshot,
   applyMessagesPayload,
   getCurrentStreamMessage,
   setCurrentStreamMessage,
@@ -30,16 +31,25 @@ export const createControllerQueue = ({
     if (pendingEvents.length === 0) return
 
     const streamPatches = []
+    let latestTasksSnapshot = null
+    const flushLatestTasksSnapshot = () => {
+      if (!latestTasksSnapshot) return
+      applyTasksSnapshot(latestTasksSnapshot)
+      latestTasksSnapshot = null
+    }
     for (const event of pendingEvents) {
       if (event.type === 'snapshot') {
         flushStreamPatches(streamPatches)
+        flushLatestTasksSnapshot()
         applySnapshot(event.payload)
         continue
       }
       if (event.type === 'stream') streamPatches.push(event.payload)
+      if (event.type === 'tasks') latestTasksSnapshot = event.payload
     }
     pendingEvents.length = 0
     flushStreamPatches(streamPatches)
+    flushLatestTasksSnapshot()
   }
 
   const enqueueEvent = (event) => {

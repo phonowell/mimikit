@@ -64,6 +64,11 @@ export const createPayloadController = ({
     return changed
   }
 
+  const applyTasksSnapshot = (tasks) => {
+    if (typeof onTasksSnapshot === 'function' && isRecord(tasks))
+      onTasksSnapshot(tasks)
+  }
+
   const applySnapshot = (snapshot) => {
     if (!isRecord(snapshot)) return
     const streamPayload = isRecord(snapshot.stream) ? snapshot.stream : null
@@ -72,8 +77,7 @@ export const createPayloadController = ({
     if (isRecord(snapshot.status)) updateStatus(snapshot.status)
     else syncLoadingState()
     applyMessagesPayload(snapshot.messages, currentStreamMessage)
-    if (typeof onTasksSnapshot === 'function' && isRecord(snapshot.tasks))
-      onTasksSnapshot(snapshot.tasks)
+    applyTasksSnapshot(snapshot.tasks)
     if (typeof onPlansSnapshot === 'function' && isRecord(snapshot.plans))
       onPlansSnapshot(snapshot.plans)
     if (typeof onFocusesSnapshot === 'function' && isRecord(snapshot.focuses))
@@ -84,6 +88,7 @@ export const createPayloadController = ({
 
   return {
     applyMessagesPayload,
+    applyTasksSnapshot,
     applySnapshot,
     getCurrentStreamMessage,
   }

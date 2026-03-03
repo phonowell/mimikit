@@ -6,6 +6,7 @@ import {
   notifyWorkerLoop,
   waitForWorkerLoopSignal,
 } from '../orchestrator/core/signals.js'
+import { isSameUsage } from '../shared/token-usage.js'
 import {
   markTaskCanceled,
   markTaskFailed,
@@ -38,8 +39,9 @@ const runTask = async (
       task,
       controller,
       onUsage: (usage) => {
+        if (isSameUsage(task.usage, usage)) return
         task.usage = usage
-        notifyUiSignal(runtime)
+        notifyUiSignal(runtime, 'tasks')
       },
     })
     if (task.status === 'canceled') {
