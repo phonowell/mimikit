@@ -1,0 +1,33 @@
+import { mkdtemp } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
+import { expect, test } from 'vitest'
+
+import { defaultConfig } from '../src/config.js'
+import { buildManagerPrompt } from '../src/prompts/build-prompts.js'
+
+test('manager prompt enforces concise reply and choice routing rules', async () => {
+  const stateDir = await mkdtemp(join(tmpdir(), 'mimikit-manager-prompt-rules-'))
+  const config = defaultConfig({ workDir: stateDir })
+  const prompt = await buildManagerPrompt({
+    stateDir,
+    workDir: stateDir,
+    inputs: [
+      {
+        id: 'input-style-rule-1',
+        role: 'user',
+        text: '给我两个可选方案并让我选一个',
+        createdAt: '2026-03-03T00:00:00.000Z',
+        focusId: 'focus-global',
+      },
+    ],
+    results: [],
+    tasks: [],
+    promptSectionLimits: config.manager.promptSections,
+  })
+
+  expect(prompt).toContain('默认不寒暄、不复述用户已给出的任务、不做无效确认')
+  expect(prompt).toContain('需要用户在有限候选中二选一/多选一：优先使用 `M:ask_user_choice`')
+  expect(prompt).toContain('若输入来源包含 `qq`：禁止 `M:ask_user_choice`')
+})
