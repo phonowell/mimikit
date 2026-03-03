@@ -14,11 +14,14 @@
 - `POST /api/choices/:id/select`
 - `POST /api/restart`
 - `POST /api/reset`
+- `POST /api/reset-with-summary`
 
 ## SSE 事件模型（`GET /api/events`）
 
 - `snapshot`：全量快照，包含 `status/messages/tasks/plans/focuses/choice/stream`。
 - `stream`：流式文本 patch（`clear | replace | delta`）。
+- `tasks`：任务列表快照更新（由 worker 侧状态变化触发）。
+- `heartbeat`：SSE 保活心跳。
 - `error`：SSE 连接内错误反馈。
 
 说明：当前实现通过 SSE 下发消息、任务、plans 与 focus，不提供独立 `messages/tasks/plans` HTTP 查询接口。
@@ -125,6 +128,8 @@ schema：`src/storage/runtime-snapshot-schema.ts`
 
 ## 重启语义
 
-- `POST /api/restart` 与 `POST /api/reset` 都是“先回包，再异步停机”。
+- `POST /api/restart`、`POST /api/reset`、`POST /api/reset-with-summary` 仅在运行时空闲（manager 未运行且无 pending/running task）时可执行；忙时返回 `409`。
+- 空闲时上述接口均为“先回包，再异步停机”。
 - 停机阶段会等待 in-flight manager 批次收敛，再持久化 snapshot 并退出。
 - `reset` 会在持久化后清空状态目录并重建。
+- `reset-with-summary` 会先将最近会话生成重启摘要并落盘，再执行与 `reset` 相同的清理流程。

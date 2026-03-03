@@ -15,6 +15,7 @@
 - `on_idle`：manager 与 worker 均空闲且达到空闲窗口后按 `priority + FIFO` 触发
 - `on_worker_slot_freed`：worker 从“满载”转为“有空槽位”时按 `priority + FIFO` 触发
 - `on_idle` 冷却：`now - lastCompletedAt >= cooldownMs`
+- `on_idle` 默认运行次数：未显式传 `max_runs` 时，创建后默认 `maxRuns=1`（一次触发后转 `done`）
 
 ## 调度语义基线（on_idle 兼容不变）
 
