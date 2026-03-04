@@ -6,7 +6,7 @@
 
 - 一次性全量切换到统一模型：`Task + TaskPlan + Focus`。
 - 不保留旧链路兼容层（intent/cron-job 体系已移除）。
-- manager 使用 OpenAI 官方 SDK（`chat.completions`）；worker 使用 `Codex SDK`。
+- manager 使用 direct `responses` provider（`openai-responses`）；worker 使用 `Codex SDK`。
 - manager 对 orchestrator/worker 依赖收敛在 `src/manager/runtime-adapter.ts`。
 - `mimikit` 负责本地状态机、队列、调度、可观测性。
 - HTTP 输入校验与参数归一化集中在 `src/http/helpers.ts`。

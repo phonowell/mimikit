@@ -5,8 +5,6 @@ import { loadDefaultConfigFromYaml } from './config-default-loader.js'
 import type { QqConfig } from './channels/qq/config.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
-export type ManagerLlmMode = 'auto' | 'chat' | 'responses'
-
 export type DefaultConfigParams = {
   /** Absolute working directory path */
   workDir: string
@@ -18,8 +16,6 @@ export type AppConfig = {
   manager: {
     /** Default manager model */
     model: string
-    /** LLM mode for manager calls: auto prefers chat */
-    mode: ManagerLlmMode
     /** Max rounds for manager correction loop */
     maxCorrectionRounds: number
     promptSections: {

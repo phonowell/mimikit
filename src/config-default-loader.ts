@@ -19,13 +19,11 @@ const taskDefaultsSchema = z
     modelReasoningEffort: modelReasoningEffortSchema,
   })
   .strict()
-const managerModeSchema = z.enum(['auto', 'chat', 'responses'])
 const defaultConfigSchema = z
   .object({
     manager: z
       .object({
         model: z.string().min(1),
-        mode: managerModeSchema.default('auto'),
         maxCorrectionRounds: z.number().int().positive(),
         promptSections: z
           .object({

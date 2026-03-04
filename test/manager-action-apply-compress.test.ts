@@ -123,7 +123,7 @@ test('compress_context stores summary with local context', async () => {
   expect(runWithProviderMock).toHaveBeenCalledTimes(1)
   expect(runWithProviderMock).toHaveBeenCalledWith(
     expect.objectContaining({
-      provider: 'codex-sdk',
+      provider: 'openai-responses',
       role: 'manager',
     }),
   )

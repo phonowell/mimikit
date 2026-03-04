@@ -62,26 +62,17 @@ wire_api = "responses"
 env_key = "AICODING_API_KEY"
 ```
 
-Manager provider mode is configured in `config.yaml`:
+Manager model is configured in `config.yaml`:
 
 If `config.yaml` is missing, Mimikit will bootstrap it from `defaults/config.template.yaml`.
 
 ```yaml
 manager:
-  mode: auto # auto | chat | responses
+  model: gpt-5.2-high
 ```
 
-- `auto` (default): prioritize `chat` (`codex-sdk`)
-  - startup 后首条用户消息：先 `chat`，若失败则自动降级 `responses`
-  - 若该次 `responses` 成功，本次 runtime 后续 manager 调用锁定为 `responses`
-- `chat`: force `chat` (`codex-sdk`)
-- `responses`: force `responses` (`codex-sdk`)
-
-You can override with env var:
-
-```bash
-export MIMIKIT_MANAGER_MODE=responses
-```
+- manager calls route directly to `openai-responses`
+- worker calls route to `codex-sdk`
 
 ### 3) Start WebUI + API
 

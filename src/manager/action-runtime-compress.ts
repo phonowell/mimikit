@@ -11,7 +11,6 @@ import { truncateText } from '../shared/text.js'
 
 import { compressContextSchema } from './action-apply-schema.js'
 import { runManagerLlmCall } from './manager-llm-call.js'
-import { resolveRuntimeManagerMode } from './manager-mode-runtime.js'
 import {
   persistRuntimeState,
   type RuntimeState,
@@ -159,7 +158,6 @@ const compressFocusContext = async (
     prompt,
     workDir: runtime.config.workDir,
     model: runtime.config.manager.model,
-    mode: resolveRuntimeManagerMode(runtime),
     logPath: runtime.paths.log,
     logContext: {
       action: 'compress_context',

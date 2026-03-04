@@ -43,7 +43,6 @@ export const runManager = async (params: {
   workingFocusIds?: FocusId[]
   model?: string
   onUsage?: (usage: TokenUsage) => void
-  mode?: AppConfig['manager']['mode']
 }): Promise<{
   output: string
   elapsedMs: number
@@ -92,7 +91,6 @@ export const runManager = async (params: {
       prompt,
       workDir: params.workDir,
       ...(model ? { model } : {}),
-      ...(params.mode ? { mode: params.mode } : {}),
       ...(params.onUsage ? { onUsage: params.onUsage } : {}),
     })
     await archive(

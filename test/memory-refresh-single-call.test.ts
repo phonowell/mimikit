@@ -36,7 +36,6 @@ test('single-call renders input json via prompt template', async () => {
   const payload = {
     workDir: '/tmp/mimikit',
     model: 'gpt-5-mini',
-    managerMode: 'auto' as const,
     memoryMarkdown: '# Memory',
     signals: [
       {
@@ -57,9 +56,9 @@ test('single-call renders input json via prompt template', async () => {
 
   expect(runManagerLlmCallMock).toHaveBeenCalledTimes(1)
   const [call] = runManagerLlmCallMock.mock.calls
-  const callParams = call?.[0] as { prompt?: string; mode?: string } | undefined
+  const callParams = call?.[0] as { prompt?: string; model?: string } | undefined
   expect(callParams?.prompt).toContain('# Input(JSON)')
   expect(callParams?.prompt).toContain('"workDir":"/tmp/mimikit"')
   expect(callParams?.prompt).not.toContain('{{ input_json }}')
-  expect(callParams?.mode).toBe('auto')
+  expect(callParams?.model).toBe('gpt-5-mini')
 })

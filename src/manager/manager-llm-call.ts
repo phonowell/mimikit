@@ -1,6 +1,5 @@
 import { runWithProvider } from '../providers/registry.js'
 
-import type { ManagerLlmMode } from '../config.js'
 import type { TokenUsage } from '../types/index.js'
 
 const BYTE_STEP = 1_024
@@ -8,7 +7,7 @@ const TIMEOUT_STEP_MS = 2_500
 
 export const MIN_MANAGER_TIMEOUT_MS = 60_000
 export const MAX_MANAGER_TIMEOUT_MS = 120_000
-const MANAGER_PROVIDER = 'codex-sdk' as const
+const MANAGER_PROVIDER = 'openai-responses' as const
 
 export const resolveManagerTimeoutMs = (prompt: string): number => {
   const promptBytes = Buffer.byteLength(prompt, 'utf8')
@@ -24,7 +23,6 @@ export const runManagerLlmCall = async (params: {
   prompt: string
   workDir: string
   model?: string
-  mode?: ManagerLlmMode
   onUsage?: (usage: TokenUsage) => void
   logPath?: string
   logContext?: Record<string, unknown>

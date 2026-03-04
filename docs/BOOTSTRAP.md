@@ -70,19 +70,19 @@ curl -sS -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8787/api/events
 
 Expected: `200`.
 
-## Optional: Force Manager Wire API
+## Optional: Override Manager Model
 
 In `config.yaml`:
 
 ```yaml
 manager:
-  mode: auto # auto | chat | responses
+  model: gpt-5.2-high
 ```
 
 Env override:
 
 ```bash
-export MIMIKIT_MANAGER_MODE=responses
+export MIMIKIT_MANAGER_MODEL=gpt-5.2-high
 ```
 
 ## Failure Triage

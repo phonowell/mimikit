@@ -68,9 +68,6 @@ export class Orchestrator {
       activeFocusIds: [],
       managerTurn: 0,
       memoryRefresh: createDefaultMemoryRefreshState(),
-      managerAutoModeState: {
-        firstUserInputPending: true,
-      },
       managerFocusCompressedContexts: [],
       runningControllers: new Map(),
       createTaskDebounce: new Map(),

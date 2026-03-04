@@ -47,15 +47,6 @@ export type RuntimeMemoryRefreshState = {
   pending: boolean
 }
 
-export type RuntimeManagerAutoModeState = {
-  firstUserInputPending: boolean
-  lockedMode?: 'responses'
-  firstUserChatFailure?: {
-    at: ISODate
-    error: string
-  }
-}
-
 export type ManagerFocusCompressedContext = {
   focusId: FocusId
   summary: string
@@ -84,7 +75,6 @@ export type RuntimeState = {
   activeFocusIds: FocusId[]
   managerTurn: number
   memoryRefresh: RuntimeMemoryRefreshState
-  managerAutoModeState?: RuntimeManagerAutoModeState
   managerFocusCompressedContexts: ManagerFocusCompressedContext[]
   managerCompressedContext?: string
   runningControllers: Map<string, AbortController>

@@ -18,7 +18,7 @@ beforeEach(() => {
   })
 })
 
-test('manager mode auto defaults to codex-sdk', async () => {
+test('manager defaults to openai-responses', async () => {
   await runManagerLlmCall({
     prompt: 'ping',
     workDir: '/tmp/mimikit',
@@ -26,38 +26,24 @@ test('manager mode auto defaults to codex-sdk', async () => {
 
   expect(runWithProviderMock).toHaveBeenCalledWith(
     expect.objectContaining({
-      provider: 'codex-sdk',
+      provider: 'openai-responses',
       role: 'manager',
     }),
   )
 })
 
-test('manager mode chat routes to codex-sdk', async () => {
+test('manager forwards trimmed model to openai-responses', async () => {
   await runManagerLlmCall({
     prompt: 'ping',
     workDir: '/tmp/mimikit',
-    mode: 'chat',
+    model: ' gpt-5 ',
   })
 
   expect(runWithProviderMock).toHaveBeenCalledWith(
     expect.objectContaining({
-      provider: 'codex-sdk',
+      provider: 'openai-responses',
       role: 'manager',
-    }),
-  )
-})
-
-test('manager mode responses routes to codex-sdk', async () => {
-  await runManagerLlmCall({
-    prompt: 'ping',
-    workDir: '/tmp/mimikit',
-    mode: 'responses',
-  })
-
-  expect(runWithProviderMock).toHaveBeenCalledWith(
-    expect.objectContaining({
-      provider: 'codex-sdk',
-      role: 'manager',
+      model: 'gpt-5',
     }),
   )
 })

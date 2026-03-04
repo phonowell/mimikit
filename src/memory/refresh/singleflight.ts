@@ -3,7 +3,6 @@ import { join } from 'node:path'
 import { readHistory } from '../../history/store.js'
 import { appendLog } from '../../log/append.js'
 import { bestEffort } from '../../log/safe.js'
-import { resolveRuntimeManagerMode } from '../../manager/manager-mode-runtime.js'
 import { persistRuntimeState } from '../../orchestrator/core/runtime-persistence.js'
 import { isVisibleToAgent } from '../../shared/message-visibility.js'
 import { truncateText } from '../../shared/text.js'
@@ -83,7 +82,6 @@ const buildPayload = async (runtime: RuntimeState): Promise<MemoryRefreshPayload
   return {
     workDir: runtime.config.workDir,
     model: runtime.config.manager.model,
-    managerMode: resolveRuntimeManagerMode(runtime),
     memoryMarkdown,
     signals: visible.map((item) => ({
       id: item.id,

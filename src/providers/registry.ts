@@ -1,5 +1,5 @@
 import { codexSdkProvider } from './codex-sdk-provider.js'
-import { openAiChatProvider } from './openai-chat-provider.js'
+import { openAiResponsesProvider } from './openai-responses-provider.js'
 
 import type {
   Provider,
@@ -34,7 +34,7 @@ let registered = false
 const ensureDefaultProvidersRegistered = (): void => {
   if (registered) return
   registerProvider(codexSdkProvider)
-  registerProvider(openAiChatProvider)
+  registerProvider(openAiResponsesProvider)
   registered = true
 }
 
