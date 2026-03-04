@@ -10,7 +10,7 @@
 - Prompt 组装：`buildManagerPrompt`
 - 模板：`prompts/manager/system.md`（`nunjucks` 渲染）
 - Provider：由 `manager.mode` 决定
-  - `auto` / `chat` -> `openai-chat`
+  - `auto` / `chat` -> `codex-sdk`
   - `responses` -> `codex-sdk`
   - `auto` 仅在启动后的首条用户消息启用 failover：`chat` 失败后尝试 `responses`；成功则后续锁定 `responses`
 - Provider 配置来源：`loadCodexSettings()`，优先读取 `~/.codex/config.toml` 的 active provider（`base_url`、`api_key`、`env_key`/`api_key_env`），缺省回退 `OPENAI_API_KEY` 与 `~/.codex/auth.json`

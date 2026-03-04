@@ -8,6 +8,7 @@ const TIMEOUT_STEP_MS = 2_500
 
 export const MIN_MANAGER_TIMEOUT_MS = 60_000
 export const MAX_MANAGER_TIMEOUT_MS = 120_000
+const MANAGER_PROVIDER = 'codex-sdk' as const
 
 export const resolveManagerTimeoutMs = (prompt: string): number => {
   const promptBytes = Buffer.byteLength(prompt, 'utf8')
@@ -17,13 +18,6 @@ export const resolveManagerTimeoutMs = (prompt: string): number => {
     MIN_MANAGER_TIMEOUT_MS,
     Math.min(MAX_MANAGER_TIMEOUT_MS, computed),
   )
-}
-
-const resolveManagerProvider = (
-  mode: ManagerLlmMode | undefined,
-): 'codex-sdk' | 'openai-chat' => {
-  if (mode === 'responses') return 'codex-sdk'
-  return 'openai-chat'
 }
 
 export const runManagerLlmCall = async (params: {
@@ -43,7 +37,7 @@ export const runManagerLlmCall = async (params: {
 }> => {
   const timeoutMs = resolveManagerTimeoutMs(params.prompt)
   const result = await runWithProvider({
-    provider: resolveManagerProvider(params.mode),
+    provider: MANAGER_PROVIDER,
     role: 'manager',
     prompt: params.prompt,
     workDir: params.workDir,

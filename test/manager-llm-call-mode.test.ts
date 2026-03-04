@@ -18,7 +18,7 @@ beforeEach(() => {
   })
 })
 
-test('manager mode auto defaults to openai-chat', async () => {
+test('manager mode auto defaults to codex-sdk', async () => {
   await runManagerLlmCall({
     prompt: 'ping',
     workDir: '/tmp/mimikit',
@@ -26,13 +26,13 @@ test('manager mode auto defaults to openai-chat', async () => {
 
   expect(runWithProviderMock).toHaveBeenCalledWith(
     expect.objectContaining({
-      provider: 'openai-chat',
+      provider: 'codex-sdk',
       role: 'manager',
     }),
   )
 })
 
-test('manager mode chat routes to openai-chat', async () => {
+test('manager mode chat routes to codex-sdk', async () => {
   await runManagerLlmCall({
     prompt: 'ping',
     workDir: '/tmp/mimikit',
@@ -41,7 +41,7 @@ test('manager mode chat routes to openai-chat', async () => {
 
   expect(runWithProviderMock).toHaveBeenCalledWith(
     expect.objectContaining({
-      provider: 'openai-chat',
+      provider: 'codex-sdk',
       role: 'manager',
     }),
   )

@@ -71,10 +71,10 @@ manager:
   mode: auto # auto | chat | responses
 ```
 
-- `auto` (default): prioritize `chat` (`openai-chat`)
+- `auto` (default): prioritize `chat` (`codex-sdk`)
   - startup 后首条用户消息：先 `chat`，若失败则自动降级 `responses`
   - 若该次 `responses` 成功，本次 runtime 后续 manager 调用锁定为 `responses`
-- `chat`: force `chat` (`openai-chat`)
+- `chat`: force `chat` (`codex-sdk`)
 - `responses`: force `responses` (`codex-sdk`)
 
 You can override with env var:
