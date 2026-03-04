@@ -25,6 +25,20 @@ test('normalizeMarkdownForRender linkifies task archive path to state files URL'
   )
 })
 
+test('normalizeMarkdownForRender linkifies relative task archive paths in archive lines', () => {
+  const source = [
+    '任务归档: tasks/2026-03-04/task-051587863a59426a8d6c137da9edfa51_task.md',
+    '任务归档: tasks/2026-03-04/task-dcfbbc3550fa44a09d137323bf644eca_task.md',
+  ].join('\n')
+  const normalized = normalizeMarkdownForRender(source)
+  expect(normalized).toBe(
+    [
+      '任务归档: [tasks/2026-03-04/task-051587863a59426a8d6c137da9edfa51_task.md](/state-files/tasks/2026-03-04/task-051587863a59426a8d6c137da9edfa51_task.md)',
+      '任务归档: [tasks/2026-03-04/task-dcfbbc3550fa44a09d137323bf644eca_task.md](/state-files/tasks/2026-03-04/task-dcfbbc3550fa44a09d137323bf644eca_task.md)',
+    ].join('\n'),
+  )
+})
+
 test('normalizeMarkdownForRender does not linkify inline code paths', () => {
   const source = '证据：`/Users/mimiko/Projects/mimikit/.mimikit/log.jsonl`'
   expect(normalizeMarkdownForRender(source)).toBe(source)

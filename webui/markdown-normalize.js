@@ -17,7 +17,7 @@ const normalizeOrderedListLine = (line) => {
   return normalizedParen.replace(/^(\s{0,3}\d+)\.(?=[^\s\d])/, '$1. ')
 }
 
-const PATH_TOKEN = /(^|[\s:：\[(（【])((?:file:\/\/\S+|(?:\/|[a-zA-Z]:[\\/]|\.mimikit(?:\/|\\))\S+))(?=$|[\s,，.。;；!！?？)\]）】>》])/g
+const PATH_TOKEN = /(^|[\s:：\[(（【])((?:file:\/\/\S+|(?:\/|[a-zA-Z]:[\\/]|\.mimikit(?:\/|\\)|[a-zA-Z0-9._-]+[\\/])\S+))(?=$|[\s,，.。;；!！?？)\]）】>》])/g
 const TRAILING_PATH_PUNCTUATION = /[.,，。;；!！?？)\]）】>》]+$/
 const INLINE_CODE_SEGMENT = /(`[^`\n]*`)/g
 

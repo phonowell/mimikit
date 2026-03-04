@@ -23,6 +23,15 @@ test('toArtifactUrl maps generated relative path to state files URL', () => {
   expect(href).toBe('/state-files/generated/reports/health.json')
 })
 
+test('toArtifactUrl maps tasks relative path to state files URL', () => {
+  const href = toArtifactUrl(
+    'tasks/2026-03-04/task-dcfbbc3550fa44a09d137323bf644eca_task.md',
+  )
+  expect(href).toBe(
+    '/state-files/tasks/2026-03-04/task-dcfbbc3550fa44a09d137323bf644eca_task.md',
+  )
+})
+
 test('toArtifactUrl maps .mimikit relative file path to state files URL', () => {
   const href = toArtifactUrl('.mimikit/log.jsonl')
   expect(href).toBe('/state-files/log.jsonl')
