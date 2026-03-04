@@ -66,6 +66,7 @@
 
 - 若缺少 `config.yaml`，启动阶段会由 `defaults/config.template.yaml` 自动生成。
 - `manager.model`
+- `manager.provider.{baseUrl,apiKey}`（可选，仅 manager）
 - `manager.maxCorrectionRounds`
 - `manager.promptSections.*`
 - `manager.taskCreate.debounceMs`

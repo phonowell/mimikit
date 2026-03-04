@@ -94,6 +94,9 @@ export const runManagerRoundWithRecovery = async (params: {
       : {}),
     ...(managerEnv ? { env: managerEnv } : {}),
     model: params.runtime.config.manager.model,
+    ...(params.runtime.config.manager.provider
+      ? { managerProvider: params.runtime.config.manager.provider }
+      : {}),
   })
 
   return {

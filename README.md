@@ -57,7 +57,7 @@ If you use a custom Codex-compatible provider, configure `base_url` and `env_key
 model_provider = "aicoding"
 
 [model_providers.aicoding]
-base_url = "http://api-ai-coding.bilibili.co/api/v1/codex"
+base_url = "https://your-codex-provider.example.com/v1/codex"
 wire_api = "responses"
 env_key = "AICODING_API_KEY"
 ```

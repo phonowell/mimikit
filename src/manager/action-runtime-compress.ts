@@ -158,6 +158,9 @@ const compressFocusContext = async (
     prompt,
     workDir: runtime.config.workDir,
     model: runtime.config.manager.model,
+    ...(runtime.config.manager.provider
+      ? { managerProvider: runtime.config.manager.provider }
+      : {}),
     logPath: runtime.paths.log,
     logContext: {
       action: 'compress_context',

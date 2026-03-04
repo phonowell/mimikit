@@ -42,6 +42,10 @@ export const runManager = async (params: {
   activeFocusIds?: FocusId[]
   workingFocusIds?: FocusId[]
   model?: string
+  managerProvider?: {
+    baseUrl?: string | undefined
+    apiKey?: string | undefined
+  }
   onUsage?: (usage: TokenUsage) => void
 }): Promise<{
   output: string
@@ -91,6 +95,7 @@ export const runManager = async (params: {
       prompt,
       workDir: params.workDir,
       ...(model ? { model } : {}),
+      ...(params.managerProvider ? { managerProvider: params.managerProvider } : {}),
       ...(params.onUsage ? { onUsage: params.onUsage } : {}),
     })
     await archive(

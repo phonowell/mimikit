@@ -25,6 +25,10 @@ export type MemoryRefreshPlanDigest = {
 export type MemoryRefreshPayload = {
   workDir: string
   model: string
+  managerProvider?: {
+    baseUrl?: string | undefined
+    apiKey?: string | undefined
+  }
   memoryMarkdown: string
   compressedContext?: string
   signals: MemoryRefreshSignal[]

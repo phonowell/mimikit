@@ -23,6 +23,10 @@ export const runManagerLlmCall = async (params: {
   prompt: string
   workDir: string
   model?: string
+  managerProvider?: {
+    baseUrl?: string | undefined
+    apiKey?: string | undefined
+  }
   onUsage?: (usage: TokenUsage) => void
   logPath?: string
   logContext?: Record<string, unknown>
@@ -33,6 +37,8 @@ export const runManagerLlmCall = async (params: {
   usage?: TokenUsage
   threadId?: string | null
 }> => {
+  const managerBaseUrl = params.managerProvider?.baseUrl?.trim()
+  const managerApiKey = params.managerProvider?.apiKey?.trim()
   const timeoutMs = resolveManagerTimeoutMs(params.prompt)
   const result = await runWithProvider({
     provider: MANAGER_PROVIDER,
@@ -40,6 +46,8 @@ export const runManagerLlmCall = async (params: {
     prompt: params.prompt,
     workDir: params.workDir,
     timeoutMs,
+    ...(managerBaseUrl ? { baseUrl: managerBaseUrl } : {}),
+    ...(managerApiKey ? { apiKey: managerApiKey } : {}),
     ...(params.model?.trim() ? { model: params.model.trim() } : {}),
     ...(params.onUsage ? { onUsage: params.onUsage } : {}),
     ...(params.logPath ? { logPath: params.logPath } : {}),

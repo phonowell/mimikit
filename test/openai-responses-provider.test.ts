@@ -25,7 +25,7 @@ const writeCodexConfig = async (homeDir: string): Promise<void> => {
       'model_provider = "aicoding"',
       '',
       '[model_providers.aicoding]',
-      'base_url = "http://api-ai-coding.bilibili.co/api/v1/codex"',
+      'base_url = "https://your-codex-provider.example.com/v1/codex"',
       'wire_api = "responses"',
       'env_key = "AICODING_API_KEY"',
       '',
@@ -128,6 +128,53 @@ describe('parseResponsesPayload', () => {
 })
 
 describe('openAiResponsesProvider', () => {
+  test('prefers request-level baseUrl and apiKey overrides for manager calls', async () => {
+    const homeDir = await createHomeDir()
+    createdHomeDirs.push(homeDir)
+    await writeCodexConfig(homeDir)
+    process.env.HOME = homeDir
+    process.env.AICODING_API_KEY = 'provider-env-key'
+
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          output: [
+            {
+              type: 'message',
+              content: [{ type: 'output_text', text: 'override-ok' }],
+            },
+          ],
+          usage: {
+            input_tokens: 1,
+            output_tokens: 1,
+            total_tokens: 2,
+          },
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      ),
+    )
+    globalThis.fetch = fetchMock
+
+    const result = await openAiResponsesProvider.run({
+      provider: 'openai-responses',
+      role: 'manager',
+      prompt: 'ping',
+      workDir: process.cwd(),
+      timeoutMs: 30_000,
+      model: 'gpt-5',
+      baseUrl: ' http://localhost:18080/v1/codex/ ',
+      apiKey: ' manager-config-key ',
+    })
+
+    expect(result.output).toBe('override-ok')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetchMock.mock.calls[0]?.[0]).toBe('http://localhost:18080/v1/codex/responses')
+    const firstInit = fetchMock.mock.calls[0]?.[1] as RequestInit
+    expect((firstInit.headers as Record<string, string>).authorization).toBe(
+      'Bearer manager-config-key',
+    )
+  })
+
   test('retries once with session_id header when upstream requires session_id', async () => {
     const homeDir = await createHomeDir()
     createdHomeDirs.push(homeDir)

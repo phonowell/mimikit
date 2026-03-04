@@ -37,6 +37,11 @@ const resolveBaseUrl = (baseUrl: string | undefined): string => {
   return trimmed
 }
 
+const trimNonEmptyString = (value: string | undefined): string | undefined => {
+  const trimmed = value?.trim()
+  return trimmed && trimmed.length > 0 ? trimmed : undefined
+}
+
 const resolveApiKey = (
   apiKey: string | undefined,
   requiresAuth: boolean | undefined,
@@ -268,19 +273,26 @@ const runOpenAiResponses = async (request: OpenAiResponsesProviderRequest) => {
 
   try {
     const settings = await loadCodexSettings()
-    const baseUrl = resolveBaseUrl(settings.baseUrl)
-    const apiKey = resolveApiKey(settings.apiKey, settings.requiresAuth)
+    const requestBaseUrl = trimNonEmptyString(request.baseUrl)
+    const requestApiKey = trimNonEmptyString(request.apiKey)
+    const baseUrl = resolveBaseUrl(requestBaseUrl ?? settings.baseUrl)
+    const apiKey = resolveApiKey(
+      requestApiKey ?? settings.apiKey,
+      settings.requiresAuth,
+    )
     const model = resolveModel(request, settings.model)
     const endpoint = `${baseUrl}/responses`
     const shouldStripAuthorizationHeader =
-      settings.requiresAuth === false && !settings.apiKey?.trim()?.length
+      settings.requiresAuth === false &&
+      !requestApiKey &&
+      !settings.apiKey?.trim()?.length
     const doFetch = shouldStripAuthorizationHeader
       ? buildFetchWithoutAuthHeader()
       : fetch
     await appendOpenAiResponsesLog(request, {
       event: 'llm_call_started',
       modelResolved: model,
-      baseUrl: settings.baseUrl,
+      baseUrl,
       ...(settings.wireApi ? { wireApi: settings.wireApi } : {}),
     })
 

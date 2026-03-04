@@ -25,6 +25,8 @@ type ProviderRequestBase = {
 
 export type OpenAiResponsesProviderRequest = ProviderRequestBase & {
   provider: 'openai-responses'
+  baseUrl?: string
+  apiKey?: string
   outputSchema?: unknown
   logPath?: string
   logContext?: Record<string, unknown>

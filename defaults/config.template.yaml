@@ -1,5 +1,10 @@
 manager:
   model: gpt-5.2-high
+  # Optional manager-only provider overrides.
+  # If omitted, manager keeps provider auto-discovery behavior.
+  # provider:
+  #   baseUrl: ${BASE_URL}
+  #   apiKey: ${API_KEY}
   maxCorrectionRounds: 3
   promptSections:
     actionFeedbackMaxBytes: 8192

@@ -16,6 +16,15 @@ export type AppConfig = {
   manager: {
     /** Default manager model */
     model: string
+    /** Manager-only provider overrides; absent fields fallback to auto-discovery */
+    provider?:
+      | {
+          /** Override provider base URL only for manager openai-responses calls */
+          baseUrl?: string | undefined
+          /** Override API key only for manager openai-responses calls */
+          apiKey?: string | undefined
+        }
+      | undefined
     /** Max rounds for manager correction loop */
     maxCorrectionRounds: number
     promptSections: {

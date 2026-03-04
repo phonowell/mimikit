@@ -82,6 +82,9 @@ const buildPayload = async (runtime: RuntimeState): Promise<MemoryRefreshPayload
   return {
     workDir: runtime.config.workDir,
     model: runtime.config.manager.model,
+    ...(runtime.config.manager.provider
+      ? { managerProvider: runtime.config.manager.provider }
+      : {}),
     memoryMarkdown,
     signals: visible.map((item) => ({
       id: item.id,

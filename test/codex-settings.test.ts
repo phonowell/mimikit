@@ -77,7 +77,7 @@ test('loads api key from active provider env_key when OPENAI_API_KEY is missing'
     `
 model_provider = "aicoding"
 [model_providers.aicoding]
-base_url = "http://api-ai-coding.bilibili.co/api/v1/codex"
+base_url = "https://your-codex-provider.example.com/v1/codex"
 wire_api = "responses"
 env_key = "AICODING_API_KEY"
 `,
@@ -89,7 +89,7 @@ env_key = "AICODING_API_KEY"
 
   expect(settings).toMatchObject({
     apiKey: 'provider-env-key',
-    baseUrl: 'http://api-ai-coding.bilibili.co/api/v1/codex',
+    baseUrl: 'https://your-codex-provider.example.com/v1/codex',
     wireApi: 'responses',
   })
 })
@@ -123,7 +123,7 @@ test('falls back to OPENAI_API_KEY when provider key config is absent', async ()
     `
 model_provider = "aicoding"
 [model_providers.aicoding]
-base_url = "http://api-ai-coding.bilibili.co/api/v1/codex"
+base_url = "https://your-codex-provider.example.com/v1/codex"
 `,
   )
   process.env.HOME = homeDir
@@ -142,7 +142,7 @@ test('falls back to ~/.codex/auth.json when envs are absent', async () => {
     `
 model_provider = "aicoding"
 [model_providers.aicoding]
-base_url = "http://api-ai-coding.bilibili.co/api/v1/codex"
+base_url = "https://your-codex-provider.example.com/v1/codex"
 `,
   )
   await writeCodexAuth(homeDir, 'auth-json-key')
