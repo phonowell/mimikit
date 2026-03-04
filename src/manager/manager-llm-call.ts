@@ -1,6 +1,7 @@
 import { runWithProvider } from '../providers/registry.js'
 
 import type { TokenUsage } from '../types/index.js'
+import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
 const BYTE_STEP = 1_024
 const TIMEOUT_STEP_MS = 2_500
@@ -26,6 +27,7 @@ export const runManagerLlmCall = async (params: {
   managerProvider?: {
     baseUrl?: string | undefined
     apiKey?: string | undefined
+    modelReasoningEffort?: ModelReasoningEffort | undefined
   }
   onUsage?: (usage: TokenUsage) => void
   logPath?: string
@@ -39,6 +41,7 @@ export const runManagerLlmCall = async (params: {
 }> => {
   const managerBaseUrl = params.managerProvider?.baseUrl?.trim()
   const managerApiKey = params.managerProvider?.apiKey?.trim()
+  const managerModelReasoningEffort = params.managerProvider?.modelReasoningEffort
   const timeoutMs = resolveManagerTimeoutMs(params.prompt)
   const result = await runWithProvider({
     provider: MANAGER_PROVIDER,
@@ -48,6 +51,9 @@ export const runManagerLlmCall = async (params: {
     timeoutMs,
     ...(managerBaseUrl ? { baseUrl: managerBaseUrl } : {}),
     ...(managerApiKey ? { apiKey: managerApiKey } : {}),
+    ...(managerModelReasoningEffort
+      ? { modelReasoningEffort: managerModelReasoningEffort }
+      : {}),
     ...(params.model?.trim() ? { model: params.model.trim() } : {}),
     ...(params.onUsage ? { onUsage: params.onUsage } : {}),
     ...(params.logPath ? { logPath: params.logPath } : {}),

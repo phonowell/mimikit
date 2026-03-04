@@ -175,7 +175,7 @@ describe('openAiResponsesProvider', () => {
     )
   })
 
-  test('always sends session_id header and stream=true for manager calls', async () => {
+  test('always sends session_id header, stream=true and reasoning effort for manager calls', async () => {
     const homeDir = await createHomeDir()
     createdHomeDirs.push(homeDir)
     await writeCodexConfig(homeDir)
@@ -202,6 +202,7 @@ describe('openAiResponsesProvider', () => {
       workDir: process.cwd(),
       timeoutMs: 30_000,
       model: 'gpt-5',
+      modelReasoningEffort: 'high',
     })
 
     expect(result.output).toBe('42')
@@ -217,6 +218,7 @@ describe('openAiResponsesProvider', () => {
       /^session-/,
     )
     expect(firstBody.stream).toBe(true)
+    expect(firstBody.reasoning).toEqual({ effort: 'high' })
     expect(result.threadId).toMatch(/^session-/)
   })
 })

@@ -27,6 +27,7 @@ export type OpenAiResponsesProviderRequest = ProviderRequestBase & {
   provider: 'openai-responses'
   baseUrl?: string
   apiKey?: string
+  modelReasoningEffort?: ModelReasoningEffort
   outputSchema?: unknown
   logPath?: string
   logContext?: Record<string, unknown>

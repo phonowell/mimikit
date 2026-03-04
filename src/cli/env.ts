@@ -43,9 +43,9 @@ const parseReasoning = (
 }
 const applyModelEnv = (config: AppConfig): void => {
   const envModel = process.env.MIMIKIT_MODEL?.trim()
-  if (envModel) config.manager.model = envModel
+  if (envModel) config.manager.provider.model = envModel
   const envManagerModel = process.env.MIMIKIT_MANAGER_MODEL?.trim()
-  if (envManagerModel) config.manager.model = envManagerModel
+  if (envManagerModel) config.manager.provider.model = envManagerModel
   const envWorkerModel = process.env.MIMIKIT_WORKER_MODEL?.trim()
   if (envWorkerModel) config.worker.model = envWorkerModel
 }
@@ -54,7 +54,15 @@ const applyReasoningEnv = (config: AppConfig): void => {
     'MIMIKIT_REASONING_EFFORT',
     process.env.MIMIKIT_REASONING_EFFORT,
   )
-  if (global) config.worker.modelReasoningEffort = global
+  if (global) {
+    config.manager.provider.modelReasoningEffort = global
+    config.worker.modelReasoningEffort = global
+  }
+  const manager = parseReasoning(
+    'MIMIKIT_MANAGER_REASONING_EFFORT',
+    process.env.MIMIKIT_MANAGER_REASONING_EFFORT,
+  )
+  if (manager) config.manager.provider.modelReasoningEffort = manager
   const worker = parseReasoning(
     'MIMIKIT_WORKER_REASONING_EFFORT',
     process.env.MIMIKIT_WORKER_REASONING_EFFORT,

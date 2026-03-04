@@ -7,6 +7,7 @@ import {
 import { runManagerLlmCall } from './manager-llm-call.js'
 
 import type { AppConfig } from '../config.js'
+import type { ModelReasoningEffort } from '@openai/codex-sdk'
 import type {
   FocusContext,
   FocusId,
@@ -45,6 +46,7 @@ export const runManager = async (params: {
   managerProvider?: {
     baseUrl?: string | undefined
     apiKey?: string | undefined
+    modelReasoningEffort?: ModelReasoningEffort | undefined
   }
   onUsage?: (usage: TokenUsage) => void
 }): Promise<{

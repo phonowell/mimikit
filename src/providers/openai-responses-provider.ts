@@ -109,6 +109,9 @@ const appendOpenAiResponsesLog = async (
       outputSchema: Boolean(request.outputSchema),
       workingDirectory: request.workDir,
       ...(request.model ? { model: request.model } : {}),
+      ...(request.modelReasoningEffort
+        ? { modelReasoningEffort: request.modelReasoningEffort }
+        : {}),
       ...(request.logContext ?? {}),
     }),
   )
@@ -290,6 +293,9 @@ const runOpenAiResponses = async (request: OpenAiResponsesProviderRequest) => {
       model,
       stream: true,
       input: [{ role: 'user', content: request.prompt }],
+      ...(request.modelReasoningEffort
+        ? { reasoning: { effort: request.modelReasoningEffort } }
+        : {}),
     })
     const sessionId = resolveSessionId(request.threadId)
     resetIdle()

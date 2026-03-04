@@ -51,6 +51,7 @@
 - `MIMIKIT_MANAGER_MODEL`
 - `MIMIKIT_WORKER_MODEL`
 - `MIMIKIT_REASONING_EFFORT`
+- `MIMIKIT_MANAGER_REASONING_EFFORT`
 - `MIMIKIT_WORKER_REASONING_EFFORT`
 - `MIMIKIT_MANAGER_CREATE_TASK_DEBOUNCE_MS`
 - `MIMIKIT_MANAGER_IDLE_TRIGGER_DELAY_MS`
@@ -65,7 +66,8 @@
 ## 配置结构（`config.yaml`）
 
 - 若缺少 `config.yaml`，启动阶段会由 `defaults/config.template.yaml` 自动生成。
-- `manager.model`
+- `manager.provider.model`
+- `manager.provider.modelReasoningEffort`
 - `manager.provider.{baseUrl,apiKey}`（可选，仅 manager）
 - `manager.maxCorrectionRounds`
 - `manager.promptSections.*`

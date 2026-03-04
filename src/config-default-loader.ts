@@ -23,14 +23,14 @@ const defaultConfigSchema = z
   .object({
     manager: z
       .object({
-        model: z.string().min(1),
         provider: z
           .object({
+            model: z.string().min(1),
+            modelReasoningEffort: modelReasoningEffortSchema,
             baseUrl: z.string().min(1).optional(),
             apiKey: z.string().min(1).optional(),
           })
-          .strict()
-          .optional(),
+          .strict(),
         maxCorrectionRounds: z.number().int().positive(),
         promptSections: z
           .object({

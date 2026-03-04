@@ -55,6 +55,7 @@ test('manager forwards provider overrides to openai-responses', async () => {
     managerProvider: {
       baseUrl: ' http://localhost:18080/v1/codex/ ',
       apiKey: ' manager-config-key ',
+      modelReasoningEffort: 'high',
     },
   })
 
@@ -64,6 +65,7 @@ test('manager forwards provider overrides to openai-responses', async () => {
       role: 'manager',
       baseUrl: 'http://localhost:18080/v1/codex/',
       apiKey: 'manager-config-key',
+      modelReasoningEffort: 'high',
     }),
   )
 })

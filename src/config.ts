@@ -14,17 +14,17 @@ export type AppConfig = {
   workDir: string
   /** Manager scheduling and prompt settings */
   manager: {
-    /** Default manager model */
-    model: string
-    /** Manager-only provider overrides; absent fields fallback to auto-discovery */
-    provider?:
-      | {
-          /** Override provider base URL only for manager openai-responses calls */
-          baseUrl?: string | undefined
-          /** Override API key only for manager openai-responses calls */
-          apiKey?: string | undefined
-        }
-      | undefined
+    /** Manager provider settings */
+    provider: {
+      /** Default manager model */
+      model: string
+      /** Manager model reasoning effort */
+      modelReasoningEffort: ModelReasoningEffort
+      /** Override provider base URL only for manager openai-responses calls */
+      baseUrl?: string | undefined
+      /** Override API key only for manager openai-responses calls */
+      apiKey?: string | undefined
+    }
     /** Max rounds for manager correction loop */
     maxCorrectionRounds: number
     promptSections: {

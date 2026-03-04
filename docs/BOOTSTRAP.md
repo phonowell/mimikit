@@ -96,7 +96,9 @@ In `config.yaml`:
 
 ```yaml
 manager:
-  model: gpt-5.2-high
+  provider:
+    model: gpt-5.2-high
+    modelReasoningEffort: high
 worker:
   model: gpt-5.3-codex-high
 ```
@@ -105,6 +107,7 @@ Env overrides:
 
 ```bash
 export MIMIKIT_MANAGER_MODEL=gpt-5.2-high
+export MIMIKIT_MANAGER_REASONING_EFFORT=high
 export MIMIKIT_WORKER_MODEL=gpt-5.3-codex-high
 ```
 
