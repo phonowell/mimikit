@@ -1,11 +1,7 @@
-import { readFile } from 'node:fs/promises'
+import { readFile, stat } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
-import {
-  checkExistingPathBoundary,
-  resolveFromRoot,
-  toPathWithinRoot,
-} from '../fs/path-safety.js'
+import { resolveFromRoot, toPathWithinRoot } from '../fs/path-safety.js'
 import { readErrorCode } from '../shared/error-code.js'
 
 import { decodeUtf8Text, sliceTextByLines } from './read-file-content.js'
@@ -19,8 +15,8 @@ import {
 import type { ReadFileLookupMessage } from '../types/index.js'
 
 const MAX_FILE_BYTES = 256 * 1_024
-const OUTSIDE_WORK_DIR_ERROR =
-  'read_file failed: path is outside repository work_dir'
+const NON_REGULAR_FILE_ERROR =
+  'read_file failed: path is not a regular file'
 
 const formatPathForPrompt = (repoRelativePath: string): string =>
   repoRelativePath.replace(/\\/g, '/')
@@ -58,16 +54,14 @@ export const runReadFileTool = async (params: {
       ? formatPathForPrompt(repoRelativePath)
       : params.request.path.trim()
 
-  if (repoRelativePath === undefined) {
-    return buildReadFileError(displayPath, OUTSIDE_WORK_DIR_ERROR)
-  }
-
-  const boundary = await checkExistingPathBoundary({
-    rootPath: resolvedWorkDir,
-    targetPath: absolutePath,
-  })
-  if (boundary === 'outside') {
-    return buildReadFileError(displayPath, OUTSIDE_WORK_DIR_ERROR)
+  try {
+    const stats = await stat(absolutePath)
+    if (!stats.isFile()) {
+      return buildReadFileError(displayPath, NON_REGULAR_FILE_ERROR)
+    }
+  } catch (error) {
+    const code = readErrorCode(error)
+    return buildReadFileError(displayPath, toErrorMessage(code))
   }
 
   try {

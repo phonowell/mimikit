@@ -1,6 +1,8 @@
+import { execFile } from 'node:child_process'
 import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { platform, tmpdir } from 'node:os'
+import { join, relative } from 'node:path'
+import { promisify } from 'node:util'
 
 import { afterEach, expect, test } from 'vitest'
 
@@ -10,6 +12,7 @@ import {
 } from '../src/manager/read-file-tool.js'
 
 const tempDirs: string[] = []
+const execFileAsync = promisify(execFile)
 
 const createTempRepo = async (): Promise<string> => {
   const dir = await mkdtemp(join(tmpdir(), 'mimikit-read-file-'))
@@ -125,19 +128,42 @@ test('runReadFileTool slices content by from_line with max_lines', async () => {
   expect(result.truncated).toBe(true)
 })
 
-test('runReadFileTool rejects paths outside work_dir', async () => {
+test('runReadFileTool allows relative paths outside work_dir', async () => {
   const workDir = await createTempRepo()
+  const outsideDir = await mkdtemp(join(tmpdir(), 'mimikit-read-file-outside-'))
+  tempDirs.push(outsideDir)
+  const outsideFile = join(outsideDir, 'outside.txt')
+  await writeFile(outsideFile, 'outside', 'utf8')
   const result = await runReadFileTool({
     workDir,
     request: {
-      path: '../outside.txt',
+      path: relative(workDir, outsideFile),
       fromLine: 1,
       maxLines: 100,
       maxChars: 100,
     },
   })
-  expect(result.status).toBe('error')
-  expect(result.error).toContain('outside repository')
+  expect(result.status).toBe('ok')
+  expect(result.content).toBe('outside')
+})
+
+test('runReadFileTool allows absolute paths outside work_dir', async () => {
+  const workDir = await createTempRepo()
+  const outsideDir = await mkdtemp(join(tmpdir(), 'mimikit-read-file-abs-'))
+  tempDirs.push(outsideDir)
+  const outsideFile = join(outsideDir, 'absolute.txt')
+  await writeFile(outsideFile, 'absolute', 'utf8')
+  const result = await runReadFileTool({
+    workDir,
+    request: {
+      path: outsideFile,
+      fromLine: 1,
+      maxLines: 100,
+      maxChars: 100,
+    },
+  })
+  expect(result.status).toBe('ok')
+  expect(result.content).toBe('absolute')
 })
 
 test('runReadFileTool allows .mimikit paths', async () => {
@@ -194,4 +220,38 @@ test('runReadFileTool rejects non-utf8 files', async () => {
   })
   expect(result.status).toBe('error')
   expect(result.error).toContain('not valid UTF-8')
+})
+
+test('runReadFileTool rejects directories', async () => {
+  const workDir = await createTempRepo()
+  await mkdir(join(workDir, 'nested'), { recursive: true })
+  const result = await runReadFileTool({
+    workDir,
+    request: {
+      path: 'nested',
+      fromLine: 1,
+      maxLines: 100,
+      maxChars: 100,
+    },
+  })
+  expect(result.status).toBe('error')
+  expect(result.error).toContain('not a regular file')
+})
+
+test('runReadFileTool rejects fifo paths on unix-like systems', async () => {
+  if (platform() === 'win32') return
+  const workDir = await createTempRepo()
+  const fifoPath = join(workDir, 'named.pipe')
+  await execFileAsync('mkfifo', [fifoPath])
+  const result = await runReadFileTool({
+    workDir,
+    request: {
+      path: 'named.pipe',
+      fromLine: 1,
+      maxLines: 100,
+      maxChars: 100,
+    },
+  })
+  expect(result.status).toBe('error')
+  expect(result.error).toContain('not a regular file')
 })

@@ -51,6 +51,37 @@
 - `compress_context`：按 focus 维度写入压缩摘要（`managerFocusCompressedContexts`），prompt 仅注入 working focus 对应条目。
 - memory 写入不再通过 action；由后台 memory 刷新子进程负责。
 
+### `read_file` 细节
+
+- 用途：读取 UTF-8 文本文件片段并注入下一轮 `M:file_lookup`。
+- 路径：支持绝对路径和相对路径；相对路径以 `work_dir` 为基准，可使用 `..` 访问 `work_dir` 外文件。
+- 文件类型限制：仅允许常规文件；目录、设备文件、socket、pipe 等路径会被拒绝。
+- symlink：保持 Node 默认语义，跟随 symlink 目标；目标必须是常规文件。
+- 大小限制：原始字节数上限 `256 KiB`，超限直接报错。
+- 文本判定：按 UTF-8（fatal）解码，非 UTF-8 返回错误。
+- 窗口与截断：先按行窗口裁剪，再按字符上限裁剪；任一裁剪发生时 `truncated=true`。
+
+参数（字符串）：
+
+- `path`：必填，非空路径字符串。
+- `from_line`：可选，默认 `1`，范围 `[1, Number.MAX_SAFE_INTEGER]`。
+- `max_lines`：可选，默认 `100`，范围 `[1, 500]`。
+- `max_chars`：可选，默认 `4000`，范围 `[1, 20000]`。
+
+常见错误：
+
+- `read_file failed: file does not exist`
+- `read_file failed: path is not a regular file`
+- `read_file failed: permission denied`
+- `read_file failed: file is too large (...)`
+- `read_file failed: file is not valid UTF-8 text`
+
+示例：
+
+- `<M:read_file path="docs/design/workflow/action.md" from_line="1" max_lines="120" max_chars="6000" />`
+- `<M:read_file path="../overflows/wt-worktree.md" />`
+- `<M:read_file path="/Users/mimiko/Projects/mimikit/README.md" max_lines="80" />`
+
 ## Prompt 注入标签
 
 - `M:inputs`
