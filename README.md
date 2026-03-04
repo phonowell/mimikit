@@ -61,6 +61,25 @@ wire_api = "responses"
 env_key = "AICODING_API_KEY"
 ```
 
+Manager provider mode is configured in `config.yaml`:
+
+```yaml
+manager:
+  mode: auto # auto | chat | responses
+```
+
+- `auto` (default): prioritize `chat` (`openai-chat`)
+  - startup 后首条用户消息：先 `chat`，若失败则自动降级 `responses`
+  - 若该次 `responses` 成功，本次 runtime 后续 manager 调用锁定为 `responses`
+- `chat`: force `chat` (`openai-chat`)
+- `responses`: force `responses` (`codex-sdk`)
+
+You can override with env var:
+
+```bash
+export MIMIKIT_MANAGER_MODE=responses
+```
+
 ### 3) Start WebUI + API
 
 ```bash

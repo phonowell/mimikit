@@ -58,24 +58,34 @@ const normalizeUsageParts = (parts: {
   return result
 }
 
-export const normalizeUsage = (
-  usage?: {
-    input_tokens?: number
-    cached_input_tokens?: number
-    cache_write_input_tokens?: number
-    output_tokens?: number
-    cached_output_tokens?: number
-    total_tokens?: number
-  } | null,
-): TokenUsage | undefined => {
-  if (!usage) return undefined
+const asRecord = (value: unknown): Record<string, unknown> | undefined => {
+  if (!value || typeof value !== 'object' || Array.isArray(value))
+    return undefined
+  return value as Record<string, unknown>
+}
+
+export const normalizeUsage = (usage?: unknown): TokenUsage | undefined => {
+  const record = asRecord(usage)
+  if (!record) return undefined
+  const inputDetails = asRecord(
+    record.input_tokens_details ?? record.prompt_tokens_details,
+  )
+  const outputDetails = asRecord(
+    record.output_tokens_details ?? record.completion_tokens_details,
+  )
   return normalizeUsageParts({
-    input: usage.input_tokens,
-    inputCacheRead: usage.cached_input_tokens,
-    inputCacheWrite: usage.cache_write_input_tokens,
-    output: usage.output_tokens,
-    outputCache: usage.cached_output_tokens,
-    total: usage.total_tokens,
+    input: record.input_tokens ?? record.prompt_tokens,
+    inputCacheRead:
+      record.cached_input_tokens ?? inputDetails?.cached_tokens,
+    inputCacheWrite:
+      record.cache_write_input_tokens ??
+      inputDetails?.cache_creation_tokens ??
+      inputDetails?.cache_write_tokens,
+    output: record.output_tokens ?? record.completion_tokens,
+    outputCache:
+      record.cached_output_tokens ?? outputDetails?.cached_tokens,
+    total: record.total_tokens,
+    sessionTotal: record.session_total_tokens,
   })
 }
 

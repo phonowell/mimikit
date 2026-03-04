@@ -71,5 +71,6 @@ export const runCodexStream = async (
     if (eventType === 'error')
       throw new Error(asString(event, 'message') ?? 'codex_stream_error')
   }
-  return { output, ...(usage ? { usage } : {}) }
+  const finalOutput = output || streamedOutput
+  return { output: finalOutput, ...(usage ? { usage } : {}) }
 }

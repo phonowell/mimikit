@@ -1,4 +1,5 @@
 import type { Role, TaskPlanStatus, TaskStatus } from '../../types/index.js'
+import type { ManagerLlmMode } from '../../config.js'
 
 export type MemoryRefreshSignal = {
   id: string
@@ -25,6 +26,7 @@ export type MemoryRefreshPlanDigest = {
 export type MemoryRefreshPayload = {
   workDir: string
   model: string
+  managerMode: ManagerLlmMode
   memoryMarkdown: string
   compressedContext?: string
   signals: MemoryRefreshSignal[]

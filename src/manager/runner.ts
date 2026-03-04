@@ -44,6 +44,7 @@ export const runManager = async (params: {
   model?: string
   onTextDelta?: (delta: string) => void
   onUsage?: (usage: TokenUsage) => void
+  mode?: AppConfig['manager']['mode']
 }): Promise<{
   output: string
   elapsedMs: number
@@ -92,6 +93,7 @@ export const runManager = async (params: {
       prompt,
       workDir: params.workDir,
       ...(model ? { model } : {}),
+      ...(params.mode ? { mode: params.mode } : {}),
       ...(params.onTextDelta ? { onTextDelta: params.onTextDelta } : {}),
       ...(params.onUsage ? { onUsage: params.onUsage } : {}),
     })

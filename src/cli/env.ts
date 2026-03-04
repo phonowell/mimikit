@@ -1,6 +1,10 @@
 import { applyQqEnvOverrides } from '../channels/qq/config.js'
 import type { AppConfig } from '../config.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
+
+const MANAGER_LLM_MODES = ['auto', 'chat', 'responses'] as const
+type ManagerLlmMode = (typeof MANAGER_LLM_MODES)[number]
+
 const ALLOWED_REASONING_EFFORT: ModelReasoningEffort[] = [
   'minimal',
   'low',
@@ -8,6 +12,18 @@ const ALLOWED_REASONING_EFFORT: ModelReasoningEffort[] = [
   'high',
   'xhigh',
 ]
+const parseManagerMode = (
+  envName: string,
+  value: string | undefined,
+): ManagerLlmMode | undefined => {
+  if (!value) return undefined
+  const trimmed = value.trim()
+  if (!trimmed) return undefined
+  if (MANAGER_LLM_MODES.includes(trimmed as ManagerLlmMode))
+    return trimmed as ManagerLlmMode
+  console.warn(`[cli] invalid ${envName}:`, trimmed)
+  return undefined
+}
 const parseEnvPositiveInteger = (
   name: string,
   value: string | undefined,
@@ -47,6 +63,11 @@ const applyModelEnv = (config: AppConfig): void => {
   if (envManagerModel) config.manager.model = envManagerModel
   const envWorkerModel = process.env.MIMIKIT_WORKER_MODEL?.trim()
   if (envWorkerModel) config.worker.model = envWorkerModel
+  const envManagerMode = parseManagerMode(
+    'MIMIKIT_MANAGER_MODE',
+    process.env.MIMIKIT_MANAGER_MODE,
+  )
+  if (envManagerMode) config.manager.mode = envManagerMode
 }
 const applyReasoningEnv = (config: AppConfig): void => {
   const global = parseReasoning(

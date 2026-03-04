@@ -1,5 +1,6 @@
 import { runWithProvider } from '../providers/registry.js'
 
+import type { ManagerLlmMode } from '../config.js'
 import type { TokenUsage } from '../types/index.js'
 
 const BYTE_STEP = 1_024
@@ -18,10 +19,18 @@ export const resolveManagerTimeoutMs = (prompt: string): number => {
   )
 }
 
+const resolveManagerProvider = (
+  mode: ManagerLlmMode | undefined,
+): 'codex-sdk' | 'openai-chat' => {
+  if (mode === 'responses') return 'codex-sdk'
+  return 'openai-chat'
+}
+
 export const runManagerLlmCall = async (params: {
   prompt: string
   workDir: string
   model?: string
+  mode?: ManagerLlmMode
   onTextDelta?: (delta: string) => void
   onUsage?: (usage: TokenUsage) => void
   logPath?: string
@@ -35,7 +44,7 @@ export const runManagerLlmCall = async (params: {
 }> => {
   const timeoutMs = resolveManagerTimeoutMs(params.prompt)
   const result = await runWithProvider({
-    provider: 'codex-sdk',
+    provider: resolveManagerProvider(params.mode),
     role: 'manager',
     prompt: params.prompt,
     workDir: params.workDir,

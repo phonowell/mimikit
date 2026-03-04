@@ -98,6 +98,7 @@ export const runMemoryRefreshSingleCall = async (params: {
     prompt,
     workDir: params.payload.workDir,
     model: params.payload.model,
+    mode: params.payload.managerMode,
   })
   const parsed = parseStageJson(
     result.output,

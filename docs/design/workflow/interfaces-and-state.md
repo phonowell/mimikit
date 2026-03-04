@@ -50,6 +50,7 @@
 
 - `MIMIKIT_MODEL`
 - `MIMIKIT_MANAGER_MODEL`
+- `MIMIKIT_MANAGER_MODE`（`auto|chat|responses`）
 - `MIMIKIT_WORKER_MODEL`
 - `MIMIKIT_REASONING_EFFORT`
 - `MIMIKIT_WORKER_REASONING_EFFORT`
@@ -66,6 +67,8 @@
 ## 配置结构（`config.yaml`）
 
 - `manager.model`
+- `manager.mode`（`auto|chat|responses`）
+- `manager.mode=auto`：启动后首条用户消息先尝试 `chat`；失败后切 `responses`，若成功则本次 runtime 锁定 `responses`
 - `manager.maxCorrectionRounds`
 - `manager.promptSections.*`
 - `manager.taskCreate.debounceMs`

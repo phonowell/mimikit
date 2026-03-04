@@ -1,5 +1,6 @@
 manager:
   model: gpt-5.2-high
+  mode: auto
   maxCorrectionRounds: 3
   promptSections:
     actionFeedbackMaxBytes: 8192

@@ -9,7 +9,10 @@
 - 导出：`runManager`
 - Prompt 组装：`buildManagerPrompt`
 - 模板：`prompts/manager/system.md`（`nunjucks` 渲染）
-- Provider：`runWithProvider({ provider: 'codex-sdk', role: 'manager' })`
+- Provider：由 `manager.mode` 决定
+  - `auto` / `chat` -> `openai-chat`
+  - `responses` -> `codex-sdk`
+  - `auto` 仅在启动后的首条用户消息启用 failover：`chat` 失败后尝试 `responses`；成功则后续锁定 `responses`
 - Provider 配置来源：`loadCodexSettings()`，优先读取 `~/.codex/config.toml` 的 active provider（`base_url`、`api_key`、`env_key`/`api_key_env`），缺省回退 `OPENAI_API_KEY` 与 `~/.codex/auth.json`
 - 会话连续性：依赖本地 `history/tasks/plans/managerFocusCompressedContexts`
 - 输出：`{ output, elapsedMs, usage? }`
@@ -45,5 +48,6 @@
 - 导出：`runWithProvider`
 - 当前注册 provider：
   - `codex-sdk`：`src/providers/codex-sdk-provider.ts`
+  - `openai-chat`：`src/providers/openai-chat-provider.ts`
 - 共享运行时工具：`src/providers/provider-runtime.ts`
 - 共享错误建模：`src/providers/provider-error.ts`
