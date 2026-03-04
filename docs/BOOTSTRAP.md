@@ -10,7 +10,7 @@ Bring up a local Mimikit runtime and open WebUI at `http://127.0.0.1:8787`.
 
 - Repository root available.
 - `node`, `pnpm`, and network access for dependency install.
-- One valid API key (`OPENAI_API_KEY`) or a configured Codex-compatible provider.
+- One valid API key (`OPENAI_API_KEY`) or an active Codex-compatible provider config.
 
 ## Step 1: Install
 
@@ -39,22 +39,34 @@ env_key = "AICODING_API_KEY"
 
 API key resolution order in runtime:
 
-1. `api_key` from active provider in `~/.codex/config.toml`
-2. env var mapped by provider `env_key` / `api_key_env`
+1. Active provider `api_key` in `~/.codex/config.toml`
+2. Active provider env var (`env_key` / `api_key_env`)
 3. `OPENAI_API_KEY`
 4. `~/.codex/auth.json` -> `OPENAI_API_KEY`
 
 ## Step 3: Start Runtime
 
+Recommended:
+
 ```bash
 pnpm start
 ```
 
-If `config.yaml` does not exist, Mimikit auto-creates it from `defaults/config.template.yaml`.
+Notes:
+
+- `pnpm start` runs `scripts/start.ts` -> installs deps (`pnpm i`) -> launches `bin/mimikit` / `bin/mimikit.ps1`.
+- Wrapper supports restart loop on exit code `75` (`/api/restart` / `/api/reset*`).
+- `config.yaml` is auto-created at repo root from `defaults/config.template.yaml` if missing.
+
+Optional direct start (skip wrapper):
+
+```bash
+tsx src/cli/index.ts --port 8787 --work-dir .mimikit
+```
 
 ## Step 4: Verify
 
-Health check:
+WebUI route responds:
 
 ```bash
 curl -sS -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8787/
@@ -62,37 +74,50 @@ curl -sS -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8787/
 
 Expected: `200`.
 
-SSE endpoint exists:
+Status API responds:
 
 ```bash
-curl -sS -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8787/api/events
+curl -sS http://127.0.0.1:8787/api/status
 ```
 
-Expected: `200`.
+Expected: JSON with fields like `runtimeId`.
 
-## Optional: Override Manager Model
+SSE endpoint emits snapshot:
+
+```bash
+curl -sS -N http://127.0.0.1:8787/api/events | head -n 2
+```
+
+Expected first line contains `event: snapshot`.
+
+## Optional: Override Models
 
 In `config.yaml`:
 
 ```yaml
 manager:
   model: gpt-5.2-high
+worker:
+  model: gpt-5.3-codex-high
 ```
 
-Env override:
+Env overrides:
 
 ```bash
 export MIMIKIT_MANAGER_MODEL=gpt-5.2-high
+export MIMIKIT_WORKER_MODEL=gpt-5.3-codex-high
 ```
 
 ## Failure Triage
 
-- `401/403`: API key missing or invalid.
-- Startup fails on provider: verify `~/.codex/config.toml` active provider `base_url` and `wire_api`.
-- Port conflict on `8787`: run `tsx src/cli/index.ts --port <new_port>`.
+- `OPENAI_API_KEY is missing`: missing credentials and provider requires auth.
+- `[cli] instance lock exists at .../.mimikit/.instance`: another process is running on same `--work-dir`.
+- `[cli] port 8787 is in use, fallback to ...`: CLI auto-selects first free port in `[8787, 8807]`.
+- `[config] invalid yaml defaults`: fix invalid fields in repo-root `config.yaml`.
 
 ## Done Criteria
 
-- `pnpm start` stays running without immediate crash.
+- Runtime keeps running (no immediate startup crash).
 - `GET /` returns `200`.
-- WebUI is reachable.
+- `GET /api/status` returns JSON.
+- `GET /api/events` emits `event: snapshot`.
