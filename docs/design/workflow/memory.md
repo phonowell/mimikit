@@ -23,7 +23,7 @@
 
 - 子进程入口：`src/memory/refresh/subprocess.ts`
 - 进程拉起：`src/memory/refresh/job-spawn.ts`
-- 子进程使用与 manager 相同 provider/model（`openai-chat` + `runtime.config.manager.model`）。
+- 子进程使用与 manager 相同 provider/model（`codex-sdk` + `runtime.config.manager.model`）。
 
 ## 单轮作业（单次 LLM 调用）
 

@@ -9,9 +9,9 @@ import {
 } from './codex-sdk-provider-helpers.js'
 import { runCodexStream } from './codex-stream.js'
 import {
-  HARDCODED_MODEL_REASONING_EFFORT,
+  DEFAULT_MODEL_REASONING_EFFORT,
   loadCodexSettings,
-} from './openai-settings.js'
+} from './codex-settings.js'
 import { ProviderError, readProviderErrorCode } from './provider-error.js'
 import {
   bindExternalAbort,
@@ -33,11 +33,11 @@ const runCodexProvider = async (request: CodexSdkProviderRequest) => {
         ...(settings.model ? { modelResolved: settings.model } : {}),
         ...(settings.baseUrl ? { baseUrl: settings.baseUrl } : {}),
         ...(settings.wireApi ? { wireApi: settings.wireApi } : {}),
-        ...(settings.requiresOpenAiAuth !== undefined
-          ? { requiresOpenAiAuth: settings.requiresOpenAiAuth }
+        ...(settings.requiresAuth !== undefined
+          ? { requiresAuth: settings.requiresAuth }
           : {}),
         modelReasoningEffort:
-          request.modelReasoningEffort ?? HARDCODED_MODEL_REASONING_EFFORT,
+          request.modelReasoningEffort ?? DEFAULT_MODEL_REASONING_EFFORT,
         apiKeyPresent: Boolean(settings.apiKey ?? process.env.OPENAI_API_KEY),
       })
     } catch (error) {

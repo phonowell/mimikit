@@ -1,7 +1,7 @@
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 
-import { HARDCODED_MODEL_REASONING_EFFORT } from './openai-settings.js'
+import { DEFAULT_MODEL_REASONING_EFFORT } from './codex-settings.js'
 import {
   buildProviderAbortedError,
   buildProviderSdkError,
@@ -74,7 +74,7 @@ export const createCodexThread = (
   request: CodexSdkProviderRequest,
 ) => {
   const modelReasoningEffort =
-    request.modelReasoningEffort ?? HARDCODED_MODEL_REASONING_EFFORT
+    request.modelReasoningEffort ?? DEFAULT_MODEL_REASONING_EFFORT
   const threadOptions = {
     workingDirectory: request.workDir,
     ...(request.model ? { model: request.model } : {}),

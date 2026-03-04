@@ -38,7 +38,7 @@ pnpm i
 
 ### 2) Configure API key
 
-Mimikit reads provider settings from `~/.codex/config.toml` and environment variables (see [`src/providers/openai-settings.ts`](./src/providers/openai-settings.ts)).
+Mimikit reads provider settings from `~/.codex/config.toml` and environment variables (see [`src/providers/codex-settings.ts`](./src/providers/codex-settings.ts)).
 API key resolution order:
 
 1. Active provider in `~/.codex/config.toml`: `api_key`

@@ -15,18 +15,18 @@ export type CodexSettings = {
   model?: string
   baseUrl?: string
   wireApi?: string
-  requiresOpenAiAuth?: boolean
+  requiresAuth?: boolean
 }
 
 type ProviderSettings = Pick<
   CodexSettings,
-  'model' | 'baseUrl' | 'wireApi' | 'requiresOpenAiAuth'
+  'model' | 'baseUrl' | 'wireApi' | 'requiresAuth'
 > & {
   apiKey?: string
   apiKeyEnv?: string
 }
 
-export const HARDCODED_MODEL_REASONING_EFFORT: ModelReasoningEffort = 'high'
+export const DEFAULT_MODEL_REASONING_EFFORT: ModelReasoningEffort = 'high'
 
 const readNonEmptyString = (value: unknown): string | undefined => {
   if (typeof value !== 'string') return undefined
@@ -97,7 +97,7 @@ const resolveProviderSettings = (
   const apiKeyEnv =
     readNonEmptyString(providerConfig?.env_key) ??
     readNonEmptyString(providerConfig?.api_key_env)
-  const requiresOpenAiAuth = readBooleanFlag(
+  const requiresAuth = readBooleanFlag(
     providerConfig?.requires_openai_auth,
   )
 
@@ -107,7 +107,7 @@ const resolveProviderSettings = (
     wireApi,
     apiKey,
     apiKeyEnv,
-    requiresOpenAiAuth,
+    requiresAuth,
   })
 }
 
@@ -131,7 +131,6 @@ export const loadCodexSettings = async (): Promise<CodexSettings> => {
     model: envString('OPENAI_MODEL') ?? cs.model,
     baseUrl: envString('OPENAI_BASE_URL') ?? cs.baseUrl,
     wireApi: envString('OPENAI_WIRE_API') ?? cs.wireApi,
-    requiresOpenAiAuth:
-      envBoolean('OPENAI_REQUIRES_AUTH') ?? cs.requiresOpenAiAuth,
+    requiresAuth: envBoolean('OPENAI_REQUIRES_AUTH') ?? cs.requiresAuth,
   })
 }

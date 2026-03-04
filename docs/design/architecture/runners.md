@@ -9,7 +9,7 @@
 - 导出：`runManager`
 - Prompt 组装：`buildManagerPrompt`
 - 模板：`prompts/manager/system.md`（`nunjucks` 渲染）
-- Provider：`runWithProvider({ provider: 'openai-chat', role: 'manager' })`
+- Provider：`runWithProvider({ provider: 'codex-sdk', role: 'manager' })`
 - Provider 配置来源：`loadCodexSettings()`，优先读取 `~/.codex/config.toml` 的 active provider（`base_url`、`api_key`、`env_key`/`api_key_env`），缺省回退 `OPENAI_API_KEY` 与 `~/.codex/auth.json`
 - 会话连续性：依赖本地 `history/tasks/plans/managerFocusCompressedContexts`
 - 输出：`{ output, elapsedMs, usage? }`
@@ -18,7 +18,7 @@
 
 1. 根据输入、任务、plan、历史、focus 组装 prompt。
 2. 执行 token 预算与超时控制。
-3. 调用 OpenAI Chat 流式接口。
+3. 调用 Codex SDK 流式接口。
 4. 若收到 `action_feedback/query_history/read_file`，在同批次继续修正回合。
 5. 成功/失败都归档到 `traces/YYYY-MM-DD/<ts36><ra>.txt`。
 
@@ -44,7 +44,6 @@
 
 - 导出：`runWithProvider`
 - 当前注册 provider：
-  - `openai-chat`：`src/providers/openai-chat-provider.ts`
   - `codex-sdk`：`src/providers/codex-sdk-provider.ts`
 - 共享运行时工具：`src/providers/provider-runtime.ts`
 - 共享错误建模：`src/providers/provider-error.ts`

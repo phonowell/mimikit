@@ -8,7 +8,7 @@ import { buildPaths } from '../fs/paths.js'
 import { createHttpServer } from '../http/index.js'
 import { bestEffort, setDefaultLogPath } from '../log/safe.js'
 import { Orchestrator } from '../orchestrator/core/orchestrator-service.js'
-import { loadCodexSettings } from '../providers/openai-settings.js'
+import { loadCodexSettings } from '../providers/codex-settings.js'
 
 import { applyCliEnvOverrides } from './env.js'
 import { acquireRuntimeLock } from './runtime-lock.js'

@@ -35,7 +35,7 @@ export const runManagerLlmCall = async (params: {
 }> => {
   const timeoutMs = resolveManagerTimeoutMs(params.prompt)
   const result = await runWithProvider({
-    provider: 'openai-chat',
+    provider: 'codex-sdk',
     role: 'manager',
     prompt: params.prompt,
     workDir: params.workDir,

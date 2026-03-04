@@ -4,7 +4,7 @@ import { join } from 'node:path'
 
 import { afterEach, beforeEach, expect, test } from 'vitest'
 
-import { loadCodexSettings } from '../src/providers/openai-settings.js'
+import { loadCodexSettings } from '../src/providers/codex-settings.js'
 
 const ENV_KEYS = [
   'HOME',
@@ -20,7 +20,7 @@ const ENV_KEYS = [
 type Snapshot = Partial<Record<(typeof ENV_KEYS)[number], string>>
 
 const createHomeDir = async (): Promise<string> =>
-  mkdtemp(join(tmpdir(), 'mimikit-openai-settings-'))
+  mkdtemp(join(tmpdir(), 'mimikit-codex-settings-'))
 
 const writeCodexConfig = async (
   homeDir: string,
