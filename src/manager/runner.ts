@@ -42,7 +42,6 @@ export const runManager = async (params: {
   activeFocusIds?: FocusId[]
   workingFocusIds?: FocusId[]
   model?: string
-  onTextDelta?: (delta: string) => void
   onUsage?: (usage: TokenUsage) => void
   mode?: AppConfig['manager']['mode']
 }): Promise<{
@@ -94,7 +93,6 @@ export const runManager = async (params: {
       workDir: params.workDir,
       ...(model ? { model } : {}),
       ...(params.mode ? { mode: params.mode } : {}),
-      ...(params.onTextDelta ? { onTextDelta: params.onTextDelta } : {}),
       ...(params.onUsage ? { onUsage: params.onUsage } : {}),
     })
     await archive(

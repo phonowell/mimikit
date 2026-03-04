@@ -8,7 +8,6 @@ import {
 import { consumeUserInputs, consumeWorkerResults } from '../streams/queues.js'
 
 import { processManagerBatch } from './loop-batch.js'
-import { createUiStreamId } from './loop-ui-stream.js'
 
 export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
   while (!runtime.stopped) {
@@ -60,7 +59,6 @@ export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
       results: resultPackets.map((packet) => packet.payload),
       nextInputsCursor,
       nextResultsCursor,
-      streamId: createUiStreamId(nextInputsCursor, nextResultsCursor),
     })
   }
 }

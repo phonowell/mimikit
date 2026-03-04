@@ -5,7 +5,6 @@ export const createMessageState = () => ({
   awaitingReply: false,
   lastMessageIds: new Set(),
   lastMessages: [],
-  lastStreamSignature: '',
 })
 
 const collectMessageIds = (messages) => {
@@ -47,25 +46,6 @@ export const hasMessageChange = (state, messages) =>
 export const hasLoadingVisibilityChange = (state, loadingVisible) =>
   state.lastLoadingVisible !== loadingVisible
 
-const normalizeStreamSignature = (streamMessage) => {
-  if (!streamMessage || typeof streamMessage !== 'object') return ''
-  const id =
-    streamMessage.id === null || streamMessage.id === undefined
-      ? ''
-      : String(streamMessage.id)
-  const text =
-    typeof streamMessage.text === 'string' ? streamMessage.text : String(streamMessage.text ?? '')
-  const usage =
-    streamMessage.usage && typeof streamMessage.usage === 'object'
-      ? JSON.stringify(streamMessage.usage)
-      : ''
-  if (!id && !text) return ''
-  return `${id}\n${text}\n${usage}`
-}
-
-export const hasStreamChange = (state, streamMessage) =>
-  state.lastStreamSignature !== normalizeStreamSignature(streamMessage)
-
 export const updateMessageState = (state, messages) => {
   state.lastMessageSignature = toMessageSignature(messages)
   state.lastMessageIds = collectMessageIds(messages)
@@ -74,10 +54,6 @@ export const updateMessageState = (state, messages) => {
 
 export const updateLoadingVisibilityState = (state, loadingVisible) => {
   state.lastLoadingVisible = loadingVisible
-}
-
-export const updateStreamState = (state, streamMessage) => {
-  state.lastStreamSignature = normalizeStreamSignature(streamMessage)
 }
 
 export const applyRenderedState = (state, rendered, { loading, syncLoadingState }) => {

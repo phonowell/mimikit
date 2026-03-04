@@ -21,7 +21,7 @@
 
 1. 根据输入、任务、plan、历史、focus 组装 prompt。
 2. 执行 token 预算与超时控制。
-3. 调用 Codex SDK 流式接口。
+3. 调用 provider 接口并返回整段输出。
 4. 若收到 `action_feedback/query_history/read_file`，在同批次继续修正回合。
 5. 成功/失败都归档到 `traces/YYYY-MM-DD/<ts36><ra>.txt`。
 

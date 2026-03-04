@@ -20,17 +20,16 @@ export const renderMessage = (params, msg) => {
   const item = document.createElement('li')
   const roleClass = msg.role === 'agent' ? 'agent' : msg.role
   const isSystemMessage = msg?.role === 'system'
-  const isStreamingMessage = Boolean(msg?.streaming)
   const isEntering = enterMessageIds?.has(msg?.id)
-  item.className = `message ${roleClass}${isStreamingMessage ? ' message--streaming' : ''}${isEntering ? ' message--enter' : ''}`
+  item.className = `message ${roleClass}${isEntering ? ' message--enter' : ''}`
   if (msg?.id) item.dataset.messageId = String(msg.id)
 
   const quoteModeEnabled = !isDeleteMode
   const canQuote = Boolean(
-    quoteModeEnabled && onQuote && msg?.id && !isSystemMessage && !isStreamingMessage,
+    quoteModeEnabled && onQuote && msg?.id && !isSystemMessage,
   )
   const canDelete = Boolean(
-    isDeleteMode && onDelete && msg?.id && !isSystemMessage && !isStreamingMessage,
+    isDeleteMode && onDelete && msg?.id && !isSystemMessage,
   )
   if (canQuote) {
     item.classList.add('message--quoteable')
@@ -60,19 +59,15 @@ export const renderMessage = (params, msg) => {
     if (quoteBlock) article.appendChild(quoteBlock)
   }
   if (isAgentMessage(msg)) {
-    if (isStreamingMessage) content.textContent = text
-    else {
-      content.classList.add('markdown')
-      content.appendChild(renderMarkdown(text))
-    }
+    content.classList.add('markdown')
+    content.appendChild(renderMarkdown(text))
   } else content.textContent = text
 
   article.appendChild(content)
 
   const usageDisplay = isAgentMessage(msg) ? formatUsage(msg.usage) : null
   const usageText = usageDisplay?.text ?? ''
-  const elapsedText =
-    isAgentMessage(msg) && !isStreamingMessage ? formatElapsedLabel(msg.elapsedMs) : ''
+  const elapsedText = isAgentMessage(msg) ? formatElapsedLabel(msg.elapsedMs) : ''
   const meta = document.createElement('small')
   meta.className = 'meta'
   if (usageText) {
@@ -111,7 +106,7 @@ export const renderMessage = (params, msg) => {
     deleteBtn.addEventListener('click', () => onDelete(msg))
   }
 
-  if (!isSystemMessage && !isStreamingMessage) {
+  if (!isSystemMessage) {
     const timeDisplay = formatDisplayTimeWithFull(msg.createdAt)
     if (timeDisplay.displayText) {
       const time = document.createElement('span')

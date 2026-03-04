@@ -28,7 +28,6 @@ import {
   consumeBatchHistory,
   finalizeBatchProgress,
 } from './loop-helpers.js'
-import { startUiStream, stopUiStream } from './loop-ui-stream.js'
 
 import type { TaskResult, TokenUsage, UserInput } from '../types/index.js'
 
@@ -38,7 +37,6 @@ export const processManagerBatch = async (params: {
   results: TaskResult[]
   nextInputsCursor: number
   nextResultsCursor: number
-  streamId: string
 }): Promise<void> => {
   const {
     runtime,
@@ -46,7 +44,6 @@ export const processManagerBatch = async (params: {
     results,
     nextInputsCursor,
     nextResultsCursor,
-    streamId,
   } = params
   applyPlanCompletionState(runtime, results)
   if (results.length > 0 || hasNonIdleManagerInput(inputs))
@@ -56,7 +53,6 @@ export const processManagerBatch = async (params: {
   const agentInputs = inputs.filter((item) => isVisibleToAgent(item))
   const startedAt = Date.now()
   let agentAppended = false
-  startUiStream(runtime, streamId)
   try {
     if (agentInputs.length === 0 && results.length === 0) {
       await finishBatchWithoutAgentReply({
@@ -74,7 +70,6 @@ export const processManagerBatch = async (params: {
       runtime,
       inputs: agentInputs,
       results,
-      streamId,
     })
     if (managerRun.roundLimitReached) {
       await bestEffort('appendHistory: manager_round_limit', () =>
@@ -156,7 +151,6 @@ export const processManagerBatch = async (params: {
       startedAt,
     })
   } finally {
-    stopUiStream(runtime, streamId)
     runtime.managerRunning = false
     notifyUiSignal(runtime)
   }

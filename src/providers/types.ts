@@ -11,7 +11,6 @@ export type ProviderResult = {
 }
 
 export type UsageListener = (usage: TokenUsage) => void
-export type TextDeltaListener = (delta: string) => void
 
 type ProviderRequestBase = {
   role: 'manager' | 'worker'
@@ -30,14 +29,12 @@ export type CodexSdkProviderRequest = ProviderRequestBase & {
   outputSchema?: unknown
   logPath?: string
   logContext?: Record<string, unknown>
-  onTextDelta?: TextDeltaListener
 }
 
 export type OpenAiChatProviderRequest = ProviderRequestBase & {
   provider: 'openai-chat'
   logPath?: string
   logContext?: Record<string, unknown>
-  onTextDelta?: TextDeltaListener
 }
 
 export type ProviderRequest =

@@ -93,7 +93,6 @@ const createRuntime = async (params?: {
       pending: false,
     },
     managerFocusCompressedContexts: [],
-    uiStream: null,
     runningControllers: new Map(),
     createTaskDebounce: new Map(),
     workerQueue: queue,

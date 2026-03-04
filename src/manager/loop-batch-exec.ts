@@ -22,11 +22,6 @@ import type {
   UserInput,
 } from '../types/index.js'
 
-type RunOnceCallbacks = {
-  onTextDelta: (delta: string) => void
-  onUsage: (usage: TokenUsage) => void
-}
-
 const buildManagerEnv = (
   runtime: RuntimeState,
   wakeProfile: ManagerWakeProfile,
@@ -81,8 +76,6 @@ export const runManagerRoundWithRecovery = async (params: {
     readFileLookup?: ReadFileLookupMessage[]
     actionFeedback?: ManagerActionFeedback[]
   }
-  onTextDelta: (delta: string) => void
-  onUsage: (usage: TokenUsage) => void
 }): Promise<{ output: string; elapsedMs: number; usage?: TokenUsage }> => {
   const wakeProfile = resolveWakeProfile(params.inputs, params.results)
   const managerEnv = buildManagerEnv(params.runtime, wakeProfile)
@@ -94,18 +87,7 @@ export const runManagerRoundWithRecovery = async (params: {
     !autoModeState.lockedMode &&
     hasUserInput
 
-  const createPassThroughCallbacks = (): RunOnceCallbacks => ({
-    onTextDelta: params.onTextDelta,
-    onUsage: (usage) => {
-      callUsage = usage
-      params.onUsage(usage)
-    },
-  })
-
-  const runOnce = (
-    mode: RuntimeState['config']['manager']['mode'],
-    callbacks: RunOnceCallbacks,
-  ) =>
+  const runOnce = (mode: RuntimeState['config']['manager']['mode']) =>
     runManager({
       stateDir: params.runtime.config.workDir,
       workDir: params.runtime.config.workDir,
@@ -130,39 +112,17 @@ export const runManagerRoundWithRecovery = async (params: {
       ...(managerEnv ? { env: managerEnv } : {}),
       model: params.runtime.config.manager.model,
       mode,
-      onTextDelta: callbacks.onTextDelta,
-      onUsage: callbacks.onUsage,
     })
 
-  let callUsage: TokenUsage | undefined
   const result = await (async () => {
     if (!shouldUseFirstUserAutoFailover) {
-      return runOnce(
-        resolveRuntimeManagerMode(params.runtime),
-        createPassThroughCallbacks(),
-      )
+      return runOnce(resolveRuntimeManagerMode(params.runtime))
     }
 
     autoModeState.firstUserInputPending = false
-    let chatBufferedOutput = ''
-    let chatBufferedUsage: TokenUsage | undefined
     try {
-      const chatResult = await runOnce('chat', {
-        onTextDelta: (delta) => {
-          chatBufferedOutput += delta
-        },
-        onUsage: (usage) => {
-          chatBufferedUsage = usage
-        },
-      })
-      if (chatBufferedOutput) params.onTextDelta(chatBufferedOutput)
-      if (chatBufferedUsage) {
-        callUsage = chatBufferedUsage
-        params.onUsage(chatBufferedUsage)
-      }
-      return chatResult
+      return await runOnce('chat')
     } catch (chatError) {
-      callUsage = undefined
       const err =
         chatError instanceof Error ? chatError : new Error(String(chatError))
       markRuntimeManagerFirstUserChatFailure(params.runtime, err.message)
@@ -173,10 +133,7 @@ export const runManagerRoundWithRecovery = async (params: {
           error: err.message,
         }),
       )
-      const responsesResult = await runOnce(
-        'responses',
-        createPassThroughCallbacks(),
-      )
+      const responsesResult = await runOnce('responses')
       lockRuntimeManagerToResponses(params.runtime)
       await bestEffort('appendLog: manager_auto_locked_responses', () =>
         appendLog(params.runtime.paths.log, {
@@ -188,10 +145,9 @@ export const runManagerRoundWithRecovery = async (params: {
     }
   })()
 
-  const resolvedUsage = result.usage ?? callUsage
   return {
     output: result.output,
     elapsedMs: result.elapsedMs,
-    ...(resolvedUsage ? { usage: resolvedUsage } : {}),
+    ...(result.usage ? { usage: result.usage } : {}),
   }
 }

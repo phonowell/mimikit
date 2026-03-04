@@ -12,7 +12,6 @@ import {
   resolveOpenAiApiKey,
   resolveOpenAiChatBaseUrl,
   resolveOpenAiChatModel,
-  STREAM_OPTIONS,
 } from './openai-chat-helpers.js'
 import { loadCodexSettings } from './codex-settings.js'
 import {
@@ -32,6 +31,21 @@ import {
 
 import type { OpenAiChatProviderRequest, Provider } from './types.js'
 import type { TokenUsage } from '../types/index.js'
+
+const resolveOutputText = (value: unknown): string => {
+  if (typeof value === 'string') return value
+  if (!Array.isArray(value)) return ''
+  let output = ''
+  for (const part of value) {
+    if (typeof part === 'string') {
+      output += part
+      continue
+    }
+    if (!part || typeof part !== 'object') continue
+    if ('text' in part && typeof part.text === 'string') output += part.text
+  }
+  return output
+}
 
 export const openAiChatProvider: Provider<OpenAiChatProviderRequest> = {
   id: 'openai-chat',
@@ -79,30 +93,21 @@ export const openAiChatProvider: Provider<OpenAiChatProviderRequest> = {
         baseUrl: settings.baseUrl,
       })
 
-      let output = ''
       let usage: TokenUsage | undefined
       resetIdle()
-      const stream = await client.chat.completions.create(
+      const completion = await client.chat.completions.create(
         {
           model,
           messages: [{ role: 'user', content: request.prompt }],
-          stream: true,
-          stream_options: STREAM_OPTIONS,
         },
         { signal: controller.signal },
       )
-      for await (const chunk of stream) {
-        const delta = chunk.choices[0]?.delta?.content
-        if (typeof delta === 'string' && delta.length > 0) {
-          output += delta
-          request.onTextDelta?.(delta)
-        }
-        const nextUsage = normalizeOpenAiChatUsage(chunk.usage)
-        if (nextUsage) {
-          usage = nextUsage
-          request.onUsage?.(nextUsage)
-        }
-        resetIdle()
+      resetIdle()
+      const output = resolveOutputText(completion.choices[0]?.message?.content)
+      const nextUsage = normalizeOpenAiChatUsage(completion.usage)
+      if (nextUsage) {
+        usage = nextUsage
+        request.onUsage?.(nextUsage)
       }
 
       const elapsedMs = elapsedMsSince(startedAt)

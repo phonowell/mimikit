@@ -1,29 +1,37 @@
 import { findLatestAgentMessage } from './render-shared.js'
 import { renderMessage } from './render-item.js'
-import {
-  canPromoteStreamItemToLatestAgent,
-  getCurrentStreamingItem,
-  preserveScrollPosition,
-  promoteStreamItemFromTemplate,
-} from './render-common.js'
 import { formatUiError } from '../system-text.js'
+
+const preserveScrollPosition = ({
+  messagesEl,
+  wasNearBottom,
+  previousScrollTop,
+  previousScrollHeight,
+  scrollToBottom,
+}) => {
+  const newScrollHeight = messagesEl.scrollHeight
+  const delta = newScrollHeight - previousScrollHeight
+  if (wasNearBottom && delta > 0) {
+    scrollToBottom({ smooth: false })
+    return
+  }
+  const nextTop = previousScrollTop + delta
+  messagesEl.scrollTop = nextTop < 0 ? 0 : nextTop
+}
 
 export const renderMessages = (params) => {
   const {
     messages,
-    streamMessage,
     messagesEl,
     removeEmpty,
     isNearBottom,
     scrollToBottom,
     updateScrollButton,
     loading,
-    streamingItemRef,
   } = params
   if (!messagesEl) return { latestAgentId: null }
-  if ((!messages || messages.length === 0) && !streamMessage) {
+  if (!messages || messages.length === 0) {
     messagesEl.replaceChildren()
-    if (streamingItemRef) streamingItemRef.current = null
     updateScrollButton()
     return { latestAgentId: null }
   }
@@ -31,14 +39,6 @@ export const renderMessages = (params) => {
   removeEmpty()
   const safeMessages = Array.isArray(messages) ? messages : []
   const latestAgent = findLatestAgentMessage(safeMessages)
-  const existingStreamItem =
-    streamMessage === null || streamMessage === undefined
-      ? getCurrentStreamingItem({ messagesEl, streamingItemRef })
-      : null
-  const canPromoteStreamItem = canPromoteStreamItemToLatestAgent({
-    existingStreamItem,
-    latestAgent,
-  })
   const wasNearBottom = isNearBottom()
   const previousScrollTop = messagesEl.scrollTop
   const previousScrollHeight = messagesEl.scrollHeight
@@ -59,28 +59,8 @@ export const renderMessages = (params) => {
   }
 
   for (const msg of safeMessages) {
-    const shouldPromoteStreamItem =
-      Boolean(canPromoteStreamItem) &&
-      latestAgentId !== null &&
-      msg?.id !== null &&
-      msg?.id !== undefined &&
-      String(msg.id) === latestAgentId
-    if (shouldPromoteStreamItem && existingStreamItem) {
-      const promoted = promoteStreamItemFromTemplate({
-        existingStreamItem,
-        renderParams,
-        msg,
-        messagesEl,
-      })
-      if (promoted) continue
-    }
     renderMessage(renderParams, msg)
   }
-
-  if (streamMessage) {
-    const streamItem = renderMessage(renderParams, streamMessage)
-    if (streamingItemRef) streamingItemRef.current = streamItem
-  } else if (streamingItemRef) streamingItemRef.current = null
 
   if (loading?.isLoading()) loading.ensureLoadingPlaceholder()
   preserveScrollPosition({

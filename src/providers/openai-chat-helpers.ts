@@ -7,7 +7,6 @@ import { buildProviderPreflightError } from './provider-error.js'
 import type { OpenAiChatProviderRequest } from './types.js'
 import type { TokenUsage } from '../types/index.js'
 
-export const STREAM_OPTIONS = { include_usage: true }
 const FALLBACK_API_KEY = 'OPENAI_API_KEY_NOT_REQUIRED'
 
 export const appendOpenAiChatLog = async (

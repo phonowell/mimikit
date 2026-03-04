@@ -72,7 +72,6 @@ export class Orchestrator {
         firstUserInputPending: true,
       },
       managerFocusCompressedContexts: [],
-      uiStream: null,
       runningControllers: new Map(),
       createTaskDebounce: new Map(),
       workerQueue: new PQueue({ concurrency: config.worker.maxConcurrent }),
@@ -153,12 +152,7 @@ export class Orchestrator {
       plans: this.getPlans(taskLimit),
       focuses: this.getFocuses(taskLimit),
       choice: clonePendingUserChoice(this.runtime.pendingUserChoice),
-      stream: this.runtime.uiStream ? { ...this.runtime.uiStream } : null,
     }))()
-  }
-
-  getWebUiStreamSnapshot() {
-    return this.runtime.uiStream ? { ...this.runtime.uiStream } : null
   }
 
   getWebUiWakeVersion(): number {

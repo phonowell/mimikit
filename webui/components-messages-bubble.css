@@ -78,27 +78,3 @@
   line-height: 1.45;
   font-size: 14px;
 }
-
-.message.message--streaming .content::after {
-  content: '';
-  display: inline-block;
-  width: 1.5px;
-  height: 1em;
-  margin-left: 2px;
-  border-radius: 1px;
-  vertical-align: -2px;
-  background: currentColor;
-  opacity: 0.5;
-  animation: stream-caret-blink 0.86s steps(1, end) infinite;
-}
-
-@keyframes stream-caret-blink {
-  0%,
-  46% {
-    opacity: 0.5;
-  }
-  47%,
-  100% {
-    opacity: 0.12;
-  }
-}

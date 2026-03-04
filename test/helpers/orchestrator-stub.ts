@@ -45,9 +45,7 @@ export const createOrchestratorStub = () => {
       plans: { items: [] },
       focuses: { items: [] },
       choice: null,
-      stream: null,
     }),
-    getWebUiStreamSnapshot: () => null,
     getTaskById: () => undefined,
     cancelTask: async () => ({ ok: false, status: 'not_found' as const }),
     selectPendingUserChoice: async () =>

@@ -104,7 +104,7 @@ For LLM-driven setup and configuration, use [`docs/BOOTSTRAP.md`](./docs/BOOTSTR
 - Single-session runtime: one main session loop, no multi-session routing complexity ([architecture](./docs/design/architecture/system-architecture.md)).
 - Explicit orchestration split: `manager` handles dialogue/planning, `worker` handles execution ([architecture](./docs/design/architecture/system-architecture.md)).
 - Plan trigger modes: `cron`, `scheduled_at`, `on_idle`, `on_worker_slot_freed` with clear semantics ([plan workflow](./docs/design/workflow/plan.md)).
-- Built-in WebUI + SSE stream: `GET /api/events`, `POST /api/input`, restart/reset APIs ([interfaces](./docs/design/workflow/interfaces-and-state.md)).
+- Built-in WebUI + SSE events: `GET /api/events`, `POST /api/input`, restart/reset APIs ([interfaces](./docs/design/workflow/interfaces-and-state.md)).
 - QQ channel integration (optional): webhook ingest + passive reply guard + de-dup state ([QQ modules](./src/channels/qq)).
 - Local file-backed observability: `history`, `tasks`, `task-progress`, `runtime-snapshot`, `log.jsonl` under `.mimikit/` ([state layout](./docs/design/workflow/interfaces-and-state.md)).
 

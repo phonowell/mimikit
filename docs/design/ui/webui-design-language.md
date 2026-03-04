@@ -98,9 +98,6 @@
 - `disabled`：降低透明度并禁用 pointer 语义。
 - 动效基线：`120ms ~ 220ms`，以 `ease-out` 为主。
 - 动效降级：`prefers-reduced-motion: reduce` 下关闭动画与 transform 过渡。
-- 流式更新：消息流渲染按帧合并（`requestAnimationFrame`），避免高频增量直接打满主线程。
-- stream patch 合并：同帧内同 `stream.id` 的连续 delta 必须先合并，再应用渲染。
-- streaming 节点：同一条流式消息必须原位更新文本与 usage；仅在 `id` 切换或 clear 时替换节点。
 
 ## Markdown 路径链接规则
 

@@ -26,12 +26,6 @@ export const runManagerCorrectionRounds = async (params: {
   plans: TaskPlan[]
   workingFocusIds: FocusId[]
   maxCorrectionRounds: number
-  stream: {
-    appendDelta: (delta: string) => void
-    setUsage: (usage: TokenUsage) => void
-    commitParsedText: (text: string) => void
-    resetCycle: () => void
-  }
   resolveFocusId: () => FocusId
 }): Promise<{
   parsed: ReturnType<typeof parseActions>
@@ -47,7 +41,6 @@ export const runManagerCorrectionRounds = async (params: {
     plans,
     workingFocusIds,
     maxCorrectionRounds,
-    stream,
     resolveFocusId,
   } = params
   let elapsedMs = 0
@@ -69,15 +62,11 @@ export const runManagerCorrectionRounds = async (params: {
       plans,
       workingFocusIds,
       extra,
-      onTextDelta: stream.appendDelta,
-      onUsage: stream.setUsage,
     })
-    if (runResult.usage) stream.setUsage(runResult.usage)
     elapsedMs += runResult.elapsedMs
     batchUsage = mergeUsageAdditive(batchUsage, runResult.usage)
     const parsed = parseActions(runResult.output)
     lastParsed = parsed
-    stream.commitParsedText(parsed.text)
     const followup = await resolveRoundFollowup({
       runtime,
       parsed: parsed.actions,
@@ -96,7 +85,6 @@ export const runManagerCorrectionRounds = async (params: {
       })
     }
     previousLookupKey = followup.lookupKey
-    stream.resetCycle()
     extra = followup.extra
   }
   await appendLog(runtime.paths.log, {

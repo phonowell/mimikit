@@ -42,7 +42,6 @@ export function createMessagesController({
 }) {
   let lastStatus = null
   let isStarted = false
-  let currentStreamMessage = null
   let unsubscribeTimeTick = null
   let deleteModeEnabled = false
   const messageState = createMessageState()
@@ -91,7 +90,7 @@ export function createMessagesController({
     isDeleteMode: () => deleteModeEnabled,
   })
   removeEmpty = rendering.removeEmpty
-  const { doRender, doRenderStream } = rendering
+  const { doRender } = rendering
 
   const syncLoadingState = () => {
     const shouldWait = messageState.awaitingReply
@@ -127,27 +126,17 @@ export function createMessagesController({
     messageState,
     loading,
     doRender,
-    doRenderStream,
     syncLoadingState,
     updateStatus,
     onTasksSnapshot,
     onPlansSnapshot,
     onFocusesSnapshot,
     onChoiceSnapshot,
-    getCurrentStreamMessage: () => currentStreamMessage,
-    setCurrentStreamMessage: (value) => {
-      currentStreamMessage = value
-    },
   })
 
   const queue = createControllerQueue({
     applySnapshot: payload.applySnapshot,
     applyTasksSnapshot: payload.applyTasksSnapshot,
-    applyMessagesPayload: payload.applyMessagesPayload,
-    getCurrentStreamMessage: () => currentStreamMessage,
-    setCurrentStreamMessage: (value) => {
-      currentStreamMessage = value
-    },
   })
 
   const sse = createSseController({
@@ -160,9 +149,6 @@ export function createMessagesController({
     },
     onTasksEvent: (tasks) => {
       queue.enqueueEvent({ type: 'tasks', payload: tasks })
-    },
-    onStreamEvent: (patch) => {
-      queue.enqueueEvent({ type: 'stream', payload: patch })
     },
     onDisconnected: () => {
       setDisconnected()
@@ -189,8 +175,8 @@ export function createMessagesController({
     const messages = Array.isArray(messageState.lastMessages)
       ? messageState.lastMessages
       : []
-    if (messages.length === 0 && !currentStreamMessage) return
-    doRender(messages, new Set(), currentStreamMessage)
+    if (messages.length === 0) return
+    doRender(messages, new Set())
   }
 
   const setDeleteMode = (enabled) => {
@@ -202,7 +188,7 @@ export function createMessagesController({
     const messages = Array.isArray(messageState.lastMessages)
       ? messageState.lastMessages
       : []
-    doRender(messages, new Set(), currentStreamMessage)
+    doRender(messages, new Set())
     return deleteModeEnabled
   }
 

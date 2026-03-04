@@ -10,8 +10,6 @@ const waitForQueueFlush = async () =>
 test('controller queue keeps earlier snapshot when a later snapshot also arrives in the same frame', async () => {
   const appliedSnapshots: string[] = []
   const appliedTasksSnapshots: string[] = []
-  const appliedStreamTexts: string[] = []
-  let currentStreamMessage: unknown = null
 
   const queue = createControllerQueue({
     applySnapshot: (snapshot: { name: string }) => {
@@ -20,26 +18,11 @@ test('controller queue keeps earlier snapshot when a later snapshot also arrives
     applyTasksSnapshot: (tasks: { name: string }) => {
       appliedTasksSnapshots.push(tasks.name)
     },
-    applyMessagesPayload: (_messagesPayload, streamMessage) => {
-      const text =
-        streamMessage && typeof streamMessage === 'object' && 'text' in streamMessage
-          ? String(streamMessage.text ?? '')
-          : ''
-      appliedStreamTexts.push(text)
-    },
-    getCurrentStreamMessage: () => currentStreamMessage,
-    setCurrentStreamMessage: (value) => {
-      currentStreamMessage = value
-    },
   })
 
   queue.enqueueEvent({
     type: 'snapshot',
     payload: { name: 'snapshot-a' },
-  })
-  queue.enqueueEvent({
-    type: 'stream',
-    payload: { mode: 'delta', id: 'stream-a', delta: 'hello' },
   })
   queue.enqueueEvent({
     type: 'snapshot',
@@ -50,14 +33,11 @@ test('controller queue keeps earlier snapshot when a later snapshot also arrives
 
   expect(appliedSnapshots).toEqual(['snapshot-a', 'snapshot-b'])
   expect(appliedTasksSnapshots).toEqual([])
-  expect(appliedStreamTexts).toEqual(['hello'])
 })
 
 test('controller queue coalesces tasks events and keeps ordering with snapshots', async () => {
   const appliedSnapshots: string[] = []
   const appliedTasksSnapshots: string[] = []
-  const appliedStreamTexts: string[] = []
-  let currentStreamMessage: unknown = null
 
   const queue = createControllerQueue({
     applySnapshot: (snapshot: { name: string }) => {
@@ -65,17 +45,6 @@ test('controller queue coalesces tasks events and keeps ordering with snapshots'
     },
     applyTasksSnapshot: (tasks: { name: string }) => {
       appliedTasksSnapshots.push(tasks.name)
-    },
-    applyMessagesPayload: (_messagesPayload, streamMessage) => {
-      const text =
-        streamMessage && typeof streamMessage === 'object' && 'text' in streamMessage
-          ? String(streamMessage.text ?? '')
-          : ''
-      appliedStreamTexts.push(text)
-    },
-    getCurrentStreamMessage: () => currentStreamMessage,
-    setCurrentStreamMessage: (value) => {
-      currentStreamMessage = value
     },
   })
 
@@ -86,10 +55,6 @@ test('controller queue coalesces tasks events and keeps ordering with snapshots'
   queue.enqueueEvent({
     type: 'tasks',
     payload: { name: 'tasks-b' },
-  })
-  queue.enqueueEvent({
-    type: 'stream',
-    payload: { mode: 'delta', id: 'stream-a', delta: 'hello' },
   })
   queue.enqueueEvent({
     type: 'snapshot',
@@ -104,5 +69,4 @@ test('controller queue coalesces tasks events and keeps ordering with snapshots'
 
   expect(appliedSnapshots).toEqual(['snapshot-a'])
   expect(appliedTasksSnapshots).toEqual(['tasks-b', 'tasks-c'])
-  expect(appliedStreamTexts).toEqual(['hello'])
 })

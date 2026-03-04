@@ -91,7 +91,6 @@ const createRuntime = async (): Promise<RuntimeState> => {
       pending: false,
     },
     managerFocusCompressedContexts: [],
-    uiStream: null,
     runningControllers: new Map(),
     createTaskDebounce: new Map(),
     workerQueue: new PQueue({ concurrency: config.worker.maxConcurrent }),

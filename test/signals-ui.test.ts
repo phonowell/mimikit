@@ -19,16 +19,16 @@ test('waitForUiSignal wakes all concurrent listeners', async () => {
   const wait1 = waitForUiSignal(runtime, 1000, 0)
   const wait2 = waitForUiSignal(runtime, 1000, 0)
   await Promise.resolve()
-  notifyUiSignal(runtime, 'stream')
-  await expect(wait1).resolves.toEqual({ kind: 'stream', version: 1 })
-  await expect(wait2).resolves.toEqual({ kind: 'stream', version: 1 })
+  notifyUiSignal(runtime, 'messages')
+  await expect(wait1).resolves.toEqual({ kind: 'messages', version: 1 })
+  await expect(wait2).resolves.toEqual({ kind: 'messages', version: 1 })
 })
 
 test('waitForUiSignal consumes unseen versions in order', async () => {
   const runtime = createRuntime()
   notifyUiSignal(runtime, 'snapshot')
   notifyUiSignal(runtime, 'tasks')
-  notifyUiSignal(runtime, 'stream')
+  notifyUiSignal(runtime, 'messages')
   await expect(waitForUiSignal(runtime, 1, 0)).resolves.toEqual({
     kind: 'snapshot',
     version: 1,
@@ -38,7 +38,7 @@ test('waitForUiSignal consumes unseen versions in order', async () => {
     version: 2,
   })
   await expect(waitForUiSignal(runtime, 1, 2)).resolves.toEqual({
-    kind: 'stream',
+    kind: 'messages',
     version: 3,
   })
 })

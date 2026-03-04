@@ -53,8 +53,6 @@ const createParams = (
   plans: [],
   workingFocusIds: ['focus-global'],
   extra: {},
-  onTextDelta: vi.fn(),
-  onUsage: vi.fn(),
 })
 
 beforeEach(() => {
@@ -65,11 +63,8 @@ beforeEach(() => {
 
 test('auto first user call: chat fail then responses success and lock responses', async () => {
   const runtime = createRuntime()
-  const onTextDelta = vi.fn()
-  const onUsage = vi.fn()
   runManagerMock.mockImplementationOnce(
-    async (params: { onTextDelta?: (delta: string) => void; onUsage?: (usage: { input: number; output: number; total: number }) => void }) => {
-      params.onTextDelta?.('chat-partial')
+    async (params: { onUsage?: (usage: { input: number; output: number; total: number }) => void }) => {
       params.onUsage?.({ input: 1, output: 1, total: 2 })
       throw new Error('chat_unavailable')
     },
@@ -81,15 +76,9 @@ test('auto first user call: chat fail then responses success and lock responses'
       usage: { input: 7, output: 3, total: 10 },
     })
 
-  const result = await runManagerRoundWithRecovery({
-    ...createParams(runtime),
-    onTextDelta,
-    onUsage,
-  })
+  const result = await runManagerRoundWithRecovery(createParams(runtime))
   expect(result.output).toBe('responses-ok')
   expect(result.usage).toEqual({ input: 7, output: 3, total: 10 })
-  expect(onTextDelta).not.toHaveBeenCalledWith('chat-partial')
-  expect(onUsage).not.toHaveBeenCalledWith({ input: 1, output: 1, total: 2 })
   expect(
     runManagerMock.mock.calls.map(
       (call) => (call[0] as { mode?: string }).mode,

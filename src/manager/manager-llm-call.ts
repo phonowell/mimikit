@@ -31,7 +31,6 @@ export const runManagerLlmCall = async (params: {
   workDir: string
   model?: string
   mode?: ManagerLlmMode
-  onTextDelta?: (delta: string) => void
   onUsage?: (usage: TokenUsage) => void
   logPath?: string
   logContext?: Record<string, unknown>
@@ -50,7 +49,6 @@ export const runManagerLlmCall = async (params: {
     workDir: params.workDir,
     timeoutMs,
     ...(params.model?.trim() ? { model: params.model.trim() } : {}),
-    ...(params.onTextDelta ? { onTextDelta: params.onTextDelta } : {}),
     ...(params.onUsage ? { onUsage: params.onUsage } : {}),
     ...(params.logPath ? { logPath: params.logPath } : {}),
     ...(params.logContext ? { logContext: params.logContext } : {}),

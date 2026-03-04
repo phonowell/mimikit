@@ -8,10 +8,6 @@ import { selectRecentPlans } from '../orchestrator/read-model/plan-select.js'
 
 import { collectTriggeredPlanIds } from './loop-batch-context.js'
 import { runManagerCorrectionRounds } from './loop-batch-run-rounds.js'
-import {
-  createManagerStreamController,
-  type ManagerStreamController,
-} from './loop-batch-stream-controller.js'
 import { selectRecentTasks, type RuntimeState } from './runtime-adapter.js'
 import { logManagerBatchStart } from './loop-batch-run-helpers.js'
 
@@ -25,7 +21,6 @@ const runRounds = (params: {
   runtime: RuntimeState
   inputs: UserInput[]
   results: TaskResult[]
-  stream: ManagerStreamController
   maxCorrectionRounds: number
 }): Promise<{
   parsed: ReturnType<typeof parseActions>
@@ -33,7 +28,7 @@ const runRounds = (params: {
   elapsedMs: number
   roundLimitReached?: boolean
 }> => {
-  const { runtime, inputs, results, stream, maxCorrectionRounds } = params
+  const { runtime, inputs, results, maxCorrectionRounds } = params
   const tasks = selectRecentTasks(runtime.tasks, {
     minCount: runtime.config.manager.taskWindow.minCount,
     maxCount: runtime.config.manager.taskWindow.maxCount,
@@ -57,7 +52,6 @@ const runRounds = (params: {
     plans,
     workingFocusIds,
     maxCorrectionRounds,
-    stream,
     resolveFocusId: () => resolveDefaultFocusId(runtime),
   })
 }
@@ -66,14 +60,13 @@ export const runManagerBatch = async (params: {
   runtime: RuntimeState
   inputs: UserInput[]
   results: TaskResult[]
-  streamId: string
 }): Promise<{
   parsed: ReturnType<typeof parseActions>
   usage?: TokenUsage
   elapsedMs: number
   roundLimitReached?: boolean
 }> => {
-  const { runtime, inputs, results, streamId } = params
+  const { runtime, inputs, results } = params
   await logManagerBatchStart(
     runtime,
     inputs.map((item) => item.id),
@@ -84,17 +77,10 @@ export const runManagerBatch = async (params: {
     1,
     runtime.config.manager.maxCorrectionRounds,
   )
-  const stream = createManagerStreamController({ runtime, streamId })
-
-  try {
-    return await runRounds({
-      runtime,
-      inputs,
-      results,
-      stream,
-      maxCorrectionRounds,
-    })
-  } finally {
-    stream.teardown()
-  }
+  return runRounds({
+    runtime,
+    inputs,
+    results,
+    maxCorrectionRounds,
+  })
 }

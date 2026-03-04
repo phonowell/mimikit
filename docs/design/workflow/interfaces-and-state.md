@@ -25,8 +25,7 @@
 
 ## SSE 事件模型（`GET /api/events`）
 
-- `snapshot`：全量快照，包含 `status/messages/tasks/plans/focuses/choice/stream`。
-- `stream`：流式文本 patch（`clear | replace | delta`）。
+- `snapshot`：全量快照，包含 `status/messages/tasks/plans/focuses/choice`。
 - `tasks`：任务列表快照更新（由 worker 侧状态变化触发）。
 - `heartbeat`：SSE 保活心跳。
 - `error`：SSE 连接内错误反馈。

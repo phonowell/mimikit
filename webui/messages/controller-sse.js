@@ -5,7 +5,6 @@ export const createSseController = ({
   isStarted,
   onSnapshotEvent,
   onTasksEvent,
-  onStreamEvent,
   onDisconnected,
 }) => {
   let eventSource = null
@@ -66,12 +65,6 @@ export const createSseController = ({
       if (!snapshot) return
       onSnapshotEvent(snapshot)
     })
-    source.addEventListener('stream', (event) => {
-      if (currentGeneration !== generation || eventSource !== source) return
-      const patch = parseJsonRecord(event.data)
-      if (!patch) return
-      onStreamEvent(patch)
-    })
     source.addEventListener('tasks', (event) => {
       if (currentGeneration !== generation || eventSource !== source) return
       const tasks = parseJsonRecord(event.data)
@@ -83,7 +76,7 @@ export const createSseController = ({
       const payload = parseJsonRecord(event.data)
       if (!payload || typeof payload.error !== 'string' || !payload.error.trim())
         return
-      console.warn('[webui] stream error', payload.error)
+      console.warn('[webui] events error', payload.error)
     })
     source.onerror = () => {
       if (currentGeneration !== generation || eventSource !== source) return

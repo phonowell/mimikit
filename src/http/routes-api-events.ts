@@ -4,9 +4,7 @@ import type { FastifyInstance } from 'fastify'
 import {
   buildDeltaSnapshot,
   buildSnapshotHintKey,
-  buildStreamPatch,
   closeSseSource,
-  cloneUiStream,
   hasMessagePayloadChanged,
   resolveMessageCursor,
   sendSseEvent,
@@ -34,13 +32,11 @@ export const registerEventsRoute = (
     request.raw.once('close', markClientClosed)
 
     let lastSnapshotHintKey = ''
-    let lastStream = cloneUiStream(null)
     let lastMessageCursor: string | undefined
     let uiWakeVersion = orchestrator.getWebUiWakeVersion()
     try {
       const initial = await getDefaultSnapshot(orchestrator)
       lastSnapshotHintKey = buildSnapshotHintKey(initial)
-      lastStream = cloneUiStream(initial.stream)
       lastMessageCursor = resolveMessageCursor(undefined, initial.messages)
       if (!sendSseEvent(reply, 'snapshot', initial)) return
 
@@ -56,14 +52,6 @@ export const registerEventsRoute = (
           continue
         }
         uiWakeVersion = signal.version
-        if (signal.kind === 'stream') {
-          const nextStream = cloneUiStream(orchestrator.getWebUiStreamSnapshot())
-          const patch = buildStreamPatch(lastStream, nextStream)
-          if (!patch) continue
-          lastStream = nextStream
-          if (!sendSseEvent(reply, 'stream', patch)) break
-          continue
-        }
         if (signal.kind === 'tasks') {
           const tasks = orchestrator.getTasks()
           if (!sendSseEvent(reply, 'tasks', tasks)) break
@@ -84,7 +72,6 @@ export const registerEventsRoute = (
             continue
         }
         lastSnapshotHintKey = snapshotHintKey
-        lastStream = cloneUiStream(snapshot.stream)
         lastMessageCursor = resolveMessageCursor(
           lastMessageCursor,
           snapshot.messages,

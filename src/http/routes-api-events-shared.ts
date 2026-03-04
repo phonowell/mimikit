@@ -1,6 +1,4 @@
 import type { Orchestrator } from '../orchestrator/core/orchestrator-service.js'
-import type { UiAgentStream } from '../orchestrator/core/runtime-state.js'
-import type { TokenUsage } from '../types/index.js'
 import type { FastifyReply } from 'fastify'
 
 export const SSE_HEARTBEAT_MS = 15_000
@@ -59,54 +57,12 @@ export const hasMessagePayloadChanged = (
   return mode === 'delta' && Array.isArray(payload.messages) && payload.messages.length > 0
 }
 
-export const cloneUiStream = (
-  stream: UiAgentStream | null,
-): UiAgentStream | null =>
-  stream
-    ? {
-        ...stream,
-        ...(stream.usage ? { usage: { ...stream.usage } } : {}),
-      }
-    : null
-
-export type StreamPatch =
-  | { mode: 'clear' }
-  | { mode: 'replace'; stream: UiAgentStream }
-  | {
-      mode: 'delta'
-      id: string
-      delta: string
-      updatedAt: string
-      usage?: TokenUsage | null
-    }
-
-export const buildStreamPatch = (
-  prev: UiAgentStream | null,
-  next: UiAgentStream | null,
-): StreamPatch | null => {
-  if (!next) return prev ? { mode: 'clear' } : null
-  if (!prev || prev.id !== next.id || !next.text.startsWith(prev.text)) {
-    return { mode: 'replace', stream: next }
-  }
-  const delta = next.text.slice(prev.text.length)
-  const usageChanged = JSON.stringify(prev.usage ?? null) !== JSON.stringify(next.usage ?? null)
-  if (!delta && !usageChanged) return null
-  return {
-    mode: 'delta',
-    id: next.id,
-    delta,
-    updatedAt: next.updatedAt,
-    ...(usageChanged ? { usage: next.usage ?? null } : {}),
-  }
-}
-
 export const buildSnapshotHintKey = (snapshot: {
   status: unknown
   tasks: unknown
   plans: unknown
   focuses: unknown
   choice: unknown
-  stream: unknown
 }): string =>
   JSON.stringify({
     status: snapshot.status,
@@ -114,7 +70,6 @@ export const buildSnapshotHintKey = (snapshot: {
     plans: snapshot.plans,
     focuses: snapshot.focuses,
     choice: snapshot.choice,
-    stream: snapshot.stream,
   })
 
 export const buildDeltaSnapshot = async (
@@ -130,7 +85,6 @@ export const buildDeltaSnapshot = async (
   plans: orchestrator.getPlans(),
   focuses: orchestrator.getFocuses(),
   choice: orchestrator.getPendingUserChoice(),
-  stream: cloneUiStream(orchestrator.getWebUiStreamSnapshot()),
 })
 
 export const sendSseEvent = (

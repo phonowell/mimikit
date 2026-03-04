@@ -38,7 +38,7 @@ export const runCodexStream = async (
     signal,
   })
   let output = ''
-  let streamedOutput = ''
+  let latestOutput = ''
   let usage: ReturnType<typeof normalizeUsage> | undefined
   for await (const rawEvent of stream.events) {
     const event = asRecord(rawEvent)
@@ -49,13 +49,7 @@ export const runCodexStream = async (
       const item = asRecord(event?.item)
       if (asString(item, 'type') !== 'agent_message') continue
       const nextOutput = asString(item, 'text') ?? ''
-      if (request.onTextDelta) {
-        const delta = nextOutput.startsWith(streamedOutput)
-          ? nextOutput.slice(streamedOutput.length)
-          : nextOutput
-        if (delta) request.onTextDelta(delta)
-      }
-      streamedOutput = nextOutput
+      latestOutput = nextOutput
       if (eventType === 'item.completed') output = nextOutput
       continue
     }
@@ -71,6 +65,6 @@ export const runCodexStream = async (
     if (eventType === 'error')
       throw new Error(asString(event, 'message') ?? 'codex_stream_error')
   }
-  const finalOutput = output || streamedOutput
+  const finalOutput = output || latestOutput
   return { output: finalOutput, ...(usage ? { usage } : {}) }
 }

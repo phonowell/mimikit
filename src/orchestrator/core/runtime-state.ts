@@ -8,7 +8,6 @@ import type {
   PendingUserChoice,
   Task,
   TaskPlan,
-  TokenUsage,
   UserInput,
 } from '../../types/index.js'
 import type PQueue from 'p-queue'
@@ -31,16 +30,7 @@ export type UserMeta = {
   qqTimestamp?: string
 }
 
-export type UiAgentStream = {
-  id: string
-  role: 'agent'
-  text: string
-  usage?: TokenUsage
-  createdAt: ISODate
-  updatedAt: ISODate
-}
-
-export type UiWakeKind = 'snapshot' | 'stream' | 'messages' | 'tasks'
+export type UiWakeKind = 'snapshot' | 'messages' | 'tasks'
 
 export type ExitRequest = {
   code: number
@@ -97,7 +87,6 @@ export type RuntimeState = {
   managerAutoModeState?: RuntimeManagerAutoModeState
   managerFocusCompressedContexts: ManagerFocusCompressedContext[]
   managerCompressedContext?: string
-  uiStream: UiAgentStream | null
   runningControllers: Map<string, AbortController>
   createTaskDebounce: Map<string, number>
   workerQueue: PQueue

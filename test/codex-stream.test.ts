@@ -7,7 +7,7 @@ const toAsyncIterable = async function* (events: unknown[]) {
 }
 
 describe('runCodexStream', () => {
-  test('streams text deltas, normalizes usage and falls back to streamed output', async () => {
+  test('normalizes usage and falls back to latest output text', async () => {
     const thread = {
       runStreamed: vi.fn().mockResolvedValue({
         events: toAsyncIterable([
@@ -39,7 +39,6 @@ describe('runCodexStream', () => {
       }),
       id: 'thread-test',
     }
-    const onTextDelta = vi.fn()
     const onUsage = vi.fn()
     const request = {
       provider: 'codex-sdk' as const,
@@ -47,7 +46,6 @@ describe('runCodexStream', () => {
       prompt: 'ping',
       workDir: '/tmp/mimikit',
       timeoutMs: 60_000,
-      onTextDelta,
       onUsage,
     }
     const resetIdle = vi.fn()
@@ -56,7 +54,6 @@ describe('runCodexStream', () => {
     const result = await runCodexStream(thread, request, signal, resetIdle)
 
     expect(result.output).toBe('hello')
-    expect(onTextDelta.mock.calls.map((call) => call[0])).toEqual(['hel', 'lo'])
     expect(result.usage).toEqual({
       input: 120,
       output: 30,
