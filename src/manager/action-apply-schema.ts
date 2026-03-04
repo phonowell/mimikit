@@ -56,6 +56,7 @@ export const upsertFocusSchema = z
 
 export const assignFocusSchema = z
   .object({
+    target_type: z.enum(['task', 'plan', 'history']),
     target_id: nonEmptyString,
     focus_id: focusIdSchema,
   })

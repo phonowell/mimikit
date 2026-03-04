@@ -208,6 +208,41 @@ test('create_plan accepts on_worker_slot_freed trigger mode', async () => {
   expect(runtime.taskPlans[0]?.profile).toBe('worker')
 })
 
+test('assign_focus updates task focus by explicit target_type', async () => {
+  const runtime = await createRuntime()
+  runtime.tasks.push({
+    id: 'task-focus-1',
+    fingerprint: 'fp-1',
+    prompt: 'do something',
+    title: 'focus task',
+    focusId: GLOBAL_FOCUS_ID,
+    profile: 'worker',
+    status: 'pending',
+    createdAt: '2026-02-13T00:00:00.000Z',
+  })
+  runtime.focuses.push({
+    id: 'focus-release',
+    title: 'Release',
+    status: 'active',
+    createdAt: '2026-02-13T00:00:00.000Z',
+    updatedAt: '2026-02-13T00:00:00.000Z',
+    lastActivityAt: '2026-02-13T00:00:00.000Z',
+  })
+
+  await applyTaskActions(runtime, [
+    {
+      name: 'assign_focus',
+      attrs: {
+        target_type: 'task',
+        target_id: 'task-focus-1',
+        focus_id: 'focus-release',
+      },
+    },
+  ])
+
+  expect(runtime.tasks[0]?.focusId).toBe('focus-release')
+})
+
 test('delete_plan removes done plan', async () => {
   const runtime = await createRuntime()
   const donePlan: TaskPlan = {

@@ -38,18 +38,21 @@ export const buildActionFeedbackContext = (params: {
   runtime: RuntimeState
   hasQueryData: boolean
   allowAskUserChoice: boolean
+  resultTaskIds: Set<string>
 }): {
   taskStatusById: Map<string, TaskStatus>
   planStatusById: Map<string, TaskPlanStatus>
+  resultTaskIds: Set<string>
   hasCompressibleContext: boolean
   allowAskUserChoice: boolean
 } => {
-  const { runtime, hasQueryData, allowAskUserChoice } = params
+  const { runtime, hasQueryData, allowAskUserChoice, resultTaskIds } = params
   return {
     taskStatusById: new Map(runtime.tasks.map((task) => [task.id, task.status])),
     planStatusById: new Map(
       runtime.taskPlans.map((plan) => [plan.id, plan.status]),
     ),
+    resultTaskIds,
     hasCompressibleContext:
       runtime.managerFocusCompressedContexts.length > 0 ||
       runtime.tasks.length > 0 ||

@@ -38,6 +38,7 @@ export const applyAssignFocusAction = async (
   if (!parsed.success) return
   const assigned = await assignFocusByTargetId(
     runtime,
+    parsed.data.target_type,
     parsed.data.target_id,
     parsed.data.focus_id,
   )

@@ -56,6 +56,7 @@ export const resolveRoundFollowup = async (params: {
   output: string
   hasQueryData: boolean
   allowAskUserChoice: boolean
+  resultTaskIds: Set<string>
   resolveFocusId: () => FocusId
   previousLookupKey?: string
 }): Promise<RoundFollowupResult> => {
@@ -66,6 +67,7 @@ export const resolveRoundFollowup = async (params: {
         runtime: params.runtime,
         hasQueryData: params.hasQueryData,
         allowAskUserChoice: params.allowAskUserChoice,
+        resultTaskIds: params.resultTaskIds,
       }),
       scheduleNowIso: resolveScheduleNowIso(params.runtime.lastUserMeta),
     },

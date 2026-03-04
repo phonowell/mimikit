@@ -16,26 +16,31 @@ export const resolveFocusByQuote = async (
 
 export const assignFocusByTargetId = async (
   runtime: RuntimeState,
+  targetType: 'task' | 'plan' | 'history',
   targetId: string,
   focusId: FocusId,
 ): Promise<boolean> => {
   ensureFocus(runtime, focusId)
 
-  const task = runtime.tasks.find((item) => item.id === targetId)
-  if (task) {
+  if (targetType === 'task') {
+    const task = runtime.tasks.find((item) => item.id === targetId)
+    if (!task) return false
     task.focusId = focusId
     touchFocus(runtime, focusId)
     await persistRuntimeState(runtime)
     return true
   }
 
-  const plan = runtime.taskPlans.find((item) => item.id === targetId)
-  if (plan) {
+  if (targetType === 'plan') {
+    const plan = runtime.taskPlans.find((item) => item.id === targetId)
+    if (!plan) return false
     plan.focusId = focusId
     touchFocus(runtime, focusId)
     await persistRuntimeState(runtime)
     return true
   }
+
+  if (targetType !== 'history') return false
 
   const history = await readHistory(runtime.paths.history)
   const index = history.findIndex((item) => item.id === targetId)

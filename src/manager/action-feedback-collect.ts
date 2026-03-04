@@ -17,6 +17,8 @@ import {
   formatUnregisteredActionHint,
 } from './action-feedback-hints.js'
 import type { FeedbackContext } from './action-validation.js'
+import { queryHistorySchema } from '../history/query.js'
+import { readFileSchema } from './action-apply-schema.js'
 
 import type { Parsed } from '../actions/model/spec.js'
 import type { ManagerActionFeedback } from '../types/index.js'
@@ -27,6 +29,20 @@ const UNREGISTERED_ACTION_HINT = formatUnregisteredActionHint(
 const INVALID_ACTION_SYNTAX_ERROR = 'invalid_action_syntax'
 const INVALID_ACTION_SYNTAX_HINT = formatInvalidActionSyntaxHint()
 const ACTION_IN_CODE_BLOCK_HINT = formatActionInCodeBlockHint()
+const SINGLE_LOOKUP_ACTION_LIMIT_HINTS: Record<string, string> = {
+  query_history:
+    'query_history 执行失败：同一轮最多保留一个 query_history action；请先合并查询条件。',
+  read_file:
+    'read_file 执行失败：同一轮最多保留一个 read_file action；请先合并读取范围。',
+}
+
+const isValidLookupAction = (item: Parsed): boolean => {
+  if (item.name === 'query_history')
+    return queryHistorySchema.safeParse(item.attrs).success
+  if (item.name === 'read_file')
+    return readFileSchema.safeParse(item.attrs).success
+  return false
+}
 
 const escapeAttr = (value: string): string =>
   value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
@@ -175,6 +191,24 @@ export const collectManagerActionFeedback = (
         UNREGISTERED_ACTION_HINT,
       )
     }
+  }
+
+  const lookupSeen = new Set<string>()
+  for (const item of items) {
+    if (!(item.name in SINGLE_LOOKUP_ACTION_LIMIT_HINTS)) continue
+    if (!isValidLookupAction(item)) continue
+    if (!lookupSeen.has(item.name)) {
+      lookupSeen.add(item.name)
+      continue
+    }
+    pushFeedback(
+      feedback,
+      seen,
+      item,
+      'action_execution_rejected',
+      SINGLE_LOOKUP_ACTION_LIMIT_HINTS[item.name] ??
+        'action 执行失败：重复 action。',
+    )
   }
 
   for (const item of items) {

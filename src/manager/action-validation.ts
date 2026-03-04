@@ -24,6 +24,7 @@ import {
   parseAskUserChoiceAttrs,
   readFileSchema,
   runTaskSchema,
+  summarizeSchema,
   updatePlanSchema,
 } from './action-apply-schema.js'
 import type { Parsed } from '../actions/model/spec.js'
@@ -32,6 +33,7 @@ import type { ZodSchema } from 'zod'
 export type FeedbackContext = {
   taskStatusById?: Map<string, TaskStatus>
   planStatusById?: Map<string, TaskPlanStatus>
+  resultTaskIds?: Set<string>
   hasCompressibleContext?: boolean
   scheduleNowIso?: string
   allowAskUserChoice?: boolean
@@ -99,6 +101,24 @@ export const validateQueryHistory = (item: Parsed): ValidationIssue[] =>
   validateRangeQueryWithSchema(item, queryHistorySchema)
 export const validateReadFile = (item: Parsed): ValidationIssue[] =>
   validateWithSchema(item, readFileSchema)
+export const validateSummarizeTaskResult = (
+  item: Parsed,
+  context: FeedbackContext,
+): ValidationIssue[] => {
+  const parsed = summarizeSchema.safeParse(item.attrs)
+  if (!parsed.success) return [invalidArgsIssue(parsed.error)]
+  const { resultTaskIds } = context
+  if (!resultTaskIds) return []
+  if (resultTaskIds.has(parsed.data.task_id)) return []
+  const available = [...resultTaskIds].slice(0, 3)
+  const availableHint =
+    available.length > 0
+      ? `当前批次可用 task_id: ${available.join(', ')}。`
+      : '当前批次无可摘要的 task_result。'
+  return rejected(
+    `summarize_task_result 执行失败：task_id 不在当前批次结果中。${availableHint}`,
+  )
+}
 export const validateCompressContext = (
   item: Parsed,
   context: FeedbackContext,
@@ -149,16 +169,7 @@ export const validateUpdatePlan = (
   const parsed = updatePlanSchema.safeParse(item.attrs)
   if (!parsed.success) return [invalidArgsIssue(parsed.error)]
   const scheduledAt = parsed.data.scheduled_at?.trim()
-  const resolvedMode =
-    parsed.data.trigger_mode ??
-    (parsed.data.cron !== undefined
-      ? 'cron'
-      : parsed.data.scheduled_at !== undefined
-        ? 'scheduled_at'
-        : parsed.data.cooldown_ms !== undefined
-          ? 'on_idle'
-          : undefined)
-  if (resolvedMode !== 'scheduled_at' || !scheduledAt) return []
+  if (parsed.data.trigger_mode !== 'scheduled_at' || !scheduledAt) return []
   return validateScheduledAtNotPast({
     action: 'update_plan',
     scheduledAt,

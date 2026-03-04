@@ -56,6 +56,7 @@ export const runManagerCorrectionRounds = async (params: {
   let extra: ManagerRoundExtra = {}
   let lastParsed = parseActions('')
   const hasQueryData = inputs.length > 0 || results.length > 0
+  const resultTaskIds = new Set(results.map((item) => item.taskId))
   const allowAskUserChoice =
     !hasQqUserInput(inputs) && runtime.lastUserMeta?.source !== 'qq'
   for (let round = 1; round <= maxCorrectionRounds; round++) {
@@ -83,6 +84,7 @@ export const runManagerCorrectionRounds = async (params: {
       output: runResult.output,
       hasQueryData,
       allowAskUserChoice,
+      resultTaskIds,
       resolveFocusId,
       ...(previousLookupKey ? { previousLookupKey } : {}),
     })

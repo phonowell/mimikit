@@ -26,3 +26,120 @@ test('ask_user_choice is rejected when qq source does not support choice callbac
   expect(feedback[0]?.error).toBe('action_execution_rejected')
   expect(feedback[0]?.hint).toContain('QQ')
 })
+
+test('query_history and read_file reject repeated actions in the same round', () => {
+  const feedback = collectManagerActionFeedback([
+    {
+      name: 'query_history',
+      attrs: {
+        query: 'first',
+      },
+    },
+    {
+      name: 'query_history',
+      attrs: {
+        query: 'second',
+      },
+    },
+    {
+      name: 'read_file',
+      attrs: {
+        path: 'README.md',
+      },
+    },
+    {
+      name: 'read_file',
+      attrs: {
+        path: 'src/cli/index.ts',
+      },
+    },
+  ])
+
+  expect(feedback).toHaveLength(2)
+  expect(feedback[0]?.action).toBe('query_history')
+  expect(feedback[0]?.hint).toContain('同一轮最多保留一个 query_history')
+  expect(feedback[1]?.action).toBe('read_file')
+  expect(feedback[1]?.hint).toContain('同一轮最多保留一个 read_file')
+})
+
+test('lookup duplicate guard only counts schema-valid actions', () => {
+  const feedback = collectManagerActionFeedback([
+    {
+      name: 'query_history',
+      attrs: {
+        query: '',
+      },
+    },
+    {
+      name: 'query_history',
+      attrs: {
+        query: 'valid query',
+      },
+    },
+  ])
+
+  expect(feedback).toHaveLength(1)
+  expect(feedback[0]?.action).toBe('query_history')
+  expect(feedback[0]?.error).toBe('invalid_action_args')
+})
+
+test('summarize_task_result rejects task_id outside current batch results', () => {
+  const feedback = collectManagerActionFeedback(
+    [
+      {
+        name: 'summarize_task_result',
+        attrs: {
+          task_id: 'task-other',
+          summary: 'done',
+        },
+      },
+    ],
+    {
+      resultTaskIds: new Set(['task-current']),
+    },
+  )
+
+  expect(feedback).toHaveLength(1)
+  expect(feedback[0]?.action).toBe('summarize_task_result')
+  expect(feedback[0]?.error).toBe('action_execution_rejected')
+  expect(feedback[0]?.hint).toContain('task_id 不在当前批次结果中')
+})
+
+test('assign_focus requires explicit target_type', () => {
+  const feedback = collectManagerActionFeedback([
+    {
+      name: 'assign_focus',
+      attrs: {
+        target_id: 'task-1',
+        focus_id: 'focus-demo',
+      },
+    },
+  ])
+
+  expect(feedback).toHaveLength(1)
+  expect(feedback[0]?.action).toBe('assign_focus')
+  expect(feedback[0]?.error).toBe('invalid_action_args')
+  expect(feedback[0]?.hint).toContain('target_type')
+})
+
+test('update_plan requires trigger_mode when patching trigger fields', () => {
+  const feedback = collectManagerActionFeedback(
+    [
+      {
+        name: 'update_plan',
+        attrs: {
+          id: 'plan-1',
+          cooldown_ms: '1000',
+        },
+      },
+    ],
+    {
+      planStatusById: new Map([['plan-1', 'active']]),
+    },
+  )
+
+  expect(feedback).toHaveLength(1)
+  expect(feedback[0]?.action).toBe('update_plan')
+  expect(feedback[0]?.error).toBe('invalid_action_args')
+  expect(feedback[0]?.hint).toContain('trigger_mode')
+})

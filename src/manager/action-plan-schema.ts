@@ -178,27 +178,28 @@ export const updatePlanSchema = z
       return
     }
 
-    const inferredMode =
-      data.trigger_mode ??
-      (data.cron !== undefined
-        ? 'cron'
-        : data.scheduled_at !== undefined
-          ? 'scheduled_at'
-          : data.cooldown_ms !== undefined
-            ? 'on_idle'
-            : undefined)
-
-    if (inferredMode !== undefined) {
-      validatePlanTriggerFields(
-        {
-          trigger_mode: inferredMode,
-          cron: data.cron,
-          scheduled_at: data.scheduled_at,
-          cooldown_ms: data.cooldown_ms,
-        },
+    const hasTriggerField =
+      data.cron !== undefined ||
+      data.scheduled_at !== undefined ||
+      data.cooldown_ms !== undefined
+    if (hasTriggerField && data.trigger_mode === undefined) {
+      addCustomIssue(
         ctx,
+        'trigger_mode',
+        'trigger_mode is required when cron/scheduled_at/cooldown_ms is provided',
       )
+      return
     }
+    if (data.trigger_mode === undefined) return
+    validatePlanTriggerFields(
+      {
+        trigger_mode: data.trigger_mode,
+        cron: data.cron,
+        scheduled_at: data.scheduled_at,
+        cooldown_ms: data.cooldown_ms,
+      },
+      ctx,
+    )
   })
 
 export const deletePlanSchema = z

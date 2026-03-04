@@ -14,12 +14,12 @@ import {
   cancelSchema,
   deletePlanSchema,
   restartSchema,
-  summarizeSchema,
   updatePlanSchema,
   upsertFocusSchema,
 } from './action-apply-schema.js'
 import {
   applyAndContinue,
+  continueApply,
   createNoopAction,
   type ManagerActionDefinition,
 } from './action-registry-shared.js'
@@ -34,6 +34,7 @@ import {
   validateQueryHistory,
   validateReadFile,
   validateRunTask,
+  validateSummarizeTaskResult,
   validateUpdatePlan,
   validateWithSchema,
 } from './action-validation.js'
@@ -112,9 +113,11 @@ export const ACTION_DEFINITIONS = [
     validate: (item, context) => validateCompressContext(item, context),
     apply: applyAndContinue(applyCompressContextAction),
   },
-  createNoopAction('summarize_task_result', (item) =>
-    validateWithSchema(item, summarizeSchema),
-  ),
+  {
+    name: 'summarize_task_result',
+    validate: (item, context) => validateSummarizeTaskResult(item, context),
+    apply: continueApply,
+  },
   createNoopAction('query_history', validateQueryHistory),
   createNoopAction('read_file', validateReadFile),
   {

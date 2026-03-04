@@ -137,14 +137,7 @@ export const resolveUpdatedTrigger = (
   if (!hasTriggerPatch) return current
 
   const mode =
-    update.triggerMode ??
-    (update.cron !== undefined
-      ? 'cron'
-      : update.scheduledAt !== undefined
-        ? 'scheduled_at'
-        : update.cooldownMs !== undefined
-          ? 'on_idle'
-          : current.mode)
+    update.triggerMode ?? current.mode
 
   return buildTrigger({
     triggerMode: mode,

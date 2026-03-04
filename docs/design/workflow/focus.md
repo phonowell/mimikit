@@ -14,13 +14,12 @@
 
 - 每条 `UserInput/HistoryMessage/Task/TaskPlan` 必带 `focusId`
 - `upsert_focus`：按 `id` 创建或更新 focus 元信息与上下文摘要
-- `assign_focus`：将输入/任务/结果归属到指定 focus
+- `assign_focus`：按 `target_type + target_id` 归属（`task | plan | history`）
 
 ## Prompt 注入
 
 - `M:focus_list`
 - `M:focus_contexts`
-- `M:compressed_context`（仅注入当前 `workingFocusIds` 对应的压缩摘要）
 
 ## 关联数据结构
 
