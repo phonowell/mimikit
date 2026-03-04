@@ -133,10 +133,19 @@ export const registerApiRoutes = (
     try {
       const status = orchestrator.getStatus()
       const history = await orchestrator.getChatHistory(100)
+      const tasks = orchestrator.getTasks(200)
+      const plans = orchestrator.getPlans(200)
+      const focuses = orchestrator.getFocuses(200)
+      const pendingChoice = orchestrator.getPendingUserChoice()
       await stagePendingRestartSummary({
         stateDir: config.workDir,
         runtimeId: status.runtimeId,
         messages: history,
+        tasks: tasks.tasks,
+        taskCounts: tasks.counts,
+        plans: plans.items,
+        focuses: focuses.items,
+        pendingChoice,
       })
     } catch (error) {
       await logSafeError('http: reset-with-summary: stage', error)

@@ -1,52 +1,19 @@
 import { appendHistory, readHistory } from '../../history/store.js'
 import { formatSystemEventText } from '../../shared/system-event.js'
-import { truncateText } from '../../shared/text.js'
 import { newId, nowIso } from '../../shared/utils.js'
 import {
   markPendingRestartSummaryConsumed,
   readPendingRestartSummary,
   upsertPendingRestartSummary,
 } from '../../storage/pending-restart-summary.js'
+import {
+  buildConversationSummaryForReset,
+  type RestartSummaryContext,
+} from './restart-summary-build.js'
 
-import type { ChatMessage } from '../read-model/chat-view.js'
 import type { FocusId } from '../../types/index.js'
-
-const MAX_SUMMARY_ITEMS = 10
-const MAX_SUMMARY_ITEM_CHARS = 220
 const SUMMARY_RESTORED_EVENT = 'session_summary_restored'
-
-const normalizeRoleLabel = (role: ChatMessage['role']): string => {
-  if (role === 'user') return 'User'
-  if (role === 'agent') return 'Assistant'
-  return 'System'
-}
-
-const normalizeSummaryLine = (value: string): string =>
-  value.replace(/^system:\s*/i, '').trim()
-
-const toSummaryLines = (messages: ChatMessage[]): string[] => {
-  const candidates = messages
-    .map((message) => ({
-      role: normalizeRoleLabel(message.role),
-      text: normalizeSummaryLine(message.text),
-    }))
-    .filter((item) => item.text.length > 0)
-  if (candidates.length === 0) return []
-  const scoped = candidates.slice(Math.max(0, candidates.length - MAX_SUMMARY_ITEMS))
-  return scoped.map(
-    (item) =>
-      `- ${item.role}: ${truncateText(item.text, MAX_SUMMARY_ITEM_CHARS, { normalizeWhitespace: true })}`,
-  )
-}
-
-export const buildConversationSummaryForReset = (
-  messages: ChatMessage[],
-): string => {
-  const lines = toSummaryLines(messages)
-  if (lines.length === 0)
-    return 'No prior conversation content was available before reset.'
-  return `Conversation highlights before reset:\n${lines.join('\n')}`
-}
+export { buildConversationSummaryForReset } from './restart-summary-build.js'
 
 const hasSummaryRestoreMarker = (text: string, summaryId: string): boolean =>
   text.includes(`<M:system_event name="${SUMMARY_RESTORED_EVENT}"`) &&
@@ -55,9 +22,8 @@ const hasSummaryRestoreMarker = (text: string, summaryId: string): boolean =>
 export const stagePendingRestartSummary = async (params: {
   stateDir: string
   runtimeId: string
-  messages: ChatMessage[]
-}): Promise<void> => {
-  const summary = buildConversationSummaryForReset(params.messages)
+} & RestartSummaryContext): Promise<void> => {
+  const summary = buildConversationSummaryForReset(params)
   await upsertPendingRestartSummary({
     stateDir: params.stateDir,
     summary,
