@@ -20,6 +20,7 @@ OPENAI_API_KEY=your_key pnpm start
 ## Table of Contents
 
 - [Quickstart](#quickstart)
+- [LLM Bootstrap](#llm-bootstrap)
 - [Features](#features)
 - [How It Works](#how-it-works)
 - [Use Cases](#use-cases)
@@ -93,6 +94,10 @@ Default port is `8787`; you can also run:
 ```bash
 tsx src/cli/index.ts --port 8787 --work-dir .mimikit
 ```
+
+## LLM Bootstrap
+
+For LLM-driven setup and configuration, use [`docs/BOOTSTRAP.md`](./docs/BOOTSTRAP.md). It provides deterministic install/config/start/verify steps.
 
 ## Features
 
