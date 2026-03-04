@@ -1,11 +1,19 @@
+import { mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
 import { expect, test } from 'vitest'
 
 import {
   MAX_CONTINUE_LATEST_OUTPUT_CHARS,
   buildContinuePrompt,
   hasDoneMarker,
+  runWorkerLoop,
   stripDoneMarker,
 } from '../src/worker/profiled-runner-loop.js'
+import type { Task, TokenUsage } from '../src/types/index.js'
+
+const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-worker-loop-'))
 
 test('done marker detection uses skill_usage done status only', () => {
   const doneOutput =
@@ -32,4 +40,52 @@ test('continue prompt clips latest output to configured max chars', () => {
   )
   expect(latestLine?.endsWith('...')).toBe(true)
   expect(prompt).toContain('<M:skill_usage status="done">')
+})
+
+test('runWorkerLoop does not double count when onUsage and result usage are identical', async () => {
+  const stateDir = await createTmpDir()
+  const usageEvents: TokenUsage[] = []
+  const task: Task = {
+    id: 'task-test-usage',
+    fingerprint: 'fingerprint-test-usage',
+    prompt: '执行测试任务',
+    title: '执行测试任务',
+    focusId: 'focus-global',
+    profile: 'worker',
+    status: 'running',
+    createdAt: '2026-03-04T00:00:00.000Z',
+  }
+
+  try {
+    const result = await runWorkerLoop({
+      stateDir,
+      task,
+      prompt: '执行测试任务',
+      continueTemplate: '{{ latest_output }}',
+      continueTemplatePath: 'inline-template',
+      archiveBase: { role: 'worker', taskId: task.id },
+      runModel: async ({ onUsage }) => {
+        const usage = { input: 100, output: 50, total: 150 }
+        onUsage?.(usage)
+        return {
+          output: '<M:skill_usage status="done">test</M:skill_usage>',
+          elapsedMs: 12,
+          usage,
+        }
+      },
+      onUsage: (usage) => {
+        usageEvents.push(usage)
+      },
+    })
+
+    expect(result.usage).toEqual({ input: 100, output: 50, total: 150 })
+    expect(task.usage).toEqual({ input: 100, output: 50, total: 150 })
+    expect(usageEvents[usageEvents.length - 1]).toEqual({
+      input: 100,
+      output: 50,
+      total: 150,
+    })
+  } finally {
+    await rm(stateDir, { recursive: true, force: true })
+  }
 })

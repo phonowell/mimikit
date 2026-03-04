@@ -1,5 +1,5 @@
 import { renderPromptTemplate } from '../prompts/format.js'
-import { mergeUsageAdditive } from '../shared/token-usage.js'
+import { mergeUsageAdditive, mergeUsageMonotonic } from '../shared/token-usage.js'
 import { appendTraceArchiveResult } from '../storage/traces-archive.js'
 
 import { isAbortLikeError } from './error-utils.js'
@@ -97,20 +97,23 @@ export const runWorkerLoop = async (
 
   try {
     for (let round = 1; round <= MAX_RUN_ROUNDS; round += 1) {
+      let roundUsage: TokenUsage | undefined
       const result = await params.runModel({
         prompt: nextPrompt,
         ...(threadId !== undefined ? { threadId } : {}),
         onUsage: (usage) => {
-          totalUsage = mergeUsageAdditive(totalUsage, usage)
-          if (!totalUsage) return
-          task.usage = totalUsage
-          params.onUsage?.(totalUsage)
+          roundUsage = mergeUsageMonotonic(roundUsage, usage)
+          const previewUsage = mergeUsageAdditive(totalUsage, roundUsage)
+          if (!previewUsage) return
+          task.usage = previewUsage
+          params.onUsage?.(previewUsage)
         },
       })
       latestResult = result
       totalElapsedMs += result.elapsedMs
       threadId = result.threadId ?? threadId ?? null
-      totalUsage = mergeUsageAdditive(totalUsage, result.usage)
+      roundUsage = mergeUsageMonotonic(roundUsage, result.usage)
+      totalUsage = mergeUsageAdditive(totalUsage, roundUsage)
       if (totalUsage) {
         task.usage = totalUsage
         params.onUsage?.(totalUsage)
