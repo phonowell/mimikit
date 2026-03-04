@@ -1,4 +1,22 @@
-const ARTIFACT_PREFIX = '/artifacts/'
+const STATE_FILE_PREFIX = '/state-files/'
+const STATE_ROOT_PREFIX = '.mimikit/'
+const STATE_ROOT_SEGMENT = '/.mimikit/'
+const STATE_TOP_LEVEL_DIRS = new Set([
+  'generated',
+  'history',
+  'inputs',
+  'memory',
+  'qq',
+  'results',
+  'task-progress',
+  'tasks',
+  'traces',
+])
+const STATE_TOP_LEVEL_FILES = new Set([
+  'log.jsonl',
+  'runtime-snapshot.json',
+  'runtime-snapshot.json.bak',
+])
 
 const splitPathSuffix = (value) => {
   const match = /^([^?#]*)([?#].*)?$/.exec(value)
@@ -11,20 +29,26 @@ const splitPathSuffix = (value) => {
 const hasScheme = (value) => /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(value)
 const isWindowsDrivePath = (value) => /^[a-zA-Z]:[\\/]/.test(value)
 
-const extractGeneratedRelative = (value) => {
+const hasKnownStateTopLevel = (value) => {
+  if (!value) return false
+  const slashIndex = value.indexOf('/')
+  if (slashIndex < 0) {
+    if (STATE_TOP_LEVEL_FILES.has(value)) return true
+    return STATE_TOP_LEVEL_DIRS.has(value)
+  }
+  const head = value.slice(0, slashIndex)
+  return STATE_TOP_LEVEL_DIRS.has(head)
+}
+
+const extractStateRelative = (value) => {
   let raw = value.trim()
   if (!raw) return null
   raw = raw.replace(/\\/g, '/')
   if (raw.startsWith('./')) raw = raw.slice(2)
-  if (raw.startsWith('generated/')) return raw.slice('generated/'.length)
-  if (raw.startsWith('.mimikit/generated/'))
-    return raw.slice('.mimikit/generated/'.length)
-  const mimikitIndex = raw.indexOf('/.mimikit/generated/')
-  if (mimikitIndex >= 0)
-    return raw.slice(mimikitIndex + '/.mimikit/generated/'.length)
-  const generatedIndex = raw.indexOf('/generated/')
-  if (generatedIndex >= 0)
-    return raw.slice(generatedIndex + '/generated/'.length)
+  if (raw.startsWith(STATE_ROOT_PREFIX)) return raw.slice(STATE_ROOT_PREFIX.length)
+  const rootIndex = raw.indexOf(STATE_ROOT_SEGMENT)
+  if (rootIndex >= 0) return raw.slice(rootIndex + STATE_ROOT_SEGMENT.length)
+  if (hasKnownStateTopLevel(raw)) return raw
   return null
 }
 
@@ -47,7 +71,7 @@ export const toArtifactUrl = (value) => {
   const raw = value?.trim()
   if (!raw) return null
   if (raw.startsWith('#')) return null
-  if (raw.startsWith(ARTIFACT_PREFIX)) return null
+  if (raw.startsWith(STATE_FILE_PREFIX)) return null
   if (hasScheme(raw) && !raw.startsWith('file:') && !isWindowsDrivePath(raw))
     return null
   let path = ''
@@ -65,12 +89,12 @@ export const toArtifactUrl = (value) => {
     path = split.path
     suffix = split.suffix
   }
-  const relative = extractGeneratedRelative(path)
-  if (!relative) return null
-  const normalized = normalizeRelativePath(relative)
-  if (!normalized) return null
-  const encoded = encodeRelativePath(normalized)
-  return `${ARTIFACT_PREFIX}${encoded}${suffix}`
+  const stateRelative = extractStateRelative(path)
+  if (!stateRelative) return null
+  const normalizedState = normalizeRelativePath(stateRelative)
+  if (!normalizedState) return null
+  const encodedState = encodeRelativePath(normalizedState)
+  return `${STATE_FILE_PREFIX}${encodedState}${suffix}`
 }
 
 export const linkifyInlineCode = (fragment) => {

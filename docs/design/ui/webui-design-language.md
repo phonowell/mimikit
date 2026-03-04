@@ -102,6 +102,14 @@
 - stream patch 合并：同帧内同 `stream.id` 的连续 delta 必须先合并，再应用渲染。
 - streaming 节点：同一条流式消息必须原位更新文本与 usage；仅在 `id` 切换或 clear 时替换节点。
 
+## Markdown 路径链接规则
+
+- 纯文本本地路径支持自动转链接（用于会话中的证据路径直达）。
+- `.mimikit` 工作目录内路径统一重写为 `/state-files/*`。
+- 约束：
+- 已存在 Markdown 链接目标不应二次改写；
+- 行内代码与 fenced code block 中路径不做 linkify。
+
 ## 响应式与可访问性
 
 - 断点：`max-width: 640px`。

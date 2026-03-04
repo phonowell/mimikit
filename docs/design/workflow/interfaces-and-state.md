@@ -16,6 +16,13 @@
 - `POST /api/reset`
 - `POST /api/reset-with-summary`
 
+## 静态路由（WebUI 文件访问）
+
+- `GET /state-files/*`（映射 `.mimikit/*`）
+
+说明：
+- `state-files` 用于 WebUI 直接打开工作目录（`.mimikit`）内证据文件与生成物。
+
 ## SSE 事件模型（`GET /api/events`）
 
 - `snapshot`：全量快照，包含 `status/messages/tasks/plans/focuses/choice/stream`。
@@ -98,7 +105,7 @@
 - `traces/YYYY-MM-DD/<ts36><ra>.txt`
 - `history/YYYY-MM-DD.jsonl`
 - `memory/MEMORY.md`
-- `generated/*`（由 `/artifacts/*` 静态路由暴露）
+- `*`（由 `/state-files/*` 静态路由暴露）
 - `qq/event-state.json`
 - `runtime-snapshot.json`
 - `runtime-snapshot.json.bak`
@@ -107,6 +114,12 @@
 说明：
 - manager 每轮会直接注入 `M:memory`
 - `memory/MEMORY.md` 由后台 memory 刷新子进程维护（`>=20` 轮触发，单飞执行）
+
+## WebUI 路径链接规则
+
+- 纯文本本地路径在渲染前会自动 linkify（仅消息 Markdown 区域）。
+- `.mimikit` 内路径统一映射到 `GET /state-files/*`。
+- 保护规则：行内代码、代码块、已存在的 Markdown 链接目标不会被二次改写。
 
 ## Runtime Snapshot 关键字段
 

@@ -54,8 +54,8 @@ const registerStaticAssets = (
   config: AppConfig,
 ): void => {
   const { webDir, markedDir, purifyDir } = resolveRoots()
-  const generatedDir = resolve(config.workDir, 'generated')
-  mkdirSync(generatedDir, { recursive: true })
+  const stateDir = resolve(config.workDir)
+  mkdirSync(stateDir, { recursive: true })
 
   app.register(fastifyStatic, {
     root: markedDir,
@@ -68,8 +68,8 @@ const registerStaticAssets = (
     decorateReply: false,
   })
   app.register(fastifyStatic, {
-    root: generatedDir,
-    prefix: '/artifacts/',
+    root: stateDir,
+    prefix: '/state-files/',
     decorateReply: false,
   })
   app.register(fastifyStatic, {
