@@ -63,6 +63,8 @@ env_key = "AICODING_API_KEY"
 
 Manager provider mode is configured in `config.yaml`:
 
+If `config.yaml` is missing, Mimikit will bootstrap it from `defaults/config.template.yaml`.
+
 ```yaml
 manager:
   mode: auto # auto | chat | responses

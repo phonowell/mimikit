@@ -66,6 +66,7 @@
 
 ## 配置结构（`config.yaml`）
 
+- 若缺少 `config.yaml`，启动阶段会由 `defaults/config.template.yaml` 自动生成。
 - `manager.model`
 - `manager.mode`（`auto|chat|responses`）
 - `manager.mode=auto`：启动后首条用户消息先尝试 `chat`；失败后切 `responses`，若成功则本次 runtime 锁定 `responses`

@@ -88,7 +88,7 @@ export const DEFAULT_CONFIG_PATH = fileURLToPath(
   new URL('../config.yaml', import.meta.url),
 )
 export const DEFAULT_CONFIG_TEMPLATE_PATH = fileURLToPath(
-  new URL('../config.yaml.default', import.meta.url),
+  new URL('../defaults/config.template.yaml', import.meta.url),
 )
 const readOrCreateConfigSource = (path: string): string => {
   try {
