@@ -175,7 +175,7 @@ describe('openAiResponsesProvider', () => {
     )
   })
 
-  test('retries once with session_id header when upstream requires session_id', async () => {
+  test('always sends session_id header and stream=true for manager calls', async () => {
     const homeDir = await createHomeDir()
     createdHomeDirs.push(homeDir)
     await writeCodexConfig(homeDir)
@@ -187,23 +187,12 @@ describe('openAiResponsesProvider', () => {
       'data: {"type":"response.completed","response":{"output":[{"type":"message","content":[{"type":"output_text","text":"42"}]}],"usage":{"input_tokens":6,"output_tokens":1,"total_tokens":7}}}',
       '',
     ].join('\n')
-    const fetchMock = vi
-      .fn<typeof fetch>()
-      .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify({
-            code: -400,
-            message: '请求参数错误 缺失session_id',
-          }),
-          { status: 200, headers: { 'content-type': 'application/json' } },
-        ),
-      )
-      .mockResolvedValueOnce(
-        new Response(sse, {
-          status: 200,
-          headers: { 'content-type': 'text/event-stream' },
-        }),
-      )
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(sse, {
+        status: 200,
+        headers: { 'content-type': 'text/event-stream' },
+      }),
+    )
     globalThis.fetch = fetchMock
 
     const result = await openAiResponsesProvider.run({
@@ -221,18 +210,13 @@ describe('openAiResponsesProvider', () => {
       output: 1,
       total: 7,
     })
-    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
     const firstInit = fetchMock.mock.calls[0]?.[1] as RequestInit
-    const secondInit = fetchMock.mock.calls[1]?.[1] as RequestInit
     const firstBody = JSON.parse(String(firstInit.body))
-    const secondBody = JSON.parse(String(secondInit.body))
-    expect((firstInit.headers as Record<string, string>).session_id).toBeUndefined()
-    expect((secondInit.headers as Record<string, string>).accept).toBeUndefined()
-    expect((secondInit.headers as Record<string, string>).session_id).toMatch(
+    expect((firstInit.headers as Record<string, string>).session_id).toMatch(
       /^session-/,
     )
-    expect(firstBody.stream).toBe(false)
-    expect(secondBody.stream).toBe(false)
+    expect(firstBody.stream).toBe(true)
     expect(result.threadId).toMatch(/^session-/)
   })
 })

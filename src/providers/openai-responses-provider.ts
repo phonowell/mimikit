@@ -159,16 +159,6 @@ const readErrorMessage = (raw: string): string | undefined => {
   return asString(error, 'message')
 }
 
-const shouldRetryWithSessionId = (
-  raw: string,
-  sessionId: string | undefined,
-): boolean => {
-  if (sessionId) return false
-  const message = readErrorMessage(raw)
-  if (!message) return false
-  return /missing[_\s-]*session[_\s-]*id|缺失session_id/i.test(message)
-}
-
 const resolveSessionId = (threadId: string | null | undefined): string => {
   const current = threadId?.trim()
   if (current) return current
@@ -298,38 +288,24 @@ const runOpenAiResponses = async (request: OpenAiResponsesProviderRequest) => {
 
     const requestBody = JSON.stringify({
       model,
-      stream: false,
+      stream: true,
       input: [{ role: 'user', content: request.prompt }],
     })
-    let sessionId: string | undefined
-    let response: Response | null = null
-    let raw = ''
-    while (true) {
-      resetIdle()
-      response = await doFetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          authorization: `Bearer ${apiKey}`,
-          ...(sessionId
-            ? {
-                session_id: sessionId,
-              }
-            : {}),
-        },
-        body: requestBody,
-        signal: controller.signal,
-      })
-      resetIdle()
-      raw = await response.text()
-      resetIdle()
-      if (shouldRetryWithSessionId(raw, sessionId)) {
-        sessionId = resolveSessionId(request.threadId)
-        continue
-      }
-      break
-    }
-    if (!response) throw new Error('responses_response_missing')
+    const sessionId = resolveSessionId(request.threadId)
+    resetIdle()
+    const response = await doFetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${apiKey}`,
+        session_id: sessionId,
+      },
+      body: requestBody,
+      signal: controller.signal,
+    })
+    resetIdle()
+    const raw = await response.text()
+    resetIdle()
     if (!response.ok) throw new Error(buildHttpErrorMessage(response.status, raw))
     const { output, usage } = parseResponsesPayload(raw)
     if (usage) request.onUsage?.(usage)
