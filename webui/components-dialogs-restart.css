@@ -1,5 +1,4 @@
 .restart-header,
-.summary-reset-header,
 .reset-header,
 .message-delete-header {
   display: flex;
@@ -9,7 +8,6 @@
 }
 
 .restart-title,
-.summary-reset-title,
 .reset-title,
 .message-delete-title {
   margin: 0;
@@ -18,7 +16,6 @@
 }
 
 .restart-description,
-.summary-reset-description,
 .reset-description,
 .message-delete-description {
   margin: 0;
@@ -28,7 +25,6 @@
 }
 
 .restart-actions,
-.summary-reset-actions,
 .reset-actions,
 .message-delete-actions {
   display: flex;
@@ -40,4 +36,19 @@
 
 .restart-dialog-btn-danger {
   margin-right: auto;
+}
+
+.reset-options {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.reset-option-item {
+  margin: 0;
 }

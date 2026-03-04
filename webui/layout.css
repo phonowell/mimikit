@@ -27,7 +27,6 @@ main[data-app] {
 .plans-dialog,
 .focuses-dialog,
 .restart-dialog,
-.summary-reset-dialog,
 .reset-dialog,
 .message-delete-dialog {
   border: 0;
@@ -43,7 +42,6 @@ main[data-app] {
 .plans-dialog[open],
 .focuses-dialog[open],
 .restart-dialog[open],
-.summary-reset-dialog[open],
 .reset-dialog[open],
 .message-delete-dialog[open] {
   animation: dialog-in 160ms ease-out;
@@ -53,7 +51,6 @@ main[data-app] {
 .plans-dialog.is-closing,
 .focuses-dialog.is-closing,
 .restart-dialog.is-closing,
-.summary-reset-dialog.is-closing,
 .reset-dialog.is-closing,
 .message-delete-dialog.is-closing {
   animation: dialog-out 140ms ease-in forwards;
@@ -64,7 +61,6 @@ main[data-app] {
 .plans-dialog:not([open]),
 .focuses-dialog:not([open]),
 .restart-dialog:not([open]),
-.summary-reset-dialog:not([open]),
 .reset-dialog:not([open]),
 .message-delete-dialog:not([open]) {
   display: none;
@@ -74,7 +70,6 @@ main[data-app] {
 .plans-dialog::backdrop,
 .focuses-dialog::backdrop,
 .restart-dialog::backdrop,
-.summary-reset-dialog::backdrop,
 .reset-dialog::backdrop,
 .message-delete-dialog::backdrop {
   background: repeating-linear-gradient(
@@ -91,7 +86,6 @@ main[data-app] {
 .plans-dialog.is-closing::backdrop,
 .focuses-dialog.is-closing::backdrop,
 .restart-dialog.is-closing::backdrop,
-.summary-reset-dialog.is-closing::backdrop,
 .reset-dialog.is-closing::backdrop,
 .message-delete-dialog.is-closing::backdrop {
   animation: dialog-backdrop-out 140ms ease-in forwards;
@@ -115,7 +109,6 @@ main[data-app] {
 }
 
 .restart-panel,
-.summary-reset-panel,
 .reset-panel,
 .message-delete-panel {
   background: var(--panel);
@@ -327,28 +320,24 @@ main[data-app] {
   .plans-dialog[open],
   .focuses-dialog[open],
   .restart-dialog[open],
-  .summary-reset-dialog[open],
   .reset-dialog[open],
   .message-delete-dialog[open],
   .tasks-dialog.is-closing,
   .plans-dialog.is-closing,
   .focuses-dialog.is-closing,
   .restart-dialog.is-closing,
-  .summary-reset-dialog.is-closing,
   .reset-dialog.is-closing,
   .message-delete-dialog.is-closing,
   .tasks-dialog::backdrop,
   .plans-dialog::backdrop,
   .focuses-dialog::backdrop,
   .restart-dialog::backdrop,
-  .summary-reset-dialog::backdrop,
   .reset-dialog::backdrop,
   .message-delete-dialog::backdrop,
   .tasks-dialog.is-closing::backdrop,
   .plans-dialog.is-closing::backdrop,
   .focuses-dialog.is-closing::backdrop,
   .restart-dialog.is-closing::backdrop,
-  .summary-reset-dialog.is-closing::backdrop,
   .reset-dialog.is-closing::backdrop,
   .message-delete-dialog.is-closing::backdrop {
     animation: none;

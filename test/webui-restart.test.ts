@@ -194,22 +194,24 @@ const flush = async () => {
   await Promise.resolve()
 }
 
-const createFixture = (idle = true) => {
+const createFixture = (
+  idle = true,
+  { includeResetWithSummaryConfirm = true }: { includeResetWithSummaryConfirm?: boolean } = {},
+) => {
   let idleState = idle
   const restartBtn = null
   const toolsToggleBtn = new FakeElement('Tools')
   const toolsMenu = new FakeElement()
   const toolsRestartBtn = new FakeElement('Restart')
-  const toolsResetWithSummaryBtn = new FakeElement('Summarize + Reset')
   const toolsResetBtn = new FakeElement('Reset')
   const restartDialog = new FakeElement()
   const restartCancelBtn = new FakeElement('Cancel restart')
   const restartConfirmBtn = new FakeElement('Confirm restart')
-  const summaryResetDialog = new FakeElement()
-  const summaryResetCancelBtn = new FakeElement('Cancel summarize reset')
-  const summaryResetConfirmBtn = new FakeElement('Confirm summarize reset')
   const resetDialog = new FakeElement()
   const resetCancelBtn = new FakeElement('Cancel reset')
+  const resetWithSummaryConfirmBtn = includeResetWithSummaryConfirm
+    ? new FakeElement('Confirm summarize reset')
+    : null
   const resetConfirmBtn = new FakeElement('Confirm reset')
   const statusText = new FakeElement()
   const statusDot = new FakeElement()
@@ -232,16 +234,13 @@ const createFixture = (idle = true) => {
     toolsToggleBtn,
     toolsMenu,
     toolsRestartBtn,
-    toolsResetWithSummaryBtn,
     toolsResetBtn,
     restartDialog,
     restartCancelBtn,
     restartConfirmBtn,
-    summaryResetDialog,
-    summaryResetCancelBtn,
-    summaryResetConfirmBtn,
     resetDialog,
     resetCancelBtn,
+    resetWithSummaryConfirmBtn,
     resetConfirmBtn,
     statusText,
     statusDot,
@@ -253,16 +252,13 @@ const createFixture = (idle = true) => {
     toolsToggleBtn,
     toolsMenu,
     toolsRestartBtn,
-    toolsResetWithSummaryBtn,
     toolsResetBtn,
     restartDialog,
     restartCancelBtn,
     restartConfirmBtn,
-    summaryResetDialog,
-    summaryResetCancelBtn,
-    summaryResetConfirmBtn,
     resetDialog,
     resetCancelBtn,
+    resetWithSummaryConfirmBtn,
     resetConfirmBtn,
     statusText,
     statusDot,
@@ -287,14 +283,12 @@ test('non-idle state disables tools actions and exposes reason via tooltip', () 
   const fixture = createFixture(false)
   try {
     expect(fixture.toolsRestartBtn.disabled).toBe(true)
-    expect(fixture.toolsResetWithSummaryBtn.disabled).toBe(true)
     expect(fixture.toolsResetBtn.disabled).toBe(true)
     expect(fixture.toolsToggleBtn.getAttribute('title')).toBe(NON_IDLE_UI_HINT)
     expect(fixture.toolsRestartBtn.getAttribute('title')).toBe(NON_IDLE_UI_HINT)
     expect(fixture.toolsResetBtn.getAttribute('title')).toBe(NON_IDLE_UI_HINT)
 
     fixture.toolsRestartBtn.dispatchEvent('click')
-    fixture.toolsResetWithSummaryBtn.dispatchEvent('click')
     fixture.toolsResetBtn.dispatchEvent('click')
 
     expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(0)
@@ -303,29 +297,33 @@ test('non-idle state disables tools actions and exposes reason via tooltip', () 
   }
 })
 
-test('restart, summarize-reset, and reset dialogs are isolated', () => {
+test('restart and reset dialogs are isolated', () => {
   const fixture = createFixture(true)
   try {
     fixture.toolsRestartBtn.dispatchEvent('click')
     expect(fixture.restartDialog.open).toBe(true)
-    expect(fixture.summaryResetDialog.open).toBe(false)
-    expect(fixture.resetDialog.open).toBe(false)
-
-    fixture.toolsResetWithSummaryBtn.dispatchEvent('click')
-    expect(fixture.summaryResetDialog.open).toBe(true)
-    expect(fixture.restartDialog.open).toBe(false)
     expect(fixture.resetDialog.open).toBe(false)
 
     fixture.toolsResetBtn.dispatchEvent('click')
     expect(fixture.resetDialog.open).toBe(true)
     expect(fixture.restartDialog.open).toBe(false)
-    expect(fixture.summaryResetDialog.open).toBe(false)
   } finally {
     fixture.dispose()
   }
 })
 
-test('restart, summarize-reset, and reset confirm actions call separate endpoints', async () => {
+test('reset dialog still opens when summarize-reset confirm is unavailable', () => {
+  const fixture = createFixture(true, { includeResetWithSummaryConfirm: false })
+  try {
+    fixture.toolsResetBtn.dispatchEvent('click')
+    expect(fixture.resetDialog.open).toBe(true)
+    expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(0)
+  } finally {
+    fixture.dispose()
+  }
+})
+
+test('restart and reset dialog confirm actions call separate endpoints', async () => {
   const calledUrls: string[] = []
   const runtimeIds = [
     'runtime-1',
@@ -363,8 +361,8 @@ test('restart, summarize-reset, and reset confirm actions call separate endpoint
     restartFixture.restartConfirmBtn.dispatchEvent('click')
     await flush()
 
-    summaryResetFixture.toolsResetWithSummaryBtn.dispatchEvent('click')
-    summaryResetFixture.summaryResetConfirmBtn.dispatchEvent('click')
+    summaryResetFixture.toolsResetBtn.dispatchEvent('click')
+    summaryResetFixture.resetWithSummaryConfirmBtn.dispatchEvent('click')
     await flush()
 
     resetFixture.toolsResetBtn.dispatchEvent('click')

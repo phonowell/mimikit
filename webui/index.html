@@ -107,16 +107,6 @@
                 </button>
                 <button
                   class="tools-menu-item tools-menu-item--danger"
-                  data-tools-reset-with-summary
-                  type="button"
-                  role="menuitem"
-                  title="Summarize + Reset"
-                  aria-label="Summarize + Reset"
-                >
-                  Summarize + Reset
-                </button>
-                <button
-                  class="tools-menu-item tools-menu-item--danger"
                   data-tools-reset
                   type="button"
                   role="menuitem"
@@ -315,46 +305,6 @@
       </dialog>
 
       <dialog
-        class="summary-reset-dialog"
-        data-summary-reset-dialog
-        id="summary-reset-dialog"
-        aria-labelledby="summary-reset-title"
-        aria-describedby="summary-reset-description"
-      >
-        <section class="summary-reset-panel">
-          <header class="summary-reset-header">
-            <h2 class="summary-reset-title" id="summary-reset-title">
-              Summarize and Reset Runtime?
-            </h2>
-          </header>
-          <p class="summary-reset-description" id="summary-reset-description">
-            A conversation summary will be generated before reset and restored as a
-            system message after restart.
-          </p>
-          <div
-            class="summary-reset-actions"
-            role="group"
-            aria-label="Summarize and reset"
-          >
-            <button
-              class="btn btn--md btn--dialog"
-              data-summary-reset-cancel
-              type="button"
-            >
-              Cancel
-            </button>
-            <button
-              class="btn btn--md btn--dialog btn--danger"
-              data-summary-reset-confirm
-              type="button"
-            >
-              Summarize and Reset
-            </button>
-          </div>
-        </section>
-      </dialog>
-
-      <dialog
         class="reset-dialog"
         data-reset-dialog
         id="reset-dialog"
@@ -366,11 +316,29 @@
             <h2 class="reset-title" id="reset-title">Reset Runtime?</h2>
           </header>
           <p class="reset-description" id="reset-description">
-            Reset clears the .mimikit state directory before restarting.
+            Choose one reset mode:
           </p>
-          <div class="reset-actions" role="group" aria-label="Reset">
+          <ul class="reset-options" aria-label="Reset modes">
+            <li class="reset-option-item">
+              <strong>Reset and Clear State:</strong> clears the <code>.mimikit</code> state
+              directory before restarting.
+            </li>
+            <li class="reset-option-item">
+              <strong>Summarize and Reset:</strong> generates a conversation summary before
+              reset and restores it as a system message after restart. This mode takes
+              longer.
+            </li>
+          </ul>
+          <div class="reset-actions" role="group" aria-label="Reset actions">
             <button class="btn btn--md btn--dialog" data-reset-cancel type="button">
               Cancel
+            </button>
+            <button
+              class="btn btn--md btn--dialog btn--danger"
+              data-reset-with-summary-confirm
+              type="button"
+            >
+              Summarize and Reset
             </button>
             <button
               class="btn btn--md btn--dialog btn--danger"
