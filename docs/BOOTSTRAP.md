@@ -90,7 +90,7 @@ curl -sS -N http://127.0.0.1:8787/api/events | head -n 2
 
 Expected first line contains `event: snapshot`.
 
-## Optional: Override Models
+## Optional: Override Models and Reasoning
 
 In `config.yaml`:
 
@@ -99,17 +99,25 @@ manager:
   provider:
     model: gpt-5.2-high
     modelReasoningEffort: high
+    # baseUrl: https://your-codex-provider.example.com/v1/codex
+    # apiKey: ${AICODING_API_KEY}
 worker:
   model: gpt-5.3-codex-high
+  modelReasoningEffort: high
 ```
 
 Env overrides:
 
 ```bash
+export MIMIKIT_MODEL=gpt-5.2-high
 export MIMIKIT_MANAGER_MODEL=gpt-5.2-high
-export MIMIKIT_MANAGER_REASONING_EFFORT=high
 export MIMIKIT_WORKER_MODEL=gpt-5.3-codex-high
+export MIMIKIT_REASONING_EFFORT=high
+export MIMIKIT_MANAGER_REASONING_EFFORT=high
+export MIMIKIT_WORKER_REASONING_EFFORT=high
 ```
+
+Precedence: role-specific env (`MIMIKIT_MANAGER_*` / `MIMIKIT_WORKER_*`) overrides global env.
 
 ## Failure Triage
 
