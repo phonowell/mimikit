@@ -1,4 +1,11 @@
 import { parseIsoMs } from '../shared/time.js'
+import {
+  formatInvalidActionArgsEmptyHint,
+  formatInvalidActionArgsWithIssuesHint,
+  formatInvalidIsoRangeFieldHint,
+  formatScheduledAtInvalidHint,
+  formatScheduledAtNotFutureHint,
+} from './action-feedback-hints.js'
 
 import type { ZodError } from 'zod'
 
@@ -26,11 +33,13 @@ export const invalidArgsIssue = (error: ZodError): ValidationIssue => ({
   error: INVALID_ACTION_ARGS,
   hint:
     error.issues.length === 0
-      ? '参数格式不符合要求。'
-      : `参数校验失败：${error.issues
-          .slice(0, 3)
-          .map((issue) => `${formatIssuePath(issue.path)}: ${issue.message}`)
-          .join('；')}`,
+      ? formatInvalidActionArgsEmptyHint()
+      : formatInvalidActionArgsWithIssuesHint(
+          error.issues
+            .slice(0, 3)
+            .map((issue) => `${formatIssuePath(issue.path)}: ${issue.message}`)
+            .join('；'),
+        ),
 })
 
 export const rejected = (hint: string): ValidationIssue[] => [
@@ -46,7 +55,7 @@ export const validateIsoRangeField = (
   return [
     {
       error: INVALID_ACTION_ARGS,
-      hint: `参数校验失败：${field} 必须是合法 ISO 8601 时间。`,
+      hint: formatInvalidIsoRangeFieldHint(field),
     },
   ]
 }
@@ -61,15 +70,13 @@ export const validateScheduledAtNotPast = (params: {
 
   const scheduledMs = parseIsoMs(trimmed)
   if (scheduledMs === undefined) {
-    return rejected(
-      `${action} 执行失败：scheduled_at 不是合法 ISO 8601 时间。`,
-    )
+    return rejected(formatScheduledAtInvalidHint(action))
   }
 
   const nowMs = parseIsoMs(scheduleNowIso ?? '') ?? Date.now()
   if (scheduledMs <= nowMs - SCHEDULED_AT_PAST_TOLERANCE_MS) {
     return rejected(
-      `${action} 执行失败：scheduled_at 必须晚于当前时间（now=${new Date(nowMs).toISOString()}）。`,
+      formatScheduledAtNotFutureHint(action, new Date(nowMs).toISOString()),
     )
   }
 

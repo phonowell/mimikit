@@ -44,3 +44,6 @@
 5. `entries` 只保留长期稳定、可验证、可执行的信息；如为“更新型”信息，需在 `content` 明确新旧关系。
 6. 禁止编造事实；证据不足时必须 `noop`。
 7. 仅当 `entries` 非空时允许顶层 `mode="patch"`；否则必须为 `noop`。
+
+# Input(JSON)
+{{ input_json }}

@@ -1,5 +1,11 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
+import {
+  formatWorkerTaskPromptExternalizedIntro,
+  formatWorkerTaskPromptExternalizedPathLine,
+  formatWorkerTaskPromptExternalizedPreviewHeader,
+  formatWorkerTaskPromptTruncatedNote,
+} from './worker-task-prompt-hints.js'
 
 export const WORKER_TASK_PROMPT_MAX_BYTES = 8_192
 export const WORKER_TASK_PROMPT_INLINE_MAX_BYTES = 640
@@ -11,8 +17,11 @@ const WORKER_SECTION_ENVIRONMENT_TEST_RE =
 const WORKER_SECTION_ENVIRONMENT_GLOBAL_RE =
   /<M:environment>[\s\S]*?<\/M:environment>/gi
 const WORKER_BLANK_LINE_RUN_RE = /\n{3,}/g
-const WORKER_PROMPT_TRUNCATED_NOTE =
-  '[task prompt truncated for worker context budget; read the full prompt from task file/history if needed.]'
+const WORKER_PROMPT_TRUNCATED_NOTE = formatWorkerTaskPromptTruncatedNote()
+const WORKER_PROMPT_EXTERNALIZED_INTRO =
+  formatWorkerTaskPromptExternalizedIntro()
+const WORKER_PROMPT_EXTERNALIZED_PREVIEW_HEADER =
+  formatWorkerTaskPromptExternalizedPreviewHeader()
 
 const clipUtf8ByBytes = (value: string, maxBytes: number): string => {
   if (maxBytes <= 0) return ''
@@ -73,9 +82,9 @@ const externalizeWorkerTaskPromptIfNeeded = async (params: {
   await writeFile(path, params.taskPrompt, 'utf8')
   const preview = toTaskPromptPreview(params.taskPrompt)
   return [
-    '任务说明已按需外置以减少每步上下文体积。',
-    `full_prompt_path: ${path}`,
-    '先读取该文件再执行；以下仅保留摘要预览：',
+    WORKER_PROMPT_EXTERNALIZED_INTRO,
+    formatWorkerTaskPromptExternalizedPathLine(path),
+    WORKER_PROMPT_EXTERNALIZED_PREVIEW_HEADER,
     preview,
   ]
     .filter((line) => line.length > 0)

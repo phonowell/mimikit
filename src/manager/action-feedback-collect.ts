@@ -11,17 +11,22 @@ import {
   REGISTERED_MANAGER_ACTIONS,
   validateRegisteredManagerAction,
 } from './action-registrations.js'
+import {
+  formatActionInCodeBlockHint,
+  formatInvalidActionSyntaxHint,
+  formatUnregisteredActionHint,
+} from './action-feedback-hints.js'
 import type { FeedbackContext } from './action-validation.js'
 
 import type { Parsed } from '../actions/model/spec.js'
 import type { ManagerActionFeedback } from '../types/index.js'
 
-const UNREGISTERED_ACTION_HINT = `Only registered actions are allowed: ${[...REGISTERED_MANAGER_ACTIONS].map((name) => `M:${name}`).join(', ')}.`
+const UNREGISTERED_ACTION_HINT = formatUnregisteredActionHint(
+  [...REGISTERED_MANAGER_ACTIONS].map((name) => `M:${name}`),
+)
 const INVALID_ACTION_SYNTAX_ERROR = 'invalid_action_syntax'
-const INVALID_ACTION_SYNTAX_HINT =
-  'Detected M:action markup but no executable action was parsed. Put valid XML actions at the end of the reply (not in code blocks), and make sure tags/quotes are closed correctly.'
-const ACTION_IN_CODE_BLOCK_HINT =
-  'Detected M:action inside a code block, so it cannot be executed. Place actions at the end of the reply without code fences.'
+const INVALID_ACTION_SYNTAX_HINT = formatInvalidActionSyntaxHint()
+const ACTION_IN_CODE_BLOCK_HINT = formatActionInCodeBlockHint()
 
 const escapeAttr = (value: string): string =>
   value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')

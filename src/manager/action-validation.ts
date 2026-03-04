@@ -1,5 +1,15 @@
 import { queryHistorySchema } from '../history/query.js'
 import {
+  formatAskUserChoiceInvalidOptionsHint,
+  formatAskUserChoiceQqUnsupportedHint,
+  formatCancelTaskAlreadyCanceledHint,
+  formatCancelTaskNotCancelableHint,
+  formatCancelTaskNotFoundHint,
+  formatCompressContextUnavailableHint,
+  formatPlanNotFoundHint,
+  formatUpdatePlanDoneForbiddenHint,
+} from './action-feedback-hints.js'
+import {
   invalidArgsIssue,
   rejected,
   validateIsoRangeField,
@@ -80,12 +90,10 @@ export const validateCancelTask = (
   if (!parsed.success) return [invalidArgsIssue(parsed.error)]
   const { id } = parsed.data
   const taskStatus = context.taskStatusById?.get(id)
-  if (!taskStatus)
-    return rejected('cancel_task 执行失败：未找到可取消的任务 ID。')
+  if (!taskStatus) return rejected(formatCancelTaskNotFoundHint())
   if (taskStatus === 'pending' || taskStatus === 'running') return []
-  if (taskStatus === 'canceled')
-    return rejected('cancel_task 执行失败：任务已是 canceled 状态。')
-  return rejected('cancel_task 执行失败：任务已完成，无法取消。')
+  if (taskStatus === 'canceled') return rejected(formatCancelTaskAlreadyCanceledHint())
+  return rejected(formatCancelTaskNotCancelableHint())
 }
 export const validateQueryHistory = (item: Parsed): ValidationIssue[] =>
   validateRangeQueryWithSchema(item, queryHistorySchema)
@@ -98,23 +106,19 @@ export const validateCompressContext = (
   const issues = validateWithSchema(item, compressContextSchema)
   if (issues.length > 0) return issues
   if (context.hasCompressibleContext) return []
-  return rejected('compress_context 执行失败：当前无可压缩上下文。')
+  return rejected(formatCompressContextUnavailableHint())
 }
 export const validateAskUserChoice = (
   item: Parsed,
   context: FeedbackContext,
 ): ValidationIssue[] => {
   if (context.allowAskUserChoice === false) {
-    return rejected(
-      'ask_user_choice 执行失败：当前批次来源包含 QQ 单聊输入，QQ 链路不支持选项回传。',
-    )
+    return rejected(formatAskUserChoiceQqUnsupportedHint())
   }
   const issues = validateWithSchema(item, askUserChoiceSchema)
   if (issues.length > 0) return issues
   if (parseAskUserChoiceAttrs(item.attrs)) return []
-  return rejected(
-    'ask_user_choice 执行失败：option_{n}_id/label/reason 参数非法，或 default_option_id 不在 options 中。',
-  )
+  return rejected(formatAskUserChoiceInvalidOptionsHint())
 }
 export const validatePlanById = (
   action: 'update_plan' | 'delete_plan',
@@ -125,7 +129,7 @@ export const validatePlanById = (
   const parsed = schema.safeParse(item.attrs)
   if (!parsed.success) return [invalidArgsIssue(parsed.error)]
   const status = context.planStatusById?.get(parsed.data.id)
-  if (!status) return rejected(`${action} 执行失败：未找到 plan ID。`)
+  if (!status) return rejected(formatPlanNotFoundHint(action))
   if (action === 'update_plan' && status === 'done') {
     const keys = new Set(Object.keys(item.attrs))
     const isLastTaskPatch =
@@ -134,7 +138,7 @@ export const validatePlanById = (
       typeof item.attrs.last_task_id === 'string' &&
       item.attrs.last_task_id.trim().length > 0
     if (isLastTaskPatch) return []
-    return rejected('update_plan 执行失败：done plan 不可修改。')
+    return rejected(formatUpdatePlanDoneForbiddenHint())
   }
   return []
 }

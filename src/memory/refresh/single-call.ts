@@ -1,7 +1,8 @@
 import { z } from 'zod'
 
 import { runManagerLlmCall } from '../../manager/manager-llm-call.js'
-import { loadPromptFile } from '../../prompts/prompt-loader.js'
+import { renderPromptTemplate } from '../../prompts/format.js'
+import { loadPromptSource } from '../../prompts/prompt-loader.js'
 
 import { parseStageJson } from './stage-json.js'
 
@@ -40,12 +41,15 @@ const singleCallOutputSchema = z
   .strict()
 
 const buildPrompt = async (payload: MemoryRefreshPayload): Promise<string> => {
-  const template = (
-    await loadPromptFile('manager', 'memory-refresh-single-call')
-  ).trim()
+  const source = await loadPromptSource('manager/memory-refresh-single-call.md')
+  const template = source.template.trim()
   if (!template)
     throw new Error('missing_prompt_template:manager/memory-refresh-single-call.md')
-  return `${template}\n\n# Input(JSON)\n${JSON.stringify(payload)}`
+  return renderPromptTemplate(
+    template,
+    { input_json: JSON.stringify(payload) },
+    source.path,
+  )
 }
 
 const toStageSummary = (
