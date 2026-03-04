@@ -6,7 +6,7 @@ const { fetchWithTimeoutMock, delayMock } = vi.hoisted(() => ({
 }))
 
 const NON_IDLE_UI_HINT =
-  'Restart and reset are available only when manager and workers are idle.'
+  'Restart tools are available only when manager and workers are idle.'
 
 vi.mock('../webui/fetch-with-timeout.js', () => ({
   fetchWithTimeout: fetchWithTimeoutMock,

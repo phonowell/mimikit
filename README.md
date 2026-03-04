@@ -38,10 +38,27 @@ pnpm i
 
 ### 2) Configure API key
 
-Mimikit reads OpenAI credentials from `OPENAI_API_KEY` (or `~/.codex/auth.json`), see [`src/providers/openai-settings.ts`](./src/providers/openai-settings.ts).
+Mimikit reads provider settings from `~/.codex/config.toml` and environment variables (see [`src/providers/openai-settings.ts`](./src/providers/openai-settings.ts)).
+API key resolution order:
+
+1. Active provider in `~/.codex/config.toml`: `api_key`
+2. Active provider in `~/.codex/config.toml`: `env_key` / `api_key_env` (read from that env var)
+3. `OPENAI_API_KEY`
+4. `~/.codex/auth.json` (`OPENAI_API_KEY`)
 
 ```bash
 export OPENAI_API_KEY=your_key
+```
+
+If you use a custom Codex-compatible provider, configure `base_url` and `env_key` in the active provider:
+
+```toml
+model_provider = "aicoding"
+
+[model_providers.aicoding]
+base_url = "http://api-ai-coding.bilibili.co/api/v1/codex"
+wire_api = "responses"
+env_key = "AICODING_API_KEY"
 ```
 
 ### 3) Start WebUI + API

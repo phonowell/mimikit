@@ -10,6 +10,7 @@
 - Prompt 组装：`buildManagerPrompt`
 - 模板：`prompts/manager/system.md`（`nunjucks` 渲染）
 - Provider：`runWithProvider({ provider: 'openai-chat', role: 'manager' })`
+- Provider 配置来源：`loadCodexSettings()`，优先读取 `~/.codex/config.toml` 的 active provider（`base_url`、`api_key`、`env_key`/`api_key_env`），缺省回退 `OPENAI_API_KEY` 与 `~/.codex/auth.json`
 - 会话连续性：依赖本地 `history/tasks/plans/managerFocusCompressedContexts`
 - 输出：`{ output, elapsedMs, usage? }`
 

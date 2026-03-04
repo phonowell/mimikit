@@ -18,6 +18,14 @@ export type CodexSettings = {
   requiresOpenAiAuth?: boolean
 }
 
+type ProviderSettings = Pick<
+  CodexSettings,
+  'model' | 'baseUrl' | 'wireApi' | 'requiresOpenAiAuth'
+> & {
+  apiKey?: string
+  apiKeyEnv?: string
+}
+
 export const HARDCODED_MODEL_REASONING_EFFORT: ModelReasoningEffort = 'high'
 
 const readNonEmptyString = (value: unknown): string | undefined => {
@@ -75,10 +83,7 @@ const readCodexConfig = async (): Promise<Record<string, unknown>> => {
 
 const resolveProviderSettings = (
   config: Record<string, unknown>,
-): Pick<
-  CodexSettings,
-  'model' | 'baseUrl' | 'wireApi' | 'requiresOpenAiAuth'
-> => {
+): ProviderSettings => {
   const model = readNonEmptyString(config.model)
   const providerName = readNonEmptyString(config.model_provider)
   const providerMap = valueRecord(config.model_providers)
@@ -88,11 +93,22 @@ const resolveProviderSettings = (
       : undefined
   const baseUrl = readNonEmptyString(providerConfig?.base_url)
   const wireApi = readNonEmptyString(providerConfig?.wire_api)
+  const apiKey = readNonEmptyString(providerConfig?.api_key)
+  const apiKeyEnv =
+    readNonEmptyString(providerConfig?.env_key) ??
+    readNonEmptyString(providerConfig?.api_key_env)
   const requiresOpenAiAuth = readBooleanFlag(
     providerConfig?.requires_openai_auth,
   )
 
-  return stripUndefined({ model, baseUrl, wireApi, requiresOpenAiAuth })
+  return stripUndefined({
+    model,
+    baseUrl,
+    wireApi,
+    apiKey,
+    apiKeyEnv,
+    requiresOpenAiAuth,
+  })
 }
 
 const readAuthApiKey = async (): Promise<string | undefined> => {
@@ -103,7 +119,13 @@ const readAuthApiKey = async (): Promise<string | undefined> => {
 export const loadCodexSettings = async (): Promise<CodexSettings> => {
   const config = await readCodexConfig()
   const cs = resolveProviderSettings(config)
-  const apiKey = envString('OPENAI_API_KEY') ?? (await readAuthApiKey())
+  const apiKeyFromProviderEnv =
+    cs.apiKeyEnv !== undefined ? envString(cs.apiKeyEnv) : undefined
+  const apiKey =
+    cs.apiKey ??
+    apiKeyFromProviderEnv ??
+    envString('OPENAI_API_KEY') ??
+    (await readAuthApiKey())
   return stripUndefined({
     apiKey,
     model: envString('OPENAI_MODEL') ?? cs.model,
