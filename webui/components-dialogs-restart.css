@@ -52,3 +52,7 @@
 .reset-option-item {
   margin: 0;
 }
+
+.reset-actions .btn--dialog {
+  white-space: nowrap;
+}

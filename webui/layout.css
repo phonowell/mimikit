@@ -38,6 +38,10 @@ main[data-app] {
   z-index: 10;
 }
 
+.reset-dialog {
+  width: min(520px, 92vw);
+}
+
 .tasks-dialog[open],
 .plans-dialog[open],
 .focuses-dialog[open],
