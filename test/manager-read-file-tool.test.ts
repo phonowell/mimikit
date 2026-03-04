@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process'
-import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, mkdir, rm, symlink, writeFile } from 'node:fs/promises'
 import { platform, tmpdir } from 'node:os'
 import { join, relative } from 'node:path'
 import { promisify } from 'node:util'
@@ -247,6 +247,42 @@ test('runReadFileTool rejects fifo paths on unix-like systems', async () => {
     workDir,
     request: {
       path: 'named.pipe',
+      fromLine: 1,
+      maxLines: 100,
+      maxChars: 100,
+    },
+  })
+  expect(result.status).toBe('error')
+  expect(result.error).toContain('not a regular file')
+})
+
+test('runReadFileTool follows symlink target when it points to a regular file', async () => {
+  if (platform() === 'win32') return
+  const workDir = await createTempRepo()
+  await writeFile(join(workDir, 'real.txt'), 'from-real', 'utf8')
+  await symlink(join(workDir, 'real.txt'), join(workDir, 'link.txt'))
+  const result = await runReadFileTool({
+    workDir,
+    request: {
+      path: 'link.txt',
+      fromLine: 1,
+      maxLines: 100,
+      maxChars: 100,
+    },
+  })
+  expect(result.status).toBe('ok')
+  expect(result.content).toBe('from-real')
+})
+
+test('runReadFileTool rejects symlink target when it is not a regular file', async () => {
+  if (platform() === 'win32') return
+  const workDir = await createTempRepo()
+  await mkdir(join(workDir, 'dir-target'), { recursive: true })
+  await symlink(join(workDir, 'dir-target'), join(workDir, 'dir-link'))
+  const result = await runReadFileTool({
+    workDir,
+    request: {
+      path: 'dir-link',
       fromLine: 1,
       maxLines: 100,
       maxChars: 100,

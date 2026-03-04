@@ -71,7 +71,7 @@
 常见错误：
 
 - `read_file failed: file does not exist`
-- `read_file failed: path is not a regular file`
+- `read_file failed: path is not a regular file`（含目录、设备文件、socket、pipe，或 symlink 目标非普通文件）
 - `read_file failed: permission denied`
 - `read_file failed: file is too large (...)`
 - `read_file failed: file is not valid UTF-8 text`
