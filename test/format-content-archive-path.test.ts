@@ -56,3 +56,36 @@ test('formatResultsYaml falls back to task archive_path when result archive_path
   expect(parsed.tasks[0]?.archive_path).toBe('/tmp/task.md')
   expect(parsed.tasks[0]?.result?.archive_path).toBe('/tmp/task.md')
 })
+
+test('formatTasksYaml rewrites archive_path to work_dir-relative path when inside work_dir', () => {
+  const workDir = '/Users/mimiko/Projects/mimikit'
+  const archivePath =
+    '/Users/mimiko/Projects/mimikit/.mimikit/tasks/2026-03-04/task-1.md'
+  const task = baseTask({ archivePath })
+  const result = baseResult({ archivePath })
+
+  const yaml = formatTasksYaml([task], [result], workDir)
+  const parsed = parseYaml(yaml) as {
+    tasks: Array<{ archive_path?: string; result?: { archive_path?: string } }>
+  }
+
+  expect(parsed.tasks[0]?.archive_path).toBe('.mimikit/tasks/2026-03-04/task-1.md')
+  expect(parsed.tasks[0]?.result?.archive_path).toBe(
+    '.mimikit/tasks/2026-03-04/task-1.md',
+  )
+})
+
+test('formatResultsYaml keeps archive_path as-is when outside work_dir', () => {
+  const workDir = '/Users/mimiko/Projects/mimikit'
+  const archivePath = '/Users/mimiko/Projects/other/.mimikit/tasks/task-1.md'
+  const task = baseTask({ archivePath })
+  const result = baseResult()
+
+  const yaml = formatResultsYaml([task], [result], workDir)
+  const parsed = parseYaml(yaml) as {
+    tasks: Array<{ archive_path?: string; result?: { archive_path?: string } }>
+  }
+
+  expect(parsed.tasks[0]?.archive_path).toBe(archivePath)
+  expect(parsed.tasks[0]?.result?.archive_path).toBe(archivePath)
+})

@@ -114,11 +114,11 @@ export const buildManagerPrompt = async (params: {
     ),
     inputs: sectionYaml(formatInputs(params.inputs), limits.inputsMaxBytes),
     batch_results: sectionYaml(
-      formatResultsYaml(params.tasks, pendingResults),
+      formatResultsYaml(params.tasks, pendingResults, params.workDir),
       limits.batchResultsMaxBytes,
     ),
     tasks: sectionYaml(
-      formatTasksYaml(params.tasks, resultsForTasks),
+      formatTasksYaml(params.tasks, resultsForTasks, params.workDir),
       limits.tasksMaxBytes,
     ),
     plans: sectionYaml(formatPlansYaml(params.plans ?? []), limits.plansMaxBytes),

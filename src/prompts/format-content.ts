@@ -1,3 +1,5 @@
+import { isAbsolute, relative, resolve } from 'node:path'
+
 import { GLOBAL_FOCUS_ID } from '../focus/index.js'
 import { truncateText } from '../shared/text.js'
 
@@ -24,6 +26,21 @@ const PLAN_PROMPT_MAX_CHARS = 220
 export const selectTasksForPrompt = (tasks: Task[]): Task[] =>
   sortTasksByChangedAt(tasks)
 
+const toDisplayPath = (path: string, workDir?: string): string => {
+  const trimmedPath = path.trim()
+  if (!workDir) return trimmedPath
+  const trimmedWorkDir = workDir.trim()
+  if (!trimmedWorkDir) return trimmedPath
+  const resolvedWorkDir = resolve(trimmedWorkDir)
+  const resolvedPath = isAbsolute(trimmedPath)
+    ? resolve(trimmedPath)
+    : resolve(resolvedWorkDir, trimmedPath)
+  const rel = relative(resolvedWorkDir, resolvedPath)
+  if (!rel) return '.'
+  if (rel.startsWith('..') || isAbsolute(rel)) return trimmedPath
+  return rel
+}
+
 const toCancelMeta = (
   cancel?: TaskCancelMeta,
 ): Record<string, unknown> | undefined =>
@@ -37,11 +54,12 @@ const toCancelMeta = (
 const pickArchivePath = (
   resultArchivePath?: string,
   taskArchivePath?: string,
+  workDir?: string,
 ): string | undefined => {
   const resultPath = resultArchivePath?.trim()
-  if (resultPath) return resultPath
+  if (resultPath) return toDisplayPath(resultPath, workDir)
   const taskPath = taskArchivePath?.trim()
-  if (taskPath) return taskPath
+  if (taskPath) return toDisplayPath(taskPath, workDir)
   return undefined
 }
 
@@ -49,8 +67,13 @@ const toResultPayload = (
   result: TaskResult,
   cancel?: TaskCancelMeta,
   taskArchivePath?: string,
+  workDir?: string,
 ): Record<string, unknown> => {
-  const archivePath = pickArchivePath(result.archivePath, taskArchivePath)
+  const archivePath = pickArchivePath(
+    result.archivePath,
+    taskArchivePath,
+    workDir,
+  )
   return {
     status: result.status,
     ok: result.ok,
@@ -70,8 +93,13 @@ const toResultPayload = (
 const formatTaskEntry = (
   task: Task,
   result: TaskResult | undefined,
+  workDir?: string,
 ): Record<string, unknown> => {
-  const archivePath = pickArchivePath(result?.archivePath, task.archivePath)
+  const archivePath = pickArchivePath(
+    result?.archivePath,
+    task.archivePath,
+    workDir,
+  )
   return {
     ...(archivePath ? { archive_path: archivePath } : {}),
     id: task.id,
@@ -92,6 +120,7 @@ const formatTaskEntry = (
             result,
             result.cancel ?? task.cancel,
             task.archivePath,
+            workDir,
           ),
         }
       : {}),
@@ -113,6 +142,7 @@ const buildFallbackTask = (result: TaskResult): Task => ({
 export const formatTasksYaml = (
   tasks: Task[],
   results: TaskResult[],
+  workDir?: string,
 ): string => {
   if (tasks.length === 0 && results.length === 0) return ''
 
@@ -121,10 +151,10 @@ export const formatTasksYaml = (
   const entries =
     orderedTasks.length === 0 && results.length > 0
       ? results.map((result) =>
-          formatTaskEntry(buildFallbackTask(result), result),
+          formatTaskEntry(buildFallbackTask(result), result, workDir),
         )
       : orderedTasks.map((task) =>
-          formatTaskEntry(task, resultById.get(task.id)),
+          formatTaskEntry(task, resultById.get(task.id), workDir),
         )
 
   return entries.length === 0
@@ -135,6 +165,7 @@ export const formatTasksYaml = (
 export const formatResultsYaml = (
   tasks: Task[],
   results: TaskResult[],
+  workDir?: string,
 ): string => {
   if (results.length === 0) return ''
 
@@ -157,7 +188,11 @@ export const formatResultsYaml = (
     )
     .map((result) => {
       const task = taskById.get(result.taskId)
-      const archivePath = pickArchivePath(result.archivePath, task?.archivePath)
+      const archivePath = pickArchivePath(
+        result.archivePath,
+        task?.archivePath,
+        workDir,
+      )
       return {
         id: result.taskId,
         title: task?.title.trim() ?? result.title?.trim() ?? result.taskId,
@@ -170,6 +205,7 @@ export const formatResultsYaml = (
           result,
           result.cancel ?? task?.cancel,
           task?.archivePath,
+          workDir,
         ),
       }
     })
