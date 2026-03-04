@@ -34,44 +34,69 @@ const toCancelMeta = (
       }
     : undefined
 
+const pickArchivePath = (
+  resultArchivePath?: string,
+  taskArchivePath?: string,
+): string | undefined => {
+  const resultPath = resultArchivePath?.trim()
+  if (resultPath) return resultPath
+  const taskPath = taskArchivePath?.trim()
+  if (taskPath) return taskPath
+  return undefined
+}
+
 const toResultPayload = (
   result: TaskResult,
   cancel?: TaskCancelMeta,
-): Record<string, unknown> => ({
-  status: result.status,
-  ok: result.ok,
-  completed_at: result.completedAt,
-  duration_ms: result.durationMs,
-  output: truncateText(result.output, TASK_OUTPUT_MAX_CHARS, {
-    normalizeWhitespace: true,
-  }),
-  ...(result.status === 'canceled' && cancel
-    ? { cancel: toCancelMeta(cancel) }
-    : {}),
-  ...(result.archivePath ? { archive_path: result.archivePath } : {}),
-  usage: normalizeYamlUsage(result.usage),
-})
+  taskArchivePath?: string,
+): Record<string, unknown> => {
+  const archivePath = pickArchivePath(result.archivePath, taskArchivePath)
+  return {
+    status: result.status,
+    ok: result.ok,
+    completed_at: result.completedAt,
+    duration_ms: result.durationMs,
+    output: truncateText(result.output, TASK_OUTPUT_MAX_CHARS, {
+      normalizeWhitespace: true,
+    }),
+    ...(result.status === 'canceled' && cancel
+      ? { cancel: toCancelMeta(cancel) }
+      : {}),
+    ...(archivePath ? { archive_path: archivePath } : {}),
+    usage: normalizeYamlUsage(result.usage),
+  }
+}
 
 const formatTaskEntry = (
   task: Task,
   result: TaskResult | undefined,
-): Record<string, unknown> => ({
-  id: task.id,
-  status: task.status,
-  title: task.title.trim() || task.id,
-  changed_at: resolveTaskChangedAt(task),
-  prompt: truncateText(task.prompt, TASK_PROMPT_MAX_CHARS, {
-    normalizeWhitespace: true,
-  }),
-  ...(task.cron ? { cron: task.cron } : {}),
-  ...(task.scheduledAt ? { scheduled_at: task.scheduledAt } : {}),
-  ...(task.status === 'canceled' && task.cancel
-    ? { cancel: toCancelMeta(task.cancel) }
-    : {}),
-  ...(result
-    ? { result: toResultPayload(result, result.cancel ?? task.cancel) }
-    : {}),
-})
+): Record<string, unknown> => {
+  const archivePath = pickArchivePath(result?.archivePath, task.archivePath)
+  return {
+    ...(archivePath ? { archive_path: archivePath } : {}),
+    id: task.id,
+    status: task.status,
+    title: task.title.trim() || task.id,
+    changed_at: resolveTaskChangedAt(task),
+    prompt: truncateText(task.prompt, TASK_PROMPT_MAX_CHARS, {
+      normalizeWhitespace: true,
+    }),
+    ...(task.cron ? { cron: task.cron } : {}),
+    ...(task.scheduledAt ? { scheduled_at: task.scheduledAt } : {}),
+    ...(task.status === 'canceled' && task.cancel
+      ? { cancel: toCancelMeta(task.cancel) }
+      : {}),
+    ...(result
+      ? {
+          result: toResultPayload(
+            result,
+            result.cancel ?? task.cancel,
+            task.archivePath,
+          ),
+        }
+      : {}),
+  }
+}
 
 const buildFallbackTask = (result: TaskResult): Task => ({
   id: result.taskId,
@@ -132,6 +157,7 @@ export const formatResultsYaml = (
     )
     .map((result) => {
       const task = taskById.get(result.taskId)
+      const archivePath = pickArchivePath(result.archivePath, task?.archivePath)
       return {
         id: result.taskId,
         title: task?.title.trim() ?? result.title?.trim() ?? result.taskId,
@@ -139,7 +165,12 @@ export const formatResultsYaml = (
           normalizeWhitespace: true,
         }),
         changed_at: result.completedAt,
-        result: toResultPayload(result, result.cancel ?? task?.cancel),
+        ...(archivePath ? { archive_path: archivePath } : {}),
+        result: toResultPayload(
+          result,
+          result.cancel ?? task?.cancel,
+          task?.archivePath,
+        ),
       }
     })
 
