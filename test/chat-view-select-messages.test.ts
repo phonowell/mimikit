@@ -51,7 +51,7 @@ test('selectChatMessages keeps delta continuity when inflight input arrives mid-
   })
 })
 
-test('selectChatMessages normalizes system text to canonical system bubble format', () => {
+test('selectChatMessages keeps system text body without adding a label prefix', () => {
   const selected = selectChatMessages({
     history: [
       {
@@ -74,7 +74,7 @@ test('selectChatMessages normalizes system text to canonical system bubble forma
         id: 'sys-1',
         role: 'system',
         visibility: 'user',
-        text: 'System: Session started.',
+        text: 'Session started.',
         createdAt: '2026-03-02T08:00:00.000Z',
         focusId: 'focus-global',
       },
@@ -82,7 +82,7 @@ test('selectChatMessages normalizes system text to canonical system bubble forma
   })
 })
 
-test('selectChatMessages avoids double system prefix on system text', () => {
+test('selectChatMessages preserves existing system text without rewriting it', () => {
   const selected = selectChatMessages({
     history: [
       {

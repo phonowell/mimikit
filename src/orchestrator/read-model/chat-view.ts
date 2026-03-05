@@ -7,18 +7,11 @@ export type ChatMessage = HistoryMessage
 
 export type ChatMessagesMode = 'full' | 'delta' | 'reset'
 
-const SYSTEM_BUBBLE_PREFIX = 'System:'
-
-const formatSystemBubbleText = (text: string): string => {
-  const normalized = text.trim()
-  if (!normalized) return ''
-  const withoutPrefix = normalized.replace(/^system:\s*/i, '').trim()
-  if (!withoutPrefix) return ''
-  return `${SYSTEM_BUBBLE_PREFIX} ${withoutPrefix}`
+const toUserVisibleSystemText = (text: string): string => {
+  const visibleText = parseActions(text).text
+  if (!visibleText.trim()) return ''
+  return visibleText
 }
-
-const toUserVisibleSystemText = (text: string): string =>
-  formatSystemBubbleText(parseActions(text).text)
 
 const toInflightChatMessage = (input: UserInput): ChatMessage => {
   if (input.role === 'system') {
