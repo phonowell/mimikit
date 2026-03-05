@@ -1,3 +1,8 @@
+import {
+  buildArchiveViewerUrlFromSource,
+  isArchiveMarkdownPath,
+} from './archive-viewer-url.js'
+
 const STATE_FILE_PREFIX = '/state-files/'
 const STATE_ROOT_PREFIX = '.mimikit/'
 const STATE_ROOT_SEGMENT = '/.mimikit/'
@@ -71,7 +76,12 @@ export const toArtifactUrl = (value) => {
   const raw = value?.trim()
   if (!raw) return null
   if (raw.startsWith('#')) return null
-  if (raw.startsWith(STATE_FILE_PREFIX)) return null
+  if (raw.startsWith(STATE_FILE_PREFIX)) {
+    if (isArchiveMarkdownPath(raw)) 
+      return buildArchiveViewerUrlFromSource(raw)
+    
+    return null
+  }
   if (hasScheme(raw) && !raw.startsWith('file:') && !isWindowsDrivePath(raw))
     return null
   let path = ''
@@ -94,7 +104,11 @@ export const toArtifactUrl = (value) => {
   const normalizedState = normalizeRelativePath(stateRelative)
   if (!normalizedState) return null
   const encodedState = encodeRelativePath(normalizedState)
-  return `${STATE_FILE_PREFIX}${encodedState}${suffix}`
+  const artifactUrl = `${STATE_FILE_PREFIX}${encodedState}${suffix}`
+  if (isArchiveMarkdownPath(normalizedState)) 
+    return buildArchiveViewerUrlFromSource(artifactUrl)
+  
+  return artifactUrl
 }
 
 export const linkifyInlineCode = (fragment) => {

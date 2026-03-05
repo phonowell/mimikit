@@ -2,12 +2,12 @@ import { expect, test } from 'vitest'
 
 import { toArtifactUrl } from '../webui/artifact-url.js'
 
-test('toArtifactUrl maps task archive path to state files URL', () => {
+test('toArtifactUrl maps task archive path to archive viewer URL', () => {
   const href = toArtifactUrl(
     '/Users/mimiko/Projects/mimikit/.mimikit/tasks/2026-03-04/task-571afad1189d4c23ab43c5485f2f9827_brew-doctor-1.md',
   )
   expect(href).toBe(
-    '/state-files/tasks/2026-03-04/task-571afad1189d4c23ab43c5485f2f9827_brew-doctor-1.md',
+    '/archive-viewer.html?src=%2Fstate-files%2Ftasks%2F2026-03-04%2Ftask-571afad1189d4c23ab43c5485f2f9827_brew-doctor-1.md',
   )
 })
 
@@ -23,12 +23,12 @@ test('toArtifactUrl maps generated relative path to state files URL', () => {
   expect(href).toBe('/state-files/generated/reports/health.json')
 })
 
-test('toArtifactUrl maps tasks relative path to state files URL', () => {
+test('toArtifactUrl maps tasks relative path to archive viewer URL', () => {
   const href = toArtifactUrl(
     'tasks/2026-03-04/task-dcfbbc3550fa44a09d137323bf644eca_task.md',
   )
   expect(href).toBe(
-    '/state-files/tasks/2026-03-04/task-dcfbbc3550fa44a09d137323bf644eca_task.md',
+    '/archive-viewer.html?src=%2Fstate-files%2Ftasks%2F2026-03-04%2Ftask-dcfbbc3550fa44a09d137323bf644eca_task.md',
   )
 })
 

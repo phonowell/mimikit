@@ -1,4 +1,5 @@
 import { UI_TEXT } from './system-text.js'
+import { buildTaskArchiveViewerUrl } from './archive-viewer-url.js'
 
 const resolveActionsElements = (actions) => {
   if (!(actions instanceof Element)) return null
@@ -106,7 +107,7 @@ export const bindTaskInteractions = (tasksList) => {
     if (!openable) return
     event.preventDefault()
     const taskId = link.getAttribute('data-task-id') || ''
-    const archiveUrl = `/api/tasks/${encodeURIComponent(taskId)}/archive`
+    const archiveUrl = buildTaskArchiveViewerUrl(taskId)
     const opened = window.open(archiveUrl, '_blank', 'noopener,noreferrer')
     if (!opened) console.warn('[webui] open task archive failed', 'popup blocked')
   }

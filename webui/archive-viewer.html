@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Archive Viewer</title>
+    <link rel="stylesheet" href="base.css" />
+    <link rel="stylesheet" href="components-messages-bubble.css" />
+    <link rel="stylesheet" href="components-markdown.css" />
+    <link rel="stylesheet" href="archive-viewer.css" />
+  </head>
+  <body>
+    <main class="archive-viewer" data-viewer>
+      <header class="archive-header">
+        <h1 class="archive-title">Task Archive</h1>
+        <p class="archive-meta" data-meta></p>
+        <a class="archive-source" data-source target="_blank" rel="noopener noreferrer" hidden
+          >Open raw markdown</a
+        >
+      </header>
+      <section class="archive-main scrollable">
+        <p class="archive-state" data-state>Loading...</p>
+        <div class="message agent" data-message hidden>
+          <article>
+            <div class="content markdown" data-content></div>
+          </article>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="archive-viewer.js"></script>
+  </body>
+</html>
