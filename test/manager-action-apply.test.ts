@@ -242,6 +242,29 @@ test('assign_focus updates task focus by explicit target_type', async () => {
   expect(runtime.tasks[0]?.focusId).toBe('focus-release')
 })
 
+test('upsert_focus accepts open_item_{n} scalar attrs and writes openItems', async () => {
+  const runtime = await createRuntime()
+
+  await applyTaskActions(runtime, [
+    {
+      name: 'upsert_focus',
+      attrs: {
+        id: 'focus-release',
+        title: 'Release',
+        summary: 'Track release readiness',
+        open_item_1: '确认回滚路径',
+        open_item_2: '补齐发布清单',
+      },
+    },
+  ])
+
+  const focus = runtime.focuses.find((item) => item.id === 'focus-release')
+  expect(focus?.title).toBe('Track release readiness')
+  const context = runtime.focusContexts.find((item) => item.focusId === 'focus-release')
+  expect(context?.summary).toBe('Track release readiness')
+  expect(context?.openItems).toEqual(['确认回滚路径', '补齐发布清单'])
+})
+
 test('delete_plan removes done plan', async () => {
   const runtime = await createRuntime()
   const donePlan: TaskPlan = {

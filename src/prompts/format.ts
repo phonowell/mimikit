@@ -84,7 +84,7 @@ export {
   formatFocusList,
 } from './format-focus.js'
 export {
-  formatPlansYaml,
-  formatResultsYaml,
-  formatTasksYaml,
+  formatPlansJson,
+  formatResultsJson,
+  formatTasksJson,
 } from './format-content.js'

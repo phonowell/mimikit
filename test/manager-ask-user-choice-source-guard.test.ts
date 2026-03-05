@@ -122,6 +122,23 @@ test('assign_focus requires explicit target_type', () => {
   expect(feedback[0]?.hint).toContain('target_type')
 })
 
+test('upsert_focus rejects json-shaped open_items payload', () => {
+  const feedback = collectManagerActionFeedback([
+    {
+      name: 'upsert_focus',
+      attrs: {
+        id: 'focus-demo',
+        open_items: '["a","b"]',
+      },
+    },
+  ])
+
+  expect(feedback).toHaveLength(1)
+  expect(feedback[0]?.action).toBe('upsert_focus')
+  expect(feedback[0]?.error).toBe('invalid_action_args')
+  expect(feedback[0]?.hint).toContain('open_items')
+})
+
 test('update_plan requires trigger_mode when patching trigger fields', () => {
   const feedback = collectManagerActionFeedback(
     [

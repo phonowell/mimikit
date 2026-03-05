@@ -1,9 +1,8 @@
 import { expect, test } from 'vitest'
-import { parse as parseYaml } from 'yaml'
 
 import {
-  formatResultsYaml,
-  formatTasksYaml,
+  formatResultsJson,
+  formatTasksJson,
 } from '../src/prompts/format-content.js'
 
 import type { Task, TaskResult } from '../src/types/index.js'
@@ -31,12 +30,12 @@ const baseResult = (overrides?: Partial<TaskResult>): TaskResult => ({
   ...overrides,
 })
 
-test('formatTasksYaml prefers result archive_path over task archive_path', () => {
+test('formatTasksJson prefers result archive_path over task archive_path', () => {
   const task = baseTask({ archivePath: '/tmp/task.md' })
   const result = baseResult({ archivePath: '/tmp/result.md' })
 
-  const yaml = formatTasksYaml([task], [result])
-  const parsed = parseYaml(yaml) as {
+  const json = formatTasksJson([task], [result])
+  const parsed = JSON.parse(json) as {
     tasks: Array<{ archive_path?: string; result?: { archive_path?: string } }>
   }
 
@@ -44,12 +43,12 @@ test('formatTasksYaml prefers result archive_path over task archive_path', () =>
   expect(parsed.tasks[0]?.result?.archive_path).toBe('/tmp/result.md')
 })
 
-test('formatResultsYaml falls back to task archive_path when result archive_path is missing', () => {
+test('formatResultsJson falls back to task archive_path when result archive_path is missing', () => {
   const task = baseTask({ archivePath: '/tmp/task.md' })
   const result = baseResult()
 
-  const yaml = formatResultsYaml([task], [result])
-  const parsed = parseYaml(yaml) as {
+  const json = formatResultsJson([task], [result])
+  const parsed = JSON.parse(json) as {
     tasks: Array<{ archive_path?: string; result?: { archive_path?: string } }>
   }
 
@@ -57,15 +56,15 @@ test('formatResultsYaml falls back to task archive_path when result archive_path
   expect(parsed.tasks[0]?.result?.archive_path).toBe('/tmp/task.md')
 })
 
-test('formatTasksYaml rewrites archive_path to work_dir-relative path when inside work_dir', () => {
+test('formatTasksJson rewrites archive_path to work_dir-relative path when inside work_dir', () => {
   const workDir = '/Users/mimiko/Projects/mimikit'
   const archivePath =
     '/Users/mimiko/Projects/mimikit/.mimikit/tasks/2026-03-04/task-1.md'
   const task = baseTask({ archivePath })
   const result = baseResult({ archivePath })
 
-  const yaml = formatTasksYaml([task], [result], workDir)
-  const parsed = parseYaml(yaml) as {
+  const json = formatTasksJson([task], [result], workDir)
+  const parsed = JSON.parse(json) as {
     tasks: Array<{ archive_path?: string; result?: { archive_path?: string } }>
   }
 
@@ -75,14 +74,14 @@ test('formatTasksYaml rewrites archive_path to work_dir-relative path when insid
   )
 })
 
-test('formatResultsYaml keeps archive_path as-is when outside work_dir', () => {
+test('formatResultsJson keeps archive_path as-is when outside work_dir', () => {
   const workDir = '/Users/mimiko/Projects/mimikit'
   const archivePath = '/Users/mimiko/Projects/other/.mimikit/tasks/task-1.md'
   const task = baseTask({ archivePath })
   const result = baseResult()
 
-  const yaml = formatResultsYaml([task], [result], workDir)
-  const parsed = parseYaml(yaml) as {
+  const json = formatResultsJson([task], [result], workDir)
+  const parsed = JSON.parse(json) as {
     tasks: Array<{ archive_path?: string; result?: { archive_path?: string } }>
   }
 

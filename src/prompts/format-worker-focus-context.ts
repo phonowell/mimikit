@@ -1,6 +1,5 @@
 import { truncateText } from '../shared/text.js'
-
-import { stringifyPromptYaml } from './format-base.js'
+import { stringifyPromptJson } from './format-base.js'
 
 import type { FocusContext, FocusId, FocusMeta } from '../types/index.js'
 
@@ -63,7 +62,7 @@ export const formatWorkerFocusContext = (
   )
   if (!focusTitle && !summary && !openItems && !compressedSummary) return ''
 
-  return stringifyPromptYaml({
+  return stringifyPromptJson({
     focus_id: focusId,
     ...(focusTitle ? { focus_title: focusTitle } : {}),
     ...(summary ? { summary } : {}),

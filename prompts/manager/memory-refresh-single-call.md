@@ -5,7 +5,7 @@
 - Curate（整理）：去重、归并、冲突消解。
 - Compress（压缩）：产出最小安全补丁。
 
-输入说明（来自 `# Input(JSON)`）：
+输入说明（来自 `# Input(YAML)`）：
 - `memoryMarkdown`：当前已有长期记忆全文。
 - `signals[]`：近期可见对话信号（采样窗口，不是全量历史；`text` 可能被截断）。
 - `tasks[]`：近期任务摘要（含 `id/title/status/focusId/output?`）。
@@ -13,7 +13,7 @@
 - `compressedContext?`：可选压缩上下文摘要。
 
 执行约束：
-1. 只能基于输入 JSON 推断；禁止使用输入外事实。
+1. 只能基于输入 YAML 推断；禁止使用输入外事实。
 2. 信息若不稳定、不可验证、一次性、或明显短期过期，不得进入 `entries`。
 3. 与 `memoryMarkdown` 前后不一致并不必然是冲突；若有更晚或更强证据，可输出“更新型”条目并明确新旧关系。
 4. 仅当无法判断新旧真伪、或证据强度不足以决策时，才应 `noop`。
@@ -45,5 +45,5 @@
 6. 禁止编造事实；证据不足时必须 `noop`。
 7. 仅当 `entries` 非空时允许顶层 `mode="patch"`；否则必须为 `noop`。
 
-# Input(JSON)
-{{ input_json }}
+# Input(YAML)
+{{ input_yaml }}

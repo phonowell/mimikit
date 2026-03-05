@@ -5,11 +5,11 @@ import { truncateText } from '../shared/text.js'
 
 import {
   escapeCdata,
-  normalizeYamlUsage,
+  normalizePromptUsage,
   parseIsoToMs,
   resolveTaskChangedAt,
   sortTasksByChangedAt,
-  stringifyPromptYaml,
+  stringifyPromptJson,
 } from './format-base.js'
 
 import type {
@@ -86,7 +86,7 @@ const toResultPayload = (
       ? { cancel: toCancelMeta(cancel) }
       : {}),
     ...(archivePath ? { archive_path: archivePath } : {}),
-    usage: normalizeYamlUsage(result.usage),
+    usage: normalizePromptUsage(result.usage),
   }
 }
 
@@ -139,7 +139,7 @@ const buildFallbackTask = (result: TaskResult): Task => ({
   completedAt: result.completedAt,
 })
 
-export const formatTasksYaml = (
+export const formatTasksJson = (
   tasks: Task[],
   results: TaskResult[],
   workDir?: string,
@@ -159,10 +159,10 @@ export const formatTasksYaml = (
 
   return entries.length === 0
     ? ''
-    : escapeCdata(stringifyPromptYaml({ tasks: entries }))
+    : escapeCdata(stringifyPromptJson({ tasks: entries }))
 }
 
-export const formatResultsYaml = (
+export const formatResultsJson = (
   tasks: Task[],
   results: TaskResult[],
   workDir?: string,
@@ -210,7 +210,7 @@ export const formatResultsYaml = (
       }
     })
 
-  return escapeCdata(stringifyPromptYaml({ tasks: entries }))
+  return escapeCdata(stringifyPromptJson({ tasks: entries }))
 }
 
 const formatPlanEntry = (plan: TaskPlan): Record<string, unknown> => ({
@@ -241,10 +241,10 @@ const formatPlanEntry = (plan: TaskPlan): Record<string, unknown> => ({
   ...(plan.doneReason ? { done_reason: plan.doneReason } : {}),
 })
 
-export const formatPlansYaml = (plans: TaskPlan[]): string => {
+export const formatPlansJson = (plans: TaskPlan[]): string => {
   if (plans.length === 0) return ''
   return escapeCdata(
-    stringifyPromptYaml({
+    stringifyPromptJson({
       plans: plans.map(formatPlanEntry),
     }),
   )

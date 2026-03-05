@@ -3,7 +3,7 @@ import { isVisibleToAgent } from '../shared/message-visibility.js'
 import {
   escapeCdata,
   parseIsoToMs,
-  stringifyPromptYaml,
+  stringifyPromptJson,
 } from './format-base.js'
 
 import type {
@@ -24,7 +24,7 @@ const sortByTimeAndIdDesc = <T extends { time: string; id: string }>(
     return a.id.localeCompare(b.id)
   })
 
-const formatMessagesYaml = (
+const formatMessagesJson = (
   entries: Array<{
     id: string
     role: string
@@ -39,7 +39,7 @@ const formatMessagesYaml = (
   if (entries.length === 0) return ''
   const sorted = sortByTimeAndIdDesc(entries)
   return escapeCdata(
-    stringifyPromptYaml({
+    stringifyPromptJson({
       messages: sorted,
     }),
   )
@@ -68,7 +68,7 @@ export const formatInputs = (inputs: UserInput[]): string => {
       }
     })
     .filter((item): item is NonNullable<typeof item> => Boolean(item))
-  return formatMessagesYaml(entries)
+  return formatMessagesJson(entries)
 }
 
 export const formatRecentHistory = (history: HistoryMessage[]): string => {
@@ -87,7 +87,7 @@ export const formatRecentHistory = (history: HistoryMessage[]): string => {
       }
     })
     .filter((item): item is NonNullable<typeof item> => item !== null)
-  return formatMessagesYaml(entries)
+  return formatMessagesJson(entries)
 }
 
 const mapLookupRole = (role: HistoryLookupMessage['role']): string => {
@@ -113,7 +113,7 @@ export const formatHistoryLookup = (lookup: HistoryLookupMessage[]): string => {
   if (entries.length === 0) return ''
   const sorted = sortByTimeAndIdDesc(entries)
   return escapeCdata(
-    stringifyPromptYaml({
+    stringifyPromptJson({
       messages: sorted,
     }),
   )
@@ -145,7 +145,7 @@ export const formatReadFileLookup = (
     .filter((item): item is NonNullable<typeof item> => item !== null)
   if (entries.length === 0) return ''
   return escapeCdata(
-    stringifyPromptYaml({
+    stringifyPromptJson({
       files: entries,
     }),
   )
@@ -172,7 +172,7 @@ export const formatActionFeedback = (
     .filter((item): item is NonNullable<typeof item> => item !== null)
   if (entries.length === 0) return ''
   return escapeCdata(
-    stringifyPromptYaml({
+    stringifyPromptJson({
       items: entries,
     }),
   )

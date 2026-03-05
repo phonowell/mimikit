@@ -1,5 +1,3 @@
-import { stringify as stringifyYaml } from 'yaml'
-
 import { parseIsoToMs } from '../shared/time.js'
 
 import type { Task } from '../types/index.js'
@@ -20,7 +18,7 @@ export const sortTasksByChangedAt = (tasks: Task[]): Task[] =>
     return a.id.localeCompare(b.id)
   })
 
-export const normalizeYamlUsage = (
+export const normalizePromptUsage = (
   usage?: Task['usage'],
 ): Task['usage'] | undefined => {
   if (!usage) return
@@ -41,30 +39,27 @@ export const normalizeYamlUsage = (
   return Object.keys(normalized).length > 0 ? normalized : undefined
 }
 
-const yamlReplacer = (_key: unknown, value: unknown): unknown => {
+const prunePromptValue = (value: unknown): unknown => {
   if (value === undefined || value === null) return undefined
   if (typeof value === 'number' && !Number.isFinite(value)) return undefined
   if (typeof value === 'string' && value === '') return undefined
   if (Array.isArray(value)) {
-    if (value.length === 0) return undefined
-    return value
+    const normalized = value
+      .map((item) => prunePromptValue(item))
+      .filter((item) => item !== undefined)
+    return normalized.length > 0 ? normalized : undefined
   }
   if (typeof value === 'object') {
-    const entries = Object.entries(value as Record<string, unknown>).filter(
-      ([, next]) => next !== undefined,
-    )
-    if (entries.length === 0) return undefined
-    return Object.fromEntries(entries)
+    const entries = Object.entries(value as Record<string, unknown>)
+      .map(([key, next]) => [key, prunePromptValue(next)] as const)
+      .filter(([, next]) => next !== undefined)
+    return entries.length > 0 ? Object.fromEntries(entries) : undefined
   }
   return value
 }
 
-export const stringifyPromptYaml = (value: unknown): string =>
-  stringifyYaml(value, yamlReplacer, {
-    lineWidth: 0,
-    indent: 2,
-    singleQuote: false,
-    blockQuote: false,
-    defaultKeyType: 'PLAIN',
-    defaultStringType: 'QUOTE_DOUBLE',
-  }).trimEnd()
+export const stringifyPromptJson = (value: unknown): string => {
+  const normalized = prunePromptValue(value)
+  if (normalized === undefined) return ''
+  return JSON.stringify(normalized, null, 2).trimEnd()
+}

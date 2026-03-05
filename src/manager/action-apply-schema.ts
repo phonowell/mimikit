@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { normalizeFocusOpenItems } from '../focus/open-items.js'
 
 import {
   createPlanSchema,
@@ -44,15 +45,63 @@ export const compressContextSchema = z.object({}).strict()
 
 export const restartSchema = z.object({}).strict()
 
+const openItemAttrRe = /^open_item_(\d+)$/
+const upsertFocusBaseKeys = new Set(['id', 'title', 'status', 'summary'])
+
 export const upsertFocusSchema = z
   .object({
     id: focusIdSchema,
     title: nonEmptyString.optional(),
     status: z.enum(['active', 'idle', 'done', 'archived']).optional(),
     summary: z.string().trim().optional(),
-    open_items: z.string().trim().optional(),
   })
-  .strict()
+  .passthrough()
+  .superRefine((data, context) => {
+    for (const [key, value] of Object.entries(data)) {
+      if (upsertFocusBaseKeys.has(key)) continue
+      if (typeof value !== 'string') {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `${key} must be a string`,
+          path: [key],
+        })
+        continue
+      }
+      const match = openItemAttrRe.exec(key)
+      if (!match) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `${key} is not allowed`,
+          path: [key],
+        })
+        continue
+      }
+      const indexRaw = match[1]
+      if (!indexRaw) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `${key} index is required`,
+          path: [key],
+        })
+        continue
+      }
+      const index = Number.parseInt(indexRaw, 10)
+      if (!Number.isInteger(index) || index < 1) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `${key} index must be >= 1`,
+          path: [key],
+        })
+      }
+      if (!value.trim()) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `${key} must be non-empty`,
+          path: [key],
+        })
+      }
+    }
+  })
 
 export const assignFocusSchema = z
   .object({
@@ -171,6 +220,58 @@ export const parseAskUserChoiceAttrs = (
     options: optionsParsed.value,
     defaultOptionId: parsed.data.default_option_id,
     ...(parsed.data.focus_id ? { focusId: parsed.data.focus_id } : {}),
+  }
+}
+
+const parseUpsertFocusOpenItems = (
+  attrs: Record<string, unknown>,
+): { ok: true; value: string[] | undefined } | { ok: false } => {
+  const indexed = new Map<number, string>()
+  for (const [key, value] of Object.entries(attrs)) {
+    if (upsertFocusBaseKeys.has(key)) continue
+    if (typeof value !== 'string') return { ok: false }
+    const match = openItemAttrRe.exec(key)
+    if (!match) return { ok: false }
+    const indexRaw = match[1]
+    if (!indexRaw) return { ok: false }
+    const index = Number.parseInt(indexRaw, 10)
+    if (!Number.isInteger(index) || index < 1) return { ok: false }
+    const normalized = value.trim()
+    if (!normalized) return { ok: false }
+    indexed.set(index, normalized)
+  }
+  if (indexed.size === 0) return { ok: true, value: undefined }
+  const ordered = [...indexed.keys()].sort((left, right) => left - right)
+  const values = ordered
+    .map((index) => indexed.get(index))
+    .filter((item): item is string => Boolean(item))
+  return {
+    ok: true,
+    value: normalizeFocusOpenItems(values, { coerceNonString: false }),
+  }
+}
+
+export const parseUpsertFocusAttrs = (
+  attrs: Record<string, string>,
+):
+  | {
+      id: string
+      title?: string
+      status?: 'active' | 'idle' | 'done' | 'archived'
+      summary?: string
+      openItems?: string[]
+    }
+  | undefined => {
+  const parsed = upsertFocusSchema.safeParse(attrs)
+  if (!parsed.success) return undefined
+  const openItems = parseUpsertFocusOpenItems(parsed.data)
+  if (!openItems.ok) return undefined
+  return {
+    id: parsed.data.id,
+    ...(parsed.data.title !== undefined ? { title: parsed.data.title } : {}),
+    ...(parsed.data.status !== undefined ? { status: parsed.data.status } : {}),
+    ...(parsed.data.summary !== undefined ? { summary: parsed.data.summary } : {}),
+    ...(openItems.value ? { openItems: openItems.value } : {}),
   }
 }
 

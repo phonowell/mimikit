@@ -42,7 +42,7 @@
 参数约定（关键字段）：
 
 - `assign_focus`：`target_type(task|plan|history) + target_id + focus_id`
-- `upsert_focus.open_items`：仅接受 JSON 数组字符串
+- `upsert_focus.open_item_{n}`：按编号传递字符串待办项（如 `open_item_1`、`open_item_2`）
 
 ## Action 执行语义
 

@@ -7,8 +7,8 @@ import {
   buildTaskResultDateHints,
   collectResultTaskIds,
   collectTaskResults,
+  encodePromptJsonSection,
   encodePromptTextSection,
-  encodePromptYamlSection,
   mergeTaskResults,
   readOptionalMarkdown,
 } from './build-prompts-helpers.js'
@@ -25,11 +25,11 @@ import {
   formatFocusList,
   formatHistoryLookup,
   formatInputs,
-  formatPlansYaml,
+  formatPlansJson,
   formatReadFileLookup,
   formatRecentHistory,
-  formatResultsYaml,
-  formatTasksYaml,
+  formatResultsJson,
+  formatTasksJson,
   renderPromptTemplate,
 } from './format.js'
 import { loadPromptFile, loadPromptSource } from './prompt-loader.js'
@@ -106,8 +106,8 @@ export const buildManagerPrompt = async (params: {
   const limits = params.promptSectionLimits
   const sectionText = (value: string, maxBytes: number): string =>
     encodePromptTextSection(value, maxBytes)
-  const sectionYaml = (value: string, maxBytes: number): string =>
-    encodePromptYamlSection(value, maxBytes)
+  const sectionJson = (value: string, maxBytes: number): string =>
+    encodePromptJsonSection(value, maxBytes)
   const templateValues: Record<string, string> = {
     environment: sectionText(
       formatEnvironment({
@@ -116,41 +116,38 @@ export const buildManagerPrompt = async (params: {
       }),
       limits.environmentMaxBytes,
     ),
-    inputs: sectionYaml(formatInputs(params.inputs), limits.inputsMaxBytes),
-    batch_results: sectionYaml(
-      formatResultsYaml(params.tasks, pendingResults, params.workDir),
+    inputs: sectionJson(formatInputs(params.inputs), limits.inputsMaxBytes),
+    batch_results: sectionJson(
+      formatResultsJson(params.tasks, pendingResults, params.workDir),
       limits.batchResultsMaxBytes,
     ),
-    tasks: sectionYaml(
-      formatTasksYaml(params.tasks, resultsForTasks, params.workDir),
+    tasks: sectionJson(
+      formatTasksJson(params.tasks, resultsForTasks, params.workDir),
       limits.tasksMaxBytes,
     ),
-    plans: sectionYaml(
-      formatPlansYaml(params.plans ?? []),
-      limits.plansMaxBytes,
-    ),
-    recent_history: sectionYaml(
+    plans: sectionJson(formatPlansJson(params.plans ?? []), limits.plansMaxBytes),
+    recent_history: sectionJson(
       formatRecentHistory(focusPayload.recentHistory),
       limits.recentHistoryMaxBytes,
     ),
-    focus_list: sectionYaml(
+    focus_list: sectionJson(
       formatFocusList(focusPayload.focusList),
       limits.focusListMaxBytes,
     ),
-    focus_contexts: sectionYaml(
+    focus_contexts: sectionJson(
       formatFocusContexts(focusPayload.focusContexts),
       limits.focusContextsMaxBytes,
     ),
-    history_lookup: sectionYaml(
+    history_lookup: sectionJson(
       formatHistoryLookup(params.historyLookup ?? []),
       limits.historyLookupMaxBytes,
     ),
     memory: sectionText(memory.trim(), limits.memoryMaxBytes),
-    file_lookup: sectionYaml(
+    file_lookup: sectionJson(
       formatReadFileLookup(params.readFileLookup ?? []),
       limits.fileLookupMaxBytes,
     ),
-    action_feedback: sectionYaml(
+    action_feedback: sectionJson(
       formatActionFeedback(params.actionFeedback ?? []),
       limits.actionFeedbackMaxBytes,
     ),

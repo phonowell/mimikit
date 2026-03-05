@@ -69,7 +69,7 @@
 - `choice.option.id`：`option-[a-zA-Z0-9._-]+`
 - `query_history.limit`：`1..20`（默认 `6`）
 - `query_history.roles`：逗号分隔，支持 `user | agent | system | all`
-- `open_items`：仅支持 JSON 数组字符串（如 `["a","b"]`）
+- `open_item_{n}`：`upsert_focus` 的待办项参数，`n` 从 `1` 开始递增，每个参数值必须是非空字符串（示例：`open_item_1="a" open_item_2="b"`）
 
 ## 各 Action 最小约束
 - `run_task`：必填 `prompt,title`；可选 `focus_id`
@@ -82,7 +82,7 @@
 - `summarize_task_result`：必填 `task_id,summary`
 - `query_history`：必填 `query`；可选 `limit,roles,before_id,from,to`
 - `read_file`：路径明确时可用；必填 `path`；可选 `from_line,max_lines,max_chars`
-- `upsert_focus`：必填 `id`；可选 `title,status,summary,open_items`
+- `upsert_focus`：必填 `id`；可选 `title,status,summary,open_item_{n}`
 - `assign_focus`：必填 `target_type,target_id,focus_id`，其中 `target_type` 只能是 `task | plan | history`
 - `restart_runtime`：无参数
 

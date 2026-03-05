@@ -4,7 +4,7 @@ import { readTextFileIfExists } from '../fs/read-text.js'
 import { readErrorCode } from '../shared/error-code.js'
 import { compareIsoDesc } from '../shared/time.js'
 
-import { escapeCdata, stringifyPromptYaml } from './format-base.js'
+import { escapeCdata, stringifyPromptJson } from './format-base.js'
 
 import type { Task, TaskResult } from '../types/index.js'
 
@@ -15,14 +15,14 @@ const clipUtf8ByBytes = (value: string, maxBytes: number): string => {
   return buffer.subarray(0, maxBytes).toString('utf8').trimEnd()
 }
 
-const parseYamlListSection = (
+const parseJsonListSection = (
   value: string,
 ): { key: string; entries: unknown[] } | undefined => {
   const trimmed = value.trim()
   if (!trimmed) return undefined
   let parsed: unknown
   try {
-    parsed = parseYaml(trimmed)
+    parsed = JSON.parse(trimmed) as unknown
   } catch {
     return undefined
   }
@@ -42,19 +42,19 @@ export const encodePromptTextSection = (
   maxBytes: number,
 ): string => escapeCdata(clipUtf8ByBytes(value, maxBytes))
 
-export const encodePromptYamlSection = (
+export const encodePromptJsonSection = (
   value: string,
   maxBytes: number,
 ): string => {
   if (maxBytes <= 0) return ''
-  const parsed = parseYamlListSection(value)
+  const parsed = parseJsonListSection(value)
   if (!parsed) return ''
   const selected = [...parsed.entries]
   while (selected.length > 0) {
-    const yaml = stringifyPromptYaml({
+    const json = stringifyPromptJson({
       [parsed.key]: selected,
     })
-    if (Buffer.byteLength(yaml, 'utf8') <= maxBytes) return escapeCdata(yaml)
+    if (Buffer.byteLength(json, 'utf8') <= maxBytes) return escapeCdata(json)
     selected.pop()
   }
   return ''

@@ -1,7 +1,7 @@
 import {
   escapeCdata,
   parseIsoToMs,
-  stringifyPromptYaml,
+  stringifyPromptJson,
 } from './format-base.js'
 
 import type { FocusListEntry, FocusPromptContextEntry } from '../focus/index.js'
@@ -20,7 +20,7 @@ const sortMessagesDesc = <T extends { time: string; id: string }>(
 export const formatFocusList = (focusList: FocusListEntry[]): string => {
   if (focusList.length === 0) return ''
   return escapeCdata(
-    stringifyPromptYaml({
+    stringifyPromptJson({
       focuses: focusList.map((focus) => ({
         id: focus.id,
         title: focus.title,
@@ -38,7 +38,7 @@ export const formatFocusContexts = (
 ): string => {
   if (contexts.length === 0) return ''
   return escapeCdata(
-    stringifyPromptYaml({
+    stringifyPromptJson({
       focuses: contexts.map((focus) => ({
         focus_id: focus.focusId,
         title: focus.title,
@@ -72,7 +72,7 @@ export const formatCompressedFocusContexts = (
 ): string => {
   if (contexts.length === 0) return ''
   return escapeCdata(
-    stringifyPromptYaml({
+    stringifyPromptJson({
       focuses: contexts.map((item) => ({
         focus_id: item.focusId,
         updated_at: item.updatedAt,

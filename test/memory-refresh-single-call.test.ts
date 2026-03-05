@@ -14,7 +14,7 @@ beforeEach(() => {
   runManagerLlmCallMock.mockReset()
 })
 
-test('single-call renders input json via prompt template', async () => {
+test('single-call renders input yaml via prompt template', async () => {
   runManagerLlmCallMock.mockResolvedValue({
     output: JSON.stringify({
       mode: 'patch',
@@ -57,8 +57,8 @@ test('single-call renders input json via prompt template', async () => {
   expect(runManagerLlmCallMock).toHaveBeenCalledTimes(1)
   const [call] = runManagerLlmCallMock.mock.calls
   const callParams = call?.[0] as { prompt?: string; model?: string } | undefined
-  expect(callParams?.prompt).toContain('# Input(JSON)')
-  expect(callParams?.prompt).toContain('"workDir":"/tmp/mimikit"')
-  expect(callParams?.prompt).not.toContain('{{ input_json }}')
+  expect(callParams?.prompt).toContain('# Input(YAML)')
+  expect(callParams?.prompt).toContain('workDir: /tmp/mimikit')
+  expect(callParams?.prompt).not.toContain('{{ input_yaml }}')
   expect(callParams?.model).toBe('gpt-5-mini')
 })
