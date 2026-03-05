@@ -1,7 +1,8 @@
 import { truncateText } from '../shared/text.js'
+
 import { stringifyPromptYaml } from './format-base.js'
 
-import type { FocusContext, FocusMeta, FocusId } from '../types/index.js'
+import type { FocusContext, FocusId, FocusMeta } from '../types/index.js'
 
 const MAX_FOCUS_TITLE_CHARS = 80
 const MAX_FOCUS_SUMMARY_CHARS = 320
@@ -31,7 +32,9 @@ const normalizeLine = (
   return truncateText(trimmed, maxChars, { normalizeWhitespace: true })
 }
 
-const normalizeOpenItems = (items: string[] | undefined): string[] | undefined => {
+const normalizeOpenItems = (
+  items: string[] | undefined,
+): string[] | undefined => {
   if (!items) return undefined
   const normalized = items
     .map((item) => normalizeLine(item, MAX_OPEN_ITEM_CHARS))
@@ -45,7 +48,10 @@ export const formatWorkerFocusContext = (
 ): string => {
   const focusId = params.focusId.trim()
   if (!focusId) return ''
-  const focusTitle = normalizeLine(params.focusMeta?.title, MAX_FOCUS_TITLE_CHARS)
+  const focusTitle = normalizeLine(
+    params.focusMeta?.title,
+    MAX_FOCUS_TITLE_CHARS,
+  )
   const summary = normalizeLine(
     params.focusContext?.summary,
     MAX_FOCUS_SUMMARY_CHARS,

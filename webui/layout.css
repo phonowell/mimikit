@@ -368,6 +368,10 @@ main[data-app] {
     padding: 12px 10px;
   }
 
+  .status-group .status-text {
+    display: none;
+  }
+
   .app-controls {
     flex-direction: row;
     align-items: center;

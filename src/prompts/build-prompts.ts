@@ -15,6 +15,10 @@ import {
 import { prepareWorkerTaskPrompt } from './build-worker-task-prompt.js'
 import { escapeCdata } from './format-base.js'
 import {
+  formatWorkerFocusContext,
+  type WorkerCompressedFocusContext,
+} from './format-worker-focus-context.js'
+import {
   formatActionFeedback,
   formatEnvironment,
   formatFocusContexts,
@@ -28,10 +32,6 @@ import {
   formatTasksYaml,
   renderPromptTemplate,
 } from './format.js'
-import {
-  formatWorkerFocusContext,
-  type WorkerCompressedFocusContext,
-} from './format-worker-focus-context.js'
 import { loadPromptFile, loadPromptSource } from './prompt-loader.js'
 
 import type { AppConfig } from '../config.js'

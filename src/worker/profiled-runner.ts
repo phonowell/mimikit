@@ -6,7 +6,12 @@ import { appendTaskProgress } from '../storage/task-progress.js'
 import { runWorkerLoop } from './profiled-runner-loop.js'
 
 import type { ManagerFocusCompressedContext } from '../orchestrator/core/runtime-state.js'
-import type { FocusContext, FocusMeta, Task, TokenUsage } from '../types/index.js'
+import type {
+  FocusContext,
+  FocusMeta,
+  Task,
+  TokenUsage,
+} from '../types/index.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
 type LlmResult = {

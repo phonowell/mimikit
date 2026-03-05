@@ -53,6 +53,8 @@
 .message .content.markdown a {
   color: var(--link, var(--accent));
   text-decoration: underline;
+  overflow-wrap: anywhere;
+  word-break: break-all;
 }
 
 .message .content.markdown code {
