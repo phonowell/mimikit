@@ -88,10 +88,8 @@
 - 消息气泡（`.message article`）：`agent`/`user` 使用极轻微凸起 + 极细边框并按角色使用 `bg/text/border` token；`system` 为无边框无背景例外样式，仅使用 `--bubble-system-text`。
 - 引用块（`.message-quote` / `.quote-preview`）：保留竖向角色条与弱化凸起阴影；不使用凹陷显示态；`.quote-preview` 的角色 `bg/text` 必须复用 `--bubble-*` token 与消息气泡对齐。
 - 引用按钮（`.message-quote-btn`）：保留凹凸按压反馈。
-- Action 芯片（`.message-action-chip`）：消息内轻量按钮，使用单色低对比 token；必须保留按压凹陷反馈。
 - 清除引用按钮（`.quote-clear`）：凸起阴影需弱于常规图标按钮，仅保留轻微触感。
 - 任务面板（`.tasks-*`）：列表平面浅色层 + 任务项凸起层；任务链接保留按压反馈。
-- Action 详情弹窗（`.message-action-dialog`）：沿用通用弹窗遮罩与动效；命令区为平面浅色可滚动代码块，不使用凹陷阴影。
 
 ## 交互与可用性
 
@@ -127,9 +125,7 @@
 - `components-core.css`：按钮、状态、通用小组件。
 - `components-messages.css`：消息流、引用、加载态。
 - `components-dialogs.css`：任务与重启弹窗。
-- `components-dialogs-action.css`：Action 详情弹窗。
 - `components-markdown.css`：Markdown 渲染细节。
-- `components-messages-actions.css`：消息内 Action 芯片。
 - `components-responsive.css`：动效降级与移动端覆写。
 
 ## 迭代协议

@@ -1,5 +1,4 @@
 import { createQuoteBlock, isAgentMessage } from './render-shared.js'
-import { extractMetaActions } from './meta-action-tags.js'
 import { UI_TEXT } from '../system-text.js'
 
 export const renderMessage = (params, msg) => {
@@ -12,7 +11,6 @@ export const renderMessage = (params, msg) => {
     enterMessageIds,
     onQuote,
     onDelete,
-    onInspectAction,
     messageLookup,
     appendTarget,
     isDeleteMode,
@@ -55,10 +53,6 @@ export const renderMessage = (params, msg) => {
   const content = document.createElement('div')
   content.className = 'content'
   const text = msg?.text ?? ''
-  const extractedActions = isAgentMessage(msg)
-    ? extractMetaActions(text)
-    : { cleanText: text, actions: [] }
-  const renderedText = extractedActions.cleanText
   if (msg?.quote && messageLookup) {
     const quoteMessage = messageLookup.get(String(msg.quote))
     const quoteBlock = createQuoteBlock({ quoteId: msg.quote, quoteMessage, messagesEl })
@@ -66,35 +60,10 @@ export const renderMessage = (params, msg) => {
   }
   if (isAgentMessage(msg)) {
     content.classList.add('markdown')
-    content.appendChild(renderMarkdown(renderedText))
-  } else content.textContent = renderedText
+    content.appendChild(renderMarkdown(text))
+  } else content.textContent = text
 
   article.appendChild(content)
-  const canInspectAction =
-    isAgentMessage(msg) &&
-    typeof onInspectAction === 'function' &&
-    extractedActions.actions.length > 0
-  if (canInspectAction) {
-    const actionList = document.createElement('div')
-    actionList.className = 'message-actions'
-    actionList.setAttribute('role', 'group')
-    actionList.setAttribute('aria-label', UI_TEXT.actionListAriaLabel)
-    for (const action of extractedActions.actions) {
-      const actionBtn = document.createElement('button')
-      actionBtn.type = 'button'
-      actionBtn.className = 'btn btn--xs message-action-chip'
-      actionBtn.dataset.actionId = action.id
-      actionBtn.textContent = `M:${action.name}`
-      actionBtn.title = UI_TEXT.viewActionCommand
-      actionBtn.setAttribute(
-        'aria-label',
-        `${UI_TEXT.viewActionCommand}: M:${action.name}`,
-      )
-      actionBtn.addEventListener('click', () => onInspectAction(action))
-      actionList.appendChild(actionBtn)
-    }
-    article.appendChild(actionList)
-  }
 
   const usageDisplay = isAgentMessage(msg) ? formatUsage(msg.usage) : null
   const usageText = usageDisplay?.text ?? ''

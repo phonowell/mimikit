@@ -34,7 +34,6 @@ export function createMessagesController({
   deleteConfirmDialog,
   deleteConfirmCancelBtn,
   deleteConfirmBtn,
-  onInspectAction,
   onTasksSnapshot,
   onPlansSnapshot,
   onFocusesSnapshot,
@@ -88,7 +87,6 @@ export function createMessagesController({
     loading,
     quote,
     onDelete: deleteMessages.deleteMessage,
-    onInspectAction,
     isDeleteMode: () => deleteModeEnabled,
   })
   removeEmpty = rendering.removeEmpty

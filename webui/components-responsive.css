@@ -25,9 +25,7 @@
   .composer .quote-clear:active,
   .message .message-quote,
   .message .message-quote-btn,
-  .message .message-action-chip,
   .message .message-delete-btn,
-  .message .message-action-chip:active,
   .message .message-quote-btn:active,
   .message .message-delete-btn:active {
     transition: none;
