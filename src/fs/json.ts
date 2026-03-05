@@ -13,6 +13,7 @@ const parseJsonRaw = <T>(
   raw: unknown,
   fallback: T,
   meta: { path: string },
+  options?: { quietParseError?: boolean },
 ): Promise<T> => {
   if (!raw) return Promise.resolve(fallback)
   if (typeof raw === 'object' && !Buffer.isBuffer(raw))
@@ -24,6 +25,13 @@ const parseJsonRaw = <T>(
         ? raw.toString('utf8')
         : ''
   if (!text.trim()) return Promise.resolve(fallback)
+  if (options?.quietParseError) {
+    try {
+      return Promise.resolve(JSON.parse(text) as T)
+    } catch {
+      return Promise.resolve(fallback)
+    }
+  }
   return safe('readJson: parse', () => JSON.parse(text) as T, {
     fallback,
     meta,
@@ -59,7 +67,7 @@ export const writeFileAtomic = async (
 export const readJson = async <T>(
   path: string,
   fallback: T,
-  opts?: { ensureFile?: boolean },
+  opts?: { ensureFile?: boolean; quietParseError?: boolean },
 ): Promise<T> => {
   const readRaw = () =>
     safe('readJson: readFile', () => readFile(path), {
@@ -74,7 +82,7 @@ export const readJson = async <T>(
     raw = await readRaw()
   }
 
-  return parseJsonRaw(raw, fallback, { path })
+  return parseJsonRaw(raw, fallback, { path }, opts)
 }
 
 export const writeJson = (path: string, value: unknown): Promise<void> =>

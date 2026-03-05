@@ -72,9 +72,17 @@ export const loadRuntimeSnapshot = async (
   const initial = initialRuntimeSnapshot()
   await ensureFile(path, toPrettyJsonText(initial))
   const fallback = Symbol('runtime-snapshot-read-fallback')
-  const primary = await readJson<unknown | typeof fallback>(path, fallback)
+  const primary = await readJson<unknown | typeof fallback>(path, fallback, {
+    quietParseError: true,
+  })
   if (primary !== fallback) return parseRuntimeSnapshot(primary)
-  const backup = await readJson<unknown | typeof fallback>(backupPath, fallback)
+  const backup = await readJson<unknown | typeof fallback>(
+    backupPath,
+    fallback,
+    {
+      quietParseError: true,
+    },
+  )
   if (backup !== fallback) return parseRuntimeSnapshot(backup)
   return initial
 }

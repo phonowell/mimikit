@@ -2,7 +2,7 @@ import { mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { expect, test } from 'vitest'
+import { expect, test, vi } from 'vitest'
 
 import { buildTaskViews } from '../src/orchestrator/read-model/task-view.js'
 import {
@@ -270,9 +270,15 @@ test('loadRuntimeSnapshot falls back to backup file when primary json is broken'
     'utf8',
   )
 
-  const loaded = await loadRuntimeSnapshot(stateDir)
-  expect(loaded.queues.inputsCursor).toBe(12)
-  expect(loaded.queues.resultsCursor).toBe(34)
+  const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+  try {
+    const loaded = await loadRuntimeSnapshot(stateDir)
+    expect(loaded.queues.inputsCursor).toBe(12)
+    expect(loaded.queues.resultsCursor).toBe(34)
+    expect(consoleErrorSpy).not.toHaveBeenCalled()
+  } finally {
+    consoleErrorSpy.mockRestore()
+  }
 })
 
 test('saveRuntimeSnapshot writes previous primary content into .bak', async () => {
