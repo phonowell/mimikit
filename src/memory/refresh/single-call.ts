@@ -1,5 +1,5 @@
-import { z } from 'zod'
 import { stringify as stringifyYaml } from 'yaml'
+import { z } from 'zod'
 
 import { runManagerLlmCall } from '../../manager/manager-llm-call.js'
 import { renderPromptTemplate } from '../../prompts/format.js'
@@ -52,15 +52,11 @@ const buildPrompt = async (payload: MemoryRefreshPayload): Promise<string> => {
   return renderPromptTemplate(
     template,
     {
-      input_yaml: stringifyYaml(
-        payload,
-        undefined,
-        {
-          lineWidth: 0,
-          indent: 2,
-          singleQuote: false,
-        },
-      ).trimEnd(),
+      input_yaml: stringifyYaml(payload, undefined, {
+        lineWidth: 0,
+        indent: 2,
+        singleQuote: false,
+      }).trimEnd(),
     },
     source.path,
   )

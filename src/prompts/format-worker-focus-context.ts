@@ -1,4 +1,5 @@
 import { truncateText } from '../shared/text.js'
+
 import { stringifyPromptJson } from './format-base.js'
 
 import type { FocusContext, FocusId, FocusMeta } from '../types/index.js'

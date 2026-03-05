@@ -56,10 +56,6 @@
 - `MIMIKIT_REASONING_EFFORT`
 - `MIMIKIT_MANAGER_REASONING_EFFORT`
 - `MIMIKIT_WORKER_REASONING_EFFORT`
-- `MIMIKIT_MANAGER_CREATE_TASK_DEBOUNCE_MS`
-- `MIMIKIT_MANAGER_IDLE_TRIGGER_DELAY_MS`
-- `MIMIKIT_MANAGER_PLAN_WINDOW_MAX_COUNT`
-- `MIMIKIT_MANAGER_PLAN_WINDOW_MIN_COUNT`
 - `QQ_CHANNEL_ENABLED`
 - `QQ_APP_ID`
 - `QQ_CLIENT_SECRET`
@@ -69,17 +65,10 @@
 ## 配置结构（`config.yaml`）
 
 - 若缺少 `config.yaml`，启动阶段会由 `defaults/config.template.yaml` 自动生成。
-- `manager.provider.model`
-- `manager.provider.modelReasoningEffort`
+- `manager.model`
+- `manager.modelReasoningEffort`
 - `manager.provider.{baseUrl,apiKey}`（可选，仅 manager）
-- `manager.maxCorrectionRounds`
-- `manager.promptSections.*`
-- `manager.taskCreate.debounceMs`
-- `manager.idleTrigger.delayMs`
-- `manager.taskWindow.{maxCount,minCount}`
-- `manager.planWindow.{maxCount,minCount}`
 - `worker.maxConcurrent`
-- `worker.retry.{maxAttempts,backoffMs}`
 - `worker.timeoutMs`
 - `worker.model`
 - `worker.modelReasoningEffort`

@@ -164,8 +164,11 @@ const compressFocusContext = async (
   const result = await runManagerLlmCall({
     prompt,
     workDir: runtime.config.workDir,
-    model: runtime.config.manager.provider.model,
-    managerProvider: runtime.config.manager.provider,
+    model: runtime.config.manager.model,
+    managerProvider: {
+      ...runtime.config.manager.provider,
+      modelReasoningEffort: runtime.config.manager.modelReasoningEffort,
+    },
     logPath: runtime.paths.log,
     logContext: {
       action: 'compress_context',

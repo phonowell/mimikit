@@ -5,6 +5,9 @@ import { parse as parseYaml } from 'yaml'
 import { z } from 'zod'
 
 import { qqConfigSchema } from './channels/qq/config.js'
+
+import type { QqConfig } from './channels/qq/config.js'
+
 const modelReasoningEffortSchema = z.enum([
   'minimal',
   'low',
@@ -12,89 +15,90 @@ const modelReasoningEffortSchema = z.enum([
   'high',
   'xhigh',
 ])
-const taskDefaultsSchema = z
-  .object({
-    timeoutMs: z.number().int().positive(),
-    model: z.string().min(1),
-    modelReasoningEffort: modelReasoningEffortSchema,
-  })
-  .strict()
-const defaultConfigSchema = z
+
+const userConfigInputSchema = z
   .object({
     manager: z
       .object({
+        model: z.string().min(1).optional(),
+        modelReasoningEffort: modelReasoningEffortSchema.optional(),
         provider: z
           .object({
-            model: z.string().min(1),
-            modelReasoningEffort: modelReasoningEffortSchema,
-            baseUrl: z.string().min(1).optional(),
-            apiKey: z.string().min(1).optional(),
+            baseUrl: z.string().optional(),
+            apiKey: z.string().optional(),
           })
-          .strict(),
-        maxCorrectionRounds: z.number().int().positive(),
-        promptSections: z
-          .object({
-            actionFeedbackMaxBytes: z.number().int().positive(),
-            batchResultsMaxBytes: z.number().int().positive(),
-            compressedContextMaxBytes: z.number().int().positive(),
-            environmentMaxBytes: z.number().int().positive(),
-            fileLookupMaxBytes: z.number().int().positive(),
-            focusContextsMaxBytes: z.number().int().positive(),
-            focusListMaxBytes: z.number().int().positive(),
-            historyLookupMaxBytes: z.number().int().positive(),
-            inputsMaxBytes: z.number().int().positive(),
-            memoryMaxBytes: z.number().int().positive(),
-            plansMaxBytes: z.number().int().positive(),
-            recentHistoryMaxBytes: z.number().int().positive(),
-            tasksMaxBytes: z.number().int().positive(),
-          })
-          .strict(),
-        taskCreate: z
-          .object({
-            debounceMs: z.number().int().nonnegative(),
-          })
-          .strict(),
-        idleTrigger: z
-          .object({
-            delayMs: z.number().int().nonnegative(),
-          })
-          .strict(),
-        taskWindow: z
-          .object({
-            maxCount: z.number().int().positive(),
-            minCount: z.number().int().positive(),
-          })
-          .strict(),
-        planWindow: z
-          .object({
-            maxCount: z.number().int().positive(),
-            minCount: z.number().int().positive(),
-          })
-          .strict(),
+          .strict()
+          .optional(),
       })
-      .strict(),
+      .strict()
+      .optional(),
     worker: z
       .object({
-        maxConcurrent: z.number().int().positive(),
-        retry: z
-          .object({
-            maxAttempts: z.number().int().nonnegative(),
-            backoffMs: z.number().int().nonnegative(),
-          })
-          .strict(),
-        ...taskDefaultsSchema.shape,
+        maxConcurrent: z.number().int().positive().optional(),
+        timeoutMs: z.number().int().positive().optional(),
+        model: z.string().min(1).optional(),
+        modelReasoningEffort: modelReasoningEffortSchema.optional(),
       })
-      .strict(),
-    qq: qqConfigSchema,
+      .strict()
+      .optional(),
+    qq: qqConfigSchema.partial().strict().optional(),
   })
   .strict()
-type AppDefaults = z.infer<typeof defaultConfigSchema>
+
+export type UserConfigDefaults = {
+  manager: {
+    model: string
+    modelReasoningEffort: z.infer<typeof modelReasoningEffortSchema>
+    provider: {
+      baseUrl?: string | undefined
+      apiKey?: string | undefined
+    }
+  }
+  worker: {
+    maxConcurrent: number
+    timeoutMs: number
+    model: string
+    modelReasoningEffort: z.infer<typeof modelReasoningEffortSchema>
+  }
+  qq: QqConfig
+}
+
+const DEFAULT_USER_CONFIG: UserConfigDefaults = {
+  manager: {
+    model: 'gpt-5.2-high',
+    modelReasoningEffort: 'high',
+    provider: {},
+  },
+  worker: {
+    maxConcurrent: 3,
+    timeoutMs: 600000,
+    model: 'gpt-5.3-codex-high',
+    modelReasoningEffort: 'high',
+  },
+  qq: {
+    enabled: false,
+    appId: '',
+    appSecret: '',
+    apiBase: 'https://api.sgroup.qq.com',
+    callbackPath: '/api/qq/events',
+    verifySign: true,
+    clockSkewMs: 300000,
+  },
+}
+
+const trimToUndefined = (value: string | undefined): string | undefined => {
+  if (value === undefined) return undefined
+  const trimmed = value.trim()
+  return trimmed.length > 0 ? trimmed : undefined
+}
+
 export const DEFAULT_CONFIG_PATH = fileURLToPath(
   new URL('../config.yaml', import.meta.url),
 )
 export const DEFAULT_CONFIG_TEMPLATE_PATH = fileURLToPath(
   new URL('../defaults/config.template.yaml', import.meta.url),
 )
+
 const readOrCreateConfigSource = (path: string): string => {
   try {
     return readFileSync(path, 'utf8')
@@ -112,36 +116,59 @@ const readOrCreateConfigSource = (path: string): string => {
     return readFileSync(path, 'utf8')
   }
 }
-const parseDefaultConfigYaml = (source: string): AppDefaults => {
-  const parsed = parseYaml(source) as unknown
-  const validated = defaultConfigSchema.safeParse(parsed)
-  if (validated.success) {
-    if (
-      validated.data.manager.taskWindow.minCount >
-      validated.data.manager.taskWindow.maxCount
-    ) {
-      throw new Error(
-        '[config] invalid yaml defaults: manager.taskWindow.minCount must be <= manager.taskWindow.maxCount',
-      )
-    }
-    if (
-      validated.data.manager.planWindow.minCount >
-      validated.data.manager.planWindow.maxCount
-    ) {
-      throw new Error(
-        '[config] invalid yaml defaults: manager.planWindow.minCount must be <= manager.planWindow.maxCount',
-      )
-    }
-    return validated.data
+
+const parseConfigInput = (source: string): UserConfigDefaults => {
+  const parsed = (parseYaml(source) ?? {}) as unknown
+  const validated = userConfigInputSchema.safeParse(parsed)
+  if (!validated.success) {
+    const issues = validated.error.issues
+      .map((issue) => `${issue.path.join('.') || '<root>'}: ${issue.message}`)
+      .join('; ')
+    throw new Error(`[config] invalid yaml defaults: ${issues}`)
   }
-  const issues = validated.error.issues
-    .map((issue) => `${issue.path.join('.') || '<root>'}: ${issue.message}`)
-    .join('; ')
-  throw new Error(`[config] invalid yaml defaults: ${issues}`)
+
+  const input = validated.data
+  const managerProvider = input.manager?.provider
+  const baseUrl = trimToUndefined(managerProvider?.baseUrl)
+  const apiKey = trimToUndefined(managerProvider?.apiKey)
+
+  return {
+    manager: {
+      model: input.manager?.model ?? DEFAULT_USER_CONFIG.manager.model,
+      modelReasoningEffort:
+        input.manager?.modelReasoningEffort ??
+        DEFAULT_USER_CONFIG.manager.modelReasoningEffort,
+      provider: {
+        ...(baseUrl ? { baseUrl } : {}),
+        ...(apiKey ? { apiKey } : {}),
+      },
+    },
+    worker: {
+      maxConcurrent:
+        input.worker?.maxConcurrent ?? DEFAULT_USER_CONFIG.worker.maxConcurrent,
+      timeoutMs:
+        input.worker?.timeoutMs ?? DEFAULT_USER_CONFIG.worker.timeoutMs,
+      model: input.worker?.model ?? DEFAULT_USER_CONFIG.worker.model,
+      modelReasoningEffort:
+        input.worker?.modelReasoningEffort ??
+        DEFAULT_USER_CONFIG.worker.modelReasoningEffort,
+    },
+    qq: {
+      enabled: input.qq?.enabled ?? DEFAULT_USER_CONFIG.qq.enabled,
+      appId: input.qq?.appId ?? DEFAULT_USER_CONFIG.qq.appId,
+      appSecret: input.qq?.appSecret ?? DEFAULT_USER_CONFIG.qq.appSecret,
+      apiBase: input.qq?.apiBase ?? DEFAULT_USER_CONFIG.qq.apiBase,
+      callbackPath:
+        input.qq?.callbackPath ?? DEFAULT_USER_CONFIG.qq.callbackPath,
+      verifySign: input.qq?.verifySign ?? DEFAULT_USER_CONFIG.qq.verifySign,
+      clockSkewMs: input.qq?.clockSkewMs ?? DEFAULT_USER_CONFIG.qq.clockSkewMs,
+    },
+  }
 }
+
 export const loadDefaultConfigFromYaml = (
   path = DEFAULT_CONFIG_PATH,
-): AppDefaults => {
+): UserConfigDefaults => {
   const source = readOrCreateConfigSource(path)
-  return parseDefaultConfigYaml(source)
+  return parseConfigInput(source)
 }

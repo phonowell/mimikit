@@ -33,7 +33,7 @@ export const setTaskLiveOutput = (
   const next = normalizeLiveOutput(output)
   const map = taskLiveOutputStore.get(runtime)
   if (!next) {
-    if (!map || !map.has(id)) return false
+    if (!map?.has(id)) return false
     map.delete(id)
     if (map.size === 0) taskLiveOutputStore.delete(runtime)
     return true
@@ -51,7 +51,7 @@ export const clearTaskLiveOutput = (
   const id = taskId.trim()
   if (!id) return false
   const map = taskLiveOutputStore.get(runtime)
-  if (!map || !map.has(id)) return false
+  if (!map?.has(id)) return false
   map.delete(id)
   if (map.size === 0) taskLiveOutputStore.delete(runtime)
   return true

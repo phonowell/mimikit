@@ -62,15 +62,21 @@ wire_api = "responses"
 env_key = "AICODING_API_KEY"
 ```
 
-Manager provider model settings are configured in `config.yaml`:
+Manager/worker model settings are configured in `config.yaml`:
 
 If `config.yaml` is missing, Mimikit will bootstrap it from `defaults/config.template.yaml`.
 
 ```yaml
 manager:
+  model: gpt-5.2-high
+  modelReasoningEffort: high
   provider:
-    model: gpt-5.2-high
-    modelReasoningEffort: high
+    # optional manager-only provider overrides
+    baseUrl: ""
+    apiKey: ""
+worker:
+  model: gpt-5.3-codex-high
+  modelReasoningEffort: high
 ```
 
 - manager calls route directly to `openai-responses`

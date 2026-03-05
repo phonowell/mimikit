@@ -6,64 +6,51 @@ import type { QqConfig } from './channels/qq/config.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
 export type DefaultConfigParams = {
-  /** Absolute working directory path */
   workDir: string
 }
+
+export type PromptSectionLimits = {
+  actionFeedbackMaxBytes: number
+  batchResultsMaxBytes: number
+  compressedContextMaxBytes: number
+  environmentMaxBytes: number
+  fileLookupMaxBytes: number
+  focusContextsMaxBytes: number
+  focusListMaxBytes: number
+  historyLookupMaxBytes: number
+  inputsMaxBytes: number
+  memoryMaxBytes: number
+  plansMaxBytes: number
+  recentHistoryMaxBytes: number
+  tasksMaxBytes: number
+}
+
 export type AppConfig = {
-  /** Absolute work directory (also state root) */
   workDir: string
-  /** Manager scheduling and prompt settings */
   manager: {
-    /** Manager provider settings */
+    model: string
+    modelReasoningEffort: ModelReasoningEffort
     provider: {
-      /** Default manager model */
-      model: string
-      /** Manager model reasoning effort */
-      modelReasoningEffort: ModelReasoningEffort
-      /** Override provider base URL only for manager openai-responses calls */
       baseUrl?: string | undefined
-      /** Override API key only for manager openai-responses calls */
       apiKey?: string | undefined
     }
-    /** Max rounds for manager correction loop */
     maxCorrectionRounds: number
-    promptSections: {
-      actionFeedbackMaxBytes: number
-      batchResultsMaxBytes: number
-      compressedContextMaxBytes: number
-      environmentMaxBytes: number
-      fileLookupMaxBytes: number
-      focusContextsMaxBytes: number
-      focusListMaxBytes: number
-      historyLookupMaxBytes: number
-      inputsMaxBytes: number
-      memoryMaxBytes: number
-      plansMaxBytes: number
-      recentHistoryMaxBytes: number
-      tasksMaxBytes: number
-    }
+    promptSections: PromptSectionLimits
     taskCreate: {
-      /** Debounce window for run_task dedup (ms) */
       debounceMs: number
     }
     idleTrigger: {
-      /** Idle duration before on_idle plans can be triggered (ms) */
       delayMs: number
     }
     taskWindow: {
-      /** Task list retention upper bound */
       maxCount: number
-      /** Task list retention lower bound */
       minCount: number
     }
     planWindow: {
-      /** Plan list retention upper bound */
       maxCount: number
-      /** Plan list retention lower bound */
       minCount: number
     }
   }
-  /** Worker execution configuration */
   worker: {
     maxConcurrent: number
     retry: {
@@ -74,10 +61,66 @@ export type AppConfig = {
     model: string
     modelReasoningEffort: ModelReasoningEffort
   }
-  /** QQ webhook + C2C passive reply settings */
   qq: QqConfig
 }
-export const defaultConfig = (params: DefaultConfigParams): AppConfig => ({
-  workDir: resolve(params.workDir),
-  ...loadDefaultConfigFromYaml(),
-})
+
+const INTERNAL_MANAGER_DEFAULTS = {
+  maxCorrectionRounds: 3,
+  promptSections: {
+    actionFeedbackMaxBytes: 8192,
+    batchResultsMaxBytes: 20480,
+    compressedContextMaxBytes: 12288,
+    environmentMaxBytes: 4096,
+    fileLookupMaxBytes: 20480,
+    focusContextsMaxBytes: 20480,
+    focusListMaxBytes: 8192,
+    historyLookupMaxBytes: 20480,
+    inputsMaxBytes: 8192,
+    memoryMaxBytes: 8192,
+    plansMaxBytes: 16384,
+    recentHistoryMaxBytes: 8192,
+    tasksMaxBytes: 24576,
+  },
+  taskCreate: {
+    debounceMs: 4000,
+  },
+  idleTrigger: {
+    delayMs: 900000,
+  },
+  taskWindow: {
+    maxCount: 20,
+    minCount: 5,
+  },
+  planWindow: {
+    maxCount: 20,
+    minCount: 5,
+  },
+} as const
+
+const INTERNAL_WORKER_DEFAULTS = {
+  retry: {
+    maxAttempts: 1,
+    backoffMs: 5000,
+  },
+} as const
+
+export const defaultConfig = (params: DefaultConfigParams): AppConfig => {
+  const userConfig = loadDefaultConfigFromYaml()
+  return {
+    workDir: resolve(params.workDir),
+    manager: {
+      model: userConfig.manager.model,
+      modelReasoningEffort: userConfig.manager.modelReasoningEffort,
+      provider: userConfig.manager.provider,
+      ...INTERNAL_MANAGER_DEFAULTS,
+    },
+    worker: {
+      maxConcurrent: userConfig.worker.maxConcurrent,
+      timeoutMs: userConfig.worker.timeoutMs,
+      model: userConfig.worker.model,
+      modelReasoningEffort: userConfig.worker.modelReasoningEffort,
+      ...INTERNAL_WORKER_DEFAULTS,
+    },
+    qq: userConfig.qq,
+  }
+}

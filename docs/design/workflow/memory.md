@@ -23,7 +23,7 @@
 
 - 子进程入口：`src/memory/refresh/subprocess.ts`
 - 进程拉起：`src/memory/refresh/job-spawn.ts`
-- 子进程使用 manager 同模型（`runtime.config.manager.provider.model`），并固定走 direct `responses` provider（`openai-responses`）
+- 子进程使用 manager 同模型（`runtime.config.manager.model`），并固定走 direct `responses` provider（`openai-responses`）
 
 ## 单轮作业（单次 LLM 调用）
 

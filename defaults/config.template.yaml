@@ -1,49 +1,36 @@
 manager:
-  provider:
-    model: gpt-5.2-high
-    modelReasoningEffort: high
-    # Optional manager-only provider overrides.
-    # If omitted, manager keeps provider auto-discovery behavior.
-    # baseUrl: ${BASE_URL}
-    # apiKey: ${API_KEY}
-  maxCorrectionRounds: 3
-  promptSections:
-    actionFeedbackMaxBytes: 8192
-    batchResultsMaxBytes: 20480
-    compressedContextMaxBytes: 12288
-    environmentMaxBytes: 4096
-    fileLookupMaxBytes: 20480
-    focusContextsMaxBytes: 20480
-    focusListMaxBytes: 8192
-    historyLookupMaxBytes: 20480
-    inputsMaxBytes: 8192
-    memoryMaxBytes: 8192
-    plansMaxBytes: 16384
-    recentHistoryMaxBytes: 8192
-    tasksMaxBytes: 24576
-  taskCreate:
-    debounceMs: 4000
-  idleTrigger:
-    delayMs: 900000
-  taskWindow:
-    maxCount: 20
-    minCount: 5
-  planWindow:
-    maxCount: 20
-    minCount: 5
-worker:
-  maxConcurrent: 3
-  retry:
-    maxAttempts: 1
-    backoffMs: 5000
-  timeoutMs: 600000
-  model: gpt-5.3-codex-high
+  # Manager 使用的模型名；必填；默认 gpt-5.2-high
+  model: gpt-5.2-high
+  # Manager 推理强度；可选值 minimal|low|medium|high|xhigh；默认 high
   modelReasoningEffort: high
+  provider:
+    # Manager 专用网关地址；可选；空字符串表示走自动发现（~/.codex/config.toml / OPENAI_BASE_URL）
+    baseUrl: ""
+    # Manager 专用 API Key；可选；敏感项；空字符串表示走环境与 codex 配置
+    apiKey: ""
+
+worker:
+  # Worker 使用的模型名；必填；默认 gpt-5.3-codex-high
+  model: gpt-5.3-codex-high
+  # Worker 推理强度；可选值 minimal|low|medium|high|xhigh；默认 high
+  modelReasoningEffort: high
+  # Worker 最大并发数；整数 >= 1；默认 3
+  maxConcurrent: 3
+  # Worker 单任务超时（毫秒）；整数 > 0；默认 600000（10 分钟）
+  timeoutMs: 600000
+
 qq:
+  # 是否启用 QQ 通道；默认 false
   enabled: false
-  appId: ''
-  appSecret: ''
+  # QQ 应用 ID；当 enabled=true 时必填
+  appId: ""
+  # QQ 应用密钥；当 enabled=true 时必填；敏感项
+  appSecret: ""
+  # QQ OpenAPI 基础地址；默认官方地址
   apiBase: https://api.sgroup.qq.com
+  # QQ 回调路径；默认 /api/qq/events
   callbackPath: /api/qq/events
+  # 是否启用回调签名校验；默认 true
   verifySign: true
+  # 验签允许时钟偏差（毫秒）；整数 >= 0；默认 300000（5 分钟）
   clockSkewMs: 300000

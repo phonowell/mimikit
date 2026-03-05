@@ -44,7 +44,7 @@ const config = defaultConfig({
 
 applyCliEnvOverrides(config)
 
-console.log('[cli] config:', config)
+console.log('[cli] config loaded')
 
 const runtimeLock = await acquireRuntimeLock(resolvedWorkDir)
 let shutdownPromise: Promise<never> | null = null

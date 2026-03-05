@@ -96,9 +96,9 @@ In `config.yaml`:
 
 ```yaml
 manager:
+  model: gpt-5.2-high
+  modelReasoningEffort: high
   provider:
-    model: gpt-5.2-high
-    modelReasoningEffort: high
     # baseUrl: https://your-codex-provider.example.com/v1/codex
     # apiKey: ${AICODING_API_KEY}
 worker:

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+
 import { normalizeFocusOpenItems } from '../focus/open-items.js'
 
 import {
@@ -270,7 +271,9 @@ export const parseUpsertFocusAttrs = (
     id: parsed.data.id,
     ...(parsed.data.title !== undefined ? { title: parsed.data.title } : {}),
     ...(parsed.data.status !== undefined ? { status: parsed.data.status } : {}),
-    ...(parsed.data.summary !== undefined ? { summary: parsed.data.summary } : {}),
+    ...(parsed.data.summary !== undefined
+      ? { summary: parsed.data.summary }
+      : {}),
     ...(openItems.value ? { openItems: openItems.value } : {}),
   }
 }

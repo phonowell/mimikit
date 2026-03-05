@@ -82,8 +82,11 @@ const buildPayload = async (
   const memoryMarkdown = await readMemoryMarkdown(runtime.paths.memoryFile)
   return {
     workDir: runtime.config.workDir,
-    model: runtime.config.manager.provider.model,
-    managerProvider: runtime.config.manager.provider,
+    model: runtime.config.manager.model,
+    managerProvider: {
+      ...runtime.config.manager.provider,
+      modelReasoningEffort: runtime.config.manager.modelReasoningEffort,
+    },
     memoryMarkdown,
     signals: visible.map((item) => ({
       id: item.id,
