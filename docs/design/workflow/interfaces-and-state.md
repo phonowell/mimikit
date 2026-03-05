@@ -32,6 +32,9 @@
 
 说明：当前实现通过 SSE 下发消息、任务、plans 与 focus，不提供独立 `messages/tasks/plans` HTTP 查询接口。
 
+补充：
+- `tasks.tasks[*].liveOutput` 为运行中任务的流式输出片段（仅 WebUI 展示，运行态内存数据，不承诺持久化）。
+
 ## 输入协议（`POST /api/input`）
 
 请求体（`parseInputBody`）：

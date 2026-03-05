@@ -11,6 +11,7 @@ import { parseIsoMs } from '../shared/time.js'
 import { nowIso } from '../shared/utils.js'
 import { publishWorkerResult } from '../streams/queues.js'
 
+import { clearTaskLiveOutput } from './live-output.js'
 import { archiveTaskResult } from './result-finalize.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
@@ -102,6 +103,7 @@ export const cancelTask = async (
 
   if (task.status === 'pending') {
     runtime.lastWorkerActivityAtMs = Date.now()
+    clearTaskLiveOutput(runtime, task.id)
     const cancelMeta = buildCancelMeta(meta)
     const result = buildCanceledResult(task, meta?.reason ?? 'Task canceled')
     markTaskCanceled(runtime.tasks, task.id, {
@@ -120,6 +122,7 @@ export const cancelTask = async (
 
   const canceledAt = nowIso()
   runtime.lastWorkerActivityAtMs = Date.now()
+  clearTaskLiveOutput(runtime, task.id)
   const canceledAtMs = parseIsoMs(canceledAt)
   const startedAtMs = parseIsoMs(task.startedAt ?? '')
   const durationMs =

@@ -26,6 +26,7 @@ const runTaskModel = (params: {
   task: Task
   controller: AbortController
   onUsage?: (usage: TokenUsage) => void
+  onPartialOutput?: (output: string) => void
 }): Promise<WorkerLlmResult> => {
   const { worker } = params.runtime.config
   const focusMeta = params.runtime.focuses.find(
@@ -50,6 +51,9 @@ const runTaskModel = (params: {
     modelReasoningEffort: worker.modelReasoningEffort,
     abortSignal: params.controller.signal,
     ...(params.onUsage ? { onUsage: params.onUsage } : {}),
+    ...(params.onPartialOutput
+      ? { onPartialOutput: params.onPartialOutput }
+      : {}),
   })
 }
 
@@ -99,6 +103,7 @@ export const runTaskWithRetry = (params: {
   task: Task
   controller: AbortController
   onUsage?: (usage: TokenUsage) => void
+  onPartialOutput?: (output: string) => void
 }): Promise<WorkerLlmResult> => {
   const { runtime, task, controller } = params
   const retries = Math.max(0, runtime.config.worker.retry.maxAttempts)
@@ -120,6 +125,9 @@ export const runTaskWithRetry = (params: {
           task,
           controller,
           ...(params.onUsage ? { onUsage: params.onUsage } : {}),
+          ...(params.onPartialOutput
+            ? { onPartialOutput: params.onPartialOutput }
+            : {}),
         })
       } catch (error) {
         if (shouldTreatAsTaskCancel(controller, error))

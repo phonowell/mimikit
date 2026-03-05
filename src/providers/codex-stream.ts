@@ -2,6 +2,8 @@ import { normalizeUsage } from '../shared/utils.js'
 
 import type { CodexSdkProviderRequest } from './types.js'
 
+const PARTIAL_OUTPUT_EMIT_INTERVAL_MS = 400
+
 type CodexThread = {
   runStreamed: (
     prompt: string,
@@ -39,7 +41,26 @@ export const runCodexStream = async (
   })
   let output = ''
   let latestOutput = ''
+  let emittedOutput = ''
+  let lastEmitAtMs = 0
   let usage: ReturnType<typeof normalizeUsage> | undefined
+  const emitPartialOutput = (
+    text: string,
+    mode: 'throttled' | 'force' = 'throttled',
+  ): void => {
+    if (!request.onPartialOutput) return
+    const normalized = text.replace(/\r\n?/g, '\n')
+    if (!normalized || normalized === emittedOutput) return
+    const nowMs = Date.now()
+    if (
+      mode === 'throttled' &&
+      nowMs - lastEmitAtMs < PARTIAL_OUTPUT_EMIT_INTERVAL_MS
+    )
+      return
+    emittedOutput = normalized
+    lastEmitAtMs = nowMs
+    request.onPartialOutput(normalized)
+  }
   for await (const rawEvent of stream.events) {
     const event = asRecord(rawEvent)
     const eventType = asString(event, 'type')
@@ -50,6 +71,10 @@ export const runCodexStream = async (
       if (asString(item, 'type') !== 'agent_message') continue
       const nextOutput = asString(item, 'text') ?? ''
       latestOutput = nextOutput
+      emitPartialOutput(
+        nextOutput,
+        eventType === 'item.completed' ? 'force' : 'throttled',
+      )
       if (eventType === 'item.completed') output = nextOutput
       continue
     }
@@ -66,5 +91,6 @@ export const runCodexStream = async (
       throw new Error(asString(event, 'message') ?? 'codex_stream_error')
   }
   const finalOutput = output || latestOutput
+  emitPartialOutput(finalOutput, 'force')
   return { output: finalOutput, ...(usage ? { usage } : {}) }
 }

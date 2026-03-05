@@ -121,6 +121,20 @@
   margin-top: 6px;
 }
 
+.task-live-output {
+  margin: 2px 0 0;
+  padding: 0;
+  color: var(--text-muted-strong, var(--muted));
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .task-status {
   padding: 0;
   background: var(--task-dot, var(--status-pending));

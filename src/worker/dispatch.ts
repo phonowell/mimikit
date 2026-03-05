@@ -14,6 +14,7 @@ import {
 } from '../orchestrator/core/task-lifecycle.js'
 import { isSameUsage } from '../shared/token-usage.js'
 
+import { clearTaskLiveOutput, setTaskLiveOutput } from './live-output.js'
 import { buildResult, finalizeResult } from './result-finalize.js'
 import { runTaskWithRetry } from './run-retry.js'
 
@@ -41,6 +42,10 @@ const runTask = async (
       onUsage: (usage) => {
         if (isSameUsage(task.usage, usage)) return
         task.usage = usage
+        notifyUiSignal(runtime, 'tasks')
+      },
+      onPartialOutput: (output) => {
+        if (!setTaskLiveOutput(runtime, task.id, output)) return
         notifyUiSignal(runtime, 'tasks')
       },
     })
@@ -100,6 +105,7 @@ const runQueuedWorker = async (
   if (task.status !== 'pending') return
   if (runtime.runningControllers.has(task.id)) return
   runtime.lastWorkerActivityAtMs = Date.now()
+  clearTaskLiveOutput(runtime, task.id)
   const controller = new AbortController()
   runtime.runningControllers.set(task.id, controller)
   markTaskRunning(runtime.tasks, task.id)
@@ -110,6 +116,7 @@ const runQueuedWorker = async (
   try {
     await runTask(runtime, task, controller)
   } finally {
+    clearTaskLiveOutput(runtime, task.id)
     runtime.runningControllers.delete(task.id)
     await bestEffort('persistRuntimeState: worker_end', () =>
       persistRuntimeState(runtime),
@@ -136,6 +143,7 @@ export const enqueuePendingWorkerTasks = (runtime: RuntimeState): void => {
     ) {
       task.status = 'pending'
       delete task.startedAt
+      clearTaskLiveOutput(runtime, task.id)
     }
     if (task.status !== 'pending') continue
     enqueueWorkerTask(runtime, task)

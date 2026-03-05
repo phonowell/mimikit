@@ -6,6 +6,7 @@ import { setDefaultLogPath } from '../../log/safe.js'
 import { createDefaultMemoryRefreshState } from '../../memory/refresh/state.js'
 import { newId } from '../../shared/utils.js'
 import { cancelTask } from '../../worker/cancel-task.js'
+import { getTaskLiveOutputById } from '../../worker/live-output.js'
 import { type ChatMessage } from '../read-model/chat-view.js'
 import { buildFocusViews } from '../read-model/focus-view.js'
 import { sortTaskPlans } from '../read-model/plan-select.js'
@@ -118,9 +119,11 @@ export class Orchestrator {
   }
 
   private buildTasksSnapshot(limit = 200) {
+    const liveOutputByTaskId = getTaskLiveOutputById(this.runtime)
     return buildTaskViews(this.runtime.tasks, limit, {
       maxConcurrentWorkers: this.runtime.config.worker.maxConcurrent,
       runningTaskCount: this.runtime.runningControllers.size,
+      ...(liveOutputByTaskId ? { liveOutputByTaskId } : {}),
     })
   }
 

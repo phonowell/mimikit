@@ -65,6 +65,7 @@ type RunModelInput = {
   prompt: string
   threadId?: string | null
   onUsage?: (usage: TokenUsage) => void
+  onPartialOutput?: (output: string) => void
 }
 
 export type RunLoopParams = {
@@ -76,6 +77,7 @@ export type RunLoopParams = {
   archiveBase: Omit<TraceArchiveEntry, 'prompt' | 'output' | 'ok'>
   runModel: (input: RunModelInput) => Promise<ProviderResult>
   onUsage?: (usage: TokenUsage) => void
+  onPartialOutput?: (output: string) => void
   abortSignal?: AbortSignal
 }
 
@@ -110,6 +112,9 @@ export const runWorkerLoop = async (
           if (!previewUsage) return
           task.usage = previewUsage
           params.onUsage?.(previewUsage)
+        },
+        onPartialOutput: (output) => {
+          params.onPartialOutput?.(output)
         },
       })
       latestResult = result

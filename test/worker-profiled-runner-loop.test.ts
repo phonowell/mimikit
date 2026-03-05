@@ -89,3 +89,45 @@ test('runWorkerLoop does not double count when onUsage and result usage are iden
     await rm(stateDir, { recursive: true, force: true })
   }
 })
+
+test('runWorkerLoop forwards partial output updates', async () => {
+  const stateDir = await createTmpDir()
+  const partialOutputs: string[] = []
+  const task: Task = {
+    id: 'task-test-partial',
+    fingerprint: 'fingerprint-test-partial',
+    prompt: '执行测试任务',
+    title: '执行测试任务',
+    focusId: 'focus-global',
+    profile: 'worker',
+    status: 'running',
+    createdAt: '2026-03-04T00:00:00.000Z',
+  }
+
+  try {
+    const result = await runWorkerLoop({
+      stateDir,
+      task,
+      prompt: '执行测试任务',
+      continueTemplate: '{{ latest_output }}',
+      continueTemplatePath: 'inline-template',
+      archiveBase: { role: 'worker', taskId: task.id },
+      runModel: async ({ onPartialOutput }) => {
+        onPartialOutput?.('step 1')
+        onPartialOutput?.('step 2')
+        return {
+          output: 'done\n<M:skill_usage status="done">test</M:skill_usage>',
+          elapsedMs: 12,
+        }
+      },
+      onPartialOutput: (output) => {
+        partialOutputs.push(output)
+      },
+    })
+
+    expect(result.output).toBe('done')
+    expect(partialOutputs).toEqual(['step 1', 'step 2'])
+  } finally {
+    await rm(stateDir, { recursive: true, force: true })
+  }
+})

@@ -40,6 +40,7 @@ describe('runCodexStream', () => {
       id: 'thread-test',
     }
     const onUsage = vi.fn()
+    const onPartialOutput = vi.fn()
     const request = {
       provider: 'codex-sdk' as const,
       role: 'manager' as const,
@@ -47,6 +48,7 @@ describe('runCodexStream', () => {
       workDir: '/tmp/mimikit',
       timeoutMs: 60_000,
       onUsage,
+      onPartialOutput,
     }
     const resetIdle = vi.fn()
     const signal = new AbortController().signal
@@ -64,6 +66,9 @@ describe('runCodexStream', () => {
       sessionTotal: 999,
     })
     expect(onUsage).toHaveBeenCalledWith(result.usage)
+    expect(onPartialOutput).toHaveBeenCalledTimes(2)
+    expect(onPartialOutput).toHaveBeenNthCalledWith(1, 'hel')
+    expect(onPartialOutput).toHaveBeenNthCalledWith(2, 'hello')
   })
 
   test('throws message from turn.failed event', async () => {

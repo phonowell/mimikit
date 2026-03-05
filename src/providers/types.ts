@@ -11,6 +11,7 @@ export type ProviderResult = {
 }
 
 export type UsageListener = (usage: TokenUsage) => void
+export type PartialOutputListener = (output: string) => void
 
 type ProviderRequestBase = {
   role: 'manager' | 'worker'
@@ -21,6 +22,7 @@ type ProviderRequestBase = {
   threadId?: string | null
   abortSignal?: AbortSignal
   onUsage?: UsageListener
+  onPartialOutput?: PartialOutputListener
 }
 
 export type OpenAiResponsesProviderRequest = ProviderRequestBase & {

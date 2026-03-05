@@ -34,6 +34,7 @@ const buildRunModel =
     prompt: string
     threadId?: string | null
     onUsage?: (usage: TokenUsage) => void
+    onPartialOutput?: (output: string) => void
   }) =>
     runWithProvider({
       provider: 'codex-sdk',
@@ -48,6 +49,9 @@ const buildRunModel =
         : {}),
       ...(input.threadId !== undefined ? { threadId: input.threadId } : {}),
       ...(input.onUsage ? { onUsage: input.onUsage } : {}),
+      ...(input.onPartialOutput
+        ? { onPartialOutput: input.onPartialOutput }
+        : {}),
     })
 
 type WorkerRunnerParams = {
@@ -62,6 +66,7 @@ type WorkerRunnerParams = {
   modelReasoningEffort?: ModelReasoningEffort
   abortSignal?: AbortSignal
   onUsage?: (usage: TokenUsage) => void
+  onPartialOutput?: (output: string) => void
 }
 
 export const runWorker = async (
@@ -97,6 +102,9 @@ export const runWorker = async (
     },
     runModel: buildRunModel(params),
     ...(params.onUsage ? { onUsage: params.onUsage } : {}),
+    ...(params.onPartialOutput
+      ? { onPartialOutput: params.onPartialOutput }
+      : {}),
     ...(params.abortSignal ? { abortSignal: params.abortSignal } : {}),
   })
 }

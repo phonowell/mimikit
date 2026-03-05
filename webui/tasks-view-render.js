@@ -114,6 +114,9 @@ export const renderTasks = (tasksList, data) => {
         ? task.title
         : UI_TEXT.untitledTask
     title.textContent = titleText
+    const liveOutputText =
+      typeof task.liveOutput === 'string' ? task.liveOutput.trim() : ''
+    const showLiveOutput = statusValue === 'running' && liveOutputText.length > 0
 
     const meta = document.createElement('small')
     meta.className = 'task-meta'
@@ -203,6 +206,13 @@ export const renderTasks = (tasksList, data) => {
     const actions = createTaskActions({ titleText, taskId, isCancelable })
 
     link.appendChild(titleRow)
+    if (showLiveOutput) {
+      const liveOutput = document.createElement('p')
+      liveOutput.className = 'task-live-output'
+      liveOutput.textContent = liveOutputText
+      liveOutput.title = liveOutputText
+      link.appendChild(liveOutput)
+    }
     link.appendChild(meta)
     item.appendChild(link)
     if (actions) item.appendChild(actions)

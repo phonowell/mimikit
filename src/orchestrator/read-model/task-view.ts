@@ -8,6 +8,7 @@ export type TaskPendingReason = 'waiting_capacity'
 export type TaskViewRuntimeSnapshot = {
   maxConcurrentWorkers: number
   runningTaskCount: number
+  liveOutputByTaskId?: ReadonlyMap<string, string>
 }
 
 export type TaskView = {
@@ -27,6 +28,7 @@ export type TaskView = {
   usage?: Task['usage']
   archivePath?: string
   pending_reason?: TaskPendingReason
+  liveOutput?: string
 }
 
 export type TaskCounts = Record<TaskStatus, number>
@@ -64,6 +66,10 @@ const taskToView = (
   snapshot?: TaskViewRuntimeSnapshot,
 ): TaskView => {
   const pendingReason = resolvePendingReason(task, snapshot)
+  const liveOutput =
+    task.status === 'running'
+      ? snapshot?.liveOutputByTaskId?.get(task.id)?.trim()
+      : undefined
   return {
     id: task.id,
     kind: 'task',
@@ -87,6 +93,7 @@ const taskToView = (
         ? { archivePath: task.result.archivePath }
         : {}),
     ...(pendingReason ? { pending_reason: pendingReason } : {}),
+    ...(liveOutput ? { liveOutput } : {}),
   }
 }
 
