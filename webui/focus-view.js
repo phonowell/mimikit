@@ -63,7 +63,19 @@ export const renderFocuses = (focusesList, data) => {
     const node = document.createElement('li')
     node.className = 'focus-item'
     const status = typeof item.status === 'string' ? item.status : 'idle'
+    const taskId =
+      typeof item.lastTaskId === 'string' ? item.lastTaskId.trim() : ''
+    const canOpenArchive = taskId.length > 0
     node.dataset.status = status
+
+    const link = document.createElement(canOpenArchive ? 'a' : 'div')
+    link.className = 'focus-link'
+    link.dataset.status = status
+    if (canOpenArchive) {
+      link.href = '#'
+      link.setAttribute('data-task-id', taskId)
+      link.setAttribute('data-archive-openable', 'true')
+    }
 
     const header = document.createElement('div')
     header.className = 'focus-title-row'
@@ -84,14 +96,14 @@ export const renderFocuses = (focusesList, data) => {
 
     header.appendChild(dot)
     header.appendChild(title)
-    node.appendChild(header)
+    link.appendChild(header)
 
     const summary = resolveSummary(item)
     if (summary) {
       const summaryEl = document.createElement('p')
       summaryEl.className = 'focus-summary'
       summaryEl.textContent = summary
-      node.appendChild(summaryEl)
+      link.appendChild(summaryEl)
     }
 
     const openItems = resolveOpenItems(item)
@@ -99,7 +111,7 @@ export const renderFocuses = (focusesList, data) => {
       const openItemsTitle = document.createElement('p')
       openItemsTitle.className = 'focus-open-items-title'
       openItemsTitle.textContent = UI_TEXT.focusOpenItemsLabel
-      node.appendChild(openItemsTitle)
+      link.appendChild(openItemsTitle)
 
       const openItemsList = document.createElement('ul')
       openItemsList.className = 'focus-open-items'
@@ -109,7 +121,7 @@ export const renderFocuses = (focusesList, data) => {
         openItemNode.textContent = openItem
         openItemsList.appendChild(openItemNode)
       }
-      node.appendChild(openItemsList)
+      link.appendChild(openItemsList)
     }
 
     const meta = document.createElement('small')
@@ -123,7 +135,8 @@ export const renderFocuses = (focusesList, data) => {
           : ''
     appendMetaTime(meta, 'focus-time', changedAt)
 
-    if (meta.childElementCount > 0) node.appendChild(meta)
+    if (meta.childElementCount > 0) link.appendChild(meta)
+    node.appendChild(link)
     focusesList.appendChild(node)
   }
 

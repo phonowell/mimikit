@@ -25,6 +25,31 @@
   transform: translate(0.5px, 0.5px);
 }
 
+.focus-link {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 10px;
+  min-width: 0;
+  transition: box-shadow 0.14s ease-out, transform 0.14s ease-out;
+}
+
+.focus-link[data-archive-openable='true'] {
+  cursor: pointer;
+}
+
+.focus-link:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.focus-link:active {
+  box-shadow: var(--shadow-inset-soft);
+  transform: translate(0.5px, 0.5px);
+}
+
 .plan-status {
   background: var(--plan-dot, var(--status-pending));
 }
@@ -44,7 +69,6 @@
 .focus-item {
   display: flex;
   flex-direction: column;
-  gap: 8px;
   position: relative;
   background: var(--panel);
   box-shadow: var(--shadow-raised-soft);

@@ -1,3 +1,4 @@
+import { bindFocusInteractions } from './focus-interactions.js'
 import { renderFocuses } from './focus-view.js'
 import { bindPlanInteractions } from './plans-interactions.js'
 import { renderPlans } from './plans-view.js'
@@ -55,6 +56,7 @@ export const bindFocusPanel = ({
   focusesOpenBtn,
   focusesCloseBtn,
 }) => {
+  const unbindFocusInteractions = bindFocusInteractions(focusesList)
   const panel = bindItemsPanel({
     list: focusesList,
     dialog: focusesDialog,
@@ -66,6 +68,9 @@ export const bindFocusPanel = ({
   return {
     applyFocusesSnapshot: panel.applySnapshot,
     setDisconnected: panel.setDisconnected,
-    dispose: panel.dispose,
+    dispose: () => {
+      unbindFocusInteractions()
+      panel.dispose()
+    },
   }
 }

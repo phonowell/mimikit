@@ -144,6 +144,7 @@ export class Orchestrator {
       this.runtime.focusContexts,
       this.runtime.activeFocusIds,
       limit,
+      this.runtime.tasks,
     )
   }
 
