@@ -91,6 +91,17 @@
 - 清除引用按钮（`.quote-clear`）：凸起阴影需弱于常规图标按钮，仅保留轻微触感。
 - 任务面板（`.tasks-*`）：列表平面浅色层 + 任务项凸起层；任务链接保留按压反馈。
 
+## Markdown 预览页规范（`archive-viewer.html`）
+
+- 定位：只读 markdown 阅读容器，强调“预览与核对”，不承载编辑行为。
+- 信息架构：`archive-header`（标题/来源）+ `archive-stats`（文档指标）+ `archive-main`（正文）。
+- 层级语法：`archive-header` 使用 Raised；`archive-main` 使用 Inset；正文气泡保持轻凸起，禁止改为强对比卡片。
+- 指标规范：固定展示 `Lines`/`Words`/`Chars`/`Code`/`Read`；加载失败或无内容回退 `--`。
+- 主操作：仅保留 `Open raw markdown`；按钮必须复用全局按压反馈（凹陷 + 轻位移）。
+- 动效：容器入场可使用 `220ms ~ 360ms` 的淡入上浮；`prefers-reduced-motion: reduce` 必须关闭动画与位移。
+- 响应式：`<=900px` 头部转单列；`<=640px` 指标卡至少两列并提升触控面积。
+- 可访问性：指标区使用 `dl/dt/dd`，正文区域保留 `aria-live="polite"`，错误态不能残留旧内容。
+
 ## 交互与可用性
 
 - `hover`：只做轻量色彩/阴影变化，不做大位移动效。
@@ -126,7 +137,10 @@
 - `components-messages.css`：消息流、引用、加载态。
 - `components-dialogs.css`：任务与重启弹窗。
 - `components-markdown.css`：Markdown 渲染细节。
-- `components-responsive.css`：动效降级与移动端覆写。
+- `archive-viewer.css`：归档 markdown 预览页核心布局与头部指标层级。
+- `archive-viewer-markdown.css`：归档正文卡片与 markdown 阅读细节。
+- `archive-viewer-responsive.css`：归档页动效降级与移动端覆写。
+- `components-responsive.css`：主会话页动效降级与移动端覆写。
 
 ## 迭代协议
 

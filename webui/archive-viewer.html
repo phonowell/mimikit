@@ -8,22 +8,57 @@
     <link rel="stylesheet" href="components-messages-bubble.css" />
     <link rel="stylesheet" href="components-markdown.css" />
     <link rel="stylesheet" href="archive-viewer.css" />
+    <link rel="stylesheet" href="archive-viewer-markdown.css" />
+    <link rel="stylesheet" href="archive-viewer-responsive.css" />
   </head>
   <body>
     <main class="archive-viewer" data-viewer>
       <header class="archive-header">
-        <h1 class="archive-title">Task Archive</h1>
-        <p class="archive-meta" data-meta></p>
-        <a class="archive-source" data-source target="_blank" rel="noopener noreferrer" hidden
-          >Open raw markdown</a
-        >
+        <div class="archive-header-main">
+          <p class="archive-kicker">Markdown Preview</p>
+          <h1 class="archive-title" data-title>Task Archive</h1>
+          <p class="archive-meta" data-meta></p>
+        </div>
+        <div class="archive-header-side" aria-label="Archive metrics">
+          <dl class="archive-stats">
+            <div class="archive-stat">
+              <dt>Lines</dt>
+              <dd data-stat-lines>--</dd>
+            </div>
+            <div class="archive-stat">
+              <dt>Words</dt>
+              <dd data-stat-words>--</dd>
+            </div>
+            <div class="archive-stat">
+              <dt>Chars</dt>
+              <dd data-stat-chars>--</dd>
+            </div>
+            <div class="archive-stat">
+              <dt>Code</dt>
+              <dd data-stat-code>--</dd>
+            </div>
+            <div class="archive-stat">
+              <dt>Read</dt>
+              <dd data-stat-read>--</dd>
+            </div>
+          </dl>
+          <a class="archive-source" data-source target="_blank" rel="noopener noreferrer" hidden
+            >Open raw markdown</a
+          >
+        </div>
       </header>
-      <section class="archive-main scrollable">
-        <p class="archive-state" data-state>Loading...</p>
-        <div class="message agent" data-message hidden>
-          <article>
-            <div class="content markdown" data-content></div>
-          </article>
+      <section class="archive-main scrollable" aria-live="polite">
+        <div class="archive-main-inner">
+          <p class="archive-state" data-state>Loading...</p>
+          <div class="message agent" data-message hidden>
+            <article>
+              <header class="archive-content-header">
+                <span class="archive-content-tag" data-content-tag>Rendered markdown</span>
+                <span class="archive-content-hint">Read-only preview</span>
+              </header>
+              <div class="content markdown" data-content></div>
+            </article>
+          </div>
         </div>
       </section>
     </main>

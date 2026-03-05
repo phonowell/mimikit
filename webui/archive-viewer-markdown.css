@@ -1,0 +1,75 @@
+.archive-main .message article {
+  max-width: 100%;
+  width: min(100%, 92ch);
+  margin: 0 auto;
+  padding: 14px 16px 16px;
+}
+
+.archive-content-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.archive-content-tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(47, 125, 230, 0.2);
+  background: linear-gradient(145deg, rgba(238, 244, 255, 0.95) 0%, rgba(223, 235, 255, 0.9) 100%);
+  color: #24509a;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.archive-content-hint {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.archive-main .message .content.markdown {
+  font-size: 15px;
+  line-height: 1.64;
+}
+
+.archive-main .message .content.markdown > * {
+  margin-bottom: 10px;
+}
+
+.archive-main .message .content.markdown h1,
+.archive-main .message .content.markdown h2,
+.archive-main .message .content.markdown h3,
+.archive-main .message .content.markdown h4,
+.archive-main .message .content.markdown h5,
+.archive-main .message .content.markdown h6 {
+  color: #28364c;
+  line-height: 1.3;
+}
+
+.archive-main .message .content.markdown pre {
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: #f3f6fb;
+  box-shadow: var(--shadow-inset-soft);
+}
+
+.archive-main .message .content.markdown table {
+  border-radius: 10px;
+}
+
+.archive-main .message .content.markdown blockquote {
+  border-left: 3px solid rgba(101, 129, 167, 0.35);
+  background: rgba(235, 240, 248, 0.58);
+  border-radius: 0 10px 10px 0;
+  padding: 8px 12px;
+}

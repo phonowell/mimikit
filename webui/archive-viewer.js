@@ -2,19 +2,67 @@ import { renderMarkdown } from './markdown.js'
 
 const ROOT = window.location.origin
 const TASK_ARCHIVE_API_PATTERN = /^\/api\/tasks\/[^/]+\/archive$/
+const NUMBER_FORMAT = new Intl.NumberFormat('en-US')
 
 const stateEl = document.querySelector('[data-state]')
+const titleEl = document.querySelector('[data-title]')
 const metaEl = document.querySelector('[data-meta]')
+const contentTagEl = document.querySelector('[data-content-tag]')
 const contentEl = document.querySelector('[data-content]')
 const messageEl = document.querySelector('[data-message]')
 const sourceEl = document.querySelector('[data-source]')
+const statLinesEl = document.querySelector('[data-stat-lines]')
+const statWordsEl = document.querySelector('[data-stat-words]')
+const statCharsEl = document.querySelector('[data-stat-chars]')
+const statCodeEl = document.querySelector('[data-stat-code]')
+const statReadEl = document.querySelector('[data-stat-read]')
+
+const setText = (el, text) => {
+  if (el) el.textContent = text
+}
+
+const setNumberText = (el, value) => {
+  if (el) el.textContent = NUMBER_FORMAT.format(value)
+}
 
 const updateState = (text) => {
-  if (stateEl) stateEl.textContent = text
+  setText(stateEl, text)
+}
+
+const updateTitle = (text) => {
+  setText(titleEl, text)
 }
 
 const updateMeta = (text) => {
-  if (metaEl) metaEl.textContent = text
+  setText(metaEl, text)
+}
+
+const updateContentTag = (text) => {
+  setText(contentTagEl, text)
+}
+
+const resetStats = () => {
+  setText(statLinesEl, '--')
+  setText(statWordsEl, '--')
+  setText(statCharsEl, '--')
+  setText(statCodeEl, '--')
+  setText(statReadEl, '--')
+}
+
+const updateStats = (markdown) => {
+  const lines = markdown.length ? markdown.split(/\r?\n/).length : 0
+  const words = (markdown.match(/[^\s]+/g) ?? []).length
+  const chars = [...markdown].length
+  const fenceMarkers = (markdown.match(/^\s*```/gm) ?? []).length
+  const codeBlocks = Math.ceil(fenceMarkers / 2)
+  const readingUnit = words + Math.floor(chars / 4)
+  const readMinutes = readingUnit === 0 ? 0 : Math.max(1, Math.ceil(readingUnit / 220))
+
+  setNumberText(statLinesEl, lines)
+  setNumberText(statWordsEl, words)
+  setNumberText(statCharsEl, chars)
+  setNumberText(statCodeEl, codeBlocks)
+  setText(statReadEl, readMinutes === 0 ? '0m' : `${readMinutes}m`)
 }
 
 const showContent = () => {
@@ -29,24 +77,39 @@ const showError = (text) => {
 }
 
 const isAllowedPath = (pathname) =>
-  pathname.startsWith('/state-files/') ||
-  TASK_ARCHIVE_API_PATTERN.test(pathname)
+  pathname.startsWith('/state-files/') || TASK_ARCHIVE_API_PATTERN.test(pathname)
+
+const buildContentTag = (value) => {
+  const trimmed = value.trim()
+  if (!trimmed) return 'Rendered markdown'
+  if (trimmed.length <= 48) return trimmed
+  return `${trimmed.slice(0, 45)}...`
+}
 
 const resolveSourceTarget = () => {
   const params = new URLSearchParams(window.location.search)
   const taskId = params.get('task')?.trim() ?? ''
   if (taskId) {
     return {
-      title: `task: ${taskId}`,
+      pageTitle: 'Task Archive',
+      meta: `task: ${taskId}`,
       sourceUrl: `/api/tasks/${encodeURIComponent(taskId)}/archive`,
+      contentTag: `task/${taskId}`,
     }
   }
+
   const source = params.get('src')?.trim() ?? ''
   if (!source) throw new Error('Missing query: task or src')
   const url = new URL(source, ROOT)
   if (url.origin !== ROOT) throw new Error('Only same-origin sources are allowed')
   if (!isAllowedPath(url.pathname)) throw new Error('Unsupported source path')
-  return { title: `source: ${url.pathname}`, sourceUrl: `${url.pathname}${url.search}` }
+
+  return {
+    pageTitle: 'Markdown Archive',
+    meta: `source: ${url.pathname}`,
+    sourceUrl: `${url.pathname}${url.search}`,
+    contentTag: url.pathname,
+  }
 }
 
 const updateSourceLink = (href) => {
@@ -58,23 +121,29 @@ const updateSourceLink = (href) => {
 const renderArchive = async () => {
   try {
     const target = resolveSourceTarget()
-    updateMeta(target.title)
+    updateTitle(target.pageTitle)
+    updateMeta(target.meta)
+    updateContentTag(buildContentTag(target.contentTag))
     updateSourceLink(target.sourceUrl)
+
     const response = await fetch(target.sourceUrl, {
       headers: { Accept: 'text/markdown,text/plain;q=0.9,*/*;q=0.1' },
     })
-    if (!response.ok) 
-      throw new Error(`Load failed: HTTP ${response.status}`)
-    
+    if (!response.ok) throw new Error(`Load failed: HTTP ${response.status}`)
+
     const markdown = await response.text()
     if (!contentEl) throw new Error('Missing content container')
+
     contentEl.replaceChildren(renderMarkdown(markdown))
+    updateStats(markdown)
     showContent()
-    document.title = `${target.title} · Archive Viewer`
+    document.title = `${target.pageTitle} · Archive Viewer`
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     showError(message)
+    updateTitle('Archive Viewer')
     updateMeta('')
+    resetStats()
     if (sourceEl instanceof HTMLAnchorElement) sourceEl.hidden = true
   }
 }
