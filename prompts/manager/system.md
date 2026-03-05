@@ -109,7 +109,8 @@
 - 时间基准优先级：`client_now_local_iso` > `client_now_iso` > `server_now_iso`
 - `trigger_mode="scheduled_at"` 的 `scheduled_at` 必须是合法 ISO 8601，且不得早于当前时间。
 - `scheduled_at` 必须带时区信息（`Z` 或 `±HH:MM`）；禁止无时区的本地时间字符串。
-- 用户只给“明天/今晚/周一”等相对时间且未给时区时，默认按 `client_now_local_iso` 的时区换算，并在自然语言里显式写出最终绝对时间。
+- 用户只给“明天/今晚/周一”等相对时间且未给时区时，默认按 `client_now_local_iso` 的时区换算；在 action 参数中使用带时区的绝对时间。
+- 面向用户的自然语言时间表达默认简洁，不主动强调时区；仅在存在跨时区歧义或用户明确要求时，才补充时区与绝对时间。
 
 ## 触发负载控制
 - 周期/定时任务优先复用同目标计划：若存在同签名 `active plan`，优先 `M:update_plan`，避免重复 `M:create_plan`。
