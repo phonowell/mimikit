@@ -58,7 +58,18 @@ export const renderPlans = (plansList, data) => {
     const node = document.createElement('li')
     node.className = 'plan-item'
     const status = typeof item.status === 'string' ? item.status : 'active'
+    const taskId =
+      typeof item.lastTaskId === 'string' ? item.lastTaskId.trim() : ''
+    const canOpenArchive = taskId.length > 0
     node.dataset.status = status
+
+    const link = document.createElement(canOpenArchive ? 'a' : 'div')
+    link.className = 'plan-link'
+    if (canOpenArchive) {
+      link.href = '#'
+      link.setAttribute('data-task-id', taskId)
+      link.setAttribute('data-archive-openable', 'true')
+    }
 
     const header = document.createElement('div')
     header.className = 'plan-title-row'
@@ -98,8 +109,9 @@ export const renderPlans = (plansList, data) => {
           : ''
     appendMetaTime(meta, 'plan-time', changedAt)
 
-    node.appendChild(header)
-    if (meta.childElementCount > 0) node.appendChild(meta)
+    link.appendChild(header)
+    if (meta.childElementCount > 0) link.appendChild(meta)
+    node.appendChild(link)
     plansList.appendChild(node)
   }
 

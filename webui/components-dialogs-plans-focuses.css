@@ -5,6 +5,26 @@
   box-shadow: var(--shadow-raised-soft);
 }
 
+.plan-link {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 10px;
+  transition: box-shadow 0.14s ease-out, transform 0.14s ease-out;
+}
+
+.plan-link:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.plan-link:active {
+  box-shadow: var(--shadow-inset-soft);
+  transform: translate(0.5px, 0.5px);
+}
+
 .plan-status {
   background: var(--plan-dot, var(--status-pending));
 }
