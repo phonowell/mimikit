@@ -1,5 +1,3 @@
-import { parse as parseYaml } from 'yaml'
-
 import { readTextFileIfExists } from '../fs/read-text.js'
 import { readErrorCode } from '../shared/error-code.js'
 import { compareIsoDesc } from '../shared/time.js'

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 
@@ -90,6 +91,20 @@ const clearPlansDirectory = (repoRoot, plansDirName) => {
   }
 };
 
+const runLintPreflight = (cwd) => {
+  console.log("[land] running pnpm lint");
+  const result = spawnSync("pnpm", ["run", "lint"], {
+    cwd,
+    stdio: "inherit",
+  });
+  if (result.error) {
+    exitWith(`failed to run pnpm lint: ${result.error.message}`);
+  }
+  if (result.status !== 0) {
+    exitWith(`pnpm lint failed with exit code ${result.status ?? "unknown"}`);
+  }
+};
+
 const { base, plansDir, message } = parseArgs(process.argv.slice(2));
 const repoRoot = runGitCapture(["rev-parse", "--show-toplevel"]);
 const currentBranch = runGitCapture(["rev-parse", "--abbrev-ref", "HEAD"]);
@@ -98,6 +113,7 @@ if (currentBranch === "HEAD") exitWith("detached HEAD is not supported");
 if (currentBranch === base) exitWith(`run from a non-${base} branch`);
 if (!ALLOWED_BRANCHES.has(currentBranch)) exitWith("run from worktree-1/2/3 only");
 
+runLintPreflight(repoRoot);
 clearStaleRebaseHead();
 ensureNoInProgressState();
 clearPlansDirectory(repoRoot, plansDir);
