@@ -106,7 +106,7 @@
 - `inputs/packets.jsonl`
 - `results/packets.jsonl`
 - `tasks/tasks.jsonl`
-- `task-progress/{taskId}.jsonl`
+- `task-progress/YYYY-MM-DD/{taskId}.jsonl`
 - `tasks/YYYY-MM-DD/*.md`
 - `traces/YYYY-MM-DD/<ts36><ra>.txt`
 - `history/YYYY-MM-DD.jsonl`
