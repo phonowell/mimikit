@@ -13,6 +13,10 @@ import { publishWorkerResult } from '../streams/queues.js'
 
 import { clearTaskLiveOutput } from './live-output.js'
 import { archiveTaskResult } from './result-finalize.js'
+import {
+  buildTaskResultHandoff,
+  withTaskArchiveEvidence,
+} from './result-handoff.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { Task, TaskCancelMeta, TaskResult } from '../types/index.js'
@@ -38,6 +42,7 @@ const buildCanceledResult = (task: Task, output: string): TaskResult => {
   const startedAtMs = parseIsoMs(task.startedAt ?? '')
   const durationMs =
     startedAtMs !== undefined ? Math.max(0, Date.now() - startedAtMs) : 0
+  const handoff = buildTaskResultHandoff(task, { status: 'canceled', output })
   return {
     taskId: task.id,
     status: 'canceled',
@@ -48,6 +53,7 @@ const buildCanceledResult = (task: Task, output: string): TaskResult => {
     ...(task.title ? { title: task.title } : {}),
     profile: task.profile,
     ...(task.cancel ? { cancel: task.cancel } : {}),
+    ...(handoff ? { handoff } : {}),
   }
 }
 
@@ -69,7 +75,10 @@ const pushCanceledResult = async (
 ) => {
   syncFocusContextFromTaskResult(runtime, task, result)
   const archivePath = await archiveTaskResult(runtime, task, result, 'cancel')
-  if (archivePath) result.archivePath = task.archivePath = archivePath
+  if (archivePath) {
+    result.archivePath = task.archivePath = archivePath
+    result.handoff = withTaskArchiveEvidence(result.handoff, archivePath)
+  }
   await publishWorkerResult({
     paths: runtime.paths,
     payload: result,

@@ -44,7 +44,7 @@ export const buildFocusViews = (
       const context = contextById.get(focus.id)
       const summary = normalizeSummary(context?.summary)
       const titleFallback = normalizeSummary(focus.title)
-      const title = summary ?? titleFallback ?? focus.id
+      const title = titleFallback ?? summary ?? focus.id
       const resolvedSummary = summary ?? titleFallback
       const openItems = normalizeFocusOpenItems(context?.openItems)
       return {

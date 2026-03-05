@@ -259,7 +259,7 @@ test('upsert_focus accepts open_item_{n} scalar attrs and writes openItems', asy
   ])
 
   const focus = runtime.focuses.find((item) => item.id === 'focus-release')
-  expect(focus?.title).toBe('Track release readiness')
+  expect(focus?.title).toBe('Release')
   const context = runtime.focusContexts.find((item) => item.focusId === 'focus-release')
   expect(context?.summary).toBe('Track release readiness')
   expect(context?.openItems).toEqual(['确认回滚路径', '补齐发布清单'])

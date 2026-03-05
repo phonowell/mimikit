@@ -64,6 +64,36 @@ test('resolveDefaultFocusId reuses idle non-global focus when no active non-glob
   expect(resolveDefaultFocusId(runtime)).toBe('focus-idle')
 })
 
+test('resolveDefaultFocusId does not reuse inbox when other idle focus exists', () => {
+  const runtime = createRuntime([
+    {
+      id: 'focus-global',
+      title: 'Global',
+      status: 'active',
+      createdAt: '2026-03-01T00:00:00.000Z',
+      updatedAt: '2026-03-01T00:00:00.000Z',
+      lastActivityAt: '2026-03-03T00:00:00.000Z',
+    },
+    {
+      id: INBOX_FOCUS_ID,
+      title: 'Inbox',
+      status: 'idle',
+      createdAt: '2026-03-01T00:00:00.000Z',
+      updatedAt: '2026-03-01T00:00:00.000Z',
+      lastActivityAt: '2026-03-03T00:00:00.000Z',
+    },
+    {
+      id: 'focus-idle',
+      title: 'Idle',
+      status: 'idle',
+      createdAt: '2026-03-01T00:00:00.000Z',
+      updatedAt: '2026-03-01T00:00:00.000Z',
+      lastActivityAt: '2026-03-02T00:00:00.000Z',
+    },
+  ])
+  expect(resolveDefaultFocusId(runtime)).toBe('focus-idle')
+})
+
 test('resolveDefaultFocusId falls back to inbox when only global exists', () => {
   const runtime = createRuntime([
     {

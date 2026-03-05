@@ -8,6 +8,7 @@ import {
   updatePlanSchema,
 } from './action-plan-schema.js'
 import { readFileToolSchema } from './read-file-tool.js'
+import { queryTaskArchiveSchema } from './task-archive-tool.js'
 
 import type { Parsed } from '../actions/model/spec.js'
 import type { UserChoiceOption } from '../types/index.js'
@@ -41,6 +42,7 @@ export const cancelSchema = z
   .strict()
 
 export const readFileSchema = readFileToolSchema
+export { queryTaskArchiveSchema }
 
 export const compressContextSchema = z.object({}).strict()
 

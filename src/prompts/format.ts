@@ -77,6 +77,7 @@ export {
   formatInputs,
   formatReadFileLookup,
   formatRecentHistory,
+  formatTaskArchiveLookup,
 } from './format-messages.js'
 export {
   formatCompressedFocusContexts,

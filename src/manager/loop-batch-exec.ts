@@ -1,6 +1,7 @@
 import { runManager } from './runner.js'
 
 import type { RuntimeState } from './runtime-adapter.js'
+import type { PromptSectionLimits } from '../config.js'
 import type {
   HistoryLookupMessage,
   ManagerActionFeedback,
@@ -9,6 +10,7 @@ import type {
   ReadFileLookupMessage,
   Task,
   TaskPlan,
+  TaskArchiveLookupMessage,
   TaskResult,
   TokenUsage,
   UserInput,
@@ -57,6 +59,69 @@ const resolveWakeProfile = (
   return 'idle'
 }
 
+const MIN_PROMPT_SECTION_BYTES = 512
+
+const WAKE_PROFILE_SECTION_MULTIPLIERS: Partial<
+  Record<ManagerWakeProfile, Partial<Record<keyof PromptSectionLimits, number>>>
+> = {
+  user_input: {
+    inputsMaxBytes: 1.5,
+    recentHistoryMaxBytes: 1.4,
+    focusContextsMaxBytes: 1.2,
+    historyLookupMaxBytes: 1.1,
+    batchResultsMaxBytes: 0.6,
+    tasksMaxBytes: 0.8,
+    plansMaxBytes: 0.9,
+  },
+  task_result: {
+    batchResultsMaxBytes: 1.6,
+    tasksMaxBytes: 1.3,
+    focusContextsMaxBytes: 1.2,
+    inputsMaxBytes: 0.7,
+    recentHistoryMaxBytes: 0.7,
+    historyLookupMaxBytes: 0.8,
+    plansMaxBytes: 0.8,
+  },
+  trigger: {
+    plansMaxBytes: 1.4,
+    tasksMaxBytes: 1.1,
+    inputsMaxBytes: 0.7,
+    recentHistoryMaxBytes: 0.8,
+  },
+  capacity: {
+    plansMaxBytes: 1.4,
+    tasksMaxBytes: 1.1,
+    inputsMaxBytes: 0.7,
+    recentHistoryMaxBytes: 0.8,
+    batchResultsMaxBytes: 0.8,
+  },
+  idle: {
+    plansMaxBytes: 1.2,
+    tasksMaxBytes: 1.1,
+    inputsMaxBytes: 0.6,
+    recentHistoryMaxBytes: 0.8,
+    batchResultsMaxBytes: 0.8,
+  },
+}
+
+export const resolvePromptSectionLimitsForWakeProfile = (
+  base: PromptSectionLimits,
+  wakeProfile: ManagerWakeProfile,
+): PromptSectionLimits => {
+  const multipliers = WAKE_PROFILE_SECTION_MULTIPLIERS[wakeProfile]
+  if (!multipliers) return base
+  const entries = Object.entries(base) as Array<
+    [keyof PromptSectionLimits, number]
+  >
+  return Object.fromEntries(
+    entries.map(([key, value]) => {
+      const multiplier = multipliers[key] ?? 1
+      const next = Math.round(value * multiplier)
+      return [key, Math.max(MIN_PROMPT_SECTION_BYTES, next)]
+    }),
+  ) as PromptSectionLimits
+}
+
 export const runManagerRoundWithRecovery = async (params: {
   runtime: RuntimeState
   round: number
@@ -68,18 +133,23 @@ export const runManagerRoundWithRecovery = async (params: {
   extra: {
     historyLookup?: HistoryLookupMessage[]
     readFileLookup?: ReadFileLookupMessage[]
+    taskArchiveLookup?: TaskArchiveLookupMessage[]
     actionFeedback?: ManagerActionFeedback[]
   }
 }): Promise<{ output: string; elapsedMs: number; usage?: TokenUsage }> => {
   const wakeProfile = resolveWakeProfile(params.inputs, params.results)
   const managerEnv = buildManagerEnv(params.runtime, wakeProfile)
+  const promptSectionLimits = resolvePromptSectionLimitsForWakeProfile(
+    params.runtime.config.manager.promptSections,
+    wakeProfile,
+  )
   const result = await runManager({
     stateDir: params.runtime.config.workDir,
     workDir: params.runtime.config.workDir,
     inputs: params.inputs,
     results: params.results,
     tasks: params.tasks,
-    promptSectionLimits: params.runtime.config.manager.promptSections,
+    promptSectionLimits,
     plans: params.plans,
     focuses: params.runtime.focuses,
     focusContexts: params.runtime.focusContexts,
@@ -90,6 +160,9 @@ export const runManagerRoundWithRecovery = async (params: {
       : {}),
     ...(params.extra.readFileLookup
       ? { readFileLookup: params.extra.readFileLookup }
+      : {}),
+    ...(params.extra.taskArchiveLookup
+      ? { taskArchiveLookup: params.extra.taskArchiveLookup }
       : {}),
     ...(params.extra.actionFeedback
       ? { actionFeedback: params.extra.actionFeedback }

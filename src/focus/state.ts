@@ -28,7 +28,12 @@ export const resolveDefaultFocusId = (runtime: RuntimeState): FocusId => {
   if (primaryActiveFocus) return primaryActiveFocus.id
 
   const reusableIdleFocus = runtime.focuses
-    .filter((item) => item.status === 'idle' && item.id !== GLOBAL_FOCUS_ID)
+    .filter(
+      (item) =>
+        item.status === 'idle' &&
+        item.id !== GLOBAL_FOCUS_ID &&
+        item.id !== INBOX_FOCUS_ID,
+    )
     .sort((a, b) => {
       const diff = compareIsoDesc(a.lastActivityAt, b.lastActivityAt)
       if (diff !== 0) return diff
@@ -49,21 +54,6 @@ const normalizeFocusSummary = (value?: string): string | undefined => {
   if (typeof value !== 'string') return undefined
   const trimmed = value.trim()
   return trimmed || undefined
-}
-
-const syncFocusTitleFromSummary = (
-  runtime: RuntimeState,
-  focusId: FocusId,
-  summary?: string,
-): void => {
-  if (!summary) return
-  const focus =
-    findFocus(runtime, focusId) ?? ensureFocus(runtime, focusId, summary)
-  if (focus.title === summary) return
-  const timestamp = nowIso()
-  focus.title = summary
-  focus.updatedAt = timestamp
-  focus.lastActivityAt = timestamp
 }
 
 export const ensureFocus = (
@@ -184,7 +174,6 @@ export const upsertFocusContext = (
   }
   if (index >= 0) runtime.focusContexts[index] = next
   else runtime.focusContexts.push(next)
-  syncFocusTitleFromSummary(runtime, params.focusId, normalizedSummary)
 }
 
 export const findFocusCompressedContext = (
@@ -200,6 +189,14 @@ export const upsertFocusCompressedContext = (
   params: {
     focusId: FocusId
     summary: string
+    firstKeptEntryId?: string
+    details?: {
+      historyFrom?: string
+      historyTo?: string
+      messageCount?: number
+      taskIds?: string[]
+      archivePaths?: string[]
+    }
   },
 ): void => {
   const summary = params.summary.trim()
@@ -209,6 +206,31 @@ export const upsertFocusCompressedContext = (
     focusId: params.focusId,
     summary,
     updatedAt: now,
+    ...(params.firstKeptEntryId?.trim()
+      ? { firstKeptEntryId: params.firstKeptEntryId.trim() }
+      : {}),
+    ...(params.details
+      ? {
+          details: {
+            ...(params.details.historyFrom
+              ? { historyFrom: params.details.historyFrom }
+              : {}),
+            ...(params.details.historyTo
+              ? { historyTo: params.details.historyTo }
+              : {}),
+            ...(params.details.messageCount !== undefined
+              ? { messageCount: params.details.messageCount }
+              : {}),
+            ...(params.details.taskIds && params.details.taskIds.length > 0
+              ? { taskIds: params.details.taskIds }
+              : {}),
+            ...(params.details.archivePaths &&
+            params.details.archivePaths.length > 0
+              ? { archivePaths: params.details.archivePaths }
+              : {}),
+          },
+        }
+      : {}),
   }
   const index = runtime.managerFocusCompressedContexts.findIndex(
     (item) => item.focusId === params.focusId,

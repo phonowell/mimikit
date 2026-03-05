@@ -77,6 +77,30 @@ export const formatCompressedFocusContexts = (
         focus_id: item.focusId,
         updated_at: item.updatedAt,
         summary: item.summary,
+        ...(item.firstKeptEntryId
+          ? { first_kept_entry_id: item.firstKeptEntryId }
+          : {}),
+        ...(item.details
+          ? {
+              details: {
+                ...(item.details.historyFrom
+                  ? { history_from: item.details.historyFrom }
+                  : {}),
+                ...(item.details.historyTo
+                  ? { history_to: item.details.historyTo }
+                  : {}),
+                ...(item.details.messageCount !== undefined
+                  ? { message_count: item.details.messageCount }
+                  : {}),
+                ...(item.details.taskIds
+                  ? { task_ids: item.details.taskIds }
+                  : {}),
+                ...(item.details.archivePaths
+                  ? { archive_paths: item.details.archivePaths }
+                  : {}),
+              },
+            }
+          : {}),
       })),
     }),
   )

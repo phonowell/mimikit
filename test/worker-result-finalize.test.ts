@@ -80,6 +80,13 @@ test('finalizeResult appends worker_end progress for canceled task', async () =>
     durationMs: 12,
     cancel: { source: 'deferred' },
   })
+  expect(result.handoff?.summary).toContain('Task canceled')
+  expect(result.handoff?.evidence?.[0]).toMatchObject({
+    type: 'task_archive',
+  })
+  expect(result.handoff?.artifacts?.[0]).toMatchObject({
+    kind: 'task_archive',
+  })
   expect(runtime.focusContexts).toHaveLength(1)
   expect(runtime.focusContexts[0]).toMatchObject({
     focusId: 'focus-global',

@@ -62,6 +62,27 @@ const formatSummary = (task: Task, result: TaskResult): string => {
 const normalizeOpenItemText = (item: string): string =>
   clipText(item, MAX_OPEN_ITEM_CHARS)
 
+const resolveHandoffSummary = (result: TaskResult): string | undefined => {
+  const summary = result.handoff?.summary?.trim()
+  if (!summary) return undefined
+  return clipText(summary, MAX_RESULT_SUMMARY_CHARS)
+}
+
+const resolveHandoffNextSteps = (result: TaskResult): string[] => {
+  const steps = result.handoff?.nextSteps
+  if (!steps || steps.length === 0) return []
+  const normalized: string[] = []
+  const seen = new Set<string>()
+  for (const item of steps) {
+    const text = normalizeOpenItemText(item)
+    if (!text || seen.has(text)) continue
+    normalized.push(text)
+    seen.add(text)
+    if (normalized.length >= MAX_FOCUS_OPEN_ITEMS) break
+  }
+  return normalized
+}
+
 const collectOpenItemsFromOutput = (output: string): string[] => {
   const lines = output.split(/\r?\n/)
   const collected: string[] = []
@@ -124,12 +145,41 @@ const mergeOpenItems = (
   )
 }
 
+const mergeOpenItemList = (
+  existing: readonly string[] | undefined,
+  nextItems: readonly string[],
+): string[] => {
+  const merged: string[] = []
+  const normalizedExisting = normalizeFocusOpenItems(existing, {
+    maxItems: MAX_FOCUS_OPEN_ITEMS,
+    coerceNonString: true,
+  })
+  if (normalizedExisting) {
+    for (const item of normalizedExisting) {
+      if (merged.includes(item)) continue
+      merged.push(item)
+    }
+  }
+  for (const item of nextItems) {
+    if (merged.includes(item)) continue
+    merged.push(item)
+    if (merged.length >= MAX_FOCUS_OPEN_ITEMS) break
+  }
+  return (
+    normalizeFocusOpenItems(merged, {
+      maxItems: MAX_FOCUS_OPEN_ITEMS,
+    }) ?? []
+  )
+}
+
 const resolveNextOpenItems = (
   currentOpenItems: readonly string[] | undefined,
   task: Task,
   result: TaskResult,
 ): string[] => {
+  const handoffNextSteps = resolveHandoffNextSteps(result)
   if (result.status === 'succeeded') {
+    if (handoffNextSteps.length > 0) return handoffNextSteps
     const extracted = collectOpenItemsFromOutput(result.output)
     if (extracted.length > 0) return extracted
     if (hasChecklistSignal(result.output)) return []
@@ -140,6 +190,8 @@ const resolveNextOpenItems = (
       }) ?? []
     )
   }
+  if (handoffNextSteps.length > 0)
+    return mergeOpenItemList(currentOpenItems, handoffNextSteps)
   return mergeOpenItems(currentOpenItems, buildFollowupOpenItem(task, result))
 }
 
@@ -151,9 +203,10 @@ export const syncFocusContextFromTaskResult = (
   const focusId = task.focusId.trim()
   if (focusId.length === 0) return
   const current = runtime.focusContexts.find((item) => item.focusId === focusId)
+  const summary = resolveHandoffSummary(result) ?? formatSummary(task, result)
   upsertFocusContext(runtime, {
     focusId,
-    summary: formatSummary(task, result),
+    summary,
     openItems: resolveNextOpenItems(current?.openItems, task, result),
   })
   touchFocus(runtime, focusId)

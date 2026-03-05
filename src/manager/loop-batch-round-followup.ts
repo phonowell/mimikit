@@ -7,9 +7,12 @@ import { collectManagerActionFeedback } from './action-feedback-collect.js'
 import {
   buildHistoryQueryKey,
   buildReadFileLookupKey,
+  buildTaskArchiveLookupKey,
   pickReadFileRequest,
+  pickQueryTaskArchiveRequest,
   queryHistoryLookup,
   queryReadFileLookup,
+  queryTaskArchiveLookup,
 } from './loop-batch-context.js'
 import {
   buildActionFeedbackContext,
@@ -75,17 +78,21 @@ export const resolveRoundFollowup = async (params: {
   )
   const queryRequest = pickQueryHistoryRequest(params.parsed)
   const readFileRequest = pickReadFileRequest(params.parsed)
+  const taskArchiveRequest = pickQueryTaskArchiveRequest(params.parsed)
   const queryKey = buildHistoryQueryKey(queryRequest)
   const readFileKey = buildReadFileLookupKey(readFileRequest)
+  const taskArchiveKey = buildTaskArchiveLookupKey(taskArchiveRequest)
   const lookupKey = buildLookupKey({
     ...(queryKey !== undefined ? { queryKey } : {}),
     ...(readFileKey !== undefined ? { readFileKey } : {}),
+    ...(taskArchiveKey !== undefined ? { taskArchiveKey } : {}),
   })
 
   if (
     hasNoFollowupRequests({
       hasQueryRequest: Boolean(queryRequest),
       hasReadFileRequest: Boolean(readFileRequest),
+      hasTaskArchiveRequest: Boolean(taskArchiveRequest),
       feedbackCount: actionFeedback.length,
     })
   )
@@ -98,9 +105,10 @@ export const resolveRoundFollowup = async (params: {
   )
     throw new Error('manager_internal_lookup_repeated_without_progress')
 
-  const [historyLookup, readFileLookup] = await Promise.all([
+  const [historyLookup, readFileLookup, taskArchiveLookup] = await Promise.all([
     queryHistoryLookup(params.runtime, queryRequest),
     queryReadFileLookup(params.runtime, readFileRequest),
+    queryTaskArchiveLookup(params.runtime, taskArchiveRequest),
   ])
 
   await appendRoundActionFeedback({
@@ -115,6 +123,7 @@ export const resolveRoundFollowup = async (params: {
     extra: {
       ...(historyLookup ? { historyLookup } : {}),
       ...(readFileLookup ? { readFileLookup } : {}),
+      ...(taskArchiveLookup ? { taskArchiveLookup } : {}),
       ...(actionFeedback.length > 0 ? { actionFeedback } : {}),
     },
   }

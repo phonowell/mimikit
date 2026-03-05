@@ -42,6 +42,18 @@ test('query_history and read_file reject repeated actions in the same round', ()
       },
     },
     {
+      name: 'query_task_archive',
+      attrs: {
+        query: 'release',
+      },
+    },
+    {
+      name: 'query_task_archive',
+      attrs: {
+        query: 'incident',
+      },
+    },
+    {
       name: 'read_file',
       attrs: {
         path: 'README.md',
@@ -55,11 +67,13 @@ test('query_history and read_file reject repeated actions in the same round', ()
     },
   ])
 
-  expect(feedback).toHaveLength(2)
+  expect(feedback).toHaveLength(3)
   expect(feedback[0]?.action).toBe('query_history')
   expect(feedback[0]?.hint).toContain('同一轮最多保留一个 query_history')
-  expect(feedback[1]?.action).toBe('read_file')
-  expect(feedback[1]?.hint).toContain('同一轮最多保留一个 read_file')
+  expect(feedback[1]?.action).toBe('query_task_archive')
+  expect(feedback[1]?.hint).toContain('同一轮最多保留一个 query_task_archive')
+  expect(feedback[2]?.action).toBe('read_file')
+  expect(feedback[2]?.hint).toContain('同一轮最多保留一个 read_file')
 })
 
 test('lookup duplicate guard only counts schema-valid actions', () => {

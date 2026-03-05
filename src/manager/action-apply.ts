@@ -30,5 +30,5 @@ export const applyTaskActions = async (
     if (result === 'stop') return
   }
   ensureFocus(runtime, resolveDefaultFocusId(runtime))
-  enforceFocusCapacity(runtime)
+  await enforceFocusCapacity(runtime)
 }

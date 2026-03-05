@@ -88,3 +88,20 @@ test('formatResultsJson keeps archive_path as-is when outside work_dir', () => {
   expect(parsed.tasks[0]?.archive_path).toBe(archivePath)
   expect(parsed.tasks[0]?.result?.archive_path).toBe(archivePath)
 })
+
+test('formatResultsJson keeps structured handoff payload when provided', () => {
+  const task = baseTask()
+  const result = baseResult({
+    handoff: {
+      goal: 'Validate deployment output',
+      summary: 'Deployment completed with follow-up checks',
+      nextSteps: ['Run smoke tests'],
+    },
+  })
+  const json = formatResultsJson([task], [result])
+  const parsed = JSON.parse(json) as {
+    tasks: Array<{ result?: { handoff?: { summary?: string; next_steps?: string[] } } }>
+  }
+  expect(parsed.tasks[0]?.result?.handoff?.summary).toContain('Deployment completed')
+  expect(parsed.tasks[0]?.result?.handoff?.next_steps).toEqual(['Run smoke tests'])
+})

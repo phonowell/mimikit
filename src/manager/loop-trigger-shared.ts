@@ -1,4 +1,5 @@
 import { parseIsoMs } from '../shared/time.js'
+import { GLOBAL_FOCUS_ID } from '../focus/constants.js'
 
 import { hasNonIdleManagerInput } from './idle-input.js'
 import { publishManagerSystemEventInput } from './system-input-event.js'
@@ -129,12 +130,11 @@ export const firePlan = async (params: {
         : {}),
     },
     createdAt: nowIso,
-    focusId: plan.focusId,
     logEvent: 'trigger_fire_input',
     logMeta: {
       planId: plan.id,
       triggerMode: plan.trigger.mode,
-      focusId: plan.focusId,
+      focusId: GLOBAL_FOCUS_ID,
       runCount: plan.runCount,
     },
   })

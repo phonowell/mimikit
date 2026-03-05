@@ -4,16 +4,24 @@ import { appendLog } from '../log/append.js'
 import { logSafeError } from '../log/safe.js'
 
 import { runReadFileTool } from './read-file-tool.js'
+import { runQueryTaskArchiveTool } from './task-archive-tool.js'
 
 import type { ReadFileRequest } from './read-file-tool.js'
+import type { QueryTaskArchiveRequest } from './task-archive-tool.js'
 import type { RuntimeState } from './runtime-adapter.js'
 import type { QueryHistoryRequest } from '../history/query.js'
 import type {
   HistoryLookupMessage,
   ReadFileLookupMessage,
+  TaskArchiveLookupMessage,
   UserInput,
 } from '../types/index.js'
 
+export {
+  buildTaskArchiveLookupKey,
+  pickQueryTaskArchiveRequest,
+  type QueryTaskArchiveRequest,
+} from './task-archive-tool.js'
 export {
   buildReadFileLookupKey,
   pickReadFileRequest,
@@ -113,4 +121,23 @@ export const queryReadFileLookup = async (
       : { error: result.error ?? 'unknown_error' }),
   })
   return [result]
+}
+
+export const queryTaskArchiveLookup = async (
+  runtime: RuntimeState,
+  request?: QueryTaskArchiveRequest,
+): Promise<TaskArchiveLookupMessage[] | undefined> => {
+  if (!request) return undefined
+  const results = await runQueryTaskArchiveTool({
+    stateDir: runtime.config.workDir,
+    request,
+  })
+  await appendLog(runtime.paths.log, {
+    event: 'manager_query_task_archive',
+    queryChars: request.query.length,
+    limit: request.limit,
+    maxFiles: request.maxFiles,
+    resultCount: results.length,
+  })
+  return results
 }

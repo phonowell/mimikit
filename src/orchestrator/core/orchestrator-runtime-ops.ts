@@ -182,7 +182,7 @@ export const startOrchestratorRuntime = async (
 ): Promise<void> => {
   await hydrateRuntimeState(runtime)
   ensureGlobalFocus(runtime)
-  enforceFocusCapacity(runtime)
+  await enforceFocusCapacity(runtime)
   const startedAt = nowIso()
   await bestEffort('appendHistory: startup_system_message', () =>
     appendHistory(runtime.paths.history, {

@@ -6,19 +6,23 @@ import { readErrorCode } from '../shared/error-code.js'
 import { buildArchiveDocument } from './archive-format.js'
 import { writeDatedArchiveFile } from './archive-write.js'
 import {
+  queryTaskResultArchives,
   readTaskResultArchive,
   readTaskResultsForTasks,
+  type QueryTaskResultArchivesOptions,
   type ReadTaskResultsOptions,
 } from './task-results-read.js'
 
 import type {
   TaskCancelMeta,
+  TaskResultHandoff,
   TaskResultStatus,
   TokenUsage,
 } from '../types/index.js'
 
 export type TaskArchiveEntry = {
   taskId?: string
+  focusId?: string
   title: string
   status: TaskResultStatus
   prompt: string
@@ -28,6 +32,7 @@ export type TaskArchiveEntry = {
   durationMs: number
   usage?: TokenUsage
   cancel?: TaskCancelMeta
+  handoff?: TaskResultHandoff
 }
 
 const TASK_ARCHIVE_DIR = 'tasks'
@@ -84,6 +89,7 @@ const buildArchiveContent = (entry: TaskArchiveEntry): string =>
   buildArchiveDocument(
     [
       ['task_id', entry.taskId ?? ''],
+      ['focus_id', entry.focusId ?? ''],
       ['title', entry.title],
       ['status', entry.status],
       ['created_at', entry.createdAt],
@@ -92,6 +98,7 @@ const buildArchiveContent = (entry: TaskArchiveEntry): string =>
       ['usage', entry.usage ? JSON.stringify(entry.usage) : undefined],
       ['cancel_source', entry.cancel?.source],
       ['cancel_reason', entry.cancel?.reason],
+      ['handoff', entry.handoff ? JSON.stringify(entry.handoff) : undefined],
     ],
     [
       { marker: '=== PROMPT ===', content: entry.prompt },
@@ -112,5 +119,5 @@ export const appendTaskResultArchive = (
     resolvePath: ensureUniquePath,
   })
 
-export { readTaskResultArchive, readTaskResultsForTasks }
-export type { ReadTaskResultsOptions }
+export { queryTaskResultArchives, readTaskResultArchive, readTaskResultsForTasks }
+export type { QueryTaskResultArchivesOptions, ReadTaskResultsOptions }

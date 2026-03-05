@@ -33,6 +33,7 @@ import {
   validatePlanById,
   validateQueryHistory,
   validateReadFile,
+  validateQueryTaskArchive,
   validateRunTask,
   validateSummarizeTaskResult,
   validateUpdatePlan,
@@ -122,6 +123,7 @@ export const ACTION_DEFINITIONS = [
     apply: continueApply,
   },
   createNoopAction('query_history', validateQueryHistory),
+  createNoopAction('query_task_archive', validateQueryTaskArchive),
   createNoopAction('read_file', validateReadFile),
   {
     name: 'restart_runtime',

@@ -25,7 +25,7 @@ export const applyUpsertFocusAction = async (
     ...(parsed.summary !== undefined ? { summary: parsed.summary } : {}),
     ...(parsed.openItems !== undefined ? { openItems: parsed.openItems } : {}),
   })
-  enforceFocusCapacity(runtime)
+  await enforceFocusCapacity(runtime)
   await persistRuntimeState(runtime)
 }
 
@@ -42,6 +42,6 @@ export const applyAssignFocusAction = async (
     parsed.data.focus_id,
   )
   if (!assigned) return
-  enforceFocusCapacity(runtime)
+  await enforceFocusCapacity(runtime)
   await persistRuntimeState(runtime)
 }

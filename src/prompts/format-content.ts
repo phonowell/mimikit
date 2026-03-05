@@ -21,6 +21,7 @@ import type {
 
 const TASK_PROMPT_MAX_CHARS = 240
 const TASK_OUTPUT_MAX_CHARS = 320
+const TASK_HANDOFF_TEXT_MAX_CHARS = 220
 const PLAN_PROMPT_MAX_CHARS = 220
 
 export const selectTasksForPrompt = (tasks: Task[]): Task[] =>
@@ -51,6 +52,62 @@ const toCancelMeta = (
       }
     : undefined
 
+const toHandoffPayload = (
+  handoff: TaskResult['handoff'],
+): Record<string, unknown> | undefined => {
+  if (!handoff) return undefined
+  const text = (value?: string): string | undefined => {
+    if (!value) return undefined
+    return truncateText(value, TASK_HANDOFF_TEXT_MAX_CHARS, {
+      normalizeWhitespace: true,
+    })
+  }
+  const list = (items?: string[]): string[] | undefined => {
+    if (!items || items.length === 0) return undefined
+    const normalized = items
+      .map((item) => text(item))
+      .filter((item): item is string => Boolean(item))
+    return normalized.length > 0 ? normalized : undefined
+  }
+  const artifacts = handoff.artifacts
+    ?.map((item) => {
+      const path = item.path.trim()
+      if (!path) return null
+      return {
+        path,
+        ...(item.kind?.trim() ? { kind: item.kind.trim() } : {}),
+        ...(text(item.note) ? { note: text(item.note) } : {}),
+      }
+    })
+    .filter((item): item is NonNullable<typeof item> => Boolean(item))
+  const evidence = handoff.evidence
+    ?.map((item) => {
+      const ref = item.ref.trim()
+      if (!ref) return null
+      return {
+        type: item.type,
+        ref,
+        ...(text(item.note) ? { note: text(item.note) } : {}),
+      }
+    })
+    .filter((item): item is NonNullable<typeof item> => Boolean(item))
+  const goal = text(handoff.goal)
+  const summary = text(handoff.summary)
+  const decisions = list(handoff.decisions)
+  const nextSteps = list(handoff.nextSteps)
+  const risks = list(handoff.risks)
+  const payload = {
+    ...(goal ? { goal } : {}),
+    ...(summary ? { summary } : {}),
+    ...(decisions ? { decisions } : {}),
+    ...(nextSteps ? { next_steps: nextSteps } : {}),
+    ...(risks ? { risks } : {}),
+    ...(artifacts && artifacts.length > 0 ? { artifacts } : {}),
+    ...(evidence && evidence.length > 0 ? { evidence } : {}),
+  }
+  return Object.keys(payload).length > 0 ? payload : undefined
+}
+
 const pickArchivePath = (
   resultArchivePath?: string,
   taskArchivePath?: string,
@@ -74,6 +131,7 @@ const toResultPayload = (
     taskArchivePath,
     workDir,
   )
+  const handoff = toHandoffPayload(result.handoff)
   return {
     status: result.status,
     ok: result.ok,
@@ -86,6 +144,7 @@ const toResultPayload = (
       ? { cancel: toCancelMeta(cancel) }
       : {}),
     ...(archivePath ? { archive_path: archivePath } : {}),
+    ...(handoff ? { handoff } : {}),
     usage: normalizePromptUsage(result.usage),
   }
 }

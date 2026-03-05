@@ -65,6 +65,15 @@ export type ReadFileLookupMessage = {
   content?: string
   error?: string
 }
+export type TaskArchiveLookupMessage = {
+  taskId: string
+  status: TaskResultStatus
+  completedAt: ISODate
+  archivePath: string
+  score: number
+  title?: string | undefined
+  snippet?: string | undefined
+}
 type UserInputUser = {
   id: Id
   role: 'user'
@@ -100,6 +109,25 @@ export type TaskResultStatus = Extract<
   TaskStatus,
   'succeeded' | 'failed' | 'canceled'
 >
+export type TaskResultHandoffArtifact = {
+  path: string
+  kind?: string | undefined
+  note?: string | undefined
+}
+export type TaskResultHandoffEvidence = {
+  type: 'task_archive' | 'file' | 'history'
+  ref: string
+  note?: string | undefined
+}
+export type TaskResultHandoff = {
+  goal?: string | undefined
+  summary?: string | undefined
+  decisions?: string[] | undefined
+  nextSteps?: string[] | undefined
+  risks?: string[] | undefined
+  artifacts?: TaskResultHandoffArtifact[] | undefined
+  evidence?: TaskResultHandoffEvidence[] | undefined
+}
 export type WorkerProfile = 'worker'
 export type PlanPriority = 'high' | 'normal' | 'low'
 export type PlanSource = 'user_request' | 'agent_auto' | 'retry_decision'

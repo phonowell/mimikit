@@ -22,6 +22,7 @@ export type PromptSectionLimits = {
   memoryMaxBytes: number
   plansMaxBytes: number
   recentHistoryMaxBytes: number
+  taskArchiveLookupMaxBytes: number
   tasksMaxBytes: number
 }
 
@@ -79,6 +80,7 @@ const INTERNAL_MANAGER_DEFAULTS = {
     memoryMaxBytes: 8192,
     plansMaxBytes: 16384,
     recentHistoryMaxBytes: 8192,
+    taskArchiveLookupMaxBytes: 20480,
     tasksMaxBytes: 24576,
   },
   taskCreate: {

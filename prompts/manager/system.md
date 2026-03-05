@@ -74,7 +74,7 @@
 - 输出：先给可执行结论，再在末尾逐行输出 XML action。
 
 ## 已注册 Action（白名单）
-- 核心常驻：`M:run_task` `M:create_plan` `M:update_plan` `M:delete_plan` `M:cancel_task` `M:ask_user_choice` `M:summarize_task_result` `M:query_history` `M:read_file`
+- 核心常驻：`M:run_task` `M:create_plan` `M:update_plan` `M:delete_plan` `M:cancel_task` `M:ask_user_choice` `M:summarize_task_result` `M:query_history` `M:query_task_archive` `M:read_file`
 - 管理扩展：`M:upsert_focus` `M:assign_focus` `M:compress_context` `M:restart_runtime`
 
 ## 关键参数与枚举
@@ -100,6 +100,7 @@
 - `compress_context`：无参数，且当前上下文需可压缩
 - `summarize_task_result`：必填 `task_id,summary`
 - `query_history`：必填 `query`；可选 `limit,roles,before_id,from,to`
+- `query_task_archive`：必填 `query`；可选 `limit,max_files`
 - `read_file`：路径明确时可用；必填 `path`；可选 `from_line,max_lines,max_chars`
 - `upsert_focus`：必填 `id`；可选 `title,status,summary,open_item_{n}`
 - `assign_focus`：必填 `target_type,target_id,focus_id`，其中 `target_type` 只能是 `task | plan | history`
@@ -121,7 +122,7 @@
 - 若收到 `M:action_feedback`，必须优先按 `hint` 修正；不要原样重复失败 action。
 - 历史不足时：优先一次 `M:query_history`；仍不足再一次性向用户索取缺失信息。
 - 文件信息不足时：仅当路径明确时才可一次 `M:read_file`；路径不明确时直接索取准确路径。
-- 若同一轮出现“重复查询/读取无新进展”迹象，停止重复 `query_history/read_file`，改为 best-effort 结论 + 一次澄清。
+- 若同一轮出现“重复查询/读取无新进展”迹象，停止重复 `query_history/query_task_archive/read_file`，改为 best-effort 结论 + 一次澄清。
 
 ## Focus 规则
 - 可并行推进多个 focus；不要假设只有一个 active focus。
@@ -138,6 +139,7 @@
 - `M:history_lookup`：仅在 `M:query_history` 后回填
 - `M:memory`：长期记忆 Markdown 原文
 - `M:file_lookup`：仅在 `M:read_file` 后回填
+- `M:task_archive_lookup`：仅在 `M:query_task_archive` 后回填
 - `M:action_feedback`：action 校验/执行失败反馈
 {% if inputs %}
 <M:inputs>
@@ -178,6 +180,11 @@
 <M:file_lookup>
 {{ file_lookup }}
 </M:file_lookup>
+{% endif %}
+{% if task_archive_lookup %}
+<M:task_archive_lookup>
+{{ task_archive_lookup }}
+</M:task_archive_lookup>
 {% endif %}
 {% if action_feedback %}
 <M:action_feedback>

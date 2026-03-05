@@ -2,16 +2,17 @@ import { stripUndefined } from '../shared/utils.js'
 
 import {
   type RuntimeSnapshot,
-  runtimeSnapshotSchema} from './runtime-snapshot-schema.js'
+  runtimeSnapshotSchema,
+} from './runtime-snapshot-schema.js'
 import { normalizeTokenUsage } from './token-usage.js'
 import type {
-
   focusContextSchema,
   focusMetaSchema,
   managerFocusCompressedContextSchema,
   pendingUserChoiceSchema,
   taskPlanSchema,
-  taskSchema} from './runtime-snapshot-schema.js';
+  taskSchema,
+} from './runtime-snapshot-schema.js'
 
 import type { z } from 'zod'
 
@@ -32,6 +33,30 @@ const normalizeTask = (task: SnapshotTask): SnapshotTask =>
       ? stripUndefined({
           ...task.result,
           usage: normalizeTokenUsage(task.result.usage),
+          handoff: task.result.handoff
+            ? stripUndefined({
+                ...task.result.handoff,
+                decisions: task.result.handoff.decisions
+                  ? [...task.result.handoff.decisions]
+                  : undefined,
+                nextSteps: task.result.handoff.nextSteps
+                  ? [...task.result.handoff.nextSteps]
+                  : undefined,
+                risks: task.result.handoff.risks
+                  ? [...task.result.handoff.risks]
+                  : undefined,
+                artifacts: task.result.handoff.artifacts
+                  ? task.result.handoff.artifacts.map((item) =>
+                      stripUndefined({ ...item }),
+                    )
+                  : undefined,
+                evidence: task.result.handoff.evidence
+                  ? task.result.handoff.evidence.map((item) =>
+                      stripUndefined({ ...item }),
+                    )
+                  : undefined,
+              })
+            : undefined,
         })
       : undefined,
   }) as SnapshotTask
@@ -50,7 +75,18 @@ const normalizeFocusContext = (
 const normalizeManagerFocusCompressedContext = (
   item: SnapshotManagerFocusCompressedContext,
 ): SnapshotManagerFocusCompressedContext =>
-  stripUndefined({ ...item }) as SnapshotManagerFocusCompressedContext
+  stripUndefined({
+    ...item,
+    details: item.details
+      ? stripUndefined({
+          ...item.details,
+          taskIds: item.details.taskIds ? [...item.details.taskIds] : undefined,
+          archivePaths: item.details.archivePaths
+            ? [...item.details.archivePaths]
+            : undefined,
+        })
+      : undefined,
+  }) as SnapshotManagerFocusCompressedContext
 
 const normalizePendingUserChoice = (
   choice: SnapshotPendingUserChoice,

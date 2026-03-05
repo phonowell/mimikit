@@ -7,6 +7,11 @@ import { appendTaskProgress } from '../storage/task-progress.js'
 import { appendTaskResultArchive } from '../storage/task-results.js'
 import { publishWorkerResult } from '../streams/queues.js'
 
+import {
+  buildTaskResultHandoff,
+  withTaskArchiveEvidence,
+} from './result-handoff.js'
+
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { Task, TaskResult, TokenUsage } from '../types/index.js'
 
@@ -19,6 +24,7 @@ export const archiveTaskResult = (
   safeOrUndefined(`appendTaskResultArchive: ${source}`, () =>
     appendTaskResultArchive(runtime.config.workDir, {
       taskId: task.id,
+      focusId: task.focusId,
       title: task.title,
       status: result.status,
       prompt: task.prompt,
@@ -28,6 +34,7 @@ export const archiveTaskResult = (
       durationMs: result.durationMs,
       ...(result.usage ? { usage: result.usage } : {}),
       ...(result.cancel ? { cancel: result.cancel } : {}),
+      ...(result.handoff ? { handoff: result.handoff } : {}),
     }),
   )
 
@@ -37,20 +44,24 @@ export const buildResult = (
   output: string,
   durationMs: number,
   usage?: TokenUsage,
-): TaskResult => ({
-  taskId: task.id,
-  status,
-  ok: status === 'succeeded',
-  output,
-  durationMs,
-  completedAt: nowIso(),
-  ...(usage ? { usage } : {}),
-  ...(task.title ? { title: task.title } : {}),
-  profile: task.profile,
-  ...(status === 'canceled'
-    ? { cancel: task.cancel ?? { source: 'system' } }
-    : {}),
-})
+): TaskResult => {
+  const handoff = buildTaskResultHandoff(task, { status, output })
+  return {
+    taskId: task.id,
+    status,
+    ok: status === 'succeeded',
+    output,
+    durationMs,
+    completedAt: nowIso(),
+    ...(usage ? { usage } : {}),
+    ...(task.title ? { title: task.title } : {}),
+    profile: task.profile,
+    ...(status === 'canceled'
+      ? { cancel: task.cancel ?? { source: 'system' } }
+      : {}),
+    ...(handoff ? { handoff } : {}),
+  }
+}
 
 export const finalizeResult = async (
   runtime: RuntimeState,
@@ -59,8 +70,12 @@ export const finalizeResult = async (
   markFn: (tasks: Task[], taskId: string, patch?: Partial<Task>) => void,
 ): Promise<void> => {
   runtime.lastWorkerActivityAtMs = Date.now()
+  if (!result.handoff) result.handoff = buildTaskResultHandoff(task, result)
   const archivePath = await archiveTaskResult(runtime, task, result, 'worker')
-  if (archivePath) result.archivePath = archivePath
+  if (archivePath) {
+    result.archivePath = archivePath
+    result.handoff = withTaskArchiveEvidence(result.handoff, archivePath)
+  }
   markFn(runtime.tasks, task.id, {
     completedAt: result.completedAt,
     durationMs: result.durationMs,

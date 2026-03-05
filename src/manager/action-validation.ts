@@ -6,6 +6,7 @@ import {
   compressContextSchema,
   createPlanSchema,
   parseAskUserChoiceAttrs,
+  queryTaskArchiveSchema,
   readFileSchema,
   runTaskSchema,
   summarizeSchema,
@@ -106,6 +107,8 @@ export const validateQueryHistory = (item: Parsed): ValidationIssue[] =>
   validateRangeQueryWithSchema(item, queryHistorySchema)
 export const validateReadFile = (item: Parsed): ValidationIssue[] =>
   validateWithSchema(item, readFileSchema)
+export const validateQueryTaskArchive = (item: Parsed): ValidationIssue[] =>
+  validateWithSchema(item, queryTaskArchiveSchema)
 export const validateSummarizeTaskResult = (
   item: Parsed,
   context: FeedbackContext,

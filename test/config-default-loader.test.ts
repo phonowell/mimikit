@@ -49,16 +49,38 @@ test('normalizes empty provider overrides to undefined', async () => {
   expect(config.manager.provider).toEqual({})
 })
 
-test('rejects removed legacy fields without compatibility layer', async () => {
+test('supports provider model fallback and ignores runtime-only compatibility keys', async () => {
+  const path = await writeTempConfig(
+    [
+      'manager:',
+      '  provider:',
+      '    model: gpt-5.2-mini',
+      '    modelReasoningEffort: medium',
+      '  maxCorrectionRounds: 3',
+      '  promptSections:',
+      '    tasksMaxBytes: 1024',
+      'worker:',
+      '  retry:',
+      '    maxAttempts: 2',
+      '    backoffMs: 1000',
+    ].join('\n'),
+  )
+
+  const config = loadDefaultConfigFromYaml(path)
+
+  expect(config.manager.model).toBe('gpt-5.2-mini')
+  expect(config.manager.modelReasoningEffort).toBe('medium')
+  expect(config.worker.model).toBe('gpt-5.3-codex-high')
+})
+
+test('rejects unknown manager keys', async () => {
   const path = await writeTempConfig(
     [
       'manager:',
       '  model: gpt-5.2-high',
-      '  maxCorrectionRounds: 3',
+      '  unknownManagerKey: true',
     ].join('\n'),
   )
 
-  expect(() => loadDefaultConfigFromYaml(path)).toThrow(
-    /invalid yaml defaults: manager: Unrecognized key: "maxCorrectionRounds"/,
-  )
+  expect(() => loadDefaultConfigFromYaml(path)).toThrow(/unknownManagerKey/)
 })

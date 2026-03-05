@@ -29,6 +29,7 @@ import {
   formatReadFileLookup,
   formatRecentHistory,
   formatResultsJson,
+  formatTaskArchiveLookup,
   formatTasksJson,
   renderPromptTemplate,
 } from './format.js'
@@ -43,6 +44,7 @@ import type {
   ManagerActionFeedback,
   ManagerEnv,
   ReadFileLookupMessage,
+  TaskArchiveLookupMessage,
   Task,
   TaskPlan,
   TaskResult,
@@ -63,6 +65,7 @@ export const buildManagerPrompt = async (params: {
   plans?: TaskPlan[]
   historyLookup?: HistoryLookupMessage[]
   readFileLookup?: ReadFileLookupMessage[]
+  taskArchiveLookup?: TaskArchiveLookupMessage[]
   actionFeedback?: ManagerActionFeedback[]
   env?: ManagerEnv
   focuses?: FocusMeta[]
@@ -148,6 +151,10 @@ export const buildManagerPrompt = async (params: {
     file_lookup: sectionJson(
       formatReadFileLookup(params.readFileLookup ?? []),
       limits.fileLookupMaxBytes,
+    ),
+    task_archive_lookup: sectionJson(
+      formatTaskArchiveLookup(params.taskArchiveLookup ?? [], params.workDir),
+      limits.taskArchiveLookupMaxBytes,
     ),
     action_feedback: sectionJson(
       formatActionFeedback(params.actionFeedback ?? []),

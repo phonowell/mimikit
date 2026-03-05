@@ -9,6 +9,34 @@ export const taskCancelSchema = z
   })
   .strict()
 
+const taskResultHandoffArtifactSchema = z
+  .object({
+    path: z.string().trim().min(1),
+    kind: z.string().trim().min(1).optional(),
+    note: z.string().trim().min(1).optional(),
+  })
+  .strict()
+
+const taskResultHandoffEvidenceSchema = z
+  .object({
+    type: z.enum(['task_archive', 'file', 'history']),
+    ref: z.string().trim().min(1),
+    note: z.string().trim().min(1).optional(),
+  })
+  .strict()
+
+const taskResultHandoffSchema = z
+  .object({
+    goal: z.string().trim().min(1).optional(),
+    summary: z.string().trim().min(1).optional(),
+    decisions: z.array(z.string().trim().min(1)).optional(),
+    nextSteps: z.array(z.string().trim().min(1)).optional(),
+    risks: z.array(z.string().trim().min(1)).optional(),
+    artifacts: z.array(taskResultHandoffArtifactSchema).optional(),
+    evidence: z.array(taskResultHandoffEvidenceSchema).optional(),
+  })
+  .strict()
+
 export const taskResultSchema = z
   .object({
     taskId: z.string().trim().min(1),
@@ -22,6 +50,7 @@ export const taskResultSchema = z
     archivePath: z.string().optional(),
     profile: z.enum(['worker']).optional(),
     cancel: taskCancelSchema.optional(),
+    handoff: taskResultHandoffSchema.optional(),
   })
   .strict()
 
@@ -137,6 +166,17 @@ export const managerFocusCompressedContextSchema = z
       .regex(/^focus-[a-zA-Z0-9._-]+$/),
     summary: z.string().trim().min(1),
     updatedAt: z.string().trim().min(1),
+    firstKeptEntryId: z.string().trim().min(1).optional(),
+    details: z
+      .object({
+        historyFrom: z.string().trim().min(1).optional(),
+        historyTo: z.string().trim().min(1).optional(),
+        messageCount: z.number().int().nonnegative().optional(),
+        taskIds: z.array(z.string().trim().min(1)).optional(),
+        archivePaths: z.array(z.string().trim().min(1)).optional(),
+      })
+      .strict()
+      .optional(),
   })
   .strict()
 

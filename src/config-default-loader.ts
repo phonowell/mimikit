@@ -16,31 +16,73 @@ const modelReasoningEffortSchema = z.enum([
   'xhigh',
 ])
 
+const managerProviderInputSchema = z
+  .object({
+    baseUrl: z.string().optional(),
+    apiKey: z.string().optional(),
+    model: z.string().min(1).optional(),
+    modelReasoningEffort: modelReasoningEffortSchema.optional(),
+  })
+  .strict()
+
+const managerInputSchema = z
+  .object({
+    model: z.string().min(1).optional(),
+    modelReasoningEffort: modelReasoningEffortSchema.optional(),
+    provider: managerProviderInputSchema.optional(),
+    maxCorrectionRounds: z.number().int().positive().optional(),
+    promptSections: z
+      .record(z.string(), z.number().int().nonnegative())
+      .optional(),
+    taskCreate: z
+      .object({
+        debounceMs: z.number().int().nonnegative().optional(),
+      })
+      .strict()
+      .optional(),
+    idleTrigger: z
+      .object({
+        delayMs: z.number().int().nonnegative().optional(),
+      })
+      .strict()
+      .optional(),
+    taskWindow: z
+      .object({
+        maxCount: z.number().int().positive().optional(),
+        minCount: z.number().int().positive().optional(),
+      })
+      .strict()
+      .optional(),
+    planWindow: z
+      .object({
+        maxCount: z.number().int().positive().optional(),
+        minCount: z.number().int().positive().optional(),
+      })
+      .strict()
+      .optional(),
+  })
+  .strict()
+
+const workerInputSchema = z
+  .object({
+    maxConcurrent: z.number().int().positive().optional(),
+    timeoutMs: z.number().int().positive().optional(),
+    model: z.string().min(1).optional(),
+    modelReasoningEffort: modelReasoningEffortSchema.optional(),
+    retry: z
+      .object({
+        maxAttempts: z.number().int().nonnegative().optional(),
+        backoffMs: z.number().int().nonnegative().optional(),
+      })
+      .strict()
+      .optional(),
+  })
+  .strict()
+
 const userConfigInputSchema = z
   .object({
-    manager: z
-      .object({
-        model: z.string().min(1).optional(),
-        modelReasoningEffort: modelReasoningEffortSchema.optional(),
-        provider: z
-          .object({
-            baseUrl: z.string().optional(),
-            apiKey: z.string().optional(),
-          })
-          .strict()
-          .optional(),
-      })
-      .strict()
-      .optional(),
-    worker: z
-      .object({
-        maxConcurrent: z.number().int().positive().optional(),
-        timeoutMs: z.number().int().positive().optional(),
-        model: z.string().min(1).optional(),
-        modelReasoningEffort: modelReasoningEffortSchema.optional(),
-      })
-      .strict()
-      .optional(),
+    manager: managerInputSchema.optional(),
+    worker: workerInputSchema.optional(),
     qq: qqConfigSchema.partial().strict().optional(),
   })
   .strict()
@@ -134,9 +176,13 @@ const parseConfigInput = (source: string): UserConfigDefaults => {
 
   return {
     manager: {
-      model: input.manager?.model ?? DEFAULT_USER_CONFIG.manager.model,
+      model:
+        input.manager?.model ??
+        managerProvider?.model ??
+        DEFAULT_USER_CONFIG.manager.model,
       modelReasoningEffort:
         input.manager?.modelReasoningEffort ??
+        managerProvider?.modelReasoningEffort ??
         DEFAULT_USER_CONFIG.manager.modelReasoningEffort,
       provider: {
         ...(baseUrl ? { baseUrl } : {}),

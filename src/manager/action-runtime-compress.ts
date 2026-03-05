@@ -65,31 +65,63 @@ const shouldProactiveCompressFocus = (
   return runtime.managerTurn % AUTO_REFRESH_INTERVAL_TURNS === 0
 }
 
+type CompressionHistorySnapshot = {
+  text: string
+  firstKeptEntryId?: string
+  historyFrom?: string
+  historyTo?: string
+  messageCount: number
+}
+
 const formatHistorySection = async (
   runtime: RuntimeState,
   focusId: FocusId,
-): Promise<string> => {
+): Promise<CompressionHistorySnapshot> => {
   const history = await readHistory(runtime.paths.history)
   const visible = history.filter(
     (item) => isVisibleToAgent(item) && item.focusId === focusId,
   )
   const recent = visible.slice(Math.max(0, visible.length - MAX_HISTORY_ITEMS))
-  if (recent.length === 0) return '无'
-  return recent
+  if (recent.length === 0) return { text: '无', messageCount: 0 }
+  const text = recent
     .map(
       (item, index) =>
         `${index + 1}. [${item.createdAt}] (${item.role}) ${truncateText(item.text, MAX_HISTORY_LINE_CHARS, { normalizeWhitespace: true })}`,
     )
     .join('\n')
+  const oldest = recent[0]
+  const newest = recent.at(-1)
+  return {
+    text,
+    messageCount: recent.length,
+    ...(oldest?.id ? { firstKeptEntryId: oldest.id } : {}),
+    ...(oldest?.createdAt ? { historyFrom: oldest.createdAt } : {}),
+    ...(newest?.createdAt ? { historyTo: newest.createdAt } : {}),
+  }
+}
+
+type CompressionTaskSnapshot = {
+  text: string
+  taskIds: string[]
+  archivePaths: string[]
 }
 
 const formatTasksSection = (
   runtime: RuntimeState,
   focusId: FocusId,
-): string => {
+): CompressionTaskSnapshot => {
   const scopedTasks = runtime.tasks.filter((task) => task.focusId === focusId)
-  if (scopedTasks.length === 0) return '无'
-  return scopedTasks
+  if (scopedTasks.length === 0)
+    return { text: '无', taskIds: [], archivePaths: [] }
+  const archivePaths = Array.from(
+    new Set(
+      scopedTasks
+        .map((task) => task.archivePath ?? task.result?.archivePath)
+        .map((value) => value?.trim())
+        .filter((value): value is string => Boolean(value)),
+    ),
+  )
+  const text = scopedTasks
     .slice(Math.max(0, scopedTasks.length - MAX_TASK_ITEMS))
     .map((task, index) => {
       const resultSummary = task.result?.output
@@ -98,6 +130,11 @@ const formatTasksSection = (
       return `${index + 1}. [${task.status}] id=${task.id} title=${truncateText(task.title, 80, { normalizeWhitespace: true })}${resultSummary ? ` result=${resultSummary}` : ''}`
     })
     .join('\n')
+  return {
+    text,
+    taskIds: scopedTasks.map((task) => task.id),
+    archivePaths,
+  }
 }
 
 const renderCompressMaterial = (params: {
@@ -116,7 +153,20 @@ const renderCompressMaterial = (params: {
 const buildCompressPrompt = async (
   runtime: RuntimeState,
   focusId: FocusId,
-): Promise<string | undefined> => {
+): Promise<
+  | {
+      prompt: string
+      firstKeptEntryId?: string
+      details?: {
+        historyFrom?: string
+        historyTo?: string
+        messageCount?: number
+        taskIds?: string[]
+        archivePaths?: string[]
+      }
+    }
+  | undefined
+> => {
   const base = (await loadPromptFile('manager', 'compress-context')).trim()
   if (!base)
     throw new Error('missing_prompt_template:manager/compress-context.md')
@@ -130,12 +180,16 @@ const buildCompressPrompt = async (
     )
   }
 
-  const historyText = await formatHistorySection(runtime, focusId)
-  const tasksText = formatTasksSection(runtime, focusId)
+  const historySnapshot = await formatHistorySection(runtime, focusId)
+  const taskSnapshot = formatTasksSection(runtime, focusId)
   const existing = findFocusCompressedContext(runtime, focusId)?.summary.trim()
   const existingText = existing && existing.length > 0 ? existing : '无'
 
-  if (historyText === '无' && tasksText === '无' && existingText === '无')
+  if (
+    historySnapshot.text === '无' &&
+    taskSnapshot.text === '无' &&
+    existingText === '无'
+  )
     return undefined
 
   const prompt = [
@@ -145,13 +199,33 @@ const buildCompressPrompt = async (
       template: materialTemplate,
       focusId,
       existingText,
-      historyText,
-      tasksText,
+      historyText: historySnapshot.text,
+      tasksText: taskSnapshot.text,
     }),
   ].join('\n')
 
-  if (prompt.length <= MAX_PROMPT_CHARS) return prompt
-  return `${prompt.slice(0, MAX_PROMPT_CHARS - 1).trimEnd()}…`
+  const finalPrompt =
+    prompt.length <= MAX_PROMPT_CHARS
+      ? prompt
+      : `${prompt.slice(0, MAX_PROMPT_CHARS - 1).trimEnd()}…`
+  const details = {
+    ...(historySnapshot.historyFrom ? { historyFrom: historySnapshot.historyFrom } : {}),
+    ...(historySnapshot.historyTo ? { historyTo: historySnapshot.historyTo } : {}),
+    ...(historySnapshot.messageCount > 0
+      ? { messageCount: historySnapshot.messageCount }
+      : {}),
+    ...(taskSnapshot.taskIds.length > 0 ? { taskIds: taskSnapshot.taskIds } : {}),
+    ...(taskSnapshot.archivePaths.length > 0
+      ? { archivePaths: taskSnapshot.archivePaths }
+      : {}),
+  }
+  return {
+    prompt: finalPrompt,
+    ...(historySnapshot.firstKeptEntryId
+      ? { firstKeptEntryId: historySnapshot.firstKeptEntryId }
+      : {}),
+    ...(Object.keys(details).length > 0 ? { details } : {}),
+  }
 }
 
 const compressFocusContext = async (
@@ -159,10 +233,10 @@ const compressFocusContext = async (
   focusId: FocusId,
   options?: { reason?: string },
 ): Promise<boolean> => {
-  const prompt = await buildCompressPrompt(runtime, focusId)
-  if (!prompt) return false
+  const promptPayload = await buildCompressPrompt(runtime, focusId)
+  if (!promptPayload) return false
   const result = await runManagerLlmCall({
-    prompt,
+    prompt: promptPayload.prompt,
     workDir: runtime.config.workDir,
     model: runtime.config.manager.model,
     managerProvider: {
@@ -181,6 +255,10 @@ const compressFocusContext = async (
   upsertFocusCompressedContext(runtime, {
     focusId,
     summary: compressed,
+    ...(promptPayload.firstKeptEntryId
+      ? { firstKeptEntryId: promptPayload.firstKeptEntryId }
+      : {}),
+    ...(promptPayload.details ? { details: promptPayload.details } : {}),
   })
   await persistRuntimeState(runtime)
   return true

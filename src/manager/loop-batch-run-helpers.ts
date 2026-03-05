@@ -5,6 +5,7 @@ import type {
   HistoryLookupMessage,
   ManagerActionFeedback,
   ReadFileLookupMessage,
+  TaskArchiveLookupMessage,
   TaskPlanStatus,
   TaskStatus,
   TokenUsage,
@@ -13,25 +14,38 @@ import type {
 export type ManagerRoundExtra = {
   historyLookup?: HistoryLookupMessage[]
   readFileLookup?: ReadFileLookupMessage[]
+  taskArchiveLookup?: TaskArchiveLookupMessage[]
   actionFeedback?: ManagerActionFeedback[]
 }
 
 export const buildLookupKey = (params: {
   queryKey?: string
   readFileKey?: string
+  taskArchiveKey?: string
 }): string | undefined => {
-  const { queryKey, readFileKey } = params
-  if (!queryKey && !readFileKey) return undefined
-  return `${queryKey ?? ''}\n---\n${readFileKey ?? ''}`
+  const { queryKey, readFileKey, taskArchiveKey } = params
+  if (!queryKey && !readFileKey && !taskArchiveKey) return undefined
+  return `${queryKey ?? ''}\n---\n${readFileKey ?? ''}\n---\n${taskArchiveKey ?? ''}`
 }
 
 export const hasNoFollowupRequests = (params: {
   hasQueryRequest: boolean
   hasReadFileRequest: boolean
+  hasTaskArchiveRequest: boolean
   feedbackCount: number
 }): boolean => {
-  const { hasQueryRequest, hasReadFileRequest, feedbackCount } = params
-  return !hasQueryRequest && !hasReadFileRequest && feedbackCount === 0
+  const {
+    hasQueryRequest,
+    hasReadFileRequest,
+    hasTaskArchiveRequest,
+    feedbackCount,
+  } = params
+  return (
+    !hasQueryRequest &&
+    !hasReadFileRequest &&
+    !hasTaskArchiveRequest &&
+    feedbackCount === 0
+  )
 }
 
 export const buildActionFeedbackContext = (params: {

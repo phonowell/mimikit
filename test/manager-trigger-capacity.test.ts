@@ -5,7 +5,6 @@ import { join } from 'node:path'
 import PQueue from 'p-queue'
 import { expect, test } from 'vitest'
 
-import { defaultConfig } from '../src/config.js'
 import { buildPaths } from '../src/fs/paths.js'
 import { triggerWakeLoop } from '../src/manager/loop-trigger.js'
 import {
@@ -20,6 +19,56 @@ import type { TaskPlan } from '../src/types/index.js'
 const GLOBAL_FOCUS_ID = 'focus-global'
 
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-trigger-capacity-'))
+
+const createTestConfig = (
+  workDir: string,
+  maxConcurrent: number,
+  idleDelayMs: number,
+): RuntimeState['config'] => ({
+  workDir,
+  manager: {
+    model: 'gpt-test-manager',
+    modelReasoningEffort: 'minimal',
+    provider: {},
+    maxCorrectionRounds: 1,
+    promptSections: {
+      actionFeedbackMaxBytes: 2048,
+      batchResultsMaxBytes: 4096,
+      compressedContextMaxBytes: 4096,
+      environmentMaxBytes: 2048,
+      fileLookupMaxBytes: 4096,
+      focusContextsMaxBytes: 4096,
+      focusListMaxBytes: 2048,
+      historyLookupMaxBytes: 4096,
+      inputsMaxBytes: 2048,
+      memoryMaxBytes: 2048,
+      plansMaxBytes: 4096,
+      recentHistoryMaxBytes: 2048,
+      taskArchiveLookupMaxBytes: 4096,
+      tasksMaxBytes: 4096,
+    },
+    taskCreate: { debounceMs: 0 },
+    idleTrigger: { delayMs: idleDelayMs },
+    taskWindow: { minCount: 1, maxCount: 5 },
+    planWindow: { minCount: 1, maxCount: 5 },
+  },
+  worker: {
+    maxConcurrent,
+    retry: { maxAttempts: 1, backoffMs: 1 },
+    timeoutMs: 60_000,
+    model: 'gpt-test-worker',
+    modelReasoningEffort: 'minimal',
+  },
+  qq: {
+    enabled: false,
+    appId: '',
+    appSecret: '',
+    apiBase: 'https://api.sgroup.qq.com',
+    callbackPath: '/api/qq/events',
+    verifySign: true,
+    clockSkewMs: 300000,
+  },
+})
 
 const waitFor = async (
   check: () => boolean,
@@ -46,11 +95,11 @@ const createRuntime = async (params?: {
   idleDelayMs?: number
 }): Promise<RuntimeState> => {
   const workDir = await createTmpDir()
-  const config = defaultConfig({ workDir })
-  config.worker.maxConcurrent = Math.max(1, params?.maxConcurrent ?? 1)
-  config.manager.idleTrigger.delayMs = Math.max(
+  const config = createTestConfig(
+    workDir,
+    Math.max(1, params?.maxConcurrent ?? 1),
     0,
-    params?.idleDelayMs ?? 60_000,
+    Math.max(0, params?.idleDelayMs ?? 60_000),
   )
   const queue = new PQueue({ concurrency: config.worker.maxConcurrent })
   const now = new Date().toISOString()
@@ -175,6 +224,22 @@ test('on_worker_slot_freed plans trigger without regressing on_idle', async () =
   const idleTriggered = await triggerOnIdlePlans(runtime, Date.now())
   expect(idleTriggered).toEqual({ triggeredCount: 1, stateChanged: true })
   expect(runtime.taskPlans[1]?.runCount).toBe(1)
+})
+
+test('trigger_fire system event uses global focus even when plan has local focus', async () => {
+  const runtime = await createRuntime({ maxConcurrent: 1 })
+  const plan = createPlan('plan-local-focus', { mode: 'on_worker_slot_freed' })
+  plan.focusId = 'focus-local'
+  runtime.taskPlans.push(plan)
+
+  const triggered = await triggerOnWorkerSlotFreedPlans(runtime, Date.now())
+  expect(triggered.triggeredCount).toBe(1)
+  const triggerInput = runtime.inflightInputs.find(
+    (input) =>
+      input.role === 'system' &&
+      input.text.includes('<M:system_event name="trigger_fire"'),
+  )
+  expect(triggerInput?.focusId).toBe(GLOBAL_FOCUS_ID)
 })
 
 test('worker_slot_freed can trigger while global idle is false', async () => {
