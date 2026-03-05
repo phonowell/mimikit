@@ -1,4 +1,16 @@
 import { queryHistorySchema } from '../history/query.js'
+
+import {
+  askUserChoiceSchema,
+  cancelSchema,
+  compressContextSchema,
+  createPlanSchema,
+  parseAskUserChoiceAttrs,
+  readFileSchema,
+  runTaskSchema,
+  summarizeSchema,
+  updatePlanSchema,
+} from './action-apply-schema.js'
 import {
   formatAskUserChoiceInvalidOptionsHint,
   formatAskUserChoiceQqUnsupportedHint,
@@ -16,17 +28,7 @@ import {
   validateScheduledAtNotPast,
   type ValidationIssue,
 } from './action-validation-helpers.js'
-import {
-  askUserChoiceSchema,
-  cancelSchema,
-  compressContextSchema,
-  createPlanSchema,
-  parseAskUserChoiceAttrs,
-  readFileSchema,
-  runTaskSchema,
-  summarizeSchema,
-  updatePlanSchema,
-} from './action-apply-schema.js'
+
 import type { Parsed } from '../actions/model/spec.js'
 import type { TaskPlanStatus, TaskStatus } from '../types/index.js'
 import type { ZodSchema } from 'zod'
@@ -49,7 +51,9 @@ export const validateWithSchema = (
 const resolveScheduleNowOption = (
   context: FeedbackContext,
 ): { scheduleNowIso?: string } =>
-  context.scheduleNowIso !== undefined ? { scheduleNowIso: context.scheduleNowIso } : {}
+  context.scheduleNowIso !== undefined
+    ? { scheduleNowIso: context.scheduleNowIso }
+    : {}
 const validateIsoRange = (
   from: string | undefined,
   to: string | undefined,
@@ -94,7 +98,8 @@ export const validateCancelTask = (
   const taskStatus = context.taskStatusById?.get(id)
   if (!taskStatus) return rejected(formatCancelTaskNotFoundHint())
   if (taskStatus === 'pending' || taskStatus === 'running') return []
-  if (taskStatus === 'canceled') return rejected(formatCancelTaskAlreadyCanceledHint())
+  if (taskStatus === 'canceled')
+    return rejected(formatCancelTaskAlreadyCanceledHint())
   return rejected(formatCancelTaskNotCancelableHint())
 }
 export const validateQueryHistory = (item: Parsed): ValidationIssue[] =>
@@ -132,9 +137,9 @@ export const validateAskUserChoice = (
   item: Parsed,
   context: FeedbackContext,
 ): ValidationIssue[] => {
-  if (context.allowAskUserChoice === false) {
+  if (context.allowAskUserChoice === false)
     return rejected(formatAskUserChoiceQqUnsupportedHint())
-  }
+
   const issues = validateWithSchema(item, askUserChoiceSchema)
   if (issues.length > 0) return issues
   if (parseAskUserChoiceAttrs(item.attrs)) return []

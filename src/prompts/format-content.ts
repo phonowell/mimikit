@@ -15,8 +15,8 @@ import {
 import type {
   Task,
   TaskCancelMeta,
-  TaskResult,
   TaskPlan,
+  TaskResult,
 } from '../types/index.js'
 
 const TASK_PROMPT_MAX_CHARS = 240
@@ -213,9 +213,7 @@ export const formatResultsYaml = (
   return escapeCdata(stringifyPromptYaml({ tasks: entries }))
 }
 
-const formatPlanEntry = (
-  plan: TaskPlan,
-): Record<string, unknown> => ({
+const formatPlanEntry = (plan: TaskPlan): Record<string, unknown> => ({
   id: plan.id,
   status: plan.status,
   priority: plan.priority,
@@ -236,12 +234,8 @@ const formatPlanEntry = (
   ...(plan.trigger.mode === 'on_idle'
     ? { cooldown_ms: plan.trigger.cooldownMs }
     : {}),
-  ...(plan.lastTriggeredAt
-    ? { last_triggered_at: plan.lastTriggeredAt }
-    : {}),
-  ...(plan.lastCompletedAt
-    ? { last_completed_at: plan.lastCompletedAt }
-    : {}),
+  ...(plan.lastTriggeredAt ? { last_triggered_at: plan.lastTriggeredAt } : {}),
+  ...(plan.lastCompletedAt ? { last_completed_at: plan.lastCompletedAt } : {}),
   ...(plan.lastTaskId ? { last_task_id: plan.lastTaskId } : {}),
   ...(plan.archivedAt ? { archived_at: plan.archivedAt } : {}),
   ...(plan.doneReason ? { done_reason: plan.doneReason } : {}),

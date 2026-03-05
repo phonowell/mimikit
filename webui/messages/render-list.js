@@ -58,9 +58,9 @@ export const renderMessages = (params) => {
     latestAgentId,
   }
 
-  for (const msg of safeMessages) {
+  for (const msg of safeMessages) 
     renderMessage(renderParams, msg)
-  }
+  
 
   if (loading?.isLoading()) loading.ensureLoadingPlaceholder()
   preserveScrollPosition({

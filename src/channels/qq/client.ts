@@ -64,13 +64,19 @@ const fetchQqAccessToken = async (config: QqClientConfig): Promise<string> => {
     url: QQ_TOKEN_URL,
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ appId: config.appId, clientSecret: config.appSecret }),
+    body: JSON.stringify({
+      appId: config.appId,
+      clientSecret: config.appSecret,
+    }),
   })
   if (!response.ok)
     throw new Error(`qq_token_http_${response.status}:${response.bodyText}`)
   const body = response.data
-  if (body.code !== 0 || !body.access_token)
-    throw new Error(`qq_token_api_${body.code ?? 'unknown'}:${body.message ?? 'unknown'}`)
+  if (body.code !== 0 || !body.access_token) {
+    throw new Error(
+      `qq_token_api_${body.code ?? 'unknown'}:${body.message ?? 'unknown'}`,
+    )
+  }
 
   tokenCache.set(buildCacheKey(config), {
     token: body.access_token,
@@ -79,10 +85,10 @@ const fetchQqAccessToken = async (config: QqClientConfig): Promise<string> => {
   return body.access_token
 }
 
-const getQqAccessToken = async (config: QqClientConfig): Promise<string> => {
+const getQqAccessToken = (config: QqClientConfig): Promise<string> => {
   const cached = tokenCache.get(buildCacheKey(config))
   if (cached && cached.expiresAtMs - Date.now() > TOKEN_EXPIRE_SKEW_MS)
-    return cached.token
+    return Promise.resolve(cached.token)
   return fetchQqAccessToken(config)
 }
 

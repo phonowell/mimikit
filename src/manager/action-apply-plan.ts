@@ -1,12 +1,12 @@
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import { newId, nowIso } from '../shared/utils.js'
 
+import { resolveActionFocusId } from './action-apply-create.js'
 import {
   createPlanSchema,
   deletePlanSchema,
   updatePlanSchema,
 } from './action-apply-schema.js'
-import { resolveActionFocusId } from './action-apply-create.js'
 import {
   appendPlanSystemMessage,
   buildTrigger,
@@ -17,11 +17,7 @@ import {
 
 import type { Parsed } from '../actions/model/spec.js'
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
-import type {
-  PlanPriority,
-  PlanSource,
-  TaskPlan,
-} from '../types/index.js'
+import type { PlanPriority, PlanSource, TaskPlan } from '../types/index.js'
 
 export const applyCreatePlan = async (
   runtime: RuntimeState,
@@ -60,8 +56,7 @@ export const applyCreatePlan = async (
 
   const timestamp = nowIso()
   const maxRuns =
-    parsed.data.max_runs ??
-    (trigger.mode === 'on_idle' ? 1 : undefined)
+    parsed.data.max_runs ?? (trigger.mode === 'on_idle' ? 1 : undefined)
 
   const plan: TaskPlan = {
     id: `plan-${newId()}`,

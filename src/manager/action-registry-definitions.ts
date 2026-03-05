@@ -55,7 +55,10 @@ const applyRunTaskAndContinue: ManagerActionDefinition['apply'] = async (
   runtime,
   item,
   context,
-) => (await applyRunTask(runtime, item, context.seen, context.options), 'continue')
+) => (
+  await applyRunTask(runtime, item, context.seen, context.options),
+  'continue'
+)
 
 const applyRestartRuntime: ManagerActionDefinition['apply'] = async (
   runtime,

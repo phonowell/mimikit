@@ -1,7 +1,8 @@
+import { parse as parseYaml } from 'yaml'
+
 import { readTextFileIfExists } from '../fs/read-text.js'
 import { readErrorCode } from '../shared/error-code.js'
 import { compareIsoDesc } from '../shared/time.js'
-import { parse as parseYaml } from 'yaml'
 
 import { escapeCdata, stringifyPromptYaml } from './format-base.js'
 
@@ -39,8 +40,7 @@ const parseYamlListSection = (
 export const encodePromptTextSection = (
   value: string,
   maxBytes: number,
-): string =>
-  escapeCdata(clipUtf8ByBytes(value, maxBytes))
+): string => escapeCdata(clipUtf8ByBytes(value, maxBytes))
 
 export const encodePromptYamlSection = (
   value: string,

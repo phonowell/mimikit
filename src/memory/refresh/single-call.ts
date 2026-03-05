@@ -43,8 +43,11 @@ const singleCallOutputSchema = z
 const buildPrompt = async (payload: MemoryRefreshPayload): Promise<string> => {
   const source = await loadPromptSource('manager/memory-refresh-single-call.md')
   const template = source.template.trim()
-  if (!template)
-    throw new Error('missing_prompt_template:manager/memory-refresh-single-call.md')
+  if (!template) {
+    throw new Error(
+      'missing_prompt_template:manager/memory-refresh-single-call.md',
+    )
+  }
   return renderPromptTemplate(
     template,
     { input_json: JSON.stringify(payload) },
@@ -59,7 +62,9 @@ const toStageSummary = (
   reason: summary.reason,
 })
 
-const collectAllowedEvidenceIds = (payload: MemoryRefreshPayload): Set<string> => {
+const collectAllowedEvidenceIds = (
+  payload: MemoryRefreshPayload,
+): Set<string> => {
   const ids = new Set<string>()
   for (const item of payload.signals) ids.add(item.id)
   for (const item of payload.tasks) ids.add(item.id)
@@ -70,8 +75,12 @@ const collectAllowedEvidenceIds = (payload: MemoryRefreshPayload): Set<string> =
 const sanitizeEntries = (
   payload: MemoryRefreshPayload,
   parsed: z.infer<typeof singleCallOutputSchema>,
-): { entries: MemoryRefreshSubprocessResult['entries']; droppedInvalidEvidence: boolean } => {
-  if (parsed.mode === 'noop') return { entries: [], droppedInvalidEvidence: false }
+): {
+  entries: MemoryRefreshSubprocessResult['entries']
+  droppedInvalidEvidence: boolean
+} => {
+  if (parsed.mode === 'noop')
+    return { entries: [], droppedInvalidEvidence: false }
   const allowedEvidenceIds = collectAllowedEvidenceIds(payload)
   const sanitized: MemoryRefreshSubprocessResult['entries'] = []
   let droppedInvalidEvidence = false
@@ -108,7 +117,7 @@ export const runMemoryRefreshSingleCall = async (params: {
     'single_call',
   )
   const sanitized = sanitizeEntries(params.payload, parsed)
-  const entries = sanitized.entries
+  const { entries } = sanitized
   const mode = parsed.mode === 'patch' && entries.length > 0 ? 'patch' : 'noop'
   const reason = (() => {
     if (parsed.mode !== 'patch' || entries.length > 0) return parsed.reason

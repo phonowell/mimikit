@@ -1,7 +1,7 @@
+import { spawn } from 'node:child_process'
 import { access, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { spawn } from 'node:child_process'
 
 import { readJson, writeJson } from '../../fs/json.js'
 import { ensureDir } from '../../fs/paths.js'
@@ -14,7 +14,9 @@ import type {
 } from './types.js'
 
 const PROJECT_ROOT = fileURLToPath(new URL('../../../', import.meta.url))
-const SUBPROCESS_ENTRY = fileURLToPath(new URL('./subprocess.ts', import.meta.url))
+const SUBPROCESS_ENTRY = fileURLToPath(
+  new URL('./subprocess.ts', import.meta.url),
+)
 const LOCAL_TSX_BIN = join(
   PROJECT_ROOT,
   'node_modules',
@@ -37,10 +39,14 @@ const runSubprocess = async (params: {
 }): Promise<void> => {
   const tsx = await resolveTsxCommand()
   await new Promise<void>((resolve, reject) => {
-    const child = spawn(tsx, [SUBPROCESS_ENTRY, params.inputPath, params.outputPath], {
-      cwd: PROJECT_ROOT,
-      stdio: ['ignore', 'pipe', 'pipe'],
-    })
+    const child = spawn(
+      tsx,
+      [SUBPROCESS_ENTRY, params.inputPath, params.outputPath],
+      {
+        cwd: PROJECT_ROOT,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      },
+    )
     let stderr = ''
     child.stderr.on('data', (chunk) => {
       stderr += String(chunk)

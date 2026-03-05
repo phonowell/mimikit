@@ -1,4 +1,7 @@
-import { assertEnabledQqConfig, registerQqWebhookRoute } from '../channels/qq/index.js'
+import {
+  assertEnabledQqConfig,
+  registerQqWebhookRoute,
+} from '../channels/qq/index.js'
 import { logSafeError } from '../log/safe.js'
 import { stagePendingRestartSummary } from '../orchestrator/core/restart-summary.js'
 
@@ -53,7 +56,12 @@ export const registerApiRoutes = (
   })
 
   app.delete('/api/messages/:id', async (request, reply) => {
-    const id = resolveRouteId(request.params, reply, 'message', 'id is required')
+    const id = resolveRouteId(
+      request.params,
+      reply,
+      'message',
+      'id is required',
+    )
     if (!id) return
     const result = await orchestrator.deleteChatMessage(id)
     if (!result.ok) {
@@ -123,7 +131,7 @@ export const registerApiRoutes = (
     reply.send({ ok: true })
     scheduleExit({
       exitReason: 'http_api_reset',
-      afterPersist: async () => clearStateDirSafely('http: reset'),
+      afterPersist: () => clearStateDirSafely('http: reset'),
     })
   })
 
@@ -150,7 +158,8 @@ export const registerApiRoutes = (
     } catch (error) {
       await logSafeError('http: reset-with-summary: stage', error)
       reply.code(500).send({
-        error: 'reset-with-summary failed: unable to stage conversation summary',
+        error:
+          'reset-with-summary failed: unable to stage conversation summary',
       })
       return
     }
@@ -158,7 +167,7 @@ export const registerApiRoutes = (
     reply.send({ ok: true })
     scheduleExit({
       exitReason: 'http_api_reset_with_summary',
-      afterPersist: async () =>
+      afterPersist: () =>
         clearStateDirSafely('http: reset-with-summary: clear_state'),
     })
   })

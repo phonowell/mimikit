@@ -1,4 +1,5 @@
 import PQueue from 'p-queue'
+
 import { type AppConfig } from '../../config.js'
 import { buildPaths } from '../../fs/paths.js'
 import { setDefaultLogPath } from '../../log/safe.js'
@@ -9,6 +10,7 @@ import { type ChatMessage } from '../read-model/chat-view.js'
 import { buildFocusViews } from '../read-model/focus-view.js'
 import { sortTaskPlans } from '../read-model/plan-select.js'
 import { buildTaskViews } from '../read-model/task-view.js'
+
 import {
   computeOrchestratorStatus,
   type OrchestratorStatus,
@@ -27,14 +29,15 @@ import {
 } from './orchestrator-runtime-ops.js'
 import { waitForUiSignal } from './signals.js'
 import { clonePendingUserChoice } from './user-choice.js'
+
 import type {
   ExitRequest,
   RuntimeState,
   UiWakeKind,
   UserMeta,
 } from './runtime-state.js'
-import type { Task, TaskPlan } from '../../types/index.js'
 import type { SelectPendingUserChoiceResult } from './user-choice.js'
+import type { Task, TaskPlan } from '../../types/index.js'
 
 export type { OrchestratorStatus } from './orchestrator-helpers.js'
 
@@ -156,7 +159,10 @@ export class Orchestrator {
     return this.runtime.uiWakeVersion
   }
 
-  waitForWebUiSignal(timeoutMs: number, sinceVersion = 0): Promise<{
+  waitForWebUiSignal(
+    timeoutMs: number,
+    sinceVersion = 0,
+  ): Promise<{
     kind: UiWakeKind | 'timeout'
     version: number
   }> {
@@ -189,6 +195,9 @@ export class Orchestrator {
   }
 
   getStatus(): OrchestratorStatus {
-    return computeOrchestratorStatus(this.runtime, this.runtime.inflightInputs.length)
+    return computeOrchestratorStatus(
+      this.runtime,
+      this.runtime.inflightInputs.length,
+    )
   }
 }

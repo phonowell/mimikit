@@ -1,7 +1,7 @@
 import { sortTasksByChangedAt } from '../../prompts/format-base.js'
 import { parseIsoToMsOrZero } from '../../shared/time.js'
 
-import type { Task, TaskPlan, PlanPriority } from '../../types/index.js'
+import type { PlanPriority, Task, TaskPlan } from '../../types/index.js'
 
 export type WindowSelectParams = {
   minCount: number
@@ -39,7 +39,8 @@ const PRIORITY_RANK: Record<PlanPriority, number> = {
 const comparePriorityFifo = (a: TaskPlan, b: TaskPlan): number => {
   const priorityRank = PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority]
   if (priorityRank !== 0) return priorityRank
-  const createdDiff = parseIsoToMsOrZero(a.createdAt) - parseIsoToMsOrZero(b.createdAt)
+  const createdDiff =
+    parseIsoToMsOrZero(a.createdAt) - parseIsoToMsOrZero(b.createdAt)
   if (createdDiff !== 0) return createdDiff
   return a.id.localeCompare(b.id)
 }

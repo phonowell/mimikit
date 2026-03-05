@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import type { z } from 'zod'
 
 const stripCodeFence = (text: string): string => {
   const trimmed = text.trim()

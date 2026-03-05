@@ -1,7 +1,10 @@
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
-import { notifyManagerLoop, notifyUiSignal } from '../orchestrator/core/signals.js'
+import {
+  notifyManagerLoop,
+  notifyUiSignal,
+} from '../orchestrator/core/signals.js'
 import { resolvePendingUserChoiceTimeout } from '../orchestrator/core/user-choice.js'
 import { sleep } from '../shared/utils.js'
 
@@ -11,12 +14,12 @@ import {
   triggerOnWorkerSlotFreedPlans,
 } from './loop-trigger-plans.js'
 import {
-  IDLE_CHECK_INTERVAL_MS,
-  WORKER_SLOT_EVENT_COOLDOWN_MS,
   hasFreeWorkerSlot,
+  IDLE_CHECK_INTERVAL_MS,
   isManagerBusy,
   isWorkerBusy,
   resolveWorkerSlotCapacity,
+  WORKER_SLOT_EVENT_COOLDOWN_MS,
 } from './loop-trigger-shared.js'
 import { publishManagerSystemEventInput } from './system-input-event.js'
 
@@ -28,7 +31,10 @@ export const triggerWakeLoop = async (runtime: RuntimeState): Promise<void> => {
   let lastFreeWorkerSlot: boolean | null = null
   let workerSlotEventPending = false
   let lastWorkerSlotEventAtMs = 0
-  const idleTriggerDelayMs = Math.max(0, runtime.config.manager.idleTrigger.delayMs)
+  const idleTriggerDelayMs = Math.max(
+    0,
+    runtime.config.manager.idleTrigger.delayMs,
+  )
 
   while (!runtime.stopped) {
     try {
@@ -54,9 +60,8 @@ export const triggerWakeLoop = async (runtime: RuntimeState): Promise<void> => {
       triggeredCount += scheduled.triggeredCount
 
       const freeWorkerSlot = hasFreeWorkerSlot(runtime)
-      if (lastFreeWorkerSlot === null) {
-        lastFreeWorkerSlot = freeWorkerSlot
-      } else if (lastFreeWorkerSlot !== freeWorkerSlot) {
+      if (lastFreeWorkerSlot === null) lastFreeWorkerSlot = freeWorkerSlot
+      else if (lastFreeWorkerSlot !== freeWorkerSlot) {
         lastFreeWorkerSlot = freeWorkerSlot
         if (freeWorkerSlot) workerSlotEventPending = true
       }
@@ -66,7 +71,10 @@ export const triggerWakeLoop = async (runtime: RuntimeState): Promise<void> => {
         freeWorkerSlot &&
         nowMs - lastWorkerSlotEventAtMs >= WORKER_SLOT_EVENT_COOLDOWN_MS
       ) {
-        const slotTriggered = await triggerOnWorkerSlotFreedPlans(runtime, nowMs)
+        const slotTriggered = await triggerOnWorkerSlotFreedPlans(
+          runtime,
+          nowMs,
+        )
         stateChanged = stateChanged || slotTriggered.stateChanged
         triggeredCount += slotTriggered.triggeredCount
 

@@ -1,3 +1,4 @@
+import { syncFocusContextFromTaskResult } from '../focus/result-feedback.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort, safeOrUndefined } from '../log/safe.js'
 import { notifyManagerLoop } from '../orchestrator/core/signals.js'
@@ -5,7 +6,6 @@ import { nowIso } from '../shared/utils.js'
 import { appendTaskProgress } from '../storage/task-progress.js'
 import { appendTaskResultArchive } from '../storage/task-results.js'
 import { publishWorkerResult } from '../streams/queues.js'
-import { syncFocusContextFromTaskResult } from '../focus/result-feedback.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { Task, TaskResult, TokenUsage } from '../types/index.js'

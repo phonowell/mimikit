@@ -53,8 +53,14 @@ export const hasMessagePayloadChanged = (
   if (!payload) return false
   if (resolveMessageCursor(cursor, payload) !== cursor) return true
   const mode =
-    typeof payload.mode === 'string' ? payload.mode.trim().toLowerCase() : 'full'
-  return mode === 'delta' && Array.isArray(payload.messages) && payload.messages.length > 0
+    typeof payload.mode === 'string'
+      ? payload.mode.trim().toLowerCase()
+      : 'full'
+  return (
+    mode === 'delta' &&
+    Array.isArray(payload.messages) &&
+    payload.messages.length > 0
+  )
 }
 
 export const buildSnapshotHintKey = (snapshot: {

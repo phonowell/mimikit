@@ -2,6 +2,7 @@ import { parseActions } from '../actions/protocol/parse.js'
 import { hasQqUserInput } from '../channels/qq/index.js'
 import { appendLog } from '../log/append.js'
 import { mergeUsageAdditive } from '../shared/token-usage.js'
+
 import { runManagerRoundWithRecovery } from './loop-batch-exec.js'
 import { resolveRoundFollowup } from './loop-batch-round-followup.js'
 import {
@@ -9,6 +10,7 @@ import {
   buildRoundLimitResult,
   type ManagerRoundExtra,
 } from './loop-batch-run-helpers.js'
+
 import type { RuntimeState } from './runtime-adapter.js'
 import type {
   FocusId,

@@ -1,33 +1,31 @@
-import { resolveDefaultFocusId } from '../focus/index.js'
 import { dispatchQqPassiveReply } from '../channels/qq/index.js'
-import {
-  appendManagerCorrectionLimitSystemMessage,
-} from '../history/manager-events.js'
+import { resolveDefaultFocusId } from '../focus/index.js'
+import { appendManagerCorrectionLimitSystemMessage } from '../history/manager-events.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { requestMemoryRefresh } from '../memory/refresh/singleflight.js'
-import {
-  notifyUiSignal,
-  persistRuntimeState,
-  type RuntimeState,
-} from './runtime-adapter.js'
 import { isVisibleToAgent } from '../shared/message-visibility.js'
 
 import { applyTaskActions, collectTaskResultSummaries } from './action-apply.js'
 import { hasNonIdleManagerInput } from './idle-input.js'
-import { applyPlanCompletionState } from './loop-batch-pre.js'
-import { runManagerBatch } from './loop-batch-run-manager.js'
-import { normalizeManagerReplyText } from './reply-normalize.js'
 import {
   appendManagerReply,
   finishBatchWithoutAgentReply,
   recoverManagerBatchFailure,
 } from './loop-batch-flow.js'
+import { applyPlanCompletionState } from './loop-batch-pre.js'
+import { runManagerBatch } from './loop-batch-run-manager.js'
 import {
   buildFallbackReply,
   consumeBatchHistory,
   finalizeBatchProgress,
 } from './loop-helpers.js'
+import { normalizeManagerReplyText } from './reply-normalize.js'
+import {
+  notifyUiSignal,
+  persistRuntimeState,
+  type RuntimeState,
+} from './runtime-adapter.js'
 
 import type { TaskResult, TokenUsage, UserInput } from '../types/index.js'
 
@@ -38,13 +36,8 @@ export const processManagerBatch = async (params: {
   nextInputsCursor: number
   nextResultsCursor: number
 }): Promise<void> => {
-  const {
-    runtime,
-    inputs,
-    results,
-    nextInputsCursor,
-    nextResultsCursor,
-  } = params
+  const { runtime, inputs, results, nextInputsCursor, nextResultsCursor } =
+    params
   applyPlanCompletionState(runtime, results)
   if (results.length > 0 || hasNonIdleManagerInput(inputs))
     runtime.lastManagerActivityAtMs = Date.now()

@@ -44,7 +44,9 @@ const waitForSignal = async (params: {
 
 const trimUiWakeHistory = (runtime: RuntimeState): void => {
   while (runtime.uiWakeEvents.size > MAX_UI_WAKE_EVENTS) {
-    const oldest = runtime.uiWakeEvents.keys().next().value as number | undefined
+    const oldest = runtime.uiWakeEvents.keys().next().value as
+      | number
+      | undefined
     if (oldest === undefined) break
     runtime.uiWakeEvents.delete(oldest)
   }
@@ -58,9 +60,9 @@ const resolveNextUiWake = (
     Number.isFinite(sinceVersion) && sinceVersion > 0
       ? Math.floor(sinceVersion)
       : 0
-  for (const [version, kind] of runtime.uiWakeEvents) {
+  for (const [version, kind] of runtime.uiWakeEvents)
     if (version > normalizedVersion) return { kind, version }
-  }
+
   return undefined
 }
 
@@ -71,9 +73,8 @@ export const notifyUiSignal = (
   runtime.uiWakeVersion += 1
   runtime.uiWakeEvents.set(runtime.uiWakeVersion, kind)
   trimUiWakeHistory(runtime)
-  for (const controller of runtime.uiSignalControllers) {
+  for (const controller of runtime.uiSignalControllers)
     abortController(controller)
-  }
 }
 
 export const waitForUiSignal = async (

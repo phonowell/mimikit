@@ -51,70 +51,90 @@ const validatePlanTriggerFields = (
   const hasCooldown = data.cooldown_ms !== undefined
 
   if (mode === 'cron') {
-    if (!cron) addCustomIssue(ctx, 'cron', 'cron is required when trigger_mode="cron"')
-    if (scheduledAt)
+    if (!cron)
+      addCustomIssue(ctx, 'cron', 'cron is required when trigger_mode="cron"')
+    if (scheduledAt) {
       addCustomIssue(
         ctx,
         'scheduled_at',
         'scheduled_at cannot be used when trigger_mode="cron"',
       )
-    if (hasCooldown)
+    }
+    if (hasCooldown) {
       addCustomIssue(
         ctx,
         'cooldown_ms',
         'cooldown_ms cannot be used when trigger_mode="cron"',
       )
+    }
     return
   }
 
   if (mode === 'scheduled_at') {
-    if (!scheduledAt)
+    if (!scheduledAt) {
       addCustomIssue(
         ctx,
         'scheduled_at',
         'scheduled_at is required when trigger_mode="scheduled_at"',
       )
-    if (cron)
-      addCustomIssue(ctx, 'cron', 'cron cannot be used when trigger_mode="scheduled_at"')
-    if (hasCooldown)
+    }
+    if (cron) {
+      addCustomIssue(
+        ctx,
+        'cron',
+        'cron cannot be used when trigger_mode="scheduled_at"',
+      )
+    }
+    if (hasCooldown) {
       addCustomIssue(
         ctx,
         'cooldown_ms',
         'cooldown_ms cannot be used when trigger_mode="scheduled_at"',
       )
+    }
     return
   }
 
   if (mode === 'on_idle') {
-    if (cron) addCustomIssue(ctx, 'cron', 'cron cannot be used when trigger_mode="on_idle"')
-    if (scheduledAt)
+    if (cron) {
+      addCustomIssue(
+        ctx,
+        'cron',
+        'cron cannot be used when trigger_mode="on_idle"',
+      )
+    }
+    if (scheduledAt) {
       addCustomIssue(
         ctx,
         'scheduled_at',
         'scheduled_at cannot be used when trigger_mode="on_idle"',
       )
+    }
     return
   }
 
   if (mode === 'on_worker_slot_freed') {
-    if (cron)
+    if (cron) {
       addCustomIssue(
         ctx,
         'cron',
         'cron cannot be used when trigger_mode="on_worker_slot_freed"',
       )
-    if (scheduledAt)
+    }
+    if (scheduledAt) {
       addCustomIssue(
         ctx,
         'scheduled_at',
         'scheduled_at cannot be used when trigger_mode="on_worker_slot_freed"',
       )
-    if (hasCooldown)
+    }
+    if (hasCooldown) {
       addCustomIssue(
         ctx,
         'cooldown_ms',
         'cooldown_ms cannot be used when trigger_mode="on_worker_slot_freed"',
       )
+    }
   }
 }
 

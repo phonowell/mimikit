@@ -45,9 +45,9 @@ export const renderMessage = (params, msg) => {
         typeof window !== 'undefined' &&
         typeof window.matchMedia === 'function' &&
         window.matchMedia('(max-width: 640px)').matches
-      ) {
+      ) 
         return
-      }
+      
       onQuote(msg)
     })
   }

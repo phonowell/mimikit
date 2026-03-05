@@ -77,7 +77,10 @@ export const publishChoiceSelectionInput = (params: {
       },
     }),
     buildLogEntry: (inputId) => ({
-      event: params.source === 'timeout' ? 'user_choice_timeout_default' : 'user_choice',
+      event:
+        params.source === 'timeout'
+          ? 'user_choice_timeout_default'
+          : 'user_choice',
       inputId,
       choiceId: params.choice.id,
       optionId: params.option.id,

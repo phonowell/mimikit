@@ -159,7 +159,11 @@ export const parseAskUserChoiceAttrs = (
   if (!parsed.success) return undefined
   const optionsParsed = parseChoiceOptions(parsed.data)
   if (!optionsParsed.ok) return undefined
-  if (!optionsParsed.value.some((item) => item.id === parsed.data.default_option_id))
+  if (
+    !optionsParsed.value.some(
+      (item) => item.id === parsed.data.default_option_id,
+    )
+  )
     return undefined
   return {
     id: parsed.data.id,

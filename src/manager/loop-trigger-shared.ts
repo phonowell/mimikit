@@ -1,6 +1,7 @@
-import { publishManagerSystemEventInput } from './system-input-event.js'
-import { hasNonIdleManagerInput } from './idle-input.js'
 import { parseIsoMs } from '../shared/time.js'
+
+import { hasNonIdleManagerInput } from './idle-input.js'
+import { publishManagerSystemEventInput } from './system-input-event.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { TaskPlan } from '../types/index.js'
@@ -74,8 +75,7 @@ export const maybeMarkPlanExhausted = (
 export const canFireOnIdle = (plan: TaskPlan, nowMs: number): boolean => {
   if (plan.status !== 'active') return false
   if (plan.trigger.mode !== 'on_idle') return false
-  if (plan.maxRuns !== undefined && plan.runCount >= plan.maxRuns)
-    return false
+  if (plan.maxRuns !== undefined && plan.runCount >= plan.maxRuns) return false
   const cooldownMs = Math.max(0, plan.trigger.cooldownMs)
   if (cooldownMs === 0) return true
   if (!plan.lastCompletedAt) return true
@@ -87,8 +87,7 @@ export const canFireOnIdle = (plan: TaskPlan, nowMs: number): boolean => {
 export const canFireOnWorkerSlotFreed = (plan: TaskPlan): boolean => {
   if (plan.status !== 'active') return false
   if (plan.trigger.mode !== 'on_worker_slot_freed') return false
-  if (plan.maxRuns !== undefined && plan.runCount >= plan.maxRuns)
-    return false
+  if (plan.maxRuns !== undefined && plan.runCount >= plan.maxRuns) return false
   return true
 }
 
@@ -103,9 +102,8 @@ export const firePlan = async (params: {
   plan.lastTriggeredAt = nowIso
   plan.updatedAt = nowIso
 
-  if (plan.trigger.mode === 'scheduled_at') {
+  if (plan.trigger.mode === 'scheduled_at')
     markPlanDone(plan, nowIso, 'completed')
-  }
 
   await publishManagerSystemEventInput({
     runtime,

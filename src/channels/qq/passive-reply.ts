@@ -18,14 +18,13 @@ type QqUserInput = Extract<UserInput, { role: 'user' }> & {
   qqTimestamp?: string
 }
 
-const isQqUserInput = (input: UserInput): input is QqUserInput => {
-  return Boolean(
+const isQqUserInput = (input: UserInput): input is QqUserInput =>
+  Boolean(
     input.role === 'user' &&
-      input.source === 'qq' &&
-      input.qqOpenid?.trim() &&
-      input.qqMessageId?.trim(),
+    input.source === 'qq' &&
+    input.qqOpenid?.trim() &&
+    input.qqMessageId?.trim(),
   )
-}
 
 const resolveLatestQqInput = (inputs: UserInput[]): QqUserInput | undefined => {
   for (let index = inputs.length - 1; index >= 0; index -= 1) {

@@ -52,9 +52,8 @@ const cleanupLegacyLock = async (workDir: string): Promise<void> => {
     legacyLockTarget,
     LOCK_CHECK_OPTIONS,
   )
-  if (isLegacyLockActive) {
+  if (isLegacyLockActive)
     throw new Error(`[cli] instance lock exists at ${legacyLockTarget}`)
-  }
 
   await rm(legacyLockPath, { recursive: true, force: true })
 }
@@ -79,11 +78,9 @@ export const acquireRuntimeLock = async (
     release: async () => {
       if (released) return
       released = true
-      await bestEffort(
-        'runtime_lock:release_lock_file',
-        () => releaseLock(),
-        { meta: { lockPath } },
-      )
+      await bestEffort('runtime_lock:release_lock_file', () => releaseLock(), {
+        meta: { lockPath },
+      })
     },
   }
 }

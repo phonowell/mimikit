@@ -6,13 +6,13 @@ import {
   notifyWorkerLoop,
   waitForWorkerLoopSignal,
 } from '../orchestrator/core/signals.js'
-import { isSameUsage } from '../shared/token-usage.js'
 import {
   markTaskCanceled,
   markTaskFailed,
   markTaskRunning,
   markTaskSucceeded,
 } from '../orchestrator/core/task-lifecycle.js'
+import { isSameUsage } from '../shared/token-usage.js'
 
 import { buildResult, finalizeResult } from './result-finalize.js'
 import { runTaskWithRetry } from './run-retry.js'

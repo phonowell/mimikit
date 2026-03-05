@@ -19,9 +19,9 @@ export const updateControllerStatus = (params) => {
 
 export const mergeIncomingMessages = (params) => {
   const { mode, lastMessages, incoming, limit } = params
-  if (mode !== 'delta' || lastMessages.length === 0) {
+  if (mode !== 'delta' || lastMessages.length === 0) 
     return incoming.slice(Math.max(0, incoming.length - limit))
-  }
+  
   const merged = [...lastMessages]
   const indexById = new Map()
   for (let index = 0; index < merged.length; index += 1) {

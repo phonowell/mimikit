@@ -6,20 +6,20 @@ import {
   findMarkdownCodeRanges,
   isIndexInRanges,
 } from '../actions/protocol/markdown-code-ranges.js'
+import { queryHistorySchema } from '../history/query.js'
 
-import {
-  REGISTERED_MANAGER_ACTIONS,
-  validateRegisteredManagerAction,
-} from './action-registrations.js'
+import { readFileSchema } from './action-apply-schema.js'
 import {
   formatActionInCodeBlockHint,
   formatInvalidActionSyntaxHint,
   formatUnregisteredActionHint,
 } from './action-feedback-hints.js'
-import type { FeedbackContext } from './action-validation.js'
-import { queryHistorySchema } from '../history/query.js'
-import { readFileSchema } from './action-apply-schema.js'
+import {
+  REGISTERED_MANAGER_ACTIONS,
+  validateRegisteredManagerAction,
+} from './action-registrations.js'
 
+import type { FeedbackContext } from './action-validation.js'
 import type { Parsed } from '../actions/model/spec.js'
 import type { ManagerActionFeedback } from '../types/index.js'
 
@@ -97,37 +97,27 @@ const detectUnparsedActionIssue = (
   hasParsedActions: boolean,
 ): ManagerActionFeedback | undefined => {
   const codeRanges = findMarkdownCodeRanges(output)
-  const actionText = extractActionText(output).actionText
+  const { actionText } = extractActionText(output)
   const zoneStart = actionText ? output.lastIndexOf(actionText) : -1
-  const parsedTagStarts = new Set(collectTagMatches(output).map((tag) => tag.start))
+  const parsedTagStarts = new Set(
+    collectTagMatches(output).map((tag) => tag.start),
+  )
   const tagRe = /<\s*M:([A-Za-z_][\w:-]*)/g
-  let outside:
-    | { action: string; attempted: string }
-    | undefined
-  let outsideBeforeZone:
-    | { action: string; attempted: string }
-    | undefined
-  let outsideUnparsed:
-    | { action: string; attempted: string }
-    | undefined
-  let inCode:
-    | { action: string; attempted: string }
-    | undefined
+  let outside: { action: string; attempted: string } | undefined
+  let outsideBeforeZone: { action: string; attempted: string } | undefined
+  let outsideUnparsed: { action: string; attempted: string } | undefined
+  let inCode: { action: string; attempted: string } | undefined
 
   let match = tagRe.exec(output)
   while (match) {
     const action = (match[1] ?? 'unknown').trim() || 'unknown'
-    const index = match.index
+    const { index } = match
     const attempted = detectActionSnippet(output, index)
     if (isIndexInRanges(index, codeRanges)) {
       if (!inCode) inCode = { action, attempted }
     } else {
       if (!outside) outside = { action, attempted }
-      if (
-        zoneStart >= 0 &&
-        index < zoneStart &&
-        !outsideBeforeZone
-      )
+      if (zoneStart >= 0 && index < zoneStart && !outsideBeforeZone)
         outsideBeforeZone = { action, attempted }
       if (!parsedTagStarts.has(index) && !outsideUnparsed)
         outsideUnparsed = { action, attempted }

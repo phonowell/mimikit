@@ -50,7 +50,10 @@ const readJsonlValues = async (path: string): Promise<unknown[]> => {
   return values
 }
 
-const toJsonlPayload = <T>(items: T[], options?: { trailingNewline?: boolean }) => {
+const toJsonlPayload = <T>(
+  items: T[],
+  options?: { trailingNewline?: boolean },
+) => {
   if (items.length === 0) return ''
   const body = items.map((item) => JSON.stringify(item)).join('\n')
   return options?.trailingNewline === false ? body : `${body}\n`

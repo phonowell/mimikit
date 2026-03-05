@@ -7,7 +7,6 @@ import {
 import { runManagerLlmCall } from './manager-llm-call.js'
 
 import type { AppConfig } from '../config.js'
-import type { ModelReasoningEffort } from '@openai/codex-sdk'
 import type {
   FocusContext,
   FocusId,
@@ -17,11 +16,12 @@ import type {
   ManagerEnv,
   ReadFileLookupMessage,
   Task,
-  TaskResult,
   TaskPlan,
+  TaskResult,
   TokenUsage,
   UserInput,
 } from '../types/index.js'
+import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
 const toError = (error: unknown): Error =>
   error instanceof Error ? error : new Error(String(error))
@@ -97,7 +97,9 @@ export const runManager = async (params: {
       prompt,
       workDir: params.workDir,
       ...(model ? { model } : {}),
-      ...(params.managerProvider ? { managerProvider: params.managerProvider } : {}),
+      ...(params.managerProvider
+        ? { managerProvider: params.managerProvider }
+        : {}),
       ...(params.onUsage ? { onUsage: params.onUsage } : {}),
     })
     await archive(

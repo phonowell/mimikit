@@ -11,8 +11,8 @@ import {
   type ApplyTaskActionsOptions,
 } from './action-registrations.js'
 
-import type { Parsed } from '../actions/model/spec.js'
 import type { RuntimeState } from './runtime-adapter.js'
+import type { Parsed } from '../actions/model/spec.js'
 
 export { collectTaskResultSummaries }
 

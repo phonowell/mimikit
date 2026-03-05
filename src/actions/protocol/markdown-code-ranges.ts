@@ -1,6 +1,6 @@
 import { visit } from 'unist-util-visit'
 
-import { parseMarkdown, type MarkdownTree } from './markdown-parse.js'
+import { type MarkdownTree, parseMarkdown } from './markdown-parse.js'
 
 type Range = {
   start: number

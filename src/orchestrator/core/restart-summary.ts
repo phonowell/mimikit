@@ -6,6 +6,7 @@ import {
   readPendingRestartSummary,
   upsertPendingRestartSummary,
 } from '../../storage/pending-restart-summary.js'
+
 import {
   buildConversationSummaryForReset,
   type RestartSummaryContext,
@@ -19,10 +20,12 @@ const hasSummaryRestoreMarker = (text: string, summaryId: string): boolean =>
   text.includes(`<M:system_event name="${SUMMARY_RESTORED_EVENT}"`) &&
   text.includes(`"summary_id":"${summaryId}"`)
 
-export const stagePendingRestartSummary = async (params: {
-  stateDir: string
-  runtimeId: string
-} & RestartSummaryContext): Promise<void> => {
+export const stagePendingRestartSummary = async (
+  params: {
+    stateDir: string
+    runtimeId: string
+  } & RestartSummaryContext,
+): Promise<void> => {
   const summary = buildConversationSummaryForReset(params)
   await upsertPendingRestartSummary({
     stateDir: params.stateDir,

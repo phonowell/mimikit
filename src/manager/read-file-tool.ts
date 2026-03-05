@@ -8,15 +8,14 @@ import { decodeUtf8Text, sliceTextByLines } from './read-file-content.js'
 import {
   buildReadFileLookupKey,
   pickReadFileRequest,
-  readFileToolSchema,
   type ReadFileRequest,
+  readFileToolSchema,
 } from './read-file-request.js'
 
 import type { ReadFileLookupMessage } from '../types/index.js'
 
-const MAX_FILE_BYTES = 256 * 1_024
-const NON_REGULAR_FILE_ERROR =
-  'read_file failed: path is not a regular file'
+const MAX_FILE_BYTES = 1_024 * 1_024
+const NON_REGULAR_FILE_ERROR = 'read_file failed: path is not a regular file'
 
 const formatPathForPrompt = (repoRelativePath: string): string =>
   repoRelativePath.replace(/\\/g, '/')
@@ -56,9 +55,8 @@ export const runReadFileTool = async (params: {
 
   try {
     const stats = await stat(absolutePath)
-    if (!stats.isFile()) {
+    if (!stats.isFile())
       return buildReadFileError(displayPath, NON_REGULAR_FILE_ERROR)
-    }
   } catch (error) {
     const code = readErrorCode(error)
     return buildReadFileError(displayPath, toErrorMessage(code))

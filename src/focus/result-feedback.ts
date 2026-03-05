@@ -49,10 +49,11 @@ const formatSummary = (task: Task, result: TaskResult): string => {
   const detail = pickSummaryLine(result.output)
   if (result.status === 'succeeded')
     return detail ?? `Task "${label}" completed.`
-  if (result.status === 'failed')
+  if (result.status === 'failed') {
     return detail
       ? `Task "${label}" failed: ${detail}`
       : `Task "${label}" failed.`
+  }
   return detail
     ? `Task "${label}" canceled: ${detail}`
     : `Task "${label}" canceled.`
@@ -66,9 +67,7 @@ const collectOpenItemsFromOutput = (output: string): string[] => {
   const collected: string[] = []
   const seen = new Set<string>()
   for (const line of lines) {
-    const match = line.match(
-      /^\s*(?:[-*+]|\d+[.)])\s+\[\s\]\s+([\s\S]+?)\s*$/,
-    )
+    const match = line.match(/^\s*(?:[-*+]|\d+[.)])\s+\[\s\]\s+([\s\S]+?)\s*$/)
     if (!match?.[1]) continue
     const normalized = normalizeOpenItemText(match[1])
     if (normalized.length === 0) continue

@@ -1,5 +1,8 @@
 import { renderPromptTemplate } from '../prompts/format.js'
-import { mergeUsageAdditive, mergeUsageMonotonic } from '../shared/token-usage.js'
+import {
+  mergeUsageAdditive,
+  mergeUsageMonotonic,
+} from '../shared/token-usage.js'
 import { appendTraceArchiveResult } from '../storage/traces-archive.js'
 
 import { isAbortLikeError } from './error-utils.js'

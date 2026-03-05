@@ -7,7 +7,6 @@ import { persistRuntimeState } from '../../orchestrator/core/runtime-persistence
 import { isVisibleToAgent } from '../../shared/message-visibility.js'
 import { truncateText } from '../../shared/text.js'
 import { nowIso } from '../../shared/utils.js'
-
 import { readMemoryMarkdown } from '../store.js'
 
 import { applyMemoryPatch } from './apply-patch.js'
@@ -18,8 +17,8 @@ import {
   shouldTriggerMemoryRefresh,
 } from './trigger-policy.js'
 
-import type { RuntimeState } from '../../orchestrator/core/runtime-state.js'
 import type { MemoryRefreshPayload } from './types.js'
+import type { RuntimeState } from '../../orchestrator/core/runtime-state.js'
 
 const MAX_SIGNALS = 80
 const MAX_TASKS = 40
@@ -55,7 +54,9 @@ const markCompleted = (
   state.lastRunAt = nowIso()
 }
 
-const buildPayload = async (runtime: RuntimeState): Promise<MemoryRefreshPayload> => {
+const buildPayload = async (
+  runtime: RuntimeState,
+): Promise<MemoryRefreshPayload> => {
   const history = await readHistory(runtime.paths.history)
   const visibleAll = history.filter((item) => isVisibleToAgent(item))
   const visible = visibleAll.slice(Math.max(0, visibleAll.length - MAX_SIGNALS))
@@ -128,7 +129,10 @@ const runMemoryRefreshOnce = async (runtime: RuntimeState): Promise<void> => {
   let written = 0
   let skipped = 0
   if (output.mode === 'patch' && output.entries.length > 0) {
-    const applied = await applyMemoryPatch(runtime.paths.memoryFile, output.entries)
+    const applied = await applyMemoryPatch(
+      runtime.paths.memoryFile,
+      output.entries,
+    )
     written = applied.written
     skipped = applied.skipped
   }

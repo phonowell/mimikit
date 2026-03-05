@@ -4,7 +4,10 @@ import { buildPaths } from '../../fs/paths.js'
 import { appendLog } from '../../log/append.js'
 import { nowIso } from '../../shared/utils.js'
 
-import { buildQqValidationSignature, verifyQqCallbackSignature } from './signature.js'
+import {
+  buildQqValidationSignature,
+  verifyQqCallbackSignature,
+} from './signature.js'
 import { registerQqInboundMessage } from './state.js'
 
 import type { AppConfig } from '../../config.js'
@@ -26,7 +29,10 @@ const qqPayloadSchema = z
   .strict()
 
 const validationDataSchema = z
-  .object({ plain_token: z.string().trim().min(1), event_ts: z.string().trim().min(1) })
+  .object({
+    plain_token: z.string().trim().min(1),
+    event_ts: z.string().trim().min(1),
+  })
   .strict()
 
 const c2cMessageSchema = z
@@ -49,7 +55,9 @@ const buildDispatchAck = (success: boolean): { op: number; d: number } => ({
   d: success ? 0 : 1,
 })
 
-const parsePayload = (rawBody: string): z.infer<typeof qqPayloadSchema> | undefined => {
+const parsePayload = (
+  rawBody: string,
+): z.infer<typeof qqPayloadSchema> | undefined => {
   try {
     const json = JSON.parse(rawBody) as unknown
     const parsed = qqPayloadSchema.safeParse(json)
@@ -67,9 +75,11 @@ export const registerQqWebhookRoute = (
   const callbackPath = normalizeCallbackPath(config.qq.callbackPath)
   const logPath = buildPaths(config.workDir).log
 
-  app.register(async (qqApp) => {
-    qqApp.addContentTypeParser('application/json', { parseAs: 'string' }, (_r, body, done) =>
-      done(null, body),
+  app.register((qqApp) => {
+    qqApp.addContentTypeParser(
+      'application/json',
+      { parseAs: 'string' },
+      (_r, body, done) => done(null, body),
     )
 
     qqApp.post(callbackPath, async (request, reply) => {

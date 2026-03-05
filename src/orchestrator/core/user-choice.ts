@@ -96,7 +96,7 @@ export const selectPendingUserChoice = async (params: {
 }): Promise<SelectPendingUserChoiceResult> => {
   const { runtime, choiceId, optionId, source } = params
   const choice = runtime.pendingUserChoice
-  if (!choice || choice.id !== choiceId) return { ok: false, reason: 'not_found' }
+  if (choice?.id !== choiceId) return { ok: false, reason: 'not_found' }
 
   const selectedAt = params.selectedAt ?? nowIso()
   const nowMs = Date.parse(selectedAt)

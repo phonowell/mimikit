@@ -75,15 +75,13 @@ export const normalizeUsage = (usage?: unknown): TokenUsage | undefined => {
   )
   return normalizeUsageParts({
     input: record.input_tokens ?? record.prompt_tokens,
-    inputCacheRead:
-      record.cached_input_tokens ?? inputDetails?.cached_tokens,
+    inputCacheRead: record.cached_input_tokens ?? inputDetails?.cached_tokens,
     inputCacheWrite:
       record.cache_write_input_tokens ??
       inputDetails?.cache_creation_tokens ??
       inputDetails?.cache_write_tokens,
     output: record.output_tokens ?? record.completion_tokens,
-    outputCache:
-      record.cached_output_tokens ?? outputDetails?.cached_tokens,
+    outputCache: record.cached_output_tokens ?? outputDetails?.cached_tokens,
     total: record.total_tokens,
     sessionTotal: record.session_total_tokens,
   })

@@ -1,6 +1,8 @@
 import { access } from 'node:fs/promises'
 import { extname } from 'node:path'
 
+import { readErrorCode } from '../shared/error-code.js'
+
 import { buildArchiveDocument } from './archive-format.js'
 import { writeDatedArchiveFile } from './archive-write.js'
 import {
@@ -8,7 +10,6 @@ import {
   readTaskResultsForTasks,
   type ReadTaskResultsOptions,
 } from './task-results-read.js'
-import { readErrorCode } from '../shared/error-code.js'
 
 import type {
   TaskCancelMeta,

@@ -1,11 +1,9 @@
 import { appendHistory } from '../history/store.js'
 import { formatSystemEventText } from '../shared/system-event.js'
 import { newId, nowIso } from '../shared/utils.js'
+
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
-import type {
-  TaskPlan,
-  TaskPlanTrigger,
-} from '../types/index.js'
+import type { TaskPlan, TaskPlanTrigger } from '../types/index.js'
 
 const resolvePlanLabel = (item: TaskPlan): string =>
   item.title.trim() || item.id
@@ -13,7 +11,8 @@ const resolvePlanLabel = (item: TaskPlan): string =>
 const planTriggerPayload = (
   trigger: TaskPlanTrigger,
 ): Record<string, unknown> => {
-  if (trigger.mode === 'cron') return { trigger_mode: 'cron', cron: trigger.cron }
+  if (trigger.mode === 'cron')
+    return { trigger_mode: 'cron', cron: trigger.cron }
   if (trigger.mode === 'scheduled_at')
     return { trigger_mode: 'scheduled_at', scheduled_at: trigger.scheduledAt }
   if (trigger.mode === 'on_idle')
@@ -75,7 +74,8 @@ export const normalizePlanKey = (params: {
     .replace(/\s+/g, ' ')
     .toLowerCase()}\n${params.focusId}\n${params.profile}`
 
-  if (params.trigger.mode === 'cron') return `${base}\ncron:${params.trigger.cron}`
+  if (params.trigger.mode === 'cron')
+    return `${base}\ncron:${params.trigger.cron}`
   if (params.trigger.mode === 'scheduled_at')
     return `${base}\nscheduled_at:${params.trigger.scheduledAt}`
   if (params.trigger.mode === 'on_idle')
@@ -84,11 +84,7 @@ export const normalizePlanKey = (params: {
 }
 
 export const buildTrigger = (params: {
-  triggerMode:
-    | 'cron'
-    | 'scheduled_at'
-    | 'on_idle'
-    | 'on_worker_slot_freed'
+  triggerMode: 'cron' | 'scheduled_at' | 'on_idle' | 'on_worker_slot_freed'
   cron?: string | undefined
   scheduledAt?: string | undefined
   cooldownMs?: number | undefined
@@ -136,13 +132,11 @@ export const resolveUpdatedTrigger = (
     update.cooldownMs !== undefined
   if (!hasTriggerPatch) return current
 
-  const mode =
-    update.triggerMode ?? current.mode
+  const mode = update.triggerMode ?? current.mode
 
   return buildTrigger({
     triggerMode: mode,
-    cron:
-      update.cron ?? (current.mode === 'cron' ? current.cron : undefined),
+    cron: update.cron ?? (current.mode === 'cron' ? current.cron : undefined),
     scheduledAt:
       update.scheduledAt ??
       (current.mode === 'scheduled_at' ? current.scheduledAt : undefined),

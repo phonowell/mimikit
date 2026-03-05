@@ -59,7 +59,8 @@ const reconcileRuntimeQueueState = async (
   const changed =
     runtime.queues.inputsCursor !== prevInputsCursor ||
     runtime.queues.resultsCursor !== prevResultsCursor ||
-    runtime.memoryRefresh.lastProcessedInputsCursor !== prevMemoryInputsCursor ||
+    runtime.memoryRefresh.lastProcessedInputsCursor !==
+      prevMemoryInputsCursor ||
     runtime.memoryRefresh.lastProcessedResultsCursor !== prevMemoryResultsCursor
   if (!changed) return
 
@@ -129,7 +130,8 @@ export const persistRuntimeState = async (
     memoryRefresh: toPersistedMemoryRefreshState(runtime.memoryRefresh),
     ...(runtime.managerFocusCompressedContexts.length > 0
       ? {
-          managerFocusCompressedContexts: runtime.managerFocusCompressedContexts,
+          managerFocusCompressedContexts:
+            runtime.managerFocusCompressedContexts,
         }
       : {}),
   })

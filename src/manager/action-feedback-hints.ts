@@ -70,13 +70,11 @@ export const formatActionInCodeBlockHint = (): string =>
 export const formatInvalidActionArgsEmptyHint = (): string =>
   renderHint('invalid_action_args_empty')
 
-export const formatInvalidActionArgsWithIssuesHint = (
-  issues: string,
-): string => renderHint('invalid_action_args_with_issues', { issues })
+export const formatInvalidActionArgsWithIssuesHint = (issues: string): string =>
+  renderHint('invalid_action_args_with_issues', { issues })
 
-export const formatInvalidIsoRangeFieldHint = (
-  field: 'from' | 'to',
-): string => renderHint('invalid_iso_range_field', { field })
+export const formatInvalidIsoRangeFieldHint = (field: 'from' | 'to'): string =>
+  renderHint('invalid_iso_range_field', { field })
 
 export const formatScheduledAtInvalidHint = (
   action: 'create_plan' | 'update_plan',

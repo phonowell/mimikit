@@ -3,7 +3,6 @@ import { join } from 'node:path'
 import { readJson, writeJson } from '../../fs/json.js'
 import { parseIsoMs } from '../../shared/time.js'
 import { nowIso } from '../../shared/utils.js'
-
 import { runSerialized } from '../../storage/serialized-lock.js'
 
 import { parseQqEventState, type QqEventState } from './state-schema.js'
@@ -34,7 +33,12 @@ const pruneRecordByTtl = <T>(
 
 const pruneStateByTtl = (state: QqEventState, nowMs: number): QqEventState => ({
   ...state,
-  seenEventIds: pruneRecordByTtl(state.seenEventIds, nowMs, SEEN_ID_TTL_MS, (v) => v),
+  seenEventIds: pruneRecordByTtl(
+    state.seenEventIds,
+    nowMs,
+    SEEN_ID_TTL_MS,
+    (v) => v,
+  ),
   seenMessageIds: pruneRecordByTtl(
     state.seenMessageIds,
     nowMs,
@@ -49,7 +53,10 @@ const pruneStateByTtl = (state: QqEventState, nowMs: number): QqEventState => ({
   ),
 })
 
-const loadQqEventState = async (path: string, now: string): Promise<QqEventState> =>
+const loadQqEventState = async (
+  path: string,
+  now: string,
+): Promise<QqEventState> =>
   pruneStateByTtl(
     {
       ...parseQqEventState(await readJson(path, {}, { ensureFile: true }), now),
@@ -58,12 +65,14 @@ const loadQqEventState = async (path: string, now: string): Promise<QqEventState
     Date.now(),
   )
 
-export const registerQqInboundMessage = async (params: {
+export const registerQqInboundMessage = (params: {
   stateDir: string
   eventId?: string
   messageId: string
   receivedAt?: string
-}): Promise<{ ok: true } | { ok: false; reason: 'duplicate_event' | 'duplicate_message' }> => {
+}): Promise<
+  { ok: true } | { ok: false; reason: 'duplicate_event' | 'duplicate_message' }
+> => {
   const path = resolveQqEventStatePath(params.stateDir)
   const now = params.receivedAt ?? nowIso()
   return runSerialized(path, async () => {
@@ -84,12 +93,14 @@ export const registerQqInboundMessage = async (params: {
   })
 }
 
-export const reserveQqReplySeq = async (params: {
+export const reserveQqReplySeq = (params: {
   stateDir: string
   messageId: string
   maxReplies: number
   reservedAt?: string
-}): Promise<{ ok: true; msgSeq: number } | { ok: false; reason: 'reply_limit_exceeded' }> => {
+}): Promise<
+  { ok: true; msgSeq: number } | { ok: false; reason: 'reply_limit_exceeded' }
+> => {
   const path = resolveQqEventStatePath(params.stateDir)
   const now = params.reservedAt ?? nowIso()
   return runSerialized(path, async () => {

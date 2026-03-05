@@ -6,8 +6,8 @@ import { logSafeError } from '../log/safe.js'
 import { runReadFileTool } from './read-file-tool.js'
 
 import type { ReadFileRequest } from './read-file-tool.js'
-import type { QueryHistoryRequest } from '../history/query.js'
 import type { RuntimeState } from './runtime-adapter.js'
+import type { QueryHistoryRequest } from '../history/query.js'
 import type {
   HistoryLookupMessage,
   ReadFileLookupMessage,
@@ -36,9 +36,7 @@ export const collectTriggeredPlanIds = (inputs: UserInput[]): Set<string> => {
         try {
           const payload = JSON.parse(raw) as { plan_id?: unknown }
           const id =
-            typeof payload.plan_id === 'string'
-              ? payload.plan_id.trim()
-              : ''
+            typeof payload.plan_id === 'string' ? payload.plan_id.trim() : ''
           if (id) ids.add(id)
         } catch (error) {
           const rawPreview = raw.length > 120 ? `${raw.slice(0, 120)}...` : raw

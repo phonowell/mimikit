@@ -1,4 +1,5 @@
 import { logSafeError } from '../log/safe.js'
+
 import { normalizeFocusOpenItems } from './open-items.js'
 
 export const parseFocusOpenItems = (value?: string): string[] | undefined => {

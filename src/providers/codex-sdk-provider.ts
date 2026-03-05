@@ -7,11 +7,11 @@ import {
   buildCodexProviderError,
   createCodexThread,
 } from './codex-sdk-provider-helpers.js'
-import { runCodexStream } from './codex-stream.js'
 import {
   DEFAULT_MODEL_REASONING_EFFORT,
   loadCodexSettings,
 } from './codex-settings.js'
+import { runCodexStream } from './codex-stream.js'
 import { ProviderError, readProviderErrorCode } from './provider-error.js'
 import {
   bindExternalAbort,

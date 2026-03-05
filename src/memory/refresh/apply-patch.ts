@@ -50,10 +50,10 @@ const dedupeEntries = (
   return { rendered, skipped }
 }
 
-const readCurrentMemory = async (path: string): Promise<string> =>
+const readCurrentMemory = (path: string): Promise<string> =>
   readTextFileIfExists(path)
 
-export const applyMemoryPatch = async (
+export const applyMemoryPatch = (
   memoryPath: string,
   entries: MemoryEvidenceEntry[],
 ): Promise<{ written: number; skipped: number }> =>

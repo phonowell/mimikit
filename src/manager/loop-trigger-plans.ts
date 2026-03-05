@@ -57,7 +57,7 @@ export const checkScheduledPlans = async (
     )
       continue
 
-    const cron = plan.trigger.cron
+    const { cron } = plan.trigger
     let matched = false
     try {
       matched = matchesCronNow(cron, now)

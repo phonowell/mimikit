@@ -1,6 +1,3 @@
-import type { Orchestrator } from '../orchestrator/core/orchestrator-service.js'
-import type { FastifyInstance } from 'fastify'
-
 import {
   buildDeltaSnapshot,
   buildSnapshotHintKey,
@@ -10,6 +7,9 @@ import {
   sendSseEvent,
   SSE_HEARTBEAT_MS,
 } from './routes-api-events-shared.js'
+
+import type { Orchestrator } from '../orchestrator/core/orchestrator-service.js'
+import type { FastifyInstance } from 'fastify'
 
 const getDefaultSnapshot = (orchestrator: Orchestrator) =>
   orchestrator.getWebUiSnapshot()
@@ -47,7 +47,9 @@ export const registerEventsRoute = (
           uiWakeVersion,
         )
         if (signal.kind === 'timeout') {
-          if (!sendSseEvent(reply, 'heartbeat', { at: new Date().toISOString() }))
+          if (
+            !sendSseEvent(reply, 'heartbeat', { at: new Date().toISOString() })
+          )
             break
           continue
         }

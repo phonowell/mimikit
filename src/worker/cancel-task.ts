@@ -1,3 +1,4 @@
+import { syncFocusContextFromTaskResult } from '../focus/result-feedback.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
@@ -9,7 +10,6 @@ import { markTaskCanceled } from '../orchestrator/core/task-lifecycle.js'
 import { parseIsoMs } from '../shared/time.js'
 import { nowIso } from '../shared/utils.js'
 import { publishWorkerResult } from '../streams/queues.js'
-import { syncFocusContextFromTaskResult } from '../focus/result-feedback.js'
 
 import { archiveTaskResult } from './result-finalize.js'
 
@@ -35,9 +35,8 @@ export type CancelResult = {
 const buildCanceledResult = (task: Task, output: string): TaskResult => {
   const completedAt = nowIso()
   const startedAtMs = parseIsoMs(task.startedAt ?? '')
-  const durationMs = startedAtMs !== undefined
-    ? Math.max(0, Date.now() - startedAtMs)
-    : 0
+  const durationMs =
+    startedAtMs !== undefined ? Math.max(0, Date.now() - startedAtMs) : 0
   return {
     taskId: task.id,
     status: 'canceled',

@@ -1,13 +1,13 @@
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
+import { consumeUserInputs, consumeWorkerResults } from '../streams/queues.js'
+
+import { processManagerBatch } from './loop-batch.js'
 import {
   persistRuntimeState,
   type RuntimeState,
   waitForManagerLoopSignal,
 } from './runtime-adapter.js'
-import { consumeUserInputs, consumeWorkerResults } from '../streams/queues.js'
-
-import { processManagerBatch } from './loop-batch.js'
 
 export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
   while (!runtime.stopped) {

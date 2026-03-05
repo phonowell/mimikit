@@ -97,9 +97,7 @@ const resolveProviderSettings = (
   const apiKeyEnv =
     readNonEmptyString(providerConfig?.env_key) ??
     readNonEmptyString(providerConfig?.api_key_env)
-  const requiresAuth = readBooleanFlag(
-    providerConfig?.requires_openai_auth,
-  )
+  const requiresAuth = readBooleanFlag(providerConfig?.requires_openai_auth)
 
   return stripUndefined({
     model,

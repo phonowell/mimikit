@@ -1,5 +1,6 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
+
 import {
   formatWorkerTaskPromptExternalizedIntro,
   formatWorkerTaskPromptExternalizedPathLine,
@@ -91,7 +92,7 @@ const externalizeWorkerTaskPromptIfNeeded = async (params: {
     .join('\n')
 }
 
-export const prepareWorkerTaskPrompt = async (params: {
+export const prepareWorkerTaskPrompt = (params: {
   workDir: string
   taskId: string
   taskPrompt: string

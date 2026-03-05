@@ -23,12 +23,13 @@ import {
   mergeChatMessages,
   selectChatMessages,
 } from '../read-model/chat-view.js'
+
 import { toUserInputLogMeta } from './orchestrator-helpers.js'
+import { injectPendingRestartSummary } from './restart-summary.js'
 import {
   hydrateRuntimeState,
   persistRuntimeState,
 } from './runtime-persistence.js'
-import { injectPendingRestartSummary } from './restart-summary.js'
 import {
   notifyManagerLoop,
   notifyUiSignal,
@@ -38,9 +39,10 @@ import {
   cancelPendingUserChoiceByUserInput,
   selectPendingUserChoice,
 } from './user-choice.js'
+
 import type { RuntimeState, UserMeta } from './runtime-state.js'
-import type { ChatMessage, ChatMessagesMode } from '../read-model/chat-view.js'
 import type { SelectPendingUserChoiceResult } from './user-choice.js'
+import type { ChatMessage, ChatMessagesMode } from '../read-model/chat-view.js'
 const SHUTDOWN_MANAGER_WAIT_POLL_MS = 50
 const DELETED_MESSAGE_TEXT = 'Message deleted.'
 export type DeleteChatMessageResult =

@@ -73,13 +73,12 @@ const resolveModel = (
   })
 }
 
-const buildFetchWithoutAuthHeader =
-  (): typeof fetch => (input, init) => {
-    const request = input instanceof Request ? input : new Request(input, init)
-    const headers = new Headers(request.headers)
-    headers.delete('authorization')
-    return fetch(new Request(request, { headers }))
-  }
+const buildFetchWithoutAuthHeader = (): typeof fetch => (input, init) => {
+  const request = input instanceof Request ? input : new Request(input, init)
+  const headers = new Headers(request.headers)
+  headers.delete('authorization')
+  return fetch(new Request(request, { headers }))
+}
 
 const asRecord = (value: unknown): Record<string, unknown> | null =>
   typeof value === 'object' && value ? (value as Record<string, unknown>) : null
@@ -194,12 +193,10 @@ export const parseResponsesSse = (
       const error = asRecord(response?.error)
       throw new Error(asString(error, 'message') ?? 'responses_failed')
     }
-    if (type === 'error') {
+    if (type === 'error')
       throw new Error(asString(event, 'message') ?? 'responses_error')
-    }
-    if (type === 'response.completed') {
-      completed = asRecord(event?.response)
-    }
+
+    if (type === 'response.completed') completed = asRecord(event?.response)
   }
   if (!completed) throw new Error('responses_completed_event_missing')
   const usage = normalizeUsage(completed.usage ?? null)
@@ -213,11 +210,12 @@ export const parseResponsesJson = (
   const payload = parseJsonRecord(raw)
   if (!payload) throw new Error('responses_json_parse_failed')
   const message = readErrorMessage(raw)
-  if (message && (payload.error || typeof payload.code === 'number')) {
+  if (message && (payload.error || typeof payload.code === 'number'))
     throw new Error(message)
-  }
+
   const usage = normalizeUsage(payload.usage ?? null)
-  const output = readCompletedOutput(payload) || (asString(payload, 'output_text') ?? '')
+  const output =
+    readCompletedOutput(payload) || (asString(payload, 'output_text') ?? '')
   return { output, ...(usage ? { usage } : {}) }
 }
 
@@ -225,9 +223,9 @@ export const parseResponsesPayload = (
   raw: string,
 ): { output: string; usage?: TokenUsage } => {
   const trimmed = raw.trimStart()
-  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+  if (trimmed.startsWith('{') || trimmed.startsWith('['))
     return parseResponsesJson(raw)
-  }
+
   return parseResponsesSse(raw)
 }
 
@@ -312,7 +310,8 @@ const runOpenAiResponses = async (request: OpenAiResponsesProviderRequest) => {
     resetIdle()
     const raw = await response.text()
     resetIdle()
-    if (!response.ok) throw new Error(buildHttpErrorMessage(response.status, raw))
+    if (!response.ok)
+      throw new Error(buildHttpErrorMessage(response.status, raw))
     const { output, usage } = parseResponsesPayload(raw)
     if (usage) request.onUsage?.(usage)
     const elapsedMs = elapsedMsSince(startedAt)
@@ -365,7 +364,8 @@ const runOpenAiResponses = async (request: OpenAiResponsesProviderRequest) => {
   }
 }
 
-export const openAiResponsesProvider: Provider<OpenAiResponsesProviderRequest> = {
-  id: PROVIDER_ID,
-  run: runOpenAiResponses,
-}
+export const openAiResponsesProvider: Provider<OpenAiResponsesProviderRequest> =
+  {
+    id: PROVIDER_ID,
+    run: runOpenAiResponses,
+  }

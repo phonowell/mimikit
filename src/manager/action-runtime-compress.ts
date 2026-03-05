@@ -1,21 +1,18 @@
-import { readHistory } from '../history/store.js'
 import {
   findFocus,
   findFocusCompressedContext,
   resolveDefaultFocusId,
   upsertFocusCompressedContext,
 } from '../focus/index.js'
+import { readHistory } from '../history/store.js'
+import { loadPromptFile } from '../prompts/prompt-loader.js'
 import { isVisibleToAgent } from '../shared/message-visibility.js'
-import { compareIsoDesc } from '../shared/time.js'
 import { truncateText } from '../shared/text.js'
+import { compareIsoDesc } from '../shared/time.js'
 
 import { compressContextSchema } from './action-apply-schema.js'
 import { runManagerLlmCall } from './manager-llm-call.js'
-import {
-  persistRuntimeState,
-  type RuntimeState,
-} from './runtime-adapter.js'
-import { loadPromptFile } from '../prompts/prompt-loader.js'
+import { persistRuntimeState, type RuntimeState } from './runtime-adapter.js'
 
 import type { Parsed } from '../actions/model/spec.js'
 import type { FocusId } from '../types/index.js'
@@ -38,13 +35,19 @@ const resolveCompressionFocusIds = (
   runtime: RuntimeState,
   focusIds?: FocusId[],
 ): FocusId[] => {
-  const requested = focusIds?.filter((id, index, source) => source.indexOf(id) === index)
+  const requested = focusIds?.filter(
+    (id, index, source) => source.indexOf(id) === index,
+  )
   if (requested && requested.length > 0) {
-    return requested.filter((id) => findFocus(runtime, id)?.status !== 'archived')
+    return requested.filter(
+      (id) => findFocus(runtime, id)?.status !== 'archived',
+    )
   }
+
   const active = runtime.activeFocusIds.filter(
     (id, index, source) =>
-      source.indexOf(id) === index && findFocus(runtime, id)?.status !== 'archived',
+      source.indexOf(id) === index &&
+      findFocus(runtime, id)?.status !== 'archived',
   )
   if (active.length > 0) return active
   return [resolveDefaultFocusId(runtime)]
@@ -80,7 +83,10 @@ const formatHistorySection = async (
     .join('\n')
 }
 
-const formatTasksSection = (runtime: RuntimeState, focusId: FocusId): string => {
+const formatTasksSection = (
+  runtime: RuntimeState,
+  focusId: FocusId,
+): string => {
   const scopedTasks = runtime.tasks.filter((task) => task.focusId === focusId)
   if (scopedTasks.length === 0) return '无'
   return scopedTasks
@@ -118,10 +124,11 @@ const buildCompressPrompt = async (
   const materialTemplate = (
     await loadPromptFile('manager', 'compress-context-material')
   ).trim()
-  if (!materialTemplate)
+  if (!materialTemplate) {
     throw new Error(
       'missing_prompt_template:manager/compress-context-material.md',
     )
+  }
 
   const historyText = await formatHistorySection(runtime, focusId)
   const tasksText = formatTasksSection(runtime, focusId)
@@ -192,14 +199,14 @@ export const compressManagerContext = async (
   return compressedFocusIds
 }
 
-export const proactiveCompressManagerContext = async (
+export const proactiveCompressManagerContext = (
   runtime: RuntimeState,
   focusIds: FocusId[],
 ): Promise<FocusId[]> => {
   const targetFocusIds = resolveCompressionFocusIds(runtime, focusIds)
     .filter((id) => shouldProactiveCompressFocus(runtime, id))
     .slice(0, MAX_PROACTIVE_FOCUSES)
-  if (targetFocusIds.length === 0) return []
+  if (targetFocusIds.length === 0) return Promise.resolve([])
   return compressManagerContext(runtime, {
     reason: 'auto_preflight',
     focusIds: targetFocusIds,

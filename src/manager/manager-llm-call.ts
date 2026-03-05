@@ -41,7 +41,8 @@ export const runManagerLlmCall = async (params: {
 }> => {
   const managerBaseUrl = params.managerProvider?.baseUrl?.trim()
   const managerApiKey = params.managerProvider?.apiKey?.trim()
-  const managerModelReasoningEffort = params.managerProvider?.modelReasoningEffort
+  const managerModelReasoningEffort =
+    params.managerProvider?.modelReasoningEffort
   const timeoutMs = resolveManagerTimeoutMs(params.prompt)
   const result = await runWithProvider({
     provider: MANAGER_PROVIDER,

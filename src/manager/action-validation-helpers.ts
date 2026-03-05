@@ -1,4 +1,5 @@
 import { parseIsoMs } from '../shared/time.js'
+
 import {
   formatInvalidActionArgsEmptyHint,
   formatInvalidActionArgsWithIssuesHint,
@@ -69,9 +70,8 @@ export const validateScheduledAtNotPast = (params: {
   const trimmed = scheduledAt.trim()
 
   const scheduledMs = parseIsoMs(trimmed)
-  if (scheduledMs === undefined) {
+  if (scheduledMs === undefined)
     return rejected(formatScheduledAtInvalidHint(action))
-  }
 
   const nowMs = parseIsoMs(scheduleNowIso ?? '') ?? Date.now()
   if (scheduledMs <= nowMs - SCHEDULED_AT_PAST_TOLERANCE_MS) {

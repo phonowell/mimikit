@@ -18,8 +18,8 @@ import {
   type ManagerRoundExtra,
 } from './loop-batch-run-helpers.js'
 
-import type { Parsed } from '../actions/model/spec.js'
 import type { RuntimeState } from './runtime-adapter.js'
+import type { Parsed } from '../actions/model/spec.js'
 import type { FocusId } from '../types/index.js'
 
 const appendRoundActionFeedback = async (params: {

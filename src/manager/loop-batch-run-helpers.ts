@@ -1,14 +1,14 @@
 import { appendLog } from '../log/append.js'
 
+import type { RuntimeState } from './runtime-adapter.js'
 import type {
   HistoryLookupMessage,
   ManagerActionFeedback,
   ReadFileLookupMessage,
   TaskPlanStatus,
   TaskStatus,
+  TokenUsage,
 } from '../types/index.js'
-import type { RuntimeState } from './runtime-adapter.js'
-import type { TokenUsage } from '../types/index.js'
 
 export type ManagerRoundExtra = {
   historyLookup?: HistoryLookupMessage[]
@@ -48,7 +48,9 @@ export const buildActionFeedbackContext = (params: {
 } => {
   const { runtime, hasQueryData, allowAskUserChoice, resultTaskIds } = params
   return {
-    taskStatusById: new Map(runtime.tasks.map((task) => [task.id, task.status])),
+    taskStatusById: new Map(
+      runtime.tasks.map((task) => [task.id, task.status]),
+    ),
     planStatusById: new Map(
       runtime.taskPlans.map((plan) => [plan.id, plan.status]),
     ),
@@ -96,10 +98,12 @@ export const buildRoundLimitResult = (params: {
   roundLimitReached: true,
 })
 
-export const buildBatchSuccessResult = <TParsed extends {
-  text: string
-  actions: unknown[]
-}>(params: {
+export const buildBatchSuccessResult = <
+  TParsed extends {
+    text: string
+    actions: unknown[]
+  },
+>(params: {
   parsed: TParsed
   elapsedMs: number
   usage?: TokenUsage

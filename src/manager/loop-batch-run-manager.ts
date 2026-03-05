@@ -1,4 +1,3 @@
-import { parseActions } from '../actions/protocol/parse.js'
 import {
   collectPreferredFocusIds,
   resolveDefaultFocusId,
@@ -7,15 +6,12 @@ import {
 import { selectRecentPlans } from '../orchestrator/read-model/plan-select.js'
 
 import { collectTriggeredPlanIds } from './loop-batch-context.js'
-import { runManagerCorrectionRounds } from './loop-batch-run-rounds.js'
-import { selectRecentTasks, type RuntimeState } from './runtime-adapter.js'
 import { logManagerBatchStart } from './loop-batch-run-helpers.js'
+import { runManagerCorrectionRounds } from './loop-batch-run-rounds.js'
+import { type RuntimeState, selectRecentTasks } from './runtime-adapter.js'
 
-import type {
-  TaskResult,
-  TokenUsage,
-  UserInput,
-} from '../types/index.js'
+import type { parseActions } from '../actions/protocol/parse.js'
+import type { TaskResult, TokenUsage, UserInput } from '../types/index.js'
 
 const runRounds = (params: {
   runtime: RuntimeState

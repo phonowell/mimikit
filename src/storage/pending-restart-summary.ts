@@ -7,9 +7,15 @@ import { newId, nowIso } from '../shared/utils.js'
 
 const pendingRestartSummarySchema = z
   .object({
-    id: z.string().trim().regex(/^sys-summary-[a-zA-Z0-9._-]+$/),
+    id: z
+      .string()
+      .trim()
+      .regex(/^sys-summary-[a-zA-Z0-9._-]+$/),
     summary: z.string().trim().min(1),
-    sourceRuntimeId: z.string().trim().regex(/^runtime-[a-zA-Z0-9._-]+$/),
+    sourceRuntimeId: z
+      .string()
+      .trim()
+      .regex(/^runtime-[a-zA-Z0-9._-]+$/),
     createdAt: z.string().trim().min(1),
     consumed: z.boolean(),
     consumedAt: z.string().trim().min(1).optional(),

@@ -4,6 +4,9 @@ import {
   touchFocus,
 } from '../focus/index.js'
 import { appendTaskSystemMessage } from '../history/task-events.js'
+
+import { markCreateAttempt } from './action-apply-guards.js'
+import { runTaskSchema } from './action-apply-schema.js'
 import {
   buildTaskFingerprint,
   buildTaskSemanticKey,
@@ -15,11 +18,6 @@ import {
   persistRuntimeState,
   type RuntimeState,
 } from './runtime-adapter.js'
-
-import {
-  markCreateAttempt,
-} from './action-apply-guards.js'
-import { runTaskSchema } from './action-apply-schema.js'
 
 import type { Parsed } from '../actions/model/spec.js'
 import type { FocusId, WorkerProfile } from '../types/index.js'

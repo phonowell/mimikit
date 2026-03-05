@@ -3,8 +3,7 @@ import { titleFromCandidates } from '../../shared/utils.js'
 
 import type { Task, TaskStatus } from '../../types/index.js'
 
-export type TaskPendingReason =
-  | 'waiting_capacity'
+export type TaskPendingReason = 'waiting_capacity'
 
 export type TaskViewRuntimeSnapshot = {
   maxConcurrentWorkers: number
@@ -55,13 +54,15 @@ const resolvePendingReason = (
   if (maxConcurrentWorkers === null || maxConcurrentWorkers <= 0)
     return undefined
   const runningTaskCount = toFiniteNumber(snapshot?.runningTaskCount)
-  if (runningTaskCount === null || runningTaskCount < 0)
-    return undefined
+  if (runningTaskCount === null || runningTaskCount < 0) return undefined
   if (runningTaskCount >= maxConcurrentWorkers) return 'waiting_capacity'
   return undefined
 }
 
-const taskToView = (task: Task, snapshot?: TaskViewRuntimeSnapshot): TaskView => {
+const taskToView = (
+  task: Task,
+  snapshot?: TaskViewRuntimeSnapshot,
+): TaskView => {
   const pendingReason = resolvePendingReason(task, snapshot)
   return {
     id: task.id,

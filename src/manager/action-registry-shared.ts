@@ -1,11 +1,7 @@
-import type { Parsed } from '../actions/model/spec.js'
-import type { RuntimeState } from './runtime-adapter.js'
-
 import type { ApplyTaskActionsOptions } from './action-apply-create.js'
-import type {
-  FeedbackContext,
-  ValidationIssue,
-} from './action-validation.js'
+import type { FeedbackContext, ValidationIssue } from './action-validation.js'
+import type { RuntimeState } from './runtime-adapter.js'
+import type { Parsed } from '../actions/model/spec.js'
 
 export type ApplyContext = {
   seen: Set<string>
@@ -27,9 +23,10 @@ export type ManagerActionDefinition = {
 export const continueApply = (): Promise<ApplyResult> =>
   Promise.resolve('continue')
 
-export const applyAndContinue = (
-  apply: (runtime: RuntimeState, item: Parsed) => Promise<void>,
-): ManagerActionDefinition['apply'] =>
+export const applyAndContinue =
+  (
+    apply: (runtime: RuntimeState, item: Parsed) => Promise<void>,
+  ): ManagerActionDefinition['apply'] =>
   async (runtime, item) => (await apply(runtime, item), 'continue')
 
 export const createNoopAction = (

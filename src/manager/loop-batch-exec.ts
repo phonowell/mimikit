@@ -8,8 +8,8 @@ import type {
   ManagerWakeProfile,
   ReadFileLookupMessage,
   Task,
-  TaskResult,
   TaskPlan,
+  TaskResult,
   TokenUsage,
   UserInput,
 } from '../types/index.js'
@@ -35,7 +35,9 @@ const resolveWakeProfile = (
 ): ManagerWakeProfile => {
   const hasUserInput = inputs.some((item) => item.role === 'user')
   const hasTaskResult = results.length > 0
-  const hasTriggerWake = inputs.some((item) => hasSystemEvent(item, 'trigger_fire'))
+  const hasTriggerWake = inputs.some((item) =>
+    hasSystemEvent(item, 'trigger_fire'),
+  )
   const hasCapacityWake = inputs.some((item) =>
     hasSystemEvent(item, 'worker_slot_freed'),
   )

@@ -1,12 +1,12 @@
 import {
+  collectMetaTagsFromMarkdown,
+  type MetaTag,
+} from './extract-meta-tags.js'
+import {
   findMarkdownCodeRanges,
   isIndexInRanges,
 } from './markdown-code-ranges.js'
 import { parseMarkdown } from './markdown-parse.js'
-import {
-  collectMetaTagsFromMarkdown,
-  type MetaTag,
-} from './extract-meta-tags.js'
 
 type Zone = {
   parseStart: number

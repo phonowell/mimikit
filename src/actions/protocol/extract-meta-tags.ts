@@ -1,7 +1,7 @@
 import { visit } from 'unist-util-visit'
 
 import { isIndexInRanges, type Range } from './markdown-code-ranges.js'
-import { parseMarkdown, type MarkdownTree } from './markdown-parse.js'
+import { type MarkdownTree, parseMarkdown } from './markdown-parse.js'
 import {
   extractAttrText,
   extractTagNameFromRaw,

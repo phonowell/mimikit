@@ -1,9 +1,9 @@
 import { truncateText } from '../../shared/text.js'
 
+import type { PendingUserChoice, TaskPlan } from '../../types/index.js'
 import type { ChatMessage } from '../read-model/chat-view.js'
 import type { FocusView } from '../read-model/focus-view.js'
 import type { TaskCounts, TaskView } from '../read-model/task-view.js'
-import type { PendingUserChoice, TaskPlan } from '../../types/index.js'
 
 const MAX_MESSAGE_ITEMS = 10
 const MAX_MESSAGE_CHARS = 220
@@ -46,7 +46,9 @@ const toSummaryLines = (messages: ChatMessage[]): string[] => {
     }))
     .filter((item) => item.text.length > 0)
   if (candidates.length === 0) return []
-  const scoped = candidates.slice(Math.max(0, candidates.length - MAX_MESSAGE_ITEMS))
+  const scoped = candidates.slice(
+    Math.max(0, candidates.length - MAX_MESSAGE_ITEMS),
+  )
   return scoped.map(
     (item) =>
       `- ${item.role}: ${truncateText(item.text, MAX_MESSAGE_CHARS, { normalizeWhitespace: true })}`,
@@ -67,7 +69,9 @@ const toTaskCounts = (
   if (counts) {
     for (const key of TASK_STATUS_ORDER) {
       const value = counts[key]
-      resolved[key] = Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0
+      resolved[key] = Number.isFinite(value)
+        ? Math.max(0, Math.floor(value))
+        : 0
     }
     return resolved
   }
@@ -75,9 +79,15 @@ const toTaskCounts = (
   return resolved
 }
 
-const buildTaskSection = (tasks: TaskView[], counts?: TaskCounts): string | undefined => {
+const buildTaskSection = (
+  tasks: TaskView[],
+  counts?: TaskCounts,
+): string | undefined => {
   const resolvedCounts = toTaskCounts(tasks, counts)
-  const total = TASK_STATUS_ORDER.reduce((sum, key) => sum + resolvedCounts[key], 0)
+  const total = TASK_STATUS_ORDER.reduce(
+    (sum, key) => sum + resolvedCounts[key],
+    0,
+  )
   if (total === 0) return undefined
   const highlights = tasks.slice(0, MAX_TASK_ITEMS).map((task) => {
     const title = truncateText(task.title || task.id, MAX_TITLE_CHARS, {
@@ -88,16 +98,19 @@ const buildTaskSection = (tasks: TaskView[], counts?: TaskCounts): string | unde
   const countLine = TASK_STATUS_ORDER.map(
     (key) => `${key}=${resolvedCounts[key]}`,
   ).join(', ')
-  return ['Task snapshot before reset:', `- Counts: ${countLine}`, ...highlights].join(
-    '\n',
-  )
+  return [
+    'Task snapshot before reset:',
+    `- Counts: ${countLine}`,
+    ...highlights,
+  ].join('\n')
 }
 
 const formatPlanTrigger = (plan: TaskPlan): string => {
   if (plan.trigger.mode === 'cron') return `cron:${plan.trigger.cron}`
   if (plan.trigger.mode === 'scheduled_at')
     return `scheduled_at:${plan.trigger.scheduledAt}`
-  if (plan.trigger.mode === 'on_idle') return `on_idle:${plan.trigger.cooldownMs}ms`
+  if (plan.trigger.mode === 'on_idle')
+    return `on_idle:${plan.trigger.cooldownMs}ms`
   return 'on_worker_slot_freed'
 }
 
@@ -119,16 +132,22 @@ const buildFocusSection = (focuses: FocusView[]): string | undefined => {
     const title = truncateText(focus.title || focus.id, MAX_TITLE_CHARS, {
       normalizeWhitespace: true,
     })
-    const parts = [`- [${focus.isActive ? 'active' : focus.status}] ${title} (${focus.id})`]
+    const parts = [
+      `- [${focus.isActive ? 'active' : focus.status}] ${title} (${focus.id})`,
+    ]
     if (focus.summary && focus.summary !== focus.title) {
       parts.push(
         `summary=${truncateText(focus.summary, MAX_DETAIL_CHARS, { normalizeWhitespace: true })}`,
       )
     }
     if (focus.openItems?.length) {
-      const openItems = truncateText(focus.openItems.join('; '), MAX_DETAIL_CHARS, {
-        normalizeWhitespace: true,
-      })
+      const openItems = truncateText(
+        focus.openItems.join('; '),
+        MAX_DETAIL_CHARS,
+        {
+          normalizeWhitespace: true,
+        },
+      )
       parts.push(`open=${openItems}`)
     }
     return parts.join(' | ')

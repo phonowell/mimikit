@@ -74,7 +74,7 @@ test('pickReadFileRequest applies default line window', () => {
     path: 'docs/plan.md',
     fromLine: 1,
     maxLines: 100,
-    maxChars: 4000,
+    maxChars: 8192,
   })
 })
 
@@ -220,6 +220,26 @@ test('runReadFileTool rejects non-utf8 files', async () => {
   })
   expect(result.status).toBe('error')
   expect(result.error).toContain('not valid UTF-8')
+})
+
+test('runReadFileTool rejects files larger than 1024KiB', async () => {
+  const workDir = await createTempRepo()
+  await writeFile(
+    join(workDir, 'oversize.txt'),
+    Buffer.alloc(1_024 * 1_024 + 1, 0x61),
+  )
+  const result = await runReadFileTool({
+    workDir,
+    request: {
+      path: 'oversize.txt',
+      fromLine: 1,
+      maxLines: 100,
+      maxChars: 100,
+    },
+  })
+  expect(result.status).toBe('error')
+  expect(result.error).toContain('file is too large')
+  expect(result.error).toContain('1048576')
 })
 
 test('runReadFileTool rejects directories', async () => {

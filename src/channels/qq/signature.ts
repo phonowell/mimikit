@@ -17,7 +17,9 @@ const normalizeSecretSeed = (secret: string): Buffer => {
   return Buffer.from(seed.slice(0, ED25519_SEED_BYTES), 'utf8')
 }
 
-const deriveKeyPair = (secret: string): {
+const deriveKeyPair = (
+  secret: string,
+): {
   publicKey: KeyObject
   privateKey: KeyObject
 } => generateEd25519KeyPair('ed25519', { seed: normalizeSecretSeed(secret) })
@@ -48,8 +50,14 @@ export const verifyQqCallbackSignature = (params: {
 }): { ok: true } | { ok: false; reason: string } => {
   const signatureHex = params.headers[SIGNATURE_HEADER]
   const timestampValue = params.headers[TIMESTAMP_HEADER]
-  const signature = typeof signatureHex === 'string' ? decodeHexSignature(signatureHex) : undefined
-  const timestamp = typeof timestampValue === 'string' ? parseTimestamp(timestampValue) : undefined
+  const signature =
+    typeof signatureHex === 'string'
+      ? decodeHexSignature(signatureHex)
+      : undefined
+  const timestamp =
+    typeof timestampValue === 'string'
+      ? parseTimestamp(timestampValue)
+      : undefined
   if (!signature) return { ok: false, reason: 'invalid_signature_header' }
   if (!timestamp) return { ok: false, reason: 'invalid_timestamp_header' }
   const nowMs = params.nowMs ?? Date.now()

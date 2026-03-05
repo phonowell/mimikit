@@ -12,6 +12,8 @@ import {
   mergeTaskResults,
   readOptionalMarkdown,
 } from './build-prompts-helpers.js'
+import { prepareWorkerTaskPrompt } from './build-worker-task-prompt.js'
+import { escapeCdata } from './format-base.js'
 import {
   formatActionFeedback,
   formatEnvironment,
@@ -26,8 +28,6 @@ import {
   formatTasksYaml,
   renderPromptTemplate,
 } from './format.js'
-import { escapeCdata } from './format-base.js'
-import { prepareWorkerTaskPrompt } from './build-worker-task-prompt.js'
 import {
   formatWorkerFocusContext,
   type WorkerCompressedFocusContext,
@@ -125,7 +125,10 @@ export const buildManagerPrompt = async (params: {
       formatTasksYaml(params.tasks, resultsForTasks, params.workDir),
       limits.tasksMaxBytes,
     ),
-    plans: sectionYaml(formatPlansYaml(params.plans ?? []), limits.plansMaxBytes),
+    plans: sectionYaml(
+      formatPlansYaml(params.plans ?? []),
+      limits.plansMaxBytes,
+    ),
     recent_history: sectionYaml(
       formatRecentHistory(focusPayload.recentHistory),
       limits.recentHistoryMaxBytes,

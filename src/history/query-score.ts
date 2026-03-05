@@ -72,20 +72,17 @@ export const scoreAndRankDocs = (
   docs: QueryDoc[],
   rankedIds: Array<string | number>,
   limit: number,
-): HistoryLookupMessage[] => {
-  return rankLookupResults({
+): HistoryLookupMessage[] =>
+  rankLookupResults({
     docs,
     rankedIds,
     limit,
-    build: ({ doc, baseScore, recency }) => {
-      return {
-        id: doc.id,
-        role: doc.role,
-        time: doc.createdAt,
-        content: truncateText(doc.text, LOOKUP_MAX_CHARS),
-        score: Number((baseScore + recency * 0.05).toFixed(4)),
-        ts: doc.ts,
-      }
-    },
+    build: ({ doc, baseScore, recency }) => ({
+      id: doc.id,
+      role: doc.role,
+      time: doc.createdAt,
+      content: truncateText(doc.text, LOOKUP_MAX_CHARS),
+      score: Number((baseScore + recency * 0.05).toFixed(4)),
+      ts: doc.ts,
+    }),
   })
-}

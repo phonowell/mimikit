@@ -2,8 +2,9 @@ import { resolve } from 'node:path'
 
 import { Environment, FileSystemLoader, Template } from 'nunjucks'
 
-import { PROMPTS_ROOT } from './prompt-loader.js'
 import { toClientNowLocalIso, toUtcOffsetText } from '../shared/time.js'
+
+import { PROMPTS_ROOT } from './prompt-loader.js'
 
 import type { ManagerEnv } from '../types/index.js'
 

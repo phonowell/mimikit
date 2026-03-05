@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 import type { Parsed } from '../actions/model/spec.js'
 
-const DEFAULT_MAX_CHARS = 4_000
+const DEFAULT_MAX_CHARS = 8 * 1_024
 const MAX_MAX_CHARS = 20_000
 const MIN_MAX_CHARS = 1
 const DEFAULT_FROM_LINE = 1
@@ -23,17 +23,14 @@ const boundedIntegerString = (params: {
     .string()
     .trim()
     .regex(integerStringRe, `${params.field} must be an integer string`)
-    .refine(
-      (value) => {
-        const parsed = Number(value)
-        return (
-          Number.isSafeInteger(parsed) &&
-          parsed >= params.min &&
-          parsed <= params.max
-        )
-      },
-      `${params.field} must be in range [${params.min}, ${params.max}]`,
-    )
+    .refine((value) => {
+      const parsed = Number(value)
+      return (
+        Number.isSafeInteger(parsed) &&
+        parsed >= params.min &&
+        parsed <= params.max
+      )
+    }, `${params.field} must be in range [${params.min}, ${params.max}]`)
 
 export const readFileToolSchema = z
   .object({
