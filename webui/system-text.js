@@ -38,6 +38,8 @@ export const UI_TEXT = Object.freeze({
   quoteUnknown: 'Quote',
   quoteMissingMessage: 'Unavailable',
   quoteFallbackMessage: 'Message',
+  actionListAriaLabel: 'Message actions',
+  viewActionCommand: 'View action command',
   deleteFailed: 'Delete failed',
   deleteConfirmPrompt: 'Delete this message?',
   sendFailed: 'Send failed',

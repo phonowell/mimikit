@@ -162,7 +162,7 @@ Yes. Configure `qq.*` in `config.yaml` or `QQ_*` env vars, then enable webhook r
 
 - Keep changes minimal and traceable to code/docs facts.
 - Follow project constraints in [`AGENTS.md`](./AGENTS.md) and lint before merging.
-- For worktree workflow: run `pnpm run wt-rebase`, implement, review, then `pnpm run wt-land`.
+- For worktree workflow: use `pnpm run wt-slot start` to allocate+rebase, then `pnpm run wt-slot finish` to run review gate + land + release. See [worktree workflow](./docs/design/workflow/worktree.md).
 
 ## License
 

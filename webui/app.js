@@ -1,6 +1,7 @@
 import { bindComposer } from './messages/composer.js'
 import { bindChoicePanel } from './choice.js'
 import { bindDeleteMode } from './delete-mode.js'
+import { createActionDialog } from './messages/action-dialog.js'
 import { createMessagesController } from './messages/controller.js'
 import { bindFocusPanel, bindPlansPanel } from './panels.js'
 import { bindRestart } from './restart.js'
@@ -40,6 +41,10 @@ const elements = {
   messageDeleteDialog: $('[data-message-delete-dialog]'),
   messageDeleteCancelBtn: $('[data-message-delete-cancel]'),
   messageDeleteConfirmBtn: $('[data-message-delete-confirm]'),
+  messageActionDialog: $('[data-message-action-dialog]'),
+  messageActionCloseBtn: $('[data-message-action-close]'),
+  messageActionTitle: $('[data-message-action-title]'),
+  messageActionCommand: $('[data-message-action-command]'),
   choicePanel: $('[data-choice-panel]'),
   choiceQuestion: $('[data-choice-question]'),
   choiceOptions: $('[data-choice-options]'),
@@ -185,6 +190,12 @@ const focusPanel = bindFocusPanel({
   focusesOpenBtn: elements.focusesOpenBtn,
   focusesCloseBtn: elements.focusesCloseBtn,
 })
+const actionDialog = createActionDialog({
+  dialog: elements.messageActionDialog,
+  closeBtn: elements.messageActionCloseBtn,
+  titleEl: elements.messageActionTitle,
+  commandEl: elements.messageActionCommand,
+})
 let messages = null
 const choicePanel = bindChoicePanel({
   panel: elements.choicePanel,
@@ -214,6 +225,7 @@ messages = createMessagesController({
   deleteConfirmDialog: elements.messageDeleteDialog,
   deleteConfirmCancelBtn: elements.messageDeleteCancelBtn,
   deleteConfirmBtn: elements.messageDeleteConfirmBtn,
+  onInspectAction: actionDialog.open,
   onTasksSnapshot: (tasks) => tasksPanel?.applyTasksSnapshot?.(tasks),
   onPlansSnapshot: (plans) =>
     plansPanel?.applyPlansSnapshot?.(plans),

@@ -1,0 +1,25 @@
+.message .message-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.message .message-action-chip {
+  --btn-pad: 2px 9px;
+  --btn-font: 11px;
+  --btn-radius: 999px;
+  --btn-bg: color-mix(in srgb, var(--panel-soft) 70%, #ffffff);
+  --btn-color: color-mix(in srgb, var(--bubble-agent-text) 72%, var(--muted));
+  --btn-border: color-mix(in srgb, var(--bubble-agent-border) 85%, transparent);
+  --btn-hover-bg: color-mix(in srgb, var(--accent-soft) 52%, #ffffff);
+  --btn-hover-color: var(--accent);
+  --btn-hover-border: color-mix(in srgb, var(--accent) 28%, transparent);
+  --btn-shadow: var(--shadow-raised-soft);
+  --btn-shadow-hover: var(--shadow-raised-soft);
+  --btn-shadow-press: var(--shadow-inset-soft);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  letter-spacing: 0.01em;
+}
