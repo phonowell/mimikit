@@ -6,6 +6,7 @@ import PQueue from 'p-queue'
 import { expect, test } from 'vitest'
 
 import { defaultConfig } from '../src/config.js'
+import { INBOX_FOCUS_ID } from '../src/focus/index.js'
 import { buildPaths } from '../src/fs/paths.js'
 import { addUserInput } from '../src/orchestrator/core/orchestrator-runtime-ops.js'
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
@@ -121,4 +122,18 @@ test('addUserInput cancels pending user choice when user sends a new message', a
     expect(second.text).toContain('user_choice_skipped')
     expect(second.text).toContain('"choice_id":"choice-delivery"')
   }
+})
+
+test('addUserInput falls back to inbox focus when only global focus exists', async () => {
+  const runtime = await createRuntime()
+  runtime.focuses = runtime.focuses.filter((item) => item.id === GLOBAL_FOCUS_ID)
+  runtime.activeFocusIds = [GLOBAL_FOCUS_ID]
+  runtime.pendingUserChoice = null
+
+  await addUserInput(runtime, 'start a new track')
+
+  expect(runtime.inflightInputs).toHaveLength(1)
+  const first = runtime.inflightInputs[0]
+  expect(first?.role).toBe('user')
+  expect(first?.focusId).toBe(INBOX_FOCUS_ID)
 })

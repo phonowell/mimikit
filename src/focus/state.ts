@@ -1,7 +1,11 @@
 import { compareIsoDesc } from '../shared/time.js'
 import { nowIso } from '../shared/utils.js'
 
-import { GLOBAL_FOCUS_ID, MAX_FOCUS_OPEN_ITEMS } from './constants.js'
+import {
+  GLOBAL_FOCUS_ID,
+  INBOX_FOCUS_ID,
+  MAX_FOCUS_OPEN_ITEMS,
+} from './constants.js'
 import { normalizeFocusOpenItems } from './open-items.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
@@ -22,10 +26,18 @@ export const resolveDefaultFocusId = (runtime: RuntimeState): FocusId => {
     })
   const primaryActiveFocus = activeNonGlobal.at(0)
   if (primaryActiveFocus) return primaryActiveFocus.id
-  const activeFallback = runtime.activeFocusIds.find((id) =>
-    runtime.focuses.some((item) => item.id === id && item.status === 'active'),
-  )
-  return activeFallback ?? GLOBAL_FOCUS_ID
+
+  const reusableIdleFocus = runtime.focuses
+    .filter((item) => item.status === 'idle' && item.id !== GLOBAL_FOCUS_ID)
+    .sort((a, b) => {
+      const diff = compareIsoDesc(a.lastActivityAt, b.lastActivityAt)
+      if (diff !== 0) return diff
+      return a.id.localeCompare(b.id)
+    })
+    .at(0)
+  if (reusableIdleFocus) return reusableIdleFocus.id
+
+  return INBOX_FOCUS_ID
 }
 
 export const findFocus = (
@@ -60,7 +72,21 @@ export const ensureFocus = (
   title?: string,
 ): FocusMeta => {
   const existing = findFocus(runtime, focusId)
-  if (existing) return existing
+  if (existing) {
+    if (
+      focusId === INBOX_FOCUS_ID &&
+      (existing.status === 'done' || existing.status === 'archived')
+    ) {
+      const timestamp = nowIso()
+      existing.status = 'idle'
+      existing.updatedAt = timestamp
+      existing.lastActivityAt = timestamp
+      runtime.activeFocusIds = runtime.activeFocusIds.filter(
+        (id) => id !== focusId,
+      )
+    }
+    return existing
+  }
   const timestamp = nowIso()
   const normalizedTitle = normalizeFocusSummary(title) ?? focusId
   const next: FocusMeta = {
@@ -101,11 +127,18 @@ export const setFocusStatus = (
   status: FocusStatus,
 ): void => {
   const focus = findFocus(runtime, focusId) ?? ensureFocus(runtime, focusId)
+  const nextStatus =
+    focusId === GLOBAL_FOCUS_ID
+      ? 'active'
+      : focusId === INBOX_FOCUS_ID &&
+          (status === 'done' || status === 'archived')
+        ? 'idle'
+        : status
   const timestamp = nowIso()
-  focus.status = status
+  focus.status = nextStatus
   focus.updatedAt = timestamp
   focus.lastActivityAt = timestamp
-  if (status === 'active') {
+  if (nextStatus === 'active') {
     if (!runtime.activeFocusIds.includes(focusId))
       runtime.activeFocusIds.push(focusId)
     return

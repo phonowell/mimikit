@@ -1,4 +1,4 @@
-import { resolveDefaultFocusId } from '../focus/index.js'
+import { GLOBAL_FOCUS_ID } from '../focus/index.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import {
@@ -27,7 +27,7 @@ export const publishManagerSystemEventInput = async (params: {
   logMeta?: Record<string, unknown>
   focusId?: FocusId
 }): Promise<string> => {
-  const focusId = params.focusId ?? resolveDefaultFocusId(params.runtime)
+  const focusId = params.focusId ?? GLOBAL_FOCUS_ID
   const input = {
     id: `input-${newId()}`,
     role: 'system' as const,

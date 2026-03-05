@@ -1,4 +1,5 @@
 export const GLOBAL_FOCUS_ID = 'focus-global'
+export const INBOX_FOCUS_ID = 'focus-inbox'
 
 export const MAX_WORKING_FOCUSES = 3
 
