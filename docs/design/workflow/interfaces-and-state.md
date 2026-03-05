@@ -18,10 +18,10 @@
 
 ## 静态路由（WebUI 文件访问）
 
-- `GET /state-files/*`（映射 `.mimikit/*`）
+- `GET /state-files/*`（映射 `workDir/*`，默认 `./.mimikit/*`）
 
 说明：
-- `state-files` 用于 WebUI 直接打开工作目录（`.mimikit`）内证据文件与生成物。
+- `state-files` 用于 WebUI 直接打开当前 `workDir` 内证据文件与生成物。
 
 ## SSE 事件模型（`GET /api/events`）
 
@@ -105,6 +105,7 @@
 - `runtime-snapshot.json`
 - `runtime-snapshot.json.bak`
 - `log.jsonl`
+- `.instance`（运行时实例锁文件）
 
 说明：
 - manager 每轮会直接注入 `M:memory`
@@ -113,7 +114,7 @@
 ## WebUI 路径链接规则
 
 - 纯文本本地路径在渲染前会自动 linkify（仅消息 Markdown 区域）。
-- `.mimikit` 内路径统一映射到 `GET /state-files/*`。
+- `workDir` 内路径统一映射到 `GET /state-files/*`（默认是 `.mimikit`）。
 - 保护规则：行内代码、代码块、已存在的 Markdown 链接目标不会被二次改写。
 
 ## Runtime Snapshot 关键字段

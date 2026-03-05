@@ -1,7 +1,7 @@
 # Codex SDK 参考（Mimikit）
 
-> 更新时间：2026-02-27
-> 基线版本：`@openai/codex-sdk@0.101.0`
+> 更新时间：2026-03-05
+> 基线版本：`@openai/codex-sdk@0.110.0`
 
 ## 用途
 
@@ -10,18 +10,19 @@
 
 ## Mimikit 当前接入
 
-- 已使用：`new Codex()`、`startThread()`、`runStreamed()`、`outputSchema`、usage 统计。
+- 已使用：`new Codex()`、`startThread()`、`resumeThread()`、`runStreamed()`、`outputSchema`、usage 统计。
 - 常用线程参数：`workingDirectory`、`sandboxMode`、`approvalPolicy`、`modelReasoningEffort`。
+- 线程连续性：worker 多轮执行会回传并复用 `threadId`。
+- 流式输出：消费 `item.updated/item.completed`，用于实时回传 partial output。
 - 失败处理：`turn.failed` 与流级 `error`。
 
 实现入口：`src/providers/codex-sdk-provider.ts`
 
 ## 高 ROI 待接入
 
-1. `resumeThread(id)`：减少跨轮上下文重建成本。
-2. `local_image` / `remote_image`：支持图像输入任务。
-3. `networkAccessEnabled`、`webSearchMode`、`webSearchEnabled`：网络与检索能力按任务启停。
-4. `additionalDirectories`：多目录工作区场景。
+1. `local_image` / `remote_image`：支持图像输入任务。
+2. `networkAccessEnabled`、`webSearchMode`、`webSearchEnabled`：网络与检索能力按任务启停。
+3. `additionalDirectories`：多目录工作区场景。
 
 ## 待评估（中 ROI）
 
@@ -29,11 +30,11 @@
 - `turn.cancelled` / `rate_limit.hit`：细粒度状态反馈。
 - `jsReplEnabled` / `jsReplRuntimePath`（实验性）：仅在明确需要跨工具持久状态时启用。
 
-## 关键事件（runStreamed）
+## 关键事件（当前已消费）
 
-- 生命周期：`thread.started`、`turn.started`、`turn.completed`、`turn.failed`、`turn.cancelled`。
-- 条目流：`item.started`、`item.updated`、`item.completed`。
-- 其他：`error`、`rate_limit.hit`。
+- 生命周期：`turn.completed`、`turn.failed`。
+- 条目流：`item.updated`、`item.completed`（`agent_message`）。
+- 其他：`error`（`rate_limit.hit` 暂未接入）。
 
 ## 维护规则
 

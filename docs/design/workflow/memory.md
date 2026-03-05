@@ -43,7 +43,7 @@
 
 ## 写入策略
 
-- 写入目标：`.mimikit/memory/MEMORY.md`
+- 写入目标：`${workDir}/memory/MEMORY.md`（默认 `./.mimikit/memory/MEMORY.md`）
 - 写入方式：序列化写入 + 原子落盘，避免并发冲突。
 - 去重：重复条目与空条目会被跳过。
 
