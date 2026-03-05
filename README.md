@@ -4,8 +4,8 @@
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
 [![Runtime](https://img.shields.io/badge/Runtime-Single%20Session-black)](./docs/design/architecture/system-architecture.md)
 
-Mimikit is for developers who want a controllable local AI assistant runtime instead of a black-box SaaS agent.
-It keeps one main session with explicit `manager + worker` orchestration, a built-in WebUI, and file-backed runtime state for reproducible debugging.
+Mimikit is for developers who want a controllable local AI orchestration runtime instead of a black-box SaaS agent.
+It keeps one main session with explicit `manager + worker` orchestration, a built-in WebUI, and file-backed runtime state for reproducible debugging. Mimikit itself is orchestration-only: direct task execution is delegated to external runtimes/providers.
 
 **Primary action: try it locally.**
 
@@ -95,14 +95,14 @@ For LLM-driven setup and configuration, use [`docs/BOOTSTRAP.md`](./docs/BOOTSTR
 ## Features
 
 - Single-session runtime: one main session loop, no multi-session routing complexity ([architecture](./docs/design/architecture/system-architecture.md)).
-- Explicit orchestration split: `manager` handles dialogue/planning, `worker` handles execution ([architecture](./docs/design/architecture/system-architecture.md)).
+- Explicit orchestration split: `manager` handles dialogue/planning, `worker` handles execution dispatch + result ingestion via external runtimes ([architecture](./docs/design/architecture/system-architecture.md)).
 - Plan trigger modes: `cron`, `scheduled_at`, `on_idle`, `on_worker_slot_freed` with clear semantics ([plan workflow](./docs/design/workflow/plan.md)).
 - Built-in WebUI + SSE events: `GET /api/events`, `POST /api/input`, restart/reset APIs ([interfaces](./docs/design/workflow/interfaces-and-state.md)).
 - Task panel live progress: running tasks show streamed output snippets in WebUI without extra model calls.
 - QQ channel integration (optional): webhook ingest + passive reply guard + de-dup state ([QQ modules](./src/channels/qq)).
 - Local file-backed observability: `history`, `tasks`, `task-progress`, `runtime-snapshot`, `log.jsonl` under `.mimikit/` ([state layout](./docs/design/workflow/interfaces-and-state.md)).
 
-Keywords: `AI assistant`, `TypeScript agent`, `Codex SDK`, `OpenAI`, `single-session orchestration`, `WebUI`, `SSE`, `task planning`, `QQ bot`, `local-first runtime`.
+Keywords: `AI orchestration layer`, `TypeScript orchestrator`, `Codex SDK`, `OpenAI`, `single-session orchestration`, `WebUI`, `SSE`, `task planning`, `QQ bot`, `local-first runtime`.
 
 ## How It Works
 
@@ -125,10 +125,10 @@ Key points:
 
 ## Use Cases
 
-- Build a controllable personal assistant runtime where state, plans, and task traces are inspectable on disk.
+- Build a controllable local orchestration runtime where state, plans, and task traces are inspectable on disk.
 - Prototype agent scheduling behavior (`on_idle` vs `on_worker_slot_freed`) with explicit semantics.
-- Run one local assistant with both WebUI input and optional QQ webhook channel.
-- Use this repo as a compact TypeScript reference for manager/worker split orchestration.
+- Run one local orchestration hub with both WebUI input and optional QQ webhook channel.
+- Use this repo as a compact TypeScript reference for manager/worker split orchestration where execution is externally delegated.
 
 ## Benchmark Positioning
 

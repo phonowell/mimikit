@@ -6,16 +6,16 @@
 
 - 一次性全量切换到统一模型：`Task + TaskPlan + Focus`。
 - 不保留旧链路兼容层（intent/cron-job 体系已移除）。
-- manager 使用 direct `responses` provider（`openai-responses`）；worker 使用 `Codex SDK`。
+- manager 使用 direct `responses` provider（`openai-responses`）；worker 使用 `Codex SDK` 作为外部执行运行时。
 - manager 对 orchestrator/worker 依赖收敛在 `src/manager/runtime-adapter.ts`。
-- `mimikit` 负责本地状态机、队列、调度、可观测性。
+- `mimikit` 为纯编排层：负责本地状态机、队列、调度、可观测性，不直接执行任务。
 - HTTP 输入校验与参数归一化集中在 `src/http/helpers.ts`。
 - 本地持久化采用进程内串行 + 文件锁（`proper-lockfile`）。
 
 ## 组件职责
 
 - `manager`：消费 `inputs/results`，输出用户回复与编排动作。
-- `worker`：执行任务并回写结果。
+- `worker`：派发任务到外部执行运行时，并回写结果。
 - `triggerWakeLoop`：统一处理 `cron/scheduled_at/on_idle/on_worker_slot_freed` 触发并发布 `system_event.name=trigger_fire`。
 
 补充：
@@ -40,7 +40,7 @@
 
 1. 用户输入写入 `inputs/packets.jsonl` 并唤醒 manager。
 2. manager 消费 `inputs/results` 并执行编排。
-3. 若产生任务，worker 执行并写入 `results/packets.jsonl`。
+3. 若产生任务，worker 调用外部执行运行时并写入 `results/packets.jsonl`。
 4. 结果回写后再次唤醒 manager，形成闭环。
 
 实时唤醒来源：`user_input`、`task_result`、`trigger`、`capacity`、`idle`。

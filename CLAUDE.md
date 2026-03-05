@@ -2,9 +2,9 @@
 
 ## 项目概览
 
-- 目标：基于 codex 开箱能力，构建轻量级 AI 助手。
-- 定位：小助手；要能揣测用户意图，并准确、高效、低成本地完成任务。
-- 特点：单一主 session 架构，内置 WebUI 界面；复用生态能力，避免重复造轮子。
+- 目标：基于 codex 开箱能力，构建轻量级 AI 编排层。
+- 定位：纯编排层；负责意图理解、任务编排与状态治理，不直接执行任务。
+- 特点：单一主 session 架构，内置 WebUI 界面；执行链路委托外部运行时，复用生态能力，避免重复造轮子。
 
 ## 参考项目
 
@@ -68,7 +68,7 @@
 
 ## 目录结构
 
-- 入口：`src/cli/index.ts` · 调度：`src/orchestrator/` · 角色执行：`src/manager/` + `src/worker/`
+- 入口：`src/cli/index.ts` · 调度：`src/orchestrator/` · 角色层：`src/manager/` + `src/worker/`（外部执行编排与结果回写）
 - 基础：`src/providers/` + `src/config.ts` + `src/fs/` + `src/storage/` + `src/log/`
 - 服务：`src/http/` + `webui/` · 状态：`.mimikit/`（见 `docs/design/workflow/interfaces-and-state.md`）
 

@@ -1,6 +1,6 @@
 # 系统设计（v7）
 
-> 当前架构：`manager(role) / worker(single)`。
+> 当前架构：`manager(role) / worker(single, external-exec dispatch)`。
 
 ## 阅读路径
 
@@ -29,6 +29,6 @@
 ## 设计原则
 
 1. 一次性全量切换，不保留运行期兼容层。
-2. `manager` 负责对话与编排，`worker` 负责执行。
+2. `manager` 负责对话与编排，`worker` 负责外部执行调度与结果回写。
 3. 提示词只放 `prompts/`，业务代码不硬编码长提示词。
 4. 队列语义固定：`inputs -> history`、`results -> tasks`。

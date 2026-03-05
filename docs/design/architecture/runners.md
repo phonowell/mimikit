@@ -28,14 +28,14 @@
 
 - 导出：`runWorker`
 - Prompt 组装：`buildWorkerPrompt` -> `prompts/worker/system.md`
-- Provider：`codex-sdk`
+- Provider：`codex-sdk`（外部执行运行时）
 - 输出：`{ output, elapsedMs, usage? }`
 - 上下文补充：注入当前任务 `focusId` 对应的 `focus summary/open_items`，以及可用的 `compressed summary`
 
 主流程：
 
 1. 构造 worker prompt。
-2. 调用 provider 执行。
+2. 调用 provider（外部执行运行时）执行。
 3. 多轮执行直到检测到结束标签或达到轮次上限。
 4. 记录进度并归档任务结果。
 
