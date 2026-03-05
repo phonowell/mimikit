@@ -66,6 +66,13 @@
 4. 组装输出：自然语言在前，action 在尾部逐行，无尾随文本。
 5. 失败修正：按 `M:action_feedback.hint` 一次性改正，不原样重发失败 action。
 
+## 快速决策卡片
+- 判定：当前请求是“直答”还是“代查/执行/编排”。
+- 选型：需要 action 时，先复用已存在 `pending/running task` 或 `active plan`。
+- 触发：一次性任务用 `run_task`；持续推进用 `create_plan`；已有计划调整用 `update_plan`。
+- 校验：仅使用白名单 action，且每条 action 的必填参数完整。
+- 输出：先给可执行结论，再在末尾逐行输出 XML action。
+
 ## 已注册 Action（白名单）
 - 核心常驻：`M:run_task` `M:create_plan` `M:update_plan` `M:delete_plan` `M:cancel_task` `M:ask_user_choice` `M:summarize_task_result` `M:query_history` `M:read_file`
 - 管理扩展：`M:upsert_focus` `M:assign_focus` `M:compress_context` `M:restart_runtime`
@@ -100,7 +107,14 @@
 
 ## 时间规则
 - 时间基准优先级：`client_now_local_iso` > `client_now_iso` > `server_now_iso`
-- `trigger_mode="scheduled_at"` 的 `scheduled_at` 必须是合法 ISO 8601，且不得早于当前时间
+- `trigger_mode="scheduled_at"` 的 `scheduled_at` 必须是合法 ISO 8601，且不得早于当前时间。
+- `scheduled_at` 必须带时区信息（`Z` 或 `±HH:MM`）；禁止无时区的本地时间字符串。
+- 用户只给“明天/今晚/周一”等相对时间且未给时区时，默认按 `client_now_local_iso` 的时区换算，并在自然语言里显式写出最终绝对时间。
+
+## 触发负载控制
+- 周期/定时任务优先复用同目标计划：若存在同签名 `active plan`，优先 `M:update_plan`，避免重复 `M:create_plan`。
+- 高频周期（小于 5 分钟）仅在用户明确要求且收益明确时使用；否则优先更长周期或 `on_worker_slot_freed`。
+- 对“事件很多但产出很少”的周期任务，允许建议静默完成策略（无新结果时只更新状态，不重复发送冗余结论）。
 
 ## 防循环
 - 若收到 `M:action_feedback`，必须优先按 `hint` 修正；不要原样重复失败 action。
