@@ -18,6 +18,7 @@ const WORKER_SECTION_ENVIRONMENT_TEST_RE =
 const WORKER_SECTION_ENVIRONMENT_GLOBAL_RE =
   /<M:environment>[\s\S]*?<\/M:environment>/gi
 const WORKER_BLANK_LINE_RUN_RE = /\n{3,}/g
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 const WORKER_PROMPT_TRUNCATED_NOTE = formatWorkerTaskPromptTruncatedNote()
 const WORKER_PROMPT_EXTERNALIZED_INTRO =
   formatWorkerTaskPromptExternalizedIntro()
@@ -61,8 +62,25 @@ export const normalizeWorkerTaskPrompt = (prompt: string): string => {
     .trim()
 }
 
-const taskPromptFilePath = (workDir: string, taskId: string): string =>
-  resolve(workDir, 'generated', 'worker-task-prompts', `${taskId}.md`)
+const resolveDateDir = (iso: string): string | undefined => {
+  const date = iso.slice(0, 10)
+  return ISO_DATE_RE.test(date) ? date : undefined
+}
+
+const taskPromptFilePath = (
+  workDir: string,
+  taskId: string,
+  taskCreatedAt: string,
+): string => {
+  const dateDir = resolveDateDir(taskCreatedAt)
+  return resolve(
+    workDir,
+    'generated',
+    'worker-task-prompts',
+    ...(dateDir ? [dateDir] : []),
+    `${taskId}.md`,
+  )
+}
 
 const toTaskPromptPreview = (value: string): string => {
   const compact = value.replace(/\s+/g, ' ').trim()
@@ -73,12 +91,17 @@ const toTaskPromptPreview = (value: string): string => {
 const externalizeWorkerTaskPromptIfNeeded = async (params: {
   workDir: string
   taskId: string
+  taskCreatedAt: string
   taskPrompt: string
 }): Promise<string> => {
   const bytes = Buffer.byteLength(params.taskPrompt, 'utf8')
   if (bytes <= WORKER_TASK_PROMPT_INLINE_MAX_BYTES)
     return withWorkerPromptBudget(params.taskPrompt)
-  const path = taskPromptFilePath(params.workDir, params.taskId)
+  const path = taskPromptFilePath(
+    params.workDir,
+    params.taskId,
+    params.taskCreatedAt,
+  )
   await mkdir(dirname(path), { recursive: true })
   await writeFile(path, params.taskPrompt, 'utf8')
   const preview = toTaskPromptPreview(params.taskPrompt)
@@ -95,12 +118,14 @@ const externalizeWorkerTaskPromptIfNeeded = async (params: {
 export const prepareWorkerTaskPrompt = (params: {
   workDir: string
   taskId: string
+  taskCreatedAt: string
   taskPrompt: string
 }): Promise<string> => {
   const normalized = normalizeWorkerTaskPrompt(params.taskPrompt)
   return externalizeWorkerTaskPromptIfNeeded({
     workDir: params.workDir,
     taskId: params.taskId,
+    taskCreatedAt: params.taskCreatedAt,
     taskPrompt: normalized,
   })
 }

@@ -41,6 +41,7 @@ test('buildWorkerPrompt externalizes oversized task prompt into generated dir', 
   const root = await mkdtemp(join(tmpdir(), 'mimikit-worker-prompt-'))
   const workDir = resolve(root, '.mimikit')
   const prompt = `task: ${'detail '.repeat(260)}`
+  const createdAt = '2026-03-04T12:34:56.000Z'
 
   const rendered = await buildWorkerPrompt({
     workDir,
@@ -48,7 +49,7 @@ test('buildWorkerPrompt externalizes oversized task prompt into generated dir', 
       id: 'task-worker-prompt-externalize',
       prompt,
       status: 'pending',
-      createdAt: new Date().toISOString(),
+      createdAt,
       focusId: 'focus-global',
     },
   })
@@ -68,7 +69,9 @@ test('buildWorkerPrompt externalizes oversized task prompt into generated dir', 
 
   const saved = await readFile(fullPath, 'utf8')
   expect(saved).toBe(normalizeWorkerTaskPrompt(prompt))
-  expect(fullPath).toContain('/generated/worker-task-prompts/task-worker-prompt-externalize.md')
+  expect(fullPath).toContain(
+    '/generated/worker-task-prompts/2026-03-04/task-worker-prompt-externalize.md',
+  )
 })
 
 test('buildWorkerPrompt injects related focus summary for worker context', async () => {

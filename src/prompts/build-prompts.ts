@@ -93,7 +93,6 @@ export const buildManagerPrompt = async (params: {
   const resultsForTasks = mergedResults.filter(
     (result) => !pendingResultIds.has(result.taskId),
   )
-
   const focusPayload = buildFocusPromptPayload({
     focuses: params.focuses ?? [],
     focusContexts: params.focusContexts ?? [],
@@ -125,7 +124,10 @@ export const buildManagerPrompt = async (params: {
       formatTasksJson(params.tasks, resultsForTasks, params.workDir),
       limits.tasksMaxBytes,
     ),
-    plans: sectionJson(formatPlansJson(params.plans ?? []), limits.plansMaxBytes),
+    plans: sectionJson(
+      formatPlansJson(params.plans ?? []),
+      limits.plansMaxBytes,
+    ),
     recent_history: sectionJson(
       formatRecentHistory(focusPayload.recentHistory),
       limits.recentHistoryMaxBytes,
@@ -171,6 +173,7 @@ export const buildWorkerPrompt = async (params: {
   let taskPrompt = await prepareWorkerTaskPrompt({
     workDir: params.workDir,
     taskId: params.task.id,
+    taskCreatedAt: params.task.createdAt,
     taskPrompt: params.task.prompt,
   })
   if (params.task.cron || params.task.scheduledAt) {
