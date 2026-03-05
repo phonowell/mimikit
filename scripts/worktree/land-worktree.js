@@ -115,6 +115,41 @@ const pushBaseBranch = (mainWorktreePath, base) => {
   });
 };
 
+const runWtRebaseInSlot = (slotPath, slotBranch, base) => {
+  const result = spawnSync("pnpm", ["run", "wt-rebase", "--", "--base", base], {
+    cwd: slotPath,
+    stdio: "inherit",
+  });
+  if (result.error) {
+    exitWith(`[land] failed to run wt-rebase (${slotBranch}): ${result.error.message}`);
+  }
+  if (result.status !== 0) {
+    exitWith(
+      `[land] wt-rebase failed (${slotBranch}) with exit code ${result.status ?? "unknown"}`,
+    );
+  }
+};
+
+const syncCleanSiblingSlots = (worktrees, currentBranch, base) => {
+  for (const slotBranch of ALLOWED_BRANCHES) {
+    if (slotBranch === currentBranch) continue;
+    const slotWorktree = worktrees.find((wt) => wt.branch === `refs/heads/${slotBranch}`);
+    if (!slotWorktree?.path) {
+      console.log(`[land] skip ${slotBranch}: worktree not found`);
+      continue;
+    }
+
+    const slotStatus = runGitCapture(["status", "--porcelain"], slotWorktree.path);
+    if (slotStatus.length > 0) {
+      console.log(`[land] skip ${slotBranch}: worktree is not clean`);
+      continue;
+    }
+
+    console.log(`[land] syncing ${slotBranch} with ${base}`);
+    runWtRebaseInSlot(slotWorktree.path, slotBranch, base);
+  }
+};
+
 const { base, plansDir, message } = parseArgs(process.argv.slice(2));
 const repoRoot = runGitCapture(["rev-parse", "--show-toplevel"]);
 const currentBranch = runGitCapture(["rev-parse", "--abbrev-ref", "HEAD"]);
@@ -158,6 +193,7 @@ const pendingMerge = runGitCapture(
 if (pendingMerge.length === 0) {
   console.log(`[land] no changes to land from ${currentBranch}`);
   pushBaseBranch(mainWorktree.path, base);
+  syncCleanSiblingSlots(worktrees, currentBranch, base);
   process.exit(0);
 }
 
@@ -185,3 +221,5 @@ runGitFast({
   context: `reset ${currentBranch} to ${base}`,
   tag: "land",
 });
+
+syncCleanSiblingSlots(worktrees, currentBranch, base);
