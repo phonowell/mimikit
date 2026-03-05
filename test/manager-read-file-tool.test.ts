@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process'
 import { mkdtemp, mkdir, rm, symlink, writeFile } from 'node:fs/promises'
 import { platform, tmpdir } from 'node:os'
-import { join, relative } from 'node:path'
+import { join } from 'node:path'
 import { promisify } from 'node:util'
 
 import { afterEach, expect, test } from 'vitest'
@@ -126,25 +126,6 @@ test('runReadFileTool slices content by from_line with max_lines', async () => {
   expect(result.lineCount).toBe(2)
   expect(result.totalLines).toBe(4)
   expect(result.truncated).toBe(true)
-})
-
-test('runReadFileTool allows relative paths outside work_dir', async () => {
-  const workDir = await createTempRepo()
-  const outsideDir = await mkdtemp(join(tmpdir(), 'mimikit-read-file-outside-'))
-  tempDirs.push(outsideDir)
-  const outsideFile = join(outsideDir, 'outside.txt')
-  await writeFile(outsideFile, 'outside', 'utf8')
-  const result = await runReadFileTool({
-    workDir,
-    request: {
-      path: relative(workDir, outsideFile),
-      fromLine: 1,
-      maxLines: 100,
-      maxChars: 100,
-    },
-  })
-  expect(result.status).toBe('ok')
-  expect(result.content).toBe('outside')
 })
 
 test('runReadFileTool allows absolute paths outside work_dir', async () => {

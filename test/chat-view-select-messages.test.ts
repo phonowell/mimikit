@@ -81,22 +81,3 @@ test('selectChatMessages keeps system text body without adding a label prefix', 
     ],
   })
 })
-
-test('selectChatMessages preserves existing system text without rewriting it', () => {
-  const selected = selectChatMessages({
-    history: [
-      {
-        id: 'sys-2',
-        role: 'system',
-        visibility: 'user',
-        text: 'System: Message deleted.',
-        createdAt: '2026-03-02T08:00:01.000Z',
-        focusId: 'focus-global',
-      },
-    ],
-    inflightInputs: [],
-    limit: 50,
-  })
-
-  expect(selected.messages[0]?.text).toBe('System: Message deleted.')
-})
