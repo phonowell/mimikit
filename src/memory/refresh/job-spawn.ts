@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process'
-import { access, rm } from 'node:fs/promises'
+import { access, rm, rmdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -72,6 +72,10 @@ const cleanupTempFiles = async (paths: string[]): Promise<void> => {
   )
 }
 
+const cleanupJobsDirIfEmpty = async (jobsDir: string): Promise<void> => {
+  await rmdir(jobsDir).catch(() => undefined)
+}
+
 export const spawnMemoryRefreshJob = async (params: {
   jobsDir: string
   payload: MemoryRefreshPayload
@@ -91,5 +95,6 @@ export const spawnMemoryRefreshJob = async (params: {
     return output
   } finally {
     await cleanupTempFiles([inputPath, outputPath])
+    await cleanupJobsDirIfEmpty(params.jobsDir)
   }
 }
