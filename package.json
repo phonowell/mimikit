@@ -7,7 +7,7 @@
     "@openai/codex-sdk": "^0.110.0",
     "croner": "^10.0.1",
     "dompurify": "^3.3.1",
-    "fastify": "^5.7.4",
+    "fastify": "^5.8.1",
     "fastify-sse-v2": "^4.2.2",
     "flexsearch": "^0.8.212",
     "get-port": "^7.1.0",
