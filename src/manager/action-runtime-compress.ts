@@ -10,11 +10,9 @@ import { isVisibleToAgent } from '../shared/message-visibility.js'
 import { truncateText } from '../shared/text.js'
 import { compareIsoDesc } from '../shared/time.js'
 
-import { compressContextSchema } from './action-apply-schema.js'
 import { runManagerLlmCall } from './manager-llm-call.js'
 import { persistRuntimeState, type RuntimeState } from './runtime-adapter.js'
 
-import type { Parsed } from '../actions/model/spec.js'
 import type { FocusId } from '../types/index.js'
 
 const MAX_COMPRESSED_CONTEXT_CHARS = 4_000
@@ -209,12 +207,18 @@ const buildCompressPrompt = async (
       ? prompt
       : `${prompt.slice(0, MAX_PROMPT_CHARS - 1).trimEnd()}…`
   const details = {
-    ...(historySnapshot.historyFrom ? { historyFrom: historySnapshot.historyFrom } : {}),
-    ...(historySnapshot.historyTo ? { historyTo: historySnapshot.historyTo } : {}),
+    ...(historySnapshot.historyFrom
+      ? { historyFrom: historySnapshot.historyFrom }
+      : {}),
+    ...(historySnapshot.historyTo
+      ? { historyTo: historySnapshot.historyTo }
+      : {}),
     ...(historySnapshot.messageCount > 0
       ? { messageCount: historySnapshot.messageCount }
       : {}),
-    ...(taskSnapshot.taskIds.length > 0 ? { taskIds: taskSnapshot.taskIds } : {}),
+    ...(taskSnapshot.taskIds.length > 0
+      ? { taskIds: taskSnapshot.taskIds }
+      : {}),
     ...(taskSnapshot.archivePaths.length > 0
       ? { archivePaths: taskSnapshot.archivePaths }
       : {}),
@@ -245,13 +249,13 @@ const compressFocusContext = async (
     },
     logPath: runtime.paths.log,
     logContext: {
-      action: 'compress_context',
+      action: 'compress_manager_context',
       focusId,
       ...(options?.reason ? { reason: options.reason } : {}),
     },
   })
   const compressed = normalizeCompressedContext(result.output)
-  if (!compressed) throw new Error('compress_context_empty_summary')
+  if (!compressed) throw new Error('compress_manager_context_empty_summary')
   upsertFocusCompressedContext(runtime, {
     focusId,
     summary: compressed,
@@ -292,13 +296,4 @@ export const proactiveCompressManagerContext = (
     reason: 'auto_preflight',
     focusIds: targetFocusIds,
   })
-}
-
-export const applyCompressContextAction = async (
-  runtime: RuntimeState,
-  item: Parsed,
-): Promise<void> => {
-  const parsed = compressContextSchema.safeParse(item.attrs)
-  if (!parsed.success) return
-  await compressManagerContext(runtime, { reason: 'action' })
 }

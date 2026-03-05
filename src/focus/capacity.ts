@@ -1,5 +1,5 @@
-import { compareIsoAsc, compareIsoDesc } from '../shared/time.js'
 import { readHistory } from '../history/store.js'
+import { compareIsoAsc, compareIsoDesc } from '../shared/time.js'
 
 import { GLOBAL_FOCUS_ID, MAX_WORKING_FOCUSES } from './constants.js'
 import {

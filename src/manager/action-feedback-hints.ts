@@ -22,7 +22,6 @@ const actionFeedbackHintSchema = z
     cancel_task_not_found: z.string().trim().min(1),
     cancel_task_already_canceled: z.string().trim().min(1),
     cancel_task_not_cancelable: z.string().trim().min(1),
-    compress_context_unavailable: z.string().trim().min(1),
     ask_user_choice_qq_unsupported: z.string().trim().min(1),
     ask_user_choice_invalid_options: z.string().trim().min(1),
     plan_not_found: z.string().trim().min(1),
@@ -97,9 +96,6 @@ export const formatCancelTaskAlreadyCanceledHint = (): string =>
 
 export const formatCancelTaskNotCancelableHint = (): string =>
   renderHint('cancel_task_not_cancelable')
-
-export const formatCompressContextUnavailableHint = (): string =>
-  renderHint('compress_context_unavailable')
 
 export const formatAskUserChoiceQqUnsupportedHint = (): string =>
   renderHint('ask_user_choice_qq_unsupported')

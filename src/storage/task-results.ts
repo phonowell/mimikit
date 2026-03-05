@@ -7,9 +7,9 @@ import { buildArchiveDocument } from './archive-format.js'
 import { writeDatedArchiveFile } from './archive-write.js'
 import {
   queryTaskResultArchives,
+  type QueryTaskResultArchivesOptions,
   readTaskResultArchive,
   readTaskResultsForTasks,
-  type QueryTaskResultArchivesOptions,
   type ReadTaskResultsOptions,
 } from './task-results-read.js'
 
@@ -119,5 +119,9 @@ export const appendTaskResultArchive = (
     resolvePath: ensureUniquePath,
   })
 
-export { queryTaskResultArchives, readTaskResultArchive, readTaskResultsForTasks }
+export {
+  queryTaskResultArchives,
+  readTaskResultArchive,
+  readTaskResultsForTasks,
+}
 export type { QueryTaskResultArchivesOptions, ReadTaskResultsOptions }

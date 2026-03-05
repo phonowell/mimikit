@@ -52,13 +52,15 @@ export type ManagerFocusCompressedContext = {
   summary: string
   updatedAt: ISODate
   firstKeptEntryId?: string | undefined
-  details?: {
-    historyFrom?: ISODate | undefined
-    historyTo?: ISODate | undefined
-    messageCount?: number | undefined
-    taskIds?: string[] | undefined
-    archivePaths?: string[] | undefined
-  } | undefined
+  details?:
+    | {
+        historyFrom?: ISODate | undefined
+        historyTo?: ISODate | undefined
+        messageCount?: number | undefined
+        taskIds?: string[] | undefined
+        archivePaths?: string[] | undefined
+      }
+    | undefined
 }
 
 export type RuntimeState = {

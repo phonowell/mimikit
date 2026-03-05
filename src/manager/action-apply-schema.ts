@@ -44,8 +44,6 @@ export const cancelSchema = z
 export const readFileSchema = readFileToolSchema
 export { queryTaskArchiveSchema }
 
-export const compressContextSchema = z.object({}).strict()
-
 export const restartSchema = z.object({}).strict()
 
 const openItemAttrRe = /^open_item_(\d+)$/

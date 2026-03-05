@@ -7,8 +7,10 @@ import { beforeEach, expect, test, vi } from 'vitest'
 
 import { defaultConfig } from '../src/config.js'
 import { buildPaths } from '../src/fs/paths.js'
-import { applyTaskActions } from '../src/manager/action-apply.js'
-import { proactiveCompressManagerContext } from '../src/manager/action-runtime-compress.js'
+import {
+  compressManagerContext,
+  proactiveCompressManagerContext,
+} from '../src/manager/action-runtime-compress.js'
 import { loadRuntimeSnapshot } from '../src/storage/runtime-snapshot.js'
 
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
@@ -106,19 +108,14 @@ beforeEach(() => {
   runWithProviderMock.mockReset()
 })
 
-test('compress_context stores summary with local context', async () => {
+test('compressManagerContext stores summary with local context', async () => {
   const runtime = await createRuntime()
   runWithProviderMock.mockResolvedValue({
     output: 'Goals\n- keep codex-only',
     elapsedMs: 10,
   })
 
-  await applyTaskActions(runtime, [
-    {
-      name: 'compress_context',
-      attrs: {},
-    },
-  ])
+  await compressManagerContext(runtime)
 
   expect(runWithProviderMock).toHaveBeenCalledTimes(1)
   expect(runWithProviderMock).toHaveBeenCalledWith(
@@ -139,21 +136,16 @@ test('compress_context stores summary with local context', async () => {
   )
 })
 
-test('compress_context throws when summary is empty', async () => {
+test('compressManagerContext throws when summary is empty', async () => {
   const runtime = await createRuntime()
   runWithProviderMock.mockResolvedValue({
     output: '   ',
     elapsedMs: 8,
   })
 
-  await expect(
-    applyTaskActions(runtime, [
-      {
-        name: 'compress_context',
-        attrs: {},
-      },
-    ]),
-  ).rejects.toThrow('compress_context_empty_summary')
+  await expect(compressManagerContext(runtime)).rejects.toThrow(
+    'compress_manager_context_empty_summary',
+  )
 
   expect(runtime.managerFocusCompressedContexts).toHaveLength(0)
 })

@@ -20,8 +20,6 @@ cancel_task_already_canceled: |
   cancel_task 执行失败：任务已是 canceled 状态。
 cancel_task_not_cancelable: |
   cancel_task 执行失败：任务已完成，无法取消。
-compress_context_unavailable: |
-  compress_context 执行失败：当前无可压缩上下文。
 ask_user_choice_qq_unsupported: |
   ask_user_choice 执行失败：当前批次来源包含 QQ 单聊输入，QQ 链路不支持选项回传。
 ask_user_choice_invalid_options: |

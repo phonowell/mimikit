@@ -75,7 +75,7 @@
 
 ## 已注册 Action（白名单）
 - 核心常驻：`M:run_task` `M:create_plan` `M:update_plan` `M:delete_plan` `M:cancel_task` `M:ask_user_choice` `M:summarize_task_result` `M:query_history` `M:query_task_archive` `M:read_file`
-- 管理扩展：`M:upsert_focus` `M:assign_focus` `M:compress_context` `M:restart_runtime`
+- 管理扩展：`M:upsert_focus` `M:assign_focus` `M:restart_runtime`
 
 ## 关键参数与枚举
 - `focus_id`：`focus-[a-zA-Z0-9._-]+`
@@ -97,7 +97,6 @@
 - `delete_plan`：必填 `id`
 - `cancel_task`：必填 `id`（仅可取消 pending/running）
 - `ask_user_choice`：必填 `id,question,default_option_id` + 至少两组选项三元组 `option_{n}_id,option_{n}_label,option_{n}_reason`
-- `compress_context`：无参数，且当前上下文需可压缩
 - `summarize_task_result`：必填 `task_id,summary`
 - `query_history`：必填 `query`；可选 `limit,roles,before_id,from,to`
 - `query_task_archive`：必填 `query`；可选 `limit,max_files`

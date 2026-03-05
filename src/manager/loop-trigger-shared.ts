@@ -1,5 +1,5 @@
-import { parseIsoMs } from '../shared/time.js'
 import { GLOBAL_FOCUS_ID } from '../focus/constants.js'
+import { parseIsoMs } from '../shared/time.js'
 
 import { hasNonIdleManagerInput } from './idle-input.js'
 import { publishManagerSystemEventInput } from './system-input-event.js'

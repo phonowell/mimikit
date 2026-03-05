@@ -13,7 +13,12 @@ const QUERY_TASK_ARCHIVE_MAX_FILES_MAX = 1200
 export const queryTaskArchiveSchema = z
   .object({
     query: z.string().trim().min(1),
-    limit: z.coerce.number().int().min(1).max(QUERY_TASK_ARCHIVE_LIMIT_MAX).optional(),
+    limit: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(QUERY_TASK_ARCHIVE_LIMIT_MAX)
+      .optional(),
     max_files: z.coerce
       .number()
       .int()
@@ -50,10 +55,12 @@ export const buildTaskArchiveLookupKey = (
   request?: QueryTaskArchiveRequest,
 ): string | undefined => {
   if (!request) return undefined
-  return [request.query, String(request.limit), String(request.maxFiles)].join('\n')
+  return [request.query, String(request.limit), String(request.maxFiles)].join(
+    '\n',
+  )
 }
 
-export const runQueryTaskArchiveTool = async (params: {
+export const runQueryTaskArchiveTool = (params: {
   stateDir: string
   request: QueryTaskArchiveRequest
 }): Promise<TaskArchiveLookupMessage[]> =>

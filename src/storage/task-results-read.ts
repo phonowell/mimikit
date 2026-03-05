@@ -14,8 +14,8 @@ import { parseTokenUsageJson } from './token-usage.js'
 import type {
   TaskArchiveLookupMessage,
   TaskCancelMeta,
-  TaskResultHandoff,
   TaskResult,
+  TaskResultHandoff,
   TaskResultStatus,
 } from '../types/index.js'
 
@@ -48,13 +48,10 @@ const parseHandoffArtifactList = (
   const items = value
     .map((item) => {
       if (!item || typeof item !== 'object') return undefined
-      const path =
-        typeof item.path === 'string' ? item.path.trim() : ''
+      const path = typeof item.path === 'string' ? item.path.trim() : ''
       if (!path) return undefined
-      const kind =
-        typeof item.kind === 'string' ? item.kind.trim() : ''
-      const note =
-        typeof item.note === 'string' ? item.note.trim() : ''
+      const kind = typeof item.kind === 'string' ? item.kind.trim() : ''
+      const note = typeof item.note === 'string' ? item.note.trim() : ''
       return {
         path,
         ...(kind ? { kind } : {}),
@@ -86,8 +83,7 @@ const parseHandoffEvidenceList = (
       const type = parseHandoffEvidenceType(item.type)
       const ref = typeof item.ref === 'string' ? item.ref.trim() : ''
       if (!type || !ref) return undefined
-      const note =
-        typeof item.note === 'string' ? item.note.trim() : ''
+      const note = typeof item.note === 'string' ? item.note.trim() : ''
       return {
         type,
         ref,
@@ -98,7 +94,9 @@ const parseHandoffEvidenceList = (
   return items.length > 0 ? items : undefined
 }
 
-const parseTaskResultHandoff = (raw?: string): TaskResultHandoff | undefined => {
+const parseTaskResultHandoff = (
+  raw?: string,
+): TaskResultHandoff | undefined => {
   if (!raw) return undefined
   let parsed: unknown
   try {
@@ -282,9 +280,8 @@ const tokenizeSearchText = (text: string): string[] =>
 
 const buildTokenFreq = (tokens: string[]): Map<string, number> => {
   const map = new Map<string, number>()
-  for (const token of tokens) {
-    map.set(token, (map.get(token) ?? 0) + 1)
-  }
+  for (const token of tokens) map.set(token, (map.get(token) ?? 0) + 1)
+
   return map
 }
 
@@ -331,10 +328,7 @@ const sortSearchHits = (
     return a.taskId.localeCompare(b.taskId)
   })
 
-const buildPhraseBoost = (
-  queryText: string,
-  doc: SearchDoc,
-): number => {
+const buildPhraseBoost = (queryText: string, doc: SearchDoc): number => {
   const phrase = queryText.trim().toLowerCase()
   if (!phrase) return 0
   const haystack = [doc.title ?? '', doc.snippet].join('\n').toLowerCase()
@@ -402,9 +396,8 @@ export const queryTaskResultArchives = async (
   const docFreqByToken = new Map<string, number>()
   for (const token of queryTokens) {
     let freq = 0
-    for (const doc of docs) {
-      if (doc.tokenFreq.has(token)) freq += 1
-    }
+    for (const doc of docs) if (doc.tokenFreq.has(token)) freq += 1
+
     docFreqByToken.set(token, freq)
   }
   const hits = docs

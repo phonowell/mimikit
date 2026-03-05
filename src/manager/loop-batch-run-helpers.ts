@@ -50,17 +50,15 @@ export const hasNoFollowupRequests = (params: {
 
 export const buildActionFeedbackContext = (params: {
   runtime: RuntimeState
-  hasQueryData: boolean
   allowAskUserChoice: boolean
   resultTaskIds: Set<string>
 }): {
   taskStatusById: Map<string, TaskStatus>
   planStatusById: Map<string, TaskPlanStatus>
   resultTaskIds: Set<string>
-  hasCompressibleContext: boolean
   allowAskUserChoice: boolean
 } => {
-  const { runtime, hasQueryData, allowAskUserChoice, resultTaskIds } = params
+  const { runtime, allowAskUserChoice, resultTaskIds } = params
   return {
     taskStatusById: new Map(
       runtime.tasks.map((task) => [task.id, task.status]),
@@ -69,13 +67,6 @@ export const buildActionFeedbackContext = (params: {
       runtime.taskPlans.map((plan) => [plan.id, plan.status]),
     ),
     resultTaskIds,
-    hasCompressibleContext:
-      runtime.managerFocusCompressedContexts.length > 0 ||
-      runtime.tasks.length > 0 ||
-      runtime.taskPlans.length > 0 ||
-      hasQueryData ||
-      runtime.queues.inputsCursor > 0 ||
-      runtime.queues.resultsCursor > 0,
     allowAskUserChoice,
   }
 }

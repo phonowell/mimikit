@@ -8,8 +8,8 @@ import {
   buildHistoryQueryKey,
   buildReadFileLookupKey,
   buildTaskArchiveLookupKey,
-  pickReadFileRequest,
   pickQueryTaskArchiveRequest,
+  pickReadFileRequest,
   queryHistoryLookup,
   queryReadFileLookup,
   queryTaskArchiveLookup,
@@ -57,7 +57,6 @@ export const resolveRoundFollowup = async (params: {
   runtime: RuntimeState
   parsed: Parsed[]
   output: string
-  hasQueryData: boolean
   allowAskUserChoice: boolean
   resultTaskIds: Set<string>
   resolveFocusId: () => FocusId
@@ -68,7 +67,6 @@ export const resolveRoundFollowup = async (params: {
     {
       ...buildActionFeedbackContext({
         runtime: params.runtime,
-        hasQueryData: params.hasQueryData,
         allowAskUserChoice: params.allowAskUserChoice,
         resultTaskIds: params.resultTaskIds,
       }),

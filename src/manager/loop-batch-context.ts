@@ -7,8 +7,8 @@ import { runReadFileTool } from './read-file-tool.js'
 import { runQueryTaskArchiveTool } from './task-archive-tool.js'
 
 import type { ReadFileRequest } from './read-file-tool.js'
-import type { QueryTaskArchiveRequest } from './task-archive-tool.js'
 import type { RuntimeState } from './runtime-adapter.js'
+import type { QueryTaskArchiveRequest } from './task-archive-tool.js'
 import type { QueryHistoryRequest } from '../history/query.js'
 import type {
   HistoryLookupMessage,

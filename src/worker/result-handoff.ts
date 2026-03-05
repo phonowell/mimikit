@@ -51,10 +51,16 @@ const formatStatusSummary = (
   status: TaskResult['status'],
   detail?: string,
 ): string | undefined => {
-  if (status === 'succeeded')
-    return detail ? `Task "${taskLabel}" completed: ${detail}` : `Task "${taskLabel}" completed.`
-  if (status === 'failed')
-    return detail ? `Task "${taskLabel}" failed: ${detail}` : `Task "${taskLabel}" failed.`
+  if (status === 'succeeded') {
+    return detail
+      ? `Task "${taskLabel}" completed: ${detail}`
+      : `Task "${taskLabel}" completed.`
+  }
+  if (status === 'failed') {
+    return detail
+      ? `Task "${taskLabel}" failed: ${detail}`
+      : `Task "${taskLabel}" failed.`
+  }
   return detail
     ? `Task "${taskLabel}" canceled: ${detail}`
     : `Task "${taskLabel}" canceled.`
@@ -114,12 +120,14 @@ export const buildTaskResultHandoff = (
   const goal = clipText(task.prompt, MAX_GOAL_CHARS)
   const decisions = collectChecklistItems(result.output, 'checked')
   const nextSteps = collectChecklistItems(result.output, 'unchecked')
-  const risks = buildRiskItems(
-    result.status,
-    taskLabel,
-    summary,
+  const risks = buildRiskItems(result.status, taskLabel, summary)
+  if (
+    !goal &&
+    !summary &&
+    decisions.length === 0 &&
+    nextSteps.length === 0 &&
+    !risks
   )
-  if (!goal && !summary && decisions.length === 0 && nextSteps.length === 0 && !risks)
     return undefined
 
   return {

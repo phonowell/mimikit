@@ -3,7 +3,6 @@ import { queryHistorySchema } from '../history/query.js'
 import {
   askUserChoiceSchema,
   cancelSchema,
-  compressContextSchema,
   createPlanSchema,
   parseAskUserChoiceAttrs,
   queryTaskArchiveSchema,
@@ -18,7 +17,6 @@ import {
   formatCancelTaskAlreadyCanceledHint,
   formatCancelTaskNotCancelableHint,
   formatCancelTaskNotFoundHint,
-  formatCompressContextUnavailableHint,
   formatPlanNotFoundHint,
   formatUpdatePlanDoneForbiddenHint,
 } from './action-feedback-hints.js'
@@ -37,7 +35,6 @@ export type FeedbackContext = {
   taskStatusById?: Map<string, TaskStatus>
   planStatusById?: Map<string, TaskPlanStatus>
   resultTaskIds?: Set<string>
-  hasCompressibleContext?: boolean
   scheduleNowIso?: string
   allowAskUserChoice?: boolean
 }
@@ -126,15 +123,6 @@ export const validateSummarizeTaskResult = (
   return rejected(
     `summarize_task_result 执行失败：task_id 不在当前批次结果中。${availableHint}`,
   )
-}
-export const validateCompressContext = (
-  item: Parsed,
-  context: FeedbackContext,
-): ValidationIssue[] => {
-  const issues = validateWithSchema(item, compressContextSchema)
-  if (issues.length > 0) return issues
-  if (context.hasCompressibleContext) return []
-  return rejected(formatCompressContextUnavailableHint())
 }
 export const validateAskUserChoice = (
   item: Parsed,

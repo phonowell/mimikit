@@ -36,7 +36,6 @@
 
 - `upsert_focus`
 - `assign_focus`
-- `compress_context`
 - `restart_runtime`
 
 参数约定（关键字段）：
@@ -48,7 +47,7 @@
 
 - `query_history` / `read_file`：仅做 schema 校验，不直接改状态；同一轮每类最多 1 条，超出会返回 `M:action_feedback`；结果通过下一纠错回合注入 `M:history_lookup` / `M:file_lookup`。
 - `summarize_task_result`：仅用于当前批次 `task_result` 的摘要覆写（不直接执行 action 状态写入）。
-- `compress_context`：按 focus 维度写入压缩摘要（`managerFocusCompressedContexts`），prompt 仅注入 working focus 对应条目。
+- 上下文压缩不再暴露为 manager action；仅由运行时内部触发，按 focus 维度写入压缩摘要（`managerFocusCompressedContexts`），prompt 仅注入 working focus 对应条目。
 - memory 写入不再通过 action；由后台 memory 刷新子进程负责。
 
 ### `read_file` 细节

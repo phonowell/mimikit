@@ -23,17 +23,15 @@ import {
   createNoopAction,
   type ManagerActionDefinition,
 } from './action-registry-shared.js'
-import { applyCompressContextAction } from './action-runtime-compress.js'
 import { applyRestartRuntimeAction } from './action-runtime-restart.js'
 import {
   validateAskUserChoice,
   validateCancelTask,
-  validateCompressContext,
   validateCreatePlan,
   validatePlanById,
   validateQueryHistory,
-  validateReadFile,
   validateQueryTaskArchive,
+  validateReadFile,
   validateRunTask,
   validateSummarizeTaskResult,
   validateUpdatePlan,
@@ -111,11 +109,6 @@ export const ACTION_DEFINITIONS = [
     name: 'ask_user_choice',
     validate: (item, context) => validateAskUserChoice(item, context),
     apply: applyAskUserChoiceAndStop,
-  },
-  {
-    name: 'compress_context',
-    validate: (item, context) => validateCompressContext(item, context),
-    apply: applyAndContinue(applyCompressContextAction),
   },
   {
     name: 'summarize_task_result',
