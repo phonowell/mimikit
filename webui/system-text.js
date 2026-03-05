@@ -47,7 +47,6 @@ export const UI_TEXT = Object.freeze({
   choiceSubmitting: 'Submitting choice...',
   choiceSubmitted: 'Choice submitted. Waiting for agent.',
   choiceSelectFailed: 'Select failed',
-  focusSummaryLabel: 'Summary:',
   focusOpenItemsLabel: 'Open items',
   fetchMessagesFailed: 'Messages failed',
   fetchStatusFailed: 'Status failed',

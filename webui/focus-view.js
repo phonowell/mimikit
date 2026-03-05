@@ -90,7 +90,7 @@ export const renderFocuses = (focusesList, data) => {
     if (summary) {
       const summaryEl = document.createElement('p')
       summaryEl.className = 'focus-summary'
-      summaryEl.textContent = `${UI_TEXT.focusSummaryLabel} ${summary}`
+      summaryEl.textContent = summary
       node.appendChild(summaryEl)
     }
 
