@@ -105,6 +105,16 @@ const runLintPreflight = (cwd) => {
   }
 };
 
+const pushBaseBranch = (mainWorktreePath, base) => {
+  console.log(`[land] pushing ${base} to remote`);
+  runGitFast({
+    args: ["push"],
+    cwd: mainWorktreePath,
+    context: `push ${base} to remote`,
+    tag: "land",
+  });
+};
+
 const { base, plansDir, message } = parseArgs(process.argv.slice(2));
 const repoRoot = runGitCapture(["rev-parse", "--show-toplevel"]);
 const currentBranch = runGitCapture(["rev-parse", "--abbrev-ref", "HEAD"]);
@@ -147,6 +157,7 @@ const pendingMerge = runGitCapture(
 );
 if (pendingMerge.length === 0) {
   console.log(`[land] no changes to land from ${currentBranch}`);
+  pushBaseBranch(mainWorktree.path, base);
   process.exit(0);
 }
 
@@ -167,6 +178,7 @@ const landMessage = message
     ? `land(${currentBranch}): ${lastSubject}`
     : `land(${currentBranch})`;
 runGit(["commit", "-m", landMessage], mainWorktree.path);
+pushBaseBranch(mainWorktree.path, base);
 
 runGitFast({
   args: ["reset", "--hard", base],

@@ -22,13 +22,14 @@
 - 当前分支自动提交未提交改动（自动消息）。
 - 当前分支执行 `rebase main`。
 - main worktree 执行 `merge --squash` 并提交。
+- main worktree 在落地后执行 `git push`，将 `main` 推到远端。
 - 合并前清空 `plans/` 目录内容。
 
 ## 当前协作约定
 
 - `worktree-1/2/3` 作为本地开发槽位，不直接推远端。
 - 开发完成后统一通过 `pnpm run wt-land` 汇入 `main`。
-- 需要对齐远端最新 `main` 时，先执行 `git push origin main`。
+- `pnpm run wt-land` 会自动把 `main` 推送到默认上游远端。
 
 ## 禁推送（worktree 槽位）
 

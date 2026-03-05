@@ -24,6 +24,7 @@
 3. 质量门禁 + 落地 + 自动释放
    - `pnpm run wt-slot finish --slot worktree-1 --message "chore: ..."`
    - 内部顺序：`pnpm run review-code-changes` -> `pnpm run wt-land -- --message "..."` -> release lock
+   - `wt-land` 内部会在 `main` 落地后自动执行 `git push`（推送到 `main` 默认上游远端）。
 
 ## 最小验证步骤
 
