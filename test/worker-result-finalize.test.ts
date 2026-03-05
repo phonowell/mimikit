@@ -30,7 +30,7 @@ test('finalizeResult appends worker_end progress for canceled task', async () =>
     fingerprint: 'task-1',
     prompt: 'cancel me',
     title: 'Cancel Me',
-    focusId: 'focus-global',
+    focusId: 'focus-local',
     profile: 'worker',
     status: 'running',
     createdAt: '2026-02-26T10:00:00.000Z',
@@ -50,9 +50,17 @@ test('finalizeResult appends worker_end progress for canceled task', async () =>
         updatedAt: '2026-02-26T10:00:00.000Z',
         lastActivityAt: '2026-02-26T10:00:00.000Z',
       },
+      {
+        id: 'focus-local',
+        title: 'Local',
+        status: 'active',
+        createdAt: '2026-02-26T10:00:00.000Z',
+        updatedAt: '2026-02-26T10:00:00.000Z',
+        lastActivityAt: '2026-02-26T10:00:00.000Z',
+      },
     ],
     focusContexts: [],
-    activeFocusIds: ['focus-global'],
+    activeFocusIds: ['focus-global', 'focus-local'],
     lastWorkerActivityAtMs: 0,
     managerWakePending: false,
     managerSignalController: new AbortController(),
@@ -89,7 +97,7 @@ test('finalizeResult appends worker_end progress for canceled task', async () =>
   })
   expect(runtime.focusContexts).toHaveLength(1)
   expect(runtime.focusContexts[0]).toMatchObject({
-    focusId: 'focus-global',
+    focusId: 'focus-local',
   })
   expect(runtime.focusContexts[0]?.summary).toContain('Cancel Me')
   expect(runtime.focusContexts[0]?.openItems?.[0]).toContain('Resume')

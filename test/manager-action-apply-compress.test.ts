@@ -16,6 +16,7 @@ import { loadRuntimeSnapshot } from '../src/storage/runtime-snapshot.js'
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
 
 const GLOBAL_FOCUS_ID = 'focus-global'
+const LOCAL_FOCUS_ID = 'focus-local'
 
 const { runWithProviderMock } = vi.hoisted(() => ({
   runWithProviderMock: vi.fn(),
@@ -56,7 +57,7 @@ const createRuntime = async (): Promise<RuntimeState> => {
         fingerprint: 'task-seed',
         prompt: 'seed prompt',
         title: 'seed',
-        focusId: GLOBAL_FOCUS_ID,
+        focusId: LOCAL_FOCUS_ID,
         profile: 'worker',
         status: 'succeeded',
         createdAt: now,
@@ -81,9 +82,17 @@ const createRuntime = async (): Promise<RuntimeState> => {
         updatedAt: now,
         lastActivityAt: now,
       },
+      {
+        id: LOCAL_FOCUS_ID,
+        title: 'Local',
+        status: 'active',
+        createdAt: now,
+        updatedAt: now,
+        lastActivityAt: now,
+      },
     ],
     focusContexts: [],
-    activeFocusIds: [GLOBAL_FOCUS_ID],
+    activeFocusIds: [GLOBAL_FOCUS_ID, LOCAL_FOCUS_ID],
     managerTurn: 0,
     memoryRefresh: {
       lastCompletedTurn: 0,
@@ -126,7 +135,7 @@ test('compressManagerContext stores summary with local context', async () => {
   )
   expect(runtime.managerFocusCompressedContexts).toHaveLength(1)
   expect(runtime.managerFocusCompressedContexts[0]).toMatchObject({
-    focusId: GLOBAL_FOCUS_ID,
+    focusId: LOCAL_FOCUS_ID,
   })
   expect(runtime.managerFocusCompressedContexts[0]?.summary).toContain('Goals')
   const snapshot = await loadRuntimeSnapshot(runtime.config.workDir)
@@ -153,20 +162,12 @@ test('compressManagerContext throws when summary is empty', async () => {
 test('proactive compression targets working focus and skips fresh summary', async () => {
   const runtime = await createRuntime()
   runtime.managerTurn = 1
-  runtime.focuses.push({
-    id: 'focus-local',
-    title: 'Local',
-    status: 'active',
-    createdAt: '2026-03-03T00:00:00.000Z',
-    updatedAt: '2026-03-03T00:00:00.000Z',
-    lastActivityAt: '2026-03-03T00:00:01.000Z',
-  })
   runtime.tasks.push({
     id: 'task-local',
     fingerprint: 'task-local',
     prompt: 'collect local context',
     title: 'local task',
-    focusId: 'focus-local',
+    focusId: LOCAL_FOCUS_ID,
     profile: 'worker',
     status: 'succeeded',
     createdAt: '2026-03-03T00:00:00.000Z',
@@ -185,13 +186,25 @@ test('proactive compression targets working focus and skips fresh summary', asyn
     elapsedMs: 9,
   })
 
-  const first = await proactiveCompressManagerContext(runtime, ['focus-local'])
-  expect(first).toEqual(['focus-local'])
-  expect(runtime.managerFocusCompressedContexts[0]?.focusId).toBe('focus-local')
+  const first = await proactiveCompressManagerContext(runtime, [LOCAL_FOCUS_ID])
+  expect(first).toEqual([LOCAL_FOCUS_ID])
+  expect(runtime.managerFocusCompressedContexts[0]?.focusId).toBe(LOCAL_FOCUS_ID)
   expect(runWithProviderMock).toHaveBeenCalledTimes(1)
 
   runWithProviderMock.mockReset()
-  const second = await proactiveCompressManagerContext(runtime, ['focus-local'])
+  const second = await proactiveCompressManagerContext(runtime, [LOCAL_FOCUS_ID])
   expect(second).toEqual([])
   expect(runWithProviderMock).not.toHaveBeenCalled()
+})
+
+test('compressManagerContext skips global-only runtime', async () => {
+  const runtime = await createRuntime()
+  runtime.focuses = runtime.focuses.filter((item) => item.id === GLOBAL_FOCUS_ID)
+  runtime.activeFocusIds = [GLOBAL_FOCUS_ID]
+  runtime.tasks = runtime.tasks.filter((item) => item.focusId === GLOBAL_FOCUS_ID)
+
+  await compressManagerContext(runtime)
+
+  expect(runWithProviderMock).not.toHaveBeenCalled()
+  expect(runtime.managerFocusCompressedContexts).toHaveLength(0)
 })

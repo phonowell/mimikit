@@ -12,6 +12,7 @@
 
 实现与类型：
 - `src/focus/*`
+- `src/focus/reserved.ts`
 - `src/types/index.ts`
 - `src/storage/runtime-snapshot-schema.ts`
 
@@ -36,9 +37,14 @@ ID 规范：
 硬约束：
 - `focus-global` 永远保持 `active`，且必须存在于 `activeFocusIds`
 - `focus-inbox` 永远可复用；对 inbox 设置 `done/archived` 会被归一化为 `idle`
+- `focus-global` 为轻量系统通道：不维护 `FocusContext` 与 `ManagerFocusCompressedContext`
 - `ensureFocus` 会修复历史脏数据：若 inbox 旧状态是 `done/archived`，自动复活为 `idle`
 - `activeFocusIds` 仅允许“去重后、确实为 active 的 focus”
 - `archived` focus 不进入 UI Focus 列表，也不进入 manager 的 focus prompt 段
+
+统一策略实现：
+- 保留 focus 规则统一收口在 `src/focus/reserved.ts`
+- 禁止在业务逻辑层散落 `focus-global/focus-inbox` 分支判定
 
 ## 默认归属与继承规则
 
@@ -77,7 +83,7 @@ ID 规范：
 语义：
 - 不存在则创建 focus，存在则更新
 - `status` 更新受不变量约束（global/inbox 归一化）
-- `summary/openItems` 写入 `FocusContext`
+- `summary/openItems` 写入 `FocusContext`（`focus-global` 会被忽略并清理）
 - `openItems` 统一归一化并裁剪到 `MAX_FOCUS_OPEN_ITEMS = 3`
 - 写入后执行容量治理（`enforceFocusCapacity`）并持久化 snapshot
 
@@ -101,6 +107,7 @@ ID 规范：
 语义：
 - 按 focus 维度压缩上下文，产物写入 `managerFocusCompressedContexts`
 - 压缩材料包含该 focus 的近期历史、任务快照、已有压缩摘要
+- `focus-global` 不参与压缩；即使显式传入也会被过滤
 - `summary` 空值会直接报错（不吞错）
 
 ## 容量治理与裁剪
@@ -132,7 +139,7 @@ ID 规范：
 
 Manager 注入：
 - `M:focus_list`：非 archived focus 列表（含 `is_active`）
-- `M:focus_contexts`：working focus 的 `summary/open_items/recent_messages`
+- `M:focus_contexts`：working focus 的 `summary/open_items/recent_messages`（不含 `focus-global`）
 - `M:recent_history`：未被 working focus recent 覆盖的最近历史窗口
 - 各段受 `manager.promptSections.*MaxBytes` 预算控制（含 `focusListMaxBytes/focusContextsMaxBytes`）
 
@@ -145,6 +152,7 @@ Worker 注入：
 实现：`src/focus/result-feedback.ts`
 
 - 每次任务完成（`succeeded/failed/canceled`）都会同步该任务 focus 的上下文
+- `focus-global` 不回写业务上下文（仅保留系统事件归属）
 - `summary` 来源优先级：
 1. `task.result.handoff.summary`
 2. 基于任务标题 + 结果首行的归一化摘要

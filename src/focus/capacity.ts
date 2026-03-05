@@ -2,6 +2,7 @@ import { readHistory } from '../history/store.js'
 import { compareIsoAsc, compareIsoDesc } from '../shared/time.js'
 
 import { GLOBAL_FOCUS_ID, MAX_WORKING_FOCUSES } from './constants.js'
+import { isBusinessActiveFocus } from './reserved.js'
 import {
   ensureGlobalFocus,
   findFocus,
@@ -31,9 +32,7 @@ const maxArchived = (runtime: RuntimeState): number =>
   runtime.config.worker.maxConcurrent * 2
 
 const activeBusinessCount = (runtime: RuntimeState): number =>
-  runtime.focuses.filter(
-    (item) => item.status === 'active' && item.id !== GLOBAL_FOCUS_ID,
-  ).length
+  runtime.focuses.filter(isBusinessActiveFocus).length
 
 const collectReferencedFocusIds = async (
   runtime: RuntimeState,
@@ -73,7 +72,7 @@ export const enforceFocusCapacity = async (
   )
 
   const demoteCandidates = runtime.focuses
-    .filter((item) => item.status === 'active' && item.id !== GLOBAL_FOCUS_ID)
+    .filter(isBusinessActiveFocus)
     .sort(compareByActivityAsc)
   while (
     activeBusinessCount(runtime) > maxActive(runtime) &&

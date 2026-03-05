@@ -8,6 +8,7 @@ import {
   MIN_RECENT_MESSAGES,
 } from './constants.js'
 import { normalizeFocusOpenItems } from './open-items.js'
+import { canPersistFocusContext } from './reserved.js'
 
 import type {
   FocusContext,
@@ -123,6 +124,7 @@ export const buildFocusPromptPayload = (params: {
   const recentFocusMessageIds = new Set<string>()
   const focusContexts: FocusPromptContextEntry[] = []
   for (const focusId of params.workingFocusIds) {
+    if (!canPersistFocusContext(focusId)) continue
     const focus = focusById.get(focusId)
     if (!focus || focus.status === 'archived') continue
     const context = focusContextById.get(focusId)

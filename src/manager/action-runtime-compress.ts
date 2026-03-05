@@ -1,4 +1,5 @@
 import {
+  canPersistFocusCompressedContext,
   findFocus,
   findFocusCompressedContext,
   resolveDefaultFocusId,
@@ -33,22 +34,24 @@ const resolveCompressionFocusIds = (
   runtime: RuntimeState,
   focusIds?: FocusId[],
 ): FocusId[] => {
+  const isCompressible = (focusId: FocusId): boolean => {
+    const focus = findFocus(runtime, focusId)
+    if (!focus || focus.status === 'archived') return false
+    return canPersistFocusCompressedContext(focusId)
+  }
   const requested = focusIds?.filter(
     (id, index, source) => source.indexOf(id) === index,
   )
   if (requested && requested.length > 0) {
-    return requested.filter(
-      (id) => findFocus(runtime, id)?.status !== 'archived',
-    )
+    return requested.filter(isCompressible)
   }
 
   const active = runtime.activeFocusIds.filter(
-    (id, index, source) =>
-      source.indexOf(id) === index &&
-      findFocus(runtime, id)?.status !== 'archived',
+    (id, index, source) => source.indexOf(id) === index && isCompressible(id),
   )
   if (active.length > 0) return active
-  return [resolveDefaultFocusId(runtime)]
+  const fallback = resolveDefaultFocusId(runtime)
+  return isCompressible(fallback) ? [fallback] : []
 }
 
 const shouldProactiveCompressFocus = (

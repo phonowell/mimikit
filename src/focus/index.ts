@@ -11,6 +11,17 @@ export {
 export { assignFocusByTargetId, resolveFocusByQuote } from './assign.js'
 export { collectPreferredFocusIds } from './batch.js'
 export { parseFocusOpenItems } from './parse.js'
+export {
+  canPersistFocusCompressedContext,
+  canPersistFocusContext,
+  initialFocusStatus,
+  isBusinessActiveFocus,
+  isDefaultActiveFocusCandidate,
+  isDefaultIdleFocusCandidate,
+  isGlobalFocusId,
+  isInboxFocusId,
+  normalizeReservedFocusStatus,
+} from './reserved.js'
 
 export {
   buildFocusPromptPayload,
