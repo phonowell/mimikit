@@ -30,6 +30,7 @@
 - Prompt 组装：`buildWorkerPrompt` -> `prompts/worker/system.md`
 - Provider：`codex-sdk`
 - 输出：`{ output, elapsedMs, usage? }`
+- 上下文补充：注入当前任务 `focusId` 对应的 `focus summary/open_items`，以及可用的 `compressed summary`
 
 主流程：
 

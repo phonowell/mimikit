@@ -28,6 +28,10 @@ import {
 } from './format.js'
 import { escapeCdata } from './format-base.js'
 import { prepareWorkerTaskPrompt } from './build-worker-task-prompt.js'
+import {
+  formatWorkerFocusContext,
+  type WorkerCompressedFocusContext,
+} from './format-worker-focus-context.js'
 import { loadPromptFile, loadPromptSource } from './prompt-loader.js'
 
 import type { AppConfig } from '../config.js'
@@ -159,6 +163,9 @@ export const buildManagerPrompt = async (params: {
 export const buildWorkerPrompt = async (params: {
   workDir: string
   task: Task
+  focusMeta?: FocusMeta
+  focusContext?: FocusContext
+  compressedFocusContext?: WorkerCompressedFocusContext
 }): Promise<string> => {
   const systemSource = await loadPromptSource('worker/system.md')
   let taskPrompt = await prepareWorkerTaskPrompt({
@@ -170,11 +177,20 @@ export const buildWorkerPrompt = async (params: {
     const prefix = await loadPromptFile('worker', 'cron-trigger-context')
     if (prefix) taskPrompt = `${prefix.trim()}\n\n${taskPrompt}`
   }
+  const focusContext = formatWorkerFocusContext({
+    focusId: params.task.focusId,
+    ...(params.focusMeta ? { focusMeta: params.focusMeta } : {}),
+    ...(params.focusContext ? { focusContext: params.focusContext } : {}),
+    ...(params.compressedFocusContext
+      ? { compressedFocusContext: params.compressedFocusContext }
+      : {}),
+  })
   return renderPromptTemplate(
     systemSource.template,
     {
       environment: escapeCdata(formatEnvironment({ workDir: params.workDir })),
       prompt: escapeCdata(taskPrompt),
+      focus_context: focusContext ? escapeCdata(focusContext) : '',
     },
     systemSource.path,
   )

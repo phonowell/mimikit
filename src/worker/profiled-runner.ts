@@ -5,7 +5,8 @@ import { appendTaskProgress } from '../storage/task-progress.js'
 
 import { runWorkerLoop } from './profiled-runner-loop.js'
 
-import type { Task, TokenUsage } from '../types/index.js'
+import type { ManagerFocusCompressedContext } from '../orchestrator/core/runtime-state.js'
+import type { FocusContext, FocusMeta, Task, TokenUsage } from '../types/index.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
 type LlmResult = {
@@ -48,6 +49,9 @@ type WorkerRunnerParams = {
   stateDir: string
   workDir: string
   task: Task
+  focusMeta?: FocusMeta
+  focusContext?: FocusContext
+  compressedFocusContext?: ManagerFocusCompressedContext
   timeoutMs: number
   model?: string
   modelReasoningEffort?: ModelReasoningEffort
@@ -61,6 +65,11 @@ export const runWorker = async (
   const prompt = await buildWorkerPrompt({
     workDir: params.workDir,
     task: params.task,
+    ...(params.focusMeta ? { focusMeta: params.focusMeta } : {}),
+    ...(params.focusContext ? { focusContext: params.focusContext } : {}),
+    ...(params.compressedFocusContext
+      ? { compressedFocusContext: params.compressedFocusContext }
+      : {}),
   })
   const continueSource = await loadPromptSource('worker/continue-until-done.md')
 

@@ -49,6 +49,7 @@ test('buildWorkerPrompt externalizes oversized task prompt into generated dir', 
       prompt,
       status: 'pending',
       createdAt: new Date().toISOString(),
+      focusId: 'focus-global',
     },
   })
 
@@ -68,4 +69,47 @@ test('buildWorkerPrompt externalizes oversized task prompt into generated dir', 
   const saved = await readFile(fullPath, 'utf8')
   expect(saved).toBe(normalizeWorkerTaskPrompt(prompt))
   expect(fullPath).toContain('/generated/worker-task-prompts/task-worker-prompt-externalize.md')
+})
+
+test('buildWorkerPrompt injects related focus summary for worker context', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'mimikit-worker-focus-context-'))
+  const workDir = resolve(root, '.mimikit')
+  const now = new Date().toISOString()
+
+  const rendered = await buildWorkerPrompt({
+    workDir,
+    task: {
+      id: 'task-worker-focus-context',
+      prompt: '执行当前 focus 的交付任务',
+      status: 'pending',
+      createdAt: now,
+      focusId: 'focus-release',
+    },
+    focusMeta: {
+      id: 'focus-release',
+      title: 'Release Readiness',
+      status: 'active',
+      createdAt: now,
+      updatedAt: now,
+      lastActivityAt: now,
+    },
+    focusContext: {
+      focusId: 'focus-release',
+      summary: '先完成回归测试并更新发布说明。',
+      openItems: ['补齐发布 checklist', '确认回滚步骤'],
+      updatedAt: now,
+    },
+    compressedFocusContext: {
+      focusId: 'focus-release',
+      summary: '目标是本周内完成发布并保留可回滚路径。',
+      updatedAt: now,
+    },
+  })
+
+  expect(rendered).toContain('<M:focus_context>')
+  expect(rendered).toContain('focus_id: "focus-release"')
+  expect(rendered).toContain('focus_title: "Release Readiness"')
+  expect(rendered).toContain('summary: "先完成回归测试并更新发布说明。"')
+  expect(rendered).toContain('open_items:')
+  expect(rendered).toContain('compressed_summary: "目标是本周内完成发布并保留可回滚路径。"')
 })

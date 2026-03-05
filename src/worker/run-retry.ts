@@ -28,10 +28,23 @@ const runTaskModel = (params: {
   onUsage?: (usage: TokenUsage) => void
 }): Promise<WorkerLlmResult> => {
   const { worker } = params.runtime.config
+  const focusMeta = params.runtime.focuses.find(
+    (focus) => focus.id === params.task.focusId,
+  )
+  const focusContext = params.runtime.focusContexts.find(
+    (focus) => focus.focusId === params.task.focusId,
+  )
+  const compressedFocusContext =
+    params.runtime.managerFocusCompressedContexts.find(
+      (focus) => focus.focusId === params.task.focusId,
+    )
   return runWorker({
     stateDir: params.runtime.config.workDir,
     workDir: params.runtime.config.workDir,
     task: params.task,
+    ...(focusMeta ? { focusMeta } : {}),
+    ...(focusContext ? { focusContext } : {}),
+    ...(compressedFocusContext ? { compressedFocusContext } : {}),
     timeoutMs: worker.timeoutMs,
     model: worker.model,
     modelReasoningEffort: worker.modelReasoningEffort,

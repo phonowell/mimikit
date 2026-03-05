@@ -29,6 +29,7 @@ test('buildWorkerPrompt includes absolute generated_dir guidance', async () => {
       prompt: '检查输出目录约束',
       status: 'pending',
       createdAt: new Date().toISOString(),
+      focusId: 'focus-global',
     },
   })
 

@@ -18,8 +18,8 @@
 
 ## Prompt 注入
 
-- `M:focus_list`
-- `M:focus_contexts`
+- Manager：`M:focus_list`、`M:focus_contexts`
+- Worker：`M:focus_context`（当前任务相关 focus 摘要）
 
 ## 关联数据结构
 
