@@ -4,6 +4,7 @@ import { join } from 'node:path'
 
 import { expect, test } from 'vitest'
 
+import { attachProviderThreadId } from '../src/shared/provider-thread-id.js'
 import {
   MAX_CONTINUE_LATEST_OUTPUT_CHARS,
   buildContinuePrompt,
@@ -127,6 +128,47 @@ test('runWorkerLoop forwards partial output updates', async () => {
 
     expect(result.output).toBe('done')
     expect(partialOutputs).toEqual(['step 1', 'step 2'])
+  } finally {
+    await rm(stateDir, { recursive: true, force: true })
+  }
+})
+
+test('runWorkerLoop captures provider thread id from error path for recovery', async () => {
+  const stateDir = await createTmpDir()
+  const sessionIds: string[] = []
+  const task: Task = {
+    id: 'task-test-session-error',
+    fingerprint: 'fingerprint-test-session-error',
+    prompt: '执行测试任务',
+    title: '执行测试任务',
+    focusId: 'focus-global',
+    profile: 'worker',
+    status: 'running',
+    createdAt: '2026-03-04T00:00:00.000Z',
+  }
+
+  try {
+    await expect(
+      runWorkerLoop({
+        stateDir,
+        task,
+        prompt: '执行测试任务',
+        continueTemplate: '{{ latest_output }}',
+        continueTemplatePath: 'inline-template',
+        archiveBase: { role: 'worker', taskId: task.id },
+        runModel: async () => {
+          throw attachProviderThreadId(
+            new Error('simulated provider failure'),
+            'session-from-error',
+          )
+        },
+        onSessionId: async (sessionId) => {
+          sessionIds.push(sessionId)
+        },
+      }),
+    ).rejects.toThrow('simulated provider failure')
+
+    expect(sessionIds).toEqual(['session-from-error'])
   } finally {
     await rm(stateDir, { recursive: true, force: true })
   }

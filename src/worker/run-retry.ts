@@ -6,6 +6,12 @@ import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js
 
 import { isAbortLikeError } from './error-utils.js'
 import { runWorker } from './profiled-runner.js'
+import {
+  discardTaskSession,
+  selectReusableSessionId,
+  setTaskSessionReusable,
+  shouldResetSessionAfterError,
+} from './session-state.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { Task, TokenUsage } from '../types/index.js'
@@ -25,6 +31,8 @@ const runTaskModel = (params: {
   runtime: RuntimeState
   task: Task
   controller: AbortController
+  sessionId?: string
+  onSessionId?: (sessionId: string) => Promise<void>
   onUsage?: (usage: TokenUsage) => void
   onPartialOutput?: (output: string) => void
 }): Promise<WorkerLlmResult> => {
@@ -49,7 +57,9 @@ const runTaskModel = (params: {
     timeoutMs: worker.timeoutMs,
     model: worker.model,
     modelReasoningEffort: worker.modelReasoningEffort,
+    ...(params.sessionId ? { sessionId: params.sessionId } : {}),
     abortSignal: params.controller.signal,
+    ...(params.onSessionId ? { onSessionId: params.onSessionId } : {}),
     ...(params.onUsage ? { onUsage: params.onUsage } : {}),
     ...(params.onPartialOutput
       ? { onPartialOutput: params.onPartialOutput }
@@ -68,8 +78,10 @@ const buildRetryOptions = (params: {
   retries: number
   backoffMs: number
   controller: AbortController
+  onSessionDiscarded: (error: unknown) => Promise<void>
 }): Parameters<typeof pRetry<WorkerLlmResult>>[1] => {
-  const { runtime, task, retries, backoffMs, controller } = params
+  const { runtime, task, retries, backoffMs, controller, onSessionDiscarded } =
+    params
   return {
     retries,
     factor: 1,
@@ -81,7 +93,10 @@ const buildRetryOptions = (params: {
       !shouldTreatAsTaskCancel(controller, error),
     shouldRetry: ({ error }) => !shouldTreatAsTaskCancel(controller, error),
     onFailedAttempt: async (attemptError) => {
+      if (shouldResetSessionAfterError(attemptError.error))
+        await onSessionDiscarded(attemptError.error)
       if (attemptError.retriesLeft <= 0) return
+
       await appendLog(runtime.paths.log, {
         event: 'worker_retry',
         taskId: task.id,
@@ -106,6 +121,36 @@ export const runTaskWithRetry = (params: {
   onPartialOutput?: (output: string) => void
 }): Promise<WorkerLlmResult> => {
   const { runtime, task, controller } = params
+  const persistSessionState = async (
+    event: 'worker_session_bound' | 'worker_session_discarded',
+    extra?: Record<string, unknown>,
+  ): Promise<void> => {
+    await bestEffort(`appendLog: ${event}`, () =>
+      appendLog(runtime.paths.log, {
+        event,
+        taskId: task.id,
+        ...(extra ?? {}),
+      }),
+    )
+    await bestEffort(`persistRuntimeState: ${event}`, () =>
+      persistRuntimeState(runtime),
+    )
+  }
+
+  const onSessionId = async (sessionId: string): Promise<void> => {
+    if (!setTaskSessionReusable(task, sessionId)) return
+    await persistSessionState('worker_session_bound', { sessionId })
+  }
+
+  const onSessionDiscarded = async (error: unknown): Promise<void> => {
+    if (!discardTaskSession(task)) return
+    const message = error instanceof Error ? error.message : String(error)
+    await persistSessionState('worker_session_discarded', {
+      reason: 'session_resume_invalid',
+      error: message,
+    })
+  }
+
   const retries = Math.max(0, runtime.config.worker.retry.maxAttempts)
   const backoffMs = Math.max(0, runtime.config.worker.retry.backoffMs)
   const retryOptions = buildRetryOptions({
@@ -114,16 +159,32 @@ export const runTaskWithRetry = (params: {
     retries,
     backoffMs,
     controller,
+    onSessionDiscarded,
   })
+  let attempt = 0
   return pRetry(
     async () => {
+      attempt += 1
       if (controller.signal.aborted)
         throw new AbortError(controller.signal.reason ?? 'Task canceled')
+      const sessionId = selectReusableSessionId(task)
+      if (sessionId) {
+        await bestEffort('appendLog: worker_session_reuse_attempt', () =>
+          appendLog(runtime.paths.log, {
+            event: 'worker_session_reuse_attempt',
+            taskId: task.id,
+            attempt,
+            sessionId,
+          }),
+        )
+      }
       try {
         return await runTaskModel({
           runtime,
           task,
           controller,
+          ...(sessionId ? { sessionId } : {}),
+          onSessionId,
           ...(params.onUsage ? { onUsage: params.onUsage } : {}),
           ...(params.onPartialOutput
             ? { onPartialOutput: params.onPartialOutput }

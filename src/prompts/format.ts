@@ -72,6 +72,7 @@ export const formatEnvironment = (params?: PromptEnvironmentParams): string => {
 }
 
 export {
+  buildQuoteReferenceLookup,
   formatActionFeedback,
   formatHistoryLookup,
   formatInputs,

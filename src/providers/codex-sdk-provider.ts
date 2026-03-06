@@ -1,6 +1,7 @@
 import { Codex } from '@openai/codex-sdk'
 
 import { logSafeError } from '../log/safe.js'
+import { attachProviderThreadId } from '../shared/provider-thread-id.js'
 
 import {
   appendCodexLlmLog,
@@ -121,7 +122,10 @@ const runCodexProvider = async (request: CodexSdkProviderRequest) => {
       idleTimeoutMs: request.timeoutMs,
       timeoutType: 'idle',
     })
-    throw mappedError
+    throw attachProviderThreadId(
+      mappedError,
+      thread.id ?? request.threadId ?? null,
+    )
   } finally {
     idleTimeout.clear()
     releaseExternalAbort()

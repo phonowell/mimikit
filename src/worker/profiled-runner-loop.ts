@@ -1,4 +1,5 @@
 import { renderPromptTemplate } from '../prompts/format.js'
+import { readProviderThreadId } from '../shared/provider-thread-id.js'
 import {
   mergeUsageAdditive,
   mergeUsageMonotonic,
@@ -72,13 +73,22 @@ export type RunLoopParams = {
   stateDir: string
   task: Task
   prompt: string
+  initialThreadId?: string | null
   continueTemplate: string
   continueTemplatePath: string
   archiveBase: Omit<TraceArchiveEntry, 'prompt' | 'output' | 'ok'>
   runModel: (input: RunModelInput) => Promise<ProviderResult>
+  onSessionId?: (sessionId: string) => Promise<void> | void
   onUsage?: (usage: TokenUsage) => void
   onPartialOutput?: (output: string) => void
   abortSignal?: AbortSignal
+}
+
+const normalizeThreadId = (
+  value: string | null | undefined,
+): string | undefined => {
+  const trimmed = value?.trim()
+  return trimmed && trimmed.length > 0 ? trimmed : undefined
 }
 
 export const runWorkerLoop = async (
@@ -89,7 +99,8 @@ export const runWorkerLoop = async (
   usage?: TokenUsage
 }> => {
   const { stateDir, task, prompt } = params
-  let threadId: string | null | undefined
+  let threadId: string | null | undefined = params.initialThreadId
+  let reportedSessionId = normalizeThreadId(threadId)
   let totalUsage: TokenUsage | undefined
   let totalElapsedMs = 0
   let latestResult: ProviderResult | undefined
@@ -99,6 +110,8 @@ export const runWorkerLoop = async (
     base: Omit<TraceArchiveEntry, 'prompt' | 'output' | 'ok'>,
     result: TraceArchiveResult,
   ) => appendTraceArchiveResult(stateDir, base, prompt, result)
+
+  if (reportedSessionId) await params.onSessionId?.(reportedSessionId)
 
   try {
     for (let round = 1; round <= MAX_RUN_ROUNDS; round += 1) {
@@ -120,6 +133,11 @@ export const runWorkerLoop = async (
       latestResult = result
       totalElapsedMs += result.elapsedMs
       threadId = result.threadId ?? threadId ?? null
+      const nextSessionId = normalizeThreadId(threadId)
+      if (nextSessionId && nextSessionId !== reportedSessionId) {
+        reportedSessionId = nextSessionId
+        await params.onSessionId?.(nextSessionId)
+      }
       roundUsage = mergeUsageMonotonic(roundUsage, result.usage)
       totalUsage = mergeUsageAdditive(totalUsage, roundUsage)
       if (totalUsage) {
@@ -160,6 +178,14 @@ export const runWorkerLoop = async (
       `[worker] task incomplete after ${MAX_RUN_ROUNDS} rounds: missing M:skill_usage status="done"; last_output=${JSON.stringify(latestResult?.output.trim() ?? 'empty_output')}`,
     )
   } catch (error) {
+    const errorThreadId = readProviderThreadId(error)
+    if (errorThreadId) {
+      threadId = errorThreadId
+      if (errorThreadId !== reportedSessionId) {
+        reportedSessionId = errorThreadId
+        await params.onSessionId?.(errorThreadId)
+      }
+    }
     const err = error instanceof Error ? error : new Error(String(error))
     const canceled =
       Boolean(params.abortSignal?.aborted) && isAbortLikeError(err)

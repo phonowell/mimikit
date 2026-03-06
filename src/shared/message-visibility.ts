@@ -1,6 +1,6 @@
-import type { MessageVisibility, Role } from '../types/index.js'
-
 import { isSystemMessageVisibleToUser } from './system-message-visibility.js'
+
+import type { MessageVisibility, Role } from '../types/index.js'
 
 type VisibilityScopedMessage =
   | {

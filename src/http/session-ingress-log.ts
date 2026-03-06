@@ -35,9 +35,14 @@ type IngressLogSink = (
 ) => void
 
 const compactText = (value: unknown): string =>
-  String(value ?? '').replace(/\s+/g, ' ').trim()
+  String(value ?? '')
+    .replace(/\s+/g, ' ')
+    .trim()
 
-const summarizeText = (value: unknown, maxLength = SUMMARY_MAX_LENGTH): string => {
+const summarizeText = (
+  value: unknown,
+  maxLength = SUMMARY_MAX_LENGTH,
+): string => {
   const normalized = compactText(value)
   if (!normalized) return ''
   if (!Number.isFinite(maxLength) || maxLength <= 0) return normalized
@@ -56,7 +61,10 @@ const resolveMode = (value: unknown): string => {
   return normalized || 'full'
 }
 
-const resolveType = (message: ChatMessage, systemEventName?: string): string => {
+const resolveType = (
+  message: ChatMessage,
+  systemEventName?: string,
+): string => {
   if (message.role === 'system')
     return systemEventName ? `system_event:${systemEventName}` : 'system'
   if (message.role === 'user') return 'user_message'
@@ -76,7 +84,9 @@ const resolveSource = (
   return 'unknown'
 }
 
-const resolveVisibility = (message: ChatMessage): MessageVisibility | 'unknown' => {
+const resolveVisibility = (
+  message: ChatMessage,
+): MessageVisibility | 'unknown' => {
   if (message.role !== 'system') return 'all'
   return message.visibility || 'unknown'
 }
@@ -96,7 +106,11 @@ const buildMessageLogEntry = (message: ChatMessage): IngressLogEntry => {
     ...(typeof message.id === 'string' ? { id: message.id } : {}),
     role,
     type: resolveType(message, parsedSystemEvent?.name),
-    source: resolveSource(message, parsedSystemEvent?.payload, parsedSystemEvent?.name),
+    source: resolveSource(
+      message,
+      parsedSystemEvent?.payload,
+      parsedSystemEvent?.name,
+    ),
     visibility: resolveVisibility(message),
     summary: summary || '(empty)',
   }

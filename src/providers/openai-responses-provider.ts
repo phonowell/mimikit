@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
+import { attachProviderThreadId } from '../shared/provider-thread-id.js'
 import { normalizeUsage } from '../shared/utils.js'
 
 import { loadCodexSettings } from './codex-settings.js'
@@ -242,6 +243,7 @@ const ensureError = (error: unknown): Error =>
 const runOpenAiResponses = async (request: OpenAiResponsesProviderRequest) => {
   const startedAt = Date.now()
   const controller = new AbortController()
+  let sessionId: string | undefined
   const lifecycle = {
     externallyAborted: false,
     timedOut: false,
@@ -295,7 +297,7 @@ const runOpenAiResponses = async (request: OpenAiResponsesProviderRequest) => {
         ? { reasoning: { effort: request.modelReasoningEffort } }
         : {}),
     })
-    const sessionId = resolveSessionId(request.threadId)
+    sessionId = resolveSessionId(request.threadId)
     resetIdle()
     const response = await doFetch(endpoint, {
       method: 'POST',
@@ -357,7 +359,7 @@ const runOpenAiResponses = async (request: OpenAiResponsesProviderRequest) => {
       errorName: mapped.name,
       ...(code ? { errorCode: code } : {}),
     })
-    throw mapped
+    throw attachProviderThreadId(mapped, sessionId ?? request.threadId ?? null)
   } finally {
     idleTimeout.clear()
     releaseExternalAbort()

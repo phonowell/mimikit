@@ -58,6 +58,7 @@ type WorkerRunnerParams = {
   stateDir: string
   workDir: string
   task: Task
+  sessionId?: string
   focusMeta?: FocusMeta
   focusContext?: FocusContext
   compressedFocusContext?: ManagerFocusCompressedContext
@@ -65,6 +66,7 @@ type WorkerRunnerParams = {
   model?: string
   modelReasoningEffort?: ModelReasoningEffort
   abortSignal?: AbortSignal
+  onSessionId?: (sessionId: string) => Promise<void> | void
   onUsage?: (usage: TokenUsage) => void
   onPartialOutput?: (output: string) => void
 }
@@ -93,6 +95,7 @@ export const runWorker = async (
     stateDir: params.stateDir,
     task: params.task,
     prompt,
+    ...(params.sessionId ? { initialThreadId: params.sessionId } : {}),
     continueTemplate: continueSource.template,
     continueTemplatePath: continueSource.path,
     archiveBase: {
@@ -101,6 +104,7 @@ export const runWorker = async (
       ...(params.model ? { model: params.model } : {}),
     },
     runModel: buildRunModel(params),
+    ...(params.onSessionId ? { onSessionId: params.onSessionId } : {}),
     ...(params.onUsage ? { onUsage: params.onUsage } : {}),
     ...(params.onPartialOutput
       ? { onPartialOutput: params.onPartialOutput }

@@ -1,6 +1,6 @@
-import type { MessageVisibility } from '../types/index.js'
-
 import { parseSystemEventText, type SystemEventName } from './system-event.js'
+
+import type { MessageVisibility } from '../types/index.js'
 
 type UserFacingSystemEventClass = 'user_value' | 'internal' | 'unknown'
 

@@ -27,7 +27,9 @@ const SYSTEM_EVENT_TAG_PATTERN =
   /<M:system_event\s+name="([^"]+)"[^>]*>([\s\S]*?)<\/M:system_event>/i
 
 const asRecord = (value: unknown): Record<string, unknown> | undefined =>
-  value && typeof value === 'object' ? (value as Record<string, unknown>) : undefined
+  value && typeof value === 'object'
+    ? (value as Record<string, unknown>)
+    : undefined
 
 const toInlineJson = (payload: Record<string, unknown>): string =>
   JSON.stringify(payload).replace(/[<>&]/g, (char) => {

@@ -28,6 +28,7 @@
 - `pending` 取消：立即标记并发布 `canceled`。
 - `running` 取消：触发 `AbortController`，由外部执行链路收敛到 `canceled`。
 - 启动恢复：持久化时 `running` 降级为 `pending`，重启后重入队列。
+- session 恢复：worker 记录并持久化 `task.sessionId`；重试/重启恢复优先复用。`cancel.source=user` 视为不可恢复并丢弃 session，`deferred/system` 视为可恢复并保留 session（若存在）。
 
 ## 关联数据结构
 

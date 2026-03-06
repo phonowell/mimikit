@@ -17,6 +17,11 @@ import {
   buildTaskResultHandoff,
   withTaskArchiveEvidence,
 } from './result-handoff.js'
+import {
+  discardTaskSession,
+  isRecoverableCancelSource,
+  setTaskSessionReusable,
+} from './session-state.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { Task, TaskCancelMeta, TaskResult } from '../types/index.js'
@@ -68,6 +73,20 @@ const buildCancelMeta = (meta?: CancelMeta): TaskCancelMeta => ({
   ...(meta?.reason ? { reason: meta.reason } : {}),
 })
 
+const applyCancelSessionPolicy = (
+  task: Task,
+  cancelSource: TaskCancelMeta['source'],
+): 'reusable' | 'discarded' | 'none' => {
+  if (cancelSource === 'user') {
+    if (discardTaskSession(task)) return 'discarded'
+    return 'none'
+  }
+  if (!isRecoverableCancelSource(cancelSource)) return 'none'
+  if (!task.sessionId) return 'none'
+  setTaskSessionReusable(task, task.sessionId)
+  return 'reusable'
+}
+
 const pushCanceledResult = async (
   runtime: RuntimeState,
   task: Task,
@@ -114,6 +133,7 @@ export const cancelTask = async (
     runtime.lastWorkerActivityAtMs = Date.now()
     clearTaskLiveOutput(runtime, task.id)
     const cancelMeta = buildCancelMeta(meta)
+    const sessionPolicy = applyCancelSessionPolicy(task, cancelMeta.source)
     const result = buildCanceledResult(task, meta?.reason ?? 'Task canceled')
     markTaskCanceled(runtime.tasks, task.id, {
       completedAt: result.completedAt,
@@ -124,6 +144,14 @@ export const cancelTask = async (
     await pushCanceledResult(runtime, task, result)
     await bestEffort('persistRuntimeState: cancel_pending', () =>
       persistRuntimeState(runtime),
+    )
+    await bestEffort('appendLog: task_cancel_session_policy', () =>
+      appendLog(runtime.paths.log, {
+        event: 'task_cancel_session_policy',
+        taskId: task.id,
+        source: cancelMeta.source,
+        policy: sessionPolicy,
+      }),
     )
     notifyWorkerLoop(runtime)
     return { ok: true, status: 'canceled', taskId: task.id }
@@ -139,6 +167,7 @@ export const cancelTask = async (
       ? Math.max(0, canceledAtMs - startedAtMs)
       : undefined
   const cancelMeta = buildCancelMeta(meta)
+  const sessionPolicy = applyCancelSessionPolicy(task, cancelMeta.source)
   markTaskCanceled(runtime.tasks, task.id, {
     completedAt: canceledAt,
     ...(durationMs !== undefined ? { durationMs } : {}),
@@ -151,6 +180,7 @@ export const cancelTask = async (
       event: 'task_cancel_requested',
       taskId: task.id,
       source: cancelMeta.source,
+      sessionPolicy,
       ...(cancelMeta.reason ? { reason: cancelMeta.reason } : {}),
     }),
   )

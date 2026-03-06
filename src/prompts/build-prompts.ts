@@ -19,6 +19,7 @@ import {
   type WorkerCompressedFocusContext,
 } from './format-worker-focus-context.js'
 import {
+  buildQuoteReferenceLookup,
   formatActionFeedback,
   formatEnvironment,
   formatFocusContexts,
@@ -103,6 +104,10 @@ export const buildManagerPrompt = async (params: {
     history,
     workingFocusIds: params.workingFocusIds ?? [],
   })
+  const quoteLookup = buildQuoteReferenceLookup({
+    history,
+    inputs: params.inputs,
+  })
 
   const systemSource = await loadPromptSource('manager/system.md')
   const limits = params.promptSectionLimits
@@ -118,7 +123,10 @@ export const buildManagerPrompt = async (params: {
       }),
       limits.environmentMaxBytes,
     ),
-    inputs: sectionJson(formatInputs(params.inputs), limits.inputsMaxBytes),
+    inputs: sectionJson(
+      formatInputs(params.inputs, quoteLookup),
+      limits.inputsMaxBytes,
+    ),
     batch_results: sectionJson(
       formatResultsJson(params.tasks, pendingResults, params.workDir),
       limits.batchResultsMaxBytes,
@@ -132,7 +140,7 @@ export const buildManagerPrompt = async (params: {
       limits.plansMaxBytes,
     ),
     recent_history: sectionJson(
-      formatRecentHistory(focusPayload.recentHistory),
+      formatRecentHistory(focusPayload.recentHistory, quoteLookup),
       limits.recentHistoryMaxBytes,
     ),
     focus_list: sectionJson(

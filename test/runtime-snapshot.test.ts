@@ -63,6 +63,9 @@ test('selectPersistedTasks recovers running task to pending', () => {
       status: 'running',
       createdAt: '2026-02-06T00:00:00.000Z',
       startedAt: '2026-02-06T00:01:00.000Z',
+      sessionId: 'session-restore-me',
+      sessionState: 'reusable',
+      sessionUpdatedAt: '2026-02-06T00:01:10.000Z',
     },
   ]
 
@@ -72,6 +75,9 @@ test('selectPersistedTasks recovers running task to pending', () => {
   expect(persisted[0]?.status).toBe('pending')
   expect(persisted[0]?.startedAt).toBeUndefined()
   expect(persisted[0]?.result).toBeUndefined()
+  expect(persisted[0]?.sessionId).toBe('session-restore-me')
+  expect(persisted[0]?.sessionState).toBe('reusable')
+  expect(persisted[0]?.sessionUpdatedAt).toBe('2026-02-06T00:01:10.000Z')
 })
 
 test('runtime snapshot accepts queue cursors', async () => {
