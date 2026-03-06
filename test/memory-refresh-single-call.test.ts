@@ -14,6 +14,22 @@ beforeEach(() => {
   runManagerLlmCallMock.mockReset()
 })
 
+const buildPayload = (memoryMarkdown = '# Memory') => ({
+  workDir: '/tmp/mimikit',
+  model: 'gpt-5-mini',
+  memoryMarkdown,
+  signals: [
+    {
+      id: 'input-1',
+      role: 'user' as const,
+      createdAt: '2026-03-04T00:00:00.000Z',
+      text: 'Prefer strict types',
+    },
+  ],
+  tasks: [],
+  plans: [],
+})
+
 test('single-call renders input yaml via prompt template', async () => {
   runManagerLlmCallMock.mockResolvedValue({
     output: JSON.stringify({
@@ -22,6 +38,7 @@ test('single-call renders input yaml via prompt template', async () => {
       harvest: { mode: 'patch', reason: 'harvested' },
       curate: { mode: 'patch', reason: 'curated' },
       compress: { mode: 'patch', reason: 'compressed' },
+      delete_entry_ids: [],
       entries: [
         {
           title: 'Project preference',
@@ -33,25 +50,12 @@ test('single-call renders input yaml via prompt template', async () => {
     elapsedMs: 5,
   })
 
-  const payload = {
-    workDir: '/tmp/mimikit',
-    model: 'gpt-5-mini',
-    memoryMarkdown: '# Memory',
-    signals: [
-      {
-        id: 'input-1',
-        role: 'user' as const,
-        createdAt: '2026-03-04T00:00:00.000Z',
-        text: 'Prefer strict types',
-      },
-    ],
-    tasks: [],
-    plans: [],
-  }
+  const payload = buildPayload()
 
   const result = await runMemoryRefreshSingleCall({ payload })
   expect(result.mode).toBe('patch')
   expect(result.entries).toHaveLength(1)
+  expect(result.deleteEntryIds).toEqual([])
   expect(result.entries[0]?.evidenceIds).toEqual(['input-1'])
 
   expect(runManagerLlmCallMock).toHaveBeenCalledTimes(1)
@@ -61,4 +65,58 @@ test('single-call renders input yaml via prompt template', async () => {
   expect(callParams?.prompt).toContain('workDir: /tmp/mimikit')
   expect(callParams?.prompt).not.toContain('{{ input_yaml }}')
   expect(callParams?.model).toBe('gpt-5-mini')
+})
+
+test('single-call accepts delete-only patch when entry id exists in memory', async () => {
+  runManagerLlmCallMock.mockResolvedValue({
+    output: JSON.stringify({
+      mode: 'patch',
+      reason: 'forget_instruction_detected',
+      harvest: { mode: 'noop', reason: 'no_new_fact' },
+      curate: { mode: 'patch', reason: 'resolved_to_delete' },
+      compress: { mode: 'patch', reason: 'delete_only' },
+      delete_entry_ids: ['memory-oldpref'],
+      entries: [],
+    }),
+    elapsedMs: 5,
+  })
+
+  const payload = buildPayload(
+    [
+      '## [memory-entry] (id:memory-oldpref)',
+      'title: Deprecated preference',
+      'updated_at: 2026-03-01T00:00:00.000Z',
+      'source: remember',
+      '',
+      'Always use old API v1.',
+      '',
+    ].join('\n'),
+  )
+
+  const result = await runMemoryRefreshSingleCall({ payload })
+  expect(result.mode).toBe('patch')
+  expect(result.entries).toHaveLength(0)
+  expect(result.deleteEntryIds).toEqual(['memory-oldpref'])
+})
+
+test('single-call drops invalid delete ids and downgrades to noop', async () => {
+  runManagerLlmCallMock.mockResolvedValue({
+    output: JSON.stringify({
+      mode: 'patch',
+      reason: 'delete_requested',
+      harvest: { mode: 'noop', reason: 'none' },
+      curate: { mode: 'patch', reason: 'delete_candidate' },
+      compress: { mode: 'patch', reason: 'delete_only' },
+      delete_entry_ids: ['memory-not-exist'],
+      entries: [],
+    }),
+    elapsedMs: 5,
+  })
+
+  const result = await runMemoryRefreshSingleCall({
+    payload: buildPayload('# Empty memory'),
+  })
+  expect(result.mode).toBe('noop')
+  expect(result.reason).toBe('invalid_delete_entry_ids')
+  expect(result.deleteEntryIds).toEqual([])
 })

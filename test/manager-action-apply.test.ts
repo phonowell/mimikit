@@ -465,7 +465,7 @@ test('remember_memory writes MEMORY.md immediately and emits system event payloa
   ])
 
   const memoryMarkdown = await readFile(runtime.paths.memoryFile, 'utf8')
-  expect(memoryMarkdown).toContain('## [memory-entry:general:auto-')
+  expect(memoryMarkdown).toContain('## [memory-entry] (id:')
   expect(memoryMarkdown).toContain(
     'User insists on always using strict ESM imports.',
   )

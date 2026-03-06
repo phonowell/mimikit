@@ -56,6 +56,7 @@ export type MemoryRefreshSubprocessResult = {
   mode: MemoryRefreshMode
   reason: string
   entries: MemoryEvidenceEntry[]
+  deleteEntryIds: string[]
   harvest: MemoryRefreshStageSummary
   curate: MemoryRefreshStageSummary
   compress: MemoryRefreshStageSummary

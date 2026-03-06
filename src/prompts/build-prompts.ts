@@ -1,6 +1,11 @@
 import { buildFocusPromptPayload } from '../focus/index.js'
 import { buildPaths } from '../fs/paths.js'
 import { readHistory } from '../history/store.js'
+import {
+  buildScoredMemoryPrompt,
+  type MemoryScoreContext,
+} from '../memory/entry-score.js'
+import { readMemoryEntries } from '../memory/store.js'
 import { readTaskResultsForTasks } from '../storage/task-results.js'
 
 import {
@@ -10,7 +15,6 @@ import {
   encodePromptJsonSection,
   encodePromptTextSection,
   mergeTaskResults,
-  readOptionalMarkdown,
 } from './build-prompts-helpers.js'
 import { prepareWorkerTaskPrompt } from './build-worker-task-prompt.js'
 import { escapeCdata } from './format-base.js'
@@ -56,6 +60,57 @@ export type { ManagerEnv } from '../types/index.js'
 
 export type PromptSectionLimits = AppConfig['manager']['promptSections']
 
+const MAX_MEMORY_QUERY_CHARS = 4_000
+const MAX_MEMORY_MENTION_ITEMS = 128
+
+const pushMention = (target: string[], value: string | undefined): void => {
+  const normalized = value?.trim()
+  if (!normalized) return
+  target.push(normalized)
+}
+
+const buildMemoryPromptScoreContext = (params: {
+  inputs: UserInput[]
+  tasks: Task[]
+  plans: TaskPlan[]
+  focusPayload: ReturnType<typeof buildFocusPromptPayload>
+  workingFocusIds: FocusId[]
+}): MemoryScoreContext => {
+  const mentionTexts: string[] = []
+  for (const input of params.inputs) pushMention(mentionTexts, input.text)
+  for (const task of params.tasks) {
+    pushMention(mentionTexts, task.title)
+    pushMention(mentionTexts, task.result?.output)
+  }
+  for (const plan of params.plans) pushMention(mentionTexts, plan.title)
+  for (const focus of params.focusPayload.focusList)
+    pushMention(mentionTexts, focus.title)
+  for (const context of params.focusPayload.focusContexts) {
+    pushMention(mentionTexts, context.summary)
+    for (const openItem of context.openItems ?? [])
+      pushMention(mentionTexts, openItem)
+  }
+
+  const uniqueForQuery: string[] = []
+  const querySeen = new Set<string>()
+  for (const item of mentionTexts) {
+    const key = item.trim().toLowerCase()
+    if (!key || querySeen.has(key)) continue
+    querySeen.add(key)
+    uniqueForQuery.push(item)
+  }
+  const queryText = uniqueForQuery
+    .slice(0, MAX_MEMORY_MENTION_ITEMS)
+    .join('\n')
+    .slice(0, MAX_MEMORY_QUERY_CHARS)
+
+  return {
+    queryText,
+    mentionTexts: mentionTexts.slice(0, MAX_MEMORY_MENTION_ITEMS),
+    workingFocusIds: params.workingFocusIds,
+  }
+}
+
 export const buildManagerPrompt = async (params: {
   stateDir: string
   workDir: string
@@ -85,7 +140,7 @@ export const buildManagerPrompt = async (params: {
   const resultTaskIds = collectResultTaskIds(params.tasks)
   const dateHints = buildTaskResultDateHints(params.tasks)
   const statePaths = buildPaths(params.stateDir)
-  const memory = await readOptionalMarkdown(statePaths.memoryFile)
+  const memoryEntries = await readMemoryEntries(statePaths.memoryFile)
   const history = await readHistory(statePaths.history)
   const archivedResults =
     resultTaskIds.length > 0
@@ -115,6 +170,18 @@ export const buildManagerPrompt = async (params: {
     encodePromptTextSection(value, maxBytes)
   const sectionJson = (value: string, maxBytes: number): string =>
     encodePromptJsonSection(value, maxBytes)
+  const memoryScoreContext = buildMemoryPromptScoreContext({
+    inputs: params.inputs,
+    tasks: params.tasks,
+    plans: params.plans ?? [],
+    focusPayload,
+    workingFocusIds: params.workingFocusIds ?? [],
+  })
+  const memoryPrompt = buildScoredMemoryPrompt({
+    entries: memoryEntries,
+    context: memoryScoreContext,
+    maxBytes: limits.memoryMaxBytes,
+  })
   const templateValues: Record<string, string> = {
     environment: sectionText(
       formatEnvironment({
@@ -159,7 +226,7 @@ export const buildManagerPrompt = async (params: {
       formatQueryLookup(params.queryLookup),
       limits.queryLookupMaxBytes,
     ),
-    memory: sectionText(memory.trim(), limits.memoryMaxBytes),
+    memory: sectionText(memoryPrompt, limits.memoryMaxBytes),
     file_lookup: sectionJson(
       formatReadFileLookup(params.readFileLookup ?? []),
       limits.fileLookupMaxBytes,

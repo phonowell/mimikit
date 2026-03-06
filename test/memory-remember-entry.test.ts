@@ -4,6 +4,7 @@ import { join } from 'node:path'
 
 import { expect, test } from 'vitest'
 
+import { parseMemoryEntries } from '../src/memory/entry-codec.js'
 import { rememberMemoryEntry } from '../src/memory/remember-entry.js'
 
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-remember-memory-'))
@@ -18,8 +19,12 @@ test('rememberMemoryEntry writes a managed memory section for new entry', async 
   expect(result.operation).toBe('created')
   expect(result.entryId.startsWith('memory-')).toBe(true)
   const markdown = await readFile(memoryPath, 'utf8')
-  expect(markdown).toContain('## [memory-entry:general:auto-')
+  expect(markdown).toContain('## [memory-entry] (id:')
   expect(markdown).toContain('User prefers concise Chinese responses.')
+  const entries = parseMemoryEntries(markdown)
+  expect(entries).toHaveLength(1)
+  expect(entries[0]?.category).toBe('general')
+  expect(entries[0]?.dedupeKey.startsWith('auto-')).toBe(true)
 })
 
 test('rememberMemoryEntry dedupes same content to noop', async () => {
@@ -36,13 +41,10 @@ test('rememberMemoryEntry dedupes same content to noop', async () => {
   expect(noop.operation).toBe('noop')
   expect(noop.dedupeKey).toBe(created.dedupeKey)
   const markdown = await readFile(memoryPath, 'utf8')
-  expect(
-    (
-      markdown.match(
-        new RegExp(`^## \\[memory-entry:general:${created.dedupeKey}\\]`, 'gm'),
-      ) ?? []
-    ).length,
-  ).toBe(1)
+  const entries = parseMemoryEntries(markdown).filter(
+    (item) => item.dedupeKey === created.dedupeKey,
+  )
+  expect(entries).toHaveLength(1)
 })
 
 test('rememberMemoryEntry merges when dedupe key is stable', async () => {
@@ -60,8 +62,12 @@ test('rememberMemoryEntry merges when dedupe key is stable', async () => {
   expect(merged.operation).toBe('merged')
   expect(merged.dedupeKey).toBe(created.dedupeKey)
   const markdown = await readFile(memoryPath, 'utf8')
-  expect(markdown).toContain(`${prefix}-first`)
-  expect(markdown).toContain(`${prefix}-second`)
+  const entries = parseMemoryEntries(markdown).filter(
+    (item) => item.dedupeKey === created.dedupeKey,
+  )
+  expect(entries).toHaveLength(1)
+  expect(entries[0]?.content).toContain(`${prefix}-first`)
+  expect(entries[0]?.content).toContain(`${prefix}-second`)
 })
 
 test('rememberMemoryEntry truncates long content to fixed limit', async () => {
@@ -94,13 +100,10 @@ test('rememberMemoryEntry serializes concurrent writes on same dedupe key', asyn
   const dedupeKey = results[0]?.dedupeKey
   expect(dedupeKey).toBeDefined()
   const markdown = await readFile(memoryPath, 'utf8')
-  expect(
-    (
-      markdown.match(
-        new RegExp(`^## \\[memory-entry:general:${dedupeKey}\\]`, 'gm'),
-      ) ?? []
-    ).length,
-  ).toBe(1)
+  const entries = parseMemoryEntries(markdown).filter(
+    (item) => item.dedupeKey === dedupeKey,
+  )
+  expect(entries).toHaveLength(1)
   for (let index = 0; index < 6; index += 1)
     expect(markdown).toContain(`parallel-note-${index + 1}`)
 })

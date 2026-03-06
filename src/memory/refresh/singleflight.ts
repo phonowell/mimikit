@@ -7,6 +7,7 @@ import { persistRuntimeState } from '../../orchestrator/core/runtime-persistence
 import { isVisibleToAgent } from '../../shared/message-visibility.js'
 import { truncateText } from '../../shared/text.js'
 import { nowIso } from '../../shared/utils.js'
+import { type MemoryScoreContext } from '../entry-score.js'
 import { readMemoryMarkdown } from '../store.js'
 
 import { applyMemoryPatch } from './apply-patch.js'
@@ -24,6 +25,8 @@ const MAX_SIGNALS = 80
 const MAX_TASKS = 40
 const MAX_PLANS = 40
 const MAX_TEXT = 800
+const MAX_SCORE_QUERY_CHARS = 4_000
+const MAX_SCORE_MENTION_ITEMS = 96
 
 type MemoryRefreshCheckpoint = {
   inputsCursor: number
@@ -102,6 +105,56 @@ const buildPayload = async (
   }
 }
 
+const pushMention = (target: string[], value: string | undefined): void => {
+  const normalized = value?.trim()
+  if (!normalized) return
+  target.push(normalized)
+}
+
+const buildRefreshScoreContext = (
+  payload: MemoryRefreshPayload,
+): MemoryScoreContext => {
+  const mentions: string[] = []
+  for (const signal of payload.signals) pushMention(mentions, signal.text)
+  for (const task of payload.tasks) {
+    pushMention(mentions, task.title)
+    pushMention(mentions, task.output)
+  }
+  for (const plan of payload.plans) pushMention(mentions, plan.title)
+  pushMention(mentions, payload.compressedContext)
+
+  const uniqueForQuery: string[] = []
+  const querySeen = new Set<string>()
+  for (const item of mentions) {
+    const key = item.trim().toLowerCase()
+    if (!key || querySeen.has(key)) continue
+    querySeen.add(key)
+    uniqueForQuery.push(item)
+  }
+  const queryText = uniqueForQuery
+    .slice(0, MAX_SCORE_MENTION_ITEMS)
+    .join('\n')
+    .slice(0, MAX_SCORE_QUERY_CHARS)
+
+  const workingFocusIds = [
+    ...new Set(
+      payload.tasks
+        .filter(
+          (task) =>
+            task.status === 'pending' ||
+            task.status === 'running' ||
+            task.status === 'paused',
+        )
+        .map((task) => task.focusId),
+    ),
+  ]
+  return {
+    queryText,
+    mentionTexts: mentions.slice(0, MAX_SCORE_MENTION_ITEMS),
+    workingFocusIds,
+  }
+}
+
 const runMemoryRefreshOnce = async (runtime: RuntimeState): Promise<void> => {
   const checkpoint = captureCheckpoint(runtime)
   await appendLog(runtime.paths.log, {
@@ -131,13 +184,19 @@ const runMemoryRefreshOnce = async (runtime: RuntimeState): Promise<void> => {
   })
   let written = 0
   let skipped = 0
-  if (output.mode === 'patch' && output.entries.length > 0) {
-    const applied = await applyMemoryPatch(
-      runtime.paths.memoryFile,
-      output.entries,
-    )
+  let deleted = 0
+  let droppedByCompression = 0
+  const hasPatch = output.entries.length > 0 || output.deleteEntryIds.length > 0
+  if (output.mode === 'patch' && hasPatch) {
+    const applied = await applyMemoryPatch(runtime.paths.memoryFile, {
+      entries: output.entries,
+      deleteEntryIds: output.deleteEntryIds,
+      scoreContext: buildRefreshScoreContext(payload),
+    })
     written = applied.written
     skipped = applied.skipped
+    deleted = applied.deleted
+    droppedByCompression = applied.droppedByCompression
   }
 
   markCompleted(runtime, checkpoint)
@@ -148,8 +207,11 @@ const runMemoryRefreshOnce = async (runtime: RuntimeState): Promise<void> => {
     mode: output.mode,
     reason: output.reason,
     entries: output.entries.length,
+    deletes: output.deleteEntryIds.length,
     written,
     skipped,
+    deleted,
+    dropped_by_compression: droppedByCompression,
     harvest_reason: output.harvest.reason,
     curate_reason: output.curate.reason,
     compress_reason: output.compress.reason,

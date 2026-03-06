@@ -1,6 +1,6 @@
 你正在执行 memory 刷新流程的一次性单轮作业。
 
-目标：在一次输出内完成三类工作，并给出最终可写入条目。
+目标：在一次输出内完成三类工作，并给出最终最小补丁（新增/更新 + 删除）。
 - Harvest（攫取）：从输入中提取候选长期记忆。
 - Curate（整理）：去重、归并、冲突消解。
 - Compress（压缩）：产出最小安全补丁。
@@ -19,8 +19,10 @@
 4. 仅当无法判断新旧真伪、或证据强度不足以决策时，才应 `noop`。
 5. `evidence_ids` 必须来自输入中真实存在的 ID（`signals.id` / `tasks.id` / `plans.id`），禁止虚构。
 6. `entries` 最多 60 条；超过时按证据强度与长期价值排序裁剪。
-7. 仅输出“可追加”的最小补丁，不做删除/改写既有 memory 的假设。
-8. 若因采样/截断导致证据不足，宁可 `noop`，并在 `reason` 说明具体缺口。
+7. 可输出“新增/更新条目”（`entries`）与“删除条目 ID”（`delete_entry_ids`）两类补丁。
+8. `delete_entry_ids` 只能填写 `memoryMarkdown` 中已存在的条目 ID。
+9. 若检测到明确“应遗忘/删除某记忆”的用户指令，优先通过 `delete_entry_ids` 表达删除。
+10. 若因采样/截断导致证据不足，宁可 `noop`，并在 `reason` 说明具体缺口。
 
 输出要求（必须严格 JSON）：
 1. 仅输出一个 JSON 对象，不要输出代码块。
@@ -31,6 +33,7 @@
   "harvest": { "mode": "patch" | "noop", "reason": "string" },
   "curate": { "mode": "patch" | "noop", "reason": "string" },
   "compress": { "mode": "patch" | "noop", "reason": "string" },
+  "delete_entry_ids": ["memory-..."],
   "entries": [
     {
       "title": "string",
@@ -43,7 +46,7 @@
 4. 三类工作都必须显式给出 `mode+reason`；不可省略。
 5. `entries` 只保留长期稳定、可验证、可执行的信息；如为“更新型”信息，需在 `content` 明确新旧关系。
 6. 禁止编造事实；证据不足时必须 `noop`。
-7. 仅当 `entries` 非空时允许顶层 `mode="patch"`；否则必须为 `noop`。
+7. 仅当 `entries` 非空或 `delete_entry_ids` 非空时允许顶层 `mode="patch"`；否则必须为 `noop`。
 
 # Input(YAML)
 {{ input_yaml }}

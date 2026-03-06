@@ -4,58 +4,69 @@
 
 ## 核心结论
 
-- 默认 memory 刷新仍由后台子进程执行，触发条件为 `>=20` manager 轮次差值。
-- 新增 `remember_memory` manager action：用于“立即写入”长期记忆（用户明确要求记住时），仅接受 `content` 参数。
-- 每次后台触发仅执行一轮子进程，且只调用一次 LLM。
-- 当无可靠增量时返回 `noop`，不会强写 `MEMORY.md`。
+- `memory/MEMORY.md` 持久化仍是 Markdown，但内部读写按结构化条目（entry）处理。
+- `remember_memory` 仅负责立即写入，不新增 `forget_memory` action。
+- “遗忘”通过记住一条指令（如“xxx 信息应遗忘”）进入 memory refresh，由 LLM 在刷新输出 `delete_entry_ids` 执行删除。
+- prompt 注入 `M:memory` 不再按文件原顺序，改为本地评分排序后按 budget 选择。
+- 刷新压缩与 prompt 注入共用同一评分器（本地计算），不增加额外 LLM 调用次数。
 
-## 触发与单飞
+## 数据结构与落盘
 
-- 触发判定：`runtime.managerTurn - runtime.memoryRefresh.lastCompletedTurn >= 20`。
-- 单飞规则：同一时刻最多一个刷新任务运行（`running`）。
-- 合并规则：运行中若再次触发，仅置 `pending=true`，不并发、不排队挤压。
+- 条目模型：`id/title/content/updatedAt/source`，可带 `category/dedupeKey/evidenceIds/focusHints`。
+- 读写模块：
+  - `src/memory/entry-types.ts`
+  - `src/memory/entry-utils.ts`
+  - `src/memory/entry-codec.ts`
+- 落盘格式（canonical）：
+  - heading：`## [memory-entry] (id:memory-...)`
+  - metadata 行：`title/updated_at/source/...`
+  - 空行后正文 `content`
 
-实现位置：
-- `src/memory/refresh/trigger-policy.ts`
-- `src/memory/refresh/singleflight.ts`
+## 立即记忆（remember）
 
-## 子进程与 Provider
+- 入口：`remember_memory(content)`。
+- 行为：
+  - 生成稳定 `dedupeKey`
+  - 命中同 key 时合并段落（`merged`）或无变化（`noop`）
+  - 新条目为 `created`
+- 回执：写入 `memory_remembered` system event（含 `entry_id/ref/operation`）。
+- 代码：
+  - `src/memory/remember-entry.ts`
+  - `src/manager/action-apply-memory.ts`
+  - `src/history/memory-events.ts`
 
-- 子进程入口：`src/memory/refresh/subprocess.ts`
-- 进程拉起：`src/memory/refresh/job-spawn.ts`
-- 子进程使用 manager 同模型（`runtime.config.manager.model`），并固定走 direct `responses` provider（`openai-responses`）
+## 刷新（refresh）与遗忘
 
-## 单轮作业（单次 LLM 调用）
+- 触发：`managerTurn` 与上次完成轮次差值 `>=20`，单飞执行。
+- 子进程单轮只调用一次 LLM，输出：
+  - `entries[]`：新增/更新候选
+  - `delete_entry_ids[]`：删除候选（必须是现存 entry id）
+  - `harvest/curate/compress` 三阶段审计原因
+- 应用补丁顺序：
+  1. 先删 `delete_entry_ids`
+  2. 再并入 `entries`
+  3. 最后按评分 + 存储预算做压缩取舍
+- 代码：
+  - `prompts/manager/memory-refresh-single-call.md`
+  - `src/memory/refresh/single-call.ts`
+  - `src/memory/refresh/apply-patch.ts`
+  - `src/memory/refresh/singleflight.ts`
 
-- 同一轮内完成三类工作：`harvest`（攫取）/`curate`（整理）/`compress`（压缩）。
-- 子进程只发起一次模型调用，并返回：
-  - 顶层 `mode + reason + entries[]`
-  - 三类工作各自的 `mode + reason`（用于审计与日志）
-- 若最终无可写入增量，返回 `mode=noop`。
+## 评分、排序与取舍
 
-实现模块：
-- `src/memory/refresh/single-call.ts`
-- `src/memory/refresh/subprocess.ts`
-
-## Prompt 位置
-
-- `prompts/manager/memory-refresh-single-call.md`
-
-## 写入策略
-
-- 写入目标：`${workDir}/memory/MEMORY.md`（默认 `./.mimikit/memory/MEMORY.md`）
-- 写入方式：序列化写入 + 原子落盘，避免并发冲突（后台刷新与 `remember_memory` 共用序列化锁）。
-- 去重：重复条目与空条目会被跳过。
-
-实现位置：
-- `src/memory/refresh/apply-patch.ts`
-- `src/memory/store.ts`
-- `src/memory/remember-entry.ts`
-- `src/manager/action-apply-memory.ts`
+- 评分器：`src/memory/entry-score.ts`
+- 主要信号：
+  - relevance（与当前上下文词重叠）
+  - recency（更新时间）
+  - reliability（source + evidence）
+  - focus_match（focusHints 与 workingFocus 命中）
+  - mention_boost（近期重复提及加分，带上限）
+- 注入：`buildManagerPrompt` 中对 memory 先评分排序，再在 `memoryMaxBytes` 内选择。
+- 压缩：`applyMemoryPatch` 在超预算时按同评分器保留高价值条目、丢弃低价值条目。
 
 ## 状态与持久化
 
-- 运行态字段：`runtime.memoryRefresh`
+- 运行态：`runtime.memoryRefresh`
   - `lastCompletedTurn`
   - `lastProcessedInputsCursor`
   - `lastProcessedResultsCursor`
@@ -63,9 +74,4 @@
   - `lastRunAt`
   - `running`
   - `pending`
-- 持久化：`runtime-snapshot.json` 中保存检查点字段（不保存 `running/pending`）。
-
-实现位置：
-- `src/orchestrator/core/runtime-state.ts`
-- `src/storage/runtime-snapshot-schema.ts`
-- `src/orchestrator/core/runtime-persistence.ts`
+- 持久化：`runtime-snapshot.json` 保存检查点字段（`running/pending` 不持久化）。

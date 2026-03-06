@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { runManagerLlmCall } from '../../manager/manager-llm-call.js'
 import { renderPromptTemplate } from '../../prompts/format.js'
 import { loadPromptSource } from '../../prompts/prompt-loader.js'
+import { parseMemoryEntries } from '../entry-codec.js'
 
 import { parseStageJson } from './stage-json.js'
 
@@ -14,6 +15,12 @@ import type {
 } from './types.js'
 
 const MAX_SINGLE_CALL_ENTRIES = 60
+const MAX_DELETE_ENTRY_IDS = 120
+
+const memoryEntryIdSchema = z
+  .string()
+  .trim()
+  .regex(/^memory-[a-z0-9._-]+$/)
 
 const entrySchema = z
   .object({
@@ -37,6 +44,10 @@ const singleCallOutputSchema = z
     harvest: stageSummarySchema,
     curate: stageSummarySchema,
     compress: stageSummarySchema,
+    delete_entry_ids: z
+      .array(memoryEntryIdSchema)
+      .max(MAX_DELETE_ENTRY_IDS)
+      .optional(),
     entries: z.array(entrySchema).max(MAX_SINGLE_CALL_ENTRIES).optional(),
   })
   .strict()
@@ -79,18 +90,41 @@ const collectAllowedEvidenceIds = (
   return ids
 }
 
+const collectAllowedDeleteEntryIds = (
+  payload: MemoryRefreshPayload,
+): Set<string> =>
+  new Set(parseMemoryEntries(payload.memoryMarkdown).map((item) => item.id))
+
 const sanitizeEntries = (
   payload: MemoryRefreshPayload,
   parsed: z.infer<typeof singleCallOutputSchema>,
 ): {
   entries: MemoryRefreshSubprocessResult['entries']
+  deleteEntryIds: MemoryRefreshSubprocessResult['deleteEntryIds']
   droppedInvalidEvidence: boolean
+  droppedInvalidDeleteEntryIds: boolean
 } => {
-  if (parsed.mode === 'noop')
-    return { entries: [], droppedInvalidEvidence: false }
+  if (parsed.mode === 'noop') {
+    return {
+      entries: [],
+      deleteEntryIds: [],
+      droppedInvalidEvidence: false,
+      droppedInvalidDeleteEntryIds: false,
+    }
+  }
   const allowedEvidenceIds = collectAllowedEvidenceIds(payload)
+  const allowedDeleteEntryIds = collectAllowedDeleteEntryIds(payload)
   const sanitized: MemoryRefreshSubprocessResult['entries'] = []
+  const deleteEntryIds: string[] = []
   let droppedInvalidEvidence = false
+  let droppedInvalidDeleteEntryIds = false
+  for (const id of parsed.delete_entry_ids ?? []) {
+    if (!allowedDeleteEntryIds.has(id)) {
+      droppedInvalidDeleteEntryIds = true
+      continue
+    }
+    if (!deleteEntryIds.includes(id)) deleteEntryIds.push(id)
+  }
   for (const item of parsed.entries ?? []) {
     const evidenceIds = item.evidence_ids ?? []
     if (evidenceIds.some((id) => !allowedEvidenceIds.has(id))) {
@@ -103,7 +137,12 @@ const sanitizeEntries = (
       evidenceIds,
     })
   }
-  return { entries: sanitized, droppedInvalidEvidence }
+  return {
+    entries: sanitized,
+    deleteEntryIds,
+    droppedInvalidEvidence,
+    droppedInvalidDeleteEntryIds,
+  }
 }
 
 export const runMemoryRefreshSingleCall = async (params: {
@@ -124,21 +163,26 @@ export const runMemoryRefreshSingleCall = async (params: {
     'single_call',
   )
   const sanitized = sanitizeEntries(params.payload, parsed)
-  const { entries } = sanitized
-  const mode = parsed.mode === 'patch' && entries.length > 0 ? 'patch' : 'noop'
+  const { entries, deleteEntryIds } = sanitized
+  const hasPatch =
+    parsed.mode === 'patch' && (entries.length > 0 || deleteEntryIds.length > 0)
+  const mode = hasPatch ? 'patch' : 'noop'
   const reason = (() => {
-    if (parsed.mode !== 'patch' || entries.length > 0) return parsed.reason
+    if (parsed.mode !== 'patch' || hasPatch) return parsed.reason
     if (sanitized.droppedInvalidEvidence) return 'invalid_evidence_ids'
-    return 'empty_entries'
+    if (sanitized.droppedInvalidDeleteEntryIds)
+      return 'invalid_delete_entry_ids'
+    return 'empty_patch'
   })()
   const compress =
-    parsed.mode === 'patch' && entries.length === 0
+    parsed.mode === 'patch' && !hasPatch
       ? { mode: 'noop' as const, reason }
       : toStageSummary(parsed.compress)
   return {
     mode,
     reason,
     entries,
+    deleteEntryIds,
     harvest: toStageSummary(parsed.harvest),
     curate: toStageSummary(parsed.curate),
     compress,

@@ -15,40 +15,57 @@ export type MemoryRememberedEventPayload = {
   contentChars: number
 }
 
-const buildSummary = (payload: MemoryRememberedEventPayload): string =>
+const appendMemoryEvent = (params: {
+  historyPath: string
+  focusId: FocusId
+  text: string
+  entryId: string
+  logContext: string
+}): Promise<boolean> => {
+  const message: HistoryMessage = {
+    id: `sys-memory-${newId()}`,
+    role: 'system',
+    visibility: 'agent',
+    text: params.text,
+    createdAt: nowIso(),
+    focusId: params.focusId,
+  }
+  return safe(
+    params.logContext,
+    async () => {
+      await appendHistory(params.historyPath, message)
+      return true
+    },
+    {
+      fallback: false,
+      meta: { focusId: params.focusId, entryId: params.entryId },
+    },
+  )
+}
+
+const rememberedSummary = (payload: MemoryRememberedEventPayload): string =>
   `Memory entry ${payload.entryId} ${payload.operation}.`
 
 export const appendMemoryRememberedSystemMessage = (
   historyPath: string,
   focusId: FocusId,
   payload: MemoryRememberedEventPayload,
-): Promise<boolean> => {
-  const text = formatSystemEventText({
-    summary: buildSummary(payload),
-    event: 'memory_remembered',
-    payload: {
-      entry_id: payload.entryId,
-      ref: payload.ref,
-      category: payload.category,
-      dedupe_key: payload.dedupeKey,
-      operation: payload.operation,
-      content_chars: payload.contentChars,
-    },
-  })
-  const message: HistoryMessage = {
-    id: `sys-memory-${newId()}`,
-    role: 'system',
-    visibility: 'agent',
-    text,
-    createdAt: nowIso(),
+): Promise<boolean> =>
+  appendMemoryEvent({
+    historyPath,
     focusId,
-  }
-  return safe(
-    'appendHistory: memory_remembered_system_message',
-    async () => {
-      await appendHistory(historyPath, message)
-      return true
-    },
-    { fallback: false, meta: { focusId, entryId: payload.entryId } },
-  )
-}
+    entryId: payload.entryId,
+    logContext: 'appendHistory: memory_remembered_system_message',
+    text: formatSystemEventText({
+      summary: rememberedSummary(payload),
+      event: 'memory_remembered',
+      payload: {
+        entry_id: payload.entryId,
+        ref: payload.ref,
+        category: payload.category,
+        dedupe_key: payload.dedupeKey,
+        operation: payload.operation,
+        content_chars: payload.contentChars,
+      },
+    }),
+  })

@@ -126,8 +126,9 @@
 - `.instance`（运行时实例锁文件）
 
 说明：
-- manager 每轮会直接注入 `M:memory`
+- manager 每轮会注入 `M:memory`，注入前对 memory entries 做本地评分排序并按 budget 选择
 - `memory/MEMORY.md` 由两条链路维护：后台 memory 刷新子进程（`>=20` 轮触发，单飞执行）+ manager `remember_memory` 即时写入
+- 不存在独立 forget action；遗忘通过 `remember_memory` 记录指令，后续刷新输出 `delete_entry_ids` 执行删除
 
 ## WebUI 路径链接规则
 
