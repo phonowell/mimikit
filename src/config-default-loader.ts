@@ -87,6 +87,8 @@ const userConfigInputSchema = z
   })
   .strict()
 
+type UserConfigInput = z.infer<typeof userConfigInputSchema>
+
 export type UserConfigDefaults = {
   manager: {
     model: string
@@ -131,6 +133,60 @@ const trimToUndefined = (value: string | undefined): string | undefined => {
   return trimmed.length > 0 ? trimmed : undefined
 }
 
+type UnknownKeyIssue = z.ZodIssue & {
+  code: 'unrecognized_keys'
+  keys: string[]
+}
+
+const isUnknownKeyIssue = (issue: z.ZodIssue): issue is UnknownKeyIssue =>
+  issue.code === 'unrecognized_keys'
+
+const formatIssues = (issues: readonly z.ZodIssue[]): string =>
+  issues
+    .map((issue) => `${issue.path.join('.') || '<root>'}: ${issue.message}`)
+    .join('; ')
+
+const formatUnknownKeys = (issues: readonly UnknownKeyIssue[]): string[] => {
+  const values: string[] = []
+  for (const issue of issues) {
+    const prefix =
+      issue.path.length > 0
+        ? `${issue.path.map((item) => String(item)).join('.')}.`
+        : ''
+    for (const key of issue.keys) values.push(`${prefix}${key}`)
+  }
+  return [...new Set(values)].sort((left, right) => left.localeCompare(right))
+}
+
+const asRecord = (value: unknown): Record<string, unknown> | undefined =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : undefined
+
+const resolveRecordAtPath = (
+  root: unknown,
+  path: readonly (string | number)[],
+): Record<string, unknown> | undefined => {
+  let current: unknown = root
+  for (const segment of path) {
+    const record = asRecord(current)
+    if (!record) return undefined
+    current = record[String(segment)]
+  }
+  return asRecord(current)
+}
+
+const stripUnknownIssues = (
+  root: unknown,
+  issues: readonly UnknownKeyIssue[],
+): void => {
+  for (const issue of issues) {
+    const target = resolveRecordAtPath(root, issue.path)
+    if (!target) continue
+    for (const key of issue.keys) delete target[key]
+  }
+}
+
 export const DEFAULT_CONFIG_PATH = fileURLToPath(
   new URL('../config.yaml', import.meta.url),
 )
@@ -156,17 +212,9 @@ const readOrCreateConfigSource = (path: string): string => {
   }
 }
 
-const parseConfigInput = (source: string): UserConfigDefaults => {
-  const parsed = (parseYaml(source) ?? {}) as unknown
-  const validated = userConfigInputSchema.safeParse(parsed)
-  if (!validated.success) {
-    const issues = validated.error.issues
-      .map((issue) => `${issue.path.join('.') || '<root>'}: ${issue.message}`)
-      .join('; ')
-    throw new Error(`[config] invalid yaml defaults: ${issues}`)
-  }
-
-  const input = validated.data
+const buildUserConfigDefaults = (
+  input: UserConfigInput,
+): UserConfigDefaults => {
   const managerProvider = input.manager?.provider
   const baseUrl = trimToUndefined(managerProvider?.baseUrl)
   const apiKey = trimToUndefined(managerProvider?.apiKey)
@@ -206,9 +254,52 @@ const parseConfigInput = (source: string): UserConfigDefaults => {
   }
 }
 
+const parseConfigInput = (
+  source: string,
+): { config: UserConfigDefaults; unknownKeys: string[] } => {
+  const parsed = (parseYaml(source) ?? {}) as unknown
+  const validated = userConfigInputSchema.safeParse(parsed)
+  if (validated.success) {
+    return {
+      config: buildUserConfigDefaults(validated.data),
+      unknownKeys: [],
+    }
+  }
+
+  const unknownIssues = validated.error.issues.filter(isUnknownKeyIssue)
+  const knownFieldIssues = validated.error.issues.filter(
+    (issue) => !isUnknownKeyIssue(issue),
+  )
+  if (knownFieldIssues.length > 0) {
+    throw new Error(
+      `[config] invalid yaml defaults: ${formatIssues(knownFieldIssues)}`,
+    )
+  }
+
+  stripUnknownIssues(parsed, unknownIssues)
+  const revalidated = userConfigInputSchema.safeParse(parsed)
+  if (!revalidated.success) {
+    throw new Error(
+      `[config] invalid yaml defaults: ${formatIssues(revalidated.error.issues)}`,
+    )
+  }
+
+  return {
+    config: buildUserConfigDefaults(revalidated.data),
+    unknownKeys: formatUnknownKeys(unknownIssues),
+  }
+}
+
+export type LoadDefaultConfigFromYamlOptions = {
+  onUnknownKeys?: (keys: readonly string[]) => void
+}
+
 export const loadDefaultConfigFromYaml = (
   path = DEFAULT_CONFIG_PATH,
+  options: LoadDefaultConfigFromYamlOptions = {},
 ): UserConfigDefaults => {
   const source = readOrCreateConfigSource(path)
-  return parseConfigInput(source)
+  const parsed = parseConfigInput(source)
+  if (parsed.unknownKeys.length > 0) options.onUnknownKeys?.(parsed.unknownKeys)
+  return parsed.config
 }

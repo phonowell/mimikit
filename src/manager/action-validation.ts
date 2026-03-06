@@ -3,8 +3,8 @@ import {
   cancelSchema,
   createPlanSchema,
   parseAskUserChoiceAttrs,
-  queryTaskArchiveSchema,
   readFileSchema,
+  rememberMemorySchema,
   runTaskSchema,
   summarizeSchema,
   updatePlanSchema,
@@ -103,8 +103,8 @@ export const validateQueryContext = (item: Parsed): ValidationIssue[] =>
   validateRangeQueryWithSchema(item, queryContextSchema)
 export const validateReadFile = (item: Parsed): ValidationIssue[] =>
   validateWithSchema(item, readFileSchema)
-export const validateQueryTaskArchive = (item: Parsed): ValidationIssue[] =>
-  validateWithSchema(item, queryTaskArchiveSchema)
+export const validateRememberMemory = (item: Parsed): ValidationIssue[] =>
+  validateWithSchema(item, rememberMemorySchema)
 export const validateSummarizeTaskResult = (
   item: Parsed,
   context: FeedbackContext,

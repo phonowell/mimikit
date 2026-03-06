@@ -21,11 +21,10 @@ const promptSectionLimits: PromptSectionLimits = {
   plansMaxBytes: 16384,
   queryLookupMaxBytes: 20480,
   recentHistoryMaxBytes: 8192,
-  taskArchiveLookupMaxBytes: 20480,
   tasksMaxBytes: 24576,
 }
 
-test('buildManagerPrompt renders task archive lookup section', async () => {
+test('buildManagerPrompt exposes task archives through query lookup only', async () => {
   const stateDir = await mkdtemp(join(tmpdir(), 'mimikit-manager-task-archive-'))
   const prompt = await buildManagerPrompt({
     stateDir,
@@ -34,20 +33,42 @@ test('buildManagerPrompt renders task archive lookup section', async () => {
     results: [],
     tasks: [],
     promptSectionLimits,
-    taskArchiveLookup: [
-      {
-        taskId: 'task-lookup-1',
-        status: 'succeeded',
-        completedAt: '2026-03-05T00:00:00.000Z',
-        archivePath: join(stateDir, 'tasks/2026-03-05/task-lookup-1.md'),
-        score: 1.23,
-        title: 'Lookup Hit',
-        snippet: 'Matched archive content',
+    queryLookup: {
+      request: {
+        query: 'release',
+        scopes: ['task_archives'],
+        limit: 6,
+        maxBytes: 12288,
+        maxItemChars: 320,
       },
-    ],
+      results: {
+        task_archives: {
+          items: [
+            {
+              ref: 'task_archive:task-lookup-1',
+              taskId: 'task-lookup-1',
+              status: 'succeeded',
+              completedAt: '2026-03-05T00:00:00.000Z',
+              archivePath: join(stateDir, 'tasks/2026-03-05/task-lookup-1.md'),
+              score: 1.23,
+              title: 'Lookup Hit',
+              snippet: 'Matched archive content',
+            },
+          ],
+          truncated: false,
+        },
+      },
+      meta: {
+        truncated: false,
+        usedBytes: 512,
+        maxBytes: 12288,
+      },
+    },
   })
 
-  expect(prompt).toContain('<M:task_archive_lookup>')
+  expect(prompt).toContain('<M:query_lookup>')
+  expect(prompt).toContain('task_archive:task-lookup-1')
   expect(prompt).toContain('task-lookup-1')
   expect(prompt).toContain('Matched archive content')
+  expect(prompt).not.toContain('<M:task_archive_lookup>')
 })

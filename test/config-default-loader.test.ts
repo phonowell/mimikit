@@ -73,14 +73,35 @@ test('supports provider model fallback and ignores runtime-only compatibility ke
   expect(config.worker.model).toBe('gpt-5.3-codex')
 })
 
-test('rejects unknown manager keys', async () => {
+test('ignores unknown keys and reports them via callback', async () => {
   const path = await writeTempConfig(
     [
+      'qq: true',
       'manager:',
       '  model: gpt-5.2',
       '  unknownManagerKey: true',
     ].join('\n'),
   )
 
-  expect(() => loadDefaultConfigFromYaml(path)).toThrow(/unknownManagerKey/)
+  let unknownKeys: string[] = []
+  const config = loadDefaultConfigFromYaml(path, {
+    onUnknownKeys: (keys) => {
+      unknownKeys = [...keys]
+    },
+  })
+
+  expect(config.manager.model).toBe('gpt-5.2')
+  expect(unknownKeys).toEqual(['manager.unknownManagerKey', 'qq'])
+})
+
+test('still rejects invalid known fields when unknown keys are present', async () => {
+  const path = await writeTempConfig(
+    [
+      'qq: true',
+      'manager:',
+      '  model: 123',
+    ].join('\n'),
+  )
+
+  expect(() => loadDefaultConfigFromYaml(path)).toThrow(/manager.model/)
 })

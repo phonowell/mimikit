@@ -6,13 +6,10 @@ import { collectManagerActionFeedback } from './action-feedback-collect.js'
 import {
   buildQueryContextLookupKey,
   buildReadFileLookupKey,
-  buildTaskArchiveLookupKey,
   pickQueryContextRequest,
-  pickQueryTaskArchiveRequest,
   pickReadFileRequest,
   queryContextLookup,
   queryReadFileLookup,
-  queryTaskArchiveLookup,
 } from './loop-batch-context.js'
 import {
   buildActionFeedbackContext,
@@ -76,21 +73,17 @@ export const resolveRoundFollowup = async (params: {
   )
   const queryContextRequest = pickQueryContextRequest(params.parsed)
   const readFileRequest = pickReadFileRequest(params.parsed)
-  const taskArchiveRequest = pickQueryTaskArchiveRequest(params.parsed)
   const queryContextKey = buildQueryContextLookupKey(queryContextRequest)
   const readFileKey = buildReadFileLookupKey(readFileRequest)
-  const taskArchiveKey = buildTaskArchiveLookupKey(taskArchiveRequest)
   const lookupKey = buildLookupKey({
     ...(queryContextKey !== undefined ? { queryContextKey } : {}),
     ...(readFileKey !== undefined ? { readFileKey } : {}),
-    ...(taskArchiveKey !== undefined ? { taskArchiveKey } : {}),
   })
 
   if (
     hasNoFollowupRequests({
       hasQueryContextRequest: Boolean(queryContextRequest),
       hasReadFileRequest: Boolean(readFileRequest),
-      hasTaskArchiveRequest: Boolean(taskArchiveRequest),
       feedbackCount: actionFeedback.length,
     })
   )
@@ -103,10 +96,9 @@ export const resolveRoundFollowup = async (params: {
   )
     throw new Error('manager_internal_lookup_repeated_without_progress')
 
-  const [queryLookup, readFileLookup, taskArchiveLookup] = await Promise.all([
+  const [queryLookup, readFileLookup] = await Promise.all([
     queryContextLookup(params.runtime, queryContextRequest),
     queryReadFileLookup(params.runtime, readFileRequest),
-    queryTaskArchiveLookup(params.runtime, taskArchiveRequest),
   ])
 
   await appendRoundActionFeedback({
@@ -121,7 +113,6 @@ export const resolveRoundFollowup = async (params: {
     extra: {
       ...(queryLookup ? { queryLookup } : {}),
       ...(readFileLookup ? { readFileLookup } : {}),
-      ...(taskArchiveLookup ? { taskArchiveLookup } : {}),
       ...(actionFeedback.length > 0 ? { actionFeedback } : {}),
     },
   }

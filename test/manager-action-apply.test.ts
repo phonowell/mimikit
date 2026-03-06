@@ -1,4 +1,4 @@
-import { mkdtemp } from 'node:fs/promises'
+import { mkdtemp, readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -390,4 +390,41 @@ test('restart_runtime requests exit through runtime hook', async () => {
   }
   expect(runtime.stopped).toBe(true)
   expect(requests).toEqual([{ code: 75, reason: 'manager_restart' }])
+})
+
+test('remember_memory writes MEMORY.md immediately and emits system event payload', async () => {
+  const runtime = await createRuntime()
+  await applyTaskActions(runtime, [
+    {
+      name: 'remember_memory',
+      attrs: {
+        content: 'User insists on always using strict ESM imports.',
+        category: 'coding',
+        dedupe_key: 'import-style',
+        source: 'explicit_user_request',
+        replace_policy: 'merge',
+      },
+    },
+  ])
+
+  const memoryMarkdown = await readFile(runtime.paths.memoryFile, 'utf8')
+  expect(memoryMarkdown).toContain(
+    '## [memory-entry:coding:import-style] (id:',
+  )
+  expect(memoryMarkdown).toContain(
+    'User insists on always using strict ESM imports.',
+  )
+
+  const history = await readHistory(runtime.paths.history)
+  const event = history.find(
+    (item) =>
+      item.role === 'system' &&
+      item.text.includes('name="memory_remembered"'),
+  )
+  expect(event).toBeTruthy()
+  const parsed = parseSystemEventText(event?.text ?? '')
+  expect(parsed.name).toBe('memory_remembered')
+  expect(parsed.payload?.operation).toBe('created')
+  expect(parsed.payload?.source).toBe('explicit_user_request')
+  expect(typeof parsed.payload?.entry_id).toBe('string')
 })

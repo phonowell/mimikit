@@ -36,7 +36,6 @@ const createRuntime = async (): Promise<RuntimeState> => {
         plansMaxBytes: 4096,
         queryLookupMaxBytes: 4096,
         recentHistoryMaxBytes: 2048,
-        taskArchiveLookupMaxBytes: 4096,
         tasksMaxBytes: 4096,
       },
       taskCreate: { debounceMs: 0 },

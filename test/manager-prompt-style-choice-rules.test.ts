@@ -4,12 +4,28 @@ import { join } from 'node:path'
 
 import { expect, test } from 'vitest'
 
-import { defaultConfig } from '../src/config.js'
 import { buildManagerPrompt } from '../src/prompts/build-prompts.js'
+import type { PromptSectionLimits } from '../src/config.js'
+
+const promptSectionLimits: PromptSectionLimits = {
+  actionFeedbackMaxBytes: 8192,
+  batchResultsMaxBytes: 20480,
+  compressedContextMaxBytes: 12288,
+  environmentMaxBytes: 4096,
+  fileLookupMaxBytes: 20480,
+  focusContextsMaxBytes: 20480,
+  focusListMaxBytes: 8192,
+  historyLookupMaxBytes: 20480,
+  inputsMaxBytes: 8192,
+  memoryMaxBytes: 8192,
+  plansMaxBytes: 16384,
+  queryLookupMaxBytes: 20480,
+  recentHistoryMaxBytes: 8192,
+  tasksMaxBytes: 24576,
+}
 
 test('manager prompt enforces concise reply and choice routing rules', async () => {
   const stateDir = await mkdtemp(join(tmpdir(), 'mimikit-manager-prompt-rules-'))
-  const config = defaultConfig({ workDir: stateDir })
   const prompt = await buildManagerPrompt({
     stateDir,
     workDir: stateDir,
@@ -24,7 +40,7 @@ test('manager prompt enforces concise reply and choice routing rules', async () 
     ],
     results: [],
     tasks: [],
-    promptSectionLimits: config.manager.promptSections,
+    promptSectionLimits,
   })
 
   expect(prompt).toContain('默认不寒暄、不复述用户已给出的任务、不做无效确认')

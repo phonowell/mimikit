@@ -8,7 +8,6 @@ import {
   updatePlanSchema,
 } from './action-plan-schema.js'
 import { readFileToolSchema } from './read-file-tool.js'
-import { queryTaskArchiveSchema } from './task-archive-tool.js'
 
 import type { Parsed } from '../actions/model/spec.js'
 import type { UserChoiceOption } from '../types/index.js'
@@ -42,9 +41,34 @@ export const cancelSchema = z
   .strict()
 
 export const readFileSchema = readFileToolSchema
-export { queryTaskArchiveSchema }
 
 export const restartSchema = z.object({}).strict()
+
+const memoryTokenSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(64)
+  .regex(/^[a-zA-Z0-9._-]+$/)
+const memorySourceSchema = z.enum([
+  'explicit_user_request',
+  'repeated_user_signal',
+  'agent_inference',
+])
+
+export const rememberMemorySchema = z
+  .object({
+    content: nonEmptyString,
+    category: memoryTokenSchema.optional(),
+    priority: z.enum(['high', 'normal', 'low']).optional(),
+    confidence: z.coerce.number().min(0).max(1).optional(),
+    dedupe_key: memoryTokenSchema.optional(),
+    replace_policy: z.enum(['merge', 'overwrite', 'append']).optional(),
+    source: memorySourceSchema.optional(),
+    max_chars: z.coerce.number().int().min(80).max(2000).optional(),
+    focus_id: focusIdSchema.optional(),
+  })
+  .strict()
 
 const openItemAttrRe = /^open_item_(\d+)$/
 const upsertFocusBaseKeys = new Set(['id', 'title', 'status', 'summary'])

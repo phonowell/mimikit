@@ -17,7 +17,6 @@ import type {
   QueryLookupMessage,
   ReadFileLookupMessage,
   Task,
-  TaskArchiveLookupMessage,
   TaskPlan,
   TaskResult,
   TokenUsage,
@@ -39,7 +38,6 @@ export const runManager = async (params: {
   historyLookup?: HistoryLookupMessage[]
   queryLookup?: QueryLookupMessage
   readFileLookup?: ReadFileLookupMessage[]
-  taskArchiveLookup?: TaskArchiveLookupMessage[]
   actionFeedback?: ManagerActionFeedback[]
   env?: ManagerEnv
   focuses?: FocusMeta[]
@@ -69,9 +67,6 @@ export const runManager = async (params: {
     ...(params.historyLookup ? { historyLookup: params.historyLookup } : {}),
     ...(params.queryLookup ? { queryLookup: params.queryLookup } : {}),
     ...(params.readFileLookup ? { readFileLookup: params.readFileLookup } : {}),
-    ...(params.taskArchiveLookup
-      ? { taskArchiveLookup: params.taskArchiveLookup }
-      : {}),
     ...(params.actionFeedback ? { actionFeedback: params.actionFeedback } : {}),
     ...(params.env ? { env: params.env } : {}),
     ...(params.focuses ? { focuses: params.focuses } : {}),

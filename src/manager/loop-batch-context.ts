@@ -3,16 +3,13 @@ import { logSafeError } from '../log/safe.js'
 
 import { runQueryContextTool } from './query-context-tool.js'
 import { runReadFileTool } from './read-file-tool.js'
-import { runQueryTaskArchiveTool } from './task-archive-tool.js'
 
 import type { QueryContextRequest } from './query-context-tool.js'
 import type { ReadFileRequest } from './read-file-tool.js'
 import type { RuntimeState } from './runtime-adapter.js'
-import type { QueryTaskArchiveRequest } from './task-archive-tool.js'
 import type {
   QueryLookupMessage,
   ReadFileLookupMessage,
-  TaskArchiveLookupMessage,
   UserInput,
 } from '../types/index.js'
 
@@ -21,11 +18,6 @@ export {
   pickQueryContextRequest,
   type QueryContextRequest,
 } from './query-context-tool.js'
-export {
-  buildTaskArchiveLookupKey,
-  pickQueryTaskArchiveRequest,
-  type QueryTaskArchiveRequest,
-} from './task-archive-tool.js'
 export {
   buildReadFileLookupKey,
   pickReadFileRequest,
@@ -89,25 +81,6 @@ export const queryReadFileLookup = async (
       : { error: result.error ?? 'unknown_error' }),
   })
   return [result]
-}
-
-export const queryTaskArchiveLookup = async (
-  runtime: RuntimeState,
-  request?: QueryTaskArchiveRequest,
-): Promise<TaskArchiveLookupMessage[] | undefined> => {
-  if (!request) return undefined
-  const results = await runQueryTaskArchiveTool({
-    stateDir: runtime.config.workDir,
-    request,
-  })
-  await appendLog(runtime.paths.log, {
-    event: 'manager_query_task_archive',
-    queryChars: request.query.length,
-    limit: request.limit,
-    maxFiles: request.maxFiles,
-    resultCount: results.length,
-  })
-  return results
 }
 
 export const queryContextLookup = async (

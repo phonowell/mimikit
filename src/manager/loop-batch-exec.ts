@@ -11,7 +11,6 @@ import type {
   QueryLookupMessage,
   ReadFileLookupMessage,
   Task,
-  TaskArchiveLookupMessage,
   TaskPlan,
   TaskResult,
   TokenUsage,
@@ -143,7 +142,6 @@ export const runManagerRoundWithRecovery = async (params: {
     historyLookup?: HistoryLookupMessage[]
     queryLookup?: QueryLookupMessage
     readFileLookup?: ReadFileLookupMessage[]
-    taskArchiveLookup?: TaskArchiveLookupMessage[]
     actionFeedback?: ManagerActionFeedback[]
   }
 }): Promise<{ output: string; elapsedMs: number; usage?: TokenUsage }> => {
@@ -173,9 +171,6 @@ export const runManagerRoundWithRecovery = async (params: {
       : {}),
     ...(params.extra.readFileLookup
       ? { readFileLookup: params.extra.readFileLookup }
-      : {}),
-    ...(params.extra.taskArchiveLookup
-      ? { taskArchiveLookup: params.extra.taskArchiveLookup }
       : {}),
     ...(params.extra.actionFeedback
       ? { actionFeedback: params.extra.actionFeedback }

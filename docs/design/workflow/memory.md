@@ -4,9 +4,9 @@
 
 ## 核心结论
 
-- `memory` 不再通过 manager action 写入；`append_memory` 已移除。
-- memory 刷新由后台子进程执行，触发条件为 `>=20` manager 轮次差值。
-- 每次触发仅执行一轮子进程，且只调用一次 LLM。
+- 默认 memory 刷新仍由后台子进程执行，触发条件为 `>=20` manager 轮次差值。
+- 新增 `remember_memory` manager action：用于“立即写入”长期记忆（用户明确要求记住时）。
+- 每次后台触发仅执行一轮子进程，且只调用一次 LLM。
 - 当无可靠增量时返回 `noop`，不会强写 `MEMORY.md`。
 
 ## 触发与单飞
@@ -44,12 +44,14 @@
 ## 写入策略
 
 - 写入目标：`${workDir}/memory/MEMORY.md`（默认 `./.mimikit/memory/MEMORY.md`）
-- 写入方式：序列化写入 + 原子落盘，避免并发冲突。
+- 写入方式：序列化写入 + 原子落盘，避免并发冲突（后台刷新与 `remember_memory` 共用序列化锁）。
 - 去重：重复条目与空条目会被跳过。
 
 实现位置：
 - `src/memory/refresh/apply-patch.ts`
 - `src/memory/store.ts`
+- `src/memory/remember-entry.ts`
+- `src/manager/action-apply-memory.ts`
 
 ## 状态与持久化
 

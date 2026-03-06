@@ -7,10 +7,7 @@ import {
   isIndexInRanges,
 } from '../actions/protocol/markdown-code-ranges.js'
 
-import {
-  queryTaskArchiveSchema,
-  readFileSchema,
-} from './action-apply-schema.js'
+import { readFileSchema } from './action-apply-schema.js'
 import {
   formatActionInCodeBlockHint,
   formatInvalidActionSyntaxHint,
@@ -35,8 +32,6 @@ const ACTION_IN_CODE_BLOCK_HINT = formatActionInCodeBlockHint()
 const SINGLE_LOOKUP_ACTION_LIMIT_HINTS: Record<string, string> = {
   query_context:
     'query_context 执行失败：同一轮最多保留一个 query_context action；请先合并 scopes 与过滤条件。',
-  query_task_archive:
-    'query_task_archive 执行失败：同一轮最多保留一个 query_task_archive action；请先合并查询条件。',
   read_file:
     'read_file 执行失败：同一轮最多保留一个 read_file action；请先合并读取范围。',
 }
@@ -44,8 +39,6 @@ const SINGLE_LOOKUP_ACTION_LIMIT_HINTS: Record<string, string> = {
 const isValidLookupAction = (item: Parsed): boolean => {
   if (item.name === 'query_context')
     return queryContextSchema.safeParse(item.attrs).success
-  if (item.name === 'query_task_archive')
-    return queryTaskArchiveSchema.safeParse(item.attrs).success
   if (item.name === 'read_file')
     return readFileSchema.safeParse(item.attrs).success
   return false

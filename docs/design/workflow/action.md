@@ -30,7 +30,6 @@
 ### 查询类
 
 - `query_context`
-- `query_task_archive`
 - `read_file`
 
 ### 结果处理类
@@ -42,6 +41,7 @@
 - `upsert_focus`
 - `assign_focus`
 - `restart_runtime`
+- `remember_memory`
 
 参数约定（关键字段）：
 
@@ -51,10 +51,11 @@
 ## Action 执行语义
 
 - `query_context` / `read_file`：仅做 schema 校验，不直接改状态；同一轮每类最多 1 条，超出会返回 `M:action_feedback`；结果通过下一纠错回合注入 `M:query_lookup` / `M:file_lookup`。
+- `query_context` 已统一覆盖 `task_archives` scope（不再提供独立 `query_task_archive` action）。
 - `summarize_task_result`：仅用于当前批次 `task_result` 的摘要覆写（不直接执行 action 状态写入）。
 - `cancel_task`：调用 `worker/cancel-task.ts` 后统一产出可追踪结构（`id`、`status`、`changeAt`）；`id` 始终为目标任务 ID（无论 source 为 `user`/`deferred`/`system`）。
 - 上下文压缩不再暴露为 manager action；仅由运行时内部触发，按 focus 维度写入压缩摘要（`managerFocusCompressedContexts`），prompt 仅注入 working focus 对应条目。
-- memory 写入不再通过 action；由后台 memory 刷新子进程负责。
+- `remember_memory`：立即写入 `memory/MEMORY.md`，支持 `merge|overwrite|append`，并通过 `memory_remembered` system event 回执 `entry_id/ref/operation`。
 
 ### manager 取消门禁（guardrail）
 
@@ -106,5 +107,4 @@
 - `M:query_lookup`
 - `M:memory`
 - `M:file_lookup`
-- `M:task_archive_lookup`
 - `M:action_feedback`

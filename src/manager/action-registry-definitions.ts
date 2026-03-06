@@ -4,6 +4,7 @@ import {
   applyAssignFocusAction,
   applyUpsertFocusAction,
 } from './action-apply-focus.js'
+import { applyRememberMemoryAction } from './action-apply-memory.js'
 import {
   applyCreatePlan,
   applyDeletePlan,
@@ -30,8 +31,8 @@ import {
   validateCreatePlan,
   validatePlanById,
   validateQueryContext,
-  validateQueryTaskArchive,
   validateReadFile,
+  validateRememberMemory,
   validateRunTask,
   validateSummarizeTaskResult,
   validateUpdatePlan,
@@ -116,7 +117,6 @@ export const ACTION_DEFINITIONS = [
     apply: continueApply,
   },
   createNoopAction('query_context', validateQueryContext),
-  createNoopAction('query_task_archive', validateQueryTaskArchive),
   createNoopAction('read_file', validateReadFile),
   {
     name: 'restart_runtime',
@@ -132,5 +132,10 @@ export const ACTION_DEFINITIONS = [
     name: 'assign_focus',
     validate: (item) => validateWithSchema(item, assignFocusSchema),
     apply: applyAndContinue(applyAssignFocusAction),
+  },
+  {
+    name: 'remember_memory',
+    validate: (item) => validateRememberMemory(item),
+    apply: applyAndContinue(applyRememberMemoryAction),
   },
 ] satisfies ManagerActionDefinition[]

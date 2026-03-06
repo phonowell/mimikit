@@ -120,7 +120,7 @@
 
 说明：
 - manager 每轮会直接注入 `M:memory`
-- `memory/MEMORY.md` 由后台 memory 刷新子进程维护（`>=20` 轮触发，单飞执行）
+- `memory/MEMORY.md` 由两条链路维护：后台 memory 刷新子进程（`>=20` 轮触发，单飞执行）+ manager `remember_memory` 即时写入
 
 ## WebUI 路径链接规则
 

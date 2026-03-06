@@ -1,5 +1,3 @@
-import { isAbsolute, relative, resolve } from 'node:path'
-
 import { isVisibleToAgent } from '../shared/message-visibility.js'
 
 import {
@@ -14,7 +12,6 @@ import type {
   ManagerActionFeedback,
   QueryLookupMessage,
   ReadFileLookupMessage,
-  TaskArchiveLookupMessage,
   UserInput,
 } from '../types/index.js'
 
@@ -198,21 +195,6 @@ const mapLookupRole = (role: HistoryLookupMessage['role']): string => {
   return role
 }
 
-const toDisplayPath = (path: string, workDir?: string): string => {
-  const trimmedPath = path.trim()
-  if (!workDir) return trimmedPath
-  const trimmedWorkDir = workDir.trim()
-  if (!trimmedWorkDir) return trimmedPath
-  const resolvedWorkDir = resolve(trimmedWorkDir)
-  const resolvedPath = isAbsolute(trimmedPath)
-    ? resolve(trimmedPath)
-    : resolve(resolvedWorkDir, trimmedPath)
-  const rel = relative(resolvedWorkDir, resolvedPath)
-  if (!rel) return '.'
-  if (rel.startsWith('..') || isAbsolute(rel)) return trimmedPath
-  return rel
-}
-
 export const formatHistoryLookup = (lookup: HistoryLookupMessage[]): string => {
   if (lookup.length === 0) return ''
   const entries = lookup
@@ -265,34 +247,6 @@ export const formatReadFileLookup = (
   return escapeCdata(
     stringifyPromptJson({
       files: entries,
-    }),
-  )
-}
-
-export const formatTaskArchiveLookup = (
-  lookup: TaskArchiveLookupMessage[],
-  workDir?: string,
-): string => {
-  if (lookup.length === 0) return ''
-  const entries = lookup
-    .map((item) => {
-      const archivePath = toDisplayPath(item.archivePath, workDir)
-      if (!archivePath) return null
-      return {
-        task_id: item.taskId,
-        status: item.status,
-        completed_at: item.completedAt,
-        archive_path: archivePath,
-        score: item.score,
-        ...(item.title ? { title: item.title.trim() } : {}),
-        ...(item.snippet ? { snippet: item.snippet } : {}),
-      }
-    })
-    .filter((item): item is NonNullable<typeof item> => item !== null)
-  if (entries.length === 0) return ''
-  return escapeCdata(
-    stringifyPromptJson({
-      items: entries,
     }),
   )
 }

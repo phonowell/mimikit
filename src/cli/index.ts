@@ -10,6 +10,7 @@ import { bestEffort, setDefaultLogPath } from '../log/safe.js'
 import { Orchestrator } from '../orchestrator/core/orchestrator-service.js'
 import { loadCodexSettings } from '../providers/codex-settings.js'
 
+import { warnIgnoredUnknownConfigKeys } from './config-warning.js'
 import { applyCliEnvOverrides } from './env.js'
 import { acquireRuntimeLock } from './runtime-lock.js'
 
@@ -40,6 +41,8 @@ const requestedPort = parsePort(portValue)
 
 const config = defaultConfig({
   workDir: resolvedWorkDir,
+  onUnknownConfigKeys: (keys) =>
+    warnIgnoredUnknownConfigKeys(keys, (message) => console.warn(message)),
 })
 
 applyCliEnvOverrides(config)

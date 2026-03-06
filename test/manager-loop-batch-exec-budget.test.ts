@@ -17,7 +17,6 @@ const baseLimits: PromptSectionLimits = {
   plansMaxBytes: 16384,
   queryLookupMaxBytes: 20480,
   recentHistoryMaxBytes: 8192,
-  taskArchiveLookupMaxBytes: 20480,
   tasksMaxBytes: 24576,
 }
 

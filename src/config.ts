@@ -7,6 +7,7 @@ import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
 export type DefaultConfigParams = {
   workDir: string
+  onUnknownConfigKeys?: (keys: readonly string[]) => void
 }
 
 export type PromptSectionLimits = {
@@ -23,7 +24,6 @@ export type PromptSectionLimits = {
   plansMaxBytes: number
   queryLookupMaxBytes: number
   recentHistoryMaxBytes: number
-  taskArchiveLookupMaxBytes: number
   tasksMaxBytes: number
 }
 
@@ -82,7 +82,6 @@ const INTERNAL_MANAGER_DEFAULTS = {
     plansMaxBytes: 16384,
     queryLookupMaxBytes: 20480,
     recentHistoryMaxBytes: 8192,
-    taskArchiveLookupMaxBytes: 20480,
     tasksMaxBytes: 24576,
   },
   taskCreate: {
@@ -109,7 +108,9 @@ const INTERNAL_WORKER_DEFAULTS = {
 } as const
 
 export const defaultConfig = (params: DefaultConfigParams): AppConfig => {
-  const userConfig = loadDefaultConfigFromYaml()
+  const userConfig = loadDefaultConfigFromYaml(undefined, {
+    onUnknownKeys: params.onUnknownConfigKeys,
+  })
   return {
     workDir: resolve(params.workDir),
     manager: {

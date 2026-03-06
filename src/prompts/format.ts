@@ -85,7 +85,6 @@ export {
   formatQueryLookup,
   formatReadFileLookup,
   formatRecentHistory,
-  formatTaskArchiveLookup,
 } from './format-messages.js'
 export {
   formatCompressedFocusContexts,
