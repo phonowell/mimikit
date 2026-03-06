@@ -3,15 +3,13 @@ import { readHistory } from '../history/store.js'
 import { appendLog } from '../log/append.js'
 import { logSafeError } from '../log/safe.js'
 
-import {
-  runQueryContextTool,
-} from './query-context-tool.js'
+import { runQueryContextTool } from './query-context-tool.js'
 import { runReadFileTool } from './read-file-tool.js'
 import { runQueryTaskArchiveTool } from './task-archive-tool.js'
 
+import type { QueryContextRequest } from './query-context-tool.js'
 import type { ReadFileRequest } from './read-file-tool.js'
 import type { RuntimeState } from './runtime-adapter.js'
-import type { QueryContextRequest } from './query-context-tool.js'
 import type { QueryTaskArchiveRequest } from './task-archive-tool.js'
 import type { QueryHistoryRequest } from '../history/query.js'
 import type {
@@ -158,7 +156,9 @@ export const queryContextLookup = async (
 ): Promise<QueryLookupMessage | undefined> => {
   if (!request) return undefined
   const result = await runQueryContextTool({ runtime, request })
-  const scopeCounts = Object.entries(result.results).reduce<Record<string, number>>(
+  const scopeCounts = Object.entries(result.results).reduce<
+    Record<string, number>
+  >(
     (acc, [scope, value]) => ({ ...acc, [scope]: value?.items.length ?? 0 }),
     {},
   )

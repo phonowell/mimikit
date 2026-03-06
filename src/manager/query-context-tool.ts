@@ -1,39 +1,37 @@
 import {
   buildQueryLookupMessage,
   enforceQueryLookupBudget,
-  toScopeResult,
   type MutableQueryResults,
+  toScopeResult,
 } from './query-context-payload.js'
-import {
-  queryFocusScope,
-  queryPlansScope,
-  queryTasksScope,
-} from './query-context-scope-runtime.js'
-import {
-  queryTaskArchivesScope,
-} from './query-context-scope-archives.js'
-import {
-  queryHistoryScope,
-  queryMemoryScope,
-} from './query-context-scope-history-memory.js'
 import {
   buildQueryContextLookupKey,
   resolveScopeLimit,
 } from './query-context-request.js'
 import {
   pickQueryContextRequest,
-  queryContextSchema,
   type QueryContextRequest,
+  queryContextSchema,
 } from './query-context-schema.js'
+import { queryTaskArchivesScope } from './query-context-scope-archives.js'
+import {
+  queryHistoryScope,
+  queryMemoryScope,
+} from './query-context-scope-history-memory.js'
+import {
+  queryFocusScope,
+  queryPlansScope,
+  queryTasksScope,
+} from './query-context-scope-runtime.js'
 
-import type { QueryContextScope, QueryLookupMessage } from '../types/index.js'
 import type { RuntimeState } from './runtime-adapter.js'
+import type { QueryContextScope, QueryLookupMessage } from '../types/index.js'
 
-const queryScopeItems = async (
+const queryScopeItems = (
   runtime: RuntimeState,
   request: QueryContextRequest,
   scope: QueryContextScope,
-): Promise<unknown[]> => {
+): Promise<unknown[]> | unknown[] => {
   const limit = resolveScopeLimit(request, scope)
   if (scope === 'history') return queryHistoryScope(runtime, request, limit)
   if (scope === 'tasks') return queryTasksScope(runtime, request)
@@ -58,7 +56,12 @@ export const runQueryContextTool = async (params: {
   const results: MutableQueryResults = {}
   for (const scope of params.request.scopes) {
     const items = await queryScopeItems(params.runtime, params.request, scope)
-    results[scope] = toScopeResult(items, resolveScopeLimit(params.request, scope))
+    results[scope] = toScopeResult(
+      items,
+      resolveScopeLimit(params.request, scope),
+    )
   }
-  return enforceQueryLookupBudget(buildQueryLookupMessage(params.request, results))
+  return enforceQueryLookupBudget(
+    buildQueryLookupMessage(params.request, results),
+  )
 }

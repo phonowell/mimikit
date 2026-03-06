@@ -1,5 +1,5 @@
-import type { QueryContextScope, QueryLookupMessage } from '../types/index.js'
 import type { QueryContextRequest } from './query-context-schema.js'
+import type { QueryContextScope, QueryLookupMessage } from '../types/index.js'
 
 export type MutableScopeResult = {
   items: unknown[]
@@ -14,7 +14,10 @@ export type MutableQueryResults = Partial<
 const measureBytes = (value: unknown): number =>
   Buffer.byteLength(JSON.stringify(value), 'utf8')
 
-export const toScopeResult = (items: unknown[], limit: number): MutableScopeResult => {
+export const toScopeResult = (
+  items: unknown[],
+  limit: number,
+): MutableScopeResult => {
   const clamped = Math.max(1, limit)
   const sliced = items.slice(0, clamped)
   const truncated = items.length > clamped

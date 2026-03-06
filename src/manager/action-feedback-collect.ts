@@ -12,7 +12,6 @@ import {
   queryTaskArchiveSchema,
   readFileSchema,
 } from './action-apply-schema.js'
-import { queryContextSchema } from './query-context-tool.js'
 import {
   formatActionInCodeBlockHint,
   formatInvalidActionSyntaxHint,
@@ -22,6 +21,7 @@ import {
   REGISTERED_MANAGER_ACTIONS,
   validateRegisteredManagerAction,
 } from './action-registrations.js'
+import { queryContextSchema } from './query-context-tool.js'
 
 import type { FeedbackContext } from './action-validation.js'
 import type { Parsed } from '../actions/model/spec.js'

@@ -1,7 +1,7 @@
 import { QUERY_CONTEXT_SCOPES } from './query-context-params.js'
 
-import type { QueryContextScope } from '../types/index.js'
 import type { QueryContextRequest } from './query-context-schema.js'
+import type { QueryContextScope } from '../types/index.js'
 
 export const resolveScopeLimit = (
   request: QueryContextRequest,

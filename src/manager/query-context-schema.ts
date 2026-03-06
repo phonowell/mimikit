@@ -62,7 +62,11 @@ export const queryContextSchema = z
     limit_task_archives: limitField.optional(),
     from: z.string().trim().min(1).optional(),
     to: z.string().trim().min(1).optional(),
-    focus_id: z.string().trim().regex(/^focus-[a-zA-Z0-9._-]+$/).optional(),
+    focus_id: z
+      .string()
+      .trim()
+      .regex(/^focus-[a-zA-Z0-9._-]+$/)
+      .optional(),
     task_status: z.preprocess(
       normalizeOptionalString,
       z
@@ -115,7 +119,9 @@ export const queryContextSchema = z
 
 const parseScopes = (raw?: string): QueryContextScope[] =>
   raw
-    ? (parseCsvEnumSet(raw, QUERY_CONTEXT_SCOPES) ?? [...QUERY_CONTEXT_DEFAULT_SCOPES])
+    ? (parseCsvEnumSet(raw, QUERY_CONTEXT_SCOPES) ?? [
+        ...QUERY_CONTEXT_DEFAULT_SCOPES,
+      ])
     : [...QUERY_CONTEXT_DEFAULT_SCOPES]
 
 export type QueryContextRequest = {
@@ -160,10 +166,16 @@ export const pickQueryContextRequest = (
     const fromMs = parsed.data.from ? parseIsoMs(parsed.data.from) : undefined
     const toMs = parsed.data.to ? parseIsoMs(parsed.data.to) : undefined
     const taskStatus = parsed.data.task_status
-      ? parseCsvEnumSet(parsed.data.task_status, QUERY_CONTEXT_TASK_STATUS_VALUES)
+      ? parseCsvEnumSet(
+          parsed.data.task_status,
+          QUERY_CONTEXT_TASK_STATUS_VALUES,
+        )
       : undefined
     const planStatus = parsed.data.plan_status
-      ? parseCsvEnumSet(parsed.data.plan_status, QUERY_CONTEXT_PLAN_STATUS_VALUES)
+      ? parseCsvEnumSet(
+          parsed.data.plan_status,
+          QUERY_CONTEXT_PLAN_STATUS_VALUES,
+        )
       : undefined
     picked = {
       query: parsed.data.query,
@@ -174,7 +186,8 @@ export const pickQueryContextRequest = (
       maxItemChars:
         parsed.data.max_item_chars ?? QUERY_CONTEXT_MAX_ITEM_CHARS_DEFAULT,
       archiveMaxFiles:
-        parsed.data.archive_max_files ?? QUERY_CONTEXT_ARCHIVE_MAX_FILES_DEFAULT,
+        parsed.data.archive_max_files ??
+        QUERY_CONTEXT_ARCHIVE_MAX_FILES_DEFAULT,
       ...(parsed.data.from ? { from: parsed.data.from } : {}),
       ...(parsed.data.to ? { to: parsed.data.to } : {}),
       ...normalizeMsRange(fromMs, toMs),

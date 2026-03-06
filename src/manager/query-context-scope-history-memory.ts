@@ -3,20 +3,20 @@ import { readHistory } from '../history/store.js'
 import { parseIsoToMs } from '../shared/time.js'
 
 import { readMemorySections } from './query-context-memory.js'
+import { inRange, isWildcardQuery } from './query-context-scope-shared.js'
 import {
   scoreQueryCandidate,
   sortByScoreTimeId,
   truncatePreview,
 } from './query-context-score.js'
-import { inRange, isWildcardQuery } from './query-context-scope-shared.js'
 
+import type { QueryContextRequest } from './query-context-schema.js'
+import type { RuntimeState } from './runtime-adapter.js'
 import type {
   HistoryMessage,
   QueryLookupHistoryItem,
   QueryLookupMemoryItem,
 } from '../types/index.js'
-import type { QueryContextRequest } from './query-context-schema.js'
-import type { RuntimeState } from './runtime-adapter.js'
 
 const mapHistoryEntry = (
   item: HistoryMessage,
@@ -81,7 +81,8 @@ export const queryHistoryScope = async (
     .map((item) => {
       const source = sourceById.get(item.id)
       if (!source) return undefined
-      if (request.focusId && source.focusId !== request.focusId) return undefined
+      if (request.focusId && source.focusId !== request.focusId)
+        return undefined
       return mapHistoryEntry(source, item.score, request.maxItemChars)
     })
     .filter((item): item is QueryLookupHistoryItem => Boolean(item))
@@ -110,13 +111,14 @@ export const queryMemoryScope = async (
         score,
         ref: section.id,
         section: section.title,
-        snippet: truncatePreview(section.body || section.title, request.maxItemChars),
+        snippet: truncatePreview(
+          section.body || section.title,
+          request.maxItemChars,
+        ),
       } satisfies QueryLookupMemoryItem & { timeMs: number; id: string }
     })
     .filter(
-      (
-        item,
-      ): item is QueryLookupMemoryItem & { timeMs: number; id: string } =>
+      (item): item is QueryLookupMemoryItem & { timeMs: number; id: string } =>
         Boolean(item),
     )
   return sortByScoreTimeId(ranked)

@@ -6,8 +6,8 @@ import type {
   HistoryLookupMessage,
   ManagerActionFeedback,
   ManagerEnv,
-  QueryLookupMessage,
   ManagerWakeProfile,
+  QueryLookupMessage,
   ReadFileLookupMessage,
   Task,
   TaskArchiveLookupMessage,
@@ -160,7 +160,9 @@ export const runManagerRoundWithRecovery = async (params: {
     ...(params.extra.historyLookup
       ? { historyLookup: params.extra.historyLookup }
       : {}),
-    ...(params.extra.queryLookup ? { queryLookup: params.extra.queryLookup } : {}),
+    ...(params.extra.queryLookup
+      ? { queryLookup: params.extra.queryLookup }
+      : {}),
     ...(params.extra.readFileLookup
       ? { readFileLookup: params.extra.readFileLookup }
       : {}),

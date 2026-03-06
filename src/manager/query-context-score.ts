@@ -11,7 +11,10 @@ export const truncatePreview = (value: string, maxChars: number): string => {
   return `${compact.slice(0, Math.max(1, maxChars - 1)).trimEnd()}…`
 }
 
-const scoreByTokenOverlap = (queryTokens: string[], haystackTokens: string[]) => {
+const scoreByTokenOverlap = (
+  queryTokens: string[],
+  haystackTokens: string[],
+) => {
   if (queryTokens.length === 0 || haystackTokens.length === 0) return 0
   const haystackSet = new Set(haystackTokens)
   let hitCount = 0
@@ -40,7 +43,9 @@ export const scoreQueryCandidate = (params: {
   return overlap * 0.85 + recency * 0.15
 }
 
-export const sortByScoreTimeId = <T extends { score: number; timeMs: number; id: string }>(
+export const sortByScoreTimeId = <
+  T extends { score: number; timeMs: number; id: string },
+>(
   items: T[],
 ): T[] =>
   [...items].sort((left, right) => {

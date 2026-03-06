@@ -4,12 +4,20 @@ import {
   readTaskResultsForTasks,
 } from '../storage/task-results.js'
 
-import { scoreQueryCandidate, sortByScoreTimeId, truncatePreview } from './query-context-score.js'
-import { inRange, isWildcardQuery, toDisplayPath } from './query-context-scope-shared.js'
+import {
+  inRange,
+  isWildcardQuery,
+  toDisplayPath,
+} from './query-context-scope-shared.js'
+import {
+  scoreQueryCandidate,
+  sortByScoreTimeId,
+  truncatePreview,
+} from './query-context-score.js'
 
-import type { QueryLookupTaskArchiveItem, TaskStatus } from '../types/index.js'
 import type { QueryContextRequest } from './query-context-schema.js'
 import type { RuntimeState } from './runtime-adapter.js'
+import type { QueryLookupTaskArchiveItem, TaskStatus } from '../types/index.js'
 
 const isArchiveStatusMatch = (
   status: TaskStatus,
@@ -66,10 +74,14 @@ export const queryTaskArchivesScope = async (
     return sortByScoreTimeId(ranked)
   }
 
-  const hits = await queryTaskResultArchives(runtime.config.workDir, request.query, {
-    limit: scopeLimit + 1,
-    maxFiles: request.archiveMaxFiles,
-  })
+  const hits = await queryTaskResultArchives(
+    runtime.config.workDir,
+    request.query,
+    {
+      limit: scopeLimit + 1,
+      maxFiles: request.archiveMaxFiles,
+    },
+  )
   const ranked = hits
     .filter(
       (item) =>

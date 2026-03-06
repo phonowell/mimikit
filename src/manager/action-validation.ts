@@ -11,7 +11,6 @@ import {
   summarizeSchema,
   updatePlanSchema,
 } from './action-apply-schema.js'
-import { queryContextSchema } from './query-context-tool.js'
 import {
   formatAskUserChoiceInvalidOptionsHint,
   formatAskUserChoiceQqUnsupportedHint,
@@ -28,6 +27,7 @@ import {
   validateScheduledAtNotPast,
   type ValidationIssue,
 } from './action-validation-helpers.js'
+import { queryContextSchema } from './query-context-tool.js'
 
 import type { Parsed } from '../actions/model/spec.js'
 import type { TaskPlanStatus, TaskStatus } from '../types/index.js'
