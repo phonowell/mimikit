@@ -49,22 +49,17 @@ const resolveWakeProfile = (
   const hasCapacityWake = inputs.some((item) =>
     hasSystemEvent(item, 'worker_slot_freed'),
   )
-  const hasSlotIdleWake = inputs.some((item) =>
-    hasSystemEvent(item, 'worker_slots_idle'),
-  )
   const activeKinds = [
     hasUserInput,
     hasTaskResult,
     hasTriggerWake,
     hasCapacityWake,
-    hasSlotIdleWake,
   ].filter(Boolean).length
   if (activeKinds !== 1) return 'mixed'
   if (hasUserInput) return 'user_input'
   if (hasTaskResult) return 'task_result'
   if (hasTriggerWake) return 'trigger'
-  if (hasCapacityWake) return 'capacity'
-  return 'slot_idle'
+  return 'capacity'
 }
 
 const MIN_PROMPT_SECTION_BYTES = 512
@@ -100,13 +95,6 @@ const WAKE_PROFILE_SECTION_MULTIPLIERS: Partial<
     plansMaxBytes: 1.4,
     tasksMaxBytes: 1.1,
     inputsMaxBytes: 0.7,
-    recentHistoryMaxBytes: 0.8,
-    batchResultsMaxBytes: 0.8,
-  },
-  slot_idle: {
-    plansMaxBytes: 1.2,
-    tasksMaxBytes: 1.1,
-    inputsMaxBytes: 0.6,
     recentHistoryMaxBytes: 0.8,
     batchResultsMaxBytes: 0.8,
   },

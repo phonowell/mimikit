@@ -10,7 +10,6 @@ export type SystemEventName =
   | 'manager_error'
   | 'action_feedback'
   | 'trigger_fire'
-  | 'worker_slots_idle'
   | 'worker_slot_freed'
   | 'user_choice'
   | 'user_choice_skipped'

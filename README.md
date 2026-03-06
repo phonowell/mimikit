@@ -128,7 +128,7 @@ For LLM-driven setup and configuration, use [`docs/BOOTSTRAP.md`](./docs/BOOTSTR
 
 - Single-session runtime: one main session loop, no multi-session routing complexity ([architecture](./docs/design/architecture/system-architecture.md)).
 - Explicit orchestration split: `manager` handles dialogue/planning, `worker` handles execution dispatch + result ingestion via external runtimes ([architecture](./docs/design/architecture/system-architecture.md)).
-- Plan trigger modes: `cron`, `scheduled_at`, `on_idle`, `on_worker_slot_freed` with clear semantics ([plan workflow](./docs/design/workflow/plan.md)).
+- Plan trigger modes: `cron`, `scheduled_at`, `on_worker_slot_freed` with clear semantics ([plan workflow](./docs/design/workflow/plan.md)).
 - Built-in WebUI + SSE events: `GET /api/events`, `POST /api/input`, restart/reset APIs ([interfaces](./docs/design/workflow/interfaces-and-state.md)).
 - Task panel live progress: running tasks show streamed output snippets in WebUI without extra model calls.
 - Telegram channel integration (optional): long polling ingest + passive reply via `sendMessage` ([Telegram modules](./src/channels/telegram)).
@@ -152,13 +152,13 @@ flowchart LR
 Key points:
 
 - Inputs and task results are persisted, then re-consumed by manager for deterministic round progression.
-- `triggerWakeLoop` evaluates timed/idle/capacity plans and emits trigger events.
+- `triggerWakeLoop` evaluates timed/capacity plans and emits trigger events.
 - Runtime snapshot supports restart/reset with cursor reconciliation.
 
 ## Use Cases
 
 - Build a controllable local orchestration runtime where state, plans, and task traces are inspectable on disk.
-- Prototype agent scheduling behavior (`on_idle` vs `on_worker_slot_freed`) with explicit semantics.
+- Prototype agent scheduling behavior (`on_worker_slot_freed`) with explicit semantics.
 - Run one local orchestration hub with both WebUI input and optional Telegram bot channel.
 - Use this repo as a compact TypeScript reference for manager/worker split orchestration where execution is externally delegated.
 
@@ -168,7 +168,7 @@ Compared with public agent projects, Mimikit intentionally optimizes for single-
 
 | Repo | Public positioning (from README) | Mimikit differentiation |
 | --- | --- | --- |
-| [HKUDS/nanobot](https://github.com/HKUDS/nanobot) | Ultra-lightweight personal assistant with broad channels/providers | Mimikit emphasizes explicit workflow semantics (`on_idle`/`on_worker_slot_freed`) and local runtime-state inspectability |
+| [HKUDS/nanobot](https://github.com/HKUDS/nanobot) | Ultra-lightweight personal assistant with broad channels/providers | Mimikit emphasizes explicit workflow semantics (`on_worker_slot_freed`) and local runtime-state inspectability |
 | [sipeed/picoclaw](https://github.com/sipeed/picoclaw) | Go-based assistant targeting low-cost, low-memory hardware | Mimikit focuses on TypeScript orchestration clarity and WebUI/SSE development loop |
 | [memovai/mimiclaw](https://github.com/memovai/mimiclaw) | ESP32 pure-C assistant via Telegram on microcontroller-class device | Mimikit targets desktop/server local runtime with richer plan/task/state management |
 | [agentscope-ai/CoPaw](https://github.com/agentscope-ai/CoPaw) | Multi-channel personal assistant platform with broad integrations | Mimikit keeps a narrower scope for lower mental overhead and faster architecture iteration |
@@ -183,9 +183,9 @@ No. Current architecture is single main session by design.
 
 At minimum: `GET /api/events` (SSE) and `POST /api/input`, plus task/choice/restart/reset endpoints.
 
-### Does it support scheduled or idle-triggered automation?
+### Does it support scheduled or capacity-triggered automation?
 
-Yes. Plans support `cron`, `scheduled_at`, `on_idle`, and `on_worker_slot_freed`.
+Yes. Plans support `cron`, `scheduled_at`, and `on_worker_slot_freed`.
 
 ### Can I enable Telegram integration?
 

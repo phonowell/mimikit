@@ -14,10 +14,8 @@ const planSourceSchema = z.enum([
 const planTriggerModeSchema = z.enum([
   'cron',
   'scheduled_at',
-  'on_idle',
   'on_worker_slot_freed',
 ])
-const cooldownMsSchema = z.coerce.number().int().nonnegative()
 const maxRunsSchema = z.coerce.number().int().positive()
 
 const addCustomIssue = (
@@ -34,22 +32,15 @@ const addCustomIssue = (
 
 const validatePlanTriggerFields = (
   data: {
-    trigger_mode?:
-      | 'cron'
-      | 'scheduled_at'
-      | 'on_idle'
-      | 'on_worker_slot_freed'
-      | undefined
+    trigger_mode?: 'cron' | 'scheduled_at' | 'on_worker_slot_freed' | undefined
     cron?: string | undefined
     scheduled_at?: string | undefined
-    cooldown_ms?: number | undefined
   },
   ctx: z.RefinementCtx,
 ): void => {
   const mode = data.trigger_mode
   const cron = data.cron?.trim()
   const scheduledAt = data.scheduled_at?.trim()
-  const hasCooldown = data.cooldown_ms !== undefined
 
   if (mode === 'cron') {
     if (!cron)
@@ -59,13 +50,6 @@ const validatePlanTriggerFields = (
         ctx,
         'scheduled_at',
         'scheduled_at cannot be used when trigger_mode="cron"',
-      )
-    }
-    if (hasCooldown) {
-      addCustomIssue(
-        ctx,
-        'cooldown_ms',
-        'cooldown_ms cannot be used when trigger_mode="cron"',
       )
     }
     return
@@ -86,31 +70,6 @@ const validatePlanTriggerFields = (
         'cron cannot be used when trigger_mode="scheduled_at"',
       )
     }
-    if (hasCooldown) {
-      addCustomIssue(
-        ctx,
-        'cooldown_ms',
-        'cooldown_ms cannot be used when trigger_mode="scheduled_at"',
-      )
-    }
-    return
-  }
-
-  if (mode === 'on_idle') {
-    if (cron) {
-      addCustomIssue(
-        ctx,
-        'cron',
-        'cron cannot be used when trigger_mode="on_idle"',
-      )
-    }
-    if (scheduledAt) {
-      addCustomIssue(
-        ctx,
-        'scheduled_at',
-        'scheduled_at cannot be used when trigger_mode="on_idle"',
-      )
-    }
     return
   }
 
@@ -129,13 +88,6 @@ const validatePlanTriggerFields = (
         'scheduled_at cannot be used when trigger_mode="on_worker_slot_freed"',
       )
     }
-    if (hasCooldown) {
-      addCustomIssue(
-        ctx,
-        'cooldown_ms',
-        'cooldown_ms cannot be used when trigger_mode="on_worker_slot_freed"',
-      )
-    }
   }
 }
 
@@ -145,7 +97,6 @@ const UPDATE_EDITABLE_FIELDS = [
   'trigger_mode',
   'cron',
   'scheduled_at',
-  'cooldown_ms',
   'max_runs',
   'priority',
   'source',
@@ -161,7 +112,6 @@ export const createPlanSchema = z
     trigger_mode: planTriggerModeSchema,
     cron: z.string().trim().optional(),
     scheduled_at: z.string().trim().optional(),
-    cooldown_ms: cooldownMsSchema.optional(),
     max_runs: maxRunsSchema.optional(),
     priority: planPrioritySchema.optional(),
     source: planSourceSchema.optional(),
@@ -180,7 +130,6 @@ export const updatePlanSchema = z
     trigger_mode: planTriggerModeSchema.optional(),
     cron: z.string().trim().optional(),
     scheduled_at: z.string().trim().optional(),
-    cooldown_ms: cooldownMsSchema.optional(),
     max_runs: maxRunsSchema.optional(),
     priority: planPrioritySchema.optional(),
     source: planSourceSchema.optional(),
@@ -200,14 +149,12 @@ export const updatePlanSchema = z
     }
 
     const hasTriggerField =
-      data.cron !== undefined ||
-      data.scheduled_at !== undefined ||
-      data.cooldown_ms !== undefined
+      data.cron !== undefined || data.scheduled_at !== undefined
     if (hasTriggerField && data.trigger_mode === undefined) {
       addCustomIssue(
         ctx,
         'trigger_mode',
-        'trigger_mode is required when cron/scheduled_at/cooldown_ms is provided',
+        'trigger_mode is required when cron/scheduled_at is provided',
       )
       return
     }
@@ -217,7 +164,6 @@ export const updatePlanSchema = z
         trigger_mode: data.trigger_mode,
         cron: data.cron,
         scheduled_at: data.scheduled_at,
-        cooldown_ms: data.cooldown_ms,
       },
       ctx,
     )

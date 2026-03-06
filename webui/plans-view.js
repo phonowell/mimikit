@@ -26,17 +26,8 @@ const resolveTriggerLabel = (item) => {
     if (!cron) return null
     return { text: `cron:${cron}`, title: `cron: ${cron}` }
   }
-  if (trigger.mode === 'on_idle') {
-    const cooldownMs =
-      typeof trigger.cooldownMs === 'number' && Number.isFinite(trigger.cooldownMs)
-        ? Math.max(0, Math.floor(trigger.cooldownMs))
-        : 0
-    const cooldownSeconds = Math.floor(cooldownMs / 1000)
-    return {
-      text: `idle/${cooldownSeconds}s`,
-      title: `on_idle cooldown: ${cooldownMs}ms`,
-    }
-  }
+  if (trigger.mode === 'on_worker_slot_freed')
+    return { text: 'slot-freed', title: 'on_worker_slot_freed' }
   return null
 }
 

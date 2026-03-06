@@ -12,7 +12,7 @@ const createPlan = (overrides: Partial<TaskPlan> = {}): TaskPlan => ({
   priority: 'normal',
   source: 'user_request',
   status: 'active',
-  trigger: { mode: 'on_idle', cooldownMs: 0 },
+  trigger: { mode: 'on_worker_slot_freed' },
   createdAt: '2026-03-01T00:00:00.000Z',
   updatedAt: '2026-03-01T00:00:00.000Z',
   runCount: 0,

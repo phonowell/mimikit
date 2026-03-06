@@ -1,6 +1,5 @@
 import { GLOBAL_FOCUS_ID } from '../focus/constants.js'
 import { buildPlanTriggerPayload } from '../shared/plan-payload.js'
-import { parseIsoMs } from '../shared/time.js'
 
 import { publishManagerSystemEventInput } from './system-input-event.js'
 
@@ -49,13 +48,6 @@ export const toWorkerSlotStatusPayload = (
 export const hasFreeWorkerSlot = (runtime: RuntimeState): boolean =>
   resolveWorkerSlotCapacity(runtime).availableSlots > 0
 
-export const areWorkerSlotsFullyAvailable = (
-  runtime: RuntimeState,
-): boolean => {
-  const capacity = resolveWorkerSlotCapacity(runtime)
-  return capacity.availableSlots === capacity.maxSlots
-}
-
 export const markPlanDone = (
   plan: TaskPlan,
   doneAt: string,
@@ -78,18 +70,6 @@ export const maybeMarkPlanExhausted = (
   return true
 }
 
-export const canFireOnIdle = (plan: TaskPlan, nowMs: number): boolean => {
-  if (plan.status !== 'active') return false
-  if (plan.trigger.mode !== 'on_idle') return false
-  if (plan.maxRuns !== undefined && plan.runCount >= plan.maxRuns) return false
-  const cooldownMs = Math.max(0, plan.trigger.cooldownMs)
-  if (cooldownMs === 0) return true
-  if (!plan.lastCompletedAt) return true
-  const lastCompletedMs = parseIsoMs(plan.lastCompletedAt)
-  if (lastCompletedMs === undefined) return true
-  return nowMs - lastCompletedMs >= cooldownMs
-}
-
 export const canFireOnWorkerSlotFreed = (plan: TaskPlan): boolean => {
   if (plan.status !== 'active') return false
   if (plan.trigger.mode !== 'on_worker_slot_freed') return false
@@ -101,7 +81,7 @@ export const firePlan = async (params: {
   runtime: RuntimeState
   plan: TaskPlan
   nowIso: string
-  reason: 'cron' | 'scheduled_at' | 'on_idle' | 'on_worker_slot_freed'
+  reason: 'cron' | 'scheduled_at' | 'on_worker_slot_freed'
 }): Promise<void> => {
   const { runtime, plan, nowIso } = params
   plan.runCount += 1

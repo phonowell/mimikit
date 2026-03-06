@@ -39,7 +39,6 @@ const createRuntime = async (): Promise<RuntimeState> => {
         tasksMaxBytes: 4096,
       },
       taskCreate: { debounceMs: 0 },
-      idleTrigger: { delayMs: 0 },
       taskWindow: { minCount: 1, maxCount: 5 },
       planWindow: { minCount: 1, maxCount: 5 },
     },

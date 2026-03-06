@@ -10,11 +10,9 @@ import { sleep } from '../shared/utils.js'
 
 import {
   checkScheduledPlans,
-  triggerOnIdlePlans,
   triggerOnWorkerSlotFreedPlans,
 } from './loop-trigger-plans.js'
 import {
-  areWorkerSlotsFullyAvailable,
   hasFreeWorkerSlot,
   IDLE_CHECK_INTERVAL_MS,
   resolveWorkerSlotCapacity,
@@ -26,25 +24,14 @@ import { publishManagerSystemEventInput } from './system-input-event.js'
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 
 export const triggerWakeLoop = async (runtime: RuntimeState): Promise<void> => {
-  let publishedSlotIdleForCurrentWindow = false
-  let lastSlotIdleSinceMs = runtime.lastWorkerActivityAtMs
   let lastFreeWorkerSlot: boolean | null = null
   let workerSlotEventPending = false
   let lastWorkerSlotEventAtMs = 0
-  const idleTriggerDelayMs = Math.max(
-    0,
-    runtime.config.manager.idleTrigger.delayMs,
-  )
 
   while (!runtime.stopped) {
     try {
       const now = new Date()
       const nowMs = now.getTime()
-      const slotIdleSinceMs = runtime.lastWorkerActivityAtMs
-      if (slotIdleSinceMs !== lastSlotIdleSinceMs) {
-        lastSlotIdleSinceMs = slotIdleSinceMs
-        publishedSlotIdleForCurrentWindow = false
-      }
 
       let stateChanged = false
       let triggeredCount = 0
@@ -102,46 +89,6 @@ export const triggerWakeLoop = async (runtime: RuntimeState): Promise<void> => {
 
         workerSlotEventPending = false
         lastWorkerSlotEventAtMs = nowMs
-      }
-
-      const idleForMs = nowMs - slotIdleSinceMs
-      const slotIdleReady =
-        areWorkerSlotsFullyAvailable(runtime) &&
-        runtime.managerRunning === false &&
-        idleForMs >= idleTriggerDelayMs
-
-      if (!publishedSlotIdleForCurrentWindow && slotIdleReady) {
-        const idleTriggered = await triggerOnIdlePlans(runtime, nowMs)
-        stateChanged = stateChanged || idleTriggered.stateChanged
-        triggeredCount += idleTriggered.triggeredCount
-
-        if (idleTriggered.triggeredCount === 0) {
-          const capacity = resolveWorkerSlotCapacity(runtime)
-          const slotIdleSince = new Date(slotIdleSinceMs).toISOString()
-          await publishManagerSystemEventInput({
-            runtime,
-            summary: 'All worker slots are currently free.',
-            event: 'worker_slots_idle',
-            visibility: 'all',
-            payload: {
-              ...toWorkerSlotStatusPayload(capacity),
-              slot_idle_since: slotIdleSince,
-              triggered_at: now.toISOString(),
-            },
-            createdAt: now.toISOString(),
-            logEvent: 'worker_slots_idle_input',
-            logMeta: {
-              slotIdleSince,
-              idleForMs,
-              availableSlots: capacity.availableSlots,
-              occupiedSlots: capacity.occupiedSlots,
-              maxSlots: capacity.maxSlots,
-            },
-          })
-          triggeredCount += 1
-        }
-
-        publishedSlotIdleForCurrentWindow = true
       }
 
       if (stateChanged) {

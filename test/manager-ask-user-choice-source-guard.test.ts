@@ -169,14 +169,14 @@ test('upsert_focus rejects json-shaped open_items payload', () => {
   expect(feedback[0]?.hint).toContain('open_items')
 })
 
-test('update_plan requires trigger_mode when patching trigger fields', () => {
+test('update_plan requires trigger_mode when patching cron/scheduled_at fields', () => {
   const feedback = collectManagerActionFeedback(
     [
       {
         name: 'update_plan',
         attrs: {
           id: 'plan-1',
-          cooldown_ms: '1000',
+          cron: '*/5 * * * *',
         },
       },
     ],

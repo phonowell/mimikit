@@ -7,7 +7,6 @@ import { requestMemoryRefresh } from '../memory/refresh/singleflight.js'
 import { isVisibleToAgent } from '../shared/message-visibility.js'
 
 import { applyTaskActions, collectTaskResultSummaries } from './action-apply.js'
-import { hasNonSlotIdleManagerInput } from './idle-input.js'
 import {
   appendManagerReply,
   finishBatchWithoutAgentReply,
@@ -39,7 +38,7 @@ export const processManagerBatch = async (params: {
   const { runtime, inputs, results, nextInputsCursor, nextResultsCursor } =
     params
   applyPlanCompletionState(runtime, results)
-  if (results.length > 0 || hasNonSlotIdleManagerInput(inputs))
+  if (results.length > 0 || inputs.length > 0)
     runtime.lastManagerActivityAtMs = Date.now()
   runtime.managerRunning = true
   notifyUiSignal(runtime)

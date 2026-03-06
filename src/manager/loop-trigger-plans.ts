@@ -5,7 +5,6 @@ import { bestEffort } from '../log/safe.js'
 import { compareIsoAsc, parseIsoMs } from '../shared/time.js'
 
 import {
-  canFireOnIdle,
   canFireOnWorkerSlotFreed,
   firePlan,
   markPlanDone,
@@ -34,7 +33,7 @@ const triggerPlans = async (params: {
   runtime: RuntimeState
   nowIso: string
   plans: TaskPlan[]
-  reason: 'on_idle' | 'on_worker_slot_freed'
+  reason: 'on_worker_slot_freed'
 }): Promise<{ triggeredCount: number; stateChanged: boolean }> => {
   if (params.plans.length === 0)
     return { triggeredCount: 0, stateChanged: false }
@@ -137,19 +136,6 @@ export const checkScheduledPlans = async (
   }
 
   return { triggeredCount, stateChanged }
-}
-
-export const triggerOnIdlePlans = (
-  runtime: RuntimeState,
-  nowMs: number,
-): Promise<{ triggeredCount: number; stateChanged: boolean }> => {
-  const nowIso = new Date(nowMs).toISOString()
-  return triggerPlans({
-    runtime,
-    nowIso,
-    plans: runtime.taskPlans.filter((plan) => canFireOnIdle(plan, nowMs)),
-    reason: 'on_idle',
-  })
 }
 
 export const triggerOnWorkerSlotFreedPlans = (

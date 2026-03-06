@@ -12,7 +12,7 @@
 - 补齐可执行枚举与格式：
   - `priority`: `high|normal|low`
   - `intent.status`: `pending|blocked|done`
-  - `trigger_mode`: `one_shot|on_idle`
+  - `trigger_mode`: `cron|scheduled_at|on_worker_slot_freed`
   - `focus.status`: `active|idle|done|archived`
   - `query_context.scopes`: 支持 `history|tasks|focus|plans|memory|task_archives`
   - `cron`: 明确为 5/6/7 段（建议 6 段）

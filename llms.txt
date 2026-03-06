@@ -31,7 +31,7 @@ OPENAI_API_KEY=your_key pnpm start
 ## Core Capabilities
 
 - Single-session manager/worker orchestration (execution delegated to external runtimes)
-- Structured plan triggers (`cron`, `scheduled_at`, `on_idle`, `on_worker_slot_freed`)
+- Structured plan triggers (`cron`, `scheduled_at`, `on_worker_slot_freed`)
 - SSE event stream for UI sync
 - File-backed runtime state (`history`, `tasks`, `results`, `runtime-snapshot`)
 - Optional QQ webhook and passive reply pipeline

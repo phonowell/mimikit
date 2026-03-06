@@ -70,8 +70,7 @@
 |---|---|---|
 | `triggerWakeLoop()` | `src/manager/loop-trigger.ts:28` | Checks and fires trigger policies |
 | `checkScheduledPlans()` | `src/manager/loop-trigger-plans.ts:22` | Fires `cron/scheduled_at` plans |
-| `triggerOnIdlePlans()` | `src/manager/loop-trigger-plans.ts:104` | Fires `on_idle` plans |
-| `triggerOnWorkerSlotFreedPlans()` | `src/manager/loop-trigger-plans.ts:134` | Fires `on_worker_slot_freed` plans |
+| `triggerOnWorkerSlotFreedPlans()` | `src/manager/loop-trigger-plans.ts:142` | Fires `on_worker_slot_freed` plans |
 | `resolveWorkerSlotCapacity()` | `src/manager/loop-trigger-shared.ts:24` | Computes current worker slot capacity |
 | `firePlan()` | `src/manager/loop-trigger-shared.ts:99` | Converts plan into runnable task |
 

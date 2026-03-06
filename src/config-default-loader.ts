@@ -40,12 +40,6 @@ const managerInputSchema = z
       })
       .strict()
       .optional(),
-    idleTrigger: z
-      .object({
-        delayMs: z.number().int().nonnegative().optional(),
-      })
-      .strict()
-      .optional(),
     taskWindow: z
       .object({
         maxCount: z.number().int().positive().optional(),
@@ -181,7 +175,11 @@ const stripUnknownIssues = (
   issues: readonly UnknownKeyIssue[],
 ): void => {
   for (const issue of issues) {
-    const target = resolveRecordAtPath(root, issue.path)
+    const issuePath = issue.path.filter(
+      (segment): segment is string | number =>
+        typeof segment === 'string' || typeof segment === 'number',
+    )
+    const target = resolveRecordAtPath(root, issuePath)
     if (!target) continue
     for (const key of issue.keys) delete target[key]
   }

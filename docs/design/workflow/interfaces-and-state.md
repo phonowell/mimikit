@@ -37,8 +37,8 @@
 ## System 气泡可见性规则（WebUI 会话流）
 
 - 判定入口：`src/shared/system-message-visibility.ts`（由 `src/shared/message-visibility.ts#isVisibleToUser` 调用）。
-- 直接对用户有价值的 system 事件默认可见：`startup`、`task_created`、`task_canceled`、`task_completed`、`manager_fallback_reply`、`user_choice`、`user_choice_skipped`。
-- 内部编排/调度/控制类事件默认不可见：`manager_round_limit`、`manager_error`、`action_feedback`、`trigger_fire`、`worker_slots_idle`、`worker_slot_freed`、`plan_created`、`plan_updated`、`plan_deleted`。
+- 直接对用户有价值的 system 事件默认可见：`startup`、`task_created`、`task_canceled`、`task_completed`、`manager_fallback_reply`、`user_choice`、`user_choice_skipped`、`session_summary_restored`。
+- 内部编排/调度/控制类事件默认不可见：`manager_round_limit`、`manager_error`、`action_feedback`、`trigger_fire`、`worker_slot_freed`、`plan_created`、`plan_updated`、`plan_deleted`。
 - 未识别 system_event 采用保守策略：`visibility=user` 保持可见，`visibility=all` 默认不展示给最终用户。
 
 `manager_fallback_reply` 失败重试补充（网络波动场景）：

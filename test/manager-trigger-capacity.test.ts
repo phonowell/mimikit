@@ -7,10 +7,7 @@ import { expect, test } from 'vitest'
 
 import { buildPaths } from '../src/fs/paths.js'
 import { triggerWakeLoop } from '../src/manager/loop-trigger.js'
-import {
-  triggerOnIdlePlans,
-  triggerOnWorkerSlotFreedPlans,
-} from '../src/manager/loop-trigger-plans.js'
+import { triggerOnWorkerSlotFreedPlans } from '../src/manager/loop-trigger-plans.js'
 import { hasFreeWorkerSlot } from '../src/manager/loop-trigger-shared.js'
 
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
@@ -23,7 +20,6 @@ const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-trigger-capacity-'))
 const createTestConfig = (
   workDir: string,
   maxConcurrent: number,
-  idleDelayMs: number,
 ): RuntimeState['config'] => ({
   workDir,
   manager: {
@@ -48,7 +44,6 @@ const createTestConfig = (
       tasksMaxBytes: 4096,
     },
     taskCreate: { debounceMs: 0 },
-    idleTrigger: { delayMs: idleDelayMs },
     taskWindow: { minCount: 1, maxCount: 5 },
     planWindow: { minCount: 1, maxCount: 5 },
   },
@@ -89,15 +84,9 @@ const countSystemEvent = (runtime: RuntimeState, name: string): number =>
 
 const createRuntime = async (params?: {
   maxConcurrent?: number
-  idleDelayMs?: number
 }): Promise<RuntimeState> => {
   const workDir = await createTmpDir()
-  const config = createTestConfig(
-    workDir,
-    Math.max(1, params?.maxConcurrent ?? 1),
-    0,
-    Math.max(0, params?.idleDelayMs ?? 60_000),
-  )
+  const config = createTestConfig(workDir, Math.max(1, params?.maxConcurrent ?? 1))
   const queue = new PQueue({ concurrency: config.worker.maxConcurrent })
   const now = new Date().toISOString()
 
@@ -202,11 +191,11 @@ test('worker slot availability tracks queue capacity transitions', async () => {
   await runtime.workerQueue.onIdle()
 })
 
-test('on_worker_slot_freed plans trigger without regressing on_idle', async () => {
+test('on_worker_slot_freed plans trigger without touching non-capacity plans', async () => {
   const runtime = await createRuntime({ maxConcurrent: 2 })
   runtime.taskPlans.push(
     createPlan('plan-capacity', { mode: 'on_worker_slot_freed' }),
-    createPlan('plan-idle', { mode: 'on_idle', cooldownMs: 0 }),
+    createPlan('plan-cron', { mode: 'cron', cron: '* * * * *' }),
   )
 
   const capacityTriggered = await triggerOnWorkerSlotFreedPlans(
@@ -217,10 +206,6 @@ test('on_worker_slot_freed plans trigger without regressing on_idle', async () =
   expect(runtime.taskPlans[0]?.runCount).toBe(1)
   expect(runtime.taskPlans[1]?.runCount).toBe(0)
   expect(countSystemEvent(runtime, 'trigger_fire')).toBe(1)
-
-  const idleTriggered = await triggerOnIdlePlans(runtime, Date.now())
-  expect(idleTriggered).toEqual({ triggeredCount: 1, stateChanged: true })
-  expect(runtime.taskPlans[1]?.runCount).toBe(1)
 })
 
 test('trigger_fire system event uses global focus even when plan has local focus', async () => {
@@ -240,45 +225,35 @@ test('trigger_fire system event uses global focus even when plan has local focus
 })
 
 test(
-  'on_idle is gated by managerRunning and fires once slots are fully free',
+  'triggerWakeLoop fires on_worker_slot_freed once on full-to-free transition',
   async () => {
-  const runtime = await createRuntime({ maxConcurrent: 1, idleDelayMs: 0 })
-  runtime.taskPlans.push(
-    createPlan('plan-capacity', { mode: 'on_worker_slot_freed' }),
-    createPlan('plan-idle', { mode: 'on_idle', cooldownMs: 0 }),
-  )
-  runtime.managerRunning = true
-  runtime.runningControllers.set('task-busy', new AbortController())
+    const runtime = await createRuntime({ maxConcurrent: 1 })
+    runtime.taskPlans.push(createPlan('plan-capacity', { mode: 'on_worker_slot_freed' }))
+    runtime.runningControllers.set('task-busy', new AbortController())
 
-  const loopPromise = triggerWakeLoop(runtime)
-  try {
-    await new Promise<void>((resolve) => setTimeout(resolve, 1_200))
-    expect(runtime.taskPlans[0]?.runCount).toBe(0)
-    expect(runtime.taskPlans[1]?.runCount).toBe(0)
+    const loopPromise = triggerWakeLoop(runtime)
+    try {
+      await new Promise<void>((resolve) => setTimeout(resolve, 1_200))
+      expect(runtime.taskPlans[0]?.runCount).toBe(0)
 
-    runtime.runningControllers.clear()
-    runtime.lastWorkerActivityAtMs = Date.now()
+      runtime.runningControllers.clear()
+      runtime.lastWorkerActivityAtMs = Date.now()
 
-    await waitFor(() => (runtime.taskPlans[0]?.runCount ?? 0) >= 1, 4_000)
-    await new Promise<void>((resolve) => setTimeout(resolve, 1_200))
+      await waitFor(() => (runtime.taskPlans[0]?.runCount ?? 0) >= 1, 4_000)
+      await new Promise<void>((resolve) => setTimeout(resolve, 1_200))
 
-    expect(runtime.taskPlans[0]?.runCount).toBe(1)
-    expect(runtime.taskPlans[1]?.runCount).toBe(0)
-    expect(countSystemEvent(runtime, 'worker_slots_idle')).toBe(0)
-
-    runtime.managerRunning = false
-    await waitFor(() => (runtime.taskPlans[1]?.runCount ?? 0) >= 1, 4_000)
-    expect(runtime.taskPlans[1]?.runCount).toBe(1)
-  } finally {
-    runtime.stopped = true
-    await loopPromise
-  }
+      expect(runtime.taskPlans[0]?.runCount).toBe(1)
+      expect(countSystemEvent(runtime, 'worker_slot_freed')).toBe(0)
+    } finally {
+      runtime.stopped = true
+      await loopPromise
+    }
   },
   12_000,
 )
 
 test('triggerWakeLoop emits worker_slot_freed on full-to-free transition only once', async () => {
-  const runtime = await createRuntime({ maxConcurrent: 1, idleDelayMs: 60_000 })
+  const runtime = await createRuntime({ maxConcurrent: 1 })
   runtime.runningControllers.set('task-busy', new AbortController())
 
   const loopPromise = triggerWakeLoop(runtime)

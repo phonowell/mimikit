@@ -62,7 +62,7 @@ ID 规范：
 
 继承与系统事件：
 - 用户输入若带 `quote`，优先继承被引用消息的 `focusId`；否则走默认归属算法
-- 系统事件输入默认归属 `focus-global`（`startup/worker_slots_idle/worker_slot_freed/trigger_fire/manager_error` 等）
+- 系统事件输入默认归属 `focus-global`（`startup/worker_slot_freed/trigger_fire/manager_error` 等）
 - manager 回复与错误消息默认使用当前 `resolveDefaultFocusId(runtime)`
 
 ## Focus 动作契约（Manager Action）

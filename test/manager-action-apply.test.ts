@@ -308,8 +308,7 @@ test('delete_plan removes done plan', async () => {
     source: 'user_request',
     status: 'done',
     trigger: {
-      mode: 'on_idle',
-      cooldownMs: 0,
+      mode: 'on_worker_slot_freed',
     },
     createdAt: '2026-02-13T00:00:00.000Z',
     updatedAt: '2026-02-13T00:00:00.000Z',

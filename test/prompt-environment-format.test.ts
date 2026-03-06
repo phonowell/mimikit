@@ -22,7 +22,7 @@ test('formatEnvironment omits work_dir and generated_dir when work_dir is missin
 test('formatEnvironment includes worker slot capacity fields', () => {
   const output = formatEnvironment({
     env: {
-      wakeProfile: 'slot_idle',
+      wakeProfile: 'capacity',
       workerSlots: {
         maxSlots: 4,
         occupiedSlots: 1,

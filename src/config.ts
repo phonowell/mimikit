@@ -41,9 +41,6 @@ export type AppConfig = {
     taskCreate: {
       debounceMs: number
     }
-    idleTrigger: {
-      delayMs: number
-    }
     taskWindow: {
       maxCount: number
       minCount: number
@@ -87,9 +84,6 @@ const INTERNAL_MANAGER_DEFAULTS = {
   taskCreate: {
     debounceMs: 4000,
   },
-  idleTrigger: {
-    delayMs: 900000,
-  },
   taskWindow: {
     maxCount: 20,
     minCount: 5,
@@ -108,9 +102,12 @@ const INTERNAL_WORKER_DEFAULTS = {
 } as const
 
 export const defaultConfig = (params: DefaultConfigParams): AppConfig => {
-  const userConfig = loadDefaultConfigFromYaml(undefined, {
-    onUnknownKeys: params.onUnknownConfigKeys,
-  })
+  const userConfig = loadDefaultConfigFromYaml(
+    undefined,
+    params.onUnknownConfigKeys
+      ? { onUnknownKeys: params.onUnknownConfigKeys }
+      : {},
+  )
   return {
     workDir: resolve(params.workDir),
     manager: {

@@ -41,13 +41,11 @@ const createPlanFixture = (
   source: 'user_request',
   status: 'active',
   trigger: {
-    mode: 'on_idle',
-    cooldownMs: 0,
+    mode: 'on_worker_slot_freed',
   },
   createdAt: SNAPSHOT_BASE_TIME,
   updatedAt: SNAPSHOT_BASE_TIME,
   runCount: 0,
-  maxRuns: 1,
   ...overrides,
 })
 

@@ -30,7 +30,6 @@ export const applyCreatePlan = async (
     triggerMode: parsed.data.trigger_mode,
     cron: parsed.data.cron,
     scheduledAt: parsed.data.scheduled_at,
-    cooldownMs: parsed.data.cooldown_ms,
   })
   const focusId = resolveActionFocusId(runtime, parsed.data.focus_id)
   const key = normalizePlanKey({
@@ -55,8 +54,7 @@ export const applyCreatePlan = async (
   if (exists) return
 
   const timestamp = nowIso()
-  const maxRuns =
-    parsed.data.max_runs ?? (trigger.mode === 'on_idle' ? 1 : undefined)
+  const maxRuns = parsed.data.max_runs
 
   const plan: TaskPlan = {
     id: `plan-${newId()}`,
@@ -108,7 +106,6 @@ export const applyUpdatePlan = async (
     triggerMode: parsed.data.trigger_mode,
     cron: parsed.data.cron,
     scheduledAt: parsed.data.scheduled_at,
-    cooldownMs: parsed.data.cooldown_ms,
   })
 
   const updatedAt = nowIso()

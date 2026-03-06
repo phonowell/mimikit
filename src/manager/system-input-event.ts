@@ -13,7 +13,7 @@ import type { FocusId, MessageVisibility } from '../types/index.js'
 
 export type ManagerSystemEventName = Extract<
   SystemEventName,
-  'trigger_fire' | 'worker_slots_idle' | 'worker_slot_freed'
+  'trigger_fire' | 'worker_slot_freed'
 >
 
 export const publishManagerSystemEventInput = async (params: {

@@ -21,7 +21,6 @@ const INTERNAL_EVENTS = new Set<SystemEventName>([
   'manager_error',
   'action_feedback',
   'trigger_fire',
-  'worker_slots_idle',
   'worker_slot_freed',
   'plan_created',
   'plan_updated',

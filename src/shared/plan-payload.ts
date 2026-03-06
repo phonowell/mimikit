@@ -8,7 +8,6 @@ export const buildPlanTriggerPayload = (
   ...(trigger.mode === 'scheduled_at'
     ? { scheduled_at: trigger.scheduledAt }
     : {}),
-  ...(trigger.mode === 'on_idle' ? { cooldown_ms: trigger.cooldownMs } : {}),
 })
 
 export const buildPlanProgressPayload = (

@@ -81,18 +81,17 @@ test('publishManagerSystemEventInput defaults to global focus when focusId is om
 
   await publishManagerSystemEventInput({
     runtime,
-    summary: 'All worker slots are currently free.',
-    event: 'worker_slots_idle',
+    summary: 'A worker slot was freed for new tasks.',
+    event: 'worker_slot_freed',
     visibility: 'all',
     payload: {
       max_slots: 2,
       occupied_slots: 0,
       available_slots: 2,
-      slot_idle_since: new Date().toISOString(),
       triggered_at: new Date().toISOString(),
     },
     createdAt: new Date().toISOString(),
-    logEvent: 'worker_slots_idle_input',
+    logEvent: 'worker_slot_freed_input',
   })
 
   expect(runtime.inflightInputs).toHaveLength(1)
