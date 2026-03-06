@@ -4,7 +4,6 @@ import {
   shouldShowManagerFallbackRetry,
 } from './fallback-retry.js'
 import { UI_TEXT } from '../system-text.js'
-import { createIconElement } from '../icon.js'
 
 export const renderMessage = (params, msg) => {
   const {
@@ -109,8 +108,8 @@ export const renderMessage = (params, msg) => {
   if (canQuote) {
     quoteBtn = document.createElement('button')
     quoteBtn.type = 'button'
-    quoteBtn.className = 'btn btn--xs btn--icon message-quote-btn'
-    quoteBtn.appendChild(createIconElement('quote'))
+    quoteBtn.className = 'btn btn--xs message-quote-btn'
+    quoteBtn.textContent = msg.role === 'user' ? '↪' : '↩'
     quoteBtn.title = UI_TEXT.quote
     quoteBtn.setAttribute('aria-label', UI_TEXT.quote)
     quoteBtn.addEventListener('click', () => onQuote(msg))
@@ -120,8 +119,8 @@ export const renderMessage = (params, msg) => {
   if (canDelete) {
     deleteBtn = document.createElement('button')
     deleteBtn.type = 'button'
-    deleteBtn.className = 'btn btn--xs btn--icon message-delete-btn'
-    deleteBtn.appendChild(createIconElement('trash-2'))
+    deleteBtn.className = 'btn btn--xs message-delete-btn'
+    deleteBtn.textContent = '✕'
     deleteBtn.title = UI_TEXT.delete
     deleteBtn.setAttribute('aria-label', UI_TEXT.delete)
     deleteBtn.addEventListener('click', () => onDelete(msg))
@@ -131,8 +130,8 @@ export const renderMessage = (params, msg) => {
   if (canRetryManagerFallback) {
     retryBtn = document.createElement('button')
     retryBtn.type = 'button'
-    retryBtn.className = 'btn btn--xs btn--icon message-retry-btn'
-    retryBtn.appendChild(createIconElement('rotate-ccw'))
+    retryBtn.className = 'btn btn--xs message-retry-btn'
+    retryBtn.textContent = 'Retry'
     retryBtn.title = UI_TEXT.retryRequestAria
     retryBtn.setAttribute('aria-label', UI_TEXT.retryRequestAria)
     if (typeof isRetryPending === 'function')

@@ -192,13 +192,6 @@ main[data-app] {
   padding: 0 10px;
 }
 
-.tools-menu-item .icon,
-.task-menu-item .icon {
-  width: 14px;
-  height: 14px;
-  flex: 0 0 14px;
-}
-
 .tools-menu-item:hover:not(:disabled),
 .task-menu-item:hover:not(:disabled) {
   background: var(--panel-soft);

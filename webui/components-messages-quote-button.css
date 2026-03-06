@@ -48,13 +48,6 @@
   pointer-events: auto;
 }
 
-.message .message-quote-btn .icon,
-.message .message-delete-btn .icon,
-.message .message-retry-btn .icon {
-  width: 14px;
-  height: 14px;
-}
-
 .message.user .message-delete-btn {
   order: -1;
 }

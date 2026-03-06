@@ -1,18 +1,14 @@
-import { createIconElement } from './icon.js'
-
 const createMenuButton = ({
   action,
   text,
   titleText,
   taskId,
   disabled,
-  iconName,
 }) => {
   const button = document.createElement('button')
   button.type = 'button'
   button.className = `task-menu-item task-menu-item--${action}`
-  button.appendChild(createIconElement(iconName))
-  button.append(text)
+  button.textContent = text
   button.setAttribute('role', 'menuitem')
   button.setAttribute('data-task-action-inline', action)
   button.setAttribute('data-task-id', taskId)
@@ -30,7 +26,7 @@ export const createTaskActions = ({ titleText, taskId, statusValue }) => {
   const moreBtn = document.createElement('button')
   moreBtn.type = 'button'
   moreBtn.className = 'btn btn--icon btn--icon-muted task-more-toggle'
-  moreBtn.appendChild(createIconElement('ellipsis'))
+  moreBtn.textContent = '⋯'
   moreBtn.setAttribute('data-task-more-toggle', 'true')
   moreBtn.setAttribute('aria-label', `More actions for ${titleText}`)
   moreBtn.setAttribute('aria-haspopup', 'menu')
@@ -56,7 +52,6 @@ export const createTaskActions = ({ titleText, taskId, statusValue }) => {
     titleText,
     taskId,
     disabled: !(isPaused ? canResume : canPause),
-    iconName: isPaused ? 'play' : 'pause',
   })
   const cancelBtn = createMenuButton({
     action: 'cancel',
@@ -64,7 +59,6 @@ export const createTaskActions = ({ titleText, taskId, statusValue }) => {
     titleText,
     taskId,
     disabled: !canCancel,
-    iconName: 'square',
   })
 
   menu.appendChild(primaryBtn)

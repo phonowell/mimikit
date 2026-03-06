@@ -144,19 +144,6 @@
   font-size: var(--btn-icon-size, 12px);
 }
 
-.icon {
-  width: 1em;
-  height: 1em;
-  display: inline-block;
-  vertical-align: middle;
-  color: currentColor;
-}
-
-.btn--icon .icon {
-  width: var(--btn-icon-size, 12px);
-  height: var(--btn-icon-size, 12px);
-}
-
 .btn--icon-sm {
   --btn-size: 28px;
   --btn-icon-size: 12px;
