@@ -81,3 +81,64 @@ test('selectChatMessages keeps system text body without adding a label prefix', 
     ],
   })
 })
+
+test('selectChatMessages hides internal system events from user chat bubbles', () => {
+  const selected = selectChatMessages({
+    history: [
+      {
+        id: 'sys-internal-trigger',
+        role: 'system',
+        visibility: 'all',
+        text: 'Task plan "nightly cleanup" was triggered.\n\n<M:system_event name="trigger_fire" version="1">{"plan_id":"plan-1"}</M:system_event>',
+        createdAt: '2026-03-02T08:00:00.000Z',
+        focusId: 'focus-global',
+      },
+      {
+        id: 'sys-internal-plan',
+        role: 'system',
+        visibility: 'user',
+        text: 'Plan changed: "nightly cleanup" (updated).\n\n<M:system_event name="plan_updated" version="1">{"plan_id":"plan-1"}</M:system_event>',
+        createdAt: '2026-03-02T08:00:01.000Z',
+        focusId: 'focus-global',
+      },
+    ],
+    inflightInputs: [],
+    limit: 50,
+  })
+
+  expect(selected).toEqual({
+    mode: 'full',
+    messages: [],
+  })
+})
+
+test('selectChatMessages keeps user-facing system events with direct user value', () => {
+  const selected = selectChatMessages({
+    history: [
+      {
+        id: 'sys-choice',
+        role: 'system',
+        visibility: 'all',
+        text: 'Selected option "Report".\n\n<M:system_event name="user_choice" version="1">{"source":"user"}</M:system_event>',
+        createdAt: '2026-03-02T08:00:00.000Z',
+        focusId: 'focus-global',
+      },
+    ],
+    inflightInputs: [],
+    limit: 50,
+  })
+
+  expect(selected).toEqual({
+    mode: 'full',
+    messages: [
+      {
+        id: 'sys-choice',
+        role: 'system',
+        visibility: 'all',
+        text: 'Selected option "Report".',
+        createdAt: '2026-03-02T08:00:00.000Z',
+        focusId: 'focus-global',
+      },
+    ],
+  })
+})

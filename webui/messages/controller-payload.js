@@ -7,6 +7,7 @@ import {
   updateMessageState,
 } from './state.js'
 import { mergeIncomingMessages } from './controller-status.js'
+import { createIngressLogger } from './ingress-log.js'
 import { isRecord } from '../value.js'
 
 const MESSAGE_LIMIT = 50
@@ -22,12 +23,15 @@ export const createPayloadController = ({
   onFocusesSnapshot,
   onChoiceSnapshot,
 }) => {
+  const ingressLogger = createIngressLogger()
+
   const applyMessagesPayload = (msgData) => {
     const hasMessagesPayload = isRecord(msgData)
     const incoming =
       hasMessagesPayload && Array.isArray(msgData.messages) ? msgData.messages : []
     const mode =
       hasMessagesPayload && typeof msgData.mode === 'string' ? msgData.mode : 'full'
+    ingressLogger.logIncomingMessages({ mode, incoming })
     const messages = hasMessagesPayload
       ? mergeIncomingMessages({
           mode,

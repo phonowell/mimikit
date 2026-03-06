@@ -34,6 +34,14 @@
 
 补充：
 - `tasks.tasks[*].liveOutput` 为运行中任务的流式输出片段（仅 WebUI 展示，运行态内存数据，不承诺持久化）。
+- WebUI 消息入口为 `webui/messages/controller-payload.js#applyMessagesPayload`；该入口会对进入会话流的消息输出控制台日志（`role/type/source/visibility/summary`），并按消息签名去重以避免重复刷屏。
+
+## System 气泡可见性规则（WebUI 会话流）
+
+- 判定入口：`src/shared/system-message-visibility.ts`（由 `src/shared/message-visibility.ts#isVisibleToUser` 调用）。
+- 直接对用户有价值的 system 事件默认可见：`startup`、`task_created`、`task_canceled`、`task_completed`、`manager_fallback_reply`、`user_choice`、`user_choice_skipped`、`session_summary_restored`。
+- 内部编排/调度/控制类事件默认不可见：`manager_round_limit`、`manager_error`、`action_feedback`、`trigger_fire`、`idle`、`worker_slot_freed`、`plan_created`、`plan_updated`、`plan_deleted`。
+- 未识别 system_event 采用保守策略：`visibility=user` 保持可见，`visibility=all` 默认不展示给最终用户。
 
 ## 输入协议（`POST /api/input`）
 
