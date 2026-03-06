@@ -30,8 +30,8 @@
 }
 
 .task-link:active {
-  box-shadow: var(--shadow-inset-soft);
-  transform: translate(0.5px, 0.5px);
+  box-shadow: none;
+  transform: none;
 }
 
 .task-item-actions {
