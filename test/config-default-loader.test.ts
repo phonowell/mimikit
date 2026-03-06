@@ -77,7 +77,7 @@ test('rejects unknown manager keys', async () => {
   const path = await writeTempConfig(
     [
       'manager:',
-      '  model: gpt-5.4',
+      '  model: gpt-5.2',
       '  unknownManagerKey: true',
     ].join('\n'),
   )

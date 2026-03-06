@@ -1,6 +1,6 @@
 manager:
-  # Manager 使用的模型名；必填；默认 gpt-5.4
-  model: gpt-5.4
+  # Manager 使用的模型名；必填；默认 gpt-5.2
+  model: gpt-5.2
   # Manager 推理强度；可选值 minimal|low|medium|high|xhigh；默认 high
   modelReasoningEffort: high
   provider:

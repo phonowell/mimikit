@@ -77,7 +77,7 @@ If `config.yaml` is missing, Mimikit will bootstrap it from `defaults/config.tem
 
 ```yaml
 manager:
-  model: gpt-5.4
+  model: gpt-5.2
   modelReasoningEffort: high
   provider:
     # optional manager-only provider overrides

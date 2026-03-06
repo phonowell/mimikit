@@ -107,7 +107,7 @@ export type UserConfigDefaults = {
 
 const DEFAULT_USER_CONFIG: UserConfigDefaults = {
   manager: {
-    model: 'gpt-5.4',
+    model: 'gpt-5.2',
     modelReasoningEffort: 'high',
     provider: {},
   },
