@@ -160,8 +160,11 @@ curl -s "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates" \
   | jq -r '.result | last | (.message.chat.id // .channel_post.chat.id // .my_chat_member.chat.id)'
 ```
 
-4. Start runtime and verify by sending a Telegram message to the bot (inbound appears in WebUI and manager reply is sent back to Telegram).
-   (`webui.enabled=true` and `telegram.enabled=true` are supported together.)
+4. Start runtime and verify in Telegram private chat:
+   - `/mmk help` should return command list.
+   - `/mmk restart` should schedule runtime restart.
+   - send normal text and confirm inbound appears in WebUI and manager reply is sent back to Telegram.
+   (`webui.enabled=true` and `telegram.enabled=true` are supported together; `/mmk` does not apply to WebUI input.)
 
 ## Failure Triage
 

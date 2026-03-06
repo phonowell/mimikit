@@ -51,6 +51,28 @@ type OrchestratorOptions = {
 export class Orchestrator {
   private runtime: RuntimeState
   private telegramStartPromise: Promise<void> | null = null
+  private restartScheduled = false
+
+  private scheduleRestart(
+    reason: string,
+  ): 'scheduled' | 'busy' | 'already_scheduled' {
+    const status = this.getStatus()
+    const canRestart =
+      status.managerRunning === false &&
+      status.activeTasks === 0 &&
+      status.pendingTasks === 0
+    if (!canRestart) return 'busy'
+    if (this.restartScheduled) return 'already_scheduled'
+
+    this.restartScheduled = true
+    setTimeout(() => {
+      void (async () => {
+        await this.stopAndPersist()
+        this.requestExit(75, reason)
+      })()
+    }, 100)
+    return 'scheduled'
+  }
 
   private async startTelegramPollingIfEnabled(): Promise<void> {
     if (!this.runtime.config.telegram.enabled) return
@@ -61,6 +83,7 @@ export class Orchestrator {
       logPath: this.runtime.paths.log,
       workDir: this.runtime.config.workDir,
       addUserInput: (text, meta, quote) => this.addUserInput(text, meta, quote),
+      requestRestart: (reason) => this.scheduleRestart(reason),
     })
   }
 

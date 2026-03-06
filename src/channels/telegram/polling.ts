@@ -13,6 +13,43 @@ type TelegramRunner = {
 
 const runners = new Map<string, TelegramRunner>()
 
+type MmkCommand = 'help' | 'restart'
+type RestartCommandResult = 'scheduled' | 'busy' | 'already_scheduled'
+type ParsedMmkCommand =
+  | { kind: 'not_mmk' }
+  | { kind: 'invalid' }
+  | { kind: 'valid'; command: MmkCommand }
+
+const MMK_PREFIX = '/mmk'
+const MMK_HELP_TEXT = ['/mmk help', '/mmk restart'].join('\n')
+
+const normalizeTelegramCommand = (
+  commandToken: string,
+): { name: string; mention?: string } => {
+  const [rawName, rawMention] = commandToken.split('@')
+  const name = rawName?.toLowerCase() ?? ''
+  if (!rawMention) return { name }
+  return { name, mention: rawMention }
+}
+
+const parseMmkCommand = (
+  text: string,
+  botUsername?: string,
+): ParsedMmkCommand => {
+  const [commandToken, ...args] = text.trim().split(/\s+/)
+  if (!commandToken) return { kind: 'not_mmk' }
+  const { name, mention } = normalizeTelegramCommand(commandToken)
+  if (name !== MMK_PREFIX) return { kind: 'not_mmk' }
+  if (mention && mention.toLowerCase() !== botUsername?.toLowerCase())
+    return { kind: 'not_mmk' }
+
+  const subCommand = args[0]?.toLowerCase()
+  if (!subCommand || subCommand === 'help')
+    return { kind: 'valid', command: 'help' }
+  if (subCommand === 'restart') return { kind: 'valid', command: 'restart' }
+  return { kind: 'invalid' }
+}
+
 const toIsoFromUnixSeconds = (value: number): string =>
   new Date(value * 1000).toISOString()
 
@@ -25,8 +62,11 @@ export const startTelegramPolling = async (params: {
     meta?: UserMeta,
     quote?: string,
   ) => Promise<string>
+  requestRestart?: (
+    reason: string,
+  ) => RestartCommandResult | Promise<RestartCommandResult>
 }): Promise<void> => {
-  const { config, logPath, workDir, addUserInput } = params
+  const { config, logPath, workDir, addUserInput, requestRestart } = params
   if (!config.telegram.enabled) return
   if (runners.has(workDir)) return
 
@@ -52,6 +92,35 @@ export const startTelegramPolling = async (params: {
   bot.on('text', async (ctx) => {
     const text = ctx.message.text.trim()
     if (!text) return
+
+    const parsedCommand = parseMmkCommand(text, ctx.botInfo.username)
+    if (parsedCommand.kind !== 'not_mmk') {
+      if (ctx.chat.type !== 'private') return
+      if (parsedCommand.kind === 'invalid') {
+        await ctx.reply(MMK_HELP_TEXT)
+        return
+      }
+      if (parsedCommand.command === 'help') {
+        await ctx.reply(MMK_HELP_TEXT)
+        return
+      }
+      if (!requestRestart) {
+        await ctx.reply('✗ restart_unavailable')
+        return
+      }
+      const restartResult = await requestRestart('telegram_mmk_restart')
+      if (restartResult === 'busy') {
+        await ctx.reply('✗ restart_busy')
+        return
+      }
+      if (restartResult === 'already_scheduled') {
+        await ctx.reply('✓ restart_already_scheduled')
+        return
+      }
+      await ctx.reply('✓ restart_scheduled')
+      return
+    }
+
     await addUserInput(text, {
       source: 'telegram',
       platform: 'telegram',
