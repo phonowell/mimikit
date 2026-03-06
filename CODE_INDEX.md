@@ -1,7 +1,7 @@
 # Code Index
 
-*Last updated: 2026-03-06 14:45:00 CST*
-*Scope: `src/**/*.ts` exported runtime capabilities (function/class/const entry points)*
+*Last updated: 2026-03-06 17:31:00 CST*
+*Scope: `src/**/*.ts` + `webui/**/*.js` exported capabilities (function/class/const entry points)*
 
 ## Quick Reference
 
@@ -12,15 +12,17 @@
 | Prompt Building | 41 | `src/prompts/*` |
 | Shared Utilities | 31 | `src/shared/*` |
 | Focus System | 30 | `src/focus/*` |
-| Worker Execution | 24 | `src/worker/*` |
+| Worker Execution | 26 | `src/worker/*` |
 | Storage | 24 | `src/storage/*` |
 | Providers | 20 | `src/providers/*` |
-| HTTP API | 20 | `src/http/*` |
+| HTTP API | 21 | `src/http/*` |
 | History | 15 | `src/history/*` |
 | FS Helpers | 13 | `src/fs/*` |
 | Action Protocol | 13 | `src/actions/protocol/*` |
 | Memory Refresh | 11 | `src/memory/*` |
 | Telegram Channel | 7 | `src/channels/telegram/*` |
+| WebUI Messages | 56 | `webui/messages/*` |
+| WebUI Panels and Views | 49 | `webui/*` |
 
 ---
 
@@ -84,6 +86,7 @@
 | `runWorkerLoop()` | `src/worker/profiled-runner-loop.ts:100` | Iterative run/continue logic |
 | `runTaskWithRetry()` | `src/worker/run-retry.ts:116` | Retry wrapper around provider execution |
 | `cancelTask()` | `src/worker/cancel-task.ts:122` | Task cancellation flow |
+| `resolveTaskChangeAt()/resolveSlotStatus()` | `src/worker/task-state-shared.ts:4` | Shared task transition timestamps and slot status payload |
 | `finalizeResult()` | `src/worker/result-finalize.ts:66` | Persists/archive result and updates state |
 | `buildTaskResultHandoff()` | `src/worker/result-handoff.ts:113` | Builds manager-visible result payload |
 
@@ -97,8 +100,25 @@
 | `buildDeltaSnapshot()` | `src/http/routes-api-events-shared.ts:81` | Builds SSE delta snapshot |
 | `sendSseEvent()` | `src/http/routes-api-events-shared.ts:96` | Writes SSE frame |
 | `registerChoiceSelectRoute()` | `src/http/routes-api-choice-select.ts:17` | User choice selection API |
+| `registerTaskMutationRoute()` | `src/http/routes-api-task-mutation.ts:25` | Shared route adapter for pause/resume/cancel responses |
 | `registerTaskCancelRoute()` | `src/http/routes-api-task-cancel.ts:6` | Task cancel API |
 | `registerTaskArchiveRoute()` | `src/http/routes-api-task-archive.ts:72` | Task archive fetch API |
+
+## WebUI Messaging and Rendering
+
+| Function | Location | Does What |
+|---|---|---|
+| `createMessagesController()` | `webui/messages/controller.js:28` | Main WebUI message runtime orchestration |
+| `createSseController()` | `webui/messages/controller-sse.js:1` | SSE connect/reconnect and event dispatch |
+| `renderMessages()` | `webui/messages/render-list.js:22` | Main message list renderer and scroll stabilization |
+| `bindChoicePanel()` | `webui/choice.js:70` | User-choice panel rendering and submit flow |
+| `bindTasksPanel()` | `webui/tasks.js:19` | Task panel state binding and ticker lifecycle |
+| `renderTasks()` | `webui/tasks-view-render.js:70` | Task row rendering with timing/usage metadata |
+| `renderPlans()` | `webui/plans-view.js:34` | Plan list rendering |
+| `renderFocuses()` | `webui/focus-view.js:48` | Focus list rendering and summary formatting |
+| `bindRestart()` | `webui/restart.js:118` | Restart/reset dialog and idle-gate control flow |
+| `renderMarkdown()` | `webui/markdown.js:89` | Markdown sanitize and render |
+| `normalizeMarkdownForRender()` | `webui/markdown-normalize.js:65` | Markdown pre-normalization before render |
 
 ## Provider Layer
 
@@ -167,6 +187,8 @@
 
 | Function | Location | Does What |
 |---|---|---|
+| `resolveTaskChangeAt()/resolveSlotStatus()` | `src/worker/task-state-shared.ts:4` | Worker pause/resume shared state helper |
+| `registerTaskMutationRoute()` | `src/http/routes-api-task-mutation.ts:25` | Shared pause/resume/cancel route response wrapper |
 | `focusIdSchema()/choiceIdSchema()/optionIdSchema()` | `src/shared/id-schema.ts:9` | Canonical ID schema validators |
 | `buildPlanTriggerPayload()` | `src/shared/plan-payload.ts:3` | Canonical plan trigger payload builder |
 | `buildPlanProgressPayload()` | `src/shared/plan-payload.ts:14` | Canonical plan progress payload builder |
@@ -174,13 +196,14 @@
 
 ---
 
-## Duplicate Audit Baseline (2026-03-06)
+## Duplicate Audit Baseline (2026-03-06, `src` + `webui`)
 
-- Exact duplicate exported symbol names across files: `0` (scanned 432 exported runtime symbols)
-- `jscpd` clones: `7 -> 0` (`duplicatedLines: 79 -> 0`)
-- `ts-prune` non used-in-module candidates: `31 -> 1` (residual is `satisfies` parser artifact)
+- Exact duplicate exported symbol names across files: `0` (scanned 634 exported symbols)
+- `jscpd` clones: `3 -> 0` (`duplicatedLines: 67 -> 0`, `duplicatedTokens: 596 -> 0`, threshold `min-lines=8`, `min-tokens=80`)
+- `ts-prune`: not rerun in this pass (current scope includes `webui/**/*.js`)
 - Highest-density modules to inspect before adding code:
   - `src/orchestrator/core/*` (39 exports)
   - `src/manager/*` action/loop related modules
   - `src/prompts/*` formatting/build helpers
+  - `webui/messages/*` interaction/rendering helpers
 - ID creation should continue to follow prefixed object IDs (`task-`, `plan-`, `input-`, `focus-`, `runtime-`, `packet-`, `sys-`, `agent-`) when composing business/runtime IDs.

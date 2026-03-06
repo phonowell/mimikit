@@ -7,6 +7,7 @@ import { markTaskPaused } from '../orchestrator/core/task-lifecycle.js'
 import { nowIso } from '../shared/utils.js'
 
 import { clearTaskLiveOutput } from './live-output.js'
+import { resolveSlotStatus, resolveTaskChangeAt } from './task-state-shared.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 
@@ -20,19 +21,6 @@ export type PauseResult = {
   id: string
   status: 'paused' | 'not_found' | 'already_done' | 'already_paused' | 'invalid'
   changeAt?: string
-}
-
-const resolveTaskChangeAt = (task: RuntimeState['tasks'][number]): string =>
-  task.completedAt ?? task.pausedAt ?? task.startedAt ?? task.createdAt
-
-const resolveSlotStatus = (runtime: RuntimeState) => {
-  const maxSlots = runtime.config.worker.maxConcurrent
-  const occupiedSlots = runtime.runningControllers.size
-  return {
-    max_slots: maxSlots,
-    occupied_slots: occupiedSlots,
-    available_slots: Math.max(0, maxSlots - occupiedSlots),
-  }
 }
 
 export const pauseTask = async (
