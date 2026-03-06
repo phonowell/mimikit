@@ -27,6 +27,8 @@ const runCommand = (
   return result.status ?? 1
 }
 
+// `pnpm start` must ensure dependencies before launching the CLI entrypoint.
+// Keep this block ahead of every runtime launch branch.
 const installExitCode =
   process.platform === 'win32'
     ? runCommand('cmd.exe', ['/d', '/s', '/c', 'pnpm i'], { cwd: rootDir })
