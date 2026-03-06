@@ -38,20 +38,20 @@ const formatJSDoc = (content: string): string => {
 }
 
 const processFile = async (filePath: string): Promise<string | null> => {
-  const content = await read<string>(filePath)
+  const content = await read<string>(filePath, { echo: false })
   if (!content) return null
 
   const newContent = formatJSDoc(content)
   if (newContent === content) return null
 
-  await write(filePath, newContent)
+  await write(filePath, newContent, {}, { echo: false })
   return filePath
 }
 
 const main = async () => {
   const list = await listSources()
   if (!list.length) {
-    echo('format-jsdoc', 'No source files found.')
+    echo('format-jsdoc: changed 0 file(s).')
     return
   }
 
@@ -63,12 +63,11 @@ const main = async () => {
   ).filter(Boolean) as string[]
 
   if (!changedFiles.length) {
-    echo('format-jsdoc', 'No JSDoc block needed formatting.')
+    echo('format-jsdoc: changed 0 file(s).')
     return
   }
 
-  echo('format-jsdoc', `JSDoc formatted in ${changedFiles.length} file(s):`)
-  changedFiles.forEach((file) => echo('format-jsdoc', `  ${file}`))
+  echo(`format-jsdoc: changed ${changedFiles.length} file(s).`)
 }
 
 main()

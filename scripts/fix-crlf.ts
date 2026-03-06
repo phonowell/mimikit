@@ -1,11 +1,14 @@
-import { echo, glob, read, runConcurrent, wrapList, write } from 'fire-keeper'
+import { echo, glob, read, runConcurrent, write } from 'fire-keeper'
 
 import { listTextSources } from './shared/text-sources.js'
 
 const listSources = () => glob(listTextSources())
 
 const normalizeLf = async (filePath: string): Promise<string | null> => {
-  const raw = await read<undefined, string, true>(filePath, { raw: true })
+  const raw = await read<undefined, string, true>(filePath, {
+    raw: true,
+    echo: false,
+  })
   if (!raw) return null
 
   const content =
@@ -14,14 +17,14 @@ const normalizeLf = async (filePath: string): Promise<string | null> => {
 
   const normalized = content.replace(/\r/g, '')
   if (normalized === content) return null
-  await write(filePath, normalized)
+  await write(filePath, normalized, {}, { echo: false })
   return filePath
 }
 
 const main = async () => {
   const list = await listSources()
   if (!list.length) {
-    echo('fix-crlf', `no files found matching ${wrapList(listTextSources())}`)
+    echo('fix-crlf: changed 0 file(s).')
     return
   }
 
@@ -33,12 +36,11 @@ const main = async () => {
   ).filter(Boolean) as string[]
 
   if (!changedFiles.length) {
-    echo('fix-crlf', 'No files needed LF normalization.')
+    echo('fix-crlf: changed 0 file(s).')
     return
   }
 
-  echo('fix-crlf', `LF normalized in ${changedFiles.length} file(s):`)
-  changedFiles.forEach((file) => echo('fix-crlf', `  ${file}`))
+  echo(`fix-crlf: changed ${changedFiles.length} file(s).`)
 }
 
 main()

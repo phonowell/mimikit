@@ -1,5 +1,5 @@
 import { ESLint } from 'eslint'
-import { glob, runConcurrent } from 'fire-keeper'
+import { echo, glob, runConcurrent } from 'fire-keeper'
 import { type FunctionDeclaration, Project, SyntaxKind } from 'ts-morph'
 
 const isObjectMethod = (fn: FunctionDeclaration): boolean => {
@@ -80,7 +80,10 @@ const listSources = () =>
 
 const main = async () => {
   const list = await listSources()
-  if (!list.length) return
+  if (!list.length) {
+    echo('fn-to-arrow: changed 0 file(s).')
+    return
+  }
 
   const changedFiles = (
     await runConcurrent(
@@ -89,12 +92,13 @@ const main = async () => {
     )
   ).filter(Boolean) as string[]
 
-  if (changedFiles.length) {
-    console.log(`✓ ${changedFiles.length} 个文件已转换`)
-    changedFiles.forEach((file) => console.log(`  ${file}`))
-    await format(changedFiles)
-    console.log('✓ ESLint 格式化完成')
-  } else console.log('无需转换的文件')
+  if (!changedFiles.length) {
+    echo('fn-to-arrow: changed 0 file(s).')
+    return
+  }
+
+  await format(changedFiles)
+  echo(`fn-to-arrow: changed ${changedFiles.length} file(s).`)
 }
 
 main()

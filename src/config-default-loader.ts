@@ -159,7 +159,7 @@ const asRecord = (value: unknown): Record<string, unknown> | undefined =>
 
 const resolveRecordAtPath = (
   root: unknown,
-  path: readonly (string | number)[],
+  path: readonly PropertyKey[],
 ): Record<string, unknown> | undefined => {
   let current: unknown = root
   for (const segment of path) {

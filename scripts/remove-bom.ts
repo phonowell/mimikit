@@ -1,4 +1,4 @@
-import { echo, glob, read, runConcurrent, wrapList, write } from 'fire-keeper'
+import { echo, glob, read, runConcurrent, write } from 'fire-keeper'
 
 import { listTextSources } from './shared/text-sources.js'
 
@@ -11,18 +11,21 @@ const hasUtf8Bom = (buffer: Buffer): boolean =>
   buffer[2] === 0xbf
 
 const stripBom = async (filePath: string): Promise<string | null> => {
-  const raw = await read<undefined, string, true>(filePath, { raw: true })
+  const raw = await read<undefined, string, true>(filePath, {
+    raw: true,
+    echo: false,
+  })
   if (!raw) return null
 
   if (!hasUtf8Bom(raw)) return null
-  await write(filePath, raw.subarray(3))
+  await write(filePath, raw.subarray(3), {}, { echo: false })
   return filePath
 }
 
 const main = async () => {
   const list = await listSources()
   if (!list.length) {
-    echo('remove-bom', `no files found matching ${wrapList(listTextSources())}`)
+    echo('remove-bom: changed 0 file(s).')
     return
   }
 
@@ -34,12 +37,11 @@ const main = async () => {
   ).filter(Boolean) as string[]
 
   if (!changedFiles.length) {
-    echo('remove-bom', 'No files needed BOM removal.')
+    echo('remove-bom: changed 0 file(s).')
     return
   }
 
-  echo('remove-bom', `BOM removed in ${changedFiles.length} file(s):`)
-  changedFiles.forEach((file) => echo('remove-bom', `  ${file}`))
+  echo(`remove-bom: changed ${changedFiles.length} file(s).`)
 }
 
 main()
