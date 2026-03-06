@@ -4,6 +4,34 @@ export const normalizeCount = (value) =>
     : 0
 
 const DEFAULT_WORKER_SLOT_COUNT = 1
+const DOT_TRANSITION_CLASS = 'worker-dot--state-transition'
+
+const resolveTransitionState = ({ previousState, nextState }) => {
+  if (!previousState || previousState === nextState) return ''
+  if (nextState === 'running') return 'engage'
+  if (previousState === 'running' && nextState === 'idle') return 'release'
+  if (nextState === 'disconnected') return 'offline'
+  if (previousState === 'disconnected') return 'recover'
+  return 'shift'
+}
+
+const bindTransitionCleanup = (dot) => {
+  if (!dot || dot.dataset.transitionBound === '1') return
+  dot.dataset.transitionBound = '1'
+  dot.addEventListener('animationend', () => {
+    dot.classList.remove(DOT_TRANSITION_CLASS)
+    delete dot.dataset.transition
+  })
+}
+
+const applyTransitionState = (dot, previousState, nextState) => {
+  const transition = resolveTransitionState({ previousState, nextState })
+  if (!transition) return
+  dot.dataset.transition = transition
+  dot.classList.remove(DOT_TRANSITION_CLASS)
+  void dot.offsetWidth
+  dot.classList.add(DOT_TRANSITION_CLASS)
+}
 
 export function clearWorkerDots(workerDots) {
   if (!workerDots) return
@@ -39,13 +67,21 @@ export function updateWorkerDots(workerDots, status) {
     for (let index = 0; index < slotCount; index += 1) {
       const dot = document.createElement('span')
       dot.className = 'worker-dot'
+      bindTransitionCleanup(dot)
       workerDots.appendChild(dot)
     }
   }
   const renderedDots = workerDots.querySelectorAll('.worker-dot')
   for (let index = 0; index < renderedDots.length; index += 1) {
     const dot = renderedDots[index]
-    const state = index < runningCount ? 'running' : 'idle'
+    bindTransitionCleanup(dot)
+    const previousState = dot.dataset.state
+    const state = isDisconnected
+      ? 'disconnected'
+      : index < runningCount
+        ? 'running'
+        : 'idle'
+    applyTransitionState(dot, previousState, state)
     dot.dataset.state = state
     dot.title = `${state}/worker-${index + 1}`
   }

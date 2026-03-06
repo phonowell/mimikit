@@ -216,6 +216,38 @@
   border-radius: 999px;
   background: color-mix(in srgb, var(--status-disconnected) 36%, #ffffff);
   box-shadow: none;
+  transform: translateZ(0);
+  transition: background-color 0.16s ease-out, box-shadow 0.16s ease-out;
+}
+
+.tasks-worker-dots .worker-dot.worker-dot--state-transition {
+  animation-duration: 260ms;
+  animation-timing-function: ease-out;
+  animation-iteration-count: 1;
+}
+
+.tasks-worker-dots
+  .worker-dot.worker-dot--state-transition[data-transition='engage'] {
+  animation-name: worker-dot-engage;
+}
+
+.tasks-worker-dots
+  .worker-dot.worker-dot--state-transition[data-transition='release'] {
+  animation-name: worker-dot-release;
+}
+
+.tasks-worker-dots
+  .worker-dot.worker-dot--state-transition[data-transition='offline'] {
+  animation-name: worker-dot-offline;
+}
+
+.tasks-worker-dots
+  .worker-dot.worker-dot--state-transition[data-transition='recover'] {
+  animation-name: worker-dot-recover;
+}
+
+.tasks-worker-dots .worker-dot.worker-dot--state-transition[data-transition='shift'] {
+  animation-name: worker-dot-shift;
 }
 
 .tasks-worker-dots .worker-dot[data-state='running'] {
@@ -244,6 +276,79 @@
 
 .tasks-worker-dots .worker-dot[data-state='disconnected'] {
   background: var(--status-disconnected);
+}
+
+@keyframes worker-dot-engage {
+  0% {
+    transform: scale(0.72);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--status-running) 26%, transparent);
+  }
+
+  58% {
+    transform: scale(1.22);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--status-running) 24%, transparent);
+  }
+
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--status-running) 0%, transparent);
+  }
+}
+
+@keyframes worker-dot-release {
+  0% {
+    transform: scale(1.18);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--status-idle) 24%, transparent);
+  }
+
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--status-idle) 0%, transparent);
+  }
+}
+
+@keyframes worker-dot-offline {
+  0% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+
+  52% {
+    transform: scale(0.84);
+    opacity: 0.66;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes worker-dot-recover {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+
+  52% {
+    transform: scale(1.16);
+    opacity: 0.92;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes worker-dot-shift {
+  0% {
+    transform: scale(0.88);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 .scroll-bottom {

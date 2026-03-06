@@ -1,6 +1,6 @@
 manager:
-  # Manager 使用的模型名；必填；默认 gpt-5.2-high
-  model: gpt-5.2-high
+  # Manager 使用的模型名；必填；默认 gpt-5.4
+  model: gpt-5.4
   # Manager 推理强度；可选值 minimal|low|medium|high|xhigh；默认 high
   modelReasoningEffort: high
   provider:
@@ -10,8 +10,8 @@ manager:
     apiKey: ""
 
 worker:
-  # Worker 使用的模型名；必填；默认 gpt-5.3-codex-high
-  model: gpt-5.3-codex-high
+  # Worker 使用的模型名；必填；默认 gpt-5.3-codex
+  model: gpt-5.3-codex
   # Worker 推理强度；可选值 minimal|low|medium|high|xhigh；默认 high
   modelReasoningEffort: high
   # Worker 最大并发数；整数 >= 1；默认 3

@@ -107,14 +107,14 @@ export type UserConfigDefaults = {
 
 const DEFAULT_USER_CONFIG: UserConfigDefaults = {
   manager: {
-    model: 'gpt-5.2-high',
+    model: 'gpt-5.4',
     modelReasoningEffort: 'high',
     provider: {},
   },
   worker: {
     maxConcurrent: 3,
     timeoutMs: 600000,
-    model: 'gpt-5.3-codex-high',
+    model: 'gpt-5.3-codex',
     modelReasoningEffort: 'high',
   },
   qq: {

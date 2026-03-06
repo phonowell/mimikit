@@ -4,8 +4,8 @@
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
 [![Runtime](https://img.shields.io/badge/Runtime-Single%20Session-black)](./docs/design/architecture/system-architecture.md)
 
-Mimikit is for developers who want a controllable local AI orchestration runtime instead of a black-box SaaS agent.
-It keeps one main session with explicit `manager + worker` orchestration, a built-in WebUI, and file-backed runtime state for reproducible debugging. Mimikit itself is orchestration-only: direct task execution is delegated to external runtimes/providers.
+Mimikit is a thin local orchestration layer around Codex for teams that want controllable behavior without adding another heavy agent stack.
+It keeps one main session with explicit `manager + worker` orchestration, a built-in WebUI, and file-backed runtime state for reproducible debugging. Mimikit is orchestration-only: direct task execution is delegated to external runtimes/providers.
 
 **Primary action: try it locally.**
 
@@ -20,6 +20,7 @@ OPENAI_API_KEY=your_key pnpm start
 ## Table of Contents
 
 - [Quickstart](#quickstart)
+- [Positioning](#positioning)
 - [LLM Bootstrap](#llm-bootstrap)
 - [Features](#features)
 - [How It Works](#how-it-works)
@@ -28,6 +29,14 @@ OPENAI_API_KEY=your_key pnpm start
 - [FAQ](#faq)
 - [Contributing](#contributing)
 - [License](#license)
+
+## Positioning
+
+Mimikit optimizes for low token usage and low mental overhead. The design keeps only the minimum concepts needed to run reliably: one session loop, one orchestration boundary, and one consistent state layout. It favors out-of-the-box startup with minimal configuration over deep tuning surfaces.
+
+Mimikit intentionally reuses Codex capabilities instead of rebuilding overlapping in-repo layers. The orchestration layer stays thin, and the implementation stays compact: it coordinates state, plans, and scheduling, while execution remains delegated to external runtimes.
+
+Interaction is conversational and task-oriented, similar to working with a teammate in chat, but Mimikit does not present itself as a human identity. The product boundary is explicit: Mimikit provides orchestration and observability, and Codex capability is treated as the core capability surface.
 
 ## Quickstart
 
@@ -68,14 +77,14 @@ If `config.yaml` is missing, Mimikit will bootstrap it from `defaults/config.tem
 
 ```yaml
 manager:
-  model: gpt-5.2-high
+  model: gpt-5.4
   modelReasoningEffort: high
   provider:
     # optional manager-only provider overrides
     baseUrl: ""
     apiKey: ""
 worker:
-  model: gpt-5.3-codex-high
+  model: gpt-5.3-codex
   modelReasoningEffort: high
 ```
 

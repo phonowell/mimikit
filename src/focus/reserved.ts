@@ -28,10 +28,7 @@ export const normalizeReservedFocusStatus = (
   status: FocusStatus,
 ): FocusStatus => {
   if (isGlobalFocusId(focusId)) return 'active'
-  if (
-    isInboxFocusId(focusId) &&
-    (status === 'done' || status === 'archived')
-  )
+  if (isInboxFocusId(focusId) && (status === 'done' || status === 'archived'))
     return 'idle'
   return status
 }

@@ -39,6 +39,10 @@
   .status-dot {
     animation: none;
   }
+
+  .tasks-worker-dots .worker-dot.worker-dot--state-transition {
+    animation: none;
+  }
 }
 
 @media (max-width: 640px) {

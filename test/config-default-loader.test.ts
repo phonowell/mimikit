@@ -29,7 +29,7 @@ test('fills defaults when optional fields are omitted', async () => {
 
   expect(config.manager.model).toBe('gpt-5')
   expect(config.manager.modelReasoningEffort).toBe('high')
-  expect(config.worker.model).toBe('gpt-5.3-codex-high')
+  expect(config.worker.model).toBe('gpt-5.3-codex')
   expect(config.worker.timeoutMs).toBe(600000)
   expect(config.qq.enabled).toBe(false)
 })
@@ -70,14 +70,14 @@ test('supports provider model fallback and ignores runtime-only compatibility ke
 
   expect(config.manager.model).toBe('gpt-5.2-mini')
   expect(config.manager.modelReasoningEffort).toBe('medium')
-  expect(config.worker.model).toBe('gpt-5.3-codex-high')
+  expect(config.worker.model).toBe('gpt-5.3-codex')
 })
 
 test('rejects unknown manager keys', async () => {
   const path = await writeTempConfig(
     [
       'manager:',
-      '  model: gpt-5.2-high',
+      '  model: gpt-5.4',
       '  unknownManagerKey: true',
     ].join('\n'),
   )

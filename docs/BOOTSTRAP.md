@@ -96,22 +96,22 @@ In `config.yaml`:
 
 ```yaml
 manager:
-  model: gpt-5.2-high
+  model: gpt-5.4
   modelReasoningEffort: high
   provider:
     # baseUrl: https://your-codex-provider.example.com/v1/codex
     # apiKey: ${AICODING_API_KEY}
 worker:
-  model: gpt-5.3-codex-high
+  model: gpt-5.3-codex
   modelReasoningEffort: high
 ```
 
 Env overrides:
 
 ```bash
-export MIMIKIT_MODEL=gpt-5.2-high
-export MIMIKIT_MANAGER_MODEL=gpt-5.2-high
-export MIMIKIT_WORKER_MODEL=gpt-5.3-codex-high
+export MIMIKIT_MODEL=gpt-5.4
+export MIMIKIT_MANAGER_MODEL=gpt-5.4
+export MIMIKIT_WORKER_MODEL=gpt-5.3-codex
 export MIMIKIT_REASONING_EFFORT=high
 export MIMIKIT_MANAGER_REASONING_EFFORT=high
 export MIMIKIT_WORKER_REASONING_EFFORT=high
