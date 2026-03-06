@@ -42,11 +42,7 @@
 
 .message .message-retry-btn {
   order: 1;
-  inline-size: auto;
-  min-width: auto;
-  padding-inline: 10px;
-  border-radius: 9999px;
-  font-size: 12px;
+  font-weight: 400;
   opacity: 1;
   transform: translateY(0) scale(1);
   pointer-events: auto;
