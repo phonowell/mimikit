@@ -110,7 +110,7 @@ export const renderMessage = (params, msg) => {
     quoteBtn = document.createElement('button')
     quoteBtn.type = 'button'
     quoteBtn.className = 'btn btn--xs btn--icon message-quote-btn'
-    quoteBtn.appendChild(createIconElement('message-square-quote'))
+    quoteBtn.appendChild(createIconElement('quote'))
     quoteBtn.title = UI_TEXT.quote
     quoteBtn.setAttribute('aria-label', UI_TEXT.quote)
     quoteBtn.addEventListener('click', () => onQuote(msg))
