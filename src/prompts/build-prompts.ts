@@ -27,6 +27,7 @@ import {
   formatHistoryLookup,
   formatInputs,
   formatPlansJson,
+  formatQueryLookup,
   formatReadFileLookup,
   formatRecentHistory,
   formatResultsJson,
@@ -44,6 +45,7 @@ import type {
   HistoryLookupMessage,
   ManagerActionFeedback,
   ManagerEnv,
+  QueryLookupMessage,
   ReadFileLookupMessage,
   Task,
   TaskArchiveLookupMessage,
@@ -65,6 +67,7 @@ export const buildManagerPrompt = async (params: {
   promptSectionLimits: PromptSectionLimits
   plans?: TaskPlan[]
   historyLookup?: HistoryLookupMessage[]
+  queryLookup?: QueryLookupMessage
   readFileLookup?: ReadFileLookupMessage[]
   taskArchiveLookup?: TaskArchiveLookupMessage[]
   actionFeedback?: ManagerActionFeedback[]
@@ -154,6 +157,10 @@ export const buildManagerPrompt = async (params: {
     history_lookup: sectionJson(
       formatHistoryLookup(params.historyLookup ?? []),
       limits.historyLookupMaxBytes,
+    ),
+    query_lookup: sectionText(
+      formatQueryLookup(params.queryLookup),
+      limits.queryLookupMaxBytes,
     ),
     memory: sectionText(memory.trim(), limits.memoryMaxBytes),
     file_lookup: sectionJson(

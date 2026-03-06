@@ -79,7 +79,7 @@
 - 输出：先给可执行结论，再在末尾逐行输出 XML action。
 
 ## 已注册 Action（白名单）
-- 核心常驻：`M:run_task` `M:create_plan` `M:update_plan` `M:delete_plan` `M:cancel_task` `M:ask_user_choice` `M:summarize_task_result` `M:query_history` `M:query_task_archive` `M:read_file`
+- 核心常驻：`M:run_task` `M:create_plan` `M:update_plan` `M:delete_plan` `M:cancel_task` `M:ask_user_choice` `M:summarize_task_result` `M:query_context` `M:query_history` `M:query_task_archive` `M:read_file`
 - 管理扩展：`M:upsert_focus` `M:assign_focus` `M:restart_runtime`
 
 ## 关键参数与枚举
@@ -93,6 +93,8 @@
 - `choice.option.id`：`option-[a-zA-Z0-9._-]+`
 - `query_history.limit`：`1..20`（默认 `6`）
 - `query_history.roles`：逗号分隔，支持 `user | agent | system | all`
+- `query_context.scopes`：逗号分隔，支持 `history | tasks | focus | plans | memory | task_archives`
+- `query_context.limit`：`1..60`（默认 `12`）
 - `open_item_{n}`：`upsert_focus` 的待办项参数，`n` 从 `1` 开始递增，每个参数值必须是非空字符串（示例：`open_item_1="a" open_item_2="b"`）
 
 ## 各 Action 最小约束
@@ -103,6 +105,7 @@
 - `cancel_task`：必填 `id`（仅可取消 pending/running）
 - `ask_user_choice`：必填 `id,question,default_option_id` + 至少两组选项三元组 `option_{n}_id,option_{n}_label,option_{n}_reason`
 - `summarize_task_result`：必填 `task_id,summary`
+- `query_context`：必填 `query`；可选 `scopes,limit,limit_history,limit_tasks,limit_focus,limit_plans,limit_memory,limit_task_archives,from,to,focus_id,task_status,plan_status,max_bytes,max_item_chars,archive_max_files`
 - `query_history`：必填 `query`；可选 `limit,roles,before_id,from,to`
 - `query_task_archive`：必填 `query`；可选 `limit,max_files`
 - `read_file`：路径明确时可用；必填 `path`；可选 `from_line,max_lines,max_chars`
@@ -126,7 +129,7 @@
 - 若收到 `M:action_feedback`，必须优先按 `hint` 修正；不要原样重复失败 action。
 - 历史不足时：优先一次 `M:query_history`；仍不足再一次性向用户索取缺失信息。
 - 文件信息不足时：仅当路径明确时才可一次 `M:read_file`；路径不明确时直接索取准确路径。
-- 若同一轮出现“重复查询/读取无新进展”迹象，停止重复 `query_history/query_task_archive/read_file`，改为 best-effort 结论 + 一次澄清。
+- 若同一轮出现“重复查询/读取无新进展”迹象，停止重复 `query_context/query_history/query_task_archive/read_file`，改为 best-effort 结论 + 一次澄清。
 
 ## Focus 规则
 - 可并行推进多个 focus；不要假设只有一个 active focus。
@@ -140,6 +143,7 @@
 - `M:focus_list`：focus 元信息列表
 - `M:focus_contexts`：focus 摘要、待办、每个 focus 的 recent messages
 - `M:recent_history`：最近可见历史窗口（已裁剪）
+- `M:query_lookup`：仅在 `M:query_context` 后回填
 - `M:history_lookup`：仅在 `M:query_history` 后回填
 - `M:memory`：长期记忆 Markdown 原文
 - `M:file_lookup`：仅在 `M:read_file` 后回填
@@ -174,6 +178,11 @@
 <M:history_lookup>
 {{ history_lookup }}
 </M:history_lookup>
+{% endif %}
+{% if query_lookup %}
+<M:query_lookup>
+{{ query_lookup }}
+</M:query_lookup>
 {% endif %}
 {% if memory %}
 <M:memory>

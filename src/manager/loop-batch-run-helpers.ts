@@ -4,6 +4,7 @@ import type { RuntimeState } from './runtime-adapter.js'
 import type {
   HistoryLookupMessage,
   ManagerActionFeedback,
+  QueryLookupMessage,
   ReadFileLookupMessage,
   TaskArchiveLookupMessage,
   TaskPlanStatus,
@@ -13,6 +14,7 @@ import type {
 
 export type ManagerRoundExtra = {
   historyLookup?: HistoryLookupMessage[]
+  queryLookup?: QueryLookupMessage
   readFileLookup?: ReadFileLookupMessage[]
   taskArchiveLookup?: TaskArchiveLookupMessage[]
   actionFeedback?: ManagerActionFeedback[]
@@ -20,28 +22,33 @@ export type ManagerRoundExtra = {
 
 export const buildLookupKey = (params: {
   queryKey?: string
+  queryContextKey?: string
   readFileKey?: string
   taskArchiveKey?: string
 }): string | undefined => {
-  const { queryKey, readFileKey, taskArchiveKey } = params
-  if (!queryKey && !readFileKey && !taskArchiveKey) return undefined
-  return `${queryKey ?? ''}\n---\n${readFileKey ?? ''}\n---\n${taskArchiveKey ?? ''}`
+  const { queryKey, queryContextKey, readFileKey, taskArchiveKey } = params
+  if (!queryKey && !queryContextKey && !readFileKey && !taskArchiveKey)
+    return undefined
+  return `${queryKey ?? ''}\n---\n${queryContextKey ?? ''}\n---\n${readFileKey ?? ''}\n---\n${taskArchiveKey ?? ''}`
 }
 
 export const hasNoFollowupRequests = (params: {
   hasQueryRequest: boolean
+  hasQueryContextRequest: boolean
   hasReadFileRequest: boolean
   hasTaskArchiveRequest: boolean
   feedbackCount: number
 }): boolean => {
   const {
     hasQueryRequest,
+    hasQueryContextRequest,
     hasReadFileRequest,
     hasTaskArchiveRequest,
     feedbackCount,
   } = params
   return (
     !hasQueryRequest &&
+    !hasQueryContextRequest &&
     !hasReadFileRequest &&
     !hasTaskArchiveRequest &&
     feedbackCount === 0

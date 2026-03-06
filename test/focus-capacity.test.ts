@@ -34,6 +34,7 @@ const createRuntime = async (): Promise<RuntimeState> => {
         inputsMaxBytes: 2048,
         memoryMaxBytes: 2048,
         plansMaxBytes: 4096,
+        queryLookupMaxBytes: 4096,
         recentHistoryMaxBytes: 2048,
         taskArchiveLookupMaxBytes: 4096,
         tasksMaxBytes: 4096,

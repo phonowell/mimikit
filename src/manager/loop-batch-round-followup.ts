@@ -6,10 +6,13 @@ import { resolveScheduleNowIso } from '../shared/time.js'
 import { collectManagerActionFeedback } from './action-feedback-collect.js'
 import {
   buildHistoryQueryKey,
+  buildQueryContextLookupKey,
   buildReadFileLookupKey,
   buildTaskArchiveLookupKey,
+  pickQueryContextRequest,
   pickQueryTaskArchiveRequest,
   pickReadFileRequest,
+  queryContextLookup,
   queryHistoryLookup,
   queryReadFileLookup,
   queryTaskArchiveLookup,
@@ -75,13 +78,16 @@ export const resolveRoundFollowup = async (params: {
     params.output,
   )
   const queryRequest = pickQueryHistoryRequest(params.parsed)
+  const queryContextRequest = pickQueryContextRequest(params.parsed)
   const readFileRequest = pickReadFileRequest(params.parsed)
   const taskArchiveRequest = pickQueryTaskArchiveRequest(params.parsed)
   const queryKey = buildHistoryQueryKey(queryRequest)
+  const queryContextKey = buildQueryContextLookupKey(queryContextRequest)
   const readFileKey = buildReadFileLookupKey(readFileRequest)
   const taskArchiveKey = buildTaskArchiveLookupKey(taskArchiveRequest)
   const lookupKey = buildLookupKey({
     ...(queryKey !== undefined ? { queryKey } : {}),
+    ...(queryContextKey !== undefined ? { queryContextKey } : {}),
     ...(readFileKey !== undefined ? { readFileKey } : {}),
     ...(taskArchiveKey !== undefined ? { taskArchiveKey } : {}),
   })
@@ -89,6 +95,7 @@ export const resolveRoundFollowup = async (params: {
   if (
     hasNoFollowupRequests({
       hasQueryRequest: Boolean(queryRequest),
+      hasQueryContextRequest: Boolean(queryContextRequest),
       hasReadFileRequest: Boolean(readFileRequest),
       hasTaskArchiveRequest: Boolean(taskArchiveRequest),
       feedbackCount: actionFeedback.length,
@@ -103,11 +110,13 @@ export const resolveRoundFollowup = async (params: {
   )
     throw new Error('manager_internal_lookup_repeated_without_progress')
 
-  const [historyLookup, readFileLookup, taskArchiveLookup] = await Promise.all([
-    queryHistoryLookup(params.runtime, queryRequest),
-    queryReadFileLookup(params.runtime, readFileRequest),
-    queryTaskArchiveLookup(params.runtime, taskArchiveRequest),
-  ])
+  const [historyLookup, queryLookup, readFileLookup, taskArchiveLookup] =
+    await Promise.all([
+      queryHistoryLookup(params.runtime, queryRequest),
+      queryContextLookup(params.runtime, queryContextRequest),
+      queryReadFileLookup(params.runtime, readFileRequest),
+      queryTaskArchiveLookup(params.runtime, taskArchiveRequest),
+    ])
 
   await appendRoundActionFeedback({
     runtime: params.runtime,
@@ -120,6 +129,7 @@ export const resolveRoundFollowup = async (params: {
     ...(lookupKey ? { lookupKey } : {}),
     extra: {
       ...(historyLookup ? { historyLookup } : {}),
+      ...(queryLookup ? { queryLookup } : {}),
       ...(readFileLookup ? { readFileLookup } : {}),
       ...(taskArchiveLookup ? { taskArchiveLookup } : {}),
       ...(actionFeedback.length > 0 ? { actionFeedback } : {}),

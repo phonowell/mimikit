@@ -29,6 +29,7 @@ import {
   validateCancelTask,
   validateCreatePlan,
   validatePlanById,
+  validateQueryContext,
   validateQueryHistory,
   validateQueryTaskArchive,
   validateReadFile,
@@ -116,6 +117,7 @@ export const ACTION_DEFINITIONS = [
     apply: continueApply,
   },
   createNoopAction('query_history', validateQueryHistory),
+  createNoopAction('query_context', validateQueryContext),
   createNoopAction('query_task_archive', validateQueryTaskArchive),
   createNoopAction('read_file', validateReadFile),
   {

@@ -76,6 +76,7 @@ export {
   formatActionFeedback,
   formatHistoryLookup,
   formatInputs,
+  formatQueryLookup,
   formatReadFileLookup,
   formatRecentHistory,
   formatTaskArchiveLookup,

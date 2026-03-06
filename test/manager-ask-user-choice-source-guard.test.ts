@@ -27,8 +27,22 @@ test('ask_user_choice is rejected when qq source does not support choice callbac
   expect(feedback[0]?.hint).toContain('QQ')
 })
 
-test('query_history and read_file reject repeated actions in the same round', () => {
+test('lookup actions reject repeated calls in the same round', () => {
   const feedback = collectManagerActionFeedback([
+    {
+      name: 'query_context',
+      attrs: {
+        query: 'deploy',
+        scopes: 'tasks,focus',
+      },
+    },
+    {
+      name: 'query_context',
+      attrs: {
+        query: 'release',
+        scopes: 'history',
+      },
+    },
     {
       name: 'query_history',
       attrs: {
@@ -67,13 +81,15 @@ test('query_history and read_file reject repeated actions in the same round', ()
     },
   ])
 
-  expect(feedback).toHaveLength(3)
-  expect(feedback[0]?.action).toBe('query_history')
-  expect(feedback[0]?.hint).toContain('同一轮最多保留一个 query_history')
-  expect(feedback[1]?.action).toBe('query_task_archive')
-  expect(feedback[1]?.hint).toContain('同一轮最多保留一个 query_task_archive')
-  expect(feedback[2]?.action).toBe('read_file')
-  expect(feedback[2]?.hint).toContain('同一轮最多保留一个 read_file')
+  expect(feedback).toHaveLength(4)
+  expect(feedback[0]?.action).toBe('query_context')
+  expect(feedback[0]?.hint).toContain('同一轮最多保留一个 query_context')
+  expect(feedback[1]?.action).toBe('query_history')
+  expect(feedback[1]?.hint).toContain('同一轮最多保留一个 query_history')
+  expect(feedback[2]?.action).toBe('query_task_archive')
+  expect(feedback[2]?.hint).toContain('同一轮最多保留一个 query_task_archive')
+  expect(feedback[3]?.action).toBe('read_file')
+  expect(feedback[3]?.hint).toContain('同一轮最多保留一个 read_file')
 })
 
 test('lookup duplicate guard only counts schema-valid actions', () => {
@@ -95,6 +111,23 @@ test('lookup duplicate guard only counts schema-valid actions', () => {
   expect(feedback).toHaveLength(1)
   expect(feedback[0]?.action).toBe('query_history')
   expect(feedback[0]?.error).toBe('invalid_action_args')
+})
+
+test('query_context invalid scope returns invalid_action_args', () => {
+  const feedback = collectManagerActionFeedback([
+    {
+      name: 'query_context',
+      attrs: {
+        query: 'deploy',
+        scopes: 'tasks,unknown_scope',
+      },
+    },
+  ])
+
+  expect(feedback).toHaveLength(1)
+  expect(feedback[0]?.action).toBe('query_context')
+  expect(feedback[0]?.error).toBe('invalid_action_args')
+  expect(feedback[0]?.hint).toContain('scopes')
 })
 
 test('summarize_task_result rejects task_id outside current batch results', () => {

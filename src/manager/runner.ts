@@ -14,6 +14,7 @@ import type {
   HistoryLookupMessage,
   ManagerActionFeedback,
   ManagerEnv,
+  QueryLookupMessage,
   ReadFileLookupMessage,
   Task,
   TaskArchiveLookupMessage,
@@ -36,6 +37,7 @@ export const runManager = async (params: {
   promptSectionLimits: AppConfig['manager']['promptSections']
   plans?: TaskPlan[]
   historyLookup?: HistoryLookupMessage[]
+  queryLookup?: QueryLookupMessage
   readFileLookup?: ReadFileLookupMessage[]
   taskArchiveLookup?: TaskArchiveLookupMessage[]
   actionFeedback?: ManagerActionFeedback[]
@@ -65,6 +67,7 @@ export const runManager = async (params: {
     promptSectionLimits: params.promptSectionLimits,
     ...(params.plans ? { plans: params.plans } : {}),
     ...(params.historyLookup ? { historyLookup: params.historyLookup } : {}),
+    ...(params.queryLookup ? { queryLookup: params.queryLookup } : {}),
     ...(params.readFileLookup ? { readFileLookup: params.readFileLookup } : {}),
     ...(params.taskArchiveLookup
       ? { taskArchiveLookup: params.taskArchiveLookup }

@@ -12,6 +12,7 @@ import type {
   HistoryLookupMessage,
   HistoryMessage,
   ManagerActionFeedback,
+  QueryLookupMessage,
   ReadFileLookupMessage,
   TaskArchiveLookupMessage,
   UserInput,
@@ -321,4 +322,9 @@ export const formatActionFeedback = (
       items: entries,
     }),
   )
+}
+
+export const formatQueryLookup = (lookup?: QueryLookupMessage): string => {
+  if (!lookup) return ''
+  return stringifyPromptJson(lookup)
 }

@@ -74,6 +74,100 @@ export type TaskArchiveLookupMessage = {
   title?: string | undefined
   snippet?: string | undefined
 }
+export type QueryContextScope =
+  | 'history'
+  | 'tasks'
+  | 'focus'
+  | 'plans'
+  | 'memory'
+  | 'task_archives'
+export type QueryLookupHistoryItem = {
+  ref: string
+  id: string
+  role: Role
+  time: ISODate
+  score: number
+  focusId: FocusId
+  snippet: string
+}
+export type QueryLookupTaskItem = {
+  ref: string
+  id: string
+  status: TaskStatus
+  focusId: FocusId
+  createdAt: ISODate
+  score: number
+  title: string
+  snippet: string
+}
+export type QueryLookupFocusItem = {
+  ref: string
+  id: string
+  status: FocusStatus
+  updatedAt: ISODate
+  score: number
+  title: string
+  summary?: string | undefined
+}
+export type QueryLookupPlanItem = {
+  ref: string
+  id: string
+  status: TaskPlanStatus
+  triggerMode: TaskPlanTriggerMode
+  updatedAt: ISODate
+  score: number
+  title: string
+  snippet: string
+}
+export type QueryLookupMemoryItem = {
+  ref: string
+  section: string
+  score: number
+  snippet: string
+}
+export type QueryLookupTaskArchiveItem = {
+  ref: string
+  taskId: string
+  status: TaskResultStatus
+  completedAt: ISODate
+  archivePath: string
+  score: number
+  title?: string | undefined
+  snippet?: string | undefined
+}
+export type QueryLookupScopeResult<TItem> = {
+  items: TItem[]
+  truncated: boolean
+  nextOffset?: number | undefined
+}
+export type QueryLookupResults = {
+  history?: QueryLookupScopeResult<QueryLookupHistoryItem>
+  tasks?: QueryLookupScopeResult<QueryLookupTaskItem>
+  focus?: QueryLookupScopeResult<QueryLookupFocusItem>
+  plans?: QueryLookupScopeResult<QueryLookupPlanItem>
+  memory?: QueryLookupScopeResult<QueryLookupMemoryItem>
+  task_archives?: QueryLookupScopeResult<QueryLookupTaskArchiveItem>
+}
+export type QueryLookupMessage = {
+  request: {
+    query: string
+    scopes: QueryContextScope[]
+    limit: number
+    maxBytes: number
+    maxItemChars: number
+    from?: ISODate | undefined
+    to?: ISODate | undefined
+    focusId?: FocusId | undefined
+    taskStatus?: TaskStatus[] | undefined
+    planStatus?: TaskPlanStatus[] | undefined
+  }
+  results: QueryLookupResults
+  meta: {
+    truncated: boolean
+    usedBytes: number
+    maxBytes: number
+  }
+}
 type UserInputUser = {
   id: Id
   role: 'user'

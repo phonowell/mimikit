@@ -11,6 +11,7 @@ import {
   summarizeSchema,
   updatePlanSchema,
 } from './action-apply-schema.js'
+import { queryContextSchema } from './query-context-tool.js'
 import {
   formatAskUserChoiceInvalidOptionsHint,
   formatAskUserChoiceQqUnsupportedHint,
@@ -102,6 +103,8 @@ export const validateCancelTask = (
 }
 export const validateQueryHistory = (item: Parsed): ValidationIssue[] =>
   validateRangeQueryWithSchema(item, queryHistorySchema)
+export const validateQueryContext = (item: Parsed): ValidationIssue[] =>
+  validateRangeQueryWithSchema(item, queryContextSchema)
 export const validateReadFile = (item: Parsed): ValidationIssue[] =>
   validateWithSchema(item, readFileSchema)
 export const validateQueryTaskArchive = (item: Parsed): ValidationIssue[] =>
