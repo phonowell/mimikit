@@ -39,7 +39,7 @@ export const UI_TEXT = Object.freeze({
   deleteFailed: 'Delete failed',
   deleteConfirmPrompt: 'Delete this message?',
   sendFailed: 'Send failed',
-  retryRequest: 'Retry',
+  retryRequest: '↻',
   retryRequestAria: 'Retry failed request',
   retryRequestMissingSource: 'Retry failed: source request not found',
   choiceDefaultIn: 'Default in',

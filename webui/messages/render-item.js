@@ -132,7 +132,7 @@ export const renderMessage = (params, msg) => {
     retryBtn.type = 'button'
     retryBtn.className = 'btn btn--xs message-retry-btn'
     retryBtn.textContent = UI_TEXT.retryRequest
-    retryBtn.title = UI_TEXT.retryRequest
+    retryBtn.title = UI_TEXT.retryRequestAria
     retryBtn.setAttribute('aria-label', UI_TEXT.retryRequestAria)
     if (typeof isRetryPending === 'function')
       retryBtn.disabled = Boolean(isRetryPending(msg))
