@@ -23,6 +23,10 @@ worker:
   # Worker 请求代理；可选；空字符串表示直连
   proxy: ""
 
+webui:
+  # 是否启用内置 WebUI + HTTP API；默认 true
+  enabled: true
+
 telegram:
   # 是否启用 Telegram 通道；默认 false
   enabled: false

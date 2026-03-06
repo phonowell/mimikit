@@ -32,8 +32,17 @@ test('fills defaults when optional fields are omitted', async () => {
   expect(config.worker.model).toBe('gpt-5.3-codex')
   expect(config.worker.timeoutMs).toBe(600000)
   expect(config.worker.proxy).toBeUndefined()
+  expect(config.webui.enabled).toBe(true)
   expect(config.telegram.enabled).toBe(false)
   expect(config.telegram.proxy).toBe('')
+})
+
+test('supports explicit webui enabled switch', async () => {
+  const path = await writeTempConfig('webui:\n  enabled: false\n')
+
+  const config = loadDefaultConfigFromYaml(path)
+
+  expect(config.webui.enabled).toBe(false)
 })
 
 test('normalizes empty provider overrides to undefined', async () => {

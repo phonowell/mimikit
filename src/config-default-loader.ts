@@ -75,10 +75,17 @@ const workerInputSchema = z
   })
   .strict()
 
+const webuiInputSchema = z
+  .object({
+    enabled: z.boolean().optional(),
+  })
+  .strict()
+
 const userConfigInputSchema = z
   .object({
     manager: managerInputSchema.optional(),
     worker: workerInputSchema.optional(),
+    webui: webuiInputSchema.optional(),
     telegram: telegramConfigSchema.partial().strict().optional(),
   })
   .strict()
@@ -102,6 +109,9 @@ export type UserConfigDefaults = {
     model: string
     modelReasoningEffort: z.infer<typeof modelReasoningEffortSchema>
   }
+  webui: {
+    enabled: boolean
+  }
   telegram: TelegramConfig
 }
 
@@ -117,6 +127,9 @@ const DEFAULT_USER_CONFIG: UserConfigDefaults = {
     proxy: '',
     model: 'gpt-5.3-codex',
     modelReasoningEffort: 'high',
+  },
+  webui: {
+    enabled: true,
   },
   telegram: {
     enabled: false,
@@ -251,6 +264,9 @@ const buildUserConfigDefaults = (
       modelReasoningEffort:
         input.worker?.modelReasoningEffort ??
         DEFAULT_USER_CONFIG.worker.modelReasoningEffort,
+    },
+    webui: {
+      enabled: input.webui?.enabled ?? DEFAULT_USER_CONFIG.webui.enabled,
     },
     telegram: {
       enabled: input.telegram?.enabled ?? DEFAULT_USER_CONFIG.telegram.enabled,

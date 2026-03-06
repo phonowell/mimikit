@@ -54,6 +54,9 @@ const createTestConfig = (
     model: 'gpt-test-worker',
     modelReasoningEffort: 'minimal',
   },
+  webui: {
+    enabled: true,
+  },
   telegram: {
     enabled: false,
     botToken: '',

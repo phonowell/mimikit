@@ -107,6 +107,8 @@ worker:
   model: gpt-5.3-codex
   modelReasoningEffort: high
   # proxy: http://127.0.0.1:7897
+webui:
+  enabled: true
 ```
 
 Env overrides:
@@ -121,6 +123,7 @@ export MIMIKIT_WORKER_REASONING_EFFORT=high
 export MIMIKIT_PROXY=http://127.0.0.1:7897
 export MIMIKIT_MANAGER_PROXY=http://127.0.0.1:7897
 export MIMIKIT_WORKER_PROXY=http://127.0.0.1:7897
+export MIMIKIT_WEBUI_ENABLED=true
 ```
 
 Precedence: role-specific env (`MIMIKIT_MANAGER_*` / `MIMIKIT_WORKER_*`) overrides global env.
@@ -158,6 +161,7 @@ curl -s "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates" \
 ```
 
 4. Start runtime and verify by sending a Telegram message to the bot (inbound appears in WebUI and manager reply is sent back to Telegram).
+   (`webui.enabled=true` and `telegram.enabled=true` are supported together.)
 
 ## Failure Triage
 

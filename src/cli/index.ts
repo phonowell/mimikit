@@ -37,8 +37,6 @@ const parsePort = (value: string): number => {
   return num
 }
 
-const requestedPort = parsePort(portValue)
-
 const config = defaultConfig({
   workDir: resolvedWorkDir,
   onUnknownConfigKeys: (keys) =>
@@ -95,8 +93,12 @@ const orchestrator = new Orchestrator(config, {
 
 try {
   await orchestrator.start()
-  const listenPort = await resolveHttpPort(requestedPort)
-  await createHttpServer(orchestrator, config, listenPort)
+  if (!config.webui.enabled)
+    console.log('[cli] webui disabled by config: webui.enabled=false')
+  else {
+    const listenPort = await resolveHttpPort(parsePort(portValue))
+    await createHttpServer(orchestrator, config, listenPort)
+  }
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error)
   await shutdown(`startup failed: ${message}`, 1)

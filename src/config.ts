@@ -62,6 +62,9 @@ export type AppConfig = {
     model: string
     modelReasoningEffort: ModelReasoningEffort
   }
+  webui: {
+    enabled: boolean
+  }
   telegram: TelegramConfig
 }
 
@@ -126,6 +129,7 @@ export const defaultConfig = (params: DefaultConfigParams): AppConfig => {
       modelReasoningEffort: userConfig.worker.modelReasoningEffort,
       ...INTERNAL_WORKER_DEFAULTS,
     },
+    webui: userConfig.webui,
     telegram: userConfig.telegram,
   }
 }

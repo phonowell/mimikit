@@ -88,6 +88,8 @@ worker:
   model: gpt-5.3-codex
   modelReasoningEffort: high
   proxy: ""
+webui:
+  enabled: true
 ```
 
 - manager calls route directly to `openai-responses`
@@ -114,6 +116,8 @@ export TELEGRAM_CHAT_ID=<your_chat_id>
 export TELEGRAM_PROXY=http://127.0.0.1:7897 # optional
 pnpm start
 ```
+
+`webui.enabled=true` (default) and `telegram.enabled=true` can run together in one process.
 
 ## LLM Bootstrap
 
@@ -185,6 +189,10 @@ Yes. Plans support `cron`, `scheduled_at`, and `on_worker_slot_freed`.
 ### Can I enable Telegram integration?
 
 Yes. Configure `telegram.*` in `config.yaml` or `TELEGRAM_*` env vars, then start with `telegram.enabled=true`.
+
+### Can I disable WebUI and keep Telegram only?
+
+Yes. Set `webui.enabled=false` in `config.yaml`; Telegram polling still works when `telegram.enabled=true`.
 
 ## Contributing
 

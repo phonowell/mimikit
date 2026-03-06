@@ -15,6 +15,7 @@ const ENV_KEYS = [
   'MIMIKIT_PROXY',
   'MIMIKIT_MANAGER_PROXY',
   'MIMIKIT_WORKER_PROXY',
+  'MIMIKIT_WEBUI_ENABLED',
   'TELEGRAM_PROXY',
 ] as const
 
@@ -81,4 +82,13 @@ test('telegram proxy env overrides config value', () => {
   applyCliEnvOverrides(config)
 
   expect(config.telegram.proxy).toBe('http://127.0.0.1:7897')
+})
+
+test('webui enabled env overrides config value', () => {
+  const config = createConfig()
+  process.env.MIMIKIT_WEBUI_ENABLED = 'false'
+
+  applyCliEnvOverrides(config)
+
+  expect(config.webui.enabled).toBe(false)
 })

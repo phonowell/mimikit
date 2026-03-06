@@ -76,6 +76,7 @@
 - `MIMIKIT_PROXY`
 - `MIMIKIT_MANAGER_PROXY`
 - `MIMIKIT_WORKER_PROXY`
+- `MIMIKIT_WEBUI_ENABLED`
 - `TELEGRAM_CHANNEL_ENABLED`
 - `TELEGRAM_BOT_TOKEN`
 - `TELEGRAM_CHAT_ID`
@@ -93,6 +94,7 @@
 - `worker.model`
 - `worker.modelReasoningEffort`
 - `worker.proxy`
+- `webui.enabled`
 - `telegram.enabled`
 - `telegram.botToken`
 - `telegram.chatId`

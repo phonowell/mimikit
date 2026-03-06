@@ -49,6 +49,9 @@ const createRuntime = async (): Promise<RuntimeState> => {
       model: 'gpt-test-worker',
       modelReasoningEffort: 'minimal',
     },
+    webui: {
+      enabled: true,
+    },
     telegram: {
       enabled: false,
       botToken: '',

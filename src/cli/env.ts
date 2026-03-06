@@ -61,6 +61,21 @@ const trimEnv = (name: string): string | undefined => {
   return trimmed.length > 0 ? trimmed : undefined
 }
 
+const parseBooleanEnv = (
+  envName: string,
+  value: string | undefined,
+): boolean | undefined => {
+  if (!value) return undefined
+  const normalized = value.trim().toLowerCase()
+  if (!normalized) return undefined
+  if (normalized === '1' || normalized === 'true' || normalized === 'yes')
+    return true
+  if (normalized === '0' || normalized === 'false' || normalized === 'no')
+    return false
+  console.warn(`[cli] invalid ${envName}:`, value)
+  return undefined
+}
+
 const applyProxyEnv = (config: AppConfig): void => {
   const globalProxy = trimEnv('MIMIKIT_PROXY')
   if (globalProxy) {
@@ -72,9 +87,19 @@ const applyProxyEnv = (config: AppConfig): void => {
   const workerProxy = trimEnv('MIMIKIT_WORKER_PROXY')
   if (workerProxy) config.worker.proxy = workerProxy
 }
+
+const applyWebUiEnv = (config: AppConfig): void => {
+  const enabled = parseBooleanEnv(
+    'MIMIKIT_WEBUI_ENABLED',
+    process.env.MIMIKIT_WEBUI_ENABLED,
+  )
+  if (enabled !== undefined) config.webui.enabled = enabled
+}
+
 export const applyCliEnvOverrides = (config: AppConfig): void => {
   applyModelEnv(config)
   applyReasoningEnv(config)
   applyProxyEnv(config)
+  applyWebUiEnv(config)
   applyTelegramEnvOverrides(config.telegram)
 }

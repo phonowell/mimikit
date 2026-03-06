@@ -26,6 +26,7 @@ telegram:
 - `TELEGRAM_PROXY`
 
 说明：当 `telegram.enabled=true` 时，`telegram.botToken` 与 `telegram.chatId` 必填，缺失会在启动阶段直接报错并退出。
+`webui.enabled=true`（默认）与 `telegram.enabled=true` 可同时启用。
 
 ## 从 0 跑通
 
