@@ -1,7 +1,5 @@
 import { appendLog } from '../../log/append.js'
 
-import { sendTelegramTextMessage } from './client.js'
-
 import type { RuntimeState } from '../../manager/runtime-adapter.js'
 import type { UserInput } from '../../types/index.js'
 
@@ -60,6 +58,7 @@ export const dispatchTelegramPassiveReply = async (params: {
     return
   }
 
+  const { sendTelegramTextMessage } = await import('./client.js')
   const sent = await sendTelegramTextMessage({
     botToken: runtime.config.telegram.botToken,
     apiRoot: runtime.config.telegram.apiRoot,

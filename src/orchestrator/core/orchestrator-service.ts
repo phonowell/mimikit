@@ -1,12 +1,8 @@
 import PQueue from 'p-queue'
 
-import {
-  startTelegramPolling,
-  stopTelegramPolling,
-} from '../../channels/telegram/index.js'
 import { type AppConfig } from '../../config.js'
 import { buildPaths } from '../../fs/paths.js'
-import { setDefaultLogPath } from '../../log/safe.js'
+import { bestEffort, setDefaultLogPath } from '../../log/safe.js'
 import { createDefaultMemoryRefreshState } from '../../memory/refresh/state.js'
 import { newId } from '../../shared/utils.js'
 import { cancelTask } from '../../worker/cancel-task.js'
@@ -54,6 +50,29 @@ type OrchestratorOptions = {
 
 export class Orchestrator {
   private runtime: RuntimeState
+  private telegramStartPromise: Promise<void> | null = null
+
+  private async startTelegramPollingIfEnabled(): Promise<void> {
+    if (!this.runtime.config.telegram.enabled) return
+    const { startTelegramPolling } =
+      await import('../../channels/telegram/index.js')
+    await startTelegramPolling({
+      config: this.runtime.config,
+      logPath: this.runtime.paths.log,
+      workDir: this.runtime.config.workDir,
+      addUserInput: (text, meta, quote) => this.addUserInput(text, meta, quote),
+    })
+  }
+
+  private async stopTelegramPollingIfEnabled(): Promise<void> {
+    if (!this.runtime.config.telegram.enabled) return
+    const { stopTelegramPolling } =
+      await import('../../channels/telegram/index.js')
+    await stopTelegramPolling({
+      workDir: this.runtime.config.workDir,
+      logPath: this.runtime.paths.log,
+    })
+  }
 
   constructor(config: AppConfig, options: OrchestratorOptions = {}) {
     const paths = buildPaths(config.workDir)
@@ -95,29 +114,38 @@ export class Orchestrator {
 
   async start() {
     await startOrchestratorRuntime(this.runtime)
-    await startTelegramPolling({
-      config: this.runtime.config,
-      logPath: this.runtime.paths.log,
-      workDir: this.runtime.config.workDir,
-      addUserInput: (text, meta, quote) => this.addUserInput(text, meta, quote),
+    this.telegramStartPromise = bestEffort(
+      'orchestrator:start_telegram_polling',
+      () => this.startTelegramPollingIfEnabled(),
+      { logPath: this.runtime.paths.log },
+    )
+    void this.telegramStartPromise.then(async () => {
+      if (!this.runtime.stopped) return
+      await bestEffort(
+        'orchestrator:stop_telegram_after_late_start',
+        () => this.stopTelegramPollingIfEnabled(),
+        { logPath: this.runtime.paths.log },
+      )
     })
   }
 
   stop() {
     prepareStop(this.runtime)
-    void stopTelegramPolling({
-      workDir: this.runtime.config.workDir,
-      logPath: this.runtime.paths.log,
-    })
+    void bestEffort(
+      'orchestrator:stop_telegram_polling',
+      () => this.stopTelegramPollingIfEnabled(),
+      { logPath: this.runtime.paths.log },
+    )
     void persistStopSnapshot(this.runtime)
   }
 
   async stopAndPersist(): Promise<void> {
     prepareStop(this.runtime)
-    await stopTelegramPolling({
-      workDir: this.runtime.config.workDir,
-      logPath: this.runtime.paths.log,
-    })
+    await bestEffort(
+      'orchestrator:stop_telegram_polling',
+      () => this.stopTelegramPollingIfEnabled(),
+      { logPath: this.runtime.paths.log },
+    )
     await waitForManagerDrain(this.runtime)
     await persistStopSnapshot(this.runtime)
   }

@@ -1,4 +1,4 @@
-import { dispatchTelegramPassiveReply } from '../channels/telegram/index.js'
+import { dispatchTelegramPassiveReply } from '../channels/telegram/passive-reply.js'
 import { resolveDefaultFocusId } from '../focus/index.js'
 import { appendManagerCorrectionLimitSystemMessage } from '../history/manager-events.js'
 import { appendLog } from '../log/append.js'

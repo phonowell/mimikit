@@ -1,5 +1,5 @@
 import { parseActions } from '../actions/protocol/parse.js'
-import { hasTelegramUserInput } from '../channels/telegram/index.js'
+import { hasTelegramUserInput } from '../channels/telegram/passive-reply.js'
 import { appendLog } from '../log/append.js'
 import { mergeUsageAdditive } from '../shared/token-usage.js'
 
