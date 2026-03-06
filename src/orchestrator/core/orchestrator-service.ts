@@ -9,7 +9,7 @@ import { cancelTask } from '../../worker/cancel-task.js'
 import { getTaskLiveOutputById } from '../../worker/live-output.js'
 import { type ChatMessage } from '../read-model/chat-view.js'
 import { buildFocusViews } from '../read-model/focus-view.js'
-import { sortTaskPlans } from '../read-model/plan-select.js'
+import { sortTaskPlansForView } from '../read-model/plan-select.js'
 import { buildTaskViews } from '../read-model/task-view.js'
 
 import {
@@ -132,7 +132,7 @@ export class Orchestrator {
   }
 
   getPlans(limit = 200): { items: TaskPlan[] } {
-    const items = sortTaskPlans(this.runtime.taskPlans)
+    const items = sortTaskPlansForView(this.runtime.taskPlans)
       .slice(0, Math.max(0, limit))
       .map((item) => ({ ...item }))
     return { items }

@@ -33,6 +33,14 @@ export type TaskView = {
 
 export type TaskCounts = Record<TaskStatus, number>
 
+const TASK_STATUS_RANK: Record<TaskStatus, number> = {
+  running: 0,
+  pending: 1,
+  failed: 2,
+  succeeded: 3,
+  canceled: 4,
+}
+
 const initCounts = (): TaskCounts => ({
   pending: 0,
   running: 0,
@@ -97,13 +105,23 @@ const taskToView = (
   }
 }
 
+const compareTaskViews = (a: TaskView, b: TaskView): number => {
+  const statusDiff = TASK_STATUS_RANK[a.status] - TASK_STATUS_RANK[b.status]
+  if (statusDiff !== 0) return statusDiff
+  const changeDiff = compareIsoDesc(a.changeAt, b.changeAt)
+  if (changeDiff !== 0) return changeDiff
+  const createdDiff = compareIsoDesc(a.createdAt, b.createdAt)
+  if (createdDiff !== 0) return createdDiff
+  return a.id.localeCompare(b.id)
+}
+
 export const buildTaskViews = (
   tasks: Task[],
   limit = 200,
   runtimeSnapshot?: TaskViewRuntimeSnapshot,
 ): { tasks: TaskView[]; counts: TaskCounts } => {
   const views = tasks.map((task) => taskToView(task, runtimeSnapshot))
-  views.sort((a, b) => compareIsoDesc(a.createdAt, b.createdAt))
+  views.sort(compareTaskViews)
   const limited = views.slice(0, Math.max(0, limit))
   const counts = initCounts()
   for (const view of limited) counts[view.status] += 1

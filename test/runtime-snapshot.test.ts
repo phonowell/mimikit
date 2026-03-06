@@ -213,6 +213,81 @@ test('buildTaskViews includes running live output snippet', () => {
   expect(pending?.liveOutput).toBeUndefined()
 })
 
+test('buildTaskViews sorts by status, change time, created time, then id', () => {
+  const tasks: Task[] = [
+    createTaskFixture({
+      id: 'task-running-old',
+      status: 'running',
+      createdAt: '2026-03-01T00:01:00.000Z',
+      startedAt: '2026-03-01T00:02:00.000Z',
+    }),
+    createTaskFixture({
+      id: 'task-running-new',
+      status: 'running',
+      createdAt: '2026-03-01T00:03:00.000Z',
+      startedAt: '2026-03-01T00:04:00.000Z',
+    }),
+    createTaskFixture({
+      id: 'task-pending-new',
+      status: 'pending',
+      createdAt: '2026-03-01T00:05:00.000Z',
+    }),
+    createTaskFixture({
+      id: 'task-pending-old',
+      status: 'pending',
+      createdAt: '2026-03-01T00:01:00.000Z',
+    }),
+    createTaskFixture({
+      id: 'task-failed',
+      status: 'failed',
+      createdAt: '2026-03-01T00:02:00.000Z',
+      completedAt: '2026-03-01T00:06:00.000Z',
+    }),
+    createTaskFixture({
+      id: 'task-succeeded',
+      status: 'succeeded',
+      createdAt: '2026-03-01T00:02:30.000Z',
+      completedAt: '2026-03-01T00:07:00.000Z',
+    }),
+    createTaskFixture({
+      id: 'task-canceled',
+      status: 'canceled',
+      createdAt: '2026-03-01T00:02:40.000Z',
+      completedAt: '2026-03-01T00:08:00.000Z',
+    }),
+  ]
+  const { tasks: views } = buildTaskViews(tasks)
+  expect(views.map((item) => item.id)).toEqual([
+    'task-running-new',
+    'task-running-old',
+    'task-pending-new',
+    'task-pending-old',
+    'task-failed',
+    'task-succeeded',
+    'task-canceled',
+  ])
+})
+
+test('buildTaskViews uses id as stable tie-breaker for same status and time', () => {
+  const tasks: Task[] = [
+    createTaskFixture({
+      id: 'task-pending-b',
+      status: 'pending',
+      createdAt: '2026-03-01T00:05:00.000Z',
+    }),
+    createTaskFixture({
+      id: 'task-pending-a',
+      status: 'pending',
+      createdAt: '2026-03-01T00:05:00.000Z',
+    }),
+  ]
+  const { tasks: views } = buildTaskViews(tasks)
+  expect(views.map((item) => item.id)).toEqual([
+    'task-pending-a',
+    'task-pending-b',
+  ])
+})
+
 test('runtime snapshot rejects legacy next fields', async () => {
   const stateDir = await createTmpDir()
   await writeFile(

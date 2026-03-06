@@ -15,9 +15,21 @@ export type FocusView = {
   openItems?: string[]
 }
 
-const sortByLastActivityDesc = (a: FocusMeta, b: FocusMeta): number => {
-  const diff = compareIsoDesc(a.lastActivityAt, b.lastActivityAt)
-  if (diff !== 0) return diff
+const FOCUS_STATUS_RANK: Record<FocusMeta['status'], number> = {
+  active: 0,
+  idle: 1,
+  done: 2,
+  archived: 3,
+}
+
+const compareFocusViews = (a: FocusView, b: FocusView): number => {
+  if (a.isActive !== b.isActive) return a.isActive ? -1 : 1
+  const statusDiff = FOCUS_STATUS_RANK[a.status] - FOCUS_STATUS_RANK[b.status]
+  if (statusDiff !== 0) return statusDiff
+  const activityDiff = compareIsoDesc(a.lastActivityAt, b.lastActivityAt)
+  if (activityDiff !== 0) return activityDiff
+  const updatedDiff = compareIsoDesc(a.updatedAt, b.updatedAt)
+  if (updatedDiff !== 0) return updatedDiff
   return a.id.localeCompare(b.id)
 }
 
@@ -71,8 +83,6 @@ export const buildFocusViews = (
   )
   const items = focuses
     .filter((focus) => focus.status !== 'archived')
-    .sort(sortByLastActivityDesc)
-    .slice(0, Math.max(0, limit))
     .map((focus) => {
       const context = contextById.get(focus.id)
       const lastTaskId = latestTaskIdByFocus.get(focus.id)
@@ -93,5 +103,7 @@ export const buildFocusViews = (
         ...(openItems ? { openItems } : {}),
       }
     })
+    .sort(compareFocusViews)
+    .slice(0, Math.max(0, limit))
   return { items }
 }

@@ -1,5 +1,5 @@
 import { sortTasksByChangedAt } from '../../prompts/format-base.js'
-import { parseIsoToMsOrZero } from '../../shared/time.js'
+import { compareIsoDesc, parseIsoToMsOrZero } from '../../shared/time.js'
 
 import type { PlanPriority, Task, TaskPlan } from '../../types/index.js'
 
@@ -64,6 +64,20 @@ export const sortTaskPlans = (plans: TaskPlan[]): TaskPlan[] =>
     if (rankDiff !== 0) return rankDiff
     if (a.status === 'done') return compareDoneDesc(a, b)
     return comparePriorityFifo(a, b)
+  })
+
+const comparePlanChangedAtDesc = (a: TaskPlan, b: TaskPlan): number =>
+  compareIsoDesc(a.archivedAt ?? a.updatedAt, b.archivedAt ?? b.updatedAt)
+
+export const sortTaskPlansForView = (plans: TaskPlan[]): TaskPlan[] =>
+  [...plans].sort((a, b) => {
+    const rankDiff = statusRank(a.status) - statusRank(b.status)
+    if (rankDiff !== 0) return rankDiff
+    const changedDiff = comparePlanChangedAtDesc(a, b)
+    if (changedDiff !== 0) return changedDiff
+    const priorityDiff = PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority]
+    if (priorityDiff !== 0) return priorityDiff
+    return a.id.localeCompare(b.id)
   })
 
 export const selectRecentPlans = (

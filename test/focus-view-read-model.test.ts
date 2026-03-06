@@ -85,3 +85,40 @@ test('buildFocusViews includes latest task id by focus', () => {
   expect(focusA?.lastTaskId).toBe('task-a-new')
   expect(focusB?.lastTaskId).toBe('task-b')
 })
+
+test('buildFocusViews sorts by active flag, status, activity time, then id', () => {
+  const focuses: FocusMeta[] = [
+    createFocus({
+      id: 'focus-idle-a',
+      status: 'idle',
+      lastActivityAt: '2026-03-01T00:12:00.000Z',
+      updatedAt: '2026-03-01T00:12:00.000Z',
+    }),
+    createFocus({
+      id: 'focus-active-b',
+      status: 'active',
+      lastActivityAt: '2026-03-01T00:01:00.000Z',
+      updatedAt: '2026-03-01T00:01:00.000Z',
+    }),
+    createFocus({
+      id: 'focus-idle-c',
+      status: 'idle',
+      lastActivityAt: '2026-03-01T00:12:00.000Z',
+      updatedAt: '2026-03-01T00:12:00.000Z',
+    }),
+    createFocus({
+      id: 'focus-done-d',
+      status: 'done',
+      lastActivityAt: '2026-03-01T00:20:00.000Z',
+      updatedAt: '2026-03-01T00:20:00.000Z',
+    }),
+  ]
+
+  const snapshot = buildFocusViews(focuses, [], ['focus-active-b'], 200, [])
+  expect(snapshot.items.map((item) => item.id)).toEqual([
+    'focus-active-b',
+    'focus-idle-a',
+    'focus-idle-c',
+    'focus-done-d',
+  ])
+})
