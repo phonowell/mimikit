@@ -6,7 +6,10 @@ import { expect, test } from 'vitest'
 
 import { buildPaths } from '../src/fs/paths.js'
 import { createDefaultMemoryRefreshState } from '../src/memory/refresh/state.js'
-import { hydrateRuntimeState } from '../src/orchestrator/core/runtime-persistence.js'
+import {
+  hydrateRuntimeState,
+  persistRuntimeState,
+} from '../src/orchestrator/core/runtime-persistence.js'
 import { saveRuntimeSnapshot } from '../src/storage/runtime-snapshot.js'
 import { publishUserInput, publishWorkerResult } from '../src/streams/queues.js'
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
@@ -65,6 +68,7 @@ test('hydrateRuntimeState reconciles stale queue cursors', async () => {
     activeFocusIds: [],
     managerTurn: 0,
     memoryRefresh: createDefaultMemoryRefreshState(),
+    managerFocusCompressedContexts: [],
   } as RuntimeState
 
   await hydrateRuntimeState(runtime)
@@ -72,4 +76,60 @@ test('hydrateRuntimeState reconciles stale queue cursors', async () => {
   expect(runtime.queues).toEqual({ inputsCursor: 0, resultsCursor: 0 })
   expect(runtime.memoryRefresh.lastProcessedInputsCursor).toBe(0)
   expect(runtime.memoryRefresh.lastProcessedResultsCursor).toBe(0)
+})
+
+test('persist+hydrate keeps reusable session on recovered pending task', async () => {
+  const stateDir = await createTmpDir()
+  const paths = buildPaths(stateDir)
+  const runtime = {
+    config: { workDir: stateDir },
+    paths,
+    queues: { inputsCursor: 0, resultsCursor: 0 },
+    tasks: [
+      {
+        id: 'task-recover-session',
+        fingerprint: 'fp-task-recover-session',
+        prompt: 'resume pending work',
+        title: 'Recover Session',
+        focusId: GLOBAL_FOCUS_ID,
+        profile: 'worker',
+        status: 'running',
+        createdAt: SNAPSHOT_BASE_TIME,
+        startedAt: '2026-02-06T00:01:00.000Z',
+        sessionId: 'session-reuse-after-restart',
+        sessionState: 'reusable' as const,
+        sessionUpdatedAt: '2026-02-06T00:01:10.000Z',
+      },
+    ],
+    taskPlans: [],
+    focuses: [],
+    focusContexts: [],
+    activeFocusIds: [],
+    managerTurn: 0,
+    memoryRefresh: createDefaultMemoryRefreshState(),
+    managerFocusCompressedContexts: [],
+  } as RuntimeState
+
+  await persistRuntimeState(runtime)
+
+  const restored = {
+    config: { workDir: stateDir },
+    paths,
+    queues: { inputsCursor: 0, resultsCursor: 0 },
+    tasks: [],
+    taskPlans: [],
+    focuses: [],
+    focusContexts: [],
+    activeFocusIds: [],
+    managerTurn: 0,
+    memoryRefresh: createDefaultMemoryRefreshState(),
+  } as RuntimeState
+
+  await hydrateRuntimeState(restored)
+
+  expect(restored.tasks).toHaveLength(1)
+  expect(restored.tasks[0]?.status).toBe('pending')
+  expect(restored.tasks[0]?.startedAt).toBeUndefined()
+  expect(restored.tasks[0]?.sessionId).toBe('session-reuse-after-restart')
+  expect(restored.tasks[0]?.sessionState).toBe('reusable')
 })
