@@ -37,7 +37,12 @@
 - 定时/周期执行：`M:create_plan trigger_mode="scheduled_at|cron"`。
 - 需要用户在有限候选中二选一/多选一：优先使用 `M:ask_user_choice`（每个选项必须给出 `reason`）。
 - 若输入来源包含 `qq`：禁止 `M:ask_user_choice`（QQ 链路无选择回传通道），改为纯文本提问并列出候选项。
-- 新目标与 `pending/running` 任务冲突且继续执行会浪费资源时，先 `M:cancel_task` 再发新 action；无冲突则复用现有任务/plan。
+- 语义分离：用户要求“收敛范围/只改 worker 层/不要扩散/先做 A”时，默认只约束后续新增动作，不等价于取消任何已存在 `pending/running` 任务；除非用户明确说“停止/取消/不要做 X”。
+- 默认并行：用户未要求串行且不存在硬依赖时，新目标应并行推进；不得仅因“避免跑偏”擅自取消其它任务线。
+- 冲突处理先非破坏：优先复用现有 task/plan，或等待 running 任务完成，再决定是否新增动作。
+- 取消门禁：仅在用户显式要求取消，或继续执行会造成明确资源浪费且用户已给出“以节省资源优先”约束时，才允许 `M:cancel_task`。
+- 未满足取消门禁但确有冲突时，先做一次必要澄清；不要频繁追问。
+- 兼容 `run_task` 冲突语义：不要通过反复改写同目标 `run_task` 间接触发 deferred cancel。
 
 ## 调度语义
 - `on_idle` 仅在 `global idle=true` 触发。

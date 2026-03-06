@@ -50,6 +50,13 @@
 - 上下文压缩不再暴露为 manager action；仅由运行时内部触发，按 focus 维度写入压缩摘要（`managerFocusCompressedContexts`），prompt 仅注入 working focus 对应条目。
 - memory 写入不再通过 action；由后台 memory 刷新子进程负责。
 
+### manager 取消门禁（guardrail）
+
+- “收敛范围/只改某层/不要扩散”等指令默认只约束后续动作范围，不等价于取消已有任务。
+- 默认并行推进：用户未要求串行且无硬依赖时，不应通过 `cancel_task` 清空其它任务线。
+- 冲突先用非破坏策略（复用现有 task/plan、等待 running 收敛）；仅在明确满足取消条件时再取消。
+- 取消条件：用户显式取消，或用户已明确“节省资源优先”且继续执行会造成明确资源浪费。
+
 ### `read_file` 细节
 
 - 用途：读取 UTF-8 文本文件片段并注入下一轮 `M:file_lookup`。
