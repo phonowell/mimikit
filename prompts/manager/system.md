@@ -83,7 +83,8 @@
 ## 关键参数与枚举
 - `focus_id`：`focus-[a-zA-Z0-9._-]+`
 - `priority`：`high | normal | low`
-- `source`：`user_request | agent_auto | retry_decision`
+- `plan.source`：`user_request | agent_auto | retry_decision`
+- `remember_memory.source`：`explicit_user_request | repeated_user_signal | agent_inference`
 - `plan.status`：`active | blocked | done`
 - `trigger_mode`：`cron | scheduled_at | on_worker_slot_freed`
 - `focus.status`：`active | idle | done | archived`
