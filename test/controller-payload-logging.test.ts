@@ -1,112 +1,114 @@
-import { expect, test, vi } from 'vitest'
+import { expect, test } from 'vitest'
 
-import { createPayloadController } from '../webui/messages/controller-payload.js'
-import { createMessageState } from '../webui/messages/state.js'
+import { createSessionIngressLogger } from '../src/http/session-ingress-log.js'
 
-const createLoadingStub = () => ({
-  isLoading: () => false,
-})
+type LogCall = {
+  tag: string
+  payload: unknown
+}
 
-const createController = () =>
-  createPayloadController({
-    messageState: createMessageState(),
-    loading: createLoadingStub(),
-    doRender: () => null,
-    syncLoadingState: () => {},
-    updateStatus: () => {},
-    onTasksSnapshot: () => {},
-    onPlansSnapshot: () => {},
-    onFocusesSnapshot: () => {},
-    onChoiceSnapshot: () => {},
+const createSpySink = () => {
+  const calls: LogCall[] = []
+  const sink = (tag: string, payload: unknown) => {
+    calls.push({ tag, payload })
+  }
+  return { calls, sink }
+}
+
+test('session ingress logger logs role/type/source/visibility/summary on node side', () => {
+  const { calls, sink } = createSpySink()
+  const logger = createSessionIngressLogger({ sink })
+  const payload = {
+    mode: 'full',
+    messages: [
+      {
+        id: 'input-1',
+        role: 'user',
+        text: 'Please summarize the latest task status',
+        createdAt: '2026-03-06T00:00:00.000Z',
+        focusId: 'focus-global',
+      },
+      {
+        id: 'sys-1',
+        role: 'system',
+        visibility: 'all',
+        text: 'Selected option "Report".\n\n<M:system_event name="user_choice" version="1">{"source":"timeout"}</M:system_event>',
+        createdAt: '2026-03-06T00:00:01.000Z',
+        focusId: 'focus-global',
+      },
+    ],
+  }
+
+  logger.logIncomingMessages(payload)
+  logger.logIncomingMessages(payload)
+
+  const messageLogs = calls.filter(
+    (call) => call.tag === '[http] session ingress message',
+  )
+  expect(messageLogs).toHaveLength(2)
+  expect(messageLogs[0]?.payload).toMatchObject({
+    role: 'user',
+    type: 'user_message',
+    source: 'unknown',
+    visibility: 'all',
+    summary: 'Please summarize the latest task status',
+  })
+  expect(messageLogs[1]?.payload).toMatchObject({
+    role: 'system',
+    type: 'system_event:user_choice',
+    source: 'timeout',
+    visibility: 'all',
+    summary: 'Selected option "Report".',
   })
 
-test('payload controller logs role/type/source/visibility/summary for ingress messages', () => {
-  const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
-  try {
-    const controller = createController()
-    const payload = {
-      mode: 'full',
-      messages: [
-        {
-          id: 'input-1',
-          role: 'user',
-          text: 'Please summarize the latest task status',
-          createdAt: '2026-03-06T00:00:00.000Z',
-          focusId: 'focus-global',
-        },
-        {
-          id: 'sys-1',
-          role: 'system',
-          visibility: 'all',
-          text: 'Selected option "Report".\n\n<M:system_event name="user_choice" version="1">{"source":"timeout"}</M:system_event>',
-          createdAt: '2026-03-06T00:00:01.000Z',
-          focusId: 'focus-global',
-        },
-      ],
-    }
-
-    controller.applyMessagesPayload(payload)
-    controller.applyMessagesPayload(payload)
-
-    const messageLogs = infoSpy.mock.calls.filter(
-      (call) => call[0] === '[webui] session ingress message',
-    )
-    expect(messageLogs).toHaveLength(2)
-    expect(messageLogs[0]?.[1]).toMatchObject({
-      role: 'user',
-      type: 'user_message',
-      source: 'unknown',
-      visibility: 'all',
-      summary: 'Please summarize the latest task status',
-    })
-    expect(messageLogs[1]?.[1]).toMatchObject({
-      role: 'system',
-      type: 'system_event:user_choice',
-      source: 'timeout',
-      visibility: 'all',
-      summary: 'Selected option "Report".',
-    })
-  } finally {
-    infoSpy.mockRestore()
-  }
+  const batchLogs = calls.filter((call) => call.tag === '[http] session ingress batch')
+  expect(batchLogs).toHaveLength(2)
+  expect(batchLogs[0]?.payload).toMatchObject({
+    mode: 'full',
+    incomingCount: 2,
+    loggedCount: 2,
+    skippedCount: 0,
+  })
+  expect(batchLogs[1]?.payload).toMatchObject({
+    mode: 'full',
+    incomingCount: 2,
+    loggedCount: 0,
+    skippedCount: 2,
+  })
 })
 
-test('payload controller re-logs a message when the same id carries a new summary', () => {
-  const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
-  try {
-    const controller = createController()
-    controller.applyMessagesPayload({
-      mode: 'full',
-      messages: [
-        {
-          id: 'agent-1',
-          role: 'agent',
-          text: 'Draft v1',
-          createdAt: '2026-03-06T00:00:00.000Z',
-          focusId: 'focus-global',
-        },
-      ],
-    })
-    controller.applyMessagesPayload({
-      mode: 'full',
-      messages: [
-        {
-          id: 'agent-1',
-          role: 'agent',
-          text: 'Draft v2',
-          createdAt: '2026-03-06T00:00:01.000Z',
-          focusId: 'focus-global',
-        },
-      ],
-    })
+test('session ingress logger re-logs a message when the same id carries a new summary', () => {
+  const { calls, sink } = createSpySink()
+  const logger = createSessionIngressLogger({ sink })
+  logger.logIncomingMessages({
+    mode: 'full',
+    messages: [
+      {
+        id: 'agent-1',
+        role: 'agent',
+        text: 'Draft v1',
+        createdAt: '2026-03-06T00:00:00.000Z',
+        focusId: 'focus-global',
+      },
+    ],
+  })
+  logger.logIncomingMessages({
+    mode: 'full',
+    messages: [
+      {
+        id: 'agent-1',
+        role: 'agent',
+        text: 'Draft v2',
+        createdAt: '2026-03-06T00:00:01.000Z',
+        focusId: 'focus-global',
+      },
+    ],
+  })
 
-    const messageLogs = infoSpy.mock.calls.filter(
-      (call) => call[0] === '[webui] session ingress message',
-    )
-    expect(messageLogs).toHaveLength(2)
-    expect(messageLogs[0]?.[1]).toMatchObject({ summary: 'Draft v1' })
-    expect(messageLogs[1]?.[1]).toMatchObject({ summary: 'Draft v2' })
-  } finally {
-    infoSpy.mockRestore()
-  }
+  const messageLogs = calls.filter(
+    (call) => call.tag === '[http] session ingress message',
+  )
+  expect(messageLogs).toHaveLength(2)
+  expect(messageLogs[0]?.payload).toMatchObject({ summary: 'Draft v1' })
+  expect(messageLogs[1]?.payload).toMatchObject({ summary: 'Draft v2' })
 })
