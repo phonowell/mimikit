@@ -221,23 +221,9 @@
   position: relative;
   border-radius: 999px;
   background: var(--worker-dot-color);
-  box-shadow: 0 0 0 1px
-      color-mix(in srgb, var(--worker-dot-color) 18%, #ffffff),
-    0 0 8px color-mix(in srgb, var(--worker-dot-color) 24%, transparent);
+  box-shadow: none;
   transform: translateZ(0);
-  transition: background-color 0.2s ease-out, box-shadow 0.2s ease-out;
-}
-
-.tasks-worker-dots .worker-dot::before {
-  content: '';
-  position: absolute;
-  top: 1px;
-  left: 1px;
-  width: 2px;
-  height: 2px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.62);
-  pointer-events: none;
+  transition: background-color 0.2s ease-out;
 }
 
 .tasks-worker-dots .worker-dot::after {
@@ -261,10 +247,6 @@
 }
 
 .tasks-worker-dots .worker-dot.worker-dot--state-transition {
-  animation-name: worker-dot-core-breathe;
-  animation-duration: 600ms;
-  animation-timing-function: cubic-bezier(0.2, 0.62, 0.25, 1);
-  animation-iteration-count: 5;
   --worker-dot-pulse-color: var(--status-running);
   --worker-dot-pulse-alpha: 42%;
   --worker-dot-pulse-scale: 2.58;
@@ -337,20 +319,6 @@
 
 .tasks-worker-dots .worker-dot[data-state='disconnected'] {
   --worker-dot-color: var(--status-disconnected);
-}
-
-@keyframes worker-dot-core-breathe {
-  0% {
-    filter: saturate(1) brightness(1);
-  }
-
-  35% {
-    filter: saturate(1.14) brightness(1.08);
-  }
-
-  100% {
-    filter: saturate(1) brightness(1);
-  }
 }
 
 @keyframes worker-dot-ring-pulse {
