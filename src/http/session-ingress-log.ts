@@ -76,6 +76,13 @@ const resolveSource = (
   systemPayload?: Record<string, unknown>,
   systemEventName?: string,
 ): string => {
+  if (message.role === 'user') {
+    const source = compactText(message.source)
+    if (source) return source
+    const platform = compactText(message.platform)
+    if (platform) return platform
+    return 'unknown'
+  }
   if (message.role !== 'system') return 'unknown'
   const payloadSource = compactText(systemPayload?.source)
   if (payloadSource) return payloadSource

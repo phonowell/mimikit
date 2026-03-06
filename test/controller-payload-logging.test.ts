@@ -27,6 +27,7 @@ test('session ingress logger logs role/type/source/visibility/summary on node si
         text: 'Please summarize the latest task status',
         createdAt: '2026-03-06T00:00:00.000Z',
         focusId: 'focus-global',
+        source: 'webui',
       },
       {
         id: 'sys-1',
@@ -49,7 +50,7 @@ test('session ingress logger logs role/type/source/visibility/summary on node si
   expect(messageLogs[0]?.payload).toMatchObject({
     role: 'user',
     type: 'user_message',
-    source: 'unknown',
+    source: 'webui',
     visibility: 'all',
     summary: 'Please summarize the latest task status',
   })
@@ -111,4 +112,34 @@ test('session ingress logger re-logs a message when the same id carries a new su
   expect(messageLogs).toHaveLength(2)
   expect(messageLogs[0]?.payload).toMatchObject({ summary: 'Draft v1' })
   expect(messageLogs[1]?.payload).toMatchObject({ summary: 'Draft v2' })
+})
+
+test('session ingress logger falls back to platform when source is missing', () => {
+  const { calls, sink } = createSpySink()
+  const logger = createSessionIngressLogger({ sink })
+  logger.logIncomingMessages({
+    mode: 'full',
+    messages: [
+      {
+        id: 'input-telegram-1',
+        role: 'user',
+        text: 'Ping from Telegram',
+        createdAt: '2026-03-06T00:00:00.000Z',
+        focusId: 'focus-global',
+        platform: 'telegram',
+      },
+    ],
+  })
+
+  const messageLogs = calls.filter(
+    (call) => call.tag === '[http] session ingress message',
+  )
+  expect(messageLogs).toHaveLength(1)
+  expect(messageLogs[0]?.payload).toMatchObject({
+    role: 'user',
+    type: 'user_message',
+    source: 'telegram',
+    visibility: 'all',
+    summary: 'Ping from Telegram',
+  })
 })

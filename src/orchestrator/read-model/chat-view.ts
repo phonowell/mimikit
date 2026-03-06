@@ -44,6 +44,18 @@ const toInflightChatMessage = (input: UserInput): ChatMessage => {
     text: input.text,
     createdAt: input.createdAt,
     focusId: input.focusId,
+    ...(input.source ? { source: input.source } : {}),
+    ...(input.platform ? { platform: input.platform } : {}),
+    ...(input.telegramChatId ? { telegramChatId: input.telegramChatId } : {}),
+    ...(input.telegramMessageId
+      ? { telegramMessageId: input.telegramMessageId }
+      : {}),
+    ...(input.telegramUpdateId
+      ? { telegramUpdateId: input.telegramUpdateId }
+      : {}),
+    ...(input.telegramTimestamp
+      ? { telegramTimestamp: input.telegramTimestamp }
+      : {}),
     ...(input.quote ? { quote: input.quote } : {}),
   }
 }

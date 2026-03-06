@@ -30,6 +30,12 @@ type NonSystemHistoryMessage = {
   text: string
   createdAt: ISODate
   focusId: FocusId
+  source?: string
+  platform?: string
+  telegramChatId?: string
+  telegramMessageId?: string
+  telegramUpdateId?: string
+  telegramTimestamp?: ISODate
   usage?: TokenUsage
   elapsedMs?: number
   quote?: Id
