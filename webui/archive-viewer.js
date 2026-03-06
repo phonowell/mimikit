@@ -104,8 +104,8 @@ const rewriteMarkdownLinks = (container, sourceUrl) => {
     )
     if (!viewerUrl) continue
     link.setAttribute('href', viewerUrl)
-    link.removeAttribute('target')
-    link.removeAttribute('rel')
+    link.setAttribute('target', '_blank')
+    link.setAttribute('rel', 'noopener noreferrer')
   }
 }
 
