@@ -40,9 +40,8 @@
     animation: none;
   }
 
-  .tasks-worker-dots .worker-dot.worker-dot--state-transition,
-  .tasks-worker-dots .worker-dot.worker-dot--state-transition::after {
-    animation: none;
+  .tasks-worker-dots .worker-dot {
+    transition: none;
   }
 }
 

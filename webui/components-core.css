@@ -220,77 +220,10 @@
   height: 6px;
   position: relative;
   border-radius: 999px;
-  background: var(--worker-dot-color);
+  background-color: var(--worker-dot-color);
   box-shadow: none;
   transform: translateZ(0);
-  transition: background-color 0.2s ease-out;
-}
-
-.tasks-worker-dots .worker-dot::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  border: 1.5px solid
-    color-mix(
-      in srgb,
-      var(--worker-dot-pulse-color) var(--worker-dot-pulse-alpha),
-      transparent
-    );
-  opacity: 0;
-  transform: translate(-50%, -50%) scale(0.72);
-  pointer-events: none;
-  will-change: transform, opacity;
-}
-
-.tasks-worker-dots .worker-dot.worker-dot--state-transition {
-  --worker-dot-pulse-color: var(--status-running);
-  --worker-dot-pulse-alpha: 42%;
-  --worker-dot-pulse-scale: 2.58;
-}
-
-.tasks-worker-dots .worker-dot.worker-dot--state-transition::after {
-  animation-name: worker-dot-ring-pulse;
-  animation-duration: 600ms;
-  animation-timing-function: cubic-bezier(0.2, 0.62, 0.25, 1);
-  animation-iteration-count: 5;
-}
-
-.tasks-worker-dots
-  .worker-dot.worker-dot--state-transition[data-transition='engage'] {
-  --worker-dot-pulse-color: var(--status-running);
-  --worker-dot-pulse-alpha: 46%;
-  --worker-dot-pulse-scale: 2.78;
-}
-
-.tasks-worker-dots
-  .worker-dot.worker-dot--state-transition[data-transition='release'] {
-  --worker-dot-pulse-color: var(--status-idle);
-  --worker-dot-pulse-alpha: 36%;
-  --worker-dot-pulse-scale: 2.42;
-}
-
-.tasks-worker-dots
-  .worker-dot.worker-dot--state-transition[data-transition='offline'] {
-  --worker-dot-pulse-color: var(--status-disconnected);
-  --worker-dot-pulse-alpha: 30%;
-  --worker-dot-pulse-scale: 2.2;
-}
-
-.tasks-worker-dots
-  .worker-dot.worker-dot--state-transition[data-transition='recover'] {
-  --worker-dot-pulse-color: var(--status-running);
-  --worker-dot-pulse-alpha: 40%;
-  --worker-dot-pulse-scale: 2.62;
-}
-
-.tasks-worker-dots .worker-dot.worker-dot--state-transition[data-transition='shift'] {
-  --worker-dot-pulse-color: var(--status-running);
-  --worker-dot-pulse-alpha: 26%;
-  --worker-dot-pulse-scale: 2;
+  transition: background-color 220ms ease;
 }
 
 .tasks-worker-dots .worker-dot[data-state='running'] {
@@ -319,22 +252,6 @@
 
 .tasks-worker-dots .worker-dot[data-state='disconnected'] {
   --worker-dot-color: var(--status-disconnected);
-}
-
-@keyframes worker-dot-ring-pulse {
-  0% {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.72);
-  }
-
-  16% {
-    opacity: 0.86;
-  }
-
-  100% {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(var(--worker-dot-pulse-scale));
-  }
 }
 
 .scroll-bottom {
