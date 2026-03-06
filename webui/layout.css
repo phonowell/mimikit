@@ -152,7 +152,8 @@ main[data-app] {
   display: inline-flex;
 }
 
-.tools-menu {
+.tools-menu,
+.task-more-menu {
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
@@ -168,11 +169,13 @@ main[data-app] {
   z-index: 6;
 }
 
-.tools-menu[hidden] {
+.tools-menu[hidden],
+.task-more-menu[hidden] {
   display: none;
 }
 
-.tools-menu-item {
+.tools-menu-item,
+.task-menu-item {
   width: 100%;
   min-height: 30px;
   border-radius: 8px;
@@ -186,22 +189,26 @@ main[data-app] {
   padding: 0 10px;
 }
 
-.tools-menu-item:hover:not(:disabled) {
+.tools-menu-item:hover:not(:disabled),
+.task-menu-item:hover:not(:disabled) {
   background: var(--panel-soft);
   color: var(--accent);
 }
 
-.tools-menu-item:active:not(:disabled) {
+.tools-menu-item:active:not(:disabled),
+.task-menu-item:active:not(:disabled) {
   box-shadow: var(--shadow-inset-soft);
   transform: translate(0.5px, 0.5px);
 }
 
-.tools-menu-item:focus-visible {
+.tools-menu-item:focus-visible,
+.task-menu-item:focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 1px;
 }
 
-.tools-menu-item--danger:hover:not(:disabled) {
+.tools-menu-item--danger:hover:not(:disabled),
+.task-menu-item--cancel:hover:not(:disabled) {
   background: rgba(226, 93, 93, 0.1);
   color: var(--danger);
 }
