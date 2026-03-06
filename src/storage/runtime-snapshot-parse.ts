@@ -1,19 +1,18 @@
 import { stripUndefined } from '../shared/utils.js'
 
-import {
-  type RuntimeSnapshot,
-  runtimeSnapshotSchema,
-} from './runtime-snapshot-schema.js'
-import { normalizeTokenUsage } from './token-usage.js'
-
 import type {
+
   focusContextSchema,
   focusMetaSchema,
   managerFocusCompressedContextSchema,
   pendingUserChoiceSchema,
   taskPlanSchema,
-  taskSchema,
-} from './runtime-snapshot-schema.js'
+  taskSchema} from './runtime-snapshot-schema.js';
+import {
+  type RuntimeSnapshot,
+  runtimeSnapshotSchema} from './runtime-snapshot-schema.js'
+import { normalizeTokenUsage } from './token-usage.js'
+
 import type { z } from 'zod'
 
 type SnapshotTask = z.infer<typeof taskSchema>

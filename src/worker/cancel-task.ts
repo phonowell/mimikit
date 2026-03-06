@@ -33,13 +33,14 @@ export type CancelMeta = {
 
 export type CancelResult = {
   ok: boolean
+  id: string
   status:
     | 'canceled'
     | 'not_found'
     | 'already_done'
     | 'already_canceled'
     | 'invalid'
-  taskId?: string
+  changeAt?: string
 }
 
 const buildCanceledResult = (task: Task, output: string): TaskResult => {
@@ -72,6 +73,9 @@ const buildCancelMeta = (meta?: CancelMeta): TaskCancelMeta => ({
   source: normalizeCancelSource(meta?.source),
   ...(meta?.reason ? { reason: meta.reason } : {}),
 })
+
+const resolveTaskChangeAt = (task: Task): string =>
+  task.completedAt ?? task.startedAt ?? task.createdAt
 
 const applyCancelSessionPolicy = (
   task: Task,
@@ -121,13 +125,25 @@ export const cancelTask = async (
   meta?: CancelMeta,
 ): Promise<CancelResult> => {
   const trimmed = taskId.trim()
-  if (!trimmed) return { ok: false, status: 'invalid' }
+  if (!trimmed) return { ok: false, id: trimmed, status: 'invalid' }
   const task = runtime.tasks.find((item) => item.id === trimmed)
-  if (!task) return { ok: false, status: 'not_found', taskId: trimmed }
-  if (task.status === 'canceled')
-    return { ok: false, status: 'already_canceled', taskId: trimmed }
-  if (task.status === 'succeeded' || task.status === 'failed')
-    return { ok: false, status: 'already_done', taskId: trimmed }
+  if (!task) return { ok: false, id: trimmed, status: 'not_found' }
+  if (task.status === 'canceled') {
+    return {
+      ok: false,
+      id: task.id,
+      status: 'already_canceled',
+      changeAt: resolveTaskChangeAt(task),
+    }
+  }
+  if (task.status === 'succeeded' || task.status === 'failed') {
+    return {
+      ok: false,
+      id: task.id,
+      status: 'already_done',
+      changeAt: resolveTaskChangeAt(task),
+    }
+  }
 
   if (task.status === 'pending') {
     runtime.lastWorkerActivityAtMs = Date.now()
@@ -154,7 +170,12 @@ export const cancelTask = async (
       }),
     )
     notifyWorkerLoop(runtime)
-    return { ok: true, status: 'canceled', taskId: task.id }
+    return {
+      ok: true,
+      id: task.id,
+      status: 'canceled',
+      changeAt: result.completedAt,
+    }
   }
 
   const canceledAt = nowIso()
@@ -188,5 +209,10 @@ export const cancelTask = async (
     persistRuntimeState(runtime),
   )
   notifyWorkerLoop(runtime)
-  return { ok: true, status: 'canceled', taskId: task.id }
+  return {
+    ok: true,
+    id: task.id,
+    status: 'canceled',
+    changeAt: canceledAt,
+  }
 }

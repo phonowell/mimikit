@@ -19,10 +19,21 @@ export const registerTaskCancelRoute = (
           : result.status === 'invalid'
             ? 400
             : 409
-      reply.code(status).send({ error: result.status })
+      reply.code(status).send({
+        ok: false,
+        id: result.id,
+        status: result.status,
+        ...(result.changeAt ? { changeAt: result.changeAt } : {}),
+        error: result.status,
+      })
       return
     }
 
-    reply.send({ ok: true, status: result.status, taskId })
+    reply.send({
+      ok: true,
+      id: result.id,
+      status: result.status,
+      ...(result.changeAt ? { changeAt: result.changeAt } : {}),
+    })
   })
 }

@@ -97,11 +97,14 @@ test('cancelTask keeps session reusable for deferred cancel source', async () =>
     reason: 'defer to follow-up plan',
   })
 
-  expect(result).toEqual({
+  expect(result).toMatchObject({
     ok: true,
+    id: task.id,
     status: 'canceled',
-    taskId: task.id,
   })
+  expect(result.changeAt).toMatch(
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+  )
   expect(task.sessionId).toBe('session-keep')
   expect(task.sessionState).toBe('reusable')
   expect(task.cancel?.source).toBe('deferred')
@@ -127,11 +130,14 @@ test('cancelTask discards session for user cancel source', async () => {
     reason: 'user clicked stop',
   })
 
-  expect(result).toEqual({
+  expect(result).toMatchObject({
     ok: true,
+    id: task.id,
     status: 'canceled',
-    taskId: task.id,
   })
+  expect(result.changeAt).toMatch(
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+  )
   expect(task.sessionId).toBeUndefined()
   expect(task.sessionState).toBe('discarded')
   expect(task.cancel?.source).toBe('user')
@@ -142,4 +148,28 @@ test('cancelTask discards session for user cancel source', async () => {
   })
   expect(packets).toHaveLength(1)
   expect(packets[0]?.payload.cancel?.source).toBe('user')
+})
+
+test('cancelTask keeps system source and returns trace fields', async () => {
+  const runtime = await createRuntime()
+  const task = createPendingTask('task-system-cancel', {
+    sessionId: 'session-system',
+    sessionState: 'reusable',
+  })
+  runtime.tasks = [task]
+
+  const result = await cancelTask(runtime, task.id, {
+    source: 'system',
+    reason: 'system cleanup',
+  })
+
+  expect(result).toMatchObject({
+    ok: true,
+    id: task.id,
+    status: 'canceled',
+  })
+  expect(result.changeAt).toMatch(
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+  )
+  expect(task.cancel?.source).toBe('system')
 })

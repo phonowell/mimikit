@@ -55,6 +55,12 @@
 - 可选：`quote`、`language`
 - 可选客户端上下文：`clientLocale`、`clientTimeZone`、`clientOffsetMinutes`、`clientNowIso`
 
+## 取消任务协议（`POST /api/tasks/:id/cancel`）
+
+- 成功：`{ ok: true, id, status: "canceled", changeAt }`
+- 失败：`{ ok: false, id, status, changeAt?, error }`
+- 说明：`id` 固定为目标任务 ID；`status` 取值 `not_found | invalid | already_canceled | already_done`；`changeAt` 与任务视图字段语义一致。
+
 ## CLI 入口
 
 - `pnpm start`

@@ -47,7 +47,11 @@ export const createOrchestratorStub = () => {
       choice: null,
     }),
     getTaskById: () => undefined,
-    cancelTask: async () => ({ ok: false, status: 'not_found' as const }),
+    cancelTask: async (taskId: string) => ({
+      ok: false,
+      id: taskId,
+      status: 'not_found' as const,
+    }),
     selectPendingUserChoice: async () =>
       ({ ok: false, reason: 'not_found' as const }),
     stopAndPersist: async () => undefined,
