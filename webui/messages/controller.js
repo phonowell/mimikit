@@ -7,6 +7,11 @@ import {
 import { createDeleteMessageController } from './controller-delete.js'
 import { createQuoteController } from './quote.js'
 import { createMessageRendering } from './rendering.js'
+import {
+  readManagerFallbackRetryStats,
+  resolveManagerFallbackRetrySource,
+} from './fallback-retry.js'
+import { renderError } from './render-list.js'
 import { createScrollController } from './scroll.js'
 import { createSendHandler } from './send.js'
 import { subscribeTimeTick } from '../time-tick.js'
@@ -14,6 +19,7 @@ import { createMessageState } from './state.js'
 import { createControllerQueue } from './controller-queue.js'
 import { createSseController } from './controller-sse.js'
 import { createPayloadController } from './controller-payload.js'
+import { UI_TEXT } from '../system-text.js'
 
 const EVENTS_URL = '/api/events'
 const RECONNECT_BASE_DELAY_MS = 1200
@@ -81,12 +87,71 @@ export function createMessagesController({
     deleteConfirmBtn,
   })
 
+  let retryingFallbackMessageId = null
+  let sendMessage = async () => {}
+
+  const isRetryPending = (message) => {
+    if (messageState.awaitingReply) return true
+    const id =
+      message?.id !== null && message?.id !== undefined
+        ? String(message.id)
+        : null
+    if (!id) return false
+    return retryingFallbackMessageId === id
+  }
+
+  const rerenderWithRetryState = () => {
+    const messages = Array.isArray(messageState.lastMessages)
+      ? messageState.lastMessages
+      : []
+    doRender(messages, new Set())
+  }
+
+  const retryManagerFallback = async (fallbackMessage) => {
+    const messages = Array.isArray(messageState.lastMessages)
+      ? messageState.lastMessages
+      : []
+    const source = resolveManagerFallbackRetrySource(messages, fallbackMessage)
+    if (!source) {
+      renderError(
+        {
+          messagesEl,
+          removeEmpty: () => removeEmpty(),
+          updateScrollButton: scroll.updateScrollButton,
+        },
+        new Error(UI_TEXT.retryRequestMissingSource),
+      )
+      return
+    }
+
+    const retryTargetMessageId =
+      fallbackMessage?.id !== null && fallbackMessage?.id !== undefined
+        ? String(fallbackMessage.id)
+        : null
+    retryingFallbackMessageId = retryTargetMessageId
+    rerenderWithRetryState()
+    try {
+      const stats = readManagerFallbackRetryStats(fallbackMessage)
+      console.info('[webui] manager fallback retry', {
+        retrySourceInputId: source.inputId,
+        fallbackMessageId: retryTargetMessageId,
+        autoRetry: stats,
+      })
+      await sendMessage(source.text)
+    } finally {
+      retryingFallbackMessageId = null
+      rerenderWithRetryState()
+    }
+  }
+
   const rendering = createMessageRendering({
     messagesEl,
     scroll,
     loading,
     quote,
     onDelete: deleteMessages.deleteMessage,
+    onRetryManagerFallback: retryManagerFallback,
+    isRetryPending,
     isDeleteMode: () => deleteModeEnabled,
   })
   removeEmpty = rendering.removeEmpty
@@ -156,7 +221,7 @@ export function createMessagesController({
     },
   })
 
-  const sendMessage = createSendHandler({
+  sendMessage = createSendHandler({
     sendBtn,
     input,
     messageState,

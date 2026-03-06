@@ -41,6 +41,8 @@ type SystemHistoryMessage = {
   text: string
   createdAt: ISODate
   focusId: FocusId
+  systemEventName?: string
+  systemEventPayload?: Record<string, unknown>
   usage?: TokenUsage
   elapsedMs?: number
   quote?: Id
@@ -189,6 +191,8 @@ type UserInputSystem = {
   text: string
   createdAt: ISODate
   focusId: FocusId
+  systemEventName?: string
+  systemEventPayload?: Record<string, unknown>
   quote?: Id
 }
 export type UserInput = UserInputUser | UserInputSystem

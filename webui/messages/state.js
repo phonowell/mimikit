@@ -35,6 +35,8 @@ const toMessageSignature = (messages) =>
       createdAt: message?.createdAt ?? null,
       quote: message?.quote ?? null,
       focusId: message?.focusId ?? null,
+      systemEventName: message?.systemEventName ?? null,
+      systemEventPayload: message?.systemEventPayload ?? null,
       usage: message?.usage ?? null,
       elapsedMs: message?.elapsedMs ?? null,
     })),

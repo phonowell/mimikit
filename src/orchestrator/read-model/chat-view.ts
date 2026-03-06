@@ -1,5 +1,6 @@
 import { parseActions } from '../../actions/protocol/parse.js'
 import { isVisibleToUser } from '../../shared/message-visibility.js'
+import { parseSystemEventText } from '../../shared/system-event.js'
 
 import type { HistoryMessage, UserInput } from '../../types/index.js'
 
@@ -7,22 +8,33 @@ export type ChatMessage = HistoryMessage
 
 export type ChatMessagesMode = 'full' | 'delta' | 'reset'
 
-const toUserVisibleSystemText = (text: string): string => {
+const toUserVisibleSystemMessage = (text: string) => {
   const visibleText = parseActions(text).text
-  if (!visibleText.trim()) return ''
-  return visibleText
+  if (!visibleText.trim()) return { text: '' }
+  const parsedEvent = parseSystemEventText(text)
+  return {
+    text: visibleText,
+    ...(parsedEvent.name ? { systemEventName: parsedEvent.name } : {}),
+    ...(parsedEvent.payload ? { systemEventPayload: parsedEvent.payload } : {}),
+  }
 }
 
 const toInflightChatMessage = (input: UserInput): ChatMessage => {
   if (input.role === 'system') {
-    const visibleText = toUserVisibleSystemText(input.text)
+    const visible = toUserVisibleSystemMessage(input.text)
     return {
       id: input.id,
       role: input.role,
       visibility: input.visibility,
-      text: visibleText,
+      text: visible.text,
       createdAt: input.createdAt,
       focusId: input.focusId,
+      ...(visible.systemEventName
+        ? { systemEventName: visible.systemEventName }
+        : {}),
+      ...(visible.systemEventPayload
+        ? { systemEventPayload: visible.systemEventPayload }
+        : {}),
       ...(input.quote ? { quote: input.quote } : {}),
     }
   }
@@ -85,11 +97,17 @@ const mergeChatMessagesWithoutLimit = (params: {
       merged.push(message)
       continue
     }
-    const visibleText = toUserVisibleSystemText(message.text)
-    if (!visibleText) continue
+    const visible = toUserVisibleSystemMessage(message.text)
+    if (!visible.text) continue
     merged.push({
       ...message,
-      text: visibleText,
+      text: visible.text,
+      ...(visible.systemEventName
+        ? { systemEventName: visible.systemEventName }
+        : {}),
+      ...(visible.systemEventPayload
+        ? { systemEventPayload: visible.systemEventPayload }
+        : {}),
     })
   }
   const seenIds = new Set(merged.map((message) => message.id))

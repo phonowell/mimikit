@@ -43,6 +43,11 @@
 - 内部编排/调度/控制类事件默认不可见：`manager_round_limit`、`manager_error`、`action_feedback`、`trigger_fire`、`worker_slots_idle`、`worker_slot_freed`、`plan_created`、`plan_updated`、`plan_deleted`。
 - 未识别 system_event 采用保守策略：`visibility=user` 保持可见，`visibility=all` 默认不展示给最终用户。
 
+`manager_fallback_reply` 失败重试补充（网络波动场景）：
+- 后端在 `manager_fallback_reply` payload 追加 `source_input_id` 与自动重试元数据：`auto_retry_attempts`、`auto_retry_max_attempts`、`auto_retry_state`、`auto_retry_strategy`。
+- WebUI 在消息模型中保留 `systemEventName/systemEventPayload`，不依赖文案关键词判断事件类型。
+- 当 `auto_retry_state` 为 `exhausted/not_retryable` 时，WebUI 在该 system 气泡展示 `Retry` 按钮；点击后复用原发送入口重新提交 `source_input_id` 对应用户输入。
+
 ## 输入协议（`POST /api/input`）
 
 请求体（`parseInputBody`）：

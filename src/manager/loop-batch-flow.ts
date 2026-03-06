@@ -13,6 +13,20 @@ import { persistRuntimeState, type RuntimeState } from './runtime-adapter.js'
 
 import type { TaskResult, TokenUsage, UserInput } from '../types/index.js'
 
+const MANAGER_AUTO_RETRY_ATTEMPTS = 0
+const MANAGER_AUTO_RETRY_MAX_ATTEMPTS = 1
+const MANAGER_AUTO_RETRY_STATE = 'exhausted' as const
+const MANAGER_AUTO_RETRY_STRATEGY = 'manager_single_attempt'
+
+const resolveLatestUserInputId = (inputs: UserInput[]): string | undefined => {
+  for (let index = inputs.length - 1; index >= 0; index -= 1) {
+    const input = inputs[index]
+    if (input?.role !== 'user') continue
+    return input.id
+  }
+  return undefined
+}
+
 export const finishBatchWithoutAgentReply = async (params: {
   runtime: RuntimeState
   inputs: UserInput[]
@@ -99,9 +113,16 @@ export const recoverManagerBatchFailure = async (params: {
   }
 
   const errorFocusId = resolveDefaultFocusId(params.runtime)
+  const sourceInputId = resolveLatestUserInputId(params.inputs)
   if (drainedOnError && !params.agentAppended && params.agentInputsCount > 0) {
     await bestEffort('appendHistory: manager_fallback_reply', () =>
-      appendManagerFallbackReply(params.runtime.paths, errorFocusId),
+      appendManagerFallbackReply(params.runtime.paths, errorFocusId, {
+        ...(sourceInputId ? { sourceInputId } : {}),
+        autoRetryAttempts: MANAGER_AUTO_RETRY_ATTEMPTS,
+        autoRetryMaxAttempts: MANAGER_AUTO_RETRY_MAX_ATTEMPTS,
+        autoRetryState: MANAGER_AUTO_RETRY_STATE,
+        autoRetryStrategy: MANAGER_AUTO_RETRY_STRATEGY,
+      }),
     )
   }
   await bestEffort('appendHistory: manager_error_system_message', () =>
@@ -119,6 +140,10 @@ export const recoverManagerBatchFailure = async (params: {
       elapsedMs: Math.max(0, Date.now() - params.startedAt),
       drainedOnError,
       agentAppended: params.agentAppended,
+      autoRetryAttempts: MANAGER_AUTO_RETRY_ATTEMPTS,
+      autoRetryMaxAttempts: MANAGER_AUTO_RETRY_MAX_ATTEMPTS,
+      autoRetryState: MANAGER_AUTO_RETRY_STATE,
+      autoRetryStrategy: MANAGER_AUTO_RETRY_STRATEGY,
     }),
   )
   await bestEffort('persistRuntimeState: manager_error', () =>

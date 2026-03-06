@@ -77,6 +77,8 @@ test('selectChatMessages keeps system text body without adding a label prefix', 
         text: 'Session started.',
         createdAt: '2026-03-02T08:00:00.000Z',
         focusId: 'focus-global',
+        systemEventName: 'startup',
+        systemEventPayload: {},
       },
     ],
   })
@@ -138,6 +140,10 @@ test('selectChatMessages keeps user-facing system events with direct user value'
         text: 'Selected option "Report".',
         createdAt: '2026-03-02T08:00:00.000Z',
         focusId: 'focus-global',
+        systemEventName: 'user_choice',
+        systemEventPayload: {
+          source: 'user',
+        },
       },
     ],
   })

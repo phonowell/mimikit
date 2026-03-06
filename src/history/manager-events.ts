@@ -8,9 +8,18 @@ import { appendHistory } from './store.js'
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { FocusId, ManagerActionFeedback } from '../types/index.js'
 
+type ManagerFallbackMeta = {
+  sourceInputId?: string
+  autoRetryAttempts: number
+  autoRetryMaxAttempts: number
+  autoRetryState: 'exhausted' | 'not_retryable'
+  autoRetryStrategy: string
+}
+
 export const appendManagerFallbackReply = async (
   paths: RuntimeState['paths'],
   focusId: FocusId = GLOBAL_FOCUS_ID,
+  fallbackMeta?: ManagerFallbackMeta,
 ): Promise<void> => {
   const fallback = (
     await loadPromptTemplate('manager/system-fallback-reply.md')
@@ -27,6 +36,17 @@ export const appendManagerFallbackReply = async (
       event: 'manager_fallback_reply',
       payload: {
         reply: fallback,
+        ...(fallbackMeta?.sourceInputId
+          ? { source_input_id: fallbackMeta.sourceInputId }
+          : {}),
+        ...(fallbackMeta
+          ? {
+              auto_retry_attempts: fallbackMeta.autoRetryAttempts,
+              auto_retry_max_attempts: fallbackMeta.autoRetryMaxAttempts,
+              auto_retry_state: fallbackMeta.autoRetryState,
+              auto_retry_strategy: fallbackMeta.autoRetryStrategy,
+            }
+          : {}),
       },
     }),
     createdAt,

@@ -5,7 +5,16 @@ import { formatElapsedLabel, formatUsage } from './format-usage.js'
 import { renderMessages } from './render-list.js'
 
 export const createMessageRendering = (params) => {
-  const { messagesEl, scroll, loading, quote, onDelete, isDeleteMode } = params
+  const {
+    messagesEl,
+    scroll,
+    loading,
+    quote,
+    onDelete,
+    onRetryManagerFallback,
+    isRetryPending,
+    isDeleteMode,
+  } = params
   const removeEmpty = () => {}
 
   const doRender = (messages, enterMessageIds) => {
@@ -25,6 +34,8 @@ export const createMessageRendering = (params) => {
       enterMessageIds,
       onQuote: quote.set,
       onDelete,
+      onRetryManagerFallback,
+      isRetryPending,
       isDeleteMode:
         typeof isDeleteMode === 'function' ? isDeleteMode() : Boolean(isDeleteMode),
     })
