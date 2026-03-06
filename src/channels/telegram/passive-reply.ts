@@ -63,6 +63,7 @@ export const dispatchTelegramPassiveReply = async (params: {
   const sent = await sendTelegramTextMessage({
     botToken: runtime.config.telegram.botToken,
     apiRoot: runtime.config.telegram.apiRoot,
+    proxy: runtime.config.telegram.proxy,
     chatId: targetChatId,
     text: content,
   })

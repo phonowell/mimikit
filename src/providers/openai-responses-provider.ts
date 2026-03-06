@@ -4,6 +4,7 @@ import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { attachProviderThreadId } from '../shared/provider-thread-id.js'
 import { normalizeUsage } from '../shared/utils.js'
+import { ProxyAgent } from 'undici'
 
 import { loadCodexSettings } from './codex-settings.js'
 import {
@@ -25,6 +26,7 @@ import {
 
 import type { OpenAiResponsesProviderRequest, Provider } from './types.js'
 import type { TokenUsage } from '../types/index.js'
+import type { Dispatcher } from 'undici'
 
 const PROVIDER_ID = 'openai-responses' as const
 
@@ -75,11 +77,34 @@ const resolveModel = (
   })
 }
 
-const buildFetchWithoutAuthHeader = (): typeof fetch => (input, init) => {
-  const request = input instanceof Request ? input : new Request(input, init)
-  const headers = new Headers(request.headers)
-  headers.delete('authorization')
-  return fetch(new Request(request, { headers }))
+const proxyDispatcherCache = new Map<string, Dispatcher>()
+
+const resolveProxyDispatcher = (
+  proxy: string | undefined,
+): Dispatcher | undefined => {
+  const trimmed = trimNonEmptyString(proxy)
+  if (!trimmed) return undefined
+  let parsed: URL
+  try {
+    parsed = new URL(trimmed)
+  } catch {
+    throw buildProviderPreflightError({
+      providerId: PROVIDER_ID,
+      message: `proxy is invalid: ${trimmed}`,
+    })
+  }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    throw buildProviderPreflightError({
+      providerId: PROVIDER_ID,
+      message: `proxy protocol is invalid: ${parsed.protocol}`,
+    })
+  }
+  const normalized = parsed.toString()
+  const cached = proxyDispatcherCache.get(normalized)
+  if (cached) return cached
+  const dispatcher = new ProxyAgent(normalized)
+  proxyDispatcherCache.set(normalized, dispatcher)
+  return dispatcher
 }
 
 const appendOpenAiResponsesLog = async (
@@ -262,19 +287,18 @@ const runOpenAiResponses = async (request: OpenAiResponsesProviderRequest) => {
       requestApiKey ?? settings.apiKey,
       settings.requiresAuth,
     )
+    const dispatcher = resolveProxyDispatcher(request.proxy)
     const model = resolveModel(request, settings.model)
     const endpoint = `${baseUrl}/responses`
     const shouldStripAuthorizationHeader =
       settings.requiresAuth === false &&
       !requestApiKey &&
       !trimNonEmptyString(settings.apiKey)
-    const doFetch = shouldStripAuthorizationHeader
-      ? buildFetchWithoutAuthHeader()
-      : fetch
     await appendOpenAiResponsesLog(request, {
       event: 'llm_call_started',
       modelResolved: model,
       baseUrl,
+      proxyEnabled: Boolean(dispatcher),
       ...(settings.wireApi ? { wireApi: settings.wireApi } : {}),
     })
 
@@ -288,16 +312,21 @@ const runOpenAiResponses = async (request: OpenAiResponsesProviderRequest) => {
     })
     sessionId = resolveSessionId(request.threadId)
     resetIdle()
-    const response = await doFetch(endpoint, {
+    const headers: Record<string, string> = {
+      'content-type': 'application/json',
+      session_id: sessionId,
+    }
+    if (!shouldStripAuthorizationHeader) {
+      headers.authorization = `Bearer ${apiKey}`
+    }
+    const requestInit: RequestInit & { dispatcher?: Dispatcher } = {
       method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        authorization: `Bearer ${apiKey}`,
-        session_id: sessionId,
-      },
+      headers,
       body: requestBody,
       signal: controller.signal,
-    })
+      ...(dispatcher ? { dispatcher } : {}),
+    }
+    const response = await fetch(endpoint, requestInit)
     resetIdle()
     const raw = await response.text()
     resetIdle()

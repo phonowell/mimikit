@@ -18,6 +18,7 @@ type ProviderRequestBase = {
   prompt: string
   workDir: string
   timeoutMs: number
+  proxy?: string
   model?: string
   threadId?: string | null
   abortSignal?: AbortSignal

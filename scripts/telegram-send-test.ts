@@ -2,7 +2,14 @@ import { parseArgs } from 'node:util'
 
 import { sendTelegramTextMessage } from '../src/channels/telegram/client.js'
 
+const stripArgSeparators = (argv: string[]): string[] => {
+  let offset = 0
+  while (argv[offset] === '--') offset += 1
+  return argv.slice(offset)
+}
+
 const { values } = parseArgs({
+  args: stripArgSeparators(process.argv.slice(2)),
   options: {
     text: { type: 'string', default: 'mimikit telegram test' },
   },
@@ -11,6 +18,7 @@ const { values } = parseArgs({
 const botToken = process.env.TELEGRAM_BOT_TOKEN?.trim()
 const chatId = process.env.TELEGRAM_CHAT_ID?.trim()
 const apiRoot = process.env.TELEGRAM_API_ROOT?.trim() ?? 'https://api.telegram.org'
+const proxy = process.env.TELEGRAM_PROXY?.trim() ?? ''
 const text = values.text.trim()
 
 if (!botToken || !chatId) {
@@ -28,6 +36,7 @@ const sent = await sendTelegramTextMessage({
   botToken,
   chatId,
   apiRoot,
+  proxy,
   text,
 })
 

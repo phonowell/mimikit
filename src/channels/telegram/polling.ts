@@ -1,6 +1,7 @@
 import { appendLog } from '../../log/append.js'
 
 import { assertEnabledTelegramConfig } from './config.js'
+import { resolveTelegramProxy } from './proxy.js'
 
 import type { AppConfig } from '../../config.js'
 import type { UserMeta } from '../../orchestrator/core/runtime-state.js'
@@ -32,9 +33,11 @@ export const startTelegramPolling = async (params: {
   assertEnabledTelegramConfig(config.telegram)
 
   const { Telegraf } = await import('telegraf')
+  const { proxyAgent } = resolveTelegramProxy(config.telegram.proxy)
   const bot = new Telegraf(config.telegram.botToken, {
     telegram: {
       apiRoot: config.telegram.apiRoot,
+      ...(proxyAgent ? { agent: proxyAgent } : {}),
     },
   })
 

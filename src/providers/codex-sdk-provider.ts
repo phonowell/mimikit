@@ -23,7 +23,46 @@ import {
 
 import type { CodexSdkProviderRequest, Provider } from './types.js'
 
-const codex = new Codex()
+const codexClientCache = new Map<string, Codex>()
+
+const toCodexCliEnv = (proxy: string): Record<string, string> => {
+  const env: Record<string, string> = {}
+  for (const [key, value] of Object.entries(process.env)) {
+    if (typeof value === 'string') env[key] = value
+  }
+  env.HTTP_PROXY = proxy
+  env.HTTPS_PROXY = proxy
+  env.ALL_PROXY = proxy
+  env.http_proxy = proxy
+  env.https_proxy = proxy
+  env.all_proxy = proxy
+  return env
+}
+
+const resolveCodexProxy = (proxy: string | undefined): string | undefined => {
+  const trimmed = proxy?.trim()
+  if (!trimmed) return undefined
+  try {
+    const parsed = new URL(trimmed)
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:')
+      throw new Error('invalid_protocol')
+    return parsed.toString()
+  } catch {
+    throw new Error(`worker_proxy_invalid_url:${trimmed}`)
+  }
+}
+
+const resolveCodexClient = (proxy: string | undefined): Codex => {
+  const proxyUrl = resolveCodexProxy(proxy)
+  const key = proxyUrl ?? ''
+  const cached = codexClientCache.get(key)
+  if (cached) return cached
+  const client = proxyUrl
+    ? new Codex({ env: toCodexCliEnv(proxyUrl) })
+    : new Codex()
+  codexClientCache.set(key, client)
+  return client
+}
 
 const runCodexProvider = async (request: CodexSdkProviderRequest) => {
   if (request.logPath) {
@@ -49,6 +88,7 @@ const runCodexProvider = async (request: CodexSdkProviderRequest) => {
     }
   }
 
+  const codex = resolveCodexClient(request.proxy)
   const { thread } = createCodexThread(codex, request)
 
   const startedAt = Date.now()

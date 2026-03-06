@@ -8,6 +8,8 @@ manager:
     baseUrl: ""
     # Manager 专用 API Key；可选；敏感项；空字符串表示走环境与 codex 配置
     apiKey: ""
+    # Manager 请求代理；可选；空字符串表示直连
+    proxy: ""
 
 worker:
   # Worker 使用的模型名；必填；默认 gpt-5.3-codex
@@ -18,6 +20,8 @@ worker:
   maxConcurrent: 3
   # Worker 单任务超时（毫秒）；整数 > 0；默认 600000（10 分钟）
   timeoutMs: 600000
+  # Worker 请求代理；可选；空字符串表示直连
+  proxy: ""
 
 telegram:
   # 是否启用 Telegram 通道；默认 false
@@ -28,3 +32,5 @@ telegram:
   chatId: ""
   # Telegram API 根地址；默认官方地址
   apiRoot: https://api.telegram.org
+  # Telegram 代理地址；可选；留空表示直连
+  proxy: ""

@@ -27,6 +27,7 @@ export const runManagerLlmCall = async (params: {
   managerProvider?: {
     baseUrl?: string | undefined
     apiKey?: string | undefined
+    proxy?: string | undefined
     modelReasoningEffort?: ModelReasoningEffort | undefined
   }
   onUsage?: (usage: TokenUsage) => void
@@ -41,6 +42,7 @@ export const runManagerLlmCall = async (params: {
 }> => {
   const managerBaseUrl = params.managerProvider?.baseUrl?.trim()
   const managerApiKey = params.managerProvider?.apiKey?.trim()
+  const managerProxy = params.managerProvider?.proxy?.trim()
   const managerModelReasoningEffort =
     params.managerProvider?.modelReasoningEffort
   const timeoutMs = resolveManagerTimeoutMs(params.prompt)
@@ -52,6 +54,7 @@ export const runManagerLlmCall = async (params: {
     timeoutMs,
     ...(managerBaseUrl ? { baseUrl: managerBaseUrl } : {}),
     ...(managerApiKey ? { apiKey: managerApiKey } : {}),
+    ...(managerProxy ? { proxy: managerProxy } : {}),
     ...(managerModelReasoningEffort
       ? { modelReasoningEffort: managerModelReasoningEffort }
       : {}),

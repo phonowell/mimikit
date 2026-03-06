@@ -102,9 +102,11 @@ manager:
   provider:
     # baseUrl: https://your-codex-provider.example.com/v1/codex
     # apiKey: ${AICODING_API_KEY}
+    # proxy: http://127.0.0.1:7897
 worker:
   model: gpt-5.3-codex
   modelReasoningEffort: high
+  # proxy: http://127.0.0.1:7897
 ```
 
 Env overrides:
@@ -116,9 +118,46 @@ export MIMIKIT_WORKER_MODEL=gpt-5.3-codex
 export MIMIKIT_REASONING_EFFORT=high
 export MIMIKIT_MANAGER_REASONING_EFFORT=medium
 export MIMIKIT_WORKER_REASONING_EFFORT=high
+export MIMIKIT_PROXY=http://127.0.0.1:7897
+export MIMIKIT_MANAGER_PROXY=http://127.0.0.1:7897
+export MIMIKIT_WORKER_PROXY=http://127.0.0.1:7897
 ```
 
 Precedence: role-specific env (`MIMIKIT_MANAGER_*` / `MIMIKIT_WORKER_*`) overrides global env.
+
+## Telegram + Proxy Bring-up Record (2026-03-06)
+
+Use this sequence when local network needs a proxy to reach Telegram:
+
+1. Configure `config.yaml`:
+
+```yaml
+telegram:
+  enabled: true
+  botToken: "<your_bot_token>"
+  chatId: "<your_chat_id>"
+  apiRoot: https://api.telegram.org
+  proxy: "http://127.0.0.1:7897"
+```
+
+2. Validate bot credentials through proxy:
+
+```bash
+HTTPS_PROXY=http://127.0.0.1:7897 \
+HTTP_PROXY=http://127.0.0.1:7897 \
+curl -s "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getMe"
+```
+
+3. Get `chat_id`:
+
+```bash
+HTTPS_PROXY=http://127.0.0.1:7897 \
+HTTP_PROXY=http://127.0.0.1:7897 \
+curl -s "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates" \
+  | jq -r '.result | last | (.message.chat.id // .channel_post.chat.id // .my_chat_member.chat.id)'
+```
+
+4. Start runtime and verify by sending a Telegram message to the bot (inbound appears in WebUI and manager reply is sent back to Telegram).
 
 ## Failure Triage
 

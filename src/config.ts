@@ -35,6 +35,7 @@ export type AppConfig = {
     provider: {
       baseUrl?: string | undefined
       apiKey?: string | undefined
+      proxy?: string | undefined
     }
     maxCorrectionRounds: number
     promptSections: PromptSectionLimits
@@ -52,6 +53,7 @@ export type AppConfig = {
   }
   worker: {
     maxConcurrent: number
+    proxy?: string | undefined
     retry: {
       maxAttempts: number
       backoffMs: number
@@ -118,6 +120,7 @@ export const defaultConfig = (params: DefaultConfigParams): AppConfig => {
     },
     worker: {
       maxConcurrent: userConfig.worker.maxConcurrent,
+      ...(userConfig.worker.proxy ? { proxy: userConfig.worker.proxy } : {}),
       timeoutMs: userConfig.worker.timeoutMs,
       model: userConfig.worker.model,
       modelReasoningEffort: userConfig.worker.modelReasoningEffort,

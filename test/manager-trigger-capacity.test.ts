@@ -59,6 +59,7 @@ const createTestConfig = (
     botToken: '',
     chatId: '',
     apiRoot: 'https://api.telegram.org',
+    proxy: '',
   },
 })
 

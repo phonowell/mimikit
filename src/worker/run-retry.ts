@@ -55,6 +55,7 @@ const runTaskModel = (params: {
     ...(focusContext ? { focusContext } : {}),
     ...(compressedFocusContext ? { compressedFocusContext } : {}),
     timeoutMs: worker.timeoutMs,
+    ...(worker.proxy ? { proxy: worker.proxy } : {}),
     model: worker.model,
     modelReasoningEffort: worker.modelReasoningEffort,
     ...(params.sessionId ? { sessionId: params.sessionId } : {}),

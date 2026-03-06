@@ -73,25 +73,31 @@
 - `MIMIKIT_REASONING_EFFORT`
 - `MIMIKIT_MANAGER_REASONING_EFFORT`
 - `MIMIKIT_WORKER_REASONING_EFFORT`
+- `MIMIKIT_PROXY`
+- `MIMIKIT_MANAGER_PROXY`
+- `MIMIKIT_WORKER_PROXY`
 - `TELEGRAM_CHANNEL_ENABLED`
 - `TELEGRAM_BOT_TOKEN`
 - `TELEGRAM_CHAT_ID`
 - `TELEGRAM_API_ROOT`
+- `TELEGRAM_PROXY`
 
 ## 配置结构（`config.yaml`）
 
 - 若缺少 `config.yaml`，启动阶段会由 `defaults/config.template.yaml` 自动生成。
 - `manager.model`
 - `manager.modelReasoningEffort`
-- `manager.provider.{baseUrl,apiKey}`（可选，仅 manager）
+- `manager.provider.{baseUrl,apiKey,proxy}`（可选，仅 manager）
 - `worker.maxConcurrent`
 - `worker.timeoutMs`
 - `worker.model`
 - `worker.modelReasoningEffort`
+- `worker.proxy`
 - `telegram.enabled`
 - `telegram.botToken`
 - `telegram.chatId`
 - `telegram.apiRoot`
+- `telegram.proxy`
 
 ## Telegram 模块边界（`src/channels/telegram/*`）
 

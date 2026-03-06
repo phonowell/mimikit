@@ -48,6 +48,7 @@ export const runManager = async (params: {
   managerProvider?: {
     baseUrl?: string | undefined
     apiKey?: string | undefined
+    proxy?: string | undefined
     modelReasoningEffort?: ModelReasoningEffort | undefined
   }
   onUsage?: (usage: TokenUsage) => void

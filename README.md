@@ -83,9 +83,11 @@ manager:
     # optional manager-only provider overrides
     baseUrl: ""
     apiKey: ""
+    proxy: ""
 worker:
   model: gpt-5.3-codex
   modelReasoningEffort: high
+  proxy: ""
 ```
 
 - manager calls route directly to `openai-responses`
@@ -109,6 +111,7 @@ tsx src/cli/index.ts --port 8787 --work-dir .mimikit
 export TELEGRAM_CHANNEL_ENABLED=true
 export TELEGRAM_BOT_TOKEN=<your_bot_token>
 export TELEGRAM_CHAT_ID=<your_chat_id>
+export TELEGRAM_PROXY=http://127.0.0.1:7897 # optional
 pnpm start
 ```
 
@@ -117,6 +120,7 @@ Outbound smoke test:
 ```bash
 TELEGRAM_BOT_TOKEN=<your_bot_token> \
 TELEGRAM_CHAT_ID=<your_chat_id> \
+TELEGRAM_PROXY=http://127.0.0.1:7897 \
 pnpm run telegram:send-test -- --text "mimikit telegram smoke test"
 ```
 

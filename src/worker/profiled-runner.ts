@@ -23,6 +23,7 @@ type LlmResult = {
 type BuildRunModelParams = {
   workDir: string
   timeoutMs: number
+  proxy?: string
   model?: string
   modelReasoningEffort?: ModelReasoningEffort
   abortSignal?: AbortSignal
@@ -42,6 +43,7 @@ const buildRunModel =
       prompt: input.prompt,
       workDir: params.workDir,
       timeoutMs: params.timeoutMs,
+      ...(params.proxy ? { proxy: params.proxy } : {}),
       ...(params.abortSignal ? { abortSignal: params.abortSignal } : {}),
       ...(params.model ? { model: params.model } : {}),
       ...(params.modelReasoningEffort
@@ -63,6 +65,7 @@ type WorkerRunnerParams = {
   focusContext?: FocusContext
   compressedFocusContext?: ManagerFocusCompressedContext
   timeoutMs: number
+  proxy?: string
   model?: string
   modelReasoningEffort?: ModelReasoningEffort
   abortSignal?: AbortSignal

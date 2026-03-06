@@ -20,6 +20,7 @@ const managerProviderInputSchema = z
   .object({
     baseUrl: z.string().optional(),
     apiKey: z.string().optional(),
+    proxy: z.string().optional(),
     model: z.string().min(1).optional(),
     modelReasoningEffort: modelReasoningEffortSchema.optional(),
   })
@@ -61,6 +62,7 @@ const workerInputSchema = z
   .object({
     maxConcurrent: z.number().int().positive().optional(),
     timeoutMs: z.number().int().positive().optional(),
+    proxy: z.string().optional(),
     model: z.string().min(1).optional(),
     modelReasoningEffort: modelReasoningEffortSchema.optional(),
     retry: z
@@ -90,11 +92,13 @@ export type UserConfigDefaults = {
     provider: {
       baseUrl?: string | undefined
       apiKey?: string | undefined
+      proxy?: string | undefined
     }
   }
   worker: {
     maxConcurrent: number
     timeoutMs: number
+    proxy?: string | undefined
     model: string
     modelReasoningEffort: z.infer<typeof modelReasoningEffortSchema>
   }
@@ -110,6 +114,7 @@ const DEFAULT_USER_CONFIG: UserConfigDefaults = {
   worker: {
     maxConcurrent: 3,
     timeoutMs: 600000,
+    proxy: '',
     model: 'gpt-5.3-codex',
     modelReasoningEffort: 'high',
   },
@@ -118,6 +123,7 @@ const DEFAULT_USER_CONFIG: UserConfigDefaults = {
     botToken: '',
     chatId: '',
     apiRoot: 'https://api.telegram.org',
+    proxy: '',
   },
 }
 
@@ -216,6 +222,8 @@ const buildUserConfigDefaults = (
   const managerProvider = input.manager?.provider
   const baseUrl = trimToUndefined(managerProvider?.baseUrl)
   const apiKey = trimToUndefined(managerProvider?.apiKey)
+  const managerProxy = trimToUndefined(managerProvider?.proxy)
+  const workerProxy = trimToUndefined(input.worker?.proxy)
 
   return {
     manager: {
@@ -230,6 +238,7 @@ const buildUserConfigDefaults = (
       provider: {
         ...(baseUrl ? { baseUrl } : {}),
         ...(apiKey ? { apiKey } : {}),
+        ...(managerProxy ? { proxy: managerProxy } : {}),
       },
     },
     worker: {
@@ -237,6 +246,7 @@ const buildUserConfigDefaults = (
         input.worker?.maxConcurrent ?? DEFAULT_USER_CONFIG.worker.maxConcurrent,
       timeoutMs:
         input.worker?.timeoutMs ?? DEFAULT_USER_CONFIG.worker.timeoutMs,
+      ...(workerProxy ? { proxy: workerProxy } : {}),
       model: input.worker?.model ?? DEFAULT_USER_CONFIG.worker.model,
       modelReasoningEffort:
         input.worker?.modelReasoningEffort ??
@@ -248,6 +258,7 @@ const buildUserConfigDefaults = (
         input.telegram?.botToken ?? DEFAULT_USER_CONFIG.telegram.botToken,
       chatId: input.telegram?.chatId ?? DEFAULT_USER_CONFIG.telegram.chatId,
       apiRoot: input.telegram?.apiRoot ?? DEFAULT_USER_CONFIG.telegram.apiRoot,
+      proxy: input.telegram?.proxy ?? DEFAULT_USER_CONFIG.telegram.proxy,
     },
   }
 }

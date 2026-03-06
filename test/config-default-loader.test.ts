@@ -31,7 +31,9 @@ test('fills defaults when optional fields are omitted', async () => {
   expect(config.manager.modelReasoningEffort).toBe('medium')
   expect(config.worker.model).toBe('gpt-5.3-codex')
   expect(config.worker.timeoutMs).toBe(600000)
+  expect(config.worker.proxy).toBeUndefined()
   expect(config.telegram.enabled).toBe(false)
+  expect(config.telegram.proxy).toBe('')
 })
 
 test('normalizes empty provider overrides to undefined', async () => {
@@ -41,12 +43,30 @@ test('normalizes empty provider overrides to undefined', async () => {
       '  provider:',
       '    baseUrl: ""',
       '    apiKey: "   "',
+      '    proxy: "   "',
     ].join('\n'),
   )
 
   const config = loadDefaultConfigFromYaml(path)
 
   expect(config.manager.provider).toEqual({})
+})
+
+test('supports manager and worker proxy overrides', async () => {
+  const path = await writeTempConfig(
+    [
+      'manager:',
+      '  provider:',
+      '    proxy: " http://127.0.0.1:7897 "',
+      'worker:',
+      '  proxy: " http://127.0.0.1:7898 "',
+    ].join('\n'),
+  )
+
+  const config = loadDefaultConfigFromYaml(path)
+
+  expect(config.manager.provider.proxy).toBe('http://127.0.0.1:7897')
+  expect(config.worker.proxy).toBe('http://127.0.0.1:7898')
 })
 
 test('supports provider model fallback and ignores runtime-only compatibility keys', async () => {

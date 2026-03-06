@@ -14,6 +14,7 @@ telegram:
   botToken: ""
   chatId: ""
   apiRoot: https://api.telegram.org
+  proxy: ""
 ```
 
 ## 环境变量覆写
@@ -22,6 +23,7 @@ telegram:
 - `TELEGRAM_BOT_TOKEN`
 - `TELEGRAM_CHAT_ID`
 - `TELEGRAM_API_ROOT`
+- `TELEGRAM_PROXY`
 
 说明：当 `telegram.enabled=true` 时，`telegram.botToken` 与 `telegram.chatId` 必填，缺失会在启动阶段直接报错并退出。
 
@@ -35,6 +37,7 @@ telegram:
 export TELEGRAM_CHANNEL_ENABLED=true
 export TELEGRAM_BOT_TOKEN=<your_bot_token>
 export TELEGRAM_CHAT_ID=<your_chat_id>
+export TELEGRAM_PROXY=http://127.0.0.1:7897 # 可选
 pnpm start
 ```
 
@@ -45,6 +48,7 @@ pnpm start
 ```bash
 TELEGRAM_BOT_TOKEN=<your_bot_token> \
 TELEGRAM_CHAT_ID=<your_chat_id> \
+TELEGRAM_PROXY=http://127.0.0.1:7897 \
 pnpm run telegram:send-test -- --text "mimikit telegram smoke test"
 ```
 

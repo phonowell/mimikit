@@ -12,6 +12,10 @@ const ENV_KEYS = [
   'MIMIKIT_REASONING_EFFORT',
   'MIMIKIT_MANAGER_REASONING_EFFORT',
   'MIMIKIT_WORKER_REASONING_EFFORT',
+  'MIMIKIT_PROXY',
+  'MIMIKIT_MANAGER_PROXY',
+  'MIMIKIT_WORKER_PROXY',
+  'TELEGRAM_PROXY',
 ] as const
 
 type Snapshot = Partial<Record<(typeof ENV_KEYS)[number], string>>
@@ -68,4 +72,13 @@ test('role-specific env overrides global env values', () => {
   expect(config.worker.model).toBe('gpt-test-worker')
   expect(config.manager.modelReasoningEffort).toBe('high')
   expect(config.worker.modelReasoningEffort).toBe('minimal')
+})
+
+test('telegram proxy env overrides config value', () => {
+  const config = createConfig()
+  process.env.TELEGRAM_PROXY = 'http://127.0.0.1:7897'
+
+  applyCliEnvOverrides(config)
+
+  expect(config.telegram.proxy).toBe('http://127.0.0.1:7897')
 })

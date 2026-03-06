@@ -54,6 +54,7 @@ const createRuntime = async (): Promise<RuntimeState> => {
       botToken: '',
       chatId: '',
       apiRoot: 'https://api.telegram.org',
+      proxy: '',
     },
   }
   const now = '2026-03-05T00:00:00.000Z'

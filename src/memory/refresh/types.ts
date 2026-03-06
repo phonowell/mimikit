@@ -29,6 +29,7 @@ export type MemoryRefreshPayload = {
   managerProvider?: {
     baseUrl?: string | undefined
     apiKey?: string | undefined
+    proxy?: string | undefined
     modelReasoningEffort?: ModelReasoningEffort | undefined
   }
   memoryMarkdown: string

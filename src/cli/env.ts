@@ -53,8 +53,28 @@ const applyReasoningEnv = (config: AppConfig): void => {
   )
   if (worker) config.worker.modelReasoningEffort = worker
 }
+
+const trimEnv = (name: string): string | undefined => {
+  const value = process.env[name]
+  if (!value) return undefined
+  const trimmed = value.trim()
+  return trimmed.length > 0 ? trimmed : undefined
+}
+
+const applyProxyEnv = (config: AppConfig): void => {
+  const globalProxy = trimEnv('MIMIKIT_PROXY')
+  if (globalProxy) {
+    config.manager.provider.proxy = globalProxy
+    config.worker.proxy = globalProxy
+  }
+  const managerProxy = trimEnv('MIMIKIT_MANAGER_PROXY')
+  if (managerProxy) config.manager.provider.proxy = managerProxy
+  const workerProxy = trimEnv('MIMIKIT_WORKER_PROXY')
+  if (workerProxy) config.worker.proxy = workerProxy
+}
 export const applyCliEnvOverrides = (config: AppConfig): void => {
   applyModelEnv(config)
   applyReasoningEnv(config)
+  applyProxyEnv(config)
   applyTelegramEnvOverrides(config.telegram)
 }

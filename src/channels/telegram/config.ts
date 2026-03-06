@@ -6,6 +6,7 @@ export const telegramConfigSchema = z
     botToken: z.string(),
     chatId: z.string(),
     apiRoot: z.string().min(1),
+    proxy: z.string(),
   })
   .strict()
 
@@ -32,6 +33,8 @@ export const applyTelegramEnvOverrides = (config: TelegramConfig): void => {
   if (chatId) config.chatId = chatId
   const apiRoot = process.env.TELEGRAM_API_ROOT?.trim()
   if (apiRoot) config.apiRoot = apiRoot
+  const proxy = process.env.TELEGRAM_PROXY?.trim()
+  if (proxy) config.proxy = proxy
 }
 
 export const assertEnabledTelegramConfig = (config: TelegramConfig): void => {
