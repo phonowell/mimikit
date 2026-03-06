@@ -110,9 +110,7 @@ export const renderMessage = (params, msg) => {
     quoteBtn = document.createElement('button')
     quoteBtn.type = 'button'
     quoteBtn.className = 'btn btn--xs btn--icon message-quote-btn'
-    quoteBtn.appendChild(
-      createIconElement(msg.role === 'user' ? 'corner-up-right' : 'corner-up-left'),
-    )
+    quoteBtn.appendChild(createIconElement('message-square-quote'))
     quoteBtn.title = UI_TEXT.quote
     quoteBtn.setAttribute('aria-label', UI_TEXT.quote)
     quoteBtn.addEventListener('click', () => onQuote(msg))
@@ -123,7 +121,7 @@ export const renderMessage = (params, msg) => {
     deleteBtn = document.createElement('button')
     deleteBtn.type = 'button'
     deleteBtn.className = 'btn btn--xs btn--icon message-delete-btn'
-    deleteBtn.appendChild(createIconElement('x'))
+    deleteBtn.appendChild(createIconElement('trash-2'))
     deleteBtn.title = UI_TEXT.delete
     deleteBtn.setAttribute('aria-label', UI_TEXT.delete)
     deleteBtn.addEventListener('click', () => onDelete(msg))

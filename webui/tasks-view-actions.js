@@ -56,7 +56,7 @@ export const createTaskActions = ({ titleText, taskId, statusValue }) => {
     titleText,
     taskId,
     disabled: !(isPaused ? canResume : canPause),
-    iconName: isPaused ? 'corner-up-right' : 'corner-up-left',
+    iconName: isPaused ? 'play' : 'pause',
   })
   const cancelBtn = createMenuButton({
     action: 'cancel',
@@ -64,7 +64,7 @@ export const createTaskActions = ({ titleText, taskId, statusValue }) => {
     titleText,
     taskId,
     disabled: !canCancel,
-    iconName: 'x',
+    iconName: 'square',
   })
 
   menu.appendChild(primaryBtn)

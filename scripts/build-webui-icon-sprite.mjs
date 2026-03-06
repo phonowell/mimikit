@@ -4,10 +4,16 @@ import { fileURLToPath } from 'node:url'
 
 const ICON_NAMES = [
   'arrow-down',
-  'corner-up-left',
-  'corner-up-right',
   'ellipsis',
+  'eraser',
+  'message-square-quote',
+  'message-square-x',
+  'pause',
+  'play',
   'rotate-ccw',
+  'send-horizontal',
+  'square',
+  'trash-2',
   'x',
 ]
 
