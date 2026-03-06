@@ -27,9 +27,9 @@ const codexClientCache = new Map<string, Codex>()
 
 const toCodexCliEnv = (proxy: string): Record<string, string> => {
   const env: Record<string, string> = {}
-  for (const [key, value] of Object.entries(process.env)) {
+  for (const [key, value] of Object.entries(process.env))
     if (typeof value === 'string') env[key] = value
-  }
+
   env.HTTP_PROXY = proxy
   env.HTTPS_PROXY = proxy
   env.ALL_PROXY = proxy

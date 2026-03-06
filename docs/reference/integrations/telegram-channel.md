@@ -42,14 +42,3 @@ pnpm start
 ```
 
 4. 在 Telegram 给机器人发送文本，确认 WebUI 会话里出现 `source=telegram` 的用户输入。
-
-## 最小出站验证
-
-```bash
-TELEGRAM_BOT_TOKEN=<your_bot_token> \
-TELEGRAM_CHAT_ID=<your_chat_id> \
-TELEGRAM_PROXY=http://127.0.0.1:7897 \
-pnpm run telegram:send-test -- --text "mimikit telegram smoke test"
-```
-
-预期：机器人向目标 chat 发送一条文本消息。

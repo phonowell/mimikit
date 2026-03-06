@@ -1,10 +1,11 @@
 import { randomUUID } from 'node:crypto'
 
+import { ProxyAgent } from 'undici'
+
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { attachProviderThreadId } from '../shared/provider-thread-id.js'
 import { normalizeUsage } from '../shared/utils.js'
-import { ProxyAgent } from 'undici'
 
 import { loadCodexSettings } from './codex-settings.js'
 import {
@@ -316,9 +317,9 @@ const runOpenAiResponses = async (request: OpenAiResponsesProviderRequest) => {
       'content-type': 'application/json',
       session_id: sessionId,
     }
-    if (!shouldStripAuthorizationHeader) {
+    if (!shouldStripAuthorizationHeader)
       headers.authorization = `Bearer ${apiKey}`
-    }
+
     const requestInit: RequestInit & { dispatcher?: Dispatcher } = {
       method: 'POST',
       headers,

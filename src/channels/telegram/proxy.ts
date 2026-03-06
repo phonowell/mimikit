@@ -9,9 +9,9 @@ const trimToUndefined = (value: string | undefined): string | undefined => {
 const normalizeProxyUrl = (value: string): string => {
   try {
     const url = new URL(value)
-    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    if (url.protocol !== 'http:' && url.protocol !== 'https:')
       throw new Error('unsupported_protocol')
-    }
+
     return url.toString()
   } catch {
     throw new Error(`telegram_proxy_invalid_url:${value}`)
@@ -26,7 +26,9 @@ const resolveProxyUrl = (configProxy: string): string | undefined => {
   return normalizeProxyUrl(envProxy)
 }
 
-export const resolveTelegramProxy = (configProxy: string): {
+export const resolveTelegramProxy = (
+  configProxy: string,
+): {
   proxyUrl?: string
   proxyAgent?: HttpsProxyAgent<string>
 } => {

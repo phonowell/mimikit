@@ -115,15 +115,6 @@ export TELEGRAM_PROXY=http://127.0.0.1:7897 # optional
 pnpm start
 ```
 
-Outbound smoke test:
-
-```bash
-TELEGRAM_BOT_TOKEN=<your_bot_token> \
-TELEGRAM_CHAT_ID=<your_chat_id> \
-TELEGRAM_PROXY=http://127.0.0.1:7897 \
-pnpm run telegram:send-test -- --text "mimikit telegram smoke test"
-```
-
 ## LLM Bootstrap
 
 For LLM-driven setup and configuration, use [`docs/BOOTSTRAP.md`](./docs/BOOTSTRAP.md). It provides deterministic install/config/start/verify steps.
