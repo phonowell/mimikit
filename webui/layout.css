@@ -176,6 +176,9 @@ main[data-app] {
 
 .tools-menu-item,
 .task-menu-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   width: 100%;
   min-height: 30px;
   border-radius: 8px;

@@ -6,11 +6,13 @@ const createMenuButton = ({
   titleText,
   taskId,
   disabled,
+  iconName,
 }) => {
   const button = document.createElement('button')
   button.type = 'button'
   button.className = `task-menu-item task-menu-item--${action}`
-  button.textContent = text
+  button.appendChild(createIconElement(iconName))
+  button.append(text)
   button.setAttribute('role', 'menuitem')
   button.setAttribute('data-task-action-inline', action)
   button.setAttribute('data-task-id', taskId)
@@ -54,6 +56,7 @@ export const createTaskActions = ({ titleText, taskId, statusValue }) => {
     titleText,
     taskId,
     disabled: !(isPaused ? canResume : canPause),
+    iconName: isPaused ? 'corner-up-right' : 'corner-up-left',
   })
   const cancelBtn = createMenuButton({
     action: 'cancel',
@@ -61,6 +64,7 @@ export const createTaskActions = ({ titleText, taskId, statusValue }) => {
     titleText,
     taskId,
     disabled: !canCancel,
+    iconName: 'x',
   })
 
   menu.appendChild(primaryBtn)
