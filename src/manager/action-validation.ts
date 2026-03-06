@@ -1,7 +1,7 @@
 import {
   askUserChoiceSchema,
-  cancelSchema,
   createPlanSchema,
+  mutateTaskSchema,
   parseAskUserChoiceAttrs,
   readFileSchema,
   rememberMemorySchema,
@@ -12,9 +12,11 @@ import {
 import {
   formatAskUserChoiceInvalidOptionsHint,
   formatAskUserChoiceTelegramUnsupportedHint,
-  formatCancelTaskAlreadyCanceledHint,
-  formatCancelTaskNotCancelableHint,
-  formatCancelTaskNotFoundHint,
+  formatMutateTaskAlreadyCanceledHint,
+  formatMutateTaskAlreadyDoneHint,
+  formatMutateTaskAlreadyPausedHint,
+  formatMutateTaskNotFoundHint,
+  formatMutateTaskNotPausedHint,
   formatPlanNotFoundHint,
   formatUpdatePlanDoneForbiddenHint,
 } from './action-feedback-hints.js'
@@ -85,15 +87,34 @@ export const validateCreatePlan = (
     ...resolveScheduleNowOption(context),
   })
 }
-export const validateCancelTask = (
+export const validateMutateTask = (
   item: Parsed,
   context: FeedbackContext,
 ): ValidationIssue[] => {
-  const parsed = cancelSchema.safeParse(item.attrs)
+  const parsed = mutateTaskSchema.safeParse(item.attrs)
   if (!parsed.success) return [invalidArgsIssue(parsed.error)]
-  const { id } = parsed.data
+  const { id, op } = parsed.data
   const taskStatus = context.taskStatusById?.get(id)
-  if (!taskStatus) return rejected(formatCancelTaskNotFoundHint())
+  if (!taskStatus) return rejected(formatMutateTaskNotFoundHint())
+
+  if (op === 'pause') {
+    if (taskStatus === 'pending' || taskStatus === 'running') return []
+    if (taskStatus === 'paused')
+      return rejected(formatMutateTaskAlreadyPausedHint())
+    return rejected(formatMutateTaskAlreadyDoneHint('pause'))
+  }
+
+  if (op === 'resume') {
+    if (taskStatus === 'paused') return []
+    if (
+      taskStatus === 'succeeded' ||
+      taskStatus === 'failed' ||
+      taskStatus === 'canceled'
+    )
+      return rejected(formatMutateTaskAlreadyDoneHint('resume'))
+    return rejected(formatMutateTaskNotPausedHint())
+  }
+
   if (
     taskStatus === 'pending' ||
     taskStatus === 'paused' ||
@@ -101,8 +122,8 @@ export const validateCancelTask = (
   )
     return []
   if (taskStatus === 'canceled')
-    return rejected(formatCancelTaskAlreadyCanceledHint())
-  return rejected(formatCancelTaskNotCancelableHint())
+    return rejected(formatMutateTaskAlreadyCanceledHint())
+  return rejected(formatMutateTaskAlreadyDoneHint('cancel'))
 }
 export const validateQueryContext = (item: Parsed): ValidationIssue[] =>
   validateRangeQueryWithSchema(item, queryContextSchema)

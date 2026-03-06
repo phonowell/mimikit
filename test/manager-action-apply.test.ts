@@ -169,6 +169,90 @@ test('enqueue_task dedupe does not block task creation when fingerprint differs'
   expect(runtime.tasks[1]?.fingerprint).not.toBe(runtime.tasks[0]?.fingerprint)
 })
 
+test('mutate_task with op=pause marks pending task as paused', async () => {
+  const runtime = await createRuntime()
+  runtime.tasks.push({
+    id: 'task-pause-target',
+    fingerprint: 'pause fp',
+    prompt: 'pause prompt',
+    title: 'pause title',
+    focusId: GLOBAL_FOCUS_ID,
+    profile: 'worker',
+    status: 'pending',
+    createdAt: '2026-02-13T00:00:00.000Z',
+  })
+
+  await applyTaskActions(runtime, [
+    {
+      name: 'mutate_task',
+      attrs: {
+        id: 'task-pause-target',
+        op: 'pause',
+      },
+    },
+  ])
+
+  expect(runtime.tasks[0]?.status).toBe('paused')
+  expect(runtime.tasks[0]?.pausedAt).toBeTypeOf('string')
+})
+
+test('mutate_task with op=resume requeues paused task', async () => {
+  const runtime = await createRuntime()
+  runtime.tasks.push({
+    id: 'task-resume-target',
+    fingerprint: 'resume fp',
+    prompt: 'resume prompt',
+    title: 'resume title',
+    focusId: GLOBAL_FOCUS_ID,
+    profile: 'worker',
+    status: 'paused',
+    createdAt: '2026-02-13T00:00:00.000Z',
+    pausedAt: '2026-02-13T00:10:00.000Z',
+  })
+
+  await applyTaskActions(runtime, [
+    {
+      name: 'mutate_task',
+      attrs: {
+        id: 'task-resume-target',
+        op: 'resume',
+      },
+    },
+  ])
+
+  expect(runtime.tasks[0]?.status).toBe('pending')
+  expect(runtime.tasks[0]?.pausedAt).toBeUndefined()
+  expect(runtime.workerQueue.size).toBe(1)
+})
+
+test('mutate_task with op=cancel marks paused task as canceled', async () => {
+  const runtime = await createRuntime()
+  runtime.tasks.push({
+    id: 'task-cancel-target',
+    fingerprint: 'cancel fp',
+    prompt: 'cancel prompt',
+    title: 'cancel title',
+    focusId: GLOBAL_FOCUS_ID,
+    profile: 'worker',
+    status: 'paused',
+    createdAt: '2026-02-13T00:00:00.000Z',
+    pausedAt: '2026-02-13T00:10:00.000Z',
+  })
+
+  await applyTaskActions(runtime, [
+    {
+      name: 'mutate_task',
+      attrs: {
+        id: 'task-cancel-target',
+        op: 'cancel',
+      },
+    },
+  ])
+
+  expect(runtime.tasks[0]?.status).toBe('canceled')
+  expect(runtime.tasks[0]?.completedAt).toBeTypeOf('string')
+})
+
 test('ask_user_choice stores pending choice and stops later actions in same batch', async () => {
   const runtime = await createRuntime()
   await applyTaskActions(runtime, [

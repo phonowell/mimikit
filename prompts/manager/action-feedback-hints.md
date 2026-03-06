@@ -14,12 +14,16 @@ scheduled_at_invalid: |
   {{ action }} 执行失败：scheduled_at 不是合法 ISO 8601 时间。
 scheduled_at_not_future: |
   {{ action }} 执行失败：scheduled_at 必须晚于当前时间（now={{ now_iso }}）。
-cancel_task_not_found: |
-  cancel_task 执行失败：未找到可取消的任务 ID。
-cancel_task_already_canceled: |
-  cancel_task 执行失败：任务已是 canceled 状态。
-cancel_task_not_cancelable: |
-  cancel_task 执行失败：任务已完成，无法取消。
+mutate_task_not_found: |
+  mutate_task 执行失败：未找到 task ID。
+mutate_task_already_done: |
+  mutate_task 执行失败：任务已完成，无法执行 {{ op }}。
+mutate_task_already_paused: |
+  mutate_task 执行失败：任务已是 paused 状态。
+mutate_task_not_paused: |
+  mutate_task 执行失败：任务当前不是 paused 状态，无法 resume。
+mutate_task_already_canceled: |
+  mutate_task 执行失败：任务已是 canceled 状态。
 ask_user_choice_telegram_unsupported: |
   ask_user_choice 执行失败：当前批次来源包含 Telegram 输入，当前链路不支持选项回传。
 ask_user_choice_invalid_options: |

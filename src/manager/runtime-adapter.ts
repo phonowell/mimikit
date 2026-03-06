@@ -13,5 +13,7 @@ export {
 export { selectRecentTasks } from '../orchestrator/read-model/plan-select.js'
 export { cancelTask } from '../worker/cancel-task.js'
 export { enqueueWorkerTask } from '../worker/dispatch.js'
+export { pauseTask } from '../worker/pause-task.js'
+export { resumeTask } from '../worker/resume-task.js'
 
 export type { RuntimeState } from '../orchestrator/core/runtime-state.js'

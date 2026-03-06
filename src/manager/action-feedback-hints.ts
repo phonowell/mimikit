@@ -19,9 +19,11 @@ const actionFeedbackHintSchema = z
     invalid_iso_range_field: z.string().trim().min(1),
     scheduled_at_invalid: z.string().trim().min(1),
     scheduled_at_not_future: z.string().trim().min(1),
-    cancel_task_not_found: z.string().trim().min(1),
-    cancel_task_already_canceled: z.string().trim().min(1),
-    cancel_task_not_cancelable: z.string().trim().min(1),
+    mutate_task_not_found: z.string().trim().min(1),
+    mutate_task_already_done: z.string().trim().min(1),
+    mutate_task_already_paused: z.string().trim().min(1),
+    mutate_task_not_paused: z.string().trim().min(1),
+    mutate_task_already_canceled: z.string().trim().min(1),
     ask_user_choice_telegram_unsupported: z.string().trim().min(1),
     ask_user_choice_invalid_options: z.string().trim().min(1),
     plan_not_found: z.string().trim().min(1),
@@ -88,14 +90,24 @@ export const formatScheduledAtNotFutureHint = (
     now_iso: nowIso,
   })
 
-export const formatCancelTaskNotFoundHint = (): string =>
-  renderHint('cancel_task_not_found')
+export const formatMutateTaskNotFoundHint = (): string =>
+  renderHint('mutate_task_not_found')
 
-export const formatCancelTaskAlreadyCanceledHint = (): string =>
-  renderHint('cancel_task_already_canceled')
+export const formatMutateTaskAlreadyDoneHint = (
+  op: 'pause' | 'resume' | 'cancel',
+): string =>
+  renderHint('mutate_task_already_done', {
+    op,
+  })
 
-export const formatCancelTaskNotCancelableHint = (): string =>
-  renderHint('cancel_task_not_cancelable')
+export const formatMutateTaskAlreadyPausedHint = (): string =>
+  renderHint('mutate_task_already_paused')
+
+export const formatMutateTaskNotPausedHint = (): string =>
+  renderHint('mutate_task_not_paused')
+
+export const formatMutateTaskAlreadyCanceledHint = (): string =>
+  renderHint('mutate_task_already_canceled')
 
 export const formatAskUserChoiceTelegramUnsupportedHint = (): string =>
   renderHint('ask_user_choice_telegram_unsupported')

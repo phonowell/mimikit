@@ -12,8 +12,8 @@ import {
 } from './action-apply-plan.js'
 import {
   assignFocusSchema,
-  cancelSchema,
   deletePlanSchema,
+  mutateTaskSchema,
   updatePlanSchema,
   upsertFocusSchema,
 } from './action-apply-schema.js'
@@ -25,8 +25,8 @@ import {
 } from './action-registry-shared.js'
 import {
   validateAskUserChoice,
-  validateCancelTask,
   validateCreatePlan,
+  validateMutateTask,
   validatePlanById,
   validateQueryContext,
   validateReadFile,
@@ -36,17 +36,30 @@ import {
   validateUpdatePlan,
   validateWithSchema,
 } from './action-validation.js'
-import { cancelTask } from './runtime-adapter.js'
+import { cancelTask, pauseTask, resumeTask } from './runtime-adapter.js'
 
 import type { Parsed } from '../actions/model/spec.js'
 
-const applyCancelTaskAction = async (
+const applyMutateTaskAction = async (
   runtime: Parameters<ManagerActionDefinition['apply']>[0],
   item: Parsed,
 ): Promise<void> => {
-  const parsed = cancelSchema.safeParse(item.attrs)
+  const parsed = mutateTaskSchema.safeParse(item.attrs)
   if (!parsed.success) return
-  await cancelTask(runtime, parsed.data.id, { source: 'deferred' })
+  const { id, op, reason } = parsed.data
+  const meta = {
+    source: 'deferred',
+    ...(reason ? { reason } : {}),
+  }
+  if (op === 'pause') {
+    await pauseTask(runtime, id, meta)
+    return
+  }
+  if (op === 'resume') {
+    await resumeTask(runtime, id, meta)
+    return
+  }
+  await cancelTask(runtime, id, meta)
 }
 
 const applyRunTaskAndContinue: ManagerActionDefinition['apply'] = async (
@@ -95,9 +108,9 @@ export const ACTION_DEFINITIONS = [
     apply: applyRunTaskAndContinue,
   },
   {
-    name: 'cancel_task',
-    validate: (item, context) => validateCancelTask(item, context),
-    apply: applyAndContinue(applyCancelTaskAction),
+    name: 'mutate_task',
+    validate: (item, context) => validateMutateTask(item, context),
+    apply: applyAndContinue(applyMutateTaskAction),
   },
   {
     name: 'ask_user_choice',

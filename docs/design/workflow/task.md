@@ -12,6 +12,7 @@
 ## 派发与去重
 
 - 立即执行 Action：`<M:enqueue_task ... />`
+- 生命周期控制 Action：`<M:mutate_task id="task-..." op="pause|resume|cancel" />`
 - worker 任务 profile 固定为 `worker`
 - action 去重键：`prompt + title + profile + focusId`
 - queue 去重键：`task.fingerprint`（仅拦 active 任务）

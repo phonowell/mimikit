@@ -236,3 +236,47 @@ test('update_plan requires trigger_mode when patching cron/scheduled_at fields',
   expect(feedback[0]?.error).toBe('invalid_action_args')
   expect(feedback[0]?.hint).toContain('trigger_mode')
 })
+
+test('mutate_task rejects pause when task is already paused', () => {
+  const feedback = collectManagerActionFeedback(
+    [
+      {
+        name: 'mutate_task',
+        attrs: {
+          id: 'task-1',
+          op: 'pause',
+        },
+      },
+    ],
+    {
+      taskStatusById: new Map([['task-1', 'paused']]),
+    },
+  )
+
+  expect(feedback).toHaveLength(1)
+  expect(feedback[0]?.action).toBe('mutate_task')
+  expect(feedback[0]?.error).toBe('action_execution_rejected')
+  expect(feedback[0]?.hint).toContain('paused')
+})
+
+test('mutate_task rejects resume when task is pending', () => {
+  const feedback = collectManagerActionFeedback(
+    [
+      {
+        name: 'mutate_task',
+        attrs: {
+          id: 'task-2',
+          op: 'resume',
+        },
+      },
+    ],
+    {
+      taskStatusById: new Map([['task-2', 'pending']]),
+    },
+  )
+
+  expect(feedback).toHaveLength(1)
+  expect(feedback[0]?.action).toBe('mutate_task')
+  expect(feedback[0]?.error).toBe('action_execution_rejected')
+  expect(feedback[0]?.hint).toContain('无法 resume')
+})

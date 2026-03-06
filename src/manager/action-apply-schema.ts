@@ -41,9 +41,11 @@ export const runTaskSchema = z
   })
   .strict()
 
-export const cancelSchema = z
+export const mutateTaskSchema = z
   .object({
     id: nonEmptyString,
+    op: z.enum(['pause', 'resume', 'cancel']),
+    reason: nonEmptyString.optional(),
   })
   .strict()
 

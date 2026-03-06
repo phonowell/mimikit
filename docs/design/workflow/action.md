@@ -24,7 +24,10 @@
 ### 任务类
 
 - `enqueue_task`
-- `cancel_task`
+- `mutate_task`
+
+### 交互类
+
 - `ask_user_choice`
 
 ### 查询类
@@ -53,16 +56,16 @@
 - `query_context` / `read_file`：仅做 schema 校验，不直接改状态；同一轮每类最多 1 条，超出会返回 `M:action_feedback`；结果通过下一纠错回合注入 `M:query_lookup` / `M:file_lookup`。
 - `query_context` 已统一覆盖 `task_archives` scope（不再提供独立 `query_task_archive` action）。
 - `set_task_result_summary`：仅用于当前批次 `task_result` 的摘要覆写（不直接执行 action 状态写入）。
-- `cancel_task`：调用 `worker/cancel-task.ts` 后统一产出可追踪结构（`id`、`status`、`changeAt`）；`id` 始终为目标任务 ID（无论 source 为 `user`/`deferred`/`system`）。
+- `mutate_task`：统一 task 生命周期控制（`op=pause|resume|cancel`），按 `op` 分发到 `worker/pause-task.ts`、`worker/resume-task.ts`、`worker/cancel-task.ts`，统一产出可追踪结构（`id`、`status`、`changeAt`）。
 - 上下文压缩不再暴露为 manager action；仅由运行时内部触发，按 focus 维度写入压缩摘要（`managerFocusCompressedContexts`），prompt 仅注入 working focus 对应条目。
 - `remember_memory`：立即写入 `memory/MEMORY.md`，仅接受 `content` 参数，并通过 `memory_remembered` system event 回执 `entry_id/ref/operation`。
 
-### manager 取消门禁（guardrail）
+### manager 任务控制门禁（guardrail）
 
 - “收敛范围/只改某层/不要扩散”等指令默认只约束后续动作范围，不等价于取消已有任务。
-- 默认并行推进：用户未要求串行且无硬依赖时，不应通过 `cancel_task` 清空其它任务线。
+- 默认并行推进：用户未要求串行且无硬依赖时，不应通过 `mutate_task op="cancel"` 清空其它任务线。
 - 冲突先用非破坏策略（复用现有 task/plan、等待 running 收敛）；仅在明确满足取消条件时再取消。
-- 取消条件：用户显式取消，或用户已明确“节省资源优先”且继续执行会造成明确资源浪费。
+- 取消条件：用户显式取消，或用户已明确“节省资源优先”且继续执行会造成明确资源浪费；`pause/resume` 也需与用户目标一致，避免无依据状态抖动。
 
 ### `read_file` 细节
 
