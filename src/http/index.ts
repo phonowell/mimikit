@@ -81,18 +81,13 @@ const registerStaticAssets = (
     prefix: '/vendor/purify/',
     decorateReply: false,
   })
-  app.get(
-    STATE_TASK_MARKDOWN_ROUTE,
-    (request: FastifyRequest, reply: FastifyReply) => {
-      const rawUrl = request.raw.url ?? request.url
-      const target = buildStateTaskMarkdownViewerRedirect(rawUrl)
-      if (!target) {
-        reply.code(404).send({ error: 'not found' })
-        return
-      }
-      reply.redirect(target, 302)
-    },
-  )
+  app.addHook('onRequest', (request: FastifyRequest, reply: FastifyReply) => {
+    if (request.method !== 'GET') return
+    const rawUrl = request.raw.url ?? request.url
+    const target = buildStateTaskMarkdownViewerRedirect(rawUrl)
+    if (!target) return
+    void reply.redirect(target, 302)
+  })
   app.register(fastifyStatic, {
     root: stateDir,
     prefix: '/state-files/',
