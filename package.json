@@ -40,6 +40,7 @@
     "eslint-plugin-unused-imports": "^4.4.1",
     "fire-keeper": "^0.0.237",
     "globals": "^17.4.0",
+    "lucide-static": "^0.577.0",
     "prettier": "^3.8.1",
     "ts-morph": "^27.0.2",
     "tsx": "^4.21.0",
@@ -56,6 +57,7 @@
   "license": "MIT",
   "scripts": {
     "lint": "tsx scripts/remove-bom.ts && tsx scripts/fix-crlf.ts && tsx scripts/format-jsdoc.ts && tsx scripts/fn-to-arrow.ts && eslint \"src/**/*.ts\" \"webui/**/*.js\" --fix",
+    "webui:icons": "node scripts/build-webui-icon-sprite.mjs",
     "prompt:preview": "tsx scripts/preview-prompt.ts",
     "start": "tsx scripts/start.ts",
     "test": "vitest run",
