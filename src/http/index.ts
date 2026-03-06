@@ -13,7 +13,12 @@ import { registerApiRoutes, registerNotFoundHandler } from './routes-api.js'
 
 import type { AppConfig } from '../config.js'
 import type { Orchestrator } from '../orchestrator/core/orchestrator-service.js'
-import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
+import type {
+  FastifyInstance,
+  FastifyReply,
+  FastifyRequest,
+  HookHandlerDoneFunction,
+} from 'fastify'
 
 const MAX_BODY_BYTES = 64 * 1024
 const STATE_TASK_MARKDOWN_ROUTE =
@@ -81,13 +86,27 @@ const registerStaticAssets = (
     prefix: '/vendor/purify/',
     decorateReply: false,
   })
-  app.addHook('onRequest', (request: FastifyRequest, reply: FastifyReply) => {
-    if (request.method !== 'GET') return
-    const rawUrl = request.raw.url ?? request.url
-    const target = buildStateTaskMarkdownViewerRedirect(rawUrl)
-    if (!target) return
-    void reply.redirect(target, 302)
-  })
+  app.addHook(
+    'onRequest',
+    (
+      request: FastifyRequest,
+      reply: FastifyReply,
+      done: HookHandlerDoneFunction,
+    ) => {
+      if (request.method !== 'GET') {
+        done()
+        return
+      }
+      const rawUrl = request.raw.url ?? request.url
+      const target = buildStateTaskMarkdownViewerRedirect(rawUrl)
+      if (!target) {
+        done()
+        return
+      }
+      reply.redirect(target, 302)
+      done()
+    },
+  )
   app.register(fastifyStatic, {
     root: stateDir,
     prefix: '/state-files/',
