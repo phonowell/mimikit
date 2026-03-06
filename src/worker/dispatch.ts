@@ -49,6 +49,7 @@ const runTask = async (
         notifyUiSignal(runtime, 'tasks')
       },
     })
+    if (task.status === 'paused') return
     if (task.status === 'canceled') {
       const result = buildResult(
         task,
@@ -70,6 +71,7 @@ const runTask = async (
     await finalizeResult(runtime, task, result, markTaskSucceeded)
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error))
+    if (task.status === 'paused') return
     if (task.status === 'canceled') {
       const result = buildResult(
         task,

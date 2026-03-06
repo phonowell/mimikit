@@ -11,6 +11,8 @@ import { createDefaultMemoryRefreshState } from '../../memory/refresh/state.js'
 import { newId } from '../../shared/utils.js'
 import { cancelTask } from '../../worker/cancel-task.js'
 import { getTaskLiveOutputById } from '../../worker/live-output.js'
+import { pauseTask } from '../../worker/pause-task.js'
+import { resumeTask } from '../../worker/resume-task.js'
 import { type ChatMessage } from '../read-model/chat-view.js'
 import { buildFocusViews } from '../read-model/focus-view.js'
 import { sortTaskPlansForView } from '../read-model/plan-select.js'
@@ -203,6 +205,14 @@ export class Orchestrator {
 
   cancelTask(taskId: string, meta?: { source?: string; reason?: string }) {
     return cancelTask(this.runtime, taskId, meta)
+  }
+
+  pauseTask(taskId: string, meta?: { source?: string; reason?: string }) {
+    return pauseTask(this.runtime, taskId, meta)
+  }
+
+  resumeTask(taskId: string, meta?: { source?: string; reason?: string }) {
+    return resumeTask(this.runtime, taskId, meta)
   }
 
   getPendingUserChoice() {

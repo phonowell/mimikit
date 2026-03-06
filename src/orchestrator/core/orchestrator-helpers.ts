@@ -31,7 +31,7 @@ export const computeOrchestratorStatus = (
   pendingInputsCount: number,
 ): OrchestratorStatus => {
   const pendingTasks = runtime.tasks.filter(
-    (task) => task.status === 'pending',
+    (task) => task.status === 'pending' || task.status === 'paused',
   ).length
   const runningTaskIds = new Set(
     runtime.tasks

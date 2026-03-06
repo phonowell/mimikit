@@ -91,7 +91,6 @@ export const renderTasks = (tasksList, data) => {
     const taskId = typeof task.id === 'string' ? task.id.trim() : ''
     item.dataset.status = statusValue
 
-    const isCancelable = statusValue === 'pending' || statusValue === 'running'
     const canOpenArchive = taskId.length > 0
 
     const link = document.createElement(canOpenArchive ? 'a' : 'div')
@@ -202,7 +201,7 @@ export const renderTasks = (tasksList, data) => {
 
     titleRow.appendChild(status)
     titleRow.appendChild(title)
-    const actions = createTaskActions({ titleText, taskId, isCancelable })
+    const actions = createTaskActions({ titleText, taskId, statusValue })
 
     link.appendChild(titleRow)
     if (showLiveOutput) {

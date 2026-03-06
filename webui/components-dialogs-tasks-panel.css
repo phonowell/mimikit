@@ -96,7 +96,17 @@
   padding: 0 10px;
 }
 
-.task-menu-item:hover:not(:disabled) {
+.task-menu-item--pause:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--warning) 18%, transparent);
+  color: #9a6400;
+}
+
+.task-menu-item--resume:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--status-running) 14%, transparent);
+  color: var(--status-running);
+}
+
+.task-menu-item--cancel:hover:not(:disabled) {
   background: rgba(226, 93, 93, 0.1);
   color: var(--danger);
 }
@@ -151,6 +161,10 @@
 
 .task-item[data-status='running'] {
   --task-dot: var(--status-running);
+}
+
+.task-item[data-status='paused'] {
+  --task-dot: var(--status-paused);
 }
 
 .task-item[data-status='succeeded'] {

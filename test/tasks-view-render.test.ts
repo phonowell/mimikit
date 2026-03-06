@@ -1,7 +1,10 @@
 import { expect, test } from 'vitest'
 
 import { resolveTaskUsageDisplay } from '../webui/tasks-view-render.js'
-import { resolveTaskPendingReasonLabel } from '../webui/system-text.js'
+import {
+  resolveTaskPendingReasonLabel,
+  resolveTaskStatusLabel,
+} from '../webui/system-text.js'
 
 test('resolveTaskUsageDisplay shows formatted usage for running tasks', () => {
   const display = resolveTaskUsageDisplay({
@@ -32,4 +35,8 @@ test('resolveTaskPendingReasonLabel maps waiting_capacity', () => {
 
 test('resolveTaskPendingReasonLabel returns empty for unknown value', () => {
   expect(resolveTaskPendingReasonLabel('unknown_pending_reason')).toBe('')
+})
+
+test('resolveTaskStatusLabel maps paused', () => {
+  expect(resolveTaskStatusLabel('paused')).toBe('paused')
 })

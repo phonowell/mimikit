@@ -3,6 +3,7 @@ import { expect, test } from 'vitest'
 import {
   enqueueTask,
   markTaskCanceled,
+  markTaskPaused,
   markTaskRunning,
 } from '../src/orchestrator/core/task-lifecycle.js'
 import { buildTaskFingerprint } from '../src/orchestrator/core/task-state.js'
@@ -39,6 +40,11 @@ test('task status transitions keep expected timestamps', () => {
   const running = markTaskRunning(tasks, 'task-1')
   expect(running).toMatchObject({ id: 'task-1', status: 'running' })
   expect(running?.startedAt).toBeTypeOf('string')
+
+  const paused = markTaskPaused(tasks, 'task-1')
+  expect(paused).toMatchObject({ id: 'task-1', status: 'paused' })
+  expect(paused?.pausedAt).toBeTypeOf('string')
+  expect(paused?.startedAt).toBeUndefined()
 
   const task = tasks[0]
   if (!task) throw new Error('task fixture missing')

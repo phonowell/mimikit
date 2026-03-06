@@ -79,7 +79,12 @@ export const collectTaskResults = (tasks: Task[]): TaskResult[] =>
 
 export const collectResultTaskIds = (tasks: Task[]): string[] =>
   tasks
-    .filter((task) => task.status !== 'pending' && task.status !== 'running')
+    .filter(
+      (task) =>
+        task.status !== 'pending' &&
+        task.status !== 'paused' &&
+        task.status !== 'running',
+    )
     .map((task) => task.id)
 
 export const buildTaskResultDateHints = (

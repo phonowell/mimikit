@@ -11,7 +11,12 @@ import type {
   TaskResultStatus,
 } from '../types/index.js'
 
-type TaskHistoryEvent = 'created' | 'canceled' | 'completed'
+type TaskHistoryEvent =
+  | 'created'
+  | 'paused'
+  | 'resumed'
+  | 'canceled'
+  | 'completed'
 
 type WorkerSlotPayload = {
   max_slots: number
@@ -35,6 +40,8 @@ const buildTaskText = (
 ): string => {
   const taskLabel = formatTaskLabel(label)
   if (event === 'created') return `Created task ${taskLabel}.`
+  if (event === 'paused') return `Paused task ${taskLabel}.`
+  if (event === 'resumed') return `Resumed task ${taskLabel}.`
   if (event === 'canceled') {
     return cancel?.source === 'user'
       ? `Canceled task ${taskLabel} at the user's request.`
@@ -48,9 +55,15 @@ const buildTaskText = (
 
 const TASK_EVENT_NAME: Record<
   TaskHistoryEvent,
-  'task_created' | 'task_canceled' | 'task_completed'
+  | 'task_created'
+  | 'task_paused'
+  | 'task_resumed'
+  | 'task_canceled'
+  | 'task_completed'
 > = {
   created: 'task_created',
+  paused: 'task_paused',
+  resumed: 'task_resumed',
   canceled: 'task_canceled',
   completed: 'task_completed',
 }
@@ -67,6 +80,8 @@ const buildTaskPayload = (
   label,
   ...(task.title.trim() ? { title: task.title.trim() } : {}),
   ...(event === 'created' ? { status: 'pending' } : {}),
+  ...(event === 'paused' ? { status: 'paused' } : {}),
+  ...(event === 'resumed' ? { status: 'pending' } : {}),
   ...(event === 'completed' ? { status: status ?? 'completed' } : {}),
   ...(event === 'canceled' ? { status: 'canceled' } : {}),
   ...(cancel?.source ? { cancel_source: cancel.source } : {}),

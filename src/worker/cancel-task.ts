@@ -145,7 +145,7 @@ export const cancelTask = async (
     }
   }
 
-  if (task.status === 'pending') {
+  if (task.status === 'pending' || task.status === 'paused') {
     runtime.lastWorkerActivityAtMs = Date.now()
     clearTaskLiveOutput(runtime, task.id)
     const cancelMeta = buildCancelMeta(meta)

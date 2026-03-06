@@ -1,0 +1,39 @@
+import { resolveRouteId } from './route-params.js'
+
+import type { Orchestrator } from '../orchestrator/core/orchestrator-service.js'
+import type { FastifyInstance } from 'fastify'
+
+export const registerTaskResumeRoute = (
+  app: FastifyInstance,
+  orchestrator: Orchestrator,
+): void => {
+  app.post('/api/tasks/:id/resume', async (request, reply) => {
+    const taskId = resolveRouteId(request.params, reply, 'task')
+    if (!taskId) return
+
+    const result = await orchestrator.resumeTask(taskId, { source: 'user' })
+    if (!result.ok) {
+      const status =
+        result.status === 'not_found'
+          ? 404
+          : result.status === 'invalid'
+            ? 400
+            : 409
+      reply.code(status).send({
+        ok: false,
+        id: result.id,
+        status: result.status,
+        ...(result.changeAt ? { changeAt: result.changeAt } : {}),
+        error: result.status,
+      })
+      return
+    }
+
+    reply.send({
+      ok: true,
+      id: result.id,
+      status: result.status,
+      ...(result.changeAt ? { changeAt: result.changeAt } : {}),
+    })
+  })
+}

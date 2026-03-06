@@ -175,12 +175,14 @@ test('buildTaskViews keeps task statuses', () => {
   const tasks: Task[] = [
     createTaskFixture({ id: 'task-done', status: 'succeeded' }),
     createTaskFixture({ id: 'task-failed', status: 'failed' }),
+    createTaskFixture({ id: 'task-paused', status: 'paused' }),
     createTaskFixture({ id: 'task-running', status: 'running' }),
   ]
   const { tasks: views } = buildTaskViews(tasks)
   const statusById = new Map(views.map((item) => [item.id, item.status]))
   expect(statusById.get('task-done')).toBe('succeeded')
   expect(statusById.get('task-failed')).toBe('failed')
+  expect(statusById.get('task-paused')).toBe('paused')
   expect(statusById.get('task-running')).toBe('running')
 })
 
@@ -228,6 +230,12 @@ test('buildTaskViews sorts by status, change time, created time, then id', () =>
       startedAt: '2026-03-01T00:04:00.000Z',
     }),
     createTaskFixture({
+      id: 'task-paused',
+      status: 'paused',
+      createdAt: '2026-03-01T00:02:20.000Z',
+      pausedAt: '2026-03-01T00:05:50.000Z',
+    }),
+    createTaskFixture({
       id: 'task-pending-new',
       status: 'pending',
       createdAt: '2026-03-01T00:05:00.000Z',
@@ -260,6 +268,7 @@ test('buildTaskViews sorts by status, change time, created time, then id', () =>
   expect(views.map((item) => item.id)).toEqual([
     'task-running-new',
     'task-running-old',
+    'task-paused',
     'task-pending-new',
     'task-pending-old',
     'task-failed',

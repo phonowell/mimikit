@@ -23,6 +23,7 @@ export type TaskView = {
   createdAt: string
   changeAt: string
   startedAt?: string
+  pausedAt?: string
   completedAt?: string
   durationMs?: number
   usage?: Task['usage']
@@ -35,14 +36,16 @@ export type TaskCounts = Record<TaskStatus, number>
 
 const TASK_STATUS_RANK: Record<TaskStatus, number> = {
   running: 0,
-  pending: 1,
-  failed: 2,
-  succeeded: 3,
-  canceled: 4,
+  paused: 1,
+  pending: 2,
+  failed: 3,
+  succeeded: 4,
+  canceled: 5,
 }
 
 const initCounts = (): TaskCounts => ({
   pending: 0,
+  paused: 0,
   running: 0,
   succeeded: 0,
   failed: 0,
@@ -50,7 +53,7 @@ const initCounts = (): TaskCounts => ({
 })
 
 const resolveTaskChangeAt = (task: Task): string =>
-  task.completedAt ?? task.startedAt ?? task.createdAt
+  task.completedAt ?? task.pausedAt ?? task.startedAt ?? task.createdAt
 
 const toFiniteNumber = (value: unknown): number | null =>
   typeof value === 'number' && Number.isFinite(value) ? value : null
@@ -90,6 +93,7 @@ const taskToView = (
     createdAt: task.createdAt,
     changeAt: resolveTaskChangeAt(task),
     ...(task.startedAt ? { startedAt: task.startedAt } : {}),
+    ...(task.pausedAt ? { pausedAt: task.pausedAt } : {}),
     ...(task.completedAt ? { completedAt: task.completedAt } : {}),
     ...(typeof task.durationMs === 'number'
       ? { durationMs: task.durationMs }

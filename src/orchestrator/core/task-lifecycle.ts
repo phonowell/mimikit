@@ -94,6 +94,7 @@ const updateTaskStatus = (
   if (!task) return null
   task.status = status
   if (patch) Object.assign(task, patch)
+  if (status !== 'paused') delete task.pausedAt
   return task
 }
 
@@ -106,6 +107,20 @@ export const markTaskRunning = (
     ...patch,
     startedAt: patch?.startedAt ?? nowIso(),
   })
+
+export const markTaskPaused = (
+  tasks: Task[],
+  taskId: string,
+  patch?: Partial<Task>,
+): Task | null => {
+  const task = updateTaskStatus(tasks, taskId, 'paused', {
+    ...patch,
+    pausedAt: patch?.pausedAt ?? nowIso(),
+  })
+  if (!task) return null
+  delete task.startedAt
+  return task
+}
 
 export const markTaskSucceeded = (
   tasks: Task[],
@@ -132,5 +147,6 @@ export const markTaskCanceled = (
     ...(task.completedAt ? { completedAt: task.completedAt } : {}),
     ...(task.durationMs !== undefined ? { durationMs: task.durationMs } : {}),
   })
+  delete task.pausedAt
   return task
 }

@@ -94,7 +94,12 @@ export const validateCancelTask = (
   const { id } = parsed.data
   const taskStatus = context.taskStatusById?.get(id)
   if (!taskStatus) return rejected(formatCancelTaskNotFoundHint())
-  if (taskStatus === 'pending' || taskStatus === 'running') return []
+  if (
+    taskStatus === 'pending' ||
+    taskStatus === 'paused' ||
+    taskStatus === 'running'
+  )
+    return []
   if (taskStatus === 'canceled')
     return rejected(formatCancelTaskAlreadyCanceledHint())
   return rejected(formatCancelTaskNotCancelableHint())

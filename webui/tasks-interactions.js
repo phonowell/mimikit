@@ -30,11 +30,26 @@ const closeAllTaskActions = (tasksList) => {
   for (const item of actions) closeTaskActions(item)
 }
 
-const requestCancel = async (taskId, button) => {
+const TASK_ACTION_ENDPOINT = Object.freeze({
+  cancel: 'cancel',
+  pause: 'pause',
+  resume: 'resume',
+})
+
+const TASK_ACTION_BUSY_TEXT = Object.freeze({
+  cancel: UI_TEXT.cancelingTask,
+  pause: UI_TEXT.pausingTask,
+  resume: UI_TEXT.resumingTask,
+})
+
+const requestTaskAction = async (taskId, action, button) => {
   if (!taskId) return
+  const endpoint = TASK_ACTION_ENDPOINT[action]
+  if (!endpoint) return
   const originalText = button?.textContent || 'cancel'
   const originalLabel = button?.getAttribute('aria-label') || ''
   const originalTitle = button?.getAttribute('title') || ''
+  const busyText = TASK_ACTION_BUSY_TEXT[action] || 'Working'
   const restoreButton = () => {
     if (!button) return
     button.disabled = false
@@ -45,13 +60,16 @@ const requestCancel = async (taskId, button) => {
   if (button) {
     button.disabled = true
     button.textContent = '…'
-    button.setAttribute('aria-label', UI_TEXT.cancelingTask)
-    button.setAttribute('title', UI_TEXT.cancelingTask)
+    button.setAttribute('aria-label', busyText)
+    button.setAttribute('title', busyText)
   }
   try {
-    const res = await fetch(`/api/tasks/${encodeURIComponent(taskId)}/cancel`, {
-      method: 'POST',
-    })
+    const res = await fetch(
+      `/api/tasks/${encodeURIComponent(taskId)}/${endpoint}`,
+      {
+        method: 'POST',
+      },
+    )
     if (!res.ok) {
       let data = null
       try {
@@ -59,13 +77,13 @@ const requestCancel = async (taskId, button) => {
       } catch {
         data = null
       }
-      throw new Error(data?.error || 'Failed to cancel task')
+      throw new Error(data?.error || `Failed to ${action} task`)
     }
     restoreButton()
   } catch (error) {
     restoreButton()
     const message = error instanceof Error ? error.message : String(error)
-    console.warn('[webui] cancel task failed', message)
+    console.warn(`[webui] ${action} task failed`, message)
   }
 }
 
@@ -88,14 +106,15 @@ export const bindTaskInteractions = (tasksList) => {
       return
     }
 
-    const button = target.closest('[data-task-cancel-inline="true"]')
+    const button = target.closest('[data-task-action-inline]')
     if (button instanceof HTMLButtonElement) {
       event.preventDefault()
       event.stopPropagation()
       closeAllTaskActions(tasksList)
       if (button.disabled) return
+      const action = button.getAttribute('data-task-action-inline') || ''
       const taskId = button.getAttribute('data-task-id') || ''
-      void requestCancel(taskId, button)
+      void requestTaskAction(taskId, action, button)
       return
     }
 

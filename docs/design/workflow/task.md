@@ -5,6 +5,7 @@
 ## 生命周期
 
 - `pending`：manager 已派发，等待外部执行。
+- `paused`：任务被用户暂停，等待恢复。
 - `running`：worker 正在调度外部执行。
 - `succeeded | failed | canceled`：终态。
 
@@ -29,6 +30,14 @@
 - `running` 取消：触发 `AbortController`，由外部执行链路收敛到 `canceled`。
 - 启动恢复：持久化时 `running` 降级为 `pending`，重启后重入队列。
 - session 恢复：worker 记录并持久化 `task.sessionId`；重试/重启恢复优先复用。`cancel.source=user` 视为不可恢复并丢弃 session，`deferred/system` 视为可恢复并保留 session（若存在）。
+
+## 暂停与恢复（pause/resume）
+
+- `pending -> paused`：停止调度，保持非终态，不生成 task_result。
+- `running -> paused`：触发 `AbortController` 终止当前执行；worker 收到 abort 后不写入 `failed/canceled` 终态结果。
+- `paused -> pending`：恢复入队并重新调度执行。
+- `paused` 状态支持继续 `cancel`，行为与 `pending` 取消一致（直接产出 `canceled` 结果）。
+- WebUI 二级菜单提供 `pause/resume/cancel` 控制动作；pause/resume 会写入系统事件消息。
 
 ### session 复用/丢弃语义
 

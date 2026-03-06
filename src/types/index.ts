@@ -198,6 +198,7 @@ type UserInputSystem = {
 export type UserInput = UserInputUser | UserInputSystem
 export type TaskStatus =
   | 'pending'
+  | 'paused'
   | 'running'
   | 'succeeded'
   | 'failed'

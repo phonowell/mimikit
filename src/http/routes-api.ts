@@ -6,6 +6,8 @@ import { registerChoiceSelectRoute } from './routes-api-choice-select.js'
 import { registerEventsRoute } from './routes-api-events.js'
 import { registerTaskArchiveRoute } from './routes-api-task-archive.js'
 import { registerTaskCancelRoute } from './routes-api-task-cancel.js'
+import { registerTaskPauseRoute } from './routes-api-task-pause.js'
+import { registerTaskResumeRoute } from './routes-api-task-resume.js'
 
 import type { AppConfig } from '../config.js'
 import type { Orchestrator } from '../orchestrator/core/orchestrator-service.js'
@@ -68,6 +70,8 @@ export const registerApiRoutes = (
 
   registerTaskArchiveRoute(app, orchestrator, config)
   registerTaskCancelRoute(app, orchestrator)
+  registerTaskPauseRoute(app, orchestrator)
+  registerTaskResumeRoute(app, orchestrator)
   registerChoiceSelectRoute(app, orchestrator)
 
   const scheduleExit = (params?: {

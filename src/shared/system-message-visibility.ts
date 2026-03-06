@@ -7,6 +7,8 @@ type UserFacingSystemEventClass = 'user_value' | 'internal' | 'unknown'
 const USER_VALUE_EVENTS = new Set<SystemEventName>([
   'startup',
   'task_created',
+  'task_paused',
+  'task_resumed',
   'task_canceled',
   'task_completed',
   'manager_fallback_reply',

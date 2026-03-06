@@ -11,6 +11,7 @@ const STATUS_TEXT_MAP = Object.freeze({
 
 const TASK_STATUS_LABEL_MAP = Object.freeze({
   pending: 'queued',
+  paused: 'paused',
   running: 'running',
   succeeded: 'done',
   failed: 'failed',
@@ -28,6 +29,8 @@ export const UI_TEXT = Object.freeze({
   noFocuses: 'No focus',
   untitledTask: 'Untitled',
   cancelingTask: 'Canceling',
+  pausingTask: 'Pausing',
+  resumingTask: 'Resuming',
   deleteMessages: 'Delete messages',
   deleteModeExit: 'Exit delete messages',
   deleteModeConfirmPrompt: 'Enter delete mode?',

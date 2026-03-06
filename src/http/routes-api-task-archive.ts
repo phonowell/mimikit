@@ -38,9 +38,11 @@ const buildLiveArchive = (task: Task): string => {
       ? resultOutput
       : task.status === 'pending'
         ? 'Task is queued. Final archive is not available yet.'
-        : task.status === 'running'
-          ? 'Task is running. Final archive is not available yet.'
-          : 'Task archive file is missing. Showing live snapshot.'
+        : task.status === 'paused'
+          ? 'Task is paused. Final archive is not available yet.'
+          : task.status === 'running'
+            ? 'Task is running. Final archive is not available yet.'
+            : 'Task archive file is missing. Showing live snapshot.'
 
   return buildArchiveDocument(
     [

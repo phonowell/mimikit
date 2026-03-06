@@ -36,6 +36,7 @@ export const QUERY_CONTEXT_DEFAULT_SCOPES = [
 
 export const QUERY_CONTEXT_TASK_STATUS_VALUES = [
   'pending',
+  'paused',
   'running',
   'succeeded',
   'failed',

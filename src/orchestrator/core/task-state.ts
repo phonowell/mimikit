@@ -37,7 +37,9 @@ export const buildTaskFingerprint = (input: TaskFingerprintInput): string =>
   ].join('\n')
 
 export const isActiveTask = (task: Task): boolean =>
-  task.status === 'pending' || task.status === 'running'
+  task.status === 'pending' ||
+  task.status === 'paused' ||
+  task.status === 'running'
 
 export const taskToFingerprintInput = (
   task: Pick<
