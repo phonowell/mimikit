@@ -1,3 +1,5 @@
+import { clipCompactText } from '../shared/text.js'
+
 import type { Task, TaskResult, TaskResultHandoff } from '../types/index.js'
 
 const MAX_GOAL_CHARS = 200
@@ -5,13 +7,8 @@ const MAX_SUMMARY_CHARS = 280
 const MAX_ITEM_CHARS = 180
 const MAX_LIST_ITEMS = 5
 
-const compactText = (value: string): string => value.replace(/\s+/g, ' ').trim()
-
-const clipText = (value: string, maxChars: number): string => {
-  const normalized = compactText(value)
-  if (normalized.length <= maxChars) return normalized
-  return `${normalized.slice(0, maxChars - 1).trimEnd()}…`
-}
+const clipText = (value: string, maxChars: number): string =>
+  clipCompactText(value, maxChars)
 
 const pickSummaryLine = (output: string): string | undefined => {
   const lines = output.split(/\r?\n/)

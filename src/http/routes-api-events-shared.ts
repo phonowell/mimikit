@@ -10,8 +10,8 @@ type MessagePayload = {
 }
 
 type SseContextReply = FastifyReply & {
-  sseContext?: {
-    source?: {
+  sseContext: {
+    source: {
       end: () => void
       destroyed?: boolean
       writableEnded?: boolean
@@ -107,8 +107,10 @@ export const sendSseEvent = (
 }
 
 export const closeSseSource = (reply: FastifyReply): void => {
-  const source = (reply as SseContextReply).sseContext?.source
-  if (!source || source.destroyed || source.writableEnded) return
+  const {
+    sseContext: { source },
+  } = reply as SseContextReply
+  if (source.destroyed || source.writableEnded) return
   try {
     source.end()
   } catch {}

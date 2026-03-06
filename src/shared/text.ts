@@ -19,3 +19,13 @@ export const truncateText = (
   const head = Math.max(0, maxChars - suffix.length)
   return `${normalized.slice(0, head).trimEnd()}${suffix}`
 }
+
+export const clipCompactText = (
+  value: string,
+  maxChars: number,
+  suffix = '…',
+): string =>
+  truncateText(value, maxChars, {
+    normalizeWhitespace: true,
+    suffix,
+  })

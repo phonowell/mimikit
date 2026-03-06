@@ -86,11 +86,7 @@ export {
   formatReadFileLookup,
   formatRecentHistory,
 } from './format-messages.js'
-export {
-  formatCompressedFocusContexts,
-  formatFocusContexts,
-  formatFocusList,
-} from './format-focus.js'
+export { formatFocusContexts, formatFocusList } from './format-focus.js'
 export {
   formatPlansJson,
   formatResultsJson,

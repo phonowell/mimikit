@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { expect, test } from 'vitest'
 
 import { ensureDir } from '../src/fs/paths.js'
-import { readTaskProgress } from '../src/storage/task-progress.js'
+import { readTaskProgressForTest } from './helpers/task-progress.js'
 
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-task-progress-'))
 
@@ -39,7 +39,7 @@ test('readTaskProgress merges same task events across daily directories', async 
     'utf8',
   )
 
-  const progress = await readTaskProgress(stateDir, taskId)
+  const progress = await readTaskProgressForTest(stateDir, taskId)
   expect(progress).toHaveLength(2)
   expect(progress[0]?.type).toBe('worker_start')
   expect(progress[1]?.type).toBe('worker_end')

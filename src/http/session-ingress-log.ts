@@ -68,8 +68,7 @@ const resolveType = (
   if (message.role === 'system')
     return systemEventName ? `system_event:${systemEventName}` : 'system'
   if (message.role === 'user') return 'user_message'
-  if (message.role === 'agent') return 'agent_message'
-  return message.role
+  return 'agent_message'
 }
 
 const resolveSource = (
@@ -88,7 +87,7 @@ const resolveVisibility = (
   message: ChatMessage,
 ): MessageVisibility | 'unknown' => {
   if (message.role !== 'system') return 'all'
-  return message.visibility || 'unknown'
+  return message.visibility
 }
 
 const buildMessageLogEntry = (message: ChatMessage): IngressLogEntry => {

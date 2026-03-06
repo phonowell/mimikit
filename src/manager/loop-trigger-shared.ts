@@ -1,4 +1,5 @@
 import { GLOBAL_FOCUS_ID } from '../focus/constants.js'
+import { buildPlanTriggerPayload } from '../shared/plan-payload.js'
 import { parseIsoMs } from '../shared/time.js'
 
 import { publishManagerSystemEventInput } from './system-input-event.js'
@@ -119,20 +120,13 @@ export const firePlan = async (params: {
       plan_id: plan.id,
       title: plan.title,
       prompt: plan.prompt,
-      trigger_mode: plan.trigger.mode,
       priority: plan.priority,
       source: plan.source,
       run_count: plan.runCount,
       slots: toWorkerSlotStatusPayload(resolveWorkerSlotCapacity(runtime)),
       ...(plan.maxRuns !== undefined ? { max_runs: plan.maxRuns } : {}),
       triggered_at: nowIso,
-      ...(plan.trigger.mode === 'cron' ? { cron: plan.trigger.cron } : {}),
-      ...(plan.trigger.mode === 'scheduled_at'
-        ? { scheduled_at: plan.trigger.scheduledAt }
-        : {}),
-      ...(plan.trigger.mode === 'on_idle'
-        ? { cooldown_ms: plan.trigger.cooldownMs }
-        : {}),
+      ...buildPlanTriggerPayload(plan.trigger),
     },
     createdAt: nowIso,
     logEvent: 'trigger_fire_input',

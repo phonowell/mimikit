@@ -1,5 +1,11 @@
 import { z } from 'zod'
 
+import {
+  choiceIdSchema,
+  focusIdSchema,
+  optionIdSchema,
+} from '../shared/id-schema.js'
+
 import { tokenUsageSchema } from './token-usage.js'
 
 export const taskCancelSchema = z
@@ -163,10 +169,7 @@ export const focusContextSchema = z
 
 export const managerFocusCompressedContextSchema = z
   .object({
-    focusId: z
-      .string()
-      .trim()
-      .regex(/^focus-[a-zA-Z0-9._-]+$/),
+    focusId: focusIdSchema,
     summary: z.string().trim().min(1),
     updatedAt: z.string().trim().min(1),
     firstKeptEntryId: z.string().trim().min(1).optional(),
@@ -185,10 +188,7 @@ export const managerFocusCompressedContextSchema = z
 
 export const userChoiceOptionSchema = z
   .object({
-    id: z
-      .string()
-      .trim()
-      .regex(/^option-[a-zA-Z0-9._-]+$/),
+    id: optionIdSchema,
     label: z.string().trim().min(1),
     reason: z.string().trim().min(1),
   })
@@ -196,22 +196,13 @@ export const userChoiceOptionSchema = z
 
 export const pendingUserChoiceSchema = z
   .object({
-    id: z
-      .string()
-      .trim()
-      .regex(/^choice-[a-zA-Z0-9._-]+$/),
+    id: choiceIdSchema,
     question: z.string().trim().min(1),
     options: z.array(userChoiceOptionSchema).min(2),
-    defaultOptionId: z
-      .string()
-      .trim()
-      .regex(/^option-[a-zA-Z0-9._-]+$/),
+    defaultOptionId: optionIdSchema,
     createdAt: z.string().trim().min(1),
     expiresAt: z.string().trim().min(1),
-    focusId: z
-      .string()
-      .trim()
-      .regex(/^focus-[a-zA-Z0-9._-]+$/),
+    focusId: focusIdSchema,
   })
   .strict()
   .superRefine((value, context) => {

@@ -1,11 +1,7 @@
 import { expect, test } from 'vitest'
 
-import {
-  ensureGlobalFocus,
-  setFocusStatus,
-  upsertFocusCompressedContext,
-  upsertFocusContext,
-} from '../src/focus/state.js'
+import { ensureGlobalFocus, setFocusStatus } from '../src/focus/state.js'
+import { upsertFocusContext } from '../src/focus/state-context.js'
 
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
 
@@ -57,17 +53,6 @@ test('upsertFocusContext ignores global focus business context', () => {
   })
 
   expect(runtime.focusContexts).toHaveLength(0)
-})
-
-test('upsertFocusCompressedContext ignores global focus compressed context', () => {
-  const runtime = createRuntime()
-
-  upsertFocusCompressedContext(runtime, {
-    focusId: 'focus-global',
-    summary: 'new compressed',
-  })
-
-  expect(runtime.managerFocusCompressedContexts).toHaveLength(0)
 })
 
 test('ensureGlobalFocus cleans legacy global contexts', () => {

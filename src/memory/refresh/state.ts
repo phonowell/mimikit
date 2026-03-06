@@ -3,7 +3,7 @@ import type { RuntimeSnapshot } from '../../storage/runtime-snapshot-schema.js'
 
 const toIsoOrUndefined = (value: string | undefined): string | undefined => {
   const normalized = value?.trim()
-  return normalized ? normalized : undefined
+  return normalized === '' ? undefined : normalized
 }
 
 const toOptionalIsoState = (params: {

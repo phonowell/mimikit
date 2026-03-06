@@ -1,6 +1,11 @@
 import { z } from 'zod'
 
 import { normalizeFocusOpenItems } from '../focus/open-items.js'
+import {
+  choiceIdSchema,
+  focusIdSchema,
+  optionIdSchema,
+} from '../shared/id-schema.js'
 
 import {
   createPlanSchema,
@@ -13,9 +18,6 @@ import type { Parsed } from '../actions/model/spec.js'
 import type { UserChoiceOption } from '../types/index.js'
 
 const nonEmptyString = z.string().trim().min(1)
-const focusIdSchema = nonEmptyString.regex(/^focus-[a-zA-Z0-9._-]+$/)
-const choiceIdSchema = nonEmptyString.regex(/^choice-[a-zA-Z0-9._-]+$/)
-const optionIdSchema = nonEmptyString.regex(/^option-[a-zA-Z0-9._-]+$/)
 
 export { createPlanSchema, deletePlanSchema, updatePlanSchema }
 
@@ -192,7 +194,7 @@ const parseChoiceOptions = (
     if (!match) return { ok: false }
     const indexRaw = match[1]
     const field = match[2] as 'id' | 'label' | 'reason'
-    if (!indexRaw || !field) return { ok: false }
+    if (!indexRaw) return { ok: false }
     const index = Number.parseInt(indexRaw, 10)
     if (!Number.isInteger(index) || index < 1) return { ok: false }
     const current = indexed.get(index) ?? {}

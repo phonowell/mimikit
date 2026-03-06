@@ -1,6 +1,9 @@
+import { clipCompactText } from '../shared/text.js'
+
 import { MAX_FOCUS_OPEN_ITEMS } from './constants.js'
 import { normalizeFocusOpenItems } from './open-items.js'
-import { touchFocus, upsertFocusContext } from './state.js'
+import { upsertFocusContext } from './state-context.js'
+import { touchFocus } from './state.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { Task, TaskResult } from '../types/index.js'
@@ -8,13 +11,8 @@ import type { Task, TaskResult } from '../types/index.js'
 const MAX_RESULT_SUMMARY_CHARS = 280
 const MAX_OPEN_ITEM_CHARS = 180
 
-const compactText = (value: string): string => value.replace(/\s+/g, ' ').trim()
-
-const clipText = (value: string, maxChars: number): string => {
-  const normalized = compactText(value)
-  if (normalized.length <= maxChars) return normalized
-  return `${normalized.slice(0, maxChars - 1).trimEnd()}…`
-}
+const clipText = (value: string, maxChars: number): string =>
+  clipCompactText(value, maxChars)
 
 const resolveTaskLabel = (task: Task): string => {
   const title = task.title.trim()
@@ -124,7 +122,7 @@ const buildFollowupOpenItem = (task: Task, result: TaskResult): string => {
 
 const mergeOpenItems = (
   existing: readonly string[] | undefined,
-  nextItem: string,
+  additions: readonly string[],
 ): string[] => {
   const merged: string[] = []
   const normalizedExisting = normalizeFocusOpenItems(existing, {
@@ -137,30 +135,7 @@ const mergeOpenItems = (
       merged.push(item)
     }
   }
-  if (!merged.includes(nextItem)) merged.push(nextItem)
-  return (
-    normalizeFocusOpenItems(merged, {
-      maxItems: MAX_FOCUS_OPEN_ITEMS,
-    }) ?? []
-  )
-}
-
-const mergeOpenItemList = (
-  existing: readonly string[] | undefined,
-  nextItems: readonly string[],
-): string[] => {
-  const merged: string[] = []
-  const normalizedExisting = normalizeFocusOpenItems(existing, {
-    maxItems: MAX_FOCUS_OPEN_ITEMS,
-    coerceNonString: true,
-  })
-  if (normalizedExisting) {
-    for (const item of normalizedExisting) {
-      if (merged.includes(item)) continue
-      merged.push(item)
-    }
-  }
-  for (const item of nextItems) {
+  for (const item of additions) {
     if (merged.includes(item)) continue
     merged.push(item)
     if (merged.length >= MAX_FOCUS_OPEN_ITEMS) break
@@ -191,8 +166,8 @@ const resolveNextOpenItems = (
     )
   }
   if (handoffNextSteps.length > 0)
-    return mergeOpenItemList(currentOpenItems, handoffNextSteps)
-  return mergeOpenItems(currentOpenItems, buildFollowupOpenItem(task, result))
+    return mergeOpenItems(currentOpenItems, handoffNextSteps)
+  return mergeOpenItems(currentOpenItems, [buildFollowupOpenItem(task, result)])
 }
 
 export const syncFocusContextFromTaskResult = (

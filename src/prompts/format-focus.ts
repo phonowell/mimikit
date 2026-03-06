@@ -5,7 +5,6 @@ import {
 } from './format-base.js'
 
 import type { FocusListEntry, FocusPromptContextEntry } from '../focus/index.js'
-import type { ManagerFocusCompressedContext } from '../orchestrator/core/runtime-state.js'
 
 const sortMessagesDesc = <T extends { time: string; id: string }>(
   entries: T[],
@@ -62,45 +61,6 @@ export const formatFocusContexts = (
             })
             .filter((item): item is NonNullable<typeof item> => Boolean(item)),
         ),
-      })),
-    }),
-  )
-}
-
-export const formatCompressedFocusContexts = (
-  contexts: ManagerFocusCompressedContext[],
-): string => {
-  if (contexts.length === 0) return ''
-  return escapeCdata(
-    stringifyPromptJson({
-      focuses: contexts.map((item) => ({
-        focus_id: item.focusId,
-        updated_at: item.updatedAt,
-        summary: item.summary,
-        ...(item.firstKeptEntryId
-          ? { first_kept_entry_id: item.firstKeptEntryId }
-          : {}),
-        ...(item.details
-          ? {
-              details: {
-                ...(item.details.historyFrom
-                  ? { history_from: item.details.historyFrom }
-                  : {}),
-                ...(item.details.historyTo
-                  ? { history_to: item.details.historyTo }
-                  : {}),
-                ...(item.details.messageCount !== undefined
-                  ? { message_count: item.details.messageCount }
-                  : {}),
-                ...(item.details.taskIds
-                  ? { task_ids: item.details.taskIds }
-                  : {}),
-                ...(item.details.archivePaths
-                  ? { archive_paths: item.details.archivePaths }
-                  : {}),
-              },
-            }
-          : {}),
       })),
     }),
   )

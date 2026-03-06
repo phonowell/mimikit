@@ -6,9 +6,9 @@ import { expect, test } from 'vitest'
 
 import { buildPaths } from '../src/fs/paths.js'
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
-import { readTaskProgress } from '../src/storage/task-progress.js'
 import type { Task, TaskResult } from '../src/types/index.js'
 import { finalizeResult } from '../src/worker/result-finalize.js'
+import { readTaskProgressForTest } from './helpers/task-progress.js'
 
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-finalize-result-'))
 
@@ -80,7 +80,7 @@ test('finalizeResult appends worker_end progress for canceled task', async () =>
 
   await finalizeResult(runtime, task, result, mergeTaskPatch)
 
-  const progress = await readTaskProgress(stateDir, task.id)
+  const progress = await readTaskProgressForTest(stateDir, task.id)
   expect(progress).toHaveLength(1)
   expect(progress[0]?.type).toBe('worker_end')
   expect(progress[0]?.payload).toMatchObject({

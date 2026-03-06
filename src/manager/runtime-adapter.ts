@@ -1,6 +1,5 @@
 export { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 export {
-  notifyManagerLoop,
   notifyUiSignal,
   notifyWorkerLoop,
   waitForManagerLoopSignal,
@@ -11,10 +10,7 @@ export {
   buildTaskSemanticKey,
   findActiveTaskBySemanticKey,
 } from '../orchestrator/core/task-state.js'
-export {
-  selectRecentPlans,
-  selectRecentTasks,
-} from '../orchestrator/read-model/plan-select.js'
+export { selectRecentTasks } from '../orchestrator/read-model/plan-select.js'
 export { cancelTask } from '../worker/cancel-task.js'
 export { enqueueWorkerTask } from '../worker/dispatch.js'
 

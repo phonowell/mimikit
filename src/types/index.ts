@@ -230,7 +230,6 @@ export type WorkerProfile = 'worker'
 export type PlanPriority = 'high' | 'normal' | 'low'
 export type PlanSource = 'user_request' | 'agent_auto' | 'retry_decision'
 export type TaskPlanStatus = 'active' | 'blocked' | 'done'
-export type TaskPlanDoneReason = 'canceled' | 'completed' | 'exhausted'
 export type TaskPlanTriggerMode =
   | 'cron'
   | 'scheduled_at'

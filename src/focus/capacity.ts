@@ -3,12 +3,8 @@ import { compareIsoAsc, compareIsoDesc } from '../shared/time.js'
 
 import { GLOBAL_FOCUS_ID, MAX_WORKING_FOCUSES } from './constants.js'
 import { isBusinessActiveFocus } from './reserved.js'
-import {
-  ensureGlobalFocus,
-  findFocus,
-  removeFocusCompressedContexts,
-  setFocusStatus,
-} from './state.js'
+import { removeFocusCompressedContexts } from './state-context.js'
+import { ensureGlobalFocus, findFocus, setFocusStatus } from './state.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { FocusId, FocusMeta } from '../types/index.js'

@@ -13,11 +13,49 @@ import {
 } from './loop-trigger-shared.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
+import type { TaskPlan } from '../types/index.js'
 
 const asSecondStamp = (iso: string): string => iso.slice(0, 19)
 
 const matchesCronNow = (expression: string, at: Date = new Date()): boolean =>
   new Cron(expression).match(at)
+
+const priorityRank = (priority: TaskPlan['priority']): number =>
+  priority === 'high' ? 0 : priority === 'normal' ? 1 : 2
+
+const sortTriggerPlans = (plans: TaskPlan[]): TaskPlan[] =>
+  [...plans].sort((a, b) => {
+    const rankDiff = priorityRank(a.priority) - priorityRank(b.priority)
+    if (rankDiff !== 0) return rankDiff
+    return compareIsoAsc(a.createdAt, b.createdAt)
+  })
+
+const triggerPlans = async (params: {
+  runtime: RuntimeState
+  nowIso: string
+  plans: TaskPlan[]
+  reason: 'on_idle' | 'on_worker_slot_freed'
+}): Promise<{ triggeredCount: number; stateChanged: boolean }> => {
+  if (params.plans.length === 0)
+    return { triggeredCount: 0, stateChanged: false }
+
+  let triggeredCount = 0
+  let stateChanged = false
+  for (const plan of sortTriggerPlans(params.plans)) {
+    await firePlan({
+      runtime: params.runtime,
+      plan,
+      nowIso: params.nowIso,
+      reason: params.reason,
+    })
+    if (plan.maxRuns !== undefined && plan.runCount >= plan.maxRuns)
+      markPlanDone(plan, params.nowIso, 'completed')
+    triggeredCount += 1
+    stateChanged = true
+  }
+
+  return { triggeredCount, stateChanged }
+}
 
 export const checkScheduledPlans = async (
   runtime: RuntimeState,
@@ -101,67 +139,28 @@ export const checkScheduledPlans = async (
   return { triggeredCount, stateChanged }
 }
 
-export const triggerOnIdlePlans = async (
+export const triggerOnIdlePlans = (
   runtime: RuntimeState,
   nowMs: number,
 ): Promise<{ triggeredCount: number; stateChanged: boolean }> => {
   const nowIso = new Date(nowMs).toISOString()
-  const items = runtime.taskPlans
-    .filter((plan) => canFireOnIdle(plan, nowMs))
-    .sort((a, b) => {
-      const priorityRank =
-        (a.priority === 'high' ? 0 : a.priority === 'normal' ? 1 : 2) -
-        (b.priority === 'high' ? 0 : b.priority === 'normal' ? 1 : 2)
-      if (priorityRank !== 0) return priorityRank
-      return compareIsoAsc(a.createdAt, b.createdAt)
-    })
-
-  if (items.length === 0) return { triggeredCount: 0, stateChanged: false }
-
-  let triggeredCount = 0
-  let stateChanged = false
-  for (const plan of items) {
-    await firePlan({ runtime, plan, nowIso, reason: 'on_idle' })
-    if (plan.maxRuns !== undefined && plan.runCount >= plan.maxRuns)
-      markPlanDone(plan, nowIso, 'completed')
-    triggeredCount += 1
-    stateChanged = true
-  }
-
-  return { triggeredCount, stateChanged }
+  return triggerPlans({
+    runtime,
+    nowIso,
+    plans: runtime.taskPlans.filter((plan) => canFireOnIdle(plan, nowMs)),
+    reason: 'on_idle',
+  })
 }
 
-export const triggerOnWorkerSlotFreedPlans = async (
+export const triggerOnWorkerSlotFreedPlans = (
   runtime: RuntimeState,
   nowMs: number,
 ): Promise<{ triggeredCount: number; stateChanged: boolean }> => {
   const nowIso = new Date(nowMs).toISOString()
-  const items = runtime.taskPlans
-    .filter((plan) => canFireOnWorkerSlotFreed(plan))
-    .sort((a, b) => {
-      const priorityRank =
-        (a.priority === 'high' ? 0 : a.priority === 'normal' ? 1 : 2) -
-        (b.priority === 'high' ? 0 : b.priority === 'normal' ? 1 : 2)
-      if (priorityRank !== 0) return priorityRank
-      return compareIsoAsc(a.createdAt, b.createdAt)
-    })
-
-  if (items.length === 0) return { triggeredCount: 0, stateChanged: false }
-
-  let triggeredCount = 0
-  let stateChanged = false
-  for (const plan of items) {
-    await firePlan({
-      runtime,
-      plan,
-      nowIso,
-      reason: 'on_worker_slot_freed',
-    })
-    if (plan.maxRuns !== undefined && plan.runCount >= plan.maxRuns)
-      markPlanDone(plan, nowIso, 'completed')
-    triggeredCount += 1
-    stateChanged = true
-  }
-
-  return { triggeredCount, stateChanged }
+  return triggerPlans({
+    runtime,
+    nowIso,
+    plans: runtime.taskPlans.filter((plan) => canFireOnWorkerSlotFreed(plan)),
+    reason: 'on_worker_slot_freed',
+  })
 }

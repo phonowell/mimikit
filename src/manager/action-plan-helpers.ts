@@ -1,4 +1,8 @@
 import { appendHistory } from '../history/store.js'
+import {
+  buildPlanProgressPayload,
+  buildPlanTriggerPayload,
+} from '../shared/plan-payload.js'
 import { formatSystemEventText } from '../shared/system-event.js'
 import { newId, nowIso } from '../shared/utils.js'
 
@@ -7,18 +11,6 @@ import type { TaskPlan, TaskPlanTrigger } from '../types/index.js'
 
 const resolvePlanLabel = (item: TaskPlan): string =>
   item.title.trim() || item.id
-
-const planTriggerPayload = (
-  trigger: TaskPlanTrigger,
-): Record<string, unknown> => {
-  if (trigger.mode === 'cron')
-    return { trigger_mode: 'cron', cron: trigger.cron }
-  if (trigger.mode === 'scheduled_at')
-    return { trigger_mode: 'scheduled_at', scheduled_at: trigger.scheduledAt }
-  if (trigger.mode === 'on_idle')
-    return { trigger_mode: 'on_idle', cooldown_ms: trigger.cooldownMs }
-  return { trigger_mode: 'on_worker_slot_freed' }
-}
 
 export const appendPlanSystemMessage = async (
   runtime: RuntimeState,
@@ -45,16 +37,8 @@ export const appendPlanSystemMessage = async (
         priority: plan.priority,
         source: plan.source,
         run_count: plan.runCount,
-        ...(plan.maxRuns !== undefined ? { max_runs: plan.maxRuns } : {}),
-        ...(plan.lastTriggeredAt
-          ? { last_triggered_at: plan.lastTriggeredAt }
-          : {}),
-        ...(plan.lastCompletedAt
-          ? { last_completed_at: plan.lastCompletedAt }
-          : {}),
-        ...(plan.lastTaskId ? { last_task_id: plan.lastTaskId } : {}),
-        ...(plan.archivedAt ? { archived_at: plan.archivedAt } : {}),
-        ...planTriggerPayload(plan.trigger),
+        ...buildPlanProgressPayload(plan),
+        ...buildPlanTriggerPayload(plan.trigger),
       },
     }),
     createdAt: nowIso(),

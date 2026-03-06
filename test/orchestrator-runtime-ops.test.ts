@@ -6,7 +6,7 @@ import PQueue from 'p-queue'
 import { expect, test } from 'vitest'
 
 import { defaultConfig } from '../src/config.js'
-import { INBOX_FOCUS_ID } from '../src/focus/index.js'
+import { INBOX_FOCUS_ID } from '../src/focus/constants.js'
 import { buildPaths } from '../src/fs/paths.js'
 import { addUserInput } from '../src/orchestrator/core/orchestrator-runtime-ops.js'
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'

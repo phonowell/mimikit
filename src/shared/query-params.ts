@@ -1,8 +1,3 @@
-export const parseOptionalNumber = (
-  raw: string | undefined,
-  fallback: number,
-): number => (raw === undefined ? fallback : Number(raw))
-
 export const normalizeMsRange = (
   fromMs?: number,
   toMs?: number,

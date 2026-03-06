@@ -40,8 +40,6 @@ export const assignFocusByTargetId = async (
     return true
   }
 
-  if (targetType !== 'history') return false
-
   const history = await readHistory(runtime.paths.history)
   const index = history.findIndex((item) => item.id === targetId)
   if (index < 0) return false

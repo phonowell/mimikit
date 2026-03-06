@@ -91,10 +91,7 @@ export const queryContextLookup = async (
   const result = await runQueryContextTool({ runtime, request })
   const scopeCounts = Object.entries(result.results).reduce<
     Record<string, number>
-  >(
-    (acc, [scope, value]) => ({ ...acc, [scope]: value?.items.length ?? 0 }),
-    {},
-  )
+  >((acc, [scope, value]) => ({ ...acc, [scope]: value.items.length }), {})
   await appendLog(runtime.paths.log, {
     event: 'manager_query_context',
     queryChars: request.query.length,

@@ -1,5 +1,6 @@
 import { z } from 'zod'
 
+import { focusIdSchema } from '../shared/id-schema.js'
 import { normalizeMsRange } from '../shared/query-params.js'
 import { parseIsoMs } from '../shared/time.js'
 
@@ -62,11 +63,7 @@ export const queryContextSchema = z
     limit_task_archives: limitField.optional(),
     from: z.string().trim().min(1).optional(),
     to: z.string().trim().min(1).optional(),
-    focus_id: z
-      .string()
-      .trim()
-      .regex(/^focus-[a-zA-Z0-9._-]+$/)
-      .optional(),
+    focus_id: focusIdSchema.optional(),
     task_status: z.preprocess(
       normalizeOptionalString,
       z

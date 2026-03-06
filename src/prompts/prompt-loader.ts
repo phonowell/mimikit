@@ -58,7 +58,4 @@ export const loadPromptSource = async (
   return { path, template: await readPromptByPath(path) }
 }
 
-export const loadSystemPrompt = (role: string): Promise<string> =>
-  loadPromptFile(role, 'system')
-
 export { PROMPTS_ROOT, resolvePromptPath }

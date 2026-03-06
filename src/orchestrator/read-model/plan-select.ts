@@ -89,24 +89,6 @@ export const selectRecentPlans = (
   return selectByWindow(sorted, params)
 }
 
-export const selectOnIdlePlansForTrigger = (
-  plans: TaskPlan[],
-  nowMs: number = Date.now(),
-): TaskPlan[] =>
-  [...plans]
-    .filter((plan) => {
-      if (plan.status !== 'active') return false
-      if (plan.trigger.mode !== 'on_idle') return false
-      if (plan.maxRuns !== undefined && plan.runCount >= plan.maxRuns)
-        return false
-      const cooldownMs = Math.max(0, plan.trigger.cooldownMs)
-      if (cooldownMs === 0) return true
-      const lastCompletedMs = parseIsoToMsOrZero(plan.lastCompletedAt)
-      if (lastCompletedMs <= 0) return true
-      return nowMs - lastCompletedMs >= cooldownMs
-    })
-    .sort(comparePriorityFifo)
-
 export const selectRecentTasks = (
   tasks: Task[],
   params: WindowSelectParams,

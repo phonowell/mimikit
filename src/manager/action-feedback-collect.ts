@@ -113,10 +113,9 @@ const detectUnparsedActionIssue = (
     const action = (match[1] ?? 'unknown').trim() || 'unknown'
     const { index } = match
     const attempted = detectActionSnippet(output, index)
-    if (isIndexInRanges(index, codeRanges)) {
-      if (!inCode) inCode = { action, attempted }
-    } else {
-      if (!outside) outside = { action, attempted }
+    if (isIndexInRanges(index, codeRanges)) inCode ??= { action, attempted }
+    else {
+      outside ??= { action, attempted }
       if (zoneStart >= 0 && index < zoneStart && !outsideBeforeZone)
         outsideBeforeZone = { action, attempted }
       if (!parsedTagStarts.has(index) && !outsideUnparsed)

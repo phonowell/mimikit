@@ -15,6 +15,7 @@ import {
   ProviderError,
   readProviderErrorCode,
 } from './provider-error.js'
+import { asRecord, asString } from './provider-payload.js'
 import {
   bindExternalAbort,
   buildProviderResult,
@@ -81,18 +82,6 @@ const buildFetchWithoutAuthHeader = (): typeof fetch => (input, init) => {
   return fetch(new Request(request, { headers }))
 }
 
-const asRecord = (value: unknown): Record<string, unknown> | null =>
-  typeof value === 'object' && value ? (value as Record<string, unknown>) : null
-
-const asString = (
-  value: Record<string, unknown> | null,
-  key: string,
-): string | undefined => {
-  if (!value) return undefined
-  const target = value[key]
-  return typeof target === 'string' ? target : undefined
-}
-
 const appendOpenAiResponsesLog = async (
   request: OpenAiResponsesProviderRequest,
   entry: Record<string, unknown>,
@@ -129,7 +118,7 @@ const toDataPayload = (chunk: string): unknown => {
 }
 
 const readCompletedOutput = (completed: Record<string, unknown>): string => {
-  const output = completed['output']
+  const { output } = completed
   if (!Array.isArray(output)) return ''
   let text = ''
   for (const item of output) {
@@ -278,7 +267,7 @@ const runOpenAiResponses = async (request: OpenAiResponsesProviderRequest) => {
     const shouldStripAuthorizationHeader =
       settings.requiresAuth === false &&
       !requestApiKey &&
-      !settings.apiKey?.trim()?.length
+      !trimNonEmptyString(settings.apiKey)
     const doFetch = shouldStripAuthorizationHeader
       ? buildFetchWithoutAuthHeader()
       : fetch

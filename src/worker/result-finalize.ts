@@ -70,7 +70,7 @@ export const finalizeResult = async (
   markFn: (tasks: Task[], taskId: string, patch?: Partial<Task>) => void,
 ): Promise<void> => {
   runtime.lastWorkerActivityAtMs = Date.now()
-  if (!result.handoff) result.handoff = buildTaskResultHandoff(task, result)
+  result.handoff ??= buildTaskResultHandoff(task, result)
   const archivePath = await archiveTaskResult(runtime, task, result, 'worker')
   if (archivePath) {
     result.archivePath = archivePath

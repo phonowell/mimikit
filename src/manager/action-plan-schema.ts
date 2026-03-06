@@ -1,7 +1,8 @@
 import { z } from 'zod'
 
+import { focusIdSchema } from '../shared/id-schema.js'
+
 const nonEmptyString = z.string().trim().min(1)
-const focusIdSchema = nonEmptyString.regex(/^focus-[a-zA-Z0-9._-]+$/)
 
 const planPrioritySchema = z.enum(['high', 'normal', 'low'])
 const planStatusSchema = z.enum(['active', 'blocked', 'done'])

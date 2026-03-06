@@ -174,11 +174,3 @@ export const updateFocus = (
     })
   }
 }
-
-export {
-  findFocusCompressedContext,
-  removeFocusCompressedContexts,
-  selectFocusCompressedContexts,
-  upsertFocusCompressedContext,
-  upsertFocusContext,
-} from './state-context.js'

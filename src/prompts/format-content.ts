@@ -1,6 +1,10 @@
 import { isAbsolute, relative, resolve } from 'node:path'
 
 import { GLOBAL_FOCUS_ID } from '../focus/index.js'
+import {
+  buildPlanProgressPayload,
+  buildPlanTriggerPayload,
+} from '../shared/plan-payload.js'
 import { truncateText } from '../shared/text.js'
 
 import {
@@ -284,19 +288,8 @@ const formatPlanEntry = (plan: TaskPlan): Record<string, unknown> => ({
   created_at: plan.createdAt,
   updated_at: plan.updatedAt,
   run_count: plan.runCount,
-  ...(plan.maxRuns !== undefined ? { max_runs: plan.maxRuns } : {}),
-  trigger_mode: plan.trigger.mode,
-  ...(plan.trigger.mode === 'cron' ? { cron: plan.trigger.cron } : {}),
-  ...(plan.trigger.mode === 'scheduled_at'
-    ? { scheduled_at: plan.trigger.scheduledAt }
-    : {}),
-  ...(plan.trigger.mode === 'on_idle'
-    ? { cooldown_ms: plan.trigger.cooldownMs }
-    : {}),
-  ...(plan.lastTriggeredAt ? { last_triggered_at: plan.lastTriggeredAt } : {}),
-  ...(plan.lastCompletedAt ? { last_completed_at: plan.lastCompletedAt } : {}),
-  ...(plan.lastTaskId ? { last_task_id: plan.lastTaskId } : {}),
-  ...(plan.archivedAt ? { archived_at: plan.archivedAt } : {}),
+  ...buildPlanProgressPayload(plan),
+  ...buildPlanTriggerPayload(plan.trigger),
   ...(plan.doneReason ? { done_reason: plan.doneReason } : {}),
 })
 

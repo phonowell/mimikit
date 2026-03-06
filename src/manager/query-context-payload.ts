@@ -68,35 +68,27 @@ const pickMostRemovableScope = (
   return removable[0]?.[0]
 }
 
+const trimOneScopeItem = (results: MutableQueryResults): boolean => {
+  const scope = pickMostRemovableScope(results)
+  if (!scope) return false
+  const group = results[scope]
+  if (!group || group.items.length === 0) return false
+  group.items.pop()
+  group.truncated = true
+  group.nextOffset = group.items.length
+  return true
+}
+
 export const enforceQueryLookupBudget = (
   message: QueryLookupMessage,
 ): QueryLookupMessage => {
   const results = message.results as MutableQueryResults
   let usedBytes = measureBytes(message)
   while (usedBytes > message.meta.maxBytes) {
-    const scope = pickMostRemovableScope(results)
-    if (!scope) break
-    const group = results[scope]
-    if (!group || group.items.length === 0) break
-    group.items.pop()
-    group.truncated = true
-    group.nextOffset = group.items.length
+    if (!trimOneScopeItem(results)) break
     message.meta.truncated = true
     usedBytes = measureBytes(message)
   }
-
-  message.meta.usedBytes = measureBytes(message)
-  while (message.meta.usedBytes > message.meta.maxBytes) {
-    const scope = pickMostRemovableScope(results)
-    if (!scope) break
-    const group = results[scope]
-    if (!group || group.items.length === 0) break
-    group.items.pop()
-    group.truncated = true
-    group.nextOffset = group.items.length
-    message.meta.truncated = true
-    message.meta.usedBytes = measureBytes(message)
-  }
-
+  message.meta.usedBytes = usedBytes
   return message
 }

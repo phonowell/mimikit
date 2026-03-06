@@ -1,5 +1,7 @@
 import { normalizeUsage } from '../shared/utils.js'
 
+import { asRecord, asString } from './provider-payload.js'
+
 import type { CodexSdkProviderRequest } from './types.js'
 
 const PARTIAL_OUTPUT_EMIT_INTERVAL_MS = 400
@@ -10,18 +12,6 @@ type CodexThread = {
     options: { outputSchema?: unknown; signal: AbortSignal },
   ) => Promise<{ events: AsyncIterable<unknown> }>
   id?: string | null
-}
-
-const asRecord = (value: unknown): Record<string, unknown> | null =>
-  typeof value === 'object' && value ? (value as Record<string, unknown>) : null
-
-const asString = (
-  value: Record<string, unknown> | null,
-  key: string,
-): string | undefined => {
-  if (!value) return undefined
-  const target = value[key]
-  return typeof target === 'string' ? target : undefined
 }
 
 export type StreamResult = {

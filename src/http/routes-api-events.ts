@@ -31,6 +31,7 @@ export const registerEventsRoute = (
       clientClosed = true
       closeSseSource(reply)
     }
+    const isClientClosed = (): boolean => clientClosed
     request.raw.once('aborted', markClientClosed)
     request.raw.once('close', markClientClosed)
 
@@ -45,7 +46,7 @@ export const registerEventsRoute = (
       ingressLogger.logIncomingMessages(initial.messages)
 
       for (;;) {
-        if (request.raw.destroyed || clientClosed) break
+        if (isClientClosed()) break
         const signal = await orchestrator.waitForWebUiSignal(
           SSE_HEARTBEAT_MS,
           uiWakeVersion,
@@ -86,7 +87,7 @@ export const registerEventsRoute = (
         ingressLogger.logIncomingMessages(snapshot.messages)
       }
     } catch (error) {
-      if (request.raw.destroyed || clientClosed) return
+      if (isClientClosed()) return
       sendSseEvent(reply, 'error', {
         error: error instanceof Error ? error.message : String(error),
       })
