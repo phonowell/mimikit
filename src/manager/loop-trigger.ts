@@ -14,11 +14,11 @@ import {
   triggerOnWorkerSlotFreedPlans,
 } from './loop-trigger-plans.js'
 import {
+  areWorkerSlotsFullyAvailable,
   hasFreeWorkerSlot,
   IDLE_CHECK_INTERVAL_MS,
-  isManagerBusy,
-  isWorkerBusy,
   resolveWorkerSlotCapacity,
+  toWorkerSlotStatusPayload,
   WORKER_SLOT_EVENT_COOLDOWN_MS,
 } from './loop-trigger-shared.js'
 import { publishManagerSystemEventInput } from './system-input-event.js'
@@ -26,8 +26,8 @@ import { publishManagerSystemEventInput } from './system-input-event.js'
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 
 export const triggerWakeLoop = async (runtime: RuntimeState): Promise<void> => {
-  let publishedIdleForCurrentWindow = false
-  let lastActivityKey = ''
+  let publishedSlotIdleForCurrentWindow = false
+  let lastSlotIdleSinceMs = runtime.lastWorkerActivityAtMs
   let lastFreeWorkerSlot: boolean | null = null
   let workerSlotEventPending = false
   let lastWorkerSlotEventAtMs = 0
@@ -40,10 +40,10 @@ export const triggerWakeLoop = async (runtime: RuntimeState): Promise<void> => {
     try {
       const now = new Date()
       const nowMs = now.getTime()
-      const activityKey = `${runtime.lastManagerActivityAtMs}:${runtime.lastWorkerActivityAtMs}`
-      if (activityKey !== lastActivityKey) {
-        lastActivityKey = activityKey
-        publishedIdleForCurrentWindow = false
+      const slotIdleSinceMs = runtime.lastWorkerActivityAtMs
+      if (slotIdleSinceMs !== lastSlotIdleSinceMs) {
+        lastSlotIdleSinceMs = slotIdleSinceMs
+        publishedSlotIdleForCurrentWindow = false
       }
 
       let stateChanged = false
@@ -86,9 +86,7 @@ export const triggerWakeLoop = async (runtime: RuntimeState): Promise<void> => {
             event: 'worker_slot_freed',
             visibility: 'all',
             payload: {
-              available_slots: capacity.availableSlots,
-              occupied_slots: capacity.occupiedSlots,
-              max_slots: capacity.maxSlots,
+              ...toWorkerSlotStatusPayload(capacity),
               triggered_at: now.toISOString(),
             },
             createdAt: now.toISOString(),
@@ -106,43 +104,44 @@ export const triggerWakeLoop = async (runtime: RuntimeState): Promise<void> => {
         lastWorkerSlotEventAtMs = nowMs
       }
 
-      const idleSinceMs = Math.max(
-        runtime.lastManagerActivityAtMs,
-        runtime.lastWorkerActivityAtMs,
-      )
-      const idleForMs = nowMs - idleSinceMs
-      const idleReady =
-        !isManagerBusy(runtime) &&
-        !isWorkerBusy(runtime) &&
+      const idleForMs = nowMs - slotIdleSinceMs
+      const slotIdleReady =
+        areWorkerSlotsFullyAvailable(runtime) &&
+        runtime.managerRunning === false &&
         idleForMs >= idleTriggerDelayMs
 
-      if (!publishedIdleForCurrentWindow && idleReady) {
+      if (!publishedSlotIdleForCurrentWindow && slotIdleReady) {
         const idleTriggered = await triggerOnIdlePlans(runtime, nowMs)
         stateChanged = stateChanged || idleTriggered.stateChanged
         triggeredCount += idleTriggered.triggeredCount
 
         if (idleTriggered.triggeredCount === 0) {
-          const idleSince = new Date(idleSinceMs).toISOString()
+          const capacity = resolveWorkerSlotCapacity(runtime)
+          const slotIdleSince = new Date(slotIdleSinceMs).toISOString()
           await publishManagerSystemEventInput({
             runtime,
-            summary: 'The system is currently idle.',
-            event: 'idle',
+            summary: 'All worker slots are currently free.',
+            event: 'worker_slots_idle',
             visibility: 'all',
             payload: {
-              idle_since: idleSince,
+              ...toWorkerSlotStatusPayload(capacity),
+              slot_idle_since: slotIdleSince,
               triggered_at: now.toISOString(),
             },
             createdAt: now.toISOString(),
-            logEvent: 'idle_trigger_input',
+            logEvent: 'worker_slots_idle_input',
             logMeta: {
-              idleSince,
+              slotIdleSince,
               idleForMs,
+              availableSlots: capacity.availableSlots,
+              occupiedSlots: capacity.occupiedSlots,
+              maxSlots: capacity.maxSlots,
             },
           })
           triggeredCount += 1
         }
 
-        publishedIdleForCurrentWindow = true
+        publishedSlotIdleForCurrentWindow = true
       }
 
       if (stateChanged) {

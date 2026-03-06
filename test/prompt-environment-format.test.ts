@@ -18,3 +18,20 @@ test('formatEnvironment omits work_dir and generated_dir when work_dir is missin
   expect(output).not.toContain('work_dir:')
   expect(output).not.toContain('generated_dir:')
 })
+
+test('formatEnvironment includes worker slot capacity fields', () => {
+  const output = formatEnvironment({
+    env: {
+      wakeProfile: 'slot_idle',
+      workerSlots: {
+        maxSlots: 4,
+        occupiedSlots: 1,
+        availableSlots: 3,
+      },
+    },
+  })
+
+  expect(output).toContain('- max_slots: 4')
+  expect(output).toContain('- occupied_slots: 1')
+  expect(output).toContain('- available_slots: 3')
+})

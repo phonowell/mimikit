@@ -1,3 +1,4 @@
+import { resolveWorkerSlotCapacity } from './loop-trigger-shared.js'
 import { runManager } from './runner.js'
 
 import type { RuntimeState } from './runtime-adapter.js'
@@ -20,12 +21,17 @@ import type {
 const buildManagerEnv = (
   runtime: RuntimeState,
   wakeProfile: ManagerWakeProfile,
-): ManagerEnv | undefined => {
+): ManagerEnv => {
+  const slots = resolveWorkerSlotCapacity(runtime)
   const env: ManagerEnv = {
     ...(runtime.lastUserMeta ? { lastUser: runtime.lastUserMeta } : {}),
     wakeProfile,
+    workerSlots: {
+      maxSlots: slots.maxSlots,
+      occupiedSlots: slots.occupiedSlots,
+      availableSlots: slots.availableSlots,
+    },
   }
-  if (!env.lastUser && !env.wakeProfile) return undefined
   return env
 }
 
@@ -44,20 +50,22 @@ const resolveWakeProfile = (
   const hasCapacityWake = inputs.some((item) =>
     hasSystemEvent(item, 'worker_slot_freed'),
   )
-  const hasIdleWake = inputs.some((item) => hasSystemEvent(item, 'idle'))
+  const hasSlotIdleWake = inputs.some((item) =>
+    hasSystemEvent(item, 'worker_slots_idle'),
+  )
   const activeKinds = [
     hasUserInput,
     hasTaskResult,
     hasTriggerWake,
     hasCapacityWake,
-    hasIdleWake,
+    hasSlotIdleWake,
   ].filter(Boolean).length
   if (activeKinds !== 1) return 'mixed'
   if (hasUserInput) return 'user_input'
   if (hasTaskResult) return 'task_result'
   if (hasTriggerWake) return 'trigger'
   if (hasCapacityWake) return 'capacity'
-  return 'idle'
+  return 'slot_idle'
 }
 
 const MIN_PROMPT_SECTION_BYTES = 512
@@ -96,7 +104,7 @@ const WAKE_PROFILE_SECTION_MULTIPLIERS: Partial<
     recentHistoryMaxBytes: 0.8,
     batchResultsMaxBytes: 0.8,
   },
-  idle: {
+  slot_idle: {
     plansMaxBytes: 1.2,
     tasksMaxBytes: 1.1,
     inputsMaxBytes: 0.6,

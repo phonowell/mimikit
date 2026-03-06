@@ -7,7 +7,9 @@ import { expect, test, vi } from 'vitest'
 
 import { defaultConfig } from '../src/config.js'
 import { buildPaths } from '../src/fs/paths.js'
+import { readHistory } from '../src/history/store.js'
 import { applyTaskActions } from '../src/manager/action-apply.js'
+import { parseSystemEventText } from '../src/shared/system-event.js'
 
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
 import type { TaskPlan } from '../src/types/index.js'
@@ -108,6 +110,35 @@ test('run_task re-enqueues pending task when fingerprint matches exactly', async
   expect(runtime.tasks[0]?.id).toBe('task-pending')
   expect(runtime.tasks[0]?.focusId).toBe('focus-local')
   expect(runtime.workerQueue.size).toBe(1)
+})
+
+test('run_task task_created system event includes worker slot status payload', async () => {
+  const runtime = await createRuntime()
+  runtime.config.worker.maxConcurrent = 3
+
+  await applyTaskActions(runtime, [
+    {
+      name: 'run_task',
+      attrs: {
+        prompt: 'generate release note',
+        title: 'release-note',
+      },
+    },
+  ])
+
+  const history = await readHistory(runtime.paths.history)
+  const createdEvent = history.find(
+    (item) =>
+      item.role === 'system' && item.text.includes('name="task_created"'),
+  )
+  expect(createdEvent).toBeTruthy()
+  const parsed = parseSystemEventText(createdEvent?.text ?? '')
+  expect(parsed.name).toBe('task_created')
+  expect(parsed.payload?.slots).toEqual({
+    max_slots: 3,
+    occupied_slots: 0,
+    available_slots: 3,
+  })
 })
 
 test('run_task dedupe does not block task creation when fingerprint differs', async () => {

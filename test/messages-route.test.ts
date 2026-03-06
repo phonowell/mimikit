@@ -239,7 +239,8 @@ test('restart route rejects when manager or worker is not idle', async () => {
 
   expect(response.statusCode).toBe(409)
   expect(response.json()).toEqual({
-    error: 'restart requires idle state: wait for manager and workers to become idle',
+    error:
+      'restart requires clear slots: wait for manager to stop and pending/running tasks to clear',
   })
   expect(stopAndPersist).toHaveBeenCalledTimes(0)
   expect(exitRequests).toHaveLength(0)
@@ -306,7 +307,8 @@ test('reset route rejects when manager or worker is not idle', async () => {
 
   expect(response.statusCode).toBe(409)
   expect(response.json()).toEqual({
-    error: 'reset requires idle state: wait for manager and workers to become idle',
+    error:
+      'reset requires clear slots: wait for manager to stop and pending/running tasks to clear',
   })
   expect(stopAndPersist).toHaveBeenCalledTimes(0)
   expect(exitRequests).toHaveLength(0)

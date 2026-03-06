@@ -253,7 +253,7 @@ export type ManagerWakeProfile =
   | 'task_result'
   | 'trigger'
   | 'capacity'
-  | 'idle'
+  | 'slot_idle'
   | 'mixed'
 export type ManagerEnv = {
   lastUser?: {
@@ -265,6 +265,11 @@ export type ManagerEnv = {
     clientNowIso?: string
   }
   wakeProfile?: ManagerWakeProfile
+  workerSlots?: {
+    maxSlots: number
+    occupiedSlots: number
+    availableSlots: number
+  }
 }
 export type ManagerActionFeedback = {
   action: string

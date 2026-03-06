@@ -243,7 +243,9 @@ test('trigger_fire system event uses global focus even when plan has local focus
   expect(triggerInput?.focusId).toBe(GLOBAL_FOCUS_ID)
 })
 
-test('worker_slot_freed can trigger while global idle is false', async () => {
+test(
+  'on_idle is gated by managerRunning and fires once slots are fully free',
+  async () => {
   const runtime = await createRuntime({ maxConcurrent: 1, idleDelayMs: 0 })
   runtime.taskPlans.push(
     createPlan('plan-capacity', { mode: 'on_worker_slot_freed' }),
@@ -266,12 +268,18 @@ test('worker_slot_freed can trigger while global idle is false', async () => {
 
     expect(runtime.taskPlans[0]?.runCount).toBe(1)
     expect(runtime.taskPlans[1]?.runCount).toBe(0)
-    expect(countSystemEvent(runtime, 'idle')).toBe(0)
+    expect(countSystemEvent(runtime, 'worker_slots_idle')).toBe(0)
+
+    runtime.managerRunning = false
+    await waitFor(() => (runtime.taskPlans[1]?.runCount ?? 0) >= 1, 4_000)
+    expect(runtime.taskPlans[1]?.runCount).toBe(1)
   } finally {
     runtime.stopped = true
     await loopPromise
   }
-})
+  },
+  12_000,
+)
 
 test('triggerWakeLoop emits worker_slot_freed on full-to-free transition only once', async () => {
   const runtime = await createRuntime({ maxConcurrent: 1, idleDelayMs: 60_000 })

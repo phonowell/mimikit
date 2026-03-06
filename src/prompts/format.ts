@@ -44,6 +44,12 @@ export const formatEnvironment = (params?: PromptEnvironmentParams): string => {
     resolvedWorkDir ? resolve(resolvedWorkDir, 'generated') : undefined,
   )
   push('wake_profile', params?.env?.wakeProfile)
+  const slots = params?.env?.workerSlots
+  if (slots) {
+    push('max_slots', slots.maxSlots)
+    push('occupied_slots', slots.occupiedSlots)
+    push('available_slots', slots.availableSlots)
+  }
   const last = params?.env?.lastUser
   if (last) {
     push('last_user_source', last.source)

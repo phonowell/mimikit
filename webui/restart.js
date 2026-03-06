@@ -8,9 +8,9 @@ const STATUS_POLL_TIMEOUT_MS = 60000
 const STATUS_POLL_INTERVAL_MS = 300
 const STATUS_REQUEST_OPTIONS = { cache: 'no-store' }
 const NON_IDLE_UI_HINT =
-  'Restart tools are available only when manager and workers are idle.'
+  'Restart tools are available only when manager is stopped and pending/running tasks are clear.'
 const NON_IDLE_BLOCK_REASON =
-  'system is busy; wait for manager and workers to become idle'
+  'system is busy; wait for manager to stop and pending/running tasks to clear'
 const MODE_ENDPOINT = {
   restart: '/api/restart',
   reset: '/api/reset',

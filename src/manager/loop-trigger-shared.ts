@@ -1,7 +1,6 @@
 import { GLOBAL_FOCUS_ID } from '../focus/constants.js'
 import { parseIsoMs } from '../shared/time.js'
 
-import { hasNonIdleManagerInput } from './idle-input.js'
 import { publishManagerSystemEventInput } from './system-input-event.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
@@ -10,15 +9,16 @@ import type { TaskPlan } from '../types/index.js'
 export const IDLE_CHECK_INTERVAL_MS = 1_000
 export const WORKER_SLOT_EVENT_COOLDOWN_MS = 1_000
 
-const hasPendingOrRunningTask = (runtime: RuntimeState): boolean =>
-  runtime.tasks.some(
-    (task) => task.status === 'pending' || task.status === 'running',
-  )
-
 export type WorkerSlotCapacity = {
   maxSlots: number
   occupiedSlots: number
   availableSlots: number
+}
+
+export type WorkerSlotStatusPayload = {
+  max_slots: number
+  occupied_slots: number
+  available_slots: number
 }
 
 export const resolveWorkerSlotCapacity = (
@@ -37,19 +37,23 @@ export const resolveWorkerSlotCapacity = (
   }
 }
 
+export const toWorkerSlotStatusPayload = (
+  capacity: WorkerSlotCapacity,
+): WorkerSlotStatusPayload => ({
+  max_slots: capacity.maxSlots,
+  occupied_slots: capacity.occupiedSlots,
+  available_slots: capacity.availableSlots,
+})
+
 export const hasFreeWorkerSlot = (runtime: RuntimeState): boolean =>
   resolveWorkerSlotCapacity(runtime).availableSlots > 0
 
-export const isWorkerBusy = (runtime: RuntimeState): boolean =>
-  runtime.runningControllers.size > 0 ||
-  runtime.workerQueue.size > 0 ||
-  hasPendingOrRunningTask(runtime)
-
-export const isManagerBusy = (runtime: RuntimeState): boolean =>
-  runtime.pendingUserChoice !== null ||
-  runtime.managerRunning ||
-  runtime.managerWakePending ||
-  hasNonIdleManagerInput(runtime.inflightInputs)
+export const areWorkerSlotsFullyAvailable = (
+  runtime: RuntimeState,
+): boolean => {
+  const capacity = resolveWorkerSlotCapacity(runtime)
+  return capacity.availableSlots === capacity.maxSlots
+}
 
 export const markPlanDone = (
   plan: TaskPlan,
@@ -119,6 +123,7 @@ export const firePlan = async (params: {
       priority: plan.priority,
       source: plan.source,
       run_count: plan.runCount,
+      slots: toWorkerSlotStatusPayload(resolveWorkerSlotCapacity(runtime)),
       ...(plan.maxRuns !== undefined ? { max_runs: plan.maxRuns } : {}),
       triggered_at: nowIso,
       ...(plan.trigger.mode === 'cron' ? { cron: plan.trigger.cron } : {}),

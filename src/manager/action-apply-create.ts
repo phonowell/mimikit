@@ -4,9 +4,15 @@ import {
   touchFocus,
 } from '../focus/index.js'
 import { appendTaskSystemMessage } from '../history/task-events.js'
+import { appendLog } from '../log/append.js'
+import { bestEffort } from '../log/safe.js'
 
 import { markCreateAttempt } from './action-apply-guards.js'
 import { runTaskSchema } from './action-apply-schema.js'
+import {
+  resolveWorkerSlotCapacity,
+  toWorkerSlotStatusPayload,
+} from './loop-trigger-shared.js'
 import {
   buildTaskFingerprint,
   buildTaskSemanticKey,
@@ -44,6 +50,23 @@ export const applyRunTask = async (
   seen: Set<string>,
   options?: ApplyTaskActionsOptions,
 ): Promise<void> => {
+  const logRunTaskDispatch = async (params: {
+    taskId: string
+    mode: 'reuse_pending' | 'created'
+  }): Promise<void> => {
+    const slots = resolveWorkerSlotCapacity(runtime)
+    await bestEffort('appendLog: run_task_dispatch', () =>
+      appendLog(runtime.paths.log, {
+        event: 'run_task_dispatch',
+        taskId: params.taskId,
+        mode: params.mode,
+        availableSlots: slots.availableSlots,
+        occupiedSlots: slots.occupiedSlots,
+        maxSlots: slots.maxSlots,
+      }),
+    )
+  }
+
   if (options?.suppressRunTask) return
   const parsed = runTaskSchema.safeParse(item.attrs)
   if (!parsed.success) return
@@ -84,6 +107,10 @@ export const applyRunTask = async (
         reason: 'superseded_by_newer_semantic_task',
       })
     } else if (activeSemanticTask.status === 'pending') {
+      await logRunTaskDispatch({
+        taskId: activeSemanticTask.id,
+        mode: 'reuse_pending',
+      })
       enqueueWorkerTask(runtime, activeSemanticTask)
       notifyWorkerLoop(runtime)
       return
@@ -100,13 +127,19 @@ export const applyRunTask = async (
   )
   if (!created) {
     if (task.status !== 'pending') return
+    await logRunTaskDispatch({ taskId: task.id, mode: 'reuse_pending' })
     enqueueWorkerTask(runtime, task)
     notifyWorkerLoop(runtime)
     return
   }
+  const slotStatus = toWorkerSlotStatusPayload(
+    resolveWorkerSlotCapacity(runtime),
+  )
   await appendTaskSystemMessage(runtime.paths.history, 'created', task, {
     createdAt: task.createdAt,
+    slotStatus,
   })
+  await logRunTaskDispatch({ taskId: task.id, mode: 'created' })
   await persistRuntimeState(runtime)
   enqueueWorkerTask(runtime, task)
   notifyWorkerLoop(runtime)

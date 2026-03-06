@@ -44,7 +44,7 @@
 3. 若产生任务，worker 调用外部执行运行时并写入 `results/packets.jsonl`。
 4. 结果回写后再次唤醒 manager，形成闭环。
 
-实时唤醒来源：`user_input`、`task_result`、`trigger`、`capacity`、`idle`。
+实时唤醒来源：`user_input`、`task_result`、`trigger`、`capacity`、`slot_idle`。
 
 ## 一致性与恢复
 

@@ -13,6 +13,12 @@ import type {
 
 type TaskHistoryEvent = 'created' | 'canceled' | 'completed'
 
+type WorkerSlotPayload = {
+  max_slots: number
+  occupied_slots: number
+  available_slots: number
+}
+
 const resolveTaskLabel = (task: Task): string => {
   const title = task.title.trim()
   if (title && title !== task.id) return title
@@ -55,6 +61,7 @@ const buildTaskPayload = (
   label: string,
   status?: TaskResultStatus,
   cancel?: TaskCancelMeta,
+  slotStatus?: WorkerSlotPayload,
 ): Record<string, unknown> => ({
   task_id: task.id,
   label,
@@ -64,6 +71,7 @@ const buildTaskPayload = (
   ...(event === 'canceled' ? { status: 'canceled' } : {}),
   ...(cancel?.source ? { cancel_source: cancel.source } : {}),
   ...(cancel?.reason ? { cancel_reason: cancel.reason } : {}),
+  ...(slotStatus ? { slots: slotStatus } : {}),
 })
 
 export const appendTaskSystemMessage = (
@@ -74,6 +82,7 @@ export const appendTaskSystemMessage = (
     status?: TaskResultStatus
     createdAt?: string
     cancel?: TaskCancelMeta
+    slotStatus?: WorkerSlotPayload
   },
 ): Promise<boolean> => {
   const label = resolveTaskLabel(task)
@@ -86,6 +95,7 @@ export const appendTaskSystemMessage = (
       label,
       options?.status,
       options?.cancel,
+      options?.slotStatus,
     ),
   })
   const message: HistoryMessage = {

@@ -107,7 +107,7 @@ export const registerApiRoutes = (
   ): boolean => {
     if (isRuntimeIdleForControlAction()) return false
     reply.code(409).send({
-      error: `${action} requires idle state: wait for manager and workers to become idle`,
+      error: `${action} requires clear slots: wait for manager to stop and pending/running tasks to clear`,
     })
     return true
   }
