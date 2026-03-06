@@ -1,6 +1,7 @@
 import { appendLog } from '../../log/append.js'
 
 import { assertEnabledTelegramConfig } from './config.js'
+import { buildUnsupportedImageInputText } from './image-unsupported-input.js'
 import { resolveTelegramProxy } from './proxy.js'
 
 import type { AppConfig } from '../../config.js'
@@ -10,7 +11,6 @@ import type { Telegraf } from 'telegraf'
 type TelegramRunner = {
   bot: Telegraf
 }
-
 const runners = new Map<string, TelegramRunner>()
 
 type MmkCommand = 'help' | 'restart'
@@ -19,6 +19,18 @@ type ParsedMmkCommand =
   | { kind: 'not_mmk' }
   | { kind: 'invalid' }
   | { kind: 'valid'; command: MmkCommand }
+type TelegramInboundContext = {
+  message: {
+    message_id: number
+    date: number
+  }
+  chat: {
+    id: number
+  }
+  update: {
+    update_id: number
+  }
+}
 
 const MMK_PREFIX = '/mmk'
 const MMK_HELP_TEXT = ['/mmk help', '/mmk restart'].join('\n')
@@ -52,6 +64,15 @@ const parseMmkCommand = (
 
 const toIsoFromUnixSeconds = (value: number): string =>
   new Date(value * 1000).toISOString()
+
+const buildTelegramUserMeta = (ctx: TelegramInboundContext): UserMeta => ({
+  source: 'telegram',
+  platform: 'telegram',
+  telegramChatId: String(ctx.chat.id),
+  telegramMessageId: String(ctx.message.message_id),
+  telegramUpdateId: String(ctx.update.update_id),
+  telegramTimestamp: toIsoFromUnixSeconds(ctx.message.date),
+})
 
 export const startTelegramPolling = async (params: {
   config: AppConfig
@@ -121,14 +142,15 @@ export const startTelegramPolling = async (params: {
       return
     }
 
-    await addUserInput(text, {
-      source: 'telegram',
-      platform: 'telegram',
-      telegramChatId: String(ctx.chat.id),
-      telegramMessageId: String(ctx.message.message_id),
-      telegramUpdateId: String(ctx.update.update_id),
-      telegramTimestamp: toIsoFromUnixSeconds(ctx.message.date),
-    })
+    await addUserInput(text, buildTelegramUserMeta(ctx))
+  })
+
+  bot.on('photo', async (ctx) => {
+    const { caption } = ctx.message as { caption?: unknown }
+    await addUserInput(
+      await buildUnsupportedImageInputText(caption),
+      buildTelegramUserMeta(ctx),
+    )
   })
 
   try {

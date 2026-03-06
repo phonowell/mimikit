@@ -53,6 +53,7 @@
 - 必填：`text`
 - 可选：`quote`、`language`
 - 可选客户端上下文：`clientLocale`、`clientTimeZone`、`clientOffsetMinutes`、`clientNowIso`
+- 输入限制：当前仅支持纯文本输入，不支持图片/附件直传。
 
 ## 取消任务协议（`POST /api/tasks/:id/cancel`）
 

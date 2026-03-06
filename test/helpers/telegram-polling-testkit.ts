@@ -5,12 +5,7 @@ import {
 } from '../../src/channels/telegram/polling.js'
 
 type ChatType = 'private' | 'group' | 'supergroup' | 'channel'
-export type TextContext = {
-  message: {
-    text: string
-    message_id: number
-    date: number
-  }
+type BaseContext = {
   chat: {
     id: number
     type: ChatType
@@ -24,6 +19,23 @@ export type TextContext = {
   reply: (text: string) => Promise<void>
 }
 
+export type TextContext = BaseContext & {
+  message: {
+    text: string
+    message_id: number
+    date: number
+  }
+}
+
+export type PhotoContext = BaseContext & {
+  message: {
+    caption?: string
+    photo: Array<{ file_id: string }>
+    message_id: number
+    date: number
+  }
+}
+
 export class MockTelegraf {
   static instances: MockTelegraf[] = []
 
@@ -31,9 +43,10 @@ export class MockTelegraf {
     MockTelegraf.instances = []
   }
 
-  private textHandler:
-    | ((ctx: TextContext) => Promise<void> | void)
-    | undefined = undefined
+  private handlers = new Map<
+    string,
+    ((ctx: TextContext | PhotoContext) => Promise<void> | void) | undefined
+  >()
 
   constructor(_token: string, _options: unknown) {
     MockTelegraf.instances.push(this)
@@ -45,9 +58,9 @@ export class MockTelegraf {
 
   on(
     event: string,
-    handler: (ctx: TextContext) => Promise<void> | void,
+    handler: (ctx: TextContext | PhotoContext) => Promise<void> | void,
   ): this {
-    if (event === 'text') this.textHandler = handler
+    this.handlers.set(event, handler)
     return this
   }
 
@@ -56,7 +69,13 @@ export class MockTelegraf {
   stop(_reason: string): void {}
 
   async emitText(ctx: TextContext): Promise<void> {
-    await this.textHandler?.(ctx)
+    const handler = this.handlers.get('text')
+    await handler?.(ctx)
+  }
+
+  async emitPhoto(ctx: PhotoContext): Promise<void> {
+    const handler = this.handlers.get('photo')
+    await handler?.(ctx)
   }
 }
 
@@ -85,6 +104,31 @@ export const buildTextContext = (params: {
     username: params.botUsername ?? 'mimikit_bot',
   },
   reply: params.reply ?? (async () => undefined),
+})
+
+export const buildPhotoContext = (params?: {
+  caption?: string
+  chatType?: ChatType
+  reply?: (text: string) => Promise<void>
+  botUsername?: string
+}): PhotoContext => ({
+  message: {
+    ...(params?.caption ? { caption: params.caption } : {}),
+    photo: [{ file_id: 'photo-1' }],
+    message_id: 11,
+    date: 1_700_000_000,
+  },
+  chat: {
+    id: 1001,
+    type: params?.chatType ?? 'private',
+  },
+  update: {
+    update_id: 22,
+  },
+  botInfo: {
+    username: params?.botUsername ?? 'mimikit_bot',
+  },
+  reply: params?.reply ?? (async () => undefined),
 })
 
 export const startPolling = async (params?: {

@@ -2,10 +2,12 @@
 
 ## 能力范围
 
-- 入站：使用 long polling 接收 Telegram 文本消息并转为 `POST /api/input` 等价输入。
+- 入站：使用 long polling 接收 Telegram 消息并转为 `POST /api/input` 等价输入。
 - 出站：manager 回答后通过 Telegram Bot API `sendMessage` 回发到同一 chat。
 - 命令：仅支持 `/mmk help`、`/mmk restart`（仅 Telegram 单聊生效；WebUI 不生效）。
 - 当前未实现 webhook；默认使用 polling，适合本地直连运行。
+- 输入能力限制：当前仅支持纯文本输入，不支持图片理解。
+- 图片处理策略：收到 Telegram `photo` 后会写入一条“当前仅支持纯文本，请改用文字描述”的引导输入，由 manager/LLM 统一回复给用户。
 
 ## `/mmk` 命令（Telegram 单聊）
 
@@ -13,6 +15,7 @@
 - `/mmk restart`：触发运行时重启（等价退出码 `75` 的重启链路）。
 - 仅在 Telegram `private` 会话中生效；群聊/频道消息忽略。
 - 非 `/mmk` 文本仍按普通用户输入进入 orchestrator。
+- `photo` 不做视觉解析，转为文本限制提示进入 orchestrator。
 
 ## 配置项（`config.yaml`）
 

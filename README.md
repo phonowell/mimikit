@@ -182,6 +182,10 @@ No. Current architecture is single main session by design.
 
 At minimum: `GET /api/events` (SSE) and `POST /api/input`, plus task/choice/restart/reset endpoints.
 
+### Does it support image input?
+
+Not yet. Current input is text-only. For Telegram, photo messages are converted into a text-only capability notice so the manager can reply and ask the user to describe the request in plain text.
+
 ### Does it support scheduled or capacity-triggered automation?
 
 Yes. Plans support `cron`, `scheduled_at`, and `on_worker_slot_freed`.
