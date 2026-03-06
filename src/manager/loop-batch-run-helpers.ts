@@ -26,8 +26,7 @@ export const buildLookupKey = (params: {
   taskArchiveKey?: string
 }): string | undefined => {
   const { queryContextKey, readFileKey, taskArchiveKey } = params
-  if (!queryContextKey && !readFileKey && !taskArchiveKey)
-    return undefined
+  if (!queryContextKey && !readFileKey && !taskArchiveKey) return undefined
   return `${queryContextKey ?? ''}\n---\n${readFileKey ?? ''}\n---\n${taskArchiveKey ?? ''}`
 }
 
