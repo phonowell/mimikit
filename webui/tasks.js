@@ -1,6 +1,7 @@
 import { bindDialogControls, createDialogController } from './dialog.js'
 import { renderEmptyListState } from './list-empty.js'
 import { createListLayoutShiftSync } from './list-scroll-sync.js'
+import { PANEL_BOTTOM_SCROLL_THRESHOLD_MULTIPLIER } from './panel-scroll-config.js'
 import { UI_TEXT } from './system-text.js'
 import { bindTaskInteractions } from './tasks-interactions.js'
 import { renderTasks } from './tasks-view-render.js'
@@ -8,7 +9,6 @@ import { createElapsedTicker } from './tasks-view-time.js'
 import { subscribeTimeTick } from './time-tick.js'
 
 const EMPTY_TASKS = { tasks: [] }
-const BOTTOM_SCROLL_THRESHOLD_MULTIPLIER = 0.1
 
 const normalizeTasksPayload = (value) => {
   if (!value || typeof value !== 'object') return EMPTY_TASKS
@@ -34,7 +34,7 @@ export function bindTasksPanel({
   const elapsedTicker = createElapsedTicker(tasksList)
   const scrollSync = createListLayoutShiftSync({
     listEl: tasksList,
-    bottomThresholdMultiplier: BOTTOM_SCROLL_THRESHOLD_MULTIPLIER,
+    bottomThresholdMultiplier: PANEL_BOTTOM_SCROLL_THRESHOLD_MULTIPLIER,
   })
   let unsubscribeTimeTick = null
   const unbindTaskInteractions = bindTaskInteractions(tasksList)

@@ -7,6 +7,7 @@ import { formatUsage } from './messages/format-usage.js'
 import { renderEmptyListState } from './list-empty.js'
 import { appendMetaTime } from './meta-time.js'
 import { captureListScrollState, restoreListScrollState } from './list-scroll-sync.js'
+import { PANEL_BOTTOM_SCROLL_THRESHOLD_MULTIPLIER } from './panel-scroll-config.js'
 import {
   UI_TEXT,
   resolveTaskPendingReasonLabel,
@@ -48,8 +49,6 @@ const resolveScheduledBadge = (value, nowDate) => {
   }
 }
 
-const BOTTOM_SCROLL_THRESHOLD_MULTIPLIER = 0.1
-
 export const resolveTaskUsageDisplay = (usage) => {
   const usageDisplay = formatUsage(usage)
   const formatted = usageDisplay?.text ?? ''
@@ -71,7 +70,7 @@ export const resolveTaskUsageDisplay = (usage) => {
 export const renderTasks = (tasksList, data) => {
   if (!tasksList) return
   const previousScrollState = captureListScrollState(tasksList, {
-    bottomThresholdMultiplier: BOTTOM_SCROLL_THRESHOLD_MULTIPLIER,
+    bottomThresholdMultiplier: PANEL_BOTTOM_SCROLL_THRESHOLD_MULTIPLIER,
   })
   const tasks = data?.tasks || []
 

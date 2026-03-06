@@ -1,6 +1,7 @@
 import { renderEmptyListState } from './list-empty.js'
 import { captureListScrollState, restoreListScrollState } from './list-scroll-sync.js'
 import { appendMetaTime } from './meta-time.js'
+import { PANEL_BOTTOM_SCROLL_THRESHOLD_MULTIPLIER } from './panel-scroll-config.js'
 import { UI_TEXT } from './system-text.js'
 
 const normalizeText = (value) => {
@@ -44,12 +45,10 @@ const resolveOpenItems = (item) => {
   return openItems
 }
 
-const BOTTOM_SCROLL_THRESHOLD_MULTIPLIER = 0.1
-
 export const renderFocuses = (focusesList, data) => {
   if (!focusesList) return
   const previousScrollState = captureListScrollState(focusesList, {
-    bottomThresholdMultiplier: BOTTOM_SCROLL_THRESHOLD_MULTIPLIER,
+    bottomThresholdMultiplier: PANEL_BOTTOM_SCROLL_THRESHOLD_MULTIPLIER,
   })
   const items = data?.items || []
   if (items.length === 0) {

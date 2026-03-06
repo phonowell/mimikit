@@ -144,3 +144,23 @@ test('layout sync does not jump after list changes when user reads history', () 
 
   expect(listEl.scrollTop).toBe(600)
 })
+
+test('layout sync keeps reading position with strict near-bottom threshold', () => {
+  const listEl = {
+    scrollHeight: 2000,
+    clientHeight: 500,
+    scrollTop: 1200,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+  }
+  const sync = createListLayoutShiftSync({
+    listEl,
+    bottomThresholdMultiplier: 0.1,
+  })
+  sync.bind()
+  listEl.scrollHeight = 2300
+
+  sync.syncAfterLayoutShift()
+
+  expect(listEl.scrollTop).toBe(1200)
+})

@@ -1,6 +1,7 @@
 import { bindDialogControls, createDialogController } from './dialog.js'
 import { renderEmptyListState } from './list-empty.js'
 import { createListLayoutShiftSync } from './list-scroll-sync.js'
+import { PANEL_BOTTOM_SCROLL_THRESHOLD_MULTIPLIER } from './panel-scroll-config.js'
 import { UI_TEXT } from './system-text.js'
 import { subscribeTimeTick } from './time-tick.js'
 
@@ -24,7 +25,10 @@ export const bindSnapshotPanel = ({
 
   let latestPayload = normalizePayload(null)
   let unsubscribeTimeTick = null
-  const scrollSync = createListLayoutShiftSync({ listEl: list })
+  const scrollSync = createListLayoutShiftSync({
+    listEl: list,
+    bottomThresholdMultiplier: PANEL_BOTTOM_SCROLL_THRESHOLD_MULTIPLIER,
+  })
 
   const renderLatest = () => {
     render(list, latestPayload)
