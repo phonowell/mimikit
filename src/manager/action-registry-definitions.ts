@@ -14,7 +14,6 @@ import {
   assignFocusSchema,
   cancelSchema,
   deletePlanSchema,
-  restartSchema,
   updatePlanSchema,
   upsertFocusSchema,
 } from './action-apply-schema.js'
@@ -24,7 +23,6 @@ import {
   createNoopAction,
   type ManagerActionDefinition,
 } from './action-registry-shared.js'
-import { applyRestartRuntimeAction } from './action-runtime-restart.js'
 import {
   validateAskUserChoice,
   validateCancelTask,
@@ -60,11 +58,6 @@ const applyRunTaskAndContinue: ManagerActionDefinition['apply'] = async (
   'continue'
 )
 
-const applyRestartRuntime: ManagerActionDefinition['apply'] = async (
-  runtime,
-  item,
-) => ((await applyRestartRuntimeAction(runtime, item)) ? 'stop' : 'continue')
-
 const applyAskUserChoiceAndStop: ManagerActionDefinition['apply'] = async (
   runtime,
   item,
@@ -97,7 +90,7 @@ export const ACTION_DEFINITIONS = [
     apply: applyAndContinue(applyDeletePlan),
   },
   {
-    name: 'run_task',
+    name: 'enqueue_task',
     validate: (item) => validateRunTask(item),
     apply: applyRunTaskAndContinue,
   },
@@ -112,17 +105,12 @@ export const ACTION_DEFINITIONS = [
     apply: applyAskUserChoiceAndStop,
   },
   {
-    name: 'summarize_task_result',
+    name: 'set_task_result_summary',
     validate: (item, context) => validateSummarizeTaskResult(item, context),
     apply: continueApply,
   },
   createNoopAction('query_context', validateQueryContext),
   createNoopAction('read_file', validateReadFile),
-  {
-    name: 'restart_runtime',
-    validate: (item) => validateWithSchema(item, restartSchema),
-    apply: applyRestartRuntime,
-  },
   {
     name: 'upsert_focus',
     validate: (item) => validateWithSchema(item, upsertFocusSchema),

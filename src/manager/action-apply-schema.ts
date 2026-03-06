@@ -18,6 +18,11 @@ import type { Parsed } from '../actions/model/spec.js'
 import type { UserChoiceOption } from '../types/index.js'
 
 const nonEmptyString = z.string().trim().min(1)
+const hasContiguousIndices = (indices: number[]): boolean => {
+  if (indices.length === 0) return true
+  const ordered = [...new Set(indices)].sort((left, right) => left - right)
+  return ordered.every((index, offset) => index === offset + 1)
+}
 
 export { createPlanSchema, deletePlanSchema, updatePlanSchema }
 
@@ -43,8 +48,6 @@ export const cancelSchema = z
   .strict()
 
 export const readFileSchema = readFileToolSchema
-
-export const restartSchema = z.object({}).strict()
 
 const memoryTokenSchema = z
   .string()
@@ -84,6 +87,7 @@ export const upsertFocusSchema = z
   })
   .passthrough()
   .superRefine((data, context) => {
+    const openItemIndices: number[] = []
     for (const [key, value] of Object.entries(data)) {
       if (upsertFocusBaseKeys.has(key)) continue
       if (typeof value !== 'string') {
@@ -119,7 +123,9 @@ export const upsertFocusSchema = z
           message: `${key} index must be >= 1`,
           path: [key],
         })
+        continue
       }
+      openItemIndices.push(index)
       if (!value.trim()) {
         context.addIssue({
           code: z.ZodIssueCode.custom,
@@ -127,6 +133,14 @@ export const upsertFocusSchema = z
           path: [key],
         })
       }
+    }
+    if (!hasContiguousIndices(openItemIndices)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          'open_item_{n} indices must start at 1 and increase contiguously',
+        path: ['open_item_1'],
+      })
     }
   })
 
@@ -204,6 +218,7 @@ const parseChoiceOptions = (
   if (indexed.size < 2) return { ok: false }
 
   const ordered = [...indexed.keys()].sort((left, right) => left - right)
+  if (!hasContiguousIndices(ordered)) return { ok: false }
   const options: UserChoiceOption[] = []
   for (const index of ordered) {
     const item = indexed.get(index)
@@ -269,6 +284,7 @@ const parseUpsertFocusOpenItems = (
   }
   if (indexed.size === 0) return { ok: true, value: undefined }
   const ordered = [...indexed.keys()].sort((left, right) => left - right)
+  if (!hasContiguousIndices(ordered)) return { ok: false }
   const values = ordered
     .map((index) => indexed.get(index))
     .filter((item): item is string => Boolean(item))
@@ -317,7 +333,7 @@ export const collectTaskResultSummaries = (
 ): Map<string, string> => {
   const summaries = new Map<string, string>()
   for (const item of items) {
-    if (item.name !== 'summarize_task_result') continue
+    if (item.name !== 'set_task_result_summary') continue
     const summary = parseSummary(item)
     if (!summary) continue
     summaries.set(summary.taskId, summary.summary)

@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import PQueue from 'p-queue'
-import { expect, test, vi } from 'vitest'
+import { expect, test } from 'vitest'
 
 import { defaultConfig } from '../src/config.js'
 import { buildPaths } from '../src/fs/paths.js'
@@ -74,7 +74,7 @@ const createRuntime = async (): Promise<RuntimeState> => {
   }
 }
 
-test('run_task re-enqueues pending task when fingerprint matches exactly', async () => {
+test('enqueue_task re-enqueues pending task when fingerprint matches exactly', async () => {
   const runtime = await createRuntime()
   runtime.focuses.push({
     id: 'focus-local',
@@ -98,7 +98,7 @@ test('run_task re-enqueues pending task when fingerprint matches exactly', async
 
   await applyTaskActions(runtime, [
     {
-      name: 'run_task',
+      name: 'enqueue_task',
       attrs: {
         prompt: 'same prompt',
         title: 'old title',
@@ -112,13 +112,13 @@ test('run_task re-enqueues pending task when fingerprint matches exactly', async
   expect(runtime.workerQueue.size).toBe(1)
 })
 
-test('run_task task_created system event includes worker slot status payload', async () => {
+test('enqueue_task task_created system event includes worker slot status payload', async () => {
   const runtime = await createRuntime()
   runtime.config.worker.maxConcurrent = 3
 
   await applyTaskActions(runtime, [
     {
-      name: 'run_task',
+      name: 'enqueue_task',
       attrs: {
         prompt: 'generate release note',
         title: 'release-note',
@@ -141,7 +141,7 @@ test('run_task task_created system event includes worker slot status payload', a
   })
 })
 
-test('run_task dedupe does not block task creation when fingerprint differs', async () => {
+test('enqueue_task dedupe does not block task creation when fingerprint differs', async () => {
   const runtime = await createRuntime()
   runtime.tasks.push({
     id: 'task-pending',
@@ -156,7 +156,7 @@ test('run_task dedupe does not block task creation when fingerprint differs', as
 
   await applyTaskActions(runtime, [
     {
-      name: 'run_task',
+      name: 'enqueue_task',
       attrs: {
         prompt: 'same prompt',
         title: 'new title',
@@ -187,7 +187,7 @@ test('ask_user_choice stores pending choice and stops later actions in same batc
       },
     },
     {
-      name: 'run_task',
+      name: 'enqueue_task',
       attrs: {
         prompt: 'this should not run before user picks',
         title: 'blocked by pending choice',
@@ -367,28 +367,6 @@ test('update_plan allows last_task_id patch for done plan', async () => {
   expect(runtime.taskPlans[0]?.status).toBe('done')
   expect(runtime.taskPlans[0]?.lastTaskId).toBe('task-after-trigger')
   expect(runtime.taskPlans[0]?.archivedAt).toBe('2026-02-13T00:00:00.000Z')
-})
-
-test('restart_runtime requests exit through runtime hook', async () => {
-  const runtime = await createRuntime()
-  const requests: Array<{ code: number; reason: string }> = []
-  runtime.requestExit = (request) => {
-    requests.push(request)
-  }
-  vi.useFakeTimers()
-  try {
-    await applyTaskActions(runtime, [
-      {
-        name: 'restart_runtime',
-        attrs: {},
-      },
-    ])
-    await vi.runAllTimersAsync()
-  } finally {
-    vi.useRealTimers()
-  }
-  expect(runtime.stopped).toBe(true)
-  expect(requests).toEqual([{ code: 75, reason: 'manager_restart' }])
 })
 
 test('remember_memory writes MEMORY.md immediately and emits system event payload', async () => {

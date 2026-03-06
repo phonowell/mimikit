@@ -13,7 +13,7 @@
 - 代码入口：`src/manager/loop-batch-run-rounds.ts`、`src/manager/loop-batch-flow.ts`。
 - 验收：同类场景返回可执行澄清或默认答复，不写入 `manager_end status=error`。
 
-2. `run_task` 路径误伤收敛
+2. `enqueue_task` 路径误伤收敛
 - 目标：减少误判导致的 `action_execution_rejected`。
 - 代码入口：`src/manager/action-apply-guards.ts`、`src/manager/read-file-request.ts`。
 - 验收：允许 `generated/` 与 `.mimikit/generated` 产物写入的正常任务不再误拒。

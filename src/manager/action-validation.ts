@@ -125,7 +125,7 @@ export const validateSummarizeTaskResult = (
       ? `当前批次可用 task_id: ${available.join(', ')}。`
       : '当前批次无可摘要的 task_result。'
   return rejected(
-    `summarize_task_result 执行失败：task_id 不在当前批次结果中。${availableHint}`,
+    `set_task_result_summary 执行失败：task_id 不在当前批次结果中。${availableHint}`,
   )
 }
 export const validateAskUserChoice = (

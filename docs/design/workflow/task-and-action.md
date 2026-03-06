@@ -14,7 +14,7 @@
 ## 关系图
 
 1. manager 解析回复尾部 action 区并做 schema 校验。
-2. `run_task` 直接创建 task；`create_plan` 创建定时、空闲或 worker 槽位可用触发计划。
+2. `enqueue_task` 直接创建 task；`create_plan` 创建定时、空闲或 worker 槽位可用触发计划。
 3. task/plan/input/history 统一归属到一个 `focusId`。
 4. worker 将 task 派发到外部执行运行时，结果经 `results` 回流给 manager。
 

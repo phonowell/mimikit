@@ -78,7 +78,7 @@ ID 规范：
 参数：
 - 必填：`id`
 - 可选：`title/status/summary/open_item_{n}`
-- `open_item_{n}` 必须为非空字符串，`n >= 1`，按编号升序收集
+- `open_item_{n}` 必须为非空字符串，`n` 必须从 `1` 连续递增且不能跳号
 
 语义：
 - 不存在则创建 focus，存在则更新

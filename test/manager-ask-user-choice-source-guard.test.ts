@@ -10,8 +10,12 @@ test('ask_user_choice is rejected when telegram source does not support choice c
         attrs: {
           id: 'choice-format',
           question: 'choose format',
-          options_json:
-            '[{"id":"option-a","label":"A","reason":"alpha"},{"id":"option-b","label":"B","reason":"beta"}]',
+          option_1_id: 'option-a',
+          option_1_label: 'A',
+          option_1_reason: 'alpha',
+          option_2_id: 'option-b',
+          option_2_label: 'B',
+          option_2_reason: 'beta',
           default_option_id: 'option-a',
         },
       },
@@ -25,6 +29,30 @@ test('ask_user_choice is rejected when telegram source does not support choice c
   expect(feedback[0]?.action).toBe('ask_user_choice')
   expect(feedback[0]?.error).toBe('action_execution_rejected')
   expect(feedback[0]?.hint).toContain('Telegram')
+})
+
+test('ask_user_choice rejects non-contiguous option indices', () => {
+  const feedback = collectManagerActionFeedback([
+    {
+      name: 'ask_user_choice',
+      attrs: {
+        id: 'choice-format',
+        question: 'choose format',
+        option_1_id: 'option-a',
+        option_1_label: 'A',
+        option_1_reason: 'alpha',
+        option_3_id: 'option-b',
+        option_3_label: 'B',
+        option_3_reason: 'beta',
+        default_option_id: 'option-a',
+      },
+    },
+  ])
+
+  expect(feedback).toHaveLength(1)
+  expect(feedback[0]?.action).toBe('ask_user_choice')
+  expect(feedback[0]?.error).toBe('action_execution_rejected')
+  expect(feedback[0]?.hint).toContain('连续递增')
 })
 
 test('lookup actions reject repeated calls in the same round', () => {
@@ -113,11 +141,11 @@ test('query_context invalid scope returns invalid_action_args', () => {
   expect(feedback[0]?.hint).toContain('scopes')
 })
 
-test('summarize_task_result rejects task_id outside current batch results', () => {
+test('set_task_result_summary rejects task_id outside current batch results', () => {
   const feedback = collectManagerActionFeedback(
     [
       {
-        name: 'summarize_task_result',
+        name: 'set_task_result_summary',
         attrs: {
           task_id: 'task-other',
           summary: 'done',
@@ -130,7 +158,7 @@ test('summarize_task_result rejects task_id outside current batch results', () =
   )
 
   expect(feedback).toHaveLength(1)
-  expect(feedback[0]?.action).toBe('summarize_task_result')
+  expect(feedback[0]?.action).toBe('set_task_result_summary')
   expect(feedback[0]?.error).toBe('action_execution_rejected')
   expect(feedback[0]?.hint).toContain('task_id 不在当前批次结果中')
 })
@@ -167,6 +195,24 @@ test('upsert_focus rejects json-shaped open_items payload', () => {
   expect(feedback[0]?.action).toBe('upsert_focus')
   expect(feedback[0]?.error).toBe('invalid_action_args')
   expect(feedback[0]?.hint).toContain('open_items')
+})
+
+test('upsert_focus rejects non-contiguous open_item indices', () => {
+  const feedback = collectManagerActionFeedback([
+    {
+      name: 'upsert_focus',
+      attrs: {
+        id: 'focus-demo',
+        open_item_1: 'a',
+        open_item_3: 'b',
+      },
+    },
+  ])
+
+  expect(feedback).toHaveLength(1)
+  expect(feedback[0]?.action).toBe('upsert_focus')
+  expect(feedback[0]?.error).toBe('invalid_action_args')
+  expect(feedback[0]?.hint).toContain('contiguously')
 })
 
 test('update_plan requires trigger_mode when patching cron/scheduled_at fields', () => {
