@@ -1,8 +1,8 @@
 manager:
   # Manager 使用的模型名；必填；默认 gpt-5.2
   model: gpt-5.2
-  # Manager 推理强度；可选值 minimal|low|medium|high|xhigh；默认 high
-  modelReasoningEffort: high
+  # Manager 推理强度；可选值 minimal|low|medium|high|xhigh；默认 medium
+  modelReasoningEffort: medium
   provider:
     # Manager 专用网关地址；可选；空字符串表示走自动发现（~/.codex/config.toml / OPENAI_BASE_URL）
     baseUrl: ""

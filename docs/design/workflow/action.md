@@ -33,6 +33,10 @@
 - `query_task_archive`
 - `read_file`
 
+### 结果处理类
+
+- `summarize_task_result`
+
 ### 状态写入类
 
 - `upsert_focus`

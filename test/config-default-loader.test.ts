@@ -28,7 +28,7 @@ test('fills defaults when optional fields are omitted', async () => {
   const config = loadDefaultConfigFromYaml(path)
 
   expect(config.manager.model).toBe('gpt-5')
-  expect(config.manager.modelReasoningEffort).toBe('high')
+  expect(config.manager.modelReasoningEffort).toBe('medium')
   expect(config.worker.model).toBe('gpt-5.3-codex')
   expect(config.worker.timeoutMs).toBe(600000)
   expect(config.qq.enabled).toBe(false)

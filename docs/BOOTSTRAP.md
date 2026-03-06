@@ -97,7 +97,7 @@ In `config.yaml`:
 ```yaml
 manager:
   model: gpt-5.2
-  modelReasoningEffort: high
+  modelReasoningEffort: medium
   provider:
     # baseUrl: https://your-codex-provider.example.com/v1/codex
     # apiKey: ${AICODING_API_KEY}
@@ -113,7 +113,7 @@ export MIMIKIT_MODEL=gpt-5.2
 export MIMIKIT_MANAGER_MODEL=gpt-5.2
 export MIMIKIT_WORKER_MODEL=gpt-5.3-codex
 export MIMIKIT_REASONING_EFFORT=high
-export MIMIKIT_MANAGER_REASONING_EFFORT=high
+export MIMIKIT_MANAGER_REASONING_EFFORT=medium
 export MIMIKIT_WORKER_REASONING_EFFORT=high
 ```
 

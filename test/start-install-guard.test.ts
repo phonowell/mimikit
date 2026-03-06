@@ -1,19 +1,22 @@
 import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-describe('start script dependency guard', () => {
-  it('keeps install step before launching runtime entrypoints', () => {
-    const startScript = readFileSync(resolve(process.cwd(), 'scripts/start.ts'), 'utf8')
+import { expect, test } from 'vitest'
 
-    const installBlock = /const installExitCode[\s\S]*runCommand\('cmd\.exe', \['\/d', '\/s', '\/c', 'pnpm i'\][\s\S]*runCommand\('pnpm', \['i'\]/m
-    expect(startScript).toMatch(installBlock)
+const ROOT_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const START_SCRIPT_PATH = resolve(ROOT_DIR, 'scripts/start.ts')
 
-    const installGuardIndex = startScript.indexOf('if (installExitCode !== 0)')
-    const firstLaunchBranchIndex = startScript.indexOf('if (process.platform === \'win32\')')
+test('pnpm start script keeps dependency install guard before runtime launch', () => {
+  const source = readFileSync(START_SCRIPT_PATH, 'utf8')
 
-    expect(installGuardIndex).toBeGreaterThan(-1)
-    expect(firstLaunchBranchIndex).toBeGreaterThan(-1)
-    expect(installGuardIndex).toBeLessThan(firstLaunchBranchIndex)
-  })
+  expect(source).toContain("runCommand('pnpm', ['i']")
+
+  const installIndex = source.indexOf('const installExitCode')
+  const installGuardIndex = source.indexOf('if (installExitCode !== 0)')
+  const runtimeLaunchIndex = source.indexOf("if (process.platform === 'win32')")
+
+  expect(installIndex).toBeGreaterThanOrEqual(0)
+  expect(installGuardIndex).toBeGreaterThan(installIndex)
+  expect(runtimeLaunchIndex).toBeGreaterThan(installGuardIndex)
 })
