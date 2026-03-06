@@ -55,7 +55,7 @@
 - `set_task_result_summary`：仅用于当前批次 `task_result` 的摘要覆写（不直接执行 action 状态写入）。
 - `cancel_task`：调用 `worker/cancel-task.ts` 后统一产出可追踪结构（`id`、`status`、`changeAt`）；`id` 始终为目标任务 ID（无论 source 为 `user`/`deferred`/`system`）。
 - 上下文压缩不再暴露为 manager action；仅由运行时内部触发，按 focus 维度写入压缩摘要（`managerFocusCompressedContexts`），prompt 仅注入 working focus 对应条目。
-- `remember_memory`：立即写入 `memory/MEMORY.md`，支持 `merge|overwrite|append`，并通过 `memory_remembered` system event 回执 `entry_id/ref/operation`。
+- `remember_memory`：立即写入 `memory/MEMORY.md`，仅接受 `content` 参数，并通过 `memory_remembered` system event 回执 `entry_id/ref/operation`。
 
 ### manager 取消门禁（guardrail）
 

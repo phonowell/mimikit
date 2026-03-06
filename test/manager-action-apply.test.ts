@@ -376,18 +376,12 @@ test('remember_memory writes MEMORY.md immediately and emits system event payloa
       name: 'remember_memory',
       attrs: {
         content: 'User insists on always using strict ESM imports.',
-        category: 'coding',
-        dedupe_key: 'import-style',
-        source: 'explicit_user_request',
-        replace_policy: 'merge',
       },
     },
   ])
 
   const memoryMarkdown = await readFile(runtime.paths.memoryFile, 'utf8')
-  expect(memoryMarkdown).toContain(
-    '## [memory-entry:coding:import-style] (id:',
-  )
+  expect(memoryMarkdown).toContain('## [memory-entry:general:auto-')
   expect(memoryMarkdown).toContain(
     'User insists on always using strict ESM imports.',
   )
@@ -402,6 +396,5 @@ test('remember_memory writes MEMORY.md immediately and emits system event payloa
   const parsed = parseSystemEventText(event?.text ?? '')
   expect(parsed.name).toBe('memory_remembered')
   expect(parsed.payload?.operation).toBe('created')
-  expect(parsed.payload?.source).toBe('explicit_user_request')
   expect(typeof parsed.payload?.entry_id).toBe('string')
 })

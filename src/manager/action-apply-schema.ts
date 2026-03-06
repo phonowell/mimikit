@@ -49,29 +49,9 @@ export const cancelSchema = z
 
 export const readFileSchema = readFileToolSchema
 
-const memoryTokenSchema = z
-  .string()
-  .trim()
-  .min(1)
-  .max(64)
-  .regex(/^[a-zA-Z0-9._-]+$/)
-const memorySourceSchema = z.enum([
-  'explicit_user_request',
-  'repeated_user_signal',
-  'agent_inference',
-])
-
 export const rememberMemorySchema = z
   .object({
     content: nonEmptyString,
-    category: memoryTokenSchema.optional(),
-    priority: z.enum(['high', 'normal', 'low']).optional(),
-    confidence: z.coerce.number().min(0).max(1).optional(),
-    dedupe_key: memoryTokenSchema.optional(),
-    replace_policy: z.enum(['merge', 'overwrite', 'append']).optional(),
-    source: memorySourceSchema.optional(),
-    max_chars: z.coerce.number().int().min(80).max(2000).optional(),
-    focus_id: focusIdSchema.optional(),
   })
   .strict()
 

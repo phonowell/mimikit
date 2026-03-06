@@ -13,106 +13,94 @@ test('rememberMemoryEntry writes a managed memory section for new entry', async 
   const memoryPath = join(workDir, 'memory', 'MEMORY.md')
   const result = await rememberMemoryEntry(memoryPath, {
     content: 'User prefers concise Chinese responses.',
-    category: 'preference',
-    dedupeKey: 'response-language',
   })
 
   expect(result.operation).toBe('created')
   expect(result.entryId.startsWith('memory-')).toBe(true)
   const markdown = await readFile(memoryPath, 'utf8')
-  expect(markdown).toContain(
-    '## [memory-entry:preference:response-language] (id:',
-  )
+  expect(markdown).toContain('## [memory-entry:general:auto-')
   expect(markdown).toContain('User prefers concise Chinese responses.')
 })
 
-test('rememberMemoryEntry merge policy dedupes existing content', async () => {
+test('rememberMemoryEntry dedupes same content to noop', async () => {
   const workDir = await createTmpDir()
   const memoryPath = join(workDir, 'memory', 'MEMORY.md')
 
-  await rememberMemoryEntry(memoryPath, {
+  const created = await rememberMemoryEntry(memoryPath, {
     content: 'Always show command outputs in UTC.',
-    category: 'workflow',
-    dedupeKey: 'timezone',
-    replacePolicy: 'merge',
   })
   const noop = await rememberMemoryEntry(memoryPath, {
     content: 'Always show command outputs in UTC.',
-    category: 'workflow',
-    dedupeKey: 'timezone',
-    replacePolicy: 'merge',
-  })
-  const merged = await rememberMemoryEntry(memoryPath, {
-    content: 'Prefer absolute dates in final responses.',
-    category: 'workflow',
-    dedupeKey: 'timezone',
-    replacePolicy: 'merge',
   })
 
   expect(noop.operation).toBe('noop')
+  expect(noop.dedupeKey).toBe(created.dedupeKey)
+  const markdown = await readFile(memoryPath, 'utf8')
+  expect(
+    (
+      markdown.match(
+        new RegExp(`^## \\[memory-entry:general:${created.dedupeKey}\\]`, 'gm'),
+      ) ?? []
+    ).length,
+  ).toBe(1)
+})
+
+test('rememberMemoryEntry merges when dedupe key is stable', async () => {
+  const workDir = await createTmpDir()
+  const memoryPath = join(workDir, 'memory', 'MEMORY.md')
+  const prefix = 'x'.repeat(72)
+
+  const created = await rememberMemoryEntry(memoryPath, {
+    content: `${prefix}-first`,
+  })
+  const merged = await rememberMemoryEntry(memoryPath, {
+    content: `${prefix}-second`,
+  })
+
   expect(merged.operation).toBe('merged')
+  expect(merged.dedupeKey).toBe(created.dedupeKey)
   const markdown = await readFile(memoryPath, 'utf8')
-  expect((markdown.match(/^## \[memory-entry:workflow:timezone\]/gm) ?? []).length).toBe(1)
-  expect(markdown).toContain('Always show command outputs in UTC.')
-  expect(markdown).toContain('Prefer absolute dates in final responses.')
+  expect(markdown).toContain(`${prefix}-first`)
+  expect(markdown).toContain(`${prefix}-second`)
 })
 
-test('rememberMemoryEntry overwrite policy replaces prior content', async () => {
+test('rememberMemoryEntry truncates long content to fixed limit', async () => {
   const workDir = await createTmpDir()
   const memoryPath = join(workDir, 'memory', 'MEMORY.md')
-
-  await rememberMemoryEntry(memoryPath, {
-    content: 'User prefers verbose answers.',
-    category: 'style',
-    dedupeKey: 'verbosity',
-  })
-  const overwritten = await rememberMemoryEntry(memoryPath, {
-    content: 'User prefers concise answers by default.',
-    category: 'style',
-    dedupeKey: 'verbosity',
-    replacePolicy: 'overwrite',
-  })
-
-  expect(overwritten.operation).toBe('overwritten')
-  expect(overwritten.replaced).toBe(true)
-  const markdown = await readFile(memoryPath, 'utf8')
-  expect(markdown).not.toContain('User prefers verbose answers.')
-  expect(markdown).toContain('User prefers concise answers by default.')
-})
-
-test('rememberMemoryEntry enforces max_chars truncation', async () => {
-  const workDir = await createTmpDir()
-  const memoryPath = join(workDir, 'memory', 'MEMORY.md')
-  const longContent = 'x'.repeat(180)
+  const longContent = 'x'.repeat(700)
   const result = await rememberMemoryEntry(memoryPath, {
     content: longContent,
-    category: 'fact',
-    dedupeKey: 'long-line',
-    maxChars: 80,
   })
 
-  expect(result.truncated).toBe(true)
-  expect(result.contentChars).toBe(80)
+  expect(result.contentChars).toBe(480)
   const markdown = await readFile(memoryPath, 'utf8')
-  expect(markdown).toContain('x'.repeat(80))
-  expect(markdown).not.toContain('x'.repeat(120))
+  expect(markdown).toContain('x'.repeat(480))
+  expect(markdown).not.toContain('x'.repeat(560))
 })
 
-test('rememberMemoryEntry serializes concurrent writes on same key', async () => {
+test('rememberMemoryEntry serializes concurrent writes on same dedupe key', async () => {
   const workDir = await createTmpDir()
   const memoryPath = join(workDir, 'memory', 'MEMORY.md')
+  const prefix = 'p'.repeat(72)
   const writes = Array.from({ length: 6 }, (_, index) =>
     rememberMemoryEntry(memoryPath, {
-      content: `parallel-note-${index + 1}`,
-      category: 'project',
-      dedupeKey: 'parallel',
-      replacePolicy: 'append',
+      content: `${prefix}\n\nparallel-note-${index + 1}`,
     }),
   )
-  await Promise.all(writes)
+  const results = await Promise.all(writes)
+  const dedupeKeys = new Set(results.map((item) => item.dedupeKey))
 
+  expect(dedupeKeys.size).toBe(1)
+  const dedupeKey = results[0]?.dedupeKey
+  expect(dedupeKey).toBeDefined()
   const markdown = await readFile(memoryPath, 'utf8')
-  expect((markdown.match(/^## \[memory-entry:project:parallel\]/gm) ?? []).length).toBe(1)
+  expect(
+    (
+      markdown.match(
+        new RegExp(`^## \\[memory-entry:general:${dedupeKey}\\]`, 'gm'),
+      ) ?? []
+    ).length,
+  ).toBe(1)
   for (let index = 0; index < 6; index += 1)
     expect(markdown).toContain(`parallel-note-${index + 1}`)
 })

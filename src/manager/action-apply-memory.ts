@@ -13,24 +13,13 @@ export const applyRememberMemoryAction = async (
 ): Promise<void> => {
   const parsed = rememberMemorySchema.safeParse(item.attrs)
   if (!parsed.success) return
-  const payload = parsed.data
   const remembered = await rememberMemoryEntry(runtime.paths.memoryFile, {
-    content: payload.content,
-    ...(payload.category ? { category: payload.category } : {}),
-    ...(payload.priority ? { priority: payload.priority } : {}),
-    ...(payload.confidence !== undefined
-      ? { confidence: payload.confidence }
-      : {}),
-    ...(payload.dedupe_key ? { dedupeKey: payload.dedupe_key } : {}),
-    ...(payload.replace_policy
-      ? { replacePolicy: payload.replace_policy }
-      : {}),
-    ...(payload.source ? { source: payload.source } : {}),
-    ...(payload.max_chars !== undefined ? { maxChars: payload.max_chars } : {}),
+    content: parsed.data.content,
   })
-  const focusId = resolveActionFocusId(runtime, payload.focus_id)
-  await appendMemoryRememberedSystemMessage(runtime.paths.history, focusId, {
-    ...remembered,
-    source: payload.source ?? 'explicit_user_request',
-  })
+  const focusId = resolveActionFocusId(runtime)
+  await appendMemoryRememberedSystemMessage(
+    runtime.paths.history,
+    focusId,
+    remembered,
+  )
 }

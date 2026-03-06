@@ -84,7 +84,6 @@
 - `focus_id`：`focus-[a-zA-Z0-9._-]+`
 - `priority`：`high | normal | low`
 - `plan.source`：`user_request | agent_auto | retry_decision`
-- `remember_memory.source`：`explicit_user_request | repeated_user_signal | agent_inference`
 - `plan.status`：`active | blocked | done`
 - `trigger_mode`：`cron | scheduled_at | on_worker_slot_freed`
 - `focus.status`：`active | idle | done | archived`
@@ -104,7 +103,7 @@
 - `set_task_result_summary`：必填 `task_id,summary`
 - `query_context`：必填 `query`；可选 `scopes,limit,limit_history,limit_tasks,limit_focus,limit_plans,limit_memory,limit_task_archives,from,to,focus_id,task_status,plan_status,max_bytes,max_item_chars,archive_max_files`
 - `read_file`：路径明确时可用；必填 `path`；可选 `from_line,max_lines,max_chars`
-- `remember_memory`：必填 `content`；可选 `category,priority,confidence,dedupe_key,replace_policy,source,max_chars,focus_id`
+- `remember_memory`：仅支持 `content`
 - `upsert_focus`：必填 `id`；可选 `title,status,summary,open_item_{n}`；`n` 必须从 `1` 连续递增且不能跳号
 - `assign_focus`：必填 `target_type,target_id,focus_id`，其中 `target_type` 只能是 `task | plan | history`
 

@@ -5,7 +5,7 @@
 ## 核心结论
 
 - 默认 memory 刷新仍由后台子进程执行，触发条件为 `>=20` manager 轮次差值。
-- 新增 `remember_memory` manager action：用于“立即写入”长期记忆（用户明确要求记住时）。
+- 新增 `remember_memory` manager action：用于“立即写入”长期记忆（用户明确要求记住时），仅接受 `content` 参数。
 - 每次后台触发仅执行一轮子进程，且只调用一次 LLM。
 - 当无可靠增量时返回 `noop`，不会强写 `MEMORY.md`。
 

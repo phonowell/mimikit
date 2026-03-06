@@ -7,22 +7,8 @@ import { readTextFileIfExists } from '../fs/read-text.js'
 import { nowIso } from '../shared/utils.js'
 import { runSerialized } from '../storage/serialized-lock.js'
 
-export type RememberMemoryReplacePolicy = 'merge' | 'overwrite' | 'append'
-export type RememberMemoryPriority = 'high' | 'normal' | 'low'
-export type RememberMemorySource =
-  | 'explicit_user_request'
-  | 'repeated_user_signal'
-  | 'agent_inference'
-
 export type RememberMemoryInput = {
   content: string
-  category?: string
-  priority?: RememberMemoryPriority
-  confidence?: number
-  dedupeKey?: string
-  replacePolicy?: RememberMemoryReplacePolicy
-  source?: RememberMemorySource
-  maxChars?: number
 }
 
 export type RememberMemoryResult = {
@@ -30,17 +16,12 @@ export type RememberMemoryResult = {
   ref: string
   category: string
   dedupeKey: string
-  operation: 'created' | 'merged' | 'overwritten' | 'appended' | 'noop'
-  merged: boolean
-  replaced: boolean
-  truncated: boolean
+  operation: 'created' | 'merged' | 'noop'
   contentChars: number
 }
 
 const DEFAULT_CATEGORY = 'general'
 const DEFAULT_MAX_CHARS = 480
-const MIN_MAX_CHARS = 80
-const MAX_MAX_CHARS = 2_000
 
 const normalizeText = (value: string): string =>
   value
@@ -58,22 +39,10 @@ const normalizeToken = (value: string, fallback: string): string => {
   return token || fallback
 }
 
-const clampMaxChars = (value: number | undefined): number => {
-  if (!Number.isFinite(value)) return DEFAULT_MAX_CHARS
-  const integer = Math.trunc(value as number)
-  if (integer < MIN_MAX_CHARS) return MIN_MAX_CHARS
-  if (integer > MAX_MAX_CHARS) return MAX_MAX_CHARS
-  return integer
-}
-
-const truncateContent = (
-  value: string,
-  maxChars: number,
-): { content: string; truncated: boolean } => {
+const truncateContent = (value: string, maxChars: number): string => {
   const normalized = normalizeText(value)
-  if (normalized.length <= maxChars)
-    return { content: normalized, truncated: false }
-  return { content: normalized.slice(0, maxChars).trimEnd(), truncated: true }
+  if (normalized.length <= maxChars) return normalized
+  return normalized.slice(0, maxChars).trimEnd()
 }
 
 const deriveDedupeKey = (content: string): string => {
@@ -96,9 +65,17 @@ const parseContentFromBlock = (block: string): string => {
   const firstNewline = block.indexOf('\n')
   if (firstNewline < 0) return ''
   const body = block.slice(firstNewline + 1).trimStart()
-  const split = body.indexOf('\n\n')
-  if (split < 0) return ''
-  return normalizeText(body.slice(split + 2))
+  if (!body) return ''
+  const sections = body.split(/\n{2,}/)
+  const firstSection = sections[0] ?? ''
+  const looksLikeMeta =
+    sections.length > 1 &&
+    firstSection
+      .split('\n')
+      .map((line) => line.trim())
+      .every((line) => line.length > 0 && /^[a-z_]+:\s.+$/.test(line))
+  const content = looksLikeMeta ? sections.slice(1).join('\n\n') : body
+  return normalizeText(content)
 }
 
 const dedupeParagraphs = (value: string): string[] =>
@@ -110,15 +87,11 @@ const dedupeParagraphs = (value: string): string[] =>
 const mergeContent = (
   existing: string,
   incoming: string,
-  policy: RememberMemoryReplacePolicy,
 ): { content: string; changed: boolean } => {
   if (!existing) return { content: incoming, changed: incoming.length > 0 }
   if (!incoming) return { content: existing, changed: false }
   if (existing === incoming || existing.includes(incoming))
     return { content: existing, changed: false }
-  if (policy === 'overwrite') return { content: incoming, changed: true }
-  if (policy === 'append')
-    return { content: `${existing}\n\n${incoming}`, changed: true }
   const existingParts = dedupeParagraphs(existing)
   const existingSet = new Set(existingParts.map((part) => part.toLowerCase()))
   const incomingParts = dedupeParagraphs(incoming)
@@ -133,23 +106,8 @@ const mergeContent = (
   return { content, changed: content !== existing }
 }
 
-const buildBlockBody = (params: {
-  content: string
-  priority: RememberMemoryPriority
-  confidence: number
-  source: RememberMemorySource
-  policy: RememberMemoryReplacePolicy
-}): string =>
-  [
-    `priority: ${params.priority}`,
-    `confidence: ${params.confidence.toFixed(2)}`,
-    `source: ${params.source}`,
-    `updated_at: ${nowIso()}`,
-    `policy: ${params.policy}`,
-    '',
-    params.content,
-    '',
-  ].join('\n')
+const buildBlockBody = (content: string): string =>
+  [`updated_at: ${nowIso()}`, '', content, ''].join('\n')
 
 const escapeRegex = (value: string): string =>
   value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -189,16 +147,9 @@ export const rememberMemoryEntry = (
   input: RememberMemoryInput,
 ): Promise<RememberMemoryResult> =>
   runSerialized(memoryPath, async () => {
-    const maxChars = clampMaxChars(input.maxChars)
-    const truncated = truncateContent(input.content, maxChars)
-    const category = normalizeToken(
-      input.category ?? DEFAULT_CATEGORY,
-      DEFAULT_CATEGORY,
-    )
-    const dedupeKey = normalizeToken(
-      input.dedupeKey ?? deriveDedupeKey(truncated.content),
-      'entry',
-    )
+    const content = truncateContent(input.content, DEFAULT_MAX_CHARS)
+    const category = DEFAULT_CATEGORY
+    const dedupeKey = normalizeToken(deriveDedupeKey(content), 'entry')
     const entryId = buildEntryId(category, dedupeKey)
     const headingPattern = new RegExp(
       `^## \\[memory-entry:${escapeRegex(category)}:${escapeRegex(dedupeKey)}\\] \\(id:(memory-[a-z0-9]+)\\)\\s*$`,
@@ -217,26 +168,15 @@ export const rememberMemoryEntry = (
     const existingContent = existingBlock
       ? parseContentFromBlock(existingBlock)
       : ''
-    const policy = input.replacePolicy ?? 'merge'
-    const nextContent = mergeContent(existingContent, truncated.content, policy)
+    const nextContent = mergeContent(existingContent, content)
     const operation: RememberMemoryResult['operation'] = !existingBlock
       ? 'created'
-      : !nextContent.changed
-        ? 'noop'
-        : policy === 'overwrite'
-          ? 'overwritten'
-          : policy === 'append'
-            ? 'appended'
-            : 'merged'
+      : nextContent.changed
+        ? 'merged'
+        : 'noop'
 
     if (operation !== 'noop') {
-      const block = `${heading}\n${buildBlockBody({
-        content: nextContent.content,
-        priority: input.priority ?? 'normal',
-        confidence: input.confidence ?? 0.8,
-        source: input.source ?? 'explicit_user_request',
-        policy,
-      })}`
+      const block = `${heading}\n${buildBlockBody(nextContent.content)}`
       const next = matched
         ? `${current.slice(0, matched.start)}${block}${current.slice(matched.end)}`
         : current.trim()
@@ -245,16 +185,12 @@ export const rememberMemoryEntry = (
       await ensureDir(dirname(memoryPath))
       await writeFile(memoryPath, `${next.trimEnd()}\n`, { encoding: 'utf8' })
     }
-
     return {
       entryId: existingEntryId,
       ref: `memory:entry:${existingEntryId}`,
       category,
       dedupeKey,
       operation,
-      merged: operation === 'merged',
-      replaced: operation === 'overwritten',
-      truncated: truncated.truncated,
-      contentChars: truncated.content.length,
+      contentChars: content.length,
     }
   })

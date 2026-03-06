@@ -11,12 +11,8 @@ export type MemoryRememberedEventPayload = {
   ref: string
   category: string
   dedupeKey: string
-  operation: 'created' | 'merged' | 'overwritten' | 'appended' | 'noop'
-  merged: boolean
-  replaced: boolean
-  truncated: boolean
+  operation: 'created' | 'merged' | 'noop'
   contentChars: number
-  source: 'explicit_user_request' | 'repeated_user_signal' | 'agent_inference'
 }
 
 const buildSummary = (payload: MemoryRememberedEventPayload): string =>
@@ -36,11 +32,7 @@ export const appendMemoryRememberedSystemMessage = (
       category: payload.category,
       dedupe_key: payload.dedupeKey,
       operation: payload.operation,
-      merged: payload.merged,
-      replaced: payload.replaced,
-      truncated: payload.truncated,
       content_chars: payload.contentChars,
-      source: payload.source,
     },
   })
   const message: HistoryMessage = {
