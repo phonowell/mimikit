@@ -1,3 +1,9 @@
+.archive-viewer-page {
+  background-color: var(--bg);
+  background-image: none;
+  background-repeat: no-repeat;
+}
+
 .archive-viewer {
   position: relative;
   isolation: isolate;
@@ -15,9 +21,8 @@
   inset: 8px 20px auto;
   height: 190px;
   border-radius: 22px;
-  background:
-    radial-gradient(circle at 14% 18%, rgba(255, 255, 255, 0.62) 0%, transparent 42%),
-    linear-gradient(118deg, rgba(255, 255, 255, 0.42) 0%, rgba(230, 236, 245, 0.12) 100%);
+  background: #eef2f7;
+  background-repeat: no-repeat;
   border: 1px solid var(--border-hairline);
   box-shadow: var(--shadow-raised-soft);
   pointer-events: none;

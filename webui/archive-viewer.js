@@ -1,8 +1,10 @@
 import { renderMarkdown } from './markdown.js'
+import { buildArchiveViewerUrlFromSource } from './archive-viewer-url.js'
 
 const ROOT = window.location.origin
 const TASK_ARCHIVE_API_PATTERN = /^\/api\/tasks\/[^/]+\/archive$/
 const NUMBER_FORMAT = new Intl.NumberFormat('en-US')
+const MARKDOWN_PATH_PATTERN = /\.(md|markdown)$/i
 
 const stateEl = document.querySelector('[data-state]')
 const titleEl = document.querySelector('[data-title]')
@@ -79,6 +81,34 @@ const showError = (text) => {
 const isAllowedPath = (pathname) =>
   pathname.startsWith('/state-files/') || TASK_ARCHIVE_API_PATTERN.test(pathname)
 
+const toArchiveViewerMarkdownUrl = (rawHref, sourceUrl) => {
+  const href = rawHref?.trim() ?? ''
+  if (!href || href.startsWith('#')) return null
+  const sourceBase = new URL(sourceUrl, ROOT)
+  const resolved = new URL(href, sourceBase)
+  if (resolved.origin !== ROOT) return null
+  if (!isAllowedPath(resolved.pathname)) return null
+  if (!MARKDOWN_PATH_PATTERN.test(resolved.pathname)) return null
+  return buildArchiveViewerUrlFromSource(
+    `${resolved.pathname}${resolved.search}${resolved.hash}`,
+  )
+}
+
+const rewriteMarkdownLinks = (container, sourceUrl) => {
+  const links = container.querySelectorAll('a[href]')
+  for (const link of links) {
+    if (!(link instanceof HTMLAnchorElement)) continue
+    const viewerUrl = toArchiveViewerMarkdownUrl(
+      link.getAttribute('href'),
+      sourceUrl,
+    )
+    if (!viewerUrl) continue
+    link.setAttribute('href', viewerUrl)
+    link.removeAttribute('target')
+    link.removeAttribute('rel')
+  }
+}
+
 const buildContentTag = (value) => {
   const trimmed = value.trim()
   if (!trimmed) return 'Rendered markdown'
@@ -134,7 +164,9 @@ const renderArchive = async () => {
     const markdown = await response.text()
     if (!contentEl) throw new Error('Missing content container')
 
-    contentEl.replaceChildren(renderMarkdown(markdown))
+    const rendered = renderMarkdown(markdown)
+    rewriteMarkdownLinks(rendered, target.sourceUrl)
+    contentEl.replaceChildren(rendered)
     updateStats(markdown)
     showContent()
     document.title = `${target.pageTitle} · Archive Viewer`

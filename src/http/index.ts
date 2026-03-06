@@ -13,9 +13,23 @@ import { registerApiRoutes, registerNotFoundHandler } from './routes-api.js'
 
 import type { AppConfig } from '../config.js'
 import type { Orchestrator } from '../orchestrator/core/orchestrator-service.js'
-import type { FastifyInstance } from 'fastify'
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 
 const MAX_BODY_BYTES = 64 * 1024
+const STATE_TASK_MARKDOWN_ROUTE =
+  /^\/state-files\/(?:.*\/)?tasks\/.*\.(?:md|markdown)$/i
+
+export const isStateTaskMarkdownPath = (pathname: string): boolean =>
+  STATE_TASK_MARKDOWN_ROUTE.test(pathname)
+
+export const buildStateTaskMarkdownViewerRedirect = (
+  requestUrl: string,
+): string | undefined => {
+  const source = requestUrl.split('#', 1)[0] ?? requestUrl
+  const pathname = source.split('?', 1)[0] ?? source
+  if (!isStateTaskMarkdownPath(pathname)) return undefined
+  return `/archive-viewer.html?src=${encodeURIComponent(source)}`
+}
 
 const resolveStatusCode = (error: unknown): number | undefined => {
   if (typeof error !== 'object' || !error) return undefined
@@ -67,6 +81,18 @@ const registerStaticAssets = (
     prefix: '/vendor/purify/',
     decorateReply: false,
   })
+  app.get(
+    STATE_TASK_MARKDOWN_ROUTE,
+    (request: FastifyRequest, reply: FastifyReply) => {
+      const rawUrl = request.raw.url ?? request.url
+      const target = buildStateTaskMarkdownViewerRedirect(rawUrl)
+      if (!target) {
+        reply.code(404).send({ error: 'not found' })
+        return
+      }
+      reply.redirect(target, 302)
+    },
+  )
   app.register(fastifyStatic, {
     root: stateDir,
     prefix: '/state-files/',
