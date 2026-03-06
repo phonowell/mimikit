@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 
 import { bindFocusInteractions } from '../webui/focus-interactions.js'
+import { bindPlanInteractions } from '../webui/plans-interactions.js'
 
 const originalWindow = globalThis.window
 const originalElement = globalThis.Element
@@ -23,10 +24,11 @@ class FakeElement {
   }
 
   closest(selector: string): FakeElement | null {
-    if (selector !== '.focus-link') return null
+    if (!selector.startsWith('.')) return null
+    const className = selector.slice(1)
     let cursor: FakeElement | null = this
     while (cursor) {
-      if (cursor.#classes.has('focus-link')) return cursor
+      if (cursor.#classes.has(className)) return cursor
       cursor = cursor.parentElement
     }
     return null
@@ -54,6 +56,25 @@ class FakeList {
     }
   }
 }
+
+type InteractionCase = {
+  bind: (list: HTMLElement) => () => void
+  linkClass: string
+  warnPrefix: string
+}
+
+const interactionCases: InteractionCase[] = [
+  {
+    bind: bindFocusInteractions,
+    linkClass: 'focus-link',
+    warnPrefix: '[webui] open focus archive failed',
+  },
+  {
+    bind: bindPlanInteractions,
+    linkClass: 'plan-link',
+    warnPrefix: '[webui] open plan archive failed',
+  },
+]
 
 beforeEach(() => {
   Object.defineProperty(globalThis, 'Element', {
@@ -83,52 +104,58 @@ afterEach(() => {
   })
 })
 
-test('focus link opens archive viewer when item is openable', () => {
-  const focusesList = new FakeList()
-  bindFocusInteractions(focusesList as unknown as HTMLElement)
+test('archive links open archive viewer for openable items', () => {
+  const openMock = window.open as unknown as ReturnType<typeof vi.fn>
 
-  const link = new FakeElement(['focus-link'])
-  link.setAttribute('data-archive-openable', 'true')
-  link.setAttribute('data-task-id', 'task-123')
+  for (const item of interactionCases) {
+    openMock.mockClear()
+    const list = new FakeList()
+    item.bind(list as unknown as HTMLElement)
+    const link = new FakeElement([item.linkClass])
+    link.setAttribute('data-archive-openable', 'true')
+    link.setAttribute('data-task-id', 'task-123')
 
-  focusesList.click(link)
+    list.click(link)
 
-  expect(window.open).toHaveBeenCalledTimes(1)
-  expect(window.open).toHaveBeenCalledWith(
-    '/archive-viewer.html?task=task-123',
-    '_blank',
-    'noopener,noreferrer',
-  )
+    expect(openMock).toHaveBeenCalledTimes(1)
+    expect(openMock).toHaveBeenCalledWith(
+      '/archive-viewer.html?task=task-123',
+      '_blank',
+      'noopener,noreferrer',
+    )
+  }
 })
 
-test('focus link does not open archive viewer when item is not openable', () => {
-  const focusesList = new FakeList()
-  bindFocusInteractions(focusesList as unknown as HTMLElement)
-
+test('archive links do not open for non-openable items', () => {
+  const openMock = window.open as unknown as ReturnType<typeof vi.fn>
+  const list = new FakeList()
+  bindFocusInteractions(list as unknown as HTMLElement)
   const link = new FakeElement(['focus-link'])
   link.setAttribute('data-archive-openable', 'false')
 
-  focusesList.click(link)
+  list.click(link)
 
-  expect(window.open).not.toHaveBeenCalled()
+  expect(openMock).not.toHaveBeenCalled()
 })
 
-test('warns when popup is blocked', () => {
-  const focusesList = new FakeList()
-  const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+test('archive links warn when popup is blocked', () => {
   const openMock = window.open as unknown as ReturnType<typeof vi.fn>
-  openMock.mockReturnValueOnce(null)
-  bindFocusInteractions(focusesList as unknown as HTMLElement)
+  const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
-  const link = new FakeElement(['focus-link'])
-  link.setAttribute('data-archive-openable', 'true')
-  link.setAttribute('data-task-id', 'task-456')
+  for (const item of interactionCases) {
+    warnSpy.mockClear()
+    openMock.mockReset()
+    openMock.mockReturnValueOnce(null)
+    const list = new FakeList()
+    item.bind(list as unknown as HTMLElement)
+    const link = new FakeElement([item.linkClass])
+    link.setAttribute('data-archive-openable', 'true')
+    link.setAttribute('data-task-id', 'task-456')
 
-  focusesList.click(link)
+    list.click(link)
 
-  expect(warnSpy).toHaveBeenCalledWith(
-    '[webui] open focus archive failed',
-    'popup blocked',
-  )
+    expect(warnSpy).toHaveBeenCalledWith(item.warnPrefix, 'popup blocked')
+  }
+
   warnSpy.mockRestore()
 })

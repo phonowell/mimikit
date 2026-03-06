@@ -1,0 +1,143 @@
+import fastify from 'fastify'
+import { expect, test, vi } from 'vitest'
+
+import { defaultConfig } from '../src/config.js'
+import { registerApiRoutes } from '../src/http/routes-api.js'
+import { createOrchestratorStub } from './helpers/orchestrator-stub.js'
+
+type ActionName = 'cancel' | 'pause' | 'resume'
+type ActionMethod = 'cancelTask' | 'pauseTask' | 'resumeTask'
+
+type SuccessStatus = 'canceled' | 'paused' | 'pending'
+type ErrorStatus = 'not_found' | 'already_paused'
+
+type ActionSuccessCase = {
+  action: ActionName
+  method: ActionMethod
+  taskId: string
+  status: SuccessStatus
+  changeAt: string
+}
+
+type ActionErrorCase = {
+  action: ActionName
+  method: ActionMethod
+  taskId: string
+  status: ErrorStatus
+  statusCode: number
+}
+
+type TaskActionHandler = (
+  taskId: string,
+  meta?: { source?: string; reason?: string },
+) => Promise<unknown>
+
+const bindActionHandler = (
+  orchestrator: unknown,
+  method: ActionMethod,
+  handler: TaskActionHandler,
+): void => {
+  ;(orchestrator as Record<ActionMethod, TaskActionHandler>)[method] = handler
+}
+
+const successCases: ActionSuccessCase[] = [
+  {
+    action: 'cancel',
+    method: 'cancelTask',
+    taskId: 'task-user-cancel',
+    status: 'canceled',
+    changeAt: '2026-03-06T05:00:00.000Z',
+  },
+  {
+    action: 'pause',
+    method: 'pauseTask',
+    taskId: 'task-user-pause',
+    status: 'paused',
+    changeAt: '2026-03-06T06:00:00.000Z',
+  },
+  {
+    action: 'resume',
+    method: 'resumeTask',
+    taskId: 'task-user-resume',
+    status: 'pending',
+    changeAt: '2026-03-06T06:10:00.000Z',
+  },
+]
+
+const errorCases: ActionErrorCase[] = [
+  {
+    action: 'cancel',
+    method: 'cancelTask',
+    taskId: 'task-user-missing',
+    status: 'not_found',
+    statusCode: 404,
+  },
+  {
+    action: 'pause',
+    method: 'pauseTask',
+    taskId: 'task-user-paused',
+    status: 'already_paused',
+    statusCode: 409,
+  },
+]
+
+test('task action routes return id/status/changeAt for user action success', async () => {
+  for (const item of successCases) {
+    const app = fastify()
+    const { orchestrator } = createOrchestratorStub()
+    const actionHandler = vi.fn(async () => ({
+      ok: true as const,
+      id: item.taskId,
+      status: item.status,
+      changeAt: item.changeAt,
+    }))
+    bindActionHandler(orchestrator, item.method, actionHandler)
+    const config = defaultConfig({ workDir: '.mimikit' })
+    registerApiRoutes(app, orchestrator, config)
+
+    const response = await app.inject({
+      method: 'POST',
+      url: `/api/tasks/${item.taskId}/${item.action}`,
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toEqual({
+      ok: true,
+      id: item.taskId,
+      status: item.status,
+      changeAt: item.changeAt,
+    })
+    expect(actionHandler).toHaveBeenCalledWith(item.taskId, { source: 'user' })
+    await app.close()
+  }
+})
+
+test('task action routes keep id/status in error payload', async () => {
+  for (const item of errorCases) {
+    const app = fastify()
+    const { orchestrator } = createOrchestratorStub()
+    const actionHandler = vi.fn(async () => ({
+      ok: false as const,
+      id: item.taskId,
+      status: item.status,
+    }))
+    bindActionHandler(orchestrator, item.method, actionHandler)
+    const config = defaultConfig({ workDir: '.mimikit' })
+    registerApiRoutes(app, orchestrator, config)
+
+    const response = await app.inject({
+      method: 'POST',
+      url: `/api/tasks/${item.taskId}/${item.action}`,
+    })
+
+    expect(response.statusCode).toBe(item.statusCode)
+    expect(response.json()).toEqual({
+      ok: false,
+      id: item.taskId,
+      status: item.status,
+      error: item.status,
+    })
+    expect(actionHandler).toHaveBeenCalledWith(item.taskId, { source: 'user' })
+    await app.close()
+  }
+})

@@ -208,6 +208,6 @@ test('reduced motion disables worker dot transition animation in css', () => {
   )
 
   expect(css).toMatch(
-    /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.tasks-worker-dots \.worker-dot\.worker-dot--state-transition \{\s*animation: none;/,
+    /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.tasks-worker-dots \.worker-dot\.worker-dot--state-transition(?:,\s*\.tasks-worker-dots \.worker-dot\.worker-dot--state-transition::after)?\s*\{\s*animation: none;/,
   )
 })
