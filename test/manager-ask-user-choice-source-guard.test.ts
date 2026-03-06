@@ -44,15 +44,10 @@ test('lookup actions reject repeated calls in the same round', () => {
       },
     },
     {
-      name: 'query_history',
+      name: 'query_context',
       attrs: {
-        query: 'first',
-      },
-    },
-    {
-      name: 'query_history',
-      attrs: {
-        query: 'second',
+        query: 'second history pass',
+        scopes: 'history',
       },
     },
     {
@@ -84,8 +79,8 @@ test('lookup actions reject repeated calls in the same round', () => {
   expect(feedback).toHaveLength(4)
   expect(feedback[0]?.action).toBe('query_context')
   expect(feedback[0]?.hint).toContain('同一轮最多保留一个 query_context')
-  expect(feedback[1]?.action).toBe('query_history')
-  expect(feedback[1]?.hint).toContain('同一轮最多保留一个 query_history')
+  expect(feedback[1]?.action).toBe('query_context')
+  expect(feedback[1]?.hint).toContain('同一轮最多保留一个 query_context')
   expect(feedback[2]?.action).toBe('query_task_archive')
   expect(feedback[2]?.hint).toContain('同一轮最多保留一个 query_task_archive')
   expect(feedback[3]?.action).toBe('read_file')
@@ -95,21 +90,23 @@ test('lookup actions reject repeated calls in the same round', () => {
 test('lookup duplicate guard only counts schema-valid actions', () => {
   const feedback = collectManagerActionFeedback([
     {
-      name: 'query_history',
+      name: 'query_context',
       attrs: {
         query: '',
+        scopes: 'history',
       },
     },
     {
-      name: 'query_history',
+      name: 'query_context',
       attrs: {
         query: 'valid query',
+        scopes: 'history',
       },
     },
   ])
 
   expect(feedback).toHaveLength(1)
-  expect(feedback[0]?.action).toBe('query_history')
+  expect(feedback[0]?.action).toBe('query_context')
   expect(feedback[0]?.error).toBe('invalid_action_args')
 })
 

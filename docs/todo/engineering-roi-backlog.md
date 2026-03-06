@@ -8,7 +8,7 @@
 
 ## P0（先做）
 
-1. `query_history` 连续无进展的降级路径
+1. `query_context(history scope)` 连续无进展的降级路径
 - 目标：避免直接回退为 `Service unavailable`。
 - 代码入口：`src/manager/loop-batch-run-rounds.ts`、`src/manager/loop-batch-flow.ts`。
 - 验收：同类场景返回可执行澄清或默认答复，不写入 `manager_end status=error`。

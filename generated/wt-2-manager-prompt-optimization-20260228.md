@@ -8,13 +8,13 @@
 ## 2. 本次优化内容
 - 修复了示例与约束冲突：
   - `schedule_task.scheduled_at` 示例改为未来时间（`2030-01-02T09:00:00+08:00`）。
-  - `query_history.limit` 示例由 `5` 调整为与运行时默认一致的 `6`。
+  - `query_context.limit_history` 示例由 `5` 调整为与运行时默认一致的 `6`。
 - 补齐可执行枚举与格式：
   - `priority`: `high|normal|low`
   - `intent.status`: `pending|blocked|done`
   - `trigger_mode`: `one_shot|on_idle`
   - `focus.status`: `active|idle|done|archived`
-  - `query_history.roles`: `user|agent|system` 的逗号分隔子集
+  - `query_context.scopes`: 支持 `history|tasks|focus|plans|memory|task_archives`
   - `cron`: 明确为 5/6/7 段（建议 6 段）
 - 明确 `summary/open_items` 可空规则：
   - `summary` 可传空字符串用于清空。

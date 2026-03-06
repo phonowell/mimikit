@@ -21,33 +21,29 @@ export type ManagerRoundExtra = {
 }
 
 export const buildLookupKey = (params: {
-  queryKey?: string
   queryContextKey?: string
   readFileKey?: string
   taskArchiveKey?: string
 }): string | undefined => {
-  const { queryKey, queryContextKey, readFileKey, taskArchiveKey } = params
-  if (!queryKey && !queryContextKey && !readFileKey && !taskArchiveKey)
+  const { queryContextKey, readFileKey, taskArchiveKey } = params
+  if (!queryContextKey && !readFileKey && !taskArchiveKey)
     return undefined
-  return `${queryKey ?? ''}\n---\n${queryContextKey ?? ''}\n---\n${readFileKey ?? ''}\n---\n${taskArchiveKey ?? ''}`
+  return `${queryContextKey ?? ''}\n---\n${readFileKey ?? ''}\n---\n${taskArchiveKey ?? ''}`
 }
 
 export const hasNoFollowupRequests = (params: {
-  hasQueryRequest: boolean
   hasQueryContextRequest: boolean
   hasReadFileRequest: boolean
   hasTaskArchiveRequest: boolean
   feedbackCount: number
 }): boolean => {
   const {
-    hasQueryRequest,
     hasQueryContextRequest,
     hasReadFileRequest,
     hasTaskArchiveRequest,
     feedbackCount,
   } = params
   return (
-    !hasQueryRequest &&
     !hasQueryContextRequest &&
     !hasReadFileRequest &&
     !hasTaskArchiveRequest &&

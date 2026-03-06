@@ -6,7 +6,6 @@ import {
   findMarkdownCodeRanges,
   isIndexInRanges,
 } from '../actions/protocol/markdown-code-ranges.js'
-import { queryHistorySchema } from '../history/query.js'
 
 import {
   queryTaskArchiveSchema,
@@ -34,8 +33,6 @@ const INVALID_ACTION_SYNTAX_ERROR = 'invalid_action_syntax'
 const INVALID_ACTION_SYNTAX_HINT = formatInvalidActionSyntaxHint()
 const ACTION_IN_CODE_BLOCK_HINT = formatActionInCodeBlockHint()
 const SINGLE_LOOKUP_ACTION_LIMIT_HINTS: Record<string, string> = {
-  query_history:
-    'query_history 执行失败：同一轮最多保留一个 query_history action；请先合并查询条件。',
   query_context:
     'query_context 执行失败：同一轮最多保留一个 query_context action；请先合并 scopes 与过滤条件。',
   query_task_archive:
@@ -45,8 +42,6 @@ const SINGLE_LOOKUP_ACTION_LIMIT_HINTS: Record<string, string> = {
 }
 
 const isValidLookupAction = (item: Parsed): boolean => {
-  if (item.name === 'query_history')
-    return queryHistorySchema.safeParse(item.attrs).success
   if (item.name === 'query_context')
     return queryContextSchema.safeParse(item.attrs).success
   if (item.name === 'query_task_archive')

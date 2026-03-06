@@ -1,5 +1,3 @@
-import { queryHistorySchema } from '../history/query.js'
-
 import {
   askUserChoiceSchema,
   cancelSchema,
@@ -101,8 +99,6 @@ export const validateCancelTask = (
     return rejected(formatCancelTaskAlreadyCanceledHint())
   return rejected(formatCancelTaskNotCancelableHint())
 }
-export const validateQueryHistory = (item: Parsed): ValidationIssue[] =>
-  validateRangeQueryWithSchema(item, queryHistorySchema)
 export const validateQueryContext = (item: Parsed): ValidationIssue[] =>
   validateRangeQueryWithSchema(item, queryContextSchema)
 export const validateReadFile = (item: Parsed): ValidationIssue[] =>

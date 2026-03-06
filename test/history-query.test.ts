@@ -1,36 +1,36 @@
 import { expect, test } from 'vitest'
 
-import {
-  pickQueryHistoryRequest,
-  queryHistory,
-} from '../src/history/query.js'
+import { queryHistory } from '../src/history/query.js'
+import { pickQueryContextRequest } from '../src/manager/query-context-tool.js'
 import type { QueryHistoryRequest } from '../src/history/query.js'
 
 import type { HistoryMessage } from '../src/types/index.js'
 
-test('pickQueryHistoryRequest expands roles=all', () => {
-  const request = pickQueryHistoryRequest([
+test('pickQueryContextRequest supports history scope limit override', () => {
+  const request = pickQueryContextRequest([
     {
-      name: 'query_history',
+      name: 'query_context',
       attrs: {
         query: 'roadmap',
-        limit: '10',
-        roles: 'all',
+        scopes: 'history',
+        limit_history: '10',
       },
     },
   ])
 
   expect(request).toBeDefined()
-  expect(request?.roles).toEqual(['user', 'agent', 'system'])
+  expect(request?.scopes).toEqual(['history'])
+  expect(request?.scopeLimits.history).toBe(10)
 })
 
-test('pickQueryHistoryRequest rejects invalid limit format', () => {
-  const request = pickQueryHistoryRequest([
+test('pickQueryContextRequest rejects invalid history limit format', () => {
+  const request = pickQueryContextRequest([
     {
-      name: 'query_history',
+      name: 'query_context',
       attrs: {
         query: 'roadmap',
-        limit: '1e2',
+        scopes: 'history',
+        limit_history: 'oops',
       },
     },
   ])
