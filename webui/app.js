@@ -1,6 +1,7 @@
 import { bindComposer } from './messages/composer.js'
 import { bindChoicePanel } from './choice.js'
 import { bindDeleteMode } from './delete-mode.js'
+import { ensureInlineIconSprite } from './icon.js'
 import { createMessagesController } from './messages/controller.js'
 import { bindFocusPanel, bindPlansPanel } from './panels.js'
 import { bindRestart } from './restart.js'
@@ -8,6 +9,10 @@ import { UI_TEXT } from './system-text.js'
 import { bindTasksPanel } from './tasks.js'
 
 const $ = (sel) => document.querySelector(sel)
+
+void ensureInlineIconSprite().catch((error) => {
+  console.warn('[icons] inline sprite fallback failed', error)
+})
 
 const elements = {
   statusDot: $('[data-status-dot]'),
