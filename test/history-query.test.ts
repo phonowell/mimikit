@@ -6,31 +6,27 @@ import type { QueryHistoryRequest } from '../src/history/query.js'
 
 import type { HistoryMessage } from '../src/types/index.js'
 
-test('pickQueryContextRequest supports history scope limit override', () => {
+test('pickQueryContextRequest accepts query-only payload', () => {
   const request = pickQueryContextRequest([
     {
       name: 'query_context',
       attrs: {
         query: 'roadmap',
-        scopes: 'history',
-        limit_history: '10',
       },
     },
   ])
 
   expect(request).toBeDefined()
-  expect(request?.scopes).toEqual(['history'])
-  expect(request?.scopeLimits.history).toBe(10)
+  expect(request?.query).toBe('roadmap')
 })
 
-test('pickQueryContextRequest rejects invalid history limit format', () => {
+test('pickQueryContextRequest rejects legacy attrs', () => {
   const request = pickQueryContextRequest([
     {
       name: 'query_context',
       attrs: {
         query: 'roadmap',
         scopes: 'history',
-        limit_history: 'oops',
       },
     },
   ])

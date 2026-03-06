@@ -23,7 +23,6 @@ import {
 import {
   invalidArgsIssue,
   rejected,
-  validateIsoRangeField,
   validateScheduledAtNotPast,
   type ValidationIssue,
 } from './action-validation-helpers.js'
@@ -53,21 +52,6 @@ const resolveScheduleNowOption = (
   context.scheduleNowIso !== undefined
     ? { scheduleNowIso: context.scheduleNowIso }
     : {}
-const validateIsoRange = (
-  from: string | undefined,
-  to: string | undefined,
-): ValidationIssue[] => {
-  const fromIssues = validateIsoRangeField('from', from)
-  return fromIssues.length > 0 ? fromIssues : validateIsoRangeField('to', to)
-}
-const validateRangeQueryWithSchema = (
-  item: Parsed,
-  schema: ZodSchema<{ from?: string | undefined; to?: string | undefined }>,
-): ValidationIssue[] => {
-  const parsed = schema.safeParse(item.attrs)
-  if (!parsed.success) return [invalidArgsIssue(parsed.error)]
-  return validateIsoRange(parsed.data.from, parsed.data.to)
-}
 export const validateRunTask = (item: Parsed): ValidationIssue[] =>
   validateWithSchema(item, runTaskSchema)
 export const validateCreatePlan = (
@@ -126,7 +110,7 @@ export const validateMutateTask = (
   return rejected(formatMutateTaskAlreadyDoneHint('cancel'))
 }
 export const validateQueryContext = (item: Parsed): ValidationIssue[] =>
-  validateRangeQueryWithSchema(item, queryContextSchema)
+  validateWithSchema(item, queryContextSchema)
 export const validateReadFile = (item: Parsed): ValidationIssue[] =>
   validateWithSchema(item, readFileSchema)
 export const validateRememberMemory = (item: Parsed): ValidationIssue[] =>

@@ -87,7 +87,6 @@ export type QueryContextScope =
   | 'tasks'
   | 'focus'
   | 'plans'
-  | 'memory'
   | 'task_archives'
 export type QueryLookupHistoryItem = {
   ref: string
@@ -127,12 +126,6 @@ export type QueryLookupPlanItem = {
   title: string
   snippet: string
 }
-export type QueryLookupMemoryItem = {
-  ref: string
-  section: string
-  score: number
-  snippet: string
-}
 export type QueryLookupTaskArchiveItem = {
   ref: string
   taskId: string
@@ -153,21 +146,11 @@ export type QueryLookupResults = {
   tasks?: QueryLookupScopeResult<QueryLookupTaskItem>
   focus?: QueryLookupScopeResult<QueryLookupFocusItem>
   plans?: QueryLookupScopeResult<QueryLookupPlanItem>
-  memory?: QueryLookupScopeResult<QueryLookupMemoryItem>
   task_archives?: QueryLookupScopeResult<QueryLookupTaskArchiveItem>
 }
 export type QueryLookupMessage = {
   request: {
     query: string
-    scopes: QueryContextScope[]
-    limit: number
-    maxBytes: number
-    maxItemChars: number
-    from?: ISODate | undefined
-    to?: ISODate | undefined
-    focusId?: FocusId | undefined
-    taskStatus?: TaskStatus[] | undefined
-    planStatus?: TaskPlanStatus[] | undefined
   }
   results: QueryLookupResults
   meta: {

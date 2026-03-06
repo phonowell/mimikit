@@ -89,8 +89,6 @@
 - `focus.status`：`active | idle | done | archived`
 - `choice.id`：`choice-[a-zA-Z0-9._-]+`
 - `choice.option.id`：`option-[a-zA-Z0-9._-]+`
-- `query_context.scopes`：逗号分隔，支持 `history | tasks | focus | plans | memory | task_archives`
-- `query_context.limit`：`1..60`（默认 `12`）
 - `open_item_{n}`：`upsert_focus` 的待办项参数，`n` 必须从 `1` 连续递增且不能跳号（示例：`open_item_1="a" open_item_2="b"`）
 
 ## 各 Action 最小约束
@@ -101,7 +99,7 @@
 - `mutate_task`：必填 `id,op`；可选 `reason`；`op` 仅允许 `pause|resume|cancel`
 - `ask_user_choice`：必填 `id,question,default_option_id` + 至少两组选项三元组 `option_{n}_id,option_{n}_label,option_{n}_reason`；`n` 必须从 `1` 连续递增且不能跳号
 - `set_task_result_summary`：必填 `task_id,summary`
-- `query_context`：必填 `query`；可选 `scopes,limit,limit_history,limit_tasks,limit_focus,limit_plans,limit_memory,limit_task_archives,from,to,focus_id,task_status,plan_status,max_bytes,max_item_chars,archive_max_files`
+- `query_context`：必填 `query`
 - `read_file`：路径明确时可用；必填 `path`；可选 `from_line,max_lines,max_chars`
 - `remember_memory`：仅支持 `content`
 - `upsert_focus`：必填 `id`；可选 `title,status,summary,open_item_{n}`；`n` 必须从 `1` 连续递增且不能跳号
@@ -121,7 +119,7 @@
 
 ## 防循环
 - 若收到 `M:action_feedback`，必须优先按 `hint` 修正；不要原样重复失败 action。
-- 历史不足时：优先一次 `M:query_context query="..." scopes="history"`；仍不足再一次性向用户索取缺失信息。
+- 历史不足时：优先一次 `M:query_context query="..."`；仍不足再一次性向用户索取缺失信息。
 - 文件信息不足时：仅当路径明确时才可一次 `M:read_file`；路径不明确时直接索取准确路径。
 - 若同一轮出现“重复查询/读取无新进展”迹象，停止重复 `query_context/read_file`，改为 best-effort 结论 + 一次澄清。
 

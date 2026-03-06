@@ -36,10 +36,6 @@ test('buildManagerPrompt renders query lookup section', async () => {
     queryLookup: {
       request: {
         query: 'deploy',
-        scopes: ['tasks', 'focus'],
-        limit: 6,
-        maxBytes: 12288,
-        maxItemChars: 320,
       },
       results: {
         tasks: {
@@ -68,6 +64,6 @@ test('buildManagerPrompt renders query lookup section', async () => {
 
   expect(prompt).toContain('<M:query_lookup>')
   expect(prompt).toContain('task:task-1')
-  expect(prompt).toContain('"scopes": [')
-  expect(prompt).toContain('"focus"')
+  expect(prompt).toContain('"query": "deploy"')
+  expect(prompt).not.toContain('"scopes"')
 })

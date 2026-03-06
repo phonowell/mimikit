@@ -31,24 +31,16 @@ export const toScopeResult = (
 export const buildQueryLookupMessage = (
   request: QueryContextRequest,
   results: MutableQueryResults,
+  maxBytes: number,
 ): QueryLookupMessage => ({
   request: {
     query: request.query,
-    scopes: request.scopes,
-    limit: request.limit,
-    maxBytes: request.maxBytes,
-    maxItemChars: request.maxItemChars,
-    ...(request.from ? { from: request.from } : {}),
-    ...(request.to ? { to: request.to } : {}),
-    ...(request.focusId ? { focusId: request.focusId } : {}),
-    ...(request.taskStatus ? { taskStatus: request.taskStatus } : {}),
-    ...(request.planStatus ? { planStatus: request.planStatus } : {}),
   },
   results: results as QueryLookupMessage['results'],
   meta: {
     truncated: false,
     usedBytes: 0,
-    maxBytes: request.maxBytes,
+    maxBytes,
   },
 })
 

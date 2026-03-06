@@ -95,9 +95,6 @@ export const queryContextLookup = async (
   await appendLog(runtime.paths.log, {
     event: 'manager_query_context',
     queryChars: request.query.length,
-    scopes: request.scopes,
-    limit: request.limit,
-    maxBytes: request.maxBytes,
     resultScopeCount: Object.keys(scopeCounts).length,
     scopeCounts,
     truncated: result.meta.truncated,

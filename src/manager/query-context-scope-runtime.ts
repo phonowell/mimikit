@@ -6,7 +6,6 @@ import {
   truncatePreview,
 } from './query-context-score.js'
 
-import type { QueryContextRequest } from './query-context-schema.js'
 import type { RuntimeState } from './runtime-adapter.js'
 import type {
   QueryLookupFocusItem,
@@ -14,16 +13,6 @@ import type {
   QueryLookupTaskItem,
   Task,
 } from '../types/index.js'
-
-const isWithinRange = (
-  timestamp: string | undefined,
-  request: QueryContextRequest,
-): boolean => {
-  const ms = timestamp ? parseIsoToMs(timestamp) : 0
-  if (request.fromMs !== undefined && ms < request.fromMs) return false
-  if (request.toMs !== undefined && ms > request.toMs) return false
-  return true
-}
 
 const resolveTimeBounds = (
   times: number[],
@@ -52,24 +41,17 @@ const buildFocusSummary = (
 
 export const queryTasksScope = (
   runtime: RuntimeState,
-  request: QueryContextRequest,
+  query: string,
+  maxItemChars: number,
 ): QueryLookupTaskItem[] => {
-  const wildcard = isWildcardQuery(request.query)
-  const candidates = runtime.tasks.filter((task) => {
-    if (request.focusId && task.focusId !== request.focusId) return false
-    if (request.taskStatus && !request.taskStatus.includes(task.status))
-      return false
-    return isWithinRange(
-      task.completedAt ?? task.startedAt ?? task.createdAt,
-      request,
-    )
-  })
+  const wildcard = isWildcardQuery(query)
+  const candidates = runtime.tasks
   const bounds = resolveTimeBounds(candidates.map(resolveTaskTime))
   const ranked = candidates
     .map((task) => {
       const timeMs = resolveTaskTime(task)
       const score = scoreQueryCandidate({
-        query: request.query,
+        query,
         isWildcard: wildcard,
         haystack: [
           task.id,
@@ -92,7 +74,7 @@ export const queryTasksScope = (
         focusId: task.focusId,
         createdAt: task.createdAt,
         title: task.title,
-        snippet: truncatePreview(task.prompt, request.maxItemChars),
+        snippet: truncatePreview(task.prompt, maxItemChars),
       } satisfies QueryLookupTaskItem & { timeMs: number }
     })
     .filter(
@@ -104,15 +86,11 @@ export const queryTasksScope = (
 
 export const queryPlansScope = (
   runtime: RuntimeState,
-  request: QueryContextRequest,
+  query: string,
+  maxItemChars: number,
 ): QueryLookupPlanItem[] => {
-  const wildcard = isWildcardQuery(request.query)
-  const candidates = runtime.taskPlans.filter((plan) => {
-    if (request.focusId && plan.focusId !== request.focusId) return false
-    if (request.planStatus && !request.planStatus.includes(plan.status))
-      return false
-    return isWithinRange(plan.updatedAt, request)
-  })
+  const wildcard = isWildcardQuery(query)
+  const candidates = runtime.taskPlans
   const bounds = resolveTimeBounds(
     candidates.map((plan) => parseIsoToMs(plan.updatedAt)),
   )
@@ -120,7 +98,7 @@ export const queryPlansScope = (
     .map((plan) => {
       const timeMs = parseIsoToMs(plan.updatedAt)
       const score = scoreQueryCandidate({
-        query: request.query,
+        query,
         isWildcard: wildcard,
         haystack: [
           plan.id,
@@ -144,7 +122,7 @@ export const queryPlansScope = (
         triggerMode: plan.trigger.mode,
         updatedAt: plan.updatedAt,
         title: plan.title,
-        snippet: truncatePreview(plan.prompt, request.maxItemChars),
+        snippet: truncatePreview(plan.prompt, maxItemChars),
       } satisfies QueryLookupPlanItem & { timeMs: number }
     })
     .filter(
@@ -156,16 +134,14 @@ export const queryPlansScope = (
 
 export const queryFocusScope = (
   runtime: RuntimeState,
-  request: QueryContextRequest,
+  query: string,
+  maxItemChars: number,
 ): QueryLookupFocusItem[] => {
-  const wildcard = isWildcardQuery(request.query)
+  const wildcard = isWildcardQuery(query)
   const contextById = new Map(
     runtime.focusContexts.map((item) => [item.focusId, item]),
   )
-  const candidates = runtime.focuses.filter((focus) => {
-    if (request.focusId && focus.id !== request.focusId) return false
-    return isWithinRange(focus.updatedAt, request)
-  })
+  const candidates = runtime.focuses
   const bounds = resolveTimeBounds(
     candidates.map((focus) => parseIsoToMs(focus.updatedAt)),
   )
@@ -176,7 +152,7 @@ export const queryFocusScope = (
     const summary = buildFocusSummary(context?.summary, context?.openItems)
     const timeMs = parseIsoToMs(focus.updatedAt)
     const score = scoreQueryCandidate({
-      query: request.query,
+      query,
       isWildcard: wildcard,
       haystack: [focus.id, focus.title, focus.status, summary].join('\n'),
       timeMs,
@@ -193,7 +169,7 @@ export const queryFocusScope = (
       updatedAt: focus.updatedAt,
       title: focus.title,
     }
-    if (summary) entry.summary = truncatePreview(summary, request.maxItemChars)
+    if (summary) entry.summary = truncatePreview(summary, maxItemChars)
     ranked.push(entry)
   }
   return sortByScoreTimeId(ranked)

@@ -36,10 +36,6 @@ test('buildManagerPrompt exposes task archives through query lookup only', async
     queryLookup: {
       request: {
         query: 'release',
-        scopes: ['task_archives'],
-        limit: 6,
-        maxBytes: 12288,
-        maxItemChars: 320,
       },
       results: {
         task_archives: {

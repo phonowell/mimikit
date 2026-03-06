@@ -54,7 +54,7 @@
 ## Action 执行语义
 
 - `query_context` / `read_file`：仅做 schema 校验，不直接改状态；同一轮每类最多 1 条，超出会返回 `M:action_feedback`；结果通过下一纠错回合注入 `M:query_lookup` / `M:file_lookup`。
-- `query_context` 已统一覆盖 `task_archives` scope（不再提供独立 `query_task_archive` action）。
+- `query_context` 参数收敛为仅 `query`；内部固定执行全局检索（`history/tasks/focus/plans/task_archives`）+ 跨 scope 去重，不再暴露 `scopes/limit/*` 调参参数。
 - `set_task_result_summary`：仅用于当前批次 `task_result` 的摘要覆写（不直接执行 action 状态写入）。
 - `mutate_task`：统一 task 生命周期控制（`op=pause|resume|cancel`），按 `op` 分发到 `worker/pause-task.ts`、`worker/resume-task.ts`、`worker/cancel-task.ts`，统一产出可追踪结构（`id`、`status`、`changeAt`）。
 - 上下文压缩不再暴露为 manager action；仅由运行时内部触发，按 focus 维度写入压缩摘要（`managerFocusCompressedContexts`），prompt 仅注入 working focus 对应条目。

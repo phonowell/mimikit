@@ -1,20 +1,6 @@
 import { isAbsolute, relative, resolve } from 'node:path'
 
-import { parseIsoToMs } from '../shared/time.js'
-
-import type { QueryContextRequest } from './query-context-schema.js'
-
 export const isWildcardQuery = (query: string): boolean => query.trim() === '*'
-
-export const inRange = (
-  value: string,
-  request: QueryContextRequest,
-): boolean => {
-  const ms = parseIsoToMs(value)
-  if (request.fromMs !== undefined && ms < request.fromMs) return false
-  if (request.toMs !== undefined && ms > request.toMs) return false
-  return true
-}
 
 export const toDisplayPath = (path: string, workDir: string): string => {
   const trimmedPath = path.trim()

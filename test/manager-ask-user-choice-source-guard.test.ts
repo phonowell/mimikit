@@ -61,21 +61,18 @@ test('lookup actions reject repeated calls in the same round', () => {
       name: 'query_context',
       attrs: {
         query: 'deploy',
-        scopes: 'tasks,focus',
       },
     },
     {
       name: 'query_context',
       attrs: {
         query: 'release',
-        scopes: 'history',
       },
     },
     {
       name: 'query_context',
       attrs: {
         query: 'second history pass',
-        scopes: 'history',
       },
     },
     {
@@ -107,14 +104,12 @@ test('lookup duplicate guard only counts schema-valid actions', () => {
       name: 'query_context',
       attrs: {
         query: '',
-        scopes: 'history',
       },
     },
     {
       name: 'query_context',
       attrs: {
         query: 'valid query',
-        scopes: 'history',
       },
     },
   ])
@@ -124,13 +119,13 @@ test('lookup duplicate guard only counts schema-valid actions', () => {
   expect(feedback[0]?.error).toBe('invalid_action_args')
 })
 
-test('query_context invalid scope returns invalid_action_args', () => {
+test('query_context extra attrs returns invalid_action_args', () => {
   const feedback = collectManagerActionFeedback([
     {
       name: 'query_context',
       attrs: {
         query: 'deploy',
-        scopes: 'tasks,unknown_scope',
+        limit: '10',
       },
     },
   ])
@@ -138,7 +133,7 @@ test('query_context invalid scope returns invalid_action_args', () => {
   expect(feedback).toHaveLength(1)
   expect(feedback[0]?.action).toBe('query_context')
   expect(feedback[0]?.error).toBe('invalid_action_args')
-  expect(feedback[0]?.hint).toContain('scopes')
+  expect(feedback[0]?.hint).toContain('limit')
 })
 
 test('set_task_result_summary rejects task_id outside current batch results', () => {
