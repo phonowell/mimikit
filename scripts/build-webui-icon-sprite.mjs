@@ -2,7 +2,14 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const ICON_NAMES = ['arrow-down', 'x', 'ellipsis']
+const ICON_NAMES = [
+  'arrow-down',
+  'corner-up-left',
+  'corner-up-right',
+  'ellipsis',
+  'rotate-ccw',
+  'x',
+]
 
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const repoRoot = resolve(scriptDir, '..')
