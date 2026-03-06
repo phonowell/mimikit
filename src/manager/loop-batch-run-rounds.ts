@@ -1,5 +1,5 @@
 import { parseActions } from '../actions/protocol/parse.js'
-import { hasQqUserInput } from '../channels/qq/index.js'
+import { hasTelegramUserInput } from '../channels/telegram/index.js'
 import { appendLog } from '../log/append.js'
 import { mergeUsageAdditive } from '../shared/token-usage.js'
 
@@ -52,7 +52,7 @@ export const runManagerCorrectionRounds = async (params: {
   let lastParsed = parseActions('')
   const resultTaskIds = new Set(results.map((item) => item.taskId))
   const allowAskUserChoice =
-    !hasQqUserInput(inputs) && runtime.lastUserMeta?.source !== 'qq'
+    !hasTelegramUserInput(inputs) && runtime.lastUserMeta?.source !== 'telegram'
   for (let round = 1; round <= maxCorrectionRounds; round++) {
     const runResult = await runManagerRoundWithRecovery({
       runtime,

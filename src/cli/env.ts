@@ -1,4 +1,4 @@
-import { applyQqEnvOverrides } from '../channels/qq/config.js'
+import { applyTelegramEnvOverrides } from '../channels/telegram/config.js'
 
 import type { AppConfig } from '../config.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
@@ -56,5 +56,5 @@ const applyReasoningEnv = (config: AppConfig): void => {
 export const applyCliEnvOverrides = (config: AppConfig): void => {
   applyModelEnv(config)
   applyReasoningEnv(config)
-  applyQqEnvOverrides(config.qq)
+  applyTelegramEnvOverrides(config.telegram)
 }

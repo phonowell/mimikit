@@ -31,7 +31,7 @@ test('fills defaults when optional fields are omitted', async () => {
   expect(config.manager.modelReasoningEffort).toBe('medium')
   expect(config.worker.model).toBe('gpt-5.3-codex')
   expect(config.worker.timeoutMs).toBe(600000)
-  expect(config.qq.enabled).toBe(false)
+  expect(config.telegram.enabled).toBe(false)
 })
 
 test('normalizes empty provider overrides to undefined', async () => {

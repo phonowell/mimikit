@@ -51,14 +51,11 @@ const createRuntime = async (): Promise<RuntimeState> => {
       model: 'gpt-test-worker',
       modelReasoningEffort: 'minimal',
     },
-    qq: {
+    telegram: {
       enabled: false,
-      appId: '',
-      appSecret: '',
-      apiBase: 'https://api.sgroup.qq.com',
-      callbackPath: '/api/qq/events',
-      verifySign: true,
-      clockSkewMs: 300000,
+      botToken: '',
+      chatId: '',
+      apiRoot: 'https://api.telegram.org',
     },
   }
   const now = '2026-03-05T00:00:00.000Z'

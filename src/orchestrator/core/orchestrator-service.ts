@@ -1,5 +1,9 @@
 import PQueue from 'p-queue'
 
+import {
+  startTelegramPolling,
+  stopTelegramPolling,
+} from '../../channels/telegram/index.js'
 import { type AppConfig } from '../../config.js'
 import { buildPaths } from '../../fs/paths.js'
 import { setDefaultLogPath } from '../../log/safe.js'
@@ -89,15 +93,29 @@ export class Orchestrator {
 
   async start() {
     await startOrchestratorRuntime(this.runtime)
+    await startTelegramPolling({
+      config: this.runtime.config,
+      logPath: this.runtime.paths.log,
+      workDir: this.runtime.config.workDir,
+      addUserInput: (text, meta, quote) => this.addUserInput(text, meta, quote),
+    })
   }
 
   stop() {
     prepareStop(this.runtime)
+    void stopTelegramPolling({
+      workDir: this.runtime.config.workDir,
+      logPath: this.runtime.paths.log,
+    })
     void persistStopSnapshot(this.runtime)
   }
 
   async stopAndPersist(): Promise<void> {
     prepareStop(this.runtime)
+    await stopTelegramPolling({
+      workDir: this.runtime.config.workDir,
+      logPath: this.runtime.paths.log,
+    })
     await waitForManagerDrain(this.runtime)
     await persistStopSnapshot(this.runtime)
   }

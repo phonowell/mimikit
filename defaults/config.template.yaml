@@ -19,18 +19,12 @@ worker:
   # Worker 单任务超时（毫秒）；整数 > 0；默认 600000（10 分钟）
   timeoutMs: 600000
 
-qq:
-  # 是否启用 QQ 通道；默认 false
+telegram:
+  # 是否启用 Telegram 通道；默认 false
   enabled: false
-  # QQ 应用 ID；当 enabled=true 时必填
-  appId: ""
-  # QQ 应用密钥；当 enabled=true 时必填；敏感项
-  appSecret: ""
-  # QQ OpenAPI 基础地址；默认官方地址
-  apiBase: https://api.sgroup.qq.com
-  # QQ 回调路径；默认 /api/qq/events
-  callbackPath: /api/qq/events
-  # 是否启用回调签名校验；默认 true
-  verifySign: true
-  # 验签允许时钟偏差（毫秒）；整数 >= 0；默认 300000（5 分钟）
-  clockSkewMs: 300000
+  # Telegram Bot Token；当 enabled=true 时必填；敏感项
+  botToken: ""
+  # Telegram 默认目标 chat id；当 enabled=true 时必填
+  chatId: ""
+  # Telegram API 根地址；默认官方地址
+  apiRoot: https://api.telegram.org

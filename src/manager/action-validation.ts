@@ -11,7 +11,7 @@ import {
 } from './action-apply-schema.js'
 import {
   formatAskUserChoiceInvalidOptionsHint,
-  formatAskUserChoiceQqUnsupportedHint,
+  formatAskUserChoiceTelegramUnsupportedHint,
   formatCancelTaskAlreadyCanceledHint,
   formatCancelTaskNotCancelableHint,
   formatCancelTaskNotFoundHint,
@@ -128,7 +128,7 @@ export const validateAskUserChoice = (
   context: FeedbackContext,
 ): ValidationIssue[] => {
   if (context.allowAskUserChoice === false)
-    return rejected(formatAskUserChoiceQqUnsupportedHint())
+    return rejected(formatAskUserChoiceTelegramUnsupportedHint())
 
   const issues = validateWithSchema(item, askUserChoiceSchema)
   if (issues.length > 0) return issues

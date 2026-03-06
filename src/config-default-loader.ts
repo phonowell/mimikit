@@ -4,9 +4,9 @@ import { fileURLToPath } from 'node:url'
 import { parse as parseYaml } from 'yaml'
 import { z } from 'zod'
 
-import { qqConfigSchema } from './channels/qq/config.js'
+import { telegramConfigSchema } from './channels/telegram/config.js'
 
-import type { QqConfig } from './channels/qq/config.js'
+import type { TelegramConfig } from './channels/telegram/config.js'
 
 const modelReasoningEffortSchema = z.enum([
   'minimal',
@@ -83,7 +83,7 @@ const userConfigInputSchema = z
   .object({
     manager: managerInputSchema.optional(),
     worker: workerInputSchema.optional(),
-    qq: qqConfigSchema.partial().strict().optional(),
+    telegram: telegramConfigSchema.partial().strict().optional(),
   })
   .strict()
 
@@ -102,7 +102,7 @@ export type UserConfigDefaults = {
     model: string
     modelReasoningEffort: z.infer<typeof modelReasoningEffortSchema>
   }
-  qq: QqConfig
+  telegram: TelegramConfig
 }
 
 const DEFAULT_USER_CONFIG: UserConfigDefaults = {
@@ -117,14 +117,11 @@ const DEFAULT_USER_CONFIG: UserConfigDefaults = {
     model: 'gpt-5.3-codex',
     modelReasoningEffort: 'high',
   },
-  qq: {
+  telegram: {
     enabled: false,
-    appId: '',
-    appSecret: '',
-    apiBase: 'https://api.sgroup.qq.com',
-    callbackPath: '/api/qq/events',
-    verifySign: true,
-    clockSkewMs: 300000,
+    botToken: '',
+    chatId: '',
+    apiRoot: 'https://api.telegram.org',
   },
 }
 
@@ -199,15 +196,12 @@ const parseConfigInput = (source: string): UserConfigDefaults => {
         input.worker?.modelReasoningEffort ??
         DEFAULT_USER_CONFIG.worker.modelReasoningEffort,
     },
-    qq: {
-      enabled: input.qq?.enabled ?? DEFAULT_USER_CONFIG.qq.enabled,
-      appId: input.qq?.appId ?? DEFAULT_USER_CONFIG.qq.appId,
-      appSecret: input.qq?.appSecret ?? DEFAULT_USER_CONFIG.qq.appSecret,
-      apiBase: input.qq?.apiBase ?? DEFAULT_USER_CONFIG.qq.apiBase,
-      callbackPath:
-        input.qq?.callbackPath ?? DEFAULT_USER_CONFIG.qq.callbackPath,
-      verifySign: input.qq?.verifySign ?? DEFAULT_USER_CONFIG.qq.verifySign,
-      clockSkewMs: input.qq?.clockSkewMs ?? DEFAULT_USER_CONFIG.qq.clockSkewMs,
+    telegram: {
+      enabled: input.telegram?.enabled ?? DEFAULT_USER_CONFIG.telegram.enabled,
+      botToken:
+        input.telegram?.botToken ?? DEFAULT_USER_CONFIG.telegram.botToken,
+      chatId: input.telegram?.chatId ?? DEFAULT_USER_CONFIG.telegram.chatId,
+      apiRoot: input.telegram?.apiRoot ?? DEFAULT_USER_CONFIG.telegram.apiRoot,
     },
   }
 }

@@ -2,7 +2,7 @@ import { expect, test } from 'vitest'
 
 import { collectManagerActionFeedback } from '../src/manager/action-feedback-collect.js'
 
-test('ask_user_choice is rejected when qq source does not support choice callback', () => {
+test('ask_user_choice is rejected when telegram source does not support choice callback', () => {
   const feedback = collectManagerActionFeedback(
     [
       {
@@ -24,7 +24,7 @@ test('ask_user_choice is rejected when qq source does not support choice callbac
   expect(feedback).toHaveLength(1)
   expect(feedback[0]?.action).toBe('ask_user_choice')
   expect(feedback[0]?.error).toBe('action_execution_rejected')
-  expect(feedback[0]?.hint).toContain('QQ')
+  expect(feedback[0]?.hint).toContain('Telegram')
 })
 
 test('lookup actions reject repeated calls in the same round', () => {

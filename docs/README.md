@@ -9,7 +9,7 @@
 5. WebUI 规范：`./design/ui/webui-design-language.md`
 6. Codex SDK 接入：`./reference/sdk/codex-sdk.md`
 7. 外部对比结论：`./reference/comparisons/known.md`
-8. CoPaw QQ 渠道调研：`./reference/comparisons/copaw-qq-channel-research.md`
+8. Telegram 渠道接入：`./reference/integrations/telegram-channel.md`
 9. LLM 启动安装：`./BOOTSTRAP.md`
 10. 工程改进待办：`./todo/engineering-roi-backlog.md`
 

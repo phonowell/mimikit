@@ -1,4 +1,4 @@
-import { dispatchQqPassiveReply } from '../channels/qq/index.js'
+import { dispatchTelegramPassiveReply } from '../channels/telegram/index.js'
 import { resolveDefaultFocusId } from '../focus/index.js'
 import { appendManagerCorrectionLimitSystemMessage } from '../history/manager-events.js'
 import { appendLog } from '../log/append.js'
@@ -107,8 +107,8 @@ export const processManagerBatch = async (params: {
       ...(resolvedUsage ? { usage: resolvedUsage } : {}),
       ...(managerRun.elapsedMs >= 0 ? { elapsedMs: managerRun.elapsedMs } : {}),
     })
-    await bestEffort('qq:dispatch_passive_reply', () =>
-      dispatchQqPassiveReply({
+    await bestEffort('telegram:dispatch_passive_reply', () =>
+      dispatchTelegramPassiveReply({
         runtime,
         inputs: agentInputs,
         replyText: responseText,

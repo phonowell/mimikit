@@ -179,10 +179,10 @@ type UserInputUser = {
   quote?: Id
   source?: string
   platform?: string
-  qqOpenid?: string
-  qqMessageId?: string
-  qqEventId?: string
-  qqTimestamp?: ISODate
+  telegramChatId?: string
+  telegramMessageId?: string
+  telegramUpdateId?: string
+  telegramTimestamp?: ISODate
 }
 type UserInputSystem = {
   id: Id

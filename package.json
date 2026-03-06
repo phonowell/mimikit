@@ -21,6 +21,7 @@
     "remark-parse": "^11.0.0",
     "rotating-file-stream": "^3.2.9",
     "stream-json": "^1.9.1",
+    "telegraf": "^4.16.3",
     "unified": "^11.0.5",
     "unist-util-visit": "^5.1.0",
     "write-file-atomic": "^7.0.1",
@@ -62,7 +63,8 @@
     "wt-rebase": "node scripts/worktree/rebase-worktree.js --base main",
     "wt-land": "node scripts/worktree/land-worktree.js --base main --plans-dir plans",
     "review-code-changes": "pnpm run lint && pnpm run type-check && pnpm run test",
-    "wt-slot": "node scripts/worktree/manage-slot.js"
+    "wt-slot": "node scripts/worktree/manage-slot.js",
+    "telegram:send-test": "tsx scripts/telegram-send-test.ts"
   },
   "type": "module",
   "version": "0.1.0"

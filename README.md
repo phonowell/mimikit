@@ -103,6 +103,23 @@ Default port is `8787`; you can also run:
 tsx src/cli/index.ts --port 8787 --work-dir .mimikit
 ```
 
+### 4) Optional: enable Telegram channel
+
+```bash
+export TELEGRAM_CHANNEL_ENABLED=true
+export TELEGRAM_BOT_TOKEN=<your_bot_token>
+export TELEGRAM_CHAT_ID=<your_chat_id>
+pnpm start
+```
+
+Outbound smoke test:
+
+```bash
+TELEGRAM_BOT_TOKEN=<your_bot_token> \
+TELEGRAM_CHAT_ID=<your_chat_id> \
+pnpm run telegram:send-test -- --text "mimikit telegram smoke test"
+```
+
 ## LLM Bootstrap
 
 For LLM-driven setup and configuration, use [`docs/BOOTSTRAP.md`](./docs/BOOTSTRAP.md). It provides deterministic install/config/start/verify steps.
@@ -114,10 +131,10 @@ For LLM-driven setup and configuration, use [`docs/BOOTSTRAP.md`](./docs/BOOTSTR
 - Plan trigger modes: `cron`, `scheduled_at`, `on_idle`, `on_worker_slot_freed` with clear semantics ([plan workflow](./docs/design/workflow/plan.md)).
 - Built-in WebUI + SSE events: `GET /api/events`, `POST /api/input`, restart/reset APIs ([interfaces](./docs/design/workflow/interfaces-and-state.md)).
 - Task panel live progress: running tasks show streamed output snippets in WebUI without extra model calls.
-- QQ channel integration (optional): webhook ingest + passive reply guard + de-dup state ([QQ modules](./src/channels/qq)).
+- Telegram channel integration (optional): long polling ingest + passive reply via `sendMessage` ([Telegram modules](./src/channels/telegram)).
 - Local file-backed observability: `history`, `tasks`, `task-progress`, `runtime-snapshot`, `log.jsonl` under `.mimikit/` ([state layout](./docs/design/workflow/interfaces-and-state.md)).
 
-Keywords: `AI orchestration layer`, `TypeScript orchestrator`, `Codex SDK`, `OpenAI`, `single-session orchestration`, `WebUI`, `SSE`, `task planning`, `QQ bot`, `local-first runtime`.
+Keywords: `AI orchestration layer`, `TypeScript orchestrator`, `Codex SDK`, `OpenAI`, `single-session orchestration`, `WebUI`, `SSE`, `task planning`, `Telegram bot`, `local-first runtime`.
 
 ## How It Works
 
@@ -142,7 +159,7 @@ Key points:
 
 - Build a controllable local orchestration runtime where state, plans, and task traces are inspectable on disk.
 - Prototype agent scheduling behavior (`on_idle` vs `on_worker_slot_freed`) with explicit semantics.
-- Run one local orchestration hub with both WebUI input and optional QQ webhook channel.
+- Run one local orchestration hub with both WebUI input and optional Telegram bot channel.
 - Use this repo as a compact TypeScript reference for manager/worker split orchestration where execution is externally delegated.
 
 ## Benchmark Positioning
@@ -170,9 +187,9 @@ At minimum: `GET /api/events` (SSE) and `POST /api/input`, plus task/choice/rest
 
 Yes. Plans support `cron`, `scheduled_at`, `on_idle`, and `on_worker_slot_freed`.
 
-### Can I enable QQ integration?
+### Can I enable Telegram integration?
 
-Yes. Configure `qq.*` in `config.yaml` or `QQ_*` env vars, then enable webhook route.
+Yes. Configure `telegram.*` in `config.yaml` or `TELEGRAM_*` env vars, then start with `telegram.enabled=true`.
 
 ## Contributing
 

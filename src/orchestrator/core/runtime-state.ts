@@ -24,10 +24,10 @@ export type UserMeta = {
   clientTimeZone?: string
   clientOffsetMinutes?: number
   clientNowIso?: string
-  qqOpenid?: string
-  qqMessageId?: string
-  qqEventId?: string
-  qqTimestamp?: string
+  telegramChatId?: string
+  telegramMessageId?: string
+  telegramUpdateId?: string
+  telegramTimestamp?: string
 }
 
 export type UiWakeKind = 'snapshot' | 'messages' | 'tasks'

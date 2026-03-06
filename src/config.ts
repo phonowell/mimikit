@@ -2,7 +2,7 @@ import { resolve } from 'node:path'
 
 import { loadDefaultConfigFromYaml } from './config-default-loader.js'
 
-import type { QqConfig } from './channels/qq/config.js'
+import type { TelegramConfig } from './channels/telegram/config.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
 export type DefaultConfigParams = {
@@ -63,7 +63,7 @@ export type AppConfig = {
     model: string
     modelReasoningEffort: ModelReasoningEffort
   }
-  qq: QqConfig
+  telegram: TelegramConfig
 }
 
 const INTERNAL_MANAGER_DEFAULTS = {
@@ -125,6 +125,6 @@ export const defaultConfig = (params: DefaultConfigParams): AppConfig => {
       modelReasoningEffort: userConfig.worker.modelReasoningEffort,
       ...INTERNAL_WORKER_DEFAULTS,
     },
-    qq: userConfig.qq,
+    telegram: userConfig.telegram,
   }
 }

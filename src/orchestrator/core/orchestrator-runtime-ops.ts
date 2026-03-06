@@ -64,10 +64,10 @@ export const addUserInput = async (
   touchFocus(runtime, focusId)
   const source = meta?.source?.trim()
   const platform = meta?.platform?.trim()
-  const qqOpenid = meta?.qqOpenid?.trim()
-  const qqMessageId = meta?.qqMessageId?.trim()
-  const qqEventId = meta?.qqEventId?.trim()
-  const qqTimestamp = meta?.qqTimestamp?.trim()
+  const telegramChatId = meta?.telegramChatId?.trim()
+  const telegramMessageId = meta?.telegramMessageId?.trim()
+  const telegramUpdateId = meta?.telegramUpdateId?.trim()
+  const telegramTimestamp = meta?.telegramTimestamp?.trim()
   const baseInput = {
     id,
     role: 'user' as const,
@@ -76,10 +76,10 @@ export const addUserInput = async (
     focusId,
     ...(source ? { source } : {}),
     ...(platform ? { platform } : {}),
-    ...(qqOpenid ? { qqOpenid } : {}),
-    ...(qqMessageId ? { qqMessageId } : {}),
-    ...(qqEventId ? { qqEventId } : {}),
-    ...(qqTimestamp ? { qqTimestamp } : {}),
+    ...(telegramChatId ? { telegramChatId } : {}),
+    ...(telegramMessageId ? { telegramMessageId } : {}),
+    ...(telegramUpdateId ? { telegramUpdateId } : {}),
+    ...(telegramTimestamp ? { telegramTimestamp } : {}),
   }
   const input = quoteId ? { ...baseInput, quote: quoteId } : baseInput
   await publishUserInput({ paths: runtime.paths, payload: input })

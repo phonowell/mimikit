@@ -7,7 +7,6 @@
 - `GET /api/events`
 - `GET /api/status`
 - `POST /api/input`
-- `POST /api/qq/events`（启用 `qq.enabled=true` 时注册）
 - `DELETE /api/messages/:id`
 - `GET /api/tasks/:id/archive`
 - `POST /api/tasks/:id/cancel`
@@ -69,11 +68,10 @@
 - `MIMIKIT_REASONING_EFFORT`
 - `MIMIKIT_MANAGER_REASONING_EFFORT`
 - `MIMIKIT_WORKER_REASONING_EFFORT`
-- `QQ_CHANNEL_ENABLED`
-- `QQ_APP_ID`
-- `QQ_CLIENT_SECRET`
-- `QQ_API_BASE`
-- `QQ_CALLBACK_PATH`
+- `TELEGRAM_CHANNEL_ENABLED`
+- `TELEGRAM_BOT_TOKEN`
+- `TELEGRAM_CHAT_ID`
+- `TELEGRAM_API_ROOT`
 
 ## 配置结构（`config.yaml`）
 
@@ -85,22 +83,17 @@
 - `worker.timeoutMs`
 - `worker.model`
 - `worker.modelReasoningEffort`
-- `qq.enabled`
-- `qq.appId`
-- `qq.appSecret`
-- `qq.apiBase`
-- `qq.callbackPath`
-- `qq.verifySign`
-- `qq.clockSkewMs`
+- `telegram.enabled`
+- `telegram.botToken`
+- `telegram.chatId`
+- `telegram.apiRoot`
 
-## QQ 模块边界（`src/channels/qq/*`）
+## Telegram 模块边界（`src/channels/telegram/*`）
 
-- `config.ts`：QQ 配置 schema、环境变量覆写、启用态配置校验
-- `http-webhook.ts`：QQ webhook 入站与验签/ACK/C2C 入队
-- `signature.ts`：QQ 回调签名验签与 challenge 签名
-- `client.ts`：QQ OpenAPI token 获取与被动文本发送
-- `state.ts` + `state-schema.ts`：QQ 事件去重与 `msg_seq` 持久化
-- `passive-reply.ts`：manager 回复后的 QQ 被动发送守卫（60 分钟 + 5 条上限）
+- `config.ts`：Telegram 配置 schema、环境变量覆写、启用态配置校验
+- `polling.ts`：Telegram long polling 入站与生命周期管理
+- `client.ts`：Telegram `sendMessage` 文本发送
+- `passive-reply.ts`：manager 回复后的 Telegram 被动发送
 - `index.ts`：对核心层暴露统一集成入口
 
 ## 状态目录（默认 `./.mimikit/`）
@@ -114,7 +107,6 @@
 - `history/YYYY-MM-DD.jsonl`
 - `memory/MEMORY.md`
 - `*`（由 `/state-files/*` 静态路由暴露）
-- `qq/event-state.json`
 - `runtime-snapshot.json`
 - `runtime-snapshot.json.bak`
 - `log.jsonl`

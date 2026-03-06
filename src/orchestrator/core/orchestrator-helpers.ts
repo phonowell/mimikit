@@ -20,10 +20,10 @@ const USER_META_STRING_KEYS = [
   'clientLocale',
   'clientTimeZone',
   'clientNowIso',
-  'qqOpenid',
-  'qqMessageId',
-  'qqEventId',
-  'qqTimestamp',
+  'telegramChatId',
+  'telegramMessageId',
+  'telegramUpdateId',
+  'telegramTimestamp',
 ] as const
 
 export const computeOrchestratorStatus = (

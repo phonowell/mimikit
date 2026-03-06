@@ -20,8 +20,8 @@ cancel_task_already_canceled: |
   cancel_task 执行失败：任务已是 canceled 状态。
 cancel_task_not_cancelable: |
   cancel_task 执行失败：任务已完成，无法取消。
-ask_user_choice_qq_unsupported: |
-  ask_user_choice 执行失败：当前批次来源包含 QQ 单聊输入，QQ 链路不支持选项回传。
+ask_user_choice_telegram_unsupported: |
+  ask_user_choice 执行失败：当前批次来源包含 Telegram 输入，当前链路不支持选项回传。
 ask_user_choice_invalid_options: |
   ask_user_choice 执行失败：option_{n}_id/label/reason 参数非法，或 default_option_id 不在 options 中。
 plan_not_found: |
