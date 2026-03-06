@@ -20,9 +20,9 @@ export const MAX_RUN_ROUNDS = 3
 export const MAX_CONTINUE_LATEST_OUTPUT_CHARS = 1_600
 
 const SKILL_USAGE_DONE_TEST_RE =
-  /<M:skill_usage\b[^>]*\bstatus\s*=\s*(['"])done\1[^>]*>[\s\S]*?<\/M:skill_usage>/i
+  /<M:skill_usage\b[^>]*\bstatus\s*=\s*(?:(['"])done\1|done(?=[\s>]))[^>]*>[\s\S]*?<\/M:skill_usage>/i
 const SKILL_USAGE_DONE_STRIP_RE =
-  /<M:skill_usage\b[^>]*\bstatus\s*=\s*(['"])done\1[^>]*>[\s\S]*?<\/M:skill_usage>/gi
+  /<M:skill_usage\b[^>]*\bstatus\s*=\s*(?:(['"])done\1|done(?=[\s>]))[^>]*>[\s\S]*?<\/M:skill_usage>/gi
 
 export const hasDoneMarker = (output: string): boolean =>
   SKILL_USAGE_DONE_TEST_RE.test(output)
@@ -43,12 +43,18 @@ export const buildContinuePrompt = (
   templatePath: string,
   latestOutput: string,
   nextRound: number,
+  options?: {
+    includeLatestOutput?: boolean
+  },
 ): string =>
   renderPromptTemplate(
     template,
     {
       done_tag_pattern: SKILL_USAGE_DONE_TAG_PATTERN,
-      latest_output: clipLatestOutput(latestOutput),
+      latest_output:
+        options?.includeLatestOutput === false
+          ? ''
+          : clipLatestOutput(latestOutput),
       next_round: String(nextRound),
       max_rounds: String(MAX_RUN_ROUNDS),
     },
@@ -165,11 +171,13 @@ export const runWorkerLoop = async (
       }
 
       if (round < MAX_RUN_ROUNDS) {
+        const shouldIncludeLatestOutput = !normalizeThreadId(threadId)
         nextPrompt = buildContinuePrompt(
           params.continueTemplate,
           params.continueTemplatePath,
           output,
           round + 1,
+          { includeLatestOutput: shouldIncludeLatestOutput },
         )
       }
     }

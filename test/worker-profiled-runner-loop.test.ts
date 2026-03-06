@@ -21,12 +21,19 @@ test('done marker detection uses skill_usage done status only', () => {
     '结论：已完成\n<M:skill_usage status="done">plan-implementation</M:skill_usage>'
   const doneOutputVariant =
     "结论：已完成\n<M:skill_usage source=\"x\" status = 'done'>plan-implementation</M:skill_usage>"
+  const doneOutputUnquoted =
+    '结论：已完成\n<M:skill_usage status=done>plan-implementation</M:skill_usage>'
+  const invalidStatusValue =
+    '结论：未完成\n<M:skill_usage status=donee>plan-implementation</M:skill_usage>'
   const legacyOutput = '结论：已完成\n<M:task_done/>'
 
   expect(hasDoneMarker(doneOutput)).toBe(true)
   expect(hasDoneMarker(doneOutputVariant)).toBe(true)
+  expect(hasDoneMarker(doneOutputUnquoted)).toBe(true)
   expect(stripDoneMarker(doneOutput)).toBe('结论：已完成')
   expect(stripDoneMarker(doneOutputVariant)).toBe('结论：已完成')
+  expect(stripDoneMarker(doneOutputUnquoted)).toBe('结论：已完成')
+  expect(hasDoneMarker(invalidStatusValue)).toBe(false)
   expect(hasDoneMarker(legacyOutput)).toBe(false)
 })
 
@@ -41,6 +48,24 @@ test('continue prompt clips latest output to configured max chars', () => {
   )
   expect(latestLine?.endsWith('...')).toBe(true)
   expect(prompt).toContain('<M:skill_usage status="done">')
+})
+
+test('continue prompt can omit latest output when thread context is available', () => {
+  const template = [
+    '当前轮次：{{ next_round }}/{{ max_rounds }}',
+    '上一轮输出：',
+    '{{ latest_output }}',
+  ].join('\n')
+  const prompt = buildContinuePrompt(
+    template,
+    'inline-template',
+    'ROUND_ONE_SENTINEL',
+    2,
+    { includeLatestOutput: false },
+  )
+
+  expect(prompt).toContain('当前轮次：2/3')
+  expect(prompt).not.toContain('ROUND_ONE_SENTINEL')
 })
 
 test('runWorkerLoop does not double count when onUsage and result usage are identical', async () => {
@@ -169,6 +194,57 @@ test('runWorkerLoop captures provider thread id from error path for recovery', a
     ).rejects.toThrow('simulated provider failure')
 
     expect(sessionIds).toEqual(['session-from-error'])
+  } finally {
+    await rm(stateDir, { recursive: true, force: true })
+  }
+})
+
+test('runWorkerLoop omits latest output in continue prompt when thread id exists', async () => {
+  const stateDir = await createTmpDir()
+  const prompts: string[] = []
+  const task: Task = {
+    id: 'task-test-threaded-continue',
+    fingerprint: 'fingerprint-test-threaded-continue',
+    prompt: '执行测试任务',
+    title: '执行测试任务',
+    focusId: 'focus-global',
+    profile: 'worker',
+    status: 'running',
+    createdAt: '2026-03-04T00:00:00.000Z',
+  }
+
+  try {
+    const result = await runWorkerLoop({
+      stateDir,
+      task,
+      prompt: '执行测试任务',
+      continueTemplate: [
+        'round={{ next_round }}',
+        'latest={{ latest_output }}',
+      ].join('\n'),
+      continueTemplatePath: 'inline-template',
+      archiveBase: { role: 'worker', taskId: task.id },
+      runModel: async ({ prompt, threadId }) => {
+        prompts.push(prompt)
+        if (!threadId) {
+          return {
+            output: 'ROUND_ONE_SENTINEL',
+            elapsedMs: 10,
+            threadId: 'session-worker-1',
+          }
+        }
+        return {
+          output: 'final\n<M:skill_usage status=done>test</M:skill_usage>',
+          elapsedMs: 10,
+          threadId,
+        }
+      },
+    })
+
+    expect(prompts).toHaveLength(2)
+    expect(prompts[1]).toContain('round=2')
+    expect(prompts[1]).not.toContain('ROUND_ONE_SENTINEL')
+    expect(result.output).toBe('final')
   } finally {
     await rm(stateDir, { recursive: true, force: true })
   }
