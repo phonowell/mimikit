@@ -221,33 +221,47 @@
 }
 
 .tasks-worker-dots .worker-dot.worker-dot--state-transition {
-  animation-duration: 260ms;
-  animation-timing-function: ease-out;
-  animation-iteration-count: 1;
+  animation-name: worker-dot-pulse;
+  animation-duration: 500ms;
+  animation-timing-function: cubic-bezier(0.25, 0.1, 0.2, 1);
+  animation-iteration-count: 6;
+  --worker-dot-pulse-color: var(--status-running);
+  --worker-dot-pulse-alpha: 30%;
+  --worker-dot-pulse-scale: 1.28;
 }
 
 .tasks-worker-dots
   .worker-dot.worker-dot--state-transition[data-transition='engage'] {
-  animation-name: worker-dot-engage;
+  --worker-dot-pulse-color: var(--status-running);
+  --worker-dot-pulse-alpha: 34%;
+  --worker-dot-pulse-scale: 1.34;
 }
 
 .tasks-worker-dots
   .worker-dot.worker-dot--state-transition[data-transition='release'] {
-  animation-name: worker-dot-release;
+  --worker-dot-pulse-color: var(--status-idle);
+  --worker-dot-pulse-alpha: 28%;
+  --worker-dot-pulse-scale: 1.24;
 }
 
 .tasks-worker-dots
   .worker-dot.worker-dot--state-transition[data-transition='offline'] {
-  animation-name: worker-dot-offline;
+  --worker-dot-pulse-color: var(--status-disconnected);
+  --worker-dot-pulse-alpha: 26%;
+  --worker-dot-pulse-scale: 1.2;
 }
 
 .tasks-worker-dots
   .worker-dot.worker-dot--state-transition[data-transition='recover'] {
-  animation-name: worker-dot-recover;
+  --worker-dot-pulse-color: var(--status-running);
+  --worker-dot-pulse-alpha: 30%;
+  --worker-dot-pulse-scale: 1.3;
 }
 
 .tasks-worker-dots .worker-dot.worker-dot--state-transition[data-transition='shift'] {
-  animation-name: worker-dot-shift;
+  --worker-dot-pulse-color: var(--status-running);
+  --worker-dot-pulse-alpha: 22%;
+  --worker-dot-pulse-scale: 1.18;
 }
 
 .tasks-worker-dots .worker-dot[data-state='running'] {
@@ -278,76 +292,29 @@
   background: var(--status-disconnected);
 }
 
-@keyframes worker-dot-engage {
+@keyframes worker-dot-pulse {
   0% {
-    transform: scale(0.72);
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--status-running) 26%, transparent);
-  }
-
-  58% {
-    transform: scale(1.22);
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--status-running) 24%, transparent);
-  }
-
-  100% {
     transform: scale(1);
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--status-running) 0%, transparent);
-  }
-}
-
-@keyframes worker-dot-release {
-  0% {
-    transform: scale(1.18);
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--status-idle) 24%, transparent);
-  }
-
-  100% {
-    transform: scale(1);
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--status-idle) 0%, transparent);
-  }
-}
-
-@keyframes worker-dot-offline {
-  0% {
-    transform: scale(1.12);
-    opacity: 1;
-  }
-
-  52% {
-    transform: scale(0.84);
-    opacity: 0.66;
-  }
-
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-@keyframes worker-dot-recover {
-  0% {
-    transform: scale(0.8);
-    opacity: 0.5;
-  }
-
-  52% {
-    transform: scale(1.16);
     opacity: 0.92;
+    box-shadow: 0 0 0 0
+      color-mix(in srgb, var(--worker-dot-pulse-color) 0%, transparent);
   }
 
-  100% {
-    transform: scale(1);
+  50% {
+    transform: scale(var(--worker-dot-pulse-scale));
     opacity: 1;
-  }
-}
-
-@keyframes worker-dot-shift {
-  0% {
-    transform: scale(0.88);
+    box-shadow: 0 0 0 6px color-mix(
+      in srgb,
+      var(--worker-dot-pulse-color) var(--worker-dot-pulse-alpha),
+      transparent
+    );
   }
 
   100% {
     transform: scale(1);
+    opacity: 0.95;
+    box-shadow: 0 0 0 0
+      color-mix(in srgb, var(--worker-dot-pulse-color) 0%, transparent);
   }
 }
 

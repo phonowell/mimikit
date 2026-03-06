@@ -5,6 +5,9 @@ export const normalizeCount = (value) =>
 
 const DEFAULT_WORKER_SLOT_COUNT = 1
 const DOT_TRANSITION_CLASS = 'worker-dot--state-transition'
+const DOT_TRANSITION_DURATION_MS = 3000
+const DOT_TRANSITION_CLEANUP_GRACE_MS = 120
+const transitionCleanupTimers = new WeakMap()
 
 const resolveTransitionState = ({ previousState, nextState }) => {
   if (!previousState || previousState === nextState) return ''
@@ -18,10 +21,28 @@ const resolveTransitionState = ({ previousState, nextState }) => {
 const bindTransitionCleanup = (dot) => {
   if (!dot || dot.dataset.transitionBound === '1') return
   dot.dataset.transitionBound = '1'
-  dot.addEventListener('animationend', () => {
+  const clearTransitionState = () => {
+    const timer = transitionCleanupTimers.get(dot)
+    if (timer) {
+      clearTimeout(timer)
+      transitionCleanupTimers.delete(dot)
+    }
     dot.classList.remove(DOT_TRANSITION_CLASS)
     delete dot.dataset.transition
-  })
+  }
+  dot.addEventListener('animationend', clearTransitionState)
+  dot.addEventListener('animationcancel', clearTransitionState)
+}
+
+const scheduleTransitionCleanup = (dot) => {
+  const previousTimer = transitionCleanupTimers.get(dot)
+  if (previousTimer) clearTimeout(previousTimer)
+  const timer = setTimeout(() => {
+    dot.classList.remove(DOT_TRANSITION_CLASS)
+    delete dot.dataset.transition
+    transitionCleanupTimers.delete(dot)
+  }, DOT_TRANSITION_DURATION_MS + DOT_TRANSITION_CLEANUP_GRACE_MS)
+  transitionCleanupTimers.set(dot, timer)
 }
 
 const applyTransitionState = (dot, previousState, nextState) => {
@@ -31,6 +52,7 @@ const applyTransitionState = (dot, previousState, nextState) => {
   dot.classList.remove(DOT_TRANSITION_CLASS)
   void dot.offsetWidth
   dot.classList.add(DOT_TRANSITION_CLASS)
+  scheduleTransitionCleanup(dot)
 }
 
 export function clearWorkerDots(workerDots) {

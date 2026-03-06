@@ -1,4 +1,6 @@
-import { afterEach, beforeEach, expect, test } from 'vitest'
+import { readFileSync } from 'node:fs'
+
+import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 
 import { clearWorkerDots, updateWorkerDots } from '../webui/messages/worker-dots.js'
 
@@ -153,6 +155,36 @@ test('disconnected status maps dot state to disconnected', () => {
   expect(workerDots.title).toBe('disconnected 0/2 running')
 })
 
+test('worker slot transition auto-clears after pulse window', () => {
+  vi.useFakeTimers()
+  try {
+    const workerDots = new WorkerDotsStub()
+
+    updateWorkerDots(workerDots, {
+      agentStatus: 'idle',
+      activeTasks: 0,
+      maxWorkers: 1,
+    })
+    updateWorkerDots(workerDots, {
+      agentStatus: 'running',
+      activeTasks: 1,
+      maxWorkers: 1,
+    })
+
+    const dot = workerDots.querySelectorAll('.worker-dot')[0]
+    expect(dot.classList.contains('worker-dot--state-transition')).toBe(true)
+
+    vi.advanceTimersByTime(3000)
+    expect(dot.classList.contains('worker-dot--state-transition')).toBe(true)
+
+    vi.advanceTimersByTime(120)
+    expect(dot.classList.contains('worker-dot--state-transition')).toBe(false)
+    expect(dot.dataset.transition).toBeUndefined()
+  } finally {
+    vi.useRealTimers()
+  }
+})
+
 test('clearWorkerDots resets rendered dots and slot count cache', () => {
   const workerDots = new WorkerDotsStub()
   workerDots.dataset.slotCount = '3'
@@ -167,4 +199,15 @@ test('clearWorkerDots resets rendered dots and slot count cache', () => {
   expect(workerDots.querySelectorAll('.worker-dot')).toHaveLength(0)
   expect(workerDots.dataset.slotCount).toBeUndefined()
   expect(workerDots.title).toBe('')
+})
+
+test('reduced motion disables worker dot transition animation in css', () => {
+  const css = readFileSync(
+    new URL('../webui/components-responsive.css', import.meta.url),
+    'utf8',
+  )
+
+  expect(css).toMatch(
+    /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.tasks-worker-dots \.worker-dot\.worker-dot--state-transition \{\s*animation: none;/,
+  )
 })
