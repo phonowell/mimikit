@@ -16,7 +16,6 @@ export type SystemEventName =
   | 'plan_updated'
   | 'plan_deleted'
   | 'memory_remembered'
-  | 'session_summary_restored'
 
 export type ParsedSystemEvent = {
   summary: string

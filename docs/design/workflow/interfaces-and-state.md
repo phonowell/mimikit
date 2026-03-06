@@ -13,7 +13,6 @@
 - `POST /api/choices/:id/select`
 - `POST /api/restart`
 - `POST /api/reset`
-- `POST /api/reset-with-summary`
 
 ## 静态路由（WebUI 文件访问）
 
@@ -38,7 +37,7 @@
 ## System 气泡可见性规则（WebUI 会话流）
 
 - 判定入口：`src/shared/system-message-visibility.ts`（由 `src/shared/message-visibility.ts#isVisibleToUser` 调用）。
-- 直接对用户有价值的 system 事件默认可见：`startup`、`task_created`、`task_canceled`、`task_completed`、`manager_fallback_reply`、`user_choice`、`user_choice_skipped`、`session_summary_restored`。
+- 直接对用户有价值的 system 事件默认可见：`startup`、`task_created`、`task_canceled`、`task_completed`、`manager_fallback_reply`、`user_choice`、`user_choice_skipped`。
 - 内部编排/调度/控制类事件默认不可见：`manager_round_limit`、`manager_error`、`action_feedback`、`trigger_fire`、`worker_slots_idle`、`worker_slot_freed`、`plan_created`、`plan_updated`、`plan_deleted`。
 - 未识别 system_event 采用保守策略：`visibility=user` 保持可见，`visibility=all` 默认不展示给最终用户。
 
@@ -148,8 +147,7 @@ schema：`src/storage/runtime-snapshot-schema.ts`
 
 ## 重启语义
 
-- `POST /api/restart`、`POST /api/reset`、`POST /api/reset-with-summary` 仅在控制面可执行窗口（manager 未运行且无 pending/running task）时可执行；忙时返回 `409`。
+- `POST /api/restart`、`POST /api/reset` 仅在控制面可执行窗口（manager 未运行且无 pending/running task）时可执行；忙时返回 `409`。
 - 满足控制窗口时上述接口均为“先回包，再异步停机”。
 - 停机阶段会等待 in-flight manager 批次收敛，再持久化 snapshot 并退出。
 - `reset` 会在持久化后清空状态目录并重建。
-- `reset-with-summary` 会先将最近会话生成重启摘要并落盘，再执行与 `reset` 相同的清理流程。

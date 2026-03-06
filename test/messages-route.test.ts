@@ -1,15 +1,13 @@
-import { mkdtemp, readFile } from 'node:fs/promises'
+import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { basename, dirname, join } from 'node:path'
+import { join } from 'node:path'
 
 import fastify from 'fastify'
 import { expect, test, vi } from 'vitest'
 
 import { defaultConfig } from '../src/config.js'
 import { registerApiRoutes } from '../src/http/routes-api.js'
-import type { FocusView } from '../src/orchestrator/read-model/focus-view.js'
-import type { TaskCounts, TaskView } from '../src/orchestrator/read-model/task-view.js'
-import type { PendingUserChoice, TaskPlan, Task } from '../src/types/index.js'
+import type { Task } from '../src/types/index.js'
 import { createOrchestratorStub } from './helpers/orchestrator-stub.js'
 
 const expectArchiveMarkdown = (
@@ -315,142 +313,17 @@ test('reset route rejects when manager or worker is not idle', async () => {
   await app.close()
 })
 
-test('reset-with-summary route stages summary and requests orchestrator exit', async () => {
+test('reset-with-summary route is removed and returns not found', async () => {
   const app = fastify()
-  const { orchestrator, exitRequests } = createOrchestratorStub()
-  const stopAndPersist = vi.fn(async () => undefined)
-  ;(orchestrator as unknown as { stopAndPersist: () => Promise<void> }).stopAndPersist =
-    stopAndPersist
-  ;(
-    orchestrator as unknown as {
-      getChatHistory: (limit?: number) => Promise<
-        Array<{ id: string; role: 'user' | 'agent' | 'system'; text: string }>
-      >
-    }
-  ).getChatHistory = async () => [
-    { id: 'input-1', role: 'user', text: 'Need a concise release checklist.' },
-    { id: 'input-2', role: 'agent', text: 'Drafted checklist with 5 items.' },
-  ]
-  ;(
-    orchestrator as unknown as {
-      getTasks: (limit?: number) => { tasks: TaskView[]; counts: TaskCounts }
-    }
-  ).getTasks = () => ({
-    tasks: [
-      {
-        id: 'task-release-1',
-        kind: 'task',
-        status: 'running',
-        profile: 'worker',
-        focusId: 'focus-release',
-        title: 'Prepare release checklist',
-        createdAt: '2026-03-03T00:00:00.000Z',
-        changeAt: '2026-03-03T00:01:00.000Z',
-      },
-    ],
-    counts: {
-      pending: 1,
-      running: 1,
-      succeeded: 0,
-      failed: 0,
-      canceled: 0,
-    },
-  })
-  ;(
-    orchestrator as unknown as {
-      getPlans: (limit?: number) => { items: TaskPlan[] }
-    }
-  ).getPlans = () => ({
-    items: [
-      {
-        id: 'plan-release-1',
-        prompt: 'Run release checks every idle period',
-        title: 'Release checks',
-        focusId: 'focus-release',
-        profile: 'worker',
-        priority: 'high',
-        source: 'user_request',
-        status: 'active',
-        trigger: {
-          mode: 'on_idle',
-          cooldownMs: 30000,
-        },
-        createdAt: '2026-03-03T00:00:00.000Z',
-        updatedAt: '2026-03-03T00:10:00.000Z',
-        runCount: 1,
-      },
-    ],
-  })
-  ;(
-    orchestrator as unknown as {
-      getFocuses: (limit?: number) => { items: FocusView[] }
-    }
-  ).getFocuses = () => ({
-    items: [
-      {
-        id: 'focus-release',
-        title: 'Release 1.2',
-        status: 'active',
-        isActive: true,
-        updatedAt: '2026-03-03T00:10:00.000Z',
-        lastActivityAt: '2026-03-03T00:10:00.000Z',
-        summary: 'Finalize release quality checks',
-      },
-    ],
-  })
-  ;(
-    orchestrator as unknown as {
-      getPendingUserChoice: () => PendingUserChoice | null
-    }
-  ).getPendingUserChoice = () => ({
-    id: 'choice-release-1',
-    question: 'Ship now?',
-    options: [
-      {
-        id: 'option-ship',
-        label: 'Ship now',
-        reason: 'No blockers',
-      },
-      {
-        id: 'option-wait',
-        label: 'Wait',
-        reason: 'Run one more regression',
-      },
-    ],
-    defaultOptionId: 'option-ship',
-    createdAt: '2026-03-03T00:09:00.000Z',
-    expiresAt: '2026-03-03T00:19:00.000Z',
-    focusId: 'focus-release',
-  })
-  const workDir = await mkdtemp(join(tmpdir(), 'mimikit-reset-summary-route-'))
-  const config = defaultConfig({ workDir })
+  const { orchestrator } = createOrchestratorStub()
+  const config = defaultConfig({ workDir: '.mimikit' })
   registerApiRoutes(app, orchestrator, config)
 
   const response = await app.inject({
     method: 'POST',
     url: '/api/reset-with-summary',
   })
-  expect(response.statusCode).toBe(200)
-  expect(response.json()).toEqual({ ok: true })
-  await new Promise((resolve) => setTimeout(resolve, 180))
 
-  expect(stopAndPersist).toHaveBeenCalledTimes(1)
-  expect(exitRequests).toEqual([
-    { code: 75, reason: 'http_api_reset_with_summary' },
-  ])
-  const pendingPath = join(
-    dirname(workDir),
-    `${basename(workDir)}.pending-summary.json`,
-  )
-  const staged = JSON.parse(await readFile(pendingPath, 'utf8')) as {
-    consumed?: boolean
-    summary?: string
-  }
-  expect(staged.consumed).toBe(false)
-  expect(staged.summary).toContain('Conversation highlights before reset')
-  expect(staged.summary).toContain('Task snapshot before reset')
-  expect(staged.summary).toContain('Plan snapshot before reset')
-  expect(staged.summary).toContain('Focus snapshot before reset')
-  expect(staged.summary).toContain('Pending decision before reset')
+  expect(response.statusCode).toBe(404)
   await app.close()
 })

@@ -55,7 +55,7 @@ pnpm start
 Notes:
 
 - `pnpm start` runs `scripts/start.ts` -> installs deps (`pnpm i`) -> launches `bin/mimikit` / `bin/mimikit.ps1`.
-- Wrapper supports restart loop on exit code `75` (`/api/restart` / `/api/reset*`).
+- Wrapper supports restart loop on exit code `75` (`/api/restart` / `/api/reset`).
 - `config.yaml` is auto-created at repo root from `defaults/config.template.yaml` if missing.
 - Unknown keys in `config.yaml` are ignored; CLI startup prints a warning listing ignored keys.
 

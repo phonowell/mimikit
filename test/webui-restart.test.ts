@@ -194,10 +194,7 @@ const flush = async () => {
   await Promise.resolve()
 }
 
-const createFixture = (
-  idle = true,
-  { includeResetWithSummaryConfirm = true }: { includeResetWithSummaryConfirm?: boolean } = {},
-) => {
+const createFixture = (idle = true) => {
   let idleState = idle
   const restartBtn = null
   const toolsToggleBtn = new FakeElement('Tools')
@@ -209,9 +206,6 @@ const createFixture = (
   const restartConfirmBtn = new FakeElement('Confirm restart')
   const resetDialog = new FakeElement()
   const resetCancelBtn = new FakeElement('Cancel reset')
-  const resetWithSummaryConfirmBtn = includeResetWithSummaryConfirm
-    ? new FakeElement('Confirm summarize reset')
-    : null
   const resetConfirmBtn = new FakeElement('Confirm reset')
   const statusText = new FakeElement()
   const statusDot = new FakeElement()
@@ -240,7 +234,6 @@ const createFixture = (
     restartConfirmBtn,
     resetDialog,
     resetCancelBtn,
-    resetWithSummaryConfirmBtn,
     resetConfirmBtn,
     statusText,
     statusDot,
@@ -258,7 +251,6 @@ const createFixture = (
     restartConfirmBtn,
     resetDialog,
     resetCancelBtn,
-    resetWithSummaryConfirmBtn,
     resetConfirmBtn,
     statusText,
     statusDot,
@@ -312,27 +304,9 @@ test('restart and reset dialogs are isolated', () => {
   }
 })
 
-test('reset dialog still opens when summarize-reset confirm is unavailable', () => {
-  const fixture = createFixture(true, { includeResetWithSummaryConfirm: false })
-  try {
-    fixture.toolsResetBtn.dispatchEvent('click')
-    expect(fixture.resetDialog.open).toBe(true)
-    expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(0)
-  } finally {
-    fixture.dispose()
-  }
-})
-
 test('restart and reset dialog confirm actions call separate endpoints', async () => {
   const calledUrls: string[] = []
-  const runtimeIds = [
-    'runtime-1',
-    'runtime-2',
-    'runtime-3',
-    'runtime-4',
-    'runtime-5',
-    'runtime-6',
-  ]
+  const runtimeIds = ['runtime-1', 'runtime-2', 'runtime-3', 'runtime-4']
   fetchWithTimeoutMock.mockImplementation(async (url) => {
     calledUrls.push(String(url))
     if (url === '/api/status') {
@@ -344,25 +318,16 @@ test('restart and reset dialog confirm actions call separate endpoints', async (
         pendingTasks: 0,
       })
     }
-    if (
-      url === '/api/restart' ||
-      url === '/api/reset' ||
-      url === '/api/reset-with-summary'
-    )
+    if (url === '/api/restart' || url === '/api/reset')
       return createResponse({ ok: true })
     throw new Error(`unexpected url: ${String(url)}`)
   })
 
   const restartFixture = createFixture(true)
-  const summaryResetFixture = createFixture(true)
   const resetFixture = createFixture(true)
   try {
     restartFixture.toolsRestartBtn.dispatchEvent('click')
     restartFixture.restartConfirmBtn.dispatchEvent('click')
-    await flush()
-
-    summaryResetFixture.toolsResetBtn.dispatchEvent('click')
-    summaryResetFixture.resetWithSummaryConfirmBtn.dispatchEvent('click')
     await flush()
 
     resetFixture.toolsResetBtn.dispatchEvent('click')
@@ -370,11 +335,9 @@ test('restart and reset dialog confirm actions call separate endpoints', async (
     await flush()
 
     expect(calledUrls.filter((url) => url === '/api/restart')).toHaveLength(1)
-    expect(calledUrls.filter((url) => url === '/api/reset-with-summary')).toHaveLength(1)
     expect(calledUrls.filter((url) => url === '/api/reset')).toHaveLength(1)
   } finally {
     restartFixture.dispose()
-    summaryResetFixture.dispose()
     resetFixture.dispose()
   }
 })

@@ -14,22 +14,18 @@ const NON_IDLE_BLOCK_REASON =
 const MODE_ENDPOINT = {
   restart: '/api/restart',
   reset: '/api/reset',
-  reset_with_summary: '/api/reset-with-summary',
 }
 const MODE_PROGRESS_LABEL = {
   restart: 'restarting',
   reset: 'resetting',
-  reset_with_summary: 'summarizing and resetting',
 }
 const MODE_FAILURE_LABEL = {
   restart: 'restart failed',
   reset: 'reset failed',
-  reset_with_summary: 'summarize-reset failed',
 }
 const MODE_BLOCKED_LABEL = {
   restart: 'restart blocked',
   reset: 'reset blocked',
-  reset_with_summary: 'summarize-reset blocked',
 }
 
 const normalizeTaskCount = (value) => {
@@ -130,7 +126,6 @@ export function bindRestart({
   restartConfirmBtn,
   resetDialog,
   resetCancelBtn,
-  resetWithSummaryConfirmBtn,
   resetConfirmBtn,
   statusText,
   statusDot,
@@ -188,7 +183,6 @@ export function bindRestart({
     toolsRestartBtn,
     toolsResetBtn,
     restartConfirmBtn,
-    resetWithSummaryConfirmBtn,
     resetConfirmBtn,
   ].forEach(rememberDefaultTitle)
 
@@ -249,15 +243,12 @@ export function bindRestart({
     if (restartCancelBtn) restartCancelBtn.disabled = isBusy
     if (restartConfirmBtn) restartConfirmBtn.disabled = disableActions
     if (resetCancelBtn) resetCancelBtn.disabled = isBusy
-    if (resetWithSummaryConfirmBtn)
-      resetWithSummaryConfirmBtn.disabled = disableActions
     if (resetConfirmBtn) resetConfirmBtn.disabled = disableActions
 
     setBlockedTitle(restartBtn, blockedByIdle)
     setBlockedTitle(toolsRestartBtn, blockedByIdle)
     setBlockedTitle(toolsResetBtn, blockedByIdle)
     setBlockedTitle(restartConfirmBtn, blockedByIdle)
-    setBlockedTitle(resetWithSummaryConfirmBtn, blockedByIdle)
     setBlockedTitle(resetConfirmBtn, blockedByIdle)
     setBlockedTitle(toolsToggleBtn, blockedByIdle)
 
@@ -455,12 +446,6 @@ export function bindRestart({
     void requestRestart('reset')
   }
 
-  const onConfirmResetWithSummary = (event) => {
-    event.preventDefault()
-    if (isBusy) return
-    void requestRestart('reset_with_summary')
-  }
-
   const onToolsToggle = (event) => {
     event.preventDefault()
     if (!toolsEnabled || isBusy) return
@@ -520,11 +505,6 @@ export function bindRestart({
       onClose: onCancelReset,
     })
     if (resetConfirmBtn) resetConfirmBtn.addEventListener('click', onConfirmReset)
-    if (resetWithSummaryConfirmBtn)
-      {resetWithSummaryConfirmBtn.addEventListener(
-        'click',
-        onConfirmResetWithSummary,
-      )}
   } else if (resetOpenBtn) {
     resetOpenBtn.addEventListener('click', onOpenReset)
     unbindResetOpenControl = () => {
@@ -561,11 +541,6 @@ export function bindRestart({
       if (restartConfirmBtn)
         restartConfirmBtn.removeEventListener('click', onConfirmRestart)
       if (resetConfirmBtn) resetConfirmBtn.removeEventListener('click', onConfirmReset)
-      if (resetWithSummaryConfirmBtn)
-        {resetWithSummaryConfirmBtn.removeEventListener(
-          'click',
-          onConfirmResetWithSummary,
-        )}
       if (statusObserver) statusObserver.disconnect()
     },
   }

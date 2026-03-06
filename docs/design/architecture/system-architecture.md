@@ -31,11 +31,10 @@
 1. `hydrateRuntimeState`
 2. `ensureGlobalFocus` + `enforceFocusCapacity`
 3. 写入 startup system message（`Session started.`）
-4. 注入 pending restart summary（若存在）
-5. `enqueuePendingWorkerTasks` + `notifyWorkerLoop`
-6. 启动 `managerLoop`
-7. 启动 `triggerWakeLoop`
-8. 启动 `workerLoop`
+4. `enqueuePendingWorkerTasks` + `notifyWorkerLoop`
+5. 启动 `managerLoop`
+6. 启动 `triggerWakeLoop`
+7. 启动 `workerLoop`
 
 ## 主链路（事件驱动）
 

@@ -38,21 +38,6 @@
   margin-right: auto;
 }
 
-.reset-options {
-  margin: 0;
-  padding-left: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.reset-option-item {
-  margin: 0;
-}
-
 .reset-actions .btn--dialog {
   white-space: nowrap;
 }

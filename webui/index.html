@@ -316,19 +316,8 @@
             <h2 class="reset-title" id="reset-title">Reset Runtime?</h2>
           </header>
           <p class="reset-description" id="reset-description">
-            Choose one reset mode:
+            Reset clears the <code>.mimikit</code> state directory before restarting.
           </p>
-          <ul class="reset-options" aria-label="Reset modes">
-            <li class="reset-option-item">
-              <strong>Reset and Clear State:</strong> clears the <code>.mimikit</code> state
-              directory before restarting.
-            </li>
-            <li class="reset-option-item">
-              <strong>Summarize and Reset:</strong> generates a conversation summary before
-              reset and restores it as a system message after restart. This mode takes
-              longer.
-            </li>
-          </ul>
           <div class="reset-actions" role="group" aria-label="Reset actions">
             <button class="btn btn--md btn--dialog" data-reset-cancel type="button">
               Cancel
@@ -338,14 +327,7 @@
               data-reset-confirm
               type="button"
             >
-              Reset + Clear State
-            </button>
-            <button
-              class="btn btn--md btn--dialog btn--danger"
-              data-reset-with-summary-confirm
-              type="button"
-            >
-              Summarize + Reset
+              Reset
             </button>
           </div>
         </section>

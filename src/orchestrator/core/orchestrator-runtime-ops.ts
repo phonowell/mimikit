@@ -25,7 +25,6 @@ import {
 } from '../read-model/chat-view.js'
 
 import { toUserInputLogMeta } from './orchestrator-helpers.js'
-import { injectPendingRestartSummary } from './restart-summary.js'
 import {
   hydrateRuntimeState,
   persistRuntimeState,
@@ -198,14 +197,6 @@ export const startOrchestratorRuntime = async (
         },
       }),
       createdAt: startedAt,
-      focusId: GLOBAL_FOCUS_ID,
-    }),
-  )
-  await bestEffort('appendHistory: restart_summary_system_message', () =>
-    injectPendingRestartSummary({
-      stateDir: runtime.config.workDir,
-      historyDir: runtime.paths.history,
-      runtimeId: runtime.runtimeId,
       focusId: GLOBAL_FOCUS_ID,
     }),
   )

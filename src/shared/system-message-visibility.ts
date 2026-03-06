@@ -12,7 +12,6 @@ const USER_VALUE_EVENTS = new Set<SystemEventName>([
   'manager_fallback_reply',
   'user_choice',
   'user_choice_skipped',
-  'session_summary_restored',
 ])
 
 const INTERNAL_EVENTS = new Set<SystemEventName>([

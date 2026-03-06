@@ -1,5 +1,4 @@
 import { logSafeError } from '../log/safe.js'
-import { stagePendingRestartSummary } from '../orchestrator/core/restart-summary.js'
 
 import { clearStateDir, parseInputBody } from './helpers.js'
 import { resolveRouteId } from './route-params.js'
@@ -95,7 +94,7 @@ export const registerApiRoutes = (
 
   const rejectWhenBusy = (
     reply: FastifyReply,
-    action: 'restart' | 'reset' | 'reset-with-summary',
+    action: 'restart' | 'reset',
   ): boolean => {
     if (isRuntimeIdleForControlAction()) return false
     reply.code(409).send({
@@ -124,43 +123,6 @@ export const registerApiRoutes = (
     scheduleExit({
       exitReason: 'http_api_reset',
       afterPersist: () => clearStateDirSafely('http: reset'),
-    })
-  })
-
-  app.post('/api/reset-with-summary', async (_request, reply) => {
-    if (rejectWhenBusy(reply, 'reset-with-summary')) return
-
-    try {
-      const status = orchestrator.getStatus()
-      const history = await orchestrator.getChatHistory(100)
-      const tasks = orchestrator.getTasks(200)
-      const plans = orchestrator.getPlans(200)
-      const focuses = orchestrator.getFocuses(200)
-      const pendingChoice = orchestrator.getPendingUserChoice()
-      await stagePendingRestartSummary({
-        stateDir: config.workDir,
-        runtimeId: status.runtimeId,
-        messages: history,
-        tasks: tasks.tasks,
-        taskCounts: tasks.counts,
-        plans: plans.items,
-        focuses: focuses.items,
-        pendingChoice,
-      })
-    } catch (error) {
-      await logSafeError('http: reset-with-summary: stage', error)
-      reply.code(500).send({
-        error:
-          'reset-with-summary failed: unable to stage conversation summary',
-      })
-      return
-    }
-
-    reply.send({ ok: true })
-    scheduleExit({
-      exitReason: 'http_api_reset_with_summary',
-      afterPersist: () =>
-        clearStateDirSafely('http: reset-with-summary: clear_state'),
     })
   })
 }
