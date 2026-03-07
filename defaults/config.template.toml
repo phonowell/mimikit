@@ -40,8 +40,8 @@ enabled = false
 model = "big-pickle"
 # Opencode 能力强度；可选值 low|medium|high；默认 low
 capability = "low"
-# Opencode 计费等级；可选值 free|low|medium|high；默认 free
-billing = "free"
+# Opencode 计费等级；可选值 free|low|medium|high；默认 low
+billing = "low"
 # Opencode 请求代理；空字符串表示直连
 proxy = ""
 
