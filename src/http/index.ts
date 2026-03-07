@@ -31,6 +31,10 @@ export const buildStateTaskMarkdownViewerRedirect = (
   requestUrl: string,
 ): string | undefined => {
   const source = requestUrl.split('#', 1)[0] ?? requestUrl
+  let query = ''
+  const queryIndex = source.indexOf('?')
+  if (queryIndex >= 0) query = source.slice(queryIndex + 1)
+  if (new URLSearchParams(query).get('raw') === '1') return undefined
   const pathname = source.split('?', 1)[0] ?? source
   if (!isStateTaskMarkdownPath(pathname)) return undefined
   return `/archive-viewer.html?src=${encodeURIComponent(source)}`

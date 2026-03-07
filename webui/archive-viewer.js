@@ -5,6 +5,8 @@ const ROOT = window.location.origin
 const TASK_ARCHIVE_API_PATTERN = /^\/api\/tasks\/[^/]+\/archive$/
 const NUMBER_FORMAT = new Intl.NumberFormat('en-US')
 const MARKDOWN_PATH_PATTERN = /\.(md|markdown)$/i
+const RAW_PARAM = 'raw'
+const RAW_PARAM_VALUE = '1'
 
 const stateEl = document.querySelector('[data-state]')
 const titleEl = document.querySelector('[data-title]')
@@ -81,6 +83,14 @@ const showError = (text) => {
 const isAllowedPath = (pathname) =>
   pathname.startsWith('/state-files/') || TASK_ARCHIVE_API_PATTERN.test(pathname)
 
+const withRawSourceParam = (sourceUrl) => {
+  const base = new URL(sourceUrl, ROOT)
+  if (!base.pathname.startsWith('/state-files/')) return sourceUrl
+  if (base.searchParams.get(RAW_PARAM) === RAW_PARAM_VALUE) return sourceUrl
+  base.searchParams.set(RAW_PARAM, RAW_PARAM_VALUE)
+  return `${base.pathname}${base.search}${base.hash}`
+}
+
 const toArchiveViewerMarkdownUrl = (rawHref, sourceUrl) => {
   const href = rawHref?.trim() ?? ''
   if (!href || href.startsWith('#')) return null
@@ -144,7 +154,7 @@ const resolveSourceTarget = () => {
 
 const updateSourceLink = (href) => {
   if (!(sourceEl instanceof HTMLAnchorElement)) return
-  sourceEl.href = href
+  sourceEl.href = withRawSourceParam(href)
   sourceEl.hidden = false
 }
 
@@ -156,7 +166,8 @@ const renderArchive = async () => {
     updateContentTag(buildContentTag(target.contentTag))
     updateSourceLink(target.sourceUrl)
 
-    const response = await fetch(target.sourceUrl, {
+    const fetchSourceUrl = withRawSourceParam(target.sourceUrl)
+    const response = await fetch(fetchSourceUrl, {
       headers: { Accept: 'text/markdown,text/plain;q=0.9,*/*;q=0.1' },
     })
     if (!response.ok) throw new Error(`Load failed: HTTP ${response.status}`)
@@ -165,7 +176,7 @@ const renderArchive = async () => {
     if (!contentEl) throw new Error('Missing content container')
 
     const rendered = renderMarkdown(markdown)
-    rewriteMarkdownLinks(rendered, target.sourceUrl)
+    rewriteMarkdownLinks(rendered, fetchSourceUrl)
     contentEl.replaceChildren(rendered)
     updateStats(markdown)
     showContent()

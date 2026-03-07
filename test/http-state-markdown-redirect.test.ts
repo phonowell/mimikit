@@ -33,3 +33,10 @@ test('buildStateTaskMarkdownViewerRedirect ignores non-task markdown paths', () 
   )
   expect(redirect).toBeUndefined()
 })
+
+test('buildStateTaskMarkdownViewerRedirect skips redirect for explicit raw mode', () => {
+  const redirect = buildStateTaskMarkdownViewerRedirect(
+    '/state-files/tasks/2026-03-06/task-abc123_archive.md?raw=1',
+  )
+  expect(redirect).toBeUndefined()
+})
