@@ -1,24 +1,21 @@
-# Mimikit Bootstrap for LLM
+# Mimikit Bootstrap (Code-Aligned, Low-Noise)
 
-This file is optimized for LLM agents that need to install, configure, and run Mimikit with minimal context.
+Goal: start Mimikit locally and open WebUI at `http://127.0.0.1:8787`.
 
-## Goal
+## Preconditions
 
-Bring up a local Mimikit runtime and open WebUI at `http://127.0.0.1:8787`.
+- Run from repo root.
+- `node` + `pnpm` installed.
+- Network available for dependency install.
+- One usable API credential path is configured.
 
-## Inputs
-
-- Repository root available.
-- `node`, `pnpm`, and network access for dependency install.
-- One valid API key (`OPENAI_API_KEY`) or an active Codex-compatible provider config.
-
-## Step 1: Install
+## 1) Install
 
 ```bash
 pnpm i
 ```
 
-## Step 2: Configure API Credentials
+## 2) Configure credentials
 
 Fast path:
 
@@ -37,14 +34,14 @@ wire_api = "responses"
 env_key = "AICODING_API_KEY"
 ```
 
-API key resolution order in runtime:
+Runtime API key resolution order:
 
 1. Active provider `api_key` in `~/.codex/config.toml`
-2. Active provider env var (`env_key` / `api_key_env`)
+2. Active provider env var from `env_key` / `api_key_env`
 3. `OPENAI_API_KEY`
 4. `~/.codex/auth.json` -> `OPENAI_API_KEY`
 
-## Step 3: Start Runtime
+## 3) Start runtime
 
 Recommended:
 
@@ -52,57 +49,56 @@ Recommended:
 pnpm start
 ```
 
-Notes:
+What this does:
 
-- `pnpm start` runs `scripts/start.ts` -> installs deps (`pnpm i`) -> launches `bin/mimikit` / `bin/mimikit.ps1`.
-- Wrapper supports restart loop on exit code `75` (`/api/restart` / `/api/reset`).
-- `config.toml` is auto-created at repo root from `defaults/config.template.toml` if missing.
-- Unknown keys in `config.toml` are ignored; CLI startup prints a warning listing ignored keys.
+- Runs `scripts/start.ts`.
+- Ensures dependencies (`pnpm i`) before launch.
+- Starts wrapper: `bin/mimikit` (Unix) or `bin/mimikit.ps1` (Windows).
+- Restarts on exit code `75` (`POST /api/restart` and `POST /api/reset` use this).
+- Auto-creates repo-root `config.toml` from `defaults/config.template.toml` when missing.
+- Unknown keys in `config.toml` are ignored with a startup warning.
 
-Optional direct start (skip wrapper):
+Direct start (no wrapper/restart loop):
 
 ```bash
 tsx src/cli/index.ts --port 8787 --work-dir .mimikit
 ```
 
-## Step 4: Verify
+## 4) Verify
 
-WebUI route responds:
+WebUI:
 
 ```bash
 curl -sS -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8787/
 ```
 
-Expected: `200`.
+Expected: `200`
 
-Status API responds:
+Runtime status:
 
 ```bash
 curl -sS http://127.0.0.1:8787/api/status
 ```
 
-Expected: JSON with fields like `runtimeId`.
+Expected: JSON with fields including:
+`ok`, `runtimeId`, `agentStatus`, `activeTasks`, `pendingTasks`, `pendingInputs`, `managerRunning`, `maxWorkers`.
 
-SSE endpoint emits snapshot:
+SSE stream:
 
 ```bash
 curl -sS -N http://127.0.0.1:8787/api/events | head -n 2
 ```
 
-Expected first line contains `event: snapshot`.
+Expected first event line: `event: snapshot`
 
-## Optional: Override Models and Reasoning
+## 5) Minimal config and env overrides
 
-In `config.toml`:
+`config.toml` keys (minimum useful set):
 
 ```toml
 [manager]
 model = "gpt-5.2"
 modelReasoningEffort = "medium"
-
-# baseUrl = "https://your-manager-provider.example.com/v1/responses"
-# apiKey = "${MANAGER_API_KEY}"
-# proxy = "http://127.0.0.1:7897"
 
 [worker]
 maxConcurrent = 3
@@ -114,20 +110,18 @@ model = "gpt-5.3-codex"
 modelReasoningEffort = "high"
 capability = "high"
 billing = "medium"
-# proxy = "http://127.0.0.1:7897"
 
 [opencode]
 enabled = false
 model = "big-pickle"
 capability = "low"
 billing = "free"
-# proxy = "http://127.0.0.1:7897"
 
 [webui]
 enabled = true
 ```
 
-Env overrides:
+Main env overrides:
 
 ```bash
 export MIMIKIT_MODEL=gpt-5.2
@@ -146,56 +140,18 @@ export MIMIKIT_OPENCODE_ENABLED=false
 export MIMIKIT_WEBUI_ENABLED=true
 ```
 
-Precedence: role-specific env (`MIMIKIT_MANAGER_*`, `MIMIKIT_CODEX_*`, `MIMIKIT_OPENCODE_*`) overrides global env.
+Precedence: role-specific env (`MIMIKIT_MANAGER_*`, `MIMIKIT_CODEX_*`, `MIMIKIT_OPENCODE_*`) overrides global env (`MIMIKIT_*`).
 
-## Telegram + Proxy Bring-up Record (2026-03-06)
+## Failure triage
 
-Use this sequence when local network needs a proxy to reach Telegram:
+- `OPENAI_API_KEY is missing`: credentials not resolved and provider requires auth.
+- `[cli] instance lock exists at .../.mimikit/.instance`: another process already uses the same `--work-dir`.
+- `[cli] port 8787 is in use, fallback to ...`: CLI picks first free port in `[8787, 8807]`.
+- `[config] invalid toml defaults`: invalid `config.toml` field values/types.
 
-1. Configure `config.toml`:
+## Done criteria
 
-```toml
-[telegram]
-enabled = true
-botToken = "<your_bot_token>"
-chatId = "<your_chat_id>"
-apiRoot = "https://api.telegram.org"
-proxy = "http://127.0.0.1:7897"
-```
-
-2. Validate bot credentials through proxy:
-
-```bash
-HTTPS_PROXY=http://127.0.0.1:7897 \
-HTTP_PROXY=http://127.0.0.1:7897 \
-curl -s "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getMe"
-```
-
-3. Get `chat_id`:
-
-```bash
-HTTPS_PROXY=http://127.0.0.1:7897 \
-HTTP_PROXY=http://127.0.0.1:7897 \
-curl -s "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates" \
-  | jq -r '.result | last | (.message.chat.id // .channel_post.chat.id // .my_chat_member.chat.id)'
-```
-
-4. Start runtime and verify in Telegram private chat:
-   - `/mmk help` should return command list.
-   - `/mmk restart` should schedule runtime restart.
-   - send normal text and confirm inbound appears in WebUI and manager reply is sent back to Telegram.
-   (`webui.enabled=true` and `telegram.enabled=true` are supported together; `/mmk` does not apply to WebUI input.)
-
-## Failure Triage
-
-- `OPENAI_API_KEY is missing`: missing credentials and provider requires auth.
-- `[cli] instance lock exists at .../.mimikit/.instance`: another process is running on same `--work-dir`.
-- `[cli] port 8787 is in use, fallback to ...`: CLI auto-selects first free port in `[8787, 8807]`.
-- `[config] invalid toml defaults`: fix invalid fields in repo-root `config.toml`.
-
-## Done Criteria
-
-- Runtime keeps running (no immediate startup crash).
+- Process stays up after startup.
 - `GET /` returns `200`.
 - `GET /api/status` returns JSON.
 - `GET /api/events` emits `event: snapshot`.
