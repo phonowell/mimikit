@@ -2,6 +2,7 @@ import type { RuntimeState, UiWakeKind } from './runtime-state.js'
 
 const MAX_WAIT_MS = 24 * 60 * 60 * 1_000
 const MAX_UI_WAKE_EVENTS = 64
+const workerSlotFreedSignals = new WeakSet<RuntimeState>()
 
 const abortController = (controller: AbortController): void => {
   if (!controller.signal.aborted) controller.abort()
@@ -150,3 +151,14 @@ export const waitForWorkerLoopSignal = (
     signal: runtime.workerSignalController.signal,
     timeoutMs,
   })
+
+export const markWorkerSlotFreedSignal = (runtime: RuntimeState): void => {
+  workerSlotFreedSignals.add(runtime)
+}
+
+export const hasWorkerSlotFreedSignal = (runtime: RuntimeState): boolean =>
+  workerSlotFreedSignals.has(runtime)
+
+export const clearWorkerSlotFreedSignal = (runtime: RuntimeState): void => {
+  workerSlotFreedSignals.delete(runtime)
+}

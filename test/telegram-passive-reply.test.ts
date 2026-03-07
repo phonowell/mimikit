@@ -25,6 +25,7 @@ const createRuntime = async (): Promise<RuntimeState> => {
   config.telegram.botToken = 'bot-token'
   config.telegram.chatId = 'fallback-chat-id'
   config.telegram.apiRoot = 'https://api.telegram.org'
+  config.telegram.proxy = ''
   const queue = new PQueue({ concurrency: 1 })
 
   return {

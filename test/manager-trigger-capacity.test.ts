@@ -9,6 +9,7 @@ import { buildPaths } from '../src/fs/paths.js'
 import { triggerWakeLoop } from '../src/manager/loop-trigger.js'
 import { triggerOnWorkerSlotFreedPlans } from '../src/manager/loop-trigger-plans.js'
 import { hasFreeWorkerSlot } from '../src/manager/loop-trigger-shared.js'
+import { markWorkerSlotFreedSignal } from '../src/orchestrator/core/signals.js'
 
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
 import type { TaskPlan } from '../src/types/index.js'
@@ -291,6 +292,29 @@ test('triggerWakeLoop emits worker_slot_freed on full-to-free transition only on
     )
     await new Promise<void>((resolve) => setTimeout(resolve, 1_300))
     expect(countSystemEvent(runtime, 'worker_slot_freed')).toBe(1)
+  } finally {
+    runtime.stopped = true
+    await loopPromise
+  }
+})
+
+test('triggerWakeLoop consumes explicit slot-freed signal when slot remains available', async () => {
+  const runtime = await createRuntime({ maxConcurrent: 1 })
+  runtime.taskPlans.push(createPlan('plan-capacity', { mode: 'on_worker_slot_freed' }))
+  runtime.runningControllers.set('task-busy', new AbortController())
+
+  const loopPromise = triggerWakeLoop(runtime)
+  try {
+    await new Promise<void>((resolve) => setTimeout(resolve, 1_200))
+    expect(runtime.taskPlans[0]?.runCount).toBe(0)
+
+    runtime.runningControllers.clear()
+    markWorkerSlotFreedSignal(runtime)
+    runtime.lastWorkerActivityAtMs = Date.now()
+
+    await waitFor(() => (runtime.taskPlans[0]?.runCount ?? 0) >= 1, 4_000)
+    expect(runtime.taskPlans[0]?.runCount).toBe(1)
+    expect(countSystemEvent(runtime, 'worker_slot_freed')).toBe(0)
   } finally {
     runtime.stopped = true
     await loopPromise

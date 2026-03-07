@@ -2,6 +2,8 @@ import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import {
+  clearWorkerSlotFreedSignal,
+  hasWorkerSlotFreedSignal,
   notifyManagerLoop,
   notifyUiSignal,
 } from '../orchestrator/core/signals.js'
@@ -53,6 +55,9 @@ export const triggerWakeLoop = async (runtime: RuntimeState): Promise<void> => {
         if (freeWorkerSlot) workerSlotEventPending = true
       }
 
+      if (hasWorkerSlotFreedSignal(runtime) && freeWorkerSlot)
+        workerSlotEventPending = true
+
       if (
         workerSlotEventPending &&
         freeWorkerSlot &&
@@ -88,6 +93,7 @@ export const triggerWakeLoop = async (runtime: RuntimeState): Promise<void> => {
         }
 
         workerSlotEventPending = false
+        clearWorkerSlotFreedSignal(runtime)
         lastWorkerSlotEventAtMs = nowMs
       }
 

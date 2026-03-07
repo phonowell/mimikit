@@ -2,6 +2,8 @@ import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import {
+  markWorkerSlotFreedSignal,
+  notifyManagerLoop,
   notifyUiSignal,
   notifyWorkerLoop,
   waitForWorkerLoopSignal,
@@ -118,8 +120,12 @@ const runQueuedWorker = async (
   try {
     await runTask(runtime, task, controller)
   } finally {
+    const maxSlots = Math.max(1, runtime.config.worker.maxConcurrent)
+    const wasFull = runtime.runningControllers.size >= maxSlots
     clearTaskLiveOutput(runtime, task.id)
     runtime.runningControllers.delete(task.id)
+    if (wasFull) markWorkerSlotFreedSignal(runtime)
+    notifyManagerLoop(runtime)
     await bestEffort('persistRuntimeState: worker_end', () =>
       persistRuntimeState(runtime),
     )
