@@ -2,6 +2,7 @@ import { appendActionFeedbackSystemMessage } from '../history/manager-events.js'
 import { appendLog } from '../log/append.js'
 import { resolveScheduleNowIso } from '../shared/time.js'
 
+import { managerActionCliLogger } from './action-cli-log.js'
 import { collectManagerActionFeedback } from './action-feedback-collect.js'
 import {
   buildQueryContextLookupKey,
@@ -29,6 +30,13 @@ const appendRoundActionFeedback = async (params: {
 }): Promise<void> => {
   const { actionFeedback } = params
   if (!actionFeedback || actionFeedback.length === 0) return
+  for (const [index, item] of actionFeedback.entries()) {
+    managerActionCliLogger.logFeedback({
+      item,
+      index: index + 1,
+      total: actionFeedback.length,
+    })
+  }
   await appendLog(params.runtime.paths.log, {
     event: 'manager_action_feedback',
     count: actionFeedback.length,

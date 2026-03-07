@@ -24,10 +24,3 @@
   justify-content: flex-end;
   gap: 3px;
 }
-
-.message .message-retry-hint {
-  display: block;
-  margin-top: 8px;
-  color: var(--muted-contrast, var(--muted));
-  font-size: 11px;
-}

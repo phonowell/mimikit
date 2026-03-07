@@ -228,10 +228,10 @@ const runMemoryRefreshDrain = async (runtime: RuntimeState): Promise<void> => {
   const state = runtime.memoryRefresh
   try {
     for (;;) {
-      if (!shouldTriggerMemoryRefresh(runtime)) break
-      await runMemoryRefreshOnce(runtime)
-      if (!state.pending) break
+      const runFromPending = state.pending
+      if (!runFromPending && !shouldTriggerMemoryRefresh(runtime)) break
       state.pending = false
+      await runMemoryRefreshOnce(runtime)
     }
   } catch (error) {
     await bestEffort('appendLog: memory_refresh_failed', () =>
@@ -243,8 +243,7 @@ const runMemoryRefreshDrain = async (runtime: RuntimeState): Promise<void> => {
     )
   } finally {
     state.running = false
-    if (state.pending && shouldTriggerMemoryRefresh(runtime)) {
-      state.pending = false
+    if (state.pending) {
       requestMemoryRefresh(runtime)
       return
     }
@@ -253,12 +252,12 @@ const runMemoryRefreshDrain = async (runtime: RuntimeState): Promise<void> => {
 }
 
 export const requestMemoryRefresh = (runtime: RuntimeState): void => {
-  if (!shouldTriggerMemoryRefresh(runtime)) return
   const state = runtime.memoryRefresh
   if (state.running) {
     state.pending = true
     return
   }
+  if (!shouldTriggerMemoryRefresh(runtime) && !state.pending) return
   state.running = true
   state.pending = false
   void runMemoryRefreshDrain(runtime)

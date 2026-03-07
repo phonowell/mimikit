@@ -11,17 +11,17 @@ import { isRecord } from '../value.js'
 
 const MESSAGE_LIMIT = 50
 
-const findNewManagerFallbackMessage = (messages, enterMessageIds) => {
-  if (!enterMessageIds || enterMessageIds.size === 0) return null
+const hasNewManagerFallbackMessage = (messages, enterMessageIds) => {
+  if (!enterMessageIds || enterMessageIds.size === 0) return false
   for (const message of messages) {
     if (!message?.id || !enterMessageIds.has(message.id)) continue
     if (
       message.role === 'system' &&
       message.systemEventName === 'manager_fallback_reply'
     )
-      return message
+      return true
   }
-  return null
+  return false
 }
 
 const findNewAgentMessages = (messages, enterMessageIds) => {
@@ -66,31 +66,7 @@ export const createPayloadController = ({
     const changed = messageChanged || loadingChanged
     if (messageChanged || loadingChanged) {
       const enterMessageIds = collectNewMessageIds(messageState, messages)
-      const fallbackMessage = findNewManagerFallbackMessage(
-        messages,
-        enterMessageIds,
-      )
-      if (fallbackMessage) {
-        const payload = fallbackMessage.systemEventPayload ?? {}
-        console.warn('[webui] manager fallback received', {
-          messageId: fallbackMessage.id,
-          autoRetryAttempts:
-            typeof payload.auto_retry_attempts === 'number'
-              ? payload.auto_retry_attempts
-              : 0,
-          autoRetryMaxAttempts:
-            typeof payload.auto_retry_max_attempts === 'number'
-              ? payload.auto_retry_max_attempts
-              : 0,
-          autoRetryState:
-            typeof payload.auto_retry_state === 'string'
-              ? payload.auto_retry_state
-              : 'unknown',
-          autoRetryStrategy:
-            typeof payload.auto_retry_strategy === 'string'
-              ? payload.auto_retry_strategy
-              : 'unspecified',
-        })
+      if (hasNewManagerFallbackMessage(messages, enterMessageIds)) {
         messageState.awaitingReply = false
         loading.setLoading(false)
       }

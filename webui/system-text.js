@@ -44,8 +44,6 @@ export const UI_TEXT = Object.freeze({
   deleteConfirmPrompt: 'Delete this message?',
   deleteTaskConfirmPrompt: 'Delete this task and all related history?',
   sendFailed: 'Send failed',
-  retryRequestAria: 'Retry failed request',
-  retryRequestMissingSource: 'Retry failed: source request not found',
   choiceDefaultIn: 'Default in',
   choiceDefaultOption: 'Default:',
   choiceDefaultBadge: 'Default',

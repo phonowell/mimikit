@@ -11,8 +11,6 @@ export const createMessageRendering = (params) => {
     loading,
     quote,
     onDelete,
-    onRetryManagerFallback,
-    isRetryPending,
     isDeleteMode,
   } = params
   const removeEmpty = () => {}
@@ -34,8 +32,6 @@ export const createMessageRendering = (params) => {
       enterMessageIds,
       onQuote: quote.set,
       onDelete,
-      onRetryManagerFallback,
-      isRetryPending,
       isDeleteMode:
         typeof isDeleteMode === 'function' ? isDeleteMode() : Boolean(isDeleteMode),
     })

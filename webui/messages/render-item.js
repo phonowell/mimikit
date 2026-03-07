@@ -1,8 +1,4 @@
 import { createQuoteBlock, isAgentMessage } from './render-shared.js'
-import {
-  formatManagerFallbackRetryHint,
-  shouldShowManagerFallbackRetry,
-} from './fallback-retry.js'
 import { UI_TEXT } from '../system-text.js'
 
 export const renderMessage = (params, msg) => {
@@ -15,8 +11,6 @@ export const renderMessage = (params, msg) => {
     enterMessageIds,
     onQuote,
     onDelete,
-    onRetryManagerFallback,
-    isRetryPending,
     messageLookup,
     appendTarget,
     isDeleteMode,
@@ -36,11 +30,6 @@ export const renderMessage = (params, msg) => {
   )
   const canDelete = Boolean(
     isDeleteMode && onDelete && msg?.id && !isSystemMessage,
-  )
-  const canRetryManagerFallback = Boolean(
-    !isDeleteMode &&
-      onRetryManagerFallback &&
-      shouldShowManagerFallbackRetry(msg),
   )
   if (canQuote) {
     item.classList.add('message--quoteable')
@@ -75,16 +64,6 @@ export const renderMessage = (params, msg) => {
   } else content.textContent = text
 
   article.appendChild(content)
-  const retryHint = canRetryManagerFallback
-    ? formatManagerFallbackRetryHint(msg)
-    : ''
-  if (retryHint) {
-    const hint = document.createElement('small')
-    hint.className = 'message-retry-hint'
-    hint.textContent = retryHint
-    article.appendChild(hint)
-  }
-
   const usageDisplay = isAgentMessage(msg) ? formatUsage(msg.usage) : null
   const usageText = usageDisplay?.text ?? ''
   const elapsedText = isAgentMessage(msg) ? formatElapsedLabel(msg.elapsedMs) : ''
@@ -126,29 +105,6 @@ export const renderMessage = (params, msg) => {
     deleteBtn.addEventListener('click', () => onDelete(msg))
   }
 
-  let retryBtn = null
-  if (canRetryManagerFallback) {
-    retryBtn = document.createElement('button')
-    retryBtn.type = 'button'
-    retryBtn.className = 'btn btn--xs message-retry-btn'
-    retryBtn.textContent = 'Retry'
-    retryBtn.title = UI_TEXT.retryRequestAria
-    retryBtn.setAttribute('aria-label', UI_TEXT.retryRequestAria)
-    if (typeof isRetryPending === 'function')
-      retryBtn.disabled = Boolean(isRetryPending(msg))
-
-    retryBtn.addEventListener('click', async () => {
-      if (retryBtn?.disabled) return
-      retryBtn.disabled = true
-      try {
-        await onRetryManagerFallback(msg)
-      } finally {
-        if (typeof isRetryPending === 'function')
-          retryBtn.disabled = Boolean(isRetryPending(msg))
-      }
-    })
-  }
-
   if (!isSystemMessage) {
     const timeDisplay = formatDisplayTimeWithFull(msg.createdAt)
     if (timeDisplay.displayText) {
@@ -164,7 +120,6 @@ export const renderMessage = (params, msg) => {
   if (meta.childElementCount > 0) article.appendChild(meta)
 
   item.appendChild(article)
-  if (retryBtn) item.appendChild(retryBtn)
   if (quoteBtn) item.appendChild(quoteBtn)
   if (deleteBtn) item.appendChild(deleteBtn)
   const target = appendTarget ?? messagesEl

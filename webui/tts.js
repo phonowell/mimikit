@@ -1,8 +1,11 @@
+import { renderMarkdown } from './markdown.js'
+import { createTtsPlayer } from './tts-player.js'
+import { resolveLatestSpeakText } from './tts-text.js'
+import { resolvePreferredTtsVoice } from './tts-voice.js'
+
 const TTS_STORAGE_KEY = 'mimikit-webui-tts-enabled'
 const TTS_STORAGE_ENABLED = '1'
 const TTS_STORAGE_DISABLED = '0'
-const MAX_SPEAK_CHARS = 2000
-
 const TTS_LABEL_ENABLED = 'Voice replies: on'
 const TTS_LABEL_DISABLED = 'Voice replies: off'
 const TTS_LABEL_UNAVAILABLE = 'Voice replies: unavailable'
@@ -56,16 +59,6 @@ const closeToolsMenu = (toolsToggleBtn) => {
   else toolsToggleBtn.setAttribute('aria-expanded', 'false')
 }
 
-const toSpeakText = (value) => {
-  if (typeof value !== 'string') return ''
-  const withoutCodeBlocks = value.replace(/```[\s\S]*?```/g, ' ')
-  const withoutInlineCode = withoutCodeBlocks.replace(/`([^`]+)`/g, '$1')
-  const compact = withoutInlineCode.replace(/\s+/g, ' ').trim()
-  if (!compact) return ''
-  if (compact.length <= MAX_SPEAK_CHARS) return compact
-  return `${compact.slice(0, MAX_SPEAK_CHARS)}...`
-}
-
 const isSpeechSupported = () =>
   typeof window !== 'undefined' &&
   typeof window.speechSynthesis !== 'undefined' &&
@@ -82,9 +75,22 @@ export const bindTts = ({ toolsTtsBtn, toolsToggleBtn } = {}) => {
 
   const supported = isSpeechSupported()
   let enabled = supported && readStoredEnabled()
-  let speaking = false
-  let queue = []
-  let currentUtterance = null
+  const player = createTtsPlayer({
+    speechSynthesis: supported ? window.speechSynthesis : undefined,
+    SpeechSynthesisUtterance: supported
+      ? window.SpeechSynthesisUtterance
+      : undefined,
+    resolveVoice: ({ utterance, speechSynthesis }) => {
+      if (utterance?.voice) return utterance.voice
+      return resolvePreferredTtsVoice({
+        speechSynthesis,
+        userAgent: window.navigator?.userAgent ?? '',
+      })
+    },
+    onSpeakError: (error) => {
+      console.warn('[webui] tts speak failed', error)
+    },
+  })
 
   const updateButton = () => {
     if (!supported) {
@@ -104,57 +110,18 @@ export const bindTts = ({ toolsTtsBtn, toolsToggleBtn } = {}) => {
     toolsTtsBtn.setAttribute('aria-checked', enabled ? 'true' : 'false')
   }
 
-  const playNext = () => {
-    if (!supported || !enabled || speaking) return
-    const nextText = queue.shift()
-    if (!nextText) return
-
-    speaking = true
-    const utterance = new window.SpeechSynthesisUtterance(nextText)
-    currentUtterance = utterance
-
-    utterance.onend = () => {
-      speaking = false
-      currentUtterance = null
-      playNext()
-    }
-
-    utterance.onerror = (event) => {
-      console.warn('[webui] tts speak failed', event?.error ?? 'unknown')
-      speaking = false
-      currentUtterance = null
-      playNext()
-    }
-
-    try {
-      window.speechSynthesis.speak(utterance)
-    } catch (error) {
-      console.warn('[webui] tts speak failed', error)
-      speaking = false
-      currentUtterance = null
-      playNext()
-    }
-  }
-
-  const stopAll = () => {
-    queue = []
-    speaking = false
-    currentUtterance = null
-    if (supported) window.speechSynthesis.cancel()
-  }
+  const stopAll = () => player.stopAll()
 
   const speakMessages = (messages) => {
     if (!supported || !enabled) return
-    const items = Array.isArray(messages) ? messages : []
-    if (items.length === 0) return
-
-    for (const message of items) {
-      const text = toSpeakText(message?.text)
-      if (!text) continue
-      queue.push(text)
-    }
-
-    if (!currentUtterance) playNext()
+    const latestText = resolveLatestSpeakText(messages, {
+      renderMarkdown,
+      documentRef: typeof document === 'undefined' ? null : document,
+      DocumentFragmentCtor:
+        typeof DocumentFragment === 'undefined' ? null : DocumentFragment,
+    })
+    if (!latestText) return
+    player.speakLatest(latestText)
   }
 
   const toggle = () => {
@@ -162,7 +129,6 @@ export const bindTts = ({ toolsTtsBtn, toolsToggleBtn } = {}) => {
     enabled = !enabled
     writeStoredEnabled(enabled)
     if (!enabled) stopAll()
-    else playNext()
     updateButton()
   }
 
