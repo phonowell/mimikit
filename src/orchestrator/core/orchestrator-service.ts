@@ -6,6 +6,7 @@ import { bestEffort, setDefaultLogPath } from '../../log/safe.js'
 import { createDefaultMemoryRefreshState } from '../../memory/refresh/state.js'
 import { newId } from '../../shared/utils.js'
 import { cancelTask } from '../../worker/cancel-task.js'
+import { deleteTask } from '../../worker/delete-task.js'
 import { getTaskLiveOutputById } from '../../worker/live-output.js'
 import { pauseTask } from '../../worker/pause-task.js'
 import { resumeTask } from '../../worker/resume-task.js'
@@ -256,6 +257,10 @@ export class Orchestrator {
 
   cancelTask(taskId: string, meta?: { source?: string; reason?: string }) {
     return cancelTask(this.runtime, taskId, meta)
+  }
+
+  deleteTask(taskId: string, meta?: { source?: string; reason?: string }) {
+    return deleteTask(this.runtime, taskId, meta)
   }
 
   pauseTask(taskId: string, meta?: { source?: string; reason?: string }) {

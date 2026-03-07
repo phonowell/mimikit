@@ -32,12 +32,14 @@ const closeAllTaskActions = (tasksList) => {
 
 const TASK_ACTION_ENDPOINT = Object.freeze({
   cancel: 'cancel',
+  delete: 'delete',
   pause: 'pause',
   resume: 'resume',
 })
 
 const TASK_ACTION_BUSY_TEXT = Object.freeze({
   cancel: UI_TEXT.cancelingTask,
+  delete: UI_TEXT.deletingTask,
   pause: UI_TEXT.pausingTask,
   resume: UI_TEXT.resumingTask,
 })
@@ -46,7 +48,7 @@ const requestTaskAction = async (taskId, action, button) => {
   if (!taskId) return
   const endpoint = TASK_ACTION_ENDPOINT[action]
   if (!endpoint) return
-  const originalText = button?.textContent || 'cancel'
+  const originalText = button?.textContent || action
   const originalLabel = button?.getAttribute('aria-label') || ''
   const originalTitle = button?.getAttribute('title') || ''
   const busyText = TASK_ACTION_BUSY_TEXT[action] || 'Working'
@@ -87,8 +89,24 @@ const requestTaskAction = async (taskId, action, button) => {
   }
 }
 
-export const bindTaskInteractions = (tasksList) => {
+export const bindTaskInteractions = (tasksList, options = {}) => {
   if (!tasksList) return () => {}
+  const taskDelete = options.taskDeleteController
+
+  const requestTaskDeleteConfirm = async (taskId) => {
+    if (taskDelete?.requestConfirmTaskDelete)
+      return taskDelete.requestConfirmTaskDelete(taskId)
+    return (
+      typeof window === 'undefined' ||
+      typeof window.confirm !== 'function' ||
+      window.confirm(UI_TEXT.deleteTaskConfirmPrompt)
+    )
+  }
+
+  const runTaskDeleteRequest = async (run) => {
+    if (taskDelete?.wrapDeleteRequest) return taskDelete.wrapDeleteRequest(run)
+    return run()
+  }
 
   const onListClick = (event) => {
     const target = event.target
@@ -114,6 +132,14 @@ export const bindTaskInteractions = (tasksList) => {
       if (button.disabled) return
       const action = button.getAttribute('data-task-action-inline') || ''
       const taskId = button.getAttribute('data-task-id') || ''
+      if (action === 'delete') {
+        void (async () => {
+          const confirmed = await requestTaskDeleteConfirm(taskId)
+          if (!confirmed) return
+          await runTaskDeleteRequest(() => requestTaskAction(taskId, action, button))
+        })()
+        return
+      }
       void requestTaskAction(taskId, action, button)
       return
     }

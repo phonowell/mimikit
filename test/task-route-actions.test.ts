@@ -5,11 +5,11 @@ import { defaultConfig } from '../src/config.js'
 import { registerApiRoutes } from '../src/http/routes-api.js'
 import { createOrchestratorStub } from './helpers/orchestrator-stub.js'
 
-type ActionName = 'cancel' | 'pause' | 'resume'
-type ActionMethod = 'cancelTask' | 'pauseTask' | 'resumeTask'
+type ActionName = 'cancel' | 'delete' | 'pause' | 'resume'
+type ActionMethod = 'cancelTask' | 'deleteTask' | 'pauseTask' | 'resumeTask'
 
-type SuccessStatus = 'canceled' | 'paused' | 'pending'
-type ErrorStatus = 'not_found' | 'already_paused'
+type SuccessStatus = 'canceled' | 'deleted' | 'paused' | 'pending'
+type ErrorStatus = 'not_found' | 'already_paused' | 'active_task'
 
 type ActionSuccessCase = {
   action: ActionName
@@ -49,6 +49,13 @@ const successCases: ActionSuccessCase[] = [
     changeAt: '2026-03-06T05:00:00.000Z',
   },
   {
+    action: 'delete',
+    method: 'deleteTask',
+    taskId: 'task-user-delete',
+    status: 'deleted',
+    changeAt: '2026-03-06T06:20:00.000Z',
+  },
+  {
     action: 'pause',
     method: 'pauseTask',
     taskId: 'task-user-pause',
@@ -77,6 +84,13 @@ const errorCases: ActionErrorCase[] = [
     method: 'pauseTask',
     taskId: 'task-user-paused',
     status: 'already_paused',
+    statusCode: 409,
+  },
+  {
+    action: 'delete',
+    method: 'deleteTask',
+    taskId: 'task-user-active',
+    status: 'active_task',
     statusCode: 409,
   },
 ]
@@ -140,4 +154,34 @@ test('task action routes keep id/status in error payload', async () => {
     expect(actionHandler).toHaveBeenCalledWith(item.taskId, { source: 'user' })
     await app.close()
   }
+})
+
+test('task delete route returns active_task as conflict', async () => {
+  const app = fastify()
+  const { orchestrator } = createOrchestratorStub()
+  const actionHandler = vi.fn(async () => ({
+    ok: false as const,
+    id: 'task-user-active-delete',
+    status: 'active_task' as const,
+  }))
+  bindActionHandler(orchestrator, 'deleteTask', actionHandler)
+  const config = defaultConfig({ workDir: '.mimikit' })
+  registerApiRoutes(app, orchestrator, config)
+
+  const response = await app.inject({
+    method: 'POST',
+    url: '/api/tasks/task-user-active-delete/delete',
+  })
+
+  expect(response.statusCode).toBe(409)
+  expect(response.json()).toEqual({
+    ok: false,
+    id: 'task-user-active-delete',
+    status: 'active_task',
+    error: 'active_task',
+  })
+  expect(actionHandler).toHaveBeenCalledWith('task-user-active-delete', {
+    source: 'user',
+  })
+  await app.close()
 })

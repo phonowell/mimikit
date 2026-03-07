@@ -367,6 +367,41 @@
           </div>
         </section>
       </dialog>
+
+      <dialog
+        class="task-delete-dialog"
+        data-task-delete-dialog
+        id="task-delete-dialog"
+        aria-labelledby="task-delete-title"
+        aria-describedby="task-delete-description"
+      >
+        <section class="task-delete-panel">
+          <header class="task-delete-header">
+            <h2 class="task-delete-title" id="task-delete-title">
+              Delete Task?
+            </h2>
+          </header>
+          <p class="task-delete-description" id="task-delete-description">
+            This removes task history and archive files permanently.
+          </p>
+          <div class="task-delete-actions" role="group" aria-label="Delete task">
+            <button
+              class="btn btn--md btn--dialog"
+              data-task-delete-cancel
+              type="button"
+            >
+              Cancel
+            </button>
+            <button
+              class="btn btn--md btn--dialog btn--danger"
+              data-task-delete-confirm
+              type="button"
+            >
+              Delete
+            </button>
+          </div>
+        </section>
+      </dialog>
     </main>
 
     <script type="module" src="app.js"></script>

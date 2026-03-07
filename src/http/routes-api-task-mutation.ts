@@ -12,6 +12,7 @@ type TaskMutationResult = {
 const resolveTaskMutationErrorCode = (status: string): number => {
   if (status === 'not_found') return 404
   if (status === 'invalid') return 400
+  if (status === 'active_task') return 409
   return 409
 }
 

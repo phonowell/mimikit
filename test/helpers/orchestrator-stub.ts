@@ -52,6 +52,11 @@ export const createOrchestratorStub = () => {
       id: taskId,
       status: 'not_found' as const,
     }),
+    deleteTask: async (taskId: string) => ({
+      ok: false,
+      id: taskId,
+      status: 'not_found' as const,
+    }),
     pauseTask: async (taskId: string) => ({
       ok: false,
       id: taskId,

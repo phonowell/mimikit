@@ -28,7 +28,8 @@ main[data-app] {
 .focuses-dialog,
 .restart-dialog,
 .reset-dialog,
-.message-delete-dialog {
+.message-delete-dialog,
+.task-delete-dialog {
   border: 0;
   padding: 12px;
   margin: auto;
@@ -47,7 +48,8 @@ main[data-app] {
 .focuses-dialog[open],
 .restart-dialog[open],
 .reset-dialog[open],
-.message-delete-dialog[open] {
+.message-delete-dialog[open],
+.task-delete-dialog[open] {
   animation: dialog-in 160ms ease-out;
 }
 
@@ -56,7 +58,8 @@ main[data-app] {
 .focuses-dialog.is-closing,
 .restart-dialog.is-closing,
 .reset-dialog.is-closing,
-.message-delete-dialog.is-closing {
+.message-delete-dialog.is-closing,
+.task-delete-dialog.is-closing {
   animation: dialog-out 140ms ease-in forwards;
   pointer-events: none;
 }
@@ -66,7 +69,8 @@ main[data-app] {
 .focuses-dialog:not([open]),
 .restart-dialog:not([open]),
 .reset-dialog:not([open]),
-.message-delete-dialog:not([open]) {
+.message-delete-dialog:not([open]),
+.task-delete-dialog:not([open]) {
   display: none;
 }
 
@@ -75,7 +79,8 @@ main[data-app] {
 .focuses-dialog::backdrop,
 .restart-dialog::backdrop,
 .reset-dialog::backdrop,
-.message-delete-dialog::backdrop {
+.message-delete-dialog::backdrop,
+.task-delete-dialog::backdrop {
   background: repeating-linear-gradient(
       135deg,
       rgba(255, 255, 255, 0.2) 0 3px,
@@ -91,7 +96,8 @@ main[data-app] {
 .focuses-dialog.is-closing::backdrop,
 .restart-dialog.is-closing::backdrop,
 .reset-dialog.is-closing::backdrop,
-.message-delete-dialog.is-closing::backdrop {
+.message-delete-dialog.is-closing::backdrop,
+.task-delete-dialog.is-closing::backdrop {
   animation: dialog-backdrop-out 140ms ease-in forwards;
 }
 
@@ -114,7 +120,8 @@ main[data-app] {
 
 .restart-panel,
 .reset-panel,
-.message-delete-panel {
+.message-delete-panel,
+.task-delete-panel {
   background: var(--panel);
   border: 1px solid transparent;
   border-radius: var(--radius);
@@ -211,7 +218,8 @@ main[data-app] {
 }
 
 .tools-menu-item--danger:hover:not(:disabled),
-.task-menu-item--cancel:hover:not(:disabled) {
+.task-menu-item--cancel:hover:not(:disabled),
+.task-menu-item--delete:hover:not(:disabled) {
   background: rgba(226, 93, 93, 0.1);
   color: var(--danger);
 }
@@ -336,24 +344,28 @@ main[data-app] {
   .restart-dialog[open],
   .reset-dialog[open],
   .message-delete-dialog[open],
+  .task-delete-dialog[open],
   .tasks-dialog.is-closing,
   .plans-dialog.is-closing,
   .focuses-dialog.is-closing,
   .restart-dialog.is-closing,
   .reset-dialog.is-closing,
   .message-delete-dialog.is-closing,
+  .task-delete-dialog.is-closing,
   .tasks-dialog::backdrop,
   .plans-dialog::backdrop,
   .focuses-dialog::backdrop,
   .restart-dialog::backdrop,
   .reset-dialog::backdrop,
   .message-delete-dialog::backdrop,
+  .task-delete-dialog::backdrop,
   .tasks-dialog.is-closing::backdrop,
   .plans-dialog.is-closing::backdrop,
   .focuses-dialog.is-closing::backdrop,
   .restart-dialog.is-closing::backdrop,
   .reset-dialog.is-closing::backdrop,
-  .message-delete-dialog.is-closing::backdrop {
+  .message-delete-dialog.is-closing::backdrop,
+  .task-delete-dialog.is-closing::backdrop {
     animation: none;
   }
 }

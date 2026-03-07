@@ -106,6 +106,18 @@ export const rewriteHistory = async (
   })
 }
 
+export const filterHistory = (
+  historyDir: string,
+  predicate: (item: HistoryMessage) => boolean,
+): Promise<{ beforeCount: number; afterCount: number }> =>
+  runSerialized(historyDir, async () => {
+    const current = await readHistory(historyDir)
+    const next = current.filter(predicate)
+    if (next.length !== current.length)
+      await writeHistory(historyDir, normalizeHistory(next))
+    return { beforeCount: current.length, afterCount: next.length }
+  })
+
 export const appendHistory = async (
   historyDir: string,
   message: HistoryMessage,

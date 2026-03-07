@@ -48,6 +48,9 @@ const elements = {
   workerDots: $('[data-worker-dots]'),
   tasksCloseBtn: $('[data-tasks-close]'),
   tasksList: $('[data-tasks-list]'),
+  taskDeleteDialog: $('[data-task-delete-dialog]'),
+  taskDeleteCancelBtn: $('[data-task-delete-cancel]'),
+  taskDeleteConfirmBtn: $('[data-task-delete-confirm]'),
   plansDialog: $('[data-plans-dialog]'),
   plansOpenBtn: $('[data-plans-open]'),
   plansCloseBtn: $('[data-plans-close]'),
@@ -171,6 +174,9 @@ const tasksPanel = bindTasksPanel({
   tasksDialog: elements.tasksDialog,
   tasksOpenBtn: elements.tasksOpenBtn,
   tasksCloseBtn: elements.tasksCloseBtn,
+  taskDeleteConfirmDialog: elements.taskDeleteDialog,
+  taskDeleteConfirmCancelBtn: elements.taskDeleteCancelBtn,
+  taskDeleteConfirmBtn: elements.taskDeleteConfirmBtn,
 })
 const plansPanel = bindPlansPanel({
   plansList: elements.plansList,

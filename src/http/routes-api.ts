@@ -6,6 +6,7 @@ import { registerChoiceSelectRoute } from './routes-api-choice-select.js'
 import { registerEventsRoute } from './routes-api-events.js'
 import { registerTaskArchiveRoute } from './routes-api-task-archive.js'
 import { registerTaskCancelRoute } from './routes-api-task-cancel.js'
+import { registerTaskDeleteRoute } from './routes-api-task-delete.js'
 import { registerTaskPauseRoute } from './routes-api-task-pause.js'
 import { registerTaskResumeRoute } from './routes-api-task-resume.js'
 
@@ -70,6 +71,7 @@ export const registerApiRoutes = (
 
   registerTaskArchiveRoute(app, orchestrator, config)
   registerTaskCancelRoute(app, orchestrator)
+  registerTaskDeleteRoute(app, orchestrator)
   registerTaskPauseRoute(app, orchestrator)
   registerTaskResumeRoute(app, orchestrator)
   registerChoiceSelectRoute(app, orchestrator)

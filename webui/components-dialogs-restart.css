@@ -1,6 +1,7 @@
 .restart-header,
 .reset-header,
-.message-delete-header {
+.message-delete-header,
+.task-delete-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -9,7 +10,8 @@
 
 .restart-title,
 .reset-title,
-.message-delete-title {
+.message-delete-title,
+.task-delete-title {
   margin: 0;
   font-size: 14px;
   font-weight: 600;
@@ -17,7 +19,8 @@
 
 .restart-description,
 .reset-description,
-.message-delete-description {
+.message-delete-description,
+.task-delete-description {
   margin: 0;
   color: var(--muted);
   font-size: 12px;
@@ -26,7 +29,8 @@
 
 .restart-actions,
 .reset-actions,
-.message-delete-actions {
+.message-delete-actions,
+.task-delete-actions {
   display: flex;
   align-items: center;
   justify-content: flex-end;

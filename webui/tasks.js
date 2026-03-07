@@ -3,6 +3,7 @@ import { renderEmptyListState } from './list-empty.js'
 import { createListLayoutShiftSync } from './list-scroll-sync.js'
 import { PANEL_BOTTOM_SCROLL_THRESHOLD_MULTIPLIER } from './panel-scroll-config.js'
 import { UI_TEXT } from './system-text.js'
+import { createTaskDeleteController } from './tasks-controller-delete.js'
 import { bindTaskInteractions } from './tasks-interactions.js'
 import { renderTasks } from './tasks-view-render.js'
 import { createElapsedTicker } from './tasks-view-time.js'
@@ -21,6 +22,9 @@ export function bindTasksPanel({
   tasksDialog,
   tasksOpenBtn,
   tasksCloseBtn,
+  taskDeleteConfirmDialog,
+  taskDeleteConfirmCancelBtn,
+  taskDeleteConfirmBtn,
 }) {
   if (!tasksList) {
     return {
@@ -30,6 +34,12 @@ export function bindTasksPanel({
     }
   }
 
+  const taskDeleteController = createTaskDeleteController({
+    deleteConfirmDialog: taskDeleteConfirmDialog,
+    deleteConfirmCancelBtn: taskDeleteConfirmCancelBtn,
+    deleteConfirmBtn: taskDeleteConfirmBtn,
+  })
+  const unbindTaskDeleteDialog = taskDeleteController.bindDialogEvents()
   let latestTasks = EMPTY_TASKS
   const elapsedTicker = createElapsedTicker(tasksList)
   const scrollSync = createListLayoutShiftSync({
@@ -37,7 +47,9 @@ export function bindTasksPanel({
     bottomThresholdMultiplier: PANEL_BOTTOM_SCROLL_THRESHOLD_MULTIPLIER,
   })
   let unsubscribeTimeTick = null
-  const unbindTaskInteractions = bindTaskInteractions(tasksList)
+  const unbindTaskInteractions = bindTaskInteractions(tasksList, {
+    taskDeleteController,
+  })
 
   const renderLatestTasks = () => {
     renderTasks(tasksList, latestTasks)
@@ -103,6 +115,7 @@ export function bindTasksPanel({
     dispose: () => {
       stopTicker()
       unbindTaskInteractions()
+      unbindTaskDeleteDialog()
       unbindDialogControls()
       scrollSync.dispose()
     },
