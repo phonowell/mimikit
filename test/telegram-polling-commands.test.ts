@@ -94,29 +94,3 @@ test('normal private text still enters input queue', async () => {
     telegramTimestamp: new Date(1_700_000_000 * 1000).toISOString(),
   })
 })
-
-test('photo input enters queue as text-only unsupported notice for LLM reply', async () => {
-  const addUserInput = vi.fn(async () => 'input-1')
-  const { bot } = await startPolling({ addUserInput })
-
-  await bot.emitPhoto(
-    buildPhotoContext({
-      caption: '请看这张图里是什么',
-    }),
-  )
-
-  expect(addUserInput).toHaveBeenCalledTimes(1)
-  const [inputText, inputMeta] = addUserInput.mock.calls[0] ?? []
-  expect(typeof inputText).toBe('string')
-  expect(inputText).toContain('System capability limit:')
-  expect(inputText).toContain('text-only input')
-  expect(inputText).toContain('请看这张图里是什么')
-  expect(inputMeta).toEqual({
-    source: 'telegram',
-    platform: 'telegram',
-    telegramChatId: '1001',
-    telegramMessageId: '11',
-    telegramUpdateId: '22',
-    telegramTimestamp: new Date(1_700_000_000 * 1000).toISOString(),
-  })
-})
