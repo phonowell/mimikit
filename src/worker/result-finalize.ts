@@ -85,10 +85,23 @@ export const finalizeResult = async (
   task: Task,
   result: TaskResult,
   markFn: (tasks: Task[], taskId: string, patch?: Partial<Task>) => void,
+  options?: {
+    progressType?: 'worker_end' | 'task_canceled'
+    logEvent?: 'worker_end' | 'task_canceled'
+    archiveSource?: 'worker' | 'cancel'
+  },
 ): Promise<void> => {
+  const progressType = options?.progressType ?? 'worker_end'
+  const logEvent = options?.logEvent ?? 'worker_end'
+  const archiveSource = options?.archiveSource ?? 'worker'
   runtime.lastWorkerActivityAtMs = Date.now()
   result.handoff ??= buildTaskResultHandoff(task, result)
-  const archivePath = await archiveTaskResult(runtime, task, result, 'worker')
+  const archivePath = await archiveTaskResult(
+    runtime,
+    task,
+    result,
+    archiveSource,
+  )
   if (archivePath) task.archivePath = archivePath
   markFn(runtime.tasks, task.id, {
     completedAt: result.completedAt,
@@ -97,11 +110,11 @@ export const finalizeResult = async (
     ...(archivePath ? { archivePath } : {}),
   })
   syncFocusContextFromTaskResult(runtime, task, result)
-  await bestEffort('appendTaskProgress: worker_end', () =>
+  await bestEffort(`appendTaskProgress: ${progressType}`, () =>
     appendTaskProgress({
       stateDir: runtime.config.workDir,
       taskId: task.id,
-      type: 'worker_end',
+      type: progressType,
       payload: {
         status: result.status,
         durationMs: result.durationMs,
@@ -115,14 +128,15 @@ export const finalizeResult = async (
     payload: result,
   })
   notifyManagerLoop(runtime)
-  await bestEffort('appendLog: worker_end', () =>
+  await bestEffort(`appendLog: ${logEvent}`, () =>
     appendLog(runtime.paths.log, {
-      event: 'worker_end',
+      event: logEvent,
       taskId: task.id,
       status: result.status,
       durationMs: result.durationMs,
       elapsedMs: result.durationMs,
       ...(result.usage ? { usage: result.usage } : {}),
+      ...(result.cancel ? { cancelSource: result.cancel.source } : {}),
       ...(archivePath ? { archivePath } : {}),
     }),
   )

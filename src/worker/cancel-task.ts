@@ -1,24 +1,23 @@
-import { syncFocusContextFromTaskResult } from '../focus/result-feedback.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
-import {
-  notifyManagerLoop,
-  notifyWorkerLoop,
-} from '../orchestrator/core/signals.js'
+import { notifyWorkerLoop } from '../orchestrator/core/signals.js'
 import { markTaskCanceled } from '../orchestrator/core/task-lifecycle.js'
 import { parseIsoMs } from '../shared/time.js'
 import { nowIso } from '../shared/utils.js'
-import { publishWorkerResult } from '../streams/queues.js'
 
-import { clearTaskLiveOutput } from './live-output.js'
-import { archiveTaskResult } from './result-finalize.js'
-import { buildTaskResultHandoff } from './result-handoff.js'
+import { buildResult, finalizeResult } from './result-finalize.js'
 import {
   discardTaskSession,
   isRecoverableCancelSource,
   setTaskSessionReusable,
 } from './session-state.js'
+import {
+  isDoneTaskStatus,
+  resolveTaskLookup,
+  touchTaskMutation,
+} from './task-action.js'
+import { resolveTaskChangeAt } from './task-state-shared.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { Task, TaskCancelMeta, TaskResult } from '../types/index.js'
@@ -40,27 +39,6 @@ export type CancelResult = {
   changeAt?: string
 }
 
-const buildCanceledResult = (task: Task, output: string): TaskResult => {
-  const completedAt = nowIso()
-  const startedAtMs = parseIsoMs(task.startedAt ?? '')
-  const durationMs =
-    startedAtMs !== undefined ? Math.max(0, Date.now() - startedAtMs) : 0
-  const handoff = buildTaskResultHandoff(task, { status: 'canceled', output })
-  return {
-    taskId: task.id,
-    status: 'canceled',
-    ok: false,
-    output,
-    durationMs,
-    completedAt,
-    ...(task.title ? { title: task.title } : {}),
-    profile: task.profile,
-    provider: task.provider,
-    ...(task.cancel ? { cancel: task.cancel } : {}),
-    ...(handoff ? { handoff } : {}),
-  }
-}
-
 const normalizeCancelSource = (source?: string): TaskCancelMeta['source'] => {
   if (source === 'user' || source === 'http') return 'user'
   if (source === 'deferred') return 'deferred'
@@ -71,9 +49,6 @@ const buildCancelMeta = (meta?: CancelMeta): TaskCancelMeta => ({
   source: normalizeCancelSource(meta?.source),
   ...(meta?.reason ? { reason: meta.reason } : {}),
 })
-
-const resolveTaskChangeAt = (task: Task): string =>
-  task.completedAt ?? task.startedAt ?? task.createdAt
 
 const applyCancelSessionPolicy = (
   task: Task,
@@ -89,40 +64,16 @@ const applyCancelSessionPolicy = (
   return 'reusable'
 }
 
-const pushCanceledResult = async (
-  runtime: RuntimeState,
-  task: Task,
-  result: TaskResult,
-) => {
-  const archivePath = await archiveTaskResult(runtime, task, result, 'cancel')
-  if (archivePath) task.archivePath = archivePath
-  syncFocusContextFromTaskResult(runtime, task, result)
-  await publishWorkerResult({
-    paths: runtime.paths,
-    payload: result,
-  })
-  notifyManagerLoop(runtime)
-  await bestEffort('appendLog: task_canceled', () =>
-    appendLog(runtime.paths.log, {
-      event: 'task_canceled',
-      taskId: task.id,
-      status: result.status,
-      durationMs: result.durationMs,
-      ...(result.cancel ? { cancelSource: result.cancel.source } : {}),
-      ...(archivePath ? { archivePath } : {}),
-    }),
-  )
-}
-
 export const cancelTask = async (
   runtime: RuntimeState,
   taskId: string,
   meta?: CancelMeta,
 ): Promise<CancelResult> => {
-  const trimmed = taskId.trim()
-  if (!trimmed) return { ok: false, id: trimmed, status: 'invalid' }
-  const task = runtime.tasks.find((item) => item.id === trimmed)
-  if (!task) return { ok: false, id: trimmed, status: 'not_found' }
+  const lookup = resolveTaskLookup(runtime, taskId)
+  if (!lookup.normalizedId)
+    return { ok: false, id: lookup.normalizedId, status: 'invalid' }
+  const { task } = lookup
+  if (!task) return { ok: false, id: lookup.normalizedId, status: 'not_found' }
   if (task.status === 'canceled') {
     return {
       ok: false,
@@ -131,7 +82,7 @@ export const cancelTask = async (
       changeAt: resolveTaskChangeAt(task),
     }
   }
-  if (task.status === 'succeeded' || task.status === 'failed') {
+  if (isDoneTaskStatus(task.status)) {
     return {
       ok: false,
       id: task.id,
@@ -141,18 +92,30 @@ export const cancelTask = async (
   }
 
   if (task.status === 'pending' || task.status === 'paused') {
-    runtime.lastWorkerActivityAtMs = Date.now()
-    clearTaskLiveOutput(runtime, task.id)
+    touchTaskMutation(runtime, task.id)
     const cancelMeta = buildCancelMeta(meta)
     const sessionPolicy = applyCancelSessionPolicy(task, cancelMeta.source)
-    const result = buildCanceledResult(task, meta?.reason ?? 'Task canceled')
+    task.cancel = cancelMeta
+    const startedAtMs = parseIsoMs(task.startedAt ?? '')
+    const durationMs =
+      startedAtMs !== undefined ? Math.max(0, Date.now() - startedAtMs) : 0
+    const result: TaskResult = buildResult(
+      task,
+      'canceled',
+      meta?.reason ?? 'Task canceled',
+      durationMs,
+    )
+    result.cancel = cancelMeta
     markTaskCanceled(runtime.tasks, task.id, {
       completedAt: result.completedAt,
       durationMs: result.durationMs,
       cancel: cancelMeta,
     })
-    result.cancel = cancelMeta
-    await pushCanceledResult(runtime, task, result)
+    await finalizeResult(runtime, task, result, markTaskCanceled, {
+      progressType: 'task_canceled',
+      logEvent: 'task_canceled',
+      archiveSource: 'cancel',
+    })
     await bestEffort('persistRuntimeState: cancel_pending', () =>
       persistRuntimeState(runtime),
     )
@@ -174,8 +137,7 @@ export const cancelTask = async (
   }
 
   const canceledAt = nowIso()
-  runtime.lastWorkerActivityAtMs = Date.now()
-  clearTaskLiveOutput(runtime, task.id)
+  touchTaskMutation(runtime, task.id)
   const canceledAtMs = parseIsoMs(canceledAt)
   const startedAtMs = parseIsoMs(task.startedAt ?? '')
   const durationMs =

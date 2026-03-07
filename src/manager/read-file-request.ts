@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { pickFirstParsedAction } from './action-parse.js'
+
 import type { Parsed } from '../actions/model/spec.js'
 
 const DEFAULT_MAX_CHARS = 8 * 1_024
@@ -60,26 +62,24 @@ export type ReadFileRequest = {
   maxChars: number
 }
 
-const toReadFileRequest = (item: Parsed): ReadFileRequest | undefined => {
-  const parsed = readFileToolSchema.safeParse(item.attrs)
-  if (!parsed.success) return undefined
-  return {
-    path: parsed.data.path,
-    fromLine: Number(parsed.data.from_line ?? DEFAULT_FROM_LINE),
-    maxLines: Number(parsed.data.max_lines ?? DEFAULT_MAX_LINES),
-    maxChars: Number(parsed.data.max_chars ?? DEFAULT_MAX_CHARS),
-  }
-}
+const toReadFileRequest = (
+  parsed: z.infer<typeof readFileToolSchema>,
+): ReadFileRequest => ({
+  path: parsed.path,
+  fromLine: Number(parsed.from_line ?? DEFAULT_FROM_LINE),
+  maxLines: Number(parsed.max_lines ?? DEFAULT_MAX_LINES),
+  maxChars: Number(parsed.max_chars ?? DEFAULT_MAX_CHARS),
+})
 
 export const pickReadFileRequest = (
   actions: Parsed[],
 ): ReadFileRequest | undefined => {
-  for (const item of actions) {
-    if (item.name !== 'read_file') continue
-    const request = toReadFileRequest(item)
-    if (request) return request
-  }
-  return undefined
+  const parsed = pickFirstParsedAction({
+    items: actions,
+    actionName: 'read_file',
+    schema: readFileToolSchema,
+  })
+  return parsed ? toReadFileRequest(parsed) : undefined
 }
 
 export const buildReadFileLookupKey = (

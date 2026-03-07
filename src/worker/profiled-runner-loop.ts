@@ -33,9 +33,7 @@ export const stripDoneMarker = (output: string): string =>
 const clipLatestOutput = (value: string): string => {
   const normalized = value.trim()
   if (normalized.length <= MAX_CONTINUE_LATEST_OUTPUT_CHARS) return normalized
-  return `${normalized
-    .slice(0, MAX_CONTINUE_LATEST_OUTPUT_CHARS - 3)
-    .trimEnd()}...`
+  return `${normalized.slice(0, MAX_CONTINUE_LATEST_OUTPUT_CHARS - 3).trimEnd()}...`
 }
 
 export const buildContinuePrompt = (

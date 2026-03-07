@@ -1,7 +1,7 @@
 import { appendLog } from '../../log/append.js'
+import { buildUnsupportedImageInputText } from '../shared/image-unsupported-input.js'
 
 import { assertEnabledTelegramConfig } from './config.js'
-import { buildUnsupportedImageInputText } from './image-unsupported-input.js'
 import { resolveTelegramProxy } from './proxy.js'
 
 import type { AppConfig } from '../../config.js'
@@ -149,7 +149,11 @@ export const startTelegramPolling = async (params: {
   bot.on('photo', async (ctx) => {
     const { caption } = ctx.message as { caption?: unknown }
     await addUserInput(
-      await buildUnsupportedImageInputText(caption),
+      await buildUnsupportedImageInputText({
+        promptPath: 'manager/telegram-image-unsupported-input.md',
+        fieldName: 'caption',
+        fieldValue: caption,
+      }),
       buildTelegramUserMeta(ctx),
     )
   })

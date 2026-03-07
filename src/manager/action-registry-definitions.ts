@@ -17,6 +17,7 @@ import {
   updatePlanSchema,
   upsertFocusSchema,
 } from './action-apply-schema.js'
+import { parseActionAttrs } from './action-parse.js'
 import {
   createContinueAction,
   createNoopAction,
@@ -44,9 +45,9 @@ const applyMutateTaskAction = async (
   runtime: Parameters<ManagerActionDefinition['apply']>[0],
   item: Parsed,
 ): Promise<void> => {
-  const parsed = mutateTaskSchema.safeParse(item.attrs)
-  if (!parsed.success) return
-  const { id, op, reason } = parsed.data
+  const parsed = parseActionAttrs(item, mutateTaskSchema)
+  if (!parsed) return
+  const { id, op, reason } = parsed
   const meta = {
     source: 'deferred',
     ...(reason ? { reason } : {}),

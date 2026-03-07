@@ -60,6 +60,7 @@ const buildPrompt = async (payload: MemoryRefreshPayload): Promise<string> => {
       'missing_prompt_template:manager/memory-refresh-single-call.md',
     )
   }
+
   return renderPromptTemplate(
     template,
     {

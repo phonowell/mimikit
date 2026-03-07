@@ -9,6 +9,7 @@ const collectLineStarts = (text: string): number[] => {
     if (text.charCodeAt(index) === 10 && index + 1 < text.length)
       starts.push(index + 1)
   }
+
   return starts
 }
 

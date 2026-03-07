@@ -46,13 +46,7 @@ export const toClientNowLocalIso = (
   const localMs = utcMs - Math.trunc(clientOffsetMinutes) * 60_000
   const localDate = new Date(localMs)
   const utcOffset = toUtcOffsetText(clientOffsetMinutes)
-  return `${localDate.getUTCFullYear()}-${padTimePart(
-    localDate.getUTCMonth() + 1,
-  )}-${padTimePart(localDate.getUTCDate())}T${padTimePart(
-    localDate.getUTCHours(),
-  )}:${padTimePart(localDate.getUTCMinutes())}:${padTimePart(
-    localDate.getUTCSeconds(),
-  )}.${padTimePart(localDate.getUTCMilliseconds(), 3)}${utcOffset}`
+  return `${localDate.getUTCFullYear()}-${padTimePart(localDate.getUTCMonth() + 1)}-${padTimePart(localDate.getUTCDate())}T${padTimePart(localDate.getUTCHours())}:${padTimePart(localDate.getUTCMinutes())}:${padTimePart(localDate.getUTCSeconds())}.${padTimePart(localDate.getUTCMilliseconds(), 3)}${utcOffset}`
 }
 
 export const resolveScheduleNowIso = (

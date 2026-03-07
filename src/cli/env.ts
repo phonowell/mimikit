@@ -1,4 +1,5 @@
 import { applyFeishuEnvOverrides } from '../channels/feishu/config.js'
+import { parseChannelEnabledEnv } from '../channels/shared/config-env.js'
 import { applyTelegramEnvOverrides } from '../channels/telegram/config.js'
 
 import type { AppConfig } from '../config.js'
@@ -65,21 +66,6 @@ const trimEnv = (name: string): string | undefined => {
   return trimmed.length > 0 ? trimmed : undefined
 }
 
-const parseBooleanEnv = (
-  envName: string,
-  value: string | undefined,
-): boolean | undefined => {
-  if (!value) return undefined
-  const normalized = value.trim().toLowerCase()
-  if (!normalized) return undefined
-  if (normalized === '1' || normalized === 'true' || normalized === 'yes')
-    return true
-  if (normalized === '0' || normalized === 'false' || normalized === 'no')
-    return false
-  console.warn(`[cli] invalid ${envName}:`, value)
-  return undefined
-}
-
 const parsePortEnv = (
   envName: string,
   value: string | undefined,
@@ -111,23 +97,23 @@ const applyProxyEnv = (config: AppConfig): void => {
 }
 
 const applyProviderEnabledEnv = (config: AppConfig): void => {
-  const codexEnabled = parseBooleanEnv(
-    'MIMIKIT_CODEX_ENABLED',
-    process.env.MIMIKIT_CODEX_ENABLED,
-  )
+  const codexEnabled = parseChannelEnabledEnv({
+    envName: 'MIMIKIT_CODEX_ENABLED',
+    value: process.env.MIMIKIT_CODEX_ENABLED,
+  })
   if (codexEnabled !== undefined) config.codex.enabled = codexEnabled
-  const opencodeEnabled = parseBooleanEnv(
-    'MIMIKIT_OPENCODE_ENABLED',
-    process.env.MIMIKIT_OPENCODE_ENABLED,
-  )
+  const opencodeEnabled = parseChannelEnabledEnv({
+    envName: 'MIMIKIT_OPENCODE_ENABLED',
+    value: process.env.MIMIKIT_OPENCODE_ENABLED,
+  })
   if (opencodeEnabled !== undefined) config.opencode.enabled = opencodeEnabled
 }
 
 const applyWebUiEnv = (config: AppConfig): void => {
-  const enabled = parseBooleanEnv(
-    'MIMIKIT_WEBUI_ENABLED',
-    process.env.MIMIKIT_WEBUI_ENABLED,
-  )
+  const enabled = parseChannelEnabledEnv({
+    envName: 'MIMIKIT_WEBUI_ENABLED',
+    value: process.env.MIMIKIT_WEBUI_ENABLED,
+  })
   if (enabled !== undefined) config.webui.enabled = enabled
 
   const port = parsePortEnv(

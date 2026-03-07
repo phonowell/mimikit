@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { pickLastParsedAction } from './action-parse.js'
+
 import type { Parsed } from '../actions/model/spec.js'
 
 export const queryContextSchema = z
@@ -15,14 +17,14 @@ export type QueryContextRequest = {
 export const pickQueryContextRequest = (
   items: Parsed[],
 ): QueryContextRequest | undefined => {
-  let picked: QueryContextRequest | undefined
-  for (const item of items) {
-    if (item.name !== 'query_context') continue
-    const parsed = queryContextSchema.safeParse(item.attrs)
-    if (!parsed.success) continue
-    picked = {
-      query: parsed.data.query,
-    }
-  }
-  return picked
+  const parsed = pickLastParsedAction({
+    items,
+    actionName: 'query_context',
+    schema: queryContextSchema,
+  })
+  return parsed ? { query: parsed.query } : undefined
 }
+
+export const buildQueryContextLookupKey = (
+  request?: QueryContextRequest,
+): string | undefined => request?.query

@@ -128,14 +128,10 @@ const formatActionFeedbackSummary = (
   entries: ActionFeedbackEntry[],
 ): string => {
   if (entries.length === 0) return ''
-  const header = `Received ${entries.length} action feedback item${
-    entries.length === 1 ? '' : 's'
-  }.`
+  const header = `Received ${entries.length} action feedback item${entries.length === 1 ? '' : 's'}.`
   const details = entries.map(
     (item, index) =>
-      `${index + 1}. Action "${item.action}" failed with "${item.error}". Suggested fix: ${item.hint}${
-        item.attempted ? ` Attempted: ${item.attempted}.` : ''
-      }`,
+      `${index + 1}. Action "${item.action}" failed with "${item.error}". Suggested fix: ${item.hint}${item.attempted ? ` Attempted: ${item.attempted}.` : ''}`,
   )
   return [header, ...details].join('\n')
 }

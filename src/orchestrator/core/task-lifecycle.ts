@@ -104,6 +104,9 @@ const updateTaskStatus = (
   return task
 }
 
+const findTaskById = (tasks: Task[], taskId: string): Task | undefined =>
+  tasks.find((item) => item.id === taskId)
+
 export const markTaskRunning = (
   tasks: Task[],
   taskId: string,
@@ -145,7 +148,7 @@ export const markTaskCanceled = (
   taskId: string,
   patch?: Partial<Task>,
 ): Task | null => {
-  const task = tasks.find((item) => item.id === taskId)
+  const task = findTaskById(tasks, taskId)
   if (!task) return null
   task.status = 'canceled'
   Object.assign(task, {

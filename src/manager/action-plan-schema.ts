@@ -52,6 +52,7 @@ const validatePlanTriggerFields = (
         'scheduled_at cannot be used when trigger_mode="cron"',
       )
     }
+
     return
   }
 
@@ -63,6 +64,7 @@ const validatePlanTriggerFields = (
         'scheduled_at is required when trigger_mode="scheduled_at"',
       )
     }
+
     if (cron) {
       addCustomIssue(
         ctx,
@@ -70,6 +72,7 @@ const validatePlanTriggerFields = (
         'cron cannot be used when trigger_mode="scheduled_at"',
       )
     }
+
     return
   }
 
@@ -81,6 +84,7 @@ const validatePlanTriggerFields = (
         'cron cannot be used when trigger_mode="on_worker_slot_freed"',
       )
     }
+
     if (scheduledAt) {
       addCustomIssue(
         ctx,

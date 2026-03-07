@@ -56,6 +56,7 @@ const runTaskModel = (params: {
       `[worker] ${taskProvider} provider is disabled: set ${taskProvider}.enabled=true`,
     )
   }
+
   const focusMeta = params.runtime.focuses.find(
     (focus) => focus.id === params.task.focusId,
   )

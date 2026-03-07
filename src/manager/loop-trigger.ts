@@ -105,6 +105,7 @@ export const triggerWakeLoop = async (runtime: RuntimeState): Promise<void> => {
           persistRuntimeState(runtime),
         )
       }
+
       if (triggeredCount > 0) notifyManagerLoop(runtime)
     } catch (error) {
       await bestEffort('appendLog: trigger_wake_error', () =>

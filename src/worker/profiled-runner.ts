@@ -62,13 +62,11 @@ const buildRunModel =
       ...(params.provider === 'opencode'
         ? {
             onRuntimeChildStarted: (child) =>
-              getRuntimeReaperBridge(params.runtimeId)?.onRuntimeChildStarted(
-                child,
-              ) ?? Promise.resolve(),
+              getRuntimeReaperBridge()?.onRuntimeChildStarted(child) ??
+              Promise.resolve(),
             onRuntimeChildStopped: (id) =>
-              getRuntimeReaperBridge(params.runtimeId)?.onRuntimeChildStopped(
-                id,
-              ) ?? Promise.resolve(),
+              getRuntimeReaperBridge()?.onRuntimeChildStopped(id) ??
+              Promise.resolve(),
           }
         : {}),
     })

@@ -73,6 +73,7 @@ export const processManagerBatch = async (params: {
         ),
       )
     }
+
     const resolvedUsage: TokenUsage | undefined = managerRun.usage
     const { parsed } = managerRun
     const summaries = collectTaskResultSummaries(parsed.actions)

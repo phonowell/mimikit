@@ -19,8 +19,8 @@ import {
   type MutableQueryResults,
   toScopeResult,
 } from './query-context-payload.js'
-import { buildQueryContextLookupKey } from './query-context-request.js'
 import {
+  buildQueryContextLookupKey,
   pickQueryContextRequest,
   type QueryContextRequest,
   queryContextSchema,
@@ -97,6 +97,7 @@ export const runQueryContextTool = async (params: {
         : QUERY_CONTEXT_SCOPE_LIMIT,
     )
   }
+
   return enforceQueryLookupBudget(
     buildQueryLookupMessage(params.request, results, QUERY_CONTEXT_MAX_BYTES),
   )

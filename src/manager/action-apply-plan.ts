@@ -7,6 +7,7 @@ import {
   deletePlanSchema,
   updatePlanSchema,
 } from './action-apply-schema.js'
+import { parseActionAttrs } from './action-parse.js'
 import {
   appendPlanSystemMessage,
   buildTrigger,
@@ -23,18 +24,18 @@ export const applyCreatePlan = async (
   runtime: RuntimeState,
   item: Parsed,
 ): Promise<void> => {
-  const parsed = createPlanSchema.safeParse(item.attrs)
-  if (!parsed.success) return
+  const parsed = parseActionAttrs(item, createPlanSchema)
+  if (!parsed) return
 
   const trigger = buildTrigger({
-    triggerMode: parsed.data.trigger_mode,
-    cron: parsed.data.cron,
-    scheduledAt: parsed.data.scheduled_at,
+    triggerMode: parsed.trigger_mode,
+    cron: parsed.cron,
+    scheduledAt: parsed.scheduled_at,
   })
-  const focusId = resolveActionFocusId(runtime, parsed.data.focus_id)
+  const focusId = resolveActionFocusId(runtime, parsed.focus_id)
   const key = normalizePlanKey({
-    prompt: parsed.data.prompt,
-    title: parsed.data.title,
+    prompt: parsed.prompt,
+    title: parsed.title,
     focusId,
     profile: 'worker',
     trigger,
@@ -54,16 +55,16 @@ export const applyCreatePlan = async (
   if (exists) return
 
   const timestamp = nowIso()
-  const maxRuns = parsed.data.max_runs
+  const maxRuns = parsed.max_runs
 
   const plan: TaskPlan = {
     id: `plan-${newId()}`,
-    prompt: parsed.data.prompt,
-    title: parsed.data.title,
+    prompt: parsed.prompt,
+    title: parsed.title,
     focusId,
     profile: 'worker',
-    priority: (parsed.data.priority ?? 'normal') as PlanPriority,
-    source: (parsed.data.source ?? 'user_request') as PlanSource,
+    priority: (parsed.priority ?? 'normal') as PlanPriority,
+    source: (parsed.source ?? 'user_request') as PlanSource,
     status: 'active',
     trigger,
     createdAt: timestamp,
@@ -81,49 +82,43 @@ export const applyUpdatePlan = async (
   runtime: RuntimeState,
   item: Parsed,
 ): Promise<void> => {
-  const parsed = updatePlanSchema.safeParse(item.attrs)
-  if (!parsed.success) return
+  const parsed = parseActionAttrs(item, updatePlanSchema)
+  if (!parsed) return
 
-  const index = runtime.taskPlans.findIndex(
-    (plan) => plan.id === parsed.data.id,
-  )
+  const index = runtime.taskPlans.findIndex((plan) => plan.id === parsed.id)
   if (index < 0) return
   const current = runtime.taskPlans[index]
   if (!current) return
 
   const doneLastTaskPatch = isDoneLastTaskPatch({
     current,
-    input: parsed.data,
+    input: parsed,
   })
   if (current.status === 'done' && !doneLastTaskPatch) return
 
   const nextFocusId =
-    parsed.data.focus_id !== undefined
-      ? resolveActionFocusId(runtime, parsed.data.focus_id)
+    parsed.focus_id !== undefined
+      ? resolveActionFocusId(runtime, parsed.focus_id)
       : current.focusId
 
   const trigger = resolveUpdatedTrigger(current.trigger, {
-    triggerMode: parsed.data.trigger_mode,
-    cron: parsed.data.cron,
-    scheduledAt: parsed.data.scheduled_at,
+    triggerMode: parsed.trigger_mode,
+    cron: parsed.cron,
+    scheduledAt: parsed.scheduled_at,
   })
 
   const updatedAt = nowIso()
   const next: TaskPlan = {
     ...current,
-    ...(parsed.data.prompt !== undefined ? { prompt: parsed.data.prompt } : {}),
-    ...(parsed.data.title !== undefined ? { title: parsed.data.title } : {}),
-    ...(parsed.data.priority !== undefined
-      ? { priority: parsed.data.priority }
+    ...(parsed.prompt !== undefined ? { prompt: parsed.prompt } : {}),
+    ...(parsed.title !== undefined ? { title: parsed.title } : {}),
+    ...(parsed.priority !== undefined ? { priority: parsed.priority } : {}),
+    ...(parsed.source !== undefined ? { source: parsed.source } : {}),
+    ...(parsed.status !== undefined ? { status: parsed.status } : {}),
+    ...(parsed.last_task_id !== undefined
+      ? { lastTaskId: parsed.last_task_id }
       : {}),
-    ...(parsed.data.source !== undefined ? { source: parsed.data.source } : {}),
-    ...(parsed.data.status !== undefined ? { status: parsed.data.status } : {}),
-    ...(parsed.data.last_task_id !== undefined
-      ? { lastTaskId: parsed.data.last_task_id }
-      : {}),
-    ...(parsed.data.max_runs !== undefined
-      ? { maxRuns: parsed.data.max_runs }
-      : {}),
+    ...(parsed.max_runs !== undefined ? { maxRuns: parsed.max_runs } : {}),
     trigger,
     focusId: nextFocusId,
     updatedAt,
@@ -143,12 +138,10 @@ export const applyDeletePlan = async (
   runtime: RuntimeState,
   item: Parsed,
 ): Promise<void> => {
-  const parsed = deletePlanSchema.safeParse(item.attrs)
-  if (!parsed.success) return
+  const parsed = parseActionAttrs(item, deletePlanSchema)
+  if (!parsed) return
 
-  const index = runtime.taskPlans.findIndex(
-    (plan) => plan.id === parsed.data.id,
-  )
+  const index = runtime.taskPlans.findIndex((plan) => plan.id === parsed.id)
   if (index < 0) return
 
   const [removed] = runtime.taskPlans.splice(index, 1)

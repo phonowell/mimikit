@@ -1,6 +1,7 @@
 import { EventDispatcher, WSClient } from '@larksuiteoapi/node-sdk'
 
 import { appendLog } from '../../log/append.js'
+import { buildUnsupportedImageInputText } from '../shared/image-unsupported-input.js'
 
 import { assertEnabledFeishuConfig } from './config.js'
 import {
@@ -11,7 +12,6 @@ import {
   shouldIgnoreMessage,
   toIsoFromUnixMillis,
 } from './events.js'
-import { buildUnsupportedImageInputText } from './image-unsupported-input.js'
 
 import type { AppConfig } from '../../config.js'
 import type { UserMeta } from '../../orchestrator/core/runtime-state.js'
@@ -82,7 +82,11 @@ export const startFeishuPolling = async (params: {
       const fallbackText = resolveImageFallbackText(event)
       if (!targetChatId) return
       await addUserInput(
-        await buildUnsupportedImageInputText(fallbackText),
+        await buildUnsupportedImageInputText({
+          promptPath: 'manager/feishu-image-unsupported-input.md',
+          fieldName: 'text',
+          fieldValue: fallbackText,
+        }),
         meta,
       )
     },

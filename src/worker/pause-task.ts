@@ -6,7 +6,11 @@ import { notifyWorkerLoop } from '../orchestrator/core/signals.js'
 import { markTaskPaused } from '../orchestrator/core/task-lifecycle.js'
 import { nowIso } from '../shared/utils.js'
 
-import { clearTaskLiveOutput } from './live-output.js'
+import {
+  isDoneTaskStatus,
+  resolveTaskLookup,
+  touchTaskMutation,
+} from './task-action.js'
 import { resolveSlotStatus, resolveTaskChangeAt } from './task-state-shared.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
@@ -28,10 +32,11 @@ export const pauseTask = async (
   taskId: string,
   meta?: PauseMeta,
 ): Promise<PauseResult> => {
-  const trimmed = taskId.trim()
-  if (!trimmed) return { ok: false, id: trimmed, status: 'invalid' }
-  const task = runtime.tasks.find((item) => item.id === trimmed)
-  if (!task) return { ok: false, id: trimmed, status: 'not_found' }
+  const lookup = resolveTaskLookup(runtime, taskId)
+  if (!lookup.normalizedId)
+    return { ok: false, id: lookup.normalizedId, status: 'invalid' }
+  const { task } = lookup
+  if (!task) return { ok: false, id: lookup.normalizedId, status: 'not_found' }
   if (task.status === 'paused') {
     return {
       ok: false,
@@ -40,11 +45,7 @@ export const pauseTask = async (
       changeAt: resolveTaskChangeAt(task),
     }
   }
-  if (
-    task.status === 'succeeded' ||
-    task.status === 'failed' ||
-    task.status === 'canceled'
-  ) {
+  if (isDoneTaskStatus(task.status)) {
     return {
       ok: false,
       id: task.id,
@@ -54,8 +55,7 @@ export const pauseTask = async (
   }
   const pausedAt = nowIso()
   const prevStatus = task.status
-  runtime.lastWorkerActivityAtMs = Date.now()
-  clearTaskLiveOutput(runtime, task.id)
+  touchTaskMutation(runtime, task.id)
   markTaskPaused(runtime.tasks, task.id, { pausedAt })
   const controller = runtime.runningControllers.get(task.id)
   if (controller && !controller.signal.aborted)

@@ -52,6 +52,7 @@ const formatSummary = (task: Task, result: TaskResult): string => {
       ? `Task "${label}" failed: ${detail}`
       : `Task "${label}" failed.`
   }
+
   return detail
     ? `Task "${label}" canceled: ${detail}`
     : `Task "${label}" canceled.`

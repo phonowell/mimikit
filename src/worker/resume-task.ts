@@ -6,7 +6,11 @@ import { notifyWorkerLoop } from '../orchestrator/core/signals.js'
 import { nowIso } from '../shared/utils.js'
 
 import { enqueueWorkerTask } from './dispatch.js'
-import { clearTaskLiveOutput } from './live-output.js'
+import {
+  isDoneTaskStatus,
+  resolveTaskLookup,
+  touchTaskMutation,
+} from './task-action.js'
 import { resolveSlotStatus, resolveTaskChangeAt } from './task-state-shared.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
@@ -28,15 +32,12 @@ export const resumeTask = async (
   taskId: string,
   meta?: ResumeMeta,
 ): Promise<ResumeResult> => {
-  const trimmed = taskId.trim()
-  if (!trimmed) return { ok: false, id: trimmed, status: 'invalid' }
-  const task = runtime.tasks.find((item) => item.id === trimmed)
-  if (!task) return { ok: false, id: trimmed, status: 'not_found' }
-  if (
-    task.status === 'succeeded' ||
-    task.status === 'failed' ||
-    task.status === 'canceled'
-  ) {
+  const lookup = resolveTaskLookup(runtime, taskId)
+  if (!lookup.normalizedId)
+    return { ok: false, id: lookup.normalizedId, status: 'invalid' }
+  const { task } = lookup
+  if (!task) return { ok: false, id: lookup.normalizedId, status: 'not_found' }
+  if (isDoneTaskStatus(task.status)) {
     return {
       ok: false,
       id: task.id,
@@ -54,13 +55,12 @@ export const resumeTask = async (
   }
 
   const resumedAt = nowIso()
-  runtime.lastWorkerActivityAtMs = Date.now()
+  touchTaskMutation(runtime, task.id)
   task.status = 'pending'
   delete task.pausedAt
   delete task.startedAt
   delete task.completedAt
   delete task.durationMs
-  clearTaskLiveOutput(runtime, task.id)
 
   await appendTaskSystemMessage(runtime.paths.history, 'resumed', task, {
     createdAt: resumedAt,

@@ -21,7 +21,7 @@ export type QueryScopeItems = {
 }
 
 type ScopeName = keyof QueryScopeItems
-
+type ScopedLookupItem = { ref: string; score: number }
 type FlatEntry = {
   key: string
   score: number
@@ -33,10 +33,12 @@ type FlatEntry = {
 const normalizeText = (value: string): string =>
   value.trim().toLowerCase().replace(/\s+/g, ' ')
 
+const toEntryKey = (scope: ScopeName, ref: string): string => `${scope}\n${ref}`
+
 const computeTokenOverlap = (left: Set<string>, right: Set<string>): number => {
   if (left.size === 0 || right.size === 0) return 0
-  const smaller = left.size <= right.size ? left : right
-  const larger = left.size <= right.size ? right : left
+  const [smaller, larger] =
+    left.size <= right.size ? [left, right] : [right, left]
   let hitCount = 0
   for (const token of smaller) if (larger.has(token)) hitCount += 1
   return hitCount / Math.min(left.size, right.size)
@@ -45,97 +47,87 @@ const computeTokenOverlap = (left: Set<string>, right: Set<string>): number => {
 const isDuplicateEntry = (left: FlatEntry, right: FlatEntry): boolean => {
   if (!left.normalizedText || !right.normalizedText) return false
   if (left.normalizedText === right.normalizedText) return true
-  const minChars = Math.min(
-    left.normalizedText.length,
-    right.normalizedText.length,
-  )
-  if (minChars < 24) return false
+  if (Math.min(left.normalizedText.length, right.normalizedText.length) < 24)
+    return false
   return computeTokenOverlap(left.tokenSet, right.tokenSet) >= 0.92
 }
 
-const pushFlatEntry = (params: {
-  flat: FlatEntry[]
+const appendFlatEntries = <TItem extends ScopedLookupItem>(params: {
+  target: FlatEntry[]
   scope: ScopeName
-  ref: string
-  score: number
-  timeMs: number
-  text: string
+  items: readonly TItem[]
+  resolve: (item: TItem) => { time: string; text: string }
 }): void => {
-  const normalizedText = normalizeText(params.text)
-  if (!normalizedText) return
-  params.flat.push({
-    key: `${params.scope}\n${params.ref}`,
-    score: params.score,
-    timeMs: params.timeMs,
-    normalizedText,
-    tokenSet: new Set(tokenizeSearchText(normalizedText)),
-  })
+  for (const item of params.items) {
+    const { time, text } = params.resolve(item)
+    const normalizedText = normalizeText(text)
+    if (!normalizedText) continue
+    params.target.push({
+      key: toEntryKey(params.scope, item.ref),
+      score: item.score,
+      timeMs: parseIsoToMs(time),
+      normalizedText,
+      tokenSet: new Set(tokenizeSearchText(normalizedText)),
+    })
+  }
 }
 
 const collectFlatEntries = (itemsByScope: QueryScopeItems): FlatEntry[] => {
   const flat: FlatEntry[] = []
-  for (const item of itemsByScope.history) {
-    pushFlatEntry({
-      flat,
-      scope: 'history',
-      ref: item.ref,
-      score: item.score,
-      timeMs: parseIsoToMs(item.time),
-      text: item.snippet,
-    })
-  }
-  for (const item of itemsByScope.tasks) {
-    pushFlatEntry({
-      flat,
-      scope: 'tasks',
-      ref: item.ref,
-      score: item.score,
-      timeMs: parseIsoToMs(item.createdAt),
-      text: item.snippet,
-    })
-  }
-  for (const item of itemsByScope.focus) {
-    pushFlatEntry({
-      flat,
-      scope: 'focus',
-      ref: item.ref,
-      score: item.score,
-      timeMs: parseIsoToMs(item.updatedAt),
+  appendFlatEntries({
+    target: flat,
+    scope: 'history',
+    items: itemsByScope.history,
+    resolve: (item) => ({ time: item.time, text: item.snippet }),
+  })
+  appendFlatEntries({
+    target: flat,
+    scope: 'tasks',
+    items: itemsByScope.tasks,
+    resolve: (item) => ({ time: item.createdAt, text: item.snippet }),
+  })
+  appendFlatEntries({
+    target: flat,
+    scope: 'focus',
+    items: itemsByScope.focus,
+    resolve: (item) => ({
+      time: item.updatedAt,
       text: item.summary ?? item.title,
-    })
-  }
-  for (const item of itemsByScope.plans) {
-    pushFlatEntry({
-      flat,
-      scope: 'plans',
-      ref: item.ref,
-      score: item.score,
-      timeMs: parseIsoToMs(item.updatedAt),
-      text: item.snippet,
-    })
-  }
-  for (const item of itemsByScope.generated_index) {
-    pushFlatEntry({
-      flat,
-      scope: 'generated_index',
-      ref: item.ref,
-      score: item.score,
-      timeMs: parseIsoToMs(item.updatedAt),
+    }),
+  })
+  appendFlatEntries({
+    target: flat,
+    scope: 'plans',
+    items: itemsByScope.plans,
+    resolve: (item) => ({ time: item.updatedAt, text: item.snippet }),
+  })
+  appendFlatEntries({
+    target: flat,
+    scope: 'generated_index',
+    items: itemsByScope.generated_index,
+    resolve: (item) => ({
+      time: item.updatedAt,
       text: [item.path, item.snippet ?? ''].join('\n'),
-    })
-  }
-  for (const item of itemsByScope.task_archives) {
-    pushFlatEntry({
-      flat,
-      scope: 'task_archives',
-      ref: item.ref,
-      score: item.score,
-      timeMs: parseIsoToMs(item.completedAt),
+    }),
+  })
+  appendFlatEntries({
+    target: flat,
+    scope: 'task_archives',
+    items: itemsByScope.task_archives,
+    resolve: (item) => ({
+      time: item.completedAt,
       text: item.snippet ?? item.title ?? '',
-    })
-  }
+    }),
+  })
   return flat
 }
+
+const filterScopeItems = <TItem extends { ref: string }>(
+  scope: ScopeName,
+  items: readonly TItem[],
+  winnerKeys: Set<string>,
+): TItem[] =>
+  items.filter((item) => winnerKeys.has(toEntryKey(scope, item.ref)))
 
 export const dedupeQueryScopeItems = (
   itemsByScope: QueryScopeItems,
@@ -148,34 +140,25 @@ export const dedupeQueryScopeItems = (
 
   const winners: FlatEntry[] = []
   for (const candidate of ranked) {
-    let duplicated = false
-    for (const kept of winners) {
-      if (!isDuplicateEntry(candidate, kept)) continue
-      duplicated = true
-      break
-    }
-    if (!duplicated) winners.push(candidate)
+    if (winners.some((kept) => isDuplicateEntry(candidate, kept))) continue
+    winners.push(candidate)
   }
 
   const winnerKeys = new Set(winners.map((item) => item.key))
   return {
-    history: itemsByScope.history.filter((item) =>
-      winnerKeys.has(`history\n${item.ref}`),
+    history: filterScopeItems('history', itemsByScope.history, winnerKeys),
+    tasks: filterScopeItems('tasks', itemsByScope.tasks, winnerKeys),
+    focus: filterScopeItems('focus', itemsByScope.focus, winnerKeys),
+    plans: filterScopeItems('plans', itemsByScope.plans, winnerKeys),
+    generated_index: filterScopeItems(
+      'generated_index',
+      itemsByScope.generated_index,
+      winnerKeys,
     ),
-    tasks: itemsByScope.tasks.filter((item) =>
-      winnerKeys.has(`tasks\n${item.ref}`),
-    ),
-    focus: itemsByScope.focus.filter((item) =>
-      winnerKeys.has(`focus\n${item.ref}`),
-    ),
-    plans: itemsByScope.plans.filter((item) =>
-      winnerKeys.has(`plans\n${item.ref}`),
-    ),
-    generated_index: itemsByScope.generated_index.filter((item) =>
-      winnerKeys.has(`generated_index\n${item.ref}`),
-    ),
-    task_archives: itemsByScope.task_archives.filter((item) =>
-      winnerKeys.has(`task_archives\n${item.ref}`),
+    task_archives: filterScopeItems(
+      'task_archives',
+      itemsByScope.task_archives,
+      winnerKeys,
     ),
   }
 }

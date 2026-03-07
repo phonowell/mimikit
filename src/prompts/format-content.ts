@@ -1,6 +1,5 @@
-import { isAbsolute, relative, resolve } from 'node:path'
-
 import { GLOBAL_FOCUS_ID } from '../focus/index.js'
+import { toDisplayPath } from '../shared/path-display.js'
 import {
   buildPlanProgressPayload,
   buildPlanTriggerPayload,
@@ -30,21 +29,6 @@ const PLAN_PROMPT_MAX_CHARS = 220
 
 export const selectTasksForPrompt = (tasks: Task[]): Task[] =>
   sortTasksByChangedAt(tasks)
-
-const toDisplayPath = (path: string, workDir?: string): string => {
-  const trimmedPath = path.trim()
-  if (!workDir) return trimmedPath
-  const trimmedWorkDir = workDir.trim()
-  if (!trimmedWorkDir) return trimmedPath
-  const resolvedWorkDir = resolve(trimmedWorkDir)
-  const resolvedPath = isAbsolute(trimmedPath)
-    ? resolve(trimmedPath)
-    : resolve(resolvedWorkDir, trimmedPath)
-  const rel = relative(resolvedWorkDir, resolvedPath)
-  if (!rel) return '.'
-  if (rel.startsWith('..') || isAbsolute(rel)) return trimmedPath
-  return rel
-}
 
 const toCancelMeta = (
   cancel?: TaskCancelMeta,

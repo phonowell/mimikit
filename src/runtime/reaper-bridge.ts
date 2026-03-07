@@ -6,7 +6,6 @@ type RuntimeChildStarted = {
 }
 
 type RuntimeReaperBridge = {
-  runtimeId: string
   onRuntimeChildStarted: (child: RuntimeChildStarted) => Promise<void>
   onRuntimeChildStopped: (id: string) => Promise<void>
 }
@@ -19,9 +18,7 @@ export const setRuntimeReaperBridge = (
   runtimeReaperBridge = bridge
 }
 
-export const getRuntimeReaperBridge = (
-  _unusedRuntimeId?: string,
-): RuntimeReaperBridge | null => {
+export const getRuntimeReaperBridge = (): RuntimeReaperBridge | null => {
   if (!runtimeReaperBridge) return null
   return runtimeReaperBridge
 }

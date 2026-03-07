@@ -50,9 +50,7 @@ const attemptCode = (
 }
 
 const buildArchiveFilename = (iso: string, entry: TraceArchiveEntry): string =>
-  `${compactTimestamp36(iso)}${roleCode(entry.role)}${attemptCode(
-    entry.attempt,
-  )}.txt`
+  `${compactTimestamp36(iso)}${roleCode(entry.role)}${attemptCode(entry.attempt)}.txt`
 
 const buildArchiveContent = (
   timestamp: string,

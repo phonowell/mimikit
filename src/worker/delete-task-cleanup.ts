@@ -12,6 +12,35 @@ type RemoveFileWithinRootResult = 'deleted' | 'missing' | 'outside' | 'skipped'
 const TASK_PROGRESS_DIR = 'task-progress'
 const WORKER_TASK_PROMPT_DIR = 'generated/worker-task-prompts'
 
+const removeTaskNamedFiles = async (params: {
+  workDir: string
+  rootDir: string
+  targetName: string
+  nestedDirectoriesOnly: boolean
+}): Promise<number> => {
+  const rootPath = join(params.workDir, params.rootDir)
+  const entries = await listFiles(rootPath)
+  let deleted = 0
+  for (const entry of entries) {
+    if (!params.nestedDirectoriesOnly && entry.isFile()) {
+      if (entry.name !== params.targetName) continue
+      await rm(join(rootPath, entry.name), { force: true })
+      deleted += 1
+      continue
+    }
+    if (!entry.isDirectory()) continue
+    const dirPath = join(rootPath, entry.name)
+    const files = await listFiles(dirPath)
+    const target = files.find(
+      (item) => item.isFile() && item.name === params.targetName,
+    )
+    if (!target) continue
+    await rm(join(dirPath, target.name), { force: true })
+    deleted += 1
+  }
+  return deleted
+}
+
 export const removeFileWithinRoot = async (params: {
   rootPath: string
   targetPath?: string
@@ -51,54 +80,24 @@ export const removeTaskSystemHistoryEntries = async (
   return beforeCount - afterCount
 }
 
-export const removeTaskProgressFiles = async (
+export const removeTaskProgressFiles = (
   workDir: string,
   taskId: string,
-): Promise<number> => {
-  const taskProgressRoot = join(workDir, TASK_PROGRESS_DIR)
-  const dateDirs = (await listFiles(taskProgressRoot)).filter((entry) =>
-    entry.isDirectory(),
-  )
-  let deleted = 0
-  const targetName = `${taskId}.jsonl`
-  for (const dateDir of dateDirs) {
-    const dirPath = join(taskProgressRoot, dateDir.name)
-    const files = await listFiles(dirPath)
-    const target = files.find(
-      (entry) => entry.isFile() && entry.name === targetName,
-    )
-    if (!target) continue
-    await rm(join(dirPath, target.name), { force: true })
-    deleted += 1
-  }
-  return deleted
-}
+): Promise<number> =>
+  removeTaskNamedFiles({
+    workDir,
+    rootDir: TASK_PROGRESS_DIR,
+    targetName: `${taskId}.jsonl`,
+    nestedDirectoriesOnly: true,
+  })
 
-export const removeWorkerTaskPromptFiles = async (
+export const removeWorkerTaskPromptFiles = (
   workDir: string,
   taskId: string,
-): Promise<number> => {
-  const promptsRoot = join(workDir, WORKER_TASK_PROMPT_DIR)
-  const entries = await listFiles(promptsRoot)
-  const targetName = `${taskId}.md`
-  let deleted = 0
-
-  for (const entry of entries) {
-    if (entry.isFile() && entry.name === targetName) {
-      await rm(join(promptsRoot, entry.name), { force: true })
-      deleted += 1
-      continue
-    }
-    if (!entry.isDirectory()) continue
-    const dirPath = join(promptsRoot, entry.name)
-    const files = await listFiles(dirPath)
-    const target = files.find(
-      (item) => item.isFile() && item.name === targetName,
-    )
-    if (!target) continue
-    await rm(join(dirPath, target.name), { force: true })
-    deleted += 1
-  }
-
-  return deleted
-}
+): Promise<number> =>
+  removeTaskNamedFiles({
+    workDir,
+    rootDir: WORKER_TASK_PROMPT_DIR,
+    targetName: `${taskId}.md`,
+    nestedDirectoriesOnly: false,
+  })

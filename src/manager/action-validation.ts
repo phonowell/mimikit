@@ -22,6 +22,7 @@ import {
   formatSetTaskResultSummaryTaskNotInBatchHint,
   formatUpdatePlanDoneForbiddenHint,
 } from './action-feedback-hints.js'
+import { parseActionAttrs } from './action-parse.js'
 import {
   invalidArgsIssue,
   rejected,
@@ -59,9 +60,9 @@ export const validateRunTask = (
   item: Parsed,
   context: FeedbackContext,
 ): ValidationIssue[] => {
-  const parsed = runTaskSchema.safeParse(item.attrs)
-  if (!parsed.success) return [invalidArgsIssue(parsed.error)]
-  const { provider } = parsed.data
+  const parsed = parseActionAttrs(item, runTaskSchema)
+  if (!parsed) return validateWithSchema(item, runTaskSchema)
+  const { provider } = parsed
   if (!provider) return []
   const enabledProviders = context.enabledWorkerProviders
   if (!enabledProviders || enabledProviders.has(provider)) return []
@@ -71,16 +72,13 @@ export const validateCreatePlan = (
   item: Parsed,
   context: FeedbackContext,
 ): ValidationIssue[] => {
-  const parsed = createPlanSchema.safeParse(item.attrs)
-  if (!parsed.success) return [invalidArgsIssue(parsed.error)]
-  if (
-    parsed.data.trigger_mode !== 'scheduled_at' ||
-    !parsed.data.scheduled_at?.trim()
-  )
+  const parsed = parseActionAttrs(item, createPlanSchema)
+  if (!parsed) return validateWithSchema(item, createPlanSchema)
+  if (parsed.trigger_mode !== 'scheduled_at' || !parsed.scheduled_at?.trim())
     return []
   return validateScheduledAtNotPast({
     action: 'create_plan',
-    scheduledAt: parsed.data.scheduled_at,
+    scheduledAt: parsed.scheduled_at,
     ...resolveScheduleNowOption(context),
   })
 }
@@ -88,9 +86,9 @@ export const validateMutateTask = (
   item: Parsed,
   context: FeedbackContext,
 ): ValidationIssue[] => {
-  const parsed = mutateTaskSchema.safeParse(item.attrs)
-  if (!parsed.success) return [invalidArgsIssue(parsed.error)]
-  const { id, op } = parsed.data
+  const parsed = parseActionAttrs(item, mutateTaskSchema)
+  if (!parsed) return validateWithSchema(item, mutateTaskSchema)
+  const { id, op } = parsed
   const taskStatus = context.taskStatusById?.get(id)
   if (!taskStatus) return rejected(formatMutateTaskNotFoundHint())
 
@@ -132,11 +130,11 @@ export const validateSummarizeTaskResult = (
   item: Parsed,
   context: FeedbackContext,
 ): ValidationIssue[] => {
-  const parsed = summarizeSchema.safeParse(item.attrs)
-  if (!parsed.success) return [invalidArgsIssue(parsed.error)]
+  const parsed = parseActionAttrs(item, summarizeSchema)
+  if (!parsed) return validateWithSchema(item, summarizeSchema)
   const { resultTaskIds } = context
   if (!resultTaskIds) return []
-  if (resultTaskIds.has(parsed.data.task_id)) return []
+  if (resultTaskIds.has(parsed.task_id)) return []
   const available = [...resultTaskIds].slice(0, 3)
   const availableHint =
     available.length > 0
@@ -182,10 +180,10 @@ export const validateUpdatePlan = (
   item: Parsed,
   context: FeedbackContext,
 ): ValidationIssue[] => {
-  const parsed = updatePlanSchema.safeParse(item.attrs)
-  if (!parsed.success) return [invalidArgsIssue(parsed.error)]
-  const scheduledAt = parsed.data.scheduled_at?.trim()
-  if (parsed.data.trigger_mode !== 'scheduled_at' || !scheduledAt) return []
+  const parsed = parseActionAttrs(item, updatePlanSchema)
+  if (!parsed) return validateWithSchema(item, updatePlanSchema)
+  const scheduledAt = parsed.scheduled_at?.trim()
+  if (parsed.trigger_mode !== 'scheduled_at' || !scheduledAt) return []
   return validateScheduledAtNotPast({
     action: 'update_plan',
     scheduledAt,

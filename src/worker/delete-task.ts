@@ -10,10 +10,14 @@ import {
   removeTaskSystemHistoryEntries,
   removeWorkerTaskPromptFiles,
 } from './delete-task-cleanup.js'
-import { clearTaskLiveOutput } from './live-output.js'
+import {
+  isActiveTaskStatus,
+  resolveTaskLookup,
+  touchTaskMutation,
+} from './task-action.js'
+import { resolveTaskChangeAt } from './task-state-shared.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
-import type { Task } from '../types/index.js'
 
 export type DeleteTaskMeta = {
   source?: string
@@ -27,23 +31,17 @@ export type DeleteTaskResult = {
   changeAt?: string
 }
 
-const resolveTaskChangeAt = (task: Task): string =>
-  task.completedAt ?? task.pausedAt ?? task.startedAt ?? task.createdAt
-
-const isActiveTaskStatus = (status: Task['status']): boolean =>
-  status === 'pending' || status === 'running' || status === 'paused'
-
 export const deleteTask = async (
   runtime: RuntimeState,
   taskId: string,
   meta?: DeleteTaskMeta,
 ): Promise<DeleteTaskResult> => {
-  const trimmed = taskId.trim()
-  if (!trimmed) return { ok: false, id: trimmed, status: 'invalid' }
-  const index = runtime.tasks.findIndex((item) => item.id === trimmed)
-  if (index < 0) return { ok: false, id: trimmed, status: 'not_found' }
-  const task = runtime.tasks[index]
-  if (!task) return { ok: false, id: trimmed, status: 'not_found' }
+  const lookup = resolveTaskLookup(runtime, taskId)
+  if (!lookup.normalizedId)
+    return { ok: false, id: lookup.normalizedId, status: 'invalid' }
+  if (lookup.index < 0 || !lookup.task)
+    return { ok: false, id: lookup.normalizedId, status: 'not_found' }
+  const { task } = lookup
   if (isActiveTaskStatus(task.status)) {
     return {
       ok: false,
@@ -81,10 +79,9 @@ export const deleteTask = async (
     task.id,
   )
 
-  runtime.lastWorkerActivityAtMs = Date.now()
-  runtime.tasks.splice(index, 1)
+  touchTaskMutation(runtime, task.id)
+  runtime.tasks.splice(lookup.index, 1)
   runtime.runningControllers.delete(task.id)
-  clearTaskLiveOutput(runtime, task.id)
   const deletedAt = nowIso()
 
   await bestEffort('persistRuntimeState: task_deleted', () =>

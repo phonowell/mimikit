@@ -27,30 +27,6 @@ const managerInputSchema = z
     baseUrl: z.string().optional(),
     apiKey: z.string().optional(),
     proxy: z.string().optional(),
-    maxCorrectionRounds: z.number().int().positive().optional(),
-    promptSections: z
-      .record(z.string(), z.number().int().nonnegative())
-      .optional(),
-    taskCreate: z
-      .object({
-        debounceMs: z.number().int().nonnegative().optional(),
-      })
-      .strict()
-      .optional(),
-    taskWindow: z
-      .object({
-        maxCount: z.number().int().positive().optional(),
-        minCount: z.number().int().positive().optional(),
-      })
-      .strict()
-      .optional(),
-    planWindow: z
-      .object({
-        maxCount: z.number().int().positive().optional(),
-        minCount: z.number().int().positive().optional(),
-      })
-      .strict()
-      .optional(),
   })
   .strict()
 
@@ -58,13 +34,6 @@ const workerInputSchema = z
   .object({
     maxConcurrent: z.number().int().positive().optional(),
     timeoutMs: z.number().int().positive().optional(),
-    retry: z
-      .object({
-        maxAttempts: z.number().int().nonnegative().optional(),
-        backoffMs: z.number().int().nonnegative().optional(),
-      })
-      .strict()
-      .optional(),
   })
   .strict()
 
@@ -238,6 +207,18 @@ const formatUnknownKeys = (issues: readonly UnknownKeyIssue[]): string[] => {
   return [...new Set(values)].sort((left, right) => left.localeCompare(right))
 }
 
+const LEGACY_RUNTIME_ONLY_KEYS = new Set([
+  'manager.maxCorrectionRounds',
+  'manager.promptSections',
+  'manager.taskCreate',
+  'manager.taskWindow',
+  'manager.planWindow',
+  'worker.retry',
+])
+
+const filterReportableUnknownKeys = (keys: readonly string[]): string[] =>
+  keys.filter((key) => !LEGACY_RUNTIME_ONLY_KEYS.has(key))
+
 const asRecord = (value: unknown): Record<string, unknown> | undefined =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -392,9 +373,7 @@ const parseConfigInput = (
     parsedRaw = TOML.parse(source) as unknown
   } catch (error) {
     throw new Error(
-      `[config] invalid toml defaults: ${
-        error instanceof Error ? error.message : String(error)
-      }`,
+      `[config] invalid toml defaults: ${error instanceof Error ? error.message : String(error)}`,
     )
   }
   const parsed = stripSymbolKeysDeep(parsedRaw)
@@ -426,7 +405,7 @@ const parseConfigInput = (
 
   return {
     config: buildUserConfigDefaults(revalidated.data),
-    unknownKeys: formatUnknownKeys(unknownIssues),
+    unknownKeys: filterReportableUnknownKeys(formatUnknownKeys(unknownIssues)),
   }
 }
 

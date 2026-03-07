@@ -47,6 +47,7 @@ const buildTaskText = (
       ? `Canceled task ${taskLabel} at the user's request.`
       : `Canceled task ${taskLabel}.`
   }
+
   if (status === 'succeeded') return `Task ${taskLabel} completed successfully.`
   if (status === 'failed') return `Task ${taskLabel} failed.`
   if (status === 'canceled') return `Task ${taskLabel} was canceled.`

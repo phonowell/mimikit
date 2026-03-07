@@ -53,10 +53,7 @@ export const normalizePlanKey = (params: {
   profile: string
   trigger: TaskPlanTrigger
 }): string => {
-  const base = `${params.prompt.trim().replace(/\s+/g, ' ').toLowerCase()}\n${params.title
-    .trim()
-    .replace(/\s+/g, ' ')
-    .toLowerCase()}\n${params.focusId}\n${params.profile}`
+  const base = `${params.prompt.trim().replace(/\s+/g, ' ').toLowerCase()}\n${params.title.trim().replace(/\s+/g, ' ').toLowerCase()}\n${params.focusId}\n${params.profile}`
 
   if (params.trigger.mode === 'cron')
     return `${base}\ncron:${params.trigger.cron}`

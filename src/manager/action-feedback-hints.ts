@@ -1,13 +1,11 @@
-import { readFileSync } from 'node:fs'
-
-import { parse as parseYaml } from 'yaml'
 import { z } from 'zod'
 
-import { renderPromptTemplate } from '../prompts/format.js'
-import { resolvePromptPath } from '../prompts/prompt-loader.js'
+import {
+  createPromptTemplateRenderer,
+  loadYamlPromptTemplates,
+} from '../prompts/prompt-template-loader.js'
 
 const HINT_TEMPLATE_RELATIVE_PATH = 'manager/action-feedback-hints.md'
-const HINT_TEMPLATE_PATH = resolvePromptPath(HINT_TEMPLATE_RELATIVE_PATH)
 
 const actionFeedbackHintSchema = z
   .object({
@@ -38,27 +36,19 @@ const actionFeedbackHintSchema = z
 
 type ActionFeedbackHintKey = keyof z.infer<typeof actionFeedbackHintSchema>
 
-const loadHintTemplates = (): z.infer<typeof actionFeedbackHintSchema> => {
-  const source = readFileSync(HINT_TEMPLATE_PATH, 'utf8').trim()
-  if (!source)
-    throw new Error(`missing_prompt_template:${HINT_TEMPLATE_RELATIVE_PATH}`)
-  const parsed = actionFeedbackHintSchema.safeParse(parseYaml(source))
-  if (!parsed.success)
-    throw new Error(`invalid_prompt_template:${HINT_TEMPLATE_RELATIVE_PATH}`)
-  return parsed.data
-}
-
-const templates = loadHintTemplates()
+const { path: hintTemplatePath, templates } = loadYamlPromptTemplates({
+  relativePath: HINT_TEMPLATE_RELATIVE_PATH,
+  schema: actionFeedbackHintSchema,
+})
+const renderTemplate = createPromptTemplateRenderer<ActionFeedbackHintKey>({
+  path: hintTemplatePath,
+  templates,
+})
 
 const renderHint = (
   key: ActionFeedbackHintKey,
   values?: Record<string, string>,
-): string =>
-  renderPromptTemplate(
-    templates[key],
-    values ?? {},
-    `${HINT_TEMPLATE_PATH}#${key}`,
-  ).trim()
+): string => renderTemplate(key, values)
 
 export const formatUnregisteredActionHint = (
   registeredActions: string[],

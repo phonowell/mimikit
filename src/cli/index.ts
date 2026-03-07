@@ -60,7 +60,6 @@ const runtimeReaper = await createRuntimeReaperHandle({
 })
 await runtimeReaper.startHeartbeat()
 setRuntimeReaperBridge({
-  runtimeId,
   onRuntimeChildStarted: (child) =>
     runtimeReaper.registerChild({
       id: child.id,

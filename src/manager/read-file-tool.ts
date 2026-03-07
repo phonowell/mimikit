@@ -70,6 +70,7 @@ export const runReadFileTool = async (params: {
         `read_file failed: file is too large (${raw.byteLength} bytes > ${MAX_FILE_BYTES})`,
       )
     }
+
     const decoded = decodeUtf8Text(raw)
     const slicedByLines = sliceTextByLines({
       text: decoded,
@@ -99,6 +100,7 @@ export const runReadFileTool = async (params: {
         'read_file failed: file is not valid UTF-8 text',
       )
     }
+
     const code = readErrorCode(error)
     return buildReadFileError(displayPath, toErrorMessage(code))
   }

@@ -128,6 +128,33 @@ test('supports manager model overrides and ignores runtime-only compatibility ke
   expect(config.codex.model).toBe('gpt-5.3-codex')
 })
 
+test('does not report runtime-only compatibility keys as unknown', async () => {
+  const path = await writeTempConfig(
+    [
+      '[manager]',
+      'model = "gpt-5.2-mini"',
+      'maxCorrectionRounds = 3',
+      '',
+      '[manager.promptSections]',
+      'tasksMaxBytes = 1024',
+      '',
+      '[worker.retry]',
+      'maxAttempts = 2',
+      'backoffMs = 1000',
+      '',
+    ].join('\n'),
+  )
+
+  let unknownKeys: string[] = []
+  loadDefaultConfigFromToml(path, {
+    onUnknownKeys: (keys) => {
+      unknownKeys = [...keys]
+    },
+  })
+
+  expect(unknownKeys).toEqual([])
+})
+
 test('ignores unknown keys and reports them via callback', async () => {
   const path = await writeTempConfig(
     [

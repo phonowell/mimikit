@@ -53,11 +53,13 @@ const formatStatusSummary = (
       ? `Task "${taskLabel}" completed: ${detail}`
       : `Task "${taskLabel}" completed.`
   }
+
   if (status === 'failed') {
     return detail
       ? `Task "${taskLabel}" failed: ${detail}`
       : `Task "${taskLabel}" failed.`
   }
+
   return detail
     ? `Task "${taskLabel}" canceled: ${detail}`
     : `Task "${taskLabel}" canceled.`
