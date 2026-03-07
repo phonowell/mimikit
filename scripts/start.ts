@@ -56,7 +56,7 @@ const unixScript = join(rootDir, 'bin', 'mimikit')
 if (process.platform === 'darwin') {
   const exitCode = runCommand(
     'caffeinate',
-    ['-dimsu', 'bash', unixScript, ...args],
+    ['-ism', 'bash', unixScript, ...args],
     { cwd: rootDir },
   )
   process.exit(exitCode)
