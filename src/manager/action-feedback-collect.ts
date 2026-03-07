@@ -10,6 +10,9 @@ import {
 import { readFileSchema } from './action-apply-schema.js'
 import {
   formatActionInCodeBlockHint,
+  formatDuplicateActionGenericHint,
+  formatDuplicateQueryContextActionLimitHint,
+  formatDuplicateReadFileActionLimitHint,
   formatInvalidActionSyntaxHint,
   formatUnregisteredActionHint,
 } from './action-feedback-hints.js'
@@ -30,11 +33,10 @@ const INVALID_ACTION_SYNTAX_ERROR = 'invalid_action_syntax'
 const INVALID_ACTION_SYNTAX_HINT = formatInvalidActionSyntaxHint()
 const ACTION_IN_CODE_BLOCK_HINT = formatActionInCodeBlockHint()
 const SINGLE_LOOKUP_ACTION_LIMIT_HINTS: Record<string, string> = {
-  query_context:
-    'query_context 执行失败：同一轮最多保留一个 query_context action；请先合并查询目标。',
-  read_file:
-    'read_file 执行失败：同一轮最多保留一个 read_file action；请先合并读取范围。',
+  query_context: formatDuplicateQueryContextActionLimitHint(),
+  read_file: formatDuplicateReadFileActionLimitHint(),
 }
+const DUPLICATE_ACTION_GENERIC_HINT = formatDuplicateActionGenericHint()
 
 const isValidLookupAction = (item: Parsed): boolean => {
   if (item.name === 'query_context')
@@ -196,7 +198,7 @@ export const collectManagerActionFeedback = (
       item,
       'action_execution_rejected',
       SINGLE_LOOKUP_ACTION_LIMIT_HINTS[item.name] ??
-        'action 执行失败：重复 action。',
+        DUPLICATE_ACTION_GENERIC_HINT,
     )
   }
 

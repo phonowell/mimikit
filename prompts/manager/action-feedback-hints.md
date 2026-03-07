@@ -32,3 +32,11 @@ plan_not_found: |
   {{ action }} 执行失败：未找到 plan ID。
 update_plan_done_forbidden: |
   update_plan 执行失败：done plan 不可修改。
+duplicate_query_context_action_limit: |
+  query_context 执行失败：同一轮最多保留一个 query_context action；请先合并查询目标。
+duplicate_read_file_action_limit: |
+  read_file 执行失败：同一轮最多保留一个 read_file action；请先合并读取范围。
+duplicate_action_generic: |
+  action 执行失败：重复 action。
+set_task_result_summary_task_not_in_batch: |
+  set_task_result_summary 执行失败：task_id 不在当前批次结果中。{{ available_hint }}

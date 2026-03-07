@@ -28,6 +28,10 @@ const actionFeedbackHintSchema = z
     ask_user_choice_invalid_options: z.string().trim().min(1),
     plan_not_found: z.string().trim().min(1),
     update_plan_done_forbidden: z.string().trim().min(1),
+    duplicate_query_context_action_limit: z.string().trim().min(1),
+    duplicate_read_file_action_limit: z.string().trim().min(1),
+    duplicate_action_generic: z.string().trim().min(1),
+    set_task_result_summary_task_not_in_batch: z.string().trim().min(1),
   })
   .strict()
 
@@ -121,3 +125,19 @@ export const formatPlanNotFoundHint = (
 
 export const formatUpdatePlanDoneForbiddenHint = (): string =>
   renderHint('update_plan_done_forbidden')
+
+export const formatDuplicateQueryContextActionLimitHint = (): string =>
+  renderHint('duplicate_query_context_action_limit')
+
+export const formatDuplicateReadFileActionLimitHint = (): string =>
+  renderHint('duplicate_read_file_action_limit')
+
+export const formatDuplicateActionGenericHint = (): string =>
+  renderHint('duplicate_action_generic')
+
+export const formatSetTaskResultSummaryTaskNotInBatchHint = (
+  availableHint: string,
+): string =>
+  renderHint('set_task_result_summary_task_not_in_batch', {
+    available_hint: availableHint,
+  })

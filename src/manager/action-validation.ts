@@ -18,6 +18,7 @@ import {
   formatMutateTaskNotFoundHint,
   formatMutateTaskNotPausedHint,
   formatPlanNotFoundHint,
+  formatSetTaskResultSummaryTaskNotInBatchHint,
   formatUpdatePlanDoneForbiddenHint,
 } from './action-feedback-hints.js'
 import {
@@ -129,9 +130,7 @@ export const validateSummarizeTaskResult = (
     available.length > 0
       ? `当前批次可用 task_id: ${available.join(', ')}。`
       : '当前批次无可摘要的 task_result。'
-  return rejected(
-    `set_task_result_summary 执行失败：task_id 不在当前批次结果中。${availableHint}`,
-  )
+  return rejected(formatSetTaskResultSummaryTaskNotInBatchHint(availableHint))
 }
 export const validateAskUserChoice = (
   item: Parsed,
