@@ -1,6 +1,6 @@
 # Code Index
 
-*Last updated: 2026-03-06 17:31:00 CST*
+*Last updated: 2026-03-07 08:35:46 CST*
 *Scope: `src/**/*.ts` + `webui/**/*.js` exported capabilities (function/class/const entry points)*
 
 ## Quick Reference
@@ -196,9 +196,9 @@
 
 ---
 
-## Duplicate Audit Baseline (2026-03-06, `src` + `webui`)
+## Duplicate Audit Baseline (2026-03-07, `src` + `webui`)
 
-- Exact duplicate exported symbol names across files: `0` (scanned 634 exported symbols)
+- Exact duplicate exported symbol names across files: `0` (scanned 630 exported symbols)
 - `jscpd` clones: `3 -> 0` (`duplicatedLines: 67 -> 0`, `duplicatedTokens: 596 -> 0`, threshold `min-lines=8`, `min-tokens=80`)
 - `ts-prune`: not rerun in this pass (current scope includes `webui/**/*.js`)
 - Highest-density modules to inspect before adding code:

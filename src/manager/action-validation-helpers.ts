@@ -3,7 +3,6 @@ import { parseIsoMs } from '../shared/time.js'
 import {
   formatInvalidActionArgsEmptyHint,
   formatInvalidActionArgsWithIssuesHint,
-  formatInvalidIsoRangeFieldHint,
   formatScheduledAtInvalidHint,
   formatScheduledAtNotFutureHint,
 } from './action-feedback-hints.js'
@@ -46,20 +45,6 @@ export const invalidArgsIssue = (error: ZodError): ValidationIssue => ({
 export const rejected = (hint: string): ValidationIssue[] => [
   { error: ACTION_EXECUTION_REJECTED, hint },
 ]
-
-export const validateIsoRangeField = (
-  field: 'from' | 'to',
-  value: string | undefined,
-): ValidationIssue[] => {
-  if (!value?.trim()) return []
-  if (parseIsoMs(value) !== undefined) return []
-  return [
-    {
-      error: INVALID_ACTION_ARGS,
-      hint: formatInvalidIsoRangeFieldHint(field),
-    },
-  ]
-}
 
 export const validateScheduledAtNotPast = (params: {
   action: 'create_plan' | 'update_plan'

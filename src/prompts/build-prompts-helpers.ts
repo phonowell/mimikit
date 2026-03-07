@@ -1,5 +1,3 @@
-import { readTextFileIfExists } from '../fs/read-text.js'
-import { readErrorCode } from '../shared/error-code.js'
 import { compareIsoDesc } from '../shared/time.js'
 
 import { escapeCdata, stringifyPromptJson } from './format-base.js'
@@ -98,12 +96,3 @@ export const buildTaskResultDateHints = (
       )
       .map((task) => [task.id, task.completedAt.slice(0, 10)]),
   )
-
-export const readOptionalMarkdown = async (path: string): Promise<string> => {
-  try {
-    return await readTextFileIfExists(path)
-  } catch (error) {
-    if (readErrorCode(error) === 'ENOENT') return ''
-    throw error
-  }
-}
