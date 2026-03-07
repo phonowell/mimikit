@@ -15,6 +15,7 @@ export type PartialOutputListener = (output: string) => void
 
 type ProviderRequestBase = {
   role: 'manager' | 'worker'
+  runtimeId?: string
   prompt: string
   workDir: string
   timeoutMs: number
@@ -24,6 +25,13 @@ type ProviderRequestBase = {
   abortSignal?: AbortSignal
   onUsage?: UsageListener
   onPartialOutput?: PartialOutputListener
+  onRuntimeChildStarted?: (child: {
+    id: string
+    kind: 'opencode-server'
+    pid: number
+    meta?: Record<string, unknown>
+  }) => Promise<void>
+  onRuntimeChildStopped?: (id: string) => Promise<void>
 }
 
 export type OpenAiResponsesProviderRequest = ProviderRequestBase & {

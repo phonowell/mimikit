@@ -144,10 +144,16 @@
 - `runtime-snapshot.json.bak`
 - `log.jsonl`
 - `.instance`（运行时实例锁文件）
+- `runtime/lease.json`（主进程 lease 心跳）
+- `runtime/children.json`（外部 worker 子进程注册表）
+- `runtime/reaper.json`（reaper 守护进程标记）
 
 说明：
 - manager 每轮会注入 `M:memory`，注入前对 memory entries 做本地评分排序并按 budget 选择
 - memory 维护与遗忘语义（`remember_memory` / `delete_entry_ids`）以 `./memory.md` 为准；本节仅描述状态目录与落盘位置
+- `memory/MEMORY.md` 由两条链路维护：后台 memory 刷新子进程（`>=20` 轮触发，单飞执行）+ manager `remember_memory` 即时写入
+- 不存在独立 forget action；遗忘通过 `remember_memory` 记录指令，后续刷新输出 `delete_entry_ids` 执行删除
+- 异常退出（如被 kill）时，reaper 依据 `runtime/lease.json + runtime/children.json` 回收残留子进程
 
 ## WebUI 路径链接规则
 

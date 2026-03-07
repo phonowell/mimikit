@@ -3,6 +3,7 @@ import { spawn } from 'node:child_process'
 import { createOpencodeClient } from '@opencode-ai/sdk'
 
 import { attachProviderThreadId } from '../shared/provider-thread-id.js'
+import { newId } from '../shared/utils.js'
 
 import {
   buildProviderAbortedError,
@@ -42,6 +43,7 @@ const OPENCODE_SERVER_IDLE_TTL_MS = 5 * 60 * 1_000
 type Usage = ProviderResult['usage']
 
 type SharedServerRef = {
+  childId: string
   port?: number
   client: OpencodeClient
   close: () => Promise<void>
@@ -404,6 +406,12 @@ const createSharedServer = async (params: {
   workDir: string
   model: string
   proxy?: string
+  onServerStarted?: (child: {
+    id: string
+    kind: 'opencode-server'
+    pid: number
+    meta?: Record<string, unknown>
+  }) => Promise<void>
 }): Promise<SharedServerRef> => {
   const provider = buildProviderConfig({
     model: params.model,
@@ -412,16 +420,19 @@ const createSharedServer = async (params: {
   const excludedPorts = new Set<number>()
   for (;;) {
     const port = reserveServerPort(excludedPorts)
+    let spawnedProc: ChildProcessWithoutNullStreams | undefined
     try {
       const spawned = await spawnOpencodeServerProcess({
         port,
         config: provider.config,
       })
+      spawnedProc = spawned.proc
       const client = createOpencodeClient({
         baseUrl: spawned.url,
         directory: params.workDir,
       })
       const ref: SharedServerRef = {
+        childId: `runtime-${newId()}`,
         port,
         client,
         close: async () => {
@@ -443,8 +454,25 @@ const createSharedServer = async (params: {
       }
       const parsedPort = parsePortFromUrl(spawned.url)
       if (parsedPort !== undefined) ref.port = parsedPort
+      await params.onServerStarted?.({
+        id: ref.childId,
+        kind: 'opencode-server',
+        pid: spawned.proc.pid ?? -1,
+        meta: {
+          model: params.model,
+          url: spawned.url,
+          ...(ref.port !== undefined ? { port: ref.port } : {}),
+        },
+      })
       return ref
     } catch (error) {
+      if (spawnedProc) {
+        try {
+          await terminateServerProcess({ proc: spawnedProc })
+        } catch {
+          // swallow cleanup errors in startup path
+        }
+      }
       releaseServerPort(port)
       if (isPortBusyError(error)) {
         excludedPorts.add(port)
@@ -459,6 +487,12 @@ const getOrCreateSharedServer = async (params: {
   workDir: string
   model: string
   proxy?: string
+  onServerStarted?: (child: {
+    id: string
+    kind: 'opencode-server'
+    pid: number
+    meta?: Record<string, unknown>
+  }) => Promise<void>
 }): Promise<SharedServerRef> => {
   const key = toServerKey(params.workDir, params.proxy, params.model)
   const existing = serverRefByKey.get(key)
@@ -692,6 +726,9 @@ const runOpencodeProvider = async (
       workDir: request.workDir,
       model,
       ...(request.proxy ? { proxy: request.proxy } : {}),
+      ...(request.onRuntimeChildStarted
+        ? { onServerStarted: request.onRuntimeChildStarted }
+        : {}),
     })
     timeout.arm()
     const requestedSessionId = normalizeThreadId(request.threadId ?? undefined)
@@ -790,6 +827,8 @@ const runOpencodeProvider = async (
     timeout.clear()
     releaseExternalAbort()
     if (shared) {
+      if (shared.refCount <= 1 && request.onRuntimeChildStopped)
+        await request.onRuntimeChildStopped(shared.childId)
       releaseSharedServer({
         workDir: request.workDir,
         model,

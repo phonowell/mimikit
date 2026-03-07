@@ -1,6 +1,7 @@
 import { buildWorkerPrompt } from '../prompts/build-prompts.js'
 import { loadPromptSource } from '../prompts/prompt-loader.js'
 import { runWithProvider } from '../providers/registry.js'
+import { getRuntimeReaperBridge } from '../runtime/reaper-bridge.js'
 import { appendTaskProgress } from '../storage/task-progress.js'
 
 import { runWorkerLoop } from './profiled-runner-loop.js'
@@ -23,6 +24,7 @@ type LlmResult = {
 
 type BuildRunModelParams = {
   provider: WorkerProvider
+  runtimeId: string
   workDir: string
   timeoutMs: number
   proxy?: string
@@ -43,6 +45,7 @@ const buildRunModel =
       provider: params.provider === 'opencode' ? 'opencode-sdk' : 'codex-sdk',
       role: 'worker',
       prompt: input.prompt,
+      runtimeId: params.runtimeId,
       workDir: params.workDir,
       timeoutMs: params.timeoutMs,
       ...(params.proxy ? { proxy: params.proxy } : {}),
@@ -56,10 +59,23 @@ const buildRunModel =
       ...(input.onPartialOutput
         ? { onPartialOutput: input.onPartialOutput }
         : {}),
+      ...(params.provider === 'opencode'
+        ? {
+            onRuntimeChildStarted: (child) =>
+              getRuntimeReaperBridge(params.runtimeId)?.onRuntimeChildStarted(
+                child,
+              ) ?? Promise.resolve(),
+            onRuntimeChildStopped: (id) =>
+              getRuntimeReaperBridge(params.runtimeId)?.onRuntimeChildStopped(
+                id,
+              ) ?? Promise.resolve(),
+          }
+        : {}),
     })
 
 type WorkerRunnerParams = {
   provider: WorkerProvider
+  runtimeId: string
   stateDir: string
   workDir: string
   task: Task

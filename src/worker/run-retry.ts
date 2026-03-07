@@ -68,6 +68,7 @@ const runTaskModel = (params: {
     )
   return runWorker({
     provider: taskProvider,
+    runtimeId: params.runtime.runtimeId,
     stateDir: params.runtime.config.workDir,
     workDir: params.runtime.config.workDir,
     task: params.task,

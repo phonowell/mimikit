@@ -21,6 +21,7 @@
 
 - `manager`：消费 `inputs/results`，输出用户回复与编排动作。
 - `worker`：派发任务到外部执行运行时，并回写结果。
+- `runtime reaper`：独立守护进程，监测主进程 lease 并在异常退出后回收 worker 子进程。
 - `triggerWakeLoop`：统一处理 `cron/scheduled_at/on_worker_slot_freed` 触发并发布 `system_event.name=trigger_fire`。
 
 补充：
@@ -56,6 +57,7 @@
 - 队列 compact 仅在“已完全消费且达到阈值”时执行。
 - manager 上下文连续性通过 `history + tasks + plans + managerFocusCompressedContexts` 保持。
 - `restart/reset` 先回包，再等待 in-flight manager 批次收敛后持久化并退出。
+- 进程被杀（如 `SIGKILL`）时由 `runtime reaper` 基于 `.mimikit/runtime/lease.json` 与 `.mimikit/runtime/children.json` 执行回收（`SIGTERM` 后 `SIGKILL`）。
 
 ## 细节索引
 

@@ -9,6 +9,8 @@ import { createHttpServer } from '../http/index.js'
 import { bestEffort, setDefaultLogPath } from '../log/safe.js'
 import { Orchestrator } from '../orchestrator/core/orchestrator-service.js'
 import { loadCodexSettings } from '../providers/codex-settings.js'
+import { setRuntimeReaperBridge } from '../runtime/reaper-bridge.js'
+import { createRuntimeReaperHandle } from '../runtime/reaper.js'
 
 import { warnIgnoredUnknownConfigKeys } from './config-warning.js'
 import { applyCliEnvOverrides } from './env.js'
@@ -25,7 +27,8 @@ const portValue = values.port
 const workDir = values['work-dir']
 
 const resolvedWorkDir = resolve(workDir)
-setDefaultLogPath(buildPaths(resolvedWorkDir).log)
+const paths = buildPaths(resolvedWorkDir)
+setDefaultLogPath(paths.log)
 await loadCodexSettings()
 
 const parsePort = (value: string): number => {
@@ -48,6 +51,25 @@ applyCliEnvOverrides(config)
 console.log('[cli] config loaded')
 
 const runtimeLock = await acquireRuntimeLock(resolvedWorkDir)
+const runtimeId = process.pid > 0 ? `runtime-${process.pid}` : 'runtime-main'
+const runtimeReaper = await createRuntimeReaperHandle({
+  runtimeId,
+  paths,
+  runtimeLock,
+  logPath: paths.log,
+})
+await runtimeReaper.startHeartbeat()
+setRuntimeReaperBridge({
+  runtimeId,
+  onRuntimeChildStarted: (child) =>
+    runtimeReaper.registerChild({
+      id: child.id,
+      kind: child.kind,
+      pid: child.pid,
+      ...(child.meta ? { meta: child.meta } : {}),
+    }),
+  onRuntimeChildStopped: (id) => runtimeReaper.unregisterChild(id),
+})
 let shutdownPromise: Promise<never> | null = null
 
 const resolveHttpPort = async (target: number): Promise<number> => {
@@ -66,6 +88,10 @@ const shutdown = (
   if (shutdownPromise) return shutdownPromise
   shutdownPromise = (async () => {
     console.log(`\n[cli] ${reason}`)
+    await bestEffort('cli:stop_runtime_reaper_heartbeat', () =>
+      runtimeReaper.stopHeartbeat(),
+    )
+    setRuntimeReaperBridge(null)
     await bestEffort('cli:release_runtime_lock', () => runtimeLock.release(), {
       meta: { reason },
     })

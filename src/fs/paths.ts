@@ -12,12 +12,15 @@ export type StatePaths = {
   resultsDir: string
   tasksDir: string
   memoryDir: string
+  runtimeDir: string
   history: string
   log: string
   inputsPackets: string
   resultsPackets: string
   tasksEvents: string
   memoryFile: string
+  runtimeLease: string
+  runtimeChildren: string
 }
 
 export const buildPaths = (stateDir: string): StatePaths => {
@@ -26,18 +29,22 @@ export const buildPaths = (stateDir: string): StatePaths => {
   const resultsDir = join(root, 'results')
   const tasksDir = join(root, 'tasks')
   const memoryDir = join(root, 'memory')
+  const runtimeDir = join(root, 'runtime')
   return {
     root,
     inputsDir,
     resultsDir,
     tasksDir,
     memoryDir,
+    runtimeDir,
     history: join(root, 'history'),
     log: join(root, 'log.jsonl'),
     inputsPackets: join(inputsDir, 'packets.jsonl'),
     resultsPackets: join(resultsDir, 'packets.jsonl'),
     tasksEvents: join(tasksDir, 'tasks.jsonl'),
     memoryFile: join(memoryDir, 'MEMORY.md'),
+    runtimeLease: join(runtimeDir, 'lease.json'),
+    runtimeChildren: join(runtimeDir, 'children.json'),
   }
 }
 

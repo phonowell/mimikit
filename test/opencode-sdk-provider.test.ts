@@ -217,3 +217,60 @@ test('opencode provider ignores stale assistant usage from reused thread before 
   expect(promptAsyncMock).toHaveBeenCalledTimes(1)
   expect(statusMock).toHaveBeenCalled()
 })
+
+test('opencode provider emits runtime child lifecycle callbacks', async () => {
+  const proc = makeFakeProc({ startupUrl: 'http://127.0.0.1:42100' })
+  spawnMock.mockReturnValueOnce(proc)
+
+  const sessionId = 'session-1'
+  const messages = [
+    {
+      info: {
+        role: 'assistant',
+        time: { created: Date.now(), completed: Date.now() + 1 },
+        tokens: { input: 1, output: 1, total: 2 },
+      },
+      parts: [{ type: 'text', text: 'done' }],
+    },
+  ]
+  const dispose = vi.fn(async () => undefined)
+  const promptAsync = vi.fn(async () => undefined)
+  const sessionCreate = vi.fn(async () => ({ data: { id: sessionId } }))
+  const sessionMessages = vi.fn(async () => ({ data: messages }))
+  const sessionStatus = vi.fn(async () => ({
+    data: { [sessionId]: { type: 'idle' } },
+  }))
+
+  createOpencodeClientMock.mockReturnValue({
+    instance: { dispose },
+    session: {
+      create: sessionCreate,
+      get: vi.fn(),
+      promptAsync,
+      messages: sessionMessages,
+      status: sessionStatus,
+    },
+  })
+
+  const started = vi.fn(async () => undefined)
+  const stopped = vi.fn(async () => undefined)
+
+  const result = await opencodeSdkProvider.run({
+    provider: 'opencode-sdk',
+    role: 'worker',
+    prompt: 'ping',
+    workDir: '/tmp/mimikit-opencode-provider',
+    timeoutMs: 5000,
+    model: 'big-pickle',
+    onRuntimeChildStarted: started,
+    onRuntimeChildStopped: stopped,
+  })
+
+  expect(result.output).toBe('done')
+  expect(started).toHaveBeenCalledTimes(1)
+  expect(stopped).toHaveBeenCalledTimes(1)
+  expect(started.mock.calls[0]?.[0]).toMatchObject({
+    kind: 'opencode-server',
+    meta: { model: 'opencode/big-pickle' },
+  })
+})
