@@ -42,12 +42,6 @@ Interaction is conversational and task-oriented, similar to working with a teamm
 
 ### 1) Install dependencies
 
-```bash
-pnpm i
-```
-
-### 2) Configure API key
-
 Mimikit reads provider settings from `~/.codex/config.toml` and environment variables (see [`src/providers/codex-settings.ts`](./src/providers/codex-settings.ts)).
 API key resolution order:
 
@@ -57,7 +51,29 @@ API key resolution order:
 4. `~/.codex/auth.json` (`OPENAI_API_KEY`)
 
 ```bash
+git clone https://github.com/phonowell/mimikit.git
+cd mimikit
+pnpm i
+```
+
+### 2) Configure API key
+
+macOS / Linux:
+
+```bash
 export OPENAI_API_KEY=your_key
+```
+
+Windows PowerShell:
+
+```powershell
+$env:OPENAI_API_KEY = "your_key"
+```
+
+Windows CMD:
+
+```cmd
+set OPENAI_API_KEY=your_key
 ```
 
 If you use a custom Codex-compatible provider, configure `base_url` and `env_key` in the active provider:
@@ -122,7 +138,12 @@ enabled = true
 pnpm start
 ```
 
-Default port is `8787`; you can also run:
+`pnpm start` auto-runs dependency check and enters restart wrapper:
+
+- Windows: `bin/mimikit.cmd` (CMD-safe; callable from PowerShell/CMD)
+- Unix: `bin/mimikit`
+
+Default port is `8787`; direct start without wrapper:
 
 ```bash
 tsx src/cli/index.ts --port 8787 --work-dir .mimikit
@@ -186,12 +207,12 @@ Key points:
 
 Compared with public agent projects, Mimikit intentionally optimizes for single-session controllability over channel breadth or hardware extremity.
 
-| Repo | Public positioning (from README) | Mimikit differentiation |
-| --- | --- | --- |
-| [HKUDS/nanobot](https://github.com/HKUDS/nanobot) | Ultra-lightweight personal assistant with broad channels/providers | Mimikit emphasizes explicit workflow semantics (`on_worker_slot_freed`) and local runtime-state inspectability |
-| [sipeed/picoclaw](https://github.com/sipeed/picoclaw) | Go-based assistant targeting low-cost, low-memory hardware | Mimikit focuses on TypeScript orchestration clarity and WebUI/SSE development loop |
-| [memovai/mimiclaw](https://github.com/memovai/mimiclaw) | ESP32 pure-C assistant via Telegram on microcontroller-class device | Mimikit targets desktop/server local runtime with richer plan/task/state management |
-| [agentscope-ai/CoPaw](https://github.com/agentscope-ai/CoPaw) | Multi-channel personal assistant platform with broad integrations | Mimikit keeps a narrower scope for lower mental overhead and faster architecture iteration |
+| Repo                                                          | Public positioning (from README)                                    | Mimikit differentiation                                                                                        |
+| ------------------------------------------------------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| [HKUDS/nanobot](https://github.com/HKUDS/nanobot)             | Ultra-lightweight personal assistant with broad channels/providers  | Mimikit emphasizes explicit workflow semantics (`on_worker_slot_freed`) and local runtime-state inspectability |
+| [sipeed/picoclaw](https://github.com/sipeed/picoclaw)         | Go-based assistant targeting low-cost, low-memory hardware          | Mimikit focuses on TypeScript orchestration clarity and WebUI/SSE development loop                             |
+| [memovai/mimiclaw](https://github.com/memovai/mimiclaw)       | ESP32 pure-C assistant via Telegram on microcontroller-class device | Mimikit targets desktop/server local runtime with richer plan/task/state management                            |
+| [agentscope-ai/CoPaw](https://github.com/agentscope-ai/CoPaw) | Multi-channel personal assistant platform with broad integrations   | Mimikit keeps a narrower scope for lower mental overhead and faster architecture iteration                     |
 
 ## FAQ
 

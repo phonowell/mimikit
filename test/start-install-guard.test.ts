@@ -11,6 +11,9 @@ test('pnpm start script keeps dependency install guard before runtime launch', (
   const source = readFileSync(START_SCRIPT_PATH, 'utf8')
 
   expect(source).toContain("runCommand('pnpm', ['i']")
+  expect(source).toContain("const windowsScript = join(rootDir, 'bin', 'mimikit.cmd')")
+  expect(source).toContain("forwardedArgs.length > 0 && forwardedArgs[0] === '--'")
+  expect(source).toContain('forwardedArgs.slice(1)')
 
   const installIndex = source.indexOf('const installExitCode')
   const installGuardIndex = source.indexOf('if (installExitCode !== 0)')

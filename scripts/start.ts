@@ -5,7 +5,11 @@ import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 
 const rootDir = dirname(dirname(fileURLToPath(import.meta.url)))
-const args = process.argv.slice(2)
+const forwardedArgs = process.argv.slice(2)
+const args =
+  forwardedArgs.length > 0 && forwardedArgs[0] === '--'
+    ? forwardedArgs.slice(1)
+    : forwardedArgs
 
 const runCommand = (
   command: string,
@@ -39,10 +43,10 @@ if (installExitCode !== 0) {
 }
 
 if (process.platform === 'win32') {
-  const windowsScript = join(rootDir, 'bin', 'mimikit.ps1')
+  const windowsScript = join(rootDir, 'bin', 'mimikit.cmd')
   const exitCode = runCommand(
-    'powershell',
-    ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', windowsScript, ...args],
+    'cmd.exe',
+    ['/d', '/s', '/c', windowsScript, ...args],
     { cwd: rootDir },
   )
   process.exit(exitCode)

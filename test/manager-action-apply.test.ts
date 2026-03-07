@@ -21,6 +21,8 @@ const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-action-apply-'))
 const createRuntime = async (): Promise<RuntimeState> => {
   const workDir = await createTmpDir()
   const config = defaultConfig({ workDir })
+  config.codex.enabled = true
+  config.opencode.enabled = false
   const queue = new PQueue({ concurrency: config.worker.maxConcurrent })
   queue.pause()
   const now = new Date().toISOString()

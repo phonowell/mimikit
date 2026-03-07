@@ -8,6 +8,7 @@ Goal: start Mimikit locally and open WebUI at `http://127.0.0.1:8787`.
 - `node` + `pnpm` installed.
 - Network available for dependency install.
 - One usable API credential path is configured.
+- On Windows, use PowerShell or CMD.
 
 ## 1) Install
 
@@ -19,8 +20,22 @@ pnpm i
 
 Fast path:
 
+macOS / Linux:
+
 ```bash
 export OPENAI_API_KEY=your_key
+```
+
+Windows PowerShell:
+
+```powershell
+$env:OPENAI_API_KEY = "your_key"
+```
+
+Windows CMD:
+
+```cmd
+set OPENAI_API_KEY=your_key
 ```
 
 Optional provider path (`~/.codex/config.toml`):
@@ -53,7 +68,7 @@ What this does:
 
 - Runs `scripts/start.ts`.
 - Ensures dependencies (`pnpm i`) before launch.
-- Starts wrapper: `bin/mimikit` (Unix) or `bin/mimikit.ps1` (Windows).
+- Starts wrapper: `bin/mimikit` (Unix) or `bin/mimikit.cmd` (Windows).
 - Restarts on exit code `75` (`POST /api/restart` and `POST /api/reset` use this).
 - Auto-creates repo-root `config.toml` from `defaults/config.template.toml` when missing.
 - Unknown keys in `config.toml` are ignored with a startup warning.
@@ -68,16 +83,32 @@ tsx src/cli/index.ts --work-dir .mimikit
 
 WebUI:
 
+macOS / Linux:
+
 ```bash
 curl -sS -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8787/
+```
+
+Windows PowerShell:
+
+```powershell
+(Invoke-WebRequest -UseBasicParsing http://127.0.0.1:8787/).StatusCode
 ```
 
 Expected: `200`
 
 Runtime status:
 
+macOS / Linux:
+
 ```bash
 curl -sS http://127.0.0.1:8787/api/status
+```
+
+Windows PowerShell:
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:8787/api/status | ConvertTo-Json -Depth 5
 ```
 
 Expected: JSON with fields including:
