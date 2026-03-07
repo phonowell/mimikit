@@ -6,6 +6,7 @@ import { bindFocusPanel, bindPlansPanel } from './panels.js'
 import { bindRestart } from './restart.js'
 import { UI_TEXT } from './system-text.js'
 import { bindTasksPanel } from './tasks.js'
+import { bindTts } from './tts.js'
 
 const $ = (sel) => document.querySelector(sel)
 
@@ -26,6 +27,7 @@ const elements = {
   toolsToggleBtn: $('[data-tools-toggle]'),
   toolsMenu: $('[data-tools-menu]'),
   toolsDeleteBtn: $('[data-tools-delete]'),
+  toolsTtsBtn: $('[data-tools-tts]'),
   toolsRestartBtn: $('[data-tools-restart]'),
   toolsResetBtn: $('[data-tools-reset]'),
   deleteModeExitSection: $('[data-delete-mode-exit]'),
@@ -190,6 +192,7 @@ const focusPanel = bindFocusPanel({
   focusesOpenBtn: elements.focusesOpenBtn,
   focusesCloseBtn: elements.focusesCloseBtn,
 })
+let tts = null
 let messages = null
 const choicePanel = bindChoicePanel({
   panel: elements.choicePanel,
@@ -227,12 +230,20 @@ messages = createMessagesController({
     syncTitleWithFocusesSnapshot(focuses)
   },
   onChoiceSnapshot: (choice) => choicePanel?.applyChoiceSnapshot?.(choice),
+  onAgentMessages: (agentMessages) => {
+    tts?.speakMessages?.(agentMessages)
+  },
   onDisconnected: () => {
     tasksPanel?.setDisconnected?.()
     plansPanel?.setDisconnected?.()
     focusPanel?.setDisconnected?.()
     choicePanel?.setDisconnected?.()
   },
+})
+
+tts = bindTts({
+  toolsTtsBtn: elements.toolsTtsBtn,
+  toolsToggleBtn: elements.toolsToggleBtn,
 })
 
 syncFaviconWithStatus()

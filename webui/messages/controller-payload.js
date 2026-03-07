@@ -24,6 +24,16 @@ const findNewManagerFallbackMessage = (messages, enterMessageIds) => {
   return null
 }
 
+const findNewAgentMessages = (messages, enterMessageIds) => {
+  if (!enterMessageIds || enterMessageIds.size === 0) return []
+  const items = []
+  for (const message of messages) {
+    if (!message?.id || !enterMessageIds.has(message.id)) continue
+    if (message.role === 'agent') items.push(message)
+  }
+  return items
+}
+
 export const createPayloadController = ({
   messageState,
   loading,
@@ -34,6 +44,7 @@ export const createPayloadController = ({
   onPlansSnapshot,
   onFocusesSnapshot,
   onChoiceSnapshot,
+  onAgentMessages,
 }) => {
   const applyMessagesPayload = (msgData) => {
     const hasMessagesPayload = isRecord(msgData)
@@ -86,6 +97,9 @@ export const createPayloadController = ({
       const rendered = doRender(messages, enterMessageIds)
       if (rendered)
         applyRenderedState(messageState, rendered, { loading, syncLoadingState })
+      const newAgentMessages = findNewAgentMessages(messages, enterMessageIds)
+      if (newAgentMessages.length > 0 && typeof onAgentMessages === 'function')
+        onAgentMessages(newAgentMessages)
     }
 
     updateMessageState(messageState, messages)

@@ -44,6 +44,7 @@ export function createMessagesController({
   onPlansSnapshot,
   onFocusesSnapshot,
   onChoiceSnapshot,
+  onAgentMessages,
   onDisconnected,
 }) {
   let lastStatus = null
@@ -197,6 +198,7 @@ export function createMessagesController({
     onPlansSnapshot,
     onFocusesSnapshot,
     onChoiceSnapshot,
+    onAgentMessages,
   })
 
   const queue = createControllerQueue({
