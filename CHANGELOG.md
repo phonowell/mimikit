@@ -14,6 +14,8 @@ All notable changes to this project will be documented in this file.
 - Codex SDK provider support
 - OpenCode SDK provider support
 - Task panel with live progress streaming
+- GitHub Actions CI workflow (`.github/workflows/ci.yml`) for lint/type-check/test on Ubuntu and Windows
+- README "Minimal API Smoke Test" with curl/PowerShell examples for `/api/status` and `/api/input`
 
 ### Architecture
 

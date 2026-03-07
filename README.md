@@ -3,6 +3,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-ESM%20%2B%20Strict-3178C6?logo=typescript&logoColor=white)](./tsconfig.json)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
 [![Runtime](https://img.shields.io/badge/Runtime-Single%20Session-black)](./docs/design/architecture/system-architecture.md)
+[![CI](https://github.com/phonowell/mimikit/actions/workflows/ci.yml/badge.svg)](https://github.com/phonowell/mimikit/actions/workflows/ci.yml)
 
 Mimikit is a thin local orchestration layer around Codex for teams that want controllable behavior without adding another heavy agent stack.
 It keeps one main session with explicit `manager + worker` orchestration, a built-in WebUI, and file-backed runtime state for reproducible debugging. Mimikit is orchestration-only: direct task execution is delegated to external runtimes/providers.
@@ -24,6 +25,7 @@ OPENAI_API_KEY=your_key pnpm start
 - [LLM Bootstrap](#llm-bootstrap)
 - [Features](#features)
 - [How It Works](#how-it-works)
+- [Minimal API Smoke Test](#minimal-api-smoke-test)
 - [Use Cases](#use-cases)
 - [Benchmark Positioning](#benchmark-positioning)
 - [FAQ](#faq)
@@ -195,6 +197,30 @@ Key points:
 - Inputs and task results are persisted, then re-consumed by manager for deterministic round progression.
 - `triggerWakeLoop` evaluates timed/capacity plans and emits trigger events.
 - Runtime snapshot supports restart/reset with cursor reconciliation.
+
+## Minimal API Smoke Test
+
+After `pnpm start`, verify API status and enqueue one input without using the UI.
+
+macOS / Linux:
+
+```bash
+curl -sS http://127.0.0.1:8787/api/status
+curl -sS -X POST http://127.0.0.1:8787/api/input \
+  -H 'content-type: application/json' \
+  -d '{"text":"hello from quickstart"}'
+```
+
+Windows PowerShell:
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:8787/api/status | ConvertTo-Json -Depth 5
+Invoke-RestMethod -Method Post -ContentType "application/json" `
+  -Uri http://127.0.0.1:8787/api/input `
+  -Body '{"text":"hello from quickstart"}' | ConvertTo-Json
+```
+
+Expected: `/api/input` returns JSON containing an ID like `input-...`.
 
 ## Use Cases
 
