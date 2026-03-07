@@ -1,10 +1,10 @@
-import { access } from 'node:fs/promises'
-import { extname } from 'node:path'
+import { access, writeFile } from 'node:fs/promises'
+import { extname, join } from 'node:path'
 
+import { ensureDir } from '../fs/paths.js'
 import { readErrorCode } from '../shared/error-code.js'
 
-import { buildArchiveDocument } from './archive-format.js'
-import { writeDatedArchiveFile } from './archive-write.js'
+import { buildArchiveDocument, dateStamp } from './archive-format.js'
 import {
   queryTaskResultArchives,
   type QueryTaskResultArchivesOptions,
@@ -18,6 +18,7 @@ import type {
   TaskResultHandoff,
   TaskResultStatus,
   TokenUsage,
+  WorkerProvider,
 } from '../types/index.js'
 
 export type TaskArchiveEntry = {
@@ -30,6 +31,7 @@ export type TaskArchiveEntry = {
   createdAt: string
   completedAt: string
   durationMs: number
+  provider?: WorkerProvider
   usage?: TokenUsage
   cancel?: TaskCancelMeta
   handoff?: TaskResultHandoff
@@ -92,6 +94,7 @@ const buildArchiveContent = (entry: TaskArchiveEntry): string =>
       ['focus_id', entry.focusId ?? ''],
       ['title', entry.title],
       ['status', entry.status],
+      ['provider', entry.provider],
       ['created_at', entry.createdAt],
       ['completed_at', entry.completedAt],
       ['duration_ms', entry.durationMs],
@@ -106,18 +109,32 @@ const buildArchiveContent = (entry: TaskArchiveEntry): string =>
     ],
   )
 
+export const resolveTaskResultArchivePath = async (
+  stateDir: string,
+  entry: TaskArchiveEntry,
+): Promise<string> => {
+  const dateDir = dateStamp(entry.completedAt)
+  const dir = join(stateDir, TASK_ARCHIVE_DIR, dateDir)
+  await ensureDir(dir)
+  const basePath = join(dir, buildFilename(entry))
+  return ensureUniquePath(basePath)
+}
+
+export const writeTaskResultArchiveAtPath = async (
+  path: string,
+  entry: TaskArchiveEntry,
+): Promise<string> => {
+  await writeFile(path, buildArchiveContent(entry), { encoding: 'utf8' })
+  return path
+}
+
 export const appendTaskResultArchive = (
   stateDir: string,
   entry: TaskArchiveEntry,
 ): Promise<string> =>
-  writeDatedArchiveFile({
-    stateDir,
-    archiveSubDir: TASK_ARCHIVE_DIR,
-    timestamp: entry.completedAt,
-    filename: buildFilename(entry),
-    content: buildArchiveContent(entry),
-    resolvePath: ensureUniquePath,
-  })
+  resolveTaskResultArchivePath(stateDir, entry).then((path) =>
+    writeTaskResultArchiveAtPath(path, entry),
+  )
 
 export {
   queryTaskResultArchives,

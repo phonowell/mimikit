@@ -4,7 +4,10 @@ import { bestEffort, safeOrUndefined } from '../log/safe.js'
 import { notifyManagerLoop } from '../orchestrator/core/signals.js'
 import { nowIso } from '../shared/utils.js'
 import { appendTaskProgress } from '../storage/task-progress.js'
-import { appendTaskResultArchive } from '../storage/task-results.js'
+import {
+  resolveTaskResultArchivePath,
+  writeTaskResultArchiveAtPath,
+} from '../storage/task-results.js'
 import { publishWorkerResult } from '../streams/queues.js'
 
 import {
@@ -21,12 +24,13 @@ export const archiveTaskResult = (
   result: TaskResult,
   source: 'worker' | 'cancel',
 ): Promise<string | undefined> =>
-  safeOrUndefined(`appendTaskResultArchive: ${source}`, () =>
-    appendTaskResultArchive(runtime.config.workDir, {
+  safeOrUndefined(`appendTaskResultArchive: ${source}`, async () => {
+    const archiveEntry = {
       taskId: task.id,
       focusId: task.focusId,
       title: task.title,
       status: result.status,
+      provider: task.provider,
       prompt: task.prompt,
       output: result.output,
       createdAt: task.createdAt,
@@ -35,8 +39,20 @@ export const archiveTaskResult = (
       ...(result.usage ? { usage: result.usage } : {}),
       ...(result.cancel ? { cancel: result.cancel } : {}),
       ...(result.handoff ? { handoff: result.handoff } : {}),
-    }),
-  )
+    }
+    const archivePath = await resolveTaskResultArchivePath(
+      runtime.config.workDir,
+      archiveEntry,
+    )
+    const nextHandoff = withTaskArchiveEvidence(result.handoff, archivePath)
+    await writeTaskResultArchiveAtPath(archivePath, {
+      ...archiveEntry,
+      ...(nextHandoff ? { handoff: nextHandoff } : {}),
+    })
+    result.archivePath = archivePath
+    result.handoff = nextHandoff
+    return archivePath
+  })
 
 export const buildResult = (
   task: Task,
@@ -73,10 +89,7 @@ export const finalizeResult = async (
   runtime.lastWorkerActivityAtMs = Date.now()
   result.handoff ??= buildTaskResultHandoff(task, result)
   const archivePath = await archiveTaskResult(runtime, task, result, 'worker')
-  if (archivePath) {
-    result.archivePath = archivePath
-    result.handoff = withTaskArchiveEvidence(result.handoff, archivePath)
-  }
+  if (archivePath) task.archivePath = archivePath
   markFn(runtime.tasks, task.id, {
     completedAt: result.completedAt,
     durationMs: result.durationMs,

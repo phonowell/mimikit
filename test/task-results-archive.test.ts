@@ -4,7 +4,10 @@ import { join } from 'node:path'
 
 import { expect, test } from 'vitest'
 
-import { appendTaskResultArchive } from '../src/storage/task-results.js'
+import {
+  appendTaskResultArchive,
+  readTaskResultArchive,
+} from '../src/storage/task-results.js'
 
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-task-archive-'))
 
@@ -12,6 +15,7 @@ const archiveEntry = {
   taskId: 'task-archive-1',
   title: 'Archive Collision',
   status: 'succeeded' as const,
+  provider: 'opencode' as const,
   prompt: 'Prompt',
   output: 'Output',
   createdAt: '2026-03-03T00:00:00.000Z',
@@ -28,4 +32,22 @@ test('appendTaskResultArchive resolves filename collisions by suffix', async () 
   expect(secondPath.endsWith('_01.md')).toBe(true)
   await expect(access(firstPath)).resolves.toBeUndefined()
   await expect(access(secondPath)).resolves.toBeUndefined()
+})
+
+test('readTaskResultArchive restores provider and handoff payload', async () => {
+  const stateDir = await createTmpDir()
+  const path = await appendTaskResultArchive(stateDir, {
+    ...archiveEntry,
+    handoff: {
+      summary: 'Done',
+      artifacts: [{ path: 'tasks/2026-03-03/task-archive-1.md', kind: 'task_archive' }],
+      evidence: [{ type: 'task_archive', ref: 'tasks/2026-03-03/task-archive-1.md' }],
+    },
+  })
+
+  const parsed = await readTaskResultArchive(path)
+  expect(parsed?.provider).toBe('opencode')
+  expect(parsed?.handoff?.evidence?.[0]).toMatchObject({
+    type: 'task_archive',
+  })
 })

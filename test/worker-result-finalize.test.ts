@@ -6,6 +6,7 @@ import { expect, test } from 'vitest'
 
 import { buildPaths } from '../src/fs/paths.js'
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
+import { readTaskResultArchive } from '../src/storage/task-results.js'
 import type { Task, TaskResult } from '../src/types/index.js'
 import { finalizeResult } from '../src/worker/result-finalize.js'
 import { readTaskProgressForTest } from './helpers/task-progress.js'
@@ -32,6 +33,7 @@ test('finalizeResult appends worker_end progress for canceled task', async () =>
     title: 'Cancel Me',
     focusId: 'focus-local',
     profile: 'worker',
+    provider: 'opencode',
     status: 'running',
     createdAt: '2026-02-26T10:00:00.000Z',
     startedAt: '2026-02-26T10:00:01.000Z',
@@ -94,6 +96,11 @@ test('finalizeResult appends worker_end progress for canceled task', async () =>
   })
   expect(result.handoff?.artifacts?.[0]).toMatchObject({
     kind: 'task_archive',
+  })
+  const archived = await readTaskResultArchive(result.archivePath ?? '')
+  expect(archived?.provider).toBe('opencode')
+  expect(archived?.handoff?.evidence?.[0]).toMatchObject({
+    type: 'task_archive',
   })
   expect(runtime.focusContexts).toHaveLength(1)
   expect(runtime.focusContexts[0]).toMatchObject({

@@ -13,10 +13,7 @@ import { publishWorkerResult } from '../streams/queues.js'
 
 import { clearTaskLiveOutput } from './live-output.js'
 import { archiveTaskResult } from './result-finalize.js'
-import {
-  buildTaskResultHandoff,
-  withTaskArchiveEvidence,
-} from './result-handoff.js'
+import { buildTaskResultHandoff } from './result-handoff.js'
 import {
   discardTaskSession,
   isRecoverableCancelSource,
@@ -58,6 +55,7 @@ const buildCanceledResult = (task: Task, output: string): TaskResult => {
     completedAt,
     ...(task.title ? { title: task.title } : {}),
     profile: task.profile,
+    provider: task.provider,
     ...(task.cancel ? { cancel: task.cancel } : {}),
     ...(handoff ? { handoff } : {}),
   }
@@ -96,12 +94,9 @@ const pushCanceledResult = async (
   task: Task,
   result: TaskResult,
 ) => {
-  syncFocusContextFromTaskResult(runtime, task, result)
   const archivePath = await archiveTaskResult(runtime, task, result, 'cancel')
-  if (archivePath) {
-    result.archivePath = task.archivePath = archivePath
-    result.handoff = withTaskArchiveEvidence(result.handoff, archivePath)
-  }
+  if (archivePath) task.archivePath = archivePath
+  syncFocusContextFromTaskResult(runtime, task, result)
   await publishWorkerResult({
     paths: runtime.paths,
     payload: result,

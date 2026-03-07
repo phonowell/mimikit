@@ -19,12 +19,16 @@ import type {
   TaskResult,
   TaskResultHandoff,
   TaskResultStatus,
+  WorkerProvider,
 } from '../types/index.js'
 
 const parseStatus = (value?: string): TaskResultStatus | null =>
   value === 'succeeded' || value === 'failed' || value === 'canceled'
     ? value
     : null
+
+const parseProvider = (value?: string): WorkerProvider | undefined =>
+  value === 'codex' || value === 'opencode' ? value : undefined
 
 const parseCancelSource = (
   value?: string,
@@ -149,6 +153,7 @@ const parseTaskResultArchive = (
 
   const durationMs = Number(parsed.header.duration_ms)
   const usage = parseTokenUsageJson(parsed.header.usage)
+  const provider = parseProvider(parsed.header.provider)
   const cancelSource = parseCancelSource(parsed.header.cancel_source)
   const cancel: TaskCancelMeta | undefined = cancelSource
     ? {
@@ -168,6 +173,7 @@ const parseTaskResultArchive = (
     durationMs: Number.isFinite(durationMs) ? durationMs : 0,
     completedAt,
     ...(usage ? { usage } : {}),
+    ...(provider ? { provider } : {}),
     ...(parsed.header.title ? { title: parsed.header.title } : {}),
     ...(archivePath ? { archivePath } : {}),
     ...(cancel ? { cancel } : {}),
