@@ -4,7 +4,7 @@
     "@fastify/static": "^9.0.0",
     "@iarna/toml": "^2.2.5",
     "@modelcontextprotocol/sdk": "^1.27.1",
-    "@openai/codex-sdk": "^0.110.0",
+    "@openai/codex-sdk": "^0.111.0",
     "croner": "^10.0.1",
     "dompurify": "^3.3.2",
     "fastify": "^5.8.1",
@@ -31,12 +31,12 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@types/node": "^25.3.3",
+    "@types/node": "^25.3.5",
     "@types/nunjucks": "^3.2.6",
     "@types/write-file-atomic": "^4.0.3",
     "@typescript-eslint/eslint-plugin": "^8.56.1",
     "@typescript-eslint/parser": "^8.56.1",
-    "eslint": "9.39.3",
+    "eslint": "9.x",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-prettier": "^5.5.5",
     "eslint-plugin-unused-imports": "^4.4.1",
