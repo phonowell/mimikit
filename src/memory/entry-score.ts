@@ -1,4 +1,5 @@
 import { scoreTextOverlap, tokenizeSearchText } from '../shared/text-search.js'
+import { clipUtf8ByBytes } from '../shared/text.js'
 import { computeRecencyWeight, parseIsoToMsOrZero } from '../shared/time.js'
 
 import { type MemoryEntry } from './entry-types.js'
@@ -110,13 +111,6 @@ export const rankMemoryEntries = (params: {
     if (leftTs !== rightTs) return rightTs - leftTs
     return left.id.localeCompare(right.id)
   })
-}
-
-const clipUtf8ByBytes = (value: string, maxBytes: number): string => {
-  if (maxBytes <= 0) return ''
-  const buffer = Buffer.from(value, 'utf8')
-  if (buffer.byteLength <= maxBytes) return value
-  return buffer.subarray(0, maxBytes).toString('utf8').trimEnd()
 }
 
 export const selectScoredMemoryEntries = (params: {

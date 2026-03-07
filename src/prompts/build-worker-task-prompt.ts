@@ -1,6 +1,8 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 
+import { clipUtf8ByBytes, truncateText } from '../shared/text.js'
+
 import {
   formatWorkerTaskPromptExternalizedIntro,
   formatWorkerTaskPromptExternalizedPathLine,
@@ -24,13 +26,6 @@ const WORKER_PROMPT_EXTERNALIZED_INTRO =
   formatWorkerTaskPromptExternalizedIntro()
 const WORKER_PROMPT_EXTERNALIZED_PREVIEW_HEADER =
   formatWorkerTaskPromptExternalizedPreviewHeader()
-
-const clipUtf8ByBytes = (value: string, maxBytes: number): string => {
-  if (maxBytes <= 0) return ''
-  const bytes = Buffer.from(value, 'utf8')
-  if (bytes.byteLength <= maxBytes) return value
-  return bytes.subarray(0, maxBytes).toString('utf8').trimEnd()
-}
 
 const withWorkerPromptBudget = (value: string): string => {
   const normalized = value.trim()
@@ -84,8 +79,9 @@ const taskPromptFilePath = (
 
 const toTaskPromptPreview = (value: string): string => {
   const compact = value.replace(/\s+/g, ' ').trim()
-  if (compact.length <= WORKER_TASK_PROMPT_PREVIEW_MAX_CHARS) return compact
-  return `${compact.slice(0, WORKER_TASK_PROMPT_PREVIEW_MAX_CHARS - 3).trimEnd()}...`
+  return truncateText(compact, WORKER_TASK_PROMPT_PREVIEW_MAX_CHARS, {
+    suffix: '...',
+  })
 }
 
 const externalizeWorkerTaskPromptIfNeeded = async (params: {

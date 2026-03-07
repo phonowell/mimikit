@@ -1,5 +1,6 @@
 import { isVisibleToAgent } from '../shared/message-visibility.js'
 import { rankLookupResults } from '../shared/search-rank.js'
+import { tokenizeSearchTextWithCjkFallback } from '../shared/text-search.js'
 import { truncateText } from '../shared/text.js'
 import { parseIsoMs } from '../shared/time.js'
 
@@ -24,9 +25,7 @@ const normalizeSpace = (value: string): string =>
   value.replace(/\s+/g, ' ').trim()
 
 export const toTokens = (value: string): string[] =>
-  normalizeSpace(value)
-    .toLowerCase()
-    .match(/[\p{L}\p{N}_-]+/gu) ?? []
+  tokenizeSearchTextWithCjkFallback(normalizeSpace(value))
 
 type QueryDoc = {
   id: string

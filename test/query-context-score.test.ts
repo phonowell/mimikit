@@ -1,6 +1,7 @@
 import { expect, test } from 'vitest'
 
 import { scoreQueryCandidate, tokenizeSearchText } from '../src/manager/query-context-score.js'
+import { tokenizeSearchTextWithCjkFallback } from '../src/shared/text-search.js'
 
 test('tokenizeSearchText emits CJK n-gram features', () => {
   const tokens = tokenizeSearchText('请用中文简洁回复')
@@ -17,4 +18,10 @@ test('scoreQueryCandidate matches CJK paraphrase text', () => {
     newestMs: 200,
   })
   expect(score > 0).toBe(true)
+})
+
+test('tokenizeSearchTextWithCjkFallback keeps single-char CJK token', () => {
+  const tokens = tokenizeSearchTextWithCjkFallback('中')
+  expect(tokens).toContain('中')
+  expect(tokens).toContain('cjk1:中')
 })

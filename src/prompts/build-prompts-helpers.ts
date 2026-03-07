@@ -1,15 +1,9 @@
+import { clipUtf8ByBytes } from '../shared/text.js'
 import { compareIsoDesc } from '../shared/time.js'
 
 import { escapeCdata, stringifyPromptJson } from './format-base.js'
 
 import type { Task, TaskResult } from '../types/index.js'
-
-const clipUtf8ByBytes = (value: string, maxBytes: number): string => {
-  if (maxBytes <= 0) return ''
-  const buffer = Buffer.from(value, 'utf8')
-  if (buffer.byteLength <= maxBytes) return value
-  return buffer.subarray(0, maxBytes).toString('utf8').trimEnd()
-}
 
 const parseJsonListSection = (
   value: string,

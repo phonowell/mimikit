@@ -43,3 +43,29 @@ test('queryTaskResultArchives returns top hits for query text', async () => {
   expect(hits[0]?.archivePath).toContain('task-release-1')
   expect(hits[0]?.score).toBeGreaterThan(0)
 })
+
+test('queryTaskResultArchives supports CJK query and single-char fallback', async () => {
+  const stateDir = await createTmpDir()
+  await appendTaskResultArchive(stateDir, {
+    taskId: 'task-cjk-1',
+    title: '中文总结',
+    status: 'succeeded',
+    prompt: '请输出中文总结',
+    output: '已经完成中文回复并保持简洁。',
+    createdAt: '2026-03-04T00:00:00.000Z',
+    completedAt: '2026-03-04T00:03:00.000Z',
+    durationMs: 18,
+  })
+
+  const cjkHits = await queryTaskResultArchives(stateDir, '中文总结', {
+    limit: 3,
+  })
+  expect(cjkHits[0]?.taskId).toBe('task-cjk-1')
+
+  const singleCharHits = await queryTaskResultArchives(stateDir, '中', {
+    limit: 3,
+  })
+  expect(singleCharHits.some((item) => item.taskId === 'task-cjk-1')).toBe(
+    true,
+  )
+})

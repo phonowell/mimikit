@@ -34,6 +34,15 @@ const tokenizeCjkNgrams = (text: string): string[] => {
 export const tokenizeSearchText = (text: string): string[] =>
   toUnique([...tokenizeWords(text), ...tokenizeCjkNgrams(text)])
 
+export const tokenizeSearchTextWithCjkFallback = (text: string): string[] => {
+  const base = tokenizeSearchText(text)
+  if (!containsCjk(text)) return base
+  const compact = (text.toLowerCase().match(CJK_GRAM_CHAR_RE) ?? []).join('')
+  if (!compact) return base
+  const singleChars = Array.from(compact).map((char) => `cjk1:${char}`)
+  return toUnique([...base, ...singleChars])
+}
+
 export const scoreTokenOverlap = (
   queryTokens: string[],
   haystackTokens: string[],

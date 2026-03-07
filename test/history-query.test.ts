@@ -85,3 +85,28 @@ test('queryHistory applies before_id window filter', () => {
   const ids = lookup.map((item) => item.id)
   expect(new Set(ids)).toEqual(new Set(['m0', 'm1', 'm2', 'm3', 'm4']))
 })
+
+test('queryHistory supports CJK single-char query fallback', () => {
+  const request: QueryHistoryRequest = {
+    query: '中',
+    limit: 5,
+    roles: ['user', 'agent'],
+  }
+  const history: HistoryMessage[] = [
+    {
+      id: 'm0',
+      role: 'user',
+      text: '请用中文回复',
+      createdAt: '2026-02-08T07:00:00.000Z',
+    },
+    {
+      id: 'm1',
+      role: 'agent',
+      text: '后续保持简洁',
+      createdAt: '2026-02-08T08:00:00.000Z',
+    },
+  ]
+
+  const lookup = queryHistory(history, request)
+  expect(lookup.some((item) => item.id === 'm0')).toBe(true)
+})

@@ -3,6 +3,8 @@ import { join } from 'node:path'
 import { listFiles } from '../fs/paths.js'
 import { readTextFile } from '../fs/read-text.js'
 import { safe } from '../log/safe.js'
+import { tokenizeSearchTextWithCjkFallback } from '../shared/text-search.js'
+import { truncateText } from '../shared/text.js'
 import { parseIsoToMs } from '../shared/time.js'
 
 import {
@@ -273,11 +275,6 @@ const MAX_DOC_SNIPPET_CHARS = 400
 const BM25_K1 = 1.2
 const BM25_B = 0.75
 
-const tokenizeSearchText = (text: string): string[] =>
-  (text.toLowerCase().match(/\p{L}[\p{L}\p{N}_-]*/gu) ?? []).map((item) =>
-    item.trim(),
-  )
-
 const buildTokenFreq = (tokens: string[]): Map<string, number> => {
   const map = new Map<string, number>()
   for (const token of tokens) map.set(token, (map.get(token) ?? 0) + 1)
@@ -287,8 +284,7 @@ const buildTokenFreq = (tokens: string[]): Map<string, number> => {
 
 const truncateSnippet = (value: string): string => {
   const normalized = value.trim().replace(/\s+/g, ' ')
-  if (normalized.length <= MAX_DOC_SNIPPET_CHARS) return normalized
-  return `${normalized.slice(0, MAX_DOC_SNIPPET_CHARS - 1).trimEnd()}…`
+  return truncateText(normalized, MAX_DOC_SNIPPET_CHARS, { suffix: '…' })
 }
 
 const toSearchDoc = async (path: string): Promise<SearchDoc | undefined> => {
@@ -305,7 +301,7 @@ const toSearchDoc = async (path: string): Promise<SearchDoc | undefined> => {
   const output = extractArchiveSection(parsed, '=== RESULT ===')
   const snippet = truncateSnippet(output)
   const indexText = [title ?? '', prompt, output].join('\n')
-  const tokens = tokenizeSearchText(indexText)
+  const tokens = tokenizeSearchTextWithCjkFallback(indexText)
   return {
     taskId,
     status,
@@ -387,7 +383,7 @@ export const queryTaskResultArchives = async (
   }
   if (docs.length === 0) return []
 
-  const queryTokens = tokenizeSearchText(queryText)
+  const queryTokens = tokenizeSearchTextWithCjkFallback(queryText)
   if (queryTokens.length === 0) return []
   const avgDocLength = Math.max(
     1,

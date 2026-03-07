@@ -1,12 +1,12 @@
 import { scoreTextOverlap, tokenizeSearchText } from '../shared/text-search.js'
+import { truncateText } from '../shared/text.js'
 import { computeRecencyWeight } from '../shared/time.js'
 
 export { tokenizeSearchText }
 
 export const truncatePreview = (value: string, maxChars: number): string => {
   const compact = value.trim().replace(/\s+/g, ' ')
-  if (compact.length <= maxChars) return compact
-  return `${compact.slice(0, Math.max(1, maxChars - 1)).trimEnd()}…`
+  return truncateText(compact, maxChars, { suffix: '…' })
 }
 
 export const scoreQueryCandidate = (params: {
