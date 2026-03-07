@@ -1,25 +1,66 @@
+import { EventEmitter } from 'node:events'
+
 import { beforeEach, expect, test, vi } from 'vitest'
 
 import { opencodeSdkProvider } from '../src/providers/opencode-sdk-provider.js'
 import { readProviderErrorCode } from '../src/providers/provider-error.js'
 
-const { createOpencodeClientMock, createOpencodeServerMock } = vi.hoisted(() => ({
+const { createOpencodeClientMock, spawnMock } = vi.hoisted(() => ({
   createOpencodeClientMock: vi.fn(),
-  createOpencodeServerMock: vi.fn(),
+  spawnMock: vi.fn(),
 }))
 
 vi.mock('@opencode-ai/sdk', () => ({
   createOpencodeClient: createOpencodeClientMock,
-  createOpencodeServer: createOpencodeServerMock,
 }))
+
+vi.mock('node:child_process', () => ({
+  spawn: spawnMock,
+}))
+
+type FakeProc = EventEmitter & {
+  stdout: EventEmitter
+  stderr: EventEmitter
+  kill: ReturnType<typeof vi.fn>
+  exitCode: number | null
+}
+
+const makeFakeProc = (params: {
+  startupError?: string
+}): FakeProc => {
+  const proc = new EventEmitter() as FakeProc
+  proc.stdout = new EventEmitter()
+  proc.stderr = new EventEmitter()
+  proc.exitCode = null
+  proc.kill = vi.fn((): boolean => {
+    if (proc.exitCode !== null) return true
+    proc.exitCode = 0
+    setTimeout(() => {
+      proc.emit('exit', 0)
+    }, 0)
+    return true
+  })
+  if (params.startupError) {
+    setTimeout(() => {
+      proc.stderr.emit('data', params.startupError)
+      proc.exitCode = 1
+      proc.emit('exit', 1)
+    }, 0)
+  }
+  return proc
+}
 
 beforeEach(() => {
   createOpencodeClientMock.mockReset()
-  createOpencodeServerMock.mockReset()
+  spawnMock.mockReset()
 })
 
 test('opencode provider surfaces server start error without secondary finally crash', async () => {
-  createOpencodeServerMock.mockRejectedValueOnce(new Error('boot failed'))
+  spawnMock.mockReturnValueOnce(
+    makeFakeProc({
+      startupError: 'boot failed',
+    }),
+  )
 
   let caught: unknown
   try {
@@ -40,4 +81,3 @@ test('opencode provider surfaces server start error without secondary finally cr
   expect((caught as Error).message).not.toContain('shared')
   expect(readProviderErrorCode(caught)).toBe('provider_sdk_failure')
 })
-

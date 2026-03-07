@@ -1,4 +1,6 @@
-import { createOpencodeClient, createOpencodeServer } from '@opencode-ai/sdk'
+import { spawn } from 'node:child_process'
+
+import { createOpencodeClient } from '@opencode-ai/sdk'
 
 import { attachProviderThreadId } from '../shared/provider-thread-id.js'
 
@@ -23,6 +25,7 @@ import type {
   ProviderResult,
 } from './types.js'
 import type { OpencodeClient, ProviderConfig, Session } from '@opencode-ai/sdk'
+import type { ChildProcessWithoutNullStreams } from 'node:child_process'
 
 const PROVIDER_ID = 'opencode-sdk' as const
 const MODEL_PROVIDER_ID = 'opencode' as const
@@ -30,6 +33,8 @@ const DEFAULT_AGENT = 'build'
 const POLL_INTERVAL_MS = 350
 
 const OPENCODE_SERVER_START_TIMEOUT_MS = 8_000
+const OPENCODE_SERVER_SHUTDOWN_GRACE_MS = 2_000
+const OPENCODE_SERVER_SHUTDOWN_FORCE_MS = 2_000
 const SERVER_PORT_MIN = 42_100
 const SERVER_PORT_MAX = 42_999
 const OPENCODE_SERVER_IDLE_TTL_MS = 5 * 60 * 1_000
@@ -39,8 +44,9 @@ type Usage = ProviderResult['usage']
 type SharedServerRef = {
   port?: number
   client: OpencodeClient
-  close: () => void
+  close: () => Promise<void>
   refCount: number
+  closing?: Promise<void>
   idleTimer?: ReturnType<typeof setTimeout>
 }
 
@@ -128,8 +134,9 @@ const parsePortFromUrl = (url: string): number | undefined => {
   }
 }
 
-const reserveServerPort = (): number => {
+const reserveServerPort = (excludedPorts?: ReadonlySet<number>): number => {
   for (let port = SERVER_PORT_MIN; port <= SERVER_PORT_MAX; port += 1) {
+    if (excludedPorts?.has(port)) continue
     if (reservedServerPorts.has(port)) continue
     reservedServerPorts.add(port)
     return port
@@ -145,10 +152,185 @@ const releaseServerPort = (port: number | undefined): void => {
   reservedServerPorts.delete(port)
 }
 
+const readSdkErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) return error.message
+  const record = asRecord(error)
+  if (!record) return String(error)
+  const name = asString(record.name)
+  const data = asRecord(record.data)
+  const dataMessage = asString(data?.message)
+  const message = asString(record.message) ?? dataMessage
+  if (name && message) return `${name}: ${message}`
+  if (message) return message
+  try {
+    return JSON.stringify(record)
+  } catch {
+    return String(error)
+  }
+}
+
+const isPortBusyError = (error: unknown): boolean => {
+  const message = readSdkErrorMessage(error)
+  return /failed to start server on port|eaddrinuse|address already in use/i.test(
+    message,
+  )
+}
+
 const clearIdleTimer = (ref: SharedServerRef): void => {
   if (!ref.idleTimer) return
   clearTimeout(ref.idleTimer)
   delete ref.idleTimer
+}
+
+const waitForProcessExit = (params: {
+  proc: ChildProcessWithoutNullStreams
+  timeoutMs: number
+}): Promise<boolean> => {
+  if (params.proc.exitCode !== null) return Promise.resolve(true)
+  return new Promise<boolean>((resolve) => {
+    let done = false
+    const finish = (exited: boolean): void => {
+      if (done) return
+      done = true
+      clearTimeout(timerId)
+      params.proc.off('exit', handleExit)
+      resolve(exited)
+    }
+    const handleExit = (): void => {
+      finish(true)
+    }
+    const timerId = setTimeout(() => {
+      finish(false)
+    }, params.timeoutMs)
+    params.proc.on('exit', handleExit)
+  })
+}
+
+const terminateServerProcess = async (params: {
+  proc: ChildProcessWithoutNullStreams
+}): Promise<void> => {
+  if (params.proc.exitCode !== null) return
+  params.proc.kill('SIGTERM')
+  const exitedByTerm = await waitForProcessExit({
+    proc: params.proc,
+    timeoutMs: OPENCODE_SERVER_SHUTDOWN_GRACE_MS,
+  })
+  if (exitedByTerm) return
+  params.proc.kill('SIGKILL')
+  await waitForProcessExit({
+    proc: params.proc,
+    timeoutMs: OPENCODE_SERVER_SHUTDOWN_FORCE_MS,
+  })
+}
+
+const spawnOpencodeServerProcess = (params: {
+  port: number
+  config: Record<string, unknown>
+}): Promise<{ url: string; proc: ChildProcessWithoutNullStreams }> => {
+  const proc = spawn(
+    'opencode',
+    ['serve', '--hostname=127.0.0.1', `--port=${params.port}`],
+    {
+      env: {
+        ...process.env,
+        OPENCODE_CONFIG_CONTENT: JSON.stringify(params.config),
+      },
+    },
+  )
+  return new Promise<{
+    url: string
+    proc: ChildProcessWithoutNullStreams
+  }>((resolve, reject) => {
+    let done = false
+    let output = ''
+    const finish = (fn: () => void): void => {
+      if (done) return
+      done = true
+      clearTimeout(timerId)
+      proc.stdout.off('data', handleStdout)
+      proc.stderr.off('data', handleStderr)
+      proc.off('exit', handleExit)
+      proc.off('error', handleError)
+      fn()
+    }
+    const fail = (error: unknown): void => {
+      const resolved = error instanceof Error ? error : new Error(String(error))
+      finish(() => {
+        reject(resolved)
+      })
+    }
+    const handleStdout = (chunk: Buffer | string): void => {
+      output += chunk.toString()
+      const lines = output.split('\n')
+      for (const line of lines) {
+        if (!line.startsWith('opencode server listening')) continue
+        const match = line.match(/on\s+(https?:\/\/[^\s]+)/)
+        if (!match) {
+          fail(new Error(`Failed to parse server url from output: ${line}`))
+          return
+        }
+        const url = match[1]
+        if (!url) {
+          fail(new Error(`Failed to parse server url from output: ${line}`))
+          return
+        }
+        finish(() => {
+          resolve({ url, proc })
+        })
+        return
+      }
+    }
+    const handleStderr = (chunk: Buffer | string): void => {
+      output += chunk.toString()
+    }
+    const handleExit = (code: number | null): void => {
+      let message = `Server exited with code ${code}`
+      const trimmed = output.trim()
+      if (trimmed.length > 0) message += `\nServer output: ${trimmed}`
+      fail(new Error(message))
+    }
+    const handleError = (error: Error): void => {
+      fail(error)
+    }
+    const timerId = setTimeout(() => {
+      fail(
+        new Error(
+          `Timeout waiting for server to start after ${OPENCODE_SERVER_START_TIMEOUT_MS}ms`,
+        ),
+      )
+    }, OPENCODE_SERVER_START_TIMEOUT_MS)
+    proc.stdout.on('data', handleStdout)
+    proc.stderr.on('data', handleStderr)
+    proc.on('exit', handleExit)
+    proc.on('error', handleError)
+  })
+}
+
+const disposeSharedServerNow = async (params: {
+  key: string
+  ref: SharedServerRef
+}): Promise<void> => {
+  const current = serverRefByKey.get(params.key)
+  if (!current || current !== params.ref) return
+  if (current.refCount > 0) return
+  if (current.closing) {
+    await current.closing
+    return
+  }
+  serverRefByKey.delete(params.key)
+  const closing = (async (): Promise<void> => {
+    try {
+      await current.close()
+    } finally {
+      releaseServerPort(current.port)
+    }
+  })()
+  current.closing = closing
+  try {
+    await closing
+  } finally {
+    if (current.closing === closing) delete current.closing
+  }
 }
 
 const scheduleServerDispose = (params: {
@@ -157,15 +339,10 @@ const scheduleServerDispose = (params: {
 }): void => {
   clearIdleTimer(params.ref)
   params.ref.idleTimer = setTimeout(() => {
-    const current = serverRefByKey.get(params.key)
-    if (!current || current !== params.ref) return
-    if (current.refCount > 0) return
-    serverRefByKey.delete(params.key)
-    try {
-      current.close()
-    } finally {
-      releaseServerPort(current.port)
-    }
+    void disposeSharedServerNow({
+      key: params.key,
+      ref: params.ref,
+    })
   }, OPENCODE_SERVER_IDLE_TTL_MS)
 }
 
@@ -228,34 +405,53 @@ const createSharedServer = async (params: {
   model: string
   proxy?: string
 }): Promise<SharedServerRef> => {
-  const port = reserveServerPort()
   const provider = buildProviderConfig({
     model: params.model,
     ...(params.proxy ? { proxy: params.proxy } : {}),
   })
-  try {
-    const server = await createOpencodeServer({
-      port,
-      timeout: OPENCODE_SERVER_START_TIMEOUT_MS,
-      config: provider.config,
-    })
-    const client = createOpencodeClient({
-      baseUrl: server.url,
-      directory: params.workDir,
-    })
-    const ref: SharedServerRef = {
-      client,
-      close: () => {
-        server.close()
-      },
-      refCount: 1,
+  const excludedPorts = new Set<number>()
+  for (;;) {
+    const port = reserveServerPort(excludedPorts)
+    try {
+      const spawned = await spawnOpencodeServerProcess({
+        port,
+        config: provider.config,
+      })
+      const client = createOpencodeClient({
+        baseUrl: spawned.url,
+        directory: params.workDir,
+      })
+      const ref: SharedServerRef = {
+        port,
+        client,
+        close: async () => {
+          try {
+            await client.instance.dispose({
+              throwOnError: true,
+            })
+          } catch (error) {
+            const message = readSdkErrorMessage(error)
+            if (!isTransientProviderMessage(message)) {
+              // ignore dispose failures; process termination below is authoritative
+            }
+          }
+          await terminateServerProcess({
+            proc: spawned.proc,
+          })
+        },
+        refCount: 1,
+      }
+      const parsedPort = parsePortFromUrl(spawned.url)
+      if (parsedPort !== undefined) ref.port = parsedPort
+      return ref
+    } catch (error) {
+      releaseServerPort(port)
+      if (isPortBusyError(error)) {
+        excludedPorts.add(port)
+        continue
+      }
+      throw error
     }
-    const parsedPort = parsePortFromUrl(server.url)
-    if (parsedPort !== undefined) ref.port = parsedPort
-    return ref
-  } catch (error) {
-    releaseServerPort(port)
-    throw error
   }
 }
 
@@ -412,23 +608,6 @@ const pickLatestAssistantMessage = (
 
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms))
-
-const readSdkErrorMessage = (error: unknown): string => {
-  if (error instanceof Error) return error.message
-  const record = asRecord(error)
-  if (!record) return String(error)
-  const name = asString(record.name)
-  const data = asRecord(record.data)
-  const dataMessage = asString(data?.message)
-  const message = asString(record.message) ?? dataMessage
-  if (name && message) return `${name}: ${message}`
-  if (message) return message
-  try {
-    return JSON.stringify(record)
-  } catch {
-    return String(error)
-  }
-}
 
 const toProviderError = (params: {
   error: unknown
