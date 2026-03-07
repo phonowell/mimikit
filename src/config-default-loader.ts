@@ -90,6 +90,7 @@ const opencodeInputSchema = z
 const webuiInputSchema = z
   .object({
     enabled: z.boolean().optional(),
+    port: z.number().int().positive().max(65535).optional(),
   })
   .strict()
 
@@ -135,6 +136,7 @@ export type UserConfigDefaults = {
   }
   webui: {
     enabled: boolean
+    port: number
   }
   telegram: TelegramConfig
 }
@@ -168,6 +170,7 @@ const DEFAULT_USER_CONFIG: UserConfigDefaults = {
   },
   webui: {
     enabled: true,
+    port: 8787,
   },
   telegram: {
     enabled: false,
@@ -335,6 +338,7 @@ const buildUserConfigDefaults = (
     },
     webui: {
       enabled: input.webui?.enabled ?? DEFAULT_USER_CONFIG.webui.enabled,
+      port: input.webui?.port ?? DEFAULT_USER_CONFIG.webui.port,
     },
     telegram: {
       enabled: input.telegram?.enabled ?? DEFAULT_USER_CONFIG.telegram.enabled,

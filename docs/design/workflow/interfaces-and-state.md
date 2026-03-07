@@ -64,7 +64,7 @@
 ## CLI 入口
 
 - `pnpm start`
-- `tsx src/cli/index.ts --port 8787 --work-dir .mimikit`
+- `tsx src/cli/index.ts --work-dir .mimikit`
 
 ## 环境变量（`src/cli/env.ts`）
 
@@ -82,6 +82,7 @@
 - `MIMIKIT_CODEX_ENABLED`
 - `MIMIKIT_OPENCODE_ENABLED`
 - `MIMIKIT_WEBUI_ENABLED`
+- `MIMIKIT_WEBUI_PORT`
 - `TELEGRAM_CHANNEL_ENABLED`
 - `TELEGRAM_BOT_TOKEN`
 - `TELEGRAM_CHAT_ID`
@@ -108,6 +109,7 @@
 - `opencode.billing`
 - `opencode.proxy`
 - `webui.enabled`
+- `webui.port`
 - `telegram.enabled`
 - `telegram.botToken`
 - `telegram.chatId`

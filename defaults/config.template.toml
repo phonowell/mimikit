@@ -49,6 +49,8 @@ proxy = ""
 [webui]
 # 是否启用内置 WebUI + HTTP API；默认 true
 enabled = true
+# WebUI 监听端口；默认 8787
+port = 8787
 
 # Telegram 配置
 [telegram]

@@ -20,6 +20,7 @@ const ENV_KEYS = [
   'MIMIKIT_CODEX_ENABLED',
   'MIMIKIT_OPENCODE_ENABLED',
   'MIMIKIT_WEBUI_ENABLED',
+  'MIMIKIT_WEBUI_PORT',
   'TELEGRAM_PROXY',
 ] as const
 
@@ -105,4 +106,13 @@ test('webui enabled env overrides config value', () => {
   applyCliEnvOverrides(config)
 
   expect(config.webui.enabled).toBe(false)
+})
+
+test('webui port env overrides config value', () => {
+  const config = createConfig()
+  process.env.MIMIKIT_WEBUI_PORT = '9797'
+
+  applyCliEnvOverrides(config)
+
+  expect(config.webui.port).toBe(9797)
 })

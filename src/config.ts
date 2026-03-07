@@ -74,6 +74,7 @@ export type AppConfig = {
   }
   webui: {
     enabled: boolean
+    port: number
   }
   telegram: TelegramConfig
 }
@@ -159,7 +160,10 @@ export const defaultConfig = (params: DefaultConfigParams): AppConfig => {
         ? { proxy: userConfig.opencode.proxy }
         : {}),
     },
-    webui: userConfig.webui,
+    webui: {
+      enabled: userConfig.webui.enabled,
+      port: userConfig.webui.port,
+    },
     telegram: userConfig.telegram,
   }
 }

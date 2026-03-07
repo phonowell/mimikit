@@ -79,6 +79,21 @@ const parseBooleanEnv = (
   return undefined
 }
 
+const parsePortEnv = (
+  envName: string,
+  value: string | undefined,
+): number | undefined => {
+  if (!value) return undefined
+  const trimmed = value.trim()
+  if (!trimmed) return undefined
+  const parsed = Number(trimmed)
+  if (!Number.isInteger(parsed) || parsed <= 0 || parsed > 65535) {
+    console.warn(`[cli] invalid ${envName}:`, value)
+    return undefined
+  }
+  return parsed
+}
+
 const applyProxyEnv = (config: AppConfig): void => {
   const globalProxy = trimEnv('MIMIKIT_PROXY')
   if (globalProxy) {
@@ -113,6 +128,12 @@ const applyWebUiEnv = (config: AppConfig): void => {
     process.env.MIMIKIT_WEBUI_ENABLED,
   )
   if (enabled !== undefined) config.webui.enabled = enabled
+
+  const port = parsePortEnv(
+    'MIMIKIT_WEBUI_PORT',
+    process.env.MIMIKIT_WEBUI_PORT,
+  )
+  if (port !== undefined) config.webui.port = port
 }
 
 export const applyCliEnvOverrides = (config: AppConfig): void => {

@@ -16,7 +16,7 @@ import { acquireRuntimeLock } from './runtime-lock.js'
 
 const { values } = parseArgs({
   options: {
-    port: { type: 'string', short: 'p', default: '8787' },
+    port: { type: 'string', short: 'p' },
     'work-dir': { type: 'string', default: '.mimikit' },
   },
 })
@@ -96,7 +96,9 @@ try {
   if (!config.webui.enabled)
     console.log('[cli] webui disabled by config: webui.enabled=false')
   else {
-    const listenPort = await resolveHttpPort(parsePort(portValue))
+    const targetPort =
+      typeof portValue === 'string' ? parsePort(portValue) : config.webui.port
+    const listenPort = await resolveHttpPort(targetPort)
     await createHttpServer(orchestrator, config, listenPort)
   }
 } catch (error) {

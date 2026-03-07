@@ -61,7 +61,7 @@ What this does:
 Direct start (no wrapper/restart loop):
 
 ```bash
-tsx src/cli/index.ts --port 8787 --work-dir .mimikit
+tsx src/cli/index.ts --work-dir .mimikit
 ```
 
 ## 4) Verify
@@ -119,6 +119,7 @@ billing = "free"
 
 [webui]
 enabled = true
+port = 8787
 ```
 
 Main env overrides:
@@ -138,6 +139,7 @@ export MIMIKIT_OPENCODE_PROXY=http://127.0.0.1:7897
 export MIMIKIT_CODEX_ENABLED=true
 export MIMIKIT_OPENCODE_ENABLED=false
 export MIMIKIT_WEBUI_ENABLED=true
+export MIMIKIT_WEBUI_PORT=8787
 ```
 
 Precedence: role-specific env (`MIMIKIT_MANAGER_*`, `MIMIKIT_CODEX_*`, `MIMIKIT_OPENCODE_*`) overrides global env (`MIMIKIT_*`).
@@ -146,7 +148,7 @@ Precedence: role-specific env (`MIMIKIT_MANAGER_*`, `MIMIKIT_CODEX_*`, `MIMIKIT_
 
 - `OPENAI_API_KEY is missing`: credentials not resolved and provider requires auth.
 - `[cli] instance lock exists at .../.mimikit/.instance`: another process already uses the same `--work-dir`.
-- `[cli] port 8787 is in use, fallback to ...`: CLI picks first free port in `[8787, 8807]`.
+- `[cli] port 8787 is in use, fallback to ...`: CLI picks first free port in `[8787, 8807]` (target port comes from `--port` > `MIMIKIT_WEBUI_PORT` > `config.toml` `webui.port`).
 - `[config] invalid toml defaults`: invalid `config.toml` field values/types.
 
 ## Done criteria

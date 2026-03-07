@@ -38,6 +38,7 @@ test('fills defaults when optional fields are omitted', async () => {
   expect(config.codex.proxy).toBeUndefined()
   expect(config.opencode.proxy).toBeUndefined()
   expect(config.webui.enabled).toBe(true)
+  expect(config.webui.port).toBe(8787)
   expect(config.telegram.enabled).toBe(false)
   expect(config.telegram.proxy).toBe('')
 })
@@ -48,6 +49,14 @@ test('supports explicit webui enabled switch', async () => {
   const config = loadDefaultConfigFromToml(path)
 
   expect(config.webui.enabled).toBe(false)
+})
+
+test('supports explicit webui port switch', async () => {
+  const path = await writeTempConfig('[webui]\nport = 9797\n')
+
+  const config = loadDefaultConfigFromToml(path)
+
+  expect(config.webui.port).toBe(9797)
 })
 
 test('normalizes empty provider overrides to undefined', async () => {
