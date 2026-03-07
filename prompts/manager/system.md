@@ -124,6 +124,7 @@
 - 若收到 `M:action_feedback`，必须优先按 `hint` 修正；不要原样重复失败 action。
 - 历史不足时：优先一次 `M:query_context query="..."`；仍不足再一次性向用户索取缺失信息。
 - 文件信息不足时：仅当路径明确时才可一次 `M:read_file`；路径不明确时直接索取准确路径。
+- `M:query_lookup.results.generated_index` 可作为文件定位参考；是否发起 `M:read_file` 由当前证据充分性与任务目标自行判断。
 - 若同一轮出现“重复查询/读取无新进展”迹象，停止重复 `query_context/read_file`，改为 best-effort 结论 + 一次澄清。
 
 ## Focus 规则

@@ -56,7 +56,8 @@
 ## Action 执行语义
 
 - `query_context` / `read_file`：仅做 schema 校验，不直接改状态；同一轮每类最多 1 条，超出会返回 `M:action_feedback`；结果通过下一纠错回合注入 `M:query_lookup` / `M:file_lookup`。
-- `query_context` 参数收敛为仅 `query`；内部固定执行全局检索（`history/tasks/focus/plans/task_archives`）+ 跨 scope 去重，不再暴露 `scopes/limit/*` 调参参数。
+- `query_context` 参数收敛为仅 `query`；内部固定执行全局检索（`history/tasks/focus/plans/generated_index/task_archives`）+ 跨 scope 去重，不再暴露 `scopes/limit/*` 调参参数。
+- `generated_index`：仅索引 `work_dir/generated` 下文本文件的轻量元信息（`path/updatedAt/size/snippet`），用于定位候选文件；需要正文时改用 `read_file`。
 - `set_task_result_summary`：仅用于当前批次 `task_result` 的摘要覆写（不直接执行 action 状态写入）。
 - `mutate_task`：统一 task 生命周期控制（`op=pause|resume|cancel`），按 `op` 分发到 `worker/pause-task.ts`、`worker/resume-task.ts`、`worker/cancel-task.ts`，统一产出可追踪结构（`id`、`status`、`changeAt`）。
 - 上下文压缩不再暴露为 manager action；仅由运行时内部触发，按 focus 维度写入压缩摘要（`managerFocusCompressedContexts`），prompt 仅注入 working focus 对应条目。

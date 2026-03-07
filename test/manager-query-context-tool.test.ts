@@ -30,6 +30,7 @@ test('query_context aggregates all scopes by default', async () => {
   expect(result.results.tasks?.items.length).toBeGreaterThan(0)
   expect(result.results.focus?.items.length).toBeGreaterThan(0)
   expect(result.results.plans?.items.length).toBeGreaterThan(0)
+  expect(result.results.generated_index?.items.length).toBeGreaterThan(0)
   expect(result.results.task_archives).toBeDefined()
 })
 
@@ -67,6 +68,29 @@ test('query_context task_archives scope is bounded and path-safe', async () => {
   const first = archiveGroup?.items[0] as { archivePath?: string } | undefined
   expect(first?.archivePath?.startsWith('/')).toBe(false)
   expect(result.meta.usedBytes).toBeLessThanOrEqual(result.meta.maxBytes)
+})
+
+test('query_context generated_index scope is bounded and path-safe', async () => {
+  const runtime = await createQueryContextRuntime()
+  const request = requireQueryContextRequest({ query: 'deploy' })
+  const result = await runQueryContextTool({ runtime, request })
+  const group = result.results.generated_index
+  expect(group).toBeDefined()
+  expect((group?.items.length ?? 0) <= 6).toBe(true)
+  const first = group?.items[0] as { path?: string; ref?: string } | undefined
+  expect(first?.path?.startsWith('/')).toBe(false)
+  expect(first?.path?.startsWith('..')).toBe(false)
+  expect(first?.ref?.startsWith('generated:')).toBe(true)
+})
+
+test('query_context generated_index excludes non-utf8 files', async () => {
+  const runtime = await createQueryContextRuntime()
+  const request = requireQueryContextRequest({ query: '*' })
+  const result = await runQueryContextTool({ runtime, request })
+  const paths = (
+    result.results.generated_index?.items.map((item) => item.path) ?? []
+  ).map((item) => item.trim())
+  expect(paths).not.toContain('generated/binary.dat')
 })
 
 test('query_context deduplicates highly similar snippets across all scopes', async () => {
@@ -110,6 +134,8 @@ test('query_context deduplicates highly similar snippets across all scopes', asy
     ...(result.results.focus?.items.map((item) => item.summary ?? item.title) ??
       []),
     ...(result.results.plans?.items.map((item) => item.snippet) ?? []),
+    ...(result.results.generated_index?.items.map((item) => item.snippet ?? '') ??
+      []),
     ...(result.results.task_archives?.items.map((item) => item.snippet ?? '') ??
       []),
   ].map((item) => item.trim().toLowerCase().replace(/\s+/g, ' '))

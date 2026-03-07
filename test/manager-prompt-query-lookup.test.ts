@@ -53,6 +53,19 @@ test('buildManagerPrompt renders query lookup section', async () => {
           ],
           truncated: false,
         },
+        generated_index: {
+          items: [
+            {
+              ref: 'generated:generated/deploy-notes.md',
+              path: 'generated/deploy-notes.md',
+              updatedAt: '2026-03-06T00:10:00.000Z',
+              size: 48,
+              score: 0.77,
+              snippet: 'deploy service alpha with canary strategy',
+            },
+          ],
+          truncated: false,
+        },
       },
       meta: {
         truncated: false,

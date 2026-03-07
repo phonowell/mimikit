@@ -87,6 +87,7 @@ export type QueryContextScope =
   | 'tasks'
   | 'focus'
   | 'plans'
+  | 'generated_index'
   | 'task_archives'
 export type QueryLookupHistoryItem = {
   ref: string
@@ -136,6 +137,14 @@ export type QueryLookupTaskArchiveItem = {
   title?: string | undefined
   snippet?: string | undefined
 }
+export type QueryLookupGeneratedIndexItem = {
+  ref: string
+  path: string
+  updatedAt: ISODate
+  size: number
+  score: number
+  snippet?: string | undefined
+}
 export type QueryLookupScopeResult<TItem> = {
   items: TItem[]
   truncated: boolean
@@ -146,6 +155,7 @@ export type QueryLookupResults = {
   tasks?: QueryLookupScopeResult<QueryLookupTaskItem>
   focus?: QueryLookupScopeResult<QueryLookupFocusItem>
   plans?: QueryLookupScopeResult<QueryLookupPlanItem>
+  generated_index?: QueryLookupScopeResult<QueryLookupGeneratedIndexItem>
   task_archives?: QueryLookupScopeResult<QueryLookupTaskArchiveItem>
 }
 export type QueryLookupMessage = {

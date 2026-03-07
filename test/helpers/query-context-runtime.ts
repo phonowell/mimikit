@@ -18,6 +18,21 @@ const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-query-context-'))
 
 export const createQueryContextRuntime = async (): Promise<RuntimeState> => {
   const workDir = await createTmpDir()
+  await mkdir(join(workDir, 'generated', 'reports'), { recursive: true })
+  await writeFile(
+    join(workDir, 'generated', 'deploy-notes.md'),
+    ['# Deploy Notes', 'deploy service alpha with canary strategy'].join('\n'),
+    'utf8',
+  )
+  await writeFile(
+    join(workDir, 'generated', 'reports', 'summary.txt'),
+    ['daily release summary', 'rollback checklist ready'].join('\n'),
+    'utf8',
+  )
+  await writeFile(
+    join(workDir, 'generated', 'binary.dat'),
+    Buffer.from([0xff, 0xfe, 0x00, 0x01]),
+  )
   const config = defaultConfig({ workDir })
   const paths = buildPaths(workDir)
   await mkdir(paths.memoryDir, { recursive: true })

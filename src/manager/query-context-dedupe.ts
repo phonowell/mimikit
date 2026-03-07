@@ -4,6 +4,7 @@ import { tokenizeSearchText } from './query-context-score.js'
 
 import type {
   QueryLookupFocusItem,
+  QueryLookupGeneratedIndexItem,
   QueryLookupHistoryItem,
   QueryLookupPlanItem,
   QueryLookupTaskArchiveItem,
@@ -15,6 +16,7 @@ export type QueryScopeItems = {
   tasks: QueryLookupTaskItem[]
   focus: QueryLookupFocusItem[]
   plans: QueryLookupPlanItem[]
+  generated_index: QueryLookupGeneratedIndexItem[]
   task_archives: QueryLookupTaskArchiveItem[]
 }
 
@@ -112,6 +114,16 @@ const collectFlatEntries = (itemsByScope: QueryScopeItems): FlatEntry[] => {
       text: item.snippet,
     })
   }
+  for (const item of itemsByScope.generated_index) {
+    pushFlatEntry({
+      flat,
+      scope: 'generated_index',
+      ref: item.ref,
+      score: item.score,
+      timeMs: parseIsoToMs(item.updatedAt),
+      text: [item.path, item.snippet ?? ''].join('\n'),
+    })
+  }
   for (const item of itemsByScope.task_archives) {
     pushFlatEntry({
       flat,
@@ -158,6 +170,9 @@ export const dedupeQueryScopeItems = (
     ),
     plans: itemsByScope.plans.filter((item) =>
       winnerKeys.has(`plans\n${item.ref}`),
+    ),
+    generated_index: itemsByScope.generated_index.filter((item) =>
+      winnerKeys.has(`generated_index\n${item.ref}`),
     ),
     task_archives: itemsByScope.task_archives.filter((item) =>
       winnerKeys.has(`task_archives\n${item.ref}`),
