@@ -2,7 +2,7 @@ import PQueue from 'p-queue'
 
 import { type AppConfig } from '../../config.js'
 import { buildPaths } from '../../fs/paths.js'
-import { bestEffort, setDefaultLogPath } from '../../log/safe.js'
+import { bestEffort, logSafeError, setDefaultLogPath } from '../../log/safe.js'
 import { createDefaultMemoryRefreshState } from '../../memory/refresh/state.js'
 import { newId } from '../../shared/utils.js'
 import { cancelTask } from '../../worker/cancel-task.js'
@@ -49,9 +49,21 @@ type OrchestratorOptions = {
   onExitRequested?: (request: ExitRequest) => void
 }
 
+const TELEGRAM_POLLING_RETRY_DELAY_MS = 10_000
+
+export const isTelegramPollingConflictError = (error: unknown): boolean => {
+  const message =
+    error instanceof Error ? error.message.toLowerCase() : String(error)
+  return (
+    message.includes('telegram_polling_start_failed:409') ||
+    (message.includes('conflict') && message.includes('getupdates'))
+  )
+}
+
 export class Orchestrator {
   private runtime: RuntimeState
   private telegramStartPromise: Promise<void> | null = null
+  private telegramRetryTimer: ReturnType<typeof setTimeout> | null = null
   private restartScheduled = false
 
   private scheduleRestart(
@@ -86,6 +98,51 @@ export class Orchestrator {
       addUserInput: (text, meta, quote) => this.addUserInput(text, meta, quote),
       requestRestart: (reason) => this.scheduleRestart(reason),
     })
+  }
+
+  private clearTelegramRetryTimer(): void {
+    if (!this.telegramRetryTimer) return
+    clearTimeout(this.telegramRetryTimer)
+    this.telegramRetryTimer = null
+  }
+
+  private scheduleTelegramPollingRetry(error: unknown): void {
+    if (!isTelegramPollingConflictError(error)) return
+    if (this.runtime.stopped || !this.runtime.config.telegram.enabled) return
+    if (this.telegramRetryTimer) return
+    this.telegramRetryTimer = setTimeout(() => {
+      this.telegramRetryTimer = null
+      this.ensureTelegramPollingStart()
+    }, TELEGRAM_POLLING_RETRY_DELAY_MS)
+  }
+
+  private ensureTelegramPollingStart(): void {
+    if (this.telegramStartPromise) return
+    this.telegramStartPromise = (async () => {
+      if (!this.runtime.config.telegram.enabled || this.runtime.stopped) return
+      try {
+        await this.startTelegramPollingIfEnabled()
+      } catch (error) {
+        await logSafeError('orchestrator:start_telegram_polling', error, {
+          logPath: this.runtime.paths.log,
+          ...(isTelegramPollingConflictError(error)
+            ? { meta: { retryInMs: TELEGRAM_POLLING_RETRY_DELAY_MS } }
+            : {}),
+        })
+        this.scheduleTelegramPollingRetry(error)
+      }
+    })()
+      .then(async () => {
+        if (!this.runtime.stopped) return
+        await bestEffort(
+          'orchestrator:stop_telegram_after_late_start',
+          () => this.stopTelegramPollingIfEnabled(),
+          { logPath: this.runtime.paths.log },
+        )
+      })
+      .finally(() => {
+        this.telegramStartPromise = null
+      })
   }
 
   private async stopTelegramPollingIfEnabled(): Promise<void> {
@@ -138,23 +195,12 @@ export class Orchestrator {
 
   async start() {
     await startOrchestratorRuntime(this.runtime)
-    this.telegramStartPromise = bestEffort(
-      'orchestrator:start_telegram_polling',
-      () => this.startTelegramPollingIfEnabled(),
-      { logPath: this.runtime.paths.log },
-    )
-    void this.telegramStartPromise.then(async () => {
-      if (!this.runtime.stopped) return
-      await bestEffort(
-        'orchestrator:stop_telegram_after_late_start',
-        () => this.stopTelegramPollingIfEnabled(),
-        { logPath: this.runtime.paths.log },
-      )
-    })
+    this.ensureTelegramPollingStart()
   }
 
   stop() {
     prepareStop(this.runtime)
+    this.clearTelegramRetryTimer()
     void bestEffort(
       'orchestrator:stop_telegram_polling',
       () => this.stopTelegramPollingIfEnabled(),
@@ -165,6 +211,7 @@ export class Orchestrator {
 
   async stopAndPersist(): Promise<void> {
     prepareStop(this.runtime)
+    this.clearTelegramRetryTimer()
     await bestEffort(
       'orchestrator:stop_telegram_polling',
       () => this.stopTelegramPollingIfEnabled(),
