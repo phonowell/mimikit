@@ -755,11 +755,11 @@ const runOpencodeProvider = async (
 
     let latestText = ''
     let latestUsage: Usage
+    let latestStatus: string | undefined
+    timeout.arm()
 
     for (;;) {
-      if (controller.signal.aborted)
-        throw buildProviderAbortedError(PROVIDER_ID)
-      timeout.arm()
+      if (controller.signal.aborted) throw new Error('opencode_loop_aborted')
 
       const messagesResponse = await shared.client.session.messages({
         path: { id: session.id },
@@ -776,10 +776,12 @@ const runOpencodeProvider = async (
           latestAssistant.text !== latestText
         ) {
           latestText = latestAssistant.text
+          timeout.arm()
           request.onPartialOutput?.(latestText)
         }
         if (!usageEquals(latestUsage, latestAssistant.usage)) {
           latestUsage = latestAssistant.usage
+          timeout.arm()
           if (latestUsage) request.onUsage?.(latestUsage)
         }
         if (latestAssistant.completedAt !== undefined) {
@@ -797,6 +799,10 @@ const runOpencodeProvider = async (
         signal: controller.signal,
       })
       const statusType = resolveSessionStatus(statusResponse.data, session.id)
+      if (statusType && statusType !== latestStatus) {
+        latestStatus = statusType
+        timeout.arm()
+      }
       if (statusType === 'idle') {
         if (!latestAssistant) {
           await sleep(POLL_INTERVAL_MS)

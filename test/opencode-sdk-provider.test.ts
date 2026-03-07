@@ -274,3 +274,42 @@ test('opencode provider emits runtime child lifecycle callbacks', async () => {
     meta: { model: 'opencode/big-pickle' },
   })
 })
+
+test('opencode provider times out when session has no progress', async () => {
+  const proc = makeFakeProc({ startupUrl: 'http://127.0.0.1:42155' })
+  spawnMock.mockReturnValueOnce(proc)
+
+  const sessionId = 'session-timeout'
+  createOpencodeClientMock.mockReturnValue({
+    instance: {
+      dispose: vi.fn(async () => undefined),
+    },
+    session: {
+      create: vi.fn(async () => ({ data: { id: sessionId } })),
+      get: vi.fn(),
+      promptAsync: vi.fn(async () => undefined),
+      messages: vi.fn(async () => ({ data: [] })),
+      status: vi.fn(async () => ({
+        data: { [sessionId]: { type: 'running' } },
+      })),
+    },
+  })
+
+  let caught: unknown
+  try {
+    await opencodeSdkProvider.run({
+      provider: 'opencode-sdk',
+      role: 'worker',
+      prompt: 'wait forever',
+      workDir: '/tmp/mimikit-opencode-provider-timeout',
+      timeoutMs: 40,
+      model: 'big-pickle',
+    })
+  } catch (error) {
+    caught = error
+  }
+
+  expect(caught).toBeInstanceOf(Error)
+  expect(readProviderErrorCode(caught)).toBe('provider_timeout')
+  expect((caught as Error).message).toContain('timed out after 40ms')
+})
