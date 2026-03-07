@@ -88,6 +88,7 @@ test('normal private text still enters input queue', async () => {
   expect(addUserInput).toHaveBeenCalledWith('hello from telegram', {
     source: 'telegram',
     platform: 'telegram',
+    channel: 'telegram',
     telegramChatId: '1001',
     telegramMessageId: '11',
     telegramUpdateId: '22',

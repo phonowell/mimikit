@@ -1,3 +1,4 @@
+import { applyFeishuEnvOverrides } from '../channels/feishu/config.js'
 import { applyTelegramEnvOverrides } from '../channels/telegram/config.js'
 
 import type { AppConfig } from '../config.js'
@@ -143,4 +144,5 @@ export const applyCliEnvOverrides = (config: AppConfig): void => {
   applyProviderEnabledEnv(config)
   applyWebUiEnv(config)
   applyTelegramEnvOverrides(config.telegram)
+  applyFeishuEnvOverrides(config.feishu)
 }

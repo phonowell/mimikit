@@ -10,8 +10,9 @@
 6. Codex SDK 接入：`./reference/sdk/codex-sdk.md`
 7. 外部对比结论：`./reference/comparisons/known.md`
 8. Telegram 渠道接入：`./reference/integrations/telegram-channel.md`
-9. LLM 启动安装：`./BOOTSTRAP.md`
-10. 工程改进待办：`./todo/engineering-roi-backlog.md`
+9. Feishu 渠道接入：`./reference/integrations/feishu-channel.md`
+10. LLM 启动安装：`./BOOTSTRAP.md`
+11. 工程改进待办：`./todo/engineering-roi-backlog.md`
 
 ## 目录职责
 

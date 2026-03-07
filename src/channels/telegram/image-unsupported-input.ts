@@ -1,24 +1,12 @@
-import { renderPromptTemplate } from '../../prompts/format.js'
-import { loadPromptTemplate } from '../../prompts/prompt-loader.js'
+import { buildUnsupportedImageInputText as buildUnsupportedImageInputTextShared } from '../shared/image-unsupported-input.js'
 
 const PROMPT_PATH = 'manager/telegram-image-unsupported-input.md'
 
-let cachedTemplate: string | undefined
-
-const trimString = (value: unknown): string =>
-  typeof value === 'string' ? value.trim() : ''
-
-const loadTemplate = async (): Promise<string> => {
-  if (cachedTemplate !== undefined) return cachedTemplate
-  const template = (await loadPromptTemplate(PROMPT_PATH)).trim()
-  if (!template) throw new Error(`missing_prompt_template:${PROMPT_PATH}`)
-  cachedTemplate = template
-  return template
-}
-
-export const buildUnsupportedImageInputText = async (
+export const buildUnsupportedImageInputText = (
   captionLike: unknown,
 ): Promise<string> =>
-  renderPromptTemplate(await loadTemplate(), {
-    caption: trimString(captionLike),
-  }).trim()
+  buildUnsupportedImageInputTextShared({
+    promptPath: PROMPT_PATH,
+    fieldName: 'caption',
+    fieldValue: captionLike,
+  })

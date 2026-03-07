@@ -24,8 +24,8 @@ mutate_task_not_paused: |
   mutate_task 执行失败：任务当前不是 paused 状态，无法 resume。
 mutate_task_already_canceled: |
   mutate_task 执行失败：任务已是 canceled 状态。
-ask_user_choice_telegram_unsupported: |
-  ask_user_choice 执行失败：当前批次来源包含 Telegram 输入，当前链路不支持选项回传。
+ask_user_choice_channel_unsupported: |
+  ask_user_choice 执行失败：当前批次来源包含不支持回传选项的渠道输入（Telegram/Feishu），请改为纯文本提问并列出候选项。
 ask_user_choice_invalid_options: |
   ask_user_choice 执行失败：option_{n}_id/label/reason 参数非法（n 必须从 1 连续递增且不能跳号），或 default_option_id 不在 options 中。
 enqueue_task_provider_disabled: |

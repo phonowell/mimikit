@@ -14,6 +14,7 @@ export type OrchestratorStatus = {
 const USER_META_STRING_KEYS = [
   'source',
   'platform',
+  'channel',
   'remote',
   'userAgent',
   'language',
@@ -24,6 +25,10 @@ const USER_META_STRING_KEYS = [
   'telegramMessageId',
   'telegramUpdateId',
   'telegramTimestamp',
+  'feishuChatId',
+  'feishuMessageId',
+  'feishuEventId',
+  'feishuTimestamp',
 ] as const
 
 export const computeOrchestratorStatus = (

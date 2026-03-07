@@ -22,6 +22,10 @@ const ENV_KEYS = [
   'MIMIKIT_WEBUI_ENABLED',
   'MIMIKIT_WEBUI_PORT',
   'TELEGRAM_PROXY',
+  'FEISHU_CHANNEL_ENABLED',
+  'FEISHU_APP_ID',
+  'FEISHU_APP_SECRET',
+  'FEISHU_CHAT_ID',
 ] as const
 
 type Snapshot = Partial<Record<(typeof ENV_KEYS)[number], string>>
@@ -97,6 +101,21 @@ test('telegram proxy env overrides config value', () => {
   applyCliEnvOverrides(config)
 
   expect(config.telegram.proxy).toBe('http://127.0.0.1:7897')
+})
+
+test('feishu env overrides config values', () => {
+  const config = createConfig()
+  process.env.FEISHU_CHANNEL_ENABLED = 'true'
+  process.env.FEISHU_APP_ID = 'cli-app-id'
+  process.env.FEISHU_APP_SECRET = 'cli-app-secret'
+  process.env.FEISHU_CHAT_ID = 'oc_cli_chat'
+
+  applyCliEnvOverrides(config)
+
+  expect(config.feishu.enabled).toBe(true)
+  expect(config.feishu.appId).toBe('cli-app-id')
+  expect(config.feishu.appSecret).toBe('cli-app-secret')
+  expect(config.feishu.chatId).toBe('oc_cli_chat')
 })
 
 test('webui enabled env overrides config value', () => {

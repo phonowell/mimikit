@@ -4,8 +4,10 @@ import { fileURLToPath } from 'node:url'
 import TOML from '@iarna/toml'
 import { z } from 'zod'
 
+import { feishuConfigSchema } from './channels/feishu/config.js'
 import { telegramConfigSchema } from './channels/telegram/config.js'
 
+import type { FeishuConfig } from './channels/feishu/config.js'
 import type { TelegramConfig } from './channels/telegram/config.js'
 
 const modelReasoningEffortSchema = z.enum([
@@ -102,6 +104,7 @@ const userConfigInputSchema = z
     opencode: opencodeInputSchema.optional(),
     webui: webuiInputSchema.optional(),
     telegram: telegramConfigSchema.partial().strict().optional(),
+    feishu: feishuConfigSchema.partial().strict().optional(),
   })
   .strict()
 
@@ -139,6 +142,7 @@ export type UserConfigDefaults = {
     port: number
   }
   telegram: TelegramConfig
+  feishu: FeishuConfig
 }
 
 const DEFAULT_USER_CONFIG: UserConfigDefaults = {
@@ -179,12 +183,23 @@ const DEFAULT_USER_CONFIG: UserConfigDefaults = {
     apiRoot: 'https://api.telegram.org',
     proxy: '',
   },
+  feishu: {
+    enabled: false,
+    appId: '',
+    appSecret: '',
+    chatId: '',
+  },
 }
 
 const trimToUndefined = (value: string | undefined): string | undefined => {
   if (value === undefined) return undefined
   const trimmed = value.trim()
   return trimmed.length > 0 ? trimmed : undefined
+}
+
+const trimOrEmpty = (value: string | undefined): string => {
+  if (value === undefined) return ''
+  return value.trim()
 }
 
 type UnknownKeyIssue = z.ZodIssue & {
@@ -300,6 +315,7 @@ const buildUserConfigDefaults = (
   const managerProxy = trimToUndefined(input.manager?.proxy)
   const codexProxy = trimToUndefined(input.codex?.proxy)
   const opencodeProxy = trimToUndefined(input.opencode?.proxy)
+  const telegramApiRoot = trimToUndefined(input.telegram?.apiRoot)
 
   return {
     manager: {
@@ -342,11 +358,28 @@ const buildUserConfigDefaults = (
     },
     telegram: {
       enabled: input.telegram?.enabled ?? DEFAULT_USER_CONFIG.telegram.enabled,
-      botToken:
+      botToken: trimOrEmpty(
         input.telegram?.botToken ?? DEFAULT_USER_CONFIG.telegram.botToken,
-      chatId: input.telegram?.chatId ?? DEFAULT_USER_CONFIG.telegram.chatId,
-      apiRoot: input.telegram?.apiRoot ?? DEFAULT_USER_CONFIG.telegram.apiRoot,
-      proxy: input.telegram?.proxy ?? DEFAULT_USER_CONFIG.telegram.proxy,
+      ),
+      chatId: trimOrEmpty(
+        input.telegram?.chatId ?? DEFAULT_USER_CONFIG.telegram.chatId,
+      ),
+      apiRoot: telegramApiRoot ?? DEFAULT_USER_CONFIG.telegram.apiRoot,
+      proxy: trimOrEmpty(
+        input.telegram?.proxy ?? DEFAULT_USER_CONFIG.telegram.proxy,
+      ),
+    },
+    feishu: {
+      enabled: input.feishu?.enabled ?? DEFAULT_USER_CONFIG.feishu.enabled,
+      appId: trimOrEmpty(
+        input.feishu?.appId ?? DEFAULT_USER_CONFIG.feishu.appId,
+      ),
+      appSecret: trimOrEmpty(
+        input.feishu?.appSecret ?? DEFAULT_USER_CONFIG.feishu.appSecret,
+      ),
+      chatId: trimOrEmpty(
+        input.feishu?.chatId ?? DEFAULT_USER_CONFIG.feishu.chatId,
+      ),
     },
   }
 }

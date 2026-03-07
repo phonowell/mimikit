@@ -28,7 +28,36 @@ test('ask_user_choice is rejected when telegram source does not support choice c
   expect(feedback).toHaveLength(1)
   expect(feedback[0]?.action).toBe('ask_user_choice')
   expect(feedback[0]?.error).toBe('action_execution_rejected')
-  expect(feedback[0]?.hint).toContain('Telegram')
+  expect(feedback[0]?.hint).toContain('Telegram/Feishu')
+})
+
+test('ask_user_choice is rejected for non-choice-return channels', () => {
+  const feedback = collectManagerActionFeedback(
+    [
+      {
+        name: 'ask_user_choice',
+        attrs: {
+          id: 'choice-format',
+          question: 'choose format',
+          option_1_id: 'option-a',
+          option_1_label: 'A',
+          option_1_reason: 'alpha',
+          option_2_id: 'option-b',
+          option_2_label: 'B',
+          option_2_reason: 'beta',
+          default_option_id: 'option-a',
+        },
+      },
+    ],
+    {
+      allowAskUserChoice: false,
+    },
+  )
+
+  expect(feedback).toHaveLength(1)
+  expect(feedback[0]?.action).toBe('ask_user_choice')
+  expect(feedback[0]?.error).toBe('action_execution_rejected')
+  expect(feedback[0]?.hint).toContain('Telegram/Feishu')
 })
 
 test('ask_user_choice rejects non-contiguous option indices', () => {

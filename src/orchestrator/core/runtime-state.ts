@@ -17,6 +17,7 @@ export type PendingUserInput = UserInput
 export type UserMeta = {
   source?: string
   platform?: string
+  channel?: string
   remote?: string
   userAgent?: string
   language?: string
@@ -28,6 +29,10 @@ export type UserMeta = {
   telegramMessageId?: string
   telegramUpdateId?: string
   telegramTimestamp?: string
+  feishuChatId?: string
+  feishuMessageId?: string
+  feishuEventId?: string
+  feishuTimestamp?: string
 }
 
 export type UiWakeKind = 'snapshot' | 'messages' | 'tasks'

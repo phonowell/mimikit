@@ -1,5 +1,11 @@
 import { z } from 'zod'
 
+import { assertRequiredChannelFields } from '../shared/channel-config.js'
+import {
+  applyTrimmedEnv,
+  parseChannelEnabledEnv,
+} from '../shared/config-env.js'
+
 export const telegramConfigSchema = z
   .object({
     enabled: z.boolean(),
@@ -12,35 +18,45 @@ export const telegramConfigSchema = z
 
 export type TelegramConfig = z.infer<typeof telegramConfigSchema>
 
-const parseEnvBoolean = (value: string | undefined): boolean | undefined => {
-  if (!value) return undefined
-  const normalized = value.trim().toLowerCase()
-  if (!normalized) return undefined
-  if (normalized === '1' || normalized === 'true' || normalized === 'yes')
-    return true
-  if (normalized === '0' || normalized === 'false' || normalized === 'no')
-    return false
-  console.warn('[cli] invalid TELEGRAM_CHANNEL_ENABLED:', value)
-  return undefined
-}
-
 export const applyTelegramEnvOverrides = (config: TelegramConfig): void => {
-  const enabled = parseEnvBoolean(process.env.TELEGRAM_CHANNEL_ENABLED)
+  const enabled = parseChannelEnabledEnv({
+    value: process.env.TELEGRAM_CHANNEL_ENABLED,
+    envName: 'TELEGRAM_CHANNEL_ENABLED',
+  })
   if (enabled !== undefined) config.enabled = enabled
-  const botToken = process.env.TELEGRAM_BOT_TOKEN?.trim()
-  if (botToken) config.botToken = botToken
-  const chatId = process.env.TELEGRAM_CHAT_ID?.trim()
-  if (chatId) config.chatId = chatId
-  const apiRoot = process.env.TELEGRAM_API_ROOT?.trim()
-  if (apiRoot) config.apiRoot = apiRoot
-  const proxy = process.env.TELEGRAM_PROXY?.trim()
-  if (proxy) config.proxy = proxy
+  applyTrimmedEnv({
+    value: process.env.TELEGRAM_BOT_TOKEN,
+    assign: (next) => {
+      config.botToken = next
+    },
+  })
+  applyTrimmedEnv({
+    value: process.env.TELEGRAM_CHAT_ID,
+    assign: (next) => {
+      config.chatId = next
+    },
+  })
+  applyTrimmedEnv({
+    value: process.env.TELEGRAM_API_ROOT,
+    assign: (next) => {
+      config.apiRoot = next
+    },
+  })
+  applyTrimmedEnv({
+    value: process.env.TELEGRAM_PROXY,
+    assign: (next) => {
+      config.proxy = next
+    },
+  })
 }
 
 export const assertEnabledTelegramConfig = (config: TelegramConfig): void => {
-  if (!config.botToken.trim() || !config.chatId.trim()) {
-    throw new Error(
-      '[config] telegram.enabled=true requires telegram.botToken and telegram.chatId',
-    )
-  }
+  assertRequiredChannelFields({
+    channel: 'telegram',
+    fields: [
+      { key: 'botToken', value: config.botToken },
+      { key: 'chatId', value: config.chatId },
+    ],
+    messageKeys: ['botToken', 'chatId'],
+  })
 }

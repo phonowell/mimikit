@@ -163,6 +163,18 @@ pnpm start
 
 `webui.enabled=true` (default) and `telegram.enabled=true` can run together in one process.
 
+### 5) Optional: enable Feishu channel
+
+```bash
+export FEISHU_CHANNEL_ENABLED=true
+export FEISHU_APP_ID=<your_app_id>
+export FEISHU_APP_SECRET=<your_app_secret>
+export FEISHU_CHAT_ID=<your_chat_id> # optional
+pnpm start
+```
+
+`webui.enabled=true` (default) and `feishu.enabled=true` can run together in one process.
+
 ## LLM Bootstrap
 
 For LLM-driven setup and configuration, use [`docs/BOOTSTRAP.md`](./docs/BOOTSTRAP.md). It provides deterministic install/config/start/verify steps.
@@ -175,9 +187,10 @@ For LLM-driven setup and configuration, use [`docs/BOOTSTRAP.md`](./docs/BOOTSTR
 - Built-in WebUI + SSE events: `GET /api/events`, `POST /api/input`, restart/reset APIs ([interfaces](./docs/design/workflow/interfaces-and-state.md)).
 - Task panel live progress: running tasks show streamed output snippets in WebUI without extra model calls.
 - Telegram channel integration (optional): long polling ingest + passive reply via `sendMessage` ([Telegram modules](./src/channels/telegram)).
+- Feishu channel integration (optional): long connection ingest + passive reply via IM message API ([Feishu modules](./src/channels/feishu)).
 - Local file-backed observability: `history`, `tasks`, `task-progress`, `runtime-snapshot`, `log.jsonl` under `.mimikit/` ([state layout](./docs/design/workflow/interfaces-and-state.md)).
 
-Keywords: `AI orchestration layer`, `TypeScript orchestrator`, `Codex SDK`, `OpenAI`, `single-session orchestration`, `WebUI`, `SSE`, `task planning`, `Telegram bot`, `local-first runtime`.
+Keywords: `AI orchestration layer`, `TypeScript orchestrator`, `Codex SDK`, `OpenAI`, `single-session orchestration`, `WebUI`, `SSE`, `task planning`, `Telegram bot`, `Feishu bot`, `local-first runtime`.
 
 ## How It Works
 
@@ -226,7 +239,7 @@ Expected: `/api/input` returns JSON containing an ID like `input-...`.
 
 - Build a controllable local orchestration runtime where state, plans, and task traces are inspectable on disk.
 - Prototype agent scheduling behavior (`on_worker_slot_freed`) with explicit semantics.
-- Run one local orchestration hub with both WebUI input and optional Telegram bot channel.
+- Run one local orchestration hub with WebUI input and optional Telegram/Feishu bot channels.
 - Use this repo as a compact TypeScript reference for manager/worker split orchestration where execution is externally delegated.
 
 ## Benchmark Positioning
@@ -252,7 +265,7 @@ At minimum: `GET /api/events` (SSE) and `POST /api/input`, plus task/choice/rest
 
 ### Does it support image input?
 
-Not yet. Current input is text-only. For Telegram, photo messages are converted into a text-only capability notice so the manager can reply and ask the user to describe the request in plain text.
+Not yet. Current input is text-only. For Telegram/Feishu, image messages are converted into a text-only capability notice so the manager can reply and ask the user to describe the request in plain text.
 
 ### Does it support scheduled or capacity-triggered automation?
 
@@ -262,9 +275,13 @@ Yes. Plans support `cron`, `scheduled_at`, and `on_worker_slot_freed`.
 
 Yes. Configure `telegram.*` in `config.toml` or `TELEGRAM_*` env vars, then start with `telegram.enabled=true`.
 
-### Can I disable WebUI and keep Telegram only?
+### Can I enable Feishu integration?
 
-Yes. Set `webui.enabled=false` in `config.toml`; Telegram polling still works when `telegram.enabled=true`.
+Yes. Configure `feishu.*` in `config.toml` or `FEISHU_*` env vars, then start with `feishu.enabled=true`.
+
+### Can I disable WebUI and keep bot channels only?
+
+Yes. Set `webui.enabled=false` in `config.toml`; Telegram/Feishu channels still work when enabled.
 
 ## Contributing
 

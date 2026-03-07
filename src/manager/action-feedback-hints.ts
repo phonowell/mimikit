@@ -24,7 +24,7 @@ const actionFeedbackHintSchema = z
     mutate_task_already_paused: z.string().trim().min(1),
     mutate_task_not_paused: z.string().trim().min(1),
     mutate_task_already_canceled: z.string().trim().min(1),
-    ask_user_choice_telegram_unsupported: z.string().trim().min(1),
+    ask_user_choice_channel_unsupported: z.string().trim().min(1),
     ask_user_choice_invalid_options: z.string().trim().min(1),
     enqueue_task_provider_disabled: z.string().trim().min(1),
     plan_not_found: z.string().trim().min(1),
@@ -114,8 +114,8 @@ export const formatMutateTaskNotPausedHint = (): string =>
 export const formatMutateTaskAlreadyCanceledHint = (): string =>
   renderHint('mutate_task_already_canceled')
 
-export const formatAskUserChoiceTelegramUnsupportedHint = (): string =>
-  renderHint('ask_user_choice_telegram_unsupported')
+export const formatAskUserChoiceChannelUnsupportedHint = (): string =>
+  renderHint('ask_user_choice_channel_unsupported')
 
 export const formatAskUserChoiceInvalidOptionsHint = (): string =>
   renderHint('ask_user_choice_invalid_options')

@@ -70,6 +70,12 @@ const createRuntime = async (): Promise<RuntimeState> => {
       apiRoot: 'https://api.telegram.org',
       proxy: '',
     },
+    feishu: {
+      enabled: false,
+      appId: '',
+      appSecret: '',
+      chatId: '',
+    },
   }
   const now = '2026-03-05T00:00:00.000Z'
   return {

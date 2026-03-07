@@ -1,5 +1,8 @@
 import { parseActions } from '../actions/protocol/parse.js'
-import { hasTelegramUserInput } from '../channels/telegram/passive-reply.js'
+import {
+  hasNoChoiceReturnChannelInput,
+  isNoChoiceReturnChannelSource,
+} from '../channels/feishu/source.js'
 import { appendLog } from '../log/append.js'
 import { mergeUsageAdditive } from '../shared/token-usage.js'
 
@@ -52,7 +55,8 @@ export const runManagerCorrectionRounds = async (params: {
   let lastParsed = parseActions('')
   const resultTaskIds = new Set(results.map((item) => item.taskId))
   const allowAskUserChoice =
-    !hasTelegramUserInput(inputs) && runtime.lastUserMeta?.source !== 'telegram'
+    !hasNoChoiceReturnChannelInput(inputs) &&
+    !isNoChoiceReturnChannelSource(runtime.lastUserMeta?.source)
   for (let round = 1; round <= maxCorrectionRounds; round++) {
     const runResult = await runManagerRoundWithRecovery({
       runtime,

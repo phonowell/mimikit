@@ -63,6 +63,7 @@ export const isTelegramPollingConflictError = (error: unknown): boolean => {
 export class Orchestrator {
   private runtime: RuntimeState
   private telegramStartPromise: Promise<void> | null = null
+  private feishuStartPromise: Promise<void> | null = null
   private telegramRetryTimer: ReturnType<typeof setTimeout> | null = null
   private restartScheduled = false
 
@@ -97,6 +98,18 @@ export class Orchestrator {
       workDir: this.runtime.config.workDir,
       addUserInput: (text, meta, quote) => this.addUserInput(text, meta, quote),
       requestRestart: (reason) => this.scheduleRestart(reason),
+    })
+  }
+
+  private async startFeishuPollingIfEnabled(): Promise<void> {
+    if (!this.runtime.config.feishu.enabled) return
+    const { startFeishuPolling } =
+      await import('../../channels/feishu/index.js')
+    await startFeishuPolling({
+      config: this.runtime.config,
+      logPath: this.runtime.paths.log,
+      workDir: this.runtime.config.workDir,
+      addUserInput: (text, meta, quote) => this.addUserInput(text, meta, quote),
     })
   }
 
@@ -155,6 +168,38 @@ export class Orchestrator {
     })
   }
 
+  private ensureFeishuPollingStart(): void {
+    if (this.feishuStartPromise) return
+    this.feishuStartPromise = (async () => {
+      if (!this.runtime.config.feishu.enabled || this.runtime.stopped) return
+      try {
+        await this.startFeishuPollingIfEnabled()
+      } catch (error) {
+        await logSafeError('orchestrator:start_feishu_polling', error, {
+          logPath: this.runtime.paths.log,
+        })
+      }
+    })()
+      .then(async () => {
+        if (!this.runtime.stopped) return
+        await bestEffort('orchestrator:stop_feishu_after_late_start', () =>
+          this.stopFeishuPollingIfEnabled(),
+        )
+      })
+      .finally(() => {
+        this.feishuStartPromise = null
+      })
+  }
+
+  private async stopFeishuPollingIfEnabled(): Promise<void> {
+    if (!this.runtime.config.feishu.enabled) return
+    const { stopFeishuPolling } = await import('../../channels/feishu/index.js')
+    await stopFeishuPolling({
+      workDir: this.runtime.config.workDir,
+      logPath: this.runtime.paths.log,
+    })
+  }
+
   constructor(config: AppConfig, options: OrchestratorOptions = {}) {
     const paths = buildPaths(config.workDir)
     setDefaultLogPath(paths.log)
@@ -196,6 +241,7 @@ export class Orchestrator {
   async start() {
     await startOrchestratorRuntime(this.runtime)
     this.ensureTelegramPollingStart()
+    this.ensureFeishuPollingStart()
   }
 
   stop() {
@@ -204,6 +250,11 @@ export class Orchestrator {
     void bestEffort(
       'orchestrator:stop_telegram_polling',
       () => this.stopTelegramPollingIfEnabled(),
+      { logPath: this.runtime.paths.log },
+    )
+    void bestEffort(
+      'orchestrator:stop_feishu_polling',
+      () => this.stopFeishuPollingIfEnabled(),
       { logPath: this.runtime.paths.log },
     )
     void persistStopSnapshot(this.runtime)
@@ -215,6 +266,11 @@ export class Orchestrator {
     await bestEffort(
       'orchestrator:stop_telegram_polling',
       () => this.stopTelegramPollingIfEnabled(),
+      { logPath: this.runtime.paths.log },
+    )
+    await bestEffort(
+      'orchestrator:stop_feishu_polling',
+      () => this.stopFeishuPollingIfEnabled(),
       { logPath: this.runtime.paths.log },
     )
     await waitForManagerDrain(this.runtime)

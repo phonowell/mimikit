@@ -10,8 +10,8 @@ import {
   updatePlanSchema,
 } from './action-apply-schema.js'
 import {
+  formatAskUserChoiceChannelUnsupportedHint,
   formatAskUserChoiceInvalidOptionsHint,
-  formatAskUserChoiceTelegramUnsupportedHint,
   formatEnqueueTaskProviderDisabledHint,
   formatMutateTaskAlreadyCanceledHint,
   formatMutateTaskAlreadyDoneHint,
@@ -149,7 +149,7 @@ export const validateAskUserChoice = (
   context: FeedbackContext,
 ): ValidationIssue[] => {
   if (context.allowAskUserChoice === false)
-    return rejected(formatAskUserChoiceTelegramUnsupportedHint())
+    return rejected(formatAskUserChoiceChannelUnsupportedHint())
 
   const issues = validateWithSchema(item, askUserChoiceSchema)
   if (issues.length > 0) return issues

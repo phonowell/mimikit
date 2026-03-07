@@ -93,6 +93,10 @@
 - `TELEGRAM_CHAT_ID`
 - `TELEGRAM_API_ROOT`
 - `TELEGRAM_PROXY`
+- `FEISHU_CHANNEL_ENABLED`
+- `FEISHU_APP_ID`
+- `FEISHU_APP_SECRET`
+- `FEISHU_CHAT_ID`
 
 ## 配置结构（`config.toml`）
 
@@ -120,6 +124,10 @@
 - `telegram.chatId`
 - `telegram.apiRoot`
 - `telegram.proxy`
+- `feishu.enabled`
+- `feishu.appId`
+- `feishu.appSecret`
+- `feishu.chatId`
 
 ## Telegram 模块边界（`src/channels/telegram/*`）
 
@@ -127,6 +135,14 @@
 - `polling.ts`：Telegram long polling 入站与生命周期管理
 - `client.ts`：Telegram `sendMessage` 文本发送
 - `passive-reply.ts`：manager 回复后的 Telegram 被动发送
+- `index.ts`：对核心层暴露统一集成入口
+
+## Feishu 模块边界（`src/channels/feishu/*`）
+
+- `config.ts`：Feishu 配置 schema、环境变量覆写、启用态配置校验
+- `polling.ts`：Feishu 长连接入站与生命周期管理
+- `client.ts`：Feishu 文本发送
+- `passive-reply.ts`：manager 回复后的 Feishu 被动发送
 - `index.ts`：对核心层暴露统一集成入口
 
 ## 状态目录（默认 `./.mimikit/`）

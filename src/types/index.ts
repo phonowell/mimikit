@@ -36,6 +36,10 @@ type NonSystemHistoryMessage = {
   telegramMessageId?: string
   telegramUpdateId?: string
   telegramTimestamp?: ISODate
+  feishuChatId?: string
+  feishuMessageId?: string
+  feishuEventId?: string
+  feishuTimestamp?: ISODate
   usage?: TokenUsage
   elapsedMs?: number
   quote?: Id
@@ -182,6 +186,10 @@ type UserInputUser = {
   telegramMessageId?: string
   telegramUpdateId?: string
   telegramTimestamp?: ISODate
+  feishuChatId?: string
+  feishuMessageId?: string
+  feishuEventId?: string
+  feishuTimestamp?: ISODate
 }
 type UserInputSystem = {
   id: Id

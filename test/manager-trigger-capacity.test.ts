@@ -75,6 +75,12 @@ const createTestConfig = (
     apiRoot: 'https://api.telegram.org',
     proxy: '',
   },
+  feishu: {
+    enabled: false,
+    appId: '',
+    appSecret: '',
+    chatId: '',
+  },
 })
 
 const waitFor = async (

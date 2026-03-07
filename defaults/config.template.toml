@@ -64,3 +64,14 @@ chatId = ""
 apiRoot = "https://api.telegram.org"
 # Telegram 代理地址；留空表示直连
 proxy = ""
+
+# Feishu 配置
+[feishu]
+# 是否启用 Feishu 通道；默认 false
+enabled = false
+# Feishu App ID；当 enabled=true 时必填；敏感项
+appId = ""
+# Feishu App Secret；当 enabled=true 时必填；敏感项
+appSecret = ""
+# Feishu 默认目标 chat id；可选，留空表示使用入站消息 chat_id 回传
+chatId = ""

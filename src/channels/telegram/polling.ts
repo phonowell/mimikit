@@ -68,6 +68,7 @@ const toIsoFromUnixSeconds = (value: number): string =>
 const buildTelegramUserMeta = (ctx: TelegramInboundContext): UserMeta => ({
   source: 'telegram',
   platform: 'telegram',
+  channel: 'telegram',
   telegramChatId: String(ctx.chat.id),
   telegramMessageId: String(ctx.message.message_id),
   telegramUpdateId: String(ctx.update.update_id),
