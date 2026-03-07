@@ -245,6 +245,54 @@ test('restart route rejects when manager or worker is not idle', async () => {
   await app.close()
 })
 
+test('restart route allows paused-only tasks when no pending/running work remains', async () => {
+  const app = fastify()
+  const { orchestrator, exitRequests } = createOrchestratorStub()
+  const stopAndPersist = vi.fn(async () => undefined)
+  ;(orchestrator as unknown as { stopAndPersist: () => Promise<void> }).stopAndPersist =
+    stopAndPersist
+  ;(
+    orchestrator as unknown as {
+      getStatus: () => {
+        ok: boolean
+        runtimeId: string
+        agentStatus: 'idle' | 'running'
+        activeTasks: number
+        pendingTasks: number
+        pendingInputs: number
+        managerRunning: boolean
+        maxWorkers: number
+      }
+    }
+  ).getStatus = () => ({
+    ok: true,
+    runtimeId: 'runtime-stub-paused-only',
+    agentStatus: 'idle',
+    activeTasks: 0,
+    pendingTasks: 0,
+    pendingInputs: 0,
+    managerRunning: false,
+    maxWorkers: 1,
+  })
+  const config = defaultConfig({ workDir: '.mimikit' })
+  registerApiRoutes(app, orchestrator, config)
+  vi.useFakeTimers()
+  try {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/restart',
+    })
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toEqual({ ok: true })
+    await vi.advanceTimersByTimeAsync(150)
+  } finally {
+    vi.useRealTimers()
+  }
+  expect(stopAndPersist).toHaveBeenCalledTimes(1)
+  expect(exitRequests).toEqual([{ code: 75, reason: 'http_api_restart' }])
+  await app.close()
+})
+
 test('reset route requests orchestrator exit after persistence', async () => {
   const app = fastify()
   const { orchestrator, exitRequests } = createOrchestratorStub()
