@@ -18,9 +18,9 @@ import {
   upsertFocusSchema,
 } from './action-apply-schema.js'
 import {
-  applyAndContinue,
-  continueApply,
+  createContinueAction,
   createNoopAction,
+  createStopAction,
   type ManagerActionDefinition,
 } from './action-registry-shared.js'
 import {
@@ -62,29 +62,15 @@ const applyMutateTaskAction = async (
   await cancelTask(runtime, id, meta)
 }
 
-const applyRunTaskAndContinue: ManagerActionDefinition['apply'] = async (
-  runtime,
-  item,
-  context,
-) => (
-  await applyRunTask(runtime, item, context.seen, context.options),
-  'continue'
-)
-
-const applyAskUserChoiceAndStop: ManagerActionDefinition['apply'] = async (
-  runtime,
-  item,
-) => (await applyAskUserChoiceAction(runtime, item), 'stop')
-
 export const ACTION_DEFINITIONS = [
-  {
-    name: 'create_plan',
-    validate: (item, context) => validateCreatePlan(item, context),
-    apply: applyAndContinue(applyCreatePlan),
-  },
-  {
-    name: 'update_plan',
-    validate: (item, context) => {
+  createContinueAction(
+    'create_plan',
+    (item, context) => validateCreatePlan(item, context),
+    applyCreatePlan,
+  ),
+  createContinueAction(
+    'update_plan',
+    (item, context) => {
       const byIdIssues = validatePlanById(
         'update_plan',
         item,
@@ -94,49 +80,48 @@ export const ACTION_DEFINITIONS = [
       if (byIdIssues.length > 0) return byIdIssues
       return validateUpdatePlan(item, context)
     },
-    apply: applyAndContinue(applyUpdatePlan),
-  },
-  {
-    name: 'delete_plan',
-    validate: (item, context) =>
+    applyUpdatePlan,
+  ),
+  createContinueAction(
+    'delete_plan',
+    (item, context) =>
       validatePlanById('delete_plan', item, deletePlanSchema, context),
-    apply: applyAndContinue(applyDeletePlan),
-  },
-  {
-    name: 'enqueue_task',
-    validate: (item) => validateRunTask(item),
-    apply: applyRunTaskAndContinue,
-  },
-  {
-    name: 'mutate_task',
-    validate: (item, context) => validateMutateTask(item, context),
-    apply: applyAndContinue(applyMutateTaskAction),
-  },
-  {
-    name: 'ask_user_choice',
-    validate: (item, context) => validateAskUserChoice(item, context),
-    apply: applyAskUserChoiceAndStop,
-  },
-  {
-    name: 'set_task_result_summary',
-    validate: (item, context) => validateSummarizeTaskResult(item, context),
-    apply: continueApply,
-  },
+    applyDeletePlan,
+  ),
+  createContinueAction(
+    'enqueue_task',
+    (item) => validateRunTask(item),
+    (runtime, item, context) =>
+      applyRunTask(runtime, item, context.seen, context.options),
+  ),
+  createContinueAction(
+    'mutate_task',
+    (item, context) => validateMutateTask(item, context),
+    applyMutateTaskAction,
+  ),
+  createStopAction(
+    'ask_user_choice',
+    (item, context) => validateAskUserChoice(item, context),
+    (runtime, item) => applyAskUserChoiceAction(runtime, item),
+  ),
+  createNoopAction('set_task_result_summary', (item, context) =>
+    validateSummarizeTaskResult(item, context),
+  ),
   createNoopAction('query_context', validateQueryContext),
   createNoopAction('read_file', validateReadFile),
-  {
-    name: 'upsert_focus',
-    validate: (item) => validateWithSchema(item, upsertFocusSchema),
-    apply: applyAndContinue(applyUpsertFocusAction),
-  },
-  {
-    name: 'assign_focus',
-    validate: (item) => validateWithSchema(item, assignFocusSchema),
-    apply: applyAndContinue(applyAssignFocusAction),
-  },
-  {
-    name: 'remember_memory',
-    validate: (item) => validateRememberMemory(item),
-    apply: applyAndContinue(applyRememberMemoryAction),
-  },
+  createContinueAction(
+    'upsert_focus',
+    (item) => validateWithSchema(item, upsertFocusSchema),
+    applyUpsertFocusAction,
+  ),
+  createContinueAction(
+    'assign_focus',
+    (item) => validateWithSchema(item, assignFocusSchema),
+    applyAssignFocusAction,
+  ),
+  createContinueAction(
+    'remember_memory',
+    (item) => validateRememberMemory(item),
+    applyRememberMemoryAction,
+  ),
 ] satisfies ManagerActionDefinition[]

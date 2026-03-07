@@ -23,17 +23,45 @@ export type ManagerActionDefinition = {
 export const continueApply = (): Promise<ApplyResult> =>
   Promise.resolve('continue')
 
-export const applyAndContinue =
-  (
-    apply: (runtime: RuntimeState, item: Parsed) => Promise<void>,
-  ): ManagerActionDefinition['apply'] =>
-  async (runtime, item) => (await apply(runtime, item), 'continue')
+export const createContinueAction = (
+  name: string,
+  validate: ManagerActionDefinition['validate'],
+  apply: (
+    runtime: RuntimeState,
+    item: Parsed,
+    context: ApplyContext,
+  ) => Promise<void>,
+): ManagerActionDefinition => ({
+  name,
+  validate,
+  apply: async (runtime, item, context) => (
+    await apply(runtime, item, context),
+    'continue'
+  ),
+})
+
+export const createStopAction = (
+  name: string,
+  validate: ManagerActionDefinition['validate'],
+  apply: (
+    runtime: RuntimeState,
+    item: Parsed,
+    context: ApplyContext,
+  ) => Promise<void>,
+): ManagerActionDefinition => ({
+  name,
+  validate,
+  apply: async (runtime, item, context) => (
+    await apply(runtime, item, context),
+    'stop'
+  ),
+})
 
 export const createNoopAction = (
   name: string,
-  validate: (item: Parsed) => ValidationIssue[],
+  validate: ManagerActionDefinition['validate'],
 ): ManagerActionDefinition => ({
   name,
-  validate: (item) => validate(item),
+  validate,
   apply: continueApply,
 })
