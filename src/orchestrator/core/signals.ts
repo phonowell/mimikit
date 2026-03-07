@@ -156,9 +156,10 @@ export const markWorkerSlotFreedSignal = (runtime: RuntimeState): void => {
   workerSlotFreedSignals.add(runtime)
 }
 
-export const hasWorkerSlotFreedSignal = (runtime: RuntimeState): boolean =>
-  workerSlotFreedSignals.has(runtime)
-
-export const clearWorkerSlotFreedSignal = (runtime: RuntimeState): void => {
+export const consumeWorkerSlotFreedSignal = (
+  runtime: RuntimeState,
+): boolean => {
+  if (!workerSlotFreedSignals.has(runtime)) return false
   workerSlotFreedSignals.delete(runtime)
+  return true
 }

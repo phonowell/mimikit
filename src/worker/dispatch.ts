@@ -120,11 +120,11 @@ const runQueuedWorker = async (
   try {
     await runTask(runtime, task, controller)
   } finally {
-    const maxSlots = Math.max(1, runtime.config.worker.maxConcurrent)
-    const wasFull = runtime.runningControllers.size >= maxSlots
+    const occupiedBeforeRelease = runtime.runningControllers.size
     clearTaskLiveOutput(runtime, task.id)
     runtime.runningControllers.delete(task.id)
-    if (wasFull) markWorkerSlotFreedSignal(runtime)
+    if (occupiedBeforeRelease > runtime.runningControllers.size)
+      markWorkerSlotFreedSignal(runtime)
     notifyManagerLoop(runtime)
     await bestEffort('persistRuntimeState: worker_end', () =>
       persistRuntimeState(runtime),

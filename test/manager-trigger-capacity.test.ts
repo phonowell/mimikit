@@ -213,6 +213,23 @@ test('worker slot availability tracks queue capacity transitions', async () => {
   await runtime.workerQueue.onIdle()
 })
 
+test('triggerWakeLoop emits worker_slot_freed once on startup when slot is already free', async () => {
+  const runtime = await createRuntime({ maxConcurrent: 2 })
+
+  const loopPromise = triggerWakeLoop(runtime)
+  try {
+    await waitFor(
+      () => countSystemEvent(runtime, 'worker_slot_freed') >= 1,
+      4_000,
+    )
+    await new Promise<void>((resolve) => setTimeout(resolve, 1_300))
+    expect(countSystemEvent(runtime, 'worker_slot_freed')).toBe(1)
+  } finally {
+    runtime.stopped = true
+    await loopPromise
+  }
+})
+
 test('on_worker_slot_freed plans trigger without touching non-capacity plans', async () => {
   const runtime = await createRuntime({ maxConcurrent: 2 })
   runtime.taskPlans.push(
@@ -297,6 +314,40 @@ test('triggerWakeLoop emits worker_slot_freed on full-to-free transition only on
     await loopPromise
   }
 })
+
+test(
+  'triggerWakeLoop coalesces burst slot-freed signals while capacity remains free',
+  async () => {
+    const runtime = await createRuntime({ maxConcurrent: 3 })
+    runtime.runningControllers.set('task-1', new AbortController())
+    runtime.runningControllers.set('task-2', new AbortController())
+    runtime.runningControllers.set('task-3', new AbortController())
+
+    const loopPromise = triggerWakeLoop(runtime)
+    try {
+      await new Promise<void>((resolve) => setTimeout(resolve, 1_200))
+      expect(countSystemEvent(runtime, 'worker_slot_freed')).toBe(0)
+
+      markWorkerSlotFreedSignal(runtime)
+      runtime.runningControllers.delete('task-1')
+      runtime.lastWorkerActivityAtMs = Date.now()
+      markWorkerSlotFreedSignal(runtime)
+      runtime.runningControllers.delete('task-2')
+      runtime.lastWorkerActivityAtMs = Date.now()
+      markWorkerSlotFreedSignal(runtime)
+      runtime.runningControllers.delete('task-3')
+      runtime.lastWorkerActivityAtMs = Date.now()
+      await waitFor(() => countSystemEvent(runtime, 'worker_slot_freed') >= 1, 4_000)
+
+      await new Promise<void>((resolve) => setTimeout(resolve, 1_300))
+      expect(countSystemEvent(runtime, 'worker_slot_freed')).toBe(1)
+    } finally {
+      runtime.stopped = true
+      await loopPromise
+    }
+  },
+  12_000,
+)
 
 test('triggerWakeLoop consumes explicit slot-freed signal when slot remains available', async () => {
   const runtime = await createRuntime({ maxConcurrent: 1 })
