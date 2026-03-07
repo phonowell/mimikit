@@ -20,9 +20,9 @@
 
 ## 单一事实源
 
-- Task 生命周期与执行链路：`./task.md`
-- Action 协议与动作清单：`./action.md`
-- Plan 生命周期与触发机制：`./plan.md`
-- Focus 生命周期与归属规则：`./focus.md`
-- Memory 后台维护策略：`./memory.md`
+- Task 生命周期与执行链路（唯一权威）：`./task.md`
+- Action 协议、动作清单与执行语义（唯一权威）：`./action.md`
+- Plan 生命周期与触发机制（唯一权威）：`./plan.md`
+- Focus 生命周期与归属规则（唯一权威）：`./focus.md`
+- Memory 后台维护策略（唯一权威）：`./memory.md`
 - Worktree 槽位与落地流程：`./worktree.md`

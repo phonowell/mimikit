@@ -2,6 +2,11 @@
 
 > 返回 [系统设计总览](../README.md)
 
+## 文档边界
+
+- 本文档仅描述 manager/worker/provider 的运行时装配与执行流程。
+- Task/Action/Plan/Focus/Memory 的领域语义不在本文定义，统一以 `../workflow/task.md`、`../workflow/action.md`、`../workflow/plan.md`、`../workflow/focus.md`、`../workflow/memory.md` 为准。
+
 ## Manager Runner
 
 实现：`src/manager/runner.ts`

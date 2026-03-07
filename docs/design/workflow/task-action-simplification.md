@@ -1,6 +1,8 @@
 # Task Action 收敛设计（pause/resume）
 
 > 范围：manager action 设计收敛（不含本文件内实现代码变更）
+> 文档定位：历史设计记录（非规范）；Action 当前有效规范见 `./action.md`。
+> 说明：下文为历史落地快照，可能与当前实现细节存在偏差，不用于规范裁决。
 
 ## 1. 背景与问题
 
@@ -30,34 +32,11 @@
 
 `cancel_task` 在 V2 中移除，不保留兼容层。
 
-## 4. Action 契约
+## 4. 规范收敛说明
 
-### 4.1 `enqueue_task`（保持不变）
-
-- 必填：`prompt`、`title`
-- 可选：`focus_id`
-
-### 4.2 `mutate_task`（新增）
-
-- 必填：`id`、`op`
-- 可选：`reason`
-- `op` 枚举：`pause | resume | cancel`
-
-示例：
-
-- `<M:mutate_task id="task-123" op="pause" reason="wait for user confirmation" />`
-- `<M:mutate_task id="task-123" op="resume" />`
-- `<M:mutate_task id="task-123" op="cancel" reason="superseded" />`
-
-## 5. 状态转移语义
-
-| op | 允许输入状态 | 输出状态 | 非法状态错误 |
-| --- | --- | --- | --- |
-| pause | `pending`、`running` | `paused` | `already_paused` / `already_done` |
-| resume | `paused` | `pending` | `not_paused` / `already_done` |
-| cancel | `pending`、`paused`、`running` | `canceled` | `already_canceled` / `already_done` |
-
-通用错误：`not_found`、`invalid`。
+- Action 契约、参数约束与执行语义已收敛到 `./action.md`。
+- Task 状态转移与取消/恢复语义已收敛到 `./task.md`。
+- 本文档不再承载可执行规范，仅保留设计动机与落地过程记录。
 
 ## 6. Manager 执行层设计
 

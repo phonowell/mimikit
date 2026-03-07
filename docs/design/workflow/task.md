@@ -2,6 +2,12 @@
 
 > 返回 [Workflow 索引](./task-and-action.md)
 
+## 文档定位
+
+- 本文档是 Task 领域的单一主规范（single source of truth），覆盖生命周期、派发去重、执行回写、取消恢复与 session 语义。
+- 涉及 Task 的设计记录、提案、讨论稿仅作背景参考，不构成并行规范。
+- 若与其他文档表述冲突，以本文档与对应实现代码（`src/worker/*`、`src/manager/*`）为准。
+
 ## 生命周期
 
 - `pending`：manager 已派发，等待外部执行。

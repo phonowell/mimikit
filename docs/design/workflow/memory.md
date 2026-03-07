@@ -2,6 +2,12 @@
 
 > 返回 [Workflow 索引](./task-and-action.md)
 
+## 文档定位
+
+- 本文档是 Memory 领域的单一主规范（single source of truth），覆盖数据结构、读写语义、刷新机制、评分策略与持久化。
+- 涉及 Memory 的设计记录、提案、讨论稿仅作背景参考，不构成并行规范。
+- 若与其他文档表述冲突，以本文档与对应实现代码（`src/memory/*`、`src/manager/action-apply-memory.ts`）为准。
+
 ## 核心结论
 
 - `memory/MEMORY.md` 持久化仍是 Markdown，但内部读写按结构化条目（entry）处理。

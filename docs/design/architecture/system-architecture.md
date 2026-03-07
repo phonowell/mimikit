@@ -2,6 +2,11 @@
 
 > 返回 [系统设计总览](../README.md)
 
+## 文档边界
+
+- 本文档仅定义架构边界、组件职责、启动顺序与事件驱动主链路。
+- Task/Action/Plan/Focus/Memory 的生命周期与执行语义不在本文定义，统一以 `../workflow/task.md`、`../workflow/action.md`、`../workflow/plan.md`、`../workflow/focus.md`、`../workflow/memory.md` 为准。
+
 ## 架构边界
 
 - 一次性全量切换到统一模型：`Task + TaskPlan + Focus`。

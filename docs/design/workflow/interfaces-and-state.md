@@ -2,6 +2,11 @@
 
 > 返回 [系统设计总览](../README.md)
 
+## 文档边界
+
+- 本文档仅定义 HTTP/SSE/CLI/配置与状态目录等接口事实。
+- Task/Action/Plan/Focus/Memory 的生命周期与执行语义不在本文定义，统一以 `./task.md`、`./action.md`、`./plan.md`、`./focus.md`、`./memory.md` 为准。
+
 ## HTTP API（`src/http/*`）
 
 - `GET /api/events`
@@ -142,8 +147,7 @@
 
 说明：
 - manager 每轮会注入 `M:memory`，注入前对 memory entries 做本地评分排序并按 budget 选择
-- `memory/MEMORY.md` 由两条链路维护：后台 memory 刷新子进程（`>=20` 轮触发，单飞执行）+ manager `remember_memory` 即时写入
-- 不存在独立 forget action；遗忘通过 `remember_memory` 记录指令，后续刷新输出 `delete_entry_ids` 执行删除
+- memory 维护与遗忘语义（`remember_memory` / `delete_entry_ids`）以 `./memory.md` 为准；本节仅描述状态目录与落盘位置
 
 ## WebUI 路径链接规则
 
@@ -163,6 +167,9 @@ schema：`src/storage/runtime-snapshot-schema.ts`
 - `memoryRefresh`（刷新检查点）
 - `queues.inputsCursor`、`queues.resultsCursor`
 - `pendingUserChoice`
+
+说明：
+- Task/Plan/Focus/Memory 的生命周期与语义以 `./task.md`、`./plan.md`、`./focus.md`、`./memory.md` 为准；本节仅列快照字段。
 
 恢复一致性规则（启动阶段）：
 - 若 `queues.inputsCursor` 大于 `inputs/packets.jsonl` 当前包数，重置为 `0`

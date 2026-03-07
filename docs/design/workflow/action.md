@@ -2,6 +2,17 @@
 
 > 返回 [Workflow 索引](./task-and-action.md)
 
+## 文档定位
+
+- 本文档是 Action 领域的单一主规范（single source of truth），覆盖协议、动作清单、执行语义与参数约束。
+- 涉及 Action 的设计记录、提案、简化说明仅作背景参考，不构成并行规范。
+- 若与其他文档表述冲突，以本文档与对应实现代码（`src/manager/*`、`src/actions/protocol/*`）为准。
+
+## 领域边界
+
+- 本文档只定义 manager 可消费 action 协议与执行语义。
+- Task 生命周期细节以 `./task.md` 为准；Plan 触发与生命周期以 `./plan.md` 为准；Focus 归属与容量以 `./focus.md` 为准；Memory 刷新策略以 `./memory.md` 为准。
+
 ## 协议
 
 协议与解析：`src/actions/protocol/*`

@@ -2,6 +2,12 @@
 
 > 返回 [Workflow 索引](./task-and-action.md)
 
+## 文档定位
+
+- 本文档是 Plan 领域的单一主规范（single source of truth），覆盖生命周期、触发机制、调度语义、去重归属与关联 Action。
+- 涉及 Plan 的设计记录、提案、讨论稿仅作背景参考，不构成并行规范。
+- 若与其他文档表述冲突，以本文档与对应实现代码（`src/manager/*`、`src/orchestrator/*`）为准。
+
 ## 生命周期
 
 - 对外名称：Plans；后端领域名：`taskPlans`
