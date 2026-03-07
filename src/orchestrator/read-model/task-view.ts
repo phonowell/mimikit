@@ -16,6 +16,7 @@ export type TaskView = {
   kind: 'task'
   status: TaskStatus
   profile: Task['profile']
+  provider: Task['provider']
   focusId: string
   title: string
   cron?: string
@@ -86,6 +87,7 @@ const taskToView = (
     kind: 'task',
     status: task.status,
     profile: task.profile,
+    provider: task.provider,
     focusId: task.focusId,
     title: task.title || titleFromCandidates(task.id, [task.prompt]),
     ...(task.cron ? { cron: task.cron } : {}),

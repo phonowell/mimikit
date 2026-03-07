@@ -167,6 +167,7 @@ const formatTaskEntry = (
     ...(archivePath ? { archive_path: archivePath } : {}),
     id: task.id,
     status: task.status,
+    provider: task.provider,
     title: task.title.trim() || task.id,
     changed_at: resolveTaskChangedAt(task),
     prompt: truncateText(task.prompt, TASK_PROMPT_MAX_CHARS, {
@@ -196,6 +197,7 @@ const buildFallbackTask = (result: TaskResult): Task => ({
   prompt: '',
   title: result.title ?? result.taskId,
   profile: 'worker',
+  provider: result.provider ?? 'codex',
   status: result.status,
   focusId: GLOBAL_FOCUS_ID,
   createdAt: result.completedAt,
@@ -258,6 +260,7 @@ export const formatResultsJson = (
       )
       return {
         id: result.taskId,
+        provider: task?.provider ?? result.provider ?? 'codex',
         title: task?.title.trim() ?? result.title?.trim() ?? result.taskId,
         prompt: truncateText(task?.prompt ?? '', TASK_PROMPT_MAX_CHARS, {
           normalizeWhitespace: true,

@@ -1,7 +1,7 @@
 import type { TokenUsage } from '../types/index.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
-export type ProviderKind = 'codex-sdk' | 'openai-responses'
+export type ProviderKind = 'codex-sdk' | 'openai-responses' | 'opencode-sdk'
 
 export type ProviderResult = {
   output: string
@@ -44,9 +44,14 @@ export type CodexSdkProviderRequest = ProviderRequestBase & {
   logContext?: Record<string, unknown>
 }
 
+export type OpencodeSdkProviderRequest = ProviderRequestBase & {
+  provider: 'opencode-sdk'
+}
+
 export type ProviderRequest =
   | CodexSdkProviderRequest
   | OpenAiResponsesProviderRequest
+  | OpencodeSdkProviderRequest
 
 export type Provider<TRequest extends ProviderRequest> = {
   id: TRequest['provider']

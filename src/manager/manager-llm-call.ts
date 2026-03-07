@@ -24,12 +24,10 @@ export const runManagerLlmCall = async (params: {
   prompt: string
   workDir: string
   model?: string
-  managerProvider?: {
-    baseUrl?: string | undefined
-    apiKey?: string | undefined
-    proxy?: string | undefined
-    modelReasoningEffort?: ModelReasoningEffort | undefined
-  }
+  baseUrl?: string | undefined
+  apiKey?: string | undefined
+  proxy?: string | undefined
+  modelReasoningEffort?: ModelReasoningEffort | undefined
   onUsage?: (usage: TokenUsage) => void
   logPath?: string
   logContext?: Record<string, unknown>
@@ -40,11 +38,10 @@ export const runManagerLlmCall = async (params: {
   usage?: TokenUsage
   threadId?: string | null
 }> => {
-  const managerBaseUrl = params.managerProvider?.baseUrl?.trim()
-  const managerApiKey = params.managerProvider?.apiKey?.trim()
-  const managerProxy = params.managerProvider?.proxy?.trim()
-  const managerModelReasoningEffort =
-    params.managerProvider?.modelReasoningEffort
+  const managerBaseUrl = params.baseUrl?.trim()
+  const managerApiKey = params.apiKey?.trim()
+  const managerProxy = params.proxy?.trim()
+  const managerModelReasoningEffort = params.modelReasoningEffort
   const timeoutMs = resolveManagerTimeoutMs(params.prompt)
   const result = await runWithProvider({
     provider: MANAGER_PROVIDER,

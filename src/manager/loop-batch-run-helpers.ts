@@ -1,5 +1,7 @@
 import { appendLog } from '../log/append.js'
 
+import { listEnabledWorkerProviders } from './worker-provider-selection.js'
+
 import type { RuntimeState } from './runtime-adapter.js'
 import type {
   HistoryLookupMessage,
@@ -9,6 +11,7 @@ import type {
   TaskPlanStatus,
   TaskStatus,
   TokenUsage,
+  WorkerProvider,
 } from '../types/index.js'
 
 export type ManagerRoundExtra = {
@@ -45,8 +48,12 @@ export const buildActionFeedbackContext = (params: {
   planStatusById: Map<string, TaskPlanStatus>
   resultTaskIds: Set<string>
   allowAskUserChoice: boolean
+  enabledWorkerProviders: Set<WorkerProvider>
 } => {
   const { runtime, allowAskUserChoice, resultTaskIds } = params
+  const enabledWorkerProviders = new Set<WorkerProvider>(
+    listEnabledWorkerProviders(runtime.config).map((item) => item.provider),
+  )
   return {
     taskStatusById: new Map(
       runtime.tasks.map((task) => [task.id, task.status]),
@@ -56,6 +63,7 @@ export const buildActionFeedbackContext = (params: {
     ),
     resultTaskIds,
     allowAskUserChoice,
+    enabledWorkerProviders,
   }
 }
 

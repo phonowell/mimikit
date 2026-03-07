@@ -8,6 +8,8 @@ import {
 
 import { tokenUsageSchema } from './token-usage.js'
 
+const workerProviderSchema = z.enum(['codex', 'opencode'])
+
 export const taskCancelSchema = z
   .object({
     source: z.enum(['user', 'deferred', 'system']),
@@ -55,6 +57,7 @@ export const taskResultSchema = z
     title: z.string().optional(),
     archivePath: z.string().optional(),
     profile: z.enum(['worker']).optional(),
+    provider: workerProviderSchema.optional(),
     cancel: taskCancelSchema.optional(),
     handoff: taskResultHandoffSchema.optional(),
   })
@@ -70,6 +73,7 @@ export const taskSchema = z
     cron: z.string().optional(),
     scheduledAt: z.string().optional(),
     profile: z.enum(['worker']),
+    provider: workerProviderSchema,
     status: z.enum([
       'pending',
       'paused',

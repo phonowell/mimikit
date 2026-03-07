@@ -38,6 +38,7 @@ export const runTaskSchema = z
     prompt: nonEmptyString,
     title: nonEmptyString,
     focus_id: focusIdSchema.optional(),
+    provider: z.enum(['codex', 'opencode']).optional(),
   })
   .strict()
 

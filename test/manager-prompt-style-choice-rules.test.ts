@@ -57,5 +57,10 @@ test('manager prompt enforces concise reply and choice routing rules', async () 
   expect(prompt).toContain('默认并行：用户未要求串行且不存在硬依赖时，新目标应并行推进')
   expect(prompt).toContain('任务控制门禁：仅在用户显式要求暂停/恢复/取消')
   expect(prompt).toContain('不要通过反复改写同目标 `enqueue_task` 间接触发 deferred cancel')
+  expect(prompt).toContain(
+    '仅从 `M:environment.provider_candidates` 选 `enqueue_task.provider`',
+  )
+  expect(prompt).toContain('省略 `provider`，交给系统自动按“`billing` 更低优先，同档位 `capability` 更高优先”选择')
+  expect(prompt).toContain('仅在任务强度明显偏高（跨文件重构、疑难排错、高回滚成本）时显式指定更高 `capability` provider')
   expect(prompt).not.toContain('docs/design/workflow/plan.md')
 })

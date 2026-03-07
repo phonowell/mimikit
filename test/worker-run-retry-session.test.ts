@@ -97,6 +97,7 @@ const createTask = (id: string, overrides: Partial<Task> = {}): Task => ({
   title: 'run task',
   focusId: 'focus-global',
   profile: 'worker',
+  provider: 'codex',
   status: 'running',
   createdAt: '2026-03-06T00:00:00.000Z',
   ...overrides,

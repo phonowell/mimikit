@@ -15,11 +15,13 @@ const createTask = (overrides?: Partial<Task>): Task => ({
     prompt: 'Write report',
     title: 'Write report',
     profile: 'worker',
+    provider: 'codex',
   }),
   prompt: 'Write report',
   title: 'Write report',
   focusId: 'focus-global',
   profile: 'worker',
+  provider: 'codex',
   status: 'pending',
   createdAt: '2026-02-26T10:00:00.000Z',
   ...overrides,
@@ -29,7 +31,13 @@ test('enqueueTask returns existing active task by fingerprint', () => {
   const existing = createTask()
   const tasks: Task[] = [existing]
 
-  const result = enqueueTask(tasks, 'Write report', 'Write report')
+  const result = enqueueTask(
+    tasks,
+    'Write report',
+    'Write report',
+    'worker',
+    'codex',
+  )
 
   expect(result).toMatchObject({ created: false, task: { id: existing.id } })
 })

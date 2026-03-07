@@ -12,6 +12,7 @@ import {
 import {
   formatAskUserChoiceInvalidOptionsHint,
   formatAskUserChoiceTelegramUnsupportedHint,
+  formatEnqueueTaskProviderDisabledHint,
   formatMutateTaskAlreadyCanceledHint,
   formatMutateTaskAlreadyDoneHint,
   formatMutateTaskAlreadyPausedHint,
@@ -38,6 +39,7 @@ export type FeedbackContext = {
   resultTaskIds?: Set<string>
   scheduleNowIso?: string
   allowAskUserChoice?: boolean
+  enabledWorkerProviders?: Set<'codex' | 'opencode'>
 }
 export type { ValidationIssue } from './action-validation-helpers.js'
 export const validateWithSchema = (
@@ -53,8 +55,18 @@ const resolveScheduleNowOption = (
   context.scheduleNowIso !== undefined
     ? { scheduleNowIso: context.scheduleNowIso }
     : {}
-export const validateRunTask = (item: Parsed): ValidationIssue[] =>
-  validateWithSchema(item, runTaskSchema)
+export const validateRunTask = (
+  item: Parsed,
+  context: FeedbackContext,
+): ValidationIssue[] => {
+  const parsed = runTaskSchema.safeParse(item.attrs)
+  if (!parsed.success) return [invalidArgsIssue(parsed.error)]
+  const { provider } = parsed.data
+  if (!provider) return []
+  const enabledProviders = context.enabledWorkerProviders
+  if (!enabledProviders || enabledProviders.has(provider)) return []
+  return rejected(formatEnqueueTaskProviderDisabledHint(provider))
+}
 export const validateCreatePlan = (
   item: Parsed,
   context: FeedbackContext,

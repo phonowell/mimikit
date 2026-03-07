@@ -47,6 +47,8 @@
 
 参数约定（关键字段）：
 
+- `enqueue_task.provider`：可选 `codex|opencode`；可选值应来自 `M:environment.provider_candidates`（仅包含 enabled provider）
+- 未指定 `provider` 时，系统按配置自动选择：`billing` 最低优先；同档位下 `capability` 最高优先
 - `assign_focus`：`target_type(task|plan|history) + target_id + focus_id`
 - `upsert_focus.open_item_{n}`：按编号传递字符串待办项，`n` 必须从 `1` 连续递增且不能跳号（如 `open_item_1`、`open_item_2`）
 - `ask_user_choice.option_{n}_id/label/reason`：选项三元组编号 `n` 必须从 `1` 连续递增且不能跳号

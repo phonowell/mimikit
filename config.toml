@@ -1,0 +1,67 @@
+[manager]
+maxCorrectionRounds = 3
+model = "gpt-5.2-high"
+modelReasoningEffort = "high"
+# Optional manager-only provider overrides.
+# If omitted, manager keeps provider auto-discovery behavior.
+# baseUrl = "https://your-codex-provider.example.com/v1/codex"
+# apiKey = "${AICODING_API_KEY}"
+
+[manager.promptSections]
+actionFeedbackMaxBytes = 8192
+batchResultsMaxBytes = 20480
+compressedContextMaxBytes = 12288
+environmentMaxBytes = 4096
+fileLookupMaxBytes = 20480
+focusContextsMaxBytes = 20480
+focusListMaxBytes = 8192
+historyLookupMaxBytes = 20480
+inputsMaxBytes = 8192
+memoryMaxBytes = 8192
+plansMaxBytes = 16384
+recentHistoryMaxBytes = 8192
+tasksMaxBytes = 24576
+
+[manager.taskCreate]
+debounceMs = 4000
+
+[manager.idleTrigger]
+delayMs = 900000
+
+[manager.taskWindow]
+maxCount = 20
+minCount = 5
+
+[manager.planWindow]
+maxCount = 20
+minCount = 5
+
+[worker]
+maxConcurrent = 3
+timeoutMs = 600000
+
+[worker.retry]
+maxAttempts = 1
+backoffMs = 5000
+
+[codex]
+enabled = true
+model = "gpt-5.3-codex-high"
+modelReasoningEffort = "high"
+capability = "high"
+billing = "medium"
+
+[opencode]
+enabled = false
+model = "big-pickle"
+capability = "low"
+billing = "free"
+
+[webui]
+enabled = true
+
+[telegram]
+enabled = false
+botToken = ""
+chatId = ""
+apiRoot = "https://api.telegram.org"

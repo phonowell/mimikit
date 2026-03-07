@@ -1,5 +1,9 @@
 import { resolveWorkerSlotCapacity } from './loop-trigger-shared.js'
 import { runManager } from './runner.js'
+import {
+  compareWorkerProviderPreference,
+  listEnabledWorkerProviders,
+} from './worker-provider-selection.js'
 
 import type { RuntimeState } from './runtime-adapter.js'
 import type { PromptSectionLimits } from '../config.js'
@@ -17,11 +21,27 @@ import type {
   UserInput,
 } from '../types/index.js'
 
+const resolveEnabledWorkerProviders = (
+  runtime: RuntimeState,
+): NonNullable<ManagerEnv['workerProviders']> =>
+  listEnabledWorkerProviders(runtime.config)
+    .sort(compareWorkerProviderPreference)
+    .map((item) => ({
+      provider: item.provider,
+      model:
+        item.provider === 'codex'
+          ? runtime.config.codex.model
+          : runtime.config.opencode.model,
+      capability: item.capability,
+      billing: item.billing,
+    }))
+
 const buildManagerEnv = (
   runtime: RuntimeState,
   wakeProfile: ManagerWakeProfile,
 ): ManagerEnv => {
   const slots = resolveWorkerSlotCapacity(runtime)
+  const enabledProviders = resolveEnabledWorkerProviders(runtime)
   const env: ManagerEnv = {
     ...(runtime.lastUserMeta ? { lastUser: runtime.lastUserMeta } : {}),
     wakeProfile,
@@ -30,6 +50,9 @@ const buildManagerEnv = (
       occupiedSlots: slots.occupiedSlots,
       availableSlots: slots.availableSlots,
     },
+    ...(enabledProviders.length > 0
+      ? { workerProviders: enabledProviders }
+      : {}),
   }
   return env
 }
@@ -165,10 +188,16 @@ export const runManagerRoundWithRecovery = async (params: {
       : {}),
     env: managerEnv,
     model: params.runtime.config.manager.model,
-    managerProvider: {
-      ...params.runtime.config.manager.provider,
-      modelReasoningEffort: params.runtime.config.manager.modelReasoningEffort,
-    },
+    ...(params.runtime.config.manager.baseUrl
+      ? { baseUrl: params.runtime.config.manager.baseUrl }
+      : {}),
+    ...(params.runtime.config.manager.apiKey
+      ? { apiKey: params.runtime.config.manager.apiKey }
+      : {}),
+    ...(params.runtime.config.manager.proxy
+      ? { proxy: params.runtime.config.manager.proxy }
+      : {}),
+    modelReasoningEffort: params.runtime.config.manager.modelReasoningEffort,
   })
 
   return {

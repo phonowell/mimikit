@@ -35,3 +35,29 @@ test('formatEnvironment includes worker slot capacity fields', () => {
   expect(output).toContain('- occupied_slots: 1')
   expect(output).toContain('- available_slots: 3')
 })
+
+test('formatEnvironment includes enabled provider candidates and compact profiles', () => {
+  const output = formatEnvironment({
+    env: {
+      workerProviders: [
+        {
+          provider: 'opencode',
+          model: 'big-pickle',
+          capability: 'low',
+          billing: 'free',
+        },
+        {
+          provider: 'codex',
+          model: 'gpt-5.3-codex',
+          capability: 'high',
+          billing: 'medium',
+        },
+      ],
+    },
+  })
+
+  expect(output).toContain('- provider_candidates: opencode,codex')
+  expect(output).toContain(
+    '- provider_profiles: opencode(billing=free,capability=low);codex(billing=medium,capability=high)',
+  )
+})

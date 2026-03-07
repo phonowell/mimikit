@@ -28,7 +28,7 @@
 
 - 导出：`runWorker`
 - Prompt 组装：`buildWorkerPrompt` -> `prompts/worker/system.md`
-- Provider：`codex-sdk`（外部执行运行时）
+- Provider：按任务 `provider` 路由到 `codex-sdk` 或 `opencode-sdk`（外部执行运行时）
 - 输出：`{ output, elapsedMs, usage? }`
 - 上下文补充：注入当前任务 `focusId` 对应的 `focus summary/open_items`，以及可用的 `compressed summary`
 
@@ -46,6 +46,7 @@
 - 导出：`runWithProvider`
 - 当前注册 provider：
   - `codex-sdk`：`src/providers/codex-sdk-provider.ts`
+  - `opencode-sdk`：`src/providers/opencode-sdk-provider.ts`
   - `openai-responses`：`src/providers/openai-responses-provider.ts`
 - 共享运行时工具：`src/providers/provider-runtime.ts`
 - 共享错误建模：`src/providers/provider-error.ts`

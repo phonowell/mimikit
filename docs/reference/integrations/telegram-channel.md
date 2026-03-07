@@ -17,15 +17,15 @@
 - 非 `/mmk` 文本仍按普通用户输入进入 orchestrator。
 - `photo` 不做视觉解析，转为文本限制提示进入 orchestrator。
 
-## 配置项（`config.yaml`）
+## 配置项（`config.toml`）
 
-```yaml
-telegram:
-  enabled: false
-  botToken: ""
-  chatId: ""
-  apiRoot: https://api.telegram.org
-  proxy: ""
+```toml
+[telegram]
+enabled = false
+botToken = ""
+chatId = ""
+apiRoot = "https://api.telegram.org"
+proxy = ""
 ```
 
 ## 环境变量覆写

@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
-import { parse as parseYaml } from 'yaml'
+import TOML from '@iarna/toml'
 import { z } from 'zod'
 
 import { telegramConfigSchema } from './channels/telegram/config.js'
@@ -15,22 +15,16 @@ const modelReasoningEffortSchema = z.enum([
   'high',
   'xhigh',
 ])
-
-const managerProviderInputSchema = z
-  .object({
-    baseUrl: z.string().optional(),
-    apiKey: z.string().optional(),
-    proxy: z.string().optional(),
-    model: z.string().min(1).optional(),
-    modelReasoningEffort: modelReasoningEffortSchema.optional(),
-  })
-  .strict()
+const providerCapabilitySchema = z.enum(['low', 'medium', 'high'])
+const providerBillingSchema = z.enum(['free', 'low', 'medium', 'high'])
 
 const managerInputSchema = z
   .object({
     model: z.string().min(1).optional(),
     modelReasoningEffort: modelReasoningEffortSchema.optional(),
-    provider: managerProviderInputSchema.optional(),
+    baseUrl: z.string().optional(),
+    apiKey: z.string().optional(),
+    proxy: z.string().optional(),
     maxCorrectionRounds: z.number().int().positive().optional(),
     promptSections: z
       .record(z.string(), z.number().int().nonnegative())
@@ -62,9 +56,6 @@ const workerInputSchema = z
   .object({
     maxConcurrent: z.number().int().positive().optional(),
     timeoutMs: z.number().int().positive().optional(),
-    proxy: z.string().optional(),
-    model: z.string().min(1).optional(),
-    modelReasoningEffort: modelReasoningEffortSchema.optional(),
     retry: z
       .object({
         maxAttempts: z.number().int().nonnegative().optional(),
@@ -72,6 +63,27 @@ const workerInputSchema = z
       })
       .strict()
       .optional(),
+  })
+  .strict()
+
+const codexInputSchema = z
+  .object({
+    enabled: z.boolean().optional(),
+    model: z.string().min(1).optional(),
+    modelReasoningEffort: modelReasoningEffortSchema.optional(),
+    proxy: z.string().optional(),
+    capability: providerCapabilitySchema.optional(),
+    billing: providerBillingSchema.optional(),
+  })
+  .strict()
+
+const opencodeInputSchema = z
+  .object({
+    enabled: z.boolean().optional(),
+    model: z.string().min(1).optional(),
+    proxy: z.string().optional(),
+    capability: providerCapabilitySchema.optional(),
+    billing: providerBillingSchema.optional(),
   })
   .strict()
 
@@ -85,6 +97,8 @@ const userConfigInputSchema = z
   .object({
     manager: managerInputSchema.optional(),
     worker: workerInputSchema.optional(),
+    codex: codexInputSchema.optional(),
+    opencode: opencodeInputSchema.optional(),
     webui: webuiInputSchema.optional(),
     telegram: telegramConfigSchema.partial().strict().optional(),
   })
@@ -96,18 +110,28 @@ export type UserConfigDefaults = {
   manager: {
     model: string
     modelReasoningEffort: z.infer<typeof modelReasoningEffortSchema>
-    provider: {
-      baseUrl?: string | undefined
-      apiKey?: string | undefined
-      proxy?: string | undefined
-    }
+    baseUrl?: string | undefined
+    apiKey?: string | undefined
+    proxy?: string | undefined
   }
   worker: {
     maxConcurrent: number
     timeoutMs: number
-    proxy?: string | undefined
+  }
+  codex: {
+    enabled: boolean
     model: string
     modelReasoningEffort: z.infer<typeof modelReasoningEffortSchema>
+    capability: z.infer<typeof providerCapabilitySchema>
+    billing: z.infer<typeof providerBillingSchema>
+    proxy?: string | undefined
+  }
+  opencode: {
+    enabled: boolean
+    model: string
+    capability: z.infer<typeof providerCapabilitySchema>
+    billing: z.infer<typeof providerBillingSchema>
+    proxy?: string | undefined
   }
   webui: {
     enabled: boolean
@@ -119,14 +143,28 @@ const DEFAULT_USER_CONFIG: UserConfigDefaults = {
   manager: {
     model: 'gpt-5.2',
     modelReasoningEffort: 'medium',
-    provider: {},
+    baseUrl: '',
+    apiKey: '',
+    proxy: '',
   },
   worker: {
     maxConcurrent: 3,
     timeoutMs: 600000,
-    proxy: '',
+  },
+  codex: {
+    enabled: true,
     model: 'gpt-5.3-codex',
     modelReasoningEffort: 'high',
+    capability: 'high',
+    billing: 'medium',
+    proxy: '',
+  },
+  opencode: {
+    enabled: false,
+    model: 'big-pickle',
+    capability: 'low',
+    billing: 'free',
+    proxy: '',
   },
   webui: {
     enabled: true,
@@ -154,9 +192,20 @@ type UnknownKeyIssue = z.ZodIssue & {
 const isUnknownKeyIssue = (issue: z.ZodIssue): issue is UnknownKeyIssue =>
   issue.code === 'unrecognized_keys'
 
+const formatIssuePath = (path: readonly PropertyKey[]): string => {
+  if (path.length === 0) return '<root>'
+  return path
+    .map((segment) =>
+      typeof segment === 'symbol'
+        ? `<symbol:${segment.description ?? 'unknown'}>`
+        : String(segment),
+    )
+    .join('.')
+}
+
 const formatIssues = (issues: readonly z.ZodIssue[]): string =>
   issues
-    .map((issue) => `${issue.path.join('.') || '<root>'}: ${issue.message}`)
+    .map((issue) => `${formatIssuePath(issue.path)}: ${issue.message}`)
     .join('; ')
 
 const formatUnknownKeys = (issues: readonly UnknownKeyIssue[]): string[] => {
@@ -175,6 +224,17 @@ const asRecord = (value: unknown): Record<string, unknown> | undefined =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : undefined
+
+const stripSymbolKeysDeep = (value: unknown): unknown => {
+  if (Array.isArray(value))
+    return value.map((item) => stripSymbolKeysDeep(item))
+  const record = asRecord(value)
+  if (!record) return value
+  const next: Record<string, unknown> = {}
+  for (const [key, child] of Object.entries(record))
+    next[key] = stripSymbolKeysDeep(child)
+  return next
+}
 
 const resolveRecordAtPath = (
   root: unknown,
@@ -205,10 +265,10 @@ const stripUnknownIssues = (
 }
 
 export const DEFAULT_CONFIG_PATH = fileURLToPath(
-  new URL('../config.yaml', import.meta.url),
+  new URL('../config.toml', import.meta.url),
 )
 export const DEFAULT_CONFIG_TEMPLATE_PATH = fileURLToPath(
-  new URL('../defaults/config.template.yaml', import.meta.url),
+  new URL('../defaults/config.template.toml', import.meta.url),
 )
 
 const readOrCreateConfigSource = (path: string): string => {
@@ -232,38 +292,46 @@ const readOrCreateConfigSource = (path: string): string => {
 const buildUserConfigDefaults = (
   input: UserConfigInput,
 ): UserConfigDefaults => {
-  const managerProvider = input.manager?.provider
-  const baseUrl = trimToUndefined(managerProvider?.baseUrl)
-  const apiKey = trimToUndefined(managerProvider?.apiKey)
-  const managerProxy = trimToUndefined(managerProvider?.proxy)
-  const workerProxy = trimToUndefined(input.worker?.proxy)
+  const baseUrl = trimToUndefined(input.manager?.baseUrl)
+  const apiKey = trimToUndefined(input.manager?.apiKey)
+  const managerProxy = trimToUndefined(input.manager?.proxy)
+  const codexProxy = trimToUndefined(input.codex?.proxy)
+  const opencodeProxy = trimToUndefined(input.opencode?.proxy)
 
   return {
     manager: {
-      model:
-        input.manager?.model ??
-        managerProvider?.model ??
-        DEFAULT_USER_CONFIG.manager.model,
+      model: input.manager?.model ?? DEFAULT_USER_CONFIG.manager.model,
       modelReasoningEffort:
         input.manager?.modelReasoningEffort ??
-        managerProvider?.modelReasoningEffort ??
         DEFAULT_USER_CONFIG.manager.modelReasoningEffort,
-      provider: {
-        ...(baseUrl ? { baseUrl } : {}),
-        ...(apiKey ? { apiKey } : {}),
-        ...(managerProxy ? { proxy: managerProxy } : {}),
-      },
+      ...(baseUrl ? { baseUrl } : {}),
+      ...(apiKey ? { apiKey } : {}),
+      ...(managerProxy ? { proxy: managerProxy } : {}),
     },
     worker: {
       maxConcurrent:
         input.worker?.maxConcurrent ?? DEFAULT_USER_CONFIG.worker.maxConcurrent,
       timeoutMs:
         input.worker?.timeoutMs ?? DEFAULT_USER_CONFIG.worker.timeoutMs,
-      ...(workerProxy ? { proxy: workerProxy } : {}),
-      model: input.worker?.model ?? DEFAULT_USER_CONFIG.worker.model,
+    },
+    codex: {
+      enabled: input.codex?.enabled ?? DEFAULT_USER_CONFIG.codex.enabled,
+      model: input.codex?.model ?? DEFAULT_USER_CONFIG.codex.model,
       modelReasoningEffort:
-        input.worker?.modelReasoningEffort ??
-        DEFAULT_USER_CONFIG.worker.modelReasoningEffort,
+        input.codex?.modelReasoningEffort ??
+        DEFAULT_USER_CONFIG.codex.modelReasoningEffort,
+      capability:
+        input.codex?.capability ?? DEFAULT_USER_CONFIG.codex.capability,
+      billing: input.codex?.billing ?? DEFAULT_USER_CONFIG.codex.billing,
+      ...(codexProxy ? { proxy: codexProxy } : {}),
+    },
+    opencode: {
+      enabled: input.opencode?.enabled ?? DEFAULT_USER_CONFIG.opencode.enabled,
+      model: input.opencode?.model ?? DEFAULT_USER_CONFIG.opencode.model,
+      capability:
+        input.opencode?.capability ?? DEFAULT_USER_CONFIG.opencode.capability,
+      billing: input.opencode?.billing ?? DEFAULT_USER_CONFIG.opencode.billing,
+      ...(opencodeProxy ? { proxy: opencodeProxy } : {}),
     },
     webui: {
       enabled: input.webui?.enabled ?? DEFAULT_USER_CONFIG.webui.enabled,
@@ -282,7 +350,17 @@ const buildUserConfigDefaults = (
 const parseConfigInput = (
   source: string,
 ): { config: UserConfigDefaults; unknownKeys: string[] } => {
-  const parsed = (parseYaml(source) ?? {}) as unknown
+  let parsedRaw: unknown
+  try {
+    parsedRaw = TOML.parse(source) as unknown
+  } catch (error) {
+    throw new Error(
+      `[config] invalid toml defaults: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    )
+  }
+  const parsed = stripSymbolKeysDeep(parsedRaw)
   const validated = userConfigInputSchema.safeParse(parsed)
   if (validated.success) {
     return {
@@ -297,7 +375,7 @@ const parseConfigInput = (
   )
   if (knownFieldIssues.length > 0) {
     throw new Error(
-      `[config] invalid yaml defaults: ${formatIssues(knownFieldIssues)}`,
+      `[config] invalid toml defaults: ${formatIssues(knownFieldIssues)}`,
     )
   }
 
@@ -305,7 +383,7 @@ const parseConfigInput = (
   const revalidated = userConfigInputSchema.safeParse(parsed)
   if (!revalidated.success) {
     throw new Error(
-      `[config] invalid yaml defaults: ${formatIssues(revalidated.error.issues)}`,
+      `[config] invalid toml defaults: ${formatIssues(revalidated.error.issues)}`,
     )
   }
 
@@ -315,13 +393,13 @@ const parseConfigInput = (
   }
 }
 
-export type LoadDefaultConfigFromYamlOptions = {
+export type LoadDefaultConfigFromTomlOptions = {
   onUnknownKeys?: (keys: readonly string[]) => void
 }
 
-export const loadDefaultConfigFromYaml = (
+export const loadDefaultConfigFromToml = (
   path = DEFAULT_CONFIG_PATH,
-  options: LoadDefaultConfigFromYamlOptions = {},
+  options: LoadDefaultConfigFromTomlOptions = {},
 ): UserConfigDefaults => {
   const source = readOrCreateConfigSource(path)
   const parsed = parseConfigInput(source)

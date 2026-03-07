@@ -275,3 +275,27 @@ test('mutate_task rejects resume when task is pending', () => {
   expect(feedback[0]?.error).toBe('action_execution_rejected')
   expect(feedback[0]?.hint).toContain('无法 resume')
 })
+
+test('enqueue_task rejects disabled provider outside enabled set', () => {
+  const feedback = collectManagerActionFeedback(
+    [
+      {
+        name: 'enqueue_task',
+        attrs: {
+          prompt: 'run with free provider',
+          title: 'use opencode',
+          provider: 'opencode',
+        },
+      },
+    ],
+    {
+      enabledWorkerProviders: new Set(['codex']),
+    },
+  )
+
+  expect(feedback).toHaveLength(1)
+  expect(feedback[0]?.action).toBe('enqueue_task')
+  expect(feedback[0]?.error).toBe('action_execution_rejected')
+  expect(feedback[0]?.hint).toContain('provider=opencode')
+  expect(feedback[0]?.hint).toContain('provider_candidates')
+})

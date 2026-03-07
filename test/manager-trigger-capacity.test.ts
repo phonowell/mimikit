@@ -25,7 +25,9 @@ const createTestConfig = (
   manager: {
     model: 'gpt-test-manager',
     modelReasoningEffort: 'minimal',
-    provider: {},
+    baseUrl: '',
+    apiKey: '',
+    proxy: '',
     maxCorrectionRounds: 1,
     promptSections: {
       actionFeedbackMaxBytes: 2048,
@@ -51,8 +53,17 @@ const createTestConfig = (
     maxConcurrent,
     retry: { maxAttempts: 1, backoffMs: 1 },
     timeoutMs: 60_000,
-    model: 'gpt-test-worker',
+  },
+  codex: {
+    enabled: true,
+    model: 'gpt-test-codex',
     modelReasoningEffort: 'minimal',
+    proxy: '',
+  },
+  opencode: {
+    enabled: false,
+    model: 'gpt-test-opencode',
+    proxy: '',
   },
   webui: {
     enabled: true,

@@ -11,6 +11,7 @@ import type {
   FocusMeta,
   Task,
   TokenUsage,
+  WorkerProvider,
 } from '../types/index.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
@@ -21,6 +22,7 @@ type LlmResult = {
 }
 
 type BuildRunModelParams = {
+  provider: WorkerProvider
   workDir: string
   timeoutMs: number
   proxy?: string
@@ -38,7 +40,7 @@ const buildRunModel =
     onPartialOutput?: (output: string) => void
   }) =>
     runWithProvider({
-      provider: 'codex-sdk',
+      provider: params.provider === 'opencode' ? 'opencode-sdk' : 'codex-sdk',
       role: 'worker',
       prompt: input.prompt,
       workDir: params.workDir,
@@ -57,6 +59,7 @@ const buildRunModel =
     })
 
 type WorkerRunnerParams = {
+  provider: WorkerProvider
   stateDir: string
   workDir: string
   task: Task

@@ -1,0 +1,64 @@
+# Manager 使用的模型名；默认 gpt-5.2
+[manager]
+model = "gpt-5.2"
+# Manager 推理强度；可选值 minimal|low|medium|high|xhigh；默认 medium
+modelReasoningEffort = "medium"
+# Manager 专用网关地址；空字符串表示走自动发现（~/.codex/config.toml / OPENAI_BASE_URL）
+baseUrl = ""
+# Manager 专用 API Key；敏感项；空字符串表示走环境与 codex 配置
+apiKey = ""
+# Manager 请求代理；空字符串表示直连
+proxy = ""
+
+# Worker 配置
+[worker]
+# Worker 最大并发数；整数 >= 1；默认 3
+maxConcurrent = 3
+# Worker 单任务超时（毫秒）；整数 > 0；默认 600000（10 分钟）
+timeoutMs = 600000
+
+# Codex Worker Provider 配置
+[codex]
+# 是否启用 codex provider；默认 true
+enabled = true
+# Codex 使用的模型名；默认 gpt-5.3-codex
+model = "gpt-5.3-codex"
+# Codex 推理强度；可选值 minimal|low|medium|high|xhigh；默认 high
+modelReasoningEffort = "high"
+# Codex 能力强度；可选值 low|medium|high；默认 high
+capability = "high"
+# Codex 计费等级；可选值 free|low|medium|high；默认 medium
+billing = "medium"
+# Codex 请求代理；空字符串表示直连
+proxy = ""
+
+# Opencode Worker Provider 配置
+[opencode]
+# 是否启用 opencode provider；默认 false
+enabled = false
+# Opencode 使用的模型名；默认 big-pickle
+model = "big-pickle"
+# Opencode 能力强度；可选值 low|medium|high；默认 low
+capability = "low"
+# Opencode 计费等级；可选值 free|low|medium|high；默认 free
+billing = "free"
+# Opencode 请求代理；空字符串表示直连
+proxy = ""
+
+# WebUI 配置
+[webui]
+# 是否启用内置 WebUI + HTTP API；默认 true
+enabled = true
+
+# Telegram 配置
+[telegram]
+# 是否启用 Telegram 通道；默认 false
+enabled = false
+# Telegram Bot Token；当 enabled=true 时必填；敏感项
+botToken = ""
+# Telegram 默认目标 chat id；当 enabled=true 时必填
+chatId = ""
+# Telegram API 根地址；默认官方地址
+apiRoot = "https://api.telegram.org"
+# Telegram 代理地址；留空表示直连
+proxy = ""

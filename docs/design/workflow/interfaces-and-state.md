@@ -70,13 +70,17 @@
 
 - `MIMIKIT_MODEL`
 - `MIMIKIT_MANAGER_MODEL`
-- `MIMIKIT_WORKER_MODEL`
+- `MIMIKIT_CODEX_MODEL`
+- `MIMIKIT_OPENCODE_MODEL`
 - `MIMIKIT_REASONING_EFFORT`
 - `MIMIKIT_MANAGER_REASONING_EFFORT`
-- `MIMIKIT_WORKER_REASONING_EFFORT`
+- `MIMIKIT_CODEX_REASONING_EFFORT`
 - `MIMIKIT_PROXY`
 - `MIMIKIT_MANAGER_PROXY`
-- `MIMIKIT_WORKER_PROXY`
+- `MIMIKIT_CODEX_PROXY`
+- `MIMIKIT_OPENCODE_PROXY`
+- `MIMIKIT_CODEX_ENABLED`
+- `MIMIKIT_OPENCODE_ENABLED`
 - `MIMIKIT_WEBUI_ENABLED`
 - `TELEGRAM_CHANNEL_ENABLED`
 - `TELEGRAM_BOT_TOKEN`
@@ -84,17 +88,25 @@
 - `TELEGRAM_API_ROOT`
 - `TELEGRAM_PROXY`
 
-## 配置结构（`config.yaml`）
+## 配置结构（`config.toml`）
 
-- 若缺少 `config.yaml`，启动阶段会由 `defaults/config.template.yaml` 自动生成。
+- 若缺少 `config.toml`，启动阶段会由 `defaults/config.template.toml` 自动生成。
 - `manager.model`
 - `manager.modelReasoningEffort`
-- `manager.provider.{baseUrl,apiKey,proxy}`（可选，仅 manager）
+- `manager.{baseUrl,apiKey,proxy}`（可选，仅 manager）
 - `worker.maxConcurrent`
 - `worker.timeoutMs`
-- `worker.model`
-- `worker.modelReasoningEffort`
-- `worker.proxy`
+- `codex.enabled`
+- `codex.model`
+- `codex.modelReasoningEffort`
+- `codex.capability`
+- `codex.billing`
+- `codex.proxy`
+- `opencode.enabled`
+- `opencode.model`
+- `opencode.capability`
+- `opencode.billing`
+- `opencode.proxy`
 - `webui.enabled`
 - `telegram.enabled`
 - `telegram.botToken`
@@ -142,6 +154,7 @@
 schema：`src/storage/runtime-snapshot-schema.ts`
 
 - `tasks`
+  - `tasks[*].provider`：`codex | opencode`
 - `taskPlans`
 - `focuses`、`focusContexts`、`activeFocusIds`
 - `managerTurn`、`managerFocusCompressedContexts`

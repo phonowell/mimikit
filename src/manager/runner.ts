@@ -45,12 +45,10 @@ export const runManager = async (params: {
   activeFocusIds?: FocusId[]
   workingFocusIds?: FocusId[]
   model?: string
-  managerProvider?: {
-    baseUrl?: string | undefined
-    apiKey?: string | undefined
-    proxy?: string | undefined
-    modelReasoningEffort?: ModelReasoningEffort | undefined
-  }
+  baseUrl?: string | undefined
+  apiKey?: string | undefined
+  proxy?: string | undefined
+  modelReasoningEffort?: ModelReasoningEffort | undefined
   onUsage?: (usage: TokenUsage) => void
 }): Promise<{
   output: string
@@ -101,8 +99,11 @@ export const runManager = async (params: {
       prompt,
       workDir: params.workDir,
       ...(model ? { model } : {}),
-      ...(params.managerProvider
-        ? { managerProvider: params.managerProvider }
+      ...(params.baseUrl ? { baseUrl: params.baseUrl } : {}),
+      ...(params.apiKey ? { apiKey: params.apiKey } : {}),
+      ...(params.proxy ? { proxy: params.proxy } : {}),
+      ...(params.modelReasoningEffort
+        ? { modelReasoningEffort: params.modelReasoningEffort }
         : {}),
       ...(params.onUsage ? { onUsage: params.onUsage } : {}),
     })

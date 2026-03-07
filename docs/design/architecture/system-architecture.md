@@ -6,7 +6,7 @@
 
 - 一次性全量切换到统一模型：`Task + TaskPlan + Focus`。
 - 不保留旧链路兼容层（intent/cron-job 体系已移除）。
-- manager 使用 direct `responses` provider（`openai-responses`）；worker 使用 `Codex SDK` 作为外部执行运行时。
+- manager 使用 direct `responses` provider（`openai-responses`）；worker 按任务 `provider` 路由到 `codex-sdk` 或 `opencode-sdk` 作为外部执行运行时。
 - manager 对 orchestrator/worker 依赖收敛在 `src/manager/runtime-adapter.ts`。
 - `mimikit` 为纯编排层：负责本地状态机、队列、调度、可观测性，不直接执行任务。
 - HTTP 输入校验与参数归一化集中在 `src/http/helpers.ts`。

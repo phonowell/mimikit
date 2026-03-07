@@ -50,6 +50,22 @@ export const formatEnvironment = (params?: PromptEnvironmentParams): string => {
     push('occupied_slots', slots.occupiedSlots)
     push('available_slots', slots.availableSlots)
   }
+  const providers = params?.env?.workerProviders ?? []
+  if (providers.length > 0) {
+    push(
+      'provider_candidates',
+      providers.map((item) => item.provider).join(','),
+    )
+    push(
+      'provider_profiles',
+      providers
+        .map(
+          (item) =>
+            `${item.provider}(billing=${item.billing},capability=${item.capability})`,
+        )
+        .join(';'),
+    )
+  }
   const last = params?.env?.lastUser
   if (last) {
     push('last_user_source', last.source)

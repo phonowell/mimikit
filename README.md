@@ -71,29 +71,50 @@ wire_api = "responses"
 env_key = "AICODING_API_KEY"
 ```
 
-Manager/worker model settings are configured in `config.yaml`:
+Manager/provider model settings are configured in `config.toml`:
 
-If `config.yaml` is missing, Mimikit will bootstrap it from `defaults/config.template.yaml`.
+If `config.toml` is missing, Mimikit will bootstrap it from `defaults/config.template.toml`.
 
-```yaml
-manager:
-  model: gpt-5.2
-  modelReasoningEffort: medium
-  provider:
-    # optional manager-only provider overrides
-    baseUrl: ""
-    apiKey: ""
-    proxy: ""
-worker:
-  model: gpt-5.3-codex
-  modelReasoningEffort: high
-  proxy: ""
-webui:
-  enabled: true
+```toml
+[manager]
+model = "gpt-5.2"
+modelReasoningEffort = "medium"
+
+# optional manager-only provider overrides
+baseUrl = ""
+apiKey = ""
+proxy = ""
+
+[worker]
+maxConcurrent = 3
+timeoutMs = 600000
+
+[codex]
+enabled = true
+model = "gpt-5.3-codex"
+modelReasoningEffort = "high"
+capability = "high"
+billing = "medium"
+proxy = ""
+
+[opencode]
+enabled = false
+model = "big-pickle"
+capability = "low"
+billing = "free"
+proxy = ""
+
+[webui]
+enabled = true
 ```
 
 - manager calls route directly to `openai-responses`
-- worker calls route to `codex-sdk`
+- worker execution routes by task provider:
+  - `provider="codex"` -> `codex-sdk`
+  - `provider="opencode"` -> `opencode-sdk` (`@opencode-ai/sdk`)
+- manager only sees enabled worker providers in `M:environment` as `provider_candidates`
+- `enqueue_task` supports optional `provider="codex|opencode"`
+- if `provider` is omitted, runtime auto-selects by config: lowest `billing` first, then strongest `capability`
 
 ### 3) Start WebUI + API
 
@@ -192,11 +213,11 @@ Yes. Plans support `cron`, `scheduled_at`, and `on_worker_slot_freed`.
 
 ### Can I enable Telegram integration?
 
-Yes. Configure `telegram.*` in `config.yaml` or `TELEGRAM_*` env vars, then start with `telegram.enabled=true`.
+Yes. Configure `telegram.*` in `config.toml` or `TELEGRAM_*` env vars, then start with `telegram.enabled=true`.
 
 ### Can I disable WebUI and keep Telegram only?
 
-Yes. Set `webui.enabled=false` in `config.yaml`; Telegram polling still works when `telegram.enabled=true`.
+Yes. Set `webui.enabled=false` in `config.toml`; Telegram polling still works when `telegram.enabled=true`.
 
 ## Contributing
 

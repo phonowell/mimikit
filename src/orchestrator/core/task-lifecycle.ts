@@ -12,6 +12,7 @@ import type {
   Task,
   TaskStatus,
   WorkerProfile,
+  WorkerProvider,
 } from '../../types/index.js'
 
 export type EnqueueTaskResult = {
@@ -34,6 +35,7 @@ export const createTask = (
   prompt: string,
   title?: string,
   profile: WorkerProfile = 'worker',
+  provider: WorkerProvider = 'codex',
   schedule?: string,
   focusId: FocusId = GLOBAL_FOCUS_ID,
 ): Task => {
@@ -45,6 +47,7 @@ export const createTask = (
       prompt,
       title: resolvedTitle,
       profile,
+      provider,
       focusId,
       ...(schedule ? { schedule } : {}),
     }),
@@ -52,6 +55,7 @@ export const createTask = (
     title: resolvedTitle,
     ...(schedule ? { cron: schedule } : {}),
     profile,
+    provider,
     status: 'pending',
     createdAt: nowIso(),
     focusId,
@@ -63,6 +67,7 @@ export const enqueueTask = (
   prompt: string,
   title?: string,
   profile: WorkerProfile = 'worker',
+  provider: WorkerProvider = 'codex',
   schedule?: string,
   focusId: FocusId = GLOBAL_FOCUS_ID,
 ): EnqueueTaskResult => {
@@ -70,6 +75,7 @@ export const enqueueTask = (
     prompt,
     title: resolveFingerprintTitle(prompt, title),
     profile,
+    provider,
     focusId,
     ...(schedule ? { schedule } : {}),
   })
@@ -79,7 +85,7 @@ export const enqueueTask = (
       buildTaskFingerprint(taskToFingerprintInput(task)) === fingerprint,
   )
   if (existing) return { task: existing, created: false }
-  const task = createTask(prompt, title, profile, schedule, focusId)
+  const task = createTask(prompt, title, profile, provider, schedule, focusId)
   tasks.push(task)
   return { task, created: true }
 }

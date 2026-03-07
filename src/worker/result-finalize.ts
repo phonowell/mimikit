@@ -56,6 +56,7 @@ export const buildResult = (
     ...(usage ? { usage } : {}),
     ...(task.title ? { title: task.title } : {}),
     profile: task.profile,
+    provider: task.provider,
     ...(status === 'canceled'
       ? { cancel: task.cancel ?? { source: 'system' } }
       : {}),

@@ -26,12 +26,15 @@ const applyModelEnv = (config: AppConfig): void => {
   const envModel = process.env.MIMIKIT_MODEL?.trim()
   if (envModel) {
     config.manager.model = envModel
-    config.worker.model = envModel
+    config.codex.model = envModel
+    config.opencode.model = envModel
   }
   const envManagerModel = process.env.MIMIKIT_MANAGER_MODEL?.trim()
   if (envManagerModel) config.manager.model = envManagerModel
-  const envWorkerModel = process.env.MIMIKIT_WORKER_MODEL?.trim()
-  if (envWorkerModel) config.worker.model = envWorkerModel
+  const envCodexModel = process.env.MIMIKIT_CODEX_MODEL?.trim()
+  if (envCodexModel) config.codex.model = envCodexModel
+  const envOpencodeModel = process.env.MIMIKIT_OPENCODE_MODEL?.trim()
+  if (envOpencodeModel) config.opencode.model = envOpencodeModel
 }
 const applyReasoningEnv = (config: AppConfig): void => {
   const global = parseReasoning(
@@ -40,18 +43,18 @@ const applyReasoningEnv = (config: AppConfig): void => {
   )
   if (global) {
     config.manager.modelReasoningEffort = global
-    config.worker.modelReasoningEffort = global
+    config.codex.modelReasoningEffort = global
   }
   const manager = parseReasoning(
     'MIMIKIT_MANAGER_REASONING_EFFORT',
     process.env.MIMIKIT_MANAGER_REASONING_EFFORT,
   )
   if (manager) config.manager.modelReasoningEffort = manager
-  const worker = parseReasoning(
-    'MIMIKIT_WORKER_REASONING_EFFORT',
-    process.env.MIMIKIT_WORKER_REASONING_EFFORT,
+  const codex = parseReasoning(
+    'MIMIKIT_CODEX_REASONING_EFFORT',
+    process.env.MIMIKIT_CODEX_REASONING_EFFORT,
   )
-  if (worker) config.worker.modelReasoningEffort = worker
+  if (codex) config.codex.modelReasoningEffort = codex
 }
 
 const trimEnv = (name: string): string | undefined => {
@@ -79,13 +82,29 @@ const parseBooleanEnv = (
 const applyProxyEnv = (config: AppConfig): void => {
   const globalProxy = trimEnv('MIMIKIT_PROXY')
   if (globalProxy) {
-    config.manager.provider.proxy = globalProxy
-    config.worker.proxy = globalProxy
+    config.manager.proxy = globalProxy
+    config.codex.proxy = globalProxy
+    config.opencode.proxy = globalProxy
   }
   const managerProxy = trimEnv('MIMIKIT_MANAGER_PROXY')
-  if (managerProxy) config.manager.provider.proxy = managerProxy
-  const workerProxy = trimEnv('MIMIKIT_WORKER_PROXY')
-  if (workerProxy) config.worker.proxy = workerProxy
+  if (managerProxy) config.manager.proxy = managerProxy
+  const codexProxy = trimEnv('MIMIKIT_CODEX_PROXY')
+  if (codexProxy) config.codex.proxy = codexProxy
+  const opencodeProxy = trimEnv('MIMIKIT_OPENCODE_PROXY')
+  if (opencodeProxy) config.opencode.proxy = opencodeProxy
+}
+
+const applyProviderEnabledEnv = (config: AppConfig): void => {
+  const codexEnabled = parseBooleanEnv(
+    'MIMIKIT_CODEX_ENABLED',
+    process.env.MIMIKIT_CODEX_ENABLED,
+  )
+  if (codexEnabled !== undefined) config.codex.enabled = codexEnabled
+  const opencodeEnabled = parseBooleanEnv(
+    'MIMIKIT_OPENCODE_ENABLED',
+    process.env.MIMIKIT_OPENCODE_ENABLED,
+  )
+  if (opencodeEnabled !== undefined) config.opencode.enabled = opencodeEnabled
 }
 
 const applyWebUiEnv = (config: AppConfig): void => {
@@ -100,6 +119,7 @@ export const applyCliEnvOverrides = (config: AppConfig): void => {
   applyModelEnv(config)
   applyReasoningEnv(config)
   applyProxyEnv(config)
+  applyProviderEnabledEnv(config)
   applyWebUiEnv(config)
   applyTelegramEnvOverrides(config.telegram)
 }

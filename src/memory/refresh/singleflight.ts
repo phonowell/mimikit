@@ -86,10 +86,16 @@ const buildPayload = async (
   return {
     workDir: runtime.config.workDir,
     model: runtime.config.manager.model,
-    managerProvider: {
-      ...runtime.config.manager.provider,
-      modelReasoningEffort: runtime.config.manager.modelReasoningEffort,
-    },
+    ...(runtime.config.manager.baseUrl
+      ? { baseUrl: runtime.config.manager.baseUrl }
+      : {}),
+    ...(runtime.config.manager.apiKey
+      ? { apiKey: runtime.config.manager.apiKey }
+      : {}),
+    ...(runtime.config.manager.proxy
+      ? { proxy: runtime.config.manager.proxy }
+      : {}),
+    modelReasoningEffort: runtime.config.manager.modelReasoningEffort,
     memoryMarkdown,
     signals: visible.map((item) => ({
       id: item.id,

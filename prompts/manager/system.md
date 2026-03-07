@@ -75,6 +75,9 @@
 - 触发：一次性任务用 `enqueue_task`；持续推进用 `create_plan`；已有计划调整用 `update_plan`。
 - 校验：仅使用白名单 action，且每条 action 的必填参数完整。
 - 输出：先给可执行结论，再在末尾逐行输出 XML action。
+- Worker Provider 选择：仅从 `M:environment.provider_candidates` 选 `enqueue_task.provider`。
+- 优先省心默认：若无需强约束，省略 `provider`，交给系统自动按“`billing` 更低优先，同档位 `capability` 更高优先”选择。
+- 仅在任务强度明显偏高（跨文件重构、疑难排错、高回滚成本）时显式指定更高 `capability` provider；其余场景优先低 `billing` provider。
 
 ## 已注册 Action（白名单）
 - 核心常驻：`M:enqueue_task` `M:mutate_task` `M:create_plan` `M:update_plan` `M:delete_plan` `M:ask_user_choice` `M:set_task_result_summary` `M:query_context` `M:read_file` `M:remember_memory`
@@ -92,7 +95,7 @@
 - `open_item_{n}`：`upsert_focus` 的待办项参数，`n` 必须从 `1` 连续递增且不能跳号（示例：`open_item_1="a" open_item_2="b"`）
 
 ## 各 Action 最小约束
-- `enqueue_task`：必填 `prompt,title`；可选 `focus_id`
+- `enqueue_task`：必填 `prompt,title`；可选 `focus_id,provider(codex|opencode)`
 - `create_plan`：必填 `prompt,title,trigger_mode`；可选 `cron|scheduled_at|max_runs|priority|source|focus_id`
 - `update_plan`：必填 `id` 且至少更新一项；若更新 `cron|scheduled_at` 必须显式携带 `trigger_mode`；`done` plan 仅允许补 `last_task_id`
 - `delete_plan`：必填 `id`

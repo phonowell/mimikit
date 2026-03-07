@@ -56,8 +56,8 @@ Notes:
 
 - `pnpm start` runs `scripts/start.ts` -> installs deps (`pnpm i`) -> launches `bin/mimikit` / `bin/mimikit.ps1`.
 - Wrapper supports restart loop on exit code `75` (`/api/restart` / `/api/reset`).
-- `config.yaml` is auto-created at repo root from `defaults/config.template.yaml` if missing.
-- Unknown keys in `config.yaml` are ignored; CLI startup prints a warning listing ignored keys.
+- `config.toml` is auto-created at repo root from `defaults/config.template.toml` if missing.
+- Unknown keys in `config.toml` are ignored; CLI startup prints a warning listing ignored keys.
 
 Optional direct start (skip wrapper):
 
@@ -93,22 +93,38 @@ Expected first line contains `event: snapshot`.
 
 ## Optional: Override Models and Reasoning
 
-In `config.yaml`:
+In `config.toml`:
 
-```yaml
-manager:
-  model: gpt-5.2
-  modelReasoningEffort: medium
-  provider:
-    # baseUrl: https://your-codex-provider.example.com/v1/codex
-    # apiKey: ${AICODING_API_KEY}
-    # proxy: http://127.0.0.1:7897
-worker:
-  model: gpt-5.3-codex
-  modelReasoningEffort: high
-  # proxy: http://127.0.0.1:7897
-webui:
-  enabled: true
+```toml
+[manager]
+model = "gpt-5.2"
+modelReasoningEffort = "medium"
+
+# baseUrl = "https://your-manager-provider.example.com/v1/responses"
+# apiKey = "${MANAGER_API_KEY}"
+# proxy = "http://127.0.0.1:7897"
+
+[worker]
+maxConcurrent = 3
+timeoutMs = 600000
+
+[codex]
+enabled = true
+model = "gpt-5.3-codex"
+modelReasoningEffort = "high"
+capability = "high"
+billing = "medium"
+# proxy = "http://127.0.0.1:7897"
+
+[opencode]
+enabled = false
+model = "big-pickle"
+capability = "low"
+billing = "free"
+# proxy = "http://127.0.0.1:7897"
+
+[webui]
+enabled = true
 ```
 
 Env overrides:
@@ -116,31 +132,35 @@ Env overrides:
 ```bash
 export MIMIKIT_MODEL=gpt-5.2
 export MIMIKIT_MANAGER_MODEL=gpt-5.2
-export MIMIKIT_WORKER_MODEL=gpt-5.3-codex
+export MIMIKIT_CODEX_MODEL=gpt-5.3-codex
+export MIMIKIT_OPENCODE_MODEL=big-pickle
 export MIMIKIT_REASONING_EFFORT=high
 export MIMIKIT_MANAGER_REASONING_EFFORT=medium
-export MIMIKIT_WORKER_REASONING_EFFORT=high
+export MIMIKIT_CODEX_REASONING_EFFORT=high
 export MIMIKIT_PROXY=http://127.0.0.1:7897
 export MIMIKIT_MANAGER_PROXY=http://127.0.0.1:7897
-export MIMIKIT_WORKER_PROXY=http://127.0.0.1:7897
+export MIMIKIT_CODEX_PROXY=http://127.0.0.1:7897
+export MIMIKIT_OPENCODE_PROXY=http://127.0.0.1:7897
+export MIMIKIT_CODEX_ENABLED=true
+export MIMIKIT_OPENCODE_ENABLED=false
 export MIMIKIT_WEBUI_ENABLED=true
 ```
 
-Precedence: role-specific env (`MIMIKIT_MANAGER_*` / `MIMIKIT_WORKER_*`) overrides global env.
+Precedence: role-specific env (`MIMIKIT_MANAGER_*`, `MIMIKIT_CODEX_*`, `MIMIKIT_OPENCODE_*`) overrides global env.
 
 ## Telegram + Proxy Bring-up Record (2026-03-06)
 
 Use this sequence when local network needs a proxy to reach Telegram:
 
-1. Configure `config.yaml`:
+1. Configure `config.toml`:
 
-```yaml
-telegram:
-  enabled: true
-  botToken: "<your_bot_token>"
-  chatId: "<your_chat_id>"
-  apiRoot: https://api.telegram.org
-  proxy: "http://127.0.0.1:7897"
+```toml
+[telegram]
+enabled = true
+botToken = "<your_bot_token>"
+chatId = "<your_chat_id>"
+apiRoot = "https://api.telegram.org"
+proxy = "http://127.0.0.1:7897"
 ```
 
 2. Validate bot credentials through proxy:
@@ -171,7 +191,7 @@ curl -s "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates" \
 - `OPENAI_API_KEY is missing`: missing credentials and provider requires auth.
 - `[cli] instance lock exists at .../.mimikit/.instance`: another process is running on same `--work-dir`.
 - `[cli] port 8787 is in use, fallback to ...`: CLI auto-selects first free port in `[8787, 8807]`.
-- `[config] invalid yaml defaults`: fix invalid fields in repo-root `config.yaml`.
+- `[config] invalid toml defaults`: fix invalid fields in repo-root `config.toml`.
 
 ## Done Criteria
 

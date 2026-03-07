@@ -90,7 +90,7 @@ export const ACTION_DEFINITIONS = [
   ),
   createContinueAction(
     'enqueue_task',
-    (item) => validateRunTask(item),
+    (item, context) => validateRunTask(item, context),
     (runtime, item, context) =>
       applyRunTask(runtime, item, context.seen, context.options),
   ),

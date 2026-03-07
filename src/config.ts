@@ -1,6 +1,6 @@
 import { resolve } from 'node:path'
 
-import { loadDefaultConfigFromYaml } from './config-default-loader.js'
+import { loadDefaultConfigFromToml } from './config-default-loader.js'
 
 import type { TelegramConfig } from './channels/telegram/config.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
@@ -32,11 +32,9 @@ export type AppConfig = {
   manager: {
     model: string
     modelReasoningEffort: ModelReasoningEffort
-    provider: {
-      baseUrl?: string | undefined
-      apiKey?: string | undefined
-      proxy?: string | undefined
-    }
+    baseUrl?: string | undefined
+    apiKey?: string | undefined
+    proxy?: string | undefined
     maxCorrectionRounds: number
     promptSections: PromptSectionLimits
     taskCreate: {
@@ -53,14 +51,26 @@ export type AppConfig = {
   }
   worker: {
     maxConcurrent: number
-    proxy?: string | undefined
     retry: {
       maxAttempts: number
       backoffMs: number
     }
     timeoutMs: number
+  }
+  codex: {
+    enabled: boolean
     model: string
     modelReasoningEffort: ModelReasoningEffort
+    capability: 'low' | 'medium' | 'high'
+    billing: 'free' | 'low' | 'medium' | 'high'
+    proxy?: string | undefined
+  }
+  opencode: {
+    enabled: boolean
+    model: string
+    capability: 'low' | 'medium' | 'high'
+    billing: 'free' | 'low' | 'medium' | 'high'
+    proxy?: string | undefined
   }
   webui: {
     enabled: boolean
@@ -107,7 +117,7 @@ const INTERNAL_WORKER_DEFAULTS = {
 } as const
 
 export const defaultConfig = (params: DefaultConfigParams): AppConfig => {
-  const userConfig = loadDefaultConfigFromYaml(
+  const userConfig = loadDefaultConfigFromToml(
     undefined,
     params.onUnknownConfigKeys
       ? { onUnknownKeys: params.onUnknownConfigKeys }
@@ -118,16 +128,36 @@ export const defaultConfig = (params: DefaultConfigParams): AppConfig => {
     manager: {
       model: userConfig.manager.model,
       modelReasoningEffort: userConfig.manager.modelReasoningEffort,
-      provider: userConfig.manager.provider,
+      ...(userConfig.manager.baseUrl
+        ? { baseUrl: userConfig.manager.baseUrl }
+        : {}),
+      ...(userConfig.manager.apiKey
+        ? { apiKey: userConfig.manager.apiKey }
+        : {}),
+      ...(userConfig.manager.proxy ? { proxy: userConfig.manager.proxy } : {}),
       ...INTERNAL_MANAGER_DEFAULTS,
     },
     worker: {
       maxConcurrent: userConfig.worker.maxConcurrent,
-      ...(userConfig.worker.proxy ? { proxy: userConfig.worker.proxy } : {}),
       timeoutMs: userConfig.worker.timeoutMs,
-      model: userConfig.worker.model,
-      modelReasoningEffort: userConfig.worker.modelReasoningEffort,
       ...INTERNAL_WORKER_DEFAULTS,
+    },
+    codex: {
+      enabled: userConfig.codex.enabled,
+      model: userConfig.codex.model,
+      modelReasoningEffort: userConfig.codex.modelReasoningEffort,
+      capability: userConfig.codex.capability,
+      billing: userConfig.codex.billing,
+      ...(userConfig.codex.proxy ? { proxy: userConfig.codex.proxy } : {}),
+    },
+    opencode: {
+      enabled: userConfig.opencode.enabled,
+      model: userConfig.opencode.model,
+      capability: userConfig.opencode.capability,
+      billing: userConfig.opencode.billing,
+      ...(userConfig.opencode.proxy
+        ? { proxy: userConfig.opencode.proxy }
+        : {}),
     },
     webui: userConfig.webui,
     telegram: userConfig.telegram,

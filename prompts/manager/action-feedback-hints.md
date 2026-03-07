@@ -28,6 +28,8 @@ ask_user_choice_telegram_unsupported: |
   ask_user_choice 执行失败：当前批次来源包含 Telegram 输入，当前链路不支持选项回传。
 ask_user_choice_invalid_options: |
   ask_user_choice 执行失败：option_{n}_id/label/reason 参数非法（n 必须从 1 连续递增且不能跳号），或 default_option_id 不在 options 中。
+enqueue_task_provider_disabled: |
+  enqueue_task 执行失败：provider={{ provider }} 当前未启用。请改用已注入到 M:environment 的 provider_candidates。
 plan_not_found: |
   {{ action }} 执行失败：未找到 plan ID。
 update_plan_done_forbidden: |

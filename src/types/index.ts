@@ -216,7 +216,10 @@ export type TaskResultHandoff = {
   artifacts?: TaskResultHandoffArtifact[] | undefined
   evidence?: TaskResultHandoffEvidence[] | undefined
 }
+export type WorkerProvider = 'codex' | 'opencode'
 export type WorkerProfile = 'worker'
+export type ProviderCapability = 'low' | 'medium' | 'high'
+export type ProviderBilling = 'free' | 'low' | 'medium' | 'high'
 export type PlanPriority = 'high' | 'normal' | 'low'
 export type PlanSource = 'user_request' | 'agent_auto' | 'retry_decision'
 export type TaskPlanStatus = 'active' | 'blocked' | 'done'
@@ -261,6 +264,12 @@ export type ManagerEnv = {
     occupiedSlots: number
     availableSlots: number
   }
+  workerProviders?: Array<{
+    provider: WorkerProvider
+    model: string
+    capability: ProviderCapability
+    billing: ProviderBilling
+  }>
 }
 export type ManagerActionFeedback = {
   action: string

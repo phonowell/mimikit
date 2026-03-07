@@ -24,9 +24,10 @@ import {
   persistRuntimeState,
   type RuntimeState,
 } from './runtime-adapter.js'
+import { resolvePreferredWorkerProvider } from './worker-provider-selection.js'
 
 import type { Parsed } from '../actions/model/spec.js'
-import type { FocusId, WorkerProfile } from '../types/index.js'
+import type { FocusId, WorkerProfile, WorkerProvider } from '../types/index.js'
 
 export type ApplyTaskActionsOptions = {
   suppressRunTask?: boolean
@@ -71,16 +72,21 @@ export const applyRunTask = async (
   const parsed = runTaskSchema.safeParse(item.attrs)
   if (!parsed.success) return
   const profile: WorkerProfile = 'worker'
+  const provider: WorkerProvider =
+    parsed.data.provider ??
+    resolvePreferredWorkerProvider(runtime.config) ??
+    'codex'
   const focusId = resolveActionFocusId(runtime, parsed.data.focus_id)
   const semanticKey = buildTaskSemanticKey({
     prompt: parsed.data.prompt,
     title: parsed.data.title,
     profile,
+    provider,
     focusId,
   })
   const debounce = markCreateAttempt(runtime, semanticKey)
   if (debounce.debounced) return
-  const dedupeKey = `${parsed.data.prompt}\n${parsed.data.title}\n${profile}\n${focusId}`
+  const dedupeKey = `${parsed.data.prompt}\n${parsed.data.title}\n${profile}\n${provider}\n${focusId}`
   if (seen.has(dedupeKey)) return
   seen.add(dedupeKey)
 
@@ -93,12 +99,14 @@ export const applyRunTask = async (
       prompt: activeSemanticTask.prompt,
       title: activeSemanticTask.title,
       profile: activeSemanticTask.profile,
+      provider: activeSemanticTask.provider,
       focusId: activeSemanticTask.focusId,
     })
     const nextFingerprint = buildTaskFingerprint({
       prompt: parsed.data.prompt,
       title: parsed.data.title,
       profile,
+      provider,
       focusId,
     })
     if (activeFingerprint !== nextFingerprint) {
@@ -122,6 +130,7 @@ export const applyRunTask = async (
     parsed.data.prompt,
     parsed.data.title,
     profile,
+    provider,
     undefined,
     focusId,
   )

@@ -77,6 +77,7 @@ const buildTaskPayload = (
   slotStatus?: WorkerSlotPayload,
 ): Record<string, unknown> => ({
   task_id: task.id,
+  provider: task.provider,
   label,
   ...(task.title.trim() ? { title: task.title.trim() } : {}),
   ...(event === 'created' ? { status: 'pending' } : {}),

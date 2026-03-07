@@ -49,6 +49,13 @@ const resolveScheduledBadge = (value, nowDate) => {
   }
 }
 
+export const resolveTaskProviderLabel = (value) => {
+  const raw = typeof value === 'string' ? value.trim().toLowerCase() : ''
+  if (!raw) return null
+  if (raw === 'codex' || raw === 'opencode') return raw
+  return null
+}
+
 export const resolveTaskUsageDisplay = (usage) => {
   const usageDisplay = formatUsage(usage)
   const formatted = usageDisplay?.text ?? ''
@@ -112,6 +119,7 @@ export const renderTasks = (tasksList, data) => {
         ? task.title
         : UI_TEXT.untitledTask
     title.textContent = titleText
+    const providerLabel = resolveTaskProviderLabel(task.provider)
     const liveOutputText =
       typeof task.liveOutput === 'string' ? task.liveOutput.trim() : ''
     const showLiveOutput = statusValue === 'running' && liveOutputText.length > 0
@@ -201,6 +209,13 @@ export const renderTasks = (tasksList, data) => {
 
     titleRow.appendChild(status)
     titleRow.appendChild(title)
+    if (providerLabel) {
+      const provider = document.createElement('span')
+      provider.className = 'task-provider'
+      provider.textContent = providerLabel
+      provider.title = `provider: ${providerLabel}`
+      titleRow.appendChild(provider)
+    }
     const actions = createTaskActions({ titleText, taskId, statusValue })
 
     link.appendChild(titleRow)

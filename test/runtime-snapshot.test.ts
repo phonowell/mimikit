@@ -24,6 +24,7 @@ const createTaskFixture = (overrides: Partial<Task> = {}): Task => ({
   title: 'Check',
   focusId: GLOBAL_FOCUS_ID,
   profile: 'worker',
+  provider: 'codex',
   status: 'pending',
   createdAt: SNAPSHOT_BASE_TIME,
   ...overrides,
@@ -58,6 +59,7 @@ test('selectPersistedTasks recovers running task to pending', () => {
       title: 'b',
       focusId: GLOBAL_FOCUS_ID,
       profile: 'worker',
+      provider: 'codex',
       status: 'running',
       createdAt: '2026-02-06T00:00:00.000Z',
       startedAt: '2026-02-06T00:01:00.000Z',
@@ -184,6 +186,17 @@ test('buildTaskViews keeps task statuses', () => {
   expect(statusById.get('task-running')).toBe('running')
 })
 
+test('buildTaskViews includes task provider in view payload', () => {
+  const tasks: Task[] = [
+    createTaskFixture({ id: 'task-codex', provider: 'codex' }),
+    createTaskFixture({ id: 'task-opencode', provider: 'opencode' }),
+  ]
+  const { tasks: views } = buildTaskViews(tasks)
+  const providerById = new Map(views.map((item) => [item.id, item.provider]))
+  expect(providerById.get('task-codex')).toBe('codex')
+  expect(providerById.get('task-opencode')).toBe('opencode')
+})
+
 test('buildTaskViews marks pending reason as waiting_capacity when worker slots are full', () => {
   const tasks: Task[] = [
     createTaskFixture({ id: 'task-running', status: 'running' }),
@@ -308,6 +321,7 @@ test('runtime snapshot rejects legacy next fields', async () => {
           title: 'legacy',
           focusId: GLOBAL_FOCUS_ID,
           profile: 'worker',
+          provider: 'codex',
           status: 'pending',
           createdAt: '2026-02-06T00:00:00.000Z',
           next: [{ prompt: 'next task', condition: 'succeeded' }],

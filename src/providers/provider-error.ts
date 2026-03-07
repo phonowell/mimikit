@@ -61,6 +61,15 @@ export const buildProviderAbortedError = (providerId: string): ProviderError =>
     retryable: false,
   })
 
+export const buildProviderCircuitOpenError = (
+  providerId: string,
+): ProviderError =>
+  new ProviderError({
+    code: 'provider_circuit_open',
+    message: `${providerTag(providerId)} circuit is open`,
+    retryable: true,
+  })
+
 export const buildProviderSdkError = (params: {
   providerId: string
   message: string

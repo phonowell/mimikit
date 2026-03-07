@@ -52,11 +52,9 @@ test('manager forwards provider overrides to openai-responses', async () => {
   await runManagerLlmCall({
     prompt: 'ping',
     workDir: '/tmp/mimikit',
-    managerProvider: {
-      baseUrl: ' http://localhost:18080/v1/codex/ ',
-      apiKey: ' manager-config-key ',
-      modelReasoningEffort: 'high',
-    },
+    baseUrl: ' http://localhost:18080/v1/codex/ ',
+    apiKey: ' manager-config-key ',
+    modelReasoningEffort: 'high',
   })
 
   expect(runWithProviderMock).toHaveBeenCalledWith(

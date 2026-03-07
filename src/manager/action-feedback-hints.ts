@@ -26,6 +26,7 @@ const actionFeedbackHintSchema = z
     mutate_task_already_canceled: z.string().trim().min(1),
     ask_user_choice_telegram_unsupported: z.string().trim().min(1),
     ask_user_choice_invalid_options: z.string().trim().min(1),
+    enqueue_task_provider_disabled: z.string().trim().min(1),
     plan_not_found: z.string().trim().min(1),
     update_plan_done_forbidden: z.string().trim().min(1),
     duplicate_query_context_action_limit: z.string().trim().min(1),
@@ -118,6 +119,13 @@ export const formatAskUserChoiceTelegramUnsupportedHint = (): string =>
 
 export const formatAskUserChoiceInvalidOptionsHint = (): string =>
   renderHint('ask_user_choice_invalid_options')
+
+export const formatEnqueueTaskProviderDisabledHint = (
+  provider: string,
+): string =>
+  renderHint('enqueue_task_provider_disabled', {
+    provider,
+  })
 
 export const formatPlanNotFoundHint = (
   action: 'update_plan' | 'delete_plan',

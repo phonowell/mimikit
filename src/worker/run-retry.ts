@@ -14,7 +14,7 @@ import {
 } from './session-state.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
-import type { Task, TokenUsage } from '../types/index.js'
+import type { Task, TokenUsage, WorkerProvider } from '../types/index.js'
 
 export type WorkerLlmResult = {
   output: string
@@ -36,7 +36,26 @@ const runTaskModel = (params: {
   onUsage?: (usage: TokenUsage) => void
   onPartialOutput?: (output: string) => void
 }): Promise<WorkerLlmResult> => {
-  const { worker } = params.runtime.config
+  const { worker, codex, opencode } = params.runtime.config
+  const taskProvider: WorkerProvider = params.task.provider
+  const providerConfig =
+    taskProvider === 'opencode'
+      ? {
+          enabled: opencode.enabled,
+          model: opencode.model,
+          proxy: opencode.proxy,
+        }
+      : {
+          enabled: codex.enabled,
+          model: codex.model,
+          proxy: codex.proxy,
+          modelReasoningEffort: codex.modelReasoningEffort,
+        }
+  if (!providerConfig.enabled) {
+    throw new Error(
+      `[worker] ${taskProvider} provider is disabled: set ${taskProvider}.enabled=true`,
+    )
+  }
   const focusMeta = params.runtime.focuses.find(
     (focus) => focus.id === params.task.focusId,
   )
@@ -48,6 +67,7 @@ const runTaskModel = (params: {
       (focus) => focus.focusId === params.task.focusId,
     )
   return runWorker({
+    provider: taskProvider,
     stateDir: params.runtime.config.workDir,
     workDir: params.runtime.config.workDir,
     task: params.task,
@@ -55,9 +75,11 @@ const runTaskModel = (params: {
     ...(focusContext ? { focusContext } : {}),
     ...(compressedFocusContext ? { compressedFocusContext } : {}),
     timeoutMs: worker.timeoutMs,
-    ...(worker.proxy ? { proxy: worker.proxy } : {}),
-    model: worker.model,
-    modelReasoningEffort: worker.modelReasoningEffort,
+    ...(providerConfig.proxy ? { proxy: providerConfig.proxy } : {}),
+    model: providerConfig.model,
+    ...(taskProvider === 'codex' && providerConfig.modelReasoningEffort
+      ? { modelReasoningEffort: providerConfig.modelReasoningEffort }
+      : {}),
     ...(params.sessionId ? { sessionId: params.sessionId } : {}),
     abortSignal: params.controller.signal,
     ...(params.onSessionId ? { onSessionId: params.onSessionId } : {}),

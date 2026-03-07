@@ -92,6 +92,7 @@ test('enqueue_task re-enqueues pending task when fingerprint matches exactly', a
     title: 'old title',
     focusId: 'focus-local',
     profile: 'worker',
+    provider: 'codex',
     status: 'pending',
     createdAt: '2026-02-13T00:00:00.000Z',
   })
@@ -150,6 +151,7 @@ test('enqueue_task dedupe does not block task creation when fingerprint differs'
     title: 'old title',
     focusId: GLOBAL_FOCUS_ID,
     profile: 'worker',
+    provider: 'codex',
     status: 'pending',
     createdAt: '2026-02-13T00:00:00.000Z',
   })
@@ -169,6 +171,52 @@ test('enqueue_task dedupe does not block task creation when fingerprint differs'
   expect(runtime.tasks[1]?.fingerprint).not.toBe(runtime.tasks[0]?.fingerprint)
 })
 
+test('enqueue_task without provider picks enabled provider by lowest billing then highest capability', async () => {
+  const runtime = await createRuntime()
+  runtime.config.codex.enabled = true
+  runtime.config.codex.billing = 'medium'
+  runtime.config.codex.capability = 'high'
+  runtime.config.opencode.enabled = true
+  runtime.config.opencode.billing = 'free'
+  runtime.config.opencode.capability = 'low'
+
+  await applyTaskActions(runtime, [
+    {
+      name: 'enqueue_task',
+      attrs: {
+        prompt: 'prefer lowest billing',
+        title: 'auto provider',
+      },
+    },
+  ])
+
+  expect(runtime.tasks).toHaveLength(1)
+  expect(runtime.tasks[0]?.provider).toBe('opencode')
+})
+
+test('enqueue_task without provider picks higher capability when billing ties', async () => {
+  const runtime = await createRuntime()
+  runtime.config.codex.enabled = true
+  runtime.config.codex.billing = 'free'
+  runtime.config.codex.capability = 'high'
+  runtime.config.opencode.enabled = true
+  runtime.config.opencode.billing = 'free'
+  runtime.config.opencode.capability = 'low'
+
+  await applyTaskActions(runtime, [
+    {
+      name: 'enqueue_task',
+      attrs: {
+        prompt: 'prefer strongest capability at same billing',
+        title: 'auto provider tie',
+      },
+    },
+  ])
+
+  expect(runtime.tasks).toHaveLength(1)
+  expect(runtime.tasks[0]?.provider).toBe('codex')
+})
+
 test('mutate_task with op=pause marks pending task as paused', async () => {
   const runtime = await createRuntime()
   runtime.tasks.push({
@@ -178,6 +226,7 @@ test('mutate_task with op=pause marks pending task as paused', async () => {
     title: 'pause title',
     focusId: GLOBAL_FOCUS_ID,
     profile: 'worker',
+    provider: 'codex',
     status: 'pending',
     createdAt: '2026-02-13T00:00:00.000Z',
   })
@@ -205,6 +254,7 @@ test('mutate_task with op=resume requeues paused task', async () => {
     title: 'resume title',
     focusId: GLOBAL_FOCUS_ID,
     profile: 'worker',
+    provider: 'codex',
     status: 'paused',
     createdAt: '2026-02-13T00:00:00.000Z',
     pausedAt: '2026-02-13T00:10:00.000Z',
@@ -234,6 +284,7 @@ test('mutate_task with op=cancel marks paused task as canceled', async () => {
     title: 'cancel title',
     focusId: GLOBAL_FOCUS_ID,
     profile: 'worker',
+    provider: 'codex',
     status: 'paused',
     createdAt: '2026-02-13T00:00:00.000Z',
     pausedAt: '2026-02-13T00:10:00.000Z',
@@ -331,6 +382,7 @@ test('assign_focus updates task focus by explicit target_type', async () => {
     title: 'focus task',
     focusId: GLOBAL_FOCUS_ID,
     profile: 'worker',
+    provider: 'codex',
     status: 'pending',
     createdAt: '2026-02-13T00:00:00.000Z',
   })
