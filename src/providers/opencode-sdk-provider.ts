@@ -595,15 +595,7 @@ const pickLatestAssistantMessage = (
     }
     if ((latest.createdAt ?? 0) <= created) latest = parsed
   }
-  if (latest) return latest
-  let fallback: AssistantMessageView | undefined
-  for (const item of messages) {
-    const parsed = parseAssistantMessage(item)
-    if (!parsed) continue
-    if (!fallback || (fallback.createdAt ?? 0) <= (parsed.createdAt ?? 0))
-      fallback = parsed
-  }
-  return fallback
+  return latest
 }
 
 const sleep = (ms: number): Promise<void> =>
@@ -769,6 +761,10 @@ const runOpencodeProvider = async (
       })
       const statusType = resolveSessionStatus(statusResponse.data, session.id)
       if (statusType === 'idle') {
+        if (!latestAssistant) {
+          await sleep(POLL_INTERVAL_MS)
+          continue
+        }
         return buildProviderResult({
           startedAt,
           output: latestText,
