@@ -35,10 +35,13 @@ const appendRoundActionFeedback = async (params: {
   const { actionFeedback } = params
   if (!actionFeedback || actionFeedback.length === 0) return
   for (const [index, item] of actionFeedback.entries()) {
-    managerActionCliLogger.logFeedback({
+    await managerActionCliLogger.logFeedback({
       item,
       index: index + 1,
       total: actionFeedback.length,
+      ...(params.runtime.managerThreadId
+        ? { traceId: params.runtime.managerThreadId }
+        : {}),
     })
   }
   await appendLog(params.runtime.paths.log, {

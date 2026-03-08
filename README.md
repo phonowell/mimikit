@@ -152,6 +152,14 @@ Default port is `8787`; direct start without wrapper:
 tsx src/cli/index.ts --port 8787 --work-dir .mimikit
 ```
 
+Action lifecycle logs are printed to CLI by default (tag: `[manager] action`) and always persisted to `.mimikit/log.jsonl` as `event="manager_action"`. You can control CLI printing with:
+
+```bash
+MIMIKIT_ACTION_LOGS=false pnpm start
+# or
+tsx src/cli/index.ts --log-actions false
+```
+
 ### 4) Optional: enable Telegram channel
 
 ```bash

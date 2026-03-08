@@ -7,6 +7,7 @@ import { defaultConfig } from '../config.js'
 import { buildPaths } from '../fs/paths.js'
 import { createHttpServer } from '../http/index.js'
 import { bestEffort, setDefaultLogPath } from '../log/safe.js'
+import { configureManagerActionCliLogger } from '../manager/action-cli-log.js'
 import { Orchestrator } from '../orchestrator/core/orchestrator-service.js'
 import { loadCodexSettings } from '../providers/codex-settings.js'
 import { setRuntimeReaperBridge } from '../runtime/reaper-bridge.js'
@@ -16,19 +17,40 @@ import { warnIgnoredUnknownConfigKeys } from './config-warning.js'
 import { applyCliEnvOverrides } from './env.js'
 import { acquireRuntimeLock } from './runtime-lock.js'
 
+const parseBoolFlag = (
+  flagName: string,
+  value: string | undefined,
+): boolean | undefined => {
+  if (value === undefined) return undefined
+  const normalized = value.trim().toLowerCase()
+  if (!normalized) return undefined
+  if (normalized === '1' || normalized === 'true' || normalized === 'yes')
+    return true
+  if (normalized === '0' || normalized === 'false' || normalized === 'no')
+    return false
+  console.error(`[cli] invalid ${flagName}: ${value}`)
+  process.exit(1)
+}
+
 const { values } = parseArgs({
   options: {
     port: { type: 'string', short: 'p' },
     'work-dir': { type: 'string', default: '.mimikit' },
+    'log-actions': { type: 'string' },
   },
 })
 
 const portValue = values.port
 const workDir = values['work-dir']
+const logActionsFlag = parseBoolFlag('log-actions', values['log-actions'])
 
 const resolvedWorkDir = resolve(workDir)
 const paths = buildPaths(resolvedWorkDir)
 setDefaultLogPath(paths.log)
+configureManagerActionCliLogger({
+  ...(logActionsFlag !== undefined ? { enabled: logActionsFlag } : {}),
+  logPath: paths.log,
+})
 await loadCodexSettings()
 
 const parsePort = (value: string): number => {
@@ -47,6 +69,8 @@ const config = defaultConfig({
 })
 
 applyCliEnvOverrides(config)
+if (logActionsFlag !== undefined)
+  configureManagerActionCliLogger({ enabled: logActionsFlag })
 
 console.log('[cli] config loaded')
 

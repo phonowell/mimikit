@@ -1,9 +1,13 @@
 import { resolve } from 'node:path'
 
-import { afterEach, beforeEach, expect, test } from 'vitest'
+import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 
 import { defaultConfig } from '../src/config.js'
 import { applyCliEnvOverrides } from '../src/cli/env.js'
+import {
+  configureManagerActionCliLogger,
+  createManagerActionCliLogger,
+} from '../src/manager/action-cli-log.js'
 
 const ENV_KEYS = [
   'MIMIKIT_MODEL',
@@ -21,6 +25,7 @@ const ENV_KEYS = [
   'MIMIKIT_OPENCODE_ENABLED',
   'MIMIKIT_WEBUI_ENABLED',
   'MIMIKIT_WEBUI_PORT',
+  'MIMIKIT_ACTION_LOGS',
   'TELEGRAM_PROXY',
   'FEISHU_CHANNEL_ENABLED',
   'FEISHU_APP_ID',
@@ -33,6 +38,7 @@ type Snapshot = Partial<Record<(typeof ENV_KEYS)[number], string>>
 let snapshot: Snapshot = {}
 
 beforeEach(() => {
+  configureManagerActionCliLogger({ enabled: true, logPath: '/tmp/mimikit-log' })
   snapshot = {}
   for (const key of ENV_KEYS) {
     const value = process.env[key]
@@ -134,4 +140,23 @@ test('webui port env overrides config value', () => {
   applyCliEnvOverrides(config)
 
   expect(config.webui.port).toBe(9797)
+})
+
+test('action logs env disables manager action console logs', async () => {
+  const config = createConfig()
+  process.env.MIMIKIT_ACTION_LOGS = 'false'
+  const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => undefined)
+
+  applyCliEnvOverrides(config)
+
+  const logger = createManagerActionCliLogger()
+  await logger.logLifecycle({
+    stage: 'dispatch',
+    item: { name: 'enqueue_task', attrs: { prompt: 'demo' } },
+    index: 1,
+    total: 1,
+  })
+  expect(infoSpy).not.toHaveBeenCalled()
+  infoSpy.mockRestore()
+  configureManagerActionCliLogger({ enabled: true })
 })

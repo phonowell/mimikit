@@ -68,7 +68,8 @@
     "wt-rebase": "node scripts/worktree/rebase-worktree.js --base main",
     "wt-land": "node scripts/worktree/land-worktree.js --base main --plans-dir plans",
     "review-code-changes": "pnpm run lint && pnpm run type-check && pnpm run test",
-    "wt-slot": "node scripts/worktree/manage-slot.js"
+    "wt-slot": "node scripts/worktree/manage-slot.js",
+    "score:manager-efficiency": "node .mimikit/tools/manager-efficiency-score.mjs"
   },
   "type": "module",
   "version": "0.1.0"

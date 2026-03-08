@@ -29,37 +29,46 @@ export const applyTaskActions = async (
   const total = items.length
   for (const [index, item] of items.entries()) {
     const order = index + 1
-    managerActionCliLogger.logLifecycle({
+    const startedAt = Date.now()
+    await managerActionCliLogger.logLifecycle({
       stage: 'dispatch',
       item,
       index: order,
       total,
+      ...(runtime.managerThreadId ? { traceId: runtime.managerThreadId } : {}),
     })
-    managerActionCliLogger.logLifecycle({
+    await managerActionCliLogger.logLifecycle({
       stage: 'running',
       item,
       index: order,
       total,
+      ...(runtime.managerThreadId ? { traceId: runtime.managerThreadId } : {}),
     })
     let result
     try {
       result = await applyRegisteredManagerAction(runtime, item, context)
     } catch (error) {
-      managerActionCliLogger.logLifecycle({
+      await managerActionCliLogger.logLifecycle({
         stage: 'failed',
         item,
         index: order,
         total,
         error,
+        elapsedMs: Math.max(0, Date.now() - startedAt),
+        ...(runtime.managerThreadId
+          ? { traceId: runtime.managerThreadId }
+          : {}),
       })
       throw error
     }
-    managerActionCliLogger.logLifecycle({
+    await managerActionCliLogger.logLifecycle({
       stage: result === 'stop' ? 'stopped' : 'applied',
       item,
       index: order,
       total,
       result,
+      elapsedMs: Math.max(0, Date.now() - startedAt),
+      ...(runtime.managerThreadId ? { traceId: runtime.managerThreadId } : {}),
     })
     if (result === 'stop') return
   }

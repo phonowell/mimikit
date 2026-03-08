@@ -1,6 +1,7 @@
 import { applyFeishuEnvOverrides } from '../channels/feishu/config.js'
 import { parseChannelEnabledEnv } from '../channels/shared/config-env.js'
 import { applyTelegramEnvOverrides } from '../channels/telegram/config.js'
+import { configureManagerActionCliLogger } from '../manager/action-cli-log.js'
 
 import type { AppConfig } from '../config.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
@@ -129,6 +130,12 @@ export const applyCliEnvOverrides = (config: AppConfig): void => {
   applyProxyEnv(config)
   applyProviderEnabledEnv(config)
   applyWebUiEnv(config)
+  const actionLogsEnabled = parseChannelEnabledEnv({
+    envName: 'MIMIKIT_ACTION_LOGS',
+    value: process.env.MIMIKIT_ACTION_LOGS,
+  })
+  if (actionLogsEnabled !== undefined)
+    configureManagerActionCliLogger({ enabled: actionLogsEnabled })
   applyTelegramEnvOverrides(config.telegram)
   applyFeishuEnvOverrides(config.feishu)
 }
