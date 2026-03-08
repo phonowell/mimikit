@@ -9,6 +9,10 @@ import { defaultConfig } from '../src/config.js'
 import { buildPaths } from '../src/fs/paths.js'
 import { readHistory } from '../src/history/store.js'
 import { applyTaskActions } from '../src/manager/action-apply.js'
+import {
+  buildRunTaskConfirmationId,
+  RUN_TASK_CONFIRM_OPTION_ID,
+} from '../src/manager/run-task-confirmation.js'
 import { parseSystemEventText } from '../src/shared/system-event.js'
 
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
@@ -271,6 +275,108 @@ test('enqueue_task without provider picks higher capability when billing ties', 
 
   expect(runtime.tasks).toHaveLength(1)
   expect(runtime.tasks[0]?.provider).toBe('codex')
+})
+
+test('enqueue_task creates confirmation choice instead of dispatching high-cost task', async () => {
+  const runtime = await createRuntime()
+
+  await applyTaskActions(runtime, [
+    {
+      name: 'enqueue_task',
+      attrs: {
+        prompt: 'x'.repeat(1300),
+        title: 'high-cost task',
+        goal: 'Deliver all outputs',
+        scope: 'Cross-module full implementation',
+        acceptance_1: 'A',
+        acceptance_2: 'B',
+        acceptance_3: 'C',
+      },
+    },
+  ])
+
+  expect(runtime.tasks).toHaveLength(0)
+  expect(runtime.pendingUserChoice).toBeTruthy()
+  expect(runtime.pendingUserChoice?.defaultOptionId).toBe(
+    'option-cancel-dispatch',
+  )
+  expect(
+    runtime.pendingUserChoice?.options.some(
+      (item) => item.id === RUN_TASK_CONFIRM_OPTION_ID,
+    ),
+  ).toBe(true)
+})
+
+test('enqueue_task dispatches high-cost task after explicit confirmation event', async () => {
+  const runtime = await createRuntime()
+  const prompt = 'x'.repeat(1300)
+  const title = 'high-cost task'
+  const goal = 'Deliver all outputs'
+  const scope = 'Cross-module full implementation'
+  const acceptance = ['A', 'B', 'C']
+  const choiceId = buildRunTaskConfirmationId({
+    prompt,
+    title,
+    goal,
+    scope,
+    acceptance,
+  })
+  runtime.inflightInputs.push({
+    id: 'input-choice-confirmed',
+    role: 'system',
+    visibility: 'all',
+    focusId: GLOBAL_FOCUS_ID,
+    createdAt: '2026-03-08T00:00:00.000Z',
+    text: `<M:system_event name="user_choice" version="1">{"choice_id":"${choiceId}","selected_option_id":"${RUN_TASK_CONFIRM_OPTION_ID}"}</M:system_event>`,
+  })
+
+  await applyTaskActions(runtime, [
+    {
+      name: 'enqueue_task',
+      attrs: {
+        prompt,
+        title,
+        goal,
+        scope,
+        acceptance_1: acceptance[0] ?? 'A',
+        acceptance_2: acceptance[1] ?? 'B',
+        acceptance_3: acceptance[2] ?? 'C',
+      },
+    },
+  ])
+
+  expect(runtime.tasks).toHaveLength(1)
+  expect(runtime.tasks[0]?.title).toBe(title)
+})
+
+test('high-cost enqueue_task stops later actions in the same batch', async () => {
+  const runtime = await createRuntime()
+
+  await applyTaskActions(runtime, [
+    {
+      name: 'enqueue_task',
+      attrs: {
+        prompt: 'x'.repeat(1300),
+        title: 'high-cost task',
+        goal: 'Deliver all outputs',
+        scope: 'Cross-module full implementation',
+        acceptance_1: 'A',
+        acceptance_2: 'B',
+        acceptance_3: 'C',
+      },
+    },
+    {
+      name: 'enqueue_task',
+      attrs: {
+        prompt: 'small task',
+        title: 'small-task',
+        ...CONTRACT_ATTRS,
+      },
+    },
+  ])
+
+  expect(runtime.pendingUserChoice).toBeTruthy()
+  expect(runtime.tasks).toHaveLength(0)
 })
 
 test('mutate_task with op=pause marks pending task as paused', async () => {

@@ -348,3 +348,31 @@ test('enqueue_task rejects missing task contract attrs', () => {
   expect(feedback[0]?.error).toBe('action_execution_rejected')
   expect(feedback[0]?.hint).toContain('task contract')
 })
+
+test('enqueue_task high-cost payload requires user confirmation first', () => {
+  const feedback = collectManagerActionFeedback(
+    [
+      {
+        name: 'enqueue_task',
+        attrs: {
+          prompt: 'x'.repeat(1300),
+          title: 'high-cost',
+          goal: 'Ship high-cost task',
+          scope: 'All modules',
+          acceptance_1: 'A',
+          acceptance_2: 'B',
+          acceptance_3: 'C',
+        },
+      },
+    ],
+    {
+      enabledWorkerProviders: new Set(['codex']),
+      confirmedRunTaskChoiceIds: new Set(),
+    },
+  )
+
+  expect(feedback).toHaveLength(1)
+  expect(feedback[0]?.action).toBe('enqueue_task')
+  expect(feedback[0]?.error).toBe('action_execution_rejected')
+  expect(feedback[0]?.hint).toContain('高成本长任务')
+})

@@ -25,6 +25,7 @@ const actionFeedbackHintSchema = z
     ask_user_choice_channel_unsupported: z.string().trim().min(1),
     ask_user_choice_invalid_options: z.string().trim().min(1),
     enqueue_task_provider_disabled: z.string().trim().min(1),
+    enqueue_task_requires_confirmation: z.string().trim().min(1),
     enqueue_task_contract_missing: z.string().trim().min(1),
     enqueue_task_contract_missing_default_prompt: z.string().trim().min(1),
     enqueue_task_contract_missing_default_title: z.string().trim().min(1),
@@ -125,6 +126,9 @@ export const formatEnqueueTaskProviderDisabledHint = (
   renderHint('enqueue_task_provider_disabled', {
     provider,
   })
+
+export const formatEnqueueTaskRequiresConfirmationHint = (): string =>
+  renderHint('enqueue_task_requires_confirmation')
 
 const FALLBACK_TASK_CONTRACT_HINT_VALUES = {
   prompt: templates.enqueue_task_contract_missing_default_prompt,

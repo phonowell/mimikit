@@ -30,6 +30,8 @@ ask_user_choice_invalid_options: |
   ask_user_choice 执行失败：option_{n}_id/label/reason 参数非法（n 必须从 1 连续递增且不能跳号），或 default_option_id 不在 options 中。
 enqueue_task_provider_disabled: |
   enqueue_task 执行失败：provider={{ provider }} 当前未启用。请改用已注入到 M:environment 的 provider_candidates。
+enqueue_task_requires_confirmation: |
+  enqueue_task 执行失败：当前任务为高成本长任务，必须先通过 ask_user_choice 获取用户确认后再派发。请先输出 ask_user_choice，并将 default_option_id 设为取消项。
 enqueue_task_contract_missing: |
   enqueue_task 执行失败：缺少 task contract。请补充 goal、scope 与至少一条 acceptance_{n}（例如 acceptance_1）。
   请直接改成下面格式后重试：

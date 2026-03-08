@@ -63,6 +63,25 @@ export const runManagerCorrectionRounds = async (params: {
     !hasNoChoiceReturnChannelInput(inputs) &&
     !isNoChoiceReturnChannelSource(runtime.lastUserMeta?.source)
   for (let round = 1; round <= maxCorrectionRounds; round++) {
+    if (round >= 2 && extra.actionFeedback && extra.actionFeedback.length > 0) {
+      await appendLog(runtime.paths.log, {
+        event: 'manager_correction_structured_clarify',
+        round,
+        feedbackCount: extra.actionFeedback.length,
+      })
+      if (promptPrefixHash) {
+        await appendLog(runtime.paths.log, {
+          event: 'manager_prompt_prefix_hash',
+          rounds: round - 1,
+          hash: promptPrefixHash,
+        })
+      }
+      return buildRoundLimitResult({
+        text: '继续执行前请先补齐三项信息：1) 明确目标；2) 明确范围与不做项；3) 明确可验收标准（至少一条）。',
+        elapsedMs,
+        ...(batchUsage ? { usage: batchUsage } : {}),
+      })
+    }
     const runResult = await (async () => {
       try {
         return await runManagerRoundWithRecovery({

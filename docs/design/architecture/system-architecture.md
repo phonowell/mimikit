@@ -38,6 +38,8 @@ WebUI（native 组件系统）：
 
 - manager 回合采用 `maxCorrectionRounds` 硬上限；超过上限写入 `system_event.name=manager_round_limit` 并返回 best-effort 文本。
 - manager 失败时会写入 `manager_error`，并在“已消费但尚未回复”场景写入 `manager_fallback_reply`。
+- manager 在纠错第 2 轮仍存在 action_feedback 时会触发结构化澄清提前收敛（`event=manager_correction_structured_clarify`），避免高成本重复纠错。
+- worker 对长任务发出软阈值观测（`event=worker_long_task_soft_limit`，默认阈值 20 分钟），并在 canceled `worker_end` 记录 `usageCaptured`。
 
 ## 启动顺序
 

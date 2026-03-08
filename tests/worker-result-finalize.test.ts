@@ -10,6 +10,7 @@ import { readTaskResultArchive } from '../src/storage/task-results.js'
 import type { Task, TaskResult } from '../src/types/index.js'
 import { finalizeResult } from '../src/worker/result-finalize.js'
 import { readTaskProgressForTest } from './helpers/task-progress.js'
+import { readJsonl } from '../src/storage/jsonl.js'
 
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-finalize-result-'))
 
@@ -87,6 +88,14 @@ test('finalizeResult appends worker_end progress for canceled task', async () =>
 
   await finalizeResult(runtime, task, result, mergeTaskPatch)
 
+  const logs = await readJsonl<Record<string, unknown>>(runtime.paths.log, {
+    ensureFile: true,
+  })
+  const workerEnd = logs.find(
+    (item) => item.event === 'worker_end' && item.taskId === task.id,
+  )
+  expect(workerEnd?.usageCaptured).toBe(false)
+
   const progress = await readTaskProgressForTest(stateDir, task.id)
   expect(progress).toHaveLength(1)
   expect(progress[0]?.type).toBe('worker_end')
@@ -129,4 +138,62 @@ test('finalizeResult appends worker_end progress for canceled task', async () =>
   }
   await finalizeResult(runtime, task, succeeded, mergeTaskPatch)
   expect(runtime.focusContexts[0]?.openItems?.[0]).toContain('Resume')
+})
+
+test('finalizeResult marks usageCaptured=true for canceled result with usage', async () => {
+  const stateDir = await createTmpDir()
+  const task: Task = {
+    id: 'task-usage',
+    fingerprint: 'task-usage',
+    prompt: 'cancel with usage',
+    title: 'Cancel With Usage',
+    focusId: 'focus-local',
+    profile: 'worker',
+    provider: 'codex',
+    status: 'running',
+    createdAt: '2026-02-26T10:00:00.000Z',
+  }
+  const runtime = {
+    config: { workDir: stateDir },
+    paths: buildPaths(stateDir),
+    tasks: [task],
+    focuses: [
+      {
+        id: 'focus-local',
+        title: 'Local',
+        status: 'active',
+        createdAt: '2026-02-26T10:00:00.000Z',
+        updatedAt: '2026-02-26T10:00:00.000Z',
+        lastActivityAt: '2026-02-26T10:00:00.000Z',
+      },
+    ],
+    focusContexts: [],
+    activeFocusIds: ['focus-local'],
+    lastWorkerActivityAtMs: 0,
+    managerWakePending: false,
+    managerSignalController: new AbortController(),
+    uiWakeVersion: 0,
+    uiWakeEvents: new Map(),
+    uiSignalControllers: new Set(),
+  } as unknown as RuntimeState
+  const result: TaskResult = {
+    taskId: task.id,
+    status: 'canceled',
+    ok: false,
+    output: 'Task canceled',
+    durationMs: 10,
+    completedAt: '2026-02-26T10:00:10.000Z',
+    cancel: { source: 'system' },
+    usage: { input: 12, output: 3, total: 15 },
+  }
+
+  await finalizeResult(runtime, task, result, mergeTaskPatch)
+
+  const logs = await readJsonl<Record<string, unknown>>(runtime.paths.log, {
+    ensureFile: true,
+  })
+  const workerEnd = logs.find(
+    (item) => item.event === 'worker_end' && item.taskId === task.id,
+  )
+  expect(workerEnd?.usageCaptured).toBe(true)
 })

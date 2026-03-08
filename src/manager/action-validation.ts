@@ -15,6 +15,7 @@ import {
   formatAskUserChoiceInvalidOptionsHint,
   formatEnqueueTaskContractMissingHint,
   formatEnqueueTaskProviderDisabledHint,
+  formatEnqueueTaskRequiresConfirmationHint,
   formatMutateTaskAlreadyCanceledHint,
   formatMutateTaskAlreadyDoneHint,
   formatMutateTaskAlreadyPausedHint,
@@ -32,6 +33,7 @@ import {
   type ValidationIssue,
 } from './action-validation-helpers.js'
 import { queryContextSchema } from './query-context-tool.js'
+import { resolveRunTaskConfirmationRequirement } from './run-task-confirmation.js'
 import { buildTaskContractFromAttrs } from './task-contract.js'
 
 import type { Parsed } from '../actions/model/spec.js'
@@ -44,6 +46,7 @@ export type FeedbackContext = {
   scheduleNowIso?: string
   allowAskUserChoice?: boolean
   enabledWorkerProviders?: Set<'codex' | 'opencode'>
+  confirmedRunTaskChoiceIds?: Set<string>
 }
 export type { ValidationIssue } from './action-validation-helpers.js'
 export const validateWithSchema = (
@@ -65,7 +68,8 @@ export const validateRunTask = (
 ): ValidationIssue[] => {
   const parsed = parseActionAttrs(item, runTaskSchema)
   if (!parsed) return validateWithSchema(item, runTaskSchema)
-  if (!buildTaskContractFromAttrs(parsed)) {
+  const contract = buildTaskContractFromAttrs(parsed)
+  if (!contract) {
     return rejected(
       buildTaskContractMissingHintFromAction(item) ??
         formatEnqueueTaskContractMissingHint({
@@ -78,10 +82,24 @@ export const validateRunTask = (
     )
   }
   const { provider } = parsed
-  if (!provider) return []
-  const enabledProviders = context.enabledWorkerProviders
-  if (!enabledProviders || enabledProviders.has(provider)) return []
-  return rejected(formatEnqueueTaskProviderDisabledHint(provider))
+  if (provider) {
+    const enabledProviders = context.enabledWorkerProviders
+    if (enabledProviders && !enabledProviders.has(provider))
+      return rejected(formatEnqueueTaskProviderDisabledHint(provider))
+  }
+
+  const confirmation = resolveRunTaskConfirmationRequirement({
+    prompt: parsed.prompt,
+    title: parsed.title,
+    goal: contract.goal,
+    scope: contract.scope,
+    acceptance: contract.acceptance,
+    ...(contract.outOfScope ? { outOfScope: contract.outOfScope } : {}),
+    ...(contract.contextRefs ? { contextRefs: contract.contextRefs } : {}),
+  })
+  if (context.confirmedRunTaskChoiceIds?.has(confirmation.choiceId)) return []
+  if (!confirmation.required) return []
+  return rejected(formatEnqueueTaskRequiresConfirmationHint())
 }
 export const validateCreatePlan = (
   item: Parsed,

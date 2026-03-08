@@ -83,6 +83,7 @@ export const resolveRoundFollowup = async (params: {
         runtime: params.runtime,
         allowAskUserChoice: params.allowAskUserChoice,
         resultTaskIds: params.resultTaskIds,
+        inputs: params.runtime.inflightInputs,
       }),
       scheduleNowIso: resolveScheduleNowIso(params.runtime.lastUserMeta),
     },

@@ -1,5 +1,6 @@
 import { appendLog } from '../log/append.js'
 
+import { collectConfirmedRunTaskChoiceIds } from './run-task-confirmation.js'
 import { listEnabledWorkerProviders } from './worker-provider-selection.js'
 
 import type { RuntimeState } from './runtime-adapter.js'
@@ -11,6 +12,7 @@ import type {
   TaskPlanStatus,
   TaskStatus,
   TokenUsage,
+  UserInput,
   WorkerProvider,
 } from '../types/index.js'
 
@@ -76,16 +78,21 @@ export const buildActionFeedbackContext = (params: {
   runtime: RuntimeState
   allowAskUserChoice: boolean
   resultTaskIds: Set<string>
+  inputs?: UserInput[]
 }): {
   taskStatusById: Map<string, TaskStatus>
   planStatusById: Map<string, TaskPlanStatus>
   resultTaskIds: Set<string>
   allowAskUserChoice: boolean
   enabledWorkerProviders: Set<WorkerProvider>
+  confirmedRunTaskChoiceIds: Set<string>
 } => {
-  const { runtime, allowAskUserChoice, resultTaskIds } = params
+  const { runtime, allowAskUserChoice, resultTaskIds, inputs } = params
   const enabledWorkerProviders = new Set<WorkerProvider>(
     listEnabledWorkerProviders(runtime.config).map((item) => item.provider),
+  )
+  const confirmedRunTaskChoiceIds = collectConfirmedRunTaskChoiceIds(
+    inputs ?? runtime.inflightInputs,
   )
   return {
     taskStatusById: new Map(
@@ -97,6 +104,7 @@ export const buildActionFeedbackContext = (params: {
     resultTaskIds,
     allowAskUserChoice,
     enabledWorkerProviders,
+    confirmedRunTaskChoiceIds,
   }
 }
 

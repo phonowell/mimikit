@@ -134,6 +134,8 @@ enabled = true
 - manager only sees enabled worker providers in `M:environment` as `provider_candidates`
 - `enqueue_task` supports optional `provider="codex|opencode"`
 - if `provider` is omitted, runtime auto-selects by config: lowest `billing` first, then strongest `capability`
+- high-cost `enqueue_task` now requires explicit user confirmation via `ask_user_choice`; confirmation option is `option-confirm-dispatch`, default is cancel
+- mixed wake rounds now use `standard` context budget (no automatic heavy escalation)
 
 ### 3) Start WebUI + API
 
@@ -158,6 +160,12 @@ Action lifecycle logs are printed to CLI by default (tag: `[manager] action`) an
 MIMIKIT_ACTION_LOGS=false pnpm start
 # or
 tsx src/cli/index.ts --log-actions false
+
+# observability additions in log.jsonl
+# - event="run_task_confirmation_required"
+# - event="manager_correction_structured_clarify"
+# - event="worker_long_task_soft_limit"
+# - worker_end includes usageCaptured for canceled tasks
 ```
 
 ### 4) Optional: enable Telegram channel

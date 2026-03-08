@@ -67,6 +67,7 @@ const runtime = {
   paths: { log: '/tmp/test-log' },
   tasks: [],
   taskPlans: [],
+  inflightInputs: [],
   config: {
     codex: { enabled: true, capability: 'high', billing: 'free' },
     opencode: { enabled: false, capability: 'low', billing: 'free' },

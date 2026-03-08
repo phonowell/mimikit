@@ -54,3 +54,16 @@ test('wake profile tiering keeps heavy rounds with larger task/result budgets th
   expect(heavy.tasksMaxBytes).toBeGreaterThan(lite.tasksMaxBytes)
   expect(heavy.batchResultsMaxBytes).toBeGreaterThan(lite.batchResultsMaxBytes)
 })
+
+test('mixed wake no longer inflates to heavy tier baseline', async () => {
+  const mixed = resolvePromptSectionLimitsForWakeProfile(
+    {
+      ...baseLimits,
+      tasksMaxBytes: 24576,
+      batchResultsMaxBytes: 20480,
+    },
+    'mixed',
+  )
+  expect(mixed.tasksMaxBytes).toBe(baseLimits.tasksMaxBytes)
+  expect(mixed.batchResultsMaxBytes).toBe(baseLimits.batchResultsMaxBytes)
+})

@@ -23,6 +23,8 @@ import { runTaskWithRetry } from './run-retry.js'
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { Task } from '../types/index.js'
 
+const LONG_TASK_SOFT_THRESHOLD_MS = 20 * 60 * 1000
+
 const runTask = async (
   runtime: RuntimeState,
   task: Task,
@@ -53,12 +55,13 @@ const runTask = async (
     })
     if (task.status === 'paused') return
     if (task.status === 'canceled') {
+      const usage = llmResult.usage ?? task.usage
       const result = buildResult(
         task,
         'canceled',
         'Task canceled',
         elapsed(),
-        llmResult.usage,
+        usage,
       )
       await finalizeResult(runtime, task, result, markTaskCanceled)
       return
@@ -75,11 +78,13 @@ const runTask = async (
     const err = error instanceof Error ? error : new Error(String(error))
     if (task.status === 'paused') return
     if (task.status === 'canceled') {
+      const { usage } = task
       const result = buildResult(
         task,
         'canceled',
         err.message || 'Task canceled',
         elapsed(),
+        usage,
       )
       await finalizeResult(runtime, task, result, markTaskCanceled)
       return
@@ -117,9 +122,30 @@ const runQueuedWorker = async (
   await bestEffort('persistRuntimeState: worker_start', () =>
     persistRuntimeState(runtime),
   )
+  let longTaskWarned = false
+  const longTaskTimer = setInterval(() => {
+    const controllerForTask = runtime.runningControllers.get(task.id)
+    if (!controllerForTask || controllerForTask.signal.aborted) return
+    const startedAtMs = Date.parse(task.startedAt ?? '')
+    if (!Number.isFinite(startedAtMs)) return
+    const elapsedMs = Math.max(0, Date.now() - startedAtMs)
+    if (elapsedMs < LONG_TASK_SOFT_THRESHOLD_MS) return
+    if (longTaskWarned) return
+    longTaskWarned = true
+    void bestEffort('appendLog: worker_long_task_soft_limit', () =>
+      appendLog(runtime.paths.log, {
+        event: 'worker_long_task_soft_limit',
+        taskId: task.id,
+        elapsedMs,
+        thresholdMs: LONG_TASK_SOFT_THRESHOLD_MS,
+      }),
+    )
+  }, 10_000)
+
   try {
     await runTask(runtime, task, controller)
   } finally {
+    clearInterval(longTaskTimer)
     const occupiedBeforeRelease = runtime.runningControllers.size
     clearTaskLiveOutput(runtime, task.id)
     runtime.runningControllers.delete(task.id)

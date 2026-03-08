@@ -89,12 +89,12 @@ export const ACTION_DEFINITIONS = [
       validatePlanById('delete_plan', item, deletePlanSchema, context),
     applyDeletePlan,
   ),
-  createContinueAction(
-    'enqueue_task',
-    (item, context) => validateRunTask(item, context),
-    (runtime, item, context) =>
+  {
+    name: 'enqueue_task',
+    validate: (item, context) => validateRunTask(item, context),
+    apply: (runtime, item, context) =>
       applyRunTask(runtime, item, context.seen, context.options),
-  ),
+  },
   createContinueAction(
     'mutate_task',
     (item, context) => validateMutateTask(item, context),

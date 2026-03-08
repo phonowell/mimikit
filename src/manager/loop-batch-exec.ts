@@ -183,7 +183,7 @@ const resolveContextBudgetTier = (params: {
   activeFocusCount: number
 }): 'lite' | 'standard' | 'heavy' => {
   const { wakeProfile, inputCount, resultCount, activeFocusCount } = params
-  if (wakeProfile === 'mixed') return 'heavy'
+  if (wakeProfile === 'mixed') return 'standard'
   if (activeFocusCount >= 3) return 'heavy'
   if (resultCount >= 2) return 'standard'
   if (inputCount >= 2) return 'standard'

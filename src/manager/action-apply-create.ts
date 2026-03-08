@@ -7,12 +7,20 @@ import { appendTaskSystemMessage } from '../history/task-events.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 
+import { applyAskUserChoiceAction } from './action-apply-choice.js'
 import { markCreateAttempt } from './action-apply-guards.js'
 import { runTaskSchema } from './action-apply-schema.js'
 import {
   resolveWorkerSlotCapacity,
   toWorkerSlotStatusPayload,
 } from './loop-trigger-shared.js'
+import {
+  buildRunTaskConfirmationQuestion,
+  collectConfirmedRunTaskChoiceIds,
+  resolveRunTaskConfirmationRequirement,
+  RUN_TASK_CANCEL_OPTION_ID,
+  RUN_TASK_CONFIRM_OPTION_ID,
+} from './run-task-confirmation.js'
 import {
   buildTaskFingerprint,
   buildTaskSemanticKey,
@@ -51,7 +59,7 @@ export const applyRunTask = async (
   item: Parsed,
   seen: Set<string>,
   options?: ApplyTaskActionsOptions,
-): Promise<void> => {
+): Promise<'continue' | 'stop'> => {
   const logRunTaskDispatch = async (params: {
     taskId: string
     mode: 'reuse_pending' | 'created'
@@ -69,9 +77,9 @@ export const applyRunTask = async (
     )
   }
 
-  if (options?.suppressRunTask) return
+  if (options?.suppressRunTask) return 'continue'
   const parsed = runTaskSchema.safeParse(item.attrs)
-  if (!parsed.success) return
+  if (!parsed.success) return 'continue'
   const profile: WorkerProfile = 'worker'
   const provider: WorkerProvider =
     parsed.data.provider ??
@@ -79,7 +87,7 @@ export const applyRunTask = async (
     'codex'
   const focusId = resolveActionFocusId(runtime, parsed.data.focus_id)
   const contract = buildTaskContractFromAttrs(parsed.data)
-  if (!contract) return
+  if (!contract) return 'continue'
   const semanticKey = buildTaskSemanticKey({
     prompt: parsed.data.prompt,
     title: parsed.data.title,
@@ -88,8 +96,53 @@ export const applyRunTask = async (
     focusId,
     contract,
   })
+  const confirmation = resolveRunTaskConfirmationRequirement({
+    prompt: parsed.data.prompt,
+    title: parsed.data.title,
+    goal: contract.goal,
+    scope: contract.scope,
+    acceptance: contract.acceptance,
+    ...(contract.outOfScope ? { outOfScope: contract.outOfScope } : {}),
+    ...(contract.contextRefs ? { contextRefs: contract.contextRefs } : {}),
+  })
+  const confirmedRunTaskChoiceIds = collectConfirmedRunTaskChoiceIds(
+    runtime.inflightInputs,
+  )
+  if (
+    confirmation.required &&
+    !confirmedRunTaskChoiceIds.has(confirmation.choiceId)
+  ) {
+    const question = buildRunTaskConfirmationQuestion({
+      title: parsed.data.title,
+      estimatedChars: confirmation.estimatedChars,
+    })
+    await applyAskUserChoiceAction(runtime, {
+      name: 'ask_user_choice',
+      attrs: {
+        id: confirmation.choiceId,
+        question,
+        option_1_id: RUN_TASK_CONFIRM_OPTION_ID,
+        option_1_label: 'Continue',
+        option_1_reason: 'Run current scope now',
+        option_2_id: RUN_TASK_CANCEL_OPTION_ID,
+        option_2_label: 'Cancel and narrow',
+        option_2_reason: 'Reduce scope before execution',
+        default_option_id: RUN_TASK_CANCEL_OPTION_ID,
+      },
+    })
+    await bestEffort('appendLog: run_task_confirmation_required', () =>
+      appendLog(runtime.paths.log, {
+        event: 'run_task_confirmation_required',
+        choiceId: confirmation.choiceId,
+        estimatedChars: confirmation.estimatedChars,
+        taskTitle: parsed.data.title,
+        focusId,
+      }),
+    )
+    return 'stop'
+  }
   const debounce = markCreateAttempt(runtime, semanticKey)
-  if (debounce.debounced) return
+  if (debounce.debounced) return 'continue'
   const dedupeKey = `${parsed.data.prompt}\n${parsed.data.title}\n${profile}\n${provider}\n${focusId}`
   const dedupeContractSuffix = [
     contract.goal,
@@ -99,7 +152,7 @@ export const applyRunTask = async (
     ...(contract.contextRefs ?? []),
   ].join('\n')
   const dedupeKeyWithContract = `${dedupeKey}\n${dedupeContractSuffix}`
-  if (seen.has(dedupeKeyWithContract)) return
+  if (seen.has(dedupeKeyWithContract)) return 'continue'
   seen.add(dedupeKeyWithContract)
 
   const activeSemanticTask = findActiveTaskBySemanticKey(
@@ -137,8 +190,8 @@ export const applyRunTask = async (
       })
       enqueueWorkerTask(runtime, activeSemanticTask)
       notifyWorkerLoop(runtime)
-      return
-    } else return
+      return 'continue'
+    } else return 'continue'
   }
 
   const { task, created } = enqueueTask(
@@ -152,11 +205,11 @@ export const applyRunTask = async (
     contract,
   )
   if (!created) {
-    if (task.status !== 'pending') return
+    if (task.status !== 'pending') return 'continue'
     await logRunTaskDispatch({ taskId: task.id, mode: 'reuse_pending' })
     enqueueWorkerTask(runtime, task)
     notifyWorkerLoop(runtime)
-    return
+    return 'continue'
   }
   const slotStatus = toWorkerSlotStatusPayload(
     resolveWorkerSlotCapacity(runtime),
@@ -169,4 +222,5 @@ export const applyRunTask = async (
   await persistRuntimeState(runtime)
   enqueueWorkerTask(runtime, task)
   notifyWorkerLoop(runtime)
+  return 'continue'
 }

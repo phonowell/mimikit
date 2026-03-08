@@ -158,6 +158,9 @@ export const finalizeResult = async (
       durationMs: result.durationMs,
       elapsedMs: result.durationMs,
       ...(result.usage ? { usage: result.usage } : {}),
+      ...(result.status === 'canceled'
+        ? { usageCaptured: Boolean(result.usage) }
+        : {}),
       ...(result.cancel ? { cancelSource: result.cancel.source } : {}),
       ...(archivePath ? { archivePath } : {}),
     }),
