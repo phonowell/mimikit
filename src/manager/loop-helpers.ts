@@ -100,13 +100,11 @@ export const consumeBatchHistory = async (params: {
         | 'append_consumed_results_incomplete'
     }
 > => {
-  const consumedInputIds = new Set(params.inputs.map((item) => item.id))
-  const consumedInputCount = await appendConsumedInputsToHistory(
-    params.runtime.paths.history,
-    params.inputs,
-  )
-  if (consumedInputCount < params.inputs.length)
-    return { ok: false, reason: 'append_consumed_inputs_incomplete' }
+  const consumedInputs = await consumeBatchInputsHistory({
+    runtime: params.runtime,
+    inputs: params.inputs,
+  })
+  if (!consumedInputs.ok) return consumedInputs
 
   const consumedResultCount = await appendConsumedResultsToHistory(
     params.runtime.paths.history,
@@ -117,5 +115,22 @@ export const consumeBatchHistory = async (params: {
   if (consumedResultCount < params.results.length)
     return { ok: false, reason: 'append_consumed_results_incomplete' }
 
+  return { ok: true, consumedInputIds: consumedInputs.consumedInputIds }
+}
+
+export const consumeBatchInputsHistory = async (params: {
+  runtime: RuntimeState
+  inputs: UserInput[]
+}): Promise<
+  | { ok: true; consumedInputIds: Set<string> }
+  | { ok: false; reason: 'append_consumed_inputs_incomplete' }
+> => {
+  const consumedInputIds = new Set(params.inputs.map((item) => item.id))
+  const consumedInputCount = await appendConsumedInputsToHistory(
+    params.runtime.paths.history,
+    params.inputs,
+  )
+  if (consumedInputCount < params.inputs.length)
+    return { ok: false, reason: 'append_consumed_inputs_incomplete' }
   return { ok: true, consumedInputIds }
 }

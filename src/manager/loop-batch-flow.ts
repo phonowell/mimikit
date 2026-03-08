@@ -8,7 +8,11 @@ import { appendLog } from '../log/append.js'
 import { bestEffort, logSafeError } from '../log/safe.js'
 import { nowIso } from '../shared/utils.js'
 
-import { consumeBatchHistory, finalizeBatchProgress } from './loop-helpers.js'
+import {
+  consumeBatchHistory,
+  consumeBatchInputsHistory,
+  finalizeBatchProgress,
+} from './loop-helpers.js'
 import { persistRuntimeState, type RuntimeState } from './runtime-adapter.js'
 
 import type { TaskResult, TokenUsage, UserInput } from '../types/index.js'
@@ -91,30 +95,33 @@ export const recoverManagerBatchFailure = async (params: {
 }): Promise<void> => {
   const errorMessage =
     params.error instanceof Error ? params.error.message : String(params.error)
-  let drainedOnError = false
+  let inputsDrainedOnError = false
   try {
-    const consumed = await consumeBatchHistory({
+    const consumedInputs = await consumeBatchInputsHistory({
       runtime: params.runtime,
       inputs: params.inputs,
-      results: params.results,
     })
-    if (consumed.ok) {
+    if (consumedInputs.ok) {
       await finalizeBatchProgress({
         runtime: params.runtime,
         nextInputsCursor: params.nextInputsCursor,
-        nextResultsCursor: params.nextResultsCursor,
-        consumedInputIds: consumed.consumedInputIds,
+        nextResultsCursor: params.runtime.queues.resultsCursor,
+        consumedInputIds: consumedInputs.consumedInputIds,
         persistRuntime: persistRuntimeState,
       })
-      drainedOnError = true
+      inputsDrainedOnError = true
     }
   } catch (drainError) {
-    await logSafeError('managerLoop: drain batch on failure', drainError)
+    await logSafeError('managerLoop: drain input batch on failure', drainError)
   }
 
   const errorFocusId = resolveDefaultFocusId(params.runtime)
   const sourceInputId = resolveLatestUserInputId(params.inputs)
-  if (drainedOnError && !params.agentAppended && params.agentInputsCount > 0) {
+  if (
+    inputsDrainedOnError &&
+    !params.agentAppended &&
+    params.agentInputsCount > 0
+  ) {
     await bestEffort('appendHistory: manager_fallback_reply', () =>
       appendManagerFallbackReply(params.runtime.paths, errorFocusId, {
         ...(sourceInputId ? { sourceInputId } : {}),
@@ -138,7 +145,7 @@ export const recoverManagerBatchFailure = async (params: {
       status: 'error',
       error: errorMessage,
       elapsedMs: Math.max(0, Date.now() - params.startedAt),
-      drainedOnError,
+      drainedOnError: inputsDrainedOnError,
       agentAppended: params.agentAppended,
       autoRetryAttempts: MANAGER_AUTO_RETRY_ATTEMPTS,
       autoRetryMaxAttempts: MANAGER_AUTO_RETRY_MAX_ATTEMPTS,
