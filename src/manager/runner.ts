@@ -1,10 +1,11 @@
-import { buildManagerPrompt } from '../prompts/build-prompts.js'
+import { buildManagerPromptPayload } from '../prompts/build-prompts.js'
 import {
   appendTraceArchiveResult,
   type TraceArchiveResult,
 } from '../storage/traces-archive.js'
 
 import { runManagerLlmCall } from './manager-llm-call.js'
+import { hashPromptPrefix } from './prompt-stability.js'
 
 import type { AppConfig } from '../config.js'
 import type {
@@ -48,14 +49,18 @@ export const runManager = async (params: {
   baseUrl?: string | undefined
   apiKey?: string | undefined
   proxy?: string | undefined
+  threadId?: string | null
   modelReasoningEffort?: ModelReasoningEffort | undefined
   onUsage?: (usage: TokenUsage) => void
+  usePromptSegments?: boolean
 }): Promise<{
   output: string
   elapsedMs: number
   usage?: TokenUsage
+  promptPrefixHash: string
+  threadId?: string | null
 }> => {
-  const prompt = await buildManagerPrompt({
+  const promptPayload = await buildManagerPromptPayload({
     stateDir: params.stateDir,
     workDir: params.workDir,
     inputs: params.inputs,
@@ -75,6 +80,8 @@ export const runManager = async (params: {
       ? { workingFocusIds: params.workingFocusIds }
       : {}),
   })
+  const { prompt, promptSegments, prefix } = promptPayload
+  const promptPrefixHash = hashPromptPrefix(prefix)
 
   const model = params.model?.trim()
   const archive = (
@@ -97,11 +104,13 @@ export const runManager = async (params: {
   try {
     const result = await runManagerLlmCall({
       prompt,
+      ...(params.usePromptSegments === false ? {} : { promptSegments }),
       workDir: params.workDir,
       ...(model ? { model } : {}),
       ...(params.baseUrl ? { baseUrl: params.baseUrl } : {}),
       ...(params.apiKey ? { apiKey: params.apiKey } : {}),
       ...(params.proxy ? { proxy: params.proxy } : {}),
+      ...(params.threadId ? { threadId: params.threadId } : {}),
       ...(params.modelReasoningEffort
         ? { modelReasoningEffort: params.modelReasoningEffort }
         : {}),
@@ -116,6 +125,8 @@ export const runManager = async (params: {
       output: result.output,
       elapsedMs: result.elapsedMs,
       ...(result.usage ? { usage: result.usage } : {}),
+      promptPrefixHash,
+      ...(result.threadId ? { threadId: result.threadId } : {}),
     }
   } catch (error) {
     const err = toError(error)

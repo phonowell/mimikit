@@ -221,4 +221,61 @@ describe('openAiResponsesProvider', () => {
     expect(firstBody.reasoning).toEqual({ effort: 'high' })
     expect(result.threadId).toMatch(/^session-/)
   })
+
+  test('encodes prompt segments with cache control in responses input', async () => {
+    const homeDir = await createHomeDir()
+    createdHomeDirs.push(homeDir)
+    await writeCodexConfig(homeDir)
+    process.env.HOME = homeDir
+    process.env.AICODING_API_KEY = 'provider-env-key'
+
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          output: [
+            {
+              type: 'message',
+              content: [{ type: 'output_text', text: 'ok' }],
+            },
+          ],
+          usage: {
+            input_tokens: 5,
+            output_tokens: 2,
+            total_tokens: 7,
+          },
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      ),
+    )
+    globalThis.fetch = fetchMock
+
+    await openAiResponsesProvider.run({
+      provider: 'openai-responses',
+      role: 'manager',
+      prompt: 'fallback prompt',
+      promptSegments: [
+        { text: 'stable prefix', cacheControl: 'ephemeral' },
+        { text: 'variable suffix' },
+      ],
+      workDir: process.cwd(),
+      timeoutMs: 30_000,
+      model: 'gpt-5',
+    })
+
+    const body = JSON.parse(
+      String((fetchMock.mock.calls[0]?.[1] as RequestInit).body),
+    ) as { input?: Array<{ content?: Array<Record<string, unknown>> }> }
+    const firstPart = body.input?.[0]?.content?.[0]
+    const secondPart = body.input?.[1]?.content?.[0]
+    expect(firstPart).toMatchObject({
+      type: 'input_text',
+      text: 'stable prefix',
+      cache_control: { type: 'ephemeral' },
+    })
+    expect(secondPart).toMatchObject({
+      type: 'input_text',
+      text: 'variable suffix',
+    })
+    expect(secondPart).not.toHaveProperty('cache_control')
+  })
 })

@@ -91,7 +91,7 @@ export type RuntimeState = {
   managerTurn: number
   memoryRefresh: RuntimeMemoryRefreshState
   managerFocusCompressedContexts: ManagerFocusCompressedContext[]
-  managerCompressedContext?: string
+  managerCompressedContext: string
   runningControllers: Map<string, AbortController>
   createTaskDebounce: Map<string, number>
   workerQueue: PQueue

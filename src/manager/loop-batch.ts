@@ -2,6 +2,7 @@ import { dispatchFeishuPassiveReply } from '../channels/feishu/passive-reply.js'
 import { dispatchTelegramPassiveReply } from '../channels/telegram/passive-reply.js'
 import { resolveDefaultFocusId } from '../focus/index.js'
 import { appendManagerCorrectionLimitSystemMessage } from '../history/manager-events.js'
+import { readHistory } from '../history/store.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { requestMemoryRefresh } from '../memory/refresh/singleflight.js'
@@ -20,6 +21,7 @@ import {
   consumeBatchHistory,
   finalizeBatchProgress,
 } from './loop-helpers.js'
+import { hashPromptPrefix } from './prompt-stability.js'
 import { normalizeManagerReplyText } from './reply-normalize.js'
 import {
   notifyUiSignal,
@@ -64,6 +66,24 @@ export const processManagerBatch = async (params: {
       inputs: agentInputs,
       results,
     })
+    const history = await readHistory(runtime.paths.history)
+    const visibleHistory = history.filter((item) => isVisibleToAgent(item))
+    const recentIds = visibleHistory
+      .slice(Math.max(0, visibleHistory.length - 8))
+      .map((item) => item.id)
+    runtime.managerCompressedContext = hashPromptPrefix(
+      JSON.stringify(
+        {
+          summary: {
+            recent_count: visibleHistory.length,
+            sampled_count: recentIds.length,
+          },
+          pointers: recentIds,
+        },
+        null,
+        2,
+      ),
+    )
     if (managerRun.roundLimitReached) {
       await bestEffort('appendHistory: manager_round_limit', () =>
         appendManagerCorrectionLimitSystemMessage(

@@ -224,6 +224,7 @@ export class Orchestrator {
       managerTurn: 0,
       memoryRefresh: createDefaultMemoryRefreshState(),
       managerFocusCompressedContexts: [],
+      managerCompressedContext: '',
       runningControllers: new Map(),
       createTaskDebounce: new Map(),
       workerQueue: new PQueue({ concurrency: config.worker.maxConcurrent }),

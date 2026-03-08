@@ -10,6 +10,11 @@ export type ProviderResult = {
   threadId?: string | null
 }
 
+export type ProviderPromptSegment = {
+  text: string
+  cacheControl?: 'ephemeral'
+}
+
 export type UsageListener = (usage: TokenUsage) => void
 export type PartialOutputListener = (output: string) => void
 
@@ -17,6 +22,7 @@ type ProviderRequestBase = {
   role: 'manager' | 'worker'
   runtimeId?: string
   prompt: string
+  promptSegments?: ProviderPromptSegment[]
   workDir: string
   timeoutMs: number
   proxy?: string

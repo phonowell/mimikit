@@ -1,5 +1,6 @@
 import { runWithProvider } from '../providers/registry.js'
 
+import type { ProviderPromptSegment } from '../providers/types.js'
 import type { TokenUsage } from '../types/index.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
@@ -22,6 +23,8 @@ export const resolveManagerTimeoutMs = (prompt: string): number => {
 
 export const runManagerLlmCall = async (params: {
   prompt: string
+  promptSegments?: ProviderPromptSegment[]
+  threadId?: string | null
   workDir: string
   model?: string
   baseUrl?: string | undefined
@@ -47,6 +50,8 @@ export const runManagerLlmCall = async (params: {
     provider: MANAGER_PROVIDER,
     role: 'manager',
     prompt: params.prompt,
+    ...(params.promptSegments ? { promptSegments: params.promptSegments } : {}),
+    ...(params.threadId ? { threadId: params.threadId } : {}),
     workDir: params.workDir,
     timeoutMs,
     ...(managerBaseUrl ? { baseUrl: managerBaseUrl } : {}),

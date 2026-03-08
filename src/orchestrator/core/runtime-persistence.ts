@@ -95,6 +95,7 @@ export const hydrateRuntimeState = async (
   runtime.memoryRefresh = hydrateMemoryRefreshState(snapshot)
   runtime.managerFocusCompressedContexts =
     snapshot.managerFocusCompressedContexts ?? []
+  runtime.managerCompressedContext = snapshot.managerCompressedContext ?? ''
   runtime.pendingUserChoice = snapshot.pendingUserChoice ?? null
   if (snapshot.queues) {
     runtime.queues = {
@@ -135,6 +136,9 @@ export const persistRuntimeState = async (
           managerFocusCompressedContexts:
             runtime.managerFocusCompressedContexts,
         }
+      : {}),
+    ...(runtime.managerCompressedContext
+      ? { managerCompressedContext: runtime.managerCompressedContext }
       : {}),
   })
 }

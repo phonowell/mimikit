@@ -290,6 +290,7 @@ export const runtimeSnapshotSchema = z
       .optional(),
     pendingUserChoice: pendingUserChoiceSchema.optional(),
     memoryRefresh: memoryRefreshSchema.optional(),
+    managerCompressedContext: z.string().optional(),
     managerFocusCompressedContexts: z
       .array(managerFocusCompressedContextSchema)
       .optional(),

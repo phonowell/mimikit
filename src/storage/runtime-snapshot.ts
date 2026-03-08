@@ -38,6 +38,7 @@ const initialRuntimeSnapshot = (): RuntimeSnapshot => ({
     lastProcessedInputsCursor: 0,
     lastProcessedResultsCursor: 0,
   },
+  managerCompressedContext: '',
 })
 
 const inspectBackupError = (

@@ -25,7 +25,11 @@ import {
   elapsedMsSince,
 } from './provider-runtime.js'
 
-import type { OpenAiResponsesProviderRequest, Provider } from './types.js'
+import type {
+  OpenAiResponsesProviderRequest,
+  Provider,
+  ProviderPromptSegment,
+} from './types.js'
 import type { TokenUsage } from '../types/index.js'
 import type { Dispatcher } from 'undici'
 
@@ -183,6 +187,40 @@ const resolveSessionId = (threadId: string | null | undefined): string => {
   return `session-${randomUUID()}`
 }
 
+const toPromptSegments = (
+  request: OpenAiResponsesProviderRequest,
+): ProviderPromptSegment[] => {
+  if (!request.promptSegments || request.promptSegments.length === 0)
+    return [{ text: request.prompt }]
+
+  const normalized = request.promptSegments
+    .map((segment) => ({
+      text: segment.text,
+      ...(segment.cacheControl ? { cacheControl: segment.cacheControl } : {}),
+    }))
+    .filter((segment) => segment.text.trim().length > 0)
+  if (normalized.length === 0) return [{ text: request.prompt }]
+  return normalized
+}
+
+const buildResponsesInput = (
+  request: OpenAiResponsesProviderRequest,
+): Array<Record<string, unknown>> => {
+  const segments = toPromptSegments(request)
+  return segments.map((segment) => ({
+    role: 'user',
+    content: [
+      {
+        type: 'input_text',
+        text: segment.text,
+        ...(segment.cacheControl
+          ? { cache_control: { type: segment.cacheControl } }
+          : {}),
+      },
+    ],
+  }))
+}
+
 export const parseResponsesSse = (
   raw: string,
 ): { output: string; usage?: TokenUsage } => {
@@ -306,7 +344,7 @@ const runOpenAiResponses = async (request: OpenAiResponsesProviderRequest) => {
     const requestBody = JSON.stringify({
       model,
       stream: true,
-      input: [{ role: 'user', content: request.prompt }],
+      input: buildResponsesInput(request),
       ...(request.modelReasoningEffort
         ? { reasoning: { effort: request.modelReasoningEffort } }
         : {}),

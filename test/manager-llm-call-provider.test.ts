@@ -67,3 +67,26 @@ test('manager forwards provider overrides to openai-responses', async () => {
     }),
   )
 })
+
+test('manager forwards promptSegments to openai-responses', async () => {
+  await runManagerLlmCall({
+    prompt: 'full prompt',
+    promptSegments: [
+      { text: 'stable prefix', cacheControl: 'ephemeral' },
+      { text: 'variable suffix' },
+    ],
+    workDir: '/tmp/mimikit',
+  })
+
+  expect(runWithProviderMock).toHaveBeenCalledWith(
+    expect.objectContaining({
+      provider: 'openai-responses',
+      role: 'manager',
+      prompt: 'full prompt',
+      promptSegments: [
+        { text: 'stable prefix', cacheControl: 'ephemeral' },
+        { text: 'variable suffix' },
+      ],
+    }),
+  )
+})

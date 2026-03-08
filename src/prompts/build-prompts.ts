@@ -17,7 +17,7 @@ import {
   mergeTaskResults,
 } from './build-prompts-helpers.js'
 import { prepareWorkerTaskPrompt } from './build-worker-task-prompt.js'
-import { escapeCdata } from './format-base.js'
+import { escapeCdata, stringifyPromptJson } from './format-base.js'
 import {
   formatWorkerFocusContext,
   type WorkerCompressedFocusContext,
@@ -33,7 +33,6 @@ import {
   formatPlansJson,
   formatQueryLookup,
   formatReadFileLookup,
-  formatRecentHistory,
   formatResultsJson,
   formatTasksJson,
   renderPromptTemplate,
@@ -41,6 +40,7 @@ import {
 import { loadPromptFile, loadPromptSource } from './prompt-loader.js'
 
 import type { AppConfig } from '../config.js'
+import type { ProviderPromptSegment } from '../providers/types.js'
 import type {
   FocusContext,
   FocusId,
@@ -60,8 +60,17 @@ export type { ManagerEnv } from '../types/index.js'
 
 export type PromptSectionLimits = AppConfig['manager']['promptSections']
 
+type ManagerPromptPayload = {
+  prefix: string
+  suffix: string
+  prompt: string
+  promptSegments: ProviderPromptSegment[]
+}
+export type { ManagerPromptPayload }
+
 const MAX_MEMORY_QUERY_CHARS = 4_000
 const MAX_MEMORY_MENTION_ITEMS = 128
+const MAX_RECENT_HISTORY_SUMMARY_ITEMS = 8
 
 const pushMention = (target: string[], value: string | undefined): void => {
   const normalized = value?.trim()
@@ -111,7 +120,7 @@ const buildMemoryPromptScoreContext = (params: {
   }
 }
 
-export const buildManagerPrompt = async (params: {
+export const buildManagerPromptPayload = async (params: {
   stateDir: string
   workDir: string
   inputs: UserInput[]
@@ -128,7 +137,7 @@ export const buildManagerPrompt = async (params: {
   focusContexts?: FocusContext[]
   activeFocusIds?: FocusId[]
   workingFocusIds?: FocusId[]
-}): Promise<string> => {
+}): Promise<ManagerPromptPayload> => {
   const pendingResults = mergeTaskResults(params.results, [])
   const knownResults = mergeTaskResults(
     pendingResults,
@@ -182,67 +191,170 @@ export const buildManagerPrompt = async (params: {
     context: memoryScoreContext,
     maxBytes: limits.memoryMaxBytes,
   })
-  const templateValues: Record<string, string> = {
-    environment: sectionText(
-      formatEnvironment({
-        workDir: params.workDir,
-        ...(params.env ? { env: params.env } : {}),
-      }),
-      limits.environmentMaxBytes,
-    ),
-    inputs: sectionJson(
-      formatInputs(params.inputs, quoteLookup),
-      limits.inputsMaxBytes,
-    ),
-    batch_results: sectionJson(
-      formatResultsJson(params.tasks, pendingResults, params.workDir),
-      limits.batchResultsMaxBytes,
-    ),
-    tasks: sectionJson(
-      formatTasksJson(params.tasks, resultsForTasks, params.workDir),
-      limits.tasksMaxBytes,
-    ),
-    plans: sectionJson(
-      formatPlansJson(params.plans ?? []),
-      limits.plansMaxBytes,
-    ),
-    recent_history: sectionJson(
-      formatRecentHistory(focusPayload.recentHistory, quoteLookup),
-      limits.recentHistoryMaxBytes,
-    ),
-    focus_list: sectionJson(
-      formatFocusList(focusPayload.focusList),
-      limits.focusListMaxBytes,
-    ),
-    focus_contexts: sectionJson(
-      formatFocusContexts(focusPayload.focusContexts),
-      limits.focusContextsMaxBytes,
-    ),
-    history_lookup: sectionJson(
-      formatHistoryLookup(params.historyLookup ?? []),
-      limits.historyLookupMaxBytes,
-    ),
-    query_lookup: sectionText(
-      formatQueryLookup(params.queryLookup),
-      limits.queryLookupMaxBytes,
-    ),
-    memory: sectionText(memoryPrompt, limits.memoryMaxBytes),
-    file_lookup: sectionJson(
-      formatReadFileLookup(params.readFileLookup ?? []),
-      limits.fileLookupMaxBytes,
-    ),
-    action_feedback: sectionJson(
-      formatActionFeedback(params.actionFeedback ?? []),
-      limits.actionFeedbackMaxBytes,
-    ),
+  const summarizeRecentHistory = (): string => {
+    const recent = focusPayload.recentHistory
+    if (recent.length === 0) return ''
+    const sorted = [...recent]
+      .sort((left, right) => {
+        if (left.createdAt !== right.createdAt)
+          return left.createdAt.localeCompare(right.createdAt)
+
+        return left.id.localeCompare(right.id)
+      })
+      .slice(Math.max(0, recent.length - MAX_RECENT_HISTORY_SUMMARY_ITEMS))
+    const byRole = new Map<string, number>()
+    for (const item of sorted) {
+      const { role } = item
+      byRole.set(role, (byRole.get(role) ?? 0) + 1)
+    }
+    const roleSummary = Array.from(byRole.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([role, count]) => `${role}:${count}`)
+      .join(',')
+    const latest = sorted[sorted.length - 1]
+    const summary = {
+      summary: {
+        recent_count: recent.length,
+        sampled_count: sorted.length,
+        role_counts: roleSummary,
+        latest_time: latest?.createdAt ?? '',
+        latest_id: latest?.id ?? '',
+      },
+      pointers: sorted.map((item) => ({
+        id: item.id,
+        role: item.role,
+        time: item.createdAt,
+        focus_id: item.focusId,
+      })),
+    }
+    return stringifyPromptJson(summary)
   }
 
-  return renderPromptTemplate(
-    systemSource.template,
-    templateValues,
-    systemSource.path,
+  const environment = sectionText(
+    formatEnvironment({
+      workDir: params.workDir,
+      ...(params.env ? { env: params.env } : {}),
+    }),
+    limits.environmentMaxBytes,
   )
+  const inputs = sectionJson(
+    formatInputs(params.inputs, quoteLookup),
+    limits.inputsMaxBytes,
+  )
+  const batchResults = sectionJson(
+    formatResultsJson(params.tasks, pendingResults, params.workDir),
+    limits.batchResultsMaxBytes,
+  )
+  const tasks = sectionJson(
+    formatTasksJson(params.tasks, resultsForTasks, params.workDir),
+    limits.tasksMaxBytes,
+  )
+  const plans = sectionJson(
+    formatPlansJson(params.plans ?? []),
+    limits.plansMaxBytes,
+  )
+  const recentHistory = sectionText(
+    summarizeRecentHistory(),
+    limits.recentHistoryMaxBytes,
+  )
+  const focusList = sectionJson(
+    formatFocusList(focusPayload.focusList),
+    limits.focusListMaxBytes,
+  )
+  const focusContexts = sectionJson(
+    formatFocusContexts(focusPayload.focusContexts),
+    limits.focusContextsMaxBytes,
+  )
+  const historyLookup = sectionJson(
+    formatHistoryLookup(params.historyLookup ?? []),
+    limits.historyLookupMaxBytes,
+  )
+  const queryLookup = sectionText(
+    formatQueryLookup(params.queryLookup),
+    limits.queryLookupMaxBytes,
+  )
+  const memory = sectionText(memoryPrompt, limits.memoryMaxBytes)
+  const fileLookup = sectionJson(
+    formatReadFileLookup(params.readFileLookup ?? []),
+    limits.fileLookupMaxBytes,
+  )
+  const actionFeedback = sectionJson(
+    formatActionFeedback(params.actionFeedback ?? []),
+    limits.actionFeedbackMaxBytes,
+  )
+
+  const prefixValues: Record<string, string> = {
+    environment: '',
+    focus_list: '',
+    focus_contexts: '',
+    memory: '',
+    tasks: '',
+    plans: '',
+    recent_history: '',
+    inputs: '',
+    batch_results: '',
+    history_lookup: '',
+    query_lookup: '',
+    file_lookup: '',
+    action_feedback: '',
+  }
+  const suffixValues: Record<string, string> = {
+    environment,
+    focus_list: focusList,
+    focus_contexts: focusContexts,
+    memory,
+    tasks,
+    plans,
+    recent_history: recentHistory,
+    inputs,
+    batch_results: batchResults,
+    history_lookup: historyLookup,
+    query_lookup: queryLookup,
+    file_lookup: fileLookup,
+    action_feedback: actionFeedback,
+  }
+
+  const contextSource = await loadPromptSource('manager/context.md')
+  const prefix = renderPromptTemplate(
+    systemSource.template,
+    prefixValues,
+    systemSource.path,
+  ).trim()
+  const suffix = renderPromptTemplate(
+    contextSource.template,
+    suffixValues,
+    contextSource.path,
+  ).trim()
+  const promptSegments: ProviderPromptSegment[] = [
+    { text: prefix, cacheControl: 'ephemeral' },
+    { text: suffix },
+  ]
+  return {
+    prefix,
+    suffix,
+    prompt: `${prefix}\n\n${suffix}`.trim(),
+    promptSegments,
+  }
 }
+
+export const buildManagerPrompt = async (params: {
+  stateDir: string
+  workDir: string
+  inputs: UserInput[]
+  results: TaskResult[]
+  tasks: Task[]
+  promptSectionLimits: PromptSectionLimits
+  plans?: TaskPlan[]
+  historyLookup?: HistoryLookupMessage[]
+  queryLookup?: QueryLookupMessage
+  readFileLookup?: ReadFileLookupMessage[]
+  actionFeedback?: ManagerActionFeedback[]
+  env?: ManagerEnv
+  focuses?: FocusMeta[]
+  focusContexts?: FocusContext[]
+  activeFocusIds?: FocusId[]
+  workingFocusIds?: FocusId[]
+}): Promise<string> => (await buildManagerPromptPayload(params)).prompt
 
 export const buildWorkerPrompt = async (params: {
   workDir: string

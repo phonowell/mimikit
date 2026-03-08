@@ -380,7 +380,7 @@ test('runtime snapshot rejects legacy next fields', async () => {
   await expect(loadRuntimeSnapshot(stateDir)).rejects.toThrow()
 })
 
-test('runtime snapshot rejects legacy managerCompressedContext field', async () => {
+test('runtime snapshot accepts managerCompressedContext field', async () => {
   const stateDir = await createTmpDir()
   await writeFile(
     join(stateDir, 'runtime-snapshot.json'),
@@ -392,7 +392,8 @@ test('runtime snapshot rejects legacy managerCompressedContext field', async () 
     'utf8',
   )
 
-  await expect(loadRuntimeSnapshot(stateDir)).rejects.toThrow()
+  const loaded = await loadRuntimeSnapshot(stateDir)
+  expect(loaded.managerCompressedContext).toBe('legacy')
 })
 
 test('loadRuntimeSnapshot falls back to backup file when primary json is broken', async () => {

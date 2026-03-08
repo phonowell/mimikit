@@ -239,7 +239,12 @@ export const runManagerRoundWithRecovery = async (params: {
     readFileLookup?: ReadFileLookupMessage[]
     actionFeedback?: ManagerActionFeedback[]
   }
-}): Promise<{ output: string; elapsedMs: number; usage?: TokenUsage }> => {
+}): Promise<{
+  output: string
+  elapsedMs: number
+  usage?: TokenUsage
+  promptPrefixHash: string
+}> => {
   const wakeProfile = resolveWakeProfile(params.inputs, params.results)
   const managerEnv = buildManagerEnv(params.runtime, wakeProfile)
   const budgetTier = resolveContextBudgetTier({
@@ -304,6 +309,7 @@ export const runManagerRoundWithRecovery = async (params: {
   return {
     output: result.output,
     elapsedMs: result.elapsedMs,
+    promptPrefixHash: result.promptPrefixHash,
     ...(result.usage ? { usage: result.usage } : {}),
   }
 }

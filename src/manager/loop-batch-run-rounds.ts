@@ -23,6 +23,7 @@ import type {
   TokenUsage,
   UserInput,
 } from '../types/index.js'
+
 export const runManagerCorrectionRounds = async (params: {
   runtime: RuntimeState
   inputs: UserInput[]
@@ -51,6 +52,7 @@ export const runManagerCorrectionRounds = async (params: {
   let elapsedMs = 0
   let batchUsage: TokenUsage | undefined
   let previousLookupKey: string | undefined
+  let promptPrefixHash: string | undefined
   let extra: ManagerRoundExtra = {}
   let lastParsed = parseActions('')
   const resultTaskIds = new Set(results.map((item) => item.taskId))
@@ -70,6 +72,16 @@ export const runManagerCorrectionRounds = async (params: {
     })
     elapsedMs += runResult.elapsedMs
     batchUsage = mergeUsageAdditive(batchUsage, runResult.usage)
+    if (!promptPrefixHash) promptPrefixHash = runResult.promptPrefixHash
+    else if (promptPrefixHash !== runResult.promptPrefixHash) {
+      await appendLog(runtime.paths.log, {
+        event: 'manager_prompt_prefix_changed',
+        round,
+        previousPrefixHash: promptPrefixHash,
+        nextPrefixHash: runResult.promptPrefixHash,
+      })
+      promptPrefixHash = runResult.promptPrefixHash
+    }
     const parsed = parseActions(runResult.output)
     lastParsed = parsed
     const followup = await resolveRoundFollowup({
@@ -82,6 +94,13 @@ export const runManagerCorrectionRounds = async (params: {
       ...(previousLookupKey ? { previousLookupKey } : {}),
     })
     if (followup.done) {
+      if (promptPrefixHash) {
+        await appendLog(runtime.paths.log, {
+          event: 'manager_prompt_prefix_hash',
+          rounds: round,
+          hash: promptPrefixHash,
+        })
+      }
       return buildBatchSuccessResult({
         parsed,
         elapsedMs,
@@ -95,6 +114,13 @@ export const runManagerCorrectionRounds = async (params: {
     event: 'manager_correction_round_limit_reached',
     maxCorrectionRounds,
   })
+  if (promptPrefixHash) {
+    await appendLog(runtime.paths.log, {
+      event: 'manager_prompt_prefix_hash',
+      rounds: maxCorrectionRounds,
+      hash: promptPrefixHash,
+    })
+  }
   return buildRoundLimitResult({
     text: lastParsed.text,
     elapsedMs,
