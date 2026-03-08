@@ -9,12 +9,15 @@ const clamp = (value, min, max) => {
 }
 
 const createNoopController = () => ({
+  bind: () => () => {},
+  mount: () => {},
   open: () => {},
   close: () => {},
-  destroy: () => {},
+  dispose: () => {},
   isOpen: () => false,
   containsTarget: () => false,
   reposition: () => {},
+  setDisabled: () => {},
 })
 
 export const createPageMenuController = ({
@@ -30,7 +33,9 @@ export const createPageMenuController = ({
   const restoreParent = menu.parentElement
   const restoreNextSibling = menu.nextSibling
   let isOpen = false
+  let isDisabled = false
   let rafId = 0
+  let unbindEvents = () => {}
 
   const resolvePortalRoot = () => {
     const dialogRoot = trigger.closest('dialog[open]')
@@ -119,21 +124,38 @@ export const createPageMenuController = ({
     requestPositionUpdate()
   }
 
+  const bind = () => {
+    const onResize = () => onViewportChange()
+    const onScroll = () => onViewportChange()
+    window.addEventListener('resize', onResize)
+    document.addEventListener('scroll', onScroll, true)
+    unbindEvents = () => {
+      window.removeEventListener('resize', onResize)
+      document.removeEventListener('scroll', onScroll, true)
+      unbindEvents = () => {}
+    }
+    return unbindEvents
+  }
+
+  const mount = () => {
+    if (menu.parentElement === resolvePortalRoot()) return
+    resolvePortalRoot().appendChild(menu)
+  }
+
   const open = () => {
+    if (isDisabled) return
     if (isOpen) {
       requestPositionUpdate()
       return
     }
 
     isOpen = true
-    const portalRoot = resolvePortalRoot()
-    if (menu.parentElement !== portalRoot) portalRoot.appendChild(menu)
+    mount()
     applyFloatingStyle()
     menu.hidden = false
     menu.dataset.pageMenuOpen = 'true'
     requestPositionUpdate()
-    window.addEventListener('resize', onViewportChange)
-    document.addEventListener('scroll', onViewportChange, true)
+    bind()
   }
 
   const close = () => {
@@ -146,8 +168,7 @@ export const createPageMenuController = ({
     }
 
     isOpen = false
-    window.removeEventListener('resize', onViewportChange)
-    document.removeEventListener('scroll', onViewportChange, true)
+    unbindEvents()
     menu.hidden = true
     delete menu.dataset.pageMenuOpen
     clearFloatingStyle()
@@ -155,13 +176,19 @@ export const createPageMenuController = ({
   }
 
   return {
+    bind,
+    mount,
     open,
     close,
-    destroy: () => {
+    dispose: () => {
       close()
     },
     isOpen: () => isOpen,
     containsTarget: (target) => target instanceof Node && menu.contains(target),
     reposition: requestPositionUpdate,
+    setDisabled: (disabled) => {
+      isDisabled = Boolean(disabled)
+      if (isDisabled) close()
+    },
   }
 }

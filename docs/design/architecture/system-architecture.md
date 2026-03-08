@@ -24,6 +24,16 @@
 - `runtime reaper`：独立守护进程，监测主进程 lease 并在异常退出后回收 worker 子进程。
 - `triggerWakeLoop`：统一处理计划触发（`cron/scheduled_at/on_worker_slot_freed`）、用户选择超时、worker 槽位释放事件。
 
+WebUI（native 组件系统）：
+
+- 分层：`foundation -> domain -> composition`，禁止跨层反向依赖。
+- `foundation`：`overlay-stack/page-menu/anchored-menu/dialog/confirm-dialog/toast`，提供统一生命周期契约（`bind/mount/open/close/setDisabled/dispose` 的可组合子集）。
+- `domain`：
+- task actions：`task-actions-controller/menu/request/copy-id/config`；
+- tools restart/reset：`restart-state-controller/restart-request/restart-status/restart-tools-menu/restart-dialog-binding`。
+- `composition`：`app.js`、`tasks.js`、`panels.js` 仅做接线与快照分发，不承载业务规则。
+- 迁移策略：WebUI 组件改造采用“一次性替换”，不保留兼容层，不维护旧实现分支。
+
 补充：
 
 - manager 回合采用 `maxCorrectionRounds` 硬上限；超过上限写入 `system_event.name=manager_round_limit` 并返回 best-effort 文本。

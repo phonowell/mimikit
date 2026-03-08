@@ -11,9 +11,13 @@ const openNativeConfirm = (message) => {
 
 const createNoopController = ({ fallbackMessage = '' } = {}) => ({
   bindEvents: () => () => {},
+  bind: () => () => {},
+  mount: () => {},
   close: () => {},
   isOpen: () => false,
   setActionsDisabled: () => {},
+  setDisabled: () => {},
+  dispose: () => {},
   request: ({ fallbackMessage: nextFallbackMessage } = {}) =>
     Promise.resolve(
       openNativeConfirm(nextFallbackMessage || fallbackMessage),
@@ -31,6 +35,7 @@ export const createConfirmDialogController = ({
 
   let pendingResolve = null
   let isBound = false
+  let isDisabled = false
 
   const dialogController = createDialogController({
     dialog,
@@ -64,14 +69,14 @@ export const createConfirmDialogController = ({
 
   const onCancel = (event) => {
     event.preventDefault()
-    if (cancelBtn.disabled || confirmBtn.disabled) return
+    if (isDisabled || cancelBtn.disabled || confirmBtn.disabled) return
     clearPendingResolve(false)
     dialogController.close()
   }
 
   const onConfirm = (event) => {
     event.preventDefault()
-    if (cancelBtn.disabled || confirmBtn.disabled) return
+    if (isDisabled || cancelBtn.disabled || confirmBtn.disabled) return
     clearPendingResolve(true)
     dialogController.close()
   }
@@ -97,17 +102,35 @@ export const createConfirmDialogController = ({
     }
   }
 
+  const setActionsDisabled = (disabled) => {
+    cancelBtn.disabled = disabled
+    confirmBtn.disabled = disabled
+  }
+
+  const setDisabled = (disabled) => {
+    isDisabled = Boolean(disabled)
+    setActionsDisabled(isDisabled)
+    if (isDisabled) {
+      clearPendingResolve(false)
+      dialogController.close()
+    }
+  }
+
   return {
+    bind: bindEvents,
+    mount: () => {},
     bindEvents,
     close: () => {
       dialogController.close()
     },
     isOpen: () => dialogController.isOpen(),
-    setActionsDisabled: (disabled) => {
-      cancelBtn.disabled = disabled
-      confirmBtn.disabled = disabled
+    setActionsDisabled,
+    setDisabled,
+    dispose: () => {
+      setDisabled(true)
     },
     request: () => {
+      if (isDisabled) return Promise.resolve(false)
       if (pendingResolve) 
         clearPendingResolve(false)
       

@@ -3,8 +3,8 @@ import { renderEmptyListState } from './list-empty.js'
 import { createListLayoutShiftSync } from './list-scroll-sync.js'
 import { PANEL_BOTTOM_SCROLL_THRESHOLD_MULTIPLIER } from './panel-scroll-config.js'
 import { UI_TEXT } from './system-text.js'
+import { bindTaskActionsController } from './task-actions-controller.js'
 import { createTaskDeleteController } from './tasks-controller-delete.js'
-import { bindTaskInteractions } from './tasks-interactions.js'
 import { renderTasks } from './tasks-view-render.js'
 import { createElapsedTicker } from './tasks-view-time.js'
 import { subscribeTimeTick } from './time-tick.js'
@@ -47,7 +47,7 @@ export function bindTasksPanel({
     bottomThresholdMultiplier: PANEL_BOTTOM_SCROLL_THRESHOLD_MULTIPLIER,
   })
   let unsubscribeTimeTick = null
-  const unbindTaskInteractions = bindTaskInteractions(tasksList, {
+  const unbindTaskInteractions = bindTaskActionsController(tasksList, {
     taskDeleteController,
   })
 

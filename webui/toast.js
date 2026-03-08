@@ -18,6 +18,7 @@ const ensureToastElement = () => {
 export const createToastController = () => {
   let hideTimer = null
   const toastEl = ensureToastElement()
+  let isDisabled = false
 
   const clearHideTimer = () => {
     if (!hideTimer) return
@@ -33,6 +34,7 @@ export const createToastController = () => {
   }
 
   const show = (message, state = '') => {
+    if (isDisabled) return
     const text = typeof message === 'string' ? message.trim() : ''
     if (!text) return
     clearHideTimer()
@@ -45,8 +47,16 @@ export const createToastController = () => {
   }
 
   return {
+    bind: () => () => {},
+    mount: () => {},
+    open: (message, state = '') => show(message, state),
+    close: hide,
     show,
     hide,
+    setDisabled: (disabled) => {
+      isDisabled = Boolean(disabled)
+      if (isDisabled) hide()
+    },
     dispose: hide,
   }
 }

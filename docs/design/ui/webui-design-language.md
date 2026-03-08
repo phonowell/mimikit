@@ -20,6 +20,29 @@
 - 弹窗遮罩：使用偏冷灰白半透明底（非黑灰）并叠加密集斜向条纹，保持较低透过度。
 - 按钮：全局不可文本选中/复制（`user-select: none`）。
 
+## 组件系统分层（2026-03-08）
+
+- 目标：在不引入 React/构建链前提下，提供稳定、可复用的原生组件体系。
+- 分层约束：
+- `foundation`：通用 UI 原语与生命周期契约（overlay/menu/dialog/toast）。
+- `domain`：业务组件（task actions、tools restart/reset、delete confirm）。
+- `composition`：页面装配层（`app.js`、`tasks.js`、`panels.js`），只做依赖接线与 snapshot 分发。
+- 生命周期契约（统一）：组件应实现 `bind`/`mount`/`open`/`close`/`setDisabled`/`dispose` 的可组合子集；禁止在 composition 层散落临时事件绑定。
+- 迁移策略：一次性替换旧链路，不保留兼容层，不维护双实现。
+
+## Overlay 规则
+
+- 菜单类浮层统一使用页面级浮层定位（非容器内绝对定位）。
+- portal 规则：优先挂载到最近 `dialog[open]`，否则挂载到 `document.body`，确保 dialog 内外都可交互。
+- 叠层规则：通过 overlay stack 管理“仅一个顶层菜单”与 `Esc` 关闭行为，避免多菜单互相覆盖。
+- 触发器规则：菜单开闭必须同步 `aria-expanded`，禁用态需自动收起浮层。
+
+## Toast 策略
+
+- 全局只允许一个 toast 容器（`[data-toast]`），统一由 `toast` 组件控制。
+- 行为反馈（如 task `copy id`）必须通过 toast 告知，不得在列表内临时插入反馈 DOM。
+- toast 只承载短反馈，状态仅允许 `success`/`error`（或空态默认样式）。
+
 ## 设计原则
 
 - 同色调优先：背景与组件共享同一色系，不做高反差分层。
@@ -141,6 +164,14 @@
 - `archive-viewer-markdown.css`：归档正文卡片与 markdown 阅读细节。
 - `archive-viewer-responsive.css`：归档页动效降级与移动端覆写。
 - `components-responsive.css`：主会话页动效降级与移动端覆写。
+
+补充（JS）：
+
+- `overlay-stack.js` + `anchored-menu.js` + `page-menu.js`：页面级菜单与 overlay 基础设施。
+- `confirm-dialog.js` + `toast.js`：统一确认弹窗与反馈组件。
+- `task-actions-*.js`：任务二级菜单与动作请求域组件。
+- `restart-*.js`：tools 菜单、restart/reset 请求与状态域组件。
+- `app-elements.js` + `app-branding.js` + `app.js`：DOM 查询、品牌状态（title/favicon）与装配层。
 
 ## 迭代协议
 
