@@ -33,3 +33,24 @@ test('resolvePromptSectionLimitsForWakeProfile boosts input/history sections for
   expect(limits.recentHistoryMaxBytes).toBeGreaterThan(baseLimits.recentHistoryMaxBytes)
   expect(limits.batchResultsMaxBytes).toBeLessThan(baseLimits.batchResultsMaxBytes)
 })
+
+test('wake profile tiering keeps heavy rounds with larger task/result budgets than lite', async () => {
+  const lite = resolvePromptSectionLimitsForWakeProfile(
+    {
+      ...baseLimits,
+      tasksMaxBytes: 12288,
+      batchResultsMaxBytes: 12288,
+    },
+    'user_input',
+  )
+  const heavy = resolvePromptSectionLimitsForWakeProfile(
+    {
+      ...baseLimits,
+      tasksMaxBytes: 32768,
+      batchResultsMaxBytes: 28672,
+    },
+    'mixed',
+  )
+  expect(heavy.tasksMaxBytes).toBeGreaterThan(lite.tasksMaxBytes)
+  expect(heavy.batchResultsMaxBytes).toBeGreaterThan(lite.batchResultsMaxBytes)
+})

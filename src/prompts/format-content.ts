@@ -133,6 +133,7 @@ const toResultPayload = (
       : {}),
     ...(archivePath ? { archive_path: archivePath } : {}),
     ...(handoff ? { handoff } : {}),
+    ...(result.evidence ? { evidence: result.evidence } : {}),
     usage: normalizePromptUsage(result.usage),
   }
 }

@@ -113,6 +113,7 @@ export const firePlan = async (params: {
     logMeta: {
       planId: plan.id,
       triggerMode: plan.trigger.mode,
+      triggerReason: params.reason,
       focusId: GLOBAL_FOCUS_ID,
       runCount: plan.runCount,
     },

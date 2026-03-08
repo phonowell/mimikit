@@ -42,6 +42,37 @@ test('enqueueTask returns existing active task by fingerprint', () => {
   expect(result).toMatchObject({ created: false, task: { id: existing.id } })
 })
 
+test('enqueueTask does not dedupe when contract differs', () => {
+  const tasks: Task[] = [
+    createTask({
+      contract: {
+        goal: 'Goal A',
+        scope: 'Scope A',
+        acceptance: ['A1'],
+      },
+    }),
+  ]
+
+  const result = enqueueTask(
+    tasks,
+    'Write report',
+    'Write report',
+    'worker',
+    'codex',
+    undefined,
+    'focus-global',
+    {
+      goal: 'Goal B',
+      scope: 'Scope B',
+      acceptance: ['B1'],
+    },
+  )
+
+  expect(result.created).toBe(true)
+  expect(tasks).toHaveLength(2)
+  expect(result.task.contract?.goal).toBe('Goal B')
+})
+
 test('task status transitions keep expected timestamps', () => {
   const tasks: Task[] = [createTask()]
 

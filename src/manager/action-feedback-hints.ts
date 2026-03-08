@@ -25,6 +25,7 @@ const actionFeedbackHintSchema = z
     ask_user_choice_channel_unsupported: z.string().trim().min(1),
     ask_user_choice_invalid_options: z.string().trim().min(1),
     enqueue_task_provider_disabled: z.string().trim().min(1),
+    enqueue_task_contract_missing: z.string().trim().min(1),
     plan_not_found: z.string().trim().min(1),
     update_plan_done_forbidden: z.string().trim().min(1),
     duplicate_query_context_action_limit: z.string().trim().min(1),
@@ -116,6 +117,9 @@ export const formatEnqueueTaskProviderDisabledHint = (
   renderHint('enqueue_task_provider_disabled', {
     provider,
   })
+
+export const formatEnqueueTaskContractMissingHint = (): string =>
+  renderHint('enqueue_task_contract_missing')
 
 export const formatPlanNotFoundHint = (
   action: 'update_plan' | 'delete_plan',

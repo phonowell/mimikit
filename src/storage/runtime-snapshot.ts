@@ -2,15 +2,22 @@ import { copyFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
 import { readJson, writeJson } from '../fs/json.js'
-import { ensureFile } from '../fs/paths.js'
+import { buildPaths, ensureFile } from '../fs/paths.js'
+import { appendLog } from '../log/append.js'
 import { logSafeError } from '../log/safe.js'
 import { readErrorCode } from '../shared/error-code.js'
 import { toPrettyJsonText } from '../shared/json.js'
 
+import { RUNTIME_SNAPSHOT_SCHEMA_VERSION } from './runtime-schema-version.js'
+import { migrateRuntimeSnapshotToCurrent } from './runtime-snapshot-migrate.js'
 import { parseRuntimeSnapshot } from './runtime-snapshot-parse.js'
 
 import type { RuntimeSnapshot } from './runtime-snapshot-schema.js'
 import type { Task } from '../types/index.js'
+
+type RuntimeSnapshotWritable = Omit<RuntimeSnapshot, 'schemaVersion'> & {
+  schemaVersion?: string
+}
 
 const runtimePath = (stateDir: string): string =>
   join(stateDir, 'runtime-snapshot.json')
@@ -18,6 +25,7 @@ const runtimeBackupPath = (stateDir: string): string =>
   `${runtimePath(stateDir)}.bak`
 
 const initialRuntimeSnapshot = (): RuntimeSnapshot => ({
+  schemaVersion: RUNTIME_SNAPSHOT_SCHEMA_VERSION,
   tasks: [],
   taskPlans: [],
   managerTurn: 0,
@@ -72,10 +80,26 @@ export const loadRuntimeSnapshot = async (
   const initial = initialRuntimeSnapshot()
   await ensureFile(path, toPrettyJsonText(initial))
   const fallback = Symbol('runtime-snapshot-read-fallback')
+  const logPath = buildPaths(stateDir).log
+  const parseAndMigrate = async (
+    source: unknown,
+    sourceLabel: 'primary' | 'backup',
+  ): Promise<RuntimeSnapshot> => {
+    const migrated = migrateRuntimeSnapshotToCurrent(source)
+    if (migrated.changed) {
+      await appendLog(logPath, {
+        event: 'runtime_schema_migration_applied',
+        source: sourceLabel,
+        fromVersion: migrated.fromVersion ?? 'unknown',
+        toVersion: migrated.toVersion,
+      })
+    }
+    return parseRuntimeSnapshot(migrated.migrated)
+  }
   const primary = await readJson<unknown | typeof fallback>(path, fallback, {
     quietParseError: true,
   })
-  if (primary !== fallback) return parseRuntimeSnapshot(primary)
+  if (primary !== fallback) return parseAndMigrate(primary, 'primary')
   const backup = await readJson<unknown | typeof fallback>(
     backupPath,
     fallback,
@@ -83,17 +107,20 @@ export const loadRuntimeSnapshot = async (
       quietParseError: true,
     },
   )
-  if (backup !== fallback) return parseRuntimeSnapshot(backup)
+  if (backup !== fallback) return parseAndMigrate(backup, 'backup')
   return initial
 }
 
 export const saveRuntimeSnapshot = async (
   stateDir: string,
-  snapshot: RuntimeSnapshot,
+  snapshot: RuntimeSnapshotWritable,
 ): Promise<void> => {
   const path = runtimePath(stateDir)
   await backupRuntimeState(path)
-  await writeJson(path, snapshot)
+  await writeJson(path, {
+    schemaVersion: snapshot.schemaVersion ?? RUNTIME_SNAPSHOT_SCHEMA_VERSION,
+    ...snapshot,
+  })
 }
 
 const toRecoveredPendingTask = (task: Task): Task => {

@@ -140,6 +140,95 @@ const parseTaskResultHandoff = (
   }
 }
 
+const parseTaskEvidence = (
+  raw?: string,
+): TaskResult['evidence'] | undefined => {
+  if (!raw) return undefined
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw) as unknown
+  } catch {
+    return undefined
+  }
+  if (!parsed || typeof parsed !== 'object') return undefined
+  const data = parsed as Record<string, unknown>
+  const statusRaw = typeof data.status === 'string' ? data.status : ''
+  const status =
+    statusRaw === 'done' || statusRaw === 'partial' || statusRaw === 'failed'
+      ? statusRaw
+      : undefined
+  const contractGoal =
+    typeof data.contractGoal === 'string' ? data.contractGoal.trim() : ''
+  if (!status || !contractGoal) return undefined
+  const stateDeltaRaw =
+    data.stateDelta && typeof data.stateDelta === 'object'
+      ? (data.stateDelta as Record<string, unknown>)
+      : undefined
+  if (!stateDeltaRaw) return undefined
+  const taskStatusToRaw =
+    typeof stateDeltaRaw.taskStatusTo === 'string'
+      ? stateDeltaRaw.taskStatusTo
+      : ''
+  const taskStatusTo =
+    taskStatusToRaw === 'succeeded' ||
+    taskStatusToRaw === 'failed' ||
+    taskStatusToRaw === 'canceled'
+      ? taskStatusToRaw
+      : undefined
+  if (!taskStatusTo) return undefined
+  const acceptanceRaw = Array.isArray(data.acceptanceChecks)
+    ? data.acceptanceChecks
+    : []
+  const acceptanceChecks = acceptanceRaw
+    .map((item) => {
+      if (!item || typeof item !== 'object') return undefined
+      const row = item as Record<string, unknown>
+      const criterion =
+        typeof row.criterion === 'string' ? row.criterion.trim() : ''
+      const met = typeof row.met === 'boolean' ? row.met : undefined
+      if (!criterion || met === undefined) return undefined
+      const note = typeof row.note === 'string' ? row.note.trim() : ''
+      return {
+        criterion,
+        met,
+        ...(note ? { note } : {}),
+      }
+    })
+    .filter((item): item is NonNullable<typeof item> => Boolean(item))
+  if (acceptanceChecks.length === 0) return undefined
+  const nextSteps = parseStringList(data.nextSteps)
+  const risks = parseStringList(data.risks)
+  const statusFromRaw =
+    typeof stateDeltaRaw.taskStatusFrom === 'string'
+      ? stateDeltaRaw.taskStatusFrom
+      : undefined
+  const taskStatusFrom =
+    statusFromRaw === 'pending' ||
+    statusFromRaw === 'paused' ||
+    statusFromRaw === 'running' ||
+    statusFromRaw === 'succeeded' ||
+    statusFromRaw === 'failed' ||
+    statusFromRaw === 'canceled'
+      ? statusFromRaw
+      : undefined
+  const archivePathRaw =
+    typeof stateDeltaRaw.archivePath === 'string'
+      ? stateDeltaRaw.archivePath.trim()
+      : undefined
+  return {
+    status,
+    contractGoal,
+    acceptanceChecks,
+    stateDelta: {
+      ...(taskStatusFrom ? { taskStatusFrom } : {}),
+      taskStatusTo,
+      ...(archivePathRaw ? { archivePath: archivePathRaw } : {}),
+    },
+    ...(nextSteps ? { nextSteps } : {}),
+    ...(risks ? { risks } : {}),
+  }
+}
+
 const parseTaskResultArchive = (
   content: string,
   fallbackTaskId?: string,
@@ -164,6 +253,7 @@ const parseTaskResultArchive = (
       }
     : undefined
   const handoff = parseTaskResultHandoff(parsed.header.handoff)
+  const evidence = parseTaskEvidence(parsed.header.evidence)
 
   return {
     taskId,
@@ -178,6 +268,7 @@ const parseTaskResultArchive = (
     ...(archivePath ? { archivePath } : {}),
     ...(cancel ? { cancel } : {}),
     ...(handoff ? { handoff } : {}),
+    ...(evidence ? { evidence } : {}),
   }
 }
 

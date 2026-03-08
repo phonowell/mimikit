@@ -10,6 +10,7 @@ import {
 import type {
   FocusId,
   Task,
+  TaskContract,
   TaskStatus,
   WorkerProfile,
   WorkerProvider,
@@ -38,6 +39,7 @@ export const createTask = (
   provider: WorkerProvider = 'codex',
   schedule?: string,
   focusId: FocusId = GLOBAL_FOCUS_ID,
+  contract?: TaskContract,
 ): Task => {
   const id = `task-${newId()}`
   const resolvedTitle = resolveTitle(id, prompt, title)
@@ -50,9 +52,11 @@ export const createTask = (
       provider,
       focusId,
       ...(schedule ? { schedule } : {}),
+      ...(contract ? { contract } : {}),
     }),
     prompt,
     title: resolvedTitle,
+    ...(contract ? { contract } : {}),
     ...(schedule ? { cron: schedule } : {}),
     profile,
     provider,
@@ -70,6 +74,7 @@ export const enqueueTask = (
   provider: WorkerProvider = 'codex',
   schedule?: string,
   focusId: FocusId = GLOBAL_FOCUS_ID,
+  contract?: TaskContract,
 ): EnqueueTaskResult => {
   const fingerprint = buildTaskFingerprint({
     prompt,
@@ -78,6 +83,7 @@ export const enqueueTask = (
     provider,
     focusId,
     ...(schedule ? { schedule } : {}),
+    ...(contract ? { contract } : {}),
   })
   const existing = tasks.find(
     (task) =>
@@ -85,7 +91,15 @@ export const enqueueTask = (
       buildTaskFingerprint(taskToFingerprintInput(task)) === fingerprint,
   )
   if (existing) return { task: existing, created: false }
-  const task = createTask(prompt, title, profile, provider, schedule, focusId)
+  const task = createTask(
+    prompt,
+    title,
+    profile,
+    provider,
+    schedule,
+    focusId,
+    contract,
+  )
   tasks.push(task)
   return { task, created: true }
 }

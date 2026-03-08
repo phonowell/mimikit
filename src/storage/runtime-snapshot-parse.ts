@@ -1,6 +1,10 @@
 import { stripUndefined } from '../shared/utils.js'
 
 import {
+  isRuntimeSnapshotSchemaVersionSupported,
+  RUNTIME_SNAPSHOT_SCHEMA_VERSION,
+} from './runtime-schema-version.js'
+import {
   type focusContextSchema,
   type focusMetaSchema,
   type managerFocusCompressedContextSchema,
@@ -55,6 +59,23 @@ const normalizeTask = (task: SnapshotTask): SnapshotTask =>
                   : undefined,
               })
             : undefined,
+          evidence: task.result.evidence
+            ? stripUndefined({
+                ...task.result.evidence,
+                acceptanceChecks: task.result.evidence.acceptanceChecks.map(
+                  (item) => stripUndefined({ ...item }),
+                ),
+                stateDelta: stripUndefined({
+                  ...task.result.evidence.stateDelta,
+                }),
+                nextSteps: task.result.evidence.nextSteps
+                  ? [...task.result.evidence.nextSteps]
+                  : undefined,
+                risks: task.result.evidence.risks
+                  ? [...task.result.evidence.risks]
+                  : undefined,
+              })
+            : undefined,
         })
       : undefined,
   }) as SnapshotTask
@@ -96,6 +117,7 @@ const normalizePendingUserChoice = (
 
 const normalizeRuntimeSnapshot = (value: RuntimeSnapshot): RuntimeSnapshot =>
   stripUndefined({
+    schemaVersion: value.schemaVersion,
     tasks: value.tasks.map(normalizeTask),
     taskPlans: value.taskPlans.map(normalizeTaskPlan),
     focuses: value.focuses?.map(normalizeFocusMeta),
@@ -112,5 +134,12 @@ const normalizeRuntimeSnapshot = (value: RuntimeSnapshot): RuntimeSnapshot =>
     memoryRefresh: value.memoryRefresh,
   }) as RuntimeSnapshot
 
-export const parseRuntimeSnapshot = (value: unknown): RuntimeSnapshot =>
-  normalizeRuntimeSnapshot(runtimeSnapshotSchema.parse(value))
+export const parseRuntimeSnapshot = (value: unknown): RuntimeSnapshot => {
+  const parsed = runtimeSnapshotSchema.parse(value)
+  if (!isRuntimeSnapshotSchemaVersionSupported(parsed.schemaVersion)) {
+    throw new Error(
+      `runtime snapshot schema version not supported: ${parsed.schemaVersion}; current=${RUNTIME_SNAPSHOT_SCHEMA_VERSION}`,
+    )
+  }
+  return normalizeRuntimeSnapshot(parsed)
+}

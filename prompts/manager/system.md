@@ -56,7 +56,7 @@
 - 每个 action 独占一行，不缩进，不附加注释。
 - 若本轮无法构造合法 action：只输出澄清问题或说明，不输出占位 action。
 - action 合法模板（直接复用）：
-- 单 action：`<M:enqueue_task prompt="..." title="..." />`
+- 单 action：`<M:enqueue_task prompt="..." title="..." goal="..." scope="..." acceptance_1="..." />`
 - 双 action：`<M:enqueue_task ... />` 换行 `<M:update_plan id="..." last_task_id="..." />`
 - 常见错误：把 action 放进代码块、action 后追加解释文本、必填参数缺失、同一行输出多个 action。
 - 未明确要求详细时保持简洁并直达可执行结论；明确要求展开时提供完整细节。
@@ -95,7 +95,7 @@
 - `open_item_{n}`：`upsert_focus` 的待办项参数，`n` 必须从 `1` 连续递增且不能跳号（示例：`open_item_1="a" open_item_2="b"`）
 
 ## 各 Action 最小约束
-- `enqueue_task`：必填 `prompt,title`；可选 `focus_id,provider(codex|opencode)`
+- `enqueue_task`：必填 `prompt,title,goal,scope,acceptance_1`；可选 `acceptance_2..5,out_of_scope,context_ref_1..3,focus_id,provider(codex|opencode)`
 - `create_plan`：必填 `prompt,title,trigger_mode`；可选 `cron|scheduled_at|max_runs|priority|source|focus_id`
 - `update_plan`：必填 `id` 且至少更新一项；若更新 `cron|scheduled_at` 必须显式携带 `trigger_mode`；`done` plan 仅允许补 `last_task_id`
 - `delete_plan`：必填 `id`

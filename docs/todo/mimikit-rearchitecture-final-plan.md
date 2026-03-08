@@ -609,3 +609,75 @@
 - `Replay & Golden Set` -> 第 11 节、第 28 节
 - `No-Go Hard Gates` -> 第 34.9 节（第 25 节仅摘要）
 - `Operational Runbook` -> 第 27 节
+
+## 36. 当前代码落地映射（2026-03-08）
+本节用于把“方案语义”与“当前已落地行为”对齐，避免后续重构误判。
+
+### 36.1 已落地项（可直接作为重构基线）
+1. `Task Contract Completeness Gate`
+- manager 侧 `enqueue_task` 已强制要求完整 contract（至少 `goal/scope/acceptance_1`）。
+- 缺失时直接拒绝 action，并返回结构化反馈 hint。
+
+2. `Task Evidence` 回收闭环
+- worker 结束任务时会生成结构化 evidence（状态、判据逐条检查、状态迁移、归档引用）。
+- evidence 已进入任务归档与提示词上下文，支持后续审计与回放。
+
+3. 上下文预算分档控制
+- manager 侧已引入 `lite/standard/heavy` 分档并结合 wake profile 动态调整。
+- 默认轻量，冲突与混合唤醒提升档位。
+
+4. `cron` 触发保真增强
+- 触发链路保留 `cron/scheduled_at/on_worker_slot_freed`。
+- 触发过程新增可观测日志事件，用于后续 SLO 与去重评估。
+
+### 36.2 关键策略约束（已编码）
+1. 判重与替换分离
+- 严格判重（fingerprint）包含 contract，避免“同标题同提示但判据不同”的误复用。
+- 语义替换（semantic key）不包含 contract，允许同主题新判据替换旧任务。
+
+2. 连续主题安全性
+- 同主题更新时，旧任务不会被静默复用为“已满足新判据”。
+- 新任务保留新 contract，后续 evidence 必须按新判据回收。
+
+### 36.3 与方案边界的关系
+1. 未引入新增一等对象
+- 运行时仍保持 `focus/task/context` 最小模型，`trigger/evidence` 为属性层。
+
+2. 不依赖词表驱动
+- contract/evidence/focus 相关判定均为结构化字段或状态逻辑，不是关键词列表匹配。
+
+3. `cron` 不降级
+- 本轮变更没有削弱 cron 语义；反而提升了可观测性。
+
+### 36.4 仍待后续重构完成项（本次未做实现细节扩展）
+1. 完整金标样本扩容（当前已有执行器与示例集，需扩大覆盖面）
+2. schema 迁移策略的历史版本全量演练（当前已接入版本字段与基础迁移）
+3. 运维值班制度与责任轮换（runbook 已落盘，组织侧流程待补）
+
+## 37. 剩余条目落地状态更新（2026-03-08）
+本节补充“上一轮未覆盖条目”的落地状态：
+
+### 37.1 Schema Governance
+- 已落地：`runtime-snapshot` 强制 `schemaVersion` 字段，写入默认 `runtime-snapshot.v2`。
+- 已落地：运行时读取时校验版本支持范围；未来版本（如 `v99`）直接拒绝。
+- 已落地：当旧快照缺失版本时自动迁移到 `v2`，并记录迁移日志事件。
+
+### 37.2 State Migration Contract
+- 已落地：`runtime-snapshot` 建立 `v1 -> v2` 的显式迁移函数与审计日志。
+- 已落地：迁移行为可复现、可验证；不支持新旧双写并存。
+
+### 37.3 Replay & Golden Set
+- 已落地：新增可执行回放脚本，支持 golden set 对账并输出匹配率。
+- 已落地：提供示例 golden set（用于本地回归和 CI 接线）。
+
+### 37.4 评分执行器
+- 已落地：新增窗口化评分脚本，输出固定结构化报告（含 `na/not_collected` 计数）。
+- 已落地：脚本明确把未采集指标标记为 `not_collected`，不做伪造估算。
+
+### 37.5 Operational Runbook
+- 已落地：新增运行手册文档，覆盖故障分级、人工接管、回滚条件、复盘模板与响应 SLA。
+
+### 37.6 当前边界说明
+- 当前阶段为“可执行基线”：
+- 已具备可运行入口与治理骨架；
+- 但金标样本规模与组织运营制度仍需后续扩容。

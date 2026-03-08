@@ -347,3 +347,90 @@
 - 路由正确率若缺少目标线真值标签，需使用代理指标并标注“不确定”。
 - 若 provider 波动显著，应在报告中拆分 provider 维度评分。
 - 若 `schema_version` 缺少严格登记，`schema_version_conflict_rate` 将被低估。
+
+## 16. 与当前代码事件的对账口径（2026-03-08）
+本节用于把评分指标映射到当前真实可采集事件，避免“文档有指标、运行无数据”。
+
+### 16.1 contract/evidence 指标对账
+1. `contract_completeness_rate`
+- 分子：成功通过 `enqueue_task` 校验且携带完整 contract 的任务数。
+- 分母：所有尝试执行 `enqueue_task` 的 action 数。
+- 建议事件来源：action feedback + 任务创建日志。
+
+2. `evidence_quality_pass_rate`
+- 分子：任务结果包含 evidence，且无 `task_evidence_mismatch` 事件。
+- 分母：所有带 contract 的任务结果数。
+- 事件来源：`task_evidence_mismatch` 日志 + 任务归档 evidence 字段。
+
+3. `continuity_contract_match_rate`
+- 分子：同主题连续任务中，新任务 evidence 对应其自身 contract（非复用旧 contract）且判据条数一致。
+- 分母：被判定为“连续主题”的任务对数。
+- 事件来源：任务指纹/语义键、contract 字段、evidence.acceptanceChecks。
+
+### 16.2 cron 指标对账
+1. `cron_trigger_success_rate`
+- 分子：`cron_trigger_metrics` 中 `outcome=triggered` 且后续存在有效动作证据的触发数。
+- 分母：`cron_trigger_metrics` 中所有 cron/scheduled_at 触发尝试数。
+
+2. `cron_duplicate_suppression_rate`
+- 分子：同计划同秒重复触发被抑制次数。
+- 分母：重复触发尝试次数。
+- 事件来源：`trigger_fire_input`、`cron_trigger_metrics`、计划 `lastTriggeredAt`。
+
+3. `cron_false_trigger_rate`
+- 分子：触发后未形成有效动作证据且判定为误触发的次数。
+- 分母：总触发次数。
+
+### 16.3 上下文预算指标对账
+1. `context_budget_drift`
+- 事件来源：`manager_context_budget_tier`。
+- 规则：按轮次对比“应在的档位”与“实际档位”；偏离计入 drift。
+
+2. `manager_reask_rate` / `context_waste_ratio` / `detail_recall_success_rate`
+- 当前代码已有分档与 wake profile 观测基础，但需在回归脚本中补充推导逻辑。
+- 在脚本上线前，报告中必须标注 `not_collected`，不得伪造估算值。
+
+### 16.4 稳定评分执行步骤（固定）
+1. 固定窗口与版本（`v1.3-stable`）
+2. 抽取事件并按本节映射生成指标
+3. 输出 `na_count/not_collected_count`
+4. 连续执行 3 轮，检查标准差是否达标
+5. 若任一关键指标 `not_collected`，直接判定 `unstable`
+
+## 17. 可执行命令（当前基线）
+### 17.1 窗口评分
+```bash
+tsx scripts/rearchitecture/score-runtime-window.ts --work-dir=.mimikit --window-type=daily --from=2026-03-07 --to=2026-03-07
+```
+
+输出：
+- 标准 JSON 报告
+- 包含 `governance`、`thresholds`、`naCount`、`notCollectedCount`、`status`
+
+### 17.2 Golden 回放
+```bash
+tsx scripts/rearchitecture/replay-golden-set.ts --work-dir=.mimikit --golden-set=overflows/golden-set-example.json
+```
+
+输出：
+- `goldenReplayMatchRate`
+- `replayDeterminismRate`
+- 每条样本的 match 明细
+
+### 17.3 Schema 迁移演练
+```bash
+tsx scripts/rearchitecture/migrate-runtime-snapshots.ts --root=.mimikit --write=false --output=overflows/reports/runtime-migration-report.json
+```
+
+输出：
+- `scanned/migrated/unchanged/failed`
+- 每个 `runtime-snapshot.json` 的迁移结果与校验状态
+
+### 17.3 结果解释规则
+1. 若评分输出含 `not_collected`：
+- 必须判定为 `unstable`
+- 不得进入放量决策
+
+2. 若回放匹配率低于门槛：
+- 判定为 `No-Go`
+- 必须先修复再重新回放

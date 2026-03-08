@@ -37,6 +37,17 @@ export const runTaskSchema = z
   .object({
     prompt: nonEmptyString,
     title: nonEmptyString,
+    goal: nonEmptyString.optional(),
+    scope: nonEmptyString.optional(),
+    acceptance_1: nonEmptyString.optional(),
+    acceptance_2: nonEmptyString.optional(),
+    acceptance_3: nonEmptyString.optional(),
+    acceptance_4: nonEmptyString.optional(),
+    acceptance_5: nonEmptyString.optional(),
+    out_of_scope: nonEmptyString.optional(),
+    context_ref_1: nonEmptyString.optional(),
+    context_ref_2: nonEmptyString.optional(),
+    context_ref_3: nonEmptyString.optional(),
     focus_id: focusIdSchema.optional(),
     provider: z.enum(['codex', 'opencode']).optional(),
   })

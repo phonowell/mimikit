@@ -1,0 +1,157 @@
+import { mkdtemp, mkdir, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
+import { expect, test } from 'vitest'
+
+import { scoreRuntimeWindow } from '../scripts/rearchitecture/score-runtime-window-core.js'
+import { appendJsonl } from '../src/storage/jsonl.js'
+
+const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-score-runtime-'))
+
+test('scoreRuntimeWindow computes core governance metrics without not_collected blockers', async () => {
+  const stateDir = await createTmpDir()
+  await Promise.all([
+    mkdir(join(stateDir, 'history'), { recursive: true }),
+    mkdir(join(stateDir, 'task-progress', '2026-03-08'), { recursive: true }),
+    mkdir(join(stateDir, 'inputs'), { recursive: true }),
+    mkdir(join(stateDir, 'results'), { recursive: true }),
+  ])
+  await Promise.all([
+    writeFile(join(stateDir, 'runtime-snapshot.json'), JSON.stringify({
+      schemaVersion: 'runtime-snapshot.v2',
+      tasks: [],
+      taskPlans: [],
+      managerTurn: 0,
+      queues: {
+        inputsCursor: 0,
+        resultsCursor: 0,
+      },
+      memoryRefresh: {
+        lastCompletedTurn: 0,
+        lastProcessedInputsCursor: 0,
+        lastProcessedResultsCursor: 0,
+      },
+    }), 'utf8'),
+    writeFile(join(stateDir, 'history', '2026-03-08.jsonl'), [
+      JSON.stringify({
+        id: 'hist-1',
+        role: 'user',
+        text: 'quoted message',
+        createdAt: '2026-03-08T00:00:00.000Z',
+        focusId: 'focus-alpha',
+      }),
+    ].join('\n') + '\n', 'utf8'),
+    writeFile(join(stateDir, 'task-progress', '2026-03-08', 'task-1.jsonl'), [
+      JSON.stringify({
+        taskId: 'task-1',
+        type: 'worker_start',
+        createdAt: '2026-03-08T00:01:00.000Z',
+        payload: {},
+      }),
+      JSON.stringify({
+        taskId: 'task-1',
+        type: 'worker_end',
+        createdAt: '2026-03-08T00:01:05.000Z',
+        payload: {},
+      }),
+    ].join('\n') + '\n', 'utf8'),
+    writeFile(join(stateDir, 'golden.json'), JSON.stringify([
+      {
+        id: 'task-1',
+        expected: {
+          status: 'succeeded',
+          requireEvidence: true,
+        },
+      },
+    ]), 'utf8'),
+  ])
+
+  await appendJsonl(join(stateDir, 'inputs', 'packets.jsonl'), [
+    {
+      id: 'packet-input-1',
+      createdAt: '2026-03-08T00:00:10.000Z',
+      payload: {
+        id: 'input-1',
+        role: 'user',
+        text: 'continue quoted thread',
+        createdAt: '2026-03-08T00:00:10.000Z',
+        focusId: 'focus-alpha',
+        quote: 'hist-1',
+      },
+    },
+  ])
+
+  await appendJsonl(join(stateDir, 'results', 'packets.jsonl'), [
+    {
+      id: 'packet-result-1',
+      createdAt: '2026-03-08T00:01:05.000Z',
+      payload: {
+        taskId: 'task-1',
+        status: 'succeeded',
+        completedAt: '2026-03-08T00:01:05.000Z',
+        evidence: {
+          contractGoal: 'deliver output',
+          acceptanceChecks: [
+            { criterion: 'has result', met: true },
+          ],
+          stateDelta: {
+            taskStatusTo: 'succeeded',
+          },
+        },
+      },
+    },
+  ])
+
+  await appendJsonl(join(stateDir, 'log.jsonl'), [
+    {
+      time: '2026-03-08T00:00:11.000Z',
+      event: 'trigger_fire_input',
+      triggerReason: 'cron',
+      planId: 'plan-1',
+    },
+    {
+      time: '2026-03-08T00:00:12.000Z',
+      event: 'run_task_dispatch',
+      mode: 'created',
+      taskId: 'task-1',
+    },
+    {
+      time: '2026-03-08T00:00:20.000Z',
+      event: 'manager_end',
+    },
+    {
+      time: '2026-03-08T00:00:20.500Z',
+      event: 'manager_context_budget_tier',
+      tier: 'lite',
+      wakeProfile: 'user_input',
+      inputCount: 1,
+      resultCount: 0,
+      activeFocusCount: 1,
+    },
+    {
+      time: '2026-03-08T00:00:21.000Z',
+      event: 'manager_read_file',
+      status: 'ok',
+    },
+  ])
+
+  const report = await scoreRuntimeWindow({
+    workDir: stateDir,
+    windowType: 'daily',
+    windowFrom: '2026-03-08T00:00:00.000Z',
+    windowTo: '2026-03-08T23:59:59.999Z',
+    version: 'v1.3-stable',
+    goldenSetPath: join(stateDir, 'golden.json'),
+  })
+
+  expect(report.governance.task_success_rate).toBe(1)
+  expect(report.governance.contract_completeness_rate).toBe(1)
+  expect(report.governance.evidence_quality_pass_rate).toBe(1)
+  expect(report.governance.route_correct_rate).toBe(1)
+  expect(report.governance.golden_replay_match_rate).toBe(1)
+  expect(report.governance.cron_trigger_success_rate).toBe(1)
+  expect(report.blockers.every((item) => !item.includes('not_collected'))).toBe(
+    true,
+  )
+})

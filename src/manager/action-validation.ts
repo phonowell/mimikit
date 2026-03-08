@@ -12,6 +12,7 @@ import {
 import {
   formatAskUserChoiceChannelUnsupportedHint,
   formatAskUserChoiceInvalidOptionsHint,
+  formatEnqueueTaskContractMissingHint,
   formatEnqueueTaskProviderDisabledHint,
   formatMutateTaskAlreadyCanceledHint,
   formatMutateTaskAlreadyDoneHint,
@@ -30,6 +31,7 @@ import {
   type ValidationIssue,
 } from './action-validation-helpers.js'
 import { queryContextSchema } from './query-context-tool.js'
+import { buildTaskContractFromAttrs } from './task-contract.js'
 
 import type { Parsed } from '../actions/model/spec.js'
 import type { TaskPlanStatus, TaskStatus } from '../types/index.js'
@@ -62,6 +64,8 @@ export const validateRunTask = (
 ): ValidationIssue[] => {
   const parsed = parseActionAttrs(item, runTaskSchema)
   if (!parsed) return validateWithSchema(item, runTaskSchema)
+  if (!buildTaskContractFromAttrs(parsed))
+    return rejected(formatEnqueueTaskContractMissingHint())
   const { provider } = parsed
   if (!provider) return []
   const enabledProviders = context.enabledWorkerProviders

@@ -313,6 +313,9 @@ test('enqueue_task rejects disabled provider outside enabled set', () => {
         attrs: {
           prompt: 'run with free provider',
           title: 'use opencode',
+          goal: 'Run worker task',
+          scope: 'Single task',
+          acceptance_1: 'Produce output',
           provider: 'opencode',
         },
       },
@@ -327,4 +330,21 @@ test('enqueue_task rejects disabled provider outside enabled set', () => {
   expect(feedback[0]?.error).toBe('action_execution_rejected')
   expect(feedback[0]?.hint).toContain('provider=opencode')
   expect(feedback[0]?.hint).toContain('provider_candidates')
+})
+
+test('enqueue_task rejects missing task contract attrs', () => {
+  const feedback = collectManagerActionFeedback([
+    {
+      name: 'enqueue_task',
+      attrs: {
+        prompt: 'run task',
+        title: 'missing contract',
+      },
+    },
+  ])
+
+  expect(feedback).toHaveLength(1)
+  expect(feedback[0]?.action).toBe('enqueue_task')
+  expect(feedback[0]?.error).toBe('action_execution_rejected')
+  expect(feedback[0]?.hint).toContain('task contract')
 })

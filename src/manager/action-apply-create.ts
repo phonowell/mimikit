@@ -24,6 +24,7 @@ import {
   persistRuntimeState,
   type RuntimeState,
 } from './runtime-adapter.js'
+import { buildTaskContractFromAttrs } from './task-contract.js'
 import { resolvePreferredWorkerProvider } from './worker-provider-selection.js'
 
 import type { Parsed } from '../actions/model/spec.js'
@@ -77,18 +78,29 @@ export const applyRunTask = async (
     resolvePreferredWorkerProvider(runtime.config) ??
     'codex'
   const focusId = resolveActionFocusId(runtime, parsed.data.focus_id)
+  const contract = buildTaskContractFromAttrs(parsed.data)
+  if (!contract) return
   const semanticKey = buildTaskSemanticKey({
     prompt: parsed.data.prompt,
     title: parsed.data.title,
     profile,
     provider,
     focusId,
+    contract,
   })
   const debounce = markCreateAttempt(runtime, semanticKey)
   if (debounce.debounced) return
   const dedupeKey = `${parsed.data.prompt}\n${parsed.data.title}\n${profile}\n${provider}\n${focusId}`
-  if (seen.has(dedupeKey)) return
-  seen.add(dedupeKey)
+  const dedupeContractSuffix = [
+    contract.goal,
+    contract.scope,
+    ...contract.acceptance,
+    contract.outOfScope ?? '',
+    ...(contract.contextRefs ?? []),
+  ].join('\n')
+  const dedupeKeyWithContract = `${dedupeKey}\n${dedupeContractSuffix}`
+  if (seen.has(dedupeKeyWithContract)) return
+  seen.add(dedupeKeyWithContract)
 
   const activeSemanticTask = findActiveTaskBySemanticKey(
     runtime.tasks,
@@ -101,6 +113,9 @@ export const applyRunTask = async (
       profile: activeSemanticTask.profile,
       provider: activeSemanticTask.provider,
       focusId: activeSemanticTask.focusId,
+      ...(activeSemanticTask.contract
+        ? { contract: activeSemanticTask.contract }
+        : {}),
     })
     const nextFingerprint = buildTaskFingerprint({
       prompt: parsed.data.prompt,
@@ -108,6 +123,7 @@ export const applyRunTask = async (
       profile,
       provider,
       focusId,
+      contract,
     })
     if (activeFingerprint !== nextFingerprint) {
       await cancelTask(runtime, activeSemanticTask.id, {
@@ -133,6 +149,7 @@ export const applyRunTask = async (
     provider,
     undefined,
     focusId,
+    contract,
   )
   if (!created) {
     if (task.status !== 'pending') return

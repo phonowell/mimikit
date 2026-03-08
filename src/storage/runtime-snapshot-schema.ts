@@ -6,14 +6,34 @@ import {
   optionIdSchema,
 } from '../shared/id-schema.js'
 
+import { RUNTIME_SNAPSHOT_SCHEMA_VERSION } from './runtime-schema-version.js'
 import { tokenUsageSchema } from './token-usage.js'
 
 const workerProviderSchema = z.enum(['codex', 'opencode'])
+const taskStatusSchema = z.enum([
+  'pending',
+  'paused',
+  'running',
+  'succeeded',
+  'failed',
+  'canceled',
+])
+const taskResultStatusSchema = z.enum(['succeeded', 'failed', 'canceled'])
 
 export const taskCancelSchema = z
   .object({
     source: z.enum(['user', 'deferred', 'system']),
     reason: z.string().optional(),
+  })
+  .strict()
+
+const taskContractSchema = z
+  .object({
+    goal: z.string().trim().min(1),
+    scope: z.string().trim().min(1),
+    acceptance: z.array(z.string().trim().min(1)).min(1),
+    outOfScope: z.string().trim().min(1).optional(),
+    contextRefs: z.array(z.string().trim().min(1)).optional(),
   })
   .strict()
 
@@ -45,6 +65,31 @@ const taskResultHandoffSchema = z
   })
   .strict()
 
+const taskEvidenceAcceptanceSchema = z
+  .object({
+    criterion: z.string().trim().min(1),
+    met: z.boolean(),
+    note: z.string().trim().min(1).optional(),
+  })
+  .strict()
+
+const taskEvidenceSchema = z
+  .object({
+    status: z.enum(['done', 'partial', 'failed']),
+    contractGoal: z.string().trim().min(1),
+    acceptanceChecks: z.array(taskEvidenceAcceptanceSchema).min(1),
+    stateDelta: z
+      .object({
+        taskStatusFrom: taskStatusSchema.optional(),
+        taskStatusTo: taskResultStatusSchema,
+        archivePath: z.string().trim().min(1).optional(),
+      })
+      .strict(),
+    nextSteps: z.array(z.string().trim().min(1)).optional(),
+    risks: z.array(z.string().trim().min(1)).optional(),
+  })
+  .strict()
+
 export const taskResultSchema = z
   .object({
     taskId: z.string().trim().min(1),
@@ -60,6 +105,7 @@ export const taskResultSchema = z
     provider: workerProviderSchema.optional(),
     cancel: taskCancelSchema.optional(),
     handoff: taskResultHandoffSchema.optional(),
+    evidence: taskEvidenceSchema.optional(),
   })
   .strict()
 
@@ -69,19 +115,13 @@ export const taskSchema = z
     fingerprint: z.string().trim().min(1),
     prompt: z.string(),
     title: z.string(),
+    contract: taskContractSchema.optional(),
     focusId: z.string().trim().min(1),
     cron: z.string().optional(),
     scheduledAt: z.string().optional(),
     profile: z.enum(['worker']),
     provider: workerProviderSchema,
-    status: z.enum([
-      'pending',
-      'paused',
-      'running',
-      'succeeded',
-      'failed',
-      'canceled',
-    ]),
+    status: taskStatusSchema,
     createdAt: z.string(),
     startedAt: z.string().optional(),
     pausedAt: z.string().optional(),
@@ -230,6 +270,11 @@ const memoryRefreshSchema = z
 
 export const runtimeSnapshotSchema = z
   .object({
+    schemaVersion: z
+      .string()
+      .trim()
+      .min(1)
+      .default(RUNTIME_SNAPSHOT_SCHEMA_VERSION),
     tasks: z.array(taskSchema),
     taskPlans: z.array(taskPlanSchema),
     focuses: z.array(focusMetaSchema).optional(),

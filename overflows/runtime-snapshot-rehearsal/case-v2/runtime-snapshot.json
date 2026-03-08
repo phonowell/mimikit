@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "runtime-snapshot.v2",
+  "tasks": [],
+  "taskPlans": [],
+  "managerTurn": 0,
+  "queues": {
+    "inputsCursor": 0,
+    "resultsCursor": 0
+  },
+  "memoryRefresh": {
+    "lastCompletedTurn": 0,
+    "lastProcessedInputsCursor": 0,
+    "lastProcessedResultsCursor": 0
+  }
+}

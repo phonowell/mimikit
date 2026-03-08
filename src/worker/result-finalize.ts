@@ -11,6 +11,10 @@ import {
 import { publishWorkerResult } from '../streams/queues.js'
 
 import {
+  buildTaskEvidence,
+  hasTaskEvidenceMismatch,
+} from './result-evidence.js'
+import {
   buildTaskResultHandoff,
   withTaskArchiveEvidence,
 } from './result-handoff.js'
@@ -39,6 +43,7 @@ export const archiveTaskResult = (
       ...(result.usage ? { usage: result.usage } : {}),
       ...(result.cancel ? { cancel: result.cancel } : {}),
       ...(result.handoff ? { handoff: result.handoff } : {}),
+      ...(result.evidence ? { evidence: result.evidence } : {}),
     }
     const archivePath = await resolveTaskResultArchivePath(
       runtime.config.workDir,
@@ -96,12 +101,29 @@ export const finalizeResult = async (
   const archiveSource = options?.archiveSource ?? 'worker'
   runtime.lastWorkerActivityAtMs = Date.now()
   result.handoff ??= buildTaskResultHandoff(task, result)
+  const previousStatus = task.status
   const archivePath = await archiveTaskResult(
     runtime,
     task,
     result,
     archiveSource,
   )
+  result.evidence = buildTaskEvidence({
+    task,
+    result,
+    previousStatus,
+    ...(archivePath ? { archivePath } : {}),
+  })
+  if (hasTaskEvidenceMismatch({ task, result })) {
+    await bestEffort('appendLog: task_evidence_mismatch', () =>
+      appendLog(runtime.paths.log, {
+        event: 'task_evidence_mismatch',
+        taskId: task.id,
+        hasContract: Boolean(task.contract),
+        status: result.status,
+      }),
+    )
+  }
   if (archivePath) task.archivePath = archivePath
   markFn(runtime.tasks, task.id, {
     completedAt: result.completedAt,

@@ -111,6 +111,7 @@ test('runtime snapshot accepts queue cursors', async () => {
   })
 
   const loaded = await loadRuntimeSnapshot(stateDir)
+  expect(loaded.schemaVersion).toBe('runtime-snapshot.v2')
   expect(loaded.queues?.resultsCursor).toBe(9)
   expect(loaded.queues?.inputsCursor).toBe(3)
   expect(loaded.managerFocusCompressedContexts?.[0]?.summary).toContain(
@@ -118,6 +119,46 @@ test('runtime snapshot accepts queue cursors', async () => {
   )
   expect(loaded.tasks[0]?.result?.output).toBe('ok')
   expect(loaded.taskPlans[0]?.id).toBe('plan-1')
+})
+
+test('runtime snapshot auto-migrates when schemaVersion is missing', async () => {
+  const stateDir = await createTmpDir()
+  await writeFile(
+    join(stateDir, 'runtime-snapshot.json'),
+    JSON.stringify({
+      tasks: [],
+      taskPlans: [],
+      queues: {
+        inputsCursor: 1,
+        resultsCursor: 2,
+      },
+    }),
+    'utf8',
+  )
+  const loaded = await loadRuntimeSnapshot(stateDir)
+  expect(loaded.schemaVersion).toBe('runtime-snapshot.v2')
+  expect(loaded.queues?.inputsCursor).toBe(1)
+  expect(loaded.queues?.resultsCursor).toBe(2)
+})
+
+test('runtime snapshot rejects unsupported future schema version', async () => {
+  const stateDir = await createTmpDir()
+  await writeFile(
+    join(stateDir, 'runtime-snapshot.json'),
+    JSON.stringify({
+      schemaVersion: 'runtime-snapshot.v99',
+      tasks: [],
+      taskPlans: [],
+      queues: {
+        inputsCursor: 1,
+        resultsCursor: 2,
+      },
+    }),
+    'utf8',
+  )
+  await expect(loadRuntimeSnapshot(stateDir)).rejects.toThrow(
+    /schema version not supported/i,
+  )
 })
 
 test('runtime snapshot accepts on_worker_slot_freed trigger', async () => {
@@ -402,6 +443,9 @@ test('saveRuntimeSnapshot writes previous primary content into .bak', async () =
 
   const primaryRaw = await readFile(primaryPath, 'utf8')
   const backupRaw = await readFile(`${primaryPath}.bak`, 'utf8')
-  expect(JSON.parse(primaryRaw)).toEqual(nextSnapshot)
+  expect(JSON.parse(primaryRaw)).toEqual({
+    schemaVersion: 'runtime-snapshot.v2',
+    ...nextSnapshot,
+  })
   expect(JSON.parse(backupRaw)).toEqual(oldSnapshot)
 })

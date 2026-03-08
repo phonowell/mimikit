@@ -234,6 +234,30 @@ export type TaskResultHandoff = {
   artifacts?: TaskResultHandoffArtifact[] | undefined
   evidence?: TaskResultHandoffEvidence[] | undefined
 }
+export type TaskContract = {
+  goal: string
+  scope: string
+  acceptance: string[]
+  outOfScope?: string | undefined
+  contextRefs?: string[] | undefined
+}
+export type TaskEvidenceAcceptance = {
+  criterion: string
+  met: boolean
+  note?: string | undefined
+}
+export type TaskEvidence = {
+  status: 'done' | 'partial' | 'failed'
+  contractGoal: string
+  acceptanceChecks: TaskEvidenceAcceptance[]
+  stateDelta: {
+    taskStatusFrom?: TaskStatus | undefined
+    taskStatusTo: TaskResultStatus
+    archivePath?: string | undefined
+  }
+  nextSteps?: string[] | undefined
+  risks?: string[] | undefined
+}
 export type WorkerProvider = 'codex' | 'opencode'
 export type WorkerProfile = 'worker'
 export type ProviderCapability = 'low' | 'medium' | 'high'

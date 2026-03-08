@@ -5,6 +5,7 @@ import {
   toPersistedMemoryRefreshState,
 } from '../../memory/refresh/state.js'
 import { readJsonl } from '../../storage/jsonl.js'
+import { RUNTIME_SNAPSHOT_SCHEMA_VERSION } from '../../storage/runtime-schema-version.js'
 import {
   loadRuntimeSnapshot,
   saveRuntimeSnapshot,
@@ -117,6 +118,7 @@ export const persistRuntimeState = async (
   runtime: RuntimeState,
 ): Promise<void> => {
   await saveRuntimeSnapshot(runtime.config.workDir, {
+    schemaVersion: RUNTIME_SNAPSHOT_SCHEMA_VERSION,
     tasks: selectPersistedTasks(runtime.tasks),
     taskPlans: runtime.taskPlans,
     focuses: runtime.focuses,

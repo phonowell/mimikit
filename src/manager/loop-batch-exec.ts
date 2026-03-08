@@ -1,3 +1,5 @@
+import { appendLog } from '../log/append.js'
+
 import { resolveWorkerSlotCapacity } from './loop-trigger-shared.js'
 import { runManager } from './runner.js'
 import {
@@ -123,6 +125,88 @@ const WAKE_PROFILE_SECTION_MULTIPLIERS: Partial<
   },
 }
 
+const CONTEXT_BUDGET_PRESETS: Record<
+  'lite' | 'standard' | 'heavy',
+  Partial<Record<keyof PromptSectionLimits, number>>
+> = {
+  lite: {
+    environmentMaxBytes: 3072,
+    inputsMaxBytes: 6144,
+    batchResultsMaxBytes: 12288,
+    tasksMaxBytes: 12288,
+    plansMaxBytes: 8192,
+    recentHistoryMaxBytes: 6144,
+    focusListMaxBytes: 6144,
+    focusContextsMaxBytes: 12288,
+    historyLookupMaxBytes: 8192,
+    queryLookupMaxBytes: 12288,
+    fileLookupMaxBytes: 12288,
+    actionFeedbackMaxBytes: 4096,
+    memoryMaxBytes: 4096,
+  },
+  standard: {
+    environmentMaxBytes: 4096,
+    inputsMaxBytes: 8192,
+    batchResultsMaxBytes: 20480,
+    tasksMaxBytes: 24576,
+    plansMaxBytes: 16384,
+    recentHistoryMaxBytes: 8192,
+    focusListMaxBytes: 8192,
+    focusContextsMaxBytes: 20480,
+    historyLookupMaxBytes: 20480,
+    queryLookupMaxBytes: 20480,
+    fileLookupMaxBytes: 20480,
+    actionFeedbackMaxBytes: 8192,
+    memoryMaxBytes: 8192,
+  },
+  heavy: {
+    environmentMaxBytes: 6144,
+    inputsMaxBytes: 12288,
+    batchResultsMaxBytes: 28672,
+    tasksMaxBytes: 32768,
+    plansMaxBytes: 24576,
+    recentHistoryMaxBytes: 12288,
+    focusListMaxBytes: 12288,
+    focusContextsMaxBytes: 28672,
+    historyLookupMaxBytes: 28672,
+    queryLookupMaxBytes: 28672,
+    fileLookupMaxBytes: 28672,
+    actionFeedbackMaxBytes: 12288,
+    memoryMaxBytes: 12288,
+  },
+}
+
+const resolveContextBudgetTier = (params: {
+  wakeProfile: ManagerWakeProfile
+  inputCount: number
+  resultCount: number
+  activeFocusCount: number
+}): 'lite' | 'standard' | 'heavy' => {
+  const { wakeProfile, inputCount, resultCount, activeFocusCount } = params
+  if (wakeProfile === 'mixed') return 'heavy'
+  if (activeFocusCount >= 3) return 'heavy'
+  if (resultCount >= 2) return 'standard'
+  if (inputCount >= 2) return 'standard'
+  if (wakeProfile === 'task_result') return 'standard'
+  return 'lite'
+}
+
+const applyContextBudgetPreset = (
+  base: PromptSectionLimits,
+  tier: 'lite' | 'standard' | 'heavy',
+): PromptSectionLimits => {
+  const preset = CONTEXT_BUDGET_PRESETS[tier]
+  return Object.fromEntries(
+    Object.entries(base).map(([key, value]) => [
+      key,
+      Math.max(
+        MIN_PROMPT_SECTION_BYTES,
+        Math.floor(preset[key as keyof PromptSectionLimits] ?? value),
+      ),
+    ]),
+  ) as PromptSectionLimits
+}
+
 export const resolvePromptSectionLimitsForWakeProfile = (
   base: PromptSectionLimits,
   wakeProfile: ManagerWakeProfile,
@@ -158,10 +242,27 @@ export const runManagerRoundWithRecovery = async (params: {
 }): Promise<{ output: string; elapsedMs: number; usage?: TokenUsage }> => {
   const wakeProfile = resolveWakeProfile(params.inputs, params.results)
   const managerEnv = buildManagerEnv(params.runtime, wakeProfile)
+  const budgetTier = resolveContextBudgetTier({
+    wakeProfile,
+    inputCount: params.inputs.length,
+    resultCount: params.results.length,
+    activeFocusCount: params.runtime.activeFocusIds.length,
+  })
   const promptSectionLimits = resolvePromptSectionLimitsForWakeProfile(
-    params.runtime.config.manager.promptSections,
+    applyContextBudgetPreset(
+      params.runtime.config.manager.promptSections,
+      budgetTier,
+    ),
     wakeProfile,
   )
+  void appendLog(params.runtime.paths.log, {
+    event: 'manager_context_budget_tier',
+    wakeProfile,
+    tier: budgetTier,
+    inputCount: params.inputs.length,
+    resultCount: params.results.length,
+    activeFocusCount: params.runtime.activeFocusIds.length,
+  })
   const result = await runManager({
     stateDir: params.runtime.config.workDir,
     workDir: params.runtime.config.workDir,

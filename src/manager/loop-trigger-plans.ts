@@ -82,6 +82,14 @@ export const checkScheduledPlans = async (
         nowIso,
         reason: 'scheduled_at',
       })
+      await bestEffort('appendLog: cron_trigger_metrics', () =>
+        appendLog(runtime.paths.log, {
+          event: 'cron_trigger_metrics',
+          triggerMode: 'scheduled_at',
+          planId: plan.id,
+          outcome: 'triggered',
+        }),
+      )
       triggeredCount += 1
       stateChanged = true
       continue
@@ -112,6 +120,14 @@ export const checkScheduledPlans = async (
     if (!matched) continue
 
     await firePlan({ runtime, plan, nowIso, reason: 'cron' })
+    await bestEffort('appendLog: cron_trigger_metrics', () =>
+      appendLog(runtime.paths.log, {
+        event: 'cron_trigger_metrics',
+        triggerMode: 'cron',
+        planId: plan.id,
+        outcome: 'triggered',
+      }),
+    )
     triggeredCount += 1
     stateChanged = true
 

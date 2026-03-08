@@ -1,0 +1,92 @@
+[
+  {
+    "id": "task-ambiguous-clarify",
+    "scenario": "ambiguous_intent",
+    "optional": true,
+    "expected": {
+      "status": "succeeded",
+      "requireEvidence": true
+    }
+  },
+  {
+    "id": "task-ambiguous-noise",
+    "scenario": "ambiguous_intent",
+    "optional": true,
+    "expected": {
+      "status": "failed",
+      "requireEvidence": true
+    }
+  },
+  {
+    "id": "task-multi-focus-alpha",
+    "scenario": "multi_workstream_switch",
+    "optional": true,
+    "expected": {
+      "status": "succeeded",
+      "requireEvidence": true
+    }
+  },
+  {
+    "id": "task-multi-focus-beta",
+    "scenario": "multi_workstream_switch",
+    "optional": true,
+    "expected": {
+      "status": "succeeded",
+      "requireEvidence": true
+    }
+  },
+  {
+    "id": "task-long-chain-1",
+    "scenario": "long_chain_continuity",
+    "optional": true,
+    "expected": {
+      "status": "succeeded",
+      "requireEvidence": true
+    }
+  },
+  {
+    "id": "task-long-chain-2",
+    "scenario": "long_chain_continuity",
+    "optional": true,
+    "expected": {
+      "status": "succeeded",
+      "requireEvidence": true
+    }
+  },
+  {
+    "id": "task-cron-recovery",
+    "scenario": "cron_trigger_recovery",
+    "optional": true,
+    "expected": {
+      "status": "succeeded",
+      "requireEvidence": true
+    }
+  },
+  {
+    "id": "task-cron-dedup",
+    "scenario": "cron_trigger_recovery",
+    "optional": true,
+    "expected": {
+      "status": "canceled",
+      "requireEvidence": true
+    }
+  },
+  {
+    "id": "task-provider-wave-1",
+    "scenario": "provider_fluctuation_degrade",
+    "optional": true,
+    "expected": {
+      "status": "failed",
+      "requireEvidence": true
+    }
+  },
+  {
+    "id": "task-provider-wave-2",
+    "scenario": "provider_fluctuation_degrade",
+    "optional": true,
+    "expected": {
+      "status": "succeeded",
+      "requireEvidence": true
+    }
+  }
+]

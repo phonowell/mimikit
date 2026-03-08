@@ -1,4 +1,9 @@
-import type { Task, WorkerProfile, WorkerProvider } from '../../types/index.js'
+import type {
+  Task,
+  TaskContract,
+  WorkerProfile,
+  WorkerProvider,
+} from '../../types/index.js'
 
 export type TaskFingerprintInput = {
   prompt: string
@@ -7,6 +12,7 @@ export type TaskFingerprintInput = {
   provider: WorkerProvider
   focusId?: string
   schedule?: string
+  contract?: TaskContract
 }
 
 const normalizeFingerprintPart = (value: string): string =>
@@ -20,6 +26,30 @@ const normalizeSemanticPart = (value: string): string =>
     .replace(/\s+/g, ' ')
     .trim()
 
+const normalizeContractLines = (
+  contract?: TaskContract,
+): { fingerprint: string; semantic: string } => {
+  if (!contract) return { fingerprint: '', semantic: '' }
+  const acceptance = contract.acceptance
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0)
+  const contextRefs = (contract.contextRefs ?? [])
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0)
+  const lines = [
+    contract.goal.trim(),
+    contract.scope.trim(),
+    ...acceptance,
+    contract.outOfScope?.trim() ?? '',
+    ...contextRefs,
+  ].filter((item) => item.length > 0)
+  const joined = lines.join('\n')
+  return {
+    fingerprint: normalizeFingerprintPart(joined),
+    semantic: normalizeSemanticPart(joined),
+  }
+}
+
 export const buildTaskSemanticKey = (input: TaskFingerprintInput): string => {
   const prompt = normalizeSemanticPart(input.prompt).slice(0, 180)
   const title = normalizeSemanticPart(input.title).slice(0, 96)
@@ -31,14 +61,18 @@ export const buildTaskSemanticKey = (input: TaskFingerprintInput): string => {
 }
 
 export const buildTaskFingerprint = (input: TaskFingerprintInput): string =>
-  [
-    normalizeFingerprintPart(input.prompt),
-    normalizeFingerprintPart(input.title),
-    input.profile,
-    input.provider,
-    normalizeFingerprintPart(input.focusId ?? ''),
-    normalizeFingerprintPart(input.schedule ?? ''),
-  ].join('\n')
+  (() => {
+    const contract = normalizeContractLines(input.contract).fingerprint
+    return [
+      normalizeFingerprintPart(input.prompt),
+      normalizeFingerprintPart(input.title),
+      input.profile,
+      input.provider,
+      normalizeFingerprintPart(input.focusId ?? ''),
+      normalizeFingerprintPart(input.schedule ?? ''),
+      contract,
+    ].join('\n')
+  })()
 
 export const isActiveTask = (task: Task): boolean =>
   task.status === 'pending' ||
@@ -55,6 +89,7 @@ export const taskToFingerprintInput = (
     | 'focusId'
     | 'cron'
     | 'scheduledAt'
+    | 'contract'
   >,
 ): TaskFingerprintInput => ({
   prompt: task.prompt,
@@ -67,6 +102,7 @@ export const taskToFingerprintInput = (
     : task.scheduledAt
       ? { schedule: task.scheduledAt }
       : {}),
+  ...(task.contract ? { contract: task.contract } : {}),
 })
 
 export const findActiveTaskBySemanticKey = (

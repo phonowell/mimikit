@@ -38,6 +38,11 @@ test('finalizeResult appends worker_end progress for canceled task', async () =>
     createdAt: '2026-02-26T10:00:00.000Z',
     startedAt: '2026-02-26T10:00:01.000Z',
     cancel: { source: 'deferred' },
+    contract: {
+      goal: 'Cancel task safely',
+      scope: 'Cancel flow',
+      acceptance: ['Task is marked canceled'],
+    },
   }
   const runtime = {
     config: { workDir: stateDir },
@@ -91,6 +96,11 @@ test('finalizeResult appends worker_end progress for canceled task', async () =>
     cancel: { source: 'deferred' },
   })
   expect(result.handoff?.summary).toContain('Task canceled')
+  expect(result.evidence?.contractGoal).toBe('Cancel task safely')
+  expect(result.evidence?.stateDelta.taskStatusTo).toBe('canceled')
+  expect(result.evidence?.acceptanceChecks[0]?.criterion).toBe(
+    'Task is marked canceled',
+  )
   expect(result.handoff?.evidence?.[0]).toMatchObject({
     type: 'task_archive',
   })

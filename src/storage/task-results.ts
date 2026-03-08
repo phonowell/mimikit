@@ -35,6 +35,7 @@ export type TaskArchiveEntry = {
   usage?: TokenUsage
   cancel?: TaskCancelMeta
   handoff?: TaskResultHandoff
+  evidence?: Record<string, unknown>
 }
 
 const TASK_ARCHIVE_DIR = 'tasks'
@@ -102,6 +103,7 @@ const buildArchiveContent = (entry: TaskArchiveEntry): string =>
       ['cancel_source', entry.cancel?.source],
       ['cancel_reason', entry.cancel?.reason],
       ['handoff', entry.handoff ? JSON.stringify(entry.handoff) : undefined],
+      ['evidence', entry.evidence ? JSON.stringify(entry.evidence) : undefined],
     ],
     [
       { marker: '=== PROMPT ===', content: entry.prompt },

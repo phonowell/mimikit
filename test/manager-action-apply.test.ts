@@ -15,6 +15,11 @@ import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
 import type { TaskPlan } from '../src/types/index.js'
 
 const GLOBAL_FOCUS_ID = 'focus-global'
+const CONTRACT_ATTRS = {
+  goal: 'Deliver requested outcome',
+  scope: 'Single runnable worker task',
+  acceptance_1: 'Return concrete output',
+}
 
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-action-apply-'))
 
@@ -92,6 +97,11 @@ test('enqueue_task re-enqueues pending task when fingerprint matches exactly', a
     fingerprint: 'same prompt',
     prompt: 'same prompt',
     title: 'old title',
+    contract: {
+      goal: CONTRACT_ATTRS.goal,
+      scope: CONTRACT_ATTRS.scope,
+      acceptance: [CONTRACT_ATTRS.acceptance_1],
+    },
     focusId: 'focus-local',
     profile: 'worker',
     provider: 'codex',
@@ -105,6 +115,7 @@ test('enqueue_task re-enqueues pending task when fingerprint matches exactly', a
       attrs: {
         prompt: 'same prompt',
         title: 'old title',
+        ...CONTRACT_ATTRS,
       },
     },
   ])
@@ -125,6 +136,7 @@ test('enqueue_task task_created system event includes worker slot status payload
       attrs: {
         prompt: 'generate release note',
         title: 'release-note',
+        ...CONTRACT_ATTRS,
       },
     },
   ])
@@ -164,6 +176,7 @@ test('enqueue_task dedupe does not block task creation when fingerprint differs'
       attrs: {
         prompt: 'same prompt',
         title: 'new title',
+        ...CONTRACT_ATTRS,
       },
     },
   ])
@@ -171,6 +184,45 @@ test('enqueue_task dedupe does not block task creation when fingerprint differs'
   expect(runtime.tasks).toHaveLength(2)
   expect(runtime.tasks[1]?.title).toBe('new title')
   expect(runtime.tasks[1]?.fingerprint).not.toBe(runtime.tasks[0]?.fingerprint)
+})
+
+test('enqueue_task contract change does not reuse pending task', async () => {
+  const runtime = await createRuntime()
+  runtime.tasks.push({
+    id: 'task-contract-old',
+    fingerprint: 'same prompt',
+    prompt: 'same prompt',
+    title: 'same title',
+    contract: {
+      goal: 'Old goal',
+      scope: 'Old scope',
+      acceptance: ['Old acceptance'],
+    },
+    focusId: GLOBAL_FOCUS_ID,
+    profile: 'worker',
+    provider: 'codex',
+    status: 'pending',
+    createdAt: '2026-02-13T00:00:00.000Z',
+  })
+
+  await applyTaskActions(runtime, [
+    {
+      name: 'enqueue_task',
+      attrs: {
+        prompt: 'same prompt',
+        title: 'same title',
+        goal: 'New goal',
+        scope: 'New scope',
+        acceptance_1: 'New acceptance',
+      },
+    },
+  ])
+
+  expect(runtime.tasks).toHaveLength(2)
+  expect(runtime.tasks[0]?.status).toBe('pending')
+  expect(runtime.tasks[0]?.cancel).toBeUndefined()
+  expect(runtime.tasks[1]?.status).toBe('pending')
+  expect(runtime.tasks[1]?.contract?.goal).toBe('New goal')
 })
 
 test('enqueue_task without provider picks enabled provider by lowest billing then highest capability', async () => {
@@ -188,6 +240,7 @@ test('enqueue_task without provider picks enabled provider by lowest billing the
       attrs: {
         prompt: 'prefer lowest billing',
         title: 'auto provider',
+        ...CONTRACT_ATTRS,
       },
     },
   ])
@@ -211,6 +264,7 @@ test('enqueue_task without provider picks higher capability when billing ties', 
       attrs: {
         prompt: 'prefer strongest capability at same billing',
         title: 'auto provider tie',
+        ...CONTRACT_ATTRS,
       },
     },
   ])
@@ -328,6 +382,7 @@ test('ask_user_choice stores pending choice and stops later actions in same batc
       attrs: {
         prompt: 'this should not run before user picks',
         title: 'blocked by pending choice',
+        ...CONTRACT_ATTRS,
       },
     },
   ])
