@@ -7,8 +7,9 @@ import { nowIso } from '../shared/utils.js'
 
 import { enqueueWorkerTask } from './dispatch.js'
 import {
+  buildTaskMutationMetaFields,
   isDoneTaskStatus,
-  resolveTaskLookup,
+  resolveTaskLookupTarget,
   touchTaskMutation,
 } from './task-action.js'
 import { resolveSlotStatus, resolveTaskChangeAt } from './task-state-shared.js'
@@ -32,11 +33,10 @@ export const resumeTask = async (
   taskId: string,
   meta?: ResumeMeta,
 ): Promise<ResumeResult> => {
-  const lookup = resolveTaskLookup(runtime, taskId)
-  if (!lookup.normalizedId)
-    return { ok: false, id: lookup.normalizedId, status: 'invalid' }
+  const lookup = resolveTaskLookupTarget(runtime, taskId)
+  if ('status' in lookup)
+    return { ok: false, id: lookup.id, status: lookup.status }
   const { task } = lookup
-  if (!task) return { ok: false, id: lookup.normalizedId, status: 'not_found' }
   if (isDoneTaskStatus(task.status)) {
     return {
       ok: false,
@@ -70,8 +70,7 @@ export const resumeTask = async (
     appendLog(runtime.paths.log, {
       event: 'task_resumed',
       taskId: task.id,
-      ...(meta?.source ? { source: meta.source } : {}),
-      ...(meta?.reason ? { reason: meta.reason } : {}),
+      ...buildTaskMutationMetaFields(meta),
     }),
   )
   await bestEffort('persistRuntimeState: task_resumed', () =>

@@ -1,6 +1,6 @@
 # Code Index
 
-*Last updated: 2026-03-07 08:35:46 CST*
+*Last updated: 2026-03-08 13:30:36 CST*
 *Scope: `src/**/*.ts` + `webui/**/*.js` exported capabilities (function/class/const entry points)*
 
 ## Quick Reference
@@ -188,6 +188,8 @@
 | Function | Location | Does What |
 |---|---|---|
 | `resolveTaskChangeAt()/resolveSlotStatus()` | `src/worker/task-state-shared.ts:4` | Worker pause/resume shared state helper |
+| `resolveTaskLookupTarget()` | `src/worker/task-action.ts:42` | Canonical task lookup with `invalid/not_found` early outcome |
+| `buildTaskMutationMetaFields()` | `src/worker/task-action.ts:58` | Reusable optional `source/reason` payload expander for mutation logs |
 | `registerTaskMutationRoute()` | `src/http/routes-api-task-mutation.ts:25` | Shared pause/resume/cancel route response wrapper |
 | `focusIdSchema()/choiceIdSchema()/optionIdSchema()` | `src/shared/id-schema.ts:9` | Canonical ID schema validators |
 | `buildPlanTriggerPayload()` | `src/shared/plan-payload.ts:3` | Canonical plan trigger payload builder |

@@ -7,8 +7,9 @@ import { markTaskPaused } from '../orchestrator/core/task-lifecycle.js'
 import { nowIso } from '../shared/utils.js'
 
 import {
+  buildTaskMutationMetaFields,
   isDoneTaskStatus,
-  resolveTaskLookup,
+  resolveTaskLookupTarget,
   touchTaskMutation,
 } from './task-action.js'
 import { resolveSlotStatus, resolveTaskChangeAt } from './task-state-shared.js'
@@ -32,11 +33,10 @@ export const pauseTask = async (
   taskId: string,
   meta?: PauseMeta,
 ): Promise<PauseResult> => {
-  const lookup = resolveTaskLookup(runtime, taskId)
-  if (!lookup.normalizedId)
-    return { ok: false, id: lookup.normalizedId, status: 'invalid' }
+  const lookup = resolveTaskLookupTarget(runtime, taskId)
+  if ('status' in lookup)
+    return { ok: false, id: lookup.id, status: lookup.status }
   const { task } = lookup
-  if (!task) return { ok: false, id: lookup.normalizedId, status: 'not_found' }
   if (task.status === 'paused') {
     return {
       ok: false,
@@ -70,8 +70,7 @@ export const pauseTask = async (
       event: 'task_paused',
       taskId: task.id,
       prevStatus,
-      ...(meta?.source ? { source: meta.source } : {}),
-      ...(meta?.reason ? { reason: meta.reason } : {}),
+      ...buildTaskMutationMetaFields(meta),
     }),
   )
   await bestEffort('persistRuntimeState: task_paused', () =>

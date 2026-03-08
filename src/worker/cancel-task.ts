@@ -14,7 +14,7 @@ import {
 } from './session-state.js'
 import {
   isDoneTaskStatus,
-  resolveTaskLookup,
+  resolveTaskLookupTarget,
   touchTaskMutation,
 } from './task-action.js'
 import { resolveTaskChangeAt } from './task-state-shared.js'
@@ -69,11 +69,10 @@ export const cancelTask = async (
   taskId: string,
   meta?: CancelMeta,
 ): Promise<CancelResult> => {
-  const lookup = resolveTaskLookup(runtime, taskId)
-  if (!lookup.normalizedId)
-    return { ok: false, id: lookup.normalizedId, status: 'invalid' }
+  const lookup = resolveTaskLookupTarget(runtime, taskId)
+  if ('status' in lookup)
+    return { ok: false, id: lookup.id, status: lookup.status }
   const { task } = lookup
-  if (!task) return { ok: false, id: lookup.normalizedId, status: 'not_found' }
   if (task.status === 'canceled') {
     return {
       ok: false,

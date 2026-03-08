@@ -11,8 +11,9 @@ import {
   removeWorkerTaskPromptFiles,
 } from './delete-task-cleanup.js'
 import {
+  buildTaskMutationMetaFields,
   isActiveTaskStatus,
-  resolveTaskLookup,
+  resolveTaskLookupTarget,
   touchTaskMutation,
 } from './task-action.js'
 import { resolveTaskChangeAt } from './task-state-shared.js'
@@ -36,12 +37,10 @@ export const deleteTask = async (
   taskId: string,
   meta?: DeleteTaskMeta,
 ): Promise<DeleteTaskResult> => {
-  const lookup = resolveTaskLookup(runtime, taskId)
-  if (!lookup.normalizedId)
-    return { ok: false, id: lookup.normalizedId, status: 'invalid' }
-  if (lookup.index < 0 || !lookup.task)
-    return { ok: false, id: lookup.normalizedId, status: 'not_found' }
-  const { task } = lookup
+  const lookup = resolveTaskLookupTarget(runtime, taskId)
+  if ('status' in lookup)
+    return { ok: false, id: lookup.id, status: lookup.status }
+  const { index, task } = lookup
   if (isActiveTaskStatus(task.status)) {
     return {
       ok: false,
@@ -80,7 +79,7 @@ export const deleteTask = async (
   )
 
   touchTaskMutation(runtime, task.id)
-  runtime.tasks.splice(lookup.index, 1)
+  runtime.tasks.splice(index, 1)
   runtime.runningControllers.delete(task.id)
   const deletedAt = nowIso()
 
@@ -99,8 +98,7 @@ export const deleteTask = async (
       archiveOutside,
       progressDeleted,
       promptDeleted,
-      ...(meta?.source ? { source: meta.source } : {}),
-      ...(meta?.reason ? { reason: meta.reason } : {}),
+      ...buildTaskMutationMetaFields(meta),
     }),
   )
   notifyUiSignal(runtime, 'messages')
