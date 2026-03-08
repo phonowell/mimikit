@@ -67,8 +67,8 @@
 
 ## 本地验证步骤（最小复现）
 
-1. 异常中断/恢复复用旧 session：`pnpm vitest run test/runtime-persistence-queue-reconcile.test.ts -t "persist+hydrate keeps reusable session on recovered pending task" && pnpm vitest run test/worker-run-retry-session.test.ts -t "reuses persisted session id on next attempt"`
-2. 用户取消丢弃旧 session、系统延后取消保留旧 session：`pnpm vitest run test/worker-cancel-session-policy.test.ts`
+1. 异常中断/恢复复用旧 session：`pnpm vitest run tests/runtime-persistence-queue-reconcile.test.ts -t "persist+hydrate keeps reusable session on recovered pending task" && pnpm vitest run tests/worker-run-retry-session.test.ts -t "reuses persisted session id on next attempt"`
+2. 用户取消丢弃旧 session、系统延后取消保留旧 session：`pnpm vitest run tests/worker-cancel-session-policy.test.ts`
 3. 全量门禁：`pnpm run review-code-changes`
 
 ## 常见问题排查（持久化状态清理）
