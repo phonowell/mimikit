@@ -146,7 +146,7 @@ billing = "medium"
 enabled = false
 model = "big-pickle"
 capability = "low"
-billing = "free"
+billing = "low"
 
 [webui]
 enabled = true

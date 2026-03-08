@@ -119,7 +119,7 @@ proxy = ""
 enabled = false
 model = "big-pickle"
 capability = "low"
-billing = "free"
+billing = "low"
 proxy = ""
 
 [webui]
