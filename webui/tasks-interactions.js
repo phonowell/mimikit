@@ -1,5 +1,6 @@
 import { UI_TEXT } from './system-text.js'
 import { buildTaskArchiveViewerUrl } from './archive-viewer-url.js'
+import { copyTaskIdToClipboard } from './tasks-copy-id.js'
 
 const resolveActionsElements = (actions) => {
   if (!(actions instanceof Element)) return null
@@ -39,10 +40,13 @@ const TASK_ACTION_ENDPOINT = Object.freeze({
 
 const TASK_ACTION_BUSY_TEXT = Object.freeze({
   cancel: UI_TEXT.cancelingTask,
+  'copy-id': UI_TEXT.copyingTaskId,
   delete: UI_TEXT.deletingTask,
   pause: UI_TEXT.pausingTask,
   resume: UI_TEXT.resumingTask,
 })
+
+const FEEDBACK_HIDE_DELAY_MS = 2800
 
 const requestTaskAction = async (taskId, action, button) => {
   if (!taskId) return
@@ -89,9 +93,42 @@ const requestTaskAction = async (taskId, action, button) => {
   }
 }
 
+const createTaskFeedback = (feedbackEl) => {
+  let hideTimer = null
+
+  const clearHideTimer = () => {
+    if (!hideTimer) return
+    window.clearTimeout(hideTimer)
+    hideTimer = null
+  }
+
+  const show = (state, message) => {
+    if (!(feedbackEl instanceof HTMLElement)) return
+    const text = typeof message === 'string' ? message.trim() : ''
+    if (!text) return
+    clearHideTimer()
+    feedbackEl.hidden = false
+    feedbackEl.dataset.state = state || ''
+    feedbackEl.textContent = text
+    hideTimer = window.setTimeout(() => {
+      feedbackEl.hidden = true
+      feedbackEl.textContent = ''
+      feedbackEl.dataset.state = ''
+      hideTimer = null
+    }, FEEDBACK_HIDE_DELAY_MS)
+  }
+
+  const dispose = () => {
+    clearHideTimer()
+  }
+
+  return { show, dispose }
+}
+
 export const bindTaskInteractions = (tasksList, options = {}) => {
   if (!tasksList) return () => {}
   const taskDelete = options.taskDeleteController
+  const feedback = createTaskFeedback(options.feedbackEl)
 
   const requestTaskDeleteConfirm = async (taskId) => {
     if (taskDelete?.requestConfirmTaskDelete)
@@ -132,6 +169,26 @@ export const bindTaskInteractions = (tasksList, options = {}) => {
       if (button.disabled) return
       const action = button.getAttribute('data-task-action-inline') || ''
       const taskId = button.getAttribute('data-task-id') || ''
+      if (action === 'copy-id') {
+        void (async () => {
+          const originalText = button.textContent || UI_TEXT.copyTaskIdAction
+          const originalLabel = button.getAttribute('aria-label') || ''
+          const originalTitle = button.getAttribute('title') || ''
+          const busyText = TASK_ACTION_BUSY_TEXT[action] || 'Working'
+          button.disabled = true
+          button.textContent = '…'
+          button.setAttribute('aria-label', busyText)
+          button.setAttribute('title', busyText)
+          const result = await copyTaskIdToClipboard(taskId)
+          button.disabled = false
+          button.textContent = originalText
+          if (originalLabel) button.setAttribute('aria-label', originalLabel)
+          if (originalTitle) button.setAttribute('title', originalTitle)
+          if (result.ok) feedback.show('success', result.message)
+          else feedback.show('error', result.message)
+        })()
+        return
+      }
       if (action === 'delete') {
         void (async () => {
           const confirmed = await requestTaskDeleteConfirm(taskId)
@@ -174,6 +231,7 @@ export const bindTaskInteractions = (tasksList, options = {}) => {
   document.addEventListener('keydown', onDocumentKeydown)
 
   return () => {
+    feedback.dispose()
     tasksList.removeEventListener('click', onListClick)
     document.removeEventListener('click', onDocumentClick)
     document.removeEventListener('keydown', onDocumentKeydown)

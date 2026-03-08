@@ -68,10 +68,18 @@ export const createTaskActions = ({ titleText, taskId, statusValue }) => {
     taskId,
     disabled: !canDelete,
   })
+  const copyIdBtn = createMenuButton({
+    action: 'copy-id',
+    text: 'copy id',
+    titleText,
+    taskId,
+    disabled: !hasTaskId,
+  })
 
   menu.appendChild(primaryBtn)
   menu.appendChild(cancelBtn)
   menu.appendChild(deleteBtn)
+  menu.appendChild(copyIdBtn)
   actions.appendChild(moreBtn)
   actions.appendChild(menu)
   return actions

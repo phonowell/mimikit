@@ -22,6 +22,7 @@ export function bindTasksPanel({
   tasksDialog,
   tasksOpenBtn,
   tasksCloseBtn,
+  tasksFeedbackEl,
   taskDeleteConfirmDialog,
   taskDeleteConfirmCancelBtn,
   taskDeleteConfirmBtn,
@@ -49,6 +50,7 @@ export function bindTasksPanel({
   let unsubscribeTimeTick = null
   const unbindTaskInteractions = bindTaskInteractions(tasksList, {
     taskDeleteController,
+    feedbackEl: tasksFeedbackEl,
   })
 
   const renderLatestTasks = () => {
