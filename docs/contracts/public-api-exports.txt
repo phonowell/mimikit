@@ -1,0 +1,23 @@
+# Public API baseline
+
+[package-exports]
+./providers/*
+
+[dist-dts]
+codex-sdk-provider
+codex-sdk-provider-helpers
+codex-settings
+codex-stream
+fs
+log
+openai-responses-provider
+opencode-sdk-provider
+provider-error
+provider-payload
+provider-runtime
+registry
+safe
+thread-id
+token-usage
+types
+utils
