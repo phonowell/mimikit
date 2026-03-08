@@ -22,7 +22,7 @@ import {
 } from './provider-runtime.js'
 import { bestEffort } from './safe.js'
 import { attachProviderThreadId } from './thread-id.js'
-import { normalizeUsage } from './utils.js'
+import { normalizeUsage, resolveHttpProxyUrl } from './utils.js'
 
 import type { TokenUsage } from './token-usage.js'
 import type {
@@ -86,24 +86,22 @@ const proxyDispatcherCache = new Map<string, Dispatcher>()
 const resolveProxyDispatcher = (
   proxy: string | undefined,
 ): Dispatcher | undefined => {
-  const trimmed = trimNonEmptyString(proxy)
-  if (!trimmed) return undefined
-  let parsed: URL
-  try {
-    parsed = new URL(trimmed)
-  } catch {
-    throw buildProviderPreflightError({
-      providerId: PROVIDER_ID,
-      message: `proxy is invalid: ${trimmed}`,
-    })
-  }
-  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-    throw buildProviderPreflightError({
-      providerId: PROVIDER_ID,
-      message: `proxy protocol is invalid: ${parsed.protocol}`,
-    })
-  }
-  const normalized = parsed.toString()
+  const normalized = resolveHttpProxyUrl({
+    proxy: trimNonEmptyString(proxy),
+    onInvalidUrl: (value) => {
+      throw buildProviderPreflightError({
+        providerId: PROVIDER_ID,
+        message: `proxy is invalid: ${value}`,
+      })
+    },
+    onInvalidProtocol: (protocol) => {
+      throw buildProviderPreflightError({
+        providerId: PROVIDER_ID,
+        message: `proxy protocol is invalid: ${protocol}`,
+      })
+    },
+  })
+  if (!normalized) return undefined
   const cached = proxyDispatcherCache.get(normalized)
   if (cached) return cached
   const dispatcher = new ProxyAgent(normalized)

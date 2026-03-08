@@ -19,6 +19,7 @@ import {
 } from './provider-runtime.js'
 import { logSafeError } from './safe.js'
 import { attachProviderThreadId } from './thread-id.js'
+import { resolveHttpProxyUrl } from './utils.js'
 
 import type { CodexSdkProviderRequest, Provider } from './types.js'
 
@@ -40,15 +41,15 @@ const toCodexCliEnv = (proxy: string): Record<string, string> => {
 
 const resolveCodexProxy = (proxy: string | undefined): string | undefined => {
   const trimmed = proxy?.trim()
-  if (!trimmed) return undefined
-  try {
-    const parsed = new URL(trimmed)
-    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:')
-      throw new Error('invalid_protocol')
-    return parsed.toString()
-  } catch {
-    throw new Error(`worker_proxy_invalid_url:${trimmed}`)
-  }
+  return resolveHttpProxyUrl({
+    proxy,
+    onInvalidUrl: (value) => {
+      throw new Error(`worker_proxy_invalid_url:${value}`)
+    },
+    onInvalidProtocol: () => {
+      throw new Error(`worker_proxy_invalid_url:${trimmed}`)
+    },
+  })
 }
 
 const resolveCodexClient = (proxy: string | undefined): Codex => {
