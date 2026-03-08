@@ -215,6 +215,16 @@ test('worker slot availability tracks queue capacity transitions', async () => {
 
 test('triggerWakeLoop emits worker_slot_freed once on startup when slot is already free', async () => {
   const runtime = await createRuntime({ maxConcurrent: 2 })
+  runtime.tasks.push({
+    id: 'task-pending-seed',
+    fingerprint: 'fp-task-pending-seed',
+    prompt: 'seed prompt',
+    title: 'seed task',
+    focusId: GLOBAL_FOCUS_ID,
+    profile: 'worker',
+    status: 'pending',
+    createdAt: new Date().toISOString(),
+  })
 
   const loopPromise = triggerWakeLoop(runtime)
   try {
@@ -224,6 +234,19 @@ test('triggerWakeLoop emits worker_slot_freed once on startup when slot is alrea
     )
     await new Promise<void>((resolve) => setTimeout(resolve, 1_300))
     expect(countSystemEvent(runtime, 'worker_slot_freed')).toBe(1)
+  } finally {
+    runtime.stopped = true
+    await loopPromise
+  }
+})
+
+test('triggerWakeLoop suppresses worker_slot_freed when no queue work exists', async () => {
+  const runtime = await createRuntime({ maxConcurrent: 2 })
+
+  const loopPromise = triggerWakeLoop(runtime)
+  try {
+    await new Promise<void>((resolve) => setTimeout(resolve, 1_300))
+    expect(countSystemEvent(runtime, 'worker_slot_freed')).toBe(0)
   } finally {
     runtime.stopped = true
     await loopPromise
@@ -293,6 +316,16 @@ test(
 
 test('triggerWakeLoop emits worker_slot_freed on full-to-free transition only once', async () => {
   const runtime = await createRuntime({ maxConcurrent: 1 })
+  runtime.tasks.push({
+    id: 'task-pending-transition',
+    fingerprint: 'fp-task-pending-transition',
+    prompt: 'transition prompt',
+    title: 'transition task',
+    focusId: GLOBAL_FOCUS_ID,
+    profile: 'worker',
+    status: 'pending',
+    createdAt: new Date().toISOString(),
+  })
   runtime.runningControllers.set('task-busy', new AbortController())
 
   const loopPromise = triggerWakeLoop(runtime)
@@ -319,6 +352,16 @@ test(
   'triggerWakeLoop coalesces burst slot-freed signals while capacity remains free',
   async () => {
     const runtime = await createRuntime({ maxConcurrent: 3 })
+    runtime.tasks.push({
+      id: 'task-pending-burst',
+      fingerprint: 'fp-task-pending-burst',
+      prompt: 'burst prompt',
+      title: 'burst task',
+      focusId: GLOBAL_FOCUS_ID,
+      profile: 'worker',
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+    })
     runtime.runningControllers.set('task-1', new AbortController())
     runtime.runningControllers.set('task-2', new AbortController())
     runtime.runningControllers.set('task-3', new AbortController())

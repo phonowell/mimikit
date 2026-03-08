@@ -13,6 +13,7 @@ import {
   buildBatchSuccessResult,
   buildRoundLimitResult,
   type ManagerRoundExtra,
+  mergeReadFileLookupHistory,
 } from './loop-batch-run-helpers.js'
 
 import type { RuntimeState } from './runtime-adapter.js'
@@ -125,7 +126,19 @@ export const runManagerCorrectionRounds = async (params: {
       })
     }
     previousLookupKey = followup.lookupKey
-    extra = followup.extra
+    const mergedReadFileLookup = mergeReadFileLookupHistory({
+      previous: extra.readFileLookup,
+      current: followup.extra.readFileLookup,
+    })
+    extra = {
+      ...followup.extra,
+      ...(mergedReadFileLookup ? { readFileLookup: mergedReadFileLookup } : {}),
+      ...(followup.extra.queryLookup
+        ? { queryLookup: followup.extra.queryLookup }
+        : extra.queryLookup
+          ? { queryLookup: extra.queryLookup }
+          : {}),
+    }
   }
   await appendLog(runtime.paths.log, {
     event: 'manager_correction_round_limit_reached',

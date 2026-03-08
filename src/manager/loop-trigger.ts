@@ -14,6 +14,7 @@ import {
   triggerOnWorkerSlotFreedPlans,
 } from './loop-trigger-plans.js'
 import {
+  canFireOnWorkerSlotFreed,
   hasFreeWorkerSlot,
   IDLE_CHECK_INTERVAL_MS,
   resolveWorkerSlotCapacity,
@@ -75,25 +76,33 @@ export const triggerWakeLoop = async (runtime: RuntimeState): Promise<void> => {
         triggeredCount += slotTriggered.triggeredCount
 
         if (slotTriggered.triggeredCount === 0) {
-          const capacity = resolveWorkerSlotCapacity(runtime)
-          await publishManagerSystemEventInput({
-            runtime,
-            summary: 'A worker slot was freed for new tasks.',
-            event: 'worker_slot_freed',
-            visibility: 'all',
-            payload: {
-              ...toWorkerSlotStatusPayload(capacity),
-              triggered_at: now.toISOString(),
-            },
-            createdAt: now.toISOString(),
-            logEvent: 'worker_slot_freed_input',
-            logMeta: {
-              availableSlots: capacity.availableSlots,
-              occupiedSlots: capacity.occupiedSlots,
-              maxSlots: capacity.maxSlots,
-            },
-          })
-          triggeredCount += 1
+          const hasRunnableCapacityPlan = runtime.taskPlans.some((plan) =>
+            canFireOnWorkerSlotFreed(plan),
+          )
+          const hasPendingOrRunningTask = runtime.tasks.some(
+            (task) => task.status === 'pending' || task.status === 'running',
+          )
+          if (hasRunnableCapacityPlan || hasPendingOrRunningTask) {
+            const capacity = resolveWorkerSlotCapacity(runtime)
+            await publishManagerSystemEventInput({
+              runtime,
+              summary: 'A worker slot was freed for new tasks.',
+              event: 'worker_slot_freed',
+              visibility: 'all',
+              payload: {
+                ...toWorkerSlotStatusPayload(capacity),
+                triggered_at: now.toISOString(),
+              },
+              createdAt: now.toISOString(),
+              logEvent: 'worker_slot_freed_input',
+              logMeta: {
+                availableSlots: capacity.availableSlots,
+                occupiedSlots: capacity.occupiedSlots,
+                maxSlots: capacity.maxSlots,
+              },
+            })
+            triggeredCount += 1
+          }
         }
 
         workerSlotEventPending = false

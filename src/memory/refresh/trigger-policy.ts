@@ -23,5 +23,6 @@ export const hasMemoryRefreshDelta = (runtime: RuntimeState): boolean => {
 }
 
 export const shouldTriggerMemoryRefresh = (runtime: RuntimeState): boolean =>
+  hasMemoryRefreshDelta(runtime) &&
   runtime.managerTurn - runtime.memoryRefresh.lastCompletedTurn >=
-  MEMORY_REFRESH_MIN_TURN_GAP
+    MEMORY_REFRESH_MIN_TURN_GAP
