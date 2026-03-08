@@ -2,6 +2,7 @@ type UserInputBase = {
   id: string
   createdAt: string
   focusId?: string
+  visibility?: string
 }
 
 type UserInputUser = UserInputBase & {
@@ -25,7 +26,12 @@ type UserInputAssistant = UserInputBase & {
   text: string
 }
 
-export type UserInput = UserInputUser | UserInputAssistant
+type UserInputSystem = UserInputBase & {
+  role: 'system'
+  text: string
+}
+
+export type UserInput = UserInputUser | UserInputAssistant | UserInputSystem
 
 export type TelegramConfig = {
   enabled: boolean
@@ -43,6 +49,7 @@ export type FeishuConfig = {
 }
 
 export type AppConfig = {
+  workDir: string
   telegram: TelegramConfig
   feishu: FeishuConfig
 }
@@ -52,6 +59,7 @@ export type RuntimeState = {
   paths: {
     log: string
   }
+  [key: string]: unknown
 }
 
 export type UserMeta = {
