@@ -213,27 +213,29 @@ Key points:
 
 ## Minimal API Smoke Test
 
-After `pnpm start`, verify API status and enqueue one input without using the UI.
+After `pnpm start`, verify API status without triggering model/provider execution.
 
 macOS / Linux:
 
 ```bash
 curl -sS http://127.0.0.1:8787/api/status
-curl -sS -X POST http://127.0.0.1:8787/api/input \
-  -H 'content-type: application/json' \
-  -d '{"text":"hello from quickstart"}'
 ```
 
 Windows PowerShell:
 
 ```powershell
 Invoke-RestMethod http://127.0.0.1:8787/api/status | ConvertTo-Json -Depth 5
-Invoke-RestMethod -Method Post -ContentType "application/json" `
-  -Uri http://127.0.0.1:8787/api/input `
-  -Body '{"text":"hello from quickstart"}' | ConvertTo-Json
 ```
 
-Expected: `/api/input` returns JSON containing an ID like `input-...`.
+Expected: `/api/status` returns JSON with runtime fields like `ok`, `runtimeId`, and `managerRunning`.
+
+Optional manual check (may incur model/provider token cost, run only when needed):
+
+```bash
+curl -sS -X POST http://127.0.0.1:8787/api/input \
+  -H 'content-type: application/json' \
+  -d '{"text":"hello from quickstart"}'
+```
 
 ## Use Cases
 

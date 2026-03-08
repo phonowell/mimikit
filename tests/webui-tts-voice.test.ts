@@ -43,24 +43,46 @@ test('resolvePreferredTtsVoice prefers Microsoft Xiaoxiao Online (Natural) on Ed
   expect(voice).toBe(xiaoxiaoNatural)
 })
 
-test('resolvePreferredTtsVoice falls back to zh-CN female-like voice when Xiaoxiao missing', () => {
-  const female = createVoice({
-    name: 'Microsoft Xiaoyi',
-    voiceURI: 'zh-CN-XiaoyiNeural',
-  })
-  const male = createVoice({
-    name: 'Microsoft Yunxi',
-    voiceURI: 'zh-CN-YunxiNeural',
+test('resolvePreferredTtsVoice falls back to default zh-CN voice when preferred variants are absent', () => {
+  const zhDefault = createVoice({
+    name: 'zh default',
+    voiceURI: 'zh-default',
     default: true,
   })
-
+  const zhAlt = createVoice({
+    name: 'zh alt',
+    voiceURI: 'zh-alt',
+    default: false,
+  })
   const voice = resolvePreferredTtsVoice({
-    speechSynthesis: createSpeechSynthesis([male, female]),
+    speechSynthesis: createSpeechSynthesis([zhAlt, zhDefault]),
     userAgent:
       'Mozilla/5.0 AppleWebKit/537.36 Chrome/123.0.0.0 Safari/537.36 Edg/123.0.0.0',
   })
 
-  expect(voice).toBe(female)
+  expect(voice).toBe(zhDefault)
+})
+
+test('resolvePreferredTtsVoice falls back to zh default when only zh voices are available', () => {
+  const zhTwDefault = createVoice({
+    lang: 'zh-TW',
+    name: 'zh tw default',
+    voiceURI: 'zh-tw-default',
+    default: true,
+  })
+  const zhTwAlt = createVoice({
+    lang: 'zh-TW',
+    name: 'zh tw alt',
+    voiceURI: 'zh-tw-alt',
+    default: false,
+  })
+  const voice = resolvePreferredTtsVoice({
+    speechSynthesis: createSpeechSynthesis([zhTwAlt, zhTwDefault]),
+    userAgent:
+      'Mozilla/5.0 AppleWebKit/537.36 Chrome/123.0.0.0 Safari/537.36 Edg/123.0.0.0',
+  })
+
+  expect(voice).toBe(zhTwDefault)
 })
 
 test('resolvePreferredTtsVoice returns null for non-Edge browser', () => {
