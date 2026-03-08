@@ -1,4 +1,4 @@
-import { expect, test } from 'vitest'
+import { expect, test, vi } from 'vitest'
 
 import { createSessionIngressLogger } from '../src/http/session-ingress-log.js'
 
@@ -142,4 +142,27 @@ test('session ingress logger falls back to platform when source is missing', () 
     visibility: 'all',
     summary: 'Ping from Telegram',
   })
+})
+
+test('session ingress logger defaults to silent sink when no sink is provided', () => {
+  const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
+  try {
+    const logger = createSessionIngressLogger()
+    logger.logIncomingMessages({
+      mode: 'full',
+      messages: [
+        {
+          id: 'input-webui-1',
+          role: 'user',
+          text: 'hello from webui',
+          createdAt: '2026-03-08T00:00:00.000Z',
+          focusId: 'focus-global',
+          source: 'webui',
+        },
+      ],
+    })
+    expect(infoSpy).not.toHaveBeenCalled()
+  } finally {
+    infoSpy.mockRestore()
+  }
 })

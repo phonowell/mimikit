@@ -122,9 +122,7 @@ const buildMessageLogEntry = (message: ChatMessage): IngressLogEntry => {
   }
 }
 
-const defaultSink: IngressLogSink = (tag, payload) => {
-  console.info(tag, payload)
-}
+const defaultSink: IngressLogSink = () => undefined
 
 export const createSessionIngressLogger = (options?: {
   sink?: IngressLogSink
