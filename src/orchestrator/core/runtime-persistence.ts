@@ -92,6 +92,9 @@ export const hydrateRuntimeState = async (
   runtime.focusContexts = snapshot.focusContexts ?? []
   runtime.activeFocusIds = snapshot.activeFocusIds ?? []
   runtime.managerTurn = snapshot.managerTurn ?? 0
+  if (snapshot.managerThreadId)
+    runtime.managerThreadId = snapshot.managerThreadId
+  else delete runtime.managerThreadId
   runtime.memoryRefresh = hydrateMemoryRefreshState(snapshot)
   runtime.managerFocusCompressedContexts =
     snapshot.managerFocusCompressedContexts ?? []
@@ -126,6 +129,9 @@ export const persistRuntimeState = async (
     focusContexts: runtime.focusContexts,
     activeFocusIds: runtime.activeFocusIds,
     managerTurn: runtime.managerTurn,
+    ...(runtime.managerThreadId
+      ? { managerThreadId: runtime.managerThreadId }
+      : {}),
     queues: runtime.queues,
     ...(runtime.pendingUserChoice
       ? { pendingUserChoice: runtime.pendingUserChoice }

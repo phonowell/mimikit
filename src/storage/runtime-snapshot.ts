@@ -29,6 +29,7 @@ const initialRuntimeSnapshot = (): RuntimeSnapshot => ({
   tasks: [],
   taskPlans: [],
   managerTurn: 0,
+  managerThreadId: undefined,
   queues: {
     inputsCursor: 0,
     resultsCursor: 0,

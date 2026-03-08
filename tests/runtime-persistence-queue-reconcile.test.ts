@@ -67,6 +67,7 @@ test('hydrateRuntimeState reconciles stale queue cursors', async () => {
     focusContexts: [],
     activeFocusIds: [],
     managerTurn: 0,
+    managerThreadId: undefined,
     memoryRefresh: createDefaultMemoryRefreshState(),
     managerFocusCompressedContexts: [],
   } as RuntimeState
@@ -107,6 +108,7 @@ test('persist+hydrate keeps reusable session on recovered pending task', async (
     focusContexts: [],
     activeFocusIds: [],
     managerTurn: 0,
+    managerThreadId: 'session-manager-persisted',
     memoryRefresh: createDefaultMemoryRefreshState(),
     managerFocusCompressedContexts: [],
   } as RuntimeState
@@ -123,6 +125,7 @@ test('persist+hydrate keeps reusable session on recovered pending task', async (
     focusContexts: [],
     activeFocusIds: [],
     managerTurn: 0,
+    managerThreadId: undefined,
     memoryRefresh: createDefaultMemoryRefreshState(),
   } as RuntimeState
 
@@ -133,4 +136,5 @@ test('persist+hydrate keeps reusable session on recovered pending task', async (
   expect(restored.tasks[0]?.startedAt).toBeUndefined()
   expect(restored.tasks[0]?.sessionId).toBe('session-reuse-after-restart')
   expect(restored.tasks[0]?.sessionState).toBe('reusable')
+  expect(restored.managerThreadId).toBe('session-manager-persisted')
 })

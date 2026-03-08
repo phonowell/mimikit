@@ -89,6 +89,7 @@ export type RuntimeState = {
   focusContexts: FocusContext[]
   activeFocusIds: FocusId[]
   managerTurn: number
+  managerThreadId?: string
   memoryRefresh: RuntimeMemoryRefreshState
   managerFocusCompressedContexts: ManagerFocusCompressedContext[]
   managerCompressedContext: string

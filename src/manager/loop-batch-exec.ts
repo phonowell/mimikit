@@ -233,6 +233,7 @@ export const runManagerRoundWithRecovery = async (params: {
   tasks: Task[]
   plans: TaskPlan[]
   workingFocusIds: string[]
+  managerThreadId?: string
   extra: {
     historyLookup?: HistoryLookupMessage[]
     queryLookup?: QueryLookupMessage
@@ -244,6 +245,7 @@ export const runManagerRoundWithRecovery = async (params: {
   elapsedMs: number
   usage?: TokenUsage
   promptPrefixHash: string
+  threadId?: string | null
 }> => {
   const wakeProfile = resolveWakeProfile(params.inputs, params.results)
   const managerEnv = buildManagerEnv(params.runtime, wakeProfile)
@@ -304,12 +306,14 @@ export const runManagerRoundWithRecovery = async (params: {
       ? { proxy: params.runtime.config.manager.proxy }
       : {}),
     modelReasoningEffort: params.runtime.config.manager.modelReasoningEffort,
+    ...(params.managerThreadId ? { threadId: params.managerThreadId } : {}),
   })
 
   return {
     output: result.output,
     elapsedMs: result.elapsedMs,
     promptPrefixHash: result.promptPrefixHash,
+    ...(result.threadId !== undefined ? { threadId: result.threadId } : {}),
     ...(result.usage ? { usage: result.usage } : {}),
   }
 }

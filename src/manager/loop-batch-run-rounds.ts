@@ -4,6 +4,7 @@ import {
   isNoChoiceReturnChannelSource,
 } from '../channels/feishu/source.js'
 import { appendLog } from '../log/append.js'
+import { readProviderThreadId } from '../shared/provider-thread-id.js'
 import { mergeUsageAdditive } from '../shared/token-usage.js'
 
 import { runManagerRoundWithRecovery } from './loop-batch-exec.js'
@@ -53,6 +54,7 @@ export const runManagerCorrectionRounds = async (params: {
   let batchUsage: TokenUsage | undefined
   let previousLookupKey: string | undefined
   let promptPrefixHash: string | undefined
+  let { managerThreadId } = runtime
   let extra: ManagerRoundExtra = {}
   let lastParsed = parseActions('')
   const resultTaskIds = new Set(results.map((item) => item.taskId))
@@ -60,16 +62,31 @@ export const runManagerCorrectionRounds = async (params: {
     !hasNoChoiceReturnChannelInput(inputs) &&
     !isNoChoiceReturnChannelSource(runtime.lastUserMeta?.source)
   for (let round = 1; round <= maxCorrectionRounds; round++) {
-    const runResult = await runManagerRoundWithRecovery({
-      runtime,
-      round,
-      inputs,
-      results,
-      tasks,
-      plans,
-      workingFocusIds,
-      extra,
-    })
+    const runResult = await (async () => {
+      try {
+        return await runManagerRoundWithRecovery({
+          runtime,
+          round,
+          inputs,
+          results,
+          tasks,
+          plans,
+          workingFocusIds,
+          extra,
+          ...(managerThreadId ? { managerThreadId } : {}),
+        })
+      } catch (error) {
+        const errorThreadId = readProviderThreadId(error)
+        if (errorThreadId) {
+          managerThreadId = errorThreadId
+          runtime.managerThreadId = managerThreadId
+        }
+        throw error
+      }
+    })()
+    managerThreadId = runResult.threadId ?? managerThreadId
+    if (managerThreadId) runtime.managerThreadId = managerThreadId
+    else delete runtime.managerThreadId
     elapsedMs += runResult.elapsedMs
     batchUsage = mergeUsageAdditive(batchUsage, runResult.usage)
     if (!promptPrefixHash) promptPrefixHash = runResult.promptPrefixHash
@@ -121,6 +138,8 @@ export const runManagerCorrectionRounds = async (params: {
       hash: promptPrefixHash,
     })
   }
+  if (managerThreadId) runtime.managerThreadId = managerThreadId
+  else delete runtime.managerThreadId
   return buildRoundLimitResult({
     text: lastParsed.text,
     elapsedMs,

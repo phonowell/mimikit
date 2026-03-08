@@ -124,6 +124,7 @@ const normalizeRuntimeSnapshot = (value: RuntimeSnapshot): RuntimeSnapshot =>
     focusContexts: value.focusContexts?.map(normalizeFocusContext),
     activeFocusIds: value.activeFocusIds,
     managerTurn: value.managerTurn,
+    managerThreadId: value.managerThreadId,
     queues: value.queues,
     managerCompressedContext: value.managerCompressedContext,
     managerFocusCompressedContexts: value.managerFocusCompressedContexts?.map(

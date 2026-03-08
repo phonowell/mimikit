@@ -108,6 +108,7 @@ test('runtime snapshot accepts queue cursors', async () => {
         updatedAt: SNAPSHOT_BASE_TIME,
       },
     ],
+    managerThreadId: 'session-manager-1',
   })
 
   const loaded = await loadRuntimeSnapshot(stateDir)
@@ -117,6 +118,7 @@ test('runtime snapshot accepts queue cursors', async () => {
   expect(loaded.managerFocusCompressedContexts?.[0]?.summary).toContain(
     'keep codex-only',
   )
+  expect(loaded.managerThreadId).toBe('session-manager-1')
   expect(loaded.tasks[0]?.result?.output).toBe('ok')
   expect(loaded.taskPlans[0]?.id).toBe('plan-1')
 })
