@@ -1,0 +1,32 @@
+{
+  "name": "@mimikit/providers",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "MIT",
+  "description": "Provider runtime layer for Mimikit",
+  "exports": {
+    "./providers/*": {
+      "types": "./dist/providers/*.d.ts",
+      "import": "./dist/providers/*.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "type-check": "tsc -p tsconfig.build.json --noEmit"
+  },
+  "dependencies": {
+    "@iarna/toml": "^2.2.5",
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "@openai/codex-sdk": "^0.111.0",
+    "@opencode-ai/sdk": "^1.2.20",
+    "undici": "^7.22.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.5",
+    "typescript": "^5.9.3"
+  },
+  "packageManager": "pnpm@10.28.2"
+}

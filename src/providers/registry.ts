@@ -1,0 +1,48 @@
+import { codexSdkProvider } from './codex-sdk-provider.js'
+import { openAiResponsesProvider } from './openai-responses-provider.js'
+import { opencodeSdkProvider } from './opencode-sdk-provider.js'
+
+import type {
+  Provider,
+  ProviderKind,
+  ProviderRequest,
+  ProviderResult,
+} from './types.js'
+
+type AnyProvider = Provider<ProviderRequest>
+
+const providers = new Map<ProviderKind, AnyProvider>()
+
+const registerProvider = <TRequest extends ProviderRequest>(
+  provider: Provider<TRequest>,
+): void => {
+  providers.set(provider.id, provider as AnyProvider)
+}
+
+const getProvider = <TKind extends ProviderKind>(
+  kind: TKind,
+): Provider<Extract<ProviderRequest, { provider: TKind }>> => {
+  const provider = providers.get(kind)
+  if (!provider) throw new Error(`[provider] unregistered provider: ${kind}`)
+
+  return provider as unknown as Provider<
+    Extract<ProviderRequest, { provider: TKind }>
+  >
+}
+
+let registered = false
+
+const ensureDefaultProvidersRegistered = (): void => {
+  if (registered) return
+  registerProvider(codexSdkProvider)
+  registerProvider(opencodeSdkProvider)
+  registerProvider(openAiResponsesProvider)
+  registered = true
+}
+
+export const runWithProvider = (
+  request: ProviderRequest,
+): Promise<ProviderResult> => {
+  ensureDefaultProvidersRegistered()
+  return getProvider(request.provider).run(request)
+}
