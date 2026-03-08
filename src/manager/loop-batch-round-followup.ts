@@ -3,6 +3,10 @@ import { appendLog } from '../log/append.js'
 import { resolveScheduleNowIso } from '../shared/time.js'
 
 import { managerActionCliLogger } from './action-cli-log.js'
+import {
+  collectActionFeedbackHintBuckets,
+  collectActionFeedbackHints,
+} from './action-feedback-buckets.js'
 import { collectManagerActionFeedback } from './action-feedback-collect.js'
 import {
   buildQueryContextLookupKey,
@@ -42,6 +46,8 @@ const appendRoundActionFeedback = async (params: {
     count: actionFeedback.length,
     errors: actionFeedback.map((item) => item.error),
     names: actionFeedback.map((item) => item.action),
+    hints: collectActionFeedbackHints(actionFeedback),
+    hintBuckets: collectActionFeedbackHintBuckets(actionFeedback),
   })
   await appendActionFeedbackSystemMessage(
     params.runtime.paths.history,

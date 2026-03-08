@@ -9,6 +9,7 @@ import {
   summarizeSchema,
   updatePlanSchema,
 } from './action-apply-schema.js'
+import { buildTaskContractMissingHintFromAction } from './action-feedback-contract-hint.js'
 import {
   formatAskUserChoiceChannelUnsupportedHint,
   formatAskUserChoiceInvalidOptionsHint,
@@ -64,8 +65,18 @@ export const validateRunTask = (
 ): ValidationIssue[] => {
   const parsed = parseActionAttrs(item, runTaskSchema)
   if (!parsed) return validateWithSchema(item, runTaskSchema)
-  if (!buildTaskContractFromAttrs(parsed))
-    return rejected(formatEnqueueTaskContractMissingHint())
+  if (!buildTaskContractFromAttrs(parsed)) {
+    return rejected(
+      buildTaskContractMissingHintFromAction(item) ??
+        formatEnqueueTaskContractMissingHint({
+          prompt: parsed.prompt,
+          title: parsed.title,
+          goal: parsed.goal,
+          scope: parsed.scope,
+          acceptance_1: parsed.acceptance_1,
+        }),
+    )
+  }
   const { provider } = parsed
   if (!provider) return []
   const enabledProviders = context.enabledWorkerProviders

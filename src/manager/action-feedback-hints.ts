@@ -118,8 +118,48 @@ export const formatEnqueueTaskProviderDisabledHint = (
     provider,
   })
 
-export const formatEnqueueTaskContractMissingHint = (): string =>
-  renderHint('enqueue_task_contract_missing')
+const FALLBACK_TASK_CONTRACT_HINT_VALUES = {
+  prompt: 'TODO_PROMPT',
+  title: 'TODO_TITLE',
+  goal: 'TODO_GOAL',
+  scope: 'TODO_SCOPE',
+  acceptance_1: 'TODO_ACCEPTANCE',
+} as const
+
+const trimOrFallback = (
+  value: string | undefined,
+  fallback: string,
+): string => {
+  const trimmed = value?.trim()
+  return trimmed && trimmed.length > 0 ? trimmed : fallback
+}
+
+export const formatEnqueueTaskContractMissingHint = (attrs?: {
+  prompt?: string | undefined
+  title?: string | undefined
+  goal?: string | undefined
+  scope?: string | undefined
+  acceptance_1?: string | undefined
+}): string =>
+  renderHint('enqueue_task_contract_missing', {
+    prompt: trimOrFallback(
+      attrs?.prompt,
+      FALLBACK_TASK_CONTRACT_HINT_VALUES.prompt,
+    ),
+    title: trimOrFallback(
+      attrs?.title,
+      FALLBACK_TASK_CONTRACT_HINT_VALUES.title,
+    ),
+    goal: trimOrFallback(attrs?.goal, FALLBACK_TASK_CONTRACT_HINT_VALUES.goal),
+    scope: trimOrFallback(
+      attrs?.scope,
+      FALLBACK_TASK_CONTRACT_HINT_VALUES.scope,
+    ),
+    acceptance_1: trimOrFallback(
+      attrs?.acceptance_1,
+      FALLBACK_TASK_CONTRACT_HINT_VALUES.acceptance_1,
+    ),
+  })
 
 export const formatPlanNotFoundHint = (
   action: 'update_plan' | 'delete_plan',

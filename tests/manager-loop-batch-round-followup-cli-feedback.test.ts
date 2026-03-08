@@ -12,6 +12,10 @@ const { loggerMock } = vi.hoisted(() => ({
   },
 }))
 
+const { appendLogMock } = vi.hoisted(() => ({
+  appendLogMock: vi.fn(async () => undefined),
+}))
+
 vi.mock('../src/manager/action-cli-log.js', () => ({
   managerActionCliLogger: loggerMock,
 }))
@@ -56,7 +60,7 @@ vi.mock('../src/history/manager-events.js', () => ({
 }))
 
 vi.mock('../src/log/append.js', () => ({
-  appendLog: vi.fn(async () => undefined),
+  appendLog: appendLogMock,
 }))
 
 const runtime = {
@@ -71,6 +75,7 @@ const runtime = {
 
 test('resolveRoundFollowup emits cli feedback logs for rejected and invalid actions', async () => {
   const parsed: Parsed[] = []
+  appendLogMock.mockClear()
   await resolveRoundFollowup({
     runtime,
     parsed,
@@ -101,6 +106,22 @@ test('resolveRoundFollowup emits cli feedback logs for rejected and invalid acti
       }),
       index: 2,
       total: 2,
+    }),
+  )
+
+  expect(appendLogMock).toHaveBeenCalledTimes(1)
+  expect(appendLogMock).toHaveBeenCalledWith(
+    '/tmp/test-log',
+    expect.objectContaining({
+      event: 'manager_action_feedback',
+      count: 2,
+      errors: ['action_execution_rejected', 'invalid_action_args'],
+      names: ['mutate_task', 'query_context'],
+      hints: ['task already canceled', 'schema mismatch'],
+      hintBuckets: [
+        'mutate_task::action_execution_rejected::task already canceled',
+        'query_context::invalid_action_args::schema mismatch',
+      ],
     }),
   )
 })

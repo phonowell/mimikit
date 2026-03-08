@@ -32,6 +32,8 @@ enqueue_task_provider_disabled: |
   enqueue_task 执行失败：provider={{ provider }} 当前未启用。请改用已注入到 M:environment 的 provider_candidates。
 enqueue_task_contract_missing: |
   enqueue_task 执行失败：缺少 task contract。请补充 goal、scope 与至少一条 acceptance_{n}（例如 acceptance_1）。
+  请直接改成下面格式后重试：
+  <M:enqueue_task prompt="{{ prompt }}" title="{{ title }}" goal="{{ goal }}" scope="{{ scope }}" acceptance_1="{{ acceptance_1 }}" />
 plan_not_found: |
   {{ action }} 执行失败：未找到 plan ID。
 update_plan_done_forbidden: |
