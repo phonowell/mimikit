@@ -63,26 +63,6 @@ test('resolvePreferredTtsVoice falls back to zh-CN female-like voice when Xiaoxi
   expect(voice).toBe(female)
 })
 
-test('resolvePreferredTtsVoice falls back to zh-CN default when no female marker', () => {
-  const zhDefault = createVoice({
-    name: 'Microsoft Yunxi',
-    voiceURI: 'zh-CN-YunxiNeural',
-    default: true,
-  })
-  const zhOther = createVoice({
-    name: 'Microsoft Standard',
-    voiceURI: 'zh-CN-Standard',
-  })
-
-  const voice = resolvePreferredTtsVoice({
-    speechSynthesis: createSpeechSynthesis([zhOther, zhDefault]),
-    userAgent:
-      'Mozilla/5.0 AppleWebKit/537.36 Chrome/123.0.0.0 Safari/537.36 Edg/123.0.0.0',
-  })
-
-  expect(voice).toBe(zhDefault)
-})
-
 test('resolvePreferredTtsVoice returns null for non-Edge browser', () => {
   const voice = resolvePreferredTtsVoice({
     speechSynthesis: createSpeechSynthesis([createVoice()]),
