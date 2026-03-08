@@ -4,6 +4,7 @@
     "@fastify/static": "^9.0.0",
     "@iarna/toml": "^2.2.5",
     "@larksuiteoapi/node-sdk": "^1.59.0",
+    "@mimikit/providers": "file:../mimikit-providers",
     "@modelcontextprotocol/sdk": "^1.27.1",
     "@openai/codex-sdk": "^0.111.0",
     "@opencode-ai/sdk": "^1.2.20",
@@ -69,7 +70,8 @@
     "wt-land": "node scripts/worktree/land-worktree.js --base main --plans-dir plans",
     "review-code-changes": "pnpm run lint && pnpm run type-check && pnpm run test",
     "wt-slot": "node scripts/worktree/manage-slot.js",
-    "score:manager-efficiency": "node .mimikit/tools/manager-efficiency-score.mjs"
+    "score:manager-efficiency": "node .mimikit/tools/manager-efficiency-score.mjs",
+    "bootstrap": "node scripts/bootstrap.mjs"
   },
   "type": "module",
   "version": "0.1.0"

@@ -1,6 +1,7 @@
 import { resolve } from 'node:path'
 import { parseArgs } from 'node:util'
 
+import { loadCodexSettings } from '@mimikit/providers/providers/codex-settings'
 import getPort, { portNumbers } from 'get-port'
 
 import { defaultConfig } from '../config.js'
@@ -9,7 +10,6 @@ import { createHttpServer } from '../http/index.js'
 import { bestEffort, setDefaultLogPath } from '../log/safe.js'
 import { configureManagerActionCliLogger } from '../manager/action-cli-log.js'
 import { Orchestrator } from '../orchestrator/core/orchestrator-service.js'
-import { loadCodexSettings } from '../providers/codex-settings.js'
 import { setRuntimeReaperBridge } from '../runtime/reaper-bridge.js'
 import { createRuntimeReaperHandle } from '../runtime/reaper.js'
 

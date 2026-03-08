@@ -1,6 +1,7 @@
+import { runWithProvider } from '@mimikit/providers/providers/registry'
+
 import { buildWorkerPrompt } from '../prompts/build-prompts.js'
 import { loadPromptSource } from '../prompts/prompt-loader.js'
-import { runWithProvider } from '../providers/registry.js'
 import { getRuntimeReaperBridge } from '../runtime/reaper-bridge.js'
 import { appendTaskProgress } from '../storage/task-progress.js'
 

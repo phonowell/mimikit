@@ -13,10 +13,13 @@ It keeps one main session with explicit `manager + worker` orchestration, a buil
 ```bash
 git clone https://github.com/phonowell/mimikit.git
 cd mimikit
+pnpm run bootstrap
 pnpm i
 OPENAI_API_KEY=your_key pnpm start
 # open http://localhost:8787
 ```
+
+`bootstrap` 会自动 clone `../mimikit-providers`，并通过 `pnpm install` 安装分仓依赖。
 
 ## Table of Contents
 
@@ -92,7 +95,7 @@ env_key = "AICODING_API_KEY"
 
 Manager/provider model settings are configured in `config.toml`:
 
-If `config.toml` is missing, Mimikit will bootstrap it from `defaults/config.template.toml`.
+If `config.toml` is missing, run `pnpm run bootstrap` to generate it from `defaults/config.template.toml`.
 
 ```toml
 [manager]

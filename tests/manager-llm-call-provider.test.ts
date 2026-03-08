@@ -6,7 +6,7 @@ const { runWithProviderMock } = vi.hoisted(() => ({
   runWithProviderMock: vi.fn(),
 }))
 
-vi.mock('../src/providers/registry.js', () => ({
+vi.mock('@mimikit/providers/providers/registry', () => ({
   runWithProvider: runWithProviderMock,
 }))
 

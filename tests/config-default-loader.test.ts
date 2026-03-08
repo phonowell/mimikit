@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -190,4 +190,16 @@ test('still rejects invalid known fields when unknown keys are present', async (
   )
 
   expect(() => loadDefaultConfigFromToml(path)).toThrow(/manager.model/)
+})
+
+test('missing config path falls back to template without creating file', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'mimikit-config-loader-missing-'))
+  tempDirs.push(dir)
+  const missingPath = join(dir, 'config.toml')
+
+  const config = loadDefaultConfigFromToml(missingPath)
+
+  expect(config.manager.model).toBe('gpt-5.2')
+  expect(config.webui.port).toBe(8787)
+  await expect(readFile(missingPath)).rejects.toMatchObject({ code: 'ENOENT' })
 })

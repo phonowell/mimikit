@@ -31,12 +31,23 @@ const runCommand = (
   return result.status ?? 1
 }
 
-// `pnpm start` must ensure dependencies before launching the CLI entrypoint.
+// `start` must ensure dependencies before launching the CLI entrypoint.
 // Keep this block ahead of every runtime launch branch.
+const bootstrapExitCode =
+  process.platform === 'win32'
+    ? runCommand('cmd.exe', ['/d', '/s', '/c', 'node scripts/bootstrap.mjs'], {
+        cwd: rootDir,
+      })
+    : runCommand('node', ['scripts/bootstrap.mjs'], { cwd: rootDir })
+
+if (bootstrapExitCode !== 0) {
+  process.exit(bootstrapExitCode)
+}
+
 const installExitCode =
   process.platform === 'win32'
-    ? runCommand('cmd.exe', ['/d', '/s', '/c', 'pnpm i'], { cwd: rootDir })
-    : runCommand('pnpm', ['i'], { cwd: rootDir })
+    ? runCommand('cmd.exe', ['/d', '/s', '/c', 'pnpm install'], { cwd: rootDir })
+    : runCommand('pnpm', ['install'], { cwd: rootDir })
 
 if (installExitCode !== 0) {
   process.exit(installExitCode)

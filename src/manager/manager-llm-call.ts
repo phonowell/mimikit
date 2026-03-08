@@ -1,7 +1,7 @@
-import { runWithProvider } from '../providers/registry.js'
+import { runWithProvider } from '@mimikit/providers/providers/registry'
 
-import type { ProviderPromptSegment } from '../providers/types.js'
 import type { TokenUsage } from '../types/index.js'
+import type { ProviderPromptSegment } from '@mimikit/providers/providers/types'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
 const BYTE_STEP = 1_024

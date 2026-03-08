@@ -13,7 +13,7 @@ Goal: start Mimikit locally and open WebUI at `http://127.0.0.1:8787`.
 ## 1) Install
 
 ```bash
-pnpm i
+pnpm install
 ```
 
 ## 2) Configure credentials
@@ -67,10 +67,12 @@ pnpm start
 What this does:
 
 - Runs `scripts/start.ts`.
-- Ensures dependencies (`pnpm i`) before launch.
+- Ensures main-repo dependencies (`pnpm install`) before launch.
 - Starts wrapper: `bin/mimikit` (Unix) or `bin/mimikit.cmd` (Windows).
 - Restarts on exit code `75` (`POST /api/restart` and `POST /api/reset` use this).
-- Auto-creates repo-root `config.toml` from `defaults/config.template.toml` when missing.
+- Runs `bootstrap` to ensure `../mimikit-providers` exists.
+- Installs `../mimikit-providers` dependencies via `pnpm install`.
+- Creates repo-root `config.toml` when missing.
 - Unknown keys in `config.toml` are ignored with a startup warning.
 
 Direct start (no wrapper/restart loop):

@@ -1,4 +1,5 @@
-import { readProviderErrorCode } from '../providers/provider-error.js'
+import { readProviderErrorCode } from '@mimikit/providers/providers/provider-error'
+
 import { nowIso } from '../shared/utils.js'
 
 import type { Task, TaskCancelSource } from '../types/index.js'

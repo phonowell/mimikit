@@ -40,7 +40,6 @@ import {
 import { loadPromptFile, loadPromptSource } from './prompt-loader.js'
 
 import type { AppConfig } from '../config.js'
-import type { ProviderPromptSegment } from '../providers/types.js'
 import type {
   FocusContext,
   FocusId,
@@ -55,6 +54,7 @@ import type {
   TaskResult,
   UserInput,
 } from '../types/index.js'
+import type { ProviderPromptSegment } from '@mimikit/providers/providers/types'
 
 export type { ManagerEnv } from '../types/index.js'
 

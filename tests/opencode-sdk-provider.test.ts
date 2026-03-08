@@ -2,20 +2,20 @@ import { EventEmitter } from 'node:events'
 
 import { beforeEach, expect, test, vi } from 'vitest'
 
-import { opencodeSdkProvider } from '../src/providers/opencode-sdk-provider.js'
-import { readProviderErrorCode } from '../src/providers/provider-error.js'
-
-const { createOpencodeClientMock, spawnMock } = vi.hoisted(() => ({
-  createOpencodeClientMock: vi.fn(),
-  spawnMock: vi.fn(),
-}))
-
 vi.mock('@opencode-ai/sdk', () => ({
   createOpencodeClient: createOpencodeClientMock,
 }))
 
 vi.mock('node:child_process', () => ({
   spawn: spawnMock,
+}))
+
+import { opencodeSdkProvider } from '@mimikit/providers/providers/opencode-sdk-provider'
+import { readProviderErrorCode } from '@mimikit/providers/providers/provider-error'
+
+const { createOpencodeClientMock, spawnMock } = vi.hoisted(() => ({
+  createOpencodeClientMock: vi.fn(),
+  spawnMock: vi.fn(),
 }))
 
 type FakeProc = EventEmitter & {

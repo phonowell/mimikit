@@ -1,5 +1,6 @@
+import { readProviderThreadId } from '@mimikit/providers/providers/thread-id'
+
 import { renderPromptTemplate } from '../prompts/format.js'
-import { readProviderThreadId } from '../shared/provider-thread-id.js'
 import {
   mergeUsageAdditive,
   mergeUsageMonotonic,

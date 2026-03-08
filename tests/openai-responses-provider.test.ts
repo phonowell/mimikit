@@ -8,7 +8,7 @@ import {
   openAiResponsesProvider,
   parseResponsesPayload,
   parseResponsesSse,
-} from '../src/providers/openai-responses-provider.js'
+} from '@mimikit/providers/providers/openai-responses-provider'
 
 const ENV_KEYS = ['HOME', 'USERPROFILE', 'OPENAI_API_KEY', 'AICODING_API_KEY'] as const
 type EnvSnapshot = Partial<Record<(typeof ENV_KEYS)[number], string>>

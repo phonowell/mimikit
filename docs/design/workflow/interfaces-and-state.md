@@ -121,7 +121,7 @@
 
 ## 配置结构（`config.toml`）
 
-- 若缺少 `config.toml`，启动阶段会由 `defaults/config.template.toml` 自动生成。
+- 若缺少 `config.toml`，请先运行 `pnpm run bootstrap` 从 `defaults/config.template.toml` 生成。
 - `manager`: `model`、`modelReasoningEffort`、`baseUrl?`、`apiKey?`、`proxy?`
 - `worker`: `maxConcurrent`、`timeoutMs`
 - `codex`: `enabled`、`model`、`modelReasoningEffort`、`capability`、`billing`、`proxy?`
