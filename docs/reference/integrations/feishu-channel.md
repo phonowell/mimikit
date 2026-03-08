@@ -54,8 +54,8 @@ pnpm start
 
 ## 模块边界
 
-- `src/channels/feishu/config.ts`：Feishu 配置 schema、环境变量覆写、启用态校验
-- `src/channels/feishu/polling.ts`：Feishu 长连接入站与生命周期管理
-- `src/channels/feishu/client.ts`：Feishu 文本发送
-- `src/channels/feishu/passive-reply.ts`：manager 回复后的 Feishu 被动发送
-- `src/channels/feishu/index.ts`：对核心层暴露统一集成入口
+- `@mimikit/channels/channels/feishu/config`：Feishu 配置 schema、环境变量覆写、启用态校验
+- `@mimikit/channels/channels/feishu/polling`：Feishu 长连接入站与生命周期管理
+- `@mimikit/channels/channels/feishu/client`：Feishu 文本发送
+- `@mimikit/channels/channels/feishu/passive-reply`：manager 回复后的 Feishu 被动发送
+- `@mimikit/channels/channels/feishu/index`：对核心层暴露统一集成入口

@@ -57,3 +57,11 @@ pnpm start
    - 发送 `/mmk help`，应返回命令列表。
    - 发送 `/mmk restart`，应返回已受理重启。
 5. 再发送普通文本，确认 WebUI 会话里出现 `source=telegram` 的用户输入。
+
+## 模块边界
+
+- `@mimikit/channels/channels/telegram/config`：Telegram 配置 schema、环境变量覆写、启用态校验
+- `@mimikit/channels/channels/telegram/polling`：Telegram long polling 入站与生命周期管理
+- `@mimikit/channels/channels/telegram/client`：Telegram 文本发送
+- `@mimikit/channels/channels/telegram/passive-reply`：manager 回复后的 Telegram 被动发送
+- `@mimikit/channels/channels/telegram/index`：对核心层暴露统一集成入口

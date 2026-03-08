@@ -1,6 +1,7 @@
-import { applyFeishuEnvOverrides } from '../channels/feishu/config.js'
-import { parseChannelEnabledEnv } from '../channels/shared/config-env.js'
-import { applyTelegramEnvOverrides } from '../channels/telegram/config.js'
+import { applyFeishuEnvOverrides } from '@mimikit/channels/channels/feishu/config'
+import { parseChannelEnabledEnv } from '@mimikit/channels/channels/shared/config-env'
+import { applyTelegramEnvOverrides } from '@mimikit/channels/channels/telegram/config'
+
 import { configureManagerActionCliLogger } from '../manager/action-cli-log.js'
 
 import type { AppConfig } from '../config.js'

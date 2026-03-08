@@ -72,6 +72,8 @@ What this does:
 - Restarts on exit code `75` (`POST /api/restart` and `POST /api/reset` use this).
 - Runs `bootstrap` to ensure `../mimikit-providers` exists.
 - Installs `../mimikit-providers` dependencies via `pnpm install`.
+- Ensures `../mimikit-channels` exists.
+- Installs `../mimikit-channels` dependencies via `pnpm install`.
 - Creates repo-root `config.toml` when missing.
 - Unknown keys in `config.toml` are ignored with a startup warning.
 

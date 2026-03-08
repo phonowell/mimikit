@@ -12,6 +12,13 @@ const providersPath = resolve(
 const providersRepo =
   process.env.MIMIKIT_PROVIDERS_REPO?.trim() ||
   'https://github.com/phonowell/mimikit-providers.git'
+const defaultChannelsPath = resolve(rootDir, '..', 'mimikit-channels')
+const channelsPath = resolve(
+  process.env.MIMIKIT_CHANNELS_PATH?.trim() || defaultChannelsPath,
+)
+const channelsRepo =
+  process.env.MIMIKIT_CHANNELS_REPO?.trim() ||
+  'https://github.com/phonowell/mimikit-channels.git'
 const configPath = resolve(rootDir, 'config.toml')
 const configTemplatePath = resolve(rootDir, 'defaults', 'config.template.toml')
 
@@ -41,6 +48,21 @@ const ensureProvidersRepo = () => {
   }
 }
 
+const ensureChannelsRepo = () => {
+  if (!existsSync(channelsPath)) {
+    console.log(`[bootstrap] cloning channels repo into ${channelsPath}`)
+    run('git', ['clone', channelsRepo, channelsPath], rootDir)
+    return
+  }
+
+  const gitDir = join(channelsPath, '.git')
+  if (!existsSync(gitDir)) {
+    throw new Error(
+      `[bootstrap] channels path exists but is not a git repo: ${channelsPath}`,
+    )
+  }
+}
+
 const ensureConfigToml = () => {
   if (existsSync(configPath)) return
   const source = readFileSync(configTemplatePath, 'utf8')
@@ -53,9 +75,16 @@ const installProvidersDependencies = () => {
   run('pnpm', ['install'], providersPath)
 }
 
+const installChannelsDependencies = () => {
+  console.log('[bootstrap] installing channels dependencies via pnpm')
+  run('pnpm', ['install'], channelsPath)
+}
+
 const main = () => {
   ensureProvidersRepo()
+  ensureChannelsRepo()
   installProvidersDependencies()
+  installChannelsDependencies()
   ensureConfigToml()
 }
 

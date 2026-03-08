@@ -1,10 +1,10 @@
-import { readProviderThreadId } from '@mimikit/providers/providers/thread-id'
-
-import { parseActions } from '../actions/protocol/parse.js'
 import {
   hasNoChoiceReturnChannelInput,
   isNoChoiceReturnChannelSource,
-} from '../channels/feishu/source.js'
+} from '@mimikit/channels/channels/feishu/source'
+import { readProviderThreadId } from '@mimikit/providers/providers/thread-id'
+
+import { parseActions } from '../actions/protocol/parse.js'
 import { appendLog } from '../log/append.js'
 import { mergeUsageAdditive } from '../shared/token-usage.js'
 

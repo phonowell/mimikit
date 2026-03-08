@@ -1,5 +1,6 @@
-import { dispatchFeishuPassiveReply } from '../channels/feishu/passive-reply.js'
-import { dispatchTelegramPassiveReply } from '../channels/telegram/passive-reply.js'
+import { dispatchFeishuPassiveReply } from '@mimikit/channels/channels/feishu/passive-reply'
+import { dispatchTelegramPassiveReply } from '@mimikit/channels/channels/telegram/passive-reply'
+
 import { resolveDefaultFocusId } from '../focus/index.js'
 import { appendManagerCorrectionLimitSystemMessage } from '../history/manager-events.js'
 import { readHistory } from '../history/store.js'

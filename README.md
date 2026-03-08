@@ -19,7 +19,7 @@ OPENAI_API_KEY=your_key pnpm start
 # open http://localhost:8787
 ```
 
-`bootstrap` 会自动 clone `../mimikit-providers`，并通过 `pnpm install` 安装分仓依赖。
+`bootstrap` 会自动 clone `../mimikit-providers` 与 `../mimikit-channels`，并通过 `pnpm install` 安装分仓依赖。
 
 ## Table of Contents
 
@@ -206,8 +206,8 @@ For LLM-driven setup and configuration, use [`docs/BOOTSTRAP.md`](./docs/BOOTSTR
 - Plan trigger modes: `cron`, `scheduled_at`, `on_worker_slot_freed` with clear semantics ([plan workflow](./docs/design/workflow/plan.md)).
 - Built-in WebUI + SSE events: `GET /api/events`, `POST /api/input`, restart/reset APIs ([interfaces](./docs/design/workflow/interfaces-and-state.md)).
 - Task panel live progress: running tasks show streamed output snippets in WebUI without extra model calls.
-- Telegram channel integration (optional): long polling ingest + passive reply via `sendMessage` ([Telegram modules](./src/channels/telegram)).
-- Feishu channel integration (optional): long connection ingest + passive reply via IM message API ([Feishu modules](./src/channels/feishu)).
+- Telegram channel integration (optional): long polling ingest + passive reply via `sendMessage` ([Telegram modules](https://github.com/phonowell/mimikit-channels/tree/main/src/channels/telegram)).
+- Feishu channel integration (optional): long connection ingest + passive reply via IM message API ([Feishu modules](https://github.com/phonowell/mimikit-channels/tree/main/src/channels/feishu)).
 - Local file-backed observability: `history`, `tasks`, `task-progress`, `runtime-snapshot`, `log.jsonl` under `.mimikit/` ([state layout](./docs/design/workflow/interfaces-and-state.md)).
 
 Keywords: `AI orchestration layer`, `TypeScript orchestrator`, `Codex SDK`, `OpenAI`, `single-session orchestration`, `WebUI`, `SSE`, `task planning`, `Telegram bot`, `Feishu bot`, `local-first runtime`.

@@ -91,7 +91,7 @@ export class Orchestrator {
   private async startTelegramPollingIfEnabled(): Promise<void> {
     if (!this.runtime.config.telegram.enabled) return
     const { startTelegramPolling } =
-      await import('../../channels/telegram/index.js')
+      await import('@mimikit/channels/channels/telegram/index')
     await startTelegramPolling({
       config: this.runtime.config,
       logPath: this.runtime.paths.log,
@@ -104,7 +104,7 @@ export class Orchestrator {
   private async startFeishuPollingIfEnabled(): Promise<void> {
     if (!this.runtime.config.feishu.enabled) return
     const { startFeishuPolling } =
-      await import('../../channels/feishu/index.js')
+      await import('@mimikit/channels/channels/feishu/index')
     await startFeishuPolling({
       config: this.runtime.config,
       logPath: this.runtime.paths.log,
@@ -161,7 +161,7 @@ export class Orchestrator {
   private async stopTelegramPollingIfEnabled(): Promise<void> {
     if (!this.runtime.config.telegram.enabled) return
     const { stopTelegramPolling } =
-      await import('../../channels/telegram/index.js')
+      await import('@mimikit/channels/channels/telegram/index')
     await stopTelegramPolling({
       workDir: this.runtime.config.workDir,
       logPath: this.runtime.paths.log,
@@ -193,7 +193,8 @@ export class Orchestrator {
 
   private async stopFeishuPollingIfEnabled(): Promise<void> {
     if (!this.runtime.config.feishu.enabled) return
-    const { stopFeishuPolling } = await import('../../channels/feishu/index.js')
+    const { stopFeishuPolling } =
+      await import('@mimikit/channels/channels/feishu/index')
     await stopFeishuPolling({
       workDir: this.runtime.config.workDir,
       logPath: this.runtime.paths.log,
