@@ -1,6 +1,6 @@
 # Code Index
 
-*Last updated: 2026-03-08 13:30:36 CST*
+*Last updated: 2026-03-08 20:05:07 CST*
 *Scope: `src/**/*.ts` + `webui/**/*.js` exported capabilities (function/class/const entry points)*
 
 ## Quick Reference
@@ -86,7 +86,7 @@
 | `runWorkerLoop()` | `src/worker/profiled-runner-loop.ts:100` | Iterative run/continue logic |
 | `runTaskWithRetry()` | `src/worker/run-retry.ts:116` | Retry wrapper around provider execution |
 | `cancelTask()` | `src/worker/cancel-task.ts:122` | Task cancellation flow |
-| `resolveTaskChangeAt()/resolveSlotStatus()` | `src/worker/task-state-shared.ts:4` | Shared task transition timestamps and slot status payload |
+| `resolveTaskChangeAt()/resolveSlotStatus()` | `src/worker/task-state-shared.ts:2` | Shared task transition timestamps and slot status payload |
 | `finalizeResult()` | `src/worker/result-finalize.ts:66` | Persists/archive result and updates state |
 | `buildTaskResultHandoff()` | `src/worker/result-handoff.ts:113` | Builds manager-visible result payload |
 
@@ -187,7 +187,8 @@
 
 | Function | Location | Does What |
 |---|---|---|
-| `resolveTaskChangeAt()/resolveSlotStatus()` | `src/worker/task-state-shared.ts:4` | Worker pause/resume shared state helper |
+| `resolveTaskChangeAt()` | `src/shared/task-state.ts:15` | Cross-module task change timestamp resolver |
+| `resolveSlotStatus()` | `src/worker/task-state-shared.ts:4` | Worker slot occupancy status helper |
 | `resolveTaskLookupTarget()` | `src/worker/task-action.ts:42` | Canonical task lookup with `invalid/not_found` early outcome |
 | `buildTaskMutationMetaFields()` | `src/worker/task-action.ts:58` | Reusable optional `source/reason` payload expander for mutation logs |
 | `registerTaskMutationRoute()` | `src/http/routes-api-task-mutation.ts:25` | Shared pause/resume/cancel route response wrapper |

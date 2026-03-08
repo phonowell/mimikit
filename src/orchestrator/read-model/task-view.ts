@@ -1,3 +1,4 @@
+import { resolveTaskChangeAt } from '../../shared/task-state.js'
 import { compareIsoDesc } from '../../shared/time.js'
 import { titleFromCandidates } from '../../shared/utils.js'
 
@@ -52,9 +53,6 @@ const initCounts = (): TaskCounts => ({
   failed: 0,
   canceled: 0,
 })
-
-const resolveTaskChangeAt = (task: Task): string =>
-  task.completedAt ?? task.pausedAt ?? task.startedAt ?? task.createdAt
 
 const toFiniteNumber = (value: unknown): number | null =>
   typeof value === 'number' && Number.isFinite(value) ? value : null

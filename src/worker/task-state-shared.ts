@@ -1,8 +1,5 @@
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
-import type { Task } from '../types/index.js'
-
-export const resolveTaskChangeAt = (task: Task): string =>
-  task.completedAt ?? task.pausedAt ?? task.startedAt ?? task.createdAt
+export { resolveTaskChangeAt } from '../shared/task-state.js'
 
 export const resolveSlotStatus = (runtime: RuntimeState) => {
   const maxSlots = runtime.config.worker.maxConcurrent
