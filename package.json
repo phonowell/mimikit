@@ -60,7 +60,7 @@
   },
   "license": "MIT",
   "scripts": {
-    "lint": "tsx scripts/remove-bom.ts && tsx scripts/fix-crlf.ts && tsx scripts/format-jsdoc.ts && tsx scripts/fn-to-arrow.ts && eslint \"src/**/*.ts\" \"webui/**/*.js\" --fix",
+    "lint": "tsx scripts/remove-bom.ts && tsx scripts/fix-crlf.ts && tsx scripts/format-jsdoc.ts && tsx scripts/fn-to-arrow.ts && tsx scripts/prompt-hardcode-guard.ts && eslint \"src/**/*.ts\" \"webui/**/*.js\" --fix",
     "prompt:preview": "tsx scripts/preview-prompt.ts",
     "start": "tsx scripts/start.ts",
     "test": "vitest run",

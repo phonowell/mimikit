@@ -26,6 +26,14 @@ const actionFeedbackHintSchema = z
     ask_user_choice_invalid_options: z.string().trim().min(1),
     enqueue_task_provider_disabled: z.string().trim().min(1),
     enqueue_task_contract_missing: z.string().trim().min(1),
+    enqueue_task_contract_missing_default_prompt: z.string().trim().min(1),
+    enqueue_task_contract_missing_default_title: z.string().trim().min(1),
+    enqueue_task_contract_missing_default_goal: z.string().trim().min(1),
+    enqueue_task_contract_missing_default_scope: z.string().trim().min(1),
+    enqueue_task_contract_missing_default_acceptance_1: z
+      .string()
+      .trim()
+      .min(1),
     plan_not_found: z.string().trim().min(1),
     update_plan_done_forbidden: z.string().trim().min(1),
     duplicate_query_context_action_limit: z.string().trim().min(1),
@@ -119,11 +127,11 @@ export const formatEnqueueTaskProviderDisabledHint = (
   })
 
 const FALLBACK_TASK_CONTRACT_HINT_VALUES = {
-  prompt: 'TODO_PROMPT',
-  title: 'TODO_TITLE',
-  goal: 'TODO_GOAL',
-  scope: 'TODO_SCOPE',
-  acceptance_1: 'TODO_ACCEPTANCE',
+  prompt: templates.enqueue_task_contract_missing_default_prompt,
+  title: templates.enqueue_task_contract_missing_default_title,
+  goal: templates.enqueue_task_contract_missing_default_goal,
+  scope: templates.enqueue_task_contract_missing_default_scope,
+  acceptance_1: templates.enqueue_task_contract_missing_default_acceptance_1,
 } as const
 
 const trimOrFallback = (
@@ -134,6 +142,9 @@ const trimOrFallback = (
   return trimmed && trimmed.length > 0 ? trimmed : fallback
 }
 
+const escapeActionAttrValue = (value: string): string =>
+  value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+
 export const formatEnqueueTaskContractMissingHint = (attrs?: {
   prompt?: string | undefined
   title?: string | undefined
@@ -142,22 +153,23 @@ export const formatEnqueueTaskContractMissingHint = (attrs?: {
   acceptance_1?: string | undefined
 }): string =>
   renderHint('enqueue_task_contract_missing', {
-    prompt: trimOrFallback(
-      attrs?.prompt,
-      FALLBACK_TASK_CONTRACT_HINT_VALUES.prompt,
+    prompt: escapeActionAttrValue(
+      trimOrFallback(attrs?.prompt, FALLBACK_TASK_CONTRACT_HINT_VALUES.prompt),
     ),
-    title: trimOrFallback(
-      attrs?.title,
-      FALLBACK_TASK_CONTRACT_HINT_VALUES.title,
+    title: escapeActionAttrValue(
+      trimOrFallback(attrs?.title, FALLBACK_TASK_CONTRACT_HINT_VALUES.title),
     ),
-    goal: trimOrFallback(attrs?.goal, FALLBACK_TASK_CONTRACT_HINT_VALUES.goal),
-    scope: trimOrFallback(
-      attrs?.scope,
-      FALLBACK_TASK_CONTRACT_HINT_VALUES.scope,
+    goal: escapeActionAttrValue(
+      trimOrFallback(attrs?.goal, FALLBACK_TASK_CONTRACT_HINT_VALUES.goal),
     ),
-    acceptance_1: trimOrFallback(
-      attrs?.acceptance_1,
-      FALLBACK_TASK_CONTRACT_HINT_VALUES.acceptance_1,
+    scope: escapeActionAttrValue(
+      trimOrFallback(attrs?.scope, FALLBACK_TASK_CONTRACT_HINT_VALUES.scope),
+    ),
+    acceptance_1: escapeActionAttrValue(
+      trimOrFallback(
+        attrs?.acceptance_1,
+        FALLBACK_TASK_CONTRACT_HINT_VALUES.acceptance_1,
+      ),
     ),
   })
 

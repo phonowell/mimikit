@@ -1,7 +1,7 @@
 import type { TaskContract } from '../types/index.js'
 
 export const TASK_CONTRACT_REQUIRED_HINT =
-  'enqueue_task 执行失败：缺少 task contract。请提供 goal/scope 与至少 1 条 acceptance_{n}。'
+  'enqueue_task 执行失败：缺少 task contract。请补充 goal、scope 与至少一条 acceptance_{n}（例如 acceptance_1）。'
 
 const normalizeLine = (value?: string): string | undefined => {
   const trimmed = value?.trim()

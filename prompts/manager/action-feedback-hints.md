@@ -34,6 +34,16 @@ enqueue_task_contract_missing: |
   enqueue_task 执行失败：缺少 task contract。请补充 goal、scope 与至少一条 acceptance_{n}（例如 acceptance_1）。
   请直接改成下面格式后重试：
   <M:enqueue_task prompt="{{ prompt }}" title="{{ title }}" goal="{{ goal }}" scope="{{ scope }}" acceptance_1="{{ acceptance_1 }}" />
+enqueue_task_contract_missing_default_prompt: |
+  请在此填写任务目标
+enqueue_task_contract_missing_default_title: |
+  补全任务契约并执行
+enqueue_task_contract_missing_default_goal: |
+  完成用户请求的可交付结果
+enqueue_task_contract_missing_default_scope: |
+  单个 worker 任务端到端闭环
+enqueue_task_contract_missing_default_acceptance_1: |
+  返回可验证结果与关键产出
 plan_not_found: |
   {{ action }} 执行失败：未找到 plan ID。
 update_plan_done_forbidden: |

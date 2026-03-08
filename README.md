@@ -25,6 +25,7 @@ OPENAI_API_KEY=your_key pnpm start
 - [LLM Bootstrap](#llm-bootstrap)
 - [Features](#features)
 - [How It Works](#how-it-works)
+- [Prompt Governance](#prompt-governance)
 - [Minimal API Smoke Test](#minimal-api-smoke-test)
 - [Use Cases](#use-cases)
 - [Benchmark Positioning](#benchmark-positioning)
@@ -191,6 +192,14 @@ For LLM-driven setup and configuration, use [`docs/BOOTSTRAP.md`](./docs/BOOTSTR
 - Local file-backed observability: `history`, `tasks`, `task-progress`, `runtime-snapshot`, `log.jsonl` under `.mimikit/` ([state layout](./docs/design/workflow/interfaces-and-state.md)).
 
 Keywords: `AI orchestration layer`, `TypeScript orchestrator`, `Codex SDK`, `OpenAI`, `single-session orchestration`, `WebUI`, `SSE`, `task planning`, `Telegram bot`, `Feishu bot`, `local-first runtime`.
+
+
+## Prompt Governance
+
+- Prompts must live in `prompts/**`; business logic should load templates instead of embedding long natural-language literals in `src/**`.
+- Lint includes `scripts/prompt-hardcode-guard.ts`, which blocks new hardcoded prompt-like literals in critical runtime paths.
+- If an exception is unavoidable, annotate with `prompt-guard-exempt:{reason}` and document the rationale.
+- Full policy and examples: [`docs/design/workflow/prompt-governance.md`](./docs/design/workflow/prompt-governance.md).
 
 ## How It Works
 

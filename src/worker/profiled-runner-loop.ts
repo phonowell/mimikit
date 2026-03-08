@@ -15,6 +15,7 @@ import type {
 import type { Task, TokenUsage } from '../types/index.js'
 
 export const SKILL_USAGE_DONE_TAG_PATTERN =
+  // prompt-guard-exempt: protocol done-tag contract constant, not an LLM prompt template.
   '<M:skill_usage status="done">{skill-a,skill-b}</M:skill_usage>'
 export const MAX_RUN_ROUNDS = 3
 export const MAX_CONTINUE_LATEST_OUTPUT_CHARS = 1_600

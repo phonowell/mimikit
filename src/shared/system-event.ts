@@ -45,6 +45,7 @@ export const formatSystemEventText = (params: {
   payload: Record<string, unknown>
 }): string => {
   const summary = params.summary.trim()
+  // prompt-guard-exempt: protocol meta tag must stay in code for runtime event wiring.
   const metaTag = `<M:system_event name="${params.event}" version="1">${toInlineJson(params.payload)}</M:system_event>`
   if (!summary) return metaTag
   return `${summary}\n\n${metaTag}`
