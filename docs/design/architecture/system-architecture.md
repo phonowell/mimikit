@@ -22,12 +22,12 @@
 - `manager`：消费 `inputs/results`，输出用户回复与编排动作。
 - `worker`：派发任务到外部执行运行时，并回写结果。
 - `runtime reaper`：独立守护进程，监测主进程 lease 并在异常退出后回收 worker 子进程。
-- `triggerWakeLoop`：统一处理 `cron/scheduled_at/on_worker_slot_freed` 触发并发布 `system_event.name=trigger_fire`。
+- `triggerWakeLoop`：统一处理计划触发（`cron/scheduled_at/on_worker_slot_freed`）、用户选择超时、worker 槽位释放事件。
 
 补充：
 
 - manager 回合采用 `maxCorrectionRounds` 硬上限；超过上限写入 `system_event.name=manager_round_limit` 并返回 best-effort 文本。
-- manager 在发起主调用前会按 working focus 主动触发压缩；context/token 类错误仍保留一次压缩重试（`compressManagerContext`）。
+- manager 失败时会写入 `manager_error`，并在“已消费但尚未回复”场景写入 `manager_fallback_reply`。
 
 ## 启动顺序
 
@@ -49,13 +49,13 @@
 3. 若产生任务，worker 调用外部执行运行时并写入 `results/packets.jsonl`。
 4. 结果回写后再次唤醒 manager，形成闭环。
 
-实时唤醒来源：`user_input`、`task_result`、`trigger`、`capacity`。
+实时唤醒来源：`user_input`、`task_result`、`trigger_fire`、`worker_slot_freed`。
 
 ## 一致性与恢复
 
 - manager loop 单飞，同一时刻仅一个活跃批次。
 - 队列 compact 仅在“已完全消费且达到阈值”时执行。
-- manager 上下文连续性通过 `history + tasks + plans + managerFocusCompressedContexts` 保持。
+- manager 上下文连续性通过 `history + tasks + plans + focus` 数据保持；`managerFocusCompressedContexts` 当前仅用于 worker prompt 补充字段保留。
 - `restart/reset` 先回包，再等待 in-flight manager 批次收敛后持久化并退出。
 - 进程被杀（如 `SIGKILL`）时由 `runtime reaper` 基于 `.mimikit/runtime/lease.json` 与 `.mimikit/runtime/children.json` 执行回收（`SIGTERM` 后 `SIGKILL`）。
 

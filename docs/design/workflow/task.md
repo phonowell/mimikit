@@ -20,8 +20,9 @@
 - 立即执行 Action：`<M:enqueue_task ... />`
 - 生命周期控制 Action：`<M:mutate_task id="task-..." op="pause|resume|cancel" />`
 - worker 任务 profile 固定为 `worker`
-- action 去重键：`prompt + title + profile + focusId`
-- queue 去重键：`task.fingerprint`（仅拦 active 任务）
+- 单轮 action 去重键：`prompt + title + profile + provider + focusId + contract`
+- active 任务去重键：`task.fingerprint`（包含 `prompt/title/profile/provider/focusId/schedule/contract`）
+- 语义冲突键：`task semantic key`，命中后会取消旧 active 任务并保留新任务
 
 ## 执行编排与回写
 
@@ -29,7 +30,7 @@
 2. `runTaskWithRetry` 调用外部执行运行时并收敛错误。
 3. `finalizeResult` 更新任务状态并归档。
 4. 发布到 `results`，立即唤醒 manager 消费结果。
-5. `pending` 快速取消：发布 `canceled` 到 `results`，立即唤醒 manager。
+5. `pending/paused` 快速取消：直接产出 `canceled` 结果并发布到 `results`。
 
 ## 取消与恢复
 
@@ -46,27 +47,31 @@
 - `paused` 状态支持继续 `cancel`，行为与 `pending` 取消一致（直接产出 `canceled` 结果）。
 - WebUI 二级菜单提供 `pause/resume/cancel` 控制动作；pause/resume 会写入系统事件消息。
 
-### session 复用/丢弃语义
+状态返回约定：
+
+- `pause` 成功状态：`paused`
+- `resume` 成功状态：`pending`
+- `cancel` 成功状态：`canceled`
+- 典型拒绝状态：`already_done`、`already_paused`、`not_paused`、`already_canceled`
+
+## session 复用/丢弃语义
 
 | 条件 | 行为 | 关键实现 |
 | --- | --- | --- |
-| 任务重试或进程重启恢复，且 `task.sessionId` 存在、`sessionState!=discarded`、`cancel.source!=user` | 复用旧 session | `src/worker/session-state.ts#selectReusableSessionId` + `src/worker/run-retry.ts` |
-| provider 返回 resume/thread/session 无效类错误（not found/expired/invalid） | 丢弃旧 session，下一次尝试不带 `sessionId` | `src/worker/session-state.ts#shouldResetSessionAfterError` + `src/worker/run-retry.ts#onSessionDiscarded` |
-| 用户主动取消（HTTP/显式用户来源） | 立即丢弃旧 session，后续必须新建 | `src/worker/cancel-task.ts#applyCancelSessionPolicy`（`source=user`） |
-| 系统取消或延后取消（`source=system/deferred`） | 保留旧 session 为可恢复 | `src/worker/cancel-task.ts#applyCancelSessionPolicy`（`source=system/deferred`） |
+| 任务重试或进程重启恢复，且 `task.sessionId` 存在、`sessionState!=discarded`、`cancel.source!=user` | 复用旧 session | `src/worker/session-state.ts` + `src/worker/run-retry.ts` |
+| provider 返回 resume/thread/session 无效类错误（not found/expired/invalid） | 丢弃旧 session，下一次尝试不带 `sessionId` | `src/worker/session-state.ts` + `src/worker/run-retry.ts` |
+| 用户主动取消（HTTP/显式用户来源） | 立即丢弃旧 session，后续必须新建 | `src/worker/cancel-task.ts`（`source=user`） |
+| 系统取消或延后取消（`source=system/deferred`） | 保留旧 session 为可恢复 | `src/worker/cancel-task.ts`（`source=system/deferred`） |
 
-`cancel.source` 归一化规则：`user|http -> user`，`deferred -> deferred`，其他来源统一视为 `system`（见 `src/worker/cancel-task.ts#normalizeCancelSource`）。
+`cancel.source` 归一化规则：`user|http -> user`，`deferred -> deferred`，其他来源统一视为 `system`。
 
-### 本地验证步骤（最小复现）
+## 本地验证步骤（最小复现）
 
-1. 异常中断/恢复复用旧 session：`pnpm vitest run test/runtime-persistence-queue-reconcile.test.ts -t "persist+hydrate keeps reusable session on recovered pending task" && pnpm vitest run test/worker-run-retry-session.test.ts -t "reuses persisted session id on next attempt"`  
-   观察点：恢复后任务从 `running` 降级为 `pending` 且保留 `sessionId`；下一次 worker 调用携带旧 `sessionId`。
-2. 用户取消丢弃旧 session、系统延后取消保留旧 session：`pnpm vitest run test/worker-cancel-session-policy.test.ts`  
-   观察点：`source=user` 后 `task.sessionId` 被清除且 `sessionState=discarded`；`source=deferred` 保留 `sessionId` 且 `sessionState=reusable`。
-3. 全量门禁：`pnpm run review-code-changes`  
-   观察点：lint/type-check/test 全部通过后再执行 `wt-land`。
+1. 异常中断/恢复复用旧 session：`pnpm vitest run test/runtime-persistence-queue-reconcile.test.ts -t "persist+hydrate keeps reusable session on recovered pending task" && pnpm vitest run test/worker-run-retry-session.test.ts -t "reuses persisted session id on next attempt"`
+2. 用户取消丢弃旧 session、系统延后取消保留旧 session：`pnpm vitest run test/worker-cancel-session-policy.test.ts`
+3. 全量门禁：`pnpm run review-code-changes`
 
-### 常见问题排查（持久化状态清理）
+## 常见问题排查（持久化状态清理）
 
 1. 停止运行中的进程，避免被后台循环立刻重写状态文件。
 2. 清理 `.mimikit/runtime-snapshot.json` 与 `.mimikit/runtime-snapshot.json.bak`（或对应 `workDir` 下同名文件）。

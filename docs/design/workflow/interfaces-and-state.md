@@ -14,42 +14,66 @@
 - `POST /api/input`
 - `DELETE /api/messages/:id`
 - `GET /api/tasks/:id/archive`
+- `POST /api/tasks/:id/pause`
+- `POST /api/tasks/:id/resume`
 - `POST /api/tasks/:id/cancel`
+- `POST /api/tasks/:id/delete`
 - `POST /api/choices/:id/select`
 - `POST /api/restart`
 - `POST /api/reset`
 
+任务变更接口（pause/resume/cancel/delete）统一返回：
+
+- 成功：`{ ok: true, id, status, changeAt? }`
+- 失败：`{ ok: false, id, status, changeAt?, error }`
+
+任务变更失败状态码映射：
+
+- `status=not_found` -> `404`
+- `status=invalid` -> `400`
+- `status=active_task` -> `409`
+- 其他业务拒绝（如 `already_done/already_paused/not_paused/already_canceled`）-> `409`
+
 ## 静态路由（WebUI 文件访问）
 
 - `GET /state-files/*`（映射 `workDir/*`，默认 `./.mimikit/*`）
+- `GET /`（WebUI 静态资源）
 
 说明：
+
 - `state-files` 用于 WebUI 直接打开当前 `workDir` 内证据文件与生成物。
+- 访问 `/state-files/**/tasks/*.md`（且无 `raw=1`）会 302 跳转到 `/archive-viewer.html?src=...`。
 
 ## SSE 事件模型（`GET /api/events`）
 
-- `snapshot`：全量快照，包含 `status/messages/tasks/plans/focuses/choice`。
+- `snapshot`：快照事件，包含 `status/messages/tasks/plans/focuses/choice`。
 - `tasks`：任务列表快照更新（由 worker 侧状态变化触发）。
 - `heartbeat`：SSE 保活心跳。
 - `error`：SSE 连接内错误反馈。
+- 心跳周期：`15s`（`SSE_HEARTBEAT_MS=15000`）。
 
-说明：当前实现通过 SSE 下发消息、任务、plans 与 focus，不提供独立 `messages/tasks/plans` HTTP 查询接口。
+消息快照模式：
+
+- `messages.mode=full`：完整消息列表。
+- `messages.mode=delta`：相对上次游标增量。
+- `messages.mode=reset`：游标失效后重置为完整列表。
 
 补充：
+
 - `tasks.tasks[*].liveOutput` 为运行中任务的流式输出片段（仅 WebUI 展示，运行态内存数据，不承诺持久化）。
-- WebUI 消息入口为 `webui/messages/controller-payload.js#applyMessagesPayload`；该入口会对进入会话流的消息输出控制台日志（`role/type/source/visibility/summary`），并按消息签名去重以避免重复刷屏。
+- 会话入站消息日志在服务端 `src/http/session-ingress-log.ts` 统一记录并去重（`[http] session ingress message/batch`）。
 
 ## System 气泡可见性规则（WebUI 会话流）
 
-- 判定入口：`src/shared/system-message-visibility.ts`（由 `src/shared/message-visibility.ts#isVisibleToUser` 调用）。
-- 直接对用户有价值的 system 事件默认可见：`startup`、`task_created`、`task_canceled`、`task_completed`、`manager_fallback_reply`、`user_choice`、`user_choice_skipped`、`session_summary_restored`。
+- 判定入口：`src/shared/system-message-visibility.ts`（由 `src/shared/message-visibility.ts` 调用）。
+- 直接对用户有价值的 system 事件默认可见：`startup`、`task_created`、`task_paused`、`task_resumed`、`task_canceled`、`task_completed`、`manager_fallback_reply`、`user_choice`、`user_choice_skipped`。
 - 内部编排/调度/控制类事件默认不可见：`manager_round_limit`、`manager_error`、`action_feedback`、`trigger_fire`、`worker_slot_freed`、`plan_created`、`plan_updated`、`plan_deleted`。
 - 未识别 system_event 采用保守策略：`visibility=user` 保持可见，`visibility=all` 默认不展示给最终用户。
 
-`manager_fallback_reply` 事件补充（网络波动场景）：
-- 后端可在 `manager_fallback_reply` payload 追加 `source_input_id` 与自动重试元数据：`auto_retry_attempts`、`auto_retry_max_attempts`、`auto_retry_state`、`auto_retry_strategy`。
-- WebUI 在消息模型中保留 `systemEventName/systemEventPayload`，不依赖文案关键词判断事件类型。
-- 当前 WebUI 仅展示失败事件，不提供前端手动 `Retry` 操作入口。
+`manager_fallback_reply` 事件补充：
+
+- payload 可能包含 `source_input_id`、`auto_retry_attempts`、`auto_retry_max_attempts`、`auto_retry_state`、`auto_retry_strategy`。
+- WebUI 通过 `systemEventName/systemEventPayload` 识别事件，不依赖文案关键词。
 
 ## 输入协议（`POST /api/input`）
 
@@ -58,104 +82,65 @@
 - 必填：`text`
 - 可选：`quote`、`language`
 - 可选客户端上下文：`clientLocale`、`clientTimeZone`、`clientOffsetMinutes`、`clientNowIso`
-- 输入限制：当前仅支持纯文本输入，不支持图片/附件直传。
+- 限制：当前仅支持纯文本输入，不支持图片/附件直传。
 
-## 取消任务协议（`POST /api/tasks/:id/cancel`）
+请求体错误语义：
 
-- 成功：`{ ok: true, id, status: "canceled", changeAt }`
-- 失败：`{ ok: false, id, status, changeAt?, error }`
-- 说明：`id` 固定为目标任务 ID；`status` 取值 `not_found | invalid | already_canceled | already_done`；`changeAt` 与任务视图字段语义一致。
+- 缺少或空 `text` -> `400 { error: "text is required" }`
+- 非法 JSON 或 schema 不匹配 -> `400 { error: "invalid JSON" }`
+
+## 交互协议（Choice）
+
+- `POST /api/choices/:id/select` 请求体：`{ optionId: string }`
+- 成功：`{ ok: true, choiceId, optionId, source }`
+- 失败：`not_found -> 404`，`invalid_option -> 400`，`expired -> 409`
+- timeout：后端在 `5` 分钟超时后自动选择默认项（`source=timeout`）
+
+## 消息删除协议
+
+- `DELETE /api/messages/:id`
+- 仅允许删除非 system 消息
+- system 消息删除请求返回 `400 { error: "system message cannot be deleted" }`
+- 消息不存在返回 `404 { error: "message not found" }`
 
 ## CLI 入口
 
 - `pnpm start`
 - `tsx src/cli/index.ts --work-dir .mimikit`
+- `tsx src/cli/index.ts --port 8787 --work-dir .mimikit`
 
 ## 环境变量（`src/cli/env.ts`）
 
-- `MIMIKIT_MODEL`
-- `MIMIKIT_MANAGER_MODEL`
-- `MIMIKIT_CODEX_MODEL`
-- `MIMIKIT_OPENCODE_MODEL`
-- `MIMIKIT_REASONING_EFFORT`
-- `MIMIKIT_MANAGER_REASONING_EFFORT`
-- `MIMIKIT_CODEX_REASONING_EFFORT`
-- `MIMIKIT_PROXY`
-- `MIMIKIT_MANAGER_PROXY`
-- `MIMIKIT_CODEX_PROXY`
-- `MIMIKIT_OPENCODE_PROXY`
-- `MIMIKIT_CODEX_ENABLED`
-- `MIMIKIT_OPENCODE_ENABLED`
-- `MIMIKIT_WEBUI_ENABLED`
-- `MIMIKIT_WEBUI_PORT`
-- `TELEGRAM_CHANNEL_ENABLED`
-- `TELEGRAM_BOT_TOKEN`
-- `TELEGRAM_CHAT_ID`
-- `TELEGRAM_API_ROOT`
-- `TELEGRAM_PROXY`
-- `FEISHU_CHANNEL_ENABLED`
-- `FEISHU_APP_ID`
-- `FEISHU_APP_SECRET`
-- `FEISHU_CHAT_ID`
+- 模型：`MIMIKIT_MODEL`、`MIMIKIT_MANAGER_MODEL`、`MIMIKIT_CODEX_MODEL`、`MIMIKIT_OPENCODE_MODEL`
+- 推理强度：`MIMIKIT_REASONING_EFFORT`、`MIMIKIT_MANAGER_REASONING_EFFORT`、`MIMIKIT_CODEX_REASONING_EFFORT`
+- 代理：`MIMIKIT_PROXY`、`MIMIKIT_MANAGER_PROXY`、`MIMIKIT_CODEX_PROXY`、`MIMIKIT_OPENCODE_PROXY`
+- provider 开关：`MIMIKIT_CODEX_ENABLED`、`MIMIKIT_OPENCODE_ENABLED`
+- WebUI：`MIMIKIT_WEBUI_ENABLED`、`MIMIKIT_WEBUI_PORT`
+- Telegram：`TELEGRAM_CHANNEL_ENABLED`、`TELEGRAM_BOT_TOKEN`、`TELEGRAM_CHAT_ID`、`TELEGRAM_API_ROOT`、`TELEGRAM_PROXY`
+- Feishu：`FEISHU_CHANNEL_ENABLED`、`FEISHU_APP_ID`、`FEISHU_APP_SECRET`、`FEISHU_CHAT_ID`
 
 ## 配置结构（`config.toml`）
 
 - 若缺少 `config.toml`，启动阶段会由 `defaults/config.template.toml` 自动生成。
-- `manager.model`
-- `manager.modelReasoningEffort`
-- `manager.{baseUrl,apiKey,proxy}`（可选，仅 manager）
-- `worker.maxConcurrent`
-- `worker.timeoutMs`
-- `codex.enabled`
-- `codex.model`
-- `codex.modelReasoningEffort`
-- `codex.capability`
-- `codex.billing`
-- `codex.proxy`
-- `opencode.enabled`
-- `opencode.model`
-- `opencode.capability`
-- `opencode.billing`
-- `opencode.proxy`
-- `webui.enabled`
-- `webui.port`
-- `telegram.enabled`
-- `telegram.botToken`
-- `telegram.chatId`
-- `telegram.apiRoot`
-- `telegram.proxy`
-- `feishu.enabled`
-- `feishu.appId`
-- `feishu.appSecret`
-- `feishu.chatId`
-
-## Telegram 模块边界（`src/channels/telegram/*`）
-
-- `config.ts`：Telegram 配置 schema、环境变量覆写、启用态配置校验
-- `polling.ts`：Telegram long polling 入站与生命周期管理
-- `client.ts`：Telegram `sendMessage` 文本发送
-- `passive-reply.ts`：manager 回复后的 Telegram 被动发送
-- `index.ts`：对核心层暴露统一集成入口
-
-## Feishu 模块边界（`src/channels/feishu/*`）
-
-- `config.ts`：Feishu 配置 schema、环境变量覆写、启用态配置校验
-- `polling.ts`：Feishu 长连接入站与生命周期管理
-- `client.ts`：Feishu 文本发送
-- `passive-reply.ts`：manager 回复后的 Feishu 被动发送
-- `index.ts`：对核心层暴露统一集成入口
+- `manager`: `model`、`modelReasoningEffort`、`baseUrl?`、`apiKey?`、`proxy?`
+- `worker`: `maxConcurrent`、`timeoutMs`
+- `codex`: `enabled`、`model`、`modelReasoningEffort`、`capability`、`billing`、`proxy?`
+- `opencode`: `enabled`、`model`、`capability`、`billing`、`proxy?`
+- `webui`: `enabled`、`port`
+- `telegram`: `enabled`、`botToken`、`chatId`、`apiRoot`、`proxy`
+- `feishu`: `enabled`、`appId`、`appSecret`、`chatId`
 
 ## 状态目录（默认 `./.mimikit/`）
 
 - `inputs/packets.jsonl`
 - `results/packets.jsonl`
-- `tasks/tasks.jsonl`
+- `tasks/tasks.jsonl`（任务视图快照，保留最近 100 条）
 - `task-progress/YYYY-MM-DD/{taskId}.jsonl`
-- `tasks/YYYY-MM-DD/*.md`
+- `tasks/YYYY-MM-DD/*.md`（任务归档）
 - `traces/YYYY-MM-DD/<ts36><ra>.txt`
 - `history/YYYY-MM-DD.jsonl`
 - `memory/MEMORY.md`
-- `*`（由 `/state-files/*` 静态路由暴露）
+- `generated/worker-task-prompts/YYYY-MM-DD/{taskId}.md`
 - `runtime-snapshot.json`
 - `runtime-snapshot.json.bak`
 - `log.jsonl`
@@ -165,35 +150,25 @@
 - `runtime/reaper.json`（reaper 守护进程标记）
 
 说明：
-- manager 每轮会注入 `M:memory`，注入前对 memory entries 做本地评分排序并按 budget 选择
-- memory 维护与遗忘语义（`remember_memory` / `delete_entry_ids`）以 `./memory.md` 为准；本节仅描述状态目录与落盘位置
-- `memory/MEMORY.md` 由两条链路维护：后台 memory 刷新子进程（`>=20` 轮触发，单飞执行）+ manager `remember_memory` 即时写入
-- 不存在独立 forget action；遗忘通过 `remember_memory` 记录指令，后续刷新输出 `delete_entry_ids` 执行删除
-- 异常退出（如被 kill）时，reaper 依据 `runtime/lease.json + runtime/children.json` 回收残留子进程
 
-## WebUI 路径链接规则
-
-- 纯文本本地路径在渲染前会自动 linkify（仅消息 Markdown 区域）。
-- `workDir` 内路径统一映射到 `GET /state-files/*`（默认是 `.mimikit`）。
-- 保护规则：行内代码、代码块、已存在的 Markdown 链接目标不会被二次改写。
+- `memory/MEMORY.md` 由两条链路维护：后台 memory 刷新子进程（`>=20` 轮触发，单飞执行）+ manager `remember_memory` 即时写入。
+- 异常退出（如被 kill）时，reaper 依据 `runtime/lease.json + runtime/children.json` 回收残留子进程。
 
 ## Runtime Snapshot 关键字段
 
 schema：`src/storage/runtime-snapshot-schema.ts`
 
-- `tasks`
-  - `tasks[*].provider`：`codex | opencode`
+- `tasks`（含 `tasks[*].provider`）
 - `taskPlans`
 - `focuses`、`focusContexts`、`activeFocusIds`
-- `managerTurn`、`managerFocusCompressedContexts`
-- `memoryRefresh`（刷新检查点）
+- `managerTurn`
 - `queues.inputsCursor`、`queues.resultsCursor`
 - `pendingUserChoice`
-
-说明：
-- Task/Plan/Focus/Memory 的生命周期与语义以 `./task.md`、`./plan.md`、`./focus.md`、`./memory.md` 为准；本节仅列快照字段。
+- `memoryRefresh`
+- `managerFocusCompressedContexts`（可选字段，当前仅保留结构）
 
 恢复一致性规则（启动阶段）：
+
 - 若 `queues.inputsCursor` 大于 `inputs/packets.jsonl` 当前包数，重置为 `0`
 - 若 `queues.resultsCursor` 大于 `results/packets.jsonl` 当前包数，重置为 `0`
 - 若 `memoryRefresh.lastProcessedInputsCursor` / `lastProcessedResultsCursor` 超过对应队列包数，同步重置为 `0`
@@ -205,3 +180,14 @@ schema：`src/storage/runtime-snapshot-schema.ts`
 - 满足控制窗口时上述接口均为“先回包，再异步停机”。
 - 停机阶段会等待 in-flight manager 批次收敛，再持久化 snapshot 并退出。
 - `reset` 会在持久化后清空状态目录并重建。
+
+## `/api/status` 字段
+
+- `ok`
+- `runtimeId`
+- `agentStatus`（`idle|running`）
+- `activeTasks`
+- `pendingTasks`
+- `pendingInputs`
+- `managerRunning`
+- `maxWorkers`

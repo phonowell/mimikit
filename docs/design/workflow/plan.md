@@ -12,21 +12,23 @@
 
 - 对外名称：Plans；后端领域名：`taskPlans`
 - 状态：`active | blocked | done`
+- 完成原因：`completed | exhausted | canceled`
 - 触发策略：`trigger.mode = cron | scheduled_at | on_worker_slot_freed`
 
 ## 触发机制
 
-- `triggerWakeLoop`（`src/manager/loop-trigger.ts`）每秒检查 plan
-- `cron/scheduled_at`：命中即发布 `system_event.name=trigger_fire`
-- `on_worker_slot_freed`：worker 从“满载”转为“有空槽位”时按 `priority + FIFO` 触发
+- `triggerWakeLoop`（`src/manager/loop-trigger.ts`）每秒检查。
+- `cron/scheduled_at`：命中即发布 `system_event.name=trigger_fire`。
+- `on_worker_slot_freed`：在“有空槽位”窗口触发，候选计划按 `priority -> createdAt(FIFO)` 排序执行。
+- 若槽位释放时无可触发 `on_worker_slot_freed` 计划，系统会发布 `system_event.name=worker_slot_freed`。
 
 ## 调度语义基线（槽位口径）
 
 - 槽位状态字段统一为：`max_slots`、`occupied_slots`、`available_slots`。
 - `available_slots = max_slots - occupied_slots`。
 - `occupied_slots = max(workerQueue.pending, runningControllers.size)`，并限制在 `[0, max_slots]`。
-- `on_worker_slot_freed` 条件：`available_slots > 0`。
-- worker 出队语义：仅受 `maxConcurrent` 与任务去重约束；同一 `focusId` 的任务在有空槽时允许并行运行。
+- `on_worker_slot_freed` 触发前置条件：`available_slots > 0`。
+- 槽位事件带 1 秒冷却（`WORKER_SLOT_EVENT_COOLDOWN_MS`）。
 
 ## 去重与归属
 
@@ -43,6 +45,18 @@
   - 可更新：`prompt|title|trigger_mode|cron|scheduled_at|max_runs|priority|source|status|last_task_id|focus_id`
 - `delete_plan`
   - 入参：`id`
+
+## 触发后的状态收敛
+
+- `scheduled_at` 触发后立即标记 `done(completed)`（一次性）。
+- `cron` 若表达式无下一次触发，则标记 `done(completed)`。
+- 达到 `max_runs` 时标记 `done(exhausted)`。
+
+## 校验边界
+
+- `create_plan/update_plan` 中 `trigger_mode=scheduled_at` 时会校验时间不得早于“当前用户上下文时间”（若有）或系统当前时间。
+- `trigger_mode=on_worker_slot_freed` 与 `cron/scheduled_at` 参数互斥。
+- `update_plan` 对 `done` 计划默认拒绝，仅允许 `last_task_id` 补丁写入。
 
 ## 关联数据结构
 

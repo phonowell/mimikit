@@ -16,7 +16,7 @@
 - 模板：`prompts/manager/system.md`（`nunjucks` 渲染）
 - Provider：固定 `openai-responses`（direct responses）
 - Provider 配置来源：`loadCodexSettings()`，优先读取 `~/.codex/config.toml` 的 active provider（`base_url`、`api_key`、`env_key`/`api_key_env`），缺省回退 `OPENAI_API_KEY` 与 `~/.codex/auth.json`
-- 会话连续性：依赖本地 `history/tasks/plans/managerFocusCompressedContexts`
+- 超时：按 prompt 字节动态计算（`60s~120s`）
 - 输出：`{ output, elapsedMs, usage? }`
 
 主流程：
@@ -42,7 +42,7 @@
 
 1. 构造 worker prompt。
 2. 调用 provider（外部执行运行时）执行。
-3. 多轮执行直到检测到结束标签或达到轮次上限。
+3. 最多执行 3 轮，直到输出包含 `<M:skill_usage status="done">...</M:skill_usage>`。
 4. 记录进度并归档任务结果。
 
 ## Provider Runtime

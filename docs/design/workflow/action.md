@@ -24,7 +24,7 @@
 
 ## Manager 消费的编排 Action
 
-实现：`src/manager/action-registrations.ts`、`src/manager/action-validation.ts`、`src/manager/action-apply.ts`、`src/manager/loop-batch-run-manager.ts`、`src/manager/runtime-adapter.ts`、`src/history/query.ts`
+实现：`src/manager/action-registry-definitions.ts`、`src/manager/action-validation.ts`、`src/manager/action-apply.ts`
 
 ### 计划类
 
@@ -61,18 +61,28 @@
 - `enqueue_task.provider`：可选 `codex|opencode`；可选值应来自 `M:environment.provider_candidates`（仅包含 enabled provider）
 - 未指定 `provider` 时，系统按配置自动选择：`billing` 最低优先；同档位下 `capability` 最高优先
 - `assign_focus`：`target_type(task|plan|history) + target_id + focus_id`
-- `upsert_focus.open_item_{n}`：按编号传递字符串待办项，`n` 必须从 `1` 连续递增且不能跳号（如 `open_item_1`、`open_item_2`）
+- `upsert_focus.open_item_{n}`：按编号传递字符串待办项，`n` 必须从 `1` 连续递增且不能跳号
 - `ask_user_choice.option_{n}_id/label/reason`：选项三元组编号 `n` 必须从 `1` 连续递增且不能跳号
 
 ## Action 执行语义
 
-- `query_context` / `read_file`：仅做 schema 校验，不直接改状态；同一轮每类最多 1 条，超出会返回 `M:action_feedback`；结果通过下一纠错回合注入 `M:query_lookup` / `M:file_lookup`。
-- `query_context` 参数收敛为仅 `query`；内部固定执行全局检索（`history/tasks/focus/plans/generated_index/task_archives`）+ 跨 scope 去重，不再暴露 `scopes/limit/*` 调参参数。
-- `generated_index`：仅索引 `work_dir/generated` 下文本文件的轻量元信息（`path/updatedAt/size/snippet`），用于定位候选文件；需要正文时改用 `read_file`。
+- `query_context` / `read_file`：仅做 schema 校验，不直接改状态；结果通过下一纠错回合注入 `M:query_lookup` / `M:file_lookup`。
+- `query_context` 参数收敛为仅 `query`；内部固定执行全局检索（`history/tasks/focus/plans/generated_index/task_archives`）+ 跨 scope 去重。
+- `generated_index`：仅索引 `work_dir/generated` 下文本文件的轻量元信息（`path/updatedAt/size/snippet`），需要正文时改用 `read_file`。
 - `set_task_result_summary`：仅用于当前批次 `task_result` 的摘要覆写（不直接执行 action 状态写入）。
 - `mutate_task`：统一 task 生命周期控制（`op=pause|resume|cancel`），按 `op` 分发到 `worker/pause-task.ts`、`worker/resume-task.ts`、`worker/cancel-task.ts`，统一产出可追踪结构（`id`、`status`、`changeAt`）。
-- 上下文压缩不再暴露为 manager action；仅由运行时内部触发，按 focus 维度写入压缩摘要（`managerFocusCompressedContexts`），prompt 仅注入 working focus 对应条目。
-- `remember_memory`：立即写入 `memory/MEMORY.md`，仅接受 `content` 参数，并通过 `memory_remembered` system event 回执 `entry_id/ref/operation`。若用户表达“某信息应遗忘”，同样通过此 action 记录指令，后续由 memory refresh 在 `delete_entry_ids` 执行真实删除（无独立 forget action）。
+- `ask_user_choice` 是 stop action：命中后当前 action 批次停止后续 apply。
+- `remember_memory`：立即写入 `memory/MEMORY.md`，仅接受 `content` 参数，并通过 `memory_remembered` system event 回执 `entry_id/ref/operation`。
+
+补充：
+
+- `managerFocusCompressedContexts` 字段当前仅保留结构与清理逻辑；未提供可执行 `compress_context` action，也未启用独立压缩动作链路。
+
+约束补充：
+
+- `query_context` 与 `read_file` 在同一纠错回合中每类仅接受 1 条有效 action；重复项会回写 `M:action_feedback`。
+- 未注册 action 会回写 `unregistered_action` 反馈，不会执行。
+- action 出现在代码块或尾部 action 区之外时，会回写 `invalid_action_syntax` 反馈。
 
 ### manager 任务控制门禁（guardrail）
 
@@ -101,7 +111,7 @@
 常见错误：
 
 - `read_file failed: file does not exist`
-- `read_file failed: path is not a regular file`（含目录、设备文件、socket、pipe，或 symlink 目标非普通文件）
+- `read_file failed: path is not a regular file`
 - `read_file failed: permission denied`
 - `read_file failed: file is too large (...)`
 - `read_file failed: file is not valid UTF-8 text`
