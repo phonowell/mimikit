@@ -56,7 +56,6 @@ const closeToolsMenu = (toolsToggleBtn) => {
   const expanded = toolsToggleBtn.getAttribute('aria-expanded')
   if (expanded !== 'true') return
   if (typeof toolsToggleBtn.click === 'function') toolsToggleBtn.click()
-  else toolsToggleBtn.setAttribute('aria-expanded', 'false')
 }
 
 const isSpeechSupported = () =>

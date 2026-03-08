@@ -173,7 +173,7 @@ main[data-app] {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  z-index: 6;
+  z-index: 20;
 }
 
 .tools-menu[hidden],
@@ -221,6 +221,31 @@ main[data-app] {
 .task-menu-item--cancel:hover:not(:disabled),
 .task-menu-item--delete:hover:not(:disabled) {
   background: rgba(226, 93, 93, 0.1);
+  color: var(--danger);
+}
+
+.app-toast {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  max-width: min(320px, calc(100vw - 24px));
+  min-height: 36px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: var(--panel);
+  box-shadow: var(--shadow-dialog);
+  color: var(--muted-contrast, var(--muted));
+  font-size: 12px;
+  line-height: 1.4;
+  z-index: 40;
+}
+
+.app-toast[data-state='success'] {
+  color: var(--status-success);
+}
+
+.app-toast[data-state='error'] {
   color: var(--danger);
 }
 

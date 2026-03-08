@@ -26,24 +26,6 @@
   font-weight: 600;
 }
 
-.tasks-feedback {
-  margin: 0;
-  padding: 6px 16px;
-  font-size: 12px;
-  line-height: 1.4;
-  color: var(--muted-contrast, var(--muted));
-  background: var(--panel-soft);
-  border-bottom: 1px solid transparent;
-}
-
-.tasks-feedback[data-state='success'] {
-  color: var(--status-success);
-}
-
-.tasks-feedback[data-state='error'] {
-  color: var(--danger);
-}
-
 .tasks-list,
 .plans-list,
 .focuses-list {

@@ -1,4 +1,4 @@
-import { createDialogController } from '../dialog.js'
+import { createConfirmDialogController } from '../confirm-dialog.js'
 import { fetchWithTimeout } from '../fetch-with-timeout.js'
 import { UI_TEXT } from '../system-text.js'
 
@@ -22,29 +22,16 @@ export const createDeleteMessageController = ({
   updateScrollButton,
 }) => {
   const resolveRemoveEmpty = getRemoveEmpty ?? removeEmpty ?? (() => () => {})
-  const deleteDialogEnabled = Boolean(
-    deleteConfirmDialog && deleteConfirmCancelBtn && deleteConfirmBtn,
-  )
-  let pendingDeleteId = ''
   let isDeletePending = false
   let deleteModeEnabled = false
   let deleteModeConfirmed = false
 
-  const deleteDialog = deleteDialogEnabled
-    ? createDialogController({
-        dialog: deleteConfirmDialog,
-        focusOnOpen: deleteConfirmCancelBtn,
-        onAfterClose: () => {
-          if (isDeletePending) return
-          pendingDeleteId = ''
-        },
-      })
-    : null
-
-  const setDeleteActionsDisabled = (disabled) => {
-    if (deleteConfirmCancelBtn) deleteConfirmCancelBtn.disabled = disabled
-    if (deleteConfirmBtn) deleteConfirmBtn.disabled = disabled
-  }
+  const deleteConfirm = createConfirmDialogController({
+    dialog: deleteConfirmDialog,
+    cancelBtn: deleteConfirmCancelBtn,
+    confirmBtn: deleteConfirmBtn,
+    fallbackMessage: UI_TEXT.deleteConfirmPrompt,
+  })
 
   const requestDeleteMessage = async (id) => {
     if (!id) return false
@@ -79,93 +66,41 @@ export const createDeleteMessageController = ({
     }
   }
 
-  const confirmDelete = async () => {
-    if (!pendingDeleteId || isDeletePending) return
-    deleteModeConfirmed = deleteModeEnabled
-    isDeletePending = true
-    setDeleteActionsDisabled(true)
-    const deleted = await requestDeleteMessage(pendingDeleteId)
-    isDeletePending = false
-    setDeleteActionsDisabled(false)
-    if (!deleted) return
-    pendingDeleteId = ''
-    if (deleteDialog) deleteDialog.close()
-  }
-
   const deleteMessage = async (message) => {
     const id = readMessageId(message)
     if (!id) return
     if (deleteModeEnabled) {
       if (!deleteModeConfirmed) {
-        if (deleteDialogEnabled && deleteDialog) {
-          pendingDeleteId = id
-          deleteDialog.open()
-          return
-        }
-        const shouldDelete =
-          typeof window === 'undefined' ||
-          typeof window.confirm !== 'function' ||
-          window.confirm(UI_TEXT.deleteConfirmPrompt)
+        const shouldDelete = await deleteConfirm.request()
         if (!shouldDelete) return
         deleteModeConfirmed = true
       }
       await requestDeleteMessage(id)
       return
     }
-    if (deleteDialogEnabled && deleteDialog) {
-      pendingDeleteId = id
-      deleteDialog.open()
-      return
-    }
-    const shouldDelete =
-      typeof window === 'undefined' ||
-      typeof window.confirm !== 'function' ||
-      window.confirm(UI_TEXT.deleteConfirmPrompt)
+    const shouldDelete = await deleteConfirm.request()
     if (!shouldDelete) return
-    await requestDeleteMessage(id)
-  }
-
-  const bindDialogHandlers = () => {
-    if (!deleteDialogEnabled || !deleteDialog || !deleteConfirmDialog) return
-    const onDialogClick = (event) => {
-      deleteDialog.handleDialogClick(event)
+    isDeletePending = true
+    deleteConfirm.setActionsDisabled(true)
+    try {
+      await requestDeleteMessage(id)
+    } finally {
+      isDeletePending = false
+      deleteConfirm.setActionsDisabled(false)
     }
-    const onDialogClose = () => {
-      deleteDialog.handleDialogClose()
-    }
-    const onDialogCancel = (event) => {
-      deleteDialog.handleDialogCancel(event)
-    }
-    const onDeleteCancel = (event) => {
-      event.preventDefault()
-      if (isDeletePending) return
-      pendingDeleteId = ''
-      deleteDialog.close()
-    }
-    const onDeleteConfirm = (event) => {
-      event.preventDefault()
-      if (isDeletePending) return
-      void confirmDelete()
-    }
-    deleteConfirmDialog.addEventListener('click', onDialogClick)
-    deleteConfirmDialog.addEventListener('close', onDialogClose)
-    deleteConfirmDialog.addEventListener('cancel', onDialogCancel)
-    deleteConfirmCancelBtn.addEventListener('click', onDeleteCancel)
-    deleteConfirmBtn.addEventListener('click', onDeleteConfirm)
   }
 
   const setDeleteMode = (enabled) => {
     deleteModeEnabled = Boolean(enabled)
     deleteModeConfirmed = false
     if (!deleteModeEnabled) return
-    pendingDeleteId = ''
-    if (deleteDialog?.isOpen()) deleteDialog.close()
+    if (deleteConfirm.isOpen()) deleteConfirm.close()
   }
 
   return {
     deleteMessage,
     setDeleteMode,
-    bindDialogEvents: bindDialogHandlers,
-    bindDialogHandlers,
+    bindDialogEvents: deleteConfirm.bindEvents,
+    bindDialogHandlers: deleteConfirm.bindEvents,
   }
 }

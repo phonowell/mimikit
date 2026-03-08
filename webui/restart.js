@@ -1,5 +1,6 @@
 import { bindDialogControls, createDialogController } from './dialog.js'
 import { delay, fetchWithTimeout } from './fetch-with-timeout.js'
+import { createPageMenuController } from './page-menu.js'
 import { setStatusState, setStatusText } from './status.js'
 import { isRecord } from './value.js'
 
@@ -154,8 +155,13 @@ export function bindRestart({
   )
 
   let isBusy = false
-  let isToolsMenuOpen = false
   let isRuntimeIdle = true
+  const toolsMenuController = toolsEnabled
+    ? createPageMenuController({
+        trigger: toolsToggleBtn,
+        menu: toolsMenu,
+      })
+    : null
 
   const titleByElement = new Map()
   const rememberDefaultTitle = (element) => {
@@ -186,20 +192,19 @@ export function bindRestart({
     resetConfirmBtn,
   ].forEach(rememberDefaultTitle)
 
-  const setToolsMenuOpen = (open) => {
-    if (!toolsEnabled || !toolsToggleBtn || !toolsMenu) return
-    isToolsMenuOpen = open
-    toolsToggleBtn.setAttribute('aria-expanded', open ? 'true' : 'false')
-    toolsMenu.hidden = !open
-  }
+  const isToolsMenuOpen = () => toolsToggleBtn?.getAttribute('aria-expanded') === 'true'
 
   const closeToolsMenu = ({ focusTrigger = false } = {}) => {
-    if (!toolsEnabled || !toolsToggleBtn || !isToolsMenuOpen) return
-    setToolsMenuOpen(false)
+    if (!toolsEnabled || !toolsToggleBtn || !isToolsMenuOpen()) return
+    toolsMenuController?.close()
+    toolsToggleBtn.setAttribute('aria-expanded', 'false')
     if (focusTrigger && !isBusy) toolsToggleBtn.focus()
   }
 
-  if (toolsEnabled) setToolsMenuOpen(false)
+  if (toolsEnabled) {
+    toolsMenuController?.close()
+    toolsToggleBtn?.setAttribute('aria-expanded', 'false')
+  }
 
   const focusRestoreBtn = toolsEnabled ? toolsToggleBtn : restartOpenBtn
 
@@ -449,15 +454,20 @@ export function bindRestart({
   const onToolsToggle = (event) => {
     event.preventDefault()
     if (!toolsEnabled || isBusy) return
-    if (isToolsMenuOpen) closeToolsMenu()
-    else setToolsMenuOpen(true)
+    if (isToolsMenuOpen()) {
+      closeToolsMenu()
+      return
+    }
+    toolsMenuController?.open()
+    toolsToggleBtn?.setAttribute('aria-expanded', 'true')
   }
 
   const onDocumentClick = (event) => {
-    if (!toolsEnabled || !toolsToggleBtn || !toolsMenu || !isToolsMenuOpen) return
+    if (!toolsEnabled || !toolsToggleBtn || !toolsMenu || !isToolsMenuOpen()) return
     const target = event.target
     if (!(target instanceof Node)) return
-    if (toolsToggleBtn.contains(target) || toolsMenu.contains(target)) return
+    if (toolsToggleBtn.contains(target) || toolsMenuController?.containsTarget(target))
+      return
     closeToolsMenu()
   }
 
@@ -536,6 +546,7 @@ export function bindRestart({
         toolsToggleBtn.removeEventListener('click', onToolsToggle)
         document.removeEventListener('click', onDocumentClick)
         document.removeEventListener('keydown', onDocumentKeydown)
+        toolsMenuController?.destroy()
       }
 
       if (restartConfirmBtn)
