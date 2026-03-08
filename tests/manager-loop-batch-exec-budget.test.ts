@@ -1,6 +1,9 @@
 import { expect, test } from 'vitest'
 
-import { resolvePromptSectionLimitsForWakeProfile } from '../src/manager/loop-batch-exec.js'
+import {
+  resolvePromptSectionLimitsForWakeProfile,
+  trimPromptSectionLimitsForTaskResult,
+} from '../src/manager/loop-batch-exec.js'
 import type { PromptSectionLimits } from '../src/config.js'
 
 const baseLimits: PromptSectionLimits = {
@@ -66,4 +69,39 @@ test('mixed wake no longer inflates to heavy tier baseline', async () => {
   )
   expect(mixed.tasksMaxBytes).toBe(baseLimits.tasksMaxBytes)
   expect(mixed.batchResultsMaxBytes).toBe(baseLimits.batchResultsMaxBytes)
+})
+
+test('task_result trim reduces heavy context sections while keeping minimum floor', () => {
+  const fromPreset = resolvePromptSectionLimitsForWakeProfile(
+    {
+      ...baseLimits,
+      tasksMaxBytes: 24576,
+      batchResultsMaxBytes: 20480,
+      recentHistoryMaxBytes: 8192,
+      focusContextsMaxBytes: 20480,
+      historyLookupMaxBytes: 20480,
+      queryLookupMaxBytes: 20480,
+      fileLookupMaxBytes: 20480,
+    },
+    'task_result',
+  )
+  const trimmed = trimPromptSectionLimitsForTaskResult(fromPreset)
+  expect(trimmed.tasksMaxBytes).toBeLessThan(fromPreset.tasksMaxBytes)
+  expect(trimmed.batchResultsMaxBytes).toBeLessThan(
+    fromPreset.batchResultsMaxBytes,
+  )
+  expect(trimmed.recentHistoryMaxBytes).toBeLessThan(
+    fromPreset.recentHistoryMaxBytes,
+  )
+  expect(trimmed.focusContextsMaxBytes).toBeLessThan(
+    fromPreset.focusContextsMaxBytes,
+  )
+  expect(trimmed.historyLookupMaxBytes).toBeLessThan(
+    fromPreset.historyLookupMaxBytes,
+  )
+  expect(trimmed.queryLookupMaxBytes).toBeLessThan(fromPreset.queryLookupMaxBytes)
+  expect(trimmed.fileLookupMaxBytes).toBeLessThan(fromPreset.fileLookupMaxBytes)
+  expect(trimmed.inputsMaxBytes).toBe(fromPreset.inputsMaxBytes)
+  expect(trimmed.tasksMaxBytes).toBeGreaterThanOrEqual(512)
+  expect(trimmed.batchResultsMaxBytes).toBeGreaterThanOrEqual(512)
 })

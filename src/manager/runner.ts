@@ -1,3 +1,4 @@
+import { buildPaths } from '../fs/paths.js'
 import { buildManagerPromptPayload } from '../prompts/build-prompts.js'
 import {
   appendTraceArchiveResult,
@@ -82,6 +83,7 @@ export const runManager = async (params: {
   })
   const { prompt, promptSegments, prefix } = promptPayload
   const promptPrefixHash = hashPromptPrefix(prefix)
+  const paths = buildPaths(params.stateDir)
 
   const model = params.model?.trim()
   const archive = (
@@ -115,6 +117,18 @@ export const runManager = async (params: {
         ? { modelReasoningEffort: params.modelReasoningEffort }
         : {}),
       ...(params.onUsage ? { onUsage: params.onUsage } : {}),
+      logPath: paths.log,
+      logContext: {
+        event: 'llm_call',
+        role: 'manager',
+        promptPrefixHash,
+        promptSegmentCount:
+          params.usePromptSegments === false ? 1 : promptSegments.length,
+        promptSegmentCacheControl:
+          params.usePromptSegments === false
+            ? []
+            : promptSegments.map((segment) => segment.cacheControl ?? 'none'),
+      },
     })
     await archive(
       result.threadId ?? undefined,

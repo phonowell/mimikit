@@ -88,6 +88,9 @@ const resolveWakeProfile = (
 }
 
 const MIN_PROMPT_SECTION_BYTES = 512
+const TASK_RESULT_TRIM_MULTIPLIER = 0.7
+const ENABLE_TASK_RESULT_PROMPT_TRIM =
+  process.env.MIMIKIT_MANAGER_TASK_RESULT_PROMPT_TRIM !== '0'
 
 const WAKE_PROFILE_SECTION_MULTIPLIERS: Partial<
   Record<ManagerWakeProfile, Partial<Record<keyof PromptSectionLimits, number>>>
@@ -225,6 +228,33 @@ export const resolvePromptSectionLimitsForWakeProfile = (
   ) as PromptSectionLimits
 }
 
+export const trimPromptSectionLimitsForTaskResult = (
+  limits: PromptSectionLimits,
+): PromptSectionLimits => {
+  const trimKeys: Array<keyof PromptSectionLimits> = [
+    'tasksMaxBytes',
+    'batchResultsMaxBytes',
+    'recentHistoryMaxBytes',
+    'focusContextsMaxBytes',
+    'historyLookupMaxBytes',
+    'queryLookupMaxBytes',
+    'fileLookupMaxBytes',
+  ]
+  return Object.fromEntries(
+    Object.entries(limits).map(([key, value]) => {
+      const typedKey = key as keyof PromptSectionLimits
+      if (!trimKeys.includes(typedKey)) return [typedKey, value]
+      return [
+        typedKey,
+        Math.max(
+          MIN_PROMPT_SECTION_BYTES,
+          Math.floor(value * TASK_RESULT_TRIM_MULTIPLIER),
+        ),
+      ]
+    }),
+  ) as PromptSectionLimits
+}
+
 export const runManagerRoundWithRecovery = async (params: {
   runtime: RuntimeState
   round: number
@@ -255,13 +285,18 @@ export const runManagerRoundWithRecovery = async (params: {
     resultCount: params.results.length,
     activeFocusCount: params.runtime.activeFocusIds.length,
   })
-  const promptSectionLimits = resolvePromptSectionLimitsForWakeProfile(
+  const wakeLimits = resolvePromptSectionLimitsForWakeProfile(
     applyContextBudgetPreset(
       params.runtime.config.manager.promptSections,
       budgetTier,
     ),
     wakeProfile,
   )
+  const taskResultTrimApplied =
+    ENABLE_TASK_RESULT_PROMPT_TRIM && wakeProfile === 'task_result'
+  const promptSectionLimits = taskResultTrimApplied
+    ? trimPromptSectionLimitsForTaskResult(wakeLimits)
+    : wakeLimits
   void appendLog(params.runtime.paths.log, {
     event: 'manager_context_budget_tier',
     wakeProfile,
@@ -269,6 +304,7 @@ export const runManagerRoundWithRecovery = async (params: {
     inputCount: params.inputs.length,
     resultCount: params.results.length,
     activeFocusCount: params.runtime.activeFocusIds.length,
+    taskResultTrimApplied,
   })
   const result = await runManager({
     stateDir: params.runtime.config.workDir,

@@ -90,3 +90,37 @@ test('manager forwards promptSegments to openai-responses', async () => {
     }),
   )
 })
+
+test('manager forwards provider call logging metadata', async () => {
+  await runManagerLlmCall({
+    prompt: 'full prompt',
+    promptSegments: [
+      { text: 'stable prefix', cacheControl: 'ephemeral' },
+      { text: 'variable suffix' },
+    ],
+    workDir: '/tmp/mimikit',
+    logPath: '/tmp/mimikit/log.jsonl',
+    logContext: {
+      event: 'llm_call',
+      role: 'manager',
+      promptPrefixHash: 'prefix-hash',
+      promptSegmentCount: 2,
+      promptSegmentCacheControl: ['ephemeral', 'none'],
+    },
+  })
+
+  expect(runWithProviderMock).toHaveBeenCalledWith(
+    expect.objectContaining({
+      provider: 'openai-responses',
+      role: 'manager',
+      logPath: '/tmp/mimikit/log.jsonl',
+      logContext: expect.objectContaining({
+        event: 'llm_call',
+        role: 'manager',
+        promptPrefixHash: 'prefix-hash',
+        promptSegmentCount: 2,
+        promptSegmentCacheControl: ['ephemeral', 'none'],
+      }),
+    }),
+  )
+})
