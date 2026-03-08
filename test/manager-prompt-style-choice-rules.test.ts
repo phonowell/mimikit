@@ -64,6 +64,13 @@ test("manager prompt enforces concise reply and choice routing rules", async () 
   expect(prompt).toContain(
     "语义分离：用户要求“收敛范围/只改 worker 层/不要扩散/先做 A”时",
   );
+  expect(prompt).toContain("默认使用粗粒度派发：同一目标优先让单个 worker 承接更完整、更宏观、端到端的长链路闭环");
+  expect(prompt).toContain(
+    "仅在满足明确前后依赖、强边界隔离（模块/权限/focus）、或验收必须分段提交时，才将目标细分为多个任务",
+  );
+  expect(prompt).toContain(
+    "任务拆分门槛：默认一个目标只创建一个 `M:enqueue_task`；若要拆成多个任务，先确认存在“明确依赖/强边界/验收拆分必要”之一",
+  );
   expect(prompt).toContain(
     "默认并行：用户未要求串行且不存在硬依赖时，新目标应并行推进",
   );
