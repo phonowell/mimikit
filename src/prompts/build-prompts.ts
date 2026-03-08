@@ -72,6 +72,22 @@ const MAX_MEMORY_QUERY_CHARS = 4_000
 const MAX_MEMORY_MENTION_ITEMS = 128
 const MAX_RECENT_HISTORY_SUMMARY_ITEMS = 8
 
+const CONTEXT_EMPTY_VALUES: Record<string, string> = {
+  environment: '',
+  focus_list: '',
+  focus_contexts: '',
+  memory: '',
+  tasks: '',
+  plans: '',
+  recent_history: '',
+  inputs: '',
+  batch_results: '',
+  history_lookup: '',
+  query_lookup: '',
+  file_lookup: '',
+  action_feedback: '',
+}
+
 const pushMention = (target: string[], value: string | undefined): void => {
   const normalized = value?.trim()
   if (!normalized) return
@@ -283,56 +299,59 @@ export const buildManagerPromptPayload = async (params: {
     limits.actionFeedbackMaxBytes,
   )
 
-  const prefixValues: Record<string, string> = {
-    environment: '',
-    focus_list: '',
-    focus_contexts: '',
-    memory: '',
-    tasks: '',
-    plans: '',
-    recent_history: '',
-    inputs: '',
-    batch_results: '',
-    history_lookup: '',
-    query_lookup: '',
-    file_lookup: '',
-    action_feedback: '',
-  }
-  const suffixValues: Record<string, string> = {
-    environment,
-    focus_list: focusList,
-    focus_contexts: focusContexts,
-    memory,
-    tasks,
-    plans,
-    recent_history: recentHistory,
-    inputs,
-    batch_results: batchResults,
-    history_lookup: historyLookup,
-    query_lookup: queryLookup,
-    file_lookup: fileLookup,
-    action_feedback: actionFeedback,
-  }
-
   const contextSource = await loadPromptSource('manager/context.md')
   const prefix = renderPromptTemplate(
     systemSource.template,
-    prefixValues,
+    CONTEXT_EMPTY_VALUES,
     systemSource.path,
   ).trim()
-  const suffix = renderPromptTemplate(
+  const stableContext = renderPromptTemplate(
     contextSource.template,
-    suffixValues,
+    {
+      ...CONTEXT_EMPTY_VALUES,
+      focus_list: focusList,
+      focus_contexts: focusContexts,
+      memory,
+      tasks,
+      plans,
+    },
     contextSource.path,
   ).trim()
+  const volatileContext = renderPromptTemplate(
+    contextSource.template,
+    {
+      ...CONTEXT_EMPTY_VALUES,
+      environment,
+      inputs,
+      batch_results: batchResults,
+      history_lookup: historyLookup,
+      query_lookup: queryLookup,
+      file_lookup: fileLookup,
+      action_feedback: actionFeedback,
+      recent_history: recentHistory,
+    },
+    contextSource.path,
+  ).trim()
+  const suffix = [stableContext, volatileContext]
+    .filter((segment) => segment.length > 0)
+    .join('\n\n')
+    .trim()
   const promptSegments: ProviderPromptSegment[] = [
-    { text: prefix, cacheControl: 'ephemeral' },
-    { text: suffix },
-  ]
+    { text: prefix, cacheControl: 'ephemeral' as const },
+    { text: stableContext, cacheControl: 'ephemeral' as const },
+    { text: volatileContext },
+  ].filter(
+    (segment): segment is ProviderPromptSegment =>
+      segment.text.trim().length > 0,
+  )
+  if (promptSegments.length === 1) promptSegments.push({ text: suffix })
   return {
     prefix,
     suffix,
-    prompt: `${prefix}\n\n${suffix}`.trim(),
+    prompt: [prefix, stableContext, volatileContext]
+      .filter((segment) => segment.length > 0)
+      .join('\n\n')
+      .trim(),
     promptSegments,
   }
 }

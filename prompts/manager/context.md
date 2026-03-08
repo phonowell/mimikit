@@ -53,6 +53,8 @@
 {{ plans }}
 </M:plans>
 {% endif %}
+{% if environment %}
 <M:environment>
 {{ environment }}
 </M:environment>
+{% endif %}
