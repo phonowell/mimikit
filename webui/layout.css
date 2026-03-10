@@ -23,7 +23,6 @@ main[data-app] {
   box-shadow: var(--shadow-raised);
 }
 
-.review-status-dialog,
 .tasks-dialog,
 .plans-dialog,
 .focuses-dialog,
@@ -40,15 +39,10 @@ main[data-app] {
   z-index: 10;
 }
 
-.review-status-dialog {
-  width: min(720px, 92vw);
-}
-
 .reset-dialog {
   width: min(520px, 92vw);
 }
 
-.review-status-dialog[open],
 .tasks-dialog[open],
 .plans-dialog[open],
 .focuses-dialog[open],
@@ -59,7 +53,6 @@ main[data-app] {
   animation: dialog-in 160ms ease-out;
 }
 
-.review-status-dialog.is-closing,
 .tasks-dialog.is-closing,
 .plans-dialog.is-closing,
 .focuses-dialog.is-closing,
@@ -71,7 +64,6 @@ main[data-app] {
   pointer-events: none;
 }
 
-.review-status-dialog:not([open]),
 .tasks-dialog:not([open]),
 .plans-dialog:not([open]),
 .focuses-dialog:not([open]),
@@ -82,7 +74,6 @@ main[data-app] {
   display: none;
 }
 
-.review-status-dialog::backdrop,
 .tasks-dialog::backdrop,
 .plans-dialog::backdrop,
 .focuses-dialog::backdrop,
@@ -100,7 +91,6 @@ main[data-app] {
   animation: dialog-backdrop-in 160ms ease-out;
 }
 
-.review-status-dialog.is-closing::backdrop,
 .tasks-dialog.is-closing::backdrop,
 .plans-dialog.is-closing::backdrop,
 .focuses-dialog.is-closing::backdrop,
@@ -111,7 +101,6 @@ main[data-app] {
   animation: dialog-backdrop-out 140ms ease-in forwards;
 }
 
-.review-status-panel,
 .tasks-panel,
 .plans-panel,
 .focuses-panel {
@@ -376,7 +365,6 @@ main[data-app] {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .review-status-dialog[open],
   .tasks-dialog[open],
   .plans-dialog[open],
   .focuses-dialog[open],
@@ -384,7 +372,6 @@ main[data-app] {
   .reset-dialog[open],
   .message-delete-dialog[open],
   .task-delete-dialog[open],
-  .review-status-dialog.is-closing,
   .tasks-dialog.is-closing,
   .plans-dialog.is-closing,
   .focuses-dialog.is-closing,
@@ -392,7 +379,6 @@ main[data-app] {
   .reset-dialog.is-closing,
   .message-delete-dialog.is-closing,
   .task-delete-dialog.is-closing,
-  .review-status-dialog::backdrop,
   .tasks-dialog::backdrop,
   .plans-dialog::backdrop,
   .focuses-dialog::backdrop,
@@ -400,7 +386,6 @@ main[data-app] {
   .reset-dialog::backdrop,
   .message-delete-dialog::backdrop,
   .task-delete-dialog::backdrop,
-  .review-status-dialog.is-closing::backdrop,
   .tasks-dialog.is-closing::backdrop,
   .plans-dialog.is-closing::backdrop,
   .focuses-dialog.is-closing::backdrop,
@@ -413,10 +398,6 @@ main[data-app] {
 }
 
 @media (min-width: 641px) {
-  .review-status-dialog {
-    width: min(760px, 90vw);
-  }
-
   .tasks-dialog {
     width: min(560px, 90vw);
   }

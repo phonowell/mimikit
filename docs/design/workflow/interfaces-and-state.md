@@ -52,8 +52,8 @@
 
 ## SSE 事件模型（`GET /api/events`）
 
-- `snapshot`：快照事件，包含 `status/messages/tasks/plans/focuses/choice/reviewStatus`。
-- `tasks`：任务列表快照更新（由 worker 侧状态变化触发），载荷为 `{ tasks, reviewStatus }`。
+- `snapshot`：快照事件，包含 `status/messages/tasks/plans/focuses/choice`。
+- `tasks`：任务列表快照更新（由 worker 侧状态变化触发），载荷为任务视图快照对象。
 - `heartbeat`：SSE 保活心跳。
 - `error`：SSE 连接内错误反馈。
 - 心跳周期：`15s`（`SSE_HEARTBEAT_MS=15000`）。
@@ -68,7 +68,6 @@
 
 - `tasks.tasks[*].liveOutput` 为运行中任务的流式输出片段（仅 WebUI 展示，运行态内存数据，不承诺持久化）。
 - `tasks.tasks[*]` 会暴露 `stopReason` 与 `recoverable`；其中 `recoverable=true` 表示该 `paused + partial + budget_exhausted` 任务可直接继续执行。
-- `reviewStatus.cards/highlights` 由服务端 read model 聚合，用于 WebUI 异步复盘板展示 `Done / Need resume / Failed / Need review / Resumed`，并直接暴露当前待确认 choice。
 - 会话入站消息日志在服务端 `src/http/session-ingress-log.ts` 统一记录并去重（`[http] session ingress message/batch`）。
 
 ## System 气泡可见性规则（WebUI 会话流）

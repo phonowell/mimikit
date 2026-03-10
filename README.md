@@ -99,7 +99,7 @@ enabled = true
 - 未指定 `provider` 时，按最低 `billing`、再按最高 `capability` 自动选择
 - 高成本 `enqueue_task` 会先生成待确认项，等人返回后再决定是否派发
 - 长任务命中 `worker.budget` 时不会直接失败；会归档部分结果、保留 session，并把任务置为 `paused` 等待显式恢复
-- WebUI 会把 `Done / Need resume / Failed / Need review / Resumed` 聚合成异步复盘状态面板，附带会话级摘要；当存在 recoverable 任务时，还提供一键 `Continue all resumable` 入口，方便人返回后集中续跑
+- WebUI 会显示任务列表、`stopReason/recoverable` 标记与待确认 choice，方便人返回后逐项复盘和续跑
 
 ### 3) 启动
 

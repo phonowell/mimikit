@@ -6,7 +6,6 @@ import { bindFocusPanel, bindPlansPanel } from './panels.js'
 import { bindRestart } from './restart.js'
 import { bindTasksPanel } from './tasks.js'
 import { bindTts } from './tts.js'
-import { bindReviewStatusPanel } from './review-board.js'
 import { createBrandingController } from './app-branding.js'
 import { elements } from './app-elements.js'
 
@@ -30,15 +29,6 @@ const focusPanel = bindFocusPanel({
   focusesDialog: elements.focusesDialog,
   focusesOpenBtn: elements.focusesOpenBtn,
   focusesCloseBtn: elements.focusesCloseBtn,
-})
-const reviewStatusPanel = bindReviewStatusPanel({
-  dialog: elements.reviewStatusDialog,
-  openBtn: elements.reviewStatusOpenBtn,
-  closeBtn: elements.reviewStatusCloseBtn,
-  summaryEl: elements.reviewStatusSummary,
-  cardsEl: elements.reviewStatusCards,
-  actionsEl: elements.reviewStatusActions,
-  highlightsEl: elements.reviewStatusHighlights,
 })
 
 let tts = null
@@ -75,8 +65,6 @@ messages = createMessagesController({
   deleteConfirmCancelBtn: elements.messageDeleteCancelBtn,
   deleteConfirmBtn: elements.messageDeleteConfirmBtn,
   onTasksSnapshot: (tasks) => tasksPanel?.applyTasksSnapshot?.(tasks),
-  onReviewStatusSnapshot: (reviewStatus) =>
-    reviewStatusPanel?.applySnapshot?.(reviewStatus),
   onPlansSnapshot: (plans) => plansPanel?.applyPlansSnapshot?.(plans),
   onFocusesSnapshot: (focuses) => {
     focusPanel?.applyFocusesSnapshot?.(focuses)
@@ -91,7 +79,6 @@ messages = createMessagesController({
     plansPanel?.setDisconnected?.()
     focusPanel?.setDisconnected?.()
     choicePanel?.setDisconnected?.()
-    reviewStatusPanel?.setDisconnected?.()
   },
 })
 

@@ -7,7 +7,6 @@ import { resumeRecoverableTasks, resumeTask } from '../../worker/resume-task.js'
 import { type ChatMessage } from '../read-model/chat-view.js'
 import { buildFocusViews } from '../read-model/focus-view.js'
 import { sortTaskPlansForView } from '../read-model/plan-select.js'
-import { buildReviewStatusView } from '../read-model/review-status-view.js'
 import { buildTaskViews } from '../read-model/task-view.js'
 
 import {
@@ -58,18 +57,6 @@ export class Orchestrator {
   private runtime: RuntimeState
   private stopChannelsAwait?: () => Promise<void>
   private restartScheduled = false
-  private reviewStatusHistoryCache: ChatMessage[] | null = null
-
-  private async readReviewStatusHistory(
-    refresh = false,
-    limit = 100,
-  ): Promise<ChatMessage[]> {
-    if (!refresh && this.reviewStatusHistoryCache)
-      return this.reviewStatusHistoryCache
-    const history = await getChatHistorySnapshot(this.runtime, limit)
-    this.reviewStatusHistoryCache = history
-    return history
-  }
 
   private scheduleRestart(
     reason: string,
@@ -178,7 +165,6 @@ export class Orchestrator {
 
   async getWebUiSnapshot(messageLimit = 50, taskLimit = 200) {
     const messages = await getChatMessagesSnapshot(this.runtime, messageLimit)
-    const history = await this.readReviewStatusHistory(true)
     return {
       status: this.getStatus(),
       messages,
@@ -186,21 +172,7 @@ export class Orchestrator {
       plans: this.getPlans(taskLimit),
       focuses: this.getFocuses(taskLimit),
       choice: clonePendingUserChoice(this.runtime.ui.pendingUserChoice),
-      reviewStatus: buildReviewStatusView(
-        this.runtime.tasks,
-        history,
-        this.runtime.ui.pendingUserChoice,
-      ),
     }
-  }
-
-  async getReviewStatus(refresh = false) {
-    const history = await this.readReviewStatusHistory(refresh)
-    return buildReviewStatusView(
-      this.runtime.tasks,
-      history,
-      this.runtime.ui.pendingUserChoice,
-    )
   }
 
   getWebUiWakeVersion(): number {

@@ -8,8 +8,6 @@
     <link rel="stylesheet" href="layout.css" />
     <link rel="stylesheet" href="components-core.css" />
     <link rel="stylesheet" href="components-choice.css" />
-    <link rel="stylesheet" href="components-review-board.css" />
-    <link rel="stylesheet" href="components-dialogs-review-status.css" />
     <link rel="stylesheet" href="components-messages-bubble.css" />
     <link rel="stylesheet" href="components-messages-quote.css" />
     <link rel="stylesheet" href="components-messages-meta.css" />
@@ -72,21 +70,6 @@
             >
               <span class="tasks-label">Tasks</span>
               <span class="tasks-worker-dots" data-worker-dots aria-hidden="true"></span>
-            </button>
-            <button
-              class="btn btn--sm review-status-open"
-              data-review-status-open
-              type="button"
-              title="Review status"
-              aria-label="Review status"
-              aria-haspopup="dialog"
-              aria-controls="review-status-dialog"
-              aria-expanded="false"
-            >
-              <span class="review-status-label">Review</span>
-              <span class="review-status-open-summary" data-review-status-summary aria-live="polite">
-                No pending review items
-              </span>
             </button>
             <div class="tools-menu-wrap">
               <button
@@ -297,38 +280,6 @@
             </div>
           </header>
           <ul class="focuses-list scrollable" data-focuses-list></ul>
-        </section>
-      </dialog>
-
-      <dialog
-        class="review-status-dialog"
-        data-review-status-dialog
-        id="review-status-dialog"
-        aria-labelledby="review-status-title"
-      >
-        <section class="review-status-panel">
-          <header class="review-status-header">
-            <div class="review-status-heading">
-              <p class="review-status-description">Async review board</p>
-              <h2 class="review-status-title" id="review-status-title">Review status</h2>
-            </div>
-            <div class="review-status-toolbar" role="group" aria-label="Review status">
-              <button
-                class="btn btn--icon btn--icon-muted review-status-close"
-                data-review-status-close
-                type="button"
-                title="Close"
-                aria-label="Close"
-              >
-                &#x2715;
-              </button>
-            </div>
-          </header>
-          <div class="review-status-content scrollable">
-            <div class="review-status-cards" data-review-status-cards></div>
-            <div class="review-status-actions" data-review-status-actions></div>
-            <ul class="review-status-highlights" data-review-status-highlights></ul>
-          </div>
         </section>
       </dialog>
 

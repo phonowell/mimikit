@@ -24,11 +24,6 @@ const TASK_PENDING_REASON_LABEL_MAP = Object.freeze({
 
 export const UI_TEXT = Object.freeze({
   conversationTitleFallback: 'Mimikit',
-  noReviewStatus: 'No pending review items',
-  resumeAllRecoverable: 'Continue all resumable',
-  resumeAllRecoverableBusy: 'Continuing resumable tasks...',
-  resumeAllRecoverableDone: 'Queued resumable tasks.',
-  resumeAllRecoverableNone: 'No resumable tasks.',
   noTasks: 'No tasks',
   noPlans: 'No plans',
   noFocuses: 'No focus',

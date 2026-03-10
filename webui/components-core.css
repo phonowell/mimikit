@@ -192,14 +192,6 @@
   white-space: nowrap;
 }
 
-.review-status-open {
-  align-items: flex-start;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 0;
-  white-space: normal;
-}
-
 .tasks-label {
   line-height: 1;
 }
@@ -210,18 +202,6 @@
 
 .focuses-label {
   line-height: 1;
-}
-
-.review-status-label {
-  line-height: 1;
-}
-
-.review-status-open-summary {
-  display: block;
-  max-width: 22ch;
-  font-size: 11px;
-  line-height: 1.35;
-  color: var(--muted);
 }
 
 .tasks-worker-dots {

@@ -50,11 +50,6 @@
     max-width: 88%;
   }
 
-  .review-status-cards,
-  .review-status-highlights {
-    grid-template-columns: 1fr;
-  }
-
   .composer .quote-clear {
     --btn-size: 22px;
     --btn-icon-size: 12px;
