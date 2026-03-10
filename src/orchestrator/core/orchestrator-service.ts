@@ -3,11 +3,11 @@ import { cancelTask } from '../../worker/cancel-task.js'
 import { deleteTask } from '../../worker/delete-task.js'
 import { getTaskLiveOutputById } from '../../worker/live-output.js'
 import { pauseTask } from '../../worker/pause-task.js'
-import { resumeTask } from '../../worker/resume-task.js'
+import { resumeRecoverableTasks, resumeTask } from '../../worker/resume-task.js'
 import { type ChatMessage } from '../read-model/chat-view.js'
-import { buildDutyStatusView } from '../read-model/duty-status-view.js'
 import { buildFocusViews } from '../read-model/focus-view.js'
 import { sortTaskPlansForView } from '../read-model/plan-select.js'
+import { buildReviewStatusView } from '../read-model/review-status-view.js'
 import { buildTaskViews } from '../read-model/task-view.js'
 
 import {
@@ -58,16 +58,16 @@ export class Orchestrator {
   private runtime: RuntimeState
   private stopChannelsAwait?: () => Promise<void>
   private restartScheduled = false
-  private dutyStatusHistoryCache: ChatMessage[] | null = null
+  private reviewStatusHistoryCache: ChatMessage[] | null = null
 
-  private async readDutyStatusHistory(
+  private async readReviewStatusHistory(
     refresh = false,
     limit = 100,
   ): Promise<ChatMessage[]> {
-    if (!refresh && this.dutyStatusHistoryCache)
-      return this.dutyStatusHistoryCache
+    if (!refresh && this.reviewStatusHistoryCache)
+      return this.reviewStatusHistoryCache
     const history = await getChatHistorySnapshot(this.runtime, limit)
-    this.dutyStatusHistoryCache = history
+    this.reviewStatusHistoryCache = history
     return history
   }
 
@@ -178,7 +178,7 @@ export class Orchestrator {
 
   async getWebUiSnapshot(messageLimit = 50, taskLimit = 200) {
     const messages = await getChatMessagesSnapshot(this.runtime, messageLimit)
-    const history = await this.readDutyStatusHistory(true)
+    const history = await this.readReviewStatusHistory(true)
     return {
       status: this.getStatus(),
       messages,
@@ -186,13 +186,21 @@ export class Orchestrator {
       plans: this.getPlans(taskLimit),
       focuses: this.getFocuses(taskLimit),
       choice: clonePendingUserChoice(this.runtime.ui.pendingUserChoice),
-      dutyStatus: buildDutyStatusView(this.runtime.tasks, history),
+      reviewStatus: buildReviewStatusView(
+        this.runtime.tasks,
+        history,
+        this.runtime.ui.pendingUserChoice,
+      ),
     }
   }
 
-  async getDutyStatus(refresh = false) {
-    const history = await this.readDutyStatusHistory(refresh)
-    return buildDutyStatusView(this.runtime.tasks, history)
+  async getReviewStatus(refresh = false) {
+    const history = await this.readReviewStatusHistory(refresh)
+    return buildReviewStatusView(
+      this.runtime.tasks,
+      history,
+      this.runtime.ui.pendingUserChoice,
+    )
   }
 
   getWebUiWakeVersion(): number {
@@ -233,6 +241,10 @@ export class Orchestrator {
 
   resumeTask(taskId: string, meta?: { source?: string; reason?: string }) {
     return resumeTask(this.runtime, taskId, meta)
+  }
+
+  resumeRecoverableTasks() {
+    return resumeRecoverableTasks(this.runtime)
   }
 
   getPendingUserChoice() {

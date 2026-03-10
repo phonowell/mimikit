@@ -97,6 +97,7 @@ export const cancelPendingUserChoiceByUserInput = async (params: {
 }
 
 const isExpired = (choice: PendingUserChoice, nowMs: number): boolean => {
+  if (!choice.expiresAt) return false
   const expiresAtMs = parseIsoMs(choice.expiresAt)
   if (expiresAtMs === undefined) return false
   return nowMs >= expiresAtMs

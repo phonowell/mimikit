@@ -130,6 +130,52 @@ test('choice select route forwards valid selection request', async () => {
   await app.close()
 })
 
+test('resume recoverable route forwards batch resume request', async () => {
+  const app = fastify()
+  const { orchestrator } = createOrchestratorStub()
+  const resumeRecoverableTasks = vi.fn(async () => ({
+    ok: true as const,
+    resumedCount: 2,
+    skippedCount: 1,
+    items: [
+      { ok: true, id: 'task-1', status: 'pending' as const },
+      { ok: true, id: 'task-2', status: 'pending' as const },
+      { ok: false, id: 'task-3', status: 'not_paused' as const },
+    ],
+  }))
+  ;(
+    orchestrator as unknown as {
+      resumeRecoverableTasks: () => Promise<{
+        ok: true
+        resumedCount: number
+        skippedCount: number
+        items: Array<{ ok: boolean; id: string; status: string }>
+      }>
+    }
+  ).resumeRecoverableTasks = resumeRecoverableTasks
+  const config = defaultConfig({ workDir: '.mimikit' })
+  registerApiRoutes(app, orchestrator, config)
+
+  const response = await app.inject({
+    method: 'POST',
+    url: '/api/tasks/resume-recoverable',
+  })
+
+  expect(response.statusCode).toBe(200)
+  expect(response.json()).toEqual({
+    ok: true,
+    resumedCount: 2,
+    skippedCount: 1,
+    items: [
+      { ok: true, id: 'task-1', status: 'pending' },
+      { ok: true, id: 'task-2', status: 'pending' },
+      { ok: false, id: 'task-3', status: 'not_paused' },
+    ],
+  })
+  expect(resumeRecoverableTasks).toHaveBeenCalledTimes(1)
+  await app.close()
+})
+
 test('task archive route falls back to live snapshot when archive file is missing', async () => {
   const app = fastify()
   const { orchestrator } = createOrchestratorStub()

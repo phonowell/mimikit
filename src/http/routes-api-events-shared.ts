@@ -69,7 +69,7 @@ export const buildSnapshotHintKey = (snapshot: {
   plans: unknown
   focuses: unknown
   choice: unknown
-  dutyStatus?: unknown
+  reviewStatus?: unknown
 }): string =>
   JSON.stringify({
     status: snapshot.status,
@@ -77,7 +77,7 @@ export const buildSnapshotHintKey = (snapshot: {
     plans: snapshot.plans,
     focuses: snapshot.focuses,
     choice: snapshot.choice,
-    dutyStatus: snapshot.dutyStatus,
+    reviewStatus: snapshot.reviewStatus,
   })
 
 export const buildDeltaSnapshot = async (
@@ -93,7 +93,7 @@ export const buildDeltaSnapshot = async (
   plans: orchestrator.getPlans(),
   focuses: orchestrator.getFocuses(),
   choice: orchestrator.getPendingUserChoice(),
-  dutyStatus: await orchestrator.getDutyStatus(true),
+  reviewStatus: await orchestrator.getReviewStatus(true),
 })
 
 export const sendSseEvent = (

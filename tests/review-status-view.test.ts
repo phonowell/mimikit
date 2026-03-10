@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 
-import { buildDutyStatusView } from '../src/orchestrator/read-model/duty-status-view.js'
+import { buildReviewStatusView } from '../src/orchestrator/read-model/review-status-view.js'
 import type { ChatMessage } from '../src/orchestrator/read-model/chat-view.js'
 import type { Task } from '../src/types/index.js'
 
@@ -27,7 +27,7 @@ const createMessage = (overrides: Partial<ChatMessage> = {}): ChatMessage => ({
   ...overrides,
 })
 
-test('buildDutyStatusView summarizes done, recoverable, input-needed, and resumed work', () => {
+test('buildReviewStatusView summarizes done, recoverable, input-needed, and resumed work', () => {
   const tasks: Task[] = [
     createTask({
       id: 'task-done',
@@ -55,6 +55,23 @@ test('buildDutyStatusView summarizes done, recoverable, input-needed, and resume
         },
       },
     }),
+    createTask({
+      id: 'task-failed',
+      title: 'Failed Task',
+      status: 'failed',
+      completedAt: '2026-03-10T00:05:30.000Z',
+      result: {
+        taskId: 'task-failed',
+        status: 'failed',
+        taskStatus: 'failed',
+        outcome: 'blocked',
+        stopReason: 'failed',
+        ok: false,
+        output: 'Build step crashed on missing artifact.',
+        durationMs: 10,
+        completedAt: '2026-03-10T00:05:30.000Z',
+      },
+    }),
   ]
   const messages: ChatMessage[] = [
     createMessage({
@@ -71,27 +88,49 @@ test('buildDutyStatusView summarizes done, recoverable, input-needed, and resume
     }),
   ]
 
-  const view = buildDutyStatusView(tasks, messages)
+  const view = buildReviewStatusView(tasks, messages, {
+    id: 'choice-review',
+    question: 'Review whether to run the high-cost task now or narrow it first.',
+    options: [
+      { id: 'option-run', label: 'Run now', reason: 'Execute current scope' },
+      {
+        id: 'option-narrow',
+        label: 'Narrow first',
+        reason: 'Review before dispatch',
+      },
+    ],
+    defaultOptionId: 'option-narrow',
+    createdAt: '2026-03-10T00:08:00.000Z',
+    focusId: 'focus-global',
+  })
   const cardValues = new Map(view.cards.map((item) => [item.id, item.value]))
 
   expect(cardValues.get('done')).toBe(1)
   expect(cardValues.get('recoverable')).toBe(1)
-  expect(cardValues.get('needs_input')).toBe(1)
+  expect(cardValues.get('failed')).toBe(1)
+  expect(cardValues.get('needs_input')).toBe(2)
   expect(cardValues.get('resumed')).toBe(1)
   expect(view.highlights).toEqual([
     {
-      id: 'task_resumed-msg-resumed',
-      title: 'Resumed',
-      detail: 'Resumed task "Budget Task".',
-      tone: 'success',
-      at: '2026-03-10T00:07:00.000Z',
+      id: 'session-summary',
+      title: 'Session summary',
+      detail: '1 done · 1 need resume · 1 failed · 2 need review · 1 resumed',
+      tone: 'accent',
+      at: '2026-03-10T00:08:00.000Z',
     },
     {
-      id: 'manager_fallback_reply-msg-needs-input',
-      title: 'Needs input',
-      detail: 'Need more files to continue.',
+      id: 'pending-choice-choice-review',
+      title: 'Pending decision',
+      detail: 'Review whether to run the high-cost task now or narrow it first.',
       tone: 'accent',
-      at: '2026-03-10T00:06:00.000Z',
+      at: '2026-03-10T00:08:00.000Z',
+    },
+    {
+      id: 'failed-task-failed',
+      title: 'Failed Task',
+      detail: 'Build step crashed on missing artifact.',
+      tone: 'accent',
+      at: '2026-03-10T00:05:30.000Z',
     },
     {
       id: 'recoverable-task-recoverable',

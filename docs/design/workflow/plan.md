@@ -17,7 +17,7 @@
 
 ## 触发机制
 
-- `managerLoop`（`src/manager/loop.ts`）在空闲轮询中统一检查计划触发、choice 超时与 worker 槽位释放。
+- `managerLoop`（`src/manager/loop.ts`）在空闲轮询中统一检查计划触发、待确认 choice 生命周期与 worker 槽位释放。
 - `cron/scheduled_at`：命中即发布 `system_event.name=trigger_fire`。
 - `on_worker_slot_freed`：在“有空槽位”窗口触发，候选计划按 `priority -> createdAt(FIFO)` 排序执行。
 - 若槽位释放时无可触发 `on_worker_slot_freed` 计划，系统会发布 `system_event.name=worker_slot_freed`。

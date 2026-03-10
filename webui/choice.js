@@ -40,7 +40,7 @@ const normalizeChoicePayload = (value) => {
   const options = optionsRaw
     .map(normalizeChoiceOption)
     .filter((item) => item !== null)
-  if (!id || !question || !defaultOptionId || !expiresAt || options.length < 2)
+  if (!id || !question || !defaultOptionId || options.length < 2)
     return null
   if (!options.some((item) => item.id === defaultOptionId)) return null
   const orderedOptions = reorderOptionsWithDefaultFirst(options, defaultOptionId)
@@ -49,11 +49,12 @@ const normalizeChoicePayload = (value) => {
     question,
     options: orderedOptions,
     defaultOptionId,
-    expiresAt,
+    ...(expiresAt ? { expiresAt } : {}),
   }
 }
 
 const formatRemaining = (expiresAt, nowMs = Date.now()) => {
+  if (typeof expiresAt !== 'string' || !expiresAt.trim()) return ''
   const expiresAtMs = Date.parse(expiresAt)
   if (!Number.isFinite(expiresAtMs)) return ''
   const remainingMs = Math.max(0, expiresAtMs - nowMs)
@@ -178,9 +179,13 @@ export const bindChoicePanel = ({
     if (questionEl instanceof HTMLElement) questionEl.textContent = choice.question
     renderOptions()
     updateMeta()
-    if (timer === null) {
+    if (choice.expiresAt && timer === null) {
       timer = window.setInterval(() => {
         if (!choice) {
+          clearTicker()
+          return
+        }
+        if (!choice.expiresAt) {
           clearTicker()
           return
         }

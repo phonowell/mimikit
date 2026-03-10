@@ -7,11 +7,17 @@ import { afterEach, expect, test, vi } from 'vitest'
 import { readHistory } from '../src/history/store.js'
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
 import { requestTaskResumeChoice } from '../src/orchestrator/core/task-resume-choice.js'
-import { selectPendingUserChoiceFromUser } from '../src/orchestrator/core/user-choice.js'
+import {
+  resolvePendingUserChoiceTimeout,
+  selectPendingUserChoiceFromUser,
+} from '../src/orchestrator/core/user-choice.js'
 import { parseSystemEventText } from '../src/shared/system-event.js'
 import type { Task } from '../src/types/index.js'
 import { pauseTask } from '../src/worker/pause-task.js'
-import { resumeTask } from '../src/worker/resume-task.js'
+import {
+  resumeRecoverableTasks,
+  resumeTask,
+} from '../src/worker/resume-task.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 const tempDirs: string[] = []
@@ -184,6 +190,7 @@ test('budget pause choice can resume paused partial task directly', async () => 
     type: 'resume_task',
     taskId: task.id,
   })
+  expect(runtime.ui.pendingUserChoice?.expiresAt).toBeUndefined()
 
   const choice = runtime.ui.pendingUserChoice
   if (!choice?.effect || choice.effect.type !== 'resume_task')
@@ -227,6 +234,100 @@ test('budget pause choice can resume paused partial task directly', async () => 
     choice_effect_status: 'pending',
     selected_option_id: choice.effect.optionId,
   })
+})
+
+test('pending resume choice persists without timeout until a user selects it', async () => {
+  const runtime = await createRuntime()
+  const task = createTask('task-budget-persist', {
+    status: 'paused',
+    pausedAt: '2026-03-06T00:00:03.000Z',
+    result: {
+      taskId: 'task-budget-persist',
+      status: 'partial',
+      taskStatus: 'paused',
+      outcome: 'partial',
+      stopReason: 'budget_exhausted',
+      ok: false,
+      output: 'partial',
+      durationMs: 12,
+      completedAt: '2026-03-06T00:00:04.000Z',
+    },
+  })
+  runtime.tasks = [task]
+
+  const requested = await requestTaskResumeChoice({
+    runtime,
+    task,
+    createdAt: '2026-03-06T00:00:04.000Z',
+  })
+
+  expect(requested).toBe(true)
+  expect(
+    await resolvePendingUserChoiceTimeout(
+      runtime,
+      Date.parse('2026-03-07T00:00:04.000Z'),
+    ),
+  ).toBe(false)
+  expect(runtime.ui.pendingUserChoice?.id).toBe(
+    'choice-task-resume-task-budget-persist',
+  )
+})
+
+test('resumeRecoverableTasks requeues all budget-recoverable tasks only', async () => {
+  const queueAdd = vi.fn(async () => undefined)
+  const runtime = await createRuntime({
+    queue: {
+      add: queueAdd as RuntimeState['worker']['queue']['add'],
+      sizeBy: () => 0,
+    },
+  })
+  const recoverableA = createTask('task-budget-a', {
+    status: 'paused',
+    pausedAt: '2026-03-06T00:00:03.000Z',
+    result: {
+      taskId: 'task-budget-a',
+      status: 'partial',
+      taskStatus: 'paused',
+      outcome: 'partial',
+      stopReason: 'budget_exhausted',
+      ok: false,
+      output: 'partial a',
+      durationMs: 12,
+      completedAt: '2026-03-06T00:00:04.000Z',
+    },
+  })
+  const recoverableB = createTask('task-budget-b', {
+    status: 'paused',
+    pausedAt: '2026-03-06T00:00:05.000Z',
+    result: {
+      taskId: 'task-budget-b',
+      status: 'partial',
+      taskStatus: 'paused',
+      outcome: 'partial',
+      stopReason: 'budget_exhausted',
+      ok: false,
+      output: 'partial b',
+      durationMs: 12,
+      completedAt: '2026-03-06T00:00:06.000Z',
+    },
+  })
+  const manualPaused = createTask('task-manual-pause', {
+    status: 'paused',
+    pausedAt: '2026-03-06T00:00:07.000Z',
+  })
+  runtime.tasks = [recoverableA, recoverableB, manualPaused]
+
+  const result = await resumeRecoverableTasks(runtime)
+
+  expect(result).toMatchObject({
+    ok: true,
+    resumedCount: 2,
+    skippedCount: 0,
+  })
+  expect(recoverableA.status).toBe('pending')
+  expect(recoverableB.status).toBe('pending')
+  expect(manualPaused.status).toBe('paused')
+  expect(queueAdd).toHaveBeenCalledTimes(2)
 })
 
 test('budget pause writes visible fallback note when another choice is pending', async () => {

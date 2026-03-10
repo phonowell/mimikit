@@ -14,6 +14,7 @@
 - `POST /api/input`
 - `DELETE /api/messages/:id`
 - `GET /api/tasks/:id/archive`
+- `POST /api/tasks/resume-recoverable`
 - `POST /api/tasks/:id/pause`
 - `POST /api/tasks/:id/resume`
 - `POST /api/tasks/:id/cancel`
@@ -26,6 +27,11 @@
 
 - 成功：`{ ok: true, id, status, changeAt? }`
 - 失败：`{ ok: false, id, status, changeAt?, error }`
+
+批量恢复接口返回：
+
+- `POST /api/tasks/resume-recoverable`
+- 成功：`{ ok: true, resumedCount, skippedCount, items[] }`
 
 任务变更失败状态码映射：
 
@@ -46,8 +52,8 @@
 
 ## SSE 事件模型（`GET /api/events`）
 
-- `snapshot`：快照事件，包含 `status/messages/tasks/plans/focuses/choice/dutyStatus`。
-- `tasks`：任务列表快照更新（由 worker 侧状态变化触发），载荷为 `{ tasks, dutyStatus }`。
+- `snapshot`：快照事件，包含 `status/messages/tasks/plans/focuses/choice/reviewStatus`。
+- `tasks`：任务列表快照更新（由 worker 侧状态变化触发），载荷为 `{ tasks, reviewStatus }`。
 - `heartbeat`：SSE 保活心跳。
 - `error`：SSE 连接内错误反馈。
 - 心跳周期：`15s`（`SSE_HEARTBEAT_MS=15000`）。
@@ -62,7 +68,7 @@
 
 - `tasks.tasks[*].liveOutput` 为运行中任务的流式输出片段（仅 WebUI 展示，运行态内存数据，不承诺持久化）。
 - `tasks.tasks[*]` 会暴露 `stopReason` 与 `recoverable`；其中 `recoverable=true` 表示该 `paused + partial + budget_exhausted` 任务可直接继续执行。
-- `dutyStatus.cards/highlights` 由服务端 read model 聚合，用于 WebUI 值守看板展示 `Done / Need resume / Need input / Resumed`。
+- `reviewStatus.cards/highlights` 由服务端 read model 聚合，用于 WebUI 异步复盘板展示 `Done / Need resume / Failed / Need review / Resumed`，并直接暴露当前待确认 choice。
 - 会话入站消息日志在服务端 `src/http/session-ingress-log.ts` 统一记录并去重（`[http] session ingress message/batch`）。
 
 ## System 气泡可见性规则（WebUI 会话流）
@@ -96,7 +102,7 @@
 - `POST /api/choices/:id/select` 请求体：`{ optionId: string }`
 - 成功：`{ ok: true, choiceId, optionId, source }`
 - 失败：`not_found -> 404`，`invalid_option -> 400`，`expired -> 409`
-- timeout：后端在 `5` 分钟超时后自动选择默认项（`source=timeout`）
+- 当前实现默认不为 choice 设置超时；choice 会保留到用户显式选择、被新的用户输入打断，或被新的待确认项替换。兼容旧快照中带 `expiresAt` 的 choice，过期时仍会返回 `source=timeout`。
 - 预算暂停会生成带 `effect.type=resume_task` 的 `pendingUserChoice`；当用户选择该 effect 对应 option 时，后端会直接调用 `resumeTask(taskId)`，HTTP 成功响应体结构不变。
 
 ## 消息删除协议

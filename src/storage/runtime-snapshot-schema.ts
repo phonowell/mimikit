@@ -271,7 +271,7 @@ export const pendingUserChoiceSchema = z
     options: z.array(userChoiceOptionSchema).min(2),
     defaultOptionId: optionIdSchema,
     createdAt: z.string().trim().min(1),
-    expiresAt: z.string().trim().min(1),
+    expiresAt: z.string().trim().min(1).optional(),
     focusId: focusIdSchema,
     effect: pendingUserChoiceEffectSchema.optional(),
   })

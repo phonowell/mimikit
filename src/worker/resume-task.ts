@@ -7,6 +7,7 @@ import {
   notifyWorkerLoop,
 } from '../orchestrator/core/signals.js'
 import { clearTaskResumeChoice } from '../orchestrator/core/task-resume-choice.js'
+import { isBudgetRecoverableTask } from '../shared/task-state.js'
 import { nowIso } from '../shared/utils.js'
 
 import { enqueueWorkerTask } from './dispatch.js'
@@ -30,6 +31,13 @@ export type ResumeResult = {
   id: string
   status: 'pending' | 'not_found' | 'already_done' | 'not_paused' | 'invalid'
   changeAt?: string
+}
+
+export type ResumeRecoverableTasksResult = {
+  ok: true
+  resumedCount: number
+  skippedCount: number
+  items: ResumeResult[]
 }
 
 export const resumeTask = async (
@@ -91,5 +99,29 @@ export const resumeTask = async (
     id: task.id,
     status: 'pending',
     changeAt: resumedAt,
+  }
+}
+
+export const resumeRecoverableTasks = async (
+  runtime: RuntimeState,
+): Promise<ResumeRecoverableTasksResult> => {
+  const recoverableTasks = runtime.tasks.filter(isBudgetRecoverableTask)
+  const items: ResumeResult[] = []
+  for (const task of recoverableTasks) {
+    items.push(
+      await resumeTask(runtime, task.id, {
+        source: 'user',
+        reason: 'resume_all_recoverable',
+      }),
+    )
+  }
+  const resumedCount = items.filter(
+    (item) => item.ok && item.status === 'pending',
+  ).length
+  return {
+    ok: true,
+    resumedCount,
+    skippedCount: items.length - resumedCount,
+    items,
   }
 }

@@ -53,10 +53,13 @@ test("manager prompt enforces concise reply and choice routing rules", async () 
     "若上下文未提供 `archive_path`，必须明确写：`任务归档: 未生成`",
   );
   expect(prompt).toContain(
-    "需要用户在有限候选中二选一/多选一：优先使用 `M:ask_user_choice`",
+    "仅当确实需要用户在有限候选中二选一/多选一，且该决定适合留待用户返回后处理时，才使用 `M:ask_user_choice`",
   );
   expect(prompt).toContain(
     "若输入来源包含 `telegram` 或 `feishu`：禁止 `M:ask_user_choice`",
+  );
+  expect(prompt).toContain(
+    "不要把 `M:ask_user_choice` 当作默认澄清方式",
   );
   expect(prompt).toContain(
     "若收到 `trigger_fire` 且本轮同时有用户输入（`wake_profile=mixed`）：先响应用户最新目标；仅当不冲突时再执行该 trigger。",

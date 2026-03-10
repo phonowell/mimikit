@@ -50,8 +50,8 @@
     max-width: 88%;
   }
 
-  .duty-status-cards,
-  .duty-status-highlights {
+  .review-status-cards,
+  .review-status-highlights {
     grid-template-columns: 1fr;
   }
 

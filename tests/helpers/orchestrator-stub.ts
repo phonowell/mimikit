@@ -23,7 +23,7 @@ export const createOrchestratorStub = () => {
     getChatHistory: async () => [],
     getChatMessages: async () => ({ messages: [], mode: 'full' as const }),
     getTasks: () => ({ tasks: [], counts: {} }),
-    getDutyStatus: async () => ({ cards: [], highlights: [] }),
+    getReviewStatus: async () => ({ cards: [], highlights: [] }),
     getPlans: () => ({ items: [] }),
     getFocuses: () => ({ items: [] }),
     getPendingUserChoice: () => null,
@@ -46,7 +46,7 @@ export const createOrchestratorStub = () => {
       plans: { items: [] },
       focuses: { items: [] },
       choice: null,
-      dutyStatus: { cards: [], highlights: [] },
+      reviewStatus: { cards: [], highlights: [] },
     }),
     getTaskById: () => undefined,
     cancelTask: async (taskId: string) => ({

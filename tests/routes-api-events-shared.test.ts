@@ -2,8 +2,8 @@ import { expect, test, vi } from 'vitest'
 
 import { buildDeltaSnapshot } from '../src/http/routes-api-events-shared.js'
 
-test('buildDeltaSnapshot refreshes duty status from the non-task snapshot path only', async () => {
-  const getDutyStatus = vi.fn(async () => ({ cards: [], highlights: [] }))
+test('buildDeltaSnapshot refreshes review status from the non-task snapshot path only', async () => {
+  const getReviewStatus = vi.fn(async () => ({ cards: [], highlights: [] }))
   const orchestrator = {
     getStatus: () => ({ ok: true }),
     getChatMessages: async () => ({ messages: [], mode: 'delta' as const }),
@@ -11,7 +11,7 @@ test('buildDeltaSnapshot refreshes duty status from the non-task snapshot path o
     getPlans: () => ({ items: [] }),
     getFocuses: () => ({ items: [] }),
     getPendingUserChoice: () => null,
-    getDutyStatus,
+    getReviewStatus,
   }
 
   const snapshot = await buildDeltaSnapshot(
@@ -19,6 +19,6 @@ test('buildDeltaSnapshot refreshes duty status from the non-task snapshot path o
     'msg-1',
   )
 
-  expect(snapshot.dutyStatus).toEqual({ cards: [], highlights: [] })
-  expect(getDutyStatus).toHaveBeenCalledWith(true)
+  expect(snapshot.reviewStatus).toEqual({ cards: [], highlights: [] })
+  expect(getReviewStatus).toHaveBeenCalledWith(true)
 })

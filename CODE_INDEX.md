@@ -50,7 +50,7 @@
 | `notifyWorkerLoop()/waitForWorkerLoopSignal()` | `src/orchestrator/core/signals.ts:138` | Worker loop wake coordination |
 | `selectChatMessages()` | `src/orchestrator/read-model/chat-view.ts:134` | Builds chat view payload |
 | `buildTaskViews()` | `src/orchestrator/read-model/task-view.ts:118` | Builds task list view model |
-| `buildDutyStatusView()` | `src/orchestrator/read-model/duty-status-view.ts:73` | Builds duty watchboard cards and highlights |
+| `buildReviewStatusView()` | `src/orchestrator/read-model/review-status-view.ts:73` | Builds async review board cards and highlights |
 | `buildFocusViews()` | `src/orchestrator/read-model/focus-view.ts:72` | Builds focus view model |
 | `selectRecentPlans()/selectRecentTasks()` | `src/orchestrator/read-model/plan-select.ts:83` | Windowed selection for UI/prompt |
 
@@ -88,6 +88,7 @@
 | `runWorkerLoop()` | `src/worker/profiled-runner-loop.ts:100` | Iterative run/continue logic |
 | `runTaskWithRetry()` | `src/worker/run-retry.ts:116` | Retry wrapper around provider execution |
 | `cancelTask()` | `src/worker/cancel-task.ts:122` | Task cancellation flow |
+| `resumeTask()/resumeRecoverableTasks()` | `src/worker/resume-task.ts:31` | Resume one paused task or batch-resume budget recoverable tasks |
 | `resolveTaskChangeAt()/resolveSlotStatus()` | `src/worker/task-state-shared.ts:2` | Shared task transition timestamps and slot status payload |
 | `finalizeResult()` | `src/worker/result-finalize.ts:66` | Persists/archive result and updates state |
 | `buildTaskResultHandoff()` | `src/worker/result-handoff.ts:113` | Builds manager-visible result payload |
@@ -103,6 +104,7 @@
 | `sendSseEvent()` | `src/http/routes-api-events-shared.ts:96` | Writes SSE frame |
 | `registerChoiceSelectRoute()` | `src/http/routes-api-choice-select.ts:17` | User choice selection API |
 | `registerTaskMutationRoute()` | `src/http/routes-api-task-mutation.ts:25` | Shared route adapter for pause/resume/cancel responses |
+| `registerTaskResumeRoute()` | `src/http/routes-api-task-resume.ts:6` | Single-task resume and batch recoverable-resume APIs |
 | `registerTaskCancelRoute()` | `src/http/routes-api-task-cancel.ts:6` | Task cancel API |
 | `registerTaskArchiveRoute()` | `src/http/routes-api-task-archive.ts:72` | Task archive fetch API |
 
@@ -115,7 +117,7 @@
 | `renderMessages()` | `webui/messages/render-list.js:22` | Main message list renderer and scroll stabilization |
 | `bindChoicePanel()` | `webui/choice.js:70` | User-choice panel rendering and submit flow |
 | `bindTasksPanel()` | `webui/tasks.js:19` | Task panel state binding and ticker lifecycle |
-| `bindDutyStatusPanel()` | `webui/watchboard.js:73` | Duty watchboard rendering and disconnect state |
+| `bindReviewStatusPanel()` | `webui/review-board.js:73` | Async review board rendering and disconnect state |
 | `renderTasks()` | `webui/tasks-view-render.js:70` | Task row rendering with timing/usage metadata |
 | `renderPlans()` | `webui/plans-view.js:34` | Plan list rendering |
 | `renderFocuses()` | `webui/focus-view.js:48` | Focus list rendering and summary formatting |

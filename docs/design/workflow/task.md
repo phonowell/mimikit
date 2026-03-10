@@ -52,7 +52,7 @@
 - `running -> paused`：触发 `AbortController` 终止当前执行；worker 收到 abort 后不写入 `failed/canceled` 终态结果。
 - `paused -> pending`：恢复入队并重新调度执行。
 - 从预算暂停恢复时，会先清理旧 `task.result`/`archivePath`，避免历史部分结果阻塞下一次结果消费。
-- 预算暂停会生成一个显式恢复 choice：默认项是 `Keep paused`，超时 `5` 分钟后自动落默认项；选择 `Continue now` 会直接调用恢复链路。
+- 预算暂停会生成一个显式恢复 choice：默认项是 `Keep paused`；当前实现默认不自动超时，用户返回后选择 `Continue now` 会直接调用恢复链路。兼容旧快照中带 `expiresAt` 的 choice。
 - `paused` 状态支持继续 `cancel`，行为与 `pending` 取消一致（直接产出 `canceled` 结果）。
 - WebUI 二级菜单提供 `pause/resume/cancel` 控制动作；对预算暂停的可恢复任务，还会在任务行直接暴露 inline `Continue` 入口；pause/resume 会写入系统事件消息。
 

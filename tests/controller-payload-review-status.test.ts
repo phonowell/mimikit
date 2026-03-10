@@ -13,10 +13,10 @@ const createLoading = () => {
   }
 }
 
-test('payload controller forwards duty status from tasks events', () => {
+test('payload controller forwards review status from tasks events', () => {
   const loading = createLoading()
   const onTasksSnapshot = vi.fn()
-  const onDutyStatusSnapshot = vi.fn()
+  const onReviewStatusSnapshot = vi.fn()
   const updateStatus = vi.fn()
   const syncLoadingState = vi.fn()
   const doRender = vi.fn(() => false)
@@ -27,7 +27,7 @@ test('payload controller forwards duty status from tasks events', () => {
     syncLoadingState,
     updateStatus,
     onTasksSnapshot,
-    onDutyStatusSnapshot,
+    onReviewStatusSnapshot,
   })
 
   controller.applyTasksSnapshot({
@@ -35,7 +35,7 @@ test('payload controller forwards duty status from tasks events', () => {
       tasks: [{ id: 'task-1', status: 'paused' }],
       counts: { paused: 1 },
     },
-    dutyStatus: {
+    reviewStatus: {
       cards: [{ id: 'recoverable', label: 'Need resume', value: 1 }],
       highlights: [],
     },
@@ -45,7 +45,7 @@ test('payload controller forwards duty status from tasks events', () => {
     tasks: [{ id: 'task-1', status: 'paused' }],
     counts: { paused: 1 },
   })
-  expect(onDutyStatusSnapshot).toHaveBeenCalledWith({
+  expect(onReviewStatusSnapshot).toHaveBeenCalledWith({
     cards: [{ id: 'recoverable', label: 'Need resume', value: 1 }],
     highlights: [],
   })
@@ -53,10 +53,10 @@ test('payload controller forwards duty status from tasks events', () => {
   expect(doRender).not.toHaveBeenCalled()
 })
 
-test('payload controller forwards duty status from full snapshots', () => {
+test('payload controller forwards review status from full snapshots', () => {
   const loading = createLoading()
   const onTasksSnapshot = vi.fn()
-  const onDutyStatusSnapshot = vi.fn()
+  const onReviewStatusSnapshot = vi.fn()
   const updateStatus = vi.fn()
   const syncLoadingState = vi.fn()
   const controller = createPayloadController({
@@ -66,16 +66,16 @@ test('payload controller forwards duty status from full snapshots', () => {
     syncLoadingState,
     updateStatus,
     onTasksSnapshot,
-    onDutyStatusSnapshot,
+    onReviewStatusSnapshot,
   })
 
   controller.applySnapshot({
     status: { ok: true },
     messages: { messages: [], mode: 'full' },
     tasks: { tasks: [], counts: {} },
-    dutyStatus: {
+    reviewStatus: {
       cards: [{ id: 'done', label: 'Done', value: 2 }],
-      highlights: [{ id: 'h-1', title: 'Resumed', detail: 'Task resumed.' }],
+      highlights: [{ id: 'h-1', title: 'Needs review', detail: 'Task resumed.' }],
     },
     plans: { items: [] },
     focuses: { items: [] },
@@ -84,8 +84,8 @@ test('payload controller forwards duty status from full snapshots', () => {
 
   expect(updateStatus).toHaveBeenCalledWith({ ok: true })
   expect(onTasksSnapshot).toHaveBeenCalledWith({ tasks: [], counts: {} })
-  expect(onDutyStatusSnapshot).toHaveBeenCalledWith({
+  expect(onReviewStatusSnapshot).toHaveBeenCalledWith({
     cards: [{ id: 'done', label: 'Done', value: 2 }],
-    highlights: [{ id: 'h-1', title: 'Resumed', detail: 'Task resumed.' }],
+    highlights: [{ id: 'h-1', title: 'Needs review', detail: 'Task resumed.' }],
   })
 })

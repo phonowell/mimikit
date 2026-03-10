@@ -6,7 +6,6 @@ import { newId } from '../../shared/utils.js'
 
 import { persistRuntimeState } from './runtime-persistence.js'
 import { notifyUiSignal } from './signals.js'
-import { USER_CHOICE_TIMEOUT_MS } from './user-choice-timeout.js'
 
 import type { RuntimeState } from './runtime-state.js'
 import type { PendingUserChoice, Task } from '../../types/index.js'
@@ -32,37 +31,31 @@ const appendResumeChoiceDeferredNote = async (params: {
 const buildTaskResumeChoice = (
   task: Task,
   createdAt: string,
-): PendingUserChoice => {
-  const expiresAt = new Date(
-    Date.parse(createdAt) + USER_CHOICE_TIMEOUT_MS,
-  ).toISOString()
-  return {
-    id: `choice-task-resume-${task.id}`,
-    question: `Task "${resolveTaskLabel(task)}" paused at the budget boundary. Continue now or keep it paused?`,
-    options: [
-      {
-        id: RESUME_TASK_OPTION_ID,
-        label: 'Continue now',
-        reason: 'Resume from the saved partial result',
-      },
-      {
-        id: KEEP_TASK_PAUSED_OPTION_ID,
-        label: 'Keep paused',
-        reason: 'Review the partial result first',
-      },
-    ],
-    defaultOptionId: KEEP_TASK_PAUSED_OPTION_ID,
-    createdAt,
-    expiresAt,
-    focusId: task.focusId,
-    effect: {
-      type: 'resume_task',
-      taskId: task.id,
-      optionId: RESUME_TASK_OPTION_ID,
-      reason: 'budget_resume_choice_confirmed',
+): PendingUserChoice => ({
+  id: `choice-task-resume-${task.id}`,
+  question: `Task "${resolveTaskLabel(task)}" paused at the budget boundary. Continue now or keep it paused?`,
+  options: [
+    {
+      id: RESUME_TASK_OPTION_ID,
+      label: 'Continue now',
+      reason: 'Resume from the saved partial result',
     },
-  }
-}
+    {
+      id: KEEP_TASK_PAUSED_OPTION_ID,
+      label: 'Keep paused',
+      reason: 'Review the partial result first',
+    },
+  ],
+  defaultOptionId: KEEP_TASK_PAUSED_OPTION_ID,
+  createdAt,
+  focusId: task.focusId,
+  effect: {
+    type: 'resume_task',
+    taskId: task.id,
+    optionId: RESUME_TASK_OPTION_ID,
+    reason: 'budget_resume_choice_confirmed',
+  },
+})
 
 export const isTaskResumeChoiceForTask = (
   choice: PendingUserChoice | null,

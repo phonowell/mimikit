@@ -5,16 +5,16 @@
 [![Runtime](https://img.shields.io/badge/Runtime-Single%20Session-black)](./docs/design/architecture/system-architecture.md)
 [![CI](https://github.com/phonowell/mimikit/actions/workflows/ci.yml/badge.svg)](https://github.com/phonowell/mimikit/actions/workflows/ci.yml)
 
-Mimikit 是面向夜班值守与周期任务的低成本自治作业系统。它保持单一主 session，用 `manager + worker` 驱动作业闭环，把真正执行委托给外部运行时，并把状态、计划、日志与恢复点持久化到本地。
+Mimikit 是面向无人在线时段与长时间异步窗口的低成本自治作业系统。它保持单一主 session，用 `manager + worker` 驱动作业闭环，把真正执行委托给外部运行时，并把状态、计划、日志与恢复点持久化到本地。
 
-它不是通用 agent 平台。保留的边界只有四件事：周期触发、低成本常驻、失败恢复、最小人工确认。
+它不是通用 agent 平台。保留的边界只有四件事：异步触发、低成本常驻、失败恢复、人返回后的复盘与续跑。
 
 ## Positioning
 
-- 低常驻成本：单 session、单 manager loop、外部执行运行时复用，避免为夜班值守额外维护多层 agent 编排。
-- 周期执行与恢复：支持 `cron`、`scheduled_at`、`on_worker_slot_freed`，并把运行时快照落盘，重启后可继续。
-- 最小确认边界：高成本任务需要显式确认；其他链路尽量自动推进到明确收尾条件。
-- 可观察值守：WebUI、CLI action log、`.mimikit/` 状态目录用于观察夜间执行，而不是扩展更多平台概念。
+- 低常驻成本：单 session、单 manager loop、外部执行运行时复用，避免为长时间无人在线场景额外维护多层 agent 编排。
+- 异步执行与恢复：支持 `cron`、`scheduled_at`、`on_worker_slot_freed`，并把运行时快照落盘，重启后可继续。
+- 显式止损边界：高成本或不确定任务停在确认边界；其他链路尽量自动推进到明确收尾条件。
+- 可复盘观察：WebUI、CLI action log、`.mimikit/` 状态目录用于观察异步执行结果，而不是扩展更多平台概念。
 
 ## Quickstart
 
@@ -97,9 +97,9 @@ enabled = true
 - manager 调用走 `openai-responses`
 - worker 按任务 `provider` 路由到 `codex-sdk` 或 `opencode-sdk`
 - 未指定 `provider` 时，按最低 `billing`、再按最高 `capability` 自动选择
-- 高成本 `enqueue_task` 先触发 `ask_user_choice` 确认，再允许派发
+- 高成本 `enqueue_task` 会先生成待确认项，等人返回后再决定是否派发
 - 长任务命中 `worker.budget` 时不会直接失败；会归档部分结果、保留 session，并把任务置为 `paused` 等待显式恢复
-- WebUI 会把 `Done / Need resume / Need input / Resumed` 聚合成值守状态面板，方便夜班快速判断当前介入点
+- WebUI 会把 `Done / Need resume / Failed / Need review / Resumed` 聚合成异步复盘状态面板，附带会话级摘要；当存在 recoverable 任务时，还提供一键 `Continue all resumable` 入口，方便人返回后集中续跑
 
 ### 3) 启动
 
@@ -117,7 +117,7 @@ CLI 默认输出 action 生命周期日志，并始终将其写入 `.mimikit/log
 MIMIKIT_ACTION_LOGS=false pnpm start
 ```
 
-### 4) 可选值守入口
+### 4) 可选异步入口
 
 Telegram：
 
@@ -151,8 +151,8 @@ flowchart LR
 ```
 
 - 用户输入、计划触发、worker 结果都会落盘，再回流给 manager。
-- `managerLoop` 统一处理计划触发、用户 choice 超时、worker 槽位释放，不额外拆第二套调度器。
-- 当补充检索没有新进展或同类拒绝重复出现时，manager 会提前收敛为 best-effort 回复，避免夜间空转。
+- `managerLoop` 统一处理计划触发、待确认 choice 生命周期、worker 槽位释放，不额外拆第二套调度器。
+- 当补充检索没有新进展或同类拒绝重复出现时，manager 会提前收敛为 best-effort 回复，避免长时间异步窗口内空转。
 - worker 命中预算上限时会写出 `partial` 结果与 handoff，日志/历史可区分正常完成、预算暂停和其他阻塞停止。
 - 重启时读取 runtime snapshot，对齐 cursor 后继续处理未消费输入与结果。
 
@@ -183,7 +183,7 @@ Invoke-RestMethod http://127.0.0.1:8787/api/status | ConvertTo-Json -Depth 5
 
 ## Contributing
 
-- 变更要直接服务夜班值守、周期执行、成本控制或恢复能力。
+- 变更要直接服务无人在线时段的异步执行、成本控制、失败恢复或事后复盘能力。
 - 遵循 [`AGENTS.md`](./AGENTS.md)。
 - 合并前运行 `pnpm run lint`、`pnpm run type-check`、`pnpm run test`。
 

@@ -41,7 +41,7 @@ export const createPayloadController = ({
   syncLoadingState,
   updateStatus,
   onTasksSnapshot,
-  onDutyStatusSnapshot,
+  onReviewStatusSnapshot,
   onPlansSnapshot,
   onFocusesSnapshot,
   onChoiceSnapshot,
@@ -93,8 +93,11 @@ export const createPayloadController = ({
         : tasks
     if (typeof onTasksSnapshot === 'function' && isRecord(taskPayload))
       onTasksSnapshot(taskPayload)
-    if (typeof onDutyStatusSnapshot === 'function' && isRecord(tasks.dutyStatus))
-      onDutyStatusSnapshot(tasks.dutyStatus)
+    if (
+      typeof onReviewStatusSnapshot === 'function' &&
+      isRecord(tasks.reviewStatus)
+    )
+      onReviewStatusSnapshot(tasks.reviewStatus)
   }
 
   const applySnapshot = (snapshot) => {
@@ -103,8 +106,11 @@ export const createPayloadController = ({
     else syncLoadingState()
     applyMessagesPayload(snapshot.messages)
     applyTasksSnapshot(snapshot.tasks)
-    if (typeof onDutyStatusSnapshot === 'function' && isRecord(snapshot.dutyStatus))
-      onDutyStatusSnapshot(snapshot.dutyStatus)
+    if (
+      typeof onReviewStatusSnapshot === 'function' &&
+      isRecord(snapshot.reviewStatus)
+    )
+      onReviewStatusSnapshot(snapshot.reviewStatus)
     if (typeof onPlansSnapshot === 'function' && isRecord(snapshot.plans))
       onPlansSnapshot(snapshot.plans)
     if (typeof onFocusesSnapshot === 'function' && isRecord(snapshot.focuses))
