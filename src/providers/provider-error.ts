@@ -121,6 +121,8 @@ const TRANSIENT_PROVIDER_MESSAGE_PATTERNS = [
   /EAI_AGAIN/i,
   /ETIMEDOUT/i,
   /timed out/i,
+  /stream disconnected/i,
+  /reconnecting\b/i,
   /network/i,
 ]
 

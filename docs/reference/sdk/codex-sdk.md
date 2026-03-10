@@ -1,7 +1,7 @@
 # Codex SDK 参考（Mimikit）
 
-> 更新时间：2026-03-05
-> 基线版本：`@openai/codex-sdk@0.110.0`
+> 更新时间：2026-03-11
+> 基线版本：`@openai/codex-sdk@0.111.0`
 
 ## 用途
 
