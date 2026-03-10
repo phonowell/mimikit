@@ -1,0 +1,6 @@
+# Public API baseline
+
+[package-exports]
+./channels/*
+
+[dist-dts]

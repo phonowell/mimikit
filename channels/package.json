@@ -1,0 +1,45 @@
+{
+  "name": "@mimikit/channels",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "MIT",
+  "description": "Channel integration layer for Mimikit",
+  "exports": {
+    "./channels/*": {
+      "types": "./dist/channels/*.d.ts",
+      "import": "./dist/channels/*.js"
+    }
+  },
+  "files": [
+    "dist",
+    "prompts"
+  ],
+  "scripts": {
+    "lint": "eslint \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "test": "vitest run",
+    "build": "tsc -p tsconfig.build.json",
+    "type-check": "tsc -p tsconfig.build.json --noEmit",
+    "api:baseline:update": "node scripts/update-public-api-baseline.mjs",
+    "api:check": "node scripts/check-public-api.mjs",
+    "ci:verify": "pnpm run lint && pnpm run type-check && pnpm run test && pnpm run build && pnpm run api:check"
+  },
+  "dependencies": {
+    "@larksuiteoapi/node-sdk": "^1.59.0",
+    "https-proxy-agent": "^7.0.6",
+    "nunjucks": "^3.2.4",
+    "p-queue": "^9.1.0",
+    "telegraf": "^4.16.3",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.35.0",
+    "@types/node": "^25.3.5",
+    "@types/nunjucks": "^3.2.6",
+    "eslint": "9.x",
+    "globals": "^17.0.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.43.0",
+    "vitest": "^4.0.18"
+  },
+  "packageManager": "pnpm@10.28.2"
+}
