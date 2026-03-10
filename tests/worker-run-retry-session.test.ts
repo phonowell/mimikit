@@ -5,8 +5,8 @@ import { join } from 'node:path'
 import { expect, test, vi, beforeEach, afterEach } from 'vitest'
 
 import { defaultConfig } from '../src/config.js'
-import { buildPaths } from '../src/fs/paths.js'
 import { runTaskWithRetry } from '../src/worker/run-retry.js'
+import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
 import type { Task } from '../src/types/index.js'
@@ -42,52 +42,20 @@ const createTmpDir = async (): Promise<string> => {
 
 const createRuntime = async (): Promise<RuntimeState> => {
   const workDir = await createTmpDir()
-  const config = defaultConfig({ workDir })
-  config.worker.retry.maxAttempts = 0
-  config.worker.retry.backoffMs = 0
-  return {
+  const runtime = await createTestRuntimeState({
+    workDir,
     runtimeId: 'runtime-run-retry-test',
-    config,
-    paths: buildPaths(workDir),
-    stopped: false,
-    managerRunning: false,
-    managerSignalController: new AbortController(),
-    managerWakePending: false,
-    lastManagerActivityAtMs: Date.now(),
-    lastWorkerActivityAtMs: Date.now(),
-    inflightInputs: [],
-    queues: {
-      inputsCursor: 0,
-      resultsCursor: 0,
-    },
-    tasks: [],
-    taskPlans: [],
-    focuses: [],
-    focusContexts: [],
-    activeFocusIds: [],
-    managerTurn: 0,
-    memoryRefresh: {
-      lastCompletedTurn: 0,
-      lastProcessedInputsCursor: 0,
-      lastProcessedResultsCursor: 0,
-      running: false,
-      pending: false,
-    },
-    managerFocusCompressedContexts: [],
-    runningControllers: new Map(),
-    createTaskDebounce: new Map(),
-    workerQueue: {
-      add: vi.fn(),
-      clear: vi.fn(),
-      pause: vi.fn(),
-      sizeBy: vi.fn().mockReturnValue(0),
-    } as unknown as RuntimeState['workerQueue'],
-    workerSignalController: new AbortController(),
-    uiWakeVersion: 0,
-    uiWakeEvents: new Map(),
-    uiSignalControllers: new Set(),
-    pendingUserChoice: null,
-  }
+    withGlobalFocus: false,
+  })
+  runtime.config.worker.retry.maxAttempts = 0
+  runtime.config.worker.retry.backoffMs = 0
+  runtime.worker.queue = {
+    add: vi.fn(),
+    clear: vi.fn(),
+    pause: vi.fn(),
+    sizeBy: vi.fn().mockReturnValue(0),
+  } as unknown as RuntimeState['worker']['queue']
+  return runtime
 }
 
 const createTask = (id: string, overrides: Partial<Task> = {}): Task => ({

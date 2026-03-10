@@ -12,6 +12,7 @@ import {
 } from '../src/orchestrator/core/runtime-persistence.js'
 import { saveRuntimeSnapshot } from '../src/storage/runtime-snapshot.js'
 import { publishUserInput, publishWorkerResult } from '../src/streams/queues.js'
+import { createTestRuntimeState } from './helpers/runtime-state.js'
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
 
 const GLOBAL_FOCUS_ID = 'focus-global'
@@ -57,77 +58,56 @@ test('hydrateRuntimeState reconciles stale queue cursors', async () => {
     },
   })
 
-  const runtime = {
-    config: { workDir: stateDir },
-    paths,
-    queues: { inputsCursor: 0, resultsCursor: 0 },
-    tasks: [],
-    taskPlans: [],
-    focuses: [],
-    focusContexts: [],
-    activeFocusIds: [],
-    managerTurn: 0,
-    managerThreadId: undefined,
-    memoryRefresh: createDefaultMemoryRefreshState(),
-    managerFocusCompressedContexts: [],
-  } as RuntimeState
+  const runtime = await createTestRuntimeState({
+    workDir: stateDir,
+    withGlobalFocus: false,
+  })
 
   await hydrateRuntimeState(runtime)
 
   expect(runtime.queues).toEqual({ inputsCursor: 0, resultsCursor: 0 })
-  expect(runtime.memoryRefresh.lastProcessedInputsCursor).toBe(0)
-  expect(runtime.memoryRefresh.lastProcessedResultsCursor).toBe(0)
+  expect(runtime.manager.memoryRefresh.lastProcessedInputsCursor).toBe(0)
+  expect(runtime.manager.memoryRefresh.lastProcessedResultsCursor).toBe(0)
 })
 
 test('persist+hydrate keeps reusable session on recovered pending task', async () => {
   const stateDir = await createTmpDir()
   const paths = buildPaths(stateDir)
-  const runtime = {
-    config: { workDir: stateDir },
-    paths,
-    queues: { inputsCursor: 0, resultsCursor: 0 },
-    tasks: [
-      {
-        id: 'task-recover-session',
-        fingerprint: 'fp-task-recover-session',
-        prompt: 'resume pending work',
-        title: 'Recover Session',
-        focusId: GLOBAL_FOCUS_ID,
-        profile: 'worker',
-        provider: 'codex',
-        status: 'running',
-        createdAt: SNAPSHOT_BASE_TIME,
-        startedAt: '2026-02-06T00:01:00.000Z',
-        sessionId: 'session-reuse-after-restart',
-        sessionState: 'reusable' as const,
-        sessionUpdatedAt: '2026-02-06T00:01:10.000Z',
+  const runtime = await createTestRuntimeState({
+    workDir: stateDir,
+    withGlobalFocus: false,
+    patch: {
+      tasks: [
+        {
+          id: 'task-recover-session',
+          fingerprint: 'fp-task-recover-session',
+          prompt: 'resume pending work',
+          title: 'Recover Session',
+          focusId: GLOBAL_FOCUS_ID,
+          profile: 'worker',
+          provider: 'codex',
+          status: 'running',
+          createdAt: SNAPSHOT_BASE_TIME,
+          startedAt: '2026-02-06T00:01:00.000Z',
+          sessionId: 'session-reuse-after-restart',
+          sessionState: 'reusable',
+          sessionUpdatedAt: '2026-02-06T00:01:10.000Z',
+        },
+      ],
+      manager: {
+        turn: 0,
+        threadId: 'session-manager-persisted',
+        memoryRefresh: createDefaultMemoryRefreshState(),
       },
-    ],
-    taskPlans: [],
-    focuses: [],
-    focusContexts: [],
-    activeFocusIds: [],
-    managerTurn: 0,
-    managerThreadId: 'session-manager-persisted',
-    memoryRefresh: createDefaultMemoryRefreshState(),
-    managerFocusCompressedContexts: [],
-  } as RuntimeState
+    },
+  })
 
   await persistRuntimeState(runtime)
 
-  const restored = {
-    config: { workDir: stateDir },
-    paths,
-    queues: { inputsCursor: 0, resultsCursor: 0 },
-    tasks: [],
-    taskPlans: [],
-    focuses: [],
-    focusContexts: [],
-    activeFocusIds: [],
-    managerTurn: 0,
-    managerThreadId: undefined,
-    memoryRefresh: createDefaultMemoryRefreshState(),
-  } as RuntimeState
+  const restored = await createTestRuntimeState({
+    workDir: stateDir,
+    withGlobalFocus: false,
+  })
 
   await hydrateRuntimeState(restored)
 
@@ -136,5 +116,60 @@ test('persist+hydrate keeps reusable session on recovered pending task', async (
   expect(restored.tasks[0]?.startedAt).toBeUndefined()
   expect(restored.tasks[0]?.sessionId).toBe('session-reuse-after-restart')
   expect(restored.tasks[0]?.sessionState).toBe('reusable')
-  expect(restored.managerThreadId).toBe('session-manager-persisted')
+  expect(restored.manager.threadId).toBe('session-manager-persisted')
+})
+
+test('persist+hydrate prunes compressed focus contexts that no longer belong to a live focus', async () => {
+  const stateDir = await createTmpDir()
+  const runtime = await createTestRuntimeState({
+    workDir: stateDir,
+    withGlobalFocus: false,
+    patch: {
+      focuses: [
+        {
+          id: 'focus-kept',
+          title: 'Kept',
+          status: 'active',
+          createdAt: SNAPSHOT_BASE_TIME,
+          updatedAt: SNAPSHOT_BASE_TIME,
+          lastActivityAt: SNAPSHOT_BASE_TIME,
+        },
+      ],
+      manager: {
+        focusCompressedContexts: [
+          {
+            focusId: GLOBAL_FOCUS_ID,
+            summary: 'legacy global summary',
+            updatedAt: SNAPSHOT_BASE_TIME,
+          },
+          {
+            focusId: 'focus-missing',
+            summary: 'orphan summary',
+            updatedAt: SNAPSHOT_BASE_TIME,
+          },
+          {
+            focusId: 'focus-kept',
+            summary: 'kept summary',
+            updatedAt: SNAPSHOT_BASE_TIME,
+          },
+        ],
+      },
+    },
+  })
+
+  await persistRuntimeState(runtime)
+
+  const restored = await createTestRuntimeState({
+    workDir: stateDir,
+    withGlobalFocus: false,
+  })
+  await hydrateRuntimeState(restored)
+
+  expect(restored.manager.focusCompressedContexts).toEqual([
+    {
+      focusId: 'focus-kept',
+      summary: 'kept summary',
+      updatedAt: SNAPSHOT_BASE_TIME,
+    },
+  ])
 })

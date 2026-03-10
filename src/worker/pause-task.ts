@@ -57,7 +57,7 @@ export const pauseTask = async (
   const prevStatus = task.status
   touchTaskMutation(runtime, task.id)
   markTaskPaused(runtime.tasks, task.id, { pausedAt })
-  const controller = runtime.runningControllers.get(task.id)
+  const controller = runtime.worker.runningControllers.get(task.id)
   if (controller && !controller.signal.aborted)
     controller.abort(meta?.reason ?? 'Task paused')
 

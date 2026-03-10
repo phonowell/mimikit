@@ -64,7 +64,7 @@ const runTaskModel = (params: {
     (focus) => focus.focusId === params.task.focusId,
   )
   const compressedFocusContext =
-    params.runtime.managerFocusCompressedContexts.find(
+    params.runtime.manager.focusCompressedContexts.find(
       (focus) => focus.focusId === params.task.focusId,
     )
   return runWorker({

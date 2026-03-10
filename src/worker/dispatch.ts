@@ -2,7 +2,6 @@ import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import {
-  markWorkerSlotFreedSignal,
   notifyManagerLoop,
   notifyUiSignal,
   notifyWorkerLoop,
@@ -112,11 +111,11 @@ const runQueuedWorker = async (
   task: Task,
 ): Promise<void> => {
   if (task.status !== 'pending') return
-  if (runtime.runningControllers.has(task.id)) return
-  runtime.lastWorkerActivityAtMs = Date.now()
+  if (runtime.worker.runningControllers.has(task.id)) return
+  runtime.worker.lastActivityAtMs = Date.now()
   clearTaskLiveOutput(runtime, task.id)
   const controller = new AbortController()
-  runtime.runningControllers.set(task.id, controller)
+  runtime.worker.runningControllers.set(task.id, controller)
   markTaskRunning(runtime.tasks, task.id)
   notifyUiSignal(runtime)
   await bestEffort('persistRuntimeState: worker_start', () =>
@@ -124,7 +123,7 @@ const runQueuedWorker = async (
   )
   let longTaskWarned = false
   const longTaskTimer = setInterval(() => {
-    const controllerForTask = runtime.runningControllers.get(task.id)
+    const controllerForTask = runtime.worker.runningControllers.get(task.id)
     if (!controllerForTask || controllerForTask.signal.aborted) return
     const startedAtMs = Date.parse(task.startedAt ?? '')
     if (!Number.isFinite(startedAtMs)) return
@@ -146,11 +145,8 @@ const runQueuedWorker = async (
     await runTask(runtime, task, controller)
   } finally {
     clearInterval(longTaskTimer)
-    const occupiedBeforeRelease = runtime.runningControllers.size
     clearTaskLiveOutput(runtime, task.id)
-    runtime.runningControllers.delete(task.id)
-    if (occupiedBeforeRelease > runtime.runningControllers.size)
-      markWorkerSlotFreedSignal(runtime)
+    runtime.worker.runningControllers.delete(task.id)
     notifyManagerLoop(runtime)
     await bestEffort('persistRuntimeState: worker_end', () =>
       persistRuntimeState(runtime),
@@ -161,9 +157,9 @@ const runQueuedWorker = async (
 
 export const enqueueWorkerTask = (runtime: RuntimeState, task: Task): void => {
   if (task.status !== 'pending') return
-  if (runtime.runningControllers.has(task.id)) return
-  if (runtime.workerQueue.sizeBy({ id: task.id }) > 0) return
-  void runtime.workerQueue
+  if (runtime.worker.runningControllers.has(task.id)) return
+  if (runtime.worker.queue.sizeBy({ id: task.id }) > 0) return
+  void runtime.worker.queue
     .add(() => runQueuedWorker(runtime, task), { id: task.id })
     .catch((error) => reportWorkerQueueError(runtime, error))
 }
@@ -172,8 +168,8 @@ export const enqueuePendingWorkerTasks = (runtime: RuntimeState): void => {
   for (const task of runtime.tasks) {
     if (
       task.status === 'running' &&
-      !runtime.runningControllers.has(task.id) &&
-      runtime.workerQueue.sizeBy({ id: task.id }) === 0
+      !runtime.worker.runningControllers.has(task.id) &&
+      runtime.worker.queue.sizeBy({ id: task.id }) === 0
     ) {
       task.status = 'pending'
       delete task.startedAt
@@ -185,11 +181,11 @@ export const enqueuePendingWorkerTasks = (runtime: RuntimeState): void => {
 }
 
 export const workerLoop = async (runtime: RuntimeState): Promise<void> => {
-  while (!runtime.stopped) {
+  while (!runtime.session.stopped) {
     enqueuePendingWorkerTasks(runtime)
     await waitForWorkerLoopSignal(runtime, Number.POSITIVE_INFINITY)
   }
 
-  runtime.workerQueue.pause()
-  runtime.workerQueue.clear()
+  runtime.worker.queue.pause()
+  runtime.worker.queue.clear()
 }

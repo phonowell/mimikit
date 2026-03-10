@@ -1,79 +1,23 @@
-import { mkdtemp } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-
-import PQueue from 'p-queue'
 import { expect, test } from 'vitest'
 
-import { defaultConfig } from '../src/config.js'
 import { GLOBAL_FOCUS_ID } from '../src/focus/index.js'
-import { buildPaths } from '../src/fs/paths.js'
 import { publishManagerSystemEventInput } from '../src/manager/system-input-event.js'
+import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
 
-const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-system-input-event-'))
-
 const createRuntime = async (): Promise<RuntimeState> => {
-  const workDir = await createTmpDir()
-  const config = defaultConfig({ workDir })
-  const queue = new PQueue({ concurrency: config.worker.maxConcurrent })
+  const runtime = await createTestRuntimeState()
   const now = new Date().toISOString()
-  return {
-    runtimeId: 'runtime-test',
-    config,
-    paths: buildPaths(workDir),
-    stopped: false,
-    managerRunning: false,
-    managerSignalController: new AbortController(),
-    managerWakePending: false,
-    lastManagerActivityAtMs: Date.now(),
-    lastWorkerActivityAtMs: Date.now(),
-    inflightInputs: [],
-    queues: {
-      inputsCursor: 0,
-      resultsCursor: 0,
-    },
-    tasks: [],
-    taskPlans: [],
-    focuses: [
-      {
-        id: GLOBAL_FOCUS_ID,
-        title: 'Global',
-        status: 'active',
-        createdAt: now,
-        updatedAt: now,
-        lastActivityAt: now,
-      },
-      {
-        id: 'focus-topic',
-        title: 'Topic',
-        status: 'active',
-        createdAt: now,
-        updatedAt: now,
-        lastActivityAt: now,
-      },
-    ],
-    focusContexts: [],
-    activeFocusIds: [GLOBAL_FOCUS_ID, 'focus-topic'],
-    managerTurn: 0,
-    memoryRefresh: {
-      lastCompletedTurn: 0,
-      lastProcessedInputsCursor: 0,
-      lastProcessedResultsCursor: 0,
-      running: false,
-      pending: false,
-    },
-    managerFocusCompressedContexts: [],
-    runningControllers: new Map(),
-    createTaskDebounce: new Map(),
-    workerQueue: queue,
-    workerSignalController: new AbortController(),
-    uiWakeVersion: 0,
-    uiWakeEvents: new Map(),
-    uiSignalControllers: new Set(),
-    pendingUserChoice: null,
-  }
+  runtime.focuses.push({
+    id: 'focus-topic',
+    title: 'Topic',
+    status: 'active',
+    createdAt: now,
+    updatedAt: now,
+    lastActivityAt: now,
+  })
+  return runtime
 }
 
 test('publishManagerSystemEventInput defaults to global focus when focusId is omitted', async () => {
@@ -94,6 +38,6 @@ test('publishManagerSystemEventInput defaults to global focus when focusId is om
     logEvent: 'worker_slot_freed_input',
   })
 
-  expect(runtime.inflightInputs).toHaveLength(1)
-  expect(runtime.inflightInputs[0]?.focusId).toBe(GLOBAL_FOCUS_ID)
+  expect(runtime.session.inflightInputs).toHaveLength(1)
+  expect(runtime.session.inflightInputs[0]?.focusId).toBe(GLOBAL_FOCUS_ID)
 })

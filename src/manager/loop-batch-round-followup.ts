@@ -39,8 +39,8 @@ const appendRoundActionFeedback = async (params: {
       item,
       index: index + 1,
       total: actionFeedback.length,
-      ...(params.runtime.managerThreadId
-        ? { traceId: params.runtime.managerThreadId }
+      ...(params.runtime.manager.threadId
+        ? { traceId: params.runtime.manager.threadId }
         : {}),
     })
   }
@@ -83,9 +83,11 @@ export const resolveRoundFollowup = async (params: {
         runtime: params.runtime,
         allowAskUserChoice: params.allowAskUserChoice,
         resultTaskIds: params.resultTaskIds,
-        inputs: params.runtime.inflightInputs,
+        inputs: params.runtime.session.inflightInputs,
       }),
-      scheduleNowIso: resolveScheduleNowIso(params.runtime.lastUserMeta),
+      scheduleNowIso: resolveScheduleNowIso(
+        params.runtime.session.lastUserMeta,
+      ),
     },
     params.output,
   )

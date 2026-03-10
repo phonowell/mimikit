@@ -1,75 +1,69 @@
-# 系统架构总览（当前实现）
+# 夜班作业系统架构
 
 > 返回 [系统设计总览](../README.md)
 
 ## 文档边界
 
-- 本文档仅定义架构边界、组件职责、启动顺序与事件驱动主链路。
-- Task/Action/Plan/Focus/Memory 的生命周期与执行语义不在本文定义，统一以 `../workflow/task.md`、`../workflow/action.md`、`../workflow/plan.md`、`../workflow/focus.md`、`../workflow/memory.md` 为准。
+- 本文档只描述夜班 agent 的最小必要架构：周期触发、单回路编排、外部执行、持久化恢复、最小人工确认。
+- Task/Action/Plan/Focus/Memory 的具体协议仍以 `../workflow/task.md`、`../workflow/action.md`、`../workflow/plan.md`、`../workflow/focus.md`、`../workflow/memory.md` 为准。
 
 ## 架构边界
 
-- 一次性全量切换到统一模型：`Task + TaskPlan + Focus`。
-- 不保留旧链路兼容层（intent/cron-job 体系已移除）。
-- manager 使用 direct `responses` provider（`openai-responses`）；worker 按任务 `provider` 路由到 `codex-sdk` 或 `opencode-sdk` 作为外部执行运行时。
-- manager 对 orchestrator/worker 依赖收敛在 `src/manager/runtime-adapter.ts`。
-- `mimikit` 为纯编排层：负责本地状态机、队列、调度、可观测性，不直接执行任务。
+- 保留统一模型 `Task + TaskPlan + Focus`，不再维护旧链路兼容层。
+- `mimikit` 只做编排层：负责本地状态机、队列、调度、可观测性，不直接执行任务。
+- manager 使用 `openai-responses`；worker 按任务 `provider` 路由到 `codex-sdk` 或 `opencode-sdk`。
+- 运行时状态收敛在 `session / manager / worker / ui` 四个子域，避免继续堆第二套调度或摘要层。
 - HTTP 输入校验与参数归一化集中在 `src/http/helpers.ts`。
 - 本地持久化采用进程内串行 + 文件锁（`proper-lockfile`）。
 
 ## 组件职责
 
-- `manager`：消费 `inputs/results`，输出用户回复与编排动作。
-- `worker`：派发任务到外部执行运行时，并回写结果。
-- `runtime reaper`：独立守护进程，监测主进程 lease 并在异常退出后回收 worker 子进程。
-- `triggerWakeLoop`：统一处理计划触发（`cron/scheduled_at/on_worker_slot_freed`）、用户选择超时、worker 槽位释放事件。
+- `manager`：消费 `inputs/results`，决定回复、任务、计划与收尾策略。
+- `worker`：把任务派发给外部执行运行时，并把结果回写到本地状态。
+- `managerLoop`：统一处理计划触发、choice 超时、worker 槽位释放，不再保留独立 trigger loop。
+- `runtime reaper`：主进程异常退出后回收 worker 子进程。
+- WebUI：只承担观察与人工确认，不承载调度策略。
 
-WebUI（native 组件系统）：
+约束：
 
-- 分层：`foundation -> domain -> composition`，禁止跨层反向依赖。
-- `foundation`：`overlay-stack/page-menu/anchored-menu/dialog/confirm-dialog/toast`，提供统一生命周期契约（`bind/mount/open/close/setDisabled/dispose` 的可组合子集）。
-- `domain`：
-- task actions：`task-actions-controller/menu/request/copy-id/config`；
-- tools restart/reset：`restart-state-controller/restart-request/restart-status/restart-tools-menu/restart-dialog-binding`。
-- `composition`：`app.js`、`tasks.js`、`panels.js` 仅做接线与快照分发，不承载业务规则。
-- 迁移策略：WebUI 组件改造采用“一次性替换”，不保留兼容层，不维护旧实现分支。
-
-补充：
-
-- manager 回合采用 `maxCorrectionRounds` 硬上限；超过上限写入 `system_event.name=manager_round_limit` 并返回 best-effort 文本。
-- manager 失败时会写入 `manager_error`，并在“已消费但尚未回复”场景写入 `manager_fallback_reply`。
-- manager 在纠错第 2 轮仍存在 action_feedback 时会触发结构化澄清提前收敛（`event=manager_correction_structured_clarify`），避免高成本重复纠错。
-- worker 对长任务发出软阈值观测（`event=worker_long_task_soft_limit`，默认阈值 20 分钟），并在 canceled `worker_end` 记录 `usageCaptured`。
+- manager 回合使用 `maxCorrectionRounds` 硬上限，超过后写入 `manager_round_limit` 并返回 best-effort 文本。
+- 当补充检索没有新进展时，manager 直接降级为澄清答复，不再掉进 `manager_end status=error`。
+- 当同类 `action_execution_rejected` 在同一批次内重复出现时，manager 打开熔断并停止继续重试。
+- worker 当前只保留长任务软阈值观测（`worker_long_task_soft_limit`）；更细的预算治理仍在 backlog。
 
 ## 启动顺序
 
-实现：`src/orchestrator/core/orchestrator-service.ts`
-链路：`src/orchestrator/core/orchestrator-runtime-ops.ts`
+实现入口：
+
+- `src/orchestrator/core/orchestrator-service.ts`
+- `src/orchestrator/core/orchestrator-channel-lifecycle.ts`
+- `src/orchestrator/core/orchestrator-input-ingress.ts`
+- `src/orchestrator/core/orchestrator-chat-history.ts`
+- `src/orchestrator/core/orchestrator-runtime-lifecycle.ts`
 
 1. `hydrateRuntimeState`
-2. `ensureGlobalFocus` + `enforceFocusCapacity`
+2. `ensureGlobalFocus` + `enforceActiveFocusLimit` + `pruneArchivedFocuses`
 3. 写入 startup system message（`Session started.`）
 4. `enqueuePendingWorkerTasks` + `notifyWorkerLoop`
 5. 启动 `managerLoop`
-6. 启动 `triggerWakeLoop`
-7. 启动 `workerLoop`
+6. 启动 `workerLoop`
 
 ## 主链路（事件驱动）
 
-1. 用户输入写入 `inputs/packets.jsonl` 并唤醒 manager。
-2. manager 消费 `inputs/results` 并执行编排。
-3. 若产生任务，worker 调用外部执行运行时并写入 `results/packets.jsonl`。
-4. 结果回写后再次唤醒 manager，形成闭环。
+1. 用户输入、计划触发、worker 结果先写入本地队列。
+2. `managerLoop` 消费这些输入并执行编排。
+3. 若产生任务，worker 调用外部运行时执行并写回 `results/packets.jsonl`。
+4. manager 再次被唤醒，直到本轮走到明确收尾条件。
 
 实时唤醒来源：`user_input`、`task_result`、`trigger_fire`、`worker_slot_freed`。
 
 ## 一致性与恢复
 
-- manager loop 单飞，同一时刻仅一个活跃批次。
-- 队列 compact 仅在“已完全消费且达到阈值”时执行。
-- manager 上下文连续性通过 `history + tasks + plans + focus` 数据保持；`managerFocusCompressedContexts` 当前仅用于 worker prompt 补充字段保留。
-- `restart/reset` 先回包，再等待 in-flight manager 批次收敛后持久化并退出。
-- 进程被杀（如 `SIGKILL`）时由 `runtime reaper` 基于 `.mimikit/runtime/lease.json` 与 `.mimikit/runtime/children.json` 执行回收（`SIGTERM` 后 `SIGKILL`）。
+- manager loop 单飞，同一时刻只允许一个活跃批次。
+- 队列 compact 只在“已完全消费且达到阈值”时执行。
+- 上下文连续性依赖 `history + tasks + plans + focus` 落盘，而不是再造独立记忆总线。
+- `restart/reset` 先回包，再等待 in-flight manager 批次收敛后持久化退出。
+- 进程被杀（如 `SIGKILL`）时由 `runtime reaper` 基于 `.mimikit/runtime/lease.json` 与 `.mimikit/runtime/children.json` 执行回收。
 
 ## 细节索引
 

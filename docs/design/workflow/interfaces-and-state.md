@@ -160,12 +160,13 @@ schema：`src/storage/runtime-snapshot-schema.ts`
 
 - `tasks`（含 `tasks[*].provider`）
 - `taskPlans`
-- `focuses`、`focusContexts`、`activeFocusIds`
+- `focuses`、`focusContexts`
 - `managerTurn`
 - `queues.inputsCursor`、`queues.resultsCursor`
 - `pendingUserChoice`
 - `memoryRefresh`
-- `managerFocusCompressedContexts`（可选字段，当前仅保留结构）
+- `managerFocusCompressedContexts`
+- `managerCompressedContext`
 
 恢复一致性规则（启动阶段）：
 

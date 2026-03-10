@@ -4,13 +4,12 @@ import { join } from 'node:path'
 
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 
-import { defaultConfig } from '../src/config.js'
-import { buildPaths } from '../src/fs/paths.js'
 import { requestMemoryRefresh } from '../src/memory/refresh/singleflight.js'
 import { writeMemoryEntries } from '../src/memory/store.js'
 import { createDefaultMemoryRefreshState } from '../src/memory/refresh/state.js'
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
 import type { MemoryRefreshSubprocessResult } from '../src/memory/refresh/types.js'
+import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 const {
   spawnMemoryRefreshJobMock,
@@ -76,51 +75,34 @@ const buildRefreshOutput = (): MemoryRefreshSubprocessResult => ({
 
 const createRuntime = async (): Promise<RuntimeState> => {
   const workDir = await createTmpDir()
-  const config = defaultConfig({ workDir })
-  const paths = buildPaths(workDir)
-  await writeMemoryEntries(paths.memoryFile, [])
-  return {
+  const runtime = await createTestRuntimeState({
+    workDir,
     runtimeId: 'runtime-memory-refresh-test',
-    config,
-    paths,
-    stopped: false,
-    managerRunning: false,
-    managerSignalController: new AbortController(),
-    managerWakePending: false,
-    lastManagerActivityAtMs: Date.now(),
-    lastWorkerActivityAtMs: Date.now(),
-    inflightInputs: [],
-    queues: {
-      inputsCursor: 100,
-      resultsCursor: 0,
+    withGlobalFocus: false,
+    patch: {
+      queues: {
+        inputsCursor: 100,
+        resultsCursor: 0,
+      },
+      manager: {
+        turn: 40,
+        memoryRefresh: {
+          ...createDefaultMemoryRefreshState(),
+          lastCompletedTurn: 20,
+          lastProcessedInputsCursor: 90,
+          lastProcessedResultsCursor: 0,
+        },
+      },
     },
-    tasks: [],
-    taskPlans: [],
-    focuses: [],
-    focusContexts: [],
-    activeFocusIds: [],
-    managerTurn: 40,
-    memoryRefresh: {
-      ...createDefaultMemoryRefreshState(),
-      lastCompletedTurn: 20,
-      lastProcessedInputsCursor: 90,
-      lastProcessedResultsCursor: 0,
-    },
-    managerFocusCompressedContexts: [],
-    runningControllers: new Map(),
-    createTaskDebounce: new Map(),
-    workerQueue: {
-      add: vi.fn(),
-      clear: vi.fn(),
-      pause: vi.fn(),
-      sizeBy: vi.fn().mockReturnValue(0),
-    } as unknown as RuntimeState['workerQueue'],
-    workerSignalController: new AbortController(),
-    uiWakeVersion: 0,
-    uiWakeEvents: new Map(),
-    uiSignalControllers: new Set(),
-    pendingUserChoice: null,
-  }
+  })
+  await writeMemoryEntries(runtime.paths.memoryFile, [])
+  runtime.worker.queue = {
+    add: vi.fn(),
+    clear: vi.fn(),
+    pause: vi.fn(),
+    sizeBy: vi.fn().mockReturnValue(0),
+  } as unknown as RuntimeState['worker']['queue']
+  return runtime
 }
 
 const waitUntil = async (
@@ -159,7 +141,7 @@ test('memory refresh reruns after pending signal while previous refresh is runni
 
   spawnMemoryRefreshJobMock
     .mockImplementationOnce(async () => {
-      runtime.managerTurn = 41
+      runtime.manager.turn = 41
       runtime.queues.inputsCursor = 101
       requestMemoryRefresh(runtime)
       await firstCallBlocked
@@ -171,11 +153,11 @@ test('memory refresh reruns after pending signal while previous refresh is runni
   releaseFirstCall?.()
   await waitUntil(
     () =>
-      runtime.memoryRefresh.running === false &&
+      runtime.manager.memoryRefresh.running === false &&
       spawnMemoryRefreshJobMock.mock.calls.length === 2,
   )
 
   expect(spawnMemoryRefreshJobMock).toHaveBeenCalledTimes(2)
-  expect(runtime.memoryRefresh.pending).toBe(false)
-  expect(runtime.memoryRefresh.lastProcessedInputsCursor).toBe(101)
+  expect(runtime.manager.memoryRefresh.pending).toBe(false)
+  expect(runtime.manager.memoryRefresh.lastProcessedInputsCursor).toBe(101)
 })

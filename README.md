@@ -5,10 +5,9 @@
 [![Runtime](https://img.shields.io/badge/Runtime-Single%20Session-black)](./docs/design/architecture/system-architecture.md)
 [![CI](https://github.com/phonowell/mimikit/actions/workflows/ci.yml/badge.svg)](https://github.com/phonowell/mimikit/actions/workflows/ci.yml)
 
-Mimikit is a thin local orchestration layer around Codex for teams that want controllable behavior without adding another heavy agent stack.
-It keeps one main session with explicit `manager + worker` orchestration, a built-in WebUI, and file-backed runtime state for reproducible debugging. Mimikit is orchestration-only: direct task execution is delegated to external runtimes/providers.
+Mimikit 是面向夜班值守与周期任务的低成本自治作业系统。它保持单一主 session，用 `manager + worker` 驱动作业闭环，把真正执行委托给外部运行时，并把状态、计划、日志与恢复点持久化到本地。
 
-**Primary action: try it locally.**
+它不是通用 agent 平台。保留的边界只有四件事：周期触发、低成本常驻、失败恢复、最小人工确认。
 
 ```bash
 git clone https://github.com/phonowell/mimikit.git
@@ -21,40 +20,25 @@ OPENAI_API_KEY=your_key pnpm start
 
 `bootstrap` 会自动 clone `../mimikit-providers` 与 `../mimikit-channels`，并通过 `pnpm install` 安装分仓依赖。
 
-## Table of Contents
-
-- [Quickstart](#quickstart)
-- [Positioning](#positioning)
-- [LLM Bootstrap](#llm-bootstrap)
-- [Features](#features)
-- [How It Works](#how-it-works)
-- [Prompt Governance](#prompt-governance)
-- [Minimal API Smoke Test](#minimal-api-smoke-test)
-- [Use Cases](#use-cases)
-- [Benchmark Positioning](#benchmark-positioning)
-- [FAQ](#faq)
-- [Contributing](#contributing)
-- [License](#license)
-
 ## Positioning
 
-Mimikit optimizes for low token usage and low mental overhead. The design keeps only the minimum concepts needed to run reliably: one session loop, one orchestration boundary, and one consistent state layout. It favors out-of-the-box startup with minimal configuration over deep tuning surfaces.
-
-Mimikit intentionally reuses Codex capabilities instead of rebuilding overlapping in-repo layers. The orchestration layer stays thin, and the implementation stays compact: it coordinates state, plans, and scheduling, while execution remains delegated to external runtimes.
-
-Interaction is conversational and task-oriented, similar to working with a teammate in chat, but Mimikit does not present itself as a human identity. The product boundary is explicit: Mimikit provides orchestration and observability, and Codex capability is treated as the core capability surface.
+- 低常驻成本：单 session、单 manager loop、外部执行运行时复用，避免为夜班值守额外维护多层 agent 编排。
+- 周期执行与恢复：支持 `cron`、`scheduled_at`、`on_worker_slot_freed`，并把运行时快照落盘，重启后可继续。
+- 最小确认边界：高成本任务需要显式确认；其他链路尽量自动推进到明确收尾条件。
+- 可观察值守：WebUI、CLI action log、`.mimikit/` 状态目录用于观察夜间执行，而不是扩展更多平台概念。
 
 ## Quickstart
 
-### 1) Install dependencies
+### 1) 安装依赖
 
-Mimikit reads provider settings from `~/.codex/config.toml` and environment variables (see [`src/providers/codex-settings.ts`](./src/providers/codex-settings.ts)).
-API key resolution order:
+Mimikit 从 `~/.codex/config.toml` 和环境变量读取 provider 设置，加载入口见 [`src/cli/index.ts`](./src/cli/index.ts)。
 
-1. Active provider in `~/.codex/config.toml`: `api_key`
-2. Active provider in `~/.codex/config.toml`: `env_key` / `api_key_env` (read from that env var)
+API key 解析顺序：
+
+1. `~/.codex/config.toml` 当前 provider 的 `api_key`
+2. `~/.codex/config.toml` 当前 provider 的 `env_key` / `api_key_env`
 3. `OPENAI_API_KEY`
-4. `~/.codex/auth.json` (`OPENAI_API_KEY`)
+4. `~/.codex/auth.json` 中的 `OPENAI_API_KEY`
 
 ```bash
 git clone https://github.com/phonowell/mimikit.git
@@ -62,7 +46,7 @@ cd mimikit
 pnpm i
 ```
 
-### 2) Configure API key
+### 2) 配置 API key
 
 macOS / Linux:
 
@@ -82,7 +66,7 @@ Windows CMD:
 set OPENAI_API_KEY=your_key
 ```
 
-If you use a custom Codex-compatible provider, configure `base_url` and `env_key` in the active provider:
+如使用自定义 Codex 兼容 provider，可在活动 provider 中配置：
 
 ```toml
 model_provider = "aicoding"
@@ -93,19 +77,12 @@ wire_api = "responses"
 env_key = "AICODING_API_KEY"
 ```
 
-Manager/provider model settings are configured in `config.toml`:
-
-If `config.toml` is missing, run `pnpm run bootstrap` to generate it from `defaults/config.template.toml`.
+如缺少 `config.toml`，运行 `pnpm run bootstrap` 从 `defaults/config.template.toml` 生成。
 
 ```toml
 [manager]
 model = "gpt-5.2"
 modelReasoningEffort = "medium"
-
-# optional manager-only provider overrides
-baseUrl = ""
-apiKey = ""
-proxy = ""
 
 [worker]
 maxConcurrent = 3
@@ -117,208 +94,143 @@ model = "gpt-5.3-codex"
 modelReasoningEffort = "high"
 capability = "high"
 billing = "medium"
-proxy = ""
 
 [opencode]
 enabled = false
 model = "big-pickle"
 capability = "low"
 billing = "low"
-proxy = ""
 
 [webui]
 enabled = true
 ```
 
-- manager calls route directly to `openai-responses`
-- worker execution routes by task provider:
-  - `provider="codex"` -> `codex-sdk`
-  - `provider="opencode"` -> `opencode-sdk` (`@opencode-ai/sdk`)
-- manager only sees enabled worker providers in `M:environment` as `provider_candidates`
-- `enqueue_task` supports optional `provider="codex|opencode"`
-- if `provider` is omitted, runtime auto-selects by config: lowest `billing` first, then strongest `capability`
-- high-cost `enqueue_task` now requires explicit user confirmation via `ask_user_choice`; confirmation option is `option-confirm-dispatch`, default is cancel
-- mixed wake rounds now use `standard` context budget (no automatic heavy escalation)
+运行时选择规则：
 
-### 3) Start WebUI + API
+- manager 调用走 `openai-responses`
+- worker 按任务 `provider` 路由到 `codex-sdk` 或 `opencode-sdk`
+- 未指定 `provider` 时，按最低 `billing`、再按最高 `capability` 自动选择
+- 高成本 `enqueue_task` 先触发 `ask_user_choice` 确认，再允许派发
+
+### 3) 启动
 
 ```bash
 pnpm start
 ```
 
-`pnpm start` auto-runs dependency check and enters restart wrapper:
-
-- Windows: `bin/mimikit.cmd` (CMD-safe; callable from PowerShell/CMD)
-- Unix: `bin/mimikit`
-
-Default port is `8787`; direct start without wrapper:
+默认端口 `8787`。直接启动：
 
 ```bash
 tsx src/cli/index.ts --port 8787 --work-dir .mimikit
 ```
 
-Action lifecycle logs are printed to CLI by default (tag: `[manager] action`) and always persisted to `.mimikit/log.jsonl` as `event="manager_action"`. You can control CLI printing with:
+CLI 默认输出 action 生命周期日志，并始终将其写入 `.mimikit/log.jsonl` 的 `manager_action` 事件。关闭 CLI 输出：
 
 ```bash
 MIMIKIT_ACTION_LOGS=false pnpm start
-# or
-tsx src/cli/index.ts --log-actions false
-
-# observability additions in log.jsonl
-# - event="run_task_confirmation_required"
-# - event="manager_correction_structured_clarify"
-# - event="worker_long_task_soft_limit"
-# - worker_end includes usageCaptured for canceled tasks
 ```
 
-### 4) Optional: enable Telegram channel
+### 4) 可选值守入口
+
+Telegram：
 
 ```bash
 export TELEGRAM_CHANNEL_ENABLED=true
 export TELEGRAM_BOT_TOKEN=<your_bot_token>
 export TELEGRAM_CHAT_ID=<your_chat_id>
-export TELEGRAM_PROXY=http://127.0.0.1:7897 # optional
 pnpm start
 ```
 
-`webui.enabled=true` (default) and `telegram.enabled=true` can run together in one process.
-
-### 5) Optional: enable Feishu channel
+Feishu：
 
 ```bash
 export FEISHU_CHANNEL_ENABLED=true
 export FEISHU_APP_ID=<your_app_id>
 export FEISHU_APP_SECRET=<your_app_secret>
-export FEISHU_CHAT_ID=<your_chat_id> # optional
+export FEISHU_CHAT_ID=<your_chat_id>
 pnpm start
 ```
 
-`webui.enabled=true` (default) and `feishu.enabled=true` can run together in one process.
+这些入口的职责是接收夜间作业输入、回传结果和最小确认，不扩展额外调度语义。
 
-## LLM Bootstrap
+## What Stays
 
-For LLM-driven setup and configuration, use [`docs/BOOTSTRAP.md`](./docs/BOOTSTRAP.md). It provides deterministic install/config/start/verify steps.
-
-## Features
-
-- Single-session runtime: one main session loop, no multi-session routing complexity ([architecture](./docs/design/architecture/system-architecture.md)).
-- Explicit orchestration split: `manager` handles dialogue/planning, `worker` handles execution dispatch + result ingestion via external runtimes ([architecture](./docs/design/architecture/system-architecture.md)).
-- Plan trigger modes: `cron`, `scheduled_at`, `on_worker_slot_freed` with clear semantics ([plan workflow](./docs/design/workflow/plan.md)).
-- Built-in WebUI + SSE events: `GET /api/events`, `POST /api/input`, restart/reset APIs ([interfaces](./docs/design/workflow/interfaces-and-state.md)).
-- Task panel live progress: running tasks show streamed output snippets in WebUI without extra model calls.
-- Telegram channel integration (optional): long polling ingest + passive reply via `sendMessage` ([Telegram modules](https://github.com/phonowell/mimikit-channels/tree/main/src/channels/telegram)).
-- Feishu channel integration (optional): long connection ingest + passive reply via IM message API ([Feishu modules](https://github.com/phonowell/mimikit-channels/tree/main/src/channels/feishu)).
-- Local file-backed observability: `history`, `tasks`, `task-progress`, `runtime-snapshot`, `log.jsonl` under `.mimikit/` ([state layout](./docs/design/workflow/interfaces-and-state.md)).
-
-Keywords: `AI orchestration layer`, `TypeScript orchestrator`, `Codex SDK`, `OpenAI`, `single-session orchestration`, `WebUI`, `SSE`, `task planning`, `Telegram bot`, `Feishu bot`, `local-first runtime`.
-
-
-## Prompt Governance
-
-- Prompts must live in `prompts/**`; business logic should load templates instead of embedding long natural-language literals in `src/**`.
-- Lint includes `scripts/prompt-hardcode-guard.ts`, which blocks new hardcoded prompt-like literals in critical runtime paths.
-- If an exception is unavoidable, annotate with `prompt-guard-exempt:{reason}` and document the rationale.
-- Full policy and examples: [`docs/design/workflow/prompt-governance.md`](./docs/design/workflow/prompt-governance.md).
+- 单 session 主循环：减少常驻成本和调试复杂度。
+- `manager + worker` 分工：manager 负责编排与收尾，worker 负责外部执行和结果回写。
+- 周期/容量触发：`cron`、`scheduled_at`、`on_worker_slot_freed`。
+- 本地持久化恢复：`history`、`tasks`、`task-progress`、`runtime-snapshot`、`log.jsonl` 全部落在 `.mimikit/`。
+- WebUI 观察面：`GET /api/events`、`POST /api/input`、任务/计划/choice/restart/reset 入口。
 
 ## How It Works
 
 ```mermaid
 flowchart LR
-  U[User Input] --> API[POST /api/input]
-  API --> M[Manager Loop]
-  M -->|create task/plan| W[Worker Loop]
+  U[User or Trigger] --> I[input or trigger packet]
+  I --> M[Manager Loop]
+  M -->|enqueue task / update plan| W[Worker Loop]
   W --> R[results/packets.jsonl]
   R --> M
-  M --> S[GET /api/events SSE]
-  S --> UI[WebUI]
+  M --> V[WebUI / channel reply]
 ```
 
-Key points:
+- 用户输入、计划触发、worker 结果都会落盘，再回流给 manager。
+- `managerLoop` 统一处理计划触发、用户 choice 超时、worker 槽位释放，不额外拆第二套调度器。
+- 当补充检索没有新进展或同类拒绝重复出现时，manager 会提前收敛为 best-effort 回复，避免夜间空转。
+- 重启时读取 runtime snapshot，对齐 cursor 后继续处理未消费输入与结果。
 
-- Inputs and task results are persisted, then re-consumed by manager for deterministic round progression.
-- `triggerWakeLoop` evaluates timed/capacity plans and emits trigger events.
-- Runtime snapshot supports restart/reset with cursor reconciliation.
+## Minimal Smoke Test
 
-## Minimal API Smoke Test
-
-After `pnpm start`, verify API status without triggering model/provider execution.
-
-macOS / Linux:
+启动后先检查状态，不触发模型执行：
 
 ```bash
 curl -sS http://127.0.0.1:8787/api/status
 ```
 
-Windows PowerShell:
+PowerShell:
 
 ```powershell
 Invoke-RestMethod http://127.0.0.1:8787/api/status | ConvertTo-Json -Depth 5
 ```
 
-Expected: `/api/status` returns JSON with runtime fields like `ok`, `runtimeId`, and `managerRunning`.
-
-Optional manual check (may incur model/provider token cost, run only when needed):
-
-```bash
-curl -sS -X POST http://127.0.0.1:8787/api/input \
-  -H 'content-type: application/json' \
-  -d '{"text":"hello from quickstart"}'
-```
+返回中应包含 `ok`、`runtimeId`、`managerRunning` 等字段。
 
 ## Use Cases
 
-- Build a controllable local orchestration runtime where state, plans, and task traces are inspectable on disk.
-- Prototype agent scheduling behavior (`on_worker_slot_freed`) with explicit semantics.
-- Run one local orchestration hub with WebUI input and optional Telegram/Feishu bot channels.
-- Use this repo as a compact TypeScript reference for manager/worker split orchestration where execution is externally delegated.
+- 夜间定时巡检、日报汇总、回归检查。
+- worker 槽位空出后自动继续排队作业。
+- 本地长驻值守，失败后依赖落盘状态继续恢复。
+- 需要保留最小人工确认、但不想引入更重平台层的自治作业场景。
 
-## Benchmark Positioning
+## Prompt Governance
 
-Compared with public agent projects, Mimikit intentionally optimizes for single-session controllability over channel breadth or hardware extremity.
-
-| Repo                                                          | Public positioning (from README)                                    | Mimikit differentiation                                                                                        |
-| ------------------------------------------------------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| [HKUDS/nanobot](https://github.com/HKUDS/nanobot)             | Ultra-lightweight personal assistant with broad channels/providers  | Mimikit emphasizes explicit workflow semantics (`on_worker_slot_freed`) and local runtime-state inspectability |
-| [sipeed/picoclaw](https://github.com/sipeed/picoclaw)         | Go-based assistant targeting low-cost, low-memory hardware          | Mimikit focuses on TypeScript orchestration clarity and WebUI/SSE development loop                             |
-| [memovai/mimiclaw](https://github.com/memovai/mimiclaw)       | ESP32 pure-C assistant via Telegram on microcontroller-class device | Mimikit targets desktop/server local runtime with richer plan/task/state management                            |
-| [agentscope-ai/CoPaw](https://github.com/agentscope-ai/CoPaw) | Multi-channel personal assistant platform with broad integrations   | Mimikit keeps a narrower scope for lower mental overhead and faster architecture iteration                     |
+- Prompt 统一放在 `prompts/**`，不要把长自然语言模板硬编码进 `src/**`。
+- lint 包含 `scripts/prompt-hardcode-guard.ts`，阻止关键路径新增硬编码提示词。
+- 例外需添加 `prompt-guard-exempt:{reason}` 并说明原因。
 
 ## FAQ
 
-### Is Mimikit multi-session?
+### 是否支持多 session？
 
-No. Current architecture is single main session by design.
+不支持。当前边界就是单一主 session。
 
-### Which APIs are available for UI integration?
+### 是否支持图片输入？
 
-At minimum: `GET /api/events` (SSE) and `POST /api/input`, plus task/choice/restart/reset endpoints.
+不支持。当前输入为文本；Telegram/Feishu 的图片消息会转成文本能力提示。
 
-### Does it support image input?
+### 是否支持定时和容量触发？
 
-Not yet. Current input is text-only. For Telegram/Feishu, image messages are converted into a text-only capability notice so the manager can reply and ask the user to describe the request in plain text.
+支持：`cron`、`scheduled_at`、`on_worker_slot_freed`。
 
-### Does it support scheduled or capacity-triggered automation?
+### 是否可以只开 bot channel，不开 WebUI？
 
-Yes. Plans support `cron`, `scheduled_at`, and `on_worker_slot_freed`.
-
-### Can I enable Telegram integration?
-
-Yes. Configure `telegram.*` in `config.toml` or `TELEGRAM_*` env vars, then start with `telegram.enabled=true`.
-
-### Can I enable Feishu integration?
-
-Yes. Configure `feishu.*` in `config.toml` or `FEISHU_*` env vars, then start with `feishu.enabled=true`.
-
-### Can I disable WebUI and keep bot channels only?
-
-Yes. Set `webui.enabled=false` in `config.toml`; Telegram/Feishu channels still work when enabled.
+可以。设置 `webui.enabled=false`，并启用 Telegram 或 Feishu。
 
 ## Contributing
 
-- Keep changes minimal and traceable to code/docs facts.
-- Follow project constraints in [`AGENTS.md`](./AGENTS.md) and lint before merging.
-- For worktree workflow: use `pnpm run wt-slot start` to allocate+rebase, then `pnpm run wt-slot finish` to run review gate + land + release. See [worktree workflow](./docs/design/workflow/worktree.md).
+- 变更要直接服务夜班值守、周期执行、成本控制或恢复能力。
+- 遵循 [`AGENTS.md`](./AGENTS.md)。
+- 合并前运行 `pnpm run lint`、`pnpm run type-check`、`pnpm run test`。
 
 ## License
 
-MIT, see [LICENSE](./LICENSE).
+MIT，见 [LICENSE](./LICENSE)。

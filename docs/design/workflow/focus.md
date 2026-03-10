@@ -30,8 +30,6 @@
 - 字段：`focusId/summary/openItems/updatedAt`
 - `ManagerFocusCompressedContext`
 - 字段：`focusId/summary/updatedAt/firstKeptEntryId?/details?`
-- `activeFocusIds`
-- 当前活跃 focus 索引列表（运行时维护）
 - `PendingUserChoice`
 - 字段含 `focusId`，用于把待用户选择的问题挂到具体 focus
 
@@ -55,10 +53,8 @@
 ## 全局不变量
 
 - `focus-global` 必须存在且永远是 `active`。
-- `focus-global` 必须在 `activeFocusIds` 中。
 - `focus-inbox` 不允许最终落在 `done/archived`，会归一化为 `idle`。
 - `focus-global` 不持久化 `FocusContext` 与压缩上下文。
-- `activeFocusIds` 仅保留“去重后且确实是 active”的 focus。
 - `archived` focus 不进入 WebUI Focus 列表，也不进入 manager 的 focus prompt 段。
 
 ## 默认归属与继承
@@ -138,18 +134,17 @@
 - `FocusMeta`
 - `FocusContext`
 - `managerFocusCompressedContexts` 残留
-- `activeFocusIds` 残留
 
 ## Working Focus 选择
 
-实现：`src/focus/batch.ts` + `src/focus/capacity.ts`
+实现：`src/manager/loop-batch-run-manager.ts`
 
 - 每轮 manager 先收集偏好 focus：
 - 当前批次输入 `inputs[*].focusId`
 - 当前批次结果关联任务的 `task.focusId`
-- `selectWorkingFocusIds` 合并并去重：
+- working focus 选择会合并并去重：
 - `preferredFocusIds`
-- `activeFocusIds`
+- 当前 `status=active` 的 focus
 - 按活跃度排序的非 archived focus
 - 最终截断：`MAX_WORKING_FOCUSES = 3`
 
@@ -169,7 +164,6 @@
 - runtime snapshot 字段：
 - `focuses`
 - `focusContexts`
-- `activeFocusIds`
 - `managerFocusCompressedContexts`
 - 读写入口：`src/orchestrator/core/runtime-persistence.ts`
 - WebUI/SSE：
@@ -181,7 +175,6 @@
 - 新输入可确定且可解释地落到唯一 `focusId`。
 - task/plan/history/choice 均能携带并维持 `focusId`。
 - `focus-global/focus-inbox` 保留规则不会被业务逻辑绕过。
-- `activeFocusIds` 与 focus 实际状态一致且去重。
 - 容量治理会收敛 active 与 archived 数量。
 - Manager 与 Worker Prompt 都能拿到对应 focus 上下文。
 - 重启后从 snapshot 恢复，不丢 Focus 主状态。

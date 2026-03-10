@@ -8,10 +8,20 @@ const asRecord = (value: unknown): Record<string, unknown> | undefined =>
     ? (value as Record<string, unknown>)
     : undefined
 
+const dropLegacyRuntimeSnapshotFields = (source: Record<string, unknown>) => {
+  let changed = false
+  const next = { ...source }
+  if ('activeFocusIds' in next) {
+    delete next.activeFocusIds
+    changed = true
+  }
+  return { next, changed }
+}
+
 const coerceRuntimeSnapshotV1ToV2 = (
   source: Record<string, unknown>,
 ): Record<string, unknown> => {
-  const next = { ...source }
+  const { next } = dropLegacyRuntimeSnapshotFields(source)
   next.schemaVersion = RUNTIME_SNAPSHOT_SCHEMA_VERSION
   return next
 }
@@ -48,6 +58,15 @@ export const migrateRuntimeSnapshotToCurrent = (
     const migrated = coerceRuntimeSnapshotV1ToV2(record)
     return {
       migrated,
+      changed: true,
+      fromVersion: rawVersion,
+      toVersion: RUNTIME_SNAPSHOT_SCHEMA_VERSION,
+    }
+  }
+  const stripped = dropLegacyRuntimeSnapshotFields(record)
+  if (stripped.changed) {
+    return {
+      migrated: stripped.next,
       changed: true,
       fromVersion: rawVersion,
       toVersion: RUNTIME_SNAPSHOT_SCHEMA_VERSION,

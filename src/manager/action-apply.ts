@@ -1,6 +1,7 @@
 import {
-  enforceFocusCapacity,
+  enforceActiveFocusLimit,
   ensureFocus,
+  pruneArchivedFocuses,
   resolveDefaultFocusId,
 } from '../focus/index.js'
 
@@ -35,14 +36,18 @@ export const applyTaskActions = async (
       item,
       index: order,
       total,
-      ...(runtime.managerThreadId ? { traceId: runtime.managerThreadId } : {}),
+      ...(runtime.manager.threadId
+        ? { traceId: runtime.manager.threadId }
+        : {}),
     })
     await managerActionCliLogger.logLifecycle({
       stage: 'running',
       item,
       index: order,
       total,
-      ...(runtime.managerThreadId ? { traceId: runtime.managerThreadId } : {}),
+      ...(runtime.manager.threadId
+        ? { traceId: runtime.manager.threadId }
+        : {}),
     })
     let result
     try {
@@ -55,8 +60,8 @@ export const applyTaskActions = async (
         total,
         error,
         elapsedMs: Math.max(0, Date.now() - startedAt),
-        ...(runtime.managerThreadId
-          ? { traceId: runtime.managerThreadId }
+        ...(runtime.manager.threadId
+          ? { traceId: runtime.manager.threadId }
           : {}),
       })
       throw error
@@ -68,10 +73,13 @@ export const applyTaskActions = async (
       total,
       result,
       elapsedMs: Math.max(0, Date.now() - startedAt),
-      ...(runtime.managerThreadId ? { traceId: runtime.managerThreadId } : {}),
+      ...(runtime.manager.threadId
+        ? { traceId: runtime.manager.threadId }
+        : {}),
     })
     if (result === 'stop') return
   }
   ensureFocus(runtime, resolveDefaultFocusId(runtime))
-  await enforceFocusCapacity(runtime)
+  await enforceActiveFocusLimit(runtime)
+  await pruneArchivedFocuses(runtime)
 }

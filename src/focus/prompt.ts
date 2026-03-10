@@ -99,7 +99,6 @@ const compareFocusByActivityDesc = (a: FocusMeta, b: FocusMeta): number => {
 export const buildFocusPromptPayload = (params: {
   focuses: FocusMeta[]
   focusContexts: FocusContext[]
-  activeFocusIds: FocusId[]
   history: HistoryMessage[]
   workingFocusIds: FocusId[]
 }): FocusPromptPayload => {
@@ -116,7 +115,7 @@ export const buildFocusPromptPayload = (params: {
       id: focus.id,
       title: focus.title,
       status: focus.status,
-      isActive: params.activeFocusIds.includes(focus.id),
+      isActive: focus.status === 'active',
       updatedAt: focus.updatedAt,
       lastActivityAt: focus.lastActivityAt,
     }))

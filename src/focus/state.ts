@@ -3,7 +3,6 @@ import { nowIso } from '../shared/utils.js'
 
 import { GLOBAL_FOCUS_ID, INBOX_FOCUS_ID } from './constants.js'
 import {
-  canPersistFocusCompressedContext,
   canPersistFocusContext,
   initialFocusStatus,
   isDefaultActiveFocusCandidate,
@@ -66,9 +65,6 @@ export const ensureFocus = (
       existing.status = normalizedStatus
       existing.updatedAt = timestamp
       existing.lastActivityAt = timestamp
-      runtime.activeFocusIds = runtime.activeFocusIds.filter(
-        (id) => id !== focusId,
-      )
     }
     return existing
   }
@@ -83,8 +79,6 @@ export const ensureFocus = (
     lastActivityAt: timestamp,
   }
   runtime.focuses.push(next)
-  if (next.status === 'active' && !runtime.activeFocusIds.includes(next.id))
-    runtime.activeFocusIds.push(next.id)
   return next
 }
 
@@ -92,18 +86,12 @@ export const ensureGlobalFocus = (runtime: RuntimeState): void => {
   runtime.focusContexts = runtime.focusContexts.filter((item) =>
     canPersistFocusContext(item.focusId),
   )
-  runtime.managerFocusCompressedContexts =
-    runtime.managerFocusCompressedContexts.filter((item) =>
-      canPersistFocusCompressedContext(item.focusId),
-    )
   const global = ensureFocus(runtime, GLOBAL_FOCUS_ID, 'Global')
   if (global.status !== 'active') {
     global.status = 'active'
     global.updatedAt = nowIso()
     global.lastActivityAt = global.updatedAt
   }
-  if (!runtime.activeFocusIds.includes(GLOBAL_FOCUS_ID))
-    runtime.activeFocusIds.unshift(GLOBAL_FOCUS_ID)
 }
 
 export const touchFocus = (runtime: RuntimeState, focusId: FocusId): void => {
@@ -124,12 +112,6 @@ export const setFocusStatus = (
   focus.status = nextStatus
   focus.updatedAt = timestamp
   focus.lastActivityAt = timestamp
-  if (nextStatus === 'active') {
-    if (!runtime.activeFocusIds.includes(focusId))
-      runtime.activeFocusIds.push(focusId)
-    return
-  }
-  runtime.activeFocusIds = runtime.activeFocusIds.filter((id) => id !== focusId)
 }
 
 export const updateFocus = (

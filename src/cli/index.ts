@@ -32,27 +32,6 @@ const parseBoolFlag = (
   process.exit(1)
 }
 
-const { values } = parseArgs({
-  options: {
-    port: { type: 'string', short: 'p' },
-    'work-dir': { type: 'string', default: '.mimikit' },
-    'log-actions': { type: 'string' },
-  },
-})
-
-const portValue = values.port
-const workDir = values['work-dir']
-const logActionsFlag = parseBoolFlag('log-actions', values['log-actions'])
-
-const resolvedWorkDir = resolve(workDir)
-const paths = buildPaths(resolvedWorkDir)
-setDefaultLogPath(paths.log)
-configureManagerActionCliLogger({
-  ...(logActionsFlag !== undefined ? { enabled: logActionsFlag } : {}),
-  logPath: paths.log,
-})
-await loadCodexSettings()
-
 const parsePort = (value: string): number => {
   const num = Number(value)
   if (!Number.isInteger(num) || num <= 0 || num > 65535) {
@@ -62,19 +41,45 @@ const parsePort = (value: string): number => {
   return num
 }
 
+const resolveHttpPort = async (target: number): Promise<number> => {
+  const max = Math.min(65535, target + 20)
+  const port = await getPort({ port: portNumbers(target, max) })
+  if (port !== target)
+    console.warn(`[cli] port ${target} is in use, fallback to ${port}`)
+  return port
+}
+
+const { values } = parseArgs({
+  options: {
+    port: { type: 'string', short: 'p' },
+    'work-dir': { type: 'string', default: '.mimikit' },
+    'log-actions': { type: 'string' },
+  },
+})
+
+const portValue = values.port
+const workDir = resolve(values['work-dir'])
+const logActionsFlag = parseBoolFlag('log-actions', values['log-actions'])
+const paths = buildPaths(workDir)
+setDefaultLogPath(paths.log)
+configureManagerActionCliLogger({
+  ...(logActionsFlag !== undefined ? { enabled: logActionsFlag } : {}),
+  logPath: paths.log,
+})
+await loadCodexSettings()
+
 const config = defaultConfig({
-  workDir: resolvedWorkDir,
+  workDir,
   onUnknownConfigKeys: (keys) =>
     warnIgnoredUnknownConfigKeys(keys, (message) => console.warn(message)),
 })
-
 applyCliEnvOverrides(config)
 if (logActionsFlag !== undefined)
   configureManagerActionCliLogger({ enabled: logActionsFlag })
 
 console.log('[cli] config loaded')
 
-const runtimeLock = await acquireRuntimeLock(resolvedWorkDir)
+const runtimeLock = await acquireRuntimeLock(workDir)
 const runtimeId = process.pid > 0 ? `runtime-${process.pid}` : 'runtime-main'
 const runtimeReaper = await createRuntimeReaperHandle({
   runtimeId,
@@ -93,15 +98,15 @@ setRuntimeReaperBridge({
     }),
   onRuntimeChildStopped: (id) => runtimeReaper.unregisterChild(id),
 })
-let shutdownPromise: Promise<never> | null = null
 
-const resolveHttpPort = async (target: number): Promise<number> => {
-  const max = Math.min(65535, target + 20)
-  const port = await getPort({ port: portNumbers(target, max) })
-  if (port !== target)
-    console.warn(`[cli] port ${target} is in use, fallback to ${port}`)
-  return port
-}
+let shutdownPromise: Promise<never> | null = null
+const orchestrator = new Orchestrator(config, {
+  onExitRequested: ({ code, reason }) => {
+    void shutdown(`orchestrator exit requested: ${reason}`, code, {
+      skipPersist: reason === 'http_api_reset',
+    })
+  },
+})
 
 const shutdown = (
   reason: string,
@@ -132,14 +137,6 @@ const shutdown = (
   return shutdownPromise
 }
 
-const orchestrator = new Orchestrator(config, {
-  onExitRequested: ({ code, reason }) => {
-    void shutdown(`orchestrator exit requested: ${reason}`, code, {
-      skipPersist: reason === 'http_api_reset',
-    })
-  },
-})
-
 try {
   await orchestrator.start()
   if (!config.webui.enabled)
@@ -158,7 +155,6 @@ try {
 process.on('SIGINT', () => {
   void shutdown('shutting down...')
 })
-
 process.on('SIGTERM', () => {
   void shutdown('received SIGTERM, shutting down...')
 })

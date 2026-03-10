@@ -51,7 +51,7 @@ export const finalizeBatchProgress = async (params: {
   } = params
   runtime.queues.inputsCursor = nextInputsCursor
   runtime.queues.resultsCursor = nextResultsCursor
-  runtime.inflightInputs = runtime.inflightInputs.filter(
+  runtime.session.inflightInputs = runtime.session.inflightInputs.filter(
     (item) => !consumedInputIds.has(item.id),
   )
   const compactedInputs = await compactInputQueueIfFullyConsumed({

@@ -43,8 +43,8 @@ export const processManagerBatch = async (params: {
     params
   applyPlanCompletionState(runtime, results)
   if (results.length > 0 || inputs.length > 0)
-    runtime.lastManagerActivityAtMs = Date.now()
-  runtime.managerRunning = true
+    runtime.manager.lastActivityAtMs = Date.now()
+  runtime.manager.running = true
   notifyUiSignal(runtime)
   const agentInputs = inputs.filter((item) => isVisibleToAgent(item))
   const startedAt = Date.now()
@@ -61,7 +61,7 @@ export const processManagerBatch = async (params: {
       })
       return
     }
-    runtime.managerTurn += 1
+    runtime.manager.turn += 1
     const managerRun = await runManagerBatch({
       runtime,
       inputs: agentInputs,
@@ -72,7 +72,7 @@ export const processManagerBatch = async (params: {
     const recentIds = visibleHistory
       .slice(Math.max(0, visibleHistory.length - 8))
       .map((item) => item.id)
-    runtime.managerCompressedContext = hashPromptPrefix(
+    runtime.manager.compressedContext = hashPromptPrefix(
       JSON.stringify(
         {
           summary: {
@@ -173,7 +173,7 @@ export const processManagerBatch = async (params: {
       startedAt,
     })
   } finally {
-    runtime.managerRunning = false
+    runtime.manager.running = false
     notifyUiSignal(runtime)
   }
 }

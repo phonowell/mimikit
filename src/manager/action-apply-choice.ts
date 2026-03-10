@@ -23,7 +23,7 @@ export const applyAskUserChoiceAction = async (
   if (!parsed) return
   const createdAt = nowIso()
   const focusId = parsed.focusId ?? resolveDefaultFocusId(runtime)
-  runtime.pendingUserChoice = {
+  runtime.ui.pendingUserChoice = {
     id: parsed.id,
     question: parsed.question,
     options: parsed.options,

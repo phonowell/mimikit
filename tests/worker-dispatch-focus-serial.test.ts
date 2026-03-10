@@ -6,8 +6,8 @@ import PQueue from 'p-queue'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 
 import { defaultConfig } from '../src/config.js'
-import { buildPaths } from '../src/fs/paths.js'
 import { enqueuePendingWorkerTasks } from '../src/worker/dispatch.js'
+import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
 import type { Task } from '../src/types/index.js'
@@ -34,72 +34,34 @@ const sleep = (ms: number): Promise<void> =>
 
 const createRuntime = async (): Promise<RuntimeState> => {
   const workDir = await createTmpDir()
-  const config = defaultConfig({ workDir })
-  config.worker.maxConcurrent = 2
+  const runtime = await createTestRuntimeState({
+    workDir,
+    maxConcurrent: 2,
+  })
+  runtime.config.worker.maxConcurrent = 2
   const now = '2026-03-02T00:00:00.000Z'
-  return {
-    runtimeId: 'runtime-test',
-    config,
-    paths: buildPaths(workDir),
-    stopped: false,
-    managerRunning: false,
-    managerSignalController: new AbortController(),
-    managerWakePending: false,
-    lastManagerActivityAtMs: Date.now(),
-    lastWorkerActivityAtMs: Date.now(),
-    inflightInputs: [],
-    queues: {
-      inputsCursor: 0,
-      resultsCursor: 0,
+  runtime.focuses.push(
+    {
+      id: 'focus-a',
+      title: 'Focus A',
+      status: 'active',
+      createdAt: now,
+      updatedAt: now,
+      lastActivityAt: now,
     },
-    tasks: [],
-    taskPlans: [],
-    focuses: [
-      {
-        id: 'focus-global',
-        title: 'Global',
-        status: 'active',
-        createdAt: now,
-        updatedAt: now,
-        lastActivityAt: now,
-      },
-      {
-        id: 'focus-a',
-        title: 'Focus A',
-        status: 'active',
-        createdAt: now,
-        updatedAt: now,
-        lastActivityAt: now,
-      },
-      {
-        id: 'focus-b',
-        title: 'Focus B',
-        status: 'active',
-        createdAt: now,
-        updatedAt: now,
-        lastActivityAt: now,
-      },
-    ],
-    focusContexts: [],
-    activeFocusIds: ['focus-global', 'focus-a', 'focus-b'],
-    managerTurn: 0,
-    memoryRefresh: {
-      lastCompletedTurn: 0,
-      lastProcessedInputsCursor: 0,
-      lastProcessedResultsCursor: 0,
-      running: false,
-      pending: false,
+    {
+      id: 'focus-b',
+      title: 'Focus B',
+      status: 'active',
+      createdAt: now,
+      updatedAt: now,
+      lastActivityAt: now,
     },
-    managerFocusCompressedContexts: [],
-    runningControllers: new Map(),
-    createTaskDebounce: new Map(),
-    workerQueue: new PQueue({ concurrency: config.worker.maxConcurrent }),
-    workerSignalController: new AbortController(),
-    uiWakeVersion: 0,
-    uiWakeEvents: new Map(),
-    uiSignalControllers: new Set(),
-    pendingUserChoice: null,
-  }
+  )
+  runtime.worker.queue = new PQueue({
+    concurrency: runtime.config.worker.maxConcurrent,
+  })
+  return runtime
 }
 
 const createTask = (id: string, focusId: string): Task => ({
@@ -157,7 +119,7 @@ test('worker dispatch allows tasks in the same focus to run in parallel when slo
 
   for (let round = 0; round < 4; round += 1) {
     enqueuePendingWorkerTasks(runtime)
-    await runtime.workerQueue.onIdle()
+    await runtime.worker.queue.onIdle()
     if (
       runtime.tasks.every(
         (task) =>

@@ -63,8 +63,8 @@ export const removeFocusCompressedContexts = (
 ): void => {
   if (focusIds.length === 0) return
   const excluded = new Set(focusIds)
-  runtime.managerFocusCompressedContexts =
-    runtime.managerFocusCompressedContexts.filter(
+  runtime.manager.focusCompressedContexts =
+    runtime.manager.focusCompressedContexts.filter(
       (item) => !excluded.has(item.focusId),
     )
 }

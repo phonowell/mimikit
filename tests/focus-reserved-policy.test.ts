@@ -2,49 +2,52 @@ import { expect, test } from 'vitest'
 
 import { ensureGlobalFocus, setFocusStatus } from '../src/focus/state.js'
 import { upsertFocusContext } from '../src/focus/state-context.js'
+import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
 
-const createRuntime = (): RuntimeState =>
-  ({
-    focuses: [
-      {
-        id: 'focus-global',
-        title: 'Global',
-        status: 'idle',
-        createdAt: '2026-03-01T00:00:00.000Z',
-        updatedAt: '2026-03-01T00:00:00.000Z',
-        lastActivityAt: '2026-03-01T00:00:00.000Z',
+const createRuntime = async (): Promise<RuntimeState> =>
+  createTestRuntimeState({
+    patch: {
+      focuses: [
+        {
+          id: 'focus-global',
+          title: 'Global',
+          status: 'idle',
+          createdAt: '2026-03-01T00:00:00.000Z',
+          updatedAt: '2026-03-01T00:00:00.000Z',
+          lastActivityAt: '2026-03-01T00:00:00.000Z',
+        },
+      ],
+      focusContexts: [
+        {
+          focusId: 'focus-global',
+          summary: 'legacy summary',
+          updatedAt: '2026-03-01T00:00:00.000Z',
+        },
+      ],
+      manager: {
+        focusCompressedContexts: [
+          {
+            focusId: 'focus-global',
+            summary: 'legacy compressed',
+            updatedAt: '2026-03-01T00:00:00.000Z',
+          },
+        ],
       },
-    ],
-    focusContexts: [
-      {
-        focusId: 'focus-global',
-        summary: 'legacy summary',
-        updatedAt: '2026-03-01T00:00:00.000Z',
-      },
-    ],
-    managerFocusCompressedContexts: [
-      {
-        focusId: 'focus-global',
-        summary: 'legacy compressed',
-        updatedAt: '2026-03-01T00:00:00.000Z',
-      },
-    ],
-    activeFocusIds: [],
-  }) as unknown as RuntimeState
+    },
+  })
 
-test('setFocusStatus normalizes global focus to active', () => {
-  const runtime = createRuntime()
+test('setFocusStatus normalizes global focus to active', async () => {
+  const runtime = await createRuntime()
 
   setFocusStatus(runtime, 'focus-global', 'done')
 
   expect(runtime.focuses[0]?.status).toBe('active')
-  expect(runtime.activeFocusIds).toContain('focus-global')
 })
 
-test('upsertFocusContext ignores global focus business context', () => {
-  const runtime = createRuntime()
+test('upsertFocusContext ignores global focus business context', async () => {
+  const runtime = await createRuntime()
 
   upsertFocusContext(runtime, {
     focusId: 'focus-global',
@@ -55,13 +58,12 @@ test('upsertFocusContext ignores global focus business context', () => {
   expect(runtime.focusContexts).toHaveLength(0)
 })
 
-test('ensureGlobalFocus cleans legacy global contexts', () => {
-  const runtime = createRuntime()
+test('ensureGlobalFocus cleans legacy global focus contexts only', async () => {
+  const runtime = await createRuntime()
 
   ensureGlobalFocus(runtime)
 
   expect(runtime.focusContexts).toHaveLength(0)
-  expect(runtime.managerFocusCompressedContexts).toHaveLength(0)
-  expect(runtime.activeFocusIds).toContain('focus-global')
+  expect(runtime.manager.focusCompressedContexts).toHaveLength(1)
   expect(runtime.focuses[0]?.status).toBe('active')
 })

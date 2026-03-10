@@ -1,6 +1,7 @@
 import { parseIsoMs } from '../../shared/time.js'
 import { nowIso } from '../../shared/utils.js'
 
+import { notifyManagerLoop, notifyUiSignal } from './signals.js'
 import {
   publishChoiceSelectionInput,
   publishChoiceSkippedInput,
@@ -40,10 +41,10 @@ export const cancelPendingUserChoiceByUserInput = async (params: {
   createdAt?: string
 }): Promise<boolean> => {
   const { runtime, triggerInputId } = params
-  const choice = runtime.pendingUserChoice
+  const choice = runtime.ui.pendingUserChoice
   if (!choice) return false
   const canceledAt = params.createdAt ?? nowIso()
-  runtime.pendingUserChoice = null
+  runtime.ui.pendingUserChoice = null
   await publishChoiceSkippedInput({
     runtime,
     choice,
@@ -78,7 +79,7 @@ const commitSelection = async (params: {
   selectedAt: string
 }): Promise<SelectPendingUserChoiceResult> => {
   await publishChoiceSelectionInput(params)
-  params.runtime.pendingUserChoice = null
+  params.runtime.ui.pendingUserChoice = null
   return {
     ok: true,
     choiceId: params.choice.id,
@@ -95,7 +96,7 @@ export const selectPendingUserChoice = async (params: {
   selectedAt?: string
 }): Promise<SelectPendingUserChoiceResult> => {
   const { runtime, choiceId, optionId, source } = params
-  const choice = runtime.pendingUserChoice
+  const choice = runtime.ui.pendingUserChoice
   if (choice?.id !== choiceId) return { ok: false, reason: 'not_found' }
 
   const selectedAt = params.selectedAt ?? nowIso()
@@ -114,7 +115,7 @@ export const selectPendingUserChoice = async (params: {
         source: 'timeout',
         selectedAt,
       })
-    } else runtime.pendingUserChoice = null
+    } else runtime.ui.pendingUserChoice = null
     return { ok: false, reason: 'expired' }
   }
 
@@ -130,16 +131,34 @@ export const selectPendingUserChoice = async (params: {
   })
 }
 
+export const selectPendingUserChoiceFromUser = async (
+  runtime: RuntimeState,
+  choiceId: string,
+  optionId: string,
+): Promise<SelectPendingUserChoiceResult> => {
+  const result = await selectPendingUserChoice({
+    runtime,
+    choiceId,
+    optionId,
+    source: 'user',
+  })
+  if (result.ok || result.reason === 'expired') {
+    notifyUiSignal(runtime)
+    notifyManagerLoop(runtime)
+  }
+  return result
+}
+
 export const resolvePendingUserChoiceTimeout = async (
   runtime: RuntimeState,
   nowMs: number = Date.now(),
 ): Promise<boolean> => {
-  const choice = runtime.pendingUserChoice
+  const choice = runtime.ui.pendingUserChoice
   if (!choice) return false
   if (!isExpired(choice, nowMs)) return false
   const defaultOption = resolveDefaultOption(choice)
   if (!defaultOption) {
-    runtime.pendingUserChoice = null
+    runtime.ui.pendingUserChoice = null
     return true
   }
   const result = await selectPendingUserChoice({

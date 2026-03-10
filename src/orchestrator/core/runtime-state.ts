@@ -1,5 +1,11 @@
-import type { AppConfig } from '../../config.js'
-import type { StatePaths } from '../../fs/paths.js'
+import PQueue from 'p-queue'
+
+import { type AppConfig } from '../../config.js'
+import { buildPaths, type StatePaths } from '../../fs/paths.js'
+import { setDefaultLogPath } from '../../log/safe.js'
+import { newId } from '../../shared/utils.js'
+
+import type { RuntimeMemoryRefreshState } from '../../memory/refresh/state.js'
 import type {
   FocusContext,
   FocusId,
@@ -10,7 +16,6 @@ import type {
   TaskPlan,
   UserInput,
 } from '../../types/index.js'
-import type PQueue from 'p-queue'
 
 export type PendingUserInput = UserInput
 
@@ -42,16 +47,6 @@ export type ExitRequest = {
   reason: string
 }
 
-export type RuntimeMemoryRefreshState = {
-  lastCompletedTurn: number
-  lastProcessedInputsCursor: number
-  lastProcessedResultsCursor: number
-  lastProcessedPlanUpdatedAt?: ISODate
-  lastRunAt?: ISODate
-  running: boolean
-  pending: boolean
-}
-
 export type ManagerFocusCompressedContext = {
   focusId: FocusId
   summary: string
@@ -68,17 +63,48 @@ export type ManagerFocusCompressedContext = {
     | undefined
 }
 
+export type RuntimeSessionState = {
+  stopped: boolean
+  inflightInputs: PendingUserInput[]
+  lastUserMeta?: UserMeta
+  requestExit?: (request: ExitRequest) => void
+}
+
+export type RuntimeManagerState = {
+  running: boolean
+  signalController: AbortController
+  wakePending: boolean
+  lastActivityAtMs: number
+  turn: number
+  threadId?: string
+  memoryRefresh: RuntimeMemoryRefreshState
+  focusCompressedContexts: ManagerFocusCompressedContext[]
+  compressedContext: string
+}
+
+export type RuntimeWorkerState = {
+  lastActivityAtMs: number
+  runningControllers: Map<string, AbortController>
+  createTaskDebounce: Map<string, number>
+  queue: PQueue
+  signalController: AbortController
+}
+
+export type RuntimeUiState = {
+  wakeVersion: number
+  wakeEvents: Map<number, UiWakeKind>
+  signalControllers: Set<AbortController>
+  pendingUserChoice: PendingUserChoice | null
+}
+
 export type RuntimeState = {
   runtimeId: string
   config: AppConfig
   paths: StatePaths
-  stopped: boolean
-  managerRunning: boolean
-  managerSignalController: AbortController
-  managerWakePending: boolean
-  lastManagerActivityAtMs: number
-  lastWorkerActivityAtMs: number
-  inflightInputs: PendingUserInput[]
+  session: RuntimeSessionState
+  manager: RuntimeManagerState
+  worker: RuntimeWorkerState
+  ui: RuntimeUiState
   queues: {
     inputsCursor: number
     resultsCursor: number
@@ -87,20 +113,62 @@ export type RuntimeState = {
   taskPlans: TaskPlan[]
   focuses: FocusMeta[]
   focusContexts: FocusContext[]
-  activeFocusIds: FocusId[]
-  managerTurn: number
-  managerThreadId?: string
-  memoryRefresh: RuntimeMemoryRefreshState
-  managerFocusCompressedContexts: ManagerFocusCompressedContext[]
-  managerCompressedContext: string
-  runningControllers: Map<string, AbortController>
-  createTaskDebounce: Map<string, number>
-  workerQueue: PQueue
-  workerSignalController: AbortController
-  uiWakeVersion: number
-  uiWakeEvents: Map<number, UiWakeKind>
-  uiSignalControllers: Set<AbortController>
-  pendingUserChoice: PendingUserChoice | null
-  lastUserMeta?: UserMeta
-  requestExit?: (request: ExitRequest) => void
+}
+
+export const createRuntimeState = (
+  config: AppConfig,
+  options: {
+    onExitRequested?: (request: ExitRequest) => void
+  } = {},
+): RuntimeState => {
+  const paths = buildPaths(config.workDir)
+  setDefaultLogPath(paths.log)
+  const nowMs = Date.now()
+  const memoryRefresh: RuntimeMemoryRefreshState = {
+    lastCompletedTurn: 0,
+    lastProcessedInputsCursor: 0,
+    lastProcessedResultsCursor: 0,
+    running: false,
+    pending: false,
+  }
+  return {
+    runtimeId: `runtime-${newId()}`,
+    config,
+    paths,
+    session: {
+      stopped: false,
+      inflightInputs: [],
+      ...(options.onExitRequested
+        ? { requestExit: options.onExitRequested }
+        : {}),
+    },
+    manager: {
+      running: false,
+      signalController: new AbortController(),
+      wakePending: false,
+      lastActivityAtMs: nowMs,
+      turn: 0,
+      memoryRefresh,
+      focusCompressedContexts: [],
+      compressedContext: '',
+    },
+    worker: {
+      lastActivityAtMs: nowMs,
+      runningControllers: new Map(),
+      createTaskDebounce: new Map(),
+      queue: new PQueue({ concurrency: config.worker.maxConcurrent }),
+      signalController: new AbortController(),
+    },
+    ui: {
+      wakeVersion: 0,
+      wakeEvents: new Map(),
+      signalControllers: new Set(),
+      pendingUserChoice: null,
+    },
+    queues: { inputsCursor: 0, resultsCursor: 0 },
+    tasks: [],
+    taskPlans: [],
+    focuses: [],
+    focusContexts: [],
+  }
 }

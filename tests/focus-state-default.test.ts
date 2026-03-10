@@ -120,7 +120,6 @@ test('setFocusStatus keeps inbox focus reusable when archived is requested', () 
         lastActivityAt: '2026-03-01T00:00:00.000Z',
       },
     ],
-    activeFocusIds: [],
   }) as unknown as RuntimeState
 
   setFocusStatus(runtime, INBOX_FOCUS_ID, 'archived')
@@ -140,11 +139,9 @@ test('ensureFocus revives legacy archived inbox to idle', () => {
         lastActivityAt: '2026-03-01T00:00:00.000Z',
       },
     ],
-    activeFocusIds: [INBOX_FOCUS_ID],
   }) as unknown as RuntimeState
 
   const focus = ensureFocus(runtime, INBOX_FOCUS_ID)
 
   expect(focus.status).toBe('idle')
-  expect(runtime.activeFocusIds).not.toContain(INBOX_FOCUS_ID)
 })

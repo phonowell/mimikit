@@ -75,7 +75,6 @@ test('buildFocusViews includes latest task id by focus', () => {
   const snapshot = buildFocusViews(
     focuses,
     focusContexts,
-    ['focus-a'],
     200,
     tasks,
   )
@@ -114,7 +113,7 @@ test('buildFocusViews sorts by active flag, status, activity time, then id', () 
     }),
   ]
 
-  const snapshot = buildFocusViews(focuses, [], ['focus-active-b'], 200, [])
+  const snapshot = buildFocusViews(focuses, [], 200, [])
   expect(snapshot.items.map((item) => item.id)).toEqual([
     'focus-active-b',
     'focus-idle-a',

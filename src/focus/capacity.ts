@@ -1,10 +1,8 @@
 import { readHistory } from '../history/store.js'
-import { compareIsoAsc, compareIsoDesc } from '../shared/time.js'
+import { compareIsoAsc } from '../shared/time.js'
 
-import { GLOBAL_FOCUS_ID, MAX_WORKING_FOCUSES } from './constants.js'
-import { isBusinessActiveFocus } from './reserved.js'
-import { removeFocusCompressedContexts } from './state-context.js'
-import { ensureGlobalFocus, findFocus, setFocusStatus } from './state.js'
+import { isDefaultActiveFocusCandidate } from './reserved.js'
+import { setFocusStatus } from './state.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { FocusId, FocusMeta } from '../types/index.js'
@@ -15,20 +13,14 @@ const compareByActivityAsc = (a: FocusMeta, b: FocusMeta): number => {
   return a.id.localeCompare(b.id)
 }
 
-const compareByActivityDesc = (a: FocusMeta, b: FocusMeta): number => {
-  const diff = compareIsoDesc(a.lastActivityAt, b.lastActivityAt)
-  if (diff !== 0) return diff
-  return a.id.localeCompare(b.id)
-}
-
-const maxActive = (runtime: RuntimeState): number =>
+const maxActiveFocuses = (runtime: RuntimeState): number =>
   runtime.config.worker.maxConcurrent
 
-const maxArchived = (runtime: RuntimeState): number =>
+const maxArchivedFocuses = (runtime: RuntimeState): number =>
   runtime.config.worker.maxConcurrent * 2
 
-const activeBusinessCount = (runtime: RuntimeState): number =>
-  runtime.focuses.filter(isBusinessActiveFocus).length
+const activeBusinessFocusCount = (runtime: RuntimeState): number =>
+  runtime.focuses.filter(isDefaultActiveFocusCandidate).length
 
 const collectReferencedFocusIds = async (
   runtime: RuntimeState,
@@ -42,7 +34,7 @@ const collectReferencedFocusIds = async (
     const focusId = plan.focusId.trim()
     if (focusId) ids.add(focusId)
   }
-  for (const input of runtime.inflightInputs) {
+  for (const input of runtime.session.inflightInputs) {
     const focusId = input.focusId.trim()
     if (focusId) ids.add(focusId)
   }
@@ -54,36 +46,28 @@ const collectReferencedFocusIds = async (
   return ids
 }
 
-export const enforceFocusCapacity = async (
-  runtime: RuntimeState,
-): Promise<void> => {
-  ensureGlobalFocus(runtime)
-
-  runtime.activeFocusIds = runtime.activeFocusIds.filter(
-    (id, index, source) => {
-      if (source.indexOf(id) !== index) return false
-      const focus = findFocus(runtime, id)
-      return Boolean(focus?.status === 'active')
-    },
-  )
-
+export const enforceActiveFocusLimit = (runtime: RuntimeState): void => {
   const demoteCandidates = runtime.focuses
-    .filter(isBusinessActiveFocus)
+    .filter(isDefaultActiveFocusCandidate)
     .sort(compareByActivityAsc)
   while (
-    activeBusinessCount(runtime) > maxActive(runtime) &&
+    activeBusinessFocusCount(runtime) > maxActiveFocuses(runtime) &&
     demoteCandidates.length > 0
   ) {
     const oldest = demoteCandidates.shift()
     if (!oldest) break
     setFocusStatus(runtime, oldest.id, 'idle')
   }
+}
 
+export const pruneArchivedFocuses = async (
+  runtime: RuntimeState,
+): Promise<void> => {
   const archived = runtime.focuses
     .filter((item) => item.status === 'archived')
     .sort(compareByActivityAsc)
   const referencedFocusIds = await collectReferencedFocusIds(runtime)
-  for (let index = 0; archived.length > maxArchived(runtime); ) {
+  for (let index = 0; archived.length > maxArchivedFocuses(runtime); ) {
     const candidate = archived[index]
     if (!candidate) break
     if (referencedFocusIds.has(candidate.id)) {
@@ -96,26 +80,9 @@ export const enforceFocusCapacity = async (
     runtime.focusContexts = runtime.focusContexts.filter(
       (item) => item.focusId !== candidate.id,
     )
-    removeFocusCompressedContexts(runtime, [candidate.id])
-    runtime.activeFocusIds = runtime.activeFocusIds.filter(
-      (id) => id !== candidate.id,
-    )
+    runtime.manager.focusCompressedContexts =
+      runtime.manager.focusCompressedContexts.filter(
+        (item) => item.focusId !== candidate.id,
+      )
   }
-
-  if (!runtime.activeFocusIds.includes(GLOBAL_FOCUS_ID))
-    runtime.activeFocusIds.unshift(GLOBAL_FOCUS_ID)
-}
-
-export const selectWorkingFocusIds = (
-  runtime: RuntimeState,
-  preferred: FocusId[],
-): FocusId[] => {
-  const ranked = runtime.focuses
-    .filter((item) => item.status !== 'archived')
-    .sort(compareByActivityDesc)
-    .map((item) => item.id)
-  const merged = Array.from(
-    new Set([...preferred, ...runtime.activeFocusIds, ...ranked]),
-  )
-  return merged.slice(0, MAX_WORKING_FOCUSES)
 }

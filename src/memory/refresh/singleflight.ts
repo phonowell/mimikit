@@ -47,8 +47,8 @@ const markCompleted = (
   runtime: RuntimeState,
   checkpoint: MemoryRefreshCheckpoint,
 ): void => {
-  const state = runtime.memoryRefresh
-  state.lastCompletedTurn = runtime.managerTurn
+  const state = runtime.manager.memoryRefresh
+  state.lastCompletedTurn = runtime.manager.turn
   state.lastProcessedInputsCursor = checkpoint.inputsCursor
   state.lastProcessedResultsCursor = checkpoint.resultsCursor
   if (checkpoint.planUpdatedAt)
@@ -105,8 +105,8 @@ const buildPayload = async (
     })),
     tasks,
     plans,
-    ...(runtime.managerCompressedContext
-      ? { compressedContext: runtime.managerCompressedContext }
+    ...(runtime.manager.compressedContext
+      ? { compressedContext: runtime.manager.compressedContext }
       : {}),
   }
 }
@@ -165,7 +165,7 @@ const runMemoryRefreshOnce = async (runtime: RuntimeState): Promise<void> => {
   const checkpoint = captureCheckpoint(runtime)
   await appendLog(runtime.paths.log, {
     event: 'memory_refresh_requested',
-    managerTurn: runtime.managerTurn,
+    managerTurn: runtime.manager.turn,
   })
   if (!hasMemoryRefreshDelta(runtime)) {
     markCompleted(runtime, checkpoint)
@@ -174,14 +174,14 @@ const runMemoryRefreshOnce = async (runtime: RuntimeState): Promise<void> => {
       event: 'memory_refresh_succeeded',
       mode: 'noop',
       reason: 'no_delta',
-      managerTurn: runtime.managerTurn,
+      managerTurn: runtime.manager.turn,
     })
     return
   }
 
   await appendLog(runtime.paths.log, {
     event: 'memory_refresh_started',
-    managerTurn: runtime.managerTurn,
+    managerTurn: runtime.manager.turn,
   })
   const payload = await buildPayload(runtime)
   const output = await spawnMemoryRefreshJob({
@@ -209,7 +209,7 @@ const runMemoryRefreshOnce = async (runtime: RuntimeState): Promise<void> => {
   await persistRuntimeState(runtime)
   await appendLog(runtime.paths.log, {
     event: 'memory_refresh_succeeded',
-    managerTurn: runtime.managerTurn,
+    managerTurn: runtime.manager.turn,
     mode: output.mode,
     reason: output.reason,
     entries: output.entries.length,
@@ -225,7 +225,7 @@ const runMemoryRefreshOnce = async (runtime: RuntimeState): Promise<void> => {
 }
 
 const runMemoryRefreshDrain = async (runtime: RuntimeState): Promise<void> => {
-  const state = runtime.memoryRefresh
+  const state = runtime.manager.memoryRefresh
   try {
     for (;;) {
       const runFromPending = state.pending
@@ -237,7 +237,7 @@ const runMemoryRefreshDrain = async (runtime: RuntimeState): Promise<void> => {
     await bestEffort('appendLog: memory_refresh_failed', () =>
       appendLog(runtime.paths.log, {
         event: 'memory_refresh_failed',
-        managerTurn: runtime.managerTurn,
+        managerTurn: runtime.manager.turn,
         error: error instanceof Error ? error.message : String(error),
       }),
     )
@@ -252,7 +252,7 @@ const runMemoryRefreshDrain = async (runtime: RuntimeState): Promise<void> => {
 }
 
 export const requestMemoryRefresh = (runtime: RuntimeState): void => {
-  const state = runtime.memoryRefresh
+  const state = runtime.manager.memoryRefresh
   if (state.running) {
     state.pending = true
     return

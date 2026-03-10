@@ -151,7 +151,6 @@ export const buildManagerPromptPayload = async (params: {
   env?: ManagerEnv
   focuses?: FocusMeta[]
   focusContexts?: FocusContext[]
-  activeFocusIds?: FocusId[]
   workingFocusIds?: FocusId[]
 }): Promise<ManagerPromptPayload> => {
   const pendingResults = mergeTaskResults(params.results, [])
@@ -180,7 +179,6 @@ export const buildManagerPromptPayload = async (params: {
   const focusPayload = buildFocusPromptPayload({
     focuses: params.focuses ?? [],
     focusContexts: params.focusContexts ?? [],
-    activeFocusIds: params.activeFocusIds ?? [],
     history,
     workingFocusIds: params.workingFocusIds ?? [],
   })
@@ -371,7 +369,6 @@ export const buildManagerPrompt = async (params: {
   env?: ManagerEnv
   focuses?: FocusMeta[]
   focusContexts?: FocusContext[]
-  activeFocusIds?: FocusId[]
   workingFocusIds?: FocusId[]
 }): Promise<string> => (await buildManagerPromptPayload(params)).prompt
 

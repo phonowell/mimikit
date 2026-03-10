@@ -92,7 +92,7 @@ export const buildActionFeedbackContext = (params: {
     listEnabledWorkerProviders(runtime.config).map((item) => item.provider),
   )
   const confirmedRunTaskChoiceIds = collectConfirmedRunTaskChoiceIds(
-    inputs ?? runtime.inflightInputs,
+    inputs ?? runtime.session.inflightInputs,
   )
   return {
     taskStatusById: new Map(

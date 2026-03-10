@@ -1,12 +1,7 @@
-import { mkdtemp, readFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-
-import PQueue from 'p-queue'
+import { readFile } from 'node:fs/promises'
 import { expect, test } from 'vitest'
 
-import { defaultConfig } from '../src/config.js'
-import { buildPaths } from '../src/fs/paths.js'
+import { GLOBAL_FOCUS_ID } from '../src/focus/constants.js'
 import { readHistory } from '../src/history/store.js'
 import { applyTaskActions } from '../src/manager/action-apply.js'
 import {
@@ -14,75 +9,22 @@ import {
   RUN_TASK_CONFIRM_OPTION_ID,
 } from '../src/manager/run-task-confirmation.js'
 import { parseSystemEventText } from '../src/shared/system-event.js'
+import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
 import type { TaskPlan } from '../src/types/index.js'
 
-const GLOBAL_FOCUS_ID = 'focus-global'
 const CONTRACT_ATTRS = {
   goal: 'Deliver requested outcome',
   scope: 'Single runnable worker task',
   acceptance_1: 'Return concrete output',
 }
 
-const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-action-apply-'))
-
 const createRuntime = async (): Promise<RuntimeState> => {
-  const workDir = await createTmpDir()
-  const config = defaultConfig({ workDir })
-  config.codex.enabled = true
-  config.opencode.enabled = false
-  const queue = new PQueue({ concurrency: config.worker.maxConcurrent })
-  queue.pause()
-  const now = new Date().toISOString()
-
-  return {
-    runtimeId: 'runtime-test',
-    config,
-    paths: buildPaths(workDir),
-    stopped: false,
-    managerRunning: false,
-    managerSignalController: new AbortController(),
-    managerWakePending: false,
-    lastManagerActivityAtMs: Date.now(),
-    lastWorkerActivityAtMs: Date.now(),
-    inflightInputs: [],
-    queues: {
-      inputsCursor: 0,
-      resultsCursor: 0,
-    },
-    tasks: [],
-    taskPlans: [],
-    focuses: [
-      {
-        id: GLOBAL_FOCUS_ID,
-        title: 'Global',
-        status: 'active',
-        createdAt: now,
-        updatedAt: now,
-        lastActivityAt: now,
-      },
-    ],
-    focusContexts: [],
-    activeFocusIds: [GLOBAL_FOCUS_ID],
-    managerTurn: 0,
-    memoryRefresh: {
-      lastCompletedTurn: 0,
-      lastProcessedInputsCursor: 0,
-      lastProcessedResultsCursor: 0,
-      running: false,
-      pending: false,
-    },
-    managerFocusCompressedContexts: [],
-    runningControllers: new Map(),
-    createTaskDebounce: new Map(),
-    workerQueue: queue,
-    workerSignalController: new AbortController(),
-    uiWakeVersion: 0,
-    uiWakeEvents: new Map(),
-    uiSignalControllers: new Set(),
-    pendingUserChoice: null,
-  }
+  const runtime = await createTestRuntimeState({ pausedQueue: true })
+  runtime.config.codex.enabled = true
+  runtime.config.opencode.enabled = false
+  return runtime
 }
 
 test('enqueue_task re-enqueues pending task when fingerprint matches exactly', async () => {
@@ -95,7 +37,6 @@ test('enqueue_task re-enqueues pending task when fingerprint matches exactly', a
     updatedAt: '2026-02-13T00:00:00.000Z',
     lastActivityAt: '2026-02-13T00:00:01.000Z',
   })
-  runtime.activeFocusIds.push('focus-local')
   runtime.tasks.push({
     id: 'task-pending',
     fingerprint: 'same prompt',
@@ -127,7 +68,7 @@ test('enqueue_task re-enqueues pending task when fingerprint matches exactly', a
   expect(runtime.tasks).toHaveLength(1)
   expect(runtime.tasks[0]?.id).toBe('task-pending')
   expect(runtime.tasks[0]?.focusId).toBe('focus-local')
-  expect(runtime.workerQueue.size).toBe(1)
+  expect(runtime.worker.queue.size).toBe(1)
 })
 
 test('enqueue_task task_created system event includes worker slot status payload', async () => {
@@ -296,12 +237,12 @@ test('enqueue_task creates confirmation choice instead of dispatching high-cost 
   ])
 
   expect(runtime.tasks).toHaveLength(0)
-  expect(runtime.pendingUserChoice).toBeTruthy()
-  expect(runtime.pendingUserChoice?.defaultOptionId).toBe(
+  expect(runtime.ui.pendingUserChoice).toBeTruthy()
+  expect(runtime.ui.pendingUserChoice?.defaultOptionId).toBe(
     'option-cancel-dispatch',
   )
   expect(
-    runtime.pendingUserChoice?.options.some(
+    runtime.ui.pendingUserChoice?.options.some(
       (item) => item.id === RUN_TASK_CONFIRM_OPTION_ID,
     ),
   ).toBe(true)
@@ -321,7 +262,7 @@ test('enqueue_task dispatches high-cost task after explicit confirmation event',
     scope,
     acceptance,
   })
-  runtime.inflightInputs.push({
+  runtime.session.inflightInputs.push({
     id: 'input-choice-confirmed',
     role: 'system',
     visibility: 'all',
@@ -375,7 +316,7 @@ test('high-cost enqueue_task stops later actions in the same batch', async () =>
     },
   ])
 
-  expect(runtime.pendingUserChoice).toBeTruthy()
+  expect(runtime.ui.pendingUserChoice).toBeTruthy()
   expect(runtime.tasks).toHaveLength(0)
 })
 
@@ -434,7 +375,7 @@ test('mutate_task with op=resume requeues paused task', async () => {
 
   expect(runtime.tasks[0]?.status).toBe('pending')
   expect(runtime.tasks[0]?.pausedAt).toBeUndefined()
-  expect(runtime.workerQueue.size).toBe(1)
+  expect(runtime.worker.queue.size).toBe(1)
 })
 
 test('mutate_task with op=cancel marks paused task as canceled', async () => {
@@ -493,9 +434,9 @@ test('ask_user_choice stores pending choice and stops later actions in same batc
     },
   ])
 
-  expect(runtime.pendingUserChoice?.id).toBe('choice-delivery')
-  expect(runtime.pendingUserChoice?.options).toHaveLength(2)
-  expect(runtime.pendingUserChoice?.options[0]?.reason).toBe('Need full context')
+  expect(runtime.ui.pendingUserChoice?.id).toBe('choice-delivery')
+  expect(runtime.ui.pendingUserChoice?.options).toHaveLength(2)
+  expect(runtime.ui.pendingUserChoice?.options[0]?.reason).toBe('Need full context')
   expect(runtime.tasks).toHaveLength(0)
 })
 

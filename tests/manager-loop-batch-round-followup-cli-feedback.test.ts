@@ -1,6 +1,7 @@
 import { expect, test, vi } from 'vitest'
 
 import { resolveRoundFollowup } from '../src/manager/loop-batch-round-followup.js'
+import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 import type { RuntimeState } from '../src/manager/runtime-adapter.js'
 import type { Parsed } from '../src/actions/model/spec.js'
@@ -63,18 +64,17 @@ vi.mock('../src/log/append.js', () => ({
   appendLog: appendLogMock,
 }))
 
-const runtime = {
-  paths: { log: '/tmp/test-log' },
-  tasks: [],
-  taskPlans: [],
-  inflightInputs: [],
-  config: {
-    codex: { enabled: true, capability: 'high', billing: 'free' },
-    opencode: { enabled: false, capability: 'low', billing: 'free' },
-  },
-} as RuntimeState
-
 test('resolveRoundFollowup emits cli feedback logs for rejected and invalid actions', async () => {
+  const runtime = (await createTestRuntimeState({
+    withGlobalFocus: false,
+  })) as RuntimeState
+  runtime.paths.log = '/tmp/test-log'
+  runtime.config.codex.enabled = true
+  runtime.config.codex.capability = 'high'
+  runtime.config.codex.billing = 'free'
+  runtime.config.opencode.enabled = false
+  runtime.config.opencode.capability = 'low'
+  runtime.config.opencode.billing = 'free'
   const parsed: Parsed[] = []
   appendLogMock.mockClear()
   await resolveRoundFollowup({

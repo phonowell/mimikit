@@ -1,107 +1,54 @@
-import { mkdtemp } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-
-import PQueue from 'p-queue'
 import { expect, test } from 'vitest'
 
-import { defaultConfig } from '../src/config.js'
 import { INBOX_FOCUS_ID } from '../src/focus/constants.js'
-import { buildPaths } from '../src/fs/paths.js'
-import { addUserInput } from '../src/orchestrator/core/orchestrator-runtime-ops.js'
+import { appendUserInput } from '../src/orchestrator/core/orchestrator-input-ingress.js'
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
 import { consumeUserInputs } from '../src/streams/queues.js'
+import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 const GLOBAL_FOCUS_ID = 'focus-global'
 
-const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-runtime-ops-'))
-
 const createRuntime = async (): Promise<RuntimeState> => {
-  const workDir = await createTmpDir()
-  const config = defaultConfig({ workDir })
-  const queue = new PQueue({ concurrency: config.worker.maxConcurrent })
-  queue.pause()
+  const runtime = await createTestRuntimeState({ pausedQueue: true })
   const now = new Date().toISOString()
-  return {
-    runtimeId: 'runtime-test',
-    config,
-    paths: buildPaths(workDir),
-    stopped: false,
-    managerRunning: false,
-    managerSignalController: new AbortController(),
-    managerWakePending: false,
-    lastManagerActivityAtMs: Date.now(),
-    lastWorkerActivityAtMs: Date.now(),
-    inflightInputs: [],
-    queues: { inputsCursor: 0, resultsCursor: 0 },
-    tasks: [],
-    taskPlans: [],
-    focuses: [
+  runtime.focuses.push({
+    id: 'focus-choice',
+    title: 'Choice',
+    status: 'active',
+    createdAt: now,
+    updatedAt: now,
+    lastActivityAt: now,
+  })
+  runtime.ui.pendingUserChoice = {
+    id: 'choice-delivery',
+    question: 'Choose output format',
+    options: [
       {
-        id: GLOBAL_FOCUS_ID,
-        title: 'Global',
-        status: 'active',
-        createdAt: now,
-        updatedAt: now,
-        lastActivityAt: now,
+        id: 'option-report',
+        label: 'Report',
+        reason: 'Need details',
       },
       {
-        id: 'focus-choice',
-        title: 'Choice',
-        status: 'active',
-        createdAt: now,
-        updatedAt: now,
-        lastActivityAt: now,
+        id: 'option-checklist',
+        label: 'Checklist',
+        reason: 'Need speed',
       },
     ],
-    focusContexts: [],
-    activeFocusIds: [GLOBAL_FOCUS_ID, 'focus-choice'],
-    managerTurn: 0,
-    memoryRefresh: {
-      lastCompletedTurn: 0,
-      lastProcessedInputsCursor: 0,
-      lastProcessedResultsCursor: 0,
-      running: false,
-      pending: false,
-    },
-    managerFocusCompressedContexts: [],
-    runningControllers: new Map(),
-    createTaskDebounce: new Map(),
-    workerQueue: queue,
-    workerSignalController: new AbortController(),
-    uiWakeVersion: 0,
-    uiWakeEvents: new Map(),
-    uiSignalControllers: new Set(),
-    pendingUserChoice: {
-      id: 'choice-delivery',
-      question: 'Choose output format',
-      options: [
-        {
-          id: 'option-report',
-          label: 'Report',
-          reason: 'Need details',
-        },
-        {
-          id: 'option-checklist',
-          label: 'Checklist',
-          reason: 'Need speed',
-        },
-      ],
-      defaultOptionId: 'option-report',
-      createdAt: '2026-03-01T00:00:00.000Z',
-      expiresAt: '2026-03-01T00:05:00.000Z',
-      focusId: 'focus-choice',
-    },
+    defaultOptionId: 'option-report',
+    createdAt: '2026-03-01T00:00:00.000Z',
+    expiresAt: '2026-03-01T00:05:00.000Z',
+    focusId: 'focus-choice',
   }
+  return runtime
 }
 
-test('addUserInput cancels pending user choice when user sends a new message', async () => {
+test('appendUserInput cancels pending user choice when user sends a new message', async () => {
   const runtime = await createRuntime()
 
-  await addUserInput(runtime, 'continue with a different request')
+  await appendUserInput(runtime, 'continue with a different request')
 
-  expect(runtime.pendingUserChoice).toBeNull()
-  expect(runtime.inflightInputs).toHaveLength(2)
+  expect(runtime.ui.pendingUserChoice).toBeNull()
+  expect(runtime.session.inflightInputs).toHaveLength(2)
   const packets = await consumeUserInputs({
     paths: runtime.paths,
     fromCursor: 0,
@@ -124,16 +71,15 @@ test('addUserInput cancels pending user choice when user sends a new message', a
   }
 })
 
-test('addUserInput falls back to inbox focus when only global focus exists', async () => {
+test('appendUserInput falls back to inbox focus when only global focus exists', async () => {
   const runtime = await createRuntime()
   runtime.focuses = runtime.focuses.filter((item) => item.id === GLOBAL_FOCUS_ID)
-  runtime.activeFocusIds = [GLOBAL_FOCUS_ID]
-  runtime.pendingUserChoice = null
+  runtime.ui.pendingUserChoice = null
 
-  await addUserInput(runtime, 'start a new track')
+  await appendUserInput(runtime, 'start a new track')
 
-  expect(runtime.inflightInputs).toHaveLength(1)
-  const first = runtime.inflightInputs[0]
+  expect(runtime.session.inflightInputs).toHaveLength(1)
+  const first = runtime.session.inflightInputs[0]
   expect(first?.role).toBe('user')
   expect(first?.focusId).toBe(INBOX_FOCUS_ID)
 })

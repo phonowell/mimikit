@@ -72,6 +72,6 @@ export const touchTaskMutation = (
   runtime: RuntimeState,
   taskId: string,
 ): void => {
-  runtime.lastWorkerActivityAtMs = Date.now()
+  runtime.worker.lastActivityAtMs = Date.now()
   clearTaskLiveOutput(runtime, taskId)
 }

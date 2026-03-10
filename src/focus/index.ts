@@ -1,7 +1,6 @@
 export { GLOBAL_FOCUS_ID } from './constants.js'
 
 export { assignFocusByTargetId, resolveFocusByQuote } from './assign.js'
-export { collectPreferredFocusIds } from './batch.js'
 
 export {
   buildFocusPromptPayload,
@@ -9,7 +8,7 @@ export {
   type FocusPromptContextEntry,
 } from './prompt.js'
 
-export { enforceFocusCapacity, selectWorkingFocusIds } from './capacity.js'
+export { enforceActiveFocusLimit, pruneArchivedFocuses } from './capacity.js'
 
 export {
   ensureFocus,

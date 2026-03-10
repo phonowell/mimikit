@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { applyTaskActions } from '../src/manager/action-apply.js'
+import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 import type { RuntimeState } from '../src/manager/runtime-adapter.js'
 import type { Parsed } from '../src/actions/model/spec.js'
@@ -40,13 +41,16 @@ vi.mock('../src/manager/action-registrations.js', async () => {
 
 vi.mock('../src/focus/index.js', () => ({
   ensureFocus: vi.fn(),
-  enforceFocusCapacity: vi.fn(async () => undefined),
+  enforceActiveFocusLimit: vi.fn(async () => undefined),
+  pruneArchivedFocuses: vi.fn(async () => undefined),
   resolveDefaultFocusId: vi.fn(() => 'focus-global'),
+  touchFocus: vi.fn(),
 }))
 
-const runtime = {} as RuntimeState
+let runtime: RuntimeState
 
-beforeEach(() => {
+beforeEach(async () => {
+  runtime = (await createTestRuntimeState()) as RuntimeState
   applyMock.mockReset()
   loggerMock.logLifecycle.mockReset()
   loggerMock.logFeedback.mockReset()

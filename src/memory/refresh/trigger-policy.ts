@@ -13,7 +13,7 @@ export const resolveLatestPlanUpdatedAt = (
 }
 
 export const hasMemoryRefreshDelta = (runtime: RuntimeState): boolean => {
-  const state = runtime.memoryRefresh
+  const state = runtime.manager.memoryRefresh
   if (runtime.queues.inputsCursor !== state.lastProcessedInputsCursor)
     return true
   if (runtime.queues.resultsCursor !== state.lastProcessedResultsCursor)
@@ -24,5 +24,5 @@ export const hasMemoryRefreshDelta = (runtime: RuntimeState): boolean => {
 
 export const shouldTriggerMemoryRefresh = (runtime: RuntimeState): boolean =>
   hasMemoryRefreshDelta(runtime) &&
-  runtime.managerTurn - runtime.memoryRefresh.lastCompletedTurn >=
+  runtime.manager.turn - runtime.manager.memoryRefresh.lastCompletedTurn >=
     MEMORY_REFRESH_MIN_TURN_GAP

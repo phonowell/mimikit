@@ -6,14 +6,11 @@ import {
 import { appendTaskSystemMessage } from '../history/task-events.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
+import { resolveSlotStatus } from '../worker/task-state-shared.js'
 
 import { applyAskUserChoiceAction } from './action-apply-choice.js'
 import { markCreateAttempt } from './action-apply-guards.js'
 import { runTaskSchema } from './action-apply-schema.js'
-import {
-  resolveWorkerSlotCapacity,
-  toWorkerSlotStatusPayload,
-} from './loop-trigger-shared.js'
 import {
   buildRunTaskConfirmationQuestion,
   collectConfirmedRunTaskChoiceIds,
@@ -64,15 +61,15 @@ export const applyRunTask = async (
     taskId: string
     mode: 'reuse_pending' | 'created'
   }): Promise<void> => {
-    const slots = resolveWorkerSlotCapacity(runtime)
+    const slots = resolveSlotStatus(runtime)
     await bestEffort('appendLog: run_task_dispatch', () =>
       appendLog(runtime.paths.log, {
         event: 'run_task_dispatch',
         taskId: params.taskId,
         mode: params.mode,
-        availableSlots: slots.availableSlots,
-        occupiedSlots: slots.occupiedSlots,
-        maxSlots: slots.maxSlots,
+        availableSlots: slots.available_slots,
+        occupiedSlots: slots.occupied_slots,
+        maxSlots: slots.max_slots,
       }),
     )
   }
@@ -106,7 +103,7 @@ export const applyRunTask = async (
     ...(contract.contextRefs ? { contextRefs: contract.contextRefs } : {}),
   })
   const confirmedRunTaskChoiceIds = collectConfirmedRunTaskChoiceIds(
-    runtime.inflightInputs,
+    runtime.session.inflightInputs,
   )
   if (
     confirmation.required &&
@@ -211,9 +208,7 @@ export const applyRunTask = async (
     notifyWorkerLoop(runtime)
     return 'continue'
   }
-  const slotStatus = toWorkerSlotStatusPayload(
-    resolveWorkerSlotCapacity(runtime),
-  )
+  const slotStatus = resolveSlotStatus(runtime)
   await appendTaskSystemMessage(runtime.paths.history, 'created', task, {
     createdAt: task.createdAt,
     slotStatus,

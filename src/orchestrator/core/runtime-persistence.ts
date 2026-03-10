@@ -1,3 +1,7 @@
+import {
+  canPersistFocusCompressedContext,
+  canPersistFocusContext,
+} from '../../focus/reserved.js'
 import { appendLog } from '../../log/append.js'
 import { bestEffort } from '../../log/safe.js'
 import {
@@ -27,6 +31,24 @@ const readQueuePacketCount = async (path: string): Promise<number> =>
     })
   ).length
 
+const normalizeManagerFocusCompressedContexts = (
+  runtime: RuntimeState,
+): void => {
+  const focusIds = new Set(runtime.focuses.map((focus) => focus.id))
+  runtime.manager.focusCompressedContexts =
+    runtime.manager.focusCompressedContexts.filter(
+      (item) =>
+        canPersistFocusCompressedContext(item.focusId) &&
+        focusIds.has(item.focusId),
+    )
+}
+
+const normalizePersistedFocusContexts = (runtime: RuntimeState): void => {
+  runtime.focusContexts = runtime.focusContexts.filter((item) =>
+    canPersistFocusContext(item.focusId),
+  )
+}
+
 const reconcileRuntimeQueueState = async (
   runtime: RuntimeState,
 ): Promise<void> => {
@@ -36,9 +58,10 @@ const reconcileRuntimeQueueState = async (
   ])
   const prevInputsCursor = runtime.queues.inputsCursor
   const prevResultsCursor = runtime.queues.resultsCursor
-  const prevMemoryInputsCursor = runtime.memoryRefresh.lastProcessedInputsCursor
+  const prevMemoryInputsCursor =
+    runtime.manager.memoryRefresh.lastProcessedInputsCursor
   const prevMemoryResultsCursor =
-    runtime.memoryRefresh.lastProcessedResultsCursor
+    runtime.manager.memoryRefresh.lastProcessedResultsCursor
 
   runtime.queues.inputsCursor = resetStaleCursor(
     runtime.queues.inputsCursor,
@@ -48,21 +71,22 @@ const reconcileRuntimeQueueState = async (
     runtime.queues.resultsCursor,
     resultsPacketCount,
   )
-  runtime.memoryRefresh.lastProcessedInputsCursor = resetStaleCursor(
-    runtime.memoryRefresh.lastProcessedInputsCursor,
+  runtime.manager.memoryRefresh.lastProcessedInputsCursor = resetStaleCursor(
+    runtime.manager.memoryRefresh.lastProcessedInputsCursor,
     inputsPacketCount,
   )
-  runtime.memoryRefresh.lastProcessedResultsCursor = resetStaleCursor(
-    runtime.memoryRefresh.lastProcessedResultsCursor,
+  runtime.manager.memoryRefresh.lastProcessedResultsCursor = resetStaleCursor(
+    runtime.manager.memoryRefresh.lastProcessedResultsCursor,
     resultsPacketCount,
   )
 
   const changed =
     runtime.queues.inputsCursor !== prevInputsCursor ||
     runtime.queues.resultsCursor !== prevResultsCursor ||
-    runtime.memoryRefresh.lastProcessedInputsCursor !==
+    runtime.manager.memoryRefresh.lastProcessedInputsCursor !==
       prevMemoryInputsCursor ||
-    runtime.memoryRefresh.lastProcessedResultsCursor !== prevMemoryResultsCursor
+    runtime.manager.memoryRefresh.lastProcessedResultsCursor !==
+      prevMemoryResultsCursor
   if (!changed) return
 
   await bestEffort('appendLog: runtime_queue_state_reconciled', () =>
@@ -76,8 +100,10 @@ const reconcileRuntimeQueueState = async (
       nextResultsCursor: runtime.queues.resultsCursor,
       prevMemoryInputsCursor,
       prevMemoryResultsCursor,
-      nextMemoryInputsCursor: runtime.memoryRefresh.lastProcessedInputsCursor,
-      nextMemoryResultsCursor: runtime.memoryRefresh.lastProcessedResultsCursor,
+      nextMemoryInputsCursor:
+        runtime.manager.memoryRefresh.lastProcessedInputsCursor,
+      nextMemoryResultsCursor:
+        runtime.manager.memoryRefresh.lastProcessedResultsCursor,
     }),
   )
 }
@@ -90,16 +116,17 @@ export const hydrateRuntimeState = async (
   runtime.taskPlans = snapshot.taskPlans
   runtime.focuses = snapshot.focuses ?? []
   runtime.focusContexts = snapshot.focusContexts ?? []
-  runtime.activeFocusIds = snapshot.activeFocusIds ?? []
-  runtime.managerTurn = snapshot.managerTurn ?? 0
+  normalizePersistedFocusContexts(runtime)
+  runtime.manager.turn = snapshot.managerTurn ?? 0
   if (snapshot.managerThreadId)
-    runtime.managerThreadId = snapshot.managerThreadId
-  else delete runtime.managerThreadId
-  runtime.memoryRefresh = hydrateMemoryRefreshState(snapshot)
-  runtime.managerFocusCompressedContexts =
+    runtime.manager.threadId = snapshot.managerThreadId
+  else delete runtime.manager.threadId
+  runtime.manager.memoryRefresh = hydrateMemoryRefreshState(snapshot)
+  runtime.manager.focusCompressedContexts =
     snapshot.managerFocusCompressedContexts ?? []
-  runtime.managerCompressedContext = snapshot.managerCompressedContext ?? ''
-  runtime.pendingUserChoice = snapshot.pendingUserChoice ?? null
+  runtime.manager.compressedContext = snapshot.managerCompressedContext ?? ''
+  normalizeManagerFocusCompressedContexts(runtime)
+  runtime.ui.pendingUserChoice = snapshot.pendingUserChoice ?? null
   if (snapshot.queues) {
     runtime.queues = {
       inputsCursor: snapshot.queues.inputsCursor,
@@ -121,30 +148,31 @@ export const hydrateRuntimeState = async (
 export const persistRuntimeState = async (
   runtime: RuntimeState,
 ): Promise<void> => {
+  normalizePersistedFocusContexts(runtime)
+  normalizeManagerFocusCompressedContexts(runtime)
   await saveRuntimeSnapshot(runtime.config.workDir, {
     schemaVersion: RUNTIME_SNAPSHOT_SCHEMA_VERSION,
     tasks: selectPersistedTasks(runtime.tasks),
     taskPlans: runtime.taskPlans,
     focuses: runtime.focuses,
     focusContexts: runtime.focusContexts,
-    activeFocusIds: runtime.activeFocusIds,
-    managerTurn: runtime.managerTurn,
-    ...(runtime.managerThreadId
-      ? { managerThreadId: runtime.managerThreadId }
+    managerTurn: runtime.manager.turn,
+    ...(runtime.manager.threadId
+      ? { managerThreadId: runtime.manager.threadId }
       : {}),
     queues: runtime.queues,
-    ...(runtime.pendingUserChoice
-      ? { pendingUserChoice: runtime.pendingUserChoice }
+    ...(runtime.ui.pendingUserChoice
+      ? { pendingUserChoice: runtime.ui.pendingUserChoice }
       : {}),
-    memoryRefresh: toPersistedMemoryRefreshState(runtime.memoryRefresh),
-    ...(runtime.managerFocusCompressedContexts.length > 0
+    memoryRefresh: toPersistedMemoryRefreshState(runtime.manager.memoryRefresh),
+    ...(runtime.manager.focusCompressedContexts.length > 0
       ? {
           managerFocusCompressedContexts:
-            runtime.managerFocusCompressedContexts,
+            runtime.manager.focusCompressedContexts,
         }
       : {}),
-    ...(runtime.managerCompressedContext
-      ? { managerCompressedContext: runtime.managerCompressedContext }
+    ...(runtime.manager.compressedContext
+      ? { managerCompressedContext: runtime.manager.compressedContext }
       : {}),
   })
 }

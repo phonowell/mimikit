@@ -44,7 +44,6 @@ export const runManager = async (params: {
   env?: ManagerEnv
   focuses?: FocusMeta[]
   focusContexts?: FocusContext[]
-  activeFocusIds?: FocusId[]
   workingFocusIds?: FocusId[]
   model?: string
   baseUrl?: string | undefined
@@ -76,7 +75,6 @@ export const runManager = async (params: {
     ...(params.env ? { env: params.env } : {}),
     ...(params.focuses ? { focuses: params.focuses } : {}),
     ...(params.focusContexts ? { focusContexts: params.focusContexts } : {}),
-    ...(params.activeFocusIds ? { activeFocusIds: params.activeFocusIds } : {}),
     ...(params.workingFocusIds
       ? { workingFocusIds: params.workingFocusIds }
       : {}),

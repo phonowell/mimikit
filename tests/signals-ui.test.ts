@@ -1,17 +1,23 @@
 import { expect, test } from 'vitest'
 
 import { notifyUiSignal, waitForUiSignal } from '../src/orchestrator/core/signals.js'
-
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
 
 const createRuntime = (): RuntimeState =>
   ({
-    uiWakeVersion: 0,
-    uiWakeEvents: new Map(),
-    uiSignalControllers: new Set(),
-    managerWakePending: false,
-    managerSignalController: new AbortController(),
-    workerSignalController: new AbortController(),
+    ui: {
+      wakeVersion: 0,
+      wakeEvents: new Map(),
+      signalControllers: new Set(),
+      pendingUserChoice: null,
+    },
+    manager: {
+      wakePending: false,
+      signalController: new AbortController(),
+    },
+    worker: {
+      signalController: new AbortController(),
+    },
   }) as unknown as RuntimeState
 
 test('waitForUiSignal wakes all concurrent listeners', async () => {

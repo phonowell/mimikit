@@ -22,8 +22,8 @@ const createRuntime = (tasks: Task[]): RuntimeState =>
     runtimeId: 'runtime-status-test',
     config: defaultConfig({ workDir: '.mimikit' }),
     tasks,
-    managerRunning: false,
-    runningControllers: new Map(),
+    manager: { running: false },
+    worker: { runningControllers: new Map() },
   }) as RuntimeState
 
 test('pendingTasks excludes paused tasks for restart gating', () => {
@@ -38,4 +38,3 @@ test('pendingTasks excludes paused tasks for restart gating', () => {
   expect(status.activeTasks).toBe(0)
   expect(status.managerRunning).toBe(false)
 })
-

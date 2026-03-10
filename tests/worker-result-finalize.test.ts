@@ -9,6 +9,7 @@ import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
 import { readTaskResultArchive } from '../src/storage/task-results.js'
 import type { Task, TaskResult } from '../src/types/index.js'
 import { finalizeResult } from '../src/worker/result-finalize.js'
+import { createTestRuntimeState } from './helpers/runtime-state.js'
 import { readTaskProgressForTest } from './helpers/task-progress.js'
 import { readJsonl } from '../src/storage/jsonl.js'
 
@@ -23,6 +24,16 @@ const mergeTaskPatch = (
   const task = tasks.find((item) => item.id === taskId)
   if (!task) return
   Object.assign(task, patch)
+}
+
+const readWorkerEndLog = async (
+  runtime: RuntimeState,
+  taskId: string,
+): Promise<Record<string, unknown> | undefined> => {
+  const logs = await readJsonl<Record<string, unknown>>(runtime.paths.log, {
+    ensureFile: true,
+  })
+  return logs.find((item) => item.event === 'worker_end' && item.taskId === taskId)
 }
 
 test('finalizeResult appends worker_end progress for canceled task', async () => {
@@ -45,37 +56,30 @@ test('finalizeResult appends worker_end progress for canceled task', async () =>
       acceptance: ['Task is marked canceled'],
     },
   }
-  const runtime = {
-    config: { workDir: stateDir },
-    paths: buildPaths(stateDir),
-    tasks: [task],
-    focuses: [
-      {
-        id: 'focus-global',
-        title: 'Global',
-        status: 'active',
-        createdAt: '2026-02-26T10:00:00.000Z',
-        updatedAt: '2026-02-26T10:00:00.000Z',
-        lastActivityAt: '2026-02-26T10:00:00.000Z',
-      },
-      {
-        id: 'focus-local',
-        title: 'Local',
-        status: 'active',
-        createdAt: '2026-02-26T10:00:00.000Z',
-        updatedAt: '2026-02-26T10:00:00.000Z',
-        lastActivityAt: '2026-02-26T10:00:00.000Z',
-      },
-    ],
-    focusContexts: [],
-    activeFocusIds: ['focus-global', 'focus-local'],
-    lastWorkerActivityAtMs: 0,
-    managerWakePending: false,
-    managerSignalController: new AbortController(),
-    uiWakeVersion: 0,
-    uiWakeEvents: new Map(),
-    uiSignalControllers: new Set(),
-  } as unknown as RuntimeState
+  const runtime = await createTestRuntimeState({
+    workDir: stateDir,
+    patch: {
+      tasks: [task],
+      focuses: [
+        {
+          id: 'focus-global',
+          title: 'Global',
+          status: 'active',
+          createdAt: '2026-02-26T10:00:00.000Z',
+          updatedAt: '2026-02-26T10:00:00.000Z',
+          lastActivityAt: '2026-02-26T10:00:00.000Z',
+        },
+        {
+          id: 'focus-local',
+          title: 'Local',
+          status: 'active',
+          createdAt: '2026-02-26T10:00:00.000Z',
+          updatedAt: '2026-02-26T10:00:00.000Z',
+          lastActivityAt: '2026-02-26T10:00:00.000Z',
+        },
+      ],
+    },
+  })
   const result: TaskResult = {
     taskId: task.id,
     status: 'canceled',
@@ -88,13 +92,9 @@ test('finalizeResult appends worker_end progress for canceled task', async () =>
 
   await finalizeResult(runtime, task, result, mergeTaskPatch)
 
-  const logs = await readJsonl<Record<string, unknown>>(runtime.paths.log, {
-    ensureFile: true,
-  })
-  const workerEnd = logs.find(
-    (item) => item.event === 'worker_end' && item.taskId === task.id,
-  )
-  expect(workerEnd?.usageCaptured).toBe(false)
+  await expect
+    .poll(() => readWorkerEndLog(runtime, task.id), { timeout: 1_000 })
+    .toMatchObject({ usageCaptured: false })
 
   const progress = await readTaskProgressForTest(stateDir, task.id)
   expect(progress).toHaveLength(1)
@@ -153,29 +153,23 @@ test('finalizeResult marks usageCaptured=true for canceled result with usage', a
     status: 'running',
     createdAt: '2026-02-26T10:00:00.000Z',
   }
-  const runtime = {
-    config: { workDir: stateDir },
-    paths: buildPaths(stateDir),
-    tasks: [task],
-    focuses: [
-      {
-        id: 'focus-local',
-        title: 'Local',
-        status: 'active',
-        createdAt: '2026-02-26T10:00:00.000Z',
-        updatedAt: '2026-02-26T10:00:00.000Z',
-        lastActivityAt: '2026-02-26T10:00:00.000Z',
-      },
-    ],
-    focusContexts: [],
-    activeFocusIds: ['focus-local'],
-    lastWorkerActivityAtMs: 0,
-    managerWakePending: false,
-    managerSignalController: new AbortController(),
-    uiWakeVersion: 0,
-    uiWakeEvents: new Map(),
-    uiSignalControllers: new Set(),
-  } as unknown as RuntimeState
+  const runtime = await createTestRuntimeState({
+    workDir: stateDir,
+    withGlobalFocus: false,
+    patch: {
+      tasks: [task],
+      focuses: [
+        {
+          id: 'focus-local',
+          title: 'Local',
+          status: 'active',
+          createdAt: '2026-02-26T10:00:00.000Z',
+          updatedAt: '2026-02-26T10:00:00.000Z',
+          lastActivityAt: '2026-02-26T10:00:00.000Z',
+        },
+      ],
+    },
+  })
   const result: TaskResult = {
     taskId: task.id,
     status: 'canceled',
@@ -189,11 +183,7 @@ test('finalizeResult marks usageCaptured=true for canceled result with usage', a
 
   await finalizeResult(runtime, task, result, mergeTaskPatch)
 
-  const logs = await readJsonl<Record<string, unknown>>(runtime.paths.log, {
-    ensureFile: true,
-  })
-  const workerEnd = logs.find(
-    (item) => item.event === 'worker_end' && item.taskId === task.id,
-  )
-  expect(workerEnd?.usageCaptured).toBe(true)
+  await expect
+    .poll(() => readWorkerEndLog(runtime, task.id), { timeout: 1_000 })
+    .toMatchObject({ usageCaptured: true })
 })

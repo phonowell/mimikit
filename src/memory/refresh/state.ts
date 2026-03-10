@@ -1,5 +1,14 @@
-import type { RuntimeMemoryRefreshState } from '../../orchestrator/core/runtime-state.js'
 import type { RuntimeSnapshot } from '../../storage/runtime-snapshot-schema.js'
+
+export type RuntimeMemoryRefreshState = {
+  lastCompletedTurn: number
+  lastProcessedInputsCursor: number
+  lastProcessedResultsCursor: number
+  lastProcessedPlanUpdatedAt?: string
+  lastRunAt?: string
+  running: boolean
+  pending: boolean
+}
 
 const toIsoOrUndefined = (value: string | undefined): string | undefined => {
   const normalized = value?.trim()

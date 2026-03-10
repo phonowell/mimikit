@@ -43,7 +43,7 @@ const publishSystemInput = async (params: {
     paths: params.runtime.paths,
     payload: input,
   })
-  params.runtime.inflightInputs.push(input)
+  params.runtime.session.inflightInputs.push(input)
   await appendLog(params.runtime.paths.log, params.buildLogEntry(input.id))
   return input.id
 }

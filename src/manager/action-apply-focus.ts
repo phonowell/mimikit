@@ -1,6 +1,7 @@
 import {
   assignFocusByTargetId,
-  enforceFocusCapacity,
+  enforceActiveFocusLimit,
+  pruneArchivedFocuses,
   updateFocus,
 } from '../focus/index.js'
 
@@ -26,7 +27,8 @@ export const applyUpsertFocusAction = async (
     ...(parsed.summary !== undefined ? { summary: parsed.summary } : {}),
     ...(parsed.openItems !== undefined ? { openItems: parsed.openItems } : {}),
   })
-  await enforceFocusCapacity(runtime)
+  await enforceActiveFocusLimit(runtime)
+  await pruneArchivedFocuses(runtime)
   await persistRuntimeState(runtime)
 }
 
@@ -43,6 +45,7 @@ export const applyAssignFocusAction = async (
     parsed.focus_id,
   )
   if (!assigned) return
-  await enforceFocusCapacity(runtime)
+  await enforceActiveFocusLimit(runtime)
+  await pruneArchivedFocuses(runtime)
   await persistRuntimeState(runtime)
 }

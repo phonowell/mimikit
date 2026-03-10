@@ -43,12 +43,12 @@ export const computeOrchestratorStatus = (
       .filter((task) => task.status === 'running')
       .map((task) => task.id),
   )
-  const activeTasks = [...runtime.runningControllers.keys()].filter((taskId) =>
-    runningTaskIds.has(taskId),
+  const activeTasks = [...runtime.worker.runningControllers.keys()].filter(
+    (taskId) => runningTaskIds.has(taskId),
   ).length
   const maxWorkers = runtime.config.worker.maxConcurrent
   const agentStatus =
-    runtime.managerRunning || activeTasks > 0 ? 'running' : 'idle'
+    runtime.manager.running || activeTasks > 0 ? 'running' : 'idle'
   return {
     ok: true,
     runtimeId: runtime.runtimeId,
@@ -56,7 +56,7 @@ export const computeOrchestratorStatus = (
     activeTasks,
     pendingTasks,
     pendingInputs: pendingInputsCount,
-    managerRunning: runtime.managerRunning,
+    managerRunning: runtime.manager.running,
     maxWorkers,
   }
 }

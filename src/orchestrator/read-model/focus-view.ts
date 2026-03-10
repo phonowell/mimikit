@@ -72,11 +72,9 @@ const buildLatestTaskIdByFocus = (
 export const buildFocusViews = (
   focuses: FocusMeta[],
   focusContexts: FocusContext[],
-  activeFocusIds: string[],
   limit = 200,
   tasks: readonly Pick<Task, 'id' | 'focusId' | 'createdAt'>[] = [],
 ): { items: FocusView[] } => {
-  const activeSet = new Set(activeFocusIds)
   const latestTaskIdByFocus = buildLatestTaskIdByFocus(tasks)
   const contextById = new Map(
     focusContexts.map((context) => [context.focusId, context] as const),
@@ -95,7 +93,7 @@ export const buildFocusViews = (
         id: focus.id,
         title,
         status: focus.status,
-        isActive: activeSet.has(focus.id),
+        isActive: focus.status === 'active',
         ...(lastTaskId ? { lastTaskId } : {}),
         updatedAt: focus.updatedAt,
         lastActivityAt: focus.lastActivityAt,

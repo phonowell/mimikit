@@ -1,10 +1,4 @@
-import PQueue from 'p-queue'
-
 import { type AppConfig } from '../../config.js'
-import { buildPaths } from '../../fs/paths.js'
-import { bestEffort, logSafeError, setDefaultLogPath } from '../../log/safe.js'
-import { createDefaultMemoryRefreshState } from '../../memory/refresh/state.js'
-import { newId } from '../../shared/utils.js'
 import { cancelTask } from '../../worker/cancel-task.js'
 import { deleteTask } from '../../worker/delete-task.js'
 import { getTaskLiveOutputById } from '../../worker/live-output.js'
@@ -16,23 +10,33 @@ import { sortTaskPlansForView } from '../read-model/plan-select.js'
 import { buildTaskViews } from '../read-model/task-view.js'
 
 import {
+  startOrchestratorChannels,
+  stopOrchestratorChannels,
+} from './orchestrator-channel-lifecycle.js'
+export { isTelegramPollingConflictError } from './orchestrator-channel-lifecycle.js'
+import {
+  deleteChatHistoryMessage,
+  getChatHistorySnapshot,
+  getChatMessagesSnapshot,
+} from './orchestrator-chat-history.js'
+import { type DeleteChatMessageResult } from './orchestrator-chat-history.js'
+import {
   computeOrchestratorStatus,
   type OrchestratorStatus,
 } from './orchestrator-helpers.js'
+import { appendUserInput } from './orchestrator-input-ingress.js'
 import {
-  addUserInput,
-  deleteChatMessage,
-  type DeleteChatMessageResult,
-  getChatHistory,
-  getChatMessages,
-  persistStopSnapshot,
-  prepareStop,
-  selectPendingUserChoiceFromUser,
-  startOrchestratorRuntime,
-  waitForManagerDrain,
-} from './orchestrator-runtime-ops.js'
+  persistRuntimeSnapshotOnStop,
+  prepareRuntimeStop,
+  startRuntimeLifecycle,
+  waitForRuntimeManagerDrain,
+} from './orchestrator-runtime-lifecycle.js'
+import { createRuntimeState } from './runtime-state.js'
 import { waitForUiSignal } from './signals.js'
-import { clonePendingUserChoice } from './user-choice.js'
+import {
+  clonePendingUserChoice,
+  selectPendingUserChoiceFromUser,
+} from './user-choice.js'
 
 import type {
   ExitRequest,
@@ -49,22 +53,9 @@ type OrchestratorOptions = {
   onExitRequested?: (request: ExitRequest) => void
 }
 
-const TELEGRAM_POLLING_RETRY_DELAY_MS = 10_000
-
-export const isTelegramPollingConflictError = (error: unknown): boolean => {
-  const message =
-    error instanceof Error ? error.message.toLowerCase() : String(error)
-  return (
-    message.includes('telegram_polling_start_failed:409') ||
-    (message.includes('conflict') && message.includes('getupdates'))
-  )
-}
-
 export class Orchestrator {
   private runtime: RuntimeState
-  private telegramStartPromise: Promise<void> | null = null
-  private feishuStartPromise: Promise<void> | null = null
-  private telegramRetryTimer: ReturnType<typeof setTimeout> | null = null
+  private stopChannelsAwait?: () => Promise<void>
   private restartScheduled = false
 
   private scheduleRestart(
@@ -80,232 +71,80 @@ export class Orchestrator {
 
     this.restartScheduled = true
     setTimeout(() => {
-      void (async () => {
-        await this.stopAndPersist()
-        this.requestExit(75, reason)
-      })()
+      void this.stopAndPersist().then(() => this.requestExit(75, reason))
     }, 100)
     return 'scheduled'
   }
 
-  private async startTelegramPollingIfEnabled(): Promise<void> {
-    if (!this.runtime.config.telegram.enabled) return
-    const { startTelegramPolling } =
-      await import('@mimikit/channels/channels/telegram/index')
-    await startTelegramPolling({
-      config: this.runtime.config,
-      logPath: this.runtime.paths.log,
-      workDir: this.runtime.config.workDir,
+  constructor(config: AppConfig, options: OrchestratorOptions = {}) {
+    this.runtime = createRuntimeState(config, {
+      ...(options.onExitRequested
+        ? { onExitRequested: options.onExitRequested }
+        : {}),
+    })
+  }
+
+  async start() {
+    await startRuntimeLifecycle(this.runtime)
+    this.stopChannelsAwait = startOrchestratorChannels({
+      runtime: this.runtime,
       addUserInput: (text, meta, quote) => this.addUserInput(text, meta, quote),
       requestRestart: (reason) => this.scheduleRestart(reason),
     })
   }
 
-  private async startFeishuPollingIfEnabled(): Promise<void> {
-    if (!this.runtime.config.feishu.enabled) return
-    const { startFeishuPolling } =
-      await import('@mimikit/channels/channels/feishu/index')
-    await startFeishuPolling({
-      config: this.runtime.config,
-      logPath: this.runtime.paths.log,
-      workDir: this.runtime.config.workDir,
-      addUserInput: (text, meta, quote) => this.addUserInput(text, meta, quote),
-    })
-  }
-
-  private clearTelegramRetryTimer(): void {
-    if (!this.telegramRetryTimer) return
-    clearTimeout(this.telegramRetryTimer)
-    this.telegramRetryTimer = null
-  }
-
-  private scheduleTelegramPollingRetry(error: unknown): void {
-    if (!isTelegramPollingConflictError(error)) return
-    if (this.runtime.stopped || !this.runtime.config.telegram.enabled) return
-    if (this.telegramRetryTimer) return
-    this.telegramRetryTimer = setTimeout(() => {
-      this.telegramRetryTimer = null
-      this.ensureTelegramPollingStart()
-    }, TELEGRAM_POLLING_RETRY_DELAY_MS)
-  }
-
-  private ensureTelegramPollingStart(): void {
-    if (this.telegramStartPromise) return
-    this.telegramStartPromise = (async () => {
-      if (!this.runtime.config.telegram.enabled || this.runtime.stopped) return
-      try {
-        await this.startTelegramPollingIfEnabled()
-      } catch (error) {
-        await logSafeError('orchestrator:start_telegram_polling', error, {
-          logPath: this.runtime.paths.log,
-          ...(isTelegramPollingConflictError(error)
-            ? { meta: { retryInMs: TELEGRAM_POLLING_RETRY_DELAY_MS } }
-            : {}),
-        })
-        this.scheduleTelegramPollingRetry(error)
-      }
-    })()
-      .then(async () => {
-        if (!this.runtime.stopped) return
-        await bestEffort(
-          'orchestrator:stop_telegram_after_late_start',
-          () => this.stopTelegramPollingIfEnabled(),
-          { logPath: this.runtime.paths.log },
-        )
-      })
-      .finally(() => {
-        this.telegramStartPromise = null
-      })
-  }
-
-  private async stopTelegramPollingIfEnabled(): Promise<void> {
-    if (!this.runtime.config.telegram.enabled) return
-    const { stopTelegramPolling } =
-      await import('@mimikit/channels/channels/telegram/index')
-    await stopTelegramPolling({
-      workDir: this.runtime.config.workDir,
-      logPath: this.runtime.paths.log,
-    })
-  }
-
-  private ensureFeishuPollingStart(): void {
-    if (this.feishuStartPromise) return
-    this.feishuStartPromise = (async () => {
-      if (!this.runtime.config.feishu.enabled || this.runtime.stopped) return
-      try {
-        await this.startFeishuPollingIfEnabled()
-      } catch (error) {
-        await logSafeError('orchestrator:start_feishu_polling', error, {
-          logPath: this.runtime.paths.log,
-        })
-      }
-    })()
-      .then(async () => {
-        if (!this.runtime.stopped) return
-        await bestEffort('orchestrator:stop_feishu_after_late_start', () =>
-          this.stopFeishuPollingIfEnabled(),
-        )
-      })
-      .finally(() => {
-        this.feishuStartPromise = null
-      })
-  }
-
-  private async stopFeishuPollingIfEnabled(): Promise<void> {
-    if (!this.runtime.config.feishu.enabled) return
-    const { stopFeishuPolling } =
-      await import('@mimikit/channels/channels/feishu/index')
-    await stopFeishuPolling({
-      workDir: this.runtime.config.workDir,
-      logPath: this.runtime.paths.log,
-    })
-  }
-
-  constructor(config: AppConfig, options: OrchestratorOptions = {}) {
-    const paths = buildPaths(config.workDir)
-    setDefaultLogPath(paths.log)
-    const nowMs = Date.now()
-    this.runtime = {
-      runtimeId: `runtime-${newId()}`,
-      config,
-      paths,
-      stopped: false,
-      managerRunning: false,
-      managerSignalController: new AbortController(),
-      managerWakePending: false,
-      lastManagerActivityAtMs: nowMs,
-      lastWorkerActivityAtMs: nowMs,
-      inflightInputs: [],
-      queues: { inputsCursor: 0, resultsCursor: 0 },
-      tasks: [],
-      taskPlans: [],
-      focuses: [],
-      focusContexts: [],
-      activeFocusIds: [],
-      managerTurn: 0,
-      memoryRefresh: createDefaultMemoryRefreshState(),
-      managerFocusCompressedContexts: [],
-      managerCompressedContext: '',
-      runningControllers: new Map(),
-      createTaskDebounce: new Map(),
-      workerQueue: new PQueue({ concurrency: config.worker.maxConcurrent }),
-      workerSignalController: new AbortController(),
-      uiWakeVersion: 0,
-      uiWakeEvents: new Map(),
-      uiSignalControllers: new Set(),
-      pendingUserChoice: null,
-      ...(options.onExitRequested
-        ? { requestExit: options.onExitRequested }
-        : {}),
-    }
-  }
-
-  async start() {
-    await startOrchestratorRuntime(this.runtime)
-    this.ensureTelegramPollingStart()
-    this.ensureFeishuPollingStart()
-  }
-
   stop() {
-    prepareStop(this.runtime)
-    this.clearTelegramRetryTimer()
-    void bestEffort(
-      'orchestrator:stop_telegram_polling',
-      () => this.stopTelegramPollingIfEnabled(),
-      { logPath: this.runtime.paths.log },
+    prepareRuntimeStop(this.runtime)
+    void (
+      this.stopChannelsAwait?.() ??
+      stopOrchestratorChannels({
+        runtime: this.runtime,
+        addUserInput: (text, meta, quote) =>
+          this.addUserInput(text, meta, quote),
+        requestRestart: (reason) => this.scheduleRestart(reason),
+        mode: 'best_effort',
+      })
     )
-    void bestEffort(
-      'orchestrator:stop_feishu_polling',
-      () => this.stopFeishuPollingIfEnabled(),
-      { logPath: this.runtime.paths.log },
-    )
-    void persistStopSnapshot(this.runtime)
+    void persistRuntimeSnapshotOnStop(this.runtime)
   }
 
   async stopAndPersist(): Promise<void> {
-    prepareStop(this.runtime)
-    this.clearTelegramRetryTimer()
-    await bestEffort(
-      'orchestrator:stop_telegram_polling',
-      () => this.stopTelegramPollingIfEnabled(),
-      { logPath: this.runtime.paths.log },
-    )
-    await bestEffort(
-      'orchestrator:stop_feishu_polling',
-      () => this.stopFeishuPollingIfEnabled(),
-      { logPath: this.runtime.paths.log },
-    )
-    await waitForManagerDrain(this.runtime)
-    await persistStopSnapshot(this.runtime)
+    prepareRuntimeStop(this.runtime)
+    await (this.stopChannelsAwait?.() ??
+      stopOrchestratorChannels({
+        runtime: this.runtime,
+        addUserInput: (text, meta, quote) =>
+          this.addUserInput(text, meta, quote),
+        requestRestart: (reason) => this.scheduleRestart(reason),
+        mode: 'await',
+      }))
+    await waitForRuntimeManagerDrain(this.runtime)
+    await persistRuntimeSnapshotOnStop(this.runtime)
   }
 
   addUserInput(text: string, meta?: UserMeta, quote?: string): Promise<string> {
-    return addUserInput(this.runtime, text, meta, quote)
+    return appendUserInput(this.runtime, text, meta, quote)
   }
 
   deleteChatMessage(messageId: string): Promise<DeleteChatMessageResult> {
-    return deleteChatMessage(this.runtime, messageId)
+    return deleteChatHistoryMessage(this.runtime, messageId)
   }
 
   getChatHistory(limit = 50): Promise<ChatMessage[]> {
-    return getChatHistory(this.runtime, limit)
+    return getChatHistorySnapshot(this.runtime, limit)
   }
 
   getChatMessages(limit = 50, afterId?: string) {
-    return getChatMessages(this.runtime, limit, afterId)
-  }
-
-  private buildTasksSnapshot(limit = 200) {
-    const liveOutputByTaskId = getTaskLiveOutputById(this.runtime)
-    return buildTaskViews(this.runtime.tasks, limit, {
-      maxConcurrentWorkers: this.runtime.config.worker.maxConcurrent,
-      runningTaskCount: this.runtime.runningControllers.size,
-      ...(liveOutputByTaskId ? { liveOutputByTaskId } : {}),
-    })
+    return getChatMessagesSnapshot(this.runtime, limit, afterId)
   }
 
   getTasks(limit = 200) {
-    return this.buildTasksSnapshot(limit)
+    const liveOutputByTaskId = getTaskLiveOutputById(this.runtime)
+    return buildTaskViews(this.runtime.tasks, limit, {
+      maxConcurrentWorkers: this.runtime.config.worker.maxConcurrent,
+      runningTaskCount: this.runtime.worker.runningControllers.size,
+      ...(liveOutputByTaskId ? { liveOutputByTaskId } : {}),
+    })
   }
 
   getPlans(limit = 200): { items: TaskPlan[] } {
@@ -319,25 +158,24 @@ export class Orchestrator {
     return buildFocusViews(
       this.runtime.focuses,
       this.runtime.focusContexts,
-      this.runtime.activeFocusIds,
       limit,
       this.runtime.tasks,
     )
   }
 
-  getWebUiSnapshot(messageLimit = 50, taskLimit = 200) {
-    return (async () => ({
+  async getWebUiSnapshot(messageLimit = 50, taskLimit = 200) {
+    return {
       status: this.getStatus(),
-      messages: await getChatMessages(this.runtime, messageLimit),
-      tasks: this.buildTasksSnapshot(taskLimit),
+      messages: await getChatMessagesSnapshot(this.runtime, messageLimit),
+      tasks: this.getTasks(taskLimit),
       plans: this.getPlans(taskLimit),
       focuses: this.getFocuses(taskLimit),
-      choice: clonePendingUserChoice(this.runtime.pendingUserChoice),
-    }))()
+      choice: clonePendingUserChoice(this.runtime.ui.pendingUserChoice),
+    }
   }
 
   getWebUiWakeVersion(): number {
-    return this.runtime.uiWakeVersion
+    return this.runtime.ui.wakeVersion
   }
 
   waitForWebUiSignal(
@@ -351,7 +189,7 @@ export class Orchestrator {
   }
 
   requestExit(code: number, reason: string): void {
-    this.runtime.requestExit?.({ code, reason })
+    this.runtime.session.requestExit?.({ code, reason })
   }
 
   getTaskById(taskId: string): Task | undefined {
@@ -377,7 +215,7 @@ export class Orchestrator {
   }
 
   getPendingUserChoice() {
-    return clonePendingUserChoice(this.runtime.pendingUserChoice)
+    return clonePendingUserChoice(this.runtime.ui.pendingUserChoice)
   }
 
   selectPendingUserChoice(
@@ -390,7 +228,7 @@ export class Orchestrator {
   getStatus(): OrchestratorStatus {
     return computeOrchestratorStatus(
       this.runtime,
-      this.runtime.inflightInputs.length,
+      this.runtime.session.inflightInputs.length,
     )
   }
 }

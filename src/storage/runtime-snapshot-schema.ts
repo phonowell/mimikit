@@ -279,7 +279,6 @@ export const runtimeSnapshotSchema = z
     taskPlans: z.array(taskPlanSchema),
     focuses: z.array(focusMetaSchema).optional(),
     focusContexts: z.array(focusContextSchema).optional(),
-    activeFocusIds: z.array(z.string().trim().min(1)).optional(),
     managerTurn: z.number().int().nonnegative().optional(),
     managerThreadId: z.string().trim().min(1).optional(),
     queues: z

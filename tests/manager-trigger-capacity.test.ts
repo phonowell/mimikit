@@ -5,16 +5,15 @@ import { join } from 'node:path'
 import PQueue from 'p-queue'
 import { expect, test } from 'vitest'
 
-import { buildPaths } from '../src/fs/paths.js'
-import { triggerWakeLoop } from '../src/manager/loop-trigger.js'
+import { GLOBAL_FOCUS_ID } from '../src/focus/constants.js'
+import { readJsonl } from '../src/storage/jsonl.js'
+import { managerLoop } from '../src/manager/loop.js'
 import { triggerOnWorkerSlotFreedPlans } from '../src/manager/loop-trigger-plans.js'
-import { hasFreeWorkerSlot } from '../src/manager/loop-trigger-shared.js'
-import { markWorkerSlotFreedSignal } from '../src/orchestrator/core/signals.js'
+import { hasFreeWorkerSlot } from '../src/worker/task-state-shared.js'
+import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
 import type { TaskPlan } from '../src/types/index.js'
-
-const GLOBAL_FOCUS_ID = 'focus-global'
 
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-trigger-capacity-'))
 
@@ -85,11 +84,11 @@ const createTestConfig = (
 })
 
 const waitFor = async (
-  check: () => boolean,
+  check: () => boolean | Promise<boolean>,
   timeoutMs = 3_500,
 ): Promise<void> => {
   const startedAt = Date.now()
-  while (!check()) {
+  while (!(await check())) {
     if (Date.now() - startedAt > timeoutMs) {
       throw new Error(`wait_timeout_${timeoutMs}ms`)
     }
@@ -97,68 +96,39 @@ const waitFor = async (
   }
 }
 
-const countSystemEvent = (runtime: RuntimeState, name: string): number =>
-  runtime.inflightInputs.filter(
-    (input) =>
-      input.role === 'system' &&
-      input.text.includes(`<M:system_event name="${name}"`),
-  ).length
+const countSystemEvent = async (
+  runtime: RuntimeState,
+  name: string,
+): Promise<number> => {
+  const packets = await readJsonl<{ payload?: { role?: string; text?: string } }>(
+    runtime.paths.inputsPackets,
+    { ensureFile: true },
+  )
+  return packets.filter((packet) => {
+    const payload = packet.payload
+    return (
+      payload?.role === 'system' &&
+      payload.text?.includes(`<M:system_event name="${name}"`) === true
+    )
+  }).length
+}
 
 const createRuntime = async (params?: {
   maxConcurrent?: number
 }): Promise<RuntimeState> => {
   const workDir = await createTmpDir()
-  const config = createTestConfig(workDir, Math.max(1, params?.maxConcurrent ?? 1))
-  const queue = new PQueue({ concurrency: config.worker.maxConcurrent })
-  const now = new Date().toISOString()
-
-  return {
-    runtimeId: 'runtime-test',
-    config,
-    paths: buildPaths(workDir),
-    stopped: false,
-    managerRunning: false,
-    managerSignalController: new AbortController(),
-    managerWakePending: false,
-    lastManagerActivityAtMs: Date.now(),
-    lastWorkerActivityAtMs: Date.now(),
-    inflightInputs: [],
-    queues: {
-      inputsCursor: 0,
-      resultsCursor: 0,
-    },
-    tasks: [],
-    taskPlans: [],
-    focuses: [
-      {
-        id: GLOBAL_FOCUS_ID,
-        title: 'Global',
-        status: 'active',
-        createdAt: now,
-        updatedAt: now,
-        lastActivityAt: now,
-      },
-    ],
-    focusContexts: [],
-    activeFocusIds: [GLOBAL_FOCUS_ID],
-    managerTurn: 0,
-    memoryRefresh: {
-      lastCompletedTurn: 0,
-      lastProcessedInputsCursor: 0,
-      lastProcessedResultsCursor: 0,
-      running: false,
-      pending: false,
-    },
-    managerFocusCompressedContexts: [],
-    runningControllers: new Map(),
-    createTaskDebounce: new Map(),
-    workerQueue: queue,
-    workerSignalController: new AbortController(),
-    uiWakeVersion: 0,
-    uiWakeEvents: new Map(),
-    uiSignalControllers: new Set(),
-    pendingUserChoice: null,
-  }
+  const runtime = await createTestRuntimeState({
+    workDir,
+    maxConcurrent: Math.max(1, params?.maxConcurrent ?? 1),
+  })
+  runtime.config = createTestConfig(
+    workDir,
+    Math.max(1, params?.maxConcurrent ?? 1),
+  )
+  runtime.worker.queue = new PQueue({
+    concurrency: runtime.config.worker.maxConcurrent,
+  })
+  return runtime
 }
 
 const createPlan = (
@@ -187,14 +157,14 @@ test('worker slot availability tracks queue capacity transitions', async () => {
   expect(hasFreeWorkerSlot(runtime)).toBe(true)
 
   const releases: Array<() => void> = []
-  void runtime.workerQueue.add(
+  void runtime.worker.queue.add(
     () =>
       new Promise<void>((resolve) => {
         releases.push(resolve)
       }),
     { id: 'task-block-1' },
   )
-  void runtime.workerQueue.add(
+  void runtime.worker.queue.add(
     () =>
       new Promise<void>((resolve) => {
         releases.push(resolve)
@@ -202,18 +172,18 @@ test('worker slot availability tracks queue capacity transitions', async () => {
     { id: 'task-block-2' },
   )
 
-  await waitFor(() => runtime.workerQueue.pending === 2)
+  await waitFor(() => runtime.worker.queue.pending === 2)
   expect(hasFreeWorkerSlot(runtime)).toBe(false)
 
   releases.shift()?.()
-  await waitFor(() => runtime.workerQueue.pending === 1)
+  await waitFor(() => runtime.worker.queue.pending === 1)
   expect(hasFreeWorkerSlot(runtime)).toBe(true)
 
   releases.shift()?.()
-  await runtime.workerQueue.onIdle()
+  await runtime.worker.queue.onIdle()
 })
 
-test('triggerWakeLoop emits worker_slot_freed once on startup when slot is already free', async () => {
+test('managerLoop emits worker_slot_freed once on startup when slot is already free', async () => {
   const runtime = await createRuntime({ maxConcurrent: 2 })
   runtime.tasks.push({
     id: 'task-pending-seed',
@@ -226,29 +196,29 @@ test('triggerWakeLoop emits worker_slot_freed once on startup when slot is alrea
     createdAt: new Date().toISOString(),
   })
 
-  const loopPromise = triggerWakeLoop(runtime)
+  const loopPromise = managerLoop(runtime)
   try {
     await waitFor(
-      () => countSystemEvent(runtime, 'worker_slot_freed') >= 1,
+      async () => (await countSystemEvent(runtime, 'worker_slot_freed')) >= 1,
       4_000,
     )
     await new Promise<void>((resolve) => setTimeout(resolve, 1_300))
-    expect(countSystemEvent(runtime, 'worker_slot_freed')).toBe(1)
+    expect(await countSystemEvent(runtime, 'worker_slot_freed')).toBe(1)
   } finally {
-    runtime.stopped = true
+    runtime.session.stopped = true
     await loopPromise
   }
 })
 
-test('triggerWakeLoop suppresses worker_slot_freed when no queue work exists', async () => {
+test('managerLoop suppresses worker_slot_freed when no queue work exists', async () => {
   const runtime = await createRuntime({ maxConcurrent: 2 })
 
-  const loopPromise = triggerWakeLoop(runtime)
+  const loopPromise = managerLoop(runtime)
   try {
     await new Promise<void>((resolve) => setTimeout(resolve, 1_300))
-    expect(countSystemEvent(runtime, 'worker_slot_freed')).toBe(0)
+    expect(await countSystemEvent(runtime, 'worker_slot_freed')).toBe(0)
   } finally {
-    runtime.stopped = true
+    runtime.session.stopped = true
     await loopPromise
   }
 })
@@ -267,7 +237,7 @@ test('on_worker_slot_freed plans trigger without touching non-capacity plans', a
   expect(capacityTriggered).toEqual({ triggeredCount: 1, stateChanged: true })
   expect(runtime.taskPlans[0]?.runCount).toBe(1)
   expect(runtime.taskPlans[1]?.runCount).toBe(0)
-  expect(countSystemEvent(runtime, 'trigger_fire')).toBe(1)
+  expect(await countSystemEvent(runtime, 'trigger_fire')).toBe(1)
 })
 
 test('trigger_fire system event uses global focus even when plan has local focus', async () => {
@@ -278,7 +248,7 @@ test('trigger_fire system event uses global focus even when plan has local focus
 
   const triggered = await triggerOnWorkerSlotFreedPlans(runtime, Date.now())
   expect(triggered.triggeredCount).toBe(1)
-  const triggerInput = runtime.inflightInputs.find(
+  const triggerInput = runtime.session.inflightInputs.find(
     (input) =>
       input.role === 'system' &&
       input.text.includes('<M:system_event name="trigger_fire"'),
@@ -287,34 +257,34 @@ test('trigger_fire system event uses global focus even when plan has local focus
 })
 
 test(
-  'triggerWakeLoop fires on_worker_slot_freed once on full-to-free transition',
+  'managerLoop fires on_worker_slot_freed once on full-to-free transition',
   async () => {
     const runtime = await createRuntime({ maxConcurrent: 1 })
     runtime.taskPlans.push(createPlan('plan-capacity', { mode: 'on_worker_slot_freed' }))
-    runtime.runningControllers.set('task-busy', new AbortController())
+    runtime.worker.runningControllers.set('task-busy', new AbortController())
 
-    const loopPromise = triggerWakeLoop(runtime)
+    const loopPromise = managerLoop(runtime)
     try {
       await new Promise<void>((resolve) => setTimeout(resolve, 1_200))
       expect(runtime.taskPlans[0]?.runCount).toBe(0)
 
-      runtime.runningControllers.clear()
-      runtime.lastWorkerActivityAtMs = Date.now()
+      runtime.worker.runningControllers.clear()
+      runtime.worker.lastActivityAtMs = Date.now()
 
       await waitFor(() => (runtime.taskPlans[0]?.runCount ?? 0) >= 1, 4_000)
       await new Promise<void>((resolve) => setTimeout(resolve, 1_200))
 
       expect(runtime.taskPlans[0]?.runCount).toBe(1)
-      expect(countSystemEvent(runtime, 'worker_slot_freed')).toBe(0)
+      expect(await countSystemEvent(runtime, 'worker_slot_freed')).toBe(0)
     } finally {
-      runtime.stopped = true
+      runtime.session.stopped = true
       await loopPromise
     }
   },
   12_000,
 )
 
-test('triggerWakeLoop emits worker_slot_freed on full-to-free transition only once', async () => {
+test('managerLoop emits worker_slot_freed on full-to-free transition only once', async () => {
   const runtime = await createRuntime({ maxConcurrent: 1 })
   runtime.tasks.push({
     id: 'task-pending-transition',
@@ -326,30 +296,30 @@ test('triggerWakeLoop emits worker_slot_freed on full-to-free transition only on
     status: 'pending',
     createdAt: new Date().toISOString(),
   })
-  runtime.runningControllers.set('task-busy', new AbortController())
+  runtime.worker.runningControllers.set('task-busy', new AbortController())
 
-  const loopPromise = triggerWakeLoop(runtime)
+  const loopPromise = managerLoop(runtime)
   try {
     await new Promise<void>((resolve) => setTimeout(resolve, 1_200))
-    expect(countSystemEvent(runtime, 'worker_slot_freed')).toBe(0)
+    expect(await countSystemEvent(runtime, 'worker_slot_freed')).toBe(0)
 
-    runtime.runningControllers.clear()
-    runtime.lastWorkerActivityAtMs = Date.now()
+    runtime.worker.runningControllers.clear()
+    runtime.worker.lastActivityAtMs = Date.now()
 
     await waitFor(
-      () => countSystemEvent(runtime, 'worker_slot_freed') >= 1,
+      async () => (await countSystemEvent(runtime, 'worker_slot_freed')) >= 1,
       4_000,
     )
     await new Promise<void>((resolve) => setTimeout(resolve, 1_300))
-    expect(countSystemEvent(runtime, 'worker_slot_freed')).toBe(1)
+    expect(await countSystemEvent(runtime, 'worker_slot_freed')).toBe(1)
   } finally {
-    runtime.stopped = true
+    runtime.session.stopped = true
     await loopPromise
   }
 })
 
 test(
-  'triggerWakeLoop coalesces burst slot-freed signals while capacity remains free',
+  'managerLoop coalesces burst worker releases while capacity remains free',
   async () => {
     const runtime = await createRuntime({ maxConcurrent: 3 })
     runtime.tasks.push({
@@ -362,55 +332,54 @@ test(
       status: 'pending',
       createdAt: new Date().toISOString(),
     })
-    runtime.runningControllers.set('task-1', new AbortController())
-    runtime.runningControllers.set('task-2', new AbortController())
-    runtime.runningControllers.set('task-3', new AbortController())
+    runtime.worker.runningControllers.set('task-1', new AbortController())
+    runtime.worker.runningControllers.set('task-2', new AbortController())
+    runtime.worker.runningControllers.set('task-3', new AbortController())
 
-    const loopPromise = triggerWakeLoop(runtime)
+    const loopPromise = managerLoop(runtime)
     try {
       await new Promise<void>((resolve) => setTimeout(resolve, 1_200))
-      expect(countSystemEvent(runtime, 'worker_slot_freed')).toBe(0)
+      expect(await countSystemEvent(runtime, 'worker_slot_freed')).toBe(0)
 
-      markWorkerSlotFreedSignal(runtime)
-      runtime.runningControllers.delete('task-1')
-      runtime.lastWorkerActivityAtMs = Date.now()
-      markWorkerSlotFreedSignal(runtime)
-      runtime.runningControllers.delete('task-2')
-      runtime.lastWorkerActivityAtMs = Date.now()
-      markWorkerSlotFreedSignal(runtime)
-      runtime.runningControllers.delete('task-3')
-      runtime.lastWorkerActivityAtMs = Date.now()
-      await waitFor(() => countSystemEvent(runtime, 'worker_slot_freed') >= 1, 4_000)
+      runtime.worker.runningControllers.delete('task-1')
+      runtime.worker.lastActivityAtMs = Date.now()
+      runtime.worker.runningControllers.delete('task-2')
+      runtime.worker.lastActivityAtMs = Date.now()
+      runtime.worker.runningControllers.delete('task-3')
+      runtime.worker.lastActivityAtMs = Date.now()
+      await waitFor(
+        async () => (await countSystemEvent(runtime, 'worker_slot_freed')) >= 1,
+        4_000,
+      )
 
       await new Promise<void>((resolve) => setTimeout(resolve, 1_300))
-      expect(countSystemEvent(runtime, 'worker_slot_freed')).toBe(1)
+      expect(await countSystemEvent(runtime, 'worker_slot_freed')).toBe(1)
     } finally {
-      runtime.stopped = true
+      runtime.session.stopped = true
       await loopPromise
     }
   },
   12_000,
 )
 
-test('triggerWakeLoop consumes explicit slot-freed signal when slot remains available', async () => {
+test('managerLoop reacts when occupied worker count drops while slot stays available', async () => {
   const runtime = await createRuntime({ maxConcurrent: 1 })
   runtime.taskPlans.push(createPlan('plan-capacity', { mode: 'on_worker_slot_freed' }))
-  runtime.runningControllers.set('task-busy', new AbortController())
+  runtime.worker.runningControllers.set('task-busy', new AbortController())
 
-  const loopPromise = triggerWakeLoop(runtime)
+  const loopPromise = managerLoop(runtime)
   try {
     await new Promise<void>((resolve) => setTimeout(resolve, 1_200))
     expect(runtime.taskPlans[0]?.runCount).toBe(0)
 
-    runtime.runningControllers.clear()
-    markWorkerSlotFreedSignal(runtime)
-    runtime.lastWorkerActivityAtMs = Date.now()
+    runtime.worker.runningControllers.clear()
+    runtime.worker.lastActivityAtMs = Date.now()
 
     await waitFor(() => (runtime.taskPlans[0]?.runCount ?? 0) >= 1, 4_000)
     expect(runtime.taskPlans[0]?.runCount).toBe(1)
-    expect(countSystemEvent(runtime, 'worker_slot_freed')).toBe(0)
+    expect(await countSystemEvent(runtime, 'worker_slot_freed')).toBe(0)
   } finally {
-    runtime.stopped = true
+    runtime.session.stopped = true
     await loopPromise
   }
 })

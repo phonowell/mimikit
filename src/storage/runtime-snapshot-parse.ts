@@ -122,7 +122,6 @@ const normalizeRuntimeSnapshot = (value: RuntimeSnapshot): RuntimeSnapshot =>
     taskPlans: value.taskPlans.map(normalizeTaskPlan),
     focuses: value.focuses?.map(normalizeFocusMeta),
     focusContexts: value.focusContexts?.map(normalizeFocusContext),
-    activeFocusIds: value.activeFocusIds,
     managerTurn: value.managerTurn,
     managerThreadId: value.managerThreadId,
     queues: value.queues,

@@ -6,7 +6,7 @@ export const markCreateAttempt = (
 ): { debounced: boolean; waitMs: number } => {
   const now = Date.now()
   const debounceMs = Math.max(0, runtime.config.manager.taskCreate.debounceMs)
-  const debounceMap = runtime.createTaskDebounce
+  const debounceMap = runtime.worker.createTaskDebounce
   const last = debounceMap.get(semanticKey)
   debounceMap.set(semanticKey, now)
   if (debounceMap.size > 1_000) {

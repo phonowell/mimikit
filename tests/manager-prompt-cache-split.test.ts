@@ -69,7 +69,6 @@ test('buildManagerPromptPayload splits stable and volatile context segments', as
         updatedAt: '2026-03-07T10:00:02.000Z',
       },
     ],
-    activeFocusIds: ['focus-global'],
     workingFocusIds: ['focus-global'],
     promptSectionLimits: config.manager.promptSections,
   })

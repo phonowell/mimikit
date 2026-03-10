@@ -1,6 +1,6 @@
 import { appendLog } from '../log/append.js'
+import { resolveSlotStatus } from '../worker/task-state-shared.js'
 
-import { resolveWorkerSlotCapacity } from './loop-trigger-shared.js'
 import { runManager } from './runner.js'
 import {
   compareWorkerProviderPreference,
@@ -42,15 +42,17 @@ const buildManagerEnv = (
   runtime: RuntimeState,
   wakeProfile: ManagerWakeProfile,
 ): ManagerEnv => {
-  const slots = resolveWorkerSlotCapacity(runtime)
+  const slots = resolveSlotStatus(runtime)
   const enabledProviders = resolveEnabledWorkerProviders(runtime)
   const env: ManagerEnv = {
-    ...(runtime.lastUserMeta ? { lastUser: runtime.lastUserMeta } : {}),
+    ...(runtime.session.lastUserMeta
+      ? { lastUser: runtime.session.lastUserMeta }
+      : {}),
     wakeProfile,
     workerSlots: {
-      maxSlots: slots.maxSlots,
-      occupiedSlots: slots.occupiedSlots,
-      availableSlots: slots.availableSlots,
+      maxSlots: slots.max_slots,
+      occupiedSlots: slots.occupied_slots,
+      availableSlots: slots.available_slots,
     },
     ...(enabledProviders.length > 0
       ? { workerProviders: enabledProviders }
@@ -194,6 +196,9 @@ const resolveContextBudgetTier = (params: {
   return 'lite'
 }
 
+const countActiveFocuses = (runtime: RuntimeState): number =>
+  runtime.focuses.filter((focus) => focus.status === 'active').length
+
 const applyContextBudgetPreset = (
   base: PromptSectionLimits,
   tier: 'lite' | 'standard' | 'heavy',
@@ -283,7 +288,7 @@ export const runManagerRoundWithRecovery = async (params: {
     wakeProfile,
     inputCount: params.inputs.length,
     resultCount: params.results.length,
-    activeFocusCount: params.runtime.activeFocusIds.length,
+    activeFocusCount: countActiveFocuses(params.runtime),
   })
   const wakeLimits = resolvePromptSectionLimitsForWakeProfile(
     applyContextBudgetPreset(
@@ -303,7 +308,7 @@ export const runManagerRoundWithRecovery = async (params: {
     tier: budgetTier,
     inputCount: params.inputs.length,
     resultCount: params.results.length,
-    activeFocusCount: params.runtime.activeFocusIds.length,
+    activeFocusCount: countActiveFocuses(params.runtime),
     taskResultTrimApplied,
   })
   const result = await runManager({
@@ -316,7 +321,6 @@ export const runManagerRoundWithRecovery = async (params: {
     plans: params.plans,
     focuses: params.runtime.focuses,
     focusContexts: params.runtime.focusContexts,
-    activeFocusIds: params.runtime.activeFocusIds,
     workingFocusIds: params.workingFocusIds,
     ...(params.extra.historyLookup
       ? { historyLookup: params.extra.historyLookup }

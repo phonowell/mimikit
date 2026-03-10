@@ -4,14 +4,13 @@ import { join } from 'node:path'
 
 import { afterEach, expect, test, vi } from 'vitest'
 
-import { defaultConfig } from '../src/config.js'
-import { buildPaths } from '../src/fs/paths.js'
 import { readHistory } from '../src/history/store.js'
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
 import { parseSystemEventText } from '../src/shared/system-event.js'
 import type { Task } from '../src/types/index.js'
 import { pauseTask } from '../src/worker/pause-task.js'
 import { resumeTask } from '../src/worker/resume-task.js'
+import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 const tempDirs: string[] = []
 
@@ -22,54 +21,22 @@ const createTmpDir = async (): Promise<string> => {
 }
 
 const createRuntime = async (params?: {
-  queue?: Partial<RuntimeState['workerQueue']>
+  queue?: Partial<RuntimeState['worker']['queue']>
 }): Promise<RuntimeState> => {
   const workDir = await createTmpDir()
-  const config = defaultConfig({ workDir })
-  return {
+  const runtime = await createTestRuntimeState({
+    workDir,
     runtimeId: 'runtime-pause-resume-test',
-    config,
-    paths: buildPaths(workDir),
-    stopped: false,
-    managerRunning: false,
-    managerSignalController: new AbortController(),
-    managerWakePending: false,
-    lastManagerActivityAtMs: Date.now(),
-    lastWorkerActivityAtMs: Date.now(),
-    inflightInputs: [],
-    queues: {
-      inputsCursor: 0,
-      resultsCursor: 0,
-    },
-    tasks: [],
-    taskPlans: [],
-    focuses: [],
-    focusContexts: [],
-    activeFocusIds: [],
-    managerTurn: 0,
-    memoryRefresh: {
-      lastCompletedTurn: 0,
-      lastProcessedInputsCursor: 0,
-      lastProcessedResultsCursor: 0,
-      running: false,
-      pending: false,
-    },
-    managerFocusCompressedContexts: [],
-    runningControllers: new Map(),
-    createTaskDebounce: new Map(),
-    workerQueue: {
-      add: async () => undefined,
-      clear: () => undefined,
-      pause: () => undefined,
-      sizeBy: () => 0,
-      ...params?.queue,
-    } as RuntimeState['workerQueue'],
-    workerSignalController: new AbortController(),
-    uiWakeVersion: 0,
-    uiWakeEvents: new Map(),
-    uiSignalControllers: new Set(),
-    pendingUserChoice: null,
-  }
+    withGlobalFocus: false,
+  })
+  runtime.worker.queue = {
+    add: async () => undefined,
+    clear: () => undefined,
+    pause: () => undefined,
+    sizeBy: () => 0,
+    ...params?.queue,
+  } as RuntimeState['worker']['queue']
+  return runtime
 }
 
 const createTask = (id: string, overrides: Partial<Task> = {}): Task => ({
@@ -118,7 +85,7 @@ test('pauseTask aborts running controller', async () => {
   })
   runtime.tasks = [task]
   const controller = new AbortController()
-  runtime.runningControllers.set(task.id, controller)
+  runtime.worker.runningControllers.set(task.id, controller)
 
   const result = await pauseTask(runtime, task.id, { source: 'user' })
 
@@ -135,7 +102,7 @@ test('resumeTask re-queues paused task and writes task_resumed event', async () 
   const queueAdd = vi.fn(async () => undefined)
   const runtime = await createRuntime({
     queue: {
-      add: queueAdd as RuntimeState['workerQueue']['add'],
+      add: queueAdd as RuntimeState['worker']['queue']['add'],
       sizeBy: () => 0,
     },
   })

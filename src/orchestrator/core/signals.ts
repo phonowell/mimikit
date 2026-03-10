@@ -2,7 +2,6 @@ import type { RuntimeState, UiWakeKind } from './runtime-state.js'
 
 const MAX_WAIT_MS = 24 * 60 * 60 * 1_000
 const MAX_UI_WAKE_EVENTS = 64
-const workerSlotFreedSignals = new WeakSet<RuntimeState>()
 
 const abortController = (controller: AbortController): void => {
   if (!controller.signal.aborted) controller.abort()
@@ -44,12 +43,12 @@ const waitForSignal = async (params: {
 // --- UI signal ---
 
 const trimUiWakeHistory = (runtime: RuntimeState): void => {
-  while (runtime.uiWakeEvents.size > MAX_UI_WAKE_EVENTS) {
-    const oldest = runtime.uiWakeEvents.keys().next().value as
+  while (runtime.ui.wakeEvents.size > MAX_UI_WAKE_EVENTS) {
+    const oldest = runtime.ui.wakeEvents.keys().next().value as
       | number
       | undefined
     if (oldest === undefined) break
-    runtime.uiWakeEvents.delete(oldest)
+    runtime.ui.wakeEvents.delete(oldest)
   }
 }
 
@@ -61,7 +60,7 @@ const resolveNextUiWake = (
     Number.isFinite(sinceVersion) && sinceVersion > 0
       ? Math.floor(sinceVersion)
       : 0
-  for (const [version, kind] of runtime.uiWakeEvents)
+  for (const [version, kind] of runtime.ui.wakeEvents)
     if (version > normalizedVersion) return { kind, version }
 
   return undefined
@@ -71,10 +70,10 @@ export const notifyUiSignal = (
   runtime: RuntimeState,
   kind: UiWakeKind = 'snapshot',
 ): void => {
-  runtime.uiWakeVersion += 1
-  runtime.uiWakeEvents.set(runtime.uiWakeVersion, kind)
+  runtime.ui.wakeVersion += 1
+  runtime.ui.wakeEvents.set(runtime.ui.wakeVersion, kind)
   trimUiWakeHistory(runtime)
-  for (const controller of runtime.uiSignalControllers)
+  for (const controller of runtime.ui.signalControllers)
     abortController(controller)
 }
 
@@ -90,12 +89,12 @@ export const waitForUiSignal = async (
   const pending = resolveNextUiWake(runtime, normalizedSinceVersion)
   if (pending) return pending
   const controller = new AbortController()
-  runtime.uiSignalControllers.add(controller)
+  runtime.ui.signalControllers.add(controller)
   try {
     await waitForSignal({
       signal: controller.signal,
       timeoutMs,
-      isResolved: () => runtime.uiWakeVersion > normalizedSinceVersion,
+      isResolved: () => runtime.ui.wakeVersion > normalizedSinceVersion,
     })
     return (
       resolveNextUiWake(runtime, normalizedSinceVersion) ?? {
@@ -104,15 +103,15 @@ export const waitForUiSignal = async (
       }
     )
   } finally {
-    runtime.uiSignalControllers.delete(controller)
+    runtime.ui.signalControllers.delete(controller)
   }
 }
 
 // --- Manager signal ---
 
 export const notifyManagerLoop = (runtime: RuntimeState): void => {
-  runtime.managerWakePending = true
-  abortController(runtime.managerSignalController)
+  runtime.manager.wakePending = true
+  abortController(runtime.manager.signalController)
   notifyUiSignal(runtime)
 }
 
@@ -120,25 +119,25 @@ export const waitForManagerLoopSignal = async (
   runtime: RuntimeState,
   timeoutMs: number,
 ): Promise<void> => {
-  if (runtime.managerWakePending) {
-    runtime.managerWakePending = false
+  if (runtime.manager.wakePending) {
+    runtime.manager.wakePending = false
     return
   }
   const controller = new AbortController()
-  runtime.managerSignalController = controller
+  runtime.manager.signalController = controller
   await waitForSignal({
     signal: controller.signal,
     timeoutMs,
-    isResolved: () => runtime.managerWakePending,
+    isResolved: () => runtime.manager.wakePending,
   })
-  runtime.managerWakePending = false
+  runtime.manager.wakePending = false
 }
 
 // --- Worker signal ---
 
 export const notifyWorkerLoop = (runtime: RuntimeState): void => {
-  runtime.workerSignalController = replaceOrCreateAbortController(
-    runtime.workerSignalController,
+  runtime.worker.signalController = replaceOrCreateAbortController(
+    runtime.worker.signalController,
   )
   notifyUiSignal(runtime)
 }
@@ -148,18 +147,6 @@ export const waitForWorkerLoopSignal = (
   timeoutMs: number,
 ): Promise<void> =>
   waitForSignal({
-    signal: runtime.workerSignalController.signal,
+    signal: runtime.worker.signalController.signal,
     timeoutMs,
   })
-
-export const markWorkerSlotFreedSignal = (runtime: RuntimeState): void => {
-  workerSlotFreedSignals.add(runtime)
-}
-
-export const consumeWorkerSlotFreedSignal = (
-  runtime: RuntimeState,
-): boolean => {
-  if (!workerSlotFreedSignals.has(runtime)) return false
-  workerSlotFreedSignals.delete(runtime)
-  return true
-}

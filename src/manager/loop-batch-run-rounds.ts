@@ -20,12 +20,46 @@ import {
 import type { RuntimeState } from './runtime-adapter.js'
 import type {
   FocusId,
+  ManagerActionFeedback,
   Task,
   TaskPlan,
   TaskResult,
   TokenUsage,
   UserInput,
 } from '../types/index.js'
+
+const LOOKUP_NO_PROGRESS_ERROR =
+  'manager_internal_lookup_repeated_without_progress'
+
+const LOOKUP_NO_PROGRESS_REPLY =
+  '当前补充检索没有带来新的有效信息，本轮先停止继续检索。请直接补充更具体的对象、时间范围、文件路径，或明确希望我继续执行的下一步。'
+
+const GENERIC_CORRECTION_REPLY =
+  '继续执行前请先补齐三项信息：1) 明确目标；2) 明确范围与不做项；3) 明确可验收标准（至少一条）。'
+
+const findRepeatedRejectedAction = (
+  feedback: ManagerActionFeedback[],
+): string | undefined => {
+  const counts = new Map<string, number>()
+  for (const item of feedback) {
+    if (item.error !== 'action_execution_rejected') continue
+    const next = (counts.get(item.action) ?? 0) + 1
+    counts.set(item.action, next)
+    if (next >= 2) return item.action
+  }
+  return undefined
+}
+
+const buildCorrectionFallbackReply = (
+  feedback: ManagerActionFeedback[],
+): string => {
+  const repeatedRejectedAction = findRepeatedRejectedAction(feedback)
+  if (repeatedRejectedAction)
+    return `同类动作 ${repeatedRejectedAction} 已连续被拒绝，本轮停止重试。请改为补充更精确的输入，或选择不会再次触发同类拒绝的下一步。`
+  if (feedback.some((item) => item.action === 'query_context'))
+    return LOOKUP_NO_PROGRESS_REPLY
+  return GENERIC_CORRECTION_REPLY
+}
 
 export const runManagerCorrectionRounds = async (params: {
   runtime: RuntimeState
@@ -56,19 +90,26 @@ export const runManagerCorrectionRounds = async (params: {
   let batchUsage: TokenUsage | undefined
   let previousLookupKey: string | undefined
   let promptPrefixHash: string | undefined
-  let { managerThreadId } = runtime
+  let managerThreadId = runtime.manager.threadId
   let extra: ManagerRoundExtra = {}
   let lastParsed = parseActions('')
   const resultTaskIds = new Set(results.map((item) => item.taskId))
   const allowAskUserChoice =
     !hasNoChoiceReturnChannelInput(inputs) &&
-    !isNoChoiceReturnChannelSource(runtime.lastUserMeta?.source)
+    !isNoChoiceReturnChannelSource(runtime.session.lastUserMeta?.source)
   for (let round = 1; round <= maxCorrectionRounds; round++) {
     if (round >= 2 && extra.actionFeedback && extra.actionFeedback.length > 0) {
+      const fallbackReply = buildCorrectionFallbackReply(extra.actionFeedback)
+      const repeatedRejectedAction = findRepeatedRejectedAction(
+        extra.actionFeedback,
+      )
       await appendLog(runtime.paths.log, {
-        event: 'manager_correction_structured_clarify',
+        event: repeatedRejectedAction
+          ? 'manager_action_rejection_circuit_open'
+          : 'manager_correction_structured_clarify',
         round,
         feedbackCount: extra.actionFeedback.length,
+        ...(repeatedRejectedAction ? { action: repeatedRejectedAction } : {}),
       })
       if (promptPrefixHash) {
         await appendLog(runtime.paths.log, {
@@ -78,7 +119,7 @@ export const runManagerCorrectionRounds = async (params: {
         })
       }
       return buildRoundLimitResult({
-        text: '继续执行前请先补齐三项信息：1) 明确目标；2) 明确范围与不做项；3) 明确可验收标准（至少一条）。',
+        text: fallbackReply,
         elapsedMs,
         ...(batchUsage ? { usage: batchUsage } : {}),
       })
@@ -100,14 +141,14 @@ export const runManagerCorrectionRounds = async (params: {
         const errorThreadId = readProviderThreadId(error)
         if (errorThreadId) {
           managerThreadId = errorThreadId
-          runtime.managerThreadId = managerThreadId
+          runtime.manager.threadId = managerThreadId
         }
         throw error
       }
     })()
     managerThreadId = runResult.threadId ?? managerThreadId
-    if (managerThreadId) runtime.managerThreadId = managerThreadId
-    else delete runtime.managerThreadId
+    if (managerThreadId) runtime.manager.threadId = managerThreadId
+    else delete runtime.manager.threadId
     elapsedMs += runResult.elapsedMs
     batchUsage = mergeUsageAdditive(batchUsage, runResult.usage)
     if (!promptPrefixHash) promptPrefixHash = runResult.promptPrefixHash
@@ -122,15 +163,41 @@ export const runManagerCorrectionRounds = async (params: {
     }
     const parsed = parseActions(runResult.output)
     lastParsed = parsed
-    const followup = await resolveRoundFollowup({
-      runtime,
-      parsed: parsed.actions,
-      output: runResult.output,
-      allowAskUserChoice,
-      resultTaskIds,
-      resolveFocusId,
-      ...(previousLookupKey ? { previousLookupKey } : {}),
-    })
+    let followup
+    try {
+      followup = await resolveRoundFollowup({
+        runtime,
+        parsed: parsed.actions,
+        output: runResult.output,
+        allowAskUserChoice,
+        resultTaskIds,
+        resolveFocusId,
+        ...(previousLookupKey ? { previousLookupKey } : {}),
+      })
+    } catch (error) {
+      if (
+        !(error instanceof Error) ||
+        error.message !== LOOKUP_NO_PROGRESS_ERROR
+      )
+        throw error
+      await appendLog(runtime.paths.log, {
+        event: 'manager_lookup_no_progress_degraded',
+        round,
+        ...(previousLookupKey ? { lookupKey: previousLookupKey } : {}),
+      })
+      if (promptPrefixHash) {
+        await appendLog(runtime.paths.log, {
+          event: 'manager_prompt_prefix_hash',
+          rounds: round,
+          hash: promptPrefixHash,
+        })
+      }
+      return buildRoundLimitResult({
+        text: LOOKUP_NO_PROGRESS_REPLY,
+        elapsedMs,
+        ...(batchUsage ? { usage: batchUsage } : {}),
+      })
+    }
     if (followup.done) {
       if (promptPrefixHash) {
         await appendLog(runtime.paths.log, {
@@ -171,8 +238,8 @@ export const runManagerCorrectionRounds = async (params: {
       hash: promptPrefixHash,
     })
   }
-  if (managerThreadId) runtime.managerThreadId = managerThreadId
-  else delete runtime.managerThreadId
+  if (managerThreadId) runtime.manager.threadId = managerThreadId
+  else delete runtime.manager.threadId
   return buildRoundLimitResult({
     text: lastParsed.text,
     elapsedMs,

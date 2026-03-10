@@ -143,6 +143,29 @@ test('runtime snapshot auto-migrates when schemaVersion is missing', async () =>
   expect(loaded.queues?.resultsCursor).toBe(2)
 })
 
+test('runtime snapshot drops legacy activeFocusIds during load', async () => {
+  const stateDir = await createTmpDir()
+  await writeFile(
+    join(stateDir, 'runtime-snapshot.json'),
+    JSON.stringify({
+      schemaVersion: 'runtime-snapshot.v2',
+      tasks: [],
+      taskPlans: [],
+      activeFocusIds: [GLOBAL_FOCUS_ID],
+      queues: {
+        inputsCursor: 1,
+        resultsCursor: 2,
+      },
+    }),
+    'utf8',
+  )
+
+  const loaded = await loadRuntimeSnapshot(stateDir)
+  expect(loaded.schemaVersion).toBe('runtime-snapshot.v2')
+  expect(loaded.queues?.inputsCursor).toBe(1)
+  expect(loaded.queues?.resultsCursor).toBe(2)
+})
+
 test('runtime snapshot rejects unsupported future schema version', async () => {
   const stateDir = await createTmpDir()
   await writeFile(
