@@ -5,9 +5,26 @@ import { join } from 'node:path'
 import { expect, test } from 'vitest'
 
 import { scoreRuntimeWindow } from '../scripts/rearchitecture/score-runtime-window-core.js'
+import { evaluateContextScore } from '../scripts/rearchitecture/score-runtime-window-eval-context.js'
 import { appendJsonl } from '../src/storage/jsonl.js'
 
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-score-runtime-'))
+const promptSectionLimits = {
+  actionFeedbackMaxBytes: 8192,
+  batchResultsMaxBytes: 20480,
+  environmentMaxBytes: 4096,
+  fileLookupMaxBytes: 20480,
+  focusContextsMaxBytes: 20480,
+  focusListMaxBytes: 8192,
+  historyLookupMaxBytes: 20480,
+  inputsMaxBytes: 8192,
+  memoryMaxBytes: 8192,
+  packetSummaryMaxBytes: 6144,
+  plansMaxBytes: 16384,
+  queryLookupMaxBytes: 20480,
+  recentHistoryMaxBytes: 8192,
+  tasksMaxBytes: 24576,
+}
 
 test('scoreRuntimeWindow computes core governance metrics without not_collected blockers', async () => {
   const stateDir = await createTmpDir()
@@ -122,12 +139,13 @@ test('scoreRuntimeWindow computes core governance metrics without not_collected 
     },
     {
       time: '2026-03-08T00:00:20.500Z',
-      event: 'manager_context_budget_tier',
-      tier: 'lite',
+      event: 'manager_context_budget_resolved',
+      policy: 'fixed',
       wakeProfile: 'user_input',
       inputCount: 1,
       resultCount: 0,
       activeFocusCount: 1,
+      promptSectionLimits,
     },
     {
       time: '2026-03-08T00:00:21.000Z',
@@ -154,4 +172,27 @@ test('scoreRuntimeWindow computes core governance metrics without not_collected 
   expect(report.blockers.every((item) => !item.includes('not_collected'))).toBe(
     true,
   )
+  expect(report.governance.context_budget_drift).toBe(0)
+})
+
+test('evaluateContextScore marks incomplete promptSectionLimits as drift', () => {
+  const score = evaluateContextScore({
+    logs: [
+      {
+        time: '2026-03-08T00:00:20.500Z',
+        event: 'manager_context_budget_resolved',
+        policy: 'fixed',
+        wakeProfile: 'user_input',
+        inputCount: 1,
+        resultCount: 0,
+        activeFocusCount: 1,
+        promptSectionLimits: {
+          actionFeedbackMaxBytes: 8192,
+        },
+      },
+    ],
+  })
+
+  expect(score.budgetRows).toHaveLength(1)
+  expect(score.driftRounds).toBe(1)
 })

@@ -1,10 +1,12 @@
 import { expect, test } from 'vitest'
 
 import {
-  resolvePromptSectionLimitsForWakeProfile,
-  trimPromptSectionLimitsForTaskResult,
-} from '../src/manager/loop-batch-exec.js'
-import type { PromptSectionLimits } from '../src/config.js'
+  normalizePromptSectionLimits,
+  resolveManagerContextBudgetDecision,
+} from '../src/manager/context-budget.js'
+import { createRuntimeState } from '../src/orchestrator/core/runtime-state.js'
+
+import type { AppConfig, PromptSectionLimits } from '../src/config.js'
 
 const baseLimits: PromptSectionLimits = {
   actionFeedbackMaxBytes: 8192,
@@ -23,85 +25,110 @@ const baseLimits: PromptSectionLimits = {
   tasksMaxBytes: 24576,
 }
 
-test('resolvePromptSectionLimitsForWakeProfile boosts result sections for task_result wake', () => {
-  const limits = resolvePromptSectionLimitsForWakeProfile(baseLimits, 'task_result')
-  expect(limits.batchResultsMaxBytes).toBeGreaterThan(baseLimits.batchResultsMaxBytes)
-  expect(limits.tasksMaxBytes).toBeGreaterThan(baseLimits.tasksMaxBytes)
-  expect(limits.inputsMaxBytes).toBeLessThan(baseLimits.inputsMaxBytes)
+const createRuntime = (limits: PromptSectionLimits) => {
+  const config: AppConfig = {
+    workDir: '.mimikit-test',
+    manager: {
+      model: 'gpt-5',
+      modelReasoningEffort: 'medium',
+      maxCorrectionRounds: 3,
+      promptSections: limits,
+      taskCreate: { debounceMs: 1000 },
+      taskWindow: { maxCount: 10, minCount: 1 },
+      planWindow: { maxCount: 10, minCount: 1 },
+    },
+    worker: {
+      maxConcurrent: 1,
+      retry: { maxAttempts: 1, backoffMs: 1000 },
+      timeoutMs: 60000,
+      budget: { maxDurationMs: 60000, maxRounds: 1 },
+    },
+    codex: {
+      enabled: true,
+      model: 'gpt-5-codex',
+      modelReasoningEffort: 'medium',
+      capability: 'medium',
+      billing: 'low',
+    },
+    opencode: {
+      enabled: false,
+      model: 'opencode',
+      capability: 'low',
+      billing: 'low',
+    },
+    webui: { enabled: false, port: 8787 },
+    telegram: {
+      enabled: false,
+      botToken: '',
+      chatId: '',
+      apiRoot: '',
+      proxy: '',
+    },
+    feishu: {
+      enabled: false,
+      appId: '',
+      appSecret: '',
+      chatId: '',
+    },
+  }
+  const runtime = createRuntimeState(config)
+  runtime.focuses.push({
+    id: 'focus-1',
+    title: 'Focus',
+    status: 'active',
+    createdAt: '2026-03-10T00:00:00.000Z',
+    updatedAt: '2026-03-10T00:00:00.000Z',
+    lastActivityAt: '2026-03-10T00:00:00.000Z',
+  })
+  return runtime
+}
+
+test('manager context budget decision keeps configured limits across wake profiles', () => {
+  const runtime = createRuntime(baseLimits)
+
+  const userInputDecision = resolveManagerContextBudgetDecision({
+    runtime,
+    inputs: [
+      {
+        id: 'input-1',
+        role: 'user',
+        text: 'continue',
+        focusId: 'focus-1',
+        createdAt: '2026-03-10T00:00:00.000Z',
+      },
+    ],
+    results: [],
+  })
+  const taskResultDecision = resolveManagerContextBudgetDecision({
+    runtime,
+    inputs: [],
+    results: [
+      {
+        taskId: 'task-1',
+        status: 'succeeded',
+        ok: true,
+        output: 'done',
+        durationMs: 1,
+        completedAt: '2026-03-10T00:00:01.000Z',
+      },
+    ],
+  })
+
+  expect(userInputDecision.wakeProfile).toBe('user_input')
+  expect(taskResultDecision.wakeProfile).toBe('task_result')
+  expect(userInputDecision.policy).toBe('fixed')
+  expect(taskResultDecision.activeFocusCount).toBe(1)
+  expect(userInputDecision.promptSectionLimits).toEqual(baseLimits)
+  expect(taskResultDecision.promptSectionLimits).toEqual(baseLimits)
 })
 
-test('resolvePromptSectionLimitsForWakeProfile boosts input/history sections for user_input wake', () => {
-  const limits = resolvePromptSectionLimitsForWakeProfile(baseLimits, 'user_input')
-  expect(limits.inputsMaxBytes).toBeGreaterThan(baseLimits.inputsMaxBytes)
-  expect(limits.recentHistoryMaxBytes).toBeGreaterThan(baseLimits.recentHistoryMaxBytes)
-  expect(limits.batchResultsMaxBytes).toBeLessThan(baseLimits.batchResultsMaxBytes)
-})
-
-test('wake profile tiering keeps heavy rounds with larger task/result budgets than lite', async () => {
-  const lite = resolvePromptSectionLimitsForWakeProfile(
-    {
-      ...baseLimits,
-      tasksMaxBytes: 12288,
-      batchResultsMaxBytes: 12288,
-    },
-    'user_input',
-  )
-  const heavy = resolvePromptSectionLimitsForWakeProfile(
-    {
-      ...baseLimits,
-      tasksMaxBytes: 32768,
-      batchResultsMaxBytes: 28672,
-    },
-    'mixed',
-  )
-  expect(heavy.tasksMaxBytes).toBeGreaterThan(lite.tasksMaxBytes)
-  expect(heavy.batchResultsMaxBytes).toBeGreaterThan(lite.batchResultsMaxBytes)
-})
-
-test('mixed wake no longer inflates to heavy tier baseline', async () => {
-  const mixed = resolvePromptSectionLimitsForWakeProfile(
-    {
-      ...baseLimits,
-      tasksMaxBytes: 24576,
-      batchResultsMaxBytes: 20480,
-    },
-    'mixed',
-  )
-  expect(mixed.tasksMaxBytes).toBe(baseLimits.tasksMaxBytes)
-  expect(mixed.batchResultsMaxBytes).toBe(baseLimits.batchResultsMaxBytes)
-})
-
-test('task_result trim reduces heavy context sections while keeping minimum floor', () => {
-  const fromPreset = resolvePromptSectionLimitsForWakeProfile(
-    {
-      ...baseLimits,
-      tasksMaxBytes: 24576,
-      batchResultsMaxBytes: 20480,
-      recentHistoryMaxBytes: 8192,
-      focusDigestsMaxBytes: 20480,
-      historyLookupMaxBytes: 20480,
-      queryLookupMaxBytes: 20480,
-      fileLookupMaxBytes: 20480,
-    },
-    'task_result',
-  )
-  const trimmed = trimPromptSectionLimitsForTaskResult(fromPreset)
-  expect(trimmed.tasksMaxBytes).toBeLessThan(fromPreset.tasksMaxBytes)
-  expect(trimmed.batchResultsMaxBytes).toBeLessThan(
-    fromPreset.batchResultsMaxBytes,
-  )
-  expect(trimmed.recentHistoryMaxBytes).toBeLessThan(
-    fromPreset.recentHistoryMaxBytes,
-  )
-  expect(trimmed.focusDigestsMaxBytes).toBeLessThan(
-    fromPreset.focusDigestsMaxBytes,
-  )
-  expect(trimmed.historyLookupMaxBytes).toBeLessThan(
-    fromPreset.historyLookupMaxBytes,
-  )
-  expect(trimmed.queryLookupMaxBytes).toBeLessThan(fromPreset.queryLookupMaxBytes)
-  expect(trimmed.fileLookupMaxBytes).toBeLessThan(fromPreset.fileLookupMaxBytes)
-  expect(trimmed.inputsMaxBytes).toBe(fromPreset.inputsMaxBytes)
-  expect(trimmed.tasksMaxBytes).toBeGreaterThanOrEqual(512)
-  expect(trimmed.batchResultsMaxBytes).toBeGreaterThanOrEqual(512)
+test('normalizePromptSectionLimits keeps a hard minimum floor', () => {
+  const normalized = normalizePromptSectionLimits({
+    ...baseLimits,
+    environmentMaxBytes: 200,
+    inputsMaxBytes: 511,
+  })
+  expect(normalized.environmentMaxBytes).toBe(512)
+  expect(normalized.inputsMaxBytes).toBe(512)
+  expect(normalized.tasksMaxBytes).toBe(baseLimits.tasksMaxBytes)
 })

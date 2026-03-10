@@ -87,7 +87,7 @@ export type LogRow = {
   triggerMode?: string
   triggerReason?: string
   outcome?: string
-  tier?: string
+  policy?: string
   wakeProfile?: string
   inputCount?: number
   resultCount?: number
@@ -97,6 +97,7 @@ export type LogRow = {
   mode?: string
   planId?: string
   taskId?: string
+  promptSectionLimits?: Record<string, number>
 }
 
 export type GoldenCase = {

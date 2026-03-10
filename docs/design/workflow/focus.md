@@ -155,7 +155,7 @@
 - `M:state_packet.focus_list`：非 archived focus 列表（含 `is_active`）
 - `M:state_packet.focus_digests`：working focus 的 `summary/open_items/recent_messages`（过滤 `focus-global`）
 - `M:event_packet.recent_history`：未被 working focus recent 覆盖的近期历史
-- 各段受 `manager.promptSections.*MaxBytes` 预算控制
+- 各段受 `manager.promptSections.*MaxBytes` 固定预算控制；`wakeProfile` 不再改写这些 section 的字节上限
 - Worker Prompt：
 - `M:focus_brief`：当前任务 focus 的 `focus_title/summary/open_items/updated_at/last_activity_at`
 

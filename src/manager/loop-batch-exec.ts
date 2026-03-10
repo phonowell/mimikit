@@ -1,11 +1,11 @@
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { resolveManagerPacketMode } from '../prompts/manager-context-packet.js'
-import { hasSystemEvent } from '../shared/system-event.js'
 import { mergeUsageAdditive } from '../shared/token-usage.js'
 import { appendManagerUsageLedgerEntry } from '../storage/usage-ledger.js'
 import { resolveSlotStatus } from '../worker/task-state-shared.js'
 
+import { resolveManagerContextBudgetDecision } from './context-budget.js'
 import { runManager } from './runner.js'
 import {
   compareWorkerProviderPreference,
@@ -13,7 +13,6 @@ import {
 } from './worker-provider-selection.js'
 
 import type { RuntimeState } from './runtime-adapter.js'
-import type { PromptSectionLimits } from '../config.js'
 import type {
   HistoryLookupMessage,
   ManagerActionFeedback,
@@ -65,206 +64,6 @@ const buildManagerEnv = (
   }
   return env
 }
-
-const resolveWakeProfile = (
-  inputs: UserInput[],
-  results: TaskResult[],
-): ManagerWakeProfile => {
-  const hasUserInput = inputs.some((item) => item.role === 'user')
-  const hasTaskResult = results.length > 0
-  const hasTriggerWake = inputs.some((item) =>
-    hasSystemEvent(item, 'trigger_fire'),
-  )
-  const hasCapacityWake = inputs.some((item) =>
-    hasSystemEvent(item, 'worker_slot_freed'),
-  )
-  const activeKinds = [
-    hasUserInput,
-    hasTaskResult,
-    hasTriggerWake,
-    hasCapacityWake,
-  ].filter(Boolean).length
-  if (activeKinds !== 1) return 'mixed'
-  if (hasUserInput) return 'user_input'
-  if (hasTaskResult) return 'task_result'
-  if (hasTriggerWake) return 'trigger'
-  return 'capacity'
-}
-
-const MIN_PROMPT_SECTION_BYTES = 512
-const TASK_RESULT_TRIM_MULTIPLIER = 0.7
-const ENABLE_TASK_RESULT_PROMPT_TRIM =
-  process.env.MIMIKIT_MANAGER_TASK_RESULT_PROMPT_TRIM !== '0'
-
-const WAKE_PROFILE_SECTION_MULTIPLIERS: Partial<
-  Record<ManagerWakeProfile, Partial<Record<keyof PromptSectionLimits, number>>>
-> = {
-  user_input: {
-    inputsMaxBytes: 1.5,
-    recentHistoryMaxBytes: 1.4,
-    focusDigestsMaxBytes: 1.2,
-    historyLookupMaxBytes: 1.1,
-    batchResultsMaxBytes: 0.6,
-    tasksMaxBytes: 0.8,
-    plansMaxBytes: 0.9,
-  },
-  task_result: {
-    batchResultsMaxBytes: 1.6,
-    tasksMaxBytes: 1.3,
-    focusDigestsMaxBytes: 1.2,
-    inputsMaxBytes: 0.7,
-    recentHistoryMaxBytes: 0.7,
-    historyLookupMaxBytes: 0.8,
-    plansMaxBytes: 0.8,
-  },
-  trigger: {
-    plansMaxBytes: 1.4,
-    tasksMaxBytes: 1.1,
-    inputsMaxBytes: 0.7,
-    recentHistoryMaxBytes: 0.8,
-  },
-  capacity: {
-    plansMaxBytes: 1.4,
-    tasksMaxBytes: 1.1,
-    inputsMaxBytes: 0.7,
-    recentHistoryMaxBytes: 0.8,
-    batchResultsMaxBytes: 0.8,
-  },
-}
-
-const CONTEXT_BUDGET_PRESETS: Record<
-  'lite' | 'standard' | 'heavy',
-  Partial<Record<keyof PromptSectionLimits, number>>
-> = {
-  lite: {
-    environmentMaxBytes: 3072,
-    inputsMaxBytes: 6144,
-    batchResultsMaxBytes: 12288,
-    packetSummaryMaxBytes: 4096,
-    tasksMaxBytes: 12288,
-    plansMaxBytes: 8192,
-    recentHistoryMaxBytes: 6144,
-    focusListMaxBytes: 6144,
-    focusDigestsMaxBytes: 12288,
-    historyLookupMaxBytes: 8192,
-    queryLookupMaxBytes: 12288,
-    fileLookupMaxBytes: 12288,
-    actionFeedbackMaxBytes: 4096,
-    memoryMaxBytes: 4096,
-  },
-  standard: {
-    environmentMaxBytes: 4096,
-    inputsMaxBytes: 8192,
-    batchResultsMaxBytes: 20480,
-    packetSummaryMaxBytes: 6144,
-    tasksMaxBytes: 24576,
-    plansMaxBytes: 16384,
-    recentHistoryMaxBytes: 8192,
-    focusListMaxBytes: 8192,
-    focusDigestsMaxBytes: 20480,
-    historyLookupMaxBytes: 20480,
-    queryLookupMaxBytes: 20480,
-    fileLookupMaxBytes: 20480,
-    actionFeedbackMaxBytes: 8192,
-    memoryMaxBytes: 8192,
-  },
-  heavy: {
-    environmentMaxBytes: 6144,
-    inputsMaxBytes: 12288,
-    batchResultsMaxBytes: 28672,
-    packetSummaryMaxBytes: 8192,
-    tasksMaxBytes: 32768,
-    plansMaxBytes: 24576,
-    recentHistoryMaxBytes: 12288,
-    focusListMaxBytes: 12288,
-    focusDigestsMaxBytes: 28672,
-    historyLookupMaxBytes: 28672,
-    queryLookupMaxBytes: 28672,
-    fileLookupMaxBytes: 28672,
-    actionFeedbackMaxBytes: 12288,
-    memoryMaxBytes: 12288,
-  },
-}
-
-const resolveContextBudgetTier = (params: {
-  wakeProfile: ManagerWakeProfile
-  inputCount: number
-  resultCount: number
-  activeFocusCount: number
-}): 'lite' | 'standard' | 'heavy' => {
-  const { wakeProfile, inputCount, resultCount, activeFocusCount } = params
-  if (wakeProfile === 'mixed') return 'standard'
-  if (activeFocusCount >= 3) return 'heavy'
-  if (resultCount >= 2) return 'standard'
-  if (inputCount >= 2) return 'standard'
-  if (wakeProfile === 'task_result') return 'standard'
-  return 'lite'
-}
-
-const countActiveFocuses = (runtime: RuntimeState): number =>
-  runtime.focuses.filter((focus) => focus.status === 'active').length
-
-const applyContextBudgetPreset = (
-  base: PromptSectionLimits,
-  tier: 'lite' | 'standard' | 'heavy',
-): PromptSectionLimits => {
-  const preset = CONTEXT_BUDGET_PRESETS[tier]
-  return Object.fromEntries(
-    Object.entries(base).map(([key, value]) => [
-      key,
-      Math.max(
-        MIN_PROMPT_SECTION_BYTES,
-        Math.floor(preset[key as keyof PromptSectionLimits] ?? value),
-      ),
-    ]),
-  ) as PromptSectionLimits
-}
-
-export const resolvePromptSectionLimitsForWakeProfile = (
-  base: PromptSectionLimits,
-  wakeProfile: ManagerWakeProfile,
-): PromptSectionLimits => {
-  const multipliers = WAKE_PROFILE_SECTION_MULTIPLIERS[wakeProfile]
-  if (!multipliers) return base
-  const entries = Object.entries(base) as Array<
-    [keyof PromptSectionLimits, number]
-  >
-  return Object.fromEntries(
-    entries.map(([key, value]) => {
-      const multiplier = multipliers[key] ?? 1
-      const next = Math.round(value * multiplier)
-      return [key, Math.max(MIN_PROMPT_SECTION_BYTES, next)]
-    }),
-  ) as PromptSectionLimits
-}
-
-export const trimPromptSectionLimitsForTaskResult = (
-  limits: PromptSectionLimits,
-): PromptSectionLimits => {
-  const trimKeys: Array<keyof PromptSectionLimits> = [
-    'tasksMaxBytes',
-    'batchResultsMaxBytes',
-    'recentHistoryMaxBytes',
-    'focusDigestsMaxBytes',
-    'historyLookupMaxBytes',
-    'queryLookupMaxBytes',
-    'fileLookupMaxBytes',
-  ]
-  return Object.fromEntries(
-    Object.entries(limits).map(([key, value]) => {
-      const typedKey = key as keyof PromptSectionLimits
-      if (!trimKeys.includes(typedKey)) return [typedKey, value]
-      return [
-        typedKey,
-        Math.max(
-          MIN_PROMPT_SECTION_BYTES,
-          Math.floor(value * TASK_RESULT_TRIM_MULTIPLIER),
-        ),
-      ]
-    }),
-  ) as PromptSectionLimits
-}
-
 export const runManagerRoundWithRecovery = async (params: {
   runtime: RuntimeState
   round: number
@@ -287,7 +86,12 @@ export const runManagerRoundWithRecovery = async (params: {
   promptPrefixHash: string
   threadId?: string | null
 }> => {
-  const wakeProfile = resolveWakeProfile(params.inputs, params.results)
+  const budgetDecision = resolveManagerContextBudgetDecision({
+    runtime: params.runtime,
+    inputs: params.inputs,
+    results: params.results,
+  })
+  const { wakeProfile } = budgetDecision
   const managerEnv = buildManagerEnv(params.runtime, wakeProfile)
   const packetMode = resolveManagerPacketMode({
     wakeProfile,
@@ -301,33 +105,16 @@ export const runManagerRoundWithRecovery = async (params: {
       params.extra.actionFeedback && params.extra.actionFeedback.length > 0,
     ),
   })
-  const budgetTier = resolveContextBudgetTier({
-    wakeProfile,
-    inputCount: params.inputs.length,
-    resultCount: params.results.length,
-    activeFocusCount: countActiveFocuses(params.runtime),
-  })
-  const wakeLimits = resolvePromptSectionLimitsForWakeProfile(
-    applyContextBudgetPreset(
-      params.runtime.config.manager.promptSections,
-      budgetTier,
-    ),
-    wakeProfile,
-  )
-  const taskResultTrimApplied =
-    ENABLE_TASK_RESULT_PROMPT_TRIM && wakeProfile === 'task_result'
-  const promptSectionLimits = taskResultTrimApplied
-    ? trimPromptSectionLimitsForTaskResult(wakeLimits)
-    : wakeLimits
+  const { promptSectionLimits } = budgetDecision
   void appendLog(params.runtime.paths.log, {
-    event: 'manager_context_budget_tier',
+    event: 'manager_context_budget_resolved',
+    policy: budgetDecision.policy,
     wakeProfile,
     packetMode,
-    tier: budgetTier,
-    inputCount: params.inputs.length,
-    resultCount: params.results.length,
-    activeFocusCount: countActiveFocuses(params.runtime),
-    taskResultTrimApplied,
+    inputCount: budgetDecision.inputCount,
+    resultCount: budgetDecision.resultCount,
+    activeFocusCount: budgetDecision.activeFocusCount,
+    promptSectionLimits,
   })
   const result = await runManager({
     stateDir: params.runtime.config.workDir,

@@ -1,6 +1,33 @@
-import { calcContextBudgetTier } from './score-runtime-window-data.js'
-
+import type { PromptSectionLimits } from '../../src/config.js'
 import type { LogRow } from './score-runtime-window-model.js'
+
+const PROMPT_SECTION_LIMIT_KEYS: Array<keyof PromptSectionLimits> = [
+  'actionFeedbackMaxBytes',
+  'batchResultsMaxBytes',
+  'environmentMaxBytes',
+  'fileLookupMaxBytes',
+  'focusContextsMaxBytes',
+  'focusListMaxBytes',
+  'historyLookupMaxBytes',
+  'inputsMaxBytes',
+  'memoryMaxBytes',
+  'packetSummaryMaxBytes',
+  'plansMaxBytes',
+  'queryLookupMaxBytes',
+  'recentHistoryMaxBytes',
+  'tasksMaxBytes',
+]
+
+const hasPromptSectionLimits = (
+  value: LogRow['promptSectionLimits'],
+): boolean =>
+  Boolean(
+    value &&
+      typeof value === 'object' &&
+      PROMPT_SECTION_LIMIT_KEYS.every(
+        (key) => typeof value[key] === 'number',
+      ),
+  )
 
 export const evaluateContextScore = (params: {
   logs: LogRow[]
@@ -14,24 +41,10 @@ export const evaluateContextScore = (params: {
   driftRounds: number
 } => {
   const budgetRows = params.logs.filter(
-    (row) => row.event === 'manager_context_budget_tier',
+    (row) => row.event === 'manager_context_budget_resolved',
   )
   const driftRounds = budgetRows.filter((row) => {
-    if (
-      typeof row.tier !== 'string' ||
-      typeof row.wakeProfile !== 'string' ||
-      typeof row.inputCount !== 'number' ||
-      typeof row.resultCount !== 'number' ||
-      typeof row.activeFocusCount !== 'number'
-    )
-      return false
-    const expected = calcContextBudgetTier({
-      wakeProfile: row.wakeProfile,
-      inputCount: row.inputCount,
-      resultCount: row.resultCount,
-      activeFocusCount: row.activeFocusCount,
-    })
-    return expected !== row.tier
+    return row.policy !== 'fixed' || !hasPromptSectionLimits(row.promptSectionLimits)
   }).length
 
   const managerRoundCount = params.logs.filter(
