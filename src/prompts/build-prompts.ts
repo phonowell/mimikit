@@ -1,3 +1,5 @@
+import { resolve } from 'node:path'
+
 import { buildFocusPromptPayload } from '../focus/index.js'
 import { buildPaths } from '../fs/paths.js'
 import { readHistory } from '../history/store.js'
@@ -377,7 +379,8 @@ export const buildManagerPrompt = async (params: {
 }): Promise<string> => (await buildManagerPromptPayload(params)).prompt
 
 export const buildWorkerPrompt = async (params: {
-  workDir: string
+  stateDir: string
+  workspaceDir: string
   task: Task
   focusMeta?: FocusMeta
   focusContext?: FocusContext
@@ -385,7 +388,7 @@ export const buildWorkerPrompt = async (params: {
 }): Promise<string> => {
   const systemSource = await loadPromptSource('worker/system.md')
   let taskPrompt = await prepareWorkerTaskPrompt({
-    workDir: params.workDir,
+    workDir: params.stateDir,
     taskId: params.task.id,
     taskCreatedAt: params.task.createdAt,
     taskPrompt: params.task.prompt,
@@ -405,7 +408,13 @@ export const buildWorkerPrompt = async (params: {
   return renderPromptTemplate(
     systemSource.template,
     {
-      environment: escapeCdata(formatEnvironment({ workDir: params.workDir })),
+      environment: escapeCdata(
+        formatEnvironment({
+          stateDir: params.stateDir,
+          workDir: params.workspaceDir,
+          generatedDir: resolve(params.stateDir, 'generated'),
+        }),
+      ),
       prompt: escapeCdata(taskPrompt),
       focus_context: focusContext ? escapeCdata(focusContext) : '',
     },

@@ -25,7 +25,7 @@ type LlmResult = {
 type BuildRunModelParams = {
   provider: WorkerProvider
   runtimeId: string
-  workDir: string
+  cwd: string
   timeoutMs: number
   proxy?: string
   model?: string
@@ -46,7 +46,7 @@ const buildRunModel =
       role: 'worker',
       prompt: input.prompt,
       runtimeId: params.runtimeId,
-      workDir: params.workDir,
+      workDir: params.cwd,
       timeoutMs: params.timeoutMs,
       ...(params.proxy ? { proxy: params.proxy } : {}),
       ...(params.abortSignal ? { abortSignal: params.abortSignal } : {}),
@@ -75,7 +75,7 @@ type WorkerRunnerParams = {
   provider: WorkerProvider
   runtimeId: string
   stateDir: string
-  workDir: string
+  cwd: string
   task: Task
   sessionId?: string
   focusMeta?: FocusMeta
@@ -99,7 +99,8 @@ export const runWorker = async (
   params: WorkerRunnerParams,
 ): Promise<LlmResult> => {
   const prompt = await buildWorkerPrompt({
-    workDir: params.workDir,
+    stateDir: params.stateDir,
+    workspaceDir: params.cwd,
     task: params.task,
     ...(params.focusMeta ? { focusMeta: params.focusMeta } : {}),
     ...(params.focusContext ? { focusContext: params.focusContext } : {}),

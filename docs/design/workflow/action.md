@@ -58,6 +58,7 @@
 
 参数约定（关键字段）：
 
+- `enqueue_task.cwd`：必填，worker 实际执行目录；manager 必须显式传，不能复用 runtime `work_dir`
 - `enqueue_task.provider`：可选 `codex|opencode`；可选值应来自 `M:environment.provider_candidates`（仅包含 enabled provider）
 - 未指定 `provider` 时，系统按配置自动选择：`billing` 最低优先；同档位下 `capability` 最高优先
 - `assign_focus`：`target_type(task|plan|history) + target_id + focus_id`
@@ -74,6 +75,7 @@
 - `mutate_task`：统一 task 生命周期控制（`op=pause|resume|cancel`），按 `op` 分发到 `worker/pause-task.ts`、`worker/resume-task.ts`、`worker/cancel-task.ts`，统一产出可追踪结构（`id`、`status`、`changeAt`）。
 - `ask_user_choice` 是 stop action：命中后当前 action 批次停止后续 apply。
 - `enqueue_task` 高成本确认闸门在 apply 与 validation 两侧同时生效：未确认时不入队，直接生成确认 choice。
+- `enqueue_task` 创建时会先解析 `cwd`；若命中 git 仓库，则记录 `repoKey + branch` 并据此参与 worker 排队锁。
 - `remember_memory`：立即写入 `memory/MEMORY.md`，仅接受 `content` 参数，并通过 `memory_remembered` system event 回执 `entry_id/ref/operation`。
 
 补充：

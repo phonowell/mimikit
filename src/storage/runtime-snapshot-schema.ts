@@ -132,6 +132,9 @@ export const taskSchema = z
     fingerprint: z.string().trim().min(1),
     prompt: z.string(),
     title: z.string(),
+    cwd: z.string().trim().min(1),
+    repoKey: z.string().trim().min(1).optional(),
+    branch: z.string().trim().min(1).optional(),
     contract: taskContractSchema.optional(),
     focusId: z.string().trim().min(1),
     cron: z.string().optional(),
@@ -157,6 +160,12 @@ export const taskSchema = z
   .refine(
     (data) => !(data.cron !== undefined && data.scheduledAt !== undefined),
     { message: 'task cron and scheduledAt are mutually exclusive' },
+  )
+  .refine(
+    (data) =>
+      (data.repoKey === undefined && data.branch === undefined) ||
+      (data.repoKey !== undefined && data.branch !== undefined),
+    { message: 'task repoKey and branch must be provided together' },
   )
 
 const planTriggerCronSchema = z

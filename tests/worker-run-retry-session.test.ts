@@ -63,6 +63,7 @@ const createTask = (id: string, overrides: Partial<Task> = {}): Task => ({
   fingerprint: `fp-${id}`,
   prompt: 'run task',
   title: 'run task',
+  cwd: '/tmp/run-retry-task',
   focusId: 'focus-global',
   profile: 'worker',
   provider: 'codex',

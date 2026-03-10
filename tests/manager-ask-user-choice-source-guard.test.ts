@@ -313,6 +313,7 @@ test('enqueue_task rejects disabled provider outside enabled set', () => {
         attrs: {
           prompt: 'run with free provider',
           title: 'use opencode',
+          cwd: '/tmp/use-opencode',
           goal: 'Run worker task',
           scope: 'Single task',
           acceptance_1: 'Produce output',
@@ -339,6 +340,7 @@ test('enqueue_task rejects missing task contract attrs', () => {
       attrs: {
         prompt: 'run task',
         title: 'missing contract',
+        cwd: '/tmp/missing-contract',
       },
     },
   ])
@@ -357,6 +359,7 @@ test('enqueue_task high-cost payload requires user confirmation first', () => {
         attrs: {
           prompt: 'x'.repeat(1300),
           title: 'high-cost',
+          cwd: '/tmp/high-cost-task',
           goal: 'Ship high-cost task',
           scope: 'All modules',
           acceptance_1: 'A',

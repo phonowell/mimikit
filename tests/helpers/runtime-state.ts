@@ -81,6 +81,7 @@ export const createTestRuntimeState = async (
     worker: {
       lastActivityAtMs: nowMs,
       runningControllers: new Map(),
+      runningTaskLocks: new Set(),
       createTaskDebounce: new Map(),
       queue,
       signalController: new AbortController(),

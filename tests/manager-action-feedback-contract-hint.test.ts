@@ -14,6 +14,7 @@ test('enqueue_task missing contract feedback includes actionable xml template', 
       attrs: {
         prompt: 'run task',
         title: 'missing contract',
+        cwd: '/tmp/missing-contract',
       },
     },
   ])
@@ -22,6 +23,7 @@ test('enqueue_task missing contract feedback includes actionable xml template', 
   const hint = feedback[0]?.hint ?? ''
   expect(hint).toContain(TASK_CONTRACT_REQUIRED_HINT)
   expect(hint).toContain('<M:enqueue_task prompt="run task"')
+  expect(hint).toContain('cwd="/tmp/missing-contract"')
   expect(hint).toContain('goal=')
   expect(hint).toContain('scope=')
   expect(hint).toContain('acceptance_1=')
@@ -33,6 +35,7 @@ test('buildTaskContractMissingHintFromAction escapes xml attrs safely', () => {
     attrs: {
       prompt: 'a "quoted" prompt',
       title: 'title with \\ slash',
+      cwd: '/tmp/task-cwd',
     },
   })
 
@@ -40,4 +43,5 @@ test('buildTaskContractMissingHintFromAction escapes xml attrs safely', () => {
   expect(isTaskContractMissingHint(hint ?? '')).toBe(true)
   expect(hint).toContain('prompt="a \\"quoted\\" prompt"')
   expect(hint).toContain('title="title with \\\\ slash"')
+  expect(hint).toContain('cwd="/tmp/task-cwd"')
 })

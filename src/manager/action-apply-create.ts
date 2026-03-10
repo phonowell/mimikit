@@ -6,6 +6,7 @@ import {
 import { appendTaskSystemMessage } from '../history/task-events.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
+import { resolveTaskExecutionTarget } from '../shared/task-execution-target.js'
 import { resolveSlotStatus } from '../worker/task-state-shared.js'
 
 import { applyAskUserChoiceAction } from './action-apply-choice.js'
@@ -85,12 +86,16 @@ export const applyRunTask = async (
   const focusId = resolveActionFocusId(runtime, parsed.data.focus_id)
   const contract = buildTaskContractFromAttrs(parsed.data)
   if (!contract) return 'continue'
+  const target = await resolveTaskExecutionTarget(parsed.data.cwd)
   const semanticKey = buildTaskSemanticKey({
     prompt: parsed.data.prompt,
     title: parsed.data.title,
+    cwd: target.cwd,
     profile,
     provider,
     focusId,
+    ...(target.repoKey ? { repoKey: target.repoKey } : {}),
+    ...(target.branch ? { branch: target.branch } : {}),
     contract,
   })
   const confirmation = resolveRunTaskConfirmationRequirement({
@@ -140,7 +145,7 @@ export const applyRunTask = async (
   }
   const debounce = markCreateAttempt(runtime, semanticKey)
   if (debounce.debounced) return 'continue'
-  const dedupeKey = `${parsed.data.prompt}\n${parsed.data.title}\n${profile}\n${provider}\n${focusId}`
+  const dedupeKey = `${parsed.data.prompt}\n${parsed.data.title}\n${target.cwd}\n${profile}\n${provider}\n${focusId}`
   const dedupeContractSuffix = [
     contract.goal,
     contract.scope,
@@ -160,9 +165,16 @@ export const applyRunTask = async (
     const activeFingerprint = buildTaskFingerprint({
       prompt: activeSemanticTask.prompt,
       title: activeSemanticTask.title,
+      cwd: activeSemanticTask.cwd,
       profile: activeSemanticTask.profile,
       provider: activeSemanticTask.provider,
       focusId: activeSemanticTask.focusId,
+      ...(activeSemanticTask.repoKey
+        ? { repoKey: activeSemanticTask.repoKey }
+        : {}),
+      ...(activeSemanticTask.branch
+        ? { branch: activeSemanticTask.branch }
+        : {}),
       ...(activeSemanticTask.contract
         ? { contract: activeSemanticTask.contract }
         : {}),
@@ -170,9 +182,12 @@ export const applyRunTask = async (
     const nextFingerprint = buildTaskFingerprint({
       prompt: parsed.data.prompt,
       title: parsed.data.title,
+      cwd: target.cwd,
       profile,
       provider,
       focusId,
+      ...(target.repoKey ? { repoKey: target.repoKey } : {}),
+      ...(target.branch ? { branch: target.branch } : {}),
       contract,
     })
     if (activeFingerprint !== nextFingerprint) {
@@ -195,10 +210,13 @@ export const applyRunTask = async (
     runtime.tasks,
     parsed.data.prompt,
     parsed.data.title,
+    target.cwd,
     profile,
     provider,
     undefined,
     focusId,
+    target.repoKey,
+    target.branch,
     contract,
   )
   if (!created) {

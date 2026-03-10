@@ -35,27 +35,37 @@ const resolveFingerprintTitle = (prompt: string, title?: string): string => {
 export const createTask = (
   prompt: string,
   title?: string,
+  cwd?: string,
   profile: WorkerProfile = 'worker',
   provider: WorkerProvider = 'codex',
   schedule?: string,
   focusId: FocusId = GLOBAL_FOCUS_ID,
+  repoKey?: string,
+  branch?: string,
   contract?: TaskContract,
 ): Task => {
   const id = `task-${newId()}`
   const resolvedTitle = resolveTitle(id, prompt, title)
+  if (!cwd?.trim()) throw new Error('task cwd is required')
   return {
     id,
     fingerprint: buildTaskFingerprint({
       prompt,
       title: resolvedTitle,
+      cwd,
       profile,
       provider,
       focusId,
       ...(schedule ? { schedule } : {}),
+      ...(repoKey ? { repoKey } : {}),
+      ...(branch ? { branch } : {}),
       ...(contract ? { contract } : {}),
     }),
     prompt,
     title: resolvedTitle,
+    cwd,
+    ...(repoKey ? { repoKey } : {}),
+    ...(branch ? { branch } : {}),
     ...(contract ? { contract } : {}),
     ...(schedule ? { cron: schedule } : {}),
     profile,
@@ -70,19 +80,26 @@ export const enqueueTask = (
   tasks: Task[],
   prompt: string,
   title?: string,
+  cwd?: string,
   profile: WorkerProfile = 'worker',
   provider: WorkerProvider = 'codex',
   schedule?: string,
   focusId: FocusId = GLOBAL_FOCUS_ID,
+  repoKey?: string,
+  branch?: string,
   contract?: TaskContract,
 ): EnqueueTaskResult => {
+  if (!cwd?.trim()) throw new Error('task cwd is required')
   const fingerprint = buildTaskFingerprint({
     prompt,
     title: resolveFingerprintTitle(prompt, title),
+    cwd,
     profile,
     provider,
     focusId,
     ...(schedule ? { schedule } : {}),
+    ...(repoKey ? { repoKey } : {}),
+    ...(branch ? { branch } : {}),
     ...(contract ? { contract } : {}),
   })
   const existing = tasks.find(
@@ -94,10 +111,13 @@ export const enqueueTask = (
   const task = createTask(
     prompt,
     title,
+    cwd,
     profile,
     provider,
     schedule,
     focusId,
+    repoKey,
+    branch,
     contract,
   )
   tasks.push(task)

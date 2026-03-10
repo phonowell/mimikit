@@ -39,15 +39,21 @@ test('normalizeWorkerTaskPrompt removes inline environment and extra blank lines
 
 test('buildWorkerPrompt externalizes oversized task prompt into generated dir', async () => {
   const root = await mkdtemp(join(tmpdir(), 'mimikit-worker-prompt-'))
-  const workDir = resolve(root, '.mimikit')
+  const stateDir = resolve(root, '.mimikit')
+  const workspaceDir = resolve(root, 'workspace')
   const prompt = `task: ${'detail '.repeat(260)}`
   const createdAt = '2026-03-04T12:34:56.000Z'
 
   const rendered = await buildWorkerPrompt({
-    workDir,
+    stateDir,
+    workspaceDir,
     task: {
       id: 'task-worker-prompt-externalize',
       prompt,
+      title: 'externalize prompt',
+      cwd: workspaceDir,
+      profile: 'worker',
+      provider: 'codex',
       status: 'pending',
       createdAt,
       focusId: 'focus-global',
@@ -76,14 +82,20 @@ test('buildWorkerPrompt externalizes oversized task prompt into generated dir', 
 
 test('buildWorkerPrompt injects related focus summary for worker context', async () => {
   const root = await mkdtemp(join(tmpdir(), 'mimikit-worker-focus-context-'))
-  const workDir = resolve(root, '.mimikit')
+  const stateDir = resolve(root, '.mimikit')
+  const workspaceDir = resolve(root, 'workspace')
   const now = new Date().toISOString()
 
   const rendered = await buildWorkerPrompt({
-    workDir,
+    stateDir,
+    workspaceDir,
     task: {
       id: 'task-worker-focus-context',
       prompt: '执行当前 focus 的交付任务',
+      title: 'focus task',
+      cwd: workspaceDir,
+      profile: 'worker',
+      provider: 'codex',
       status: 'pending',
       createdAt: now,
       focusId: 'focus-release',

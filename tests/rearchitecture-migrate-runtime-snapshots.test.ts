@@ -78,7 +78,7 @@ test('migrate-runtime-snapshots script reports migrated and unchanged files', as
   }
 
   expect(parsed.scanned).toBe(2)
-  expect(parsed.migrated).toBe(1)
-  expect(parsed.unchanged).toBe(1)
+  expect(parsed.migrated).toBe(2)
+  expect(parsed.unchanged).toBe(0)
   expect(parsed.failed).toBe(0)
 })

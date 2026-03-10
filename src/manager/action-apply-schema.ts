@@ -37,6 +37,7 @@ export const runTaskSchema = z
   .object({
     prompt: nonEmptyString,
     title: nonEmptyString,
+    cwd: nonEmptyString,
     goal: nonEmptyString.optional(),
     scope: nonEmptyString.optional(),
     acceptance_1: nonEmptyString.optional(),

@@ -85,7 +85,7 @@ test("manager prompt enforces concise reply and choice routing rules", async () 
     "仅从 `M:environment.provider_candidates` 选 `enqueue_task.provider`",
   );
   expect(prompt).toContain(
-    "`enqueue_task`：必填 `prompt,title,goal,scope,acceptance_1`",
+    "`enqueue_task`：必填 `prompt,title,cwd,goal,scope,acceptance_1`",
   );
   expect(prompt).toContain(
     "省略 `provider`，交给系统自动按“`billing` 更低优先，同档位 `capability` 更高优先”选择",

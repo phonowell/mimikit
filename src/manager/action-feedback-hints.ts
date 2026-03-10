@@ -29,6 +29,7 @@ const actionFeedbackHintSchema = z
     enqueue_task_contract_missing: z.string().trim().min(1),
     enqueue_task_contract_missing_default_prompt: z.string().trim().min(1),
     enqueue_task_contract_missing_default_title: z.string().trim().min(1),
+    enqueue_task_contract_missing_default_cwd: z.string().trim().min(1),
     enqueue_task_contract_missing_default_goal: z.string().trim().min(1),
     enqueue_task_contract_missing_default_scope: z.string().trim().min(1),
     enqueue_task_contract_missing_default_acceptance_1: z
@@ -133,6 +134,7 @@ export const formatEnqueueTaskRequiresConfirmationHint = (): string =>
 const FALLBACK_TASK_CONTRACT_HINT_VALUES = {
   prompt: templates.enqueue_task_contract_missing_default_prompt,
   title: templates.enqueue_task_contract_missing_default_title,
+  cwd: templates.enqueue_task_contract_missing_default_cwd,
   goal: templates.enqueue_task_contract_missing_default_goal,
   scope: templates.enqueue_task_contract_missing_default_scope,
   acceptance_1: templates.enqueue_task_contract_missing_default_acceptance_1,
@@ -152,6 +154,7 @@ const escapeActionAttrValue = (value: string): string =>
 export const formatEnqueueTaskContractMissingHint = (attrs?: {
   prompt?: string | undefined
   title?: string | undefined
+  cwd?: string | undefined
   goal?: string | undefined
   scope?: string | undefined
   acceptance_1?: string | undefined
@@ -162,6 +165,9 @@ export const formatEnqueueTaskContractMissingHint = (attrs?: {
     ),
     title: escapeActionAttrValue(
       trimOrFallback(attrs?.title, FALLBACK_TASK_CONTRACT_HINT_VALUES.title),
+    ),
+    cwd: escapeActionAttrValue(
+      trimOrFallback(attrs?.cwd, FALLBACK_TASK_CONTRACT_HINT_VALUES.cwd),
     ),
     goal: escapeActionAttrValue(
       trimOrFallback(attrs?.goal, FALLBACK_TASK_CONTRACT_HINT_VALUES.goal),

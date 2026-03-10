@@ -12,7 +12,9 @@ const createTask = (id: string, status: Task['status']): Task =>
     fingerprint: `fp-${id}`,
     prompt: 'test',
     title: 'test',
+    cwd: '/tmp/orchestrator-status',
     profile: 'worker',
+    provider: 'codex',
     status,
     createdAt: '2026-03-07T00:00:00.000Z',
   }) as Task
@@ -23,7 +25,7 @@ const createRuntime = (tasks: Task[]): RuntimeState =>
     config: defaultConfig({ workDir: '.mimikit' }),
     tasks,
     manager: { running: false },
-    worker: { runningControllers: new Map() },
+    worker: { runningControllers: new Map(), runningTaskLocks: new Set() },
   }) as RuntimeState
 
 test('pendingTasks excludes paused tasks for restart gating', () => {

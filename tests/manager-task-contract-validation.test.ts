@@ -9,6 +9,7 @@ test('enqueue_task requires goal/scope/acceptance_1 contract attrs', () => {
       attrs: {
         prompt: 'Do work',
         title: 'Task without contract',
+        cwd: '/tmp/task-without-contract',
       },
     },
   ])
@@ -27,6 +28,7 @@ test('enqueue_task accepts complete contract attrs', () => {
         attrs: {
           prompt: 'Do work',
           title: 'Task with contract',
+          cwd: '/tmp/task-with-contract',
           goal: 'Finish task',
           scope: 'Single deliverable',
           acceptance_1: 'Output exists',
@@ -40,4 +42,3 @@ test('enqueue_task accepts complete contract attrs', () => {
 
   expect(feedback).toHaveLength(0)
 })
-

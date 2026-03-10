@@ -8,10 +8,13 @@ import type {
 export type TaskFingerprintInput = {
   prompt: string
   title: string
+  cwd: string
   profile: WorkerProfile
   provider: WorkerProvider
   focusId?: string
   schedule?: string
+  repoKey?: string
+  branch?: string
   contract?: TaskContract
 }
 
@@ -53,11 +56,22 @@ const normalizeContractLines = (
 export const buildTaskSemanticKey = (input: TaskFingerprintInput): string => {
   const prompt = normalizeSemanticPart(input.prompt).slice(0, 180)
   const title = normalizeSemanticPart(input.title).slice(0, 96)
+  const cwd = normalizeSemanticPart(input.cwd)
   const focusId = normalizeSemanticPart(input.focusId ?? '')
   const schedule = normalizeSemanticPart(input.schedule ?? '')
-  return [input.profile, input.provider, focusId, title, prompt, schedule].join(
-    '\n',
-  )
+  const repoKey = normalizeSemanticPart(input.repoKey ?? '')
+  const branch = normalizeSemanticPart(input.branch ?? '')
+  return [
+    input.profile,
+    input.provider,
+    focusId,
+    title,
+    prompt,
+    schedule,
+    repoKey,
+    branch,
+    cwd,
+  ].join('\n')
 }
 
 export const buildTaskFingerprint = (input: TaskFingerprintInput): string =>
@@ -66,10 +80,13 @@ export const buildTaskFingerprint = (input: TaskFingerprintInput): string =>
     return [
       normalizeFingerprintPart(input.prompt),
       normalizeFingerprintPart(input.title),
+      normalizeFingerprintPart(input.cwd),
       input.profile,
       input.provider,
       normalizeFingerprintPart(input.focusId ?? ''),
       normalizeFingerprintPart(input.schedule ?? ''),
+      normalizeFingerprintPart(input.repoKey ?? ''),
+      normalizeFingerprintPart(input.branch ?? ''),
       contract,
     ].join('\n')
   })()
@@ -84,6 +101,9 @@ export const taskToFingerprintInput = (
     Task,
     | 'prompt'
     | 'title'
+    | 'cwd'
+    | 'repoKey'
+    | 'branch'
     | 'profile'
     | 'provider'
     | 'focusId'
@@ -94,6 +114,9 @@ export const taskToFingerprintInput = (
 ): TaskFingerprintInput => ({
   prompt: task.prompt,
   title: task.title,
+  cwd: task.cwd,
+  ...(task.repoKey ? { repoKey: task.repoKey } : {}),
+  ...(task.branch ? { branch: task.branch } : {}),
   profile: task.profile,
   provider: task.provider,
   focusId: task.focusId,

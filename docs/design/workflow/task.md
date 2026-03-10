@@ -20,9 +20,16 @@
 - 立即执行 Action：`<M:enqueue_task ... />`
 - 生命周期控制 Action：`<M:mutate_task id="task-..." op="pause|resume|cancel" />`
 - worker 任务 profile 固定为 `worker`
-- 单轮 action 去重键：`prompt + title + profile + provider + focusId + contract`
-- active 任务去重键：`task.fingerprint`（包含 `prompt/title/profile/provider/focusId/schedule/contract`）
+- `Task.cwd` 是任务执行目录；若 `cwd` 在 git 仓库内，会额外记录 `repoKey + branch`
+- 单轮 action 去重键：`prompt + title + cwd + profile + provider + focusId + contract`
+- active 任务去重键：`task.fingerprint`（包含 `prompt/title/cwd/profile/provider/focusId/schedule/repoKey/branch/contract`）
 - 语义冲突键：`task semantic key`，命中后会取消旧 active 任务并保留新任务
+
+## 资源排队
+
+- worker 排队命中同一 `repoKey + branch` 时，不会失败，也不会 cancel；后来的任务保持 `pending` 等待锁释放
+- 非 git 目录退化为 `cwd` 级别串行；同一目录只允许一个写任务运行
+- 不同 repo 或不同 branch 仍可并发，只受全局 worker 槽位限制
 
 ## 执行编排与回写
 

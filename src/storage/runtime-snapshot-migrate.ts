@@ -18,7 +18,7 @@ const dropLegacyRuntimeSnapshotFields = (source: Record<string, unknown>) => {
   return { next, changed }
 }
 
-const coerceRuntimeSnapshotV1ToV2 = (
+const coerceRuntimeSnapshotToCurrent = (
   source: Record<string, unknown>,
 ): Record<string, unknown> => {
   const { next } = dropLegacyRuntimeSnapshotFields(source)
@@ -45,7 +45,7 @@ export const migrateRuntimeSnapshotToCurrent = (
   const rawVersion =
     typeof record.schemaVersion === 'string' ? record.schemaVersion.trim() : ''
   if (!rawVersion) {
-    const migrated = coerceRuntimeSnapshotV1ToV2(record)
+    const migrated = coerceRuntimeSnapshotToCurrent(record)
     return {
       migrated,
       changed: true,
@@ -54,8 +54,8 @@ export const migrateRuntimeSnapshotToCurrent = (
     }
   }
   const major = parseRuntimeSnapshotSchemaMajor(rawVersion)
-  if (major === 1) {
-    const migrated = coerceRuntimeSnapshotV1ToV2(record)
+  if (major === 1 || major === 2) {
+    const migrated = coerceRuntimeSnapshotToCurrent(record)
     return {
       migrated,
       changed: true,

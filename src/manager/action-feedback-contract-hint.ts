@@ -13,6 +13,7 @@ export const buildTaskContractMissingHintFromAction = (
   return formatEnqueueTaskContractMissingHint({
     prompt: item.attrs.prompt,
     title: item.attrs.title,
+    cwd: item.attrs.cwd,
     goal: item.attrs.goal,
     scope: item.attrs.scope,
     acceptance_1: item.attrs.acceptance_1,

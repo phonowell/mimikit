@@ -85,6 +85,7 @@ export type RuntimeManagerState = {
 export type RuntimeWorkerState = {
   lastActivityAtMs: number
   runningControllers: Map<string, AbortController>
+  runningTaskLocks: Set<string>
   createTaskDebounce: Map<string, number>
   queue: PQueue
   signalController: AbortController
@@ -155,6 +156,7 @@ export const createRuntimeState = (
     worker: {
       lastActivityAtMs: nowMs,
       runningControllers: new Map(),
+      runningTaskLocks: new Set(),
       createTaskDebounce: new Map(),
       queue: new PQueue({ concurrency: config.worker.maxConcurrent }),
       signalController: new AbortController(),

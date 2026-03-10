@@ -79,7 +79,7 @@ const runTaskModel = (params: {
     provider: taskProvider,
     runtimeId: params.runtime.runtimeId,
     stateDir: params.runtime.config.workDir,
-    workDir: params.runtime.config.workDir,
+    cwd: params.task.cwd,
     task: params.task,
     ...(focusMeta ? { focusMeta } : {}),
     ...(focusContext ? { focusContext } : {}),

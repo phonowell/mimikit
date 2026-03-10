@@ -19,6 +19,7 @@ const CONTRACT_ATTRS = {
   scope: 'Single runnable worker task',
   acceptance_1: 'Return concrete output',
 }
+const TASK_CWD = '/tmp/manager-action-apply-task'
 
 const createRuntime = async (): Promise<RuntimeState> => {
   const runtime = await createTestRuntimeState({ pausedQueue: true })
@@ -42,6 +43,7 @@ test('enqueue_task re-enqueues pending task when fingerprint matches exactly', a
     fingerprint: 'same prompt',
     prompt: 'same prompt',
     title: 'old title',
+    cwd: TASK_CWD,
     contract: {
       goal: CONTRACT_ATTRS.goal,
       scope: CONTRACT_ATTRS.scope,
@@ -60,6 +62,7 @@ test('enqueue_task re-enqueues pending task when fingerprint matches exactly', a
       attrs: {
         prompt: 'same prompt',
         title: 'old title',
+        cwd: TASK_CWD,
         ...CONTRACT_ATTRS,
       },
     },
@@ -81,6 +84,7 @@ test('enqueue_task task_created system event includes worker slot status payload
       attrs: {
         prompt: 'generate release note',
         title: 'release-note',
+        cwd: TASK_CWD,
         ...CONTRACT_ATTRS,
       },
     },
@@ -108,6 +112,7 @@ test('enqueue_task dedupe does not block task creation when fingerprint differs'
     fingerprint: 'same prompt',
     prompt: 'same prompt',
     title: 'old title',
+    cwd: TASK_CWD,
     focusId: GLOBAL_FOCUS_ID,
     profile: 'worker',
     provider: 'codex',
@@ -121,6 +126,7 @@ test('enqueue_task dedupe does not block task creation when fingerprint differs'
       attrs: {
         prompt: 'same prompt',
         title: 'new title',
+        cwd: TASK_CWD,
         ...CONTRACT_ATTRS,
       },
     },
@@ -138,6 +144,7 @@ test('enqueue_task contract change does not reuse pending task', async () => {
     fingerprint: 'same prompt',
     prompt: 'same prompt',
     title: 'same title',
+    cwd: TASK_CWD,
     contract: {
       goal: 'Old goal',
       scope: 'Old scope',
@@ -156,6 +163,7 @@ test('enqueue_task contract change does not reuse pending task', async () => {
       attrs: {
         prompt: 'same prompt',
         title: 'same title',
+        cwd: TASK_CWD,
         goal: 'New goal',
         scope: 'New scope',
         acceptance_1: 'New acceptance',
@@ -185,6 +193,7 @@ test('enqueue_task without provider picks enabled provider by lowest billing the
       attrs: {
         prompt: 'prefer lowest billing',
         title: 'auto provider',
+        cwd: TASK_CWD,
         ...CONTRACT_ATTRS,
       },
     },
@@ -209,6 +218,7 @@ test('enqueue_task without provider picks higher capability when billing ties', 
       attrs: {
         prompt: 'prefer strongest capability at same billing',
         title: 'auto provider tie',
+        cwd: TASK_CWD,
         ...CONTRACT_ATTRS,
       },
     },
@@ -227,6 +237,7 @@ test('enqueue_task creates confirmation choice instead of dispatching high-cost 
       attrs: {
         prompt: 'x'.repeat(1300),
         title: 'high-cost task',
+        cwd: TASK_CWD,
         goal: 'Deliver all outputs',
         scope: 'Cross-module full implementation',
         acceptance_1: 'A',
@@ -277,6 +288,7 @@ test('enqueue_task dispatches high-cost task after explicit confirmation event',
       attrs: {
         prompt,
         title,
+        cwd: TASK_CWD,
         goal,
         scope,
         acceptance_1: acceptance[0] ?? 'A',
@@ -299,6 +311,7 @@ test('high-cost enqueue_task stops later actions in the same batch', async () =>
       attrs: {
         prompt: 'x'.repeat(1300),
         title: 'high-cost task',
+        cwd: TASK_CWD,
         goal: 'Deliver all outputs',
         scope: 'Cross-module full implementation',
         acceptance_1: 'A',
@@ -311,6 +324,7 @@ test('high-cost enqueue_task stops later actions in the same batch', async () =>
       attrs: {
         prompt: 'small task',
         title: 'small-task',
+        cwd: TASK_CWD,
         ...CONTRACT_ATTRS,
       },
     },
@@ -327,6 +341,7 @@ test('mutate_task with op=pause marks pending task as paused', async () => {
     fingerprint: 'pause fp',
     prompt: 'pause prompt',
     title: 'pause title',
+    cwd: TASK_CWD,
     focusId: GLOBAL_FOCUS_ID,
     profile: 'worker',
     provider: 'codex',
@@ -355,6 +370,7 @@ test('mutate_task with op=resume requeues paused task', async () => {
     fingerprint: 'resume fp',
     prompt: 'resume prompt',
     title: 'resume title',
+    cwd: TASK_CWD,
     focusId: GLOBAL_FOCUS_ID,
     profile: 'worker',
     provider: 'codex',
@@ -385,6 +401,7 @@ test('mutate_task with op=cancel marks paused task as canceled', async () => {
     fingerprint: 'cancel fp',
     prompt: 'cancel prompt',
     title: 'cancel title',
+    cwd: TASK_CWD,
     focusId: GLOBAL_FOCUS_ID,
     profile: 'worker',
     provider: 'codex',
@@ -429,6 +446,7 @@ test('ask_user_choice stores pending choice and stops later actions in same batc
       attrs: {
         prompt: 'this should not run before user picks',
         title: 'blocked by pending choice',
+        cwd: TASK_CWD,
         ...CONTRACT_ATTRS,
       },
     },
@@ -484,6 +502,7 @@ test('assign_focus updates task focus by explicit target_type', async () => {
     fingerprint: 'fp-1',
     prompt: 'do something',
     title: 'focus task',
+    cwd: TASK_CWD,
     focusId: GLOBAL_FOCUS_ID,
     profile: 'worker',
     provider: 'codex',

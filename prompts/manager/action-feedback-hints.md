@@ -35,11 +35,13 @@ enqueue_task_requires_confirmation: |
 enqueue_task_contract_missing: |
   enqueue_task 执行失败：缺少 task contract。请补充 goal、scope 与至少一条 acceptance_{n}（例如 acceptance_1）。
   请直接改成下面格式后重试：
-  <M:enqueue_task prompt="{{ prompt }}" title="{{ title }}" goal="{{ goal }}" scope="{{ scope }}" acceptance_1="{{ acceptance_1 }}" />
+  <M:enqueue_task prompt="{{ prompt }}" title="{{ title }}" cwd="{{ cwd }}" goal="{{ goal }}" scope="{{ scope }}" acceptance_1="{{ acceptance_1 }}" />
 enqueue_task_contract_missing_default_prompt: |
   请在此填写任务目标
 enqueue_task_contract_missing_default_title: |
   补全任务契约并执行
+enqueue_task_contract_missing_default_cwd: |
+  /absolute/path/to/workspace
 enqueue_task_contract_missing_default_goal: |
   完成用户请求的可交付结果
 enqueue_task_contract_missing_default_scope: |

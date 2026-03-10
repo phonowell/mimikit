@@ -11,7 +11,9 @@ import type { ManagerEnv } from '../types/index.js'
 type PromptTemplateValues = Record<string, string>
 type PromptEnvironmentParams = {
   env?: ManagerEnv
+  stateDir?: string
   workDir?: string
+  generatedDir?: string
 }
 
 const PROMPT_TEMPLATE_ENV = new Environment(
@@ -36,13 +38,21 @@ export const formatEnvironment = (params?: PromptEnvironmentParams): string => {
     if (value === undefined || value === '') return
     lines.push(`- ${label}: ${value}`)
   }
+  const stateDir = params?.stateDir?.trim()
+  const resolvedStateDir = stateDir ? resolve(stateDir) : undefined
   const workDir = params?.workDir?.trim()
   const resolvedWorkDir = workDir ? resolve(workDir) : undefined
+  const generatedDir = params?.generatedDir?.trim()
+  const resolvedGeneratedDir = generatedDir
+    ? resolve(generatedDir)
+    : resolvedStateDir
+      ? resolve(resolvedStateDir, 'generated')
+      : resolvedWorkDir
+        ? resolve(resolvedWorkDir, 'generated')
+        : undefined
+  push('state_dir', resolvedStateDir)
   push('work_dir', resolvedWorkDir)
-  push(
-    'generated_dir',
-    resolvedWorkDir ? resolve(resolvedWorkDir, 'generated') : undefined,
-  )
+  push('generated_dir', resolvedGeneratedDir)
   push('wake_profile', params?.env?.wakeProfile)
   const slots = params?.env?.workerSlots
   if (slots) {

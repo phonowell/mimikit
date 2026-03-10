@@ -83,6 +83,7 @@ test('persist+hydrate keeps reusable session on recovered pending task', async (
           fingerprint: 'fp-task-recover-session',
           prompt: 'resume pending work',
           title: 'Recover Session',
+          cwd: '/tmp/recover-session',
           focusId: GLOBAL_FOCUS_ID,
           profile: 'worker',
           provider: 'codex',

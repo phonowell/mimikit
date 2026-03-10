@@ -5,7 +5,6 @@ import { join } from 'node:path'
 import PQueue from 'p-queue'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 
-import { defaultConfig } from '../src/config.js'
 import { enqueuePendingWorkerTasks } from '../src/worker/dispatch.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
@@ -24,7 +23,7 @@ vi.mock('../src/worker/run-retry.js', () => ({
 const tempDirs: string[] = []
 
 const createTmpDir = async (): Promise<string> => {
-  const dir = await mkdtemp(join(tmpdir(), 'mimikit-worker-dispatch-focus-'))
+  const dir = await mkdtemp(join(tmpdir(), 'mimikit-worker-dispatch-repo-'))
   tempDirs.push(dir)
   return dir
 }
@@ -39,42 +38,25 @@ const createRuntime = async (): Promise<RuntimeState> => {
     maxConcurrent: 2,
   })
   runtime.config.worker.maxConcurrent = 2
-  const now = '2026-03-02T00:00:00.000Z'
-  runtime.focuses.push(
-    {
-      id: 'focus-a',
-      title: 'Focus A',
-      status: 'active',
-      createdAt: now,
-      updatedAt: now,
-      lastActivityAt: now,
-    },
-    {
-      id: 'focus-b',
-      title: 'Focus B',
-      status: 'active',
-      createdAt: now,
-      updatedAt: now,
-      lastActivityAt: now,
-    },
-  )
   runtime.worker.queue = new PQueue({
     concurrency: runtime.config.worker.maxConcurrent,
   })
   return runtime
 }
 
-const createTask = (id: string, focusId: string): Task => ({
+const createTask = (id: string, branch: string): Task => ({
   id,
   fingerprint: id,
   prompt: `prompt-${id}`,
   title: `task ${id}`,
   cwd: `/tmp/${id}`,
-  focusId,
+  repoKey: '/tmp/shared-repo/.git',
+  branch,
+  focusId: 'focus-global',
   profile: 'worker',
   provider: 'codex',
   status: 'pending',
-  createdAt: '2026-03-02T00:00:00.000Z',
+  createdAt: '2026-03-10T00:00:00.000Z',
 })
 
 beforeEach(() => {
@@ -87,56 +69,63 @@ afterEach(async () => {
   }
 })
 
-test('worker dispatch allows tasks in the same focus to run in parallel when slots are free', async () => {
+test('worker dispatch serializes tasks on the same repo and branch', async () => {
   const runtime = await createRuntime()
-  runtime.tasks.push(
-    createTask('task-a1', 'focus-a'),
-    createTask('task-a2', 'focus-a'),
-  )
+  runtime.tasks.push(createTask('task-main-a', 'main'), createTask('task-main-b', 'main'))
 
-  let globalRunning = 0
-  let maxGlobalRunning = 0
-  const runningByFocus = new Map<string, number>()
-  const maxByFocus = new Map<string, number>()
-
+  let running = 0
+  let maxRunning = 0
   runTaskWithRetryMock.mockImplementation(
-    async ({ task }: { task: Task }): Promise<WorkerLlmResult> => {
-      globalRunning += 1
-      if (globalRunning > maxGlobalRunning) maxGlobalRunning = globalRunning
-      const nextFocusRunning = (runningByFocus.get(task.focusId) ?? 0) + 1
-      runningByFocus.set(task.focusId, nextFocusRunning)
-      const currentMaxFocus = maxByFocus.get(task.focusId) ?? 0
-      if (nextFocusRunning > currentMaxFocus)
-        maxByFocus.set(task.focusId, nextFocusRunning)
+    async (): Promise<WorkerLlmResult> => {
+      running += 1
+      maxRunning = Math.max(maxRunning, running)
       await sleep(40)
-      const current = runningByFocus.get(task.focusId) ?? 0
-      runningByFocus.set(task.focusId, Math.max(0, current - 1))
-      globalRunning = Math.max(0, globalRunning - 1)
-      return {
-        output: `done ${task.id}`,
-        elapsedMs: 40,
-      }
+      running = Math.max(0, running - 1)
+      return { output: 'done', elapsedMs: 40 }
     },
   )
 
-  for (let round = 0; round < 4; round += 1) {
+  for (let round = 0; round < 6; round += 1) {
     enqueuePendingWorkerTasks(runtime)
     await runtime.worker.queue.onIdle()
-    if (
-      runtime.tasks.every(
-        (task) =>
-          task.status === 'succeeded' ||
-          task.status === 'failed' ||
-          task.status === 'canceled',
-      )
-    )
-      break
+    if (runtime.tasks.every((task) => task.status === 'succeeded')) break
   }
 
   expect(runtime.tasks.map((task) => task.status)).toEqual([
     'succeeded',
     'succeeded',
   ])
-  expect(maxByFocus.get('focus-a')).toBe(2)
-  expect(maxGlobalRunning).toBe(2)
+  expect(maxRunning).toBe(1)
+})
+
+test('worker dispatch keeps different branches parallel when slots are free', async () => {
+  const runtime = await createRuntime()
+  runtime.tasks.push(
+    createTask('task-worktree-1', 'worktree-1'),
+    createTask('task-worktree-2', 'worktree-2'),
+  )
+
+  let running = 0
+  let maxRunning = 0
+  runTaskWithRetryMock.mockImplementation(
+    async (): Promise<WorkerLlmResult> => {
+      running += 1
+      maxRunning = Math.max(maxRunning, running)
+      await sleep(40)
+      running = Math.max(0, running - 1)
+      return { output: 'done', elapsedMs: 40 }
+    },
+  )
+
+  for (let round = 0; round < 4; round += 1) {
+    enqueuePendingWorkerTasks(runtime)
+    await runtime.worker.queue.onIdle()
+    if (runtime.tasks.every((task) => task.status === 'succeeded')) break
+  }
+
+  expect(runtime.tasks.map((task) => task.status)).toEqual([
+    'succeeded',
+    'succeeded',
+  ])
+  expect(maxRunning).toBe(2)
 })

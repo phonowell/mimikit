@@ -15,6 +15,7 @@ import {
   markTaskSucceeded,
 } from '../orchestrator/core/task-lifecycle.js'
 import { requestTaskResumeChoice } from '../orchestrator/core/task-resume-choice.js'
+import { buildTaskDispatchLockKey } from '../shared/task-execution-target.js'
 import { isSameUsage } from '../shared/token-usage.js'
 
 import { clearTaskLiveOutput, setTaskLiveOutput } from './live-output.js'
@@ -152,9 +153,12 @@ const runQueuedWorker = async (
 ): Promise<void> => {
   if (task.status !== 'pending') return
   if (runtime.worker.runningControllers.has(task.id)) return
+  const dispatchLockKey = buildTaskDispatchLockKey(task)
+  if (runtime.worker.runningTaskLocks.has(dispatchLockKey)) return
   runtime.worker.lastActivityAtMs = Date.now()
   clearTaskLiveOutput(runtime, task.id)
   const controller = new AbortController()
+  runtime.worker.runningTaskLocks.add(dispatchLockKey)
   runtime.worker.runningControllers.set(task.id, controller)
   markTaskRunning(runtime.tasks, task.id)
   notifyUiSignal(runtime)
@@ -187,6 +191,7 @@ const runQueuedWorker = async (
     clearInterval(longTaskTimer)
     clearTaskLiveOutput(runtime, task.id)
     runtime.worker.runningControllers.delete(task.id)
+    runtime.worker.runningTaskLocks.delete(dispatchLockKey)
     notifyManagerLoop(runtime)
     await bestEffort('persistRuntimeState: worker_end', () =>
       persistRuntimeState(runtime),

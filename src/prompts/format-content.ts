@@ -157,6 +157,9 @@ const formatTaskEntry = (
     id: task.id,
     status: task.status,
     provider: task.provider,
+    cwd: toDisplayPath(task.cwd, workDir),
+    ...(task.repoKey ? { repo_key: task.repoKey } : {}),
+    ...(task.branch ? { branch: task.branch } : {}),
     title: resolveTaskLabel(task),
     changed_at: resolveTaskChangedAt(task),
     prompt: truncateText(task.prompt, TASK_PROMPT_MAX_CHARS, {
@@ -185,6 +188,7 @@ const buildFallbackTask = (result: TaskResult): Task => ({
   fingerprint: '',
   prompt: '',
   title: result.title ?? result.taskId,
+  cwd: 'unknown-task-cwd',
   profile: 'worker',
   provider: result.provider ?? 'codex',
   status:

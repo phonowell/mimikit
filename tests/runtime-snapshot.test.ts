@@ -22,6 +22,7 @@ const createTaskFixture = (overrides: Partial<Task> = {}): Task => ({
   fingerprint: 'task-1',
   prompt: 'check',
   title: 'Check',
+  cwd: '/tmp/runtime-snapshot-task',
   focusId: GLOBAL_FOCUS_ID,
   profile: 'worker',
   provider: 'codex',
@@ -57,6 +58,7 @@ test('selectPersistedTasks recovers running task to pending', () => {
       fingerprint: 'b',
       prompt: 'b',
       title: 'b',
+      cwd: '/tmp/runtime-snapshot-b',
       focusId: GLOBAL_FOCUS_ID,
       profile: 'worker',
       provider: 'codex',
@@ -112,7 +114,7 @@ test('runtime snapshot accepts queue cursors', async () => {
   })
 
   const loaded = await loadRuntimeSnapshot(stateDir)
-  expect(loaded.schemaVersion).toBe('runtime-snapshot.v2')
+  expect(loaded.schemaVersion).toBe('runtime-snapshot.v3')
   expect(loaded.queues?.resultsCursor).toBe(9)
   expect(loaded.queues?.inputsCursor).toBe(3)
   expect(loaded.managerFocusCompressedContexts?.[0]?.summary).toContain(
@@ -138,7 +140,7 @@ test('runtime snapshot auto-migrates when schemaVersion is missing', async () =>
     'utf8',
   )
   const loaded = await loadRuntimeSnapshot(stateDir)
-  expect(loaded.schemaVersion).toBe('runtime-snapshot.v2')
+  expect(loaded.schemaVersion).toBe('runtime-snapshot.v3')
   expect(loaded.queues?.inputsCursor).toBe(1)
   expect(loaded.queues?.resultsCursor).toBe(2)
 })
@@ -161,7 +163,7 @@ test('runtime snapshot drops legacy activeFocusIds during load', async () => {
   )
 
   const loaded = await loadRuntimeSnapshot(stateDir)
-  expect(loaded.schemaVersion).toBe('runtime-snapshot.v2')
+  expect(loaded.schemaVersion).toBe('runtime-snapshot.v3')
   expect(loaded.queues?.inputsCursor).toBe(1)
   expect(loaded.queues?.resultsCursor).toBe(2)
 })
@@ -412,6 +414,7 @@ test('runtime snapshot rejects legacy next fields', async () => {
           fingerprint: 'task-legacy-next',
           prompt: 'legacy',
           title: 'legacy',
+          cwd: '/tmp/runtime-snapshot-legacy-next',
           focusId: GLOBAL_FOCUS_ID,
           profile: 'worker',
           provider: 'codex',
@@ -497,7 +500,7 @@ test('saveRuntimeSnapshot writes previous primary content into .bak', async () =
   const primaryRaw = await readFile(primaryPath, 'utf8')
   const backupRaw = await readFile(`${primaryPath}.bak`, 'utf8')
   expect(JSON.parse(primaryRaw)).toEqual({
-    schemaVersion: 'runtime-snapshot.v2',
+    schemaVersion: 'runtime-snapshot.v3',
     ...nextSnapshot,
   })
   expect(JSON.parse(backupRaw)).toEqual(oldSnapshot)
