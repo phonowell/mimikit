@@ -22,10 +22,22 @@ test('clearStateDir rejects non-state directories with unexpected entries', asyn
 test('clearStateDir clears recognized runtime state directories', async () => {
   const workDir = await createTmpDir()
   await Promise.all([
+    mkdir(join(workDir, 'generated', 'worker-task-prompts', '2026-03-11'), {
+      recursive: true,
+    }),
+    mkdir(join(workDir, 'history'), { recursive: true }),
     mkdir(join(workDir, 'inputs'), { recursive: true }),
+    mkdir(join(workDir, 'memory'), { recursive: true }),
+    mkdir(join(workDir, 'results'), { recursive: true }),
     mkdir(join(workDir, 'runtime'), { recursive: true }),
+    mkdir(join(workDir, 'task-progress', '2026-03-11'), { recursive: true }),
     mkdir(join(workDir, 'tasks'), { recursive: true }),
+    mkdir(join(workDir, 'traces', '2026-03-11'), { recursive: true }),
+    mkdir(join(workDir, 'usage'), { recursive: true }),
+    writeFile(join(workDir, '.instance'), 'lock', 'utf8'),
     writeFile(join(workDir, 'log.jsonl'), '{"ok":true}\n', 'utf8'),
+    writeFile(join(workDir, 'runtime-snapshot.json'), '{}\n', 'utf8'),
+    writeFile(join(workDir, 'runtime-snapshot.json.bak'), '{}\n', 'utf8'),
   ])
 
   await clearStateDir(workDir)

@@ -39,3 +39,6 @@ jobs:
 
       - name: Test
         run: pnpm run test
+
+      - name: Verify tracked tree clean
+        run: git diff --exit-code

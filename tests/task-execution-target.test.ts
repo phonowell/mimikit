@@ -16,7 +16,11 @@ const createTmpDir = async (): Promise<string> => {
 }
 
 const runGit = (cwd: string, args: string[]): string =>
-  execFileSync('git', args, { cwd, encoding: 'utf8' }).trim()
+  execFileSync('git', args, {
+    cwd,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  }).trim()
 
 afterEach(async () => {
   for (const dir of tempDirs.splice(0, tempDirs.length)) {
@@ -43,7 +47,11 @@ test('resolveTaskExecutionTarget extracts git common dir and branch from worktre
       '-m',
       'init',
     ],
-    { cwd: repoDir, encoding: 'utf8' },
+    {
+      cwd: repoDir,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    },
   )
   runGit(repoDir, ['worktree', 'add', '-b', 'feature', worktreeDir, 'HEAD'])
 

@@ -6,6 +6,23 @@ import { z } from 'zod'
 
 import { ensureDir } from '../fs/paths.js'
 
+const RESETTABLE_STATE_ENTRY_NAMES = new Set([
+  '.instance',
+  'generated',
+  'history',
+  'inputs',
+  'log.jsonl',
+  'memory',
+  'results',
+  'runtime',
+  'runtime-snapshot.json',
+  'runtime-snapshot.json.bak',
+  'task-progress',
+  'tasks',
+  'traces',
+  'usage',
+])
+
 export const resolveRoots = () => {
   const __dirname = fileURLToPath(new URL('.', import.meta.url))
   const rootDir = resolve(__dirname, '..', '..')
@@ -33,6 +50,12 @@ export const clearStateDir = async (stateDir: string): Promise<void> => {
 
   await ensureDir(resolved)
   const entries = await readdir(resolved, { withFileTypes: true })
+  const hasUnexpectedEntry = entries.some(
+    (entry) => !RESETTABLE_STATE_ENTRY_NAMES.has(entry.name),
+  )
+  if (hasUnexpectedEntry)
+    throw new Error(`refusing to clear unsafe state dir: ${resolved}`)
+
   await Promise.all(
     entries.map((entry) =>
       rm(join(resolved, entry.name), { recursive: true, force: true }),
