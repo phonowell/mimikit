@@ -222,18 +222,6 @@ const formatUnknownKeys = (issues: readonly UnknownKeyIssue[]): string[] => {
   return [...new Set(values)].sort((left, right) => left.localeCompare(right))
 }
 
-const LEGACY_RUNTIME_ONLY_KEYS = new Set([
-  'manager.maxCorrectionRounds',
-  'manager.promptSections',
-  'manager.taskCreate',
-  'manager.taskWindow',
-  'manager.planWindow',
-  'worker.retry',
-])
-
-const filterReportableUnknownKeys = (keys: readonly string[]): string[] =>
-  keys.filter((key) => !LEGACY_RUNTIME_ONLY_KEYS.has(key))
-
 const asRecord = (value: unknown): Record<string, unknown> | undefined =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -420,7 +408,7 @@ const parseConfigInput = (
 
   return {
     config: buildUserConfigDefaults(revalidated.data),
-    unknownKeys: filterReportableUnknownKeys(formatUnknownKeys(unknownIssues)),
+    unknownKeys: formatUnknownKeys(unknownIssues),
   }
 }
 

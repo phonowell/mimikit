@@ -61,7 +61,7 @@
 - 从预算暂停恢复时，会先清理旧 `task.result`/`archivePath`，避免历史部分结果阻塞下一次结果消费。
 - 预算暂停会生成一个显式恢复 choice：默认项是 `Keep paused`；当前实现默认不自动超时，用户返回后选择 `Continue now` 会直接调用恢复链路。
 - 该 choice 会随 `pendingUserChoices` 一起持久化；若 snapshot 中缺失但任务态存在 `paused + partial + budget_exhausted`，启动时会按任务态补回同等恢复入口。
-- `runtime-snapshot` 不再对旧 choice/schema 做运行期兼容；旧状态需先离线迁移后再加载。
+- `runtime-snapshot` 不再对旧 choice/schema 做任何兼容；旧状态文件会被直接拒绝，需人工清理或重写后再启动。
 - `paused` 状态支持继续 `cancel`，行为与 `pending` 取消一致（直接产出 `canceled` 结果）。
 - WebUI 二级菜单提供 `pause/resume/cancel` 控制动作；对预算暂停的可恢复任务，还会在任务行直接暴露 inline `Continue` 入口；pause/resume 会写入系统事件消息。
 

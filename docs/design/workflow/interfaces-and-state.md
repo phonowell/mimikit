@@ -193,7 +193,7 @@ schema：`src/storage/runtime-snapshot-schema.ts`
 
 - `channelTargets`、`managerLastContextPacket`、`managerLastUsage`、`managerUsageTotal` 都是进程内交互/观测态，不进入 snapshot。
 - `channelTargets` 启动时会从最近 history 用户消息中的 chat id 恢复。
-- `runtime-snapshot` 运行期只接受当前 `schemaVersion`；旧版本只允许通过离线迁移脚本转换，不在加载阶段自动兼容。
+- `runtime-snapshot` 运行期只接受当前 `schemaVersion`；旧版本/旧字段会被直接拒绝，不再提供仓内迁移脚本。
 - `workerUsageTotal` 不持久化到 snapshot；`GET /api/status` 会在返回时按 `tasks[*].result.usage ?? tasks[*].usage` 实时聚合。
 
 恢复一致性规则（启动阶段）：

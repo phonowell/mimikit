@@ -9,8 +9,6 @@ import {
   CANONICAL_HEADING_RE,
   ensureMemoryEntryId,
   HEADING_RE,
-  LEGACY_REMEMBER_HEADING_RE,
-  LEGACY_TIMESTAMP_HEADING_RE,
   normalizeCsv,
   normalizeInline,
   normalizeSource,
@@ -23,6 +21,8 @@ import {
 
 const parseBlock = (heading: string, body: string): MemoryEntry | undefined => {
   const normalizedHeading = normalizeInline(heading)
+  const canonical = normalizedHeading.match(CANONICAL_HEADING_RE)
+  if (!canonical?.[1]) return undefined
   const parsed = parseMetaAndContent(body)
 
   const titleMeta = parsed.meta.get('title')
@@ -33,66 +33,34 @@ const parseBlock = (heading: string, body: string): MemoryEntry | undefined => {
   const evidenceIds = normalizeCsv(parsed.meta.get('evidence_ids'))
   const focusHints = normalizeCsv(parsed.meta.get('focus_hints'))
 
-  let idFromHeading: string | undefined
-  let titleFromHeading: string | undefined
-  let updatedAtFromHeading: string | undefined
-  let sourceFromHeading: MemoryEntry['source'] = 'unknown'
-  let categoryFromHeading: string | undefined
-  let dedupeKeyFromHeading: string | undefined
-
-  const canonical = normalizedHeading.match(CANONICAL_HEADING_RE)
-  if (canonical?.[1]) idFromHeading = canonical[1]
-  else {
-    const legacyRemember = normalizedHeading.match(LEGACY_REMEMBER_HEADING_RE)
-    if (legacyRemember) {
-      categoryFromHeading = legacyRemember[1]?.trim().toLowerCase()
-      dedupeKeyFromHeading = legacyRemember[2]?.trim().toLowerCase()
-      idFromHeading = legacyRemember[3]?.trim().toLowerCase()
-      sourceFromHeading = 'remember'
-    } else {
-      const legacyTimestamp = normalizedHeading.match(
-        LEGACY_TIMESTAMP_HEADING_RE,
-      )
-      if (legacyTimestamp) {
-        titleFromHeading = normalizeInline(legacyTimestamp[1] ?? '')
-        updatedAtFromHeading = legacyTimestamp[2]?.trim()
-        sourceFromHeading = 'refresh'
-      } else titleFromHeading = normalizedHeading
-    }
-  }
-
   const content = truncateContent(parsed.content)
-  const title = truncateTitle(
-    normalizeInline(titleMeta ?? titleFromHeading ?? 'Memory'),
-  )
+  const title = truncateTitle(normalizeInline(titleMeta ?? 'Memory'))
   if (!title && !content) return undefined
 
-  const seed = [
-    title,
-    content,
-    updatedAtFromHeading ?? updatedAtMeta ?? '',
-  ].join('\n')
-  const id = ensureMemoryEntryId(parsed.meta.get('id') ?? idFromHeading ?? seed)
+  const id = ensureMemoryEntryId(parsed.meta.get('id') ?? canonical[1])
 
   return {
     id,
     title: title || 'Memory',
     content,
-    updatedAt: normalizeUpdatedAt(updatedAtMeta ?? updatedAtFromHeading),
-    source: normalizeSource(sourceMeta ?? sourceFromHeading),
-    ...((categoryMeta ?? categoryFromHeading)
-      ? { category: normalizeInline(categoryMeta ?? categoryFromHeading ?? '') }
-      : {}),
-    ...((dedupeKeyMeta ?? dedupeKeyFromHeading)
-      ? {
-          dedupeKey: normalizeInline(
-            dedupeKeyMeta ?? dedupeKeyFromHeading ?? '',
-          ),
-        }
-      : {}),
+    updatedAt: normalizeUpdatedAt(updatedAtMeta),
+    source: normalizeSource(sourceMeta),
+    ...(categoryMeta ? { category: normalizeInline(categoryMeta) } : {}),
+    ...(dedupeKeyMeta ? { dedupeKey: normalizeInline(dedupeKeyMeta) } : {}),
     ...(evidenceIds ? { evidenceIds } : {}),
     ...(focusHints ? { focusHints } : {}),
   }
+}
+
+const findFirstNonCanonicalHeading = (markdown: string): string | undefined => {
+  const source = markdown.replace(/\r\n/g, '\n')
+  for (const line of source.split('\n')) {
+    const heading = line.match(HEADING_RE)
+    if (!heading?.[1]) continue
+    if (CANONICAL_HEADING_RE.test(normalizeInline(heading[1]))) continue
+    return heading[1]
+  }
+  return undefined
 }
 
 export const parseMemoryEntries = (markdown: string): MemoryEntry[] => {
@@ -157,6 +125,9 @@ export const readMemoryEntries = async (
   memoryPath: string,
 ): Promise<MemoryEntry[]> => {
   const markdown = await readTextFileIfExists(memoryPath)
+  const invalidHeading = findFirstNonCanonicalHeading(markdown)
+  if (invalidHeading)
+    throw new Error(`memory heading format not supported: ${invalidHeading}`)
   return parseMemoryEntries(markdown)
 }
 

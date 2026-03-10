@@ -5,7 +5,6 @@ import { join } from 'node:path'
 import { expect, test, vi } from 'vitest'
 
 import { buildTaskViews } from '../src/orchestrator/read-model/task-view.js'
-import { migrateRuntimeSnapshotToCurrent } from '../src/storage/runtime-snapshot-migrate.js'
 import {
   loadRuntimeSnapshot,
   saveRuntimeSnapshot,
@@ -535,63 +534,4 @@ test('saveRuntimeSnapshot writes previous primary content into .bak', async () =
     ...nextSnapshot,
   })
   expect(JSON.parse(backupRaw)).toEqual(oldSnapshot)
-})
-
-test('migrateRuntimeSnapshotToCurrent upgrades v4 focusContexts to current focusDigests', () => {
-  const result = migrateRuntimeSnapshotToCurrent({
-    schemaVersion: 'runtime-snapshot.v4',
-    tasks: [],
-    taskPlans: [],
-    focusContexts: [
-      {
-        focusId: 'focus-release',
-        summary: 'release summary',
-        updatedAt: SNAPSHOT_BASE_TIME,
-      },
-    ],
-  })
-
-  expect(result.changed).toBe(true)
-  expect(result.fromVersion).toBe('runtime-snapshot.v4')
-  expect(result.toVersion).toBe('runtime-snapshot.v6')
-  expect(result.migrated).toMatchObject({
-    schemaVersion: 'runtime-snapshot.v6',
-    focusDigests: [
-      {
-        focusId: 'focus-release',
-        summary: 'release summary',
-        updatedAt: SNAPSHOT_BASE_TIME,
-      },
-    ],
-  })
-  expect(result.migrated).not.toHaveProperty('focusContexts')
-})
-
-test('migrateRuntimeSnapshotToCurrent upgrades v5 snapshot to current version', () => {
-  const result = migrateRuntimeSnapshotToCurrent({
-    schemaVersion: 'runtime-snapshot.v5',
-    tasks: [],
-    taskPlans: [],
-    focusDigests: [
-      {
-        focusId: 'focus-release',
-        summary: 'release summary',
-        updatedAt: SNAPSHOT_BASE_TIME,
-      },
-    ],
-  })
-
-  expect(result.changed).toBe(true)
-  expect(result.fromVersion).toBe('runtime-snapshot.v5')
-  expect(result.toVersion).toBe('runtime-snapshot.v6')
-  expect(result.migrated).toMatchObject({
-    schemaVersion: 'runtime-snapshot.v6',
-    focusDigests: [
-      {
-        focusId: 'focus-release',
-        summary: 'release summary',
-        updatedAt: SNAPSHOT_BASE_TIME,
-      },
-    ],
-  })
 })

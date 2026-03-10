@@ -85,8 +85,7 @@
 - `schema_coverage_rate = schema_valid_events / total_governed_events`
 - `schema_version_conflict_rate = schema_version_conflicts / total_schema_checked_events`
 
-### 5.2 迁移与路由不变量相关
-- `migration_integrity_rate = migrated_records_passed / total_migrated_records`
+### 5.2 路由不变量相关
 - `dual_truth_rate = dual_truth_records / total_checked_records`
 - `focus_key_determinism_rate = deterministic_routes / replayed_route_cases`
 
@@ -234,7 +233,7 @@
 
 ### 11.4 新增治理指标
 - `schema_coverage_rate`、`schema_version_conflict_rate`
-- `migration_integrity_rate`、`dual_truth_rate`
+- `dual_truth_rate`
 - `contract_completeness_rate`、`continuity_contract_match_rate`、`evidence_quality_pass_rate`
 - `manager_reask_rate`、`context_waste_ratio`、`detail_recall_success_rate`、`context_budget_drift`
 - `cron_trigger_success_rate`、`cron_duplicate_suppression_rate`、`cron_false_trigger_rate`、`cron_trigger_latency_p95`
@@ -264,7 +263,6 @@
 ### 12.2 唯一 No-Go 硬闸门（任一不满足即 No-Go）
 - `schema_coverage_rate >= 99%`
 - `schema_version_conflict_rate <= 0.5%`
-- `migration_integrity_rate >= 99%`
 - `dual_truth_rate <= 0.5%`
 - `focus_key_determinism_rate >= 99%`
 - `contract_completeness_rate >= 99%`
@@ -307,7 +305,6 @@
 治理指标:
 - schema_coverage_rate: ...
 - schema_version_conflict_rate: ...
-- migration_integrity_rate: ...
 - dual_truth_rate: ...
 - focus_key_determinism_rate: ...
 - contract_completeness_rate: ...
@@ -416,15 +413,6 @@ tsx scripts/rearchitecture/replay-golden-set.ts --work-dir=.mimikit --golden-set
 - `goldenReplayMatchRate`
 - `replayDeterminismRate`
 - 每条样本的 match 明细
-
-### 17.3 Schema 迁移演练
-```bash
-tsx scripts/rearchitecture/migrate-runtime-snapshots.ts --root=.mimikit --write=false --output=overflows/reports/runtime-migration-report.json
-```
-
-输出：
-- `scanned/migrated/unchanged/failed`
-- 每个 `runtime-snapshot.json` 的迁移结果与校验状态
 
 ### 17.3 结果解释规则
 1. 若评分输出含 `not_collected`：

@@ -1,4 +1,4 @@
-import { mkdtemp, readFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -106,4 +106,48 @@ test('rememberMemoryEntry serializes concurrent writes on same dedupe key', asyn
   expect(entries).toHaveLength(1)
   for (let index = 0; index < 6; index += 1)
     expect(markdown).toContain(`parallel-note-${index + 1}`)
+})
+
+test('parseMemoryEntries ignores non-canonical legacy headings', () => {
+  const markdown = [
+    '## [memory-entry:general:auto-1] (id:memory-legacy)',
+    'title: legacy remember',
+    'updated_at: 2026-03-11T00:00:00.000Z',
+    'source: remember',
+    '',
+    'legacy body',
+    '',
+    '## Legacy note (2026-03-11T00:00:00.000Z)',
+    'title: legacy refresh',
+    'updated_at: 2026-03-11T00:00:00.000Z',
+    'source: refresh',
+    '',
+    'legacy refresh body',
+  ].join('\n')
+
+  expect(parseMemoryEntries(markdown)).toEqual([])
+})
+
+test('rememberMemoryEntry rejects non-canonical legacy headings instead of overwriting them', async () => {
+  const workDir = await createTmpDir()
+  const memoryPath = join(workDir, 'memory', 'MEMORY.md')
+  await mkdir(join(workDir, 'memory'), { recursive: true })
+  await writeFile(
+    memoryPath,
+    [
+      '## [memory-entry:general:auto-1] (id:memory-legacy)',
+      'title: legacy remember',
+      'updated_at: 2026-03-11T00:00:00.000Z',
+      'source: remember',
+      '',
+      'legacy body',
+    ].join('\n'),
+    'utf8',
+  )
+
+  await expect(
+    rememberMemoryEntry(memoryPath, {
+      content: 'new memory entry',
+    }),
+  ).rejects.toThrow(/memory heading format not supported/i)
 })

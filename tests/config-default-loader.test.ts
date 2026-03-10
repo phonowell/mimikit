@@ -103,7 +103,7 @@ test('supports manager and provider proxy overrides', async () => {
   expect(config.opencode.proxy).toBe('http://127.0.0.1:7899')
 })
 
-test('supports manager model overrides and ignores runtime-only compatibility keys', async () => {
+test('supports manager model overrides and ignores unknown keys after reporting them', async () => {
   const path = await writeTempConfig(
     [
       '[manager]',
@@ -121,14 +121,24 @@ test('supports manager model overrides and ignores runtime-only compatibility ke
     ].join('\n'),
   )
 
-  const config = loadDefaultConfigFromToml(path)
+  let unknownKeys: string[] = []
+  const config = loadDefaultConfigFromToml(path, {
+    onUnknownKeys: (keys) => {
+      unknownKeys = [...keys]
+    },
+  })
 
   expect(config.manager.model).toBe('gpt-5.2-mini')
   expect(config.manager.modelReasoningEffort).toBe('medium')
   expect(config.codex.model).toBe('gpt-5.4')
+  expect(unknownKeys).toEqual([
+    'manager.maxCorrectionRounds',
+    'manager.promptSections',
+    'worker.retry',
+  ])
 })
 
-test('does not report runtime-only compatibility keys as unknown', async () => {
+test('reports removed runtime-only keys as unknown', async () => {
   const path = await writeTempConfig(
     [
       '[manager]',
@@ -152,7 +162,11 @@ test('does not report runtime-only compatibility keys as unknown', async () => {
     },
   })
 
-  expect(unknownKeys).toEqual([])
+  expect(unknownKeys).toEqual([
+    'manager.maxCorrectionRounds',
+    'manager.promptSections',
+    'worker.retry',
+  ])
 })
 
 test('ignores unknown keys and reports them via callback', async () => {

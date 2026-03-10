@@ -27,6 +27,7 @@
   - heading：`## [memory-entry] (id:memory-...)`
   - metadata 行：`title/updated_at/source/...`
   - 空行后正文 `content`
+- 读取阶段只接受 canonical heading；旧标题样式不会再被解析或自动迁移，写路径会直接报错而不是静默覆盖。
 
 ## 立即记忆（remember）
 

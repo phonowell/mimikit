@@ -13,10 +13,6 @@ import {
 export const HEADING_RE = /^##\s+(.+)$/
 export const CANONICAL_HEADING_RE =
   /^\[memory-entry\]\s+\(id:(memory-[a-z0-9._-]+)\)$/i
-export const LEGACY_REMEMBER_HEADING_RE =
-  /^\[memory-entry:([a-z0-9._-]+):([a-z0-9._-]+)\]\s+\(id:(memory-[a-z0-9._-]+)\)$/i
-export const LEGACY_TIMESTAMP_HEADING_RE =
-  /^(.+?)\s+\((\d{4}-\d{2}-\d{2}T[^)]+)\)$/
 
 const META_LINE_RE = /^([a-z_]+):\s*(.*)$/i
 

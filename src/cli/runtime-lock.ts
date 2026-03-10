@@ -1,4 +1,4 @@
-import { mkdir, rm, stat } from 'node:fs/promises'
+import { mkdir } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { join } from 'node:path'
 
@@ -11,7 +11,6 @@ export type RuntimeLock = {
 }
 
 const LOCK_TARGET_NAME = '.instance'
-const LEGACY_LOCK_TARGET_NAME = '.instance.lock'
 type LockRelease = () => Promise<void>
 
 const require = createRequire(import.meta.url)
@@ -32,37 +31,10 @@ const LOCK_OPTIONS = {
   },
 } as const
 
-const LOCK_CHECK_OPTIONS = {
-  realpath: LOCK_OPTIONS.realpath,
-  stale: LOCK_OPTIONS.stale,
-} as const
-
-const cleanupLegacyLock = async (workDir: string): Promise<void> => {
-  const legacyLockTarget = join(workDir, LEGACY_LOCK_TARGET_NAME)
-  const legacyLockPath = `${legacyLockTarget}.lock`
-
-  try {
-    await stat(legacyLockPath)
-  } catch (error) {
-    if (readErrorCode(error) === 'ENOENT') return
-    throw error
-  }
-
-  const isLegacyLockActive = await lockfile.check(
-    legacyLockTarget,
-    LOCK_CHECK_OPTIONS,
-  )
-  if (isLegacyLockActive)
-    throw new Error(`[cli] instance lock exists at ${legacyLockTarget}`)
-
-  await rm(legacyLockPath, { recursive: true, force: true })
-}
-
 export const acquireRuntimeLock = async (
   workDir: string,
 ): Promise<RuntimeLock> => {
   await mkdir(workDir, { recursive: true })
-  await cleanupLegacyLock(workDir)
   const lockPath = join(workDir, LOCK_TARGET_NAME)
   let releaseLock: LockRelease
   try {
