@@ -1,14 +1,10 @@
+import { mkdir, utimes, writeFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import { expect, test } from 'vitest'
 
-import {
-  pickQueryContextRequest,
-  runQueryContextTool,
-} from '../src/manager/query-context-tool.js'
-
-import {
-  createQueryContextRuntime,
-  requireQueryContextRequest,
-} from './helpers/query-context-runtime.js'
+import { pickQueryContextRequest, runQueryContextTool } from '../src/manager/query-context-tool.js'
+import { QUERY_CONTEXT_GENERATED_WALK_MAX_FILES as GENERATED_WALK_MAX_FILES } from '../src/manager/query-context-params.js'
+import { createQueryContextRuntime, requireQueryContextRequest } from './helpers/query-context-runtime.js'
 
 test('query_context supports single history scope', async () => {
   const runtime = await createQueryContextRuntime()
@@ -100,6 +96,37 @@ test('query_context generated_index includes both repo and state generated roots
   const paths = result.results.generated_index?.items.map((item) => item.path) ?? []
 
   expect(paths).toContain('.mimikit/generated/handoff.md')
+})
+
+test('query_context generated_index keeps newer repo files when state generated is crowded', async () => {
+  const runtime = await createQueryContextRuntime()
+  const stateFloodDir = join(runtime.paths.root, '.mimikit', 'generated', 'flood')
+  const oldTime = new Date('2026-03-01T00:00:00.000Z')
+  const newTime = new Date('2026-03-09T00:00:00.000Z')
+
+  await mkdir(stateFloodDir, { recursive: true })
+  for (let index = 0; index <= GENERATED_WALK_MAX_FILES; index += 1) {
+    const filePath = join(stateFloodDir, `snapshot-${index}.md`)
+    await writeFile(filePath, `snapshot ${index} without keyword`, 'utf8')
+    await utimes(filePath, oldTime, oldTime)
+  }
+
+  await utimes(
+    join(runtime.paths.root, '.mimikit', 'generated', 'handoff.md'),
+    oldTime,
+    oldTime,
+  )
+  await utimes(
+    join(runtime.paths.root, 'generated', 'deploy-notes.md'),
+    newTime,
+    newTime,
+  )
+
+  const request = requireQueryContextRequest({ query: 'canary' })
+  const result = await runQueryContextTool({ runtime, request })
+  const paths = result.results.generated_index?.items.map((item) => item.path) ?? []
+
+  expect(paths).toContain('generated/deploy-notes.md')
 })
 
 test('query_context keeps repo and state generated paths distinct in .mimikit mode', async () => {

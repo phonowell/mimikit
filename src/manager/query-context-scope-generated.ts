@@ -67,14 +67,14 @@ const resolveGeneratedRoots = (workDir: string): GeneratedRoot[] => {
 const collectGeneratedFiles = async (
   workDir: string,
   walkMaxFiles: number,
-): Promise<Array<{ absolutePath: string; path: string }>> => {
+): Promise<GeneratedFileCandidate[]> => {
   const stacks = resolveGeneratedRoots(workDir).map((root) => ({
     root,
     stack: [root.absoluteDir],
   }))
-  const files: Array<{ absolutePath: string; path: string }> = []
+  const files: GeneratedFileCandidate[] = []
   const seen = new Set<string>()
-  while (stacks.length > 0 && files.length < walkMaxFiles) {
+  while (stacks.length > 0) {
     const current = stacks.at(-1)
     if (!current) break
     const currentDir = current.stack.pop()
@@ -84,7 +84,6 @@ const collectGeneratedFiles = async (
     }
     const entries = await listFiles(currentDir)
     for (const entry of entries) {
-      if (files.length >= walkMaxFiles) break
       const absolutePath = join(currentDir, entry.name)
       if (entry.isDirectory()) {
         current.stack.push(absolutePath)
@@ -99,10 +98,24 @@ const collectGeneratedFiles = async (
       )
       if (seen.has(path)) continue
       seen.add(path)
-      files.push({ absolutePath, path })
+      try {
+        const stats = await stat(absolutePath)
+        if (!stats.isFile()) continue
+        files.push({
+          absolutePath,
+          path,
+          size: stats.size,
+          timeMs: stats.mtimeMs,
+        })
+      } catch (error) {
+        if (isRecoverableFsError(error)) continue
+        throw error
+      }
     }
   }
   return files
+    .sort((left, right) => right.timeMs - left.timeMs)
+    .slice(0, Math.max(1, walkMaxFiles))
 }
 
 const readSnippet = async (
@@ -134,31 +147,10 @@ export const queryGeneratedScope = async (params: {
   maxReadBytes: number
 }): Promise<QueryLookupGeneratedIndexItem[]> => {
   const wildcard = isWildcardQuery(params.query)
-  const discovered = await collectGeneratedFiles(
-    params.workDir,
-    params.walkMaxFiles,
-  )
-  const files: GeneratedFileCandidate[] = []
-  for (const item of discovered) {
-    try {
-      const stats = await stat(item.absolutePath)
-      if (!stats.isFile()) continue
-      files.push({
-        absolutePath: item.absolutePath,
-        path: item.path,
-        size: stats.size,
-        timeMs: stats.mtimeMs,
-      })
-    } catch (error) {
-      if (isRecoverableFsError(error)) continue
-      throw error
-    }
-  }
+  const files = await collectGeneratedFiles(params.workDir, params.walkMaxFiles)
   if (files.length === 0) return []
 
-  const recentFiles = [...files]
-    .sort((left, right) => right.timeMs - left.timeMs)
-    .slice(0, Math.max(1, params.scanMaxFiles))
+  const recentFiles = files.slice(0, Math.max(1, params.scanMaxFiles))
   const times = recentFiles.map((item) => item.timeMs)
   const oldestMs = times.length > 0 ? Math.min(...times) : 0
   const newestMs = times.length > 0 ? Math.max(...times) : 0

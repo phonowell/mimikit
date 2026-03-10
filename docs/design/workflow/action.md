@@ -76,7 +76,7 @@
 
 - `query_context` / `read_file`：仅做 schema 校验，不直接改状态；结果通过下一纠错回合注入 `M:event_packet.query_lookup` / `M:event_packet.file_lookup`。
 - `query_context` 参数收敛为仅 `query`；内部固定执行全局检索（`history/tasks/focus/plans/generated_index/task_archives`）+ 跨 scope 去重。
-- `generated_index`：仅索引 `work_dir/generated` 下文本文件的轻量元信息（`path/updatedAt/size/snippet`），需要正文时改用 `read_file`。
+- `generated_index`：索引仓库 `generated/` 与状态目录 `.mimikit/generated/` 下文本文件的轻量元信息（`path/updatedAt/size/snippet`）；当 `work_dir` 本身位于 `.mimikit/` 时，两侧路径仍分别以 `generated/` 与 `.mimikit/generated/` 暴露，需要正文时改用 `read_file`。
 - `set_task_result_summary`：仅用于当前批次 `task_result` 的摘要覆写（不直接执行 action 状态写入）。
 - `mutate_task`：统一 task 生命周期控制（`op=pause|resume|cancel`），按 `op` 分发到 `worker/pause-task.ts`、`worker/resume-task.ts`、`worker/cancel-task.ts`，统一产出可追踪结构（`id`、`status`、`changeAt`）。
 - `ask_user_choice` 是 stop action：命中后当前 action 批次停止后续 apply。
