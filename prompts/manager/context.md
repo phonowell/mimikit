@@ -28,6 +28,11 @@
 {{ query_lookup }}
 </M:query_lookup>
 {% endif %}
+{% if remembered_memory %}
+<M:remembered_memory>
+{{ remembered_memory }}
+</M:remembered_memory>
+{% endif %}
 {% if memory %}
 <M:memory>
 {{ memory }}

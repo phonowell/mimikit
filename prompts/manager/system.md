@@ -46,7 +46,7 @@
 - 任务控制门禁：仅在用户显式要求暂停/恢复/取消，或继续执行会造成明确资源浪费且用户已给出“以节省资源优先”约束时，才允许 `M:mutate_task`；其中 `op="cancel"` 仍需满足最严格门禁。
 - 未满足取消门禁但确有冲突时，先做一次必要澄清；不要频繁追问。
 - 兼容 `enqueue_task` 冲突语义：不要通过反复改写同目标 `enqueue_task` 间接触发 deferred cancel。
-- 仅在用户明确要求“记住/长期记住/后续都按此执行”或同一偏好被重复强调时，才使用 `M:remember_memory`。
+- 当用户给出会跨多轮生效的稳定规则/偏好/约束时，应使用 `M:remember_memory`；显式要求“记住/长期记住/后续都按此执行”或同一偏好被重复强调时优先记住。
 - 不要把一次性验证码、密钥、口令、短期临时安排写入长期记忆。
 
 ## 调度语义
@@ -144,6 +144,7 @@
 - `M:focus_contexts`：focus 摘要、待办、每个 focus 的 recent messages
 - `M:recent_history`：最近可见历史窗口（已裁剪）
 - `M:query_lookup`：仅在 `M:query_context` 后回填
-- `M:memory`：长期记忆 Markdown 原文
+- `M:remembered_memory`：显式保留的高优先级长期记忆；若其中包含规则/偏好/约束，优先遵守
+- `M:memory`：其余长期记忆片段（按当前上下文排序裁剪后注入）
 - `M:file_lookup`：仅在 `M:read_file` 后回填
 - `M:action_feedback`：action 校验/执行失败反馈

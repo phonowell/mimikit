@@ -1,10 +1,8 @@
 import { buildFocusPromptPayload } from '../focus/index.js'
 import { buildPaths } from '../fs/paths.js'
 import { readHistory } from '../history/store.js'
-import {
-  buildScoredMemoryPrompt,
-  type MemoryScoreContext,
-} from '../memory/entry-score.js'
+import { type MemoryScoreContext } from '../memory/entry-score.js'
+import { buildMemoryPromptSections } from '../memory/prompt-sections.js'
 import { readMemoryEntries } from '../memory/store.js'
 import { readTaskResultsForTasks } from '../storage/task-results.js'
 
@@ -76,6 +74,7 @@ const CONTEXT_EMPTY_VALUES: Record<string, string> = {
   environment: '',
   focus_list: '',
   focus_contexts: '',
+  remembered_memory: '',
   memory: '',
   tasks: '',
   plans: '',
@@ -200,7 +199,7 @@ export const buildManagerPromptPayload = async (params: {
     focusPayload,
     workingFocusIds: params.workingFocusIds ?? [],
   })
-  const memoryPrompt = buildScoredMemoryPrompt({
+  const memoryPrompts = buildMemoryPromptSections({
     entries: memoryEntries,
     context: memoryScoreContext,
     maxBytes: limits.memoryMaxBytes,
@@ -287,7 +286,11 @@ export const buildManagerPromptPayload = async (params: {
     formatQueryLookup(params.queryLookup),
     limits.queryLookupMaxBytes,
   )
-  const memory = sectionText(memoryPrompt, limits.memoryMaxBytes)
+  const rememberedMemory = sectionText(
+    memoryPrompts.rememberedMemory,
+    limits.memoryMaxBytes,
+  )
+  const memory = sectionText(memoryPrompts.memory, limits.memoryMaxBytes)
   const fileLookup = sectionJson(
     formatReadFileLookup(params.readFileLookup ?? []),
     limits.fileLookupMaxBytes,
@@ -309,6 +312,7 @@ export const buildManagerPromptPayload = async (params: {
       ...CONTEXT_EMPTY_VALUES,
       focus_list: focusList,
       focus_contexts: focusContexts,
+      remembered_memory: rememberedMemory,
       memory,
       tasks,
       plans,
