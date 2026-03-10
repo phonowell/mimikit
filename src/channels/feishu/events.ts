@@ -47,7 +47,9 @@ export const toIsoFromUnixMillis = (
   if (!value) return undefined
   const ms = Number(value)
   if (!Number.isFinite(ms)) return undefined
-  return new Date(ms).toISOString()
+  const date = new Date(ms)
+  if (Number.isNaN(date.getTime())) return undefined
+  return date.toISOString()
 }
 
 export const shouldIgnoreMessage = (event: FeishuInboundEvent): boolean => {
