@@ -48,7 +48,7 @@ test('formatEnvironment includes enabled provider candidates and compact profile
         },
         {
           provider: 'codex',
-          model: 'gpt-5.3-codex',
+          model: 'gpt-5.4',
           capability: 'high',
           billing: 'medium',
         },

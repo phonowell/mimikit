@@ -21,8 +21,8 @@ timeoutMs = 600000
 [codex]
 # 是否启用 codex provider；默认 true
 enabled = true
-# Codex 使用的模型名；默认 gpt-5.3-codex
-model = "gpt-5.3-codex"
+# Codex 使用的模型名；默认 gpt-5.4
+model = "gpt-5.4"
 # Codex 推理强度；可选值 minimal|low|medium|high|xhigh；默认 high
 modelReasoningEffort = "high"
 # Codex 能力强度；可选值 low|medium|high；默认 high

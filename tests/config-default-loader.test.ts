@@ -29,7 +29,7 @@ test('fills defaults when optional fields are omitted', async () => {
 
   expect(config.manager.model).toBe('gpt-5')
   expect(config.manager.modelReasoningEffort).toBe('medium')
-  expect(config.codex.model).toBe('gpt-5.3-codex')
+  expect(config.codex.model).toBe('gpt-5.4')
   expect(config.codex.enabled).toBe(true)
   expect(config.codex.modelReasoningEffort).toBe('high')
   expect(config.opencode.enabled).toBe(false)
@@ -125,7 +125,7 @@ test('supports manager model overrides and ignores runtime-only compatibility ke
 
   expect(config.manager.model).toBe('gpt-5.2-mini')
   expect(config.manager.modelReasoningEffort).toBe('medium')
-  expect(config.codex.model).toBe('gpt-5.3-codex')
+  expect(config.codex.model).toBe('gpt-5.4')
 })
 
 test('does not report runtime-only compatibility keys as unknown', async () => {

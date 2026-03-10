@@ -141,7 +141,7 @@ timeoutMs = 600000
 
 [codex]
 enabled = true
-model = "gpt-5.3-codex"
+model = "gpt-5.4"
 modelReasoningEffort = "high"
 capability = "high"
 billing = "medium"
@@ -162,7 +162,7 @@ Main env overrides:
 ```bash
 export MIMIKIT_MODEL=gpt-5.2
 export MIMIKIT_MANAGER_MODEL=gpt-5.2
-export MIMIKIT_CODEX_MODEL=gpt-5.3-codex
+export MIMIKIT_CODEX_MODEL=gpt-5.4
 export MIMIKIT_OPENCODE_MODEL=big-pickle
 export MIMIKIT_REASONING_EFFORT=high
 export MIMIKIT_MANAGER_REASONING_EFFORT=medium

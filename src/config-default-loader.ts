@@ -142,7 +142,7 @@ const DEFAULT_USER_CONFIG: UserConfigDefaults = {
   },
   codex: {
     enabled: true,
-    model: 'gpt-5.3-codex',
+    model: 'gpt-5.4',
     modelReasoningEffort: 'high',
     capability: 'high',
     billing: 'medium',

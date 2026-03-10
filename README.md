@@ -77,7 +77,7 @@ maxRounds = 3
 
 [codex]
 enabled = true
-model = "gpt-5.3-codex"
+model = "gpt-5.4"
 modelReasoningEffort = "high"
 capability = "high"
 billing = "medium"
