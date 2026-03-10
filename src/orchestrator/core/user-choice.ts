@@ -1,5 +1,6 @@
 import { nowIso } from '../../shared/utils.js'
 
+import { persistRuntimeState } from './runtime-persistence.js'
 import { publishChoiceSkippedInput } from './user-choice-input.js'
 import { selectPendingUserChoice } from './user-choice-select.js'
 import {
@@ -37,6 +38,7 @@ export const cancelPendingUserChoiceByUserInput = async (params: {
       triggerInputId,
     })
   }
+  await persistRuntimeState(runtime)
   return true
 }
 

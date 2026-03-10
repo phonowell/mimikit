@@ -1,6 +1,7 @@
 import { nowIso } from '../../shared/utils.js'
 import { resumeTask } from '../../worker/resume-task.js'
 
+import { persistRuntimeState } from './runtime-persistence.js'
 import { notifyManagerLoop, notifyUiSignal } from './signals.js'
 import { publishChoiceSelectionInput } from './user-choice-input.js'
 import {
@@ -76,6 +77,7 @@ const commitSelection = async (params: {
     ...(effectResult ? { effectResult } : {}),
   })
   removePendingUserChoice(params.runtime, params.choice.id)
+  await persistRuntimeState(params.runtime)
   return {
     ok: true,
     choiceId: params.choice.id,
@@ -114,7 +116,10 @@ export const selectPendingUserChoice = async (params: {
         source: 'timeout',
         selectedAt,
       })
-    } else removePendingUserChoice(runtime, choice.id)
+    } else {
+      removePendingUserChoice(runtime, choice.id)
+      await persistRuntimeState(runtime)
+    }
     return { ok: false, reason: 'expired' }
   }
 

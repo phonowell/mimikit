@@ -2,7 +2,9 @@ import { expect, test } from 'vitest'
 
 import { INBOX_FOCUS_ID } from '../src/focus/constants.js'
 import { appendUserInput } from '../src/orchestrator/core/orchestrator-input-ingress.js'
+import { persistRuntimeState } from '../src/orchestrator/core/runtime-persistence.js'
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
+import { loadRuntimeSnapshot } from '../src/storage/runtime-snapshot.js'
 import { consumeUserInputs } from '../src/streams/queues.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
@@ -65,6 +67,7 @@ const createRuntime = async (): Promise<RuntimeState> => {
 
 test('appendUserInput cancels pending user choice when user sends a new message', async () => {
   const runtime = await createRuntime()
+  await persistRuntimeState(runtime)
 
   await appendUserInput(runtime, 'continue with a different request')
 
@@ -106,6 +109,8 @@ test('appendUserInput cancels pending user choice when user sends a new message'
   if (third?.role === 'system') {
     expect(third.text).toContain('Choose priority')
   }
+  const snapshot = await loadRuntimeSnapshot(runtime.config.workDir)
+  expect(snapshot.pendingUserChoices).toBeUndefined()
 })
 
 test('appendUserInput falls back to inbox focus when only global focus exists', async () => {

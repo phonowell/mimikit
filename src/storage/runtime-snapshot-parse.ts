@@ -91,6 +91,13 @@ const normalizeFocusDigest = (
 ): SnapshotFocusDigest =>
   stripUndefined({ ...focusDigest }) as SnapshotFocusDigest
 
+const normalizeChannelTargets = (
+  value: RuntimeSnapshot['channelTargets'],
+): RuntimeSnapshot['channelTargets'] =>
+  value
+    ? (stripUndefined({ ...value }) as RuntimeSnapshot['channelTargets'])
+    : undefined
+
 const normalizePendingUserChoices = (
   choices: SnapshotPendingUserChoices,
 ): SnapshotPendingUserChoices =>
@@ -110,6 +117,7 @@ const normalizeRuntimeSnapshot = (value: RuntimeSnapshot): RuntimeSnapshot =>
     managerTurn: value.managerTurn,
     managerThreadId: value.managerThreadId,
     queues: value.queues,
+    channelTargets: normalizeChannelTargets(value.channelTargets),
     pendingUserChoices: value.pendingUserChoices
       ? normalizePendingUserChoices(value.pendingUserChoices)
       : undefined,

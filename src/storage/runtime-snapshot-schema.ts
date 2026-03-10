@@ -361,6 +361,13 @@ const memoryRefreshSchema = z
   })
   .strict()
 
+const channelTargetsSchema = z
+  .object({
+    telegramChatId: z.string().trim().min(1).optional(),
+    feishuChatId: z.string().trim().min(1).optional(),
+  })
+  .strict()
+
 export const runtimeSnapshotSchema = z
   .object({
     schemaVersion: z.string().trim().min(1),
@@ -377,6 +384,7 @@ export const runtimeSnapshotSchema = z
       })
       .strict()
       .optional(),
+    channelTargets: channelTargetsSchema.optional(),
     pendingUserChoices: pendingUserChoicesSchema.optional(),
     memoryRefresh: memoryRefreshSchema.optional(),
   })

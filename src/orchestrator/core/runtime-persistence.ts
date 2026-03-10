@@ -55,10 +55,11 @@ const normalizeChannelTargets = (
 
 const restoreChannelTargetsFromHistory = async (
   runtime: RuntimeState,
-): Promise<void> => {
+  currentTargets: RuntimeState['session']['channelTargets'] = {},
+): Promise<RuntimeState['session']['channelTargets']> => {
   const history = await readHistory(runtime.paths.history)
-  let telegramChatId: string | undefined
-  let feishuChatId: string | undefined
+  let { telegramChatId } = currentTargets
+  let { feishuChatId } = currentTargets
   for (let index = history.length - 1; index >= 0; index -= 1) {
     const item = history[index]
     if (!item) break
@@ -76,7 +77,7 @@ const restoreChannelTargetsFromHistory = async (
       feishuChatId = item.feishuChatId.trim()
     if (telegramChatId && feishuChatId) break
   }
-  runtime.session.channelTargets = normalizeChannelTargets({
+  return normalizeChannelTargets({
     ...(telegramChatId ? { telegramChatId } : {}),
     ...(feishuChatId ? { feishuChatId } : {}),
   })
@@ -159,7 +160,10 @@ export const hydrateRuntimeState = async (
   delete runtime.manager.lastUsage
   delete runtime.manager.usageTotal
   runtime.ui.pendingUserChoices = snapshot.pendingUserChoices ?? []
-  await restoreChannelTargetsFromHistory(runtime)
+  runtime.session.channelTargets = await restoreChannelTargetsFromHistory(
+    runtime,
+    normalizeChannelTargets(snapshot.channelTargets),
+  )
   if (snapshot.queues) {
     runtime.queues = {
       inputsCursor: snapshot.queues.inputsCursor,
@@ -194,6 +198,14 @@ export const persistRuntimeState = async (
       ? { managerThreadId: runtime.manager.threadId }
       : {}),
     queues: runtime.queues,
+    ...(Object.keys(normalizeChannelTargets(runtime.session.channelTargets))
+      .length > 0
+      ? {
+          channelTargets: normalizeChannelTargets(
+            runtime.session.channelTargets,
+          ),
+        }
+      : {}),
     ...(runtime.ui.pendingUserChoices.length > 0
       ? { pendingUserChoices: runtime.ui.pendingUserChoices }
       : {}),

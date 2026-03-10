@@ -6,11 +6,13 @@ import { afterEach, expect, test, vi } from 'vitest'
 
 import { readHistory } from '../src/history/store.js'
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
+import { persistRuntimeState } from '../src/orchestrator/core/runtime-persistence.js'
 import { requestTaskResumeChoice } from '../src/orchestrator/core/task-resume-choice.js'
 import {
   resolvePendingUserChoiceTimeout,
   selectPendingUserChoiceFromUser,
 } from '../src/orchestrator/core/user-choice.js'
+import { loadRuntimeSnapshot } from '../src/storage/runtime-snapshot.js'
 import type { Task } from '../src/types/index.js'
 import { pauseTask } from '../src/worker/pause-task.js'
 import {
@@ -248,6 +250,47 @@ test('budget pause choice can resume paused partial task directly', async () => 
     choice_effect_status: 'pending',
     selected_option_id: choice.effect.optionId,
   })
+})
+
+test('selectPendingUserChoiceFromUser persists resolved choice removal immediately', async () => {
+  const queueAdd = vi.fn(async () => undefined)
+  const runtime = await createRuntime({
+    queue: {
+      add: queueAdd as RuntimeState['worker']['queue']['add'],
+      sizeBy: () => 0,
+    },
+  })
+  const task = createTask('task-budget-persist-selection', {
+    status: 'paused',
+    pausedAt: '2026-03-06T00:00:03.000Z',
+    result: {
+      taskId: 'task-budget-persist-selection',
+      status: 'partial',
+      taskStatus: 'paused',
+      outcome: 'partial',
+      stopReason: 'budget_exhausted',
+      ok: false,
+      output: 'partial',
+      durationMs: 12,
+      completedAt: '2026-03-06T00:00:04.000Z',
+    },
+  })
+  runtime.tasks = [task]
+
+  await requestTaskResumeChoice({
+    runtime,
+    task,
+  })
+  await persistRuntimeState(runtime)
+
+  const choice = runtime.ui.pendingUserChoices[0]
+  if (!choice?.effect || choice.effect.type !== 'resume_task')
+    throw new Error('expected resume_task choice')
+
+  await selectPendingUserChoiceFromUser(runtime, choice.id, choice.effect.optionId)
+
+  const snapshot = await loadRuntimeSnapshot(runtime.config.workDir)
+  expect(snapshot.pendingUserChoices).toBeUndefined()
 })
 
 test('pending resume choice persists without timeout until a user selects it', async () => {

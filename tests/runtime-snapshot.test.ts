@@ -104,6 +104,10 @@ test('runtime snapshot accepts queue cursors', async () => {
       resultsCursor: 9,
     },
     managerThreadId: 'session-manager-1',
+    channelTargets: {
+      telegramChatId: 'chat-1001',
+      feishuChatId: 'oc_chat_1',
+    },
   })
 
   const loaded = await loadRuntimeSnapshot(stateDir)
@@ -111,6 +115,10 @@ test('runtime snapshot accepts queue cursors', async () => {
   expect(loaded.queues?.resultsCursor).toBe(9)
   expect(loaded.queues?.inputsCursor).toBe(3)
   expect(loaded.managerThreadId).toBe('session-manager-1')
+  expect(loaded.channelTargets).toEqual({
+    telegramChatId: 'chat-1001',
+    feishuChatId: 'oc_chat_1',
+  })
   expect(loaded.tasks[0]?.result?.output).toBe('ok')
   expect(loaded.taskPlans[0]?.id).toBe('plan-1')
 })
@@ -466,9 +474,6 @@ test('runtime snapshot rejects legacy extra fields during load', async () => {
         defaultOptionId: 'option-b',
         createdAt: SNAPSHOT_BASE_TIME,
         focusId: GLOBAL_FOCUS_ID,
-      },
-      channelTargets: {
-        telegramChatId: 'chat-1001',
       },
       managerCompressedContext: 'legacy-summary',
       managerPacketSummary: 'legacy-packet-summary',
