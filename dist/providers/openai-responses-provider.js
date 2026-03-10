@@ -171,9 +171,6 @@ const buildResponsesInput = (request) => {
             {
                 type: 'input_text',
                 text: segment.text,
-                ...(segment.cacheControl
-                    ? { cache_control: { type: segment.cacheControl } }
-                    : {}),
             },
         ],
     }));
