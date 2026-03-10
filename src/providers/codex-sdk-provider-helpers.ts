@@ -58,7 +58,7 @@ export const buildCodexProviderError = (params: {
   if (
     externallyAborted ||
     error.name === 'AbortError' ||
-    /aborted|canceled/i.test(error.message)
+    /aborted|canceled|cancelled/i.test(error.message)
   )
     return buildProviderAbortedError('codex-sdk')
   return buildProviderSdkError({

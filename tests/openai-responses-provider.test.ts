@@ -4,6 +4,7 @@ import { join } from 'node:path'
 
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
+import { readProviderErrorCode } from '../src/providers/provider-error.js'
 import {
   openAiResponsesProvider,
   parseResponsesPayload,
@@ -154,6 +155,34 @@ describe('parseResponsesPayload', () => {
 })
 
 describe('openAiResponsesProvider', () => {
+  test('maps cancelled fetch errors to provider_aborted', async () => {
+    const homeDir = await createHomeDir()
+    createdHomeDirs.push(homeDir)
+    await writeCodexConfig(homeDir)
+    process.env.HOME = homeDir
+    process.env.AICODING_API_KEY = 'provider-env-key'
+
+    globalThis.fetch = vi
+      .fn<typeof fetch>()
+      .mockRejectedValue(new Error('request cancelled by user'))
+
+    const error = await openAiResponsesProvider
+      .run({
+        provider: 'openai-responses',
+        role: 'manager',
+        prompt: 'ping',
+        workDir: process.cwd(),
+        timeoutMs: 30_000,
+        model: 'gpt-5',
+      })
+      .catch((rejected: unknown) => rejected)
+
+    expect(error).toMatchObject({
+      message: '[provider:openai-responses] aborted',
+    })
+    expect(readProviderErrorCode(error)).toBe('provider_aborted')
+  })
+
   test('prefers request-level baseUrl and apiKey overrides for manager calls', async () => {
     const homeDir = await createHomeDir()
     createdHomeDirs.push(homeDir)

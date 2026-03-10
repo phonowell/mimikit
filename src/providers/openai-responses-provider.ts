@@ -414,7 +414,7 @@ const runOpenAiResponses = async (request: OpenAiResponsesProviderRequest) => {
     else if (
       lifecycle.externallyAborted ||
       err.name === 'AbortError' ||
-      /aborted|canceled/i.test(err.message)
+      /aborted|canceled|cancelled/i.test(err.message)
     )
       mapped = buildProviderAbortedError(PROVIDER_ID)
     else {
