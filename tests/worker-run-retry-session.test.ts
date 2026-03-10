@@ -173,6 +173,47 @@ test('runTaskWithRetry persists newly reported session id even when attempt fail
   ).toBe(true)
 })
 
+test('runTaskWithRetry discards reusable session after transient stream disconnect', async () => {
+  const runtime = await createRuntime()
+  runtime.config.worker.retry.maxAttempts = 1
+  const task = createTask('task-reset-transient-session', {
+    sessionId: 'session-reconnect',
+    sessionState: 'reusable',
+  })
+
+  runWorkerMock
+    .mockRejectedValueOnce(
+      new ProviderError({
+        code: 'provider_transient_network',
+        message:
+          '[provider:codex-sdk] sdk run failed: Reconnecting... 1/5 (stream disconnected before completion)',
+        retryable: true,
+      }),
+    )
+    .mockResolvedValueOnce({
+      output: 'done after fresh session',
+      elapsedMs: 2,
+    } satisfies WorkerLlmResult)
+
+  const result = await runTaskWithRetry({
+    runtime,
+    task,
+    controller: new AbortController(),
+  })
+
+  expect(result.output).toBe('done after fresh session')
+  expect(runWorkerMock).toHaveBeenCalledTimes(2)
+  expect(runWorkerMock.mock.calls[0]?.[0]?.sessionId).toBe('session-reconnect')
+  expect(runWorkerMock.mock.calls[1]?.[0]?.sessionId).toBeUndefined()
+  expect(task.sessionId).toBeUndefined()
+  expect(task.sessionState).toBe('discarded')
+  expect(
+    appendLogMock.mock.calls.some(
+      (call) => call[1]?.event === 'worker_session_discarded',
+    ),
+  ).toBe(true)
+})
+
 test('runTaskWithRetry retries transient reconnect provider errors', async () => {
   const runtime = await createRuntime()
   runtime.config.worker.retry.maxAttempts = 1

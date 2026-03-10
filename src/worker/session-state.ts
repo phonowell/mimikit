@@ -7,6 +7,8 @@ const SESSION_RESET_PATTERNS = [
   /thread.+(not found|does not exist|invalid|expired|deleted)/i,
   /session.+(not found|does not exist|invalid|expired|deleted)/i,
   /resume.+(not found|invalid|expired|failed)/i,
+  /stream disconnected/i,
+  /reconnecting\.\.\./i,
 ]
 
 const normalizeSessionId = (
