@@ -180,6 +180,20 @@ const readErrorMessage = (raw: string): string | undefined => {
   return asString(error, 'message')
 }
 
+const readIncompleteReason = (
+  payload: Record<string, unknown> | null | undefined,
+): string | undefined => {
+  const details = asRecord(payload?.incomplete_details)
+  return asString(details, 'reason')
+}
+
+const buildIncompleteMessage = (
+  payload: Record<string, unknown> | null | undefined,
+): string => {
+  const reason = readIncompleteReason(payload)
+  return reason ? `responses_incomplete:${reason}` : 'responses_incomplete'
+}
+
 const resolveSessionId = (threadId: string | null | undefined): string => {
   const current = threadId?.trim()
   if (current) return current
@@ -243,6 +257,10 @@ export const parseResponsesSse = (
       const error = asRecord(response?.error)
       throw new Error(asString(error, 'message') ?? 'responses_failed')
     }
+    if (type === 'response.incomplete') {
+      const response = asRecord(event?.response)
+      throw new Error(buildIncompleteMessage(response))
+    }
     if (type === 'error')
       throw new Error(asString(event, 'message') ?? 'responses_error')
 
@@ -259,6 +277,11 @@ export const parseResponsesJson = (
 ): { output: string; usage?: TokenUsage } => {
   const payload = parseJsonRecord(raw)
   if (!payload) throw new Error('responses_json_parse_failed')
+  if (
+    asString(payload, 'type') === 'response.incomplete' ||
+    asString(payload, 'status') === 'incomplete'
+  )
+    throw new Error(buildIncompleteMessage(payload))
   const message = readErrorMessage(raw)
   if (message && (payload.error || typeof payload.code === 'number'))
     throw new Error(message)

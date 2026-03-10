@@ -98,6 +98,18 @@ describe('parseResponsesSse', () => {
 
     expect(() => parseResponsesSse(sse)).toThrow('upstream failed')
   })
+
+  test('throws incomplete reason from response.incomplete event', () => {
+    const sse = [
+      'event: response.incomplete',
+      'data: {"type":"response.incomplete","response":{"status":"incomplete","incomplete_details":{"reason":"max_output_tokens"},"output":[{"type":"message","content":[{"type":"output_text","text":"partial"}]}]}}',
+      '',
+    ].join('\n')
+
+    expect(() => parseResponsesSse(sse)).toThrow(
+      'responses_incomplete:max_output_tokens',
+    )
+  })
 })
 
 describe('parseResponsesPayload', () => {
@@ -124,6 +136,20 @@ describe('parseResponsesPayload', () => {
       output: 4,
       total: 12,
     })
+  })
+
+  test('throws incomplete reason from json response payload', () => {
+    const payload = JSON.stringify({
+      status: 'incomplete',
+      incomplete_details: {
+        reason: 'max_output_tokens',
+      },
+      output_text: 'partial',
+    })
+
+    expect(() => parseResponsesPayload(payload)).toThrow(
+      'responses_incomplete:max_output_tokens',
+    )
   })
 })
 
