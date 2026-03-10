@@ -12,16 +12,16 @@
 实现：`src/manager/runner.ts`
 
 - 导出：`runManager`
-- Prompt 组装：`buildManagerPrompt`
+- Prompt 组装：`buildManagerPromptPayload`（对外仍导出 `buildManagerPrompt` 便于纯字符串调用）
 - 模板：`prompts/manager/system.md`（`nunjucks` 渲染）
 - Provider：固定 `openai-responses`（direct responses）
 - Provider 配置来源：`loadCodexSettings()`，优先读取 `~/.codex/config.toml` 的 active provider（`base_url`、`api_key`、`env_key`/`api_key_env`），缺省回退 `OPENAI_API_KEY` 与 `~/.codex/auth.json`
 - 超时：按 prompt 字节动态计算（`60s~120s`）
-- 输出：`{ output, elapsedMs, usage? }`
+- 输出：`{ output, elapsedMs, usage?, threadId?, contextPacket, packetSummary, promptBytes, promptSegmentCount, promptPrefixHash }`
 
 主流程：
 
-1. 根据输入、任务、plan、历史、focus 组装 prompt。
+1. 根据输入、任务、plan、历史、focus 组装 prompt、context packet 与 prompt segments。
 2. 执行 token 预算与超时控制。
 3. 调用 provider 接口并返回整段输出。
 4. 若收到 `action_feedback/query_context/read_file`，在同批次继续修正回合。
@@ -35,14 +35,15 @@
 - Prompt 组装：`buildWorkerPrompt` -> `prompts/worker/system.md`
 - Provider：按任务 `provider` 路由到 `codex-sdk` 或 `opencode-sdk`（外部执行运行时）
 - 输出：`{ output, elapsedMs, usage? }`
-- 上下文补充：注入当前任务 `focusId` 对应的 `focus summary/open_items`，以及可用的 `compressed summary`
+- 上下文补充：注入当前任务 `focusId` 对应的 `focus summary/open_items`。
+- 任务 prompt 过大时会外置到 `generated/worker-task-prompts/YYYY-MM-DD/{taskId}.md`，主 prompt 仅保留路径与预览。
 - 异常回收：worker provider 会向 runtime reaper 报告外部子进程生命周期（当前覆盖 `opencode serve`）
 
 主流程：
 
 1. 构造 worker prompt。
 2. 调用 provider（外部执行运行时）执行。
-3. 最多执行 3 轮，直到输出包含 `<M:skill_usage status="done">...</M:skill_usage>`。
+3. 按 `worker.budget.maxRounds/maxDurationMs` 执行多轮续跑；默认 3 轮，直到输出包含 `<M:skill_usage status="done">...</M:skill_usage>`。
 4. 记录进度并归档任务结果。
 
 ## Provider Runtime

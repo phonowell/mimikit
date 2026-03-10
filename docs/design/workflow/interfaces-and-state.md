@@ -132,6 +132,7 @@
 - 推理强度：`MIMIKIT_REASONING_EFFORT`、`MIMIKIT_MANAGER_REASONING_EFFORT`、`MIMIKIT_CODEX_REASONING_EFFORT`
 - 代理：`MIMIKIT_PROXY`、`MIMIKIT_MANAGER_PROXY`、`MIMIKIT_CODEX_PROXY`、`MIMIKIT_OPENCODE_PROXY`
 - provider 开关：`MIMIKIT_CODEX_ENABLED`、`MIMIKIT_OPENCODE_ENABLED`
+- CLI action 日志：`MIMIKIT_ACTION_LOGS`
 - WebUI：`MIMIKIT_WEBUI_ENABLED`、`MIMIKIT_WEBUI_PORT`
 - Telegram：`TELEGRAM_CHANNEL_ENABLED`、`TELEGRAM_BOT_TOKEN`、`TELEGRAM_CHAT_ID`、`TELEGRAM_API_ROOT`、`TELEGRAM_PROXY`
 - Feishu：`FEISHU_CHANNEL_ENABLED`、`FEISHU_APP_ID`、`FEISHU_APP_SECRET`、`FEISHU_CHAT_ID`
@@ -183,6 +184,7 @@ schema：`src/storage/runtime-snapshot-schema.ts`
 - `taskPlans`
 - `focuses`、`focusDigests`
 - `managerTurn`
+- `managerThreadId`
 - `queues.inputsCursor`、`queues.resultsCursor`
 - `memoryRefresh`
 
@@ -217,3 +219,7 @@ schema：`src/storage/runtime-snapshot-schema.ts`
 - `pendingInputs`
 - `managerRunning`
 - `maxWorkers`
+- `managerLastContextPacket?`
+- `managerLastUsage?`
+- `managerUsageTotal?`
+- `workerUsageTotal?`

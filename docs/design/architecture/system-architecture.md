@@ -12,7 +12,7 @@
 - 保留统一模型 `Task + TaskPlan + Focus`，不再维护旧链路兼容层。
 - `mimikit` 对外是异步自治作业系统，对内保持轻量编排内核：负责本地状态机、队列、调度、可观测性，不直接执行任务。
 - manager 使用 `openai-responses`；worker 按任务 `provider` 路由到 `codex-sdk` 或 `opencode-sdk`。
-- 运行时状态收敛在 `session / manager / worker / ui` 四个子域，避免继续堆第二套调度或摘要层。
+- 运行时状态采用“根级实体集合 + 过程态子域”结构：根上保留 `queues / tasks / taskPlans / focuses / focusDigests`，过程态收敛在 `session / manager / worker / ui`，避免继续堆第二套调度或摘要层。
 - manager prompt 收敛为双 packet：`state_packet` 负责稳定状态（focus/task/plan），`event_packet` 负责当前批次事件（input/result/history/lookup/action_feedback/environment/packet）；section 字节预算固定取自 `manager.promptSections`，`wakeProfile` 只影响 packet/action surface，不再动态改写 bytes。
 - manager 自动选 worker provider 时遵循固定顺序：显式 `provider` > 同 `focus` 最近活跃任务的 provider affinity > 默认低 `billing` / 同档高 `capability` provider。
 - manager/worker 每轮 usage 统一写入 `usage/ledger.jsonl`，直接暴露 prompt 字节、packet 裁剪与执行侧 token 消耗，不再额外引入成本推导层。
@@ -21,11 +21,12 @@
 
 ## 组件职责
 
-- `manager`：消费 `inputs/results`，决定回复、任务、计划与收尾策略，并记录每轮 context packet 与 usage ledger。
+- `manager`：消费 `inputs/results`，决定回复、任务、计划与收尾策略，记录每轮 context packet 与 usage ledger，并在批次收尾后触发 memory refresh。
 - `worker`：把任务派发给外部执行运行时，并把结果回写到本地状态，同时在结果收尾时写 usage ledger。
 - `managerLoop`：统一处理计划触发、待确认 choice 生命周期、worker 槽位释放，不再保留独立 trigger loop。
 - `runtime reaper`：主进程异常退出后回收 worker 子进程。
-- WebUI：只承担观察、复盘与显式续跑入口，不承载调度策略。
+- `channel lifecycle`：启动并维护 Telegram/Feishu polling，把外部入站消息转成统一输入，并负责被动回发与跨通道广播。
+- HTTP/WebUI：承担观察、复盘、显式续跑与控制面入口（消息删除、任务变更、choice 选择、restart/reset），不承载调度策略。
 
 约束：
 
@@ -36,24 +37,29 @@
 
 ## 启动顺序
 
-实现入口：
+进程入口：
 
+- `src/cli/index.ts`
 - `src/orchestrator/core/orchestrator-service.ts`
-- `src/orchestrator/core/orchestrator-channel-lifecycle.ts`
-- `src/orchestrator/core/orchestrator-input-ingress.ts`
-- `src/orchestrator/core/orchestrator-chat-history.ts`
 - `src/orchestrator/core/orchestrator-runtime-lifecycle.ts`
+- `src/orchestrator/core/orchestrator-channel-lifecycle.ts`
 
-1. `hydrateRuntimeState`
-2. `ensureGlobalFocus` + `enforceActiveFocusLimit` + `pruneArchivedFocuses`
-3. 写入 startup system message（`Session started.`）
-4. `enqueuePendingWorkerTasks` + `notifyWorkerLoop`
-5. 启动 `managerLoop`
-6. 启动 `workerLoop`
+启动顺序：
+
+1. CLI 解析参数，加载 `config.toml` + 环境变量覆写，并获取 runtime lock。
+2. 启动 `runtime reaper` heartbeat，建立外部子进程桥接。
+3. 构造 `Orchestrator` 并执行内部启动链路：
+4. `hydrateRuntimeState`
+5. `ensureGlobalFocus` + `enforceActiveFocusLimit` + `pruneArchivedFocuses`
+6. 写入 startup system message（`Session started.`）
+7. `enqueuePendingWorkerTasks` + `notifyWorkerLoop`
+8. 启动 `managerLoop` 与 `workerLoop`
+9. 启动 Telegram/Feishu channel lifecycle（若启用）
+10. 启动 HTTP 服务与 WebUI 静态资源（若启用）
 
 ## 主链路（信号驱动 + deadline 唤醒）
 
-1. 用户输入、计划触发、worker 结果先写入本地队列；写入后通过 `notifyManagerLoop` 立即唤醒 manager。
+1. 用户输入（WebUI/Telegram/Feishu）、计划触发、worker 结果先写入本地队列；写入后通过 `notifyManagerLoop` 立即唤醒 manager。
 2. `managerLoop` 基于队列 checkpoint 增量消费这些输入并执行编排，不再每轮全量重读 `inputs/results` JSONL。
 3. 若产生任务，worker 调用外部运行时执行并写回 `results/packets.jsonl`。
 4. manager 再次被唤醒，直到本轮走到明确收尾条件；若当前无新队列事件，则只按最近 `choice expiresAt` / `plan scheduled_at|cron` 的 deadline 休眠，不做固定频率空轮询。
