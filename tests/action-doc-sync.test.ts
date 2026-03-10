@@ -9,8 +9,8 @@ import { ACTION_DEFINITIONS } from '../src/manager/action-registry-definitions.j
 const ROOT_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const ACTION_DOC_PATH = resolve(ROOT_DIR, 'docs/design/workflow/action.md')
 
-const MANAGER_ACTION_LIST_START = '### 计划类'
-const MANAGER_ACTION_LIST_END = '参数约定（关键字段）：'
+const MANAGER_ACTION_LIST_START = '### 读取与检索'
+const MANAGER_ACTION_LIST_END = '## 动态 Action Surface'
 
 const extractManagerActionNamesFromDoc = (source: string): string[] => {
   const startIndex = source.indexOf(MANAGER_ACTION_LIST_START)

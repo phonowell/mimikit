@@ -37,7 +37,11 @@ import { resolveRunTaskConfirmationRequirement } from './run-task-confirmation.j
 import { buildTaskContractFromAttrs } from './task-contract.js'
 
 import type { Parsed } from '../actions/model/spec.js'
-import type { TaskPlanStatus, TaskStatus } from '../types/index.js'
+import type {
+  ManagerWakeProfile,
+  TaskPlanStatus,
+  TaskStatus,
+} from '../types/index.js'
 import type { ZodSchema } from 'zod'
 export type FeedbackContext = {
   taskStatusById?: Map<string, TaskStatus>
@@ -47,6 +51,8 @@ export type FeedbackContext = {
   allowAskUserChoice?: boolean
   enabledWorkerProviders?: Set<'codex' | 'opencode'>
   confirmedRunTaskChoiceIds?: Set<string>
+  wakeProfile?: ManagerWakeProfile
+  allowedActions?: Set<string>
 }
 export type { ValidationIssue } from './action-validation-helpers.js'
 export const validateWithSchema = (

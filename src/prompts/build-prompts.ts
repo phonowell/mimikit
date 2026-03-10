@@ -3,6 +3,10 @@ import { resolve } from 'node:path'
 import { buildFocusPromptPayload } from '../focus/index.js'
 import { buildPaths } from '../fs/paths.js'
 import { readHistory } from '../history/store.js'
+import {
+  formatManagerActionSurfacePrompt,
+  resolveManagerActionSurface,
+} from '../manager/action-surface.js'
 import { type MemoryScoreContext } from '../memory/entry-score.js'
 import { buildMemoryPromptSections } from '../memory/prompt-sections.js'
 import { readMemoryEntries } from '../memory/store.js'
@@ -91,6 +95,7 @@ const MAX_MEMORY_MENTION_ITEMS = 128
 const MAX_RECENT_HISTORY_SUMMARY_ITEMS = 8
 
 const CONTEXT_EMPTY_VALUES: Record<string, string> = {
+  action_surface: '',
   state_packet: '',
   event_packet: '',
   remembered_memory: '',
@@ -202,6 +207,9 @@ export const buildManagerPromptPayload = async (params: {
   const limits = params.promptSectionLimits
   const wakeProfile = params.wakeProfile ?? params.env?.wakeProfile ?? 'mixed'
   const packetMode = params.packetMode ?? 'standard'
+  const actionSurface = formatManagerActionSurfacePrompt(
+    resolveManagerActionSurface(wakeProfile),
+  )
   const sectionText = (value: string, maxBytes: number): string =>
     encodePromptTextSection(value, maxBytes)
   const sectionJson = (value: string, maxBytes: number): string =>
@@ -464,7 +472,10 @@ export const buildManagerPromptPayload = async (params: {
   const contextSource = await loadPromptSource('manager/context.md')
   const prefix = renderPromptTemplate(
     systemSource.template,
-    CONTEXT_EMPTY_VALUES,
+    {
+      ...CONTEXT_EMPTY_VALUES,
+      action_surface: actionSurface,
+    },
     systemSource.path,
   ).trim()
   const stableContext = renderPromptTemplate(

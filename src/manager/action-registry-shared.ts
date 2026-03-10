@@ -3,6 +3,19 @@ import type { FeedbackContext, ValidationIssue } from './action-validation.js'
 import type { RuntimeState } from './runtime-adapter.js'
 import type { Parsed } from '../actions/model/spec.js'
 
+export type ManagerActionDomain =
+  | 'lookup'
+  | 'task'
+  | 'plan'
+  | 'dialog'
+  | 'focus'
+  | 'memory'
+
+export type ManagerActionPromptSpec = {
+  summary: string
+  constraints: readonly string[]
+}
+
 export type ApplyContext = {
   seen: Set<string>
   options?: ApplyTaskActionsOptions
@@ -12,6 +25,8 @@ export type ApplyResult = 'continue' | 'stop'
 
 export type ManagerActionDefinition = {
   name: string
+  domain: ManagerActionDomain
+  prompt: ManagerActionPromptSpec
   validate: (item: Parsed, context: FeedbackContext) => ValidationIssue[]
   apply: (
     runtime: RuntimeState,
@@ -24,7 +39,7 @@ export const continueApply = (): Promise<ApplyResult> =>
   Promise.resolve('continue')
 
 export const createContinueAction = (
-  name: string,
+  definition: Pick<ManagerActionDefinition, 'name' | 'domain' | 'prompt'>,
   validate: ManagerActionDefinition['validate'],
   apply: (
     runtime: RuntimeState,
@@ -32,7 +47,7 @@ export const createContinueAction = (
     context: ApplyContext,
   ) => Promise<void>,
 ): ManagerActionDefinition => ({
-  name,
+  ...definition,
   validate,
   apply: async (runtime, item, context) => (
     await apply(runtime, item, context),
@@ -41,7 +56,7 @@ export const createContinueAction = (
 })
 
 export const createStopAction = (
-  name: string,
+  definition: Pick<ManagerActionDefinition, 'name' | 'domain' | 'prompt'>,
   validate: ManagerActionDefinition['validate'],
   apply: (
     runtime: RuntimeState,
@@ -49,7 +64,7 @@ export const createStopAction = (
     context: ApplyContext,
   ) => Promise<void>,
 ): ManagerActionDefinition => ({
-  name,
+  ...definition,
   validate,
   apply: async (runtime, item, context) => (
     await apply(runtime, item, context),
@@ -58,10 +73,10 @@ export const createStopAction = (
 })
 
 export const createNoopAction = (
-  name: string,
+  definition: Pick<ManagerActionDefinition, 'name' | 'domain' | 'prompt'>,
   validate: ManagerActionDefinition['validate'],
 ): ManagerActionDefinition => ({
-  name,
+  ...definition,
   validate,
   apply: continueApply,
 })

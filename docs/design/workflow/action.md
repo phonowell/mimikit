@@ -4,9 +4,9 @@
 
 ## 文档定位
 
-- 本文档是 Action 领域的单一主规范（single source of truth），覆盖协议、动作清单、执行语义与参数约束。
-- 涉及 Action 的设计记录、提案、简化说明仅作背景参考，不构成并行规范。
-- 若与其他文档表述冲突，以本文档与对应实现代码（`src/manager/*`、`src/actions/protocol/*`）为准。
+- Action 的代码主源是 `src/manager/action-registry-definitions.ts`、`src/manager/action-surface.ts`、`src/manager/action-validation.ts`。
+- 本文档是面向人的实现说明，覆盖协议、域边界、动态 surface、执行语义与关键参数约束。
+- 涉及 Action 的设计记录、提案、简化说明仅作背景参考，不构成并行规范；若与实现冲突，以代码为准。
 
 ## 领域边界
 
@@ -26,35 +26,41 @@
 
 实现：`src/manager/action-registry-definitions.ts`、`src/manager/action-validation.ts`、`src/manager/action-apply.ts`
 
+### 读取与检索
+
+- `query_context`
+- `read_file`
+
+### 任务类
+
+- `enqueue_task`
+- `mutate_task`
+- `set_task_result_summary`
+
 ### 计划类
 
 - `create_plan`
 - `update_plan`
 - `delete_plan`
 
-### 任务类
-
-- `enqueue_task`
-- `mutate_task`
-
 ### 交互类
 
 - `ask_user_choice`
 
-### 查询类
-
-- `query_context`
-- `read_file`
-
-### 结果处理类
-
-- `set_task_result_summary`
-
-### 状态写入类
+### 状态归属与记忆类
 
 - `upsert_focus`
 - `assign_focus`
 - `remember_memory`
+
+## 动态 Action Surface
+
+实现：`src/manager/action-surface.ts`、`src/manager/loop-batch-run-helpers.ts`、`src/manager/action-feedback-collect.ts`
+
+- `user_input` / `mixed`：开放 `lookup + task + plan + dialog + focus + memory`
+- `task_result` / `trigger` / `capacity`：仅开放 `lookup + task + plan`
+- 未出现在当前 surface 的 action，即使已注册，也会在校验阶段被拒绝并回写 `action_execution_rejected`
+- prompt 中展示的 action 面由代码按当前 `wake_profile` 生成，不再由 prompt 文案手写维护
 
 参数约定（关键字段）：
 
@@ -80,6 +86,7 @@
 
 约束补充：
 
+- 当前轮次不开放的 action 会被拒绝，反馈文本会显式说明 `wake_profile` 与本轮允许的 action 列表。
 - `query_context` 与 `read_file` 在同一纠错回合中每类仅接受 1 条有效 action；重复项会回写 `M:event_packet.action_feedback`。
 - 未注册 action 会回写 `unregistered_action` 反馈，不会执行。
 - action 出现在代码块或尾部 action 区之外时，会回写 `invalid_action_syntax` 反馈。

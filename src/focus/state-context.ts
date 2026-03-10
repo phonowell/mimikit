@@ -5,7 +5,7 @@ import { normalizeFocusOpenItems } from './open-items.js'
 import { canPersistFocusContext } from './reserved.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
-import type { FocusContext } from '../types/index.js'
+import type { FocusContext, FocusId } from '../types/index.js'
 
 export const normalizeFocusSummary = (value?: string): string | undefined => {
   if (typeof value !== 'string') return undefined

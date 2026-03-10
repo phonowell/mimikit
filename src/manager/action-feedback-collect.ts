@@ -20,6 +20,7 @@ import {
   REGISTERED_MANAGER_ACTIONS,
   validateRegisteredManagerAction,
 } from './action-registrations.js'
+import { formatBlockedActionSurfaceHint } from './action-surface.js'
 import { queryContextSchema } from './query-context-tool.js'
 
 import type { FeedbackContext } from './action-validation.js'
@@ -192,6 +193,22 @@ export const collectManagerActionFeedback = (
     }
   }
 
+  for (const item of items) {
+    if (!REGISTERED_MANAGER_ACTIONS.has(item.name)) continue
+    if (!context.allowedActions || context.allowedActions.has(item.name))
+      continue
+    pushFeedback(
+      feedback,
+      seen,
+      item,
+      'action_execution_rejected',
+      formatBlockedActionSurfaceHint({
+        action: item.name,
+        wakeProfile: context.wakeProfile ?? 'mixed',
+      }),
+    )
+  }
+
   const lookupSeen = new Set<string>()
   for (const item of items) {
     if (!(item.name in SINGLE_LOOKUP_ACTION_LIMIT_HINTS)) continue
@@ -212,6 +229,8 @@ export const collectManagerActionFeedback = (
 
   for (const item of items) {
     if (!REGISTERED_MANAGER_ACTIONS.has(item.name)) continue
+    if (context.allowedActions && !context.allowedActions.has(item.name))
+      continue
     const issues = validateRegisteredManagerAction(item, context)
     for (const issue of issues)
       pushFeedback(feedback, seen, item, issue.error, issue.hint)

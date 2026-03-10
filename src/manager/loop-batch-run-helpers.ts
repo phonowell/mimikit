@@ -1,5 +1,6 @@
 import { appendLog } from '../log/append.js'
 
+import { resolveManagerActionSurface } from './action-surface.js'
 import { collectConfirmedRunTaskChoiceIds } from './run-task-confirmation.js'
 import { listEnabledWorkerProviders } from './worker-provider-selection.js'
 
@@ -7,6 +8,7 @@ import type { RuntimeState } from './runtime-adapter.js'
 import type {
   HistoryLookupMessage,
   ManagerActionFeedback,
+  ManagerWakeProfile,
   QueryLookupMessage,
   ReadFileLookupMessage,
   TaskPlanStatus,
@@ -78,6 +80,7 @@ export const buildActionFeedbackContext = (params: {
   runtime: RuntimeState
   allowAskUserChoice: boolean
   resultTaskIds: Set<string>
+  wakeProfile: ManagerWakeProfile
   inputs?: UserInput[]
 }): {
   taskStatusById: Map<string, TaskStatus>
@@ -86,14 +89,18 @@ export const buildActionFeedbackContext = (params: {
   allowAskUserChoice: boolean
   enabledWorkerProviders: Set<WorkerProvider>
   confirmedRunTaskChoiceIds: Set<string>
+  wakeProfile: ManagerWakeProfile
+  allowedActions: Set<string>
 } => {
-  const { runtime, allowAskUserChoice, resultTaskIds, inputs } = params
+  const { runtime, allowAskUserChoice, resultTaskIds, wakeProfile, inputs } =
+    params
   const enabledWorkerProviders = new Set<WorkerProvider>(
     listEnabledWorkerProviders(runtime.config).map((item) => item.provider),
   )
   const confirmedRunTaskChoiceIds = collectConfirmedRunTaskChoiceIds(
     inputs ?? runtime.session.inflightInputs,
   )
+  const actionSurface = resolveManagerActionSurface(wakeProfile)
   return {
     taskStatusById: new Map(
       runtime.tasks.map((task) => [task.id, task.status]),
@@ -105,6 +112,8 @@ export const buildActionFeedbackContext = (params: {
     allowAskUserChoice,
     enabledWorkerProviders,
     confirmedRunTaskChoiceIds,
+    wakeProfile,
+    allowedActions: actionSurface.actionNames,
   }
 }
 

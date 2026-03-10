@@ -76,6 +76,8 @@ export const resolveRoundFollowup = async (params: {
   resolveFocusId: () => FocusId
   previousLookupKey?: string
 }): Promise<RoundFollowupResult> => {
+  const wakeProfile =
+    params.runtime.manager.lastContextPacket?.wakeProfile ?? 'mixed'
   const actionFeedback = collectManagerActionFeedback(
     params.parsed,
     {
@@ -83,6 +85,7 @@ export const resolveRoundFollowup = async (params: {
         runtime: params.runtime,
         allowAskUserChoice: params.allowAskUserChoice,
         resultTaskIds: params.resultTaskIds,
+        wakeProfile,
         inputs: params.runtime.session.inflightInputs,
       }),
       scheduleNowIso: resolveScheduleNowIso(

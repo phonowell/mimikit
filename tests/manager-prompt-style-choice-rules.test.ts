@@ -43,6 +43,7 @@ test("manager prompt enforces concise reply and choice routing rules", async () 
     results: [],
     tasks: [],
     promptSectionLimits,
+    wakeProfile: "user_input",
   });
 
   expect(prompt).toContain("默认不寒暄、不复述用户已给出的任务、不做无效确认");
@@ -82,16 +83,25 @@ test("manager prompt enforces concise reply and choice routing rules", async () 
     "不要通过反复改写同目标 `enqueue_task` 间接触发 deferred cancel",
   );
   expect(prompt).toContain(
-    "仅从 `M:environment.provider_candidates` 选 `enqueue_task.provider`",
+    "仅从 `M:event_packet.environment` 中已注入的 `provider_candidates` 选 `enqueue_task.provider`",
   );
   expect(prompt).toContain(
-    "`enqueue_task`：必填 `prompt,title,cwd,goal,scope,acceptance_1`",
+    "当前 wake_profile=`user_input`；未列出的 action 视为本轮不可用。",
   );
   expect(prompt).toContain(
-    "省略 `provider`，交给系统自动按“`billing` 更低优先，同档位 `capability` 更高优先”选择",
+    "`M:enqueue_task`：派发一个 worker 任务",
   );
   expect(prompt).toContain(
-    "仅在任务强度明显偏高（跨文件重构、疑难排错、高回滚成本）时显式指定更高 `capability` provider",
+    "### 用户交互",
+  );
+  expect(prompt).toContain(
+    "`M:ask_user_choice`：生成一个待用户返回后处理的有限选择",
+  );
+  expect(prompt).toContain(
+    "### 长期记忆",
+  );
+  expect(prompt).toContain(
+    "`M:remember_memory`：写入长期记忆",
   );
   expect(prompt).not.toContain("docs/design/workflow/plan.md");
 });
