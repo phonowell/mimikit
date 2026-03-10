@@ -1,5 +1,20 @@
 export const newProviderId = () => crypto.randomUUID().replace(/-/g, '');
 export const stripUndefined = (obj) => Object.fromEntries(Object.entries(obj).filter(([, value]) => value !== undefined));
+export const resolveHttpProxyUrl = (params) => {
+    const trimmed = params.proxy?.trim();
+    if (!trimmed)
+        return undefined;
+    let parsed;
+    try {
+        parsed = new URL(trimmed);
+    }
+    catch {
+        return params.onInvalidUrl(trimmed);
+    }
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:')
+        return params.onInvalidProtocol(parsed.protocol);
+    return parsed.toString();
+};
 const asNumber = (value) => typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 const normalizeUsageParts = (parts) => {
     const input = asNumber(parts.input);

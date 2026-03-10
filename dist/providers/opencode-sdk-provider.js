@@ -3,7 +3,7 @@ import { createOpencodeClient } from '@opencode-ai/sdk';
 import { buildProviderAbortedError, buildProviderCircuitOpenError, buildProviderPreflightError, buildProviderSdkError, buildProviderTimeoutError, isTransientProviderMessage, ProviderError, } from './provider-error.js';
 import { bindExternalAbort, buildProviderResult, createTimeoutGuard, } from './provider-runtime.js';
 import { attachProviderThreadId } from './thread-id.js';
-import { newProviderId } from './utils.js';
+import { newProviderId, resolveHttpProxyUrl } from './utils.js';
 const PROVIDER_ID = 'opencode-sdk';
 const MODEL_PROVIDER_ID = 'opencode';
 const DEFAULT_AGENT = 'build';
@@ -56,26 +56,21 @@ const asString = (value) => {
 };
 const asNumber = (value) => typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 const resolveProxyUrl = (proxy) => {
-    const trimmed = proxy?.trim();
-    if (!trimmed)
-        return undefined;
-    let parsed;
-    try {
-        parsed = new URL(trimmed);
-    }
-    catch {
-        throw buildProviderPreflightError({
-            providerId: PROVIDER_ID,
-            message: `proxy is invalid: ${trimmed}`,
-        });
-    }
-    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-        throw buildProviderPreflightError({
-            providerId: PROVIDER_ID,
-            message: `proxy protocol is invalid: ${parsed.protocol}`,
-        });
-    }
-    return parsed.toString();
+    return resolveHttpProxyUrl({
+        proxy,
+        onInvalidUrl: (value) => {
+            throw buildProviderPreflightError({
+                providerId: PROVIDER_ID,
+                message: `proxy is invalid: ${value}`,
+            });
+        },
+        onInvalidProtocol: (protocol) => {
+            throw buildProviderPreflightError({
+                providerId: PROVIDER_ID,
+                message: `proxy protocol is invalid: ${protocol}`,
+            });
+        },
+    });
 };
 const parsePortFromUrl = (url) => {
     try {

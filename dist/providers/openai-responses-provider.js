@@ -7,7 +7,7 @@ import { asRecord, asString } from './provider-payload.js';
 import { bindExternalAbort, buildProviderResult, createTimeoutGuard, elapsedMsSince, } from './provider-runtime.js';
 import { bestEffort } from './safe.js';
 import { attachProviderThreadId } from './thread-id.js';
-import { normalizeUsage } from './utils.js';
+import { normalizeUsage, resolveHttpProxyUrl } from './utils.js';
 const PROVIDER_ID = 'openai-responses';
 const resolveBaseUrl = (baseUrl) => {
     const trimmed = baseUrl?.trim().replace(/\/+$/g, '');
@@ -49,26 +49,23 @@ const resolveModel = (request, fallbackModel) => {
 };
 const proxyDispatcherCache = new Map();
 const resolveProxyDispatcher = (proxy) => {
-    const trimmed = trimNonEmptyString(proxy);
-    if (!trimmed)
+    const normalized = resolveHttpProxyUrl({
+        proxy: trimNonEmptyString(proxy),
+        onInvalidUrl: (value) => {
+            throw buildProviderPreflightError({
+                providerId: PROVIDER_ID,
+                message: `proxy is invalid: ${value}`,
+            });
+        },
+        onInvalidProtocol: (protocol) => {
+            throw buildProviderPreflightError({
+                providerId: PROVIDER_ID,
+                message: `proxy protocol is invalid: ${protocol}`,
+            });
+        },
+    });
+    if (!normalized)
         return undefined;
-    let parsed;
-    try {
-        parsed = new URL(trimmed);
-    }
-    catch {
-        throw buildProviderPreflightError({
-            providerId: PROVIDER_ID,
-            message: `proxy is invalid: ${trimmed}`,
-        });
-    }
-    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-        throw buildProviderPreflightError({
-            providerId: PROVIDER_ID,
-            message: `proxy protocol is invalid: ${parsed.protocol}`,
-        });
-    }
-    const normalized = parsed.toString();
     const cached = proxyDispatcherCache.get(normalized);
     if (cached)
         return cached;

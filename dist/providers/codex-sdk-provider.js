@@ -6,6 +6,7 @@ import { ProviderError, readProviderErrorCode } from './provider-error.js';
 import { bindExternalAbort, buildProviderResult, createTimeoutGuard, elapsedMsSince, } from './provider-runtime.js';
 import { logSafeError } from './safe.js';
 import { attachProviderThreadId } from './thread-id.js';
+import { resolveHttpProxyUrl } from './utils.js';
 const codexClientCache = new Map();
 const toCodexCliEnv = (proxy) => {
     const env = {};
@@ -22,17 +23,15 @@ const toCodexCliEnv = (proxy) => {
 };
 const resolveCodexProxy = (proxy) => {
     const trimmed = proxy?.trim();
-    if (!trimmed)
-        return undefined;
-    try {
-        const parsed = new URL(trimmed);
-        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:')
-            throw new Error('invalid_protocol');
-        return parsed.toString();
-    }
-    catch {
-        throw new Error(`worker_proxy_invalid_url:${trimmed}`);
-    }
+    return resolveHttpProxyUrl({
+        proxy,
+        onInvalidUrl: (value) => {
+            throw new Error(`worker_proxy_invalid_url:${value}`);
+        },
+        onInvalidProtocol: () => {
+            throw new Error(`worker_proxy_invalid_url:${trimmed}`);
+        },
+    });
 };
 const resolveCodexClient = (proxy) => {
     const proxyUrl = resolveCodexProxy(proxy);
