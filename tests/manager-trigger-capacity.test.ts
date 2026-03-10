@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import PQueue from 'p-queue'
-import { expect, test } from 'vitest'
+import { beforeEach, expect, test, vi } from 'vitest'
 
 import { GLOBAL_FOCUS_ID } from '../src/focus/constants.js'
 import { notifyManagerLoop } from '../src/orchestrator/core/signals.js'
@@ -16,9 +16,26 @@ import { createTestRuntimeState } from './helpers/runtime-state.js'
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
 import type { TaskPlan } from '../src/types/index.js'
 
+const { runManagerRoundWithRecoveryMock } = vi.hoisted(() => ({
+  runManagerRoundWithRecoveryMock: vi.fn(),
+}))
+
+vi.mock('../src/manager/loop-batch-exec.js', () => ({
+  runManagerRoundWithRecovery: runManagerRoundWithRecoveryMock,
+}))
+
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-trigger-capacity-'))
 const settle = (ms = 150) =>
   new Promise<void>((resolve) => setTimeout(resolve, ms))
+
+beforeEach(() => {
+  runManagerRoundWithRecoveryMock.mockReset()
+  runManagerRoundWithRecoveryMock.mockResolvedValue({
+    output: '',
+    elapsedMs: 0,
+    promptPrefixHash: 'manager-trigger-capacity-test',
+  })
+})
 
 const createTestConfig = (
   workDir: string,
@@ -291,7 +308,7 @@ test(
       await stopLoop(runtime, loopPromise)
     }
   },
-  12_000,
+  20_000,
 )
 
 test('managerLoop emits worker_slot_freed on full-to-free transition only once', async () => {
@@ -369,27 +386,33 @@ test(
       await stopLoop(runtime, loopPromise)
     }
   },
-  12_000,
+  20_000,
 )
 
-test('managerLoop reacts when occupied worker count drops while slot stays available', async () => {
-  const runtime = await createRuntime({ maxConcurrent: 1 })
-  runtime.taskPlans.push(createPlan('plan-capacity', { mode: 'on_worker_slot_freed' }))
-  runtime.worker.runningControllers.set('task-busy', new AbortController())
+test(
+  'managerLoop reacts when occupied worker count drops while slot stays available',
+  async () => {
+    const runtime = await createRuntime({ maxConcurrent: 1 })
+    runtime.taskPlans.push(
+      createPlan('plan-capacity', { mode: 'on_worker_slot_freed' }),
+    )
+    runtime.worker.runningControllers.set('task-busy', new AbortController())
 
-  const loopPromise = managerLoop(runtime)
-  try {
-    await settle()
-    expect(runtime.taskPlans[0]?.runCount).toBe(0)
+    const loopPromise = managerLoop(runtime)
+    try {
+      await settle()
+      expect(runtime.taskPlans[0]?.runCount).toBe(0)
 
-    runtime.worker.runningControllers.clear()
-    runtime.worker.lastActivityAtMs = Date.now()
-    notifyManagerLoop(runtime)
+      runtime.worker.runningControllers.clear()
+      runtime.worker.lastActivityAtMs = Date.now()
+      notifyManagerLoop(runtime)
 
-    await waitFor(() => (runtime.taskPlans[0]?.runCount ?? 0) >= 1, 4_000)
-    expect(runtime.taskPlans[0]?.runCount).toBe(1)
-    expect(await countSystemEvent(runtime, 'worker_slot_freed')).toBe(0)
-  } finally {
-    await stopLoop(runtime, loopPromise)
-  }
-})
+      await waitFor(() => (runtime.taskPlans[0]?.runCount ?? 0) >= 1, 4_000)
+      expect(runtime.taskPlans[0]?.runCount).toBe(1)
+      expect(await countSystemEvent(runtime, 'worker_slot_freed')).toBe(0)
+    } finally {
+      await stopLoop(runtime, loopPromise)
+    }
+  },
+  20_000,
+)

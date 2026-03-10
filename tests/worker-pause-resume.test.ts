@@ -201,13 +201,13 @@ test('budget pause choice can resume paused partial task directly', async () => 
   })
 
   expect(requested).toBe(true)
-  expect(runtime.ui.pendingUserChoice?.effect).toMatchObject({
+  expect(runtime.ui.pendingUserChoices[0]?.effect).toMatchObject({
     type: 'resume_task',
     taskId: task.id,
   })
-  expect(runtime.ui.pendingUserChoice?.expiresAt).toBeUndefined()
+  expect(runtime.ui.pendingUserChoices[0]?.expiresAt).toBeUndefined()
 
-  const choice = runtime.ui.pendingUserChoice
+  const choice = runtime.ui.pendingUserChoices[0]
   if (!choice?.effect || choice.effect.type !== 'resume_task')
     throw new Error('expected resume_task choice')
 
@@ -229,7 +229,7 @@ test('budget pause choice can resume paused partial task directly', async () => 
       status: 'pending',
     },
   })
-  expect(runtime.ui.pendingUserChoice).toBeNull()
+  expect(runtime.ui.pendingUserChoices).toHaveLength(0)
   expect(task.status).toBe('pending')
   expect(task.result).toBeUndefined()
   expect(queueAdd).toHaveBeenCalledTimes(1)
@@ -282,7 +282,7 @@ test('pending resume choice persists without timeout until a user selects it', a
       Date.parse('2026-03-07T00:00:04.000Z'),
     ),
   ).toBe(false)
-  expect(runtime.ui.pendingUserChoice?.id).toBe(
+  expect(runtime.ui.pendingUserChoices[0]?.id).toBe(
     'choice-task-resume-task-budget-persist',
   )
 })
@@ -344,20 +344,22 @@ test('resumeRecoverableTasks requeues all budget-recoverable tasks only', async 
   expect(queueAdd).toHaveBeenCalledTimes(2)
 })
 
-test('budget pause writes visible fallback note when another choice is pending', async () => {
+test('budget pause appends a resume choice when another choice is pending', async () => {
   const runtime = await createRuntime()
-  runtime.ui.pendingUserChoice = {
-    id: 'choice-existing',
-    question: 'Choose output format',
-    options: [
-      { id: 'option-a', label: 'A', reason: 'reason-a' },
-      { id: 'option-b', label: 'B', reason: 'reason-b' },
-    ],
-    defaultOptionId: 'option-a',
-    createdAt: '2026-03-06T00:00:00.000Z',
-    expiresAt: '2026-03-06T00:05:00.000Z',
-    focusId: 'focus-global',
-  }
+  runtime.ui.pendingUserChoices = [
+    {
+      id: 'choice-existing',
+      question: 'Choose output format',
+      options: [
+        { id: 'option-a', label: 'A', reason: 'reason-a' },
+        { id: 'option-b', label: 'B', reason: 'reason-b' },
+      ],
+      defaultOptionId: 'option-a',
+      createdAt: '2026-03-06T00:00:00.000Z',
+      expiresAt: '2026-03-06T00:05:00.000Z',
+      focusId: 'focus-global',
+    },
+  ]
   const task = createTask('task-budget-busy', {
     status: 'paused',
     pausedAt: '2026-03-06T00:00:03.000Z',
@@ -369,10 +371,9 @@ test('budget pause writes visible fallback note when another choice is pending',
     createdAt: '2026-03-06T00:00:04.000Z',
   })
 
-  expect(requested).toBe(false)
-  const history = await readHistory(runtime.paths.history)
-  const note = history.find((item) =>
-    item.text.includes('Use Continue in the task list to resume when ready.'),
-  )
-  expect(note?.role).toBe('system')
+  expect(requested).toBe(true)
+  expect(runtime.ui.pendingUserChoices.map((item) => item.id)).toEqual([
+    'choice-existing',
+    'choice-task-resume-task-budget-busy',
+  ])
 })

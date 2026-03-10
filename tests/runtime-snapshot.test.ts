@@ -108,7 +108,7 @@ test('runtime snapshot accepts queue cursors', async () => {
   })
 
   const loaded = await loadRuntimeSnapshot(stateDir)
-  expect(loaded.schemaVersion).toBe('runtime-snapshot.v5')
+  expect(loaded.schemaVersion).toBe('runtime-snapshot.v6')
   expect(loaded.queues?.resultsCursor).toBe(9)
   expect(loaded.queues?.inputsCursor).toBe(3)
   expect(loaded.managerThreadId).toBe('session-manager-1')
@@ -154,6 +154,32 @@ test('runtime snapshot rejects older schema version', async () => {
   await expect(loadRuntimeSnapshot(stateDir)).rejects.toThrow(
     /schema version not supported/i,
   )
+})
+
+test('runtime snapshot rejects legacy single pendingUserChoice field', async () => {
+  const stateDir = await createTmpDir()
+  await writeFile(
+    join(stateDir, 'runtime-snapshot.json'),
+    JSON.stringify({
+      schemaVersion: 'runtime-snapshot.v6',
+      tasks: [],
+      taskPlans: [],
+      pendingUserChoice: {
+        id: 'choice-legacy',
+        question: 'continue?',
+        options: [
+          { id: 'option-yes', label: 'Yes', reason: 'continue' },
+          { id: 'option-no', label: 'No', reason: 'stop' },
+        ],
+        defaultOptionId: 'option-no',
+        createdAt: SNAPSHOT_BASE_TIME,
+        focusId: GLOBAL_FOCUS_ID,
+      },
+    }),
+    'utf8',
+  )
+
+  await expect(loadRuntimeSnapshot(stateDir)).rejects.toThrow()
 })
 
 test('runtime snapshot rejects unsupported future schema version', async () => {
@@ -428,7 +454,7 @@ test('runtime snapshot rejects legacy extra fields during load', async () => {
   await writeFile(
     join(stateDir, 'runtime-snapshot.json'),
     JSON.stringify({
-      schemaVersion: 'runtime-snapshot.v4',
+      schemaVersion: 'runtime-snapshot.v6',
       tasks: [],
       taskPlans: [],
       pendingUserChoice: {
@@ -463,7 +489,7 @@ test('loadRuntimeSnapshot falls back to backup file when primary json is broken'
   await writeFile(
     backupPath,
     JSON.stringify({
-      schemaVersion: 'runtime-snapshot.v5',
+      schemaVersion: 'runtime-snapshot.v6',
       tasks: [],
       taskPlans: [],
       queues: {
@@ -505,13 +531,13 @@ test('saveRuntimeSnapshot writes previous primary content into .bak', async () =
   const primaryRaw = await readFile(primaryPath, 'utf8')
   const backupRaw = await readFile(`${primaryPath}.bak`, 'utf8')
   expect(JSON.parse(primaryRaw)).toEqual({
-    schemaVersion: 'runtime-snapshot.v5',
+    schemaVersion: 'runtime-snapshot.v6',
     ...nextSnapshot,
   })
   expect(JSON.parse(backupRaw)).toEqual(oldSnapshot)
 })
 
-test('migrateRuntimeSnapshotToCurrent upgrades v4 focusContexts to v5 focusDigests', () => {
+test('migrateRuntimeSnapshotToCurrent upgrades v4 focusContexts to current focusDigests', () => {
   const result = migrateRuntimeSnapshotToCurrent({
     schemaVersion: 'runtime-snapshot.v4',
     tasks: [],
@@ -527,9 +553,9 @@ test('migrateRuntimeSnapshotToCurrent upgrades v4 focusContexts to v5 focusDiges
 
   expect(result.changed).toBe(true)
   expect(result.fromVersion).toBe('runtime-snapshot.v4')
-  expect(result.toVersion).toBe('runtime-snapshot.v5')
+  expect(result.toVersion).toBe('runtime-snapshot.v6')
   expect(result.migrated).toMatchObject({
-    schemaVersion: 'runtime-snapshot.v5',
+    schemaVersion: 'runtime-snapshot.v6',
     focusDigests: [
       {
         focusId: 'focus-release',
@@ -539,4 +565,33 @@ test('migrateRuntimeSnapshotToCurrent upgrades v4 focusContexts to v5 focusDiges
     ],
   })
   expect(result.migrated).not.toHaveProperty('focusContexts')
+})
+
+test('migrateRuntimeSnapshotToCurrent upgrades v5 snapshot to current version', () => {
+  const result = migrateRuntimeSnapshotToCurrent({
+    schemaVersion: 'runtime-snapshot.v5',
+    tasks: [],
+    taskPlans: [],
+    focusDigests: [
+      {
+        focusId: 'focus-release',
+        summary: 'release summary',
+        updatedAt: SNAPSHOT_BASE_TIME,
+      },
+    ],
+  })
+
+  expect(result.changed).toBe(true)
+  expect(result.fromVersion).toBe('runtime-snapshot.v5')
+  expect(result.toVersion).toBe('runtime-snapshot.v6')
+  expect(result.migrated).toMatchObject({
+    schemaVersion: 'runtime-snapshot.v6',
+    focusDigests: [
+      {
+        focusId: 'focus-release',
+        summary: 'release summary',
+        updatedAt: SNAPSHOT_BASE_TIME,
+      },
+    ],
+  })
 })

@@ -79,6 +79,7 @@ export const runManagerRoundWithRecovery = async (params: {
     readFileLookup?: ReadFileLookupMessage[]
     actionFeedback?: ManagerActionFeedback[]
   }
+  abortSignal?: AbortSignal
 }): Promise<{
   output: string
   elapsedMs: number
@@ -152,6 +153,7 @@ export const runManagerRoundWithRecovery = async (params: {
       : {}),
     modelReasoningEffort: params.runtime.config.manager.modelReasoningEffort,
     retry: params.runtime.config.worker.retry,
+    ...(params.abortSignal ? { abortSignal: params.abortSignal } : {}),
     ...(params.managerThreadId ? { threadId: params.managerThreadId } : {}),
     packetMode,
     wakeProfile,

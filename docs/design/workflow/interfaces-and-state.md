@@ -59,7 +59,7 @@
 
 ## SSE 事件模型（`GET /api/events`）
 
-- `snapshot`：快照事件，包含 `status/messages/tasks/plans/focuses/choice`。
+- `snapshot`：快照事件，包含 `status/messages/tasks/plans/focuses/choices`。
 - `tasks`：任务列表快照更新（由 worker 侧状态变化触发），载荷为任务视图快照对象。
 - `heartbeat`：SSE 保活心跳。
 - `error`：SSE 连接内错误反馈。
@@ -109,9 +109,8 @@
 - `POST /api/choices/:id/select` 请求体：`{ optionId: string }`
 - 成功：`{ ok: true, choiceId, optionId, source }`
 - 失败：`not_found -> 404`，`invalid_option -> 400`，`expired -> 409`
-- 当前实现默认不为 choice 设置超时；choice 会保留到用户显式选择、被新的用户输入打断，或被新的待确认项替换。
-- 预算暂停会生成带 `effect.type=resume_task` 的 `pendingUserChoice`；当用户选择该 effect 对应 option 时，后端会直接调用 `resumeTask(taskId)`，HTTP 成功响应体结构不变。
-- `pendingUserChoice` 属于进程内 UI 交互态，不写入 `runtime-snapshot`；预算暂停场景在重启后会按任务态重建。
+- 当前实现默认不为 choice 设置超时；choice 会保留到用户显式选择、被新的用户输入打断，或被超时逻辑按默认选项结算。
+- 预算暂停会生成带 `effect.type=resume_task` 的 `pendingUserChoices[*]` 项；当用户选择该 effect 对应 option 时，后端会直接调用 `resumeTask(taskId)`，HTTP 成功响应体结构不变。
 
 ## 消息删除协议
 
@@ -186,11 +185,13 @@ schema：`src/storage/runtime-snapshot-schema.ts`
 - `managerTurn`
 - `managerThreadId`
 - `queues.inputsCursor`、`queues.resultsCursor`
+- `pendingUserChoices[]`（预算暂停恢复场景下可带 `effect={ type: "resume_task", taskId, optionId, reason? }`）
+- `pendingUserChoices[]`（预算暂停恢复场景下可带 `effect={ type: "resume_task", taskId, optionId, reason? }`）
 - `memoryRefresh`
 
 补充：
 
-- `pendingUserChoice`、`channelTargets`、`managerLastContextPacket`、`managerLastUsage`、`managerUsageTotal` 都是进程内交互/观测态，不进入 snapshot。
+- `channelTargets`、`managerLastContextPacket`、`managerLastUsage`、`managerUsageTotal` 都是进程内交互/观测态，不进入 snapshot。
 - `channelTargets` 启动时会从最近 history 用户消息中的 chat id 恢复。
 - `runtime-snapshot` 运行期只接受当前 `schemaVersion`；旧版本只允许通过离线迁移脚本转换，不在加载阶段自动兼容。
 - `workerUsageTotal` 不持久化到 snapshot；`GET /api/status` 会在返回时按 `tasks[*].result.usage ?? tasks[*].usage` 实时聚合。

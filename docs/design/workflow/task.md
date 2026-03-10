@@ -44,7 +44,7 @@
 - 长任务命中 `worker.budget.maxDurationMs/maxRounds` 时，本次执行不会落成 `failed`；而是写出 `TaskResult.status=partial`，同时把 `Task.status` 置为 `paused`。
 - 当前默认预算基线为 `30m / 3 rounds`；`pnpm run score:worker-budget` 的当前样本为 `25` 条结果、`p90=22.6m`、`budget_partial=0`，因此保持该默认值。
 - `partial` 结果会保留 `handoff`、`archivePath`、`sessionId` 线索，恢复时继续复用已有 session。
-- 预算暂停后会生成一个进程内 `pendingUserChoice` 作为显式恢复确认；choice 通过 `effect.type=resume_task` 直接绑定恢复动作，不依赖文案判断。
+- 预算暂停后会追加一个显式恢复 choice 到 `pendingUserChoices`；choice 通过 `effect.type=resume_task` 直接绑定恢复动作，不依赖文案判断。
 
 ## 取消与恢复
 
@@ -60,7 +60,7 @@
 - `paused -> pending`：恢复入队并重新调度执行。
 - 从预算暂停恢复时，会先清理旧 `task.result`/`archivePath`，避免历史部分结果阻塞下一次结果消费。
 - 预算暂停会生成一个显式恢复 choice：默认项是 `Keep paused`；当前实现默认不自动超时，用户返回后选择 `Continue now` 会直接调用恢复链路。
-- 该 choice 不进入 `runtime-snapshot`；重启后若恰好只有一个 `paused + partial + budget_exhausted` 任务，会按任务态重建同等恢复入口。多任务场景则退化为任务行 `Continue` 入口。
+- 该 choice 会随 `pendingUserChoices` 一起持久化；若 snapshot 中缺失但任务态存在 `paused + partial + budget_exhausted`，启动时会按任务态补回同等恢复入口。
 - `runtime-snapshot` 不再对旧 choice/schema 做运行期兼容；旧状态需先离线迁移后再加载。
 - `paused` 状态支持继续 `cancel`，行为与 `pending` 取消一致（直接产出 `canceled` 结果）。
 - WebUI 二级菜单提供 `pause/resume/cancel` 控制动作；对预算暂停的可恢复任务，还会在任务行直接暴露 inline `Continue` 入口；pause/resume 会写入系统事件消息。

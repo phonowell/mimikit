@@ -57,6 +57,7 @@ export const runManager = async (params: {
     maxAttempts: number
     backoffMs: number
   }
+  abortSignal?: AbortSignal
   onUsage?: (usage: TokenUsage) => void
   usePromptSegments?: boolean
   packetMode?: ManagerPacketMode
@@ -130,6 +131,7 @@ export const runManager = async (params: {
         ? { modelReasoningEffort: params.modelReasoningEffort }
         : {}),
       ...(params.retry ? { retry: params.retry } : {}),
+      ...(params.abortSignal ? { abortSignal: params.abortSignal } : {}),
       ...(params.onUsage ? { onUsage: params.onUsage } : {}),
       logPath: paths.log,
       logContext: {

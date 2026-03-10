@@ -94,6 +94,7 @@ export const runManagerLlmCall = async (params: {
     maxAttempts: number
     backoffMs: number
   }
+  abortSignal?: AbortSignal
   onUsage?: (usage: TokenUsage) => void
   logPath?: string
   logContext?: Record<string, unknown>
@@ -133,6 +134,7 @@ export const runManagerLlmCall = async (params: {
             ? { modelReasoningEffort: managerModelReasoningEffort }
             : {}),
           ...(params.model?.trim() ? { model: params.model.trim() } : {}),
+          ...(params.abortSignal ? { abortSignal: params.abortSignal } : {}),
           ...(params.onUsage ? { onUsage: params.onUsage } : {}),
           ...(params.logPath ? { logPath: params.logPath } : {}),
           ...(params.logContext ? { logContext: params.logContext } : {}),

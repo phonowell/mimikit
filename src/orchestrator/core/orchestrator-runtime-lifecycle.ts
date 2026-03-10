@@ -33,6 +33,8 @@ export const startRuntimeLifecycle = async (
 
 export const prepareRuntimeStop = (runtime: RuntimeState): void => {
   runtime.session.stopped = true
+  if (!runtime.manager.runAbortController.signal.aborted)
+    runtime.manager.runAbortController.abort()
   notifyManagerLoop(runtime)
   notifyWorkerLoop(runtime)
 }

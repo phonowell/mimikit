@@ -33,10 +33,8 @@ import {
 } from './orchestrator-runtime-lifecycle.js'
 import { createRuntimeState } from './runtime-state.js'
 import { waitForUiSignal } from './signals.js'
-import {
-  clonePendingUserChoice,
-  selectPendingUserChoiceFromUser,
-} from './user-choice.js'
+import { clonePendingUserChoices } from './user-choice-state.js'
+import { selectPendingUserChoiceFromUser } from './user-choice.js'
 
 import type {
   ExitRequest,
@@ -171,7 +169,7 @@ export class Orchestrator {
       tasks: this.getTasks(taskLimit),
       plans: this.getPlans(taskLimit),
       focuses: this.getFocuses(taskLimit),
-      choice: clonePendingUserChoice(this.runtime.ui.pendingUserChoice),
+      choices: clonePendingUserChoices(this.runtime.ui.pendingUserChoices),
     }
   }
 
@@ -219,8 +217,8 @@ export class Orchestrator {
     return resumeRecoverableTasks(this.runtime)
   }
 
-  getPendingUserChoice() {
-    return clonePendingUserChoice(this.runtime.ui.pendingUserChoice)
+  getPendingUserChoices() {
+    return clonePendingUserChoices(this.runtime.ui.pendingUserChoices)
   }
 
   selectPendingUserChoice(

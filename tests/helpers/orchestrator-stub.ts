@@ -26,7 +26,7 @@ export const createOrchestratorStub = () => {
     getReviewStatus: async () => ({ cards: [], highlights: [] }),
     getPlans: () => ({ items: [] }),
     getFocuses: () => ({ items: [] }),
-    getPendingUserChoice: () => null,
+    getPendingUserChoices: () => [],
     getWebUiWakeVersion: () => 0,
     waitForWebUiSignal: async () =>
       ({ kind: 'timeout', version: 0 }) as const,
@@ -45,7 +45,7 @@ export const createOrchestratorStub = () => {
       tasks: { tasks: [], counts: {} },
       plans: { items: [] },
       focuses: { items: [] },
-      choice: null,
+      choices: [],
       reviewStatus: { cards: [], highlights: [] },
     }),
     getTaskById: () => undefined,

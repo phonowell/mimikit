@@ -71,6 +71,7 @@ export const createTestRuntimeState = async (
     manager: {
       running: false,
       signalController: new AbortController(),
+      runAbortController: new AbortController(),
       wakePending: false,
       lastActivityAtMs: nowMs,
       turn: 0,
@@ -90,7 +91,7 @@ export const createTestRuntimeState = async (
       wakeVersion: 0,
       wakeEvents: new Map(),
       signalControllers: new Set(),
-      pendingUserChoice: null,
+      pendingUserChoices: [],
       ...options.patch?.ui,
     },
     queues: {

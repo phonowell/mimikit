@@ -3,6 +3,7 @@ import { appendManagerCorrectionLimitSystemMessage } from '../history/manager-ev
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { requestMemoryRefresh } from '../memory/refresh/singleflight.js'
+import { readProviderErrorCode } from '../providers/provider-error.js'
 import { isVisibleToAgent } from '../shared/message-visibility.js'
 
 import { applyTaskActions, collectTaskResultSummaries } from './action-apply.js'
@@ -41,10 +42,23 @@ export const processManagerBatch = async (params: {
     runtime.manager.lastActivityAtMs = Date.now()
   runtime.manager.running = true
   notifyUiSignal(runtime)
+  const runAbortController = new AbortController()
+  runtime.manager.runAbortController = runAbortController
   const agentInputs = inputs.filter((item) => isVisibleToAgent(item))
   const startedAt = Date.now()
   let agentAppended = false
   try {
+    if (runtime.session.stopped) {
+      await finishBatchWithoutAgentReply({
+        runtime,
+        inputs,
+        results,
+        nextInputsCursor,
+        nextResultsCursor,
+        startedAt,
+      })
+      return
+    }
     if (agentInputs.length === 0 && results.length === 0) {
       await finishBatchWithoutAgentReply({
         runtime,
@@ -61,6 +75,7 @@ export const processManagerBatch = async (params: {
       runtime,
       inputs: agentInputs,
       results,
+      abortSignal: runAbortController.signal,
     })
     if (managerRun.roundLimitReached) {
       await bestEffort('appendHistory: manager_round_limit', () =>
@@ -124,6 +139,20 @@ export const processManagerBatch = async (params: {
     })
     requestMemoryRefresh(runtime)
   } catch (error) {
+    if (
+      runtime.session.stopped &&
+      readProviderErrorCode(error) === 'provider_aborted'
+    ) {
+      await finishBatchWithoutAgentReply({
+        runtime,
+        inputs,
+        results,
+        nextInputsCursor,
+        nextResultsCursor,
+        startedAt,
+      })
+      return
+    }
     await recoverManagerBatchFailure({
       runtime,
       error,
@@ -136,6 +165,8 @@ export const processManagerBatch = async (params: {
       startedAt,
     })
   } finally {
+    if (runtime.manager.runAbortController === runAbortController)
+      runtime.manager.runAbortController = new AbortController()
     runtime.manager.running = false
     notifyUiSignal(runtime)
   }

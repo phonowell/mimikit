@@ -63,6 +63,7 @@ export type RuntimeSessionState = {
 export type RuntimeManagerState = {
   running: boolean
   signalController: AbortController
+  runAbortController: AbortController
   wakePending: boolean
   lastActivityAtMs: number
   turn: number
@@ -86,7 +87,7 @@ export type RuntimeUiState = {
   wakeVersion: number
   wakeEvents: Map<number, UiWakeKind>
   signalControllers: Set<AbortController>
-  pendingUserChoice: PendingUserChoice | null
+  pendingUserChoices: PendingUserChoice[]
 }
 
 export type RuntimeState = {
@@ -138,6 +139,7 @@ export const createRuntimeState = (
     manager: {
       running: false,
       signalController: new AbortController(),
+      runAbortController: new AbortController(),
       wakePending: false,
       lastActivityAtMs: nowMs,
       turn: 0,
@@ -155,7 +157,7 @@ export const createRuntimeState = (
       wakeVersion: 0,
       wakeEvents: new Map(),
       signalControllers: new Set(),
-      pendingUserChoice: null,
+      pendingUserChoices: [],
     },
     queues: { inputsCursor: 0, resultsCursor: 0 },
     tasks: [],

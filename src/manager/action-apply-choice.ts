@@ -1,6 +1,7 @@
 import { resolveDefaultFocusId } from '../focus/index.js'
 import { appendLog } from '../log/append.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
+import { putPendingUserChoice } from '../orchestrator/core/user-choice-state.js'
 import { nowIso } from '../shared/utils.js'
 
 import { parseAskUserChoiceAttrs } from './action-apply-schema.js'
@@ -16,14 +17,14 @@ export const applyAskUserChoiceAction = async (
   if (!parsed) return
   const createdAt = nowIso()
   const focusId = parsed.focusId ?? resolveDefaultFocusId(runtime)
-  runtime.ui.pendingUserChoice = {
+  putPendingUserChoice(runtime, {
     id: parsed.id,
     question: parsed.question,
     options: parsed.options,
     defaultOptionId: parsed.defaultOptionId,
     createdAt,
     focusId,
-  }
+  })
   await persistRuntimeState(runtime)
   await appendLog(runtime.paths.log, {
     event: 'user_choice_requested',

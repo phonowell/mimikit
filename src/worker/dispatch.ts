@@ -108,13 +108,14 @@ const runTask = async (
         },
         persistCompletionFields: false,
       })
-      await bestEffort('requestTaskResumeChoice: budget_pause', () =>
-        requestTaskResumeChoice({
+      await bestEffort('requestTaskResumeChoice: budget_pause', async () => {
+        await requestTaskResumeChoice({
           runtime,
           task,
           createdAt: result.completedAt,
-        }),
-      )
+        })
+        await persistRuntimeState(runtime)
+      })
       return
     }
     if (task.status === 'canceled') {

@@ -9,7 +9,7 @@ const createRuntime = (): RuntimeState =>
       wakeVersion: 0,
       wakeEvents: new Map(),
       signalControllers: new Set(),
-      pendingUserChoice: null,
+      pendingUserChoices: [],
     },
     manager: {
       wakePending: false,

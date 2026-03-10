@@ -189,7 +189,7 @@ test('hydrateRuntimeState rebuilds budget resume choice from paused task state',
   })
   await hydrateRuntimeState(restored)
 
-  expect(restored.ui.pendingUserChoice?.effect).toMatchObject({
+  expect(restored.ui.pendingUserChoices[0]?.effect).toMatchObject({
     type: 'resume_task',
     taskId: 'task-budget-paused',
   })

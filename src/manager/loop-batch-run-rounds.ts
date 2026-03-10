@@ -108,6 +108,7 @@ export const runManagerCorrectionRounds = async (params: {
   workingFocusIds: FocusId[]
   maxCorrectionRounds: number
   resolveFocusId: () => FocusId
+  abortSignal?: AbortSignal
 }): Promise<{
   parsed: ReturnType<typeof parseActions>
   usage?: TokenUsage
@@ -179,6 +180,7 @@ export const runManagerCorrectionRounds = async (params: {
           plans,
           workingFocusIds,
           extra,
+          ...(params.abortSignal ? { abortSignal: params.abortSignal } : {}),
           ...(managerThreadId ? { managerThreadId } : {}),
         })
       } catch (error) {

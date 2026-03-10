@@ -75,7 +75,7 @@ export const migrateRuntimeSnapshotToCurrent = (
     }
   }
   const major = parseRuntimeSnapshotSchemaMajor(rawVersion)
-  if (major === 1 || major === 2 || major === 3 || major === 4) {
+  if (major === 1 || major === 2 || major === 3 || major === 4 || major === 5) {
     const migrated = coerceRuntimeSnapshotToCurrent(record)
     return {
       migrated,

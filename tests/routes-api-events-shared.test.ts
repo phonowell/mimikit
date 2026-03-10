@@ -9,7 +9,7 @@ test('buildDeltaSnapshot excludes review status and keeps the remaining snapshot
     getTasks: () => ({ tasks: [], counts: {} }),
     getPlans: () => ({ items: [] }),
     getFocuses: () => ({ items: [] }),
-    getPendingUserChoice: () => null,
+    getPendingUserChoices: () => [],
   }
 
   const snapshot = await buildDeltaSnapshot(
@@ -23,6 +23,6 @@ test('buildDeltaSnapshot excludes review status and keeps the remaining snapshot
     tasks: { tasks: [], counts: {} },
     plans: { items: [] },
     focuses: { items: [] },
-    choice: null,
+    choices: [],
   })
 })

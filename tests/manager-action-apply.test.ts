@@ -289,12 +289,12 @@ test('enqueue_task creates confirmation choice instead of dispatching high-cost 
   ])
 
   expect(runtime.tasks).toHaveLength(0)
-  expect(runtime.ui.pendingUserChoice).toBeTruthy()
-  expect(runtime.ui.pendingUserChoice?.defaultOptionId).toBe(
+  expect(runtime.ui.pendingUserChoices).toHaveLength(1)
+  expect(runtime.ui.pendingUserChoices[0]?.defaultOptionId).toBe(
     'option-cancel-dispatch',
   )
   expect(
-    runtime.ui.pendingUserChoice?.options.some(
+    runtime.ui.pendingUserChoices[0]?.options.some(
       (item) => item.id === RUN_TASK_CONFIRM_OPTION_ID,
     ),
   ).toBe(true)
@@ -376,7 +376,7 @@ test('high-cost enqueue_task stops later actions in the same batch', async () =>
     },
   ])
 
-  expect(runtime.ui.pendingUserChoice).toBeTruthy()
+  expect(runtime.ui.pendingUserChoices).toHaveLength(1)
   expect(runtime.tasks).toHaveLength(0)
 })
 
@@ -498,10 +498,52 @@ test('ask_user_choice stores pending choice and stops later actions in same batc
     },
   ])
 
-  expect(runtime.ui.pendingUserChoice?.id).toBe('choice-delivery')
-  expect(runtime.ui.pendingUserChoice?.options).toHaveLength(2)
-  expect(runtime.ui.pendingUserChoice?.options[0]?.reason).toBe('Need full context')
+  expect(runtime.ui.pendingUserChoices).toHaveLength(1)
+  expect(runtime.ui.pendingUserChoices[0]?.id).toBe('choice-delivery')
+  expect(runtime.ui.pendingUserChoices[0]?.options).toHaveLength(2)
+  expect(runtime.ui.pendingUserChoices[0]?.options[0]?.reason).toBe(
+    'Need full context',
+  )
   expect(runtime.tasks).toHaveLength(0)
+})
+
+test('ask_user_choice appends a new pending choice instead of overwriting existing one', async () => {
+  const runtime = await createRuntime()
+  runtime.ui.pendingUserChoices = [
+    {
+      id: 'choice-existing',
+      question: 'Existing',
+      options: [
+        { id: 'option-a', label: 'A', reason: 'reason-a' },
+        { id: 'option-b', label: 'B', reason: 'reason-b' },
+      ],
+      defaultOptionId: 'option-a',
+      createdAt: '2026-03-08T00:00:00.000Z',
+      focusId: GLOBAL_FOCUS_ID,
+    },
+  ]
+
+  await applyTaskActions(runtime, [
+    {
+      name: 'ask_user_choice',
+      attrs: {
+        id: 'choice-delivery',
+        question: 'Choose output format',
+        option_1_id: 'option-report',
+        option_1_label: 'Report',
+        option_1_reason: 'Need full context',
+        option_2_id: 'option-checklist',
+        option_2_label: 'Checklist',
+        option_2_reason: 'Need quick execution',
+        default_option_id: 'option-report',
+      },
+    },
+  ])
+
+  expect(runtime.ui.pendingUserChoices.map((item) => item.id)).toEqual([
+    'choice-existing',
+    'choice-delivery',
+  ])
 })
 
 test('create_plan uses worker profile for cron plan', async () => {

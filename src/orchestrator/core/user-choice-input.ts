@@ -7,12 +7,16 @@ import { newId } from '../../shared/utils.js'
 import { publishUserInput } from '../../streams/queues.js'
 
 import type { RuntimeState } from './runtime-state.js'
-import type { UserChoiceEffectResult } from './user-choice.js'
 import type {
   PendingUserChoice,
   UserChoiceOption,
   UserChoiceSelectionSource,
 } from '../../types/index.js'
+
+type PublishedChoiceEffectResult = {
+  ok: boolean
+  status: 'pending' | 'not_found' | 'already_done' | 'not_paused' | 'invalid'
+}
 
 const resolveTimeoutSummary = (
   choice: PendingUserChoice,
@@ -65,7 +69,7 @@ export const publishChoiceSelectionInput = (params: {
   option: UserChoiceOption
   source: UserChoiceSelectionSource
   selectedAt: string
-  effectResult?: UserChoiceEffectResult
+  effectResult?: PublishedChoiceEffectResult
 }): Promise<string> =>
   publishSystemInput({
     runtime: params.runtime,

@@ -56,6 +56,7 @@ const runRounds = (params: {
   inputs: UserInput[]
   results: TaskResult[]
   maxCorrectionRounds: number
+  abortSignal?: AbortSignal
 }): Promise<{
   parsed: ReturnType<typeof parseActions>
   usage?: TokenUsage
@@ -86,6 +87,7 @@ const runRounds = (params: {
     plans,
     workingFocusIds,
     maxCorrectionRounds,
+    ...(params.abortSignal ? { abortSignal: params.abortSignal } : {}),
     resolveFocusId: () => resolveDefaultFocusId(runtime),
   })
 }
@@ -94,6 +96,7 @@ export const runManagerBatch = async (params: {
   runtime: RuntimeState
   inputs: UserInput[]
   results: TaskResult[]
+  abortSignal?: AbortSignal
 }): Promise<{
   parsed: ReturnType<typeof parseActions>
   usage?: TokenUsage
@@ -116,5 +119,6 @@ export const runManagerBatch = async (params: {
     inputs,
     results,
     maxCorrectionRounds,
+    ...(params.abortSignal ? { abortSignal: params.abortSignal } : {}),
   })
 }

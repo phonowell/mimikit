@@ -105,7 +105,7 @@ export const createPayloadController = ({
     if (typeof onFocusesSnapshot === 'function' && isRecord(snapshot.focuses))
       onFocusesSnapshot(snapshot.focuses)
     if (typeof onChoiceSnapshot === 'function')
-      onChoiceSnapshot(snapshot.choice ?? null)
+      onChoiceSnapshot(snapshot.choices ?? [])
   }
 
   return {

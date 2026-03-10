@@ -7,6 +7,7 @@ import {
 import {
   type focusDigestSchema,
   type focusMetaSchema,
+  type pendingUserChoicesSchema,
   type RuntimeSnapshot,
   runtimeSnapshotSchema,
   type taskPlanSchema,
@@ -20,11 +21,11 @@ type SnapshotTask = z.infer<typeof taskSchema>
 type SnapshotTaskPlan = z.infer<typeof taskPlanSchema>
 type SnapshotFocusMeta = z.infer<typeof focusMetaSchema>
 type SnapshotFocusDigest = z.infer<typeof focusDigestSchema>
-
 const asRecord = (value: unknown): Record<string, unknown> | undefined =>
   value && typeof value === 'object'
     ? (value as Record<string, unknown>)
     : undefined
+type SnapshotPendingUserChoices = z.infer<typeof pendingUserChoicesSchema>
 
 const normalizeTask = (task: SnapshotTask): SnapshotTask =>
   stripUndefined({
@@ -90,6 +91,15 @@ const normalizeFocusDigest = (
 ): SnapshotFocusDigest =>
   stripUndefined({ ...focusDigest }) as SnapshotFocusDigest
 
+const normalizePendingUserChoices = (
+  choices: SnapshotPendingUserChoices,
+): SnapshotPendingUserChoices =>
+  choices.map((choice) =>
+    stripUndefined({
+      ...choice,
+      options: choice.options.map((item) => stripUndefined({ ...item })),
+    }),
+  ) as SnapshotPendingUserChoices
 const normalizeRuntimeSnapshot = (value: RuntimeSnapshot): RuntimeSnapshot =>
   stripUndefined({
     schemaVersion: value.schemaVersion,
@@ -100,6 +110,9 @@ const normalizeRuntimeSnapshot = (value: RuntimeSnapshot): RuntimeSnapshot =>
     managerTurn: value.managerTurn,
     managerThreadId: value.managerThreadId,
     queues: value.queues,
+    pendingUserChoices: value.pendingUserChoices
+      ? normalizePendingUserChoices(value.pendingUserChoices)
+      : undefined,
     memoryRefresh: value.memoryRefresh,
   }) as RuntimeSnapshot
 

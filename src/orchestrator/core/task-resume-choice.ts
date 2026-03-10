@@ -1,10 +1,6 @@
-import { appendHistory } from '../../history/store.js'
 import { appendLog } from '../../log/append.js'
-import { bestEffort } from '../../log/safe.js'
 import { resolveTaskLabel } from '../../shared/task-state.js'
-import { newId } from '../../shared/utils.js'
 
-import { persistRuntimeState } from './runtime-persistence.js'
 import { notifyUiSignal } from './signals.js'
 
 import type { RuntimeState } from './runtime-state.js'
@@ -12,21 +8,6 @@ import type { PendingUserChoice, Task } from '../../types/index.js'
 
 const RESUME_TASK_OPTION_ID = 'option-resume-task'
 const KEEP_TASK_PAUSED_OPTION_ID = 'option-keep-task-paused'
-
-const appendResumeChoiceDeferredNote = async (params: {
-  runtime: RuntimeState
-  task: Task
-  createdAt: string
-}): Promise<void> => {
-  await appendHistory(params.runtime.paths.history, {
-    id: `sys-${newId()}`,
-    role: 'system',
-    visibility: 'user',
-    text: `Task "${resolveTaskLabel(params.task)}" paused at the budget boundary while another confirmation is still pending. Use Continue in the task list to resume when ready.`,
-    createdAt: params.createdAt,
-    focusId: params.task.focusId,
-  })
-}
 
 const buildTaskResumeChoice = (
   task: Task,
@@ -69,19 +50,21 @@ const resolveResumeChoiceCreatedAt = (task: Task): string =>
 export const restoreTaskResumeChoiceOnHydrate = (
   runtime: RuntimeState,
 ): void => {
-  if (runtime.ui.pendingUserChoice) return
-  const candidates = runtime.tasks.filter(isRecoverableBudgetPausedTask)
-  if (candidates.length !== 1) return
-  const [task] = candidates
-  if (!task) return
-  runtime.ui.pendingUserChoice = buildTaskResumeChoice(
-    task,
-    resolveResumeChoiceCreatedAt(task),
-  )
+  for (const task of runtime.tasks) {
+    if (!isRecoverableBudgetPausedTask(task)) continue
+    const choiceId = `choice-task-resume-${task.id}`
+    const exists = runtime.ui.pendingUserChoices.some(
+      (choice) => choice.id === choiceId,
+    )
+    if (exists) continue
+    runtime.ui.pendingUserChoices.push(
+      buildTaskResumeChoice(task, resolveResumeChoiceCreatedAt(task)),
+    )
+  }
 }
 
 export const isTaskResumeChoiceForTask = (
-  choice: PendingUserChoice | null,
+  choice: PendingUserChoice | null | undefined,
   taskId: string,
 ): boolean =>
   choice?.effect?.type === 'resume_task' && choice.effect.taskId === taskId
@@ -90,9 +73,11 @@ export const clearTaskResumeChoice = (
   runtime: RuntimeState,
   taskId: string,
 ): boolean => {
-  if (!isTaskResumeChoiceForTask(runtime.ui.pendingUserChoice, taskId))
-    return false
-  runtime.ui.pendingUserChoice = null
+  const index = runtime.ui.pendingUserChoices.findIndex((choice) =>
+    isTaskResumeChoiceForTask(choice, taskId),
+  )
+  if (index < 0) return false
+  runtime.ui.pendingUserChoices.splice(index, 1)
   return true
 }
 
@@ -102,34 +87,17 @@ export const requestTaskResumeChoice = async (params: {
   createdAt?: string
 }): Promise<boolean> => {
   const { runtime, task } = params
-  const existingChoice = runtime.ui.pendingUserChoice
-  if (existingChoice) {
-    await bestEffort('appendLog: task_resume_choice_skipped', () =>
-      appendLog(runtime.paths.log, {
-        event: 'task_resume_choice_skipped',
-        taskId: task.id,
-        existingChoiceId: existingChoice.id,
-        reason: 'pending_choice_busy',
-      }),
-    )
-    await bestEffort('appendHistory: task_resume_choice_skipped', () =>
-      appendResumeChoiceDeferredNote({
-        runtime,
-        task,
-        createdAt: params.createdAt ?? new Date().toISOString(),
-      }),
-    )
-    notifyUiSignal(runtime, 'messages')
-    return false
-  }
-
   const createdAt = params.createdAt ?? new Date().toISOString()
-  runtime.ui.pendingUserChoice = buildTaskResumeChoice(task, createdAt)
-  await persistRuntimeState(runtime)
+  const choice = buildTaskResumeChoice(task, createdAt)
+  const existingIndex = runtime.ui.pendingUserChoices.findIndex(
+    (item) => item.id === choice.id,
+  )
+  if (existingIndex >= 0) runtime.ui.pendingUserChoices[existingIndex] = choice
+  else runtime.ui.pendingUserChoices.push(choice)
   await appendLog(runtime.paths.log, {
     event: 'task_resume_choice_requested',
     taskId: task.id,
-    choiceId: runtime.ui.pendingUserChoice.id,
+    choiceId: choice.id,
   })
   notifyUiSignal(runtime)
   return true

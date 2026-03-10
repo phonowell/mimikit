@@ -343,10 +343,13 @@ export const pendingUserChoiceSchema = z
     if (!value.options.some((item) => item.id === value.defaultOptionId)) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'pendingUserChoice defaultOptionId must exist in options',
+        message:
+          'pendingUserChoices item defaultOptionId must exist in options',
       })
     }
   })
+
+export const pendingUserChoicesSchema = z.array(pendingUserChoiceSchema)
 
 const memoryRefreshSchema = z
   .object({
@@ -374,6 +377,7 @@ export const runtimeSnapshotSchema = z
       })
       .strict()
       .optional(),
+    pendingUserChoices: pendingUserChoicesSchema.optional(),
     memoryRefresh: memoryRefreshSchema.optional(),
   })
   .strict()

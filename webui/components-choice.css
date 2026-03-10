@@ -24,9 +24,38 @@
 
 .choice-options {
   display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 2px 2px 10px;
+}
+
+.choice-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 14px;
+  background: var(--well-bg);
+  box-shadow: var(--shadow-raised-soft);
+}
+
+.choice-card-question {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.choice-card-options {
+  display: flex;
   gap: 8px;
   overflow-x: auto;
-  padding: 2px 2px 10px;
+}
+
+.choice-card-meta {
+  margin: 0;
+  font-size: 11px;
+  color: var(--muted);
 }
 
 .choice-tab {

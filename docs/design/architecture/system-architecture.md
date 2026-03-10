@@ -62,7 +62,7 @@
 1. 用户输入（WebUI/Telegram/Feishu）、计划触发、worker 结果先写入本地队列；写入后通过 `notifyManagerLoop` 立即唤醒 manager。
 2. `managerLoop` 基于队列 checkpoint 增量消费这些输入并执行编排，不再每轮全量重读 `inputs/results` JSONL。
 3. 若产生任务，worker 调用外部运行时执行并写回 `results/packets.jsonl`。
-4. manager 再次被唤醒，直到本轮走到明确收尾条件；若当前无新队列事件，则只按最近 `choice expiresAt` / `plan scheduled_at|cron` 的 deadline 休眠，不做固定频率空轮询。
+4. manager 再次被唤醒，直到本轮走到明确收尾条件；若当前无新队列事件，则只按最近 `pendingUserChoices[*].expiresAt` / `plan scheduled_at|cron` 的 deadline 休眠，不做固定频率空轮询。
 
 明确收尾条件只有三类：
 

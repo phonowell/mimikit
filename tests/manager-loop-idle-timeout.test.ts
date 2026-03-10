@@ -7,22 +7,24 @@ test('manager idle timeout waits for the nearest pending choice expiry', async (
   const runtime = await createTestRuntimeState({
     patch: {
       ui: {
-        pendingUserChoice: {
-          id: 'choice-timeout',
-          question: 'continue?',
-          options: [
-            {
-              id: 'option-continue',
-              label: 'Continue',
-              reason: 'keep running',
-            },
-            { id: 'option-stop', label: 'Stop', reason: 'stop now' },
-          ],
-          defaultOptionId: 'option-stop',
-          createdAt: '2026-03-10T12:00:00.000Z',
-          expiresAt: '2026-03-10T12:00:05.000Z',
-          focusId: 'focus-global',
-        },
+        pendingUserChoices: [
+          {
+            id: 'choice-timeout',
+            question: 'continue?',
+            options: [
+              {
+                id: 'option-continue',
+                label: 'Continue',
+                reason: 'keep running',
+              },
+              { id: 'option-stop', label: 'Stop', reason: 'stop now' },
+            ],
+            defaultOptionId: 'option-stop',
+            createdAt: '2026-03-10T12:00:00.000Z',
+            expiresAt: '2026-03-10T12:00:05.000Z',
+            focusId: 'focus-global',
+          },
+        ],
       },
     },
   })

@@ -61,7 +61,7 @@ test('payload controller forwards task snapshots from full snapshots', () => {
     tasks: { tasks: [], counts: {} },
     plans: { items: [] },
     focuses: { items: [] },
-    choice: null,
+    choices: [],
   })
 
   expect(updateStatus).toHaveBeenCalledWith({ ok: true })

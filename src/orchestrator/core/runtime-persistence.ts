@@ -158,7 +158,7 @@ export const hydrateRuntimeState = async (
   delete runtime.manager.lastContextPacket
   delete runtime.manager.lastUsage
   delete runtime.manager.usageTotal
-  runtime.ui.pendingUserChoice = null
+  runtime.ui.pendingUserChoices = snapshot.pendingUserChoices ?? []
   await restoreChannelTargetsFromHistory(runtime)
   if (snapshot.queues) {
     runtime.queues = {
@@ -194,6 +194,9 @@ export const persistRuntimeState = async (
       ? { managerThreadId: runtime.manager.threadId }
       : {}),
     queues: runtime.queues,
+    ...(runtime.ui.pendingUserChoices.length > 0
+      ? { pendingUserChoices: runtime.ui.pendingUserChoices }
+      : {}),
     memoryRefresh: toPersistedMemoryRefreshState(runtime.manager.memoryRefresh),
   })
 }
