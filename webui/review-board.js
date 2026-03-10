@@ -1,105 +1,59 @@
+import { bindDialogControls, createDialogController } from './dialog.js'
 import { fetchWithTimeout } from './fetch-with-timeout.js'
 import { renderEmptyListState } from './list-empty.js'
+import {
+  EMPTY_REVIEW_STATUS,
+  normalizeReviewStatus,
+  renderReviewStatusCard,
+  renderReviewStatusHighlight,
+  resolveReviewStatusCardValue,
+  resolveReviewStatusSummary,
+} from './review-status-view.js'
 import { UI_TEXT } from './system-text.js'
 
-const EMPTY_REVIEW_STATUS = {
-  cards: [],
-  highlights: [],
+const EMPTY_PANEL = {
+  applySnapshot: () => {},
+  setDisconnected: () => {},
+  dispose: () => {},
 }
 const REVIEW_BOARD_REQUEST_TIMEOUT_MS = 15000
 
-const normalizeCards = (value) =>
-  Array.isArray(value)
-    ? value.filter(
-        (item) =>
-          item &&
-          typeof item.id === 'string' &&
-          typeof item.label === 'string' &&
-          typeof item.value === 'number',
-      )
-    : []
-
-const normalizeHighlights = (value) =>
-  Array.isArray(value)
-    ? value.filter(
-        (item) =>
-          item &&
-          typeof item.id === 'string' &&
-          typeof item.title === 'string' &&
-          typeof item.detail === 'string',
-      )
-    : []
-
-const normalizeReviewStatus = (value) => {
-  if (!value || typeof value !== 'object') return EMPTY_REVIEW_STATUS
-  return {
-    cards: normalizeCards(value.cards),
-    highlights: normalizeHighlights(value.highlights),
-  }
-}
-
-const resolveCardValue = (cards, id) =>
-  cards.find((item) => item.id === id)?.value ?? 0
-
-const renderCard = (item) => {
-  const card = document.createElement('article')
-  card.className = 'review-card'
-  card.dataset.tone = typeof item.tone === 'string' ? item.tone : 'neutral'
-
-  const label = document.createElement('p')
-  label.className = 'review-card-label'
-  label.textContent = item.label
-
-  const value = document.createElement('p')
-  value.className = 'review-card-value'
-  value.textContent = String(item.value)
-
-  card.append(label, value)
-  return card
-}
-
-const renderHighlight = (item) => {
-  const node = document.createElement('li')
-  node.className = 'review-highlight'
-  node.dataset.tone = typeof item.tone === 'string' ? item.tone : 'neutral'
-
-  const title = document.createElement('p')
-  title.className = 'review-highlight-title'
-  title.textContent = item.title
-
-  const detail = document.createElement('p')
-  detail.className = 'review-highlight-detail'
-  detail.textContent = item.detail
-
-  node.append(title, detail)
-  return node
-}
-
 export const bindReviewStatusPanel = ({
-  section,
+  dialog,
+  openBtn,
+  closeBtn,
+  summaryEl,
   cardsEl,
   actionsEl,
   highlightsEl,
 }) => {
   if (
-    !(section instanceof HTMLElement) ||
+    !(dialog instanceof HTMLElement) ||
+    !(openBtn instanceof HTMLElement) ||
+    !(closeBtn instanceof HTMLElement) ||
     !(cardsEl instanceof HTMLElement) ||
     !(actionsEl instanceof HTMLElement) ||
     !(highlightsEl instanceof HTMLElement)
-  ) {
-    return {
-      applySnapshot: () => {},
-      setDisconnected: () => {},
-    }
-  }
+  )
+    return EMPTY_PANEL
 
-  let currentCards = []
+  let currentReviewStatus = EMPTY_REVIEW_STATUS
   let actionBusy = false
   let actionNote = ''
 
+  const updateSummary = (summaryOverride = '') => {
+    const summary = summaryOverride || resolveReviewStatusSummary(currentReviewStatus)
+    if (summaryEl instanceof HTMLElement) summaryEl.textContent = summary
+    openBtn.setAttribute('title', `Review status · ${summary}`)
+    openBtn.setAttribute('aria-label', `Review status. ${summary}`)
+  }
+
   const renderActions = () => {
     actionsEl.replaceChildren()
-    const recoverableCount = resolveCardValue(currentCards, 'recoverable')
+    const recoverableCount = resolveReviewStatusCardValue(
+      currentReviewStatus.cards,
+      'recoverable',
+    )
     if (recoverableCount <= 0 && !actionNote) return
 
     if (recoverableCount > 0) {
@@ -117,12 +71,11 @@ export const bindReviewStatusPanel = ({
       actionsEl.appendChild(button)
     }
 
-    if (actionNote) {
-      const note = document.createElement('p')
-      note.className = 'review-action-note'
-      note.textContent = actionNote
-      actionsEl.appendChild(note)
-    }
+    if (!actionNote) return
+    const note = document.createElement('p')
+    note.className = 'review-action-note'
+    note.textContent = actionNote
+    actionsEl.appendChild(note)
   }
 
   const requestResumeAllRecoverable = async () => {
@@ -153,37 +106,56 @@ export const bindReviewStatusPanel = ({
   }
 
   const render = (payload) => {
-    const reviewStatus = normalizeReviewStatus(payload)
-    currentCards = reviewStatus.cards
-    cardsEl.replaceChildren(...reviewStatus.cards.map(renderCard))
+    currentReviewStatus = normalizeReviewStatus(payload)
+    cardsEl.replaceChildren(...currentReviewStatus.cards.map(renderReviewStatusCard))
     renderActions()
-    if (reviewStatus.highlights.length === 0) {
+    updateSummary()
+    if (currentReviewStatus.highlights.length === 0) {
       renderEmptyListState(
         highlightsEl,
         'review-highlights-empty',
         UI_TEXT.noReviewStatus,
       )
-      section.hidden = false
       return
     }
     highlightsEl.replaceChildren(
-      ...reviewStatus.highlights.map(renderHighlight),
+      ...currentReviewStatus.highlights.map(renderReviewStatusHighlight),
     )
-    section.hidden = false
   }
+
+  const controller = createDialogController({
+    dialog,
+    trigger: openBtn,
+    focusOnOpen: closeBtn,
+    focusOnClose: openBtn,
+  })
+  controller.setExpanded(false)
+  const unbindDialogControls = bindDialogControls({
+    dialog,
+    openBtn,
+    closeBtn,
+    controller,
+  })
+
+  render(null)
 
   return {
     applySnapshot: render,
     setDisconnected: () => {
-      currentCards = []
+      currentReviewStatus = EMPTY_REVIEW_STATUS
       actionBusy = false
       actionNote = UI_TEXT.connectionLost
+      cardsEl.replaceChildren()
       renderActions()
+      updateSummary(UI_TEXT.connectionLost)
       renderEmptyListState(
         highlightsEl,
         'review-highlights-empty',
         UI_TEXT.connectionLost,
       )
+    },
+    dispose: () => {
+      unbindDialogControls()
     },
   }
 }

@@ -32,7 +32,10 @@ const focusPanel = bindFocusPanel({
   focusesCloseBtn: elements.focusesCloseBtn,
 })
 const reviewStatusPanel = bindReviewStatusPanel({
-  section: elements.reviewStatus,
+  dialog: elements.reviewStatusDialog,
+  openBtn: elements.reviewStatusOpenBtn,
+  closeBtn: elements.reviewStatusCloseBtn,
+  summaryEl: elements.reviewStatusSummary,
   cardsEl: elements.reviewStatusCards,
   actionsEl: elements.reviewStatusActions,
   highlightsEl: elements.reviewStatusHighlights,
