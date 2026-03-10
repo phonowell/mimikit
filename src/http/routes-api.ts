@@ -5,10 +5,7 @@ import { resolveRouteId } from './route-params.js'
 import { registerChoiceSelectRoute } from './routes-api-choice-select.js'
 import { registerEventsRoute } from './routes-api-events.js'
 import { registerTaskArchiveRoute } from './routes-api-task-archive.js'
-import { registerTaskCancelRoute } from './routes-api-task-cancel.js'
-import { registerTaskDeleteRoute } from './routes-api-task-delete.js'
-import { registerTaskPauseRoute } from './routes-api-task-pause.js'
-import { registerTaskResumeRoute } from './routes-api-task-resume.js'
+import { registerTaskMutationRoute } from './routes-api-task-mutation.js'
 
 import type { AppConfig } from '../config.js'
 import type { Orchestrator } from '../orchestrator/core/orchestrator-service.js'
@@ -70,10 +67,34 @@ export const registerApiRoutes = (
   })
 
   registerTaskArchiveRoute(app, orchestrator, config)
-  registerTaskCancelRoute(app, orchestrator)
-  registerTaskDeleteRoute(app, orchestrator)
-  registerTaskPauseRoute(app, orchestrator)
-  registerTaskResumeRoute(app, orchestrator)
+  const taskMutationRoutes = [
+    {
+      path: '/api/tasks/:id/cancel',
+      mutateTask: (taskId: string) =>
+        orchestrator.cancelTask(taskId, { source: 'user' }),
+    },
+    {
+      path: '/api/tasks/:id/delete',
+      mutateTask: (taskId: string) =>
+        orchestrator.deleteTask(taskId, { source: 'user' }),
+    },
+    {
+      path: '/api/tasks/:id/pause',
+      mutateTask: (taskId: string) =>
+        orchestrator.pauseTask(taskId, { source: 'user' }),
+    },
+    {
+      path: '/api/tasks/:id/resume',
+      mutateTask: (taskId: string) =>
+        orchestrator.resumeTask(taskId, { source: 'user' }),
+    },
+  ] as const
+  for (const route of taskMutationRoutes)
+    registerTaskMutationRoute(app, route.path, route.mutateTask)
+
+  app.post('/api/tasks/resume-recoverable', async (_request, reply) => {
+    reply.send(await orchestrator.resumeRecoverableTasks())
+  })
   registerChoiceSelectRoute(app, orchestrator)
 
   const scheduleExit = (params?: {

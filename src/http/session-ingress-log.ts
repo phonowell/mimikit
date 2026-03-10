@@ -1,4 +1,5 @@
 import { resolveSystemEvent } from '../shared/system-event.js'
+import { normalizeInlineWhitespace, truncateText } from '../shared/text.js'
 
 import type { ChatMessage } from '../orchestrator/read-model/chat-view.js'
 import type { MessageVisibility } from '../types/index.js'
@@ -34,21 +35,14 @@ type IngressLogSink = (
   payload: IngressLogEntry | IngressBatchEntry,
 ) => void
 
-const compactText = (value: unknown): string =>
-  String(value ?? '')
-    .replace(/\s+/g, ' ')
-    .trim()
-
 const summarizeText = (
   value: unknown,
   maxLength = SUMMARY_MAX_LENGTH,
 ): string => {
-  const normalized = compactText(value)
+  const normalized = normalizeInlineWhitespace(String(value ?? ''))
   if (!normalized) return ''
   if (!Number.isFinite(maxLength) || maxLength <= 0) return normalized
-  const limit = Math.floor(maxLength)
-  if (normalized.length <= limit) return normalized
-  return `${normalized.slice(0, limit)}...`
+  return truncateText(normalized, Math.floor(maxLength), { suffix: '...' })
 }
 
 const asMessagePayload = (value: unknown): MessagePayload | null =>
@@ -57,7 +51,7 @@ const asMessagePayload = (value: unknown): MessagePayload | null =>
 const resolveMode = (value: unknown): string => {
   const mode = asMessagePayload(value)?.mode
   if (typeof mode !== 'string') return 'full'
-  const normalized = compactText(mode).toLowerCase()
+  const normalized = normalizeInlineWhitespace(mode).toLowerCase()
   return normalized || 'full'
 }
 
@@ -77,14 +71,16 @@ const resolveSource = (
   systemEventName?: string,
 ): string => {
   if (message.role === 'user') {
-    const source = compactText(message.source)
+    const source = normalizeInlineWhitespace(String(message.source ?? ''))
     if (source) return source
-    const platform = compactText(message.platform)
+    const platform = normalizeInlineWhitespace(String(message.platform ?? ''))
     if (platform) return platform
     return 'unknown'
   }
   if (message.role !== 'system') return 'unknown'
-  const payloadSource = compactText(systemPayload?.source)
+  const payloadSource = normalizeInlineWhitespace(
+    String(systemPayload?.source ?? ''),
+  )
   if (payloadSource) return payloadSource
   if (systemEventName) return `system_event:${systemEventName}`
   return 'unknown'
@@ -98,7 +94,7 @@ const resolveVisibility = (
 }
 
 const buildMessageLogEntry = (message: ChatMessage): IngressLogEntry => {
-  const role = compactText(message.role).toLowerCase() || 'unknown'
+  const role = normalizeInlineWhitespace(String(message.role)).toLowerCase()
   const parsedSystemEvent =
     message.role === 'system'
       ? resolveSystemEvent({

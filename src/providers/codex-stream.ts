@@ -1,5 +1,6 @@
+import { normalizeUsage } from '../shared/utils.js'
+
 import { asRecord, asString } from './provider-payload.js'
-import { normalizeUsage } from './utils.js'
 
 import type { CodexSdkProviderRequest } from './types.js'
 

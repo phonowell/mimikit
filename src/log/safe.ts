@@ -1,12 +1,7 @@
 import { readErrorCode } from '../shared/error-code.js'
+import { toErrorInfo } from '../shared/error-info.js'
 
 import { appendLog } from './append.js'
-
-type SafeErrorInfo = {
-  message: string
-  name?: string
-  stack?: string
-}
 
 export type SafeOptions<T> = {
   logPath?: string
@@ -28,30 +23,12 @@ export const setDefaultLogPath = (path?: string | null): void => {
   defaultLogPath = trimmed.length > 0 ? trimmed : null
 }
 
-const trimStack = (stack?: string, lines = 6): string | undefined => {
-  if (!stack) return undefined
-  return stack.split(/\r?\n/).slice(0, lines).join('\n')
-}
-
-const normalizeError = (error: unknown): SafeErrorInfo => {
-  if (error instanceof Error) {
-    const info: SafeErrorInfo = {
-      message: error.message,
-      name: error.name,
-    }
-    const stack = trimStack(error.stack)
-    if (stack) info.stack = stack
-    return info
-  }
-  return { message: String(error) }
-}
-
 export const logSafeError = async (
   context: string,
   error: unknown,
   options?: SafeLogOptions,
 ): Promise<void> => {
-  const info = normalizeError(error)
+  const info = toErrorInfo(error)
   const payload = {
     event: 'error',
     context,

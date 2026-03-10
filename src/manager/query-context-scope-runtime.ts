@@ -1,5 +1,6 @@
 import { parseIsoToMs } from '../shared/time.js'
 
+import { isWildcardQuery } from './query-context-scope-shared.js'
 import {
   scoreQueryCandidate,
   sortByScoreTimeId,
@@ -23,8 +24,6 @@ const resolveTimeBounds = (
     newest: Math.max(...times),
   }
 }
-
-const isWildcardQuery = (query: string): boolean => query.trim() === '*'
 
 const resolveTaskTime = (task: Task): number =>
   parseIsoToMs(task.completedAt ?? task.startedAt ?? task.createdAt)

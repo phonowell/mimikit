@@ -1,6 +1,6 @@
 # Code Index
 
-*Last updated: 2026-03-10 13:46:28 CST*
+*Last updated: 2026-03-11 01:22:11 CST*
 *Scope: `src/**/*.ts` + `webui/**/*.js` exported capabilities (function/class/const entry points)*
 
 ## Quick Reference
@@ -98,14 +98,12 @@
 | Function | Location | Does What |
 |---|---|---|
 | `createHttpServer()` | `src/http/index.ts:108` | Fastify server bootstrap |
-| `registerApiRoutes()` | `src/http/routes-api.ts:15` | Registers REST endpoints |
+| `registerApiRoutes()` | `src/http/routes-api.ts:14` | Registers REST endpoints, task mutation routes, and recoverable resume API |
 | `registerEventsRoute()` | `src/http/routes-api-events.ts:18` | Registers SSE event stream route |
 | `buildDeltaSnapshot()` | `src/http/routes-api-events-shared.ts:81` | Builds SSE delta snapshot |
 | `sendSseEvent()` | `src/http/routes-api-events-shared.ts:96` | Writes SSE frame |
 | `registerChoiceSelectRoute()` | `src/http/routes-api-choice-select.ts:17` | User choice selection API |
-| `registerTaskMutationRoute()` | `src/http/routes-api-task-mutation.ts:25` | Shared route adapter for pause/resume/cancel responses |
-| `registerTaskResumeRoute()` | `src/http/routes-api-task-resume.ts:6` | Single-task resume and batch recoverable-resume APIs |
-| `registerTaskCancelRoute()` | `src/http/routes-api-task-cancel.ts:6` | Task cancel API |
+| `registerTaskMutationRoute()` | `src/http/routes-api-task-mutation.ts:25` | Shared route adapter for task mutation responses |
 | `registerTaskArchiveRoute()` | `src/http/routes-api-task-archive.ts:72` | Task archive fetch API |
 
 ## WebUI Messaging and Rendering
@@ -175,8 +173,10 @@
 | `readTextFile()/readTextFileIfExists()` | `src/fs/read-text.ts:12` | UTF-8 text reads |
 | `readJson()/writeJson()` | `src/fs/json.ts:67` | JSON read/write helpers |
 | `logSafeError()/bestEffort()` | `src/log/safe.ts:49` | Non-fatal error logging wrappers |
+| `toErrorInfo()` | `src/shared/error-info.ts:13` | Shared error message/name/stack normalizer for logging |
 | `parseIsoToMs()/compareIsoAsc()` | `src/shared/time.ts:6` | Shared time parsing/sorting |
 | `newId()/shortId()/nowIso()` | `src/shared/utils.ts:3` | Core ID/time helper utilities |
+| `normalizeUsage()` | `src/shared/utils.ts:67` | Shared provider/API token usage normalizer |
 | `clipCompactText()` | `src/shared/text.ts:23` | Shared compact+truncate text helper |
 
 ## Channel Integration (Telegram)
@@ -198,7 +198,7 @@
 | `resolveSlotStatus()` | `src/worker/task-state-shared.ts:4` | Worker slot occupancy status helper |
 | `resolveTaskLookupTarget()` | `src/worker/task-action.ts:42` | Canonical task lookup with `invalid/not_found` early outcome |
 | `buildTaskMutationMetaFields()` | `src/worker/task-action.ts:58` | Reusable optional `source/reason` payload expander for mutation logs |
-| `registerTaskMutationRoute()` | `src/http/routes-api-task-mutation.ts:25` | Shared pause/resume/cancel route response wrapper |
+| `registerTaskMutationRoute()` | `src/http/routes-api-task-mutation.ts:25` | Shared task mutation route response wrapper |
 | `focusIdSchema()/choiceIdSchema()/optionIdSchema()` | `src/shared/id-schema.ts:9` | Canonical ID schema validators |
 | `buildPlanTriggerPayload()` | `src/shared/plan-payload.ts:3` | Canonical plan trigger payload builder |
 | `buildPlanProgressPayload()` | `src/shared/plan-payload.ts:14` | Canonical plan progress payload builder |
@@ -212,6 +212,8 @@
 - `jscpd` clones: `3 -> 0` (`duplicatedLines: 67 -> 0`, `duplicatedTokens: 596 -> 0`, threshold `min-lines=8`, `min-tokens=80`)
 - `ts-prune`: not rerun in this pass (current scope includes `webui/**/*.js`)
 - 2026-03-10 full-scope dedup follow-up: centralized task result summary helpers in `src/shared/task-state.ts`, removed unused local `src/shared/provider-thread-id.ts` duplicate in favor of `src/providers/thread-id.ts`, and collapsed `webui/restart-tools-menu.js` onto `createAnchoredMenuController()` instead of keeping a second noop controller.
+- 2026-03-11 trim follow-up: inlined task mutation route wrappers into `src/http/routes-api.ts`, removed duplicate provider-side `normalizeUsage()` in favor of `src/shared/utils.ts`, reused shared text truncation in `src/http/session-ingress-log.ts`, and reduced `jscpd` exact clones from `3` to `2` (`duplicatedLines: 104 -> 38`, `duplicatedTokens: 1095 -> 354`).
+- 2026-03-11 safe-error follow-up: extracted `toErrorInfo()` into `src/shared/error-info.ts`, removed duplicate error normalization from `src/log/safe.ts` and `src/providers/safe.ts`, and reduced `jscpd` exact clones from `2` to `1` (`duplicatedLines: 38 -> 18`, `duplicatedTokens: 354 -> 152`).
 - Highest-density modules to inspect before adding code:
   - `src/orchestrator/core/*` (39 exports)
   - `src/manager/*` action/loop related modules

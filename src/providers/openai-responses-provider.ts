@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto'
 
 import { ProxyAgent } from 'undici'
 
+import { normalizeUsage } from '../shared/utils.js'
+
 import { loadCodexSettings } from './codex-settings.js'
 import { appendLog } from './log.js'
 import {
@@ -22,7 +24,7 @@ import {
 } from './provider-runtime.js'
 import { bestEffort } from './safe.js'
 import { attachProviderThreadId } from './thread-id.js'
-import { normalizeUsage, resolveHttpProxyUrl } from './utils.js'
+import { resolveHttpProxyUrl } from './utils.js'
 
 import type { TokenUsage } from './token-usage.js'
 import type {
