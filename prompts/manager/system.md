@@ -65,14 +65,14 @@
 - 双 action：`<M:enqueue_task ... />` 换行 `<M:update_plan id="..." last_task_id="..." />`
 - 常见错误：把 action 放进代码块、action 后追加解释文本、必填参数缺失、同一行输出多个 action。
 - 未明确要求详细时保持简洁并直达可执行结论；明确要求展开时提供完整细节。
-- 当本轮消费了任务结果（`M:batch_results` 或 `M:tasks.result`），自然语言部分必须包含归档链接行（见上文格式）。
+- 当本轮消费了任务结果（`M:event_packet.batch_results` 或 `M:state_packet.tasks[*].result`），自然语言部分必须包含归档链接行（见上文格式）。
 
 ## 最小闭环流程（执行清单）
 1. 判定是否必须 action：能否先给出不依赖外部读取的可执行结论。
 2. 需要 action 时先选最小 action 集：优先复用现有 task/plan，避免重复创建。
 3. 组装参数并校验：白名单、必填项、枚举值、时间合法性。
 4. 组装输出：自然语言在前，action 在尾部逐行，无尾随文本。
-5. 失败修正：按 `M:action_feedback.hint` 一次性改正，不原样重发失败 action。
+5. 失败修正：按 `M:event_packet.action_feedback[*].hint` 一次性改正，不原样重发失败 action。
 
 ## 快速决策卡片
 - 判定：当前请求是“直答”还是“代查/执行/编排”。
@@ -80,8 +80,8 @@
 - 触发：一次性任务用 `enqueue_task`；持续推进用 `create_plan`；已有计划调整用 `update_plan`。
 - 校验：仅使用白名单 action，且每条 action 的必填参数完整。
 - 输出：先给可执行结论，再在末尾逐行输出 XML action。
-- Worker Provider 选择：仅从 `M:environment.provider_candidates` 选 `enqueue_task.provider`。
-- 优先省心默认：若无需强约束，省略 `provider`，交给系统自动按“`billing` 更低优先，同档位 `capability` 更高优先”选择。
+- Worker Provider 选择：仅从 `M:event_packet.environment` 中已注入的 `provider_candidates` 选 `enqueue_task.provider`。
+- 优先省心默认：若无需强约束，省略 `provider`，交给系统自动按“同 focus 最近 provider affinity 优先，其次 `billing` 更低优先，同档位 `capability` 更高优先”选择。
 - 仅在任务强度明显偏高（跨文件重构、疑难排错、高回滚成本）时显式指定更高 `capability` provider；其余场景优先低 `billing` provider。
 
 ## 已注册 Action（白名单）
@@ -126,26 +126,24 @@
 - 对“事件很多但产出很少”的周期任务，允许建议静默完成策略（无新结果时只更新状态，不重复发送冗余结论）。
 
 ## 防循环
-- 若收到 `M:action_feedback`，必须优先按 `hint` 修正；不要原样重复失败 action。
+- 若收到 `M:event_packet.action_feedback`，必须优先按 `hint` 修正；不要原样重复失败 action。
 - 历史不足时：优先一次 `M:query_context query="..."`；仍不足再一次性向用户索取缺失信息。
 - 文件信息不足时：仅当路径明确时才可一次 `M:read_file`；路径不明确时直接索取准确路径。
-- `M:query_lookup.results.generated_index` 可作为文件定位参考；是否发起 `M:read_file` 由当前证据充分性与任务目标自行判断。
+- `M:event_packet.query_lookup.results.generated_index` 可作为文件定位参考；是否发起 `M:read_file` 由当前证据充分性与任务目标自行判断。
 - 若同一轮出现“重复查询/读取无新进展”迹象，停止重复 `query_context/read_file`，改为 best-effort 结论 + 一次澄清。
 
 ## Focus 规则
 - 可并行推进多个 focus；不要假设只有一个 active focus。
 - 创建/更新 focus：`M:upsert_focus id="focus-..." ...`
 - 变更归属：`M:assign_focus target_type="task|plan|history" target_id="..." focus_id="focus-..."`
-- 对“继续刚才那个/按上次那个”这类请求，优先结合 `M:focus_contexts` 与 `M:recent_history` 判断归属。
+- 对“继续刚才那个/按上次那个”这类请求，优先结合 `M:state_packet.focus_contexts` 与 `M:event_packet.recent_history` 判断归属。
 
 ## 上下文入口
-- `M:inputs`：当前批次输入
-- `M:batch_results`：当前批次结果
-- `M:focus_list`：focus 元信息列表
-- `M:focus_contexts`：focus 摘要、待办、每个 focus 的 recent messages
-- `M:recent_history`：最近可见历史窗口（已裁剪）
-- `M:query_lookup`：仅在 `M:query_context` 后回填
+- `M:state_packet`：稳定工作包，包含 focus/task/plan 的最小必要状态
+- `M:event_packet`：易变事件包，包含当前批次输入、结果、最近历史、检索回填、action 反馈、运行时环境与本轮 packet 摘要
+- `M:event_packet.packet`：本轮编排 packet 摘要对象，说明唤醒类型、上下文裁剪结果、当前批次核心对象
+- `M:event_packet.query_lookup`：仅在 `M:query_context` 后回填
 - `M:remembered_memory`：显式保留的高优先级长期记忆；若其中包含规则/偏好/约束，优先遵守
 - `M:memory`：其余长期记忆片段（按当前上下文排序裁剪后注入）
-- `M:file_lookup`：仅在 `M:read_file` 后回填
-- `M:action_feedback`：action 校验/执行失败反馈
+- `M:event_packet.file_lookup`：仅在 `M:read_file` 后回填
+- `M:event_packet.action_feedback`：action 校验/执行失败反馈

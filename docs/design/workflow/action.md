@@ -59,8 +59,8 @@
 参数约定（关键字段）：
 
 - `enqueue_task.cwd`：必填，worker 实际执行目录；manager 必须显式传，不能复用 runtime `work_dir`
-- `enqueue_task.provider`：可选 `codex|opencode`；可选值应来自 `M:environment.provider_candidates`（仅包含 enabled provider）
-- 未指定 `provider` 时，系统按配置自动选择：`billing` 最低优先；同档位下 `capability` 最高优先
+- `enqueue_task.provider`：可选 `codex|opencode`；可选值应来自 `M:event_packet.environment` 中的 `provider_candidates`（仅包含 enabled provider）
+- 未指定 `provider` 时，系统按固定顺序自动选择：同 `focus` 最近活跃任务的 provider affinity 优先；未命中时再按 `billing` 最低优先、同档位 `capability` 最高优先
 - `assign_focus`：`target_type(task|plan|history) + target_id + focus_id`
 - `upsert_focus.open_item_{n}`：按编号传递字符串待办项，`n` 必须从 `1` 连续递增且不能跳号
 - `ask_user_choice.option_{n}_id/label/reason`：选项三元组编号 `n` 必须从 `1` 连续递增且不能跳号
@@ -68,7 +68,7 @@
 
 ## Action 执行语义
 
-- `query_context` / `read_file`：仅做 schema 校验，不直接改状态；结果通过下一纠错回合注入 `M:query_lookup` / `M:file_lookup`。
+- `query_context` / `read_file`：仅做 schema 校验，不直接改状态；结果通过下一纠错回合注入 `M:event_packet.query_lookup` / `M:event_packet.file_lookup`。
 - `query_context` 参数收敛为仅 `query`；内部固定执行全局检索（`history/tasks/focus/plans/generated_index/task_archives`）+ 跨 scope 去重。
 - `generated_index`：仅索引 `work_dir/generated` 下文本文件的轻量元信息（`path/updatedAt/size/snippet`），需要正文时改用 `read_file`。
 - `set_task_result_summary`：仅用于当前批次 `task_result` 的摘要覆写（不直接执行 action 状态写入）。
@@ -84,7 +84,7 @@
 
 约束补充：
 
-- `query_context` 与 `read_file` 在同一纠错回合中每类仅接受 1 条有效 action；重复项会回写 `M:action_feedback`。
+- `query_context` 与 `read_file` 在同一纠错回合中每类仅接受 1 条有效 action；重复项会回写 `M:event_packet.action_feedback`。
 - 未注册 action 会回写 `unregistered_action` 反馈，不会执行。
 - action 出现在代码块或尾部 action 区之外时，会回写 `invalid_action_syntax` 反馈。
 - 纠错回合在第二轮仍存在 action_feedback 时，manager 直接输出结构化澄清并提前收敛，不继续盲目重试。
@@ -98,7 +98,7 @@
 
 ### `read_file` 细节
 
-- 用途：读取 UTF-8 文本文件片段并注入下一轮 `M:file_lookup`。
+- 用途：读取 UTF-8 文本文件片段并注入下一轮 `M:event_packet.file_lookup`。
 - 路径：支持绝对路径和相对路径；相对路径以 `work_dir` 为基准，可使用 `..` 访问 `work_dir` 外文件。
 - 文件类型限制：仅允许常规文件；目录、设备文件、socket、pipe 等路径会被拒绝。
 - symlink：保持 Node 默认语义，跟随 symlink 目标；目标必须是常规文件。
@@ -129,14 +129,23 @@
 
 ## Prompt 注入标签
 
-- `M:inputs`
-- `M:batch_results`
-- `M:tasks`
-- `M:plans`
-- `M:focus_list`
-- `M:focus_contexts`
-- `M:recent_history`
-- `M:query_lookup`
-- `M:memory`
-- `M:file_lookup`
-- `M:action_feedback`
+- 稳定包：`M:state_packet`
+- 易变包：`M:event_packet`
+- 长期高优先级记忆：`M:remembered_memory`
+- 其余长期记忆：`M:memory`
+
+当前实现中的主要子字段：
+
+- `M:state_packet.focus_list`
+- `M:state_packet.focus_contexts`
+- `M:state_packet.tasks`
+- `M:state_packet.plans`
+- `M:event_packet.environment`
+- `M:event_packet.inputs`
+- `M:event_packet.batch_results`
+- `M:event_packet.recent_history`
+- `M:event_packet.history_lookup`
+- `M:event_packet.query_lookup`
+- `M:event_packet.file_lookup`
+- `M:event_packet.action_feedback`
+- `M:event_packet.packet`

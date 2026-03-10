@@ -16,7 +16,6 @@ const promptSectionLimits = (
   environmentMaxBytes: 1024,
   inputsMaxBytes: 1024,
   batchResultsMaxBytes: 1024,
-  compressedContextMaxBytes: 1024,
   tasksMaxBytes: 1024,
   plansMaxBytes: 1024,
   recentHistoryMaxBytes: 1024,
@@ -26,6 +25,7 @@ const promptSectionLimits = (
   queryLookupMaxBytes: 1024,
   fileLookupMaxBytes: 1024,
   actionFeedbackMaxBytes: 1024,
+  packetSummaryMaxBytes: 1024,
   memoryMaxBytes,
 })
 

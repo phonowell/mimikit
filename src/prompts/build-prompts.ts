@@ -23,7 +23,16 @@ import {
   type WorkerCompressedFocusContext,
 } from './format-worker-focus-context.js'
 import {
+  buildActionFeedbackPromptPayload,
+  buildFocusContextsPromptPayload,
+  buildFocusListPromptPayload,
+  buildHistoryLookupPromptPayload,
+  buildInputsPromptPayload,
+  buildPlansPromptPayload,
   buildQuoteReferenceLookup,
+  buildReadFileLookupPromptPayload,
+  buildResultsPromptPayload,
+  buildTasksPromptPayload,
   formatActionFeedback,
   formatEnvironment,
   formatFocusContexts,
@@ -37,6 +46,10 @@ import {
   formatTasksJson,
   renderPromptTemplate,
 } from './format.js'
+import {
+  buildManagerContextPacket,
+  shouldIncludePacketSection,
+} from './manager-context-packet.js'
 import { loadPromptFile, loadPromptSource } from './prompt-loader.js'
 
 import type { AppConfig } from '../config.js'
@@ -47,7 +60,10 @@ import type {
   FocusMeta,
   HistoryLookupMessage,
   ManagerActionFeedback,
+  ManagerContextPacket,
   ManagerEnv,
+  ManagerPacketMode,
+  ManagerPacketSection,
   QueryLookupMessage,
   ReadFileLookupMessage,
   Task,
@@ -65,6 +81,8 @@ type ManagerPromptPayload = {
   suffix: string
   prompt: string
   promptSegments: ProviderPromptSegment[]
+  contextPacket: ManagerContextPacket
+  packetSummary: string
 }
 export type { ManagerPromptPayload }
 
@@ -73,20 +91,10 @@ const MAX_MEMORY_MENTION_ITEMS = 128
 const MAX_RECENT_HISTORY_SUMMARY_ITEMS = 8
 
 const CONTEXT_EMPTY_VALUES: Record<string, string> = {
-  environment: '',
-  focus_list: '',
-  focus_contexts: '',
+  state_packet: '',
+  event_packet: '',
   remembered_memory: '',
   memory: '',
-  tasks: '',
-  plans: '',
-  recent_history: '',
-  inputs: '',
-  batch_results: '',
-  history_lookup: '',
-  query_lookup: '',
-  file_lookup: '',
-  action_feedback: '',
 }
 
 const pushMention = (target: string[], value: string | undefined): void => {
@@ -153,6 +161,8 @@ export const buildManagerPromptPayload = async (params: {
   focuses?: FocusMeta[]
   focusContexts?: FocusContext[]
   workingFocusIds?: FocusId[]
+  packetMode?: ManagerPacketMode
+  wakeProfile?: ManagerEnv['wakeProfile']
 }): Promise<ManagerPromptPayload> => {
   const pendingResults = mergeTaskResults(params.results, [])
   const knownResults = mergeTaskResults(
@@ -190,6 +200,8 @@ export const buildManagerPromptPayload = async (params: {
 
   const systemSource = await loadPromptSource('manager/system.md')
   const limits = params.promptSectionLimits
+  const wakeProfile = params.wakeProfile ?? params.env?.wakeProfile ?? 'mixed'
+  const packetMode = params.packetMode ?? 'standard'
   const sectionText = (value: string, maxBytes: number): string =>
     encodePromptTextSection(value, maxBytes)
   const sectionJson = (value: string, maxBytes: number): string =>
@@ -301,6 +313,153 @@ export const buildManagerPromptPayload = async (params: {
     formatActionFeedback(params.actionFeedback ?? []),
     limits.actionFeedbackMaxBytes,
   )
+  const rawSections: Record<ManagerPacketSection, string> = {
+    packet_summary: '',
+    environment,
+    focus_list: focusList,
+    focus_contexts: focusContexts,
+    remembered_memory: rememberedMemory,
+    memory,
+    tasks,
+    plans,
+    inputs,
+    batch_results: batchResults,
+    recent_history: recentHistory,
+    history_lookup: historyLookup,
+    query_lookup: queryLookup,
+    file_lookup: fileLookup,
+    action_feedback: actionFeedback,
+  }
+  const includedSections: ManagerPacketSection[] = []
+  const prunedSections: ManagerPacketSection[] = []
+  const selectSection = (section: ManagerPacketSection): string => {
+    const value = rawSections[section]
+    const include = shouldIncludePacketSection({
+      mode: packetMode,
+      wakeProfile,
+      section,
+      hasContent: value.trim().length > 0,
+    })
+    if (include) includedSections.push(section)
+    else if (value.trim().length > 0) prunedSections.push(section)
+    return include ? value : ''
+  }
+  const selectedEnvironment = selectSection('environment')
+  const selectedFocusList = selectSection('focus_list')
+  const selectedFocusContexts = selectSection('focus_contexts')
+  const selectedRememberedMemory = selectSection('remembered_memory')
+  const selectedMemory = selectSection('memory')
+  const selectedTasks = selectSection('tasks')
+  const selectedPlans = selectSection('plans')
+  const selectedInputs = selectSection('inputs')
+  const selectedBatchResults = selectSection('batch_results')
+  const selectedRecentHistory = selectSection('recent_history')
+  const selectedHistoryLookup = selectSection('history_lookup')
+  const selectedQueryLookup = selectSection('query_lookup')
+  const selectedFileLookup = selectSection('file_lookup')
+  const selectedActionFeedback = selectSection('action_feedback')
+  const packetBundle = buildManagerContextPacket({
+    wakeProfile,
+    mode: packetMode,
+    inputs: params.inputs,
+    results: pendingResults,
+    tasks: params.tasks,
+    plans: params.plans ?? [],
+    workingFocusIds: params.workingFocusIds ?? [],
+    includedSections: ['packet_summary', ...includedSections],
+    prunedSections,
+  })
+  const packetSummary = packetBundle.summaryText
+  const statePacket = sectionText(
+    stringifyPromptJson({
+      ...(selectedFocusList
+        ? { focus_list: buildFocusListPromptPayload(focusPayload.focusList) }
+        : {}),
+      ...(selectedFocusContexts
+        ? {
+            focus_contexts: buildFocusContextsPromptPayload(
+              focusPayload.focusContexts,
+            ),
+          }
+        : {}),
+      ...(selectedTasks
+        ? {
+            tasks: buildTasksPromptPayload(
+              params.tasks,
+              resultsForTasks,
+              params.workDir,
+            ),
+          }
+        : {}),
+      ...(selectedPlans
+        ? { plans: buildPlansPromptPayload(params.plans ?? []) }
+        : {}),
+    }),
+    limits.focusListMaxBytes +
+      limits.focusContextsMaxBytes +
+      limits.tasksMaxBytes +
+      limits.plansMaxBytes +
+      limits.packetSummaryMaxBytes,
+  )
+  const eventPacket = sectionText(
+    stringifyPromptJson({
+      ...(selectedEnvironment
+        ? {
+            environment: formatEnvironment({
+              workDir: params.workDir,
+              ...(params.env ? { env: params.env } : {}),
+            }),
+          }
+        : {}),
+      ...(selectedInputs
+        ? { inputs: buildInputsPromptPayload(params.inputs, quoteLookup) }
+        : {}),
+      ...(selectedBatchResults
+        ? {
+            batch_results: buildResultsPromptPayload(
+              params.tasks,
+              pendingResults,
+              params.workDir,
+            ),
+          }
+        : {}),
+      ...(selectedRecentHistory
+        ? { recent_history: summarizeRecentHistory() }
+        : {}),
+      ...(selectedHistoryLookup
+        ? {
+            history_lookup: buildHistoryLookupPromptPayload(
+              params.historyLookup ?? [],
+            ),
+          }
+        : {}),
+      ...(selectedQueryLookup ? { query_lookup: params.queryLookup } : {}),
+      ...(selectedFileLookup
+        ? {
+            file_lookup: buildReadFileLookupPromptPayload(
+              params.readFileLookup ?? [],
+            ),
+          }
+        : {}),
+      ...(selectedActionFeedback
+        ? {
+            action_feedback: buildActionFeedbackPromptPayload(
+              params.actionFeedback ?? [],
+            ),
+          }
+        : {}),
+      packet: packetBundle.packet,
+    }),
+    limits.environmentMaxBytes +
+      limits.inputsMaxBytes +
+      limits.batchResultsMaxBytes +
+      limits.recentHistoryMaxBytes +
+      limits.historyLookupMaxBytes +
+      limits.queryLookupMaxBytes +
+      limits.fileLookupMaxBytes +
+      limits.actionFeedbackMaxBytes +
+      limits.packetSummaryMaxBytes,
+  )
 
   const contextSource = await loadPromptSource('manager/context.md')
   const prefix = renderPromptTemplate(
@@ -312,12 +471,8 @@ export const buildManagerPromptPayload = async (params: {
     contextSource.template,
     {
       ...CONTEXT_EMPTY_VALUES,
-      focus_list: focusList,
-      focus_contexts: focusContexts,
-      remembered_memory: rememberedMemory,
-      memory,
-      tasks,
-      plans,
+      state_packet: statePacket,
+      remembered_memory: selectedRememberedMemory,
     },
     contextSource.path,
   ).trim()
@@ -325,14 +480,8 @@ export const buildManagerPromptPayload = async (params: {
     contextSource.template,
     {
       ...CONTEXT_EMPTY_VALUES,
-      environment,
-      inputs,
-      batch_results: batchResults,
-      history_lookup: historyLookup,
-      query_lookup: queryLookup,
-      file_lookup: fileLookup,
-      action_feedback: actionFeedback,
-      recent_history: recentHistory,
+      event_packet: eventPacket,
+      memory: selectedMemory,
     },
     contextSource.path,
   ).trim()
@@ -341,9 +490,9 @@ export const buildManagerPromptPayload = async (params: {
     .join('\n\n')
     .trim()
   const promptSegments: ProviderPromptSegment[] = [
-    { text: prefix, cacheControl: 'ephemeral' as const },
-    { text: stableContext, cacheControl: 'ephemeral' as const },
-    { text: volatileContext },
+    { text: prefix },
+    { text: stableContext },
+    { text: volatileContext, cacheControl: 'ephemeral' as const },
   ].filter(
     (segment): segment is ProviderPromptSegment =>
       segment.text.trim().length > 0,
@@ -352,6 +501,8 @@ export const buildManagerPromptPayload = async (params: {
   return {
     prefix,
     suffix,
+    contextPacket: packetBundle.packet,
+    packetSummary,
     prompt: [prefix, stableContext, volatileContext]
       .filter((segment) => segment.length > 0)
       .join('\n\n')
@@ -376,6 +527,8 @@ export const buildManagerPrompt = async (params: {
   focuses?: FocusMeta[]
   focusContexts?: FocusContext[]
   workingFocusIds?: FocusId[]
+  packetMode?: ManagerPacketMode
+  wakeProfile?: ManagerEnv['wakeProfile']
 }): Promise<string> => (await buildManagerPromptPayload(params)).prompt
 
 export const buildWorkerPrompt = async (params: {

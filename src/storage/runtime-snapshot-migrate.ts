@@ -22,6 +22,10 @@ const coerceRuntimeSnapshotToCurrent = (
   source: Record<string, unknown>,
 ): Record<string, unknown> => {
   const { next } = dropLegacyRuntimeSnapshotFields(source)
+  if ('managerCompressedContext' in next && !('managerPacketSummary' in next)) {
+    next.managerPacketSummary = next.managerCompressedContext
+    delete next.managerCompressedContext
+  }
   next.schemaVersion = RUNTIME_SNAPSHOT_SCHEMA_VERSION
   return next
 }
@@ -54,7 +58,7 @@ export const migrateRuntimeSnapshotToCurrent = (
     }
   }
   const major = parseRuntimeSnapshotSchemaMajor(rawVersion)
-  if (major === 1 || major === 2) {
+  if (major === 1 || major === 2 || major === 3) {
     const migrated = coerceRuntimeSnapshotToCurrent(record)
     return {
       migrated,

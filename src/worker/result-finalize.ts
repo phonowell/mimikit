@@ -4,6 +4,7 @@ import { bestEffort } from '../log/safe.js'
 import { notifyManagerLoop } from '../orchestrator/core/signals.js'
 import { nowIso } from '../shared/utils.js'
 import { appendTaskProgress } from '../storage/task-progress.js'
+import { appendWorkerUsageLedgerEntry } from '../storage/usage-ledger.js'
 import { publishWorkerResult } from '../streams/queues.js'
 
 import { resolveArchivePath, writeTaskArchive } from './result-archive.js'
@@ -173,6 +174,22 @@ export const finalizeResult = async (
         : {}),
       ...(result.cancel ? { cancelSource: result.cancel.source } : {}),
       ...(archivePath ? { archivePath } : {}),
+    }),
+  )
+  await bestEffort('appendWorkerUsageLedgerEntry', () =>
+    appendWorkerUsageLedgerEntry({
+      stateDir: runtime.config.workDir,
+      focusId: task.focusId,
+      taskId: task.id,
+      provider: task.provider,
+      ...(result.usage ? { usage: result.usage } : {}),
+      elapsedMs: result.durationMs,
+      ...(task.sessionId ? { threadId: task.sessionId } : {}),
+      model:
+        task.provider === 'opencode'
+          ? runtime.config.opencode.model
+          : runtime.config.codex.model,
+      status: result.status,
     }),
   )
 }

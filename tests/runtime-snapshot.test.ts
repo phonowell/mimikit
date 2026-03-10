@@ -117,7 +117,7 @@ test('runtime snapshot accepts queue cursors', async () => {
   })
 
   const loaded = await loadRuntimeSnapshot(stateDir)
-  expect(loaded.schemaVersion).toBe('runtime-snapshot.v3')
+  expect(loaded.schemaVersion).toBe('runtime-snapshot.v4')
   expect(loaded.queues?.resultsCursor).toBe(9)
   expect(loaded.queues?.inputsCursor).toBe(3)
   expect(loaded.channelTargets?.telegramChatId).toBe('chat-1001')
@@ -144,7 +144,7 @@ test('runtime snapshot auto-migrates when schemaVersion is missing', async () =>
     'utf8',
   )
   const loaded = await loadRuntimeSnapshot(stateDir)
-  expect(loaded.schemaVersion).toBe('runtime-snapshot.v3')
+  expect(loaded.schemaVersion).toBe('runtime-snapshot.v4')
   expect(loaded.queues?.inputsCursor).toBe(1)
   expect(loaded.queues?.resultsCursor).toBe(2)
 })
@@ -167,7 +167,7 @@ test('runtime snapshot drops legacy activeFocusIds during load', async () => {
   )
 
   const loaded = await loadRuntimeSnapshot(stateDir)
-  expect(loaded.schemaVersion).toBe('runtime-snapshot.v3')
+  expect(loaded.schemaVersion).toBe('runtime-snapshot.v4')
   expect(loaded.queues?.inputsCursor).toBe(1)
   expect(loaded.queues?.resultsCursor).toBe(2)
 })
@@ -439,7 +439,7 @@ test('runtime snapshot rejects legacy next fields', async () => {
   await expect(loadRuntimeSnapshot(stateDir)).rejects.toThrow()
 })
 
-test('runtime snapshot accepts managerCompressedContext field', async () => {
+test('runtime snapshot migrates managerCompressedContext into managerPacketSummary', async () => {
   const stateDir = await createTmpDir()
   await writeFile(
     join(stateDir, 'runtime-snapshot.json'),
@@ -452,7 +452,7 @@ test('runtime snapshot accepts managerCompressedContext field', async () => {
   )
 
   const loaded = await loadRuntimeSnapshot(stateDir)
-  expect(loaded.managerCompressedContext).toBe('legacy')
+  expect(loaded.managerPacketSummary).toBe('legacy')
 })
 
 test('loadRuntimeSnapshot falls back to backup file when primary json is broken', async () => {
@@ -504,7 +504,7 @@ test('saveRuntimeSnapshot writes previous primary content into .bak', async () =
   const primaryRaw = await readFile(primaryPath, 'utf8')
   const backupRaw = await readFile(`${primaryPath}.bak`, 'utf8')
   expect(JSON.parse(primaryRaw)).toEqual({
-    schemaVersion: 'runtime-snapshot.v3',
+    schemaVersion: 'runtime-snapshot.v4',
     ...nextSnapshot,
   })
   expect(JSON.parse(backupRaw)).toEqual(oldSnapshot)

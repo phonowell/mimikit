@@ -11,9 +11,11 @@ import type {
   FocusId,
   FocusMeta,
   ISODate,
+  ManagerContextPacket,
   PendingUserChoice,
   Task,
   TaskPlan,
+  TokenUsage,
   UserInput,
 } from '../../types/index.js'
 
@@ -85,7 +87,10 @@ export type RuntimeManagerState = {
   threadId?: string
   memoryRefresh: RuntimeMemoryRefreshState
   focusCompressedContexts: ManagerFocusCompressedContext[]
-  compressedContext: string
+  packetSummary: string
+  lastContextPacket?: ManagerContextPacket
+  lastUsage?: TokenUsage
+  usageTotal?: TokenUsage
 }
 
 export type RuntimeWorkerState = {
@@ -158,7 +163,7 @@ export const createRuntimeState = (
       turn: 0,
       memoryRefresh,
       focusCompressedContexts: [],
-      compressedContext: '',
+      packetSummary: '',
     },
     worker: {
       lastActivityAtMs: nowMs,

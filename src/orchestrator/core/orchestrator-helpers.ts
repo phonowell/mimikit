@@ -1,4 +1,7 @@
+import { mergeUsageAdditive } from '../../shared/token-usage.js'
+
 import type { RuntimeState, UserMeta } from './runtime-state.js'
+import type { ManagerContextPacket, TokenUsage } from '../../types/index.js'
 
 export type OrchestratorStatus = {
   ok: boolean
@@ -9,6 +12,10 @@ export type OrchestratorStatus = {
   pendingInputs: number
   managerRunning: boolean
   maxWorkers: number
+  managerLastContextPacket?: ManagerContextPacket
+  managerLastUsage?: TokenUsage
+  managerUsageTotal?: TokenUsage
+  workerUsageTotal?: TokenUsage
 }
 
 const USER_META_STRING_KEYS = [
@@ -35,6 +42,10 @@ export const computeOrchestratorStatus = (
   runtime: RuntimeState,
   pendingInputsCount: number,
 ): OrchestratorStatus => {
+  const workerUsageTotal = runtime.tasks.reduce<TokenUsage | undefined>(
+    (acc, task) => mergeUsageAdditive(acc, task.result?.usage ?? task.usage),
+    undefined,
+  )
   const pendingTasks = runtime.tasks.filter(
     (task) => task.status === 'pending',
   ).length
@@ -58,6 +69,16 @@ export const computeOrchestratorStatus = (
     pendingInputs: pendingInputsCount,
     managerRunning: runtime.manager.running,
     maxWorkers,
+    ...(runtime.manager.lastContextPacket
+      ? { managerLastContextPacket: runtime.manager.lastContextPacket }
+      : {}),
+    ...(runtime.manager.lastUsage
+      ? { managerLastUsage: runtime.manager.lastUsage }
+      : {}),
+    ...(runtime.manager.usageTotal
+      ? { managerUsageTotal: runtime.manager.usageTotal }
+      : {}),
+    ...(workerUsageTotal ? { workerUsageTotal } : {}),
   }
 }
 

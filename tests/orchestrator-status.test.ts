@@ -40,3 +40,39 @@ test('pendingTasks excludes paused tasks for restart gating', () => {
   expect(status.activeTasks).toBe(0)
   expect(status.managerRunning).toBe(false)
 })
+
+test('status exposes manager packet and usage totals when present', () => {
+  const runtime = createRuntime([
+    {
+      ...createTask('task-usage-1', 'succeeded'),
+      usage: { input: 10, output: 2, total: 12 },
+    },
+  ])
+  runtime.manager = {
+    ...(runtime.manager as RuntimeState['manager']),
+    running: false,
+    lastContextPacket: {
+      id: 'packet-status-1',
+      createdAt: '2026-03-10T00:00:00.000Z',
+      wakeProfile: 'user_input',
+      mode: 'standard',
+      counts: {
+        inputs: 1,
+        results: 0,
+        tasks: 1,
+        plans: 0,
+        workingFocuses: 1,
+      },
+      includedSections: ['packet_summary', 'inputs'],
+      prunedSections: ['history_lookup'],
+    },
+    lastUsage: { input: 20, output: 5, total: 25 },
+    usageTotal: { input: 30, output: 7, total: 37 },
+  } as RuntimeState['manager']
+
+  const status = computeOrchestratorStatus(runtime, 1)
+
+  expect(status.managerLastContextPacket?.id).toBe('packet-status-1')
+  expect(status.managerUsageTotal).toEqual({ input: 30, output: 7, total: 37 })
+  expect(status.workerUsageTotal).toEqual({ input: 10, output: 2, total: 12 })
+})

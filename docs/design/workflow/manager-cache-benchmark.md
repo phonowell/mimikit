@@ -1,7 +1,7 @@
 # Manager Cache 命中率改造与基准
 
 ## 改造目标
-- 将 manager 输入构造拆分为“稳定前缀 + 变量后缀”，降低重复输入导致的 cache miss。
+- 将 manager 输入构造拆分为“系统规则 + 稳定 packet + 易变 packet”，降低重复输入导致的 cache miss。
 - 在固定场景下验证 `inputCacheRead / input >= 0.5`。
 
 ## 代码改造点
@@ -9,9 +9,10 @@
   - 新增 `buildManagerPromptPayload`。
   - 返回 `prefix/suffix/prompt/promptSegments`。
   - `recent_history` 从全文注入调整为摘要 + 指针（`id/role/time/focus_id`）。
+  - `state_packet` 与 `remembered_memory` 放入稳定段；`event_packet` 与 `memory` 放入易变段。
 - 模板拆分：
-  - `prompts/manager/system.md` 仅保留系统规则（稳定前缀）。
-  - `prompts/manager/context.md` 承载上下文字段（变量后缀）。
+  - `prompts/manager/system.md` 仅保留系统规则。
+  - `prompts/manager/context.md` 承载 `M:state_packet` / `M:event_packet` / `M:remembered_memory` / `M:memory`。
 - provider 输入分段：
   - `src/providers/types.ts` 增加 `promptSegments`。
   - `src/providers/openai-responses-provider.ts` 将 `promptSegments` 编码为多段 `input`，并支持 `cache_control`。
@@ -20,16 +21,13 @@
   - `src/manager/loop-batch-exec.ts` / `src/manager/loop-batch-run-rounds.ts` 记录并校验 `promptPrefixHash` 稳定性。
 
 ## 稳定字段与变量字段
-- 稳定前缀：
+- 稳定段：
   - manager 系统规则（`prompts/manager/system.md`）
-- 变量后缀：
-  - `M:inputs`
-  - `M:batch_results`
-  - `M:query_lookup`
-  - `M:file_lookup`
-  - `M:action_feedback`
-  - `M:environment`
-  - `M:tasks` / `M:plans` / `M:focus_*` / `M:recent_history(summary)`
+  - `M:state_packet`
+  - `M:remembered_memory`
+- 易变段：
+  - `M:event_packet`
+  - `M:memory`
 
 ## 可复现基准
 - 脚本：`scripts/benchmark-manager-cache.ts`
@@ -41,7 +39,7 @@
   - 目标判定 `target_met=true|false`
 - 口径：
   - `before`：不启用 `promptSegments`，并将每轮变化标记注入到 prompt 前缀，统计真实 usage。
-  - `after`：启用 `promptSegments`（稳定前缀 + 变量后缀），将同一每轮变化标记放在变量后缀，统计真实 usage。
+  - `after`：启用 `promptSegments`（系统规则 + 稳定 packet + 易变 packet），将同一每轮变化标记放在易变段，统计真实 usage。
   - 两组均在同一固定场景、同线程多轮执行，并输出逐轮对比。
 
 ## 回滚方案

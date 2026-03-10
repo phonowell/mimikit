@@ -199,12 +199,12 @@ const buildFallbackTask = (result: TaskResult): Task => ({
   completedAt: result.completedAt,
 })
 
-export const formatTasksJson = (
+export const buildTasksPromptPayload = (
   tasks: Task[],
   results: TaskResult[],
   workDir?: string,
-): string => {
-  if (tasks.length === 0 && results.length === 0) return ''
+): { tasks: Record<string, unknown>[] } | undefined => {
+  if (tasks.length === 0 && results.length === 0) return undefined
 
   const resultById = new Map(results.map((result) => [result.taskId, result]))
   const orderedTasks = selectTasksForPrompt(tasks)
@@ -217,17 +217,25 @@ export const formatTasksJson = (
           formatTaskEntry(task, resultById.get(task.id), workDir),
         )
 
-  return entries.length === 0
-    ? ''
-    : escapeCdata(stringifyPromptJson({ tasks: entries }))
+  return entries.length === 0 ? undefined : { tasks: entries }
 }
 
-export const formatResultsJson = (
+export const formatTasksJson = (
   tasks: Task[],
   results: TaskResult[],
   workDir?: string,
 ): string => {
-  if (results.length === 0) return ''
+  const payload = buildTasksPromptPayload(tasks, results, workDir)
+  if (!payload) return ''
+  return escapeCdata(stringifyPromptJson(payload))
+}
+
+export const buildResultsPromptPayload = (
+  tasks: Task[],
+  results: TaskResult[],
+  workDir?: string,
+): { tasks: Record<string, unknown>[] } | undefined => {
+  if (results.length === 0) return undefined
 
   const taskById = new Map(tasks.map((task) => [task.id, task]))
   const latestByTaskId = new Map<string, TaskResult>()
@@ -271,7 +279,17 @@ export const formatResultsJson = (
       }
     })
 
-  return escapeCdata(stringifyPromptJson({ tasks: entries }))
+  return entries.length === 0 ? undefined : { tasks: entries }
+}
+
+export const formatResultsJson = (
+  tasks: Task[],
+  results: TaskResult[],
+  workDir?: string,
+): string => {
+  const payload = buildResultsPromptPayload(tasks, results, workDir)
+  if (!payload) return ''
+  return escapeCdata(stringifyPromptJson(payload))
 }
 
 const formatPlanEntry = (plan: TaskPlan): Record<string, unknown> => ({
@@ -291,11 +309,13 @@ const formatPlanEntry = (plan: TaskPlan): Record<string, unknown> => ({
   ...(plan.doneReason ? { done_reason: plan.doneReason } : {}),
 })
 
+export const buildPlansPromptPayload = (
+  plans: TaskPlan[],
+): { plans: Record<string, unknown>[] } | undefined =>
+  plans.length === 0 ? undefined : { plans: plans.map(formatPlanEntry) }
+
 export const formatPlansJson = (plans: TaskPlan[]): string => {
-  if (plans.length === 0) return ''
-  return escapeCdata(
-    stringifyPromptJson({
-      plans: plans.map(formatPlanEntry),
-    }),
-  )
+  const payload = buildPlansPromptPayload(plans)
+  if (!payload) return ''
+  return escapeCdata(stringifyPromptJson(payload))
 }

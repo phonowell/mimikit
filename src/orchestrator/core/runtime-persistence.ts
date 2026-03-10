@@ -140,7 +140,16 @@ export const hydrateRuntimeState = async (
   runtime.manager.memoryRefresh = hydrateMemoryRefreshState(snapshot)
   runtime.manager.focusCompressedContexts =
     snapshot.managerFocusCompressedContexts ?? []
-  runtime.manager.compressedContext = snapshot.managerCompressedContext ?? ''
+  runtime.manager.packetSummary = snapshot.managerPacketSummary ?? ''
+  if (snapshot.managerLastContextPacket)
+    runtime.manager.lastContextPacket = snapshot.managerLastContextPacket
+  else delete runtime.manager.lastContextPacket
+  if (snapshot.managerLastUsage)
+    runtime.manager.lastUsage = snapshot.managerLastUsage
+  else delete runtime.manager.lastUsage
+  if (snapshot.managerUsageTotal)
+    runtime.manager.usageTotal = snapshot.managerUsageTotal
+  else delete runtime.manager.usageTotal
   normalizeManagerFocusCompressedContexts(runtime)
   runtime.ui.pendingUserChoice = snapshot.pendingUserChoice ?? null
   runtime.session.channelTargets = normalizeChannelTargets(
@@ -192,14 +201,23 @@ export const persistRuntimeState = async (
       ? { pendingUserChoice: runtime.ui.pendingUserChoice }
       : {}),
     memoryRefresh: toPersistedMemoryRefreshState(runtime.manager.memoryRefresh),
+    ...(runtime.manager.lastContextPacket
+      ? { managerLastContextPacket: runtime.manager.lastContextPacket }
+      : {}),
+    ...(runtime.manager.lastUsage
+      ? { managerLastUsage: runtime.manager.lastUsage }
+      : {}),
+    ...(runtime.manager.usageTotal
+      ? { managerUsageTotal: runtime.manager.usageTotal }
+      : {}),
     ...(runtime.manager.focusCompressedContexts.length > 0
       ? {
           managerFocusCompressedContexts:
             runtime.manager.focusCompressedContexts,
         }
       : {}),
-    ...(runtime.manager.compressedContext
-      ? { managerCompressedContext: runtime.manager.compressedContext }
+    ...(runtime.manager.packetSummary
+      ? { managerPacketSummary: runtime.manager.packetSummary }
       : {}),
   })
 }

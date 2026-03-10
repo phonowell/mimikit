@@ -23,6 +23,13 @@
 - `POST /api/restart`
 - `POST /api/reset`
 
+`GET /api/status` 当前除基础运行状态外，还会返回：
+
+- `managerLastContextPacket`：最近一次 manager 编排 packet 元数据（唤醒类型、packet 模式、纳入/裁剪 section）
+- `managerLastUsage`
+- `managerUsageTotal`
+- `workerUsageTotal`
+
 任务变更接口（pause/resume/cancel/delete）统一返回：
 
 - 成功：`{ ok: true, id, status, changeAt? }`
@@ -150,6 +157,7 @@
 - `history/YYYY-MM-DD.jsonl`
 - `memory/MEMORY.md`
 - `generated/worker-task-prompts/YYYY-MM-DD/{taskId}.md`
+- `usage/ledger.jsonl`
 - `runtime-snapshot.json`
 - `runtime-snapshot.json.bak`
 - `log.jsonl`
@@ -161,6 +169,7 @@
 说明：
 
 - `memory/MEMORY.md` 由两条链路维护：后台 memory 刷新子进程（`>=20` 轮触发，单飞执行）+ manager `remember_memory` 即时写入。
+- `usage/ledger.jsonl` 追加写入 manager round 与 worker result 两类账本记录；manager 记录 `wakeProfile/packetMode/promptBytes/promptSegmentCount/includedSections/prunedSections`，worker 记录 `taskId/provider/status/usage`。
 - 异常退出（如被 kill）时，reaper 依据 `runtime/lease.json + runtime/children.json` 回收残留子进程。
 
 ## Runtime Snapshot 关键字段
@@ -175,7 +184,14 @@ schema：`src/storage/runtime-snapshot-schema.ts`
 - `pendingUserChoice`（预算暂停恢复场景下可带 `effect={ type: "resume_task", taskId, optionId, reason? }`）
 - `memoryRefresh`
 - `managerFocusCompressedContexts`
-- `managerCompressedContext`
+- `managerPacketSummary`
+- `managerLastContextPacket`
+- `managerLastUsage`
+- `managerUsageTotal`
+
+补充：
+
+- `workerUsageTotal` 不持久化到 snapshot；`GET /api/status` 会在返回时按 `tasks[*].result.usage ?? tasks[*].usage` 实时聚合。
 
 恢复一致性规则（启动阶段）：
 

@@ -256,6 +256,80 @@ export const managerFocusCompressedContextSchema = z
   })
   .strict()
 
+const managerWakeProfileSchema = z.enum([
+  'user_input',
+  'task_result',
+  'trigger',
+  'capacity',
+  'mixed',
+])
+
+export const managerPacketModeSchema = z.enum([
+  'minimal',
+  'standard',
+  'expanded',
+])
+
+export const managerPacketSectionSchema = z.enum([
+  'packet_summary',
+  'environment',
+  'focus_list',
+  'focus_contexts',
+  'remembered_memory',
+  'memory',
+  'tasks',
+  'plans',
+  'inputs',
+  'batch_results',
+  'recent_history',
+  'history_lookup',
+  'query_lookup',
+  'file_lookup',
+  'action_feedback',
+])
+
+export const managerContextPacketSchema = z
+  .object({
+    id: z.string().trim().min(1),
+    createdAt: z.string().trim().min(1),
+    wakeProfile: managerWakeProfileSchema,
+    mode: managerPacketModeSchema,
+    counts: z
+      .object({
+        inputs: z.number().int().nonnegative(),
+        results: z.number().int().nonnegative(),
+        tasks: z.number().int().nonnegative(),
+        plans: z.number().int().nonnegative(),
+        workingFocuses: z.number().int().nonnegative(),
+      })
+      .strict(),
+    latestUserInput: z
+      .object({
+        id: z.string().trim().min(1),
+        focusId: focusIdSchema,
+        text: z.string().trim().min(1),
+      })
+      .strict()
+      .optional(),
+    latestResult: z
+      .object({
+        taskId: z.string().trim().min(1),
+        status: taskResultStatusSchema,
+        focusId: focusIdSchema.optional(),
+        summary: z.string().trim().min(1).optional(),
+        stopReason: z.string().trim().min(1).optional(),
+        archivePath: z.string().trim().min(1).optional(),
+      })
+      .strict()
+      .optional(),
+    activeTaskIds: z.array(z.string().trim().min(1)).optional(),
+    activePlanIds: z.array(z.string().trim().min(1)).optional(),
+    workingFocusIds: z.array(focusIdSchema).optional(),
+    includedSections: z.array(managerPacketSectionSchema),
+    prunedSections: z.array(managerPacketSectionSchema),
+  })
+  .strict()
+
 export const userChoiceOptionSchema = z
   .object({
     id: optionIdSchema,
@@ -334,7 +408,10 @@ export const runtimeSnapshotSchema = z
     pendingUserChoice: pendingUserChoiceSchema.optional(),
     memoryRefresh: memoryRefreshSchema.optional(),
     channelTargets: channelTargetsSchema.optional(),
-    managerCompressedContext: z.string().optional(),
+    managerPacketSummary: z.string().optional(),
+    managerLastContextPacket: managerContextPacketSchema.optional(),
+    managerLastUsage: tokenUsageSchema.optional(),
+    managerUsageTotal: tokenUsageSchema.optional(),
     managerFocusCompressedContexts: z
       .array(managerFocusCompressedContextSchema)
       .optional(),

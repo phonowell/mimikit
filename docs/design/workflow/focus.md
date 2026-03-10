@@ -67,6 +67,7 @@
 - 无引用时按默认归属算法。
 - manager `enqueue_task`/`ask_user_choice` 未显式传 `focus_id` 时按默认归属。
 - manager 回复与 manager 错误系统消息均使用 `resolveDefaultFocusId(runtime)`。
+- manager `enqueue_task` 未显式传 `provider` 时，会优先复用同 `focus` 最近活跃任务的 provider，减少跨 provider 切换与额外编排成本。
 
 ## 系统事件与 Focus 归属
 
@@ -151,9 +152,9 @@
 ## Prompt 注入规范
 
 - Manager Prompt：
-- `M:focus_list`：非 archived focus 列表（含 `is_active`）
-- `M:focus_contexts`：working focus 的 `summary/open_items/recent_messages`（过滤 `focus-global`）
-- `M:recent_history`：未被 working focus recent 覆盖的近期历史
+- `M:state_packet.focus_list`：非 archived focus 列表（含 `is_active`）
+- `M:state_packet.focus_contexts`：working focus 的 `summary/open_items/recent_messages`（过滤 `focus-global`）
+- `M:event_packet.recent_history`：未被 working focus recent 覆盖的近期历史
 - 各段受 `manager.promptSections.*MaxBytes` 预算控制
 - Worker Prompt：
 - `M:focus_context`：当前任务 focus 的 `focus_title/summary/open_items/context_updated_at`

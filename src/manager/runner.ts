@@ -15,7 +15,9 @@ import type {
   FocusMeta,
   HistoryLookupMessage,
   ManagerActionFeedback,
+  ManagerContextPacket,
   ManagerEnv,
+  ManagerPacketMode,
   QueryLookupMessage,
   ReadFileLookupMessage,
   Task,
@@ -57,12 +59,18 @@ export const runManager = async (params: {
   }
   onUsage?: (usage: TokenUsage) => void
   usePromptSegments?: boolean
+  packetMode?: ManagerPacketMode
+  wakeProfile?: ManagerEnv['wakeProfile']
 }): Promise<{
   output: string
   elapsedMs: number
   usage?: TokenUsage
   promptPrefixHash: string
   threadId?: string | null
+  contextPacket: ManagerContextPacket
+  packetSummary: string
+  promptBytes: number
+  promptSegmentCount: number
 }> => {
   const promptPayload = await buildManagerPromptPayload({
     stateDir: params.stateDir,
@@ -82,8 +90,11 @@ export const runManager = async (params: {
     ...(params.workingFocusIds
       ? { workingFocusIds: params.workingFocusIds }
       : {}),
+    ...(params.packetMode ? { packetMode: params.packetMode } : {}),
+    ...(params.wakeProfile ? { wakeProfile: params.wakeProfile } : {}),
   })
-  const { prompt, promptSegments, prefix } = promptPayload
+  const { prompt, promptSegments, prefix, contextPacket, packetSummary } =
+    promptPayload
   const promptPrefixHash = hashPromptPrefix(prefix)
   const paths = buildPaths(params.stateDir)
 
@@ -144,6 +155,11 @@ export const runManager = async (params: {
       ...(result.usage ? { usage: result.usage } : {}),
       promptPrefixHash,
       ...(result.threadId ? { threadId: result.threadId } : {}),
+      contextPacket,
+      packetSummary,
+      promptBytes: Buffer.byteLength(prompt, 'utf8'),
+      promptSegmentCount:
+        params.usePromptSegments === false ? 1 : promptSegments.length,
     }
   } catch (error) {
     const err = toError(error)

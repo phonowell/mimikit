@@ -13,6 +13,7 @@ export type StatePaths = {
   tasksDir: string
   memoryDir: string
   runtimeDir: string
+  usageDir: string
   history: string
   log: string
   inputsPackets: string
@@ -21,6 +22,7 @@ export type StatePaths = {
   memoryFile: string
   runtimeLease: string
   runtimeChildren: string
+  usageLedger: string
 }
 
 export const buildPaths = (stateDir: string): StatePaths => {
@@ -30,6 +32,7 @@ export const buildPaths = (stateDir: string): StatePaths => {
   const tasksDir = join(root, 'tasks')
   const memoryDir = join(root, 'memory')
   const runtimeDir = join(root, 'runtime')
+  const usageDir = join(root, 'usage')
   return {
     root,
     inputsDir,
@@ -37,6 +40,7 @@ export const buildPaths = (stateDir: string): StatePaths => {
     tasksDir,
     memoryDir,
     runtimeDir,
+    usageDir,
     history: join(root, 'history'),
     log: join(root, 'log.jsonl'),
     inputsPackets: join(inputsDir, 'packets.jsonl'),
@@ -45,6 +49,7 @@ export const buildPaths = (stateDir: string): StatePaths => {
     memoryFile: join(memoryDir, 'MEMORY.md'),
     runtimeLease: join(runtimeDir, 'lease.json'),
     runtimeChildren: join(runtimeDir, 'children.json'),
+    usageLedger: join(usageDir, 'ledger.jsonl'),
   }
 }
 

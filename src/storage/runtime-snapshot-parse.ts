@@ -7,6 +7,7 @@ import {
 import {
   type focusContextSchema,
   type focusMetaSchema,
+  type managerContextPacketSchema,
   type managerFocusCompressedContextSchema,
   type pendingUserChoiceSchema,
   type RuntimeSnapshot,
@@ -25,6 +26,7 @@ type SnapshotFocusContext = z.infer<typeof focusContextSchema>
 type SnapshotManagerFocusCompressedContext = z.infer<
   typeof managerFocusCompressedContextSchema
 >
+type SnapshotManagerContextPacket = z.infer<typeof managerContextPacketSchema>
 type SnapshotPendingUserChoice = z.infer<typeof pendingUserChoiceSchema>
 
 const normalizeTask = (task: SnapshotTask): SnapshotTask =>
@@ -107,6 +109,27 @@ const normalizeManagerFocusCompressedContext = (
       : undefined,
   }) as SnapshotManagerFocusCompressedContext
 
+const normalizeManagerContextPacket = (
+  item: SnapshotManagerContextPacket,
+): SnapshotManagerContextPacket =>
+  stripUndefined({
+    ...item,
+    counts: stripUndefined({ ...item.counts }),
+    latestUserInput: item.latestUserInput
+      ? stripUndefined({ ...item.latestUserInput })
+      : undefined,
+    latestResult: item.latestResult
+      ? stripUndefined({ ...item.latestResult })
+      : undefined,
+    activeTaskIds: item.activeTaskIds ? [...item.activeTaskIds] : undefined,
+    activePlanIds: item.activePlanIds ? [...item.activePlanIds] : undefined,
+    workingFocusIds: item.workingFocusIds
+      ? [...item.workingFocusIds]
+      : undefined,
+    includedSections: [...item.includedSections],
+    prunedSections: [...item.prunedSections],
+  }) as SnapshotManagerContextPacket
+
 const normalizePendingUserChoice = (
   choice: SnapshotPendingUserChoice,
 ): SnapshotPendingUserChoice =>
@@ -126,7 +149,12 @@ const normalizeRuntimeSnapshot = (value: RuntimeSnapshot): RuntimeSnapshot =>
     managerThreadId: value.managerThreadId,
     queues: value.queues,
     channelTargets: value.channelTargets,
-    managerCompressedContext: value.managerCompressedContext,
+    managerPacketSummary: value.managerPacketSummary,
+    managerLastContextPacket: value.managerLastContextPacket
+      ? normalizeManagerContextPacket(value.managerLastContextPacket)
+      : undefined,
+    managerLastUsage: normalizeTokenUsage(value.managerLastUsage),
+    managerUsageTotal: normalizeTokenUsage(value.managerUsageTotal),
     managerFocusCompressedContexts: value.managerFocusCompressedContexts?.map(
       normalizeManagerFocusCompressedContext,
     ),

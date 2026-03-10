@@ -1,4 +1,8 @@
 import { appendLog } from '../log/append.js'
+import { bestEffort } from '../log/safe.js'
+import { resolveManagerPacketMode } from '../prompts/manager-context-packet.js'
+import { mergeUsageAdditive } from '../shared/token-usage.js'
+import { appendManagerUsageLedgerEntry } from '../storage/usage-ledger.js'
 import { resolveSlotStatus } from '../worker/task-state-shared.js'
 
 import { runManager } from './runner.js'
@@ -138,6 +142,7 @@ const CONTEXT_BUDGET_PRESETS: Record<
     environmentMaxBytes: 3072,
     inputsMaxBytes: 6144,
     batchResultsMaxBytes: 12288,
+    packetSummaryMaxBytes: 4096,
     tasksMaxBytes: 12288,
     plansMaxBytes: 8192,
     recentHistoryMaxBytes: 6144,
@@ -153,6 +158,7 @@ const CONTEXT_BUDGET_PRESETS: Record<
     environmentMaxBytes: 4096,
     inputsMaxBytes: 8192,
     batchResultsMaxBytes: 20480,
+    packetSummaryMaxBytes: 6144,
     tasksMaxBytes: 24576,
     plansMaxBytes: 16384,
     recentHistoryMaxBytes: 8192,
@@ -168,6 +174,7 @@ const CONTEXT_BUDGET_PRESETS: Record<
     environmentMaxBytes: 6144,
     inputsMaxBytes: 12288,
     batchResultsMaxBytes: 28672,
+    packetSummaryMaxBytes: 8192,
     tasksMaxBytes: 32768,
     plansMaxBytes: 24576,
     recentHistoryMaxBytes: 12288,
@@ -284,6 +291,18 @@ export const runManagerRoundWithRecovery = async (params: {
 }> => {
   const wakeProfile = resolveWakeProfile(params.inputs, params.results)
   const managerEnv = buildManagerEnv(params.runtime, wakeProfile)
+  const packetMode = resolveManagerPacketMode({
+    wakeProfile,
+    round: params.round,
+    hasLookupData: Boolean(
+      params.extra.historyLookup ??
+      params.extra.queryLookup ??
+      params.extra.readFileLookup,
+    ),
+    hasActionFeedback: Boolean(
+      params.extra.actionFeedback && params.extra.actionFeedback.length > 0,
+    ),
+  })
   const budgetTier = resolveContextBudgetTier({
     wakeProfile,
     inputCount: params.inputs.length,
@@ -305,6 +324,7 @@ export const runManagerRoundWithRecovery = async (params: {
   void appendLog(params.runtime.paths.log, {
     event: 'manager_context_budget_tier',
     wakeProfile,
+    packetMode,
     tier: budgetTier,
     inputCount: params.inputs.length,
     resultCount: params.results.length,
@@ -348,7 +368,31 @@ export const runManagerRoundWithRecovery = async (params: {
     modelReasoningEffort: params.runtime.config.manager.modelReasoningEffort,
     retry: params.runtime.config.worker.retry,
     ...(params.managerThreadId ? { threadId: params.managerThreadId } : {}),
+    packetMode,
+    wakeProfile,
   })
+  params.runtime.manager.lastContextPacket = result.contextPacket
+  params.runtime.manager.packetSummary = result.packetSummary
+  if (result.usage) {
+    params.runtime.manager.lastUsage = result.usage
+    params.runtime.manager.usageTotal =
+      mergeUsageAdditive(params.runtime.manager.usageTotal, result.usage) ??
+      result.usage
+  }
+  await bestEffort('appendManagerUsageLedgerEntry', () =>
+    appendManagerUsageLedgerEntry({
+      stateDir: params.runtime.config.workDir,
+      wakeProfile,
+      packetMode,
+      contextPacket: result.contextPacket,
+      ...(result.usage ? { usage: result.usage } : {}),
+      elapsedMs: result.elapsedMs,
+      ...(result.threadId !== undefined ? { threadId: result.threadId } : {}),
+      model: params.runtime.config.manager.model,
+      promptBytes: result.promptBytes,
+      promptSegmentCount: result.promptSegmentCount,
+    }),
+  )
 
   return {
     output: result.output,

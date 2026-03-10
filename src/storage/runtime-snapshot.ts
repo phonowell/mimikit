@@ -39,7 +39,7 @@ const initialRuntimeSnapshot = (): RuntimeSnapshot => ({
     lastProcessedInputsCursor: 0,
     lastProcessedResultsCursor: 0,
   },
-  managerCompressedContext: '',
+  managerPacketSummary: '',
 })
 
 const inspectBackupError = (

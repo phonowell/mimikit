@@ -31,7 +31,10 @@ import {
   type RuntimeState,
 } from './runtime-adapter.js'
 import { buildTaskContractFromAttrs } from './task-contract.js'
-import { resolvePreferredWorkerProvider } from './worker-provider-selection.js'
+import {
+  resolveFocusAffinitizedWorkerProvider,
+  resolvePreferredWorkerProvider,
+} from './worker-provider-selection.js'
 
 import type { Parsed } from '../actions/model/spec.js'
 import type { FocusId, WorkerProfile, WorkerProvider } from '../types/index.js'
@@ -79,11 +82,19 @@ export const applyRunTask = async (
   const parsed = runTaskSchema.safeParse(item.attrs)
   if (!parsed.success) return 'continue'
   const profile: WorkerProfile = 'worker'
+  const focusId = resolveActionFocusId(runtime, parsed.data.focus_id)
+  const affinityProvider = parsed.data.provider
+    ? undefined
+    : resolveFocusAffinitizedWorkerProvider({
+        config: runtime.config,
+        tasks: runtime.tasks,
+        focusId,
+      })
   const provider: WorkerProvider =
     parsed.data.provider ??
+    affinityProvider ??
     resolvePreferredWorkerProvider(runtime.config) ??
     'codex'
-  const focusId = resolveActionFocusId(runtime, parsed.data.focus_id)
   const contract = buildTaskContractFromAttrs(parsed.data)
   if (!contract) return 'continue'
   const target = await resolveTaskExecutionTarget(parsed.data.cwd)
@@ -231,6 +242,17 @@ export const applyRunTask = async (
     createdAt: task.createdAt,
     slotStatus,
   })
+  if (!parsed.data.provider && affinityProvider) {
+    await bestEffort('appendLog: run_task_provider_affinity', () =>
+      appendLog(runtime.paths.log, {
+        event: 'run_task_provider_affinity',
+        taskId: task.id,
+        focusId,
+        provider,
+        source: 'focus_recent_task',
+      }),
+    )
+  }
   await logRunTaskDispatch({ taskId: task.id, mode: 'created' })
   await persistRuntimeState(runtime)
   enqueueWorkerTask(runtime, task)

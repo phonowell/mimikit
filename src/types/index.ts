@@ -1,6 +1,9 @@
 import type {
   focusContextSchema,
   focusMetaSchema,
+  managerContextPacketSchema,
+  managerPacketModeSchema,
+  managerPacketSectionSchema,
   pendingUserChoiceEffectSchema,
   pendingUserChoiceSchema,
   taskCancelSchema,
@@ -302,6 +305,9 @@ export type ManagerWakeProfile =
   | 'trigger'
   | 'capacity'
   | 'mixed'
+export type ManagerPacketMode = z.infer<typeof managerPacketModeSchema>
+export type ManagerPacketSection = z.infer<typeof managerPacketSectionSchema>
+export type ManagerContextPacket = z.infer<typeof managerContextPacketSchema>
 export type ManagerEnv = {
   lastUser?: {
     source?: string

@@ -76,7 +76,7 @@ export const createTestRuntimeState = async (
       turn: 0,
       memoryRefresh: createDefaultMemoryRefreshState(),
       focusCompressedContexts: [],
-      compressedContext: '',
+      packetSummary: '',
       ...options.patch?.manager,
     },
     worker: {

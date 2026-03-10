@@ -228,6 +228,51 @@ test('enqueue_task without provider picks higher capability when billing ties', 
   expect(runtime.tasks[0]?.provider).toBe('codex')
 })
 
+test('enqueue_task without provider reuses recent focus provider before falling back to billing order', async () => {
+  const runtime = await createRuntime()
+  runtime.config.codex.enabled = true
+  runtime.config.codex.billing = 'low'
+  runtime.config.opencode.enabled = true
+  runtime.config.opencode.billing = 'free'
+  runtime.focuses.push({
+    id: 'focus-affinity',
+    title: 'Affinity',
+    status: 'active',
+    createdAt: '2026-03-08T00:00:00.000Z',
+    updatedAt: '2026-03-08T00:00:00.000Z',
+    lastActivityAt: '2026-03-08T00:00:02.000Z',
+  })
+  runtime.tasks.push({
+    id: 'task-affinity-1',
+    fingerprint: 'task-affinity-1',
+    prompt: 'existing focus task',
+    title: 'Existing focus task',
+    cwd: TASK_CWD,
+    focusId: 'focus-affinity',
+    profile: 'worker',
+    provider: 'codex',
+    status: 'succeeded',
+    createdAt: '2026-03-08T00:00:00.000Z',
+    completedAt: '2026-03-08T00:00:03.000Z',
+  })
+
+  await applyTaskActions(runtime, [
+    {
+      name: 'enqueue_task',
+      attrs: {
+        prompt: 'follow same focus runtime',
+        title: 'affinitized provider',
+        cwd: TASK_CWD,
+        focus_id: 'focus-affinity',
+        ...CONTRACT_ATTRS,
+      },
+    },
+  ])
+
+  expect(runtime.tasks).toHaveLength(2)
+  expect(runtime.tasks[1]?.provider).toBe('codex')
+})
+
 test('enqueue_task creates confirmation choice instead of dispatching high-cost task', async () => {
   const runtime = await createRuntime()
 

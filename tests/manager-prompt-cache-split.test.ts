@@ -78,25 +78,25 @@ test('buildManagerPromptPayload splits stable and volatile context segments', as
   expect(payload.prefix).toContain('## 工作边界')
   expect(payload.prefix).not.toContain('<M:inputs>')
   expect(payload.prefix).not.toContain('<M:environment>')
-  expect(payload.suffix).toContain('<M:inputs>')
-  expect(payload.suffix).toContain('<M:environment>')
-  expect(payload.suffix).toContain('<M:tasks>')
-  expect(payload.suffix).toContain('<M:focus_list>')
+  expect(payload.suffix).toContain('<M:event_packet>')
+  expect(payload.suffix).toContain('<M:state_packet>')
+  expect(payload.suffix).toContain('"packet"')
   expect(payload.prompt).toContain(payload.prefix)
   expect(payload.prompt).toContain(payload.suffix)
   expect(payload.promptSegments).toHaveLength(3)
   expect(payload.promptSegments[0]).toEqual({
     text: payload.prefix,
-    cacheControl: 'ephemeral',
   })
-  expect(payload.promptSegments[1]).toMatchObject({
-    cacheControl: 'ephemeral',
+  expect(payload.promptSegments[1]?.text).toContain('<M:state_packet>')
+  expect(payload.promptSegments[1]).toEqual({
+    text: payload.promptSegments[1]?.text,
   })
-  expect(payload.promptSegments[1]?.text).toContain('<M:tasks>')
-  expect(payload.promptSegments[1]?.text).toContain('<M:focus_list>')
   expect(payload.promptSegments[2]).toEqual({
     text: expect.any(String),
+    cacheControl: 'ephemeral',
   })
-  expect(payload.promptSegments[2]?.text).toContain('<M:inputs>')
-  expect(payload.promptSegments[2]?.text).toContain('<M:environment>')
+  expect(payload.promptSegments[2]?.text).toContain('<M:event_packet>')
+  expect(payload.promptSegments[2]?.text).toContain('"packet"')
+  expect(payload.contextPacket.mode).toBe('standard')
+  expect(payload.contextPacket.includedSections).toContain('packet_summary')
 })

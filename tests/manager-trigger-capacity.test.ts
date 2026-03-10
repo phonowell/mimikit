@@ -35,7 +35,6 @@ const createTestConfig = (
     promptSections: {
       actionFeedbackMaxBytes: 2048,
       batchResultsMaxBytes: 4096,
-      compressedContextMaxBytes: 4096,
       environmentMaxBytes: 2048,
       fileLookupMaxBytes: 4096,
       focusContextsMaxBytes: 4096,
@@ -43,6 +42,7 @@ const createTestConfig = (
       historyLookupMaxBytes: 4096,
       inputsMaxBytes: 2048,
       memoryMaxBytes: 2048,
+      packetSummaryMaxBytes: 4096,
       plansMaxBytes: 4096,
       queryLookupMaxBytes: 4096,
       recentHistoryMaxBytes: 2048,

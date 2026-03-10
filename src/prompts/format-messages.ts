@@ -141,7 +141,30 @@ export const formatInputs = (
   inputs: UserInput[],
   quoteLookup?: PromptQuoteReferenceLookup,
 ): string => {
-  if (inputs.length === 0) return ''
+  const payload = buildInputsPromptPayload(inputs, quoteLookup)
+  if (!payload) return ''
+  return formatMessagesJson(payload.messages)
+}
+
+export const buildInputsPromptPayload = (
+  inputs: UserInput[],
+  quoteLookup?: PromptQuoteReferenceLookup,
+):
+  | {
+      messages: Array<{
+        id: string
+        role: string
+        time: string
+        focus_id: string
+        source?: string
+        platform?: string
+        quote?: string
+        quote_ref?: PromptQuoteReference
+        content: string
+      }>
+    }
+  | undefined => {
+  if (inputs.length === 0) return undefined
   const entries = inputs
     .map((input) => {
       if (!isVisibleToAgent(input)) return null
@@ -164,14 +187,35 @@ export const formatInputs = (
       }
     })
     .filter((item): item is NonNullable<typeof item> => Boolean(item))
-  return formatMessagesJson(entries)
+  return entries.length === 0 ? undefined : { messages: entries }
 }
 
 export const formatRecentHistory = (
   history: HistoryMessage[],
   quoteLookup?: PromptQuoteReferenceLookup,
 ): string => {
-  if (history.length === 0) return ''
+  const payload = buildRecentHistoryPromptPayload(history, quoteLookup)
+  if (!payload) return ''
+  return formatMessagesJson(payload.messages)
+}
+
+export const buildRecentHistoryPromptPayload = (
+  history: HistoryMessage[],
+  quoteLookup?: PromptQuoteReferenceLookup,
+):
+  | {
+      messages: Array<{
+        id: string
+        role: string
+        time: string
+        focus_id: string
+        quote?: string
+        quote_ref?: PromptQuoteReference
+        content: string
+      }>
+    }
+  | undefined => {
+  if (history.length === 0) return undefined
   const entries = history
     .map((item) => {
       const content = item.text.trim()
@@ -187,7 +231,7 @@ export const formatRecentHistory = (
       }
     })
     .filter((item): item is NonNullable<typeof item> => item !== null)
-  return formatMessagesJson(entries)
+  return entries.length === 0 ? undefined : { messages: entries }
 }
 
 const mapLookupRole = (role: HistoryLookupMessage['role']): string => {
@@ -196,7 +240,25 @@ const mapLookupRole = (role: HistoryLookupMessage['role']): string => {
 }
 
 export const formatHistoryLookup = (lookup: HistoryLookupMessage[]): string => {
-  if (lookup.length === 0) return ''
+  const payload = buildHistoryLookupPromptPayload(lookup)
+  if (!payload) return ''
+  return escapeCdata(stringifyPromptJson(payload))
+}
+
+export const buildHistoryLookupPromptPayload = (
+  lookup: HistoryLookupMessage[],
+):
+  | {
+      messages: Array<{
+        id: string
+        role: string
+        time: string
+        score: number
+        content: string
+      }>
+    }
+  | undefined => {
+  if (lookup.length === 0) return undefined
   const entries = lookup
     .map((item) => {
       const content = item.content.trim()
@@ -210,19 +272,23 @@ export const formatHistoryLookup = (lookup: HistoryLookupMessage[]): string => {
       }
     })
     .filter((item): item is NonNullable<typeof item> => item !== null)
-  if (entries.length === 0) return ''
+  if (entries.length === 0) return undefined
   const sorted = sortByTimeAndIdDesc(entries)
-  return escapeCdata(
-    stringifyPromptJson({
-      messages: sorted,
-    }),
-  )
+  return { messages: sorted }
 }
 
 export const formatReadFileLookup = (
   lookup: ReadFileLookupMessage[],
 ): string => {
-  if (lookup.length === 0) return ''
+  const payload = buildReadFileLookupPromptPayload(lookup)
+  if (!payload) return ''
+  return escapeCdata(stringifyPromptJson(payload))
+}
+
+export const buildReadFileLookupPromptPayload = (
+  lookup: ReadFileLookupMessage[],
+): { files: Array<Record<string, unknown>> } | undefined => {
+  if (lookup.length === 0) return undefined
   const entries = lookup
     .map((item) => {
       const path = item.path.trim()
@@ -243,18 +309,21 @@ export const formatReadFileLookup = (
       }
     })
     .filter((item): item is NonNullable<typeof item> => item !== null)
-  if (entries.length === 0) return ''
-  return escapeCdata(
-    stringifyPromptJson({
-      files: entries,
-    }),
-  )
+  return entries.length === 0 ? undefined : { files: entries }
 }
 
 export const formatActionFeedback = (
   feedback: ManagerActionFeedback[],
 ): string => {
-  if (feedback.length === 0) return ''
+  const payload = buildActionFeedbackPromptPayload(feedback)
+  if (!payload) return ''
+  return escapeCdata(stringifyPromptJson(payload))
+}
+
+export const buildActionFeedbackPromptPayload = (
+  feedback: ManagerActionFeedback[],
+): { items: Array<Record<string, string>> } | undefined => {
+  if (feedback.length === 0) return undefined
   const entries = feedback
     .map((item) => {
       const action = item.action.trim()
@@ -270,12 +339,7 @@ export const formatActionFeedback = (
       }
     })
     .filter((item): item is NonNullable<typeof item> => item !== null)
-  if (entries.length === 0) return ''
-  return escapeCdata(
-    stringifyPromptJson({
-      items: entries,
-    }),
-  )
+  return entries.length === 0 ? undefined : { items: entries }
 }
 
 export const formatQueryLookup = (lookup?: QueryLookupMessage): string => {

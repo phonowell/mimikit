@@ -29,4 +29,6 @@ test('manager prompt no longer injects M:compressed_context section', async () =
 
   expect(prompt).not.toContain('<M:compressed_context>')
   expect(prompt).not.toContain('M:compressed_context')
+  expect(prompt).toContain('<M:event_packet>')
+  expect(prompt).toContain('"packet"')
 })

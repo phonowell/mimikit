@@ -31,8 +31,8 @@ test('recent_history is summarized into stable pointers instead of full content'
     promptSectionLimits: config.manager.promptSections,
   })
 
-  expect(payload.suffix).toContain('<M:recent_history>')
-  expect(payload.suffix).toContain('"pointers"')
-  expect(payload.suffix).toContain('"id": "agent-history-summary-1"')
+  expect(payload.suffix).toContain('<M:event_packet>')
+  expect(payload.suffix).toContain('"recent_history"')
+  expect(payload.suffix).toContain('agent-history-summary-1')
   expect(payload.suffix).not.toContain('这里是一大段历史内容')
 })

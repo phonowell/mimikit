@@ -10,7 +10,6 @@ import type { PromptSectionLimits } from "../src/config.js";
 const promptSectionLimits: PromptSectionLimits = {
   actionFeedbackMaxBytes: 8192,
   batchResultsMaxBytes: 20480,
-  compressedContextMaxBytes: 12288,
   environmentMaxBytes: 4096,
   fileLookupMaxBytes: 20480,
   focusContextsMaxBytes: 20480,
@@ -18,6 +17,7 @@ const promptSectionLimits: PromptSectionLimits = {
   historyLookupMaxBytes: 20480,
   inputsMaxBytes: 8192,
   memoryMaxBytes: 8192,
+  packetSummaryMaxBytes: 6144,
   plansMaxBytes: 16384,
   queryLookupMaxBytes: 20480,
   recentHistoryMaxBytes: 8192,

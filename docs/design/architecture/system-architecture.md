@@ -13,13 +13,16 @@
 - `mimikit` 对外是异步自治作业系统，对内保持轻量编排内核：负责本地状态机、队列、调度、可观测性，不直接执行任务。
 - manager 使用 `openai-responses`；worker 按任务 `provider` 路由到 `codex-sdk` 或 `opencode-sdk`。
 - 运行时状态收敛在 `session / manager / worker / ui` 四个子域，避免继续堆第二套调度或摘要层。
+- manager prompt 收敛为双 packet：`state_packet` 负责稳定状态（focus/task/plan），`event_packet` 负责当前批次事件（input/result/history/lookup/action_feedback/environment/packet）；具体注入按 `wakeProfile + correction round` 渐进展开。
+- manager 自动选 worker provider 时遵循固定顺序：显式 `provider` > 同 `focus` 最近活跃任务的 provider affinity > 默认低 `billing` / 同档高 `capability` provider。
+- manager/worker 每轮 usage 统一写入 `usage/ledger.jsonl`，直接暴露 prompt 字节、packet 裁剪与执行侧 token 消耗，不再额外引入成本推导层。
 - HTTP 输入校验与参数归一化集中在 `src/http/helpers.ts`。
 - 本地持久化采用进程内串行 + 文件锁（`proper-lockfile`）。
 
 ## 组件职责
 
-- `manager`：消费 `inputs/results`，决定回复、任务、计划与收尾策略。
-- `worker`：把任务派发给外部执行运行时，并把结果回写到本地状态。
+- `manager`：消费 `inputs/results`，决定回复、任务、计划与收尾策略，并记录每轮 context packet 与 usage ledger。
+- `worker`：把任务派发给外部执行运行时，并把结果回写到本地状态，同时在结果收尾时写 usage ledger。
 - `managerLoop`：统一处理计划触发、待确认 choice 生命周期、worker 槽位释放，不再保留独立 trigger loop。
 - `runtime reaper`：主进程异常退出后回收 worker 子进程。
 - WebUI：只承担观察、复盘与显式续跑入口，不承载调度策略。
@@ -72,7 +75,7 @@
 
 - manager loop 单飞，同一时刻只允许一个活跃批次。
 - 队列 compact 只在“已完全消费且达到阈值”时执行。
-- 上下文连续性依赖 `history + tasks + plans + focus` 落盘，而不是再造独立记忆总线。
+- 上下文连续性依赖 `history + tasks + plans + focus + manager context packet + usage totals` 落盘，而不是再造独立记忆总线。
 - `restart/reset` 先回包，再等待 in-flight manager 批次收敛后持久化退出。
 - 进程被杀（如 `SIGKILL`）时由 `runtime reaper` 基于 `.mimikit/runtime/lease.json` 与 `.mimikit/runtime/children.json` 执行回收。
 

@@ -105,8 +105,8 @@ const buildPayload = async (
     })),
     tasks,
     plans,
-    ...(runtime.manager.compressedContext
-      ? { compressedContext: runtime.manager.compressedContext }
+    ...(runtime.manager.packetSummary
+      ? { packetSummary: runtime.manager.packetSummary }
       : {}),
   }
 }
@@ -127,7 +127,7 @@ const buildRefreshScoreContext = (
     pushMention(mentions, task.output)
   }
   for (const plan of payload.plans) pushMention(mentions, plan.title)
-  pushMention(mentions, payload.compressedContext)
+  pushMention(mentions, payload.packetSummary)
 
   const uniqueForQuery: string[] = []
   const querySeen = new Set<string>()
