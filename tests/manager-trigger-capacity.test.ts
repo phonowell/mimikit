@@ -37,7 +37,7 @@ const createTestConfig = (
       batchResultsMaxBytes: 4096,
       environmentMaxBytes: 2048,
       fileLookupMaxBytes: 4096,
-      focusContextsMaxBytes: 4096,
+      focusDigestsMaxBytes: 4096,
       focusListMaxBytes: 2048,
       historyLookupMaxBytes: 4096,
       inputsMaxBytes: 2048,

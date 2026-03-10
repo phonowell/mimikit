@@ -7,7 +7,7 @@ import { newId } from '../../shared/utils.js'
 
 import type { RuntimeMemoryRefreshState } from '../../memory/refresh/state.js'
 import type {
-  FocusContext,
+  FocusDigest,
   FocusMeta,
   ManagerContextPacket,
   PendingUserChoice,
@@ -104,7 +104,7 @@ export type RuntimeState = {
   tasks: Task[]
   taskPlans: TaskPlan[]
   focuses: FocusMeta[]
-  focusContexts: FocusContext[]
+  focusDigests: FocusDigest[]
 }
 
 export const createRuntimeState = (
@@ -161,6 +161,6 @@ export const createRuntimeState = (
     tasks: [],
     taskPlans: [],
     focuses: [],
-    focusContexts: [],
+    focusDigests: [],
   }
 }

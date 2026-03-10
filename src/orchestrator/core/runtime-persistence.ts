@@ -1,4 +1,4 @@
-import { canPersistFocusContext } from '../../focus/reserved.js'
+import { canPersistFocusDigest } from '../../focus/reserved.js'
 import { readHistory } from '../../history/store.js'
 import { appendLog } from '../../log/append.js'
 import { bestEffort } from '../../log/safe.js'
@@ -31,9 +31,9 @@ const readQueuePacketCount = async (path: string): Promise<number> =>
     })
   ).length
 
-const normalizePersistedFocusContexts = (runtime: RuntimeState): void => {
-  runtime.focusContexts = runtime.focusContexts.filter((item) =>
-    canPersistFocusContext(item.focusId),
+const normalizePersistedFocusDigests = (runtime: RuntimeState): void => {
+  runtime.focusDigests = runtime.focusDigests.filter((item) =>
+    canPersistFocusDigest(item.focusId),
   )
 }
 
@@ -148,8 +148,8 @@ export const hydrateRuntimeState = async (
   runtime.tasks = snapshot.tasks
   runtime.taskPlans = snapshot.taskPlans
   runtime.focuses = snapshot.focuses ?? []
-  runtime.focusContexts = snapshot.focusContexts ?? []
-  normalizePersistedFocusContexts(runtime)
+  runtime.focusDigests = snapshot.focusDigests ?? []
+  normalizePersistedFocusDigests(runtime)
   runtime.manager.turn = snapshot.managerTurn ?? 0
   if (snapshot.managerThreadId)
     runtime.manager.threadId = snapshot.managerThreadId
@@ -182,13 +182,13 @@ export const hydrateRuntimeState = async (
 export const persistRuntimeState = async (
   runtime: RuntimeState,
 ): Promise<void> => {
-  normalizePersistedFocusContexts(runtime)
+  normalizePersistedFocusDigests(runtime)
   await saveRuntimeSnapshot(runtime.config.workDir, {
     schemaVersion: RUNTIME_SNAPSHOT_SCHEMA_VERSION,
     tasks: selectPersistedTasks(runtime.tasks),
     taskPlans: runtime.taskPlans,
     focuses: runtime.focuses,
-    focusContexts: runtime.focusContexts,
+    focusDigests: runtime.focusDigests,
     managerTurn: runtime.manager.turn,
     ...(runtime.manager.threadId
       ? { managerThreadId: runtime.manager.threadId }

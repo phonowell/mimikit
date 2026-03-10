@@ -1,5 +1,5 @@
 import type {
-  focusContextSchema,
+  focusDigestSchema,
   focusMetaSchema,
   managerContextPacketSchema,
   managerPacketModeSchema,
@@ -287,7 +287,7 @@ export type Task = z.infer<typeof taskSchema>
 export type TaskPlanTrigger = z.infer<typeof taskPlanTriggerSchema>
 export type TaskPlan = z.infer<typeof taskPlanSchema>
 export type FocusMeta = z.infer<typeof focusMetaSchema>
-export type FocusContext = z.infer<typeof focusContextSchema>
+export type FocusDigest = z.infer<typeof focusDigestSchema>
 export type UserChoiceOption = z.infer<typeof userChoiceOptionSchema>
 export type PendingUserChoiceEffect = z.infer<
   typeof pendingUserChoiceEffectSchema

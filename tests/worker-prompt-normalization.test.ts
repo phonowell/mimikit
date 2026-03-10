@@ -80,7 +80,7 @@ test('buildWorkerPrompt externalizes oversized task prompt into generated dir', 
   )
 })
 
-test('buildWorkerPrompt injects related focus summary for worker context', async () => {
+test('buildWorkerPrompt injects related focus brief for worker context', async () => {
   const root = await mkdtemp(join(tmpdir(), 'mimikit-worker-focus-context-'))
   const stateDir = resolve(root, '.mimikit')
   const workspaceDir = resolve(root, 'workspace')
@@ -100,31 +100,21 @@ test('buildWorkerPrompt injects related focus summary for worker context', async
       createdAt: now,
       focusId: 'focus-release',
     },
-    focusMeta: {
-      id: 'focus-release',
-      title: 'Release Readiness',
-      status: 'active',
-      createdAt: now,
-      updatedAt: now,
-      lastActivityAt: now,
-    },
-    focusContext: {
+    focusBrief: {
       focusId: 'focus-release',
+      title: 'Release Readiness',
       summary: '先完成回归测试并更新发布说明。',
       openItems: ['补齐发布 checklist', '确认回滚步骤'],
       updatedAt: now,
-    },
-    compressedFocusContext: {
-      focusId: 'focus-release',
-      summary: '目标是本周内完成发布并保留可回滚路径。',
-      updatedAt: now,
+      lastActivityAt: now,
     },
   })
 
-  expect(rendered).toContain('<M:focus_context>')
+  expect(rendered).toContain('<M:focus_brief>')
   expect(rendered).toContain('"focus_id": "focus-release"')
   expect(rendered).toContain('"focus_title": "Release Readiness"')
   expect(rendered).toContain('"summary": "先完成回归测试并更新发布说明。"')
   expect(rendered).toContain('"open_items": [')
-  expect(rendered).toContain('"compressed_summary": "目标是本周内完成发布并保留可回滚路径。"')
+  expect(rendered).toContain('"updated_at":')
+  expect(rendered).toContain('"last_activity_at":')
 })

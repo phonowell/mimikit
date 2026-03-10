@@ -11,7 +11,7 @@ const baseLimits: PromptSectionLimits = {
   batchResultsMaxBytes: 20480,
   environmentMaxBytes: 4096,
   fileLookupMaxBytes: 20480,
-  focusContextsMaxBytes: 20480,
+  focusDigestsMaxBytes: 20480,
   focusListMaxBytes: 8192,
   historyLookupMaxBytes: 20480,
   inputsMaxBytes: 8192,
@@ -78,7 +78,7 @@ test('task_result trim reduces heavy context sections while keeping minimum floo
       tasksMaxBytes: 24576,
       batchResultsMaxBytes: 20480,
       recentHistoryMaxBytes: 8192,
-      focusContextsMaxBytes: 20480,
+      focusDigestsMaxBytes: 20480,
       historyLookupMaxBytes: 20480,
       queryLookupMaxBytes: 20480,
       fileLookupMaxBytes: 20480,
@@ -93,8 +93,8 @@ test('task_result trim reduces heavy context sections while keeping minimum floo
   expect(trimmed.recentHistoryMaxBytes).toBeLessThan(
     fromPreset.recentHistoryMaxBytes,
   )
-  expect(trimmed.focusContextsMaxBytes).toBeLessThan(
-    fromPreset.focusContextsMaxBytes,
+  expect(trimmed.focusDigestsMaxBytes).toBeLessThan(
+    fromPreset.focusDigestsMaxBytes,
   )
   expect(trimmed.historyLookupMaxBytes).toBeLessThan(
     fromPreset.historyLookupMaxBytes,

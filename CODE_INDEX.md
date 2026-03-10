@@ -155,8 +155,8 @@
 | `ensureFocus()/setFocusStatus()/updateFocus()` | `src/focus/state.ts:53` | Focus entity lifecycle |
 | `assignFocusByTargetId()` | `src/focus/assign.ts:17` | Maps task/result to focus |
 | `enforceFocusCapacity()` | `src/focus/capacity.ts:61` | Limits active working focuses |
-| `upsertFocusContext()` | `src/focus/state-context.ts:20` | Maintains focus context state |
-| `syncFocusContextFromTaskResult()` | `src/focus/result-feedback.ts:198` | Updates focus from task results |
+| `upsertFocusDigest()` | `src/focus/state-digest.ts:16` | Maintains focus digest state |
+| `syncFocusDigestFromTaskResult()` | `src/focus/result-feedback.ts:153` | Updates focus digest from task results |
 | `requestMemoryRefresh()` | `src/memory/refresh/singleflight.ts:187` | Triggers memory refresh job |
 | `runMemoryRefreshSingleCall()` | `src/memory/refresh/single-call.ts:109` | Executes one refresh request |
 | `rememberMemoryEntry()` | `src/memory/remember-entry.ts:187` | Append/update memory markdown entry |

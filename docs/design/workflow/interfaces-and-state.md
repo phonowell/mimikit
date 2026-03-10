@@ -180,7 +180,7 @@ schema：`src/storage/runtime-snapshot-schema.ts`
 
 - `tasks`（含 `tasks[*].provider`）
 - `taskPlans`
-- `focuses`、`focusContexts`
+- `focuses`、`focusDigests`
 - `managerTurn`
 - `queues.inputsCursor`、`queues.resultsCursor`
 - `memoryRefresh`

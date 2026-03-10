@@ -4,7 +4,7 @@ import {
   stringifyPromptJson,
 } from './format-base.js'
 
-import type { FocusListEntry, FocusPromptContextEntry } from '../focus/index.js'
+import type { FocusListEntry, FocusPromptDigestEntry } from '../focus/index.js'
 
 const sortMessagesDesc = <T extends { time: string; id: string }>(
   entries: T[],
@@ -34,10 +34,10 @@ export const formatFocusList = (focusList: FocusListEntry[]): string => {
   )
 }
 
-export const buildFocusContextsPromptPayload = (
-  contexts: FocusPromptContextEntry[],
+export const buildFocusDigestsPromptPayload = (
+  digests: FocusPromptDigestEntry[],
 ) => ({
-  focuses: contexts.map((focus) => ({
+  focuses: digests.map((focus) => ({
     focus_id: focus.focusId,
     title: focus.title,
     status: focus.status,
@@ -63,11 +63,11 @@ export const buildFocusContextsPromptPayload = (
   })),
 })
 
-export const formatFocusContexts = (
-  contexts: FocusPromptContextEntry[],
+export const formatFocusDigests = (
+  digests: FocusPromptDigestEntry[],
 ): string => {
-  if (contexts.length === 0) return ''
+  if (digests.length === 0) return ''
   return escapeCdata(
-    stringifyPromptJson(buildFocusContextsPromptPayload(contexts)),
+    stringifyPromptJson(buildFocusDigestsPromptPayload(digests)),
   )
 }

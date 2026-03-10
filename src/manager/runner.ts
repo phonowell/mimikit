@@ -10,7 +10,7 @@ import { hashPromptPrefix } from './prompt-stability.js'
 
 import type { AppConfig } from '../config.js'
 import type {
-  FocusContext,
+  FocusDigest,
   FocusId,
   FocusMeta,
   HistoryLookupMessage,
@@ -45,7 +45,7 @@ export const runManager = async (params: {
   actionFeedback?: ManagerActionFeedback[]
   env?: ManagerEnv
   focuses?: FocusMeta[]
-  focusContexts?: FocusContext[]
+  focusDigests?: FocusDigest[]
   workingFocusIds?: FocusId[]
   model?: string
   baseUrl?: string | undefined
@@ -86,7 +86,7 @@ export const runManager = async (params: {
     ...(params.actionFeedback ? { actionFeedback: params.actionFeedback } : {}),
     ...(params.env ? { env: params.env } : {}),
     ...(params.focuses ? { focuses: params.focuses } : {}),
-    ...(params.focusContexts ? { focusContexts: params.focusContexts } : {}),
+    ...(params.focusDigests ? { focusDigests: params.focusDigests } : {}),
     ...(params.workingFocusIds
       ? { workingFocusIds: params.workingFocusIds }
       : {}),

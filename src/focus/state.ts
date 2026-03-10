@@ -3,13 +3,13 @@ import { nowIso } from '../shared/utils.js'
 
 import { GLOBAL_FOCUS_ID, INBOX_FOCUS_ID } from './constants.js'
 import {
-  canPersistFocusContext,
+  canPersistFocusDigest,
   initialFocusStatus,
   isDefaultActiveFocusCandidate,
   isDefaultIdleFocusCandidate,
   normalizeReservedFocusStatus,
 } from './reserved.js'
-import { normalizeFocusSummary, upsertFocusContext } from './state-context.js'
+import { normalizeFocusSummary, upsertFocusDigest } from './state-digest.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { FocusId, FocusMeta, FocusStatus } from '../types/index.js'
@@ -77,8 +77,8 @@ export const ensureFocus = (
 }
 
 export const ensureGlobalFocus = (runtime: RuntimeState): void => {
-  runtime.focusContexts = runtime.focusContexts.filter((item) =>
-    canPersistFocusContext(item.focusId),
+  runtime.focusDigests = runtime.focusDigests.filter((item) =>
+    canPersistFocusDigest(item.focusId),
   )
   const global = ensureFocus(runtime, GLOBAL_FOCUS_ID, 'Global')
   if (global.status !== 'active') {
@@ -123,7 +123,7 @@ export const updateFocus = (
   const nextTitle =
     normalizedTitle && normalizedTitle.length > 0 ? normalizedTitle : undefined
   const normalizedSummary = normalizeFocusSummary(params.summary)
-  const summaryForContext =
+  const summaryForDigest =
     normalizedSummary ??
     nextTitle ??
     (params.summary !== undefined ? '' : undefined)
@@ -139,11 +139,9 @@ export const updateFocus = (
     params.openItems !== undefined ||
     nextTitle !== undefined
   ) {
-    upsertFocusContext(runtime, {
+    upsertFocusDigest(runtime, {
       focusId: params.id,
-      ...(summaryForContext !== undefined
-        ? { summary: summaryForContext }
-        : {}),
+      ...(summaryForDigest !== undefined ? { summary: summaryForDigest } : {}),
       ...(params.openItems !== undefined
         ? { openItems: params.openItems }
         : {}),

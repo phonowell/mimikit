@@ -12,7 +12,7 @@ const promptSectionLimits: PromptSectionLimits = {
   batchResultsMaxBytes: 20480,
   environmentMaxBytes: 4096,
   fileLookupMaxBytes: 20480,
-  focusContextsMaxBytes: 20480,
+  focusDigestsMaxBytes: 20480,
   focusListMaxBytes: 8192,
   historyLookupMaxBytes: 20480,
   inputsMaxBytes: 8192,
@@ -90,6 +90,9 @@ test("manager prompt enforces concise reply and choice routing rules", async () 
   );
   expect(prompt).toContain(
     "`M:enqueue_task`：派发一个 worker 任务",
+  );
+  expect(prompt).toContain(
+    "省略 `provider`，交给系统自动按“同 focus 最近 provider affinity 优先，其次 `billing` 更低优先，同档位 `capability` 更高优先”选择",
   );
   expect(prompt).toContain(
     "### 用户交互",

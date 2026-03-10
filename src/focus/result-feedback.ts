@@ -7,7 +7,7 @@ import { clipCompactText } from '../shared/text.js'
 
 import { MAX_FOCUS_OPEN_ITEMS } from './constants.js'
 import { normalizeFocusOpenItems } from './open-items.js'
-import { upsertFocusContext } from './state-context.js'
+import { upsertFocusDigest } from './state-digest.js'
 import { touchFocus } from './state.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
@@ -150,16 +150,16 @@ const resolveNextOpenItems = (
   return mergeOpenItems(currentOpenItems, [buildFollowupOpenItem(task, result)])
 }
 
-export const syncFocusContextFromTaskResult = (
+export const syncFocusDigestFromTaskResult = (
   runtime: RuntimeState,
   task: Task,
   result: TaskResult,
 ): void => {
   const focusId = task.focusId.trim()
   if (focusId.length === 0) return
-  const current = runtime.focusContexts.find((item) => item.focusId === focusId)
+  const current = runtime.focusDigests.find((item) => item.focusId === focusId)
   const summary = resolveHandoffSummary(result) ?? formatSummary(task, result)
-  upsertFocusContext(runtime, {
+  upsertFocusDigest(runtime, {
     focusId,
     summary,
     openItems: resolveNextOpenItems(current?.openItems, task, result),

@@ -5,7 +5,7 @@ export { assignFocusByTargetId, resolveFocusByQuote } from './assign.js'
 export {
   buildFocusPromptPayload,
   type FocusListEntry,
-  type FocusPromptContextEntry,
+  type FocusPromptDigestEntry,
 } from './prompt.js'
 
 export { enforceActiveFocusLimit, pruneArchivedFocuses } from './capacity.js'

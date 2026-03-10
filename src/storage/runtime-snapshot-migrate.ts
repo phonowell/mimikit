@@ -8,9 +8,18 @@ const asRecord = (value: unknown): Record<string, unknown> | undefined =>
     ? (value as Record<string, unknown>)
     : undefined
 
-const dropLegacyRuntimeSnapshotFields = (source: Record<string, unknown>) => {
-  let changed = false
+const renameLegacyFocusContexts = (source: Record<string, unknown>) => {
+  if (!('focusContexts' in source)) return { next: source, changed: false }
   const next = { ...source }
+  if (!('focusDigests' in next)) next.focusDigests = next.focusContexts
+  delete next.focusContexts
+  return { next, changed: true }
+}
+
+const dropLegacyRuntimeSnapshotFields = (source: Record<string, unknown>) => {
+  const renamed = renameLegacyFocusContexts(source)
+  let changed = false
+  const next = { ...renamed.next }
   const removableFields = [
     'activeFocusIds',
     'pendingUserChoice',
@@ -27,7 +36,7 @@ const dropLegacyRuntimeSnapshotFields = (source: Record<string, unknown>) => {
     delete next[field]
     changed = true
   }
-  return { next, changed }
+  return { next, changed: renamed.changed || changed }
 }
 
 const coerceRuntimeSnapshotToCurrent = (
@@ -66,7 +75,7 @@ export const migrateRuntimeSnapshotToCurrent = (
     }
   }
   const major = parseRuntimeSnapshotSchemaMajor(rawVersion)
-  if (major === 1 || major === 2 || major === 3) {
+  if (major === 1 || major === 2 || major === 3 || major === 4) {
     const migrated = coerceRuntimeSnapshotToCurrent(record)
     return {
       migrated,

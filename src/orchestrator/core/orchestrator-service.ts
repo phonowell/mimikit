@@ -157,7 +157,7 @@ export class Orchestrator {
   getFocuses(limit = 200) {
     return buildFocusViews(
       this.runtime.focuses,
-      this.runtime.focusContexts,
+      this.runtime.focusDigests,
       limit,
       this.runtime.tasks,
     )

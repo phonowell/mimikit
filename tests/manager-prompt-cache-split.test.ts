@@ -64,7 +64,7 @@ test('buildManagerPromptPayload splits stable and volatile context segments', as
         lastActivityAt: '2026-03-07T10:00:02.000Z',
       },
     ],
-    focusContexts: [
+    focusDigests: [
       {
         focusId: 'focus-global',
         summary: '缓存优化待推进',

@@ -140,7 +140,7 @@ export const queryFocusScope = (
   maxItemChars: number,
 ): QueryLookupFocusItem[] => {
   const contextById = new Map(
-    runtime.focusContexts.map((item) => [item.focusId, item]),
+    runtime.focusDigests.map((item) => [item.focusId, item]),
   )
   return rankRuntimeScope({
     query,

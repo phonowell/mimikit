@@ -118,9 +118,9 @@ export {
   formatRecentHistory,
 } from './format-messages.js'
 export {
-  buildFocusContextsPromptPayload,
+  buildFocusDigestsPromptPayload,
   buildFocusListPromptPayload,
-  formatFocusContexts,
+  formatFocusDigests,
   formatFocusList,
 } from './format-focus.js'
 export {

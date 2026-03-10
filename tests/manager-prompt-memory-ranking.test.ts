@@ -20,7 +20,7 @@ const promptSectionLimits = (
   plansMaxBytes: 1024,
   recentHistoryMaxBytes: 1024,
   focusListMaxBytes: 1024,
-  focusContextsMaxBytes: 1024,
+  focusDigestsMaxBytes: 1024,
   historyLookupMaxBytes: 1024,
   queryLookupMaxBytes: 1024,
   fileLookupMaxBytes: 1024,

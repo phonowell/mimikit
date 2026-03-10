@@ -12,7 +12,7 @@ const promptSectionLimits: PromptSectionLimits = {
   batchResultsMaxBytes: 20480,
   environmentMaxBytes: 4096,
   fileLookupMaxBytes: 20480,
-  focusContextsMaxBytes: 20480,
+  focusDigestsMaxBytes: 20480,
   focusListMaxBytes: 8192,
   historyLookupMaxBytes: 20480,
   inputsMaxBytes: 8192,

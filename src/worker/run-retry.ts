@@ -15,6 +15,7 @@ import {
 } from './session-state.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
+import type { TaskFocusBrief } from '../prompts/format-task-focus-brief.js'
 import type { Task, TokenUsage, WorkerProvider } from '../types/index.js'
 
 export type WorkerLlmResult = {
@@ -34,6 +35,31 @@ const shouldRetryTaskRun = (
 ): boolean =>
   !shouldTreatAsTaskCancel(controller, error) &&
   !isWorkerBudgetExceededError(error)
+
+const buildTaskFocusBrief = (
+  runtime: RuntimeState,
+  task: Task,
+): TaskFocusBrief | undefined => {
+  const focusMeta = runtime.focuses.find((focus) => focus.id === task.focusId)
+  const focusDigest = runtime.focusDigests.find(
+    (digest) => digest.focusId === task.focusId,
+  )
+  if (!focusMeta && !focusDigest) return undefined
+  return {
+    focusId: task.focusId,
+    ...(focusMeta?.title ? { title: focusMeta.title } : {}),
+    ...(focusDigest?.summary ? { summary: focusDigest.summary } : {}),
+    ...(focusDigest?.openItems ? { openItems: focusDigest.openItems } : {}),
+    ...(focusDigest?.updatedAt
+      ? { updatedAt: focusDigest.updatedAt }
+      : focusMeta?.updatedAt
+        ? { updatedAt: focusMeta.updatedAt }
+        : {}),
+    ...(focusMeta?.lastActivityAt
+      ? { lastActivityAt: focusMeta.lastActivityAt }
+      : {}),
+  }
+}
 
 const runTaskModel = (params: {
   runtime: RuntimeState
@@ -65,20 +91,14 @@ const runTaskModel = (params: {
     )
   }
 
-  const focusMeta = params.runtime.focuses.find(
-    (focus) => focus.id === params.task.focusId,
-  )
-  const focusContext = params.runtime.focusContexts.find(
-    (focus) => focus.focusId === params.task.focusId,
-  )
+  const focusBrief = buildTaskFocusBrief(params.runtime, params.task)
   return runWorker({
     provider: taskProvider,
     runtimeId: params.runtime.runtimeId,
     stateDir: params.runtime.config.workDir,
     cwd: params.task.cwd,
     task: params.task,
-    ...(focusMeta ? { focusMeta } : {}),
-    ...(focusContext ? { focusContext } : {}),
+    ...(focusBrief ? { focusBrief } : {}),
     timeoutMs: worker.timeoutMs,
     ...(providerConfig.proxy ? { proxy: providerConfig.proxy } : {}),
     model: providerConfig.model,

@@ -1,4 +1,4 @@
-export const RUNTIME_SNAPSHOT_SCHEMA_VERSION = 'runtime-snapshot.v4'
+export const RUNTIME_SNAPSHOT_SCHEMA_VERSION = 'runtime-snapshot.v5'
 
 const RUNTIME_SNAPSHOT_VERSION_RE = /^runtime-snapshot\.v(\d+)$/
 

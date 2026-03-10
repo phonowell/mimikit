@@ -23,12 +23,12 @@ import {
 import { prepareWorkerTaskPrompt } from './build-worker-task-prompt.js'
 import { escapeCdata, stringifyPromptJson } from './format-base.js'
 import {
-  formatWorkerFocusContext,
-  type WorkerCompressedFocusContext,
-} from './format-worker-focus-context.js'
+  formatTaskFocusBrief,
+  type TaskFocusBrief,
+} from './format-task-focus-brief.js'
 import {
   buildActionFeedbackPromptPayload,
-  buildFocusContextsPromptPayload,
+  buildFocusDigestsPromptPayload,
   buildFocusListPromptPayload,
   buildHistoryLookupPromptPayload,
   buildInputsPromptPayload,
@@ -39,7 +39,7 @@ import {
   buildTasksPromptPayload,
   formatActionFeedback,
   formatEnvironment,
-  formatFocusContexts,
+  formatFocusDigests,
   formatFocusList,
   formatHistoryLookup,
   formatInputs,
@@ -59,7 +59,7 @@ import { loadPromptFile, loadPromptSource } from './prompt-loader.js'
 import type { AppConfig } from '../config.js'
 import type { ProviderPromptSegment } from '../providers/types.js'
 import type {
-  FocusContext,
+  FocusDigest,
   FocusId,
   FocusMeta,
   HistoryLookupMessage,
@@ -124,9 +124,9 @@ const buildMemoryPromptScoreContext = (params: {
   for (const plan of params.plans) pushMention(mentionTexts, plan.title)
   for (const focus of params.focusPayload.focusList)
     pushMention(mentionTexts, focus.title)
-  for (const context of params.focusPayload.focusContexts) {
-    pushMention(mentionTexts, context.summary)
-    for (const openItem of context.openItems ?? [])
+  for (const digest of params.focusPayload.focusDigests) {
+    pushMention(mentionTexts, digest.summary)
+    for (const openItem of digest.openItems ?? [])
       pushMention(mentionTexts, openItem)
   }
 
@@ -164,7 +164,7 @@ export const buildManagerPromptPayload = async (params: {
   actionFeedback?: ManagerActionFeedback[]
   env?: ManagerEnv
   focuses?: FocusMeta[]
-  focusContexts?: FocusContext[]
+  focusDigests?: FocusDigest[]
   workingFocusIds?: FocusId[]
   packetMode?: ManagerPacketMode
   wakeProfile?: ManagerEnv['wakeProfile']
@@ -194,7 +194,7 @@ export const buildManagerPromptPayload = async (params: {
   )
   const focusPayload = buildFocusPromptPayload({
     focuses: params.focuses ?? [],
-    focusContexts: params.focusContexts ?? [],
+    focusDigests: params.focusDigests ?? [],
     history,
     workingFocusIds: params.workingFocusIds ?? [],
   })
@@ -296,9 +296,9 @@ export const buildManagerPromptPayload = async (params: {
     formatFocusList(focusPayload.focusList),
     limits.focusListMaxBytes,
   )
-  const focusContexts = sectionJson(
-    formatFocusContexts(focusPayload.focusContexts),
-    limits.focusContextsMaxBytes,
+  const focusDigests = sectionJson(
+    formatFocusDigests(focusPayload.focusDigests),
+    limits.focusDigestsMaxBytes,
   )
   const historyLookup = sectionJson(
     formatHistoryLookup(params.historyLookup ?? []),
@@ -325,7 +325,7 @@ export const buildManagerPromptPayload = async (params: {
     packet_summary: '',
     environment,
     focus_list: focusList,
-    focus_contexts: focusContexts,
+    focus_digests: focusDigests,
     remembered_memory: rememberedMemory,
     memory,
     tasks,
@@ -354,7 +354,7 @@ export const buildManagerPromptPayload = async (params: {
   }
   const selectedEnvironment = selectSection('environment')
   const selectedFocusList = selectSection('focus_list')
-  const selectedFocusContexts = selectSection('focus_contexts')
+  const selectedFocusDigests = selectSection('focus_digests')
   const selectedRememberedMemory = selectSection('remembered_memory')
   const selectedMemory = selectSection('memory')
   const selectedTasks = selectSection('tasks')
@@ -383,10 +383,10 @@ export const buildManagerPromptPayload = async (params: {
       ...(selectedFocusList
         ? { focus_list: buildFocusListPromptPayload(focusPayload.focusList) }
         : {}),
-      ...(selectedFocusContexts
+      ...(selectedFocusDigests
         ? {
-            focus_contexts: buildFocusContextsPromptPayload(
-              focusPayload.focusContexts,
+            focus_digests: buildFocusDigestsPromptPayload(
+              focusPayload.focusDigests,
             ),
           }
         : {}),
@@ -404,7 +404,7 @@ export const buildManagerPromptPayload = async (params: {
         : {}),
     }),
     limits.focusListMaxBytes +
-      limits.focusContextsMaxBytes +
+      limits.focusDigestsMaxBytes +
       limits.tasksMaxBytes +
       limits.plansMaxBytes +
       limits.packetSummaryMaxBytes,
@@ -536,7 +536,7 @@ export const buildManagerPrompt = async (params: {
   actionFeedback?: ManagerActionFeedback[]
   env?: ManagerEnv
   focuses?: FocusMeta[]
-  focusContexts?: FocusContext[]
+  focusDigests?: FocusDigest[]
   workingFocusIds?: FocusId[]
   packetMode?: ManagerPacketMode
   wakeProfile?: ManagerEnv['wakeProfile']
@@ -546,9 +546,7 @@ export const buildWorkerPrompt = async (params: {
   stateDir: string
   workspaceDir: string
   task: Task
-  focusMeta?: FocusMeta
-  focusContext?: FocusContext
-  compressedFocusContext?: WorkerCompressedFocusContext
+  focusBrief?: TaskFocusBrief
 }): Promise<string> => {
   const systemSource = await loadPromptSource('worker/system.md')
   let taskPrompt = await prepareWorkerTaskPrompt({
@@ -561,14 +559,7 @@ export const buildWorkerPrompt = async (params: {
     const prefix = await loadPromptFile('worker', 'cron-trigger-context')
     if (prefix) taskPrompt = `${prefix.trim()}\n\n${taskPrompt}`
   }
-  const focusContext = formatWorkerFocusContext({
-    focusId: params.task.focusId,
-    ...(params.focusMeta ? { focusMeta: params.focusMeta } : {}),
-    ...(params.focusContext ? { focusContext: params.focusContext } : {}),
-    ...(params.compressedFocusContext
-      ? { compressedFocusContext: params.compressedFocusContext }
-      : {}),
-  })
+  const focusBrief = formatTaskFocusBrief(params.focusBrief)
   return renderPromptTemplate(
     systemSource.template,
     {
@@ -580,7 +571,7 @@ export const buildWorkerPrompt = async (params: {
         }),
       ),
       prompt: escapeCdata(taskPrompt),
-      focus_context: focusContext ? escapeCdata(focusContext) : '',
+      focus_brief: focusBrief ? escapeCdata(focusBrief) : '',
     },
     systemSource.path,
   )

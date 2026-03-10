@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest'
 
 import { buildFocusViews } from '../src/orchestrator/read-model/focus-view.js'
-import type { FocusContext, FocusMeta, Task } from '../src/types/index.js'
+import type { FocusDigest, FocusMeta, Task } from '../src/types/index.js'
 
 const createFocus = (overrides: Partial<FocusMeta> = {}): FocusMeta => ({
   id: 'focus-a',
@@ -13,9 +13,9 @@ const createFocus = (overrides: Partial<FocusMeta> = {}): FocusMeta => ({
   ...overrides,
 })
 
-const createFocusContext = (
-  overrides: Partial<FocusContext> = {},
-): FocusContext => ({
+const createFocusDigest = (
+  overrides: Partial<FocusDigest> = {},
+): FocusDigest => ({
   focusId: 'focus-a',
   updatedAt: '2026-03-01T00:00:00.000Z',
   ...overrides,
@@ -52,9 +52,9 @@ test('buildFocusViews includes latest task id by focus', () => {
       updatedAt: '2026-03-01T00:05:00.000Z',
     }),
   ]
-  const focusContexts: FocusContext[] = [
-    createFocusContext({ focusId: 'focus-a' }),
-    createFocusContext({ focusId: 'focus-b' }),
+  const focusDigests: FocusDigest[] = [
+    createFocusDigest({ focusId: 'focus-a' }),
+    createFocusDigest({ focusId: 'focus-b' }),
   ]
   const tasks: Task[] = [
     createTask({
@@ -74,12 +74,7 @@ test('buildFocusViews includes latest task id by focus', () => {
     }),
   ]
 
-  const snapshot = buildFocusViews(
-    focuses,
-    focusContexts,
-    200,
-    tasks,
-  )
+  const snapshot = buildFocusViews(focuses, focusDigests, 200, tasks)
 
   const focusA = snapshot.items.find((item) => item.id === 'focus-a')
   const focusB = snapshot.items.find((item) => item.id === 'focus-b')

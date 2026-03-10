@@ -138,7 +138,7 @@ test('query_context deduplicates highly similar snippets across all scopes', asy
     updatedAt: '2026-03-06T01:20:00.000Z',
     runCount: 0,
   })
-  runtime.focusContexts.push({
+  runtime.focusDigests.push({
     focusId: 'focus-maintenance',
     summary: 'deploy service alpha',
     updatedAt: '2026-03-06T01:20:00.000Z',

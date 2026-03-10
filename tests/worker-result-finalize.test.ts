@@ -128,12 +128,12 @@ test('finalizeResult appends worker_end progress for canceled task', async () =>
       taskStatusTo: 'canceled',
     },
   })
-  expect(runtime.focusContexts).toHaveLength(1)
-  expect(runtime.focusContexts[0]).toMatchObject({
+  expect(runtime.focusDigests).toHaveLength(1)
+  expect(runtime.focusDigests[0]).toMatchObject({
     focusId: 'focus-local',
   })
-  expect(runtime.focusContexts[0]?.summary).toContain('Cancel Me')
-  expect(runtime.focusContexts[0]?.openItems?.[0]).toContain('Resume')
+  expect(runtime.focusDigests[0]?.summary).toContain('Cancel Me')
+  expect(runtime.focusDigests[0]?.openItems?.[0]).toContain('Resume')
 
   const succeeded: TaskResult = {
     taskId: task.id,
@@ -144,7 +144,7 @@ test('finalizeResult appends worker_end progress for canceled task', async () =>
     completedAt: '2026-02-26T10:00:33.000Z',
   }
   await finalizeResult(runtime, task, succeeded, mergeTaskPatch)
-  expect(runtime.focusContexts[0]?.openItems?.[0]).toContain('Resume')
+  expect(runtime.focusDigests[0]?.openItems?.[0]).toContain('Resume')
 })
 
 test('finalizeResult marks usageCaptured=true for canceled result with usage', async () => {
@@ -289,5 +289,5 @@ test('finalizeResult keeps paused task state for partial budget result', async (
     },
   })
   expect(result.evidence?.stateDelta.taskStatusTo).toBe('paused')
-  expect(runtime.focusContexts[0]?.openItems?.[0]).toContain('Resume')
+  expect(runtime.focusDigests[0]?.openItems?.[0]).toContain('Resume')
 })

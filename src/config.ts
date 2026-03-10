@@ -16,7 +16,7 @@ export type PromptSectionLimits = {
   batchResultsMaxBytes: number
   environmentMaxBytes: number
   fileLookupMaxBytes: number
-  focusContextsMaxBytes: number
+  focusDigestsMaxBytes: number
   focusListMaxBytes: number
   historyLookupMaxBytes: number
   inputsMaxBytes: number
@@ -92,7 +92,7 @@ const INTERNAL_MANAGER_DEFAULTS = {
     batchResultsMaxBytes: 20480,
     environmentMaxBytes: 4096,
     fileLookupMaxBytes: 20480,
-    focusContextsMaxBytes: 20480,
+    focusDigestsMaxBytes: 20480,
     focusListMaxBytes: 8192,
     historyLookupMaxBytes: 20480,
     inputsMaxBytes: 8192,

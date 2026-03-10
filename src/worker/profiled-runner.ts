@@ -6,15 +6,9 @@ import { appendTaskProgress } from '../storage/task-progress.js'
 
 import { runWorkerLoop } from './profiled-runner-loop.js'
 
-import type { WorkerCompressedFocusContext } from '../prompts/format-worker-focus-context.js'
+import type { TaskFocusBrief } from '../prompts/format-task-focus-brief.js'
 import type { RuntimeChildStarted } from '../runtime/reaper-bridge.js'
-import type {
-  FocusContext,
-  FocusMeta,
-  Task,
-  TokenUsage,
-  WorkerProvider,
-} from '../types/index.js'
+import type { Task, TokenUsage, WorkerProvider } from '../types/index.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
 type LlmResult = {
@@ -79,9 +73,7 @@ type WorkerRunnerParams = {
   cwd: string
   task: Task
   sessionId?: string
-  focusMeta?: FocusMeta
-  focusContext?: FocusContext
-  compressedFocusContext?: WorkerCompressedFocusContext
+  focusBrief?: TaskFocusBrief
   timeoutMs: number
   budget?: {
     maxDurationMs: number
@@ -103,11 +95,7 @@ export const runWorker = async (
     stateDir: params.stateDir,
     workspaceDir: params.cwd,
     task: params.task,
-    ...(params.focusMeta ? { focusMeta: params.focusMeta } : {}),
-    ...(params.focusContext ? { focusContext: params.focusContext } : {}),
-    ...(params.compressedFocusContext
-      ? { compressedFocusContext: params.compressedFocusContext }
-      : {}),
+    ...(params.focusBrief ? { focusBrief: params.focusBrief } : {}),
   })
   const continueSource = await loadPromptSource('worker/continue-until-done.md')
 

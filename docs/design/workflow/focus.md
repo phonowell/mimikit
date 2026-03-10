@@ -10,9 +10,9 @@
 
 ## 系统定位
 
-- Focus 是编排域内的“工作主题单元”，用于把 `input/history/task/plan/choice` 绑定到同一上下文。
+- Focus 是编排域内的“工作主题单元”，用于把 `input/history/task/plan/choice` 绑定到同一归属。
 - Focus 只负责上下文与状态治理，不承载 worker 执行逻辑。
-- 执行仍由外部运行时完成，Focus 仅影响编排决策与 Prompt 注入。
+- 执行仍由外部运行时完成；摘要与 Prompt 注入通过独立的 `FocusDigest` / `TaskFocusBrief` 承载。
 
 ## 单一事实源（代码）
 
@@ -26,10 +26,10 @@
 
 - `FocusMeta`
 - 字段：`id/title/status/createdAt/updatedAt/lastActivityAt`
-- `FocusContext`
+- `FocusDigest`
 - 字段：`focusId/summary/openItems/updatedAt`
-- `ManagerFocusCompressedContext`
-- 字段：`focusId/summary/updatedAt/firstKeptEntryId?/details?`
+- `TaskFocusBrief`
+- 字段：`focusId/title/summary/openItems/updatedAt/lastActivityAt`
 - `PendingUserChoice`
 - 字段含 `focusId`，用于把待用户选择的问题挂到具体 focus
 
@@ -54,7 +54,7 @@
 
 - `focus-global` 必须存在且永远是 `active`。
 - `focus-inbox` 不允许最终落在 `done/archived`，会归一化为 `idle`。
-- `focus-global` 不持久化 `FocusContext` 与压缩上下文。
+- `focus-global` 不持久化 `FocusDigest`。
 - `archived` focus 不进入 WebUI Focus 列表，也不进入 manager 的 focus prompt 段。
 
 ## 默认归属与继承
@@ -90,7 +90,7 @@
 - 行为：
 - 不存在则创建，存在则更新。
 - `status` 会应用保留 focus 归一化规则。
-- `summary/openItems` 写入 `FocusContext`。
+- `summary/openItems` 写入 `FocusDigest`。
 - `openItems` 去重与裁剪：`MAX_FOCUS_OPEN_ITEMS = 3`。
 - 执行后触发容量治理并持久化快照。
 
@@ -105,13 +105,13 @@
 ### 关于 `compress_context`
 
 - 当前代码库不存在可执行的 `compress_context` manager action。
-- 当前 Focus 主状态只保留 `FocusMeta + FocusContext`；不再维护独立的 focus 压缩上下文持久化层。
+- 当前 Focus 主状态只保留 `FocusMeta + FocusDigest`；不再维护独立的 focus 压缩上下文持久化层。
 
-## 任务结果回写 FocusContext
+## 任务结果回写 FocusDigest
 
 实现：`src/focus/result-feedback.ts`
 
-- 任务完成（`succeeded/failed/canceled`）时同步回写对应 focus 的上下文。
+- 任务完成（`succeeded/failed/canceled`）时同步回写对应 focus 的 digest。
 - `focus-global` 不写业务上下文。
 - `summary` 优先级：
 1. `task.result.handoff.summary`
@@ -134,7 +134,7 @@
 - `history/*.jsonl`
 - 删除时同步移除：
 - `FocusMeta`
-- `FocusContext`
+- `FocusDigest`
 
 ## Working Focus 选择
 
@@ -153,17 +153,17 @@
 
 - Manager Prompt：
 - `M:state_packet.focus_list`：非 archived focus 列表（含 `is_active`）
-- `M:state_packet.focus_contexts`：working focus 的 `summary/open_items/recent_messages`（过滤 `focus-global`）
+- `M:state_packet.focus_digests`：working focus 的 `summary/open_items/recent_messages`（过滤 `focus-global`）
 - `M:event_packet.recent_history`：未被 working focus recent 覆盖的近期历史
 - 各段受 `manager.promptSections.*MaxBytes` 预算控制
 - Worker Prompt：
-- `M:focus_context`：当前任务 focus 的 `focus_title/summary/open_items/context_updated_at`
+- `M:focus_brief`：当前任务 focus 的 `focus_title/summary/open_items/updated_at/last_activity_at`
 
 ## 持久化与对外视图
 
 - runtime snapshot 字段：
 - `focuses`
-- `focusContexts`
+- `focusDigests`
 - 读写入口：`src/orchestrator/core/runtime-persistence.ts`
 - WebUI/SSE：
 - `GET /api/events` 的 `snapshot` 包含 `focuses`
@@ -175,7 +175,7 @@
 - task/plan/history/choice 均能携带并维持 `focusId`。
 - `focus-global/focus-inbox` 保留规则不会被业务逻辑绕过。
 - 容量治理会收敛 active 与 archived 数量。
-- Manager 与 Worker Prompt 都能拿到对应 focus 上下文。
+- Manager 与 Worker Prompt 都能拿到对应 focus 摘要视图。
 - 重启后从 snapshot 恢复，不丢 Focus 主状态。
 - WebUI 视图与 runtime Focus 状态一致。
 

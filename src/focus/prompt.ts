@@ -8,10 +8,10 @@ import {
   MIN_RECENT_MESSAGES,
 } from './constants.js'
 import { normalizeFocusOpenItems } from './open-items.js'
-import { canPersistFocusContext } from './reserved.js'
+import { canPersistFocusDigest } from './reserved.js'
 
 import type {
-  FocusContext,
+  FocusDigest,
   FocusId,
   FocusMeta,
   HistoryMessage,
@@ -26,7 +26,7 @@ export type FocusListEntry = {
   lastActivityAt: string
 }
 
-export type FocusPromptContextEntry = {
+export type FocusPromptDigestEntry = {
   focusId: FocusId
   title: string
   status: FocusMeta['status']
@@ -37,7 +37,7 @@ export type FocusPromptContextEntry = {
 
 export type FocusPromptPayload = {
   focusList: FocusListEntry[]
-  focusContexts: FocusPromptContextEntry[]
+  focusDigests: FocusPromptDigestEntry[]
   recentHistory: HistoryMessage[]
 }
 
@@ -98,14 +98,14 @@ const compareFocusByActivityDesc = (a: FocusMeta, b: FocusMeta): number => {
 
 export const buildFocusPromptPayload = (params: {
   focuses: FocusMeta[]
-  focusContexts: FocusContext[]
+  focusDigests: FocusDigest[]
   history: HistoryMessage[]
   workingFocusIds: FocusId[]
 }): FocusPromptPayload => {
   const visible = toVisibleMessages(params.history)
   const focusById = new Map(params.focuses.map((focus) => [focus.id, focus]))
-  const focusContextById = new Map(
-    params.focusContexts.map((context) => [context.focusId, context]),
+  const focusDigestById = new Map(
+    params.focusDigests.map((digest) => [digest.focusId, digest]),
   )
 
   const focusList = params.focuses
@@ -121,14 +121,14 @@ export const buildFocusPromptPayload = (params: {
     }))
 
   const recentFocusMessageIds = new Set<string>()
-  const focusContexts: FocusPromptContextEntry[] = []
+  const focusDigests: FocusPromptDigestEntry[] = []
   for (const focusId of params.workingFocusIds) {
-    if (!canPersistFocusContext(focusId)) continue
+    if (!canPersistFocusDigest(focusId)) continue
     const focus = focusById.get(focusId)
     if (!focus || focus.status === 'archived') continue
-    const context = focusContextById.get(focusId)
-    const summary = context?.summary?.trim()
-    const openItems = normalizeFocusOpenItems(context?.openItems, {
+    const digest = focusDigestById.get(focusId)
+    const summary = digest?.summary?.trim()
+    const openItems = normalizeFocusOpenItems(digest?.openItems, {
       maxItems: MAX_FOCUS_OPEN_ITEMS,
     })
     const focusMessages = visible.filter((item) => item.focusId === focusId)
@@ -143,7 +143,7 @@ export const buildFocusPromptPayload = (params: {
       recentMessages.length === 0
     )
       continue
-    focusContexts.push({
+    focusDigests.push({
       focusId,
       title: focus.title,
       status: focus.status,
@@ -160,7 +160,7 @@ export const buildFocusPromptPayload = (params: {
 
   return {
     focusList,
-    focusContexts,
+    focusDigests,
     recentHistory,
   }
 }

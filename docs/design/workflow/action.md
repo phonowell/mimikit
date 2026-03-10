@@ -140,7 +140,7 @@
 当前实现中的主要子字段：
 
 - `M:state_packet.focus_list`
-- `M:state_packet.focus_contexts`
+- `M:state_packet.focus_digests`
 - `M:state_packet.tasks`
 - `M:state_packet.plans`
 - `M:event_packet.environment`

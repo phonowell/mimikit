@@ -1,7 +1,7 @@
 import { normalizeFocusOpenItems } from '../../focus/open-items.js'
 import { compareIsoDesc } from '../../shared/time.js'
 
-import type { FocusContext, FocusMeta, Task } from '../../types/index.js'
+import type { FocusDigest, FocusMeta, Task } from '../../types/index.js'
 
 export type FocusView = {
   id: string
@@ -71,13 +71,13 @@ const buildLatestTaskIdByFocus = (
 
 export const buildFocusViews = (
   focuses: FocusMeta[],
-  focusContexts: FocusContext[],
+  focusDigests: FocusDigest[],
   limit = 200,
   tasks: readonly Pick<Task, 'id' | 'focusId' | 'createdAt'>[] = [],
 ): { items: FocusView[] } => {
   const latestTaskIdByFocus = buildLatestTaskIdByFocus(tasks)
   const contextById = new Map(
-    focusContexts.map((context) => [context.focusId, context] as const),
+    focusDigests.map((digest) => [digest.focusId, digest] as const),
   )
   const items = focuses
     .filter((focus) => focus.status !== 'archived')
