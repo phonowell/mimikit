@@ -189,6 +189,18 @@ export const renderTasks = (tasksList, data) => {
       meta.appendChild(pendingReasonEl)
     }
 
+    if (task.recoverable) {
+      const recoverableEl = document.createElement('span')
+      recoverableEl.className =
+        'task-pending-reason task-pending-reason--recoverable'
+      recoverableEl.textContent = 'Resume from partial'
+      recoverableEl.title =
+        typeof task.stopReason === 'string'
+          ? task.stopReason
+          : 'budget_exhausted'
+      meta.appendChild(recoverableEl)
+    }
+
     if (task.status === 'running' && Number.isFinite(startMs)) {
       elapsedEl.dataset.startedAt = String(startMs)
       elapsedEl.dataset.elapsed = 'true'
@@ -216,7 +228,12 @@ export const renderTasks = (tasksList, data) => {
       provider.title = `provider: ${providerLabel}`
       titleRow.appendChild(provider)
     }
-    const actions = createTaskActions({ titleText, taskId, statusValue })
+    const actions = createTaskActions({
+      titleText,
+      taskId,
+      statusValue,
+      recoverable: task.recoverable === true,
+    })
 
     link.appendChild(titleRow)
     if (showLiveOutput) {

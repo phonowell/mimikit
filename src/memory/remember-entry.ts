@@ -5,7 +5,7 @@ import { runSerialized } from '../storage/serialized-lock.js'
 
 import { readMemoryEntries, writeMemoryEntries } from './entry-codec.js'
 import { type MemoryEntry } from './entry-types.js'
-import { truncateContent } from './entry-utils.js'
+import { normalizeText, truncateContent } from './entry-utils.js'
 
 export type RememberMemoryInput = {
   content: string
@@ -22,12 +22,6 @@ export type RememberMemoryResult = {
 
 const DEFAULT_CATEGORY = 'general'
 const DEFAULT_MAX_CHARS = 480
-
-const normalizeText = (value: string): string =>
-  value
-    .replace(/\r\n/g, '\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim()
 
 const deriveDedupeKey = (content: string): string => {
   const seed = content.slice(0, 72).trim().toLowerCase()

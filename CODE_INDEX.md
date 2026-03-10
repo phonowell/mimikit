@@ -1,6 +1,6 @@
 # Code Index
 
-*Last updated: 2026-03-08 20:05:07 CST*
+*Last updated: 2026-03-10 13:46:28 CST*
 *Scope: `src/**/*.ts` + `webui/**/*.js` exported capabilities (function/class/const entry points)*
 
 ## Quick Reference
@@ -8,9 +8,9 @@
 | Category | Export Count | Primary Location |
 |---|---:|---|
 | Manager Orchestration | 125 | `src/manager/*` |
-| Orchestrator Runtime | 48 | `src/orchestrator/core/*` |
+| Orchestrator Runtime | 50 | `src/orchestrator/core/*` |
 | Prompt Building | 41 | `src/prompts/*` |
-| Shared Utilities | 31 | `src/shared/*` |
+| Shared Utilities | 33 | `src/shared/*` |
 | Focus System | 30 | `src/focus/*` |
 | Worker Execution | 26 | `src/worker/*` |
 | Storage | 24 | `src/storage/*` |
@@ -22,7 +22,7 @@
 | Memory Refresh | 11 | `src/memory/*` |
 | Telegram Channel | 7 | `src/channels/telegram/*` |
 | WebUI Messages | 56 | `webui/messages/*` |
-| WebUI Panels and Views | 49 | `webui/*` |
+| WebUI Panels and Views | 50 | `webui/*` |
 
 ---
 
@@ -39,6 +39,7 @@
 | `createTask()` | `src/orchestrator/core/task-lifecycle.ts:33` | Creates new task with canonical fields | `(params) => Task` |
 | `enqueueTask()` | `src/orchestrator/core/task-lifecycle.ts:61` | Queues task into runtime pending list | `(runtime, task) => EnqueueTaskResult` |
 | `markTaskRunning()/Succeeded()/Failed()/Canceled()` | `src/orchestrator/core/task-lifecycle.ts:100` | Task status transitions | `(runtime, taskId, ...) => void` |
+| `requestTaskResumeChoice()/clearTaskResumeChoice()` | `src/orchestrator/core/task-resume-choice.ts:60` | Publishes and clears explicit resume choices for budget-paused tasks | `(params) => Promise<boolean>` / `(runtime, taskId) => boolean` |
 
 ## Event Signaling and Read Models
 
@@ -49,6 +50,7 @@
 | `notifyWorkerLoop()/waitForWorkerLoopSignal()` | `src/orchestrator/core/signals.ts:138` | Worker loop wake coordination |
 | `selectChatMessages()` | `src/orchestrator/read-model/chat-view.ts:134` | Builds chat view payload |
 | `buildTaskViews()` | `src/orchestrator/read-model/task-view.ts:118` | Builds task list view model |
+| `buildDutyStatusView()` | `src/orchestrator/read-model/duty-status-view.ts:73` | Builds duty watchboard cards and highlights |
 | `buildFocusViews()` | `src/orchestrator/read-model/focus-view.ts:72` | Builds focus view model |
 | `selectRecentPlans()/selectRecentTasks()` | `src/orchestrator/read-model/plan-select.ts:83` | Windowed selection for UI/prompt |
 
@@ -113,6 +115,7 @@
 | `renderMessages()` | `webui/messages/render-list.js:22` | Main message list renderer and scroll stabilization |
 | `bindChoicePanel()` | `webui/choice.js:70` | User-choice panel rendering and submit flow |
 | `bindTasksPanel()` | `webui/tasks.js:19` | Task panel state binding and ticker lifecycle |
+| `bindDutyStatusPanel()` | `webui/watchboard.js:73` | Duty watchboard rendering and disconnect state |
 | `renderTasks()` | `webui/tasks-view-render.js:70` | Task row rendering with timing/usage metadata |
 | `renderPlans()` | `webui/plans-view.js:34` | Plan list rendering |
 | `renderFocuses()` | `webui/focus-view.js:48` | Focus list rendering and summary formatting |
@@ -188,6 +191,8 @@
 | Function | Location | Does What |
 |---|---|---|
 | `resolveTaskChangeAt()` | `src/shared/task-state.ts:15` | Cross-module task change timestamp resolver |
+| `resolveTaskLabel()` | `src/shared/task-state.ts:19` | Shared user-facing task label resolver |
+| `isBudgetRecoverableTask()` | `src/shared/task-state.ts:26` | Detects resumable budget-paused partial tasks |
 | `resolveSlotStatus()` | `src/worker/task-state-shared.ts:4` | Worker slot occupancy status helper |
 | `resolveTaskLookupTarget()` | `src/worker/task-action.ts:42` | Canonical task lookup with `invalid/not_found` early outcome |
 | `buildTaskMutationMetaFields()` | `src/worker/task-action.ts:58` | Reusable optional `source/reason` payload expander for mutation logs |
@@ -204,6 +209,7 @@
 - Exact duplicate exported symbol names across files: `0` (scanned 630 exported symbols)
 - `jscpd` clones: `3 -> 0` (`duplicatedLines: 67 -> 0`, `duplicatedTokens: 596 -> 0`, threshold `min-lines=8`, `min-tokens=80`)
 - `ts-prune`: not rerun in this pass (current scope includes `webui/**/*.js`)
+- 2026-03-10 full-scope dedup follow-up: centralized task result summary helpers in `src/shared/task-state.ts`, removed unused local `src/shared/provider-thread-id.ts` duplicate in favor of `@mimikit/providers/providers/thread-id`, and collapsed `webui/restart-tools-menu.js` onto `createAnchoredMenuController()` instead of keeping a second noop controller.
 - Highest-density modules to inspect before adding code:
   - `src/orchestrator/core/*` (39 exports)
   - `src/manager/*` action/loop related modules

@@ -5,6 +5,7 @@ import { getTaskLiveOutputById } from '../../worker/live-output.js'
 import { pauseTask } from '../../worker/pause-task.js'
 import { resumeTask } from '../../worker/resume-task.js'
 import { type ChatMessage } from '../read-model/chat-view.js'
+import { buildDutyStatusView } from '../read-model/duty-status-view.js'
 import { buildFocusViews } from '../read-model/focus-view.js'
 import { sortTaskPlansForView } from '../read-model/plan-select.js'
 import { buildTaskViews } from '../read-model/task-view.js'
@@ -57,6 +58,18 @@ export class Orchestrator {
   private runtime: RuntimeState
   private stopChannelsAwait?: () => Promise<void>
   private restartScheduled = false
+  private dutyStatusHistoryCache: ChatMessage[] | null = null
+
+  private async readDutyStatusHistory(
+    refresh = false,
+    limit = 100,
+  ): Promise<ChatMessage[]> {
+    if (!refresh && this.dutyStatusHistoryCache)
+      return this.dutyStatusHistoryCache
+    const history = await getChatHistorySnapshot(this.runtime, limit)
+    this.dutyStatusHistoryCache = history
+    return history
+  }
 
   private scheduleRestart(
     reason: string,
@@ -164,14 +177,22 @@ export class Orchestrator {
   }
 
   async getWebUiSnapshot(messageLimit = 50, taskLimit = 200) {
+    const messages = await getChatMessagesSnapshot(this.runtime, messageLimit)
+    const history = await this.readDutyStatusHistory(true)
     return {
       status: this.getStatus(),
-      messages: await getChatMessagesSnapshot(this.runtime, messageLimit),
+      messages,
       tasks: this.getTasks(taskLimit),
       plans: this.getPlans(taskLimit),
       focuses: this.getFocuses(taskLimit),
       choice: clonePendingUserChoice(this.runtime.ui.pendingUserChoice),
+      dutyStatus: buildDutyStatusView(this.runtime.tasks, history),
     }
+  }
+
+  async getDutyStatus(refresh = false) {
+    const history = await this.readDutyStatusHistory(refresh)
+    return buildDutyStatusView(this.runtime.tasks, history)
   }
 
   getWebUiWakeVersion(): number {

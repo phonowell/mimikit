@@ -50,6 +50,11 @@
     max-width: 88%;
   }
 
+  .duty-status-cards,
+  .duty-status-highlights {
+    grid-template-columns: 1fr;
+  }
+
   .composer .quote-clear {
     --btn-size: 22px;
     --btn-icon-size: 12px;

@@ -4,6 +4,7 @@ import { newId } from '../../shared/utils.js'
 import { publishUserInput } from '../../streams/queues.js'
 
 import type { RuntimeState } from './runtime-state.js'
+import type { UserChoiceEffectResult } from './user-choice.js'
 import type {
   PendingUserChoice,
   UserChoiceOption,
@@ -54,6 +55,7 @@ export const publishChoiceSelectionInput = (params: {
   option: UserChoiceOption
   source: UserChoiceSelectionSource
   selectedAt: string
+  effectResult?: UserChoiceEffectResult
 }): Promise<string> =>
   publishSystemInput({
     runtime: params.runtime,
@@ -72,6 +74,18 @@ export const publishChoiceSelectionInput = (params: {
         selected_option_label: params.option.label,
         selected_option_reason: params.option.reason,
         default_option_id: params.choice.defaultOptionId,
+        ...(params.choice.effect
+          ? {
+              choice_effect_type: params.choice.effect.type,
+              choice_effect_task_id: params.choice.effect.taskId,
+            }
+          : {}),
+        ...(params.effectResult
+          ? {
+              choice_effect_ok: params.effectResult.ok,
+              choice_effect_status: params.effectResult.status,
+            }
+          : {}),
         source: params.source,
         selected_at: params.selectedAt,
       },
@@ -84,6 +98,18 @@ export const publishChoiceSelectionInput = (params: {
       inputId,
       choiceId: params.choice.id,
       optionId: params.option.id,
+      ...(params.choice.effect
+        ? {
+            effectType: params.choice.effect.type,
+            effectTaskId: params.choice.effect.taskId,
+          }
+        : {}),
+      ...(params.effectResult
+        ? {
+            effectOk: params.effectResult.ok,
+            effectStatus: params.effectResult.status,
+          }
+        : {}),
       source: params.source,
     }),
   })

@@ -1,3 +1,8 @@
+import {
+  formatTaskResultSummary,
+  pickTaskResultSummaryLine,
+  resolveTaskLabel,
+} from '../shared/task-state.js'
 import { clipCompactText } from '../shared/text.js'
 
 import type { Task, TaskResult, TaskResultHandoff } from '../types/index.js'
@@ -9,17 +14,6 @@ const MAX_LIST_ITEMS = 5
 
 const clipText = (value: string, maxChars: number): string =>
   clipCompactText(value, maxChars)
-
-const pickSummaryLine = (output: string): string | undefined => {
-  const lines = output.split(/\r?\n/)
-  for (const line of lines) {
-    const trimmed = line.trim()
-    if (!trimmed || trimmed.startsWith('```')) continue
-    return clipText(trimmed.replace(/^#{1,6}\s+/, ''), MAX_SUMMARY_CHARS)
-  }
-  const fallback = clipText(output, MAX_SUMMARY_CHARS)
-  return fallback || undefined
-}
 
 const collectChecklistItems = (
   output: string,
@@ -43,48 +37,18 @@ const collectChecklistItems = (
   return items
 }
 
-const formatStatusSummary = (
-  taskLabel: string,
-  status: TaskResult['status'],
-  detail?: string,
-): string | undefined => {
-  if (status === 'succeeded') {
-    return detail
-      ? `Task "${taskLabel}" completed: ${detail}`
-      : `Task "${taskLabel}" completed.`
-  }
-
-  if (status === 'partial') {
-    return detail
-      ? `Task "${taskLabel}" paused with partial result: ${detail}`
-      : `Task "${taskLabel}" paused with partial result.`
-  }
-
-  if (status === 'failed') {
-    return detail
-      ? `Task "${taskLabel}" failed: ${detail}`
-      : `Task "${taskLabel}" failed.`
-  }
-
-  return detail
-    ? `Task "${taskLabel}" canceled: ${detail}`
-    : `Task "${taskLabel}" canceled.`
-}
-
 const buildRiskItems = (
   status: TaskResult['status'],
   taskLabel: string,
   summary?: string,
 ): string[] | undefined => {
   if (status === 'succeeded') return undefined
-  const detail =
-    summary ??
-    (status === 'failed'
-      ? `Task "${taskLabel}" failed.`
-      : status === 'partial'
-        ? `Task "${taskLabel}" paused with partial result.`
-        : `Task "${taskLabel}" was canceled.`)
-  return [clipText(detail, MAX_SUMMARY_CHARS)]
+  return [
+    clipText(
+      summary ?? formatTaskResultSummary(taskLabel, status),
+      MAX_SUMMARY_CHARS,
+    ),
+  ]
 }
 
 const dedupeArtifacts = (
@@ -121,9 +85,9 @@ export const buildTaskResultHandoff = (
   task: Task,
   result: Pick<TaskResult, 'status' | 'output'>,
 ): TaskResultHandoff | undefined => {
-  const taskLabel = task.title.trim() || task.id
-  const detail = pickSummaryLine(result.output)
-  const summary = formatStatusSummary(taskLabel, result.status, detail)
+  const taskLabel = resolveTaskLabel(task)
+  const detail = pickTaskResultSummaryLine(result.output, MAX_SUMMARY_CHARS)
+  const summary = formatTaskResultSummary(taskLabel, result.status, detail)
   const goal = clipText(task.prompt, MAX_GOAL_CHARS)
   const decisions = collectChecklistItems(result.output, 'checked')
   const nextSteps = collectChecklistItems(result.output, 'unchecked')

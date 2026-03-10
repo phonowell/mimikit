@@ -61,7 +61,8 @@ export const registerEventsRoute = (
         uiWakeVersion = signal.version
         if (signal.kind === 'tasks') {
           const tasks = orchestrator.getTasks()
-          if (!sendSseEvent(reply, 'tasks', tasks)) break
+          const dutyStatus = await orchestrator.getDutyStatus()
+          if (!sendSseEvent(reply, 'tasks', { tasks, dutyStatus })) break
           continue
         }
 

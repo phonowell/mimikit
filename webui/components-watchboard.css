@@ -1,0 +1,119 @@
+.duty-status {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0 14px;
+}
+
+.duty-status-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.duty-card {
+  position: relative;
+  overflow: hidden;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.78),
+    rgba(230, 235, 242, 0.92)
+  );
+  box-shadow: var(--shadow-raised-soft);
+}
+
+.duty-card::after {
+  content: '';
+  position: absolute;
+  inset: auto 12px 10px 12px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--duty-accent, var(--status-idle));
+  opacity: 0.9;
+}
+
+.duty-card[data-tone='success'] {
+  --duty-accent: var(--status-success);
+}
+
+.duty-card[data-tone='warning'] {
+  --duty-accent: var(--status-paused);
+}
+
+.duty-card[data-tone='accent'] {
+  --duty-accent: var(--status-running);
+}
+
+.duty-card[data-tone='neutral'] {
+  --duty-accent: rgba(109, 119, 137, 0.7);
+}
+
+.duty-card-label,
+.duty-card-value,
+.duty-highlight-title,
+.duty-highlight-detail {
+  margin: 0;
+}
+
+.duty-card-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.duty-card-value {
+  margin-top: 6px;
+  font-size: 24px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.duty-status-highlights {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.duty-highlight,
+.duty-highlights-empty {
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.64);
+  border: 1px solid rgba(133, 146, 166, 0.1);
+  box-shadow: var(--shadow-raised-soft);
+}
+
+.duty-highlight[data-tone='warning'] {
+  border-color: rgba(217, 119, 6, 0.16);
+}
+
+.duty-highlight[data-tone='accent'] {
+  border-color: rgba(47, 125, 230, 0.16);
+}
+
+.duty-highlight[data-tone='success'] {
+  border-color: rgba(49, 196, 141, 0.18);
+}
+
+.duty-highlight-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.duty-highlight-detail {
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--muted-contrast, var(--muted));
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}

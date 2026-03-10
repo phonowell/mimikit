@@ -1,5 +1,6 @@
 import { safe } from '../log/safe.js'
 import { formatSystemEventText } from '../shared/system-event.js'
+import { resolveTaskLabel } from '../shared/task-state.js'
 import { newId, nowIso } from '../shared/utils.js'
 
 import { appendHistory } from './store.js'
@@ -23,12 +24,6 @@ type WorkerSlotPayload = {
   max_slots: number
   occupied_slots: number
   available_slots: number
-}
-
-const resolveTaskLabel = (task: Task): string => {
-  const title = task.title.trim()
-  if (title && title !== task.id) return title
-  return task.id
 }
 
 const formatTaskLabel = (label: string): string => `"${label}"`
@@ -55,7 +50,7 @@ const buildTaskText = (
   if (status === 'succeeded') return `Task ${taskLabel} completed successfully.`
   if (status === 'partial') {
     return stopReason === 'budget_exhausted'
-      ? `Task ${taskLabel} paused after hitting the run budget and returned a partial result.`
+      ? `Task ${taskLabel} paused after hitting the run budget and returned a partial result. Use Continue in the task list to resume.`
       : `Task ${taskLabel} paused with a partial result.`
   }
   if (status === 'failed') return `Task ${taskLabel} failed.`

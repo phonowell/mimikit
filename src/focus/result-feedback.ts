@@ -1,3 +1,8 @@
+import {
+  formatTaskResultSummary,
+  pickTaskResultSummaryLine,
+  resolveTaskLabel,
+} from '../shared/task-state.js'
 import { clipCompactText } from '../shared/text.js'
 
 import { MAX_FOCUS_OPEN_ITEMS } from './constants.js'
@@ -14,53 +19,13 @@ const MAX_OPEN_ITEM_CHARS = 180
 const clipText = (value: string, maxChars: number): string =>
   clipCompactText(value, maxChars)
 
-const resolveTaskLabel = (task: Task): string => {
-  const title = task.title.trim()
-  if (title.length > 0) return title
-  return task.id
-}
-
-const normalizeSummaryLine = (line: string): string => {
-  const withoutHeading = line.replace(/^#{1,6}\s+/, '')
-  const withoutListPrefix = withoutHeading.replace(
-    /^(?:[-*+]|\d+[.)])\s+(?:\[[ xX]\]\s+)?/,
-    '',
-  )
-  return clipText(withoutListPrefix, MAX_RESULT_SUMMARY_CHARS)
-}
-
-const pickSummaryLine = (output: string): string | undefined => {
-  const lines = output.split(/\r?\n/)
-  for (const line of lines) {
-    const trimmed = line.trim()
-    if (trimmed.length === 0) continue
-    if (trimmed.startsWith('```')) continue
-    const normalized = normalizeSummaryLine(trimmed)
-    if (normalized.length > 0) return normalized
-  }
-  const compacted = clipText(output, MAX_RESULT_SUMMARY_CHARS)
-  return compacted.length > 0 ? compacted : undefined
-}
-
 const formatSummary = (task: Task, result: TaskResult): string => {
   const label = resolveTaskLabel(task)
-  const detail = pickSummaryLine(result.output)
-  if (result.status === 'succeeded')
-    return detail ?? `Task "${label}" completed.`
-  if (result.status === 'partial') {
-    return detail
-      ? `Task "${label}" paused with partial result: ${detail}`
-      : `Task "${label}" paused with partial result.`
-  }
-  if (result.status === 'failed') {
-    return detail
-      ? `Task "${label}" failed: ${detail}`
-      : `Task "${label}" failed.`
-  }
-
-  return detail
-    ? `Task "${label}" canceled: ${detail}`
-    : `Task "${label}" canceled.`
+  const detail = pickTaskResultSummaryLine(
+    result.output,
+    MAX_RESULT_SUMMARY_CHARS,
+  )
+  return formatTaskResultSummary(label, result.status, detail)
 }
 
 const normalizeOpenItemText = (item: string): string =>
@@ -113,7 +78,10 @@ const hasChecklistSignal = (output: string): boolean =>
 
 const buildFollowupOpenItem = (task: Task, result: TaskResult): string => {
   const label = resolveTaskLabel(task)
-  const detail = pickSummaryLine(result.output)
+  const detail = pickTaskResultSummaryLine(
+    result.output,
+    MAX_RESULT_SUMMARY_CHARS,
+  )
   if (result.status === 'failed') {
     const text = detail
       ? `Resolve failure in "${label}": ${detail}`

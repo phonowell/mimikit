@@ -1,8 +1,15 @@
-import { resolveTaskChangeAt } from '../../shared/task-state.js'
+import {
+  isBudgetRecoverableTask,
+  resolveTaskChangeAt,
+} from '../../shared/task-state.js'
 import { compareIsoDesc } from '../../shared/time.js'
 import { titleFromCandidates } from '../../shared/utils.js'
 
-import type { Task, TaskStatus } from '../../types/index.js'
+import type {
+  Task,
+  TaskResultStopReason,
+  TaskStatus,
+} from '../../types/index.js'
 
 export type TaskPendingReason = 'waiting_capacity'
 
@@ -30,6 +37,8 @@ export type TaskView = {
   durationMs?: number
   usage?: Task['usage']
   archivePath?: string
+  stopReason?: TaskResultStopReason
+  recoverable?: boolean
   pending_reason?: TaskPendingReason
   liveOutput?: string
 }
@@ -104,6 +113,8 @@ const taskToView = (
       : task.result?.archivePath
         ? { archivePath: task.result.archivePath }
         : {}),
+    ...(task.result?.stopReason ? { stopReason: task.result.stopReason } : {}),
+    ...(isBudgetRecoverableTask(task) ? { recoverable: true } : {}),
     ...(pendingReason ? { pending_reason: pendingReason } : {}),
     ...(liveOutput ? { liveOutput } : {}),
   }

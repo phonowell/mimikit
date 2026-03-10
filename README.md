@@ -72,7 +72,7 @@ maxConcurrent = 3
 timeoutMs = 600000
 
 [worker.budget]
-maxDurationMs = 1200000
+maxDurationMs = 1800000
 maxRounds = 3
 
 [codex]
@@ -99,6 +99,7 @@ enabled = true
 - 未指定 `provider` 时，按最低 `billing`、再按最高 `capability` 自动选择
 - 高成本 `enqueue_task` 先触发 `ask_user_choice` 确认，再允许派发
 - 长任务命中 `worker.budget` 时不会直接失败；会归档部分结果、保留 session，并把任务置为 `paused` 等待显式恢复
+- WebUI 会把 `Done / Need resume / Need input / Resumed` 聚合成值守状态面板，方便夜班快速判断当前介入点
 
 ### 3) 启动
 

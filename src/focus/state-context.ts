@@ -7,7 +7,7 @@ import { canPersistFocusContext } from './reserved.js'
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { FocusContext, FocusId } from '../types/index.js'
 
-const normalizeFocusSummary = (value?: string): string | undefined => {
+export const normalizeFocusSummary = (value?: string): string | undefined => {
   if (typeof value !== 'string') return undefined
   const trimmed = value.trim()
   return trimmed || undefined

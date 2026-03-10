@@ -292,6 +292,33 @@ test('buildTaskViews includes running live output snippet', () => {
   expect(pending?.liveOutput).toBeUndefined()
 })
 
+test('buildTaskViews exposes recoverable budget pause state', () => {
+  const task = createTaskFixture({
+    id: 'task-budget-pause',
+    status: 'paused',
+    pausedAt: '2026-03-01T00:05:50.000Z',
+    result: {
+      taskId: 'task-budget-pause',
+      status: 'partial',
+      taskStatus: 'paused',
+      outcome: 'partial',
+      stopReason: 'budget_exhausted',
+      ok: false,
+      output: 'partial',
+      durationMs: 50,
+      completedAt: '2026-03-01T00:05:50.000Z',
+    },
+  })
+
+  const { tasks: views } = buildTaskViews([task])
+  expect(views[0]).toMatchObject({
+    id: 'task-budget-pause',
+    status: 'paused',
+    stopReason: 'budget_exhausted',
+    recoverable: true,
+  })
+})
+
 test('buildTaskViews sorts by status, change time, created time, then id', () => {
   const tasks: Task[] = [
     createTaskFixture({

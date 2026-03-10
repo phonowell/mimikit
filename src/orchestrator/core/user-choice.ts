@@ -1,5 +1,6 @@
 import { parseIsoMs } from '../../shared/time.js'
 import { nowIso } from '../../shared/utils.js'
+import { resumeTask } from '../../worker/resume-task.js'
 
 import { notifyManagerLoop, notifyUiSignal } from './signals.js'
 import {
@@ -14,7 +15,19 @@ import type {
   UserChoiceSelectionSource,
 } from '../../types/index.js'
 
-export const USER_CHOICE_TIMEOUT_MS = 5 * 60 * 1000
+export type UserChoiceEffectResult =
+  | {
+      type: 'resume_task'
+      taskId: string
+      ok: true
+      status: 'pending'
+    }
+  | {
+      type: 'resume_task'
+      taskId: string
+      ok: false
+      status: 'not_found' | 'already_done' | 'not_paused' | 'invalid'
+    }
 
 export type SelectPendingUserChoiceResult =
   | {
@@ -22,6 +35,7 @@ export type SelectPendingUserChoiceResult =
       choiceId: string
       optionId: string
       source: UserChoiceSelectionSource
+      effect?: UserChoiceEffectResult
     }
   | { ok: false; reason: 'not_found' | 'invalid_option' | 'expired' }
 
@@ -32,8 +46,36 @@ export const clonePendingUserChoice = (
     ? {
         ...value,
         options: value.options.map((item) => ({ ...item })),
+        ...(value.effect ? { effect: { ...value.effect } } : {}),
       }
     : null
+
+const applyChoiceEffect = async (params: {
+  runtime: RuntimeState
+  choice: PendingUserChoice
+  option: UserChoiceOption
+}): Promise<UserChoiceEffectResult | undefined> => {
+  const { effect } = params.choice
+  if (effect?.optionId !== params.option.id) return undefined
+  const result = await resumeTask(params.runtime, effect.taskId, {
+    source: 'user',
+    ...(effect.reason ? { reason: effect.reason } : {}),
+  })
+  if (result.status === 'pending') {
+    return {
+      type: effect.type,
+      taskId: effect.taskId,
+      ok: true,
+      status: 'pending',
+    }
+  }
+  return {
+    type: effect.type,
+    taskId: effect.taskId,
+    ok: false,
+    status: result.status,
+  }
+}
 
 export const cancelPendingUserChoiceByUserInput = async (params: {
   runtime: RuntimeState
@@ -78,13 +120,18 @@ const commitSelection = async (params: {
   source: UserChoiceSelectionSource
   selectedAt: string
 }): Promise<SelectPendingUserChoiceResult> => {
-  await publishChoiceSelectionInput(params)
+  const effectResult = await applyChoiceEffect(params)
+  await publishChoiceSelectionInput({
+    ...params,
+    ...(effectResult ? { effectResult } : {}),
+  })
   params.runtime.ui.pendingUserChoice = null
   return {
     ok: true,
     choiceId: params.choice.id,
     optionId: params.option.id,
     source: params.source,
+    ...(effectResult ? { effect: effectResult } : {}),
   }
 }
 

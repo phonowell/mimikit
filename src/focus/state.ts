@@ -9,7 +9,7 @@ import {
   isDefaultIdleFocusCandidate,
   normalizeReservedFocusStatus,
 } from './reserved.js'
-import { upsertFocusContext } from './state-context.js'
+import { normalizeFocusSummary, upsertFocusContext } from './state-context.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { FocusId, FocusMeta, FocusStatus } from '../types/index.js'
@@ -42,12 +42,6 @@ export const findFocus = (
   runtime: RuntimeState,
   focusId: FocusId,
 ): FocusMeta | undefined => runtime.focuses.find((item) => item.id === focusId)
-
-const normalizeFocusSummary = (value?: string): string | undefined => {
-  if (typeof value !== 'string') return undefined
-  const trimmed = value.trim()
-  return trimmed || undefined
-}
 
 export const ensureFocus = (
   runtime: RuntimeState,

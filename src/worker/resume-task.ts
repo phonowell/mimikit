@@ -2,7 +2,11 @@ import { appendTaskSystemMessage } from '../history/task-events.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
-import { notifyWorkerLoop } from '../orchestrator/core/signals.js'
+import {
+  notifyUiSignal,
+  notifyWorkerLoop,
+} from '../orchestrator/core/signals.js'
+import { clearTaskResumeChoice } from '../orchestrator/core/task-resume-choice.js'
 import { nowIso } from '../shared/utils.js'
 
 import { enqueueWorkerTask } from './dispatch.js'
@@ -56,6 +60,7 @@ export const resumeTask = async (
 
   const resumedAt = nowIso()
   touchTaskMutation(runtime, task.id)
+  clearTaskResumeChoice(runtime, task.id)
   task.status = 'pending'
   delete task.pausedAt
   delete task.startedAt
@@ -78,6 +83,7 @@ export const resumeTask = async (
   await bestEffort('persistRuntimeState: task_resumed', () =>
     persistRuntimeState(runtime),
   )
+  notifyUiSignal(runtime)
   enqueueWorkerTask(runtime, task)
   notifyWorkerLoop(runtime)
   return {

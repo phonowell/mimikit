@@ -6,6 +6,7 @@ import { bindFocusPanel, bindPlansPanel } from './panels.js'
 import { bindRestart } from './restart.js'
 import { bindTasksPanel } from './tasks.js'
 import { bindTts } from './tts.js'
+import { bindDutyStatusPanel } from './watchboard.js'
 import { createBrandingController } from './app-branding.js'
 import { elements } from './app-elements.js'
 
@@ -29,6 +30,11 @@ const focusPanel = bindFocusPanel({
   focusesDialog: elements.focusesDialog,
   focusesOpenBtn: elements.focusesOpenBtn,
   focusesCloseBtn: elements.focusesCloseBtn,
+})
+const dutyStatusPanel = bindDutyStatusPanel({
+  section: elements.dutyStatus,
+  cardsEl: elements.dutyStatusCards,
+  highlightsEl: elements.dutyStatusHighlights,
 })
 
 let tts = null
@@ -65,6 +71,8 @@ messages = createMessagesController({
   deleteConfirmCancelBtn: elements.messageDeleteCancelBtn,
   deleteConfirmBtn: elements.messageDeleteConfirmBtn,
   onTasksSnapshot: (tasks) => tasksPanel?.applyTasksSnapshot?.(tasks),
+  onDutyStatusSnapshot: (dutyStatus) =>
+    dutyStatusPanel?.applySnapshot?.(dutyStatus),
   onPlansSnapshot: (plans) => plansPanel?.applyPlansSnapshot?.(plans),
   onFocusesSnapshot: (focuses) => {
     focusPanel?.applyFocusesSnapshot?.(focuses)
@@ -79,6 +87,7 @@ messages = createMessagesController({
     plansPanel?.setDisconnected?.()
     focusPanel?.setDisconnected?.()
     choicePanel?.setDisconnected?.()
+    dutyStatusPanel?.setDisconnected?.()
   },
 })
 

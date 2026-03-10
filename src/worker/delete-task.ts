@@ -2,6 +2,7 @@ import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import { notifyUiSignal } from '../orchestrator/core/signals.js'
+import { clearTaskResumeChoice } from '../orchestrator/core/task-resume-choice.js'
 import { nowIso } from '../shared/utils.js'
 
 import {
@@ -79,6 +80,7 @@ export const deleteTask = async (
   )
 
   touchTaskMutation(runtime, task.id)
+  clearTaskResumeChoice(runtime, task.id)
   runtime.tasks.splice(index, 1)
   runtime.worker.runningControllers.delete(task.id)
   const deletedAt = nowIso()

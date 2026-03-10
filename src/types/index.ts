@@ -1,6 +1,7 @@
 import type {
   focusContextSchema,
   focusMetaSchema,
+  pendingUserChoiceEffectSchema,
   pendingUserChoiceSchema,
   taskCancelSchema,
   taskPlanSchema,
@@ -285,6 +286,9 @@ export type TaskPlan = z.infer<typeof taskPlanSchema>
 export type FocusMeta = z.infer<typeof focusMetaSchema>
 export type FocusContext = z.infer<typeof focusContextSchema>
 export type UserChoiceOption = z.infer<typeof userChoiceOptionSchema>
+export type PendingUserChoiceEffect = z.infer<
+  typeof pendingUserChoiceEffectSchema
+>
 export type PendingUserChoice = z.infer<typeof pendingUserChoiceSchema>
 export type UserChoiceSelectionSource = 'user' | 'timeout'
 export type JsonPacket<TPayload> = {

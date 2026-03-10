@@ -18,7 +18,24 @@ const createMenuButton = ({
   return button
 }
 
-export const createTaskActions = ({ titleText, taskId, statusValue }) => {
+const createInlineButton = ({ action, text, titleText, taskId }) => {
+  const button = document.createElement('button')
+  button.type = 'button'
+  button.className = 'task-inline-action'
+  button.textContent = text
+  button.setAttribute('data-task-action-inline', action)
+  button.setAttribute('data-task-id', taskId)
+  button.setAttribute('title', `${text} ${titleText}`)
+  button.setAttribute('aria-label', `${text} ${titleText}`)
+  return button
+}
+
+export const createTaskActions = ({
+  titleText,
+  taskId,
+  statusValue,
+  recoverable,
+}) => {
   const actions = document.createElement('div')
   actions.className = 'task-item-actions'
   actions.setAttribute('data-task-actions', 'true')
@@ -47,9 +64,11 @@ export const createTaskActions = ({ titleText, taskId, statusValue }) => {
   const canCancel = hasTaskId && (isPending || isRunning || isPaused)
   const canDelete = hasTaskId && !isPending && !isRunning && !isPaused
   const primaryAction = isPaused ? 'resume' : 'pause'
+  const primaryText =
+    recoverable && primaryAction === 'resume' ? 'continue' : primaryAction
   const primaryBtn = createMenuButton({
     action: primaryAction,
-    text: primaryAction,
+    text: primaryText,
     titleText,
     taskId,
     disabled: !(isPaused ? canResume : canPause),
@@ -80,6 +99,16 @@ export const createTaskActions = ({ titleText, taskId, statusValue }) => {
   menu.appendChild(cancelBtn)
   menu.appendChild(deleteBtn)
   menu.appendChild(copyIdBtn)
+  if (recoverable && canResume) {
+    actions.appendChild(
+      createInlineButton({
+        action: 'resume',
+        text: 'Continue',
+        titleText,
+        taskId,
+      }),
+    )
+  }
   actions.appendChild(moreBtn)
   actions.appendChild(menu)
   return actions

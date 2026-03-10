@@ -11,7 +11,7 @@
 ## 生命周期
 
 - `pending`：manager 已派发，等待外部执行。
-- `paused`：任务被用户暂停，等待恢复。
+- `paused`：任务被用户暂停，或命中预算边界后以 `partial` 结果暂停，等待恢复。
 - `running`：worker 正在调度外部执行。
 - `succeeded | failed | canceled`：终态。
 
@@ -35,7 +35,9 @@
 补充：
 
 - 长任务命中 `worker.budget.maxDurationMs/maxRounds` 时，本次执行不会落成 `failed`；而是写出 `TaskResult.status=partial`，同时把 `Task.status` 置为 `paused`。
+- 当前默认预算基线为 `30m / 3 rounds`；`pnpm run score:worker-budget` 的当前样本为 `25` 条结果、`p90=22.6m`、`budget_partial=0`，因此保持该默认值。
 - `partial` 结果会保留 `handoff`、`archivePath`、`sessionId` 线索，恢复时继续复用已有 session。
+- 预算暂停后会复用现有 `pendingUserChoice` 发布显式恢复确认；choice 通过 `effect.type=resume_task` 直接绑定恢复动作，不依赖文案判断。
 
 ## 取消与恢复
 
@@ -50,8 +52,9 @@
 - `running -> paused`：触发 `AbortController` 终止当前执行；worker 收到 abort 后不写入 `failed/canceled` 终态结果。
 - `paused -> pending`：恢复入队并重新调度执行。
 - 从预算暂停恢复时，会先清理旧 `task.result`/`archivePath`，避免历史部分结果阻塞下一次结果消费。
+- 预算暂停会生成一个显式恢复 choice：默认项是 `Keep paused`，超时 `5` 分钟后自动落默认项；选择 `Continue now` 会直接调用恢复链路。
 - `paused` 状态支持继续 `cancel`，行为与 `pending` 取消一致（直接产出 `canceled` 结果）。
-- WebUI 二级菜单提供 `pause/resume/cancel` 控制动作；pause/resume 会写入系统事件消息。
+- WebUI 二级菜单提供 `pause/resume/cancel` 控制动作；对预算暂停的可恢复任务，还会在任务行直接暴露 inline `Continue` 入口；pause/resume 会写入系统事件消息。
 
 状态返回约定：
 
@@ -76,7 +79,8 @@
 
 1. 异常中断/恢复复用旧 session：`pnpm vitest run tests/runtime-persistence-queue-reconcile.test.ts -t "persist+hydrate keeps reusable session on recovered pending task" && pnpm vitest run tests/worker-run-retry-session.test.ts -t "reuses persisted session id on next attempt"`
 2. 用户取消丢弃旧 session、系统延后取消保留旧 session：`pnpm vitest run tests/worker-cancel-session-policy.test.ts`
-3. 全量门禁：`pnpm run review-code-changes`
+3. 预算样本校准：`pnpm run score:worker-budget`
+4. 全量门禁：`pnpm run review-code-changes`
 
 ## 常见问题排查（持久化状态清理）
 

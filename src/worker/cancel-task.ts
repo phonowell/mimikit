@@ -1,8 +1,12 @@
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
-import { notifyWorkerLoop } from '../orchestrator/core/signals.js'
+import {
+  notifyUiSignal,
+  notifyWorkerLoop,
+} from '../orchestrator/core/signals.js'
 import { markTaskCanceled } from '../orchestrator/core/task-lifecycle.js'
+import { clearTaskResumeChoice } from '../orchestrator/core/task-resume-choice.js'
 import { parseIsoMs } from '../shared/time.js'
 import { nowIso } from '../shared/utils.js'
 
@@ -92,6 +96,7 @@ export const cancelTask = async (
 
   if (task.status === 'pending' || task.status === 'paused') {
     touchTaskMutation(runtime, task.id)
+    clearTaskResumeChoice(runtime, task.id)
     const cancelMeta = buildCancelMeta(meta)
     const sessionPolicy = applyCancelSessionPolicy(task, cancelMeta.source)
     task.cancel = cancelMeta
@@ -126,6 +131,7 @@ export const cancelTask = async (
         policy: sessionPolicy,
       }),
     )
+    notifyUiSignal(runtime)
     notifyWorkerLoop(runtime)
     return {
       ok: true,
@@ -137,6 +143,7 @@ export const cancelTask = async (
 
   const canceledAt = nowIso()
   touchTaskMutation(runtime, task.id)
+  clearTaskResumeChoice(runtime, task.id)
   const canceledAtMs = parseIsoMs(canceledAt)
   const startedAtMs = parseIsoMs(task.startedAt ?? '')
   const durationMs =
@@ -164,6 +171,7 @@ export const cancelTask = async (
   await bestEffort('persistRuntimeState: cancel_running', () =>
     persistRuntimeState(runtime),
   )
+  notifyUiSignal(runtime)
   notifyWorkerLoop(runtime)
   return {
     ok: true,

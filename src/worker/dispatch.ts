@@ -14,6 +14,7 @@ import {
   markTaskRunning,
   markTaskSucceeded,
 } from '../orchestrator/core/task-lifecycle.js'
+import { requestTaskResumeChoice } from '../orchestrator/core/task-resume-choice.js'
 import { isSameUsage } from '../shared/token-usage.js'
 
 import { clearTaskLiveOutput, setTaskLiveOutput } from './live-output.js'
@@ -106,6 +107,13 @@ const runTask = async (
         },
         persistCompletionFields: false,
       })
+      await bestEffort('requestTaskResumeChoice: budget_pause', () =>
+        requestTaskResumeChoice({
+          runtime,
+          task,
+          createdAt: result.completedAt,
+        }),
+      )
       return
     }
     if (task.status === 'canceled') {

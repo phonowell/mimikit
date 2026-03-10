@@ -24,6 +24,7 @@ const TASK_PENDING_REASON_LABEL_MAP = Object.freeze({
 
 export const UI_TEXT = Object.freeze({
   conversationTitleFallback: 'Mimikit',
+  noDutyStatus: 'No recent duty signals',
   noTasks: 'No tasks',
   noPlans: 'No plans',
   noFocuses: 'No focus',

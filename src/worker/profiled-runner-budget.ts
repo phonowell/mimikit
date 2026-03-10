@@ -1,6 +1,6 @@
 import type { TokenUsage } from '../types/index.js'
 
-export const DEFAULT_WORKER_BUDGET_DURATION_MS = 20 * 60 * 1000
+export const DEFAULT_WORKER_BUDGET_DURATION_MS = 30 * 60 * 1000
 const BUDGET_EXCEEDED_TAG = 'mimikit.worker_budget_exceeded'
 
 export type WorkerBudgetExceededError = Error & {

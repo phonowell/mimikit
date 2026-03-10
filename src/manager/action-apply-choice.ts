@@ -1,7 +1,7 @@
 import { resolveDefaultFocusId } from '../focus/index.js'
 import { appendLog } from '../log/append.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
-import { USER_CHOICE_TIMEOUT_MS } from '../orchestrator/core/user-choice.js'
+import { USER_CHOICE_TIMEOUT_MS } from '../orchestrator/core/user-choice-timeout.js'
 import { nowIso } from '../shared/utils.js'
 
 import { parseAskUserChoiceAttrs } from './action-apply-schema.js'

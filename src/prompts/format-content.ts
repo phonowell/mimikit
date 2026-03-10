@@ -4,6 +4,7 @@ import {
   buildPlanProgressPayload,
   buildPlanTriggerPayload,
 } from '../shared/plan-payload.js'
+import { resolveTaskLabel } from '../shared/task-state.js'
 import { truncateText } from '../shared/text.js'
 
 import {
@@ -156,7 +157,7 @@ const formatTaskEntry = (
     id: task.id,
     status: task.status,
     provider: task.provider,
-    title: task.title.trim() || task.id,
+    title: resolveTaskLabel(task),
     changed_at: resolveTaskChangedAt(task),
     prompt: truncateText(task.prompt, TASK_PROMPT_MAX_CHARS, {
       normalizeWhitespace: true,

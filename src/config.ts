@@ -122,7 +122,7 @@ const INTERNAL_WORKER_DEFAULTS = {
     backoffMs: 5000,
   },
   budget: {
-    maxDurationMs: 20 * 60 * 1000,
+    maxDurationMs: 30 * 60 * 1000,
     maxRounds: 3,
   },
 } as const
