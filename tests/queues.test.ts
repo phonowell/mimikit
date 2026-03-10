@@ -8,6 +8,7 @@ import { buildPaths } from '../src/fs/paths.js'
 import {
   compactInputQueueIfFullyConsumed,
   consumeUserInputs,
+  consumeUserInputsIncrementally,
   publishUserInput,
 } from '../src/streams/queues.js'
 
@@ -79,4 +80,58 @@ test('input queue compacts when fully consumed', async () => {
     fromCursor: 0,
   })
   expect(read).toHaveLength(0)
+})
+
+test('incremental input queue consume resumes from checkpoint without replaying old packets', async () => {
+  const dir = await createTmpDir()
+  const paths = buildPaths(dir)
+
+  await publishTwoUserInputs(paths)
+
+  const firstRead = await consumeUserInputsIncrementally({
+    paths,
+    checkpoint: { cursor: 0, byteOffset: 0 },
+  })
+  expect(firstRead.packets.map((item) => item.cursor)).toEqual([1, 2])
+  expect(firstRead.packets.map((item) => item.payload.text)).toEqual(['a', 'b'])
+
+  await publishUserInput({
+    paths,
+    payload: {
+      id: 'in-3',
+      role: 'user',
+      text: 'c',
+      createdAt: '2026-02-08T00:00:02.000Z',
+    },
+  })
+
+  const secondRead = await consumeUserInputsIncrementally({
+    paths,
+    checkpoint: firstRead.checkpoint,
+  })
+  expect(secondRead.packets.map((item) => item.cursor)).toEqual([3])
+  expect(secondRead.packets[0]?.payload.text).toBe('c')
+})
+
+test('incremental input queue consume rebuilds byte offset from persisted cursor', async () => {
+  const dir = await createTmpDir()
+  const paths = buildPaths(dir)
+
+  await publishTwoUserInputs(paths)
+  await publishUserInput({
+    paths,
+    payload: {
+      id: 'in-3',
+      role: 'user',
+      text: 'c',
+      createdAt: '2026-02-08T00:00:02.000Z',
+    },
+  })
+
+  const read = await consumeUserInputsIncrementally({
+    paths,
+    checkpoint: { cursor: 2, byteOffset: 0 },
+  })
+  expect(read.packets.map((item) => item.cursor)).toEqual([3])
+  expect(read.packets[0]?.payload.text).toBe('c')
 })

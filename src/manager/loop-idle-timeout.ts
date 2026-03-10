@@ -1,0 +1,56 @@
+import { Cron } from 'croner'
+
+import { parseIsoMs } from '../shared/time.js'
+
+import type { RuntimeState } from './runtime-adapter.js'
+import type { TaskPlan } from '../types/index.js'
+
+const pickEarlier = (
+  current: number | undefined,
+  candidate: number | undefined,
+): number | undefined => {
+  if (candidate === undefined) return current
+  if (current === undefined) return candidate
+  return Math.min(current, candidate)
+}
+
+const isPlanRunnable = (plan: TaskPlan): boolean => {
+  if (plan.status !== 'active') return false
+  if (plan.maxRuns === undefined) return true
+  return plan.runCount < plan.maxRuns
+}
+
+const resolvePlanWakeAtMs = (plan: TaskPlan, now: Date): number | undefined => {
+  if (!isPlanRunnable(plan)) return undefined
+  if (plan.trigger.mode === 'on_worker_slot_freed') return undefined
+  if (plan.trigger.mode === 'scheduled_at') {
+    const scheduledAtMs = parseIsoMs(plan.trigger.scheduledAt)
+    if (scheduledAtMs === undefined) return undefined
+    if (plan.lastTriggeredAt) return undefined
+    return scheduledAtMs
+  }
+  try {
+    return new Cron(plan.trigger.cron).nextRun(now)?.getTime()
+  } catch {
+    return undefined
+  }
+}
+
+export const resolveManagerIdleTimeoutMs = (
+  runtime: RuntimeState,
+  now: Date = new Date(),
+): number => {
+  const nowMs = now.getTime()
+  let nextWakeAtMs = pickEarlier(
+    undefined,
+    runtime.ui.pendingUserChoice?.expiresAt
+      ? parseIsoMs(runtime.ui.pendingUserChoice.expiresAt)
+      : undefined,
+  )
+
+  for (const plan of runtime.taskPlans)
+    nextWakeAtMs = pickEarlier(nextWakeAtMs, resolvePlanWakeAtMs(plan, now))
+
+  if (nextWakeAtMs === undefined) return Number.POSITIVE_INFINITY
+  return Math.max(0, nextWakeAtMs - nowMs)
+}

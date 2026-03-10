@@ -3,11 +3,19 @@ import { bestEffort } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import { notifyUiSignal } from '../orchestrator/core/signals.js'
 import { resolvePendingUserChoiceTimeout } from '../orchestrator/core/user-choice.js'
-import { taskResultSchema } from '../storage/runtime-snapshot-schema.js'
-import { consumeUserInputs, consumeWorkerResults } from '../streams/queues.js'
+import {
+  consumeUserInputsIncrementally,
+  consumeWorkerResultsIncrementally,
+  type QueueReadCheckpoint,
+} from '../streams/queues.js'
 import { resolveSlotStatus } from '../worker/task-state-shared.js'
 
 import { processManagerBatch } from './loop-batch.js'
+import { resolveManagerIdleTimeoutMs } from './loop-idle-timeout.js'
+import {
+  filterValidResultPackets,
+  syncCheckpoint,
+} from './loop-result-packets.js'
 import {
   checkScheduledPlans,
   triggerOnWorkerSlotFreedPlans,
@@ -18,13 +26,7 @@ import {
 } from './runtime-adapter.js'
 import { publishManagerSystemEventInput } from './system-input-event.js'
 
-const IDLE_CHECK_INTERVAL_MS = 1_000
 const WORKER_SLOT_EVENT_COOLDOWN_MS = 1_000
-
-const formatIssuePath = (path: readonly PropertyKey[]): string => {
-  if (path.length === 0) return '<root>'
-  return path.map((segment) => String(segment)).join('.')
-}
 
 const hasRunnableWorkerSlotPlan = (runtime: RuntimeState): boolean =>
   runtime.taskPlans.some((plan) => {
@@ -131,46 +133,47 @@ export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
     workerSlotEventPending: false,
     lastWorkerSlotEventAtMs: 0,
   }
+  let inputCheckpoint: QueueReadCheckpoint = {
+    cursor: runtime.queues.inputsCursor,
+    byteOffset: 0,
+  }
+  let resultCheckpoint: QueueReadCheckpoint = {
+    cursor: runtime.queues.resultsCursor,
+    byteOffset: 0,
+  }
 
   while (!runtime.session.stopped) {
+    inputCheckpoint = syncCheckpoint(
+      inputCheckpoint,
+      runtime.queues.inputsCursor,
+    )
+    resultCheckpoint = syncCheckpoint(
+      resultCheckpoint,
+      runtime.queues.resultsCursor,
+    )
     const triggerStateChanged = await safeProcessLoopTriggers(
       runtime,
       triggerState,
     )
-    const inputPackets = await consumeUserInputs({
+    const inputRead = await consumeUserInputsIncrementally({
       paths: runtime.paths,
-      fromCursor: runtime.queues.inputsCursor,
+      checkpoint: inputCheckpoint,
     })
-    const allResultPackets = await consumeWorkerResults({
+    const resultRead = await consumeWorkerResultsIncrementally({
       paths: runtime.paths,
-      fromCursor: runtime.queues.resultsCursor,
+      checkpoint: resultCheckpoint,
     })
-    const nextInputsCursor =
-      inputPackets.at(-1)?.cursor ?? runtime.queues.inputsCursor
-    const nextResultsCursor =
-      allResultPackets.at(-1)?.cursor ?? runtime.queues.resultsCursor
+    inputCheckpoint = inputRead.checkpoint
+    resultCheckpoint = resultRead.checkpoint
+    const inputPackets = inputRead.packets
+    const allResultPackets = resultRead.packets
+    const nextInputsCursor = inputCheckpoint.cursor
+    const nextResultsCursor = resultCheckpoint.cursor
 
-    const resultPackets = []
-    for (const packet of allResultPackets) {
-      const parsedResult = taskResultSchema.safeParse(packet.payload)
-      if (parsedResult.success) {
-        resultPackets.push({
-          ...packet,
-          payload: parsedResult.data,
-        })
-        continue
-      }
-      await bestEffort('appendLog: invalid_worker_result_packet', () =>
-        appendLog(runtime.paths.log, {
-          event: 'invalid_worker_result_packet',
-          packetId: packet.id,
-          cursor: packet.cursor,
-          issues: parsedResult.error.issues.map(
-            (issue) => `${formatIssuePath(issue.path)}: ${issue.message}`,
-          ),
-        }),
-      )
-    }
+    const resultPackets = await filterValidResultPackets(
+      runtime,
+      allResultPackets,
+    )
 
     if (inputPackets.length === 0 && resultPackets.length === 0) {
       if (nextResultsCursor !== runtime.queues.resultsCursor) {
@@ -185,7 +188,10 @@ export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
           persistRuntimeState(runtime),
         )
       }
-      await waitForManagerLoopSignal(runtime, IDLE_CHECK_INTERVAL_MS)
+      await waitForManagerLoopSignal(
+        runtime,
+        resolveManagerIdleTimeoutMs(runtime),
+      )
       continue
     }
 

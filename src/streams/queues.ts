@@ -2,10 +2,19 @@ import { nowIso, shortId } from '../shared/utils.js'
 import { appendJsonl, readJsonl, writeJsonl } from '../storage/jsonl.js'
 import { runSerialized } from '../storage/serialized-lock.js'
 
+import {
+  consumeQueuePacketsIncrementally,
+  type PacketWithCursor,
+  type QueueReadCheckpoint,
+} from './queue-checkpoint.js'
+
 import type { StatePaths } from '../fs/paths.js'
 import type { JsonPacket, TaskResult, UserInput } from '../types/index.js'
 
-type PacketWithCursor<TPayload> = JsonPacket<TPayload> & { cursor: number }
+export type {
+  PacketWithCursor,
+  QueueReadCheckpoint,
+} from './queue-checkpoint.js'
 
 const normalizeCursor = (value: number): number =>
   Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0
@@ -73,6 +82,19 @@ const createQueueOps = <T>(packets: (p: StatePaths) => string) => ({
       fromCursor: params.fromCursor,
       ...(params.limit ? { limit: params.limit } : {}),
     }),
+  consumeIncrementally: (params: {
+    paths: StatePaths
+    checkpoint: QueueReadCheckpoint
+    limit?: number
+  }): Promise<{
+    packets: Array<PacketWithCursor<T>>
+    checkpoint: QueueReadCheckpoint
+  }> =>
+    consumeQueuePacketsIncrementally<T>({
+      path: packets(params.paths),
+      checkpoint: params.checkpoint,
+      ...(params.limit ? { limit: params.limit } : {}),
+    }),
   compact: (params: {
     paths: StatePaths
     cursor: number
@@ -90,8 +112,10 @@ const result = createQueueOps<TaskResult>((p) => p.resultsPackets)
 
 export const publishUserInput = input.publish
 export const consumeUserInputs = input.consume
+export const consumeUserInputsIncrementally = input.consumeIncrementally
 export const compactInputQueueIfFullyConsumed = input.compact
 
 export const publishWorkerResult = result.publish
 export const consumeWorkerResults = result.consume
+export const consumeWorkerResultsIncrementally = result.consumeIncrementally
 export const compactResultQueueIfFullyConsumed = result.compact

@@ -48,12 +48,12 @@
 5. 启动 `managerLoop`
 6. 启动 `workerLoop`
 
-## 主链路（事件驱动）
+## 主链路（信号驱动 + deadline 唤醒）
 
-1. 用户输入、计划触发、worker 结果先写入本地队列。
-2. `managerLoop` 消费这些输入并执行编排。
+1. 用户输入、计划触发、worker 结果先写入本地队列；写入后通过 `notifyManagerLoop` 立即唤醒 manager。
+2. `managerLoop` 基于队列 checkpoint 增量消费这些输入并执行编排，不再每轮全量重读 `inputs/results` JSONL。
 3. 若产生任务，worker 调用外部运行时执行并写回 `results/packets.jsonl`。
-4. manager 再次被唤醒，直到本轮走到明确收尾条件。
+4. manager 再次被唤醒，直到本轮走到明确收尾条件；若当前无新队列事件，则只按最近 `choice expiresAt` / `plan scheduled_at|cron` 的 deadline 休眠，不做固定频率空轮询。
 
 明确收尾条件只有三类：
 
@@ -62,6 +62,11 @@
 - manager best-effort 收敛：输入不足、守卫拒绝或检索无进展时直接给出下一步，不再空转。
 
 实时唤醒来源：`user_input`、`task_result`、`trigger_fire`、`worker_slot_freed`。
+
+说明：
+
+- `worker_slot_freed` 不依赖独立轮询器；它由 worker 生命周期信号驱动 manager 重新评估可用槽位。
+- `cron` / `scheduled_at` / `choice timeout` 仍属于时间触发，但只在最近 deadline 到达时唤醒，不再以 1 秒间隔扫全局状态。
 
 ## 一致性与恢复
 

@@ -6,6 +6,7 @@ import PQueue from 'p-queue'
 import { expect, test } from 'vitest'
 
 import { GLOBAL_FOCUS_ID } from '../src/focus/constants.js'
+import { notifyManagerLoop } from '../src/orchestrator/core/signals.js'
 import { readJsonl } from '../src/storage/jsonl.js'
 import { managerLoop } from '../src/manager/loop.js'
 import { triggerOnWorkerSlotFreedPlans } from '../src/manager/loop-trigger-plans.js'
@@ -16,6 +17,8 @@ import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
 import type { TaskPlan } from '../src/types/index.js'
 
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-trigger-capacity-'))
+const settle = (ms = 150) =>
+  new Promise<void>((resolve) => setTimeout(resolve, ms))
 
 const createTestConfig = (
   workDir: string,
@@ -131,6 +134,15 @@ const createRuntime = async (params?: {
   return runtime
 }
 
+const stopLoop = async (
+  runtime: RuntimeState,
+  loopPromise: Promise<void>,
+): Promise<void> => {
+  runtime.session.stopped = true
+  notifyManagerLoop(runtime)
+  await loopPromise
+}
+
 const createPlan = (
   id: string,
   trigger: TaskPlan['trigger'],
@@ -202,11 +214,10 @@ test('managerLoop emits worker_slot_freed once on startup when slot is already f
       async () => (await countSystemEvent(runtime, 'worker_slot_freed')) >= 1,
       4_000,
     )
-    await new Promise<void>((resolve) => setTimeout(resolve, 1_300))
+    await settle()
     expect(await countSystemEvent(runtime, 'worker_slot_freed')).toBe(1)
   } finally {
-    runtime.session.stopped = true
-    await loopPromise
+    await stopLoop(runtime, loopPromise)
   }
 })
 
@@ -215,11 +226,10 @@ test('managerLoop suppresses worker_slot_freed when no queue work exists', async
 
   const loopPromise = managerLoop(runtime)
   try {
-    await new Promise<void>((resolve) => setTimeout(resolve, 1_300))
+    await settle()
     expect(await countSystemEvent(runtime, 'worker_slot_freed')).toBe(0)
   } finally {
-    runtime.session.stopped = true
-    await loopPromise
+    await stopLoop(runtime, loopPromise)
   }
 })
 
@@ -265,20 +275,20 @@ test(
 
     const loopPromise = managerLoop(runtime)
     try {
-      await new Promise<void>((resolve) => setTimeout(resolve, 1_200))
+      await settle()
       expect(runtime.taskPlans[0]?.runCount).toBe(0)
 
       runtime.worker.runningControllers.clear()
       runtime.worker.lastActivityAtMs = Date.now()
+      notifyManagerLoop(runtime)
 
       await waitFor(() => (runtime.taskPlans[0]?.runCount ?? 0) >= 1, 4_000)
-      await new Promise<void>((resolve) => setTimeout(resolve, 1_200))
+      await settle()
 
       expect(runtime.taskPlans[0]?.runCount).toBe(1)
       expect(await countSystemEvent(runtime, 'worker_slot_freed')).toBe(0)
     } finally {
-      runtime.session.stopped = true
-      await loopPromise
+      await stopLoop(runtime, loopPromise)
     }
   },
   12_000,
@@ -300,21 +310,21 @@ test('managerLoop emits worker_slot_freed on full-to-free transition only once',
 
   const loopPromise = managerLoop(runtime)
   try {
-    await new Promise<void>((resolve) => setTimeout(resolve, 1_200))
+    await settle()
     expect(await countSystemEvent(runtime, 'worker_slot_freed')).toBe(0)
 
     runtime.worker.runningControllers.clear()
     runtime.worker.lastActivityAtMs = Date.now()
+    notifyManagerLoop(runtime)
 
     await waitFor(
       async () => (await countSystemEvent(runtime, 'worker_slot_freed')) >= 1,
       4_000,
     )
-    await new Promise<void>((resolve) => setTimeout(resolve, 1_300))
+    await settle()
     expect(await countSystemEvent(runtime, 'worker_slot_freed')).toBe(1)
   } finally {
-    runtime.session.stopped = true
-    await loopPromise
+    await stopLoop(runtime, loopPromise)
   }
 })
 
@@ -338,7 +348,7 @@ test(
 
     const loopPromise = managerLoop(runtime)
     try {
-      await new Promise<void>((resolve) => setTimeout(resolve, 1_200))
+      await settle()
       expect(await countSystemEvent(runtime, 'worker_slot_freed')).toBe(0)
 
       runtime.worker.runningControllers.delete('task-1')
@@ -347,16 +357,16 @@ test(
       runtime.worker.lastActivityAtMs = Date.now()
       runtime.worker.runningControllers.delete('task-3')
       runtime.worker.lastActivityAtMs = Date.now()
+      notifyManagerLoop(runtime)
       await waitFor(
         async () => (await countSystemEvent(runtime, 'worker_slot_freed')) >= 1,
         4_000,
       )
 
-      await new Promise<void>((resolve) => setTimeout(resolve, 1_300))
+      await settle()
       expect(await countSystemEvent(runtime, 'worker_slot_freed')).toBe(1)
     } finally {
-      runtime.session.stopped = true
-      await loopPromise
+      await stopLoop(runtime, loopPromise)
     }
   },
   12_000,
@@ -369,17 +379,17 @@ test('managerLoop reacts when occupied worker count drops while slot stays avail
 
   const loopPromise = managerLoop(runtime)
   try {
-    await new Promise<void>((resolve) => setTimeout(resolve, 1_200))
+    await settle()
     expect(runtime.taskPlans[0]?.runCount).toBe(0)
 
     runtime.worker.runningControllers.clear()
     runtime.worker.lastActivityAtMs = Date.now()
+    notifyManagerLoop(runtime)
 
     await waitFor(() => (runtime.taskPlans[0]?.runCount ?? 0) >= 1, 4_000)
     expect(runtime.taskPlans[0]?.runCount).toBe(1)
     expect(await countSystemEvent(runtime, 'worker_slot_freed')).toBe(0)
   } finally {
-    runtime.session.stopped = true
-    await loopPromise
+    await stopLoop(runtime, loopPromise)
   }
 })
