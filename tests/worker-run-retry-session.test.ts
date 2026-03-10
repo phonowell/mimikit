@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { expect, test, vi, beforeEach, afterEach } from 'vitest'
 
 import { defaultConfig } from '../src/config.js'
+import { ProviderError } from '../src/providers/provider-error.js'
 import { runTaskWithRetry } from '../src/worker/run-retry.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
@@ -170,4 +171,32 @@ test('runTaskWithRetry persists newly reported session id even when attempt fail
       (call) => call[1]?.event === 'worker_session_bound',
     ),
   ).toBe(true)
+})
+
+test('runTaskWithRetry does not retry non-retryable provider errors', async () => {
+  const runtime = await createRuntime()
+  runtime.config.worker.retry.maxAttempts = 2
+  const task = createTask('task-no-retry-provider-error')
+
+  runWorkerMock.mockRejectedValue(
+    new ProviderError({
+      code: 'provider_sdk_failure',
+      message: '[provider:codex-sdk] sdk run failed: invalid schema',
+      retryable: false,
+    }),
+  )
+
+  await expect(
+    runTaskWithRetry({
+      runtime,
+      task,
+      controller: new AbortController(),
+    }),
+  ).rejects.toThrow('invalid schema')
+
+  expect(runWorkerMock).toHaveBeenCalledTimes(1)
+  expect(
+    appendLogMock.mock.calls.some((call) => call[1]?.event === 'worker_retry'),
+  ).toBe(false)
+  expect(task.attempts ?? 0).toBe(0)
 })

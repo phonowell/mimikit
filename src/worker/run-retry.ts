@@ -3,6 +3,7 @@ import pRetry, { AbortError } from 'p-retry'
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
+import { ProviderError } from '../providers/provider-error.js'
 
 import { isAbortLikeError } from './error-utils.js'
 import { isWorkerBudgetExceededError } from './profiled-runner-loop.js'
@@ -34,6 +35,7 @@ const shouldRetryTaskRun = (
   error: unknown,
 ): boolean =>
   !shouldTreatAsTaskCancel(controller, error) &&
+  !(error instanceof ProviderError && !error.retryable) &&
   !isWorkerBudgetExceededError(error)
 
 const buildTaskFocusBrief = (
@@ -141,6 +143,7 @@ const buildRetryOptions = (params: {
     shouldConsumeRetry: ({ error }) => shouldRetryTaskRun(controller, error),
     shouldRetry: ({ error }) => shouldRetryTaskRun(controller, error),
     onFailedAttempt: async (attemptError) => {
+      if (!shouldRetryTaskRun(controller, attemptError.error)) return
       if (isWorkerBudgetExceededError(attemptError.error)) return
       if (shouldResetSessionAfterError(attemptError.error))
         await onSessionDiscarded(attemptError.error)
