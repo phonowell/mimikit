@@ -1,4 +1,4 @@
-type RuntimeChildStarted = {
+export type RuntimeChildStarted = {
   id: string
   kind: 'opencode-server'
   pid: number

@@ -1,5 +1,3 @@
-import { dispatchFeishuPassiveReply } from '../channels/feishu/passive-reply.js'
-import { dispatchTelegramPassiveReply } from '../channels/telegram/passive-reply.js'
 import { resolveDefaultFocusId } from '../focus/index.js'
 import { appendManagerCorrectionLimitSystemMessage } from '../history/manager-events.js'
 import { readHistory } from '../history/store.js'
@@ -128,20 +126,6 @@ export const processManagerBatch = async (params: {
       ...(resolvedUsage ? { usage: resolvedUsage } : {}),
       ...(managerRun.elapsedMs >= 0 ? { elapsedMs: managerRun.elapsedMs } : {}),
     })
-    await bestEffort('telegram:dispatch_passive_reply', () =>
-      dispatchTelegramPassiveReply({
-        runtime,
-        inputs: agentInputs,
-        replyText: responseText,
-      }),
-    )
-    await bestEffort('feishu:dispatch_passive_reply', () =>
-      dispatchFeishuPassiveReply({
-        runtime,
-        inputs: agentInputs,
-        replyText: responseText,
-      }),
-    )
     agentAppended = true
 
     await finalizeBatchProgress({

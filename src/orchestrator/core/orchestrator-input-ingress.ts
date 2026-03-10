@@ -5,9 +5,14 @@ import {
   touchFocus,
 } from '../../focus/index.js'
 import { appendLog } from '../../log/append.js'
+import { bestEffort } from '../../log/safe.js'
 import { newId, nowIso } from '../../shared/utils.js'
 import { publishUserInput } from '../../streams/queues.js'
 
+import {
+  broadcastUserMessage,
+  rememberChannelTargets,
+} from './channel-broadcast.js'
 import { toUserInputLogMeta } from './orchestrator-helpers.js'
 import { notifyManagerLoop, notifyUiSignal } from './signals.js'
 import { cancelPendingUserChoiceByUserInput } from './user-choice.js'
@@ -59,7 +64,10 @@ export const appendUserInput = async (
   await publishUserInput({ paths: runtime.paths, payload: input })
   runtime.session.inflightInputs.push(input)
   notifyUiSignal(runtime)
-  if (meta) runtime.session.lastUserMeta = meta
+  if (meta) {
+    runtime.session.lastUserMeta = meta
+    rememberChannelTargets(runtime, meta)
+  }
   await appendLog(runtime.paths.log, {
     event: 'user_input',
     id,
@@ -72,6 +80,12 @@ export const appendUserInput = async (
     triggerInputId: id,
     createdAt,
   })
+  await bestEffort('broadcast:user_message', () =>
+    broadcastUserMessage({
+      runtime,
+      input,
+    }),
+  )
   notifyManagerLoop(runtime)
   return id
 }

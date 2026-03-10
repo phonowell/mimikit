@@ -103,6 +103,9 @@ test('runtime snapshot accepts queue cursors', async () => {
       inputsCursor: 3,
       resultsCursor: 9,
     },
+    channelTargets: {
+      telegramChatId: 'chat-1001',
+    },
     managerFocusCompressedContexts: [
       {
         focusId: GLOBAL_FOCUS_ID,
@@ -117,6 +120,7 @@ test('runtime snapshot accepts queue cursors', async () => {
   expect(loaded.schemaVersion).toBe('runtime-snapshot.v3')
   expect(loaded.queues?.resultsCursor).toBe(9)
   expect(loaded.queues?.inputsCursor).toBe(3)
+  expect(loaded.channelTargets?.telegramChatId).toBe('chat-1001')
   expect(loaded.managerFocusCompressedContexts?.[0]?.summary).toContain(
     'keep codex-only',
   )

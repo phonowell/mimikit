@@ -65,6 +65,7 @@ export const createTestRuntimeState = async (
     session: {
       stopped: false,
       inflightInputs: [],
+      channelTargets: {},
       ...options.patch?.session,
     },
     manager: {

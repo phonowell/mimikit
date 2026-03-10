@@ -49,6 +49,22 @@ const normalizePersistedFocusContexts = (runtime: RuntimeState): void => {
   )
 }
 
+const normalizeChannelTargets = (
+  value:
+    | {
+        telegramChatId?: string | undefined
+        feishuChatId?: string | undefined
+      }
+    | undefined,
+) => {
+  const telegramChatId = value?.telegramChatId?.trim()
+  const feishuChatId = value?.feishuChatId?.trim()
+  return {
+    ...(telegramChatId ? { telegramChatId } : {}),
+    ...(feishuChatId ? { feishuChatId } : {}),
+  }
+}
+
 const reconcileRuntimeQueueState = async (
   runtime: RuntimeState,
 ): Promise<void> => {
@@ -127,6 +143,9 @@ export const hydrateRuntimeState = async (
   runtime.manager.compressedContext = snapshot.managerCompressedContext ?? ''
   normalizeManagerFocusCompressedContexts(runtime)
   runtime.ui.pendingUserChoice = snapshot.pendingUserChoice ?? null
+  runtime.session.channelTargets = normalizeChannelTargets(
+    snapshot.channelTargets,
+  )
   if (snapshot.queues) {
     runtime.queues = {
       inputsCursor: snapshot.queues.inputsCursor,
@@ -161,6 +180,14 @@ export const persistRuntimeState = async (
       ? { managerThreadId: runtime.manager.threadId }
       : {}),
     queues: runtime.queues,
+    ...(runtime.session.channelTargets.telegramChatId ||
+    runtime.session.channelTargets.feishuChatId
+      ? {
+          channelTargets: normalizeChannelTargets(
+            runtime.session.channelTargets,
+          ),
+        }
+      : {}),
     ...(runtime.ui.pendingUserChoice
       ? { pendingUserChoice: runtime.ui.pendingUserChoice }
       : {}),

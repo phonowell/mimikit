@@ -120,6 +120,36 @@ test('persist+hydrate keeps reusable session on recovered pending task', async (
   expect(restored.manager.threadId).toBe('session-manager-persisted')
 })
 
+test('persist+hydrate keeps channel targets for cross-channel broadcast', async () => {
+  const stateDir = await createTmpDir()
+  const runtime = await createTestRuntimeState({
+    workDir: stateDir,
+    withGlobalFocus: false,
+    patch: {
+      session: {
+        channelTargets: {
+          telegramChatId: 'chat-1001',
+          feishuChatId: 'oc_chat_1',
+        },
+      },
+    },
+  })
+
+  await persistRuntimeState(runtime)
+
+  const restored = await createTestRuntimeState({
+    workDir: stateDir,
+    withGlobalFocus: false,
+  })
+
+  await hydrateRuntimeState(restored)
+
+  expect(restored.session.channelTargets).toEqual({
+    telegramChatId: 'chat-1001',
+    feishuChatId: 'oc_chat_1',
+  })
+})
+
 test('persist+hydrate prunes compressed focus contexts that no longer belong to a live focus', async () => {
   const stateDir = await createTmpDir()
   const runtime = await createTestRuntimeState({

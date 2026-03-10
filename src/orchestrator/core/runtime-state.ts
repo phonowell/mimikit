@@ -40,6 +40,11 @@ export type UserMeta = {
   feishuTimestamp?: string
 }
 
+export type ChannelTargets = {
+  telegramChatId?: string
+  feishuChatId?: string
+}
+
 export type UiWakeKind = 'snapshot' | 'messages' | 'tasks'
 
 export type ExitRequest = {
@@ -67,6 +72,7 @@ export type RuntimeSessionState = {
   stopped: boolean
   inflightInputs: PendingUserInput[]
   lastUserMeta?: UserMeta
+  channelTargets: ChannelTargets
   requestExit?: (request: ExitRequest) => void
 }
 
@@ -139,6 +145,7 @@ export const createRuntimeState = (
     session: {
       stopped: false,
       inflightInputs: [],
+      channelTargets: {},
       ...(options.onExitRequested
         ? { requestExit: options.onExitRequested }
         : {}),

@@ -304,6 +304,13 @@ const memoryRefreshSchema = z
   })
   .strict()
 
+const channelTargetsSchema = z
+  .object({
+    telegramChatId: z.string().trim().min(1).optional(),
+    feishuChatId: z.string().trim().min(1).optional(),
+  })
+  .strict()
+
 export const runtimeSnapshotSchema = z
   .object({
     schemaVersion: z
@@ -326,6 +333,7 @@ export const runtimeSnapshotSchema = z
       .optional(),
     pendingUserChoice: pendingUserChoiceSchema.optional(),
     memoryRefresh: memoryRefreshSchema.optional(),
+    channelTargets: channelTargetsSchema.optional(),
     managerCompressedContext: z.string().optional(),
     managerFocusCompressedContexts: z
       .array(managerFocusCompressedContextSchema)

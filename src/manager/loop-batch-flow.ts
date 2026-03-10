@@ -6,6 +6,7 @@ import {
 import { appendHistory } from '../history/store.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort, logSafeError } from '../log/safe.js'
+import { broadcastAgentReply } from '../orchestrator/core/channel-broadcast.js'
 import { nowIso } from '../shared/utils.js'
 
 import {
@@ -69,8 +70,9 @@ export const appendManagerReply = async (params: {
 }): Promise<void> => {
   const replyFocusId = resolveDefaultFocusId(params.runtime)
   touchFocus(params.runtime, replyFocusId)
+  const messageId = `agent-${Date.now()}-${params.nextInputsCursor}`
   await appendHistory(params.runtime.paths.history, {
-    id: `agent-${Date.now()}-${params.nextInputsCursor}`,
+    id: messageId,
     role: 'agent',
     text: params.text,
     createdAt: nowIso(),
@@ -80,6 +82,13 @@ export const appendManagerReply = async (params: {
       ? { elapsedMs: params.elapsedMs }
       : {}),
   })
+  await bestEffort('broadcast:agent_reply', () =>
+    broadcastAgentReply({
+      runtime: params.runtime,
+      messageId,
+      text: params.text,
+    }),
+  )
 }
 
 export const recoverManagerBatchFailure = async (params: {

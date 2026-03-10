@@ -7,6 +7,7 @@ import { appendTaskProgress } from '../storage/task-progress.js'
 import { runWorkerLoop } from './profiled-runner-loop.js'
 
 import type { ManagerFocusCompressedContext } from '../orchestrator/core/runtime-state.js'
+import type { RuntimeChildStarted } from '../runtime/reaper-bridge.js'
 import type {
   FocusContext,
   FocusMeta,
@@ -61,10 +62,10 @@ const buildRunModel =
         : {}),
       ...(params.provider === 'opencode'
         ? {
-            onRuntimeChildStarted: (child) =>
+            onRuntimeChildStarted: (child: RuntimeChildStarted) =>
               getRuntimeReaperBridge()?.onRuntimeChildStarted(child) ??
               Promise.resolve(),
-            onRuntimeChildStopped: (id) =>
+            onRuntimeChildStopped: (id: string) =>
               getRuntimeReaperBridge()?.onRuntimeChildStopped(id) ??
               Promise.resolve(),
           }

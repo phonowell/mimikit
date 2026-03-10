@@ -185,7 +185,7 @@ export const runManagerCorrectionRounds = async (params: {
         const errorThreadId = readProviderThreadId(error)
         if (errorThreadId) {
           managerThreadId = errorThreadId
-          runtime.manager.threadId = managerThreadId
+          runtime.manager.threadId = errorThreadId
         }
         throw error
       }
