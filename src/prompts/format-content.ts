@@ -122,9 +122,12 @@ const toResultPayload = (
   const handoff = toHandoffPayload(result.handoff)
   return {
     status: result.status,
+    ...(result.taskStatus ? { task_status: result.taskStatus } : {}),
     ok: result.ok,
     completed_at: result.completedAt,
     duration_ms: result.durationMs,
+    ...(result.outcome ? { outcome: result.outcome } : {}),
+    ...(result.stopReason ? { stop_reason: result.stopReason } : {}),
     output: truncateText(result.output, TASK_OUTPUT_MAX_CHARS, {
       normalizeWhitespace: true,
     }),
@@ -183,7 +186,9 @@ const buildFallbackTask = (result: TaskResult): Task => ({
   title: result.title ?? result.taskId,
   profile: 'worker',
   provider: result.provider ?? 'codex',
-  status: result.status,
+  status:
+    result.taskStatus ??
+    (result.status === 'partial' ? 'paused' : result.status),
   focusId: GLOBAL_FOCUS_ID,
   createdAt: result.completedAt,
   completedAt: result.completedAt,

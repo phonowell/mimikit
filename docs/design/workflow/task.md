@@ -32,6 +32,11 @@
 4. 发布到 `results`，立即唤醒 manager 消费结果。
 5. `pending/paused` 快速取消：直接产出 `canceled` 结果并发布到 `results`。
 
+补充：
+
+- 长任务命中 `worker.budget.maxDurationMs/maxRounds` 时，本次执行不会落成 `failed`；而是写出 `TaskResult.status=partial`，同时把 `Task.status` 置为 `paused`。
+- `partial` 结果会保留 `handoff`、`archivePath`、`sessionId` 线索，恢复时继续复用已有 session。
+
 ## 取消与恢复
 
 - `pending` 取消：立即标记并发布 `canceled`。
@@ -44,6 +49,7 @@
 - `pending -> paused`：停止调度，保持非终态，不生成 task_result。
 - `running -> paused`：触发 `AbortController` 终止当前执行；worker 收到 abort 后不写入 `failed/canceled` 终态结果。
 - `paused -> pending`：恢复入队并重新调度执行。
+- 从预算暂停恢复时，会先清理旧 `task.result`/`archivePath`，避免历史部分结果阻塞下一次结果消费。
 - `paused` 状态支持继续 `cancel`，行为与 `pending` 取消一致（直接产出 `canceled` 结果）。
 - WebUI 二级菜单提供 `pause/resume/cancel` 控制动作；pause/resume 会写入系统事件消息。
 
@@ -62,6 +68,7 @@
 | provider 返回 resume/thread/session 无效类错误（not found/expired/invalid） | 丢弃旧 session，下一次尝试不带 `sessionId` | `src/worker/session-state.ts` + `src/worker/run-retry.ts` |
 | 用户主动取消（HTTP/显式用户来源） | 立即丢弃旧 session，后续必须新建 | `src/worker/cancel-task.ts`（`source=user`） |
 | 系统取消或延后取消（`source=system/deferred`） | 保留旧 session 为可恢复 | `src/worker/cancel-task.ts`（`source=system/deferred`） |
+| 预算暂停（`Task.status=paused` + `TaskResult.status=partial`） | 保留旧 session，等待显式 `resume` 后继续 | `src/worker/profiled-runner-loop.ts` + `src/worker/resume-task.ts` |
 
 `cancel.source` 归一化规则：`user|http -> user`，`deferred -> deferred`，其他来源统一视为 `system`。
 

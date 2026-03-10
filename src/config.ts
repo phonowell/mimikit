@@ -57,6 +57,10 @@ export type AppConfig = {
       backoffMs: number
     }
     timeoutMs: number
+    budget: {
+      maxDurationMs: number
+      maxRounds: number
+    }
   }
   codex: {
     enabled: boolean
@@ -117,6 +121,10 @@ const INTERNAL_WORKER_DEFAULTS = {
     maxAttempts: 1,
     backoffMs: 5000,
   },
+  budget: {
+    maxDurationMs: 20 * 60 * 1000,
+    maxRounds: 3,
+  },
 } as const
 
 export const defaultConfig = (params: DefaultConfigParams): AppConfig => {
@@ -143,7 +151,11 @@ export const defaultConfig = (params: DefaultConfigParams): AppConfig => {
     worker: {
       maxConcurrent: userConfig.worker.maxConcurrent,
       timeoutMs: userConfig.worker.timeoutMs,
-      ...INTERNAL_WORKER_DEFAULTS,
+      retry: INTERNAL_WORKER_DEFAULTS.retry,
+      budget: {
+        ...INTERNAL_WORKER_DEFAULTS.budget,
+        ...userConfig.worker.budget,
+      },
     },
     codex: {
       enabled: userConfig.codex.enabled,

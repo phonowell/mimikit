@@ -211,10 +211,17 @@ export type TaskStatus =
   | 'failed'
   | 'canceled'
 export type TaskCancelSource = 'user' | 'deferred' | 'system'
-export type TaskResultStatus = Extract<
-  TaskStatus,
-  'succeeded' | 'failed' | 'canceled'
->
+export type TaskResultStatus =
+  | Extract<TaskStatus, 'succeeded' | 'failed' | 'canceled'>
+  | 'partial'
+export type TaskResultOutcome = 'completed' | 'partial' | 'blocked'
+export type TaskResultStopReason =
+  | 'completed'
+  | 'budget_exhausted'
+  | 'guard_rejected'
+  | 'input_required'
+  | 'failed'
+  | 'canceled'
 export type TaskResultHandoffArtifact = {
   path: string
   kind?: string | undefined
@@ -252,7 +259,7 @@ export type TaskEvidence = {
   acceptanceChecks: TaskEvidenceAcceptance[]
   stateDelta: {
     taskStatusFrom?: TaskStatus | undefined
-    taskStatusTo: TaskResultStatus
+    taskStatusTo: TaskStatus
     archivePath?: string | undefined
   }
   nextSteps?: string[] | undefined

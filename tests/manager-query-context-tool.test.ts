@@ -93,6 +93,25 @@ test('query_context generated_index excludes non-utf8 files', async () => {
   expect(paths).not.toContain('generated/binary.dat')
 })
 
+test('query_context generated_index includes both repo and state generated roots', async () => {
+  const runtime = await createQueryContextRuntime()
+  const request = requireQueryContextRequest({ query: 'resume deploy' })
+  const result = await runQueryContextTool({ runtime, request })
+  const paths = result.results.generated_index?.items.map((item) => item.path) ?? []
+
+  expect(paths).toContain('.mimikit/generated/handoff.md')
+})
+
+test('query_context keeps repo and state generated paths distinct in .mimikit mode', async () => {
+  const runtime = await createQueryContextRuntime({ useStateDir: true })
+  const request = requireQueryContextRequest({ query: 'deploy' })
+  const result = await runQueryContextTool({ runtime, request })
+  const paths = result.results.generated_index?.items.map((item) => item.path) ?? []
+
+  expect(paths).toContain('generated/deploy-notes.md')
+  expect(paths).toContain('.mimikit/generated/handoff.md')
+})
+
 test('query_context deduplicates highly similar snippets across all scopes', async () => {
   const runtime = await createQueryContextRuntime()
   runtime.tasks.push({

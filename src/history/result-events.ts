@@ -16,6 +16,15 @@ const summarizeResultOutput = (
     : `${compacted.slice(0, 279).trimEnd()}…`
 }
 
+const shouldIgnoreStaleResult = (
+  task: RuntimeState['tasks'][number],
+  result: TaskResult,
+): boolean => {
+  if (result.status !== 'partial') return false
+  if (task.status !== (result.taskStatus ?? 'paused')) return true
+  return Boolean(task.pausedAt && task.pausedAt !== result.completedAt)
+}
+
 export const appendConsumedInputsToHistory = async (
   historyPath: string,
   inputs: UserInput[],
@@ -49,6 +58,10 @@ export const appendConsumedResultsToHistory = async (
       consumed += 1
       continue
     }
+    if (shouldIgnoreStaleResult(task, result)) {
+      consumed += 1
+      continue
+    }
 
     const resolvedCancel = result.cancel ?? task.cancel
     const appended =
@@ -59,6 +72,9 @@ export const appendConsumedResultsToHistory = async (
           })
         : await appendTaskSystemMessage(historyPath, 'completed', task, {
             status: result.status,
+            ...(result.taskStatus ? { taskStatus: result.taskStatus } : {}),
+            ...(result.outcome ? { outcome: result.outcome } : {}),
+            ...(result.stopReason ? { stopReason: result.stopReason } : {}),
             createdAt: result.completedAt,
           })
 

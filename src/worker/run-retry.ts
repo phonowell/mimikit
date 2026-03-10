@@ -5,6 +5,7 @@ import { bestEffort } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 
 import { isAbortLikeError } from './error-utils.js'
+import { isWorkerBudgetExceededError } from './profiled-runner-loop.js'
 import { runWorker } from './profiled-runner.js'
 import {
   discardTaskSession,
@@ -26,6 +27,13 @@ const shouldTreatAsTaskCancel = (
   controller: AbortController,
   error: unknown,
 ): boolean => controller.signal.aborted && isAbortLikeError(error)
+
+const shouldRetryTaskRun = (
+  controller: AbortController,
+  error: unknown,
+): boolean =>
+  !shouldTreatAsTaskCancel(controller, error) &&
+  !isWorkerBudgetExceededError(error)
 
 const runTaskModel = (params: {
   runtime: RuntimeState
@@ -89,6 +97,7 @@ const runTaskModel = (params: {
     ...(params.onPartialOutput
       ? { onPartialOutput: params.onPartialOutput }
       : {}),
+    budget: worker.budget,
   })
 }
 
@@ -114,10 +123,10 @@ const buildRetryOptions = (params: {
     maxTimeout: backoffMs,
     randomize: false,
     signal: controller.signal,
-    shouldConsumeRetry: ({ error }) =>
-      !shouldTreatAsTaskCancel(controller, error),
-    shouldRetry: ({ error }) => !shouldTreatAsTaskCancel(controller, error),
+    shouldConsumeRetry: ({ error }) => shouldRetryTaskRun(controller, error),
+    shouldRetry: ({ error }) => shouldRetryTaskRun(controller, error),
     onFailedAttempt: async (attemptError) => {
+      if (isWorkerBudgetExceededError(attemptError.error)) return
       if (shouldResetSessionAfterError(attemptError.error))
         await onSessionDiscarded(attemptError.error)
       if (attemptError.retriesLeft <= 0) return

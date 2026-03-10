@@ -34,7 +34,8 @@ export const buildTaskEvidence = (params: {
   const { contract } = task
   if (!contract) return undefined
   const note = summarizeOutput(result.output)
-  const allMet = result.status === 'succeeded'
+  const allMet = result.outcome === 'completed' || result.status === 'succeeded'
+  const nextTaskStatus = result.taskStatus ?? task.status
   const acceptanceChecks = contract.acceptance.map((criterion) => ({
     criterion,
     met: allMet,
@@ -46,7 +47,7 @@ export const buildTaskEvidence = (params: {
     acceptanceChecks,
     stateDelta: {
       ...(previousStatus ? { taskStatusFrom: previousStatus } : {}),
-      taskStatusTo: result.status,
+      taskStatusTo: nextTaskStatus,
       ...(archivePath ? { archivePath } : {}),
     },
     ...(result.handoff?.nextSteps
@@ -67,7 +68,7 @@ export const hasTaskEvidenceMismatch = (params: {
   if (evidence.contractGoal.trim() !== task.contract.goal.trim()) return true
   if (evidence.acceptanceChecks.length !== task.contract.acceptance.length)
     return true
-  const expectedTo = result.status
+  const expectedTo = result.taskStatus ?? task.status
   if (evidence.stateDelta.taskStatusTo !== expectedTo) return true
   return false
 }

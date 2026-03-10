@@ -9,6 +9,7 @@ import {
   MAX_CONTINUE_LATEST_OUTPUT_CHARS,
   buildContinuePrompt,
   hasDoneMarker,
+  isWorkerBudgetExceededError,
   runWorkerLoop,
   stripDoneMarker,
 } from '../src/worker/profiled-runner-loop.js'
@@ -245,6 +246,57 @@ test('runWorkerLoop omits latest output in continue prompt when thread id exists
     expect(prompts[1]).toContain('round=2')
     expect(prompts[1]).not.toContain('ROUND_ONE_SENTINEL')
     expect(result.output).toBe('final')
+  } finally {
+    await rm(stateDir, { recursive: true, force: true })
+  }
+})
+
+test('runWorkerLoop raises partial budget error with latest output and session', async () => {
+  const stateDir = await createTmpDir()
+  const task: Task = {
+    id: 'task-budget-partial',
+    fingerprint: 'fingerprint-budget-partial',
+    prompt: '执行预算测试任务',
+    title: '执行预算测试任务',
+    focusId: 'focus-global',
+    profile: 'worker',
+    status: 'running',
+    createdAt: '2026-03-04T00:00:00.000Z',
+  }
+
+  try {
+    let capturedError: unknown
+    try {
+      await runWorkerLoop({
+        stateDir,
+        task,
+        prompt: '执行预算测试任务',
+        continueTemplate: 'round={{ next_round }}/{{ max_rounds }}\n{{ latest_output }}',
+        continueTemplatePath: 'inline-template',
+        archiveBase: { role: 'worker', taskId: task.id },
+        budget: {
+          maxRounds: 1,
+          maxDurationMs: 5,
+        },
+        runModel: async () => ({
+          output: 'partial draft without done marker',
+          elapsedMs: 12,
+          usage: { input: 4, output: 6, total: 10 },
+          threadId: 'session-budget-1',
+        }),
+      })
+    } catch (error) {
+      capturedError = error
+    }
+
+    expect(isWorkerBudgetExceededError(capturedError)).toBe(true)
+    if (!isWorkerBudgetExceededError(capturedError))
+      throw new Error('expected worker budget exceeded error')
+    expect(capturedError.latestOutput).toBe('partial draft without done marker')
+    expect(capturedError.elapsedMs).toBe(12)
+    expect(capturedError.round).toBe(1)
+    expect(capturedError.threadId).toBe('session-budget-1')
+    expect(capturedError.usage).toEqual({ input: 4, output: 6, total: 10 })
   } finally {
     await rm(stateDir, { recursive: true, force: true })
   }

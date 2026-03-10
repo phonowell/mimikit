@@ -33,6 +33,13 @@ const workerInputSchema = z
   .object({
     maxConcurrent: z.number().int().positive().optional(),
     timeoutMs: z.number().int().positive().optional(),
+    budget: z
+      .object({
+        maxDurationMs: z.number().int().positive().optional(),
+        maxRounds: z.number().int().positive().optional(),
+      })
+      .strict()
+      .optional(),
   })
   .strict()
 
@@ -89,6 +96,10 @@ export type UserConfigDefaults = {
   worker: {
     maxConcurrent: number
     timeoutMs: number
+    budget: {
+      maxDurationMs: number
+      maxRounds: number
+    }
   }
   codex: {
     enabled: boolean
@@ -124,6 +135,10 @@ const DEFAULT_USER_CONFIG: UserConfigDefaults = {
   worker: {
     maxConcurrent: 3,
     timeoutMs: 600000,
+    budget: {
+      maxDurationMs: 1200000,
+      maxRounds: 3,
+    },
   },
   codex: {
     enabled: true,
@@ -304,6 +319,14 @@ const buildUserConfigDefaults = (
         input.worker?.maxConcurrent ?? DEFAULT_USER_CONFIG.worker.maxConcurrent,
       timeoutMs:
         input.worker?.timeoutMs ?? DEFAULT_USER_CONFIG.worker.timeoutMs,
+      budget: {
+        maxDurationMs:
+          input.worker?.budget?.maxDurationMs ??
+          DEFAULT_USER_CONFIG.worker.budget.maxDurationMs,
+        maxRounds:
+          input.worker?.budget?.maxRounds ??
+          DEFAULT_USER_CONFIG.worker.budget.maxRounds,
+      },
     },
     codex: {
       enabled: input.codex?.enabled ?? DEFAULT_USER_CONFIG.codex.enabled,

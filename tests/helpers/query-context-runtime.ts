@@ -14,21 +14,34 @@ import type { RuntimeState } from '../../src/orchestrator/core/runtime-state.js'
 
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-query-context-'))
 
-export const createQueryContextRuntime = async (): Promise<RuntimeState> => {
-  const workDir = await createTmpDir()
-  await mkdir(join(workDir, 'generated', 'reports'), { recursive: true })
+export const createQueryContextRuntime = async (options?: {
+  useStateDir?: boolean
+}): Promise<RuntimeState> => {
+  const rootDir = await createTmpDir()
+  const workDir = options?.useStateDir ? join(rootDir, '.mimikit') : rootDir
+  const repoGeneratedDir = join(rootDir, 'generated')
+  const stateGeneratedDir = options?.useStateDir
+    ? join(workDir, 'generated')
+    : join(rootDir, '.mimikit', 'generated')
+  await mkdir(join(repoGeneratedDir, 'reports'), { recursive: true })
+  await mkdir(join(stateGeneratedDir, 'reports'), { recursive: true })
   await writeFile(
-    join(workDir, 'generated', 'deploy-notes.md'),
+    join(repoGeneratedDir, 'deploy-notes.md'),
     ['# Deploy Notes', 'deploy service alpha with canary strategy'].join('\n'),
     'utf8',
   )
   await writeFile(
-    join(workDir, 'generated', 'reports', 'summary.txt'),
+    join(stateGeneratedDir, 'handoff.md'),
+    ['# Handoff', 'resume deploy service alpha from partial result'].join('\n'),
+    'utf8',
+  )
+  await writeFile(
+    join(repoGeneratedDir, 'reports', 'summary.txt'),
     ['daily release summary', 'rollback checklist ready'].join('\n'),
     'utf8',
   )
   await writeFile(
-    join(workDir, 'generated', 'binary.dat'),
+    join(repoGeneratedDir, 'binary.dat'),
     Buffer.from([0xff, 0xfe, 0x00, 0x01]),
   )
   const runtime = await createTestRuntimeState({

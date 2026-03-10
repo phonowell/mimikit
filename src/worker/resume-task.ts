@@ -61,6 +61,8 @@ export const resumeTask = async (
   delete task.startedAt
   delete task.completedAt
   delete task.durationMs
+  delete task.archivePath
+  delete task.result
 
   await appendTaskSystemMessage(runtime.paths.history, 'resumed', task, {
     createdAt: resumedAt,

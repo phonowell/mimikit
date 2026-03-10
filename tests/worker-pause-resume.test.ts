@@ -109,6 +109,19 @@ test('resumeTask re-queues paused task and writes task_resumed event', async () 
   const task = createTask('task-resume', {
     status: 'paused',
     pausedAt: '2026-03-06T00:00:03.000Z',
+    archivePath: '/tmp/task-partial.md',
+    result: {
+      taskId: 'task-resume',
+      status: 'partial',
+      taskStatus: 'paused',
+      outcome: 'partial',
+      stopReason: 'budget_exhausted',
+      ok: false,
+      output: 'partial',
+      durationMs: 12,
+      completedAt: '2026-03-06T00:00:04.000Z',
+      archivePath: '/tmp/task-partial.md',
+    },
   })
   runtime.tasks = [task]
 
@@ -121,6 +134,8 @@ test('resumeTask re-queues paused task and writes task_resumed event', async () 
   })
   expect(task.status).toBe('pending')
   expect(task.pausedAt).toBeUndefined()
+  expect(task.archivePath).toBeUndefined()
+  expect(task.result).toBeUndefined()
   expect(queueAdd).toHaveBeenCalledTimes(1)
   const history = await readHistory(runtime.paths.history)
   const event = history

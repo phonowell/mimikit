@@ -9,17 +9,6 @@ Mimikit 是面向夜班值守与周期任务的低成本自治作业系统。它
 
 它不是通用 agent 平台。保留的边界只有四件事：周期触发、低成本常驻、失败恢复、最小人工确认。
 
-```bash
-git clone https://github.com/phonowell/mimikit.git
-cd mimikit
-pnpm run bootstrap
-pnpm i
-OPENAI_API_KEY=your_key pnpm start
-# open http://localhost:8787
-```
-
-`bootstrap` 会自动 clone `../mimikit-providers` 与 `../mimikit-channels`，并通过 `pnpm install` 安装分仓依赖。
-
 ## Positioning
 
 - 低常驻成本：单 session、单 manager loop、外部执行运行时复用，避免为夜班值守额外维护多层 agent 编排。
@@ -31,9 +20,7 @@ OPENAI_API_KEY=your_key pnpm start
 
 ### 1) 安装依赖
 
-Mimikit 从 `~/.codex/config.toml` 和环境变量读取 provider 设置，加载入口见 [`src/cli/index.ts`](./src/cli/index.ts)。
-
-API key 解析顺序：
+Mimikit 从 `~/.codex/config.toml` 和环境变量读取 provider 设置，加载入口见 [`src/cli/index.ts`](./src/cli/index.ts)。API key 解析顺序：
 
 1. `~/.codex/config.toml` 当前 provider 的 `api_key`
 2. `~/.codex/config.toml` 当前 provider 的 `env_key` / `api_key_env`
@@ -53,8 +40,6 @@ macOS / Linux:
 ```bash
 export OPENAI_API_KEY=your_key
 ```
-
-Windows PowerShell:
 
 ```powershell
 $env:OPENAI_API_KEY = "your_key"
@@ -77,8 +62,6 @@ wire_api = "responses"
 env_key = "AICODING_API_KEY"
 ```
 
-如缺少 `config.toml`，运行 `pnpm run bootstrap` 从 `defaults/config.template.toml` 生成。
-
 ```toml
 [manager]
 model = "gpt-5.2"
@@ -87,6 +70,10 @@ modelReasoningEffort = "medium"
 [worker]
 maxConcurrent = 3
 timeoutMs = 600000
+
+[worker.budget]
+maxDurationMs = 1200000
+maxRounds = 3
 
 [codex]
 enabled = true
@@ -111,14 +98,13 @@ enabled = true
 - worker 按任务 `provider` 路由到 `codex-sdk` 或 `opencode-sdk`
 - 未指定 `provider` 时，按最低 `billing`、再按最高 `capability` 自动选择
 - 高成本 `enqueue_task` 先触发 `ask_user_choice` 确认，再允许派发
+- 长任务命中 `worker.budget` 时不会直接失败；会归档部分结果、保留 session，并把任务置为 `paused` 等待显式恢复
 
 ### 3) 启动
 
 ```bash
 pnpm start
 ```
-
-默认端口 `8787`。直接启动：
 
 ```bash
 tsx src/cli/index.ts --port 8787 --work-dir .mimikit
@@ -151,16 +137,6 @@ export FEISHU_CHAT_ID=<your_chat_id>
 pnpm start
 ```
 
-这些入口的职责是接收夜间作业输入、回传结果和最小确认，不扩展额外调度语义。
-
-## What Stays
-
-- 单 session 主循环：减少常驻成本和调试复杂度。
-- `manager + worker` 分工：manager 负责编排与收尾，worker 负责外部执行和结果回写。
-- 周期/容量触发：`cron`、`scheduled_at`、`on_worker_slot_freed`。
-- 本地持久化恢复：`history`、`tasks`、`task-progress`、`runtime-snapshot`、`log.jsonl` 全部落在 `.mimikit/`。
-- WebUI 观察面：`GET /api/events`、`POST /api/input`、任务/计划/choice/restart/reset 入口。
-
 ## How It Works
 
 ```mermaid
@@ -176,11 +152,10 @@ flowchart LR
 - 用户输入、计划触发、worker 结果都会落盘，再回流给 manager。
 - `managerLoop` 统一处理计划触发、用户 choice 超时、worker 槽位释放，不额外拆第二套调度器。
 - 当补充检索没有新进展或同类拒绝重复出现时，manager 会提前收敛为 best-effort 回复，避免夜间空转。
+- worker 命中预算上限时会写出 `partial` 结果与 handoff，日志/历史可区分正常完成、预算暂停和其他阻塞停止。
 - 重启时读取 runtime snapshot，对齐 cursor 后继续处理未消费输入与结果。
 
 ## Minimal Smoke Test
-
-启动后先检查状态，不触发模型执行：
 
 ```bash
 curl -sS http://127.0.0.1:8787/api/status
@@ -192,15 +167,6 @@ PowerShell:
 Invoke-RestMethod http://127.0.0.1:8787/api/status | ConvertTo-Json -Depth 5
 ```
 
-返回中应包含 `ok`、`runtimeId`、`managerRunning` 等字段。
-
-## Use Cases
-
-- 夜间定时巡检、日报汇总、回归检查。
-- worker 槽位空出后自动继续排队作业。
-- 本地长驻值守，失败后依赖落盘状态继续恢复。
-- 需要保留最小人工确认、但不想引入更重平台层的自治作业场景。
-
 ## Prompt Governance
 
 - Prompt 统一放在 `prompts/**`，不要把长自然语言模板硬编码进 `src/**`。
@@ -209,21 +175,10 @@ Invoke-RestMethod http://127.0.0.1:8787/api/status | ConvertTo-Json -Depth 5
 
 ## FAQ
 
-### 是否支持多 session？
-
-不支持。当前边界就是单一主 session。
-
-### 是否支持图片输入？
-
-不支持。当前输入为文本；Telegram/Feishu 的图片消息会转成文本能力提示。
-
-### 是否支持定时和容量触发？
-
-支持：`cron`、`scheduled_at`、`on_worker_slot_freed`。
-
-### 是否可以只开 bot channel，不开 WebUI？
-
-可以。设置 `webui.enabled=false`，并启用 Telegram 或 Feishu。
+- 多 session：不支持，当前边界就是单一主 session。
+- 图片输入：不支持；Telegram/Feishu 图片消息会转成文本能力提示。
+- 定时和容量触发：支持 `cron`、`scheduled_at`、`on_worker_slot_freed`。
+- 只开 bot channel：可以，设置 `webui.enabled=false` 并启用 Telegram 或 Feishu。
 
 ## Contributing
 

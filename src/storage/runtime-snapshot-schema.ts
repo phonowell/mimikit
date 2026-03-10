@@ -18,7 +18,12 @@ const taskStatusSchema = z.enum([
   'failed',
   'canceled',
 ])
-const taskResultStatusSchema = z.enum(['succeeded', 'failed', 'canceled'])
+const taskResultStatusSchema = z.enum([
+  'succeeded',
+  'failed',
+  'canceled',
+  'partial',
+])
 
 export const taskCancelSchema = z
   .object({
@@ -81,7 +86,7 @@ const taskEvidenceSchema = z
     stateDelta: z
       .object({
         taskStatusFrom: taskStatusSchema.optional(),
-        taskStatusTo: taskResultStatusSchema,
+        taskStatusTo: taskStatusSchema,
         archivePath: z.string().trim().min(1).optional(),
       })
       .strict(),
@@ -93,11 +98,23 @@ const taskEvidenceSchema = z
 export const taskResultSchema = z
   .object({
     taskId: z.string().trim().min(1),
-    status: z.enum(['succeeded', 'failed', 'canceled']),
+    status: taskResultStatusSchema,
     ok: z.boolean(),
     output: z.string(),
     durationMs: z.number().finite().nonnegative(),
     completedAt: z.string(),
+    taskStatus: taskStatusSchema.optional(),
+    outcome: z.enum(['completed', 'partial', 'blocked']).optional(),
+    stopReason: z
+      .enum([
+        'completed',
+        'budget_exhausted',
+        'guard_rejected',
+        'input_required',
+        'failed',
+        'canceled',
+      ])
+      .optional(),
     usage: tokenUsageSchema.optional(),
     title: z.string().optional(),
     archivePath: z.string().optional(),

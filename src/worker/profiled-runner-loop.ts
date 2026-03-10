@@ -1,6 +1,5 @@
 import { readProviderThreadId } from '@mimikit/providers/providers/thread-id'
 
-import { renderPromptTemplate } from '../prompts/format.js'
 import {
   mergeUsageAdditive,
   mergeUsageMonotonic,
@@ -8,87 +7,32 @@ import {
 import { appendTraceArchiveResult } from '../storage/traces-archive.js'
 
 import { isAbortLikeError } from './error-utils.js'
+import {
+  buildWorkerBudgetExceededError,
+  DEFAULT_WORKER_BUDGET_DURATION_MS,
+  isWorkerBudgetExceededError,
+} from './profiled-runner-budget.js'
+import {
+  buildContinuePrompt,
+  hasDoneMarker,
+  MAX_RUN_ROUNDS,
+  stripDoneMarker,
+} from './profiled-runner-prompt.js'
 
+import type { ProviderResult, RunLoopParams } from './profiled-runner-types.js'
 import type {
   TraceArchiveEntry,
   TraceArchiveResult,
 } from '../storage/traces-archive.js'
-import type { Task, TokenUsage } from '../types/index.js'
-
-export const SKILL_USAGE_DONE_TAG_PATTERN =
-  // prompt-guard-exempt: protocol done-tag contract constant, not an LLM prompt template.
-  '<M:skill_usage status="done">{skill-a,skill-b}</M:skill_usage>'
-export const MAX_RUN_ROUNDS = 3
-export const MAX_CONTINUE_LATEST_OUTPUT_CHARS = 1_600
-
-const SKILL_USAGE_DONE_TEST_RE =
-  /<M:skill_usage\b[^>]*\bstatus\s*=\s*(?:(['"])done\1|done(?=[\s>]))[^>]*>[\s\S]*?<\/M:skill_usage>/i
-const SKILL_USAGE_DONE_STRIP_RE =
-  /<M:skill_usage\b[^>]*\bstatus\s*=\s*(?:(['"])done\1|done(?=[\s>]))[^>]*>[\s\S]*?<\/M:skill_usage>/gi
-
-export const hasDoneMarker = (output: string): boolean =>
-  SKILL_USAGE_DONE_TEST_RE.test(output)
-
-export const stripDoneMarker = (output: string): string =>
-  output.replace(SKILL_USAGE_DONE_STRIP_RE, '').trim()
-
-const clipLatestOutput = (value: string): string => {
-  const normalized = value.trim()
-  if (normalized.length <= MAX_CONTINUE_LATEST_OUTPUT_CHARS) return normalized
-  return `${normalized.slice(0, MAX_CONTINUE_LATEST_OUTPUT_CHARS - 3).trimEnd()}...`
-}
-
-export const buildContinuePrompt = (
-  template: string,
-  templatePath: string,
-  latestOutput: string,
-  nextRound: number,
-  options?: {
-    includeLatestOutput?: boolean
-  },
-): string =>
-  renderPromptTemplate(
-    template,
-    {
-      done_tag_pattern: SKILL_USAGE_DONE_TAG_PATTERN,
-      latest_output:
-        options?.includeLatestOutput === false
-          ? ''
-          : clipLatestOutput(latestOutput),
-      next_round: String(nextRound),
-      max_rounds: String(MAX_RUN_ROUNDS),
-    },
-    templatePath,
-  )
-
-type ProviderResult = {
-  output: string
-  elapsedMs: number
-  usage?: TokenUsage
-  threadId?: string | null
-}
-
-type RunModelInput = {
-  prompt: string
-  threadId?: string | null
-  onUsage?: (usage: TokenUsage) => void
-  onPartialOutput?: (output: string) => void
-}
-
-export type RunLoopParams = {
-  stateDir: string
-  task: Task
-  prompt: string
-  initialThreadId?: string | null
-  continueTemplate: string
-  continueTemplatePath: string
-  archiveBase: Omit<TraceArchiveEntry, 'prompt' | 'output' | 'ok'>
-  runModel: (input: RunModelInput) => Promise<ProviderResult>
-  onSessionId?: (sessionId: string) => Promise<void> | void
-  onUsage?: (usage: TokenUsage) => void
-  onPartialOutput?: (output: string) => void
-  abortSignal?: AbortSignal
-}
+import type { TokenUsage } from '../types/index.js'
+export {
+  buildContinuePrompt,
+  hasDoneMarker,
+  MAX_CONTINUE_LATEST_OUTPUT_CHARS,
+  MAX_RUN_ROUNDS,
+  stripDoneMarker,
+} from './profiled-runner-prompt.js'
+export { isWorkerBudgetExceededError } from './profiled-runner-budget.js'
 
 const normalizeThreadId = (
   value: string | null | undefined,
@@ -105,6 +49,11 @@ export const runWorkerLoop = async (
   usage?: TokenUsage
 }> => {
   const { stateDir, task, prompt } = params
+  const maxRounds = Math.max(1, params.budget?.maxRounds ?? MAX_RUN_ROUNDS)
+  const maxDurationMs = Math.max(
+    1,
+    params.budget?.maxDurationMs ?? DEFAULT_WORKER_BUDGET_DURATION_MS,
+  )
   let threadId: string | null | undefined = params.initialThreadId
   let reportedSessionId = normalizeThreadId(threadId)
   let totalUsage: TokenUsage | undefined
@@ -120,7 +69,7 @@ export const runWorkerLoop = async (
   if (reportedSessionId) await params.onSessionId?.(reportedSessionId)
 
   try {
-    for (let round = 1; round <= MAX_RUN_ROUNDS; round += 1) {
+    for (let round = 1; round <= maxRounds; round += 1) {
       let roundUsage: TokenUsage | undefined
       const result = await params.runModel({
         prompt: nextPrompt,
@@ -170,20 +119,33 @@ export const runWorkerLoop = async (
         }
       }
 
-      if (round < MAX_RUN_ROUNDS) {
+      if (round >= maxRounds || totalElapsedMs >= maxDurationMs) {
+        throw buildWorkerBudgetExceededError({
+          latestOutput: output,
+          elapsedMs: totalElapsedMs,
+          round,
+          ...(totalUsage ? { usage: totalUsage } : {}),
+          ...(nextSessionId ? { threadId: nextSessionId } : {}),
+        })
+      }
+
+      if (round < maxRounds) {
         const shouldIncludeLatestOutput = !normalizeThreadId(threadId)
         nextPrompt = buildContinuePrompt(
           params.continueTemplate,
           params.continueTemplatePath,
           output,
           round + 1,
-          { includeLatestOutput: shouldIncludeLatestOutput },
+          {
+            includeLatestOutput: shouldIncludeLatestOutput,
+            maxRounds,
+          },
         )
       }
     }
 
     throw new Error(
-      `[worker] task incomplete after ${MAX_RUN_ROUNDS} rounds: missing M:skill_usage status="done"; last_output=${JSON.stringify(latestResult?.output.trim() ?? 'empty_output')}`,
+      `[worker] task incomplete after ${maxRounds} rounds: missing M:skill_usage status="done"; last_output=${JSON.stringify(latestResult?.output.trim() ?? 'empty_output')}`,
     )
   } catch (error) {
     const errorThreadId = readProviderThreadId(error)
@@ -197,16 +159,28 @@ export const runWorkerLoop = async (
     const err = error instanceof Error ? error : new Error(String(error))
     const canceled =
       Boolean(params.abortSignal?.aborted) && isAbortLikeError(err)
+    const partial =
+      isWorkerBudgetExceededError(error) && error.latestOutput.trim().length > 0
     await archiveResult(
       {
         ...params.archiveBase,
         ...(threadId !== undefined ? { threadId } : {}),
       },
       {
-        output: '',
+        output: partial ? error.latestOutput : '',
         ok: false,
         error: canceled ? 'Task canceled' : err.message,
-        errorName: canceled ? 'TaskCanceledError' : err.name,
+        errorName: canceled
+          ? 'TaskCanceledError'
+          : partial
+            ? 'WorkerBudgetExceededError'
+            : err.name,
+        ...(partial
+          ? {
+              elapsedMs: error.elapsedMs,
+              ...(error.usage ? { usage: error.usage } : {}),
+            }
+          : {}),
       },
     )
     throw error

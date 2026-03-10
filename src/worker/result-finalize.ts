@@ -1,15 +1,12 @@
 import { syncFocusContextFromTaskResult } from '../focus/result-feedback.js'
 import { appendLog } from '../log/append.js'
-import { bestEffort, safeOrUndefined } from '../log/safe.js'
+import { bestEffort } from '../log/safe.js'
 import { notifyManagerLoop } from '../orchestrator/core/signals.js'
 import { nowIso } from '../shared/utils.js'
 import { appendTaskProgress } from '../storage/task-progress.js'
-import {
-  resolveTaskResultArchivePath,
-  writeTaskResultArchiveAtPath,
-} from '../storage/task-results.js'
 import { publishWorkerResult } from '../streams/queues.js'
 
+import { resolveArchivePath, writeTaskArchive } from './result-archive.js'
 import {
   buildTaskEvidence,
   hasTaskEvidenceMismatch,
@@ -18,46 +15,13 @@ import {
   buildTaskResultHandoff,
   withTaskArchiveEvidence,
 } from './result-handoff.js'
+import {
+  applyTaskResultStateDefaults,
+  buildDefaultTaskResultState,
+} from './result-state.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { Task, TaskResult, TokenUsage } from '../types/index.js'
-
-export const archiveTaskResult = (
-  runtime: RuntimeState,
-  task: Task,
-  result: TaskResult,
-  source: 'worker' | 'cancel',
-): Promise<string | undefined> =>
-  safeOrUndefined(`appendTaskResultArchive: ${source}`, async () => {
-    const archiveEntry = {
-      taskId: task.id,
-      focusId: task.focusId,
-      title: task.title,
-      status: result.status,
-      provider: task.provider,
-      prompt: task.prompt,
-      output: result.output,
-      createdAt: task.createdAt,
-      completedAt: result.completedAt,
-      durationMs: result.durationMs,
-      ...(result.usage ? { usage: result.usage } : {}),
-      ...(result.cancel ? { cancel: result.cancel } : {}),
-      ...(result.handoff ? { handoff: result.handoff } : {}),
-      ...(result.evidence ? { evidence: result.evidence } : {}),
-    }
-    const archivePath = await resolveTaskResultArchivePath(
-      runtime.config.workDir,
-      archiveEntry,
-    )
-    const nextHandoff = withTaskArchiveEvidence(result.handoff, archivePath)
-    await writeTaskResultArchiveAtPath(archivePath, {
-      ...archiveEntry,
-      ...(nextHandoff ? { handoff: nextHandoff } : {}),
-    })
-    result.archivePath = archivePath
-    result.handoff = nextHandoff
-    return archivePath
-  })
 
 export const buildResult = (
   task: Task,
@@ -67,6 +31,7 @@ export const buildResult = (
   usage?: TokenUsage,
 ): TaskResult => {
   const handoff = buildTaskResultHandoff(task, { status, output })
+  const state = buildDefaultTaskResultState(status)
   return {
     taskId: task.id,
     status,
@@ -74,6 +39,7 @@ export const buildResult = (
     output,
     durationMs,
     completedAt: nowIso(),
+    ...state,
     ...(usage ? { usage } : {}),
     ...(task.title ? { title: task.title } : {}),
     profile: task.profile,
@@ -94,6 +60,8 @@ export const finalizeResult = async (
     progressType?: 'worker_end' | 'task_canceled'
     logEvent?: 'worker_end' | 'task_canceled'
     archiveSource?: 'worker' | 'cancel'
+    taskPatch?: Partial<Task>
+    persistCompletionFields?: boolean
   },
 ): Promise<void> => {
   const progressType = options?.progressType ?? 'worker_end'
@@ -101,19 +69,49 @@ export const finalizeResult = async (
   const archiveSource = options?.archiveSource ?? 'worker'
   runtime.worker.lastActivityAtMs = Date.now()
   result.handoff ??= buildTaskResultHandoff(task, result)
+  applyTaskResultStateDefaults(result)
   const previousStatus = task.status
-  const archivePath = await archiveTaskResult(
+  const candidateArchivePath = await resolveArchivePath(
     runtime,
     task,
     result,
     archiveSource,
   )
-  result.evidence = buildTaskEvidence({
+  const archivedHandoff = candidateArchivePath
+    ? withTaskArchiveEvidence(result.handoff, candidateArchivePath)
+    : result.handoff
+  const archiveEvidence = buildTaskEvidence({
     task,
-    result,
+    result: {
+      ...result,
+      ...(archivedHandoff ? { handoff: archivedHandoff } : {}),
+    },
     previousStatus,
-    ...(archivePath ? { archivePath } : {}),
+    ...(candidateArchivePath ? { archivePath: candidateArchivePath } : {}),
   })
+  const archivePath = candidateArchivePath
+    ? await writeTaskArchive(
+        task,
+        {
+          ...result,
+          ...(archivedHandoff ? { handoff: archivedHandoff } : {}),
+          ...(archiveEvidence ? { evidence: archiveEvidence } : {}),
+        },
+        candidateArchivePath,
+        archiveSource,
+      )
+    : undefined
+  if (archivePath) {
+    result.archivePath = archivePath
+    result.handoff = archivedHandoff
+    result.evidence = archiveEvidence
+  } else {
+    result.evidence = buildTaskEvidence({
+      task,
+      result,
+      previousStatus,
+    })
+  }
   if (hasTaskEvidenceMismatch({ task, result })) {
     await bestEffort('appendLog: task_evidence_mismatch', () =>
       appendLog(runtime.paths.log, {
@@ -125,12 +123,18 @@ export const finalizeResult = async (
     )
   }
   if (archivePath) task.archivePath = archivePath
-  markFn(runtime.tasks, task.id, {
-    completedAt: result.completedAt,
-    durationMs: result.durationMs,
+  const basePatch: Partial<Task> = {
+    ...(options?.persistCompletionFields === false
+      ? {}
+      : {
+          completedAt: result.completedAt,
+          durationMs: result.durationMs,
+        }),
     ...(result.usage ? { usage: result.usage } : {}),
     ...(archivePath ? { archivePath } : {}),
-  })
+    ...(options?.taskPatch ?? {}),
+  }
+  markFn(runtime.tasks, task.id, basePatch)
   syncFocusContextFromTaskResult(runtime, task, result)
   await bestEffort(`appendTaskProgress: ${progressType}`, () =>
     appendTaskProgress({
@@ -139,6 +143,9 @@ export const finalizeResult = async (
       type: progressType,
       payload: {
         status: result.status,
+        taskStatus: result.taskStatus,
+        outcome: result.outcome,
+        stopReason: result.stopReason,
         durationMs: result.durationMs,
         ...(result.cancel ? { cancel: result.cancel } : {}),
         ...(archivePath ? { archivePath } : {}),
@@ -155,6 +162,9 @@ export const finalizeResult = async (
       event: logEvent,
       taskId: task.id,
       status: result.status,
+      taskStatus: result.taskStatus,
+      outcome: result.outcome,
+      stopReason: result.stopReason,
       durationMs: result.durationMs,
       elapsedMs: result.durationMs,
       ...(result.usage ? { usage: result.usage } : {}),

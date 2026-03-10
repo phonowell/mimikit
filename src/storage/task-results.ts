@@ -16,7 +16,10 @@ import {
 import type {
   TaskCancelMeta,
   TaskResultHandoff,
+  TaskResultOutcome,
   TaskResultStatus,
+  TaskResultStopReason,
+  TaskStatus,
   TokenUsage,
   WorkerProvider,
 } from '../types/index.js'
@@ -26,6 +29,9 @@ export type TaskArchiveEntry = {
   focusId?: string
   title: string
   status: TaskResultStatus
+  taskStatus?: TaskStatus
+  outcome?: TaskResultOutcome
+  stopReason?: TaskResultStopReason
   prompt: string
   output: string
   createdAt: string
@@ -95,6 +101,9 @@ const buildArchiveContent = (entry: TaskArchiveEntry): string =>
       ['focus_id', entry.focusId ?? ''],
       ['title', entry.title],
       ['status', entry.status],
+      ['task_status', entry.taskStatus],
+      ['outcome', entry.outcome],
+      ['stop_reason', entry.stopReason],
       ['provider', entry.provider],
       ['created_at', entry.createdAt],
       ['completed_at', entry.completedAt],

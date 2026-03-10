@@ -83,6 +83,10 @@ type WorkerRunnerParams = {
   focusContext?: FocusContext
   compressedFocusContext?: ManagerFocusCompressedContext
   timeoutMs: number
+  budget?: {
+    maxDurationMs: number
+    maxRounds: number
+  }
   proxy?: string
   model?: string
   modelReasoningEffort?: ModelReasoningEffort
@@ -131,5 +135,6 @@ export const runWorker = async (
       ? { onPartialOutput: params.onPartialOutput }
       : {}),
     ...(params.abortSignal ? { abortSignal: params.abortSignal } : {}),
+    ...(params.budget ? { budget: params.budget } : {}),
   })
 }

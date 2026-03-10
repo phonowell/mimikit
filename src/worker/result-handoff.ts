@@ -54,6 +54,12 @@ const formatStatusSummary = (
       : `Task "${taskLabel}" completed.`
   }
 
+  if (status === 'partial') {
+    return detail
+      ? `Task "${taskLabel}" paused with partial result: ${detail}`
+      : `Task "${taskLabel}" paused with partial result.`
+  }
+
   if (status === 'failed') {
     return detail
       ? `Task "${taskLabel}" failed: ${detail}`
@@ -75,7 +81,9 @@ const buildRiskItems = (
     summary ??
     (status === 'failed'
       ? `Task "${taskLabel}" failed.`
-      : `Task "${taskLabel}" was canceled.`)
+      : status === 'partial'
+        ? `Task "${taskLabel}" paused with partial result.`
+        : `Task "${taskLabel}" was canceled.`)
   return [clipText(detail, MAX_SUMMARY_CHARS)]
 }
 

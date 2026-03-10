@@ -14,6 +14,7 @@ import {
 import { parseTokenUsageJson } from './token-usage.js'
 
 import type {
+  Task,
   TaskArchiveLookupMessage,
   TaskCancelMeta,
   TaskResult,
@@ -23,9 +24,39 @@ import type {
 } from '../types/index.js'
 
 const parseStatus = (value?: string): TaskResultStatus | null =>
-  value === 'succeeded' || value === 'failed' || value === 'canceled'
+  value === 'succeeded' ||
+  value === 'failed' ||
+  value === 'canceled' ||
+  value === 'partial'
     ? value
     : null
+
+const parseTaskStatus = (value?: string): Task['status'] | undefined =>
+  value === 'pending' ||
+  value === 'paused' ||
+  value === 'running' ||
+  value === 'succeeded' ||
+  value === 'failed' ||
+  value === 'canceled'
+    ? value
+    : undefined
+
+const parseOutcome = (value?: string): TaskResult['outcome'] | undefined =>
+  value === 'completed' || value === 'partial' || value === 'blocked'
+    ? value
+    : undefined
+
+const parseStopReason = (
+  value?: string,
+): TaskResult['stopReason'] | undefined =>
+  value === 'completed' ||
+  value === 'budget_exhausted' ||
+  value === 'guard_rejected' ||
+  value === 'input_required' ||
+  value === 'failed' ||
+  value === 'canceled'
+    ? value
+    : undefined
 
 const parseProvider = (value?: string): WorkerProvider | undefined =>
   value === 'codex' || value === 'opencode' ? value : undefined
@@ -169,12 +200,7 @@ const parseTaskEvidence = (
     typeof stateDeltaRaw.taskStatusTo === 'string'
       ? stateDeltaRaw.taskStatusTo
       : ''
-  const taskStatusTo =
-    taskStatusToRaw === 'succeeded' ||
-    taskStatusToRaw === 'failed' ||
-    taskStatusToRaw === 'canceled'
-      ? taskStatusToRaw
-      : undefined
+  const taskStatusTo = parseTaskStatus(taskStatusToRaw)
   if (!taskStatusTo) return undefined
   const acceptanceRaw = Array.isArray(data.acceptanceChecks)
     ? data.acceptanceChecks
@@ -202,15 +228,7 @@ const parseTaskEvidence = (
     typeof stateDeltaRaw.taskStatusFrom === 'string'
       ? stateDeltaRaw.taskStatusFrom
       : undefined
-  const taskStatusFrom =
-    statusFromRaw === 'pending' ||
-    statusFromRaw === 'paused' ||
-    statusFromRaw === 'running' ||
-    statusFromRaw === 'succeeded' ||
-    statusFromRaw === 'failed' ||
-    statusFromRaw === 'canceled'
-      ? statusFromRaw
-      : undefined
+  const taskStatusFrom = parseTaskStatus(statusFromRaw)
   const archivePathRaw =
     typeof stateDeltaRaw.archivePath === 'string'
       ? stateDeltaRaw.archivePath.trim()
@@ -243,6 +261,9 @@ const parseTaskResultArchive = (
   const durationMs = Number(parsed.header.duration_ms)
   const usage = parseTokenUsageJson(parsed.header.usage)
   const provider = parseProvider(parsed.header.provider)
+  const taskStatus = parseTaskStatus(parsed.header.task_status)
+  const outcome = parseOutcome(parsed.header.outcome)
+  const stopReason = parseStopReason(parsed.header.stop_reason)
   const cancelSource = parseCancelSource(parsed.header.cancel_source)
   const cancel: TaskCancelMeta | undefined = cancelSource
     ? {
@@ -262,6 +283,9 @@ const parseTaskResultArchive = (
     output: extractArchiveSection(parsed, '=== RESULT ==='),
     durationMs: Number.isFinite(durationMs) ? durationMs : 0,
     completedAt,
+    ...(taskStatus ? { taskStatus } : {}),
+    ...(outcome ? { outcome } : {}),
+    ...(stopReason ? { stopReason } : {}),
     ...(usage ? { usage } : {}),
     ...(provider ? { provider } : {}),
     ...(parsed.header.title ? { title: parsed.header.title } : {}),

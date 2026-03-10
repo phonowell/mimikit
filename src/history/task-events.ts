@@ -9,6 +9,7 @@ import type {
   Task,
   TaskCancelMeta,
   TaskResultStatus,
+  TaskStatus,
 } from '../types/index.js'
 
 type TaskHistoryEvent =
@@ -36,6 +37,9 @@ const buildTaskText = (
   event: TaskHistoryEvent,
   label: string,
   status?: TaskResultStatus,
+  taskStatus?: TaskStatus,
+  outcome?: 'completed' | 'partial' | 'blocked',
+  stopReason?: string,
   cancel?: TaskCancelMeta,
 ): string => {
   const taskLabel = formatTaskLabel(label)
@@ -49,7 +53,14 @@ const buildTaskText = (
   }
 
   if (status === 'succeeded') return `Task ${taskLabel} completed successfully.`
+  if (status === 'partial') {
+    return stopReason === 'budget_exhausted'
+      ? `Task ${taskLabel} paused after hitting the run budget and returned a partial result.`
+      : `Task ${taskLabel} paused with a partial result.`
+  }
   if (status === 'failed') return `Task ${taskLabel} failed.`
+  if (taskStatus === 'paused' && outcome === 'blocked')
+    return `Task ${taskLabel} paused.`
   if (status === 'canceled') return `Task ${taskLabel} was canceled.`
   return `Task ${taskLabel} completed.`
 }
@@ -74,6 +85,9 @@ const buildTaskPayload = (
   task: Task,
   label: string,
   status?: TaskResultStatus,
+  taskStatus?: TaskStatus,
+  outcome?: 'completed' | 'partial' | 'blocked',
+  stopReason?: string,
   cancel?: TaskCancelMeta,
   slotStatus?: WorkerSlotPayload,
 ): Record<string, unknown> => ({
@@ -85,6 +99,9 @@ const buildTaskPayload = (
   ...(event === 'paused' ? { status: 'paused' } : {}),
   ...(event === 'resumed' ? { status: 'pending' } : {}),
   ...(event === 'completed' ? { status: status ?? 'completed' } : {}),
+  ...(taskStatus ? { task_status: taskStatus } : {}),
+  ...(outcome ? { outcome } : {}),
+  ...(stopReason ? { stop_reason: stopReason } : {}),
   ...(event === 'canceled' ? { status: 'canceled' } : {}),
   ...(cancel?.source ? { cancel_source: cancel.source } : {}),
   ...(cancel?.reason ? { cancel_reason: cancel.reason } : {}),
@@ -97,6 +114,9 @@ export const appendTaskSystemMessage = (
   task: Task,
   options?: {
     status?: TaskResultStatus
+    taskStatus?: TaskStatus
+    outcome?: 'completed' | 'partial' | 'blocked'
+    stopReason?: string
     createdAt?: string
     cancel?: TaskCancelMeta
     slotStatus?: WorkerSlotPayload
@@ -104,13 +124,24 @@ export const appendTaskSystemMessage = (
 ): Promise<boolean> => {
   const label = resolveTaskLabel(task)
   const text = formatSystemEventText({
-    summary: buildTaskText(event, label, options?.status, options?.cancel),
+    summary: buildTaskText(
+      event,
+      label,
+      options?.status,
+      options?.taskStatus,
+      options?.outcome,
+      options?.stopReason,
+      options?.cancel,
+    ),
     event: TASK_EVENT_NAME[event],
     payload: buildTaskPayload(
       event,
       task,
       label,
       options?.status,
+      options?.taskStatus,
+      options?.outcome,
+      options?.stopReason,
       options?.cancel,
       options?.slotStatus,
     ),

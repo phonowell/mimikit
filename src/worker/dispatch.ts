@@ -10,12 +10,14 @@ import {
 import {
   markTaskCanceled,
   markTaskFailed,
+  markTaskPaused,
   markTaskRunning,
   markTaskSucceeded,
 } from '../orchestrator/core/task-lifecycle.js'
 import { isSameUsage } from '../shared/token-usage.js'
 
 import { clearTaskLiveOutput, setTaskLiveOutput } from './live-output.js'
+import { isWorkerBudgetExceededError } from './profiled-runner-loop.js'
 import { buildResult, finalizeResult } from './result-finalize.js'
 import { runTaskWithRetry } from './run-retry.js'
 
@@ -76,6 +78,36 @@ const runTask = async (
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error))
     if (task.status === 'paused') return
+    if (isWorkerBudgetExceededError(error)) {
+      const partialOutput = error.latestOutput.trim()
+      const result = buildResult(
+        task,
+        'partial',
+        partialOutput,
+        error.elapsedMs,
+        error.usage ?? task.usage,
+      )
+      result.handoff = {
+        ...(result.handoff ?? {}),
+        summary:
+          partialOutput.length > 0
+            ? `Task paused after hitting the run budget. ${partialOutput.split(/\r?\n/, 1)[0]?.trim() ?? ''}`.trim()
+            : 'Task paused after hitting the run budget.',
+        nextSteps: [
+          'Review the partial result and resume the task when you want to continue.',
+        ],
+        risks: [
+          'Task stopped at the run budget boundary and may need another resume cycle.',
+        ],
+      }
+      await finalizeResult(runtime, task, result, markTaskPaused, {
+        taskPatch: {
+          pausedAt: result.completedAt,
+        },
+        persistCompletionFields: false,
+      })
+      return
+    }
     if (task.status === 'canceled') {
       const { usage } = task
       const result = buildResult(

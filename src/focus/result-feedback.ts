@@ -47,6 +47,11 @@ const formatSummary = (task: Task, result: TaskResult): string => {
   const detail = pickSummaryLine(result.output)
   if (result.status === 'succeeded')
     return detail ?? `Task "${label}" completed.`
+  if (result.status === 'partial') {
+    return detail
+      ? `Task "${label}" paused with partial result: ${detail}`
+      : `Task "${label}" paused with partial result.`
+  }
   if (result.status === 'failed') {
     return detail
       ? `Task "${label}" failed: ${detail}`
@@ -113,6 +118,12 @@ const buildFollowupOpenItem = (task: Task, result: TaskResult): string => {
     const text = detail
       ? `Resolve failure in "${label}": ${detail}`
       : `Resolve failure in "${label}".`
+    return normalizeOpenItemText(text)
+  }
+  if (result.status === 'partial') {
+    const text = detail
+      ? `Resume "${label}" from partial result: ${detail}`
+      : `Resume "${label}" from partial result.`
     return normalizeOpenItemText(text)
   }
   const text = detail

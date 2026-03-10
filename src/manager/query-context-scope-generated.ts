@@ -1,10 +1,10 @@
 import { readFile, stat } from 'node:fs/promises'
-import { join } from 'node:path'
+import { basename, dirname, join, relative, resolve } from 'node:path'
 
 import { listFiles } from '../fs/paths.js'
 import { readErrorCode } from '../shared/error-code.js'
 
-import { isWildcardQuery, toDisplayPath } from './query-context-scope-shared.js'
+import { isWildcardQuery } from './query-context-scope-shared.js'
 import {
   scoreQueryCandidate,
   sortByScoreTimeId,
@@ -33,27 +33,72 @@ const isRecoverableFsError = (error: unknown): boolean => {
   )
 }
 
+type GeneratedRoot = { absoluteDir: string; displayRoot: string }
+
+const resolveGeneratedRoots = (workDir: string): GeneratedRoot[] => {
+  const resolvedWorkDir = resolve(workDir)
+  const stateDirMode = basename(resolvedWorkDir) === '.mimikit'
+  const roots: GeneratedRoot[] = [
+    {
+      absoluteDir: join(resolvedWorkDir, 'generated'),
+      displayRoot: stateDirMode ? '.mimikit/generated' : 'generated',
+    },
+  ]
+  if (stateDirMode) {
+    roots.push({
+      absoluteDir: join(dirname(resolvedWorkDir), 'generated'),
+      displayRoot: 'generated',
+    })
+  } else {
+    roots.push({
+      absoluteDir: join(resolvedWorkDir, '.mimikit', 'generated'),
+      displayRoot: '.mimikit/generated',
+    })
+  }
+  const seen = new Set<string>()
+  return roots.filter((item) => {
+    const key = `${item.absoluteDir}\n${item.displayRoot}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
 const collectGeneratedFiles = async (
   workDir: string,
   walkMaxFiles: number,
 ): Promise<Array<{ absolutePath: string; path: string }>> => {
-  const generatedDir = join(workDir, 'generated')
-  const stack = [generatedDir]
+  const stacks = resolveGeneratedRoots(workDir).map((root) => ({
+    root,
+    stack: [root.absoluteDir],
+  }))
   const files: Array<{ absolutePath: string; path: string }> = []
-  while (stack.length > 0 && files.length < walkMaxFiles) {
-    const currentDir = stack.pop()
-    if (!currentDir) break
+  const seen = new Set<string>()
+  while (stacks.length > 0 && files.length < walkMaxFiles) {
+    const current = stacks.at(-1)
+    if (!current) break
+    const currentDir = current.stack.pop()
+    if (!currentDir) {
+      stacks.pop()
+      continue
+    }
     const entries = await listFiles(currentDir)
     for (const entry of entries) {
       if (files.length >= walkMaxFiles) break
       const absolutePath = join(currentDir, entry.name)
       if (entry.isDirectory()) {
-        stack.push(absolutePath)
+        current.stack.push(absolutePath)
         continue
       }
       if (!entry.isFile()) continue
-      const path = toDisplayPath(absolutePath, workDir)
-      if (!path || path === '.' || path.startsWith('..')) continue
+      const relativePath = relative(current.root.absoluteDir, absolutePath)
+      if (!relativePath || relativePath.startsWith('..')) continue
+      const path = join(current.root.displayRoot, relativePath).replaceAll(
+        '\\',
+        '/',
+      )
+      if (seen.has(path)) continue
+      seen.add(path)
       files.push({ absolutePath, path })
     }
   }
