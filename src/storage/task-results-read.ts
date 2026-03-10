@@ -320,6 +320,16 @@ export type QueryTaskResultArchivesOptions = {
   maxFiles?: number
 }
 
+const compareTaskResultRecency = (
+  left: TaskResult,
+  right: TaskResult,
+): number => {
+  const timeDiff =
+    parseIsoToMs(right.completedAt) - parseIsoToMs(left.completedAt)
+  if (timeDiff !== 0) return timeDiff
+  return (right.archivePath ?? '').localeCompare(left.archivePath ?? '')
+}
+
 const sortedDirNames = (names: string[]): string[] =>
   [...names].sort().reverse()
 
@@ -352,6 +362,7 @@ export const readTaskResultsForTasks = async (
   if (idSet.size === 0) return []
 
   const maxFiles = options.maxFiles ?? Number.POSITIVE_INFINITY
+  const resultLimit = Math.min(idSet.size, maxFiles)
   const found = new Map<string, TaskResult>()
   const archiveRoot = join(stateDir, 'tasks')
   const allDateDirs = sortedDirNames(
@@ -361,24 +372,28 @@ export const readTaskResultsForTasks = async (
   )
 
   for (const dateDir of resolveDateDirs(ids, allDateDirs, options.dateHints)) {
-    if (found.size >= idSet.size) break
+    if (found.size >= resultLimit) break
     const entries = await listFiles(join(archiveRoot, dateDir))
     for (const entry of entries) {
       if (!entry.isFile()) continue
-      if (found.size >= idSet.size || found.size >= maxFiles) break
       const underscore = entry.name.indexOf('_')
       if (underscore <= 0) continue
       const taskId = entry.name.slice(0, underscore)
-      if (!idSet.has(taskId) || found.has(taskId)) continue
+      if (!idSet.has(taskId)) continue
       const result = await readTaskResultArchive(
         join(archiveRoot, dateDir, entry.name),
         taskId,
       )
-      if (result) found.set(taskId, result)
+      if (!result) continue
+      const existing = found.get(taskId)
+      if (!existing || compareTaskResultRecency(result, existing) < 0)
+        found.set(taskId, result)
     }
   }
 
   return Array.from(found.values())
+    .sort(compareTaskResultRecency)
+    .slice(0, resultLimit)
 }
 
 type SearchDoc = {

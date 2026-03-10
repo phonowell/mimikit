@@ -7,6 +7,7 @@ import { expect, test } from 'vitest'
 import {
   appendTaskResultArchive,
   readTaskResultArchive,
+  readTaskResultsForTasks,
 } from '../src/storage/task-results.js'
 
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-task-archive-'))
@@ -50,4 +51,24 @@ test('readTaskResultArchive restores provider and handoff payload', async () => 
   expect(parsed?.handoff?.evidence?.[0]).toMatchObject({
     type: 'task_archive',
   })
+})
+
+test('readTaskResultsForTasks keeps the newest archive for a task on same day', async () => {
+  const stateDir = await createTmpDir()
+  await appendTaskResultArchive(stateDir, {
+    ...archiveEntry,
+    output: 'old output',
+    completedAt: '2026-03-03T00:00:02.000Z',
+  })
+  await appendTaskResultArchive(stateDir, {
+    ...archiveEntry,
+    output: 'new output',
+    completedAt: '2026-03-03T00:05:00.000Z',
+  })
+
+  const [parsed] = await readTaskResultsForTasks(stateDir, [archiveEntry.taskId])
+
+  expect(parsed?.output).toBe('new output')
+  expect(parsed?.completedAt).toBe('2026-03-03T00:05:00.000Z')
+  expect(parsed?.archivePath?.endsWith('_01.md')).toBe(true)
 })
