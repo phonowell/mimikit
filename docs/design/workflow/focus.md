@@ -74,6 +74,7 @@
 - 启动系统消息（`startup`）写入 history，固定归属 `focus-global`。
 - manager 系统输入事件（如 `trigger_fire`、`worker_slot_freed`）默认归属 `focus-global`。
 - `manager_error` 不是 manager system input，而是写入 history 的系统消息；其 focus 走默认归属，不强制是 `focus-global`。
+- 这些 system event 的 `text` 仅保存摘要，具体类型与 payload 通过 `systemEventName/systemEventPayload` 绑定到同一条 history/input 记录。
 
 ## Focus 动作契约（Manager Action）
 

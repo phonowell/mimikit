@@ -83,6 +83,7 @@
 - 直接对用户有价值的 system 事件默认可见：`startup`、`task_created`、`task_paused`、`task_resumed`、`task_canceled`、`task_completed`、`manager_fallback_reply`、`user_choice`、`user_choice_skipped`。
 - 内部编排/调度/控制类事件默认不可见：`manager_round_limit`、`manager_error`、`action_feedback`、`trigger_fire`、`worker_slot_freed`、`plan_created`、`plan_updated`、`plan_deleted`。
 - 未识别 system_event 采用保守策略：`visibility=user` 保持可见，`visibility=all` 默认不展示给最终用户。
+- system 消息落盘/出站采用双轨字段：`text` 仅承载用户可读摘要，`systemEventName/systemEventPayload` 承载结构化事件元数据；WebUI/manager/log 不再从 `text` 反解析协议标签。
 
 `manager_fallback_reply` 事件补充：
 

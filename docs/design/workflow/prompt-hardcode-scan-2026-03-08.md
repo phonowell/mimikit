@@ -47,6 +47,7 @@
 - 分类：协议常量（可豁免）
 - 处理决策：豁免并添加注释 `prompt-guard-exempt`
 - 理由：协议标签必须在代码层生成；非 LLM prompt
+- 后续状态：已于 2026-03-10 移除；system event 改为 `text(summary) + systemEventName + systemEventPayload`
 
 7. `src/worker/profiled-runner-loop.ts:18`
 - 片段：`<M:skill_usage status="done">...` 完成标签模式

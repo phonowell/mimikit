@@ -1,4 +1,4 @@
-import { parseSystemEventText, type SystemEventName } from './system-event.js'
+import { resolveSystemEvent, type SystemEventName } from './system-event.js'
 
 import type { MessageVisibility } from '../types/index.js'
 
@@ -39,12 +39,19 @@ const classifySystemEventForUser = (
 export const isSystemMessageVisibleToUser = (params: {
   visibility: MessageVisibility
   text?: string
+  systemEventName?: string
+  systemEventPayload?: Record<string, unknown>
 }): boolean => {
   if (params.visibility === 'agent') return false
-  const parsed =
-    typeof params.text === 'string'
-      ? parseSystemEventText(params.text)
-      : { summary: '', name: undefined, payload: undefined }
+  const parsed = resolveSystemEvent({
+    text: params.text ?? '',
+    ...(params.systemEventName
+      ? { systemEventName: params.systemEventName }
+      : {}),
+    ...(params.systemEventPayload
+      ? { systemEventPayload: params.systemEventPayload }
+      : {}),
+  })
   const eventClass = classifySystemEventForUser(parsed.name)
   if (eventClass === 'user_value') return true
   if (eventClass === 'internal') return false

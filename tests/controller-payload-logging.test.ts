@@ -33,7 +33,11 @@ test('session ingress logger logs role/type/source/visibility/summary on node si
         id: 'sys-1',
         role: 'system',
         visibility: 'all',
-        text: 'Selected option "Report".\n\n<M:system_event name="user_choice" version="1">{"source":"timeout"}</M:system_event>',
+        text: 'Selected option "Report".',
+        systemEventName: 'user_choice',
+        systemEventPayload: {
+          source: 'timeout',
+        },
         createdAt: '2026-03-06T00:00:01.000Z',
         focusId: 'focus-global',
       },
@@ -141,6 +145,41 @@ test('session ingress logger falls back to platform when source is missing', () 
     source: 'telegram',
     visibility: 'all',
     summary: 'Ping from Telegram',
+  })
+})
+
+test('session ingress logger uses structured system metadata when text is already stripped', () => {
+  const { calls, sink } = createSpySink()
+  const logger = createSessionIngressLogger({ sink })
+  logger.logIncomingMessages({
+    mode: 'delta',
+    messages: [
+      {
+        id: 'sys-structured-1',
+        role: 'system',
+        visibility: 'all',
+        text: 'A worker slot was freed for new tasks.',
+        systemEventName: 'worker_slot_freed',
+        systemEventPayload: {
+          source: 'scheduler',
+          available_slots: 1,
+        },
+        createdAt: '2026-03-06T00:00:00.000Z',
+        focusId: 'focus-global',
+      },
+    ],
+  })
+
+  const messageLogs = calls.filter(
+    (call) => call.tag === '[http] session ingress message',
+  )
+  expect(messageLogs).toHaveLength(1)
+  expect(messageLogs[0]?.payload).toMatchObject({
+    role: 'system',
+    type: 'system_event:worker_slot_freed',
+    source: 'scheduler',
+    visibility: 'all',
+    summary: 'A worker slot was freed for new tasks.',
   })
 })
 

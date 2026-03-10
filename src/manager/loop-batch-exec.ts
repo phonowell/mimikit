@@ -1,6 +1,7 @@
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { resolveManagerPacketMode } from '../prompts/manager-context-packet.js'
+import { hasSystemEvent } from '../shared/system-event.js'
 import { mergeUsageAdditive } from '../shared/token-usage.js'
 import { appendManagerUsageLedgerEntry } from '../storage/usage-ledger.js'
 import { resolveSlotStatus } from '../worker/task-state-shared.js'
@@ -64,9 +65,6 @@ const buildManagerEnv = (
   }
   return env
 }
-
-const hasSystemEvent = (item: UserInput, name: string): boolean =>
-  item.role === 'system' && item.text.includes(`<M:system_event name="${name}"`)
 
 const resolveWakeProfile = (
   inputs: UserInput[],

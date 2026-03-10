@@ -95,21 +95,23 @@ export const appendStartupSystemMessage = async (
 ): Promise<void> => {
   const { appendHistory } = await import('../../history/store.js')
   const { bestEffort } = await import('../../log/safe.js')
-  const { formatSystemEventText } = await import('../../shared/system-event.js')
+  const { createSystemEventRecord } =
+    await import('../../shared/system-event.js')
   const startedAt = nowIso()
+  const eventRecord = createSystemEventRecord({
+    summary: 'Session started.',
+    event: 'startup',
+    payload: {
+      runtime_id: runtime.runtimeId,
+      started_at: startedAt,
+    },
+  })
   await bestEffort('appendHistory: startup_system_message', () =>
     appendHistory(runtime.paths.history, {
       id: `sys-startup-${newId()}`,
       role: 'system',
       visibility: 'user',
-      text: formatSystemEventText({
-        summary: 'Session started.',
-        event: 'startup',
-        payload: {
-          runtime_id: runtime.runtimeId,
-          started_at: startedAt,
-        },
-      }),
+      ...eventRecord,
       createdAt: startedAt,
       focusId: GLOBAL_FOCUS_ID,
     }),

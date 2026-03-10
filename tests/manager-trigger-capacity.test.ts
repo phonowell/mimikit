@@ -103,16 +103,18 @@ const countSystemEvent = async (
   runtime: RuntimeState,
   name: string,
 ): Promise<number> => {
-  const packets = await readJsonl<{ payload?: { role?: string; text?: string } }>(
+  const packets = await readJsonl<{
+    payload?: {
+      role?: string
+      systemEventName?: string
+    }
+  }>(
     runtime.paths.inputsPackets,
     { ensureFile: true },
   )
   return packets.filter((packet) => {
     const payload = packet.payload
-    return (
-      payload?.role === 'system' &&
-      payload.text?.includes(`<M:system_event name="${name}"`) === true
-    )
+    return payload?.role === 'system' && payload.systemEventName === name
   }).length
 }
 
@@ -259,9 +261,7 @@ test('trigger_fire system event uses global focus even when plan has local focus
   const triggered = await triggerOnWorkerSlotFreedPlans(runtime, Date.now())
   expect(triggered.triggeredCount).toBe(1)
   const triggerInput = runtime.session.inflightInputs.find(
-    (input) =>
-      input.role === 'system' &&
-      input.text.includes('<M:system_event name="trigger_fire"'),
+    (input) => input.role === 'system' && input.systemEventName === 'trigger_fire',
   )
   expect(triggerInput?.focusId).toBe(GLOBAL_FOCUS_ID)
 })

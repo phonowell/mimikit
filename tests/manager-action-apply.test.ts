@@ -8,7 +8,6 @@ import {
   buildRunTaskConfirmationId,
   RUN_TASK_CONFIRM_OPTION_ID,
 } from '../src/manager/run-task-confirmation.js'
-import { parseSystemEventText } from '../src/shared/system-event.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
@@ -92,13 +91,10 @@ test('enqueue_task task_created system event includes worker slot status payload
 
   const history = await readHistory(runtime.paths.history)
   const createdEvent = history.find(
-    (item) =>
-      item.role === 'system' && item.text.includes('name="task_created"'),
+    (item) => item.role === 'system' && item.systemEventName === 'task_created',
   )
   expect(createdEvent).toBeTruthy()
-  const parsed = parseSystemEventText(createdEvent?.text ?? '')
-  expect(parsed.name).toBe('task_created')
-  expect(parsed.payload?.slots).toEqual({
+  expect(createdEvent?.systemEventPayload?.slots).toEqual({
     max_slots: 3,
     occupied_slots: 0,
     available_slots: 3,
@@ -324,7 +320,12 @@ test('enqueue_task dispatches high-cost task after explicit confirmation event',
     visibility: 'all',
     focusId: GLOBAL_FOCUS_ID,
     createdAt: '2026-03-08T00:00:00.000Z',
-    text: `<M:system_event name="user_choice" version="1">{"choice_id":"${choiceId}","selected_option_id":"${RUN_TASK_CONFIRM_OPTION_ID}"}</M:system_event>`,
+    text: 'Selected option "Continue" for this task.',
+    systemEventName: 'user_choice',
+    systemEventPayload: {
+      choice_id: choiceId,
+      selected_option_id: RUN_TASK_CONFIRM_OPTION_ID,
+    },
   })
 
   await applyTaskActions(runtime, [
@@ -694,11 +695,9 @@ test('remember_memory writes MEMORY.md immediately and emits system event payloa
   const event = history.find(
     (item) =>
       item.role === 'system' &&
-      item.text.includes('name="memory_remembered"'),
+      item.systemEventName === 'memory_remembered',
   )
   expect(event).toBeTruthy()
-  const parsed = parseSystemEventText(event?.text ?? '')
-  expect(parsed.name).toBe('memory_remembered')
-  expect(parsed.payload?.operation).toBe('created')
-  expect(typeof parsed.payload?.entry_id).toBe('string')
+  expect(event?.systemEventPayload?.operation).toBe('created')
+  expect(typeof event?.systemEventPayload?.entry_id).toBe('string')
 })

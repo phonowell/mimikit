@@ -70,6 +70,7 @@
 
 - `worker_slot_freed` 不依赖独立轮询器；它由 worker 生命周期信号驱动 manager 重新评估可用槽位。
 - `cron` / `scheduled_at` / `choice timeout` 仍属于时间触发，但只在最近 deadline 到达时唤醒，不再以 1 秒间隔扫全局状态。
+- system event 在 `inputs/history` 中以 `text(summary) + systemEventName + systemEventPayload` 持久化；控制面判断不再依赖 `text` 中的协议标签。
 
 ## 一致性与恢复
 

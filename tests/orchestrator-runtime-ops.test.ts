@@ -64,11 +64,13 @@ test('appendUserInput cancels pending user choice when user sends a new message'
     role: 'system',
     visibility: 'all',
     focusId: 'focus-choice',
+    systemEventName: 'user_choice_skipped',
+    systemEventPayload: {
+      choice_id: 'choice-delivery',
+    },
   })
-  if (second?.role === 'system') {
-    expect(second.text).toContain('user_choice_skipped')
-    expect(second.text).toContain('"choice_id":"choice-delivery"')
-  }
+  if (second?.role !== 'system') return
+  expect(second.text).toContain('Choose output format')
 })
 
 test('appendUserInput falls back to inbox focus when only global focus exists', async () => {

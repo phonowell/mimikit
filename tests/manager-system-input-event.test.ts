@@ -2,9 +2,11 @@ import { expect, test } from 'vitest'
 
 import { GLOBAL_FOCUS_ID } from '../src/focus/index.js'
 import { publishManagerSystemEventInput } from '../src/manager/system-input-event.js'
+import { readJsonl } from '../src/storage/jsonl.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
+import type { JsonPacket, UserInput } from '../src/types/index.js'
 
 const createRuntime = async (): Promise<RuntimeState> => {
   const runtime = await createTestRuntimeState()
@@ -39,5 +41,25 @@ test('publishManagerSystemEventInput defaults to global focus when focusId is om
   })
 
   expect(runtime.session.inflightInputs).toHaveLength(1)
-  expect(runtime.session.inflightInputs[0]?.focusId).toBe(GLOBAL_FOCUS_ID)
+  expect(runtime.session.inflightInputs[0]).toMatchObject({
+    focusId: GLOBAL_FOCUS_ID,
+    systemEventName: 'worker_slot_freed',
+    systemEventPayload: {
+      max_slots: 2,
+      occupied_slots: 0,
+      available_slots: 2,
+    },
+  })
+  const packets = await readJsonl<JsonPacket<UserInput>>(runtime.paths.inputsPackets, {
+    ensureFile: true,
+  })
+  expect(packets[0]?.payload).toMatchObject({
+    focusId: GLOBAL_FOCUS_ID,
+    systemEventName: 'worker_slot_freed',
+    systemEventPayload: {
+      max_slots: 2,
+      occupied_slots: 0,
+      available_slots: 2,
+    },
+  })
 })

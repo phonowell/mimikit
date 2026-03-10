@@ -3,7 +3,7 @@ import {
   buildPlanProgressPayload,
   buildPlanTriggerPayload,
 } from '../shared/plan-payload.js'
-import { formatSystemEventText } from '../shared/system-event.js'
+import { createSystemEventRecord } from '../shared/system-event.js'
 import { newId, nowIso } from '../shared/utils.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
@@ -18,29 +18,30 @@ export const appendPlanSystemMessage = async (
   plan: TaskPlan,
 ): Promise<void> => {
   const label = resolvePlanLabel(plan)
+  const eventRecord = createSystemEventRecord({
+    summary:
+      event === 'plan_created'
+        ? `Plan changed: "${label}" (created).`
+        : event === 'plan_updated'
+          ? `Plan changed: "${label}" (updated).`
+          : `Plan changed: "${label}" (deleted).`,
+    event,
+    payload: {
+      plan_id: plan.id,
+      title: label,
+      status: plan.status,
+      priority: plan.priority,
+      source: plan.source,
+      run_count: plan.runCount,
+      ...buildPlanProgressPayload(plan),
+      ...buildPlanTriggerPayload(plan.trigger),
+    },
+  })
   await appendHistory(runtime.paths.history, {
     id: `sys-plan-${newId()}`,
     role: 'system',
     visibility: 'user',
-    text: formatSystemEventText({
-      summary:
-        event === 'plan_created'
-          ? `Plan changed: "${label}" (created).`
-          : event === 'plan_updated'
-            ? `Plan changed: "${label}" (updated).`
-            : `Plan changed: "${label}" (deleted).`,
-      event,
-      payload: {
-        plan_id: plan.id,
-        title: label,
-        status: plan.status,
-        priority: plan.priority,
-        source: plan.source,
-        run_count: plan.runCount,
-        ...buildPlanProgressPayload(plan),
-        ...buildPlanTriggerPayload(plan.trigger),
-      },
-    }),
+    ...eventRecord,
     createdAt: nowIso(),
     focusId: plan.focusId,
   })

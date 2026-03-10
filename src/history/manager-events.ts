@@ -1,6 +1,6 @@
 import { GLOBAL_FOCUS_ID } from '../focus/index.js'
 import { loadPromptTemplate } from '../prompts/prompt-loader.js'
-import { formatSystemEventText } from '../shared/system-event.js'
+import { createSystemEventRecord } from '../shared/system-event.js'
 import { nowIso } from '../shared/utils.js'
 
 import { appendHistory } from './store.js'
@@ -27,28 +27,29 @@ export const appendManagerFallbackReply = async (
   if (!fallback)
     throw new Error('missing_prompt_template:manager/system-fallback-reply.md')
   const createdAt = nowIso()
+  const eventRecord = createSystemEventRecord({
+    summary: fallback,
+    event: 'manager_fallback_reply',
+    payload: {
+      reply: fallback,
+      ...(fallbackMeta?.sourceInputId
+        ? { source_input_id: fallbackMeta.sourceInputId }
+        : {}),
+      ...(fallbackMeta
+        ? {
+            auto_retry_attempts: fallbackMeta.autoRetryAttempts,
+            auto_retry_max_attempts: fallbackMeta.autoRetryMaxAttempts,
+            auto_retry_state: fallbackMeta.autoRetryState,
+            auto_retry_strategy: fallbackMeta.autoRetryStrategy,
+          }
+        : {}),
+    },
+  })
   await appendHistory(paths.history, {
     id: `sys-${Date.now()}`,
     role: 'system',
     visibility: 'user',
-    text: formatSystemEventText({
-      summary: fallback,
-      event: 'manager_fallback_reply',
-      payload: {
-        reply: fallback,
-        ...(fallbackMeta?.sourceInputId
-          ? { source_input_id: fallbackMeta.sourceInputId }
-          : {}),
-        ...(fallbackMeta
-          ? {
-              auto_retry_attempts: fallbackMeta.autoRetryAttempts,
-              auto_retry_max_attempts: fallbackMeta.autoRetryMaxAttempts,
-              auto_retry_state: fallbackMeta.autoRetryState,
-              auto_retry_strategy: fallbackMeta.autoRetryStrategy,
-            }
-          : {}),
-      },
-    }),
+    ...eventRecord,
     createdAt,
     focusId,
   })
@@ -65,15 +66,16 @@ export const appendManagerErrorSystemMessage = async (
 ): Promise<void> => {
   const detail = compactManagerErrorText(error)
   const createdAt = nowIso()
+  const eventRecord = createSystemEventRecord({
+    summary: detail ? `Manager failed: ${detail}` : 'Manager failed.',
+    event: 'manager_error',
+    payload: detail ? { error: detail } : {},
+  })
   await appendHistory(paths.history, {
     id: `sys-manager-error-${Date.now()}`,
     role: 'system',
     visibility: 'all',
-    text: formatSystemEventText({
-      summary: detail ? `Manager failed: ${detail}` : 'Manager failed.',
-      event: 'manager_error',
-      payload: detail ? { error: detail } : {},
-    }),
+    ...eventRecord,
     createdAt,
     focusId,
   })
@@ -85,15 +87,16 @@ export const appendManagerCorrectionLimitSystemMessage = async (
   focusId: FocusId = GLOBAL_FOCUS_ID,
 ): Promise<void> => {
   const createdAt = nowIso()
+  const eventRecord = createSystemEventRecord({
+    summary: `Manager reached correction round limit (${maxRounds}). Returned best-effort answer without further actions.`,
+    event: 'manager_round_limit',
+    payload: { max_rounds: maxRounds },
+  })
   await appendHistory(paths.history, {
     id: `sys-manager-round-limit-${Date.now()}`,
     role: 'system',
     visibility: 'all',
-    text: formatSystemEventText({
-      summary: `Manager reached correction round limit (${maxRounds}). Returned best-effort answer without further actions.`,
-      event: 'manager_round_limit',
-      payload: { max_rounds: maxRounds },
-    }),
+    ...eventRecord,
     createdAt,
     focusId,
   })
@@ -137,12 +140,12 @@ const formatActionFeedbackSummary = (
   return [header, ...details].join('\n')
 }
 
-const formatActionFeedbackSystemText = (
+const createActionFeedbackEventRecord = (
   feedback: ManagerActionFeedback[],
-): string => {
+): ReturnType<typeof createSystemEventRecord> | null => {
   const entries = toActionFeedbackEntries(feedback)
-  if (entries.length === 0) return ''
-  return formatSystemEventText({
+  if (entries.length === 0) return null
+  return createSystemEventRecord({
     summary: formatActionFeedbackSummary(entries),
     event: 'action_feedback',
     payload: {
@@ -157,13 +160,13 @@ export const appendActionFeedbackSystemMessage = (
   feedback: ManagerActionFeedback[],
   focusId: FocusId = GLOBAL_FOCUS_ID,
 ): Promise<boolean> => {
-  const text = formatActionFeedbackSystemText(feedback)
-  if (!text) return Promise.resolve(false)
+  const eventRecord = createActionFeedbackEventRecord(feedback)
+  if (!eventRecord) return Promise.resolve(false)
   return appendHistory(historyPath, {
     id: `sys-action-feedback-${Date.now()}`,
     role: 'system',
     visibility: 'all',
-    text,
+    ...eventRecord,
     createdAt: nowIso(),
     focusId,
   }).then(() => true)

@@ -1,5 +1,5 @@
 import { appendLog } from '../log/append.js'
-import { logSafeError } from '../log/safe.js'
+import { resolveSystemEvent } from '../shared/system-event.js'
 
 import { runQueryContextTool } from './query-context-tool.js'
 import { runReadFileTool } from './read-file-tool.js'
@@ -24,33 +24,17 @@ export {
   type ReadFileRequest,
 } from './read-file-tool.js'
 
-const PLAN_TRIGGER_EVENT_RE =
-  /<M:system_event[^>]*name="trigger_fire"[^>]*>([\s\S]*?)<\/M:system_event>/g
-
 export const collectTriggeredPlanIds = (inputs: UserInput[]): Set<string> => {
   const ids = new Set<string>()
   for (const input of inputs) {
     if (input.role !== 'system') continue
-    if (!input.text.includes('name="trigger_fire"')) continue
-    PLAN_TRIGGER_EVENT_RE.lastIndex = 0
-    let match = PLAN_TRIGGER_EVENT_RE.exec(input.text)
-    while (match) {
-      const raw = match[1]?.trim()
-      if (raw) {
-        try {
-          const payload = JSON.parse(raw) as { plan_id?: unknown }
-          const id =
-            typeof payload.plan_id === 'string' ? payload.plan_id.trim() : ''
-          if (id) ids.add(id)
-        } catch (error) {
-          const rawPreview = raw.length > 120 ? `${raw.slice(0, 120)}...` : raw
-          void logSafeError('collectTriggeredPlanIds:parse_payload', error, {
-            meta: { rawPreview },
-          })
-        }
-      }
-      match = PLAN_TRIGGER_EVENT_RE.exec(input.text)
-    }
+    const event = resolveSystemEvent(input)
+    if (event.name !== 'trigger_fire') continue
+    const id =
+      typeof event.payload?.plan_id === 'string'
+        ? event.payload.plan_id.trim()
+        : ''
+    if (id) ids.add(id)
   }
   return ids
 }

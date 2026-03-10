@@ -7,6 +7,8 @@ type VisibilityScopedMessage =
       role: 'system'
       visibility: MessageVisibility
       text?: string
+      systemEventName?: string
+      systemEventPayload?: Record<string, unknown>
     }
   | {
       role: Exclude<Role, 'system'>
@@ -24,6 +26,12 @@ export const isVisibleToUser = (value: VisibilityScopedMessage): boolean => {
   return isSystemMessageVisibleToUser({
     visibility: value.visibility,
     ...(typeof value.text === 'string' ? { text: value.text } : {}),
+    ...(value.systemEventName
+      ? { systemEventName: value.systemEventName }
+      : {}),
+    ...(value.systemEventPayload
+      ? { systemEventPayload: value.systemEventPayload }
+      : {}),
   })
 }
 

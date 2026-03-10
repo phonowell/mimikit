@@ -1,5 +1,5 @@
 import { safe } from '../log/safe.js'
-import { formatSystemEventText } from '../shared/system-event.js'
+import { createSystemEventRecord } from '../shared/system-event.js'
 import { resolveTaskLabel } from '../shared/task-state.js'
 import { newId, nowIso } from '../shared/utils.js'
 
@@ -118,7 +118,7 @@ export const appendTaskSystemMessage = (
   },
 ): Promise<boolean> => {
   const label = resolveTaskLabel(task)
-  const text = formatSystemEventText({
+  const eventRecord = createSystemEventRecord({
     summary: buildTaskText(
       event,
       label,
@@ -145,7 +145,7 @@ export const appendTaskSystemMessage = (
     id: `sys-task-${newId()}`,
     role: 'system',
     visibility: 'user',
-    text,
+    ...eventRecord,
     createdAt: options?.createdAt ?? nowIso(),
     focusId: task.focusId,
   }

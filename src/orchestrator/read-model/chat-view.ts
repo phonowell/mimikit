@@ -1,6 +1,6 @@
 import { parseActions } from '../../actions/protocol/parse.js'
 import { isVisibleToUser } from '../../shared/message-visibility.js'
-import { parseSystemEventText } from '../../shared/system-event.js'
+import { resolveSystemEvent } from '../../shared/system-event.js'
 
 import type { HistoryMessage, UserInput } from '../../types/index.js'
 
@@ -8,10 +8,14 @@ export type ChatMessage = HistoryMessage
 
 export type ChatMessagesMode = 'full' | 'delta' | 'reset'
 
-const toUserVisibleSystemMessage = (text: string) => {
-  const visibleText = parseActions(text).text
+const toUserVisibleSystemMessage = (message: {
+  text: string
+  systemEventName?: string
+  systemEventPayload?: Record<string, unknown>
+}) => {
+  const visibleText = parseActions(message.text).text
   if (!visibleText.trim()) return { text: '' }
-  const parsedEvent = parseSystemEventText(text)
+  const parsedEvent = resolveSystemEvent(message)
   return {
     text: visibleText,
     ...(parsedEvent.name ? { systemEventName: parsedEvent.name } : {}),
@@ -21,7 +25,7 @@ const toUserVisibleSystemMessage = (text: string) => {
 
 const toInflightChatMessage = (input: UserInput): ChatMessage => {
   if (input.role === 'system') {
-    const visible = toUserVisibleSystemMessage(input.text)
+    const visible = toUserVisibleSystemMessage(input)
     return {
       id: input.id,
       role: input.role,
@@ -117,7 +121,7 @@ const mergeChatMessagesWithoutLimit = (params: {
       merged.push(message)
       continue
     }
-    const visible = toUserVisibleSystemMessage(message.text)
+    const visible = toUserVisibleSystemMessage(message)
     if (!visible.text) continue
     merged.push({
       ...message,

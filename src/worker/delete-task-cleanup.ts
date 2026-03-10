@@ -5,7 +5,7 @@ import { checkExistingPathBoundary } from '../fs/path-safety.js'
 import { listFiles } from '../fs/paths.js'
 import { filterHistory } from '../history/store.js'
 import { readErrorCode } from '../shared/error-code.js'
-import { parseSystemEventText } from '../shared/system-event.js'
+import { resolveSystemEvent } from '../shared/system-event.js'
 
 type RemoveFileWithinRootResult = 'deleted' | 'missing' | 'outside' | 'skipped'
 
@@ -69,7 +69,7 @@ export const removeTaskSystemHistoryEntries = async (
     historyPath,
     (item) => {
       if (item.role !== 'system') return true
-      const parsed = parseSystemEventText(item.text)
+      const parsed = resolveSystemEvent(item)
       const eventTaskId =
         typeof parsed.payload?.task_id === 'string'
           ? parsed.payload.task_id.trim()

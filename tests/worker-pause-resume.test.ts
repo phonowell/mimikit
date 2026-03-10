@@ -11,7 +11,6 @@ import {
   resolvePendingUserChoiceTimeout,
   selectPendingUserChoiceFromUser,
 } from '../src/orchestrator/core/user-choice.js'
-import { parseSystemEventText } from '../src/shared/system-event.js'
 import type { Task } from '../src/types/index.js'
 import { pauseTask } from '../src/worker/pause-task.js'
 import {
@@ -83,7 +82,14 @@ test('pauseTask marks pending task as paused and writes task_paused event', asyn
   expect(runtime.ui.wakeVersion).toBe(1)
   const history = await readHistory(runtime.paths.history)
   const event = history
-    .map((item) => parseSystemEventText(item.text))
+    .map((item) =>
+      item.role === 'system'
+        ? {
+            name: item.systemEventName,
+            payload: item.systemEventPayload,
+          }
+        : null,
+    )
     .find((item) => item.name === 'task_paused')
   expect(event?.payload?.task_id).toBe(task.id)
 })
@@ -150,7 +156,14 @@ test('resumeTask re-queues paused task and writes task_resumed event', async () 
   expect(queueAdd).toHaveBeenCalledTimes(1)
   const history = await readHistory(runtime.paths.history)
   const event = history
-    .map((item) => parseSystemEventText(item.text))
+    .map((item) =>
+      item.role === 'system'
+        ? {
+            name: item.systemEventName,
+            payload: item.systemEventPayload,
+          }
+        : null,
+    )
     .find((item) => item.name === 'task_resumed')
   expect(event?.payload?.task_id).toBe(task.id)
 })
@@ -226,9 +239,8 @@ test('budget pause choice can resume paused partial task directly', async () => 
   )
   expect(systemInput?.role).toBe('system')
   if (systemInput?.role !== 'system') return
-  const event = parseSystemEventText(systemInput.text)
-  expect(event.name).toBe('user_choice')
-  expect(event.payload).toMatchObject({
+  expect(systemInput.systemEventName).toBe('user_choice')
+  expect(systemInput.systemEventPayload).toMatchObject({
     choice_id: choice.id,
     choice_effect_type: 'resume_task',
     choice_effect_task_id: task.id,

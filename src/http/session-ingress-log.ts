@@ -1,4 +1,4 @@
-import { parseSystemEventText } from '../shared/system-event.js'
+import { resolveSystemEvent } from '../shared/system-event.js'
 
 import type { ChatMessage } from '../orchestrator/read-model/chat-view.js'
 import type { MessageVisibility } from '../types/index.js'
@@ -101,7 +101,15 @@ const buildMessageLogEntry = (message: ChatMessage): IngressLogEntry => {
   const role = compactText(message.role).toLowerCase() || 'unknown'
   const parsedSystemEvent =
     message.role === 'system'
-      ? parseSystemEventText(compactText(message.text))
+      ? resolveSystemEvent({
+          text: message.text,
+          ...(message.systemEventName
+            ? { systemEventName: message.systemEventName }
+            : {}),
+          ...(message.systemEventPayload
+            ? { systemEventPayload: message.systemEventPayload }
+            : {}),
+        })
       : undefined
   const summary =
     message.role === 'system'

@@ -1,5 +1,8 @@
 import { safe } from '../log/safe.js'
-import { formatSystemEventText } from '../shared/system-event.js'
+import {
+  createSystemEventRecord,
+  type SystemEventRecord,
+} from '../shared/system-event.js'
 import { newId, nowIso } from '../shared/utils.js'
 
 import { appendHistory } from './store.js'
@@ -18,7 +21,7 @@ export type MemoryRememberedEventPayload = {
 const appendMemoryEvent = (params: {
   historyPath: string
   focusId: FocusId
-  text: string
+  eventRecord: SystemEventRecord
   entryId: string
   logContext: string
 }): Promise<boolean> => {
@@ -26,7 +29,7 @@ const appendMemoryEvent = (params: {
     id: `sys-memory-${newId()}`,
     role: 'system',
     visibility: 'agent',
-    text: params.text,
+    ...params.eventRecord,
     createdAt: nowIso(),
     focusId: params.focusId,
   }
@@ -56,7 +59,7 @@ export const appendMemoryRememberedSystemMessage = (
     focusId,
     entryId: payload.entryId,
     logContext: 'appendHistory: memory_remembered_system_message',
-    text: formatSystemEventText({
+    eventRecord: createSystemEventRecord({
       summary: rememberedSummary(payload),
       event: 'memory_remembered',
       payload: {

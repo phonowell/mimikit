@@ -2,7 +2,7 @@ import { GLOBAL_FOCUS_ID } from '../focus/index.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import {
-  formatSystemEventText,
+  createSystemEventRecord,
   type SystemEventName,
 } from '../shared/system-event.js'
 import { newId } from '../shared/utils.js'
@@ -28,15 +28,16 @@ export const publishManagerSystemEventInput = async (params: {
   focusId?: FocusId
 }): Promise<string> => {
   const focusId = params.focusId ?? GLOBAL_FOCUS_ID
+  const eventRecord = createSystemEventRecord({
+    summary: params.summary,
+    event: params.event,
+    payload: params.payload,
+  })
   const input = {
     id: `input-${newId()}`,
     role: 'system' as const,
     visibility: params.visibility,
-    text: formatSystemEventText({
-      summary: params.summary,
-      event: params.event,
-      payload: params.payload,
-    }),
+    ...eventRecord,
     createdAt: params.createdAt,
     focusId,
   }

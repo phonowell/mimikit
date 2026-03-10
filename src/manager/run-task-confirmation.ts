@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 
-import { parseSystemEventText } from '../shared/system-event.js'
+import { resolveSystemEvent } from '../shared/system-event.js'
 
 import type { UserInput } from '../types/index.js'
 
@@ -148,7 +148,7 @@ export const collectConfirmedRunTaskChoiceIds = (
   const confirmed = new Set<string>()
   for (const input of inputs) {
     if (input.role !== 'system') continue
-    const parsed = parseSystemEventText(input.text)
+    const parsed = resolveSystemEvent(input)
     if (parsed.name !== 'user_choice') continue
     const choiceId = toStringField(parsed.payload?.choice_id)
     const selectedOptionId = toStringField(parsed.payload?.selected_option_id)

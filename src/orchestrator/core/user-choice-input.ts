@@ -1,5 +1,8 @@
 import { appendLog } from '../../log/append.js'
-import { formatSystemEventText } from '../../shared/system-event.js'
+import {
+  createSystemEventRecord,
+  type SystemEventName,
+} from '../../shared/system-event.js'
 import { newId } from '../../shared/utils.js'
 import { publishUserInput } from '../../streams/queues.js'
 
@@ -29,14 +32,21 @@ const publishSystemInput = async (params: {
   runtime: RuntimeState
   focusId: string
   createdAt: string
-  text: string
+  summary: string
+  event: SystemEventName
+  payload: Record<string, unknown>
   buildLogEntry: (inputId: string) => Record<string, unknown>
 }): Promise<string> => {
+  const eventRecord = createSystemEventRecord({
+    summary: params.summary,
+    event: params.event,
+    payload: params.payload,
+  })
   const input = {
     id: `input-${newId()}`,
     role: 'system' as const,
     visibility: 'all' as const,
-    text: params.text,
+    ...eventRecord,
     createdAt: params.createdAt,
     focusId: params.focusId,
   }
@@ -61,35 +71,33 @@ export const publishChoiceSelectionInput = (params: {
     runtime: params.runtime,
     focusId: params.choice.focusId,
     createdAt: params.selectedAt,
-    text: formatSystemEventText({
-      summary:
-        params.source === 'timeout'
-          ? resolveTimeoutSummary(params.choice, params.option)
-          : resolveUserSummary(params.choice, params.option),
-      event: 'user_choice',
-      payload: {
-        choice_id: params.choice.id,
-        question: params.choice.question,
-        selected_option_id: params.option.id,
-        selected_option_label: params.option.label,
-        selected_option_reason: params.option.reason,
-        default_option_id: params.choice.defaultOptionId,
-        ...(params.choice.effect
-          ? {
-              choice_effect_type: params.choice.effect.type,
-              choice_effect_task_id: params.choice.effect.taskId,
-            }
-          : {}),
-        ...(params.effectResult
-          ? {
-              choice_effect_ok: params.effectResult.ok,
-              choice_effect_status: params.effectResult.status,
-            }
-          : {}),
-        source: params.source,
-        selected_at: params.selectedAt,
-      },
-    }),
+    summary:
+      params.source === 'timeout'
+        ? resolveTimeoutSummary(params.choice, params.option)
+        : resolveUserSummary(params.choice, params.option),
+    event: 'user_choice',
+    payload: {
+      choice_id: params.choice.id,
+      question: params.choice.question,
+      selected_option_id: params.option.id,
+      selected_option_label: params.option.label,
+      selected_option_reason: params.option.reason,
+      default_option_id: params.choice.defaultOptionId,
+      ...(params.choice.effect
+        ? {
+            choice_effect_type: params.choice.effect.type,
+            choice_effect_task_id: params.choice.effect.taskId,
+          }
+        : {}),
+      ...(params.effectResult
+        ? {
+            choice_effect_ok: params.effectResult.ok,
+            choice_effect_status: params.effectResult.status,
+          }
+        : {}),
+      source: params.source,
+      selected_at: params.selectedAt,
+    },
     buildLogEntry: (inputId) => ({
       event:
         params.source === 'timeout'
@@ -124,18 +132,16 @@ export const publishChoiceSkippedInput = (params: {
     runtime: params.runtime,
     focusId: params.choice.focusId,
     createdAt: params.canceledAt,
-    text: formatSystemEventText({
-      summary: resolveSkipSummary(params.choice),
-      event: 'user_choice_skipped',
-      payload: {
-        choice_id: params.choice.id,
-        question: params.choice.question,
-        default_option_id: params.choice.defaultOptionId,
-        source: 'user_input',
-        trigger_input_id: params.triggerInputId,
-        canceled_at: params.canceledAt,
-      },
-    }),
+    summary: resolveSkipSummary(params.choice),
+    event: 'user_choice_skipped',
+    payload: {
+      choice_id: params.choice.id,
+      question: params.choice.question,
+      default_option_id: params.choice.defaultOptionId,
+      source: 'user_input',
+      trigger_input_id: params.triggerInputId,
+      canceled_at: params.canceledAt,
+    },
     buildLogEntry: (inputId) => ({
       event: 'user_choice_skipped',
       inputId,

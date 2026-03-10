@@ -8,7 +8,6 @@ import { GLOBAL_FOCUS_ID } from '../src/focus/index.js'
 import { readHistory } from '../src/history/store.js'
 import { recoverManagerBatchFailure } from '../src/manager/loop-batch-flow.js'
 import { createTask } from '../src/orchestrator/core/task-lifecycle.js'
-import { parseSystemEventText } from '../src/shared/system-event.js'
 import {
   consumeWorkerResults,
   publishUserInput,
@@ -135,15 +134,14 @@ test('recoverManagerBatchFailure keeps task results pending for replay after man
 
   const fallbackMessage = history.find((item) => {
     if (item.role !== 'system') return false
-    return parseSystemEventText(item.text).name === 'manager_fallback_reply'
+    return item.systemEventName === 'manager_fallback_reply'
   })
   expect(fallbackMessage).toBeDefined()
-  const fallbackEvent = parseSystemEventText(fallbackMessage?.text ?? '')
-  expect(fallbackEvent.payload?.source_input_id).toBe(input.id)
+  expect(fallbackMessage?.systemEventPayload?.source_input_id).toBe(input.id)
 
   const managerErrorMessage = history.find((item) => {
     if (item.role !== 'system') return false
-    return parseSystemEventText(item.text).name === 'manager_error'
+    return item.systemEventName === 'manager_error'
   })
   expect(managerErrorMessage).toBeDefined()
 })
@@ -186,10 +184,9 @@ test('recoverManagerBatchFailure dispatches fallback reply to telegram source in
   const history = await readHistory(runtime.paths.history)
   const fallbackMessage = history.find((item) => {
     if (item.role !== 'system') return false
-    return parseSystemEventText(item.text).name === 'manager_fallback_reply'
+    return item.systemEventName === 'manager_fallback_reply'
   })
-  const fallbackReply = parseSystemEventText(fallbackMessage?.text ?? '').payload
-    ?.reply
+  const fallbackReply = fallbackMessage?.systemEventPayload?.reply
 
   expect(fallbackReply).toBeTypeOf('string')
   expect(mockedSendTelegramTextMessage).toHaveBeenCalledWith({
