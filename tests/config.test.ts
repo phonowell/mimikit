@@ -58,3 +58,30 @@ test('defaultConfig keeps worker budget overrides from user config', () => {
     maxRounds: 7,
   })
 })
+
+test('defaultConfig returns independent nested defaults per call', () => {
+  const first = defaultConfig({ workDir: '.mimikit-a' })
+  first.worker.retry.maxAttempts = 9
+  first.worker.retry.backoffMs = 1
+  first.manager.promptSections.tasksMaxBytes = 123
+  first.manager.taskCreate.debounceMs = 99
+  first.manager.taskWindow.maxCount = 1
+  first.manager.planWindow.minCount = 99
+
+  const second = defaultConfig({ workDir: '.mimikit-b' })
+
+  expect(second.worker.retry).toEqual({
+    maxAttempts: 1,
+    backoffMs: 5000,
+  })
+  expect(second.manager.promptSections.tasksMaxBytes).toBe(24576)
+  expect(second.manager.taskCreate.debounceMs).toBe(4000)
+  expect(second.manager.taskWindow).toEqual({
+    maxCount: 20,
+    minCount: 5,
+  })
+  expect(second.manager.planWindow).toEqual({
+    maxCount: 20,
+    minCount: 5,
+  })
+})

@@ -146,12 +146,16 @@ export const defaultConfig = (params: DefaultConfigParams): AppConfig => {
         ? { apiKey: userConfig.manager.apiKey }
         : {}),
       ...(userConfig.manager.proxy ? { proxy: userConfig.manager.proxy } : {}),
-      ...INTERNAL_MANAGER_DEFAULTS,
+      maxCorrectionRounds: INTERNAL_MANAGER_DEFAULTS.maxCorrectionRounds,
+      promptSections: { ...INTERNAL_MANAGER_DEFAULTS.promptSections },
+      taskCreate: { ...INTERNAL_MANAGER_DEFAULTS.taskCreate },
+      taskWindow: { ...INTERNAL_MANAGER_DEFAULTS.taskWindow },
+      planWindow: { ...INTERNAL_MANAGER_DEFAULTS.planWindow },
     },
     worker: {
       maxConcurrent: userConfig.worker.maxConcurrent,
       timeoutMs: userConfig.worker.timeoutMs,
-      retry: INTERNAL_WORKER_DEFAULTS.retry,
+      retry: { ...INTERNAL_WORKER_DEFAULTS.retry },
       budget: {
         ...INTERNAL_WORKER_DEFAULTS.budget,
         ...userConfig.worker.budget,

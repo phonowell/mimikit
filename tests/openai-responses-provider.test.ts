@@ -90,6 +90,23 @@ describe('parseResponsesSse', () => {
     })
   })
 
+  test('accepts SSE data lines without a following space', () => {
+    const sse = [
+      'event: response.completed',
+      'data:{"type":"response.completed","response":{"output":[{"type":"message","content":[{"type":"output_text","text":"hello-no-space"}]}],"usage":{"input_tokens":2,"output_tokens":2,"total_tokens":4}}}',
+      '',
+    ].join('\n')
+
+    const parsed = parseResponsesSse(sse)
+
+    expect(parsed.output).toBe('hello-no-space')
+    expect(parsed.usage).toEqual({
+      input: 2,
+      output: 2,
+      total: 4,
+    })
+  })
+
   test('throws failed message from response.failed event', () => {
     const sse = [
       'event: response.failed',

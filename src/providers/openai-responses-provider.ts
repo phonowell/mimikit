@@ -138,8 +138,8 @@ const appendOpenAiResponsesLog = async (
 const toDataPayload = (chunk: string): unknown => {
   const dataLines = chunk
     .split(/\r?\n/)
-    .filter((line) => line.startsWith('data: '))
-    .map((line) => line.slice(6))
+    .filter((line) => line.startsWith('data:'))
+    .map((line) => line.slice(5).trimStart())
   if (dataLines.length === 0) return null
   const raw = dataLines.join('\n').trim()
   if (!raw || raw === '[DONE]') return null
