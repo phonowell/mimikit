@@ -31,20 +31,24 @@ export const runSerialized = async <T>(
   const safePrevious = previous.catch((error) =>
     logSafeError('runSerialized:previous_failed', error, { meta: { key } }),
   )
-  let releaseQueue!: () => void
+  let releaseQueue: (() => void) | undefined
   const next = new Promise<void>((resolve) => {
     releaseQueue = resolve
   })
   updateQueue.set(key, next)
   await safePrevious
   const lockPath = `${key}.lock`
-  await ensureFile(lockPath, '')
-  const releaseLock = await lockfile.lock(lockPath, LOCK_OPTIONS)
+  let releaseLock: LockRelease | undefined
   try {
+    await ensureFile(lockPath, '')
+    releaseLock = await lockfile.lock(lockPath, LOCK_OPTIONS)
     return await fn()
   } finally {
-    await releaseLock()
-    releaseQueue()
-    if (updateQueue.get(key) === next) updateQueue.delete(key)
+    try {
+      if (releaseLock) await releaseLock()
+    } finally {
+      releaseQueue?.()
+      if (updateQueue.get(key) === next) updateQueue.delete(key)
+    }
   }
 }
