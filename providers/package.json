@@ -1,0 +1,42 @@
+{
+  "name": "@mimikit/providers",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "MIT",
+  "description": "Provider runtime layer for Mimikit",
+  "exports": {
+    "./providers/*": {
+      "types": "./dist/providers/*.d.ts",
+      "import": "./dist/providers/*.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "lint": "eslint \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "test": "vitest run",
+    "build": "tsc -p tsconfig.build.json",
+    "type-check": "tsc -p tsconfig.build.json --noEmit",
+    "api:baseline:update": "node scripts/update-public-api-baseline.mjs",
+    "api:check": "node scripts/check-public-api.mjs",
+    "ci:verify": "pnpm run lint && pnpm run type-check && pnpm run test && pnpm run build && pnpm run api:check"
+  },
+  "dependencies": {
+    "@iarna/toml": "^2.2.5",
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "@openai/codex-sdk": "^0.111.0",
+    "@opencode-ai/sdk": "^1.2.20",
+    "undici": "^7.22.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.35.0",
+    "@types/node": "^25.3.5",
+    "eslint": "9.x",
+    "globals": "^17.0.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.43.0",
+    "vitest": "^4.0.18"
+  },
+  "packageManager": "pnpm@10.28.2"
+}
