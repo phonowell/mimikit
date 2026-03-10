@@ -1,9 +1,30 @@
-import { execFileSync } from 'node:child_process'
-import { mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, realpath, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 
-import { afterEach, expect, test } from 'vitest'
+import { afterEach, beforeEach, expect, test, vi } from 'vitest'
+
+type ExecFileAsync = (
+  file: string,
+  args: string[],
+  options: { cwd: string; encoding: string },
+) => Promise<{ stdout: string; stderr: string }>
+
+const { execFileAsyncMock } = vi.hoisted(() => ({
+  execFileAsyncMock: vi.fn<ExecFileAsync>(),
+}))
+
+vi.mock('node:util', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:util')>()
+  return {
+    ...actual,
+    promisify: vi.fn(() => execFileAsyncMock),
+  }
+})
+
+vi.mock('node:child_process', () => ({
+  execFile: vi.fn(),
+}))
 
 import { resolveTaskExecutionTarget } from '../src/shared/task-execution-target.js'
 
@@ -15,12 +36,9 @@ const createTmpDir = async (): Promise<string> => {
   return dir
 }
 
-const runGit = (cwd: string, args: string[]): string =>
-  execFileSync('git', args, {
-    cwd,
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-  }).trim()
+beforeEach(() => {
+  execFileAsyncMock.mockReset()
+})
 
 afterEach(async () => {
   for (const dir of tempDirs.splice(0, tempDirs.length)) {
@@ -33,33 +51,36 @@ test('resolveTaskExecutionTarget extracts git common dir and branch from worktre
   const repoDir = join(root, 'repo')
   const worktreeDir = join(root, 'repo-feature')
 
-  runGit(root, ['init', '-b', 'main', repoDir])
-  await writeFile(join(repoDir, 'README.md'), '# repo\n', 'utf8')
-  runGit(repoDir, ['add', 'README.md'])
-  execFileSync(
-    'git',
-    [
-      '-c',
-      'user.name=Test User',
-      '-c',
-      'user.email=test@example.com',
-      'commit',
-      '-m',
-      'init',
-    ],
-    {
-      cwd: repoDir,
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-    },
-  )
-  runGit(repoDir, ['worktree', 'add', '-b', 'feature', worktreeDir, 'HEAD'])
+  await mkdir(join(repoDir, '.git'), { recursive: true })
+  await mkdir(worktreeDir, { recursive: true })
 
-  const target = await resolveTaskExecutionTarget(worktreeDir)
   const realWorktreeDir = await realpath(worktreeDir)
   const realRepoGitDir = await realpath(resolve(repoDir, '.git'))
+
+  execFileAsyncMock.mockImplementation(async (_file, args, options) => {
+    expect(options.cwd).toBe(realWorktreeDir)
+
+    if (args[0] === 'rev-parse' && args[1] === '--git-common-dir') {
+      return {
+        stdout: '../repo/.git\n',
+        stderr: '',
+      }
+    }
+
+    if (args[0] === 'symbolic-ref' && args[1] === '--short' && args[2] === 'HEAD') {
+      return {
+        stdout: 'feature\n',
+        stderr: '',
+      }
+    }
+
+    throw new Error(`unexpected git args: ${args.join(' ')}`)
+  })
+
+  const target = await resolveTaskExecutionTarget(worktreeDir)
 
   expect(target.cwd).toBe(realWorktreeDir)
   expect(target.repoKey).toBe(realRepoGitDir)
   expect(target.branch).toBe('feature')
+  expect(execFileAsyncMock).toHaveBeenCalledTimes(2)
 })
