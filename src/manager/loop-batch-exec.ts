@@ -346,6 +346,7 @@ export const runManagerRoundWithRecovery = async (params: {
       ? { proxy: params.runtime.config.manager.proxy }
       : {}),
     modelReasoningEffort: params.runtime.config.manager.modelReasoningEffort,
+    retry: params.runtime.config.worker.retry,
     ...(params.managerThreadId ? { threadId: params.managerThreadId } : {}),
   })
 

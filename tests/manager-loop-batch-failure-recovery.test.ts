@@ -2,7 +2,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { afterEach, expect, test } from 'vitest'
+import { afterEach, expect, test, vi } from 'vitest'
 
 import { GLOBAL_FOCUS_ID } from '../src/focus/index.js'
 import { readHistory } from '../src/history/store.js'
@@ -18,6 +18,19 @@ import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
 import type { TaskResult, UserInput } from '../src/types/index.js'
+
+const mockedSendTelegramTextMessage = vi.fn(async () => ({ messageId: 'tg-1' }))
+const mockedSendFeishuTextMessage = vi.fn(async () => ({ messageId: 'fs-1' }))
+
+vi.mock('../src/channels/telegram/client.js', () => ({
+  sendTelegramTextMessage: (...args: unknown[]) =>
+    mockedSendTelegramTextMessage(...args),
+}))
+
+vi.mock('../src/channels/feishu/client.js', () => ({
+  sendFeishuTextMessage: (...args: unknown[]) =>
+    mockedSendFeishuTextMessage(...args),
+}))
 
 const tempDirs: string[] = []
 
@@ -47,6 +60,8 @@ const createRuntime = async (): Promise<RuntimeState> => {
 }
 
 afterEach(async () => {
+  mockedSendTelegramTextMessage.mockClear()
+  mockedSendFeishuTextMessage.mockClear()
   for (const dir of tempDirs.splice(0, tempDirs.length)) {
     await rm(dir, { recursive: true, force: true })
   }
@@ -131,4 +146,58 @@ test('recoverManagerBatchFailure keeps task results pending for replay after man
     return parseSystemEventText(item.text).name === 'manager_error'
   })
   expect(managerErrorMessage).toBeDefined()
+})
+
+test('recoverManagerBatchFailure dispatches fallback reply to telegram source input', async () => {
+  const runtime = await createRuntime()
+  runtime.config.telegram.enabled = true
+  runtime.config.telegram.botToken = 'bot-token'
+  runtime.config.telegram.chatId = 'telegram-fallback-chat'
+  runtime.config.telegram.apiRoot = 'https://api.telegram.org'
+  runtime.config.telegram.proxy = ''
+
+  const input: UserInput = {
+    id: 'input-telegram-1',
+    role: 'user',
+    text: '现在怎么样了？',
+    createdAt: '2026-03-08T06:18:36.155Z',
+    focusId: 'focus-main',
+    source: 'telegram',
+    platform: 'telegram',
+    telegramChatId: 'telegram-from-input',
+    telegramMessageId: '42',
+  }
+
+  runtime.session.inflightInputs = [input]
+  await publishUserInput({ paths: runtime.paths, payload: input })
+
+  await recoverManagerBatchFailure({
+    runtime,
+    error: new Error('[provider:openai-responses] sdk run failed: fetch failed'),
+    inputs: [input],
+    results: [],
+    nextInputsCursor: 1,
+    nextResultsCursor: 0,
+    agentInputsCount: 1,
+    agentAppended: false,
+    startedAt: Date.now() - 20,
+  })
+
+  const history = await readHistory(runtime.paths.history)
+  const fallbackMessage = history.find((item) => {
+    if (item.role !== 'system') return false
+    return parseSystemEventText(item.text).name === 'manager_fallback_reply'
+  })
+  const fallbackReply = parseSystemEventText(fallbackMessage?.text ?? '').payload
+    ?.reply
+
+  expect(fallbackReply).toBeTypeOf('string')
+  expect(mockedSendTelegramTextMessage).toHaveBeenCalledWith({
+    botToken: 'bot-token',
+    apiRoot: 'https://api.telegram.org',
+    proxy: '',
+    chatId: 'telegram-from-input',
+    text: fallbackReply,
+  })
+  expect(mockedSendFeishuTextMessage).not.toHaveBeenCalled()
 })

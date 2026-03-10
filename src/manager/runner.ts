@@ -51,6 +51,10 @@ export const runManager = async (params: {
   proxy?: string | undefined
   threadId?: string | null
   modelReasoningEffort?: ModelReasoningEffort | undefined
+  retry?: {
+    maxAttempts: number
+    backoffMs: number
+  }
   onUsage?: (usage: TokenUsage) => void
   usePromptSegments?: boolean
 }): Promise<{
@@ -114,6 +118,7 @@ export const runManager = async (params: {
       ...(params.modelReasoningEffort
         ? { modelReasoningEffort: params.modelReasoningEffort }
         : {}),
+      ...(params.retry ? { retry: params.retry } : {}),
       ...(params.onUsage ? { onUsage: params.onUsage } : {}),
       logPath: paths.log,
       logContext: {

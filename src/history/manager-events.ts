@@ -20,7 +20,7 @@ export const appendManagerFallbackReply = async (
   paths: RuntimeState['paths'],
   focusId: FocusId = GLOBAL_FOCUS_ID,
   fallbackMeta?: ManagerFallbackMeta,
-): Promise<void> => {
+): Promise<string> => {
   const fallback = (
     await loadPromptTemplate('manager/system-fallback-reply.md')
   ).trim()
@@ -52,6 +52,7 @@ export const appendManagerFallbackReply = async (
     createdAt,
     focusId,
   })
+  return fallback
 }
 
 const compactManagerErrorText = (value: string): string =>
