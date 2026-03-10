@@ -1,4 +1,4 @@
-import { expect, test } from 'vitest'
+import { afterEach, expect, test, vi } from 'vitest'
 
 import {
   configureManagerActionCliLogger,
@@ -17,6 +17,10 @@ const createSpySink = () => {
   }
   return { calls, sink }
 }
+
+afterEach(() => {
+  configureManagerActionCliLogger({ enabled: !process.env.VITEST })
+})
 
 test('manager action cli logger emits lifecycle payload with redacted attrs', () => {
   configureManagerActionCliLogger({ enabled: true })
@@ -82,6 +86,31 @@ test('manager action cli logger emits feedback stage from action feedback error'
   })
 })
 
+test('manager action cli logger stays silent by default under vitest', async () => {
+  const previousVitest = process.env.VITEST
+  process.env.VITEST = 'true'
+  vi.resetModules()
+  try {
+    const { createManagerActionCliLogger: createLogger } = await import(
+      '../src/manager/action-cli-log.js'
+    )
+    const { calls, sink } = createSpySink()
+    const logger = createLogger({ sink })
+    await logger.logLifecycle({
+      stage: 'dispatch',
+      item: { name: 'enqueue_task', attrs: { prompt: 'noop' } },
+      index: 1,
+      total: 1,
+    })
+
+    expect(calls).toHaveLength(0)
+  } finally {
+    if (previousVitest === undefined) delete process.env.VITEST
+    else process.env.VITEST = previousVitest
+    vi.resetModules()
+  }
+})
+
 test('manager action cli logger can disable console sink while keeping payload generation', async () => {
   configureManagerActionCliLogger({ enabled: false })
   const { calls, sink } = createSpySink()
@@ -94,7 +123,6 @@ test('manager action cli logger can disable console sink while keeping payload g
   })
 
   expect(calls).toHaveLength(0)
-  configureManagerActionCliLogger({ enabled: true })
 })
 
 test('manager action cli logger extracts action/task ids from action attrs', async () => {

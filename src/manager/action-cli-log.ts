@@ -165,7 +165,7 @@ const defaultSink: ActionLogSink = (tag, payload) => {
   console.info(tag, payload)
 }
 
-let actionConsoleLogEnabled = true
+let actionConsoleLogEnabled = !process.env.VITEST
 let actionLogPath: string | undefined
 
 export const configureManagerActionCliLogger = (params?: {
