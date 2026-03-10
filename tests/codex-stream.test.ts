@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from 'vitest'
 
-import { runCodexStream } from '@mimikit/providers/providers/codex-stream'
+import { runCodexStream } from '../src/providers/codex-stream.js'
 
 const toAsyncIterable = async function* (events: unknown[]) {
   for (const event of events) yield event

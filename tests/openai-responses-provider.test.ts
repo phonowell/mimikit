@@ -8,7 +8,7 @@ import {
   openAiResponsesProvider,
   parseResponsesPayload,
   parseResponsesSse,
-} from '@mimikit/providers/providers/openai-responses-provider'
+} from '../src/providers/openai-responses-provider.js'
 
 const ENV_KEYS = ['HOME', 'USERPROFILE', 'OPENAI_API_KEY', 'AICODING_API_KEY'] as const
 type EnvSnapshot = Partial<Record<(typeof ENV_KEYS)[number], string>>
@@ -222,7 +222,7 @@ describe('openAiResponsesProvider', () => {
     expect(result.threadId).toMatch(/^session-/)
   })
 
-  test('encodes prompt segments with cache control in responses input', async () => {
+  test('encodes prompt segments without cache control in responses input', async () => {
     const homeDir = await createHomeDir()
     createdHomeDirs.push(homeDir)
     await writeCodexConfig(homeDir)
@@ -270,12 +270,12 @@ describe('openAiResponsesProvider', () => {
     expect(firstPart).toMatchObject({
       type: 'input_text',
       text: 'stable prefix',
-      cache_control: { type: 'ephemeral' },
     })
     expect(secondPart).toMatchObject({
       type: 'input_text',
       text: 'variable suffix',
     })
+    expect(firstPart).not.toHaveProperty('cache_control')
     expect(secondPart).not.toHaveProperty('cache_control')
   })
 })

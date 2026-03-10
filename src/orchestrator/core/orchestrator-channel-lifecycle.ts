@@ -38,7 +38,7 @@ const createChannelController = (params: {
   const startTelegramPollingIfEnabled = async (): Promise<void> => {
     if (!params.runtime.config.telegram.enabled) return
     const { startTelegramPolling } =
-      await import('@mimikit/channels/channels/telegram/index')
+      await import('../../channels/telegram/index.js')
     await startTelegramPolling({
       config: params.runtime.config,
       logPath: params.runtime.paths.log,
@@ -52,7 +52,7 @@ const createChannelController = (params: {
   const stopTelegramPollingIfEnabled = async (): Promise<void> => {
     if (!params.runtime.config.telegram.enabled) return
     const { stopTelegramPolling } =
-      await import('@mimikit/channels/channels/telegram/index')
+      await import('../../channels/telegram/index.js')
     await stopTelegramPolling({
       workDir: params.runtime.config.workDir,
       logPath: params.runtime.paths.log,
@@ -109,7 +109,7 @@ const createChannelController = (params: {
   const startFeishuPollingIfEnabled = async (): Promise<void> => {
     if (!params.runtime.config.feishu.enabled) return
     const { startFeishuPolling } =
-      await import('@mimikit/channels/channels/feishu/index')
+      await import('../../channels/feishu/index.js')
     await startFeishuPolling({
       config: params.runtime.config,
       logPath: params.runtime.paths.log,
@@ -121,8 +121,7 @@ const createChannelController = (params: {
 
   const stopFeishuPollingIfEnabled = async (): Promise<void> => {
     if (!params.runtime.config.feishu.enabled) return
-    const { stopFeishuPolling } =
-      await import('@mimikit/channels/channels/feishu/index')
+    const { stopFeishuPolling } = await import('../../channels/feishu/index.js')
     await stopFeishuPolling({
       workDir: params.runtime.config.workDir,
       logPath: params.runtime.paths.log,

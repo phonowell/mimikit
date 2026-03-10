@@ -10,8 +10,8 @@ vi.mock('node:child_process', () => ({
   spawn: spawnMock,
 }))
 
-import { opencodeSdkProvider } from '@mimikit/providers/providers/opencode-sdk-provider'
-import { readProviderErrorCode } from '@mimikit/providers/providers/provider-error'
+import { opencodeSdkProvider } from '../src/providers/opencode-sdk-provider.js'
+import { readProviderErrorCode } from '../src/providers/provider-error.js'
 
 const { createOpencodeClientMock, spawnMock } = vi.hoisted(() => ({
   createOpencodeClientMock: vi.fn(),

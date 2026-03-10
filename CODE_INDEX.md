@@ -211,7 +211,7 @@
 - Exact duplicate exported symbol names across files: `0` (scanned 630 exported symbols)
 - `jscpd` clones: `3 -> 0` (`duplicatedLines: 67 -> 0`, `duplicatedTokens: 596 -> 0`, threshold `min-lines=8`, `min-tokens=80`)
 - `ts-prune`: not rerun in this pass (current scope includes `webui/**/*.js`)
-- 2026-03-10 full-scope dedup follow-up: centralized task result summary helpers in `src/shared/task-state.ts`, removed unused local `src/shared/provider-thread-id.ts` duplicate in favor of `@mimikit/providers/providers/thread-id`, and collapsed `webui/restart-tools-menu.js` onto `createAnchoredMenuController()` instead of keeping a second noop controller.
+- 2026-03-10 full-scope dedup follow-up: centralized task result summary helpers in `src/shared/task-state.ts`, removed unused local `src/shared/provider-thread-id.ts` duplicate in favor of `src/providers/thread-id.ts`, and collapsed `webui/restart-tools-menu.js` onto `createAnchoredMenuController()` instead of keeping a second noop controller.
 - Highest-density modules to inspect before adding code:
   - `src/orchestrator/core/*` (39 exports)
   - `src/manager/*` action/loop related modules

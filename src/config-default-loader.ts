@@ -2,12 +2,13 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 import TOML from '@iarna/toml'
-import { feishuConfigSchema } from '@mimikit/channels/channels/feishu/config'
-import { telegramConfigSchema } from '@mimikit/channels/channels/telegram/config'
 import { z } from 'zod'
 
-import type { FeishuConfig } from '@mimikit/channels/channels/feishu/config'
-import type { TelegramConfig } from '@mimikit/channels/channels/telegram/config'
+import { feishuConfigSchema } from './channels/feishu/config.js'
+import { telegramConfigSchema } from './channels/telegram/config.js'
+
+import type { FeishuConfig } from './channels/feishu/config.js'
+import type { TelegramConfig } from './channels/telegram/config.js'
 
 const modelReasoningEffortSchema = z.enum([
   'minimal',

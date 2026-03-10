@@ -2,8 +2,8 @@ import { resolve } from 'node:path'
 
 import { loadDefaultConfigFromToml } from './config-default-loader.js'
 
-import type { FeishuConfig } from '@mimikit/channels/channels/feishu/config'
-import type { TelegramConfig } from '@mimikit/channels/channels/telegram/config'
+import type { FeishuConfig } from './channels/feishu/config.js'
+import type { TelegramConfig } from './channels/telegram/config.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
 export type DefaultConfigParams = {

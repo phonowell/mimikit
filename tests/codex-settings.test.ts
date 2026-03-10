@@ -4,7 +4,7 @@ import { join } from 'node:path'
 
 import { afterEach, beforeEach, expect, test } from 'vitest'
 
-import { loadCodexSettings } from '@mimikit/providers/providers/codex-settings'
+import { loadCodexSettings } from '../src/providers/codex-settings.js'
 
 const ENV_KEYS = [
   'HOME',

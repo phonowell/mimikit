@@ -70,10 +70,8 @@ What this does:
 - Ensures main-repo dependencies (`pnpm install`) before launch.
 - Starts wrapper: `bin/mimikit` (Unix) or `bin/mimikit.cmd` (Windows).
 - Restarts on exit code `75` (`POST /api/restart` and `POST /api/reset` use this).
-- Runs `bootstrap` to ensure `../mimikit-providers` exists.
-- Installs `../mimikit-providers` dependencies via `pnpm install`.
-- Ensures `../mimikit-channels` exists.
-- Installs `../mimikit-channels` dependencies via `pnpm install`.
+- Runs `bootstrap` to ensure repo-root `config.toml` exists.
+- Uses root source directories `src/channels/` and `src/providers/`; no extra package install/bootstrap step is required for them.
 - Creates repo-root `config.toml` when missing.
 - Unknown keys in `config.toml` are ignored with a startup warning.
 

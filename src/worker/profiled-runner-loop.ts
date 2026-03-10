@@ -1,5 +1,4 @@
-import { readProviderThreadId } from '@mimikit/providers/providers/thread-id'
-
+import { readProviderThreadId } from '../providers/thread-id.js'
 import {
   mergeUsageAdditive,
   mergeUsageMonotonic,

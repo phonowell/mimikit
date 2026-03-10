@@ -4,7 +4,7 @@ import { join } from 'node:path'
 
 import { expect, test } from 'vitest'
 
-import { attachProviderThreadId } from '@mimikit/providers/providers/thread-id'
+import { attachProviderThreadId } from '../src/providers/thread-id.js'
 import {
   MAX_CONTINUE_LATEST_OUTPUT_CHARS,
   buildContinuePrompt,
