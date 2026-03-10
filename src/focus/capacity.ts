@@ -80,9 +80,5 @@ export const pruneArchivedFocuses = async (
     runtime.focusContexts = runtime.focusContexts.filter(
       (item) => item.focusId !== candidate.id,
     )
-    runtime.manager.focusCompressedContexts =
-      runtime.manager.focusCompressedContexts.filter(
-        (item) => item.focusId !== candidate.id,
-      )
   }
 }

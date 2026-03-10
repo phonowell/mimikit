@@ -57,6 +57,29 @@ const buildTaskResumeChoice = (
   },
 })
 
+const isRecoverableBudgetPausedTask = (task: Task): boolean =>
+  task.status === 'paused' &&
+  task.result?.status === 'partial' &&
+  task.result.taskStatus !== 'canceled' &&
+  task.result.taskStatus !== 'failed'
+
+const resolveResumeChoiceCreatedAt = (task: Task): string =>
+  task.pausedAt ?? task.result?.completedAt ?? task.createdAt
+
+export const restoreTaskResumeChoiceOnHydrate = (
+  runtime: RuntimeState,
+): void => {
+  if (runtime.ui.pendingUserChoice) return
+  const candidates = runtime.tasks.filter(isRecoverableBudgetPausedTask)
+  if (candidates.length !== 1) return
+  const [task] = candidates
+  if (!task) return
+  runtime.ui.pendingUserChoice = buildTaskResumeChoice(
+    task,
+    resolveResumeChoiceCreatedAt(task),
+  )
+}
+
 export const isTaskResumeChoiceForTask = (
   choice: PendingUserChoice | null,
   taskId: string,

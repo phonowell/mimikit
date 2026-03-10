@@ -11,8 +11,20 @@ const asRecord = (value: unknown): Record<string, unknown> | undefined =>
 const dropLegacyRuntimeSnapshotFields = (source: Record<string, unknown>) => {
   let changed = false
   const next = { ...source }
-  if ('activeFocusIds' in next) {
-    delete next.activeFocusIds
+  const removableFields = [
+    'activeFocusIds',
+    'pendingUserChoice',
+    'channelTargets',
+    'managerCompressedContext',
+    'managerPacketSummary',
+    'managerLastContextPacket',
+    'managerLastUsage',
+    'managerUsageTotal',
+    'managerFocusCompressedContexts',
+  ] as const
+  for (const field of removableFields) {
+    if (!(field in next)) continue
+    delete next[field]
     changed = true
   }
   return { next, changed }
@@ -22,10 +34,6 @@ const coerceRuntimeSnapshotToCurrent = (
   source: Record<string, unknown>,
 ): Record<string, unknown> => {
   const { next } = dropLegacyRuntimeSnapshotFields(source)
-  if ('managerCompressedContext' in next && !('managerPacketSummary' in next)) {
-    next.managerPacketSummary = next.managerCompressedContext
-    delete next.managerCompressedContext
-  }
   next.schemaVersion = RUNTIME_SNAPSHOT_SCHEMA_VERSION
   return next
 }

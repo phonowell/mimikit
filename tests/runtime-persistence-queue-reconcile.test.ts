@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { expect, test } from 'vitest'
 
 import { buildPaths } from '../src/fs/paths.js'
+import { appendHistory } from '../src/history/store.js'
 import { createDefaultMemoryRefreshState } from '../src/memory/refresh/state.js'
 import {
   hydrateRuntimeState,
@@ -13,7 +14,6 @@ import {
 import { saveRuntimeSnapshot } from '../src/storage/runtime-snapshot.js'
 import { publishUserInput, publishWorkerResult } from '../src/streams/queues.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
-import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
 
 const GLOBAL_FOCUS_ID = 'focus-global'
 const SNAPSHOT_BASE_TIME = '2026-02-06T00:00:00.000Z'
@@ -120,26 +120,22 @@ test('persist+hydrate keeps reusable session on recovered pending task', async (
   expect(restored.manager.threadId).toBe('session-manager-persisted')
 })
 
-test('persist+hydrate keeps channel targets for cross-channel broadcast', async () => {
+test('hydrateRuntimeState restores channel targets from history', async () => {
   const stateDir = await createTmpDir()
-  const runtime = await createTestRuntimeState({
-    workDir: stateDir,
-    withGlobalFocus: false,
-    patch: {
-      session: {
-        channelTargets: {
-          telegramChatId: 'chat-1001',
-          feishuChatId: 'oc_chat_1',
-        },
-      },
-    },
+  const runtime = await createTestRuntimeState({ workDir: stateDir })
+  await appendHistory(runtime.paths.history, {
+    id: 'input-history-1',
+    role: 'user',
+    text: 'hello',
+    createdAt: SNAPSHOT_BASE_TIME,
+    focusId: GLOBAL_FOCUS_ID,
+    telegramChatId: 'chat-1001',
+    feishuChatId: 'oc_chat_1',
   })
-
   await persistRuntimeState(runtime)
 
   const restored = await createTestRuntimeState({
     workDir: stateDir,
-    withGlobalFocus: false,
   })
 
   await hydrateRuntimeState(restored)
@@ -150,41 +146,38 @@ test('persist+hydrate keeps channel targets for cross-channel broadcast', async 
   })
 })
 
-test('persist+hydrate prunes compressed focus contexts that no longer belong to a live focus', async () => {
+test('hydrateRuntimeState rebuilds budget resume choice from paused task state', async () => {
   const stateDir = await createTmpDir()
   const runtime = await createTestRuntimeState({
     workDir: stateDir,
     withGlobalFocus: false,
     patch: {
-      focuses: [
+      tasks: [
         {
-          id: 'focus-kept',
-          title: 'Kept',
-          status: 'active',
+          id: 'task-budget-paused',
+          fingerprint: 'fp-task-budget-paused',
+          prompt: 'resume me',
+          title: 'Budget Paused',
+          cwd: '/tmp/task-budget-paused',
+          focusId: GLOBAL_FOCUS_ID,
+          profile: 'worker',
+          provider: 'codex',
+          status: 'paused',
           createdAt: SNAPSHOT_BASE_TIME,
-          updatedAt: SNAPSHOT_BASE_TIME,
-          lastActivityAt: SNAPSHOT_BASE_TIME,
+          pausedAt: '2026-02-06T00:10:00.000Z',
+          result: {
+            taskId: 'task-budget-paused',
+            status: 'partial',
+            taskStatus: 'paused',
+            outcome: 'partial',
+            stopReason: 'budget_exhausted',
+            ok: false,
+            output: 'partial output',
+            durationMs: 42,
+            completedAt: '2026-02-06T00:10:00.000Z',
+          },
         },
       ],
-      manager: {
-        focusCompressedContexts: [
-          {
-            focusId: GLOBAL_FOCUS_ID,
-            summary: 'legacy global summary',
-            updatedAt: SNAPSHOT_BASE_TIME,
-          },
-          {
-            focusId: 'focus-missing',
-            summary: 'orphan summary',
-            updatedAt: SNAPSHOT_BASE_TIME,
-          },
-          {
-            focusId: 'focus-kept',
-            summary: 'kept summary',
-            updatedAt: SNAPSHOT_BASE_TIME,
-          },
-        ],
-      },
     },
   })
 
@@ -196,11 +189,8 @@ test('persist+hydrate prunes compressed focus contexts that no longer belong to 
   })
   await hydrateRuntimeState(restored)
 
-  expect(restored.manager.focusCompressedContexts).toEqual([
-    {
-      focusId: 'focus-kept',
-      summary: 'kept summary',
-      updatedAt: SNAPSHOT_BASE_TIME,
-    },
-  ])
+  expect(restored.ui.pendingUserChoice?.effect).toMatchObject({
+    type: 'resume_task',
+    taskId: 'task-budget-paused',
+  })
 })

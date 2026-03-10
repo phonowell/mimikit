@@ -5,7 +5,7 @@ import { normalizeFocusOpenItems } from './open-items.js'
 import { canPersistFocusContext } from './reserved.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
-import type { FocusContext, FocusId } from '../types/index.js'
+import type { FocusContext } from '../types/index.js'
 
 export const normalizeFocusSummary = (value?: string): string | undefined => {
   if (typeof value !== 'string') return undefined
@@ -55,16 +55,4 @@ export const upsertFocusContext = (
   }
   if (index >= 0) runtime.focusContexts[index] = next
   else runtime.focusContexts.push(next)
-}
-
-export const removeFocusCompressedContexts = (
-  runtime: RuntimeState,
-  focusIds: FocusId[],
-): void => {
-  if (focusIds.length === 0) return
-  const excluded = new Set(focusIds)
-  runtime.manager.focusCompressedContexts =
-    runtime.manager.focusCompressedContexts.filter(
-      (item) => !excluded.has(item.focusId),
-    )
 }

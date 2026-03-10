@@ -6,7 +6,7 @@ import { appendTaskProgress } from '../storage/task-progress.js'
 
 import { runWorkerLoop } from './profiled-runner-loop.js'
 
-import type { ManagerFocusCompressedContext } from '../orchestrator/core/runtime-state.js'
+import type { WorkerCompressedFocusContext } from '../prompts/format-worker-focus-context.js'
 import type { RuntimeChildStarted } from '../runtime/reaper-bridge.js'
 import type {
   FocusContext,
@@ -81,7 +81,7 @@ type WorkerRunnerParams = {
   sessionId?: string
   focusMeta?: FocusMeta
   focusContext?: FocusContext
-  compressedFocusContext?: ManagerFocusCompressedContext
+  compressedFocusContext?: WorkerCompressedFocusContext
   timeoutMs: number
   budget?: {
     maxDurationMs: number

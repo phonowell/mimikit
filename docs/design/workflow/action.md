@@ -78,10 +78,6 @@
 - `enqueue_task` 创建时会先解析 `cwd`；若命中 git 仓库，则记录 `repoKey + branch` 并据此参与 worker 排队锁。
 - `remember_memory`：立即写入 `memory/MEMORY.md`，仅接受 `content` 参数，并通过 `memory_remembered` system event 回执 `entry_id/ref/operation`。
 
-补充：
-
-- `managerFocusCompressedContexts` 字段当前仅保留结构与清理逻辑；未提供可执行 `compress_context` action，也未启用独立压缩动作链路。
-
 约束补充：
 
 - `query_context` 与 `read_file` 在同一纠错回合中每类仅接受 1 条有效 action；重复项会回写 `M:event_packet.action_feedback`。

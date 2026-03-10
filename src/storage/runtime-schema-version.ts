@@ -13,12 +13,4 @@ export const parseRuntimeSnapshotSchemaMajor = (
 
 export const isRuntimeSnapshotSchemaVersionSupported = (
   value: string,
-): boolean => {
-  const major = parseRuntimeSnapshotSchemaMajor(value)
-  if (major === undefined) return false
-  const currentMajor = parseRuntimeSnapshotSchemaMajor(
-    RUNTIME_SNAPSHOT_SCHEMA_VERSION,
-  )
-  if (currentMajor === undefined) return false
-  return major <= currentMajor
-}
+): boolean => value.trim() === RUNTIME_SNAPSHOT_SCHEMA_VERSION

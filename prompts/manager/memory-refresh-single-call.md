@@ -10,7 +10,6 @@
 - `signals[]`：近期可见对话信号（采样窗口，不是全量历史；`text` 可能被截断）。
 - `tasks[]`：近期任务摘要（含 `id/title/status/focusId/output?`）。
 - `plans[]`：近期计划摘要（含 `id/title/status/updatedAt`）。
-- `compressedContext?`：可选压缩上下文摘要。
 
 执行约束：
 1. 只能基于输入 YAML 推断；禁止使用输入外事实。

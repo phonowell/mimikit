@@ -31,7 +31,6 @@ export type MemoryRefreshPayload = {
   proxy?: string | undefined
   modelReasoningEffort?: ModelReasoningEffort | undefined
   memoryMarkdown: string
-  packetSummary?: string
   signals: MemoryRefreshSignal[]
   tasks: MemoryRefreshTaskDigest[]
   plans: MemoryRefreshPlanDigest[]

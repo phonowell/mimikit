@@ -1,7 +1,5 @@
-import {
-  canPersistFocusCompressedContext,
-  canPersistFocusContext,
-} from '../../focus/reserved.js'
+import { canPersistFocusContext } from '../../focus/reserved.js'
+import { readHistory } from '../../history/store.js'
 import { appendLog } from '../../log/append.js'
 import { bestEffort } from '../../log/safe.js'
 import {
@@ -15,6 +13,8 @@ import {
   saveRuntimeSnapshot,
   selectPersistedTasks,
 } from '../../storage/runtime-snapshot.js'
+
+import { restoreTaskResumeChoiceOnHydrate } from './task-resume-choice.js'
 
 import type { RuntimeState } from './runtime-state.js'
 import type { JsonPacket } from '../../types/index.js'
@@ -30,18 +30,6 @@ const readQueuePacketCount = async (path: string): Promise<number> =>
       ensureFile: true,
     })
   ).length
-
-const normalizeManagerFocusCompressedContexts = (
-  runtime: RuntimeState,
-): void => {
-  const focusIds = new Set(runtime.focuses.map((focus) => focus.id))
-  runtime.manager.focusCompressedContexts =
-    runtime.manager.focusCompressedContexts.filter(
-      (item) =>
-        canPersistFocusCompressedContext(item.focusId) &&
-        focusIds.has(item.focusId),
-    )
-}
 
 const normalizePersistedFocusContexts = (runtime: RuntimeState): void => {
   runtime.focusContexts = runtime.focusContexts.filter((item) =>
@@ -63,6 +51,35 @@ const normalizeChannelTargets = (
     ...(telegramChatId ? { telegramChatId } : {}),
     ...(feishuChatId ? { feishuChatId } : {}),
   }
+}
+
+const restoreChannelTargetsFromHistory = async (
+  runtime: RuntimeState,
+): Promise<void> => {
+  const history = await readHistory(runtime.paths.history)
+  let telegramChatId: string | undefined
+  let feishuChatId: string | undefined
+  for (let index = history.length - 1; index >= 0; index -= 1) {
+    const item = history[index]
+    if (!item) break
+    if (
+      'telegramChatId' in item &&
+      typeof item.telegramChatId === 'string' &&
+      !telegramChatId
+    )
+      telegramChatId = item.telegramChatId.trim()
+    if (
+      'feishuChatId' in item &&
+      typeof item.feishuChatId === 'string' &&
+      !feishuChatId
+    )
+      feishuChatId = item.feishuChatId.trim()
+    if (telegramChatId && feishuChatId) break
+  }
+  runtime.session.channelTargets = normalizeChannelTargets({
+    ...(telegramChatId ? { telegramChatId } : {}),
+    ...(feishuChatId ? { feishuChatId } : {}),
+  })
 }
 
 const reconcileRuntimeQueueState = async (
@@ -138,23 +155,11 @@ export const hydrateRuntimeState = async (
     runtime.manager.threadId = snapshot.managerThreadId
   else delete runtime.manager.threadId
   runtime.manager.memoryRefresh = hydrateMemoryRefreshState(snapshot)
-  runtime.manager.focusCompressedContexts =
-    snapshot.managerFocusCompressedContexts ?? []
-  runtime.manager.packetSummary = snapshot.managerPacketSummary ?? ''
-  if (snapshot.managerLastContextPacket)
-    runtime.manager.lastContextPacket = snapshot.managerLastContextPacket
-  else delete runtime.manager.lastContextPacket
-  if (snapshot.managerLastUsage)
-    runtime.manager.lastUsage = snapshot.managerLastUsage
-  else delete runtime.manager.lastUsage
-  if (snapshot.managerUsageTotal)
-    runtime.manager.usageTotal = snapshot.managerUsageTotal
-  else delete runtime.manager.usageTotal
-  normalizeManagerFocusCompressedContexts(runtime)
-  runtime.ui.pendingUserChoice = snapshot.pendingUserChoice ?? null
-  runtime.session.channelTargets = normalizeChannelTargets(
-    snapshot.channelTargets,
-  )
+  delete runtime.manager.lastContextPacket
+  delete runtime.manager.lastUsage
+  delete runtime.manager.usageTotal
+  runtime.ui.pendingUserChoice = null
+  await restoreChannelTargetsFromHistory(runtime)
   if (snapshot.queues) {
     runtime.queues = {
       inputsCursor: snapshot.queues.inputsCursor,
@@ -162,6 +167,7 @@ export const hydrateRuntimeState = async (
     }
   }
   await reconcileRuntimeQueueState(runtime)
+  restoreTaskResumeChoiceOnHydrate(runtime)
 
   if (snapshot.tasks.length > 0) {
     await bestEffort('appendLog: runtime_hydrated', () =>
@@ -177,7 +183,6 @@ export const persistRuntimeState = async (
   runtime: RuntimeState,
 ): Promise<void> => {
   normalizePersistedFocusContexts(runtime)
-  normalizeManagerFocusCompressedContexts(runtime)
   await saveRuntimeSnapshot(runtime.config.workDir, {
     schemaVersion: RUNTIME_SNAPSHOT_SCHEMA_VERSION,
     tasks: selectPersistedTasks(runtime.tasks),
@@ -189,35 +194,6 @@ export const persistRuntimeState = async (
       ? { managerThreadId: runtime.manager.threadId }
       : {}),
     queues: runtime.queues,
-    ...(runtime.session.channelTargets.telegramChatId ||
-    runtime.session.channelTargets.feishuChatId
-      ? {
-          channelTargets: normalizeChannelTargets(
-            runtime.session.channelTargets,
-          ),
-        }
-      : {}),
-    ...(runtime.ui.pendingUserChoice
-      ? { pendingUserChoice: runtime.ui.pendingUserChoice }
-      : {}),
     memoryRefresh: toPersistedMemoryRefreshState(runtime.manager.memoryRefresh),
-    ...(runtime.manager.lastContextPacket
-      ? { managerLastContextPacket: runtime.manager.lastContextPacket }
-      : {}),
-    ...(runtime.manager.lastUsage
-      ? { managerLastUsage: runtime.manager.lastUsage }
-      : {}),
-    ...(runtime.manager.usageTotal
-      ? { managerUsageTotal: runtime.manager.usageTotal }
-      : {}),
-    ...(runtime.manager.focusCompressedContexts.length > 0
-      ? {
-          managerFocusCompressedContexts:
-            runtime.manager.focusCompressedContexts,
-        }
-      : {}),
-    ...(runtime.manager.packetSummary
-      ? { managerPacketSummary: runtime.manager.packetSummary }
-      : {}),
   })
 }

@@ -26,15 +26,6 @@ const createRuntime = async (): Promise<RuntimeState> =>
           updatedAt: '2026-03-01T00:00:00.000Z',
         },
       ],
-      manager: {
-        focusCompressedContexts: [
-          {
-            focusId: 'focus-global',
-            summary: 'legacy compressed',
-            updatedAt: '2026-03-01T00:00:00.000Z',
-          },
-        ],
-      },
     },
   })
 
@@ -58,12 +49,11 @@ test('upsertFocusContext ignores global focus business context', async () => {
   expect(runtime.focusContexts).toHaveLength(0)
 })
 
-test('ensureGlobalFocus cleans legacy global focus contexts only', async () => {
+test('ensureGlobalFocus cleans legacy global focus contexts', async () => {
   const runtime = await createRuntime()
 
   ensureGlobalFocus(runtime)
 
   expect(runtime.focusContexts).toHaveLength(0)
-  expect(runtime.manager.focusCompressedContexts).toHaveLength(1)
   expect(runtime.focuses[0]?.status).toBe('active')
 })

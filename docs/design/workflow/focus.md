@@ -105,7 +105,7 @@
 ### 关于 `compress_context`
 
 - 当前代码库不存在可执行的 `compress_context` manager action。
-- `managerFocusCompressedContexts` 结构已在运行时与 Worker Prompt 注入链路中预留，但本文档不将其视为当前可用动作能力。
+- 当前 Focus 主状态只保留 `FocusMeta + FocusContext`；不再维护独立的 focus 压缩上下文持久化层。
 
 ## 任务结果回写 FocusContext
 
@@ -135,7 +135,6 @@
 - 删除时同步移除：
 - `FocusMeta`
 - `FocusContext`
-- `managerFocusCompressedContexts` 残留
 
 ## Working Focus 选择
 
@@ -159,14 +158,12 @@
 - 各段受 `manager.promptSections.*MaxBytes` 预算控制
 - Worker Prompt：
 - `M:focus_context`：当前任务 focus 的 `focus_title/summary/open_items/context_updated_at`
-- 若存在压缩上下文，再注入 `compressed_summary/compressed_updated_at`
 
 ## 持久化与对外视图
 
 - runtime snapshot 字段：
 - `focuses`
 - `focusContexts`
-- `managerFocusCompressedContexts`
 - 读写入口：`src/orchestrator/core/runtime-persistence.ts`
 - WebUI/SSE：
 - `GET /api/events` 的 `snapshot` 包含 `focuses`

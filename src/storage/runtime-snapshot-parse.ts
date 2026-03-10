@@ -7,9 +7,6 @@ import {
 import {
   type focusContextSchema,
   type focusMetaSchema,
-  type managerContextPacketSchema,
-  type managerFocusCompressedContextSchema,
-  type pendingUserChoiceSchema,
   type RuntimeSnapshot,
   runtimeSnapshotSchema,
   type taskPlanSchema,
@@ -23,11 +20,11 @@ type SnapshotTask = z.infer<typeof taskSchema>
 type SnapshotTaskPlan = z.infer<typeof taskPlanSchema>
 type SnapshotFocusMeta = z.infer<typeof focusMetaSchema>
 type SnapshotFocusContext = z.infer<typeof focusContextSchema>
-type SnapshotManagerFocusCompressedContext = z.infer<
-  typeof managerFocusCompressedContextSchema
->
-type SnapshotManagerContextPacket = z.infer<typeof managerContextPacketSchema>
-type SnapshotPendingUserChoice = z.infer<typeof pendingUserChoiceSchema>
+
+const asRecord = (value: unknown): Record<string, unknown> | undefined =>
+  value && typeof value === 'object'
+    ? (value as Record<string, unknown>)
+    : undefined
 
 const normalizeTask = (task: SnapshotTask): SnapshotTask =>
   stripUndefined({
@@ -93,51 +90,6 @@ const normalizeFocusContext = (
 ): SnapshotFocusContext =>
   stripUndefined({ ...focusContext }) as SnapshotFocusContext
 
-const normalizeManagerFocusCompressedContext = (
-  item: SnapshotManagerFocusCompressedContext,
-): SnapshotManagerFocusCompressedContext =>
-  stripUndefined({
-    ...item,
-    details: item.details
-      ? stripUndefined({
-          ...item.details,
-          taskIds: item.details.taskIds ? [...item.details.taskIds] : undefined,
-          archivePaths: item.details.archivePaths
-            ? [...item.details.archivePaths]
-            : undefined,
-        })
-      : undefined,
-  }) as SnapshotManagerFocusCompressedContext
-
-const normalizeManagerContextPacket = (
-  item: SnapshotManagerContextPacket,
-): SnapshotManagerContextPacket =>
-  stripUndefined({
-    ...item,
-    counts: stripUndefined({ ...item.counts }),
-    latestUserInput: item.latestUserInput
-      ? stripUndefined({ ...item.latestUserInput })
-      : undefined,
-    latestResult: item.latestResult
-      ? stripUndefined({ ...item.latestResult })
-      : undefined,
-    activeTaskIds: item.activeTaskIds ? [...item.activeTaskIds] : undefined,
-    activePlanIds: item.activePlanIds ? [...item.activePlanIds] : undefined,
-    workingFocusIds: item.workingFocusIds
-      ? [...item.workingFocusIds]
-      : undefined,
-    includedSections: [...item.includedSections],
-    prunedSections: [...item.prunedSections],
-  }) as SnapshotManagerContextPacket
-
-const normalizePendingUserChoice = (
-  choice: SnapshotPendingUserChoice,
-): SnapshotPendingUserChoice =>
-  stripUndefined({
-    ...choice,
-    options: choice.options.map((item) => stripUndefined({ ...item })),
-  }) as SnapshotPendingUserChoice
-
 const normalizeRuntimeSnapshot = (value: RuntimeSnapshot): RuntimeSnapshot =>
   stripUndefined({
     schemaVersion: value.schemaVersion,
@@ -148,28 +100,21 @@ const normalizeRuntimeSnapshot = (value: RuntimeSnapshot): RuntimeSnapshot =>
     managerTurn: value.managerTurn,
     managerThreadId: value.managerThreadId,
     queues: value.queues,
-    channelTargets: value.channelTargets,
-    managerPacketSummary: value.managerPacketSummary,
-    managerLastContextPacket: value.managerLastContextPacket
-      ? normalizeManagerContextPacket(value.managerLastContextPacket)
-      : undefined,
-    managerLastUsage: normalizeTokenUsage(value.managerLastUsage),
-    managerUsageTotal: normalizeTokenUsage(value.managerUsageTotal),
-    managerFocusCompressedContexts: value.managerFocusCompressedContexts?.map(
-      normalizeManagerFocusCompressedContext,
-    ),
-    pendingUserChoice: value.pendingUserChoice
-      ? normalizePendingUserChoice(value.pendingUserChoice)
-      : undefined,
     memoryRefresh: value.memoryRefresh,
   }) as RuntimeSnapshot
 
 export const parseRuntimeSnapshot = (value: unknown): RuntimeSnapshot => {
-  const parsed = runtimeSnapshotSchema.parse(value)
-  if (!isRuntimeSnapshotSchemaVersionSupported(parsed.schemaVersion)) {
+  const rawVersion = asRecord(value)?.schemaVersion
+  const schemaVersion =
+    typeof rawVersion === 'string' ? rawVersion.trim() : undefined
+  if (
+    !schemaVersion ||
+    !isRuntimeSnapshotSchemaVersionSupported(schemaVersion)
+  ) {
     throw new Error(
-      `runtime snapshot schema version not supported: ${parsed.schemaVersion}; current=${RUNTIME_SNAPSHOT_SCHEMA_VERSION}`,
+      `runtime snapshot schema version not supported: ${schemaVersion ?? 'missing'}; current=${RUNTIME_SNAPSHOT_SCHEMA_VERSION}`,
     )
   }
+  const parsed = runtimeSnapshotSchema.parse(value)
   return normalizeRuntimeSnapshot(parsed)
 }

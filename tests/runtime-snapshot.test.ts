@@ -103,16 +103,6 @@ test('runtime snapshot accepts queue cursors', async () => {
       inputsCursor: 3,
       resultsCursor: 9,
     },
-    channelTargets: {
-      telegramChatId: 'chat-1001',
-    },
-    managerFocusCompressedContexts: [
-      {
-        focusId: GLOBAL_FOCUS_ID,
-        summary: 'Goals\n- keep codex-only',
-        updatedAt: SNAPSHOT_BASE_TIME,
-      },
-    ],
     managerThreadId: 'session-manager-1',
   })
 
@@ -120,16 +110,12 @@ test('runtime snapshot accepts queue cursors', async () => {
   expect(loaded.schemaVersion).toBe('runtime-snapshot.v4')
   expect(loaded.queues?.resultsCursor).toBe(9)
   expect(loaded.queues?.inputsCursor).toBe(3)
-  expect(loaded.channelTargets?.telegramChatId).toBe('chat-1001')
-  expect(loaded.managerFocusCompressedContexts?.[0]?.summary).toContain(
-    'keep codex-only',
-  )
   expect(loaded.managerThreadId).toBe('session-manager-1')
   expect(loaded.tasks[0]?.result?.output).toBe('ok')
   expect(loaded.taskPlans[0]?.id).toBe('plan-1')
 })
 
-test('runtime snapshot auto-migrates when schemaVersion is missing', async () => {
+test('runtime snapshot rejects snapshot without schemaVersion', async () => {
   const stateDir = await createTmpDir()
   await writeFile(
     join(stateDir, 'runtime-snapshot.json'),
@@ -143,13 +129,12 @@ test('runtime snapshot auto-migrates when schemaVersion is missing', async () =>
     }),
     'utf8',
   )
-  const loaded = await loadRuntimeSnapshot(stateDir)
-  expect(loaded.schemaVersion).toBe('runtime-snapshot.v4')
-  expect(loaded.queues?.inputsCursor).toBe(1)
-  expect(loaded.queues?.resultsCursor).toBe(2)
+  await expect(loadRuntimeSnapshot(stateDir)).rejects.toThrow(
+    /schema version not supported/i,
+  )
 })
 
-test('runtime snapshot drops legacy activeFocusIds during load', async () => {
+test('runtime snapshot rejects older schema version', async () => {
   const stateDir = await createTmpDir()
   await writeFile(
     join(stateDir, 'runtime-snapshot.json'),
@@ -157,7 +142,6 @@ test('runtime snapshot drops legacy activeFocusIds during load', async () => {
       schemaVersion: 'runtime-snapshot.v2',
       tasks: [],
       taskPlans: [],
-      activeFocusIds: [GLOBAL_FOCUS_ID],
       queues: {
         inputsCursor: 1,
         resultsCursor: 2,
@@ -166,10 +150,9 @@ test('runtime snapshot drops legacy activeFocusIds during load', async () => {
     'utf8',
   )
 
-  const loaded = await loadRuntimeSnapshot(stateDir)
-  expect(loaded.schemaVersion).toBe('runtime-snapshot.v4')
-  expect(loaded.queues?.inputsCursor).toBe(1)
-  expect(loaded.queues?.resultsCursor).toBe(2)
+  await expect(loadRuntimeSnapshot(stateDir)).rejects.toThrow(
+    /schema version not supported/i,
+  )
 })
 
 test('runtime snapshot rejects unsupported future schema version', async () => {
@@ -439,20 +422,36 @@ test('runtime snapshot rejects legacy next fields', async () => {
   await expect(loadRuntimeSnapshot(stateDir)).rejects.toThrow()
 })
 
-test('runtime snapshot migrates managerCompressedContext into managerPacketSummary', async () => {
+test('runtime snapshot rejects legacy extra fields during load', async () => {
   const stateDir = await createTmpDir()
   await writeFile(
     join(stateDir, 'runtime-snapshot.json'),
     JSON.stringify({
+      schemaVersion: 'runtime-snapshot.v4',
       tasks: [],
       taskPlans: [],
-      managerCompressedContext: 'legacy',
+      pendingUserChoice: {
+        id: 'choice-legacy',
+        question: 'legacy',
+        options: [
+          { id: 'option-a', label: 'A', reason: 'a' },
+          { id: 'option-b', label: 'B', reason: 'b' },
+        ],
+        defaultOptionId: 'option-b',
+        createdAt: SNAPSHOT_BASE_TIME,
+        focusId: GLOBAL_FOCUS_ID,
+      },
+      channelTargets: {
+        telegramChatId: 'chat-1001',
+      },
+      managerCompressedContext: 'legacy-summary',
+      managerPacketSummary: 'legacy-packet-summary',
+      managerLastUsage: { input: 1, output: 2, total: 3 },
     }),
     'utf8',
   )
 
-  const loaded = await loadRuntimeSnapshot(stateDir)
-  expect(loaded.managerPacketSummary).toBe('legacy')
+  await expect(loadRuntimeSnapshot(stateDir)).rejects.toThrow()
 })
 
 test('loadRuntimeSnapshot falls back to backup file when primary json is broken', async () => {
@@ -463,6 +462,7 @@ test('loadRuntimeSnapshot falls back to backup file when primary json is broken'
   await writeFile(
     backupPath,
     JSON.stringify({
+      schemaVersion: 'runtime-snapshot.v4',
       tasks: [],
       taskPlans: [],
       queues: {

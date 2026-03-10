@@ -370,7 +370,6 @@ export const runManagerRoundWithRecovery = async (params: {
     wakeProfile,
   })
   params.runtime.manager.lastContextPacket = result.contextPacket
-  params.runtime.manager.packetSummary = result.packetSummary
   if (result.usage) {
     params.runtime.manager.lastUsage = result.usage
     params.runtime.manager.usageTotal =

@@ -6,7 +6,6 @@ import {
   optionIdSchema,
 } from '../shared/id-schema.js'
 
-import { RUNTIME_SNAPSHOT_SCHEMA_VERSION } from './runtime-schema-version.js'
 import { tokenUsageSchema } from './token-usage.js'
 
 const workerProviderSchema = z.enum(['codex', 'opencode'])
@@ -237,25 +236,6 @@ export const focusContextSchema = z
   })
   .strict()
 
-export const managerFocusCompressedContextSchema = z
-  .object({
-    focusId: focusIdSchema,
-    summary: z.string().trim().min(1),
-    updatedAt: z.string().trim().min(1),
-    firstKeptEntryId: z.string().trim().min(1).optional(),
-    details: z
-      .object({
-        historyFrom: z.string().trim().min(1).optional(),
-        historyTo: z.string().trim().min(1).optional(),
-        messageCount: z.number().int().nonnegative().optional(),
-        taskIds: z.array(z.string().trim().min(1)).optional(),
-        archivePaths: z.array(z.string().trim().min(1)).optional(),
-      })
-      .strict()
-      .optional(),
-  })
-  .strict()
-
 const managerWakeProfileSchema = z.enum([
   'user_input',
   'task_result',
@@ -378,20 +358,9 @@ const memoryRefreshSchema = z
   })
   .strict()
 
-const channelTargetsSchema = z
-  .object({
-    telegramChatId: z.string().trim().min(1).optional(),
-    feishuChatId: z.string().trim().min(1).optional(),
-  })
-  .strict()
-
 export const runtimeSnapshotSchema = z
   .object({
-    schemaVersion: z
-      .string()
-      .trim()
-      .min(1)
-      .default(RUNTIME_SNAPSHOT_SCHEMA_VERSION),
+    schemaVersion: z.string().trim().min(1),
     tasks: z.array(taskSchema),
     taskPlans: z.array(taskPlanSchema),
     focuses: z.array(focusMetaSchema).optional(),
@@ -405,16 +374,7 @@ export const runtimeSnapshotSchema = z
       })
       .strict()
       .optional(),
-    pendingUserChoice: pendingUserChoiceSchema.optional(),
     memoryRefresh: memoryRefreshSchema.optional(),
-    channelTargets: channelTargetsSchema.optional(),
-    managerPacketSummary: z.string().optional(),
-    managerLastContextPacket: managerContextPacketSchema.optional(),
-    managerLastUsage: tokenUsageSchema.optional(),
-    managerUsageTotal: tokenUsageSchema.optional(),
-    managerFocusCompressedContexts: z
-      .array(managerFocusCompressedContextSchema)
-      .optional(),
   })
   .strict()
 

@@ -8,9 +8,7 @@ import { newId } from '../../shared/utils.js'
 import type { RuntimeMemoryRefreshState } from '../../memory/refresh/state.js'
 import type {
   FocusContext,
-  FocusId,
   FocusMeta,
-  ISODate,
   ManagerContextPacket,
   PendingUserChoice,
   Task,
@@ -54,22 +52,6 @@ export type ExitRequest = {
   reason: string
 }
 
-export type ManagerFocusCompressedContext = {
-  focusId: FocusId
-  summary: string
-  updatedAt: ISODate
-  firstKeptEntryId?: string | undefined
-  details?:
-    | {
-        historyFrom?: ISODate | undefined
-        historyTo?: ISODate | undefined
-        messageCount?: number | undefined
-        taskIds?: string[] | undefined
-        archivePaths?: string[] | undefined
-      }
-    | undefined
-}
-
 export type RuntimeSessionState = {
   stopped: boolean
   inflightInputs: PendingUserInput[]
@@ -86,8 +68,6 @@ export type RuntimeManagerState = {
   turn: number
   threadId?: string
   memoryRefresh: RuntimeMemoryRefreshState
-  focusCompressedContexts: ManagerFocusCompressedContext[]
-  packetSummary: string
   lastContextPacket?: ManagerContextPacket
   lastUsage?: TokenUsage
   usageTotal?: TokenUsage
@@ -162,8 +142,6 @@ export const createRuntimeState = (
       lastActivityAtMs: nowMs,
       turn: 0,
       memoryRefresh,
-      focusCompressedContexts: [],
-      packetSummary: '',
     },
     worker: {
       lastActivityAtMs: nowMs,
