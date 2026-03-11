@@ -39,6 +39,10 @@ test('readTaskResultArchive restores provider and handoff payload', async () => 
   const stateDir = await createTmpDir()
   const path = await appendTaskResultArchive(stateDir, {
     ...archiveEntry,
+    taskStatus: 'succeeded',
+    outcome: 'completed',
+    stopReason: 'completed',
+    cancel: { source: 'user', reason: 'requested' },
     handoff: {
       summary: 'Done',
       artifacts: [{ path: 'tasks/2026-03-03/task-archive-1.md', kind: 'task_archive' }],
@@ -48,6 +52,10 @@ test('readTaskResultArchive restores provider and handoff payload', async () => 
 
   const parsed = await readTaskResultArchive(path)
   expect(parsed?.provider).toBe('opencode')
+  expect(parsed?.taskStatus).toBe('succeeded')
+  expect(parsed?.outcome).toBe('completed')
+  expect(parsed?.stopReason).toBe('completed')
+  expect(parsed?.cancel).toMatchObject({ source: 'user', reason: 'requested' })
   expect(parsed?.handoff?.evidence?.[0]).toMatchObject({
     type: 'task_archive',
   })

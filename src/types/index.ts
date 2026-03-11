@@ -1,4 +1,13 @@
 import type {
+  FocusStatus,
+  ManagerWakeProfile,
+  TaskPlanStatus,
+  TaskPlanTriggerMode,
+  TaskResultStatus,
+  TaskStatus,
+  WorkerProvider,
+} from './runtime-domain.js'
+import type {
   focusDigestSchema,
   focusMetaSchema,
   managerContextPacketSchema,
@@ -14,6 +23,19 @@ import type {
   userChoiceOptionSchema,
 } from '../storage/runtime-snapshot-schema.js'
 import type { z } from 'zod'
+
+export type {
+  FocusStatus,
+  ManagerWakeProfile,
+  TaskCancelSource,
+  TaskPlanStatus,
+  TaskPlanTriggerMode,
+  TaskResultOutcome,
+  TaskResultStatus,
+  TaskResultStopReason,
+  TaskStatus,
+  WorkerProvider,
+} from './runtime-domain.js'
 export type ISODate = string
 export type Id = string
 export type FocusId = string
@@ -207,25 +229,6 @@ type UserInputSystem = {
   quote?: Id
 }
 export type UserInput = UserInputUser | UserInputSystem
-export type TaskStatus =
-  | 'pending'
-  | 'paused'
-  | 'running'
-  | 'succeeded'
-  | 'failed'
-  | 'canceled'
-export type TaskCancelSource = 'user' | 'deferred' | 'system'
-export type TaskResultStatus =
-  | Extract<TaskStatus, 'succeeded' | 'failed' | 'canceled'>
-  | 'partial'
-export type TaskResultOutcome = 'completed' | 'partial' | 'blocked'
-export type TaskResultStopReason =
-  | 'completed'
-  | 'budget_exhausted'
-  | 'guard_rejected'
-  | 'input_required'
-  | 'failed'
-  | 'canceled'
 export type TaskResultHandoffArtifact = {
   path: string
   kind?: string | undefined
@@ -269,18 +272,11 @@ export type TaskEvidence = {
   nextSteps?: string[] | undefined
   risks?: string[] | undefined
 }
-export type WorkerProvider = 'codex' | 'opencode'
 export type WorkerProfile = 'worker'
 export type ProviderCapability = 'low' | 'medium' | 'high'
 export type ProviderBilling = 'free' | 'low' | 'medium' | 'high'
 export type PlanPriority = 'high' | 'normal' | 'low'
 export type PlanSource = 'user_request' | 'agent_auto' | 'retry_decision'
-export type TaskPlanStatus = 'active' | 'blocked' | 'done'
-export type TaskPlanTriggerMode =
-  | 'cron'
-  | 'scheduled_at'
-  | 'on_worker_slot_freed'
-export type FocusStatus = 'active' | 'idle' | 'done' | 'archived'
 export type TaskCancelMeta = z.infer<typeof taskCancelSchema>
 export type TaskResult = z.infer<typeof taskResultSchema>
 export type Task = z.infer<typeof taskSchema>
@@ -299,12 +295,6 @@ export type JsonPacket<TPayload> = {
   createdAt: string
   payload: TPayload
 }
-export type ManagerWakeProfile =
-  | 'user_input'
-  | 'task_result'
-  | 'trigger'
-  | 'capacity'
-  | 'mixed'
 export type ManagerPacketMode = z.infer<typeof managerPacketModeSchema>
 export type ManagerPacketSection = z.infer<typeof managerPacketSectionSchema>
 export type ManagerContextPacket = z.infer<typeof managerContextPacketSchema>

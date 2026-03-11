@@ -6,6 +6,14 @@ import { safe } from '../log/safe.js'
 import { tokenizeSearchTextWithCjkFallback } from '../shared/text-search.js'
 import { truncateText } from '../shared/text.js'
 import { parseIsoToMs } from '../shared/time.js'
+import {
+  parseTaskCancelSource,
+  parseTaskResultOutcome,
+  parseTaskResultStatus,
+  parseTaskResultStopReason,
+  parseTaskStatus,
+  parseWorkerProvider,
+} from '../types/runtime-domain.js'
 
 import {
   extractArchiveSection,
@@ -14,60 +22,21 @@ import {
 import { parseTokenUsageJson } from './token-usage.js'
 
 import type {
-  Task,
   TaskArchiveLookupMessage,
   TaskCancelMeta,
   TaskResult,
   TaskResultHandoff,
   TaskResultStatus,
-  WorkerProvider,
 } from '../types/index.js'
 
 const parseStatus = (value?: string): TaskResultStatus | null =>
-  value === 'succeeded' ||
-  value === 'failed' ||
-  value === 'canceled' ||
-  value === 'partial'
-    ? value
-    : null
-
-const parseTaskStatus = (value?: string): Task['status'] | undefined =>
-  value === 'pending' ||
-  value === 'paused' ||
-  value === 'running' ||
-  value === 'succeeded' ||
-  value === 'failed' ||
-  value === 'canceled'
-    ? value
-    : undefined
-
-const parseOutcome = (value?: string): TaskResult['outcome'] | undefined =>
-  value === 'completed' || value === 'partial' || value === 'blocked'
-    ? value
-    : undefined
-
-const parseStopReason = (
-  value?: string,
-): TaskResult['stopReason'] | undefined =>
-  value === 'completed' ||
-  value === 'budget_exhausted' ||
-  value === 'guard_rejected' ||
-  value === 'input_required' ||
-  value === 'failed' ||
-  value === 'canceled'
-    ? value
-    : undefined
-
-const parseProvider = (value?: string): WorkerProvider | undefined =>
-  value === 'codex' || value === 'opencode' ? value : undefined
+  parseTaskResultStatus(value) ?? null
 
 const parseCancelSource = (
   value?: string,
 ): TaskCancelMeta['source'] | undefined => {
-  if (value === 'user' || value === 'http') return 'user'
-  if (value === 'deferred') return 'deferred'
-  if (value === 'system') return 'system'
-  return undefined
+  const normalized = value === 'http' ? 'user' : value
+  return parseTaskCancelSource(normalized)
 }
 
 const parseStringList = (value: unknown): string[] | undefined => {
@@ -260,10 +229,10 @@ const parseTaskResultArchive = (
 
   const durationMs = Number(parsed.header.duration_ms)
   const usage = parseTokenUsageJson(parsed.header.usage)
-  const provider = parseProvider(parsed.header.provider)
+  const provider = parseWorkerProvider(parsed.header.provider)
   const taskStatus = parseTaskStatus(parsed.header.task_status)
-  const outcome = parseOutcome(parsed.header.outcome)
-  const stopReason = parseStopReason(parsed.header.stop_reason)
+  const outcome = parseTaskResultOutcome(parsed.header.outcome)
+  const stopReason = parseTaskResultStopReason(parsed.header.stop_reason)
   const cancelSource = parseCancelSource(parsed.header.cancel_source)
   const cancel: TaskCancelMeta | undefined = cancelSource
     ? {
