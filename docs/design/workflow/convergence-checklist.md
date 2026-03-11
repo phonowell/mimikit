@@ -34,10 +34,11 @@
 ### 收敛-4 · runtime state/type 单一真相
 
 - done definition：runtime 持久化域遵循 `schema -> types -> parser` 单向派生；归档/快照读取不再手写平行枚举与对象结构；`RuntimeState` 对外暴露继续收缩。
-- 当前已完成：`src/types/runtime-domain.ts` 已从 `src/storage/runtime-snapshot-schema.ts` 派生状态/provider/outcome/stopReason 等类型；`src/storage/task-results-read.ts` 的归档读取已复用 schema 派生解析，移除手写状态/provider/outcome/stopReason/handoff/evidence 判断；已补 `tests/task-results-archive.test.ts` 覆盖 `evidence` 回读与空 `handoff` 忽略回退。
-- 本刀验收（2026-03-11）：验证 `pnpm run review-code-changes`；commit `024337c`；结果：任务归档 `handoff/evidence` 已接入 `runtime-snapshot-schema` 派生链，`391` 个测试通过。
-- 剩余 TODO：继续把 runtime snapshot 持久化字段与 `RuntimeState` slice / adapter API 收回同一派生链，避免跨层继续透传总对象。
-- 下一刀候选：优先收敛 `runtime-adapter` 的 slice 化出口，避免 `RuntimeState` 继续作为跨层总对象扩张。
+- 当前已完成：`src/types/runtime-domain.ts` 已从 `src/storage/runtime-snapshot-schema.ts` 派生状态/provider/outcome/stopReason 等类型；`src/storage/task-results-read.ts` 的归档读取已复用 schema 派生解析，移除手写状态/provider/outcome/stopReason/handoff/evidence 判断；`src/orchestrator/core/runtime-snapshot-persist.ts` 已把 snapshot 写盘字段收为单独 slice builder，`persistRuntimeState()` 不再在写盘时原地过滤 `runtime.focusDigests`；已补 `tests/task-results-archive.test.ts` 与 `tests/runtime-persistence-focus-digests.test.ts` 覆盖归档回读与“snapshot 过滤不污染内存态”回归。
+- 前刀验收（2026-03-11）：验证 `pnpm run review-code-changes`；commit `024337c`；结果：任务归档 `handoff/evidence` 已接入 `runtime-snapshot-schema` 派生链，`391` 个测试通过。
+- 本刀验收（2026-03-11）：验证 `pnpm exec vitest run tests/runtime-persistence-queue-reconcile.test.ts tests/runtime-persistence-focus-digests.test.ts`、`git diff --check`、`pnpm run review-code-changes`；commit `516af5a`；结果：runtime snapshot 写盘已收为 schema 对齐 slice builder，reserved `focusDigests` 仅过滤 snapshot payload，不再改写运行时内存；`114` 个测试文件、`392` 个测试通过。
+- 剩余 TODO：继续把 runtime snapshot 持久化字段与 `RuntimeState` slice / adapter API 收回同一派生链，尤其是 hydrate / adapter 侧仍保留的总对象透传。
+- 下一刀候选：优先收敛 `hydrateRuntimeState()` / `runtime-adapter` 的相邻 slice 出口，避免 `RuntimeState` 继续作为跨层总对象扩张。
 
 ### 收敛-5 · WebUI 最小工程化
 
@@ -48,6 +49,6 @@
 
 ## 本轮结果
 
-- 本轮范围：仅落地持续维护的 checklist 与索引入口，不继续推进任何代码收敛续刀。
-- 本轮已完成：已对齐“收敛-1~5”归档与当前仓库主线状态，补齐本清单并接入 `docs/design/README.md`、`docs/design/workflow/task-and-action.md`。
-- 下一刀候选（1-3）：`收敛-2 plan payload/view trigger 化`、`收敛-3 session poller 抽离`、`收敛-5 dialog/tasks 渲染模块化`。
+- 本轮范围：仅推进 `收敛-4` 的 runtime snapshot 写盘 slice 化，不扩展其他收敛项。
+- 本轮已完成：`persistRuntimeState()` 已改为经 `src/orchestrator/core/runtime-snapshot-persist.ts` 组装 snapshot；新增 `tests/runtime-persistence-focus-digests.test.ts` 锁定“snapshot 过滤不污染内存态”回归；代码提交 `516af5a` 已推送到 `main`。
+- 下一刀候选（1-3）：`收敛-4 hydrate/runtime-adapter slice 化`、`收敛-2 plan payload/view trigger 化`、`收敛-3 session poller 抽离`。
