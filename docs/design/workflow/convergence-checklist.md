@@ -34,8 +34,9 @@
 ### 收敛-4 · runtime state/type 单一真相
 
 - done definition：runtime 持久化域遵循 `schema -> types -> parser` 单向派生；归档/快照读取不再手写平行枚举与对象结构；`RuntimeState` 对外暴露继续收缩。
-- 当前已完成：`src/types/runtime-domain.ts` 已从 `src/storage/runtime-snapshot-schema.ts` 派生状态/provider/outcome/stopReason 等类型；`src/storage/task-results-read.ts` 的归档读取已复用 schema 派生解析，移除手写状态/provider/outcome/stopReason 判断。
-- 剩余 TODO：继续把归档/快照其余持久化字段收回同一派生链；`RuntimeState` slice 与 adapter API 仍有继续收口空间。
+- 当前已完成：`src/types/runtime-domain.ts` 已从 `src/storage/runtime-snapshot-schema.ts` 派生状态/provider/outcome/stopReason 等类型；`src/storage/task-results-read.ts` 的归档读取已复用 schema 派生解析，移除手写状态/provider/outcome/stopReason/handoff/evidence 判断；已补 `tests/task-results-archive.test.ts` 覆盖 `evidence` 回读与空 `handoff` 忽略回退。
+- 本刀验收（2026-03-11）：验证 `pnpm run review-code-changes`；commit `024337c`；结果：任务归档 `handoff/evidence` 已接入 `runtime-snapshot-schema` 派生链，`391` 个测试通过。
+- 剩余 TODO：继续把 runtime snapshot 持久化字段与 `RuntimeState` slice / adapter API 收回同一派生链，避免跨层继续透传总对象。
 - 下一刀候选：优先收敛 `runtime-adapter` 的 slice 化出口，避免 `RuntimeState` 继续作为跨层总对象扩张。
 
 ### 收敛-5 · WebUI 最小工程化
