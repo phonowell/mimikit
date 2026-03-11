@@ -1,21 +1,18 @@
 import { readHistory } from '../../history/store.js'
 import { appendLog } from '../../log/append.js'
 import { bestEffort } from '../../log/safe.js'
-import {
-  hydrateMemoryRefreshState,
-  toPersistedMemoryRefreshState,
-} from '../../memory/refresh/state.js'
+import { toPersistedMemoryRefreshState } from '../../memory/refresh/state.js'
 import { readJsonl } from '../../storage/jsonl.js'
 import {
   loadRuntimeSnapshot,
   saveRuntimeSnapshot,
 } from '../../storage/runtime-snapshot.js'
 
+import { applyRuntimeSnapshot } from './runtime-snapshot-hydrate.js'
 import {
   buildRuntimeSnapshot,
   normalizeChannelTargets,
   type RuntimeSnapshotPersistSlice,
-  selectPersistedFocusDigests,
 } from './runtime-snapshot-persist.js'
 import { restoreTaskResumeChoiceOnHydrate } from './task-resume-choice.js'
 
@@ -35,10 +32,10 @@ const readQueuePacketCount = async (path: string): Promise<number> =>
   ).length
 
 const restoreChannelTargetsFromHistory = async (
-  runtime: RuntimeState,
+  historyPath: string,
   currentTargets: RuntimeState['session']['channelTargets'] = {},
 ): Promise<RuntimeState['session']['channelTargets']> => {
-  const history = await readHistory(runtime.paths.history)
+  const history = await readHistory(historyPath)
   let { telegramChatId } = currentTargets
   let { feishuChatId } = currentTargets
   for (let index = history.length - 1; index >= 0; index -= 1) {
@@ -127,31 +124,13 @@ export const hydrateRuntimeState = async (
   runtime: RuntimeState,
 ): Promise<void> => {
   const snapshot = await loadRuntimeSnapshot(runtime.config.workDir)
-  runtime.tasks = snapshot.tasks
-  runtime.taskPlans = snapshot.taskPlans
-  runtime.focuses = snapshot.focuses ?? []
-  runtime.focusDigests = selectPersistedFocusDigests(
-    snapshot.focusDigests ?? [],
-  )
-  runtime.manager.turn = snapshot.managerTurn ?? 0
-  if (snapshot.managerThreadId)
-    runtime.manager.threadId = snapshot.managerThreadId
-  else delete runtime.manager.threadId
-  runtime.manager.memoryRefresh = hydrateMemoryRefreshState(snapshot)
-  delete runtime.manager.lastContextPacket
-  delete runtime.manager.lastUsage
-  delete runtime.manager.usageTotal
-  runtime.ui.pendingUserChoices = snapshot.pendingUserChoices ?? []
-  runtime.session.channelTargets = await restoreChannelTargetsFromHistory(
-    runtime,
-    normalizeChannelTargets(snapshot.channelTargets),
-  )
-  if (snapshot.queues) {
-    runtime.queues = {
-      inputsCursor: snapshot.queues.inputsCursor,
-      resultsCursor: snapshot.queues.resultsCursor,
-    }
-  }
+  applyRuntimeSnapshot(runtime, {
+    snapshot,
+    channelTargets: await restoreChannelTargetsFromHistory(
+      runtime.paths.history,
+      normalizeChannelTargets(snapshot.channelTargets),
+    ),
+  })
   await reconcileRuntimeQueueState(runtime)
   restoreTaskResumeChoiceOnHydrate(runtime)
 
