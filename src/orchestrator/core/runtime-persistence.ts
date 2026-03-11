@@ -1,4 +1,3 @@
-import { canPersistFocusDigest } from '../../focus/reserved.js'
 import { readHistory } from '../../history/store.js'
 import { appendLog } from '../../log/append.js'
 import { bestEffort } from '../../log/safe.js'
@@ -7,13 +6,17 @@ import {
   toPersistedMemoryRefreshState,
 } from '../../memory/refresh/state.js'
 import { readJsonl } from '../../storage/jsonl.js'
-import { RUNTIME_SNAPSHOT_SCHEMA_VERSION } from '../../storage/runtime-schema-version.js'
 import {
   loadRuntimeSnapshot,
   saveRuntimeSnapshot,
-  selectPersistedTasks,
 } from '../../storage/runtime-snapshot.js'
 
+import {
+  buildRuntimeSnapshot,
+  normalizeChannelTargets,
+  type RuntimeSnapshotPersistSlice,
+  selectPersistedFocusDigests,
+} from './runtime-snapshot-persist.js'
 import { restoreTaskResumeChoiceOnHydrate } from './task-resume-choice.js'
 
 import type { RuntimeState } from './runtime-state.js'
@@ -30,28 +33,6 @@ const readQueuePacketCount = async (path: string): Promise<number> =>
       ensureFile: true,
     })
   ).length
-
-const normalizePersistedFocusDigests = (runtime: RuntimeState): void => {
-  runtime.focusDigests = runtime.focusDigests.filter((item) =>
-    canPersistFocusDigest(item.focusId),
-  )
-}
-
-const normalizeChannelTargets = (
-  value:
-    | {
-        telegramChatId?: string | undefined
-        feishuChatId?: string | undefined
-      }
-    | undefined,
-) => {
-  const telegramChatId = value?.telegramChatId?.trim()
-  const feishuChatId = value?.feishuChatId?.trim()
-  return {
-    ...(telegramChatId ? { telegramChatId } : {}),
-    ...(feishuChatId ? { feishuChatId } : {}),
-  }
-}
 
 const restoreChannelTargetsFromHistory = async (
   runtime: RuntimeState,
@@ -149,8 +130,9 @@ export const hydrateRuntimeState = async (
   runtime.tasks = snapshot.tasks
   runtime.taskPlans = snapshot.taskPlans
   runtime.focuses = snapshot.focuses ?? []
-  runtime.focusDigests = snapshot.focusDigests ?? []
-  normalizePersistedFocusDigests(runtime)
+  runtime.focusDigests = selectPersistedFocusDigests(
+    snapshot.focusDigests ?? [],
+  )
   runtime.manager.turn = snapshot.managerTurn ?? 0
   if (snapshot.managerThreadId)
     runtime.manager.threadId = snapshot.managerThreadId
@@ -184,31 +166,13 @@ export const hydrateRuntimeState = async (
 }
 
 export const persistRuntimeState = async (
-  runtime: RuntimeState,
+  runtime: RuntimeSnapshotPersistSlice,
 ): Promise<void> => {
-  normalizePersistedFocusDigests(runtime)
-  await saveRuntimeSnapshot(runtime.config.workDir, {
-    schemaVersion: RUNTIME_SNAPSHOT_SCHEMA_VERSION,
-    tasks: selectPersistedTasks(runtime.tasks),
-    taskPlans: runtime.taskPlans,
-    focuses: runtime.focuses,
-    focusDigests: runtime.focusDigests,
-    managerTurn: runtime.manager.turn,
-    ...(runtime.manager.threadId
-      ? { managerThreadId: runtime.manager.threadId }
-      : {}),
-    queues: runtime.queues,
-    ...(Object.keys(normalizeChannelTargets(runtime.session.channelTargets))
-      .length > 0
-      ? {
-          channelTargets: normalizeChannelTargets(
-            runtime.session.channelTargets,
-          ),
-        }
-      : {}),
-    ...(runtime.ui.pendingUserChoices.length > 0
-      ? { pendingUserChoices: runtime.ui.pendingUserChoices }
-      : {}),
-    memoryRefresh: toPersistedMemoryRefreshState(runtime.manager.memoryRefresh),
-  })
+  await saveRuntimeSnapshot(
+    runtime.config.workDir,
+    buildRuntimeSnapshot(
+      runtime,
+      toPersistedMemoryRefreshState(runtime.manager.memoryRefresh),
+    ),
+  )
 }
