@@ -48,6 +48,13 @@ test('readTaskResultArchive restores provider and handoff payload', async () => 
       artifacts: [{ path: 'tasks/2026-03-03/task-archive-1.md', kind: 'task_archive' }],
       evidence: [{ type: 'task_archive', ref: 'tasks/2026-03-03/task-archive-1.md' }],
     },
+    evidence: {
+      status: 'done',
+      contractGoal: 'Archive task outcome',
+      acceptanceChecks: [{ criterion: 'Archive exists', met: true }],
+      stateDelta: { taskStatusFrom: 'running', taskStatusTo: 'succeeded' },
+      nextSteps: ['Notify reviewer'],
+    },
   })
 
   const parsed = await readTaskResultArchive(path)
@@ -59,6 +66,22 @@ test('readTaskResultArchive restores provider and handoff payload', async () => 
   expect(parsed?.handoff?.evidence?.[0]).toMatchObject({
     type: 'task_archive',
   })
+  expect(parsed?.evidence).toMatchObject({
+    status: 'done',
+    contractGoal: 'Archive task outcome',
+    stateDelta: { taskStatusFrom: 'running', taskStatusTo: 'succeeded' },
+  })
+})
+
+test('readTaskResultArchive ignores empty handoff payload', async () => {
+  const stateDir = await createTmpDir()
+  const path = await appendTaskResultArchive(stateDir, {
+    ...archiveEntry,
+    handoff: {},
+  })
+
+  const parsed = await readTaskResultArchive(path)
+  expect(parsed?.handoff).toBeUndefined()
 })
 
 test('readTaskResultsForTasks keeps the newest archive for a task on same day', async () => {

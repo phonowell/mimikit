@@ -19,6 +19,10 @@ import {
   extractArchiveSection,
   parseArchiveDocument,
 } from './archive-format.js'
+import {
+  taskEvidenceSchema,
+  taskResultHandoffSchema,
+} from './runtime-snapshot-schema.js'
 import { parseTokenUsageJson } from './token-usage.js'
 
 import type {
@@ -28,6 +32,7 @@ import type {
   TaskResultHandoff,
   TaskResultStatus,
 } from '../types/index.js'
+import type { z } from 'zod'
 
 const parseStatus = (value?: string): TaskResultStatus | null =>
   parseTaskResultStatus(value) ?? null
@@ -39,70 +44,10 @@ const parseCancelSource = (
   return parseTaskCancelSource(normalized)
 }
 
-const parseStringList = (value: unknown): string[] | undefined => {
-  if (!Array.isArray(value)) return undefined
-  const items = value
-    .map((item) => (typeof item === 'string' ? item.trim() : ''))
-    .filter((item) => item.length > 0)
-  return items.length > 0 ? items : undefined
-}
-
-const parseHandoffArtifactList = (
-  value: unknown,
-): TaskResultHandoff['artifacts'] | undefined => {
-  if (!Array.isArray(value)) return undefined
-  const items = value
-    .map((item) => {
-      if (!item || typeof item !== 'object') return undefined
-      const path = typeof item.path === 'string' ? item.path.trim() : ''
-      if (!path) return undefined
-      const kind = typeof item.kind === 'string' ? item.kind.trim() : ''
-      const note = typeof item.note === 'string' ? item.note.trim() : ''
-      return {
-        path,
-        ...(kind ? { kind } : {}),
-        ...(note ? { note } : {}),
-      }
-    })
-    .filter((item): item is NonNullable<typeof item> => Boolean(item))
-  return items.length > 0 ? items : undefined
-}
-
-type TaskResultHandoffEvidenceType = NonNullable<
-  TaskResultHandoff['evidence']
->[number]['type']
-
-const parseHandoffEvidenceType = (
-  value: unknown,
-): TaskResultHandoffEvidenceType | undefined =>
-  value === 'task_archive' || value === 'file' || value === 'history'
-    ? value
-    : undefined
-
-const parseHandoffEvidenceList = (
-  value: unknown,
-): TaskResultHandoff['evidence'] | undefined => {
-  if (!Array.isArray(value)) return undefined
-  const items = value
-    .map((item) => {
-      if (!item || typeof item !== 'object') return undefined
-      const type = parseHandoffEvidenceType(item.type)
-      const ref = typeof item.ref === 'string' ? item.ref.trim() : ''
-      if (!type || !ref) return undefined
-      const note = typeof item.note === 'string' ? item.note.trim() : ''
-      return {
-        type,
-        ref,
-        ...(note ? { note } : {}),
-      }
-    })
-    .filter((item): item is NonNullable<typeof item> => Boolean(item))
-  return items.length > 0 ? items : undefined
-}
-
-const parseTaskResultHandoff = (
-  raw?: string,
-): TaskResultHandoff | undefined => {
+const parseArchiveJsonObject = <T extends Record<string, unknown>>(
+  raw: string | undefined,
+  schema: z.ZodType<T>,
+): T | undefined => {
   if (!raw) return undefined
   let parsed: unknown
   try {
@@ -110,111 +55,16 @@ const parseTaskResultHandoff = (
   } catch {
     return undefined
   }
-  if (!parsed || typeof parsed !== 'object') return undefined
-  const data = parsed as Record<string, unknown>
-  const goal = typeof data.goal === 'string' ? data.goal.trim() : ''
-  const summary = typeof data.summary === 'string' ? data.summary.trim() : ''
-  const decisions = parseStringList(data.decisions)
-  const nextSteps = parseStringList(data.nextSteps)
-  const risks = parseStringList(data.risks)
-  const artifacts = parseHandoffArtifactList(data.artifacts)
-  const evidence = parseHandoffEvidenceList(data.evidence)
-  if (
-    !goal &&
-    !summary &&
-    !decisions &&
-    !nextSteps &&
-    !risks &&
-    !artifacts &&
-    !evidence
-  )
-    return undefined
-  return {
-    ...(goal ? { goal } : {}),
-    ...(summary ? { summary } : {}),
-    ...(decisions ? { decisions } : {}),
-    ...(nextSteps ? { nextSteps } : {}),
-    ...(risks ? { risks } : {}),
-    ...(artifacts ? { artifacts } : {}),
-    ...(evidence ? { evidence } : {}),
-  }
+  const result = schema.safeParse(parsed)
+  if (!result.success) return undefined
+  return Object.keys(result.data).length > 0 ? result.data : undefined
 }
 
-const parseTaskEvidence = (
-  raw?: string,
-): TaskResult['evidence'] | undefined => {
-  if (!raw) return undefined
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(raw) as unknown
-  } catch {
-    return undefined
-  }
-  if (!parsed || typeof parsed !== 'object') return undefined
-  const data = parsed as Record<string, unknown>
-  const statusRaw = typeof data.status === 'string' ? data.status : ''
-  const status =
-    statusRaw === 'done' || statusRaw === 'partial' || statusRaw === 'failed'
-      ? statusRaw
-      : undefined
-  const contractGoal =
-    typeof data.contractGoal === 'string' ? data.contractGoal.trim() : ''
-  if (!status || !contractGoal) return undefined
-  const stateDeltaRaw =
-    data.stateDelta && typeof data.stateDelta === 'object'
-      ? (data.stateDelta as Record<string, unknown>)
-      : undefined
-  if (!stateDeltaRaw) return undefined
-  const taskStatusToRaw =
-    typeof stateDeltaRaw.taskStatusTo === 'string'
-      ? stateDeltaRaw.taskStatusTo
-      : ''
-  const taskStatusTo = parseTaskStatus(taskStatusToRaw)
-  if (!taskStatusTo) return undefined
-  const acceptanceRaw = Array.isArray(data.acceptanceChecks)
-    ? data.acceptanceChecks
-    : []
-  const acceptanceChecks = acceptanceRaw
-    .map((item) => {
-      if (!item || typeof item !== 'object') return undefined
-      const row = item as Record<string, unknown>
-      const criterion =
-        typeof row.criterion === 'string' ? row.criterion.trim() : ''
-      const met = typeof row.met === 'boolean' ? row.met : undefined
-      if (!criterion || met === undefined) return undefined
-      const note = typeof row.note === 'string' ? row.note.trim() : ''
-      return {
-        criterion,
-        met,
-        ...(note ? { note } : {}),
-      }
-    })
-    .filter((item): item is NonNullable<typeof item> => Boolean(item))
-  if (acceptanceChecks.length === 0) return undefined
-  const nextSteps = parseStringList(data.nextSteps)
-  const risks = parseStringList(data.risks)
-  const statusFromRaw =
-    typeof stateDeltaRaw.taskStatusFrom === 'string'
-      ? stateDeltaRaw.taskStatusFrom
-      : undefined
-  const taskStatusFrom = parseTaskStatus(statusFromRaw)
-  const archivePathRaw =
-    typeof stateDeltaRaw.archivePath === 'string'
-      ? stateDeltaRaw.archivePath.trim()
-      : undefined
-  return {
-    status,
-    contractGoal,
-    acceptanceChecks,
-    stateDelta: {
-      ...(taskStatusFrom ? { taskStatusFrom } : {}),
-      taskStatusTo,
-      ...(archivePathRaw ? { archivePath: archivePathRaw } : {}),
-    },
-    ...(nextSteps ? { nextSteps } : {}),
-    ...(risks ? { risks } : {}),
-  }
-}
+const parseTaskResultHandoff = (raw?: string): TaskResultHandoff | undefined =>
+  parseArchiveJsonObject(raw, taskResultHandoffSchema)
+
+const parseTaskEvidence = (raw?: string): TaskResult['evidence'] | undefined =>
+  parseArchiveJsonObject(raw, taskEvidenceSchema)
 
 const parseTaskResultArchive = (
   content: string,

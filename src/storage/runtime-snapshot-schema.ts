@@ -57,7 +57,7 @@ const taskResultHandoffEvidenceSchema = z
   })
   .strict()
 
-const taskResultHandoffSchema = z
+export const taskResultHandoffSchema = z
   .object({
     goal: z.string().trim().min(1).optional(),
     summary: z.string().trim().min(1).optional(),
@@ -77,7 +77,7 @@ const taskEvidenceAcceptanceSchema = z
   })
   .strict()
 
-const taskEvidenceSchema = z
+export const taskEvidenceSchema = z
   .object({
     status: z.enum(['done', 'partial', 'failed']),
     contractGoal: z.string().trim().min(1),
