@@ -14,6 +14,7 @@ import { createMessageState } from './state.js'
 import { createControllerQueue } from './controller-queue.js'
 import { createSseController } from './controller-sse.js'
 import { createPayloadController } from './controller-payload.js'
+import { createControllerViewState } from './controller-view-state.js'
 
 const EVENTS_URL = '/api/events'
 const RECONNECT_BASE_DELAY_MS = 1200
@@ -44,24 +45,12 @@ export function createMessagesController({
   let lastStatus = null
   let isStarted = false
   let unsubscribeTimeTick = null
-  let deleteModeEnabled = false
   const messageState = createMessageState()
-
-  const scroll = createScrollController({
-    messagesEl,
-    scrollBottomBtn,
-    scrollBottomMultiplier: 1.5,
-  })
-  let stickBottomAfterChoicePanelShift = false
-
-  const beginChoicePanelLayoutShift = () => {
-    stickBottomAfterChoicePanelShift = scroll.isNearBottom()
+  const setLastStatus = (value) => {
+    lastStatus = value
   }
 
-  const endChoicePanelLayoutShift = () => {
-    scroll.syncAfterLayoutShift({ stickToBottom: stickBottomAfterChoicePanelShift })
-    stickBottomAfterChoicePanelShift = false
-  }
+  const scroll = createScrollController({ messagesEl, scrollBottomBtn, scrollBottomMultiplier: 1.5 })
 
   let removeEmpty = () => {}
   const loading = createLoadingController({
@@ -88,10 +77,17 @@ export function createMessagesController({
     loading,
     quote,
     onDelete: deleteMessages.deleteMessage,
-    isDeleteMode: () => deleteModeEnabled,
+    isDeleteMode: () => viewState.isDeleteMode(),
   })
   removeEmpty = rendering.removeEmpty
   const { doRender } = rendering
+  const viewState = createControllerViewState({
+    scroll,
+    messageState,
+    quote,
+    deleteMessages,
+    doRender,
+  })
 
   const syncLoadingState = () => {
     const shouldWait = messageState.awaitingReply
@@ -99,18 +95,8 @@ export function createMessagesController({
     else if (!shouldWait && loading.isLoading()) loading.setLoading(false)
   }
 
-  const updateStatus = (status) => {
-    updateControllerStatus({
-      status,
-      statusDot,
-      statusText,
-      workerDots,
-      setLastStatus: (value) => {
-        lastStatus = value
-      },
-      syncLoadingState,
-    })
-  }
+  const updateStatus = (status) =>
+    updateControllerStatus({ status, statusDot, statusText, workerDots, setLastStatus, syncLoadingState })
 
   const setDisconnected = createDisconnectHandler({
     statusDot,
@@ -118,9 +104,7 @@ export function createMessagesController({
     workerDots,
     messageState,
     loading,
-    setLastStatus: (value) => {
-      lastStatus = value
-    },
+    setLastStatus,
   })
 
   const payload = createPayloadController({
@@ -136,10 +120,7 @@ export function createMessagesController({
     onAgentMessages,
   })
 
-  const queue = createControllerQueue({
-    applySnapshot: payload.applySnapshot,
-    applyTasksSnapshot: payload.applyTasksSnapshot,
-  })
+  const queue = createControllerQueue({ applySnapshot: payload.applySnapshot, applyTasksSnapshot: payload.applyTasksSnapshot })
 
   const sse = createSseController({
     eventsUrl: EVENTS_URL,
@@ -173,33 +154,12 @@ export function createMessagesController({
   if (quotePreview) quotePreview.addEventListener('dblclick', quote.clear)
   deleteMessages.bindDialogEvents()
 
-  const refreshRenderedTimes = () => {
-    const messages = Array.isArray(messageState.lastMessages)
-      ? messageState.lastMessages
-      : []
-    if (messages.length === 0) return
-    doRender(messages, new Set())
-  }
-
-  const setDeleteMode = (enabled) => {
-    const nextDeleteMode = Boolean(enabled)
-    if (deleteModeEnabled === nextDeleteMode) return deleteModeEnabled
-    deleteModeEnabled = nextDeleteMode
-    deleteMessages.setDeleteMode(nextDeleteMode)
-    if (nextDeleteMode) quote.clear()
-    const messages = Array.isArray(messageState.lastMessages)
-      ? messageState.lastMessages
-      : []
-    doRender(messages, new Set())
-    return deleteModeEnabled
-  }
-
   const start = () => {
     if (isStarted) return
     isStarted = true
     if (!unsubscribeTimeTick) {
       unsubscribeTimeTick = subscribeTimeTick(() => {
-        refreshRenderedTimes()
+        viewState.refreshRenderedTimes()
       })
     }
     scroll.bindScrollControls()
@@ -225,9 +185,9 @@ export function createMessagesController({
     isFullyIdle,
     isNearBottom: scroll.isNearBottom,
     syncAfterLayoutShift: scroll.syncAfterLayoutShift,
-    beginChoicePanelLayoutShift,
-    endChoicePanelLayoutShift,
-    setDeleteMode,
-    isDeleteMode: () => deleteModeEnabled,
+    beginChoicePanelLayoutShift: viewState.beginChoicePanelLayoutShift,
+    endChoicePanelLayoutShift: viewState.endChoicePanelLayoutShift,
+    setDeleteMode: viewState.setDeleteMode,
+    isDeleteMode: viewState.isDeleteMode,
   }
 }
