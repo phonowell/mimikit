@@ -6,6 +6,10 @@ import { notifyUiSignal } from './signals.js'
 import type { RuntimeState } from './runtime-state.js'
 import type { PendingUserChoice, Task } from '../../types/index.js'
 
+export type RuntimeResumeChoiceHydrateSlice = Pick<RuntimeState, 'tasks'> & {
+  ui: Pick<RuntimeState['ui'], 'pendingUserChoices'>
+}
+
 const RESUME_TASK_OPTION_ID = 'option-resume-task'
 const KEEP_TASK_PAUSED_OPTION_ID = 'option-keep-task-paused'
 
@@ -48,7 +52,7 @@ const resolveResumeChoiceCreatedAt = (task: Task): string =>
   task.pausedAt ?? task.result?.completedAt ?? task.createdAt
 
 export const restoreTaskResumeChoiceOnHydrate = (
-  runtime: RuntimeState,
+  runtime: RuntimeResumeChoiceHydrateSlice,
 ): void => {
   for (const task of runtime.tasks) {
     if (!isRecoverableBudgetPausedTask(task)) continue
