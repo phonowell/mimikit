@@ -4,6 +4,7 @@
 
 ## 概念文档
 
+- [领域模型最小语义 RFC（2026-03-11）](./minimal-semantics-rfc-2026-03-11.md)
 - [任务（Task）](./task.md)
 - [动作（Action）](./action.md)
 - [计划（Plan / TaskPlan）](./plan.md)
