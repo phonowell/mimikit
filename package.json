@@ -60,7 +60,7 @@
   },
   "license": "MIT",
   "scripts": {
-    "lint": "tsx scripts/remove-bom.ts && tsx scripts/fix-crlf.ts && tsx scripts/format-jsdoc.ts && tsx scripts/fn-to-arrow.ts && tsx scripts/prompt-hardcode-guard.ts && eslint \"src/**/*.ts\" \"webui/**/*.js\" --fix",
+    "lint": "pnpm run guard:file-length && tsx scripts/remove-bom.ts && tsx scripts/fix-crlf.ts && tsx scripts/format-jsdoc.ts && tsx scripts/fn-to-arrow.ts && tsx scripts/prompt-hardcode-guard.ts && eslint \"src/**/*.ts\" \"webui/**/*.js\" --fix",
     "prompt:preview": "tsx scripts/preview-prompt.ts",
     "start": "tsx scripts/start.ts",
     "test": "vitest run",
@@ -71,7 +71,8 @@
     "wt-slot": "node scripts/worktree/manage-slot.js",
     "score:worker-budget": "tsx scripts/worker-budget-report.ts",
     "score:manager-efficiency": "node .mimikit/tools/manager-efficiency-score.mjs",
-    "bootstrap": "node scripts/bootstrap.mjs"
+    "bootstrap": "node scripts/bootstrap.mjs",
+    "guard:file-length": "tsx scripts/check-file-length.ts"
   },
   "type": "module",
   "version": "0.1.0"

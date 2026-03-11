@@ -6,6 +6,7 @@
 git clone https://github.com/phonowell/mimikit.git
 cd mimikit
 pnpm i
+pnpm run guard:file-length
 pnpm run lint
 pnpm run type-check
 pnpm run test
@@ -26,10 +27,11 @@ See [Worktree Workflow](./docs/design/workflow/worktree.md) for details.
 ## Code Standards
 
 - **TypeScript ESM** with strict mode (no `any`)
-- **Files >200 lines**: split into modules
+- **Files >200 lines**: split into modules; `pnpm run guard:file-length` blocks new oversize files and growth of exempted debt
 - **IDs**: must include type prefixes (`task-`, `plan-`, `input-`, etc.)
 - **≥5 non-null assertions**: refactor type architecture
 - **Prompts**: keep in `prompts/` directory, inject via builders
+- **Oversize debt**: track only existing exceptions in `scripts/file-length-guard-exemptions.tsv` with exact current line counts
 - **No keyword-driven features**: use structural signals or model judgment
 
 ## Pull Request Guidelines

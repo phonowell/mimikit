@@ -117,7 +117,13 @@ CLI 默认输出 action 生命周期日志，并始终将其写入 `.mimikit/log
 MIMIKIT_ACTION_LOGS=false pnpm start
 ```
 
-### 4) 可选异步入口
+### 4) 本地门禁
+
+- `pnpm run guard:file-length`：报告并阻止受管范围内新增的 >200 行文件，也会阻止已豁免超限文件继续膨胀
+- `pnpm run lint`：已默认串联该 guard，避免“文件 >200 行需拆分”继续停留在口号层
+- 豁免台账在 `scripts/file-length-guard-exemptions.tsv`；只记录存量债务，不给新文件预留缓冲
+
+### 5) 可选异步入口
 
 Telegram：
 
