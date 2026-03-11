@@ -8,13 +8,13 @@ import { GLOBAL_FOCUS_ID } from '../src/focus/index.js'
 import { readHistory } from '../src/history/store.js'
 import { recoverManagerBatchFailure } from '../src/manager/loop-batch-flow.js'
 import { createTask } from '../src/orchestrator/core/task-lifecycle.js'
+import { ProviderError } from '../src/providers/provider-error.js'
 import {
   consumeWorkerResults,
   publishUserInput,
   publishWorkerResult,
 } from '../src/streams/queues.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
-
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
 import type { TaskResult, UserInput } from '../src/types/index.js'
 
@@ -57,7 +57,6 @@ const createRuntime = async (): Promise<RuntimeState> => {
   })
   return runtime
 }
-
 afterEach(async () => {
   mockedSendTelegramTextMessage.mockClear()
   mockedSendFeishuTextMessage.mockClear()
@@ -65,7 +64,6 @@ afterEach(async () => {
     await rm(dir, { recursive: true, force: true })
   }
 })
-
 test('recoverManagerBatchFailure keeps task results pending for replay after manager fetch failure', async () => {
   const runtime = await createRuntime()
   const task = createTask(
@@ -100,14 +98,17 @@ test('recoverManagerBatchFailure keeps task results pending for replay after man
     profile: 'worker',
     provider: 'codex',
   }
-
   runtime.session.inflightInputs = [input]
   await publishUserInput({ paths: runtime.paths, payload: input })
   await publishWorkerResult({ paths: runtime.paths, payload: result })
 
   await recoverManagerBatchFailure({
     runtime,
-    error: new Error('[provider:openai-responses] sdk run failed: fetch failed'),
+    error: new ProviderError({
+      code: 'provider_transient_network',
+      message: '[provider:openai-responses] sdk run failed: fetch failed',
+      retryable: true,
+    }),
     inputs: [input],
     results: [result],
     nextInputsCursor: 1,
@@ -121,7 +122,8 @@ test('recoverManagerBatchFailure keeps task results pending for replay after man
   expect(runtime.queues.resultsCursor).toBe(0)
   expect(runtime.session.inflightInputs).toHaveLength(0)
   expect(runtime.tasks[0]?.result).toBeUndefined()
-
+  expect(runtime.manager.resultReplayFailureCount).toBe(1)
+  expect(runtime.manager.resultReplayReadyAtMs).toBeGreaterThan(Date.now())
   const pendingResults = await consumeWorkerResults({
     paths: runtime.paths,
     fromCursor: runtime.queues.resultsCursor,
@@ -131,7 +133,6 @@ test('recoverManagerBatchFailure keeps task results pending for replay after man
 
   const history = await readHistory(runtime.paths.history)
   expect(history.some((item) => item.id === input.id)).toBe(true)
-
   const fallbackMessage = history.find((item) => {
     if (item.role !== 'system') return false
     return item.systemEventName === 'manager_fallback_reply'
@@ -145,7 +146,6 @@ test('recoverManagerBatchFailure keeps task results pending for replay after man
   })
   expect(managerErrorMessage).toBeDefined()
 })
-
 test('recoverManagerBatchFailure dispatches fallback reply to telegram source input', async () => {
   const runtime = await createRuntime()
   runtime.config.telegram.enabled = true
@@ -153,7 +153,6 @@ test('recoverManagerBatchFailure dispatches fallback reply to telegram source in
   runtime.config.telegram.chatId = 'telegram-fallback-chat'
   runtime.config.telegram.apiRoot = 'https://api.telegram.org'
   runtime.config.telegram.proxy = ''
-
   const input: UserInput = {
     id: 'input-telegram-1',
     role: 'user',
@@ -165,7 +164,6 @@ test('recoverManagerBatchFailure dispatches fallback reply to telegram source in
     telegramChatId: 'telegram-from-input',
     telegramMessageId: '42',
   }
-
   runtime.session.inflightInputs = [input]
   await publishUserInput({ paths: runtime.paths, payload: input })
 
@@ -187,7 +185,6 @@ test('recoverManagerBatchFailure dispatches fallback reply to telegram source in
     return item.systemEventName === 'manager_fallback_reply'
   })
   const fallbackReply = fallbackMessage?.systemEventPayload?.reply
-
   expect(fallbackReply).toBeTypeOf('string')
   expect(mockedSendTelegramTextMessage).toHaveBeenCalledWith({
     botToken: 'bot-token',
@@ -197,4 +194,6 @@ test('recoverManagerBatchFailure dispatches fallback reply to telegram source in
     text: fallbackReply,
   })
   expect(mockedSendFeishuTextMessage).not.toHaveBeenCalled()
+  expect(runtime.manager.resultReplayFailureCount).toBe(0)
+  expect(runtime.manager.resultReplayReadyAtMs).toBe(0)
 })

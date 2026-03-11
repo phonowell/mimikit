@@ -20,12 +20,12 @@ import {
   checkScheduledPlans,
   triggerOnWorkerSlotFreedPlans,
 } from './loop-trigger-plans.js'
+import { waitForResultReplayBackoff } from './result-replay-backoff.js'
 import {
   type RuntimeState,
   waitForManagerLoopSignal,
 } from './runtime-adapter.js'
 import { publishManagerSystemEventInput } from './system-input-event.js'
-
 const WORKER_SLOT_EVENT_COOLDOWN_MS = 1_000
 
 const hasRunnableWorkerSlotPlan = (runtime: RuntimeState): boolean =>
@@ -47,15 +47,12 @@ const processLoopTriggers = async (
   const now = new Date()
   const nowMs = now.getTime()
   let stateChanged = false
-
   if (await resolvePendingUserChoiceTimeout(runtime, nowMs)) {
     stateChanged = true
     notifyUiSignal(runtime)
   }
-
   const scheduled = await checkScheduledPlans(runtime, now)
   stateChanged = stateChanged || scheduled.stateChanged
-
   const slots = resolveSlotStatus(runtime)
   if (state.lastAvailableSlots === null) {
     state.lastAvailableSlots = slots.available_slots
@@ -73,7 +70,6 @@ const processLoopTriggers = async (
   ) {
     const slotTriggered = await triggerOnWorkerSlotFreedPlans(runtime, nowMs)
     stateChanged = stateChanged || slotTriggered.stateChanged
-
     if (slotTriggered.triggeredCount === 0) {
       const hasPendingOrRunningTask = runtime.tasks.some(
         (task) => task.status === 'pending' || task.status === 'running',
@@ -98,11 +94,9 @@ const processLoopTriggers = async (
         })
       }
     }
-
     state.workerSlotEventPending = false
     state.lastWorkerSlotEventAtMs = nowMs
   }
-
   return stateChanged
 }
 
@@ -141,7 +135,6 @@ export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
     cursor: runtime.queues.resultsCursor,
     byteOffset: 0,
   }
-
   while (!runtime.session.stopped) {
     inputCheckpoint = syncCheckpoint(
       inputCheckpoint,
@@ -169,11 +162,18 @@ export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
     const allResultPackets = resultRead.packets
     const nextInputsCursor = inputCheckpoint.cursor
     const nextResultsCursor = resultCheckpoint.cursor
-
     const resultPackets = await filterValidResultPackets(
       runtime,
       allResultPackets,
     )
+    if (
+      await waitForResultReplayBackoff(
+        runtime,
+        inputPackets.length,
+        resultPackets.length,
+      )
+    )
+      continue
 
     if (inputPackets.length === 0 && resultPackets.length === 0) {
       if (nextResultsCursor !== runtime.queues.resultsCursor) {
@@ -194,7 +194,6 @@ export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
       )
       continue
     }
-
     await processManagerBatch({
       runtime,
       inputs: inputPackets.map((packet) => packet.payload),

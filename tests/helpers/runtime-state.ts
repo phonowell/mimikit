@@ -74,6 +74,8 @@ export const createTestRuntimeState = async (
       runAbortController: new AbortController(),
       wakePending: false,
       lastActivityAtMs: nowMs,
+      resultReplayReadyAtMs: 0,
+      resultReplayFailureCount: 0,
       turn: 0,
       memoryRefresh: createDefaultMemoryRefreshState(),
       ...options.patch?.manager,

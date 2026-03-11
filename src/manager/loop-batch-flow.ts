@@ -1,34 +1,22 @@
-import { dispatchFeishuPassiveReply } from '../channels/feishu/passive-reply.js'
-import { dispatchTelegramPassiveReply } from '../channels/telegram/passive-reply.js'
 import { resolveDefaultFocusId, touchFocus } from '../focus/index.js'
-import {
-  appendManagerErrorSystemMessage,
-  appendManagerFallbackReply,
-} from '../history/manager-events.js'
+import { appendManagerErrorSystemMessage } from '../history/manager-events.js'
 import { appendHistory } from '../history/store.js'
 import { appendLog } from '../log/append.js'
-import { bestEffort, logSafeError, safeOrUndefined } from '../log/safe.js'
+import { bestEffort, logSafeError } from '../log/safe.js'
 import { broadcastAgentReply } from '../orchestrator/core/channel-broadcast.js'
 import { nowIso } from '../shared/utils.js'
 
+import { appendAndDispatchManagerFailureReply } from './loop-batch-failure-reply.js'
 import {
   consumeBatchHistory,
   consumeBatchInputsHistory,
   finalizeBatchProgress,
 } from './loop-helpers.js'
 import { readManagerAutoRetryMeta } from './manager-llm-call.js'
+import { scheduleResultReplayBackoff } from './result-replay-backoff.js'
 import { persistRuntimeState, type RuntimeState } from './runtime-adapter.js'
 
 import type { TaskResult, TokenUsage, UserInput } from '../types/index.js'
-
-const resolveLatestUserInputId = (inputs: UserInput[]): string | undefined => {
-  for (let index = inputs.length - 1; index >= 0; index -= 1) {
-    const input = inputs[index]
-    if (input?.role !== 'user') continue
-    return input.id
-  }
-  return undefined
-}
 
 export const finishBatchWithoutAgentReply = async (params: {
   runtime: RuntimeState
@@ -112,6 +100,12 @@ export const recoverManagerBatchFailure = async (params: {
     autoRetryStrategy:
       autoRetryMeta?.autoRetryStrategy ?? 'reuse_worker_retry_config',
   }
+  const resultReplayBackoffMs = scheduleResultReplayBackoff({
+    runtime: params.runtime,
+    error: params.error,
+    resultsCount: params.results.length,
+    autoRetryState: fallbackAutoRetryMeta.autoRetryState,
+  })
   let inputsDrainedOnError = false
   try {
     const consumedInputs = await consumeBatchInputsHistory({
@@ -131,41 +125,18 @@ export const recoverManagerBatchFailure = async (params: {
   } catch (drainError) {
     await logSafeError('managerLoop: drain input batch on failure', drainError)
   }
-
   const errorFocusId = resolveDefaultFocusId(params.runtime)
-  const sourceInputId = resolveLatestUserInputId(params.inputs)
   if (
     inputsDrainedOnError &&
     !params.agentAppended &&
     params.agentInputsCount > 0
   ) {
-    const fallbackReplyText = await safeOrUndefined(
-      'appendHistory: manager_fallback_reply',
-      () =>
-        appendManagerFallbackReply(params.runtime.paths, errorFocusId, {
-          ...(sourceInputId ? { sourceInputId } : {}),
-          autoRetryAttempts: fallbackAutoRetryMeta.autoRetryAttempts,
-          autoRetryMaxAttempts: fallbackAutoRetryMeta.autoRetryMaxAttempts,
-          autoRetryState: fallbackAutoRetryMeta.autoRetryState,
-          autoRetryStrategy: fallbackAutoRetryMeta.autoRetryStrategy,
-        }),
-    )
-    if (fallbackReplyText) {
-      await bestEffort('telegram:dispatch_passive_reply_fallback', () =>
-        dispatchTelegramPassiveReply({
-          runtime: params.runtime,
-          inputs: params.inputs,
-          replyText: fallbackReplyText,
-        }),
-      )
-      await bestEffort('feishu:dispatch_passive_reply_fallback', () =>
-        dispatchFeishuPassiveReply({
-          runtime: params.runtime,
-          inputs: params.inputs,
-          replyText: fallbackReplyText,
-        }),
-      )
-    }
+    await appendAndDispatchManagerFailureReply({
+      runtime: params.runtime,
+      inputs: params.inputs,
+      focusId: errorFocusId,
+      autoRetryMeta: fallbackAutoRetryMeta,
+    })
   }
   await bestEffort('appendHistory: manager_error_system_message', () =>
     appendManagerErrorSystemMessage(
@@ -186,6 +157,7 @@ export const recoverManagerBatchFailure = async (params: {
       autoRetryMaxAttempts: fallbackAutoRetryMeta.autoRetryMaxAttempts,
       autoRetryState: fallbackAutoRetryMeta.autoRetryState,
       autoRetryStrategy: fallbackAutoRetryMeta.autoRetryStrategy,
+      ...(resultReplayBackoffMs !== undefined ? { resultReplayBackoffMs } : {}),
     }),
   )
   await bestEffort('persistRuntimeState: manager_error', () =>

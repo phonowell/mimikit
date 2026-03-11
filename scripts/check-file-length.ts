@@ -61,6 +61,13 @@ const formatViolation = (violation: FileLengthViolation): string => {
   return ` - exemption_grew ${violation.path} lines=${String(violation.lineCount)} baseline=${String(violation.limit)} reason=${violation.reason ?? 'missing_reason'}`
 }
 
+const REMEDIATION_GUIDANCE = [
+  'check-file-length: remediation:',
+  ' - split by responsibility and move stable subflows/types/helpers into narrower files',
+  ' - do not game the limit by reformatting code, collapsing blank lines, merging statements, or other layout-only tricks',
+  ' - line count reduction only counts when the file actually becomes simpler and smaller in responsibility',
+].join('\n')
+
 const main = async () => {
   const exemptions = parseExemptions(await readFile(EXEMPTIONS_FILE, 'utf8'))
   const stats = await collectStats(listTrackedFiles())
@@ -83,6 +90,7 @@ const main = async () => {
   for (const violation of violations) {
     console.log(formatViolation(violation))
   }
+  console.log(REMEDIATION_GUIDANCE)
   process.exitCode = 1
 }
 

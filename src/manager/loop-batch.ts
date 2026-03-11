@@ -20,6 +20,7 @@ import {
   finalizeBatchProgress,
 } from './loop-helpers.js'
 import { normalizeManagerReplyText } from './reply-normalize.js'
+import { clearResultReplayBackoff } from './result-replay-backoff.js'
 import {
   notifyUiSignal,
   persistRuntimeState,
@@ -130,6 +131,7 @@ export const processManagerBatch = async (params: {
       consumedInputIds: consumed.consumedInputIds,
       persistRuntime: persistRuntimeState,
     })
+    clearResultReplayBackoff(runtime)
 
     await appendLog(runtime.paths.log, {
       event: 'manager_end',

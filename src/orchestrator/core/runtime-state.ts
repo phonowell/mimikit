@@ -66,6 +66,8 @@ export type RuntimeManagerState = {
   runAbortController: AbortController
   wakePending: boolean
   lastActivityAtMs: number
+  resultReplayReadyAtMs: number
+  resultReplayFailureCount: number
   turn: number
   threadId?: string
   memoryRefresh: RuntimeMemoryRefreshState
@@ -142,6 +144,8 @@ export const createRuntimeState = (
       runAbortController: new AbortController(),
       wakePending: false,
       lastActivityAtMs: nowMs,
+      resultReplayReadyAtMs: 0,
+      resultReplayFailureCount: 0,
       turn: 0,
       memoryRefresh,
     },
