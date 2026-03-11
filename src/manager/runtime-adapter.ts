@@ -16,4 +16,20 @@ export { enqueueWorkerTask } from '../worker/dispatch.js'
 export { pauseTask } from '../worker/pause-task.js'
 export { resumeTask } from '../worker/resume-task.js'
 
-export type { RuntimeState } from '../orchestrator/core/runtime-state.js'
+import type { RuntimeState as CoreRuntimeState } from '../orchestrator/core/runtime-state.js'
+
+export type RuntimeState = Pick<
+  CoreRuntimeState,
+  | 'runtimeId'
+  | 'config'
+  | 'paths'
+  | 'session'
+  | 'manager'
+  | 'worker'
+  | 'ui'
+  | 'queues'
+  | 'tasks'
+  | 'taskPlans'
+  | 'focuses'
+  | 'focusDigests'
+>
