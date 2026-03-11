@@ -4,6 +4,7 @@
 
 ## 概念文档
 
+- [收敛落地清单](./convergence-checklist.md)
 - [领域模型最小语义 RFC（2026-03-11）](./minimal-semantics-rfc-2026-03-11.md)
 - [任务（Task）](./task.md)
 - [动作（Action）](./action.md)

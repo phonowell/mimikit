@@ -1,0 +1,52 @@
+# 收敛落地清单
+
+> 返回 [Workflow 索引](./task-and-action.md)
+
+## 用法
+
+- 目标：把“收敛-1~5”从一次性首刀，推进为可持续维护的落地队列。
+- 维护规则：每次续刀都回写 `当前已完成 / 剩余 TODO / 下一刀候选`，并在真正落地后更新状态，不保留口头完成。
+- 选择原则：优先 `收益高 × 确定性高 × 可回滚 × 验证面清晰` 的切口。
+
+## 清单
+
+### 收敛-1 · 最小必要架构门禁
+
+- done definition：仓库存在可执行的超长文件门禁；新增超限文件默认阻断；历史债有基线台账与消债规则。
+- 当前已完成：`scripts/check-file-length.ts`、`scripts/file-length-guard-exemptions.tsv`、`pnpm run guard:file-length` 已落地，并接入 `lint`；最小回归测试与使用文档已补齐。
+- 剩余 TODO：按基线台账持续压缩已豁免超长文件，优先处理业务主路径上的超长实现文件。
+- 下一刀候选：结合后续功能改动，顺手把命中的豁免文件拆回阈值内，避免单开“纯拆文件”低 ROI 任务。
+
+### 收敛-2 · plan 从语义容器收敛为触发器
+
+- done definition：`TaskPlan` 与对外 API 统一围绕 `trigger + effect`；`Task.cron` / `Task.scheduledAt` 不再作为平行语义源；Plan 文档与实现一致。
+- 当前已完成：`docs/design/workflow/minimal-semantics-rfc-2026-03-11.md` 与 `docs/design/workflow/plan.md` 已明确最小语义、触发器模型与迁移方向；设计索引与 Workflow 索引已补入口。
+- 剩余 TODO：把 action/http/read-model 中仍以 `trigger_mode + cron + scheduled_at` 暴露的接口，迁到统一 trigger 载荷；清理 task 上残留 schedule 双写语义。
+- 下一刀候选：先收敛 plan payload / view-model 的 trigger 出口，再推进 action 输入面，避免一次横切太宽。
+
+### 收敛-3 · provider 边界收缩
+
+- done definition：provider 只保留请求编排、session 轮询与错误映射；本地 supervisor/server 生命周期职责下沉到独立模块；新增 provider 不需复制共享运行时逻辑。
+- 当前已完成：`opencode` provider 的共享 server 池已抽到 `src/providers/opencode/server-pool.ts`，provider 首刀边界已缩小，`runWithProvider()` 对外契约保持不变。
+- 剩余 TODO：继续拆出 session 轮询 / preflight / 错误映射中最稳定的独立职责；持续压缩 `src/providers/opencode-sdk-provider.ts`。
+- 下一刀候选：优先抽离 session 轮询或响应解析前置逻辑，保持 `runWithProvider()` 契约不变。
+
+### 收敛-4 · runtime state/type 单一真相
+
+- done definition：runtime 持久化域遵循 `schema -> types -> parser` 单向派生；归档/快照读取不再手写平行枚举与对象结构；`RuntimeState` 对外暴露继续收缩。
+- 当前已完成：`src/types/runtime-domain.ts` 已从 `src/storage/runtime-snapshot-schema.ts` 派生状态/provider/outcome/stopReason 等类型；`src/storage/task-results-read.ts` 的归档读取已复用 schema 派生解析，移除手写状态/provider/outcome/stopReason 判断。
+- 剩余 TODO：继续把归档/快照其余持久化字段收回同一派生链；`RuntimeState` slice 与 adapter API 仍有继续收口空间。
+- 下一刀候选：优先收敛 `runtime-adapter` 的 slice 化出口，避免 `RuntimeState` 继续作为跨层总对象扩张。
+
+### 收敛-5 · WebUI 最小工程化
+
+- done definition：维持原生 `html/css/js`，控制器只做装配；局部状态有单一 owner；样式遵守 `base/layout/components` 分层；关键交互可做最小回归。
+- 当前已完成：消息区 view state 已抽到 `webui/messages/controller-view-state.js`，`webui/messages/controller.js` 已收回 200 行阈值内；最小回归测试已覆盖消息区关键状态切换。
+- 剩余 TODO：`webui/layout.css`、`webui/tasks-view-render.js` 等仍混合多类职责；对话框与面板样式重复仍高。
+- 下一刀候选：优先抽离共享 dialog/panel 样式或 `tasks-view-render` 的渲染子块，避免重新把消息区 controller 做大。
+
+## 本轮结果
+
+- 本轮范围：仅落地持续维护的 checklist 与索引入口，不继续推进任何代码收敛续刀。
+- 本轮已完成：已对齐“收敛-1~5”归档与当前仓库主线状态，补齐本清单并接入 `docs/design/README.md`、`docs/design/workflow/task-and-action.md`。
+- 下一刀候选（1-3）：`收敛-2 plan payload/view trigger 化`、`收敛-3 session poller 抽离`、`收敛-5 dialog/tasks 渲染模块化`。
