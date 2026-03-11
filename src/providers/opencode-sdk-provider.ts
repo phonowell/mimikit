@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process'
 
 import { createOpencodeClient } from '@opencode-ai/sdk'
 
+import { createServerPool } from './opencode/server-pool.js'
 import {
   buildProviderAbortedError,
   buildProviderCircuitOpenError,
@@ -19,6 +20,7 @@ import {
 import { attachProviderThreadId } from './thread-id.js'
 import { newProviderId, resolveHttpProxyUrl } from './utils.js'
 
+import type { SharedServerLease } from './opencode/server-pool.js'
 import type {
   OpencodeSdkProviderRequest,
   Provider,
@@ -41,19 +43,20 @@ const OPENCODE_SERVER_IDLE_TTL_MS = 5 * 60 * 1_000
 
 type Usage = ProviderResult['usage']
 
-type SharedServerRef = {
+type SharedServerRef = SharedServerLease<{
   childId: string
   port?: number
   client: OpencodeClient
-  close: () => Promise<void>
-  refCount: number
-  closing?: Promise<void>
-  idleTimer?: ReturnType<typeof setTimeout>
-}
+}>
 
-const serverRefByKey = new Map<string, SharedServerRef>()
-const pendingServerByKey = new Map<string, Promise<SharedServerRef>>()
 const reservedServerPorts = new Set<number>()
+const sharedServerPool = createServerPool<{
+  childId: string
+  port?: number
+  client: OpencodeClient
+}>({
+  idleTtlMs: OPENCODE_SERVER_IDLE_TTL_MS,
+})
 
 const toServerKey = (
   workDir: string,
@@ -171,12 +174,6 @@ const isPortBusyError = (error: unknown): boolean => {
   return /failed to start server on port|eaddrinuse|address already in use/i.test(
     message,
   )
-}
-
-const clearIdleTimer = (ref: SharedServerRef): void => {
-  if (!ref.idleTimer) return
-  clearTimeout(ref.idleTimer)
-  delete ref.idleTimer
 }
 
 const waitForProcessExit = (params: {
@@ -303,46 +300,6 @@ const spawnOpencodeServerProcess = (params: {
   })
 }
 
-const disposeSharedServerNow = async (params: {
-  key: string
-  ref: SharedServerRef
-}): Promise<void> => {
-  const current = serverRefByKey.get(params.key)
-  if (!current || current !== params.ref) return
-  if (current.refCount > 0) return
-  if (current.closing) {
-    await current.closing
-    return
-  }
-  serverRefByKey.delete(params.key)
-  const closing = (async (): Promise<void> => {
-    try {
-      await current.close()
-    } finally {
-      releaseServerPort(current.port)
-    }
-  })()
-  current.closing = closing
-  try {
-    await closing
-  } finally {
-    if (current.closing === closing) delete current.closing
-  }
-}
-
-const scheduleServerDispose = (params: {
-  key: string
-  ref: SharedServerRef
-}): void => {
-  clearIdleTimer(params.ref)
-  params.ref.idleTimer = setTimeout(() => {
-    void disposeSharedServerNow({
-      key: params.key,
-      ref: params.ref,
-    })
-  }, OPENCODE_SERVER_IDLE_TTL_MS)
-}
-
 const buildProviderConfig = (params: {
   model: string
   proxy?: string
@@ -426,6 +383,7 @@ const createSharedServer = async (params: {
         baseUrl: spawned.url,
         directory: params.workDir,
       })
+      let boundPort = port
       const ref: SharedServerRef = {
         childId: `runtime-${newProviderId()}`,
         port,
@@ -441,14 +399,21 @@ const createSharedServer = async (params: {
               // ignore dispose failures; process termination below is authoritative
             }
           }
-          await terminateServerProcess({
-            proc: spawned.proc,
-          })
+          try {
+            await terminateServerProcess({
+              proc: spawned.proc,
+            })
+          } finally {
+            releaseServerPort(boundPort)
+          }
         },
         refCount: 1,
       }
       const parsedPort = parsePortFromUrl(spawned.url)
-      if (parsedPort !== undefined) ref.port = parsedPort
+      if (parsedPort !== undefined) {
+        boundPort = parsedPort
+        ref.port = parsedPort
+      }
       await params.onServerStarted?.({
         id: ref.childId,
         kind: 'opencode-server',
@@ -476,57 +441,6 @@ const createSharedServer = async (params: {
       throw error
     }
   }
-}
-
-const getOrCreateSharedServer = async (params: {
-  workDir: string
-  model: string
-  proxy?: string
-  onServerStarted?: (child: {
-    id: string
-    kind: 'opencode-server'
-    pid: number
-    meta?: Record<string, unknown>
-  }) => Promise<void>
-}): Promise<SharedServerRef> => {
-  const key = toServerKey(params.workDir, params.proxy, params.model)
-  const existing = serverRefByKey.get(key)
-  if (existing) {
-    clearIdleTimer(existing)
-    existing.refCount += 1
-    return existing
-  }
-
-  const pending = pendingServerByKey.get(key)
-  if (pending) {
-    const resolved = await pending
-    clearIdleTimer(resolved)
-    resolved.refCount += 1
-    return resolved
-  }
-
-  const createPromise = createSharedServer(params)
-  pendingServerByKey.set(key, createPromise)
-  try {
-    const created = await createPromise
-    serverRefByKey.set(key, created)
-    return created
-  } finally {
-    pendingServerByKey.delete(key)
-  }
-}
-
-const releaseSharedServer = (params: {
-  workDir: string
-  model: string
-  proxy?: string
-}): void => {
-  const key = toServerKey(params.workDir, params.proxy, params.model)
-  const current = serverRefByKey.get(key)
-  if (!current) return
-  current.refCount = Math.max(0, current.refCount - 1)
-  if (current.refCount > 0) return
-  scheduleServerDispose({ key, ref: current })
 }
 
 const usageEquals = (left: Usage, right: Usage): boolean => {
@@ -693,6 +607,7 @@ const runOpencodeProvider = async (
   request: OpencodeSdkProviderRequest,
 ): Promise<ProviderResult> => {
   const model = normalizeModel(request.model)
+  const serverKey = toServerKey(request.workDir, request.proxy, model)
   const modelSpec = parseModel(model)
   const startedAt = Date.now()
   const controller = new AbortController()
@@ -717,13 +632,17 @@ const runOpencodeProvider = async (
   let shared: SharedServerRef | undefined
 
   try {
-    shared = await getOrCreateSharedServer({
-      workDir: request.workDir,
-      model,
-      ...(request.proxy ? { proxy: request.proxy } : {}),
-      ...(request.onRuntimeChildStarted
-        ? { onServerStarted: request.onRuntimeChildStarted }
-        : {}),
+    shared = await sharedServerPool.acquireServer({
+      key: serverKey,
+      create: () =>
+        createSharedServer({
+          workDir: request.workDir,
+          model,
+          ...(request.proxy ? { proxy: request.proxy } : {}),
+          ...(request.onRuntimeChildStarted
+            ? { onServerStarted: request.onRuntimeChildStarted }
+            : {}),
+        }),
     })
     timeout.arm()
     const requestedSessionId = normalizeThreadId(request.threadId ?? undefined)
@@ -830,11 +749,7 @@ const runOpencodeProvider = async (
     if (shared) {
       if (shared.refCount <= 1 && request.onRuntimeChildStopped)
         await request.onRuntimeChildStopped(shared.childId)
-      releaseSharedServer({
-        workDir: request.workDir,
-        model,
-        ...(request.proxy ? { proxy: request.proxy } : {}),
-      })
+      sharedServerPool.releaseServer({ key: serverKey })
     }
   }
 }
