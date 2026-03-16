@@ -1,12 +1,13 @@
 import { readErrorCode } from '../shared/error-code.js'
 import { toErrorInfo } from '../shared/error-info.js'
+import { type ErrorFallback, resolveErrorFallback } from '../shared/utils.js'
 
 import { appendLog } from './append.js'
 
 export type SafeOptions<T> = {
   logPath?: string
   meta?: Record<string, unknown>
-  fallback?: T | ((error: unknown) => T)
+  fallback?: ErrorFallback<T>
   ignoreCodes?: string[]
 }
 
@@ -61,12 +62,8 @@ export const safe = async <T>(
     const shouldIgnore =
       code && options.ignoreCodes ? options.ignoreCodes.includes(code) : false
     if (!shouldIgnore) await logSafeError(context, error, options)
-    if (Object.prototype.hasOwnProperty.call(options, 'fallback')) {
-      const { fallback } = options
-      if (typeof fallback === 'function')
-        return (fallback as (err: unknown) => T)(error)
-      return fallback as T
-    }
+    const fallback = resolveErrorFallback(options, error)
+    if (fallback.handled) return fallback.value
     throw error
   }
 }

@@ -35,6 +35,8 @@ test('clearStateDir clears recognized runtime state directories', async () => {
     mkdir(join(workDir, 'traces', '2026-03-11'), { recursive: true }),
     mkdir(join(workDir, 'usage'), { recursive: true }),
     writeFile(join(workDir, '.instance'), 'lock', 'utf8'),
+    writeFile(join(workDir, '.instance.lock'), '', 'utf8'),
+    writeFile(join(workDir, 'history.lock'), '', 'utf8'),
     writeFile(join(workDir, 'log.jsonl'), '{"ok":true}\n', 'utf8'),
     writeFile(join(workDir, 'runtime-snapshot.json'), '{}\n', 'utf8'),
     writeFile(join(workDir, 'runtime-snapshot.json.bak'), '{}\n', 'utf8'),

@@ -1,5 +1,7 @@
 import type { TokenUsage } from '../types/index.js'
 
+export type ErrorFallback<T> = T | ((error: unknown) => T)
+
 export const newId = (): string => crypto.randomUUID().replace(/-/g, '')
 
 export const shortId = (): string => newId().slice(0, 8)
@@ -18,6 +20,18 @@ export const stripUndefined = <T extends Record<string, unknown>>(
   Object.fromEntries(
     Object.entries(obj).filter(([, v]) => v !== undefined),
   ) as { [K in keyof T]: Exclude<T[K], undefined> }
+
+export const resolveErrorFallback = <T>(
+  options: { fallback?: ErrorFallback<T> },
+  error: unknown,
+): { handled: false } | { handled: true; value: T } => {
+  if (!Object.prototype.hasOwnProperty.call(options, 'fallback'))
+    return { handled: false }
+  const { fallback } = options
+  if (typeof fallback === 'function')
+    return { handled: true, value: (fallback as (err: unknown) => T)(error) }
+  return { handled: true, value: fallback as T }
+}
 
 const normalizeUsageParts = (parts: {
   input?: unknown

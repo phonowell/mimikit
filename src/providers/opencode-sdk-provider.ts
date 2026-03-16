@@ -18,7 +18,7 @@ import {
   createTimeoutGuard,
 } from './provider-runtime.js'
 import { attachProviderThreadId } from './thread-id.js'
-import { newProviderId, resolveHttpProxyUrl } from './utils.js'
+import { newProviderId, resolveProviderProxyUrl } from './utils.js'
 
 import type { SharedServerLease } from './opencode/server-pool.js'
 import type {
@@ -106,21 +106,7 @@ const asNumber = (value: unknown): number | undefined =>
   typeof value === 'number' && Number.isFinite(value) ? value : undefined
 
 const resolveProxyUrl = (proxy: string | undefined): string | undefined =>
-  resolveHttpProxyUrl({
-    proxy,
-    onInvalidUrl: (value) => {
-      throw buildProviderPreflightError({
-        providerId: PROVIDER_ID,
-        message: `proxy is invalid: ${value}`,
-      })
-    },
-    onInvalidProtocol: (protocol) => {
-      throw buildProviderPreflightError({
-        providerId: PROVIDER_ID,
-        message: `proxy protocol is invalid: ${protocol}`,
-      })
-    },
-  })
+  resolveProviderProxyUrl(PROVIDER_ID, proxy)
 
 const parsePortFromUrl = (url: string): number | undefined => {
   try {

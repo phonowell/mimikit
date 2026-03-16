@@ -1,21 +1,19 @@
+import { createServer } from 'node:net'
 import { resolve } from 'node:path'
+import { setTimeout as delay } from 'node:timers/promises'
 import { parseArgs } from 'node:util'
 
 import getPort, { portNumbers } from 'get-port'
 
 import { defaultConfig } from '../config.js'
 import { buildPaths } from '../fs/paths.js'
-import { createHttpServer } from '../http/index.js'
-import { bestEffort, setDefaultLogPath } from '../log/safe.js'
+import { setDefaultLogPath } from '../log/safe.js'
 import { configureManagerActionCliLogger } from '../manager/action-cli-log.js'
-import { Orchestrator } from '../orchestrator/core/orchestrator-service.js'
 import { loadCodexSettings } from '../providers/codex-settings.js'
-import { setRuntimeReaperBridge } from '../runtime/reaper-bridge.js'
-import { createRuntimeReaperHandle } from '../runtime/reaper.js'
 
 import { warnIgnoredUnknownConfigKeys } from './config-warning.js'
 import { applyCliEnvOverrides } from './env.js'
-import { acquireRuntimeLock } from './runtime-lock.js'
+import { runCliCycle } from './runtime-cycle.js'
 
 const parseBoolFlag = (
   flagName: string,
@@ -49,6 +47,31 @@ const resolveHttpPort = async (target: number): Promise<number> => {
   return port
 }
 
+const waitForPortRelease = async (port: number): Promise<void> => {
+  const deadline = Date.now() + 10_000
+  while (Date.now() < deadline) {
+    const released = await new Promise<boolean>((resolveRelease, reject) => {
+      const probe = createServer()
+      probe.once('error', (error: NodeJS.ErrnoException) => {
+        if (error.code === 'EADDRINUSE') {
+          resolveRelease(false)
+          return
+        }
+        reject(error)
+      })
+      probe.listen(port, '127.0.0.1', () => {
+        probe.close((error) => {
+          if (error) reject(error)
+          else resolveRelease(true)
+        })
+      })
+    })
+    if (released) return
+    await delay(100)
+  }
+  throw new Error(`[cli] port ${port} did not release in time`)
+}
+
 const { values } = parseArgs({
   options: {
     port: { type: 'string', short: 'p' },
@@ -79,82 +102,37 @@ if (logActionsFlag !== undefined)
 
 console.log('[cli] config loaded')
 
-const runtimeLock = await acquireRuntimeLock(workDir)
-const runtimeId = process.pid > 0 ? `runtime-${process.pid}` : 'runtime-main'
-const runtimeReaper = await createRuntimeReaperHandle({
-  runtimeId,
-  paths,
-  runtimeLock,
-  logPath: paths.log,
-})
-await runtimeReaper.startHeartbeat()
-setRuntimeReaperBridge({
-  onRuntimeChildStarted: (child) =>
-    runtimeReaper.registerChild({
-      id: child.id,
-      kind: child.kind,
-      pid: child.pid,
-      ...(child.meta ? { meta: child.meta } : {}),
-    }),
-  onRuntimeChildStopped: (id) => runtimeReaper.unregisterChild(id),
-})
+const targetPort =
+  typeof portValue === 'string' ? parsePort(portValue) : config.webui.port
 
-let shutdownPromise: Promise<never> | null = null
-const orchestrator = new Orchestrator(config, {
-  onExitRequested: ({ code, reason }) => {
-    void shutdown(`orchestrator exit requested: ${reason}`, code, {
-      skipPersist: reason === 'http_api_reset',
-    })
-  },
-})
-
-const shutdown = (
-  reason: string,
-  code = 0,
-  options?: { skipPersist?: boolean },
-): Promise<never> => {
-  if (shutdownPromise) return shutdownPromise
-  shutdownPromise = (async () => {
-    console.log(`\n[cli] ${reason}`)
-    await bestEffort('cli:stop_runtime_reaper_heartbeat', () =>
-      runtimeReaper.stopHeartbeat(),
-    )
-    setRuntimeReaperBridge(null)
-    await bestEffort('cli:release_runtime_lock', () => runtimeLock.release(), {
-      meta: { reason },
-    })
-    if (!options?.skipPersist) {
-      await bestEffort(
-        'cli:stop_and_persist',
-        () => orchestrator.stopAndPersist(),
-        {
-          meta: { reason },
-        },
-      )
-    }
-    process.exit(code)
-  })()
-  return shutdownPromise
-}
-
-try {
-  await orchestrator.start()
-  if (!config.webui.enabled)
-    console.log('[cli] webui disabled by config: webui.enabled=false')
-  else {
-    const targetPort =
-      typeof portValue === 'string' ? parsePort(portValue) : config.webui.port
-    const listenPort = await resolveHttpPort(targetPort)
-    await createHttpServer(orchestrator, config, listenPort)
-  }
-} catch (error) {
-  const message = error instanceof Error ? error.message : String(error)
-  await shutdown(`startup failed: ${message}`, 1)
-}
+let requestShutdown: ((reason: string, code?: number) => void) | null = null
+let restartPort: number | null = null
 
 process.on('SIGINT', () => {
-  void shutdown('shutting down...')
+  requestShutdown?.('shutting down...')
 })
 process.on('SIGTERM', () => {
-  void shutdown('received SIGTERM, shutting down...')
+  requestShutdown?.('received SIGTERM, shutting down...')
 })
+
+for (;;) {
+  const listenPort: number | null =
+    restartPort ??
+    (config.webui.enabled ? await resolveHttpPort(targetPort) : null)
+  const exitCode = await runCliCycle({
+    config,
+    workDir,
+    paths,
+    port: listenPort,
+    onShutdownReady: (shutdown) => {
+      requestShutdown = shutdown
+    },
+  })
+  requestShutdown = null
+  if (exitCode !== 75) process.exit(exitCode)
+  if (listenPort !== null) {
+    await waitForPortRelease(listenPort)
+    restartPort = listenPort
+  }
+  console.log('[cli] restarting...')
+}

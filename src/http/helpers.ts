@@ -8,8 +8,10 @@ import { ensureDir } from '../fs/paths.js'
 
 const RESETTABLE_STATE_ENTRY_NAMES = new Set([
   '.instance',
+  '.instance.lock',
   'generated',
   'history',
+  'history.lock',
   'inputs',
   'log.jsonl',
   'memory',

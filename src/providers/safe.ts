@@ -1,9 +1,10 @@
 import { toErrorInfo } from '../shared/error-info.js'
+import { type ErrorFallback, resolveErrorFallback } from '../shared/utils.js'
 
 export type SafeOptions<T> = {
   meta?: Record<string, unknown>
   ignoreCodes?: string[]
-  fallback?: T | ((error: unknown) => T)
+  fallback?: ErrorFallback<T>
 }
 
 export const logSafeError = (context: string, error: unknown): void => {
@@ -26,12 +27,8 @@ export const safe = async <T>(
   try {
     return await fn()
   } catch (error) {
-    if (Object.prototype.hasOwnProperty.call(options, 'fallback')) {
-      const { fallback } = options
-      if (typeof fallback === 'function')
-        return (fallback as (err: unknown) => T)(error)
-      return fallback as T
-    }
+    const fallback = resolveErrorFallback(options, error)
+    if (fallback.handled) return fallback.value
     throw error
   }
 }

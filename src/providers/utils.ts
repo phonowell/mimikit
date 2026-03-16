@@ -1,3 +1,5 @@
+import { buildProviderPreflightError } from './provider-error.js'
+
 export const newProviderId = (): string => crypto.randomUUID().replace(/-/g, '')
 
 export const stripUndefined = <T extends Record<string, unknown>>(
@@ -25,3 +27,24 @@ export const resolveHttpProxyUrl = (params: {
     return params.onInvalidProtocol(parsed.protocol)
   return parsed.toString()
 }
+
+/** Resolves a provider proxy URL and raises canonical preflight errors on invalid input. */
+export const resolveProviderProxyUrl = (
+  providerId: string,
+  proxy: string | undefined,
+): string | undefined =>
+  resolveHttpProxyUrl({
+    proxy,
+    onInvalidUrl: (value) => {
+      throw buildProviderPreflightError({
+        providerId,
+        message: `proxy is invalid: ${value}`,
+      })
+    },
+    onInvalidProtocol: (protocol) => {
+      throw buildProviderPreflightError({
+        providerId,
+        message: `proxy protocol is invalid: ${protocol}`,
+      })
+    },
+  })

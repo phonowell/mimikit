@@ -1,6 +1,6 @@
 # Code Index
 
-*Last updated: 2026-03-11 01:22:11 CST*
+*Last updated: 2026-03-11 01:56:00 CST*
 *Scope: `src/**/*.ts` + `webui/**/*.js` exported capabilities (function/class/const entry points)*
 
 ## Quick Reference
@@ -214,6 +214,7 @@
 - 2026-03-10 full-scope dedup follow-up: centralized task result summary helpers in `src/shared/task-state.ts`, removed unused local `src/shared/provider-thread-id.ts` duplicate in favor of `src/providers/thread-id.ts`, and collapsed `webui/restart-tools-menu.js` onto `createAnchoredMenuController()` instead of keeping a second noop controller.
 - 2026-03-11 trim follow-up: inlined task mutation route wrappers into `src/http/routes-api.ts`, removed duplicate provider-side `normalizeUsage()` in favor of `src/shared/utils.ts`, reused shared text truncation in `src/http/session-ingress-log.ts`, and reduced `jscpd` exact clones from `3` to `2` (`duplicatedLines: 104 -> 38`, `duplicatedTokens: 1095 -> 354`).
 - 2026-03-11 safe-error follow-up: extracted `toErrorInfo()` into `src/shared/error-info.ts`, removed duplicate error normalization from `src/log/safe.ts` and `src/providers/safe.ts`, and reduced `jscpd` exact clones from `2` to `1` (`duplicatedLines: 38 -> 18`, `duplicatedTokens: 354 -> 152`).
+- 2026-03-11 prompt/provider trim: collapsed the duplicated manager prompt parameter shape in `src/prompts/build-prompts.ts` into `BuildManagerPromptParams`, centralized provider proxy preflight validation in `src/providers/utils.ts` via `resolveProviderProxyUrl()` for both OpenAI Responses and Opencode, and extracted shared `resolveErrorFallback()` in `src/shared/utils.ts` so `src/log/safe.ts` and `src/providers/safe.ts` keep behavior without duplicating fallback resolution; clone metrics not rerun in this pass.
 - Highest-density modules to inspect before adding code:
   - `src/orchestrator/core/*` (39 exports)
   - `src/manager/*` action/loop related modules

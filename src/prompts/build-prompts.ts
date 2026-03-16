@@ -90,6 +90,26 @@ type ManagerPromptPayload = {
 }
 export type { ManagerPromptPayload }
 
+type BuildManagerPromptParams = {
+  stateDir: string
+  workDir: string
+  inputs: UserInput[]
+  results: TaskResult[]
+  tasks: Task[]
+  promptSectionLimits: PromptSectionLimits
+  plans?: TaskPlan[]
+  historyLookup?: HistoryLookupMessage[]
+  queryLookup?: QueryLookupMessage
+  readFileLookup?: ReadFileLookupMessage[]
+  actionFeedback?: ManagerActionFeedback[]
+  env?: ManagerEnv
+  focuses?: FocusMeta[]
+  focusDigests?: FocusDigest[]
+  workingFocusIds?: FocusId[]
+  packetMode?: ManagerPacketMode
+  wakeProfile?: ManagerEnv['wakeProfile']
+}
+
 const MAX_MEMORY_QUERY_CHARS = 4_000
 const MAX_MEMORY_MENTION_ITEMS = 128
 const MAX_RECENT_HISTORY_SUMMARY_ITEMS = 8
@@ -150,25 +170,9 @@ const buildMemoryPromptScoreContext = (params: {
   }
 }
 
-export const buildManagerPromptPayload = async (params: {
-  stateDir: string
-  workDir: string
-  inputs: UserInput[]
-  results: TaskResult[]
-  tasks: Task[]
-  promptSectionLimits: PromptSectionLimits
-  plans?: TaskPlan[]
-  historyLookup?: HistoryLookupMessage[]
-  queryLookup?: QueryLookupMessage
-  readFileLookup?: ReadFileLookupMessage[]
-  actionFeedback?: ManagerActionFeedback[]
-  env?: ManagerEnv
-  focuses?: FocusMeta[]
-  focusDigests?: FocusDigest[]
-  workingFocusIds?: FocusId[]
-  packetMode?: ManagerPacketMode
-  wakeProfile?: ManagerEnv['wakeProfile']
-}): Promise<ManagerPromptPayload> => {
+export const buildManagerPromptPayload = async (
+  params: BuildManagerPromptParams,
+): Promise<ManagerPromptPayload> => {
   const pendingResults = mergeTaskResults(params.results, [])
   const knownResults = mergeTaskResults(
     pendingResults,
@@ -522,25 +526,9 @@ export const buildManagerPromptPayload = async (params: {
   }
 }
 
-export const buildManagerPrompt = async (params: {
-  stateDir: string
-  workDir: string
-  inputs: UserInput[]
-  results: TaskResult[]
-  tasks: Task[]
-  promptSectionLimits: PromptSectionLimits
-  plans?: TaskPlan[]
-  historyLookup?: HistoryLookupMessage[]
-  queryLookup?: QueryLookupMessage
-  readFileLookup?: ReadFileLookupMessage[]
-  actionFeedback?: ManagerActionFeedback[]
-  env?: ManagerEnv
-  focuses?: FocusMeta[]
-  focusDigests?: FocusDigest[]
-  workingFocusIds?: FocusId[]
-  packetMode?: ManagerPacketMode
-  wakeProfile?: ManagerEnv['wakeProfile']
-}): Promise<string> => (await buildManagerPromptPayload(params)).prompt
+export const buildManagerPrompt = async (
+  params: BuildManagerPromptParams,
+): Promise<string> => (await buildManagerPromptPayload(params)).prompt
 
 export const buildWorkerPrompt = async (params: {
   stateDir: string

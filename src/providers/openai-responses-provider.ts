@@ -24,7 +24,7 @@ import {
 } from './provider-runtime.js'
 import { bestEffort } from './safe.js'
 import { attachProviderThreadId } from './thread-id.js'
-import { resolveHttpProxyUrl } from './utils.js'
+import { resolveProviderProxyUrl } from './utils.js'
 
 import type { TokenUsage } from './token-usage.js'
 import type {
@@ -88,21 +88,10 @@ const proxyDispatcherCache = new Map<string, Dispatcher>()
 const resolveProxyDispatcher = (
   proxy: string | undefined,
 ): Dispatcher | undefined => {
-  const normalized = resolveHttpProxyUrl({
-    proxy: trimNonEmptyString(proxy),
-    onInvalidUrl: (value) => {
-      throw buildProviderPreflightError({
-        providerId: PROVIDER_ID,
-        message: `proxy is invalid: ${value}`,
-      })
-    },
-    onInvalidProtocol: (protocol) => {
-      throw buildProviderPreflightError({
-        providerId: PROVIDER_ID,
-        message: `proxy protocol is invalid: ${protocol}`,
-      })
-    },
-  })
+  const normalized = resolveProviderProxyUrl(
+    PROVIDER_ID,
+    trimNonEmptyString(proxy),
+  )
   if (!normalized) return undefined
   const cached = proxyDispatcherCache.get(normalized)
   if (cached) return cached
