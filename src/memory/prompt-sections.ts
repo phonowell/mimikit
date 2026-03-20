@@ -19,38 +19,46 @@ export const buildMemoryPromptSections = (params: {
   entries: MemoryEntry[]
   context: MemoryScoreContext
   maxBytes: number
+  includeRemembered?: boolean
+  includeMemory?: boolean
 }): MemoryPromptSections => {
+  const includeRemembered = params.includeRemembered ?? true
+  const includeMemory = params.includeMemory ?? true
+  if (!includeRemembered && !includeMemory) {
+    return { rememberedMemory: '', memory: '' }
+  }
+
   const rememberedEntries = params.entries.filter(
     (entry) => entry.source === 'remember',
   )
-  if (rememberedEntries.length === 0) {
+  if (!includeRemembered || rememberedEntries.length === 0) {
     return {
       rememberedMemory: '',
-      memory: buildScoredMemoryPrompt(params),
+      memory: includeMemory ? buildScoredMemoryPrompt(params) : '',
     }
   }
 
   const rememberedBudget = Math.min(
+    includeMemory
+      ? Math.max(
+          MIN_REMEMBERED_MEMORY_BYTES,
+          Math.floor(params.maxBytes * REMEMBERED_MEMORY_SHARE),
+        )
+      : params.maxBytes,
     params.maxBytes,
-    Math.max(
-      MIN_REMEMBERED_MEMORY_BYTES,
-      Math.floor(params.maxBytes * REMEMBERED_MEMORY_SHARE),
-    ),
   )
   const rememberedMemory = buildScoredMemoryPrompt({
     entries: rememberedEntries,
     context: params.context,
     maxBytes: rememberedBudget,
   })
-  const remainingBytes = Math.max(
-    0,
-    params.maxBytes - measureBytes(rememberedMemory),
-  )
-  const memory = buildScoredMemoryPrompt({
-    entries: params.entries.filter((entry) => entry.source !== 'remember'),
-    context: params.context,
-    maxBytes: remainingBytes,
-  })
+  const memory = includeMemory
+    ? buildScoredMemoryPrompt({
+        entries: params.entries.filter((entry) => entry.source !== 'remember'),
+        context: params.context,
+        maxBytes: Math.max(0, params.maxBytes - measureBytes(rememberedMemory)),
+      })
+    : ''
 
   return {
     rememberedMemory,

@@ -8,6 +8,7 @@
 - prompt 链路拆分：`src/prompts/build-prompts.ts`
   - 新增 `buildManagerPromptPayload`。
   - 返回 `prefix/suffix/prompt/promptSegments`。
+  - 先按 `wakeProfile + packetMode` 解析 section policy，再按需读取 `history/memory/task archive`；未进入候选 section 的数据不再预读。
   - `recent_history` 从全文注入调整为摘要 + 指针（`id/role/time/focus_id`）。
   - `state_packet` 与 `remembered_memory` 放入稳定段；`event_packet` 与 `memory` 放入易变段。
 - 模板拆分：

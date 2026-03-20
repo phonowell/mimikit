@@ -116,58 +116,120 @@ export type ManagerPromptRuntimeData = {
   recentHistorySource: string
 }
 
+export type ManagerPromptRuntimeDemand = {
+  includeTasks: boolean
+  includeInputs: boolean
+  includeRememberedMemory: boolean
+  includeMemory: boolean
+  includeWorkingFocuses: boolean
+  includeRecentHistory: boolean
+}
+
+const DEFAULT_RUNTIME_DEMAND: ManagerPromptRuntimeDemand = {
+  includeTasks: true,
+  includeInputs: true,
+  includeRememberedMemory: true,
+  includeMemory: true,
+  includeWorkingFocuses: true,
+  includeRecentHistory: true,
+}
+
+const normalizeRuntimeDemand = (
+  demand?: Partial<ManagerPromptRuntimeDemand>,
+): ManagerPromptRuntimeDemand => ({
+  includeTasks: demand?.includeTasks ?? DEFAULT_RUNTIME_DEMAND.includeTasks,
+  includeInputs: demand?.includeInputs ?? DEFAULT_RUNTIME_DEMAND.includeInputs,
+  includeRememberedMemory:
+    demand?.includeRememberedMemory ??
+    DEFAULT_RUNTIME_DEMAND.includeRememberedMemory,
+  includeMemory: demand?.includeMemory ?? DEFAULT_RUNTIME_DEMAND.includeMemory,
+  includeWorkingFocuses:
+    demand?.includeWorkingFocuses ??
+    DEFAULT_RUNTIME_DEMAND.includeWorkingFocuses,
+  includeRecentHistory:
+    demand?.includeRecentHistory ?? DEFAULT_RUNTIME_DEMAND.includeRecentHistory,
+})
+
+const hasQuotedInputs = (inputs: UserInput[]): boolean =>
+  inputs.some((item) => item.quote?.trim().length)
+
 export const prepareManagerPromptRuntimeData = async (
   params: BuildManagerPromptParams,
+  demandInput?: Partial<ManagerPromptRuntimeDemand>,
 ): Promise<ManagerPromptRuntimeData> => {
+  const demand = normalizeRuntimeDemand(demandInput)
+  const workingFocusIds = params.workingFocusIds ?? []
   const pendingResults = mergeTaskResults(params.results, [])
   const knownResults = mergeTaskResults(
     pendingResults,
     collectTaskResults(params.tasks),
   )
-  const pendingResultIds = new Set(
-    pendingResults.map((result) => result.taskId),
-  )
-  const resultTaskIds = collectResultTaskIds(params.tasks)
-  const dateHints = buildTaskResultDateHints(params.tasks)
   const statePaths = buildPaths(params.stateDir)
-  const memoryEntries = await readMemoryEntries(statePaths.memoryFile)
-  const history = await readHistory(statePaths.history)
+
+  const requiresFocusHistory =
+    (demand.includeWorkingFocuses && workingFocusIds.length > 0) ||
+    demand.includeRecentHistory
+  const requiresQuoteHistory = demand.includeInputs && hasQuotedInputs(params.inputs)
+  const shouldReadHistory = requiresFocusHistory || requiresQuoteHistory
+  const history = shouldReadHistory
+    ? await readHistory(statePaths.history)
+    : []
+
+  const shouldLoadMemory = demand.includeRememberedMemory || demand.includeMemory
+  const memoryEntries = shouldLoadMemory
+    ? await readMemoryEntries(statePaths.memoryFile)
+    : []
+
+  const resultTaskIds = demand.includeTasks ? collectResultTaskIds(params.tasks) : []
+  const dateHints = buildTaskResultDateHints(params.tasks)
   const archivedResults =
     resultTaskIds.length > 0
       ? await readTaskResultsForTasks(params.stateDir, resultTaskIds, {
           dateHints,
         })
       : []
+  const pendingResultIds = new Set(pendingResults.map((result) => result.taskId))
   const mergedResults = mergeTaskResults(knownResults, archivedResults)
-  const resultsForTasks = mergedResults.filter(
-    (result) => !pendingResultIds.has(result.taskId),
-  )
+  const resultsForTasks = demand.includeTasks
+    ? mergedResults.filter((result) => !pendingResultIds.has(result.taskId))
+    : []
+
+  const focusHistory = requiresFocusHistory ? history : []
   const focusPayload = buildFocusPromptPayload({
     focuses: params.focuses ?? [],
-    history,
-    workingFocusIds: params.workingFocusIds ?? [],
+    history: focusHistory,
+    workingFocusIds,
   })
-  const quoteLookup = buildQuoteReferenceLookup({
-    history,
-    inputs: params.inputs,
-  })
-  const memoryPrompts = buildMemoryPromptSections({
-    entries: memoryEntries,
-    context: buildMemoryPromptScoreContext({
-      inputs: params.inputs,
-      tasks: params.tasks,
-      plans: params.plans ?? [],
-      focusPayload,
-      workingFocusIds: params.workingFocusIds ?? [],
-    }),
-    maxBytes: params.promptSectionLimits.memoryMaxBytes,
-  })
+  const quoteLookup =
+    demand.includeInputs && hasQuotedInputs(params.inputs)
+      ? buildQuoteReferenceLookup({
+          history,
+          inputs: params.inputs,
+        })
+      : new Map()
+  const memoryPrompts = shouldLoadMemory
+    ? buildMemoryPromptSections({
+        entries: memoryEntries,
+        context: buildMemoryPromptScoreContext({
+          inputs: params.inputs,
+          tasks: params.tasks,
+          plans: params.plans ?? [],
+          focusPayload,
+          workingFocusIds,
+        }),
+        maxBytes: params.promptSectionLimits.memoryMaxBytes,
+        includeRemembered: demand.includeRememberedMemory,
+        includeMemory: demand.includeMemory,
+      })
+    : { rememberedMemory: '', memory: '' }
   return {
     pendingResults,
     resultsForTasks,
     focusPayload,
     quoteLookup,
     memoryPrompts,
-    recentHistorySource: summarizeRecentHistory(focusPayload.recentHistory),
+    recentHistorySource: demand.includeRecentHistory
+      ? summarizeRecentHistory(focusPayload.recentHistory)
+      : '',
   }
 }

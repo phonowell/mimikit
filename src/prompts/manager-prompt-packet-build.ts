@@ -5,7 +5,10 @@ import {
   buildStatePacketPayload,
 } from './manager-prompt-packet-content.js'
 import { buildManagerPacketSectionSource } from './manager-prompt-section-source.js'
-import { selectPacketSections } from './select-packet-sections.js'
+import {
+  selectPacketSections,
+  type PacketSectionPolicy,
+} from './select-packet-sections.js'
 
 import type { ManagerPromptRuntimeData } from './manager-prompt-runtime-data.js'
 import type {
@@ -29,6 +32,7 @@ export const buildManagerPromptPackets = (params: {
   actionFeedback: BuildManagerPromptParams['actionFeedback']
   workingFocusIds: BuildManagerPromptParams['workingFocusIds']
   env: BuildManagerPromptParams['env']
+  sectionPolicy: PacketSectionPolicy
 }): ManagerPromptPacketBuildResult => {
   const { environmentSource, digestSections, sectionSources } =
     buildManagerPacketSectionSource({
@@ -43,6 +47,7 @@ export const buildManagerPromptPackets = (params: {
       readFileLookup: params.readFileLookup,
       actionFeedback: params.actionFeedback,
       env: params.env,
+      sectionPolicy: params.sectionPolicy,
     })
   const { selectedSections, includedSections, prunedSections } =
     selectPacketSections({

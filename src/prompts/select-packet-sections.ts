@@ -7,6 +7,10 @@ import type {
 } from '../types/index.js'
 
 export type PacketSections = Record<ManagerPacketSection, string>
+export type PacketSectionPolicy = Record<
+  Exclude<ManagerPacketSection, 'packet_summary'>,
+  boolean
+>
 
 const SELECTABLE_PACKET_SECTIONS: Exclude<
   ManagerPacketSection,
@@ -27,6 +31,22 @@ const SELECTABLE_PACKET_SECTIONS: Exclude<
   'file_lookup',
   'action_feedback',
 ]
+
+export const resolvePacketSectionPolicy = (params: {
+  mode: ManagerPacketMode
+  wakeProfile: ManagerWakeProfile
+}): PacketSectionPolicy => {
+  const policy = {} as PacketSectionPolicy
+  for (const section of SELECTABLE_PACKET_SECTIONS) {
+    policy[section] = shouldIncludePacketSection({
+      mode: params.mode,
+      wakeProfile: params.wakeProfile,
+      section,
+      hasContent: true,
+    })
+  }
+  return policy
+}
 
 export const selectPacketSections = (params: {
   sections: PacketSections

@@ -7,6 +7,7 @@ import { renderPromptTemplate } from './format.js'
 import { buildManagerPromptPackets } from './manager-prompt-packet-build.js'
 import { prepareManagerPromptRuntimeData } from './manager-prompt-runtime-data.js'
 import { loadPromptSource } from './prompt-loader.js'
+import { resolvePacketSectionPolicy } from './select-packet-sections.js'
 
 import type {
   BuildManagerPromptParams,
@@ -33,11 +34,22 @@ const CONTEXT_EMPTY_VALUES: Record<string, string> = {
 export const buildManagerPromptPayload = async (
   params: BuildManagerPromptParams,
 ): Promise<ManagerPromptPayload> => {
-  const runtime = await prepareManagerPromptRuntimeData(params)
-  const systemSource = await loadPromptSource('manager/system.md')
-  const contextSource = await loadPromptSource('manager/context.md')
   const wakeProfile = params.wakeProfile ?? params.env?.wakeProfile ?? 'mixed'
   const packetMode = params.packetMode ?? 'standard'
+  const sectionPolicy = resolvePacketSectionPolicy({
+    mode: packetMode,
+    wakeProfile,
+  })
+  const runtime = await prepareManagerPromptRuntimeData(params, {
+    includeTasks: sectionPolicy.tasks,
+    includeInputs: sectionPolicy.inputs,
+    includeRememberedMemory: sectionPolicy.remembered_memory,
+    includeMemory: sectionPolicy.memory,
+    includeWorkingFocuses: sectionPolicy.working_focuses,
+    includeRecentHistory: sectionPolicy.recent_history,
+  })
+  const systemSource = await loadPromptSource('manager/system.md')
+  const contextSource = await loadPromptSource('manager/context.md')
   const actionSurface = formatManagerActionSurfacePrompt(
     resolveManagerActionSurfacePromptConfig({
       wakeProfile,
@@ -62,6 +74,7 @@ export const buildManagerPromptPayload = async (
     actionFeedback: params.actionFeedback,
     workingFocusIds: params.workingFocusIds,
     env: params.env,
+    sectionPolicy,
   })
 
   const prefix = renderPromptTemplate(
