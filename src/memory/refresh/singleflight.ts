@@ -43,11 +43,6 @@ const captureCheckpoint = (runtime: RuntimeState): MemoryRefreshCheckpoint => {
   }
 }
 
-const shouldRunRefreshDrain = (
-  runtime: RuntimeState,
-  state: RuntimeState['manager']['memoryRefresh'],
-): boolean => state.pending || shouldTriggerMemoryRefresh(runtime)
-
 const markCompleted = (
   runtime: RuntimeState,
   checkpoint: MemoryRefreshCheckpoint,
@@ -66,10 +61,9 @@ const buildPayload = async (
   runtime: RuntimeState,
 ): Promise<MemoryRefreshPayload> => {
   const history = await readHistory(runtime.paths.history)
-  const visibleAll = history.filter((item) => isVisibleToAgent(item))
-  const recentVisible = visibleAll.slice(
-    Math.max(0, visibleAll.length - MAX_SIGNALS),
-  )
+  const visible = history
+    .filter((item) => isVisibleToAgent(item))
+    .slice(-MAX_SIGNALS)
   const tasks = runtime.tasks
     .slice(Math.max(0, runtime.tasks.length - MAX_TASKS))
     .map((task) => ({
@@ -104,7 +98,7 @@ const buildPayload = async (
       : {}),
     modelReasoningEffort: runtime.config.manager.modelReasoningEffort,
     memoryMarkdown,
-    signals: recentVisible.map((item) => ({
+    signals: visible.map((item) => ({
       id: item.id,
       role: item.role,
       createdAt: item.createdAt,
@@ -230,7 +224,7 @@ const runMemoryRefreshOnce = async (runtime: RuntimeState): Promise<void> => {
 const runMemoryRefreshDrain = async (runtime: RuntimeState): Promise<void> => {
   const state = runtime.manager.memoryRefresh
   try {
-    while (shouldRunRefreshDrain(runtime, state)) {
+    while (state.pending || shouldTriggerMemoryRefresh(runtime)) {
       state.pending = false
       await runMemoryRefreshOnce(runtime)
     }
@@ -258,7 +252,7 @@ export const requestMemoryRefresh = (runtime: RuntimeState): void => {
     state.pending = true
     return
   }
-  if (!shouldRunRefreshDrain(runtime, state)) return
+  if (!state.pending && !shouldTriggerMemoryRefresh(runtime)) return
   state.running = true
   state.pending = false
   void runMemoryRefreshDrain(runtime)
