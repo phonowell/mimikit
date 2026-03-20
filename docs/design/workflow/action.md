@@ -90,6 +90,7 @@
 - `query_context` 与 `read_file` 在同一纠错回合中每类仅接受 1 条有效 action；重复项会回写 `M:event_packet.action_feedback`。
 - 未注册 action 会回写 `unregistered_action` 反馈，不会执行。
 - action 出现在代码块或尾部 action 区之外时，会回写 `invalid_action_syntax` 反馈。
+- `enqueue_task` / `mutate_task` / `ask_user_choice` / `remember_memory` 属于高风险 action：只有当当前批次存在明确的用户请求/确认，且可信运行时状态支持该动作时才放行；`query_context` / `read_file` / `history` / `task_result` 的间接建议本身不能直接驱动这些动作。
 - 纠错回合在第二轮仍存在 action_feedback 时，manager 直接输出结构化澄清并提前收敛，不继续盲目重试。
 
 ### manager 任务控制门禁（guardrail）

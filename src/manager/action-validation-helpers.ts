@@ -7,7 +7,8 @@ import {
   formatScheduledAtNotFutureHint,
 } from './action-feedback-hints.js'
 
-import type { ZodError } from 'zod'
+import type { Parsed } from '../actions/model/spec.js'
+import type { ZodError, ZodSchema } from 'zod'
 
 export type ValidationIssue = {
   error: string
@@ -41,6 +42,14 @@ export const invalidArgsIssue = (error: ZodError): ValidationIssue => ({
             .join('；'),
         ),
 })
+
+export const validateItemWithSchema = (
+  item: Parsed,
+  schema: ZodSchema,
+): ValidationIssue[] => {
+  const parsed = schema.safeParse(item.attrs)
+  return parsed.success ? [] : [invalidArgsIssue(parsed.error)]
+}
 
 export const rejected = (hint: string): ValidationIssue[] => [
   { error: ACTION_EXECUTION_REJECTED, hint },

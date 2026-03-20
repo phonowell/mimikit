@@ -1,10 +1,14 @@
-import {
-  classifyRejectedActionFeedback,
-  type RejectedActionClass,
-} from './action-feedback-collect.js'
 import { isTaskContractMissingHint } from './action-feedback-contract-hint.js'
 
 import type { ManagerActionFeedback } from '../types/index.js'
+
+type RejectedActionClass =
+  | 'lookup_no_progress'
+  | 'task_state_conflict'
+  | 'needs_scope_confirmation'
+  | 'channel_choice_unsupported'
+  | 'result_not_available'
+  | 'blocked_action'
 
 export const LOOKUP_NO_PROGRESS_REPLY =
   '当前补充检索没有带来新的有效信息，本轮先停止继续检索。请直接补充更具体的对象、时间范围、文件路径，或明确希望我继续执行的下一步。'
@@ -36,6 +40,19 @@ export const findRepeatedRejectedAction = (
     if (next >= 2) return item.action
   }
   return undefined
+}
+
+const classifyRejectedActionFeedback = (
+  item: ManagerActionFeedback,
+): RejectedActionClass => {
+  if (item.error !== 'action_execution_rejected') return 'blocked_action'
+  if (item.action === 'query_context' || item.action === 'read_file')
+    return 'lookup_no_progress'
+  if (item.action === 'mutate_task') return 'task_state_conflict'
+  if (item.action === 'enqueue_task') return 'needs_scope_confirmation'
+  if (item.action === 'ask_user_choice') return 'channel_choice_unsupported'
+  if (item.action === 'set_task_result_summary') return 'result_not_available'
+  return 'blocked_action'
 }
 
 export const resolveDominantRejectedClass = (

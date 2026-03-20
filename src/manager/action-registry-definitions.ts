@@ -238,7 +238,7 @@ const MEMORY_ACTION_DEFINITIONS = [
         constraints: ['仅支持 `content`', '只保存稳定偏好或长期约束'],
       },
     },
-    (item) => validateRememberMemory(item),
+    (item, context) => validateRememberMemory(item, context),
     applyRememberMemoryAction,
   ),
 ] satisfies ManagerActionDefinition[]
