@@ -25,7 +25,7 @@ import type {
 } from '../types/index.js'
 
 export type TaskArchiveEntry = {
-  taskId?: string
+  taskId: string
   focusId?: string
   title: string
   status: TaskResultStatus
@@ -46,12 +46,6 @@ export type TaskArchiveEntry = {
 
 const TASK_ARCHIVE_DIR = 'tasks'
 
-const compactTimestamp = (iso: string): string => {
-  const date = iso.slice(0, 10).replace(/-/g, '')
-  const time = iso.slice(11, 19).replace(/:/g, '')
-  return `${date}_${time}`
-}
-
 const sanitizePart = (value: string, limit = 60): string => {
   const ascii = value.normalize('NFKD').replace(/[^\x20-\x7E]/g, '')
   const dashed = ascii
@@ -63,11 +57,8 @@ const sanitizePart = (value: string, limit = 60): string => {
 }
 
 const buildFilename = (entry: TaskArchiveEntry): string => {
-  const trimmedId = entry.taskId?.trim()
-  const id =
-    trimmedId && trimmedId.length > 0
-      ? trimmedId
-      : compactTimestamp(entry.completedAt)
+  const id = entry.taskId.trim()
+  if (!id) throw new Error('task archive taskId is required')
   const safeTitle = sanitizePart(entry.title) || 'task'
   return `${id}_${safeTitle}.md`
 }
@@ -97,7 +88,7 @@ const ensureUniquePath = async (basePath: string): Promise<string> => {
 const buildArchiveContent = (entry: TaskArchiveEntry): string =>
   buildArchiveDocument(
     [
-      ['task_id', entry.taskId ?? ''],
+      ['task_id', entry.taskId],
       ['focus_id', entry.focusId ?? ''],
       ['title', entry.title],
       ['status', entry.status],
