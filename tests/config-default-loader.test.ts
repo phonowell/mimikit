@@ -32,11 +32,8 @@ test('fills defaults when optional fields are omitted', async () => {
   expect(config.codex.model).toBe('gpt-5.4')
   expect(config.codex.enabled).toBe(true)
   expect(config.codex.modelReasoningEffort).toBe('high')
-  expect(config.opencode.enabled).toBe(false)
-  expect(config.opencode.model).toBe('big-pickle')
   expect(config.worker.timeoutMs).toBe(600000)
   expect(config.codex.proxy).toBeUndefined()
-  expect(config.opencode.proxy).toBeUndefined()
   expect(config.webui.enabled).toBe(true)
   expect(config.webui.port).toBe(8787)
   expect(config.telegram.enabled).toBe(false)
@@ -90,9 +87,6 @@ test('supports manager and provider proxy overrides', async () => {
       '[codex]',
       'proxy = " http://127.0.0.1:7898 "',
       '',
-      '[opencode]',
-      'proxy = " http://127.0.0.1:7899 "',
-      '',
     ].join('\n'),
   )
 
@@ -100,7 +94,6 @@ test('supports manager and provider proxy overrides', async () => {
 
   expect(config.manager.proxy).toBe('http://127.0.0.1:7897')
   expect(config.codex.proxy).toBe('http://127.0.0.1:7898')
-  expect(config.opencode.proxy).toBe('http://127.0.0.1:7899')
 })
 
 test('supports manager model overrides and ignores unknown keys after reporting them', async () => {

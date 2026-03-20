@@ -128,10 +128,10 @@
 
 ## 环境变量（`src/cli/env.ts`）
 
-- 模型：`MIMIKIT_MODEL`、`MIMIKIT_MANAGER_MODEL`、`MIMIKIT_CODEX_MODEL`、`MIMIKIT_OPENCODE_MODEL`
+- 模型：`MIMIKIT_MODEL`、`MIMIKIT_MANAGER_MODEL`、`MIMIKIT_CODEX_MODEL`
 - 推理强度：`MIMIKIT_REASONING_EFFORT`、`MIMIKIT_MANAGER_REASONING_EFFORT`、`MIMIKIT_CODEX_REASONING_EFFORT`
-- 代理：`MIMIKIT_PROXY`、`MIMIKIT_MANAGER_PROXY`、`MIMIKIT_CODEX_PROXY`、`MIMIKIT_OPENCODE_PROXY`
-- provider 开关：`MIMIKIT_CODEX_ENABLED`、`MIMIKIT_OPENCODE_ENABLED`
+- 代理：`MIMIKIT_PROXY`、`MIMIKIT_MANAGER_PROXY`、`MIMIKIT_CODEX_PROXY`
+- provider 开关：`MIMIKIT_CODEX_ENABLED`
 - CLI action 日志：`MIMIKIT_ACTION_LOGS`
 - WebUI：`MIMIKIT_WEBUI_ENABLED`、`MIMIKIT_WEBUI_PORT`
 - Telegram：`TELEGRAM_CHANNEL_ENABLED`、`TELEGRAM_BOT_TOKEN`、`TELEGRAM_CHAT_ID`、`TELEGRAM_API_ROOT`、`TELEGRAM_PROXY`
@@ -144,7 +144,6 @@
 - `worker`: `maxConcurrent`、`timeoutMs`
 - `worker.budget`: `maxDurationMs`、`maxRounds`
 - `codex`: `enabled`、`model`、`modelReasoningEffort`、`capability`、`billing`、`proxy?`
-- `opencode`: `enabled`、`model`、`capability`、`billing`、`proxy?`
 - `webui`: `enabled`、`port`
 - `telegram`: `enabled`、`botToken`、`chatId`、`apiRoot`、`proxy`
 - `feishu`: `enabled`、`appId`、`appSecret`、`chatId`

@@ -70,13 +70,6 @@ export type AppConfig = {
     billing: 'free' | 'low' | 'medium' | 'high'
     proxy?: string | undefined
   }
-  opencode: {
-    enabled: boolean
-    model: string
-    capability: 'low' | 'medium' | 'high'
-    billing: 'free' | 'low' | 'medium' | 'high'
-    proxy?: string | undefined
-  }
   webui: {
     enabled: boolean
     port: number
@@ -168,15 +161,6 @@ export const defaultConfig = (params: DefaultConfigParams): AppConfig => {
       capability: userConfig.codex.capability,
       billing: userConfig.codex.billing,
       ...(userConfig.codex.proxy ? { proxy: userConfig.codex.proxy } : {}),
-    },
-    opencode: {
-      enabled: userConfig.opencode.enabled,
-      model: userConfig.opencode.model,
-      capability: userConfig.opencode.capability,
-      billing: userConfig.opencode.billing,
-      ...(userConfig.opencode.proxy
-        ? { proxy: userConfig.opencode.proxy }
-        : {}),
     },
     webui: {
       enabled: userConfig.webui.enabled,

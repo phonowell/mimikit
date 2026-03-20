@@ -12,7 +12,7 @@
 
 本阶段只做隔离与设计，不做仓库拆分与发布：
 
-- 保留当前注册的 3 种 provider：`codex-sdk`、`openai-responses`、`opencode-sdk`。
+- 保留当前注册的 provider：`codex-sdk`、`openai-responses`。
 - 保留调用入口：`runWithProvider()`。
 - 保留现有 request/result/error 契约，不引入兼容层。
 
@@ -23,7 +23,7 @@ provider 层内聚到 `src/providers`，形成可迁移最小闭环：
 - provider 契约：`types.ts`、`token-usage.ts`
 - provider 运行时：`registry.ts`、`provider-runtime.ts`、`provider-error.ts`
 - provider 基础工具：`utils.ts`、`thread-id.ts`、`safe.ts`、`fs.ts`、`log.ts`
-- provider 实现：`codex-sdk-provider.ts`、`openai-responses-provider.ts`、`opencode-sdk-provider.ts`
+- provider 实现：`codex-sdk-provider.ts`、`openai-responses-provider.ts`
 
 ## 已完成的隔离动作（phase1）
 
@@ -48,7 +48,7 @@ provider 层内聚到 `src/providers`，形成可迁移最小闭环：
 ## 验证基线
 
 - `pnpm lint`
-- provider 相关回归测试（含 `openai-responses`、`opencode-sdk`、`worker loop`、`manager provider call`）
+- provider 相关回归测试（含 `openai-responses`、`worker loop`、`manager provider call`）
 
 ## 下一阶段（拆仓）输入条件
 
@@ -57,4 +57,3 @@ provider 层内聚到 `src/providers`，形成可迁移最小闭环：
 1. `src/providers` 不再反向依赖 `src/shared` 与 `src/types`。
 2. provider 契约具备独立版本化基础（`types/request/result/error` 稳定）。
 3. 主仓仅通过 provider 公共入口交互（而非依赖 provider 内部细节）。
-

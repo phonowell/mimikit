@@ -1,6 +1,6 @@
 export type RuntimeChildStarted = {
   id: string
-  kind: 'opencode-server'
+  kind: string
   pid: number
   meta?: Record<string, unknown>
 }

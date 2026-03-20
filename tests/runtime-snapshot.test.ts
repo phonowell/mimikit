@@ -250,14 +250,10 @@ test('buildTaskViews keeps task statuses', () => {
 })
 
 test('buildTaskViews includes task provider in view payload', () => {
-  const tasks: Task[] = [
-    createTaskFixture({ id: 'task-codex', provider: 'codex' }),
-    createTaskFixture({ id: 'task-opencode', provider: 'opencode' }),
-  ]
+  const tasks: Task[] = [createTaskFixture({ id: 'task-codex', provider: 'codex' })]
   const { tasks: views } = buildTaskViews(tasks)
   const providerById = new Map(views.map((item) => [item.id, item.provider]))
   expect(providerById.get('task-codex')).toBe('codex')
-  expect(providerById.get('task-opencode')).toBe('opencode')
 })
 
 test('buildTaskViews marks pending reason as waiting_capacity when worker slots are full', () => {

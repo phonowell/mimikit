@@ -6,7 +6,6 @@
     "@larksuiteoapi/node-sdk": "^1.59.0",
     "@modelcontextprotocol/sdk": "^1.27.1",
     "@openai/codex-sdk": "^0.111.0",
-    "@opencode-ai/sdk": "^1.2.20",
     "croner": "^10.0.1",
     "dompurify": "^3.3.2",
     "fastify": "^5.8.1",

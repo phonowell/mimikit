@@ -30,9 +30,6 @@ importers:
       '@openai/codex-sdk':
         specifier: ^0.111.0
         version: 0.111.0
-      '@opencode-ai/sdk':
-        specifier: ^1.2.20
-        version: 1.2.20
       croner:
         specifier: ^10.0.1
         version: 10.0.1
@@ -486,9 +483,6 @@ packages:
     engines: {node: '>=16'}
     cpu: [x64]
     os: [win32]
-
-  '@opencode-ai/sdk@1.2.20':
-    resolution: {integrity: sha512-U5ROpG21D8jg9rkc1IgKAk1g5dn6X/rkOBfveupd0peSDO9n6VM9aikYccVLaMObxVqdjtG08IeQOFTPVS8ySQ==}
 
   '@pinojs/redact@0.4.0':
     resolution: {integrity: sha512-k2ENnmBugE/rzQfEcdWHcCY+/FM3VLzH9cYEsbdsoqrvzAKRhUZeRNhAZvB8OitQJ1TBed3yqWtdjzS6wJKBwg==}
@@ -3256,8 +3250,6 @@ snapshots:
 
   '@openai/codex@0.111.0-win32-x64':
     optional: true
-
-  '@opencode-ai/sdk@1.2.20': {}
 
   '@pinojs/redact@0.4.0': {}
 

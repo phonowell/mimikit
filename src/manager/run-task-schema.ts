@@ -29,7 +29,7 @@ export const runTaskSchema = z
     context_ref_2: nonEmptyString.optional(),
     context_ref_3: nonEmptyString.optional(),
     focus_id: focusIdSchema.optional(),
-    provider: z.enum(['codex', 'opencode']).optional(),
+    provider: z.enum(['codex']).optional(),
   })
   .strict()
   .transform((value) => ({

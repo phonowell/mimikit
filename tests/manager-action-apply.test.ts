@@ -23,7 +23,6 @@ const TASK_CWD = '/tmp/manager-action-apply-task'
 const createRuntime = async (): Promise<RuntimeState> => {
   const runtime = await createTestRuntimeState({ pausedQueue: true })
   runtime.config.codex.enabled = true
-  runtime.config.opencode.enabled = false
   return runtime
 }
 
@@ -174,46 +173,16 @@ test('enqueue_task contract change does not reuse pending task', async () => {
   expect(runtime.tasks[1]?.contract?.goal).toBe('New goal')
 })
 
-test('enqueue_task without provider picks enabled provider by lowest billing then highest capability', async () => {
+test('enqueue_task without provider picks codex when codex is enabled', async () => {
   const runtime = await createRuntime()
   runtime.config.codex.enabled = true
-  runtime.config.codex.billing = 'medium'
-  runtime.config.codex.capability = 'high'
-  runtime.config.opencode.enabled = true
-  runtime.config.opencode.billing = 'free'
-  runtime.config.opencode.capability = 'low'
 
   await applyTaskActions(runtime, [
     {
       name: 'enqueue_task',
       attrs: {
-        worker_prompt: 'prefer lowest billing',
+        worker_prompt: 'default provider',
         title: 'auto provider',
-        cwd: TASK_CWD,
-        ...CONTRACT_ATTRS,
-      },
-    },
-  ])
-
-  expect(runtime.tasks).toHaveLength(1)
-  expect(runtime.tasks[0]?.provider).toBe('opencode')
-})
-
-test('enqueue_task without provider picks higher capability when billing ties', async () => {
-  const runtime = await createRuntime()
-  runtime.config.codex.enabled = true
-  runtime.config.codex.billing = 'free'
-  runtime.config.codex.capability = 'high'
-  runtime.config.opencode.enabled = true
-  runtime.config.opencode.billing = 'free'
-  runtime.config.opencode.capability = 'low'
-
-  await applyTaskActions(runtime, [
-    {
-      name: 'enqueue_task',
-      attrs: {
-        worker_prompt: 'prefer strongest capability at same billing',
-        title: 'auto provider tie',
         cwd: TASK_CWD,
         ...CONTRACT_ATTRS,
       },
@@ -228,8 +197,6 @@ test('enqueue_task without provider reuses recent focus provider before falling 
   const runtime = await createRuntime()
   runtime.config.codex.enabled = true
   runtime.config.codex.billing = 'low'
-  runtime.config.opencode.enabled = true
-  runtime.config.opencode.billing = 'free'
   runtime.focuses.push({
     id: 'focus-affinity',
     title: 'Affinity',

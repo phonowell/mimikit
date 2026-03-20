@@ -36,7 +36,7 @@ test('reaper handle registers and unregisters runtime child', async () => {
   await handle.startHeartbeat()
   await handle.registerChild({
     id: 'runtime-child-1',
-    kind: 'opencode-server',
+    kind: 'worker-child',
     pid: 22222,
     meta: { model: 'big-pickle' },
   })

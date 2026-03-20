@@ -1,7 +1,7 @@
 import type { RuntimeLock } from '../cli/runtime-lock.js'
 import type { StatePaths } from '../fs/paths.js'
 
-export type WorkerKind = 'opencode-server'
+export type WorkerKind = string
 
 export type LeaseRecord = {
   runtimeId: string

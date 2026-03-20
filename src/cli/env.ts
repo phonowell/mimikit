@@ -30,14 +30,11 @@ const applyModelEnv = (config: AppConfig): void => {
   if (envModel) {
     config.manager.model = envModel
     config.codex.model = envModel
-    config.opencode.model = envModel
   }
   const envManagerModel = process.env.MIMIKIT_MANAGER_MODEL?.trim()
   if (envManagerModel) config.manager.model = envManagerModel
   const envCodexModel = process.env.MIMIKIT_CODEX_MODEL?.trim()
   if (envCodexModel) config.codex.model = envCodexModel
-  const envOpencodeModel = process.env.MIMIKIT_OPENCODE_MODEL?.trim()
-  if (envOpencodeModel) config.opencode.model = envOpencodeModel
 }
 const applyReasoningEnv = (config: AppConfig): void => {
   const global = parseReasoning(
@@ -87,14 +84,11 @@ const applyProxyEnv = (config: AppConfig): void => {
   if (globalProxy) {
     config.manager.proxy = globalProxy
     config.codex.proxy = globalProxy
-    config.opencode.proxy = globalProxy
   }
   const managerProxy = trimEnv('MIMIKIT_MANAGER_PROXY')
   if (managerProxy) config.manager.proxy = managerProxy
   const codexProxy = trimEnv('MIMIKIT_CODEX_PROXY')
   if (codexProxy) config.codex.proxy = codexProxy
-  const opencodeProxy = trimEnv('MIMIKIT_OPENCODE_PROXY')
-  if (opencodeProxy) config.opencode.proxy = opencodeProxy
 }
 
 const applyProviderEnabledEnv = (config: AppConfig): void => {
@@ -103,11 +97,6 @@ const applyProviderEnabledEnv = (config: AppConfig): void => {
     value: process.env.MIMIKIT_CODEX_ENABLED,
   })
   if (codexEnabled !== undefined) config.codex.enabled = codexEnabled
-  const opencodeEnabled = parseChannelEnabledEnv({
-    envName: 'MIMIKIT_OPENCODE_ENABLED',
-    value: process.env.MIMIKIT_OPENCODE_ENABLED,
-  })
-  if (opencodeEnabled !== undefined) config.opencode.enabled = opencodeEnabled
 }
 
 const applyWebUiEnv = (config: AppConfig): void => {

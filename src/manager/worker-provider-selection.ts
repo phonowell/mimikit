@@ -53,13 +53,6 @@ export const listEnabledWorkerProviders = (
       billing: config.codex.billing,
     })
   }
-  if (config.opencode.enabled) {
-    providers.push({
-      provider: 'opencode',
-      capability: config.opencode.capability,
-      billing: config.opencode.billing,
-    })
-  }
   return providers
 }
 

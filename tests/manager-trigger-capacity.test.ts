@@ -78,15 +78,13 @@ const createTestConfig = (
     enabled: true,
     model: 'gpt-test-codex',
     modelReasoningEffort: 'minimal',
-    proxy: '',
-  },
-  opencode: {
-    enabled: false,
-    model: 'gpt-test-opencode',
+    capability: 'medium',
+    billing: 'low',
     proxy: '',
   },
   webui: {
     enabled: true,
+    port: 8787,
   },
   telegram: {
     enabled: false,

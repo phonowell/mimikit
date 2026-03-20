@@ -1,13 +1,11 @@
 import { buildWorkerPrompt } from '../prompts/build-prompts.js'
 import { loadPromptSource } from '../prompts/prompt-loader.js'
 import { runWithProvider } from '../providers/registry.js'
-import { getRuntimeReaperBridge } from '../runtime/reaper-bridge.js'
 import { appendTaskProgress } from '../storage/task-progress.js'
 
 import { runWorkerLoop } from './profiled-runner-loop.js'
 
 import type { TaskFocusBrief } from '../prompts/format-task-focus-brief.js'
-import type { RuntimeChildStarted } from '../runtime/reaper-bridge.js'
 import type { Task, TokenUsage, WorkerProvider } from '../types/index.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
@@ -37,7 +35,7 @@ const buildRunModel =
     onPartialOutput?: (output: string) => void
   }) =>
     runWithProvider({
-      provider: params.provider === 'opencode' ? 'opencode-sdk' : 'codex-sdk',
+      provider: 'codex-sdk',
       role: 'worker',
       prompt: input.prompt,
       runtimeId: params.runtimeId,
@@ -53,16 +51,6 @@ const buildRunModel =
       ...(input.onUsage ? { onUsage: input.onUsage } : {}),
       ...(input.onPartialOutput
         ? { onPartialOutput: input.onPartialOutput }
-        : {}),
-      ...(params.provider === 'opencode'
-        ? {
-            onRuntimeChildStarted: (child: RuntimeChildStarted) =>
-              getRuntimeReaperBridge()?.onRuntimeChildStarted(child) ??
-              Promise.resolve(),
-            onRuntimeChildStopped: (id: string) =>
-              getRuntimeReaperBridge()?.onRuntimeChildStopped(id) ??
-              Promise.resolve(),
-          }
         : {}),
     })
 
@@ -91,6 +79,9 @@ type WorkerRunnerParams = {
 export const runWorker = async (
   params: WorkerRunnerParams,
 ): Promise<LlmResult> => {
+  if (params.provider !== 'codex') {
+    throw new Error(`[worker] unsupported provider: ${params.provider}`)
+  }
   const prompt = await buildWorkerPrompt({
     stateDir: params.stateDir,
     workspaceDir: params.cwd,

@@ -33,11 +33,11 @@
 
 - 导出：`runWorker`
 - Prompt 组装：`buildWorkerPrompt` -> `prompts/worker/system.md`
-- Provider：按任务 `provider` 路由到 `codex-sdk` 或 `opencode-sdk`（外部执行运行时）
+- Provider：固定 `codex-sdk`（外部执行运行时）
 - 输出：`{ output, elapsedMs, usage? }`
 - 上下文补充：注入当前任务 `focusId` 对应的 `focus summary/open_items`。
 - 任务 prompt 过大时会外置到 `generated/worker-task-prompts/YYYY-MM-DD/{taskId}.md`，主 prompt 仅保留路径与预览。
-- 异常回收：worker provider 会向 runtime reaper 报告外部子进程生命周期（当前覆盖 `opencode serve`）
+- 异常回收：当前无 provider 级外部子进程生命周期上报
 
 主流程：
 
@@ -53,7 +53,6 @@
 - 导出：`runWithProvider`
 - 当前注册 provider：
   - `codex-sdk`：`src/providers/codex-sdk-provider.ts`
-  - `opencode-sdk`：`src/providers/opencode-sdk-provider.ts`
   - `openai-responses`：`src/providers/openai-responses-provider.ts`
 - 共享运行时工具：`src/providers/provider-runtime.ts`
 - 共享错误建模：`src/providers/provider-error.ts`
@@ -70,6 +69,6 @@
 机制：
 
 1. 主进程启动时创建 reaper handle，并周期刷新 `runtime/lease.json`。
-2. `opencode-sdk` 创建 server 子进程后登记到 `runtime/children.json`。
+2. 若未来出现 provider 级外部子进程，启动后登记到 `runtime/children.json`。
 3. 正常释放时从 children registry 注销。
 4. 若主进程异常退出且 lease 过期，reaper 执行 `SIGTERM -> SIGKILL` 回收残留子进程。

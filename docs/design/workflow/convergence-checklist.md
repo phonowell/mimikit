@@ -27,9 +27,9 @@
 ### 收敛-3 · provider 边界收缩
 
 - done definition：provider 只保留请求编排、session 轮询与错误映射；本地 supervisor/server 生命周期职责下沉到独立模块；新增 provider 不需复制共享运行时逻辑。
-- 当前已完成：`opencode` provider 的共享 server 池已抽到 `src/providers/opencode/server-pool.ts`，provider 首刀边界已缩小，`runWithProvider()` 对外契约保持不变。
-- 剩余 TODO：继续拆出 session 轮询 / preflight / 错误映射中最稳定的独立职责；持续压缩 `src/providers/opencode-sdk-provider.ts`。
-- 下一刀候选：优先抽离 session 轮询或响应解析前置逻辑，保持 `runWithProvider()` 契约不变。
+- 当前已完成：worker provider 已收敛为 `codex-sdk` 单实现，`runWithProvider()` 对外契约保持不变。
+- 剩余 TODO：继续压缩 provider 运行时公共层（错误建模、日志、thread id）并减少转发式包装。
+- 下一刀候选：优先收敛 provider runtime 公共层，减少 `worker/provider` 链路的重复拼装逻辑。
 
 ### 收敛-4 · runtime state/type 单一真相
 

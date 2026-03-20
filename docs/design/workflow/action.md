@@ -65,7 +65,7 @@
 参数约定（关键字段）：
 
 - `enqueue_task.cwd`：必填；未传 `branch` 时直接作为 worker 实际执行目录。若同时传 `branch`，则 `cwd` 视为仓库内定位路径，enqueue 阶段会自动创建或复用对应 branch 的 worktree，并把任务实际执行目录切到该 worktree 的对应路径
-- `enqueue_task.provider`：可选 `codex|opencode`；可选值应来自 `M:event_packet.environment` 中的 `provider_candidates`（仅包含 enabled provider）
+- `enqueue_task.provider`：可选 `codex`；可选值应来自 `M:event_packet.environment` 中的 `provider_candidates`（仅包含 enabled provider）
 - 未指定 `provider` 时，系统按固定顺序自动选择：同 `focus` 最近活跃任务的 provider affinity 优先；未命中时再按 `billing` 最低优先、同档位 `capability` 最高优先
 - `assign_focus`：`target_type(task|plan|history) + target_id + focus_id`
 - `upsert_focus.open_item_{n}`：按编号传递字符串待办项，`n` 必须从 `1` 连续递增且不能跳号

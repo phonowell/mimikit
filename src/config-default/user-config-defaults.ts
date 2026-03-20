@@ -32,13 +32,6 @@ export type UserConfigDefaults = {
     billing: ProviderBilling
     proxy?: string | undefined
   }
-  opencode: {
-    enabled: boolean
-    model: string
-    capability: ProviderCapability
-    billing: ProviderBilling
-    proxy?: string | undefined
-  }
   webui: {
     enabled: boolean
     port: number
@@ -70,13 +63,6 @@ const DEFAULT_USER_CONFIG: UserConfigDefaults = {
     modelReasoningEffort: 'high',
     capability: 'high',
     billing: 'medium',
-    proxy: '',
-  },
-  opencode: {
-    enabled: false,
-    model: 'big-pickle',
-    capability: 'low',
-    billing: 'free',
     proxy: '',
   },
   webui: {
@@ -116,7 +102,6 @@ export const buildUserConfigDefaults = (
   const apiKey = trimToUndefined(input.manager?.apiKey)
   const managerProxy = trimToUndefined(input.manager?.proxy)
   const codexProxy = trimToUndefined(input.codex?.proxy)
-  const opencodeProxy = trimToUndefined(input.opencode?.proxy)
   const telegramApiRoot = trimToUndefined(input.telegram?.apiRoot)
 
   return {
@@ -156,14 +141,6 @@ export const buildUserConfigDefaults = (
         input.codex?.capability ?? DEFAULT_USER_CONFIG.codex.capability,
       billing: input.codex?.billing ?? DEFAULT_USER_CONFIG.codex.billing,
       ...(codexProxy ? { proxy: codexProxy } : {}),
-    },
-    opencode: {
-      enabled: input.opencode?.enabled ?? DEFAULT_USER_CONFIG.opencode.enabled,
-      model: input.opencode?.model ?? DEFAULT_USER_CONFIG.opencode.model,
-      capability:
-        input.opencode?.capability ?? DEFAULT_USER_CONFIG.opencode.capability,
-      billing: input.opencode?.billing ?? DEFAULT_USER_CONFIG.opencode.billing,
-      ...(opencodeProxy ? { proxy: opencodeProxy } : {}),
     },
     webui: {
       enabled: input.webui?.enabled ?? DEFAULT_USER_CONFIG.webui.enabled,

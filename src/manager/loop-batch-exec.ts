@@ -34,10 +34,7 @@ const resolveEnabledWorkerProviders = (
     .sort(compareWorkerProviderPreference)
     .map((item) => ({
       provider: item.provider,
-      model:
-        item.provider === 'codex'
-          ? runtime.config.codex.model
-          : runtime.config.opencode.model,
+      model: runtime.config.codex.model,
       capability: item.capability,
       billing: item.billing,
     }))

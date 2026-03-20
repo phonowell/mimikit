@@ -1,7 +1,7 @@
 import type { TokenUsage } from './token-usage.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
-export type ProviderKind = 'codex-sdk' | 'openai-responses' | 'opencode-sdk'
+export type ProviderKind = 'codex-sdk' | 'openai-responses'
 
 export type ProviderResult = {
   output: string
@@ -31,13 +31,6 @@ type ProviderRequestBase = {
   abortSignal?: AbortSignal
   onUsage?: UsageListener
   onPartialOutput?: PartialOutputListener
-  onRuntimeChildStarted?: (child: {
-    id: string
-    kind: 'opencode-server'
-    pid: number
-    meta?: Record<string, unknown>
-  }) => Promise<void>
-  onRuntimeChildStopped?: (id: string) => Promise<void>
 }
 
 export type OpenAiResponsesProviderRequest = ProviderRequestBase & {
@@ -58,14 +51,9 @@ export type CodexSdkProviderRequest = ProviderRequestBase & {
   logContext?: Record<string, unknown>
 }
 
-export type OpencodeSdkProviderRequest = ProviderRequestBase & {
-  provider: 'opencode-sdk'
-}
-
 export type ProviderRequest =
   | CodexSdkProviderRequest
   | OpenAiResponsesProviderRequest
-  | OpencodeSdkProviderRequest
 
 export type Provider<TRequest extends ProviderRequest> = {
   id: TRequest['provider']

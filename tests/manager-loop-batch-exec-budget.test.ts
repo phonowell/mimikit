@@ -50,12 +50,6 @@ const createRuntime = (limits: PromptSectionLimits) => {
       capability: 'medium',
       billing: 'low',
     },
-    opencode: {
-      enabled: false,
-      model: 'opencode',
-      capability: 'low',
-      billing: 'low',
-    },
     webui: { enabled: false, port: 8787 },
     telegram: {
       enabled: false,

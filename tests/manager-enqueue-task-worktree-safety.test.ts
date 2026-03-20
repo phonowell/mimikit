@@ -20,7 +20,6 @@ const CONTRACT_ATTRS = {
 const createRuntime = async () => {
   const runtime = await createTestRuntimeState({ pausedQueue: true })
   runtime.config.codex.enabled = true
-  runtime.config.opencode.enabled = false
   return runtime
 }
 

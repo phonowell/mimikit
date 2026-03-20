@@ -16,7 +16,7 @@ const archiveEntry = {
   taskId: 'task-archive-1',
   title: 'Archive Collision',
   status: 'succeeded' as const,
-  provider: 'opencode' as const,
+  provider: 'codex' as const,
   prompt: 'Prompt',
   output: 'Output',
   createdAt: '2026-03-03T00:00:00.000Z',
@@ -58,7 +58,7 @@ test('readTaskResultArchive restores provider and handoff payload', async () => 
   })
 
   const parsed = await readTaskResultArchive(path)
-  expect(parsed?.provider).toBe('opencode')
+  expect(parsed?.provider).toBe('codex')
   expect(parsed?.taskStatus).toBe('succeeded')
   expect(parsed?.outcome).toBe('completed')
   expect(parsed?.stopReason).toBe('completed')

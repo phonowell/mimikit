@@ -22,12 +22,6 @@ vi.mock('../src/config-default-loader.js', () => ({
       capability: 'high',
       billing: 'medium',
     },
-    opencode: {
-      enabled: false,
-      model: 'big-pickle',
-      capability: 'low',
-      billing: 'free',
-    },
     webui: {
       enabled: true,
       port: 8787,

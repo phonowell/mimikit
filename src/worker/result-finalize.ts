@@ -185,10 +185,7 @@ export const finalizeResult = async (
       ...(result.usage ? { usage: result.usage } : {}),
       elapsedMs: result.durationMs,
       ...(task.sessionId ? { threadId: task.sessionId } : {}),
-      model:
-        task.provider === 'opencode'
-          ? runtime.config.opencode.model
-          : runtime.config.codex.model,
+      model: runtime.config.codex.model,
       status: result.status,
     }),
   )

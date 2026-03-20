@@ -243,7 +243,7 @@ export type PlanEffect =
         title: string
         prompt: string
         cwd: string
-        provider?: 'codex' | 'opencode'
+        provider?: 'codex'
         contract: {
           goal: string
           scope: string

@@ -54,16 +54,6 @@ const codexInputSchema = z
   })
   .strict()
 
-const opencodeInputSchema = z
-  .object({
-    enabled: z.boolean().optional(),
-    model: z.string().min(1).optional(),
-    proxy: z.string().optional(),
-    capability: providerCapabilitySchema.optional(),
-    billing: providerBillingSchema.optional(),
-  })
-  .strict()
-
 const webuiInputSchema = z
   .object({
     enabled: z.boolean().optional(),
@@ -76,7 +66,6 @@ export const userConfigInputSchema = z
     manager: managerInputSchema.optional(),
     worker: workerInputSchema.optional(),
     codex: codexInputSchema.optional(),
-    opencode: opencodeInputSchema.optional(),
     webui: webuiInputSchema.optional(),
     telegram: telegramConfigSchema.partial().strict().optional(),
     feishu: feishuConfigSchema.partial().strict().optional(),

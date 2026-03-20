@@ -11,7 +11,7 @@
 
 - 保留统一模型 `Task + TaskPlan + Focus`，不再维护旧链路兼容层。
 - `mimikit` 对外是异步自治作业系统，对内保持轻量编排内核：负责本地状态机、队列、调度、可观测性，不直接执行任务。
-- manager 使用 `openai-responses`；worker 按任务 `provider` 路由到 `codex-sdk` 或 `opencode-sdk`。
+- manager 使用 `openai-responses`；worker 使用 `codex-sdk`。
 - 运行时状态采用“根级实体集合 + 过程态子域”结构：根上保留 `queues / tasks / taskPlans / focuses`，过程态收敛在 `session / manager / worker / ui`，避免继续堆第二套调度或摘要层。
 - manager prompt 收敛为双 packet：`state_packet` 负责稳定状态（focus/task/plan），`event_packet` 负责当前批次事件（input/result/history/lookup/action_feedback/environment/packet）；section 字节预算固定取自 `manager.promptSections`，`wakeProfile` 只影响 packet/action surface，不再动态改写 bytes。
 - manager 自动选 worker provider 时遵循固定顺序：显式 `provider` > 同 `focus` 最近活跃任务的 provider affinity > 默认低 `billing` / 同档高 `capability` provider。

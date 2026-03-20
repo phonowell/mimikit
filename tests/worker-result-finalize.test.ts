@@ -46,7 +46,7 @@ test('finalizeResult appends worker_end progress for canceled task', async () =>
     title: 'Cancel Me',
     focusId: 'focus-local',
     profile: 'worker',
-    provider: 'opencode',
+    provider: 'codex',
     status: 'running',
     createdAt: '2026-02-26T10:00:00.000Z',
     startedAt: '2026-02-26T10:00:01.000Z',
@@ -118,7 +118,7 @@ test('finalizeResult appends worker_end progress for canceled task', async () =>
     kind: 'task_archive',
   })
   const archived = await readTaskResultArchive(result.archivePath ?? '')
-  expect(archived?.provider).toBe('opencode')
+  expect(archived?.provider).toBe('codex')
   expect(archived?.handoff?.evidence?.[0]).toMatchObject({
     type: 'task_archive',
   })

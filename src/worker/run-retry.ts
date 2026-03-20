@@ -65,21 +65,17 @@ const runTaskModel = (params: {
   onUsage?: (usage: TokenUsage) => void
   onPartialOutput?: (output: string) => void
 }): Promise<WorkerLlmResult> => {
-  const { worker, codex, opencode } = params.runtime.config
+  const { worker, codex } = params.runtime.config
   const taskProvider: WorkerProvider = params.task.provider
-  const providerConfig =
-    taskProvider === 'opencode'
-      ? {
-          enabled: opencode.enabled,
-          model: opencode.model,
-          proxy: opencode.proxy,
-        }
-      : {
-          enabled: codex.enabled,
-          model: codex.model,
-          proxy: codex.proxy,
-          modelReasoningEffort: codex.modelReasoningEffort,
-        }
+  if (taskProvider !== 'codex') {
+    throw new Error(`[worker] unsupported provider: ${taskProvider}`)
+  }
+  const providerConfig = {
+    enabled: codex.enabled,
+    model: codex.model,
+    proxy: codex.proxy,
+    modelReasoningEffort: codex.modelReasoningEffort,
+  }
   if (!providerConfig.enabled) {
     throw new Error(
       `[worker] ${taskProvider} provider is disabled: set ${taskProvider}.enabled=true`,
@@ -97,7 +93,7 @@ const runTaskModel = (params: {
     timeoutMs: worker.timeoutMs,
     ...(providerConfig.proxy ? { proxy: providerConfig.proxy } : {}),
     model: providerConfig.model,
-    ...(taskProvider === 'codex' && providerConfig.modelReasoningEffort
+    ...(providerConfig.modelReasoningEffort
       ? { modelReasoningEffort: providerConfig.modelReasoningEffort }
       : {}),
     ...(params.sessionId ? { sessionId: params.sessionId } : {}),
