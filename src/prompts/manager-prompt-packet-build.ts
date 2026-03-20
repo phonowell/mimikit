@@ -6,11 +6,11 @@ import {
 } from './manager-prompt-packet-content.js'
 import { buildManagerPacketSectionSource } from './manager-prompt-section-source.js'
 import {
-  selectPacketSections,
   type PacketSectionPolicy,
+  selectPacketSections,
 } from './select-packet-sections.js'
 
-import type { ManagerPromptRuntimeData } from './manager-prompt-runtime-data.js'
+import type { ManagerPromptRuntimeData } from './manager-prompt-runtime-helpers.js'
 import type {
   BuildManagerPromptParams,
   ManagerPromptPacketBuildResult,

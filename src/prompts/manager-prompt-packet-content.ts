@@ -10,7 +10,7 @@ import {
   buildWorkingFocusesPromptPayload,
 } from './format.js'
 
-import type { ManagerPromptRuntimeData } from './manager-prompt-runtime-data.js'
+import type { ManagerPromptRuntimeData } from './manager-prompt-runtime-helpers.js'
 import type { BuildManagerPromptParams } from './manager-prompt-types.js'
 import type { PacketSections } from './select-packet-sections.js'
 

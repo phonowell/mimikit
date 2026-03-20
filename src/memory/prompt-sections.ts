@@ -24,9 +24,8 @@ export const buildMemoryPromptSections = (params: {
 }): MemoryPromptSections => {
   const includeRemembered = params.includeRemembered ?? true
   const includeMemory = params.includeMemory ?? true
-  if (!includeRemembered && !includeMemory) {
+  if (!includeRemembered && !includeMemory)
     return { rememberedMemory: '', memory: '' }
-  }
 
   const rememberedEntries = params.entries.filter(
     (entry) => entry.source === 'remember',

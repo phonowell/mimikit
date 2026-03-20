@@ -97,7 +97,7 @@ export const buildFocusPromptPayload = (params: {
   workingFocusIds: FocusId[]
 }): FocusPromptPayload => {
   const visible = toVisibleMessages(params.history)
-  const primaryFocusId = params.workingFocusIds[0]?.trim() || undefined
+  const primaryFocusId = params.workingFocusIds[0]?.trim()
   const scopedVisible = primaryFocusId
     ? visible.filter((item) => item.focusId === primaryFocusId)
     : visible
@@ -125,7 +125,9 @@ export const buildFocusPromptPayload = (params: {
     const openItems = normalizeFocusOpenItems(focus.openItems, {
       maxItems: MAX_FOCUS_OPEN_ITEMS,
     })
-    const focusMessages = scopedVisible.filter((item) => item.focusId === focusId)
+    const focusMessages = scopedVisible.filter(
+      (item) => item.focusId === focusId,
+    )
     const recentMessages = selectRecentMessagesByBudget(
       focusMessages,
       MAX_FOCUS_RECENT_BYTES,

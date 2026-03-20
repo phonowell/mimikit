@@ -115,7 +115,8 @@ export const resolveBatchPrimaryFocusId = (params: {
   wakeProfile: ManagerWakeProfile
 }): FocusId => {
   const inputsNewestFirst = [...params.inputs].sort((a, b) => {
-    const diff = parseIsoToMsOrZero(b.createdAt) - parseIsoToMsOrZero(a.createdAt)
+    const diff =
+      parseIsoToMsOrZero(b.createdAt) - parseIsoToMsOrZero(a.createdAt)
     if (diff !== 0) return diff
     return b.id.localeCompare(a.id)
   })
@@ -140,7 +141,7 @@ export const resolveBatchPrimaryFocusId = (params: {
   const latestOpenTaskFocusId = resolveLatestOpenTaskFocusId(params.runtime)
   const recentActiveFocusId = resolveRecentActiveFocusId(params.runtime)
 
-  if (params.wakeProfile === 'user_input')
+  if (params.wakeProfile === 'user_input') {
     return (
       latestUserFocusId ??
       latestResultFocusId ??
@@ -148,7 +149,8 @@ export const resolveBatchPrimaryFocusId = (params: {
       recentActiveFocusId ??
       resolveDefaultFocusId(params.runtime)
     )
-  if (params.wakeProfile === 'task_result')
+  }
+  if (params.wakeProfile === 'task_result') {
     return (
       latestResultFocusId ??
       latestUserFocusId ??
@@ -156,7 +158,8 @@ export const resolveBatchPrimaryFocusId = (params: {
       recentActiveFocusId ??
       resolveDefaultFocusId(params.runtime)
     )
-  if (params.wakeProfile === 'trigger')
+  }
+  if (params.wakeProfile === 'trigger') {
     return (
       latestTriggerFocusId ??
       latestUserFocusId ??
@@ -164,7 +167,8 @@ export const resolveBatchPrimaryFocusId = (params: {
       recentActiveFocusId ??
       resolveDefaultFocusId(params.runtime)
     )
-  if (params.wakeProfile === 'capacity')
+  }
+  if (params.wakeProfile === 'capacity') {
     return (
       latestOpenTaskFocusId ??
       latestUserFocusId ??
@@ -173,6 +177,7 @@ export const resolveBatchPrimaryFocusId = (params: {
       recentActiveFocusId ??
       resolveDefaultFocusId(params.runtime)
     )
+  }
   return (
     latestUserFocusId ??
     latestResultFocusId ??

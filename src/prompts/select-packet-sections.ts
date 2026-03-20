@@ -36,7 +36,22 @@ export const resolvePacketSectionPolicy = (params: {
   mode: ManagerPacketMode
   wakeProfile: ManagerWakeProfile
 }): PacketSectionPolicy => {
-  const policy = {} as PacketSectionPolicy
+  const policy: PacketSectionPolicy = {
+    environment: false,
+    focus_list: false,
+    working_focuses: false,
+    remembered_memory: false,
+    memory: false,
+    tasks: false,
+    plans: false,
+    inputs: false,
+    batch_results: false,
+    recent_history: false,
+    history_lookup: false,
+    query_lookup: false,
+    file_lookup: false,
+    action_feedback: false,
+  }
   for (const section of SELECTABLE_PACKET_SECTIONS) {
     policy[section] = shouldIncludePacketSection({
       mode: params.mode,

@@ -17,7 +17,7 @@ import {
 } from './format.js'
 import { buildManagerEventDigests } from './manager-event-digests.js'
 
-import type { ManagerPromptRuntimeData } from './manager-prompt-runtime-data.js'
+import type { ManagerPromptRuntimeData } from './manager-prompt-runtime-helpers.js'
 import type { BuildManagerPromptParams } from './manager-prompt-types.js'
 import type {
   PacketSectionPolicy,
