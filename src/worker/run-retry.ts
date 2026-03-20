@@ -43,21 +43,14 @@ const buildTaskFocusBrief = (
   task: Task,
 ): TaskFocusBrief | undefined => {
   const focusMeta = runtime.focuses.find((focus) => focus.id === task.focusId)
-  const focusDigest = runtime.focusDigests.find(
-    (digest) => digest.focusId === task.focusId,
-  )
-  if (!focusMeta && !focusDigest) return undefined
+  if (!focusMeta) return undefined
   return {
     focusId: task.focusId,
-    ...(focusMeta?.title ? { title: focusMeta.title } : {}),
-    ...(focusDigest?.summary ? { summary: focusDigest.summary } : {}),
-    ...(focusDigest?.openItems ? { openItems: focusDigest.openItems } : {}),
-    ...(focusDigest?.updatedAt
-      ? { updatedAt: focusDigest.updatedAt }
-      : focusMeta?.updatedAt
-        ? { updatedAt: focusMeta.updatedAt }
-        : {}),
-    ...(focusMeta?.lastActivityAt
+    ...(focusMeta.title ? { title: focusMeta.title } : {}),
+    ...(focusMeta.summary ? { summary: focusMeta.summary } : {}),
+    ...(focusMeta.openItems ? { openItems: focusMeta.openItems } : {}),
+    ...(focusMeta.updatedAt ? { updatedAt: focusMeta.updatedAt } : {}),
+    ...(focusMeta.lastActivityAt
       ? { lastActivityAt: focusMeta.lastActivityAt }
       : {}),
   }

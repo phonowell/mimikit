@@ -642,9 +642,8 @@ test('upsert_focus accepts open_item_{n} scalar attrs and writes openItems', asy
 
   const focus = runtime.focuses.find((item) => item.id === 'focus-release')
   expect(focus?.title).toBe('Release')
-  const digest = runtime.focusDigests.find((item) => item.focusId === 'focus-release')
-  expect(digest?.summary).toBe('Track release readiness')
-  expect(digest?.openItems).toEqual(['确认回滚路径', '补齐发布清单'])
+  expect(focus?.summary).toBe('Track release readiness')
+  expect(focus?.openItems).toEqual(['确认回滚路径', '补齐发布清单'])
 })
 
 test('delete_plan removes done plan', async () => {

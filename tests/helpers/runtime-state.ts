@@ -26,7 +26,6 @@ type CreateTestRuntimeStateOptions = {
     tasks?: RuntimeState['tasks']
     taskPlans?: RuntimeState['taskPlans']
     focuses?: RuntimeState['focuses']
-    focusDigests?: RuntimeState['focusDigests']
   }
 }
 
@@ -104,6 +103,5 @@ export const createTestRuntimeState = async (
     tasks: options.patch?.tasks ?? [],
     taskPlans: options.patch?.taskPlans ?? [],
     focuses,
-    focusDigests: options.patch?.focusDigests ?? [],
   }
 }

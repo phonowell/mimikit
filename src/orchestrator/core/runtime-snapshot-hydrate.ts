@@ -1,13 +1,11 @@
 import { hydrateMemoryRefreshState } from '../../memory/refresh/state.js'
 
-import { selectPersistedFocusDigests } from './runtime-snapshot-persist.js'
-
 import type { RuntimeState } from './runtime-state.js'
 import type { RuntimeSnapshot } from '../../storage/runtime-snapshot-schema.js'
 
 export type RuntimeSnapshotHydrateSlice = Pick<
   RuntimeState,
-  'tasks' | 'taskPlans' | 'focuses' | 'focusDigests'
+  'tasks' | 'taskPlans' | 'focuses'
 > & {
   manager: Pick<RuntimeState['manager'], 'turn' | 'threadId' | 'memoryRefresh'>
   session: Pick<RuntimeState['session'], 'channelTargets'>
@@ -17,7 +15,7 @@ export type RuntimeSnapshotHydrateSlice = Pick<
 
 export type RuntimeSnapshotHydrateTarget = Pick<
   RuntimeState,
-  'tasks' | 'taskPlans' | 'focuses' | 'focusDigests' | 'queues'
+  'tasks' | 'taskPlans' | 'focuses' | 'queues'
 > & {
   manager: Pick<
     RuntimeState['manager'],
@@ -51,7 +49,6 @@ export const buildRuntimeSnapshotHydrateSlice = (params: {
     tasks: snapshot.tasks,
     taskPlans: snapshot.taskPlans,
     focuses: snapshot.focuses ?? [],
-    focusDigests: selectPersistedFocusDigests(snapshot.focusDigests ?? []),
     manager: {
       turn: snapshot.managerTurn ?? 0,
       ...(snapshot.managerThreadId
@@ -74,7 +71,6 @@ export const applyRuntimeSnapshotHydrateSlice = (
   runtime.tasks = slice.tasks
   runtime.taskPlans = slice.taskPlans
   runtime.focuses = slice.focuses
-  runtime.focusDigests = slice.focusDigests
   runtime.manager.turn = slice.manager.turn
   if (slice.manager.threadId) runtime.manager.threadId = slice.manager.threadId
   else delete runtime.manager.threadId

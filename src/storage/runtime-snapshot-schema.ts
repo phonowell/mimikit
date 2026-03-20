@@ -225,15 +225,8 @@ export const focusMetaSchema = z
     createdAt: z.string(),
     updatedAt: z.string(),
     lastActivityAt: z.string(),
-  })
-  .strict()
-
-export const focusDigestSchema = z
-  .object({
-    focusId: z.string().trim().min(1),
-    summary: z.string().optional(),
-    openItems: z.array(z.string()).optional(),
-    updatedAt: z.string(),
+    summary: z.string().trim().min(1).optional(),
+    openItems: z.array(z.string().trim().min(1)).optional(),
   })
   .strict()
 
@@ -255,7 +248,7 @@ export const managerPacketSectionSchema = z.enum([
   'packet_summary',
   'environment',
   'focus_list',
-  'focus_digests',
+  'working_focuses',
   'remembered_memory',
   'memory',
   'tasks',
@@ -375,7 +368,6 @@ export const runtimeSnapshotSchema = z
     tasks: z.array(taskSchema),
     taskPlans: z.array(taskPlanSchema),
     focuses: z.array(focusMetaSchema).optional(),
-    focusDigests: z.array(focusDigestSchema).optional(),
     managerTurn: z.number().int().nonnegative().optional(),
     managerThreadId: z.string().trim().min(1).optional(),
     queues: z

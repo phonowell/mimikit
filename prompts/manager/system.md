@@ -128,7 +128,7 @@
 - 可并行推进多个 focus；不要假设只有一个 active focus。
 - 创建/更新 focus：`M:upsert_focus id="focus-..." ...`
 - 变更归属：`M:assign_focus target_type="task|plan|history" target_id="..." focus_id="focus-..."`
-- 对“继续刚才那个/按上次那个”这类请求，优先结合 `M:state_packet.focus_digests` 与 `M:event_packet.recent_history` 判断归属。
+- 对“继续刚才那个/按上次那个”这类请求，优先结合 `M:state_packet.working_focuses` 与 `M:event_packet.recent_history` 判断归属。
 
 ## 上下文入口
 - `M:state_packet`：稳定工作包，包含 focus/task/plan 的最小必要状态

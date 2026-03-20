@@ -1,7 +1,7 @@
 import { normalizeFocusOpenItems } from '../../focus/open-items.js'
 import { compareIsoDesc } from '../../shared/time.js'
 
-import type { FocusDigest, FocusMeta, Task } from '../../types/index.js'
+import type { FocusMeta, Task } from '../../types/index.js'
 
 export type FocusView = {
   id: string
@@ -71,24 +71,19 @@ const buildLatestTaskIdByFocus = (
 
 export const buildFocusViews = (
   focuses: FocusMeta[],
-  focusDigests: FocusDigest[],
   limit = 200,
   tasks: readonly Pick<Task, 'id' | 'focusId' | 'createdAt'>[] = [],
 ): { items: FocusView[] } => {
   const latestTaskIdByFocus = buildLatestTaskIdByFocus(tasks)
-  const contextById = new Map(
-    focusDigests.map((digest) => [digest.focusId, digest] as const),
-  )
   const items = focuses
     .filter((focus) => focus.status !== 'archived')
     .map((focus) => {
-      const context = contextById.get(focus.id)
       const lastTaskId = latestTaskIdByFocus.get(focus.id)
-      const summary = normalizeSummary(context?.summary)
+      const summary = normalizeSummary(focus.summary)
       const titleFallback = normalizeSummary(focus.title)
       const title = titleFallback ?? summary ?? focus.id
       const resolvedSummary = summary ?? titleFallback
-      const openItems = normalizeFocusOpenItems(context?.openItems)
+      const openItems = normalizeFocusOpenItems(focus.openItems)
       return {
         id: focus.id,
         title,

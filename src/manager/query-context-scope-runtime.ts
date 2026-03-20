@@ -137,22 +137,17 @@ export const queryFocusScope = (
   runtime: RuntimeState,
   query: string,
   maxItemChars: number,
-): QueryLookupFocusItem[] => {
-  const contextById = new Map(
-    runtime.focusDigests.map((item) => [item.focusId, item]),
-  )
-  return rankRuntimeScope({
+): QueryLookupFocusItem[] =>
+  rankRuntimeScope({
     query,
     candidates: runtime.focuses,
     resolveTimeMs: (focus) => parseIsoToMs(focus.updatedAt),
     buildHaystack: (focus) => {
-      const context = contextById.get(focus.id)
-      const summary = buildFocusSummary(context?.summary, context?.openItems)
+      const summary = buildFocusSummary(focus.summary, focus.openItems)
       return [focus.id, focus.title, focus.status, summary].join('\n')
     },
     buildItem: (focus, values) => {
-      const context = contextById.get(focus.id)
-      const summary = buildFocusSummary(context?.summary, context?.openItems)
+      const summary = buildFocusSummary(focus.summary, focus.openItems)
       const entry: QueryLookupFocusItem & { id: string; timeMs: number } = {
         id: focus.id,
         timeMs: values.timeMs,
@@ -166,4 +161,3 @@ export const queryFocusScope = (
       return entry
     },
   })
-}

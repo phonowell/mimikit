@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest'
 
 import { buildFocusViews } from '../src/orchestrator/read-model/focus-view.js'
-import type { FocusDigest, FocusMeta, Task } from '../src/types/index.js'
+import type { FocusMeta, Task } from '../src/types/index.js'
 
 const createFocus = (overrides: Partial<FocusMeta> = {}): FocusMeta => ({
   id: 'focus-a',
@@ -10,14 +10,6 @@ const createFocus = (overrides: Partial<FocusMeta> = {}): FocusMeta => ({
   createdAt: '2026-03-01T00:00:00.000Z',
   updatedAt: '2026-03-01T00:00:00.000Z',
   lastActivityAt: '2026-03-01T00:00:00.000Z',
-  ...overrides,
-})
-
-const createFocusDigest = (
-  overrides: Partial<FocusDigest> = {},
-): FocusDigest => ({
-  focusId: 'focus-a',
-  updatedAt: '2026-03-01T00:00:00.000Z',
   ...overrides,
 })
 
@@ -43,6 +35,7 @@ test('buildFocusViews includes latest task id by focus', () => {
       title: 'A',
       lastActivityAt: '2026-03-01T00:10:00.000Z',
       updatedAt: '2026-03-01T00:10:00.000Z',
+      summary: 'Summary A',
     }),
     createFocus({
       id: 'focus-b',
@@ -50,11 +43,8 @@ test('buildFocusViews includes latest task id by focus', () => {
       status: 'idle',
       lastActivityAt: '2026-03-01T00:05:00.000Z',
       updatedAt: '2026-03-01T00:05:00.000Z',
+      summary: 'Summary B',
     }),
-  ]
-  const focusDigests: FocusDigest[] = [
-    createFocusDigest({ focusId: 'focus-a' }),
-    createFocusDigest({ focusId: 'focus-b' }),
   ]
   const tasks: Task[] = [
     createTask({
@@ -74,7 +64,7 @@ test('buildFocusViews includes latest task id by focus', () => {
     }),
   ]
 
-  const snapshot = buildFocusViews(focuses, focusDigests, 200, tasks)
+  const snapshot = buildFocusViews(focuses, 200, tasks)
 
   const focusA = snapshot.items.find((item) => item.id === 'focus-a')
   const focusB = snapshot.items.find((item) => item.id === 'focus-b')
@@ -110,7 +100,7 @@ test('buildFocusViews sorts by active flag, status, activity time, then id', () 
     }),
   ]
 
-  const snapshot = buildFocusViews(focuses, [], 200, [])
+  const snapshot = buildFocusViews(focuses, 200, [])
   expect(snapshot.items.map((item) => item.id)).toEqual([
     'focus-active-b',
     'focus-idle-a',

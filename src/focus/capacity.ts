@@ -77,8 +77,5 @@ export const pruneArchivedFocuses = async (
     }
     archived.splice(index, 1)
     runtime.focuses = runtime.focuses.filter((item) => item.id !== candidate.id)
-    runtime.focusDigests = runtime.focusDigests.filter(
-      (item) => item.focusId !== candidate.id,
-    )
   }
 }

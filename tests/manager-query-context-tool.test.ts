@@ -165,10 +165,14 @@ test('query_context deduplicates highly similar snippets across all scopes', asy
     updatedAt: '2026-03-06T01:20:00.000Z',
     runCount: 0,
   })
-  runtime.focusDigests.push({
-    focusId: 'focus-maintenance',
-    summary: 'deploy service alpha',
+  runtime.focuses.push({
+    id: 'focus-maintenance',
+    title: 'Maintenance',
+    status: 'idle',
+    createdAt: '2026-03-06T01:20:00.000Z',
     updatedAt: '2026-03-06T01:20:00.000Z',
+    lastActivityAt: '2026-03-06T01:20:00.000Z',
+    summary: 'deploy service alpha',
   })
 
   const request = requireQueryContextRequest({ query: 'deploy service alpha' })

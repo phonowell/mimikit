@@ -5,7 +5,6 @@ import {
   RUNTIME_SNAPSHOT_SCHEMA_VERSION,
 } from './runtime-schema-version.js'
 import {
-  type focusDigestSchema,
   type focusMetaSchema,
   type pendingUserChoicesSchema,
   type RuntimeSnapshot,
@@ -20,7 +19,6 @@ import type { z } from 'zod'
 type SnapshotTask = z.infer<typeof taskSchema>
 type SnapshotTaskPlan = z.infer<typeof taskPlanSchema>
 type SnapshotFocusMeta = z.infer<typeof focusMetaSchema>
-type SnapshotFocusDigest = z.infer<typeof focusDigestSchema>
 const asRecord = (value: unknown): Record<string, unknown> | undefined =>
   value && typeof value === 'object'
     ? (value as Record<string, unknown>)
@@ -86,11 +84,6 @@ const normalizeTaskPlan = (item: SnapshotTaskPlan): SnapshotTaskPlan =>
 const normalizeFocusMeta = (focus: SnapshotFocusMeta): SnapshotFocusMeta =>
   stripUndefined({ ...focus }) as SnapshotFocusMeta
 
-const normalizeFocusDigest = (
-  focusDigest: SnapshotFocusDigest,
-): SnapshotFocusDigest =>
-  stripUndefined({ ...focusDigest }) as SnapshotFocusDigest
-
 const normalizeChannelTargets = (
   value: RuntimeSnapshot['channelTargets'],
 ): RuntimeSnapshot['channelTargets'] =>
@@ -113,7 +106,6 @@ const normalizeRuntimeSnapshot = (value: RuntimeSnapshot): RuntimeSnapshot =>
     tasks: value.tasks.map(normalizeTask),
     taskPlans: value.taskPlans.map(normalizeTaskPlan),
     focuses: value.focuses?.map(normalizeFocusMeta),
-    focusDigests: value.focusDigests?.map(normalizeFocusDigest),
     managerTurn: value.managerTurn,
     managerThreadId: value.managerThreadId,
     queues: value.queues,

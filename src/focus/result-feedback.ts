@@ -7,8 +7,7 @@ import { clipCompactText } from '../shared/text.js'
 
 import { MAX_FOCUS_OPEN_ITEMS } from './constants.js'
 import { normalizeFocusOpenItems } from './open-items.js'
-import { upsertFocusDigest } from './state-digest.js'
-import { touchFocus } from './state.js'
+import { ensureFocus, normalizeFocusSummary, touchFocus } from './state.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { Task, TaskResult } from '../types/index.js'
@@ -150,19 +149,20 @@ const resolveNextOpenItems = (
   return mergeOpenItems(currentOpenItems, [buildFollowupOpenItem(task, result)])
 }
 
-export const syncFocusDigestFromTaskResult = (
+export const syncFocusFromTaskResult = (
   runtime: RuntimeState,
   task: Task,
   result: TaskResult,
 ): void => {
   const focusId = task.focusId.trim()
   if (focusId.length === 0) return
-  const current = runtime.focusDigests.find((item) => item.focusId === focusId)
+  const focus = ensureFocus(runtime, focusId)
   const summary = resolveHandoffSummary(result) ?? formatSummary(task, result)
-  upsertFocusDigest(runtime, {
-    focusId,
-    summary,
-    openItems: resolveNextOpenItems(current?.openItems, task, result),
-  })
+  const normalizedSummary = normalizeFocusSummary(summary)
+  const nextOpenItems = resolveNextOpenItems(focus.openItems, task, result)
+  if (normalizedSummary) focus.summary = normalizedSummary
+  else delete focus.summary
+  if (nextOpenItems.length > 0) focus.openItems = nextOpenItems
+  else delete focus.openItems
   touchFocus(runtime, focusId)
 }

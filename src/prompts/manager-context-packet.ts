@@ -29,7 +29,7 @@ const MINIMAL_SECTIONS = new Set<ManagerPacketSection>([
   'packet_summary',
   'environment',
   'focus_list',
-  'focus_digests',
+  'working_focuses',
   'remembered_memory',
   'tasks',
   'plans',

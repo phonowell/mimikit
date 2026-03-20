@@ -126,7 +126,6 @@ export const runManagerRoundWithRecovery = async (params: {
     promptSectionLimits,
     plans: params.plans,
     focuses: params.runtime.focuses,
-    focusDigests: params.runtime.focusDigests,
     workingFocusIds: params.workingFocusIds,
     ...(params.extra.historyLookup
       ? { historyLookup: params.extra.historyLookup }

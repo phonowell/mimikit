@@ -36,7 +36,7 @@ export const normalizeReservedFocusStatus = (
 export const initialFocusStatus = (focusId: FocusId): FocusStatus =>
   normalizeReservedFocusStatus(focusId, 'idle')
 
-export const canPersistFocusDigest = (focusId: FocusId): boolean =>
+export const canStoreFocusDetails = (focusId: FocusId): boolean =>
   !isGlobalFocusId(focusId)
 
 export const canPersistFocusCompressedContext = (focusId: FocusId): boolean =>

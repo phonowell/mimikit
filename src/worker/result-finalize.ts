@@ -1,4 +1,4 @@
-import { syncFocusDigestFromTaskResult } from '../focus/result-feedback.js'
+import { syncFocusFromTaskResult } from '../focus/result-feedback.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { notifyManagerLoop } from '../orchestrator/core/signals.js'
@@ -136,7 +136,7 @@ export const finalizeResult = async (
     ...(options?.taskPatch ?? {}),
   }
   markFn(runtime.tasks, task.id, basePatch)
-  syncFocusDigestFromTaskResult(runtime, task, result)
+  syncFocusFromTaskResult(runtime, task, result)
   await bestEffort(`appendTaskProgress: ${progressType}`, () =>
     appendTaskProgress({
       stateDir: runtime.config.workDir,

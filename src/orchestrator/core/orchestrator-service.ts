@@ -148,12 +148,7 @@ export class Orchestrator {
   }
 
   getFocuses(limit = 200) {
-    return buildFocusViews(
-      this.runtime.focuses,
-      this.runtime.focusDigests,
-      limit,
-      this.runtime.tasks,
-    )
+    return buildFocusViews(this.runtime.focuses, limit, this.runtime.tasks)
   }
 
   async getWebUiSnapshot(messageLimit = 50, taskLimit = 200) {

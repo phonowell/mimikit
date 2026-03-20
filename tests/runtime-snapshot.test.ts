@@ -10,6 +10,7 @@ import {
   saveRuntimeSnapshot,
   selectPersistedTasks,
 } from '../src/storage/runtime-snapshot.js'
+import { RUNTIME_SNAPSHOT_SCHEMA_VERSION } from '../src/storage/runtime-schema-version.js'
 import {
   createPlanFixture,
   createTaskFixture,
@@ -80,7 +81,7 @@ test('runtime snapshot accepts queue cursors', async () => {
   })
 
   const loaded = await loadRuntimeSnapshot(stateDir)
-  expect(loaded.schemaVersion).toBe('runtime-snapshot.v6')
+  expect(loaded.schemaVersion).toBe(RUNTIME_SNAPSHOT_SCHEMA_VERSION)
   expect(loaded.queues?.resultsCursor).toBe(9)
   expect(loaded.queues?.inputsCursor).toBe(3)
   expect(loaded.managerThreadId).toBe('session-manager-1')
@@ -137,7 +138,7 @@ test('runtime snapshot rejects legacy single pendingUserChoice field', async () 
   await writeFile(
     join(stateDir, 'runtime-snapshot.json'),
     JSON.stringify({
-      schemaVersion: 'runtime-snapshot.v6',
+      schemaVersion: RUNTIME_SNAPSHOT_SCHEMA_VERSION,
       tasks: [],
       taskPlans: [],
       pendingUserChoice: {
@@ -471,7 +472,7 @@ test('loadRuntimeSnapshot falls back to backup file when primary json is broken'
   await writeFile(
     backupPath,
     JSON.stringify({
-      schemaVersion: 'runtime-snapshot.v6',
+      schemaVersion: RUNTIME_SNAPSHOT_SCHEMA_VERSION,
       tasks: [],
       taskPlans: [],
       queues: {
@@ -513,7 +514,7 @@ test('saveRuntimeSnapshot writes previous primary content into .bak', async () =
   const primaryRaw = await readFile(primaryPath, 'utf8')
   const backupRaw = await readFile(`${primaryPath}.bak`, 'utf8')
   expect(JSON.parse(primaryRaw)).toEqual({
-    schemaVersion: 'runtime-snapshot.v6',
+    schemaVersion: RUNTIME_SNAPSHOT_SCHEMA_VERSION,
     ...nextSnapshot,
   })
   expect(JSON.parse(backupRaw)).toEqual(oldSnapshot)

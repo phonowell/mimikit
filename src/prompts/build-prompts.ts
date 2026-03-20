@@ -28,7 +28,6 @@ import {
 } from './format-task-focus-brief.js'
 import {
   buildActionFeedbackPromptPayload,
-  buildFocusDigestsPromptPayload,
   buildFocusListPromptPayload,
   buildHistoryLookupPromptPayload,
   buildInputsPromptPayload,
@@ -37,9 +36,9 @@ import {
   buildReadFileLookupPromptPayload,
   buildResultsPromptPayload,
   buildTasksPromptPayload,
+  buildWorkingFocusesPromptPayload,
   formatActionFeedback,
   formatEnvironment,
-  formatFocusDigests,
   formatFocusList,
   formatHistoryLookup,
   formatInputs,
@@ -48,6 +47,7 @@ import {
   formatReadFileLookup,
   formatResultsJson,
   formatTasksJson,
+  formatWorkingFocuses,
   renderPromptTemplate,
 } from './format.js'
 import {
@@ -59,7 +59,6 @@ import { loadPromptFile, loadPromptSource } from './prompt-loader.js'
 import type { AppConfig } from '../config.js'
 import type { ProviderPromptSegment } from '../providers/types.js'
 import type {
-  FocusDigest,
   FocusId,
   FocusMeta,
   HistoryLookupMessage,
@@ -104,7 +103,6 @@ type BuildManagerPromptParams = {
   actionFeedback?: ManagerActionFeedback[]
   env?: ManagerEnv
   focuses?: FocusMeta[]
-  focusDigests?: FocusDigest[]
   workingFocusIds?: FocusId[]
   packetMode?: ManagerPacketMode
   wakeProfile?: ManagerEnv['wakeProfile']
@@ -144,9 +142,9 @@ const buildMemoryPromptScoreContext = (params: {
   for (const plan of params.plans) pushMention(mentionTexts, plan.title)
   for (const focus of params.focusPayload.focusList)
     pushMention(mentionTexts, focus.title)
-  for (const digest of params.focusPayload.focusDigests) {
-    pushMention(mentionTexts, digest.summary)
-    for (const openItem of digest.openItems ?? [])
+  for (const focus of params.focusPayload.workingFocuses) {
+    pushMention(mentionTexts, focus.summary)
+    for (const openItem of focus.openItems ?? [])
       pushMention(mentionTexts, openItem)
   }
 
@@ -198,7 +196,6 @@ export const buildManagerPromptPayload = async (
   )
   const focusPayload = buildFocusPromptPayload({
     focuses: params.focuses ?? [],
-    focusDigests: params.focusDigests ?? [],
     history,
     workingFocusIds: params.workingFocusIds ?? [],
   })
@@ -300,9 +297,9 @@ export const buildManagerPromptPayload = async (
     formatFocusList(focusPayload.focusList),
     limits.focusListMaxBytes,
   )
-  const focusDigests = sectionJson(
-    formatFocusDigests(focusPayload.focusDigests),
-    limits.focusDigestsMaxBytes,
+  const workingFocuses = sectionJson(
+    formatWorkingFocuses(focusPayload.workingFocuses),
+    limits.workingFocusesMaxBytes,
   )
   const historyLookup = sectionJson(
     formatHistoryLookup(params.historyLookup ?? []),
@@ -329,7 +326,7 @@ export const buildManagerPromptPayload = async (
     packet_summary: '',
     environment,
     focus_list: focusList,
-    focus_digests: focusDigests,
+    working_focuses: workingFocuses,
     remembered_memory: rememberedMemory,
     memory,
     tasks,
@@ -358,7 +355,7 @@ export const buildManagerPromptPayload = async (
   }
   const selectedEnvironment = selectSection('environment')
   const selectedFocusList = selectSection('focus_list')
-  const selectedFocusDigests = selectSection('focus_digests')
+  const selectedWorkingFocuses = selectSection('working_focuses')
   const selectedRememberedMemory = selectSection('remembered_memory')
   const selectedMemory = selectSection('memory')
   const selectedTasks = selectSection('tasks')
@@ -387,10 +384,10 @@ export const buildManagerPromptPayload = async (
       ...(selectedFocusList
         ? { focus_list: buildFocusListPromptPayload(focusPayload.focusList) }
         : {}),
-      ...(selectedFocusDigests
+      ...(selectedWorkingFocuses
         ? {
-            focus_digests: buildFocusDigestsPromptPayload(
-              focusPayload.focusDigests,
+            working_focuses: buildWorkingFocusesPromptPayload(
+              focusPayload.workingFocuses,
             ),
           }
         : {}),
@@ -408,7 +405,7 @@ export const buildManagerPromptPayload = async (
         : {}),
     }),
     limits.focusListMaxBytes +
-      limits.focusDigestsMaxBytes +
+      limits.workingFocusesMaxBytes +
       limits.tasksMaxBytes +
       limits.plansMaxBytes +
       limits.packetSummaryMaxBytes,

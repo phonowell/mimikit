@@ -13,7 +13,6 @@ const baseLimits: PromptSectionLimits = {
   batchResultsMaxBytes: 20480,
   environmentMaxBytes: 4096,
   fileLookupMaxBytes: 20480,
-  focusDigestsMaxBytes: 20480,
   focusListMaxBytes: 8192,
   historyLookupMaxBytes: 20480,
   inputsMaxBytes: 8192,
@@ -23,6 +22,7 @@ const baseLimits: PromptSectionLimits = {
   queryLookupMaxBytes: 20480,
   recentHistoryMaxBytes: 8192,
   tasksMaxBytes: 24576,
+  workingFocusesMaxBytes: 20480,
 }
 
 const createRuntime = (limits: PromptSectionLimits) => {

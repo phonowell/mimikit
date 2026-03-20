@@ -12,21 +12,29 @@ const SNAPSHOT_BASE_TIME = '2026-02-06T00:00:00.000Z'
 const createTmpDir = () =>
   mkdtemp(join(tmpdir(), 'mimikit-runtime-persistence-focus-digests-'))
 
-test('persistRuntimeState keeps runtime focus digests intact while filtering snapshot payload', async () => {
+test('persistRuntimeState writes focus details on focuses and strips global focus details', async () => {
   const stateDir = await createTmpDir()
   const runtime = await createTestRuntimeState({
     workDir: stateDir,
     patch: {
-      focusDigests: [
+      focuses: [
         {
-          focusId: 'focus-global',
-          summary: 'legacy global digest',
+          id: 'focus-global',
+          title: 'Global',
+          status: 'active',
+          createdAt: SNAPSHOT_BASE_TIME,
           updatedAt: SNAPSHOT_BASE_TIME,
+          lastActivityAt: SNAPSHOT_BASE_TIME,
+          summary: 'legacy global detail',
         },
         {
-          focusId: 'focus-release',
-          summary: 'ship phase2',
+          id: 'focus-release',
+          title: 'Release',
+          status: 'active',
+          createdAt: SNAPSHOT_BASE_TIME,
           updatedAt: SNAPSHOT_BASE_TIME,
+          lastActivityAt: SNAPSHOT_BASE_TIME,
+          summary: 'ship phase2',
         },
       ],
     },
@@ -34,11 +42,21 @@ test('persistRuntimeState keeps runtime focus digests intact while filtering sna
 
   await persistRuntimeState(runtime)
 
-  expect(runtime.focusDigests.map((item) => item.focusId)).toEqual([
-    'focus-global',
-    'focus-release',
-  ])
-  expect((await loadRuntimeSnapshot(stateDir)).focusDigests?.map((item) => item.focusId)).toEqual([
-    'focus-release',
+  expect(runtime.focuses.find((item) => item.id === 'focus-global')?.summary).toBe(
+    'legacy global detail',
+  )
+  expect((await loadRuntimeSnapshot(stateDir)).focuses).toEqual([
+    expect.objectContaining({
+      id: 'focus-global',
+      title: 'Global',
+      status: 'active',
+      createdAt: SNAPSHOT_BASE_TIME,
+      updatedAt: SNAPSHOT_BASE_TIME,
+      lastActivityAt: SNAPSHOT_BASE_TIME,
+    }),
+    expect.objectContaining({
+      id: 'focus-release',
+      summary: 'ship phase2',
+    }),
   ])
 })

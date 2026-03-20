@@ -7,7 +7,6 @@ import { setDefaultLogPath } from '../../log/safe.js'
 import type { RuntimeMemoryRefreshState } from '../../memory/refresh/state.js'
 import type { RuntimeStartupInfo } from '../../shared/runtime-startup.js'
 import type {
-  FocusDigest,
   FocusMeta,
   ManagerContextPacket,
   PendingUserChoice,
@@ -108,7 +107,6 @@ export type RuntimeState = {
   tasks: Task[]
   taskPlans: TaskPlan[]
   focuses: FocusMeta[]
-  focusDigests: FocusDigest[]
 }
 
 export const createRuntimeState = (
@@ -171,6 +169,5 @@ export const createRuntimeState = (
     tasks: [],
     taskPlans: [],
     focuses: [],
-    focusDigests: [],
   }
 }

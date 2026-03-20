@@ -16,7 +16,6 @@ export type PromptSectionLimits = {
   batchResultsMaxBytes: number
   environmentMaxBytes: number
   fileLookupMaxBytes: number
-  focusDigestsMaxBytes: number
   focusListMaxBytes: number
   historyLookupMaxBytes: number
   inputsMaxBytes: number
@@ -26,6 +25,7 @@ export type PromptSectionLimits = {
   queryLookupMaxBytes: number
   recentHistoryMaxBytes: number
   tasksMaxBytes: number
+  workingFocusesMaxBytes: number
 }
 
 export type AppConfig = {
@@ -92,7 +92,6 @@ const INTERNAL_MANAGER_DEFAULTS = {
     batchResultsMaxBytes: 20480,
     environmentMaxBytes: 4096,
     fileLookupMaxBytes: 20480,
-    focusDigestsMaxBytes: 20480,
     focusListMaxBytes: 8192,
     historyLookupMaxBytes: 20480,
     inputsMaxBytes: 8192,
@@ -102,6 +101,7 @@ const INTERNAL_MANAGER_DEFAULTS = {
     queryLookupMaxBytes: 20480,
     recentHistoryMaxBytes: 8192,
     tasksMaxBytes: 24576,
+    workingFocusesMaxBytes: 20480,
   },
   taskCreate: {
     debounceMs: 4000,

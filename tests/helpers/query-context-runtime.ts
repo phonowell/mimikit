@@ -144,13 +144,7 @@ export const createQueryContextRuntime = async (options?: {
       createdAt: '2026-03-06T00:00:00.000Z',
       updatedAt: '2026-03-06T00:40:00.000Z',
       lastActivityAt: '2026-03-06T01:00:00.000Z',
-    },
-  ]
-  runtime.focusDigests = [
-    {
-      focusId: 'focus-release',
       summary: 'deployment in progress',
-      updatedAt: '2026-03-06T00:40:00.000Z',
     },
   ]
   return runtime

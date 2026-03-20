@@ -1,4 +1,4 @@
-import { canPersistFocusDigest } from '../../focus/reserved.js'
+import { canStoreFocusDetails } from '../../focus/reserved.js'
 import { RUNTIME_SNAPSHOT_SCHEMA_VERSION } from '../../storage/runtime-schema-version.js'
 import { selectPersistedTasks } from '../../storage/runtime-snapshot.js'
 
@@ -7,17 +7,12 @@ import type { RuntimeSnapshot } from '../../storage/runtime-snapshot-schema.js'
 
 export type RuntimeSnapshotPersistSlice = Pick<
   RuntimeState,
-  'config' | 'tasks' | 'taskPlans' | 'focuses' | 'focusDigests' | 'queues'
+  'config' | 'tasks' | 'taskPlans' | 'focuses' | 'queues'
 > & {
   manager: Pick<RuntimeState['manager'], 'turn' | 'threadId' | 'memoryRefresh'>
   session: Pick<RuntimeState['session'], 'channelTargets'>
   ui: Pick<RuntimeState['ui'], 'pendingUserChoices'>
 }
-
-export const selectPersistedFocusDigests = (
-  focusDigests: RuntimeState['focusDigests'],
-): NonNullable<RuntimeSnapshot['focusDigests']> =>
-  focusDigests.filter((item) => canPersistFocusDigest(item.focusId))
 
 export const normalizeChannelTargets = (
   value:
@@ -35,6 +30,22 @@ export const normalizeChannelTargets = (
   }
 }
 
+const selectPersistedFocuses = (
+  focuses: RuntimeState['focuses'],
+): RuntimeSnapshot['focuses'] =>
+  focuses.map((focus) =>
+    canStoreFocusDetails(focus.id)
+      ? { ...focus }
+      : {
+          id: focus.id,
+          title: focus.title,
+          status: focus.status,
+          createdAt: focus.createdAt,
+          updatedAt: focus.updatedAt,
+          lastActivityAt: focus.lastActivityAt,
+        },
+  )
+
 export const buildRuntimeSnapshot = (
   runtime: RuntimeSnapshotPersistSlice,
   memoryRefresh: RuntimeSnapshot['memoryRefresh'],
@@ -44,8 +55,7 @@ export const buildRuntimeSnapshot = (
     schemaVersion: RUNTIME_SNAPSHOT_SCHEMA_VERSION,
     tasks: selectPersistedTasks(runtime.tasks),
     taskPlans: runtime.taskPlans,
-    focuses: runtime.focuses,
-    focusDigests: selectPersistedFocusDigests(runtime.focusDigests),
+    focuses: selectPersistedFocuses(runtime.focuses),
     managerTurn: runtime.manager.turn,
     ...(runtime.manager.threadId
       ? { managerThreadId: runtime.manager.threadId }

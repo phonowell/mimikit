@@ -12,7 +12,7 @@
 
 - Focus 是编排域内的“工作主题单元”，用于把 `input/history/task/plan/choice` 绑定到同一归属。
 - Focus 只负责上下文与状态治理，不承载 worker 执行逻辑。
-- 执行仍由外部运行时完成；摘要与 Prompt 注入通过独立的 `FocusDigest` / `TaskFocusBrief` 承载。
+- 执行仍由外部运行时完成；摘要与 Prompt 注入直接来自 `FocusMeta` 与派生 `TaskFocusBrief`。
 
 ## 单一事实源（代码）
 
@@ -25,9 +25,7 @@
 ## 数据模型
 
 - `FocusMeta`
-- 字段：`id/title/status/createdAt/updatedAt/lastActivityAt`
-- `FocusDigest`
-- 字段：`focusId/summary/openItems/updatedAt`
+- 字段：`id/title/status/createdAt/updatedAt/lastActivityAt/summary?/openItems?`
 - `TaskFocusBrief`
 - 字段：`focusId/title/summary/openItems/updatedAt/lastActivityAt`
 - `PendingUserChoice`
@@ -54,7 +52,7 @@
 
 - `focus-global` 必须存在且永远是 `active`。
 - `focus-inbox` 不允许最终落在 `done/archived`，会归一化为 `idle`。
-- `focus-global` 不持久化 `FocusDigest`。
+- `focus-global` 不持久化业务 `summary/openItems`。
 - `archived` focus 不进入 WebUI Focus 列表，也不进入 manager 的 focus prompt 段。
 
 ## 默认归属与继承
@@ -90,7 +88,7 @@
 - 行为：
 - 不存在则创建，存在则更新。
 - `status` 会应用保留 focus 归一化规则。
-- `summary/openItems` 写入 `FocusDigest`。
+- `summary/openItems` 直接写入 `FocusMeta`。
 - `openItems` 去重与裁剪：`MAX_FOCUS_OPEN_ITEMS = 3`。
 - 执行后触发容量治理并持久化快照。
 
@@ -105,9 +103,9 @@
 ### 关于 `compress_context`
 
 - 当前代码库不存在可执行的 `compress_context` manager action。
-- 当前 Focus 主状态只保留 `FocusMeta + FocusDigest`；不再维护独立的 focus 压缩上下文持久化层。
+- 当前 Focus 主状态只保留 `FocusMeta`；不再维护独立的 focus 摘要对象或压缩上下文持久化层。
 
-## 任务结果回写 FocusDigest
+## 任务结果回写 FocusMeta
 
 实现：`src/focus/result-feedback.ts`
 
@@ -134,7 +132,6 @@
 - `history/*.jsonl`
 - 删除时同步移除：
 - `FocusMeta`
-- `FocusDigest`
 
 ## Working Focus 选择
 
@@ -153,7 +150,7 @@
 
 - Manager Prompt：
 - `M:state_packet.focus_list`：非 archived focus 列表（含 `is_active`）
-- `M:state_packet.focus_digests`：working focus 的 `summary/open_items/recent_messages`（过滤 `focus-global`）
+- `M:state_packet.working_focuses`：working focus 的 `summary/open_items/recent_messages`（过滤 `focus-global`）
 - `M:event_packet.recent_history`：未被 working focus recent 覆盖的近期历史
 - 各段受 `manager.promptSections.*MaxBytes` 固定预算控制；`wakeProfile` 不再改写这些 section 的字节上限
 - Worker Prompt：
@@ -163,7 +160,6 @@
 
 - runtime snapshot 字段：
 - `focuses`
-- `focusDigests`
 - 读写入口：`src/orchestrator/core/runtime-persistence.ts`
 - WebUI/SSE：
 - `GET /api/events` 的 `snapshot` 包含 `focuses`

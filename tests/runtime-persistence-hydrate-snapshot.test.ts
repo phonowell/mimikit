@@ -52,18 +52,7 @@ test('hydrateRuntimeState restores persisted snapshot slices through one hydrate
           createdAt: SNAPSHOT_BASE_TIME,
           updatedAt: SNAPSHOT_BASE_TIME,
           lastActivityAt: SNAPSHOT_BASE_TIME,
-        },
-      ],
-      focusDigests: [
-        {
-          focusId: 'focus-global',
-          summary: 'ignore reserved digest',
-          updatedAt: SNAPSHOT_BASE_TIME,
-        },
-        {
-          focusId: 'focus-release',
           summary: 'ship phase2',
-          updatedAt: SNAPSHOT_BASE_TIME,
         },
       ],
       session: {
@@ -157,9 +146,7 @@ test('hydrateRuntimeState restores persisted snapshot slices through one hydrate
     'plan-hydrate-slice',
   ])
   expect(restored.focuses.map((focus) => focus.id)).toEqual(['focus-release'])
-  expect(restored.focusDigests.map((digest) => digest.focusId)).toEqual([
-    'focus-release',
-  ])
+  expect(restored.focuses[0]?.summary).toBe('ship phase2')
   expect(restored.manager.turn).toBe(7)
   expect(restored.manager.threadId).toBe('thread-hydrate-slice')
   expect(restored.manager.memoryRefresh).toEqual({

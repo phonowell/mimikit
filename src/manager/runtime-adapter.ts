@@ -32,5 +32,4 @@ export type RuntimeState = Pick<
   | 'tasks'
   | 'taskPlans'
   | 'focuses'
-  | 'focusDigests'
 >

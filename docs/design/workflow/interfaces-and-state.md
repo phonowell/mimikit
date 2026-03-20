@@ -182,7 +182,7 @@ schema：`src/storage/runtime-snapshot-schema.ts`
 
 - `tasks`（含 `tasks[*].provider`）
 - `taskPlans`
-- `focuses`、`focusDigests`
+- `focuses`
 - `managerTurn`
 - `managerThreadId`
 - `queues.inputsCursor`、`queues.resultsCursor`
