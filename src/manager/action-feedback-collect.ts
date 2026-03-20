@@ -167,6 +167,7 @@ export const collectManagerActionFeedback = (
 ): ManagerActionFeedback[] => {
   const feedback: ManagerActionFeedback[] = []
   const seen = new Set<string>()
+  const lookupSeen = new Set<string>()
 
   if (output.trim().length > 0) {
     const syntaxIssue = detectUnparsedActionIssue(output, items.length > 0)
@@ -174,7 +175,8 @@ export const collectManagerActionFeedback = (
   }
 
   for (const item of items) {
-    if (!REGISTERED_MANAGER_ACTIONS.has(item.name)) {
+    const isRegistered = REGISTERED_MANAGER_ACTIONS.has(item.name)
+    if (!isRegistered) {
       pushFeedback(
         feedback,
         seen,
@@ -182,47 +184,42 @@ export const collectManagerActionFeedback = (
         'unregistered_action',
         UNREGISTERED_ACTION_HINT,
       )
-    }
-  }
-
-  for (const item of items) {
-    if (!REGISTERED_MANAGER_ACTIONS.has(item.name)) continue
-    if (!context.allowedActions || context.allowedActions.has(item.name))
-      continue
-    pushFeedback(
-      feedback,
-      seen,
-      item,
-      'action_execution_rejected',
-      formatBlockedActionSurfaceHint({
-        action: item.name,
-        wakeProfile: context.wakeProfile ?? 'mixed',
-      }),
-    )
-  }
-
-  const lookupSeen = new Set<string>()
-  for (const item of items) {
-    if (!(item.name in SINGLE_LOOKUP_ACTION_LIMIT_HINTS)) continue
-    if (!isValidLookupAction(item)) continue
-    if (!lookupSeen.has(item.name)) {
-      lookupSeen.add(item.name)
       continue
     }
-    pushFeedback(
-      feedback,
-      seen,
-      item,
-      'action_execution_rejected',
-      SINGLE_LOOKUP_ACTION_LIMIT_HINTS[item.name] ??
-        DUPLICATE_ACTION_GENERIC_HINT,
-    )
-  }
 
-  for (const item of items) {
-    if (!REGISTERED_MANAGER_ACTIONS.has(item.name)) continue
-    if (context.allowedActions && !context.allowedActions.has(item.name))
+    const isBlocked =
+      context.allowedActions !== undefined &&
+      !context.allowedActions.has(item.name)
+    if (isBlocked) {
+      pushFeedback(
+        feedback,
+        seen,
+        item,
+        'action_execution_rejected',
+        formatBlockedActionSurfaceHint({
+          action: item.name,
+          wakeProfile: context.wakeProfile ?? 'mixed',
+        }),
+      )
       continue
+    }
+
+    if (
+      item.name in SINGLE_LOOKUP_ACTION_LIMIT_HINTS &&
+      isValidLookupAction(item)
+    ) {
+      if (lookupSeen.has(item.name)) {
+        pushFeedback(
+          feedback,
+          seen,
+          item,
+          'action_execution_rejected',
+          SINGLE_LOOKUP_ACTION_LIMIT_HINTS[item.name] ??
+            DUPLICATE_ACTION_GENERIC_HINT,
+        )
+      } else lookupSeen.add(item.name)
+    }
+
     const issues = validateRegisteredManagerAction(item, context)
     for (const issue of issues)
       pushFeedback(feedback, seen, item, issue.error, issue.hint)

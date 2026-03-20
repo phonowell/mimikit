@@ -18,18 +18,4 @@ export { resumeTask } from '../worker/resume-task.js'
 
 import type { RuntimeState as CoreRuntimeState } from '../orchestrator/core/runtime-state.js'
 
-export type RuntimeState = Pick<
-  CoreRuntimeState,
-  | 'runtimeId'
-  | 'startup'
-  | 'config'
-  | 'paths'
-  | 'session'
-  | 'manager'
-  | 'worker'
-  | 'ui'
-  | 'queues'
-  | 'tasks'
-  | 'taskPlans'
-  | 'focuses'
->
+export type RuntimeState = CoreRuntimeState
