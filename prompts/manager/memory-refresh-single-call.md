@@ -8,20 +8,21 @@
 输入说明（来自 `# Input(YAML)`）：
 - `memoryMarkdown`：当前已有长期记忆全文。
 - `signals[]`：近期可见对话信号（采样窗口，不是全量历史；`text` 可能被截断）。
-- `tasks[]`：近期任务摘要（含 `id/title/status/focusId/output?`）。
-- `plans[]`：近期计划摘要（含 `id/title/status/updatedAt`）。
+- `tasks[]`：近期任务状态摘要（含 `id/status/focusId`）。
+- `plans[]`：近期计划状态摘要（含 `id/status/updatedAt`）。
 
 执行约束：
 1. 只能基于输入 YAML 推断；禁止使用输入外事实。
 2. 信息若不稳定、不可验证、一次性、或明显短期过期，不得进入 `entries`。
-3. 与 `memoryMarkdown` 前后不一致并不必然是冲突；若有更晚或更强证据，可输出“更新型”条目并明确新旧关系。
-4. 仅当无法判断新旧真伪、或证据强度不足以决策时，才应 `noop`。
-5. `evidence_ids` 必须来自输入中真实存在的 ID（`signals.id` / `tasks.id` / `plans.id`），禁止虚构。
-6. `entries` 最多 60 条；超过时按证据强度与长期价值排序裁剪。
-7. 可输出“新增/更新条目”（`entries`）与“删除条目 ID”（`delete_entry_ids`）两类补丁。
-8. `delete_entry_ids` 只能填写 `memoryMarkdown` 中已存在的条目 ID。
-9. 若检测到明确“应遗忘/删除某记忆”的用户指令，优先通过 `delete_entry_ids` 表达删除。
-10. 若因采样/截断导致证据不足，宁可 `noop`，并在 `reason` 说明具体缺口。
+3. `tasks[]` / `plans[]` 仅用于判断当前是否仍属过程态；禁止把它们当长期事实源。
+4. 与 `memoryMarkdown` 前后不一致并不必然是冲突；若有更晚或更强证据，可输出“更新型”条目并明确新旧关系。
+5. 仅当无法判断新旧真伪、或证据强度不足以决策时，才应 `noop`。
+6. `evidence_ids` 必须来自输入中真实存在的 ID（`signals.id` / `tasks.id` / `plans.id`），禁止虚构。
+7. `entries` 最多 60 条；超过时按证据强度与长期价值排序裁剪。
+8. 可输出“新增/更新条目”（`entries`）与“删除条目 ID”（`delete_entry_ids`）两类补丁。
+9. `delete_entry_ids` 只能填写 `memoryMarkdown` 中已存在的条目 ID。
+10. 若检测到明确“应遗忘/删除某记忆”的用户指令，优先通过 `delete_entry_ids` 表达删除。
+11. 若因采样/截断导致证据不足，宁可 `noop`，并在 `reason` 说明具体缺口。
 
 输出要求（必须严格 JSON）：
 1. 仅输出一个 JSON 对象，不要输出代码块。

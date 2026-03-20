@@ -6,6 +6,7 @@ import { type MemoryEntry } from './entry-types.js'
 
 const REDUNDANCY_THRESHOLD = 0.9
 const MIN_MENTION_OVERLAP = 0.06
+const MAX_MENTION_BOOST = 0.05
 
 export type MemoryScoreContext = {
   queryText: string
@@ -36,10 +37,10 @@ const mentionBoost = (entryText: string, mentionTexts: string[]): number => {
   for (const text of mentionTexts) {
     const overlap = scoreTextOverlap(text, entryText)
     if (overlap < MIN_MENTION_OVERLAP) continue
-    mentionStrength += Math.min(1, overlap / 0.35)
+    mentionStrength += Math.min(1, overlap / 0.5)
   }
   if (mentionStrength <= 0) return 0
-  return Math.min(0.12, Math.log1p(mentionStrength) * 0.06)
+  return Math.min(MAX_MENTION_BOOST, Math.log1p(mentionStrength) * 0.03)
 }
 
 const sourceReliability = (entry: MemoryEntry): number => {
@@ -93,10 +94,10 @@ export const rankMemoryEntries = (params: {
       sourceReliability(entry) * 0.7 + evidenceReliability(entry) * 0.3
     const focusMatch = hasFocusHint(entry, workingFocusIds) ? 1 : 0
     const score =
-      relevance * 0.45 +
+      relevance * 0.5 +
       recency * 0.2 +
       reliability * 0.2 +
-      focusMatch * 0.1 +
+      focusMatch * 0.05 +
       mentionBoost(entryText, mentionTexts)
     return {
       ...entry,
