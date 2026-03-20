@@ -7,25 +7,22 @@
 
 Mimikit 是面向无人在线时段与长时间异步窗口的低成本自治作业系统。它保持单一主 session，用 `manager + worker` 驱动作业闭环，把真正执行委托给外部运行时，并把状态、计划、日志与恢复点持久化到本地。
 
-它不是通用 agent 平台。保留的边界只有四件事：异步触发、低成本常驻、失败恢复、人返回后的复盘与续跑。
+它不是通用 agent 平台。当前边界只有四件事：异步触发、低成本常驻、失败恢复、人返回后的复盘与续跑。
 
 ## Positioning
 
-- 低常驻成本：单 session、单 manager loop、外部执行运行时复用，避免为长时间无人在线场景额外维护多层 agent 编排。
-- 异步执行与恢复：支持 `cron`、`scheduled_at`、`on_worker_slot_freed`，并把运行时快照落盘，重启后可继续。
-- 显式止损边界：高成本或不确定任务停在确认边界；其他链路尽量自动推进到明确收尾条件。
-- 可复盘观察：WebUI、CLI action log、`.mimikit/` 状态目录用于观察异步执行结果，而不是扩展更多平台概念。
+- 低常驻成本：单 session、单 manager loop、外部执行运行时复用。
+- 异步执行与恢复：支持 `cron`、`scheduled_at`、`on_worker_slot_freed`，重启后可继续。
+- 显式止损边界：高成本或不确定任务停在确认边界。
+- 可复盘观察：WebUI、CLI action log、`.mimikit/` 状态目录共同构成观测面。
 
-## Quickstart
+## 30 分钟跑起来
 
-### 1) 安装依赖
+### 1) 准备环境
 
-Mimikit 从 `~/.codex/config.toml` 和环境变量读取 provider 设置，加载入口见 [`src/cli/index.ts`](./src/cli/index.ts)。API key 解析顺序：
-
-1. `~/.codex/config.toml` 当前 provider 的 `api_key`
-2. `~/.codex/config.toml` 当前 provider 的 `env_key` / `api_key_env`
-3. `OPENAI_API_KEY`
-4. `~/.codex/auth.json` 中的 `OPENAI_API_KEY`
+- CI 基线是 Node `22` + `pnpm@10.28.2`。
+- 凭证可来自 `~/.codex/config.toml`、环境变量或 `~/.codex/auth.json`。
+- 最直接的环境变量是 `OPENAI_API_KEY`。
 
 ```bash
 git clone https://github.com/phonowell/mimikit.git
@@ -33,166 +30,58 @@ cd mimikit
 pnpm i
 ```
 
-### 2) 配置 API key
-
-macOS / Linux:
-
 ```bash
 export OPENAI_API_KEY=your_key
 ```
+
+Windows PowerShell:
 
 ```powershell
 $env:OPENAI_API_KEY = "your_key"
 ```
 
-Windows CMD:
+### 2) 启动开发实例
 
-```cmd
-set OPENAI_API_KEY=your_key
-```
-
-如使用自定义 Codex 兼容 provider，可在活动 provider 中配置：
-
-```toml
-model_provider = "aicoding"
-
-[model_providers.aicoding]
-base_url = "https://your-codex-provider.example.com/v1/codex"
-wire_api = "responses"
-env_key = "AICODING_API_KEY"
-```
-
-```toml
-[manager]
-model = "gpt-5.2"
-modelReasoningEffort = "medium"
-
-[worker]
-maxConcurrent = 3
-timeoutMs = 600000
-
-[worker.budget]
-maxDurationMs = 1800000
-maxRounds = 3
-
-[codex]
-enabled = true
-model = "gpt-5.4"
-modelReasoningEffort = "high"
-capability = "high"
-billing = "medium"
-
-[opencode]
-enabled = false
-model = "big-pickle"
-capability = "low"
-billing = "low"
-
-[webui]
-enabled = true
-```
-
-运行时选择规则：
-
-- manager 调用走 `openai-responses`
-- worker 按任务 `provider` 路由到 `codex-sdk` 或 `opencode-sdk`
-- 未指定 `provider` 时，按最低 `billing`、再按最高 `capability` 自动选择
-- 高成本 `enqueue_task` 会先生成待确认项，等人返回后再决定是否派发
-- 长任务命中 `worker.budget` 时不会直接失败；会归档部分结果、保留 session，并把任务置为 `paused` 等待显式恢复
-- WebUI 会显示任务列表、`stopReason/recoverable` 标记与待确认 choice，方便人返回后逐项复盘和续跑
-
-### 3) 启动
+一键启动（会先补 `config.toml`、执行 `pnpm install`，再启动 CLI）：
 
 ```bash
-pnpm start
+pnpm start -- --port 8787 --work-dir .mimikit
 ```
+
+更适合日常内循环的直接入口：
 
 ```bash
 tsx src/cli/index.ts --port 8787 --work-dir .mimikit
 ```
 
-CLI 默认输出 action 生命周期日志，并始终将其写入 `.mimikit/log.jsonl` 的 `manager_action` 事件。关闭 CLI 输出：
+说明：没有单独的 agent / worker 启动命令；`manager + worker + WebUI` 都由同一 CLI 进程拉起。
 
-```bash
-MIMIKIT_ACTION_LOGS=false pnpm start
-```
-
-### 4) 本地门禁
-
-- `pnpm run guard:file-length`：报告并阻止受管范围内新增的 >200 行文件，也会阻止已豁免超限文件继续膨胀
-- `pnpm run lint`：已默认串联该 guard，避免“文件 >200 行需拆分”继续停留在口号层
-- 豁免台账在 `scripts/file-length-guard-exemptions.tsv`；只记录存量债务，不给新文件预留缓冲
-
-### 5) 可选异步入口
-
-Telegram：
-
-```bash
-export TELEGRAM_CHANNEL_ENABLED=true
-export TELEGRAM_BOT_TOKEN=<your_bot_token>
-export TELEGRAM_CHAT_ID=<your_chat_id>
-pnpm start
-```
-
-Feishu：
-
-```bash
-export FEISHU_CHANNEL_ENABLED=true
-export FEISHU_APP_ID=<your_app_id>
-export FEISHU_APP_SECRET=<your_app_secret>
-export FEISHU_CHAT_ID=<your_chat_id>
-pnpm start
-```
-
-## How It Works
-
-```mermaid
-flowchart LR
-  U[User or Trigger] --> I[input or trigger packet]
-  I --> M[Manager Loop]
-  M -->|enqueue task / update plan| W[Worker Loop]
-  W --> R[results/packets.jsonl]
-  R --> M
-  M --> V[WebUI / channel reply]
-```
-
-- 用户输入、计划触发、worker 结果都会落盘，再回流给 manager。
-- `managerLoop` 统一处理计划触发、待确认 choice 生命周期、worker 槽位释放，不额外拆第二套调度器。
-- 当补充检索没有新进展或同类拒绝重复出现时，manager 会提前收敛为 best-effort 回复，避免长时间异步窗口内空转。
-- worker 命中预算上限时会写出 `partial` 结果与 handoff，日志/历史可区分正常完成、预算暂停和其他阻塞停止。
-- 重启时读取 runtime snapshot，对齐 cursor 后继续处理未消费输入与结果。
-
-## Minimal Smoke Test
+### 3) 验证 WebUI / API
 
 ```bash
 curl -sS http://127.0.0.1:8787/api/status
 ```
 
-PowerShell:
+期望返回含 `ok`、`runtimeId`、`agentStatus`、`activeTasks`、`pendingTasks`、`managerRunning`、`maxWorkers` 的 JSON。
 
-```powershell
-Invoke-RestMethod http://127.0.0.1:8787/api/status | ConvertTo-Json -Depth 5
-```
+### 4) 常用命令
 
-## Prompt Governance
+- `pnpm run bootstrap`：生成根目录 `config.toml`。
+- `pnpm run lint`：含 BOM/CRLF/JSDoc/prompt/file-length guard 与 ESLint 修复。
+- `pnpm run typecheck`：开发者友好别名，等价 `pnpm run type-check`。
+- `pnpm run test`：运行 Vitest。
+- `pnpm run build`：静态构建门禁；当前不产出 `dist/`，等价 `pnpm run type-check`。
+- `pnpm run review-code-changes`：合流前门禁，串联 `lint + type-check + test`。
 
-- Prompt 统一放在 `prompts/**`，不要把长自然语言模板硬编码进 `src/**`。
-- lint 包含 `scripts/prompt-hardcode-guard.ts`，阻止关键路径新增硬编码提示词。
-- 例外需添加 `prompt-guard-exempt:{reason}` 并说明原因。
+## 文档入口
 
-## FAQ
+- 开发者运行手册：`docs/BOOTSTRAP.md`
+- 文档导航：`docs/README.md`
+- 贡献约定：`CONTRIBUTING.md`
+- 系统架构：`docs/design/architecture/system-architecture.md`
 
-- 多 session：不支持，当前边界就是单一主 session。
-- 图片输入：不支持；Telegram/Feishu 图片消息会转成文本能力提示。
-- 定时和容量触发：支持 `cron`、`scheduled_at`、`on_worker_slot_freed`。
-- 只开 bot channel：可以，设置 `webui.enabled=false` 并启用 Telegram 或 Feishu。
+## 开发提示
 
-## Contributing
-
-- 变更要直接服务无人在线时段的异步执行、成本控制、失败恢复或事后复盘能力。
-- 遵循 [`AGENTS.md`](./AGENTS.md)。
-- 合并前运行 `pnpm run lint`、`pnpm run type-check`、`pnpm run test`。
-
-## License
-
-MIT，见 [LICENSE](./LICENSE)。
+- 默认工作流：`git fetch origin && git worktree add ../mimikit-<topic> -b <topic> origin/main`
+- 调试入口：`.mimikit/log.jsonl`、`/api/status`、`/api/events`
+- 主状态目录说明见 `docs/BOOTSTRAP.md` 与 `docs/design/workflow/interfaces-and-state.md`

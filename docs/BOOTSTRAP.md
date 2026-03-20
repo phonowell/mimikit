@@ -1,26 +1,20 @@
-# Mimikit Bootstrap (Code-Aligned, Low-Noise)
+# 开发者运行手册
 
-Goal: start Mimikit locally and open WebUI at `http://127.0.0.1:8787`.
+目标：让新同事在 30 分钟内完成安装、启动、验证，并知道排障入口在哪里。
 
-## Preconditions
+## 1. 前置准备
 
-- Run from repo root.
-- `node` + `pnpm` installed.
-- Network available for dependency install.
-- One usable API credential path is configured.
-- On Windows, use PowerShell or CMD.
-
-## 1) Install
+- CI 基线：Node `22`、`pnpm@10.28.2`。
+- provider 凭证优先从 `~/.codex/config.toml` 读取；其次支持环境变量与 `~/.codex/auth.json`。
+- 最简单的本地配置是直接导出 `OPENAI_API_KEY`。
+- 根目录 `config.toml` 不必手写；`pnpm run bootstrap` 或 `pnpm start` 会在缺失时从 `defaults/config.template.toml` 生成。
 
 ```bash
-pnpm install
+git clone https://github.com/phonowell/mimikit.git
+cd mimikit
+pnpm i
+pnpm run bootstrap
 ```
-
-## 2) Configure credentials
-
-Fast path:
-
-macOS / Linux:
 
 ```bash
 export OPENAI_API_KEY=your_key
@@ -32,161 +26,130 @@ Windows PowerShell:
 $env:OPENAI_API_KEY = "your_key"
 ```
 
-Windows CMD:
+## 2. 启动入口
 
-```cmd
-set OPENAI_API_KEY=your_key
-```
-
-Optional provider path (`~/.codex/config.toml`):
-
-```toml
-model_provider = "aicoding"
-
-[model_providers.aicoding]
-base_url = "https://your-codex-provider.example.com/v1/codex"
-wire_api = "responses"
-env_key = "AICODING_API_KEY"
-```
-
-Runtime API key resolution order:
-
-1. Active provider `api_key` in `~/.codex/config.toml`
-2. Active provider env var from `env_key` / `api_key_env`
-3. `OPENAI_API_KEY`
-4. `~/.codex/auth.json` -> `OPENAI_API_KEY`
-
-## 3) Start runtime
-
-Recommended:
+### 开发默认入口
 
 ```bash
-pnpm start
+pnpm start -- --port 8787 --work-dir .mimikit
 ```
 
-What this does:
+- `pnpm start` 实际运行 `scripts/start.ts`。
+- 启动前会先执行 `node scripts/bootstrap.mjs`，再执行一次 `pnpm install`。
+- 之后转到 `bin/mimikit` / `bin/mimikit.cmd`，并保留 restart 语义。
 
-- Runs `scripts/start.ts`.
-- Ensures main-repo dependencies (`pnpm install`) before launch.
-- Starts wrapper: `bin/mimikit` (Unix) or `bin/mimikit.cmd` (Windows).
-- Restarts on exit code `75` (`POST /api/restart` and `POST /api/reset` use this).
-- Runs `bootstrap` to ensure repo-root `config.toml` exists.
-- Uses root source directories `src/channels/` and `src/providers/`; no extra package install/bootstrap step is required for them.
-- Creates repo-root `config.toml` when missing.
-- Unknown keys in `config.toml` are ignored with a startup warning.
-
-Direct start (no wrapper/restart loop):
+### 日常内循环入口
 
 ```bash
-tsx src/cli/index.ts --work-dir .mimikit
+tsx src/cli/index.ts --port 8787 --work-dir .mimikit
 ```
 
-## 4) Verify
+- 适合已装好依赖后频繁重启调试。
+- 支持 `--port`、`--work-dir`、`--log-actions`。
+- `--work-dir` 默认值是 `.mimikit`。
 
-WebUI:
+### WebUI / agent / channel 说明
 
-macOS / Linux:
+- 没有单独的 agent 守护进程；`manager + worker + WebUI` 都由同一 CLI 启动。
+- Telegram / Feishu 只是额外输入通道，仍使用同一个启动命令。
+
+Telegram:
 
 ```bash
-curl -sS -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8787/
+export TELEGRAM_CHANNEL_ENABLED=true
+export TELEGRAM_BOT_TOKEN=<your_bot_token>
+export TELEGRAM_CHAT_ID=<your_chat_id>
+pnpm start -- --port 8787 --work-dir .mimikit
 ```
 
-Windows PowerShell:
+Feishu:
 
-```powershell
-(Invoke-WebRequest -UseBasicParsing http://127.0.0.1:8787/).StatusCode
+```bash
+export FEISHU_CHANNEL_ENABLED=true
+export FEISHU_APP_ID=<your_app_id>
+export FEISHU_APP_SECRET=<your_app_secret>
+export FEISHU_CHAT_ID=<your_chat_id>
+pnpm start -- --port 8787 --work-dir .mimikit
 ```
 
-Expected: `200`
+关闭 CLI action 日志输出：
 
-Runtime status:
+```bash
+MIMIKIT_ACTION_LOGS=false pnpm start -- --port 8787 --work-dir .mimikit
+```
 
-macOS / Linux:
+## 3. 常用命令
+
+- `pnpm run bootstrap`：生成缺失的 `config.toml`。
+- `pnpm run guard:file-length`：阻止新增超长文件与豁免债务继续膨胀。
+- `pnpm run lint`：运行 file-length guard、BOM/CRLF/JSDoc/prompt 处理与 ESLint `--fix`。
+- `pnpm run typecheck`：开发者友好别名，等价 `pnpm run type-check`。
+- `pnpm run test`：运行 `vitest run`。
+- `pnpm run build`：静态构建门禁；当前仓库不产出 `dist/`，等价 `pnpm run type-check`。
+- `pnpm run review-code-changes`：合流前门禁，串联 `lint + type-check + test`。
+
+## 4. 调试入口
+
+WebUI / HTTP 状态：
 
 ```bash
 curl -sS http://127.0.0.1:8787/api/status
 ```
 
-Windows PowerShell:
-
-```powershell
-Invoke-RestMethod http://127.0.0.1:8787/api/status | ConvertTo-Json -Depth 5
-```
-
-Expected: JSON with fields including:
-`ok`, `runtimeId`, `agentStatus`, `activeTasks`, `pendingTasks`, `pendingInputs`, `managerRunning`, `maxWorkers`.
-
-SSE stream:
+SSE 快照：
 
 ```bash
 curl -sS -N http://127.0.0.1:8787/api/events | head -n 2
 ```
 
-Expected first event line: `event: snapshot`
+建议优先查看：
 
-## 5) Minimal config and env overrides
+- `.mimikit/log.jsonl`：CLI action、runtime startup、manager budget 与恢复事件。
+- `.mimikit/runtime-snapshot.json`：当前 runtime 持久化快照。
+- `.mimikit/tasks/tasks.jsonl`：任务视图快照。
+- `.mimikit/results/packets.jsonl`：worker 回写结果。
+- `.mimikit/generated/worker-task-prompts/`：实际下发给 worker 的 prompt 快照。
 
-`config.toml` keys (minimum useful set):
+更完整的接口与状态字段说明见 `docs/design/workflow/interfaces-and-state.md`。
 
-```toml
-[manager]
-model = "gpt-5.2"
-modelReasoningEffort = "medium"
+## 5. `.mimikit/` 状态目录速查
 
-[worker]
-maxConcurrent = 3
-timeoutMs = 600000
+- `inputs/packets.jsonl`：用户输入、触发器与系统输入包。
+- `results/packets.jsonl`：worker 结果回流队列。
+- `tasks/tasks.jsonl`：最近任务视图快照。
+- `task-progress/YYYY-MM-DD/{taskId}.jsonl`：任务进度事件流。
+- `tasks/YYYY-MM-DD/*.md`：任务归档。
+- `memory/MEMORY.md`：持久化 memory。
+- `generated/worker-task-prompts/YYYY-MM-DD/{taskId}.md`：worker prompt 快照。
+- `usage/ledger.jsonl`：manager / worker 用量账本。
+- `runtime-snapshot.json`：启动恢复的核心快照。
+- `runtime/lease.json`、`runtime/children.json`、`runtime/reaper.json`：实例 lease、子进程注册与回收信息。
+- `.instance`：实例锁文件；同一 `--work-dir` 只能被一个进程占用。
 
-[codex]
-enabled = true
-model = "gpt-5.4"
-modelReasoningEffort = "high"
-capability = "high"
-billing = "medium"
+## 6. 常见排障
 
-[opencode]
-enabled = false
-model = "big-pickle"
-capability = "low"
-billing = "low"
+- `OPENAI_API_KEY is missing`：provider 没拿到凭证；先查 `~/.codex/config.toml`、环境变量、`~/.codex/auth.json`。
+- `[cli] instance lock exists at .../.mimikit/.instance`：同一状态目录已有实例占用；换 `--work-dir` 或先停掉旧进程。
+- `[cli] port 8787 is in use, fallback to ...`：端口已被占用；CLI 会在目标端口后 20 个端口内自动寻找空位。
+- `pnpm start` 很慢：它会额外执行 `pnpm install`；内循环调试改用 `tsx src/cli/index.ts --port 8787 --work-dir .mimikit`。
+- `pnpm run build` 没有生成产物：这是预期行为；当前仓库没有独立编译产物，`build` 只负责静态门禁。
 
-[webui]
-enabled = true
-port = 8787
-```
-
-Main env overrides:
+## 7. 推荐开发流程
 
 ```bash
-export MIMIKIT_MODEL=gpt-5.2
-export MIMIKIT_MANAGER_MODEL=gpt-5.2
-export MIMIKIT_CODEX_MODEL=gpt-5.4
-export MIMIKIT_OPENCODE_MODEL=big-pickle
-export MIMIKIT_REASONING_EFFORT=high
-export MIMIKIT_MANAGER_REASONING_EFFORT=medium
-export MIMIKIT_CODEX_REASONING_EFFORT=high
-export MIMIKIT_PROXY=http://127.0.0.1:7897
-export MIMIKIT_MANAGER_PROXY=http://127.0.0.1:7897
-export MIMIKIT_CODEX_PROXY=http://127.0.0.1:7897
-export MIMIKIT_OPENCODE_PROXY=http://127.0.0.1:7897
-export MIMIKIT_CODEX_ENABLED=true
-export MIMIKIT_OPENCODE_ENABLED=false
-export MIMIKIT_WEBUI_ENABLED=true
-export MIMIKIT_WEBUI_PORT=8787
+git fetch origin
+git worktree add ../mimikit-<topic> -b <topic> origin/main
+cd ../mimikit-<topic>
+pnpm run review-code-changes
 ```
 
-Precedence: role-specific env (`MIMIKIT_MANAGER_*`, `MIMIKIT_CODEX_*`, `MIMIKIT_OPENCODE_*`) overrides global env (`MIMIKIT_*`).
+- 合流前统一跑 `pnpm run review-code-changes`。
+- 文档入口收敛到本页；设计事实继续看 `docs/design/**`。
 
-## Failure triage
+## 8. 延伸阅读
 
-- `OPENAI_API_KEY is missing`: credentials not resolved and provider requires auth.
-- `[cli] instance lock exists at .../.mimikit/.instance`: another process already uses the same `--work-dir`.
-- `[cli] port 8787 is in use, fallback to ...`: CLI picks first free port in `[8787, 8807]` (target port comes from `--port` > `MIMIKIT_WEBUI_PORT` > `config.toml` `webui.port`).
-- `[config] invalid toml defaults`: invalid `config.toml` field values/types.
-
-## Done criteria
-
-- Process stays up after startup.
-- `GET /` returns `200`.
-- `GET /api/status` returns JSON.
-- `GET /api/events` emits `event: snapshot`.
+- 文档导航：`docs/README.md`
+- 系统架构：`docs/design/architecture/system-architecture.md`
+- 接口与状态：`docs/design/workflow/interfaces-and-state.md`
+- Telegram 接入：`docs/reference/integrations/telegram-channel.md`
+- Feishu 接入：`docs/reference/integrations/feishu-channel.md`
