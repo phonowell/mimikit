@@ -6,7 +6,10 @@ import PQueue from 'p-queue'
 import { beforeEach, expect, test, vi } from 'vitest'
 
 import { GLOBAL_FOCUS_ID } from '../src/focus/constants.js'
-import { notifyManagerLoop } from '../src/orchestrator/core/signals.js'
+import {
+  notifyManagerLoop,
+  notifyWorkerLoop,
+} from '../src/orchestrator/core/signals.js'
 import { readJsonl } from '../src/storage/jsonl.js'
 import { managerLoop } from '../src/manager/loop.js'
 import { triggerOnWorkerSlotFreedPlans } from '../src/manager/loop-trigger-plans.js'
@@ -416,3 +419,22 @@ test(
   },
   20_000,
 )
+
+test('notifyManagerLoop can skip ui wake emission', async () => {
+  const runtime = await createRuntime({ maxConcurrent: 1 })
+
+  notifyManagerLoop(runtime, { notifyUi: false })
+
+  expect(runtime.manager.wakePending).toBe(true)
+  expect(runtime.ui.wakeVersion).toBe(0)
+  expect(runtime.ui.wakeEvents.size).toBe(0)
+})
+
+test('notifyWorkerLoop can emit explicit ui wake kind', async () => {
+  const runtime = await createRuntime({ maxConcurrent: 1 })
+
+  notifyWorkerLoop(runtime, { uiKind: 'tasks' })
+
+  expect(runtime.ui.wakeVersion).toBe(1)
+  expect(runtime.ui.wakeEvents.get(1)).toBe('tasks')
+})

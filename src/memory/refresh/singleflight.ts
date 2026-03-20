@@ -43,6 +43,11 @@ const captureCheckpoint = (runtime: RuntimeState): MemoryRefreshCheckpoint => {
   }
 }
 
+const shouldRunRefreshDrain = (
+  runtime: RuntimeState,
+  state: RuntimeState['manager']['memoryRefresh'],
+): boolean => state.pending || shouldTriggerMemoryRefresh(runtime)
+
 const markCompleted = (
   runtime: RuntimeState,
   checkpoint: MemoryRefreshCheckpoint,
@@ -62,7 +67,9 @@ const buildPayload = async (
 ): Promise<MemoryRefreshPayload> => {
   const history = await readHistory(runtime.paths.history)
   const visibleAll = history.filter((item) => isVisibleToAgent(item))
-  const visible = visibleAll.slice(Math.max(0, visibleAll.length - MAX_SIGNALS))
+  const recentVisible = visibleAll.slice(
+    Math.max(0, visibleAll.length - MAX_SIGNALS),
+  )
   const tasks = runtime.tasks
     .slice(Math.max(0, runtime.tasks.length - MAX_TASKS))
     .map((task) => ({
@@ -97,7 +104,7 @@ const buildPayload = async (
       : {}),
     modelReasoningEffort: runtime.config.manager.modelReasoningEffort,
     memoryMarkdown,
-    signals: visible.map((item) => ({
+    signals: recentVisible.map((item) => ({
       id: item.id,
       role: item.role,
       createdAt: item.createdAt,
@@ -118,7 +125,7 @@ const buildRefreshScoreContext = (
   payload: MemoryRefreshPayload,
 ): MemoryScoreContext => {
   const mentions: string[] = []
-  for (const signal of payload.signals) pushMention(mentions, signal.text)
+  for (const event of payload.signals) pushMention(mentions, event.text)
   for (const task of payload.tasks) {
     pushMention(mentions, task.title)
     pushMention(mentions, task.output)
@@ -223,9 +230,7 @@ const runMemoryRefreshOnce = async (runtime: RuntimeState): Promise<void> => {
 const runMemoryRefreshDrain = async (runtime: RuntimeState): Promise<void> => {
   const state = runtime.manager.memoryRefresh
   try {
-    for (;;) {
-      const runFromPending = state.pending
-      if (!runFromPending && !shouldTriggerMemoryRefresh(runtime)) break
+    while (shouldRunRefreshDrain(runtime, state)) {
       state.pending = false
       await runMemoryRefreshOnce(runtime)
     }
@@ -253,7 +258,7 @@ export const requestMemoryRefresh = (runtime: RuntimeState): void => {
     state.pending = true
     return
   }
-  if (!shouldTriggerMemoryRefresh(runtime) && !state.pending) return
+  if (!shouldRunRefreshDrain(runtime, state)) return
   state.running = true
   state.pending = false
   void runMemoryRefreshDrain(runtime)
