@@ -32,6 +32,8 @@ enqueue_task_provider_disabled: |
   enqueue_task 执行失败：provider={{ provider }} 当前未启用。请改用已注入到 M:event_packet.environment 的 provider_candidates。
 enqueue_task_requires_confirmation: |
   enqueue_task 执行失败：当前任务为高成本长任务，必须先通过 ask_user_choice 生成待确认项，再由用户返回后决定是否派发。请先输出 ask_user_choice，并将 default_option_id 设为取消项。
+enqueue_task_worktree_prepare_failed: |
+  enqueue_task 执行失败：无法为 branch={{ branch }} 准备 worktree。{{ reason }} 请先修正 `cwd` / `branch` 或清理冲突目录后再重试。
 enqueue_task_contract_missing: |
   enqueue_task 执行失败：继续派发前还缺 3 个最小信息，每项一句即可：goal（最终要什么结果）、in_scope/out_of_scope（这次做什么、哪些不做）、至少一条 done_when_{n}（怎样算完成）。
   可以直接改成下面格式后重试；`worker_prompt` 可省略，省略时系统会按 contract 自动生成：

@@ -1,0 +1,38 @@
+import type { Task, TaskPlan } from '../../src/types/index.js'
+
+export const GLOBAL_FOCUS_ID = 'focus-global'
+export const SNAPSHOT_BASE_TIME = '2026-02-06T00:00:00.000Z'
+
+export const createTaskFixture = (overrides: Partial<Task> = {}): Task => ({
+  id: 'task-1',
+  fingerprint: 'task-1',
+  prompt: 'check',
+  title: 'Check',
+  cwd: '/tmp/runtime-snapshot-task',
+  focusId: GLOBAL_FOCUS_ID,
+  profile: 'worker',
+  provider: 'codex',
+  status: 'pending',
+  createdAt: SNAPSHOT_BASE_TIME,
+  ...overrides,
+})
+
+export const createPlanFixture = (
+  overrides: Partial<TaskPlan> = {},
+): TaskPlan => ({
+  id: 'plan-1',
+  prompt: 'summarize',
+  title: 'summarize',
+  focusId: GLOBAL_FOCUS_ID,
+  profile: 'worker',
+  priority: 'high',
+  source: 'user_request',
+  status: 'active',
+  trigger: {
+    mode: 'on_worker_slot_freed',
+  },
+  createdAt: SNAPSHOT_BASE_TIME,
+  updatedAt: SNAPSHOT_BASE_TIME,
+  runCount: 0,
+  ...overrides,
+})

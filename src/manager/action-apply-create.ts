@@ -1,10 +1,6 @@
 import { appendTaskSystemMessage } from '../history/task-events.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
-import {
-  materializeTaskWorktreeCwd,
-  resolveTaskExecutionTarget,
-} from '../shared/task-execution-target.js'
 import { resolveSlotStatus } from '../worker/task-state-shared.js'
 
 import { applyAskUserChoiceAction } from './action-apply-choice.js'
@@ -18,6 +14,7 @@ import {
   RUN_TASK_CANCEL_OPTION_ID,
   RUN_TASK_CONFIRM_OPTION_ID,
 } from './run-task-confirmation.js'
+import { resolveRunTaskTarget } from './run-task-target.js'
 import {
   buildTaskFingerprint,
   buildTaskSemanticKey,
@@ -89,21 +86,6 @@ export const applyRunTask = async (
   if (!contract) return 'continue'
   const workerPrompt = resolveWorkerPromptFromAttrs(parsed.data)
   if (!workerPrompt) return 'continue'
-  const effectiveCwd = parsed.data.branch
-    ? await materializeTaskWorktreeCwd(parsed.data.cwd, parsed.data.branch)
-    : parsed.data.cwd
-  const target = await resolveTaskExecutionTarget(effectiveCwd)
-  const semanticKey = buildTaskSemanticKey({
-    prompt: workerPrompt,
-    title: parsed.data.title,
-    cwd: target.cwd,
-    profile,
-    provider,
-    focusId,
-    ...(target.repoKey ? { repoKey: target.repoKey } : {}),
-    ...(target.branch ? { branch: target.branch } : {}),
-    contract,
-  })
   const confirmation = resolveRunTaskConfirmationRequirement({
     prompt: workerPrompt,
     title: parsed.data.title,
@@ -149,6 +131,22 @@ export const applyRunTask = async (
     )
     return 'stop'
   }
+  const target = await resolveRunTaskTarget({
+    actionName: item.name,
+    cwd: parsed.data.cwd,
+    ...(parsed.data.branch ? { branch: parsed.data.branch } : {}),
+  })
+  const semanticKey = buildTaskSemanticKey({
+    prompt: workerPrompt,
+    title: parsed.data.title,
+    cwd: target.cwd,
+    profile,
+    provider,
+    focusId,
+    ...(target.repoKey ? { repoKey: target.repoKey } : {}),
+    ...(target.branch ? { branch: target.branch } : {}),
+    contract,
+  })
   const debounce = markCreateAttempt(runtime, semanticKey)
   if (debounce.debounced) return 'continue'
   const dedupeKey = `${workerPrompt}\n${parsed.data.title}\n${target.cwd}\n${profile}\n${provider}\n${focusId}\n${target.repoKey ?? ''}\n${target.branch ?? ''}`

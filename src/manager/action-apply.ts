@@ -4,7 +4,10 @@ import {
   pruneArchivedFocuses,
   resolveDefaultFocusId,
 } from '../focus/index.js'
+import { appendActionFeedbackSystemMessage } from '../history/manager-events.js'
+import { appendLog } from '../log/append.js'
 
+import { isActionApplyFeedbackError } from './action-apply-feedback-error.js'
 import { collectTaskResultSummaries } from './action-apply-schema.js'
 import { managerActionCliLogger } from './action-cli-log.js'
 import {
@@ -64,6 +67,20 @@ export const applyTaskActions = async (
           ? { traceId: runtime.manager.threadId }
           : {}),
       })
+      if (isActionApplyFeedbackError(error)) {
+        await appendLog(runtime.paths.log, {
+          event: 'manager_action_apply_feedback',
+          action: error.feedback.action,
+          error: error.feedback.error,
+          hint: error.feedback.hint,
+        })
+        await appendActionFeedbackSystemMessage(
+          runtime.paths.history,
+          [error.feedback],
+          resolveDefaultFocusId(runtime),
+        )
+        continue
+      }
       throw error
     }
     await managerActionCliLogger.logLifecycle({

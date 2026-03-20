@@ -31,6 +31,7 @@ const actionFeedbackHintSchema = z
     ask_user_choice_invalid_options: z.string().trim().min(1),
     enqueue_task_provider_disabled: z.string().trim().min(1),
     enqueue_task_requires_confirmation: z.string().trim().min(1),
+    enqueue_task_worktree_prepare_failed: z.string().trim().min(1),
     enqueue_task_contract_missing: z.string().trim().min(1),
     enqueue_task_contract_missing_default_worker_prompt: z
       .string()
@@ -139,6 +140,15 @@ export const formatEnqueueTaskProviderDisabledHint = (
 
 export const formatEnqueueTaskRequiresConfirmationHint = (): string =>
   renderHint('enqueue_task_requires_confirmation')
+
+export const formatEnqueueTaskWorktreePrepareFailedHint = (
+  branch: string,
+  reason: string,
+): string =>
+  renderHint('enqueue_task_worktree_prepare_failed', {
+    branch,
+    reason,
+  })
 
 const FALLBACK_TASK_CONTRACT_HINT_VALUES = {
   worker_prompt: templates.enqueue_task_contract_missing_default_worker_prompt,

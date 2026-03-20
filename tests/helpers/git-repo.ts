@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import { basename, dirname, join } from 'node:path'
 
 const tempDirs: string[] = []
+const tempWorktreeDirs = new Set<string>()
 
 export const createGitRepo = async (): Promise<string> => {
   const dir = await mkdtemp(join(tmpdir(), 'mimikit-branch-override-'))
@@ -27,6 +28,10 @@ export const createGitRepo = async (): Promise<string> => {
 }
 
 export const cleanupGitRepos = async (): Promise<void> => {
+  for (const dir of tempWorktreeDirs) {
+    await rm(dir, { recursive: true, force: true })
+  }
+  tempWorktreeDirs.clear()
   for (const dir of tempDirs.splice(0, tempDirs.length)) {
     await rm(dir, { recursive: true, force: true })
   }
@@ -43,5 +48,7 @@ export const resolveExpectedWorktreePath = (
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '')
   const branchKey = createHash('sha1').update(branch).digest('hex').slice(0, 8)
-  return join(dirname(cwd), `${basename(cwd)}-${branchPath}-${branchKey}`)
+  const path = join(dirname(cwd), `${basename(cwd)}-${branchPath}-${branchKey}`)
+  tempWorktreeDirs.add(path)
+  return path
 }
