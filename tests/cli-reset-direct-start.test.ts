@@ -79,6 +79,12 @@ const waitForRuntimeRestart = async (
   throw new Error(lastError)
 }
 
+const parseRuntimePid = (runtimeId: string): number => {
+  const match = /^runtime-(\d+)-/.exec(runtimeId)
+  if (!match?.[1]) throw new Error(`runtime pid missing: ${runtimeId}`)
+  return Number.parseInt(match[1], 10)
+}
+
 const runningChildren = new Set<ReturnType<typeof spawn>>()
 
 afterEach(async () => {
@@ -102,7 +108,7 @@ afterEach(async () => {
 })
 
 test(
-  'direct cli start keeps reset available without wrapper restart loop',
+  'direct cli start reloads app code by restarting into a fresh runtime process',
   async () => {
     const workDir = await mkdtemp(join(tmpdir(), 'mimikit-cli-reset-'))
     const port = await createFreePort()
@@ -138,6 +144,9 @@ test(
         20_000,
       )
       expect(afterReset.runtimeId).not.toBe(beforeReset.runtimeId)
+      expect(parseRuntimePid(afterReset.runtimeId)).not.toBe(
+        parseRuntimePid(beforeReset.runtimeId),
+      )
       expect(child.exitCode).toBeNull()
     } catch (error) {
       throw new Error(
@@ -149,5 +158,5 @@ test(
       await rm(workDir, { recursive: true, force: true })
     }
   },
-  30_000,
+  60_000,
 )
