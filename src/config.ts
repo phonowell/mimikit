@@ -146,7 +146,7 @@ export const defaultConfig = (params: DefaultConfigParams): AppConfig => {
         ? { apiKey: userConfig.manager.apiKey }
         : {}),
       ...(userConfig.manager.proxy ? { proxy: userConfig.manager.proxy } : {}),
-      maxCorrectionRounds: INTERNAL_MANAGER_DEFAULTS.maxCorrectionRounds,
+      maxCorrectionRounds: userConfig.manager.maxCorrectionRounds,
       promptSections: { ...INTERNAL_MANAGER_DEFAULTS.promptSections },
       taskCreate: { ...INTERNAL_MANAGER_DEFAULTS.taskCreate },
       taskWindow: { ...INTERNAL_MANAGER_DEFAULTS.taskWindow },

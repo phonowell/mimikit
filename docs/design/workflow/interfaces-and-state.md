@@ -140,7 +140,7 @@
 ## 配置结构（`config.toml`）
 
 - 若缺少 `config.toml`，请先运行 `pnpm run bootstrap` 从 `defaults/config.template.toml` 生成。
-- `manager`: `model`、`modelReasoningEffort`、`baseUrl?`、`apiKey?`、`proxy?`
+- `manager`: `model`、`modelReasoningEffort`、`baseUrl?`、`apiKey?`、`proxy?`、`maxCorrectionRounds`
 - `worker`: `maxConcurrent`、`timeoutMs`
 - `worker.budget`: `maxDurationMs`、`maxRounds`
 - `codex`: `enabled`、`model`、`modelReasoningEffort`、`capability`、`billing`、`proxy?`
@@ -164,7 +164,7 @@
 - `runtime-snapshot.json`
 - `runtime-snapshot.json.bak`
 - `log.jsonl`
-- `.instance`（运行时实例锁文件）
+- `.instance.lock`（运行时实例锁目录）
 - `runtime/lease.json`（主进程 lease 心跳）
 - `runtime/children.json`（外部 worker 子进程注册表）
 - `runtime/reaper.json`（reaper 守护进程标记）

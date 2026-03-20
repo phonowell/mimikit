@@ -11,6 +11,7 @@ export type RuntimeLock = {
 }
 
 const LOCK_TARGET_NAME = '.instance'
+const LOCK_SUFFIX = '.lock'
 type LockRelease = () => Promise<void>
 
 const require = createRequire(import.meta.url)
@@ -35,10 +36,11 @@ export const acquireRuntimeLock = async (
   workDir: string,
 ): Promise<RuntimeLock> => {
   await mkdir(workDir, { recursive: true })
-  const lockPath = join(workDir, LOCK_TARGET_NAME)
+  const lockTargetPath = join(workDir, LOCK_TARGET_NAME)
+  const lockPath = `${lockTargetPath}${LOCK_SUFFIX}`
   let releaseLock: LockRelease
   try {
-    releaseLock = await lockfile.lock(lockPath, LOCK_OPTIONS)
+    releaseLock = await lockfile.lock(lockTargetPath, LOCK_OPTIONS)
   } catch (error) {
     if (readErrorCode(error) !== 'ELOCKED') throw error
     throw new Error(`[cli] instance lock exists at ${lockPath}`)

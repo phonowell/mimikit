@@ -130,12 +130,9 @@ test('supports manager model overrides and ignores unknown keys after reporting 
 
   expect(config.manager.model).toBe('gpt-5.2-mini')
   expect(config.manager.modelReasoningEffort).toBe('medium')
+  expect(config.manager.maxCorrectionRounds).toBe(3)
   expect(config.codex.model).toBe('gpt-5.4')
-  expect(unknownKeys).toEqual([
-    'manager.maxCorrectionRounds',
-    'manager.promptSections',
-    'worker.retry',
-  ])
+  expect(unknownKeys).toEqual(['manager.promptSections', 'worker.retry'])
 })
 
 test('reports removed runtime-only keys as unknown', async () => {
@@ -162,11 +159,7 @@ test('reports removed runtime-only keys as unknown', async () => {
     },
   })
 
-  expect(unknownKeys).toEqual([
-    'manager.maxCorrectionRounds',
-    'manager.promptSections',
-    'worker.retry',
-  ])
+  expect(unknownKeys).toEqual(['manager.promptSections', 'worker.retry'])
 })
 
 test('ignores unknown keys and reports them via callback', async () => {

@@ -28,7 +28,7 @@ test('reaper handle registers and unregisters runtime child', async () => {
     runtimeId: 'runtime-test',
     paths,
     runtimeLock: {
-      path: join(workDir, '.instance'),
+      path: join(workDir, '.instance.lock'),
       release: async () => undefined,
     },
   })

@@ -1,4 +1,4 @@
-import { mkdtemp, writeFile } from 'node:fs/promises'
+import { access, mkdtemp, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -12,11 +12,15 @@ test('acquireRuntimeLock blocks concurrent acquire and allows acquire after rele
   const workDir = await createTmpDir()
   const first = await acquireRuntimeLock(workDir)
 
+  await expect(access(first.path)).resolves.toBeUndefined()
+  expect(first.path).toBe(join(workDir, '.instance.lock'))
+
   await expect(acquireRuntimeLock(workDir)).rejects.toThrow(
-    '[cli] instance lock exists',
+    `[cli] instance lock exists at ${join(workDir, '.instance.lock')}`,
   )
 
   await first.release()
+  await expect(access(first.path)).rejects.toMatchObject({ code: 'ENOENT' })
   const second = await acquireRuntimeLock(workDir)
   await second.release()
 })
