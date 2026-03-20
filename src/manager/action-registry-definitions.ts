@@ -6,18 +6,12 @@ import {
 } from './action-apply-focus.js'
 import { applyRememberMemoryAction } from './action-apply-memory.js'
 import {
-  applyCreatePlan,
-  applyDeletePlan,
-  applyUpdatePlan,
-} from './action-apply-plan.js'
-import {
   assignFocusSchema,
-  deletePlanSchema,
   mutateTaskSchema,
-  updatePlanSchema,
   upsertFocusSchema,
 } from './action-apply-schema.js'
 import { parseActionAttrs } from './action-parse.js'
+import { PLAN_ACTION_DEFINITIONS } from './action-registry-plan-definitions.js'
 import {
   createContinueAction,
   createNoopAction,
@@ -26,15 +20,12 @@ import {
 } from './action-registry-shared.js'
 import {
   validateAskUserChoice,
-  validateCreatePlan,
   validateMutateTask,
-  validatePlanById,
   validateQueryContext,
   validateReadFile,
   validateRememberMemory,
   validateRunTask,
   validateSummarizeTaskResult,
-  validateUpdatePlan,
   validateWithSchema,
 } from './action-validation.js'
 import { cancelTask, pauseTask, resumeTask } from './runtime-adapter.js'
@@ -72,56 +63,6 @@ const applyMutateTaskAction = async (
   }
   await cancelTask(runtime, id, meta)
 }
-
-const PLAN_ACTION_DEFINITIONS = [
-  createContinueAction(
-    {
-      name: 'create_plan',
-      domain: 'plan',
-      prompt: definePrompt(
-        '创建持续触发计划。',
-        ['必填 `prompt,title,schedule_type`'],
-        [
-          '`schedule_type="scheduled_at"` 时，`scheduled_at` 必须是未来绝对时间',
-        ],
-      ),
-    },
-    (item, context) => validateCreatePlan(item, context),
-    applyCreatePlan,
-  ),
-  createContinueAction(
-    {
-      name: 'update_plan',
-      domain: 'plan',
-      prompt: definePrompt(
-        '更新现有计划。',
-        ['必填 `id` 且至少更新一项'],
-        ['`done` plan 仅允许补 `last_task_id`'],
-      ),
-    },
-    (item, context) => {
-      const byIdIssues = validatePlanById(
-        'update_plan',
-        item,
-        updatePlanSchema,
-        context,
-      )
-      if (byIdIssues.length > 0) return byIdIssues
-      return validateUpdatePlan(item, context)
-    },
-    applyUpdatePlan,
-  ),
-  createContinueAction(
-    {
-      name: 'delete_plan',
-      domain: 'plan',
-      prompt: definePrompt('删除现有计划。', ['必填 `id`']),
-    },
-    (item, context) =>
-      validatePlanById('delete_plan', item, deletePlanSchema, context),
-    applyDeletePlan,
-  ),
-] satisfies ManagerActionDefinition[]
 
 const TASK_ACTION_DEFINITIONS = [
   {

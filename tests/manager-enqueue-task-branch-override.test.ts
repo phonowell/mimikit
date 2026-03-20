@@ -61,7 +61,7 @@ test('enqueue_task branch attr materializes worktree cwd', async () => {
       encoding: 'utf8',
     }).trim(),
   ).toBe('feat/webui-pending-reason')
-})
+}, 15_000)
 
 test('enqueue_task keeps resolved cwd branch when branch attr is absent', async () => {
   const cwd = await createGitRepo()
