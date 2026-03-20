@@ -4,6 +4,7 @@ import type { ManagerActionFeedback } from '../types/index.js'
 
 type RejectedActionClass =
   | 'lookup_no_progress'
+  | 'insufficient_evidence'
   | 'task_state_conflict'
   | 'needs_scope_confirmation'
   | 'channel_choice_unsupported'
@@ -19,6 +20,8 @@ const GENERIC_CORRECTION_REPLY =
 const REJECTION_CLASS_REPLY: Record<RejectedActionClass, string> = {
   lookup_no_progress:
     '当前这类检索/读文件动作继续重试没有意义。本轮先停止重试；请直接补充更具体的查询词、时间范围、文件路径，或明确要我改做哪一步。',
+  insufficient_evidence:
+    '当前高风险动作缺少可核实证据，本轮先停止重试。请先补充明确用户目标；若仍缺外部事实，先做只读 lookup；若需要用户决定，再直接向用户确认。',
   task_state_conflict:
     '当前动作和任务状态冲突，本轮停止重复尝试。请改为确认该任务是否应继续等待、恢复，或换一个仍可执行的目标。',
   needs_scope_confirmation: `当前派发动作缺少继续执行所需边界。本轮先停止重试；${GENERIC_CORRECTION_REPLY}`,
@@ -42,10 +45,14 @@ export const findRepeatedRejectedAction = (
   return undefined
 }
 
+const isIntentEvidenceHint = (hint: string): boolean =>
+  hint.includes('intent-evidence guard 未通过')
+
 const classifyRejectedActionFeedback = (
   item: ManagerActionFeedback,
 ): RejectedActionClass => {
   if (item.error !== 'action_execution_rejected') return 'blocked_action'
+  if (isIntentEvidenceHint(item.hint)) return 'insufficient_evidence'
   if (item.action === 'query_context' || item.action === 'read_file')
     return 'lookup_no_progress'
   if (item.action === 'mutate_task') return 'task_state_conflict'
@@ -81,6 +88,7 @@ const buildDirectActionFeedbackReply = (
   if (!first) return undefined
   if (
     feedback.length === 1 &&
+    !isIntentEvidenceHint(first.hint) &&
     (first.error !== 'action_execution_rejected' ||
       !isTaskContractMissingHint(first.hint))
   )
