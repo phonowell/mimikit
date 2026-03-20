@@ -68,11 +68,10 @@ const parseTaskEvidence = (raw?: string): TaskResult['evidence'] | undefined =>
 
 const parseTaskResultArchive = (
   content: string,
-  fallbackTaskId?: string,
   archivePath?: string,
 ): TaskResult | null => {
   const parsed = parseArchiveDocument(content)
-  const taskId = parsed.header.task_id ?? fallbackTaskId
+  const taskId = parsed.header.task_id
   const status = parseStatus(parsed.header.status)
   const completedAt = parsed.header.completed_at ?? parsed.header.created_at
   if (!taskId || !status || !completedAt) return null
@@ -117,14 +116,13 @@ const parseTaskResultArchive = (
 
 export const readTaskResultArchive = (
   path: string,
-  fallbackTaskId?: string,
 ): Promise<TaskResult | null> =>
   safe(
     'readTaskResultArchive',
     async () => {
       const content = await readTextFile(path)
       if (!content) return null
-      return parseTaskResultArchive(content, fallbackTaskId, path)
+      return parseTaskResultArchive(content, path)
     },
     { fallback: null, meta: { path }, ignoreCodes: ['ENOENT'] },
   )
@@ -201,7 +199,6 @@ export const readTaskResultsForTasks = async (
       if (!idSet.has(taskId)) continue
       const result = await readTaskResultArchive(
         join(archiveRoot, dateDir, entry.name),
-        taskId,
       )
       if (!result) continue
       const existing = found.get(taskId)

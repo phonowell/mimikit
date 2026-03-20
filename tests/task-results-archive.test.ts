@@ -1,4 +1,4 @@
-import { access, mkdtemp } from 'node:fs/promises'
+import { access, mkdtemp, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -82,6 +82,29 @@ test('readTaskResultArchive ignores empty handoff payload', async () => {
 
   const parsed = await readTaskResultArchive(path)
   expect(parsed?.handoff).toBeUndefined()
+})
+
+test('readTaskResultArchive rejects archive without header task_id', async () => {
+  const stateDir = await createTmpDir()
+  const path = join(stateDir, 'missing-task-id.md')
+  await writeFile(
+    path,
+    [
+      'title: Missing Task ID',
+      'status: succeeded',
+      'completed_at: 2026-03-03T00:00:02.000Z',
+      '',
+      '=== PROMPT ===',
+      'Prompt',
+      '',
+      '=== RESULT ===',
+      'Output',
+      '',
+    ].join('\n'),
+    'utf8',
+  )
+
+  await expect(readTaskResultArchive(path)).resolves.toBeNull()
 })
 
 test('readTaskResultsForTasks keeps the newest archive for a task on same day', async () => {
