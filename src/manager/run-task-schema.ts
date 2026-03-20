@@ -29,7 +29,6 @@ export const runTaskSchema = z
     context_ref_2: nonEmptyString.optional(),
     context_ref_3: nonEmptyString.optional(),
     focus_id: focusIdSchema.optional(),
-    provider: z.enum(['codex']).optional(),
   })
   .strict()
   .transform((value) => ({
@@ -49,5 +48,4 @@ export const runTaskSchema = z
     context_ref_2: value.context_ref_2,
     context_ref_3: value.context_ref_3,
     focus_id: value.focus_id,
-    provider: value.provider,
   }))

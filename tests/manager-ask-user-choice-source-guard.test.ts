@@ -276,7 +276,7 @@ test('mutate_task rejects resume when task is pending', () => {
   expect(feedback[0]?.hint).toContain('无法 resume')
 })
 
-test('enqueue_task rejects disabled codex provider outside enabled set', () => {
+test('enqueue_task rejects unexpected provider attr', () => {
   const feedback = collectManagerActionFeedback(
     [
       {
@@ -292,16 +292,12 @@ test('enqueue_task rejects disabled codex provider outside enabled set', () => {
         },
       },
     ],
-    {
-      enabledWorkerProviders: new Set(),
-    },
   )
 
   expect(feedback).toHaveLength(1)
   expect(feedback[0]?.action).toBe('enqueue_task')
-  expect(feedback[0]?.error).toBe('action_execution_rejected')
-  expect(feedback[0]?.hint).toContain('provider=codex')
-  expect(feedback[0]?.hint).toContain('固定为 codex')
+  expect(feedback[0]?.error).toBe('invalid_action_args')
+  expect(feedback[0]?.hint).toContain('provider')
 })
 
 test('enqueue_task rejects missing task contract attrs', () => {
@@ -342,7 +338,6 @@ test('enqueue_task high-cost payload requires user confirmation first', () => {
       },
     ],
     {
-      enabledWorkerProviders: new Set(['codex']),
       confirmedRunTaskChoiceIds: new Set(),
     },
   )

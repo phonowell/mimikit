@@ -42,7 +42,6 @@ test('enqueue_task is blocked when only supplemental evidence suggests new work'
     ],
     {
       inputs: [createUserInput('先总结当前状态，不要开始新任务。')],
-      enabledWorkerProviders: new Set(['codex']),
       supplementalEvidenceSources: new Set(['query_lookup', 'task_result']),
     },
   )
@@ -74,7 +73,6 @@ test('enqueue_task stays allowed when current user input directly supports it', 
           '请实现 intent evidence guard，只改 manager validation and feedback flow，并确保能拦住 unsupported risky actions。',
         ),
       ],
-      enabledWorkerProviders: new Set(['codex']),
       supplementalEvidenceSources: new Set(['task_result']),
     },
   )

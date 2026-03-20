@@ -10,7 +10,6 @@ import {
   formatAskUserChoiceChannelUnsupportedHint,
   formatAskUserChoiceInvalidOptionsHint,
   formatEnqueueTaskContractMissingHint,
-  formatEnqueueTaskProviderDisabledHint,
   formatEnqueueTaskRequiresConfirmationHint,
   formatMutateTaskAlreadyCanceledHint,
   formatMutateTaskAlreadyDoneHint,
@@ -40,7 +39,6 @@ import type {
   TaskPlanStatus,
   TaskStatus,
   UserInput,
-  WorkerProvider,
 } from '../types/index.js'
 
 export type FeedbackContext = {
@@ -50,7 +48,6 @@ export type FeedbackContext = {
   resultTaskIds?: Set<string>
   scheduleNowIso?: string
   allowAskUserChoice?: boolean
-  enabledWorkerProviders?: Set<WorkerProvider>
   confirmedRunTaskChoiceIds?: Set<string>
   wakeProfile?: ManagerWakeProfile
   allowedActions?: Set<string>
@@ -93,12 +90,6 @@ export const validateRunTask = (
     )
   }
   if (!workerPrompt) return rejected(formatEnqueueTaskContractMissingHint())
-  const { provider } = parsed
-  if (provider) {
-    const enabledProviders = context.enabledWorkerProviders
-    if (enabledProviders && !enabledProviders.has(provider))
-      return rejected(formatEnqueueTaskProviderDisabledHint(provider))
-  }
 
   const confirmation = resolveRunTaskConfirmationRequirement({
     prompt: workerPrompt,

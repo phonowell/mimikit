@@ -73,7 +73,7 @@ const TASK_ACTION_DEFINITIONS = [
       ['必填 `title,cwd,goal,in_scope,done_when_1`'],
       [
         '`worker_prompt` 可省略并由系统按 contract 自动生成',
-        '可选 `branch,out_of_scope,context_ref_{1..3},focus_id,provider`',
+        '可选 `branch,out_of_scope,context_ref_{1..3},focus_id`',
         '提供 `branch` 后 enqueue 阶段会自动创建或复用对应 worktree，并把任务 `cwd` 切到该 worktree',
         '默认一个目标只创建一个任务',
       ],

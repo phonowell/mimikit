@@ -29,7 +29,6 @@ const actionFeedbackHintSchema = z
     mutate_task_already_canceled: z.string().trim().min(1),
     ask_user_choice_channel_unsupported: z.string().trim().min(1),
     ask_user_choice_invalid_options: z.string().trim().min(1),
-    enqueue_task_provider_disabled: z.string().trim().min(1),
     enqueue_task_requires_confirmation: z.string().trim().min(1),
     enqueue_task_worktree_prepare_failed: z.string().trim().min(1),
     enqueue_task_contract_missing: z.string().trim().min(1),
@@ -130,13 +129,6 @@ export const formatAskUserChoiceChannelUnsupportedHint = (): string =>
 
 export const formatAskUserChoiceInvalidOptionsHint = (): string =>
   renderHint('ask_user_choice_invalid_options')
-
-export const formatEnqueueTaskProviderDisabledHint = (
-  provider: string,
-): string =>
-  renderHint('enqueue_task_provider_disabled', {
-    provider,
-  })
 
 export const formatEnqueueTaskRequiresConfirmationHint = (): string =>
   renderHint('enqueue_task_requires_confirmation')

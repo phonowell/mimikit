@@ -2,7 +2,6 @@ import { appendLog } from '../log/append.js'
 
 import { resolveManagerActionSurface } from './action-surface.js'
 import { collectConfirmedRunTaskChoiceIds } from './run-task-confirmation.js'
-import { listEnabledWorkerProviders } from './worker-provider-selection.js'
 
 import type { SupplementalEvidenceSource } from './action-intent-evidence.js'
 import type { RuntimeState } from './runtime-adapter.js'
@@ -16,7 +15,6 @@ import type {
   TaskStatus,
   TokenUsage,
   UserInput,
-  WorkerProvider,
 } from '../types/index.js'
 
 export type ManagerRoundExtra = {
@@ -90,7 +88,6 @@ export const buildActionFeedbackContext = (params: {
   planStatusById: Map<string, TaskPlanStatus>
   resultTaskIds: Set<string>
   allowAskUserChoice: boolean
-  enabledWorkerProviders: Set<WorkerProvider>
   confirmedRunTaskChoiceIds: Set<string>
   wakeProfile: ManagerWakeProfile
   allowedActions: Set<string>
@@ -105,9 +102,6 @@ export const buildActionFeedbackContext = (params: {
     inputs,
     roundExtra,
   } = params
-  const enabledWorkerProviders = new Set<WorkerProvider>(
-    listEnabledWorkerProviders(runtime.config).map((item) => item.provider),
-  )
   const currentInputs = inputs ?? runtime.session.inflightInputs
   const confirmedRunTaskChoiceIds =
     collectConfirmedRunTaskChoiceIds(currentInputs)
@@ -129,7 +123,6 @@ export const buildActionFeedbackContext = (params: {
     ),
     resultTaskIds,
     allowAskUserChoice,
-    enabledWorkerProviders,
     confirmedRunTaskChoiceIds,
     wakeProfile,
     allowedActions: actionSurface.actionNames,

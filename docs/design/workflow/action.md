@@ -65,7 +65,6 @@
 参数约定（关键字段）：
 
 - `enqueue_task.cwd`：必填；未传 `branch` 时直接作为 worker 实际执行目录。若同时传 `branch`，则 `cwd` 视为仓库内定位路径，enqueue 阶段会自动创建或复用对应 branch 的 worktree，并把任务实际执行目录切到该 worktree 的对应路径
-- `enqueue_task.provider`：当前固定为 `codex` 执行通道；manager 不再依赖环境候选集做 provider 选择
 - `assign_focus`：`target_type(task|plan|history) + target_id + focus_id`
 - `upsert_focus.open_item_{n}`：按编号传递字符串待办项，`n` 必须从 `1` 连续递增且不能跳号
 - `ask_user_choice.option_{n}_id/label/reason`：选项三元组编号 `n` 必须从 `1` 连续递增且不能跳号

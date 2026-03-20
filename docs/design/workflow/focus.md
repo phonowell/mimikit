@@ -65,7 +65,6 @@
 - 无引用时按默认归属算法。
 - manager `enqueue_task`/`ask_user_choice` 未显式传 `focus_id` 时按默认归属。
 - manager 回复与 manager 错误系统消息均使用 `resolveDefaultFocusId(runtime)`。
-- manager `enqueue_task` 未显式传 `provider` 时，会优先复用同 `focus` 最近活跃任务的 provider，减少跨 provider 切换与额外编排成本。
 
 ## 系统事件与 Focus 归属
 

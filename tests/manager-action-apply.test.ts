@@ -173,7 +173,7 @@ test('enqueue_task contract change does not reuse pending task', async () => {
   expect(runtime.tasks[1]?.contract?.goal).toBe('New goal')
 })
 
-test('enqueue_task without provider picks codex when codex is enabled', async () => {
+test('enqueue_task always dispatches on codex', async () => {
   const runtime = await createRuntime()
   runtime.config.codex.enabled = true
 
@@ -193,10 +193,9 @@ test('enqueue_task without provider picks codex when codex is enabled', async ()
   expect(runtime.tasks[0]?.provider).toBe('codex')
 })
 
-test('enqueue_task without provider reuses recent focus provider before falling back to billing order', async () => {
+test('enqueue_task keeps codex even when the focus already has recent tasks', async () => {
   const runtime = await createRuntime()
   runtime.config.codex.enabled = true
-  runtime.config.codex.billing = 'low'
   runtime.focuses.push({
     id: 'focus-affinity',
     title: 'Affinity',

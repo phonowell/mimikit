@@ -36,9 +36,7 @@ test('enqueue_task accepts complete contract attrs', () => {
         },
       },
     ],
-    {
-      enabledWorkerProviders: new Set(['codex']),
-    },
+    {},
   )
 
   expect(feedback).toHaveLength(0)
@@ -60,9 +58,7 @@ test('enqueue_task accepts branch attr with complete contract attrs', () => {
         },
       },
     ],
-    {
-      enabledWorkerProviders: new Set(['codex']),
-    },
+    {},
   )
 
   expect(feedback).toHaveLength(0)
@@ -82,9 +78,7 @@ test('enqueue_task accepts legacy prompt scope and acceptance aliases', () => {
         },
       },
     ],
-    {
-      enabledWorkerProviders: new Set(['codex']),
-    },
+    {},
   )
 
   expect(feedback).toHaveLength(0)

@@ -122,7 +122,6 @@ test('enqueue_task stays blocked when only timeout choice text suggests new work
           source: 'timeout',
         }),
       ],
-      enabledWorkerProviders: new Set(['codex']),
       supplementalEvidenceSources: new Set(['task_result']),
     },
   )
