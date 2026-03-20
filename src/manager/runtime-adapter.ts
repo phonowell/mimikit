@@ -21,6 +21,7 @@ import type { RuntimeState as CoreRuntimeState } from '../orchestrator/core/runt
 export type RuntimeState = Pick<
   CoreRuntimeState,
   | 'runtimeId'
+  | 'startup'
   | 'config'
   | 'paths'
   | 'session'

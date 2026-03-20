@@ -36,20 +36,13 @@ import { waitForUiSignal } from './signals.js'
 import { clonePendingUserChoices } from './user-choice-state.js'
 import { selectPendingUserChoiceFromUser } from './user-choice.js'
 
-import type {
-  ExitRequest,
-  RuntimeState,
-  UiWakeKind,
-  UserMeta,
-} from './runtime-state.js'
+import type { RuntimeState, UiWakeKind, UserMeta } from './runtime-state.js'
 import type { SelectPendingUserChoiceResult } from './user-choice.js'
-import type { Task, TaskPlan } from '../../types/index.js'
+import type { Task } from '../../types/index.js'
 
 export type { OrchestratorStatus } from './orchestrator-helpers.js'
 
-type OrchestratorOptions = {
-  onExitRequested?: (request: ExitRequest) => void
-}
+type OrchestratorOptions = Parameters<typeof createRuntimeState>[1]
 
 export class Orchestrator {
   private runtime: RuntimeState
@@ -74,8 +67,10 @@ export class Orchestrator {
     return 'scheduled'
   }
 
-  constructor(config: AppConfig, options: OrchestratorOptions = {}) {
+  constructor(config: AppConfig, options: OrchestratorOptions) {
     this.runtime = createRuntimeState(config, {
+      runtimeId: options.runtimeId,
+      startup: options.startup,
       ...(options.onExitRequested
         ? { onExitRequested: options.onExitRequested }
         : {}),
@@ -145,7 +140,7 @@ export class Orchestrator {
     })
   }
 
-  getPlans(limit = 200): { items: TaskPlan[] } {
+  getPlans(limit = 200) {
     const items = sortTaskPlansForView(this.runtime.taskPlans)
       .slice(0, Math.max(0, limit))
       .map((item) => ({ ...item }))

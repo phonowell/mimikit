@@ -3,9 +3,9 @@ import PQueue from 'p-queue'
 import { type AppConfig } from '../../config.js'
 import { buildPaths, type StatePaths } from '../../fs/paths.js'
 import { setDefaultLogPath } from '../../log/safe.js'
-import { newId } from '../../shared/utils.js'
 
 import type { RuntimeMemoryRefreshState } from '../../memory/refresh/state.js'
+import type { RuntimeStartupInfo } from '../../shared/runtime-startup.js'
 import type {
   FocusDigest,
   FocusMeta,
@@ -94,6 +94,7 @@ export type RuntimeUiState = {
 
 export type RuntimeState = {
   runtimeId: string
+  startup: RuntimeStartupInfo
   config: AppConfig
   paths: StatePaths
   session: RuntimeSessionState
@@ -113,8 +114,10 @@ export type RuntimeState = {
 export const createRuntimeState = (
   config: AppConfig,
   options: {
+    runtimeId: string
+    startup: RuntimeStartupInfo
     onExitRequested?: (request: ExitRequest) => void
-  } = {},
+  },
 ): RuntimeState => {
   const paths = buildPaths(config.workDir)
   setDefaultLogPath(paths.log)
@@ -127,7 +130,8 @@ export const createRuntimeState = (
     pending: false,
   }
   return {
-    runtimeId: `runtime-${newId()}`,
+    runtimeId: options.runtimeId,
+    startup: options.startup,
     config,
     paths,
     session: {

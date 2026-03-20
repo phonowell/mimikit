@@ -1,10 +1,13 @@
 import { createHttpServer } from '../http/index.js'
+import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { Orchestrator } from '../orchestrator/core/orchestrator-service.js'
 import { setRuntimeReaperBridge } from '../runtime/reaper-bridge.js'
 import { createRuntimeReaperHandle } from '../runtime/reaper.js'
+import { buildRuntimeStartupLogEntry } from '../shared/runtime-startup.js'
 
 import { acquireRuntimeLock } from './runtime-lock.js'
+import { resolveRuntimeStartupInfo } from './runtime-startup-info.js'
 
 import type { AppConfig } from '../config.js'
 import type { StatePaths } from '../fs/paths.js'
@@ -37,8 +40,18 @@ const closeHttpServer = async (
 export const runCliCycle = async (
   params: RunCliCycleParams,
 ): Promise<number> => {
-  const runtimeLock = await acquireRuntimeLock(params.workDir)
   const runtimeId = process.pid > 0 ? `runtime-${process.pid}` : 'runtime-main'
+  const startup = resolveRuntimeStartupInfo()
+  const runtimeLock = await acquireRuntimeLock(params.workDir)
+  await bestEffort('appendLog: runtime_startup', () =>
+    appendLog(
+      params.paths.log,
+      buildRuntimeStartupLogEntry({
+        runtimeId,
+        startup,
+      }),
+    ),
+  )
   const runtimeReaper = await createRuntimeReaperHandle({
     runtimeId,
     paths: params.paths,
@@ -70,6 +83,8 @@ export const runCliCycle = async (
   }
 
   const orchestrator = new Orchestrator(params.config, {
+    runtimeId,
+    startup,
     onExitRequested: ({ code, reason }) => {
       void shutdown(`orchestrator exit requested: ${reason}`, code, {
         skipPersist: reason === 'http_api_reset',

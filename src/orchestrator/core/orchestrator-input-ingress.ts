@@ -6,6 +6,7 @@ import {
 } from '../../focus/index.js'
 import { appendLog } from '../../log/append.js'
 import { bestEffort } from '../../log/safe.js'
+import { buildRuntimeStartupSystemEventPayload } from '../../shared/runtime-startup.js'
 import { newId, nowIso } from '../../shared/utils.js'
 import { publishUserInput } from '../../streams/queues.js'
 
@@ -97,14 +98,13 @@ export const appendStartupSystemMessage = async (
   const { bestEffort } = await import('../../log/safe.js')
   const { createSystemEventRecord } =
     await import('../../shared/system-event.js')
-  const startedAt = nowIso()
   const eventRecord = createSystemEventRecord({
     summary: 'Session started.',
     event: 'startup',
-    payload: {
-      runtime_id: runtime.runtimeId,
-      started_at: startedAt,
-    },
+    payload: buildRuntimeStartupSystemEventPayload({
+      runtimeId: runtime.runtimeId,
+      startup: runtime.startup,
+    }),
   })
   await bestEffort('appendHistory: startup_system_message', () =>
     appendHistory(runtime.paths.history, {
@@ -112,7 +112,7 @@ export const appendStartupSystemMessage = async (
       role: 'system',
       visibility: 'user',
       ...eventRecord,
-      createdAt: startedAt,
+      createdAt: runtime.startup.startedAt,
       focusId: GLOBAL_FOCUS_ID,
     }),
   )

@@ -89,6 +89,7 @@
 
 - payload 可能包含 `source_input_id`、`auto_retry_attempts`、`auto_retry_max_attempts`、`auto_retry_state`、`auto_retry_strategy`。
 - WebUI 通过 `systemEventName/systemEventPayload` 识别事件，不依赖文案关键词。
+- `startup` payload 包含 `runtime_id`、`started_at`，并在可用时附带 `commit`、`dirty`、`worktree`。
 
 ## 输入协议（`POST /api/input`）
 
@@ -172,7 +173,7 @@
 
 - `memory/MEMORY.md` 由两条链路维护：后台 memory 刷新子进程（`>=20` 轮触发，单飞执行）+ manager `remember_memory` 即时写入。
 - `usage/ledger.jsonl` 追加写入 manager round 与 worker result 两类账本记录；manager 记录 `wakeProfile/packetMode/promptBytes/promptSegmentCount/includedSections/prunedSections`，worker 记录 `taskId/provider/status/usage`。
-- `log.jsonl` 中 manager 每轮会写 `manager_context_budget_resolved`，显式记录 `policy=fixed`、`wakeProfile` 与最终 `promptSectionLimits`；预算解释以这条日志为准，不再依赖隐式分档推导。
+- `log.jsonl` 中 manager 每轮会写 `manager_context_budget_resolved`，显式记录 `policy=fixed`、`wakeProfile` 与最终 `promptSectionLimits`；预算解释以这条日志为准，不再依赖隐式分档推导。每次启动还会先写入 `runtime_startup` 事件，至少包含 `runtimeId`、`startedAt`、`worktree`，并在可用时附带 `commit`、`dirty`。
 - 异常退出（如被 kill）时，reaper 依据 `runtime/lease.json + runtime/children.json` 回收残留子进程。
 
 ## Runtime Snapshot 关键字段
@@ -185,7 +186,6 @@ schema：`src/storage/runtime-snapshot-schema.ts`
 - `managerTurn`
 - `managerThreadId`
 - `queues.inputsCursor`、`queues.resultsCursor`
-- `pendingUserChoices[]`（预算暂停恢复场景下可带 `effect={ type: "resume_task", taskId, optionId, reason? }`）
 - `pendingUserChoices[]`（预算暂停恢复场景下可带 `effect={ type: "resume_task", taskId, optionId, reason? }`）
 - `memoryRefresh`
 
