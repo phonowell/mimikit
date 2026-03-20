@@ -3,6 +3,11 @@ import type { RuntimeState, UiWakeKind } from './runtime-state.js'
 const MAX_WAIT_MS = 24 * 60 * 60 * 1_000
 const MAX_UI_WAKE_EVENTS = 64
 
+type LoopWakeOptions = {
+  notifyUi?: boolean
+  uiKind?: UiWakeKind
+}
+
 const abortController = (controller: AbortController): void => {
   if (!controller.signal.aborted) controller.abort()
 }
@@ -77,6 +82,14 @@ export const notifyUiSignal = (
     abortController(controller)
 }
 
+const notifyUiIfRequested = (
+  runtime: RuntimeState,
+  options: LoopWakeOptions | undefined,
+): void => {
+  if (options?.notifyUi === false) return
+  notifyUiSignal(runtime, options?.uiKind ?? 'snapshot')
+}
+
 export const waitForUiSignal = async (
   runtime: RuntimeState,
   timeoutMs: number,
@@ -109,10 +122,13 @@ export const waitForUiSignal = async (
 
 // --- Manager signal ---
 
-export const notifyManagerLoop = (runtime: RuntimeState): void => {
+export const notifyManagerLoop = (
+  runtime: RuntimeState,
+  options?: LoopWakeOptions,
+): void => {
   runtime.manager.wakePending = true
   abortController(runtime.manager.signalController)
-  notifyUiSignal(runtime)
+  notifyUiIfRequested(runtime, options)
 }
 
 export const waitForManagerLoopSignal = async (
@@ -135,11 +151,14 @@ export const waitForManagerLoopSignal = async (
 
 // --- Worker signal ---
 
-export const notifyWorkerLoop = (runtime: RuntimeState): void => {
+export const notifyWorkerLoop = (
+  runtime: RuntimeState,
+  options?: LoopWakeOptions,
+): void => {
   runtime.worker.signalController = replaceOrCreateAbortController(
     runtime.worker.signalController,
   )
-  notifyUiSignal(runtime)
+  notifyUiIfRequested(runtime, options)
 }
 
 export const waitForWorkerLoopSignal = (

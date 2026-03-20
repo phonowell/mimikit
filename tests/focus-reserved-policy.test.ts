@@ -43,6 +43,17 @@ test('updateFocus ignores global focus business context', async () => {
   expect(runtime.focuses[0]?.openItems).toBeUndefined()
 })
 
+test('updateFocus normalizes global focus status through shared status path', async () => {
+  const runtime = await createRuntime()
+
+  updateFocus(runtime, {
+    id: 'focus-global',
+    status: 'done',
+  })
+
+  expect(runtime.focuses[0]?.status).toBe('active')
+})
+
 test('ensureGlobalFocus cleans legacy global focus details', async () => {
   const runtime = await createRuntime()
 
