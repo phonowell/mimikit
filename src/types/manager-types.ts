@@ -1,13 +1,9 @@
+import type { FocusId, ProviderBilling, ProviderCapability } from './base.js'
 import type {
   ManagerWakeProfile,
   TaskResultStatus,
   WorkerProvider,
 } from './runtime-domain.js'
-import type {
-  FocusId,
-  ProviderBilling,
-  ProviderCapability,
-} from './base.js'
 
 export type ManagerPacketMode = 'minimal' | 'standard' | 'expanded'
 

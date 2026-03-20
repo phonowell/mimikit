@@ -1,4 +1,5 @@
 import { truncateText } from '../shared/text.js'
+
 import type { ApplyResult } from './action-registrations.js'
 import type { Parsed } from '../actions/model/spec.js'
 import type { ManagerActionFeedback } from '../types/index.js'
@@ -170,7 +171,9 @@ export const buildLifecycleActionLogEntry = (params: {
       ? { omittedAttrCount: attrs.omittedAttrCount }
       : {}),
     ...(params.result ? { result: params.result } : {}),
-    ...(params.error !== undefined ? { error: toErrorMessage(params.error) } : {}),
+    ...(params.error !== undefined
+      ? { error: toErrorMessage(params.error) }
+      : {}),
     ...(params.elapsedMs !== undefined ? { elapsedMs: params.elapsedMs } : {}),
     ...(params.traceId ? { traceId: params.traceId } : {}),
   }

@@ -1,3 +1,4 @@
+import type { FocusId, ISODate, Role } from './base.js'
 import type {
   FocusStatus,
   TaskPlanStatus,
@@ -5,7 +6,6 @@ import type {
   TaskResultStatus,
   TaskStatus,
 } from './runtime-domain.js'
-import type { FocusId, ISODate, Role } from './base.js'
 
 export type HistoryLookupMessage = {
   id: string

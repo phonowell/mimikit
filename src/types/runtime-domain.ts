@@ -40,7 +40,12 @@ export const TASK_PLAN_TRIGGER_MODE_VALUES = [
   'scheduled_at',
   'on_worker_slot_freed',
 ] as const
-export const FOCUS_STATUS_VALUES = ['active', 'idle', 'done', 'archived'] as const
+export const FOCUS_STATUS_VALUES = [
+  'active',
+  'idle',
+  'done',
+  'archived',
+] as const
 export const MANAGER_WAKE_PROFILE_VALUES = [
   'user_input',
   'task_result',
@@ -60,7 +65,8 @@ export type TaskStatus = (typeof TASK_STATUS_VALUES)[number]
 export type TaskCancelSource = (typeof TASK_CANCEL_SOURCE_VALUES)[number]
 export type TaskResultStatus = (typeof TASK_RESULT_STATUS_VALUES)[number]
 export type TaskResultOutcome = (typeof TASK_RESULT_OUTCOME_VALUES)[number]
-export type TaskResultStopReason = (typeof TASK_RESULT_STOP_REASON_VALUES)[number]
+export type TaskResultStopReason =
+  (typeof TASK_RESULT_STOP_REASON_VALUES)[number]
 export type WorkerProvider = (typeof WORKER_PROVIDER_VALUES)[number]
 export type TaskPlanStatus = (typeof TASK_PLAN_STATUS_VALUES)[number]
 export type TaskPlanTriggerMode = (typeof TASK_PLAN_TRIGGER_MODE_VALUES)[number]
@@ -92,5 +98,4 @@ export const parseTaskResultStopReason = (
 
 export const parseWorkerProvider = (
   value: unknown,
-): WorkerProvider | undefined =>
-  parseSchemaValue(workerProviderSchema, value)
+): WorkerProvider | undefined => parseSchemaValue(workerProviderSchema, value)

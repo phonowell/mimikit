@@ -1,4 +1,12 @@
 import type {
+  FocusId,
+  ISODate,
+  PlanPriority,
+  PlanSource,
+  TokenUsage,
+  WorkerProfile,
+} from './base.js'
+import type {
   FocusStatus,
   TaskCancelSource,
   TaskPlanStatus,
@@ -8,14 +16,6 @@ import type {
   TaskStatus,
   WorkerProvider,
 } from './runtime-domain.js'
-import type {
-  FocusId,
-  ISODate,
-  PlanPriority,
-  PlanSource,
-  TokenUsage,
-  WorkerProfile,
-} from './base.js'
 
 export type TaskResultHandoffArtifact = {
   path: string

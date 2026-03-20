@@ -2,10 +2,10 @@ import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 
 import {
-  buildFeedbackActionLogEntry,
-  buildLifecycleActionLogEntry,
   type ActionLifecycleStage,
   type ActionLogEntry,
+  buildFeedbackActionLogEntry,
+  buildLifecycleActionLogEntry,
 } from './action-cli-log-payload.js'
 
 import type { ApplyResult } from './action-registrations.js'

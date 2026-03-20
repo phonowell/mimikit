@@ -1,6 +1,10 @@
 import { z } from 'zod'
 
-import { choiceIdSchema, focusIdSchema, optionIdSchema } from '../shared/id-schema.js'
+import {
+  choiceIdSchema,
+  focusIdSchema,
+  optionIdSchema,
+} from '../shared/id-schema.js'
 
 import type { UserChoiceOption } from '../types/index.js'
 
