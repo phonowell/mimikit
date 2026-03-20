@@ -4,9 +4,7 @@ import { readHistory } from '../history/store.js'
 import { buildMemoryPromptSections } from '../memory/prompt-sections.js'
 import { readMemoryEntries } from '../memory/store.js'
 
-import {
-  mergeTaskResults,
-} from './build-prompts-helpers.js'
+import { mergeTaskResults } from './build-prompts-helpers.js'
 import { buildQuoteReferenceLookup } from './format.js'
 import {
   buildMemoryPromptScoreContext,

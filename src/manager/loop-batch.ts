@@ -7,6 +7,7 @@ import { readProviderErrorCode } from '../providers/provider-error.js'
 import { isVisibleToAgent } from '../shared/message-visibility.js'
 
 import { applyTaskActions, collectTaskResultSummaries } from './action-apply.js'
+import { collectTriggeredPlanIds } from './loop-batch-context.js'
 import {
   appendManagerReply,
   finishBatchWithoutAgentReply,
@@ -18,7 +19,6 @@ import {
   consumeBatchHistory,
   finalizeBatchProgress,
 } from './loop-helpers.js'
-import { collectTriggeredPlanIds } from './loop-batch-context.js'
 import { applyPlanCompletionState } from './plan-progress.js'
 import { normalizeManagerReplyText } from './reply-normalize.js'
 import { clearResultReplayBackoff } from './result-replay-backoff.js'

@@ -3,22 +3,19 @@ import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { resolveSlotStatus } from '../worker/task-state-shared.js'
 
-import { applyAskUserChoiceAction } from './action-apply-choice.js'
 import { markCreateAttempt } from './action-apply-guards.js'
 import { runTaskSchema } from './action-apply-schema.js'
 import { resolveActionFocusId } from './action-focus-id.js'
+import { linkTriggeredPlanToTask } from './plan-progress.js'
+import { requestRunTaskConfirmation } from './run-task-confirmation-request.js'
 import {
-  buildRunTaskConfirmationQuestion,
   collectConfirmedRunTaskChoiceIds,
   resolveRunTaskConfirmationRequirement,
-  RUN_TASK_CANCEL_OPTION_ID,
-  RUN_TASK_CONFIRM_OPTION_ID,
 } from './run-task-confirmation.js'
+import { handleActiveSemanticTask } from './run-task-existing.js'
 import { resolveRunTaskTarget } from './run-task-target.js'
 import {
-  buildTaskFingerprint,
   buildTaskSemanticKey,
-  cancelTask,
   enqueueTask,
   enqueueWorkerTask,
   findActiveTaskBySemanticKey,
@@ -30,7 +27,6 @@ import {
   buildTaskContractFromAttrs,
   resolveWorkerPromptFromAttrs,
 } from './task-contract.js'
-import { linkTriggeredPlanToTask } from './plan-progress.js'
 
 import type { Parsed } from '../actions/model/spec.js'
 import type { WorkerProfile } from '../types/index.js'

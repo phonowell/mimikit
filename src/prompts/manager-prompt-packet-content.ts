@@ -38,11 +38,7 @@ export const buildStatePacketPayload = (params: {
       : {}),
     ...(params.selectedSections.tasks
       ? {
-          tasks: buildTasksPromptPayload(
-            params.tasks,
-            [],
-            params.workDir,
-          ),
+          tasks: buildTasksPromptPayload(params.tasks, [], params.workDir),
         }
       : {}),
     ...(params.selectedSections.plans

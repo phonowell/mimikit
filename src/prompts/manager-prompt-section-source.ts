@@ -114,11 +114,7 @@ export const buildManagerPacketSectionSource = (params: {
         : '',
       tasks: params.sectionPolicy.tasks
         ? sectionJson(
-            formatTasksJson(
-              params.tasks,
-              [],
-              params.workDir,
-            ),
+            formatTasksJson(params.tasks, [], params.workDir),
             params.limits.tasksMaxBytes,
           )
         : '',

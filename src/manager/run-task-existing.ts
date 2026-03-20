@@ -1,3 +1,4 @@
+import { linkTriggeredPlanToTask } from './plan-progress.js'
 import {
   buildTaskFingerprint,
   cancelTask,
@@ -6,9 +7,13 @@ import {
   persistRuntimeState,
   type RuntimeState,
 } from './runtime-adapter.js'
-import { linkTriggeredPlanToTask } from './plan-progress.js'
 
-import type { Task, TaskContract, WorkerProfile, WorkerProvider } from '../types/index.js'
+import type {
+  Task,
+  TaskContract,
+  WorkerProfile,
+  WorkerProvider,
+} from '../types/index.js'
 
 export const handleActiveSemanticTask = async (params: {
   runtime: RuntimeState
@@ -39,9 +44,13 @@ export const handleActiveSemanticTask = async (params: {
     profile: params.activeTask.profile,
     provider: params.activeTask.provider,
     focusId: params.activeTask.focusId,
-    ...(params.activeTask.repoKey ? { repoKey: params.activeTask.repoKey } : {}),
+    ...(params.activeTask.repoKey
+      ? { repoKey: params.activeTask.repoKey }
+      : {}),
     ...(params.activeTask.branch ? { branch: params.activeTask.branch } : {}),
-    ...(params.activeTask.contract ? { contract: params.activeTask.contract } : {}),
+    ...(params.activeTask.contract
+      ? { contract: params.activeTask.contract }
+      : {}),
   })
   const nextFingerprint = buildTaskFingerprint({
     prompt: params.nextTask.prompt,

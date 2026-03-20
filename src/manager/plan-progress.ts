@@ -55,9 +55,8 @@ export const applyPlanCompletionState = (
     if (
       !existing ||
       Date.parse(result.completedAt) >= Date.parse(existing.completedAt)
-    ) {
+    )
       latestByTaskId.set(result.taskId, result)
-    }
   }
 
   for (const plan of runtime.taskPlans) {
