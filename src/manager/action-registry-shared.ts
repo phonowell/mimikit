@@ -13,7 +13,8 @@ export type ManagerActionDomain =
 
 export type ManagerActionPromptSpec = {
   summary: string
-  constraints: readonly string[]
+  briefConstraints?: readonly string[]
+  detailConstraints?: readonly string[]
 }
 
 export type ApplyContext = {

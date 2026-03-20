@@ -41,6 +41,16 @@ import { cancelTask, pauseTask, resumeTask } from './runtime-adapter.js'
 
 import type { Parsed } from '../actions/model/spec.js'
 
+const definePrompt = (
+  summary: string,
+  briefConstraints: readonly string[] = [],
+  detailConstraints: readonly string[] = [],
+): ManagerActionDefinition['prompt'] => ({
+  summary,
+  ...(briefConstraints.length > 0 ? { briefConstraints } : {}),
+  ...(detailConstraints.length > 0 ? { detailConstraints } : {}),
+})
+
 const applyMutateTaskAction = async (
   runtime: Parameters<ManagerActionDefinition['apply']>[0],
   item: Parsed,
@@ -68,13 +78,13 @@ const PLAN_ACTION_DEFINITIONS = [
     {
       name: 'create_plan',
       domain: 'plan',
-      prompt: {
-        summary: '创建持续触发计划。',
-        constraints: [
-          '必填 `prompt,title,schedule_type`',
-          '`scheduled_at` 必须是未来绝对时间',
+      prompt: definePrompt(
+        '创建持续触发计划。',
+        ['必填 `prompt,title,schedule_type`'],
+        [
+          '`schedule_type="scheduled_at"` 时，`scheduled_at` 必须是未来绝对时间',
         ],
-      },
+      ),
     },
     (item, context) => validateCreatePlan(item, context),
     applyCreatePlan,
@@ -83,13 +93,11 @@ const PLAN_ACTION_DEFINITIONS = [
     {
       name: 'update_plan',
       domain: 'plan',
-      prompt: {
-        summary: '更新现有计划。',
-        constraints: [
-          '必填 `id` 且至少更新一项',
-          '`done` plan 仅允许补 `last_task_id`',
-        ],
-      },
+      prompt: definePrompt(
+        '更新现有计划。',
+        ['必填 `id` 且至少更新一项'],
+        ['`done` plan 仅允许补 `last_task_id`'],
+      ),
     },
     (item, context) => {
       const byIdIssues = validatePlanById(
@@ -107,10 +115,7 @@ const PLAN_ACTION_DEFINITIONS = [
     {
       name: 'delete_plan',
       domain: 'plan',
-      prompt: {
-        summary: '删除现有计划。',
-        constraints: ['必填 `id`'],
-      },
+      prompt: definePrompt('删除现有计划。', ['必填 `id`']),
     },
     (item, context) =>
       validatePlanById('delete_plan', item, deletePlanSchema, context),
@@ -122,13 +127,16 @@ const TASK_ACTION_DEFINITIONS = [
   {
     name: 'enqueue_task',
     domain: 'task',
-    prompt: {
-      summary: '派发一个 worker 任务。',
-      constraints: [
-        '必填 `title,cwd,goal,in_scope,done_when_1`；`worker_prompt` 可省略并由系统按 contract 自动生成；可选 `branch` 显式指定目标分支，提供后 enqueue 阶段会自动创建或复用对应 worktree，并把任务 `cwd` 切到该 worktree',
+    prompt: definePrompt(
+      '派发一个 worker 任务。',
+      ['必填 `title,cwd,goal,in_scope,done_when_1`'],
+      [
+        '`worker_prompt` 可省略并由系统按 contract 自动生成',
+        '可选 `branch,out_of_scope,context_ref_{1..3},focus_id,provider`',
+        '提供 `branch` 后 enqueue 阶段会自动创建或复用对应 worktree，并把任务 `cwd` 切到该 worktree',
         '默认一个目标只创建一个任务',
       ],
-    },
+    ),
     validate: (item, context) => validateRunTask(item, context),
     apply: (runtime, item, context) =>
       applyRunTask(runtime, item, context.seen, context.options),
@@ -137,10 +145,11 @@ const TASK_ACTION_DEFINITIONS = [
     {
       name: 'mutate_task',
       domain: 'task',
-      prompt: {
-        summary: '暂停、恢复或取消任务。',
-        constraints: ['必填 `id,op`', '仅用于显式任务控制'],
-      },
+      prompt: definePrompt(
+        '暂停、恢复或取消任务。',
+        ['必填 `id,op`'],
+        ['仅用于显式任务控制'],
+      ),
     },
     (item, context) => validateMutateTask(item, context),
     applyMutateTaskAction,
@@ -149,10 +158,11 @@ const TASK_ACTION_DEFINITIONS = [
     {
       name: 'set_task_result_summary',
       domain: 'task',
-      prompt: {
-        summary: '为当前批次 `task_result` 写摘要。',
-        constraints: ['必填 `task_id,summary`', '仅能引用当前批次可见结果'],
-      },
+      prompt: definePrompt(
+        '为当前批次 `task_result` 写摘要。',
+        ['必填 `task_id,summary`'],
+        ['仅能引用当前批次可见结果'],
+      ),
     },
     (item, context) => validateSummarizeTaskResult(item, context),
   ),
@@ -163,13 +173,13 @@ const DIALOG_ACTION_DEFINITIONS = [
     {
       name: 'ask_user_choice',
       domain: 'dialog',
-      prompt: {
-        summary: '生成一个待用户返回后处理的有限选择。',
-        constraints: [
-          '仅在有限候选且确需用户决策时使用',
-          '`telegram`/`feishu` 来源不可用',
+      prompt: definePrompt(
+        '生成一个待用户返回后处理的有限选择。',
+        [
+          '必填 `id,question,default_option_id` 与连续的 `option_n_{id,label,reason}`',
         ],
-      },
+        ['仅在有限候选且确需用户决策时使用', '`telegram`/`feishu` 来源不可用'],
+      ),
     },
     (item, context) => validateAskUserChoice(item, context),
     (runtime, item) => applyAskUserChoiceAction(runtime, item),
@@ -181,10 +191,11 @@ const LOOKUP_ACTION_DEFINITIONS = [
     {
       name: 'query_context',
       domain: 'lookup',
-      prompt: {
-        summary: '检索历史、任务、计划等补充上下文。',
-        constraints: ['必填 `query`', '单轮最多一次'],
-      },
+      prompt: definePrompt(
+        '检索历史、任务、计划等补充上下文。',
+        ['必填 `query`'],
+        ['单轮最多一次'],
+      ),
     },
     validateQueryContext,
   ),
@@ -192,10 +203,14 @@ const LOOKUP_ACTION_DEFINITIONS = [
     {
       name: 'read_file',
       domain: 'lookup',
-      prompt: {
-        summary: '读取明确路径的文件片段。',
-        constraints: ['必填 `path`', '仅在路径明确时使用，单轮最多一次'],
-      },
+      prompt: definePrompt(
+        '读取明确路径的文件片段。',
+        ['必填 `path`'],
+        [
+          '可选 `from_line,max_lines,max_chars`',
+          '仅在路径明确时使用，单轮最多一次',
+        ],
+      ),
     },
     validateReadFile,
   ),
@@ -206,10 +221,11 @@ const FOCUS_ACTION_DEFINITIONS = [
     {
       name: 'upsert_focus',
       domain: 'focus',
-      prompt: {
-        summary: '创建或更新 focus 状态。',
-        constraints: ['必填 `id`', '`open_item_n` 必须连续编号'],
-      },
+      prompt: definePrompt(
+        '创建或更新 focus 状态。',
+        ['必填 `id`'],
+        ['可选 `title,status,summary`', '`open_item_n` 必须连续编号'],
+      ),
     },
     (item) => validateWithSchema(item, upsertFocusSchema),
     applyUpsertFocusAction,
@@ -218,10 +234,9 @@ const FOCUS_ACTION_DEFINITIONS = [
     {
       name: 'assign_focus',
       domain: 'focus',
-      prompt: {
-        summary: '给 task、plan 或 history 绑定 focus。',
-        constraints: ['必填 `target_type,target_id,focus_id`'],
-      },
+      prompt: definePrompt('给 task、plan 或 history 绑定 focus。', [
+        '必填 `target_type,target_id,focus_id`',
+      ]),
     },
     (item) => validateWithSchema(item, assignFocusSchema),
     applyAssignFocusAction,
@@ -233,10 +248,11 @@ const MEMORY_ACTION_DEFINITIONS = [
     {
       name: 'remember_memory',
       domain: 'memory',
-      prompt: {
-        summary: '写入长期记忆。',
-        constraints: ['仅支持 `content`', '只保存稳定偏好或长期约束'],
-      },
+      prompt: definePrompt(
+        '写入长期记忆。',
+        ['仅支持 `content`'],
+        ['只保存稳定偏好或长期约束'],
+      ),
     },
     (item) => validateRememberMemory(item),
     applyRememberMemoryAction,
