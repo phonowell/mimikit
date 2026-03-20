@@ -137,21 +137,20 @@
 
 实现：`src/manager/loop-batch-run-manager.ts`
 
-- 每轮 manager 先收集偏好 focus：
-- 当前批次输入 `inputs[*].focusId`
-- 当前批次结果关联任务的 `task.focusId`
-- working focus 选择会合并并去重：
-- `preferredFocusIds`
-- 当前 `status=active` 的 focus
-- 按活跃度排序的非 archived focus
-- 最终截断：`MAX_WORKING_FOCUSES = 3`
+- 每轮 manager 只解析一个 `primary focus`，不再把多个 focus 混进同一批 prompt。
+- 选择顺序按 `wakeProfile` 收口：
+- `user_input` 优先最新用户输入 focus，其次结果/触发/最近 active focus。
+- `task_result` 优先结果关联任务的 focus。
+- `trigger` 优先触发计划或触发 system input 携带的 focus。
+- `capacity` 优先最近仍 open 的任务 focus。
+- 若都无法命中，回退到 `resolveDefaultFocusId()`。
 
 ## Prompt 注入规范
 
 - Manager Prompt：
 - `M:state_packet.focus_list`：非 archived focus 列表（含 `is_active`）
-- `M:state_packet.working_focuses`：working focus 的 `summary/open_items/recent_messages`（过滤 `focus-global`）
-- `M:event_packet.recent_history`：未被 working focus recent 覆盖的近期历史
+- `M:state_packet.working_focuses`：仅当前 `primary focus` 的 `summary/open_items/recent_messages`（过滤 `focus-global`）
+- `M:event_packet.recent_history`：仅当前 `primary focus` 范围内、未被 working focus recent 覆盖的近期历史
 - 各段受 `manager.promptSections.*MaxBytes` 固定预算控制；`wakeProfile` 不再改写这些 section 的字节上限
 - Worker Prompt：
 - `M:focus_brief`：当前任务 focus 的 `focus_title/summary/open_items/updated_at/last_activity_at`

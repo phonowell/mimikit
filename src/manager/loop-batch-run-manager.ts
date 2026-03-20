@@ -1,55 +1,15 @@
-import { MAX_WORKING_FOCUSES } from '../focus/constants.js'
 import { resolveDefaultFocusId } from '../focus/index.js'
 import { selectRecentPlans } from '../orchestrator/read-model/plan-select.js'
-import { compareIsoDesc } from '../shared/time.js'
 
+import { resolveWakeProfile } from './context-budget.js'
 import { collectTriggeredPlanIds } from './loop-batch-context.js'
+import { resolveBatchWorkingFocusIds } from './loop-batch-primary-focus.js'
 import { logManagerBatchStart } from './loop-batch-run-helpers.js'
 import { runManagerCorrectionRounds } from './loop-batch-run-rounds.js'
 import { type RuntimeState, selectRecentTasks } from './runtime-adapter.js'
 
 import type { parseActions } from '../actions/protocol/parse.js'
-import type {
-  FocusId,
-  TaskResult,
-  TokenUsage,
-  UserInput,
-} from '../types/index.js'
-
-const collectPreferredFocusIds = (
-  runtime: RuntimeState,
-  inputs: UserInput[],
-  results: TaskResult[],
-): FocusId[] => {
-  const ids: FocusId[] = []
-  for (const input of inputs) ids.push(input.focusId)
-  for (const result of results) {
-    const task = runtime.tasks.find((item) => item.id === result.taskId)
-    if (task) ids.push(task.focusId)
-  }
-  return Array.from(new Set(ids.filter((id) => id.trim().length > 0)))
-}
-
-const selectWorkingFocusIds = (
-  runtime: RuntimeState,
-  preferred: FocusId[],
-): FocusId[] => {
-  const ranked = runtime.focuses
-    .filter((item) => item.status !== 'archived')
-    .sort((a, b) => {
-      const diff = compareIsoDesc(a.lastActivityAt, b.lastActivityAt)
-      if (diff !== 0) return diff
-      return a.id.localeCompare(b.id)
-    })
-    .map((item) => item.id)
-  const active = runtime.focuses
-    .filter((item) => item.status === 'active')
-    .map((item) => item.id)
-  return Array.from(new Set([...preferred, ...active, ...ranked])).slice(
-    0,
-    MAX_WORKING_FOCUSES,
-  )
-}
+import type { TaskResult, TokenUsage, UserInput } from '../types/index.js'
 
 const runRounds = (params: {
   runtime: RuntimeState
@@ -76,8 +36,13 @@ const runRounds = (params: {
     minCount: runtime.config.manager.planWindow.minCount,
     maxCount: runtime.config.manager.planWindow.maxCount,
   })
-  const preferredFocusIds = collectPreferredFocusIds(runtime, inputs, results)
-  const workingFocusIds = selectWorkingFocusIds(runtime, preferredFocusIds)
+  const wakeProfile = resolveWakeProfile(inputs, results)
+  const workingFocusIds = resolveBatchWorkingFocusIds({
+    runtime,
+    inputs,
+    results,
+    wakeProfile,
+  })
 
   return runManagerCorrectionRounds({
     runtime,
