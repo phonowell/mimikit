@@ -54,7 +54,8 @@ export const collectUserIntentTexts = (
       continue
     }
     const event = resolveSystemEvent(input)
-    if (event.name === 'user_choice') texts.push(text)
+    if (event.name === 'user_choice' && event.payload?.source === 'user')
+      texts.push(text)
   }
   return texts
 }
