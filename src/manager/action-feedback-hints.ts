@@ -5,7 +5,10 @@ import {
   loadYamlPromptTemplates,
 } from '../prompts/prompt-template-loader.js'
 
-import { formatEnqueueTaskContractMissingHint as buildEnqueueTaskContractMissingHint } from './action-feedback-enqueue-task-contract.js'
+import {
+  formatEnqueueTaskContractMissingHint as buildEnqueueTaskContractMissingHint,
+  type EnqueueTaskContractHintAttrs,
+} from './action-feedback-enqueue-task-contract.js'
 
 const HINT_TEMPLATE_RELATIVE_PATH = 'manager/action-feedback-hints.md'
 
@@ -147,19 +150,13 @@ const FALLBACK_TASK_CONTRACT_HINT_VALUES = {
   done_when_1: templates.enqueue_task_contract_missing_default_done_when_1,
 } as const
 
-export const formatEnqueueTaskContractMissingHint = (attrs?: {
-  worker_prompt?: string | undefined
-  title?: string | undefined
-  cwd?: string | undefined
-  goal?: string | undefined
-  in_scope?: string | undefined
-  out_of_scope?: string | undefined
-  done_when_1?: string | undefined
-}): string =>
+export const formatEnqueueTaskContractMissingHint = (
+  attrs?: EnqueueTaskContractHintAttrs,
+): string =>
   buildEnqueueTaskContractMissingHint({
     renderHint,
     defaults: FALLBACK_TASK_CONTRACT_HINT_VALUES,
-    attrs,
+    ...(attrs ? { attrs } : {}),
   })
 
 export const formatPlanNotFoundHint = (

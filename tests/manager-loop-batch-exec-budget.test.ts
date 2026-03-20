@@ -71,7 +71,13 @@ const createRuntime = (limits: PromptSectionLimits) => {
       chatId: '',
     },
   }
-  const runtime = createRuntimeState(config)
+  const runtime = createRuntimeState(config, {
+    runtimeId: 'runtime-test-budget',
+    startup: {
+      startedAt: '2026-03-10T00:00:00.000Z',
+      worktree: '.mimikit-test',
+    },
+  })
   runtime.focuses.push({
     id: 'focus-1',
     title: 'Focus',

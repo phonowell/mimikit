@@ -25,7 +25,13 @@ import { defaultConfig } from '../src/config.js'
 import { Orchestrator } from '../src/orchestrator/core/orchestrator-service.js'
 
 test('stop reuses the started channel controller instead of building a new one', async () => {
-  const orchestrator = new Orchestrator(defaultConfig({ workDir: '.mimikit' }))
+  const orchestrator = new Orchestrator(defaultConfig({ workDir: '.mimikit' }), {
+    runtimeId: 'runtime-test-stop',
+    startup: {
+      startedAt: '2026-03-10T00:00:00.000Z',
+      worktree: '.mimikit',
+    },
+  })
 
   await orchestrator.start()
   orchestrator.stop()

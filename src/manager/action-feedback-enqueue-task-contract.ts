@@ -8,6 +8,16 @@ type EnqueueTaskContractHintValues = {
   done_when_1: string
 }
 
+export type EnqueueTaskContractHintAttrs = {
+  worker_prompt?: string | undefined
+  title?: string | undefined
+  cwd?: string | undefined
+  goal?: string | undefined
+  in_scope?: string | undefined
+  out_of_scope?: string | undefined
+  done_when_1?: string | undefined
+}
+
 const trimOrFallback = (
   value: string | undefined,
   fallback: string,
@@ -25,7 +35,7 @@ export const formatEnqueueTaskContractMissingHint = (params: {
     values: Record<string, string>,
   ) => string
   defaults: EnqueueTaskContractHintValues
-  attrs?: Partial<EnqueueTaskContractHintValues>
+  attrs?: EnqueueTaskContractHintAttrs
 }): string =>
   params.renderHint('enqueue_task_contract_missing', {
     worker_prompt: escapeActionAttrValue(

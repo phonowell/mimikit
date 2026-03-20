@@ -5,6 +5,7 @@ import { Orchestrator } from '../orchestrator/core/orchestrator-service.js'
 import { setRuntimeReaperBridge } from '../runtime/reaper-bridge.js'
 import { createRuntimeReaperHandle } from '../runtime/reaper.js'
 import { buildRuntimeStartupLogEntry } from '../shared/runtime-startup.js'
+import { shortId } from '../shared/utils.js'
 
 import { acquireRuntimeLock } from './runtime-lock.js'
 import { resolveRuntimeStartupInfo } from './runtime-startup-info.js'
@@ -40,7 +41,10 @@ const closeHttpServer = async (
 export const runCliCycle = async (
   params: RunCliCycleParams,
 ): Promise<number> => {
-  const runtimeId = process.pid > 0 ? `runtime-${process.pid}` : 'runtime-main'
+  const runtimeId =
+    process.pid > 0
+      ? `runtime-${process.pid}-${shortId()}`
+      : `runtime-main-${shortId()}`
   const startup = resolveRuntimeStartupInfo()
   const runtimeLock = await acquireRuntimeLock(params.workDir)
   await bestEffort('appendLog: runtime_startup', () =>
