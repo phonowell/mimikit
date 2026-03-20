@@ -49,12 +49,13 @@ import {
   formatWorkingFocuses,
   renderPromptTemplate,
 } from './format.js'
-import {
-  buildManagerContextPacket,
-  shouldIncludePacketSection,
-} from './manager-context-packet.js'
+import { buildManagerContextPacket } from './manager-context-packet.js'
 import { buildManagerEventDigests } from './manager-event-digests.js'
 import { loadPromptFile, loadPromptSource } from './prompt-loader.js'
+import {
+  type PacketSections,
+  selectPacketSections,
+} from './select-packet-sections.js'
 
 import type { AppConfig } from '../config.js'
 import type { ProviderPromptSegment } from '../providers/types.js'
@@ -66,7 +67,6 @@ import type {
   ManagerContextPacket,
   ManagerEnv,
   ManagerPacketMode,
-  ManagerPacketSection,
   QueryLookupMessage,
   ReadFileLookupMessage,
   Task,
@@ -118,57 +118,6 @@ const CONTEXT_EMPTY_VALUES: Record<string, string> = {
   event_packet: '',
   remembered_memory: '',
   memory: '',
-}
-
-type SelectablePacketSection = Exclude<ManagerPacketSection, 'packet_summary'>
-type PacketSections = Record<ManagerPacketSection, string>
-
-const SELECTABLE_PACKET_SECTIONS = [
-  'environment',
-  'focus_list',
-  'working_focuses',
-  'remembered_memory',
-  'memory',
-  'tasks',
-  'plans',
-  'inputs',
-  'batch_results',
-  'recent_history',
-  'history_lookup',
-  'query_lookup',
-  'file_lookup',
-  'action_feedback',
-] satisfies readonly SelectablePacketSection[]
-
-const selectPacketSections = (params: {
-  sections: PacketSections
-  mode: ManagerPacketMode
-  wakeProfile: NonNullable<ManagerEnv['wakeProfile']>
-}): {
-  selectedSections: PacketSections
-  includedSections: ManagerPacketSection[]
-  prunedSections: ManagerPacketSection[]
-} => {
-  const selectedSections: PacketSections = { ...params.sections }
-  const includedSections: ManagerPacketSection[] = []
-  const prunedSections: ManagerPacketSection[] = []
-  for (const section of SELECTABLE_PACKET_SECTIONS) {
-    const value = params.sections[section]
-    const hasContent = value.trim().length > 0
-    const include = shouldIncludePacketSection({
-      mode: params.mode,
-      wakeProfile: params.wakeProfile,
-      section,
-      hasContent,
-    })
-    if (include) {
-      includedSections.push(section)
-      continue
-    }
-    if (hasContent) prunedSections.push(section)
-    selectedSections[section] = ''
-  }
-  return { selectedSections, includedSections, prunedSections }
 }
 
 const pushMention = (target: string[], value: string | undefined): void => {
