@@ -6,14 +6,12 @@ import { registerApiRoutes } from '../src/http/routes-api.js'
 import { createOrchestratorStub } from './helpers/orchestrator-stub.js'
 
 type ActionName = 'cancel' | 'delete' | 'pause' | 'resume'
-type ActionMethod = 'cancelTask' | 'deleteTask' | 'pauseTask' | 'resumeTask'
 
 type SuccessStatus = 'canceled' | 'deleted' | 'paused' | 'pending'
 type ErrorStatus = 'not_found' | 'already_paused' | 'active_task'
 
 type ActionSuccessCase = {
   action: ActionName
-  method: ActionMethod
   taskId: string
   status: SuccessStatus
   changeAt: string
@@ -21,50 +19,42 @@ type ActionSuccessCase = {
 
 type ActionErrorCase = {
   action: ActionName
-  method: ActionMethod
   taskId: string
   status: ErrorStatus
   statusCode: number
 }
 
 type TaskActionHandler = (
+  action: ActionName,
   taskId: string,
   meta?: { source?: string; reason?: string },
 ) => Promise<unknown>
 
-const bindActionHandler = (
-  orchestrator: unknown,
-  method: ActionMethod,
-  handler: TaskActionHandler,
-): void => {
-  ;(orchestrator as Record<ActionMethod, TaskActionHandler>)[method] = handler
+const bindActionHandler = (orchestrator: unknown, handler: TaskActionHandler): void => {
+  ;(orchestrator as { mutateTask: TaskActionHandler }).mutateTask = handler
 }
 
 const successCases: ActionSuccessCase[] = [
   {
     action: 'cancel',
-    method: 'cancelTask',
     taskId: 'task-user-cancel',
     status: 'canceled',
     changeAt: '2026-03-06T05:00:00.000Z',
   },
   {
     action: 'delete',
-    method: 'deleteTask',
     taskId: 'task-user-delete',
     status: 'deleted',
     changeAt: '2026-03-06T06:20:00.000Z',
   },
   {
     action: 'pause',
-    method: 'pauseTask',
     taskId: 'task-user-pause',
     status: 'paused',
     changeAt: '2026-03-06T06:00:00.000Z',
   },
   {
     action: 'resume',
-    method: 'resumeTask',
     taskId: 'task-user-resume',
     status: 'pending',
     changeAt: '2026-03-06T06:10:00.000Z',
@@ -74,21 +64,18 @@ const successCases: ActionSuccessCase[] = [
 const errorCases: ActionErrorCase[] = [
   {
     action: 'cancel',
-    method: 'cancelTask',
     taskId: 'task-user-missing',
     status: 'not_found',
     statusCode: 404,
   },
   {
     action: 'pause',
-    method: 'pauseTask',
     taskId: 'task-user-paused',
     status: 'already_paused',
     statusCode: 409,
   },
   {
     action: 'delete',
-    method: 'deleteTask',
     taskId: 'task-user-active',
     status: 'active_task',
     statusCode: 409,
@@ -105,7 +92,7 @@ test('task action routes return id/status/changeAt for user action success', asy
       status: item.status,
       changeAt: item.changeAt,
     }))
-    bindActionHandler(orchestrator, item.method, actionHandler)
+    bindActionHandler(orchestrator, actionHandler)
     const config = defaultConfig({ workDir: '.mimikit' })
     registerApiRoutes(app, orchestrator, config)
 
@@ -121,7 +108,9 @@ test('task action routes return id/status/changeAt for user action success', asy
       status: item.status,
       changeAt: item.changeAt,
     })
-    expect(actionHandler).toHaveBeenCalledWith(item.taskId, { source: 'user' })
+    expect(actionHandler).toHaveBeenCalledWith(item.action, item.taskId, {
+      source: 'user',
+    })
     await app.close()
   }
 })
@@ -135,7 +124,7 @@ test('task action routes keep id/status in error payload', async () => {
       id: item.taskId,
       status: item.status,
     }))
-    bindActionHandler(orchestrator, item.method, actionHandler)
+    bindActionHandler(orchestrator, actionHandler)
     const config = defaultConfig({ workDir: '.mimikit' })
     registerApiRoutes(app, orchestrator, config)
 
@@ -151,7 +140,9 @@ test('task action routes keep id/status in error payload', async () => {
       status: item.status,
       error: item.status,
     })
-    expect(actionHandler).toHaveBeenCalledWith(item.taskId, { source: 'user' })
+    expect(actionHandler).toHaveBeenCalledWith(item.action, item.taskId, {
+      source: 'user',
+    })
     await app.close()
   }
 })
@@ -164,7 +155,7 @@ test('task delete route returns active_task as conflict', async () => {
     id: 'task-user-active-delete',
     status: 'active_task' as const,
   }))
-  bindActionHandler(orchestrator, 'deleteTask', actionHandler)
+  bindActionHandler(orchestrator, actionHandler)
   const config = defaultConfig({ workDir: '.mimikit' })
   registerApiRoutes(app, orchestrator, config)
 
@@ -180,8 +171,10 @@ test('task delete route returns active_task as conflict', async () => {
     status: 'active_task',
     error: 'active_task',
   })
-  expect(actionHandler).toHaveBeenCalledWith('task-user-active-delete', {
-    source: 'user',
-  })
+  expect(actionHandler).toHaveBeenCalledWith(
+    'delete',
+    'task-user-active-delete',
+    { source: 'user' },
+  )
   await app.close()
 })

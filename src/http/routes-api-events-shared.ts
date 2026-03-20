@@ -78,20 +78,11 @@ export const buildSnapshotHintKey = (snapshot: {
     choices: snapshot.choices,
   })
 
-export const buildDeltaSnapshot = async (
+export const buildDeltaSnapshot = (
   orchestrator: Orchestrator,
   lastMessageCursor?: string,
-) => ({
-  status: orchestrator.getStatus(),
-  messages: await orchestrator.getChatMessages(
-    SNAPSHOT_MESSAGE_LIMIT,
-    lastMessageCursor,
-  ),
-  tasks: orchestrator.getTasks(),
-  plans: orchestrator.getPlans(),
-  focuses: orchestrator.getFocuses(),
-  choices: orchestrator.getPendingUserChoices(),
-})
+) =>
+  orchestrator.getWebUiDeltaSnapshot(SNAPSHOT_MESSAGE_LIMIT, lastMessageCursor)
 
 export const sendSseEvent = (
   reply: FastifyReply,

@@ -70,27 +70,26 @@ export const registerApiRoutes = (
   const taskMutationRoutes = [
     {
       path: '/api/tasks/:id/cancel',
-      mutateTask: (taskId: string) =>
-        orchestrator.cancelTask(taskId, { source: 'user' }),
+      action: 'cancel',
     },
     {
       path: '/api/tasks/:id/delete',
-      mutateTask: (taskId: string) =>
-        orchestrator.deleteTask(taskId, { source: 'user' }),
+      action: 'delete',
     },
     {
       path: '/api/tasks/:id/pause',
-      mutateTask: (taskId: string) =>
-        orchestrator.pauseTask(taskId, { source: 'user' }),
+      action: 'pause',
     },
     {
       path: '/api/tasks/:id/resume',
-      mutateTask: (taskId: string) =>
-        orchestrator.resumeTask(taskId, { source: 'user' }),
+      action: 'resume',
     },
   ] as const
-  for (const route of taskMutationRoutes)
-    registerTaskMutationRoute(app, route.path, route.mutateTask)
+  for (const route of taskMutationRoutes) {
+    registerTaskMutationRoute(app, route.path, (taskId: string) =>
+      orchestrator.mutateTask(route.action, taskId, { source: 'user' }),
+    )
+  }
 
   app.post('/api/tasks/resume-recoverable', async (_request, reply) => {
     reply.send(await orchestrator.resumeRecoverableTasks())
