@@ -18,6 +18,7 @@ export type ManagerSectionDigestStat = {
 }
 
 export type SectionDigest = {
+  payload: Record<string, unknown>
   text: string
   stat: ManagerSectionDigestStat
 }
@@ -37,7 +38,7 @@ export const buildDigest = (params: {
   summary: Record<string, unknown>
   items: DigestItem[]
 }): SectionDigest => {
-  const text = stringifyPromptJson({
+  const payload = {
     mode: 'digest',
     summary: params.summary,
     source_refs: params.sourceRefs,
@@ -50,13 +51,11 @@ export const buildDigest = (params: {
       source_ref_count: params.sourceRefs.length,
     },
     items: params.items,
-  })
+  }
+  const text = stringifyPromptJson(payload)
   const digestBytes = countBytes(text)
-  const normalizedText = stringifyPromptJson({
-    mode: 'digest',
-    summary: params.summary,
-    source_refs: params.sourceRefs,
-    truncated: params.truncated,
+  const normalizedPayload = {
+    ...payload,
     stats: {
       source_bytes: countBytes(params.sourceText),
       digest_bytes: digestBytes,
@@ -64,9 +63,10 @@ export const buildDigest = (params: {
       digest_items: params.items.length,
       source_ref_count: params.sourceRefs.length,
     },
-    items: params.items,
-  })
+  }
+  const normalizedText = stringifyPromptJson(normalizedPayload)
   return {
+    payload: normalizedPayload,
     text: normalizedText,
     stat: {
       section: params.section,

@@ -12,6 +12,46 @@ import type {
   TaskResult,
 } from '../types/index.js'
 
+type DigestSelection = {
+  text: string
+  payload?: unknown
+  stat?: NonNullable<ManagerContextPacket['sectionDigests']>[number]
+}
+
+const selectDigest = <
+  T extends { payload: Record<string, unknown>; text: string },
+>(
+  digest:
+    | (T & {
+        stat: NonNullable<ManagerContextPacket['sectionDigests']>[number]
+      })
+    | undefined,
+  fallback: string,
+): DigestSelection => {
+  const trimmedFallback = fallback.trim()
+  if (!digest) {
+    return {
+      text: fallback,
+      payload: trimmedFallback
+        ? (JSON.parse(trimmedFallback) as unknown)
+        : undefined,
+    }
+  }
+  if (digest.stat.digestBytes >= digest.stat.sourceBytes) {
+    return {
+      text: fallback,
+      payload: trimmedFallback
+        ? (JSON.parse(trimmedFallback) as unknown)
+        : undefined,
+    }
+  }
+  return {
+    text: digest.text,
+    payload: digest.payload,
+    stat: digest.stat,
+  }
+}
+
 export const buildManagerEventDigests = (params: {
   recentHistory: HistoryMessage[]
   recentHistorySource: string
@@ -22,8 +62,11 @@ export const buildManagerEventDigests = (params: {
   batchResultsSource: string
 }): {
   batchResults: string
+  batchResultsPayload?: unknown
   recentHistory: string
+  recentHistoryPayload?: unknown
   queryLookup: string
+  queryLookupPayload?: unknown
   sectionDigests: NonNullable<ManagerContextPacket['sectionDigests']>
 } => {
   const recentHistoryDigest = params.recentHistorySource
@@ -47,15 +90,32 @@ export const buildManagerEventDigests = (params: {
       })
     : undefined
 
+  const selectedBatchResults = selectDigest(
+    batchResultsDigest,
+    params.batchResultsSource,
+  )
+  const selectedRecentHistory = selectDigest(
+    recentHistoryDigest,
+    params.recentHistorySource,
+  )
+  const selectedQueryLookup = selectDigest(
+    queryLookupDigest,
+    params.queryLookupSource,
+  )
+
   const sectionDigests: NonNullable<ManagerContextPacket['sectionDigests']> = []
-  if (batchResultsDigest) sectionDigests.push(batchResultsDigest.stat)
-  if (recentHistoryDigest) sectionDigests.push(recentHistoryDigest.stat)
-  if (queryLookupDigest) sectionDigests.push(queryLookupDigest.stat)
+  if (selectedBatchResults.stat) sectionDigests.push(selectedBatchResults.stat)
+  if (selectedRecentHistory.stat)
+    sectionDigests.push(selectedRecentHistory.stat)
+  if (selectedQueryLookup.stat) sectionDigests.push(selectedQueryLookup.stat)
 
   return {
-    batchResults: batchResultsDigest?.text ?? params.batchResultsSource,
-    recentHistory: recentHistoryDigest?.text ?? params.recentHistorySource,
-    queryLookup: queryLookupDigest?.text ?? params.queryLookupSource,
+    batchResults: selectedBatchResults.text,
+    batchResultsPayload: selectedBatchResults.payload,
+    recentHistory: selectedRecentHistory.text,
+    recentHistoryPayload: selectedRecentHistory.payload,
+    queryLookup: selectedQueryLookup.text,
+    queryLookupPayload: selectedQueryLookup.payload,
     sectionDigests,
   }
 }

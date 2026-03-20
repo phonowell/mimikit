@@ -221,11 +221,6 @@ export const buildManagerPromptPayload = async (
     encodePromptTextSection(value, maxBytes)
   const sectionJson = (value: string, maxBytes: number): string =>
     encodePromptJsonSection(value, maxBytes)
-  const parsePromptSectionJson = (value: string): unknown | undefined => {
-    const trimmed = value.trim()
-    if (!trimmed) return undefined
-    return JSON.parse(trimmed) as unknown
-  }
   const memoryScoreContext = buildMemoryPromptScoreContext({
     inputs: params.inputs,
     tasks: params.tasks,
@@ -444,10 +439,10 @@ export const buildManagerPromptPayload = async (
         ? { inputs: buildInputsPromptPayload(params.inputs, quoteLookup) }
         : {}),
       ...(selectedBatchResults
-        ? { batch_results: parsePromptSectionJson(selectedBatchResults) }
+        ? { batch_results: digestSections.batchResultsPayload }
         : {}),
       ...(selectedRecentHistory
-        ? { recent_history: parsePromptSectionJson(selectedRecentHistory) }
+        ? { recent_history: digestSections.recentHistoryPayload }
         : {}),
       ...(selectedHistoryLookup
         ? {
@@ -457,7 +452,7 @@ export const buildManagerPromptPayload = async (
           }
         : {}),
       ...(selectedQueryLookup
-        ? { query_lookup: parsePromptSectionJson(selectedQueryLookup) }
+        ? { query_lookup: digestSections.queryLookupPayload }
         : {}),
       ...(selectedFileLookup
         ? {
