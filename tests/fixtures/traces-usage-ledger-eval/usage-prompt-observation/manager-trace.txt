@@ -1,0 +1,15 @@
+---
+timestamp: '2026-03-18T13:00:00.000Z'
+role: manager
+attempt: primary
+model: gpt-5
+thread_id: session-manager-usage-1
+ok: 'true'
+elapsed_ms: 3200
+usage: '{"input":1200,"output":180,"total":1380}'
+---
+=== PROMPT ===
+汇总本轮任务与结果，并控制 prompt 成本。
+
+=== OUTPUT ===
+本轮已调度 2 个任务，继续等待结果。

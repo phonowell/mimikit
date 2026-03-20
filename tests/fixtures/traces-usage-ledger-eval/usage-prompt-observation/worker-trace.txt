@@ -1,0 +1,16 @@
+---
+timestamp: '2026-03-18T13:05:00.000Z'
+role: worker
+attempt: primary
+model: gpt-5-codex
+task_id: task-usage-2
+thread_id: session-worker-usage-2
+ok: 'true'
+elapsed_ms: 54000
+usage: '{"input":340,"output":160,"total":500}'
+---
+=== PROMPT ===
+生成实现草稿并返回结构化证据。
+
+=== OUTPUT ===
+已生成实现草稿并附带证据。

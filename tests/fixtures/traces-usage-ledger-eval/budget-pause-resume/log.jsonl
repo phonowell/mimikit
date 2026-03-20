@@ -1,0 +1,3 @@
+{"time":"2026-03-18T10:00:01.000Z","event":"task_paused","taskId":"task-budget-1","source":"system"}
+{"time":"2026-03-18T10:10:00.000Z","event":"task_resumed","taskId":"task-budget-1","source":"user"}
+{"time":"2026-03-18T10:15:02.000Z","event":"worker_result_written","taskId":"task-budget-1","status":"succeeded"}
