@@ -8,13 +8,13 @@ import { appendActionFeedbackSystemMessage } from '../history/manager-events.js'
 import { appendLog } from '../log/append.js'
 
 import { isActionApplyFeedbackError } from './action-apply-feedback-error.js'
-import { collectTaskResultSummaries } from './action-apply-schema.js'
 import { managerActionCliLogger } from './action-cli-log.js'
 import {
   type ApplyContext,
   applyRegisteredManagerAction,
   type ApplyTaskActionsOptions,
 } from './action-registrations.js'
+import { collectTaskResultSummaries } from './action-task-result-summary.js'
 
 import type { RuntimeState } from './runtime-adapter.js'
 import type { Parsed } from '../actions/model/spec.js'
