@@ -47,11 +47,20 @@ const listTrackedFiles = (): string[] => {
 const collectStats = async (filePaths: readonly string[]): Promise<FileLengthStat[]> => {
   const stats = await Promise.all(
     filePaths.filter(shouldCheckFilePath).map(async (filePath) => {
+      try {
       const source = await readFile(filePath, 'utf8')
       return { path: filePath, lineCount: countTextLines(source) }
+      } catch (error: unknown) {
+        if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+          return null
+        }
+        throw error
+      }
     }),
   )
-  return stats.sort((left, right) => left.path.localeCompare(right.path))
+  return stats
+    .filter((stat): stat is FileLengthStat => stat !== null)
+    .sort((left, right) => left.path.localeCompare(right.path))
 }
 
 const formatViolation = (violation: FileLengthViolation): string => {

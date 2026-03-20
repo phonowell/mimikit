@@ -11,7 +11,6 @@
 - [计划（Plan / TaskPlan）](./plan.md)
 - [焦点（Focus）](./focus.md)
 - [记忆机制（Memory）](./memory.md)
-- [Worktree 槽位工作流](./worktree.md)
 
 ## 关系图
 
@@ -27,4 +26,3 @@
 - Plan 生命周期与触发机制（唯一权威）：`./plan.md`
 - Focus 生命周期与归属规则（唯一权威）：`./focus.md`
 - Memory 后台维护策略（唯一权威）：`./memory.md`
-- Worktree 槽位与落地流程：`./worktree.md`

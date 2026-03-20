@@ -127,7 +127,7 @@
 示例：
 
 - `<M:read_file path="docs/design/workflow/action.md" from_line="1" max_lines="120" max_chars="6000" />`
-- `<M:read_file path="../overflows/wt-worktree.md" />`
+- `<M:read_file path="docs/design/workflow/task.md" />`
 - `<M:read_file path="/Users/mimiko/Projects/mimikit/README.md" max_lines="80" />`
 
 ## Prompt 注入标签

@@ -14,15 +14,13 @@ pnpm run test
 
 ## Development Workflow
 
-Mimikit uses a worktree-based workflow for parallel development:
+Mimikit supports the standard `git worktree` workflow for parallel development:
 
-1. **Allocate slot**: `pnpm run wt-slot start` (creates `worktree-1/2/3`)
-2. **Rebase on main**: `pnpm run wt-rebase`
-3. **Make changes** in the allocated worktree
-4. **Review before landing**: `pnpm run review-code-changes`
-5. **Land changes**: `pnpm run wt-land` (runs review, commits, rebases main, squash merges)
-
-See [Worktree Workflow](./docs/design/workflow/worktree.md) for details.
+1. **Create a topic worktree**: `git fetch origin && git worktree add ../mimikit-<topic> -b <topic> origin/main`
+2. **Make changes** in that worktree and commit normally on the topic branch
+3. **Keep it current**: `git fetch origin && git rebase origin/main`
+4. **Run quality checks**: `pnpm run review-code-changes`
+5. **Merge through the normal PR / branch flow**, then clean up locally with `git worktree remove ../mimikit-<topic>`
 
 ## Code Standards
 
@@ -36,7 +34,7 @@ See [Worktree Workflow](./docs/design/workflow/worktree.md) for details.
 
 ## Pull Request Guidelines
 
-1. Run `pnpm run review-code-changes` before landing
+1. Run `pnpm run review-code-changes` before opening or merging a PR
 2. Keep changes minimal and traceable to facts
 3. Update documentation if needed
 4. Ensure no secrets or keys in commits
