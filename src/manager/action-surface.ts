@@ -1,9 +1,6 @@
 import { ACTION_DEFINITIONS } from './action-registry-definitions.js'
 
-import type {
-  ManagerActionDefinition,
-  ManagerActionDomain,
-} from './action-registry-shared.js'
+import type { ManagerActionDomain } from './action-registry-shared.js'
 import type { ManagerWakeProfile } from '../types/index.js'
 
 type ManagerActionDomainSpec = {
@@ -15,7 +12,7 @@ type ManagerActionDomainSpec = {
 export type ManagerActionSurface = {
   wakeProfile: ManagerWakeProfile
   domains: ManagerActionDomainSpec[]
-  actions: ManagerActionDefinition[]
+  actions: typeof ACTION_DEFINITIONS
   actionNames: Set<string>
 }
 
@@ -84,32 +81,6 @@ export const resolveManagerActionSurface = (
     actionNames: new Set(actions.map((action) => action.name)),
   }
 }
-
-const formatActionSummary = (action: ManagerActionDefinition): string => {
-  const summary = action.prompt.summary.replace(/[。.]$/, '')
-  const constraints =
-    action.prompt.constraints.length > 0
-      ? `；${action.prompt.constraints.join('；')}`
-      : ''
-  return `- \`M:${action.name}\`：${summary}${constraints}`
-}
-
-export const formatManagerActionSurfacePrompt = (
-  surface: ManagerActionSurface,
-): string =>
-  [
-    `- 当前 wake_profile=\`${surface.wakeProfile}\`；未列出的 action 视为本轮不可用。`,
-    ...surface.domains.flatMap((domain) => {
-      const actions = surface.actions.filter(
-        (action) => action.domain === domain.domain,
-      )
-      return [
-        `### ${domain.title}`,
-        `- 边界：${domain.summary}`,
-        ...actions.map(formatActionSummary),
-      ]
-    }),
-  ].join('\n')
 
 const formatAllowedActionList = (surface: ManagerActionSurface): string =>
   surface.actions.map((action) => `M:${action.name}`).join(', ')

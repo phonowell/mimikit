@@ -5,8 +5,8 @@ import { buildPaths } from '../fs/paths.js'
 import { readHistory } from '../history/store.js'
 import {
   formatManagerActionSurfacePrompt,
-  resolveManagerActionSurface,
-} from '../manager/action-surface.js'
+  resolveManagerActionSurfacePromptConfig,
+} from '../manager/action-surface-prompt.js'
 import { type MemoryScoreContext } from '../memory/entry-score.js'
 import { buildMemoryPromptSections } from '../memory/prompt-sections.js'
 import { readMemoryEntries } from '../memory/store.js'
@@ -209,7 +209,13 @@ export const buildManagerPromptPayload = async (
   const wakeProfile = params.wakeProfile ?? params.env?.wakeProfile ?? 'mixed'
   const packetMode = params.packetMode ?? 'standard'
   const actionSurface = formatManagerActionSurfacePrompt(
-    resolveManagerActionSurface(wakeProfile),
+    resolveManagerActionSurfacePromptConfig({
+      wakeProfile,
+      packetMode,
+      ...(params.actionFeedback
+        ? { actionFeedback: params.actionFeedback }
+        : {}),
+    }),
   )
   const sectionText = (value: string, maxBytes: number): string =>
     encodePromptTextSection(value, maxBytes)
