@@ -6,7 +6,17 @@ import {
   optionIdSchema,
 } from '../shared/id-schema.js'
 
+import {
+  managerPacketModeSchema,
+  managerPacketSectionSchema,
+  managerSectionDigestSchema,
+} from './manager-packet-schema.js'
 import { tokenUsageSchema } from './token-usage.js'
+
+export {
+  managerPacketModeSchema,
+  managerPacketSectionSchema,
+} from './manager-packet-schema.js'
 
 const workerProviderSchema = z.enum(['codex', 'opencode'])
 const taskStatusSchema = z.enum([
@@ -238,30 +248,6 @@ const managerWakeProfileSchema = z.enum([
   'mixed',
 ])
 
-export const managerPacketModeSchema = z.enum([
-  'minimal',
-  'standard',
-  'expanded',
-])
-
-export const managerPacketSectionSchema = z.enum([
-  'packet_summary',
-  'environment',
-  'focus_list',
-  'working_focuses',
-  'remembered_memory',
-  'memory',
-  'tasks',
-  'plans',
-  'inputs',
-  'batch_results',
-  'recent_history',
-  'history_lookup',
-  'query_lookup',
-  'file_lookup',
-  'action_feedback',
-])
-
 export const managerContextPacketSchema = z
   .object({
     id: z.string().trim().min(1),
@@ -299,6 +285,7 @@ export const managerContextPacketSchema = z
     activeTaskIds: z.array(z.string().trim().min(1)).optional(),
     activePlanIds: z.array(z.string().trim().min(1)).optional(),
     workingFocusIds: z.array(focusIdSchema).optional(),
+    sectionDigests: z.array(managerSectionDigestSchema).optional(),
     includedSections: z.array(managerPacketSectionSchema),
     prunedSections: z.array(managerPacketSectionSchema),
   })

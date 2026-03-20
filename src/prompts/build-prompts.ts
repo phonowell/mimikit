@@ -34,7 +34,6 @@ import {
   buildPlansPromptPayload,
   buildQuoteReferenceLookup,
   buildReadFileLookupPromptPayload,
-  buildResultsPromptPayload,
   buildTasksPromptPayload,
   buildWorkingFocusesPromptPayload,
   formatActionFeedback,
@@ -54,6 +53,7 @@ import {
   buildManagerContextPacket,
   shouldIncludePacketSection,
 } from './manager-context-packet.js'
+import { buildManagerEventDigests } from './manager-event-digests.js'
 import { loadPromptFile, loadPromptSource } from './prompt-loader.js'
 
 import type { AppConfig } from '../config.js'
@@ -221,6 +221,11 @@ export const buildManagerPromptPayload = async (
     encodePromptTextSection(value, maxBytes)
   const sectionJson = (value: string, maxBytes: number): string =>
     encodePromptJsonSection(value, maxBytes)
+  const parsePromptSectionJson = (value: string): unknown | undefined => {
+    const trimmed = value.trim()
+    if (!trimmed) return undefined
+    return JSON.parse(trimmed) as unknown
+  }
   const memoryScoreContext = buildMemoryPromptScoreContext({
     inputs: params.inputs,
     tasks: params.tasks,
@@ -295,10 +300,7 @@ export const buildManagerPromptPayload = async (
     formatPlansJson(params.plans ?? []),
     limits.plansMaxBytes,
   )
-  const recentHistory = sectionText(
-    summarizeRecentHistory(),
-    limits.recentHistoryMaxBytes,
-  )
+  const recentHistorySource = summarizeRecentHistory()
   const focusList = sectionJson(
     formatFocusList(focusPayload.focusList),
     limits.focusListMaxBytes,
@@ -311,10 +313,7 @@ export const buildManagerPromptPayload = async (
     formatHistoryLookup(params.historyLookup ?? []),
     limits.historyLookupMaxBytes,
   )
-  const queryLookup = sectionText(
-    formatQueryLookup(params.queryLookup),
-    limits.queryLookupMaxBytes,
-  )
+  const queryLookupSource = formatQueryLookup(params.queryLookup)
   const rememberedMemory = sectionText(
     memoryPrompts.rememberedMemory,
     limits.memoryMaxBytes,
@@ -328,6 +327,15 @@ export const buildManagerPromptPayload = async (
     formatActionFeedback(params.actionFeedback ?? []),
     limits.actionFeedbackMaxBytes,
   )
+  const digestSections = buildManagerEventDigests({
+    recentHistory: focusPayload.recentHistory,
+    recentHistorySource,
+    ...(params.queryLookup ? { queryLookup: params.queryLookup } : {}),
+    queryLookupSource,
+    tasks: params.tasks,
+    pendingResults,
+    batchResultsSource: batchResults,
+  })
   const rawSections: Record<ManagerPacketSection, string> = {
     packet_summary: '',
     environment,
@@ -338,10 +346,10 @@ export const buildManagerPromptPayload = async (
     tasks,
     plans,
     inputs,
-    batch_results: batchResults,
-    recent_history: recentHistory,
+    batch_results: digestSections.batchResults,
+    recent_history: digestSections.recentHistory,
     history_lookup: historyLookup,
-    query_lookup: queryLookup,
+    query_lookup: digestSections.queryLookup,
     file_lookup: fileLookup,
     action_feedback: actionFeedback,
   }
@@ -373,6 +381,9 @@ export const buildManagerPromptPayload = async (
   const selectedQueryLookup = selectSection('query_lookup')
   const selectedFileLookup = selectSection('file_lookup')
   const selectedActionFeedback = selectSection('action_feedback')
+  const includedSectionDigests = digestSections.sectionDigests.filter((item) =>
+    includedSections.includes(item.section),
+  )
   const packetBundle = buildManagerContextPacket({
     wakeProfile,
     mode: packetMode,
@@ -383,6 +394,9 @@ export const buildManagerPromptPayload = async (
     workingFocusIds: params.workingFocusIds ?? [],
     includedSections: ['packet_summary', ...includedSections],
     prunedSections,
+    ...(includedSectionDigests.length > 0
+      ? { sectionDigests: includedSectionDigests }
+      : {}),
   })
   const packetSummary = packetBundle.summaryText
   const statePacket = sectionText(
@@ -430,16 +444,10 @@ export const buildManagerPromptPayload = async (
         ? { inputs: buildInputsPromptPayload(params.inputs, quoteLookup) }
         : {}),
       ...(selectedBatchResults
-        ? {
-            batch_results: buildResultsPromptPayload(
-              params.tasks,
-              pendingResults,
-              params.workDir,
-            ),
-          }
+        ? { batch_results: parsePromptSectionJson(selectedBatchResults) }
         : {}),
       ...(selectedRecentHistory
-        ? { recent_history: summarizeRecentHistory() }
+        ? { recent_history: parsePromptSectionJson(selectedRecentHistory) }
         : {}),
       ...(selectedHistoryLookup
         ? {
@@ -448,7 +456,9 @@ export const buildManagerPromptPayload = async (
             ),
           }
         : {}),
-      ...(selectedQueryLookup ? { query_lookup: params.queryLookup } : {}),
+      ...(selectedQueryLookup
+        ? { query_lookup: parsePromptSectionJson(selectedQueryLookup) }
+        : {}),
       ...(selectedFileLookup
         ? {
             file_lookup: buildReadFileLookupPromptPayload(
