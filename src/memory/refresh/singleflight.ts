@@ -7,6 +7,7 @@ import { persistRuntimeState } from '../../orchestrator/core/runtime-persistence
 import { isVisibleToAgent } from '../../shared/message-visibility.js'
 import { truncateText } from '../../shared/text.js'
 import { nowIso } from '../../shared/utils.js'
+import { type HistoryMessage } from '../../types/index.js'
 import { type MemoryScoreContext } from '../entry-score.js'
 import { readMemoryMarkdown } from '../store.js'
 
@@ -27,6 +28,7 @@ const MAX_PLANS = 40
 const MAX_TEXT = 800
 const MAX_SCORE_QUERY_CHARS = 4_000
 const MAX_SCORE_MENTION_ITEMS = 96
+const MEMORY_SIGNAL_EVENTS = new Set(['memory_remembered'])
 
 type MemoryRefreshCheckpoint = {
   inputsCursor: number
@@ -62,24 +64,19 @@ const buildPayload = async (
 ): Promise<MemoryRefreshPayload> => {
   const history = await readHistory(runtime.paths.history)
   const visible = history
-    .filter((item) => isVisibleToAgent(item))
+    .filter((item) => isVisibleToAgent(item) || isMemoryRefreshSignal(item))
     .slice(-MAX_SIGNALS)
   const tasks = runtime.tasks
     .slice(Math.max(0, runtime.tasks.length - MAX_TASKS))
     .map((task) => ({
       id: task.id,
-      title: task.title,
       status: task.status,
       focusId: task.focusId,
-      ...(task.result?.output
-        ? { output: truncateText(task.result.output, MAX_TEXT) }
-        : {}),
     }))
   const plans = runtime.taskPlans
     .slice(Math.max(0, runtime.taskPlans.length - MAX_PLANS))
     .map((plan) => ({
       id: plan.id,
-      title: plan.title,
       status: plan.status,
       updatedAt: plan.updatedAt,
     }))
@@ -109,6 +106,13 @@ const buildPayload = async (
   }
 }
 
+const isMemoryRefreshSignal = (item: HistoryMessage): boolean => {
+  if (item.role !== 'system') return false
+  const eventName = item.systemEventName?.trim()
+  if (!eventName) return false
+  return MEMORY_SIGNAL_EVENTS.has(eventName)
+}
+
 const pushMention = (target: string[], value: string | undefined): void => {
   const normalized = value?.trim()
   if (!normalized) return
@@ -120,11 +124,6 @@ const buildRefreshScoreContext = (
 ): MemoryScoreContext => {
   const mentions: string[] = []
   for (const event of payload.signals) pushMention(mentions, event.text)
-  for (const task of payload.tasks) {
-    pushMention(mentions, task.title)
-    pushMention(mentions, task.output)
-  }
-  for (const plan of payload.plans) pushMention(mentions, plan.title)
 
   const uniqueForQuery: string[] = []
   const querySeen = new Set<string>()

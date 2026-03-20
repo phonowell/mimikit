@@ -58,6 +58,9 @@
   - `src/memory/refresh/single-call.ts`
   - `src/memory/refresh/apply-patch.ts`
   - `src/memory/refresh/singleflight.ts`
+- 输入边界：
+  - refresh 只消费长期价值候选信号，不再把近期 `task.result.output`、plan 标题等过程态文本直接喂给刷新链路。
+  - `memory_remembered` 一类稳定 system event 可作为 refresh 证据；短期任务推进、待办、调度策略、恢复步骤不得进入长期 memory。
 
 ## 评分、排序与取舍
 
@@ -67,9 +70,12 @@
   - recency（更新时间）
   - reliability（source + evidence）
   - focus_match（focusHints 与 workingFocus 命中）
-  - mention_boost（近期重复提及加分，带上限）
+  - mention_boost（近期稳定信号加分，带更严格上限）
 - 注入：`buildManagerPrompt` 中对 memory 先评分排序，再在 `memoryMaxBytes` 内选择。
 - 压缩：`applyMemoryPatch` 在超预算时按同评分器保留高价值条目、丢弃低价值条目。
+- 禁止项：
+  - 禁止把 task 进度、待办、调度策略、恢复步骤写入长期 memory。
+  - 禁止依赖近期 task output / plan title 的重复出现来放大长期 memory 排序。
 
 ## 状态与持久化
 

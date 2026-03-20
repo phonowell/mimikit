@@ -113,11 +113,9 @@
 - `summary` 优先级：
 1. `task.result.handoff.summary`
 2. 基于任务标题 + 输出首行的归一化摘要
-- `openItems` 优先级：
-1. `handoff.nextSteps`
-2. 输出中的 checklist（`- [ ] ...`）
-3. 失败/取消时自动 follow-up
-- 最终 `openItems` 去重并裁剪到 3 条。
+- `openItems` 不再由任务结果自动提炼。
+- `openItems` 仅允许通过显式 `upsert_focus` 写入，作为人工确认后的 digest 提示。
+- 禁止把 `openItems` 当任务列表、验收清单、恢复指令或执行步骤来源。
 
 ## 容量治理与清理
 

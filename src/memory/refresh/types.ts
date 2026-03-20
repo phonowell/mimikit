@@ -10,15 +10,12 @@ export type MemoryRefreshSignal = {
 
 export type MemoryRefreshTaskDigest = {
   id: string
-  title: string
   status: TaskStatus
   focusId: string
-  output?: string
 }
 
 export type MemoryRefreshPlanDigest = {
   id: string
-  title: string
   status: TaskPlanStatus
   updatedAt: string
 }
