@@ -27,14 +27,6 @@ import type { FeedbackContext } from './action-validation.js'
 import type { Parsed } from '../actions/model/spec.js'
 import type { ManagerActionFeedback } from '../types/index.js'
 
-export type RejectedActionClass =
-  | 'lookup_no_progress'
-  | 'task_state_conflict'
-  | 'needs_scope_confirmation'
-  | 'channel_choice_unsupported'
-  | 'result_not_available'
-  | 'blocked_action'
-
 const UNREGISTERED_ACTION_HINT = formatUnregisteredActionHint(
   [...REGISTERED_MANAGER_ACTIONS].map((name) => `M:${name}`),
 )
@@ -236,17 +228,4 @@ export const collectManagerActionFeedback = (
       pushFeedback(feedback, seen, item, issue.error, issue.hint)
   }
   return feedback
-}
-
-export const classifyRejectedActionFeedback = (
-  item: ManagerActionFeedback,
-): RejectedActionClass => {
-  if (item.error !== 'action_execution_rejected') return 'blocked_action'
-  if (item.action === 'query_context' || item.action === 'read_file')
-    return 'lookup_no_progress'
-  if (item.action === 'mutate_task') return 'task_state_conflict'
-  if (item.action === 'enqueue_task') return 'needs_scope_confirmation'
-  if (item.action === 'ask_user_choice') return 'channel_choice_unsupported'
-  if (item.action === 'set_task_result_summary') return 'result_not_available'
-  return 'blocked_action'
 }

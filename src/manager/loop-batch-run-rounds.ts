@@ -165,6 +165,7 @@ export const runManagerCorrectionRounds = async (params: {
         allowAskUserChoice,
         resultTaskIds,
         resolveFocusId,
+        roundExtra: extra,
         ...(previousLookupKey ? { previousLookupKey } : {}),
       })
     } catch (error) {

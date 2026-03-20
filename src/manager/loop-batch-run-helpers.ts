@@ -4,6 +4,7 @@ import { resolveManagerActionSurface } from './action-surface.js'
 import { collectConfirmedRunTaskChoiceIds } from './run-task-confirmation.js'
 import { listEnabledWorkerProviders } from './worker-provider-selection.js'
 
+import type { SupplementalEvidenceSource } from './action-intent-evidence.js'
 import type { RuntimeState } from './runtime-adapter.js'
 import type {
   HistoryLookupMessage,
@@ -82,8 +83,10 @@ export const buildActionFeedbackContext = (params: {
   resultTaskIds: Set<string>
   wakeProfile: ManagerWakeProfile
   inputs?: UserInput[]
+  roundExtra?: ManagerRoundExtra
 }): {
   taskStatusById: Map<string, TaskStatus>
+  taskById: Map<string, RuntimeState['tasks'][number]>
   planStatusById: Map<string, TaskPlanStatus>
   resultTaskIds: Set<string>
   allowAskUserChoice: boolean
@@ -91,20 +94,36 @@ export const buildActionFeedbackContext = (params: {
   confirmedRunTaskChoiceIds: Set<string>
   wakeProfile: ManagerWakeProfile
   allowedActions: Set<string>
+  inputs: UserInput[]
+  supplementalEvidenceSources: Set<SupplementalEvidenceSource>
 } => {
-  const { runtime, allowAskUserChoice, resultTaskIds, wakeProfile, inputs } =
-    params
+  const {
+    runtime,
+    allowAskUserChoice,
+    resultTaskIds,
+    wakeProfile,
+    inputs,
+    roundExtra,
+  } = params
   const enabledWorkerProviders = new Set<WorkerProvider>(
     listEnabledWorkerProviders(runtime.config).map((item) => item.provider),
   )
-  const confirmedRunTaskChoiceIds = collectConfirmedRunTaskChoiceIds(
-    inputs ?? runtime.session.inflightInputs,
-  )
+  const currentInputs = inputs ?? runtime.session.inflightInputs
+  const confirmedRunTaskChoiceIds =
+    collectConfirmedRunTaskChoiceIds(currentInputs)
   const actionSurface = resolveManagerActionSurface(wakeProfile)
+  const supplementalEvidenceSources = new Set<SupplementalEvidenceSource>()
+  if (resultTaskIds.size > 0) supplementalEvidenceSources.add('task_result')
+  if (roundExtra?.queryLookup) supplementalEvidenceSources.add('query_lookup')
+  if (roundExtra?.readFileLookup && roundExtra.readFileLookup.length > 0)
+    supplementalEvidenceSources.add('read_file')
+  if (roundExtra?.historyLookup && roundExtra.historyLookup.length > 0)
+    supplementalEvidenceSources.add('history_lookup')
   return {
     taskStatusById: new Map(
       runtime.tasks.map((task) => [task.id, task.status]),
     ),
+    taskById: new Map(runtime.tasks.map((task) => [task.id, task])),
     planStatusById: new Map(
       runtime.taskPlans.map((plan) => [plan.id, plan.status]),
     ),
@@ -114,6 +133,8 @@ export const buildActionFeedbackContext = (params: {
     confirmedRunTaskChoiceIds,
     wakeProfile,
     allowedActions: actionSurface.actionNames,
+    inputs: currentInputs,
+    supplementalEvidenceSources,
   }
 }
 
