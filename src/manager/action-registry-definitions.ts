@@ -125,7 +125,7 @@ const TASK_ACTION_DEFINITIONS = [
     prompt: {
       summary: '派发一个 worker 任务。',
       constraints: [
-        '必填 `title,cwd,goal,in_scope,done_when_1`；`worker_prompt` 可省略并由系统按 contract 自动生成；可选 `branch` 显式指定 worktree 分支，未提供时默认取 `cwd` 当前分支',
+        '必填 `title,cwd,goal,in_scope,done_when_1`；`worker_prompt` 可省略并由系统按 contract 自动生成；可选 `branch` 显式指定目标分支，提供后 enqueue 阶段会自动创建或复用对应 worktree，并把任务 `cwd` 切到该 worktree',
         '默认一个目标只创建一个任务',
       ],
     },

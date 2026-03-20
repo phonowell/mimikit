@@ -1,7 +1,10 @@
 import { appendTaskSystemMessage } from '../history/task-events.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
-import { resolveTaskExecutionTarget } from '../shared/task-execution-target.js'
+import {
+  materializeTaskWorktreeCwd,
+  resolveTaskExecutionTarget,
+} from '../shared/task-execution-target.js'
 import { resolveSlotStatus } from '../worker/task-state-shared.js'
 
 import { applyAskUserChoiceAction } from './action-apply-choice.js'
@@ -86,10 +89,10 @@ export const applyRunTask = async (
   if (!contract) return 'continue'
   const workerPrompt = resolveWorkerPromptFromAttrs(parsed.data)
   if (!workerPrompt) return 'continue'
-  const target = await resolveTaskExecutionTarget(
-    parsed.data.cwd,
-    parsed.data.branch,
-  )
+  const effectiveCwd = parsed.data.branch
+    ? await materializeTaskWorktreeCwd(parsed.data.cwd, parsed.data.branch)
+    : parsed.data.cwd
+  const target = await resolveTaskExecutionTarget(effectiveCwd)
   const semanticKey = buildTaskSemanticKey({
     prompt: workerPrompt,
     title: parsed.data.title,

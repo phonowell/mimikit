@@ -20,7 +20,7 @@
 - 立即执行 Action：`<M:enqueue_task ... />`
 - 生命周期控制 Action：`<M:mutate_task id="task-..." op="pause|resume|cancel" />`
 - worker 任务 profile 固定为 `worker`
-- `Task.cwd` 是任务执行目录；若 `cwd` 在 git 仓库内，会额外记录 `repoKey + branch`
+- `Task.cwd` 是任务执行目录；若 `enqueue_task` 同时传入 `cwd + branch`，系统会在 enqueue 阶段自动创建或复用对应 worktree，并把 `Task.cwd` 写成真实 worktree 路径。若最终 `cwd` 在 git 仓库内，会额外记录 `repoKey + branch`
 - 单轮 action 去重键：`prompt + title + cwd + profile + provider + focusId + contract`
 - active 任务去重键：`task.fingerprint`（包含 `prompt/title/cwd/profile/provider/focusId/schedule/repoKey/branch/contract`）
 - 语义冲突键：`task semantic key`，命中后会取消旧 active 任务并保留新任务

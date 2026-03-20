@@ -64,7 +64,7 @@
 
 参数约定（关键字段）：
 
-- `enqueue_task.cwd`：必填，worker 实际执行目录；manager 必须显式传，不能复用 runtime `work_dir`
+- `enqueue_task.cwd`：必填；未传 `branch` 时直接作为 worker 实际执行目录。若同时传 `branch`，则 `cwd` 视为仓库内定位路径，enqueue 阶段会自动创建或复用对应 branch 的 worktree，并把任务实际执行目录切到该 worktree 的对应路径
 - `enqueue_task.provider`：可选 `codex|opencode`；可选值应来自 `M:event_packet.environment` 中的 `provider_candidates`（仅包含 enabled provider）
 - 未指定 `provider` 时，系统按固定顺序自动选择：同 `focus` 最近活跃任务的 provider affinity 优先；未命中时再按 `billing` 最低优先、同档位 `capability` 最高优先
 - `assign_focus`：`target_type(task|plan|history) + target_id + focus_id`
@@ -81,7 +81,7 @@
 - `mutate_task`：统一 task 生命周期控制（`op=pause|resume|cancel`），按 `op` 分发到 `worker/pause-task.ts`、`worker/resume-task.ts`、`worker/cancel-task.ts`，统一产出可追踪结构（`id`、`status`、`changeAt`）。
 - `ask_user_choice` 是 stop action：命中后当前 action 批次停止后续 apply。
 - `enqueue_task` 高成本确认闸门在 apply 与 validation 两侧同时生效：未确认时不入队，直接生成确认 choice。
-- `enqueue_task` 创建时会先解析 `cwd`；若命中 git 仓库，则记录 `repoKey + branch` 并据此参与 worker 排队锁。
+- `enqueue_task` 创建时会先解析 `cwd`；若同时传入 `branch` 且 `cwd` 位于 git 仓库中，则 enqueue 阶段先创建或复用对应 branch 的 worktree，再把任务 `cwd` 落到该 worktree。最终任务仍按真实 `repoKey + branch` 参与 worker 排队锁。
 - `remember_memory`：立即写入 `memory/MEMORY.md`，仅接受 `content` 参数，并通过 `memory_remembered` system event 回执 `entry_id/ref/operation`。
 
 约束补充：
