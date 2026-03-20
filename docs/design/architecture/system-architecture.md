@@ -14,7 +14,7 @@
 - manager 使用 `openai-responses`；worker 使用 `codex-sdk`。
 - 运行时状态采用“根级实体集合 + 过程态子域”结构：根上保留 `queues / tasks / taskPlans / focuses`，过程态收敛在 `session / manager / worker / ui`，避免继续堆第二套调度或摘要层。
 - manager prompt 收敛为双 packet：`state_packet` 负责稳定状态（focus/task/plan），`event_packet` 负责当前批次事件（input/result/history/lookup/action_feedback/environment/packet）；section 字节预算固定取自 `manager.promptSections`，`wakeProfile` 只影响 packet/action surface，不再动态改写 bytes。
-- manager 自动选 worker provider 时遵循固定顺序：显式 `provider` > 同 `focus` 最近活跃任务的 provider affinity > 默认低 `billing` / 同档高 `capability` provider。
+- worker 执行通道固定为 codex，不再进行 provider 候选注入、自动打分或按任务显式切换。
 - manager/worker 每轮 usage 统一写入 `usage/ledger.jsonl`，直接暴露 prompt 字节、packet 裁剪与执行侧 token 消耗，不再额外引入成本推导层。
 - HTTP 输入校验与参数归一化集中在 `src/http/helpers.ts`。
 - 本地持久化采用进程内串行 + 文件锁（`proper-lockfile`）。

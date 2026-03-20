@@ -7,10 +7,6 @@ import { resolveSlotStatus } from '../worker/task-state-shared.js'
 
 import { resolveManagerContextBudgetDecision } from './context-budget.js'
 import { runManager } from './runner.js'
-import {
-  compareWorkerProviderPreference,
-  listEnabledWorkerProviders,
-} from './worker-provider-selection.js'
 
 import type { RuntimeState } from './runtime-adapter.js'
 import type {
@@ -27,24 +23,11 @@ import type {
   UserInput,
 } from '../types/index.js'
 
-const resolveEnabledWorkerProviders = (
-  runtime: RuntimeState,
-): NonNullable<ManagerEnv['workerProviders']> =>
-  listEnabledWorkerProviders(runtime.config)
-    .sort(compareWorkerProviderPreference)
-    .map((item) => ({
-      provider: item.provider,
-      model: runtime.config.codex.model,
-      capability: item.capability,
-      billing: item.billing,
-    }))
-
 const buildManagerEnv = (
   runtime: RuntimeState,
   wakeProfile: ManagerWakeProfile,
 ): ManagerEnv => {
   const slots = resolveSlotStatus(runtime)
-  const enabledProviders = resolveEnabledWorkerProviders(runtime)
   const env: ManagerEnv = {
     ...(runtime.session.lastUserMeta
       ? { lastUser: runtime.session.lastUserMeta }
@@ -55,9 +38,6 @@ const buildManagerEnv = (
       occupiedSlots: slots.occupied_slots,
       availableSlots: slots.available_slots,
     },
-    ...(enabledProviders.length > 0
-      ? { workerProviders: enabledProviders }
-      : {}),
   }
   return env
 }

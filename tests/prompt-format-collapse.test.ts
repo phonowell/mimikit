@@ -5,6 +5,7 @@ import {
   buildInputsPromptPayload,
   buildQuoteReferenceLookup,
 } from '../src/prompts/format-messages.js'
+import { formatEnvironment } from '../src/prompts/format.js'
 import {
   buildPlansPromptPayload,
   buildResultsPromptPayload,
@@ -170,4 +171,23 @@ test('buildTasksPromptPayload fallback and buildPlansPromptPayload title fallbac
     title: 'plan-collapse-1',
     done_reason: 'completed',
   })
+})
+
+test('formatEnvironment does not expose provider candidate fields', () => {
+  const formatted = formatEnvironment({
+    workDir: '/tmp/work',
+    env: {
+      wakeProfile: 'user_input',
+      workerSlots: {
+        maxSlots: 2,
+        occupiedSlots: 1,
+        availableSlots: 1,
+      },
+    },
+  })
+
+  expect(formatted).toContain('wake_profile: user_input')
+  expect(formatted).toContain('available_slots: 1')
+  expect(formatted).not.toContain('provider_candidates')
+  expect(formatted).not.toContain('provider_profiles')
 })

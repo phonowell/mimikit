@@ -1,9 +1,5 @@
-import type { FocusId, ProviderBilling, ProviderCapability } from './base.js'
-import type {
-  ManagerWakeProfile,
-  TaskResultStatus,
-  WorkerProvider,
-} from './runtime-domain.js'
+import type { FocusId } from './base.js'
+import type { ManagerWakeProfile, TaskResultStatus } from './runtime-domain.js'
 
 export type ManagerPacketMode = 'minimal' | 'standard' | 'expanded'
 
@@ -86,12 +82,6 @@ export type ManagerEnv = {
     occupiedSlots: number
     availableSlots: number
   }
-  workerProviders?: Array<{
-    provider: WorkerProvider
-    model: string
-    capability: ProviderCapability
-    billing: ProviderBilling
-  }>
 }
 
 export type ManagerActionFeedback = {

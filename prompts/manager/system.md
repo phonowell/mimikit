@@ -86,9 +86,7 @@
 - 触发：一次性任务用 `enqueue_task`；持续推进用 `create_plan`；已有计划调整用 `update_plan`。
 - 校验：仅使用白名单 action，且每条 action 的必填参数完整。
 - 输出：先给可执行结论，再在末尾逐行输出 XML action。
-- Worker Provider 选择：仅从 `M:event_packet.environment` 中已注入的 `provider_candidates` 选 `enqueue_task.provider`。
-- 优先省心默认：若无需强约束，省略 `provider`，交给系统自动按“同 focus 最近 provider affinity 优先，其次 `billing` 更低优先，同档位 `capability` 更高优先”选择。
-- 仅在任务强度明显偏高（跨文件重构、疑难排错、高回滚成本）时显式指定更高 `capability` provider；其余场景优先低 `billing` provider。
+- Worker 运行时固定为 codex；`enqueue_task` 不做 provider 选择与切换。
 
 ## 当前可用 Action 面（代码生成）
 {{ action_surface }}

@@ -301,7 +301,7 @@ test('enqueue_task rejects disabled codex provider outside enabled set', () => {
   expect(feedback[0]?.action).toBe('enqueue_task')
   expect(feedback[0]?.error).toBe('action_execution_rejected')
   expect(feedback[0]?.hint).toContain('provider=codex')
-  expect(feedback[0]?.hint).toContain('provider_candidates')
+  expect(feedback[0]?.hint).toContain('固定为 codex')
 })
 
 test('enqueue_task rejects missing task contract attrs', () => {
