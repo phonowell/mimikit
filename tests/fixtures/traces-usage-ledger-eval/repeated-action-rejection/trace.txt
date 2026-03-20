@@ -1,0 +1,15 @@
+---
+timestamp: '2026-03-18T11:00:00.000Z'
+role: manager
+attempt: primary
+model: gpt-5
+thread_id: session-manager-reject-1
+ok: 'true'
+elapsed_ms: 4100
+usage: '{"input":980,"output":120,"total":1100}'
+---
+=== PROMPT ===
+取消已经取消的任务，并在被拒绝时收敛回复。
+
+=== OUTPUT ===
+<M:mutate_task id="task-1" op="cancel" />

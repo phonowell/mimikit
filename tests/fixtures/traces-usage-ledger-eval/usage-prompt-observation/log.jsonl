@@ -1,0 +1,4 @@
+{"time":"2026-03-18T13:00:01.000Z","event":"manager_end"}
+{"time":"2026-03-18T13:00:02.000Z","event":"run_task_dispatch","mode":"created","taskId":"task-usage-1"}
+{"time":"2026-03-18T13:00:03.000Z","event":"run_task_dispatch","mode":"created","taskId":"task-usage-2"}
+{"time":"2026-03-18T13:00:08.000Z","event":"manager_end"}

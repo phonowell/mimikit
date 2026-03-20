@@ -1,0 +1,336 @@
+{
+  "version": "v1",
+  "samples": [
+    {
+      "id": "sample-budget-01",
+      "scenario": "budget_pause_resume",
+      "description": "worker trace keeps budget-exhausted role contract",
+      "tracePath": "budget-pause-resume/trace.txt",
+      "referenceTests": [
+        "tests/worker-pause-resume.test.ts",
+        "tests/worker-profiled-runner-loop.test.ts"
+      ],
+      "expected": {
+        "trace": {
+          "header": {
+            "role": "worker",
+            "error_name": "WorkerBudgetExceededError"
+          }
+        }
+      }
+    },
+    {
+      "id": "sample-budget-02",
+      "scenario": "budget_pause_resume",
+      "tracePath": "budget-pause-resume/trace.txt",
+      "referenceTests": [
+        "tests/worker-profiled-runner-loop.test.ts"
+      ],
+      "expected": {
+        "trace": {
+          "header": {
+            "ok": "false",
+            "attempt": "primary"
+          }
+        }
+      }
+    },
+    {
+      "id": "sample-budget-03",
+      "scenario": "budget_pause_resume",
+      "tracePath": "budget-pause-resume/trace.txt",
+      "expected": {
+        "trace": {
+          "sections": [
+            "=== PROMPT ===",
+            "=== OUTPUT ===",
+            "=== ERROR ==="
+          ]
+        }
+      }
+    },
+    {
+      "id": "sample-budget-04",
+      "scenario": "budget_pause_resume",
+      "ledgerPath": "budget-pause-resume/ledger.jsonl",
+      "expected": {
+        "ledger": {
+          "totalEntries": 2,
+          "kindCounts": {
+            "worker_result": 2
+          },
+          "statusCounts": {
+            "partial": 1,
+            "succeeded": 1
+          },
+          "minTotalUsage": 800
+        }
+      }
+    },
+    {
+      "id": "sample-budget-05",
+      "scenario": "budget_pause_resume",
+      "logPath": "budget-pause-resume/log.jsonl",
+      "expected": {
+        "log": {
+          "requireEvents": [
+            "task_paused",
+            "task_resumed"
+          ],
+          "eventCountsAtLeast": {
+            "task_resumed": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "sample-reject-01",
+      "scenario": "repeated_action_rejection",
+      "tracePath": "repeated-action-rejection/trace.txt",
+      "referenceTests": [
+        "tests/manager-thread-cache-reuse.test.ts"
+      ],
+      "expected": {
+        "trace": {
+          "header": {
+            "role": "manager",
+            "ok": "true"
+          }
+        }
+      }
+    },
+    {
+      "id": "sample-reject-02",
+      "scenario": "repeated_action_rejection",
+      "tracePath": "repeated-action-rejection/trace.txt",
+      "expected": {
+        "trace": {
+          "header": {
+            "thread_id": "session-manager-reject-1"
+          },
+          "sections": [
+            "=== PROMPT ===",
+            "=== OUTPUT ==="
+          ]
+        }
+      }
+    },
+    {
+      "id": "sample-reject-03",
+      "scenario": "repeated_action_rejection",
+      "ledgerPath": "repeated-action-rejection/ledger.jsonl",
+      "expected": {
+        "ledger": {
+          "kindCounts": {
+            "manager_round": 2
+          },
+          "minPromptBytesSum": 7000,
+          "includedSections": [
+            "packet_summary",
+            "tasks"
+          ],
+          "prunedSections": [
+            "memory"
+          ]
+        }
+      }
+    },
+    {
+      "id": "sample-reject-04",
+      "scenario": "repeated_action_rejection",
+      "logPath": "repeated-action-rejection/log.jsonl",
+      "expected": {
+        "log": {
+          "requireEvents": [
+            "manager_action_feedback"
+          ],
+          "eventCountsAtLeast": {
+            "manager_action_feedback": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "sample-reject-05",
+      "scenario": "repeated_action_rejection",
+      "logPath": "repeated-action-rejection/log.jsonl",
+      "expected": {
+        "log": {
+          "requireEvents": [
+            "manager_action_rejection_circuit_open"
+          ],
+          "eventCountsAtLeast": {
+            "manager_action_rejection_circuit_open": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "sample-lookup-01",
+      "scenario": "lookup_no_progress",
+      "tracePath": "lookup-no-progress/trace.txt",
+      "referenceTests": [
+        "tests/manager-thread-cache-reuse.test.ts"
+      ],
+      "expected": {
+        "trace": {
+          "header": {
+            "role": "manager",
+            "attempt": "primary"
+          }
+        }
+      }
+    },
+    {
+      "id": "sample-lookup-02",
+      "scenario": "lookup_no_progress",
+      "tracePath": "lookup-no-progress/trace.txt",
+      "expected": {
+        "trace": {
+          "header": {
+            "ok": "true",
+            "thread_id": "session-manager-lookup-1"
+          },
+          "sections": [
+            "=== PROMPT ===",
+            "=== OUTPUT ==="
+          ]
+        }
+      }
+    },
+    {
+      "id": "sample-lookup-03",
+      "scenario": "lookup_no_progress",
+      "ledgerPath": "lookup-no-progress/ledger.jsonl",
+      "expected": {
+        "ledger": {
+          "kindCounts": {
+            "manager_round": 2
+          },
+          "minPromptBytesSum": 5200,
+          "includedSections": [
+            "packet_summary",
+            "tasks"
+          ],
+          "prunedSections": [
+            "memory"
+          ]
+        }
+      }
+    },
+    {
+      "id": "sample-lookup-04",
+      "scenario": "lookup_no_progress",
+      "logPath": "lookup-no-progress/log.jsonl",
+      "expected": {
+        "log": {
+          "requireEvents": [
+            "manager_query_context",
+            "manager_lookup_no_progress_degraded"
+          ],
+          "eventCountsAtLeast": {
+            "manager_query_context": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "sample-lookup-05",
+      "scenario": "lookup_no_progress",
+      "logPath": "lookup-no-progress/log.jsonl",
+      "expected": {
+        "log": {
+          "eventCountsAtLeast": {
+            "manager_lookup_no_progress_degraded": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "sample-usage-01",
+      "scenario": "usage_prompt_observation",
+      "tracePath": "usage-prompt-observation/manager-trace.txt",
+      "referenceTests": [
+        "tests/usage-ledger.test.ts"
+      ],
+      "expected": {
+        "trace": {
+          "header": {
+            "role": "manager",
+            "ok": "true"
+          }
+        }
+      }
+    },
+    {
+      "id": "sample-usage-02",
+      "scenario": "usage_prompt_observation",
+      "tracePath": "usage-prompt-observation/worker-trace.txt",
+      "referenceTests": [
+        "tests/worker-profiled-runner-loop.test.ts",
+        "tests/usage-ledger.test.ts"
+      ],
+      "expected": {
+        "trace": {
+          "header": {
+            "role": "worker",
+            "ok": "true"
+          },
+          "sections": [
+            "=== PROMPT ===",
+            "=== OUTPUT ==="
+          ]
+        }
+      }
+    },
+    {
+      "id": "sample-usage-03",
+      "scenario": "usage_prompt_observation",
+      "ledgerPath": "usage-prompt-observation/ledger.jsonl",
+      "expected": {
+        "ledger": {
+          "kindCounts": {
+            "manager_round": 2,
+            "worker_result": 2
+          },
+          "minPromptBytesSum": 6500
+        }
+      }
+    },
+    {
+      "id": "sample-usage-04",
+      "scenario": "usage_prompt_observation",
+      "ledgerPath": "usage-prompt-observation/ledger.jsonl",
+      "expected": {
+        "ledger": {
+          "statusCounts": {
+            "succeeded": 2
+          },
+          "minTotalUsage": 3600,
+          "includedSections": [
+            "packet_summary",
+            "inputs",
+            "tasks"
+          ]
+        }
+      }
+    },
+    {
+      "id": "sample-usage-05",
+      "scenario": "usage_prompt_observation",
+      "logPath": "usage-prompt-observation/log.jsonl",
+      "expected": {
+        "log": {
+          "requireEvents": [
+            "manager_end",
+            "run_task_dispatch"
+          ],
+          "eventCountsAtLeast": {
+            "manager_end": 2,
+            "run_task_dispatch": 2
+          }
+        }
+      }
+    }
+  ]
+}

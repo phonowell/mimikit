@@ -1,0 +1,20 @@
+---
+timestamp: '2026-03-18T10:00:00.000Z'
+role: worker
+attempt: primary
+model: gpt-5-codex
+task_id: task-budget-1
+thread_id: session-worker-budget-1
+ok: 'false'
+elapsed_ms: 420000
+usage: '{"input":320,"output":210,"total":530}'
+error_name: WorkerBudgetExceededError
+---
+=== PROMPT ===
+整理交付草稿并在预算耗尽前输出当前进度。
+
+=== OUTPUT ===
+已完成目录整理，剩余验证待恢复后继续。
+
+=== ERROR ===
+[worker] budget exhausted after 2 rounds

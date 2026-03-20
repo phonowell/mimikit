@@ -71,7 +71,8 @@
     "score:worker-budget": "tsx scripts/worker-budget-report.ts",
     "score:manager-efficiency": "node .mimikit/tools/manager-efficiency-score.mjs",
     "bootstrap": "node scripts/bootstrap.mjs",
-    "guard:file-length": "tsx scripts/check-file-length.ts"
+    "guard:file-length": "tsx scripts/check-file-length.ts",
+    "eval:traces-usage-ledger": "tsx scripts/traces-usage-ledger-eval.ts"
   },
   "type": "module",
   "version": "0.1.0"

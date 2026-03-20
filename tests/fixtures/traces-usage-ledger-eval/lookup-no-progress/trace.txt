@@ -1,0 +1,15 @@
+---
+timestamp: '2026-03-18T12:00:00.000Z'
+role: manager
+attempt: primary
+model: gpt-5
+thread_id: session-manager-lookup-1
+ok: 'true'
+elapsed_ms: 3900
+usage: '{"input":870,"output":140,"total":1010}'
+---
+=== PROMPT ===
+继续查发布说明，如无新进展则给出 best-effort 结论。
+
+=== OUTPUT ===
+<M:query_context query="release notes" />
