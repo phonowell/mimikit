@@ -63,7 +63,7 @@ describe('applyTaskActions cli lifecycle logging', () => {
     await applyTaskActions(runtime, [
       {
         name: 'enqueue_task',
-        attrs: { prompt: 'hello' },
+        attrs: { worker_prompt: 'hello' },
       },
     ])
 
@@ -105,7 +105,7 @@ describe('applyTaskActions cli lifecycle logging', () => {
       },
       {
         name: 'enqueue_task',
-        attrs: { prompt: 'must-not-run' },
+        attrs: { worker_prompt: 'must-not-run' },
       },
     ])
 

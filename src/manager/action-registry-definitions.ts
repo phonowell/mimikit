@@ -71,7 +71,7 @@ const PLAN_ACTION_DEFINITIONS = [
       prompt: {
         summary: '创建持续触发计划。',
         constraints: [
-          '必填 `prompt,title,trigger_mode`',
+          '必填 `prompt,title,schedule_type`',
           '`scheduled_at` 必须是未来绝对时间',
         ],
       },
@@ -125,7 +125,7 @@ const TASK_ACTION_DEFINITIONS = [
     prompt: {
       summary: '派发一个 worker 任务。',
       constraints: [
-        '必填 `prompt,title,cwd,goal,scope,acceptance_1`',
+        '必填 `title,cwd,goal,in_scope,done_when_1`；`worker_prompt` 可省略并由系统按 contract 自动生成',
         '默认一个目标只创建一个任务',
       ],
     },

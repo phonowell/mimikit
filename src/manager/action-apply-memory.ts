@@ -1,8 +1,8 @@
 import { appendMemoryRememberedSystemMessage } from '../history/memory-events.js'
 import { rememberMemoryEntry } from '../memory/remember-entry.js'
 
-import { resolveActionFocusId } from './action-apply-create.js'
 import { rememberMemorySchema } from './action-apply-schema.js'
+import { resolveActionFocusId } from './action-focus-id.js'
 import { parseActionAttrs } from './action-parse.js'
 
 import type { Parsed } from '../actions/model/spec.js'

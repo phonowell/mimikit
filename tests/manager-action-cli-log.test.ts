@@ -32,7 +32,7 @@ test('manager action cli logger emits lifecycle payload with redacted attrs', ()
     item: {
       name: 'enqueue_task',
       attrs: {
-        prompt: 'build release artifact now',
+        worker_prompt: 'build release artifact now',
         title: 'release',
         api_key: 'sk-super-secret',
         authorization: 'Bearer ABCDEFG',
@@ -51,7 +51,7 @@ test('manager action cli logger emits lifecycle payload with redacted attrs', ()
     total: 2,
     attrCount: 4,
     attrs: {
-      prompt: 'build release artifact now',
+      worker_prompt: 'build release artifact now',
       title: 'release',
       api_key: '[REDACTED]',
       authorization: '[REDACTED]',
@@ -98,7 +98,7 @@ test('manager action cli logger stays silent by default under vitest', async () 
     const logger = createLogger({ sink })
     await logger.logLifecycle({
       stage: 'dispatch',
-      item: { name: 'enqueue_task', attrs: { prompt: 'noop' } },
+      item: { name: 'enqueue_task', attrs: { worker_prompt: 'noop' } },
       index: 1,
       total: 1,
     })
@@ -117,7 +117,7 @@ test('manager action cli logger can disable console sink while keeping payload g
   const logger = createManagerActionCliLogger({ sink })
   await logger.logLifecycle({
     stage: 'dispatch',
-    item: { name: 'enqueue_task', attrs: { prompt: 'noop' } },
+    item: { name: 'enqueue_task', attrs: { worker_prompt: 'noop' } },
     index: 1,
     total: 1,
   })
@@ -164,7 +164,7 @@ test('manager action cli logger extracts ids from attempted feedback payload', a
       error: 'invalid_action_args',
       hint: 'schema mismatch',
       attempted:
-        '<M:enqueue_task id="task-xy" task_id="task-xy" prompt="demo" />',
+        '<M:enqueue_task id="task-xy" task_id="task-xy" worker_prompt="demo" />',
     },
     index: 1,
     total: 1,

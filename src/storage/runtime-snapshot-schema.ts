@@ -171,6 +171,7 @@ const planTriggerCronSchema = z
   .object({
     mode: z.literal('cron'),
     cron: z.string().trim().min(1),
+    timeZone: z.string().trim().min(1).optional(),
   })
   .strict()
 

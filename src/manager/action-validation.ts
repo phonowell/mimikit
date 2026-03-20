@@ -29,12 +29,18 @@ import { parseActionAttrs } from './action-parse.js'
 import {
   invalidArgsIssue,
   rejected,
-  validateScheduledAtNotPast,
   type ValidationIssue,
 } from './action-validation-helpers.js'
+import {
+  validateCreatePlanSchedule,
+  validateUpdatePlanSchedule,
+} from './action-validation-plan.js'
 import { queryContextSchema } from './query-context-tool.js'
 import { resolveRunTaskConfirmationRequirement } from './run-task-confirmation.js'
-import { buildTaskContractFromAttrs } from './task-contract.js'
+import {
+  buildTaskContractFromAttrs,
+  resolveWorkerPromptFromAttrs,
+} from './task-contract.js'
 
 import type { Parsed } from '../actions/model/spec.js'
 import type {
@@ -43,6 +49,7 @@ import type {
   TaskStatus,
 } from '../types/index.js'
 import type { ZodSchema } from 'zod'
+
 export type FeedbackContext = {
   taskStatusById?: Map<string, TaskStatus>
   planStatusById?: Map<string, TaskPlanStatus>
@@ -55,6 +62,7 @@ export type FeedbackContext = {
   allowedActions?: Set<string>
 }
 export type { ValidationIssue } from './action-validation-helpers.js'
+
 export const validateWithSchema = (
   item: Parsed,
   schema: ZodSchema,
@@ -62,12 +70,7 @@ export const validateWithSchema = (
   const parsed = schema.safeParse(item.attrs)
   return parsed.success ? [] : [invalidArgsIssue(parsed.error)]
 }
-const resolveScheduleNowOption = (
-  context: FeedbackContext,
-): { scheduleNowIso?: string } =>
-  context.scheduleNowIso !== undefined
-    ? { scheduleNowIso: context.scheduleNowIso }
-    : {}
+
 export const validateRunTask = (
   item: Parsed,
   context: FeedbackContext,
@@ -75,18 +78,22 @@ export const validateRunTask = (
   const parsed = parseActionAttrs(item, runTaskSchema)
   if (!parsed) return validateWithSchema(item, runTaskSchema)
   const contract = buildTaskContractFromAttrs(parsed)
+  const workerPrompt = resolveWorkerPromptFromAttrs(parsed)
   if (!contract) {
     return rejected(
       buildTaskContractMissingHintFromAction(item) ??
         formatEnqueueTaskContractMissingHint({
-          prompt: parsed.prompt,
+          worker_prompt: parsed.worker_prompt,
           title: parsed.title,
+          cwd: parsed.cwd,
           goal: parsed.goal,
-          scope: parsed.scope,
-          acceptance_1: parsed.acceptance_1,
+          in_scope: parsed.in_scope,
+          out_of_scope: parsed.out_of_scope,
+          done_when_1: parsed.done_when_1,
         }),
     )
   }
+  if (!workerPrompt) return rejected(formatEnqueueTaskContractMissingHint())
   const { provider } = parsed
   if (provider) {
     const enabledProviders = context.enabledWorkerProviders
@@ -95,7 +102,7 @@ export const validateRunTask = (
   }
 
   const confirmation = resolveRunTaskConfirmationRequirement({
-    prompt: parsed.prompt,
+    prompt: workerPrompt,
     title: parsed.title,
     goal: contract.goal,
     scope: contract.scope,
@@ -113,14 +120,9 @@ export const validateCreatePlan = (
 ): ValidationIssue[] => {
   const parsed = parseActionAttrs(item, createPlanSchema)
   if (!parsed) return validateWithSchema(item, createPlanSchema)
-  if (parsed.trigger_mode !== 'scheduled_at' || !parsed.scheduled_at?.trim())
-    return []
-  return validateScheduledAtNotPast({
-    action: 'create_plan',
-    scheduledAt: parsed.scheduled_at,
-    ...resolveScheduleNowOption(context),
-  })
+  return validateCreatePlanSchedule(item, context)
 }
+
 export const validateMutateTask = (
   item: Parsed,
   context: FeedbackContext,
@@ -221,11 +223,5 @@ export const validateUpdatePlan = (
 ): ValidationIssue[] => {
   const parsed = parseActionAttrs(item, updatePlanSchema)
   if (!parsed) return validateWithSchema(item, updatePlanSchema)
-  const scheduledAt = parsed.scheduled_at?.trim()
-  if (parsed.trigger_mode !== 'scheduled_at' || !scheduledAt) return []
-  return validateScheduledAtNotPast({
-    action: 'update_plan',
-    scheduledAt,
-    ...resolveScheduleNowOption(context),
-  })
+  return validateUpdatePlanSchedule(item, context)
 }

@@ -3,8 +3,13 @@ import type { TaskPlan, TaskPlanTrigger } from '../types/index.js'
 export const buildPlanTriggerPayload = (
   trigger: TaskPlanTrigger,
 ): Record<string, unknown> => ({
-  trigger_mode: trigger.mode,
-  ...(trigger.mode === 'cron' ? { cron: trigger.cron } : {}),
+  schedule_type: trigger.mode,
+  ...(trigger.mode === 'cron'
+    ? {
+        cron_expr: trigger.cron,
+        ...(trigger.timeZone ? { time_zone: trigger.timeZone } : {}),
+      }
+    : {}),
   ...(trigger.mode === 'scheduled_at'
     ? { scheduled_at: trigger.scheduledAt }
     : {}),

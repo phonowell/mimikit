@@ -11,11 +11,12 @@ export const buildTaskContractMissingHintFromAction = (
 ): string | undefined => {
   if (item.name !== 'enqueue_task') return undefined
   return formatEnqueueTaskContractMissingHint({
-    prompt: item.attrs.prompt,
+    worker_prompt: item.attrs.worker_prompt,
     title: item.attrs.title,
     cwd: item.attrs.cwd,
     goal: item.attrs.goal,
-    scope: item.attrs.scope,
-    acceptance_1: item.attrs.acceptance_1,
+    in_scope: item.attrs.in_scope,
+    out_of_scope: item.attrs.out_of_scope,
+    done_when_1: item.attrs.done_when_1,
   })
 }

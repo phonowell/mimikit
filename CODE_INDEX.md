@@ -1,6 +1,6 @@
 # Code Index
 
-*Last updated: 2026-03-11 01:56:00 CST*
+*Last updated: 2026-03-20 12:44:01 CST*
 *Scope: `src/**/*.ts` + `webui/**/*.js` exported capabilities (function/class/const entry points)*
 
 ## Quick Reference
@@ -61,10 +61,13 @@
 | `managerLoop()` | `src/manager/loop.ts:12` | Main manager processing loop |
 | `processManagerBatch()` | `src/manager/loop-batch.ts:32` | Runs one manager batch cycle |
 | `runManagerBatch()` | `src/manager/loop-batch-run-manager.ts:55` | Executes manager model call + apply actions |
-| `runManagerCorrectionRounds()` | `src/manager/loop-batch-run-rounds.ts:23` | Runs correction rounds when output invalid |
+| `runManagerCorrectionRounds()` | `src/manager/loop-batch-run-rounds.ts:39` | Runs correction rounds when output invalid |
 | `runManagerLlmCall()` | `src/manager/manager-llm-call.ts:23` | Calls manager provider with timeout policy |
 | `applyTaskActions()` | `src/manager/action-apply.ts:19` | Dispatches parsed actions |
-| `validateRunTask()/validateCreatePlan()/validateUpdatePlan()` | `src/manager/action-validation.ts:69` | Per-action validation suite |
+| `validateRunTask()/validateCreatePlan()/validateUpdatePlan()` | `src/manager/action-validation.ts:74` | Per-action validation suite |
+| `validateCreatePlanSchedule()/validateUpdatePlanSchedule()` | `src/manager/action-validation-plan.ts:23` | Shared scheduled-at future-time validation for plan actions |
+| `resolveActionFocusId()` | `src/manager/action-focus-id.ts:10` | Resolves explicit/default focus and touches activity before action apply |
+| `findRepeatedRejectedAction()/buildCorrectionFallbackReply()/shouldRetrySelfRepairRound()` | `src/manager/loop-batch-correction-reply.ts:28` | Shared correction fallback classification, self-repair gating, and degrade replies |
 | `MANAGER_ACTION_REGISTRY` | `src/manager/action-registrations.ts:19` | Runtime action registry |
 | `ACTION_DEFINITIONS` | `src/manager/action-registry-definitions.ts:73` | Canonical action definitions |
 
@@ -73,8 +76,10 @@
 | Function | Location | Does What |
 |---|---|---|
 | `triggerWakeLoop()` | `src/manager/loop-trigger.ts:28` | Checks and fires trigger policies |
-| `checkScheduledPlans()` | `src/manager/loop-trigger-plans.ts:22` | Fires `cron/scheduled_at` plans |
-| `triggerOnWorkerSlotFreedPlans()` | `src/manager/loop-trigger-plans.ts:142` | Fires `on_worker_slot_freed` plans |
+| `checkScheduledPlans()` | `src/manager/loop-trigger-plans.ts:122` | Fires `cron/scheduled_at` plans |
+| `triggerOnWorkerSlotFreedPlans()` | `src/manager/loop-trigger-plans.ts:222` | Fires `on_worker_slot_freed` plans |
+| `planScheduleTypeSchema()/validatePlanTriggerFields()` | `src/manager/action-plan-trigger-schema.ts:24` | Canonical external plan trigger schema and cross-field validation |
+| `matchesCronNow()/hasNextCronRun()/resolveNextCronRunAtMs()` | `src/manager/plan-cron.ts:3` | Shared timezone-aware cron match and next-run helpers |
 | `resolveWorkerSlotCapacity()` | `src/manager/loop-trigger-shared.ts:24` | Computes current worker slot capacity |
 | `firePlan()` | `src/manager/loop-trigger-shared.ts:99` | Converts plan into runnable task |
 
@@ -142,6 +147,7 @@
 | `buildManagerPrompt()` | `src/prompts/build-prompts.ts:59` | Builds manager system+context prompt |
 | `buildWorkerPrompt()` | `src/prompts/build-prompts.ts:180` | Builds worker runtime prompt |
 | `prepareWorkerTaskPrompt()` | `src/prompts/build-worker-task-prompt.ts:118` | Normalizes/externalizes long task prompts |
+| `buildActionFeedbackPromptPayload()/formatActionFeedback()` | `src/prompts/format-action-feedback.ts:41` | Serializes action feedback and structured repair hints into prompt payload |
 | `formatInputs()/formatRecentHistory()` | `src/prompts/format-messages.ts:140` | Message formatting blocks |
 | `formatTasksJson()/formatResultsJson()/formatPlansJson()` | `src/prompts/format-content.ts:201` | JSON blocks for prompt sections |
 | `loadSystemPrompt()/loadPromptTemplate()` | `src/prompts/prompt-loader.ts:51` | Prompt template loader from `prompts/` |
@@ -215,6 +221,7 @@
 - 2026-03-11 trim follow-up: inlined task mutation route wrappers into `src/http/routes-api.ts`, removed duplicate provider-side `normalizeUsage()` in favor of `src/shared/utils.ts`, reused shared text truncation in `src/http/session-ingress-log.ts`, and reduced `jscpd` exact clones from `3` to `2` (`duplicatedLines: 104 -> 38`, `duplicatedTokens: 1095 -> 354`).
 - 2026-03-11 safe-error follow-up: extracted `toErrorInfo()` into `src/shared/error-info.ts`, removed duplicate error normalization from `src/log/safe.ts` and `src/providers/safe.ts`, and reduced `jscpd` exact clones from `2` to `1` (`duplicatedLines: 38 -> 18`, `duplicatedTokens: 354 -> 152`).
 - 2026-03-11 prompt/provider trim: collapsed the duplicated manager prompt parameter shape in `src/prompts/build-prompts.ts` into `BuildManagerPromptParams`, centralized provider proxy preflight validation in `src/providers/utils.ts` via `resolveProviderProxyUrl()` for both OpenAI Responses and Opencode, and extracted shared `resolveErrorFallback()` in `src/shared/utils.ts` so `src/log/safe.ts` and `src/providers/safe.ts` keep behavior without duplicating fallback resolution; clone metrics not rerun in this pass.
+- 2026-03-20 manager-input-clarity follow-up: checked recent manager/prompt helper extractions against existing capabilities, found no semantic duplicate to merge further, and indexed the new shared action-focus, plan-trigger, correction-reply, cron, and action-feedback formatting helpers for future reuse.
 - Highest-density modules to inspect before adding code:
   - `src/orchestrator/core/*` (39 exports)
   - `src/manager/*` action/loop related modules

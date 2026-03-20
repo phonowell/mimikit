@@ -2,6 +2,11 @@ import { z } from 'zod'
 
 import { focusIdSchema } from '../shared/id-schema.js'
 
+import {
+  planScheduleTypeSchema,
+  validatePlanTriggerFields,
+} from './action-plan-trigger-schema.js'
+
 const nonEmptyString = z.string().trim().min(1)
 
 const planPrioritySchema = z.enum(['high', 'normal', 'low'])
@@ -10,11 +15,6 @@ const planSourceSchema = z.enum([
   'user_request',
   'agent_auto',
   'retry_decision',
-])
-const planTriggerModeSchema = z.enum([
-  'cron',
-  'scheduled_at',
-  'on_worker_slot_freed',
 ])
 const maxRunsSchema = z.coerce.number().int().positive()
 
@@ -30,77 +30,13 @@ const addCustomIssue = (
   })
 }
 
-const validatePlanTriggerFields = (
-  data: {
-    trigger_mode?: 'cron' | 'scheduled_at' | 'on_worker_slot_freed' | undefined
-    cron?: string | undefined
-    scheduled_at?: string | undefined
-  },
-  ctx: z.RefinementCtx,
-): void => {
-  const mode = data.trigger_mode
-  const cron = data.cron?.trim()
-  const scheduledAt = data.scheduled_at?.trim()
-
-  if (mode === 'cron') {
-    if (!cron)
-      addCustomIssue(ctx, 'cron', 'cron is required when trigger_mode="cron"')
-    if (scheduledAt) {
-      addCustomIssue(
-        ctx,
-        'scheduled_at',
-        'scheduled_at cannot be used when trigger_mode="cron"',
-      )
-    }
-
-    return
-  }
-
-  if (mode === 'scheduled_at') {
-    if (!scheduledAt) {
-      addCustomIssue(
-        ctx,
-        'scheduled_at',
-        'scheduled_at is required when trigger_mode="scheduled_at"',
-      )
-    }
-
-    if (cron) {
-      addCustomIssue(
-        ctx,
-        'cron',
-        'cron cannot be used when trigger_mode="scheduled_at"',
-      )
-    }
-
-    return
-  }
-
-  if (mode === 'on_worker_slot_freed') {
-    if (cron) {
-      addCustomIssue(
-        ctx,
-        'cron',
-        'cron cannot be used when trigger_mode="on_worker_slot_freed"',
-      )
-    }
-
-    if (scheduledAt) {
-      addCustomIssue(
-        ctx,
-        'scheduled_at',
-        'scheduled_at cannot be used when trigger_mode="on_worker_slot_freed"',
-      )
-    }
-  }
-}
-
 const UPDATE_EDITABLE_FIELDS = [
   'prompt',
   'title',
-  'trigger_mode',
-  'cron',
+  'schedule_type',
+  'cron_expr',
   'scheduled_at',
+  'time_zone',
   'max_runs',
   'priority',
   'source',
@@ -113,9 +49,10 @@ export const createPlanSchema = z
   .object({
     prompt: nonEmptyString,
     title: nonEmptyString,
-    trigger_mode: planTriggerModeSchema,
-    cron: z.string().trim().optional(),
+    schedule_type: planScheduleTypeSchema,
+    cron_expr: z.string().trim().optional(),
     scheduled_at: z.string().trim().optional(),
+    time_zone: z.string().trim().optional(),
     max_runs: maxRunsSchema.optional(),
     priority: planPrioritySchema.optional(),
     source: planSourceSchema.optional(),
@@ -131,9 +68,10 @@ export const updatePlanSchema = z
     id: nonEmptyString,
     prompt: nonEmptyString.optional(),
     title: nonEmptyString.optional(),
-    trigger_mode: planTriggerModeSchema.optional(),
-    cron: z.string().trim().optional(),
+    schedule_type: planScheduleTypeSchema.optional(),
+    cron_expr: z.string().trim().optional(),
     scheduled_at: z.string().trim().optional(),
+    time_zone: z.string().trim().optional(),
     max_runs: maxRunsSchema.optional(),
     priority: planPrioritySchema.optional(),
     source: planSourceSchema.optional(),
@@ -153,21 +91,24 @@ export const updatePlanSchema = z
     }
 
     const hasTriggerField =
-      data.cron !== undefined || data.scheduled_at !== undefined
-    if (hasTriggerField && data.trigger_mode === undefined) {
+      data.cron_expr !== undefined ||
+      data.scheduled_at !== undefined ||
+      data.time_zone !== undefined
+    if (hasTriggerField && data.schedule_type === undefined) {
       addCustomIssue(
         ctx,
-        'trigger_mode',
-        'trigger_mode is required when cron/scheduled_at is provided',
+        'schedule_type',
+        'schedule_type is required when cron_expr/scheduled_at/time_zone is provided',
       )
       return
     }
-    if (data.trigger_mode === undefined) return
+    if (data.schedule_type === undefined) return
     validatePlanTriggerFields(
       {
-        trigger_mode: data.trigger_mode,
-        cron: data.cron,
+        schedule_type: data.schedule_type,
+        cron_expr: data.cron_expr,
         scheduled_at: data.scheduled_at,
+        time_zone: data.time_zone,
       },
       ctx,
     )

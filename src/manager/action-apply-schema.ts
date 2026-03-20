@@ -35,16 +35,16 @@ export const summarizeSchema = z
 
 export const runTaskSchema = z
   .object({
-    prompt: nonEmptyString,
+    worker_prompt: nonEmptyString.optional(),
     title: nonEmptyString,
     cwd: nonEmptyString,
     goal: nonEmptyString.optional(),
-    scope: nonEmptyString.optional(),
-    acceptance_1: nonEmptyString.optional(),
-    acceptance_2: nonEmptyString.optional(),
-    acceptance_3: nonEmptyString.optional(),
-    acceptance_4: nonEmptyString.optional(),
-    acceptance_5: nonEmptyString.optional(),
+    in_scope: nonEmptyString.optional(),
+    done_when_1: nonEmptyString.optional(),
+    done_when_2: nonEmptyString.optional(),
+    done_when_3: nonEmptyString.optional(),
+    done_when_4: nonEmptyString.optional(),
+    done_when_5: nonEmptyString.optional(),
     out_of_scope: nonEmptyString.optional(),
     context_ref_1: nonEmptyString.optional(),
     context_ref_2: nonEmptyString.optional(),

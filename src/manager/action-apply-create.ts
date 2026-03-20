@@ -1,8 +1,3 @@
-import {
-  ensureFocus,
-  resolveDefaultFocusId,
-  touchFocus,
-} from '../focus/index.js'
 import { appendTaskSystemMessage } from '../history/task-events.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
@@ -12,6 +7,7 @@ import { resolveSlotStatus } from '../worker/task-state-shared.js'
 import { applyAskUserChoiceAction } from './action-apply-choice.js'
 import { markCreateAttempt } from './action-apply-guards.js'
 import { runTaskSchema } from './action-apply-schema.js'
+import { resolveActionFocusId } from './action-focus-id.js'
 import {
   buildRunTaskConfirmationQuestion,
   collectConfirmedRunTaskChoiceIds,
@@ -30,29 +26,20 @@ import {
   persistRuntimeState,
   type RuntimeState,
 } from './runtime-adapter.js'
-import { buildTaskContractFromAttrs } from './task-contract.js'
+import {
+  buildTaskContractFromAttrs,
+  resolveWorkerPromptFromAttrs,
+} from './task-contract.js'
 import {
   resolveFocusAffinitizedWorkerProvider,
   resolvePreferredWorkerProvider,
 } from './worker-provider-selection.js'
 
 import type { Parsed } from '../actions/model/spec.js'
-import type { FocusId, WorkerProfile, WorkerProvider } from '../types/index.js'
+import type { WorkerProfile, WorkerProvider } from '../types/index.js'
 
 export type ApplyTaskActionsOptions = {
   suppressRunTask?: boolean
-}
-
-export const resolveActionFocusId = (
-  runtime: RuntimeState,
-  actionFocusId?: string,
-): FocusId => {
-  const trimmed = actionFocusId?.trim()
-  const focusId =
-    trimmed && trimmed.length > 0 ? trimmed : resolveDefaultFocusId(runtime)
-  ensureFocus(runtime, focusId)
-  touchFocus(runtime, focusId)
-  return focusId
 }
 
 export const applyRunTask = async (
@@ -97,9 +84,11 @@ export const applyRunTask = async (
     'codex'
   const contract = buildTaskContractFromAttrs(parsed.data)
   if (!contract) return 'continue'
+  const workerPrompt = resolveWorkerPromptFromAttrs(parsed.data)
+  if (!workerPrompt) return 'continue'
   const target = await resolveTaskExecutionTarget(parsed.data.cwd)
   const semanticKey = buildTaskSemanticKey({
-    prompt: parsed.data.prompt,
+    prompt: workerPrompt,
     title: parsed.data.title,
     cwd: target.cwd,
     profile,
@@ -110,7 +99,7 @@ export const applyRunTask = async (
     contract,
   })
   const confirmation = resolveRunTaskConfirmationRequirement({
-    prompt: parsed.data.prompt,
+    prompt: workerPrompt,
     title: parsed.data.title,
     goal: contract.goal,
     scope: contract.scope,
@@ -156,7 +145,7 @@ export const applyRunTask = async (
   }
   const debounce = markCreateAttempt(runtime, semanticKey)
   if (debounce.debounced) return 'continue'
-  const dedupeKey = `${parsed.data.prompt}\n${parsed.data.title}\n${target.cwd}\n${profile}\n${provider}\n${focusId}`
+  const dedupeKey = `${workerPrompt}\n${parsed.data.title}\n${target.cwd}\n${profile}\n${provider}\n${focusId}`
   const dedupeContractSuffix = [
     contract.goal,
     contract.scope,
@@ -191,7 +180,7 @@ export const applyRunTask = async (
         : {}),
     })
     const nextFingerprint = buildTaskFingerprint({
-      prompt: parsed.data.prompt,
+      prompt: workerPrompt,
       title: parsed.data.title,
       cwd: target.cwd,
       profile,
@@ -219,7 +208,7 @@ export const applyRunTask = async (
 
   const { task, created } = enqueueTask(
     runtime.tasks,
-    parsed.data.prompt,
+    workerPrompt,
     parsed.data.title,
     target.cwd,
     profile,

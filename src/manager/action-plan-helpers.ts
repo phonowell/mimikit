@@ -57,24 +57,27 @@ export const normalizePlanKey = (params: {
   const base = `${params.prompt.trim().replace(/\s+/g, ' ').toLowerCase()}\n${params.title.trim().replace(/\s+/g, ' ').toLowerCase()}\n${params.focusId}\n${params.profile}`
 
   if (params.trigger.mode === 'cron')
-    return `${base}\ncron:${params.trigger.cron}`
+    return `${base}\ncron:${params.trigger.cron}\ntime_zone:${params.trigger.timeZone ?? ''}`
   if (params.trigger.mode === 'scheduled_at')
     return `${base}\nscheduled_at:${params.trigger.scheduledAt}`
   return `${base}\non_worker_slot_freed`
 }
 
 export const buildTrigger = (params: {
-  triggerMode: 'cron' | 'scheduled_at' | 'on_worker_slot_freed'
-  cron?: string | undefined
+  scheduleType: 'cron' | 'scheduled_at' | 'on_worker_slot_freed'
+  cronExpr?: string | undefined
   scheduledAt?: string | undefined
+  timeZone?: string | undefined
 }): TaskPlanTrigger => {
-  if (params.triggerMode === 'cron') {
-    const cron = params.cron?.trim()
+  if (params.scheduleType === 'cron') {
+    const cron = params.cronExpr?.trim()
+    const timeZone = params.timeZone?.trim()
     if (!cron) throw new Error('invalid_plan_trigger: cron required')
-    return { mode: 'cron', cron }
+    if (!timeZone) throw new Error('invalid_plan_trigger: time_zone required')
+    return { mode: 'cron', cron, timeZone }
   }
 
-  if (params.triggerMode === 'scheduled_at') {
+  if (params.scheduleType === 'scheduled_at') {
     const scheduledAt = params.scheduledAt?.trim()
     if (!scheduledAt)
       throw new Error('invalid_plan_trigger: scheduled_at required')
@@ -87,25 +90,31 @@ export const buildTrigger = (params: {
 export const resolveUpdatedTrigger = (
   current: TaskPlanTrigger,
   update: {
-    triggerMode?: 'cron' | 'scheduled_at' | 'on_worker_slot_freed' | undefined
-    cron?: string | undefined
+    scheduleType?: 'cron' | 'scheduled_at' | 'on_worker_slot_freed' | undefined
+    cronExpr?: string | undefined
     scheduledAt?: string | undefined
+    timeZone?: string | undefined
   },
 ): TaskPlanTrigger => {
   const hasTriggerPatch =
-    update.triggerMode !== undefined ||
-    update.cron !== undefined ||
-    update.scheduledAt !== undefined
+    update.scheduleType !== undefined ||
+    update.cronExpr !== undefined ||
+    update.scheduledAt !== undefined ||
+    update.timeZone !== undefined
   if (!hasTriggerPatch) return current
 
-  const mode = update.triggerMode ?? current.mode
+  const mode = update.scheduleType ?? current.mode
 
   return buildTrigger({
-    triggerMode: mode,
-    cron: update.cron ?? (current.mode === 'cron' ? current.cron : undefined),
+    scheduleType: mode,
+    cronExpr:
+      update.cronExpr ?? (current.mode === 'cron' ? current.cron : undefined),
     scheduledAt:
       update.scheduledAt ??
       (current.mode === 'scheduled_at' ? current.scheduledAt : undefined),
+    timeZone:
+      update.timeZone ??
+      (current.mode === 'cron' ? current.timeZone : undefined),
   })
 }
 
@@ -115,9 +124,10 @@ export const isDoneLastTaskPatch = (params: {
     last_task_id?: string | undefined
     prompt?: string | undefined
     title?: string | undefined
-    trigger_mode?: 'cron' | 'scheduled_at' | 'on_worker_slot_freed' | undefined
-    cron?: string | undefined
+    schedule_type?: 'cron' | 'scheduled_at' | 'on_worker_slot_freed' | undefined
+    cron_expr?: string | undefined
     scheduled_at?: string | undefined
+    time_zone?: string | undefined
     max_runs?: number | undefined
     priority?: string | undefined
     source?: string | undefined
@@ -131,9 +141,10 @@ export const isDoneLastTaskPatch = (params: {
     input.last_task_id !== undefined &&
     input.prompt === undefined &&
     input.title === undefined &&
-    input.trigger_mode === undefined &&
-    input.cron === undefined &&
+    input.schedule_type === undefined &&
+    input.cron_expr === undefined &&
     input.scheduled_at === undefined &&
+    input.time_zone === undefined &&
     input.max_runs === undefined &&
     input.priority === undefined &&
     input.source === undefined &&

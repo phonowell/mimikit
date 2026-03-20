@@ -5,6 +5,8 @@ import {
   loadYamlPromptTemplates,
 } from '../prompts/prompt-template-loader.js'
 
+import { formatEnqueueTaskContractMissingHint as buildEnqueueTaskContractMissingHint } from './action-feedback-enqueue-task-contract.js'
+
 const HINT_TEMPLATE_RELATIVE_PATH = 'manager/action-feedback-hints.md'
 
 const actionFeedbackHintSchema = z
@@ -27,15 +29,19 @@ const actionFeedbackHintSchema = z
     enqueue_task_provider_disabled: z.string().trim().min(1),
     enqueue_task_requires_confirmation: z.string().trim().min(1),
     enqueue_task_contract_missing: z.string().trim().min(1),
-    enqueue_task_contract_missing_default_prompt: z.string().trim().min(1),
-    enqueue_task_contract_missing_default_title: z.string().trim().min(1),
-    enqueue_task_contract_missing_default_cwd: z.string().trim().min(1),
-    enqueue_task_contract_missing_default_goal: z.string().trim().min(1),
-    enqueue_task_contract_missing_default_scope: z.string().trim().min(1),
-    enqueue_task_contract_missing_default_acceptance_1: z
+    enqueue_task_contract_missing_default_worker_prompt: z
       .string()
       .trim()
       .min(1),
+    enqueue_task_contract_missing_default_title: z.string().trim().min(1),
+    enqueue_task_contract_missing_default_cwd: z.string().trim().min(1),
+    enqueue_task_contract_missing_default_goal: z.string().trim().min(1),
+    enqueue_task_contract_missing_default_in_scope: z.string().trim().min(1),
+    enqueue_task_contract_missing_default_out_of_scope: z
+      .string()
+      .trim()
+      .min(1),
+    enqueue_task_contract_missing_default_done_when_1: z.string().trim().min(1),
     plan_not_found: z.string().trim().min(1),
     update_plan_done_forbidden: z.string().trim().min(1),
     duplicate_query_context_action_limit: z.string().trim().min(1),
@@ -132,55 +138,28 @@ export const formatEnqueueTaskRequiresConfirmationHint = (): string =>
   renderHint('enqueue_task_requires_confirmation')
 
 const FALLBACK_TASK_CONTRACT_HINT_VALUES = {
-  prompt: templates.enqueue_task_contract_missing_default_prompt,
+  worker_prompt: templates.enqueue_task_contract_missing_default_worker_prompt,
   title: templates.enqueue_task_contract_missing_default_title,
   cwd: templates.enqueue_task_contract_missing_default_cwd,
   goal: templates.enqueue_task_contract_missing_default_goal,
-  scope: templates.enqueue_task_contract_missing_default_scope,
-  acceptance_1: templates.enqueue_task_contract_missing_default_acceptance_1,
+  in_scope: templates.enqueue_task_contract_missing_default_in_scope,
+  out_of_scope: templates.enqueue_task_contract_missing_default_out_of_scope,
+  done_when_1: templates.enqueue_task_contract_missing_default_done_when_1,
 } as const
 
-const trimOrFallback = (
-  value: string | undefined,
-  fallback: string,
-): string => {
-  const trimmed = value?.trim()
-  return trimmed && trimmed.length > 0 ? trimmed : fallback
-}
-
-const escapeActionAttrValue = (value: string): string =>
-  value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
-
 export const formatEnqueueTaskContractMissingHint = (attrs?: {
-  prompt?: string | undefined
+  worker_prompt?: string | undefined
   title?: string | undefined
   cwd?: string | undefined
   goal?: string | undefined
-  scope?: string | undefined
-  acceptance_1?: string | undefined
+  in_scope?: string | undefined
+  out_of_scope?: string | undefined
+  done_when_1?: string | undefined
 }): string =>
-  renderHint('enqueue_task_contract_missing', {
-    prompt: escapeActionAttrValue(
-      trimOrFallback(attrs?.prompt, FALLBACK_TASK_CONTRACT_HINT_VALUES.prompt),
-    ),
-    title: escapeActionAttrValue(
-      trimOrFallback(attrs?.title, FALLBACK_TASK_CONTRACT_HINT_VALUES.title),
-    ),
-    cwd: escapeActionAttrValue(
-      trimOrFallback(attrs?.cwd, FALLBACK_TASK_CONTRACT_HINT_VALUES.cwd),
-    ),
-    goal: escapeActionAttrValue(
-      trimOrFallback(attrs?.goal, FALLBACK_TASK_CONTRACT_HINT_VALUES.goal),
-    ),
-    scope: escapeActionAttrValue(
-      trimOrFallback(attrs?.scope, FALLBACK_TASK_CONTRACT_HINT_VALUES.scope),
-    ),
-    acceptance_1: escapeActionAttrValue(
-      trimOrFallback(
-        attrs?.acceptance_1,
-        FALLBACK_TASK_CONTRACT_HINT_VALUES.acceptance_1,
-      ),
-    ),
+  buildEnqueueTaskContractMissingHint({
+    renderHint,
+    defaults: FALLBACK_TASK_CONTRACT_HINT_VALUES,
+    attrs,
   })
 
 export const formatPlanNotFoundHint = (

@@ -1,5 +1,3 @@
-import { Cron } from 'croner'
-
 import { GLOBAL_FOCUS_ID } from '../focus/constants.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
@@ -7,15 +5,13 @@ import { buildPlanTriggerPayload } from '../shared/plan-payload.js'
 import { compareIsoAsc, parseIsoMs } from '../shared/time.js'
 import { resolveSlotStatus } from '../worker/task-state-shared.js'
 
+import { hasNextCronRun, matchesCronNow } from './plan-cron.js'
 import { publishManagerSystemEventInput } from './system-input-event.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { TaskPlan } from '../types/index.js'
 
 const asSecondStamp = (iso: string): string => iso.slice(0, 19)
-
-const matchesCronNow = (expression: string, at: Date = new Date()): boolean =>
-  new Cron(expression).match(at)
 
 const priorityRank = (priority: TaskPlan['priority']): number =>
   priority === 'high' ? 0 : priority === 'normal' ? 1 : 2
@@ -169,16 +165,17 @@ export const checkScheduledPlans = async (
     )
       continue
 
-    const { cron } = plan.trigger
+    const { cron, timeZone } = plan.trigger
     let matched = false
     try {
-      matched = matchesCronNow(cron, now)
+      matched = matchesCronNow(cron, timeZone, now)
     } catch (error) {
       await bestEffort('appendLog: trigger_expression_error', () =>
         appendLog(runtime.paths.log, {
           event: 'trigger_expression_error',
           planId: plan.id,
           cron,
+          ...(timeZone ? { timeZone } : {}),
           error: error instanceof Error ? error.message : String(error),
         }),
       )
@@ -200,13 +197,14 @@ export const checkScheduledPlans = async (
 
     let hasNextRun = false
     try {
-      hasNextRun = new Cron(cron).nextRun() !== null
+      hasNextRun = hasNextCronRun(cron, timeZone)
     } catch (error) {
       await bestEffort('appendLog: trigger_next_run_error', () =>
         appendLog(runtime.paths.log, {
           event: 'trigger_next_run_error',
           planId: plan.id,
           cron,
+          ...(timeZone ? { timeZone } : {}),
           error: error instanceof Error ? error.message : String(error),
         }),
       )

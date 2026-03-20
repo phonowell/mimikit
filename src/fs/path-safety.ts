@@ -38,8 +38,8 @@ export const checkExistingPathBoundary = async (params: {
 
   if (!isPathInsideRoot(rootResolved, targetResolved)) return 'outside'
 
-  const rootReal = await realpath(rootResolved)
   try {
+    const rootReal = await realpath(rootResolved)
     const targetReal = await realpath(targetResolved)
     return isPathInsideRoot(rootReal, targetReal) ? 'inside' : 'outside'
   } catch (error) {

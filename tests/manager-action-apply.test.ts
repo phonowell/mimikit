@@ -15,8 +15,8 @@ import type { TaskPlan } from '../src/types/index.js'
 
 const CONTRACT_ATTRS = {
   goal: 'Deliver requested outcome',
-  scope: 'Single runnable worker task',
-  acceptance_1: 'Return concrete output',
+  in_scope: 'Single runnable worker task',
+  done_when_1: 'Return concrete output',
 }
 const TASK_CWD = '/tmp/manager-action-apply-task'
 
@@ -45,8 +45,8 @@ test('enqueue_task re-enqueues pending task when fingerprint matches exactly', a
     cwd: TASK_CWD,
     contract: {
       goal: CONTRACT_ATTRS.goal,
-      scope: CONTRACT_ATTRS.scope,
-      acceptance: [CONTRACT_ATTRS.acceptance_1],
+      scope: CONTRACT_ATTRS.in_scope,
+      acceptance: [CONTRACT_ATTRS.done_when_1],
     },
     focusId: 'focus-local',
     profile: 'worker',
@@ -59,7 +59,7 @@ test('enqueue_task re-enqueues pending task when fingerprint matches exactly', a
     {
       name: 'enqueue_task',
       attrs: {
-        prompt: 'same prompt',
+        worker_prompt: 'same prompt',
         title: 'old title',
         cwd: TASK_CWD,
         ...CONTRACT_ATTRS,
@@ -81,7 +81,7 @@ test('enqueue_task task_created system event includes worker slot status payload
     {
       name: 'enqueue_task',
       attrs: {
-        prompt: 'generate release note',
+        worker_prompt: 'generate release note',
         title: 'release-note',
         cwd: TASK_CWD,
         ...CONTRACT_ATTRS,
@@ -120,7 +120,7 @@ test('enqueue_task dedupe does not block task creation when fingerprint differs'
     {
       name: 'enqueue_task',
       attrs: {
-        prompt: 'same prompt',
+        worker_prompt: 'same prompt',
         title: 'new title',
         cwd: TASK_CWD,
         ...CONTRACT_ATTRS,
@@ -157,12 +157,12 @@ test('enqueue_task contract change does not reuse pending task', async () => {
     {
       name: 'enqueue_task',
       attrs: {
-        prompt: 'same prompt',
+        worker_prompt: 'same prompt',
         title: 'same title',
         cwd: TASK_CWD,
         goal: 'New goal',
-        scope: 'New scope',
-        acceptance_1: 'New acceptance',
+        in_scope: 'New scope',
+        done_when_1: 'New acceptance',
       },
     },
   ])
@@ -187,7 +187,7 @@ test('enqueue_task without provider picks enabled provider by lowest billing the
     {
       name: 'enqueue_task',
       attrs: {
-        prompt: 'prefer lowest billing',
+        worker_prompt: 'prefer lowest billing',
         title: 'auto provider',
         cwd: TASK_CWD,
         ...CONTRACT_ATTRS,
@@ -212,7 +212,7 @@ test('enqueue_task without provider picks higher capability when billing ties', 
     {
       name: 'enqueue_task',
       attrs: {
-        prompt: 'prefer strongest capability at same billing',
+        worker_prompt: 'prefer strongest capability at same billing',
         title: 'auto provider tie',
         cwd: TASK_CWD,
         ...CONTRACT_ATTRS,
@@ -256,7 +256,7 @@ test('enqueue_task without provider reuses recent focus provider before falling 
     {
       name: 'enqueue_task',
       attrs: {
-        prompt: 'follow same focus runtime',
+        worker_prompt: 'follow same focus runtime',
         title: 'affinitized provider',
         cwd: TASK_CWD,
         focus_id: 'focus-affinity',
@@ -276,14 +276,14 @@ test('enqueue_task creates confirmation choice instead of dispatching high-cost 
     {
       name: 'enqueue_task',
       attrs: {
-        prompt: 'x'.repeat(1300),
+        worker_prompt: 'x'.repeat(1300),
         title: 'high-cost task',
         cwd: TASK_CWD,
         goal: 'Deliver all outputs',
-        scope: 'Cross-module full implementation',
-        acceptance_1: 'A',
-        acceptance_2: 'B',
-        acceptance_3: 'C',
+        in_scope: 'Cross-module full implementation',
+        done_when_1: 'A',
+        done_when_2: 'B',
+        done_when_3: 'C',
       },
     },
   ])
@@ -302,13 +302,13 @@ test('enqueue_task creates confirmation choice instead of dispatching high-cost 
 
 test('enqueue_task dispatches high-cost task after explicit confirmation event', async () => {
   const runtime = await createRuntime()
-  const prompt = 'x'.repeat(1300)
+  const workerPrompt = 'x'.repeat(1300)
   const title = 'high-cost task'
   const goal = 'Deliver all outputs'
   const scope = 'Cross-module full implementation'
   const acceptance = ['A', 'B', 'C']
   const choiceId = buildRunTaskConfirmationId({
-    prompt,
+    prompt: workerPrompt,
     title,
     goal,
     scope,
@@ -332,14 +332,14 @@ test('enqueue_task dispatches high-cost task after explicit confirmation event',
     {
       name: 'enqueue_task',
       attrs: {
-        prompt,
+        worker_prompt: workerPrompt,
         title,
         cwd: TASK_CWD,
         goal,
-        scope,
-        acceptance_1: acceptance[0] ?? 'A',
-        acceptance_2: acceptance[1] ?? 'B',
-        acceptance_3: acceptance[2] ?? 'C',
+        in_scope: scope,
+        done_when_1: acceptance[0] ?? 'A',
+        done_when_2: acceptance[1] ?? 'B',
+        done_when_3: acceptance[2] ?? 'C',
       },
     },
   ])
@@ -355,20 +355,20 @@ test('high-cost enqueue_task stops later actions in the same batch', async () =>
     {
       name: 'enqueue_task',
       attrs: {
-        prompt: 'x'.repeat(1300),
+        worker_prompt: 'x'.repeat(1300),
         title: 'high-cost task',
         cwd: TASK_CWD,
         goal: 'Deliver all outputs',
-        scope: 'Cross-module full implementation',
-        acceptance_1: 'A',
-        acceptance_2: 'B',
-        acceptance_3: 'C',
+        in_scope: 'Cross-module full implementation',
+        done_when_1: 'A',
+        done_when_2: 'B',
+        done_when_3: 'C',
       },
     },
     {
       name: 'enqueue_task',
       attrs: {
-        prompt: 'small task',
+        worker_prompt: 'small task',
         title: 'small-task',
         cwd: TASK_CWD,
         ...CONTRACT_ATTRS,
@@ -490,7 +490,7 @@ test('ask_user_choice stores pending choice and stops later actions in same batc
     {
       name: 'enqueue_task',
       attrs: {
-        prompt: 'this should not run before user picks',
+        worker_prompt: 'this should not run before user picks',
         title: 'blocked by pending choice',
         cwd: TASK_CWD,
         ...CONTRACT_ATTRS,
@@ -554,8 +554,9 @@ test('create_plan uses worker profile for cron plan', async () => {
       attrs: {
         prompt: 'Summarize daily build status',
         title: 'scheduled',
-        trigger_mode: 'cron',
-        cron: '0 0 9 * * *',
+        schedule_type: 'cron',
+        cron_expr: '0 0 9 * * *',
+        time_zone: 'Asia/Shanghai',
       },
     },
   ])
@@ -563,6 +564,9 @@ test('create_plan uses worker profile for cron plan', async () => {
   expect(runtime.taskPlans).toHaveLength(1)
   expect(runtime.taskPlans[0]?.profile).toBe('worker')
   expect(runtime.taskPlans[0]?.trigger.mode).toBe('cron')
+  expect(runtime.taskPlans[0]?.trigger).toMatchObject({
+    timeZone: 'Asia/Shanghai',
+  })
 })
 
 test('create_plan accepts on_worker_slot_freed trigger mode', async () => {
@@ -573,7 +577,7 @@ test('create_plan accepts on_worker_slot_freed trigger mode', async () => {
       attrs: {
         prompt: 'Consume queue when capacity is available',
         title: 'capacity trigger',
-        trigger_mode: 'on_worker_slot_freed',
+        schedule_type: 'on_worker_slot_freed',
       },
     },
   ])

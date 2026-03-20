@@ -1,12 +1,12 @@
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import { newId, nowIso } from '../shared/utils.js'
 
-import { resolveActionFocusId } from './action-apply-create.js'
 import {
   createPlanSchema,
   deletePlanSchema,
   updatePlanSchema,
 } from './action-apply-schema.js'
+import { resolveActionFocusId } from './action-focus-id.js'
 import { parseActionAttrs } from './action-parse.js'
 import {
   appendPlanSystemMessage,
@@ -28,9 +28,10 @@ export const applyCreatePlan = async (
   if (!parsed) return
 
   const trigger = buildTrigger({
-    triggerMode: parsed.trigger_mode,
-    cron: parsed.cron,
+    scheduleType: parsed.schedule_type,
+    cronExpr: parsed.cron_expr,
     scheduledAt: parsed.scheduled_at,
+    timeZone: parsed.time_zone,
   })
   const focusId = resolveActionFocusId(runtime, parsed.focus_id)
   const key = normalizePlanKey({
@@ -102,9 +103,10 @@ export const applyUpdatePlan = async (
       : current.focusId
 
   const trigger = resolveUpdatedTrigger(current.trigger, {
-    triggerMode: parsed.trigger_mode,
-    cron: parsed.cron,
+    scheduleType: parsed.schedule_type,
+    cronExpr: parsed.cron_expr,
     scheduledAt: parsed.scheduled_at,
+    timeZone: parsed.time_zone,
   })
 
   const updatedAt = nowIso()

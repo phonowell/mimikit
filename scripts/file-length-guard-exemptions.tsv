@@ -21,15 +21,15 @@ src/prompts/format-content.ts	321	prompt 构建仍混合多职责：后续按片
 src/prompts/format-messages.ts	348	prompt 构建仍混合多职责：后续按片段与序列化拆分
 src/providers/openai-responses-provider.ts	449	provider 会话与传输逻辑仍共置：后续按职责拆分
 src/providers/opencode-sdk-provider.ts	845	provider 会话与传输逻辑仍共置：后续按职责拆分
-src/storage/runtime-snapshot-schema.ts	393	存储读取与协议装配仍共置：后续按 reader/schema 拆分
+src/storage/runtime-snapshot-schema.ts	394	存储读取与协议装配仍共置：后续按 reader/schema 拆分
 src/storage/task-results-read.ts	558	存储读取与协议装配仍共置：后续按 reader/schema 拆分
 src/types/index.ts	338	历史实现仍混合多职责：后续拆分到稳定边界
 src/worker/dispatch.ts	237	worker 执行链路仍偏长：后续按 dispatch/retry/finalize 拆分
 src/worker/run-retry.ts	255	worker 执行链路仍偏长：后续按 dispatch/retry/finalize 拆分
 tests/config-default-loader.test.ts	219	高价值回归仍集中在单文件：后续按场景拆分夹具与断言
 tests/controller-payload-logging.test.ts	207	高价值回归仍集中在单文件：后续按场景拆分夹具与断言
-tests/manager-action-apply.test.ts	745	高价值回归仍集中在单文件：后续按场景拆分夹具与断言
-tests/manager-ask-user-choice-source-guard.test.ts	381	高价值回归仍集中在单文件：后续按场景拆分夹具与断言
+tests/manager-action-apply.test.ts	749	高价值回归仍集中在单文件：后续按场景拆分夹具与断言
+tests/manager-ask-user-choice-source-guard.test.ts	383	高价值回归仍集中在单文件：后续按场景拆分夹具与断言
 tests/manager-llm-call-provider.test.ts	221	高价值回归仍集中在单文件：后续按场景拆分夹具与断言
 tests/manager-read-file-tool.test.ts	294	高价值回归仍集中在单文件：后续按场景拆分夹具与断言
 tests/manager-thread-cache-reuse.test.ts	213	高价值回归仍集中在单文件：后续按场景拆分夹具与断言

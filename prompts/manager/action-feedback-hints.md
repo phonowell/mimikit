@@ -33,21 +33,23 @@ enqueue_task_provider_disabled: |
 enqueue_task_requires_confirmation: |
   enqueue_task 执行失败：当前任务为高成本长任务，必须先通过 ask_user_choice 生成待确认项，再由用户返回后决定是否派发。请先输出 ask_user_choice，并将 default_option_id 设为取消项。
 enqueue_task_contract_missing: |
-  enqueue_task 执行失败：缺少 task contract。请补充 goal、scope 与至少一条 acceptance_{n}（例如 acceptance_1）。
-  请直接改成下面格式后重试：
-  <M:enqueue_task prompt="{{ prompt }}" title="{{ title }}" cwd="{{ cwd }}" goal="{{ goal }}" scope="{{ scope }}" acceptance_1="{{ acceptance_1 }}" />
-enqueue_task_contract_missing_default_prompt: |
-  请在此填写任务目标
+  enqueue_task 执行失败：继续派发前还缺 3 个最小信息，每项一句即可：goal（最终要什么结果）、in_scope/out_of_scope（这次做什么、哪些不做）、至少一条 done_when_{n}（怎样算完成）。
+  可以直接改成下面格式后重试；`worker_prompt` 可省略，省略时系统会按 contract 自动生成：
+  <M:enqueue_task worker_prompt="{{ worker_prompt }}" title="{{ title }}" cwd="{{ cwd }}" goal="{{ goal }}" in_scope="{{ in_scope }}" out_of_scope="{{ out_of_scope }}" done_when_1="{{ done_when_1 }}" />
+enqueue_task_contract_missing_default_worker_prompt: |
+  按 contract 自动生成可省略；如需显式指定，可写给 worker 的执行指令
 enqueue_task_contract_missing_default_title: |
   补全任务契约并执行
 enqueue_task_contract_missing_default_cwd: |
   /absolute/path/to/workspace
 enqueue_task_contract_missing_default_goal: |
   完成用户请求的可交付结果
-enqueue_task_contract_missing_default_scope: |
-  单个 worker 任务端到端闭环
-enqueue_task_contract_missing_default_acceptance_1: |
-  返回可验证结果与关键产出
+enqueue_task_contract_missing_default_in_scope: |
+  只覆盖这次要完成的最小交付范围
+enqueue_task_contract_missing_default_out_of_scope: |
+  不改无关模块，不做顺手重构
+enqueue_task_contract_missing_default_done_when_1: |
+  结果可直接验证，例如命令通过或页面行为符合预期
 plan_not_found: |
   {{ action }} 执行失败：未找到 plan ID。
 update_plan_done_forbidden: |

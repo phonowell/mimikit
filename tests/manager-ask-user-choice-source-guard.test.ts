@@ -239,14 +239,14 @@ test('upsert_focus rejects non-contiguous open_item indices', () => {
   expect(feedback[0]?.hint).toContain('contiguously')
 })
 
-test('update_plan requires trigger_mode when patching cron/scheduled_at fields', () => {
+test('update_plan requires schedule_type when patching cron_expr/scheduled_at fields', () => {
   const feedback = collectManagerActionFeedback(
     [
       {
         name: 'update_plan',
         attrs: {
           id: 'plan-1',
-          cron: '*/5 * * * *',
+          cron_expr: '*/5 * * * *',
         },
       },
     ],
@@ -258,7 +258,7 @@ test('update_plan requires trigger_mode when patching cron/scheduled_at fields',
   expect(feedback).toHaveLength(1)
   expect(feedback[0]?.action).toBe('update_plan')
   expect(feedback[0]?.error).toBe('invalid_action_args')
-  expect(feedback[0]?.hint).toContain('trigger_mode')
+  expect(feedback[0]?.hint).toContain('schedule_type')
 })
 
 test('mutate_task rejects pause when task is already paused', () => {
@@ -311,12 +311,12 @@ test('enqueue_task rejects disabled provider outside enabled set', () => {
       {
         name: 'enqueue_task',
         attrs: {
-          prompt: 'run with free provider',
+          worker_prompt: 'run with free provider',
           title: 'use opencode',
           cwd: '/tmp/use-opencode',
           goal: 'Run worker task',
-          scope: 'Single task',
-          acceptance_1: 'Produce output',
+          in_scope: 'Single task',
+          done_when_1: 'Produce output',
           provider: 'opencode',
         },
       },
@@ -338,7 +338,7 @@ test('enqueue_task rejects missing task contract attrs', () => {
     {
       name: 'enqueue_task',
       attrs: {
-        prompt: 'run task',
+        worker_prompt: 'run task',
         title: 'missing contract',
         cwd: '/tmp/missing-contract',
       },
@@ -348,7 +348,9 @@ test('enqueue_task rejects missing task contract attrs', () => {
   expect(feedback).toHaveLength(1)
   expect(feedback[0]?.action).toBe('enqueue_task')
   expect(feedback[0]?.error).toBe('action_execution_rejected')
-  expect(feedback[0]?.hint).toContain('task contract')
+  expect(feedback[0]?.hint).toContain('每项一句即可')
+  expect(feedback[0]?.hint).toContain('worker_prompt=')
+  expect(feedback[0]?.hint).toContain('out_of_scope=')
 })
 
 test('enqueue_task high-cost payload requires user confirmation first', () => {
@@ -357,14 +359,14 @@ test('enqueue_task high-cost payload requires user confirmation first', () => {
       {
         name: 'enqueue_task',
         attrs: {
-          prompt: 'x'.repeat(1300),
+          worker_prompt: 'x'.repeat(1300),
           title: 'high-cost',
           cwd: '/tmp/high-cost-task',
           goal: 'Ship high-cost task',
-          scope: 'All modules',
-          acceptance_1: 'A',
-          acceptance_2: 'B',
-          acceptance_3: 'C',
+          in_scope: 'All modules',
+          done_when_1: 'A',
+          done_when_2: 'B',
+          done_when_3: 'C',
         },
       },
     ],

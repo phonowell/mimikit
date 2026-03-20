@@ -152,7 +152,7 @@ test('action logs env disables manager action console logs', async () => {
   const logger = createManagerActionCliLogger()
   await logger.logLifecycle({
     stage: 'dispatch',
-    item: { name: 'enqueue_task', attrs: { prompt: 'demo' } },
+    item: { name: 'enqueue_task', attrs: { worker_prompt: 'demo' } },
     index: 1,
     total: 1,
   })

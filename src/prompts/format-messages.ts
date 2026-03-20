@@ -5,11 +5,14 @@ import {
   parseIsoToMs,
   stringifyPromptJson,
 } from './format-base.js'
+export {
+  buildActionFeedbackPromptPayload,
+  formatActionFeedback,
+} from './format-action-feedback.js'
 
 import type {
   HistoryLookupMessage,
   HistoryMessage,
-  ManagerActionFeedback,
   QueryLookupMessage,
   ReadFileLookupMessage,
   UserInput,
@@ -310,36 +313,6 @@ export const buildReadFileLookupPromptPayload = (
     })
     .filter((item): item is NonNullable<typeof item> => item !== null)
   return entries.length === 0 ? undefined : { files: entries }
-}
-
-export const formatActionFeedback = (
-  feedback: ManagerActionFeedback[],
-): string => {
-  const payload = buildActionFeedbackPromptPayload(feedback)
-  if (!payload) return ''
-  return escapeCdata(stringifyPromptJson(payload))
-}
-
-export const buildActionFeedbackPromptPayload = (
-  feedback: ManagerActionFeedback[],
-): { items: Array<Record<string, string>> } | undefined => {
-  if (feedback.length === 0) return undefined
-  const entries = feedback
-    .map((item) => {
-      const action = item.action.trim()
-      const error = item.error.trim()
-      const hint = item.hint.trim()
-      if (!action || !error || !hint) return null
-      const attempted = item.attempted?.trim()
-      return {
-        action,
-        error,
-        hint,
-        ...(attempted ? { attempted } : {}),
-      }
-    })
-    .filter((item): item is NonNullable<typeof item> => item !== null)
-  return entries.length === 0 ? undefined : { items: entries }
 }
 
 export const formatQueryLookup = (lookup?: QueryLookupMessage): string => {

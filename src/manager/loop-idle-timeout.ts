@@ -1,6 +1,6 @@
-import { Cron } from 'croner'
-
 import { parseIsoMs } from '../shared/time.js'
+
+import { resolveNextCronRunAtMs } from './plan-cron.js'
 
 import type { RuntimeState } from './runtime-adapter.js'
 import type { TaskPlan } from '../types/index.js'
@@ -30,7 +30,7 @@ const resolvePlanWakeAtMs = (plan: TaskPlan, now: Date): number | undefined => {
     return scheduledAtMs
   }
   try {
-    return new Cron(plan.trigger.cron).nextRun(now)?.getTime()
+    return resolveNextCronRunAtMs(plan.trigger.cron, plan.trigger.timeZone, now)
   } catch {
     return undefined
   }
