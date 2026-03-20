@@ -74,16 +74,8 @@ export const validatePlanById = (
   if (!parsed.success) return [invalidArgsIssue(parsed.error)]
   const status = context.planStatusById?.get(parsed.data.id)
   if (!status) return rejected(formatPlanNotFoundHint(action))
-  if (action === 'update_plan' && status === 'done') {
-    const keys = new Set(Object.keys(item.attrs))
-    const isLastTaskPatch =
-      keys.size > 0 &&
-      [...keys].every((key) => key === 'id' || key === 'last_task_id') &&
-      typeof item.attrs.last_task_id === 'string' &&
-      item.attrs.last_task_id.trim().length > 0
-    if (isLastTaskPatch) return []
+  if (action === 'update_plan' && status === 'done')
     return rejected(formatUpdatePlanDoneForbiddenHint())
-  }
   return []
 }
 

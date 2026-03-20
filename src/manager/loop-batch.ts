@@ -5,7 +5,6 @@ import { bestEffort } from '../log/safe.js'
 import { requestMemoryRefresh } from '../memory/refresh/singleflight.js'
 import { readProviderErrorCode } from '../providers/provider-error.js'
 import { isVisibleToAgent } from '../shared/message-visibility.js'
-import { parseIsoToMsOrZero } from '../shared/time.js'
 
 import { applyTaskActions, collectTaskResultSummaries } from './action-apply.js'
 import {
@@ -19,6 +18,8 @@ import {
   consumeBatchHistory,
   finalizeBatchProgress,
 } from './loop-helpers.js'
+import { collectTriggeredPlanIds } from './loop-batch-context.js'
+import { applyPlanCompletionState } from './plan-progress.js'
 import { normalizeManagerReplyText } from './reply-normalize.js'
 import { clearResultReplayBackoff } from './result-replay-backoff.js'
 import {
@@ -28,31 +29,6 @@ import {
 } from './runtime-adapter.js'
 
 import type { TaskResult, TokenUsage, UserInput } from '../types/index.js'
-
-const applyPlanCompletionState = (
-  runtime: RuntimeState,
-  results: TaskResult[],
-): void => {
-  if (results.length === 0) return
-  const latestByTaskId = new Map<string, TaskResult>()
-  for (const result of results) {
-    const existing = latestByTaskId.get(result.taskId)
-    if (
-      !existing ||
-      parseIsoToMsOrZero(result.completedAt) >=
-        parseIsoToMsOrZero(existing.completedAt)
-    )
-      latestByTaskId.set(result.taskId, result)
-  }
-  for (const plan of runtime.taskPlans) {
-    const taskId = plan.lastTaskId?.trim()
-    if (!taskId) continue
-    const matched = latestByTaskId.get(taskId)
-    if (!matched) continue
-    plan.lastCompletedAt = matched.completedAt
-    plan.updatedAt = matched.completedAt
-  }
-}
 
 export const processManagerBatch = async (params: {
   runtime: RuntimeState
@@ -129,6 +105,7 @@ export const processManagerBatch = async (params: {
     if (!consumed.ok) throw new Error(consumed.reason)
     await applyTaskActions(runtime, parsed.actions, {
       suppressRunTask: hasManualCanceledResult && agentInputs.length === 0,
+      triggeredPlanIds: collectTriggeredPlanIds(inputs),
     })
 
     const normalizedReplyText = normalizeManagerReplyText(parsed.text)

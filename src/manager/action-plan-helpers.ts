@@ -117,38 +117,3 @@ export const resolveUpdatedTrigger = (
       (current.mode === 'cron' ? current.timeZone : undefined),
   })
 }
-
-export const isDoneLastTaskPatch = (params: {
-  current: TaskPlan
-  input: {
-    last_task_id?: string | undefined
-    prompt?: string | undefined
-    title?: string | undefined
-    schedule_type?: 'cron' | 'scheduled_at' | 'on_worker_slot_freed' | undefined
-    cron_expr?: string | undefined
-    scheduled_at?: string | undefined
-    time_zone?: string | undefined
-    max_runs?: number | undefined
-    priority?: string | undefined
-    source?: string | undefined
-    status?: string | undefined
-    focus_id?: string | undefined
-  }
-}): boolean => {
-  const { current, input } = params
-  return (
-    current.status === 'done' &&
-    input.last_task_id !== undefined &&
-    input.prompt === undefined &&
-    input.title === undefined &&
-    input.schedule_type === undefined &&
-    input.cron_expr === undefined &&
-    input.scheduled_at === undefined &&
-    input.time_zone === undefined &&
-    input.max_runs === undefined &&
-    input.priority === undefined &&
-    input.source === undefined &&
-    input.status === undefined &&
-    input.focus_id === undefined
-  )
-}

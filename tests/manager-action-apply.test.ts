@@ -647,7 +647,46 @@ test('delete_plan removes done plan', async () => {
   expect(runtime.taskPlans).toHaveLength(0)
 })
 
-test('update_plan allows last_task_id patch for done plan', async () => {
+test('enqueue_task auto-links a triggered plan to the created task', async () => {
+  const runtime = await createRuntime()
+  runtime.taskPlans.push({
+    id: 'plan-triggered',
+    prompt: 'scheduled prompt',
+    title: 'scheduled title',
+    focusId: GLOBAL_FOCUS_ID,
+    profile: 'worker',
+    priority: 'normal',
+    source: 'user_request',
+    status: 'active',
+    trigger: {
+      mode: 'scheduled_at',
+      scheduledAt: '2026-02-13T00:00:00.000Z',
+    },
+    createdAt: '2026-02-13T00:00:00.000Z',
+    updatedAt: '2026-02-13T00:00:00.000Z',
+    runCount: 1,
+  })
+
+  await applyTaskActions(runtime, [
+    {
+      name: 'enqueue_task',
+      attrs: {
+        worker_prompt: 'deliver scheduled work',
+        title: 'scheduled title',
+        cwd: TASK_CWD,
+        ...CONTRACT_ATTRS,
+      },
+    },
+  ], {
+    triggeredPlanIds: new Set(['plan-triggered']),
+  })
+
+  expect(runtime.taskPlans).toHaveLength(1)
+  expect(runtime.tasks).toHaveLength(1)
+  expect(runtime.taskPlans[0]?.lastTaskId).toBe(runtime.tasks[0]?.id)
+})
+
+test('update_plan rejects done plan edits', async () => {
   const runtime = await createRuntime()
   runtime.taskPlans.push({
     id: 'plan-done-bind',
@@ -674,15 +713,12 @@ test('update_plan allows last_task_id patch for done plan', async () => {
       name: 'update_plan',
       attrs: {
         id: 'plan-done-bind',
-        last_task_id: 'task-after-trigger',
+        title: 'changed title',
       },
     },
   ])
 
-  expect(runtime.taskPlans).toHaveLength(1)
-  expect(runtime.taskPlans[0]?.status).toBe('done')
-  expect(runtime.taskPlans[0]?.lastTaskId).toBe('task-after-trigger')
-  expect(runtime.taskPlans[0]?.archivedAt).toBe('2026-02-13T00:00:00.000Z')
+  expect(runtime.taskPlans[0]?.title).toBe('scheduled title')
 })
 
 test('remember_memory writes MEMORY.md immediately and emits system event payload', async () => {

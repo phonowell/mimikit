@@ -42,7 +42,7 @@
   - 触发参数：`cron? | scheduled_at? | max_runs?`
 - `update_plan`
   - 入参：`id` + 至少一个更新字段
-  - 可更新：`prompt|title|trigger_mode|cron|scheduled_at|max_runs|priority|source|status|last_task_id|focus_id`
+  - 可更新：`prompt|title|trigger_mode|cron|scheduled_at|max_runs|priority|source|status|focus_id`
 - `delete_plan`
   - 入参：`id`
 
@@ -56,7 +56,8 @@
 
 - `create_plan/update_plan` 中 `trigger_mode=scheduled_at` 时会校验时间不得早于“当前用户上下文时间”（若有）或系统当前时间。
 - `trigger_mode=on_worker_slot_freed` 与 `cron/scheduled_at` 参数互斥。
-- `update_plan` 对 `done` 计划默认拒绝，仅允许 `last_task_id` 补丁写入。
+- `update_plan` 对 `done` 计划默认拒绝。
+- `lastTaskId` 由运行时在 `trigger_fire -> enqueue_task` 成功落到既有/新建任务时自动回写，不再由 manager action 显式维护。
 
 ## 关联数据结构
 

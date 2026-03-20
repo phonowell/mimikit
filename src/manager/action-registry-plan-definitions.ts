@@ -37,7 +37,6 @@ const PLAN_ACTION_DEFINITIONS = [
       prompt: {
         summary: '更新现有计划。',
         briefConstraints: ['必填 `id` 且至少更新一项'],
-        detailConstraints: ['`done` plan 仅允许补 `last_task_id`'],
       },
     },
     (item, context) => {

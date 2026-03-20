@@ -11,7 +11,6 @@ import { parseActionAttrs } from './action-parse.js'
 import {
   appendPlanSystemMessage,
   buildTrigger,
-  isDoneLastTaskPatch,
   normalizePlanKey,
   resolveUpdatedTrigger,
 } from './action-plan-helpers.js'
@@ -90,12 +89,7 @@ export const applyUpdatePlan = async (
   if (index < 0) return
   const current = runtime.taskPlans[index]
   if (!current) return
-
-  const doneLastTaskPatch = isDoneLastTaskPatch({
-    current,
-    input: parsed,
-  })
-  if (current.status === 'done' && !doneLastTaskPatch) return
+  if (current.status === 'done') return
 
   const nextFocusId =
     parsed.focus_id !== undefined
@@ -117,16 +111,13 @@ export const applyUpdatePlan = async (
     ...(parsed.priority !== undefined ? { priority: parsed.priority } : {}),
     ...(parsed.source !== undefined ? { source: parsed.source } : {}),
     ...(parsed.status !== undefined ? { status: parsed.status } : {}),
-    ...(parsed.last_task_id !== undefined
-      ? { lastTaskId: parsed.last_task_id }
-      : {}),
     ...(parsed.max_runs !== undefined ? { maxRuns: parsed.max_runs } : {}),
     trigger,
     focusId: nextFocusId,
     updatedAt,
   }
 
-  if (next.status === 'done' && current.status !== 'done') {
+  if (next.status === 'done') {
     next.archivedAt = updatedAt
     next.doneReason = next.doneReason ?? 'completed'
   }

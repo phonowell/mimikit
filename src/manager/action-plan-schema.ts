@@ -41,7 +41,6 @@ const UPDATE_EDITABLE_FIELDS = [
   'priority',
   'source',
   'status',
-  'last_task_id',
   'focus_id',
 ] as const
 
@@ -76,7 +75,6 @@ export const updatePlanSchema = z
     priority: planPrioritySchema.optional(),
     source: planSourceSchema.optional(),
     status: planStatusSchema.optional(),
-    last_task_id: nonEmptyString.optional(),
     focus_id: focusIdSchema.optional(),
   })
   .strict()

@@ -30,12 +30,14 @@ import {
   buildTaskContractFromAttrs,
   resolveWorkerPromptFromAttrs,
 } from './task-contract.js'
+import { linkTriggeredPlanToTask } from './plan-progress.js'
 
 import type { Parsed } from '../actions/model/spec.js'
 import type { WorkerProfile } from '../types/index.js'
 
 export type ApplyTaskActionsOptions = {
   suppressRunTask?: boolean
+  triggeredPlanIds: ReadonlySet<string> | undefined
 }
 
 export const applyRunTask = async (
@@ -87,33 +89,13 @@ export const applyRunTask = async (
     confirmation.required &&
     !confirmedRunTaskChoiceIds.has(confirmation.choiceId)
   ) {
-    const question = buildRunTaskConfirmationQuestion({
-      title: parsed.data.title,
+    await requestRunTaskConfirmation({
+      runtime,
+      choiceId: confirmation.choiceId,
       estimatedChars: confirmation.estimatedChars,
+      title: parsed.data.title,
+      focusId,
     })
-    await applyAskUserChoiceAction(runtime, {
-      name: 'ask_user_choice',
-      attrs: {
-        id: confirmation.choiceId,
-        question,
-        option_1_id: RUN_TASK_CONFIRM_OPTION_ID,
-        option_1_label: 'Continue',
-        option_1_reason: 'Run current scope now',
-        option_2_id: RUN_TASK_CANCEL_OPTION_ID,
-        option_2_label: 'Cancel and narrow',
-        option_2_reason: 'Reduce scope before execution',
-        default_option_id: RUN_TASK_CANCEL_OPTION_ID,
-      },
-    })
-    await bestEffort('appendLog: run_task_confirmation_required', () =>
-      appendLog(runtime.paths.log, {
-        event: 'run_task_confirmation_required',
-        choiceId: confirmation.choiceId,
-        estimatedChars: confirmation.estimatedChars,
-        taskTitle: parsed.data.title,
-        focusId,
-      }),
-    )
     return 'stop'
   }
   const target = await resolveRunTaskTarget({
@@ -151,48 +133,28 @@ export const applyRunTask = async (
     semanticKey,
   )
   if (activeSemanticTask) {
-    const activeFingerprint = buildTaskFingerprint({
-      prompt: activeSemanticTask.prompt,
-      title: activeSemanticTask.title,
-      cwd: activeSemanticTask.cwd,
-      profile: activeSemanticTask.profile,
-      provider: activeSemanticTask.provider,
-      focusId: activeSemanticTask.focusId,
-      ...(activeSemanticTask.repoKey
-        ? { repoKey: activeSemanticTask.repoKey }
-        : {}),
-      ...(activeSemanticTask.branch
-        ? { branch: activeSemanticTask.branch }
-        : {}),
-      ...(activeSemanticTask.contract
-        ? { contract: activeSemanticTask.contract }
-        : {}),
+    const handled = await handleActiveSemanticTask({
+      runtime,
+      activeTask: activeSemanticTask,
+      nextTask: {
+        prompt: workerPrompt,
+        title: parsed.data.title,
+        cwd: target.cwd,
+        profile,
+        provider,
+        focusId,
+        ...(target.repoKey ? { repoKey: target.repoKey } : {}),
+        ...(target.branch ? { branch: target.branch } : {}),
+        contract,
+      },
+      triggeredPlanIds: options?.triggeredPlanIds,
+      onReusePending: (taskId) =>
+        logRunTaskDispatch({
+          taskId,
+          mode: 'reuse_pending',
+        }),
     })
-    const nextFingerprint = buildTaskFingerprint({
-      prompt: workerPrompt,
-      title: parsed.data.title,
-      cwd: target.cwd,
-      profile,
-      provider,
-      focusId,
-      ...(target.repoKey ? { repoKey: target.repoKey } : {}),
-      ...(target.branch ? { branch: target.branch } : {}),
-      contract,
-    })
-    if (activeFingerprint !== nextFingerprint) {
-      await cancelTask(runtime, activeSemanticTask.id, {
-        source: 'deferred',
-        reason: 'superseded_by_newer_semantic_task',
-      })
-    } else if (activeSemanticTask.status === 'pending') {
-      await logRunTaskDispatch({
-        taskId: activeSemanticTask.id,
-        mode: 'reuse_pending',
-      })
-      enqueueWorkerTask(runtime, activeSemanticTask)
-      notifyWorkerLoop(runtime)
-      return 'continue'
-    } else return 'continue'
+    if (handled) return 'continue'
   }
 
   const { task, created } = enqueueTask(
@@ -209,12 +171,23 @@ export const applyRunTask = async (
     contract,
   )
   if (!created) {
+    const linked = linkTriggeredPlanToTask({
+      runtime,
+      task,
+      triggeredPlanIds: options?.triggeredPlanIds,
+    })
+    if (linked) await persistRuntimeState(runtime)
     if (task.status !== 'pending') return 'continue'
     await logRunTaskDispatch({ taskId: task.id, mode: 'reuse_pending' })
     enqueueWorkerTask(runtime, task)
     notifyWorkerLoop(runtime)
     return 'continue'
   }
+  linkTriggeredPlanToTask({
+    runtime,
+    task,
+    triggeredPlanIds: options?.triggeredPlanIds,
+  })
   const slotStatus = resolveSlotStatus(runtime)
   await appendTaskSystemMessage(runtime.paths.history, 'created', task, {
     createdAt: task.createdAt,
