@@ -86,7 +86,10 @@ export const applyRunTask = async (
   if (!contract) return 'continue'
   const workerPrompt = resolveWorkerPromptFromAttrs(parsed.data)
   if (!workerPrompt) return 'continue'
-  const target = await resolveTaskExecutionTarget(parsed.data.cwd)
+  const target = await resolveTaskExecutionTarget(
+    parsed.data.cwd,
+    parsed.data.branch,
+  )
   const semanticKey = buildTaskSemanticKey({
     prompt: workerPrompt,
     title: parsed.data.title,
@@ -145,7 +148,7 @@ export const applyRunTask = async (
   }
   const debounce = markCreateAttempt(runtime, semanticKey)
   if (debounce.debounced) return 'continue'
-  const dedupeKey = `${workerPrompt}\n${parsed.data.title}\n${target.cwd}\n${profile}\n${provider}\n${focusId}`
+  const dedupeKey = `${workerPrompt}\n${parsed.data.title}\n${target.cwd}\n${profile}\n${provider}\n${focusId}\n${target.repoKey ?? ''}\n${target.branch ?? ''}`
   const dedupeContractSuffix = [
     contract.goal,
     contract.scope,

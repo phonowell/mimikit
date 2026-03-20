@@ -65,14 +65,18 @@ export type TaskExecutionTarget = {
 
 export const resolveTaskExecutionTarget = async (
   cwd: string,
+  branchOverride?: string,
 ): Promise<TaskExecutionTarget> => {
   const resolvedCwd = resolve(expandHomeDir(cwd))
   const normalizedCwd = await tryResolveRealpath(resolvedCwd)
   const repoKey = await resolveRepoKey(normalizedCwd)
-  const branch = repoKey ? await resolveBranch(normalizedCwd) : undefined
+  const branch = repoKey
+    ? (branchOverride ?? (await resolveBranch(normalizedCwd)))
+    : undefined
   return {
     cwd: normalizedCwd,
-    ...(repoKey && branch ? { repoKey, branch } : {}),
+    ...(repoKey ? { repoKey } : {}),
+    ...(repoKey && branch ? { branch } : {}),
   }
 }
 
