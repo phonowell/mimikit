@@ -17,7 +17,7 @@ import {
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { TaskFocusBrief } from '../prompts/format-task-focus-brief.js'
-import type { Task, TokenUsage, WorkerProvider } from '../types/index.js'
+import type { Task, TokenUsage } from '../types/index.js'
 
 export type WorkerLlmResult = {
   output: string
@@ -66,10 +66,6 @@ const runTaskModel = (params: {
   onPartialOutput?: (output: string) => void
 }): Promise<WorkerLlmResult> => {
   const { worker, codex } = params.runtime.config
-  const taskProvider: WorkerProvider = params.task.provider
-  if (taskProvider !== 'codex') {
-    throw new Error(`[worker] unsupported provider: ${taskProvider}`)
-  }
   const providerConfig = {
     enabled: codex.enabled,
     model: codex.model,
@@ -78,13 +74,12 @@ const runTaskModel = (params: {
   }
   if (!providerConfig.enabled) {
     throw new Error(
-      `[worker] ${taskProvider} provider is disabled: set ${taskProvider}.enabled=true`,
+      '[worker] codex provider is disabled: set codex.enabled=true',
     )
   }
 
   const focusBrief = buildTaskFocusBrief(params.runtime, params.task)
   return runWorker({
-    provider: taskProvider,
     runtimeId: params.runtime.runtimeId,
     stateDir: params.runtime.config.workDir,
     cwd: params.task.cwd,
@@ -93,9 +88,7 @@ const runTaskModel = (params: {
     timeoutMs: worker.timeoutMs,
     ...(providerConfig.proxy ? { proxy: providerConfig.proxy } : {}),
     model: providerConfig.model,
-    ...(providerConfig.modelReasoningEffort
-      ? { modelReasoningEffort: providerConfig.modelReasoningEffort }
-      : {}),
+    modelReasoningEffort: providerConfig.modelReasoningEffort,
     ...(params.sessionId ? { sessionId: params.sessionId } : {}),
     abortSignal: params.controller.signal,
     ...(params.onSessionId ? { onSessionId: params.onSessionId } : {}),

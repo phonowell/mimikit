@@ -6,7 +6,7 @@ import { appendTaskProgress } from '../storage/task-progress.js'
 import { runWorkerLoop } from './profiled-runner-loop.js'
 
 import type { TaskFocusBrief } from '../prompts/format-task-focus-brief.js'
-import type { Task, TokenUsage, WorkerProvider } from '../types/index.js'
+import type { Task, TokenUsage } from '../types/index.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
 type LlmResult = {
@@ -16,7 +16,6 @@ type LlmResult = {
 }
 
 type BuildRunModelParams = {
-  provider: WorkerProvider
   runtimeId: string
   cwd: string
   timeoutMs: number
@@ -55,7 +54,6 @@ const buildRunModel =
     })
 
 type WorkerRunnerParams = {
-  provider: WorkerProvider
   runtimeId: string
   stateDir: string
   cwd: string
@@ -79,9 +77,6 @@ type WorkerRunnerParams = {
 export const runWorker = async (
   params: WorkerRunnerParams,
 ): Promise<LlmResult> => {
-  if (params.provider !== 'codex') {
-    throw new Error(`[worker] unsupported provider: ${params.provider}`)
-  }
   const prompt = await buildWorkerPrompt({
     stateDir: params.stateDir,
     workspaceDir: params.cwd,

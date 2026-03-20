@@ -65,12 +65,6 @@ export const resolvePreferredWorkerProvider = (
   return enabled[0]?.provider
 }
 
-const isEnabledProvider = (
-  config: AppConfig,
-  provider: WorkerProvider,
-): boolean =>
-  listEnabledWorkerProviders(config).some((item) => item.provider === provider)
-
 const compareAffinityTaskDesc = (left: Task, right: Task): number => {
   const leftRank =
     left.status === 'running' || left.status === 'pending'
@@ -105,13 +99,11 @@ export const resolveFocusAffinitizedWorkerProvider = (params: {
   tasks: Task[]
   focusId: FocusId
 }): WorkerProvider | undefined => {
+  if (!params.config.codex.enabled) return undefined
   const candidates = params.tasks
     .filter(
-      (task) =>
-        task.focusId === params.focusId &&
-        task.status !== 'canceled' &&
-        isEnabledProvider(params.config, task.provider),
+      (task) => task.focusId === params.focusId && task.status !== 'canceled',
     )
     .sort(compareAffinityTaskDesc)
-  return candidates[0]?.provider
+  return candidates.length > 0 ? 'codex' : undefined
 }
