@@ -161,7 +161,7 @@
 - 读写入口：`src/orchestrator/core/runtime-persistence.ts`
 - WebUI/SSE：
 - `GET /api/events` 的 `snapshot` 包含 `focuses`
-- Focus 读模型仅输出非 archived focus，且做 `title/summary/openItems` 归一化与兜底
+- Focus 读模型仅输出非 archived focus；`title` 只来自显式标题或 `focus.id`，不再从 `summary` 反向派生
 
 ## 完整性验收清单
 

@@ -81,8 +81,7 @@ export const buildFocusViews = (
       const lastTaskId = latestTaskIdByFocus.get(focus.id)
       const summary = normalizeSummary(focus.summary)
       const titleFallback = normalizeSummary(focus.title)
-      const title = titleFallback ?? summary ?? focus.id
-      const resolvedSummary = summary ?? titleFallback
+      const title = titleFallback ?? focus.id
       const openItems = normalizeFocusOpenItems(focus.openItems)
       return {
         id: focus.id,
@@ -92,7 +91,7 @@ export const buildFocusViews = (
         ...(lastTaskId ? { lastTaskId } : {}),
         updatedAt: focus.updatedAt,
         lastActivityAt: focus.lastActivityAt,
-        ...(resolvedSummary ? { summary: resolvedSummary } : {}),
+        ...(summary ? { summary } : {}),
         ...(openItems ? { openItems } : {}),
       }
     })

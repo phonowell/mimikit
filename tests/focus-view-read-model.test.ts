@@ -108,3 +108,23 @@ test('buildFocusViews sorts by active flag, status, activity time, then id', () 
     'focus-done-d',
   ])
 })
+
+test('buildFocusViews does not derive title from summary', () => {
+  const snapshot = buildFocusViews(
+    [
+      createFocus({
+        id: 'focus-summary-only',
+        title: '',
+        summary: 'Manual summary only',
+      }),
+    ],
+    200,
+    [],
+  )
+
+  expect(snapshot.items[0]).toMatchObject({
+    id: 'focus-summary-only',
+    title: 'focus-summary-only',
+    summary: 'Manual summary only',
+  })
+})
