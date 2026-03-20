@@ -43,3 +43,25 @@ test('enqueue_task accepts complete contract attrs', () => {
 
   expect(feedback).toHaveLength(0)
 })
+
+test('enqueue_task accepts legacy prompt scope and acceptance aliases', () => {
+  const feedback = collectManagerActionFeedback(
+    [
+      {
+        name: 'enqueue_task',
+        attrs: {
+          title: 'Task with legacy aliases',
+          cwd: '/tmp/task-with-legacy-contract',
+          goal: 'Finish task',
+          scope: 'Single deliverable',
+          acceptance_1: 'Output exists',
+        },
+      },
+    ],
+    {
+      enabledWorkerProviders: new Set(['codex']),
+    },
+  )
+
+  expect(feedback).toHaveLength(0)
+})

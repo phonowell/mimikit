@@ -13,6 +13,7 @@ import {
   updatePlanSchema,
 } from './action-plan-schema.js'
 import { readFileToolSchema } from './read-file-tool.js'
+export { runTaskSchema } from './run-task-schema.js'
 
 import type { Parsed } from '../actions/model/spec.js'
 import type { UserChoiceOption } from '../types/index.js'
@@ -30,27 +31,6 @@ export const summarizeSchema = z
   .object({
     task_id: nonEmptyString,
     summary: nonEmptyString,
-  })
-  .strict()
-
-export const runTaskSchema = z
-  .object({
-    worker_prompt: nonEmptyString.optional(),
-    title: nonEmptyString,
-    cwd: nonEmptyString,
-    goal: nonEmptyString.optional(),
-    in_scope: nonEmptyString.optional(),
-    done_when_1: nonEmptyString.optional(),
-    done_when_2: nonEmptyString.optional(),
-    done_when_3: nonEmptyString.optional(),
-    done_when_4: nonEmptyString.optional(),
-    done_when_5: nonEmptyString.optional(),
-    out_of_scope: nonEmptyString.optional(),
-    context_ref_1: nonEmptyString.optional(),
-    context_ref_2: nonEmptyString.optional(),
-    context_ref_3: nonEmptyString.optional(),
-    focus_id: focusIdSchema.optional(),
-    provider: z.enum(['codex', 'opencode']).optional(),
   })
   .strict()
 
