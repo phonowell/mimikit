@@ -85,7 +85,7 @@ const stripPortArgs = (argv: readonly string[]): string[] => {
       index += 1
       continue
     }
-    if (arg?.startsWith('--port=')) continue
+    if (arg.startsWith('--port=')) continue
     nextArgs.push(arg)
   }
   return nextArgs
@@ -93,15 +93,18 @@ const stripPortArgs = (argv: readonly string[]): string[] => {
 
 const buildRespawnArgs = (port: number | null): string[] => {
   const cliArgs = process.argv.slice(1)
-  if (port === null) return [...process.execArgv, ...cliArgs]
-  return [...process.execArgv, ...stripPortArgs(cliArgs), '--port', String(port)]
+  return port === null
+    ? [...process.execArgv, ...cliArgs]
+    : [...process.execArgv, ...stripPortArgs(cliArgs), '--port', String(port)]
 }
 
-const runFreshProcessRestartLoop = async (port: number | null): Promise<never> => {
+const runFreshProcessRestartLoop = async (
+  port: number | null,
+): Promise<never> => {
   const childArgs = buildRespawnArgs(port)
   let activeChild: ReturnType<typeof spawn> | null = null
   const forwardSignal = (signal: NodeJS.Signals): void => {
-    if (!activeChild || activeChild.exitCode !== null) return
+    if (activeChild?.exitCode !== null) return
     activeChild.kill(signal)
   }
 

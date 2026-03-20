@@ -28,6 +28,7 @@ type UsageLedgerEntry = {
   threadId?: string
   promptBytes?: number
   promptSegmentCount?: number
+  sectionDigests?: ManagerContextPacket['sectionDigests']
   includedSections?: string[]
   prunedSections?: string[]
   status?: string
@@ -73,6 +74,9 @@ export const appendManagerUsageLedgerEntry = (params: {
     ...(params.threadId?.trim() ? { threadId: params.threadId.trim() } : {}),
     promptBytes: params.promptBytes,
     promptSegmentCount: params.promptSegmentCount,
+    ...(params.contextPacket.sectionDigests?.length
+      ? { sectionDigests: params.contextPacket.sectionDigests }
+      : {}),
     includedSections: params.contextPacket.includedSections,
     prunedSections: params.contextPacket.prunedSections,
   })

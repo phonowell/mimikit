@@ -30,6 +30,17 @@ test('appendManagerUsageLedgerEntry writes manager round packet with token usage
       },
       activeTaskIds: ['task-1'],
       workingFocusIds: ['focus-global'],
+      sectionDigests: [
+        {
+          section: 'query_lookup',
+          mode: 'digest',
+          sourceBytes: 4096,
+          digestBytes: 1024,
+          sourceItems: 6,
+          digestItems: 2,
+          sourceRefCount: 2,
+        },
+      ],
       includedSections: ['packet_summary', 'inputs', 'tasks'],
       prunedSections: ['memory'],
     },
@@ -56,6 +67,17 @@ test('appendManagerUsageLedgerEntry writes manager round packet with token usage
   expect(entry?.focusIds).toEqual(['focus-global'])
   expect(entry?.promptBytes).toBe(2048)
   expect(entry?.promptSegmentCount).toBe(3)
+  expect(entry?.sectionDigests).toEqual([
+    {
+      section: 'query_lookup',
+      mode: 'digest',
+      sourceBytes: 4096,
+      digestBytes: 1024,
+      sourceItems: 6,
+      digestItems: 2,
+      sourceRefCount: 2,
+    },
+  ])
 })
 
 test('appendWorkerUsageLedgerEntry writes worker result packet with provider and task scope', async () => {

@@ -141,6 +141,7 @@ export const buildManagerContextPacket = (params: {
   tasks: Task[]
   plans: TaskPlan[]
   workingFocusIds: FocusId[]
+  sectionDigests?: ManagerContextPacket['sectionDigests']
   includedSections: ManagerPacketSection[]
   prunedSections: ManagerPacketSection[]
 }): {
@@ -186,6 +187,9 @@ export const buildManagerContextPacket = (params: {
       .map((plan) => plan.id)
       .slice(0, MAX_PACKET_IDS),
     workingFocusIds: params.workingFocusIds.slice(0, MAX_PACKET_IDS),
+    ...(params.sectionDigests?.length
+      ? { sectionDigests: params.sectionDigests }
+      : {}),
     includedSections: [...params.includedSections],
     prunedSections: [...params.prunedSections],
   }
