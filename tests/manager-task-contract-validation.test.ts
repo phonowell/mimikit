@@ -44,6 +44,30 @@ test('enqueue_task accepts complete contract attrs', () => {
   expect(feedback).toHaveLength(0)
 })
 
+test('enqueue_task accepts branch attr with complete contract attrs', () => {
+  const feedback = collectManagerActionFeedback(
+    [
+      {
+        name: 'enqueue_task',
+        attrs: {
+          worker_prompt: 'Do work',
+          title: 'Task with branch contract',
+          cwd: '/tmp/task-with-branch',
+          branch: 'feat/runtime-status',
+          goal: 'Finish task',
+          in_scope: 'Single deliverable',
+          done_when_1: 'Output exists',
+        },
+      },
+    ],
+    {
+      enabledWorkerProviders: new Set(['codex']),
+    },
+  )
+
+  expect(feedback).toHaveLength(0)
+})
+
 test('enqueue_task accepts legacy prompt scope and acceptance aliases', () => {
   const feedback = collectManagerActionFeedback(
     [

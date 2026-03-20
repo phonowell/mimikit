@@ -20,6 +20,7 @@ const TASK_STATUS_LABEL_MAP = Object.freeze({
 
 const TASK_PENDING_REASON_LABEL_MAP = Object.freeze({
   waiting_capacity: 'Waiting: capacity',
+  waiting_dispatch_lock: 'Waiting: dispatch lock',
 })
 
 export const UI_TEXT = Object.freeze({
