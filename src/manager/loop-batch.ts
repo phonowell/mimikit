@@ -5,6 +5,7 @@ import { bestEffort } from '../log/safe.js'
 import { requestMemoryRefresh } from '../memory/refresh/singleflight.js'
 import { readProviderErrorCode } from '../providers/provider-error.js'
 import { isVisibleToAgent } from '../shared/message-visibility.js'
+import { parseIsoToMsOrZero } from '../shared/time.js'
 
 import { applyTaskActions, collectTaskResultSummaries } from './action-apply.js'
 import {
@@ -12,7 +13,6 @@ import {
   finishBatchWithoutAgentReply,
   recoverManagerBatchFailure,
 } from './loop-batch-flow.js'
-import { applyPlanCompletionState } from './loop-batch-pre.js'
 import { runManagerBatch } from './loop-batch-run-manager.js'
 import {
   buildFallbackReply,
@@ -28,6 +28,31 @@ import {
 } from './runtime-adapter.js'
 
 import type { TaskResult, TokenUsage, UserInput } from '../types/index.js'
+
+const applyPlanCompletionState = (
+  runtime: RuntimeState,
+  results: TaskResult[],
+): void => {
+  if (results.length === 0) return
+  const latestByTaskId = new Map<string, TaskResult>()
+  for (const result of results) {
+    const existing = latestByTaskId.get(result.taskId)
+    if (
+      !existing ||
+      parseIsoToMsOrZero(result.completedAt) >=
+        parseIsoToMsOrZero(existing.completedAt)
+    )
+      latestByTaskId.set(result.taskId, result)
+  }
+  for (const plan of runtime.taskPlans) {
+    const taskId = plan.lastTaskId?.trim()
+    if (!taskId) continue
+    const matched = latestByTaskId.get(taskId)
+    if (!matched) continue
+    plan.lastCompletedAt = matched.completedAt
+    plan.updatedAt = matched.completedAt
+  }
+}
 
 export const processManagerBatch = async (params: {
   runtime: RuntimeState

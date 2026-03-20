@@ -24,9 +24,23 @@ export const createOrchestratorStub = () => {
     getChatMessages: async () => ({ messages: [], mode: 'full' as const }),
     getTasks: () => ({ tasks: [], counts: {} }),
     getReviewStatus: async () => ({ cards: [], highlights: [] }),
-    getPlans: () => ({ items: [] }),
-    getFocuses: () => ({ items: [] }),
-    getPendingUserChoices: () => [],
+    getWebUiDeltaSnapshot: async () => ({
+      status: {
+        ok: true,
+        runtimeId: 'runtime-stub-1',
+        agentStatus: 'idle',
+        activeTasks: 0,
+        pendingTasks: 0,
+        pendingInputs: 0,
+        managerRunning: false,
+        maxWorkers: 1,
+      },
+      messages: { messages: [], mode: 'full' as const },
+      tasks: { tasks: [], counts: {} },
+      plans: { items: [] },
+      focuses: { items: [] },
+      choices: [],
+    }),
     getWebUiWakeVersion: () => 0,
     waitForWebUiSignal: async () =>
       ({ kind: 'timeout', version: 0 }) as const,
@@ -49,22 +63,7 @@ export const createOrchestratorStub = () => {
       reviewStatus: { cards: [], highlights: [] },
     }),
     getTaskById: () => undefined,
-    cancelTask: async (taskId: string) => ({
-      ok: false,
-      id: taskId,
-      status: 'not_found' as const,
-    }),
-    deleteTask: async (taskId: string) => ({
-      ok: false,
-      id: taskId,
-      status: 'not_found' as const,
-    }),
-    pauseTask: async (taskId: string) => ({
-      ok: false,
-      id: taskId,
-      status: 'not_found' as const,
-    }),
-    resumeTask: async (taskId: string) => ({
+    mutateTask: async (_action: 'cancel' | 'delete' | 'pause' | 'resume', taskId: string) => ({
       ok: false,
       id: taskId,
       status: 'not_found' as const,
