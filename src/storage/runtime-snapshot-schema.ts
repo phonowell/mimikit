@@ -5,6 +5,17 @@ import {
   focusIdSchema,
   optionIdSchema,
 } from '../shared/id-schema.js'
+import {
+  FOCUS_STATUS_VALUES,
+  MANAGER_WAKE_PROFILE_VALUES,
+  TASK_CANCEL_SOURCE_VALUES,
+  TASK_PLAN_STATUS_VALUES,
+  TASK_RESULT_OUTCOME_VALUES,
+  TASK_RESULT_STATUS_VALUES,
+  TASK_RESULT_STOP_REASON_VALUES,
+  TASK_STATUS_VALUES,
+  WORKER_PROVIDER_VALUES,
+} from '../types/runtime-domain.js'
 
 import {
   managerPacketModeSchema,
@@ -18,25 +29,19 @@ export {
   managerPacketSectionSchema,
 } from './manager-packet-schema.js'
 
-const workerProviderSchema = z.enum(['codex', 'opencode'])
-const taskStatusSchema = z.enum([
-  'pending',
-  'paused',
-  'running',
-  'succeeded',
-  'failed',
-  'canceled',
-])
-const taskResultStatusSchema = z.enum([
-  'succeeded',
-  'failed',
-  'canceled',
-  'partial',
-])
+const workerProviderSchema = z.enum(WORKER_PROVIDER_VALUES)
+const taskStatusSchema = z.enum(TASK_STATUS_VALUES)
+const taskResultStatusSchema = z.enum(TASK_RESULT_STATUS_VALUES)
+const taskCancelSourceSchema = z.enum(TASK_CANCEL_SOURCE_VALUES)
+const taskResultOutcomeSchema = z.enum(TASK_RESULT_OUTCOME_VALUES)
+const taskResultStopReasonSchema = z.enum(TASK_RESULT_STOP_REASON_VALUES)
+const taskPlanStatusSchema = z.enum(TASK_PLAN_STATUS_VALUES)
+const focusStatusSchema = z.enum(FOCUS_STATUS_VALUES)
+const managerWakeProfileSchema = z.enum(MANAGER_WAKE_PROFILE_VALUES)
 
 export const taskCancelSchema = z
   .object({
-    source: z.enum(['user', 'deferred', 'system']),
+    source: taskCancelSourceSchema,
     reason: z.string().optional(),
   })
   .strict()
@@ -113,17 +118,8 @@ export const taskResultSchema = z
     durationMs: z.number().finite().nonnegative(),
     completedAt: z.string(),
     taskStatus: taskStatusSchema.optional(),
-    outcome: z.enum(['completed', 'partial', 'blocked']).optional(),
-    stopReason: z
-      .enum([
-        'completed',
-        'budget_exhausted',
-        'guard_rejected',
-        'input_required',
-        'failed',
-        'canceled',
-      ])
-      .optional(),
+    outcome: taskResultOutcomeSchema.optional(),
+    stopReason: taskResultStopReasonSchema.optional(),
     usage: tokenUsageSchema.optional(),
     title: z.string().optional(),
     archivePath: z.string().optional(),
@@ -213,7 +209,7 @@ export const taskPlanSchema = z
     profile: z.enum(['worker']),
     priority: z.enum(['high', 'normal', 'low']),
     source: z.enum(['user_request', 'agent_auto', 'retry_decision']),
-    status: z.enum(['active', 'blocked', 'done']),
+    status: taskPlanStatusSchema,
     trigger: taskPlanTriggerSchema,
     createdAt: z.string(),
     updatedAt: z.string(),
@@ -231,7 +227,7 @@ export const focusMetaSchema = z
   .object({
     id: z.string().trim().min(1),
     title: z.string(),
-    status: z.enum(['active', 'idle', 'done', 'archived']),
+    status: focusStatusSchema,
     createdAt: z.string(),
     updatedAt: z.string(),
     lastActivityAt: z.string(),
@@ -239,14 +235,6 @@ export const focusMetaSchema = z
     openItems: z.array(z.string().trim().min(1)).optional(),
   })
   .strict()
-
-const managerWakeProfileSchema = z.enum([
-  'user_input',
-  'task_result',
-  'trigger',
-  'capacity',
-  'mixed',
-])
 
 export const managerContextPacketSchema = z
   .object({
