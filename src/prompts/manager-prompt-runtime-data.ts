@@ -3,12 +3,8 @@ import { buildPaths } from '../fs/paths.js'
 import { readHistory } from '../history/store.js'
 import { buildMemoryPromptSections } from '../memory/prompt-sections.js'
 import { readMemoryEntries } from '../memory/store.js'
-import { readTaskResultsForTasks } from '../storage/task-results.js'
 
 import {
-  buildTaskResultDateHints,
-  collectResultTaskIds,
-  collectTaskResults,
   mergeTaskResults,
 } from './build-prompts-helpers.js'
 import { buildQuoteReferenceLookup } from './format.js'
@@ -30,10 +26,6 @@ export const prepareManagerPromptRuntimeData = async (
   const demand = normalizeRuntimeDemand(demandInput)
   const workingFocusIds = params.workingFocusIds ?? []
   const pendingResults = mergeTaskResults(params.results, [])
-  const knownResults = mergeTaskResults(
-    pendingResults,
-    collectTaskResults(params.tasks),
-  )
   const statePaths = buildPaths(params.stateDir)
 
   const requiresFocusHistory =
@@ -48,24 +40,6 @@ export const prepareManagerPromptRuntimeData = async (
     demand.includeRememberedMemory || demand.includeMemory
   const memoryEntries = shouldLoadMemory
     ? await readMemoryEntries(statePaths.memoryFile)
-    : []
-
-  const resultTaskIds = demand.includeTasks
-    ? collectResultTaskIds(params.tasks)
-    : []
-  const dateHints = buildTaskResultDateHints(params.tasks)
-  const archivedResults =
-    resultTaskIds.length > 0
-      ? await readTaskResultsForTasks(params.stateDir, resultTaskIds, {
-          dateHints,
-        })
-      : []
-  const pendingResultIds = new Set(
-    pendingResults.map((result) => result.taskId),
-  )
-  const mergedResults = mergeTaskResults(knownResults, archivedResults)
-  const resultsForTasks = demand.includeTasks
-    ? mergedResults.filter((result) => !pendingResultIds.has(result.taskId))
     : []
 
   const focusHistory = requiresFocusHistory ? history : []
@@ -98,7 +72,6 @@ export const prepareManagerPromptRuntimeData = async (
     : { rememberedMemory: '', memory: '' }
   return {
     pendingResults,
-    resultsForTasks,
     focusPayload,
     quoteLookup,
     memoryPrompts,

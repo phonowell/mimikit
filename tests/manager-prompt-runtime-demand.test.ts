@@ -11,10 +11,6 @@ const { readMemoryEntriesMock } = vi.hoisted(() => ({
   readMemoryEntriesMock: vi.fn(async () => []),
 }))
 
-const { readTaskResultsForTasksMock } = vi.hoisted(() => ({
-  readTaskResultsForTasksMock: vi.fn(async () => []),
-}))
-
 vi.mock('../src/history/store.js', () => ({
   readHistory: readHistoryMock,
 }))
@@ -23,18 +19,9 @@ vi.mock('../src/memory/store.js', () => ({
   readMemoryEntries: readMemoryEntriesMock,
 }))
 
-vi.mock('../src/storage/task-results.js', async () => {
-  const actual = await vi.importActual('../src/storage/task-results.js')
-  return {
-    ...actual,
-    readTaskResultsForTasks: readTaskResultsForTasksMock,
-  }
-})
-
 test('buildManagerPromptPayload skips history reads for minimal task_result packets without focus context', async () => {
   readHistoryMock.mockClear()
   readMemoryEntriesMock.mockClear()
-  readTaskResultsForTasksMock.mockClear()
 
   const config = defaultConfig({
     workDir: '/tmp/mimikit-context-demand-minimal',
@@ -62,13 +49,11 @@ test('buildManagerPromptPayload skips history reads for minimal task_result pack
 
   expect(readHistoryMock).not.toHaveBeenCalled()
   expect(readMemoryEntriesMock).toHaveBeenCalledTimes(1)
-  expect(readTaskResultsForTasksMock).not.toHaveBeenCalled()
 })
 
 test('buildManagerPromptPayload reads history and memory when standard packet sections require them', async () => {
   readHistoryMock.mockClear()
   readMemoryEntriesMock.mockClear()
-  readTaskResultsForTasksMock.mockClear()
 
   const config = defaultConfig({
     workDir: '/tmp/mimikit-context-demand-standard',
@@ -107,5 +92,4 @@ test('buildManagerPromptPayload reads history and memory when standard packet se
 
   expect(readHistoryMock).toHaveBeenCalledTimes(1)
   expect(readMemoryEntriesMock).toHaveBeenCalledTimes(1)
-  expect(readTaskResultsForTasksMock).not.toHaveBeenCalled()
 })

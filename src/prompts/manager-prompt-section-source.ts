@@ -116,7 +116,7 @@ export const buildManagerPacketSectionSource = (params: {
         ? sectionJson(
             formatTasksJson(
               params.tasks,
-              params.runtime.resultsForTasks,
+              [],
               params.workDir,
             ),
             params.limits.tasksMaxBytes,

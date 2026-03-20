@@ -151,3 +151,9 @@
 - `M:event_packet.file_lookup`
 - `M:event_packet.action_feedback`
 - `M:event_packet.packet`
+
+约束补充：
+
+- `M:state_packet.tasks` 只承载稳定任务状态与归档路径，不再重复展开详细 task result。
+- `M:event_packet.batch_results` 是当前批次 task result 的唯一详细结果通道。
+- `M:event_packet.packet.latestResult` 只保留摘要指针，用于快速判断本轮结果重心。

@@ -159,18 +159,37 @@ test('buildTasksPromptPayload fallback and buildPlansPromptPayload title fallbac
     }),
   ])
 
-  expect(tasksPayload?.tasks[0]).toMatchObject({
-    id: 'task-result-only',
-    status: 'paused',
-    result: {
-      status: 'partial',
-    },
-  })
+  expect(tasksPayload).toBeUndefined()
   expect(planPayload?.plans[0]).toMatchObject({
     id: 'plan-collapse-1',
     title: 'plan-collapse-1',
     done_reason: 'completed',
   })
+})
+
+test('buildTasksPromptPayload keeps archive path but does not duplicate detailed result', () => {
+  const task = createTaskFixture({
+    id: 'task-collapse-state-1',
+    title: 'State only task',
+    archivePath: '/tmp/task-collapse-state-1.md',
+  })
+  const result: TaskResult = {
+    taskId: task.id,
+    status: 'succeeded',
+    ok: true,
+    output: 'final output',
+    durationMs: 12,
+    completedAt: '2026-03-20T12:30:00.000Z',
+    archivePath: '/tmp/task-collapse-state-1.md',
+  }
+
+  const payload = buildTasksPromptPayload([task], [result], '/tmp')
+
+  expect(payload?.tasks[0]).toMatchObject({
+    id: task.id,
+    archive_path: 'task-collapse-state-1.md',
+  })
+  expect(payload?.tasks[0]).not.toHaveProperty('result')
 })
 
 test('formatEnvironment does not expose provider candidate fields', () => {

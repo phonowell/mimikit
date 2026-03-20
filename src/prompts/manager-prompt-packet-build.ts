@@ -80,7 +80,6 @@ export const buildManagerPromptPackets = (params: {
       selectedSections,
       focusPayload: params.runtime.focusPayload,
       tasks: params.tasks,
-      resultsForTasks: params.runtime.resultsForTasks,
       workDir: params.workDir,
       plans: params.plans,
     }),

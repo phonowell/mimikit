@@ -18,7 +18,6 @@ export const buildStatePacketPayload = (params: {
   selectedSections: PacketSections
   focusPayload: ManagerPromptRuntimeData['focusPayload']
   tasks: BuildManagerPromptParams['tasks']
-  resultsForTasks: ManagerPromptRuntimeData['resultsForTasks']
   workDir: string
   plans: BuildManagerPromptParams['plans']
 }): string =>
@@ -41,7 +40,7 @@ export const buildStatePacketPayload = (params: {
       ? {
           tasks: buildTasksPromptPayload(
             params.tasks,
-            params.resultsForTasks,
+            [],
             params.workDir,
           ),
         }

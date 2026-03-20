@@ -1,4 +1,3 @@
-import { GLOBAL_FOCUS_ID } from '../focus/index.js'
 import { toDisplayPath } from '../shared/path-display.js'
 import { resolveTaskLabel } from '../shared/task-state.js'
 import { truncateText } from '../shared/text.js'
@@ -59,52 +58,21 @@ const formatTaskEntry = (
     ...(task.status === 'canceled' && task.cancel
       ? { cancel: toCancelMeta(task.cancel) }
       : {}),
-    ...(result
-      ? {
-          result: buildResultPromptPayload(
-            result,
-            result.cancel ?? task.cancel,
-            task.archivePath,
-            workDir,
-          ),
-        }
-      : {}),
   }
 }
-
-const buildFallbackTask = (result: TaskResult): Task => ({
-  id: result.taskId,
-  fingerprint: '',
-  prompt: '',
-  title: result.title ?? result.taskId,
-  cwd: 'unknown-task-cwd',
-  profile: 'worker',
-  provider: result.provider ?? 'codex',
-  status:
-    result.taskStatus ??
-    (result.status === 'partial' ? 'paused' : result.status),
-  focusId: GLOBAL_FOCUS_ID,
-  createdAt: result.completedAt,
-  completedAt: result.completedAt,
-})
 
 export const buildTasksPromptPayload = (
   tasks: Task[],
   results: TaskResult[],
   workDir?: string,
 ): { tasks: Record<string, unknown>[] } | undefined => {
-  if (tasks.length === 0 && results.length === 0) return undefined
+  if (tasks.length === 0) return undefined
 
   const resultById = new Map(results.map((result) => [result.taskId, result]))
   const orderedTasks = selectTasksForPrompt(tasks)
-  const entries =
-    orderedTasks.length === 0 && results.length > 0
-      ? results.map((result) =>
-          formatTaskEntry(buildFallbackTask(result), result, workDir),
-        )
-      : orderedTasks.map((task) =>
-          formatTaskEntry(task, resultById.get(task.id), workDir),
-        )
+  const entries = orderedTasks.map((task) =>
+    formatTaskEntry(task, resultById.get(task.id), workDir),
+  )
 
   return entries.length === 0 ? undefined : { tasks: entries }
 }
