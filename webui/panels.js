@@ -8,6 +8,24 @@ const normalizeItemsPayload = (value) => ({
   items: Array.isArray(value?.items) ? value.items : [],
 })
 
+export const hasSnapshotItems = (value) =>
+  normalizeItemsPayload(value).items.length > 0
+
+export const syncPlansEntryVisibility = ({
+  plansOpenBtn,
+  plansDialog,
+  hasPlans,
+}) => {
+  if (plansOpenBtn) plansOpenBtn.hidden = !hasPlans
+  if (hasPlans || !plansDialog?.open) return
+  if (typeof plansDialog.close === 'function') {
+    plansDialog.close()
+    return
+  }
+  if (typeof plansDialog.removeAttribute === 'function')
+    plansDialog.removeAttribute('open')
+}
+
 const bindItemsPanel = ({ list, dialog, openBtn, closeBtn, render, emptyClass }) => {
   const panel = bindSnapshotPanel({
     list,
@@ -31,6 +49,7 @@ export const bindPlansPanel = ({
   plansOpenBtn,
   plansCloseBtn,
 }) => {
+  syncPlansEntryVisibility({ plansOpenBtn, plansDialog, hasPlans: false })
   const unbindPlanInteractions = bindPlanInteractions(plansList)
   const panel = bindItemsPanel({
     list: plansList,
@@ -41,7 +60,14 @@ export const bindPlansPanel = ({
     emptyClass: 'plans-empty',
   })
   return {
-    applyPlansSnapshot: panel.applySnapshot,
+    applyPlansSnapshot: (payload) => {
+      syncPlansEntryVisibility({
+        plansOpenBtn,
+        plansDialog,
+        hasPlans: hasSnapshotItems(payload),
+      })
+      panel.applySnapshot(payload)
+    },
     setDisconnected: panel.setDisconnected,
     dispose: () => {
       unbindPlanInteractions()
