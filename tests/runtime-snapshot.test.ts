@@ -299,6 +299,15 @@ test('buildTaskViews marks pending reason as waiting_capacity when worker slots 
   expect(pending?.pending_reason).toBe('waiting_capacity')
 })
 
+test('buildTaskViews omits pending reason when worker slots are available', () => {
+  const tasks: Task[] = [createTaskFixture({ id: 'task-pending' })]
+  const { tasks: views } = buildTaskViews(tasks, 200, {
+    maxConcurrentWorkers: 2,
+    runningTaskCount: 1,
+  })
+  expect(views[0]?.pending_reason).toBeUndefined()
+})
+
 test('buildTaskViews includes running live output snippet', () => {
   const tasks: Task[] = [
     createTaskFixture({ id: 'task-running', status: 'running' }),
