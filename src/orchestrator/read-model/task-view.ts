@@ -1,3 +1,4 @@
+import { buildTaskDispatchLockKey } from '../../shared/task-execution-target.js'
 import {
   isBudgetRecoverableTask,
   resolveTaskChangeAt,
@@ -11,7 +12,7 @@ import type {
   TaskStatus,
 } from '../../types/index.js'
 
-export type TaskPendingReason = 'waiting_capacity'
+export type TaskPendingReason = 'waiting_capacity' | 'waiting_dispatch_lock'
 
 export type TaskViewRuntimeSnapshot = {
   maxConcurrentWorkers: number
@@ -66,11 +67,47 @@ const initCounts = (): TaskCounts => ({
 const toFiniteNumber = (value: unknown): number | null =>
   typeof value === 'number' && Number.isFinite(value) ? value : null
 
+const hasNonEmptyText = (value: unknown): boolean =>
+  typeof value === 'string' && value.trim().length > 0
+
+const resolveTaskViewStatus = (task: Task): TaskStatus => {
+  if (task.status !== 'succeeded') return task.status
+  const hasCompletedAt = hasNonEmptyText(task.completedAt)
+  const hasConsistentResult = !task.result || task.result.status === 'succeeded'
+  if (hasCompletedAt && hasConsistentResult) return 'succeeded'
+  if (hasNonEmptyText(task.pausedAt)) return 'paused'
+  if (hasNonEmptyText(task.startedAt)) return 'running'
+  return 'pending'
+}
+
+const resolveDispatchLockPendingReason = (
+  task: Task,
+  tasks: Task[],
+  taskStatus: TaskStatus,
+): TaskPendingReason | undefined => {
+  if (taskStatus !== 'pending') return undefined
+  const lockKey = buildTaskDispatchLockKey(task)
+  for (const item of tasks) {
+    if (item.id === task.id || item.status !== 'running') continue
+    if (buildTaskDispatchLockKey(item) !== lockKey) continue
+    return 'waiting_dispatch_lock'
+  }
+  return undefined
+}
+
 const resolvePendingReason = (
   task: Task,
+  tasks: Task[],
   snapshot?: TaskViewRuntimeSnapshot,
+  taskStatus: TaskStatus = task.status,
 ): TaskPendingReason | undefined => {
-  if (task.status !== 'pending') return undefined
+  const dispatchLockReason = resolveDispatchLockPendingReason(
+    task,
+    tasks,
+    taskStatus,
+  )
+  if (dispatchLockReason) return dispatchLockReason
+  if (taskStatus !== 'pending') return undefined
   const maxConcurrentWorkers = toFiniteNumber(snapshot?.maxConcurrentWorkers)
   if (maxConcurrentWorkers === null || maxConcurrentWorkers <= 0)
     return undefined
@@ -82,17 +119,19 @@ const resolvePendingReason = (
 
 const taskToView = (
   task: Task,
+  tasks: Task[],
   snapshot?: TaskViewRuntimeSnapshot,
 ): TaskView => {
-  const pendingReason = resolvePendingReason(task, snapshot)
+  const status = resolveTaskViewStatus(task)
+  const pendingReason = resolvePendingReason(task, tasks, snapshot, status)
   const liveOutput =
-    task.status === 'running'
+    status === 'running'
       ? snapshot?.liveOutputByTaskId?.get(task.id)?.trim()
       : undefined
   return {
     id: task.id,
     kind: 'task',
-    status: task.status,
+    status,
     profile: task.profile,
     provider: task.provider,
     focusId: task.focusId,
@@ -135,7 +174,7 @@ export const buildTaskViews = (
   limit = 200,
   runtimeSnapshot?: TaskViewRuntimeSnapshot,
 ): { tasks: TaskView[]; counts: TaskCounts } => {
-  const views = tasks.map((task) => taskToView(task, runtimeSnapshot))
+  const views = tasks.map((task) => taskToView(task, tasks, runtimeSnapshot))
   views.sort(compareTaskViews)
   const limited = views.slice(0, Math.max(0, limit))
   const counts = initCounts()

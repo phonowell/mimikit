@@ -232,7 +232,11 @@ test('loadRuntimeSnapshot rejects legacy worker-slot trigger mode', async () => 
 
 test('buildTaskViews keeps task statuses', () => {
   const tasks: Task[] = [
-    createTaskFixture({ id: 'task-done', status: 'succeeded' }),
+    createTaskFixture({
+      id: 'task-done',
+      status: 'succeeded',
+      completedAt: '2026-03-01T00:06:00.000Z',
+    }),
     createTaskFixture({ id: 'task-failed', status: 'failed' }),
     createTaskFixture({ id: 'task-paused', status: 'paused' }),
     createTaskFixture({ id: 'task-running', status: 'running' }),
@@ -258,8 +262,16 @@ test('buildTaskViews includes task provider in view payload', () => {
 
 test('buildTaskViews marks pending reason as waiting_capacity when worker slots are full', () => {
   const tasks: Task[] = [
-    createTaskFixture({ id: 'task-running', status: 'running' }),
-    createTaskFixture({ id: 'task-pending', status: 'pending' }),
+    createTaskFixture({
+      id: 'task-running',
+      status: 'running',
+      cwd: '/tmp/runtime-snapshot-running',
+    }),
+    createTaskFixture({
+      id: 'task-pending',
+      status: 'pending',
+      cwd: '/tmp/runtime-snapshot-pending',
+    }),
   ]
   const { tasks: views } = buildTaskViews(tasks, 200, {
     maxConcurrentWorkers: 1,
@@ -269,6 +281,31 @@ test('buildTaskViews marks pending reason as waiting_capacity when worker slots 
   expect(pending?.pending_reason).toBe('waiting_capacity')
 })
 
+test('buildTaskViews marks pending reason as waiting_dispatch_lock when lock key is occupied', () => {
+  const tasks: Task[] = [
+    createTaskFixture({
+      id: 'task-running',
+      status: 'running',
+      cwd: '/tmp/repo-main',
+      repoKey: '/tmp/repo/.git',
+      branch: 'main',
+    }),
+    createTaskFixture({
+      id: 'task-pending',
+      status: 'pending',
+      cwd: '/tmp/repo-main',
+      repoKey: '/tmp/repo/.git',
+      branch: 'main',
+    }),
+  ]
+  const { tasks: views } = buildTaskViews(tasks, 200, {
+    maxConcurrentWorkers: 4,
+    runningTaskCount: 1,
+  })
+  const pending = views.find((item) => item.id === 'task-pending')
+  expect(pending?.pending_reason).toBe('waiting_dispatch_lock')
+})
+
 test('buildTaskViews omits pending reason when worker slots are available', () => {
   const tasks: Task[] = [createTaskFixture({ id: 'task-pending' })]
   const { tasks: views } = buildTaskViews(tasks, 200, {
@@ -276,6 +313,17 @@ test('buildTaskViews omits pending reason when worker slots are available', () =
     runningTaskCount: 1,
   })
   expect(views[0]?.pending_reason).toBeUndefined()
+})
+
+test('buildTaskViews downgrades succeeded status without completion markers', () => {
+  const tasks: Task[] = [
+    createTaskFixture({
+      id: 'task-inconsistent-succeeded',
+      status: 'succeeded',
+    }),
+  ]
+  const { tasks: views } = buildTaskViews(tasks)
+  expect(views[0]?.status).toBe('pending')
 })
 
 test('buildTaskViews includes running live output snippet', () => {
