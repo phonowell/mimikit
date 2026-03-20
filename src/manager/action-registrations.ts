@@ -1,5 +1,4 @@
 import { ACTION_DEFINITIONS } from './action-registry-definitions.js'
-import { continueApply } from './action-registry-shared.js'
 
 import type { ApplyTaskActionsOptions } from './action-apply-create.js'
 import type {
@@ -21,14 +20,19 @@ export const MANAGER_ACTION_REGISTRY = new Map(
 )
 
 export const REGISTERED_MANAGER_ACTIONS = new Set(
-  ACTION_DEFINITIONS.map((definition) => definition.name),
+  MANAGER_ACTION_REGISTRY.keys(),
 )
+
+const resolveActionDefinition = (
+  actionName: Parsed['name'],
+): ManagerActionDefinition | undefined =>
+  MANAGER_ACTION_REGISTRY.get(actionName)
 
 export const validateRegisteredManagerAction = (
   item: Parsed,
   context: FeedbackContext = {},
 ): ValidationIssue[] => {
-  const definition = MANAGER_ACTION_REGISTRY.get(item.name)
+  const definition = resolveActionDefinition(item.name)
   if (!definition) return []
   return definition.validate(item, context)
 }
@@ -38,7 +42,7 @@ export const applyRegisteredManagerAction = (
   item: Parsed,
   context: ApplyContext,
 ): Promise<ApplyResult> => {
-  const definition = MANAGER_ACTION_REGISTRY.get(item.name)
-  if (!definition) return continueApply()
+  const definition = resolveActionDefinition(item.name)
+  if (!definition) return Promise.resolve('continue')
   return definition.apply(runtime, item, context)
 }

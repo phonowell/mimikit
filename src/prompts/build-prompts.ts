@@ -120,6 +120,57 @@ const CONTEXT_EMPTY_VALUES: Record<string, string> = {
   memory: '',
 }
 
+type SelectablePacketSection = Exclude<ManagerPacketSection, 'packet_summary'>
+type PacketSections = Record<ManagerPacketSection, string>
+
+const SELECTABLE_PACKET_SECTIONS = [
+  'environment',
+  'focus_list',
+  'working_focuses',
+  'remembered_memory',
+  'memory',
+  'tasks',
+  'plans',
+  'inputs',
+  'batch_results',
+  'recent_history',
+  'history_lookup',
+  'query_lookup',
+  'file_lookup',
+  'action_feedback',
+] satisfies readonly SelectablePacketSection[]
+
+const selectPacketSections = (params: {
+  sections: PacketSections
+  mode: ManagerPacketMode
+  wakeProfile: NonNullable<ManagerEnv['wakeProfile']>
+}): {
+  selectedSections: PacketSections
+  includedSections: ManagerPacketSection[]
+  prunedSections: ManagerPacketSection[]
+} => {
+  const selectedSections: PacketSections = { ...params.sections }
+  const includedSections: ManagerPacketSection[] = []
+  const prunedSections: ManagerPacketSection[] = []
+  for (const section of SELECTABLE_PACKET_SECTIONS) {
+    const value = params.sections[section]
+    const hasContent = value.trim().length > 0
+    const include = shouldIncludePacketSection({
+      mode: params.mode,
+      wakeProfile: params.wakeProfile,
+      section,
+      hasContent,
+    })
+    if (include) {
+      includedSections.push(section)
+      continue
+    }
+    if (hasContent) prunedSections.push(section)
+    selectedSections[section] = ''
+  }
+  return { selectedSections, includedSections, prunedSections }
+}
+
 const pushMention = (target: string[], value: string | undefined): void => {
   const normalized = value?.trim()
   if (!normalized) return
@@ -272,13 +323,11 @@ export const buildManagerPromptPayload = async (
     return stringifyPromptJson(summary)
   }
 
-  const environment = sectionText(
-    formatEnvironment({
-      workDir: params.workDir,
-      ...(params.env ? { env: params.env } : {}),
-    }),
-    limits.environmentMaxBytes,
-  )
+  const environmentSource = formatEnvironment({
+    workDir: params.workDir,
+    ...(params.env ? { env: params.env } : {}),
+  })
+  const environment = sectionText(environmentSource, limits.environmentMaxBytes)
   const inputs = sectionJson(
     formatInputs(params.inputs, quoteLookup),
     limits.inputsMaxBytes,
@@ -331,7 +380,7 @@ export const buildManagerPromptPayload = async (
     pendingResults,
     batchResultsSource: batchResults,
   })
-  const rawSections: Record<ManagerPacketSection, string> = {
+  const sectionSources: PacketSections = {
     packet_summary: '',
     environment,
     focus_list: focusList,
@@ -348,36 +397,15 @@ export const buildManagerPromptPayload = async (
     file_lookup: fileLookup,
     action_feedback: actionFeedback,
   }
-  const includedSections: ManagerPacketSection[] = []
-  const prunedSections: ManagerPacketSection[] = []
-  const selectSection = (section: ManagerPacketSection): string => {
-    const value = rawSections[section]
-    const include = shouldIncludePacketSection({
+  const { selectedSections, includedSections, prunedSections } =
+    selectPacketSections({
+      sections: sectionSources,
       mode: packetMode,
       wakeProfile,
-      section,
-      hasContent: value.trim().length > 0,
     })
-    if (include) includedSections.push(section)
-    else if (value.trim().length > 0) prunedSections.push(section)
-    return include ? value : ''
-  }
-  const selectedEnvironment = selectSection('environment')
-  const selectedFocusList = selectSection('focus_list')
-  const selectedWorkingFocuses = selectSection('working_focuses')
-  const selectedRememberedMemory = selectSection('remembered_memory')
-  const selectedMemory = selectSection('memory')
-  const selectedTasks = selectSection('tasks')
-  const selectedPlans = selectSection('plans')
-  const selectedInputs = selectSection('inputs')
-  const selectedBatchResults = selectSection('batch_results')
-  const selectedRecentHistory = selectSection('recent_history')
-  const selectedHistoryLookup = selectSection('history_lookup')
-  const selectedQueryLookup = selectSection('query_lookup')
-  const selectedFileLookup = selectSection('file_lookup')
-  const selectedActionFeedback = selectSection('action_feedback')
+  const includedSectionSet = new Set(includedSections)
   const includedSectionDigests = digestSections.sectionDigests.filter((item) =>
-    includedSections.includes(item.section),
+    includedSectionSet.has(item.section),
   )
   const packetBundle = buildManagerContextPacket({
     wakeProfile,
@@ -396,17 +424,17 @@ export const buildManagerPromptPayload = async (
   const packetSummary = packetBundle.summaryText
   const statePacket = sectionText(
     stringifyPromptJson({
-      ...(selectedFocusList
+      ...(selectedSections.focus_list
         ? { focus_list: buildFocusListPromptPayload(focusPayload.focusList) }
         : {}),
-      ...(selectedWorkingFocuses
+      ...(selectedSections.working_focuses
         ? {
             working_focuses: buildWorkingFocusesPromptPayload(
               focusPayload.workingFocuses,
             ),
           }
         : {}),
-      ...(selectedTasks
+      ...(selectedSections.tasks
         ? {
             tasks: buildTasksPromptPayload(
               params.tasks,
@@ -415,7 +443,7 @@ export const buildManagerPromptPayload = async (
             ),
           }
         : {}),
-      ...(selectedPlans
+      ...(selectedSections.plans
         ? { plans: buildPlansPromptPayload(params.plans ?? []) }
         : {}),
     }),
@@ -427,41 +455,38 @@ export const buildManagerPromptPayload = async (
   )
   const eventPacket = sectionText(
     stringifyPromptJson({
-      ...(selectedEnvironment
+      ...(selectedSections.environment
         ? {
-            environment: formatEnvironment({
-              workDir: params.workDir,
-              ...(params.env ? { env: params.env } : {}),
-            }),
+            environment: environmentSource,
           }
         : {}),
-      ...(selectedInputs
+      ...(selectedSections.inputs
         ? { inputs: buildInputsPromptPayload(params.inputs, quoteLookup) }
         : {}),
-      ...(selectedBatchResults
+      ...(selectedSections.batch_results
         ? { batch_results: digestSections.batchResultsPayload }
         : {}),
-      ...(selectedRecentHistory
+      ...(selectedSections.recent_history
         ? { recent_history: digestSections.recentHistoryPayload }
         : {}),
-      ...(selectedHistoryLookup
+      ...(selectedSections.history_lookup
         ? {
             history_lookup: buildHistoryLookupPromptPayload(
               params.historyLookup ?? [],
             ),
           }
         : {}),
-      ...(selectedQueryLookup
+      ...(selectedSections.query_lookup
         ? { query_lookup: digestSections.queryLookupPayload }
         : {}),
-      ...(selectedFileLookup
+      ...(selectedSections.file_lookup
         ? {
             file_lookup: buildReadFileLookupPromptPayload(
               params.readFileLookup ?? [],
             ),
           }
         : {}),
-      ...(selectedActionFeedback
+      ...(selectedSections.action_feedback
         ? {
             action_feedback: buildActionFeedbackPromptPayload(
               params.actionFeedback ?? [],
@@ -495,7 +520,7 @@ export const buildManagerPromptPayload = async (
     {
       ...CONTEXT_EMPTY_VALUES,
       state_packet: statePacket,
-      remembered_memory: selectedRememberedMemory,
+      remembered_memory: selectedSections.remembered_memory,
     },
     contextSource.path,
   ).trim()
@@ -504,7 +529,7 @@ export const buildManagerPromptPayload = async (
     {
       ...CONTEXT_EMPTY_VALUES,
       event_packet: eventPacket,
-      memory: selectedMemory,
+      memory: selectedSections.memory,
     },
     contextSource.path,
   ).trim()
