@@ -14,11 +14,12 @@
 - 状态：`active | blocked | done`
 - 完成原因：`completed | exhausted | canceled`
 - 触发策略：`trigger.mode = cron | scheduled_at | on_worker_slot_freed`
+- 生效动作：`effect.kind = enqueue_task | wake_manager`
 
 ## 触发机制
 
 - `managerLoop`（`src/manager/loop.ts`）在空闲轮询中统一检查计划触发、待确认 choice 生命周期与 worker 槽位释放。
-- `cron/scheduled_at`：命中即发布 `trigger_fire` system input，并写入 `systemEventName/systemEventPayload`。
+- `cron/scheduled_at`：命中即执行结构化 `effect`，并发布 `trigger_fire` system input 记录触发事实与 payload。
 - `on_worker_slot_freed`：在“有空槽位”窗口触发，候选计划按 `priority -> createdAt(FIFO)` 排序执行。
 - 若槽位释放时无可触发 `on_worker_slot_freed` 计划，系统会发布 `worker_slot_freed` system input，并写入结构化槽位 payload。
 
@@ -32,17 +33,20 @@
 
 ## 去重与归属
 
-- plan action 去重键：`prompt + title + profile + focusId + trigger签名`
+- plan action 去重键：`title + focusId + effect签名 + trigger签名`
 - 每条 `TaskPlan` 必带 `focusId`
 
 ## 相关 Action
 
 - `create_plan`
-  - 入参：`prompt`、`title`、`trigger_mode`、`focus_id?`、`priority?`、`source?`
-  - 触发参数：`cron? | scheduled_at? | max_runs?`
+  - 入参：`title`、`trigger_mode`、`focus_id?`、`priority?`、`max_runs?`
+  - 触发参数：`cron_expr? | scheduled_at? | time_zone?`
+  - effect 参数：
+    - `effect_kind="enqueue_task"`：`task_title`、`task_worker_prompt`、`task_cwd`、`task_goal`、`task_in_scope`、`task_done_when_{n}`，可选 `task_branch` / `task_out_of_scope` / `task_context_ref_{n}`
+    - `effect_kind="wake_manager"`：`effect_reason`
 - `update_plan`
   - 入参：`id` + 至少一个更新字段
-  - 可更新：`prompt|title|trigger_mode|cron|scheduled_at|max_runs|priority|source|status|focus_id`
+  - 可更新：`title|trigger_mode|cron_expr|scheduled_at|time_zone|max_runs|priority|status|focus_id|effect_*|task_*`
 - `delete_plan`
   - 入参：`id`
 
@@ -58,13 +62,19 @@
 - `trigger_mode=on_worker_slot_freed` 与 `cron/scheduled_at` 参数互斥。
 - `update_plan` 对 `done` 计划默认拒绝。
 - `lastTaskId` 由运行时在 `trigger_fire -> enqueue_task` 成功落到既有/新建任务时自动回写，不再由 manager action 显式维护。
+- `effect_kind="enqueue_task"` 必须能构出完整 task contract；`effect_kind="wake_manager"` 仅允许受限 reason，不再接受自由文本 prompt。
 
 ## 关联数据结构
 
 定义：`src/types/index.ts`
 
 - `TaskPlan`
+- `TaskPlanTrigger`
+- `TaskPlanEffect`
 
 ## 示例
 
-- `on_worker_slot_freed`：`<M:create_plan prompt="有空槽位就处理下一批积压任务" title="积压任务续跑" trigger_mode="on_worker_slot_freed" max_runs="20" />`
+- `on_worker_slot_freed`：
+  `<M:create_plan title="积压任务续跑" trigger_mode="on_worker_slot_freed" max_runs="20" effect_kind="enqueue_task" task_title="继续处理积压任务" task_worker_prompt="阅读当前状态并处理下一批积压任务" task_cwd="/Users/mimiko/Projects/mimikit" task_goal="推进积压任务处理" task_in_scope="仅处理当前 focus 的积压项" task_done_when_1="输出本轮处理结果与下一步" />`
+- `scheduled_at`：
+  `<M:create_plan title="下午复盘" trigger_mode="scheduled_at" scheduled_at="2026-03-21T16:00:00+08:00" effect_kind="wake_manager" effect_reason="scheduled_review" />`
