@@ -6,6 +6,11 @@ import {
 import { compareIsoDesc } from '../../shared/time.js'
 import { titleFromCandidates } from '../../shared/utils.js'
 
+import {
+  deriveTaskGitClosure,
+  type TaskGitClosureView,
+} from './task-git-closure.js'
+
 import type {
   Task,
   TaskResultStopReason,
@@ -29,6 +34,7 @@ export type TaskView = {
   focusId: string
   title: string
   git?: Task['git']
+  gitClosure?: TaskGitClosureView
   createdAt: string
   changeAt: string
   startedAt?: string
@@ -127,6 +133,7 @@ const taskToView = (
     status === 'running'
       ? snapshot?.liveOutputByTaskId?.get(task.id)?.trim()
       : undefined
+  const gitClosure = deriveTaskGitClosure(task)
   return {
     id: task.id,
     kind: 'task',
@@ -136,6 +143,7 @@ const taskToView = (
     focusId: task.focusId,
     title: task.title || titleFromCandidates(task.id, [task.prompt]),
     ...(task.git ? { git: task.git } : {}),
+    ...(gitClosure ? { gitClosure } : {}),
     createdAt: task.createdAt,
     changeAt: resolveTaskChangeAt(task),
     ...(task.startedAt ? { startedAt: task.startedAt } : {}),
