@@ -76,9 +76,6 @@ const taskGitExecutionSchema = z
   .object({
     worktreePath: z.string().trim().min(1),
     branch: z.string().trim().min(1),
-    reviewStatus: z.enum(['pending', 'passed', 'failed', 'skipped']),
-    mergeStatus: z.enum(['pending', 'merged', 'not_applicable']),
-    cleanupStatus: z.enum(['pending', 'done', 'skipped']),
   })
   .strict()
 

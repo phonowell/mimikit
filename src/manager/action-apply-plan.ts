@@ -115,6 +115,27 @@ export const applyUpdatePlan = async (
     updatedAt,
   }
 
+  if (next.status !== 'done') {
+    const key = normalizePlanKey({
+      title: next.title,
+      focusId: next.focusId,
+      trigger: next.trigger,
+      effect: next.effect,
+    })
+    const collides = runtime.taskPlans.some(
+      (plan) =>
+        plan.id !== current.id &&
+        plan.status !== 'done' &&
+        normalizePlanKey({
+          title: plan.title,
+          focusId: plan.focusId,
+          trigger: plan.trigger,
+          effect: plan.effect,
+        }) === key,
+    )
+    if (collides) return
+  }
+
   if (next.status === 'done') {
     next.closedAt = updatedAt
     next.doneReason = next.doneReason ?? 'completed'

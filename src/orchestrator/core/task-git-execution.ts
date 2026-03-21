@@ -9,8 +9,5 @@ export const buildTaskGitExecution = (
   return {
     worktreePath: cwd,
     branch: normalizedBranch,
-    reviewStatus: 'pending',
-    mergeStatus: 'pending',
-    cleanupStatus: 'pending',
   }
 }

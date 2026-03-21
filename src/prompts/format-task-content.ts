@@ -53,9 +53,6 @@ const formatTaskEntry = (
           git: {
             worktree_path: toDisplayPath(task.git.worktreePath, workDir),
             branch: task.git.branch,
-            review_status: task.git.reviewStatus,
-            merge_status: task.git.mergeStatus,
-            cleanup_status: task.git.cleanupStatus,
           },
         }
       : {}),

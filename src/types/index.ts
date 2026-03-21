@@ -61,12 +61,7 @@ export type {
   TaskResult,
   UserChoiceOption,
 } from './task-runtime-types.js'
-export type {
-  TaskGitCleanupStatus,
-  TaskGitExecution,
-  TaskGitMergeStatus,
-  TaskGitReviewStatus,
-} from './task-git-types.js'
+export type { TaskGitExecution } from './task-git-types.js'
 export type {
   TaskResultHandoff,
   TaskResultHandoffArtifact,

@@ -103,3 +103,26 @@ test('buildTasksPromptPayload keeps archive path but does not duplicate detailed
   })
   expect(payload?.tasks[0]).not.toHaveProperty('result')
 })
+
+test('buildTasksPromptPayload exposes only truthful git execution fields', () => {
+  const task = createTaskFixture({
+    id: 'task-git-1',
+    git: {
+      worktreePath: '/tmp/task-git-1',
+      branch: 'hotfix/task-git-1',
+    },
+  })
+
+  const payload = buildTasksPromptPayload([task], [], '/tmp')
+
+  expect(payload?.tasks[0]).toMatchObject({
+    id: 'task-git-1',
+    git: {
+      worktree_path: 'task-git-1',
+      branch: 'hotfix/task-git-1',
+    },
+  })
+  expect(payload?.tasks[0]).not.toHaveProperty('git.review_status')
+  expect(payload?.tasks[0]).not.toHaveProperty('git.merge_status')
+  expect(payload?.tasks[0]).not.toHaveProperty('git.cleanup_status')
+})
