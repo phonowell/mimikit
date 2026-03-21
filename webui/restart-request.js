@@ -12,6 +12,7 @@ import {
 } from './restart-config.js'
 import {
   fetchStatusSnapshot,
+  formatBusyStats,
   readResponseError,
   readRuntimeIdFromStatus,
 } from './restart-status.js'
@@ -26,13 +27,15 @@ const createRestoreAfterFailure = (ctx) => (mode, reason = '') => {
   ctx.messages?.start?.()
 }
 
-const createRestoreAfterBlocked = (ctx) => (mode, reason = '') => {
+const createRestoreAfterBlocked = (ctx) => (mode, reason = '', busy = null) => {
   ctx.setBusy(false)
   ctx.setRuntimeIdle(false)
   ctx.syncControlState()
   const label = MODE_BLOCKED_LABEL[mode] ?? MODE_BLOCKED_LABEL.restart
   const detail = reason.trim() || NON_IDLE_BLOCK_REASON
-  setStatusText(ctx.statusText, `${label}: ${detail}`)
+  const stats = formatBusyStats(busy)
+  const suffix = stats ? ` ${stats}` : ''
+  setStatusText(ctx.statusText, `${label}: ${detail}${suffix}`)
   setStatusState(ctx.statusDot, 'running')
   ctx.messages?.start?.()
 }
@@ -101,7 +104,7 @@ export const createRestartRequester = (ctx) => {
       return
     }
     if (!preflight.isIdle) {
-      restoreAfterBlocked(mode, preflight.error)
+      restoreAfterBlocked(mode, preflight.error, preflight.busy)
       return
     }
 
@@ -115,7 +118,8 @@ export const createRestartRequester = (ctx) => {
         const fallback = `${mode} failed (${response.status})`
         const detail = await readResponseError(response, fallback)
         if (response.status === 409 || response.status === 423) {
-          restoreAfterBlocked(mode, detail)
+          const snapshot = await fetchStatusSnapshot()
+          restoreAfterBlocked(mode, detail, snapshot.busy)
           return
         }
         throw new Error(detail)
