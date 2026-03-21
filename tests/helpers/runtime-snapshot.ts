@@ -21,15 +21,16 @@ export const createPlanFixture = (
   overrides: Partial<TaskPlan> = {},
 ): TaskPlan => ({
   id: 'plan-1',
-  prompt: 'summarize',
   title: 'summarize',
   focusId: GLOBAL_FOCUS_ID,
-  profile: 'worker',
   priority: 'high',
-  source: 'user_request',
   status: 'active',
   trigger: {
     mode: 'on_worker_slot_freed',
+  },
+  effect: {
+    kind: 'wake_manager',
+    reason: 'follow_up',
   },
   createdAt: SNAPSHOT_BASE_TIME,
   updatedAt: SNAPSHOT_BASE_TIME,

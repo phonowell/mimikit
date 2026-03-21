@@ -2,7 +2,6 @@ import type {
   FocusId,
   ISODate,
   PlanPriority,
-  PlanSource,
   TokenUsage,
   WorkerProfile,
 } from './base.js'
@@ -16,28 +15,8 @@ import type {
   TaskStatus,
   WorkerProvider,
 } from './runtime-domain.js'
-
-export type TaskResultHandoffArtifact = {
-  path: string
-  kind?: string | undefined
-  note?: string | undefined
-}
-
-export type TaskResultHandoffEvidence = {
-  type: 'task_archive' | 'file' | 'history'
-  ref: string
-  note?: string | undefined
-}
-
-export type TaskResultHandoff = {
-  goal?: string | undefined
-  summary?: string | undefined
-  decisions?: string[] | undefined
-  nextSteps?: string[] | undefined
-  risks?: string[] | undefined
-  artifacts?: TaskResultHandoffArtifact[] | undefined
-  evidence?: TaskResultHandoffEvidence[] | undefined
-}
+import type { TaskGitExecution } from './task-git-types.js'
+import type { TaskResultHandoff } from './task-handoff-types.js'
 
 export type TaskContract = {
   goal: string
@@ -99,10 +78,9 @@ export type Task = {
   cwd: string
   repoKey?: string | undefined
   branch?: string | undefined
+  git?: TaskGitExecution | undefined
   contract?: TaskContract | undefined
   focusId: FocusId
-  cron?: string | undefined
-  scheduledAt?: string | undefined
   profile: WorkerProfile
   provider: WorkerProvider
   status: TaskStatus
@@ -141,24 +119,41 @@ export type TaskPlanTrigger =
   | TaskPlanTriggerScheduledAt
   | TaskPlanTriggerOnWorkerSlotFreed
 
+export type TaskPlanEnqueueTaskEffect = {
+  kind: 'enqueue_task'
+  taskTemplate: {
+    title: string
+    prompt: string
+    cwd: string
+    branch?: string | undefined
+    contract: TaskContract
+  }
+}
+
+export type TaskPlanWakeManagerEffect = {
+  kind: 'wake_manager'
+  reason: 'scheduled_review' | 'capacity_retry' | 'follow_up'
+}
+
+export type TaskPlanEffect =
+  | TaskPlanEnqueueTaskEffect
+  | TaskPlanWakeManagerEffect
+
 export type TaskPlan = {
   id: string
-  prompt: string
   title: string
   focusId: FocusId
-  profile: WorkerProfile
   priority: PlanPriority
-  source: PlanSource
   status: TaskPlanStatus
   trigger: TaskPlanTrigger
+  effect: TaskPlanEffect
   createdAt: ISODate
   updatedAt: ISODate
   runCount: number
   maxRuns?: number | undefined
   lastTriggeredAt?: ISODate | undefined
-  lastCompletedAt?: ISODate | undefined
   lastTaskId?: string | undefined
-  archivedAt?: ISODate | undefined
+  closedAt?: ISODate | undefined
   doneReason?: 'canceled' | 'completed' | 'exhausted' | undefined
 }
 

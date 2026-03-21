@@ -12,7 +12,6 @@ export type TaskFingerprintInput = {
   profile: WorkerProfile
   provider: WorkerProvider
   focusId?: string
-  schedule?: string
   repoKey?: string
   branch?: string
   contract?: TaskContract
@@ -58,7 +57,6 @@ export const buildTaskSemanticKey = (input: TaskFingerprintInput): string => {
   const title = normalizeSemanticPart(input.title).slice(0, 96)
   const cwd = normalizeSemanticPart(input.cwd)
   const focusId = normalizeSemanticPart(input.focusId ?? '')
-  const schedule = normalizeSemanticPart(input.schedule ?? '')
   const repoKey = normalizeSemanticPart(input.repoKey ?? '')
   const branch = normalizeSemanticPart(input.branch ?? '')
   return [
@@ -67,7 +65,6 @@ export const buildTaskSemanticKey = (input: TaskFingerprintInput): string => {
     focusId,
     title,
     prompt,
-    schedule,
     repoKey,
     branch,
     cwd,
@@ -84,7 +81,6 @@ export const buildTaskFingerprint = (input: TaskFingerprintInput): string =>
       input.profile,
       input.provider,
       normalizeFingerprintPart(input.focusId ?? ''),
-      normalizeFingerprintPart(input.schedule ?? ''),
       normalizeFingerprintPart(input.repoKey ?? ''),
       normalizeFingerprintPart(input.branch ?? ''),
       contract,
@@ -107,8 +103,6 @@ export const taskToFingerprintInput = (
     | 'profile'
     | 'provider'
     | 'focusId'
-    | 'cron'
-    | 'scheduledAt'
     | 'contract'
   >,
 ): TaskFingerprintInput => ({
@@ -120,11 +114,6 @@ export const taskToFingerprintInput = (
   profile: task.profile,
   provider: task.provider,
   focusId: task.focusId,
-  ...(task.cron
-    ? { schedule: task.cron }
-    : task.scheduledAt
-      ? { schedule: task.scheduledAt }
-      : {}),
   ...(task.contract ? { contract: task.contract } : {}),
 })
 

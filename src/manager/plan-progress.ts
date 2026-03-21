@@ -64,7 +64,6 @@ export const applyPlanCompletionState = (
     if (!taskId) continue
     const matched = latestByTaskId.get(taskId)
     if (!matched) continue
-    plan.lastCompletedAt = matched.completedAt
     plan.updatedAt = matched.completedAt
   }
 }

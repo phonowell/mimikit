@@ -1,4 +1,5 @@
 import {
+  buildPlanEffectPayload,
   buildPlanProgressPayload,
   buildPlanTriggerPayload,
 } from '../shared/plan-payload.js'
@@ -14,16 +15,24 @@ const formatPlanEntry = (plan: TaskPlan): Record<string, unknown> => ({
   id: plan.id,
   status: plan.status,
   priority: plan.priority,
-  source: plan.source,
   title: plan.title.trim() || plan.id,
-  prompt: truncateText(plan.prompt, PLAN_PROMPT_MAX_CHARS, {
-    normalizeWhitespace: true,
-  }),
+  ...(plan.effect.kind === 'enqueue_task'
+    ? {
+        task_prompt: truncateText(
+          plan.effect.taskTemplate.prompt,
+          PLAN_PROMPT_MAX_CHARS,
+          {
+            normalizeWhitespace: true,
+          },
+        ),
+      }
+    : {}),
   created_at: plan.createdAt,
   updated_at: plan.updatedAt,
   run_count: plan.runCount,
   ...buildPlanProgressPayload(plan),
   ...buildPlanTriggerPayload(plan.trigger),
+  ...buildPlanEffectPayload(plan.effect),
   ...(plan.doneReason ? { done_reason: plan.doneReason } : {}),
 })
 

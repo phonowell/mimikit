@@ -28,8 +28,7 @@ export type TaskView = {
   provider: Task['provider']
   focusId: string
   title: string
-  cron?: string
-  scheduledAt?: string
+  git?: Task['git']
   createdAt: string
   changeAt: string
   startedAt?: string
@@ -136,8 +135,7 @@ const taskToView = (
     provider: task.provider,
     focusId: task.focusId,
     title: task.title || titleFromCandidates(task.id, [task.prompt]),
-    ...(task.cron ? { cron: task.cron } : {}),
-    ...(task.scheduledAt ? { scheduledAt: task.scheduledAt } : {}),
+    ...(task.git ? { git: task.git } : {}),
     createdAt: task.createdAt,
     changeAt: resolveTaskChangeAt(task),
     ...(task.startedAt ? { startedAt: task.startedAt } : {}),

@@ -115,7 +115,9 @@ export const queryPlansScope = (
       [
         plan.id,
         plan.title,
-        plan.prompt,
+        plan.effect.kind === 'enqueue_task'
+          ? plan.effect.taskTemplate.prompt
+          : '',
         plan.status,
         plan.trigger.mode,
         plan.focusId,
@@ -129,7 +131,12 @@ export const queryPlansScope = (
       triggerMode: plan.trigger.mode,
       updatedAt: plan.updatedAt,
       title: plan.title,
-      snippet: truncatePreview(plan.prompt, maxItemChars),
+      snippet: truncatePreview(
+        plan.effect.kind === 'enqueue_task'
+          ? plan.effect.taskTemplate.prompt
+          : plan.effect.reason,
+        maxItemChars,
+      ),
     }),
   })
 

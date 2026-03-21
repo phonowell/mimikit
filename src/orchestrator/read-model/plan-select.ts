@@ -46,8 +46,8 @@ const comparePriorityFifo = (a: TaskPlan, b: TaskPlan): number => {
 }
 
 const compareDoneDesc = (a: TaskPlan, b: TaskPlan): number => {
-  const aChanged = parseIsoToMsOrZero(a.archivedAt ?? a.updatedAt)
-  const bChanged = parseIsoToMsOrZero(b.archivedAt ?? b.updatedAt)
+  const aChanged = parseIsoToMsOrZero(a.closedAt ?? a.updatedAt)
+  const bChanged = parseIsoToMsOrZero(b.closedAt ?? b.updatedAt)
   if (aChanged !== bChanged) return bChanged - aChanged
   return a.id.localeCompare(b.id)
 }
@@ -67,7 +67,7 @@ export const sortTaskPlans = (plans: TaskPlan[]): TaskPlan[] =>
   })
 
 const comparePlanChangedAtDesc = (a: TaskPlan, b: TaskPlan): number =>
-  compareIsoDesc(a.archivedAt ?? a.updatedAt, b.archivedAt ?? b.updatedAt)
+  compareIsoDesc(a.closedAt ?? a.updatedAt, b.closedAt ?? b.updatedAt)
 
 export const sortTaskPlansForView = (plans: TaskPlan[]): TaskPlan[] =>
   [...plans].sort((a, b) => {

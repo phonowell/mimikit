@@ -8,6 +8,7 @@ import {
 } from './action-apply-schema.js'
 import { resolveActionFocusId } from './action-focus-id.js'
 import { parseActionAttrs } from './action-parse.js'
+import { buildPlanEffect, resolveUpdatedEffect } from './action-plan-effect.js'
 import {
   appendPlanSystemMessage,
   buildTrigger,
@@ -17,7 +18,7 @@ import {
 
 import type { Parsed } from '../actions/model/spec.js'
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
-import type { PlanPriority, PlanSource, TaskPlan } from '../types/index.js'
+import type { PlanPriority, TaskPlan } from '../types/index.js'
 
 export const applyCreatePlan = async (
   runtime: RuntimeState,
@@ -32,24 +33,23 @@ export const applyCreatePlan = async (
     scheduledAt: parsed.scheduled_at,
     timeZone: parsed.time_zone,
   })
+  const effect = buildPlanEffect(parsed)
   const focusId = resolveActionFocusId(runtime, parsed.focus_id)
   const key = normalizePlanKey({
-    prompt: parsed.prompt,
     title: parsed.title,
     focusId,
-    profile: 'worker',
     trigger,
+    effect,
   })
 
   const exists = runtime.taskPlans.some(
     (plan) =>
       plan.status !== 'done' &&
       normalizePlanKey({
-        prompt: plan.prompt,
         title: plan.title,
         focusId: plan.focusId,
-        profile: plan.profile,
         trigger: plan.trigger,
+        effect: plan.effect,
       }) === key,
   )
   if (exists) return
@@ -59,14 +59,12 @@ export const applyCreatePlan = async (
 
   const plan: TaskPlan = {
     id: `plan-${newId()}`,
-    prompt: parsed.prompt,
     title: parsed.title,
     focusId,
-    profile: 'worker',
     priority: (parsed.priority ?? 'normal') as PlanPriority,
-    source: (parsed.source ?? 'user_request') as PlanSource,
     status: 'active',
     trigger,
+    effect,
     createdAt: timestamp,
     updatedAt: timestamp,
     runCount: 0,
@@ -102,23 +100,23 @@ export const applyUpdatePlan = async (
     scheduledAt: parsed.scheduled_at,
     timeZone: parsed.time_zone,
   })
+  const effect = resolveUpdatedEffect(current.effect, parsed)
 
   const updatedAt = nowIso()
   const next: TaskPlan = {
     ...current,
-    ...(parsed.prompt !== undefined ? { prompt: parsed.prompt } : {}),
     ...(parsed.title !== undefined ? { title: parsed.title } : {}),
     ...(parsed.priority !== undefined ? { priority: parsed.priority } : {}),
-    ...(parsed.source !== undefined ? { source: parsed.source } : {}),
     ...(parsed.status !== undefined ? { status: parsed.status } : {}),
     ...(parsed.max_runs !== undefined ? { maxRuns: parsed.max_runs } : {}),
     trigger,
+    effect,
     focusId: nextFocusId,
     updatedAt,
   }
 
   if (next.status === 'done') {
-    next.archivedAt = updatedAt
+    next.closedAt = updatedAt
     next.doneReason = next.doneReason ?? 'completed'
   }
 

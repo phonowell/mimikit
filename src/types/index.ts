@@ -54,13 +54,24 @@ export type {
   TaskEvidence,
   TaskEvidenceAcceptance,
   TaskPlan,
+  TaskPlanEffect,
+  TaskPlanEnqueueTaskEffect,
   TaskPlanTrigger,
+  TaskPlanWakeManagerEffect,
   TaskResult,
+  UserChoiceOption,
+} from './task-runtime-types.js'
+export type {
+  TaskGitCleanupStatus,
+  TaskGitExecution,
+  TaskGitMergeStatus,
+  TaskGitReviewStatus,
+} from './task-git-types.js'
+export type {
   TaskResultHandoff,
   TaskResultHandoffArtifact,
   TaskResultHandoffEvidence,
-  UserChoiceOption,
-} from './task-runtime-types.js'
+} from './task-handoff-types.js'
 export type {
   ManagerActionFeedback,
   ManagerContextPacket,
