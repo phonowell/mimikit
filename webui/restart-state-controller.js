@@ -42,7 +42,7 @@ export const createRestartStateController = ({
 
   const syncControlState = () => {
     const blockedByIdle = !isRuntimeIdle
-    const disableActions = isBusy || blockedByIdle
+    const disableActions = isBusy
 
     if (controls.toolsRestartBtn) controls.toolsRestartBtn.disabled = disableActions
     if (controls.toolsResetBtn) controls.toolsResetBtn.disabled = disableActions
@@ -59,10 +59,6 @@ export const createRestartStateController = ({
     setBlockedTitle(controls.resetConfirmBtn, blockedByIdle, titleByElement)
     setBlockedTitle(controls.toolsToggleBtn, blockedByIdle, titleByElement)
 
-    if (blockedByIdle) {
-      toolsMenuController?.close()
-      closeDialogs?.()
-    }
   }
 
   const readUiIdleState = () => {
@@ -77,16 +73,6 @@ export const createRestartStateController = ({
     return isRuntimeIdle
   }
 
-  const restoreBlockedFromUi = (mode) => {
-    isBusy = false
-    isRuntimeIdle = false
-    syncControlState()
-    const label = MODE_BLOCKED_LABEL[mode] ?? MODE_BLOCKED_LABEL.restart
-    setStatusText(statusText, `${label}: ${NON_IDLE_BLOCK_REASON}`)
-    setStatusState(statusDot, 'running')
-    messages?.start?.()
-  }
-
   return {
     isBusy: () => isBusy,
     setBusy: (value) => {
@@ -97,7 +83,6 @@ export const createRestartStateController = ({
     },
     syncControlState,
     refreshUiIdleState,
-    restoreBlockedFromUi,
     closeToolsMenu: (options) => toolsMenuController?.close(options),
     closeAllDialogs: () => closeDialogs?.(),
   }
