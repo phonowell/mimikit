@@ -60,7 +60,7 @@ const gitIsAncestorOfMain = (params: {
 export const deriveTaskGitClosure = (
   task: Task,
 ): TaskGitClosureView | undefined => {
-  const worktreePath = task.git?.worktreePath?.trim()
+  const worktreePath = task.git?.worktreePath.trim()
   if (!worktreePath) return undefined
   const cleaned = !existsSync(worktreePath)
 
