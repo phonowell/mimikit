@@ -179,7 +179,7 @@
 
 schema：`src/storage/runtime-snapshot-schema.ts`
 
-- `tasks`（含 `tasks[*].provider`）
+- `tasks`（含 `tasks[*].provider`、可选 `tasks[*].git={ worktreePath, branch }`）
 - `taskPlans`
 - `focuses`
 - `managerTurn`
@@ -194,6 +194,7 @@ schema：`src/storage/runtime-snapshot-schema.ts`
 - `channelTargets` 启动时会从最近 history 用户消息中的 chat id 恢复。
 - `runtime-snapshot` 运行期只接受当前 `schemaVersion`；旧版本/旧字段会被直接拒绝，不再提供仓内迁移脚本。
 - `workerUsageTotal` 不持久化到 snapshot；`GET /api/status` 会在返回时按 `tasks[*].result.usage ?? tasks[*].usage` 实时聚合。
+- `taskPlans[*]` 当前使用 `trigger + effect` 结构，不再持久化顶层 `prompt/profile/source` 旧字段。
 
 恢复一致性规则（启动阶段）：
 

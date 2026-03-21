@@ -20,9 +20,9 @@
 - 立即执行 Action：`<M:enqueue_task ... />`
 - 生命周期控制 Action：`<M:mutate_task id="task-..." op="pause|resume|cancel" />`
 - worker 任务 profile 固定为 `worker`
-- `Task.cwd` 是任务执行目录；若 `enqueue_task` 同时传入 `cwd + branch`，系统会在 enqueue 阶段自动创建或复用对应 worktree，并把 `Task.cwd` 写成真实 worktree 路径。若最终 `cwd` 在 git 仓库内，会额外记录 `repoKey + branch`
+- `Task.cwd` 是任务执行目录；若 `enqueue_task` 同时传入 `cwd + branch`，系统会在 enqueue 阶段自动创建或复用对应 worktree，并把 `Task.cwd` 写成真实 worktree 路径。若最终 `cwd` 在 git 仓库内，会额外记录 `repoKey + branch`，并在 `Task.git` / `TaskResultHandoff.git` 中补充 `worktreePath + branch`
 - 单轮 action 去重键：`prompt + title + cwd + profile + provider + focusId + contract`
-- active 任务去重键：`task.fingerprint`（包含 `prompt/title/cwd/profile/provider/focusId/schedule/repoKey/branch/contract`）
+- active 任务去重键：`task.fingerprint`（包含 `prompt/title/cwd/profile/provider/focusId/repoKey/branch/contract`）
 - 语义冲突键：`task semantic key`，命中后会取消旧 active 任务并保留新任务
 
 ## 资源排队
@@ -103,3 +103,11 @@
 定义：`src/types/index.ts`
 
 - `Task`
+- `TaskGitExecution`
+- `TaskResultHandoff`
+
+关键字段补充：
+
+- `Task.git`：当前仅记录 git 执行目录信息，字段为 `worktreePath`、`branch`
+- `TaskResultHandoff.git`：任务结果回写时透传同一份 git 执行信息，便于归档和复盘追踪
+- 当前实现尚未把 `review -> merge -> cleanup` 状态纳入 `Task` / `TaskResultHandoff` 正式协议；这仍属于待补闭环
