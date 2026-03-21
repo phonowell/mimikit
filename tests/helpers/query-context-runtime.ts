@@ -123,14 +123,24 @@ export const createQueryContextRuntime = async (options?: {
   runtime.taskPlans = [
     {
       id: 'plan-1',
-      prompt: 'deploy verification',
       title: 'Release Plan',
       focusId: 'focus-release',
-      profile: 'worker',
       priority: 'normal',
-      source: 'user_request',
       status: 'active',
       trigger: { mode: 'on_worker_slot_freed' },
+      effect: {
+        kind: 'enqueue_task',
+        taskTemplate: {
+          title: 'Deploy Verification',
+          prompt: 'deploy verification',
+          cwd: rootDir,
+          contract: {
+            goal: 'Verify deploy outcome',
+            scope: 'Check release health for service alpha',
+            acceptance: ['verification summary recorded'],
+          },
+        },
+      },
       createdAt: '2026-03-06T00:00:00.000Z',
       updatedAt: '2026-03-06T00:40:00.000Z',
       runCount: 0,

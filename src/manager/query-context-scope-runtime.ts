@@ -78,6 +78,14 @@ const buildFocusSummary = (
   return summaryText || openText
 }
 
+const buildPlanEffectText = (
+  plan: RuntimeState['taskPlans'][number],
+): string => {
+  if (plan.effect.kind === 'enqueue_task')
+    return plan.effect.taskTemplate.prompt
+  return plan.effect.reason
+}
+
 export const queryTasksScope = (
   runtime: RuntimeState,
   query: string,
@@ -115,9 +123,7 @@ export const queryPlansScope = (
       [
         plan.id,
         plan.title,
-        plan.effect.kind === 'enqueue_task'
-          ? plan.effect.taskTemplate.prompt
-          : '',
+        buildPlanEffectText(plan),
         plan.status,
         plan.trigger.mode,
         plan.focusId,
@@ -131,12 +137,7 @@ export const queryPlansScope = (
       triggerMode: plan.trigger.mode,
       updatedAt: plan.updatedAt,
       title: plan.title,
-      snippet: truncatePreview(
-        plan.effect.kind === 'enqueue_task'
-          ? plan.effect.taskTemplate.prompt
-          : plan.effect.reason,
-        maxItemChars,
-      ),
+      snippet: truncatePreview(buildPlanEffectText(plan), maxItemChars),
     }),
   })
 
