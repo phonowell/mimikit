@@ -11,6 +11,36 @@ const normalizeTaskCount = (value) => {
   return Math.floor(value)
 }
 
+export const readBusyStatsFromStatus = (raw) => {
+  if (!isRecord(raw)) return null
+  const managerRunning =
+    typeof raw.managerRunning === 'boolean' ? raw.managerRunning : null
+  const activeTasks = normalizeTaskCount(raw.activeTasks)
+  const pendingTasks = normalizeTaskCount(raw.pendingTasks)
+  const pendingInputs = normalizeTaskCount(raw.pendingInputs)
+  if (
+    managerRunning === null &&
+    activeTasks === null &&
+    pendingTasks === null &&
+    pendingInputs === null
+  )
+    return null
+  return { managerRunning, activeTasks, pendingTasks, pendingInputs }
+}
+
+export const formatBusyStats = (stats) => {
+  if (!stats) return ''
+  const parts = []
+  if (stats.managerRunning !== null)
+    parts.push(`managerRunning=${stats.managerRunning}`)
+  if (stats.activeTasks !== null) parts.push(`activeTasks=${stats.activeTasks}`)
+  if (stats.pendingTasks !== null)
+    parts.push(`pendingTasks=${stats.pendingTasks}`)
+  if (stats.pendingInputs !== null)
+    parts.push(`pendingInputs=${stats.pendingInputs}`)
+  return parts.length > 0 ? `(${parts.join(', ')})` : ''
+}
+
 export const isStatusIdle = (raw) => {
   if (!isRecord(raw)) return false
   const managerRunning = raw.managerRunning
@@ -68,6 +98,7 @@ export const fetchStatusSnapshot = async () => {
         runtimeId: '',
         isIdle: false,
         error: `status request failed (${response.status})`,
+        busy: null,
       }
     }
 
@@ -82,12 +113,14 @@ export const fetchStatusSnapshot = async () => {
       runtimeId: readRuntimeIdFromStatus(payload),
       isIdle: isStatusIdle(payload),
       error: readStatusError(payload),
+      busy: readBusyStatsFromStatus(payload),
     }
   } catch {
     return {
       runtimeId: '',
       isIdle: false,
       error: 'status request failed',
+      busy: null,
     }
   }
 }

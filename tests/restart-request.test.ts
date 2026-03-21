@@ -79,4 +79,61 @@ describe('createRestartRequester', () => {
     )
     expect(window.location.reload).toHaveBeenCalledTimes(1)
   })
+
+  test('includes busy stats in the blocked status message when server rejects with 409', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        createJsonResponse(true, 200, {
+          runtimeId: 'runtime-1',
+          managerRunning: false,
+          activeTasks: 0,
+          pendingTasks: 0,
+          pendingInputs: 0,
+        }),
+      )
+      .mockResolvedValueOnce(
+        createJsonResponse(false, 409, {
+          error:
+            'restart requires clear slots: wait for manager to stop and pending/running tasks to clear',
+        }),
+      )
+      .mockResolvedValueOnce(
+        createJsonResponse(true, 200, {
+          runtimeId: 'runtime-1',
+          managerRunning: true,
+          activeTasks: 1,
+          pendingTasks: 2,
+          pendingInputs: 3,
+        }),
+      )
+    globalThis.fetch = fetchMock as typeof fetch
+
+    const ctx = {
+      statusText: { textContent: '' },
+      statusDot: { dataset: {} as Record<string, string> },
+      messages: {
+        stop: vi.fn(),
+        start: vi.fn(),
+      },
+      isBusy: () => false,
+      setBusy: vi.fn(),
+      setRuntimeIdle: vi.fn(),
+      refreshUiIdleState: vi.fn().mockReturnValue(true),
+      syncControlState: vi.fn(),
+      closeToolsMenu: vi.fn(),
+      closeAllDialogs: vi.fn(),
+    }
+
+    const requester = createRestartRequester(ctx)
+    await requester.request('restart')
+
+    expect(window.location.reload).toHaveBeenCalledTimes(0)
+    expect(ctx.statusDot.dataset.state).toBe('running')
+    expect(ctx.statusText.textContent).toContain('REQUIRES CLEAR SLOTS')
+    expect(ctx.statusText.textContent).toContain('MANAGERRUNNING=TRUE')
+    expect(ctx.statusText.textContent).toContain('ACTIVETASKS=1')
+    expect(ctx.statusText.textContent).toContain('PENDINGTASKS=2')
+    expect(ctx.statusText.textContent).toContain('PENDINGINPUTS=3')
+  })
 })
