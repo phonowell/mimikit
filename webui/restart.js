@@ -93,10 +93,7 @@ export function bindRestart({
   const onOpenRestart = (event) => {
     event.preventDefault()
     if (state.isBusy()) return
-    if (!state.refreshUiIdleState()) {
-      state.restoreBlockedFromUi('restart')
-      return
-    }
+    state.refreshUiIdleState()
     state.closeToolsMenu()
     resetDialogController?.close()
     if (restartDialogController) restartDialogController.open()
@@ -106,10 +103,7 @@ export function bindRestart({
   const onOpenReset = (event) => {
     event.preventDefault()
     if (state.isBusy()) return
-    if (!state.refreshUiIdleState()) {
-      state.restoreBlockedFromUi('reset')
-      return
-    }
+    state.refreshUiIdleState()
     state.closeToolsMenu()
     restartDialogController?.close()
     if (resetDialogController) resetDialogController.open()

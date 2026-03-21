@@ -83,10 +83,7 @@ export const createRestartRequester = (ctx) => {
 
   const request = async (mode) => {
     if (ctx.isBusy()) return
-    if (!ctx.refreshUiIdleState()) {
-      restoreAfterBlocked(mode)
-      return
-    }
+    ctx.refreshUiIdleState()
 
     ctx.setBusy(true)
     ctx.closeToolsMenu()
