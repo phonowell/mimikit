@@ -1,0 +1,137 @@
+import { GLOBAL_FOCUS_ID } from '../focus/constants.js'
+import { appendTaskSystemMessage } from '../history/task-events.js'
+import {
+  buildPlanEffectPayload,
+  buildPlanTriggerPayload,
+} from '../shared/plan-payload.js'
+import { resolveSlotStatus } from '../worker/task-state-shared.js'
+
+import { linkTriggeredPlanToTask } from './plan-progress.js'
+import { resolveRunTaskTarget } from './run-task-target.js'
+import {
+  enqueueTask,
+  enqueueWorkerTask,
+  notifyWorkerLoop,
+  type RuntimeState,
+} from './runtime-adapter.js'
+import { publishManagerSystemEventInput } from './system-input-event.js'
+
+import type { TaskPlan } from '../types/index.js'
+
+const markPlanDone = (
+  plan: TaskPlan,
+  doneAt: string,
+  reason: TaskPlan['doneReason'],
+): void => {
+  plan.status = 'done'
+  plan.updatedAt = doneAt
+  plan.closedAt = doneAt
+  plan.doneReason = reason
+}
+
+export const maybeMarkPlanExhausted = (
+  plan: TaskPlan,
+  nowIso: string,
+): boolean => {
+  if (plan.status !== 'active') return false
+  if (plan.maxRuns === undefined) return false
+  if (plan.runCount < plan.maxRuns) return false
+  markPlanDone(plan, nowIso, 'exhausted')
+  return true
+}
+
+export const canFireOnWorkerSlotFreed = (plan: TaskPlan): boolean => {
+  if (plan.status !== 'active') return false
+  if (plan.trigger.mode !== 'on_worker_slot_freed') return false
+  if (plan.maxRuns !== undefined && plan.runCount >= plan.maxRuns) return false
+  return true
+}
+
+export const firePlan = async (params: {
+  runtime: RuntimeState
+  plan: TaskPlan
+  nowIso: string
+  reason: 'cron' | 'scheduled_at' | 'on_worker_slot_freed'
+}): Promise<void> => {
+  const { runtime, plan, nowIso } = params
+  let lastTaskId: string | undefined
+  if (plan.effect.kind === 'enqueue_task') {
+    const target = await resolveRunTaskTarget({
+      actionName: 'create_plan',
+      cwd: plan.effect.taskTemplate.cwd,
+      ...(plan.effect.taskTemplate.branch
+        ? { branch: plan.effect.taskTemplate.branch }
+        : {}),
+    })
+    const { task, created } = enqueueTask(
+      runtime.tasks,
+      plan.effect.taskTemplate.prompt,
+      plan.effect.taskTemplate.title,
+      target.cwd,
+      'worker',
+      'codex',
+      plan.focusId,
+      target.repoKey,
+      target.branch,
+      plan.effect.taskTemplate.contract,
+    )
+    linkTriggeredPlanToTask({
+      runtime,
+      triggeredPlanIds: new Set([plan.id]),
+      task,
+      linkedAt: nowIso,
+    })
+    lastTaskId = task.id
+    if (created) {
+      await appendTaskSystemMessage(runtime.paths.history, 'created', task, {
+        createdAt: task.createdAt,
+        slotStatus: resolveSlotStatus(runtime),
+      })
+    }
+    if (task.status === 'pending') {
+      enqueueWorkerTask(runtime, task)
+      notifyWorkerLoop(runtime)
+    }
+  }
+
+  plan.runCount += 1
+  plan.lastTriggeredAt = nowIso
+  plan.updatedAt = nowIso
+  if (lastTaskId) plan.lastTaskId = lastTaskId
+  if (plan.trigger.mode === 'scheduled_at')
+    markPlanDone(plan, nowIso, 'completed')
+
+  await publishManagerSystemEventInput({
+    runtime,
+    summary: `Task plan "${plan.title.trim() || plan.id}" was triggered.`,
+    event: 'trigger_fire',
+    visibility: 'all',
+    payload: {
+      plan_id: plan.id,
+      title: plan.title,
+      priority: plan.priority,
+      run_count: plan.runCount,
+      slots: resolveSlotStatus(runtime),
+      ...(plan.maxRuns !== undefined ? { max_runs: plan.maxRuns } : {}),
+      ...(lastTaskId ? { last_task_id: lastTaskId } : {}),
+      triggered_at: nowIso,
+      ...buildPlanTriggerPayload(plan.trigger),
+      ...buildPlanEffectPayload(plan.effect),
+    },
+    createdAt: nowIso,
+    logEvent: 'trigger_fire_input',
+    logMeta: {
+      planId: plan.id,
+      triggerMode: plan.trigger.mode,
+      triggerReason: params.reason,
+      focusId: GLOBAL_FOCUS_ID,
+      runCount: plan.runCount,
+      ...(lastTaskId ? { lastTaskId } : {}),
+    },
+  })
+}
+
+export const markTriggeredPlanDone = (plan: TaskPlan, nowIso: string): void => {
+  if (plan.maxRuns !== undefined && plan.runCount >= plan.maxRuns)
+    markPlanDone(plan, nowIso, 'completed')
+}

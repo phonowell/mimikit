@@ -2,6 +2,13 @@ import { z } from 'zod'
 
 import { focusIdSchema } from '../shared/id-schema.js'
 
+import { normalizePlanEffectAttrs } from './action-plan-effect-normalize.js'
+import {
+  PLAN_EFFECT_EDITABLE_FIELDS,
+  planEffectFields,
+  planEffectUpdateFields,
+  validatePlanEffectFields,
+} from './action-plan-effect-schema.js'
 import {
   planScheduleTypeSchema,
   validatePlanTriggerFields,
@@ -11,12 +18,20 @@ const nonEmptyString = z.string().trim().min(1)
 
 const planPrioritySchema = z.enum(['high', 'normal', 'low'])
 const planStatusSchema = z.enum(['active', 'blocked', 'done'])
-const planSourceSchema = z.enum([
-  'user_request',
-  'agent_auto',
-  'retry_decision',
-])
 const maxRunsSchema = z.coerce.number().int().positive()
+
+const UPDATE_EDITABLE_FIELDS = [
+  'title',
+  'schedule_type',
+  'cron_expr',
+  'scheduled_at',
+  'time_zone',
+  'max_runs',
+  'priority',
+  'status',
+  'focus_id',
+  ...PLAN_EFFECT_EDITABLE_FIELDS,
+] as const
 
 const addCustomIssue = (
   ctx: z.RefinementCtx,
@@ -30,23 +45,8 @@ const addCustomIssue = (
   })
 }
 
-const UPDATE_EDITABLE_FIELDS = [
-  'prompt',
-  'title',
-  'schedule_type',
-  'cron_expr',
-  'scheduled_at',
-  'time_zone',
-  'max_runs',
-  'priority',
-  'source',
-  'status',
-  'focus_id',
-] as const
-
-export const createPlanSchema = z
+const basePlanSchema = z
   .object({
-    prompt: nonEmptyString,
     title: nonEmptyString,
     schedule_type: planScheduleTypeSchema,
     cron_expr: z.string().trim().optional(),
@@ -54,18 +54,30 @@ export const createPlanSchema = z
     time_zone: z.string().trim().optional(),
     max_runs: maxRunsSchema.optional(),
     priority: planPrioritySchema.optional(),
-    source: planSourceSchema.optional(),
     focus_id: focusIdSchema.optional(),
+    ...planEffectFields,
   })
   .strict()
-  .superRefine((data, ctx) => {
-    validatePlanTriggerFields(data, ctx)
-  })
+  .transform((value) => ({
+    title: value.title,
+    schedule_type: value.schedule_type,
+    cron_expr: value.cron_expr,
+    scheduled_at: value.scheduled_at,
+    time_zone: value.time_zone,
+    max_runs: value.max_runs,
+    priority: value.priority,
+    focus_id: value.focus_id,
+    ...normalizePlanEffectAttrs(value),
+  }))
+
+export const createPlanSchema = basePlanSchema.superRefine((data, ctx) => {
+  validatePlanTriggerFields(data, ctx)
+  validatePlanEffectFields(data, ctx, addCustomIssue)
+})
 
 export const updatePlanSchema = z
   .object({
     id: nonEmptyString,
-    prompt: nonEmptyString.optional(),
     title: nonEmptyString.optional(),
     schedule_type: planScheduleTypeSchema.optional(),
     cron_expr: z.string().trim().optional(),
@@ -73,11 +85,24 @@ export const updatePlanSchema = z
     time_zone: z.string().trim().optional(),
     max_runs: maxRunsSchema.optional(),
     priority: planPrioritySchema.optional(),
-    source: planSourceSchema.optional(),
     status: planStatusSchema.optional(),
     focus_id: focusIdSchema.optional(),
+    ...planEffectUpdateFields,
   })
   .strict()
+  .transform((value) => ({
+    id: value.id,
+    title: value.title,
+    schedule_type: value.schedule_type,
+    cron_expr: value.cron_expr,
+    scheduled_at: value.scheduled_at,
+    time_zone: value.time_zone,
+    max_runs: value.max_runs,
+    priority: value.priority,
+    status: value.status,
+    focus_id: value.focus_id,
+    ...normalizePlanEffectAttrs(value),
+  }))
   .superRefine((data, ctx) => {
     if (
       !UPDATE_EDITABLE_FIELDS.some(
@@ -100,16 +125,35 @@ export const updatePlanSchema = z
       )
       return
     }
-    if (data.schedule_type === undefined) return
-    validatePlanTriggerFields(
-      {
-        schedule_type: data.schedule_type,
-        cron_expr: data.cron_expr,
-        scheduled_at: data.scheduled_at,
-        time_zone: data.time_zone,
-      },
-      ctx,
-    )
+    if (data.schedule_type !== undefined) validatePlanTriggerFields(data, ctx)
+
+    const hasEffectField =
+      data.effect_reason !== undefined ||
+      data.task_title !== undefined ||
+      data.task_worker_prompt !== undefined ||
+      data.task_cwd !== undefined ||
+      data.task_branch !== undefined ||
+      data.task_goal !== undefined ||
+      data.task_in_scope !== undefined ||
+      data.task_done_when_1 !== undefined ||
+      data.task_done_when_2 !== undefined ||
+      data.task_done_when_3 !== undefined ||
+      data.task_done_when_4 !== undefined ||
+      data.task_done_when_5 !== undefined ||
+      data.task_out_of_scope !== undefined ||
+      data.task_context_ref_1 !== undefined ||
+      data.task_context_ref_2 !== undefined ||
+      data.task_context_ref_3 !== undefined
+    if (hasEffectField && data.effect_kind === undefined) {
+      addCustomIssue(
+        ctx,
+        'effect_kind',
+        'effect_kind is required when effect fields are provided',
+      )
+      return
+    }
+    if (data.effect_kind !== undefined)
+      validatePlanEffectFields(data, ctx, addCustomIssue)
   })
 
 export const deletePlanSchema = z

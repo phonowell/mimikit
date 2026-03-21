@@ -63,7 +63,6 @@ test('enqueueTask does not dedupe when contract differs', () => {
     '/tmp/write-report',
     'worker',
     'codex',
-    undefined,
     'focus-global',
     undefined,
     undefined,

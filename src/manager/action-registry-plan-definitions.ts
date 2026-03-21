@@ -21,9 +21,10 @@ const PLAN_ACTION_DEFINITIONS = [
       domain: 'plan',
       prompt: {
         summary: '创建持续触发计划。',
-        briefConstraints: ['必填 `prompt,title,schedule_type`'],
+        briefConstraints: ['必填 `title,schedule_type,effect_kind`'],
         detailConstraints: [
           '`schedule_type="scheduled_at"` 时，`scheduled_at` 必须是未来绝对时间',
+          '`effect_kind="enqueue_task"` 时必须提供 task 模板与 contract',
         ],
       },
     },

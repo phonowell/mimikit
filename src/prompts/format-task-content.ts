@@ -48,13 +48,22 @@ const formatTaskEntry = (
     cwd: toDisplayPath(task.cwd, workDir),
     ...(task.repoKey ? { repo_key: task.repoKey } : {}),
     ...(task.branch ? { branch: task.branch } : {}),
+    ...(task.git
+      ? {
+          git: {
+            worktree_path: toDisplayPath(task.git.worktreePath, workDir),
+            branch: task.git.branch,
+            review_status: task.git.reviewStatus,
+            merge_status: task.git.mergeStatus,
+            cleanup_status: task.git.cleanupStatus,
+          },
+        }
+      : {}),
     title: resolveTaskLabel(task),
     changed_at: resolveTaskChangedAt(task),
     prompt: truncateText(task.prompt, TASK_PROMPT_MAX_CHARS, {
       normalizeWhitespace: true,
     }),
-    ...(task.cron ? { cron: task.cron } : {}),
-    ...(task.scheduledAt ? { scheduled_at: task.scheduledAt } : {}),
     ...(task.status === 'canceled' && task.cancel
       ? { cancel: toCancelMeta(task.cancel) }
       : {}),

@@ -72,6 +72,16 @@ const taskResultHandoffEvidenceSchema = z
   })
   .strict()
 
+const taskGitExecutionSchema = z
+  .object({
+    worktreePath: z.string().trim().min(1),
+    branch: z.string().trim().min(1),
+    reviewStatus: z.enum(['pending', 'passed', 'failed', 'skipped']),
+    mergeStatus: z.enum(['pending', 'merged', 'not_applicable']),
+    cleanupStatus: z.enum(['pending', 'done', 'skipped']),
+  })
+  .strict()
+
 export const taskResultHandoffSchema = z
   .object({
     goal: z.string().trim().min(1).optional(),
@@ -79,6 +89,7 @@ export const taskResultHandoffSchema = z
     decisions: z.array(z.string().trim().min(1)).optional(),
     nextSteps: z.array(z.string().trim().min(1)).optional(),
     risks: z.array(z.string().trim().min(1)).optional(),
+    git: taskGitExecutionSchema.optional(),
     artifacts: z.array(taskResultHandoffArtifactSchema).optional(),
     evidence: z.array(taskResultHandoffEvidenceSchema).optional(),
   })
@@ -140,10 +151,9 @@ export const taskSchema = z
     cwd: z.string().trim().min(1),
     repoKey: z.string().trim().min(1).optional(),
     branch: z.string().trim().min(1).optional(),
+    git: taskGitExecutionSchema.optional(),
     contract: taskContractSchema.optional(),
     focusId: z.string().trim().min(1),
-    cron: z.string().optional(),
-    scheduledAt: z.string().optional(),
     profile: z.enum(['worker']),
     provider: workerProviderSchema,
     status: taskStatusSchema,
@@ -162,10 +172,6 @@ export const taskSchema = z
     result: taskResultSchema.optional(),
   })
   .strict()
-  .refine(
-    (data) => !(data.cron !== undefined && data.scheduledAt !== undefined),
-    { message: 'task cron and scheduledAt are mutually exclusive' },
-  )
   .refine(
     (data) =>
       (data.repoKey === undefined && data.branch === undefined) ||
@@ -200,25 +206,49 @@ export const taskPlanTriggerSchema = z.discriminatedUnion('mode', [
   planTriggerOnWorkerSlotFreedSchema,
 ])
 
+const taskPlanEnqueueTaskEffectSchema = z
+  .object({
+    kind: z.literal('enqueue_task'),
+    taskTemplate: z
+      .object({
+        title: z.string().trim().min(1),
+        prompt: z.string().trim().min(1),
+        cwd: z.string().trim().min(1),
+        branch: z.string().trim().min(1).optional(),
+        contract: taskContractSchema,
+      })
+      .strict(),
+  })
+  .strict()
+
+const taskPlanWakeManagerEffectSchema = z
+  .object({
+    kind: z.literal('wake_manager'),
+    reason: z.enum(['scheduled_review', 'capacity_retry', 'follow_up']),
+  })
+  .strict()
+
+const taskPlanEffectSchema = z.discriminatedUnion('kind', [
+  taskPlanEnqueueTaskEffectSchema,
+  taskPlanWakeManagerEffectSchema,
+])
+
 export const taskPlanSchema = z
   .object({
     id: z.string().trim().min(1),
-    prompt: z.string(),
     title: z.string(),
     focusId: z.string().trim().min(1),
-    profile: z.enum(['worker']),
     priority: z.enum(['high', 'normal', 'low']),
-    source: z.enum(['user_request', 'agent_auto', 'retry_decision']),
     status: taskPlanStatusSchema,
     trigger: taskPlanTriggerSchema,
+    effect: taskPlanEffectSchema,
     createdAt: z.string(),
     updatedAt: z.string(),
     runCount: z.number().int().nonnegative(),
     maxRuns: z.number().int().positive().optional(),
     lastTriggeredAt: z.string().optional(),
-    lastCompletedAt: z.string().optional(),
     lastTaskId: z.string().trim().min(1).optional(),
-    archivedAt: z.string().optional(),
+    closedAt: z.string().optional(),
     doneReason: z.enum(['canceled', 'completed', 'exhausted']).optional(),
   })
   .strict()

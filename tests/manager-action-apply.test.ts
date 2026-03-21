@@ -518,20 +518,34 @@ test('create_plan uses worker profile for cron plan', async () => {
     {
       name: 'create_plan',
       attrs: {
-        prompt: 'Summarize daily build status',
         title: 'scheduled',
         schedule_type: 'cron',
         cron_expr: '0 0 9 * * *',
         time_zone: 'Asia/Shanghai',
+        effect_kind: 'enqueue_task',
+        task_title: 'scheduled task',
+        task_cwd: TASK_CWD,
+        task_goal: 'Summarize daily build status',
+        task_in_scope: 'Review the latest build state and produce a summary',
+        task_done_when_1: 'A concise build status summary is ready',
       },
     },
   ])
 
   expect(runtime.taskPlans).toHaveLength(1)
-  expect(runtime.taskPlans[0]?.profile).toBe('worker')
   expect(runtime.taskPlans[0]?.trigger.mode).toBe('cron')
   expect(runtime.taskPlans[0]?.trigger).toMatchObject({
     timeZone: 'Asia/Shanghai',
+  })
+  expect(runtime.taskPlans[0]?.effect).toMatchObject({
+    kind: 'enqueue_task',
+    taskTemplate: {
+      title: 'scheduled task',
+      cwd: TASK_CWD,
+      contract: {
+        goal: 'Summarize daily build status',
+      },
+    },
   })
 })
 
@@ -541,16 +555,20 @@ test('create_plan accepts on_worker_slot_freed trigger mode', async () => {
     {
       name: 'create_plan',
       attrs: {
-        prompt: 'Consume queue when capacity is available',
         title: 'capacity trigger',
         schedule_type: 'on_worker_slot_freed',
+        effect_kind: 'wake_manager',
+        effect_reason: 'capacity_retry',
       },
     },
   ])
 
   expect(runtime.taskPlans).toHaveLength(1)
   expect(runtime.taskPlans[0]?.trigger.mode).toBe('on_worker_slot_freed')
-  expect(runtime.taskPlans[0]?.profile).toBe('worker')
+  expect(runtime.taskPlans[0]?.effect).toEqual({
+    kind: 'wake_manager',
+    reason: 'capacity_retry',
+  })
 })
 
 test('assign_focus updates task focus by explicit target_type', async () => {
@@ -616,19 +634,20 @@ test('delete_plan removes done plan', async () => {
   const runtime = await createRuntime()
   const donePlan: TaskPlan = {
     id: 'plan-done',
-    prompt: 'done prompt',
     title: 'done',
     focusId: GLOBAL_FOCUS_ID,
-    profile: 'worker',
     priority: 'normal',
-    source: 'user_request',
     status: 'done',
     trigger: {
       mode: 'on_worker_slot_freed',
     },
+    effect: {
+      kind: 'wake_manager',
+      reason: 'capacity_retry',
+    },
     createdAt: '2026-02-13T00:00:00.000Z',
     updatedAt: '2026-02-13T00:00:00.000Z',
-    archivedAt: '2026-02-13T00:00:00.000Z',
+    closedAt: '2026-02-13T00:00:00.000Z',
     runCount: 1,
     maxRuns: 1,
     doneReason: 'completed',

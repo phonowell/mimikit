@@ -1,13 +1,20 @@
 import { appendHistory } from '../history/store.js'
 import {
+  buildPlanEffectPayload,
   buildPlanProgressPayload,
   buildPlanTriggerPayload,
 } from '../shared/plan-payload.js'
 import { createSystemEventRecord } from '../shared/system-event.js'
 import { newId, nowIso } from '../shared/utils.js'
 
+import { buildPlanEffectKey } from './action-plan-effect-key.js'
+
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
-import type { TaskPlan, TaskPlanTrigger } from '../types/index.js'
+import type {
+  TaskPlan,
+  TaskPlanEffect,
+  TaskPlanTrigger,
+} from '../types/index.js'
 
 const resolvePlanLabel = (item: TaskPlan): string =>
   item.title.trim() || item.id
@@ -31,10 +38,10 @@ export const appendPlanSystemMessage = async (
       title: label,
       status: plan.status,
       priority: plan.priority,
-      source: plan.source,
       run_count: plan.runCount,
       ...buildPlanProgressPayload(plan),
       ...buildPlanTriggerPayload(plan.trigger),
+      ...buildPlanEffectPayload(plan.effect),
     },
   })
   await appendHistory(runtime.paths.history, {
@@ -48,19 +55,22 @@ export const appendPlanSystemMessage = async (
 }
 
 export const normalizePlanKey = (params: {
-  prompt: string
   title: string
   focusId: string
-  profile: string
   trigger: TaskPlanTrigger
+  effect: TaskPlanEffect
 }): string => {
-  const base = `${params.prompt.trim().replace(/\s+/g, ' ').toLowerCase()}\n${params.title.trim().replace(/\s+/g, ' ').toLowerCase()}\n${params.focusId}\n${params.profile}`
+  const base = `${params.title.trim().replace(/\s+/g, ' ').toLowerCase()}\n${params.focusId}`
+  const effectKey = buildPlanEffectKey({
+    effect: params.effect,
+    focusId: params.focusId,
+  })
 
   if (params.trigger.mode === 'cron')
-    return `${base}\ncron:${params.trigger.cron}\ntime_zone:${params.trigger.timeZone ?? ''}`
+    return `${base}\n${effectKey}\ncron:${params.trigger.cron}\ntime_zone:${params.trigger.timeZone ?? ''}`
   if (params.trigger.mode === 'scheduled_at')
-    return `${base}\nscheduled_at:${params.trigger.scheduledAt}`
-  return `${base}\non_worker_slot_freed`
+    return `${base}\n${effectKey}\nscheduled_at:${params.trigger.scheduledAt}`
+  return `${base}\n${effectKey}\non_worker_slot_freed`
 }
 
 export const buildTrigger = (params: {

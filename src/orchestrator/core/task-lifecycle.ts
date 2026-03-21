@@ -1,6 +1,7 @@
 import { GLOBAL_FOCUS_ID } from '../../focus/index.js'
 import { newId, nowIso, titleFromCandidates } from '../../shared/utils.js'
 
+import { buildTaskGitExecution } from './task-git-execution.js'
 import {
   buildTaskFingerprint,
   isActiveTask,
@@ -15,11 +16,7 @@ import type {
   WorkerProfile,
   WorkerProvider,
 } from '../../types/index.js'
-
-export type EnqueueTaskResult = {
-  task: Task
-  created: boolean
-}
+export type EnqueueTaskResult = { task: Task; created: boolean }
 
 const resolveTitle = (id: string, prompt: string, title?: string): string =>
   titleFromCandidates(id, [title, prompt])
@@ -38,7 +35,6 @@ export const createTask = (
   cwd?: string,
   profile: WorkerProfile = 'worker',
   provider: WorkerProvider = 'codex',
-  schedule?: string,
   focusId: FocusId = GLOBAL_FOCUS_ID,
   repoKey?: string,
   branch?: string,
@@ -47,6 +43,7 @@ export const createTask = (
   const id = `task-${newId()}`
   const resolvedTitle = resolveTitle(id, prompt, title)
   if (!cwd?.trim()) throw new Error('task cwd is required')
+  const git = buildTaskGitExecution(cwd, branch)
   return {
     id,
     fingerprint: buildTaskFingerprint({
@@ -56,7 +53,6 @@ export const createTask = (
       profile,
       provider,
       focusId,
-      ...(schedule ? { schedule } : {}),
       ...(repoKey ? { repoKey } : {}),
       ...(branch ? { branch } : {}),
       ...(contract ? { contract } : {}),
@@ -66,8 +62,8 @@ export const createTask = (
     cwd,
     ...(repoKey ? { repoKey } : {}),
     ...(branch ? { branch } : {}),
+    ...(git ? { git } : {}),
     ...(contract ? { contract } : {}),
-    ...(schedule ? { cron: schedule } : {}),
     profile,
     provider,
     status: 'pending',
@@ -83,7 +79,6 @@ export const enqueueTask = (
   cwd?: string,
   profile: WorkerProfile = 'worker',
   provider: WorkerProvider = 'codex',
-  schedule?: string,
   focusId: FocusId = GLOBAL_FOCUS_ID,
   repoKey?: string,
   branch?: string,
@@ -97,7 +92,6 @@ export const enqueueTask = (
     profile,
     provider,
     focusId,
-    ...(schedule ? { schedule } : {}),
     ...(repoKey ? { repoKey } : {}),
     ...(branch ? { branch } : {}),
     ...(contract ? { contract } : {}),
@@ -114,7 +108,6 @@ export const enqueueTask = (
     cwd,
     profile,
     provider,
-    schedule,
     focusId,
     repoKey,
     branch,

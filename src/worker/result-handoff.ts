@@ -107,6 +107,7 @@ export const buildTaskResultHandoff = (
     ...(decisions.length > 0 ? { decisions } : {}),
     ...(nextSteps.length > 0 ? { nextSteps } : {}),
     ...(risks ? { risks } : {}),
+    ...(task.git ? { git: task.git } : {}),
   }
 }
 

@@ -1,14 +1,16 @@
-import { GLOBAL_FOCUS_ID } from '../focus/constants.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
-import { buildPlanTriggerPayload } from '../shared/plan-payload.js'
 import { compareIsoAsc, parseIsoMs } from '../shared/time.js'
-import { resolveSlotStatus } from '../worker/task-state-shared.js'
 
+import {
+  canFireOnWorkerSlotFreed,
+  firePlan,
+  markTriggeredPlanDone,
+  maybeMarkPlanExhausted,
+} from './loop-trigger-plan-execution.js'
 import { hasNextCronRun, matchesCronNow } from './plan-cron.js'
-import { publishManagerSystemEventInput } from './system-input-event.js'
+import { type RuntimeState } from './runtime-adapter.js'
 
-import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { TaskPlan } from '../types/index.js'
 
 const asSecondStamp = (iso: string): string => iso.slice(0, 19)
@@ -22,75 +24,6 @@ const sortTriggerPlans = (plans: TaskPlan[]): TaskPlan[] =>
     if (rankDiff !== 0) return rankDiff
     return compareIsoAsc(a.createdAt, b.createdAt)
   })
-
-const markPlanDone = (
-  plan: TaskPlan,
-  doneAt: string,
-  reason: TaskPlan['doneReason'],
-): void => {
-  plan.status = 'done'
-  plan.updatedAt = doneAt
-  plan.archivedAt = doneAt
-  plan.doneReason = reason
-}
-
-const maybeMarkPlanExhausted = (plan: TaskPlan, nowIso: string): boolean => {
-  if (plan.status !== 'active') return false
-  if (plan.maxRuns === undefined) return false
-  if (plan.runCount < plan.maxRuns) return false
-  markPlanDone(plan, nowIso, 'exhausted')
-  return true
-}
-
-const canFireOnWorkerSlotFreed = (plan: TaskPlan): boolean => {
-  if (plan.status !== 'active') return false
-  if (plan.trigger.mode !== 'on_worker_slot_freed') return false
-  if (plan.maxRuns !== undefined && plan.runCount >= plan.maxRuns) return false
-  return true
-}
-
-const firePlan = async (params: {
-  runtime: RuntimeState
-  plan: TaskPlan
-  nowIso: string
-  reason: 'cron' | 'scheduled_at' | 'on_worker_slot_freed'
-}): Promise<void> => {
-  const { runtime, plan, nowIso } = params
-  plan.runCount += 1
-  plan.lastTriggeredAt = nowIso
-  plan.updatedAt = nowIso
-
-  if (plan.trigger.mode === 'scheduled_at')
-    markPlanDone(plan, nowIso, 'completed')
-
-  await publishManagerSystemEventInput({
-    runtime,
-    summary: `Task plan "${plan.title.trim() || plan.id}" was triggered.`,
-    event: 'trigger_fire',
-    visibility: 'all',
-    payload: {
-      plan_id: plan.id,
-      title: plan.title,
-      prompt: plan.prompt,
-      priority: plan.priority,
-      source: plan.source,
-      run_count: plan.runCount,
-      slots: resolveSlotStatus(runtime),
-      ...(plan.maxRuns !== undefined ? { max_runs: plan.maxRuns } : {}),
-      triggered_at: nowIso,
-      ...buildPlanTriggerPayload(plan.trigger),
-    },
-    createdAt: nowIso,
-    logEvent: 'trigger_fire_input',
-    logMeta: {
-      planId: plan.id,
-      triggerMode: plan.trigger.mode,
-      triggerReason: params.reason,
-      focusId: GLOBAL_FOCUS_ID,
-      runCount: plan.runCount,
-    },
-  })
-}
 
 const triggerPlans = async (params: {
   runtime: RuntimeState
@@ -110,8 +43,7 @@ const triggerPlans = async (params: {
       nowIso: params.nowIso,
       reason: params.reason,
     })
-    if (plan.maxRuns !== undefined && plan.runCount >= plan.maxRuns)
-      markPlanDone(plan, params.nowIso, 'completed')
+    markTriggeredPlanDone(plan, params.nowIso)
     triggeredCount += 1
     stateChanged = true
   }
@@ -211,7 +143,7 @@ export const checkScheduledPlans = async (
       hasNextRun = false
     }
     if (!hasNextRun) {
-      markPlanDone(plan, nowIso, 'completed')
+      markTriggeredPlanDone(plan, nowIso)
       stateChanged = true
     }
   }

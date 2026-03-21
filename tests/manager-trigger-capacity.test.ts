@@ -167,14 +167,15 @@ const createPlan = (
   const now = new Date().toISOString()
   return {
     id,
-    prompt: id,
     title: id,
     focusId: GLOBAL_FOCUS_ID,
-    profile: 'worker',
     priority: 'normal',
-    source: 'user_request',
     status: 'active',
     trigger,
+    effect: {
+      kind: 'wake_manager',
+      reason: 'capacity_retry',
+    },
     createdAt: now,
     updatedAt: now,
     runCount: 0,

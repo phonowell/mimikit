@@ -160,7 +160,6 @@ export const applyRunTask = async (
     target.cwd,
     profile,
     provider,
-    undefined,
     focusId,
     target.repoKey,
     target.branch,
