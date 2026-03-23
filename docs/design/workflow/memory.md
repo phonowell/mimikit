@@ -47,7 +47,7 @@
 
 ## 刷新（refresh）与遗忘
 
-- 触发：`managerTurn` 与上次完成轮次差值 `>=20` 且 `inputsCursor` 相对上次完成检查点发生变化，单飞执行。
+- 触发：`managerTurn` 与上次完成轮次差值 `>=20`，且 `signalVersion != lastProcessedSignalVersion` 时触发；当前 signal 只来自稳定的 `memory_remembered` system event，单飞执行。
 - 子进程单轮只调用一次 LLM，输出：
   - `entries[]`：新增/更新候选
   - `delete_entry_ids[]`：删除候选（必须是现存 entry id）
@@ -91,5 +91,5 @@
   - `lastRunAt`
   - `running`
   - `pending`
-- 持久化：`runtime-snapshot.json` 只保存 `lastCompletedTurn/signalVersion/lastProcessedSignalVersion/lastRunAt` 检查点字段（`running/pending` 不持久化）。
+- 持久化：`runtime-snapshot.json` 只保存 `lastCompletedTurn/signalVersion/lastProcessedSignalVersion/lastRunAt` 检查点字段（`running/pending` 不持久化）；refresh 是否有增量仅由 `signalVersion` 与 `lastProcessedSignalVersion` 比较得出，不再依赖 `inputsCursor` 一类队列游标。
 - 后台任务注册：`memory_refresh` 现已在统一 background job registry 中声明 `summary/allowedWriteDomains/auditEvents`；后续新增后台 job 必须先在该 registry 注册，再声明写域。
