@@ -3,6 +3,8 @@ import type { FeedbackContext, ValidationIssue } from './action-validation.js'
 import type { RuntimeState } from './runtime-adapter.js'
 import type { Parsed } from '../actions/model/spec.js'
 
+export type { ApplyTaskActionsOptions }
+
 export type ManagerActionDomain =
   | 'task'
   | 'plan'

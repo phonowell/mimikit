@@ -8,7 +8,7 @@ import {
   buildLifecycleActionLogEntry,
 } from './action-cli-log-payload.js'
 
-import type { ApplyResult } from './action-registrations.js'
+import type { ApplyResult } from './action-registry-shared.js'
 import type { Parsed } from '../actions/model/spec.js'
 import type { ManagerActionFeedback } from '../types/index.js'
 

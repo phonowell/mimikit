@@ -11,7 +11,7 @@ import {
 
 import type { SupplementalEvidenceSource } from './action-intent-evidence.js'
 import type { Parsed } from '../actions/model/spec.js'
-import type { UserInput } from '../types/index.js'
+import type { Task, UserInput } from '../types/index.js'
 
 const toEvidenceLabel = (source: SupplementalEvidenceSource): string => source
 
@@ -91,4 +91,54 @@ export const isSupportedByInputs = (params: {
   )
   if (!combinedCandidate) return false
   return scoreTextOverlap(combinedCandidate, inputText) >= 0.35
+}
+
+type MutateTaskGitOp = 'review_passed' | 'merged' | 'cleaned'
+
+const resolveTaskRef = (task: Task | undefined, taskId: string): string => {
+  const title = task?.title.trim()
+  if (title) return `${taskId} / ${title}`
+  return taskId
+}
+
+const resolveGitOpLabel = (op: MutateTaskGitOp): string => {
+  if (op === 'review_passed') return 'review passed'
+  if (op === 'merged') return 'merged'
+  return 'cleaned'
+}
+
+export const isMutateTaskGitOp = (op: string): op is MutateTaskGitOp =>
+  op === 'review_passed' || op === 'merged' || op === 'cleaned'
+
+export const validateMutateTaskGitIntentEvidence = (params: {
+  op: MutateTaskGitOp
+  reason?: string | undefined
+  task: Task | undefined
+  taskId: string
+  inputTexts: string[]
+  supplementalEvidenceSources?: Set<SupplementalEvidenceSource>
+}): string | undefined => {
+  const reason = params.reason?.trim()
+  if (!reason) {
+    return formatMutateTaskIntentEvidenceHint({
+      evidenceSources: formatEvidenceSources(
+        params.supplementalEvidenceSources,
+      ),
+      taskRef: resolveTaskRef(params.task, params.taskId),
+      requiredAction: resolveGitOpLabel(params.op),
+    })
+  }
+  if (
+    isSupportedByInputs({
+      candidates: [reason],
+      combinedCandidate: reason,
+      inputs: params.inputTexts,
+    })
+  )
+    return undefined
+  return formatMutateTaskIntentEvidenceHint({
+    evidenceSources: formatEvidenceSources(params.supplementalEvidenceSources),
+    taskRef: resolveTaskRef(params.task, params.taskId),
+    requiredAction: resolveGitOpLabel(params.op),
+  })
 }

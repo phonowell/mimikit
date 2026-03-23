@@ -14,18 +14,21 @@ import { parseActionAttrs } from './action-parse.js'
 import { ACTION_PROMPT_SPECS } from './action-prompt-spec.js'
 import { PLAN_ACTION_DEFINITIONS } from './action-registry-plan-definitions.js'
 import {
+  type ApplyContext,
   createContinueAction,
   createNoopAction,
   createStopAction,
   type ManagerActionDefinition,
 } from './action-registry-shared.js'
 import {
+  type FeedbackContext,
   validateAskUserChoice,
   validateMutateTask,
   validateRememberMemory,
   validateRunTask,
   validateSummarizeTaskResult,
   validateWithSchema,
+  type ValidationIssue,
 } from './action-validation.js'
 import {
   cancelTask,
@@ -143,3 +146,35 @@ export const ACTION_DEFINITIONS = [
   ...FOCUS_ACTION_DEFINITIONS,
   ...MEMORY_ACTION_DEFINITIONS,
 ] satisfies ManagerActionDefinition[]
+
+export const MANAGER_ACTION_REGISTRY = new Map(
+  ACTION_DEFINITIONS.map((definition) => [definition.name, definition]),
+)
+
+export const REGISTERED_MANAGER_ACTIONS = new Set(
+  MANAGER_ACTION_REGISTRY.keys(),
+)
+
+const resolveActionDefinition = (
+  actionName: Parsed['name'],
+): ManagerActionDefinition | undefined =>
+  MANAGER_ACTION_REGISTRY.get(actionName)
+
+export const validateRegisteredManagerAction = (
+  item: Parsed,
+  context: FeedbackContext = {},
+): ValidationIssue[] => {
+  const definition = resolveActionDefinition(item.name)
+  if (!definition) return []
+  return definition.validate(item, context)
+}
+
+export const applyRegisteredManagerAction = (
+  runtime: Parameters<ManagerActionDefinition['apply']>[0],
+  item: Parsed,
+  context: ApplyContext,
+): Promise<'continue' | 'stop'> => {
+  const definition = resolveActionDefinition(item.name)
+  if (!definition) return Promise.resolve('continue')
+  return definition.apply(runtime, item, context)
+}

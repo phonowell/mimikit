@@ -9,11 +9,11 @@ import { appendLog } from '../log/append.js'
 
 import { isActionApplyFeedbackError } from './action-apply-feedback-error.js'
 import { managerActionCliLogger } from './action-cli-log.js'
+import { applyRegisteredManagerAction } from './action-registry-definitions.js'
 import {
   type ApplyContext,
-  applyRegisteredManagerAction,
   type ApplyTaskActionsOptions,
-} from './action-registrations.js'
+} from './action-registry-shared.js'
 import { collectTaskResultSummaries } from './action-task-result-summary.js'
 
 import type { RuntimeState } from './runtime-adapter.js'

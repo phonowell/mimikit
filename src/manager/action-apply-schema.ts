@@ -4,16 +4,18 @@ import { focusIdSchema } from '../shared/id-schema.js'
 import { normalizeInlineWhitespace } from '../shared/text.js'
 
 import {
+  askUserChoiceSchema,
+  parseAskUserChoiceAttrs,
+} from './action-apply-choice-attrs.js'
+import {
+  parseUpsertFocusAttrs,
+  upsertFocusSchema,
+} from './action-apply-focus-attrs.js'
+import {
   createPlanSchema,
   deletePlanSchema,
   updatePlanSchema,
 } from './action-plan-schema.js'
-export {
-  askUserChoiceSchema,
-  parseAskUserChoiceAttrs,
-  parseUpsertFocusAttrs,
-  upsertFocusSchema,
-} from './action-apply-dynamic-attrs.js'
 
 const nonEmptyString = z.string().trim().min(1)
 const REMEMBER_MEMORY_PROTOCOL_TAG_RE = /<M:[^>]+>/i
@@ -31,6 +33,12 @@ export type RememberMemoryContentIssue =
   | 'runtime_ref'
   | 'too_long'
 
+export {
+  askUserChoiceSchema,
+  parseAskUserChoiceAttrs,
+  parseUpsertFocusAttrs,
+  upsertFocusSchema,
+}
 export { createPlanSchema, deletePlanSchema, updatePlanSchema }
 
 export const runTaskSchema = z

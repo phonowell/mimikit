@@ -63,7 +63,8 @@
 - 审计 / 研究 / 质量辅助：`context-engineering-collection`、`context-compression`、`memory-systems`、`evaluation`、`advanced-evaluation`、`comprehensive-research-agent`、`reasoning-trace-optimizer`、`skill-template`
 - 不应反向驱动产品扩张：`book-sft-pipeline`、`digital-brain`、`bdi-mental-states`、`hosted-agents`、`workflow-orchestration-patterns`
 - 本轮已闭环的最后一个真实业务缺口：`enqueue_task` 与 `plan effect` 的旧协议别名入口已从 manager schema 中删除；`prompt/scope/acceptance_{1..5}`、`task_prompt/task_scope/task_acceptance_{1..5}` 不再被接受，也不再保留运行时归一化兼容层。
-- 当前仅剩规模治理缺口：`src + webui + prompts` 全文件约 `40125` LOC，仍明显高于 `<20k LOC` 目标；该项按当前用户要求明确延后，不在本轮处理范围内。
+- 当前业务主线缺口已闭环；规模治理仅保留为 nice-to-have 工程目标，不作为当前业务缺口或阻塞项。
+- 当前 `src` 约 `29463` LOC，仍高于 `<20k LOC` 的 nice-to-have 目标；该项用于持续提醒收缩实现复杂度，不作为本轮验收门禁。
 
 ## 参考项目
 
@@ -81,7 +82,7 @@
 - 第一性原理：用户指示不是天然正确前提；若与项目目标、代码事实、成本结构冲突，必须直接指出并收敛到更小、更硬的实现。
 - 删减策略：可以大刀阔斧删除低 ROI 的代码、功能、模块；删除优于勉强保留
 - 新增门槛：新增代码、功能、模块必须证明有明确高 ROI；无强收益不新增
-- 规模目标：持续将仓库总规模控制在 20k LOC 以内；新增前优先通过删减、复用、内联回收体量
+- 规模目标：以 `src <20k LOC` 作为 nice-to-have 工程目标；新增前优先通过删减、复用、内联回收体量，但不作为功能验收或合并阻塞条件
 - 客观诚实：不主观评价 · 不因用户情绪转移立场 · 不编造事实 · 立刻暴露不确定信息
 - 分层规则：默认遵循根级 `AGENTS.md`；若子目录存在 `AGENTS.md`，以更近目录规则为准；局部文件只写差异项，不重复全局规则
 - 计划管理：≥3 步任务用 `/plans/task_plan_{suffix}.md` 并持续更新

@@ -64,7 +64,7 @@ test('enqueue_task accepts branch attr with complete contract attrs', () => {
   expect(feedback).toHaveLength(0)
 })
 
-test('enqueue_task accepts legacy prompt scope and acceptance aliases', () => {
+test('enqueue_task rejects legacy scope and acceptance aliases', () => {
   const feedback = collectManagerActionFeedback(
     [
       {
@@ -81,5 +81,8 @@ test('enqueue_task accepts legacy prompt scope and acceptance aliases', () => {
     {},
   )
 
-  expect(feedback).toHaveLength(0)
+  expect(feedback).toHaveLength(1)
+  expect(feedback[0]?.action).toBe('enqueue_task')
+  expect(feedback[0]?.error).toBe('invalid_action_args')
+  expect(feedback[0]?.hint).toContain('scope')
 })

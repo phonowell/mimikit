@@ -8,12 +8,9 @@ import {
   invalidArgsIssue,
   rejected,
   validateItemWithSchema,
+  validateScheduledAtNotPast,
   type ValidationIssue,
 } from './action-validation-helpers.js'
-import {
-  validateCreatePlanSchedule,
-  validateUpdatePlanSchedule,
-} from './action-validation-plan.js'
 import {
   type FeedbackContext,
   validateAskUserChoice,
@@ -29,6 +26,13 @@ import type { ZodSchema } from 'zod'
 export type { FeedbackContext } from './action-validation-risk.js'
 export type { ValidationIssue } from './action-validation-helpers.js'
 
+const resolveScheduleNowOption = (
+  context: Pick<FeedbackContext, 'scheduleNowIso'>,
+): { scheduleNowIso?: string } =>
+  context.scheduleNowIso !== undefined
+    ? { scheduleNowIso: context.scheduleNowIso }
+    : {}
+
 export const validateWithSchema = (
   item: Parsed,
   schema: ZodSchema,
@@ -42,7 +46,13 @@ export const validateCreatePlan = (
 ): ValidationIssue[] => {
   const parsed = parseActionAttrs(item, createPlanSchema)
   if (!parsed) return validateWithSchema(item, createPlanSchema)
-  return validateCreatePlanSchedule(item, context)
+  if (parsed.schedule_type !== 'scheduled_at' || !parsed.scheduled_at?.trim())
+    return []
+  return validateScheduledAtNotPast({
+    action: 'create_plan',
+    scheduledAt: parsed.scheduled_at,
+    ...resolveScheduleNowOption(context),
+  })
 }
 
 export { validateMutateTask }
@@ -74,5 +84,11 @@ export const validateUpdatePlan = (
 ): ValidationIssue[] => {
   const parsed = parseActionAttrs(item, updatePlanSchema)
   if (!parsed) return validateWithSchema(item, updatePlanSchema)
-  return validateUpdatePlanSchedule(item, context)
+  const scheduledAt = parsed.scheduled_at?.trim()
+  if (parsed.schedule_type !== 'scheduled_at' || !scheduledAt) return []
+  return validateScheduledAtNotPast({
+    action: 'update_plan',
+    scheduledAt,
+    ...resolveScheduleNowOption(context),
+  })
 }

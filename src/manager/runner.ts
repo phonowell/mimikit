@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto'
+
 import { buildPaths } from '../fs/paths.js'
 import { buildManagerPromptPayload } from '../prompts/build-prompts.js'
 import {
@@ -6,7 +8,6 @@ import {
 } from '../storage/traces-archive.js'
 
 import { runManagerLlmCall } from './manager-llm-call.js'
-import { hashPromptPrefix } from './prompt-stability.js'
 
 import type { AppConfig } from '../config.js'
 import type {
@@ -26,6 +27,9 @@ import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
 const toError = (error: unknown): Error =>
   error instanceof Error ? error : new Error(String(error))
+
+const hashPromptPrefix = (prefix: string): string =>
+  createHash('sha256').update(prefix, 'utf8').digest('hex')
 
 export const runManager = async (params: {
   stateDir: string

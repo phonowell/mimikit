@@ -11,12 +11,10 @@ import {
 } from './action-apply-schema.js'
 import {
   buildMissingIntentEvidenceHint,
-  isSupportedByInputs,
-} from './action-intent-evidence-match.js'
-import {
   isMutateTaskGitOp,
+  isSupportedByInputs,
   validateMutateTaskGitIntentEvidence,
-} from './action-intent-evidence-mutate-task-git.js'
+} from './action-intent-evidence-match.js'
 import { parseActionAttrs } from './action-parse.js'
 import { resolveRunTaskConfirmationRequirement } from './run-task-confirmation.js'
 import {

@@ -15,7 +15,7 @@ import {
 import {
   REGISTERED_MANAGER_ACTIONS,
   validateRegisteredManagerAction,
-} from './action-registrations.js'
+} from './action-registry-definitions.js'
 import { formatBlockedActionSurfaceHint } from './action-surface.js'
 
 import type { FeedbackContext } from './action-validation.js'
