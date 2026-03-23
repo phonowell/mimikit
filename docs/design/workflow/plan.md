@@ -15,6 +15,7 @@
 - 完成原因：`completed | exhausted | canceled`
 - 触发策略：`trigger.mode = cron | scheduled_at | on_worker_slot_freed`
 - 生效动作：`effect.kind = enqueue_task | wake_manager`
+- 结构分层：`TaskPlan` 顶层只保留声明式调度语义；运行态 bookkeeping 统一收进 `plan.runtime`
 
 ## 触发机制
 
@@ -61,6 +62,7 @@
 - `create_plan/update_plan` 中 `trigger_mode=scheduled_at` 时会校验时间不得早于“当前用户上下文时间”（若有）或系统当前时间。
 - `trigger_mode=on_worker_slot_freed` 与 `cron/scheduled_at` 参数互斥。
 - `update_plan` 对 `done` 计划默认拒绝。
+- `plan.runtime.runCount/lastTriggeredAt/lastTaskId/closedAt/doneReason` 只允许由触发执行链路维护，不对 manager action 暴露写入口。
 - `lastTaskId` 由运行时在 `trigger_fire -> enqueue_task` 成功落到既有/新建任务时自动回写，不再由 manager action 显式维护。
 - `effect_kind="enqueue_task"` 必须能构出完整 task contract；`effect_kind="wake_manager"` 仅允许受限 reason，不再接受自由文本 prompt。
 
@@ -71,6 +73,15 @@
 - `TaskPlan`
 - `TaskPlanTrigger`
 - `TaskPlanEffect`
+- `TaskPlanRuntime`
+
+运行态字段：
+
+- `runtime.runCount`：已触发次数
+- `runtime.lastTriggeredAt`：最近一次触发时间
+- `runtime.lastTaskId`：最近一次触发关联到的 task
+- `runtime.closedAt`：进入 `done` 的关闭时间
+- `runtime.doneReason`：`canceled | completed | exhausted`
 
 ## 示例
 

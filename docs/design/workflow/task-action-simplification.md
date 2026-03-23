@@ -1,8 +1,9 @@
-# Task Action 收敛设计（pause/resume）
+# Task Action 收敛设计（pause/resume/git closure）
 
 > 范围：manager action 设计收敛（不含本文件内实现代码变更）
 > 文档定位：历史设计记录（非规范）；Action 当前有效规范见 `./action.md`。
 > 说明：下文为历史落地快照，可能与当前实现细节存在偏差，不用于规范裁决。
+> 状态更新：`mutate_task` 收敛方案已落地，本文不再表示待办。
 
 ## 1. 背景与问题
 
@@ -10,6 +11,7 @@
 
 - 创建：`enqueue_task`
 - 控制：worker/HTTP 已支持 `pause`、`resume`、`cancel`
+- 闭环：task git lifecycle 已支持 `review_passed`、`merged`、`cleaned` 显式写回
 
 若在 manager 层继续按“一个能力一个 action”新增 `pause_task`、`resume_task`，会出现：
 
@@ -28,7 +30,7 @@
 保留 2 个 task 相关 action：
 
 - `enqueue_task`：只负责“创建并入队”
-- `mutate_task`：统一负责“生命周期控制”
+- `mutate_task`：统一负责“任务控制 + git 闭环状态写回”
 
 `cancel_task` 在 V2 中移除，不保留兼容层。
 
@@ -55,6 +57,7 @@
 - `pause` -> `pauseTask(runtime, id, { source: 'deferred', reason })`
 - `resume` -> `resumeTask(runtime, id, { source: 'deferred', reason })`
 - `cancel` -> `cancelTask(runtime, id, { source: 'deferred', reason })`
+- `review_passed|merged|cleaned` -> `recordTaskGitLifecycle(runtime, id, op, ...)`
 
 ## 7. 文档与 Prompt 收敛
 
@@ -65,7 +68,7 @@
 
 - `prompts/manager/system.md`：
 - 白名单移除 `cancel_task`，新增 `mutate_task`
-- 最小约束新增 `mutate_task(id, op[, reason])`
+- 最小约束新增 `mutate_task(id, op[, reason][, sha])`
 - “取消门禁”文本改为“任务控制门禁”（重点仍是 cancel 需更严格）
 
 ## 8. 一次性落地策略（不留兼容层）
@@ -78,12 +81,12 @@
 
 ## 9. 测试增量（最小必要）
 
-- `manager-action-apply`：`mutate_task` 的 `pause/resume/cancel` 路径
+- `manager-action-apply`：`mutate_task` 的 `pause/resume/cancel/review_passed/merged/cleaned` 路径
 - `action-validation`：各 `op` 的非法状态拦截
 - `action-doc-sync`：文档 action 名与 registry 保持一致
 
 ## 10. 验收标准
 
-- manager 可生成并成功执行 `mutate_task op="pause|resume|cancel"`
+- manager 可生成并成功执行 `mutate_task op="pause|resume|cancel|review_passed|merged|cleaned"`
 - 不再注册 `cancel_task`，无兼容分支
 - 文档、prompt、注册表、校验与测试一致

@@ -33,7 +33,7 @@ test('update_plan rejects sibling collision for active plan key', async () => {
       },
       createdAt: '2026-02-13T00:00:00.000Z',
       updatedAt: '2026-02-13T00:00:00.000Z',
-      runCount: 0,
+      runtime: { runCount: 0 },
     },
     {
       id: 'plan-update-target',
@@ -51,7 +51,7 @@ test('update_plan rejects sibling collision for active plan key', async () => {
       },
       createdAt: '2026-02-13T00:00:00.000Z',
       updatedAt: '2026-02-13T00:00:00.000Z',
-      runCount: 0,
+      runtime: { runCount: 0 },
     },
   )
 

@@ -23,9 +23,11 @@ export const buildPlanProgressPayload = (
   plan: TaskPlan,
 ): Record<string, unknown> => ({
   ...(plan.maxRuns !== undefined ? { max_runs: plan.maxRuns } : {}),
-  ...(plan.lastTriggeredAt ? { last_triggered_at: plan.lastTriggeredAt } : {}),
-  ...(plan.lastTaskId ? { last_task_id: plan.lastTaskId } : {}),
-  ...(plan.closedAt ? { closed_at: plan.closedAt } : {}),
+  ...(plan.runtime.lastTriggeredAt
+    ? { last_triggered_at: plan.runtime.lastTriggeredAt }
+    : {}),
+  ...(plan.runtime.lastTaskId ? { last_task_id: plan.runtime.lastTaskId } : {}),
+  ...(plan.runtime.closedAt ? { closed_at: plan.runtime.closedAt } : {}),
 })
 
 export const buildPlanEffectPayload = (

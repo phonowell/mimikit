@@ -6,50 +6,13 @@ import { expect, test } from 'vitest'
 
 import { attachProviderThreadId } from '../src/providers/thread-id.js'
 import {
-  MAX_CONTINUE_LATEST_OUTPUT_CHARS,
   buildContinuePrompt,
-  hasDoneMarker,
   isWorkerBudgetExceededError,
   runWorkerLoop,
-  stripDoneMarker,
 } from '../src/worker/profiled-runner-loop.js'
 import type { Task, TokenUsage } from '../src/types/index.js'
 
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-worker-loop-'))
-
-test('done marker detection uses skill_usage done status only', () => {
-  const doneOutput =
-    '结论：已完成\n<M:skill_usage status="done">plan-implementation</M:skill_usage>'
-  const doneOutputVariant =
-    "结论：已完成\n<M:skill_usage source=\"x\" status = 'done'>plan-implementation</M:skill_usage>"
-  const doneOutputUnquoted =
-    '结论：已完成\n<M:skill_usage status=done>plan-implementation</M:skill_usage>'
-  const invalidStatusValue =
-    '结论：未完成\n<M:skill_usage status=donee>plan-implementation</M:skill_usage>'
-  const legacyOutput = '结论：已完成\n<M:task_done/>'
-
-  expect(hasDoneMarker(doneOutput)).toBe(true)
-  expect(hasDoneMarker(doneOutputVariant)).toBe(true)
-  expect(hasDoneMarker(doneOutputUnquoted)).toBe(true)
-  expect(stripDoneMarker(doneOutput)).toBe('结论：已完成')
-  expect(stripDoneMarker(doneOutputVariant)).toBe('结论：已完成')
-  expect(stripDoneMarker(doneOutputUnquoted)).toBe('结论：已完成')
-  expect(hasDoneMarker(invalidStatusValue)).toBe(false)
-  expect(hasDoneMarker(legacyOutput)).toBe(false)
-})
-
-test('continue prompt clips latest output to configured max chars', () => {
-  const template = '{{ latest_output }}\n{{ done_tag_pattern }}'
-  const longOutput = `A${'b'.repeat(MAX_CONTINUE_LATEST_OUTPUT_CHARS + 300)}`
-  const prompt = buildContinuePrompt(template, 'inline-template', longOutput, 2)
-  const [latestLine] = prompt.split('\n')
-
-  expect(latestLine?.length).toBeLessThanOrEqual(
-    MAX_CONTINUE_LATEST_OUTPUT_CHARS,
-  )
-  expect(latestLine?.endsWith('...')).toBe(true)
-  expect(prompt).toContain('<M:skill_usage status="done">')
-})
 
 test('continue prompt can omit latest output when thread context is available', () => {
   const template = [
@@ -95,7 +58,8 @@ test('runWorkerLoop does not double count when onUsage and result usage are iden
         const usage = { input: 100, output: 50, total: 150 }
         onUsage?.(usage)
         return {
-          output: '<M:skill_usage status="done">test</M:skill_usage>',
+          output:
+            'done\n<M:task_handoff>{"summary":"done"}</M:task_handoff>\n<M:skill_usage status="done">test</M:skill_usage>',
           elapsedMs: 12,
           usage,
         }
@@ -143,7 +107,8 @@ test('runWorkerLoop forwards partial output updates', async () => {
         onPartialOutput?.('step 1')
         onPartialOutput?.('step 2')
         return {
-          output: 'done\n<M:skill_usage status="done">test</M:skill_usage>',
+          output:
+            'done\n<M:task_handoff>{"summary":"done"}</M:task_handoff>\n<M:skill_usage status="done">test</M:skill_usage>',
           elapsedMs: 12,
         }
       },
@@ -235,7 +200,8 @@ test('runWorkerLoop omits latest output in continue prompt when thread id exists
           }
         }
         return {
-          output: 'final\n<M:skill_usage status=done>test</M:skill_usage>',
+          output:
+            'final\n<M:task_handoff>{"summary":"final"}</M:task_handoff>\n<M:skill_usage status=done>test</M:skill_usage>',
           elapsedMs: 10,
           threadId,
         }

@@ -47,7 +47,6 @@ test('scoreRuntimeWindow computes core governance metrics without not_collected 
       memoryRefresh: {
         lastCompletedTurn: 0,
         lastProcessedInputsCursor: 0,
-        lastProcessedResultsCursor: 0,
       },
     }), 'utf8'),
     writeFile(join(stateDir, 'history', '2026-03-08.jsonl'), [

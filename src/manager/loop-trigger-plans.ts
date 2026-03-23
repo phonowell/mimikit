@@ -70,7 +70,7 @@ export const checkScheduledPlans = async (
     if (plan.trigger.mode === 'scheduled_at') {
       const scheduledMs = parseIsoMs(plan.trigger.scheduledAt)
       if (scheduledMs === undefined || now.getTime() < scheduledMs) continue
-      if (plan.lastTriggeredAt) continue
+      if (plan.runtime.lastTriggeredAt) continue
       await firePlan({
         runtime,
         plan,
@@ -92,8 +92,8 @@ export const checkScheduledPlans = async (
 
     if (plan.trigger.mode !== 'cron') continue
     if (
-      plan.lastTriggeredAt &&
-      asSecondStamp(plan.lastTriggeredAt) === nowSecond
+      plan.runtime.lastTriggeredAt &&
+      asSecondStamp(plan.runtime.lastTriggeredAt) === nowSecond
     )
       continue
 

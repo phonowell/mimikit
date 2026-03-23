@@ -139,6 +139,14 @@ export type TaskPlanEffect =
   | TaskPlanEnqueueTaskEffect
   | TaskPlanWakeManagerEffect
 
+export type TaskPlanRuntime = {
+  runCount: number
+  lastTriggeredAt?: ISODate | undefined
+  lastTaskId?: string | undefined
+  closedAt?: ISODate | undefined
+  doneReason?: 'canceled' | 'completed' | 'exhausted' | undefined
+}
+
 export type TaskPlan = {
   id: string
   title: string
@@ -149,12 +157,8 @@ export type TaskPlan = {
   effect: TaskPlanEffect
   createdAt: ISODate
   updatedAt: ISODate
-  runCount: number
   maxRuns?: number | undefined
-  lastTriggeredAt?: ISODate | undefined
-  lastTaskId?: string | undefined
-  closedAt?: ISODate | undefined
-  doneReason?: 'canceled' | 'completed' | 'exhausted' | undefined
+  runtime: TaskPlanRuntime
 }
 
 export type FocusMeta = {

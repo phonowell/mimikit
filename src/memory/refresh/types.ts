@@ -1,4 +1,4 @@
-import type { Role, TaskPlanStatus, TaskStatus } from '../../types/index.js'
+import type { Role } from '../../types/index.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
 export type MemoryRefreshSignal = {
@@ -6,18 +6,6 @@ export type MemoryRefreshSignal = {
   role: Role
   createdAt: string
   text: string
-}
-
-export type MemoryRefreshTaskDigest = {
-  id: string
-  status: TaskStatus
-  focusId: string
-}
-
-export type MemoryRefreshPlanDigest = {
-  id: string
-  status: TaskPlanStatus
-  updatedAt: string
 }
 
 export type MemoryRefreshPayload = {
@@ -29,8 +17,6 @@ export type MemoryRefreshPayload = {
   modelReasoningEffort?: ModelReasoningEffort | undefined
   memoryMarkdown: string
   signals: MemoryRefreshSignal[]
-  tasks: MemoryRefreshTaskDigest[]
-  plans: MemoryRefreshPlanDigest[]
 }
 
 export type MemoryEvidenceEntry = {

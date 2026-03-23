@@ -38,10 +38,12 @@ export const formatEnqueueTaskIntentEvidenceHint = (
 export const formatMutateTaskIntentEvidenceHint = (params: {
   evidenceSources: string
   taskRef: string
+  requiredAction?: string
 }): string =>
   renderHint('mutate_task_intent_evidence_missing', {
     evidence_sources: params.evidenceSources,
     task_ref: params.taskRef,
+    required_action: params.requiredAction ?? '目标控制动作',
   })
 
 export const formatAskUserChoiceIntentEvidenceHint = (

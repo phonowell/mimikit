@@ -1,9 +1,15 @@
+import { resolveTaskGitLifecycle } from '../shared/task-git-lifecycle.js'
 import {
   formatTaskResultSummary,
   pickTaskResultSummaryLine,
   resolveTaskLabel,
 } from '../shared/task-state.js'
 import { clipCompactText } from '../shared/text.js'
+
+import {
+  buildStructuredTaskHandoff,
+  stripTaskHandoffTag,
+} from './task-handoff-protocol.js'
 
 import type { Task, TaskResult, TaskResultHandoff } from '../types/index.js'
 
@@ -85,12 +91,21 @@ export const buildTaskResultHandoff = (
   task: Task,
   result: Pick<TaskResult, 'status' | 'output'>,
 ): TaskResultHandoff | undefined => {
-  const taskLabel = resolveTaskLabel(task)
-  const detail = pickTaskResultSummaryLine(result.output, MAX_SUMMARY_CHARS)
-  const summary = formatTaskResultSummary(taskLabel, result.status, detail)
   const goal = clipText(task.prompt, MAX_GOAL_CHARS)
-  const decisions = collectChecklistItems(result.output, 'checked')
-  const nextSteps = collectChecklistItems(result.output, 'unchecked')
+  const structured = buildStructuredTaskHandoff({
+    ...(goal ? { goal } : {}),
+    git: task.git,
+    output: result.output,
+  })
+  if (structured) return structured
+  if (result.status === 'succeeded') return goal ? { goal } : undefined
+
+  const cleanedOutput = stripTaskHandoffTag(result.output)
+  const taskLabel = resolveTaskLabel(task)
+  const detail = pickTaskResultSummaryLine(cleanedOutput, MAX_SUMMARY_CHARS)
+  const summary = formatTaskResultSummary(taskLabel, result.status, detail)
+  const decisions = collectChecklistItems(cleanedOutput, 'checked')
+  const nextSteps = collectChecklistItems(cleanedOutput, 'unchecked')
   const risks = buildRiskItems(result.status, taskLabel, summary)
   if (
     !goal &&
@@ -101,13 +116,21 @@ export const buildTaskResultHandoff = (
   )
     return undefined
 
+  const gitLifecycle = resolveTaskGitLifecycle(task)
+  const git =
+    task.git &&
+    ({
+      ...task.git,
+      ...(gitLifecycle ? { lifecycle: gitLifecycle } : {}),
+    } satisfies NonNullable<TaskResultHandoff['git']>)
+
   return {
     ...(goal ? { goal } : {}),
     ...(summary ? { summary } : {}),
     ...(decisions.length > 0 ? { decisions } : {}),
     ...(nextSteps.length > 0 ? { nextSteps } : {}),
     ...(risks ? { risks } : {}),
-    ...(task.git ? { git: task.git } : {}),
+    ...(git ? { git } : {}),
   }
 }
 

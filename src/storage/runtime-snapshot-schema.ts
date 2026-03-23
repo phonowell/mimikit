@@ -22,6 +22,12 @@ import {
   managerPacketSectionSchema,
   managerSectionDigestSchema,
 } from './manager-packet-schema.js'
+import {
+  taskGitExecutionSchema,
+  taskPlanRuntimeSchema,
+  taskResultHandoffArtifactSchema,
+  taskResultHandoffEvidenceSchema,
+} from './runtime-snapshot-task-schema-parts.js'
 import { tokenUsageSchema } from './token-usage.js'
 
 export {
@@ -53,29 +59,6 @@ const taskContractSchema = z
     acceptance: z.array(z.string().trim().min(1)).min(1),
     outOfScope: z.string().trim().min(1).optional(),
     contextRefs: z.array(z.string().trim().min(1)).optional(),
-  })
-  .strict()
-
-const taskResultHandoffArtifactSchema = z
-  .object({
-    path: z.string().trim().min(1),
-    kind: z.string().trim().min(1).optional(),
-    note: z.string().trim().min(1).optional(),
-  })
-  .strict()
-
-const taskResultHandoffEvidenceSchema = z
-  .object({
-    type: z.enum(['task_archive', 'file', 'history']),
-    ref: z.string().trim().min(1),
-    note: z.string().trim().min(1).optional(),
-  })
-  .strict()
-
-const taskGitExecutionSchema = z
-  .object({
-    worktreePath: z.string().trim().min(1),
-    branch: z.string().trim().min(1),
   })
   .strict()
 
@@ -241,12 +224,8 @@ export const taskPlanSchema = z
     effect: taskPlanEffectSchema,
     createdAt: z.string(),
     updatedAt: z.string(),
-    runCount: z.number().int().nonnegative(),
     maxRuns: z.number().int().positive().optional(),
-    lastTriggeredAt: z.string().optional(),
-    lastTaskId: z.string().trim().min(1).optional(),
-    closedAt: z.string().optional(),
-    doneReason: z.enum(['canceled', 'completed', 'exhausted']).optional(),
+    runtime: taskPlanRuntimeSchema,
   })
   .strict()
 
@@ -351,8 +330,6 @@ const memoryRefreshSchema = z
   .object({
     lastCompletedTurn: z.number().int().nonnegative(),
     lastProcessedInputsCursor: z.number().int().nonnegative(),
-    lastProcessedResultsCursor: z.number().int().nonnegative(),
-    lastProcessedPlanUpdatedAt: z.string().trim().min(1).optional(),
     lastRunAt: z.string().trim().min(1).optional(),
   })
   .strict()

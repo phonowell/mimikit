@@ -53,11 +53,11 @@ const WAKE_PROFILE_DOMAIN_ORDER: Record<
   ManagerWakeProfile,
   readonly ManagerActionDomain[]
 > = {
-  user_input: ['lookup', 'task', 'plan', 'dialog', 'focus', 'memory'],
-  mixed: ['lookup', 'task', 'plan', 'dialog', 'focus', 'memory'],
-  task_result: ['lookup', 'task', 'plan'],
-  trigger: ['lookup', 'task', 'plan'],
-  capacity: ['lookup', 'task', 'plan'],
+  user_input: ['task', 'plan', 'dialog', 'focus', 'memory'],
+  mixed: ['task', 'plan', 'dialog', 'focus', 'memory'],
+  task_result: ['task', 'plan'],
+  trigger: ['task', 'plan'],
+  capacity: ['task', 'plan'],
 }
 
 const DOMAIN_SPEC_BY_NAME = new Map(

@@ -14,6 +14,7 @@ export { selectRecentTasks } from '../orchestrator/read-model/plan-select.js'
 export { cancelTask } from '../worker/cancel-task.js'
 export { enqueueWorkerTask } from '../worker/dispatch.js'
 export { pauseTask } from '../worker/pause-task.js'
+export { recordTaskGitLifecycle } from '../worker/record-task-git-lifecycle.js'
 export { resumeTask } from '../worker/resume-task.js'
 
 import type { RuntimeState as CoreRuntimeState } from '../orchestrator/core/runtime-state.js'

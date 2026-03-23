@@ -11,10 +11,13 @@ import { readJsonl } from '../src/storage/jsonl.js'
 import { managerLoop } from '../src/manager/loop.js'
 import { triggerOnWorkerSlotFreedPlans } from '../src/manager/loop-trigger-plans.js'
 import { hasFreeWorkerSlot } from '../src/worker/task-state-shared.js'
+import {
+  createCapacityPlan,
+  waitForCondition,
+} from './helpers/manager-trigger-capacity.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
-import type { TaskPlan } from '../src/types/index.js'
 
 const { runManagerRoundWithRecoveryMock } = vi.hoisted(() => ({
   runManagerRoundWithRecoveryMock: vi.fn(),
@@ -101,19 +104,6 @@ const createTestConfig = (
   },
 })
 
-const waitFor = async (
-  check: () => boolean | Promise<boolean>,
-  timeoutMs = 3_500,
-): Promise<void> => {
-  const startedAt = Date.now()
-  while (!(await check())) {
-    if (Date.now() - startedAt > timeoutMs) {
-      throw new Error(`wait_timeout_${timeoutMs}ms`)
-    }
-    await new Promise<void>((resolve) => setTimeout(resolve, 25))
-  }
-}
-
 const countSystemEvent = async (
   runtime: RuntimeState,
   name: string,
@@ -160,28 +150,6 @@ const stopLoop = async (
   await loopPromise
 }
 
-const createPlan = (
-  id: string,
-  trigger: TaskPlan['trigger'],
-): TaskPlan => {
-  const now = new Date().toISOString()
-  return {
-    id,
-    title: id,
-    focusId: GLOBAL_FOCUS_ID,
-    priority: 'normal',
-    status: 'active',
-    trigger,
-    effect: {
-      kind: 'wake_manager',
-      reason: 'capacity_retry',
-    },
-    createdAt: now,
-    updatedAt: now,
-    runCount: 0,
-  }
-}
-
 test('worker slot availability tracks queue capacity transitions', async () => {
   const runtime = await createRuntime({ maxConcurrent: 2 })
   expect(hasFreeWorkerSlot(runtime)).toBe(true)
@@ -202,11 +170,11 @@ test('worker slot availability tracks queue capacity transitions', async () => {
     { id: 'task-block-2' },
   )
 
-  await waitFor(() => runtime.worker.queue.pending === 2)
+  await waitForCondition(() => runtime.worker.queue.pending === 2)
   expect(hasFreeWorkerSlot(runtime)).toBe(false)
 
   releases.shift()?.()
-  await waitFor(() => runtime.worker.queue.pending === 1)
+  await waitForCondition(() => runtime.worker.queue.pending === 1)
   expect(hasFreeWorkerSlot(runtime)).toBe(true)
 
   releases.shift()?.()
@@ -228,7 +196,7 @@ test('managerLoop emits worker_slot_freed once on startup when slot is already f
 
   const loopPromise = managerLoop(runtime)
   try {
-    await waitFor(
+    await waitForCondition(
       async () => (await countSystemEvent(runtime, 'worker_slot_freed')) >= 1,
       4_000,
     )
@@ -254,8 +222,16 @@ test('managerLoop suppresses worker_slot_freed when no queue work exists', async
 test('on_worker_slot_freed plans trigger without touching non-capacity plans', async () => {
   const runtime = await createRuntime({ maxConcurrent: 2 })
   runtime.taskPlans.push(
-    createPlan('plan-capacity', { mode: 'on_worker_slot_freed' }),
-    createPlan('plan-cron', { mode: 'cron', cron: '* * * * *' }),
+    createCapacityPlan(
+      'plan-capacity',
+      { mode: 'on_worker_slot_freed' },
+      GLOBAL_FOCUS_ID,
+    ),
+    createCapacityPlan(
+      'plan-cron',
+      { mode: 'cron', cron: '* * * * *' },
+      GLOBAL_FOCUS_ID,
+    ),
   )
 
   const capacityTriggered = await triggerOnWorkerSlotFreedPlans(
@@ -263,14 +239,18 @@ test('on_worker_slot_freed plans trigger without touching non-capacity plans', a
     Date.now(),
   )
   expect(capacityTriggered).toEqual({ triggeredCount: 1, stateChanged: true })
-  expect(runtime.taskPlans[0]?.runCount).toBe(1)
-  expect(runtime.taskPlans[1]?.runCount).toBe(0)
+  expect(runtime.taskPlans[0]?.runtime.runCount).toBe(1)
+  expect(runtime.taskPlans[1]?.runtime.runCount).toBe(0)
   expect(await countSystemEvent(runtime, 'trigger_fire')).toBe(1)
 })
 
 test('trigger_fire system event uses global focus even when plan has local focus', async () => {
   const runtime = await createRuntime({ maxConcurrent: 1 })
-  const plan = createPlan('plan-local-focus', { mode: 'on_worker_slot_freed' })
+  const plan = createCapacityPlan(
+    'plan-local-focus',
+    { mode: 'on_worker_slot_freed' },
+    GLOBAL_FOCUS_ID,
+  )
   plan.focusId = 'focus-local'
   runtime.taskPlans.push(plan)
 
@@ -286,22 +266,31 @@ test(
   'managerLoop fires on_worker_slot_freed once on full-to-free transition',
   async () => {
     const runtime = await createRuntime({ maxConcurrent: 1 })
-    runtime.taskPlans.push(createPlan('plan-capacity', { mode: 'on_worker_slot_freed' }))
+    runtime.taskPlans.push(
+      createCapacityPlan(
+        'plan-capacity',
+        { mode: 'on_worker_slot_freed' },
+        GLOBAL_FOCUS_ID,
+      ),
+    )
     runtime.worker.runningControllers.set('task-busy', new AbortController())
 
     const loopPromise = managerLoop(runtime)
     try {
       await settle()
-      expect(runtime.taskPlans[0]?.runCount).toBe(0)
+      expect(runtime.taskPlans[0]?.runtime.runCount).toBe(0)
 
       runtime.worker.runningControllers.clear()
       runtime.worker.lastActivityAtMs = Date.now()
       notifyManagerLoop(runtime)
 
-      await waitFor(() => (runtime.taskPlans[0]?.runCount ?? 0) >= 1, 4_000)
+      await waitForCondition(
+        () => (runtime.taskPlans[0]?.runtime.runCount ?? 0) >= 1,
+        4_000,
+      )
       await settle()
 
-      expect(runtime.taskPlans[0]?.runCount).toBe(1)
+      expect(runtime.taskPlans[0]?.runtime.runCount).toBe(1)
       expect(await countSystemEvent(runtime, 'worker_slot_freed')).toBe(0)
     } finally {
       await stopLoop(runtime, loopPromise)
@@ -333,7 +322,7 @@ test('managerLoop emits worker_slot_freed on full-to-free transition only once',
     runtime.worker.lastActivityAtMs = Date.now()
     notifyManagerLoop(runtime)
 
-    await waitFor(
+    await waitForCondition(
       async () => (await countSystemEvent(runtime, 'worker_slot_freed')) >= 1,
       4_000,
     )
@@ -374,7 +363,7 @@ test(
       runtime.worker.runningControllers.delete('task-3')
       runtime.worker.lastActivityAtMs = Date.now()
       notifyManagerLoop(runtime)
-      await waitFor(
+      await waitForCondition(
         async () => (await countSystemEvent(runtime, 'worker_slot_freed')) >= 1,
         4_000,
       )
@@ -393,21 +382,28 @@ test(
   async () => {
     const runtime = await createRuntime({ maxConcurrent: 1 })
     runtime.taskPlans.push(
-      createPlan('plan-capacity', { mode: 'on_worker_slot_freed' }),
+      createCapacityPlan(
+        'plan-capacity',
+        { mode: 'on_worker_slot_freed' },
+        GLOBAL_FOCUS_ID,
+      ),
     )
     runtime.worker.runningControllers.set('task-busy', new AbortController())
 
     const loopPromise = managerLoop(runtime)
     try {
       await settle()
-      expect(runtime.taskPlans[0]?.runCount).toBe(0)
+      expect(runtime.taskPlans[0]?.runtime.runCount).toBe(0)
 
       runtime.worker.runningControllers.clear()
       runtime.worker.lastActivityAtMs = Date.now()
       notifyManagerLoop(runtime)
 
-      await waitFor(() => (runtime.taskPlans[0]?.runCount ?? 0) >= 1, 4_000)
-      expect(runtime.taskPlans[0]?.runCount).toBe(1)
+      await waitForCondition(
+        () => (runtime.taskPlans[0]?.runtime.runCount ?? 0) >= 1,
+        4_000,
+      )
+      expect(runtime.taskPlans[0]?.runtime.runCount).toBe(1)
       expect(await countSystemEvent(runtime, 'worker_slot_freed')).toBe(0)
     } finally {
       await stopLoop(runtime, loopPromise)

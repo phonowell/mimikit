@@ -1,22 +1,22 @@
 {
-  "root": "/Users/mimiko/Projects/mimikit-worktree-2/overflows/runtime-snapshot-rehearsal",
+  "root": "/Users/mimiko/Projects/mimikit/workflows/runtime-snapshot-rehearsal",
   "scanned": 2,
-  "migrated": 1,
-  "unchanged": 1,
+  "migrated": 0,
+  "unchanged": 2,
   "failed": 0,
-  "targetVersion": "runtime-snapshot.v2",
+  "targetVersion": "runtime-snapshot.v7",
   "results": [
     {
       "path": "case-v1/runtime-snapshot.json",
-      "sourceVersion": "runtime-snapshot.v1",
-      "targetVersion": "runtime-snapshot.v2",
-      "changed": true,
+      "sourceVersion": "runtime-snapshot.v7",
+      "targetVersion": "runtime-snapshot.v7",
+      "changed": false,
       "valid": true
     },
     {
       "path": "case-v2/runtime-snapshot.json",
-      "sourceVersion": "runtime-snapshot.v2",
-      "targetVersion": "runtime-snapshot.v2",
+      "sourceVersion": "runtime-snapshot.v7",
+      "targetVersion": "runtime-snapshot.v7",
       "changed": false,
       "valid": true
     }

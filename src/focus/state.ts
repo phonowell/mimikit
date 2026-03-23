@@ -6,6 +6,11 @@ import {
   INBOX_FOCUS_ID,
   MAX_FOCUS_OPEN_ITEMS,
 } from './constants.js'
+import {
+  MAX_FOCUS_OPEN_ITEM_CHARS,
+  MAX_FOCUS_SUMMARY_CHARS,
+  normalizeFocusDigestText,
+} from './digest.js'
 import { normalizeFocusOpenItems } from './open-items.js'
 import {
   canStoreFocusDetails,
@@ -20,8 +25,7 @@ import type { FocusId, FocusMeta, FocusStatus } from '../types/index.js'
 
 export const normalizeFocusSummary = (value?: string): string | undefined => {
   if (typeof value !== 'string') return undefined
-  const trimmed = value.trim()
-  return trimmed || undefined
+  return normalizeFocusDigestText(value, MAX_FOCUS_SUMMARY_CHARS)
 }
 
 const markFocusActivity = (
@@ -60,9 +64,15 @@ const applyFocusDetails = (
       : normalizeFocusSummary(focus.summary)
   const normalizedOpenItems =
     params.openItems !== undefined
-      ? normalizeFocusOpenItems(params.openItems, {
-          maxItems: MAX_FOCUS_OPEN_ITEMS,
-        })
+      ? normalizeFocusOpenItems(
+          params.openItems.map(
+            (item) =>
+              normalizeFocusDigestText(item, MAX_FOCUS_OPEN_ITEM_CHARS) ?? '',
+          ),
+          {
+            maxItems: MAX_FOCUS_OPEN_ITEMS,
+          },
+        )
       : focus.openItems
   if (normalizedSummary) focus.summary = normalizedSummary
   else delete focus.summary

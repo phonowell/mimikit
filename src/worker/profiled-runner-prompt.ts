@@ -1,5 +1,11 @@
 import { renderPromptTemplate } from '../prompts/format.js'
 
+import {
+  hasStructuredTaskHandoff,
+  stripTaskHandoffTag,
+  TASK_HANDOFF_TAG_PATTERN,
+} from './task-handoff-protocol.js'
+
 export const SKILL_USAGE_DONE_TAG_PATTERN =
   // prompt-guard-exempt: protocol done-tag contract constant, not an LLM prompt template.
   '<M:skill_usage status="done">{skill-a,skill-b}</M:skill_usage>'
@@ -16,6 +22,12 @@ export const hasDoneMarker = (output: string): boolean =>
 
 export const stripDoneMarker = (output: string): string =>
   output.replace(SKILL_USAGE_DONE_STRIP_RE, '').trim()
+
+export const hasWorkerCompletionMarker = (output: string): boolean =>
+  hasDoneMarker(output) && hasStructuredTaskHandoff(output)
+
+export const stripWorkerProtocolTags = (output: string): string =>
+  stripDoneMarker(stripTaskHandoffTag(output))
 
 const clipLatestOutput = (value: string): string => {
   const normalized = value.trim()
@@ -37,6 +49,7 @@ export const buildContinuePrompt = (
     template,
     {
       done_tag_pattern: SKILL_USAGE_DONE_TAG_PATTERN,
+      task_handoff_tag_pattern: TASK_HANDOFF_TAG_PATTERN,
       latest_output:
         options?.includeLatestOutput === false
           ? ''

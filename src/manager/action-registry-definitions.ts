@@ -28,7 +28,12 @@ import {
   validateSummarizeTaskResult,
   validateWithSchema,
 } from './action-validation.js'
-import { cancelTask, pauseTask, resumeTask } from './runtime-adapter.js'
+import {
+  cancelTask,
+  pauseTask,
+  recordTaskGitLifecycle,
+  resumeTask,
+} from './runtime-adapter.js'
 
 import type { Parsed } from '../actions/model/spec.js'
 
@@ -48,10 +53,11 @@ const applyMutateTaskAction = async (
 ): Promise<void> => {
   const parsed = parseActionAttrs(item, mutateTaskSchema)
   if (!parsed) return
-  const { id, op, reason } = parsed
+  const { id, op, reason, sha } = parsed
   const meta = {
     source: 'deferred',
     ...(reason ? { reason } : {}),
+    ...(sha ? { sha } : {}),
   }
   if (op === 'pause') {
     await pauseTask(runtime, id, meta)
@@ -59,6 +65,10 @@ const applyMutateTaskAction = async (
   }
   if (op === 'resume') {
     await resumeTask(runtime, id, meta)
+    return
+  }
+  if (op === 'review_passed' || op === 'merged' || op === 'cleaned') {
+    await recordTaskGitLifecycle(runtime, id, op, meta)
     return
   }
   await cancelTask(runtime, id, meta)
@@ -87,9 +97,12 @@ const TASK_ACTION_DEFINITIONS = [
       name: 'mutate_task',
       domain: 'task',
       prompt: definePrompt(
-        '暂停、恢复或取消任务。',
+        '暂停、恢复、取消任务，或写回 git 闭环状态。',
         ['必填 `id,op`'],
-        ['仅用于显式任务控制'],
+        [
+          '`op=pause|resume|cancel|review_passed|merged|cleaned`',
+          '`review_passed` 可选 `sha`',
+        ],
       ),
     },
     (item, context) => validateMutateTask(item, context),

@@ -17,7 +17,7 @@ const pickEarlier = (
 const isPlanRunnable = (plan: TaskPlan): boolean => {
   if (plan.status !== 'active') return false
   if (plan.maxRuns === undefined) return true
-  return plan.runCount < plan.maxRuns
+  return plan.runtime.runCount < plan.maxRuns
 }
 
 const resolvePlanWakeAtMs = (plan: TaskPlan, now: Date): number | undefined => {
@@ -26,7 +26,7 @@ const resolvePlanWakeAtMs = (plan: TaskPlan, now: Date): number | undefined => {
   if (plan.trigger.mode === 'scheduled_at') {
     const scheduledAtMs = parseIsoMs(plan.trigger.scheduledAt)
     if (scheduledAtMs === undefined) return undefined
-    if (plan.lastTriggeredAt) return undefined
+    if (plan.runtime.lastTriggeredAt) return undefined
     return scheduledAtMs
   }
   try {

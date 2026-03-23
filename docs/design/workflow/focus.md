@@ -81,6 +81,8 @@
 
 - 必填：`id`
 - 可选：`title/status/summary/open_item_{n}`
+- `summary/open_item_{n}` 都必须是单行 digest 文本；拒绝多行、checklist、步骤列表形态
+- 长度上限：`summary <= 140 chars`、`open_item_{n} <= 80 chars`
 - `open_item_{n}` 约束：
 - 值必须为非空字符串。
 - 索引必须从 `1` 连续递增，不可跳号。
@@ -115,7 +117,7 @@
 2. 基于任务标题 + 输出首行的归一化摘要
 - `openItems` 不再由任务结果自动提炼。
 - `openItems` 仅允许通过显式 `upsert_focus` 写入，作为人工确认后的 digest 提示。
-- 禁止把 `openItems` 当任务列表、验收清单、恢复指令或执行步骤来源。
+- 禁止把 `summary/openItems` 当任务列表、验收清单、恢复指令或执行步骤来源。
 
 ## 容量治理与清理
 

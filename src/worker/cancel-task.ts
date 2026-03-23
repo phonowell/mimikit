@@ -10,7 +10,8 @@ import { clearTaskResumeChoice } from '../orchestrator/core/task-resume-choice.j
 import { parseIsoMs } from '../shared/time.js'
 import { nowIso } from '../shared/utils.js'
 
-import { buildResult, finalizeResult } from './result-finalize.js'
+import { buildResult } from './result-build.js'
+import { finalizeResult } from './result-finalize.js'
 import {
   discardTaskSession,
   isRecoverableCancelSource,

@@ -29,11 +29,11 @@ const formatPlanEntry = (plan: TaskPlan): Record<string, unknown> => ({
     : {}),
   created_at: plan.createdAt,
   updated_at: plan.updatedAt,
-  run_count: plan.runCount,
+  run_count: plan.runtime.runCount,
   ...buildPlanProgressPayload(plan),
   ...buildPlanTriggerPayload(plan.trigger),
   ...buildPlanEffectPayload(plan.effect),
-  ...(plan.doneReason ? { done_reason: plan.doneReason } : {}),
+  ...(plan.runtime.doneReason ? { done_reason: plan.runtime.doneReason } : {}),
 })
 
 export const buildPlansPromptPayload = (

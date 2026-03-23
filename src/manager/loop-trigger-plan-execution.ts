@@ -21,12 +21,15 @@ import type { TaskPlan } from '../types/index.js'
 const markPlanDone = (
   plan: TaskPlan,
   doneAt: string,
-  reason: TaskPlan['doneReason'],
+  reason: TaskPlan['runtime']['doneReason'],
 ): void => {
   plan.status = 'done'
   plan.updatedAt = doneAt
-  plan.closedAt = doneAt
-  plan.doneReason = reason
+  plan.runtime = {
+    ...plan.runtime,
+    closedAt: doneAt,
+    doneReason: reason,
+  }
 }
 
 export const maybeMarkPlanExhausted = (
@@ -35,7 +38,7 @@ export const maybeMarkPlanExhausted = (
 ): boolean => {
   if (plan.status !== 'active') return false
   if (plan.maxRuns === undefined) return false
-  if (plan.runCount < plan.maxRuns) return false
+  if (plan.runtime.runCount < plan.maxRuns) return false
   markPlanDone(plan, nowIso, 'exhausted')
   return true
 }
@@ -43,7 +46,8 @@ export const maybeMarkPlanExhausted = (
 export const canFireOnWorkerSlotFreed = (plan: TaskPlan): boolean => {
   if (plan.status !== 'active') return false
   if (plan.trigger.mode !== 'on_worker_slot_freed') return false
-  if (plan.maxRuns !== undefined && plan.runCount >= plan.maxRuns) return false
+  if (plan.maxRuns !== undefined && plan.runtime.runCount >= plan.maxRuns)
+    return false
   return true
 }
 
@@ -94,10 +98,13 @@ export const firePlan = async (params: {
     }
   }
 
-  plan.runCount += 1
-  plan.lastTriggeredAt = nowIso
+  plan.runtime = {
+    ...plan.runtime,
+    runCount: plan.runtime.runCount + 1,
+    lastTriggeredAt: nowIso,
+    ...(lastTaskId ? { lastTaskId } : {}),
+  }
   plan.updatedAt = nowIso
-  if (lastTaskId) plan.lastTaskId = lastTaskId
   if (plan.trigger.mode === 'scheduled_at')
     markPlanDone(plan, nowIso, 'completed')
 
@@ -110,7 +117,7 @@ export const firePlan = async (params: {
       plan_id: plan.id,
       title: plan.title,
       priority: plan.priority,
-      run_count: plan.runCount,
+      run_count: plan.runtime.runCount,
       slots: resolveSlotStatus(runtime),
       ...(plan.maxRuns !== undefined ? { max_runs: plan.maxRuns } : {}),
       ...(lastTaskId ? { last_task_id: lastTaskId } : {}),
@@ -125,13 +132,13 @@ export const firePlan = async (params: {
       triggerMode: plan.trigger.mode,
       triggerReason: params.reason,
       focusId: GLOBAL_FOCUS_ID,
-      runCount: plan.runCount,
+      runCount: plan.runtime.runCount,
       ...(lastTaskId ? { lastTaskId } : {}),
     },
   })
 }
 
 export const markTriggeredPlanDone = (plan: TaskPlan, nowIso: string): void => {
-  if (plan.maxRuns !== undefined && plan.runCount >= plan.maxRuns)
+  if (plan.maxRuns !== undefined && plan.runtime.runCount >= plan.maxRuns)
     markPlanDone(plan, nowIso, 'completed')
 }

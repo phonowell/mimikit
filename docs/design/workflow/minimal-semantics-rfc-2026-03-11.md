@@ -1,7 +1,7 @@
 # 领域模型最小语义 RFC（focus / plan / task / action / memory）
 
-- status: proposed
-- date: 2026-03-11
+- status: implemented
+- date: 2026-03-11; updated: 2026-03-23
 - scope: `focus`、`plan`、`task`、`action`、`memory`
 - source:
   - `docs/todo/mimikit-rearchitecture-final-plan.md`
@@ -16,6 +16,12 @@
   - `src/memory/*`
   - `src/storage/runtime-snapshot-schema.ts`
 
+> 历史 RFC；当前可执行规范以 `docs/design/workflow/*.md` 与对应 `src/*` 实现为准。
+
+## 0. 2026-03-23 落地状态
+
+核心收敛项均已落地：`TaskPlan=trigger+effect+runtime`、`Task` 不再承载调度字段、`focus.summary/openItems` 降级为 digest、`memory refresh` 收窄为 `signals`、`Task.git.lifecycle` 入模、低上下文 wake profile 不再开放 `lookup`。本文以下内容只保留为设计背景。
+
 ## 1. 背景
 
 当前仓库已经把 `focus / plan / task / action / memory` 五个对象分别落了文档和实现，但它们仍然存在两类不收敛：
@@ -29,7 +35,7 @@
 - 它既承载触发条件，又夹带调度来源、运行计数、最近任务关联等派生状态。
 - 触发后实际仍依赖 manager 读取 `prompt` 再决定做什么，导致“plan 是 trigger 还是 intent container”并不清楚。
 
-同时，`Task` 仍保留 `cron / scheduledAt` 字段，说明“调度语义”还没有彻底收口到 `plan`。`focus.summary/openItems` 也容易被误用成 task list 或 plan list。`memory` 虽然整体方向已接近“长期事实”，但刷新与注入链路仍让它有被继续扩张为过程上下文容器的风险。
+在 RFC 提出时，`Task` 仍保留 `cron / scheduledAt`，`focus.summary/openItems` 容易被误用成 task list，`memory` 刷新链路也仍可能吸收过程态文本。本节保留的是当时背景，而不是当前仓库事实。
 
 本 RFC 的目标不是引入新概念，而是把现有概念压回最小必要语义。
 
@@ -290,6 +296,8 @@ export type TriggerPlan = {
 - `lastCompletedAt` 可以删除；它是 `lastTaskId` 结果的派生视图，不必单独占一个主字段。
 - `archivedAt` 建议并入 `closedAt`，避免“done + archived”双重终态语义。
 
+注：当前实现已按这个方向落到 `plan.runtime.runCount/lastTriggeredAt/lastTaskId/closedAt/doneReason`，不再保留顶层 bookkeeping 字段。
+
 ### 4.4 对外 action API 建议
 
 建议把 `create_plan` / `update_plan` 也同步收敛到 effect 结构：
@@ -325,6 +333,8 @@ export type TriggerPlan = {
 
 ## 5. 字段删减 / 迁移建议
 
+本节多数项目已完成；保留它主要是为了说明当前协议为何收敛成现状。
+
 | 当前字段 | 处理 | 理由 |
 | --- | --- | --- |
 | `TaskPlan.prompt` | 移入 `effect.taskTemplate.prompt` 或删除 | 顶层自由文本会把 plan 重新变成语义容器 |
@@ -343,6 +353,8 @@ export type TriggerPlan = {
 - `task` 若需要保留“由谁触发”的信息，应新增 `triggeredByPlanId` 或 `triggerMeta`，不要继续复用 `cron/scheduledAt`。
 
 ## 6. 迁移策略
+
+以下迁移策略已基本完成；现阶段不再建议重新引入任何兼容层或双 schema 并存。
 
 ### 6.1 推荐迁移顺序
 
@@ -378,29 +390,17 @@ export type TriggerPlan = {
 
 这与仓库“全量更新、不留兼容层”的原则一致。
 
-## 7. 当前仓库的最小落地建议
+## 7. 当前状态
 
-本轮优先建议只落文档，不直接改 runtime 行为。
+原“最小落地建议”已完成；现在只剩三条持续约束：
 
-建议立即落地的高确定性事项：
-
-1. 新增本 RFC，作为“问题 2：领域模型不收敛”的收敛基线。
-2. 在设计索引中把 RFC 暴露出来，避免后续再从零讨论五对象边界。
-3. 后续若继续实现，第一批代码改动优先级应为：
-   - `Task.cron/scheduledAt` 去除或降级为 trigger metadata。
-   - `TaskPlan.prompt/profile/source` 从主模型移出。
-   - `create_plan/update_plan` 切到 `effect_kind` 结构。
-
-本轮不建议直接做的改动：
-
-- 不在没有完整迁移方案前半删半留 `TaskPlan.prompt`。
-- 不只改 WebUI 展示而不改 schema。
-- 不把 `focus.openItems` 扩成正式任务列表。
-- 不把 `memory` 再扩成 process log 或 queue scratchpad。
+- 不重新引入旧 `TaskPlan.prompt` 式自由文本 plan 容器
+- 不把 `focus.openItems` 扩成正式任务列表
+- 不把 `memory` 再扩成 process log 或 queue scratchpad
 
 ## 8. 验收标准
 
-当以下条件同时满足时，可以认为领域模型开始收敛：
+当以下条件同时满足时，可以认为领域模型已进入稳定收敛状态：
 
 - `focus` 只承担归属与 digest，不再承载执行规划。
 - `task` 成为唯一执行实例与证据载体。

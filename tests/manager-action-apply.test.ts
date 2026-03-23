@@ -647,10 +647,12 @@ test('delete_plan removes done plan', async () => {
     },
     createdAt: '2026-02-13T00:00:00.000Z',
     updatedAt: '2026-02-13T00:00:00.000Z',
-    closedAt: '2026-02-13T00:00:00.000Z',
-    runCount: 1,
     maxRuns: 1,
-    doneReason: 'completed',
+    runtime: {
+      runCount: 1,
+      closedAt: '2026-02-13T00:00:00.000Z',
+      doneReason: 'completed',
+    },
   }
   runtime.taskPlans.push(donePlan)
 

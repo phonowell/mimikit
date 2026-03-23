@@ -67,3 +67,35 @@ test('buildTaskViews derives cleaned=true when worktreePath is missing', () => {
   expect(views[0]?.gitClosure?.cleaned).toBe(true)
 })
 
+test('buildTaskViews keeps explicit lifecycle fields while merging derived closure', () => {
+  const task = createTaskFixture({
+    id: 'task-explicit-git-closure',
+    git: {
+      worktreePath: '/tmp/mimikit-missing-worktree',
+      branch: 'main',
+      lifecycle: {
+        review: {
+          passed: true,
+          at: '2026-03-23T00:00:00.000Z',
+          sha: 'abc123',
+        },
+        merged: true,
+        mergedAt: '2026-03-23T00:10:00.000Z',
+        cleaned: false,
+      },
+    },
+  })
+
+  const { tasks: views } = buildTaskViews([task])
+
+  expect(views[0]?.gitClosure).toMatchObject({
+    review: {
+      passed: true,
+      at: '2026-03-23T00:00:00.000Z',
+      sha: 'abc123',
+    },
+    merged: true,
+    mergedAt: '2026-03-23T00:10:00.000Z',
+    cleaned: true,
+  })
+})

@@ -56,12 +56,17 @@ export type {
   TaskPlan,
   TaskPlanEffect,
   TaskPlanEnqueueTaskEffect,
+  TaskPlanRuntime,
   TaskPlanTrigger,
   TaskPlanWakeManagerEffect,
   TaskResult,
   UserChoiceOption,
 } from './task-runtime-types.js'
-export type { TaskGitExecution } from './task-git-types.js'
+export type {
+  TaskGitExecution,
+  TaskGitLifecycle,
+  TaskGitReview,
+} from './task-git-types.js'
 export type {
   TaskResultHandoff,
   TaskResultHandoffArtifact,

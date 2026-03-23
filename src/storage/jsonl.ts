@@ -14,8 +14,8 @@ type JsonlReadOptions<T> = {
 }
 
 const require = createRequire(import.meta.url)
-const jsonlParserFactory = require('stream-json/jsonl/Parser') as {
-  parser: (options?: {
+const jsonlParserFactory = require('stream-json/jsonl/Parser.js') as {
+  asStream: (options?: {
     errorIndicator?: (error: unknown, input: string) => unknown
   }) => NodeJS.ReadWriteStream
 }
@@ -25,7 +25,7 @@ const readJsonlValues = async (path: string): Promise<unknown[]> => {
   const values: unknown[] = []
   await new Promise<void>((resolve, reject) => {
     const source = createReadStream(path, { encoding: 'utf8' })
-    const parser = jsonlParserFactory.parser({
+    const parser = jsonlParserFactory.asStream({
       errorIndicator: (error, input) => {
         parserErrors.push({ error, line: String(input) })
         return undefined

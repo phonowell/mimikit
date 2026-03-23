@@ -70,7 +70,7 @@ test('requestMemoryRefresh excludes task outputs and plan titles from payload', 
           trigger: { mode: 'cron', cron: '0 1 * * *' },
           createdAt: '2026-03-20T00:00:00.000Z',
           updatedAt: '2026-03-20T00:00:00.000Z',
-          runCount: 0,
+          runtime: { runCount: 0 },
         },
       ],
       focuses: [
@@ -93,16 +93,15 @@ test('requestMemoryRefresh excludes task outputs and plan titles from payload', 
       ],
     },
   })
-  runtime.manager.memoryRefresh.pending = true
+  runtime.queues.inputsCursor = 1
   await rewriteHistory(runtime.paths.history, [
     {
-      id: 'sys-1',
-      role: 'system',
+      id: 'input-1',
+      role: 'user',
       visibility: 'user',
-      text: 'Memory remembered',
+      text: 'Keep the oncall escalation path stable across release weeks.',
       createdAt: '2026-03-20T00:00:00.000Z',
       focusId: 'focus-a',
-      systemEventName: 'memory_remembered',
     },
   ])
 
@@ -114,12 +113,10 @@ test('requestMemoryRefresh excludes task outputs and plan titles from payload', 
 
   await expect.poll(() => capturedPayloads[0]).toBeTruthy()
   expect(capturedPayloads[0]).toMatchObject({
-    tasks: [{ id: 'task-1', status: 'paused', focusId: 'focus-a' }],
-    plans: [
+    signals: [
       {
-        id: 'plan-1',
-        status: 'active',
-        updatedAt: '2026-03-20T00:00:00.000Z',
+        id: 'input-1',
+        role: 'user',
       },
     ],
   })
@@ -127,5 +124,7 @@ test('requestMemoryRefresh excludes task outputs and plan titles from payload', 
     'Partial draft with rollout notes',
   )
   expect(JSON.stringify(capturedPayloads[0])).not.toContain('Nightly backlog sweep')
-  expect(JSON.stringify(capturedPayloads[0])).toContain('Memory remembered')
+  expect(JSON.stringify(capturedPayloads[0])).toContain(
+    'Keep the oncall escalation path stable across release weeks.',
+  )
 })

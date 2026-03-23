@@ -12,6 +12,10 @@ import {
   buildMissingIntentEvidenceHint,
   isSupportedByInputs,
 } from './action-intent-evidence-match.js'
+import {
+  isMutateTaskGitOp,
+  validateMutateTaskGitIntentEvidence,
+} from './action-intent-evidence-mutate-task-git.js'
 import { parseActionAttrs } from './action-parse.js'
 import { resolveRunTaskConfirmationRequirement } from './run-task-confirmation.js'
 import { runTaskSchema } from './run-task-schema.js'
@@ -118,6 +122,16 @@ export const validateMutateTaskIntentEvidence = (params: {
   if (hasResumeChoiceEffectTask(inputs, parsed.id, parsed.op)) return undefined
 
   const task = taskById?.get(parsed.id)
+  if (isMutateTaskGitOp(parsed.op)) {
+    return validateMutateTaskGitIntentEvidence({
+      op: parsed.op,
+      reason: parsed.reason,
+      task,
+      taskId: parsed.id,
+      inputTexts,
+      ...(supplementalEvidenceSources ? { supplementalEvidenceSources } : {}),
+    })
+  }
   const candidates = [parsed.id]
   if (task?.title.trim()) candidates.push(task.title)
   if (task?.branch?.trim()) candidates.push(task.branch)

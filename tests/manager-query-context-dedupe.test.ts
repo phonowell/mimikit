@@ -40,7 +40,7 @@ test('query_context deduplicates highly similar snippets across all scopes', asy
     },
     createdAt: '2026-03-06T01:10:00.000Z',
     updatedAt: '2026-03-06T01:20:00.000Z',
-    runCount: 0,
+    runtime: { runCount: 0 },
   })
   runtime.focuses.push({
     id: 'focus-maintenance',

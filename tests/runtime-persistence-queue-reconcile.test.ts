@@ -54,7 +54,6 @@ test('hydrateRuntimeState reconciles stale queue cursors', async () => {
     memoryRefresh: {
       lastCompletedTurn: 0,
       lastProcessedInputsCursor: 5,
-      lastProcessedResultsCursor: 6,
     },
   })
 
@@ -67,7 +66,6 @@ test('hydrateRuntimeState reconciles stale queue cursors', async () => {
 
   expect(runtime.queues).toEqual({ inputsCursor: 0, resultsCursor: 0 })
   expect(runtime.manager.memoryRefresh.lastProcessedInputsCursor).toBe(0)
-  expect(runtime.manager.memoryRefresh.lastProcessedResultsCursor).toBe(0)
 })
 
 test('persist+hydrate keeps reusable session on recovered pending task', async () => {

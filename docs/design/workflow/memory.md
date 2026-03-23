@@ -44,7 +44,7 @@
 
 ## 刷新（refresh）与遗忘
 
-- 触发：`managerTurn` 与上次完成轮次差值 `>=20`，单飞执行。
+- 触发：`managerTurn` 与上次完成轮次差值 `>=20` 且 `inputsCursor` 相对上次完成检查点发生变化，单飞执行。
 - 子进程单轮只调用一次 LLM，输出：
   - `entries[]`：新增/更新候选
   - `delete_entry_ids[]`：删除候选（必须是现存 entry id）
@@ -58,8 +58,10 @@
   - `src/memory/refresh/single-call.ts`
   - `src/memory/refresh/apply-patch.ts`
   - `src/memory/refresh/singleflight.ts`
+  - `src/orchestrator/background-write-policy.ts`
 - 输入边界：
-  - refresh 只消费长期价值候选信号，不再把近期 `task.result.output`、plan 标题等过程态文本直接喂给刷新链路。
+  - refresh 只消费 `signals`；当前来源限定为最近用户输入与稳定 memory system event。
+  - refresh 不再消费近期 `task.result.output`、plan 标题、待办摘要等过程态文本。
   - `memory_remembered` 一类稳定 system event 可作为 refresh 证据；短期任务推进、待办、调度策略、恢复步骤不得进入长期 memory。
 
 ## 评分、排序与取舍
@@ -82,9 +84,8 @@
 - 运行态：`runtime.memoryRefresh`
   - `lastCompletedTurn`
   - `lastProcessedInputsCursor`
-  - `lastProcessedResultsCursor`
-  - `lastProcessedPlanUpdatedAt`
   - `lastRunAt`
   - `running`
   - `pending`
-- 持久化：`runtime-snapshot.json` 保存检查点字段（`running/pending` 不持久化）。
+- 持久化：`runtime-snapshot.json` 只保存 `lastCompletedTurn/lastProcessedInputsCursor/lastRunAt` 检查点字段（`running/pending` 不持久化）。
+- 后台任务注册：`memory_refresh` 现已在统一 background job registry 中声明 `summary/allowedWriteDomains/auditEvents`；后续新增后台 job 必须先在该 registry 注册，再声明写域。

@@ -13,9 +13,9 @@ import {
 } from './profiled-runner-budget.js'
 import {
   buildContinuePrompt,
-  hasDoneMarker,
+  hasWorkerCompletionMarker,
   MAX_RUN_ROUNDS,
-  stripDoneMarker,
+  stripWorkerProtocolTags,
 } from './profiled-runner-prompt.js'
 
 import type { ProviderResult, RunLoopParams } from './profiled-runner-types.js'
@@ -26,10 +26,10 @@ import type {
 import type { TokenUsage } from '../types/index.js'
 export {
   buildContinuePrompt,
-  hasDoneMarker,
+  hasWorkerCompletionMarker,
   MAX_CONTINUE_LATEST_OUTPUT_CHARS,
   MAX_RUN_ROUNDS,
-  stripDoneMarker,
+  stripWorkerProtocolTags,
 } from './profiled-runner-prompt.js'
 export { isWorkerBudgetExceededError } from './profiled-runner-budget.js'
 
@@ -100,8 +100,8 @@ export const runWorkerLoop = async (
       }
 
       const output = result.output.trim()
-      if (hasDoneMarker(output)) {
-        const finalOutput = stripDoneMarker(output)
+      if (hasWorkerCompletionMarker(output)) {
+        const finalOutput = stripWorkerProtocolTags(output)
         await archiveResult(
           { ...params.archiveBase, threadId },
           {
@@ -144,7 +144,7 @@ export const runWorkerLoop = async (
     }
 
     throw new Error(
-      `[worker] task incomplete after ${maxRounds} rounds: missing M:skill_usage status="done"; last_output=${JSON.stringify(latestResult?.output.trim() ?? 'empty_output')}`,
+      `[worker] task incomplete after ${maxRounds} rounds: missing completion protocol (M:task_handoff + M:skill_usage status="done"); last_output=${JSON.stringify(latestResult?.output.trim() ?? 'empty_output')}`,
     )
   } catch (error) {
     const errorThreadId = readProviderThreadId(error)

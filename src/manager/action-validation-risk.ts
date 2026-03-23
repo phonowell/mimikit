@@ -25,6 +25,7 @@ import {
   validateItemWithSchema,
   type ValidationIssue,
 } from './action-validation-helpers.js'
+import { validateMutateTaskGitOp } from './action-validation-mutate-task-git.js'
 import { resolveRunTaskConfirmationRequirement } from './run-task-confirmation.js'
 import { runTaskSchema } from './run-task-schema.js'
 import {
@@ -112,9 +113,10 @@ export const validateMutateTask = (
 ): ValidationIssue[] => {
   const parsed = parseActionAttrs(item, mutateTaskSchema)
   if (!parsed) return validateWithSchema(item, mutateTaskSchema)
-  const { id, op } = parsed
+  const { id, op, reason } = parsed
   const taskStatus = context.taskStatusById?.get(id)
   if (!taskStatus) return rejected(formatMutateTaskNotFoundHint())
+  const task = context.taskById?.get(id)
 
   if (op === 'pause') {
     if (taskStatus !== 'pending' && taskStatus !== 'running') {
@@ -132,14 +134,19 @@ export const validateMutateTask = (
         return rejected(formatMutateTaskAlreadyDoneHint('resume'))
       return rejected(formatMutateTaskNotPausedHint())
     }
-  } else if (
-    taskStatus !== 'pending' &&
-    taskStatus !== 'paused' &&
-    taskStatus !== 'running'
-  ) {
-    if (taskStatus === 'canceled')
-      return rejected(formatMutateTaskAlreadyCanceledHint())
-    return rejected(formatMutateTaskAlreadyDoneHint('cancel'))
+  } else if (op === 'cancel') {
+    if (
+      taskStatus !== 'pending' &&
+      taskStatus !== 'paused' &&
+      taskStatus !== 'running'
+    ) {
+      if (taskStatus === 'canceled')
+        return rejected(formatMutateTaskAlreadyCanceledHint())
+      return rejected(formatMutateTaskAlreadyDoneHint('cancel'))
+    }
+  } else {
+    const issues = validateMutateTaskGitOp({ op, taskStatus, task, reason })
+    if (issues.length > 0) return issues
   }
 
   return validateHighRiskActionIntentEvidence(item, context)

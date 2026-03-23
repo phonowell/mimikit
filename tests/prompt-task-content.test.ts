@@ -63,7 +63,10 @@ test('buildTasksPromptPayload omits result-only fallback and plan title still fa
       id: 'plan-collapse-1',
       title: '',
       status: 'done',
-      doneReason: 'completed',
+      runtime: {
+        runCount: 0,
+        doneReason: 'completed',
+      },
       trigger: {
         mode: 'scheduled_at',
         scheduledAt: '2026-03-20T13:00:00.000Z',

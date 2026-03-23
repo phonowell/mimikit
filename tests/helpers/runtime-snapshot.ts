@@ -34,6 +34,8 @@ export const createPlanFixture = (
   },
   createdAt: SNAPSHOT_BASE_TIME,
   updatedAt: SNAPSHOT_BASE_TIME,
-  runCount: 0,
+  runtime: {
+    runCount: 0,
+  },
   ...overrides,
 })

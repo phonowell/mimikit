@@ -123,7 +123,6 @@ export const createRuntimeState = (
   const memoryRefresh: RuntimeMemoryRefreshState = {
     lastCompletedTurn: 0,
     lastProcessedInputsCursor: 0,
-    lastProcessedResultsCursor: 0,
     running: false,
     pending: false,
   }

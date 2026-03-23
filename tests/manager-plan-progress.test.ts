@@ -36,7 +36,9 @@ test('enqueue_task auto-links a triggered plan to the created task', async () =>
     },
     createdAt: '2026-02-13T00:00:00.000Z',
     updatedAt: '2026-02-13T00:00:00.000Z',
-    runCount: 1,
+    runtime: {
+      runCount: 1,
+    },
   })
 
   await applyTaskActions(
@@ -58,7 +60,7 @@ test('enqueue_task auto-links a triggered plan to the created task', async () =>
   )
 
   expect(runtime.tasks).toHaveLength(1)
-  expect(runtime.taskPlans[0]?.lastTaskId).toBe(runtime.tasks[0]?.id)
+  expect(runtime.taskPlans[0]?.runtime.lastTaskId).toBe(runtime.tasks[0]?.id)
 })
 
 test('update_plan rejects done plan edits', async () => {
@@ -78,9 +80,11 @@ test('update_plan rejects done plan edits', async () => {
     },
     createdAt: '2026-02-13T00:00:00.000Z',
     updatedAt: '2026-02-13T00:00:00.000Z',
-    archivedAt: '2026-02-13T00:00:00.000Z',
-    runCount: 1,
-    doneReason: 'completed',
+    runtime: {
+      runCount: 1,
+      closedAt: '2026-02-13T00:00:00.000Z',
+      doneReason: 'completed',
+    },
   })
 
   await applyTaskActions(runtime, [

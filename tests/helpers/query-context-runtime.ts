@@ -143,7 +143,7 @@ export const createQueryContextRuntime = async (options?: {
       },
       createdAt: '2026-03-06T00:00:00.000Z',
       updatedAt: '2026-03-06T00:40:00.000Z',
-      runCount: 0,
+      runtime: { runCount: 0 },
     },
   ]
   runtime.focuses = [

@@ -35,7 +35,6 @@ const initialRuntimeSnapshot = (): RuntimeSnapshot => ({
   memoryRefresh: {
     lastCompletedTurn: 0,
     lastProcessedInputsCursor: 0,
-    lastProcessedResultsCursor: 0,
   },
 })
 

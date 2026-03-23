@@ -8,9 +8,6 @@ test('shouldTriggerMemoryRefresh returns false when turn gap met but no delta ex
   runtime.manager.turn = 40
   runtime.manager.memoryRefresh.lastCompletedTurn = 20
   runtime.manager.memoryRefresh.lastProcessedInputsCursor = runtime.queues.inputsCursor
-  runtime.manager.memoryRefresh.lastProcessedResultsCursor = runtime.queues.resultsCursor
-  runtime.manager.memoryRefresh.lastProcessedPlanUpdatedAt =
-    runtime.taskPlans[0]?.updatedAt
 
   expect(shouldTriggerMemoryRefresh(runtime)).toBe(false)
 })
@@ -20,9 +17,6 @@ test('shouldTriggerMemoryRefresh returns true when turn gap met and delta exists
   runtime.manager.turn = 40
   runtime.manager.memoryRefresh.lastCompletedTurn = 20
   runtime.manager.memoryRefresh.lastProcessedInputsCursor = runtime.queues.inputsCursor
-  runtime.manager.memoryRefresh.lastProcessedResultsCursor = runtime.queues.resultsCursor
-  runtime.manager.memoryRefresh.lastProcessedPlanUpdatedAt =
-    runtime.taskPlans[0]?.updatedAt
   runtime.queues.inputsCursor += 1
 
   expect(shouldTriggerMemoryRefresh(runtime)).toBe(true)

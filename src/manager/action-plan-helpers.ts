@@ -38,7 +38,7 @@ export const appendPlanSystemMessage = async (
       title: label,
       status: plan.status,
       priority: plan.priority,
-      run_count: plan.runCount,
+      run_count: plan.runtime.runCount,
       ...buildPlanProgressPayload(plan),
       ...buildPlanTriggerPayload(plan.trigger),
       ...buildPlanEffectPayload(plan.effect),

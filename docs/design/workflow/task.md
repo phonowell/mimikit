@@ -18,7 +18,7 @@
 ## 派发与去重
 
 - 立即执行 Action：`<M:enqueue_task ... />`
-- 生命周期控制 Action：`<M:mutate_task id="task-..." op="pause|resume|cancel" />`
+- 生命周期控制 Action：`<M:mutate_task id="task-..." op="pause|resume|cancel|review_passed|merged|cleaned" />`
 - worker 任务 profile 固定为 `worker`
 - `Task.cwd` 是任务执行目录；若 `enqueue_task` 同时传入 `cwd + branch`，系统会在 enqueue 阶段自动创建或复用对应 worktree，并把 `Task.cwd` 写成真实 worktree 路径。若最终 `cwd` 在 git 仓库内，会额外记录 `repoKey + branch`，并在 `Task.git` / `TaskResultHandoff.git` 中补充 `worktreePath + branch`
 - 单轮 action 去重键：`prompt + title + cwd + profile + provider + focusId + contract`
@@ -35,9 +35,10 @@
 
 1. `enqueueWorkerTask` 入 `p-queue`。
 2. `runTaskWithRetry` 调用外部执行运行时并收敛错误。
-3. `finalizeResult` 更新任务状态并归档。
-4. 发布到 `results`，立即唤醒 manager 消费结果。
-5. `pending/paused` 快速取消：直接产出 `canceled` 结果并发布到 `results`。
+3. worker 完成时必须同时满足 `M:task_handoff + M:skill_usage status="done"` 完成协议；未满足则继续轮转或命中预算暂停。
+4. `finalizeResult` 更新任务状态并归档。
+5. 发布到 `results`，立即唤醒 manager 消费结果。
+6. `pending/paused` 快速取消：直接产出 `canceled` 结果并发布到 `results`。
 
 补充：
 
@@ -45,6 +46,9 @@
 - 当前默认预算基线为 `30m / 3 rounds`；`pnpm run score:worker-budget` 的当前样本为 `25` 条结果、`p90=22.6m`、`budget_partial=0`，因此保持该默认值。
 - `partial` 结果会保留 `handoff`、`archivePath`、`sessionId` 线索，恢复时继续复用已有 session。
 - 预算暂停后会追加一个显式恢复 choice 到 `pendingUserChoices`；choice 通过 `effect.type=resume_task` 直接绑定恢复动作，不依赖文案判断。
+- `succeeded` 结果的 handoff 只接受 `M:task_handoff` 结构化 JSON；不再从自由文本里启发式推导 `summary/decisions/nextSteps`。
+- `partial/failed/canceled` 等非成功结果，若缺失结构化协议块，仍允许退回到最小自由文本摘要/清单提取。
+- `M:task_handoff` 当前允许的核心字段是：`summary`、`decisions[]`、`next_steps[]`、`risks[]`、`artifacts[]`、`evidence[]`、`git_lifecycle`。
 
 ## 取消与恢复
 
@@ -71,6 +75,15 @@
 - `resume` 成功状态：`pending`
 - `cancel` 成功状态：`canceled`
 - 典型拒绝状态：`already_done`、`already_paused`、`not_paused`、`already_canceled`
+
+## Git 闭环显式写回
+
+- `mutate_task op="review_passed"`：任务已完成且存在 `Task.git` 时，显式写回 review passed；可选 `sha`，并写入 `review.at`。
+- `mutate_task op="merged"`：要求当前 task 已记录 `review.passed=true`；写回 `merged=true` 与 `mergedAt`。
+- `mutate_task op="cleaned"`：要求当前 task 已记录 `merged=true`；写回 `cleaned=true` 与 `cleanedAt`。
+- 这三类 op 都必须附带可审计 `reason`，且 `reason` 必须能被当前用户输入直接支撑；单靠 task id/title 命中不足以通过 intent-evidence guard。
+- 这些 op 只记录可审计状态，不直接执行 `review-code-changes`、`git merge` 或 `git worktree remove`。
+- 读模型会把显式写回的 `Task.git.lifecycle` 与本地派生 closure 合并：显式记录不会被派生视图吃掉，派生出的 `cleaned=true` 等真实信号也不会被显式旧值回退。
 
 ## session 复用/丢弃语义
 
@@ -108,6 +121,11 @@
 
 关键字段补充：
 
-- `Task.git`：当前仅记录 git 执行目录信息，字段为 `worktreePath`、`branch`
-- `TaskResultHandoff.git`：任务结果回写时透传同一份 git 执行信息，便于归档和复盘追踪
-- 当前实现尚未把 `review -> merge -> cleanup` 状态纳入 `Task` / `TaskResultHandoff` 正式协议；这仍属于待补闭环
+- `Task.git`：记录 git 执行目录信息，字段为 `worktreePath`、`branch`、`lifecycle`
+- `Task.git.lifecycle.review`：`passed/at?/sha?`，可由 worktree 内 `.mimikit/review-code-changes.passed` 哨兵派生，也可由 `mutate_task op="review_passed"` 显式写回
+- `Task.git.lifecycle.merged`：若 `review.sha` 已进入 `main`，则标记为已合流；也可由 `mutate_task op="merged"` 显式写回，时间记入 `mergedAt`
+- `Task.git.lifecycle.cleaned`：若 worktree 路径已不存在，则标记为已清理；也可由 `mutate_task op="cleaned"` 显式写回，时间记入 `cleanedAt`
+- `TaskResultHandoff.git`：任务结果回写时透传同一份 git 执行信息与 `lifecycle`，用于归档、handoff 与复盘追踪
+- 显式 git lifecycle 写回时，会同步重写已有 task archive 的 handoff/frontmatter，确保 archive 与 runtime task/result 保持同一份 lifecycle 事实
+- worker 若在 `M:task_handoff.git_lifecycle` 中显式声明 `review/merged/cleaned`，收尾链路会优先吸收该协议结果，再与本地派生视图合并
+- `review -> merge -> cleanup` 不允许靠 idle/后台链路静默回写 task 真相源；只能通过 `mutate_task` 显式动作、worker handoff 协议或可审计的本地派生信号收敛

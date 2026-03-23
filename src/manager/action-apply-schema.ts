@@ -30,8 +30,16 @@ export const summarizeSchema = z
 export const mutateTaskSchema = z
   .object({
     id: nonEmptyString,
-    op: z.enum(['pause', 'resume', 'cancel']),
+    op: z.enum([
+      'pause',
+      'resume',
+      'cancel',
+      'review_passed',
+      'merged',
+      'cleaned',
+    ]),
     reason: nonEmptyString.optional(),
+    sha: nonEmptyString.optional(),
   })
   .strict()
 

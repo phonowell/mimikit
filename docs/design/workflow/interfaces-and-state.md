@@ -200,7 +200,7 @@ schema：`src/storage/runtime-snapshot-schema.ts`
 
 - 若 `queues.inputsCursor` 大于 `inputs/packets.jsonl` 当前包数，重置为 `0`
 - 若 `queues.resultsCursor` 大于 `results/packets.jsonl` 当前包数，重置为 `0`
-- 若 `memoryRefresh.lastProcessedInputsCursor` / `lastProcessedResultsCursor` 超过对应队列包数，同步重置为 `0`
+- 若 `memoryRefresh.lastProcessedInputsCursor` 超过 `inputs/packets.jsonl` 当前包数，同步重置为 `0`
 - 发生校正时写入 `log.jsonl` 事件：`runtime_queue_state_reconciled`
 
 ## 重启语义

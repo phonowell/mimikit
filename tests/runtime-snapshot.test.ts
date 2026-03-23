@@ -220,7 +220,7 @@ test('loadRuntimeSnapshot rejects legacy worker-slot trigger mode', async () => 
           },
           createdAt: SNAPSHOT_BASE_TIME,
           updatedAt: SNAPSHOT_BASE_TIME,
-          runCount: 0,
+          runtime: { runCount: 0 },
         },
       ],
     }),

@@ -26,11 +26,6 @@
 
 实现：`src/manager/action-registry-definitions.ts`、`src/manager/action-validation.ts`、`src/manager/action-apply.ts`
 
-### 读取与检索
-
-- `query_context`
-- `read_file`
-
 ### 任务类
 
 - `enqueue_task`
@@ -57,8 +52,10 @@
 
 实现：`src/manager/action-surface.ts`、`src/manager/loop-batch-run-helpers.ts`、`src/manager/action-feedback-collect.ts`
 
-- `user_input` / `mixed`：开放 `lookup + task + plan + dialog + focus + memory`
-- `task_result` / `trigger` / `capacity`：仅开放 `lookup + task + plan`
+- `user_input` / `mixed`：开放 `task + plan + dialog + focus + memory`
+- `task_result` / `trigger` / `capacity`：仅开放 `task + plan`
+- `query_context` / `read_file` 仍保留实现与测试，但当前默认不进入任何 manager wake profile 的 action surface
+- 主线程默认不再承担本地细读/检索；需要局部搜索、实现、排查时，优先走执行面 task，而不是把 lookup 堆回 manager prompt
 - 未出现在当前 surface 的 action，即使已注册，也会在校验阶段被拒绝并回写 `action_execution_rejected`
 - prompt 中展示的 action 面由代码按当前 `wake_profile` 生成，不再由 prompt 文案手写维护
 
@@ -76,7 +73,11 @@
 - `query_context` 参数收敛为仅 `query`；内部固定执行全局检索（`history/tasks/focus/plans/generated_index/task_archives`）+ 跨 scope 去重。
 - `generated_index`：索引仓库 `generated/` 与状态目录 `.mimikit/generated/` 下文本文件的轻量元信息（`path/updatedAt/size/snippet`）；当 `work_dir` 本身位于 `.mimikit/` 时，两侧路径仍分别以 `generated/` 与 `.mimikit/generated/` 暴露，需要正文时改用 `read_file`。
 - `set_task_result_summary`：仅用于当前批次 `task_result` 的摘要覆写（不直接执行 action 状态写入）。
-- `mutate_task`：统一 task 生命周期控制（`op=pause|resume|cancel`），按 `op` 分发到 `worker/pause-task.ts`、`worker/resume-task.ts`、`worker/cancel-task.ts`，统一产出可追踪结构（`id`、`status`、`changeAt`）。
+- `mutate_task`：统一 task 生命周期与 git 闭环状态控制。
+- `op=pause|resume|cancel`：分发到 `worker/pause-task.ts`、`worker/resume-task.ts`、`worker/cancel-task.ts`。
+- `op=review_passed|merged|cleaned`：分发到 `worker/record-task-git-lifecycle.ts`，用于显式写回“外部 review / merge / cleanup 已完成”的 task git 生命周期状态；`review_passed` 可附带 `sha`。
+- `op=review_passed|merged|cleaned` 还必须附带 `reason`，并且 `reason` 要能被当前用户输入直接支撑；仅靠 task 引用或 lookup 证据不足以推进 git 闭环写回。
+- `mutate_task` 所有分支统一产出可追踪结构（`id`、`status`、`changeAt`）。
 - `ask_user_choice` 是 stop action：命中后当前 action 批次停止后续 apply。
 - `enqueue_task` 高成本确认闸门在 apply 与 validation 两侧同时生效：未确认时不入队，直接生成确认 choice。
 - `enqueue_task` 创建时会先解析 `cwd`；若同时传入 `branch` 且 `cwd` 位于 git 仓库中，则 enqueue 阶段先创建或复用对应 branch 的 worktree，再把任务 `cwd` 落到该 worktree。最终任务仍按真实 `repoKey + branch` 参与 worker 排队锁。
@@ -97,8 +98,15 @@
 - 默认并行推进：用户未要求串行且无硬依赖时，不应通过 `mutate_task op="cancel"` 清空其它任务线。
 - 冲突先用非破坏策略（复用现有 task/plan、等待 running 收敛）；仅在明确满足取消条件时再取消。
 - 取消条件：用户显式取消，或用户已明确“节省资源优先”且继续执行会造成明确资源浪费；`pause/resume` 也需与用户目标一致，避免无依据状态抖动。
+- `review_passed/merged/cleaned` 只能用于“真实外部动作已完成后的状态回写”，不能把 manager 当成实际 review/merge/cleanup 执行器。
+- git 闭环状态一旦写回，必须同步到 `task.git.lifecycle`、`task.result.handoff.git.lifecycle` 与归档 frontmatter，避免 task 与 archive 漂移。
 
 ### `read_file` 细节
+
+当前状态：
+
+- `read_file` / `query_context` 已从默认 manager surface 退出，不再作为主线程常态能力暴露。
+- 本节保留实现说明，仅供维护这些内部只读工具或测试时参考；若未来重新开放，必须先证明不会把主线程重新拉回局部检索/细读模式。
 
 - 用途：读取 UTF-8 文本文件片段并注入下一轮 `M:event_packet.file_lookup`。
 - 路径：支持绝对路径和相对路径；相对路径以 `work_dir` 为基准，可使用 `..` 访问 `work_dir` 外文件。

@@ -47,12 +47,9 @@
 
 ## 我们的缺口是什么
 
-- `plan` 已收口为 `trigger + effect` 结构化协议，但 `runCount/lastTriggeredAt/lastTaskId/closedAt` 等运行态 bookkeeping 仍与主协议同体；编排层离“声明式计划 + 派生执行态”还有一步。
-- `focus` 已不再自动从任务结果提炼 `openItems`，但 `upsert_focus` 仍允许自由文本 `summary/openItems` 写入；当前主要靠约定保证它是 digest，缺少更硬的内容边界。
-- `memory` 刷新链路已把 `tasks/plans` 降为辅助信号，但触发条件与输入仍消费 queue delta、plan update 与近期可见 signals；“只保留稳定事实”的约束仍主要落在 prompt，而不是更硬的结构过滤。
-- `worktree` 物化已存在，但 `review -> merge -> cleanup` 还没成为最小执行协议；编排链路仍缺闭环状态。
-- idle / 后台链路已存在，但还没有统一白名单或写边界机制，去强制“后台任务只维护派生物、不改 `task/plan/focus` 真相源”。
-- 主线程低上下文的方向已存在，但当前代码里真正固化的是 `manager + worker` 分工，而不是更硬的 “subagent 默认处理局部任务” 协议；manager 仍保留 `query_context/read_file` 等本地读取能力，边界还不够硬。
+- 这一轮原始缺口已全部收口：`plan.runtime` 分层、`focus` digest 硬边界、`memory_refresh` 收窄、`Task.git.lifecycle` 入模、后台任务注册/写域治理、manager 默认 surface 去掉 `lookup`、worker 完成改为 `M:task_handoff + M:skill_usage status="done"` 协议、`mutate_task` 显式写回 `review_passed|merged|cleaned`、git 闭环写回的 intent-evidence 门禁与 archive/handoff 同步，都已落地并有测试覆盖。
+- 当前没有仍需继续追击的同级结构缺口：worker handoff、manager surface、后台写治理、git 闭环显式动作面都已形成代码协议。
+- 后续若再发现问题，应视为新一轮审计或新需求，而不是本轮缺口残留。
 
 ## 参考项目
 

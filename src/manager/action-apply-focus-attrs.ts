@@ -1,5 +1,10 @@
 import { z } from 'zod'
 
+import {
+  MAX_FOCUS_OPEN_ITEM_CHARS,
+  MAX_FOCUS_SUMMARY_CHARS,
+  validateFocusDigestText,
+} from '../focus/digest.js'
 import { normalizeFocusOpenItems } from '../focus/open-items.js'
 import { focusIdSchema } from '../shared/id-schema.js'
 
@@ -23,6 +28,20 @@ export const upsertFocusSchema = z
   })
   .passthrough()
   .superRefine((data, context) => {
+    if (typeof data.summary === 'string') {
+      const issue = validateFocusDigestText({
+        key: 'summary',
+        value: data.summary,
+        maxChars: MAX_FOCUS_SUMMARY_CHARS,
+      })
+      if (issue) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: issue,
+          path: ['summary'],
+        })
+      }
+    }
     const openItemIndices: number[] = []
     for (const [key, value] of Object.entries(data)) {
       if (upsertFocusBaseKeys.has(key)) continue
@@ -66,6 +85,19 @@ export const upsertFocusSchema = z
         context.addIssue({
           code: z.ZodIssueCode.custom,
           message: `${key} must be non-empty`,
+          path: [key],
+        })
+        continue
+      }
+      const digestIssue = validateFocusDigestText({
+        key,
+        value,
+        maxChars: MAX_FOCUS_OPEN_ITEM_CHARS,
+      })
+      if (digestIssue) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: digestIssue,
           path: [key],
         })
       }

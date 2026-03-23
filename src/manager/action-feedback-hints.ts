@@ -9,6 +9,10 @@ import {
   formatEnqueueTaskContractMissingHint as buildEnqueueTaskContractMissingHint,
   type EnqueueTaskContractHintAttrs,
 } from './action-feedback-enqueue-task-contract.js'
+import {
+  createMutateTaskGitHintFormatters,
+  mutateTaskGitHintSchemaShape,
+} from './action-feedback-mutate-task-git-hints.js'
 
 const HINT_TEMPLATE_RELATIVE_PATH = 'manager/action-feedback-hints.md'
 
@@ -27,6 +31,7 @@ const actionFeedbackHintSchema = z
     mutate_task_already_paused: z.string().trim().min(1),
     mutate_task_not_paused: z.string().trim().min(1),
     mutate_task_already_canceled: z.string().trim().min(1),
+    ...mutateTaskGitHintSchemaShape,
     ask_user_choice_channel_unsupported: z.string().trim().min(1),
     ask_user_choice_invalid_options: z.string().trim().min(1),
     enqueue_task_requires_confirmation: z.string().trim().min(1),
@@ -64,11 +69,18 @@ const renderTemplate = createPromptTemplateRenderer<ActionFeedbackHintKey>({
   path: hintTemplatePath,
   templates,
 })
-
 const renderHint = (
   key: ActionFeedbackHintKey,
   values?: Record<string, string>,
 ): string => renderTemplate(key, values)
+
+const {
+  formatMutateTaskGitReasonRequiredHint,
+  formatMutateTaskNotDoneForGitHint,
+  formatMutateTaskNotGitHint,
+  formatMutateTaskReviewRequiredHint,
+  formatMutateTaskMergeRequiredHint,
+} = createMutateTaskGitHintFormatters(renderHint)
 
 export const formatUnregisteredActionHint = (
   registeredActions: string[],
@@ -123,13 +135,19 @@ export const formatMutateTaskNotPausedHint = (): string =>
 
 export const formatMutateTaskAlreadyCanceledHint = (): string =>
   renderHint('mutate_task_already_canceled')
+export {
+  formatMutateTaskGitReasonRequiredHint,
+  formatMutateTaskMergeRequiredHint,
+  formatMutateTaskNotDoneForGitHint,
+  formatMutateTaskNotGitHint,
+  formatMutateTaskReviewRequiredHint,
+}
 
 export const formatAskUserChoiceChannelUnsupportedHint = (): string =>
   renderHint('ask_user_choice_channel_unsupported')
 
 export const formatAskUserChoiceInvalidOptionsHint = (): string =>
   renderHint('ask_user_choice_invalid_options')
-
 export const formatEnqueueTaskRequiresConfirmationHint = (): string =>
   renderHint('enqueue_task_requires_confirmation')
 
@@ -167,7 +185,6 @@ export const formatPlanNotFoundHint = (
 
 export const formatUpdatePlanDoneForbiddenHint = (): string =>
   renderHint('update_plan_done_forbidden')
-
 export const formatDuplicateQueryContextActionLimitHint = (): string =>
   renderHint('duplicate_query_context_action_limit')
 

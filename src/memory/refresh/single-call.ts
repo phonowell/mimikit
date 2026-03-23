@@ -86,8 +86,6 @@ const collectAllowedEvidenceIds = (
 ): Set<string> => {
   const ids = new Set<string>()
   for (const item of payload.signals) ids.add(item.id)
-  for (const item of payload.tasks) ids.add(item.id)
-  for (const item of payload.plans) ids.add(item.id)
   return ids
 }
 

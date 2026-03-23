@@ -35,10 +35,17 @@ export const linkTriggeredPlanToTask = (params: {
   )
   const matchedPlan = resolveTriggeredPlanMatch(candidates, task)
   const nextTaskId = task.id.trim()
-  if (!matchedPlan || !nextTaskId || matchedPlan.lastTaskId === nextTaskId)
+  if (
+    !matchedPlan ||
+    !nextTaskId ||
+    matchedPlan.runtime.lastTaskId === nextTaskId
+  )
     return false
 
-  matchedPlan.lastTaskId = nextTaskId
+  matchedPlan.runtime = {
+    ...matchedPlan.runtime,
+    lastTaskId: nextTaskId,
+  }
   matchedPlan.updatedAt = params.linkedAt ?? nowIso()
   return true
 }
@@ -60,7 +67,7 @@ export const applyPlanCompletionState = (
   }
 
   for (const plan of runtime.taskPlans) {
-    const taskId = plan.lastTaskId?.trim()
+    const taskId = plan.runtime.lastTaskId?.trim()
     if (!taskId) continue
     const matched = latestByTaskId.get(taskId)
     if (!matched) continue

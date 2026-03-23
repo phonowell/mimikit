@@ -2,11 +2,15 @@ import { syncFocusFromTaskResult } from '../focus/result-feedback.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { notifyManagerLoop } from '../orchestrator/core/signals.js'
-import { nowIso } from '../shared/utils.js'
+import {
+  mergeTaskGitLifecycle,
+  resolveTaskGitLifecycle,
+} from '../shared/task-git-lifecycle.js'
 import { appendTaskProgress } from '../storage/task-progress.js'
 import { appendWorkerUsageLedgerEntry } from '../storage/usage-ledger.js'
 import { publishWorkerResult } from '../streams/queues.js'
 
+import { stripWorkerProtocolTags } from './profiled-runner-prompt.js'
 import { resolveArchivePath, writeTaskArchive } from './result-archive.js'
 import {
   buildTaskEvidence,
@@ -16,41 +20,10 @@ import {
   buildTaskResultHandoff,
   withTaskArchiveEvidence,
 } from './result-handoff.js'
-import {
-  applyTaskResultStateDefaults,
-  buildDefaultTaskResultState,
-} from './result-state.js'
+import { applyTaskResultStateDefaults } from './result-state.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
-import type { Task, TaskResult, TokenUsage } from '../types/index.js'
-
-export const buildResult = (
-  task: Task,
-  status: TaskResult['status'],
-  output: string,
-  durationMs: number,
-  usage?: TokenUsage,
-): TaskResult => {
-  const handoff = buildTaskResultHandoff(task, { status, output })
-  const state = buildDefaultTaskResultState(status)
-  return {
-    taskId: task.id,
-    status,
-    ok: status === 'succeeded',
-    output,
-    durationMs,
-    completedAt: nowIso(),
-    ...state,
-    ...(usage ? { usage } : {}),
-    ...(task.title ? { title: task.title } : {}),
-    profile: task.profile,
-    provider: task.provider,
-    ...(status === 'canceled'
-      ? { cancel: task.cancel ?? { source: 'system' } }
-      : {}),
-    ...(handoff ? { handoff } : {}),
-  }
-}
+import type { Task, TaskResult } from '../types/index.js'
 
 export const finalizeResult = async (
   runtime: RuntimeState,
@@ -69,7 +42,15 @@ export const finalizeResult = async (
   const logEvent = options?.logEvent ?? 'worker_end'
   const archiveSource = options?.archiveSource ?? 'worker'
   runtime.worker.lastActivityAtMs = Date.now()
+  if (task.git) {
+    const lifecycle = mergeTaskGitLifecycle({
+      current: resolveTaskGitLifecycle(task),
+      patch: result.handoff?.git?.lifecycle,
+    })
+    if (lifecycle) task.git = { ...task.git, lifecycle }
+  }
   result.handoff ??= buildTaskResultHandoff(task, result)
+  result.output = stripWorkerProtocolTags(result.output)
   applyTaskResultStateDefaults(result)
   const previousStatus = task.status
   const candidateArchivePath = await resolveArchivePath(

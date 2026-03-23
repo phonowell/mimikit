@@ -67,8 +67,10 @@ export const applyCreatePlan = async (
     effect,
     createdAt: timestamp,
     updatedAt: timestamp,
-    runCount: 0,
     ...(maxRuns !== undefined ? { maxRuns } : {}),
+    runtime: {
+      runCount: 0,
+    },
   }
 
   runtime.taskPlans.push(plan)
@@ -137,8 +139,11 @@ export const applyUpdatePlan = async (
   }
 
   if (next.status === 'done') {
-    next.closedAt = updatedAt
-    next.doneReason = next.doneReason ?? 'completed'
+    next.runtime = {
+      ...next.runtime,
+      closedAt: updatedAt,
+      doneReason: next.runtime.doneReason ?? 'completed',
+    }
   }
 
   runtime.taskPlans[index] = next

@@ -24,6 +24,16 @@ mutate_task_not_paused: |
   mutate_task 执行失败：任务当前不是 paused 状态，无法 resume。
 mutate_task_already_canceled: |
   mutate_task 执行失败：任务已是 canceled 状态。
+mutate_task_git_reason_required: |
+  mutate_task 执行失败：{{ op }} 必须附带 `reason`，并用一句话明确引用用户已经确认的 review/merge/cleanup 动作。
+mutate_task_not_done_for_git: |
+  mutate_task 执行失败：任务尚未完成，无法写入 {{ op }}。
+mutate_task_not_git: |
+  mutate_task 执行失败：任务没有 git 执行上下文，无法写入 {{ op }}。
+mutate_task_review_required: |
+  mutate_task 执行失败：任务尚未记录 review passed，无法写入 merged。
+mutate_task_merge_required: |
+  mutate_task 执行失败：任务尚未记录 merged，无法写入 cleaned。
 ask_user_choice_channel_unsupported: |
   ask_user_choice 执行失败：当前批次来源包含不支持回传选项的渠道输入（Telegram/Feishu），请改为纯文本提问并列出候选项。
 ask_user_choice_invalid_options: |

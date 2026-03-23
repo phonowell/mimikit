@@ -56,7 +56,7 @@ test('manager idle timeout prefers the earliest plan trigger', async () => {
           },
           createdAt: '2026-03-10T12:00:00.000Z',
           updatedAt: '2026-03-10T12:00:00.000Z',
-          runCount: 0,
+          runtime: { runCount: 0 },
         },
         {
           id: 'plan-earlier',
@@ -73,7 +73,7 @@ test('manager idle timeout prefers the earliest plan trigger', async () => {
           },
           createdAt: '2026-03-10T12:00:00.000Z',
           updatedAt: '2026-03-10T12:00:00.000Z',
-          runCount: 0,
+          runtime: { runCount: 0 },
         },
       ],
     },

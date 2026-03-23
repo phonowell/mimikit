@@ -33,7 +33,7 @@ const hasRunnableWorkerSlotPlan = (runtime: RuntimeState): boolean =>
     if (plan.status !== 'active') return false
     if (plan.trigger.mode !== 'on_worker_slot_freed') return false
     if (plan.maxRuns === undefined) return true
-    return plan.runCount < plan.maxRuns
+    return plan.runtime.runCount < plan.maxRuns
   })
 
 const processLoopTriggers = async (
