@@ -74,7 +74,7 @@
 ## 8. 一次性落地策略（不留兼容层）
 
 1. schema + validation + apply + registry 同步改为 `mutate_task`
-2. runtime adapter 暴露 `pauseTask`、`resumeTask` 给 manager
+2. manager 直接依赖 worker lifecycle 模块暴露的 `pauseTask`、`resumeTask`
 3. 更新 action feedback hints（从 `cancel_task_*` 扩展到 `mutate_task_*`）
 4. 更新 manager prompt 白名单与参数说明
 5. 更新 `docs/design/workflow/action.md` 与相关测试

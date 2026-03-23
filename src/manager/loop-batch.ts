@@ -3,6 +3,8 @@ import { appendManagerCorrectionLimitSystemMessage } from '../history/manager-ev
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { requestMemoryRefresh } from '../memory/refresh/singleflight.js'
+import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
+import { notifyUiSignal } from '../orchestrator/core/signals.js'
 import { readProviderErrorCode } from '../providers/provider-error.js'
 import { isVisibleToAgent } from '../shared/message-visibility.js'
 
@@ -22,12 +24,8 @@ import {
 import { applyPlanCompletionState } from './plan-progress.js'
 import { normalizeManagerReplyText } from './reply-normalize.js'
 import { clearResultReplayBackoff } from './result-replay-backoff.js'
-import {
-  notifyUiSignal,
-  persistRuntimeState,
-  type RuntimeState,
-} from './runtime-adapter.js'
 
+import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { TaskResult, TokenUsage, UserInput } from '../types/index.js'
 
 export const processManagerBatch = async (params: {

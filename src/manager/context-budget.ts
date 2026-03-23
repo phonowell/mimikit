@@ -1,7 +1,7 @@
 import { hasSystemEvent } from '../shared/system-event.js'
 
 import type { PromptSectionLimits } from '../config.js'
-import type { RuntimeState } from './runtime-adapter.js'
+import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type {
   ManagerWakeProfile,
   TaskResult,

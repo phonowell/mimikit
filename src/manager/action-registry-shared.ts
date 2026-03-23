@@ -1,7 +1,7 @@
 import type { ApplyTaskActionsOptions } from './action-apply-create.js'
 import type { FeedbackContext, ValidationIssue } from './action-validation.js'
-import type { RuntimeState } from './runtime-adapter.js'
 import type { Parsed } from '../actions/model/spec.js'
+import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 
 export type { ApplyTaskActionsOptions }
 

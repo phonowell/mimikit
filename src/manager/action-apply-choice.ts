@@ -6,8 +6,8 @@ import { nowIso } from '../shared/utils.js'
 
 import { parseAskUserChoiceAttrs } from './action-apply-schema.js'
 
-import type { RuntimeState } from './runtime-adapter.js'
 import type { Parsed } from '../actions/model/spec.js'
+import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 
 export const applyAskUserChoiceAction = async (
   runtime: RuntimeState,

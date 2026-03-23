@@ -4,15 +4,16 @@ import {
   pruneArchivedFocuses,
   updateFocus,
 } from '../focus/index.js'
+import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 
 import {
   assignFocusSchema,
   parseUpsertFocusAttrs,
 } from './action-apply-schema.js'
 import { parseActionAttrs } from './action-parse.js'
-import { persistRuntimeState, type RuntimeState } from './runtime-adapter.js'
 
 import type { Parsed } from '../actions/model/spec.js'
+import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 
 export const applyUpsertFocusAction = async (
   runtime: RuntimeState,

@@ -21,7 +21,7 @@ import {
   type ManagerRoundExtra,
 } from './loop-batch-run-helpers.js'
 
-import type { RuntimeState } from './runtime-adapter.js'
+import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type {
   FocusId,
   Task,

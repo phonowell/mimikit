@@ -1,3 +1,8 @@
+import { cancelTask } from '../worker/cancel-task.js'
+import { pauseTask } from '../worker/pause-task.js'
+import { recordTaskGitLifecycle } from '../worker/record-task-git-lifecycle.js'
+import { resumeTask } from '../worker/resume-task.js'
+
 import { applyAskUserChoiceAction } from './action-apply-choice.js'
 import { applyRunTask } from './action-apply-create.js'
 import {
@@ -30,12 +35,6 @@ import {
   validateWithSchema,
   type ValidationIssue,
 } from './action-validation.js'
-import {
-  cancelTask,
-  pauseTask,
-  recordTaskGitLifecycle,
-  resumeTask,
-} from './runtime-adapter.js'
 
 import type { Parsed } from '../actions/model/spec.js'
 

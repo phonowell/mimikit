@@ -34,14 +34,14 @@
 ### 收敛-4 · runtime state/type 单一真相
 
 - done definition：runtime 持久化域遵循 `schema -> types -> parser` 单向派生；归档/快照读取不再手写平行枚举与对象结构；`RuntimeState` 对外暴露继续收缩。
-- 当前已完成：`src/types/runtime-domain.ts` 已从 `src/storage/runtime-snapshot-schema.ts` 派生状态/provider/outcome/stopReason 等类型；`src/storage/task-results-read.ts` 的归档读取已复用 schema 派生解析，移除手写状态/provider/outcome/stopReason/handoff/evidence 判断；`src/orchestrator/core/runtime-snapshot-persist.ts` 已把 snapshot 写盘字段收为单独 slice builder，`persistRuntimeState()` 不再在写盘时原地过滤 `runtime.focusDigests`；`src/orchestrator/core/runtime-snapshot-hydrate.ts` 已把 snapshot→runtime 的 hydrate 赋值集中到单独 slice applier，`hydrateRuntimeState()` 只保留装配/修复顺序；`src/orchestrator/core/runtime-queue-reconcile.ts` 已承接 hydrate 后 queue/memory cursor 修复，避免该 repair helper 继续内嵌在 persistence 组合根；`src/manager/runtime-adapter.ts` 已改为显式 manager-facing `RuntimeState` 契约，停止直接 raw re-export core runtime type；已补 `tests/task-results-archive.test.ts`、`tests/runtime-persistence-focus-digests.test.ts`、`tests/runtime-persistence-hydrate-snapshot.test.ts` 覆盖归档回读、写盘副作用与 hydrate slice 回归。
+- 当前已完成：`src/types/runtime-domain.ts` 已从 `src/storage/runtime-snapshot-schema.ts` 派生状态/provider/outcome/stopReason 等类型；`src/storage/task-results-read.ts` 的归档读取已复用 schema 派生解析，移除手写状态/provider/outcome/stopReason/handoff/evidence 判断；`src/orchestrator/core/runtime-snapshot-persist.ts` 已把 snapshot 写盘字段收为单独 slice builder，`persistRuntimeState()` 不再在写盘时原地过滤 `runtime.focusDigests`；`src/orchestrator/core/runtime-snapshot-hydrate.ts` 已把 snapshot→runtime 的 hydrate 赋值集中到单独 slice applier，`hydrateRuntimeState()` 只保留装配/修复顺序；`src/orchestrator/core/runtime-queue-reconcile.ts` 已承接 hydrate 后 queue/memory cursor 修复，避免该 repair helper 继续内嵌在 persistence 组合根；manager 已直接依赖 `runtime-state`、signals、task lifecycle 与 worker lifecycle 模块，不再保留 `src/manager/runtime-adapter.ts` 薄壳；已补 `tests/task-results-archive.test.ts`、`tests/runtime-persistence-focus-digests.test.ts`、`tests/runtime-persistence-hydrate-snapshot.test.ts` 覆盖归档回读、写盘副作用与 hydrate slice 回归。
 - 前刀验收（2026-03-11）：验证 `pnpm run review-code-changes`；commit `024337c`；结果：任务归档 `handoff/evidence` 已接入 `runtime-snapshot-schema` 派生链，`391` 个测试通过。
 - 前刀验收（2026-03-11）：验证 `pnpm exec vitest run tests/runtime-persistence-queue-reconcile.test.ts tests/runtime-persistence-focus-digests.test.ts`、`git diff --check`、`pnpm run review-code-changes`；commit `516af5a`；结果：runtime snapshot 写盘已收为 schema 对齐 slice builder，reserved `focusDigests` 仅过滤 snapshot payload，不再改写运行时内存；`114` 个测试文件、`392` 个测试通过。
 - 前刀验收（2026-03-11）：验证 `pnpm exec vitest run tests/runtime-persistence-hydrate-snapshot.test.ts tests/runtime-persistence-queue-reconcile.test.ts`、`git diff --check`、`pnpm run review-code-changes`；commit `be001fc`；结果：`hydrateRuntimeState()` 已改为通过 `src/orchestrator/core/runtime-snapshot-hydrate.ts` 应用 persisted slices，channel target 回补仅依赖 history 路径，hydrate/seam 回归与全量 `393` 测试均通过。
 - 前刀验收（2026-03-11）：验证 `pnpm exec vitest run tests/runtime-persistence-hydrate-snapshot.test.ts tests/runtime-persistence-queue-reconcile.test.ts tests/worker-pause-resume.test.ts`、`git diff --check`、`pnpm run review-code-changes`；commit `506d54d`；结果：queue cursor/memory refresh reconcile 已抽到 `src/orchestrator/core/runtime-queue-reconcile.ts`，`hydrateRuntimeState()` 只保留 snapshot 装配顺序，paused-task resume 路径与全量 `393` 测试继续通过。
 - 本刀验收（2026-03-11）：验证 `pnpm exec tsc -p tsconfig.json --noEmit`、`pnpm exec vitest run tests/manager-action-apply-cli-logging.test.ts tests/manager-loop-worker-result-guard.test.ts tests/runtime-persistence-hydrate-snapshot.test.ts tests/runtime-persistence-queue-reconcile.test.ts`、`git diff --check`、`pnpm run review-code-changes`；commit `f6577a5`；结果：`src/manager/runtime-adapter.ts` 已从 raw re-export 改为显式 `RuntimeState` 契约，manager 边界开始按 adapter 面而非 core type alias 收敛；全量 `393` 测试继续通过。
-- 剩余 TODO：继续收窄 manager-facing runtime adapter 的嵌套可变字段面，减少 `worker/ui/manager` 子状态整块透传。
-- 下一刀候选：把 `src/manager/runtime-adapter.ts` 再拆成 action/query 所需的更小 slice 类型，或切换到 `收敛-2 plan payload/view trigger 化`。
+- 剩余 TODO：继续收窄 manager 直接消费的 `RuntimeState` 可变字段面，减少 `worker/ui/manager` 子状态整块透传。
+- 下一刀候选：把 manager 直接消费的 runtime 读写面继续收成 action/query 所需 slice，或切换到 `收敛-2 plan payload/view trigger 化`。
 
 ### 收敛-5 · WebUI 最小工程化
 
@@ -52,6 +52,6 @@
 
 ## 本轮结果
 
-- 本轮范围：连续推进 `收敛-4` 的 hydrate/runtime-adapter/queue reconcile 同主题里程碑，不扩展其他收敛项。
-- 本轮已完成：`be001fc` 抽出 hydrate seam；`30d7674` 把 hydrate 签名收窄到显式目标 contract；`506d54d` 抽出 queue reconcile slice；`f6577a5` 把 `src/manager/runtime-adapter.ts` 改为显式 manager-facing `RuntimeState` 契约；对应 docs 回写已通过 `d3fc38c`、`b87769d` 推送到 `main`。
-- 下一刀候选（1-3）：`收敛-4 runtime-adapter 子 slice 化`、`收敛-2 plan payload/view trigger 化`、`收敛-3 session poller 抽离`。
+- 本轮范围：连续推进 `收敛-4` 的 hydrate/runtime boundary/queue reconcile 同主题里程碑，不扩展其他收敛项。
+- 本轮已完成：`be001fc` 抽出 hydrate seam；`30d7674` 把 hydrate 签名收窄到显式目标 contract；`506d54d` 抽出 queue reconcile slice；`f6577a5` 把 `src/manager/runtime-adapter.ts` 改为显式 manager-facing `RuntimeState` 契约；`2026-03-23` 已继续删除该薄壳并改为 direct imports；对应 docs 已同步回写。
+- 下一刀候选（1-3）：`收敛-4 manager runtime 读写面继续 slice 化`、`收敛-2 plan payload/view trigger 化`、`收敛-3 session poller 抽离`。

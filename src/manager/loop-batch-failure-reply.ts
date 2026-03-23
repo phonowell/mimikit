@@ -4,7 +4,7 @@ import { appendManagerFallbackReply } from '../history/manager-events.js'
 import { bestEffort, safeOrUndefined } from '../log/safe.js'
 
 import type { ManagerAutoRetryMeta } from './manager-llm-call.js'
-import type { RuntimeState } from './runtime-adapter.js'
+import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { UserInput } from '../types/index.js'
 
 const resolveLatestUserInputId = (inputs: UserInput[]): string | undefined => {

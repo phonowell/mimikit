@@ -1,13 +1,12 @@
-import { linkTriggeredPlanToTask } from './plan-progress.js'
-import {
-  buildTaskFingerprint,
-  cancelTask,
-  enqueueWorkerTask,
-  notifyWorkerLoop,
-  persistRuntimeState,
-  type RuntimeState,
-} from './runtime-adapter.js'
+import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
+import { notifyWorkerLoop } from '../orchestrator/core/signals.js'
+import { buildTaskFingerprint } from '../orchestrator/core/task-state.js'
+import { cancelTask } from '../worker/cancel-task.js'
+import { enqueueWorkerTask } from '../worker/dispatch.js'
 
+import { linkTriggeredPlanToTask } from './plan-progress.js'
+
+import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type {
   Task,
   TaskContract,

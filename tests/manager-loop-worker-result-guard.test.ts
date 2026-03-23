@@ -31,7 +31,7 @@ vi.mock('../src/orchestrator/core/runtime-persistence.js', () => ({
   persistRuntimeState: vi.fn(async () => {}),
 }))
 
-vi.mock('../src/manager/runtime-adapter.js', () => ({
+vi.mock('../src/orchestrator/core/signals.js', () => ({
   waitForManagerLoopSignal: vi.fn(async (runtime: RuntimeState) => {
     runtime.session.stopped = true
   }),

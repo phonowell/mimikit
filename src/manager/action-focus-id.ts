@@ -4,7 +4,7 @@ import {
   touchFocus,
 } from '../focus/index.js'
 
-import type { RuntimeState } from './runtime-adapter.js'
+import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { FocusId } from '../types/index.js'
 
 export const resolveActionFocusId = (

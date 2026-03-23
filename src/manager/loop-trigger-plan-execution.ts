@@ -1,21 +1,19 @@
 import { GLOBAL_FOCUS_ID } from '../focus/constants.js'
 import { appendTaskSystemMessage } from '../history/task-events.js'
+import { notifyWorkerLoop } from '../orchestrator/core/signals.js'
+import { enqueueTask } from '../orchestrator/core/task-lifecycle.js'
 import {
   buildPlanEffectPayload,
   buildPlanTriggerPayload,
 } from '../shared/plan-payload.js'
+import { enqueueWorkerTask } from '../worker/dispatch.js'
 import { resolveSlotStatus } from '../worker/task-state-shared.js'
 
 import { linkTriggeredPlanToTask } from './plan-progress.js'
 import { resolveRunTaskTarget } from './run-task-target.js'
-import {
-  enqueueTask,
-  enqueueWorkerTask,
-  notifyWorkerLoop,
-  type RuntimeState,
-} from './runtime-adapter.js'
 import { publishManagerSystemEventInput } from './system-input-event.js'
 
+import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { TaskPlan } from '../types/index.js'
 
 const markPlanDone = (

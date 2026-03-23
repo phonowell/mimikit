@@ -4,7 +4,7 @@ import { resolveManagerActionSurface } from './action-surface.js'
 import { collectConfirmedRunTaskChoiceIds } from './run-task-confirmation.js'
 
 import type { SupplementalEvidenceSource } from './action-intent-evidence.js'
-import type { RuntimeState } from './runtime-adapter.js'
+import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type {
   ManagerActionFeedback,
   ManagerWakeProfile,

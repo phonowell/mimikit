@@ -8,7 +8,7 @@ import { resolveSlotStatus } from '../worker/task-state-shared.js'
 import { resolveManagerContextBudgetDecision } from './context-budget.js'
 import { runManager } from './runner.js'
 
-import type { RuntimeState } from './runtime-adapter.js'
+import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type {
   ManagerActionFeedback,
   ManagerEnv,

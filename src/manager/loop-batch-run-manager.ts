@@ -1,14 +1,17 @@
 import { resolveDefaultFocusId } from '../focus/index.js'
-import { selectRecentPlans } from '../orchestrator/read-model/plan-select.js'
+import {
+  selectRecentPlans,
+  selectRecentTasks,
+} from '../orchestrator/read-model/plan-select.js'
 
 import { resolveWakeProfile } from './context-budget.js'
 import { collectTriggeredPlanIds } from './loop-batch-context.js'
 import { resolveBatchWorkingFocusIds } from './loop-batch-primary-focus.js'
 import { logManagerBatchStart } from './loop-batch-run-helpers.js'
 import { runManagerCorrectionRounds } from './loop-batch-run-rounds.js'
-import { type RuntimeState, selectRecentTasks } from './runtime-adapter.js'
 
 import type { parseActions } from '../actions/protocol/parse.js'
+import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { TaskResult, TokenUsage, UserInput } from '../types/index.js'
 
 const runRounds = (params: {

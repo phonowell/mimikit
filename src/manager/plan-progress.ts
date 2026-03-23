@@ -1,6 +1,6 @@
 import { nowIso } from '../shared/utils.js'
 
-import type { RuntimeState } from './runtime-adapter.js'
+import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { Task, TaskPlan, TaskResult } from '../types/index.js'
 
 const resolveTriggeredPlanMatch = (

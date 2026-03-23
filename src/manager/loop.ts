@@ -1,7 +1,10 @@
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
-import { notifyUiSignal } from '../orchestrator/core/signals.js'
+import {
+  notifyUiSignal,
+  waitForManagerLoopSignal,
+} from '../orchestrator/core/signals.js'
 import { resolvePendingUserChoiceTimeout } from '../orchestrator/core/user-choice.js'
 import {
   consumeUserInputsIncrementally,
@@ -21,11 +24,9 @@ import {
   triggerOnWorkerSlotFreedPlans,
 } from './loop-trigger-plans.js'
 import { waitForResultReplayBackoff } from './result-replay-backoff.js'
-import {
-  type RuntimeState,
-  waitForManagerLoopSignal,
-} from './runtime-adapter.js'
 import { publishManagerSystemEventInput } from './system-input-event.js'
+
+import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 const WORKER_SLOT_EVENT_COOLDOWN_MS = 1_000
 
 const hasRunnableWorkerSlotPlan = (runtime: RuntimeState): boolean =>

@@ -16,8 +16,8 @@ import {
 } from './action-registry-shared.js'
 import { collectTaskResultSummaries } from './action-task-result-summary.js'
 
-import type { RuntimeState } from './runtime-adapter.js'
 import type { Parsed } from '../actions/model/spec.js'
+import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 
 export { collectTaskResultSummaries }
 

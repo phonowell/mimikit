@@ -2,7 +2,7 @@ import { resolveDefaultFocusId } from '../focus/index.js'
 import { resolveSystemEvent } from '../shared/system-event.js'
 import { compareIsoDesc, parseIsoToMsOrZero } from '../shared/time.js'
 
-import type { RuntimeState } from './runtime-adapter.js'
+import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type {
   FocusId,
   ManagerWakeProfile,

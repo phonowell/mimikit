@@ -2,7 +2,7 @@ import { parseIsoMs } from '../shared/time.js'
 
 import { resolveNextCronRunAtMs } from './plan-cron.js'
 
-import type { RuntimeState } from './runtime-adapter.js'
+import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { TaskPlan } from '../types/index.js'
 
 const pickEarlier = (

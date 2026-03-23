@@ -4,6 +4,7 @@ import { appendHistory } from '../history/store.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort, logSafeError } from '../log/safe.js'
 import { broadcastAgentReply } from '../orchestrator/core/channel-broadcast.js'
+import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
 import { nowIso } from '../shared/utils.js'
 
 import { appendAndDispatchManagerFailureReply } from './loop-batch-failure-reply.js'
@@ -14,8 +15,8 @@ import {
 } from './loop-helpers.js'
 import { readManagerAutoRetryMeta } from './manager-llm-call.js'
 import { scheduleResultReplayBackoff } from './result-replay-backoff.js'
-import { persistRuntimeState, type RuntimeState } from './runtime-adapter.js'
 
+import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { TaskResult, TokenUsage, UserInput } from '../types/index.js'
 
 export const finishBatchWithoutAgentReply = async (params: {

@@ -1,9 +1,9 @@
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
+import { waitForManagerLoopSignal } from '../orchestrator/core/signals.js'
 import { readProviderErrorCode } from '../providers/provider-error.js'
 
 import { resolveManagerIdleTimeoutMs } from './loop-idle-timeout.js'
-import { waitForManagerLoopSignal } from './runtime-adapter.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 

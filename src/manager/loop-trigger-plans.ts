@@ -9,8 +9,8 @@ import {
   maybeMarkPlanExhausted,
 } from './loop-trigger-plan-execution.js'
 import { hasNextCronRun, matchesCronNow } from './plan-cron.js'
-import { type RuntimeState } from './runtime-adapter.js'
 
+import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { TaskPlan } from '../types/index.js'
 
 const asSecondStamp = (iso: string): string => iso.slice(0, 19)

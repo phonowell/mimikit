@@ -1,4 +1,4 @@
-import type { RuntimeState } from './runtime-adapter.js'
+import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 
 export const markCreateAttempt = (
   runtime: RuntimeState,

@@ -2,7 +2,7 @@ import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
 import { taskResultSchema } from '../storage/runtime-snapshot-schema.js'
 
-import type { RuntimeState } from './runtime-adapter.js'
+import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { PacketWithCursor } from '../streams/queue-checkpoint.js'
 import type { QueueReadCheckpoint } from '../streams/queues.js'
 import type { TaskResult } from '../types/index.js'

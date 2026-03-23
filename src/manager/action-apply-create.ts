@@ -1,6 +1,14 @@
 import { appendTaskSystemMessage } from '../history/task-events.js'
 import { appendLog } from '../log/append.js'
 import { bestEffort } from '../log/safe.js'
+import { persistRuntimeState } from '../orchestrator/core/runtime-persistence.js'
+import { notifyWorkerLoop } from '../orchestrator/core/signals.js'
+import { enqueueTask } from '../orchestrator/core/task-lifecycle.js'
+import {
+  buildTaskSemanticKey,
+  findActiveTaskBySemanticKey,
+} from '../orchestrator/core/task-state.js'
+import { enqueueWorkerTask } from '../worker/dispatch.js'
 import { resolveSlotStatus } from '../worker/task-state-shared.js'
 
 import { markCreateAttempt } from './action-apply-guards.js'
@@ -15,20 +23,12 @@ import {
 import { handleActiveSemanticTask } from './run-task-existing.js'
 import { resolveRunTaskTarget } from './run-task-target.js'
 import {
-  buildTaskSemanticKey,
-  enqueueTask,
-  enqueueWorkerTask,
-  findActiveTaskBySemanticKey,
-  notifyWorkerLoop,
-  persistRuntimeState,
-  type RuntimeState,
-} from './runtime-adapter.js'
-import {
   buildTaskContractFromAttrs,
   resolveWorkerPromptFromAttrs,
 } from './task-contract.js'
 
 import type { Parsed } from '../actions/model/spec.js'
+import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { WorkerProfile } from '../types/index.js'
 
 export type ApplyTaskActionsOptions = {
