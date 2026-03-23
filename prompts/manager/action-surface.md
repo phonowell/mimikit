@@ -56,13 +56,15 @@ actions:
   create_plan:
     summary: 创建一个持续触发的计划。
     brief_constraints:
-      - 必填 `title,trigger_mode,effect_kind,focus_id`
+      - 必填 `title,schedule_type,effect_kind`
+    detail_constraints:
+      - 可选 `focus_id,priority,max_runs`
   update_plan:
     summary: 更新已有计划的触发器或 effect。
     brief_constraints:
       - 必填 `id`
   delete_plan:
-    summary: 删除一个已有计划。
+    summary: 关闭一个已有计划，并保留审计记录。
     brief_constraints:
       - 必填 `id`
   ask_user_choice:

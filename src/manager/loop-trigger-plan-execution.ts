@@ -54,9 +54,10 @@ export const firePlan = async (params: {
   plan: TaskPlan
   nowIso: string
   reason: 'cron' | 'scheduled_at' | 'on_worker_slot_freed'
-}): Promise<void> => {
+}): Promise<{ consumedWorkerSlot: boolean }> => {
   const { runtime, plan, nowIso } = params
   let lastTaskId: string | undefined
+  let consumedWorkerSlot = false
   if (plan.effect.kind === 'enqueue_task') {
     const target = await resolveRunTaskTarget({
       actionName: 'create_plan',
@@ -83,6 +84,7 @@ export const firePlan = async (params: {
       task,
       linkedAt: nowIso,
     })
+    consumedWorkerSlot = created
     lastTaskId = task.id
     if (created) {
       await appendTaskSystemMessage(runtime.paths.history, 'created', task, {
@@ -134,6 +136,7 @@ export const firePlan = async (params: {
       ...(lastTaskId ? { lastTaskId } : {}),
     },
   })
+  return { consumedWorkerSlot }
 }
 
 export const markTriggeredPlanDone = (plan: TaskPlan, nowIso: string): void => {

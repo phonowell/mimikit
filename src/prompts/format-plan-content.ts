@@ -19,7 +19,6 @@ const formatPlanEntry = (plan: TaskPlan): Record<string, unknown> => ({
   ...buildPlanProgressPayload(plan),
   ...buildPlanTriggerPayload(plan.trigger),
   ...buildPlanEffectPayload(plan.effect),
-  ...(plan.runtime.doneReason ? { done_reason: plan.runtime.doneReason } : {}),
 })
 
 export const buildPlansPromptPayload = (

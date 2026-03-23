@@ -91,6 +91,7 @@
 - `status` 会应用保留 focus 归一化规则。
 - `summary/openItems` 直接写入 `FocusMeta`。
 - `openItems` 去重与裁剪：`MAX_FOCUS_OPEN_ITEMS = 3`。
+- 仅 `status` 变更或真实归属活动会刷新 `lastActivityAt`；`title/summary/openItems` 维护只更新 `updatedAt`，不参与默认归属与容量 LRU。
 - 执行后触发容量治理并持久化快照。
 
 ### `assign_focus`

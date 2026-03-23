@@ -28,6 +28,7 @@ export const buildPlanProgressPayload = (
     : {}),
   ...(plan.runtime.lastTaskId ? { last_task_id: plan.runtime.lastTaskId } : {}),
   ...(plan.runtime.closedAt ? { closed_at: plan.runtime.closedAt } : {}),
+  ...(plan.runtime.doneReason ? { done_reason: plan.runtime.doneReason } : {}),
 })
 
 export const buildPlanEffectPayload = (

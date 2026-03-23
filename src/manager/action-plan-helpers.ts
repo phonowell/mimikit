@@ -31,7 +31,7 @@ export const appendPlanSystemMessage = async (
         ? `Plan changed: "${label}" (created).`
         : event === 'plan_updated'
           ? `Plan changed: "${label}" (updated).`
-          : `Plan changed: "${label}" (deleted).`,
+          : `Plan changed: "${label}" (closed).`,
     event,
     payload: {
       plan_id: plan.id,

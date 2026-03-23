@@ -21,29 +21,24 @@ import {
 } from './loop-result-packets.js'
 import {
   checkScheduledPlans,
+  hasRunnableWorkerSlotPlan,
   triggerOnWorkerSlotFreedPlans,
 } from './loop-trigger-plans.js'
 import { waitForResultReplayBackoff } from './result-replay-backoff.js'
 import { publishManagerSystemEventInput } from './system-input-event.js'
 
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
-const WORKER_SLOT_EVENT_COOLDOWN_MS = 1_000
 
-const hasRunnableWorkerSlotPlan = (runtime: RuntimeState): boolean =>
-  runtime.taskPlans.some((plan) => {
-    if (plan.status !== 'active') return false
-    if (plan.trigger.mode !== 'on_worker_slot_freed') return false
-    if (plan.maxRuns === undefined) return true
-    return plan.runtime.runCount < plan.maxRuns
-  })
+const WORKER_SLOT_EVENT_COOLDOWN_MS = 1_000
+type TriggerLoopState = {
+  lastAvailableSlots: number | null
+  workerSlotEventPending: boolean
+  lastWorkerSlotEventAtMs: number
+}
 
 const processLoopTriggers = async (
   runtime: RuntimeState,
-  state: {
-    lastAvailableSlots: number | null
-    workerSlotEventPending: boolean
-    lastWorkerSlotEventAtMs: number
-  },
+  state: TriggerLoopState,
 ): Promise<boolean> => {
   const now = new Date()
   const nowMs = now.getTime()
@@ -69,7 +64,11 @@ const processLoopTriggers = async (
     slots.available_slots > 0 &&
     nowMs - state.lastWorkerSlotEventAtMs >= WORKER_SLOT_EVENT_COOLDOWN_MS
   ) {
-    const slotTriggered = await triggerOnWorkerSlotFreedPlans(runtime, nowMs)
+    const slotTriggered = await triggerOnWorkerSlotFreedPlans(
+      runtime,
+      nowMs,
+      slots.available_slots,
+    )
     stateChanged = stateChanged || slotTriggered.stateChanged
     if (slotTriggered.triggeredCount === 0) {
       const hasPendingOrRunningTask = runtime.tasks.some(
@@ -103,11 +102,7 @@ const processLoopTriggers = async (
 
 const safeProcessLoopTriggers = async (
   runtime: RuntimeState,
-  state: {
-    lastAvailableSlots: number | null
-    workerSlotEventPending: boolean
-    lastWorkerSlotEventAtMs: number
-  },
+  state: TriggerLoopState,
 ): Promise<boolean> => {
   try {
     return await processLoopTriggers(runtime, state)
