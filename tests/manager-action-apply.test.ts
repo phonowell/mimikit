@@ -630,14 +630,14 @@ test('upsert_focus accepts open_item_{n} scalar attrs and writes openItems', asy
   expect(focus?.openItems).toEqual(['确认回滚路径', '补齐发布清单'])
 })
 
-test('delete_plan removes done plan', async () => {
+test('update_plan marks manual close as canceled', async () => {
   const runtime = await createRuntime()
-  const donePlan: TaskPlan = {
-    id: 'plan-done',
-    title: 'done',
+  const activePlan: TaskPlan = {
+    id: 'plan-active',
+    title: 'active',
     focusId: GLOBAL_FOCUS_ID,
     priority: 'normal',
-    status: 'done',
+    status: 'active',
     trigger: {
       mode: 'on_worker_slot_freed',
     },
@@ -647,25 +647,63 @@ test('delete_plan removes done plan', async () => {
     },
     createdAt: '2026-02-13T00:00:00.000Z',
     updatedAt: '2026-02-13T00:00:00.000Z',
-    maxRuns: 1,
     runtime: {
-      runCount: 1,
-      closedAt: '2026-02-13T00:00:00.000Z',
-      doneReason: 'completed',
+      runCount: 0,
     },
   }
-  runtime.taskPlans.push(donePlan)
+  runtime.taskPlans.push(activePlan)
+
+  await applyTaskActions(runtime, [
+    {
+      name: 'update_plan',
+      attrs: {
+        id: 'plan-active',
+        status: 'done',
+      },
+    },
+  ])
+
+  expect(runtime.taskPlans).toHaveLength(1)
+  expect(runtime.taskPlans[0]?.status).toBe('done')
+  expect(runtime.taskPlans[0]?.runtime.doneReason).toBe('canceled')
+  expect(runtime.taskPlans[0]?.runtime.closedAt).toBeTypeOf('string')
+})
+
+test('delete_plan keeps plan entity and records canceled closure', async () => {
+  const runtime = await createRuntime()
+  const activePlan: TaskPlan = {
+    id: 'plan-delete',
+    title: 'delete target',
+    focusId: GLOBAL_FOCUS_ID,
+    priority: 'normal',
+    status: 'active',
+    trigger: {
+      mode: 'on_worker_slot_freed',
+    },
+    effect: {
+      kind: 'wake_manager',
+      reason: 'capacity_retry',
+    },
+    createdAt: '2026-02-13T00:00:00.000Z',
+    updatedAt: '2026-02-13T00:00:00.000Z',
+    runtime: {
+      runCount: 0,
+    },
+  }
+  runtime.taskPlans.push(activePlan)
 
   await applyTaskActions(runtime, [
     {
       name: 'delete_plan',
       attrs: {
-        id: 'plan-done',
+        id: 'plan-delete',
       },
     },
   ])
 
-  expect(runtime.taskPlans).toHaveLength(0)
+  expect(runtime.taskPlans).toHaveLength(1)
+  expect(runtime.taskPlans[0]?.status).toBe('done')
+  expect(runtime.taskPlans[0]?.runtime.doneReason).toBe('canceled')
 })
 
 test('remember_memory writes MEMORY.md immediately and emits system event payload', async () => {

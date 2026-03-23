@@ -142,7 +142,7 @@ export const applyUpdatePlan = async (
     next.runtime = {
       ...next.runtime,
       closedAt: updatedAt,
-      doneReason: next.runtime.doneReason ?? 'completed',
+      doneReason: 'canceled',
     }
   }
 
@@ -161,9 +161,24 @@ export const applyDeletePlan = async (
   const index = runtime.taskPlans.findIndex((plan) => plan.id === parsed.id)
   if (index < 0) return
 
-  const [removed] = runtime.taskPlans.splice(index, 1)
-  if (!removed) return
+  const current = runtime.taskPlans[index]
+  if (!current) return
+  const deletedAt = nowIso()
+  const next =
+    current.status === 'done'
+      ? current
+      : {
+          ...current,
+          status: 'done' as const,
+          updatedAt: deletedAt,
+          runtime: {
+            ...current.runtime,
+            closedAt: deletedAt,
+            doneReason: 'canceled' as const,
+          },
+        }
+  runtime.taskPlans[index] = next
 
   await persistRuntimeState(runtime)
-  await appendPlanSystemMessage(runtime, 'plan_deleted', removed)
+  await appendPlanSystemMessage(runtime, 'plan_deleted', next)
 }

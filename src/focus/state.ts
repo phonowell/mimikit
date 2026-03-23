@@ -1,19 +1,14 @@
 import { compareIsoDesc } from '../shared/time.js'
 import { nowIso } from '../shared/utils.js'
 
+import { GLOBAL_FOCUS_ID, INBOX_FOCUS_ID } from './constants.js'
 import {
-  GLOBAL_FOCUS_ID,
-  INBOX_FOCUS_ID,
-  MAX_FOCUS_OPEN_ITEMS,
-} from './constants.js'
+  applyFocusMetaStatus,
+  normalizeFocusSummary,
+  touchFocusMeta,
+  updateFocusMeta,
+} from './meta.js'
 import {
-  MAX_FOCUS_OPEN_ITEM_CHARS,
-  MAX_FOCUS_SUMMARY_CHARS,
-  normalizeFocusDigestText,
-} from './digest.js'
-import { normalizeFocusOpenItems } from './open-items.js'
-import {
-  canStoreFocusDetails,
   initialFocusStatus,
   isDefaultActiveFocusCandidate,
   isDefaultIdleFocusCandidate,
@@ -23,63 +18,7 @@ import {
 import type { RuntimeState } from '../orchestrator/core/runtime-state.js'
 import type { FocusId, FocusMeta, FocusStatus } from '../types/index.js'
 
-export const normalizeFocusSummary = (value?: string): string | undefined => {
-  if (typeof value !== 'string') return undefined
-  return normalizeFocusDigestText(value, MAX_FOCUS_SUMMARY_CHARS)
-}
-
-const markFocusActivity = (
-  focus: FocusMeta,
-  timestamp: string = nowIso(),
-): void => {
-  focus.updatedAt = timestamp
-  focus.lastActivityAt = timestamp
-}
-
-const applyFocusStatus = (
-  focus: FocusMeta,
-  focusId: FocusId,
-  status: FocusStatus,
-  timestamp: string = nowIso(),
-): void => {
-  focus.status = normalizeReservedFocusStatus(focusId, status)
-  markFocusActivity(focus, timestamp)
-}
-
-const applyFocusDetails = (
-  focus: FocusMeta,
-  params: {
-    summary?: string
-    openItems?: string[]
-  },
-): void => {
-  if (!canStoreFocusDetails(focus.id)) {
-    delete focus.summary
-    delete focus.openItems
-    return
-  }
-  const normalizedSummary =
-    params.summary !== undefined
-      ? normalizeFocusSummary(params.summary)
-      : normalizeFocusSummary(focus.summary)
-  const normalizedOpenItems =
-    params.openItems !== undefined
-      ? normalizeFocusOpenItems(
-          params.openItems.map(
-            (item) =>
-              normalizeFocusDigestText(item, MAX_FOCUS_OPEN_ITEM_CHARS) ?? '',
-          ),
-          {
-            maxItems: MAX_FOCUS_OPEN_ITEMS,
-          },
-        )
-      : focus.openItems
-  if (normalizedSummary) focus.summary = normalizedSummary
-  else delete focus.summary
-  if (normalizedOpenItems && normalizedOpenItems.length > 0)
-    focus.openItems = normalizedOpenItems
-  else delete focus.openItems
-}
+export { normalizeFocusSummary } from './meta.js'
 
 export const resolveDefaultFocusId = (runtime: RuntimeState): FocusId => {
   const activeNonGlobal = runtime.focuses
@@ -122,7 +61,7 @@ export const ensureFocus = (
       existing.status,
     )
     if (normalizedStatus !== existing.status)
-      applyFocusStatus(existing, focusId, normalizedStatus)
+      applyFocusMetaStatus(existing, focusId, normalizedStatus)
     return existing
   }
   const timestamp = nowIso()
@@ -148,7 +87,7 @@ export const ensureGlobalFocus = (runtime: RuntimeState): void => {
     delete global.openItems
   }
   if (global.status !== 'active') {
-    applyFocusStatus(global, GLOBAL_FOCUS_ID, 'active')
+    applyFocusMetaStatus(global, GLOBAL_FOCUS_ID, 'active')
     return
   }
   if (hadDetails) global.updatedAt = nowIso()
@@ -156,7 +95,7 @@ export const ensureGlobalFocus = (runtime: RuntimeState): void => {
 
 export const touchFocus = (runtime: RuntimeState, focusId: FocusId): void => {
   const focus = findFocus(runtime, focusId) ?? ensureFocus(runtime, focusId)
-  markFocusActivity(focus)
+  touchFocusMeta(focus)
 }
 
 export const setFocusStatus = (
@@ -165,7 +104,7 @@ export const setFocusStatus = (
   status: FocusStatus,
 ): void => {
   const focus = findFocus(runtime, focusId) ?? ensureFocus(runtime, focusId)
-  applyFocusStatus(focus, focusId, status)
+  applyFocusMetaStatus(focus, focusId, status)
 }
 
 export const updateFocus = (
@@ -179,22 +118,5 @@ export const updateFocus = (
   },
 ): void => {
   const focus = findFocus(runtime, params.id) ?? ensureFocus(runtime, params.id)
-  const normalizedTitle = params.title?.trim()
-  const nextTitle =
-    normalizedTitle && normalizedTitle.length > 0 ? normalizedTitle : undefined
-  const timestamp = nowIso()
-  if (nextTitle) focus.title = nextTitle
-  if (params.summary !== undefined || params.openItems !== undefined) {
-    applyFocusDetails(focus, {
-      ...(params.summary !== undefined ? { summary: params.summary } : {}),
-      ...(params.openItems !== undefined
-        ? { openItems: params.openItems }
-        : {}),
-    })
-  }
-  if (params.status !== undefined) {
-    applyFocusStatus(focus, params.id, params.status, timestamp)
-    return
-  }
-  markFocusActivity(focus, timestamp)
+  updateFocusMeta(focus, params, params.id, nowIso())
 }

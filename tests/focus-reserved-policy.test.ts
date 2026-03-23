@@ -54,6 +54,35 @@ test('updateFocus normalizes global focus status through shared status path', as
   expect(runtime.focuses[0]?.status).toBe('active')
 })
 
+test('updateFocus digest-only edits do not refresh lastActivityAt', async () => {
+  const runtime = await createTestRuntimeState({
+    patch: {
+      focuses: [
+        {
+          id: 'focus-local',
+          title: 'Local',
+          status: 'active',
+          createdAt: '2026-03-01T00:00:00.000Z',
+          updatedAt: '2026-03-01T00:00:00.000Z',
+          lastActivityAt: '2026-03-01T00:00:05.000Z',
+        },
+      ],
+    },
+  })
+
+  updateFocus(runtime, {
+    id: 'focus-local',
+    summary: 'Updated digest',
+    openItems: ['Next step'],
+  })
+
+  const focus = runtime.focuses[0]
+  expect(focus?.summary).toBe('Updated digest')
+  expect(focus?.openItems).toEqual(['Next step'])
+  expect(focus?.lastActivityAt).toBe('2026-03-01T00:00:05.000Z')
+  expect(focus?.updatedAt).not.toBe('2026-03-01T00:00:00.000Z')
+})
+
 test('ensureGlobalFocus cleans legacy global focus details', async () => {
   const runtime = await createRuntime()
 

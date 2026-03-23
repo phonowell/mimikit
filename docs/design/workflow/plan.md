@@ -21,7 +21,7 @@
 
 - `managerLoop`（`src/manager/loop.ts`）在空闲轮询中统一检查计划触发、待确认 choice 生命周期与 worker 槽位释放。
 - `cron/scheduled_at`：命中即执行结构化 `effect`，并发布 `trigger_fire` system input 记录触发事实与 payload。
-- `on_worker_slot_freed`：在“有空槽位”窗口触发，候选计划按 `priority -> createdAt(FIFO)` 排序执行。
+- `on_worker_slot_freed`：在“有空槽位”窗口触发，候选计划按 `priority -> createdAt(FIFO)` 排序执行；同一事件最多消耗 `available_slots` 个 worker 槽位，不占槽位的触发（如 `wake_manager` 或复用既有 task）不计入预算。
 - 若槽位释放时无可触发 `on_worker_slot_freed` 计划，系统会发布 `worker_slot_freed` system input，并写入结构化槽位 payload。
 
 ## 调度语义基线（槽位口径）
@@ -40,27 +40,29 @@
 ## 相关 Action
 
 - `create_plan`
-  - 入参：`title`、`trigger_mode`、`focus_id?`、`priority?`、`max_runs?`
+  - 入参：`title`、`schedule_type`、`focus_id?`、`priority?`、`max_runs?`
   - 触发参数：`cron_expr? | scheduled_at? | time_zone?`
   - effect 参数：
     - `effect_kind="enqueue_task"`：`task_title`、`task_worker_prompt`、`task_cwd`、`task_goal`、`task_in_scope`、`task_done_when_{n}`，可选 `task_branch` / `task_out_of_scope` / `task_context_ref_{n}`
     - `effect_kind="wake_manager"`：`effect_reason`
 - `update_plan`
   - 入参：`id` + 至少一个更新字段
-  - 可更新：`title|trigger_mode|cron_expr|scheduled_at|time_zone|max_runs|priority|status|focus_id|effect_*|task_*`
+  - 可更新：`title|schedule_type|cron_expr|scheduled_at|time_zone|max_runs|priority|status|focus_id|effect_*|task_*`
 - `delete_plan`
   - 入参：`id`
+  - 语义：把计划关闭为 `done(canceled)`；实体保留用于审计与回放，不做物理删除
 
 ## 触发后的状态收敛
 
 - `scheduled_at` 触发后立即标记 `done(completed)`（一次性）。
 - `cron` 若表达式无下一次触发，则标记 `done(completed)`。
 - 达到 `max_runs` 时标记 `done(exhausted)`。
+- manager 主动 `update_plan status="done"` 或 `delete_plan` 时，统一标记为 `done(canceled)`。
 
 ## 校验边界
 
-- `create_plan/update_plan` 中 `trigger_mode=scheduled_at` 时会校验时间不得早于“当前用户上下文时间”（若有）或系统当前时间。
-- `trigger_mode=on_worker_slot_freed` 与 `cron/scheduled_at` 参数互斥。
+- `create_plan/update_plan` 中 `schedule_type=scheduled_at` 时会校验时间不得早于“当前用户上下文时间”（若有）或系统当前时间。
+- `schedule_type=on_worker_slot_freed` 与 `cron/scheduled_at` 参数互斥。
 - `update_plan` 对 `done` 计划默认拒绝。
 - `plan.runtime.runCount/lastTriggeredAt/lastTaskId/closedAt/doneReason` 只允许由触发执行链路维护，不对 manager action 暴露写入口。
 - `lastTaskId` 由运行时在 `trigger_fire -> enqueue_task` 成功落到既有/新建任务时自动回写，不再由 manager action 显式维护。
@@ -86,6 +88,6 @@
 ## 示例
 
 - `on_worker_slot_freed`：
-  `<M:create_plan title="积压任务续跑" trigger_mode="on_worker_slot_freed" max_runs="20" effect_kind="enqueue_task" task_title="继续处理积压任务" task_worker_prompt="阅读当前状态并处理下一批积压任务" task_cwd="/Users/mimiko/Projects/mimikit" task_goal="推进积压任务处理" task_in_scope="仅处理当前 focus 的积压项" task_done_when_1="输出本轮处理结果与下一步" />`
+  `<M:create_plan title="积压任务续跑" schedule_type="on_worker_slot_freed" max_runs="20" effect_kind="enqueue_task" task_title="继续处理积压任务" task_worker_prompt="阅读当前状态并处理下一批积压任务" task_cwd="/Users/mimiko/Projects/mimikit" task_goal="推进积压任务处理" task_in_scope="仅处理当前 focus 的积压项" task_done_when_1="输出本轮处理结果与下一步" />`
 - `scheduled_at`：
-  `<M:create_plan title="下午复盘" trigger_mode="scheduled_at" scheduled_at="2026-03-21T16:00:00+08:00" effect_kind="wake_manager" effect_reason="scheduled_review" />`
+  `<M:create_plan title="下午复盘" schedule_type="scheduled_at" scheduled_at="2026-03-21T16:00:00+08:00" effect_kind="wake_manager" effect_reason="scheduled_review" />`

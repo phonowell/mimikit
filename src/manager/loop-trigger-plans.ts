@@ -25,19 +25,37 @@ const sortTriggerPlans = (plans: TaskPlan[]): TaskPlan[] =>
     return compareIsoAsc(a.createdAt, b.createdAt)
   })
 
+export const hasRunnableWorkerSlotPlan = (runtime: RuntimeState): boolean =>
+  runtime.taskPlans.some((plan) => {
+    if (plan.status !== 'active') return false
+    if (plan.trigger.mode !== 'on_worker_slot_freed') return false
+    if (plan.maxRuns === undefined) return true
+    return plan.runtime.runCount < plan.maxRuns
+  })
+
 const triggerPlans = async (params: {
   runtime: RuntimeState
   nowIso: string
   plans: TaskPlan[]
   reason: 'on_worker_slot_freed'
+  availableSlots?: number
 }): Promise<{ triggeredCount: number; stateChanged: boolean }> => {
   if (params.plans.length === 0)
+    return { triggeredCount: 0, stateChanged: false }
+  let remainingSlots = params.availableSlots
+  if (remainingSlots !== undefined && remainingSlots <= 0)
     return { triggeredCount: 0, stateChanged: false }
 
   let triggeredCount = 0
   let stateChanged = false
   for (const plan of sortTriggerPlans(params.plans)) {
-    await firePlan({
+    if (
+      remainingSlots !== undefined &&
+      remainingSlots <= 0 &&
+      plan.effect.kind === 'enqueue_task'
+    )
+      continue
+    const result = await firePlan({
       runtime: params.runtime,
       plan,
       nowIso: params.nowIso,
@@ -46,6 +64,8 @@ const triggerPlans = async (params: {
     markTriggeredPlanDone(plan, params.nowIso)
     triggeredCount += 1
     stateChanged = true
+    if (remainingSlots !== undefined && result.consumedWorkerSlot)
+      remainingSlots -= 1
   }
 
   return { triggeredCount, stateChanged }
@@ -154,6 +174,7 @@ export const checkScheduledPlans = async (
 export const triggerOnWorkerSlotFreedPlans = (
   runtime: RuntimeState,
   nowMs: number,
+  availableSlots: number,
 ): Promise<{ triggeredCount: number; stateChanged: boolean }> => {
   const nowIso = new Date(nowMs).toISOString()
   return triggerPlans({
@@ -161,5 +182,6 @@ export const triggerOnWorkerSlotFreedPlans = (
     nowIso,
     plans: runtime.taskPlans.filter((plan) => canFireOnWorkerSlotFreed(plan)),
     reason: 'on_worker_slot_freed',
+    availableSlots,
   })
 }

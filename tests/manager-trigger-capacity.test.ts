@@ -234,6 +234,7 @@ test('on_worker_slot_freed plans trigger without touching non-capacity plans', a
   const capacityTriggered = await triggerOnWorkerSlotFreedPlans(
     runtime,
     Date.now(),
+    runtime.config.worker.maxConcurrent,
   )
   expect(capacityTriggered).toEqual({ triggeredCount: 1, stateChanged: true })
   expect(runtime.taskPlans[0]?.runtime.runCount).toBe(1)
@@ -251,7 +252,11 @@ test('trigger_fire system event uses global focus even when plan has local focus
   plan.focusId = 'focus-local'
   runtime.taskPlans.push(plan)
 
-  const triggered = await triggerOnWorkerSlotFreedPlans(runtime, Date.now())
+  const triggered = await triggerOnWorkerSlotFreedPlans(
+    runtime,
+    Date.now(),
+    runtime.config.worker.maxConcurrent,
+  )
   expect(triggered.triggeredCount).toBe(1)
   const triggerInput = runtime.session.inflightInputs.find(
     (input) => input.role === 'system' && input.systemEventName === 'trigger_fire',
