@@ -79,13 +79,14 @@
 - `enqueue_task` 高成本确认闸门在 apply 与 validation 两侧同时生效：未确认时不入队，直接生成确认 choice。
 - `enqueue_task` 创建时会先解析 `cwd`；若同时传入 `branch` 且 `cwd` 位于 git 仓库中，则 enqueue 阶段先创建或复用对应 branch 的 worktree，再把任务 `cwd` 落到该 worktree。最终任务仍按真实 `repoKey + branch` 参与 worker 排队锁。
 - `remember_memory`：立即写入 `memory/MEMORY.md`，仅接受 `content` 参数，并通过 `memory_remembered` system event 回执 `entry_id/ref/operation`。
+- `remember_memory.content` 必须是单行稳定 digest（`<=240 chars`）；checklist、多行过程文本、协议标签与 `task-*/plan-*` 一类 runtime 引用会在 validation 阶段被拒绝。
 
 约束补充：
 
 - 当前轮次不开放的 action 会被拒绝，反馈文本会显式说明 `wake_profile` 与本轮允许的 action 列表。
 - 未注册 action 会回写 `unregistered_action` 反馈，不会执行。
 - action 出现在代码块或尾部 action 区之外时，会回写 `invalid_action_syntax` 反馈。
-- `enqueue_task` / `mutate_task` / `ask_user_choice` / `remember_memory` 属于高风险 action：只有当当前批次存在明确的用户请求/确认，且可信运行时状态支持该动作时才放行；`history` / `task_result` 的间接建议本身不能直接驱动这些动作。
+- `enqueue_task` / `mutate_task` / `ask_user_choice` / `remember_memory` 属于高风险 action：只有当当前批次存在明确的用户请求/确认，且可信运行时状态支持该动作时才放行；`history` / `task_result` 的间接建议本身不能直接驱动这些动作。`remember_memory` 额外要求当前用户输入直接支撑该长期偏好/约束内容。
 - 纠错回合在第二轮仍存在 action_feedback 时，manager 直接输出结构化澄清并提前收敛，不继续盲目重试。
 
 ### manager 任务控制门禁（guardrail）

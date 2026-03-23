@@ -5,7 +5,7 @@ import { stringifyPromptJson } from './format-base.js'
 import type { buildQuoteReferenceLookup } from './format.js'
 import type { BuildManagerPromptParams } from './manager-prompt-types.js'
 import type { buildFocusPromptPayload } from '../focus/index.js'
-import type { FocusId, Task, TaskPlan, UserInput } from '../types/index.js'
+import type { FocusId, Task, UserInput } from '../types/index.js'
 
 const MAX_MEMORY_QUERY_CHARS = 4_000
 const MAX_MEMORY_MENTION_ITEMS = 128
@@ -57,17 +57,12 @@ export const hasQuotedInputs = (inputs: UserInput[]): boolean =>
 export const buildMemoryPromptScoreContext = (params: {
   inputs: UserInput[]
   tasks: Task[]
-  plans: TaskPlan[]
   focusPayload: ReturnType<typeof buildFocusPromptPayload>
   workingFocusIds: FocusId[]
 }): MemoryScoreContext => {
   const mentionTexts: string[] = []
   for (const input of params.inputs) pushMention(mentionTexts, input.text)
-  for (const task of params.tasks) {
-    pushMention(mentionTexts, task.title)
-    pushMention(mentionTexts, task.result?.output)
-  }
-  for (const plan of params.plans) pushMention(mentionTexts, plan.title)
+  for (const task of params.tasks) pushMention(mentionTexts, task.title)
   for (const focus of params.focusPayload.focusList)
     pushMention(mentionTexts, focus.title)
   for (const focus of params.focusPayload.workingFocuses) {

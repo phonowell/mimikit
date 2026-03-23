@@ -66,5 +66,7 @@ update_plan_done_forbidden: |
   update_plan 执行失败：done plan 不可修改。
 duplicate_action_generic: |
   action 执行失败：重复 action。
+remember_memory_not_stable: |
+  remember_memory 执行失败：content 必须是可跨轮复用的单行稳定规则/偏好 digest，不能直接写任务过程文本、checklist、协议标签或 runtime 引用。当前问题：{{ reason }}。
 set_task_result_summary_task_not_in_batch: |
   set_task_result_summary 执行失败：task_id 不在当前批次结果中。{{ available_hint }}

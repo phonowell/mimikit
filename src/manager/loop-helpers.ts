@@ -3,6 +3,11 @@ import {
   appendConsumedResultsToHistory,
 } from '../history/result-events.js'
 import { loadPromptTemplate } from '../prompts/prompt-loader.js'
+import { toDisplayPath } from '../shared/path-display.js'
+import {
+  formatTaskResultSummary,
+  resolveTaskLabel,
+} from '../shared/task-state.js'
 import { nowIso } from '../shared/utils.js'
 import { updateJsonl } from '../storage/jsonl.js'
 import {
@@ -16,17 +21,56 @@ import type { TaskResult, UserInput } from '../types/index.js'
 const QUEUE_COMPACT_MIN_PACKETS = 100
 const TASK_SNAPSHOT_MAX_COUNT = 100
 
-export const buildFallbackReply = async (params: {
-  inputs: UserInput[]
+const resolveLatestResult = (results: TaskResult[]): TaskResult | undefined => {
+  if (results.length === 0) return undefined
+  const sorted = [...results].sort((left, right) => {
+    if (left.completedAt !== right.completedAt)
+      return right.completedAt.localeCompare(left.completedAt)
+    return left.taskId.localeCompare(right.taskId)
+  })
+  return sorted[0]
+}
+
+const buildFallbackResultReply = (params: {
   results: TaskResult[]
+  tasks: RuntimeState['tasks']
+  workDir: string
+}): string | undefined => {
+  const latestResult = resolveLatestResult(params.results)
+  if (!latestResult) return undefined
+  const task = params.tasks.find((item) => item.id === latestResult.taskId)
+  const handoffSummary = latestResult.handoff?.summary?.trim()
+  const summary =
+    handoffSummary && handoffSummary.length > 0
+      ? handoffSummary
+      : formatTaskResultSummary(
+          task ? resolveTaskLabel(task) : latestResult.taskId,
+          latestResult.status,
+        )
+  const rawArchivePath = [
+    latestResult.archivePath,
+    task?.archivePath,
+    task?.result?.archivePath,
+  ].find((value) => typeof value === 'string' && value.trim().length > 0)
+  const archivePath = rawArchivePath
+    ? toDisplayPath(rawArchivePath, params.workDir).trim()
+    : ''
+  return archivePath
+    ? `${summary}\n[任务归档](${archivePath})`
+    : `${summary}\n任务归档: 未生成`
+}
+
+export const buildFallbackReply = async (params: {
+  results: TaskResult[]
+  tasks: RuntimeState['tasks']
+  workDir: string
 }): Promise<string> => {
-  const latestInput = [...params.inputs]
-    .reverse()
-    .find((item) => item.role === 'user')
-    ?.text.trim()
-  if (latestInput) return latestInput
-  const latestResult = params.results.at(-1)?.output.trim()
-  if (latestResult) return latestResult
+  const resultReply = buildFallbackResultReply({
+    results: params.results,
+    tasks: params.tasks,
+    workDir: params.workDir,
+  })
+  if (resultReply) return resultReply
   const fallback = (
     await loadPromptTemplate('manager/fallback-reply.md')
   ).trim()

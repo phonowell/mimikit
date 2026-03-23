@@ -4,7 +4,6 @@ import {
   resolveTaskChangeAt,
 } from '../../shared/task-state.js'
 import { compareIsoDesc } from '../../shared/time.js'
-import { titleFromCandidates } from '../../shared/utils.js'
 
 import {
   deriveTaskGitClosure,
@@ -75,6 +74,11 @@ const toFiniteNumber = (value: unknown): number | null =>
 const hasNonEmptyText = (value: unknown): boolean =>
   typeof value === 'string' && value.trim().length > 0
 
+const resolveTaskViewTitle = (task: Task): string => {
+  const title = task.title.trim()
+  return title || task.id
+}
+
 const resolveTaskViewStatus = (task: Task): TaskStatus => {
   if (task.status !== 'succeeded') return task.status
   const hasCompletedAt = hasNonEmptyText(task.completedAt)
@@ -141,7 +145,7 @@ const taskToView = (
     profile: task.profile,
     provider: task.provider,
     focusId: task.focusId,
-    title: task.title || titleFromCandidates(task.id, [task.prompt]),
+    title: resolveTaskViewTitle(task),
     ...(task.git ? { git: task.git } : {}),
     ...(gitClosure ? { gitClosure } : {}),
     createdAt: task.createdAt,

@@ -27,6 +27,7 @@ import {
   type ValidationIssue,
 } from './action-validation-helpers.js'
 import { validateMutateTaskGitOp } from './action-validation-mutate-task-git.js'
+import { validateRememberMemoryAction } from './action-validation-remember-memory.js'
 import { resolveRunTaskConfirmationRequirement } from './run-task-confirmation.js'
 import {
   buildTaskContractFromAttrs,
@@ -156,7 +157,7 @@ export const validateRememberMemory = (
 ): ValidationIssue[] => {
   const parsed = parseActionAttrs(item, rememberMemorySchema)
   if (!parsed) return validateWithSchema(item, rememberMemorySchema)
-  return validateHighRiskActionIntentEvidence(item, context)
+  return validateRememberMemoryAction(item, context)
 }
 
 export const validateSummarizeTaskResult = (

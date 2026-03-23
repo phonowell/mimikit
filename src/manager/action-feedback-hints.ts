@@ -53,6 +53,7 @@ const actionFeedbackHintSchema = z
     plan_not_found: z.string().trim().min(1),
     update_plan_done_forbidden: z.string().trim().min(1),
     duplicate_action_generic: z.string().trim().min(1),
+    remember_memory_not_stable: z.string().trim().min(1),
     set_task_result_summary_task_not_in_batch: z.string().trim().min(1),
   })
   .strict()
@@ -185,6 +186,9 @@ export const formatUpdatePlanDoneForbiddenHint = (): string =>
   renderHint('update_plan_done_forbidden')
 export const formatDuplicateActionGenericHint = (): string =>
   renderHint('duplicate_action_generic')
+
+export const formatRememberMemoryNotStableHint = (reason: string): string =>
+  renderHint('remember_memory_not_stable', { reason })
 
 export const formatSetTaskResultSummaryTaskNotInBatchHint = (
   availableHint: string,

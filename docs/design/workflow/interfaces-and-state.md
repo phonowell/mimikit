@@ -74,6 +74,7 @@
 补充：
 
 - `tasks.tasks[*].liveOutput` 为运行中任务的流式输出片段（仅 WebUI 展示，运行态内存数据，不承诺持久化）。
+- `tasks.tasks[*].title` 只使用稳定 `Task.title`；若标题缺失则退回 `task.id`，不再从 `task.prompt` 派生展示标题。
 - `tasks.tasks[*]` 会暴露 `stopReason` 与 `recoverable`；其中 `recoverable=true` 表示该 `paused + partial + budget_exhausted` 任务可直接继续执行。
 - 会话入站消息日志在服务端 `src/http/session-ingress-log.ts` 统一记录并去重（`[http] session ingress message/batch`）。
 

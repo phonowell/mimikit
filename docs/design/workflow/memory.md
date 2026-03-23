@@ -36,6 +36,9 @@
   - 生成稳定 `dedupeKey`
   - 命中同 key 时合并段落（`merged`）或无变化（`noop`）
   - 新条目为 `created`
+- 输入门禁：
+  - `content` 必须是单行稳定 digest（`<=240 chars`）。
+  - checklist、多行过程文本、协议标签与 `task-*/plan-*` 一类 runtime 引用会被拒绝，不进入长期 memory。
 - 回执：写入 `memory_remembered` system event（含 `entry_id/ref/operation`）。
 - 代码：
   - `src/memory/remember-entry.ts`
@@ -68,7 +71,7 @@
 
 - 评分器：`src/memory/entry-score.ts`
 - 主要信号：
-  - relevance（与当前上下文词重叠）
+  - relevance（与当前输入、task 标题、focus digest 的词重叠）
   - recency（更新时间）
   - reliability（source + evidence）
   - focus_match（focusHints 与 workingFocus 命中）

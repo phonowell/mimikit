@@ -113,8 +113,9 @@ export const processManagerBatch = async (params: {
       normalizedReplyText ||
       normalizeManagerReplyText(
         await buildFallbackReply({
-          inputs: agentInputs,
           results,
+          tasks: runtime.tasks,
+          workDir: runtime.config.workDir,
         }),
       )
     await appendManagerReply({

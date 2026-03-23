@@ -59,7 +59,6 @@ export const prepareManagerPromptRuntimeData = async (
         context: buildMemoryPromptScoreContext({
           inputs: params.inputs,
           tasks: params.tasks,
-          plans: params.plans ?? [],
           focusPayload,
           workingFocusIds,
         }),

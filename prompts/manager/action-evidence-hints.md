@@ -5,4 +5,4 @@ mutate_task_intent_evidence_missing: |
 ask_user_choice_intent_evidence_missing: |
   ask_user_choice 执行失败：intent-evidence guard 未通过。当前可见证据包含 {{ evidence_sources }} 等补充信息，但缺少来自当前用户输入的直接决策意图证据。请先澄清用户真实目标，或直接说明当前不确定性边界，不要基于补充材料自行制造确认项。
 remember_memory_intent_evidence_missing: |
-  remember_memory 执行失败：intent-evidence guard 未通过。当前可见证据包含 {{ evidence_sources }} 等补充信息，但缺少来自当前用户输入的直接“要求记住该偏好/约束”的证据。请先让用户明确确认后再写入长期记忆。
+  remember_memory 执行失败：intent-evidence guard 未通过。当前可见证据包含 {{ evidence_sources }} 等补充信息，但缺少来自当前用户输入的直接长期偏好/约束证据。请先让用户明确该规则需要跨轮继续生效，再写入长期记忆。

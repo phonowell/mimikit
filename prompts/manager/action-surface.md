@@ -89,3 +89,5 @@ actions:
       - 仅支持 `content`
     detail_constraints:
       - 只保存稳定偏好或长期约束
+      - '`content` 必须是单行 digest，且 `<=240 chars`'
+      - '禁止 checklist、多行过程文本、协议标签与 `task-*/plan-*` 一类 runtime 引用'

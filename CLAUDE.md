@@ -53,8 +53,11 @@
 - `M:state_packet.tasks` / `M:state_packet.plans` 已收缩为编排态信息，不再携带 `task.prompt`、`task_prompt` 或完整 task contract。
 - manager `query_context` / `read_file` dormant lane 已从代码协议、packet/digest、schema、文档和测试中删除，主线程不再保留默认不可达的 lookup 旁路。
 - `memory_refresh` 已改为只由结构化 `memory_remembered` 信号触发与取样，运行态/快照检查点切为 `signalVersion + lastProcessedSignalVersion`，不再采样最近用户原文。
+- manager memory ranking 已停止消费 `task.result.output` / `plan.title` 一类过程态文本；`remember_memory` 现要求单行稳定 digest，并在 validation 阶段拒绝 checklist、多行过程文本、协议标签与 runtime 引用。
 - 与 lookup 移除相关的 fallback/evidence 提示词、`score-runtime-window` 预算键集和回归测试已同步到当前协议，不再残留旧的只读 lookup 指引或过期 `file/query lookup` 配额字段。
 - manager prompt 已彻底删除 `history_lookup` section / budget / type 壳；worker `task_result` 也不再通过 `handoff.goal` 把 `task.prompt` 回灌主线程。
+- manager 空文本回退已收窄为“稳定模板”或“task handoff 摘要 + 任务归档链接”；不再回显用户输入，也不再把 `task.result.output` 原文直接吐给用户。
+- WebUI / read-model 的 task 标题已收紧为 `task.title || task.id`；即使遇到脏旧数据，也不再从 `task.prompt` 派生展示标题。
 - 当前唯一保留缺口是规模治理：`src + webui + prompts` 约 `42088` LOC，仍明显高于 `<20k LOC` 目标；该项按用户本轮要求明确排除，不在本次收口范围内。
 - 与本轮目标直接相关的 `.agents` 技能基线：`context-fundamentals`、`context-degradation`、`context-optimization`、`filesystem-context`、`multi-agent-patterns`、`tool-design`、`evaluation`、`project-development`、`code-deduplication`、`prompt-engineering-patterns`。`book-sft-pipeline`、`digital-brain`、`bdi-mental-states`、`hosted-agents`、`workflow-orchestration-patterns` 等已加载，但不构成当前主线要求。
 

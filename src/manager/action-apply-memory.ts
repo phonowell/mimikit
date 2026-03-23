@@ -1,7 +1,11 @@
 import { appendMemoryRememberedSystemMessage } from '../history/memory-events.js'
 import { rememberMemoryEntry } from '../memory/remember-entry.js'
 
-import { rememberMemorySchema } from './action-apply-schema.js'
+import {
+  normalizeRememberMemoryContent,
+  rememberMemorySchema,
+  resolveRememberMemoryContentIssue,
+} from './action-apply-schema.js'
 import { resolveActionFocusId } from './action-focus-id.js'
 import { parseActionAttrs } from './action-parse.js'
 
@@ -14,8 +18,9 @@ export const applyRememberMemoryAction = async (
 ): Promise<void> => {
   const parsed = parseActionAttrs(item, rememberMemorySchema)
   if (!parsed) return
+  if (resolveRememberMemoryContentIssue(parsed.content)) return
   const remembered = await rememberMemoryEntry(runtime.paths.memoryFile, {
-    content: parsed.content,
+    content: normalizeRememberMemoryContent(parsed.content),
   })
   const focusId = resolveActionFocusId(runtime)
   const appended = await appendMemoryRememberedSystemMessage(
