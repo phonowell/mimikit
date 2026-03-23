@@ -1,4 +1,4 @@
-import { mkdir } from 'node:fs/promises'
+import { mkdir, readFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { join } from 'node:path'
 
@@ -32,6 +32,37 @@ const LOCK_OPTIONS = {
   },
 } as const
 
+type LeaseDiagnostics = {
+  runtimeId: string
+  ownerPid: number
+  updatedAt?: string
+}
+
+const readLeaseDiagnostics = async (
+  workDir: string,
+): Promise<LeaseDiagnostics | null> => {
+  const leasePath = join(workDir, 'runtime', 'lease.json')
+  const raw = await readFile(leasePath, 'utf8').catch(() => null)
+  if (!raw) return null
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw) as unknown
+  } catch {
+    return null
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed))
+    return null
+  const obj = parsed as Record<string, unknown>
+  if (typeof obj.runtimeId !== 'string') return null
+  if (!Number.isInteger(obj.ownerPid) || (obj.ownerPid as number) <= 0)
+    return null
+  return {
+    runtimeId: obj.runtimeId,
+    ownerPid: obj.ownerPid as number,
+    ...(typeof obj.updatedAt === 'string' ? { updatedAt: obj.updatedAt } : {}),
+  }
+}
+
 export const acquireRuntimeLock = async (
   workDir: string,
 ): Promise<RuntimeLock> => {
@@ -43,7 +74,14 @@ export const acquireRuntimeLock = async (
     releaseLock = await lockfile.lock(lockTargetPath, LOCK_OPTIONS)
   } catch (error) {
     if (readErrorCode(error) !== 'ELOCKED') throw error
-    throw new Error(`[cli] instance lock exists at ${lockPath}`)
+    const lease = await readLeaseDiagnostics(workDir)
+    const diag =
+      lease === null
+        ? ''
+        : ` (ownerPid=${lease.ownerPid}, runtimeId=${lease.runtimeId}${
+            lease.updatedAt ? `, updatedAt=${lease.updatedAt}` : ''
+          })`
+    throw new Error(`[cli] instance lock exists at ${lockPath}${diag}`)
   }
 
   let released = false
