@@ -18,13 +18,6 @@ import type {
 const PREVIEW_MAX_CHARS = 140
 const MAX_PACKET_IDS = 5
 
-const EXPANDED_LOOKUP_SECTIONS: ManagerPacketSection[] = [
-  'history_lookup',
-  'query_lookup',
-  'file_lookup',
-  'action_feedback',
-]
-
 const MINIMAL_SECTIONS = new Set<ManagerPacketSection>([
   'packet_summary',
   'environment',
@@ -46,11 +39,10 @@ const STANDARD_SECTIONS = new Set<ManagerPacketSection>([
 export const resolveManagerPacketMode = (params: {
   wakeProfile: ManagerWakeProfile
   round: number
-  hasLookupData: boolean
   hasActionFeedback: boolean
 }): ManagerPacketMode => {
   if (params.round >= 2) return 'expanded'
-  if (params.hasLookupData || params.hasActionFeedback) return 'expanded'
+  if (params.hasActionFeedback) return 'expanded'
   if (
     params.wakeProfile === 'trigger' ||
     params.wakeProfile === 'capacity' ||
@@ -77,7 +69,7 @@ export const shouldIncludePacketSection = (params: {
 }): boolean => {
   if (!params.hasContent) return false
   if (params.section === 'packet_summary') return true
-  if (EXPANDED_LOOKUP_SECTIONS.includes(params.section)) return true
+  if (params.section === 'action_feedback') return true
   if (params.section === 'inputs') {
     return (
       params.wakeProfile === 'user_input' ||

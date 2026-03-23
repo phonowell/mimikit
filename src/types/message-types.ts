@@ -44,19 +44,6 @@ type SystemHistoryMessage = {
 
 export type HistoryMessage = NonSystemHistoryMessage | SystemHistoryMessage
 
-export type ReadFileLookupMessage = {
-  path: string
-  status: 'ok' | 'error'
-  encoding: 'utf-8'
-  chars?: number
-  fromLine?: number
-  lineCount?: number
-  totalLines?: number
-  truncated?: boolean
-  content?: string
-  error?: string
-}
-
 type UserInputUser = {
   id: Id
   role: 'user'

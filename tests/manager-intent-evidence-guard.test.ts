@@ -42,7 +42,7 @@ test('enqueue_task is blocked when only supplemental evidence suggests new work'
     ],
     {
       inputs: [createUserInput('先总结当前状态，不要开始新任务。')],
-      supplementalEvidenceSources: new Set(['query_lookup', 'task_result']),
+      supplementalEvidenceSources: new Set(['task_result']),
     },
   )
 
@@ -50,7 +50,7 @@ test('enqueue_task is blocked when only supplemental evidence suggests new work'
   expect(feedback[0]?.action).toBe('enqueue_task')
   expect(feedback[0]?.error).toBe('action_execution_rejected')
   expect(feedback[0]?.hint).toContain('intent-evidence guard 未通过')
-  expect(feedback[0]?.hint).toContain('query_lookup / task_result')
+  expect(feedback[0]?.hint).toContain('task_result')
 })
 
 test('enqueue_task stays allowed when current user input directly supports it', () => {
@@ -96,7 +96,7 @@ test('mutate_task is blocked when user input does not identify the task', () => 
       inputs: [createUserInput('先看看文档里怎么说。')],
       taskStatusById: new Map([[task.id, task.status]]),
       taskById: new Map([[task.id, task]]),
-      supplementalEvidenceSources: new Set(['read_file']),
+      supplementalEvidenceSources: new Set(['task_result']),
     },
   )
 
@@ -123,7 +123,7 @@ test('mutate_task stays allowed when user explicitly references the task', () =>
       inputs: [createUserInput(`请取消 ${task.id}，也就是 ${task.title}。`)],
       taskStatusById: new Map([[task.id, task.status]]),
       taskById: new Map([[task.id, task]]),
-      supplementalEvidenceSources: new Set(['read_file']),
+      supplementalEvidenceSources: new Set(['task_result']),
     },
   )
 

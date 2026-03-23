@@ -2,7 +2,8 @@ import type { RuntimeSnapshot } from '../../storage/runtime-snapshot-schema.js'
 
 export type RuntimeMemoryRefreshState = {
   lastCompletedTurn: number
-  lastProcessedInputsCursor: number
+  signalVersion: number
+  lastProcessedSignalVersion: number
   lastRunAt?: string
   running: boolean
   pending: boolean
@@ -23,7 +24,8 @@ const toOptionalIsoState = (params: {
 export const createDefaultMemoryRefreshState =
   (): RuntimeMemoryRefreshState => ({
     lastCompletedTurn: 0,
-    lastProcessedInputsCursor: 0,
+    signalVersion: 0,
+    lastProcessedSignalVersion: 0,
     running: false,
     pending: false,
   })
@@ -35,7 +37,8 @@ export const hydrateMemoryRefreshState = (
   if (!current) return createDefaultMemoryRefreshState()
   return {
     lastCompletedTurn: current.lastCompletedTurn,
-    lastProcessedInputsCursor: current.lastProcessedInputsCursor,
+    signalVersion: current.signalVersion,
+    lastProcessedSignalVersion: current.lastProcessedSignalVersion,
     ...toOptionalIsoState({
       lastRunAt: current.lastRunAt,
     }),
@@ -51,5 +54,6 @@ export const toPersistedMemoryRefreshState = (
     lastRunAt: state.lastRunAt,
   }),
   lastCompletedTurn: state.lastCompletedTurn,
-  lastProcessedInputsCursor: state.lastProcessedInputsCursor,
+  signalVersion: state.signalVersion,
+  lastProcessedSignalVersion: state.lastProcessedSignalVersion,
 })

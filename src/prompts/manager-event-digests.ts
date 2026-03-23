@@ -1,13 +1,11 @@
 import {
   buildBatchResultsDigest,
-  buildQueryLookupDigest,
   buildRecentHistoryDigest,
 } from './context-digests.js'
 
 import type {
   HistoryMessage,
   ManagerContextPacket,
-  QueryLookupMessage,
   Task,
   TaskResult,
 } from '../types/index.js'
@@ -55,8 +53,6 @@ const selectDigest = <
 export const buildManagerEventDigests = (params: {
   recentHistory: HistoryMessage[]
   recentHistorySource: string
-  queryLookup?: QueryLookupMessage
-  queryLookupSource: string
   tasks: Task[]
   pendingResults: TaskResult[]
   batchResultsSource: string
@@ -65,8 +61,6 @@ export const buildManagerEventDigests = (params: {
   batchResultsPayload?: unknown
   recentHistory: string
   recentHistoryPayload?: unknown
-  queryLookup: string
-  queryLookupPayload?: unknown
   sectionDigests: NonNullable<ManagerContextPacket['sectionDigests']>
 } => {
   const recentHistoryDigest = params.recentHistorySource
@@ -75,13 +69,6 @@ export const buildManagerEventDigests = (params: {
         sourceText: params.recentHistorySource,
       })
     : undefined
-  const queryLookupDigest =
-    params.queryLookup && params.queryLookupSource
-      ? buildQueryLookupDigest({
-          lookup: params.queryLookup,
-          sourceText: params.queryLookupSource,
-        })
-      : undefined
   const batchResultsDigest = params.batchResultsSource
     ? buildBatchResultsDigest({
         tasks: params.tasks,
@@ -98,24 +85,16 @@ export const buildManagerEventDigests = (params: {
     recentHistoryDigest,
     params.recentHistorySource,
   )
-  const selectedQueryLookup = selectDigest(
-    queryLookupDigest,
-    params.queryLookupSource,
-  )
-
   const sectionDigests: NonNullable<ManagerContextPacket['sectionDigests']> = []
   if (selectedBatchResults.stat) sectionDigests.push(selectedBatchResults.stat)
   if (selectedRecentHistory.stat)
     sectionDigests.push(selectedRecentHistory.stat)
-  if (selectedQueryLookup.stat) sectionDigests.push(selectedQueryLookup.stat)
 
   return {
     batchResults: selectedBatchResults.text,
     batchResultsPayload: selectedBatchResults.payload,
     recentHistory: selectedRecentHistory.text,
     recentHistoryPayload: selectedRecentHistory.payload,
-    queryLookup: selectedQueryLookup.text,
-    queryLookupPayload: selectedQueryLookup.payload,
     sectionDigests,
   }
 }

@@ -17,7 +17,8 @@ export type BackgroundJobSpec = {
 const BACKGROUND_JOB_SPECS: Record<BackgroundJobSource, BackgroundJobSpec> = {
   memory_refresh: {
     source: 'memory_refresh',
-    summary: 'Refresh long-term memory from stable user/system signals only.',
+    summary:
+      'Refresh long-term memory from stable structured memory signals only.',
     allowedWriteDomains: ['memory', 'runtime_meta'],
     auditEvents: {
       requested: 'memory_refresh_requested',

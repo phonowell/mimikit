@@ -15,13 +15,10 @@ export type ManagerPacketSection =
   | 'inputs'
   | 'batch_results'
   | 'recent_history'
-  | 'history_lookup'
-  | 'query_lookup'
-  | 'file_lookup'
   | 'action_feedback'
 
 type ManagerSectionDigest = {
-  section: 'recent_history' | 'query_lookup' | 'batch_results'
+  section: 'recent_history' | 'batch_results'
   mode: 'digest'
   sourceBytes: number
   digestBytes: number

@@ -47,9 +47,16 @@
 
 ## 我们的缺口是什么
 
-- 这一轮原始缺口已全部收口：`plan.runtime` 分层、`focus` digest 硬边界、`memory_refresh` 收窄、`Task.git.lifecycle` 入模、后台任务注册/写域治理、manager 默认 surface 去掉 `lookup`、worker 完成改为 `M:task_handoff + M:skill_usage status="done"` 协议、`mutate_task` 显式写回 `review_passed|merged|cleaned`、git 闭环写回的 intent-evidence 门禁与 archive/handoff 同步，都已落地并有测试覆盖。
-- 当前没有仍需继续追击的同级结构缺口：worker handoff、manager surface、后台写治理、git 闭环显式动作面都已形成代码协议。
-- 后续若再发现问题，应视为新一轮审计或新需求，而不是本轮缺口残留。
+- 已闭环的上一轮缺口：`plan.runtime` 分层、`focus` digest 硬边界、`Task.git.lifecycle` 入模、后台任务注册/写域治理、manager 默认 surface 去掉 `lookup`、worker 完成改为 `M:task_handoff + M:skill_usage status="done"` 协议、`mutate_task` 显式写回 `review_passed|merged|cleaned`、git 闭环写回的 intent-evidence 门禁与 archive/handoff 同步，均已落地。
+- 基于 2026-03-23 对 `.agents` 全量技能的再次审计并完成本轮实现收口后，以下缺口已闭环：
+- `manager` prompt/action surface 文案已迁入 `prompts/manager/action-surface.md`，不再把会注入 LLM 的自然语言说明硬编码在 TS。
+- `M:state_packet.tasks` / `M:state_packet.plans` 已收缩为编排态信息，不再携带 `task.prompt`、`task_prompt` 或完整 task contract。
+- manager `query_context` / `read_file` dormant lane 已从代码协议、packet/digest、schema、文档和测试中删除，主线程不再保留默认不可达的 lookup 旁路。
+- `memory_refresh` 已改为只由结构化 `memory_remembered` 信号触发与取样，运行态/快照检查点切为 `signalVersion + lastProcessedSignalVersion`，不再采样最近用户原文。
+- 与 lookup 移除相关的 fallback/evidence 提示词、`score-runtime-window` 预算键集和回归测试已同步到当前协议，不再残留旧的只读 lookup 指引或过期 `file/query lookup` 配额字段。
+- manager prompt 已彻底删除 `history_lookup` section / budget / type 壳；worker `task_result` 也不再通过 `handoff.goal` 把 `task.prompt` 回灌主线程。
+- 当前唯一保留缺口是规模治理：`src + webui + prompts` 约 `42088` LOC，仍明显高于 `<20k LOC` 目标；该项按用户本轮要求明确排除，不在本次收口范围内。
+- 与本轮目标直接相关的 `.agents` 技能基线：`context-fundamentals`、`context-degradation`、`context-optimization`、`filesystem-context`、`multi-agent-patterns`、`tool-design`、`evaluation`、`project-development`、`code-deduplication`、`prompt-engineering-patterns`。`book-sft-pipeline`、`digital-brain`、`bdi-mental-states`、`hosted-agents`、`workflow-orchestration-patterns` 等已加载，但不构成当前主线要求。
 
 ## 参考项目
 

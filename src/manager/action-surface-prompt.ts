@@ -1,4 +1,14 @@
 import {
+  renderActionDetailAll,
+  renderActionDetailFeedback,
+  renderActionDetailHeading,
+  renderActionDetailLine,
+  renderActionDomainBoundary,
+  renderActionDomainHeading,
+  renderActionSummaryLine,
+  renderActionSurfaceIntro,
+} from './action-prompt-spec.js'
+import {
   type ManagerActionSurface,
   resolveManagerActionSurface,
 } from './action-surface.js'
@@ -21,24 +31,17 @@ const DETAIL_FEEDBACK_ERRORS = new Set([
   'action_execution_rejected',
 ])
 
-const formatActionSummary = (action: ManagerActionDefinition): string => {
-  const summary = action.prompt.summary.replace(/[。.]$/, '')
-  const constraints =
-    action.prompt.briefConstraints && action.prompt.briefConstraints.length > 0
-      ? `；${action.prompt.briefConstraints.join('；')}`
-      : ''
-  return `- \`M:${action.name}\`：${summary}${constraints}`
-}
+const formatActionSummary = (action: ManagerActionDefinition): string =>
+  renderActionSummaryLine({
+    name: action.name,
+    prompt: action.prompt,
+  })
 
-const formatActionDetail = (action: ManagerActionDefinition): string => {
-  const summary = action.prompt.summary.replace(/[。.]$/, '')
-  const constraints = [
-    ...(action.prompt.briefConstraints ?? []),
-    ...(action.prompt.detailConstraints ?? []),
-  ]
-  const suffix = constraints.length > 0 ? `；${constraints.join('；')}` : ''
-  return `- \`M:${action.name}\`：${summary}${suffix}`
-}
+const formatActionDetail = (action: ManagerActionDefinition): string =>
+  renderActionDetailLine({
+    name: action.name,
+    prompt: action.prompt,
+  })
 
 export const resolveManagerActionSurfacePromptConfig = (params: {
   wakeProfile: ManagerWakeProfile
@@ -88,26 +91,26 @@ export const formatManagerActionSurfacePrompt = (
   )
 
   return [
-    `- 当前 wake_profile=\`${config.surface.wakeProfile}\`；默认仅注入简版 action 卡，未列出的 action 视为本轮不可用。`,
+    renderActionSurfaceIntro(config.surface.wakeProfile),
     ...config.surface.domains.flatMap((domain) => {
       const actions = config.surface.actions.filter(
         (action) => action.domain === domain.domain,
       )
       return [
-        `### ${domain.title}`,
-        `- 边界：${domain.summary}`,
+        renderActionDomainHeading(domain.title),
+        renderActionDomainBoundary(domain.summary),
         ...actions.map(formatActionSummary),
       ]
     }),
     ...(detailSection.length === 0
       ? []
       : [
-          '### 详细参数契约（按需注入）',
+          renderActionDetailHeading(),
           config.includeAllDetails
-            ? '- 当前为 follow-up/expanded 轮，补充本轮可用 action 的完整约束。'
-            : `- 当前按反馈补充失败 action：${detailSection
-                .map((action) => `M:${action.name}`)
-                .join(', ')}。`,
+            ? renderActionDetailAll()
+            : renderActionDetailFeedback(
+                detailSection.map((action) => `M:${action.name}`),
+              ),
           ...detailSection.map(formatActionDetail),
         ]),
   ].join('\n')

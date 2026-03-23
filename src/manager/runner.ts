@@ -12,13 +12,10 @@ import type { AppConfig } from '../config.js'
 import type {
   FocusId,
   FocusMeta,
-  HistoryLookupMessage,
   ManagerActionFeedback,
   ManagerContextPacket,
   ManagerEnv,
   ManagerPacketMode,
-  QueryLookupMessage,
-  ReadFileLookupMessage,
   Task,
   TaskPlan,
   TaskResult,
@@ -38,9 +35,6 @@ export const runManager = async (params: {
   tasks: Task[]
   promptSectionLimits: AppConfig['manager']['promptSections']
   plans?: TaskPlan[]
-  historyLookup?: HistoryLookupMessage[]
-  queryLookup?: QueryLookupMessage
-  readFileLookup?: ReadFileLookupMessage[]
   actionFeedback?: ManagerActionFeedback[]
   env?: ManagerEnv
   focuses?: FocusMeta[]
@@ -79,9 +73,6 @@ export const runManager = async (params: {
     tasks: params.tasks,
     promptSectionLimits: params.promptSectionLimits,
     ...(params.plans ? { plans: params.plans } : {}),
-    ...(params.historyLookup ? { historyLookup: params.historyLookup } : {}),
-    ...(params.queryLookup ? { queryLookup: params.queryLookup } : {}),
-    ...(params.readFileLookup ? { readFileLookup: params.readFileLookup } : {}),
     ...(params.actionFeedback ? { actionFeedback: params.actionFeedback } : {}),
     ...(params.env ? { env: params.env } : {}),
     ...(params.focuses ? { focuses: params.focuses } : {}),

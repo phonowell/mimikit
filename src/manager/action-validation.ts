@@ -1,8 +1,4 @@
-import {
-  createPlanSchema,
-  readFileSchema,
-  updatePlanSchema,
-} from './action-apply-schema.js'
+import { createPlanSchema, updatePlanSchema } from './action-apply-schema.js'
 import {
   formatPlanNotFoundHint,
   formatUpdatePlanDoneForbiddenHint,
@@ -26,7 +22,6 @@ import {
   validateRunTask,
   validateSummarizeTaskResult,
 } from './action-validation-risk.js'
-import { queryContextSchema } from './query-context-tool.js'
 
 import type { Parsed } from '../actions/model/spec.js'
 import type { ZodSchema } from 'zod'
@@ -51,12 +46,6 @@ export const validateCreatePlan = (
 }
 
 export { validateMutateTask }
-
-export const validateQueryContext = (item: Parsed): ValidationIssue[] =>
-  validateWithSchema(item, queryContextSchema)
-
-export const validateReadFile = (item: Parsed): ValidationIssue[] =>
-  validateWithSchema(item, readFileSchema)
 
 export {
   validateRememberMemory,

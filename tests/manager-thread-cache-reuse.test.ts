@@ -94,53 +94,6 @@ test('runManagerCorrectionRounds reuses and updates manager thread id across rou
   expect(runtime.manager.threadId).toBe('session-manager-1')
 })
 
-test('runManagerCorrectionRounds degrades repeated lookup with no progress into a best-effort reply', async () => {
-  runManagerRoundWithRecoveryMock.mockResolvedValueOnce({
-    output: '<M:query_context query="release notes" />',
-    elapsedMs: 5,
-    promptPrefixHash: 'prefix-hash',
-    threadId: 'session-manager-lookup',
-  })
-  resolveRoundFollowupMock.mockReset()
-  resolveRoundFollowupMock.mockRejectedValueOnce(
-    new Error('manager_internal_lookup_repeated_without_progress'),
-  )
-
-  const runtime = await createTestRuntimeState({
-    workDir: '/tmp/mimikit-manager-thread-cache-lookup-test',
-    withGlobalFocus: false,
-  })
-
-  const result = await runManagerCorrectionRounds({
-    runtime,
-    inputs: [
-      {
-        id: 'input-lookup-1',
-        role: 'user',
-        text: '继续查发布说明',
-        createdAt: '2026-03-08T00:00:00.000Z',
-        focusId: 'focus-global',
-      },
-    ],
-    results: [],
-    tasks: [],
-    plans: [],
-    workingFocusIds: ['focus-global'],
-    maxCorrectionRounds: 3,
-    resolveFocusId: () => 'focus-global',
-  })
-
-  expect(result.roundLimitReached).toBe(true)
-  expect(result.parsed.text).toContain('当前补充检索没有带来新的有效信息')
-  expect(appendLogMock).toHaveBeenCalledWith(
-    expect.any(String),
-    expect.objectContaining({
-      event: 'manager_lookup_no_progress_degraded',
-      round: 1,
-    }),
-  )
-})
-
 test('runManagerCorrectionRounds opens rejection circuit after repeated rejected actions', async () => {
   runManagerRoundWithRecoveryMock
     .mockResolvedValueOnce({

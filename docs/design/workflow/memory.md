@@ -60,9 +60,9 @@
   - `src/memory/refresh/singleflight.ts`
   - `src/orchestrator/background-write-policy.ts`
 - 输入边界：
-  - refresh 只消费 `signals`；当前来源限定为最近用户输入与稳定 memory system event。
+  - refresh 只消费 `signals`；当前来源限定为稳定的 `memory_remembered` system event。
   - refresh 不再消费近期 `task.result.output`、plan 标题、待办摘要等过程态文本。
-  - `memory_remembered` 一类稳定 system event 可作为 refresh 证据；短期任务推进、待办、调度策略、恢复步骤不得进入长期 memory。
+  - `memory_remembered` 一类稳定 system event 可作为 refresh 证据；短期任务推进、待办、调度策略、恢复步骤、用户原话不得进入长期 memory。
 
 ## 评分、排序与取舍
 
@@ -83,9 +83,10 @@
 
 - 运行态：`runtime.memoryRefresh`
   - `lastCompletedTurn`
-  - `lastProcessedInputsCursor`
+  - `signalVersion`
+  - `lastProcessedSignalVersion`
   - `lastRunAt`
   - `running`
   - `pending`
-- 持久化：`runtime-snapshot.json` 只保存 `lastCompletedTurn/lastProcessedInputsCursor/lastRunAt` 检查点字段（`running/pending` 不持久化）。
+- 持久化：`runtime-snapshot.json` 只保存 `lastCompletedTurn/signalVersion/lastProcessedSignalVersion/lastRunAt` 检查点字段（`running/pending` 不持久化）。
 - 后台任务注册：`memory_refresh` 现已在统一 background job registry 中声明 `summary/allowedWriteDomains/auditEvents`；后续新增后台 job 必须先在该 registry 注册，再声明写域。

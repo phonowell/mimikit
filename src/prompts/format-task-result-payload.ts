@@ -5,8 +5,6 @@ import { normalizePromptUsage } from './format-base.js'
 
 import type { TaskCancelMeta, TaskResult } from '../types/index.js'
 
-export const TASK_PROMPT_MAX_CHARS = 240
-
 const TASK_OUTPUT_MAX_CHARS = 320
 const TASK_HANDOFF_TEXT_MAX_CHARS = 220
 
@@ -59,13 +57,11 @@ const toHandoffPayload = (
       }
     })
     .filter((item): item is NonNullable<typeof item> => Boolean(item))
-  const goal = text(handoff.goal)
   const summary = text(handoff.summary)
   const decisions = list(handoff.decisions)
   const nextSteps = list(handoff.nextSteps)
   const risks = list(handoff.risks)
   const payload = {
-    ...(goal ? { goal } : {}),
     ...(summary ? { summary } : {}),
     ...(decisions ? { decisions } : {}),
     ...(nextSteps ? { next_steps: nextSteps } : {}),

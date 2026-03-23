@@ -12,11 +12,7 @@ import {
 import type { Parsed } from '../actions/model/spec.js'
 import type { Task, UserInput } from '../types/index.js'
 
-export type SupplementalEvidenceSource =
-  | 'query_lookup'
-  | 'read_file'
-  | 'task_result'
-  | 'history_lookup'
+export type SupplementalEvidenceSource = 'task_result'
 
 type IntentEvidenceContext = {
   inputs?: UserInput[]

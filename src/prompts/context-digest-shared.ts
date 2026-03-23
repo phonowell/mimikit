@@ -1,11 +1,6 @@
-import { truncateText } from '../shared/text.js'
-
 import { stringifyPromptJson } from './format-base.js'
 
-export type ManagerDigestSection =
-  | 'recent_history'
-  | 'query_lookup'
-  | 'batch_results'
+export type ManagerDigestSection = 'recent_history' | 'batch_results'
 
 export type ManagerSectionDigestStat = {
   section: ManagerDigestSection
@@ -91,42 +86,3 @@ export const buildCountSummary = (
     .sort((left, right) => left[0].localeCompare(right[0]))
     .map(([key, count]) => ({ key, count }))
 }
-
-export const buildQueryScopeItems = (params: {
-  scope: string
-  items: Record<string, unknown>[]
-  limit: number
-}): DigestItem[] =>
-  params.items.slice(0, params.limit).map((item) => ({
-    scope: params.scope,
-    ...(typeof item.ref === 'string' ? { ref: item.ref } : {}),
-    ...(typeof item.id === 'string' ? { id: item.id } : {}),
-    ...(typeof item.taskId === 'string' ? { task_id: item.taskId } : {}),
-    ...(typeof item.path === 'string' ? { path: item.path } : {}),
-    ...(typeof item.status === 'string' ? { status: item.status } : {}),
-    ...(typeof item.score === 'number' ? { score: item.score } : {}),
-    ...(typeof item.title === 'string'
-      ? {
-          title: truncateText(item.title, DIGEST_SUMMARY_MAX_CHARS, {
-            normalizeWhitespace: true,
-            suffix: '…',
-          }),
-        }
-      : {}),
-    ...(typeof item.summary === 'string'
-      ? {
-          summary: truncateText(item.summary, DIGEST_SUMMARY_MAX_CHARS, {
-            normalizeWhitespace: true,
-            suffix: '…',
-          }),
-        }
-      : {}),
-    ...(typeof item.snippet === 'string'
-      ? {
-          snippet: truncateText(item.snippet, DIGEST_SUMMARY_MAX_CHARS, {
-            normalizeWhitespace: true,
-            suffix: '…',
-          }),
-        }
-      : {}),
-  }))

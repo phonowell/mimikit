@@ -4,7 +4,6 @@ import type { RuntimeState } from './runtime-adapter.js'
 import type { Parsed } from '../actions/model/spec.js'
 
 export type ManagerActionDomain =
-  | 'lookup'
   | 'task'
   | 'plan'
   | 'dialog'

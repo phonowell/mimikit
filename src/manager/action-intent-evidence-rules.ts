@@ -7,6 +7,7 @@ import {
   mutateTaskSchema,
   parseAskUserChoiceAttrs,
   rememberMemorySchema,
+  runTaskSchema,
 } from './action-apply-schema.js'
 import {
   buildMissingIntentEvidenceHint,
@@ -18,7 +19,6 @@ import {
 } from './action-intent-evidence-mutate-task-git.js'
 import { parseActionAttrs } from './action-parse.js'
 import { resolveRunTaskConfirmationRequirement } from './run-task-confirmation.js'
-import { runTaskSchema } from './run-task-schema.js'
 import {
   buildTaskContractFromAttrs,
   resolveWorkerPromptFromAttrs,

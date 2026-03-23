@@ -24,7 +24,8 @@ test('runtime snapshot rejects legacy memoryRefresh checkpoint fields', async ()
       },
       memoryRefresh: {
         lastCompletedTurn: 0,
-        lastProcessedInputsCursor: 0,
+        signalVersion: 0,
+        lastProcessedSignalVersion: 0,
         lastProcessedResultsCursor: 0,
       },
     }),

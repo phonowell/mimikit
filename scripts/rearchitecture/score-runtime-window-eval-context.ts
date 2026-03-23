@@ -5,17 +5,14 @@ const PROMPT_SECTION_LIMIT_KEYS: Array<keyof PromptSectionLimits> = [
   'actionFeedbackMaxBytes',
   'batchResultsMaxBytes',
   'environmentMaxBytes',
-  'fileLookupMaxBytes',
-  'focusContextsMaxBytes',
   'focusListMaxBytes',
-  'historyLookupMaxBytes',
   'inputsMaxBytes',
   'memoryMaxBytes',
   'packetSummaryMaxBytes',
   'plansMaxBytes',
-  'queryLookupMaxBytes',
   'recentHistoryMaxBytes',
   'tasksMaxBytes',
+  'workingFocusesMaxBytes',
 ]
 
 const hasPromptSectionLimits = (

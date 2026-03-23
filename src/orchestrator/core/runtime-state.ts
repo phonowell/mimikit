@@ -122,7 +122,8 @@ export const createRuntimeState = (
   const nowMs = Date.now()
   const memoryRefresh: RuntimeMemoryRefreshState = {
     lastCompletedTurn: 0,
-    lastProcessedInputsCursor: 0,
+    signalVersion: 0,
+    lastProcessedSignalVersion: 0,
     running: false,
     pending: false,
   }

@@ -13,7 +13,6 @@ import {
 
 import type { Task, TaskResult, TaskResultHandoff } from '../types/index.js'
 
-const MAX_GOAL_CHARS = 200
 const MAX_SUMMARY_CHARS = 280
 const MAX_ITEM_CHARS = 180
 const MAX_LIST_ITEMS = 5
@@ -91,14 +90,12 @@ export const buildTaskResultHandoff = (
   task: Task,
   result: Pick<TaskResult, 'status' | 'output'>,
 ): TaskResultHandoff | undefined => {
-  const goal = clipText(task.prompt, MAX_GOAL_CHARS)
   const structured = buildStructuredTaskHandoff({
-    ...(goal ? { goal } : {}),
     git: task.git,
     output: result.output,
   })
   if (structured) return structured
-  if (result.status === 'succeeded') return goal ? { goal } : undefined
+  if (result.status === 'succeeded') return undefined
 
   const cleanedOutput = stripTaskHandoffTag(result.output)
   const taskLabel = resolveTaskLabel(task)
@@ -107,13 +104,7 @@ export const buildTaskResultHandoff = (
   const decisions = collectChecklistItems(cleanedOutput, 'checked')
   const nextSteps = collectChecklistItems(cleanedOutput, 'unchecked')
   const risks = buildRiskItems(result.status, taskLabel, summary)
-  if (
-    !goal &&
-    !summary &&
-    decisions.length === 0 &&
-    nextSteps.length === 0 &&
-    !risks
-  )
+  if (!summary && decisions.length === 0 && nextSteps.length === 0 && !risks)
     return undefined
 
   const gitLifecycle = resolveTaskGitLifecycle(task)
@@ -125,7 +116,6 @@ export const buildTaskResultHandoff = (
     } satisfies NonNullable<TaskResultHandoff['git']>)
 
   return {
-    ...(goal ? { goal } : {}),
     ...(summary ? { summary } : {}),
     ...(decisions.length > 0 ? { decisions } : {}),
     ...(nextSteps.length > 0 ? { nextSteps } : {}),

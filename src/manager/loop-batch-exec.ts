@@ -10,12 +10,9 @@ import { runManager } from './runner.js'
 
 import type { RuntimeState } from './runtime-adapter.js'
 import type {
-  HistoryLookupMessage,
   ManagerActionFeedback,
   ManagerEnv,
   ManagerWakeProfile,
-  QueryLookupMessage,
-  ReadFileLookupMessage,
   Task,
   TaskPlan,
   TaskResult,
@@ -51,9 +48,6 @@ export const runManagerRoundWithRecovery = async (params: {
   workingFocusIds: string[]
   managerThreadId?: string
   extra: {
-    historyLookup?: HistoryLookupMessage[]
-    queryLookup?: QueryLookupMessage
-    readFileLookup?: ReadFileLookupMessage[]
     actionFeedback?: ManagerActionFeedback[]
   }
   abortSignal?: AbortSignal
@@ -74,11 +68,6 @@ export const runManagerRoundWithRecovery = async (params: {
   const packetMode = resolveManagerPacketMode({
     wakeProfile,
     round: params.round,
-    hasLookupData: Boolean(
-      params.extra.historyLookup ??
-      params.extra.queryLookup ??
-      params.extra.readFileLookup,
-    ),
     hasActionFeedback: Boolean(
       params.extra.actionFeedback && params.extra.actionFeedback.length > 0,
     ),
@@ -104,15 +93,6 @@ export const runManagerRoundWithRecovery = async (params: {
     plans: params.plans,
     focuses: params.runtime.focuses,
     workingFocusIds: params.workingFocusIds,
-    ...(params.extra.historyLookup
-      ? { historyLookup: params.extra.historyLookup }
-      : {}),
-    ...(params.extra.queryLookup
-      ? { queryLookup: params.extra.queryLookup }
-      : {}),
-    ...(params.extra.readFileLookup
-      ? { readFileLookup: params.extra.readFileLookup }
-      : {}),
     ...(params.extra.actionFeedback
       ? { actionFeedback: params.extra.actionFeedback }
       : {}),

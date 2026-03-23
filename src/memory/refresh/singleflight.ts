@@ -32,11 +32,11 @@ const MEMORY_SIGNAL_EVENTS = new Set(['memory_remembered'])
 const MEMORY_REFRESH_JOB = getBackgroundJobSpec('memory_refresh')
 
 type MemoryRefreshCheckpoint = {
-  inputsCursor: number
+  signalVersion: number
 }
 
 const captureCheckpoint = (runtime: RuntimeState): MemoryRefreshCheckpoint => ({
-  inputsCursor: runtime.queues.inputsCursor,
+  signalVersion: runtime.manager.memoryRefresh.signalVersion,
 })
 
 const markCompleted = (
@@ -45,8 +45,24 @@ const markCompleted = (
 ): void => {
   const state = runtime.manager.memoryRefresh
   state.lastCompletedTurn = runtime.manager.turn
-  state.lastProcessedInputsCursor = checkpoint.inputsCursor
+  state.lastProcessedSignalVersion = checkpoint.signalVersion
   state.lastRunAt = nowIso()
+}
+
+const toMemoryRefreshSignalText = (item: HistoryMessage): string => {
+  if (item.role !== 'system') return truncateText(item.text, MAX_TEXT)
+  const entryId = item.systemEventPayload?.entry_id
+  const category = item.systemEventPayload?.category
+  const ref = item.systemEventPayload?.ref
+  const operation = item.systemEventPayload?.operation
+  const parts = [
+    typeof entryId === 'string' ? `entry_id=${entryId}` : undefined,
+    typeof category === 'string' ? `category=${category}` : undefined,
+    typeof ref === 'string' ? `ref=${ref}` : undefined,
+    typeof operation === 'string' ? `operation=${operation}` : undefined,
+  ].filter((value): value is string => Boolean(value))
+  if (parts.length > 0) return parts.join('\n')
+  return truncateText(item.text, MAX_TEXT)
 }
 
 const buildPayload = async (
@@ -54,7 +70,7 @@ const buildPayload = async (
 ): Promise<MemoryRefreshPayload> => {
   const history = await readHistory(runtime.paths.history)
   const visible = history
-    .filter((item) => item.role === 'user' || isMemoryRefreshSignal(item))
+    .filter((item) => isMemoryRefreshSignal(item))
     .slice(-MAX_SIGNALS)
   const memoryMarkdown = await readMemoryMarkdown(runtime.paths.memoryFile)
   return {
@@ -75,7 +91,7 @@ const buildPayload = async (
       id: item.id,
       role: item.role,
       createdAt: item.createdAt,
-      text: truncateText(item.text, MAX_TEXT),
+      text: truncateText(toMemoryRefreshSignalText(item), MAX_TEXT),
     })),
   }
 }

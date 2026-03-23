@@ -13,7 +13,6 @@ export type TaskResultHandoffEvidence = {
 }
 
 export type TaskResultHandoff = {
-  goal?: string | undefined
   summary?: string | undefined
   decisions?: string[] | undefined
   nextSteps?: string[] | undefined

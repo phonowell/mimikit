@@ -1,11 +1,10 @@
 import { expect, test } from 'vitest'
 
 import {
-  buildHistoryLookupPromptPayload,
   buildInputsPromptPayload,
   buildQuoteReferenceLookup,
-} from '../src/prompts/format-messages.js'
-import { formatEnvironment } from '../src/prompts/format.js'
+  formatEnvironment,
+} from '../src/prompts/format.js'
 import type { HistoryMessage, UserInput } from '../src/types/index.js'
 import {
   GLOBAL_FOCUS_ID,
@@ -55,38 +54,6 @@ test('buildQuoteReferenceLookup keeps only agent-visible messages', () => {
       content: 'Agent history quote',
     },
   })
-})
-
-test('buildHistoryLookupPromptPayload sorts by time desc then id', () => {
-  const payload = buildHistoryLookupPromptPayload([
-    {
-      id: 'msg-b',
-      role: 'agent',
-      time: '2026-03-20T10:00:00.000Z',
-      score: 0.8,
-      content: 'B',
-    },
-    {
-      id: 'msg-a',
-      role: 'user',
-      time: '2026-03-20T10:00:00.000Z',
-      score: 0.7,
-      content: 'A',
-    },
-    {
-      id: 'msg-c',
-      role: 'user',
-      time: '2026-03-20T10:05:00.000Z',
-      score: 0.9,
-      content: 'C',
-    },
-  ])
-
-  expect(payload?.messages.map((item) => item.id)).toEqual([
-    'msg-c',
-    'msg-a',
-    'msg-b',
-  ])
 })
 
 test('formatEnvironment does not expose provider candidate fields', () => {

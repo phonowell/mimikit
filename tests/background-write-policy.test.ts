@@ -35,6 +35,6 @@ test('background jobs are declared through the shared registry', () => {
     }),
   ])
   expect(getBackgroundJobSpec('memory_refresh').summary).toContain(
-    'stable user/system signals',
+    'stable structured memory signals',
   )
 })

@@ -26,9 +26,6 @@ const SELECTABLE_PACKET_SECTIONS: Exclude<
   'inputs',
   'batch_results',
   'recent_history',
-  'history_lookup',
-  'query_lookup',
-  'file_lookup',
   'action_feedback',
 ]
 
@@ -47,9 +44,6 @@ export const resolvePacketSectionPolicy = (params: {
     inputs: false,
     batch_results: false,
     recent_history: false,
-    history_lookup: false,
-    query_lookup: false,
-    file_lookup: false,
     action_feedback: false,
   }
   for (const section of SELECTABLE_PACKET_SECTIONS) {

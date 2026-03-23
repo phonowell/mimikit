@@ -13,17 +13,15 @@ const promptSectionLimits = {
   actionFeedbackMaxBytes: 8192,
   batchResultsMaxBytes: 20480,
   environmentMaxBytes: 4096,
-  fileLookupMaxBytes: 20480,
   focusContextsMaxBytes: 20480,
   focusListMaxBytes: 8192,
-  historyLookupMaxBytes: 20480,
   inputsMaxBytes: 8192,
   memoryMaxBytes: 8192,
   packetSummaryMaxBytes: 6144,
   plansMaxBytes: 16384,
-  queryLookupMaxBytes: 20480,
   recentHistoryMaxBytes: 8192,
   tasksMaxBytes: 24576,
+  workingFocusesMaxBytes: 20480,
 }
 
 test('scoreRuntimeWindow computes core governance metrics without not_collected blockers', async () => {
@@ -46,7 +44,8 @@ test('scoreRuntimeWindow computes core governance metrics without not_collected 
       },
       memoryRefresh: {
         lastCompletedTurn: 0,
-        lastProcessedInputsCursor: 0,
+        signalVersion: 0,
+        lastProcessedSignalVersion: 0,
       },
     }), 'utf8'),
     writeFile(join(stateDir, 'history', '2026-03-08.jsonl'), [
@@ -145,11 +144,6 @@ test('scoreRuntimeWindow computes core governance metrics without not_collected 
       resultCount: 0,
       activeFocusCount: 1,
       promptSectionLimits,
-    },
-    {
-      time: '2026-03-08T00:00:21.000Z',
-      event: 'manager_read_file',
-      status: 'ok',
     },
   ])
 

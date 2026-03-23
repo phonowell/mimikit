@@ -18,9 +18,10 @@ export const applyRememberMemoryAction = async (
     content: parsed.content,
   })
   const focusId = resolveActionFocusId(runtime)
-  await appendMemoryRememberedSystemMessage(
+  const appended = await appendMemoryRememberedSystemMessage(
     runtime.paths.history,
     focusId,
     remembered,
   )
+  if (appended) runtime.manager.memoryRefresh.signalVersion += 1
 }

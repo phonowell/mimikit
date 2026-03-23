@@ -12,11 +12,10 @@ test('runTraceUsageLedgerEval passes on committed regression samples', async () 
   })
 
   expect(report.passed).toBe(true)
-  expect(report.requiredMatched).toBe(20)
-  expect(report.requiredTotal).toBe(20)
+  expect(report.requiredMatched).toBe(15)
+  expect(report.requiredTotal).toBe(15)
   expect(report.scenarioCoverage).toEqual([
     { scenario: 'budget_pause_resume', total: 5, matched: 5 },
-    { scenario: 'lookup_no_progress', total: 5, matched: 5 },
     { scenario: 'repeated_action_rejection', total: 5, matched: 5 },
     { scenario: 'usage_prompt_observation', total: 5, matched: 5 },
   ])

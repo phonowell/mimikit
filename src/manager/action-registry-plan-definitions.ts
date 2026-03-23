@@ -4,6 +4,7 @@ import {
   applyUpdatePlan,
 } from './action-apply-plan.js'
 import { deletePlanSchema, updatePlanSchema } from './action-apply-schema.js'
+import { ACTION_PROMPT_SPECS } from './action-prompt-spec.js'
 import {
   createContinueAction,
   type ManagerActionDefinition,
@@ -19,14 +20,7 @@ const PLAN_ACTION_DEFINITIONS = [
     {
       name: 'create_plan',
       domain: 'plan',
-      prompt: {
-        summary: '创建持续触发计划。',
-        briefConstraints: ['必填 `title,schedule_type,effect_kind`'],
-        detailConstraints: [
-          '`schedule_type="scheduled_at"` 时，`scheduled_at` 必须是未来绝对时间',
-          '`effect_kind="enqueue_task"` 时必须提供 task 模板与 contract',
-        ],
-      },
+      prompt: ACTION_PROMPT_SPECS.create_plan,
     },
     (item, context) => validateCreatePlan(item, context),
     applyCreatePlan,
@@ -35,10 +29,7 @@ const PLAN_ACTION_DEFINITIONS = [
     {
       name: 'update_plan',
       domain: 'plan',
-      prompt: {
-        summary: '更新现有计划。',
-        briefConstraints: ['必填 `id` 且至少更新一项'],
-      },
+      prompt: ACTION_PROMPT_SPECS.update_plan,
     },
     (item, context) => {
       const byIdIssues = validatePlanById(
@@ -56,10 +47,7 @@ const PLAN_ACTION_DEFINITIONS = [
     {
       name: 'delete_plan',
       domain: 'plan',
-      prompt: {
-        summary: '删除现有计划。',
-        briefConstraints: ['必填 `id`'],
-      },
+      prompt: ACTION_PROMPT_SPECS.delete_plan,
     },
     (item, context) =>
       validatePlanById('delete_plan', item, deletePlanSchema, context),

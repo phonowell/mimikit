@@ -1,6 +1,5 @@
 import { toDisplayPath } from '../shared/path-display.js'
 import { resolveTaskLabel } from '../shared/task-state.js'
-import { truncateText } from '../shared/text.js'
 
 import {
   escapeCdata,
@@ -12,7 +11,6 @@ import {
 import {
   buildResultPromptPayload,
   pickArchivePath,
-  TASK_PROMPT_MAX_CHARS,
 } from './format-task-result-payload.js'
 
 import type { Task, TaskCancelMeta, TaskResult } from '../types/index.js'
@@ -58,9 +56,6 @@ const formatTaskEntry = (
       : {}),
     title: resolveTaskLabel(task),
     changed_at: resolveTaskChangedAt(task),
-    prompt: truncateText(task.prompt, TASK_PROMPT_MAX_CHARS, {
-      normalizeWhitespace: true,
-    }),
     ...(task.status === 'canceled' && task.cancel
       ? { cancel: toCancelMeta(task.cancel) }
       : {}),
@@ -128,9 +123,6 @@ export const buildResultsPromptPayload = (
         id: result.taskId,
         provider: task?.provider ?? result.provider ?? 'codex',
         title: task?.title.trim() ?? result.title?.trim() ?? result.taskId,
-        prompt: truncateText(task?.prompt ?? '', TASK_PROMPT_MAX_CHARS, {
-          normalizeWhitespace: true,
-        }),
         changed_at: result.completedAt,
         ...(archivePath ? { archive_path: archivePath } : {}),
         result: buildResultPromptPayload(

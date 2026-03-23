@@ -7,12 +7,8 @@ import {
   isIndexInRanges,
 } from '../actions/protocol/markdown-code-ranges.js'
 
-import { readFileSchema } from './action-apply-schema.js'
 import {
   formatActionInCodeBlockHint,
-  formatDuplicateActionGenericHint,
-  formatDuplicateQueryContextActionLimitHint,
-  formatDuplicateReadFileActionLimitHint,
   formatInvalidActionSyntaxHint,
   formatUnregisteredActionHint,
 } from './action-feedback-hints.js'
@@ -21,7 +17,6 @@ import {
   validateRegisteredManagerAction,
 } from './action-registrations.js'
 import { formatBlockedActionSurfaceHint } from './action-surface.js'
-import { queryContextSchema } from './query-context-tool.js'
 
 import type { FeedbackContext } from './action-validation.js'
 import type { Parsed } from '../actions/model/spec.js'
@@ -33,19 +28,6 @@ const UNREGISTERED_ACTION_HINT = formatUnregisteredActionHint(
 const INVALID_ACTION_SYNTAX_ERROR = 'invalid_action_syntax'
 const INVALID_ACTION_SYNTAX_HINT = formatInvalidActionSyntaxHint()
 const ACTION_IN_CODE_BLOCK_HINT = formatActionInCodeBlockHint()
-const SINGLE_LOOKUP_ACTION_LIMIT_HINTS: Record<string, string> = {
-  query_context: formatDuplicateQueryContextActionLimitHint(),
-  read_file: formatDuplicateReadFileActionLimitHint(),
-}
-const DUPLICATE_ACTION_GENERIC_HINT = formatDuplicateActionGenericHint()
-
-const isValidLookupAction = (item: Parsed): boolean => {
-  if (item.name === 'query_context')
-    return queryContextSchema.safeParse(item.attrs).success
-  if (item.name === 'read_file')
-    return readFileSchema.safeParse(item.attrs).success
-  return false
-}
 
 const escapeAttr = (value: string): string =>
   value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
@@ -167,7 +149,6 @@ export const collectManagerActionFeedback = (
 ): ManagerActionFeedback[] => {
   const feedback: ManagerActionFeedback[] = []
   const seen = new Set<string>()
-  const lookupSeen = new Set<string>()
 
   if (output.trim().length > 0) {
     const syntaxIssue = detectUnparsedActionIssue(output, items.length > 0)
@@ -202,22 +183,6 @@ export const collectManagerActionFeedback = (
         }),
       )
       continue
-    }
-
-    if (
-      item.name in SINGLE_LOOKUP_ACTION_LIMIT_HINTS &&
-      isValidLookupAction(item)
-    ) {
-      if (lookupSeen.has(item.name)) {
-        pushFeedback(
-          feedback,
-          seen,
-          item,
-          'action_execution_rejected',
-          SINGLE_LOOKUP_ACTION_LIMIT_HINTS[item.name] ??
-            DUPLICATE_ACTION_GENERIC_HINT,
-        )
-      } else lookupSeen.add(item.name)
     }
 
     const issues = validateRegisteredManagerAction(item, context)

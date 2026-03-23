@@ -15,14 +15,11 @@ export type PromptSectionLimits = {
   actionFeedbackMaxBytes: number
   batchResultsMaxBytes: number
   environmentMaxBytes: number
-  fileLookupMaxBytes: number
   focusListMaxBytes: number
-  historyLookupMaxBytes: number
   inputsMaxBytes: number
   memoryMaxBytes: number
   packetSummaryMaxBytes: number
   plansMaxBytes: number
-  queryLookupMaxBytes: number
   recentHistoryMaxBytes: number
   tasksMaxBytes: number
   workingFocusesMaxBytes: number
@@ -84,14 +81,11 @@ const INTERNAL_MANAGER_DEFAULTS = {
     actionFeedbackMaxBytes: 8192,
     batchResultsMaxBytes: 20480,
     environmentMaxBytes: 4096,
-    fileLookupMaxBytes: 20480,
     focusListMaxBytes: 8192,
-    historyLookupMaxBytes: 20480,
     inputsMaxBytes: 8192,
     memoryMaxBytes: 8192,
     packetSummaryMaxBytes: 6144,
     plansMaxBytes: 16384,
-    queryLookupMaxBytes: 20480,
     recentHistoryMaxBytes: 8192,
     tasksMaxBytes: 24576,
     workingFocusesMaxBytes: 20480,

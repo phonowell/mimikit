@@ -89,18 +89,19 @@ export const formatEnvironment = (params?: PromptEnvironmentParams): string => {
 
 export {
   buildActionFeedbackPromptPayload,
-  buildQuoteReferenceLookup,
-  buildHistoryLookupPromptPayload,
-  buildInputsPromptPayload,
-  buildReadFileLookupPromptPayload,
-  buildRecentHistoryPromptPayload,
   formatActionFeedback,
-  formatHistoryLookup,
+} from './format-action-feedback.js'
+export {
+  buildInputsPromptPayload,
+  buildRecentHistoryPromptPayload,
   formatInputs,
-  formatQueryLookup,
-  formatReadFileLookup,
   formatRecentHistory,
-} from './format-messages.js'
+} from './format-message-dialog.js'
+export {
+  buildQuoteReferenceLookup,
+  type PromptQuoteReference,
+  type PromptQuoteReferenceLookup,
+} from './format-message-quote.js'
 export {
   buildFocusListPromptPayload,
   formatFocusList,
@@ -108,10 +109,13 @@ export {
   formatWorkingFocuses,
 } from './format-focus.js'
 export {
-  buildPlansPromptPayload,
   buildResultsPromptPayload,
   buildTasksPromptPayload,
-  formatPlansJson,
   formatResultsJson,
   formatTasksJson,
-} from './format-content.js'
+  selectTasksForPrompt,
+} from './format-task-content.js'
+export {
+  buildPlansPromptPayload,
+  formatPlansJson,
+} from './format-plan-content.js'

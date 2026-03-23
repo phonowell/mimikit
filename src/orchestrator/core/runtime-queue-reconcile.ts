@@ -33,8 +33,6 @@ export const reconcileRuntimeQueueState = async (
   ])
   const prevInputsCursor = runtime.queues.inputsCursor
   const prevResultsCursor = runtime.queues.resultsCursor
-  const prevMemoryInputsCursor =
-    runtime.manager.memoryRefresh.lastProcessedInputsCursor
 
   runtime.queues.inputsCursor = resetStaleCursor(
     runtime.queues.inputsCursor,
@@ -44,16 +42,10 @@ export const reconcileRuntimeQueueState = async (
     runtime.queues.resultsCursor,
     resultsPacketCount,
   )
-  runtime.manager.memoryRefresh.lastProcessedInputsCursor = resetStaleCursor(
-    runtime.manager.memoryRefresh.lastProcessedInputsCursor,
-    inputsPacketCount,
-  )
 
   const changed =
     runtime.queues.inputsCursor !== prevInputsCursor ||
-    runtime.queues.resultsCursor !== prevResultsCursor ||
-    runtime.manager.memoryRefresh.lastProcessedInputsCursor !==
-      prevMemoryInputsCursor
+    runtime.queues.resultsCursor !== prevResultsCursor
   if (!changed) return
 
   await bestEffort('appendLog: runtime_queue_state_reconciled', () =>
@@ -65,9 +57,6 @@ export const reconcileRuntimeQueueState = async (
       prevResultsCursor,
       nextInputsCursor: runtime.queues.inputsCursor,
       nextResultsCursor: runtime.queues.resultsCursor,
-      prevMemoryInputsCursor,
-      nextMemoryInputsCursor:
-        runtime.manager.memoryRefresh.lastProcessedInputsCursor,
     }),
   )
 }

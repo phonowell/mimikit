@@ -3,7 +3,6 @@ import { isTaskContractMissingHint } from './action-feedback-contract-hint.js'
 import type { ManagerActionFeedback } from '../types/index.js'
 
 type RejectedActionClass =
-  | 'lookup_no_progress'
   | 'insufficient_evidence'
   | 'task_state_conflict'
   | 'needs_scope_confirmation'
@@ -11,17 +10,12 @@ type RejectedActionClass =
   | 'result_not_available'
   | 'blocked_action'
 
-export const LOOKUP_NO_PROGRESS_REPLY =
-  '当前补充检索没有带来新的有效信息，本轮先停止继续检索。请直接补充更具体的对象、时间范围、文件路径，或明确希望我继续执行的下一步。'
-
 const GENERIC_CORRECTION_REPLY =
   '继续执行前还缺 3 个最小信息，每项一句即可：1) 目标：最终要我产出什么；2) 范围与不做项：这次只处理哪里、哪些不要动；3) 验收标准：怎样算完成，至少一条。若一时说不全，请先缩成一个最小可交付结果。'
 
 const REJECTION_CLASS_REPLY: Record<RejectedActionClass, string> = {
-  lookup_no_progress:
-    '当前这类检索/读文件动作继续重试没有意义。本轮先停止重试；请直接补充更具体的查询词、时间范围、文件路径，或明确要我改做哪一步。',
   insufficient_evidence:
-    '当前高风险动作缺少可核实证据，本轮先停止重试。请先补充明确用户目标；若仍缺外部事实，先做只读 lookup；若需要用户决定，再直接向用户确认。',
+    '当前高风险动作缺少可核实证据，本轮先停止重试。请先补充明确用户目标；若需要用户决定，再直接向用户确认。',
   task_state_conflict:
     '当前动作和任务状态冲突，本轮停止重复尝试。请改为确认该任务是否应继续等待、恢复，或换一个仍可执行的目标。',
   needs_scope_confirmation: `当前派发动作缺少继续执行所需边界。本轮先停止重试；${GENERIC_CORRECTION_REPLY}`,
@@ -53,8 +47,6 @@ const classifyRejectedActionFeedback = (
 ): RejectedActionClass => {
   if (item.error !== 'action_execution_rejected') return 'blocked_action'
   if (isIntentEvidenceHint(item.hint)) return 'insufficient_evidence'
-  if (item.action === 'query_context' || item.action === 'read_file')
-    return 'lookup_no_progress'
   if (item.action === 'mutate_task') return 'task_state_conflict'
   if (item.action === 'enqueue_task') return 'needs_scope_confirmation'
   if (item.action === 'ask_user_choice') return 'channel_choice_unsupported'
@@ -128,7 +120,5 @@ export const buildCorrectionFallbackReply = (
   if (directActionFeedbackReply) return directActionFeedbackReply
   const dominantRejectedClass = resolveDominantRejectedClass(feedback)
   if (dominantRejectedClass) return REJECTION_CLASS_REPLY[dominantRejectedClass]
-  if (feedback.some((item) => item.action === 'query_context'))
-    return LOOKUP_NO_PROGRESS_REPLY
   return GENERIC_CORRECTION_REPLY
 }

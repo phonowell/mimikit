@@ -2,10 +2,8 @@ import { stringifyPromptJson } from './format-base.js'
 import {
   buildActionFeedbackPromptPayload,
   buildFocusListPromptPayload,
-  buildHistoryLookupPromptPayload,
   buildInputsPromptPayload,
   buildPlansPromptPayload,
-  buildReadFileLookupPromptPayload,
   buildTasksPromptPayload,
   buildWorkingFocusesPromptPayload,
 } from './format.js'
@@ -53,9 +51,6 @@ export const buildEventPacketPayload = (params: {
   quoteLookup: ManagerPromptRuntimeData['quoteLookup']
   batchResultsPayload: unknown
   recentHistoryPayload: unknown
-  historyLookup: BuildManagerPromptParams['historyLookup']
-  queryLookupPayload: unknown
-  readFileLookup: BuildManagerPromptParams['readFileLookup']
   actionFeedback: BuildManagerPromptParams['actionFeedback']
   packet: unknown
 }): string =>
@@ -71,23 +66,6 @@ export const buildEventPacketPayload = (params: {
       : {}),
     ...(params.selectedSections.recent_history
       ? { recent_history: params.recentHistoryPayload }
-      : {}),
-    ...(params.selectedSections.history_lookup
-      ? {
-          history_lookup: buildHistoryLookupPromptPayload(
-            params.historyLookup ?? [],
-          ),
-        }
-      : {}),
-    ...(params.selectedSections.query_lookup
-      ? { query_lookup: params.queryLookupPayload }
-      : {}),
-    ...(params.selectedSections.file_lookup
-      ? {
-          file_lookup: buildReadFileLookupPromptPayload(
-            params.readFileLookup ?? [],
-          ),
-        }
       : {}),
     ...(params.selectedSections.action_feedback
       ? {

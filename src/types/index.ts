@@ -25,25 +25,8 @@ export type {
   UserChoiceSelectionSource,
   WorkerProfile,
 } from './base.js'
-export type {
-  HistoryMessage,
-  ReadFileLookupMessage,
-  UserInput,
-} from './message-types.js'
-export type {
-  HistoryLookupMessage,
-  QueryContextScope,
-  QueryLookupFocusItem,
-  QueryLookupGeneratedIndexItem,
-  QueryLookupHistoryItem,
-  QueryLookupMessage,
-  QueryLookupPlanItem,
-  QueryLookupResults,
-  QueryLookupScopeResult,
-  QueryLookupTaskArchiveItem,
-  QueryLookupTaskItem,
-  TaskArchiveLookupMessage,
-} from './query-types.js'
+export type { HistoryMessage, UserInput } from './message-types.js'
+export type { TaskArchiveLookupMessage } from './query-types.js'
 export type {
   FocusMeta,
   PendingUserChoice,

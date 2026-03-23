@@ -32,7 +32,7 @@ test('appendManagerUsageLedgerEntry writes manager round packet with token usage
       workingFocusIds: ['focus-global'],
       sectionDigests: [
         {
-          section: 'query_lookup',
+          section: 'batch_results',
           mode: 'digest',
           sourceBytes: 4096,
           digestBytes: 1024,
@@ -69,7 +69,7 @@ test('appendManagerUsageLedgerEntry writes manager round packet with token usage
   expect(entry?.promptSegmentCount).toBe(3)
   expect(entry?.sectionDigests).toEqual([
     {
-      section: 'query_lookup',
+      section: 'batch_results',
       mode: 'digest',
       sourceBytes: 4096,
       digestBytes: 1024,

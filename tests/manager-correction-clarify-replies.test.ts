@@ -191,5 +191,5 @@ test('runManagerCorrectionRounds explains insufficient evidence for risky action
 
   expect(result.roundLimitReached).toBe(true)
   expect(result.parsed.text).toContain('缺少可核实证据')
-  expect(result.parsed.text).toContain('只读 lookup')
+  expect(result.parsed.text).toContain('直接向用户确认')
 })

@@ -1,6 +1,6 @@
 # Code Index
 
-*Last updated: 2026-03-20 12:44:01 CST*
+*Last updated: 2026-03-23 17:18:00 CST*
 *Scope: `src/**/*.ts` + `webui/**/*.js` exported capabilities (function/class/const entry points)*
 
 ## Quick Reference
@@ -148,8 +148,9 @@
 | `buildWorkerPrompt()` | `src/prompts/build-prompts.ts:180` | Builds worker runtime prompt |
 | `prepareWorkerTaskPrompt()` | `src/prompts/build-worker-task-prompt.ts:118` | Normalizes/externalizes long task prompts |
 | `buildActionFeedbackPromptPayload()/formatActionFeedback()` | `src/prompts/format-action-feedback.ts:41` | Serializes action feedback and structured repair hints into prompt payload |
-| `formatInputs()/formatRecentHistory()` | `src/prompts/format-messages.ts:140` | Message formatting blocks |
-| `formatTasksJson()/formatResultsJson()/formatPlansJson()` | `src/prompts/format-content.ts:201` | JSON blocks for prompt sections |
+| `buildQuoteReferenceLookup()/formatInputs()/formatRecentHistory()` | `src/prompts/format.ts:94` | Input quote lookup and message formatting blocks |
+| `buildTasksPromptPayload()/buildResultsPromptPayload()/formatTasksJson()/formatResultsJson()` | `src/prompts/format.ts:115` | Task/result prompt payload builders and JSON blocks |
+| `buildPlansPromptPayload()/formatPlansJson()` | `src/prompts/format.ts:123` | Plan prompt payload builders and JSON blocks |
 | `loadSystemPrompt()/loadPromptTemplate()` | `src/prompts/prompt-loader.ts:51` | Prompt template loader from `prompts/` |
 
 ## Focus and Memory
@@ -174,7 +175,6 @@
 | `queryTaskResultArchives()` | `src/storage/task-results-read.ts:361` | Query archived task results |
 | `appendTaskProgress()` | `src/storage/task-progress.ts:35` | Task progress stream append/write |
 | `readHistory()/appendHistory()` | `src/history/store.ts:88` | Chat history persistence |
-| `queryHistory()` | `src/history/query.ts:27` | History lookup query |
 | `buildPaths()/ensureDir()/ensureFile()` | `src/fs/paths.ts:23` | State path and file bootstrap |
 | `readTextFile()/readTextFileIfExists()` | `src/fs/read-text.ts:12` | UTF-8 text reads |
 | `readJson()/writeJson()` | `src/fs/json.ts:67` | JSON read/write helpers |

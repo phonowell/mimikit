@@ -10,7 +10,6 @@ import { mergeUsageAdditive } from '../shared/token-usage.js'
 import {
   buildCorrectionFallbackReply,
   findRepeatedRejectedAction,
-  LOOKUP_NO_PROGRESS_REPLY,
   resolveDominantRejectedClass,
   shouldRetrySelfRepairRound,
 } from './loop-batch-correction-reply.js'
@@ -20,7 +19,6 @@ import {
   buildBatchSuccessResult,
   buildRoundLimitResult,
   type ManagerRoundExtra,
-  mergeReadFileLookupHistory,
 } from './loop-batch-run-helpers.js'
 
 import type { RuntimeState } from './runtime-adapter.js'
@@ -32,9 +30,6 @@ import type {
   TokenUsage,
   UserInput,
 } from '../types/index.js'
-
-const LOOKUP_NO_PROGRESS_ERROR =
-  'manager_internal_lookup_repeated_without_progress'
 
 export const runManagerCorrectionRounds = async (params: {
   runtime: RuntimeState
@@ -64,7 +59,6 @@ export const runManagerCorrectionRounds = async (params: {
   } = params
   let elapsedMs = 0
   let batchUsage: TokenUsage | undefined
-  let previousLookupKey: string | undefined
   let promptPrefixHash: string | undefined
   let managerThreadId = runtime.manager.threadId
   let extra: ManagerRoundExtra = {}
@@ -156,42 +150,15 @@ export const runManagerCorrectionRounds = async (params: {
     }
     const parsed = parseActions(runResult.output)
     lastParsed = parsed
-    let followup
-    try {
-      followup = await resolveRoundFollowup({
-        runtime,
-        parsed: parsed.actions,
-        output: runResult.output,
-        allowAskUserChoice,
-        resultTaskIds,
-        resolveFocusId,
-        roundExtra: extra,
-        ...(previousLookupKey ? { previousLookupKey } : {}),
-      })
-    } catch (error) {
-      if (
-        !(error instanceof Error) ||
-        error.message !== LOOKUP_NO_PROGRESS_ERROR
-      )
-        throw error
-      await appendLog(runtime.paths.log, {
-        event: 'manager_lookup_no_progress_degraded',
-        round,
-        ...(previousLookupKey ? { lookupKey: previousLookupKey } : {}),
-      })
-      if (promptPrefixHash) {
-        await appendLog(runtime.paths.log, {
-          event: 'manager_prompt_prefix_hash',
-          rounds: round,
-          hash: promptPrefixHash,
-        })
-      }
-      return buildRoundLimitResult({
-        text: LOOKUP_NO_PROGRESS_REPLY,
-        elapsedMs,
-        ...(batchUsage ? { usage: batchUsage } : {}),
-      })
-    }
+    const followup = await resolveRoundFollowup({
+      runtime,
+      parsed: parsed.actions,
+      output: runResult.output,
+      allowAskUserChoice,
+      resultTaskIds,
+      resolveFocusId,
+      roundExtra: extra,
+    })
     if (followup.done) {
       if (promptPrefixHash) {
         await appendLog(runtime.paths.log, {
@@ -206,20 +173,7 @@ export const runManagerCorrectionRounds = async (params: {
         ...(batchUsage ? { usage: batchUsage } : {}),
       })
     }
-    previousLookupKey = followup.lookupKey
-    const mergedReadFileLookup = mergeReadFileLookupHistory({
-      previous: extra.readFileLookup,
-      current: followup.extra.readFileLookup,
-    })
-    extra = {
-      ...followup.extra,
-      ...(mergedReadFileLookup ? { readFileLookup: mergedReadFileLookup } : {}),
-      ...(followup.extra.queryLookup
-        ? { queryLookup: followup.extra.queryLookup }
-        : extra.queryLookup
-          ? { queryLookup: extra.queryLookup }
-          : {}),
-    }
+    extra = { ...followup.extra }
   }
   await appendLog(runtime.paths.log, {
     event: 'manager_correction_round_limit_reached',

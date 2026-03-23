@@ -26,9 +26,6 @@ export const buildManagerPromptPackets = (params: {
   inputs: BuildManagerPromptParams['inputs']
   tasks: BuildManagerPromptParams['tasks']
   plans: BuildManagerPromptParams['plans']
-  historyLookup: BuildManagerPromptParams['historyLookup']
-  queryLookup: BuildManagerPromptParams['queryLookup']
-  readFileLookup: BuildManagerPromptParams['readFileLookup']
   actionFeedback: BuildManagerPromptParams['actionFeedback']
   workingFocusIds: BuildManagerPromptParams['workingFocusIds']
   env: BuildManagerPromptParams['env']
@@ -42,9 +39,6 @@ export const buildManagerPromptPackets = (params: {
       inputs: params.inputs,
       tasks: params.tasks,
       plans: params.plans,
-      historyLookup: params.historyLookup,
-      queryLookup: params.queryLookup,
-      readFileLookup: params.readFileLookup,
       actionFeedback: params.actionFeedback,
       env: params.env,
       sectionPolicy: params.sectionPolicy,
@@ -97,9 +91,6 @@ export const buildManagerPromptPackets = (params: {
       quoteLookup: params.runtime.quoteLookup,
       batchResultsPayload: digestSections.batchResultsPayload,
       recentHistoryPayload: digestSections.recentHistoryPayload,
-      historyLookup: params.historyLookup,
-      queryLookupPayload: digestSections.queryLookupPayload,
-      readFileLookup: params.readFileLookup,
       actionFeedback: params.actionFeedback,
       packet: packetBundle.packet,
     }),
@@ -107,9 +98,6 @@ export const buildManagerPromptPackets = (params: {
       params.limits.inputsMaxBytes +
       params.limits.batchResultsMaxBytes +
       params.limits.recentHistoryMaxBytes +
-      params.limits.historyLookupMaxBytes +
-      params.limits.queryLookupMaxBytes +
-      params.limits.fileLookupMaxBytes +
       params.limits.actionFeedbackMaxBytes +
       params.limits.packetSummaryMaxBytes,
   )

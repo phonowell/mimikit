@@ -3,20 +3,13 @@ import { truncateText } from '../shared/text.js'
 import {
   buildCountSummary,
   buildDigest,
-  buildQueryScopeItems,
   DIGEST_SUMMARY_MAX_CHARS,
 } from './context-digest-shared.js'
 
 import type { SectionDigest } from './context-digest-shared.js'
-import type {
-  HistoryMessage,
-  QueryLookupMessage,
-  Task,
-  TaskResult,
-} from '../types/index.js'
+import type { HistoryMessage, Task, TaskResult } from '../types/index.js'
 
 const RECENT_HISTORY_ITEM_LIMIT = 6
-const QUERY_SCOPE_ITEM_LIMIT = 2
 const BATCH_RESULT_ITEM_LIMIT = 4
 
 export const buildRecentHistoryDigest = (params: {
@@ -45,85 +38,6 @@ export const buildRecentHistoryDigest = (params: {
       latest_id: selected[0]?.id,
     },
     items: [],
-  })
-}
-
-export const buildQueryLookupDigest = (params: {
-  lookup?: QueryLookupMessage
-  sourceText: string
-}): SectionDigest => {
-  const { lookup } = params
-  if (!lookup) {
-    return buildDigest({
-      section: 'query_lookup',
-      sourceText: params.sourceText,
-      sourceItems: 0,
-      sourceRefs: [],
-      truncated: false,
-      summary: {
-        query: '',
-        total_items: 0,
-      },
-      items: [],
-    })
-  }
-  const scopeEntries = Object.entries(lookup.results).filter((entry) => {
-    const value = entry[1]
-    return Array.isArray(value.items) && value.items.length > 0
-  }) as Array<
-    [
-      keyof QueryLookupMessage['results'],
-      NonNullable<
-        QueryLookupMessage['results'][keyof QueryLookupMessage['results']]
-      >,
-    ]
-  >
-  const digestItems = scopeEntries.flatMap(([scope, result]) =>
-    buildQueryScopeItems({
-      scope,
-      items: result.items as Record<string, unknown>[],
-      limit: QUERY_SCOPE_ITEM_LIMIT,
-    }),
-  )
-  const sourceRefs = digestItems
-    .map((item) => {
-      const { ref } = item
-      if (typeof ref === 'string' && ref.trim().length > 0) return ref
-      const { id } = item
-      if (typeof id === 'string' && id.trim().length > 0) return id
-      const taskId = item.task_id
-      if (typeof taskId === 'string' && taskId.trim().length > 0) return taskId
-      const { path } = item
-      return typeof path === 'string' ? path : undefined
-    })
-    .filter((item): item is string => Boolean(item))
-  const sourceItems = scopeEntries.reduce(
-    (sum, [, result]) => sum + result.items.length,
-    0,
-  )
-  return buildDigest({
-    section: 'query_lookup',
-    sourceText: params.sourceText,
-    sourceItems,
-    sourceRefs,
-    truncated:
-      lookup.meta.truncated ||
-      scopeEntries.some(
-        ([, result]) =>
-          result.truncated || result.items.length > QUERY_SCOPE_ITEM_LIMIT,
-      ),
-    summary: {
-      query: lookup.request.query,
-      total_items: sourceItems,
-      scopes: scopeEntries.map(([scope, result]) => ({
-        scope,
-        count: result.items.length,
-        truncated: result.truncated,
-        next_offset: result.nextOffset,
-      })),
-      source_meta: lookup.meta,
-    },
-    items: digestItems,
   })
 }
 

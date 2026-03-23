@@ -105,7 +105,6 @@ test('finalizeResult does not infer success handoff fields from free text withou
   await finalizeResult(runtime, task, result, mergeTaskPatch)
 
   expect(result.handoff).toEqual({
-    goal: 'ship release',
     artifacts: [{ path: result.archivePath ?? '', kind: 'task_archive' }],
     evidence: [{ type: 'task_archive', ref: result.archivePath ?? '' }],
   })

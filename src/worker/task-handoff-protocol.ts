@@ -82,7 +82,6 @@ export const stripTaskHandoffTag = (output: string): string =>
   output.replace(TASK_HANDOFF_TAG_STRIP_RE, '').trim()
 
 export const buildStructuredTaskHandoff = (params: {
-  goal?: string | undefined
   git?: TaskGitExecution | undefined
   output: string
 }): TaskResultHandoff | undefined => {
@@ -99,7 +98,6 @@ export const buildStructuredTaskHandoff = (params: {
       ...(lifecycle ? { lifecycle } : {}),
     } satisfies TaskGitExecution)
   return {
-    ...(params.goal ? { goal: params.goal } : {}),
     summary: parsed.summary,
     ...(parsed.decisions ? { decisions: [...parsed.decisions] } : {}),
     ...(parsed.next_steps ? { nextSteps: [...parsed.next_steps] } : {}),

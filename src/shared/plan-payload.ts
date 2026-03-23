@@ -37,19 +37,9 @@ export const buildPlanEffectPayload = (
     ? {
         effect_kind: effect.kind,
         task_title: effect.taskTemplate.title,
-        task_prompt: effect.taskTemplate.prompt,
         task_cwd: effect.taskTemplate.cwd,
         ...(effect.taskTemplate.branch
           ? { task_branch: effect.taskTemplate.branch }
-          : {}),
-        task_goal: effect.taskTemplate.contract.goal,
-        task_scope: effect.taskTemplate.contract.scope,
-        task_acceptance: effect.taskTemplate.contract.acceptance,
-        ...(effect.taskTemplate.contract.outOfScope
-          ? { task_out_of_scope: effect.taskTemplate.contract.outOfScope }
-          : {}),
-        ...(effect.taskTemplate.contract.contextRefs
-          ? { task_context_refs: effect.taskTemplate.contract.contextRefs }
           : {}),
       }
     : {

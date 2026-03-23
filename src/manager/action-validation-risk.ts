@@ -3,6 +3,7 @@ import {
   mutateTaskSchema,
   parseAskUserChoiceAttrs,
   rememberMemorySchema,
+  runTaskSchema,
   summarizeSchema,
 } from './action-apply-schema.js'
 import { buildTaskContractMissingHintFromAction } from './action-feedback-contract-hint.js'
@@ -27,7 +28,6 @@ import {
 } from './action-validation-helpers.js'
 import { validateMutateTaskGitOp } from './action-validation-mutate-task-git.js'
 import { resolveRunTaskConfirmationRequirement } from './run-task-confirmation.js'
-import { runTaskSchema } from './run-task-schema.js'
 import {
   buildTaskContractFromAttrs,
   resolveWorkerPromptFromAttrs,
@@ -53,9 +53,7 @@ export type FeedbackContext = {
   wakeProfile?: ManagerWakeProfile
   allowedActions?: Set<string>
   inputs?: UserInput[]
-  supplementalEvidenceSources?: Set<
-    'query_lookup' | 'read_file' | 'task_result' | 'history_lookup'
-  >
+  supplementalEvidenceSources?: Set<'task_result'>
 }
 
 const validateWithSchema = validateItemWithSchema

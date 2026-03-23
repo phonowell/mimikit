@@ -47,7 +47,7 @@ test('mutate_task git closure stays blocked when user only references task witho
       inputs: [createUserInput(`请看一下 ${task.id}，也就是 ${task.title}。`)],
       taskStatusById: new Map([[task.id, task.status]]),
       taskById: new Map([[task.id, task]]),
-      supplementalEvidenceSources: new Set(['read_file']),
+      supplementalEvidenceSources: new Set(['task_result']),
     },
   )
 
@@ -81,7 +81,7 @@ test('mutate_task git closure stays allowed when user explicitly requests the cl
       ],
       taskStatusById: new Map([[task.id, task.status]]),
       taskById: new Map([[task.id, task]]),
-      supplementalEvidenceSources: new Set(['read_file']),
+      supplementalEvidenceSources: new Set(['task_result']),
     },
   )
 

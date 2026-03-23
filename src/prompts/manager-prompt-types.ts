@@ -3,13 +3,10 @@ import type { ProviderPromptSegment } from '../providers/types.js'
 import type {
   FocusId,
   FocusMeta,
-  HistoryLookupMessage,
   ManagerActionFeedback,
   ManagerContextPacket,
   ManagerEnv,
   ManagerPacketMode,
-  QueryLookupMessage,
-  ReadFileLookupMessage,
   Task,
   TaskPlan,
   TaskResult,
@@ -35,9 +32,6 @@ export type BuildManagerPromptParams = {
   tasks: Task[]
   promptSectionLimits: PromptSectionLimits
   plans?: TaskPlan[]
-  historyLookup?: HistoryLookupMessage[]
-  queryLookup?: QueryLookupMessage
-  readFileLookup?: ReadFileLookupMessage[]
   actionFeedback?: ManagerActionFeedback[]
   env?: ManagerEnv
   focuses?: FocusMeta[]

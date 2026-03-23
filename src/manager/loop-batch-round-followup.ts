@@ -9,16 +9,7 @@ import {
 } from './action-feedback-buckets.js'
 import { collectManagerActionFeedback } from './action-feedback-collect.js'
 import {
-  buildQueryContextLookupKey,
-  buildReadFileLookupKey,
-  pickQueryContextRequest,
-  pickReadFileRequest,
-  queryContextLookup,
-  queryReadFileLookup,
-} from './loop-batch-context.js'
-import {
   buildActionFeedbackContext,
-  buildLookupKey,
   hasNoFollowupRequests,
   type ManagerRoundExtra,
 } from './loop-batch-run-helpers.js'
@@ -63,7 +54,6 @@ type RoundFollowupResult =
   | { done: true }
   | {
       done: false
-      lookupKey?: string
       extra: ManagerRoundExtra
     }
 
@@ -74,7 +64,6 @@ export const resolveRoundFollowup = async (params: {
   allowAskUserChoice: boolean
   resultTaskIds: Set<string>
   resolveFocusId: () => FocusId
-  previousLookupKey?: string
   roundExtra?: ManagerRoundExtra
 }): Promise<RoundFollowupResult> => {
   const wakeProfile =
@@ -88,7 +77,6 @@ export const resolveRoundFollowup = async (params: {
         resultTaskIds: params.resultTaskIds,
         wakeProfile,
         inputs: params.runtime.session.inflightInputs,
-        ...(params.roundExtra ? { roundExtra: params.roundExtra } : {}),
       }),
       scheduleNowIso: resolveScheduleNowIso(
         params.runtime.session.lastUserMeta,
@@ -96,35 +84,8 @@ export const resolveRoundFollowup = async (params: {
     },
     params.output,
   )
-  const queryContextRequest = pickQueryContextRequest(params.parsed)
-  const readFileRequest = pickReadFileRequest(params.parsed)
-  const queryContextKey = buildQueryContextLookupKey(queryContextRequest)
-  const readFileKey = buildReadFileLookupKey(readFileRequest)
-  const lookupKey = buildLookupKey({
-    ...(queryContextKey !== undefined ? { queryContextKey } : {}),
-    ...(readFileKey !== undefined ? { readFileKey } : {}),
-  })
-
-  if (
-    hasNoFollowupRequests({
-      hasQueryContextRequest: Boolean(queryContextRequest),
-      hasReadFileRequest: Boolean(readFileRequest),
-      feedbackCount: actionFeedback.length,
-    })
-  )
+  if (hasNoFollowupRequests({ feedbackCount: actionFeedback.length }))
     return { done: true }
-
-  if (
-    lookupKey &&
-    actionFeedback.length === 0 &&
-    params.previousLookupKey === lookupKey
-  )
-    throw new Error('manager_internal_lookup_repeated_without_progress')
-
-  const [queryLookup, readFileLookup] = await Promise.all([
-    queryContextLookup(params.runtime, queryContextRequest),
-    queryReadFileLookup(params.runtime, readFileRequest),
-  ])
 
   await appendRoundActionFeedback({
     runtime: params.runtime,
@@ -134,10 +95,7 @@ export const resolveRoundFollowup = async (params: {
 
   return {
     done: false,
-    ...(lookupKey ? { lookupKey } : {}),
     extra: {
-      ...(queryLookup ? { queryLookup } : {}),
-      ...(readFileLookup ? { readFileLookup } : {}),
       ...(actionFeedback.length > 0 ? { actionFeedback } : {}),
     },
   }

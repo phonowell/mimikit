@@ -91,7 +91,7 @@ test('mutate_task cancel stays blocked for resume-only choice effect', () => {
       ],
       taskStatusById: new Map([[task.id, task.status]]),
       taskById: new Map([[task.id, task]]),
-      supplementalEvidenceSources: new Set(['read_file']),
+      supplementalEvidenceSources: new Set(['task_result']),
     },
   )
 

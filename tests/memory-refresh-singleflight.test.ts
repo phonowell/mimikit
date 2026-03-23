@@ -93,17 +93,24 @@ test('requestMemoryRefresh excludes task outputs and plan titles from payload', 
       ],
     },
   })
-  runtime.queues.inputsCursor = 1
   await rewriteHistory(runtime.paths.history, [
     {
-      id: 'input-1',
-      role: 'user',
-      visibility: 'user',
-      text: 'Keep the oncall escalation path stable across release weeks.',
+      id: 'sys-memory-1',
+      role: 'system',
+      visibility: 'agent',
+      text: 'Memory entry remembered.',
       createdAt: '2026-03-20T00:00:00.000Z',
       focusId: 'focus-a',
+      systemEventName: 'memory_remembered',
+      systemEventPayload: {
+        entry_id: 'memory-release-policy',
+        category: 'project',
+        ref: 'release-policy',
+        operation: 'created',
+      },
     },
   ])
+  runtime.manager.memoryRefresh.signalVersion = 1
 
   const { requestMemoryRefresh } = await import(
     '../src/memory/refresh/singleflight.js'
@@ -115,8 +122,8 @@ test('requestMemoryRefresh excludes task outputs and plan titles from payload', 
   expect(capturedPayloads[0]).toMatchObject({
     signals: [
       {
-        id: 'input-1',
-        role: 'user',
+        id: 'sys-memory-1',
+        role: 'system',
       },
     ],
   })
@@ -124,7 +131,8 @@ test('requestMemoryRefresh excludes task outputs and plan titles from payload', 
     'Partial draft with rollout notes',
   )
   expect(JSON.stringify(capturedPayloads[0])).not.toContain('Nightly backlog sweep')
-  expect(JSON.stringify(capturedPayloads[0])).toContain(
+  expect(JSON.stringify(capturedPayloads[0])).toContain('entry_id=memory-release-policy')
+  expect(JSON.stringify(capturedPayloads[0])).not.toContain(
     'Keep the oncall escalation path stable across release weeks.',
   )
 })

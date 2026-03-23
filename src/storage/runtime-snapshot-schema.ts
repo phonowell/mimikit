@@ -64,7 +64,6 @@ const taskContractSchema = z
 
 export const taskResultHandoffSchema = z
   .object({
-    goal: z.string().trim().min(1).optional(),
     summary: z.string().trim().min(1).optional(),
     decisions: z.array(z.string().trim().min(1)).optional(),
     nextSteps: z.array(z.string().trim().min(1)).optional(),
@@ -329,7 +328,8 @@ export const pendingUserChoicesSchema = z.array(pendingUserChoiceSchema)
 const memoryRefreshSchema = z
   .object({
     lastCompletedTurn: z.number().int().nonnegative(),
-    lastProcessedInputsCursor: z.number().int().nonnegative(),
+    signalVersion: z.number().int().nonnegative(),
+    lastProcessedSignalVersion: z.number().int().nonnegative(),
     lastRunAt: z.string().trim().min(1).optional(),
   })
   .strict()

@@ -6,11 +6,8 @@ import { collectConfirmedRunTaskChoiceIds } from './run-task-confirmation.js'
 import type { SupplementalEvidenceSource } from './action-intent-evidence.js'
 import type { RuntimeState } from './runtime-adapter.js'
 import type {
-  HistoryLookupMessage,
   ManagerActionFeedback,
   ManagerWakeProfile,
-  QueryLookupMessage,
-  ReadFileLookupMessage,
   TaskPlanStatus,
   TaskStatus,
   TokenUsage,
@@ -18,61 +15,13 @@ import type {
 } from '../types/index.js'
 
 export type ManagerRoundExtra = {
-  historyLookup?: HistoryLookupMessage[]
-  queryLookup?: QueryLookupMessage
-  readFileLookup?: ReadFileLookupMessage[]
   actionFeedback?: ManagerActionFeedback[]
 }
-
-const buildReadFileLookupEntryKey = (item: ReadFileLookupMessage): string =>
-  [
-    item.path.trim(),
-    item.status,
-    item.encoding,
-    String(item.fromLine ?? ''),
-    String(item.lineCount ?? ''),
-    String(item.totalLines ?? ''),
-    String(item.truncated ?? ''),
-    item.error?.trim() ?? '',
-  ].join('\n')
-
-export const mergeReadFileLookupHistory = (params: {
-  previous?: ReadFileLookupMessage[] | undefined
-  current?: ReadFileLookupMessage[] | undefined
-}): ReadFileLookupMessage[] | undefined => {
-  const previous = params.previous ?? []
-  const current = params.current ?? []
-  if (previous.length === 0 && current.length === 0) return undefined
-  if (previous.length === 0) return [...current]
-  if (current.length === 0) return [...previous]
-
-  const merged: ReadFileLookupMessage[] = []
-  const seen = new Set<string>()
-  for (const item of [...previous, ...current]) {
-    const key = buildReadFileLookupEntryKey(item)
-    if (seen.has(key)) continue
-    seen.add(key)
-    merged.push(item)
-  }
-  return merged
-}
-
-export const buildLookupKey = (params: {
-  queryContextKey?: string
-  readFileKey?: string
-}): string | undefined => {
-  const { queryContextKey, readFileKey } = params
-  if (!queryContextKey && !readFileKey) return undefined
-  return `${queryContextKey ?? ''}\n---\n${readFileKey ?? ''}`
-}
-
 export const hasNoFollowupRequests = (params: {
-  hasQueryContextRequest: boolean
-  hasReadFileRequest: boolean
   feedbackCount: number
 }): boolean => {
-  const { hasQueryContextRequest, hasReadFileRequest, feedbackCount } = params
-  return !hasQueryContextRequest && !hasReadFileRequest && feedbackCount === 0
+  const { feedbackCount } = params
+  return feedbackCount === 0
 }
 
 export const buildActionFeedbackContext = (params: {
@@ -81,7 +30,6 @@ export const buildActionFeedbackContext = (params: {
   resultTaskIds: Set<string>
   wakeProfile: ManagerWakeProfile
   inputs?: UserInput[]
-  roundExtra?: ManagerRoundExtra
 }): {
   taskStatusById: Map<string, TaskStatus>
   taskById: Map<string, RuntimeState['tasks'][number]>
@@ -94,25 +42,14 @@ export const buildActionFeedbackContext = (params: {
   inputs: UserInput[]
   supplementalEvidenceSources: Set<SupplementalEvidenceSource>
 } => {
-  const {
-    runtime,
-    allowAskUserChoice,
-    resultTaskIds,
-    wakeProfile,
-    inputs,
-    roundExtra,
-  } = params
+  const { runtime, allowAskUserChoice, resultTaskIds, wakeProfile, inputs } =
+    params
   const currentInputs = inputs ?? runtime.session.inflightInputs
   const confirmedRunTaskChoiceIds =
     collectConfirmedRunTaskChoiceIds(currentInputs)
   const actionSurface = resolveManagerActionSurface(wakeProfile)
   const supplementalEvidenceSources = new Set<SupplementalEvidenceSource>()
   if (resultTaskIds.size > 0) supplementalEvidenceSources.add('task_result')
-  if (roundExtra?.queryLookup) supplementalEvidenceSources.add('query_lookup')
-  if (roundExtra?.readFileLookup && roundExtra.readFileLookup.length > 0)
-    supplementalEvidenceSources.add('read_file')
-  if (roundExtra?.historyLookup && roundExtra.historyLookup.length > 0)
-    supplementalEvidenceSources.add('history_lookup')
   return {
     taskStatusById: new Map(
       runtime.tasks.map((task) => [task.id, task.status]),

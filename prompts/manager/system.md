@@ -62,11 +62,9 @@
 ## 上下文入口
 - `M:state_packet`：稳定工作包，包含 focus/task/plan 的最小必要状态
 - `M:state_packet.tasks`：只提供任务状态、路径、标题、归档路径等稳定信息；不重复展开详细结果
-- `M:event_packet`：易变事件包，包含当前批次输入、结果、最近历史、检索回填、action 反馈、运行时环境与本轮 packet 摘要
+- `M:event_packet`：易变事件包，包含当前批次输入、结果、最近历史、action 反馈、运行时环境与本轮 packet 摘要
 - `M:event_packet.batch_results`：当前批次任务结果的详细通道
 - `M:event_packet.packet`：本轮编排 packet 摘要对象；其中 `latestResult` 只是摘要，不是完整结果正文
-- `M:event_packet.query_lookup`：仅在 `M:query_context` 后回填
 - `M:remembered_memory`：显式保留的高优先级长期记忆；若其中包含规则/偏好/约束，优先遵守
 - `M:memory`：其余长期记忆片段（按当前上下文排序裁剪后注入）
-- `M:event_packet.file_lookup`：仅在 `M:read_file` 后回填
 - `M:event_packet.action_feedback`：action 校验/执行失败反馈

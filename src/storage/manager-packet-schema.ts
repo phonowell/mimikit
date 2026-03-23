@@ -18,15 +18,12 @@ export const managerPacketSectionSchema = z.enum([
   'inputs',
   'batch_results',
   'recent_history',
-  'history_lookup',
-  'query_lookup',
-  'file_lookup',
   'action_feedback',
 ])
 
 export const managerSectionDigestSchema = z
   .object({
-    section: z.enum(['recent_history', 'query_lookup', 'batch_results']),
+    section: z.enum(['recent_history', 'batch_results']),
     mode: z.literal('digest'),
     sourceBytes: z.number().int().nonnegative(),
     digestBytes: z.number().int().nonnegative(),

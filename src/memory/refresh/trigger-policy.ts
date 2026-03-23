@@ -4,9 +4,7 @@ export const MEMORY_REFRESH_MIN_TURN_GAP = 20
 
 export const hasMemoryRefreshDelta = (runtime: RuntimeState): boolean => {
   const state = runtime.manager.memoryRefresh
-  if (runtime.queues.inputsCursor !== state.lastProcessedInputsCursor)
-    return true
-  return false
+  return state.signalVersion !== state.lastProcessedSignalVersion
 }
 
 export const shouldTriggerMemoryRefresh = (runtime: RuntimeState): boolean =>
