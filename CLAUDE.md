@@ -48,7 +48,7 @@
 ## 我们的缺口是什么
 
 - 已闭环的上一轮缺口：`plan.runtime` 分层、`focus` digest 硬边界、`Task.git.lifecycle` 入模、后台任务注册/写域治理、manager 默认 surface 去掉 `lookup`、worker 完成改为 `M:task_handoff + M:skill_usage status="done"` 协议、`mutate_task` 显式写回 `review_passed|merged|cleaned`、git 闭环写回的 intent-evidence 门禁与 archive/handoff 同步，均已落地。
-- 基于 2026-03-23 对 `.agents` 全量技能的再次审计并完成本轮实现收口后，以下缺口已闭环：
+- 基于 2026-03-23 对 `.agents` 全量 skill（`code-deduplication`、`context-engineering-collection`、`book-sft-pipeline`、`digital-brain`、`reasoning-trace-optimizer`、`comprehensive-research-agent`、`advanced-evaluation`、`bdi-mental-states`、`context-compression`、`context-degradation`、`context-fundamentals`、`context-optimization`、`evaluation`、`filesystem-context`、`hosted-agents`、`memory-systems`、`multi-agent-patterns`、`project-development`、`tool-design`、`skill-template`、`prompt-engineering-patterns`、`workflow-orchestration-patterns`）与真实代码的再次核验，当前实现未发现新的主线目标偏离；以下收敛项已由代码确认：
 - `manager` prompt/action surface 文案已迁入 `prompts/manager/action-surface.md`，不再把会注入 LLM 的自然语言说明硬编码在 TS。
 - `M:state_packet.tasks` / `M:state_packet.plans` 已收缩为编排态信息，不再携带 `task.prompt`、`task_prompt` 或完整 task contract。
 - manager `query_context` / `read_file` dormant lane 已从代码协议、packet/digest、schema、文档和测试中删除，主线程不再保留默认不可达的 lookup 旁路。
@@ -58,8 +58,12 @@
 - manager prompt 已彻底删除 `history_lookup` section / budget / type 壳；worker `task_result` 也不再通过 `handoff.goal` 把 `task.prompt` 回灌主线程。
 - manager 空文本回退已收窄为“稳定模板”或“task handoff 摘要 + 任务归档链接”；不再回显用户输入，也不再把 `task.result.output` 原文直接吐给用户。
 - WebUI / read-model 的 task 标题已收紧为 `task.title || task.id`；即使遇到脏旧数据，也不再从 `task.prompt` 派生展示标题。
-- 当前唯一保留缺口是规模治理：`src + webui + prompts` 约 `42088` LOC，仍明显高于 `<20k LOC` 目标；该项按用户本轮要求明确排除，不在本次收口范围内。
-- 与本轮目标直接相关的 `.agents` 技能基线：`context-fundamentals`、`context-degradation`、`context-optimization`、`filesystem-context`、`multi-agent-patterns`、`tool-design`、`evaluation`、`project-development`、`code-deduplication`、`prompt-engineering-patterns`。`book-sft-pipeline`、`digital-brain`、`bdi-mental-states`、`hosted-agents`、`workflow-orchestration-patterns` 等已加载，但不构成当前主线要求。
+- `.agents` skill 与当前项目目标的关系已核验：
+- 直接支撑主线收敛：`context-fundamentals`、`context-degradation`、`context-optimization`、`filesystem-context`、`multi-agent-patterns`、`tool-design`、`project-development`、`code-deduplication`、`prompt-engineering-patterns`
+- 审计 / 研究 / 质量辅助：`context-engineering-collection`、`context-compression`、`memory-systems`、`evaluation`、`advanced-evaluation`、`comprehensive-research-agent`、`reasoning-trace-optimizer`、`skill-template`
+- 不应反向驱动产品扩张：`book-sft-pipeline`、`digital-brain`、`bdi-mental-states`、`hosted-agents`、`workflow-orchestration-patterns`
+- 本轮已闭环的最后一个真实业务缺口：`enqueue_task` 与 `plan effect` 的旧协议别名入口已从 manager schema 中删除；`prompt/scope/acceptance_{1..5}`、`task_prompt/task_scope/task_acceptance_{1..5}` 不再被接受，也不再保留运行时归一化兼容层。
+- 当前仅剩规模治理缺口：`src + webui + prompts` 全文件约 `40125` LOC，仍明显高于 `<20k LOC` 目标；该项按当前用户要求明确延后，不在本轮处理范围内。
 
 ## 参考项目
 

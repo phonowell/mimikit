@@ -2,7 +2,6 @@ import { z } from 'zod'
 
 import { focusIdSchema } from '../shared/id-schema.js'
 
-import { normalizePlanEffectAttrs } from './action-plan-effect-normalize.js'
 import {
   PLAN_EFFECT_EDITABLE_FIELDS,
   planEffectFields,
@@ -58,17 +57,6 @@ const basePlanSchema = z
     ...planEffectFields,
   })
   .strict()
-  .transform((value) => ({
-    title: value.title,
-    schedule_type: value.schedule_type,
-    cron_expr: value.cron_expr,
-    scheduled_at: value.scheduled_at,
-    time_zone: value.time_zone,
-    max_runs: value.max_runs,
-    priority: value.priority,
-    focus_id: value.focus_id,
-    ...normalizePlanEffectAttrs(value),
-  }))
 
 export const createPlanSchema = basePlanSchema.superRefine((data, ctx) => {
   validatePlanTriggerFields(data, ctx)
@@ -90,19 +78,6 @@ export const updatePlanSchema = z
     ...planEffectUpdateFields,
   })
   .strict()
-  .transform((value) => ({
-    id: value.id,
-    title: value.title,
-    schedule_type: value.schedule_type,
-    cron_expr: value.cron_expr,
-    scheduled_at: value.scheduled_at,
-    time_zone: value.time_zone,
-    max_runs: value.max_runs,
-    priority: value.priority,
-    status: value.status,
-    focus_id: value.focus_id,
-    ...normalizePlanEffectAttrs(value),
-  }))
   .superRefine((data, ctx) => {
     if (
       !UPDATE_EDITABLE_FIELDS.some(
