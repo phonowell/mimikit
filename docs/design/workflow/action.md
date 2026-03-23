@@ -54,6 +54,8 @@
 
 - `user_input` / `mixed`：开放 `task + plan + dialog + focus + memory`
 - `task_result` / `trigger` / `capacity`：仅开放 `task + plan`
+- `task_result`：默认收掉 `enqueue_task` / `mutate_task`，避免仅凭 `task_result` 补充证据继续创建或控制高风险任务
+- `trigger` / `capacity`：默认收掉 `mutate_task` / `set_task_result_summary`，保留 `enqueue_task + plan` 以支持触发型续跑
 - `query_context` / `read_file` 已从 manager 代码协议中删除；主线程默认不承担本地细读/检索
 - 需要局部搜索、实现、排查时，优先走执行面 task，而不是把 lookup 堆回 manager prompt
 - 未出现在当前 surface 的 action，即使已注册，也会在校验阶段被拒绝并回写 `action_execution_rejected`

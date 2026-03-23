@@ -1,3 +1,10 @@
+import {
+  extractAttrText,
+  extractTagNameFromRaw,
+  parseAttributes,
+} from '../actions/protocol/meta-tag-attrs.js'
+import { clipCompactText } from '../shared/text.js'
+
 import { isTaskContractMissingHint } from './action-feedback-contract-hint.js'
 
 import type { ManagerActionFeedback } from '../types/index.js'
@@ -41,6 +48,47 @@ export const findRepeatedRejectedAction = (
 
 const isIntentEvidenceHint = (hint: string): boolean =>
   hint.includes('intent-evidence guard 未通过')
+
+const parseAttemptedAttrs = (
+  attempted: string | undefined,
+): Record<string, string> | undefined => {
+  const raw = attempted?.trim()
+  if (!raw) return undefined
+  const fullName = extractTagNameFromRaw(raw)
+  if (!fullName) return undefined
+  return parseAttributes(extractAttrText(raw, fullName))
+}
+
+const readAttemptedAttr = (
+  attempted: string | undefined,
+  key: 'title' | 'goal',
+): string | undefined => {
+  const value = parseAttemptedAttrs(attempted)?.[key]?.trim()
+  return value && value.length > 0 ? value : undefined
+}
+
+const buildAttemptedFollowupLabel = (
+  item: ManagerActionFeedback,
+): string | undefined => {
+  const title = readAttemptedAttr(item.attempted, 'title')
+  if (title) return clipCompactText(title, 48)
+  const goal = readAttemptedAttr(item.attempted, 'goal')
+  if (goal) return clipCompactText(goal, 72)
+  return undefined
+}
+
+const buildIntentEvidenceReply = (
+  feedback: ManagerActionFeedback[],
+): string | undefined => {
+  const first = feedback.find((item) => isIntentEvidenceHint(item.hint))
+  if (!first) return undefined
+  const followupLabel = buildAttemptedFollowupLabel(first)
+  if (!followupLabel) return undefined
+  if (first.action === 'enqueue_task')
+    return `当前高风险动作缺少可核实证据，本轮先停止重试。系统原本想继续：${followupLabel}。但这类 follow-up 不能只靠 task_result 等补充信息自动派发；如果要继续，请直接说明要我继续这一项，并补一句范围/验收。`
+
+  return `当前高风险动作缺少可核实证据，本轮先停止重试。系统原本想执行：${followupLabel}。但这类动作不能只靠 task_result 等补充信息自动触发；如果要继续，请先给出明确指令。`
+}
 
 const classifyRejectedActionFeedback = (
   item: ManagerActionFeedback,
@@ -118,6 +166,8 @@ export const buildCorrectionFallbackReply = (
     return `同类动作 ${repeatedRejectedAction} 已连续被拒绝，本轮停止重试。${REJECTION_CLASS_REPLY[resolveDominantRejectedClass(feedback) ?? 'blocked_action']}`
   const directActionFeedbackReply = buildDirectActionFeedbackReply(feedback)
   if (directActionFeedbackReply) return directActionFeedbackReply
+  const intentEvidenceReply = buildIntentEvidenceReply(feedback)
+  if (intentEvidenceReply) return intentEvidenceReply
   const dominantRejectedClass = resolveDominantRejectedClass(feedback)
   if (dominantRejectedClass) return REJECTION_CLASS_REPLY[dominantRejectedClass]
   return GENERIC_CORRECTION_REPLY

@@ -23,6 +23,14 @@ const WAKE_PROFILE_DOMAIN_ORDER: Record<
   capacity: ['task', 'plan'],
 }
 
+const WAKE_PROFILE_EXCLUDED_ACTIONS: Partial<
+  Record<ManagerWakeProfile, ReadonlySet<string>>
+> = {
+  task_result: new Set(['enqueue_task', 'mutate_task']),
+  trigger: new Set(['mutate_task', 'set_task_result_summary']),
+  capacity: new Set(['mutate_task', 'set_task_result_summary']),
+}
+
 const DOMAIN_SPEC_BY_NAME = new Map(
   Object.values(ACTION_DOMAIN_SPECS).map((spec) => [spec.domain, spec]),
 )
@@ -32,8 +40,11 @@ export const resolveManagerActionSurface = (
 ): ManagerActionSurface => {
   const allowedDomains = WAKE_PROFILE_DOMAIN_ORDER[wakeProfile]
   const domainSet = new Set(allowedDomains)
-  const actions = ACTION_DEFINITIONS.filter((definition) =>
-    domainSet.has(definition.domain),
+  const excludedActions = WAKE_PROFILE_EXCLUDED_ACTIONS[wakeProfile]
+  const actions = ACTION_DEFINITIONS.filter(
+    (definition) =>
+      domainSet.has(definition.domain) &&
+      !excludedActions?.has(definition.name),
   )
   return {
     wakeProfile,

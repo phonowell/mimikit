@@ -20,6 +20,8 @@ test('task_result prompt surface excludes lookup actions even with lookup feedba
   )
 
   expect(prompt).toContain('wake_profile=`task_result`')
+  expect(prompt).not.toContain('M:enqueue_task')
+  expect(prompt).not.toContain('M:mutate_task')
   expect(prompt).not.toContain('M:query_context')
   expect(prompt).not.toContain('M:read_file')
   expect(prompt).not.toContain('读取与检索')

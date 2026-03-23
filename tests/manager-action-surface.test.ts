@@ -27,3 +27,20 @@ test('task_result, trigger, and capacity wake profiles exclude lookup actions', 
     expect(surface.actionNames.has('read_file')).toBe(false)
   }
 })
+
+test('task_result wake profile excludes follow-up task creation and control actions that need fresh user intent', () => {
+  const surface = resolveManagerActionSurface('task_result')
+
+  expect(surface.actionNames.has('enqueue_task')).toBe(false)
+  expect(surface.actionNames.has('mutate_task')).toBe(false)
+  expect(surface.actionNames.has('set_task_result_summary')).toBe(true)
+})
+
+test('trigger and capacity wake profiles keep enqueue_task but exclude dead-end task actions', () => {
+  for (const wakeProfile of ['trigger', 'capacity'] as const) {
+    const surface = resolveManagerActionSurface(wakeProfile)
+    expect(surface.actionNames.has('enqueue_task')).toBe(true)
+    expect(surface.actionNames.has('mutate_task')).toBe(false)
+    expect(surface.actionNames.has('set_task_result_summary')).toBe(false)
+  }
+})
