@@ -87,8 +87,15 @@ MIMIKIT_ACTION_LOGS=false pnpm start -- --port 8787 --work-dir .mimikit
 - `pnpm run test`：运行 `vitest run`。
 - `pnpm run build`：静态构建门禁；当前仓库不产出 `dist/`，等价 `pnpm run type-check`。
 - `pnpm run review-code-changes`：合流前门禁，串联 `lint + type-check + test`。
+- `pnpm run manual:eval:traces-usage-ledger`：手动离线评测，基于提交到仓库的 trace/ledger fixture。
 
-## 4. 调试入口
+## 4. 默认回归边界
+
+- 默认回归只包含 `pnpm run review-code-changes`。
+- `manual:eval:*`、`score:*` 与 `scripts/rearchitecture/*` 属于手动分析入口，不在默认 CI / 合流门禁中执行。
+- 会真实调用 provider、带成本或易波动的 benchmark 不应进入仓库默认路径；当前这类 manager cache benchmark 已移除。
+
+## 5. 调试入口
 
 WebUI / HTTP 状态：
 
@@ -112,7 +119,7 @@ curl -sS -N http://127.0.0.1:8787/api/events | head -n 2
 
 更完整的接口与状态字段说明见 `docs/design/workflow/interfaces-and-state.md`。
 
-## 5. `.mimikit/` 状态目录速查
+## 6. `.mimikit/` 状态目录速查
 
 - `inputs/packets.jsonl`：用户输入、触发器与系统输入包。
 - `results/packets.jsonl`：worker 结果回流队列。
@@ -126,7 +133,7 @@ curl -sS -N http://127.0.0.1:8787/api/events | head -n 2
 - `runtime/lease.json`、`runtime/children.json`、`runtime/reaper.json`：实例 lease、子进程注册与回收信息。
 - `.instance.lock`：实例锁目录；同一 `--work-dir` 只能被一个进程占用。
 
-## 6. 常见排障
+## 7. 常见排障
 
 - `OPENAI_API_KEY is missing`：provider 没拿到凭证；先查 `~/.codex/config.toml`、环境变量、`~/.codex/auth.json`。
 - `[cli] instance lock exists at .../.mimikit/.instance.lock`：同一状态目录已有实例占用；换 `--work-dir` 或先停掉旧进程。
@@ -134,7 +141,7 @@ curl -sS -N http://127.0.0.1:8787/api/events | head -n 2
 - `pnpm start` 很慢：它会额外执行 `pnpm install`；内循环调试改用 `tsx src/cli/index.ts --port 8787 --work-dir .mimikit`。
 - `pnpm run build` 没有生成产物：这是预期行为；当前仓库没有独立编译产物，`build` 只负责静态门禁。
 
-## 7. 推荐开发流程
+## 8. 推荐开发流程
 
 ```bash
 git fetch origin
@@ -146,7 +153,7 @@ pnpm run review-code-changes
 - 合流前统一跑 `pnpm run review-code-changes`。
 - 文档入口收敛到本页；设计事实继续看 `docs/design/**`。
 
-## 8. 延伸阅读
+## 9. 延伸阅读
 
 - 文档导航：`docs/README.md`
 - 系统架构：`docs/design/architecture/system-architecture.md`

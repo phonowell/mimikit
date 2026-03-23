@@ -72,6 +72,13 @@ curl -sS http://127.0.0.1:8787/api/status
 - `pnpm run test`：运行 Vitest。
 - `pnpm run build`：静态构建门禁；当前不产出 `dist/`，等价 `pnpm run type-check`。
 - `pnpm run review-code-changes`：合流前门禁，串联 `lint + type-check + test`。
+- `pnpm run manual:eval:traces-usage-ledger`：手动离线评测，读取仓库内 fixture；不属于默认回归。
+
+### 5) 默认回归边界
+
+- 默认门禁只有 `pnpm run review-code-changes`，也就是 `lint + type-check + test`。
+- 手动 `eval:*`、`score:*` 与 `scripts/rearchitecture/*` 只用于离线分析或专项排查，不接入默认 CI。
+- 仓库已移除会真实调用 manager provider 的 cache benchmark，避免把付费且高波动脚本误当成本地回归。
 
 ## 文档入口
 

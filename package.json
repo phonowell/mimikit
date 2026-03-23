@@ -71,7 +71,7 @@
     "score:manager-efficiency": "node .mimikit/tools/manager-efficiency-score.mjs",
     "bootstrap": "node scripts/bootstrap.mjs",
     "guard:file-length": "tsx scripts/check-file-length.ts",
-    "eval:traces-usage-ledger": "tsx scripts/traces-usage-ledger-eval.ts"
+    "manual:eval:traces-usage-ledger": "tsx scripts/traces-usage-ledger-eval.ts"
   },
   "type": "module",
   "version": "0.1.0"

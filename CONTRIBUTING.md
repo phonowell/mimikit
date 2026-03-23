@@ -12,10 +12,11 @@
 git clone https://github.com/phonowell/mimikit.git
 cd mimikit
 pnpm i
-pnpm run lint
-pnpm run typecheck
-pnpm run test
+pnpm run review-code-changes
 ```
+
+- 默认合流门禁只有 `pnpm run review-code-changes`。
+- `manual:eval:*`、`score:*` 与 `scripts/rearchitecture/*` 仅用于手动离线分析，不属于默认回归。
 
 ## Development Workflow
 
