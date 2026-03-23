@@ -70,6 +70,12 @@ export const shouldIncludePacketSection = (params: {
   if (!params.hasContent) return false
   if (params.section === 'packet_summary') return true
   if (params.section === 'action_feedback') return true
+  if (
+    params.section === 'working_focuses' &&
+    params.wakeProfile === 'capacity' &&
+    params.mode === 'minimal'
+  )
+    return false
   if (params.section === 'inputs') {
     return (
       params.wakeProfile === 'user_input' ||

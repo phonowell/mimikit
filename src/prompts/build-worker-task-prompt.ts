@@ -11,7 +11,7 @@ import {
 } from './worker-task-prompt-hints.js'
 
 export const WORKER_TASK_PROMPT_MAX_BYTES = 8_192
-export const WORKER_TASK_PROMPT_INLINE_MAX_BYTES = 640
+export const WORKER_TASK_PROMPT_INLINE_MAX_BYTES = 256
 export const WORKER_TASK_PROMPT_PREVIEW_MAX_CHARS = 150
 
 const WORKER_SECTION_PROMPT_RE = /<M:prompt>\s*([\s\S]*?)\s*<\/M:prompt>/i
