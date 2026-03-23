@@ -47,6 +47,14 @@ actions:
     detail_constraints:
       - '`op=pause|resume|cancel|review_passed|merged|cleaned`'
       - '`review_passed` 可选 `sha`'
+  restart_runtime:
+    summary: 在当前 batch 收尾后请求运行时自重启。
+    brief_constraints:
+      - 必填 `reason`
+    detail_constraints:
+      - 仅在没有 pending/running worker task 时可用
+      - 命中后当前 action 批次停止后续 apply
+      - '`reason` 必须直接对应当前用户请求的更新/重启意图'
   set_task_result_summary:
     summary: 为当前批次 `task_result` 写摘要。
     brief_constraints:

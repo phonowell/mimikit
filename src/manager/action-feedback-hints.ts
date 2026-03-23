@@ -31,6 +31,9 @@ const actionFeedbackHintSchema = z
     mutate_task_already_paused: z.string().trim().min(1),
     mutate_task_not_paused: z.string().trim().min(1),
     mutate_task_already_canceled: z.string().trim().min(1),
+    restart_runtime_unavailable: z.string().trim().min(1),
+    restart_runtime_busy: z.string().trim().min(1),
+    restart_runtime_already_scheduled: z.string().trim().min(1),
     ...mutateTaskGitHintSchemaShape,
     ask_user_choice_channel_unsupported: z.string().trim().min(1),
     ask_user_choice_invalid_options: z.string().trim().min(1),
@@ -134,6 +137,12 @@ export const formatMutateTaskNotPausedHint = (): string =>
 
 export const formatMutateTaskAlreadyCanceledHint = (): string =>
   renderHint('mutate_task_already_canceled')
+export const formatRestartRuntimeUnavailableHint = (): string =>
+  renderHint('restart_runtime_unavailable')
+export const formatRestartRuntimeBusyHint = (): string =>
+  renderHint('restart_runtime_busy')
+export const formatRestartRuntimeAlreadyScheduledHint = (): string =>
+  renderHint('restart_runtime_already_scheduled')
 export {
   formatMutateTaskGitReasonRequiredHint,
   formatMutateTaskMergeRequiredHint,

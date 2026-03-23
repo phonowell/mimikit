@@ -56,6 +56,8 @@ export type RuntimeSessionState = {
   inflightInputs: PendingUserInput[]
   lastUserMeta?: UserMeta
   channelTargets: ChannelTargets
+  restartScheduled: boolean
+  pendingRestartReason?: string
   requestExit?: (request: ExitRequest) => void
 }
 
@@ -136,6 +138,7 @@ export const createRuntimeState = (
       stopped: false,
       inflightInputs: [],
       channelTargets: {},
+      restartScheduled: false,
       ...(options.onExitRequested
         ? { requestExit: options.onExitRequested }
         : {}),

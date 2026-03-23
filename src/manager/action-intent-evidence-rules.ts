@@ -21,6 +21,7 @@ import {
   buildTaskContractFromAttrs,
   resolveWorkerPromptFromAttrs,
 } from './task-contract.js'
+export { validateRestartRuntimeIntentEvidence } from './action-intent-evidence-restart-runtime.js'
 
 import type { SupplementalEvidenceSource } from './action-intent-evidence.js'
 import type { Parsed } from '../actions/model/spec.js'
@@ -170,7 +171,6 @@ export const validateAskUserChoiceIntentEvidence = (params: {
     evidenceSources: supplementalEvidenceSources,
   })
 }
-
 export const validateRememberMemoryIntentEvidence = (params: {
   item: Parsed
   inputTexts: string[]

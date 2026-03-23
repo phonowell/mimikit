@@ -16,6 +16,7 @@ import {
   validateAskUserChoice,
   validateMutateTask,
   validateRememberMemory,
+  validateRestartRuntime,
   validateRunTask,
   validateSummarizeTaskResult,
 } from './action-validation-risk.js'
@@ -39,6 +40,7 @@ export const validateWithSchema = (
 ): ValidationIssue[] => validateItemWithSchema(item, schema)
 
 export { validateRunTask }
+export { validateRestartRuntime }
 
 export const validateCreatePlan = (
   item: Parsed,

@@ -7,6 +7,7 @@ import {
   validateEnqueueTaskIntentEvidence,
   validateMutateTaskIntentEvidence,
   validateRememberMemoryIntentEvidence,
+  validateRestartRuntimeIntentEvidence,
 } from './action-intent-evidence-rules.js'
 
 import type { Parsed } from '../actions/model/spec.js'
@@ -24,16 +25,24 @@ type IntentEvidenceContext = {
 const INTENT_EVIDENCE_REQUIRED_ACTIONS = new Set([
   'enqueue_task',
   'mutate_task',
+  'restart_runtime',
   'ask_user_choice',
   'remember_memory',
 ])
+
+const requiresDirectUserEvidence = (actionName: Parsed['name']): boolean =>
+  actionName === 'restart_runtime'
 
 export const resolveIntentEvidenceRejectionHint = (
   item: Parsed,
   context: IntentEvidenceContext,
 ): string | undefined => {
   if (!INTENT_EVIDENCE_REQUIRED_ACTIONS.has(item.name)) return undefined
-  if (!context.supplementalEvidenceSources?.size) return undefined
+  if (
+    !requiresDirectUserEvidence(item.name) &&
+    !context.supplementalEvidenceSources?.size
+  )
+    return undefined
 
   const inputTexts = collectUserIntentTexts(context.inputs)
   if (inputTexts.length === 0) {
@@ -50,7 +59,9 @@ export const resolveIntentEvidenceRejectionHint = (
       ...(context.confirmedRunTaskChoiceIds
         ? { confirmedRunTaskChoiceIds: context.confirmedRunTaskChoiceIds }
         : {}),
-      supplementalEvidenceSources: context.supplementalEvidenceSources,
+      ...(context.supplementalEvidenceSources
+        ? { supplementalEvidenceSources: context.supplementalEvidenceSources }
+        : {}),
     })
   }
   if (item.name === 'mutate_task') {
@@ -59,21 +70,36 @@ export const resolveIntentEvidenceRejectionHint = (
       inputTexts,
       ...(context.inputs ? { inputs: context.inputs } : {}),
       ...(context.taskById ? { taskById: context.taskById } : {}),
-      supplementalEvidenceSources: context.supplementalEvidenceSources,
+      ...(context.supplementalEvidenceSources
+        ? { supplementalEvidenceSources: context.supplementalEvidenceSources }
+        : {}),
+    })
+  }
+  if (item.name === 'restart_runtime') {
+    return validateRestartRuntimeIntentEvidence({
+      item,
+      inputTexts,
+      ...(context.supplementalEvidenceSources
+        ? { supplementalEvidenceSources: context.supplementalEvidenceSources }
+        : {}),
     })
   }
   if (item.name === 'ask_user_choice') {
     return validateAskUserChoiceIntentEvidence({
       item,
       inputTexts,
-      supplementalEvidenceSources: context.supplementalEvidenceSources,
+      ...(context.supplementalEvidenceSources
+        ? { supplementalEvidenceSources: context.supplementalEvidenceSources }
+        : {}),
     })
   }
   if (item.name === 'remember_memory') {
     return validateRememberMemoryIntentEvidence({
       item,
       inputTexts,
-      supplementalEvidenceSources: context.supplementalEvidenceSources,
+      ...(context.supplementalEvidenceSources
+        ? { supplementalEvidenceSources: context.supplementalEvidenceSources }
+        : {}),
     })
   }
   return undefined

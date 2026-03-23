@@ -45,7 +45,6 @@ type OrchestratorOptions = Parameters<typeof createRuntimeState>[1]
 export class Orchestrator {
   private runtime: RuntimeState
   private stopChannelsAwait?: () => Promise<void>
-  private restartScheduled = false
   private readonly channelInput = (
     text: string,
     meta?: UserMeta,
@@ -57,9 +56,9 @@ export class Orchestrator {
     scheduleOrchestratorRestart({
       reason,
       getStatus: () => this.getStatus(),
-      restartScheduled: this.restartScheduled,
+      restartScheduled: this.runtime.session.restartScheduled,
       markScheduled: () => {
-        this.restartScheduled = true
+        this.runtime.session.restartScheduled = true
       },
       runRestart: async () => {
         await this.stopAndPersist()

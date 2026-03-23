@@ -24,6 +24,12 @@ mutate_task_not_paused: |
   mutate_task 执行失败：任务当前不是 paused 状态，无法 resume。
 mutate_task_already_canceled: |
   mutate_task 执行失败：任务已是 canceled 状态。
+restart_runtime_unavailable: |
+  restart_runtime 执行失败：当前 runtime 未暴露重启出口，不能由 manager 直接发起重启。
+restart_runtime_busy: |
+  restart_runtime 执行失败：当前仍有 pending/running worker task，需等待执行面清空后再重启。
+restart_runtime_already_scheduled: |
+  restart_runtime 执行失败：重启已在排队，不要重复发起。
 mutate_task_git_reason_required: |
   mutate_task 执行失败：{{ op }} 必须附带 `reason`，并用一句话明确引用用户已经确认的 review/merge/cleanup 动作。
 mutate_task_not_done_for_git: |

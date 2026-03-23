@@ -48,6 +48,7 @@ const actionSurfaceTemplateSchema = z
       .object({
         enqueue_task: actionPromptSpecSchema,
         mutate_task: actionPromptSpecSchema,
+        restart_runtime: actionPromptSpecSchema,
         set_task_result_summary: actionPromptSpecSchema,
         create_plan: actionPromptSpecSchema,
         update_plan: actionPromptSpecSchema,
@@ -97,6 +98,7 @@ const normalizePromptSpec = (
 export const ACTION_PROMPT_SPECS = {
   enqueue_task: normalizePromptSpec(templates.actions.enqueue_task),
   mutate_task: normalizePromptSpec(templates.actions.mutate_task),
+  restart_runtime: normalizePromptSpec(templates.actions.restart_runtime),
   set_task_result_summary: normalizePromptSpec(
     templates.actions.set_task_result_summary,
   ),

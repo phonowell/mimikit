@@ -11,6 +11,7 @@ const actionEvidenceHintSchema = z
   .object({
     enqueue_task_intent_evidence_missing: z.string().trim().min(1),
     mutate_task_intent_evidence_missing: z.string().trim().min(1),
+    restart_runtime_intent_evidence_missing: z.string().trim().min(1),
     ask_user_choice_intent_evidence_missing: z.string().trim().min(1),
     remember_memory_intent_evidence_missing: z.string().trim().min(1),
   })
@@ -44,6 +45,13 @@ export const formatMutateTaskIntentEvidenceHint = (params: {
     evidence_sources: params.evidenceSources,
     task_ref: params.taskRef,
     required_action: params.requiredAction ?? '目标控制动作',
+  })
+
+export const formatRestartRuntimeIntentEvidenceHint = (
+  evidenceSources: string,
+): string =>
+  renderHint('restart_runtime_intent_evidence_missing', {
+    evidence_sources: evidenceSources,
   })
 
 export const formatAskUserChoiceIntentEvidenceHint = (

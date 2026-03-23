@@ -85,6 +85,12 @@ export const mutateTaskSchema = z
   })
   .strict()
 
+export const restartRuntimeSchema = z
+  .object({
+    reason: nonEmptyString,
+  })
+  .strict()
+
 export const rememberMemorySchema = z
   .object({
     content: nonEmptyString,

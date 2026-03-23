@@ -1,6 +1,7 @@
 import { appendLog } from '../log/append.js'
 
 import { resolveManagerActionSurface } from './action-surface.js'
+import { canScheduleManagerRestart } from './restart-runtime.js'
 import { collectConfirmedRunTaskChoiceIds } from './run-task-confirmation.js'
 
 import type { SupplementalEvidenceSource } from './action-intent-evidence.js'
@@ -41,6 +42,9 @@ export const buildActionFeedbackContext = (params: {
   allowedActions: Set<string>
   inputs: UserInput[]
   supplementalEvidenceSources: Set<SupplementalEvidenceSource>
+  restartRuntimeAvailable: boolean
+  restartRuntimeScheduled: boolean
+  restartRuntimeBusy: boolean
 } => {
   const { runtime, allowAskUserChoice, resultTaskIds, wakeProfile, inputs } =
     params
@@ -65,6 +69,9 @@ export const buildActionFeedbackContext = (params: {
     allowedActions: actionSurface.actionNames,
     inputs: currentInputs,
     supplementalEvidenceSources,
+    restartRuntimeAvailable: runtime.session.requestExit !== undefined,
+    restartRuntimeScheduled: runtime.session.restartScheduled,
+    restartRuntimeBusy: !canScheduleManagerRestart(runtime),
   }
 }
 

@@ -4,7 +4,6 @@ import {
   parseAskUserChoiceAttrs,
   rememberMemorySchema,
   runTaskSchema,
-  summarizeSchema,
 } from './action-apply-schema.js'
 import { buildTaskContractMissingHintFromAction } from './action-feedback-contract-hint.js'
 import {
@@ -17,7 +16,6 @@ import {
   formatMutateTaskAlreadyPausedHint,
   formatMutateTaskNotFoundHint,
   formatMutateTaskNotPausedHint,
-  formatSetTaskResultSummaryTaskNotInBatchHint,
 } from './action-feedback-hints.js'
 import { resolveIntentEvidenceRejectionHint } from './action-intent-evidence.js'
 import { parseActionAttrs } from './action-parse.js'
@@ -28,6 +26,8 @@ import {
 } from './action-validation-helpers.js'
 import { validateMutateTaskGitOp } from './action-validation-mutate-task-git.js'
 import { validateRememberMemoryAction } from './action-validation-remember-memory.js'
+import { validateRestartRuntimeAction } from './action-validation-restart-runtime.js'
+import { validateTaskResultSummaryAction } from './action-validation-task-result-summary.js'
 import { resolveRunTaskConfirmationRequirement } from './run-task-confirmation.js'
 import {
   buildTaskContractFromAttrs,
@@ -55,6 +55,9 @@ export type FeedbackContext = {
   allowedActions?: Set<string>
   inputs?: UserInput[]
   supplementalEvidenceSources?: Set<'task_result'>
+  restartRuntimeAvailable?: boolean
+  restartRuntimeScheduled?: boolean
+  restartRuntimeBusy?: boolean
 }
 
 const validateWithSchema = validateItemWithSchema
@@ -151,6 +154,15 @@ export const validateMutateTask = (
   return validateHighRiskActionIntentEvidence(item, context)
 }
 
+export const validateRestartRuntime = (
+  item: Parsed,
+  context: FeedbackContext,
+): ValidationIssue[] => {
+  const issues = validateRestartRuntimeAction(item, context)
+  if (issues.length > 0) return issues
+  return validateHighRiskActionIntentEvidence(item, context)
+}
+
 export const validateRememberMemory = (
   item: Parsed,
   context: FeedbackContext,
@@ -163,19 +175,11 @@ export const validateRememberMemory = (
 export const validateSummarizeTaskResult = (
   item: Parsed,
   context: FeedbackContext,
-): ValidationIssue[] => {
-  const parsed = parseActionAttrs(item, summarizeSchema)
-  if (!parsed) return validateWithSchema(item, summarizeSchema)
-  const { resultTaskIds } = context
-  if (!resultTaskIds) return []
-  if (resultTaskIds.has(parsed.task_id)) return []
-  const available = [...resultTaskIds].slice(0, 3)
-  const availableHint =
-    available.length > 0
-      ? `当前批次可用 task_id: ${available.join(', ')}。`
-      : '当前批次无可摘要的 task_result。'
-  return rejected(formatSetTaskResultSummaryTaskNotInBatchHint(availableHint))
-}
+): ValidationIssue[] =>
+  validateTaskResultSummaryAction({
+    item,
+    ...(context.resultTaskIds ? { resultTaskIds: context.resultTaskIds } : {}),
+  })
 
 export const validateAskUserChoice = (
   item: Parsed,

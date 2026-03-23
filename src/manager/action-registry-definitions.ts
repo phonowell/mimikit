@@ -5,6 +5,7 @@ import { resumeTask } from '../worker/resume-task.js'
 
 import { applyAskUserChoiceAction } from './action-apply-choice.js'
 import { applyRunTask } from './action-apply-create.js'
+import { ActionApplyFeedbackError } from './action-apply-feedback-error.js'
 import {
   applyAssignFocusAction,
   applyUpsertFocusAction,
@@ -13,8 +14,14 @@ import { applyRememberMemoryAction } from './action-apply-memory.js'
 import {
   assignFocusSchema,
   mutateTaskSchema,
+  restartRuntimeSchema,
   upsertFocusSchema,
 } from './action-apply-schema.js'
+import {
+  formatRestartRuntimeAlreadyScheduledHint,
+  formatRestartRuntimeBusyHint,
+  formatRestartRuntimeUnavailableHint,
+} from './action-feedback-hints.js'
 import { parseActionAttrs } from './action-parse.js'
 import { ACTION_PROMPT_SPECS } from './action-prompt-spec.js'
 import { PLAN_ACTION_DEFINITIONS } from './action-registry-plan-definitions.js'
@@ -30,11 +37,13 @@ import {
   validateAskUserChoice,
   validateMutateTask,
   validateRememberMemory,
+  validateRestartRuntime,
   validateRunTask,
   validateSummarizeTaskResult,
   validateWithSchema,
   type ValidationIssue,
 } from './action-validation.js'
+import { scheduleManagerRestart } from './restart-runtime.js'
 
 import type { Parsed } from '../actions/model/spec.js'
 
@@ -65,6 +74,27 @@ const applyMutateTaskAction = async (
   await cancelTask(runtime, id, meta)
 }
 
+const applyRestartRuntimeAction = (
+  runtime: Parameters<ManagerActionDefinition['apply']>[0],
+  item: Parsed,
+): Promise<void> => {
+  const parsed = parseActionAttrs(item, restartRuntimeSchema)
+  if (!parsed) return Promise.resolve()
+  const result = scheduleManagerRestart(runtime, parsed.reason)
+  if (result === 'scheduled') return Promise.resolve()
+  const hint =
+    result === 'busy'
+      ? formatRestartRuntimeBusyHint()
+      : result === 'already_scheduled'
+        ? formatRestartRuntimeAlreadyScheduledHint()
+        : formatRestartRuntimeUnavailableHint()
+  throw new ActionApplyFeedbackError({
+    action: 'restart_runtime',
+    error: 'action_execution_rejected',
+    hint,
+  })
+}
+
 const TASK_ACTION_DEFINITIONS = [
   {
     name: 'enqueue_task',
@@ -82,6 +112,15 @@ const TASK_ACTION_DEFINITIONS = [
     },
     (item, context) => validateMutateTask(item, context),
     applyMutateTaskAction,
+  ),
+  createStopAction(
+    {
+      name: 'restart_runtime',
+      domain: 'task',
+      prompt: ACTION_PROMPT_SPECS.restart_runtime,
+    },
+    (item, context) => validateRestartRuntime(item, context),
+    applyRestartRuntimeAction,
   ),
   createNoopAction(
     {

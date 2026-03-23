@@ -7,6 +7,7 @@ import {
   formatEnqueueTaskIntentEvidenceHint,
   formatMutateTaskIntentEvidenceHint,
   formatRememberMemoryIntentEvidenceHint,
+  formatRestartRuntimeIntentEvidenceHint,
 } from './action-evidence-hints.js'
 
 import type { SupplementalEvidenceSource } from './action-intent-evidence.js'
@@ -34,6 +35,8 @@ export const buildMissingIntentEvidenceHint = (params: {
       taskRef: params.taskRef ?? '当前目标 task',
     })
   }
+  if (params.actionName === 'restart_runtime')
+    return formatRestartRuntimeIntentEvidenceHint(evidenceSources)
   if (params.actionName === 'ask_user_choice')
     return formatAskUserChoiceIntentEvidenceHint(evidenceSources)
   if (params.actionName === 'remember_memory')
