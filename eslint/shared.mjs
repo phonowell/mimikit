@@ -35,6 +35,20 @@ export const srcTsLanguageOptions = {
   sourceType: 'module',
 }
 
+export const testsTsLanguageOptions = {
+  ecmaVersion: 'latest',
+  globals: {
+    ...globals.browser,
+    ...globals.node,
+    ...globals.vitest,
+  },
+  parser: tsParser,
+  parserOptions: {
+    project: './tsconfig.eslint.json',
+  },
+  sourceType: 'module',
+}
+
 export const webuiTsLanguageOptions = {
   ecmaVersion: 'latest',
   globals: {

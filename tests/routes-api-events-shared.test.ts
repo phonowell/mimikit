@@ -1,6 +1,11 @@
+import { EventEmitter } from 'node:events'
+
 import { expect, test, vi } from 'vitest'
 
-import { closeSseSource } from '../src/surface/http/routes-api-events-shared.js'
+import {
+  closeSseSource,
+  registerSseClientCloseHandlers,
+} from '../src/surface/http/routes-api-events-shared.js'
 
 test('closeSseSource ignores replies without sseContext', () => {
   expect(() =>
@@ -45,4 +50,41 @@ test('closeSseSource skips ended or destroyed sources', () => {
 
   expect(destroyedEnd).not.toHaveBeenCalled()
   expect(endedEnd).not.toHaveBeenCalled()
+})
+
+test('registerSseClientCloseHandlers ignores request close and reacts to reply close', () => {
+  const requestRaw = new EventEmitter()
+  const replyRaw = new EventEmitter()
+  const onClose = vi.fn()
+  const cleanup = registerSseClientCloseHandlers(
+    { raw: requestRaw } as Parameters<typeof registerSseClientCloseHandlers>[0],
+    { raw: replyRaw } as Parameters<typeof registerSseClientCloseHandlers>[1],
+    onClose,
+  )
+
+  requestRaw.emit('close')
+  expect(onClose).not.toHaveBeenCalled()
+
+  replyRaw.emit('close')
+  expect(onClose).toHaveBeenCalledTimes(1)
+
+  cleanup()
+})
+
+test('registerSseClientCloseHandlers closes once across aborted and reply close', () => {
+  const requestRaw = new EventEmitter()
+  const replyRaw = new EventEmitter()
+  const onClose = vi.fn()
+  const cleanup = registerSseClientCloseHandlers(
+    { raw: requestRaw } as Parameters<typeof registerSseClientCloseHandlers>[0],
+    { raw: replyRaw } as Parameters<typeof registerSseClientCloseHandlers>[1],
+    onClose,
+  )
+
+  requestRaw.emit('aborted')
+  replyRaw.emit('close')
+
+  expect(onClose).toHaveBeenCalledTimes(1)
+
+  cleanup()
 })

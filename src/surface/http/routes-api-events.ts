@@ -3,6 +3,7 @@ import {
   buildSnapshotHintKey,
   closeSseSource,
   hasMessagePayloadChanged,
+  registerSseClientCloseHandlers,
   resolveMessageCursor,
   sendSseEvent,
   SSE_HEARTBEAT_MS,
@@ -28,12 +29,16 @@ export const registerEventsRoute = (
 
     let clientClosed = false
     const markClientClosed = () => {
+      if (clientClosed) return
       clientClosed = true
       closeSseSource(reply)
     }
     const isClientClosed = (): boolean => clientClosed
-    request.raw.once('aborted', markClientClosed)
-    request.raw.once('close', markClientClosed)
+    const cleanupCloseHandlers = registerSseClientCloseHandlers(
+      request,
+      reply,
+      markClientClosed,
+    )
 
     let lastSnapshotHintKey = ''
     let lastMessageCursor: string | undefined
@@ -92,8 +97,7 @@ export const registerEventsRoute = (
         error: error instanceof Error ? error.message : String(error),
       })
     } finally {
-      request.raw.off('aborted', markClientClosed)
-      request.raw.off('close', markClientClosed)
+      cleanupCloseHandlers()
       closeSseSource(reply)
     }
   })

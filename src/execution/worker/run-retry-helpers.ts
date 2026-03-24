@@ -1,4 +1,4 @@
-import pRetry from 'p-retry'
+import { AbortError } from 'p-retry'
 
 import { persistRuntimeState } from '../../kernel/orchestrator/runtime-persistence.js'
 import { appendLog } from '../../persistence/log/append.js'
@@ -10,9 +10,9 @@ import { isAbortLikeError } from './error-utils.js'
 import { isWorkerBudgetExceededError } from './profiled-runner-loop.js'
 import { shouldResetSessionAfterError } from './session-state.js'
 
-import type { WorkerLlmResult } from './run-retry-model.js'
 import type { Task } from '../../foundation/types/index.js'
 import type { WorkerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
+import type { Options, RetryContext } from 'p-retry'
 
 const shouldTreatAsTaskCancel = (
   controller: AbortController,
@@ -37,7 +37,7 @@ export const toAbortRetryError = (
   error: unknown,
 ): unknown => {
   if (shouldTreatAsTaskCancel(controller, error))
-    return new pRetry.AbortError(controller.signal.reason ?? 'Task canceled')
+    return new AbortError(controller.signal.reason ?? 'Task canceled')
 
   return toRetryError(error)
 }
@@ -49,7 +49,7 @@ export const buildRetryOptions = (params: {
   backoffMs: number
   controller: AbortController
   onSessionDiscarded: (error: unknown) => Promise<void>
-}): Parameters<typeof pRetry<WorkerLlmResult>>[1] => {
+}): Options => {
   const { runtime, task, retries, backoffMs, controller, onSessionDiscarded } =
     params
   return {
@@ -61,7 +61,7 @@ export const buildRetryOptions = (params: {
     signal: controller.signal,
     shouldConsumeRetry: ({ error }) => shouldRetryTaskRun(controller, error),
     shouldRetry: ({ error }) => shouldRetryTaskRun(controller, error),
-    onFailedAttempt: async (attemptError) => {
+    onFailedAttempt: async (attemptError: RetryContext) => {
       if (!shouldRetryTaskRun(controller, attemptError.error)) return
       if (isWorkerBudgetExceededError(attemptError.error)) return
       if (shouldResetSessionAfterError(attemptError.error))

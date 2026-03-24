@@ -1,6 +1,7 @@
 import {
   ignoreConfig,
   srcTsLanguageOptions,
+  testsTsLanguageOptions,
   tasksTsLanguageOptions,
   typeScriptPlugins,
   webuiJsLanguageOptions,
@@ -22,6 +23,12 @@ export const configBlocks = [
     languageOptions: webuiTsLanguageOptions,
     plugins: typeScriptPlugins,
     rules: webuiSrcTsRules,
+  },
+  {
+    files: ['tests/**/*.ts'],
+    languageOptions: testsTsLanguageOptions,
+    plugins: typeScriptPlugins,
+    rules: srcTsRules,
   },
   {
     files: ['webui/**/*.js'],

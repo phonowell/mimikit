@@ -1,5 +1,5 @@
 import type { Orchestrator } from '../../kernel/orchestrator/orchestrator-service.js'
-import type { FastifyReply } from 'fastify'
+import type { FastifyReply, FastifyRequest } from 'fastify'
 
 export const SSE_HEARTBEAT_MS = 15_000
 const SNAPSHOT_MESSAGE_LIMIT = 50
@@ -100,6 +100,25 @@ export const sendSseEvent = (
     return true
   } catch {
     return false
+  }
+}
+
+export const registerSseClientCloseHandlers = (
+  request: FastifyRequest,
+  reply: FastifyReply,
+  onClose: () => void,
+): (() => void) => {
+  let closed = false
+  const handleClose = () => {
+    if (closed) return
+    closed = true
+    onClose()
+  }
+  request.raw.once('aborted', handleClose)
+  reply.raw.once('close', handleClose)
+  return () => {
+    request.raw.off('aborted', handleClose)
+    reply.raw.off('close', handleClose)
   }
 }
 
