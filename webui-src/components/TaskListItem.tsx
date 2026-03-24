@@ -14,6 +14,7 @@ import { formatElapsedText } from '../../webui/tasks-view-time.js'
 import type { TaskView } from '../types.js'
 
 type Props = {
+  now: number
   onRequestDelete: (taskId: string, title: string) => void
   onTaskAction: (
     taskId: string,
@@ -30,6 +31,7 @@ const toMs = (value: string | undefined): number | null => {
 }
 
 export const TaskListItem = ({
+  now,
   onRequestDelete,
   onTaskAction,
   onToggleMenu,
@@ -45,13 +47,13 @@ export const TaskListItem = ({
   const completedMs = toMs(task.completedAt)
   const elapsed =
     status === 'running' && startMs
-      ? formatElapsedText(Date.now() - startMs, hasUsage)
+      ? formatElapsedText(now - startMs, hasUsage)
       : typeof task.durationMs === 'number'
         ? formatElapsedText(task.durationMs, hasUsage)
         : startMs && completedMs
           ? formatElapsedText(Math.max(0, completedMs - startMs), hasUsage)
           : ''
-  const timeDisplay = formatDisplayTimeWithFull(task.changeAt)
+  const timeDisplay = formatDisplayTimeWithFull(task.changeAt, { now })
   const pendingReason =
     status === 'pending'
       ? resolveTaskPendingReasonLabel(task.pending_reason)

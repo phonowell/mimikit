@@ -10,6 +10,11 @@
       "source": "buildermethods/design-os",
       "sourceType": "github",
       "computedHash": "ef27b958d3a46961a63a15fcb55de729d447d34e8cc868d46679f47b2ab31573"
+    },
+    "vercel-react-best-practices": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "computedHash": "c858d2d9023e73edb4e5504868cb0e36313e58fd56af12ef888b43c5634a3c17"
     }
   }
 }
