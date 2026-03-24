@@ -11,7 +11,7 @@ import type {
   UserChoiceOption,
   UserChoiceSelectionSource,
 } from '../../foundation/types/index.js'
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { OrchestratorRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 type PublishedChoiceEffectResult = {
   ok: boolean
@@ -33,7 +33,7 @@ const resolveSkipSummary = (choice: PendingUserChoice): string =>
   `Received a new user message before selecting an option for "${choice.question}". Canceled this choice as no option selected.`
 
 const publishSystemInput = async (params: {
-  runtime: RuntimeState
+  runtime: OrchestratorRuntime
   focusId: string
   createdAt: string
   summary: string
@@ -64,7 +64,7 @@ const publishSystemInput = async (params: {
 }
 
 export const publishChoiceSelectionInput = (params: {
-  runtime: RuntimeState
+  runtime: OrchestratorRuntime
   choice: PendingUserChoice
   option: UserChoiceOption
   source: UserChoiceSelectionSource
@@ -127,7 +127,7 @@ export const publishChoiceSelectionInput = (params: {
   })
 
 export const publishChoiceSkippedInput = (params: {
-  runtime: RuntimeState
+  runtime: OrchestratorRuntime
   choice: PendingUserChoice
   canceledAt: string
   triggerInputId: string

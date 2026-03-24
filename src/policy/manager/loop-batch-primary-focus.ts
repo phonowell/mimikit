@@ -11,10 +11,10 @@ import type {
   TaskResult,
   UserInput,
 } from '../../foundation/types/index.js'
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 const resolveKnownFocusId = (
-  runtime: RuntimeState,
+  runtime: ManagerRuntime,
   focusId?: FocusId,
 ): FocusId | undefined => {
   const normalized = focusId?.trim()
@@ -25,7 +25,7 @@ const resolveKnownFocusId = (
 }
 
 const resolveLatestUserFocusId = (
-  runtime: RuntimeState,
+  runtime: ManagerRuntime,
   inputsNewestFirst: UserInput[],
 ): FocusId | undefined => {
   for (const input of inputsNewestFirst) {
@@ -37,7 +37,7 @@ const resolveLatestUserFocusId = (
 }
 
 const resolveLatestResultFocusId = (
-  runtime: RuntimeState,
+  runtime: ManagerRuntime,
   resultsNewestFirst: TaskResult[],
 ): FocusId | undefined => {
   const taskById = new Map(runtime.tasks.map((task) => [task.id, task]))
@@ -51,7 +51,7 @@ const resolveLatestResultFocusId = (
 }
 
 const resolveLatestTriggerFocusId = (
-  runtime: RuntimeState,
+  runtime: ManagerRuntime,
   inputsNewestFirst: UserInput[],
 ): FocusId | undefined => {
   const planById = new Map(runtime.taskPlans.map((plan) => [plan.id, plan]))
@@ -75,7 +75,7 @@ const resolveLatestTriggerFocusId = (
 }
 
 const resolveLatestOpenTaskFocusId = (
-  runtime: RuntimeState,
+  runtime: ManagerRuntime,
 ): FocusId | undefined => {
   const openTasks = runtime.tasks
     .filter(
@@ -97,7 +97,7 @@ const resolveLatestOpenTaskFocusId = (
 }
 
 const resolveRecentActiveFocusId = (
-  runtime: RuntimeState,
+  runtime: ManagerRuntime,
 ): FocusId | undefined => {
   const activeFocus = runtime.focuses
     .filter((focus) => focus.status === 'active')
@@ -112,7 +112,7 @@ const resolveRecentActiveFocusId = (
 }
 
 export const resolveBatchPrimaryFocusId = (params: {
-  runtime: RuntimeState
+  runtime: ManagerRuntime
   inputs: UserInput[]
   results: TaskResult[]
   wakeProfile: ManagerWakeProfile
@@ -192,7 +192,7 @@ export const resolveBatchPrimaryFocusId = (params: {
 }
 
 export const resolveBatchWorkingFocusIds = (params: {
-  runtime: RuntimeState
+  runtime: ManagerRuntime
   inputs: UserInput[]
   results: TaskResult[]
   wakeProfile: ManagerWakeProfile

@@ -14,13 +14,13 @@ import type {
   TaskPlanEffect,
   TaskPlanTrigger,
 } from '../../foundation/types/index.js'
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 const resolvePlanLabel = (item: TaskPlan): string =>
   item.title.trim() || item.id
 
 export const appendPlanSystemMessage = async (
-  runtime: RuntimeState,
+  runtime: ManagerRuntime,
   event: 'plan_created' | 'plan_updated' | 'plan_deleted',
   plan: TaskPlan,
 ): Promise<void> => {

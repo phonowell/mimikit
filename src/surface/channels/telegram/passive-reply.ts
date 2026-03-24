@@ -5,7 +5,7 @@ import {
 } from '../shared/passive-reply.js'
 
 import type { UserInput } from '../../../foundation/types/index.js'
-import type { RuntimeState } from '../../../kernel/orchestrator/runtime-state.js'
+import type { ChannelRuntime } from '../../../kernel/orchestrator/runtime-interfaces.js'
 
 type TelegramUserInput = Extract<UserInput, { role: 'user' }> & {
   source: 'telegram'
@@ -30,7 +30,7 @@ export const hasTelegramUserInput = (inputs: UserInput[]): boolean =>
   hasUserInputFromSource(inputs, 'telegram')
 
 export const dispatchTelegramPassiveReply = async (params: {
-  runtime: RuntimeState
+  runtime: ChannelRuntime
   inputs: UserInput[]
   replyText: string
 }): Promise<void> => {

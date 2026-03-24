@@ -28,7 +28,7 @@ import {
 } from './task-contract.js'
 
 import type { WorkerProfile } from '../../foundation/types/index.js'
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 import type { Parsed } from '../actions/model/spec.js'
 
 export type ApplyTaskActionsOptions = {
@@ -37,7 +37,7 @@ export type ApplyTaskActionsOptions = {
 }
 
 export const applyRunTask = async (
-  runtime: RuntimeState,
+  runtime: ManagerRuntime,
   item: Parsed,
   seen: Set<string>,
   options?: ApplyTaskActionsOptions,

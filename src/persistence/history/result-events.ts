@@ -2,7 +2,10 @@ import { appendHistory, readHistory } from './store.js'
 import { appendTaskSystemMessage } from './task-events.js'
 
 import type { TaskResult, UserInput } from '../../foundation/types/index.js'
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type {
+  RuntimeTaskCollection,
+  RuntimeTaskState,
+} from '../../kernel/orchestrator/runtime-interfaces.js'
 
 const summarizeResultOutput = (
   result: TaskResult,
@@ -17,7 +20,7 @@ const summarizeResultOutput = (
 }
 
 const shouldIgnoreStaleResult = (
-  task: RuntimeState['tasks'][number],
+  task: RuntimeTaskState,
   result: TaskResult,
 ): boolean => {
   if (result.status !== 'partial') return false
@@ -47,7 +50,7 @@ export const appendConsumedInputsToHistory = async (
 
 export const appendConsumedResultsToHistory = async (
   historyPath: string,
-  tasks: RuntimeState['tasks'],
+  tasks: RuntimeTaskCollection,
   results: TaskResult[],
   summaries?: Map<string, string>,
 ): Promise<number> => {

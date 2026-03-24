@@ -5,7 +5,7 @@ import type {
   TaskPlan,
   TaskResult,
 } from '../../foundation/types/index.js'
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 const resolveTriggeredPlanMatch = (
   plans: TaskPlan[],
@@ -26,7 +26,7 @@ const resolveTriggeredPlanMatch = (
 }
 
 export const linkTriggeredPlanToTask = (params: {
-  runtime: RuntimeState
+  runtime: ManagerRuntime
   triggeredPlanIds: ReadonlySet<string> | undefined
   task: Pick<Task, 'id' | 'focusId' | 'title'>
   linkedAt?: string
@@ -55,7 +55,7 @@ export const linkTriggeredPlanToTask = (params: {
 }
 
 export const applyPlanCompletionState = (
-  runtime: RuntimeState,
+  runtime: ManagerRuntime,
   results: TaskResult[],
 ): void => {
   if (results.length === 0) return

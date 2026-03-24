@@ -5,7 +5,7 @@ import { dispatchTelegramPassiveReply } from '../../surface/channels/telegram/pa
 
 import type { ManagerAutoRetryMeta } from './manager-llm-call.js'
 import type { UserInput } from '../../foundation/types/index.js'
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 const resolveLatestUserInputId = (inputs: UserInput[]): string | undefined => {
   for (let index = inputs.length - 1; index >= 0; index -= 1) {
@@ -17,7 +17,7 @@ const resolveLatestUserInputId = (inputs: UserInput[]): string | undefined => {
 }
 
 export const appendAndDispatchManagerFailureReply = async (params: {
-  runtime: RuntimeState
+  runtime: ManagerRuntime
   inputs: UserInput[]
   focusId: string
   autoRetryMeta: ManagerAutoRetryMeta

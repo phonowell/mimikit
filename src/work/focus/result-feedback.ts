@@ -8,7 +8,7 @@ import {
 import { ensureFocus, normalizeFocusSummary, touchFocus } from './state.js'
 
 import type { Task, TaskResult } from '../../foundation/types/index.js'
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { FocusRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 const MAX_RESULT_SUMMARY_CHARS = 280
 
@@ -31,7 +31,7 @@ const resolveHandoffSummary = (result: TaskResult): string | undefined => {
 }
 
 export const syncFocusFromTaskResult = (
-  runtime: RuntimeState,
+  runtime: FocusRuntime,
   task: Task,
   result: TaskResult,
 ): void => {

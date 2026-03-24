@@ -1,12 +1,13 @@
 import { waitForWorkerLoopSignal } from '../../kernel/orchestrator/signals.js'
+import { recoverDispatchedTaskToPending } from '../../work/orchestrator/task-state-write.js'
 
 import { clearTaskLiveOutput } from './live-output.js'
 import { reportWorkerQueueError, runQueuedWorker } from './queued-run.js'
 
 import type { Task } from '../../foundation/types/index.js'
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { WorkerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
-export const enqueueWorkerTask = (runtime: RuntimeState, task: Task): void => {
+export const enqueueWorkerTask = (runtime: WorkerRuntime, task: Task): void => {
   if (task.status !== 'pending') return
   if (runtime.worker.runningControllers.has(task.id)) return
   if (runtime.worker.queue.sizeBy({ id: task.id }) > 0) return
@@ -15,15 +16,14 @@ export const enqueueWorkerTask = (runtime: RuntimeState, task: Task): void => {
     .catch((error) => reportWorkerQueueError(runtime, error))
 }
 
-export const enqueuePendingWorkerTasks = (runtime: RuntimeState): void => {
+export const enqueuePendingWorkerTasks = (runtime: WorkerRuntime): void => {
   for (const task of runtime.tasks) {
     if (
       task.status === 'running' &&
       !runtime.worker.runningControllers.has(task.id) &&
       runtime.worker.queue.sizeBy({ id: task.id }) === 0
     ) {
-      task.status = 'pending'
-      delete task.startedAt
+      recoverDispatchedTaskToPending({ runtime, taskId: task.id })
       clearTaskLiveOutput(runtime, task.id)
     }
     if (task.status !== 'pending') continue
@@ -31,7 +31,7 @@ export const enqueuePendingWorkerTasks = (runtime: RuntimeState): void => {
   }
 }
 
-export const workerLoop = async (runtime: RuntimeState): Promise<void> => {
+export const workerLoop = async (runtime: WorkerRuntime): Promise<void> => {
   while (!runtime.session.stopped) {
     enqueuePendingWorkerTasks(runtime)
     await waitForWorkerLoopSignal(runtime, Number.POSITIVE_INFINITY)

@@ -9,11 +9,11 @@ import {
 import { resolveActionFocusId } from './action-focus-id.js'
 import { parseActionAttrs } from './action-parse.js'
 
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 import type { Parsed } from '../actions/model/spec.js'
 
 export const applyRememberMemoryAction = async (
-  runtime: RuntimeState,
+  runtime: ManagerRuntime,
   item: Parsed,
 ): Promise<void> => {
   const parsed = parseActionAttrs(item, rememberMemorySchema)

@@ -6,7 +6,7 @@ import type {
   TaskResult,
   UserInput,
 } from '../../foundation/types/index.js'
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 const MIN_PROMPT_SECTION_BYTES = 512
 
@@ -44,7 +44,7 @@ export const resolveWakeProfile = (
   return 'capacity'
 }
 
-const countActiveFocuses = (runtime: RuntimeState): number =>
+const countActiveFocuses = (runtime: ManagerRuntime): number =>
   runtime.focuses.filter((focus) => focus.status === 'active').length
 
 export const normalizePromptSectionLimits = (
@@ -58,7 +58,7 @@ export const normalizePromptSectionLimits = (
   ) as PromptSectionLimits
 
 export const resolveManagerContextBudgetDecision = (params: {
-  runtime: RuntimeState
+  runtime: ManagerRuntime
   inputs: UserInput[]
   results: TaskResult[]
 }): ManagerContextBudgetDecision => ({

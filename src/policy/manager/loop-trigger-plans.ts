@@ -11,7 +11,7 @@ import {
 import { hasNextCronRun, matchesCronNow } from './plan-cron.js'
 
 import type { TaskPlan } from '../../foundation/types/index.js'
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 const asSecondStamp = (iso: string): string => iso.slice(0, 19)
 
@@ -25,7 +25,7 @@ const sortTriggerPlans = (plans: TaskPlan[]): TaskPlan[] =>
     return compareIsoAsc(a.createdAt, b.createdAt)
   })
 
-export const hasRunnableWorkerSlotPlan = (runtime: RuntimeState): boolean =>
+export const hasRunnableWorkerSlotPlan = (runtime: ManagerRuntime): boolean =>
   runtime.taskPlans.some((plan) => {
     if (plan.status !== 'active') return false
     if (plan.trigger.mode !== 'on_worker_slot_freed') return false
@@ -34,7 +34,7 @@ export const hasRunnableWorkerSlotPlan = (runtime: RuntimeState): boolean =>
   })
 
 const triggerPlans = async (params: {
-  runtime: RuntimeState
+  runtime: ManagerRuntime
   nowIso: string
   plans: TaskPlan[]
   reason: 'on_worker_slot_freed'
@@ -72,7 +72,7 @@ const triggerPlans = async (params: {
 }
 
 export const checkScheduledPlans = async (
-  runtime: RuntimeState,
+  runtime: ManagerRuntime,
   now: Date,
 ): Promise<{ triggeredCount: number; stateChanged: boolean }> => {
   const nowIso = now.toISOString()
@@ -172,7 +172,7 @@ export const checkScheduledPlans = async (
 }
 
 export const triggerOnWorkerSlotFreedPlans = (
-  runtime: RuntimeState,
+  runtime: ManagerRuntime,
   nowMs: number,
   availableSlots: number,
 ): Promise<{ triggeredCount: number; stateChanged: boolean }> => {

@@ -6,11 +6,11 @@ import { putPendingUserChoice } from '../../work/orchestrator/user-choice-state.
 
 import { parseAskUserChoiceAttrs } from './action-apply-schema.js'
 
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 import type { Parsed } from '../actions/model/spec.js'
 
 export const applyAskUserChoiceAction = async (
-  runtime: RuntimeState,
+  runtime: ManagerRuntime,
   item: Parsed,
 ): Promise<void> => {
   const parsed = parseAskUserChoiceAttrs(item.attrs)

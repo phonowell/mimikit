@@ -7,10 +7,10 @@ import { buildTaskViews } from '../read-model/task-view.js'
 import { getChatMessagesSnapshot } from './orchestrator-chat-history.js'
 
 import type { OrchestratorStatus } from '../../kernel/orchestrator/orchestrator-helpers.js'
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { SurfaceRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 export const buildOrchestratorTaskViews = (
-  runtime: RuntimeState,
+  runtime: SurfaceRuntime,
   limit = 200,
 ) => {
   const liveOutputByTaskId = getTaskLiveOutputById(runtime)
@@ -22,7 +22,7 @@ export const buildOrchestratorTaskViews = (
 }
 
 export const buildOrchestratorPlanViews = (
-  runtime: RuntimeState,
+  runtime: SurfaceRuntime,
   limit = 200,
 ) => {
   const items = sortTaskPlansForView(runtime.taskPlans)
@@ -32,12 +32,12 @@ export const buildOrchestratorPlanViews = (
 }
 
 export const buildOrchestratorFocusViews = (
-  runtime: RuntimeState,
+  runtime: SurfaceRuntime,
   limit = 200,
 ) => buildFocusViews(runtime.focuses, limit, runtime.tasks)
 
 export const buildOrchestratorWebUiSnapshot = async (params: {
-  runtime: RuntimeState
+  runtime: SurfaceRuntime
   status: OrchestratorStatus
   messageLimit: number
   taskLimit: number
@@ -51,7 +51,7 @@ export const buildOrchestratorWebUiSnapshot = async (params: {
 })
 
 export const buildOrchestratorWebUiDeltaSnapshot = async (params: {
-  runtime: RuntimeState
+  runtime: SurfaceRuntime
   status: OrchestratorStatus
   messageLimit: number
   afterId?: string

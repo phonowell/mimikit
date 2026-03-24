@@ -20,12 +20,15 @@ import {
   type RuntimeSnapshotPersistSlice,
 } from './runtime-snapshot-persist.js'
 
-import type { RuntimeState } from './runtime-state.js'
+import type {
+  RuntimeChannelTargets,
+  RuntimePathsState,
+} from './runtime-interfaces.js'
 
 const restoreChannelTargetsFromHistory = async (
   historyPath: string,
-  currentTargets: RuntimeState['session']['channelTargets'] = {},
-): Promise<RuntimeState['session']['channelTargets']> => {
+  currentTargets: RuntimeChannelTargets = {},
+): Promise<RuntimeChannelTargets> => {
   const history = await readHistory(historyPath)
   let { telegramChatId } = currentTargets
   let { feishuChatId } = currentTargets
@@ -53,7 +56,9 @@ const restoreChannelTargetsFromHistory = async (
 }
 
 type HydratableRuntimeState = RuntimeSnapshotHydrateTarget &
-  Pick<RuntimeState, 'config' | 'paths'>
+  RuntimePathsState & {
+    config: { workDir: string }
+  }
 
 export const hydrateRuntimeState = async (
   runtime: HydratableRuntimeState,

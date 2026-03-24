@@ -12,11 +12,11 @@ import {
 } from './action-apply-schema.js'
 import { parseActionAttrs } from './action-parse.js'
 
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 import type { Parsed } from '../actions/model/spec.js'
 
 export const applyUpsertFocusAction = async (
-  runtime: RuntimeState,
+  runtime: ManagerRuntime,
   item: Parsed,
 ): Promise<void> => {
   const parsed = parseUpsertFocusAttrs(item.attrs)
@@ -34,7 +34,7 @@ export const applyUpsertFocusAction = async (
 }
 
 export const applyAssignFocusAction = async (
-  runtime: RuntimeState,
+  runtime: ManagerRuntime,
   item: Parsed,
 ): Promise<void> => {
   const parsed = parseActionAttrs(item, assignFocusSchema)

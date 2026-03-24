@@ -1,10 +1,10 @@
 import { appendLog } from '../../../persistence/log/append.js'
 
 import type { UserInput } from '../../../foundation/types/index.js'
-import type { RuntimeState } from '../../../kernel/orchestrator/runtime-state.js'
+import type { ChannelRuntime } from '../../../kernel/orchestrator/runtime-interfaces.js'
 
 type DispatchParams<TInput extends UserInput> = {
-  runtime: RuntimeState
+  runtime: ChannelRuntime
   inputs: UserInput[]
   replyText: string
   enabled: boolean

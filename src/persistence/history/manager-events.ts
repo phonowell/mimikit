@@ -9,7 +9,7 @@ import type {
   FocusId,
   ManagerActionFeedback,
 } from '../../foundation/types/index.js'
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { RuntimePathsState } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 type ManagerFallbackMeta = {
   sourceInputId?: string
@@ -20,7 +20,7 @@ type ManagerFallbackMeta = {
 }
 
 export const appendManagerFallbackReply = async (
-  paths: RuntimeState['paths'],
+  paths: RuntimePathsState['paths'],
   focusId: FocusId = GLOBAL_FOCUS_ID,
   fallbackMeta?: ManagerFallbackMeta,
 ): Promise<string> => {
@@ -63,7 +63,7 @@ const compactManagerErrorText = (value: string): string =>
   value.replace(/\s+/g, ' ').trim()
 
 export const appendManagerErrorSystemMessage = async (
-  paths: RuntimeState['paths'],
+  paths: RuntimePathsState['paths'],
   error: string,
   focusId: FocusId = GLOBAL_FOCUS_ID,
 ): Promise<void> => {
@@ -85,7 +85,7 @@ export const appendManagerErrorSystemMessage = async (
 }
 
 export const appendManagerCorrectionLimitSystemMessage = async (
-  paths: RuntimeState['paths'],
+  paths: RuntimePathsState['paths'],
   maxRounds: number,
   focusId: FocusId = GLOBAL_FOCUS_ID,
 ): Promise<void> => {

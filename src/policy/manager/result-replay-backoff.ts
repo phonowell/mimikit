@@ -5,21 +5,21 @@ import { bestEffort } from '../../persistence/log/safe.js'
 
 import { resolveManagerIdleTimeoutMs } from './loop-idle-timeout.js'
 
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 const MIN_RESULT_REPLAY_BACKOFF_MS = 5_000
 const MAX_RESULT_REPLAY_BACKOFF_MS = 60_000
 
-const resolveReplayBackoffBaseMs = (runtime: RuntimeState): number =>
+const resolveReplayBackoffBaseMs = (runtime: ManagerRuntime): number =>
   Math.max(MIN_RESULT_REPLAY_BACKOFF_MS, runtime.config.worker.retry.backoffMs)
 
-export const clearResultReplayBackoff = (runtime: RuntimeState): void => {
+export const clearResultReplayBackoff = (runtime: ManagerRuntime): void => {
   runtime.manager.resultReplayFailureCount = 0
   runtime.manager.resultReplayReadyAtMs = 0
 }
 
 export const scheduleResultReplayBackoff = (params: {
-  runtime: RuntimeState
+  runtime: ManagerRuntime
   error: unknown
   resultsCount: number
   autoRetryState?: 'exhausted' | 'not_retryable'
@@ -44,7 +44,7 @@ export const scheduleResultReplayBackoff = (params: {
 }
 
 export const resolveResultReplayDelayMs = (
-  runtime: RuntimeState,
+  runtime: ManagerRuntime,
   inputCount: number,
   resultCount: number,
 ): number => {
@@ -57,7 +57,7 @@ export const resolveResultReplayDelayMs = (
 }
 
 export const waitForResultReplayBackoff = async (
-  runtime: RuntimeState,
+  runtime: ManagerRuntime,
   inputCount: number,
   resultCount: number,
 ): Promise<boolean> => {

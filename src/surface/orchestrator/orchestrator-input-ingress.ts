@@ -21,14 +21,14 @@ import {
 import { cancelPendingUserChoiceByUserInput } from '../../work/orchestrator/user-choice.js'
 
 import type {
-  RuntimeState,
-  UserMeta,
-} from '../../kernel/orchestrator/runtime-state.js'
+  RuntimeUserMeta,
+  SurfaceRuntime,
+} from '../../kernel/orchestrator/runtime-interfaces.js'
 
 export const appendUserInput = async (
-  runtime: RuntimeState,
+  runtime: SurfaceRuntime,
   text: string,
-  meta?: UserMeta,
+  meta?: RuntimeUserMeta,
   quote?: string,
 ): Promise<string> => {
   const id = `input-${newId()}`
@@ -97,7 +97,7 @@ export const appendUserInput = async (
 }
 
 export const appendStartupSystemMessage = async (
-  runtime: RuntimeState,
+  runtime: SurfaceRuntime,
 ): Promise<void> => {
   const { appendHistory } = await import('../../persistence/history/store.js')
   const { bestEffort } = await import('../../persistence/log/safe.js')

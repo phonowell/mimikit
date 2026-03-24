@@ -13,7 +13,7 @@ import type {
   TokenUsage,
   UserInput,
 } from '../../foundation/types/index.js'
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 export type ManagerRoundExtra = {
   actionFeedback?: ManagerActionFeedback[]
@@ -26,14 +26,14 @@ export const hasNoFollowupRequests = (params: {
 }
 
 export const buildActionFeedbackContext = (params: {
-  runtime: RuntimeState
+  runtime: ManagerRuntime
   allowAskUserChoice: boolean
   resultTaskIds: Set<string>
   wakeProfile: ManagerWakeProfile
   inputs?: UserInput[]
 }): {
   taskStatusById: Map<string, TaskStatus>
-  taskById: Map<string, RuntimeState['tasks'][number]>
+  taskById: Map<string, ManagerRuntime['tasks'][number]>
   planStatusById: Map<string, TaskPlanStatus>
   resultTaskIds: Set<string>
   allowAskUserChoice: boolean
@@ -76,7 +76,7 @@ export const buildActionFeedbackContext = (params: {
 }
 
 export const logManagerBatchStart = (
-  runtime: RuntimeState,
+  runtime: ManagerRuntime,
   inputIds: string[],
   resultIds: string[],
 ): Promise<void> =>

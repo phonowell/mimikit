@@ -21,10 +21,10 @@ import type {
   TokenUsage,
   UserInput,
 } from '../../foundation/types/index.js'
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 export const finishBatchWithoutAgentReply = async (params: {
-  runtime: RuntimeState
+  runtime: ManagerRuntime
   inputs: UserInput[]
   results: TaskResult[]
   nextInputsCursor: number
@@ -53,7 +53,7 @@ export const finishBatchWithoutAgentReply = async (params: {
 }
 
 export const appendManagerReply = async (params: {
-  runtime: RuntimeState
+  runtime: ManagerRuntime
   text: string
   nextInputsCursor: number
   usage?: TokenUsage
@@ -83,7 +83,7 @@ export const appendManagerReply = async (params: {
 }
 
 export const recoverManagerBatchFailure = async (params: {
-  runtime: RuntimeState
+  runtime: ManagerRuntime
   error: unknown
   inputs: UserInput[]
   results: TaskResult[]

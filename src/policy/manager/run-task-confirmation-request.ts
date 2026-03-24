@@ -8,10 +8,10 @@ import {
   RUN_TASK_CONFIRM_OPTION_ID,
 } from './run-task-confirmation.js'
 
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 export const requestRunTaskConfirmation = async (params: {
-  runtime: RuntimeState
+  runtime: ManagerRuntime
   choiceId: string
   estimatedChars: number
   title: string

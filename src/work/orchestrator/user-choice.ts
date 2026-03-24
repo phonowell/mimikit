@@ -10,7 +10,7 @@ import {
   resolvePendingUserChoiceDefaultOption,
 } from './user-choice-state.js'
 
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { OrchestratorRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 export {
   selectPendingUserChoice,
   selectPendingUserChoiceFromUser,
@@ -21,7 +21,7 @@ export type {
 } from './user-choice-select.js'
 
 export const cancelPendingUserChoiceByUserInput = async (params: {
-  runtime: RuntimeState
+  runtime: OrchestratorRuntime
   triggerInputId: string
   createdAt?: string
 }): Promise<boolean> => {
@@ -43,7 +43,7 @@ export const cancelPendingUserChoiceByUserInput = async (params: {
 }
 
 export const resolvePendingUserChoiceTimeout = async (
-  runtime: RuntimeState,
+  runtime: OrchestratorRuntime,
   nowMs: number = Date.now(),
 ): Promise<boolean> => {
   const expiredChoices = runtime.ui.pendingUserChoices.filter((choice) =>

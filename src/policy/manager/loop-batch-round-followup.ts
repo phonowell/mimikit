@@ -15,11 +15,11 @@ import {
 } from './loop-batch-run-helpers.js'
 
 import type { FocusId } from '../../foundation/types/index.js'
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 import type { Parsed } from '../actions/model/spec.js'
 
 const appendRoundActionFeedback = async (params: {
-  runtime: RuntimeState
+  runtime: ManagerRuntime
   actionFeedback: ManagerRoundExtra['actionFeedback']
   resolveFocusId: () => FocusId
 }): Promise<void> => {
@@ -58,7 +58,7 @@ type RoundFollowupResult =
     }
 
 export const resolveRoundFollowup = async (params: {
-  runtime: RuntimeState
+  runtime: ManagerRuntime
   parsed: Parsed[]
   output: string
   allowAskUserChoice: boolean

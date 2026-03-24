@@ -1,7 +1,7 @@
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { WorkerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 const MAX_LIVE_OUTPUT_CHARS = 800
-const taskLiveOutputStore = new WeakMap<RuntimeState, Map<string, string>>()
+const taskLiveOutputStore = new WeakMap<WorkerRuntime, Map<string, string>>()
 
 const normalizeLiveOutput = (value: string): string => {
   const normalized = value.replace(/\r\n?/g, '\n').trim()
@@ -11,7 +11,7 @@ const normalizeLiveOutput = (value: string): string => {
   return `...${clipped}`
 }
 
-const ensureOutputMap = (runtime: RuntimeState): Map<string, string> => {
+const ensureOutputMap = (runtime: WorkerRuntime): Map<string, string> => {
   const existing = taskLiveOutputStore.get(runtime)
   if (existing) return existing
   const created = new Map<string, string>()
@@ -20,11 +20,11 @@ const ensureOutputMap = (runtime: RuntimeState): Map<string, string> => {
 }
 
 export const getTaskLiveOutputById = (
-  runtime: RuntimeState,
+  runtime: WorkerRuntime,
 ): ReadonlyMap<string, string> | undefined => taskLiveOutputStore.get(runtime)
 
 export const setTaskLiveOutput = (
-  runtime: RuntimeState,
+  runtime: WorkerRuntime,
   taskId: string,
   output: string,
 ): boolean => {
@@ -45,7 +45,7 @@ export const setTaskLiveOutput = (
 }
 
 export const clearTaskLiveOutput = (
-  runtime: RuntimeState,
+  runtime: WorkerRuntime,
   taskId: string,
 ): boolean => {
   const id = taskId.trim()

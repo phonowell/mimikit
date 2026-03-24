@@ -29,10 +29,10 @@ import type {
   TokenUsage,
   UserInput,
 } from '../../foundation/types/index.js'
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 export const runManagerCorrectionRounds = async (params: {
-  runtime: RuntimeState
+  runtime: ManagerRuntime
   inputs: UserInput[]
   results: TaskResult[]
   tasks: Task[]

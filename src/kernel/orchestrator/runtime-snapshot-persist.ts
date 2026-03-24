@@ -2,17 +2,23 @@ import { RUNTIME_SNAPSHOT_SCHEMA_VERSION } from '../../persistence/storage/runti
 import { selectPersistedTasks } from '../../persistence/storage/runtime-snapshot.js'
 import { canStoreFocusDetails } from '../../work/focus/reserved.js'
 
-import type { RuntimeState } from './runtime-state.js'
+import type {
+  RuntimeDomainState,
+  RuntimeFocusCollection,
+} from './runtime-interfaces.js'
 import type { RuntimeSnapshot } from '../../persistence/storage/runtime-snapshot-schema.js'
 
 export type RuntimeSnapshotPersistSlice = Pick<
-  RuntimeState,
-  'config' | 'tasks' | 'taskPlans' | 'focuses' | 'queues'
-> & {
-  manager: Pick<RuntimeState['manager'], 'turn' | 'threadId' | 'memoryRefresh'>
-  session: Pick<RuntimeState['session'], 'channelTargets'>
-  ui: Pick<RuntimeState['ui'], 'pendingUserChoices'>
-}
+  RuntimeDomainState & { config: { workDir: string } },
+  | 'config'
+  | 'tasks'
+  | 'taskPlans'
+  | 'focuses'
+  | 'queues'
+  | 'manager'
+  | 'session'
+  | 'ui'
+>
 
 export const normalizeChannelTargets = (
   value:
@@ -31,7 +37,7 @@ export const normalizeChannelTargets = (
 }
 
 const selectPersistedFocuses = (
-  focuses: RuntimeState['focuses'],
+  focuses: RuntimeFocusCollection,
 ): RuntimeSnapshot['focuses'] =>
   focuses.map((focus) =>
     canStoreFocusDetails(focus.id)

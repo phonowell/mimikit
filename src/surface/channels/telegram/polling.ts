@@ -5,7 +5,7 @@ import { assertEnabledTelegramConfig } from './config.js'
 import { resolveTelegramProxy } from './proxy.js'
 
 import type { AppConfig } from '../../../bootstrap/config.js'
-import type { UserMeta } from '../../../kernel/orchestrator/runtime-state.js'
+import type { RuntimeUserMeta } from '../../../kernel/orchestrator/runtime-interfaces.js'
 import type { Telegraf } from 'telegraf'
 
 type TelegramRunner = {
@@ -65,7 +65,9 @@ const parseMmkCommand = (
 const toIsoFromUnixSeconds = (value: number): string =>
   new Date(value * 1000).toISOString()
 
-const buildTelegramUserMeta = (ctx: TelegramInboundContext): UserMeta => ({
+const buildTelegramUserMeta = (
+  ctx: TelegramInboundContext,
+): RuntimeUserMeta => ({
   source: 'telegram',
   platform: 'telegram',
   channel: 'telegram',
@@ -81,7 +83,7 @@ export const startTelegramPolling = async (params: {
   workDir: string
   addUserInput: (
     text: string,
-    meta?: UserMeta,
+    meta?: RuntimeUserMeta,
     quote?: string,
   ) => Promise<string>
   requestRestart?: (

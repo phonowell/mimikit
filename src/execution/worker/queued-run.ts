@@ -1,24 +1,21 @@
-import { persistRuntimeState } from '../../kernel/orchestrator/runtime-persistence.js'
-import {
-  notifyManagerLoop,
-  notifyUiSignal,
-  notifyWorkerLoop,
-} from '../../kernel/orchestrator/signals.js'
 import { appendLog } from '../../persistence/log/append.js'
 import { bestEffort } from '../../persistence/log/safe.js'
-import { markTaskRunning } from '../../work/orchestrator/task-lifecycle.js'
+import {
+  finishTaskWorkerRun,
+  startTaskWorkerRun,
+} from '../../work/orchestrator/task-worker-run-write.js'
 import { buildTaskDispatchLockKey } from '../../work/shared/task-execution-target.js'
 
 import { clearTaskLiveOutput } from './live-output.js'
 import { runTask } from './run-task.js'
 
 import type { Task } from '../../foundation/types/index.js'
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { WorkerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 const LONG_TASK_SOFT_THRESHOLD_MS = 20 * 60 * 1000
 
 export const reportWorkerQueueError = async (
-  runtime: RuntimeState,
+  runtime: WorkerRuntime,
   error: unknown,
 ): Promise<void> => {
   const message = error instanceof Error ? error.message : String(error)
@@ -31,23 +28,21 @@ export const reportWorkerQueueError = async (
 }
 
 export const runQueuedWorker = async (
-  runtime: RuntimeState,
+  runtime: WorkerRuntime,
   task: Task,
 ): Promise<void> => {
   if (task.status !== 'pending') return
   if (runtime.worker.runningControllers.has(task.id)) return
   const dispatchLockKey = buildTaskDispatchLockKey(task)
   if (runtime.worker.runningTaskLocks.has(dispatchLockKey)) return
-  runtime.worker.lastActivityAtMs = Date.now()
   clearTaskLiveOutput(runtime, task.id)
   const controller = new AbortController()
-  runtime.worker.runningTaskLocks.add(dispatchLockKey)
-  runtime.worker.runningControllers.set(task.id, controller)
-  markTaskRunning(runtime.tasks, task.id)
-  notifyUiSignal(runtime)
-  await bestEffort('persistRuntimeState: worker_start', () =>
-    persistRuntimeState(runtime),
-  )
+  await startTaskWorkerRun({
+    runtime,
+    task,
+    dispatchLockKey,
+    controller,
+  })
   let longTaskWarned = false
   const longTaskTimer = setInterval(() => {
     const controllerForTask = runtime.worker.runningControllers.get(task.id)
@@ -73,12 +68,10 @@ export const runQueuedWorker = async (
   } finally {
     clearInterval(longTaskTimer)
     clearTaskLiveOutput(runtime, task.id)
-    runtime.worker.runningControllers.delete(task.id)
-    runtime.worker.runningTaskLocks.delete(dispatchLockKey)
-    notifyManagerLoop(runtime)
-    await bestEffort('persistRuntimeState: worker_end', () =>
-      persistRuntimeState(runtime),
-    )
-    notifyWorkerLoop(runtime)
+    await finishTaskWorkerRun({
+      runtime,
+      taskId: task.id,
+      dispatchLockKey,
+    })
   }
 }

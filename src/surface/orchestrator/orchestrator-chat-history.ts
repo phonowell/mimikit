@@ -6,7 +6,7 @@ import {
   selectChatMessages,
 } from '../read-model/chat-view.js'
 
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { SurfaceRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 import type { ChatMessage, ChatMessagesMode } from '../read-model/chat-view.js'
 
 const DELETED_MESSAGE_TEXT = 'Message deleted.'
@@ -16,7 +16,7 @@ export type DeleteChatMessageResult =
   | { ok: false; reason: 'not_found' | 'not_allowed' }
 
 export const getChatMessagesSnapshot = async (
-  runtime: RuntimeState,
+  runtime: SurfaceRuntime,
   limit = 50,
   afterId?: string,
 ): Promise<{ messages: ChatMessage[]; mode: ChatMessagesMode }> => {
@@ -30,7 +30,7 @@ export const getChatMessagesSnapshot = async (
 }
 
 export const getChatHistorySnapshot = async (
-  runtime: RuntimeState,
+  runtime: SurfaceRuntime,
   limit = 50,
 ): Promise<ChatMessage[]> => {
   const history = await readHistory(runtime.paths.history)
@@ -42,7 +42,7 @@ export const getChatHistorySnapshot = async (
 }
 
 export const deleteChatHistoryMessage = async (
-  runtime: RuntimeState,
+  runtime: SurfaceRuntime,
   messageId: string,
 ): Promise<DeleteChatMessageResult> => {
   const id = messageId.trim()

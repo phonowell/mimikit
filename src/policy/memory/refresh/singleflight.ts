@@ -22,7 +22,7 @@ import {
 } from './trigger-policy.js'
 
 import type { MemoryRefreshPayload } from './types.js'
-import type { RuntimeState } from '../../../kernel/orchestrator/runtime-state.js'
+import type { ManagerRuntime } from '../../../kernel/orchestrator/runtime-interfaces.js'
 
 const MAX_SIGNALS = 80
 const MAX_TEXT = 800
@@ -31,16 +31,16 @@ const MAX_SCORE_MENTION_ITEMS = 96
 const MEMORY_SIGNAL_EVENTS = new Set(['memory_remembered'])
 const MEMORY_REFRESH_JOB = getBackgroundJobSpec('memory_refresh')
 
-type MemoryRefreshCheckpoint = {
-  signalVersion: number
-}
+type MemoryRefreshCheckpoint = { signalVersion: number }
 
-const captureCheckpoint = (runtime: RuntimeState): MemoryRefreshCheckpoint => ({
+const captureCheckpoint = (
+  runtime: ManagerRuntime,
+): MemoryRefreshCheckpoint => ({
   signalVersion: runtime.manager.memoryRefresh.signalVersion,
 })
 
 const markCompleted = (
-  runtime: RuntimeState,
+  runtime: ManagerRuntime,
   checkpoint: MemoryRefreshCheckpoint,
 ): void => {
   const state = runtime.manager.memoryRefresh
@@ -66,7 +66,7 @@ const toMemoryRefreshSignalText = (item: HistoryMessage): string => {
 }
 
 const buildPayload = async (
-  runtime: RuntimeState,
+  runtime: ManagerRuntime,
 ): Promise<MemoryRefreshPayload> => {
   const history = await readHistory(runtime.paths.history)
   const visible = history
@@ -110,7 +110,7 @@ const pushMention = (target: string[], value: string | undefined): void => {
 }
 
 const buildRefreshScoreContext = (
-  runtime: RuntimeState,
+  runtime: ManagerRuntime,
   payload: MemoryRefreshPayload,
 ): MemoryScoreContext => {
   const mentions: string[] = []
@@ -148,7 +148,7 @@ const buildRefreshScoreContext = (
   }
 }
 
-const runMemoryRefreshOnce = async (runtime: RuntimeState): Promise<void> => {
+const runMemoryRefreshOnce = async (runtime: ManagerRuntime): Promise<void> => {
   const checkpoint = captureCheckpoint(runtime)
   await appendLog(runtime.paths.log, {
     event: MEMORY_REFRESH_JOB.auditEvents.requested,
@@ -218,7 +218,9 @@ const runMemoryRefreshOnce = async (runtime: RuntimeState): Promise<void> => {
   })
 }
 
-const runMemoryRefreshDrain = async (runtime: RuntimeState): Promise<void> => {
+const runMemoryRefreshDrain = async (
+  runtime: ManagerRuntime,
+): Promise<void> => {
   const state = runtime.manager.memoryRefresh
   try {
     while (state.pending || shouldTriggerMemoryRefresh(runtime)) {
@@ -244,7 +246,7 @@ const runMemoryRefreshDrain = async (runtime: RuntimeState): Promise<void> => {
   }
 }
 
-export const requestMemoryRefresh = (runtime: RuntimeState): void => {
+export const requestMemoryRefresh = (runtime: ManagerRuntime): void => {
   const state = runtime.manager.memoryRefresh
   if (state.running) {
     state.pending = true

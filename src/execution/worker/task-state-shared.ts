@@ -1,7 +1,7 @@
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { WorkerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 export { resolveTaskChangeAt } from '../../work/shared/task-state.js'
 
-export const resolveSlotStatus = (runtime: RuntimeState) => {
+export const resolveSlotStatus = (runtime: WorkerRuntime) => {
   const maxSlots = Math.max(1, runtime.config.worker.maxConcurrent)
   const occupied = Math.max(
     runtime.worker.queue.pending,
@@ -15,5 +15,5 @@ export const resolveSlotStatus = (runtime: RuntimeState) => {
   }
 }
 
-export const hasFreeWorkerSlot = (runtime: RuntimeState): boolean =>
+export const hasFreeWorkerSlot = (runtime: WorkerRuntime): boolean =>
   resolveSlotStatus(runtime).available_slots > 0
