@@ -44,7 +44,8 @@ export const resumeRuntimeTask = (params: {
   delete task.durationMs
   delete task.archivePath
   delete task.result
-  if (params.resumeInstruction) task.resumeInstruction = params.resumeInstruction
+  if (params.resumeInstruction)
+    task.resumeInstruction = params.resumeInstruction
   else delete task.resumeInstruction
   return task
 }

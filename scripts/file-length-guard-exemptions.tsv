@@ -1,47 +1,8 @@
 # path	maxLines	reason
 docs/design/workflow/interfaces-and-state.md	226	协议文档仍承载多主题内容：后续按接口与状态拆分
-scripts/worker-budget-report.ts	279	脚本职责仍偏长：后续拆出参数解析与报告层
-src/bootstrap/config-default-loader.ts	427	历史实现仍混合多职责：后续拆分到稳定边界
-src/bootstrap/cli/index.ts	215	上游 CLI 入口已超默认阈值：后续按启动流程与参数处理拆分
-src/policy/manager/action-apply-create.ts	261	manager 拆分债务：先冻结新增膨胀，后续按职责收缩
-src/policy/manager/action-apply-schema.ts	337	manager 拆分债务：先冻结新增膨胀，后续按职责收缩
-src/policy/manager/action-cli-log.ts	286	manager 拆分债务：先冻结新增膨胀，后续按职责收缩
-src/policy/manager/action-feedback-collect.ts	252	manager 拆分债务：先冻结新增膨胀，后续按职责收缩
-src/policy/manager/action-feedback-hints.ts	207	manager 拆分债务：先冻结新增膨胀，后续按职责收缩
-src/policy/manager/action-registry-definitions.ts	253	manager 拆分债务：先冻结新增膨胀，后续按职责收缩
-src/policy/manager/action-validation.ts	231	manager 拆分债务：先冻结新增膨胀，后续按职责收缩
-src/policy/manager/loop-batch-run-rounds.ts	294	manager 拆分债务：先冻结新增膨胀，后续按职责收缩
-src/policy/manager/loop-trigger-plans.ts	235	manager 拆分债务：先冻结新增膨胀，后续按职责收缩
-src/policy/manager/loop.ts	206	manager 拆分债务：先冻结新增膨胀，后续按职责收缩
-src/policy/memory/refresh/singleflight.ts	260	memory 刷新链路仍偏长：后续按阶段拆分
-src/kernel/orchestrator/orchestrator-channel-lifecycle.ts	213	编排核心仍集中：后续按 lifecycle/read-model 收缩
-src/kernel/orchestrator/orchestrator-service.ts	237	编排核心仍集中：后续按 lifecycle/read-model 收缩
-src/kernel/orchestrator/runtime-persistence.ts	214	编排核心仍集中：后续按 lifecycle/read-model 收缩
-src/policy/prompts/build-prompts.ts	578	prompt 构建仍混合多职责：后续按片段与序列化拆分
-src/execution/providers/openai-responses-provider.ts	449	provider 会话与传输逻辑仍共置：后续按职责拆分
 src/execution/providers/opencode-sdk-provider.ts	845	provider 会话与传输逻辑仍共置：后续按职责拆分
-src/persistence/storage/runtime-snapshot-schema.ts	394	存储读取与协议装配仍共置：后续按 reader/schema 拆分
-src/persistence/storage/task-results-read.ts	558	存储读取与协议装配仍共置：后续按 reader/schema 拆分
-src/foundation/types/index.ts	338	历史实现仍混合多职责：后续拆分到稳定边界
-src/execution/worker/dispatch.ts	237	worker 执行链路仍偏长：后续按 dispatch/retry/finalize 拆分
-src/execution/worker/run-retry.ts	255	worker 执行链路仍偏长：后续按 dispatch/retry/finalize 拆分
-tests/config-default-loader.test.ts	219	高价值回归仍集中在单文件：后续按场景拆分夹具与断言
-tests/controller-payload-logging.test.ts	207	高价值回归仍集中在单文件：后续按场景拆分夹具与断言
-tests/manager-action-apply.test.ts	749	高价值回归仍集中在单文件：后续按场景拆分夹具与断言
-tests/manager-ask-user-choice-source-guard.test.ts	383	高价值回归仍集中在单文件：后续按场景拆分夹具与断言
-tests/manager-llm-call-provider.test.ts	221	高价值回归仍集中在单文件：后续按场景拆分夹具与断言
 tests/manager-read-file-tool.test.ts	294	高价值回归仍集中在单文件：后续按场景拆分夹具与断言
-tests/manager-thread-cache-reuse.test.ts	213	高价值回归仍集中在单文件：后续按场景拆分夹具与断言
-tests/manager-trigger-capacity.test.ts	418	高价值回归仍集中在单文件：后续按场景拆分夹具与断言
-tests/messages-route.test.ts	423	高价值回归仍集中在单文件：后续按场景拆分夹具与断言
-tests/openai-responses-provider.test.ts	353	高价值回归仍集中在单文件：后续按场景拆分夹具与断言
 tests/opencode-sdk-provider.test.ts	315	高价值回归仍集中在单文件：后续按场景拆分夹具与断言
-tests/runtime-persistence-queue-reconcile.test.ts	223	高价值回归仍集中在单文件：后续按场景拆分夹具与断言
-tests/runtime-snapshot.test.ts	542	高价值回归仍集中在单文件：后续按场景拆分夹具与断言
-tests/worker-pause-resume.test.ts	422	高价值回归仍集中在单文件：后续按场景拆分夹具与断言
-tests/worker-profiled-runner-loop.test.ts	303	高价值回归仍集中在单文件：后续按场景拆分夹具与断言
-tests/worker-result-finalize.test.ts	293	高价值回归仍集中在单文件：后续按场景拆分夹具与断言
-tests/worker-run-retry-session.test.ts	276	高价值回归仍集中在单文件：后续按场景拆分夹具与断言
 webui/messages/controller.js	233	WebUI 控制器与渲染仍共置：后续按 view/action 拆分
 webui/tasks-view-render.js	253	WebUI 控制器与渲染仍共置：后续按 view/action 拆分
 webui/generated/app.js	30000	React WebUI 的单文件浏览器产物，属于构建输出而非手写源码，不参与源码长度约束

@@ -1,0 +1,118 @@
+import { appendHistory } from '../../src/persistence/history/store.js'
+import {
+  hydrateRuntimeState,
+  persistRuntimeState,
+} from '../../src/kernel/orchestrator/runtime-persistence.js'
+import { expect, test } from 'vitest'
+import { mkdtemp } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
+import { createTestRuntimeState } from '../helpers/runtime-state.js'
+
+const GLOBAL_FOCUS_ID = 'focus-global'
+const SNAPSHOT_BASE_TIME = '2026-02-06T00:00:00.000Z'
+const createTmpDir = () =>
+  mkdtemp(join(tmpdir(), 'mimikit-runtime-persistence-'))
+
+test('hydrateRuntimeState restores channel targets from snapshot', async () => {
+  const stateDir = await createTmpDir()
+  const runtime = await createTestRuntimeState({
+    workDir: stateDir,
+    patch: {
+      session: {
+        channelTargets: {
+          telegramChatId: 'chat-1001',
+          feishuChatId: 'oc_chat_1',
+        },
+      },
+    },
+  })
+  await persistRuntimeState(runtime)
+
+  const restored = await createTestRuntimeState({
+    workDir: stateDir,
+  })
+
+  await hydrateRuntimeState(restored)
+
+  expect(restored.session.channelTargets).toEqual({
+    telegramChatId: 'chat-1001',
+    feishuChatId: 'oc_chat_1',
+  })
+})
+
+test('hydrateRuntimeState falls back to channel targets from history', async () => {
+  const stateDir = await createTmpDir()
+  const runtime = await createTestRuntimeState({ workDir: stateDir })
+  await appendHistory(runtime.paths.history, {
+    id: 'input-history-1',
+    role: 'user',
+    text: 'hello',
+    createdAt: SNAPSHOT_BASE_TIME,
+    focusId: GLOBAL_FOCUS_ID,
+    telegramChatId: 'chat-1001',
+    feishuChatId: 'oc_chat_1',
+  })
+  await persistRuntimeState(runtime)
+
+  const restored = await createTestRuntimeState({
+    workDir: stateDir,
+  })
+
+  await hydrateRuntimeState(restored)
+
+  expect(restored.session.channelTargets).toEqual({
+    telegramChatId: 'chat-1001',
+    feishuChatId: 'oc_chat_1',
+  })
+})
+
+test('hydrateRuntimeState rebuilds budget resume choice from paused task state', async () => {
+  const stateDir = await createTmpDir()
+  const runtime = await createTestRuntimeState({
+    workDir: stateDir,
+    withGlobalFocus: false,
+    patch: {
+      tasks: [
+        {
+          id: 'task-budget-paused',
+          fingerprint: 'fp-task-budget-paused',
+          prompt: 'resume me',
+          title: 'Budget Paused',
+          cwd: '/tmp/task-budget-paused',
+          focusId: GLOBAL_FOCUS_ID,
+          profile: 'worker',
+          provider: 'codex',
+          status: 'paused',
+          createdAt: SNAPSHOT_BASE_TIME,
+          pausedAt: '2026-02-06T00:10:00.000Z',
+          result: {
+            taskId: 'task-budget-paused',
+            status: 'partial',
+            taskStatus: 'paused',
+            outcome: 'partial',
+            stopReason: 'budget_exhausted',
+            ok: false,
+            output: 'partial output',
+            durationMs: 42,
+            completedAt: '2026-02-06T00:10:00.000Z',
+          },
+        },
+      ],
+    },
+  })
+
+  await persistRuntimeState(runtime)
+
+  const restored = await createTestRuntimeState({
+    workDir: stateDir,
+    withGlobalFocus: false,
+  })
+  await hydrateRuntimeState(restored)
+
+  expect(restored.ui.pendingUserChoices[0]?.effect).toMatchObject({
+    type: 'resume_task',
+    taskId: 'task-budget-paused',
+  })
+})

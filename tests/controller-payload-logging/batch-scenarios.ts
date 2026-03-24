@@ -1,0 +1,108 @@
+import { expect, test } from 'vitest'
+
+import { createSessionIngressLogger } from '../../src/surface/http/session-ingress-log.js'
+
+import { createSpySink } from './testkit.js'
+
+test('session ingress logger logs role/type/source/visibility/summary on node side', () => {
+  const { calls, sink } = createSpySink()
+  const logger = createSessionIngressLogger({ sink })
+  const payload = {
+    mode: 'full',
+    messages: [
+      {
+        id: 'input-1',
+        role: 'user',
+        text: 'Please summarize the latest task status',
+        createdAt: '2026-03-06T00:00:00.000Z',
+        focusId: 'focus-global',
+        source: 'webui',
+      },
+      {
+        id: 'sys-1',
+        role: 'system',
+        visibility: 'all',
+        text: 'Selected option "Report".',
+        systemEventName: 'user_choice',
+        systemEventPayload: {
+          source: 'timeout',
+        },
+        createdAt: '2026-03-06T00:00:01.000Z',
+        focusId: 'focus-global',
+      },
+    ],
+  }
+
+  logger.logIncomingMessages(payload)
+  logger.logIncomingMessages(payload)
+
+  const messageLogs = calls.filter(
+    (call) => call.tag === '[http] session ingress message',
+  )
+  expect(messageLogs).toHaveLength(2)
+  expect(messageLogs[0]?.payload).toMatchObject({
+    role: 'user',
+    type: 'user_message',
+    source: 'webui',
+    visibility: 'all',
+    summary: 'Please summarize the latest task status',
+  })
+  expect(messageLogs[1]?.payload).toMatchObject({
+    role: 'system',
+    type: 'system_event:user_choice',
+    source: 'timeout',
+    visibility: 'all',
+    summary: 'Selected option "Report".',
+  })
+
+  const batchLogs = calls.filter((call) => call.tag === '[http] session ingress batch')
+  expect(batchLogs).toHaveLength(2)
+  expect(batchLogs[0]?.payload).toMatchObject({
+    mode: 'full',
+    incomingCount: 2,
+    loggedCount: 2,
+    skippedCount: 0,
+  })
+  expect(batchLogs[1]?.payload).toMatchObject({
+    mode: 'full',
+    incomingCount: 2,
+    loggedCount: 0,
+    skippedCount: 2,
+  })
+})
+
+test('session ingress logger re-logs a message when the same id carries a new summary', () => {
+  const { calls, sink } = createSpySink()
+  const logger = createSessionIngressLogger({ sink })
+  logger.logIncomingMessages({
+    mode: 'full',
+    messages: [
+      {
+        id: 'agent-1',
+        role: 'agent',
+        text: 'Draft v1',
+        createdAt: '2026-03-06T00:00:00.000Z',
+        focusId: 'focus-global',
+      },
+    ],
+  })
+  logger.logIncomingMessages({
+    mode: 'full',
+    messages: [
+      {
+        id: 'agent-1',
+        role: 'agent',
+        text: 'Draft v2',
+        createdAt: '2026-03-06T00:00:01.000Z',
+        focusId: 'focus-global',
+      },
+    ],
+  })
+
+  const messageLogs = calls.filter(
+    (call) => call.tag === '[http] session ingress message',
+  )
+  expect(messageLogs).toHaveLength(2)
+  expect(messageLogs[0]?.payload).toMatchObject({ summary: 'Draft v1' })
+  expect(messageLogs[1]?.payload).toMatchObject({ summary: 'Draft v2' })
+})
