@@ -8,7 +8,7 @@ import { FastifySSEPlugin } from 'fastify-sse-v2'
 
 import { logSafeError } from '../../persistence/log/safe.js'
 
-import { resolveRoots } from './helpers.js'
+import { ensureWebUiGenerated, resolveRoots } from './helpers.js'
 import { registerApiRoutes, registerNotFoundHandler } from './routes-api.js'
 
 import type { AppConfig } from '../../bootstrap/config.js'
@@ -76,20 +76,10 @@ const registerStaticAssets = (
   app: ReturnType<typeof fastify>,
   config: AppConfig,
 ): void => {
-  const { webDir, markedDir, purifyDir } = resolveRoots()
+  const { webDir } = resolveRoots()
   const stateDir = resolve(config.workDir)
   mkdirSync(stateDir, { recursive: true })
 
-  app.register(fastifyStatic, {
-    root: markedDir,
-    prefix: '/vendor/marked/',
-    decorateReply: false,
-  })
-  app.register(fastifyStatic, {
-    root: purifyDir,
-    prefix: '/vendor/purify/',
-    decorateReply: false,
-  })
   app.addHook(
     'onRequest',
     (
@@ -128,6 +118,7 @@ export const createHttpServer = async (
   config: AppConfig,
   port: number,
 ) => {
+  await ensureWebUiGenerated()
   const app = fastify({ bodyLimit: MAX_BODY_BYTES })
   await app.register(fastifyEtag)
   await app.register(FastifySSEPlugin, { retryDelay: 1500 })

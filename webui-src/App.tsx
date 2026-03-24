@@ -38,6 +38,7 @@ export const App = () => {
           messages={controller.appState.messages}
           loading={controller.appState.awaitingReply}
           deleteMode={controller.deleteMode}
+          listRef={controller.scroll.listRef}
           scrollButtonVisible={controller.scroll.scrollButtonVisible}
           onScroll={controller.scroll.onScroll}
           onScrollBottom={() => controller.scroll.scrollToBottom(true)}
@@ -73,6 +74,7 @@ export const App = () => {
             quoteLabel={controller.quote?.label ?? 'Quote'}
             quoteText={controller.quote?.text ?? ''}
             hasQuote={controller.quote !== null}
+            isNearBottom={controller.scroll.isNearBottom}
             onChange={controller.actions.onComposerInput}
             onClearQuote={controller.actions.clearQuote}
             onLayoutShift={(stickToBottom) =>

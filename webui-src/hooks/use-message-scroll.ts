@@ -6,11 +6,6 @@ import {
   shouldStickAfterLayoutShift,
 } from '../lib/message-scroll.js'
 
-const getMessagesEl = (): HTMLUListElement | null => {
-  const node = document.querySelector('[data-messages]')
-  return node instanceof HTMLUListElement ? node : null
-}
-
 type ScrollMetrics = {
   previousClientHeight: number
   previousHeight: number
@@ -19,13 +14,14 @@ type ScrollMetrics = {
 }
 
 export const useMessageScroll = (deps: readonly unknown[]) => {
+  const listRef = useRef<HTMLUListElement | null>(null)
   const lastClientHeightRef = useRef(0)
   const lastScrollHeightRef = useRef(0)
   const pendingMetricsRef = useRef<ScrollMetrics | null>(null)
   const [scrollButtonVisible, setScrollButtonVisible] = useState(false)
 
   const updateScrollButton = () => {
-    const element = getMessagesEl()
+    const element = listRef.current
     if (!element) return
     const state = readScrollState(element)
     lastClientHeightRef.current = state.clientHeight
@@ -34,7 +30,7 @@ export const useMessageScroll = (deps: readonly unknown[]) => {
   }
 
   const captureLayoutShift = () => {
-    const element = getMessagesEl()
+    const element = listRef.current
     if (!element) return
     const state = readScrollState(element)
     pendingMetricsRef.current = {
@@ -46,7 +42,7 @@ export const useMessageScroll = (deps: readonly unknown[]) => {
   }
 
   const scrollToBottom = (smooth = false) => {
-    const element = getMessagesEl()
+    const element = listRef.current
     if (!element) return
     const maxTop = Math.max(0, element.scrollHeight - element.clientHeight)
     element.scrollTo({
@@ -57,7 +53,7 @@ export const useMessageScroll = (deps: readonly unknown[]) => {
   }
 
   const isNearBottomNow = (): boolean => {
-    const element = getMessagesEl()
+    const element = listRef.current
     if (!element) return true
     return isScrollStateNearBottom(readScrollState(element))
   }
@@ -67,7 +63,7 @@ export const useMessageScroll = (deps: readonly unknown[]) => {
   }: {
     stickToBottom?: boolean
   } = {}) => {
-    const element = getMessagesEl()
+    const element = listRef.current
     if (!element) return
     const state = readScrollState(element)
     const previousClientHeight =
@@ -96,7 +92,7 @@ export const useMessageScroll = (deps: readonly unknown[]) => {
   }
 
   useLayoutEffect(() => {
-    const element = getMessagesEl()
+    const element = listRef.current
     const metrics = pendingMetricsRef.current
     if (!element || !metrics) {
       syncAfterLayoutShift()
@@ -119,6 +115,7 @@ export const useMessageScroll = (deps: readonly unknown[]) => {
   return {
     captureLayoutShift,
     isNearBottom: isNearBottomNow,
+    listRef,
     onScroll: updateScrollButton,
     scrollButtonVisible,
     scrollToBottom,

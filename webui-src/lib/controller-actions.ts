@@ -1,7 +1,3 @@
-import { fetchWithTimeout } from '../../webui/fetch-with-timeout.js'
-import { UI_TEXT } from '../../webui/system-text.js'
-import { copyTaskIdToClipboard } from '../../webui/tasks-copy-id.js'
-
 import { runConfirmAction } from './confirm-action.js'
 import {
   focusElementById,
@@ -9,6 +5,9 @@ import {
   resolveDeleteModeTransition,
   toQuoteState,
 } from './controller-utils.js'
+import { fetchWithTimeout } from './fetch-with-timeout.js'
+import { UI_TEXT } from './system-text.js'
+import { copyTaskIdToClipboard } from './tasks-copy-id.js'
 
 import type {
   AppState,

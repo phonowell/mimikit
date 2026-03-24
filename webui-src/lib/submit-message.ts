@@ -1,7 +1,6 @@
-import { fetchWithTimeout } from '../../webui/fetch-with-timeout.js'
-import { UI_TEXT } from '../../webui/system-text.js'
-
 import { readJsonError } from './controller-utils.js'
+import { fetchWithTimeout } from './fetch-with-timeout.js'
+import { UI_TEXT } from './system-text.js'
 
 import type { AppState, QuoteState } from '../types.js'
 import type { Dispatch, SetStateAction } from 'react'

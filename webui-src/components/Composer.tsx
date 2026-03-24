@@ -1,12 +1,8 @@
-import { useEffectEvent, useLayoutEffect } from 'react'
-
-import {
-  isScrollStateNearBottom,
-  readScrollState,
-} from '../lib/message-scroll.js'
+import { useEffectEvent, useLayoutEffect, useRef } from 'react'
 
 type Props = {
   hasQuote: boolean
+  isNearBottom: () => boolean
   onChange: (value: string) => void
   onClearQuote: () => void
   onLayoutShift: (stickToBottom: boolean) => void
@@ -31,6 +27,7 @@ const resizeInput = (input: HTMLTextAreaElement) => {
 
 export const Composer = ({
   hasQuote,
+  isNearBottom,
   onChange,
   onClearQuote,
   onLayoutShift,
@@ -40,19 +37,16 @@ export const Composer = ({
   sendPending,
   value,
 }: Props) => {
+  const inputRef = useRef<HTMLTextAreaElement>(null)
   const syncLayoutShift = useEffectEvent(onLayoutShift)
 
   useLayoutEffect(() => {
-    const input = document.getElementById('message-input')
-    if (!(input instanceof HTMLTextAreaElement)) return
-    const messages = document.querySelector('[data-messages]')
-    const stickToBottom =
-      messages instanceof HTMLUListElement
-        ? isScrollStateNearBottom(readScrollState(messages))
-        : false
+    const input = inputRef.current
+    if (!input) return
+    const stickToBottom = isNearBottom()
     resizeInput(input)
     syncLayoutShift(stickToBottom)
-  }, [hasQuote, syncLayoutShift, value])
+  }, [hasQuote, isNearBottom, syncLayoutShift, value])
 
   return (
     <section className="composer" aria-label="Input">
@@ -78,6 +72,7 @@ export const Composer = ({
         </label>
         <textarea
           id="message-input"
+          ref={inputRef}
           placeholder="Message..."
           rows={1}
           disabled={sendPending}

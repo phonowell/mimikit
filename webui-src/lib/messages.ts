@@ -1,5 +1,5 @@
-import { normalizeChoicesPayload } from '../../webui/choice-payload.js'
-import { mergeIncomingMessages } from '../../webui/messages/controller-status.js'
+import { normalizeChoicesPayload } from './choice-payload.js'
+import { mergeIncomingMessages } from './merge-incoming-messages.js'
 
 import type {
   AppState,

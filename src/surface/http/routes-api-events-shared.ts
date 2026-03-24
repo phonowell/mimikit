@@ -19,6 +19,12 @@ type SseContextReply = FastifyReply & {
   }
 }
 
+const resolveSseSource = (
+  reply: FastifyReply,
+): SseContextReply['sseContext']['source'] | null =>
+  (reply as { sseContext?: SseContextReply['sseContext'] }).sseContext
+    ?.source ?? null
+
 const asMessagePayload = (value: unknown): MessagePayload | null =>
   value && typeof value === 'object' ? (value as MessagePayload) : null
 
@@ -98,7 +104,7 @@ export const sendSseEvent = (
 }
 
 export const closeSseSource = (reply: FastifyReply): void => {
-  const source = (reply as SseContextReply).sseContext?.source
+  const source = resolveSseSource(reply)
   if (!source) return
   if (source.destroyed || source.writableEnded) return
   try {

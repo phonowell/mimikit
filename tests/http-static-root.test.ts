@@ -26,6 +26,24 @@ test('GET / serves webui index instead of root not-found handler', async () => {
     expect(String(response.headers['content-type'])).toContain('text/html')
     expect(response.body).toContain('<div id="root"></div>')
     expect(response.body).toContain('generated/app.js')
+
+    const appBundle = await app.inject({
+      method: 'GET',
+      url: '/generated/app.js',
+    })
+    expect(appBundle.statusCode).toBe(200)
+    expect(String(appBundle.headers['content-type'])).toContain(
+      'application/javascript',
+    )
+
+    const archiveBundle = await app.inject({
+      method: 'GET',
+      url: '/generated/archive-viewer.js',
+    })
+    expect(archiveBundle.statusCode).toBe(200)
+    expect(String(archiveBundle.headers['content-type'])).toContain(
+      'application/javascript',
+    )
   } finally {
     await app.close()
   }

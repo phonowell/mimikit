@@ -2,7 +2,7 @@ import {
   formatQuotePreview,
   formatRoleLabel,
   normalizeRole,
-} from '../../webui/messages/quote-utils.js'
+} from './messages/quote-utils.js'
 
 import type { ChatMessage, QuoteState } from '../types.js'
 

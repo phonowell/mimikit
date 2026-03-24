@@ -1,15 +1,15 @@
-import { buildTaskArchiveViewerUrl } from '../../webui/archive-viewer-url.js'
+import { buildTaskArchiveViewerUrl } from '../lib/archive-viewer-url.js'
 import {
   formatDateTimeFull,
   formatDisplayTimeWithFull,
   parseTimeInput,
-} from '../../webui/messages/format-time.js'
-import { formatUsage } from '../../webui/messages/format-usage.js'
+} from '../lib/messages/format-time.js'
+import { formatUsage } from '../lib/messages/format-usage.js'
 import {
   resolveTaskPendingReasonLabel,
   resolveTaskStatusLabel,
-} from '../../webui/system-text.js'
-import { formatElapsedText } from '../../webui/tasks-view-time.js'
+} from '../lib/system-text.js'
+import { formatElapsedText } from '../lib/tasks-view-time.js'
 
 import type { TaskView } from '../types.js'
 

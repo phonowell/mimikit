@@ -1,6 +1,5 @@
-import { UI_TEXT } from '../../webui/system-text.js'
-
 import { useNowTick } from '../hooks/use-now-tick.js'
+import { UI_TEXT } from '../lib/system-text.js'
 
 import { ModalDialog } from './ModalDialog.js'
 import { TaskListItem } from './TaskListItem.js'

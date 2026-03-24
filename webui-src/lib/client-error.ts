@@ -1,4 +1,4 @@
-import { formatUiError } from '../../webui/system-text.js'
+import { formatUiError } from './system-text.js'
 
 import type { AppState } from '../types.js'
 import type { Dispatch, SetStateAction } from 'react'
