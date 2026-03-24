@@ -27,7 +27,7 @@ const RESETTABLE_STATE_ENTRY_NAMES = new Set([
 
 export const resolveRoots = () => {
   const __dirname = fileURLToPath(new URL('.', import.meta.url))
-  const rootDir = resolve(__dirname, '..', '..')
+  const rootDir = resolve(__dirname, '..', '..', '..')
   return {
     rootDir,
     webDir: resolve(rootDir, 'webui'),

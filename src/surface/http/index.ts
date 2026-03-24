@@ -134,8 +134,8 @@ export const createHttpServer = async (
 
   registerErrorHandler(app)
   registerApiRoutes(app, orchestrator, config)
-  registerNotFoundHandler(app)
   registerStaticAssets(app, config)
+  registerNotFoundHandler(app)
 
   const address = await app.listen({ port, host: '0.0.0.0' })
   console.log(`[http] listening on ${address}`)
