@@ -15,6 +15,7 @@ describe('file length guard', () => {
 
   test('checks only managed code and doc paths', () => {
     expect(shouldCheckFilePath('src/app.ts')).toBe(true)
+    expect(shouldCheckFilePath('webui-src/App.tsx')).toBe(true)
     expect(shouldCheckFilePath('docs/design/workflow/task.md')).toBe(true)
     expect(shouldCheckFilePath('README.md')).toBe(true)
     expect(shouldCheckFilePath('package.json')).toBe(false)
