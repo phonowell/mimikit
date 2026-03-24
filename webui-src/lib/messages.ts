@@ -55,6 +55,9 @@ export const isManagerFallbackMessage = (message: ChatMessage): boolean =>
   message.role === 'system' &&
   message.systemEventName === 'manager_fallback_reply'
 
+export const shouldDisplayMessageTime = (message: ChatMessage): boolean =>
+  message.role !== 'system'
+
 export const findNewAgentMessages = (
   messages: readonly ChatMessage[],
   previousIds: ReadonlySet<string>,

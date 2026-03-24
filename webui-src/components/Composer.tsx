@@ -1,5 +1,10 @@
 import { useEffectEvent, useLayoutEffect } from 'react'
 
+import {
+  isScrollStateNearBottom,
+  readScrollState,
+} from '../lib/message-scroll.js'
+
 type Props = {
   hasQuote: boolean
   onChange: (value: string) => void
@@ -43,8 +48,7 @@ export const Composer = ({
     const messages = document.querySelector('[data-messages]')
     const stickToBottom =
       messages instanceof HTMLUListElement
-        ? messages.scrollHeight - messages.scrollTop - messages.clientHeight <=
-          56
+        ? isScrollStateNearBottom(readScrollState(messages))
         : false
     resizeInput(input)
     syncLayoutShift(stickToBottom)

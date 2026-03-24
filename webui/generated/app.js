@@ -24,9 +24,9 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   mod
 ));
 
-// node_modules/.pnpm/react@19.2.4/node_modules/react/cjs/react.development.js
+// ../mimikit/node_modules/.pnpm/react@19.2.4/node_modules/react/cjs/react.development.js
 var require_react_development = __commonJS({
-  "node_modules/.pnpm/react@19.2.4/node_modules/react/cjs/react.development.js"(exports, module) {
+  "../mimikit/node_modules/.pnpm/react@19.2.4/node_modules/react/cjs/react.development.js"(exports, module) {
     "use strict";
     (function() {
       function defineDeprecationWarning(methodName, info) {
@@ -996,9 +996,9 @@ var require_react_development = __commonJS({
   }
 });
 
-// node_modules/.pnpm/react@19.2.4/node_modules/react/index.js
+// ../mimikit/node_modules/.pnpm/react@19.2.4/node_modules/react/index.js
 var require_react = __commonJS({
-  "node_modules/.pnpm/react@19.2.4/node_modules/react/index.js"(exports, module) {
+  "../mimikit/node_modules/.pnpm/react@19.2.4/node_modules/react/index.js"(exports, module) {
     "use strict";
     if (false) {
       module.exports = null;
@@ -1008,9 +1008,9 @@ var require_react = __commonJS({
   }
 });
 
-// node_modules/.pnpm/scheduler@0.27.0/node_modules/scheduler/cjs/scheduler.development.js
+// ../mimikit/node_modules/.pnpm/scheduler@0.27.0/node_modules/scheduler/cjs/scheduler.development.js
 var require_scheduler_development = __commonJS({
-  "node_modules/.pnpm/scheduler@0.27.0/node_modules/scheduler/cjs/scheduler.development.js"(exports) {
+  "../mimikit/node_modules/.pnpm/scheduler@0.27.0/node_modules/scheduler/cjs/scheduler.development.js"(exports) {
     "use strict";
     (function() {
       function performWorkUntilDeadline() {
@@ -1267,9 +1267,9 @@ var require_scheduler_development = __commonJS({
   }
 });
 
-// node_modules/.pnpm/scheduler@0.27.0/node_modules/scheduler/index.js
+// ../mimikit/node_modules/.pnpm/scheduler@0.27.0/node_modules/scheduler/index.js
 var require_scheduler = __commonJS({
-  "node_modules/.pnpm/scheduler@0.27.0/node_modules/scheduler/index.js"(exports, module) {
+  "../mimikit/node_modules/.pnpm/scheduler@0.27.0/node_modules/scheduler/index.js"(exports, module) {
     "use strict";
     if (false) {
       module.exports = null;
@@ -1279,9 +1279,9 @@ var require_scheduler = __commonJS({
   }
 });
 
-// node_modules/.pnpm/react-dom@19.2.4_react@19.2.4/node_modules/react-dom/cjs/react-dom.development.js
+// ../mimikit/node_modules/.pnpm/react-dom@19.2.4_react@19.2.4/node_modules/react-dom/cjs/react-dom.development.js
 var require_react_dom_development = __commonJS({
-  "node_modules/.pnpm/react-dom@19.2.4_react@19.2.4/node_modules/react-dom/cjs/react-dom.development.js"(exports) {
+  "../mimikit/node_modules/.pnpm/react-dom@19.2.4_react@19.2.4/node_modules/react-dom/cjs/react-dom.development.js"(exports) {
     "use strict";
     (function() {
       function noop() {
@@ -1523,9 +1523,9 @@ var require_react_dom_development = __commonJS({
   }
 });
 
-// node_modules/.pnpm/react-dom@19.2.4_react@19.2.4/node_modules/react-dom/index.js
+// ../mimikit/node_modules/.pnpm/react-dom@19.2.4_react@19.2.4/node_modules/react-dom/index.js
 var require_react_dom = __commonJS({
-  "node_modules/.pnpm/react-dom@19.2.4_react@19.2.4/node_modules/react-dom/index.js"(exports, module) {
+  "../mimikit/node_modules/.pnpm/react-dom@19.2.4_react@19.2.4/node_modules/react-dom/index.js"(exports, module) {
     "use strict";
     if (false) {
       checkDCE();
@@ -1536,9 +1536,9 @@ var require_react_dom = __commonJS({
   }
 });
 
-// node_modules/.pnpm/react-dom@19.2.4_react@19.2.4/node_modules/react-dom/cjs/react-dom-client.development.js
+// ../mimikit/node_modules/.pnpm/react-dom@19.2.4_react@19.2.4/node_modules/react-dom/cjs/react-dom-client.development.js
 var require_react_dom_client_development = __commonJS({
-  "node_modules/.pnpm/react-dom@19.2.4_react@19.2.4/node_modules/react-dom/cjs/react-dom-client.development.js"(exports) {
+  "../mimikit/node_modules/.pnpm/react-dom@19.2.4_react@19.2.4/node_modules/react-dom/cjs/react-dom-client.development.js"(exports) {
     "use strict";
     (function() {
       function findHook(fiber, id) {
@@ -21435,9 +21435,9 @@ var require_react_dom_client_development = __commonJS({
   }
 });
 
-// node_modules/.pnpm/react-dom@19.2.4_react@19.2.4/node_modules/react-dom/client.js
+// ../mimikit/node_modules/.pnpm/react-dom@19.2.4_react@19.2.4/node_modules/react-dom/client.js
 var require_client = __commonJS({
-  "node_modules/.pnpm/react-dom@19.2.4_react@19.2.4/node_modules/react-dom/client.js"(exports, module) {
+  "../mimikit/node_modules/.pnpm/react-dom@19.2.4_react@19.2.4/node_modules/react-dom/client.js"(exports, module) {
     "use strict";
     if (false) {
       checkDCE();
@@ -21448,9 +21448,9 @@ var require_client = __commonJS({
   }
 });
 
-// node_modules/.pnpm/react@19.2.4/node_modules/react/cjs/react-jsx-runtime.development.js
+// ../mimikit/node_modules/.pnpm/react@19.2.4/node_modules/react/cjs/react-jsx-runtime.development.js
 var require_react_jsx_runtime_development = __commonJS({
-  "node_modules/.pnpm/react@19.2.4/node_modules/react/cjs/react-jsx-runtime.development.js"(exports) {
+  "../mimikit/node_modules/.pnpm/react@19.2.4/node_modules/react/cjs/react-jsx-runtime.development.js"(exports) {
     "use strict";
     (function() {
       function getComponentNameFromType(type) {
@@ -21705,9 +21705,9 @@ var require_react_jsx_runtime_development = __commonJS({
   }
 });
 
-// node_modules/.pnpm/react@19.2.4/node_modules/react/jsx-runtime.js
+// ../mimikit/node_modules/.pnpm/react@19.2.4/node_modules/react/jsx-runtime.js
 var require_jsx_runtime = __commonJS({
-  "node_modules/.pnpm/react@19.2.4/node_modules/react/jsx-runtime.js"(exports, module) {
+  "../mimikit/node_modules/.pnpm/react@19.2.4/node_modules/react/jsx-runtime.js"(exports, module) {
     "use strict";
     if (false) {
       module.exports = null;
@@ -21940,6 +21940,28 @@ var ChoicePanel = ({
 
 // webui-src/components/Composer.tsx
 var import_react = __toESM(require_react(), 1);
+
+// webui-src/lib/message-scroll.ts
+var BOTTOM_THRESHOLD_MULTIPLIER = 1.5;
+var getBottomThreshold = (clientHeight, multiplier = BOTTOM_THRESHOLD_MULTIPLIER) => Math.max(0, clientHeight * multiplier);
+var readScrollState = (element) => ({
+  clientHeight: element.clientHeight,
+  distance: element.scrollHeight - element.scrollTop - element.clientHeight,
+  scrollHeight: element.scrollHeight,
+  scrollTop: element.scrollTop
+});
+var isScrollStateNearBottom = (state, multiplier = BOTTOM_THRESHOLD_MULTIPLIER) => state.clientHeight === 0 || state.distance <= getBottomThreshold(state.clientHeight, multiplier);
+var shouldStickAfterLayoutShift = (params) => {
+  const multiplier = params.bottomThresholdMultiplier ?? BOTTOM_THRESHOLD_MULTIPLIER;
+  const previousDistance = params.state.distance - (params.state.scrollHeight - params.previousScrollHeight) + (params.state.clientHeight - params.previousClientHeight);
+  const previousThreshold = getBottomThreshold(
+    params.previousClientHeight,
+    multiplier
+  );
+  return (params.state.clientHeight !== params.previousClientHeight || params.state.scrollHeight !== params.previousScrollHeight) && previousDistance <= previousThreshold;
+};
+
+// webui-src/components/Composer.tsx
 var import_jsx_runtime2 = __toESM(require_jsx_runtime(), 1);
 var resizeInput = (input) => {
   input.style.height = "auto";
@@ -21967,7 +21989,7 @@ var Composer = ({
     const input = document.getElementById("message-input");
     if (!(input instanceof HTMLTextAreaElement)) return;
     const messages = document.querySelector("[data-messages]");
-    const stickToBottom = messages instanceof HTMLUListElement ? messages.scrollHeight - messages.scrollTop - messages.clientHeight <= 56 : false;
+    const stickToBottom = messages instanceof HTMLUListElement ? isScrollStateNearBottom(readScrollState(messages)) : false;
     resizeInput(input);
     syncLayoutShift(stickToBottom);
   }, [hasQuote, syncLayoutShift, value]);
@@ -22749,7 +22771,7 @@ var formatQuotePreview = (text2, maxLength = 120) => {
   return cleaned.length > max ? `${cleaned.slice(0, max)}...` : cleaned;
 };
 
-// node_modules/.pnpm/dompurify@3.3.3/node_modules/dompurify/dist/purify.es.mjs
+// ../mimikit/node_modules/.pnpm/dompurify@3.3.3/node_modules/dompurify/dist/purify.es.mjs
 var {
   entries,
   setPrototypeOf,
@@ -23777,7 +23799,7 @@ function createDOMPurify() {
 }
 var purify = createDOMPurify();
 
-// node_modules/.pnpm/marked@17.0.5/node_modules/marked/lib/marked.esm.js
+// ../mimikit/node_modules/.pnpm/marked@17.0.5/node_modules/marked/lib/marked.esm.js
 function M() {
   return { async: false, breaks: false, extensions: null, gfm: true, hooks: null, pedantic: false, renderer: null, silent: false, tokenizer: null, walkTokens: null };
 }
@@ -25259,6 +25281,120 @@ var renderMarkdownHtml = (text2) => {
   return template.innerHTML;
 };
 
+// webui/status.js
+var normalizeStatusValue = (value) => {
+  if (value === null || value === void 0) return "";
+  const text2 = typeof value === "string" ? value : String(value);
+  return text2.trim();
+};
+var formatStatusText = (value) => {
+  const text2 = normalizeStatusValue(value);
+  return text2 ? resolveStatusText(text2) : "";
+};
+
+// webui/messages/controller-status.js
+var mergeIncomingMessages = (params) => {
+  const { mode, lastMessages, incoming, limit } = params;
+  if (mode !== "delta" || lastMessages.length === 0)
+    return incoming.slice(Math.max(0, incoming.length - limit));
+  const merged = [...lastMessages];
+  const indexById = /* @__PURE__ */ new Map();
+  for (let index = 0; index < merged.length; index += 1) {
+    const id = merged[index]?.id;
+    if (id === null || id === void 0) continue;
+    indexById.set(String(id), index);
+  }
+  for (const message of incoming) {
+    const id = message?.id;
+    if (id === null || id === void 0) {
+      merged.push(message);
+      continue;
+    }
+    const idKey = String(id);
+    const existingIndex = indexById.get(idKey);
+    if (existingIndex === void 0) {
+      indexById.set(idKey, merged.length);
+      merged.push(message);
+      continue;
+    }
+    merged[existingIndex] = message;
+  }
+  return merged.slice(Math.max(0, merged.length - limit));
+};
+
+// webui-src/lib/messages.ts
+var MESSAGE_LIMIT = 50;
+var DEFAULT_STATUS = {
+  agentStatus: "loading",
+  activeTasks: 0,
+  pendingTasks: 0,
+  pendingInputs: 0,
+  managerRunning: false,
+  maxWorkers: 1,
+  runtimeId: ""
+};
+var normalizeMessages = (value) => Array.isArray(value?.messages) ? value.messages ?? [] : [];
+var normalizeMode = (value) => typeof value?.mode === "string" ? value.mode ?? "full" : "full";
+var collectMessageIds = (messages) => {
+  const ids = /* @__PURE__ */ new Set();
+  for (const message of messages) {
+    const id = typeof message.id === "string" ? message.id.trim() : "";
+    if (id) ids.add(id);
+  }
+  return ids;
+};
+var createInitialAppState = () => ({
+  status: DEFAULT_STATUS,
+  messages: [],
+  tasks: [],
+  plans: [],
+  focuses: [],
+  choices: [],
+  awaitingReply: false
+});
+var isManagerFallbackMessage = (message) => message.role === "system" && message.systemEventName === "manager_fallback_reply";
+var shouldDisplayMessageTime = (message) => message.role !== "system";
+var findNewAgentMessages = (messages, previousIds) => {
+  const next = [];
+  for (const message of messages) {
+    const id = typeof message.id === "string" ? message.id.trim() : "";
+    if (!id || previousIds.has(id)) continue;
+    if (message.role === "agent") next.push(message);
+  }
+  return next;
+};
+var applyIncomingSnapshot = (previous, snapshot) => {
+  const previousIds = collectMessageIds(previous.messages);
+  const incomingMessages = normalizeMessages(snapshot.messages);
+  const mode = normalizeMode(snapshot.messages);
+  const messages = mergeIncomingMessages({
+    mode,
+    lastMessages: previous.messages,
+    incoming: incomingMessages,
+    limit: MESSAGE_LIMIT
+  });
+  const newAgentMessages = findNewAgentMessages(messages, previousIds);
+  const shouldStopWaiting = newAgentMessages.length > 0 || messages.some((message) => {
+    const id = typeof message.id === "string" ? message.id.trim() : "";
+    return id && !previousIds.has(id) && isManagerFallbackMessage(message);
+  });
+  const normalizedChoices = normalizeChoicesPayload(
+    snapshot.choices
+  );
+  return {
+    next: {
+      status: snapshot.status ?? previous.status,
+      messages,
+      tasks: snapshot.tasks?.tasks ?? previous.tasks,
+      plans: snapshot.plans?.items ?? previous.plans,
+      focuses: snapshot.focuses?.items ?? previous.focuses,
+      choices: normalizedChoices,
+      awaitingReply: shouldStopWaiting ? false : previous.awaitingReply
+    },
+    newAgentMessages
+  };
+};
+
 // webui-src/components/MessageItem.tsx
 var import_jsx_runtime7 = __toESM(require_jsx_runtime(), 1);
 var isAgentMessage = (message) => message.role === "agent";
@@ -25277,7 +25413,7 @@ var MessageItem = ({
   const quotedMessage = resolveQuote(messages, message.quote);
   const usage = isAgentMessage(message) ? formatUsage(message.usage) : null;
   const elapsed = isAgentMessage(message) ? formatElapsedLabel(message.elapsedMs) : "";
-  const timeDisplay = formatDisplayTimeWithFull(message.createdAt);
+  const timeDisplay = shouldDisplayMessageTime(message) ? formatDisplayTimeWithFull(message.createdAt) : { displayText: "", fullText: "" };
   return /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)(
     "li",
     {
@@ -25744,17 +25880,6 @@ var Toast = ({ toast }) => /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
 
 // webui-src/hooks/use-app-controller.ts
 var import_react8 = __toESM(require_react(), 1);
-
-// webui/status.js
-var normalizeStatusValue = (value) => {
-  if (value === null || value === void 0) return "";
-  const text2 = typeof value === "string" ? value : String(value);
-  return text2.trim();
-};
-var formatStatusText = (value) => {
-  const text2 = normalizeStatusValue(value);
-  return text2 ? resolveStatusText(text2) : "";
-};
 
 // webui-src/lib/client-error.ts
 var appendClientError = (setAppState, error) => {
@@ -26332,108 +26457,6 @@ var createControllerActions = ({
   };
 };
 
-// webui/messages/controller-status.js
-var mergeIncomingMessages = (params) => {
-  const { mode, lastMessages, incoming, limit } = params;
-  if (mode !== "delta" || lastMessages.length === 0)
-    return incoming.slice(Math.max(0, incoming.length - limit));
-  const merged = [...lastMessages];
-  const indexById = /* @__PURE__ */ new Map();
-  for (let index = 0; index < merged.length; index += 1) {
-    const id = merged[index]?.id;
-    if (id === null || id === void 0) continue;
-    indexById.set(String(id), index);
-  }
-  for (const message of incoming) {
-    const id = message?.id;
-    if (id === null || id === void 0) {
-      merged.push(message);
-      continue;
-    }
-    const idKey = String(id);
-    const existingIndex = indexById.get(idKey);
-    if (existingIndex === void 0) {
-      indexById.set(idKey, merged.length);
-      merged.push(message);
-      continue;
-    }
-    merged[existingIndex] = message;
-  }
-  return merged.slice(Math.max(0, merged.length - limit));
-};
-
-// webui-src/lib/messages.ts
-var MESSAGE_LIMIT = 50;
-var DEFAULT_STATUS = {
-  agentStatus: "loading",
-  activeTasks: 0,
-  pendingTasks: 0,
-  pendingInputs: 0,
-  managerRunning: false,
-  maxWorkers: 1,
-  runtimeId: ""
-};
-var normalizeMessages = (value) => Array.isArray(value?.messages) ? value.messages ?? [] : [];
-var normalizeMode = (value) => typeof value?.mode === "string" ? value.mode ?? "full" : "full";
-var collectMessageIds = (messages) => {
-  const ids = /* @__PURE__ */ new Set();
-  for (const message of messages) {
-    const id = typeof message.id === "string" ? message.id.trim() : "";
-    if (id) ids.add(id);
-  }
-  return ids;
-};
-var createInitialAppState = () => ({
-  status: DEFAULT_STATUS,
-  messages: [],
-  tasks: [],
-  plans: [],
-  focuses: [],
-  choices: [],
-  awaitingReply: false
-});
-var isManagerFallbackMessage = (message) => message.role === "system" && message.systemEventName === "manager_fallback_reply";
-var findNewAgentMessages = (messages, previousIds) => {
-  const next = [];
-  for (const message of messages) {
-    const id = typeof message.id === "string" ? message.id.trim() : "";
-    if (!id || previousIds.has(id)) continue;
-    if (message.role === "agent") next.push(message);
-  }
-  return next;
-};
-var applyIncomingSnapshot = (previous, snapshot) => {
-  const previousIds = collectMessageIds(previous.messages);
-  const incomingMessages = normalizeMessages(snapshot.messages);
-  const mode = normalizeMode(snapshot.messages);
-  const messages = mergeIncomingMessages({
-    mode,
-    lastMessages: previous.messages,
-    incoming: incomingMessages,
-    limit: MESSAGE_LIMIT
-  });
-  const newAgentMessages = findNewAgentMessages(messages, previousIds);
-  const shouldStopWaiting = newAgentMessages.length > 0 || messages.some((message) => {
-    const id = typeof message.id === "string" ? message.id.trim() : "";
-    return id && !previousIds.has(id) && isManagerFallbackMessage(message);
-  });
-  const normalizedChoices = normalizeChoicesPayload(
-    snapshot.choices
-  );
-  return {
-    next: {
-      status: snapshot.status ?? previous.status,
-      messages,
-      tasks: snapshot.tasks?.tasks ?? previous.tasks,
-      plans: snapshot.plans?.items ?? previous.plans,
-      focuses: snapshot.focuses?.items ?? previous.focuses,
-      choices: normalizedChoices,
-      awaitingReply: shouldStopWaiting ? false : previous.awaitingReply
-    },
-    newAgentMessages
-  };
-};
-
 // webui-src/lib/submit-message.ts
 var SEND_TIMEOUT_MS = 45e3;
 var submitMessage = async ({
@@ -26643,22 +26666,6 @@ var useEventStream = ({
 
 // webui-src/hooks/use-message-scroll.ts
 var import_react6 = __toESM(require_react(), 1);
-
-// webui-src/lib/message-scroll.ts
-var BOTTOM_THRESHOLD_PX = 56;
-var readScrollState = (element) => ({
-  clientHeight: element.clientHeight,
-  distance: element.scrollHeight - element.scrollTop - element.clientHeight,
-  scrollHeight: element.scrollHeight,
-  scrollTop: element.scrollTop
-});
-var isScrollStateNearBottom = (state) => state.clientHeight === 0 || state.distance <= BOTTOM_THRESHOLD_PX;
-var shouldStickAfterLayoutShift = (params) => {
-  const previousDistance = params.state.distance - (params.state.scrollHeight - params.previousScrollHeight) + (params.state.clientHeight - params.previousClientHeight);
-  return (params.state.clientHeight !== params.previousClientHeight || params.state.scrollHeight !== params.previousScrollHeight) && previousDistance <= BOTTOM_THRESHOLD_PX;
-};
-
-// webui-src/hooks/use-message-scroll.ts
 var getMessagesEl = () => {
   const node = document.querySelector("[data-messages]");
   return node instanceof HTMLUListElement ? node : null;
@@ -26690,8 +26697,9 @@ var useMessageScroll = (deps) => {
   const scrollToBottom = (smooth = false) => {
     const element = getMessagesEl();
     if (!element) return;
+    const maxTop = Math.max(0, element.scrollHeight - element.clientHeight);
     element.scrollTo({
-      top: element.scrollHeight,
+      top: maxTop,
       behavior: smooth ? "smooth" : "auto"
     });
     setScrollButtonVisible(false);

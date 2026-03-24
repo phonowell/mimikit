@@ -1,6 +1,10 @@
 import { expect, test } from 'vitest'
 
-import { applyIncomingSnapshot, createInitialAppState } from '../webui-src/lib/messages.js'
+import {
+  applyIncomingSnapshot,
+  createInitialAppState,
+  shouldDisplayMessageTime,
+} from '../webui-src/lib/messages.js'
 
 test('applyIncomingSnapshot clears awaitingReply when agent message arrives', () => {
   const current = {
@@ -39,4 +43,19 @@ test('applyIncomingSnapshot clears awaitingReply for manager fallback reply', ()
   })
 
   expect(next.awaitingReply).toBe(false)
+})
+
+test('system messages do not display a message time', () => {
+  expect(
+    shouldDisplayMessageTime({
+      role: 'system',
+      text: 'status',
+    }),
+  ).toBe(false)
+  expect(
+    shouldDisplayMessageTime({
+      role: 'user',
+      text: 'hello',
+    }),
+  ).toBe(true)
 })
