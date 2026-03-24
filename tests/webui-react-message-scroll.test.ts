@@ -1,11 +1,8 @@
 import { expect, test } from 'vitest'
 
-import {
-  isScrollStateNearBottom,
-  shouldStickAfterLayoutShift,
-} from '../webui-src/lib/message-scroll.js'
+import { isScrollStateNearBottom } from '../webui-src/lib/message-scroll.js'
 
-test('near-bottom detection scales with the viewport height', () => {
+test('near-bottom detection keeps a small fixed threshold', () => {
   expect(
     isScrollStateNearBottom({
       clientHeight: 400,
@@ -13,35 +10,16 @@ test('near-bottom detection scales with the viewport height', () => {
       scrollHeight: 1_300,
       scrollTop: 400,
     }),
-  ).toBe(true)
-})
-
-test('layout shift keeps the list pinned when it was already near bottom', () => {
-  expect(
-    shouldStickAfterLayoutShift({
-      previousClientHeight: 400,
-      previousScrollHeight: 1_000,
-      state: {
-        clientHeight: 360,
-        distance: 20,
-        scrollHeight: 1_020,
-        scrollTop: 640,
-      },
-    }),
-  ).toBe(true)
-})
-
-test('layout shift does not pull the list when the reader is far from bottom', () => {
-  expect(
-    shouldStickAfterLayoutShift({
-      previousClientHeight: 400,
-      previousScrollHeight: 1_000,
-      state: {
-        clientHeight: 360,
-        distance: 800,
-        scrollHeight: 1_020,
-        scrollTop: 0,
-      },
-    }),
   ).toBe(false)
+})
+
+test('near-bottom detection keeps the follow zone tight', () => {
+  expect(
+    isScrollStateNearBottom({
+      clientHeight: 400,
+      distance: 36,
+      scrollHeight: 1_300,
+      scrollTop: 864,
+    }),
+  ).toBe(true)
 })
