@@ -21,11 +21,11 @@ OPENAI_API_KEY=your_key pnpm start
 
 ## Entry Points
 
-- CLI: `src/cli/index.ts`
-- Orchestrator: `src/orchestrator/`
-- Manager: `src/manager/`
-- Worker: `src/worker/`
-- HTTP + WebUI: `src/http/` and `webui/`
+- CLI: `src/bootstrap/cli/index.ts`
+- Kernel orchestration: `src/kernel/orchestrator/`
+- Manager policy: `src/policy/manager/`
+- Worker execution: `src/execution/worker/`
+- HTTP + WebUI: `src/surface/http/` and `webui/`
 - Workflow docs: `docs/design/workflow/`
 
 ## Core Capabilities

@@ -4,7 +4,7 @@ set "SCRIPT_DIR=%~dp0"
 set "ROOT=%SCRIPT_DIR%.."
 
 :loop
-call pnpm exec tsx "%ROOT%\src\cli\index.ts" %*
+call pnpm exec tsx "%ROOT%\src\bootstrap\cli\index.ts" %*
 set "EXIT_CODE=%ERRORLEVEL%"
 
 if "%EXIT_CODE%"=="75" (
