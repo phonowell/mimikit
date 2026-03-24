@@ -11,7 +11,7 @@ import {
   type ValidationIssue,
 } from './action-validation-helpers.js'
 
-import type { FeedbackContext } from './action-validation-risk.js'
+import type { FeedbackContext } from './action-validation-context.js'
 import type { Parsed } from '../actions/model/spec.js'
 
 export const validateRestartRuntimeAction = (
