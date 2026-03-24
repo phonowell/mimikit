@@ -1,5 +1,7 @@
 import { UI_TEXT } from '../../webui/system-text.js'
 
+import { useNowTick } from '../hooks/use-now-tick.js'
+
 import { ModalDialog } from './ModalDialog.js'
 import { TaskListItem } from './TaskListItem.js'
 
@@ -26,45 +28,51 @@ export const TasksDialog = ({
   onToggleMenu,
   onTaskAction,
   onRequestDelete,
-}: Props) => (
-  <ModalDialog
-    open={open}
-    className="tasks-dialog"
-    id="tasks-dialog"
-    labelledBy="tasks-title"
-    onClose={onClose}
-    title={null}
-  >
-    <section className="tasks-panel">
-      <header className="tasks-header">
-        <h2 className="tasks-title" id="tasks-title">
-          Tasks
-        </h2>
-        <div className="tasks-actions" role="group" aria-label="Tasks">
-          <button
-            className="btn btn--icon btn--icon-muted tasks-close"
-            type="button"
-            onClick={onClose}
-          >
-            ✕
-          </button>
-        </div>
-      </header>
-      <ul className="tasks-list scrollable">
-        {tasks.length === 0 ? (
-          <li className="list-empty tasks-empty">{UI_TEXT.noTasks}</li>
-        ) : null}
-        {tasks.map((task) => (
-          <TaskListItem
-            key={task.id}
-            task={task}
-            openMenuId={openMenuId}
-            onRequestDelete={onRequestDelete}
-            onTaskAction={onTaskAction}
-            onToggleMenu={onToggleMenu}
-          />
-        ))}
-      </ul>
-    </section>
-  </ModalDialog>
-)
+}: Props) => {
+  const hasRunningTask = tasks.some((task) => task.status === 'running')
+  const now = useNowTick(hasRunningTask ? 1_000 : 60_000, open)
+
+  return (
+    <ModalDialog
+      open={open}
+      className="tasks-dialog"
+      id="tasks-dialog"
+      labelledBy="tasks-title"
+      onClose={onClose}
+      title={null}
+    >
+      <section className="tasks-panel">
+        <header className="tasks-header">
+          <h2 className="tasks-title" id="tasks-title">
+            Tasks
+          </h2>
+          <div className="tasks-actions" role="group" aria-label="Tasks">
+            <button
+              className="btn btn--icon btn--icon-muted tasks-close"
+              type="button"
+              onClick={onClose}
+            >
+              ✕
+            </button>
+          </div>
+        </header>
+        <ul className="tasks-list scrollable">
+          {tasks.length === 0 ? (
+            <li className="list-empty tasks-empty">{UI_TEXT.noTasks}</li>
+          ) : null}
+          {tasks.map((task) => (
+            <TaskListItem
+              key={task.id}
+              now={now}
+              task={task}
+              openMenuId={openMenuId}
+              onRequestDelete={onRequestDelete}
+              onTaskAction={onTaskAction}
+              onToggleMenu={onToggleMenu}
+            />
+          ))}
+        </ul>
+      </section>
+    </ModalDialog>
+  )
+}

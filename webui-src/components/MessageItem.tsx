@@ -18,6 +18,7 @@ type Props = {
   index: number
   message: ChatMessage
   messages: readonly ChatMessage[]
+  now: number
   onDelete: (message: ChatMessage) => void
   onQuote: (message: ChatMessage) => void
 }
@@ -36,6 +37,7 @@ export const MessageItem = ({
   index,
   message,
   messages,
+  now,
   onDelete,
   onQuote,
 }: Props) => {
@@ -47,7 +49,7 @@ export const MessageItem = ({
   const elapsed = isAgentMessage(message)
     ? formatElapsedLabel(message.elapsedMs)
     : ''
-  const timeDisplay = formatDisplayTimeWithFull(message.createdAt)
+  const timeDisplay = formatDisplayTimeWithFull(message.createdAt, { now })
 
   return (
     <li
