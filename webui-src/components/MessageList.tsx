@@ -1,15 +1,16 @@
-import { UI_TEXT } from '../../webui/system-text.js'
-
 import { useNowTick } from '../hooks/use-now-tick.js'
+import { UI_TEXT } from '../lib/system-text.js'
 
 import { MessageItem } from './MessageItem.js'
 
 import type { ChatMessage } from '../types.js'
+import type { RefObject } from 'react'
 
 type Props = {
   messages: ChatMessage[]
   loading: boolean
   deleteMode: boolean
+  listRef: RefObject<HTMLUListElement | null>
   scrollButtonVisible: boolean
   onScroll: () => void
   onScrollBottom: () => void
@@ -21,6 +22,7 @@ export const MessageList = ({
   messages,
   loading,
   deleteMode,
+  listRef,
   scrollButtonVisible,
   onScroll,
   onScrollBottom,
@@ -35,6 +37,7 @@ export const MessageList = ({
       <ul
         className="messages scrollable"
         data-messages
+        ref={listRef}
         role="log"
         aria-live="polite"
         aria-relevant="additions text"

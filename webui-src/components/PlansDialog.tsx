@@ -1,8 +1,7 @@
-import { buildTaskArchiveViewerUrl } from '../../webui/archive-viewer-url.js'
-import { formatDisplayTimeWithFull } from '../../webui/messages/format-time.js'
-import { UI_TEXT } from '../../webui/system-text.js'
-
 import { useNowTick } from '../hooks/use-now-tick.js'
+import { buildTaskArchiveViewerUrl } from '../lib/archive-viewer-url.js'
+import { formatDisplayTimeWithFull } from '../lib/messages/format-time.js'
+import { UI_TEXT } from '../lib/system-text.js'
 
 import { ModalDialog } from './ModalDialog.js'
 

@@ -1,3 +1,4 @@
+import { spawn } from 'node:child_process'
 import { readdir, rm } from 'node:fs/promises'
 import { join, parse, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -31,9 +32,29 @@ export const resolveRoots = () => {
   return {
     rootDir,
     webDir: resolve(rootDir, 'webui'),
-    markedDir: resolve(rootDir, 'node_modules', 'marked', 'lib'),
-    purifyDir: resolve(rootDir, 'node_modules', 'dompurify', 'dist'),
   }
+}
+
+export const ensureWebUiGenerated = async (): Promise<void> => {
+  const { rootDir } = resolveRoots()
+  await new Promise<void>((resolveBuild, rejectBuild) => {
+    const child = spawn(process.execPath, ['scripts/build-webui.mjs'], {
+      cwd: rootDir,
+      stdio: 'inherit',
+    })
+    child.once('error', (error) => {
+      rejectBuild(error)
+    })
+    child.once('exit', (code) => {
+      if (code === 0) {
+        resolveBuild()
+        return
+      }
+      rejectBuild(
+        new Error(`build:webui failed with exit code ${code ?? 'unknown'}`),
+      )
+    })
+  })
 }
 
 const isSafeStateDir = (stateDir: string): boolean => {

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 
-import { formatStatusText } from '../../webui/status.js'
 import { appendClientError } from '../lib/client-error.js'
 import { createControllerActions } from '../lib/controller-actions.js'
 import { resolveWorkerStates } from '../lib/controller-utils.js'
@@ -8,6 +7,7 @@ import {
   applyIncomingSnapshot,
   createInitialAppState,
 } from '../lib/messages.js'
+import { formatStatusText } from '../lib/status.js'
 import { submitMessage } from '../lib/submit-message.js'
 
 import { useBranding } from './use-branding.js'

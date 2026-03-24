@@ -65,7 +65,7 @@
   },
   "license": "MIT",
   "scripts": {
-    "lint": "pnpm run guard:file-length && tsx scripts/remove-bom.ts && tsx scripts/fix-crlf.ts && tsx scripts/format-jsdoc.ts && tsx scripts/fn-to-arrow.ts && tsx scripts/prompt-hardcode-guard.ts && eslint \"src/**/*.ts\" \"webui/**/*.js\" \"webui-src/**/*.{ts,tsx}\" --fix",
+    "lint": "pnpm run guard:file-length && tsx scripts/remove-bom.ts && tsx scripts/fix-crlf.ts && tsx scripts/format-jsdoc.ts && tsx scripts/fn-to-arrow.ts && tsx scripts/prompt-hardcode-guard.ts && eslint \"src/**/*.ts\" \"webui-src/**/*.{ts,tsx}\" --fix",
     "prompt:preview": "tsx scripts/preview-prompt.ts",
     "start": "tsx scripts/start.ts",
     "test": "vitest run",
@@ -73,7 +73,7 @@
     "type-check": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.webui.json --noEmit",
     "build:webui": "node scripts/build-webui.mjs",
     "build": "pnpm run type-check && pnpm run build:webui",
-    "review-code-changes": "pnpm run lint && pnpm run type-check && pnpm run test",
+    "review-code-changes": "pnpm run lint && pnpm run type-check && pnpm run build:webui && pnpm run test",
     "audit:duplicates": "jscpd src tests --pattern \"**/*.{ts,tsx,js}\" --min-lines 8 --min-tokens 80 --reporters console,json --output .tmp/jscpd-src-tests",
     "score:worker-budget": "tsx scripts/worker-budget-report.ts",
     "score:manager-efficiency": "node .mimikit/tools/manager-efficiency-score.mjs",

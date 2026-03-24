@@ -1,8 +1,8 @@
 import {
   formatChoiceRemaining,
   resolveChoiceDefaultLabel,
-} from '../../webui/choice-payload.js'
-import { UI_TEXT } from '../../webui/system-text.js'
+} from '../lib/choice-payload.js'
+import { UI_TEXT } from '../lib/system-text.js'
 
 import type { ChoiceView } from '../types.js'
 

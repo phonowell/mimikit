@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 
-import { createTtsPlayer } from '../../webui/tts-player.js'
-import { resolveLatestSpeakText } from '../../webui/tts-text.js'
-import { resolvePreferredTtsVoice } from '../../webui/tts-voice.js'
+import { createTtsPlayer } from '../lib/tts-player.js'
+import { resolveLatestSpeakText } from '../lib/tts-text.js'
+import { resolvePreferredTtsVoice } from '../lib/tts-voice.js'
 
 import type { ChatMessage } from '../types.js'
 
@@ -36,6 +36,20 @@ export const useTts = (): {
   const [enabled, setEnabledState] = useState<boolean>(
     () => supported && readStoredEnabled(),
   )
+  const [player] = useState(() =>
+    createTtsPlayer({
+      speechSynthesis: supported ? window.speechSynthesis : undefined,
+      SpeechSynthesisUtterance: supported
+        ? window.SpeechSynthesisUtterance
+        : undefined,
+      resolveVoice: ({ utterance, speechSynthesis }: VoiceResolverParams) =>
+        utterance?.voice ||
+        resolvePreferredTtsVoice({
+          speechSynthesis,
+          userAgent: window.navigator?.userAgent ?? '',
+        }),
+    }),
+  )
 
   useEffect(() => {
     if (!supported) return
@@ -43,19 +57,11 @@ export const useTts = (): {
       window.localStorage.setItem(TTS_STORAGE_KEY, enabled ? '1' : '0')
     } catch {}
   }, [enabled, supported])
-
-  const player = createTtsPlayer({
-    speechSynthesis: supported ? window.speechSynthesis : undefined,
-    SpeechSynthesisUtterance: supported
-      ? window.SpeechSynthesisUtterance
-      : undefined,
-    resolveVoice: ({ utterance, speechSynthesis }: VoiceResolverParams) =>
-      utterance?.voice ||
-      resolvePreferredTtsVoice({
-        speechSynthesis,
-        userAgent: window.navigator?.userAgent ?? '',
-      }),
-  })
+  useEffect(() => {
+    if (enabled) return
+    player.stopAll()
+  }, [enabled, player])
+  useEffect(() => () => player.stopAll(), [player])
 
   return {
     enabled,

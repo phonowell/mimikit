@@ -1,4 +1,4 @@
-import { UI_TEXT } from '../../webui/system-text.js'
+import { UI_TEXT } from './system-text.js'
 
 import type { FocusView, StatusSnapshot } from '../types.js'
 

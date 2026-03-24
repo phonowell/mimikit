@@ -1,16 +1,16 @@
-import { formatDisplayTimeWithFull } from '../../webui/messages/format-time.js'
+import { renderMarkdownHtml } from '../lib/markdown.js'
+import { formatDisplayTimeWithFull } from '../lib/messages/format-time.js'
 import {
   formatElapsedLabel,
   formatUsage,
-} from '../../webui/messages/format-usage.js'
+} from '../lib/messages/format-usage.js'
 import {
   formatQuotePreview,
   formatRoleLabel,
   normalizeRole,
-} from '../../webui/messages/quote-utils.js'
-import { UI_TEXT } from '../../webui/system-text.js'
-import { renderMarkdownHtml } from '../lib/markdown.js'
+} from '../lib/messages/quote-utils.js'
 import { shouldDisplayMessageTime } from '../lib/messages.js'
+import { UI_TEXT } from '../lib/system-text.js'
 
 import type { ChatMessage } from '../types.js'
 

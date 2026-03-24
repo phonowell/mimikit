@@ -1,4 +1,4 @@
-import { delay, fetchWithTimeout } from '../../webui/fetch-with-timeout.js'
+import { delay, fetchWithTimeout } from './fetch-with-timeout.js'
 import {
   MODE_BLOCKED_LABEL,
   MODE_ENDPOINT,
@@ -7,13 +7,13 @@ import {
   RESTART_REQUEST_TIMEOUT_MS,
   STATUS_POLL_INTERVAL_MS,
   STATUS_POLL_TIMEOUT_MS,
-} from '../../webui/restart-config.js'
+} from './restart-config.js'
 import {
   fetchStatusSnapshot,
   formatBusyStats,
   readResponseError,
   readRuntimeIdFromStatus,
-} from '../../webui/restart-status.js'
+} from './restart-status.js'
 
 import type { StatusSnapshot } from '../types.js'
 

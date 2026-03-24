@@ -1,8 +1,8 @@
 import createDOMPurify from 'dompurify'
 import { marked } from 'marked'
 
-import { linkifyInlineCode, toArtifactUrl } from '../../webui/artifact-url.js'
-import { normalizeMarkdownForRender } from '../../webui/markdown-normalize.js'
+import { linkifyInlineCode, toArtifactUrl } from './artifact-url.js'
+import { normalizeMarkdownForRender } from './markdown-normalize.js'
 
 const ALLOWED_TAGS = [
   'a',
@@ -48,6 +48,10 @@ const ALLOWED_ATTR = [
   'type',
 ]
 const SAFE_PROTOCOLS = new Set(['http:', 'https:'])
+const MARKDOWN_CACHE_LIMIT = 128
+
+const markdownCache = new Map<string, string>()
+let purifyInstance: ReturnType<typeof createDOMPurify> | null = null
 
 marked.setOptions({ gfm: true, breaks: true })
 
@@ -61,7 +65,14 @@ const isSafeProtocol = (value: string, allowMailto: boolean): boolean => {
   }
 }
 
-export const renderMarkdownHtml = (text: string): string => {
+const trimMarkdownCache = (): void => {
+  if (markdownCache.size < MARKDOWN_CACHE_LIMIT) return
+  const oldestKey = markdownCache.keys().next().value
+  if (typeof oldestKey === 'string') markdownCache.delete(oldestKey)
+}
+
+const getPurify = () => {
+  if (purifyInstance) return purifyInstance
   const purify = createDOMPurify(window)
   purify.addHook('afterSanitizeAttributes', (node) => {
     if (node.tagName === 'A') {
@@ -85,11 +96,17 @@ export const renderMarkdownHtml = (text: string): string => {
     if (node.tagName === 'INPUT' && node.getAttribute('type') !== 'checkbox')
       node.parentNode?.removeChild(node)
   })
+  purifyInstance = purify
+  return purify
+}
 
+export const renderMarkdownHtml = (text: string): string => {
   const source = normalizeMarkdownForRender(text)
   if (!source.trim()) return ''
+  const cached = markdownCache.get(source)
+  if (cached) return cached
   const rendered = marked.parse(source) as string
-  const clean = purify.sanitize(rendered, {
+  const clean = getPurify().sanitize(rendered, {
     ALLOWED_TAGS,
     ALLOWED_ATTR,
     FORBID_TAGS: ['iframe', 'script', 'style'],
@@ -97,5 +114,8 @@ export const renderMarkdownHtml = (text: string): string => {
   const template = document.createElement('template')
   template.innerHTML = clean
   linkifyInlineCode(template.content)
-  return template.innerHTML
+  const html = template.innerHTML
+  trimMarkdownCache()
+  markdownCache.set(source, html)
+  return html
 }
