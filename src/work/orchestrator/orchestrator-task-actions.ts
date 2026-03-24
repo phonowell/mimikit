@@ -7,7 +7,11 @@ import type { Task } from '../../foundation/types/index.js'
 import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
 
 export type TaskMutationAction = 'cancel' | 'delete' | 'pause' | 'resume'
-export type TaskMutationMeta = { source?: string; reason?: string }
+export type TaskMutationMeta = {
+  source?: string
+  reason?: string
+  resumeInstruction?: string
+}
 
 export const resolveTaskById = (
   runtime: RuntimeState,

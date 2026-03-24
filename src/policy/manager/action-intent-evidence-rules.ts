@@ -1,7 +1,5 @@
 import { basename } from 'node:path'
 
-import { resolveSystemEvent } from '../../surface/shared/system-event.js'
-
 import {
   askUserChoiceSchema,
   mutateTaskSchema,
@@ -15,6 +13,7 @@ import {
   isSupportedByInputs,
   validateMutateTaskGitIntentEvidence,
 } from './action-intent-evidence-match.js'
+import { hasResumeChoiceEffectTask } from './action-intent-evidence-resume-choice.js'
 import { parseActionAttrs } from './action-parse.js'
 import { resolveRunTaskConfirmationRequirement } from './run-task-confirmation.js'
 import {
@@ -34,30 +33,6 @@ const resolveMutateTaskRef = (
   const title = task?.title.trim()
   if (title) return `${taskId} / ${title}`
   return taskId
-}
-
-const toStringField = (value: unknown): string | undefined => {
-  if (typeof value !== 'string') return undefined
-  const normalized = value.trim()
-  return normalized.length > 0 ? normalized : undefined
-}
-
-const hasResumeChoiceEffectTask = (
-  inputs: UserInput[] | undefined,
-  taskId: string,
-  op: string,
-): boolean => {
-  if (op !== 'resume') return false
-  if (!inputs || inputs.length === 0) return false
-  for (const input of inputs) {
-    if (input.role !== 'system') continue
-    const event = resolveSystemEvent(input)
-    if (event.name !== 'user_choice') continue
-    const effectType = toStringField(event.payload?.choice_effect_type)
-    const effectTaskId = toStringField(event.payload?.choice_effect_task_id)
-    if (effectType === 'resume_task' && effectTaskId === taskId) return true
-  }
-  return false
 }
 
 export const validateEnqueueTaskIntentEvidence = (params: {
@@ -118,8 +93,7 @@ export const validateMutateTaskIntentEvidence = (params: {
     params
   const parsed = parseActionAttrs(item, mutateTaskSchema)
   if (!parsed) return undefined
-  if (hasResumeChoiceEffectTask(inputs, parsed.id, parsed.op)) return undefined
-
+  const resumeInstruction = parsed.resume_instruction?.trim()
   const task = taskById?.get(parsed.id)
   if (isMutateTaskGitOp(parsed.op)) {
     return validateMutateTaskGitIntentEvidence({
@@ -136,6 +110,25 @@ export const validateMutateTaskIntentEvidence = (params: {
   if (task?.branch?.trim()) candidates.push(task.branch)
   const cwdBase = task?.cwd.trim() ? basename(task.cwd.trim()) : ''
   if (cwdBase) candidates.push(cwdBase)
+  if (parsed.op === 'resume' && resumeInstruction) {
+    if (
+      !isSupportedByInputs({
+        candidates: [resumeInstruction],
+        combinedCandidate: resumeInstruction,
+        inputs: inputTexts,
+      })
+    ) {
+      return buildMissingIntentEvidenceHint({
+        actionName: item.name,
+        evidenceSources: supplementalEvidenceSources,
+        taskRef: resolveMutateTaskRef(task, parsed.id),
+      })
+    }
+    if (hasResumeChoiceEffectTask(inputs, parsed.id, parsed.op))
+      return undefined
+  } else if (hasResumeChoiceEffectTask(inputs, parsed.id, parsed.op))
+    return undefined
+
   if (isSupportedByInputs({ candidates, inputs: inputTexts })) return undefined
 
   return buildMissingIntentEvidenceHint({

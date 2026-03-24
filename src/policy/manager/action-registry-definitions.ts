@@ -53,11 +53,12 @@ const applyMutateTaskAction = async (
 ): Promise<void> => {
   const parsed = parseActionAttrs(item, mutateTaskSchema)
   if (!parsed) return
-  const { id, op, reason, sha } = parsed
+  const { id, op, reason, sha, resume_instruction: resumeInstruction } = parsed
   const meta = {
     source: 'deferred',
     ...(reason ? { reason } : {}),
     ...(sha ? { sha } : {}),
+    ...(resumeInstruction ? { resumeInstruction } : {}),
   }
   if (op === 'pause') {
     await pauseTask(runtime, id, meta)

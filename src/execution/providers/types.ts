@@ -17,6 +17,7 @@ export type ProviderPromptSegment = {
 
 export type UsageListener = (usage: TokenUsage) => void
 export type PartialOutputListener = (output: string) => void
+export type TurnStartedListener = () => void
 
 type ProviderRequestBase = {
   role: 'manager' | 'worker'
@@ -29,6 +30,7 @@ type ProviderRequestBase = {
   model?: string
   threadId?: string | null
   abortSignal?: AbortSignal
+  onTurnStarted?: TurnStartedListener
   onUsage?: UsageListener
   onPartialOutput?: PartialOutputListener
 }

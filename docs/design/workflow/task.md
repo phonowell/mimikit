@@ -64,6 +64,7 @@
 - `pending -> paused`：停止调度，保持非终态，不生成 task_result。
 - `running -> paused`：触发 `AbortController` 终止当前执行；worker 收到 abort 后不写入 `failed/canceled` 终态结果。
 - `paused -> pending`：恢复入队并重新调度执行。
+- `mutate_task op="resume"` 可附带 `resume_instruction`；若存在，则只在恢复后的下一轮 worker prompt 中注入一次，并继续复用原 `sessionId/threadId`。
 - 从预算暂停恢复时，会先清理旧 `task.result`/`archivePath`，避免历史部分结果阻塞下一次结果消费。
 - 预算暂停会生成一个显式恢复 choice：默认项是 `Keep paused`；当前实现默认不自动超时，用户返回后选择 `Continue now` 会直接调用恢复链路。
 - 该 choice 会随 `pendingUserChoices` 一起持久化；若 snapshot 中缺失但任务态存在 `paused + partial + budget_exhausted`，启动时会按任务态补回同等恢复入口。
@@ -96,6 +97,7 @@
 | 用户主动取消（HTTP/显式用户来源） | 立即丢弃旧 session，后续必须新建 | `src/execution/worker/cancel-task.ts`（`source=user`） |
 | 系统取消或延后取消（`source=system/deferred`） | 保留旧 session 为可恢复 | `src/execution/worker/cancel-task.ts`（`source=system/deferred`） |
 | 预算暂停（`Task.status=paused` + `TaskResult.status=partial`） | 保留旧 session，等待显式 `resume` 后继续 | `src/execution/worker/profiled-runner-loop.ts` + `src/execution/worker/resume-task.ts` |
+| `mutate_task op="resume"` 附带 `resume_instruction` | 仍复用旧 session，但在恢复后的下一轮首个 prompt 追加一次性补充说明 | `src/execution/worker/resume-task.ts` + `src/execution/worker/run-retry.ts` + `prompts/worker/system.md` |
 
 `cancel.source` 归一化规则：`user|http -> user`，`deferred -> deferred`，其他来源统一视为 `system`。
 

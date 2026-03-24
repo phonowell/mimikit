@@ -61,7 +61,9 @@ const runTaskModel = (params: {
   task: Task
   controller: AbortController
   sessionId?: string
+  resumeInstruction?: string
   onSessionId?: (sessionId: string) => Promise<void>
+  onTurnStarted?: () => void
   onUsage?: (usage: TokenUsage) => void
   onPartialOutput?: (output: string) => void
 }): Promise<WorkerLlmResult> => {
@@ -90,8 +92,12 @@ const runTaskModel = (params: {
     model: providerConfig.model,
     modelReasoningEffort: providerConfig.modelReasoningEffort,
     ...(params.sessionId ? { sessionId: params.sessionId } : {}),
+    ...(params.resumeInstruction
+      ? { resumeInstruction: params.resumeInstruction }
+      : {}),
     abortSignal: params.controller.signal,
     ...(params.onSessionId ? { onSessionId: params.onSessionId } : {}),
+    ...(params.onTurnStarted ? { onTurnStarted: params.onTurnStarted } : {}),
     ...(params.onUsage ? { onUsage: params.onUsage } : {}),
     ...(params.onPartialOutput
       ? { onPartialOutput: params.onPartialOutput }
@@ -151,6 +157,7 @@ export const runTaskWithRetry = (params: {
   runtime: RuntimeState
   task: Task
   controller: AbortController
+  onTurnStarted?: () => void
   onUsage?: (usage: TokenUsage) => void
   onPartialOutput?: (output: string) => void
 }): Promise<WorkerLlmResult> => {
@@ -187,6 +194,7 @@ export const runTaskWithRetry = (params: {
 
   const retries = Math.max(0, runtime.config.worker.retry.maxAttempts)
   const backoffMs = Math.max(0, runtime.config.worker.retry.backoffMs)
+  const resumeInstruction = task.resumeInstruction?.trim() ?? undefined
   const retryOptions = buildRetryOptions({
     runtime,
     task,
@@ -218,7 +226,11 @@ export const runTaskWithRetry = (params: {
           task,
           controller,
           ...(sessionId ? { sessionId } : {}),
+          ...(resumeInstruction ? { resumeInstruction } : {}),
           onSessionId,
+          ...(params.onTurnStarted
+            ? { onTurnStarted: params.onTurnStarted }
+            : {}),
           ...(params.onUsage ? { onUsage: params.onUsage } : {}),
           ...(params.onPartialOutput
             ? { onPartialOutput: params.onPartialOutput }

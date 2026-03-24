@@ -24,6 +24,7 @@ import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
 export type ResumeMeta = {
   source?: string
   reason?: string
+  resumeInstruction?: string
 }
 
 export type ResumeResult = {
@@ -38,6 +39,13 @@ export type ResumeRecoverableTasksResult = {
   resumedCount: number
   skippedCount: number
   items: ResumeResult[]
+}
+
+const normalizeResumeInstruction = (
+  value: string | undefined,
+): string | undefined => {
+  const normalized = value?.trim()
+  return normalized === '' ? undefined : normalized
 }
 
 export const resumeTask = async (
@@ -67,6 +75,7 @@ export const resumeTask = async (
   }
 
   const resumedAt = nowIso()
+  const resumeInstruction = normalizeResumeInstruction(meta?.resumeInstruction)
   touchTaskMutation(runtime, task.id)
   clearTaskResumeChoice(runtime, task.id)
   task.status = 'pending'
@@ -76,15 +85,24 @@ export const resumeTask = async (
   delete task.durationMs
   delete task.archivePath
   delete task.result
+  if (resumeInstruction) task.resumeInstruction = resumeInstruction
+  else delete task.resumeInstruction
 
   await appendTaskSystemMessage(runtime.paths.history, 'resumed', task, {
     createdAt: resumedAt,
     slotStatus: resolveSlotStatus(runtime),
+    resumeInstructionPresent: Boolean(resumeInstruction),
   })
   await bestEffort('appendLog: task_resumed', () =>
     appendLog(runtime.paths.log, {
       event: 'task_resumed',
       taskId: task.id,
+      ...(resumeInstruction
+        ? {
+            resumeInstructionPresent: true,
+            resumeInstructionChars: resumeInstruction.length,
+          }
+        : {}),
       ...buildTaskMutationMetaFields(meta),
     }),
   )

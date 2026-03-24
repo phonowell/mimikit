@@ -27,6 +27,13 @@ export const runTask = async (
 ): Promise<void> => {
   const startedAt = Date.now()
   const elapsed = () => Math.max(0, Date.now() - startedAt)
+  const resumeInstruction = task.resumeInstruction?.trim() ?? undefined
+  const resumeTurnState = { started: false }
+  const clearConsumedResumeInstruction = (): void => {
+    if (!resumeInstruction) return
+    if (task.resumeInstruction?.trim() !== resumeInstruction) return
+    delete task.resumeInstruction
+  }
   try {
     await appendLog(runtime.paths.log, {
       event: 'worker_start',
@@ -47,7 +54,11 @@ export const runTask = async (
         if (!setTaskLiveOutput(runtime, task.id, output)) return
         notifyUiSignal(runtime, 'tasks')
       },
+      onTurnStarted: () => {
+        resumeTurnState.started = true
+      },
     })
+    clearConsumedResumeInstruction()
     if (task.status === 'paused') return
     if (task.status === 'canceled') {
       const usage = llmResult.usage ?? task.usage
@@ -71,8 +82,12 @@ export const runTask = async (
     await finalizeResult(runtime, task, result, markTaskSucceeded)
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error))
-    if (task.status === 'paused') return
+    if (task.status === 'paused') {
+      if (resumeTurnState.started) clearConsumedResumeInstruction()
+      return
+    }
     if (isWorkerBudgetExceededError(error)) {
+      clearConsumedResumeInstruction()
       const partialOutput = error.latestOutput.trim()
       const result = buildResult(
         task,
@@ -111,6 +126,7 @@ export const runTask = async (
       return
     }
     if (task.status === 'canceled') {
+      clearConsumedResumeInstruction()
       const { usage } = task
       const result = buildResult(
         task,
@@ -122,6 +138,7 @@ export const runTask = async (
       await finalizeResult(runtime, task, result, markTaskCanceled)
       return
     }
+    if (resumeTurnState.started) clearConsumedResumeInstruction()
     const result = buildResult(task, 'failed', err.message, elapsed())
     await finalizeResult(runtime, task, result, markTaskFailed)
   }

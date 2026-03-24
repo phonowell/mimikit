@@ -30,6 +30,7 @@ const buildRunModel =
   (input: {
     prompt: string
     threadId?: string | null
+    onTurnStarted?: () => void
     onUsage?: (usage: TokenUsage) => void
     onPartialOutput?: (output: string) => void
   }) =>
@@ -47,6 +48,7 @@ const buildRunModel =
         ? { modelReasoningEffort: params.modelReasoningEffort }
         : {}),
       ...(input.threadId !== undefined ? { threadId: input.threadId } : {}),
+      ...(input.onTurnStarted ? { onTurnStarted: input.onTurnStarted } : {}),
       ...(input.onUsage ? { onUsage: input.onUsage } : {}),
       ...(input.onPartialOutput
         ? { onPartialOutput: input.onPartialOutput }
@@ -59,6 +61,7 @@ type WorkerRunnerParams = {
   cwd: string
   task: Task
   sessionId?: string
+  resumeInstruction?: string
   focusBrief?: TaskFocusBrief
   timeoutMs: number
   budget?: {
@@ -70,6 +73,7 @@ type WorkerRunnerParams = {
   modelReasoningEffort?: ModelReasoningEffort
   abortSignal?: AbortSignal
   onSessionId?: (sessionId: string) => Promise<void> | void
+  onTurnStarted?: () => void
   onUsage?: (usage: TokenUsage) => void
   onPartialOutput?: (output: string) => void
 }
@@ -81,6 +85,9 @@ export const runWorker = async (
     stateDir: params.stateDir,
     workspaceDir: params.cwd,
     task: params.task,
+    ...(params.resumeInstruction
+      ? { resumeInstruction: params.resumeInstruction }
+      : {}),
     ...(params.focusBrief ? { focusBrief: params.focusBrief } : {}),
   })
   const continueSource = await loadPromptSource('worker/continue-until-done.md')
@@ -105,6 +112,7 @@ export const runWorker = async (
     },
     runModel: buildRunModel(params),
     ...(params.onSessionId ? { onSessionId: params.onSessionId } : {}),
+    ...(params.onTurnStarted ? { onTurnStarted: params.onTurnStarted } : {}),
     ...(params.onUsage ? { onUsage: params.onUsage } : {}),
     ...(params.onPartialOutput
       ? { onPartialOutput: params.onPartialOutput }

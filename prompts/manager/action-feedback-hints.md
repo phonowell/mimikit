@@ -22,6 +22,8 @@ mutate_task_already_paused: |
   mutate_task 执行失败：任务已是 paused 状态。
 mutate_task_not_paused: |
   mutate_task 执行失败：任务当前不是 paused 状态，无法 resume。
+mutate_task_resume_instruction_invalid: |
+  mutate_task 执行失败：`resume_instruction` 只能与 `op="resume"` 一起使用，且内容应是本次恢复的一次性补充说明。
 mutate_task_already_canceled: |
   mutate_task 执行失败：任务已是 canceled 状态。
 restart_runtime_unavailable: |

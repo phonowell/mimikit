@@ -18,6 +18,7 @@ import {
 } from './action-plan-schema.js'
 
 const nonEmptyString = z.string().trim().min(1)
+const resumeInstructionString = z.string().trim().min(1).max(600)
 const REMEMBER_MEMORY_PROTOCOL_TAG_RE = /<M:[^>]+>/i
 const REMEMBER_MEMORY_CODE_FENCE_RE = /```|~~~/
 const REMEMBER_MEMORY_LIST_RE = /^\s*(?:[-*+]|\d+[.)])\s+/m
@@ -82,6 +83,7 @@ export const mutateTaskSchema = z
     ]),
     reason: nonEmptyString.optional(),
     sha: nonEmptyString.optional(),
+    resume_instruction: resumeInstructionString.optional(),
   })
   .strict()
 

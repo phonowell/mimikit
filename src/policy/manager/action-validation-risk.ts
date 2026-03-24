@@ -16,6 +16,7 @@ import {
   formatMutateTaskAlreadyPausedHint,
   formatMutateTaskNotFoundHint,
   formatMutateTaskNotPausedHint,
+  formatMutateTaskResumeInstructionInvalidHint,
 } from './action-feedback-hints.js'
 import { resolveIntentEvidenceRejectionHint } from './action-intent-evidence.js'
 import { parseActionAttrs } from './action-parse.js'
@@ -92,10 +93,12 @@ export const validateMutateTask = (
 ): ValidationIssue[] => {
   const parsed = parseActionAttrs(item, mutateTaskSchema)
   if (!parsed) return validateWithSchema(item, mutateTaskSchema)
-  const { id, op, reason } = parsed
+  const { id, op, reason, resume_instruction: resumeInstruction } = parsed
   const taskStatus = context.taskStatusById?.get(id)
   if (!taskStatus) return rejected(formatMutateTaskNotFoundHint())
   const task = context.taskById?.get(id)
+  if (resumeInstruction && op !== 'resume')
+    return rejected(formatMutateTaskResumeInstructionInvalidHint())
 
   if (op === 'pause') {
     if (taskStatus !== 'pending' && taskStatus !== 'running') {

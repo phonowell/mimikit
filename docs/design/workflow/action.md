@@ -76,6 +76,7 @@
 - `mutate_task`：统一 task 生命周期与 git 闭环状态控制。
 - `restart_runtime`：登记 deferred restart；仅当没有 pending/running worker task 时允许调度，并在当前 manager batch 完成持久化后触发退出码 `75` 重启。
 - `op=pause|resume|cancel`：分发到 `worker/pause-task.ts`、`worker/resume-task.ts`、`worker/cancel-task.ts`。
+- `op="resume"` 可选 `resume_instruction`：仅作为“下一轮恢复执行”的一次性补充说明，不能改写原 task contract，也不支持对运行中的 turn 热插指令。
 - `op=review_passed|merged|cleaned`：分发到 `worker/record-task-git-lifecycle.ts`，用于显式写回“外部 review / merge / cleanup 已完成”的 task git 生命周期状态；`review_passed` 可附带 `sha`。
 - `op=review_passed|merged|cleaned` 还必须附带 `reason`，并且 `reason` 要能被当前用户输入直接支撑；仅靠 task 引用或历史/结果间接证据不足以推进 git 闭环写回。
 - `mutate_task` 所有分支统一产出可追踪结构（`id`、`status`、`changeAt`）。

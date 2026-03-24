@@ -94,6 +94,7 @@ export type Task = {
   sessionId?: string | undefined
   sessionState?: 'reusable' | 'discarded' | undefined
   sessionUpdatedAt?: ISODate | undefined
+  resumeInstruction?: string | undefined
   archivePath?: string | undefined
   cancel?: TaskCancelMeta | undefined
   result?: TaskResult | undefined

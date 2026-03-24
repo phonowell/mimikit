@@ -12,6 +12,13 @@
 </M:focus_brief>
 {% endif %}
 
+{% if resume_instruction %}
+// 恢复补充说明；仅用于本次恢复，不改写原任务契约。先核对当前工作区和已有 partial 结果，再决定如何吸收这条补充说明。
+<M:resume_instruction>
+{{ resume_instruction }}
+</M:resume_instruction>
+{% endif %}
+
 // 环境信息；供参考，不主动提及
 <M:environment>
 {{ environment }}

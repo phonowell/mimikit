@@ -36,11 +36,16 @@ const buildTaskText = (
   outcome?: 'completed' | 'partial' | 'blocked',
   stopReason?: string,
   cancel?: TaskCancelMeta,
+  resumeInstructionPresent?: boolean,
 ): string => {
   const taskLabel = formatTaskLabel(label)
   if (event === 'created') return `Created task ${taskLabel}.`
   if (event === 'paused') return `Paused task ${taskLabel}.`
-  if (event === 'resumed') return `Resumed task ${taskLabel}.`
+  if (event === 'resumed') {
+    return resumeInstructionPresent
+      ? `Resumed task ${taskLabel} with a supplemental instruction.`
+      : `Resumed task ${taskLabel}.`
+  }
   if (event === 'canceled') {
     return cancel?.source === 'user'
       ? `Canceled task ${taskLabel} at the user's request.`
@@ -85,6 +90,7 @@ const buildTaskPayload = (
   stopReason?: string,
   cancel?: TaskCancelMeta,
   slotStatus?: WorkerSlotPayload,
+  resumeInstructionPresent?: boolean,
 ): Record<string, unknown> => ({
   task_id: task.id,
   provider: task.provider,
@@ -93,6 +99,9 @@ const buildTaskPayload = (
   ...(event === 'created' ? { status: 'pending' } : {}),
   ...(event === 'paused' ? { status: 'paused' } : {}),
   ...(event === 'resumed' ? { status: 'pending' } : {}),
+  ...(event === 'resumed' && resumeInstructionPresent
+    ? { resume_instruction_present: true }
+    : {}),
   ...(event === 'completed' ? { status: status ?? 'completed' } : {}),
   ...(taskStatus ? { task_status: taskStatus } : {}),
   ...(outcome ? { outcome } : {}),
@@ -115,6 +124,7 @@ export const appendTaskSystemMessage = (
     createdAt?: string
     cancel?: TaskCancelMeta
     slotStatus?: WorkerSlotPayload
+    resumeInstructionPresent?: boolean
   },
 ): Promise<boolean> => {
   const label = resolveTaskLabel(task)
@@ -127,6 +137,7 @@ export const appendTaskSystemMessage = (
       options?.outcome,
       options?.stopReason,
       options?.cancel,
+      options?.resumeInstructionPresent,
     ),
     event: TASK_EVENT_NAME[event],
     payload: buildTaskPayload(
@@ -139,6 +150,7 @@ export const appendTaskSystemMessage = (
       options?.stopReason,
       options?.cancel,
       options?.slotStatus,
+      options?.resumeInstructionPresent,
     ),
   })
   const message: HistoryMessage = {

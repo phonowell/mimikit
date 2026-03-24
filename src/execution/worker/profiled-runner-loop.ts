@@ -73,6 +73,9 @@ export const runWorkerLoop = async (
       const result = await params.runModel({
         prompt: nextPrompt,
         ...(threadId !== undefined ? { threadId } : {}),
+        ...(params.onTurnStarted
+          ? { onTurnStarted: params.onTurnStarted }
+          : {}),
         onUsage: (usage) => {
           roundUsage = mergeUsageMonotonic(roundUsage, usage)
           const previewUsage = mergeUsageAdditive(totalUsage, roundUsage)

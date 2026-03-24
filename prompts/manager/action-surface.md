@@ -46,6 +46,7 @@ actions:
       - 必填 `id,op`
     detail_constraints:
       - '`op=pause|resume|cancel|review_passed|merged|cleaned`'
+      - '`op="resume"` 时可选 `resume_instruction`，仅用于本次恢复的一次性补充说明'
       - '`review_passed` 可选 `sha`'
   restart_runtime:
     summary: 在当前 batch 收尾后请求运行时自重启。

@@ -125,6 +125,7 @@ const runOpenAiResponses = async (request: OpenAiResponsesProviderRequest) => {
     }
     const response = await fetch(endpoint, requestInit)
     resetIdle()
+    if (response.ok) request.onTurnStarted?.()
     const raw = await response.text()
     resetIdle()
     if (!response.ok)

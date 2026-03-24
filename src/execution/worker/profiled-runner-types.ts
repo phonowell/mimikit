@@ -11,6 +11,7 @@ export type ProviderResult = {
 export type RunModelInput = {
   prompt: string
   threadId?: string | null
+  onTurnStarted?: () => void
   onUsage?: (usage: TokenUsage) => void
   onPartialOutput?: (output: string) => void
 }
@@ -25,6 +26,7 @@ export type RunLoopParams = {
   archiveBase: Omit<TraceArchiveEntry, 'prompt' | 'output' | 'ok'>
   runModel: (input: RunModelInput) => Promise<ProviderResult>
   onSessionId?: (sessionId: string) => Promise<void> | void
+  onTurnStarted?: () => void
   onUsage?: (usage: TokenUsage) => void
   onPartialOutput?: (output: string) => void
   abortSignal?: AbortSignal

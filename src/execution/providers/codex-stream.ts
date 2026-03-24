@@ -29,6 +29,7 @@ export const runCodexStream = async (
     ...(request.outputSchema ? { outputSchema: request.outputSchema } : {}),
     signal,
   })
+  request.onTurnStarted?.()
   let output = ''
   let latestOutput = ''
   let emittedOutput = ''

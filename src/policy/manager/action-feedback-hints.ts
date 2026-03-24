@@ -30,6 +30,7 @@ const actionFeedbackHintSchema = z
     mutate_task_already_done: z.string().trim().min(1),
     mutate_task_already_paused: z.string().trim().min(1),
     mutate_task_not_paused: z.string().trim().min(1),
+    mutate_task_resume_instruction_invalid: z.string().trim().min(1),
     mutate_task_already_canceled: z.string().trim().min(1),
     restart_runtime_unavailable: z.string().trim().min(1),
     restart_runtime_busy: z.string().trim().min(1),
@@ -128,13 +129,12 @@ export const formatMutateTaskAlreadyDoneHint = (
   renderHint('mutate_task_already_done', {
     op,
   })
-
 export const formatMutateTaskAlreadyPausedHint = (): string =>
   renderHint('mutate_task_already_paused')
-
 export const formatMutateTaskNotPausedHint = (): string =>
   renderHint('mutate_task_not_paused')
-
+export const formatMutateTaskResumeInstructionInvalidHint = (): string =>
+  renderHint('mutate_task_resume_instruction_invalid')
 export const formatMutateTaskAlreadyCanceledHint = (): string =>
   renderHint('mutate_task_already_canceled')
 export const formatRestartRuntimeUnavailableHint = (): string =>

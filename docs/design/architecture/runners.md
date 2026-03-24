@@ -36,6 +36,7 @@
 - Provider：固定 `codex-sdk`（外部执行运行时）
 - 输出：`{ output, elapsedMs, usage? }`
 - 上下文补充：注入当前任务 `focusId` 对应的 `focus summary/open_items`。
+- 恢复补充：若 task 带 `resumeInstruction`，只在恢复后的下一轮首个 worker prompt 注入 `<M:resume_instruction>`，不改写原 task prompt。
 - 任务 prompt 过大时会外置到 `generated/worker-task-prompts/YYYY-MM-DD/{taskId}.md`，主 prompt 仅保留路径与预览。
 - 异常回收：当前无 provider 级外部子进程生命周期上报
 

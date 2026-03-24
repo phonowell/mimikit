@@ -20,6 +20,7 @@ export const buildWorkerPrompt = async (params: {
   workspaceDir: string
   task: Task
   focusBrief?: TaskFocusBrief
+  resumeInstruction?: string
 }): Promise<string> => {
   const systemSource = await loadPromptSource('worker/system.md')
   const taskPrompt = await prepareWorkerTaskPrompt({
@@ -41,6 +42,9 @@ export const buildWorkerPrompt = async (params: {
       ),
       prompt: escapeCdata(taskPrompt),
       focus_brief: focusBrief ? escapeCdata(focusBrief) : '',
+      resume_instruction: params.resumeInstruction
+        ? escapeCdata(params.resumeInstruction)
+        : '',
     },
     systemSource.path,
   )

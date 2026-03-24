@@ -6,6 +6,7 @@ import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
 export type TaskMutationMeta = {
   source?: string
   reason?: string
+  resumeInstruction?: string
 }
 
 export type TaskLookup = {

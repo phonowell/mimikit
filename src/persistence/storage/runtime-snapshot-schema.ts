@@ -146,6 +146,7 @@ export const taskSchema = z
     sessionId: z.string().trim().min(1).optional(),
     sessionState: z.enum(['reusable', 'discarded']).optional(),
     sessionUpdatedAt: z.string().trim().min(1).optional(),
+    resumeInstruction: z.string().trim().min(1).optional(),
     archivePath: z.string().optional(),
     cancel: taskCancelSchema.optional(),
     result: taskResultSchema.optional(),
