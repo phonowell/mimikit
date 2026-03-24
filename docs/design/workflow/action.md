@@ -82,7 +82,8 @@
 - `ask_user_choice` 是 stop action：命中后当前 action 批次停止后续 apply。
 - `restart_runtime` 是 stop action：命中后当前 action 批次停止后续 apply，避免继续派发后续动作又立刻重启。
 - `enqueue_task` 高成本确认闸门在 apply 与 validation 两侧同时生效：未确认时不入队，直接生成确认 choice。
-- `enqueue_task` 创建时会先解析 `cwd`；若同时传入 `branch` 且 `cwd` 位于 git 仓库中，则 enqueue 阶段先创建或复用对应 branch 的 worktree，再把任务 `cwd` 落到该 worktree。最终任务仍按真实 `repoKey + branch` 参与 worker 排队锁。
+- `enqueue_task` 创建时会先解析 `cwd`；若同时传入 `branch` 且 `cwd` 位于 git 仓库中，则 enqueue 阶段先创建或复用对应 branch 的 worktree，再把任务 `cwd` 落到该 worktree。最终任务仍按真实 `repoKey + branch` 参与当前 runtime 内的 worker dispatch guard。
+- 这里的 dispatch guard 只约束当前 runtime 内的 worker 派发顺序：同一 `repoKey + branch` 串行，不同 branch/worktree 仍可并发；它不是跨进程、跨 session 或仓库级强一致锁。
 - `remember_memory`：立即写入 `memory/MEMORY.md`，仅接受 `content` 参数，并通过 `memory_remembered` system event 回执 `entry_id/ref/operation`。
 - `remember_memory.content` 必须是单行稳定 digest（`<=240 chars`）；checklist、多行过程文本、协议标签与 `task-*/plan-*` 一类 runtime 引用会在 validation 阶段被拒绝。
 

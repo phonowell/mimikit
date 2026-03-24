@@ -27,9 +27,10 @@
 
 ## 资源排队
 
-- worker 排队命中同一 `repoKey + branch` 时，不会失败，也不会 cancel；后来的任务保持 `pending` 等待锁释放
+- worker 排队命中同一 `repoKey + branch` 时，不会失败，也不会 cancel；后来的任务保持 `pending`，等待同一 dispatch guard 释放
 - 非 git 目录退化为 `cwd` 级别串行；同一目录只允许一个写任务运行
 - 不同 repo 或不同 branch 仍可并发，只受全局 worker 槽位限制
+- 该 dispatch guard 仅作用于当前 runtime 内的 worker 派发，不提供跨进程、跨 session 或仓库级强一致互斥
 - `Task.title` 是唯一展示标题来源；创建时可由 enqueue 阶段归一化生成，但读模型/WebUI 不再从 `task.prompt` 回推标题，缺失时直接显示 `task.id`
 
 ## 执行编排与回写
