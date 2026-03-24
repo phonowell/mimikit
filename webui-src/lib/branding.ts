@@ -7,6 +7,8 @@ const FAVICON_COLOR_BY_STATE: Record<string, string> = {
   idle: '#22c55e',
   running: '#0ea5e9',
 }
+const DEFAULT_FAVICON_COLOR = '#94a3b8'
+const faviconHrefByColor = new Map<string, string>()
 
 const normalizeTitle = (value: string | undefined): string => {
   if (typeof value !== 'string') return ''
@@ -32,22 +34,30 @@ export const resolveDocumentTitle = (focuses: readonly FocusView[]): string => {
   return title || UI_TEXT.conversationTitleFallback
 }
 
+const resolveFaviconHref = (color: string): string => {
+  const cached = faviconHrefByColor.get(color)
+  if (cached) return cached
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="20" fill="${color}"/></svg>`
+  const href = `data:image/svg+xml,${encodeURIComponent(svg)}`
+  faviconHrefByColor.set(color, href)
+  return href
+}
+
 export const syncDocumentBranding = (
   status: StatusSnapshot,
   focuses: readonly FocusView[],
 ): void => {
-  document.title = resolveDocumentTitle(focuses)
+  const nextTitle = resolveDocumentTitle(focuses)
+  if (document.title !== nextTitle) document.title = nextTitle
   const state = status.agentStatus.trim().toLowerCase() || 'disconnected'
-  const color =
-    FAVICON_COLOR_BY_STATE[state] ?? FAVICON_COLOR_BY_STATE.disconnected
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="20" fill="${color}"/></svg>`
-  const href = `data:image/svg+xml,${encodeURIComponent(svg)}`
+  const color = FAVICON_COLOR_BY_STATE[state] ?? DEFAULT_FAVICON_COLOR
+  const href = resolveFaviconHref(color)
   const existing = document.querySelector('link[rel="icon"]')
   const link =
     existing instanceof HTMLLinkElement
       ? existing
       : document.createElement('link')
   link.rel = 'icon'
-  link.href = href
+  if (link.getAttribute('href') !== href) link.href = href
   if (!(existing instanceof HTMLLinkElement)) document.head.appendChild(link)
 }
