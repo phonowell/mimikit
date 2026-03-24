@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { focusIdSchema } from '../../foundation/shared/id-schema.js'
 
 import {
+  PLAN_EFFECT_DETAIL_FIELDS,
   PLAN_EFFECT_EDITABLE_FIELDS,
   planEffectFields,
   planEffectUpdateFields,
@@ -102,23 +103,9 @@ export const updatePlanSchema = z
     }
     if (data.schedule_type !== undefined) validatePlanTriggerFields(data, ctx)
 
-    const hasEffectField =
-      data.effect_reason !== undefined ||
-      data.task_title !== undefined ||
-      data.task_worker_prompt !== undefined ||
-      data.task_cwd !== undefined ||
-      data.task_branch !== undefined ||
-      data.task_goal !== undefined ||
-      data.task_in_scope !== undefined ||
-      data.task_done_when_1 !== undefined ||
-      data.task_done_when_2 !== undefined ||
-      data.task_done_when_3 !== undefined ||
-      data.task_done_when_4 !== undefined ||
-      data.task_done_when_5 !== undefined ||
-      data.task_out_of_scope !== undefined ||
-      data.task_context_ref_1 !== undefined ||
-      data.task_context_ref_2 !== undefined ||
-      data.task_context_ref_3 !== undefined
+    const hasEffectField = PLAN_EFFECT_DETAIL_FIELDS.some(
+      (key) => data[key as keyof typeof data] !== undefined,
+    )
     if (hasEffectField && data.effect_kind === undefined) {
       addCustomIssue(
         ctx,

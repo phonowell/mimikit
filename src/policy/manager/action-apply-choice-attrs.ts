@@ -6,15 +6,11 @@ import {
   optionIdSchema,
 } from '../../foundation/shared/id-schema.js'
 
+import { hasContiguousIndices } from './action-indexed-attrs.js'
+
 import type { UserChoiceOption } from '../../foundation/types/index.js'
 
 const nonEmptyString = z.string().trim().min(1)
-
-const hasContiguousIndices = (indices: number[]): boolean => {
-  if (indices.length === 0) return true
-  const ordered = [...new Set(indices)].sort((left, right) => left - right)
-  return ordered.every((index, offset) => index === offset + 1)
-}
 
 const choiceOptionSchema = z
   .object({

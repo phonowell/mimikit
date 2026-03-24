@@ -1,13 +1,13 @@
 # Code Index
 
-*Last updated: 2026-03-23 17:18:00 CST*
+*Last updated: 2026-03-24 17:20:00 CST*
 *Scope: `src/**/*.ts` + `webui/**/*.js` exported capabilities (function/class/const entry points)*
 
 ## Quick Reference
 
 | Category | Export Count | Primary Location |
 |---|---:|---|
-| Manager Orchestration | 125 | `src/policy/manager/*` |
+| Manager Orchestration | 126 | `src/policy/manager/*` |
 | Orchestrator Runtime | 50 | `src/kernel/orchestrator/*` |
 | Prompt Building | 41 | `src/policy/prompts/*` + `src/execution/prompts/*` + `src/foundation/prompting/*` |
 | Shared Utilities | 33 | `src/foundation/shared/*` |
@@ -205,6 +205,7 @@
 | `buildTaskMutationMetaFields()` | `src/execution/worker/task-action.ts:58` | Reusable optional `source/reason` payload expander for mutation logs |
 | `registerTaskMutationRoute()` | `src/surface/http/routes-api-task-mutation.ts:25` | Shared task mutation route response wrapper |
 | `focusIdSchema()/choiceIdSchema()/optionIdSchema()` | `src/foundation/shared/id-schema.ts:9` | Canonical ID schema validators |
+| `hasContiguousIndices()` | `src/policy/manager/action-indexed-attrs.ts:1` | Shared contiguous `1..n` index validation for manager attr parsing |
 | `buildPlanTriggerPayload()` | `src/work/shared/plan-payload.ts:3` | Canonical plan trigger payload builder |
 | `buildPlanProgressPayload()` | `src/work/shared/plan-payload.ts:14` | Canonical plan progress payload builder |
 | `asRecord()/asString()` | `src/execution/providers/provider-payload.ts:1` | Shared provider event payload decoders |
@@ -221,6 +222,7 @@
 - 2026-03-11 safe-error follow-up: extracted `toErrorInfo()` into `src/foundation/shared/error-info.ts`, removed duplicate error normalization from `src/persistence/log/safe.ts` and `src/execution/providers/safe.ts`, and reduced `jscpd` exact clones from `2` to `1` (`duplicatedLines: 38 -> 18`, `duplicatedTokens: 354 -> 152`).
 - 2026-03-11 prompt/provider trim: collapsed the duplicated manager prompt parameter shape in `src/policy/prompts/build-prompts.ts` into `BuildManagerPromptParams`, centralized provider proxy preflight validation in `src/execution/providers/utils.ts` via `resolveProviderProxyUrl()` for both OpenAI Responses and Opencode, and extracted shared `resolveErrorFallback()` in `src/foundation/shared/utils.ts` so `src/persistence/log/safe.ts` and `src/execution/providers/safe.ts` keep behavior without duplicating fallback resolution; clone metrics not rerun in this pass.
 - 2026-03-20 manager-input-clarity follow-up: checked recent manager/prompt helper extractions against existing capabilities, found no semantic duplicate to merge further, and indexed the new shared action-focus, plan-trigger, correction-reply, cron, and action-feedback formatting helpers for future reuse.
+- 2026-03-24 non-webui trim follow-up: centralized contiguous manager attr index checks in `src/policy/manager/action-indexed-attrs.ts`, collapsed duplicated `plan effect` field/type shapes into `src/policy/manager/action-plan-effect-schema.ts`, removed provider/storage-local `TokenUsage` type copies in favor of `src/foundation/types/base.ts`, installed project-local `jscpd` plus `pnpm run audit:duplicates`, and extracted shared test fixtures/setup for intent-evidence, lifecycle-route, restart-request, capacity-demand, and retry-session coverage; non-webui `jscpd` scan moved `src + tests` clones from `16` to `4` (`duplicatedLines: 293 -> 95`, `duplicatedTokens: 2633 -> 793`).
 - Highest-density modules to inspect before adding code:
   - `src/kernel/orchestrator/*` (39 exports)
   - `src/policy/manager/*` action/loop related modules

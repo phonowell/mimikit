@@ -2,6 +2,8 @@ import { z } from 'zod'
 
 import { logSafeError } from '../log/safe.js'
 
+import type { TokenUsage } from '../../foundation/types/index.js'
+
 export const tokenUsageSchema = z
   .object({
     input: z.number().finite().nonnegative().optional(),
@@ -13,16 +15,6 @@ export const tokenUsageSchema = z
     sessionTotal: z.number().finite().nonnegative().optional(),
   })
   .strict()
-
-type TokenUsage = {
-  input?: number | undefined
-  inputCacheRead?: number | undefined
-  inputCacheWrite?: number | undefined
-  output?: number | undefined
-  outputCache?: number | undefined
-  total?: number | undefined
-  sessionTotal?: number | undefined
-}
 
 type TokenUsageInput = z.infer<typeof tokenUsageSchema>
 

@@ -3,27 +3,8 @@ import {
   resolveWorkerPromptFromAttrs,
 } from './task-contract.js'
 
+import type { PlanEffectAttrs } from './action-plan-effect-schema.js'
 import type { TaskPlanEffect } from '../../foundation/types/index.js'
-
-export type PlanEffectAttrs = {
-  effect_kind?: 'enqueue_task' | 'wake_manager' | undefined
-  effect_reason?: string | undefined
-  task_title?: string | undefined
-  task_worker_prompt?: string | undefined
-  task_cwd?: string | undefined
-  task_branch?: string | undefined
-  task_goal?: string | undefined
-  task_in_scope?: string | undefined
-  task_done_when_1?: string | undefined
-  task_done_when_2?: string | undefined
-  task_done_when_3?: string | undefined
-  task_done_when_4?: string | undefined
-  task_done_when_5?: string | undefined
-  task_out_of_scope?: string | undefined
-  task_context_ref_1?: string | undefined
-  task_context_ref_2?: string | undefined
-  task_context_ref_3?: string | undefined
-}
 
 const toTaskContractAttrs = (
   params: PlanEffectAttrs,

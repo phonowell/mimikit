@@ -8,13 +8,9 @@ import {
 } from '../../work/focus/digest.js'
 import { normalizeFocusOpenItems } from '../../work/focus/open-items.js'
 
-const nonEmptyString = z.string().trim().min(1)
+import { hasContiguousIndices } from './action-indexed-attrs.js'
 
-const hasContiguousIndices = (indices: number[]): boolean => {
-  if (indices.length === 0) return true
-  const ordered = [...new Set(indices)].sort((left, right) => left - right)
-  return ordered.every((index, offset) => index === offset + 1)
-}
+const nonEmptyString = z.string().trim().min(1)
 
 const openItemAttrRe = /^open_item_(\d+)$/
 const upsertFocusBaseKeys = new Set(['id', 'title', 'status', 'summary'])

@@ -10,6 +10,63 @@ import { registerApiRoutes } from '../src/surface/http/routes-api.js'
 import type { Task } from '../src/foundation/types/index.js'
 import { createOrchestratorStub } from './helpers/orchestrator-stub.js'
 
+type LifecycleRouteStatus = {
+  ok: boolean
+  runtimeId: string
+  agentStatus: 'idle' | 'running'
+  activeTasks: number
+  pendingTasks: number
+  pendingInputs: number
+  managerRunning: boolean
+  maxWorkers: number
+}
+
+const createLifecycleRouteApp = (params?: {
+  workDir?: string
+  status?: LifecycleRouteStatus
+}) => {
+  const app = fastify()
+  const { orchestrator, exitRequests } = createOrchestratorStub()
+  const stopAndPersist = vi.fn(async () => undefined)
+  ;(orchestrator as unknown as { stopAndPersist: () => Promise<void> }).stopAndPersist =
+    stopAndPersist
+  if (params?.status) {
+    ;(orchestrator as unknown as { getStatus: () => LifecycleRouteStatus }).getStatus =
+      () => params.status as LifecycleRouteStatus
+  }
+  const config = defaultConfig({ workDir: params?.workDir ?? '.mimikit' })
+  registerApiRoutes(app, orchestrator, config)
+  return { app, exitRequests, stopAndPersist }
+}
+
+const expectLifecycleRouteAccepted = async (params: {
+  url: '/api/restart' | '/api/reset'
+  app: Awaited<ReturnType<typeof createLifecycleRouteApp>>['app']
+  stopAndPersist: ReturnType<typeof vi.fn>
+  exitRequests: { code: number; reason: string }[]
+  expectedExitReason: 'http_api_restart' | 'http_api_reset'
+  settleMs: number
+  useFakeTimers?: boolean
+}): Promise<void> => {
+  if (params.useFakeTimers) vi.useFakeTimers()
+  try {
+    const response = await params.app.inject({
+      method: 'POST',
+      url: params.url,
+    })
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toEqual({ ok: true })
+    if (params.useFakeTimers) await vi.advanceTimersByTimeAsync(params.settleMs)
+    else await new Promise((resolve) => setTimeout(resolve, params.settleMs))
+  } finally {
+    if (params.useFakeTimers) vi.useRealTimers()
+  }
+  expect(params.stopAndPersist).toHaveBeenCalledTimes(1)
+  expect(params.exitRequests).toEqual([
+    { code: 75, reason: params.expectedExitReason },
+  ])
+}
+
 const expectArchiveMarkdown = (
   response: {
     statusCode: number
@@ -220,50 +277,22 @@ test('task archive route falls back to live snapshot when archive file is missin
 })
 
 test('restart route requests orchestrator exit after persistence', async () => {
-  const app = fastify()
-  const { orchestrator, exitRequests } = createOrchestratorStub()
-  const stopAndPersist = vi.fn(async () => undefined)
-  ;(orchestrator as unknown as { stopAndPersist: () => Promise<void> }).stopAndPersist =
-    stopAndPersist
-  const config = defaultConfig({ workDir: '.mimikit' })
-  registerApiRoutes(app, orchestrator, config)
-  vi.useFakeTimers()
-  try {
-    const response = await app.inject({
-      method: 'POST',
-      url: '/api/restart',
-    })
-    expect(response.statusCode).toBe(200)
-    expect(response.json()).toEqual({ ok: true })
-    await vi.advanceTimersByTimeAsync(150)
-  } finally {
-    vi.useRealTimers()
-  }
-  expect(stopAndPersist).toHaveBeenCalledTimes(1)
-  expect(exitRequests).toEqual([{ code: 75, reason: 'http_api_restart' }])
+  const { app, exitRequests, stopAndPersist } = createLifecycleRouteApp()
+  await expectLifecycleRouteAccepted({
+    url: '/api/restart',
+    app,
+    stopAndPersist,
+    exitRequests,
+    expectedExitReason: 'http_api_restart',
+    settleMs: 150,
+    useFakeTimers: true,
+  })
   await app.close()
 })
 
 test('restart route rejects when manager or worker is not idle', async () => {
-  const app = fastify()
-  const { orchestrator, exitRequests } = createOrchestratorStub()
-  const stopAndPersist = vi.fn(async () => undefined)
-  ;(orchestrator as unknown as { stopAndPersist: () => Promise<void> }).stopAndPersist =
-    stopAndPersist
-  ;(
-    orchestrator as unknown as {
-      getStatus: () => {
-        ok: boolean
-        runtimeId: string
-        agentStatus: 'idle' | 'running'
-        activeTasks: number
-        pendingTasks: number
-        pendingInputs: number
-        managerRunning: boolean
-        maxWorkers: number
-      }
-    }
-  ).getStatus = () => ({
+  const { app, exitRequests, stopAndPersist } = createLifecycleRouteApp({
+    status: {
     ok: true,
     runtimeId: 'runtime-stub-busy',
     agentStatus: 'running',
@@ -272,9 +301,8 @@ test('restart route rejects when manager or worker is not idle', async () => {
     pendingInputs: 0,
     managerRunning: true,
     maxWorkers: 1,
+    },
   })
-  const config = defaultConfig({ workDir: '.mimikit' })
-  registerApiRoutes(app, orchestrator, config)
 
   const response = await app.inject({
     method: 'POST',
@@ -292,25 +320,8 @@ test('restart route rejects when manager or worker is not idle', async () => {
 })
 
 test('restart route allows paused-only tasks when no pending/running work remains', async () => {
-  const app = fastify()
-  const { orchestrator, exitRequests } = createOrchestratorStub()
-  const stopAndPersist = vi.fn(async () => undefined)
-  ;(orchestrator as unknown as { stopAndPersist: () => Promise<void> }).stopAndPersist =
-    stopAndPersist
-  ;(
-    orchestrator as unknown as {
-      getStatus: () => {
-        ok: boolean
-        runtimeId: string
-        agentStatus: 'idle' | 'running'
-        activeTasks: number
-        pendingTasks: number
-        pendingInputs: number
-        managerRunning: boolean
-        maxWorkers: number
-      }
-    }
-  ).getStatus = () => ({
+  const { app, exitRequests, stopAndPersist } = createLifecycleRouteApp({
+    status: {
     ok: true,
     runtimeId: 'runtime-stub-paused-only',
     agentStatus: 'idle',
@@ -318,68 +329,40 @@ test('restart route allows paused-only tasks when no pending/running work remain
     pendingTasks: 0,
     pendingInputs: 0,
     managerRunning: false,
-    maxWorkers: 1,
+      maxWorkers: 1,
+    },
   })
-  const config = defaultConfig({ workDir: '.mimikit' })
-  registerApiRoutes(app, orchestrator, config)
-  vi.useFakeTimers()
-  try {
-    const response = await app.inject({
-      method: 'POST',
-      url: '/api/restart',
-    })
-    expect(response.statusCode).toBe(200)
-    expect(response.json()).toEqual({ ok: true })
-    await vi.advanceTimersByTimeAsync(150)
-  } finally {
-    vi.useRealTimers()
-  }
-  expect(stopAndPersist).toHaveBeenCalledTimes(1)
-  expect(exitRequests).toEqual([{ code: 75, reason: 'http_api_restart' }])
+  await expectLifecycleRouteAccepted({
+    url: '/api/restart',
+    app,
+    stopAndPersist,
+    exitRequests,
+    expectedExitReason: 'http_api_restart',
+    settleMs: 150,
+    useFakeTimers: true,
+  })
   await app.close()
 })
 
 test('reset route requests orchestrator exit after persistence', async () => {
-  const app = fastify()
-  const { orchestrator, exitRequests } = createOrchestratorStub()
-  const stopAndPersist = vi.fn(async () => undefined)
-  ;(orchestrator as unknown as { stopAndPersist: () => Promise<void> }).stopAndPersist =
-    stopAndPersist
   const workDir = await mkdtemp(join(tmpdir(), 'mimikit-reset-route-'))
-  const config = defaultConfig({ workDir })
-  registerApiRoutes(app, orchestrator, config)
-  const response = await app.inject({
-    method: 'POST',
-    url: '/api/reset',
+  const { app, exitRequests, stopAndPersist } = createLifecycleRouteApp({
+    workDir,
   })
-  expect(response.statusCode).toBe(200)
-  expect(response.json()).toEqual({ ok: true })
-  await new Promise((resolve) => setTimeout(resolve, 180))
-  expect(stopAndPersist).toHaveBeenCalledTimes(1)
-  expect(exitRequests).toEqual([{ code: 75, reason: 'http_api_reset' }])
+  await expectLifecycleRouteAccepted({
+    url: '/api/reset',
+    app,
+    stopAndPersist,
+    exitRequests,
+    expectedExitReason: 'http_api_reset',
+    settleMs: 180,
+  })
   await app.close()
 })
 
 test('reset route rejects when manager or worker is not idle', async () => {
-  const app = fastify()
-  const { orchestrator, exitRequests } = createOrchestratorStub()
-  const stopAndPersist = vi.fn(async () => undefined)
-  ;(orchestrator as unknown as { stopAndPersist: () => Promise<void> }).stopAndPersist =
-    stopAndPersist
-  ;(
-    orchestrator as unknown as {
-      getStatus: () => {
-        ok: boolean
-        runtimeId: string
-        agentStatus: 'idle' | 'running'
-        activeTasks: number
-        pendingTasks: number
-        pendingInputs: number
-        managerRunning: boolean
-        maxWorkers: number
-      }
-    }
-  ).getStatus = () => ({
+  const { app, exitRequests, stopAndPersist } = createLifecycleRouteApp({
+    status: {
     ok: true,
     runtimeId: 'runtime-stub-busy',
     agentStatus: 'running',
@@ -388,9 +371,8 @@ test('reset route rejects when manager or worker is not idle', async () => {
     pendingInputs: 0,
     managerRunning: false,
     maxWorkers: 1,
+    },
   })
-  const config = defaultConfig({ workDir: '.mimikit' })
-  registerApiRoutes(app, orchestrator, config)
 
   const response = await app.inject({
     method: 'POST',

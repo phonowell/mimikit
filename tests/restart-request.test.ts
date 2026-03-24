@@ -8,6 +8,22 @@ const createJsonResponse = (ok: boolean, status: number, payload: unknown) => ({
   json: vi.fn().mockResolvedValue(payload),
 })
 
+const createRestartUiContext = (idle = true) => ({
+  statusText: { textContent: '' },
+  statusDot: { dataset: {} as Record<string, string> },
+  messages: {
+    stop: vi.fn(),
+    start: vi.fn(),
+  },
+  isBusy: () => false,
+  setBusy: vi.fn(),
+  setRuntimeIdle: vi.fn(),
+  refreshUiIdleState: vi.fn().mockReturnValue(idle),
+  syncControlState: vi.fn(),
+  closeToolsMenu: vi.fn(),
+  closeAllDialogs: vi.fn(),
+})
+
 describe('createRestartRequester', () => {
   const originalWindow = globalThis.window
   const originalFetch = globalThis.fetch
@@ -48,21 +64,7 @@ describe('createRestartRequester', () => {
       )
     globalThis.fetch = fetchMock as typeof fetch
 
-    const ctx = {
-      statusText: { textContent: '' },
-      statusDot: { dataset: {} as Record<string, string> },
-      messages: {
-        stop: vi.fn(),
-        start: vi.fn(),
-      },
-      isBusy: () => false,
-      setBusy: vi.fn(),
-      setRuntimeIdle: vi.fn(),
-      refreshUiIdleState: vi.fn().mockReturnValue(false),
-      syncControlState: vi.fn(),
-      closeToolsMenu: vi.fn(),
-      closeAllDialogs: vi.fn(),
-    }
+    const ctx = createRestartUiContext(false)
 
     const requester = createRestartRequester(ctx)
     await requester.request('restart')
@@ -109,21 +111,7 @@ describe('createRestartRequester', () => {
       )
     globalThis.fetch = fetchMock as typeof fetch
 
-    const ctx = {
-      statusText: { textContent: '' },
-      statusDot: { dataset: {} as Record<string, string> },
-      messages: {
-        stop: vi.fn(),
-        start: vi.fn(),
-      },
-      isBusy: () => false,
-      setBusy: vi.fn(),
-      setRuntimeIdle: vi.fn(),
-      refreshUiIdleState: vi.fn().mockReturnValue(true),
-      syncControlState: vi.fn(),
-      closeToolsMenu: vi.fn(),
-      closeAllDialogs: vi.fn(),
-    }
+    const ctx = createRestartUiContext()
 
     const requester = createRestartRequester(ctx)
     await requester.request('restart')

@@ -85,6 +85,22 @@ afterEach(async () => {
   }
 })
 
+const expectDiscardedSession = (params: {
+  task: Task
+  firstSessionId: string
+}) => {
+  expect(runWorkerMock).toHaveBeenCalledTimes(2)
+  expect(runWorkerMock.mock.calls[0]?.[0]?.sessionId).toBe(params.firstSessionId)
+  expect(runWorkerMock.mock.calls[1]?.[0]?.sessionId).toBeUndefined()
+  expect(params.task.sessionId).toBeUndefined()
+  expect(params.task.sessionState).toBe('discarded')
+  expect(
+    appendLogMock.mock.calls.some(
+      (call) => call[1]?.event === 'worker_session_discarded',
+    ),
+  ).toBe(true)
+}
+
 test('runTaskWithRetry reuses persisted session id on next attempt', async () => {
   const runtime = await createRuntime()
   const task = createTask('task-reuse', {
@@ -129,16 +145,7 @@ test('runTaskWithRetry discards invalid session and retries without thread reuse
   })
 
   expect(result.output).toBe('done after reset')
-  expect(runWorkerMock).toHaveBeenCalledTimes(2)
-  expect(runWorkerMock.mock.calls[0]?.[0]?.sessionId).toBe('session-stale')
-  expect(runWorkerMock.mock.calls[1]?.[0]?.sessionId).toBeUndefined()
-  expect(task.sessionId).toBeUndefined()
-  expect(task.sessionState).toBe('discarded')
-  expect(
-    appendLogMock.mock.calls.some(
-      (call) => call[1]?.event === 'worker_session_discarded',
-    ),
-  ).toBe(true)
+  expectDiscardedSession({ task, firstSessionId: 'session-stale' })
 })
 
 test('runTaskWithRetry persists newly reported session id even when attempt fails', async () => {
@@ -202,16 +209,7 @@ test('runTaskWithRetry discards reusable session after transient stream disconne
   })
 
   expect(result.output).toBe('done after fresh session')
-  expect(runWorkerMock).toHaveBeenCalledTimes(2)
-  expect(runWorkerMock.mock.calls[0]?.[0]?.sessionId).toBe('session-reconnect')
-  expect(runWorkerMock.mock.calls[1]?.[0]?.sessionId).toBeUndefined()
-  expect(task.sessionId).toBeUndefined()
-  expect(task.sessionState).toBe('discarded')
-  expect(
-    appendLogMock.mock.calls.some(
-      (call) => call[1]?.event === 'worker_session_discarded',
-    ),
-  ).toBe(true)
+  expectDiscardedSession({ task, firstSessionId: 'session-reconnect' })
 })
 
 test('runTaskWithRetry retries transient reconnect provider errors', async () => {

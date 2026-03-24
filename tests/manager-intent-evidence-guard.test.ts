@@ -1,30 +1,12 @@
 import { expect, test } from 'vitest'
 
 import { collectManagerActionFeedback } from '../src/policy/manager/action-feedback-collect.js'
-
-import type { Task, UserInput } from '../src/foundation/types/index.js'
-
-const createUserInput = (text: string): UserInput => ({
-  id: 'input-user',
-  role: 'user',
-  text,
-  createdAt: '2026-03-20T08:00:00.000Z',
-  focusId: 'focus-inbox',
-})
-
-const createTask = (overrides: Partial<Task> = {}): Task => ({
-  id: 'task-refactor-auth',
-  fingerprint: 'task-refactor-auth-fingerprint',
-  prompt: 'Refactor auth guard',
-  title: 'Refactor auth guard',
-  cwd: '/repo/auth-guard',
-  focusId: 'focus-inbox',
-  profile: 'worker',
-  provider: 'codex',
-  status: 'running',
-  createdAt: '2026-03-20T08:00:00.000Z',
-  ...overrides,
-})
+import {
+  createIntentEvidenceTaskContext,
+  createIntentEvidenceTask as createTask,
+  createIntentEvidenceUserInput as createUserInput,
+  expectSingleRejectedFeedback,
+} from './helpers/manager-intent-evidence.js'
 
 test('enqueue_task is blocked when only supplemental evidence suggests new work', () => {
   const feedback = collectManagerActionFeedback(
@@ -92,19 +74,14 @@ test('mutate_task is blocked when user input does not identify the task', () => 
         },
       },
     ],
-    {
-      inputs: [createUserInput('先看看文档里怎么说。')],
-      taskStatusById: new Map([[task.id, task.status]]),
-      taskById: new Map([[task.id, task]]),
-      supplementalEvidenceSources: new Set(['task_result']),
-    },
+    createIntentEvidenceTaskContext(task, [createUserInput('先看看文档里怎么说。')]),
   )
 
-  expect(feedback).toHaveLength(1)
-  expect(feedback[0]?.action).toBe('mutate_task')
-  expect(feedback[0]?.error).toBe('action_execution_rejected')
-  expect(feedback[0]?.hint).toContain('intent-evidence guard 未通过')
-  expect(feedback[0]?.hint).toContain(task.id)
+  expectSingleRejectedFeedback(feedback, {
+    action: 'mutate_task',
+    error: 'action_execution_rejected',
+    hintIncludes: ['intent-evidence guard 未通过', task.id],
+  })
 })
 
 test('mutate_task stays allowed when user explicitly references the task', () => {

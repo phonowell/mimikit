@@ -1,45 +1,12 @@
 import { expect, test } from 'vitest'
 
 import { collectManagerActionFeedback } from '../src/policy/manager/action-feedback-collect.js'
-
-import type { Task, UserInput } from '../src/foundation/types/index.js'
-
-const createTask = (overrides: Partial<Task> = {}): Task => ({
-  id: 'task-refactor-auth',
-  fingerprint: 'task-refactor-auth-fingerprint',
-  prompt: 'Refactor auth guard',
-  title: 'Refactor auth guard',
-  cwd: '/repo/auth-guard',
-  focusId: 'focus-inbox',
-  profile: 'worker',
-  provider: 'codex',
-  status: 'running',
-  createdAt: '2026-03-20T08:00:00.000Z',
-  ...overrides,
-})
-
-const createChoiceInput = (params: {
-  text: string
-  source: 'user' | 'timeout'
-  taskId?: string
-}): UserInput => ({
-  id: `input-choice-${params.source}`,
-  role: 'system',
-  visibility: 'all',
-  text: params.text,
-  createdAt: '2026-03-20T08:00:00.000Z',
-  focusId: 'focus-inbox',
-  systemEventName: 'user_choice',
-  systemEventPayload: {
-    source: params.source,
-    ...(params.taskId
-      ? {
-          choice_effect_type: 'resume_task',
-          choice_effect_task_id: params.taskId,
-        }
-      : {}),
-  },
-})
+import {
+  createIntentEvidenceChoiceInput as createChoiceInput,
+  createIntentEvidenceTask as createTask,
+  createIntentEvidenceTaskContext,
+  expectSingleRejectedFeedback,
+} from './helpers/manager-intent-evidence.js'
 
 test('mutate_task resume stays allowed for matching resume choice effect', () => {
   const task = createTask({ status: 'paused' })
@@ -81,24 +48,20 @@ test('mutate_task cancel stays blocked for resume-only choice effect', () => {
         },
       },
     ],
-    {
-      inputs: [
-        createChoiceInput({
-          text: 'Selected option "Resume" for "Continue this task?".',
-          source: 'user',
-          taskId: task.id,
-        }),
-      ],
-      taskStatusById: new Map([[task.id, task.status]]),
-      taskById: new Map([[task.id, task]]),
-      supplementalEvidenceSources: new Set(['task_result']),
-    },
+    createIntentEvidenceTaskContext(task, [
+      createChoiceInput({
+        text: 'Selected option "Resume" for "Continue this task?".',
+        source: 'user',
+        taskId: task.id,
+      }),
+    ]),
   )
 
-  expect(feedback).toHaveLength(1)
-  expect(feedback[0]?.action).toBe('mutate_task')
-  expect(feedback[0]?.error).toBe('action_execution_rejected')
-  expect(feedback[0]?.hint).toContain('intent-evidence guard 未通过')
+  expectSingleRejectedFeedback(feedback, {
+    action: 'mutate_task',
+    error: 'action_execution_rejected',
+    hintIncludes: ['intent-evidence guard 未通过'],
+  })
 })
 
 test('enqueue_task stays blocked when only timeout choice text suggests new work', () => {

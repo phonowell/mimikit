@@ -19,25 +19,29 @@ vi.mock('../src/work/memory/store.js', () => ({
   readMemoryEntries: readMemoryEntriesMock,
 }))
 
-test('buildManagerPromptPayload skips working focus history for minimal capacity packets', async () => {
+const buildCapacityPromptPayload = async (params: {
+  workDir: string
+  taskId: string
+  prompt: string
+  title: string
+  packetMode: 'minimal' | 'expanded'
+}) => {
   readHistoryMock.mockClear()
   readMemoryEntriesMock.mockClear()
-
   const config = defaultConfig({
-    workDir: '/tmp/mimikit-context-demand-capacity',
+    workDir: params.workDir,
   })
-
-  const payload = await buildManagerPromptPayload({
+  return buildManagerPromptPayload({
     stateDir: config.workDir,
     workDir: config.workDir,
     inputs: [],
     results: [],
     tasks: [
       {
-        id: 'task-capacity-1',
-        fingerprint: 'task-capacity-1',
-        prompt: 'resume queued work',
-        title: 'Resume queued work',
+        id: params.taskId,
+        fingerprint: params.taskId,
+        prompt: params.prompt,
+        title: params.title,
         cwd: '/repo',
         focusId: 'focus-capacity',
         profile: 'worker',
@@ -61,6 +65,16 @@ test('buildManagerPromptPayload skips working focus history for minimal capacity
     ],
     workingFocusIds: ['focus-capacity'],
     wakeProfile: 'capacity',
+    packetMode: params.packetMode,
+  })
+}
+
+test('buildManagerPromptPayload skips working focus history for minimal capacity packets', async () => {
+  const payload = await buildCapacityPromptPayload({
+    workDir: '/tmp/mimikit-context-demand-capacity',
+    taskId: 'task-capacity-1',
+    prompt: 'resume queued work',
+    title: 'Resume queued work',
     packetMode: 'minimal',
   })
 
@@ -71,47 +85,11 @@ test('buildManagerPromptPayload skips working focus history for minimal capacity
 })
 
 test('buildManagerPromptPayload keeps working focus context for expanded capacity packets', async () => {
-  readHistoryMock.mockClear()
-  readMemoryEntriesMock.mockClear()
-
-  const config = defaultConfig({
+  const payload = await buildCapacityPromptPayload({
     workDir: '/tmp/mimikit-context-demand-capacity-expanded',
-  })
-
-  const payload = await buildManagerPromptPayload({
-    stateDir: config.workDir,
-    workDir: config.workDir,
-    inputs: [],
-    results: [],
-    tasks: [
-      {
-        id: 'task-capacity-2',
-        fingerprint: 'task-capacity-2',
-        prompt: 'resume queued work with follow-up',
-        title: 'Resume queued work with follow-up',
-        cwd: '/repo',
-        focusId: 'focus-capacity',
-        profile: 'worker',
-        provider: 'codex',
-        status: 'paused',
-        createdAt: '2026-03-20T00:00:00.000Z',
-      },
-    ],
-    promptSectionLimits: config.manager.promptSections,
-    focuses: [
-      {
-        id: 'focus-capacity',
-        title: 'Capacity retry',
-        status: 'active',
-        summary: 'Retry queued work when slots free up.',
-        openItems: ['Resume pending task'],
-        createdAt: '2026-03-20T00:00:00.000Z',
-        updatedAt: '2026-03-20T00:00:00.000Z',
-        lastActivityAt: '2026-03-20T00:00:00.000Z',
-      },
-    ],
-    workingFocusIds: ['focus-capacity'],
-    wakeProfile: 'capacity',
+    taskId: 'task-capacity-2',
+    prompt: 'resume queued work with follow-up',
+    title: 'Resume queued work with follow-up',
     packetMode: 'expanded',
   })
 

@@ -1,30 +1,12 @@
 import { expect, test } from 'vitest'
 
 import { collectManagerActionFeedback } from '../src/policy/manager/action-feedback-collect.js'
-
-import type { Task, UserInput } from '../src/foundation/types/index.js'
-
-const createUserInput = (text: string): UserInput => ({
-  id: 'input-user',
-  role: 'user',
-  text,
-  createdAt: '2026-03-20T08:00:00.000Z',
-  focusId: 'focus-inbox',
-})
-
-const createTask = (overrides: Partial<Task> = {}): Task => ({
-  id: 'task-refactor-auth',
-  fingerprint: 'task-refactor-auth-fingerprint',
-  prompt: 'Refactor auth guard',
-  title: 'Refactor auth guard',
-  cwd: '/repo/auth-guard',
-  focusId: 'focus-inbox',
-  profile: 'worker',
-  provider: 'codex',
-  status: 'running',
-  createdAt: '2026-03-20T08:00:00.000Z',
-  ...overrides,
-})
+import {
+  createIntentEvidenceTaskContext,
+  createIntentEvidenceTask as createTask,
+  createIntentEvidenceUserInput as createUserInput,
+  expectSingleRejectedFeedback,
+} from './helpers/manager-intent-evidence.js'
 
 test('mutate_task git closure stays blocked when user only references task without explicit closure action', () => {
   const task = createTask({
@@ -43,17 +25,15 @@ test('mutate_task git closure stays blocked when user only references task witho
   })
   const feedback = collectManagerActionFeedback(
     [{ name: 'mutate_task', attrs: { id: task.id, op: 'merged', reason: 'mark this task as merged to main' } }],
-    {
-      inputs: [createUserInput(`请看一下 ${task.id}，也就是 ${task.title}。`)],
-      taskStatusById: new Map([[task.id, task.status]]),
-      taskById: new Map([[task.id, task]]),
-      supplementalEvidenceSources: new Set(['task_result']),
-    },
+    createIntentEvidenceTaskContext(task, [
+      createUserInput(`请看一下 ${task.id}，也就是 ${task.title}。`),
+    ]),
   )
 
-  expect(feedback).toHaveLength(1)
-  expect(feedback[0]?.action).toBe('mutate_task')
-  expect(feedback[0]?.hint).toContain('当前需要：merged')
+  expectSingleRejectedFeedback(feedback, {
+    action: 'mutate_task',
+    hintIncludes: ['当前需要：merged'],
+  })
 })
 
 test('mutate_task git closure stays allowed when user explicitly requests the closure action', () => {
