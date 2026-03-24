@@ -46,5 +46,6 @@ tests/worker-result-finalize.test.ts	293	高价值回归仍集中在单文件：
 tests/worker-run-retry-session.test.ts	276	高价值回归仍集中在单文件：后续按场景拆分夹具与断言
 webui/messages/controller.js	233	WebUI 控制器与渲染仍共置：后续按 view/action 拆分
 webui/tasks-view-render.js	253	WebUI 控制器与渲染仍共置：后续按 view/action 拆分
+webui/generated/app.js	30000	React WebUI 的单文件浏览器产物，属于构建输出而非手写源码，不参与源码长度约束
 workflows/validation-scoring-workflow.md	424	维护工作流文档仍偏长：后续按阶段拆分
 docs/design/workflow/minimal-semantics-rfc-2026-03-11.md	411	设计 RFC 当前为单文档审阅态：先登记豁免，后续按语义分段拆分

@@ -28,7 +28,7 @@ export type FileLengthViolation = {
 
 const DOC_PATHS = new Set(['README.md', 'CONTRIBUTING.md'])
 const DOC_PREFIXES = ['docs/design/', 'workflows/']
-const CODE_PREFIXES = ['scripts/', 'src/', 'tests/', 'webui/']
+const CODE_PREFIXES = ['scripts/', 'src/', 'tests/', 'webui/', 'webui-src/']
 const CODE_EXTENSIONS = new Set(['.js', '.jsx', '.ts', '.tsx'])
 
 const fileExtensionOf = (filePath: string): string => {
