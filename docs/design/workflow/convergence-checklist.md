@@ -21,8 +21,9 @@
 
 - done definition：`TaskPlan` 与对外 API 统一围绕 `trigger + effect`；`Task.cron` / `Task.scheduledAt` 不再作为平行语义源；Plan 文档与实现一致。
 - 当前已完成：`docs/design/workflow/minimal-semantics-rfc-2026-03-11.md` 与 `docs/design/workflow/plan.md` 已明确最小语义、触发器模型与迁移方向；设计索引与 Workflow 索引已补入口。
-- 剩余 TODO：把 action/http/read-model 中仍以 `trigger_mode + cron + scheduled_at` 暴露的接口，迁到统一 trigger 载荷；清理 task 上残留 schedule 双写语义。
-- 下一刀候选：先收敛 plan payload / view-model 的 trigger 出口，再推进 action 输入面，避免一次横切太宽。
+- 当前已完成（2026-03-24 回写）：manager plan action 已统一为 `schedule_type + effect_kind`；plan read-model/payload 只暴露 `trigger + effect + runtime progress`；旧别名 `trigger_mode/task_prompt/task_scope/task_acceptance_*` 已从 schema、prompt payload 与文档主规范移除。
+- 剩余 TODO：无。后续只需在历史 RFC / TODO 文档继续清理陈旧示例，避免旧协议回流。
+- 下一刀候选：维持文档与测试同步，防止新的计划协议别名再次进入 prompt/schema。
 
 ### 收敛-3 · provider 边界收缩
 
@@ -41,7 +42,7 @@
 - 前刀验收（2026-03-11）：验证 `pnpm exec vitest run tests/runtime-persistence-queue-reconcile.test.ts tests/worker-pause-resume.test.ts`、`git diff --check`、`pnpm run review-code-changes`；commit `506d54d`；结果：queue cursor/memory refresh reconcile 已抽到 `src/kernel/orchestrator/runtime-queue-reconcile.ts`，`hydrateRuntimeState()` 只保留 snapshot 装配顺序，paused-task resume 路径与全量 `393` 测试继续通过。
 - 本刀验收（2026-03-11）：验证 `pnpm exec tsc -p tsconfig.json --noEmit`、`pnpm exec vitest run tests/manager-action-cli-log-payload.test.ts tests/manager-loop-worker-result-guard.test.ts tests/runtime-persistence-queue-reconcile.test.ts`、`git diff --check`、`pnpm run review-code-changes`；commit `f6577a5`；结果：旧的 manager runtime adapter 薄壳当时已先收窄为显式 `RuntimeState` 契约；后续在 `2026-03-23` 已继续删除并改为 direct imports；全量 `393` 测试继续通过。
 - 剩余 TODO：继续收窄 manager 直接消费的 `RuntimeState` 可变字段面，减少 `worker/ui/manager` 子状态整块透传。
-- 下一刀候选：把 manager 直接消费的 runtime 读写面继续收成 action/query 所需 slice，或切换到 `收敛-2 plan payload/view trigger 化`。
+- 下一刀候选：把 manager 直接消费的 runtime 读写面继续收成 action/query 所需 slice，或切换到 `收敛-3 session poller 抽离`。
 
 ### 收敛-5 · WebUI 最小工程化
 
@@ -54,4 +55,4 @@
 
 - 本轮范围：连续推进 `收敛-4` 的 hydrate/runtime boundary/queue reconcile 同主题里程碑，不扩展其他收敛项。
 - 本轮已完成：`be001fc` 抽出 hydrate seam；`30d7674` 把 hydrate 签名收窄到显式目标 contract；`506d54d` 抽出 queue reconcile slice；`f6577a5` 先把旧的 manager runtime adapter 薄壳收窄为显式 manager-facing `RuntimeState` 契约；`2026-03-23` 已继续删除该薄壳并改为 direct imports；对应 docs 已同步回写。
-- 下一刀候选（1-3）：`收敛-4 manager runtime 读写面继续 slice 化`、`收敛-2 plan payload/view trigger 化`、`收敛-3 session poller 抽离`。
+- 下一刀候选（1-3）：`收敛-4 manager runtime 读写面继续 slice 化`、`收敛-3 session poller 抽离`、`收敛-5 WebUI 共享样式/渲染子块继续收口`。

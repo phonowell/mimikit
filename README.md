@@ -70,7 +70,7 @@ curl -sS http://127.0.0.1:8787/api/status
 - `pnpm run lint`：含 BOM/CRLF/JSDoc/prompt/file-length guard 与 ESLint 修复。
 - `pnpm run typecheck`：开发者友好别名，等价 `pnpm run type-check`。
 - `pnpm run test`：运行 Vitest。
-- `pnpm run build`：静态构建门禁；当前不产出 `dist/`，等价 `pnpm run type-check`。
+- `pnpm run build`：执行 `type-check + build:webui`，并生成 `webui/generated/app.js`。
 - `pnpm run review-code-changes`：合流前门禁，串联 `lint + type-check + test`。
 - `pnpm run manual:eval:traces-usage-ledger`：手动离线评测，读取仓库内 fixture；不属于默认回归。
 

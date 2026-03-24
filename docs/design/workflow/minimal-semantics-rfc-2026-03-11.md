@@ -302,14 +302,15 @@ export type TriggerPlan = {
 
 ### 4.4 对外 action API 建议
 
-建议把 `create_plan` / `update_plan` 也同步收敛到 effect 结构：
+建议把 `create_plan` / `update_plan` 也同步收敛到 effect 结构。旧别名 `trigger_mode/task_prompt/task_scope/task_acceptance_*` 已从当前 schema 删除，以下示例按现行 action 字段重写：
 
 ```xml
 <M:create_plan
   title="每日回顾"
   focus_id="focus-mimikit"
-  trigger_mode="cron"
-  cron="0 9 * * *"
+  schedule_type="cron"
+  cron_expr="0 0 9 * * *"
+  time_zone="Asia/Shanghai"
   effect_kind="wake_manager"
   effect_reason="scheduled_review"
 />
@@ -319,15 +320,15 @@ export type TriggerPlan = {
 <M:create_plan
   title="空槽位续跑"
   focus_id="focus-mimikit"
-  trigger_mode="on_worker_slot_freed"
+  schedule_type="on_worker_slot_freed"
   max_runs="20"
   effect_kind="enqueue_task"
   task_title="继续收敛领域模型"
-  task_prompt="阅读最新状态并推进 RFC 收敛"
+  task_worker_prompt="阅读最新状态并推进 RFC 收敛"
   task_cwd="/Users/mimiko/Projects/mimikit"
   task_goal="推进领域模型收敛"
-  task_scope="仅处理 focus/plan/task/action/memory 边界"
-  task_acceptance_1="输出一版新的 RFC 或收敛结论"
+  task_in_scope="仅处理 focus/plan/task/action/memory 边界"
+  task_done_when_1="输出一版新的 RFC 或收敛结论"
 />
 ```
 

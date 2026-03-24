@@ -615,7 +615,7 @@
 
 ### 36.1 已落地项（可直接作为重构基线）
 1. `Task Contract Completeness Gate`
-- manager 侧 `enqueue_task` 已强制要求完整 contract（至少 `goal/scope/acceptance_1`）。
+- manager 侧 `enqueue_task` 已强制要求完整 task contract：action 层至少要补齐 `task_goal`、`task_in_scope`、一条 `task_done_when_{n}`，并同时给出 `task_title` 与 `task_cwd`。
 - 缺失时直接拒绝 action，并返回结构化反馈 hint。
 
 2. `Task Evidence` 回收闭环

@@ -85,7 +85,7 @@ MIMIKIT_ACTION_LOGS=false pnpm start -- --port 8787 --work-dir .mimikit
 - `pnpm run lint`：运行 file-length guard、BOM/CRLF/JSDoc/prompt 处理与 ESLint `--fix`。
 - `pnpm run typecheck`：开发者友好别名，等价 `pnpm run type-check`。
 - `pnpm run test`：运行 `vitest run`。
-- `pnpm run build`：静态构建门禁；当前仓库不产出 `dist/`，等价 `pnpm run type-check`。
+- `pnpm run build`：执行 `type-check + build:webui`，并生成 `webui/generated/app.js`。
 - `pnpm run review-code-changes`：合流前门禁，串联 `lint + type-check + test`。
 - `pnpm run manual:eval:traces-usage-ledger`：手动离线评测，基于提交到仓库的 trace/ledger fixture。
 
@@ -139,7 +139,7 @@ curl -sS -N http://127.0.0.1:8787/api/events | head -n 2
 - `[cli] instance lock exists at .../.mimikit/.instance.lock`：同一状态目录已有实例占用；换 `--work-dir` 或先停掉旧进程。
 - `[cli] port 8787 is in use, fallback to ...`：端口已被占用；CLI 会在目标端口后 20 个端口内自动寻找空位。
 - `pnpm start` 很慢：它会额外执行 `pnpm install`；内循环调试改用 `tsx src/bootstrap/cli/index.ts --port 8787 --work-dir .mimikit`。
-- `pnpm run build` 没有生成产物：这是预期行为；当前仓库没有独立编译产物，`build` 只负责静态门禁。
+- `pnpm run build` 修改了 `webui/generated/app.js`：这是预期行为；当前构建会刷新 WebUI 浏览器产物。
 
 ## 8. 推荐开发流程
 
