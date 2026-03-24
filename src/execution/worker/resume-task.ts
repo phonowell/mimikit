@@ -8,6 +8,7 @@ import { appendTaskSystemMessage } from '../../persistence/history/task-events.j
 import { appendLog } from '../../persistence/log/append.js'
 import { bestEffort } from '../../persistence/log/safe.js'
 import { clearTaskResumeChoice } from '../../work/orchestrator/task-resume-choice.js'
+import { resumeRuntimeTask } from '../../work/orchestrator/task-state-write.js'
 import { isBudgetRecoverableTask } from '../../work/shared/task-state.js'
 
 import { enqueueWorkerTask } from './dispatch.js'
@@ -19,7 +20,7 @@ import {
 } from './task-action.js'
 import { resolveSlotStatus, resolveTaskChangeAt } from './task-state-shared.js'
 
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { WorkerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 export type ResumeMeta = {
   source?: string
@@ -49,7 +50,7 @@ const normalizeResumeInstruction = (
 }
 
 export const resumeTask = async (
-  runtime: RuntimeState,
+  runtime: WorkerRuntime,
   taskId: string,
   meta?: ResumeMeta,
 ): Promise<ResumeResult> => {
@@ -78,15 +79,11 @@ export const resumeTask = async (
   const resumeInstruction = normalizeResumeInstruction(meta?.resumeInstruction)
   touchTaskMutation(runtime, task.id)
   clearTaskResumeChoice(runtime, task.id)
-  task.status = 'pending'
-  delete task.pausedAt
-  delete task.startedAt
-  delete task.completedAt
-  delete task.durationMs
-  delete task.archivePath
-  delete task.result
-  if (resumeInstruction) task.resumeInstruction = resumeInstruction
-  else delete task.resumeInstruction
+  resumeRuntimeTask({
+    runtime,
+    taskId: task.id,
+    ...(resumeInstruction ? { resumeInstruction } : {}),
+  })
 
   await appendTaskSystemMessage(runtime.paths.history, 'resumed', task, {
     createdAt: resumedAt,
@@ -121,7 +118,7 @@ export const resumeTask = async (
 }
 
 export const resumeRecoverableTasks = async (
-  runtime: RuntimeState,
+  runtime: WorkerRuntime,
 ): Promise<ResumeRecoverableTasksResult> => {
   const recoverableTasks = runtime.tasks.filter(isBudgetRecoverableTask)
   const items: ResumeResult[] = []

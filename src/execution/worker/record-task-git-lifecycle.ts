@@ -3,6 +3,7 @@ import { persistRuntimeState } from '../../kernel/orchestrator/runtime-persisten
 import { notifyUiSignal } from '../../kernel/orchestrator/signals.js'
 import { appendLog } from '../../persistence/log/append.js'
 import { bestEffort } from '../../persistence/log/safe.js'
+import { applyRuntimeTaskGitResult } from '../../work/orchestrator/task-state-write.js'
 import {
   mergeTaskGitLifecycle,
   resolveTaskGitLifecycle,
@@ -21,7 +22,7 @@ import {
 } from './task-git-lifecycle-artifacts.js'
 import { resolveTaskChangeAt } from './task-state-shared.js'
 
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { WorkerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 export type TaskGitLifecycleOp = 'review_passed' | 'merged' | 'cleaned'
 
@@ -64,7 +65,7 @@ const buildLifecyclePatch = (
 }
 
 export const recordTaskGitLifecycle = async (
-  runtime: RuntimeState,
+  runtime: WorkerRuntime,
   taskId: string,
   op: TaskGitLifecycleOp,
   meta?: RecordTaskGitLifecycleMeta,
@@ -130,8 +131,12 @@ export const recordTaskGitLifecycle = async (
   })
 
   touchTaskMutation(runtime, task.id)
-  task.git = git
-  if (result) task.result = result
+  applyRuntimeTaskGitResult({
+    runtime,
+    taskId: task.id,
+    git,
+    ...(result ? { result } : {}),
+  })
   await bestEffort('appendLog: task_git_lifecycle_recorded', () =>
     appendLog(runtime.paths.log, {
       event: 'task_git_lifecycle_recorded',

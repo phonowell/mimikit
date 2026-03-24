@@ -4,7 +4,7 @@ import { pauseTask } from '../../execution/worker/pause-task.js'
 import { resumeTask } from '../../execution/worker/resume-task.js'
 
 import type { Task } from '../../foundation/types/index.js'
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { OrchestratorRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 export type TaskMutationAction = 'cancel' | 'delete' | 'pause' | 'resume'
 export type TaskMutationMeta = {
@@ -14,7 +14,7 @@ export type TaskMutationMeta = {
 }
 
 export const resolveTaskById = (
-  runtime: RuntimeState,
+  runtime: OrchestratorRuntime,
   taskId: string,
 ): Task | undefined => {
   const id = taskId.trim()
@@ -23,7 +23,7 @@ export const resolveTaskById = (
 }
 
 export const mutateTaskByAction = (
-  runtime: RuntimeState,
+  runtime: OrchestratorRuntime,
   action: TaskMutationAction,
   taskId: string,
   meta?: TaskMutationMeta,

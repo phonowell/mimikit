@@ -1,7 +1,7 @@
 import { clearTaskLiveOutput } from './live-output.js'
 
 import type { Task } from '../../foundation/types/index.js'
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { WorkerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 export type TaskMutationMeta = {
   source?: string
@@ -27,7 +27,7 @@ export type TaskLookupTarget = {
 }
 
 export const resolveTaskLookup = (
-  runtime: RuntimeState,
+  runtime: WorkerRuntime,
   taskId: string,
 ): TaskLookup => {
   const normalizedId = taskId.trim()
@@ -41,7 +41,7 @@ export const resolveTaskLookup = (
 }
 
 export const resolveTaskLookupTarget = (
-  runtime: RuntimeState,
+  runtime: WorkerRuntime,
   taskId: string,
 ): TaskLookupFailure | TaskLookupTarget => {
   const lookup = resolveTaskLookup(runtime, taskId)
@@ -70,7 +70,7 @@ export const isActiveTaskStatus = (status: Task['status']): boolean =>
   status === 'pending' || status === 'running' || status === 'paused'
 
 export const touchTaskMutation = (
-  runtime: RuntimeState,
+  runtime: WorkerRuntime,
   taskId: string,
 ): void => {
   runtime.worker.lastActivityAtMs = Date.now()

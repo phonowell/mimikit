@@ -14,14 +14,14 @@ import {
 } from './events.js'
 
 import type { AppConfig } from '../../../bootstrap/config.js'
-import type { UserMeta } from '../../../kernel/orchestrator/runtime-state.js'
+import type { RuntimeUserMeta } from '../../../kernel/orchestrator/runtime-interfaces.js'
 
 type FeishuRunner = {
   wsClient: WSClient
 }
 const runners = new Map<string, FeishuRunner>()
 
-const buildFeishuUserMeta = (event: FeishuInboundEvent): UserMeta => ({
+const buildFeishuUserMeta = (event: FeishuInboundEvent): RuntimeUserMeta => ({
   source: 'feishu',
   platform: 'feishu',
   channel: 'feishu',
@@ -44,7 +44,7 @@ export const startFeishuPolling = async (params: {
   workDir: string
   addUserInput: (
     text: string,
-    meta?: UserMeta,
+    meta?: RuntimeUserMeta,
     quote?: string,
   ) => Promise<string>
 }): Promise<void> => {

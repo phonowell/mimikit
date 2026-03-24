@@ -5,7 +5,7 @@ import {
 } from '../shared/passive-reply.js'
 
 import type { UserInput } from '../../../foundation/types/index.js'
-import type { RuntimeState } from '../../../kernel/orchestrator/runtime-state.js'
+import type { ChannelRuntime } from '../../../kernel/orchestrator/runtime-interfaces.js'
 
 type FeishuUserInput = Extract<UserInput, { role: 'user' }> & {
   source: 'feishu'
@@ -30,7 +30,7 @@ export const hasFeishuUserInput = (inputs: UserInput[]): boolean =>
   hasUserInputFromSource(inputs, 'feishu')
 
 export const dispatchFeishuPassiveReply = async (params: {
-  runtime: RuntimeState
+  runtime: ChannelRuntime
   inputs: UserInput[]
   replyText: string
 }): Promise<void> => {

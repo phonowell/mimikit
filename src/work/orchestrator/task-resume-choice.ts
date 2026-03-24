@@ -3,10 +3,15 @@ import { appendLog } from '../../persistence/log/append.js'
 import { resolveTaskLabel } from '../shared/task-state.js'
 
 import type { PendingUserChoice, Task } from '../../foundation/types/index.js'
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type {
+  OrchestratorRuntime,
+  RuntimePendingUserChoices,
+  RuntimeTaskCollection,
+} from '../../kernel/orchestrator/runtime-interfaces.js'
 
-export type RuntimeResumeChoiceHydrateSlice = Pick<RuntimeState, 'tasks'> & {
-  ui: Pick<RuntimeState['ui'], 'pendingUserChoices'>
+export type RuntimeResumeChoiceHydrateSlice = {
+  tasks: RuntimeTaskCollection
+  ui: { pendingUserChoices: RuntimePendingUserChoices }
 }
 
 const RESUME_TASK_OPTION_ID = 'option-resume-task'
@@ -73,7 +78,7 @@ export const isTaskResumeChoiceForTask = (
   choice?.effect?.type === 'resume_task' && choice.effect.taskId === taskId
 
 export const clearTaskResumeChoice = (
-  runtime: RuntimeState,
+  runtime: OrchestratorRuntime,
   taskId: string,
 ): boolean => {
   const index = runtime.ui.pendingUserChoices.findIndex((choice) =>
@@ -85,7 +90,7 @@ export const clearTaskResumeChoice = (
 }
 
 export const requestTaskResumeChoice = async (params: {
-  runtime: RuntimeState
+  runtime: OrchestratorRuntime
   task: Task
   createdAt?: string
 }): Promise<boolean> => {

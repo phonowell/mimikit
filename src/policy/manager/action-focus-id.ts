@@ -5,10 +5,10 @@ import {
 } from '../../work/focus/index.js'
 
 import type { FocusId } from '../../foundation/types/index.js'
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 export const resolveActionFocusId = (
-  runtime: RuntimeState,
+  runtime: ManagerRuntime,
   actionFocusId?: string,
 ): FocusId => {
   const trimmed = actionFocusId?.trim()

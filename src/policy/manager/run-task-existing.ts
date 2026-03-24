@@ -12,10 +12,10 @@ import type {
   WorkerProfile,
   WorkerProvider,
 } from '../../foundation/types/index.js'
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 export const handleActiveSemanticTask = async (params: {
-  runtime: RuntimeState
+  runtime: ManagerRuntime
   activeTask: Task
   nextTask: {
     prompt: string

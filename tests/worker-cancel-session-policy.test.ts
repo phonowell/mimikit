@@ -75,6 +75,7 @@ test('cancelTask keeps session reusable for deferred cancel source', async () =>
   expect(task.sessionId).toBe('session-keep')
   expect(task.sessionState).toBe('reusable')
   expect(task.cancel?.source).toBe('deferred')
+  expect(task.archivePath).toMatch(/task-deferred-cancel/i)
 
   const packets = await consumeWorkerResults({
     paths: runtime.paths,
@@ -108,6 +109,7 @@ test('cancelTask discards session for user cancel source', async () => {
   expect(task.sessionId).toBeUndefined()
   expect(task.sessionState).toBe('discarded')
   expect(task.cancel?.source).toBe('user')
+  expect(task.archivePath).toMatch(/task-user-cancel/i)
 
   const packets = await consumeWorkerResults({
     paths: runtime.paths,

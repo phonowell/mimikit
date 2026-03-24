@@ -3,7 +3,7 @@ import { parseIsoMs } from '../../foundation/shared/time.js'
 import { resolveNextCronRunAtMs } from './plan-cron.js'
 
 import type { TaskPlan } from '../../foundation/types/index.js'
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 const pickEarlier = (
   current: number | undefined,
@@ -37,7 +37,7 @@ const resolvePlanWakeAtMs = (plan: TaskPlan, now: Date): number | undefined => {
 }
 
 export const resolveManagerIdleTimeoutMs = (
-  runtime: RuntimeState,
+  runtime: ManagerRuntime,
   now: Date = new Date(),
 ): number => {
   const nowMs = now.getTime()

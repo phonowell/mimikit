@@ -1,6 +1,6 @@
 import { computeOrchestratorStatus } from '../../kernel/orchestrator/orchestrator-helpers.js'
 
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 export type ScheduleManagerRestartResult =
   | 'scheduled'
@@ -8,7 +8,7 @@ export type ScheduleManagerRestartResult =
   | 'already_scheduled'
   | 'unavailable'
 
-export const canScheduleManagerRestart = (runtime: RuntimeState): boolean => {
+export const canScheduleManagerRestart = (runtime: ManagerRuntime): boolean => {
   const status = computeOrchestratorStatus(
     runtime,
     runtime.session.inflightInputs.length,
@@ -17,7 +17,7 @@ export const canScheduleManagerRestart = (runtime: RuntimeState): boolean => {
 }
 
 export const scheduleManagerRestart = (
-  runtime: RuntimeState,
+  runtime: ManagerRuntime,
   reason: string,
 ): ScheduleManagerRestartResult => {
   if (!runtime.session.requestExit) return 'unavailable'
@@ -29,7 +29,7 @@ export const scheduleManagerRestart = (
 }
 
 export const consumePendingManagerRestartReason = (
-  runtime: RuntimeState,
+  runtime: ManagerRuntime,
 ): string | undefined => {
   const reason = runtime.session.pendingRestartReason?.trim()
   delete runtime.session.pendingRestartReason

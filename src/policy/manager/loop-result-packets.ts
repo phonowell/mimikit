@@ -3,7 +3,7 @@ import { bestEffort } from '../../persistence/log/safe.js'
 import { taskResultSchema } from '../../persistence/storage/runtime-snapshot-schema.js'
 
 import type { TaskResult } from '../../foundation/types/index.js'
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 import type { PacketWithCursor } from '../../kernel/streams/queue-checkpoint.js'
 import type { QueueReadCheckpoint } from '../../kernel/streams/queues.js'
 
@@ -19,7 +19,7 @@ export const syncCheckpoint = (
   checkpoint.cursor === cursor ? checkpoint : { cursor, byteOffset: 0 }
 
 export const filterValidResultPackets = async (
-  runtime: RuntimeState,
+  runtime: ManagerRuntime,
   packets: Array<PacketWithCursor<unknown>>,
 ): Promise<Array<PacketWithCursor<TaskResult>>> => {
   const resultPackets: Array<PacketWithCursor<TaskResult>> = []

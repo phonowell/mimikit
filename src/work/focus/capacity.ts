@@ -5,7 +5,7 @@ import { isDefaultActiveFocusCandidate } from './reserved.js'
 import { setFocusStatus } from './state.js'
 
 import type { FocusId, FocusMeta } from '../../foundation/types/index.js'
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { FocusRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 const compareByActivityAsc = (a: FocusMeta, b: FocusMeta): number => {
   const diff = compareIsoAsc(a.lastActivityAt, b.lastActivityAt)
@@ -13,17 +13,17 @@ const compareByActivityAsc = (a: FocusMeta, b: FocusMeta): number => {
   return a.id.localeCompare(b.id)
 }
 
-const maxActiveFocuses = (runtime: RuntimeState): number =>
+const maxActiveFocuses = (runtime: FocusRuntime): number =>
   runtime.config.worker.maxConcurrent
 
-const maxArchivedFocuses = (runtime: RuntimeState): number =>
+const maxArchivedFocuses = (runtime: FocusRuntime): number =>
   runtime.config.worker.maxConcurrent * 2
 
-const activeBusinessFocusCount = (runtime: RuntimeState): number =>
+const activeBusinessFocusCount = (runtime: FocusRuntime): number =>
   runtime.focuses.filter(isDefaultActiveFocusCandidate).length
 
 const collectReferencedFocusIds = async (
-  runtime: RuntimeState,
+  runtime: FocusRuntime,
 ): Promise<Set<FocusId>> => {
   const ids = new Set<FocusId>()
   for (const task of runtime.tasks) {
@@ -46,7 +46,7 @@ const collectReferencedFocusIds = async (
   return ids
 }
 
-export const enforceActiveFocusLimit = (runtime: RuntimeState): void => {
+export const enforceActiveFocusLimit = (runtime: FocusRuntime): void => {
   const demoteCandidates = runtime.focuses
     .filter(isDefaultActiveFocusCandidate)
     .sort(compareByActivityAsc)
@@ -61,7 +61,7 @@ export const enforceActiveFocusLimit = (runtime: RuntimeState): void => {
 }
 
 export const pruneArchivedFocuses = async (
-  runtime: RuntimeState,
+  runtime: FocusRuntime,
 ): Promise<void> => {
   const archived = runtime.focuses
     .filter((item) => item.status === 'archived')

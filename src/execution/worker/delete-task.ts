@@ -4,6 +4,7 @@ import { notifyUiSignal } from '../../kernel/orchestrator/signals.js'
 import { appendLog } from '../../persistence/log/append.js'
 import { bestEffort } from '../../persistence/log/safe.js'
 import { clearTaskResumeChoice } from '../../work/orchestrator/task-resume-choice.js'
+import { removeRuntimeTask } from '../../work/orchestrator/task-state-write.js'
 
 import {
   removeFileWithinRoot,
@@ -19,7 +20,7 @@ import {
 } from './task-action.js'
 import { resolveTaskChangeAt } from './task-state-shared.js'
 
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { WorkerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 export type DeleteTaskMeta = {
   source?: string
@@ -34,14 +35,14 @@ export type DeleteTaskResult = {
 }
 
 export const deleteTask = async (
-  runtime: RuntimeState,
+  runtime: WorkerRuntime,
   taskId: string,
   meta?: DeleteTaskMeta,
 ): Promise<DeleteTaskResult> => {
   const lookup = resolveTaskLookupTarget(runtime, taskId)
   if ('status' in lookup)
     return { ok: false, id: lookup.id, status: lookup.status }
-  const { index, task } = lookup
+  const { task } = lookup
   if (isActiveTaskStatus(task.status)) {
     return {
       ok: false,
@@ -81,7 +82,7 @@ export const deleteTask = async (
 
   touchTaskMutation(runtime, task.id)
   clearTaskResumeChoice(runtime, task.id)
-  runtime.tasks.splice(index, 1)
+  removeRuntimeTask({ runtime, taskId: task.id })
   runtime.worker.runningControllers.delete(task.id)
   const deletedAt = nowIso()
 

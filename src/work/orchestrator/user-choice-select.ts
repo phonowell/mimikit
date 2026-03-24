@@ -19,7 +19,7 @@ import type {
   UserChoiceOption,
   UserChoiceSelectionSource,
 } from '../../foundation/types/index.js'
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { OrchestratorRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 export type UserChoiceEffectResult =
   | { type: 'resume_task'; taskId: string; ok: true; status: 'pending' }
@@ -41,7 +41,7 @@ export type SelectPendingUserChoiceResult =
   | { ok: false; reason: 'not_found' | 'invalid_option' | 'expired' }
 
 const applyChoiceEffect = async (params: {
-  runtime: RuntimeState
+  runtime: OrchestratorRuntime
   choice: PendingUserChoice
   option: UserChoiceOption
 }): Promise<UserChoiceEffectResult | undefined> => {
@@ -68,7 +68,7 @@ const applyChoiceEffect = async (params: {
 }
 
 const commitSelection = async (params: {
-  runtime: RuntimeState
+  runtime: OrchestratorRuntime
   choice: PendingUserChoice
   option: UserChoiceOption
   source: UserChoiceSelectionSource
@@ -91,7 +91,7 @@ const commitSelection = async (params: {
 }
 
 export const selectPendingUserChoice = async (params: {
-  runtime: RuntimeState
+  runtime: OrchestratorRuntime
   choiceId: string
   optionId: string
   source: UserChoiceSelectionSource
@@ -139,7 +139,7 @@ export const selectPendingUserChoice = async (params: {
 }
 
 export const selectPendingUserChoiceFromUser = async (
-  runtime: RuntimeState,
+  runtime: OrchestratorRuntime,
   choiceId: string,
   optionId: string,
 ): Promise<SelectPendingUserChoiceResult> => {

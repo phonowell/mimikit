@@ -16,13 +16,13 @@ import {
 } from './action-registry-shared.js'
 import { collectTaskResultSummaries } from './action-task-result-summary.js'
 
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 import type { Parsed } from '../actions/model/spec.js'
 
 export { collectTaskResultSummaries }
 
 export const applyTaskActions = async (
-  runtime: RuntimeState,
+  runtime: ManagerRuntime,
   items: Parsed[],
   options?: ApplyTaskActionsOptions,
 ): Promise<void> => {

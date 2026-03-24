@@ -27,7 +27,7 @@ import {
 import { waitForResultReplayBackoff } from './result-replay-backoff.js'
 import { publishManagerSystemEventInput } from './system-input-event.js'
 
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 const WORKER_SLOT_EVENT_COOLDOWN_MS = 1_000
 type TriggerLoopState = {
@@ -37,7 +37,7 @@ type TriggerLoopState = {
 }
 
 const processLoopTriggers = async (
-  runtime: RuntimeState,
+  runtime: ManagerRuntime,
   state: TriggerLoopState,
 ): Promise<boolean> => {
   const now = new Date()
@@ -101,7 +101,7 @@ const processLoopTriggers = async (
 }
 
 const safeProcessLoopTriggers = async (
-  runtime: RuntimeState,
+  runtime: ManagerRuntime,
   state: TriggerLoopState,
 ): Promise<boolean> => {
   try {
@@ -117,7 +117,7 @@ const safeProcessLoopTriggers = async (
   }
 }
 
-export const managerLoop = async (runtime: RuntimeState): Promise<void> => {
+export const managerLoop = async (runtime: ManagerRuntime): Promise<void> => {
   const triggerState = {
     lastAvailableSlots: null as number | null,
     workerSlotEventPending: false,

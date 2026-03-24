@@ -1,24 +1,23 @@
 import { hydrateMemoryRefreshState } from '../../policy/memory/refresh/state.js'
 
-import type { RuntimeState } from './runtime-state.js'
+import type {
+  RuntimeChannelTargets,
+  RuntimeDomainState,
+  RuntimeManagerState,
+  RuntimeQueueState,
+} from './runtime-interfaces.js'
 import type { RuntimeSnapshot } from '../../persistence/storage/runtime-snapshot-schema.js'
 
-export type RuntimeSnapshotHydrateSlice = Pick<
-  RuntimeState,
-  'tasks' | 'taskPlans' | 'focuses'
-> & {
-  manager: Pick<RuntimeState['manager'], 'turn' | 'threadId' | 'memoryRefresh'>
-  session: Pick<RuntimeState['session'], 'channelTargets'>
-  ui: Pick<RuntimeState['ui'], 'pendingUserChoices'>
-  queues?: RuntimeState['queues']
+export type RuntimeSnapshotHydrateSlice = Omit<RuntimeDomainState, 'queues'> & {
+  queues?: RuntimeQueueState
 }
 
 export type RuntimeSnapshotHydrateTarget = Pick<
-  RuntimeState,
-  'tasks' | 'taskPlans' | 'focuses' | 'queues'
+  RuntimeDomainState,
+  'tasks' | 'taskPlans' | 'focuses' | 'queues' | 'session' | 'ui'
 > & {
   manager: Pick<
-    RuntimeState['manager'],
+    RuntimeManagerState,
     | 'turn'
     | 'threadId'
     | 'memoryRefresh'
@@ -26,13 +25,11 @@ export type RuntimeSnapshotHydrateTarget = Pick<
     | 'lastUsage'
     | 'usageTotal'
   >
-  session: Pick<RuntimeState['session'], 'channelTargets'>
-  ui: Pick<RuntimeState['ui'], 'pendingUserChoices'>
 }
 
 const selectRuntimeSnapshotQueues = (
   snapshot: RuntimeSnapshot,
-): RuntimeState['queues'] | undefined => {
+): RuntimeQueueState | undefined => {
   if (!snapshot.queues) return undefined
   return {
     inputsCursor: snapshot.queues.inputsCursor,
@@ -42,7 +39,7 @@ const selectRuntimeSnapshotQueues = (
 
 export const buildRuntimeSnapshotHydrateSlice = (params: {
   snapshot: RuntimeSnapshot
-  channelTargets: RuntimeState['session']['channelTargets']
+  channelTargets: RuntimeChannelTargets
 }): RuntimeSnapshotHydrateSlice => {
   const { snapshot, channelTargets } = params
   const slice: RuntimeSnapshotHydrateSlice = {

@@ -1,4 +1,3 @@
-import { parseIsoMs } from '../../foundation/shared/time.js'
 import { nowIso } from '../../foundation/shared/utils.js'
 import { persistRuntimeState } from '../../kernel/orchestrator/runtime-persistence.js'
 import {
@@ -7,16 +6,19 @@ import {
 } from '../../kernel/orchestrator/signals.js'
 import { appendLog } from '../../persistence/log/append.js'
 import { bestEffort } from '../../persistence/log/safe.js'
-import { markTaskCanceled } from '../../work/orchestrator/task-lifecycle.js'
+import {
+  applyTaskCancelSessionPolicy,
+  buildTaskCancelMeta,
+  resolveTaskElapsedDurationMs,
+} from '../../work/orchestrator/task-cancel-write.js'
 import { clearTaskResumeChoice } from '../../work/orchestrator/task-resume-choice.js'
+import {
+  cancelRuntimeTask,
+  patchRuntimeTask,
+} from '../../work/orchestrator/task-state-write.js'
 
 import { buildResult } from './result-build.js'
 import { finalizeResult } from './result-finalize.js'
-import {
-  discardTaskSession,
-  isRecoverableCancelSource,
-  setTaskSessionReusable,
-} from './session-state.js'
 import {
   isDoneTaskStatus,
   resolveTaskLookupTarget,
@@ -24,12 +26,8 @@ import {
 } from './task-action.js'
 import { resolveTaskChangeAt } from './task-state-shared.js'
 
-import type {
-  Task,
-  TaskCancelMeta,
-  TaskResult,
-} from '../../foundation/types/index.js'
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { TaskResult } from '../../foundation/types/index.js'
+import type { WorkerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 export type CancelMeta = {
   source?: string
@@ -48,33 +46,8 @@ export type CancelResult = {
   changeAt?: string
 }
 
-const normalizeCancelSource = (source?: string): TaskCancelMeta['source'] => {
-  if (source === 'user' || source === 'http') return 'user'
-  if (source === 'deferred') return 'deferred'
-  return 'system'
-}
-
-const buildCancelMeta = (meta?: CancelMeta): TaskCancelMeta => ({
-  source: normalizeCancelSource(meta?.source),
-  ...(meta?.reason ? { reason: meta.reason } : {}),
-})
-
-const applyCancelSessionPolicy = (
-  task: Task,
-  cancelSource: TaskCancelMeta['source'],
-): 'reusable' | 'discarded' | 'none' => {
-  if (cancelSource === 'user') {
-    if (discardTaskSession(task)) return 'discarded'
-    return 'none'
-  }
-  if (!isRecoverableCancelSource(cancelSource)) return 'none'
-  if (!task.sessionId) return 'none'
-  setTaskSessionReusable(task, task.sessionId)
-  return 'reusable'
-}
-
 export const cancelTask = async (
-  runtime: RuntimeState,
+  runtime: WorkerRuntime,
   taskId: string,
   meta?: CancelMeta,
 ): Promise<CancelResult> => {
@@ -102,12 +75,14 @@ export const cancelTask = async (
   if (task.status === 'pending' || task.status === 'paused') {
     touchTaskMutation(runtime, task.id)
     clearTaskResumeChoice(runtime, task.id)
-    const cancelMeta = buildCancelMeta(meta)
-    const sessionPolicy = applyCancelSessionPolicy(task, cancelMeta.source)
-    task.cancel = cancelMeta
-    const startedAtMs = parseIsoMs(task.startedAt ?? '')
-    const durationMs =
-      startedAtMs !== undefined ? Math.max(0, Date.now() - startedAtMs) : 0
+    const cancelMeta = buildTaskCancelMeta(meta)
+    const sessionPolicy = applyTaskCancelSessionPolicy({
+      runtime,
+      taskId: task.id,
+      task,
+      cancelSource: cancelMeta.source,
+    })
+    const durationMs = resolveTaskElapsedDurationMs({ task }) ?? 0
     const result: TaskResult = buildResult(
       task,
       'canceled',
@@ -115,16 +90,34 @@ export const cancelTask = async (
       durationMs,
     )
     result.cancel = cancelMeta
-    markTaskCanceled(runtime.tasks, task.id, {
+    cancelRuntimeTask({
+      runtime,
+      taskId: task.id,
       completedAt: result.completedAt,
       durationMs: result.durationMs,
       cancel: cancelMeta,
     })
-    await finalizeResult(runtime, task, result, markTaskCanceled, {
-      progressType: 'task_canceled',
-      logEvent: 'task_canceled',
-      archiveSource: 'cancel',
-    })
+    await finalizeResult(
+      runtime,
+      task,
+      result,
+      (_tasks, canceledTaskId, patch) => {
+        if (!patch) return
+        patchRuntimeTask({
+          runtime,
+          taskId: canceledTaskId,
+          patch,
+        })
+      },
+      {
+        progressType: 'task_canceled',
+        logEvent: 'task_canceled',
+        archiveSource: 'cancel',
+        taskPatch: {
+          cancel: cancelMeta,
+        },
+      },
+    )
     await bestEffort('persistRuntimeState: cancel_pending', () =>
       persistRuntimeState(runtime),
     )
@@ -149,15 +142,20 @@ export const cancelTask = async (
   const canceledAt = nowIso()
   touchTaskMutation(runtime, task.id)
   clearTaskResumeChoice(runtime, task.id)
-  const canceledAtMs = parseIsoMs(canceledAt)
-  const startedAtMs = parseIsoMs(task.startedAt ?? '')
-  const durationMs =
-    startedAtMs !== undefined && canceledAtMs !== undefined
-      ? Math.max(0, canceledAtMs - startedAtMs)
-      : undefined
-  const cancelMeta = buildCancelMeta(meta)
-  const sessionPolicy = applyCancelSessionPolicy(task, cancelMeta.source)
-  markTaskCanceled(runtime.tasks, task.id, {
+  const durationMs = resolveTaskElapsedDurationMs({
+    task,
+    completedAt: canceledAt,
+  })
+  const cancelMeta = buildTaskCancelMeta(meta)
+  const sessionPolicy = applyTaskCancelSessionPolicy({
+    runtime,
+    taskId: task.id,
+    task,
+    cancelSource: cancelMeta.source,
+  })
+  cancelRuntimeTask({
+    runtime,
+    taskId: task.id,
     completedAt: canceledAt,
     ...(durationMs !== undefined ? { durationMs } : {}),
     cancel: cancelMeta,

@@ -3,21 +3,24 @@ import pRetry, { AbortError } from 'p-retry'
 import { persistRuntimeState } from '../../kernel/orchestrator/runtime-persistence.js'
 import { appendLog } from '../../persistence/log/append.js'
 import { bestEffort } from '../../persistence/log/safe.js'
+import {
+  bindRuntimeTaskSession,
+  discardRuntimeTaskSession,
+} from '../../work/orchestrator/task-session-write.js'
+import { incrementRuntimeTaskAttempts } from '../../work/orchestrator/task-state-write.js'
 import { ProviderError } from '../providers/provider-error.js'
 
 import { isAbortLikeError } from './error-utils.js'
 import { isWorkerBudgetExceededError } from './profiled-runner-loop.js'
 import { runWorker } from './profiled-runner.js'
 import {
-  discardTaskSession,
   selectReusableSessionId,
-  setTaskSessionReusable,
   shouldResetSessionAfterError,
 } from './session-state.js'
 
 import type { TaskFocusBrief } from '../../foundation/prompting/format-task-focus-brief.js'
 import type { Task, TokenUsage } from '../../foundation/types/index.js'
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { WorkerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 export type WorkerLlmResult = {
   output: string
@@ -39,7 +42,7 @@ const shouldRetryTaskRun = (
   !isWorkerBudgetExceededError(error)
 
 const buildTaskFocusBrief = (
-  runtime: RuntimeState,
+  runtime: WorkerRuntime,
   task: Task,
 ): TaskFocusBrief | undefined => {
   const focusMeta = runtime.focuses.find((focus) => focus.id === task.focusId)
@@ -57,7 +60,7 @@ const buildTaskFocusBrief = (
 }
 
 const runTaskModel = (params: {
-  runtime: RuntimeState
+  runtime: WorkerRuntime
   task: Task
   controller: AbortController
   sessionId?: string
@@ -112,7 +115,7 @@ const toRetryError = (error: unknown): Error => {
 }
 
 const buildRetryOptions = (params: {
-  runtime: RuntimeState
+  runtime: WorkerRuntime
   task: Task
   retries: number
   backoffMs: number
@@ -145,7 +148,7 @@ const buildRetryOptions = (params: {
         maxAttempts: retries + 1,
         backoffMs,
       })
-      task.attempts = Math.max(0, (task.attempts ?? 0) + 1)
+      incrementRuntimeTaskAttempts({ runtime, taskId: task.id, task })
       await bestEffort('persistRuntimeState: worker_retry', () =>
         persistRuntimeState(runtime),
       )
@@ -154,7 +157,7 @@ const buildRetryOptions = (params: {
 }
 
 export const runTaskWithRetry = (params: {
-  runtime: RuntimeState
+  runtime: WorkerRuntime
   task: Task
   controller: AbortController
   onTurnStarted?: () => void
@@ -179,12 +182,13 @@ export const runTaskWithRetry = (params: {
   }
 
   const onSessionId = async (sessionId: string): Promise<void> => {
-    if (!setTaskSessionReusable(task, sessionId)) return
+    if (!bindRuntimeTaskSession({ runtime, taskId: task.id, sessionId, task }))
+      return
     await persistSessionState('worker_session_bound', { sessionId })
   }
 
   const onSessionDiscarded = async (error: unknown): Promise<void> => {
-    if (!discardTaskSession(task)) return
+    if (!discardRuntimeTaskSession({ runtime, taskId: task.id, task })) return
     const message = error instanceof Error ? error.message : String(error)
     await persistSessionState('worker_session_discarded', {
       reason: 'session_resume_invalid',

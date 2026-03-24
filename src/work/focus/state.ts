@@ -20,11 +20,11 @@ import type {
   FocusMeta,
   FocusStatus,
 } from '../../foundation/types/index.js'
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { FocusRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 export { normalizeFocusSummary } from './meta.js'
 
-export const resolveDefaultFocusId = (runtime: RuntimeState): FocusId => {
+export const resolveDefaultFocusId = (runtime: FocusRuntime): FocusId => {
   const activeNonGlobal = runtime.focuses
     .filter(isDefaultActiveFocusCandidate)
     .sort((a, b) => {
@@ -49,12 +49,12 @@ export const resolveDefaultFocusId = (runtime: RuntimeState): FocusId => {
 }
 
 export const findFocus = (
-  runtime: RuntimeState,
+  runtime: FocusRuntime,
   focusId: FocusId,
 ): FocusMeta | undefined => runtime.focuses.find((item) => item.id === focusId)
 
 export const ensureFocus = (
-  runtime: RuntimeState,
+  runtime: FocusRuntime,
   focusId: FocusId,
   title?: string,
 ): FocusMeta => {
@@ -82,7 +82,7 @@ export const ensureFocus = (
   return next
 }
 
-export const ensureGlobalFocus = (runtime: RuntimeState): void => {
+export const ensureGlobalFocus = (runtime: FocusRuntime): void => {
   const global = ensureFocus(runtime, GLOBAL_FOCUS_ID, 'Global')
   const hadDetails =
     Boolean(global.summary) || Boolean(global.openItems?.length)
@@ -97,13 +97,13 @@ export const ensureGlobalFocus = (runtime: RuntimeState): void => {
   if (hadDetails) global.updatedAt = nowIso()
 }
 
-export const touchFocus = (runtime: RuntimeState, focusId: FocusId): void => {
+export const touchFocus = (runtime: FocusRuntime, focusId: FocusId): void => {
   const focus = findFocus(runtime, focusId) ?? ensureFocus(runtime, focusId)
   touchFocusMeta(focus)
 }
 
 export const setFocusStatus = (
-  runtime: RuntimeState,
+  runtime: FocusRuntime,
   focusId: FocusId,
   status: FocusStatus,
 ): void => {
@@ -112,7 +112,7 @@ export const setFocusStatus = (
 }
 
 export const updateFocus = (
-  runtime: RuntimeState,
+  runtime: FocusRuntime,
   params: {
     id: FocusId
     title?: string

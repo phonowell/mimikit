@@ -18,10 +18,10 @@ import type {
   TokenUsage,
   UserInput,
 } from '../../foundation/types/index.js'
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 const buildManagerEnv = (
-  runtime: RuntimeState,
+  runtime: ManagerRuntime,
   wakeProfile: ManagerWakeProfile,
 ): ManagerEnv => {
   const slots = resolveSlotStatus(runtime)
@@ -39,7 +39,7 @@ const buildManagerEnv = (
   return env
 }
 export const runManagerRoundWithRecovery = async (params: {
-  runtime: RuntimeState
+  runtime: ManagerRuntime
   round: number
   inputs: UserInput[]
   results: TaskResult[]

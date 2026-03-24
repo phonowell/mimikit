@@ -17,11 +17,11 @@ import {
 } from './action-plan-helpers.js'
 
 import type { PlanPriority, TaskPlan } from '../../foundation/types/index.js'
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 import type { Parsed } from '../actions/model/spec.js'
 
 export const applyCreatePlan = async (
-  runtime: RuntimeState,
+  runtime: ManagerRuntime,
   item: Parsed,
 ): Promise<void> => {
   const parsed = parseActionAttrs(item, createPlanSchema)
@@ -79,7 +79,7 @@ export const applyCreatePlan = async (
 }
 
 export const applyUpdatePlan = async (
-  runtime: RuntimeState,
+  runtime: ManagerRuntime,
   item: Parsed,
 ): Promise<void> => {
   const parsed = parseActionAttrs(item, updatePlanSchema)
@@ -152,7 +152,7 @@ export const applyUpdatePlan = async (
 }
 
 export const applyDeletePlan = async (
-  runtime: RuntimeState,
+  runtime: ManagerRuntime,
   item: Parsed,
 ): Promise<void> => {
   const parsed = parseActionAttrs(item, deletePlanSchema)

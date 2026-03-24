@@ -5,7 +5,7 @@ import {
 } from '../../persistence/storage/task-results.js'
 
 import type { Task, TaskResult } from '../../foundation/types/index.js'
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { WorkerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 const buildArchiveEntry = (task: Task, result: TaskResult) => ({
   taskId: task.id,
@@ -28,7 +28,7 @@ const buildArchiveEntry = (task: Task, result: TaskResult) => ({
 })
 
 export const resolveArchivePath = (
-  runtime: RuntimeState,
+  runtime: WorkerRuntime,
   task: Task,
   result: TaskResult,
   source: 'worker' | 'cancel',

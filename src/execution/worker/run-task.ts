@@ -9,7 +9,7 @@ import {
   markTaskSucceeded,
 } from '../../work/orchestrator/task-lifecycle.js'
 import { requestTaskResumeChoice } from '../../work/orchestrator/task-resume-choice.js'
-import { isSameUsage } from '../shared/token-usage.js'
+import { updateTaskUsage } from '../../work/orchestrator/task-worker-run-write.js'
 
 import { setTaskLiveOutput } from './live-output.js'
 import { isWorkerBudgetExceededError } from './profiled-runner-loop.js'
@@ -18,10 +18,10 @@ import { finalizeResult } from './result-finalize.js'
 import { runTaskWithRetry } from './run-retry.js'
 
 import type { Task } from '../../foundation/types/index.js'
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { WorkerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 export const runTask = async (
-  runtime: RuntimeState,
+  runtime: WorkerRuntime,
   task: Task,
   controller: AbortController,
 ): Promise<void> => {
@@ -46,9 +46,7 @@ export const runTask = async (
       task,
       controller,
       onUsage: (usage) => {
-        if (isSameUsage(task.usage, usage)) return
-        task.usage = usage
-        notifyUiSignal(runtime, 'tasks')
+        updateTaskUsage(runtime, task, usage)
       },
       onPartialOutput: (output) => {
         if (!setTaskLiveOutput(runtime, task.id, output)) return

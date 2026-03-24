@@ -1,7 +1,7 @@
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 export const markCreateAttempt = (
-  runtime: RuntimeState,
+  runtime: ManagerRuntime,
   semanticKey: string,
 ): { debounced: boolean; waitMs: number } => {
   const now = Date.now()

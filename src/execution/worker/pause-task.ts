@@ -4,7 +4,7 @@ import { notifyWorkerLoop } from '../../kernel/orchestrator/signals.js'
 import { appendTaskSystemMessage } from '../../persistence/history/task-events.js'
 import { appendLog } from '../../persistence/log/append.js'
 import { bestEffort } from '../../persistence/log/safe.js'
-import { markTaskPaused } from '../../work/orchestrator/task-lifecycle.js'
+import { pauseRuntimeTask } from '../../work/orchestrator/task-state-write.js'
 
 import {
   buildTaskMutationMetaFields,
@@ -14,7 +14,7 @@ import {
 } from './task-action.js'
 import { resolveSlotStatus, resolveTaskChangeAt } from './task-state-shared.js'
 
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { WorkerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 export type PauseMeta = {
   source?: string
@@ -29,7 +29,7 @@ export type PauseResult = {
 }
 
 export const pauseTask = async (
-  runtime: RuntimeState,
+  runtime: WorkerRuntime,
   taskId: string,
   meta?: PauseMeta,
 ): Promise<PauseResult> => {
@@ -56,7 +56,7 @@ export const pauseTask = async (
   const pausedAt = nowIso()
   const prevStatus = task.status
   touchTaskMutation(runtime, task.id)
-  markTaskPaused(runtime.tasks, task.id, { pausedAt })
+  pauseRuntimeTask({ runtime, taskId: task.id, pausedAt })
   const controller = runtime.worker.runningControllers.get(task.id)
   if (controller && !controller.signal.aborted)
     controller.abort(meta?.reason ?? 'Task paused')

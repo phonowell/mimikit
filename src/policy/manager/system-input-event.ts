@@ -12,7 +12,7 @@ import type {
   FocusId,
   MessageVisibility,
 } from '../../foundation/types/index.js'
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 export type ManagerSystemEventName = Extract<
   SystemEventName,
@@ -20,7 +20,7 @@ export type ManagerSystemEventName = Extract<
 >
 
 export const publishManagerSystemEventInput = async (params: {
-  runtime: RuntimeState
+  runtime: ManagerRuntime
   summary: string
   event: ManagerSystemEventName
   visibility: MessageVisibility

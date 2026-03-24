@@ -14,7 +14,7 @@ import { resolveRunTaskTarget } from './run-task-target.js'
 import { publishManagerSystemEventInput } from './system-input-event.js'
 
 import type { TaskPlan } from '../../foundation/types/index.js'
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 const markPlanDone = (
   plan: TaskPlan,
@@ -50,7 +50,7 @@ export const canFireOnWorkerSlotFreed = (plan: TaskPlan): boolean => {
 }
 
 export const firePlan = async (params: {
-  runtime: RuntimeState
+  runtime: ManagerRuntime
   plan: TaskPlan
   nowIso: string
   reason: 'cron' | 'scheduled_at' | 'on_worker_slot_freed'

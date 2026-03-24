@@ -4,10 +4,10 @@ import { readHistory, rewriteHistory } from '../../persistence/history/store.js'
 import { ensureFocus, touchFocus } from './state.js'
 
 import type { FocusId, HistoryMessage } from '../../foundation/types/index.js'
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { FocusRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 export const resolveFocusByQuote = async (
-  runtime: RuntimeState,
+  runtime: FocusRuntime,
   quoteId: string,
 ): Promise<FocusId | undefined> => {
   const history = await readHistory(runtime.paths.history)
@@ -15,7 +15,7 @@ export const resolveFocusByQuote = async (
 }
 
 export const assignFocusByTargetId = async (
-  runtime: RuntimeState,
+  runtime: FocusRuntime,
   targetType: 'task' | 'plan' | 'history',
   targetId: string,
   focusId: FocusId,

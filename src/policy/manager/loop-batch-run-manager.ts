@@ -15,11 +15,11 @@ import type {
   TokenUsage,
   UserInput,
 } from '../../foundation/types/index.js'
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 import type { parseActions } from '../actions/protocol/parse.js'
 
 const runRounds = (params: {
-  runtime: RuntimeState
+  runtime: ManagerRuntime
   inputs: UserInput[]
   results: TaskResult[]
   maxCorrectionRounds: number
@@ -65,7 +65,7 @@ const runRounds = (params: {
 }
 
 export const runManagerBatch = async (params: {
-  runtime: RuntimeState
+  runtime: ManagerRuntime
   inputs: UserInput[]
   results: TaskResult[]
   abortSignal?: AbortSignal

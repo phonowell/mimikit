@@ -1,7 +1,6 @@
-import { nowIso } from '../../foundation/shared/utils.js'
 import { readProviderErrorCode } from '../providers/provider-error.js'
 
-import type { Task, TaskCancelSource } from '../../foundation/types/index.js'
+import type { Task } from '../../foundation/types/index.js'
 
 const SESSION_RESET_PATTERNS = [
   /thread.+(not found|does not exist|invalid|expired|deleted)/i,
@@ -11,7 +10,7 @@ const SESSION_RESET_PATTERNS = [
   /reconnecting\.\.\./i,
 ]
 
-const normalizeSessionId = (
+export const normalizeSessionId = (
   value: string | null | undefined,
 ): string | undefined => {
   const trimmed = value?.trim()
@@ -26,28 +25,6 @@ export const selectReusableSessionId = (task: Task): string | undefined => {
   return current
 }
 
-export const setTaskSessionReusable = (
-  task: Task,
-  sessionId: string | null | undefined,
-): boolean => {
-  const normalized = normalizeSessionId(sessionId)
-  if (!normalized) return false
-  if (task.sessionId === normalized && task.sessionState === 'reusable')
-    return false
-  task.sessionId = normalized
-  task.sessionState = 'reusable'
-  task.sessionUpdatedAt = nowIso()
-  return true
-}
-
-export const discardTaskSession = (task: Task): boolean => {
-  if (!task.sessionId && task.sessionState === 'discarded') return false
-  delete task.sessionId
-  task.sessionState = 'discarded'
-  task.sessionUpdatedAt = nowIso()
-  return true
-}
-
 export const shouldResetSessionAfterError = (error: unknown): boolean => {
   const code = readProviderErrorCode(error)
   if (code === 'provider_aborted' || code === 'provider_timeout') return false
@@ -55,7 +32,3 @@ export const shouldResetSessionAfterError = (error: unknown): boolean => {
   if (!message) return false
   return SESSION_RESET_PATTERNS.some((pattern) => pattern.test(message))
 }
-
-export const isRecoverableCancelSource = (
-  source: TaskCancelSource | undefined,
-): boolean => source === 'deferred' || source === 'system'

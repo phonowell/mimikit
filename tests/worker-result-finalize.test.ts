@@ -105,6 +105,9 @@ test('finalizeResult appends worker_end progress for canceled task', async () =>
     durationMs: 12,
     cancel: { source: 'deferred' },
   })
+  expect(
+    runtime.focuses.find((focus) => focus.id === 'focus-local')?.summary,
+  ).toContain('Task canceled')
   expect(result.handoff?.summary).toContain('Task canceled')
   expect(result.evidence?.contractGoal).toBe('Cancel task safely')
   expect(result.evidence?.stateDelta.taskStatusTo).toBe('canceled')

@@ -16,7 +16,10 @@ import {
 } from '../../work/shared/task-state.js'
 
 import type { TaskResult, UserInput } from '../../foundation/types/index.js'
-import type { RuntimeState } from '../../kernel/orchestrator/runtime-state.js'
+import type {
+  ManagerRuntime,
+  RuntimeTaskCollection,
+} from '../../kernel/orchestrator/runtime-interfaces.js'
 
 const QUEUE_COMPACT_MIN_PACKETS = 100
 const TASK_SNAPSHOT_MAX_COUNT = 100
@@ -33,7 +36,7 @@ const resolveLatestResult = (results: TaskResult[]): TaskResult | undefined => {
 
 const buildFallbackResultReply = (params: {
   results: TaskResult[]
-  tasks: RuntimeState['tasks']
+  tasks: RuntimeTaskCollection
   workDir: string
 }): string | undefined => {
   const latestResult = resolveLatestResult(params.results)
@@ -62,7 +65,7 @@ const buildFallbackResultReply = (params: {
 
 export const buildFallbackReply = async (params: {
   results: TaskResult[]
-  tasks: RuntimeState['tasks']
+  tasks: RuntimeTaskCollection
   workDir: string
 }): Promise<string> => {
   const resultReply = buildFallbackResultReply({
@@ -80,11 +83,11 @@ export const buildFallbackReply = async (params: {
 }
 
 export const finalizeBatchProgress = async (params: {
-  runtime: RuntimeState
+  runtime: ManagerRuntime
   nextInputsCursor: number
   nextResultsCursor: number
   consumedInputIds: Set<string>
-  persistRuntime: (runtime: RuntimeState) => Promise<void>
+  persistRuntime: (runtime: ManagerRuntime) => Promise<void>
 }): Promise<void> => {
   const {
     runtime,
@@ -131,7 +134,7 @@ export const finalizeBatchProgress = async (params: {
 }
 
 export const consumeBatchHistory = async (params: {
-  runtime: RuntimeState
+  runtime: ManagerRuntime
   inputs: UserInput[]
   results: TaskResult[]
   summaries?: Map<string, string>
@@ -163,7 +166,7 @@ export const consumeBatchHistory = async (params: {
 }
 
 export const consumeBatchInputsHistory = async (params: {
-  runtime: RuntimeState
+  runtime: ManagerRuntime
   inputs: UserInput[]
 }): Promise<
   | { ok: true; consumedInputIds: Set<string> }
