@@ -48,8 +48,9 @@ export const useMessageScroll = (deps: readonly unknown[]) => {
   const scrollToBottom = (smooth = false) => {
     const element = getMessagesEl()
     if (!element) return
+    const maxTop = Math.max(0, element.scrollHeight - element.clientHeight)
     element.scrollTo({
-      top: element.scrollHeight,
+      top: maxTop,
       behavior: smooth ? 'smooth' : 'auto',
     })
     setScrollButtonVisible(false)

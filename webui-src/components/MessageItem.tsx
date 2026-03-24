@@ -10,6 +10,7 @@ import {
 } from '../../webui/messages/quote-utils.js'
 import { UI_TEXT } from '../../webui/system-text.js'
 import { renderMarkdownHtml } from '../lib/markdown.js'
+import { shouldDisplayMessageTime } from '../lib/messages.js'
 
 import type { ChatMessage } from '../types.js'
 
@@ -47,7 +48,9 @@ export const MessageItem = ({
   const elapsed = isAgentMessage(message)
     ? formatElapsedLabel(message.elapsedMs)
     : ''
-  const timeDisplay = formatDisplayTimeWithFull(message.createdAt)
+  const timeDisplay = shouldDisplayMessageTime(message)
+    ? formatDisplayTimeWithFull(message.createdAt)
+    : { displayText: '', fullText: '' }
 
   return (
     <li
