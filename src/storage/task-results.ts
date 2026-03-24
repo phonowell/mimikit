@@ -6,12 +6,14 @@ import { readErrorCode } from '../shared/error-code.js'
 
 import { buildArchiveDocument, dateStamp } from './archive-format.js'
 import {
-  queryTaskResultArchives,
-  type QueryTaskResultArchivesOptions,
   readTaskResultArchive,
   readTaskResultsForTasks,
   type ReadTaskResultsOptions,
 } from './task-results-read.js'
+import {
+  queryTaskResultArchives,
+  type QueryTaskResultArchivesOptions,
+} from './task-results-search.js'
 
 import type {
   TaskCancelMeta,
