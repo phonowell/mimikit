@@ -4,7 +4,7 @@
 
 ## 文档定位
 
-- Action 的代码主源是 `src/manager/action-registry-definitions.ts`、`src/manager/action-surface.ts`、`src/manager/action-validation.ts`。
+- Action 的代码主源是 `src/policy/manager/action-registry-definitions.ts`、`src/policy/manager/action-surface.ts`、`src/policy/manager/action-validation.ts`。
 - 本文档是面向人的实现说明，覆盖协议、域边界、动态 surface、执行语义与关键参数约束。
 - 涉及 Action 的设计记录、提案、简化说明仅作背景参考，不构成并行规范；若与实现冲突，以代码为准。
 
@@ -15,7 +15,7 @@
 
 ## 协议
 
-协议与解析：`src/actions/protocol/*`
+协议与解析：`src/policy/actions/protocol/*`
 
 - Action 行格式：`<M:name key="value" />`
 - 解析链路：`remark-parse` + `unist-util-visit`（无正则主解析）
@@ -24,7 +24,7 @@
 
 ## Manager 消费的编排 Action
 
-实现：`src/manager/action-registry-definitions.ts`、`src/manager/action-validation.ts`、`src/manager/action-apply.ts`
+实现：`src/policy/manager/action-registry-definitions.ts`、`src/policy/manager/action-validation.ts`、`src/policy/manager/action-apply.ts`
 
 ### 任务类
 
@@ -51,7 +51,7 @@
 
 ## 动态 Action Surface
 
-实现：`src/manager/action-surface.ts`、`src/manager/loop-batch-run-helpers.ts`、`src/manager/action-feedback-collect.ts`
+实现：`src/policy/manager/action-surface.ts`、`src/policy/manager/loop-batch-run-helpers.ts`、`src/policy/manager/action-feedback-collect.ts`
 
 - `user_input` / `mixed`：开放 `task + plan + dialog + focus + memory`
 - `task_result` / `trigger` / `capacity`：仅开放 `task + plan`

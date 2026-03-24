@@ -1,7 +1,7 @@
 import { access, readFile, readdir } from 'node:fs/promises'
 import { join } from 'node:path'
 
-import { readJsonl } from '../../src/storage/jsonl.js'
+import { readJsonl } from '../../src/persistence/storage/jsonl.js'
 
 import {
   isInRange,

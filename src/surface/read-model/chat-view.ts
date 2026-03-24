@@ -1,0 +1,173 @@
+import { parseActions } from '../../policy/actions/protocol/parse.js'
+import { isVisibleToUser } from '../shared/message-visibility.js'
+import { resolveSystemEvent } from '../shared/system-event.js'
+
+import type { HistoryMessage, UserInput } from '../../foundation/types/index.js'
+
+export type ChatMessage = HistoryMessage
+
+export type ChatMessagesMode = 'full' | 'delta' | 'reset'
+
+const toUserVisibleSystemMessage = (message: {
+  text: string
+  systemEventName?: string
+  systemEventPayload?: Record<string, unknown>
+}) => {
+  const visibleText = parseActions(message.text).text
+  if (!visibleText.trim()) return { text: '' }
+  const parsedEvent = resolveSystemEvent(message)
+  return {
+    text: visibleText,
+    ...(parsedEvent.name ? { systemEventName: parsedEvent.name } : {}),
+    ...(parsedEvent.payload ? { systemEventPayload: parsedEvent.payload } : {}),
+  }
+}
+
+const toInflightChatMessage = (input: UserInput): ChatMessage => {
+  if (input.role === 'system') {
+    const visible = toUserVisibleSystemMessage(input)
+    return {
+      id: input.id,
+      role: input.role,
+      visibility: input.visibility,
+      text: visible.text,
+      createdAt: input.createdAt,
+      focusId: input.focusId,
+      ...(visible.systemEventName
+        ? { systemEventName: visible.systemEventName }
+        : {}),
+      ...(visible.systemEventPayload
+        ? { systemEventPayload: visible.systemEventPayload }
+        : {}),
+      ...(input.quote ? { quote: input.quote } : {}),
+    }
+  }
+  return {
+    id: input.id,
+    role: input.role,
+    text: input.text,
+    createdAt: input.createdAt,
+    focusId: input.focusId,
+    ...(input.source ? { source: input.source } : {}),
+    ...(input.platform ? { platform: input.platform } : {}),
+    ...(input.telegramChatId ? { telegramChatId: input.telegramChatId } : {}),
+    ...(input.telegramMessageId
+      ? { telegramMessageId: input.telegramMessageId }
+      : {}),
+    ...(input.telegramUpdateId
+      ? { telegramUpdateId: input.telegramUpdateId }
+      : {}),
+    ...(input.telegramTimestamp
+      ? { telegramTimestamp: input.telegramTimestamp }
+      : {}),
+    ...(input.feishuChatId ? { feishuChatId: input.feishuChatId } : {}),
+    ...(input.feishuMessageId
+      ? { feishuMessageId: input.feishuMessageId }
+      : {}),
+    ...(input.feishuEventId ? { feishuEventId: input.feishuEventId } : {}),
+    ...(input.feishuTimestamp
+      ? { feishuTimestamp: input.feishuTimestamp }
+      : {}),
+    ...(input.quote ? { quote: input.quote } : {}),
+  }
+}
+
+const tailWithLimit = (
+  messages: ChatMessage[],
+  limit: number,
+): ChatMessage[] => {
+  if (limit <= 0) return []
+  return messages.slice(Math.max(0, messages.length - limit))
+}
+
+const toTimestamp = (iso: string): number | null => {
+  const value = Date.parse(iso)
+  return Number.isFinite(value) ? value : null
+}
+
+const sortMessagesByCreatedAt = (messages: ChatMessage[]): ChatMessage[] => {
+  if (messages.length < 2) return messages
+  return messages
+    .map((message, index) => ({ message, index }))
+    .sort((a, b) => {
+      const aTime = toTimestamp(a.message.createdAt)
+      const bTime = toTimestamp(b.message.createdAt)
+      if (aTime !== null && bTime !== null && aTime !== bTime)
+        return aTime - bTime
+      if (aTime !== null && bTime === null) return -1
+      if (aTime === null && bTime !== null) return 1
+      return a.index - b.index
+    })
+    .map((item) => item.message)
+}
+
+const withTailAndMode = (
+  messages: ChatMessage[],
+  limit: number,
+  mode: ChatMessagesMode,
+): { messages: ChatMessage[]; mode: ChatMessagesMode } => ({
+  messages: tailWithLimit(messages, limit),
+  mode,
+})
+
+const mergeChatMessagesWithoutLimit = (params: {
+  history: HistoryMessage[]
+  inflightInputs: UserInput[]
+}): ChatMessage[] => {
+  const merged: ChatMessage[] = []
+  for (const message of params.history) {
+    if (!isVisibleToUser(message)) continue
+    if (message.role !== 'system') {
+      merged.push(message)
+      continue
+    }
+    const visible = toUserVisibleSystemMessage(message)
+    if (!visible.text) continue
+    merged.push({
+      ...message,
+      text: visible.text,
+      ...(visible.systemEventName
+        ? { systemEventName: visible.systemEventName }
+        : {}),
+      ...(visible.systemEventPayload
+        ? { systemEventPayload: visible.systemEventPayload }
+        : {}),
+    })
+  }
+  const seenIds = new Set(merged.map((message) => message.id))
+  for (const input of params.inflightInputs) {
+    if (!isVisibleToUser(input)) continue
+    if (seenIds.has(input.id)) continue
+    const message = toInflightChatMessage(input)
+    if (message.role === 'system' && !message.text) continue
+    merged.push(message)
+    seenIds.add(input.id)
+  }
+  return sortMessagesByCreatedAt(merged)
+}
+
+export const mergeChatMessages = (params: {
+  history: HistoryMessage[]
+  inflightInputs: UserInput[]
+  limit: number
+}): ChatMessage[] => {
+  const merged = mergeChatMessagesWithoutLimit(params)
+  return tailWithLimit(merged, params.limit)
+}
+
+export const selectChatMessages = (params: {
+  history: HistoryMessage[]
+  inflightInputs: UserInput[]
+  limit: number
+  afterId?: string
+}): { messages: ChatMessage[]; mode: ChatMessagesMode } => {
+  const merged = mergeChatMessagesWithoutLimit(params)
+  const afterId = params.afterId?.trim()
+  if (!afterId) return withTailAndMode(merged, params.limit, 'full')
+  const afterIndex = merged.findIndex((item) => item.id === afterId)
+  if (afterIndex < 0) return withTailAndMode(merged, params.limit, 'reset')
+  return {
+    messages: merged.slice(afterIndex + 1),
+    mode: 'delta',
+  }
+}

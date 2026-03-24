@@ -4,7 +4,7 @@ import { join } from 'node:path'
 
 import { expect, test } from 'vitest'
 
-import { checkExistingPathBoundary } from '../src/fs/path-safety.js'
+import { checkExistingPathBoundary } from '../src/persistence/fs/path-safety.js'
 
 test('checkExistingPathBoundary returns missing when root path is absent', async () => {
   const sandboxDir = await mkdtemp(join(tmpdir(), 'mimikit-path-safety-'))

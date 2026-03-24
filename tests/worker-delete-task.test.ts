@@ -4,12 +4,12 @@ import { join } from 'node:path'
 
 import { afterEach, expect, test } from 'vitest'
 
-import { appendHistory, readHistory } from '../src/history/store.js'
-import { appendTaskSystemMessage } from '../src/history/task-events.js'
-import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
-import { loadRuntimeSnapshot } from '../src/storage/runtime-snapshot.js'
-import type { Task } from '../src/types/index.js'
-import { deleteTask } from '../src/worker/delete-task.js'
+import { appendHistory, readHistory } from '../src/persistence/history/store.js'
+import { appendTaskSystemMessage } from '../src/persistence/history/task-events.js'
+import type { RuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
+import { loadRuntimeSnapshot } from '../src/persistence/storage/runtime-snapshot.js'
+import type { Task } from '../src/foundation/types/index.js'
+import { deleteTask } from '../src/execution/worker/delete-task.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 const tempDirs: string[] = []

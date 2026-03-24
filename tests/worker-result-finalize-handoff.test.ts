@@ -4,10 +4,10 @@ import { join } from 'node:path'
 
 import { expect, test } from 'vitest'
 
-import { finalizeResult } from '../src/worker/result-finalize.js'
+import { finalizeResult } from '../src/execution/worker/result-finalize.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
-import type { Task, TaskResult } from '../src/types/index.js'
+import type { Task, TaskResult } from '../src/foundation/types/index.js'
 
 const createTmpDir = () =>
   mkdtemp(join(tmpdir(), 'mimikit-finalize-result-handoff-'))

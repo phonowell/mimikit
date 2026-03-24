@@ -4,13 +4,13 @@ import { join } from 'node:path'
 
 import { expect, test } from 'vitest'
 
-import { buildPaths } from '../src/fs/paths.js'
+import { buildPaths } from '../src/persistence/fs/paths.js'
 import {
   compactInputQueueIfFullyConsumed,
   consumeUserInputs,
   consumeUserInputsIncrementally,
   publishUserInput,
-} from '../src/streams/queues.js'
+} from '../src/kernel/streams/queues.js'
 
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-queue-'))
 type QueuePaths = ReturnType<typeof buildPaths>

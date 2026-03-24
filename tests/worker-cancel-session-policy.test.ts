@@ -4,10 +4,10 @@ import { join } from 'node:path'
 
 import { afterEach, expect, test } from 'vitest'
 
-import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
-import { consumeWorkerResults } from '../src/streams/queues.js'
-import type { Task } from '../src/types/index.js'
-import { cancelTask } from '../src/worker/cancel-task.js'
+import type { RuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
+import { consumeWorkerResults } from '../src/kernel/streams/queues.js'
+import type { Task } from '../src/foundation/types/index.js'
+import { cancelTask } from '../src/execution/worker/cancel-task.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 const tempDirs: string[] = []

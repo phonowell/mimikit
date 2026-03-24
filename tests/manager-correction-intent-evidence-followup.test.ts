@@ -1,7 +1,7 @@
 import { beforeEach, expect, test, vi } from 'vitest'
 
-import { formatEnqueueTaskIntentEvidenceHint } from '../src/manager/action-evidence-hints.js'
-import { runManagerCorrectionRounds } from '../src/manager/loop-batch-run-rounds.js'
+import { formatEnqueueTaskIntentEvidenceHint } from '../src/policy/manager/action-evidence-hints.js'
+import { runManagerCorrectionRounds } from '../src/policy/manager/loop-batch-run-rounds.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 const { runManagerRoundWithRecoveryMock } = vi.hoisted(() => ({
@@ -12,11 +12,11 @@ const { resolveRoundFollowupMock } = vi.hoisted(() => ({
   resolveRoundFollowupMock: vi.fn(),
 }))
 
-vi.mock('../src/manager/loop-batch-exec.js', () => ({
+vi.mock('../src/policy/manager/loop-batch-exec.js', () => ({
   runManagerRoundWithRecovery: runManagerRoundWithRecoveryMock,
 }))
 
-vi.mock('../src/manager/loop-batch-round-followup.js', () => ({
+vi.mock('../src/policy/manager/loop-batch-round-followup.js', () => ({
   resolveRoundFollowup: resolveRoundFollowupMock,
 }))
 

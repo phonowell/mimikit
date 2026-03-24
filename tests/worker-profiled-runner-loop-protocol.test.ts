@@ -11,9 +11,9 @@ import {
   MAX_CONTINUE_LATEST_OUTPUT_CHARS,
   runWorkerLoop,
   stripWorkerProtocolTags,
-} from '../src/worker/profiled-runner-loop.js'
+} from '../src/execution/worker/profiled-runner-loop.js'
 
-import type { Task } from '../src/types/index.js'
+import type { Task } from '../src/foundation/types/index.js'
 
 const createTmpDir = () =>
   mkdtemp(join(tmpdir(), 'mimikit-worker-loop-protocol-'))

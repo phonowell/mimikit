@@ -1,8 +1,8 @@
 # wt-2 Manager Prompt 优化说明（2026-02-28）
 
 ## 1. 链路核对结果
-- 运行入口：`src/manager/runner.ts` 调用 `buildManagerPrompt`。
-- 提示词构建：`src/prompts/build-prompts.ts` 通过 `loadPromptSource('manager/system.md')` 加载系统提示词。
+- 运行入口：`src/policy/manager/runner.ts` 调用 `buildManagerPrompt`。
+- 提示词构建：`src/policy/prompts/build-prompts.ts` 通过 `loadPromptSource('manager/system.md')` 加载系统提示词。
 - 实际生效文件：`prompts/manager/system.md`。
 
 ## 2. 本次优化内容
@@ -32,7 +32,7 @@
   - 结果：无未注册 action。
 - `pnpm -s type-check`
   - 结果：失败（仓库现存问题，非本次改动引入）：
-  - `src/manager/action-registry.ts(205,20): error TS2322: Type 'string' is not assignable to type 'Promise<ApplyResult>'.`
+  - `src/policy/manager/action-registry.ts(205,20): error TS2322: Type 'string' is not assignable to type 'Promise<ApplyResult>'.`
 
 ## 4. 涉及文件
 - `prompts/manager/system.md`

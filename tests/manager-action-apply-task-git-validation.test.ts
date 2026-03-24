@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest'
 
-import { GLOBAL_FOCUS_ID } from '../src/focus/constants.js'
-import { validateMutateTask } from '../src/manager/action-validation-risk.js'
+import { GLOBAL_FOCUS_ID } from '../src/work/focus/constants.js'
+import { validateMutateTask } from '../src/policy/manager/action-validation-risk.js'
 
 const TASK_CWD = '/tmp/manager-action-apply-task-git'
 

@@ -4,12 +4,12 @@ import { join } from 'node:path'
 
 import { expect, test, vi } from 'vitest'
 
-import { rewriteHistory } from '../src/history/store.js'
+import { rewriteHistory } from '../src/persistence/history/store.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 const capturedPayloads: unknown[] = []
 
-vi.mock('../src/memory/refresh/job-spawn.js', () => ({
+vi.mock('../src/policy/memory/refresh/job-spawn.js', () => ({
   spawnMemoryRefreshJob: vi.fn(async (params: { payload: unknown }) => {
     capturedPayloads.push(params.payload)
     return {
@@ -113,7 +113,7 @@ test('requestMemoryRefresh excludes task outputs and plan titles from payload', 
   runtime.manager.memoryRefresh.signalVersion = 1
 
   const { requestMemoryRefresh } = await import(
-    '../src/memory/refresh/singleflight.js'
+    '../src/policy/memory/refresh/singleflight.js'
   )
 
   requestMemoryRefresh(runtime)

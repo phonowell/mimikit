@@ -3,12 +3,12 @@ import { expect, test } from 'vitest'
 import {
   enforceActiveFocusLimit,
   pruneArchivedFocuses,
-} from '../src/focus/capacity.js'
-import { GLOBAL_FOCUS_ID } from '../src/focus/constants.js'
-import { appendHistory } from '../src/history/store.js'
+} from '../src/work/focus/capacity.js'
+import { GLOBAL_FOCUS_ID } from '../src/work/focus/constants.js'
+import { appendHistory } from '../src/persistence/history/store.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
-import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
+import type { RuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
 
 const createRuntime = async (): Promise<RuntimeState> => {
   const runtime = await createTestRuntimeState()

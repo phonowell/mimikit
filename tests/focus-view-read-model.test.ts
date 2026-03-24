@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest'
 
-import { buildFocusViews } from '../src/orchestrator/read-model/focus-view.js'
-import type { FocusMeta, Task } from '../src/types/index.js'
+import { buildFocusViews } from '../src/surface/read-model/focus-view.js'
+import type { FocusMeta, Task } from '../src/foundation/types/index.js'
 
 const createFocus = (overrides: Partial<FocusMeta> = {}): FocusMeta => ({
   id: 'focus-a',

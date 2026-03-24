@@ -1,6 +1,6 @@
 import { beforeEach, expect, test, vi } from 'vitest'
 
-import { runManagerBatch } from '../src/manager/loop-batch-run-manager.js'
+import { runManagerBatch } from '../src/policy/manager/loop-batch-run-manager.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 const { runManagerCorrectionRoundsMock } = vi.hoisted(() => ({
@@ -11,11 +11,11 @@ const { logManagerBatchStartMock } = vi.hoisted(() => ({
   logManagerBatchStartMock: vi.fn(async () => undefined),
 }))
 
-vi.mock('../src/manager/loop-batch-run-rounds.js', () => ({
+vi.mock('../src/policy/manager/loop-batch-run-rounds.js', () => ({
   runManagerCorrectionRounds: runManagerCorrectionRoundsMock,
 }))
 
-vi.mock('../src/manager/loop-batch-run-helpers.js', () => ({
+vi.mock('../src/policy/manager/loop-batch-run-helpers.js', () => ({
   logManagerBatchStart: logManagerBatchStartMock,
 }))
 

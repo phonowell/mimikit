@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
 
-import { parseRuntimeSnapshot } from '../../src/storage/runtime-snapshot-parse.js'
+import { parseRuntimeSnapshot } from '../../src/persistence/storage/runtime-snapshot-parse.js'
 
 import { type ScoreValue } from './score-runtime-window-model.js'
 

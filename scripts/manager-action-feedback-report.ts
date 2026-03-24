@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
-import { buildPaths } from '../src/fs/paths.js'
+import { buildPaths } from '../src/persistence/fs/paths.js'
 
 type FeedbackLogRow = {
   event?: string

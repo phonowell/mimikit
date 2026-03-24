@@ -1,6 +1,6 @@
 import { expect, test, vi } from 'vitest'
 
-vi.mock('../src/config-default-loader.js', () => ({
+vi.mock('../src/bootstrap/config-default-loader.js', () => ({
   loadDefaultConfigFromToml: () => ({
     manager: {
       model: 'gpt-test-manager',
@@ -42,7 +42,7 @@ vi.mock('../src/config-default-loader.js', () => ({
   }),
 }))
 
-import { defaultConfig } from '../src/config.js'
+import { defaultConfig } from '../src/bootstrap/config.js'
 
 test('defaultConfig keeps worker budget overrides from user config', () => {
   const config = defaultConfig({ workDir: '.mimikit' })

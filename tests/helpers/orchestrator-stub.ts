@@ -1,5 +1,5 @@
-import type { Orchestrator } from '../../src/orchestrator/core/orchestrator-service.js'
-import type { UserMeta } from '../../src/orchestrator/core/runtime-state.js'
+import type { Orchestrator } from '../../src/kernel/orchestrator/orchestrator-service.js'
+import type { UserMeta } from '../../src/kernel/orchestrator/runtime-state.js'
 
 export const createOrchestratorStub = () => {
   const addInputCalls: Array<{ text: string; meta: UserMeta; quote?: string }> =

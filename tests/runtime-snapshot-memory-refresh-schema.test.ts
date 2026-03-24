@@ -4,8 +4,8 @@ import { join } from 'node:path'
 
 import { expect, test } from 'vitest'
 
-import { loadRuntimeSnapshot } from '../src/storage/runtime-snapshot.js'
-import { RUNTIME_SNAPSHOT_SCHEMA_VERSION } from '../src/storage/runtime-schema-version.js'
+import { loadRuntimeSnapshot } from '../src/persistence/storage/runtime-snapshot.js'
+import { RUNTIME_SNAPSHOT_SCHEMA_VERSION } from '../src/persistence/storage/runtime-schema-version.js'
 
 const createTmpDir = () =>
   mkdtemp(join(tmpdir(), 'mimikit-runtime-snapshot-memory-refresh-'))

@@ -6,7 +6,7 @@ import { expect, test } from 'vitest'
 
 import { scoreRuntimeWindow } from '../scripts/rearchitecture/score-runtime-window-core.js'
 import { evaluateContextScore } from '../scripts/rearchitecture/score-runtime-window-eval-context.js'
-import { appendJsonl } from '../src/storage/jsonl.js'
+import { appendJsonl } from '../src/persistence/storage/jsonl.js'
 
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-score-runtime-'))
 const promptSectionLimits = {

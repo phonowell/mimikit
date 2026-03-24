@@ -7,7 +7,7 @@ import { expect, test } from 'vitest'
 import {
   appendManagerUsageLedgerEntry,
   appendWorkerUsageLedgerEntry,
-} from '../src/storage/usage-ledger.js'
+} from '../src/persistence/storage/usage-ledger.js'
 
 test('appendManagerUsageLedgerEntry writes manager round packet with token usage', async () => {
   const stateDir = await mkdtemp(join(tmpdir(), 'mimikit-usage-ledger-manager-'))

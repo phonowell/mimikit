@@ -4,8 +4,8 @@ import { join } from 'node:path'
 
 import { expect, test } from 'vitest'
 
-import { parseMemoryEntries } from '../src/memory/entry-codec.js'
-import { rememberMemoryEntry } from '../src/memory/remember-entry.js'
+import { parseMemoryEntries } from '../src/work/memory/entry-codec.js'
+import { rememberMemoryEntry } from '../src/work/memory/remember-entry.js'
 
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-remember-memory-'))
 

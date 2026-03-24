@@ -6,7 +6,7 @@
 
 - 本文档是 Task 领域的单一主规范（single source of truth），覆盖生命周期、派发去重、执行回写、取消恢复与 session 语义。
 - 涉及 Task 的设计记录、提案、讨论稿仅作背景参考，不构成并行规范。
-- 若与其他文档表述冲突，以本文档与对应实现代码（`src/worker/*`、`src/manager/*`）为准。
+- 若与其他文档表述冲突，以本文档与对应实现代码（`src/execution/worker/*`、`src/policy/manager/*`）为准。
 
 ## 生命周期
 
@@ -90,11 +90,11 @@
 
 | 条件 | 行为 | 关键实现 |
 | --- | --- | --- |
-| 任务重试或进程重启恢复，且 `task.sessionId` 存在、`sessionState!=discarded`、`cancel.source!=user` | 复用旧 session | `src/worker/session-state.ts` + `src/worker/run-retry.ts` |
-| provider 返回 resume/thread/session 无效类错误（not found/expired/invalid） | 丢弃旧 session，下一次尝试不带 `sessionId` | `src/worker/session-state.ts` + `src/worker/run-retry.ts` |
-| 用户主动取消（HTTP/显式用户来源） | 立即丢弃旧 session，后续必须新建 | `src/worker/cancel-task.ts`（`source=user`） |
-| 系统取消或延后取消（`source=system/deferred`） | 保留旧 session 为可恢复 | `src/worker/cancel-task.ts`（`source=system/deferred`） |
-| 预算暂停（`Task.status=paused` + `TaskResult.status=partial`） | 保留旧 session，等待显式 `resume` 后继续 | `src/worker/profiled-runner-loop.ts` + `src/worker/resume-task.ts` |
+| 任务重试或进程重启恢复，且 `task.sessionId` 存在、`sessionState!=discarded`、`cancel.source!=user` | 复用旧 session | `src/execution/worker/session-state.ts` + `src/execution/worker/run-retry.ts` |
+| provider 返回 resume/thread/session 无效类错误（not found/expired/invalid） | 丢弃旧 session，下一次尝试不带 `sessionId` | `src/execution/worker/session-state.ts` + `src/execution/worker/run-retry.ts` |
+| 用户主动取消（HTTP/显式用户来源） | 立即丢弃旧 session，后续必须新建 | `src/execution/worker/cancel-task.ts`（`source=user`） |
+| 系统取消或延后取消（`source=system/deferred`） | 保留旧 session 为可恢复 | `src/execution/worker/cancel-task.ts`（`source=system/deferred`） |
+| 预算暂停（`Task.status=paused` + `TaskResult.status=partial`） | 保留旧 session，等待显式 `resume` 后继续 | `src/execution/worker/profiled-runner-loop.ts` + `src/execution/worker/resume-task.ts` |
 
 `cancel.source` 归一化规则：`user|http -> user`，`deferred -> deferred`，其他来源统一视为 `system`。
 
@@ -114,7 +114,7 @@
 
 ## 关联数据结构
 
-定义：`src/types/index.ts`
+定义：`src/foundation/types/index.ts`
 
 - `Task`
 - `TaskGitExecution`

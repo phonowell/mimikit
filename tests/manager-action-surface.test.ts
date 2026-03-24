@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 
-import { resolveManagerActionSurface } from '../src/manager/action-surface.js'
+import { resolveManagerActionSurface } from '../src/policy/manager/action-surface.js'
 
 test('user_input wake profile keeps manager surface focused on task/plan/dialog/focus/memory only', () => {
   const surface = resolveManagerActionSurface('user_input')

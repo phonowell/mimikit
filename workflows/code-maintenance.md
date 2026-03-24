@@ -8,8 +8,8 @@
 ## 当前最关键的口号-现状反例
 - 规则口号：`README.md` 与 `docs/design/architecture/system-architecture.md` 都强调“单 session / 轻量编排 / 最小必要架构”
 - 现状反例 1：受管范围内当前仍有 `48` 个 `>200` 行文件，说明“文件 >200 行需拆分”长期未被工具化执行
-- 现状反例 2：`src/manager/` 当前共有 `60` 个文件、`7140` 行，其中 `10` 个文件 `>200` 行；`src/manager/action-apply-schema.ts` 已达 `337` 行，`manager` 目录仍在堆主路径复杂度
-- 现状反例 3：核心协议/边界文件仍偏大，`src/providers/opencode-sdk-provider.ts` 为 `845` 行，`docs/design/workflow/interfaces-and-state.md` 为 `226` 行，和“轻量编排内核 + 清晰边界”不一致
+- 现状反例 2：`src/policy/manager/` 当前共有 `60` 个文件、`7140` 行，其中 `10` 个文件 `>200` 行；`src/policy/manager/action-apply-schema.ts` 已达 `337` 行，`manager` 目录仍在堆主路径复杂度
+- 现状反例 3：核心协议/边界文件仍偏大，`src/execution/providers/opencode-sdk-provider.ts` 为 `845` 行，`docs/design/workflow/interfaces-and-state.md` 为 `226` 行，和“轻量编排内核 + 清晰边界”不一致
 
 ## 受管范围
 - 根文档：`README.md`、`CONTRIBUTING.md`

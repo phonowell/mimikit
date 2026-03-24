@@ -4,29 +4,29 @@ import { join } from 'node:path'
 
 import { afterEach, expect, test, vi } from 'vitest'
 
-import { GLOBAL_FOCUS_ID } from '../src/focus/index.js'
-import { readHistory } from '../src/history/store.js'
-import { recoverManagerBatchFailure } from '../src/manager/loop-batch-flow.js'
-import { createTask } from '../src/orchestrator/core/task-lifecycle.js'
-import { ProviderError } from '../src/providers/provider-error.js'
+import { GLOBAL_FOCUS_ID } from '../src/work/focus/index.js'
+import { readHistory } from '../src/persistence/history/store.js'
+import { recoverManagerBatchFailure } from '../src/policy/manager/loop-batch-flow.js'
+import { createTask } from '../src/work/orchestrator/task-lifecycle.js'
+import { ProviderError } from '../src/execution/providers/provider-error.js'
 import {
   consumeWorkerResults,
   publishUserInput,
   publishWorkerResult,
-} from '../src/streams/queues.js'
+} from '../src/kernel/streams/queues.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
-import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
-import type { TaskResult, UserInput } from '../src/types/index.js'
+import type { RuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
+import type { TaskResult, UserInput } from '../src/foundation/types/index.js'
 
 const mockedSendTelegramTextMessage = vi.fn(async () => ({ messageId: 'tg-1' }))
 const mockedSendFeishuTextMessage = vi.fn(async () => ({ messageId: 'fs-1' }))
 
-vi.mock('../src/channels/telegram/client.js', () => ({
+vi.mock('../src/surface/channels/telegram/client.js', () => ({
   sendTelegramTextMessage: (...args: unknown[]) =>
     mockedSendTelegramTextMessage(...args),
 }))
 
-vi.mock('../src/channels/feishu/client.js', () => ({
+vi.mock('../src/surface/channels/feishu/client.js', () => ({
   sendFeishuTextMessage: (...args: unknown[]) =>
     mockedSendFeishuTextMessage(...args),
 }))

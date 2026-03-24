@@ -26,7 +26,7 @@ vi.mock('node:child_process', () => ({
   execFile: vi.fn(),
 }))
 
-import { resolveTaskExecutionTarget } from '../src/shared/task-execution-target.js'
+import { resolveTaskExecutionTarget } from '../src/work/shared/task-execution-target.js'
 
 const tempDirs: string[] = []
 

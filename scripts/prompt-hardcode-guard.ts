@@ -14,7 +14,9 @@ type GuardViolation = {
 const GUARD_GLOBS = [
   './src/**/*.ts',
   '!./src/**/*.d.ts',
-  '!./src/prompts/**',
+  '!./src/foundation/prompting/**',
+  '!./src/policy/prompts/**',
+  '!./src/execution/prompts/**',
   '!./src/**/__generated__/**',
 ]
 

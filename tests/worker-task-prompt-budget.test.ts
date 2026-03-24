@@ -7,7 +7,7 @@ import { afterEach, expect, test } from 'vitest'
 import {
   prepareWorkerTaskPrompt,
   WORKER_TASK_PROMPT_INLINE_MAX_BYTES,
-} from '../src/prompts/build-worker-task-prompt.js'
+} from '../src/execution/prompts/build-worker-task-prompt.js'
 
 const tempDirs: string[] = []
 

@@ -41,7 +41,7 @@ pnpm start -- --port 8787 --work-dir .mimikit
 ### 日常内循环入口
 
 ```bash
-tsx src/cli/index.ts --port 8787 --work-dir .mimikit
+tsx src/bootstrap/cli/index.ts --port 8787 --work-dir .mimikit
 ```
 
 - 适合已装好依赖后频繁重启调试。
@@ -138,7 +138,7 @@ curl -sS -N http://127.0.0.1:8787/api/events | head -n 2
 - `OPENAI_API_KEY is missing`：provider 没拿到凭证；先查 `~/.codex/config.toml`、环境变量、`~/.codex/auth.json`。
 - `[cli] instance lock exists at .../.mimikit/.instance.lock`：同一状态目录已有实例占用；换 `--work-dir` 或先停掉旧进程。
 - `[cli] port 8787 is in use, fallback to ...`：端口已被占用；CLI 会在目标端口后 20 个端口内自动寻找空位。
-- `pnpm start` 很慢：它会额外执行 `pnpm install`；内循环调试改用 `tsx src/cli/index.ts --port 8787 --work-dir .mimikit`。
+- `pnpm start` 很慢：它会额外执行 `pnpm install`；内循环调试改用 `tsx src/bootstrap/cli/index.ts --port 8787 --work-dir .mimikit`。
 - `pnpm run build` 没有生成产物：这是预期行为；当前仓库没有独立编译产物，`build` 只负责静态门禁。
 
 ## 8. 推荐开发流程

@@ -3,7 +3,7 @@ import { expect, test } from 'vitest'
 import {
   formatManagerActionSurfacePrompt,
   resolveManagerActionSurfacePromptConfig,
-} from '../src/manager/action-surface-prompt.js'
+} from '../src/policy/manager/action-surface-prompt.js'
 
 test('task_result prompt surface excludes lookup actions even with lookup feedback', () => {
   const prompt = formatManagerActionSurfacePrompt(

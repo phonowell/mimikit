@@ -4,12 +4,12 @@ import { join } from 'node:path'
 
 import PQueue from 'p-queue'
 
-import { defaultConfig } from '../../src/config.js'
-import { GLOBAL_FOCUS_ID } from '../../src/focus/constants.js'
-import { buildPaths } from '../../src/fs/paths.js'
-import { createDefaultMemoryRefreshState } from '../../src/memory/refresh/state.js'
+import { defaultConfig } from '../../src/bootstrap/config.js'
+import { GLOBAL_FOCUS_ID } from '../../src/work/focus/constants.js'
+import { buildPaths } from '../../src/persistence/fs/paths.js'
+import { createDefaultMemoryRefreshState } from '../../src/policy/memory/refresh/state.js'
 
-import type { RuntimeState } from '../../src/orchestrator/core/runtime-state.js'
+import type { RuntimeState } from '../../src/kernel/orchestrator/runtime-state.js'
 
 type CreateTestRuntimeStateOptions = {
   workDir?: string

@@ -1,4 +1,4 @@
-import type { TaskPlan } from '../../src/types/index.js'
+import type { TaskPlan } from '../../src/foundation/types/index.js'
 
 export const waitForCondition = async (
   check: () => boolean | Promise<boolean>,

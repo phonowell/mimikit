@@ -132,8 +132,8 @@
 
 ## 核心命令
 
-- 启动：`tsx src/cli/index.ts`
-- WebUI：`tsx src/cli/index.ts --port 8787`
+- 启动：`tsx src/bootstrap/cli/index.ts`
+- WebUI：`tsx src/bootstrap/cli/index.ts --port 8787`
 - Windows 编码/换行：`pnpm fix:crlf` / `pnpm fix:bom`
 
 ## Worktree 工作流
@@ -145,9 +145,9 @@
 
 ## 目录结构
 
-- 入口：`src/cli/index.ts` · 调度：`src/orchestrator/` · 角色层：`src/manager/` + `src/worker/`（外部执行编排与结果回写）
-- 基础：`src/providers/` + `src/config.ts` + `src/fs/` + `src/storage/` + `src/log/`
-- 服务：`src/http/` + `webui/` · 状态：`.mimikit/`（见 `docs/design/workflow/interfaces-and-state.md`）
+- 入口：`src/bootstrap/cli/index.ts` · 调度：`src/kernel/` + `src/work/` + `src/surface/` · 角色层：`src/policy/manager/` + `src/execution/worker/`（外部执行编排与结果回写）
+- 基础：`src/execution/providers/` + `src/bootstrap/config.ts` + `src/persistence/fs/` + `src/persistence/storage/` + `src/persistence/log/`
+- 服务：`src/surface/http/` + `webui/` · 状态：`.mimikit/`（见 `docs/design/workflow/interfaces-and-state.md`）
 
 ## 文档
 

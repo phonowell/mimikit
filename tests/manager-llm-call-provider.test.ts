@@ -3,14 +3,14 @@ import { beforeEach, expect, test, vi } from 'vitest'
 import {
   readManagerAutoRetryMeta,
   runManagerLlmCall,
-} from '../src/manager/manager-llm-call.js'
-import { ProviderError } from '../src/providers/provider-error.js'
+} from '../src/policy/manager/manager-llm-call.js'
+import { ProviderError } from '../src/execution/providers/provider-error.js'
 
 const { runWithProviderMock } = vi.hoisted(() => ({
   runWithProviderMock: vi.fn(),
 }))
 
-vi.mock('../src/providers/registry.js', () => ({
+vi.mock('../src/execution/providers/registry.js', () => ({
   runWithProvider: runWithProviderMock,
 }))
 

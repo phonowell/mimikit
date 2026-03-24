@@ -4,12 +4,12 @@ import { join } from 'node:path'
 
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
-import { readProviderErrorCode } from '../src/providers/provider-error.js'
+import { readProviderErrorCode } from '../src/execution/providers/provider-error.js'
 import {
   openAiResponsesProvider,
   parseResponsesPayload,
   parseResponsesSse,
-} from '../src/providers/openai-responses-provider.js'
+} from '../src/execution/providers/openai-responses-provider.js'
 
 const ENV_KEYS = ['HOME', 'USERPROFILE', 'OPENAI_API_KEY', 'AICODING_API_KEY'] as const
 type EnvSnapshot = Partial<Record<(typeof ENV_KEYS)[number], string>>

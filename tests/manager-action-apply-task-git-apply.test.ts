@@ -4,12 +4,12 @@ import { join } from 'node:path'
 
 import { expect, test } from 'vitest'
 
-import { GLOBAL_FOCUS_ID } from '../src/focus/constants.js'
-import { applyTaskActions } from '../src/manager/action-apply.js'
+import { GLOBAL_FOCUS_ID } from '../src/work/focus/constants.js'
+import { applyTaskActions } from '../src/policy/manager/action-apply.js'
 import {
   appendTaskResultArchive,
   readTaskResultArchive,
-} from '../src/storage/task-results.js'
+} from '../src/persistence/storage/task-results.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 const TASK_CWD = '/tmp/manager-action-apply-task-git'

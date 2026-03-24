@@ -5,9 +5,9 @@ import {
   markTaskCanceled,
   markTaskPaused,
   markTaskRunning,
-} from '../src/orchestrator/core/task-lifecycle.js'
-import { buildTaskFingerprint } from '../src/orchestrator/core/task-state.js'
-import type { Task } from '../src/types/index.js'
+} from '../src/work/orchestrator/task-lifecycle.js'
+import { buildTaskFingerprint } from '../src/work/orchestrator/task-state.js'
+import type { Task } from '../src/foundation/types/index.js'
 
 const createTask = (overrides?: Partial<Task>): Task => ({
   id: 'task-1',

@@ -4,15 +4,15 @@ import { join } from 'node:path'
 
 import { expect, test } from 'vitest'
 
-import { buildPaths } from '../src/fs/paths.js'
-import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
-import { readTaskResultArchive } from '../src/storage/task-results.js'
-import type { Task, TaskResult } from '../src/types/index.js'
-import { finalizeResult } from '../src/worker/result-finalize.js'
-import { markTaskPaused } from '../src/orchestrator/core/task-lifecycle.js'
+import { buildPaths } from '../src/persistence/fs/paths.js'
+import type { RuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
+import { readTaskResultArchive } from '../src/persistence/storage/task-results.js'
+import type { Task, TaskResult } from '../src/foundation/types/index.js'
+import { finalizeResult } from '../src/execution/worker/result-finalize.js'
+import { markTaskPaused } from '../src/work/orchestrator/task-lifecycle.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 import { readTaskProgressForTest } from './helpers/task-progress.js'
-import { readJsonl } from '../src/storage/jsonl.js'
+import { readJsonl } from '../src/persistence/storage/jsonl.js'
 
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-finalize-result-'))
 

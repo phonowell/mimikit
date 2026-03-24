@@ -1,12 +1,12 @@
 import { beforeEach, expect, test, vi } from 'vitest'
 
-import { runMemoryRefreshSingleCall } from '../src/memory/refresh/single-call.js'
+import { runMemoryRefreshSingleCall } from '../src/policy/memory/refresh/single-call.js'
 
 const { runManagerLlmCallMock } = vi.hoisted(() => ({
   runManagerLlmCallMock: vi.fn(),
 }))
 
-vi.mock('../src/manager/manager-llm-call.js', () => ({
+vi.mock('../src/policy/manager/manager-llm-call.js', () => ({
   runManagerLlmCall: runManagerLlmCallMock,
 }))
 

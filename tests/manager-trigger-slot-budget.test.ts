@@ -1,11 +1,11 @@
 import { expect, test } from 'vitest'
 
-import { GLOBAL_FOCUS_ID } from '../src/focus/constants.js'
-import { triggerOnWorkerSlotFreedPlans } from '../src/manager/loop-trigger-plans.js'
+import { GLOBAL_FOCUS_ID } from '../src/work/focus/constants.js'
+import { triggerOnWorkerSlotFreedPlans } from '../src/policy/manager/loop-trigger-plans.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
-import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
-import type { TaskPlan } from '../src/types/index.js'
+import type { RuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
+import type { TaskPlan } from '../src/foundation/types/index.js'
 
 const createRuntime = async (): Promise<RuntimeState> => {
   const runtime = await createTestRuntimeState({ maxConcurrent: 1 })

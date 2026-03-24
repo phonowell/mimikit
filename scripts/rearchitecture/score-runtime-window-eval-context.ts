@@ -1,4 +1,4 @@
-import type { PromptSectionLimits } from '../../src/config.js'
+import type { PromptSectionLimits } from '../../src/bootstrap/config.js'
 import type { LogRow } from './score-runtime-window-model.js'
 
 const PROMPT_SECTION_LIMIT_KEYS: Array<keyof PromptSectionLimits> = [

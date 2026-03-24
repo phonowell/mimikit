@@ -1,6 +1,6 @@
 import { expect, test, vi } from 'vitest'
 
-import { createSessionIngressLogger } from '../src/http/session-ingress-log.js'
+import { createSessionIngressLogger } from '../src/surface/http/session-ingress-log.js'
 
 type LogCall = {
   tag: string

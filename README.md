@@ -51,7 +51,7 @@ pnpm start -- --port 8787 --work-dir .mimikit
 更适合日常内循环的直接入口：
 
 ```bash
-tsx src/cli/index.ts --port 8787 --work-dir .mimikit
+tsx src/bootstrap/cli/index.ts --port 8787 --work-dir .mimikit
 ```
 
 说明：没有单独的 agent / worker 启动命令；`manager + worker + WebUI` 都由同一 CLI 进程拉起。

@@ -1,9 +1,9 @@
 import { expect, test } from 'vitest'
 
-import { ensureGlobalFocus, updateFocus, setFocusStatus } from '../src/focus/state.js'
+import { ensureGlobalFocus, updateFocus, setFocusStatus } from '../src/work/focus/state.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
-import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
+import type { RuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
 
 const createRuntime = async (): Promise<RuntimeState> =>
   createTestRuntimeState({

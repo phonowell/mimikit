@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 
-import { collectManagerActionFeedback } from '../src/manager/action-feedback-collect.js'
+import { collectManagerActionFeedback } from '../src/policy/manager/action-feedback-collect.js'
 
 test('ask_user_choice is rejected when telegram source does not support choice callback', () => {
   const feedback = collectManagerActionFeedback(

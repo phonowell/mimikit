@@ -8,7 +8,7 @@ import {
   appendTaskResultArchive,
   readTaskResultArchive,
   readTaskResultsForTasks,
-} from '../src/storage/task-results.js'
+} from '../src/persistence/storage/task-results.js'
 
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-task-archive-'))
 

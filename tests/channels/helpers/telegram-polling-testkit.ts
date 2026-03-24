@@ -1,8 +1,8 @@
-import { defaultConfig } from '../../../src/config.js'
+import { defaultConfig } from '../../../src/bootstrap/config.js'
 import {
   startTelegramPolling,
   stopTelegramPolling,
-} from '../../../src/channels/telegram/polling.js'
+} from '../../../src/surface/channels/telegram/polling.js'
 
 type ChatType = 'private' | 'group' | 'supergroup' | 'channel'
 type BaseContext = {

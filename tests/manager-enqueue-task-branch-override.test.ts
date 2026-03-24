@@ -4,7 +4,7 @@ import { join } from 'node:path'
 
 import { afterEach, expect, test } from 'vitest'
 
-import { applyTaskActions } from '../src/manager/action-apply.js'
+import { applyTaskActions } from '../src/policy/manager/action-apply.js'
 import {
   cleanupGitRepos,
   createGitRepo,
@@ -12,7 +12,7 @@ import {
 } from './helpers/git-repo.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
-import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
+import type { RuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
 
 const CONTRACT_ATTRS = {
   goal: 'Deliver requested outcome',

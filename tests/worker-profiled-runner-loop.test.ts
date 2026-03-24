@@ -4,13 +4,13 @@ import { join } from 'node:path'
 
 import { expect, test } from 'vitest'
 
-import { attachProviderThreadId } from '../src/providers/thread-id.js'
+import { attachProviderThreadId } from '../src/execution/providers/thread-id.js'
 import {
   buildContinuePrompt,
   isWorkerBudgetExceededError,
   runWorkerLoop,
-} from '../src/worker/profiled-runner-loop.js'
-import type { Task, TokenUsage } from '../src/types/index.js'
+} from '../src/execution/worker/profiled-runner-loop.js'
+import type { Task, TokenUsage } from '../src/foundation/types/index.js'
 
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-worker-loop-'))
 

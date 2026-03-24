@@ -7,7 +7,7 @@
 - 本文档仅定义 HTTP/SSE/CLI/配置与状态目录等接口事实。
 - Task/Action/Plan/Focus/Memory 的生命周期与执行语义不在本文定义，统一以 `./task.md`、`./action.md`、`./plan.md`、`./focus.md`、`./memory.md` 为准。
 
-## HTTP API（`src/http/*`）
+## HTTP API（`src/surface/http/*`）
 
 - `GET /api/events`
 - `GET /api/status`
@@ -76,11 +76,11 @@
 - `tasks.tasks[*].liveOutput` 为运行中任务的流式输出片段（仅 WebUI 展示，运行态内存数据，不承诺持久化）。
 - `tasks.tasks[*].title` 只使用稳定 `Task.title`；若标题缺失则退回 `task.id`，不再从 `task.prompt` 派生展示标题。
 - `tasks.tasks[*]` 会暴露 `stopReason` 与 `recoverable`；其中 `recoverable=true` 表示该 `paused + partial + budget_exhausted` 任务可直接继续执行。
-- 会话入站消息日志在服务端 `src/http/session-ingress-log.ts` 统一记录并去重（`[http] session ingress message/batch`）。
+- 会话入站消息日志在服务端 `src/surface/http/session-ingress-log.ts` 统一记录并去重（`[http] session ingress message/batch`）。
 
 ## System 气泡可见性规则（WebUI 会话流）
 
-- 判定入口：`src/shared/system-message-visibility.ts`（由 `src/shared/message-visibility.ts` 调用）。
+- 判定入口：`src/surface/shared/system-message-visibility.ts`（由 `src/surface/shared/message-visibility.ts` 调用）。
 - 直接对用户有价值的 system 事件默认可见：`startup`、`task_created`、`task_paused`、`task_resumed`、`task_canceled`、`task_completed`、`manager_fallback_reply`、`user_choice`、`user_choice_skipped`。
 - 内部编排/调度/控制类事件默认不可见：`manager_round_limit`、`manager_error`、`action_feedback`、`trigger_fire`、`worker_slot_freed`、`plan_created`、`plan_updated`、`plan_deleted`。
 - 未识别 system_event 采用保守策略：`visibility=user` 保持可见，`visibility=all` 默认不展示给最终用户。
@@ -124,10 +124,10 @@
 ## CLI 入口
 
 - `pnpm start`
-- `tsx src/cli/index.ts --work-dir .mimikit`
-- `tsx src/cli/index.ts --port 8787 --work-dir .mimikit`
+- `tsx src/bootstrap/cli/index.ts --work-dir .mimikit`
+- `tsx src/bootstrap/cli/index.ts --port 8787 --work-dir .mimikit`
 
-## 环境变量（`src/cli/env.ts`）
+## 环境变量（`src/bootstrap/cli/env.ts`）
 
 - 模型：`MIMIKIT_MODEL`、`MIMIKIT_MANAGER_MODEL`、`MIMIKIT_CODEX_MODEL`
 - 推理强度：`MIMIKIT_REASONING_EFFORT`、`MIMIKIT_MANAGER_REASONING_EFFORT`、`MIMIKIT_CODEX_REASONING_EFFORT`
@@ -178,7 +178,7 @@
 
 ## Runtime Snapshot 关键字段
 
-schema：`src/storage/runtime-snapshot-schema.ts`
+schema：`src/persistence/storage/runtime-snapshot-schema.ts`
 
 - `tasks`（含 `tasks[*].provider`、可选 `tasks[*].git={ worktreePath, branch }`）
 - `taskPlans`

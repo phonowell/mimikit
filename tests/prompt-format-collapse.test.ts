@@ -4,8 +4,8 @@ import {
   buildInputsPromptPayload,
   buildQuoteReferenceLookup,
   formatEnvironment,
-} from '../src/prompts/format.js'
-import type { HistoryMessage, UserInput } from '../src/types/index.js'
+} from '../src/foundation/prompting/format.js'
+import type { HistoryMessage, UserInput } from '../src/foundation/types/index.js'
 import {
   GLOBAL_FOCUS_ID,
 } from './helpers/runtime-snapshot.js'

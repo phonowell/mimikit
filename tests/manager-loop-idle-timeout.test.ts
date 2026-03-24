@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 
-import { resolveManagerIdleTimeoutMs } from '../src/manager/loop-idle-timeout.js'
+import { resolveManagerIdleTimeoutMs } from '../src/policy/manager/loop-idle-timeout.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 test('manager idle timeout waits for the nearest pending choice expiry', async () => {

@@ -9,7 +9,7 @@
 
 ## Manager Runner
 
-实现：`src/manager/runner.ts`
+实现：`src/policy/manager/runner.ts`
 
 - 导出：`runManager`
 - Prompt 组装：`buildManagerPromptPayload`（对外仍导出 `buildManagerPrompt` 便于纯字符串调用）
@@ -29,7 +29,7 @@
 
 ## Worker Runner
 
-实现：`src/worker/profiled-runner.ts`
+实现：`src/execution/worker/profiled-runner.ts`
 
 - 导出：`runWorker`
 - Prompt 组装：`buildWorkerPrompt` -> `prompts/worker/system.md`
@@ -48,23 +48,23 @@
 
 ## Provider Runtime
 
-实现：`src/providers/registry.ts`
+实现：`src/execution/providers/registry.ts`
 
 - 导出：`runWithProvider`
 - 当前注册 provider：
-  - `codex-sdk`：`src/providers/codex-sdk-provider.ts`
-  - `openai-responses`：`src/providers/openai-responses-provider.ts`
-- 共享运行时工具：`src/providers/provider-runtime.ts`
-- 共享错误建模：`src/providers/provider-error.ts`
+  - `codex-sdk`：`src/execution/providers/codex-sdk-provider.ts`
+  - `openai-responses`：`src/execution/providers/openai-responses-provider.ts`
+- 共享运行时工具：`src/execution/providers/provider-runtime.ts`
+- 共享错误建模：`src/execution/providers/provider-error.ts`
 
 ## Runtime Reaper
 
-实现：`src/runtime/reaper-*.ts`
+实现：`src/kernel/runtime/reaper-*.ts`
 
-- 启动与桥接：`src/cli/index.ts`
-- 守护进程入口：`src/runtime/reaper-daemon.ts`
-- 子进程登记：`src/runtime/reaper-registry.ts`
-- lease 心跳：`src/runtime/reaper-handle.ts`
+- 启动与桥接：`src/bootstrap/cli/index.ts`
+- 守护进程入口：`src/kernel/runtime/reaper-daemon.ts`
+- 子进程登记：`src/kernel/runtime/reaper-registry.ts`
+- lease 心跳：`src/kernel/runtime/reaper-handle.ts`
 
 机制：
 

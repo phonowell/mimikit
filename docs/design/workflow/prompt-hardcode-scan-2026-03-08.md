@@ -10,46 +10,46 @@
 
 ## 命中清单（逐条归档）
 
-1. `src/manager/action-feedback-contract-hint.ts:5-9,29,54`
+1. `src/policy/manager/action-feedback-contract-hint.ts:5-9,29,54`
 - 片段：内联默认文案（`请在此填写任务目标` 等）+ 内联 `<M:enqueue_task ... />` 模板拼接
 - 分类：业务路径硬编码 prompt（必须处理）
 - 处理决策：已处理
 - 处理方式：移除硬编码，统一走 `prompts/manager/action-feedback-hints.md` + `formatEnqueueTaskContractMissingHint`
 - 理由：符合“prompt 统一放 prompts/”规则，避免业务代码埋提示词
 
-2. `src/manager/action-feedback-hints.ts:122-126`（历史状态）
+2. `src/policy/manager/action-feedback-hints.ts:122-126`（历史状态）
 - 片段：`TODO_PROMPT/TODO_TITLE/...` 兜底占位
 - 分类：业务路径 prompt 兜底字面量（必须处理）
 - 处理决策：已处理
 - 处理方式：改为从 `prompts/manager/action-feedback-hints.md` 读取默认值字段
 - 理由：默认提示值也应模板化，不在 TS 里硬编码
 
-3. `src/channels/shared/source.ts:1`
+3. `src/surface/channels/shared/source.ts:1`
 - 片段：`['telegram', 'feishu']`
 - 分类：渠道能力白名单（可豁免）
 - 处理决策：豁免
 - 理由：这是结构化渠道枚举，不是 prompt 或词表驱动业务意图判定
 
-4. `src/cli/env.ts:10-16`
+4. `src/bootstrap/cli/env.ts:10-16`
 - 片段：`ALLOWED_REASONING_EFFORT = ['minimal','low','medium','high','xhigh']`
 - 分类：配置 schema 枚举（可豁免）
 - 处理决策：豁免
 - 理由：SDK 参数合法值集合，不涉及 prompt 语义判定
 
-5. `src/manager/action-apply-schema.ts:37-45`
+5. `src/policy/manager/action-apply-schema.ts:37-45`
 - 片段：`runTaskSchema` 字段枚举（`acceptance_1..5` 等）
 - 分类：协议 schema（可豁免）
 - 处理决策：豁免
 - 理由：结构化参数校验，不是词表驱动逻辑
 
-6. `src/shared/system-event.ts:48`
+6. `src/surface/shared/system-event.ts:48`
 - 片段：`<M:system_event ...>` 协议标签拼接
 - 分类：协议常量（可豁免）
 - 处理决策：豁免并添加注释 `prompt-guard-exempt`
 - 理由：协议标签必须在代码层生成；非 LLM prompt
 - 后续状态：已于 2026-03-10 移除；system event 改为 `text(summary) + systemEventName + systemEventPayload`
 
-7. `src/worker/profiled-runner-loop.ts:18`
+7. `src/execution/worker/profiled-runner-loop.ts:18`
 - 片段：`<M:skill_usage status="done">...` 完成标签模式
 - 分类：协议常量（可豁免）
 - 处理决策：豁免并添加注释 `prompt-guard-exempt`

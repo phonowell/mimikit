@@ -4,21 +4,21 @@ import { join } from 'node:path'
 
 import { afterEach, expect, test, vi } from 'vitest'
 
-import { readHistory } from '../src/history/store.js'
-import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
-import { persistRuntimeState } from '../src/orchestrator/core/runtime-persistence.js'
-import { requestTaskResumeChoice } from '../src/orchestrator/core/task-resume-choice.js'
+import { readHistory } from '../src/persistence/history/store.js'
+import type { RuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
+import { persistRuntimeState } from '../src/kernel/orchestrator/runtime-persistence.js'
+import { requestTaskResumeChoice } from '../src/work/orchestrator/task-resume-choice.js'
 import {
   resolvePendingUserChoiceTimeout,
   selectPendingUserChoiceFromUser,
-} from '../src/orchestrator/core/user-choice.js'
-import { loadRuntimeSnapshot } from '../src/storage/runtime-snapshot.js'
-import type { Task } from '../src/types/index.js'
-import { pauseTask } from '../src/worker/pause-task.js'
+} from '../src/work/orchestrator/user-choice.js'
+import { loadRuntimeSnapshot } from '../src/persistence/storage/runtime-snapshot.js'
+import type { Task } from '../src/foundation/types/index.js'
+import { pauseTask } from '../src/execution/worker/pause-task.js'
 import {
   resumeRecoverableTasks,
   resumeTask,
-} from '../src/worker/resume-task.js'
+} from '../src/execution/worker/resume-task.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 const tempDirs: string[] = []

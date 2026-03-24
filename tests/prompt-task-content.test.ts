@@ -4,8 +4,8 @@ import {
   buildPlansPromptPayload,
   buildResultsPromptPayload,
   buildTasksPromptPayload,
-} from '../src/prompts/format.js'
-import type { TaskResult } from '../src/types/index.js'
+} from '../src/foundation/prompting/format.js'
+import type { TaskResult } from '../src/foundation/types/index.js'
 import { createPlanFixture, createTaskFixture } from './helpers/runtime-snapshot.js'
 
 test('buildResultsPromptPayload keeps the latest result per task', () => {

@@ -6,11 +6,11 @@ const { runManagerBatchMock } = vi.hoisted(() => ({
   runManagerBatchMock: vi.fn(),
 }))
 
-vi.mock('../src/manager/loop-batch-run-manager.js', () => ({
+vi.mock('../src/policy/manager/loop-batch-run-manager.js', () => ({
   runManagerBatch: runManagerBatchMock,
 }))
 
-import { processManagerBatch } from '../src/manager/loop-batch.js'
+import { processManagerBatch } from '../src/policy/manager/loop-batch.js'
 
 beforeEach(() => {
   runManagerBatchMock.mockReset()

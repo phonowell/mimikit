@@ -4,14 +4,14 @@ import { join } from 'node:path'
 
 import { expect, test, vi, beforeEach, afterEach } from 'vitest'
 
-import { defaultConfig } from '../src/config.js'
-import { ProviderError } from '../src/providers/provider-error.js'
-import { runTaskWithRetry } from '../src/worker/run-retry.js'
+import { defaultConfig } from '../src/bootstrap/config.js'
+import { ProviderError } from '../src/execution/providers/provider-error.js'
+import { runTaskWithRetry } from '../src/execution/worker/run-retry.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
-import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
-import type { Task } from '../src/types/index.js'
-import type { WorkerLlmResult } from '../src/worker/run-retry.js'
+import type { RuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
+import type { Task } from '../src/foundation/types/index.js'
+import type { WorkerLlmResult } from '../src/execution/worker/run-retry.js'
 
 const { runWorkerMock, appendLogMock, persistRuntimeStateMock } = vi.hoisted(
   () => ({
@@ -21,15 +21,15 @@ const { runWorkerMock, appendLogMock, persistRuntimeStateMock } = vi.hoisted(
   }),
 )
 
-vi.mock('../src/worker/profiled-runner.js', () => ({
+vi.mock('../src/execution/worker/profiled-runner.js', () => ({
   runWorker: runWorkerMock,
 }))
 
-vi.mock('../src/log/append.js', () => ({
+vi.mock('../src/persistence/log/append.js', () => ({
   appendLog: appendLogMock,
 }))
 
-vi.mock('../src/orchestrator/core/runtime-persistence.js', () => ({
+vi.mock('../src/kernel/orchestrator/runtime-persistence.js', () => ({
   persistRuntimeState: persistRuntimeStateMock,
 }))
 

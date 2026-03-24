@@ -1,10 +1,10 @@
 import { expect, test } from 'vitest'
 
-import { GLOBAL_FOCUS_ID } from '../src/focus/constants.js'
-import { applyTaskActions } from '../src/manager/action-apply.js'
+import { GLOBAL_FOCUS_ID } from '../src/work/focus/constants.js'
+import { applyTaskActions } from '../src/policy/manager/action-apply.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
-import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
+import type { RuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
 
 const CONTRACT_ATTRS = {
   goal: 'Deliver requested outcome',

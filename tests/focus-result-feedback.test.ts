@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest'
 
-import { syncFocusFromTaskResult } from '../src/focus/result-feedback.js'
-import type { Task, TaskResult } from '../src/types/index.js'
+import { syncFocusFromTaskResult } from '../src/work/focus/result-feedback.js'
+import type { Task, TaskResult } from '../src/foundation/types/index.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 test('syncFocusFromTaskResult updates summary but does not infer open items', async () => {

@@ -8,7 +8,7 @@
 
 - 门禁脚本：`scripts/prompt-hardcode-guard.ts`
 - 执行入口：`pnpm run lint`（本地）与 CI 的 Lint 步骤
-- 检测范围：`src/**/*.ts`（排除 `src/prompts/**` 与生成文件）
+- 检测范围：`src/**/*.ts`（排除 `src/foundation/prompting/**`、`src/policy/prompts/**`、`src/execution/prompts/**` 与生成文件）
 
 门禁判定依据（结构化，不依赖关键词词表）：
 
@@ -19,7 +19,9 @@
 ## 允许位置
 
 - `prompts/**/*.md`：所有面向 LLM 的系统/上下文/提示模板
-- `src/prompts/**`：模板加载、渲染、组合逻辑
+- `src/foundation/prompting/**`：模板加载、渲染、共享格式化逻辑
+- `src/policy/prompts/**`：manager prompt packet 与策略侧 prompt 组合
+- `src/execution/prompts/**`：worker prompt 构建
 - `tests/**`：测试样例输入（不进入生产执行路径）
 - `docs/**`：文档说明（不进入生产执行路径）
 

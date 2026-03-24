@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 
-import { buildFocusPromptPayload } from '../src/focus/prompt.js'
+import { buildFocusPromptPayload } from '../src/work/focus/prompt.js'
 
 test('buildFocusPromptPayload only keeps the primary focus in working focuses and recent history', () => {
   const payload = buildFocusPromptPayload({

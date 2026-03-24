@@ -1,8 +1,8 @@
 import { expect, test } from 'vitest'
 
-import { collectManagerActionFeedback } from '../src/manager/action-feedback-collect.js'
+import { collectManagerActionFeedback } from '../src/policy/manager/action-feedback-collect.js'
 
-import type { Task, UserInput } from '../src/types/index.js'
+import type { Task, UserInput } from '../src/foundation/types/index.js'
 
 const createUserInput = (text: string): UserInput => ({
   id: 'input-user',

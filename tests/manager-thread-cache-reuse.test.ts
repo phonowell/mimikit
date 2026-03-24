@@ -1,8 +1,8 @@
 import { beforeEach, expect, test, vi } from 'vitest'
 
-import { defaultConfig } from '../src/config.js'
-import { buildPaths } from '../src/fs/paths.js'
-import { runManagerCorrectionRounds } from '../src/manager/loop-batch-run-rounds.js'
+import { defaultConfig } from '../src/bootstrap/config.js'
+import { buildPaths } from '../src/persistence/fs/paths.js'
+import { runManagerCorrectionRounds } from '../src/policy/manager/loop-batch-run-rounds.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 const { runManagerRoundWithRecoveryMock } = vi.hoisted(() => ({
@@ -17,15 +17,15 @@ const { appendLogMock } = vi.hoisted(() => ({
   appendLogMock: vi.fn(async () => undefined),
 }))
 
-vi.mock('../src/manager/loop-batch-exec.js', () => ({
+vi.mock('../src/policy/manager/loop-batch-exec.js', () => ({
   runManagerRoundWithRecovery: runManagerRoundWithRecoveryMock,
 }))
 
-vi.mock('../src/log/append.js', () => ({
+vi.mock('../src/persistence/log/append.js', () => ({
   appendLog: appendLogMock,
 }))
 
-vi.mock('../src/manager/loop-batch-round-followup.js', () => ({
+vi.mock('../src/policy/manager/loop-batch-round-followup.js', () => ({
   resolveRoundFollowup: resolveRoundFollowupMock,
 }))
 

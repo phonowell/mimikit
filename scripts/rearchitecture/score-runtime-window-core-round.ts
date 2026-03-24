@@ -1,6 +1,6 @@
-import { buildPaths } from '../../src/fs/paths.js'
-import { readHistory } from '../../src/history/store.js'
-import { readJsonl } from '../../src/storage/jsonl.js'
+import { buildPaths } from '../../src/persistence/fs/paths.js'
+import { readHistory } from '../../src/persistence/history/store.js'
+import { readJsonl } from '../../src/persistence/storage/jsonl.js'
 
 import {
   dedupeTaskResultsByLatest,

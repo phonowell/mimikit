@@ -1,7 +1,7 @@
 import { join } from 'node:path'
 
-import { listFiles } from '../../src/fs/paths.js'
-import { readJsonl } from '../../src/storage/jsonl.js'
+import { listFiles } from '../../src/persistence/fs/paths.js'
+import { readJsonl } from '../../src/persistence/storage/jsonl.js'
 
 type TaskProgressEvent = {
   taskId: string

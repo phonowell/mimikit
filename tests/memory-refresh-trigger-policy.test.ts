@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 
-import { shouldTriggerMemoryRefresh } from '../src/memory/refresh/trigger-policy.js'
+import { shouldTriggerMemoryRefresh } from '../src/policy/memory/refresh/trigger-policy.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 test('shouldTriggerMemoryRefresh returns false when turn gap met but no delta exists', async () => {

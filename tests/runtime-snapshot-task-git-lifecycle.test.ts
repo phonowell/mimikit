@@ -7,7 +7,7 @@ import { expect, test } from 'vitest'
 import {
   loadRuntimeSnapshot,
   saveRuntimeSnapshot,
-} from '../src/storage/runtime-snapshot.js'
+} from '../src/persistence/storage/runtime-snapshot.js'
 import { createTaskFixture } from './helpers/runtime-snapshot.js'
 
 const createTmpDir = () =>

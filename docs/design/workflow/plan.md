@@ -6,7 +6,7 @@
 
 - 本文档是 Plan 领域的单一主规范（single source of truth），覆盖生命周期、触发机制、调度语义、去重归属与关联 Action。
 - 涉及 Plan 的设计记录、提案、讨论稿仅作背景参考，不构成并行规范。
-- 若与其他文档表述冲突，以本文档与对应实现代码（`src/manager/*`、`src/orchestrator/*`）为准。
+- 若与其他文档表述冲突，以本文档与对应实现代码（`src/policy/manager/*`、`src/work/*`、`src/kernel/orchestrator/*`）为准。
 
 ## 生命周期
 
@@ -19,7 +19,7 @@
 
 ## 触发机制
 
-- `managerLoop`（`src/manager/loop.ts`）在空闲轮询中统一检查计划触发、待确认 choice 生命周期与 worker 槽位释放。
+- `managerLoop`（`src/policy/manager/loop.ts`）在空闲轮询中统一检查计划触发、待确认 choice 生命周期与 worker 槽位释放。
 - `cron/scheduled_at`：命中即执行结构化 `effect`，并发布 `trigger_fire` system input 记录触发事实与 payload。
 - `on_worker_slot_freed`：在“有空槽位”窗口触发，候选计划按 `priority -> createdAt(FIFO)` 排序执行；同一事件最多消耗 `available_slots` 个 worker 槽位，不占槽位的触发（如 `wake_manager` 或复用既有 task）不计入预算。
 - 若槽位释放时无可触发 `on_worker_slot_freed` 计划，系统会发布 `worker_slot_freed` system input，并写入结构化槽位 payload。
@@ -70,7 +70,7 @@
 
 ## 关联数据结构
 
-定义：`src/types/index.ts`
+定义：`src/foundation/types/index.ts`
 
 - `TaskPlan`
 - `TaskPlanTrigger`

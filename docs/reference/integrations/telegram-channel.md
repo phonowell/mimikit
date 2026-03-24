@@ -60,8 +60,8 @@ pnpm start
 
 ## 模块边界
 
-- `src/channels/telegram/config.ts`：Telegram 配置 schema、环境变量覆写、启用态校验
-- `src/channels/telegram/polling.ts`：Telegram long polling 入站与生命周期管理
-- `src/channels/telegram/client.ts`：Telegram 文本发送
-- `src/channels/telegram/passive-reply.ts`：manager 回复后的 Telegram 被动发送
-- `src/channels/telegram/index.ts`：对核心层暴露统一集成入口
+- `src/surface/channels/telegram/config.ts`：Telegram 配置 schema、环境变量覆写、启用态校验
+- `src/surface/channels/telegram/polling.ts`：Telegram long polling 入站与生命周期管理
+- `src/surface/channels/telegram/client.ts`：Telegram 文本发送
+- `src/surface/channels/telegram/passive-reply.ts`：manager 回复后的 Telegram 被动发送
+- `src/surface/channels/telegram/index.ts`：对核心层暴露统一集成入口

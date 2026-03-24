@@ -4,7 +4,7 @@ import { join } from 'node:path'
 
 import { afterEach, expect, test } from 'vitest'
 
-import { buildTaskViews } from '../src/orchestrator/read-model/task-view.js'
+import { buildTaskViews } from '../src/surface/read-model/task-view.js'
 import { cleanupGitRepos, createGitRepo } from './helpers/git-repo.js'
 import { createTaskFixture } from './helpers/runtime-snapshot.js'
 

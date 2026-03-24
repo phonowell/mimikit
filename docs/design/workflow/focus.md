@@ -16,11 +16,11 @@
 
 ## 单一事实源（代码）
 
-- 核心目录：`src/focus/*`
-- Manager 动作：`src/manager/action-apply-focus.ts`
-- Prompt 构建：`src/prompts/build-prompts.ts`
-- 运行时快照：`src/orchestrator/core/runtime-persistence.ts`
-- WebUI 读模型：`src/orchestrator/read-model/focus-view.ts`
+- 核心目录：`src/work/focus/*`
+- Manager 动作：`src/policy/manager/action-apply-focus.ts`
+- Prompt 构建：`src/policy/prompts/build-prompts.ts`
+- 运行时快照：`src/kernel/orchestrator/runtime-persistence.ts`
+- WebUI 读模型：`src/surface/read-model/focus-view.ts`
 
 ## 数据模型
 
@@ -75,7 +75,7 @@
 
 ## Focus 动作契约（Manager Action）
 
-实现入口：`src/manager/action-apply-focus.ts`
+实现入口：`src/policy/manager/action-apply-focus.ts`
 
 ### `upsert_focus`
 
@@ -109,7 +109,7 @@
 
 ## 任务结果回写 FocusMeta
 
-实现：`src/focus/result-feedback.ts`
+实现：`src/work/focus/result-feedback.ts`
 
 - 任务完成（`succeeded/failed/canceled`）时同步回写对应 focus 的 digest。
 - `focus-global` 不写业务上下文。
@@ -122,7 +122,7 @@
 
 ## 容量治理与清理
 
-实现：`src/focus/capacity.ts`
+实现：`src/work/focus/capacity.ts`
 
 - `active` 业务 focus 上限：`worker.maxConcurrent`（不计 `focus-global`）。
 - 超限时按 `lastActivityAt` 的 LRU，把最老 active 业务 focus 降级为 `idle`。
@@ -135,7 +135,7 @@
 
 ## Working Focus 选择
 
-实现：`src/manager/loop-batch-run-manager.ts`
+实现：`src/policy/manager/loop-batch-run-manager.ts`
 
 - 每轮 manager 只解析一个 `primary focus`，不再把多个 focus 混进同一批 prompt。
 - 选择顺序按 `wakeProfile` 收口：
@@ -159,7 +159,7 @@
 
 - runtime snapshot 字段：
 - `focuses`
-- 读写入口：`src/orchestrator/core/runtime-persistence.ts`
+- 读写入口：`src/kernel/orchestrator/runtime-persistence.ts`
 - WebUI/SSE：
 - `GET /api/events` 的 `snapshot` 包含 `focuses`
 - Focus 读模型仅输出非 archived focus；`title` 只来自显式标题或 `focus.id`，不再从 `summary` 反向派生

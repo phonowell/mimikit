@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 
-import { parseUpsertFocusAttrs } from '../src/manager/action-apply-focus-attrs.js'
+import { parseUpsertFocusAttrs } from '../src/policy/manager/action-apply-focus-attrs.js'
 
 test('parseUpsertFocusAttrs rejects multiline summary digests', () => {
   expect(

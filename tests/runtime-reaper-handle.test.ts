@@ -4,8 +4,8 @@ import { join } from 'node:path'
 
 import { expect, test, vi } from 'vitest'
 
-import { buildPaths } from '../src/fs/paths.js'
-import { createRuntimeReaperHandle } from '../src/runtime/reaper.js'
+import { buildPaths } from '../src/persistence/fs/paths.js'
+import { createRuntimeReaperHandle } from '../src/kernel/runtime/reaper.js'
 
 vi.mock('node:child_process', () => {
   return {

@@ -1,8 +1,8 @@
 import { readFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 
-import { parseArchiveDocument } from '../src/storage/archive-format.js'
-import { readJsonl } from '../src/storage/jsonl.js'
+import { parseArchiveDocument } from '../src/persistence/storage/archive-format.js'
+import { readJsonl } from '../src/persistence/storage/jsonl.js'
 
 import {
   pushLedgerMismatches,

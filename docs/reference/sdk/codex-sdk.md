@@ -16,7 +16,7 @@
 - 流式输出：消费 `item.updated/item.completed`，用于实时回传 partial output。
 - 失败处理：`turn.failed` 与流级 `error`。
 
-实现入口：`src/providers/codex-sdk-provider.ts`
+实现入口：`src/execution/providers/codex-sdk-provider.ts`
 
 ## 高 ROI 待接入
 

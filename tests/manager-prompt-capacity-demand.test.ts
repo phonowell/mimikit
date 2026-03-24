@@ -1,7 +1,7 @@
 import { expect, test, vi } from 'vitest'
 
-import { defaultConfig } from '../src/config.js'
-import { buildManagerPromptPayload } from '../src/prompts/build-prompts.js'
+import { defaultConfig } from '../src/bootstrap/config.js'
+import { buildManagerPromptPayload } from '../src/policy/prompts/build-prompts.js'
 
 const { readHistoryMock } = vi.hoisted(() => ({
   readHistoryMock: vi.fn(async () => []),
@@ -11,11 +11,11 @@ const { readMemoryEntriesMock } = vi.hoisted(() => ({
   readMemoryEntriesMock: vi.fn(async () => []),
 }))
 
-vi.mock('../src/history/store.js', () => ({
+vi.mock('../src/persistence/history/store.js', () => ({
   readHistory: readHistoryMock,
 }))
 
-vi.mock('../src/memory/store.js', () => ({
+vi.mock('../src/work/memory/store.js', () => ({
   readMemoryEntries: readMemoryEntriesMock,
 }))
 

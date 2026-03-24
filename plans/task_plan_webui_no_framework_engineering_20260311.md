@@ -30,7 +30,7 @@
 ## 验收步骤
 - 自动验证：`pnpm vitest run tests/controller-view-state.test.ts`
 - 仓库检查：`pnpm run lint`、`pnpm run type-check`、`pnpm run test`、`pnpm run review-code-changes`
-- 手动验收 1：运行 `tsx src/cli/index.ts --port 8787`，打开 WebUI，确认消息列表可正常渲染与滚动。
+- 手动验收 1：运行 `tsx src/bootstrap/cli/index.ts --port 8787`，打开 WebUI，确认消息列表可正常渲染与滚动。
 - 手动验收 2：进入/退出 delete mode，确认输入区与退出条切换正常，进入 delete mode 时 quote 预览被清空。
 - 手动验收 3：触发 choice panel 显示/隐藏，若消息列表原本贴底，布局变化后仍保持贴底；若原本未贴底，不强制跳到底部。
 - 手动验收 4：切换 Tasks / Plans / Focus 面板，确认本次消息区拆分未影响其他面板交互。

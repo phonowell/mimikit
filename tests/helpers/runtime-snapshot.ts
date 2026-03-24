@@ -1,4 +1,4 @@
-import type { Task, TaskPlan } from '../../src/types/index.js'
+import type { Task, TaskPlan } from '../../src/foundation/types/index.js'
 
 export const GLOBAL_FOCUS_ID = 'focus-global'
 export const SNAPSHOT_BASE_TIME = '2026-02-06T00:00:00.000Z'

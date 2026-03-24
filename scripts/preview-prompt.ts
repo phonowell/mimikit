@@ -1,5 +1,5 @@
-import { defaultConfig } from '../src/config.js'
-import { buildManagerPrompt, buildWorkerPrompt } from '../src/prompts/build-prompts.js'
+import { defaultConfig } from '../src/bootstrap/config.js'
+import { buildManagerPrompt, buildWorkerPrompt } from '../src/policy/prompts/build-prompts.js'
 
 const usage = () => {
   console.log(

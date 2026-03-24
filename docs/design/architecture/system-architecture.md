@@ -16,7 +16,7 @@
 - manager prompt 收敛为双 packet：`state_packet` 负责稳定状态（focus/task/plan），`event_packet` 负责当前批次事件（input/result/history/action_feedback/environment/packet）；详细 task result 只留在 `event_packet.batch_results`，`state_packet.tasks` 不再重复展开结果正文；section 字节预算固定取自 `manager.promptSections`，`wakeProfile` 只影响 packet/action surface，不再动态改写 bytes。
 - worker 执行通道固定为 codex，不再进行 provider 候选注入、自动打分或按任务显式切换。
 - manager/worker 每轮 usage 统一写入 `usage/ledger.jsonl`，直接暴露 prompt 字节、packet 裁剪与执行侧 token 消耗，不再额外引入成本推导层。
-- HTTP 输入校验与参数归一化集中在 `src/http/helpers.ts`。
+- HTTP 输入校验与参数归一化集中在 `src/surface/http/helpers.ts`。
 - 本地持久化采用进程内串行 + 文件锁（`proper-lockfile`）。
 
 ## 组件职责
@@ -39,10 +39,10 @@
 
 进程入口：
 
-- `src/cli/index.ts`
-- `src/orchestrator/core/orchestrator-service.ts`
-- `src/orchestrator/core/orchestrator-runtime-lifecycle.ts`
-- `src/orchestrator/core/orchestrator-channel-lifecycle.ts`
+- `src/bootstrap/cli/index.ts`
+- `src/kernel/orchestrator/orchestrator-service.ts`
+- `src/kernel/orchestrator/orchestrator-runtime-lifecycle.ts`
+- `src/kernel/orchestrator/orchestrator-channel-lifecycle.ts`
 
 启动顺序：
 

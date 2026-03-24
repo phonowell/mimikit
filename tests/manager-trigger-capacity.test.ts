@@ -5,25 +5,25 @@ import { join } from 'node:path'
 import PQueue from 'p-queue'
 import { beforeEach, expect, test, vi } from 'vitest'
 
-import { GLOBAL_FOCUS_ID } from '../src/focus/constants.js'
-import { notifyManagerLoop } from '../src/orchestrator/core/signals.js'
-import { readJsonl } from '../src/storage/jsonl.js'
-import { managerLoop } from '../src/manager/loop.js'
-import { triggerOnWorkerSlotFreedPlans } from '../src/manager/loop-trigger-plans.js'
-import { hasFreeWorkerSlot } from '../src/worker/task-state-shared.js'
+import { GLOBAL_FOCUS_ID } from '../src/work/focus/constants.js'
+import { notifyManagerLoop } from '../src/kernel/orchestrator/signals.js'
+import { readJsonl } from '../src/persistence/storage/jsonl.js'
+import { managerLoop } from '../src/policy/manager/loop.js'
+import { triggerOnWorkerSlotFreedPlans } from '../src/policy/manager/loop-trigger-plans.js'
+import { hasFreeWorkerSlot } from '../src/execution/worker/task-state-shared.js'
 import {
   createCapacityPlan,
   waitForCondition,
 } from './helpers/manager-trigger-capacity.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
-import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
+import type { RuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
 
 const { runManagerRoundWithRecoveryMock } = vi.hoisted(() => ({
   runManagerRoundWithRecoveryMock: vi.fn(),
 }))
 
-vi.mock('../src/manager/loop-batch-exec.js', () => ({
+vi.mock('../src/policy/manager/loop-batch-exec.js', () => ({
   runManagerRoundWithRecovery: runManagerRoundWithRecoveryMock,
 }))
 

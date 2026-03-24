@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest'
 
-import { buildFallbackReply } from '../src/manager/loop-helpers.js'
-import type { Task, TaskResult } from '../src/types/index.js'
+import { buildFallbackReply } from '../src/policy/manager/loop-helpers.js'
+import type { Task, TaskResult } from '../src/foundation/types/index.js'
 
 const createTask = (overrides: Partial<Task> = {}): Task => ({
   id: 'task-1',

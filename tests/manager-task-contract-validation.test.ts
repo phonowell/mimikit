@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 
-import { collectManagerActionFeedback } from '../src/manager/action-feedback-collect.js'
+import { collectManagerActionFeedback } from '../src/policy/manager/action-feedback-collect.js'
 
 test('enqueue_task requires goal/in_scope/done_when_1 contract attrs', () => {
   const feedback = collectManagerActionFeedback([

@@ -3,10 +3,10 @@ import { expect, test } from 'vitest'
 import {
   normalizePromptSectionLimits,
   resolveManagerContextBudgetDecision,
-} from '../src/manager/context-budget.js'
-import { createRuntimeState } from '../src/orchestrator/core/runtime-state.js'
+} from '../src/policy/manager/context-budget.js'
+import { createRuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
 
-import type { AppConfig, PromptSectionLimits } from '../src/config.js'
+import type { AppConfig, PromptSectionLimits } from '../src/bootstrap/config.js'
 
 const baseLimits: PromptSectionLimits = {
   actionFeedbackMaxBytes: 8192,

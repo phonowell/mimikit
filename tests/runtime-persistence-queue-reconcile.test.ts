@@ -4,15 +4,15 @@ import { join } from 'node:path'
 
 import { expect, test } from 'vitest'
 
-import { buildPaths } from '../src/fs/paths.js'
-import { appendHistory } from '../src/history/store.js'
-import { createDefaultMemoryRefreshState } from '../src/memory/refresh/state.js'
+import { buildPaths } from '../src/persistence/fs/paths.js'
+import { appendHistory } from '../src/persistence/history/store.js'
+import { createDefaultMemoryRefreshState } from '../src/policy/memory/refresh/state.js'
 import {
   hydrateRuntimeState,
   persistRuntimeState,
-} from '../src/orchestrator/core/runtime-persistence.js'
-import { saveRuntimeSnapshot } from '../src/storage/runtime-snapshot.js'
-import { publishUserInput, publishWorkerResult } from '../src/streams/queues.js'
+} from '../src/kernel/orchestrator/runtime-persistence.js'
+import { saveRuntimeSnapshot } from '../src/persistence/storage/runtime-snapshot.js'
+import { publishUserInput, publishWorkerResult } from '../src/kernel/streams/queues.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 const GLOBAL_FOCUS_ID = 'focus-global'

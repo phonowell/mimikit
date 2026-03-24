@@ -4,20 +4,20 @@ import { join } from 'node:path'
 
 import { expect, test, vi } from 'vitest'
 
-import { buildTaskViews } from '../src/orchestrator/read-model/task-view.js'
+import { buildTaskViews } from '../src/surface/read-model/task-view.js'
 import {
   loadRuntimeSnapshot,
   saveRuntimeSnapshot,
   selectPersistedTasks,
-} from '../src/storage/runtime-snapshot.js'
-import { RUNTIME_SNAPSHOT_SCHEMA_VERSION } from '../src/storage/runtime-schema-version.js'
+} from '../src/persistence/storage/runtime-snapshot.js'
+import { RUNTIME_SNAPSHOT_SCHEMA_VERSION } from '../src/persistence/storage/runtime-schema-version.js'
 import {
   createPlanFixture,
   createTaskFixture,
   GLOBAL_FOCUS_ID,
   SNAPSHOT_BASE_TIME,
 } from './helpers/runtime-snapshot.js'
-import type { Task, TaskPlan } from '../src/types/index.js'
+import type { Task, TaskPlan } from '../src/foundation/types/index.js'
 
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-runtime-snapshot-'))
 

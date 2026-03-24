@@ -4,7 +4,7 @@ import { join } from 'node:path'
 
 import { afterEach, expect, test } from 'vitest'
 
-import { loadDefaultConfigFromToml } from '../src/config-default-loader.js'
+import { loadDefaultConfigFromToml } from '../src/bootstrap/config-default-loader.js'
 
 const tempDirs: string[] = []
 

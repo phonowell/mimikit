@@ -5,18 +5,18 @@ import { join } from 'node:path'
 import PQueue from 'p-queue'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 
-import { enqueuePendingWorkerTasks } from '../src/worker/dispatch.js'
+import { enqueuePendingWorkerTasks } from '../src/execution/worker/dispatch.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
-import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
-import type { Task } from '../src/types/index.js'
-import type { WorkerLlmResult } from '../src/worker/run-retry.js'
+import type { RuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
+import type { Task } from '../src/foundation/types/index.js'
+import type { WorkerLlmResult } from '../src/execution/worker/run-retry.js'
 
 const { runTaskWithRetryMock } = vi.hoisted(() => ({
   runTaskWithRetryMock: vi.fn(),
 }))
 
-vi.mock('../src/worker/run-retry.js', () => ({
+vi.mock('../src/execution/worker/run-retry.js', () => ({
   runTaskWithRetry: runTaskWithRetryMock,
 }))
 

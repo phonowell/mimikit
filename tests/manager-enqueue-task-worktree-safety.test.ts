@@ -2,8 +2,8 @@ import { access, mkdir, writeFile } from 'node:fs/promises'
 
 import { afterEach, expect, test } from 'vitest'
 
-import { readHistory } from '../src/history/store.js'
-import { applyTaskActions } from '../src/manager/action-apply.js'
+import { readHistory } from '../src/persistence/history/store.js'
+import { applyTaskActions } from '../src/policy/manager/action-apply.js'
 import {
   cleanupGitRepos,
   createGitRepo,

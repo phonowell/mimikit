@@ -1,11 +1,11 @@
 import { expect, test } from 'vitest'
 
-import { INBOX_FOCUS_ID } from '../src/focus/constants.js'
-import { appendUserInput } from '../src/orchestrator/core/orchestrator-input-ingress.js'
-import { persistRuntimeState } from '../src/orchestrator/core/runtime-persistence.js'
-import type { RuntimeState } from '../src/orchestrator/core/runtime-state.js'
-import { loadRuntimeSnapshot } from '../src/storage/runtime-snapshot.js'
-import { consumeUserInputs } from '../src/streams/queues.js'
+import { INBOX_FOCUS_ID } from '../src/work/focus/constants.js'
+import { appendUserInput } from '../src/surface/orchestrator/orchestrator-input-ingress.js'
+import { persistRuntimeState } from '../src/kernel/orchestrator/runtime-persistence.js'
+import type { RuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
+import { loadRuntimeSnapshot } from '../src/persistence/storage/runtime-snapshot.js'
+import { consumeUserInputs } from '../src/kernel/streams/queues.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 const GLOBAL_FOCUS_ID = 'focus-global'

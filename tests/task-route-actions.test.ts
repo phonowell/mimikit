@@ -1,8 +1,8 @@
 import fastify from 'fastify'
 import { expect, test, vi } from 'vitest'
 
-import { defaultConfig } from '../src/config.js'
-import { registerApiRoutes } from '../src/http/routes-api.js'
+import { defaultConfig } from '../src/bootstrap/config.js'
+import { registerApiRoutes } from '../src/surface/http/routes-api.js'
 import { createOrchestratorStub } from './helpers/orchestrator-stub.js'
 
 type ActionName = 'cancel' | 'delete' | 'pause' | 'resume'

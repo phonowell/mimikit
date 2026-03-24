@@ -3,7 +3,7 @@ import { expect, test } from 'vitest'
 import {
   notifyManagerLoop,
   notifyWorkerLoop,
-} from '../src/orchestrator/core/signals.js'
+} from '../src/kernel/orchestrator/signals.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 test('notifyManagerLoop can skip ui wake emission', async () => {

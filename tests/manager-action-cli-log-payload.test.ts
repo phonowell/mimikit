@@ -3,10 +3,10 @@ import { expect, test } from 'vitest'
 import {
   buildFeedbackActionLogEntry,
   buildLifecycleActionLogEntry,
-} from '../src/manager/action-cli-log-payload.js'
+} from '../src/policy/manager/action-cli-log-payload.js'
 
-import type { Parsed } from '../src/actions/model/spec.js'
-import type { ManagerActionFeedback } from '../src/types/index.js'
+import type { Parsed } from '../src/policy/actions/model/spec.js'
+import type { ManagerActionFeedback } from '../src/foundation/types/index.js'
 
 const createParsed = (
   name: string,

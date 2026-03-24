@@ -6,7 +6,7 @@
 
 - 本文档是 Memory 领域的单一主规范（single source of truth），覆盖数据结构、读写语义、刷新机制、评分策略与持久化。
 - 涉及 Memory 的设计记录、提案、讨论稿仅作背景参考，不构成并行规范。
-- 若与其他文档表述冲突，以本文档与对应实现代码（`src/memory/*`、`src/manager/action-apply-memory.ts`）为准。
+- 若与其他文档表述冲突，以本文档与对应实现代码（`src/work/memory/*`、`src/policy/memory/*`、`src/policy/manager/action-apply-memory.ts`）为准。
 
 ## 核心结论
 
@@ -20,9 +20,9 @@
 
 - 条目模型：`id/title/content/updatedAt/source`，可带 `category/dedupeKey/evidenceIds/focusHints`。
 - 读写模块：
-  - `src/memory/entry-types.ts`
-  - `src/memory/entry-utils.ts`
-  - `src/memory/entry-codec.ts`
+  - `src/work/memory/entry-types.ts`
+  - `src/work/memory/entry-utils.ts`
+  - `src/work/memory/entry-codec.ts`
 - 落盘格式（canonical）：
   - heading：`## [memory-entry] (id:memory-...)`
   - metadata 行：`title/updated_at/source/...`
@@ -41,9 +41,9 @@
   - checklist、多行过程文本、协议标签与 `task-*/plan-*` 一类 runtime 引用会被拒绝，不进入长期 memory。
 - 回执：写入 `memory_remembered` system event（含 `entry_id/ref/operation`）。
 - 代码：
-  - `src/memory/remember-entry.ts`
-  - `src/manager/action-apply-memory.ts`
-  - `src/history/memory-events.ts`
+  - `src/work/memory/remember-entry.ts`
+  - `src/policy/manager/action-apply-memory.ts`
+  - `src/persistence/history/memory-events.ts`
 
 ## 刷新（refresh）与遗忘
 
@@ -58,10 +58,10 @@
   3. 最后按评分 + 存储预算做压缩取舍
 - 代码：
   - `prompts/manager/memory-refresh-single-call.md`
-  - `src/memory/refresh/single-call.ts`
-  - `src/memory/refresh/apply-patch.ts`
-  - `src/memory/refresh/singleflight.ts`
-  - `src/orchestrator/background-write-policy.ts`
+  - `src/policy/memory/refresh/single-call.ts`
+  - `src/policy/memory/refresh/apply-patch.ts`
+  - `src/policy/memory/refresh/singleflight.ts`
+  - `src/kernel/background-write-policy.ts`
 - 输入边界：
   - refresh 只消费 `signals`；当前来源限定为稳定的 `memory_remembered` system event。
   - refresh 不再消费近期 `task.result.output`、plan 标题、待办摘要等过程态文本。
@@ -69,7 +69,7 @@
 
 ## 评分、排序与取舍
 
-- 评分器：`src/memory/entry-score.ts`
+- 评分器：`src/policy/memory/entry-score.ts`
 - 主要信号：
   - relevance（与当前输入、task 标题、focus digest 的词重叠）
   - recency（更新时间）

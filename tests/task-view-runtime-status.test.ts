@@ -1,8 +1,8 @@
 import { expect, test } from 'vitest'
 
-import { buildTaskViews } from '../src/orchestrator/read-model/task-view.js'
+import { buildTaskViews } from '../src/surface/read-model/task-view.js'
 import { createTaskFixture } from './helpers/runtime-snapshot.js'
-import type { Task } from '../src/types/index.js'
+import type { Task } from '../src/foundation/types/index.js'
 
 test('buildTaskViews marks pending reason as waiting_dispatch_lock when lock key is occupied', () => {
   const tasks: Task[] = [

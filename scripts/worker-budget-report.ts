@@ -1,11 +1,11 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
-import { buildPaths, ensureDir } from '../src/fs/paths.js'
-import { readJsonl } from '../src/storage/jsonl.js'
-import { DEFAULT_WORKER_BUDGET_DURATION_MS } from '../src/worker/profiled-runner-budget.js'
+import { buildPaths, ensureDir } from '../src/persistence/fs/paths.js'
+import { readJsonl } from '../src/persistence/storage/jsonl.js'
+import { DEFAULT_WORKER_BUDGET_DURATION_MS } from '../src/execution/worker/profiled-runner-budget.js'
 
-import type { JsonPacket, TaskResult } from '../src/types/index.js'
+import type { JsonPacket, TaskResult } from '../src/foundation/types/index.js'
 
 type LogRow = {
   event?: string

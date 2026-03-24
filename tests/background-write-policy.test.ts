@@ -4,7 +4,7 @@ import {
   assertBackgroundWriteAllowed,
   getBackgroundJobSpec,
   listBackgroundJobSpecs,
-} from '../src/orchestrator/background-write-policy.js'
+} from '../src/kernel/background-write-policy.js'
 
 test('memory_refresh allows writes to memory and runtime_meta only', () => {
   expect(() =>

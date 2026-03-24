@@ -1,11 +1,11 @@
 import { expect, test } from 'vitest'
 
-import { collectManagerActionFeedback } from '../src/manager/action-feedback-collect.js'
-import { applyTaskActions } from '../src/manager/action-apply.js'
-import { resolveManagerActionSurface } from '../src/manager/action-surface.js'
+import { collectManagerActionFeedback } from '../src/policy/manager/action-feedback-collect.js'
+import { applyTaskActions } from '../src/policy/manager/action-apply.js'
+import { resolveManagerActionSurface } from '../src/policy/manager/action-surface.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
-import type { UserInput } from '../src/types/index.js'
+import type { UserInput } from '../src/foundation/types/index.js'
 
 const createUserInput = (text: string): UserInput => ({
   id: 'input-user',

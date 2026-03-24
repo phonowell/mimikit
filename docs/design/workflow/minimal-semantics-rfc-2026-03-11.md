@@ -10,11 +10,13 @@
   - `docs/design/workflow/task.md`
   - `docs/design/workflow/action.md`
   - `docs/design/workflow/memory.md`
-  - `src/focus/*`
-  - `src/manager/action-*`
-  - `src/orchestrator/*`
-  - `src/memory/*`
-  - `src/storage/runtime-snapshot-schema.ts`
+  - `src/work/focus/*`
+  - `src/policy/manager/action-*`
+  - `src/kernel/orchestrator/*`
+  - `src/work/orchestrator/*`
+  - `src/work/memory/*`
+  - `src/policy/memory/*`
+  - `src/persistence/storage/runtime-snapshot-schema.ts`
 
 > 历史 RFC；当前可执行规范以 `docs/design/workflow/*.md` 与对应 `src/*` 实现为准。
 

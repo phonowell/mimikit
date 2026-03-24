@@ -4,7 +4,7 @@ import { join } from 'node:path'
 
 import { expect, test } from 'vitest'
 
-import { acquireRuntimeLock } from '../src/cli/runtime-lock.js'
+import { acquireRuntimeLock } from '../src/bootstrap/cli/runtime-lock.js'
 
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-runtime-lock-'))
 
