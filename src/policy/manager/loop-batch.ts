@@ -9,6 +9,10 @@ import { resolveDefaultFocusId } from '../../work/focus/index.js'
 import { requestMemoryRefresh } from '../memory/refresh/singleflight.js'
 
 import { applyTaskActions, collectTaskResultSummaries } from './action-apply.js'
+import {
+  finishBatchWithDirectTaskResultReply,
+  resolveDirectTaskResultReply,
+} from './direct-task-result-reply.js'
 import { collectTriggeredPlanIds } from './loop-batch-context.js'
 import {
   appendManagerReply,
@@ -32,7 +36,6 @@ import type {
   UserInput,
 } from '../../foundation/types/index.js'
 import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
-
 export const processManagerBatch = async (params: {
   runtime: ManagerRuntime
   inputs: UserInput[]
@@ -75,6 +78,26 @@ export const processManagerBatch = async (params: {
       })
       return
     }
+    const directTaskResultCandidate = resolveDirectTaskResultReply({
+      inputs,
+      results,
+    })
+    const directTaskResultReply = directTaskResultCandidate
+      ? normalizeManagerReplyText(directTaskResultCandidate)
+      : ''
+    if (directTaskResultReply) {
+      await finishBatchWithDirectTaskResultReply({
+        runtime,
+        text: directTaskResultReply,
+        inputs,
+        results,
+        nextInputsCursor,
+        nextResultsCursor,
+        startedAt,
+      })
+      agentAppended = true
+      return
+    }
     runtime.manager.turn += 1
     const managerRun = await runManagerBatch({
       runtime,
@@ -91,7 +114,6 @@ export const processManagerBatch = async (params: {
         ),
       )
     }
-
     const resolvedUsage: TokenUsage | undefined = managerRun.usage
     const { parsed } = managerRun
     const summaries = collectTaskResultSummaries(parsed.actions)
@@ -110,7 +132,6 @@ export const processManagerBatch = async (params: {
       suppressRunTask: hasManualCanceledResult && agentInputs.length === 0,
       triggeredPlanIds: collectTriggeredPlanIds(inputs),
     })
-
     const normalizedReplyText = normalizeManagerReplyText(parsed.text)
     const responseText =
       normalizedReplyText ||
@@ -129,7 +150,6 @@ export const processManagerBatch = async (params: {
       ...(managerRun.elapsedMs >= 0 ? { elapsedMs: managerRun.elapsedMs } : {}),
     })
     agentAppended = true
-
     await finalizeBatchProgress({
       runtime,
       nextInputsCursor,
@@ -138,7 +158,6 @@ export const processManagerBatch = async (params: {
       persistRuntime: persistRuntimeState,
     })
     clearResultReplayBackoff(runtime)
-
     await appendLog(runtime.paths.log, {
       event: 'manager_end',
       status: 'ok',
