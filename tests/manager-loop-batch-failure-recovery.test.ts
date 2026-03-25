@@ -67,11 +67,12 @@ afterEach(async () => {
 test('recoverManagerBatchFailure keeps task results pending for replay after manager fetch failure', async () => {
   const runtime = await createRuntime()
   const task = createTask(
+    runtime.config.workDir,
     'fix manager issue',
     'Fix manager issue',
+    runtime.config.workDir,
     'worker',
     'codex',
-    undefined,
     'focus-main',
   )
   task.status = 'succeeded'

@@ -4,6 +4,10 @@ import { homedir } from 'node:os'
 import { resolve } from 'node:path'
 import { promisify } from 'node:util'
 
+import { isWriteTaskResourceMode } from './task-resource-mode.js'
+
+import type { TaskResourceMode } from '../../foundation/types/index.js'
+
 const execFileAsync = promisify(execFile)
 
 export const expandHomeDir = (value: string): string => {
@@ -93,9 +97,12 @@ export const resolveTaskExecutionTarget = async (
 
 export const buildTaskDispatchLockKey = (target: {
   cwd: string
+  resourceMode?: TaskResourceMode | undefined
   repoKey?: string | undefined
   branch?: string | undefined
-}): string =>
-  target.repoKey && target.branch
-    ? `git:${target.repoKey}#${target.branch}`
-    : `cwd:${target.cwd}`
+}): string | undefined =>
+  !isWriteTaskResourceMode(target.resourceMode)
+    ? undefined
+    : target.repoKey && target.branch
+      ? `git:${target.repoKey}#${target.branch}`
+      : `cwd:${target.cwd}`

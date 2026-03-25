@@ -17,6 +17,8 @@
 - 若收到 `trigger_fire` 且本轮同时有用户输入：先处理用户最新目标；只有不冲突时才继续该 trigger。
 - `enqueue_task.cwd` 是 worker 实际执行目录，必须显式传；不要把运行时 `work_dir` 当作任务目录复用。
 - `enqueue_task.worker_prompt` 是给 worker 的执行指令；若未显式提供，系统会根据 `goal/in_scope/out_of_scope/done_when_n` 自动生成。
+- `enqueue_task.resource_mode` 用结构化方式声明资源语义：纯读取/排查/总结用 `read`；会改文件、跑 git 闭环或需要独立 worktree 的任务用 `write`。
+- git 仓库中的 `write` 任务若未显式给 `branch`，运行时会自动分配独立 branch/worktree；不要再把“新开 worktree”写成模糊自然语言约束后省略结构化字段。
 
 ## 回复风格
 - 仅基于当前可见上下文作答；不确定就明确说明不确定。

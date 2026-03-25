@@ -32,8 +32,6 @@ export type {
 export type { TaskArchiveLookupMessage } from '../../surface/types/query-types.js'
 export type {
   FocusMeta,
-  PendingUserChoice,
-  PendingUserChoiceEffect,
   Task,
   TaskCancelMeta,
   TaskContract,
@@ -44,10 +42,15 @@ export type {
   TaskPlanEnqueueTaskEffect,
   TaskPlanRuntime,
   TaskPlanTrigger,
+  TaskResourceMode,
   TaskPlanWakeManagerEffect,
   TaskResult,
-  UserChoiceOption,
 } from '../../work/types/task-runtime-types.js'
+export type {
+  PendingUserChoice,
+  PendingUserChoiceEffect,
+  UserChoiceOption,
+} from '../../work/types/pending-user-choice-types.js'
 export type {
   TaskGitExecution,
   TaskGitLifecycle,

@@ -39,6 +39,9 @@ export const buildPlanEffectPayload = (
         effect_kind: effect.kind,
         task_title: effect.taskTemplate.title,
         task_cwd: effect.taskTemplate.cwd,
+        ...(effect.taskTemplate.resourceMode
+          ? { task_resource_mode: effect.taskTemplate.resourceMode }
+          : {}),
         ...(effect.taskTemplate.branch
           ? { task_branch: effect.taskTemplate.branch }
           : {}),

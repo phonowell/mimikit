@@ -34,7 +34,8 @@ export const runQueuedWorker = async (
   if (task.status !== 'pending') return
   if (runtime.worker.runningControllers.has(task.id)) return
   const dispatchLockKey = buildTaskDispatchLockKey(task)
-  if (runtime.worker.runningTaskLocks.has(dispatchLockKey)) return
+  if (dispatchLockKey && runtime.worker.runningTaskLocks.has(dispatchLockKey))
+    return
   clearTaskLiveOutput(runtime, task.id)
   const controller = new AbortController()
   await startTaskWorkerRun({

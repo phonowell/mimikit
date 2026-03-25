@@ -40,3 +40,29 @@ test('buildTaskViews downgrades succeeded status without completion markers', ()
   const { tasks: views } = buildTaskViews(tasks)
   expect(views[0]?.status).toBe('pending')
 })
+
+test('buildTaskViews does not mark read task as waiting_dispatch_lock', () => {
+  const tasks: Task[] = [
+    createTaskFixture({
+      id: 'task-running-write',
+      status: 'running',
+      resourceMode: 'write',
+      cwd: '/tmp/repo-main',
+      repoKey: '/tmp/repo/.git',
+      branch: 'main',
+    }),
+    createTaskFixture({
+      id: 'task-pending-read',
+      status: 'pending',
+      resourceMode: 'read',
+      cwd: '/tmp/repo-main',
+      repoKey: '/tmp/repo/.git',
+      branch: 'main',
+    }),
+  ]
+  const { tasks: views } = buildTaskViews(tasks, 200, {
+    maxConcurrentWorkers: 4,
+    runningTaskCount: 1,
+  })
+  expect(views.find((item) => item.id === 'task-pending-read')?.pending_reason).toBeUndefined()
+})

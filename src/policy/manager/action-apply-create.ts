@@ -18,11 +18,7 @@ import { markCreateAttempt } from './action-apply-guards.js'
 import { runTaskSchema } from './action-apply-schema.js'
 import { resolveActionFocusId } from './action-focus-id.js'
 import { linkTriggeredPlanToTask } from './plan-progress.js'
-import { requestRunTaskConfirmation } from './run-task-confirmation-request.js'
-import {
-  collectConfirmedRunTaskChoiceIds,
-  resolveRunTaskConfirmationRequirement,
-} from './run-task-confirmation.js'
+import { ensureRunTaskConfirmation } from './run-task-confirmation-request.js'
 import { handleActiveSemanticTask } from './run-task-existing.js'
 import { resolveRunTaskTarget } from './run-task-target.js'
 import {
@@ -56,34 +52,22 @@ export const applyRunTask = async (
   if (!contract) return 'continue'
   const workerPrompt = resolveWorkerPromptFromAttrs(parsed.data)
   if (!workerPrompt) return 'continue'
-  const confirmation = resolveRunTaskConfirmationRequirement({
+  const confirmationState = await ensureRunTaskConfirmation({
+    runtime,
     prompt: workerPrompt,
     title: parsed.data.title,
-    goal: contract.goal,
-    scope: contract.scope,
-    acceptance: contract.acceptance,
-    ...(contract.outOfScope ? { outOfScope: contract.outOfScope } : {}),
-    ...(contract.contextRefs ? { contextRefs: contract.contextRefs } : {}),
+    focusId,
+    contract,
   })
-  const confirmedRunTaskChoiceIds = collectConfirmedRunTaskChoiceIds(
-    runtime.session.inflightInputs,
-  )
-  if (
-    confirmation.required &&
-    !confirmedRunTaskChoiceIds.has(confirmation.choiceId)
-  ) {
-    await requestRunTaskConfirmation({
-      runtime,
-      choiceId: confirmation.choiceId,
-      estimatedChars: confirmation.estimatedChars,
-      title: parsed.data.title,
-      focusId,
-    })
-    return 'stop'
-  }
+  if (confirmationState === 'stop') return 'stop'
   const target = await resolveRunTaskTarget({
     actionName: item.name,
     cwd: parsed.data.cwd,
+    resourceMode: parsed.data.resource_mode,
+    prompt: workerPrompt,
+    title: parsed.data.title,
+    focusId,
+    contract,
     ...(parsed.data.branch ? { branch: parsed.data.branch } : {}),
   })
   const semanticKey = buildTaskSemanticKey({
@@ -160,6 +144,7 @@ export const applyRunTask = async (
     focusId,
     target.repoKey,
     target.branch,
+    target.resourceMode,
     contract,
   )
   if (!created) {

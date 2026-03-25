@@ -42,6 +42,7 @@ const formatTaskEntry = (
     ...(archivePath ? { archive_path: archivePath } : {}),
     id: task.id,
     status: task.status,
+    resource_mode: task.resourceMode ?? 'write',
     provider: task.provider,
     cwd: toDisplayPath(task.cwd, workDir),
     ...(task.repoKey ? { repo_key: task.repoKey } : {}),

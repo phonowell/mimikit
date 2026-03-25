@@ -67,6 +67,11 @@ export const firePlan = async (params: {
     const target = await resolveRunTaskTarget({
       actionName: 'create_plan',
       cwd: plan.effect.taskTemplate.cwd,
+      resourceMode: plan.effect.taskTemplate.resourceMode,
+      prompt: spec.prompt,
+      title: plan.effect.taskTemplate.title,
+      focusId: plan.focusId,
+      contract: spec.contract,
       ...(plan.effect.taskTemplate.branch
         ? { branch: plan.effect.taskTemplate.branch }
         : {}),
@@ -82,6 +87,7 @@ export const firePlan = async (params: {
       plan.focusId,
       target.repoKey,
       target.branch,
+      target.resourceMode,
       spec.contract,
     )
     linkTriggeredPlanToTask({

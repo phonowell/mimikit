@@ -37,7 +37,9 @@ actions:
       - 必填 `title,cwd,goal,in_scope,done_when_1`
     detail_constraints:
       - '`worker_prompt` 可省略并由系统按 contract 自动生成'
-      - 可选 `branch,out_of_scope,context_ref_{1..3},focus_id`
+      - 可选 `resource_mode,branch,out_of_scope,context_ref_{1..3},focus_id`
+      - '`resource_mode="read"` 用于纯读取/排查/总结任务，不占 git 写锁，也不会自动分配新 worktree'
+      - '`resource_mode="write"` 用于会改文件或需独立 git target 的任务；未显式给 `branch` 时，enqueue 阶段会自动分配 branch/worktree'
       - 提供 `branch` 后 enqueue 阶段会自动创建或复用对应 worktree，并把任务 `cwd` 切到该 worktree
       - 默认一个目标只创建一个任务
   mutate_task:

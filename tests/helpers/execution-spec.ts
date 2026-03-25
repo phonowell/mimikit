@@ -17,6 +17,7 @@ type LegacyEnqueueTaskTemplate = {
   contract?: TaskContract
   title?: string
   cwd?: string
+  resourceMode?: Task['resourceMode']
   branch?: string
   executionSpecId?: string
   fingerprint?: string
@@ -59,6 +60,7 @@ export const materializeTaskFixture = async (params: {
         prompt,
         title,
         cwd,
+        ...(task.resourceMode ? { resourceMode: task.resourceMode } : {}),
         profile,
         provider,
         focusId,
@@ -72,6 +74,7 @@ export const materializeTaskFixture = async (params: {
         prompt,
         title,
         cwd,
+        ...(task.resourceMode ? { resourceMode: task.resourceMode } : {}),
         profile,
         provider,
         focusId,
@@ -82,6 +85,7 @@ export const materializeTaskFixture = async (params: {
     executionSpecId: spec.id,
     title,
     cwd,
+    ...(task.resourceMode ? { resourceMode: task.resourceMode } : {}),
     focusId,
     profile,
     provider,
@@ -128,6 +132,9 @@ export const materializePlanFixture = async (params: {
             prompt,
             title,
             cwd,
+            ...(template.resourceMode
+              ? { resourceMode: template.resourceMode }
+              : {}),
             profile: 'worker',
             provider: 'codex',
             focusId: params.plan.focusId,
@@ -140,12 +147,18 @@ export const materializePlanFixture = async (params: {
             prompt,
             title,
             cwd,
+            ...(template.resourceMode
+              ? { resourceMode: template.resourceMode }
+              : {}),
             profile: 'worker',
             provider: 'codex',
             focusId: params.plan.focusId,
             ...(template.branch ? { branch: template.branch } : {}),
             ...(contract ? { contract } : {}),
           }),
+        ...(template.resourceMode
+          ? { resourceMode: template.resourceMode }
+          : {}),
         ...(template.branch ? { branch: template.branch } : {}),
       },
     },
