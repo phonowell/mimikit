@@ -1,5 +1,7 @@
 import { useEffectEvent, useLayoutEffect, useRef } from 'react'
 
+import type { QuoteState } from '../types.js'
+
 type Props = {
   hasQuote: boolean
   isNearBottom: boolean
@@ -11,7 +13,16 @@ type Props = {
   sendPending: boolean
   quoteLabel: string
   quoteText: string
+  quoteRole: QuoteState['role']
 }
+
+export const buildQuotePreviewState = (
+  hasQuote: boolean,
+  quoteRole: QuoteState['role'],
+) => ({
+  className: `quote-preview${hasQuote ? ' is-visible' : ''}`,
+  dataRole: quoteRole,
+})
 
 const resizeInput = (input: HTMLTextAreaElement) => {
   input.style.height = 'auto'
@@ -33,6 +44,7 @@ export const Composer = ({
   onLayoutShift,
   onSubmit,
   quoteLabel,
+  quoteRole,
   quoteText,
   sendPending,
   value,
@@ -47,6 +59,8 @@ export const Composer = ({
     syncLayoutShift(isNearBottom)
   }, [hasQuote, isNearBottom, syncLayoutShift, value])
 
+  const quotePreview = buildQuotePreviewState(hasQuote, quoteRole)
+
   return (
     <section className="composer" aria-label="Input">
       <form
@@ -55,7 +69,11 @@ export const Composer = ({
           onSubmit()
         }}
       >
-        <div className="quote-preview" hidden={!hasQuote}>
+        <div
+          className={quotePreview.className}
+          data-role={quotePreview.dataRole}
+          hidden={!hasQuote}
+        >
           <span className="quote-label">{quoteLabel}</span>
           <span className="quote-text">{quoteText}</span>
           <button

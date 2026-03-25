@@ -51,6 +51,7 @@ const ComposerRoot = () => {
       sendPending={composer.sendPending}
       quoteLabel={composer.quote?.label ?? 'Quote'}
       quoteText={composer.quote?.text ?? ''}
+      quoteRole={composer.quote?.role ?? 'unknown'}
       hasQuote={composer.quote !== null}
       isNearBottom={composer.isNearBottom}
       onChange={composer.onChange}
