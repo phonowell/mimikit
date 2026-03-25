@@ -28,6 +28,10 @@ test('buildTaskViews marks pending reason as waiting_dispatch_lock when lock key
   expect(views.find((item) => item.id === 'task-pending')?.pending_reason).toBe(
     'waiting_dispatch_lock',
   )
+  expect(views.find((item) => item.id === 'task-pending')?.dispatchLock).toEqual({
+    blockerTaskId: 'task-running',
+    lockKey: 'git:/tmp/repo/.git#main',
+  })
 })
 
 test('buildTaskViews downgrades succeeded status without completion markers', () => {
@@ -64,5 +68,7 @@ test('buildTaskViews does not mark read task as waiting_dispatch_lock', () => {
     maxConcurrentWorkers: 4,
     runningTaskCount: 1,
   })
-  expect(views.find((item) => item.id === 'task-pending-read')?.pending_reason).toBeUndefined()
+  const view = views.find((item) => item.id === 'task-pending-read')
+  expect(view?.pending_reason).toBeUndefined()
+  expect(view?.dispatchLock).toBeUndefined()
 })

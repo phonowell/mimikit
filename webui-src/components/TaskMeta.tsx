@@ -41,6 +41,16 @@ export const TaskMeta = ({ open, task }: Props) => {
     status === 'pending'
       ? resolveTaskPendingReasonLabel(task.pending_reason)
       : ''
+  const dispatchLockDetail =
+    status === 'pending' && task.pending_reason === 'waiting_dispatch_lock'
+      ? task.dispatchLock
+      : undefined
+  const dispatchLockTitle = dispatchLockDetail
+    ? `Blocked by ${dispatchLockDetail.blockerTaskId} via ${dispatchLockDetail.lockKey}`
+    : ''
+  const dispatchLockText = dispatchLockDetail
+    ? `${dispatchLockDetail.blockerTaskId} · ${dispatchLockDetail.lockKey}`
+    : ''
 
   return (
     <small className="task-meta">
@@ -50,6 +60,11 @@ export const TaskMeta = ({ open, task }: Props) => {
       {pendingReason ? (
         <span className="task-pending-reason" title={task.pending_reason}>
           {pendingReason}
+        </span>
+      ) : null}
+      {dispatchLockDetail ? (
+        <span className="task-pending-detail" title={dispatchLockTitle}>
+          {dispatchLockText}
         </span>
       ) : null}
       {task.recoverable ? (
