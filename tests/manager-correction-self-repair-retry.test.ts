@@ -33,19 +33,20 @@ beforeEach(() => {
   resolveRoundFollowupMock.mockReset()
 })
 
-test('runManagerCorrectionRounds summarizes repeated invalid create_plan feedback instead of asking for scope details', async () => {
+test('runManagerCorrectionRounds gives invalid action feedback one self-repair retry before degrading', async () => {
   runManagerRoundWithRecoveryMock
     .mockResolvedValueOnce({
-      output: '<M:create_plan title="bad plan" />',
+      output:
+        '<M:create_plan prompt="daily" title="plan" cron_expr="*/15 * * * *" time_zone="Asia/Shanghai" />',
       elapsedMs: 3,
       promptPrefixHash: 'prefix-hash',
-      threadId: 'session-manager-invalid-plan',
+      threadId: 'session-manager-self-repair',
     })
     .mockResolvedValueOnce({
-      output: '<M:create_plan title="bad plan" />',
+      output: 'repaired answer',
       elapsedMs: 4,
       promptPrefixHash: 'prefix-hash',
-      threadId: 'session-manager-invalid-plan',
+      threadId: 'session-manager-self-repair',
     })
   resolveRoundFollowupMock
     .mockResolvedValueOnce({
@@ -54,14 +55,6 @@ test('runManagerCorrectionRounds summarizes repeated invalid create_plan feedbac
         actionFeedback: [
           {
             action: 'create_plan',
-            error: 'invalid_action_syntax',
-            hint:
-              'Detected M:action markup but no executable action was parsed. Put valid XML actions at the end of the reply.',
-            code: 'invalid_action_syntax',
-            repair: { kind: 'fix_action_markup' },
-          },
-          {
-            action: 'create_plan',
             error: 'invalid_action_args',
             hint:
               '参数校验失败：schedule_type: schedule_type is required when cron_expr/scheduled_at/time_zone is provided',
@@ -77,36 +70,11 @@ test('runManagerCorrectionRounds summarizes repeated invalid create_plan feedbac
       },
     })
     .mockResolvedValueOnce({
-      done: false,
-      extra: {
-        actionFeedback: [
-          {
-            action: 'create_plan',
-            error: 'invalid_action_syntax',
-            hint:
-              'Detected M:action markup but no executable action was parsed. Put valid XML actions at the end of the reply.',
-            code: 'invalid_action_syntax',
-            repair: { kind: 'fix_action_markup' },
-          },
-          {
-            action: 'create_plan',
-            error: 'invalid_action_args',
-            hint:
-              '参数校验失败：schedule_type: schedule_type is required when cron_expr/scheduled_at/time_zone is provided',
-            code: 'invalid_action_args',
-            repair: {
-              kind: 'fix_action_args',
-              issues: [
-                'schedule_type: schedule_type is required when cron_expr/scheduled_at/time_zone is provided',
-              ],
-            },
-          },
-        ],
-      },
+      done: true,
     })
 
   const runtime = await createTestRuntimeState({
-    workDir: '/tmp/mimikit-manager-thread-cache-invalid-plan-test',
+    workDir: '/tmp/mimikit-manager-thread-cache-self-repair-test',
     withGlobalFocus: false,
   })
 
@@ -114,7 +82,7 @@ test('runManagerCorrectionRounds summarizes repeated invalid create_plan feedbac
     runtime,
     inputs: [
       {
-        id: 'input-invalid-plan-1',
+        id: 'input-self-repair-1',
         role: 'user',
         text: '继续处理',
         createdAt: '2026-03-08T00:00:00.000Z',
@@ -129,9 +97,14 @@ test('runManagerCorrectionRounds summarizes repeated invalid create_plan feedbac
     resolveFocusId: () => 'focus-global',
   })
 
-  expect(result.roundLimitReached).toBe(true)
-  expect(result.parsed.text).toContain('create_plan 动作参数或格式仍有问题')
-  expect(result.parsed.text).toContain('Detected M:action markup')
-  expect(result.parsed.text).toContain('schedule_type is required')
-  expect(result.parsed.text).not.toContain('继续执行前还缺 3 个最小信息')
+  expect(result.roundLimitReached).toBeUndefined()
+  expect(result.parsed.text).toBe('repaired answer')
+  expect(runManagerRoundWithRecoveryMock).toHaveBeenCalledTimes(2)
+  expect(appendLogMock).toHaveBeenCalledWith(
+    expect.any(String),
+    expect.objectContaining({
+      event: 'manager_action_feedback_self_repair_retry',
+      round: 2,
+    }),
+  )
 })

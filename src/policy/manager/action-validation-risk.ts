@@ -45,7 +45,7 @@ const validateHighRiskActionIntentEvidence = (
   context: FeedbackContext,
 ): ValidationIssue[] => {
   const hint = resolveIntentEvidenceRejectionHint(item, context)
-  return hint ? rejected(hint) : []
+  return hint ? rejected(hint, { code: 'intent_evidence_missing' }) : []
 }
 
 export const validateRunTask = (
@@ -68,9 +68,14 @@ export const validateRunTask = (
           out_of_scope: parsed.out_of_scope,
           done_when_1: parsed.done_when_1,
         }),
+      { code: 'task_contract_missing' },
     )
   }
-  if (!workerPrompt) return rejected(formatEnqueueTaskContractMissingHint())
+  if (!workerPrompt) {
+    return rejected(formatEnqueueTaskContractMissingHint(), {
+      code: 'task_contract_missing',
+    })
+  }
 
   const confirmation = resolveRunTaskConfirmationRequirement({
     prompt: workerPrompt,

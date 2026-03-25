@@ -84,9 +84,25 @@ export type ManagerEnv = {
   }
 }
 
+export type ManagerActionFeedbackCode =
+  | 'intent_evidence_missing'
+  | 'task_contract_missing'
+  | 'invalid_action_args'
+  | 'invalid_action_syntax'
+
+export type ManagerActionFeedbackRepair = {
+  kind: 'fix_action_markup' | 'fix_action_args'
+  issues?: string[] | undefined
+  missing_required_attr?: string | undefined
+  missing_required_attrs?: string[] | undefined
+  unknown_attrs?: string[] | undefined
+}
+
 export type ManagerActionFeedback = {
   action: string
   error: string
   hint: string
   attempted?: string
+  code?: ManagerActionFeedbackCode
+  repair?: ManagerActionFeedbackRepair
 }

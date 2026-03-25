@@ -67,6 +67,3 @@ export const formatRememberMemoryIntentEvidenceHint = (
   renderHint('remember_memory_intent_evidence_missing', {
     evidence_sources: evidenceSources,
   })
-
-export const isActionIntentEvidenceHint = (hint: string): boolean =>
-  hint.includes('intent-evidence guard 未通过')

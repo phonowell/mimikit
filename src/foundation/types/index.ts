@@ -60,6 +60,8 @@ export type {
 } from '../../work/types/task-handoff-types.js'
 export type {
   ManagerActionFeedback,
+  ManagerActionFeedbackCode,
+  ManagerActionFeedbackRepair,
   ManagerContextPacket,
   ManagerEnv,
   ManagerPacketMode,

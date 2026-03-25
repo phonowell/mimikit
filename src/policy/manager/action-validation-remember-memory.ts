@@ -51,5 +51,5 @@ export const validateRememberMemoryAction = (
       ? { supplementalEvidenceSources: context.supplementalEvidenceSources }
       : {}),
   })
-  return hint ? rejected(hint) : []
+  return hint ? rejected(hint, { code: 'intent_evidence_missing' }) : []
 }

@@ -31,6 +31,7 @@ test('enqueue_task is blocked when only supplemental evidence suggests new work'
   expect(feedback).toHaveLength(1)
   expect(feedback[0]?.action).toBe('enqueue_task')
   expect(feedback[0]?.error).toBe('action_execution_rejected')
+  expect(feedback[0]?.code).toBe('intent_evidence_missing')
   expect(feedback[0]?.hint).toContain('intent-evidence guard 未通过')
   expect(feedback[0]?.hint).toContain('task_result')
 })
