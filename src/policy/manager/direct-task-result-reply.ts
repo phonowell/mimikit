@@ -1,5 +1,6 @@
 import { persistRuntimeState } from '../../kernel/orchestrator/runtime-persistence.js'
 import { appendLog } from '../../persistence/log/append.js'
+import { toDisplayPath } from '../../surface/shared/path-display.js'
 import { requestMemoryRefresh } from '../memory/refresh/singleflight.js'
 
 import { appendManagerReply } from './loop-batch-flow.js'
@@ -30,6 +31,26 @@ export const resolveDirectTaskResultReply = (params: {
   return output
 }
 
+const appendArchiveLine = (
+  runtime: ManagerRuntime,
+  result: TaskResult | undefined,
+  text: string,
+): string => {
+  if (!result) return text
+  const task = runtime.tasks.find((item) => item.id === result.taskId)
+  const rawArchivePath = [
+    result.archivePath,
+    task?.archivePath,
+    task?.result?.archivePath,
+  ].find((value) => typeof value === 'string' && value.trim().length > 0)
+  const archivePath = rawArchivePath
+    ? toDisplayPath(rawArchivePath, runtime.config.workDir).trim()
+    : ''
+  return archivePath
+    ? `${text}\n[任务归档](${archivePath})`
+    : `${text}\n任务归档: 未生成`
+}
+
 export const finishBatchWithDirectTaskResultReply = async (params: {
   runtime: ManagerRuntime
   text: string
@@ -39,6 +60,11 @@ export const finishBatchWithDirectTaskResultReply = async (params: {
   nextResultsCursor: number
   startedAt: number
 }): Promise<void> => {
+  const replyText = appendArchiveLine(
+    params.runtime,
+    params.results[0],
+    params.text,
+  )
   const consumed = await consumeBatchHistory({
     runtime: params.runtime,
     inputs: params.inputs,
@@ -47,7 +73,7 @@ export const finishBatchWithDirectTaskResultReply = async (params: {
   if (!consumed.ok) throw new Error(consumed.reason)
   await appendManagerReply({
     runtime: params.runtime,
-    text: params.text,
+    text: replyText,
     nextInputsCursor: params.nextInputsCursor,
   })
   await finalizeBatchProgress({

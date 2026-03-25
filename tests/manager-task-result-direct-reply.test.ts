@@ -12,8 +12,11 @@ test('processManagerBatch directly delivers compact single task_result output', 
     id: 'task-explain-reject',
     title: '解释 remember_memory 被拒原因',
     status: 'running',
+    archivePath:
+      '/tmp/mimikit/.mimikit/tasks/2026-03-25/task-explain-reject.md',
   })
   const runtime = await createTestRuntimeState({
+    workDir: '/tmp/mimikit',
     patch: {
       tasks: [task],
     },
@@ -40,7 +43,7 @@ test('processManagerBatch directly delivers compact single task_result output', 
   const history = await readHistory(runtime.paths.history)
   expect(history.at(-1)).toMatchObject({
     role: 'agent',
-    text: '结论是：remember_memory 不是写入存储失败，而是在校验阶段被 intent-evidence guard 拦下了。\n最小补充是让用户直接声明这条规则需要跨轮长期生效。',
+    text: '结论是：remember_memory 不是写入存储失败，而是在校验阶段被 intent-evidence guard 拦下了。\n最小补充是让用户直接声明这条规则需要跨轮长期生效。\n[任务归档](.mimikit/tasks/2026-03-25/task-explain-reject.md)',
   })
   expect(task.result?.output).toBe(`Task "${task.title}" completed.`)
   expect(runtime.queues.resultsCursor).toBe(1)
