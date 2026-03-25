@@ -1,0 +1,184 @@
+import { useCallback, useMemo } from 'react'
+
+import {
+  focusElementById,
+  resolveDeleteModeTransition,
+  toQuoteState,
+} from '../lib/controller-utils.js'
+
+import type { ChatMessage } from '../types.js'
+import type {
+  AppActionParams,
+  AppActionStateRef,
+} from './use-app-actions-types.js'
+
+type Params = Pick<
+  AppActionParams,
+  | 'scroll'
+  | 'setComposerValue'
+  | 'setConfirmDialog'
+  | 'setDeleteMode'
+  | 'setFocusesOpen'
+  | 'setOpenTaskMenuId'
+  | 'setPlansOpen'
+  | 'setQuote'
+  | 'setTasksOpen'
+  | 'setToolsMenuOpen'
+  | 'setTtsEnabled'
+> & {
+  stateRef: AppActionStateRef
+}
+
+export const useAppLocalActions = ({
+  scroll,
+  setComposerValue,
+  setConfirmDialog,
+  setDeleteMode,
+  setFocusesOpen,
+  setOpenTaskMenuId,
+  setPlansOpen,
+  setQuote,
+  setTasksOpen,
+  setToolsMenuOpen,
+  setTtsEnabled,
+  stateRef,
+}: Params) => {
+  const applyDeleteMode = useCallback(
+    (nextDeleteMode: boolean) => {
+      const current = stateRef.current
+      const transition = resolveDeleteModeTransition(
+        {
+          deleteMode: current.deleteMode,
+          openTaskMenuId: current.openTaskMenuId,
+          quote: current.quote,
+          toolsMenuOpen: current.toolsMenuOpen,
+        },
+        nextDeleteMode,
+      )
+      if (transition.deleteMode === current.deleteMode) return
+      scroll.captureLayoutShift()
+      setDeleteMode(transition.deleteMode)
+      setToolsMenuOpen(transition.toolsMenuOpen)
+      setOpenTaskMenuId(transition.openTaskMenuId)
+      setQuote(transition.quote)
+      focusElementById(transition.focusTargetId)
+    },
+    [
+      scroll,
+      setDeleteMode,
+      setOpenTaskMenuId,
+      setQuote,
+      setToolsMenuOpen,
+      stateRef,
+    ],
+  )
+
+  const clearQuote = useCallback(() => {
+    scroll.captureLayoutShift()
+    setQuote(null)
+  }, [scroll, setQuote])
+  const closeConfirmDialog = useCallback(
+    () => setConfirmDialog(null),
+    [setConfirmDialog],
+  )
+  const closeFocuses = useCallback(
+    () => setFocusesOpen(false),
+    [setFocusesOpen],
+  )
+  const closePlans = useCallback(() => setPlansOpen(false), [setPlansOpen])
+  const closeTasks = useCallback(() => setTasksOpen(false), [setTasksOpen])
+  const exitDeleteMode = useCallback(
+    () => applyDeleteMode(false),
+    [applyDeleteMode],
+  )
+  const onComposerInput = useCallback(
+    (value: string) => setComposerValue(value),
+    [setComposerValue],
+  )
+  const openFocuses = useCallback(() => setFocusesOpen(true), [setFocusesOpen])
+  const openPlans = useCallback(() => setPlansOpen(true), [setPlansOpen])
+  const openRestartDialog = useCallback(
+    () => setConfirmDialog({ kind: 'restart' }),
+    [setConfirmDialog],
+  )
+  const openResetDialog = useCallback(
+    () => setConfirmDialog({ kind: 'reset' }),
+    [setConfirmDialog],
+  )
+  const openTasks = useCallback(() => setTasksOpen(true), [setTasksOpen])
+  const requestDeleteMessage = useCallback(
+    (message: ChatMessage) =>
+      setConfirmDialog({ kind: 'message', id: message.id ?? '' }),
+    [setConfirmDialog],
+  )
+  const requestDeleteTask = useCallback(
+    (id: string, title: string) =>
+      setConfirmDialog({ kind: 'task', id, title }),
+    [setConfirmDialog],
+  )
+  const selectQuote = useCallback(
+    (message: ChatMessage) => {
+      scroll.captureLayoutShift()
+      setQuote(toQuoteState(message))
+    },
+    [scroll, setQuote],
+  )
+  const toggleDeleteMode = useCallback(
+    () => applyDeleteMode(!stateRef.current.deleteMode),
+    [applyDeleteMode, stateRef],
+  )
+  const toggleTaskMenu = useCallback(
+    (taskId: string) =>
+      setOpenTaskMenuId((current) => (current === taskId ? '' : taskId)),
+    [setOpenTaskMenuId],
+  )
+  const toggleToolsMenu = useCallback(
+    () => setToolsMenuOpen((current) => !current),
+    [setToolsMenuOpen],
+  )
+
+  return useMemo(
+    () => ({
+      clearQuote,
+      closeConfirmDialog,
+      closeFocuses,
+      closePlans,
+      closeTasks,
+      exitDeleteMode,
+      onComposerInput,
+      openFocuses,
+      openPlans,
+      openRestartDialog,
+      openResetDialog,
+      openTasks,
+      requestDeleteMessage,
+      requestDeleteTask,
+      selectQuote,
+      setTtsEnabled,
+      toggleDeleteMode,
+      toggleTaskMenu,
+      toggleToolsMenu,
+    }),
+    [
+      clearQuote,
+      closeConfirmDialog,
+      closeFocuses,
+      closePlans,
+      closeTasks,
+      exitDeleteMode,
+      onComposerInput,
+      openFocuses,
+      openPlans,
+      openRestartDialog,
+      openResetDialog,
+      openTasks,
+      requestDeleteMessage,
+      requestDeleteTask,
+      selectQuote,
+      setTtsEnabled,
+      toggleDeleteMode,
+      toggleTaskMenu,
+      toggleToolsMenu,
+    ],
+  )
+}

@@ -1,62 +1,39 @@
+import { memo } from 'react'
+
 import { renderMarkdownHtml } from '../lib/markdown.js'
-import { formatDisplayTimeWithFull } from '../lib/messages/format-time.js'
-import {
-  formatElapsedLabel,
-  formatUsage,
-} from '../lib/messages/format-usage.js'
 import {
   formatQuotePreview,
   formatRoleLabel,
   normalizeRole,
 } from '../lib/messages/quote-utils.js'
-import { shouldDisplayMessageTime } from '../lib/messages.js'
 import { UI_TEXT } from '../lib/system-text.js'
+
+import { MessageMeta } from './MessageMeta.js'
 
 import type { ChatMessage } from '../types.js'
 
 type Props = {
   deleteMode: boolean
-  index: number
   message: ChatMessage
-  messages: readonly ChatMessage[]
-  now: number
   onDelete: (message: ChatMessage) => void
   onQuote: (message: ChatMessage) => void
+  quotedMessage: ChatMessage | undefined
 }
 
-const isAgentMessage = (message: ChatMessage): boolean =>
-  message.role === 'agent'
-
-const resolveQuote = (
-  messages: readonly ChatMessage[],
-  quoteId: string | undefined,
-): ChatMessage | undefined =>
-  messages.find((item) => item.id && quoteId && item.id === quoteId)
-
-export const MessageItem = ({
+export const MessageItem = memo(function MessageItem({
   deleteMode,
-  index,
   message,
-  messages,
-  now,
   onDelete,
   onQuote,
-}: Props) => {
+  quotedMessage,
+}: Props) {
   const isSystem = message.role === 'system'
   const canQuote = !deleteMode && !isSystem && !!message.id
   const canDelete = deleteMode && !isSystem && !!message.id
-  const quotedMessage = resolveQuote(messages, message.quote)
-  const usage = isAgentMessage(message) ? formatUsage(message.usage) : null
-  const elapsed = isAgentMessage(message)
-    ? formatElapsedLabel(message.elapsedMs)
-    : ''
-  const timeDisplay = shouldDisplayMessageTime(message)
-    ? formatDisplayTimeWithFull(message.createdAt, { now })
-    : { displayText: '', fullText: '' }
+  const isAgent = message.role === 'agent'
 
   return (
     <li
-      key={message.id ?? `message-${index}`}
       className={`message ${message.role === 'agent' ? 'agent' : message.role}${canQuote ? ' message--quoteable' : ''}`}
       {...(message.id ? { 'data-message-id': message.id } : {})}
       tabIndex={canQuote ? 0 : undefined}
@@ -98,8 +75,8 @@ export const MessageItem = ({
           </button>
         ) : null}
         <div
-          className={`content${isAgentMessage(message) ? ' markdown' : ''}`}
-          {...(isAgentMessage(message)
+          className={`content${isAgent ? ' markdown' : ''}`}
+          {...(isAgent
             ? {
                 dangerouslySetInnerHTML: {
                   __html: renderMarkdownHtml(message.text ?? ''),
@@ -107,28 +84,7 @@ export const MessageItem = ({
               }
             : { children: message.text ?? '' })}
         ></div>
-        {usage?.text || elapsed || timeDisplay.displayText ? (
-          <small className="meta">
-            {usage?.text ? (
-              <span className="usage" title={usage.title}>
-                {usage.text}
-              </span>
-            ) : null}
-            {elapsed ? (
-              <span className="elapsed">
-                {usage?.text ? `· ${elapsed}` : elapsed}
-              </span>
-            ) : null}
-            {timeDisplay.displayText ? (
-              <span
-                className="time"
-                title={timeDisplay.fullText || message.createdAt || ''}
-              >
-                {timeDisplay.displayText}
-              </span>
-            ) : null}
-          </small>
-        ) : null}
+        <MessageMeta message={message} />
       </article>
       {canQuote ? (
         <button
@@ -154,4 +110,4 @@ export const MessageItem = ({
       ) : null}
     </li>
   )
-}
+})

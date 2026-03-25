@@ -22,15 +22,29 @@ const resolveFocusActivityAtMs = (focus: FocusView): number => {
 }
 
 export const resolveDocumentTitle = (focuses: readonly FocusView[]): string => {
-  const active = focuses.filter((focus) => focus.status === 'active')
-  const candidates = active.length > 0 ? active : focuses
-  const sorted = [...candidates].sort((left, right) => {
-    const diff =
-      resolveFocusActivityAtMs(right) - resolveFocusActivityAtMs(left)
-    if (diff !== 0) return diff
-    return right.id.localeCompare(left.id)
-  })
-  const title = normalizeTitle(sorted[0]?.title)
+  let bestActive: FocusView | null = null
+  let bestFallback: FocusView | null = null
+
+  for (const focus of focuses) {
+    const currentTarget = focus.status === 'active' ? bestActive : bestFallback
+    if (!currentTarget) {
+      if (focus.status === 'active') bestActive = focus
+      else bestFallback = focus
+      continue
+    }
+    const focusActivity = resolveFocusActivityAtMs(focus)
+    const targetActivity = resolveFocusActivityAtMs(currentTarget)
+    if (
+      focusActivity > targetActivity ||
+      (focusActivity === targetActivity &&
+        focus.id.localeCompare(currentTarget.id) > 0)
+    ) {
+      if (focus.status === 'active') bestActive = focus
+      else bestFallback = focus
+    }
+  }
+
+  const title = normalizeTitle((bestActive ?? bestFallback)?.title)
   return title || UI_TEXT.conversationTitleFallback
 }
 

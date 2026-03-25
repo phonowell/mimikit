@@ -7,23 +7,50 @@ import { resolvePreferredTtsVoice } from '../lib/tts-voice.js'
 import type { ChatMessage } from '../types.js'
 
 const TTS_STORAGE_KEY = 'mimikit-webui-tts-enabled'
+let speechSupportedSnapshot: boolean | null = null
+let storedEnabledSnapshot: boolean | null = null
+let sharedPlayer: ReturnType<typeof createTtsPlayer> | null = null
 
 type VoiceResolverParams = {
   utterance: SpeechSynthesisUtterance
   speechSynthesis: SpeechSynthesis
 }
 
-const isSpeechSupported = (): boolean =>
-  typeof window !== 'undefined' &&
-  typeof window.speechSynthesis !== 'undefined' &&
-  typeof window.SpeechSynthesisUtterance !== 'undefined'
+const isSpeechSupported = (): boolean => {
+  if (speechSupportedSnapshot !== null) return speechSupportedSnapshot
+  speechSupportedSnapshot =
+    typeof window !== 'undefined' &&
+    typeof window.speechSynthesis !== 'undefined' &&
+    typeof window.SpeechSynthesisUtterance !== 'undefined'
+  return speechSupportedSnapshot
+}
 
 const readStoredEnabled = (): boolean => {
+  if (storedEnabledSnapshot !== null) return storedEnabledSnapshot
   try {
-    return window.localStorage.getItem(TTS_STORAGE_KEY) === '1'
+    storedEnabledSnapshot = window.localStorage.getItem(TTS_STORAGE_KEY) === '1'
+    return storedEnabledSnapshot
   } catch {
+    storedEnabledSnapshot = false
     return false
   }
+}
+
+const getSharedPlayer = (supported: boolean) => {
+  if (sharedPlayer) return sharedPlayer
+  sharedPlayer = createTtsPlayer({
+    speechSynthesis: supported ? window.speechSynthesis : undefined,
+    SpeechSynthesisUtterance: supported
+      ? window.SpeechSynthesisUtterance
+      : undefined,
+    resolveVoice: ({ utterance, speechSynthesis }: VoiceResolverParams) =>
+      utterance?.voice ||
+      resolvePreferredTtsVoice({
+        speechSynthesis,
+        userAgent: window.navigator?.userAgent ?? '',
+      }),
+  })
+  return sharedPlayer
 }
 
 export const useTts = (): {
@@ -36,24 +63,12 @@ export const useTts = (): {
   const [enabled, setEnabledState] = useState<boolean>(
     () => supported && readStoredEnabled(),
   )
-  const [player] = useState(() =>
-    createTtsPlayer({
-      speechSynthesis: supported ? window.speechSynthesis : undefined,
-      SpeechSynthesisUtterance: supported
-        ? window.SpeechSynthesisUtterance
-        : undefined,
-      resolveVoice: ({ utterance, speechSynthesis }: VoiceResolverParams) =>
-        utterance?.voice ||
-        resolvePreferredTtsVoice({
-          speechSynthesis,
-          userAgent: window.navigator?.userAgent ?? '',
-        }),
-    }),
-  )
+  const [player] = useState(() => getSharedPlayer(supported))
 
   useEffect(() => {
     if (!supported) return
     try {
+      storedEnabledSnapshot = enabled
       window.localStorage.setItem(TTS_STORAGE_KEY, enabled ? '1' : '0')
     } catch {}
   }, [enabled, supported])

@@ -1,6 +1,9 @@
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 
-import { isScrollStateNearBottom, readScrollState } from '../lib/message-scroll.js'
+import {
+  isScrollStateNearBottom,
+  readScrollState,
+} from '../lib/message-scroll.js'
 
 type ScrollMetrics = {
   previousHeight: number
@@ -12,18 +15,31 @@ export const useMessageScroll = (deps: readonly unknown[]) => {
   const listRef = useRef<HTMLUListElement | null>(null)
   const followBottomRef = useRef(true)
   const pendingMetricsRef = useRef<ScrollMetrics | null>(null)
+  const scrollButtonVisibleRef = useRef(false)
+  const [isNearBottom, setIsNearBottom] = useState(true)
   const [scrollButtonVisible, setScrollButtonVisible] = useState(false)
 
-  const updateScrollButton = () => {
+  const syncFollowState = useCallback((nearBottom: boolean) => {
+    followBottomRef.current = nearBottom
+    setIsNearBottom((current) =>
+      current === nearBottom ? current : nearBottom,
+    )
+    const nextVisible = !nearBottom
+    scrollButtonVisibleRef.current = nextVisible
+    setScrollButtonVisible((current) =>
+      current === nextVisible ? current : nextVisible,
+    )
+  }, [])
+
+  const updateScrollButton = useCallback(() => {
     const element = listRef.current
     if (!element) return
     const state = readScrollState(element)
     const nearBottom = isScrollStateNearBottom(state)
-    followBottomRef.current = nearBottom
-    setScrollButtonVisible(!nearBottom)
-  }
+    syncFollowState(nearBottom)
+  }, [syncFollowState])
 
-  const captureLayoutShift = () => {
+  const captureLayoutShift = useCallback(() => {
     const element = listRef.current
     if (!element) return
     const state = readScrollState(element)
@@ -32,37 +48,38 @@ export const useMessageScroll = (deps: readonly unknown[]) => {
       previousTop: state.scrollTop,
       wasFollowingBottom: followBottomRef.current,
     }
-  }
+  }, [])
 
-  const scrollToBottom = (smooth = false) => {
-    const element = listRef.current
-    if (!element) return
-    followBottomRef.current = true
-    const maxTop = Math.max(0, element.scrollHeight - element.clientHeight)
-    element.scrollTo({
-      top: maxTop,
-      behavior: smooth ? 'smooth' : 'auto',
-    })
-    setScrollButtonVisible(false)
-  }
+  const scrollToBottom = useCallback(
+    (smooth = false) => {
+      const element = listRef.current
+      if (!element) return
+      syncFollowState(true)
+      const maxTop = Math.max(0, element.scrollHeight - element.clientHeight)
+      element.scrollTo({
+        top: maxTop,
+        behavior: smooth ? 'smooth' : 'auto',
+      })
+    },
+    [syncFollowState],
+  )
 
-  const isNearBottomNow = (): boolean => {
-    return followBottomRef.current
-  }
-
-  const syncAfterLayoutShift = ({
-    stickToBottom = false,
-  }: {
-    stickToBottom?: boolean
-  } = {}) => {
-    const element = listRef.current
-    if (!element) return
-    if (stickToBottom || followBottomRef.current) {
-      scrollToBottom(false)
-      return
-    }
-    setScrollButtonVisible(true)
-  }
+  const syncAfterLayoutShift = useCallback(
+    ({
+      stickToBottom = false,
+    }: {
+      stickToBottom?: boolean
+    } = {}) => {
+      const element = listRef.current
+      if (!element) return
+      if (stickToBottom || followBottomRef.current) {
+        scrollToBottom(false)
+        return
+      }
+      syncFollowState(false)
+    },
+    [scrollToBottom, syncFollowState],
+  )
 
   useLayoutEffect(() => {
     const element = listRef.current
@@ -78,12 +95,12 @@ export const useMessageScroll = (deps: readonly unknown[]) => {
     }
     const delta = element.scrollHeight - metrics.previousHeight
     element.scrollTop = Math.max(0, metrics.previousTop + delta)
-    setScrollButtonVisible(true)
+    if (!scrollButtonVisibleRef.current) syncFollowState(false)
   }, deps)
 
   return {
     captureLayoutShift,
-    isNearBottom: isNearBottomNow,
+    isNearBottom,
     listRef,
     onScroll: updateScrollButton,
     scrollButtonVisible,

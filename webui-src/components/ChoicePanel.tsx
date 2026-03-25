@@ -1,3 +1,5 @@
+import { memo } from 'react'
+
 import {
   formatChoiceRemaining,
   resolveChoiceDefaultLabel,
@@ -30,14 +32,14 @@ const resolveMeta = (
     : `${UI_TEXT.choiceDefaultOption} ${defaultLabel}`
 }
 
-export const ChoicePanel = ({
+export const ChoicePanel = memo(function ChoicePanel({
   choices,
   pendingChoiceId,
   pendingOptionId,
   choiceMetaOverrides,
   disconnected,
   onSelect,
-}: Props) => {
+}: Props) {
   if (choices.length === 0) return null
   return (
     <section
@@ -99,4 +101,4 @@ export const ChoicePanel = ({
       </p>
     </section>
   )
-}
+})

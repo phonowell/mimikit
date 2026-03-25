@@ -1,4 +1,5 @@
-import { useNowTick } from '../hooks/use-now-tick.js'
+import { memo } from 'react'
+
 import { UI_TEXT } from '../lib/system-text.js'
 
 import { MessageItem } from './MessageItem.js'
@@ -18,7 +19,16 @@ type Props = {
   onDelete: (message: ChatMessage) => void
 }
 
-export const MessageList = ({
+const indexMessagesById = (
+  messages: readonly ChatMessage[],
+): ReadonlyMap<string, ChatMessage> => {
+  const index = new Map<string, ChatMessage>()
+  for (const message of messages) if (message.id) index.set(message.id, message)
+
+  return index
+}
+
+export const MessageList = memo(function MessageList({
   messages,
   loading,
   deleteMode,
@@ -28,8 +38,8 @@ export const MessageList = ({
   onScrollBottom,
   onQuote,
   onDelete,
-}: Props) => {
-  const now = useNowTick(60_000)
+}: Props) {
+  const messagesById = indexMessagesById(messages)
 
   return (
     <section className="messages-section" aria-label="Chat">
@@ -48,12 +58,12 @@ export const MessageList = ({
           <MessageItem
             key={message.id ?? `message-${index}`}
             deleteMode={deleteMode}
-            index={index}
             message={message}
-            messages={messages}
-            now={now}
             onDelete={onDelete}
             onQuote={onQuote}
+            quotedMessage={
+              message.quote ? messagesById.get(message.quote) : undefined
+            }
           />
         ))}
         {loading ? (
@@ -85,4 +95,4 @@ export const MessageList = ({
       </button>
     </section>
   )
-}
+})

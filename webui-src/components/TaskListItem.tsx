@@ -1,20 +1,14 @@
+import { memo } from 'react'
+
 import { buildTaskArchiveViewerUrl } from '../lib/archive-viewer-url.js'
-import {
-  formatDateTimeFull,
-  formatDisplayTimeWithFull,
-  parseTimeInput,
-} from '../lib/messages/format-time.js'
-import { formatUsage } from '../lib/messages/format-usage.js'
-import {
-  resolveTaskPendingReasonLabel,
-  resolveTaskStatusLabel,
-} from '../lib/system-text.js'
-import { formatElapsedText } from '../lib/tasks-view-time.js'
+import { resolveTaskStatusLabel } from '../lib/system-text.js'
+
+import { TaskMeta } from './TaskMeta.js'
 
 import type { TaskView } from '../types.js'
 
 type Props = {
-  now: number
+  open: boolean
   onRequestDelete: (taskId: string, title: string) => void
   onTaskAction: (
     taskId: string,
@@ -25,39 +19,17 @@ type Props = {
   task: TaskView
 }
 
-const toMs = (value: string | undefined): number | null => {
-  const parsed = parseTimeInput(value)
-  return parsed ? parsed.getTime() : null
-}
-
-export const TaskListItem = ({
-  now,
+export const TaskListItem = memo(function TaskListItem({
+  open,
   onRequestDelete,
   onTaskAction,
   onToggleMenu,
   openMenuId,
   task,
-}: Props) => {
+}: Props) {
   const status = task.status || 'pending'
   const title =
     task.title?.trim() && task.title !== task.id ? task.title : 'Untitled task'
-  const usage = formatUsage(task.usage)
-  const hasUsage = Boolean(usage?.text)
-  const startMs = toMs(task.startedAt) ?? toMs(task.createdAt)
-  const completedMs = toMs(task.completedAt)
-  const elapsed =
-    status === 'running' && startMs
-      ? formatElapsedText(now - startMs, hasUsage)
-      : typeof task.durationMs === 'number'
-        ? formatElapsedText(task.durationMs, hasUsage)
-        : startMs && completedMs
-          ? formatElapsedText(Math.max(0, completedMs - startMs), hasUsage)
-          : ''
-  const timeDisplay = formatDisplayTimeWithFull(task.changeAt, { now })
-  const pendingReason =
-    status === 'pending'
-      ? resolveTaskPendingReasonLabel(task.pending_reason)
-      : ''
   const canPause = status === 'pending' || status === 'running'
   const canResume = status === 'paused'
   const canCancel =
@@ -97,33 +69,7 @@ export const TaskListItem = ({
             {task.liveOutput}
           </p>
         ) : null}
-        <small className="task-meta">
-          <span className="task-tokens" title={usage?.title ?? ''}>
-            {usage?.text ?? '-'}
-          </span>
-          {pendingReason ? (
-            <span className="task-pending-reason" title={task.pending_reason}>
-              {pendingReason}
-            </span>
-          ) : null}
-          {task.recoverable ? (
-            <span
-              className="task-pending-reason task-pending-reason--recoverable"
-              title={task.stopReason ?? 'budget_exhausted'}
-            >
-              Resume from partial
-            </span>
-          ) : null}
-          {elapsed ? <span className="task-elapsed">{elapsed}</span> : null}
-          {timeDisplay.displayText ? (
-            <span
-              className="task-time"
-              title={formatDateTimeFull(task.changeAt) || task.changeAt}
-            >
-              {timeDisplay.displayText}
-            </span>
-          ) : null}
-        </small>
+        <TaskMeta open={open} task={task} />
       </a>
       <div className="task-item-actions" data-task-actions="true">
         {task.recoverable && canResume ? (
@@ -191,4 +137,4 @@ export const TaskListItem = ({
       </div>
     </li>
   )
-}
+})

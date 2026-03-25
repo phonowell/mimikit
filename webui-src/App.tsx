@@ -1,3 +1,5 @@
+import { useCallback, useDeferredValue } from 'react'
+
 import { ChoicePanel } from './components/ChoicePanel.js'
 import { Composer } from './components/Composer.js'
 import { ConfirmDialogs } from './components/ConfirmDialogs.js'
@@ -11,6 +13,26 @@ import { useAppController } from './hooks/use-app-controller.js'
 
 export const App = () => {
   const controller = useAppController()
+  const deferredTasks = useDeferredValue(controller.appState.tasks)
+  const deferredPlans = useDeferredValue(controller.appState.plans)
+  const deferredFocuses = useDeferredValue(controller.appState.focuses)
+  const handleConfirmDialog = useCallback(
+    () => void controller.actions.confirmAction(),
+    [controller.actions.confirmAction],
+  )
+  const handleComposerLayoutShift = useCallback(
+    (stickToBottom: boolean) =>
+      controller.scroll.syncAfterLayoutShift({ stickToBottom }),
+    [controller.scroll.syncAfterLayoutShift],
+  )
+  const handleScrollBottom = useCallback(
+    () => controller.scroll.scrollToBottom(true),
+    [controller.scroll.scrollToBottom],
+  )
+  const handleToggleTts = useCallback(
+    () => controller.actions.setTtsEnabled(!controller.ttsEnabled),
+    [controller.actions.setTtsEnabled, controller.ttsEnabled],
+  )
 
   return (
     <>
@@ -27,9 +49,7 @@ export const App = () => {
           onOpenPlans={controller.actions.openPlans}
           onOpenTasks={controller.actions.openTasks}
           onToggleTools={controller.actions.toggleToolsMenu}
-          onToggleTts={() =>
-            controller.actions.setTtsEnabled(!controller.ttsEnabled)
-          }
+          onToggleTts={handleToggleTts}
           onToggleDeleteMode={controller.actions.toggleDeleteMode}
           onOpenRestart={controller.actions.openRestartDialog}
           onOpenReset={controller.actions.openResetDialog}
@@ -41,7 +61,7 @@ export const App = () => {
           listRef={controller.scroll.listRef}
           scrollButtonVisible={controller.scroll.scrollButtonVisible}
           onScroll={controller.scroll.onScroll}
-          onScrollBottom={() => controller.scroll.scrollToBottom(true)}
+          onScrollBottom={handleScrollBottom}
           onQuote={controller.actions.selectQuote}
           onDelete={controller.actions.requestDeleteMessage}
         />
@@ -77,16 +97,14 @@ export const App = () => {
             isNearBottom={controller.scroll.isNearBottom}
             onChange={controller.actions.onComposerInput}
             onClearQuote={controller.actions.clearQuote}
-            onLayoutShift={(stickToBottom) =>
-              controller.scroll.syncAfterLayoutShift({ stickToBottom })
-            }
+            onLayoutShift={handleComposerLayoutShift}
             onSubmit={controller.actions.submitMessage}
           />
         )}
       </main>
       <TasksDialog
         open={controller.tasksOpen}
-        tasks={controller.appState.tasks}
+        tasks={deferredTasks}
         openMenuId={controller.openTaskMenuId}
         onClose={controller.actions.closeTasks}
         onToggleMenu={controller.actions.toggleTaskMenu}
@@ -95,19 +113,19 @@ export const App = () => {
       />
       <PlansDialog
         open={controller.plansOpen}
-        plans={controller.appState.plans}
+        plans={deferredPlans}
         onClose={controller.actions.closePlans}
       />
       <FocusDialog
         open={controller.focusesOpen}
-        focuses={controller.appState.focuses}
+        focuses={deferredFocuses}
         onClose={controller.actions.closeFocuses}
       />
       <ConfirmDialogs
         dialog={controller.confirmDialog}
         busy={controller.busy}
         onClose={controller.actions.closeConfirmDialog}
-        onConfirm={() => void controller.actions.confirmAction()}
+        onConfirm={handleConfirmDialog}
       />
       <Toast toast={controller.toast} />
     </>

@@ -1,4 +1,5 @@
-import { useNowTick } from '../hooks/use-now-tick.js'
+import { memo } from 'react'
+
 import { UI_TEXT } from '../lib/system-text.js'
 
 import { ModalDialog } from './ModalDialog.js'
@@ -19,7 +20,7 @@ type Props = {
   onRequestDelete: (taskId: string, title: string) => void
 }
 
-export const TasksDialog = ({
+export const TasksDialog = memo(function TasksDialog({
   open,
   tasks,
   openMenuId,
@@ -27,10 +28,7 @@ export const TasksDialog = ({
   onToggleMenu,
   onTaskAction,
   onRequestDelete,
-}: Props) => {
-  const hasRunningTask = tasks.some((task) => task.status === 'running')
-  const now = useNowTick(hasRunningTask ? 1_000 : 60_000, open)
-
+}: Props) {
   return (
     <ModalDialog
       open={open}
@@ -62,7 +60,7 @@ export const TasksDialog = ({
           {tasks.map((task) => (
             <TaskListItem
               key={task.id}
-              now={now}
+              open={open}
               task={task}
               openMenuId={openMenuId}
               onRequestDelete={onRequestDelete}
@@ -74,4 +72,4 @@ export const TasksDialog = ({
       </section>
     </ModalDialog>
   )
-}
+})

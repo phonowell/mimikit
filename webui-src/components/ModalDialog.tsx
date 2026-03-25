@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useEffectEvent, useRef } from 'react'
 
 import type { PropsWithChildren, ReactNode } from 'react'
 
@@ -23,6 +23,17 @@ export const ModalDialog = ({
   onClose,
 }: Props) => {
   const ref = useRef<HTMLDialogElement>(null)
+  const handleCancel = useEffectEvent((event: Event) => {
+    event.preventDefault()
+    onClose()
+  })
+  const handleClick = useEffectEvent((event: MouseEvent) => {
+    const dialog = ref.current
+    if (dialog && event.target === dialog) onClose()
+  })
+  const handleClose = useEffectEvent(() => {
+    if (open) onClose()
+  })
 
   useEffect(() => {
     const dialog = ref.current
@@ -37,16 +48,6 @@ export const ModalDialog = ({
   useEffect(() => {
     const dialog = ref.current
     if (!dialog) return
-    const handleCancel = (event: Event) => {
-      event.preventDefault()
-      onClose()
-    }
-    const handleClick = (event: MouseEvent) => {
-      if (event.target === dialog) onClose()
-    }
-    const handleClose = () => {
-      if (open) onClose()
-    }
     dialog.addEventListener('cancel', handleCancel)
     dialog.addEventListener('click', handleClick)
     dialog.addEventListener('close', handleClose)
@@ -55,7 +56,7 @@ export const ModalDialog = ({
       dialog.removeEventListener('click', handleClick)
       dialog.removeEventListener('close', handleClose)
     }
-  }, [onClose, open])
+  }, [])
 
   return (
     <dialog

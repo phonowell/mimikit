@@ -36,5 +36,5 @@ export const useEventStream = ({
       onDisconnected: handleDisconnected,
     })
     return () => connection.stop()
-  }, [handleDisconnected, handleSnapshot, handleTasks])
+  }, [])
 }
