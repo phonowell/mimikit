@@ -1,3 +1,8 @@
+import {
+  buildTaskFingerprint,
+  buildTaskSemanticKey,
+} from '../../src/work/orchestrator/task-state.js'
+
 import type { Task, TaskPlan } from '../../src/foundation/types/index.js'
 
 export const GLOBAL_FOCUS_ID = 'focus-global'
@@ -5,8 +10,23 @@ export const SNAPSHOT_BASE_TIME = '2026-02-06T00:00:00.000Z'
 
 export const createTaskFixture = (overrides: Partial<Task> = {}): Task => ({
   id: 'task-1',
-  fingerprint: 'task-1',
-  prompt: 'check',
+  fingerprint: buildTaskFingerprint({
+    prompt: 'check',
+    title: 'Check',
+    cwd: '/tmp/runtime-snapshot-task',
+    profile: 'worker',
+    provider: 'codex',
+    focusId: GLOBAL_FOCUS_ID,
+  }),
+  semanticKey: buildTaskSemanticKey({
+    prompt: 'check',
+    title: 'Check',
+    cwd: '/tmp/runtime-snapshot-task',
+    profile: 'worker',
+    provider: 'codex',
+    focusId: GLOBAL_FOCUS_ID,
+  }),
+  executionSpecId: 'spec-task-1',
   title: 'Check',
   cwd: '/tmp/runtime-snapshot-task',
   focusId: GLOBAL_FOCUS_ID,

@@ -1,3 +1,5 @@
+import { resolveTaskResultSummary } from '../../work/shared/task-state.js'
+
 import { appendHistory, readHistory } from './store.js'
 import { appendTaskSystemMessage } from './task-events.js'
 
@@ -8,15 +10,17 @@ import type {
 } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 const summarizeResultOutput = (
+  task: RuntimeTaskState,
   result: TaskResult,
   summaries?: Map<string, string>,
 ): string => {
   const summary = summaries?.get(result.taskId)?.trim()
   if (summary) return summary
-  const compacted = result.output.replace(/\s+/g, ' ').trim()
-  return compacted.length <= 280
-    ? compacted
-    : `${compacted.slice(0, 279).trimEnd()}…`
+  return resolveTaskResultSummary({
+    task,
+    result,
+    maxChars: 280,
+  })
 }
 
 const shouldIgnoreStaleResult = (
@@ -84,7 +88,7 @@ export const appendConsumedResultsToHistory = async (
     if (!appended) break
     task.result = {
       ...result,
-      output: summarizeResultOutput(result, summaries),
+      output: summarizeResultOutput(task, result, summaries),
     }
     consumed += 1
   }

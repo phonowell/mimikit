@@ -73,13 +73,13 @@ export type TaskResult = {
 export type Task = {
   id: string
   fingerprint: string
-  prompt: string
+  semanticKey: string
+  executionSpecId: string
   title: string
   cwd: string
   repoKey?: string | undefined
   branch?: string | undefined
   git?: TaskGitExecution | undefined
-  contract?: TaskContract | undefined
   focusId: FocusId
   profile: WorkerProfile
   provider: WorkerProvider
@@ -124,10 +124,11 @@ export type TaskPlanEnqueueTaskEffect = {
   kind: 'enqueue_task'
   taskTemplate: {
     title: string
-    prompt: string
+    executionSpecId: string
+    fingerprint: string
+    semanticKey: string
     cwd: string
     branch?: string | undefined
-    contract: TaskContract
   }
 }
 

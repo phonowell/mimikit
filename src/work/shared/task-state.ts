@@ -12,7 +12,11 @@
 
 import { clipCompactText } from '../../foundation/shared/text.js'
 
-import type { Task, TaskResultStatus } from '../../foundation/types/index.js'
+import type {
+  Task,
+  TaskResult,
+  TaskResultStatus,
+} from '../../foundation/types/index.js'
 
 /** Resolves the latest state-change timestamp for a task. */
 export const resolveTaskChangeAt = (task: Task): string =>
@@ -73,6 +77,27 @@ export const formatTaskResultSummary = (
   return detail
     ? `Task "${label}" canceled: ${detail}`
     : `Task "${label}" canceled.`
+}
+
+/** Resolves the stable result summary exposed back to the manager/focus/history layers. */
+export const resolveTaskResultSummary = (params: {
+  result: Pick<TaskResult, 'taskId' | 'title' | 'status' | 'handoff'>
+  task?: Task
+  maxChars?: number
+}): string => {
+  const maxChars = params.maxChars ?? 280
+  const handoffSummary = clipCompactText(
+    params.result.handoff?.summary?.trim() ?? '',
+    maxChars,
+  )
+  if (handoffSummary) return handoffSummary
+  const label = params.task
+    ? resolveTaskLabel(params.task)
+    : (params.result.title?.trim() ?? params.result.taskId)
+  return clipCompactText(
+    formatTaskResultSummary(label, params.result.status),
+    maxChars,
+  )
 }
 
 /** Detects whether a paused task has a resumable budget partial result. */

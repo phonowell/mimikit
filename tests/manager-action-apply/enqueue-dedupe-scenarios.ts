@@ -3,6 +3,8 @@ import { expect, test } from 'vitest'
 import { GLOBAL_FOCUS_ID } from '../../src/work/focus/constants.js'
 import { readHistory } from '../../src/persistence/history/store.js'
 import { applyTaskActions } from '../../src/policy/manager/action-apply.js'
+import { readTaskExecutionSpec } from '../../src/work/spec/store.js'
+import { materializeTaskFixture } from '../helpers/execution-spec.js'
 
 import { CONTRACT_ATTRS, createRuntime, TASK_CWD } from './testkit.js'
 
@@ -16,9 +18,10 @@ test('enqueue_task re-enqueues pending task when fingerprint matches exactly', a
     updatedAt: '2026-02-13T00:00:00.000Z',
     lastActivityAt: '2026-02-13T00:00:01.000Z',
   })
-  runtime.tasks.push({
+  runtime.tasks.push(await materializeTaskFixture({
+    stateDir: runtime.config.workDir,
+    task: {
     id: 'task-pending',
-    fingerprint: 'same prompt',
     prompt: 'same prompt',
     title: 'old title',
     cwd: TASK_CWD,
@@ -32,7 +35,8 @@ test('enqueue_task re-enqueues pending task when fingerprint matches exactly', a
     provider: 'codex',
     status: 'pending',
     createdAt: '2026-02-13T00:00:00.000Z',
-  })
+  },
+  }))
 
   await applyTaskActions(runtime, [
     {
@@ -41,6 +45,7 @@ test('enqueue_task re-enqueues pending task when fingerprint matches exactly', a
         worker_prompt: 'same prompt',
         title: 'old title',
         cwd: TASK_CWD,
+        focus_id: 'focus-local',
         ...CONTRACT_ATTRS,
       },
     },
@@ -82,9 +87,10 @@ test('enqueue_task task_created system event includes worker slot status payload
 
 test('enqueue_task dedupe does not block task creation when fingerprint differs', async () => {
   const runtime = await createRuntime()
-  runtime.tasks.push({
+  runtime.tasks.push(await materializeTaskFixture({
+    stateDir: runtime.config.workDir,
+    task: {
     id: 'task-pending',
-    fingerprint: 'same prompt',
     prompt: 'same prompt',
     title: 'old title',
     cwd: TASK_CWD,
@@ -93,7 +99,8 @@ test('enqueue_task dedupe does not block task creation when fingerprint differs'
     provider: 'codex',
     status: 'pending',
     createdAt: '2026-02-13T00:00:00.000Z',
-  })
+  },
+  }))
 
   await applyTaskActions(runtime, [
     {
@@ -114,9 +121,10 @@ test('enqueue_task dedupe does not block task creation when fingerprint differs'
 
 test('enqueue_task contract change does not reuse pending task', async () => {
   const runtime = await createRuntime()
-  runtime.tasks.push({
+  runtime.tasks.push(await materializeTaskFixture({
+    stateDir: runtime.config.workDir,
+    task: {
     id: 'task-contract-old',
-    fingerprint: 'same prompt',
     prompt: 'same prompt',
     title: 'same title',
     cwd: TASK_CWD,
@@ -130,7 +138,8 @@ test('enqueue_task contract change does not reuse pending task', async () => {
     provider: 'codex',
     status: 'pending',
     createdAt: '2026-02-13T00:00:00.000Z',
-  })
+  },
+  }))
 
   await applyTaskActions(runtime, [
     {
@@ -150,5 +159,9 @@ test('enqueue_task contract change does not reuse pending task', async () => {
   expect(runtime.tasks[0]?.status).toBe('pending')
   expect(runtime.tasks[0]?.cancel).toBeUndefined()
   expect(runtime.tasks[1]?.status).toBe('pending')
-  expect(runtime.tasks[1]?.contract?.goal).toBe('New goal')
+  const spec = await readTaskExecutionSpec(
+    runtime.config.workDir,
+    runtime.tasks[1]?.executionSpecId ?? '',
+  )
+  expect(spec.contract?.goal).toBe('New goal')
 })

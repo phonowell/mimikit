@@ -92,37 +92,8 @@ export const isActiveTask = (task: Task): boolean =>
   task.status === 'paused' ||
   task.status === 'running'
 
-export const taskToFingerprintInput = (
-  task: Pick<
-    Task,
-    | 'prompt'
-    | 'title'
-    | 'cwd'
-    | 'repoKey'
-    | 'branch'
-    | 'profile'
-    | 'provider'
-    | 'focusId'
-    | 'contract'
-  >,
-): TaskFingerprintInput => ({
-  prompt: task.prompt,
-  title: task.title,
-  cwd: task.cwd,
-  ...(task.repoKey ? { repoKey: task.repoKey } : {}),
-  ...(task.branch ? { branch: task.branch } : {}),
-  profile: task.profile,
-  provider: task.provider,
-  focusId: task.focusId,
-  ...(task.contract ? { contract: task.contract } : {}),
-})
-
 export const findActiveTaskBySemanticKey = (
   tasks: Task[],
   semanticKey: string,
 ): Task | undefined =>
-  tasks.find(
-    (task) =>
-      isActiveTask(task) &&
-      buildTaskSemanticKey(taskToFingerprintInput(task)) === semanticKey,
-  )
+  tasks.find((task) => isActiveTask(task) && task.semanticKey === semanticKey)

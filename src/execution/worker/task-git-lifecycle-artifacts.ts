@@ -2,6 +2,7 @@ import {
   readTaskResultArchive,
   writeTaskResultArchiveAtPath,
 } from '../../persistence/storage/task-results.js'
+import { readTaskExecutionSpec } from '../../work/spec/store.js'
 
 import type { Task, TaskResult } from '../../foundation/types/index.js'
 
@@ -28,6 +29,7 @@ export const buildTaskResultWithGitLifecycle = (
 }
 
 export const syncTaskGitLifecycleArtifacts = async (params: {
+  stateDir: string
   task: Task
   git: NonNullable<Task['git']>
   result?: TaskResult | undefined
@@ -40,6 +42,10 @@ export const syncTaskGitLifecycleArtifacts = async (params: {
     ...(archived.handoff ?? params.result?.handoff ?? {}),
     git: params.git,
   }
+  const spec = await readTaskExecutionSpec(
+    params.stateDir,
+    params.task.executionSpecId,
+  )
   await writeTaskResultArchiveAtPath(archivePath, {
     taskId: archived.taskId,
     focusId: params.task.focusId,
@@ -48,7 +54,7 @@ export const syncTaskGitLifecycleArtifacts = async (params: {
     ...(archived.taskStatus ? { taskStatus: archived.taskStatus } : {}),
     ...(archived.outcome ? { outcome: archived.outcome } : {}),
     ...(archived.stopReason ? { stopReason: archived.stopReason } : {}),
-    prompt: params.task.prompt,
+    prompt: spec.prompt,
     output: archived.output,
     createdAt: params.task.createdAt,
     completedAt: archived.completedAt,

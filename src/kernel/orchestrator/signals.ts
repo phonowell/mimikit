@@ -8,6 +8,31 @@ type LoopWakeOptions = {
   uiKind?: UiWakeKind
 }
 
+type UiSignalRuntime = {
+  ui: Pick<
+    RuntimeState['ui'],
+    'wakeVersion' | 'wakeEvents' | 'signalControllers'
+  >
+}
+
+type ManagerSignalRuntime = {
+  manager: Pick<RuntimeState['manager'], 'wakePending' | 'signalController'>
+  ui: UiSignalRuntime['ui']
+}
+
+type ManagerWaitRuntime = {
+  manager: Pick<RuntimeState['manager'], 'wakePending' | 'signalController'>
+}
+
+type WorkerSignalRuntime = {
+  worker: Pick<RuntimeState['worker'], 'signalController'>
+  ui: UiSignalRuntime['ui']
+}
+
+type WorkerWaitRuntime = {
+  worker: Pick<RuntimeState['worker'], 'signalController'>
+}
+
 const abortController = (controller: AbortController): void => {
   if (!controller.signal.aborted) controller.abort()
 }
@@ -47,7 +72,7 @@ const waitForSignal = async (params: {
 
 // --- UI signal ---
 
-const trimUiWakeHistory = (runtime: RuntimeState): void => {
+const trimUiWakeHistory = (runtime: UiSignalRuntime): void => {
   while (runtime.ui.wakeEvents.size > MAX_UI_WAKE_EVENTS) {
     const oldest = runtime.ui.wakeEvents.keys().next().value as
       | number
@@ -58,7 +83,7 @@ const trimUiWakeHistory = (runtime: RuntimeState): void => {
 }
 
 const resolveNextUiWake = (
-  runtime: RuntimeState,
+  runtime: UiSignalRuntime,
   sinceVersion: number,
 ): { kind: UiWakeKind; version: number } | undefined => {
   const normalizedVersion =
@@ -72,7 +97,7 @@ const resolveNextUiWake = (
 }
 
 export const notifyUiSignal = (
-  runtime: RuntimeState,
+  runtime: UiSignalRuntime,
   kind: UiWakeKind = 'snapshot',
 ): void => {
   runtime.ui.wakeVersion += 1
@@ -83,7 +108,7 @@ export const notifyUiSignal = (
 }
 
 const notifyUiIfRequested = (
-  runtime: RuntimeState,
+  runtime: UiSignalRuntime,
   options: LoopWakeOptions | undefined,
 ): void => {
   if (options?.notifyUi === false) return
@@ -91,7 +116,7 @@ const notifyUiIfRequested = (
 }
 
 export const waitForUiSignal = async (
-  runtime: RuntimeState,
+  runtime: UiSignalRuntime,
   timeoutMs: number,
   sinceVersion = 0,
 ): Promise<{ kind: UiWakeKind | 'timeout'; version: number }> => {
@@ -123,7 +148,7 @@ export const waitForUiSignal = async (
 // --- Manager signal ---
 
 export const notifyManagerLoop = (
-  runtime: RuntimeState,
+  runtime: ManagerSignalRuntime,
   options?: LoopWakeOptions,
 ): void => {
   runtime.manager.wakePending = true
@@ -132,7 +157,7 @@ export const notifyManagerLoop = (
 }
 
 export const waitForManagerLoopSignal = async (
-  runtime: RuntimeState,
+  runtime: ManagerWaitRuntime,
   timeoutMs: number,
 ): Promise<void> => {
   if (runtime.manager.wakePending) {
@@ -152,7 +177,7 @@ export const waitForManagerLoopSignal = async (
 // --- Worker signal ---
 
 export const notifyWorkerLoop = (
-  runtime: RuntimeState,
+  runtime: WorkerSignalRuntime,
   options?: LoopWakeOptions,
 ): void => {
   runtime.worker.signalController = replaceOrCreateAbortController(
@@ -162,7 +187,7 @@ export const notifyWorkerLoop = (
 }
 
 export const waitForWorkerLoopSignal = (
-  runtime: RuntimeState,
+  runtime: WorkerWaitRuntime,
   timeoutMs: number,
 ): Promise<void> =>
   waitForSignal({

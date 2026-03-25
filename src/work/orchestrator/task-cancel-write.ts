@@ -7,7 +7,7 @@ import {
 } from './task-session-write.js'
 
 import type { Task, TaskCancelMeta } from '../../foundation/types/index.js'
-import type { OrchestratorRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
+import type { RuntimeTaskStateSlice } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 export const buildTaskCancelMeta = (meta?: {
   source?: string
@@ -23,7 +23,7 @@ export const buildTaskCancelMeta = (meta?: {
 })
 
 export const applyTaskCancelSessionPolicy = (params: {
-  runtime: OrchestratorRuntime
+  runtime: RuntimeTaskStateSlice
   taskId: string
   task: Task
   cancelSource: TaskCancelMeta['source']

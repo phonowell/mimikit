@@ -7,6 +7,10 @@ import { expect, test } from 'vitest'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 import { loadRuntimeSnapshot } from '../src/persistence/storage/runtime-snapshot.js'
 import {
+  buildTaskFingerprint,
+  buildTaskSemanticKey,
+} from '../src/work/orchestrator/task-state.js'
+import {
   finishTaskWorkerRun,
   startTaskWorkerRun,
   updateTaskUsage,
@@ -18,8 +22,23 @@ const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-task-worker-run-'))
 
 const createTask = (): Task => ({
   id: 'task-run-write',
-  fingerprint: 'fp-task-run-write',
-  prompt: 'run task',
+  fingerprint: buildTaskFingerprint({
+    prompt: 'run task',
+    title: 'Run Task',
+    cwd: '/tmp/run-task',
+    profile: 'worker',
+    provider: 'codex',
+    focusId: 'focus-local',
+  }),
+  semanticKey: buildTaskSemanticKey({
+    prompt: 'run task',
+    title: 'Run Task',
+    cwd: '/tmp/run-task',
+    profile: 'worker',
+    provider: 'codex',
+    focusId: 'focus-local',
+  }),
+  executionSpecId: 'spec-task-run-write',
   title: 'Run Task',
   cwd: '/tmp/run-task',
   focusId: 'focus-local',

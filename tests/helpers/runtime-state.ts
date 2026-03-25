@@ -8,6 +8,10 @@ import { defaultConfig } from '../../src/bootstrap/config.js'
 import { GLOBAL_FOCUS_ID } from '../../src/work/focus/constants.js'
 import { buildPaths } from '../../src/persistence/fs/paths.js'
 import { createDefaultMemoryRefreshState } from '../../src/policy/memory/refresh/state.js'
+import {
+  materializePlanFixture,
+  materializeTaskFixture,
+} from './execution-spec.js'
 
 import type { RuntimeState } from '../../src/kernel/orchestrator/runtime-state.js'
 
@@ -57,6 +61,30 @@ export const createTestRuntimeState = async (
             lastActivityAt: now,
           },
         ])
+  const tasks = options.patch?.tasks
+    ? await Promise.all(
+        options.patch.tasks.map(async (task) => {
+          const materialized = await materializeTaskFixture({
+            stateDir: workDir,
+            task: task as never,
+          })
+          Object.assign(task, materialized)
+          return task
+        }),
+      )
+    : []
+  const taskPlans = options.patch?.taskPlans
+    ? await Promise.all(
+        options.patch.taskPlans.map(async (plan) => {
+          const materialized = await materializePlanFixture({
+            stateDir: workDir,
+            plan,
+          })
+          Object.assign(plan, materialized)
+          return plan
+        }),
+      )
+    : []
   return {
     runtimeId: options.runtimeId ?? 'runtime-test',
     config,
@@ -101,8 +129,8 @@ export const createTestRuntimeState = async (
       resultsCursor: 0,
       ...options.patch?.queues,
     },
-    tasks: options.patch?.tasks ?? [],
-    taskPlans: options.patch?.taskPlans ?? [],
+    tasks,
+    taskPlans,
     focuses,
   }
 }

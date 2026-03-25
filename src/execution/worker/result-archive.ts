@@ -3,29 +3,37 @@ import {
   resolveTaskResultArchivePath,
   writeTaskResultArchiveAtPath,
 } from '../../persistence/storage/task-results.js'
+import { readTaskExecutionSpec } from '../../work/spec/store.js'
 
 import type { Task, TaskResult } from '../../foundation/types/index.js'
 import type { WorkerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
-const buildArchiveEntry = (task: Task, result: TaskResult) => ({
-  taskId: task.id,
-  focusId: task.focusId,
-  title: task.title,
-  status: result.status,
-  provider: task.provider,
-  prompt: task.prompt,
-  output: result.output,
-  createdAt: task.createdAt,
-  completedAt: result.completedAt,
-  durationMs: result.durationMs,
-  ...(result.taskStatus ? { taskStatus: result.taskStatus } : {}),
-  ...(result.outcome ? { outcome: result.outcome } : {}),
-  ...(result.stopReason ? { stopReason: result.stopReason } : {}),
-  ...(result.usage ? { usage: result.usage } : {}),
-  ...(result.cancel ? { cancel: result.cancel } : {}),
-  ...(result.handoff ? { handoff: result.handoff } : {}),
-  ...(result.evidence ? { evidence: result.evidence } : {}),
-})
+const buildArchiveEntry = async (
+  stateDir: string,
+  task: Task,
+  result: TaskResult,
+) => {
+  const spec = await readTaskExecutionSpec(stateDir, task.executionSpecId)
+  return {
+    taskId: task.id,
+    focusId: task.focusId,
+    title: task.title,
+    status: result.status,
+    provider: task.provider,
+    prompt: spec.prompt,
+    output: result.output,
+    createdAt: task.createdAt,
+    completedAt: result.completedAt,
+    durationMs: result.durationMs,
+    ...(result.taskStatus ? { taskStatus: result.taskStatus } : {}),
+    ...(result.outcome ? { outcome: result.outcome } : {}),
+    ...(result.stopReason ? { stopReason: result.stopReason } : {}),
+    ...(result.usage ? { usage: result.usage } : {}),
+    ...(result.cancel ? { cancel: result.cancel } : {}),
+    ...(result.handoff ? { handoff: result.handoff } : {}),
+    ...(result.evidence ? { evidence: result.evidence } : {}),
+  }
+}
 
 export const resolveArchivePath = (
   runtime: WorkerRuntime,
@@ -34,13 +42,13 @@ export const resolveArchivePath = (
   source: 'worker' | 'cancel',
 ): Promise<string | undefined> =>
   safeOrUndefined(`appendTaskResultArchive: ${source}`, () =>
-    resolveTaskResultArchivePath(
-      runtime.config.workDir,
-      buildArchiveEntry(task, result),
+    buildArchiveEntry(runtime.config.workDir, task, result).then((entry) =>
+      resolveTaskResultArchivePath(runtime.config.workDir, entry),
     ),
   )
 
 export const writeTaskArchive = (
+  stateDir: string,
   task: Task,
   result: TaskResult,
   archivePath: string,
@@ -49,7 +57,7 @@ export const writeTaskArchive = (
   safeOrUndefined(`writeTaskResultArchive: ${source}`, async () => {
     await writeTaskResultArchiveAtPath(
       archivePath,
-      buildArchiveEntry(task, result),
+      await buildArchiveEntry(stateDir, task, result),
     )
     return archivePath
   })

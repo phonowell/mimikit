@@ -125,6 +125,7 @@ export const recordTaskGitLifecycle = async (
   const git = { ...task.git, lifecycle }
   const result = buildTaskResultWithGitLifecycle(task, git)
   await syncTaskGitLifecycleArtifacts({
+    stateDir: runtime.config.workDir,
     task,
     git,
     ...(result ? { result } : {}),

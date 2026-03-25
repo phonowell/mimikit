@@ -1,7 +1,7 @@
 import { nowIso } from '../../foundation/shared/utils.js'
 
 import type { Task, TaskCancelSource } from '../../foundation/types/index.js'
-import type { OrchestratorRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
+import type { RuntimeTaskStateSlice } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 const normalizeSessionId = (
   value: string | null | undefined,
@@ -10,17 +10,17 @@ const normalizeSessionId = (
   return trimmed && trimmed.length > 0 ? trimmed : undefined
 }
 
-const findTask = (runtime: OrchestratorRuntime, taskId: string) =>
+const findTask = (runtime: RuntimeTaskStateSlice, taskId: string) =>
   runtime.tasks.find((item) => item.id === taskId)
 
 const resolveTaskTarget = (params: {
-  runtime: OrchestratorRuntime
+  runtime: RuntimeTaskStateSlice
   taskId: string
   task?: Task
 }) => findTask(params.runtime, params.taskId) ?? params.task
 
 export const bindRuntimeTaskSession = (params: {
-  runtime: OrchestratorRuntime
+  runtime: RuntimeTaskStateSlice
   taskId: string
   sessionId: string | null | undefined
   task?: Task
@@ -37,7 +37,7 @@ export const bindRuntimeTaskSession = (params: {
 }
 
 export const discardRuntimeTaskSession = (params: {
-  runtime: OrchestratorRuntime
+  runtime: RuntimeTaskStateSlice
   taskId: string
   task?: Task
 }): boolean => {

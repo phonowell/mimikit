@@ -3,7 +3,7 @@ import {
   buildDigest,
   DIGEST_SUMMARY_MAX_CHARS,
 } from '../../foundation/prompting/context-digest-shared.js'
-import { truncateText } from '../../foundation/shared/text.js'
+import { resolveTaskResultSummary } from '../../work/shared/task-state.js'
 
 import type { SectionDigest } from '../../foundation/prompting/context-digest-shared.js'
 import type {
@@ -85,22 +85,11 @@ export const buildBatchResultsDigest = (params: {
         title: task?.title.trim() ?? result.title?.trim() ?? result.taskId,
         ...(result.stopReason ? { stop_reason: result.stopReason } : {}),
         ...(result.archivePath ? { archive_path: result.archivePath } : {}),
-        output: truncateText(result.output, DIGEST_SUMMARY_MAX_CHARS, {
-          normalizeWhitespace: true,
-          suffix: '…',
+        summary: resolveTaskResultSummary({
+          result,
+          ...(task ? { task } : {}),
+          maxChars: DIGEST_SUMMARY_MAX_CHARS,
         }),
-        ...(result.handoff?.summary
-          ? {
-              handoff_summary: truncateText(
-                result.handoff.summary,
-                DIGEST_SUMMARY_MAX_CHARS,
-                {
-                  normalizeWhitespace: true,
-                  suffix: '…',
-                },
-              ),
-            }
-          : {}),
       }
     }),
   })
