@@ -41,7 +41,7 @@ test('appendManagerUsageLedgerEntry writes manager round packet with token usage
           sourceRefCount: 2,
         },
       ],
-      includedSections: ['packet_summary', 'inputs', 'tasks'],
+      includedSections: ['inputs', 'tasks'],
       prunedSections: ['memory'],
     },
     usage: {

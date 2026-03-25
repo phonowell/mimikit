@@ -1,6 +1,4 @@
 import { compareIsoAsc, parseIsoMs } from '../../foundation/shared/time.js'
-import { appendLog } from '../../persistence/log/append.js'
-import { bestEffort } from '../../persistence/log/safe.js'
 
 import {
   canFireOnWorkerSlotFreed,
@@ -97,14 +95,6 @@ export const checkScheduledPlans = async (
         nowIso,
         reason: 'scheduled_at',
       })
-      await bestEffort('appendLog: cron_trigger_metrics', () =>
-        appendLog(runtime.paths.log, {
-          event: 'cron_trigger_metrics',
-          triggerMode: 'scheduled_at',
-          planId: plan.id,
-          outcome: 'triggered',
-        }),
-      )
       triggeredCount += 1
       stateChanged = true
       continue
@@ -121,45 +111,19 @@ export const checkScheduledPlans = async (
     let matched = false
     try {
       matched = matchesCronNow(cron, timeZone, now)
-    } catch (error) {
-      await bestEffort('appendLog: trigger_expression_error', () =>
-        appendLog(runtime.paths.log, {
-          event: 'trigger_expression_error',
-          planId: plan.id,
-          cron,
-          ...(timeZone ? { timeZone } : {}),
-          error: error instanceof Error ? error.message : String(error),
-        }),
-      )
+    } catch {
       continue
     }
     if (!matched) continue
 
     await firePlan({ runtime, plan, nowIso, reason: 'cron' })
-    await bestEffort('appendLog: cron_trigger_metrics', () =>
-      appendLog(runtime.paths.log, {
-        event: 'cron_trigger_metrics',
-        triggerMode: 'cron',
-        planId: plan.id,
-        outcome: 'triggered',
-      }),
-    )
     triggeredCount += 1
     stateChanged = true
 
     let hasNextRun = false
     try {
       hasNextRun = hasNextCronRun(cron, timeZone)
-    } catch (error) {
-      await bestEffort('appendLog: trigger_next_run_error', () =>
-        appendLog(runtime.paths.log, {
-          event: 'trigger_next_run_error',
-          planId: plan.id,
-          cron,
-          ...(timeZone ? { timeZone } : {}),
-          error: error instanceof Error ? error.message : String(error),
-        }),
-      )
+    } catch {
       hasNextRun = false
     }
     if (!hasNextRun) {

@@ -16,7 +16,6 @@ export type FeedbackContext = {
   allowAskUserChoice?: boolean
   confirmedRunTaskChoiceIds?: Set<string>
   wakeProfile?: ManagerWakeProfile
-  allowedActions?: Set<string>
   inputs?: UserInput[]
   supplementalEvidenceSources?: Set<'task_result'>
   restartRuntimeAvailable?: boolean

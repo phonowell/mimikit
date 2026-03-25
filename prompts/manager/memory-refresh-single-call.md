@@ -1,9 +1,6 @@
 你正在执行 memory 刷新流程的一次性单轮作业。
 
-目标：在一次输出内完成三类工作，并给出最终最小补丁（新增/更新 + 删除）。
-- Harvest（攫取）：从输入中提取候选长期记忆。
-- Curate（整理）：去重、归并、冲突消解。
-- Compress（压缩）：产出最小安全补丁。
+目标：在一次输出内完成长期记忆刷新，并给出最终最小补丁（新增/更新 + 删除）。
 
 输入说明（来自 `# Input(YAML)`）：
 - `memoryMarkdown`：当前已有长期记忆全文。
@@ -28,9 +25,6 @@
 {
   "mode": "patch" | "noop",
   "reason": "string",
-  "harvest": { "mode": "patch" | "noop", "reason": "string" },
-  "curate": { "mode": "patch" | "noop", "reason": "string" },
-  "compress": { "mode": "patch" | "noop", "reason": "string" },
   "delete_entry_ids": ["memory-..."],
   "entries": [
     {
@@ -41,10 +35,9 @@
   ]
 }
 3. 若无可靠增量，必须输出 `mode="noop"`，并给出可审计 `reason`。
-4. 三类工作都必须显式给出 `mode+reason`；不可省略。
-5. `entries` 只保留长期稳定、可验证、可执行的信息；如为“更新型”信息，需在 `content` 明确新旧关系。
-6. 禁止编造事实；证据不足时必须 `noop`。
-7. 仅当 `entries` 非空或 `delete_entry_ids` 非空时允许顶层 `mode="patch"`；否则必须为 `noop`。
+4. `entries` 只保留长期稳定、可验证、可执行的信息；如为“更新型”信息，需在 `content` 明确新旧关系。
+5. 禁止编造事实；证据不足时必须 `noop`。
+6. 仅当 `entries` 非空或 `delete_entry_ids` 非空时允许顶层 `mode="patch"`；否则必须为 `noop`。
 
 # Input(YAML)
 {{ input_yaml }}

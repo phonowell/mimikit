@@ -65,7 +65,7 @@ export const buildManagerPromptPackets = (params: {
     tasks: params.tasks,
     plans: params.plans ?? [],
     workingFocusIds: params.workingFocusIds ?? [],
-    includedSections: ['packet_summary', ...includedSections],
+    includedSections,
     prunedSections,
     ...(includedSectionDigests.length > 0
       ? { sectionDigests: includedSectionDigests }
@@ -84,8 +84,7 @@ export const buildManagerPromptPackets = (params: {
     params.limits.focusListMaxBytes +
       params.limits.workingFocusesMaxBytes +
       params.limits.tasksMaxBytes +
-      params.limits.plansMaxBytes +
-      params.limits.packetSummaryMaxBytes,
+      params.limits.plansMaxBytes,
   )
   const eventPacket = sectionText(
     buildEventPacketPayload({
@@ -102,8 +101,7 @@ export const buildManagerPromptPackets = (params: {
       params.limits.inputsMaxBytes +
       params.limits.batchResultsMaxBytes +
       params.limits.recentHistoryMaxBytes +
-      params.limits.actionFeedbackMaxBytes +
-      params.limits.packetSummaryMaxBytes,
+      params.limits.actionFeedbackMaxBytes,
   )
 
   return {

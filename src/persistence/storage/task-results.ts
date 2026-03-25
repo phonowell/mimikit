@@ -10,10 +10,6 @@ import {
   readTaskResultsForTasks,
   type ReadTaskResultsOptions,
 } from './task-results-read.js'
-import {
-  queryTaskResultArchives,
-  type QueryTaskResultArchivesOptions,
-} from './task-results-search.js'
 
 import type {
   TaskCancelMeta,
@@ -140,9 +136,5 @@ export const appendTaskResultArchive = (
     writeTaskResultArchiveAtPath(path, entry),
   )
 
-export {
-  queryTaskResultArchives,
-  readTaskResultArchive,
-  readTaskResultsForTasks,
-}
-export type { QueryTaskResultArchivesOptions, ReadTaskResultsOptions }
+export { readTaskResultArchive, readTaskResultsForTasks }
+export type { ReadTaskResultsOptions }

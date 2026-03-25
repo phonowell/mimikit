@@ -5,10 +5,7 @@ import { GLOBAL_FOCUS_ID } from '../../work/focus/index.js'
 
 import { appendHistory } from './store.js'
 
-import type {
-  FocusId,
-  ManagerActionFeedback,
-} from '../../foundation/types/index.js'
+import type { FocusId } from '../../foundation/types/index.js'
 import type { RuntimePathsState } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 type ManagerFallbackMeta = {
@@ -103,74 +100,4 @@ export const appendManagerCorrectionLimitSystemMessage = async (
     createdAt,
     focusId,
   })
-}
-
-type ActionFeedbackEntry = {
-  action: string
-  error: string
-  hint: string
-  attempted?: string
-}
-
-const toActionFeedbackEntries = (
-  feedback: ManagerActionFeedback[],
-): ActionFeedbackEntry[] =>
-  feedback
-    .map((item) => {
-      const action = item.action.replace(/\s+/g, ' ').trim()
-      const error = item.error.replace(/\s+/g, ' ').trim()
-      const hint = item.hint.replace(/\s+/g, ' ').trim()
-      if (!action || !error || !hint) return null
-      const attempted = item.attempted?.replace(/\s+/g, ' ').trim()
-      return {
-        action,
-        error,
-        hint,
-        ...(attempted ? { attempted } : {}),
-      }
-    })
-    .filter((item): item is ActionFeedbackEntry => Boolean(item))
-
-const formatActionFeedbackSummary = (
-  entries: ActionFeedbackEntry[],
-): string => {
-  if (entries.length === 0) return ''
-  const header = `Received ${entries.length} action feedback item${entries.length === 1 ? '' : 's'}.`
-  const details = entries.map(
-    (item, index) =>
-      `${index + 1}. Action "${item.action}" failed with "${item.error}". Suggested fix: ${item.hint}${item.attempted ? ` Attempted: ${item.attempted}.` : ''}`,
-  )
-  return [header, ...details].join('\n')
-}
-
-const createActionFeedbackEventRecord = (
-  feedback: ManagerActionFeedback[],
-): ReturnType<typeof createSystemEventRecord> | null => {
-  const entries = toActionFeedbackEntries(feedback)
-  if (entries.length === 0) return null
-  return createSystemEventRecord({
-    summary: formatActionFeedbackSummary(entries),
-    event: 'action_feedback',
-    payload: {
-      count: entries.length,
-      items: entries,
-    },
-  })
-}
-
-export const appendActionFeedbackSystemMessage = (
-  historyPath: string,
-  feedback: ManagerActionFeedback[],
-  focusId: FocusId = GLOBAL_FOCUS_ID,
-): Promise<boolean> => {
-  const eventRecord = createActionFeedbackEventRecord(feedback)
-  if (!eventRecord) return Promise.resolve(false)
-  return appendHistory(historyPath, {
-    id: `sys-action-feedback-${Date.now()}`,
-    role: 'system',
-    visibility: 'all',
-    ...eventRecord,
-    createdAt: nowIso(),
-    focusId,
-  }).then(() => true)
 }

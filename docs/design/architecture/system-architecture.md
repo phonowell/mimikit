@@ -13,7 +13,7 @@
 - `mimikit` 对外是异步自治作业系统，对内保持轻量编排内核：负责本地状态机、队列、调度、可观测性，不直接执行任务。
 - manager 使用 `openai-responses`；worker 使用 `codex-sdk`。
 - 运行时状态采用“根级实体集合 + 过程态子域”结构：根上保留 `queues / tasks / taskPlans / focuses`，过程态收敛在 `session / manager / worker / ui`，避免继续堆第二套调度或摘要层。
-- manager prompt 收敛为双 packet：`state_packet` 负责稳定状态（focus/task/plan），`event_packet` 负责当前批次事件（input/result/history/action_feedback/environment/packet）；详细 task result 只留在 `event_packet.batch_results`，`state_packet.tasks` 不再重复展开结果正文；section 字节预算固定取自 `manager.promptSections`，`wakeProfile` 只影响 packet/action surface，不再动态改写 bytes。
+- manager prompt 收敛为双 packet：`state_packet` 负责稳定状态（focus/task/plan），`event_packet` 负责当前批次事件（input/result/history/action_feedback/environment/packet）；详细 task result 只留在 `event_packet.batch_results`，`state_packet.tasks` 不再重复展开结果正文；section 字节预算固定取自 `manager.promptSections`，`wakeProfile` 只影响 packet section 选择，不再动态改写 bytes，也不再分档 action surface。
 - worker 执行通道固定为 codex，不再进行 provider 候选注入、自动打分或按任务显式切换。
 - manager/worker 每轮 usage 统一写入 `usage/ledger.jsonl`，直接暴露 prompt 字节、packet 裁剪与执行侧 token 消耗，不再额外引入成本推导层。
 - HTTP 输入校验与参数归一化集中在 `src/surface/http/helpers.ts`。

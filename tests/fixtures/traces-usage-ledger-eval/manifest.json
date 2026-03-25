@@ -126,7 +126,6 @@
           },
           "minPromptBytesSum": 7000,
           "includedSections": [
-            "packet_summary",
             "tasks"
           ],
           "prunedSections": [
@@ -227,7 +226,6 @@
           },
           "minTotalUsage": 3600,
           "includedSections": [
-            "packet_summary",
             "inputs",
             "tasks"
           ]

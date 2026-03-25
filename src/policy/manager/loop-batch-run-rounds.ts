@@ -39,7 +39,6 @@ export const runManagerCorrectionRounds = async (params: {
   plans: TaskPlan[]
   workingFocusIds: FocusId[]
   maxCorrectionRounds: number
-  resolveFocusId: () => FocusId
   abortSignal?: AbortSignal
 }): Promise<{
   parsed: ReturnType<typeof parseActions>
@@ -55,11 +54,9 @@ export const runManagerCorrectionRounds = async (params: {
     plans,
     workingFocusIds,
     maxCorrectionRounds,
-    resolveFocusId,
   } = params
   let elapsedMs = 0
   let batchUsage: TokenUsage | undefined
-  let promptPrefixHash: string | undefined
   let managerThreadId = runtime.manager.threadId
   let extra: ManagerRoundExtra = {}
   let lastParsed = parseActions('')
@@ -96,13 +93,6 @@ export const runManagerCorrectionRounds = async (params: {
             : {}),
           ...(repeatedRejectedAction ? { action: repeatedRejectedAction } : {}),
         })
-        if (promptPrefixHash) {
-          await appendLog(runtime.paths.log, {
-            event: 'manager_prompt_prefix_hash',
-            rounds: round - 1,
-            hash: promptPrefixHash,
-          })
-        }
         return buildRoundLimitResult({
           text: fallbackReply,
           elapsedMs,
@@ -138,16 +128,6 @@ export const runManagerCorrectionRounds = async (params: {
     else delete runtime.manager.threadId
     elapsedMs += runResult.elapsedMs
     batchUsage = mergeUsageAdditive(batchUsage, runResult.usage)
-    if (!promptPrefixHash) promptPrefixHash = runResult.promptPrefixHash
-    else if (promptPrefixHash !== runResult.promptPrefixHash) {
-      await appendLog(runtime.paths.log, {
-        event: 'manager_prompt_prefix_changed',
-        round,
-        previousPrefixHash: promptPrefixHash,
-        nextPrefixHash: runResult.promptPrefixHash,
-      })
-      promptPrefixHash = runResult.promptPrefixHash
-    }
     const parsed = parseActions(runResult.output)
     lastParsed = parsed
     const followup = await resolveRoundFollowup({
@@ -156,17 +136,10 @@ export const runManagerCorrectionRounds = async (params: {
       output: runResult.output,
       allowAskUserChoice,
       resultTaskIds,
-      resolveFocusId,
+      wakeProfile: runResult.wakeProfile,
       roundExtra: extra,
     })
     if (followup.done) {
-      if (promptPrefixHash) {
-        await appendLog(runtime.paths.log, {
-          event: 'manager_prompt_prefix_hash',
-          rounds: round,
-          hash: promptPrefixHash,
-        })
-      }
       return buildBatchSuccessResult({
         parsed,
         elapsedMs,
@@ -179,13 +152,6 @@ export const runManagerCorrectionRounds = async (params: {
     event: 'manager_correction_round_limit_reached',
     maxCorrectionRounds,
   })
-  if (promptPrefixHash) {
-    await appendLog(runtime.paths.log, {
-      event: 'manager_prompt_prefix_hash',
-      rounds: maxCorrectionRounds,
-      hash: promptPrefixHash,
-    })
-  }
   if (managerThreadId) runtime.manager.threadId = managerThreadId
   else delete runtime.manager.threadId
   return buildRoundLimitResult({

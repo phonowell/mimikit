@@ -35,9 +35,6 @@ test('single-call renders input yaml via prompt template', async () => {
     output: JSON.stringify({
       mode: 'patch',
       reason: 'ready',
-      harvest: { mode: 'patch', reason: 'harvested' },
-      curate: { mode: 'patch', reason: 'curated' },
-      compress: { mode: 'patch', reason: 'compressed' },
       delete_entry_ids: [],
       entries: [
         {
@@ -72,9 +69,6 @@ test('single-call accepts delete-only patch when entry id exists in memory', asy
     output: JSON.stringify({
       mode: 'patch',
       reason: 'forget_instruction_detected',
-      harvest: { mode: 'noop', reason: 'no_new_fact' },
-      curate: { mode: 'patch', reason: 'resolved_to_delete' },
-      compress: { mode: 'patch', reason: 'delete_only' },
       delete_entry_ids: ['memory-oldpref'],
       entries: [],
     }),
@@ -104,9 +98,6 @@ test('single-call drops invalid delete ids and downgrades to noop', async () => 
     output: JSON.stringify({
       mode: 'patch',
       reason: 'delete_requested',
-      harvest: { mode: 'noop', reason: 'none' },
-      curate: { mode: 'patch', reason: 'delete_candidate' },
-      compress: { mode: 'patch', reason: 'delete_only' },
       delete_entry_ids: ['memory-not-exist'],
       entries: [],
     }),

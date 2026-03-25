@@ -8,7 +8,6 @@ export type SystemEventName =
   | 'manager_fallback_reply'
   | 'manager_round_limit'
   | 'manager_error'
-  | 'action_feedback'
   | 'trigger_fire'
   | 'worker_slot_freed'
   | 'user_choice'

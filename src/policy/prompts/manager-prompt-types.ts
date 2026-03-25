@@ -21,7 +21,6 @@ export type ManagerPromptPayload = {
   prompt: string
   promptSegments: ProviderPromptSegment[]
   contextPacket: ManagerContextPacket
-  packetSummary: string
 }
 
 export type BuildManagerPromptParams = {
@@ -41,10 +40,7 @@ export type BuildManagerPromptParams = {
 }
 
 export type ManagerPromptPacketBuildResult = {
-  packetBundle: {
-    packet: ManagerContextPacket
-    summaryText: string
-  }
+  packetBundle: { packet: ManagerContextPacket }
   statePacket: string
   eventPacket: string
   selectedRememberedMemory: string

@@ -69,7 +69,7 @@ const buildCapacityPromptPayload = async (params: {
   })
 }
 
-test('buildManagerPromptPayload skips working focus history for minimal capacity packets', async () => {
+test('buildManagerPromptPayload keeps working focus history for minimal capacity packets', async () => {
   const payload = await buildCapacityPromptPayload({
     workDir: '/tmp/mimikit-context-demand-capacity',
     taskId: 'task-capacity-1',
@@ -78,9 +78,9 @@ test('buildManagerPromptPayload skips working focus history for minimal capacity
     packetMode: 'minimal',
   })
 
-  expect(readHistoryMock).not.toHaveBeenCalled()
+  expect(readHistoryMock).toHaveBeenCalledTimes(1)
   expect(readMemoryEntriesMock).toHaveBeenCalledTimes(1)
-  expect(payload.contextPacket.includedSections).not.toContain('working_focuses')
+  expect(payload.contextPacket.includedSections).toContain('working_focuses')
   expect(payload.contextPacket.prunedSections).not.toContain('working_focuses')
 })
 

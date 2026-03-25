@@ -30,7 +30,7 @@ test('runManagerCorrectionRounds explains insufficient evidence for risky action
     output:
       '<M:enqueue_task title="task" cwd="/tmp/task" goal="ship" in_scope="guard only" done_when_1="tests pass" />',
     elapsedMs: 3,
-    promptPrefixHash: 'prefix-hash',
+    wakeProfile: 'task_result',
     threadId: 'session-manager-evidence',
   })
   resolveRoundFollowupMock.mockResolvedValueOnce({

@@ -19,7 +19,6 @@ const USER_VALUE_EVENTS = new Set<SystemEventName>([
 const INTERNAL_EVENTS = new Set<SystemEventName>([
   'manager_round_limit',
   'manager_error',
-  'action_feedback',
   'trigger_fire',
   'worker_slot_freed',
   'plan_created',

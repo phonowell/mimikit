@@ -30,7 +30,7 @@ test('runManagerCorrectionRounds explains missing execution boundary in user ter
     output:
       '<M:enqueue_task worker_prompt="do work" title="task" cwd="/tmp/task" />',
     elapsedMs: 3,
-    promptPrefixHash: 'prefix-hash',
+    wakeProfile: 'user_input',
     threadId: 'session-manager-scope',
   })
   resolveRoundFollowupMock.mockResolvedValueOnce({
@@ -84,14 +84,14 @@ test('runManagerCorrectionRounds returns concrete invalid action args instead of
       output:
         '<M:enqueue_task title="task" cwd="/tmp/task" goal="ship" in_scope="frontend only" done_when_1="tests pass" />',
       elapsedMs: 3,
-      promptPrefixHash: 'prefix-hash',
+      wakeProfile: 'user_input',
       threadId: 'session-manager-invalid-args',
     })
     .mockResolvedValueOnce({
       output:
         '<M:enqueue_task title="task" cwd="/tmp/task" goal="ship" in_scope="frontend only" done_when_1="tests pass" />',
       elapsedMs: 4,
-      promptPrefixHash: 'prefix-hash',
+      wakeProfile: 'user_input',
       threadId: 'session-manager-invalid-args',
     })
   resolveRoundFollowupMock

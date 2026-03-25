@@ -7,15 +7,9 @@ import type {
 } from '../../foundation/types/index.js'
 
 export type PacketSections = Record<ManagerPacketSection, string>
-export type PacketSectionPolicy = Record<
-  Exclude<ManagerPacketSection, 'packet_summary'>,
-  boolean
->
+export type PacketSectionPolicy = Record<ManagerPacketSection, boolean>
 
-const SELECTABLE_PACKET_SECTIONS: Exclude<
-  ManagerPacketSection,
-  'packet_summary'
->[] = [
+const SELECTABLE_PACKET_SECTIONS: ManagerPacketSection[] = [
   'environment',
   'focus_list',
   'working_focuses',

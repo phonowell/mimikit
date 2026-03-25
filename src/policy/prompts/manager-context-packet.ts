@@ -1,4 +1,3 @@
-import { stringifyPromptJson } from '../../foundation/prompting/format-base.js'
 import { truncateText } from '../../foundation/shared/text.js'
 import { newId, nowIso } from '../../foundation/shared/utils.js'
 
@@ -22,7 +21,6 @@ import type {
 const MAX_PACKET_IDS = 5
 
 const MINIMAL_SECTIONS = new Set<ManagerPacketSection>([
-  'packet_summary',
   'environment',
   'focus_list',
   'working_focuses',
@@ -71,14 +69,7 @@ export const shouldIncludePacketSection = (params: {
   hasContent: boolean
 }): boolean => {
   if (!params.hasContent) return false
-  if (params.section === 'packet_summary') return true
   if (params.section === 'action_feedback') return true
-  if (
-    params.section === 'working_focuses' &&
-    params.wakeProfile === 'capacity' &&
-    params.mode === 'minimal'
-  )
-    return false
   if (params.section === 'inputs') {
     return (
       params.wakeProfile === 'user_input' ||
@@ -110,10 +101,7 @@ export const buildManagerContextPacket = (params: {
   sectionDigests?: ManagerContextPacket['sectionDigests']
   includedSections: ManagerPacketSection[]
   prunedSections: ManagerPacketSection[]
-}): {
-  packet: ManagerContextPacket
-  summaryText: string
-} => {
+}): { packet: ManagerContextPacket } => {
   const latestUserInput = [...params.inputs]
     .reverse()
     .find((item) => item.role === 'user')
@@ -159,8 +147,5 @@ export const buildManagerContextPacket = (params: {
     includedSections: [...params.includedSections],
     prunedSections: [...params.prunedSections],
   }
-  return {
-    packet,
-    summaryText: stringifyPromptJson(packet),
-  }
+  return { packet }
 }

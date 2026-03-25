@@ -52,7 +52,6 @@ export const buildManagerPromptPayload = async (
   const contextSource = await loadPromptSource('manager/context.md')
   const actionSurface = formatManagerActionSurfacePrompt(
     resolveManagerActionSurfacePromptConfig({
-      wakeProfile,
       packetMode,
       ...(params.actionFeedback
         ? { actionFeedback: params.actionFeedback }
@@ -118,7 +117,6 @@ export const buildManagerPromptPayload = async (
     prefix,
     suffix,
     contextPacket: packets.packetBundle.packet,
-    packetSummary: packets.packetBundle.summaryText,
     prompt: [prefix, stableContext, volatileContext]
       .filter((segment) => segment.length > 0)
       .join('\n\n')

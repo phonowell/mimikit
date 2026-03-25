@@ -5,10 +5,9 @@ import {
   resolveManagerActionSurfacePromptConfig,
 } from '../src/policy/manager/action-surface-prompt.js'
 
-test('task_result prompt surface excludes lookup actions even with lookup feedback', () => {
+test('prompt surface no longer varies by wake profile', () => {
   const prompt = formatManagerActionSurfacePrompt(
     resolveManagerActionSurfacePromptConfig({
-      wakeProfile: 'task_result',
       actionFeedback: [
         {
           action: 'query_context',
@@ -19,22 +18,22 @@ test('task_result prompt surface excludes lookup actions even with lookup feedba
     }),
   )
 
-  expect(prompt).toContain('wake_profile=`task_result`')
-  expect(prompt).not.toContain('M:enqueue_task')
-  expect(prompt).not.toContain('M:mutate_task')
+  expect(prompt).toContain('默认仅注入简版 action 卡')
+  expect(prompt).toContain('M:enqueue_task')
+  expect(prompt).toContain('M:mutate_task')
   expect(prompt).not.toContain('M:query_context')
   expect(prompt).not.toContain('M:read_file')
   expect(prompt).not.toContain('读取与检索')
 })
 
-test('expanded user_input prompt includes lookup details', () => {
+test('expanded prompt keeps full detail section without wake profile banner', () => {
   const prompt = formatManagerActionSurfacePrompt(
     resolveManagerActionSurfacePromptConfig({
-      wakeProfile: 'user_input',
       packetMode: 'expanded',
     }),
   )
 
+  expect(prompt).not.toContain('wake_profile=')
   expect(prompt).not.toContain('M:query_context')
   expect(prompt).not.toContain('M:read_file')
   expect(prompt).toContain('M:enqueue_task')

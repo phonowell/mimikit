@@ -1,5 +1,3 @@
-import { createHash } from 'node:crypto'
-
 import { buildPaths } from '../../persistence/fs/paths.js'
 import {
   appendTraceArchiveResult,
@@ -27,9 +25,6 @@ import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
 const toError = (error: unknown): Error =>
   error instanceof Error ? error : new Error(String(error))
-
-const hashPromptPrefix = (prefix: string): string =>
-  createHash('sha256').update(prefix, 'utf8').digest('hex')
 
 export const runManager = async (params: {
   stateDir: string
@@ -62,10 +57,8 @@ export const runManager = async (params: {
   output: string
   elapsedMs: number
   usage?: TokenUsage
-  promptPrefixHash: string
   threadId?: string | null
   contextPacket: ManagerContextPacket
-  packetSummary: string
   promptBytes: number
   promptSegmentCount: number
 }> => {
@@ -86,9 +79,7 @@ export const runManager = async (params: {
     ...(params.packetMode ? { packetMode: params.packetMode } : {}),
     ...(params.wakeProfile ? { wakeProfile: params.wakeProfile } : {}),
   })
-  const { prompt, promptSegments, prefix, contextPacket, packetSummary } =
-    promptPayload
-  const promptPrefixHash = hashPromptPrefix(prefix)
+  const { prompt, promptSegments, contextPacket } = promptPayload
   const paths = buildPaths(params.stateDir)
 
   const model = params.model?.trim()
@@ -129,7 +120,6 @@ export const runManager = async (params: {
       logContext: {
         event: 'llm_call',
         role: 'manager',
-        promptPrefixHash,
         promptSegmentCount:
           params.usePromptSegments === false ? 1 : promptSegments.length,
         promptSegmentCacheControl:
@@ -147,10 +137,8 @@ export const runManager = async (params: {
       output: result.output,
       elapsedMs: result.elapsedMs,
       ...(result.usage ? { usage: result.usage } : {}),
-      promptPrefixHash,
       ...(result.threadId ? { threadId: result.threadId } : {}),
       contextPacket,
-      packetSummary,
       promptBytes: Buffer.byteLength(prompt, 'utf8'),
       promptSegmentCount:
         params.usePromptSegments === false ? 1 : promptSegments.length,

@@ -49,13 +49,13 @@ test('runManagerCorrectionRounds reuses and updates manager thread id across rou
     .mockResolvedValueOnce({
       output: 'first round output',
       elapsedMs: 3,
-      promptPrefixHash: 'prefix-hash',
+      wakeProfile: 'user_input',
       threadId: 'session-manager-1',
     })
     .mockResolvedValueOnce({
       output: 'final answer',
       elapsedMs: 4,
-      promptPrefixHash: 'prefix-hash',
+      wakeProfile: 'user_input',
       threadId: 'session-manager-1',
     })
 
@@ -99,13 +99,13 @@ test('runManagerCorrectionRounds opens rejection circuit after repeated rejected
     .mockResolvedValueOnce({
       output: '<M:mutate_task id="task-1" op="cancel" />',
       elapsedMs: 3,
-      promptPrefixHash: 'prefix-hash',
+      wakeProfile: 'user_input',
       threadId: 'session-manager-reject',
     })
     .mockResolvedValueOnce({
       output: '<M:mutate_task id="task-1" op="cancel" />',
       elapsedMs: 4,
-      promptPrefixHash: 'prefix-hash',
+      wakeProfile: 'user_input',
       threadId: 'session-manager-reject',
     })
   resolveRoundFollowupMock.mockReset()

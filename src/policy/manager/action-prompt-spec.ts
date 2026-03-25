@@ -140,8 +140,8 @@ export const ACTION_DOMAIN_SPECS: Record<
 const buildConstraintsSuffix = (constraints?: readonly string[]): string =>
   constraints && constraints.length > 0 ? `；${constraints.join('；')}` : ''
 
-export const renderActionSurfaceIntro = (wakeProfile: string): string =>
-  renderTemplate('surface_intro', { wake_profile: wakeProfile })
+export const renderActionSurfaceIntro = (): string =>
+  renderTemplate('surface_intro')
 
 export const renderActionDomainHeading = (title: string): string =>
   renderTemplate('domain_heading', { title })

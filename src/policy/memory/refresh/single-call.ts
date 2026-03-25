@@ -10,7 +10,6 @@ import { parseStageJson } from './stage-json.js'
 
 import type {
   MemoryRefreshPayload,
-  MemoryRefreshStageSummary,
   MemoryRefreshSubprocessResult,
 } from './types.js'
 
@@ -30,20 +29,10 @@ const entrySchema = z
   })
   .strict()
 
-const stageSummarySchema = z
-  .object({
-    mode: z.enum(['patch', 'noop']),
-    reason: z.string().trim().min(1),
-  })
-  .strict()
-
 const singleCallOutputSchema = z
   .object({
     mode: z.enum(['patch', 'noop']),
     reason: z.string().trim().min(1),
-    harvest: stageSummarySchema,
-    curate: stageSummarySchema,
-    compress: stageSummarySchema,
     delete_entry_ids: z
       .array(memoryEntryIdSchema)
       .max(MAX_DELETE_ENTRY_IDS)
@@ -73,13 +62,6 @@ const buildPrompt = async (payload: MemoryRefreshPayload): Promise<string> => {
     source.path,
   )
 }
-
-const toStageSummary = (
-  summary: z.infer<typeof stageSummarySchema>,
-): MemoryRefreshStageSummary => ({
-  mode: summary.mode,
-  reason: summary.reason,
-})
 
 const collectAllowedEvidenceIds = (
   payload: MemoryRefreshPayload,
@@ -176,17 +158,10 @@ export const runMemoryRefreshSingleCall = async (params: {
       return 'invalid_delete_entry_ids'
     return 'empty_patch'
   })()
-  const compress =
-    parsed.mode === 'patch' && !hasPatch
-      ? { mode: 'noop' as const, reason }
-      : toStageSummary(parsed.compress)
   return {
     mode,
     reason,
     entries,
     deleteEntryIds,
-    harvest: toStageSummary(parsed.harvest),
-    curate: toStageSummary(parsed.curate),
-    compress,
   }
 }

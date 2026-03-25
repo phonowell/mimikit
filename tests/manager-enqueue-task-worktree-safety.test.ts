@@ -73,8 +73,8 @@ test('enqueue_task worktree prepare failure appends action feedback without thro
 
   expect(runtime.tasks).toHaveLength(0)
   const history = await readHistory(runtime.paths.history)
-  const actionFeedback = history.find(
-    (item) => item.role === 'system' && item.systemEventName === 'action_feedback',
+  const triggerFire = history.find(
+    (item) => item.role === 'system' && item.systemEventName === 'trigger_fire',
   )
-  expect(actionFeedback?.text).toContain('无法为 branch=feat/conflict-task 准备 worktree')
+  expect(triggerFire).toBeUndefined()
 })

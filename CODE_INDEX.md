@@ -171,7 +171,6 @@
 |---|---|---|
 | `loadRuntimeSnapshot()/saveRuntimeSnapshot()` | `src/persistence/storage/runtime-snapshot.ts:67` | Runtime snapshot persistence |
 | `appendTaskResultArchive()` | `src/persistence/storage/task-results.ts:109` | Stores task result archives |
-| `queryTaskResultArchives()` | `src/persistence/storage/task-results-read.ts:361` | Query archived task results |
 | `appendTaskProgress()` | `src/persistence/storage/task-progress.ts:35` | Task progress stream append/write |
 | `readHistory()/appendHistory()` | `src/persistence/history/store.ts:88` | Chat history persistence |
 | `buildPaths()/ensureDir()/ensureFile()` | `src/persistence/fs/paths.ts:23` | State path and file bootstrap |

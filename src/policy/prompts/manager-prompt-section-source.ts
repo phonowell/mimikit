@@ -73,7 +73,6 @@ export const buildManagerPacketSectionSource = (params: {
     environmentSource,
     digestSections,
     sectionSources: {
-      packet_summary: '',
       environment: sectionText(
         environmentSource,
         params.limits.environmentMaxBytes,

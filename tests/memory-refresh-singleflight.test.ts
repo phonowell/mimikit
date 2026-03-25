@@ -9,17 +9,14 @@ import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 const capturedPayloads: unknown[] = []
 
-vi.mock('../src/policy/memory/refresh/job-spawn.js', () => ({
-  spawnMemoryRefreshJob: vi.fn(async (params: { payload: unknown }) => {
+vi.mock('../src/policy/memory/refresh/single-call.js', () => ({
+  runMemoryRefreshSingleCall: vi.fn(async (params: { payload: unknown }) => {
     capturedPayloads.push(params.payload)
     return {
       mode: 'noop',
       reason: 'test',
       entries: [],
       deleteEntryIds: [],
-      harvest: { mode: 'noop', reason: 'test' },
-      curate: { mode: 'noop', reason: 'test' },
-      compress: { mode: 'noop', reason: 'test' },
     }
   }),
 }))

@@ -8,7 +8,6 @@ const PROMPT_SECTION_LIMIT_KEYS: Array<keyof PromptSectionLimits> = [
   'focusListMaxBytes',
   'inputsMaxBytes',
   'memoryMaxBytes',
-  'packetSummaryMaxBytes',
   'plansMaxBytes',
   'recentHistoryMaxBytes',
   'tasksMaxBytes',

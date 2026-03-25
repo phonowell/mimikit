@@ -8,7 +8,6 @@ import {
   sendSseEvent,
   SSE_HEARTBEAT_MS,
 } from './routes-api-events-shared.js'
-import { createSessionIngressLogger } from './session-ingress-log.js'
 
 import type { Orchestrator } from '../../kernel/orchestrator/orchestrator-service.js'
 import type { FastifyInstance } from 'fastify'
@@ -20,8 +19,6 @@ export const registerEventsRoute = (
   app: FastifyInstance,
   orchestrator: Orchestrator,
 ): void => {
-  const ingressLogger = createSessionIngressLogger()
-
   app.get('/api/events', async (request, reply) => {
     reply.header('X-Accel-Buffering', 'no')
     reply.header('Cache-Control', 'no-cache, no-transform')
@@ -48,7 +45,6 @@ export const registerEventsRoute = (
       lastSnapshotHintKey = buildSnapshotHintKey(initial)
       lastMessageCursor = resolveMessageCursor(undefined, initial.messages)
       if (!sendSseEvent(reply, 'snapshot', initial)) return
-      ingressLogger.logIncomingMessages(initial.messages)
 
       for (;;) {
         if (isClientClosed()) break
@@ -89,7 +85,6 @@ export const registerEventsRoute = (
           snapshot.messages,
         )
         if (!sendSseEvent(reply, 'snapshot', snapshot)) break
-        ingressLogger.logIncomingMessages(snapshot.messages)
       }
     } catch (error) {
       if (isClientClosed()) return

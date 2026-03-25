@@ -49,18 +49,15 @@
 - `assign_focus`
 - `remember_memory`
 
-## 动态 Action Surface
+## Action Surface
 
 实现：`src/policy/manager/action-surface.ts`、`src/policy/manager/loop-batch-run-helpers.ts`、`src/policy/manager/action-feedback-collect.ts`
 
-- `user_input` / `mixed`：开放 `task + plan + dialog + focus + memory`
-- `task_result` / `trigger` / `capacity`：仅开放 `task + plan`
-- `task_result`：默认收掉 `enqueue_task` / `mutate_task`，避免仅凭 `task_result` 补充证据继续创建或控制高风险任务
-- `trigger` / `capacity`：默认收掉 `mutate_task` / `set_task_result_summary`，保留 `enqueue_task + plan` 以支持触发型续跑
+- 当前 manager 使用统一 action surface：`task + plan + dialog + focus + memory`
 - `query_context` / `read_file` 已从 manager 代码协议中删除；主线程默认不承担本地细读/检索
 - 需要局部搜索、实现、排查时，优先走执行面 task，而不是把 lookup 堆回 manager prompt
-- 未出现在当前 surface 的 action，即使已注册，也会在校验阶段被拒绝并回写 `action_execution_rejected`
-- prompt 中展示的 action 面由代码按当前 `wake_profile` 生成，不再由 prompt 文案手写维护
+- 高风险动作是否放行由 validation / intent-evidence / runtime guard 决定，而不是再按 `wakeProfile` 额外裁一层 action 名单
+- prompt 中展示的 action 面由代码统一生成，不再按 `wake_profile` 分档，也不再由 prompt 文案手写维护
 
 参数约定（关键字段）：
 
@@ -91,7 +88,6 @@
 
 约束补充：
 
-- 当前轮次不开放的 action 会被拒绝，反馈文本会显式说明 `wake_profile` 与本轮允许的 action 列表。
 - 未注册 action 会回写 `unregistered_action` 反馈，不会执行。
 - action 出现在代码块或尾部 action 区之外时，会回写 `invalid_action_syntax` 反馈。
 - `enqueue_task` / `mutate_task` / `restart_runtime` / `ask_user_choice` / `remember_memory` 属于高风险 action：只有当当前批次存在明确的用户请求/确认，且可信运行时状态支持该动作时才放行；`history` / `task_result` 的间接建议本身不能直接驱动这些动作。`remember_memory` 额外要求当前用户输入直接支撑该长期偏好/约束内容。

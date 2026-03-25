@@ -89,7 +89,6 @@ test('manager forwards provider call logging metadata', async () => {
     logContext: {
       event: 'llm_call',
       role: 'manager',
-      promptPrefixHash: 'prefix-hash',
       promptSegmentCount: 2,
       promptSegmentCacheControl: ['ephemeral', 'none'],
     },
@@ -103,7 +102,6 @@ test('manager forwards provider call logging metadata', async () => {
       logContext: expect.objectContaining({
         event: 'llm_call',
         role: 'manager',
-        promptPrefixHash: 'prefix-hash',
         promptSegmentCount: 2,
         promptSegmentCacheControl: ['ephemeral', 'none'],
       }),

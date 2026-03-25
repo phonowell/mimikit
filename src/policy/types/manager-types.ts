@@ -7,7 +7,6 @@ import type {
 export type ManagerPacketMode = 'minimal' | 'standard' | 'expanded'
 
 export type ManagerPacketSection =
-  | 'packet_summary'
   | 'environment'
   | 'focus_list'
   | 'working_focuses'

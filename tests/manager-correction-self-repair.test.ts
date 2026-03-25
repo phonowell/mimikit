@@ -38,13 +38,13 @@ test('runManagerCorrectionRounds summarizes repeated invalid create_plan feedbac
     .mockResolvedValueOnce({
       output: '<M:create_plan title="bad plan" />',
       elapsedMs: 3,
-      promptPrefixHash: 'prefix-hash',
+      wakeProfile: 'user_input',
       threadId: 'session-manager-invalid-plan',
     })
     .mockResolvedValueOnce({
       output: '<M:create_plan title="bad plan" />',
       elapsedMs: 4,
-      promptPrefixHash: 'prefix-hash',
+      wakeProfile: 'user_input',
       threadId: 'session-manager-invalid-plan',
     })
   resolveRoundFollowupMock

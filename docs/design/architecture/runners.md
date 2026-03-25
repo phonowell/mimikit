@@ -17,7 +17,7 @@
 - Provider：固定 `openai-responses`（direct responses）
 - Provider 配置来源：`loadCodexSettings()`，优先读取 `~/.codex/config.toml` 的 active provider（`base_url`、`api_key`、`env_key`/`api_key_env`），缺省回退 `OPENAI_API_KEY` 与 `~/.codex/auth.json`
 - 超时：按 prompt 字节动态计算（`60s~120s`）
-- 输出：`{ output, elapsedMs, usage?, threadId?, contextPacket, packetSummary, promptBytes, promptSegmentCount, promptPrefixHash }`
+- 输出：`{ output, elapsedMs, usage?, threadId?, contextPacket, promptBytes, promptSegmentCount }`
 
 主流程：
 

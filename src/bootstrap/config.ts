@@ -18,7 +18,6 @@ export type PromptSectionLimits = {
   focusListMaxBytes: number
   inputsMaxBytes: number
   memoryMaxBytes: number
-  packetSummaryMaxBytes: number
   plansMaxBytes: number
   recentHistoryMaxBytes: number
   tasksMaxBytes: number
@@ -84,7 +83,6 @@ const INTERNAL_MANAGER_DEFAULTS = {
     focusListMaxBytes: 8192,
     inputsMaxBytes: 8192,
     memoryMaxBytes: 8192,
-    packetSummaryMaxBytes: 6144,
     plansMaxBytes: 16384,
     recentHistoryMaxBytes: 8192,
     tasksMaxBytes: 24576,

@@ -55,7 +55,7 @@ export const runManagerRoundWithRecovery = async (params: {
   output: string
   elapsedMs: number
   usage?: TokenUsage
-  promptPrefixHash: string
+  wakeProfile: ManagerWakeProfile
   threadId?: string | null
 }> => {
   const budgetDecision = resolveManagerContextBudgetDecision({
@@ -139,7 +139,7 @@ export const runManagerRoundWithRecovery = async (params: {
   return {
     output: result.output,
     elapsedMs: result.elapsedMs,
-    promptPrefixHash: result.promptPrefixHash,
+    wakeProfile,
     ...(result.threadId !== undefined ? { threadId: result.threadId } : {}),
     ...(result.usage ? { usage: result.usage } : {}),
   }

@@ -32,7 +32,7 @@ beforeEach(() => {
   runManagerRoundWithRecoveryMock.mockResolvedValue({
     output: '',
     elapsedMs: 0,
-    promptPrefixHash: 'manager-trigger-capacity-test',
+    wakeProfile: 'capacity',
   })
 })
 
@@ -55,7 +55,6 @@ const createTestConfig = (
       focusListMaxBytes: 2048,
       inputsMaxBytes: 2048,
       memoryMaxBytes: 2048,
-      packetSummaryMaxBytes: 4096,
       plansMaxBytes: 4096,
       recentHistoryMaxBytes: 2048,
       tasksMaxBytes: 4096,

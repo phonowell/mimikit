@@ -27,17 +27,9 @@ export type MemoryEvidenceEntry = {
 
 export type MemoryRefreshMode = 'patch' | 'noop'
 
-export type MemoryRefreshStageSummary = {
-  mode: MemoryRefreshMode
-  reason: string
-}
-
 export type MemoryRefreshSubprocessResult = {
   mode: MemoryRefreshMode
   reason: string
   entries: MemoryEvidenceEntry[]
   deleteEntryIds: string[]
-  harvest: MemoryRefreshStageSummary
-  curate: MemoryRefreshStageSummary
-  compress: MemoryRefreshStageSummary
 }

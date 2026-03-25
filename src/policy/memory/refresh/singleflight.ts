@@ -1,7 +1,11 @@
 import { appendLog } from '../../../persistence/log/append.js'
 import { bestEffort } from '../../../persistence/log/safe.js'
 
-import { MEMORY_REFRESH_JOB, runMemoryRefreshOnce } from './singleflight-run.js'
+import {
+  MEMORY_REFRESH_AUDIT_EVENTS,
+  MEMORY_REFRESH_SOURCE,
+  runMemoryRefreshOnce,
+} from './singleflight-run.js'
 import { shouldTriggerMemoryRefresh } from './trigger-policy.js'
 
 import type { ManagerRuntime } from '../../../kernel/orchestrator/runtime-interfaces.js'
@@ -18,9 +22,9 @@ const runMemoryRefreshDrain = async (
   } catch (error) {
     await bestEffort('appendLog: memory_refresh_failed', () =>
       appendLog(runtime.paths.log, {
-        event: MEMORY_REFRESH_JOB.auditEvents.failed,
+        event: MEMORY_REFRESH_AUDIT_EVENTS.failed,
         managerTurn: runtime.manager.turn,
-        source: MEMORY_REFRESH_JOB.source,
+        source: MEMORY_REFRESH_SOURCE,
         error: error instanceof Error ? error.message : String(error),
       }),
     )

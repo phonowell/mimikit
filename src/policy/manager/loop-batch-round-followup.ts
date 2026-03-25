@@ -1,5 +1,4 @@
 import { resolveScheduleNowIso } from '../../foundation/shared/time.js'
-import { appendActionFeedbackSystemMessage } from '../../persistence/history/manager-events.js'
 import { appendLog } from '../../persistence/log/append.js'
 
 import { managerActionCliLogger } from './action-cli-log.js'
@@ -14,14 +13,13 @@ import {
   type ManagerRoundExtra,
 } from './loop-batch-run-helpers.js'
 
-import type { FocusId } from '../../foundation/types/index.js'
+import type { ManagerWakeProfile } from '../../foundation/types/index.js'
 import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 import type { Parsed } from '../actions/model/spec.js'
 
 const appendRoundActionFeedback = async (params: {
   runtime: ManagerRuntime
   actionFeedback: ManagerRoundExtra['actionFeedback']
-  resolveFocusId: () => FocusId
 }): Promise<void> => {
   const { actionFeedback } = params
   if (!actionFeedback || actionFeedback.length === 0) return
@@ -43,11 +41,6 @@ const appendRoundActionFeedback = async (params: {
     hints: collectActionFeedbackHints(actionFeedback),
     hintBuckets: collectActionFeedbackHintBuckets(actionFeedback),
   })
-  await appendActionFeedbackSystemMessage(
-    params.runtime.paths.history,
-    actionFeedback,
-    params.resolveFocusId(),
-  )
 }
 
 type RoundFollowupResult =
@@ -63,11 +56,9 @@ export const resolveRoundFollowup = async (params: {
   output: string
   allowAskUserChoice: boolean
   resultTaskIds: Set<string>
-  resolveFocusId: () => FocusId
+  wakeProfile: ManagerWakeProfile
   roundExtra?: ManagerRoundExtra
 }): Promise<RoundFollowupResult> => {
-  const wakeProfile =
-    params.runtime.manager.lastContextPacket?.wakeProfile ?? 'mixed'
   const actionFeedback = collectManagerActionFeedback(
     params.parsed,
     {
@@ -75,7 +66,7 @@ export const resolveRoundFollowup = async (params: {
         runtime: params.runtime,
         allowAskUserChoice: params.allowAskUserChoice,
         resultTaskIds: params.resultTaskIds,
-        wakeProfile,
+        wakeProfile: params.wakeProfile,
         inputs: params.runtime.session.inflightInputs,
       }),
       scheduleNowIso: resolveScheduleNowIso(
@@ -90,7 +81,6 @@ export const resolveRoundFollowup = async (params: {
   await appendRoundActionFeedback({
     runtime: params.runtime,
     actionFeedback,
-    resolveFocusId: params.resolveFocusId,
   })
 
   return {

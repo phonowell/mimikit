@@ -16,7 +16,7 @@ const createUserInput = (text: string): UserInput => ({
 })
 
 test('task_result wake profile exposes restart_runtime', () => {
-  const surface = resolveManagerActionSurface('task_result')
+  const surface = resolveManagerActionSurface()
 
   expect(surface.actionNames.has('restart_runtime')).toBe(true)
 })

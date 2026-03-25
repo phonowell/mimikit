@@ -7,7 +7,6 @@ export const managerPacketModeSchema = z.enum([
 ])
 
 export const managerPacketSectionSchema = z.enum([
-  'packet_summary',
   'environment',
   'focus_list',
   'working_focuses',

@@ -17,7 +17,6 @@ import type { ManagerActionDefinition } from './action-registry-shared.js'
 import type {
   ManagerActionFeedback,
   ManagerPacketMode,
-  ManagerWakeProfile,
 } from '../../foundation/types/index.js'
 
 export type ManagerActionSurfacePromptConfig = {
@@ -44,11 +43,10 @@ const formatActionDetail = (action: ManagerActionDefinition): string =>
   })
 
 export const resolveManagerActionSurfacePromptConfig = (params: {
-  wakeProfile: ManagerWakeProfile
   packetMode?: ManagerPacketMode
   actionFeedback?: readonly ManagerActionFeedback[]
 }): ManagerActionSurfacePromptConfig => {
-  const surface = resolveManagerActionSurface(params.wakeProfile)
+  const surface = resolveManagerActionSurface()
   const detailActionNames = new Set<string>()
 
   for (const item of params.actionFeedback ?? []) {
@@ -91,7 +89,7 @@ export const formatManagerActionSurfacePrompt = (
   )
 
   return [
-    renderActionSurfaceIntro(config.surface.wakeProfile),
+    renderActionSurfaceIntro(),
     ...config.surface.domains.flatMap((domain) => {
       const actions = config.surface.actions.filter(
         (action) => action.domain === domain.domain,

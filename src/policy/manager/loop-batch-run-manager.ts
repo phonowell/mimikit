@@ -2,9 +2,7 @@ import {
   selectRecentPlans,
   selectRecentTasks,
 } from '../../surface/read-model/plan-select.js'
-import { resolveDefaultFocusId } from '../../work/focus/index.js'
 
-import { resolveWakeProfile } from './context-budget.js'
 import { collectTriggeredPlanIds } from './loop-batch-context.js'
 import { resolveBatchWorkingFocusIds } from './loop-batch-primary-focus.js'
 import { logManagerBatchStart } from './loop-batch-run-helpers.js'
@@ -43,12 +41,10 @@ const runRounds = (params: {
     minCount: runtime.config.manager.planWindow.minCount,
     maxCount: runtime.config.manager.planWindow.maxCount,
   })
-  const wakeProfile = resolveWakeProfile(inputs, results)
   const workingFocusIds = resolveBatchWorkingFocusIds({
     runtime,
     inputs,
     results,
-    wakeProfile,
   })
 
   return runManagerCorrectionRounds({
@@ -60,7 +56,6 @@ const runRounds = (params: {
     workingFocusIds,
     maxCorrectionRounds,
     ...(params.abortSignal ? { abortSignal: params.abortSignal } : {}),
-    resolveFocusId: () => resolveDefaultFocusId(runtime),
   })
 }
 

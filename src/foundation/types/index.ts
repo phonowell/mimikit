@@ -29,7 +29,6 @@ export type {
   HistoryMessage,
   UserInput,
 } from '../../surface/types/message-types.js'
-export type { TaskArchiveLookupMessage } from '../../surface/types/query-types.js'
 export type {
   FocusMeta,
   Task,

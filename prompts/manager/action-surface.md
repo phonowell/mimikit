@@ -1,5 +1,5 @@
 surface_intro: |
-  - 当前 wake_profile=`{{ wake_profile }}`；默认仅注入简版 action 卡，未列出的 action 视为本轮不可用。
+  - 默认仅注入简版 action 卡；未列出的 action 视为本轮不可用。
 domain_heading: |
   ### {{ title }}
 domain_boundary: |

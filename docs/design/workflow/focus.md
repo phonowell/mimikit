@@ -138,11 +138,7 @@
 实现：`src/policy/manager/loop-batch-run-manager.ts`
 
 - 每轮 manager 只解析一个 `primary focus`，不再把多个 focus 混进同一批 prompt。
-- 选择顺序按 `wakeProfile` 收口：
-- `user_input` 优先最新用户输入 focus，其次结果/触发/最近 active focus。
-- `task_result` 优先结果关联任务的 focus。
-- `trigger` 优先触发计划或触发 system input 携带的 focus。
-- `capacity` 优先最近仍 open 的任务 focus。
+- 选择顺序固定收敛为：最新用户输入 focus -> 最新结果关联 task focus -> 最新触发关联 focus -> 最近 open task focus -> 最近 active focus。
 - 若都无法命中，回退到 `resolveDefaultFocusId()`。
 
 ## Prompt 注入规范

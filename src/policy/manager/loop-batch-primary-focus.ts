@@ -7,7 +7,6 @@ import { resolveDefaultFocusId } from '../../work/focus/index.js'
 
 import type {
   FocusId,
-  ManagerWakeProfile,
   TaskResult,
   UserInput,
 } from '../../foundation/types/index.js'
@@ -111,11 +110,10 @@ const resolveRecentActiveFocusId = (
   return activeFocus.id
 }
 
-export const resolveBatchPrimaryFocusId = (params: {
+const resolveBatchPrimaryFocusId = (params: {
   runtime: ManagerRuntime
   inputs: UserInput[]
   results: TaskResult[]
-  wakeProfile: ManagerWakeProfile
 }): FocusId => {
   const inputsNewestFirst = [...params.inputs].sort((a, b) => {
     const diff =
@@ -143,44 +141,6 @@ export const resolveBatchPrimaryFocusId = (params: {
   )
   const latestOpenTaskFocusId = resolveLatestOpenTaskFocusId(params.runtime)
   const recentActiveFocusId = resolveRecentActiveFocusId(params.runtime)
-
-  if (params.wakeProfile === 'user_input') {
-    return (
-      latestUserFocusId ??
-      latestResultFocusId ??
-      latestTriggerFocusId ??
-      recentActiveFocusId ??
-      resolveDefaultFocusId(params.runtime)
-    )
-  }
-  if (params.wakeProfile === 'task_result') {
-    return (
-      latestResultFocusId ??
-      latestUserFocusId ??
-      latestTriggerFocusId ??
-      recentActiveFocusId ??
-      resolveDefaultFocusId(params.runtime)
-    )
-  }
-  if (params.wakeProfile === 'trigger') {
-    return (
-      latestTriggerFocusId ??
-      latestUserFocusId ??
-      latestResultFocusId ??
-      recentActiveFocusId ??
-      resolveDefaultFocusId(params.runtime)
-    )
-  }
-  if (params.wakeProfile === 'capacity') {
-    return (
-      latestOpenTaskFocusId ??
-      latestUserFocusId ??
-      latestResultFocusId ??
-      latestTriggerFocusId ??
-      recentActiveFocusId ??
-      resolveDefaultFocusId(params.runtime)
-    )
-  }
   return (
     latestUserFocusId ??
     latestResultFocusId ??
@@ -195,5 +155,4 @@ export const resolveBatchWorkingFocusIds = (params: {
   runtime: ManagerRuntime
   inputs: UserInput[]
   results: TaskResult[]
-  wakeProfile: ManagerWakeProfile
 }): FocusId[] => [resolveBatchPrimaryFocusId(params)]

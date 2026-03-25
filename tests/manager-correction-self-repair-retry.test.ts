@@ -39,13 +39,13 @@ test('runManagerCorrectionRounds gives invalid action feedback one self-repair r
       output:
         '<M:create_plan prompt="daily" title="plan" cron_expr="*/15 * * * *" time_zone="Asia/Shanghai" />',
       elapsedMs: 3,
-      promptPrefixHash: 'prefix-hash',
+      wakeProfile: 'user_input',
       threadId: 'session-manager-self-repair',
     })
     .mockResolvedValueOnce({
       output: 'repaired answer',
       elapsedMs: 4,
-      promptPrefixHash: 'prefix-hash',
+      wakeProfile: 'user_input',
       threadId: 'session-manager-self-repair',
     })
   resolveRoundFollowupMock

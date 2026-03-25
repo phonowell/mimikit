@@ -4,7 +4,6 @@ import {
   REGISTERED_MANAGER_ACTIONS,
   validateRegisteredManagerAction,
 } from './action-registry-definitions.js'
-import { formatBlockedActionSurfaceHint } from './action-surface.js'
 
 import type { FeedbackContext } from './action-validation.js'
 import type { ManagerActionFeedback } from '../../foundation/types/index.js'
@@ -82,20 +81,6 @@ export const collectManagerActionFeedback = (
       pushFeedback(feedback, seen, item, {
         error: 'unregistered_action',
         hint: UNREGISTERED_ACTION_HINT,
-      })
-      continue
-    }
-
-    const isBlocked =
-      context.allowedActions !== undefined &&
-      !context.allowedActions.has(item.name)
-    if (isBlocked) {
-      pushFeedback(feedback, seen, item, {
-        error: 'action_execution_rejected',
-        hint: formatBlockedActionSurfaceHint({
-          action: item.name,
-          wakeProfile: context.wakeProfile ?? 'mixed',
-        }),
       })
       continue
     }

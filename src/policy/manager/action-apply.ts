@@ -1,4 +1,3 @@
-import { appendActionFeedbackSystemMessage } from '../../persistence/history/manager-events.js'
 import { appendLog } from '../../persistence/log/append.js'
 import {
   enforceActiveFocusLimit,
@@ -74,11 +73,6 @@ export const applyTaskActions = async (
           error: error.feedback.error,
           hint: error.feedback.hint,
         })
-        await appendActionFeedbackSystemMessage(
-          runtime.paths.history,
-          [error.feedback],
-          resolveDefaultFocusId(runtime),
-        )
         continue
       }
       throw error

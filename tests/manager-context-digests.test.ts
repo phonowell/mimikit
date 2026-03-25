@@ -60,7 +60,7 @@ test('buildManagerContextPacket latestResult falls back to status summary instea
     tasks: [task],
     plans: [],
     workingFocusIds: [],
-    includedSections: ['packet_summary', 'batch_results', 'tasks'],
+    includedSections: ['batch_results', 'tasks'],
     prunedSections: [],
   })
 

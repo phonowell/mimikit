@@ -17,7 +17,6 @@ const promptSectionLimits = {
   focusListMaxBytes: 8192,
   inputsMaxBytes: 8192,
   memoryMaxBytes: 8192,
-  packetSummaryMaxBytes: 6144,
   plansMaxBytes: 16384,
   recentHistoryMaxBytes: 8192,
   tasksMaxBytes: 24576,
