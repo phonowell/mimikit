@@ -64,7 +64,8 @@
 
 参数约定（关键字段）：
 
-- `enqueue_task.cwd`：必填；未传 `branch` 时直接作为 worker 实际执行目录。若同时传 `branch`，则 `cwd` 视为仓库内定位路径，enqueue 阶段会自动创建或复用对应 branch 的 worktree，并把任务实际执行目录切到该 worktree 的对应路径
+- `enqueue_task.cwd`：必填；若 `resource_mode="read"` 且未传 `branch`，则直接作为 worker 实际执行目录。若 `resource_mode="write"` 且位于 git 仓库内，未显式传 `branch` 时 enqueue 阶段会自动分配独立 branch/worktree；若同时传 `branch`，则 `cwd` 视为仓库内定位路径，enqueue 阶段会自动创建或复用对应 branch 的 worktree，并把任务实际执行目录切到该 worktree 的对应路径
+- `enqueue_task.resource_mode`：可选，`read|write`；纯读取/排查/总结用 `read`，会改文件或需要独立 git target 的任务用 `write`
 - `assign_focus`：`target_type(task|plan|history) + target_id + focus_id`
 - `upsert_focus.open_item_{n}`：按编号传递字符串待办项，`n` 必须从 `1` 连续递增且不能跳号
 - `ask_user_choice.option_{n}_id/label/reason`：选项三元组编号 `n` 必须从 `1` 连续递增且不能跳号
@@ -83,8 +84,8 @@
 - `ask_user_choice` 是 stop action：命中后当前 action 批次停止后续 apply。
 - `restart_runtime` 是 stop action：命中后当前 action 批次停止后续 apply，避免继续派发后续动作又立刻重启。
 - `enqueue_task` 高成本确认闸门在 apply 与 validation 两侧同时生效：未确认时不入队，直接生成确认 choice。
-- `enqueue_task` 创建时会先解析 `cwd`；若同时传入 `branch` 且 `cwd` 位于 git 仓库中，则 enqueue 阶段先创建或复用对应 branch 的 worktree，再把任务 `cwd` 落到该 worktree。最终任务仍按真实 `repoKey + branch` 参与当前 runtime 内的 worker dispatch guard。
-- 这里的 dispatch guard 只约束当前 runtime 内的 worker 派发顺序：同一 `repoKey + branch` 串行，不同 branch/worktree 仍可并发；它不是跨进程、跨 session 或仓库级强一致锁。
+- `enqueue_task` 创建时会先解析 `cwd` 与 `resource_mode`；git 仓库中的 `write` 任务若未显式传 `branch`，会在 enqueue 阶段按 task 指纹自动分配 branch/worktree；显式 `branch` 仍优先。最终任务按真实 `repoKey + branch` 参与当前 runtime 内的写资源 dispatch guard。
+- 这里的 dispatch guard 只约束当前 runtime 内的 worker 派发顺序：同一写资源 `repoKey + branch` 串行，不同 branch/worktree 仍可并发；`read` 任务不占该写锁。它不是跨进程、跨 session 或仓库级强一致锁。
 - `remember_memory`：立即写入 `memory/MEMORY.md`，仅接受 `content` 参数，并通过 `memory_remembered` system event 回执 `entry_id/ref/operation`。
 - `remember_memory.content` 必须是单行稳定 digest（`<=240 chars`）；checklist、多行过程文本、协议标签与 `task-*/plan-*` 一类 runtime 引用会在 validation 阶段被拒绝。
 

@@ -18,6 +18,7 @@ const createTask = (overrides?: Partial<Task>): Task => ({
     prompt: 'Write report',
     title: 'Write report',
     cwd: '/tmp/write-report',
+    resourceMode: 'write',
     profile: 'worker',
     provider: 'codex',
     focusId: 'focus-global',
@@ -26,6 +27,7 @@ const createTask = (overrides?: Partial<Task>): Task => ({
   executionSpecId: 'spec-task-1',
   title: 'Write report',
   cwd: '/tmp/write-report',
+  resourceMode: 'write',
   focusId: 'focus-global',
   profile: 'worker',
   provider: 'codex',
@@ -68,6 +70,7 @@ test('enqueueTask does not dedupe when contract differs', async () => {
     'worker',
     'codex',
     'focus-global',
+    undefined,
     undefined,
     undefined,
     {

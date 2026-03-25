@@ -20,14 +20,16 @@
 - 立即执行 Action：`<M:enqueue_task ... />`
 - 生命周期控制 Action：`<M:mutate_task id="task-..." op="pause|resume|cancel|review_passed|merged|cleaned" />`
 - worker 任务 profile 固定为 `worker`
-- `Task.cwd` 是任务执行目录；若 `enqueue_task` 同时传入 `cwd + branch`，系统会在 enqueue 阶段自动创建或复用对应 worktree，并把 `Task.cwd` 写成真实 worktree 路径。若最终 `cwd` 在 git 仓库内，会额外记录 `repoKey + branch`，并在 `Task.git` / `TaskResultHandoff.git` 中补充 `worktreePath + branch`
+- `Task.resourceMode` 表达任务资源语义：`read` 只读，不占 git 写锁；`write` 可改文件/占写资源。未显式声明时默认按 `write` 处理
+- `Task.cwd` 是任务执行目录；若 `enqueue_task` 同时传入 `cwd + branch`，系统会在 enqueue 阶段自动创建或复用对应 worktree，并把 `Task.cwd` 写成真实 worktree 路径。git 仓库中的 `write` 任务若未显式传 `branch`，enqueue 阶段会按 task 指纹自动分配独立 branch/worktree。若最终 `cwd` 在 git 仓库内，会额外记录 `repoKey + branch`，并在 `Task.git` / `TaskResultHandoff.git` 中补充 `worktreePath + branch`
 - 单轮 action 去重键：`prompt + title + cwd + profile + provider + focusId + contract`
 - active 任务去重键：`task.fingerprint`（包含 `prompt/title/cwd/profile/provider/focusId/repoKey/branch/contract`）
 - 语义冲突键：`task semantic key`，命中后会取消旧 active 任务并保留新任务
 
 ## 资源排队
 
-- worker 排队命中同一 `repoKey + branch` 时，不会失败，也不会 cancel；后来的任务保持 `pending`，等待同一 dispatch guard 释放
+- `write` worker 排队命中同一 `repoKey + branch` 时，不会失败，也不会 cancel；后来的任务保持 `pending`，等待同一 dispatch guard 释放
+- `read` 任务不占 repo/branch 写锁；同仓只读任务默认只受全局 worker 槽位限制
 - 非 git 目录退化为 `cwd` 级别串行；同一目录只允许一个写任务运行
 - 不同 repo 或不同 branch 仍可并发，只受全局 worker 槽位限制
 - 该 dispatch guard 仅作用于当前 runtime 内的 worker 派发，不提供跨进程、跨 session 或仓库级强一致互斥

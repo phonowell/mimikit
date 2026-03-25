@@ -18,6 +18,10 @@ import type {
   WorkerProvider,
 } from '../../foundation/types/runtime-domain.js'
 
+export const TASK_RESOURCE_MODE_VALUES = ['read', 'write'] as const
+
+export type TaskResourceMode = (typeof TASK_RESOURCE_MODE_VALUES)[number]
+
 export type TaskContract = {
   goal: string
   scope: string
@@ -77,6 +81,7 @@ export type Task = {
   executionSpecId: string
   title: string
   cwd: string
+  resourceMode?: TaskResourceMode | undefined
   repoKey?: string | undefined
   branch?: string | undefined
   git?: TaskGitExecution | undefined
@@ -128,6 +133,7 @@ export type TaskPlanEnqueueTaskEffect = {
     fingerprint: string
     semanticKey: string
     cwd: string
+    resourceMode?: TaskResourceMode | undefined
     branch?: string | undefined
   }
 }
@@ -172,28 +178,4 @@ export type FocusMeta = {
   lastActivityAt: ISODate
   summary?: string | undefined
   openItems?: string[] | undefined
-}
-
-export type UserChoiceOption = {
-  id: string
-  label: string
-  reason: string
-}
-
-export type PendingUserChoiceEffect = {
-  type: 'resume_task'
-  taskId: string
-  optionId: string
-  reason?: string | undefined
-}
-
-export type PendingUserChoice = {
-  id: string
-  question: string
-  options: UserChoiceOption[]
-  defaultOptionId: string
-  createdAt: ISODate
-  expiresAt?: ISODate | undefined
-  focusId: FocusId
-  effect?: PendingUserChoiceEffect | undefined
 }

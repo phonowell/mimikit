@@ -1,6 +1,9 @@
+import { resolveTaskResourceMode } from '../shared/task-resource-mode.js'
+
 import type {
   Task,
   TaskContract,
+  TaskResourceMode,
   WorkerProfile,
   WorkerProvider,
 } from '../../foundation/types/index.js'
@@ -9,6 +12,7 @@ export type TaskFingerprintInput = {
   prompt: string
   title: string
   cwd: string
+  resourceMode?: TaskResourceMode
   profile: WorkerProfile
   provider: WorkerProvider
   focusId?: string
@@ -56,12 +60,16 @@ export const buildTaskSemanticKey = (input: TaskFingerprintInput): string => {
   const prompt = normalizeSemanticPart(input.prompt).slice(0, 180)
   const title = normalizeSemanticPart(input.title).slice(0, 96)
   const cwd = normalizeSemanticPart(input.cwd)
+  const resourceMode = normalizeSemanticPart(
+    resolveTaskResourceMode(input.resourceMode),
+  )
   const focusId = normalizeSemanticPart(input.focusId ?? '')
   const repoKey = normalizeSemanticPart(input.repoKey ?? '')
   const branch = normalizeSemanticPart(input.branch ?? '')
   return [
     input.profile,
     input.provider,
+    resourceMode,
     focusId,
     title,
     prompt,
@@ -78,6 +86,7 @@ export const buildTaskFingerprint = (input: TaskFingerprintInput): string =>
       normalizeFingerprintPart(input.prompt),
       normalizeFingerprintPart(input.title),
       normalizeFingerprintPart(input.cwd),
+      resolveTaskResourceMode(input.resourceMode),
       input.profile,
       input.provider,
       normalizeFingerprintPart(input.focusId ?? ''),

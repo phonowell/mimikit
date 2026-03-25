@@ -4,6 +4,7 @@ import {
   titleFromCandidates,
 } from '../../foundation/shared/utils.js'
 import { GLOBAL_FOCUS_ID } from '../focus/index.js'
+import { resolveTaskResourceMode } from '../shared/task-resource-mode.js'
 import { persistTaskExecutionSpec } from '../spec/store.js'
 
 import { buildTaskGitExecution } from './task-git-execution.js'
@@ -17,6 +18,7 @@ import type {
   FocusId,
   Task,
   TaskContract,
+  TaskResourceMode,
   WorkerProfile,
   WorkerProvider,
 } from '../../foundation/types/index.js'
@@ -44,16 +46,19 @@ export const createTask = (
   focusId: FocusId = GLOBAL_FOCUS_ID,
   repoKey?: string,
   branch?: string,
+  resourceMode?: TaskResourceMode,
   contract?: TaskContract,
 ): Promise<Task> => {
   const id = `task-${newId()}`
   const resolvedTitle = resolveTitle(id, prompt, title)
   if (!cwd?.trim()) throw new Error('task cwd is required')
+  const normalizedResourceMode = resolveTaskResourceMode(resourceMode)
   const git = buildTaskGitExecution(cwd, branch)
   const fingerprint = buildTaskFingerprint({
     prompt,
     title: resolvedTitle,
     cwd,
+    resourceMode: normalizedResourceMode,
     profile,
     provider,
     focusId,
@@ -65,6 +70,7 @@ export const createTask = (
     prompt,
     title: resolvedTitle,
     cwd,
+    resourceMode: normalizedResourceMode,
     profile,
     provider,
     focusId,
@@ -83,6 +89,7 @@ export const createTask = (
     executionSpecId: spec.id,
     title: resolvedTitle,
     cwd,
+    resourceMode: normalizedResourceMode,
     ...(repoKey ? { repoKey } : {}),
     ...(branch ? { branch } : {}),
     ...(git ? { git } : {}),
@@ -105,13 +112,16 @@ export const enqueueTask = (
   focusId: FocusId = GLOBAL_FOCUS_ID,
   repoKey?: string,
   branch?: string,
+  resourceMode?: TaskResourceMode,
   contract?: TaskContract,
 ): Promise<EnqueueTaskResult> => {
   if (!cwd?.trim()) throw new Error('task cwd is required')
+  const normalizedResourceMode = resolveTaskResourceMode(resourceMode)
   const fingerprint = buildTaskFingerprint({
     prompt,
     title: resolveFingerprintTitle(prompt, title),
     cwd,
+    resourceMode: normalizedResourceMode,
     profile,
     provider,
     focusId,
@@ -133,6 +143,7 @@ export const enqueueTask = (
     focusId,
     repoKey,
     branch,
+    normalizedResourceMode,
     contract,
   ).then((task) => {
     tasks.push(task)

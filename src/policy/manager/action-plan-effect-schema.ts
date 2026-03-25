@@ -1,6 +1,11 @@
 import { z } from 'zod'
 
+import { TASK_RESOURCE_MODE_VALUES } from '../../work/types/task-runtime-types.js'
+
+import type { TaskResourceMode } from '../../foundation/types/index.js'
+
 const nonEmptyString = z.string().trim().min(1)
+const taskResourceModeSchema = z.enum(TASK_RESOURCE_MODE_VALUES)
 
 export const planEffectKindSchema = z.enum(['enqueue_task', 'wake_manager'])
 export const wakeManagerReasonSchema = z.enum([
@@ -13,6 +18,7 @@ const PLAN_EFFECT_TASK_ATTR_FIELDS = [
   'task_title',
   'task_worker_prompt',
   'task_cwd',
+  'task_resource_mode',
   'task_branch',
   'task_goal',
   'task_in_scope',
@@ -45,6 +51,7 @@ const planEffectSharedFields = {
   task_title: nonEmptyString.optional(),
   task_worker_prompt: nonEmptyString.optional(),
   task_cwd: nonEmptyString.optional(),
+  task_resource_mode: taskResourceModeSchema.optional(),
   task_branch: nonEmptyString.optional(),
   task_goal: nonEmptyString.optional(),
   task_in_scope: nonEmptyString.optional(),
@@ -62,7 +69,14 @@ const planEffectSharedFields = {
 export type PlanEffectAttrs = {
   effect_kind?: z.infer<typeof planEffectKindSchema> | undefined
   effect_reason?: z.infer<typeof wakeManagerReasonSchema> | undefined
-} & Partial<Record<PlanEffectTaskAttrField, string | undefined>>
+} & Partial<
+  Record<
+    Exclude<PlanEffectTaskAttrField, 'task_resource_mode'>,
+    string | undefined
+  >
+> & {
+    task_resource_mode?: TaskResourceMode | undefined
+  }
 
 export const planEffectFields = {
   effect_kind: planEffectKindSchema,

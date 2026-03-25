@@ -1,5 +1,6 @@
 import { compareIsoDesc } from '../../foundation/shared/time.js'
 import { buildTaskDispatchLockKey } from '../../work/shared/task-execution-target.js'
+import { resolveTaskResourceMode } from '../../work/shared/task-resource-mode.js'
 import {
   isBudgetRecoverableTask,
   resolveTaskChangeAt,
@@ -12,6 +13,7 @@ import {
 
 import type {
   Task,
+  TaskResourceMode,
   TaskResultStopReason,
   TaskStatus,
 } from '../../foundation/types/index.js'
@@ -32,6 +34,7 @@ export type TaskView = {
   provider: Task['provider']
   focusId: string
   title: string
+  resourceMode: TaskResourceMode
   git?: Task['git']
   gitClosure?: TaskGitClosureView
   createdAt: string
@@ -96,6 +99,7 @@ const resolveDispatchLockPendingReason = (
 ): TaskPendingReason | undefined => {
   if (taskStatus !== 'pending') return undefined
   const lockKey = buildTaskDispatchLockKey(task)
+  if (!lockKey) return undefined
   for (const item of tasks) {
     if (item.id === task.id || item.status !== 'running') continue
     if (buildTaskDispatchLockKey(item) !== lockKey) continue
@@ -146,6 +150,7 @@ const taskToView = (
     provider: task.provider,
     focusId: task.focusId,
     title: resolveTaskViewTitle(task),
+    resourceMode: resolveTaskResourceMode(task.resourceMode),
     ...(task.git ? { git: task.git } : {}),
     ...(gitClosure ? { gitClosure } : {}),
     createdAt: task.createdAt,

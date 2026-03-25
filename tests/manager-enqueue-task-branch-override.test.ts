@@ -26,6 +26,20 @@ const createRuntime = async (): Promise<RuntimeState> => {
   return runtime
 }
 
+const enqueueTask = async (
+  runtime: RuntimeState,
+  attrs: Record<string, string>,
+): Promise<void> =>
+  applyTaskActions(runtime, [
+    {
+      name: 'enqueue_task',
+      attrs: {
+        ...attrs,
+        ...CONTRACT_ATTRS,
+      },
+    },
+  ])
+
 afterEach(cleanupGitRepos)
 
 test('enqueue_task branch attr materializes worktree cwd', async () => {
@@ -37,18 +51,12 @@ test('enqueue_task branch attr materializes worktree cwd', async () => {
     'feat/webui-pending-reason',
   )
 
-  await applyTaskActions(runtime, [
-    {
-      name: 'enqueue_task',
-      attrs: {
-        worker_prompt: 'same prompt',
-        title: 'branch override task',
-        cwd,
-        branch: 'feat/webui-pending-reason',
-        ...CONTRACT_ATTRS,
-      },
-    },
-  ])
+  await enqueueTask(runtime, {
+    worker_prompt: 'same prompt',
+    title: 'branch override task',
+    cwd,
+    branch: 'feat/webui-pending-reason',
+  })
 
   expect(runtime.tasks).toHaveLength(1)
   expect(runtime.tasks[0]?.repoKey).toBe(repoKey)
@@ -66,19 +74,37 @@ test('enqueue_task keeps resolved cwd branch when branch attr is absent', async 
   const cwd = await createGitRepo()
   const runtime = await createRuntime()
 
-  await applyTaskActions(runtime, [
-    {
-      name: 'enqueue_task',
-      attrs: {
-        worker_prompt: 'same prompt',
-        title: 'default branch task',
-        cwd,
-        ...CONTRACT_ATTRS,
-      },
-    },
-  ])
+  await enqueueTask(runtime, {
+    worker_prompt: 'same prompt',
+    title: 'default branch task',
+    cwd,
+  })
 
   expect(runtime.tasks).toHaveLength(1)
+  expect(runtime.tasks[0]?.resourceMode).toBe('write')
+  expect(runtime.tasks[0]?.cwd).not.toBe(await realpath(cwd))
+  expect(runtime.tasks[0]?.branch).not.toBe('main')
+  expect(
+    execFileSync('git', ['branch', '--show-current'], {
+      cwd: runtime.tasks[0]?.cwd,
+      encoding: 'utf8',
+    }).trim(),
+  ).toBe(runtime.tasks[0]?.branch)
+})
+
+test('enqueue_task read mode keeps repo cwd without creating a worktree', async () => {
+  const cwd = await createGitRepo()
+  const runtime = await createRuntime()
+
+  await enqueueTask(runtime, {
+    worker_prompt: 'same prompt',
+    title: 'read task',
+    cwd,
+    resource_mode: 'read',
+  })
+
+  expect(runtime.tasks).toHaveLength(1)
+  expect(runtime.tasks[0]?.resourceMode).toBe('read')
   expect(runtime.tasks[0]?.cwd).toBe(await realpath(cwd))
   expect(runtime.tasks[0]?.branch).toBe('main')
 })
@@ -89,18 +115,12 @@ test('enqueue_task maps repo subdirectory into branch worktree cwd', async () =>
   const runtime = await createRuntime()
   const expectedWorktree = resolveExpectedWorktreePath(cwd, 'docs/dev-handbook')
 
-  await applyTaskActions(runtime, [
-    {
-      name: 'enqueue_task',
-      attrs: {
-        worker_prompt: 'same prompt',
-        title: 'nested task',
-        cwd: nestedCwd,
-        branch: 'docs/dev-handbook',
-        ...CONTRACT_ATTRS,
-      },
-    },
-  ])
+  await enqueueTask(runtime, {
+    worker_prompt: 'same prompt',
+    title: 'nested task',
+    cwd: nestedCwd,
+    branch: 'docs/dev-handbook',
+  })
 
   expect(runtime.tasks).toHaveLength(1)
   expect(runtime.tasks[0]?.cwd).toBe(join(await realpath(expectedWorktree), 'src'))
@@ -121,18 +141,12 @@ test('enqueue_task reuses existing worktree for the requested branch', async () 
     { cwd, stdio: 'ignore' },
   )
 
-  await applyTaskActions(runtime, [
-    {
-      name: 'enqueue_task',
-      attrs: {
-        worker_prompt: 'same prompt',
-        title: 'reuse task',
-        cwd,
-        branch: 'feat/webui-pending-reason',
-        ...CONTRACT_ATTRS,
-      },
-    },
-  ])
+  await enqueueTask(runtime, {
+    worker_prompt: 'same prompt',
+    title: 'reuse task',
+    cwd,
+    branch: 'feat/webui-pending-reason',
+  })
 
   expect(runtime.tasks).toHaveLength(1)
   expect(runtime.tasks[0]?.cwd).toBe(await realpath(existingWorktree))

@@ -45,7 +45,12 @@ const createRuntime = async (): Promise<RuntimeState> => {
   return runtime
 }
 
-const createTask = (stateDir: string, id: string, branch: string): Promise<Task> =>
+const createTask = (
+  stateDir: string,
+  id: string,
+  branch: string,
+  resourceMode: Task['resourceMode'] = 'write',
+): Promise<Task> =>
   materializeTaskFixture({
     stateDir,
     task: {
@@ -53,6 +58,7 @@ const createTask = (stateDir: string, id: string, branch: string): Promise<Task>
       prompt: `prompt-${id}`,
       title: `task ${id}`,
       cwd: `/tmp/${id}`,
+      resourceMode,
       repoKey: '/tmp/shared-repo/.git',
       branch,
       focusId: 'focus-global',
@@ -110,6 +116,38 @@ test('worker dispatch keeps different branches parallel when slots are free', as
   runtime.tasks.push(
     await createTask(runtime.config.workDir, 'task-worktree-1', 'worktree-1'),
     await createTask(runtime.config.workDir, 'task-worktree-2', 'worktree-2'),
+  )
+
+  let running = 0
+  let maxRunning = 0
+  runTaskWithRetryMock.mockImplementation(
+    async (): Promise<WorkerLlmResult> => {
+      running += 1
+      maxRunning = Math.max(maxRunning, running)
+      await sleep(40)
+      running = Math.max(0, running - 1)
+      return { output: 'done', elapsedMs: 40 }
+    },
+  )
+
+  for (let round = 0; round < 4; round += 1) {
+    enqueuePendingWorkerTasks(runtime)
+    await runtime.worker.queue.onIdle()
+    if (runtime.tasks.every((task) => task.status === 'succeeded')) break
+  }
+
+  expect(runtime.tasks.map((task) => task.status)).toEqual([
+    'succeeded',
+    'succeeded',
+  ])
+  expect(maxRunning).toBe(2)
+})
+
+test('worker dispatch does not serialize read tasks behind the same repo branch lock', async () => {
+  const runtime = await createRuntime()
+  runtime.tasks.push(
+    await createTask(runtime.config.workDir, 'task-read-a', 'main', 'read'),
+    await createTask(runtime.config.workDir, 'task-read-b', 'main', 'read'),
   )
 
   let running = 0

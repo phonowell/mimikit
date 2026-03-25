@@ -8,6 +8,7 @@ import {
   TASK_STATUS_VALUES,
   WORKER_PROVIDER_VALUES,
 } from '../../foundation/types/runtime-domain.js'
+import { TASK_RESOURCE_MODE_VALUES } from '../../work/types/task-runtime-types.js'
 
 import {
   taskGitExecutionSchema,
@@ -22,6 +23,7 @@ const taskResultStatusSchema = z.enum(TASK_RESULT_STATUS_VALUES)
 const taskCancelSourceSchema = z.enum(TASK_CANCEL_SOURCE_VALUES)
 const taskResultOutcomeSchema = z.enum(TASK_RESULT_OUTCOME_VALUES)
 const taskResultStopReasonSchema = z.enum(TASK_RESULT_STOP_REASON_VALUES)
+const taskResourceModeSchema = z.enum(TASK_RESOURCE_MODE_VALUES)
 
 export const taskCancelSchema = z
   .object({
@@ -107,6 +109,7 @@ export const taskSchema = z
     executionSpecId: z.string().trim().min(1),
     title: z.string(),
     cwd: z.string().trim().min(1),
+    resourceMode: taskResourceModeSchema.optional(),
     repoKey: z.string().trim().min(1).optional(),
     branch: z.string().trim().min(1).optional(),
     git: taskGitExecutionSchema.optional(),

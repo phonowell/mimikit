@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 import { focusIdSchema } from '../../foundation/shared/id-schema.js'
 import { normalizeInlineWhitespace } from '../../foundation/shared/text.js'
+import { TASK_RESOURCE_MODE_VALUES } from '../../work/types/task-runtime-types.js'
 
 import {
   askUserChoiceSchema,
@@ -18,6 +19,7 @@ import {
 } from './action-plan-schema.js'
 
 const nonEmptyString = z.string().trim().min(1)
+const taskResourceModeSchema = z.enum(TASK_RESOURCE_MODE_VALUES)
 const resumeInstructionString = z.string().trim().min(1).max(600)
 const REMEMBER_MEMORY_PROTOCOL_TAG_RE = /<M:[^>]+>/i
 const REMEMBER_MEMORY_CODE_FENCE_RE = /```|~~~/
@@ -47,6 +49,7 @@ export const runTaskSchema = z
     worker_prompt: nonEmptyString.optional(),
     title: nonEmptyString,
     cwd: nonEmptyString,
+    resource_mode: taskResourceModeSchema.optional(),
     branch: nonEmptyString.optional(),
     goal: nonEmptyString.optional(),
     in_scope: nonEmptyString.optional(),

@@ -2,6 +2,7 @@ import {
   buildTaskFingerprint,
   buildTaskSemanticKey,
 } from '../../work/orchestrator/task-state.js'
+import { resolveTaskResourceMode } from '../../work/shared/task-resource-mode.js'
 import {
   persistTaskExecutionSpec,
   readTaskExecutionSpec,
@@ -16,6 +17,7 @@ import type { PlanEffectAttrs } from './action-plan-effect-schema.js'
 import type {
   TaskContract,
   TaskPlanEffect,
+  TaskResourceMode,
 } from '../../foundation/types/index.js'
 
 type EnqueueTaskAttrs = Pick<
@@ -58,10 +60,12 @@ const buildEnqueueTaskEffect = async (params: {
   focusId: string
   title: string
   cwd: string
+  resourceMode?: TaskResourceMode | undefined
   branch?: string | undefined
   prompt: string
   contract: TaskContract
 }): Promise<TaskPlanEffect> => {
+  const resourceMode = resolveTaskResourceMode(params.resourceMode)
   const spec = await persistTaskExecutionSpec({
     stateDir: params.stateDir,
     prompt: params.prompt,
@@ -71,6 +75,7 @@ const buildEnqueueTaskEffect = async (params: {
     prompt: params.prompt,
     title: params.title,
     cwd: params.cwd,
+    resourceMode,
     profile: 'worker',
     provider: 'codex',
     focusId: params.focusId,
@@ -81,6 +86,7 @@ const buildEnqueueTaskEffect = async (params: {
     prompt: params.prompt,
     title: params.title,
     cwd: params.cwd,
+    resourceMode,
     profile: 'worker',
     provider: 'codex',
     focusId: params.focusId,
@@ -95,6 +101,7 @@ const buildEnqueueTaskEffect = async (params: {
       fingerprint,
       semanticKey,
       cwd: params.cwd,
+      resourceMode,
       ...(params.branch ? { branch: params.branch } : {}),
     },
   }
@@ -115,6 +122,9 @@ export const buildPlanEnqueueTaskEffect = (params: {
     focusId: params.focusId,
     title: params.attrs.task_title?.trim() ?? '',
     cwd: params.attrs.task_cwd?.trim() ?? '',
+    ...(params.attrs.task_resource_mode
+      ? { resourceMode: params.attrs.task_resource_mode }
+      : {}),
     prompt,
     contract,
     ...(params.attrs.task_branch?.trim()
@@ -166,12 +176,15 @@ export const resolveUpdatedPlanEnqueueTaskEffect = async (params: {
   const branch = params.update.task_branch?.trim()
     ? params.update.task_branch.trim()
     : params.current.taskTemplate.branch
+  const resourceMode =
+    params.update.task_resource_mode ?? params.current.taskTemplate.resourceMode
   const title = nextTaskAttrs.task_title.trim()
   return buildEnqueueTaskEffect({
     stateDir: params.stateDir,
     focusId: params.focusId,
     title,
     cwd: params.update.task_cwd?.trim() ?? params.current.taskTemplate.cwd,
+    ...(resourceMode ? { resourceMode } : {}),
     prompt,
     contract,
     ...(branch ? { branch } : {}),

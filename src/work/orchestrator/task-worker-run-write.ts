@@ -53,12 +53,12 @@ export const updateTaskUsage = (
 export const startTaskWorkerRun = async (params: {
   runtime: TaskWorkerRunRuntime
   task: Task
-  dispatchLockKey: string
+  dispatchLockKey: string | undefined
   controller: AbortController
 }): Promise<void> => {
   const { runtime, task, dispatchLockKey, controller } = params
   runtime.worker.lastActivityAtMs = Date.now()
-  runtime.worker.runningTaskLocks.add(dispatchLockKey)
+  if (dispatchLockKey) runtime.worker.runningTaskLocks.add(dispatchLockKey)
   runtime.worker.runningControllers.set(task.id, controller)
   markRuntimeTaskRunning({ runtime, taskId: task.id })
   notifyUiSignal(runtime)
@@ -70,11 +70,11 @@ export const startTaskWorkerRun = async (params: {
 export const finishTaskWorkerRun = async (params: {
   runtime: TaskWorkerRunRuntime
   taskId: string
-  dispatchLockKey: string
+  dispatchLockKey: string | undefined
 }): Promise<void> => {
   const { runtime, taskId, dispatchLockKey } = params
   runtime.worker.runningControllers.delete(taskId)
-  runtime.worker.runningTaskLocks.delete(dispatchLockKey)
+  if (dispatchLockKey) runtime.worker.runningTaskLocks.delete(dispatchLockKey)
   notifyManagerLoop(runtime)
   await bestEffort('persistRuntimeState: worker_end', () =>
     persistRuntimeState(runtime),
