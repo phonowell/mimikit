@@ -49,6 +49,7 @@ export type UiWakeKind = 'snapshot' | 'messages' | 'tasks'
 export type ExitRequest = {
   code: number
   reason: string
+  skipPersist?: boolean
 }
 
 export type RuntimeSessionState = {

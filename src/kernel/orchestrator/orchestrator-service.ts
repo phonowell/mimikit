@@ -64,7 +64,7 @@ export class Orchestrator {
       },
       runRestart: async () => {
         await this.stopAndPersist()
-        this.requestExit(75, reason)
+        this.requestExit(75, reason, { skipPersist: true })
       },
     })
 
@@ -156,8 +156,16 @@ export class Orchestrator {
     return waitForUiSignal(this.runtime, timeoutMs, sinceVersion)
   }
 
-  requestExit(code: number, reason: string): void {
-    this.runtime.session.requestExit?.({ code, reason })
+  requestExit(
+    code: number,
+    reason: string,
+    options?: { skipPersist?: boolean },
+  ): void {
+    this.runtime.session.requestExit?.({
+      code,
+      reason,
+      ...(options?.skipPersist ? { skipPersist: true } : {}),
+    })
   }
 
   getTaskById(taskId: string) {

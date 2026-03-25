@@ -1,5 +1,7 @@
 import { beforeEach, expect, test, vi } from 'vitest'
 
+import { processManagerBatch } from '../src/policy/manager/loop-batch.js'
+
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 const { runManagerBatchMock } = vi.hoisted(() => ({
@@ -9,8 +11,6 @@ const { runManagerBatchMock } = vi.hoisted(() => ({
 vi.mock('../src/policy/manager/loop-batch-run-manager.js', () => ({
   runManagerBatch: runManagerBatchMock,
 }))
-
-import { processManagerBatch } from '../src/policy/manager/loop-batch.js'
 
 beforeEach(() => {
   runManagerBatchMock.mockReset()
@@ -31,7 +31,11 @@ beforeEach(() => {
 })
 
 test('processManagerBatch flushes deferred restart after batch finalize', async () => {
-  const exitRequests: Array<{ code: number; reason: string }> = []
+  const exitRequests: Array<{
+    code: number
+    reason: string
+    skipPersist?: boolean
+  }> = []
   const runtime = await createTestRuntimeState({
     patch: {
       session: {
@@ -62,6 +66,7 @@ test('processManagerBatch flushes deferred restart after batch finalize', async 
     {
       code: 75,
       reason: '重启 mimikit 以应用刚完成的项目更新',
+      skipPersist: true,
     },
   ])
   expect(runtime.session.pendingRestartReason).toBeUndefined()

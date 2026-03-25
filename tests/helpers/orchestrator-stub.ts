@@ -4,7 +4,11 @@ import type { UserMeta } from '../../src/kernel/orchestrator/runtime-state.js'
 export const createOrchestratorStub = () => {
   const addInputCalls: Array<{ text: string; meta: UserMeta; quote?: string }> =
     []
-  const exitRequests: Array<{ code: number; reason: string }> = []
+  const exitRequests: Array<{
+    code: number
+    reason: string
+    skipPersist?: boolean
+  }> = []
   const orchestrator = {
     getStatus: () => ({
       ok: true,
@@ -16,63 +20,81 @@ export const createOrchestratorStub = () => {
       managerRunning: false,
       maxWorkers: 1,
     }),
-    addUserInput: async (text: string, meta: UserMeta, quote?: string) => {
+    addUserInput: (text: string, meta: UserMeta, quote?: string) => {
       addInputCalls.push({ text, meta, quote })
-      return 'input-1'
+      return Promise.resolve('input-1')
     },
-    getChatHistory: async () => [],
-    getChatMessages: async () => ({ messages: [], mode: 'full' as const }),
+    getChatHistory: () => Promise.resolve([]),
+    getChatMessages: () =>
+      Promise.resolve({ messages: [], mode: 'full' as const }),
     getTasks: () => ({ tasks: [], counts: {} }),
-    getReviewStatus: async () => ({ cards: [], highlights: [] }),
-    getWebUiDeltaSnapshot: async () => ({
-      status: {
-        ok: true,
-        runtimeId: 'runtime-stub-1',
-        agentStatus: 'idle',
-        activeTasks: 0,
-        pendingTasks: 0,
-        pendingInputs: 0,
-        managerRunning: false,
-        maxWorkers: 1,
-      },
-      messages: { messages: [], mode: 'full' as const },
-      tasks: { tasks: [], counts: {} },
-      plans: { items: [] },
-      focuses: { items: [] },
-      choices: [],
-    }),
+    getReviewStatus: () => Promise.resolve({ cards: [], highlights: [] }),
+    getWebUiDeltaSnapshot: () =>
+      Promise.resolve({
+        status: {
+          ok: true,
+          runtimeId: 'runtime-stub-1',
+          agentStatus: 'idle',
+          activeTasks: 0,
+          pendingTasks: 0,
+          pendingInputs: 0,
+          managerRunning: false,
+          maxWorkers: 1,
+        },
+        messages: { messages: [], mode: 'full' as const },
+        tasks: { tasks: [], counts: {} },
+        plans: { items: [] },
+        focuses: { items: [] },
+        choices: [],
+      }),
     getWebUiWakeVersion: () => 0,
-    waitForWebUiSignal: async () =>
-      ({ kind: 'timeout', version: 0 }) as const,
-    getWebUiSnapshot: async () => ({
-      status: {
-        ok: true,
-        runtimeId: 'runtime-stub-1',
-        agentStatus: 'idle',
-        activeTasks: 0,
-        pendingTasks: 0,
-        pendingInputs: 0,
-        managerRunning: false,
-        maxWorkers: 1,
-      },
-      messages: [],
-      tasks: { tasks: [], counts: {} },
-      plans: { items: [] },
-      focuses: { items: [] },
-      choices: [],
-      reviewStatus: { cards: [], highlights: [] },
-    }),
+    waitForWebUiSignal: () =>
+      Promise.resolve({ kind: 'timeout', version: 0 } as const),
+    getWebUiSnapshot: () =>
+      Promise.resolve({
+        status: {
+          ok: true,
+          runtimeId: 'runtime-stub-1',
+          agentStatus: 'idle',
+          activeTasks: 0,
+          pendingTasks: 0,
+          pendingInputs: 0,
+          managerRunning: false,
+          maxWorkers: 1,
+        },
+        messages: [],
+        tasks: { tasks: [], counts: {} },
+        plans: { items: [] },
+        focuses: { items: [] },
+        choices: [],
+        reviewStatus: { cards: [], highlights: [] },
+      }),
     getTaskById: () => undefined,
-    mutateTask: async (_action: 'cancel' | 'delete' | 'pause' | 'resume', taskId: string) => ({
-      ok: false,
-      id: taskId,
-      status: 'not_found' as const,
-    }),
-    selectPendingUserChoice: async () =>
-      ({ ok: false, reason: 'not_found' as const }),
-    stopAndPersist: async () => undefined,
-    requestExit: (code: number, reason: string) => {
-      exitRequests.push({ code, reason })
+    mutateTask: (
+      _action: 'cancel' | 'delete' | 'pause' | 'resume',
+      taskId: string,
+    ) =>
+      Promise.resolve({
+        ok: false,
+        id: taskId,
+        status: 'not_found' as const,
+      }),
+    selectPendingUserChoice: () =>
+      Promise.resolve({
+        ok: false,
+        reason: 'not_found' as const,
+      }),
+    stopAndPersist: () => Promise.resolve(),
+    requestExit: (
+      code: number,
+      reason: string,
+      options?: { skipPersist?: boolean },
+    ) => {
+      exitRequests.push({
+        code,
+        reason,
+        ...(options?.skipPersist ? { skipPersist: true } : {}),
+      })
     },
   } as unknown as Orchestrator
   return { orchestrator, addInputCalls, exitRequests }

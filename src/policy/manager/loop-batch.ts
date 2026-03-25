@@ -27,7 +27,7 @@ import {
 } from './loop-helpers.js'
 import { applyPlanCompletionState } from './plan-progress.js'
 import { normalizeManagerReplyText } from './reply-normalize.js'
-import { consumePendingManagerRestartReason } from './restart-runtime.js'
+import { flushPendingManagerRestart } from './restart-runtime.js'
 import { clearResultReplayBackoff } from './result-replay-backoff.js'
 
 import type {
@@ -56,18 +56,10 @@ export const processManagerBatch = async (params: {
   const startedAt = Date.now()
   let agentAppended = false
   try {
-    if (runtime.session.stopped) {
-      await finishBatchWithoutAgentReply({
-        runtime,
-        inputs,
-        results,
-        nextInputsCursor,
-        nextResultsCursor,
-        startedAt,
-      })
-      return
-    }
-    if (agentInputs.length === 0 && results.length === 0) {
+    if (
+      runtime.session.stopped ||
+      (agentInputs.length === 0 && results.length === 0)
+    ) {
       await finishBatchWithoutAgentReply({
         runtime,
         inputs,
@@ -164,14 +156,7 @@ export const processManagerBatch = async (params: {
       elapsedMs: Math.max(0, Date.now() - startedAt),
       ...(resolvedUsage ? { usage: resolvedUsage } : {}),
     })
-    const pendingRestartReason = consumePendingManagerRestartReason(runtime)
-    if (pendingRestartReason) {
-      runtime.session.requestExit?.({
-        code: 75,
-        reason: pendingRestartReason,
-      })
-      return
-    }
+    if (flushPendingManagerRestart(runtime)) return
     requestMemoryRefresh(runtime)
   } catch (error) {
     if (

@@ -104,7 +104,9 @@ export const registerApiRoutes = (
       void (async () => {
         await orchestrator.stopAndPersist()
         if (params?.afterPersist) await params.afterPersist()
-        orchestrator.requestExit(75, params?.exitReason ?? 'http_api_restart')
+        orchestrator.requestExit(75, params?.exitReason ?? 'http_api_restart', {
+          skipPersist: true,
+        })
       })()
     }, 100)
   }

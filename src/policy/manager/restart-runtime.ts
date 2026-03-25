@@ -36,3 +36,16 @@ export const consumePendingManagerRestartReason = (
   if (!reason) return undefined
   return reason
 }
+
+export const flushPendingManagerRestart = (
+  runtime: ManagerRuntime,
+): boolean => {
+  const reason = consumePendingManagerRestartReason(runtime)
+  if (!reason) return false
+  runtime.session.requestExit?.({
+    code: 75,
+    reason,
+    skipPersist: true,
+  })
+  return true
+}

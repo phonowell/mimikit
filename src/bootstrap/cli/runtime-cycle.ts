@@ -89,9 +89,9 @@ export const runCliCycle = async (
   const orchestrator = new Orchestrator(params.config, {
     runtimeId,
     startup,
-    onExitRequested: ({ code, reason }) => {
+    onExitRequested: ({ code, reason, skipPersist }) => {
       void shutdown(`orchestrator exit requested: ${reason}`, code, {
-        skipPersist: reason === 'http_api_reset',
+        skipPersist: reason === 'http_api_reset' || skipPersist === true,
       })
     },
   })

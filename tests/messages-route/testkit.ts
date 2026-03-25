@@ -1,6 +1,6 @@
-import fastify from 'fastify'
 import { setTimeout as delay } from 'node:timers/promises'
 
+import fastify from 'fastify'
 import { expect, vi } from 'vitest'
 
 import { defaultConfig } from '../../src/bootstrap/config.js'
@@ -24,12 +24,14 @@ export const createLifecycleRouteApp = (params?: {
 }) => {
   const app = fastify()
   const { orchestrator, exitRequests } = createOrchestratorStub()
-  const stopAndPersist = vi.fn(async () => undefined)
-  ;(orchestrator as unknown as { stopAndPersist: () => Promise<void> }).stopAndPersist =
-    stopAndPersist
+  const stopAndPersist = vi.fn(() => Promise.resolve())
+  ;(
+    orchestrator as unknown as { stopAndPersist: () => Promise<void> }
+  ).stopAndPersist = () => stopAndPersist()
   if (params?.status) {
-    ;(orchestrator as unknown as { getStatus: () => LifecycleRouteStatus }).getStatus =
-      () => params.status as LifecycleRouteStatus
+    ;(
+      orchestrator as unknown as { getStatus: () => LifecycleRouteStatus }
+    ).getStatus = () => params.status as LifecycleRouteStatus
   }
   const config = defaultConfig({ workDir: params?.workDir ?? '.mimikit' })
   registerApiRoutes(app, orchestrator, config)
@@ -40,7 +42,7 @@ export const expectLifecycleRouteAccepted = async (params: {
   url: '/api/restart' | '/api/reset'
   app: Awaited<ReturnType<typeof createLifecycleRouteApp>>['app']
   stopAndPersist: ReturnType<typeof vi.fn>
-  exitRequests: { code: number; reason: string }[]
+  exitRequests: { code: number; reason: string; skipPersist?: boolean }[]
   expectedExitReason: 'http_api_restart' | 'http_api_reset'
   settleMs: number
   useFakeTimers?: boolean
@@ -60,7 +62,7 @@ export const expectLifecycleRouteAccepted = async (params: {
   }
   expect(params.stopAndPersist).toHaveBeenCalledTimes(1)
   expect(params.exitRequests).toEqual([
-    { code: 75, reason: params.expectedExitReason },
+    { code: 75, reason: params.expectedExitReason, skipPersist: true },
   ])
 }
 
