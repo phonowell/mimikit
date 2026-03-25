@@ -52,6 +52,8 @@
   border-radius: 12px;
   border: 1px solid transparent;
   background: var(--panel);
+  content-visibility: auto;
+  contain-intrinsic-size: 72px;
 }
 
 .task-title-row,

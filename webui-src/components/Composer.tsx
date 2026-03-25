@@ -1,4 +1,4 @@
-import { memo, useEffectEvent, useLayoutEffect, useRef } from 'react'
+import { useEffectEvent, useLayoutEffect, useRef } from 'react'
 
 type Props = {
   hasQuote: boolean
@@ -25,7 +25,7 @@ const resizeInput = (input: HTMLTextAreaElement) => {
     maxHeight > 0 && nextHeight > maxHeight ? 'auto' : 'hidden'
 }
 
-export const Composer = memo(function Composer({
+export const Composer = ({
   hasQuote,
   isNearBottom,
   onChange,
@@ -36,7 +36,7 @@ export const Composer = memo(function Composer({
   quoteText,
   sendPending,
   value,
-}: Props) {
+}: Props) => {
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const syncLayoutShift = useEffectEvent(onLayoutShift)
 
@@ -98,4 +98,4 @@ export const Composer = memo(function Composer({
       </form>
     </section>
   )
-})
+}

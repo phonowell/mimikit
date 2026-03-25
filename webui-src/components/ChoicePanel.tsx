@@ -1,30 +1,30 @@
-import { memo } from 'react'
-
 import {
   formatChoiceRemaining,
   resolveChoiceDefaultLabel,
 } from '../lib/choice-payload.js'
 import { UI_TEXT } from '../lib/system-text.js'
 
+import type { ChoiceSubmissionState } from '../hooks/use-app-actions-types.js'
 import type { ChoiceView } from '../types.js'
 
 type Props = {
   choices: ChoiceView[]
-  pendingChoiceId: string
-  pendingOptionId: string
-  choiceMetaOverrides: ReadonlyMap<string, string>
-  disconnected: boolean
+  choiceSubmission: ChoiceSubmissionState
+  isDisconnected: boolean
   onSelect: (choiceId: string, optionId: string) => void
 }
 
 const resolveMeta = (
   choice: ChoiceView,
-  disconnected: boolean,
-  overrides: ReadonlyMap<string, string>,
+  isDisconnected: boolean,
+  submission: ChoiceSubmissionState,
 ): string => {
-  const override = overrides.get(choice.id)
-  if (override) return override
-  if (disconnected) return UI_TEXT.connectionLost
+  if (submission?.choiceId === choice.id) {
+    if (submission.status === 'submitting') return UI_TEXT.choiceSubmitting
+    if (submission.status === 'submitted') return UI_TEXT.choiceSubmitted
+    return `${UI_TEXT.choiceSelectFailed}: ${submission.message ?? ''}`.trim()
+  }
+  if (isDisconnected) return UI_TEXT.connectionLost
   const remaining = formatChoiceRemaining(choice.expiresAt)
   const defaultLabel = resolveChoiceDefaultLabel(choice)
   return remaining
@@ -32,14 +32,12 @@ const resolveMeta = (
     : `${UI_TEXT.choiceDefaultOption} ${defaultLabel}`
 }
 
-export const ChoicePanel = memo(function ChoicePanel({
+export const ChoicePanel = ({
   choices,
-  pendingChoiceId,
-  pendingOptionId,
-  choiceMetaOverrides,
-  disconnected,
+  choiceSubmission,
+  isDisconnected,
   onSelect,
-}: Props) {
+}: Props) => {
   if (choices.length === 0) return null
   return (
     <section
@@ -60,8 +58,11 @@ export const ChoicePanel = memo(function ChoicePanel({
             ) : null}
             <div className="choice-card-options">
               {choice.options.map((option) => {
-                const isPending = pendingChoiceId === choice.id
-                const isSelected = isPending && pendingOptionId === option.id
+                const isLocked =
+                  choiceSubmission?.choiceId === choice.id &&
+                  choiceSubmission.status !== 'error'
+                const isSelected =
+                  isLocked && choiceSubmission.optionId === option.id
                 const isDefault = option.id === choice.defaultOptionId
                 return (
                   <button
@@ -70,7 +71,7 @@ export const ChoicePanel = memo(function ChoicePanel({
                     type="button"
                     role="tab"
                     aria-selected={isSelected}
-                    disabled={isPending}
+                    disabled={isLocked}
                     onClick={() => onSelect(choice.id, option.id)}
                   >
                     <span className="choice-tab-label">
@@ -89,7 +90,7 @@ export const ChoicePanel = memo(function ChoicePanel({
               })}
             </div>
             <p className="choice-card-meta">
-              {resolveMeta(choice, disconnected, choiceMetaOverrides)}
+              {resolveMeta(choice, isDisconnected, choiceSubmission)}
             </p>
           </section>
         ))}
@@ -101,4 +102,4 @@ export const ChoicePanel = memo(function ChoicePanel({
       </p>
     </section>
   )
-})
+}

@@ -64,7 +64,7 @@ export const useAppLocalActions = ({
       focusElementById(transition.focusTargetId)
     },
     [
-      scroll,
+      scroll.captureLayoutShift,
       setDeleteMode,
       setOpenTaskMenuId,
       setQuote,
@@ -76,7 +76,7 @@ export const useAppLocalActions = ({
   const clearQuote = useCallback(() => {
     scroll.captureLayoutShift()
     setQuote(null)
-  }, [scroll, setQuote])
+  }, [scroll.captureLayoutShift, setQuote])
   const closeConfirmDialog = useCallback(
     () => setConfirmDialog(null),
     [setConfirmDialog],
@@ -121,7 +121,7 @@ export const useAppLocalActions = ({
       scroll.captureLayoutShift()
       setQuote(toQuoteState(message))
     },
-    [scroll, setQuote],
+    [scroll.captureLayoutShift, setQuote],
   )
   const toggleDeleteMode = useCallback(
     () => applyDeleteMode(!stateRef.current.deleteMode),

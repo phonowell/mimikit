@@ -7,6 +7,8 @@ import { resolvePreferredTtsVoice } from '../lib/tts-voice.js'
 import type { ChatMessage } from '../types.js'
 
 const TTS_STORAGE_KEY = 'mimikit-webui-tts-enabled'
+const TTS_STORAGE_VERSION = 'v2'
+const VERSIONED_TTS_STORAGE_KEY = `${TTS_STORAGE_KEY}:${TTS_STORAGE_VERSION}`
 let speechSupportedSnapshot: boolean | null = null
 let storedEnabledSnapshot: boolean | null = null
 let sharedPlayer: ReturnType<typeof createTtsPlayer> | null = null
@@ -28,7 +30,10 @@ const isSpeechSupported = (): boolean => {
 const readStoredEnabled = (): boolean => {
   if (storedEnabledSnapshot !== null) return storedEnabledSnapshot
   try {
-    storedEnabledSnapshot = window.localStorage.getItem(TTS_STORAGE_KEY) === '1'
+    const stored =
+      window.localStorage.getItem(VERSIONED_TTS_STORAGE_KEY) ??
+      window.localStorage.getItem(TTS_STORAGE_KEY)
+    storedEnabledSnapshot = stored === '1'
     return storedEnabledSnapshot
   } catch {
     storedEnabledSnapshot = false
@@ -63,13 +68,17 @@ export const useTts = (): {
   const [enabled, setEnabledState] = useState<boolean>(
     () => supported && readStoredEnabled(),
   )
-  const [player] = useState(() => getSharedPlayer(supported))
+  const player = getSharedPlayer(supported)
 
   useEffect(() => {
     if (!supported) return
     try {
       storedEnabledSnapshot = enabled
-      window.localStorage.setItem(TTS_STORAGE_KEY, enabled ? '1' : '0')
+      window.localStorage.setItem(
+        VERSIONED_TTS_STORAGE_KEY,
+        enabled ? '1' : '0',
+      )
+      window.localStorage.removeItem(TTS_STORAGE_KEY)
     } catch {}
   }, [enabled, supported])
   useEffect(() => {

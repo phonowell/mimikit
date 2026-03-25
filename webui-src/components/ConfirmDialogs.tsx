@@ -1,5 +1,3 @@
-import { memo } from 'react'
-
 import { ModalDialog } from './ModalDialog.js'
 
 import type { ConfirmDialogState } from '../types.js'
@@ -82,12 +80,7 @@ const resolveCopy = (dialog: ConfirmDialogState | null) => {
   }
 }
 
-export const ConfirmDialogs = memo(function ConfirmDialogs({
-  dialog,
-  busy,
-  onClose,
-  onConfirm,
-}: Props) {
+export const ConfirmDialogs = ({ dialog, busy, onClose, onConfirm }: Props) => {
   const copy = resolveCopy(dialog)
   if (!copy) return null
   return (
@@ -134,4 +127,4 @@ export const ConfirmDialogs = memo(function ConfirmDialogs({
       </section>
     </ModalDialog>
   )
-})
+}

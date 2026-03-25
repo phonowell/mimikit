@@ -1,5 +1,3 @@
-import { memo } from 'react'
-
 import { UI_TEXT } from '../lib/system-text.js'
 
 import { MessageItem } from './MessageItem.js'
@@ -13,7 +11,6 @@ type Props = {
   deleteMode: boolean
   listRef: RefObject<HTMLUListElement | null>
   scrollButtonVisible: boolean
-  onScroll: () => void
   onScrollBottom: () => void
   onQuote: (message: ChatMessage) => void
   onDelete: (message: ChatMessage) => void
@@ -28,17 +25,16 @@ const indexMessagesById = (
   return index
 }
 
-export const MessageList = memo(function MessageList({
+export const MessageList = ({
   messages,
   loading,
   deleteMode,
   listRef,
   scrollButtonVisible,
-  onScroll,
   onScrollBottom,
   onQuote,
   onDelete,
-}: Props) {
+}: Props) => {
   const messagesById = indexMessagesById(messages)
 
   return (
@@ -52,7 +48,6 @@ export const MessageList = memo(function MessageList({
         aria-live="polite"
         aria-relevant="additions text"
         aria-atomic="false"
-        onScroll={onScroll}
       >
         {messages.map((message, index) => (
           <MessageItem
@@ -95,4 +90,4 @@ export const MessageList = memo(function MessageList({
       </button>
     </section>
   )
-})
+}

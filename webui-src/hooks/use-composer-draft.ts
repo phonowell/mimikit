@@ -1,12 +1,17 @@
 import { useEffect, useState } from 'react'
 
 const DRAFT_STORAGE_KEY = 'mimikit:webui:composer-draft'
+const DRAFT_STORAGE_VERSION = 'v2'
+const VERSIONED_DRAFT_STORAGE_KEY = `${DRAFT_STORAGE_KEY}:${DRAFT_STORAGE_VERSION}`
 let cachedDraftValue: string | null = null
 
 const readDraft = (): string => {
   if (cachedDraftValue !== null) return cachedDraftValue
   try {
-    cachedDraftValue = window.localStorage.getItem(DRAFT_STORAGE_KEY) ?? ''
+    const versionedDraft =
+      window.localStorage.getItem(VERSIONED_DRAFT_STORAGE_KEY) ??
+      window.localStorage.getItem(DRAFT_STORAGE_KEY)
+    cachedDraftValue = versionedDraft ?? ''
     return cachedDraftValue
   } catch {
     cachedDraftValue = ''
@@ -20,8 +25,10 @@ export const useComposerDraft = (): [string, (value: string) => void] => {
   useEffect(() => {
     try {
       cachedDraftValue = value
-      if (value) window.localStorage.setItem(DRAFT_STORAGE_KEY, value)
-      else window.localStorage.removeItem(DRAFT_STORAGE_KEY)
+      if (value) window.localStorage.setItem(VERSIONED_DRAFT_STORAGE_KEY, value)
+      else window.localStorage.removeItem(VERSIONED_DRAFT_STORAGE_KEY)
+
+      window.localStorage.removeItem(DRAFT_STORAGE_KEY)
     } catch {}
   }, [value])
 

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 
+import type { ChoiceSubmissionState } from './use-app-actions-types.js'
 import type { ConfirmDialogState, QuoteState, ToastState } from '../types.js'
 
 export const useAppUiState = () => {
@@ -16,14 +17,8 @@ export const useAppUiState = () => {
   )
   const [sendPending, setSendPending] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [choicePending, setChoicePending] = useState({
-    choiceId: '',
-    optionId: '',
-  })
-  const [choiceMetaOverrides, setChoiceMetaOverrides] = useState(
-    () => new Map<string, string>(),
-  )
-  const [disconnected, setDisconnected] = useState(false)
+  const [choiceSubmission, setChoiceSubmission] =
+    useState<ChoiceSubmissionState>(null)
   const [statusOverride, setStatusOverride] = useState<{
     state: string
     text: string
@@ -31,11 +26,9 @@ export const useAppUiState = () => {
 
   return {
     busy,
-    choiceMetaOverrides,
-    choicePending,
+    choiceSubmission,
     confirmDialog,
     deleteMode,
-    disconnected,
     focusesOpen,
     openTaskMenuId,
     plansOpen,
@@ -46,11 +39,9 @@ export const useAppUiState = () => {
     toast,
     toolsMenuOpen,
     setBusy,
-    setChoiceMetaOverrides,
-    setChoicePending,
+    setChoiceSubmission,
     setConfirmDialog,
     setDeleteMode,
-    setDisconnected,
     setFocusesOpen,
     setOpenTaskMenuId,
     setPlansOpen,

@@ -1,5 +1,3 @@
-import { memo } from 'react'
-
 import { buildTaskArchiveViewerUrl } from '../lib/archive-viewer-url.js'
 import { resolveTaskStatusLabel } from '../lib/system-text.js'
 
@@ -19,14 +17,14 @@ type Props = {
   task: TaskView
 }
 
-export const TaskListItem = memo(function TaskListItem({
+export const TaskListItem = ({
   open,
   onRequestDelete,
   onTaskAction,
   onToggleMenu,
   openMenuId,
   task,
-}: Props) {
+}: Props) => {
   const status = task.status || 'pending'
   const title =
     task.title?.trim() && task.title !== task.id ? task.title : 'Untitled task'
@@ -137,4 +135,4 @@ export const TaskListItem = memo(function TaskListItem({
       </div>
     </li>
   )
-})
+}

@@ -1,5 +1,3 @@
-import { memo } from 'react'
-
 import { renderMarkdownHtml } from '../lib/markdown.js'
 import {
   formatQuotePreview,
@@ -20,13 +18,13 @@ type Props = {
   quotedMessage: ChatMessage | undefined
 }
 
-export const MessageItem = memo(function MessageItem({
+export const MessageItem = ({
   deleteMode,
   message,
   onDelete,
   onQuote,
   quotedMessage,
-}: Props) {
+}: Props) => {
   const isSystem = message.role === 'system'
   const canQuote = !deleteMode && !isSystem && !!message.id
   const canDelete = deleteMode && !isSystem && !!message.id
@@ -110,4 +108,4 @@ export const MessageItem = memo(function MessageItem({
       ) : null}
     </li>
   )
-})
+}

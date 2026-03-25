@@ -1,35 +1,70 @@
-import { mkdir } from 'node:fs/promises'
-import { dirname, resolve } from 'node:path'
+import { mkdir, readFile, rm } from 'node:fs/promises'
+import { dirname, extname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { transformAsync } from '@babel/core'
 import { build } from 'esbuild'
 
 const rootDir = dirname(dirname(fileURLToPath(import.meta.url)))
 const generatedDir = resolve(rootDir, 'webui', 'generated')
+const webuiSourceDir = resolve(rootDir, 'webui-src')
 
+const resolveLoader = (path) => {
+  switch (extname(path)) {
+    case '.tsx':
+      return 'tsx'
+    case '.ts':
+      return 'ts'
+    case '.jsx':
+      return 'jsx'
+    default:
+      return 'js'
+  }
+}
+
+const reactCompilerPlugin = {
+  name: 'react-compiler',
+  setup(esbuild) {
+    esbuild.onLoad({ filter: /\.[cm]?[jt]sx?$/ }, async (args) => {
+      if (!args.path.startsWith(webuiSourceDir)) return null
+      const source = await readFile(args.path, 'utf8')
+      const transformed = await transformAsync(source, {
+        babelrc: false,
+        configFile: false,
+        filename: args.path,
+        parserOpts: {
+          plugins: ['jsx', 'typescript'],
+        },
+        plugins: ['babel-plugin-react-compiler'],
+        sourceMaps: false,
+      })
+      return {
+        contents: transformed?.code ?? source,
+        loader: resolveLoader(args.path),
+      }
+    })
+  },
+}
+
+await rm(generatedDir, { force: true, recursive: true })
 await mkdir(generatedDir, { recursive: true })
 
-const entryPoints = [
-  {
-    entryPoint: resolve(rootDir, 'webui-src', 'main.tsx'),
-    outfile: resolve(generatedDir, 'app.js'),
+await build({
+  bundle: true,
+  chunkNames: 'chunks/[name]-[hash]',
+  entryNames: '[name]',
+  entryPoints: {
+    app: resolve(rootDir, 'webui-src', 'main.tsx'),
+    'archive-viewer': resolve(rootDir, 'webui-src', 'archive-viewer.ts'),
   },
-  {
-    entryPoint: resolve(rootDir, 'webui-src', 'archive-viewer.ts'),
-    outfile: resolve(generatedDir, 'archive-viewer.js'),
-  },
-]
-
-for (const { entryPoint, outfile } of entryPoints) {
-  await build({
-    bundle: true,
-    entryPoints: [entryPoint],
-    format: 'esm',
-    jsx: 'automatic',
-    legalComments: 'none',
-    outfile,
-    platform: 'browser',
-    target: ['es2022'],
-    tsconfig: resolve(rootDir, 'tsconfig.webui.json'),
-  })
-}
+  format: 'esm',
+  jsx: 'automatic',
+  legalComments: 'none',
+  minify: true,
+  outdir: generatedDir,
+  platform: 'browser',
+  plugins: [reactCompilerPlugin],
+  splitting: true,
+  target: ['es2022'],
+  tsconfig: resolve(rootDir, 'tsconfig.webui.json'),
+})

@@ -1,5 +1,3 @@
-import { memo } from 'react'
-
 import { useNowTick } from '../hooks/use-now-tick.js'
 import { buildTaskArchiveViewerUrl } from '../lib/archive-viewer-url.js'
 import { formatDisplayTimeWithFull } from '../lib/messages/format-time.js'
@@ -12,7 +10,7 @@ type Props = {
   plan: PlanView
 }
 
-export const PlanListItem = memo(function PlanListItem({ open, plan }: Props) {
+export const PlanListItem = ({ open, plan }: Props) => {
   const now = useNowTick(60_000, open)
   const changedAt = plan.archivedAt || plan.updatedAt || ''
   const timeDisplay = formatDisplayTimeWithFull(changedAt, { now })
@@ -66,4 +64,4 @@ export const PlanListItem = memo(function PlanListItem({ open, plan }: Props) {
       )}
     </li>
   )
-})
+}

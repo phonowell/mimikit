@@ -18,8 +18,7 @@ type Params = Pick<
   | 'scroll'
   | 'setAppState'
   | 'setBusy'
-  | 'setChoiceMetaOverrides'
-  | 'setChoicePending'
+  | 'setChoiceSubmission'
   | 'setComposerValue'
   | 'setConfirmDialog'
   | 'setOpenTaskMenuId'
@@ -36,8 +35,7 @@ export const useAppRequestActions = ({
   scroll,
   setAppState,
   setBusy,
-  setChoiceMetaOverrides,
-  setChoicePending,
+  setChoiceSubmission,
   setComposerValue,
   setConfirmDialog,
   setOpenTaskMenuId,
@@ -93,7 +91,7 @@ export const useAppRequestActions = ({
       }),
     [
       appendError,
-      scroll,
+      scroll.captureLayoutShift,
       setAppState,
       setComposerValue,
       setQuote,
@@ -104,8 +102,7 @@ export const useAppRequestActions = ({
 
   const selectChoice = useCallback(
     async (choiceId: string, optionId: string) => {
-      setChoicePending({ choiceId, optionId })
-      setChoiceMetaOverrides(new Map([[choiceId, UI_TEXT.choiceSubmitting]]))
+      setChoiceSubmission({ choiceId, optionId, status: 'submitting' })
       try {
         const response = await fetchWithTimeout(
           `/api/choices/${encodeURIComponent(choiceId)}/select`,
@@ -122,16 +119,13 @@ export const useAppRequestActions = ({
           )
         }
 
-        setChoiceMetaOverrides(new Map([[choiceId, UI_TEXT.choiceSubmitted]]))
+        setChoiceSubmission({ choiceId, optionId, status: 'submitted' })
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
-        setChoicePending({ choiceId: '', optionId: '' })
-        setChoiceMetaOverrides(
-          new Map([[choiceId, `${UI_TEXT.choiceSelectFailed}: ${message}`]]),
-        )
+        setChoiceSubmission({ choiceId, optionId, status: 'error', message })
       }
     },
-    [setChoiceMetaOverrides, setChoicePending],
+    [setChoiceSubmission],
   )
 
   const triggerTaskAction = useCallback(

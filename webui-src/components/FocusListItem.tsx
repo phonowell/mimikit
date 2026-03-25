@@ -1,5 +1,3 @@
-import { memo } from 'react'
-
 import { useNowTick } from '../hooks/use-now-tick.js'
 import { buildTaskArchiveViewerUrl } from '../lib/archive-viewer-url.js'
 import { formatDisplayTimeWithFull } from '../lib/messages/format-time.js'
@@ -12,10 +10,7 @@ type Props = {
   open: boolean
 }
 
-export const FocusListItem = memo(function FocusListItem({
-  focus,
-  open,
-}: Props) {
+export const FocusListItem = ({ focus, open }: Props) => {
   const now = useNowTick(60_000, open)
   const changedAt = focus.lastActivityAt || focus.updatedAt
   const timeDisplay = formatDisplayTimeWithFull(changedAt, { now })
@@ -71,4 +66,4 @@ export const FocusListItem = memo(function FocusListItem({
       )}
     </li>
   )
-})
+}

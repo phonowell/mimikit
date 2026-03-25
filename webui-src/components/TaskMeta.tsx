@@ -1,5 +1,3 @@
-import { memo } from 'react'
-
 import { useNowTick } from '../hooks/use-now-tick.js'
 import {
   formatDateTimeFull,
@@ -22,7 +20,7 @@ const toMs = (value: string | undefined): number | null => {
   return parsed ? parsed.getTime() : null
 }
 
-export const TaskMeta = memo(function TaskMeta({ open, task }: Props) {
+export const TaskMeta = ({ open, task }: Props) => {
   const status = task.status || 'pending'
   const hasRunningClock = status === 'running'
   const now = useNowTick(hasRunningClock ? 1_000 : 60_000, open)
@@ -73,4 +71,4 @@ export const TaskMeta = memo(function TaskMeta({ open, task }: Props) {
       ) : null}
     </small>
   )
-})
+}

@@ -19,7 +19,6 @@ type Params = {
   scroll: ScrollController
   speakMessages: (messages: AppState['messages']) => void
   setAppState: Dispatch<SetStateAction<AppState>>
-  setDisconnected: Dispatch<SetStateAction<boolean>>
   setOpenTaskMenuId: Dispatch<SetStateAction<string>>
   setStatusOverride: Dispatch<
     SetStateAction<{ state: string; text: string } | null>
@@ -36,7 +35,6 @@ export const useAppRuntimeEffects = ({
   scroll,
   speakMessages,
   setAppState,
-  setDisconnected,
   setOpenTaskMenuId,
   setStatusOverride,
   setToast,
@@ -45,7 +43,6 @@ export const useAppRuntimeEffects = ({
 }: Params): void => {
   const handleSnapshot = useEffectEvent((snapshot: SnapshotEnvelope) => {
     scroll.captureLayoutShift()
-    setDisconnected(false)
     setStatusOverride(null)
     setAppState((current) => {
       const { next, newAgentMessages } = applyIncomingSnapshot(
@@ -60,7 +57,6 @@ export const useAppRuntimeEffects = ({
     setAppState((current) => ({ ...current, tasks: tasks.tasks })),
   )
   const handleDisconnected = useEffectEvent(() => {
-    setDisconnected(true)
     setAppState((current) => ({
       ...current,
       awaitingReply: false,

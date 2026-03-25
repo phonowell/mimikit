@@ -1,4 +1,12 @@
-import { useCallback, useLayoutEffect, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 
 import {
   isScrollStateNearBottom,
@@ -15,29 +23,22 @@ export const useMessageScroll = (deps: readonly unknown[]) => {
   const listRef = useRef<HTMLUListElement | null>(null)
   const followBottomRef = useRef(true)
   const pendingMetricsRef = useRef<ScrollMetrics | null>(null)
-  const scrollButtonVisibleRef = useRef(false)
   const [isNearBottom, setIsNearBottom] = useState(true)
-  const [scrollButtonVisible, setScrollButtonVisible] = useState(false)
 
   const syncFollowState = useCallback((nearBottom: boolean) => {
     followBottomRef.current = nearBottom
     setIsNearBottom((current) =>
       current === nearBottom ? current : nearBottom,
     )
-    const nextVisible = !nearBottom
-    scrollButtonVisibleRef.current = nextVisible
-    setScrollButtonVisible((current) =>
-      current === nextVisible ? current : nextVisible,
-    )
   }, [])
 
-  const updateScrollButton = useCallback(() => {
+  const updateScrollButton = useEffectEvent(() => {
     const element = listRef.current
     if (!element) return
     const state = readScrollState(element)
     const nearBottom = isScrollStateNearBottom(state)
     syncFollowState(nearBottom)
-  }, [syncFollowState])
+  })
 
   const captureLayoutShift = useCallback(() => {
     const element = listRef.current
@@ -81,6 +82,14 @@ export const useMessageScroll = (deps: readonly unknown[]) => {
     [scrollToBottom, syncFollowState],
   )
 
+  useEffect(() => {
+    const element = listRef.current
+    if (!element) return
+    updateScrollButton()
+    element.addEventListener('scroll', updateScrollButton, { passive: true })
+    return () => element.removeEventListener('scroll', updateScrollButton)
+  }, [updateScrollButton])
+
   useLayoutEffect(() => {
     const element = listRef.current
     const metrics = pendingMetricsRef.current
@@ -95,16 +104,24 @@ export const useMessageScroll = (deps: readonly unknown[]) => {
     }
     const delta = element.scrollHeight - metrics.previousHeight
     element.scrollTop = Math.max(0, metrics.previousTop + delta)
-    if (!scrollButtonVisibleRef.current) syncFollowState(false)
+    syncFollowState(false)
   }, deps)
 
-  return {
-    captureLayoutShift,
-    isNearBottom,
-    listRef,
-    onScroll: updateScrollButton,
-    scrollButtonVisible,
-    scrollToBottom,
-    syncAfterLayoutShift,
-  }
+  return useMemo(
+    () => ({
+      captureLayoutShift,
+      isNearBottom,
+      listRef,
+      scrollButtonVisible: !isNearBottom,
+      scrollToBottom,
+      syncAfterLayoutShift,
+    }),
+    [
+      captureLayoutShift,
+      isNearBottom,
+      listRef,
+      scrollToBottom,
+      syncAfterLayoutShift,
+    ],
+  )
 }
