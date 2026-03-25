@@ -2,7 +2,6 @@ import { appendLog } from '../../persistence/log/append.js'
 import { resolveDefaultFocusId } from '../../work/focus/index.js'
 
 import { canScheduleManagerRestart } from './restart-runtime.js'
-import { collectConfirmedRunTaskChoiceIds } from './run-task-confirmation.js'
 
 import type { SupplementalEvidenceSource } from './action-intent-evidence.js'
 import type {
@@ -37,7 +36,6 @@ export const buildActionFeedbackContext = (params: {
   planStatusById: Map<string, TaskPlanStatus>
   resultTaskIds: Set<string>
   allowAskUserChoice: boolean
-  confirmedRunTaskChoiceIds: Set<string>
   wakeProfile: ManagerWakeProfile
   inputs: UserInput[]
   supplementalEvidenceSources: Set<SupplementalEvidenceSource>
@@ -49,8 +47,6 @@ export const buildActionFeedbackContext = (params: {
   const { runtime, allowAskUserChoice, resultTaskIds, wakeProfile, inputs } =
     params
   const currentInputs = inputs ?? runtime.session.inflightInputs
-  const confirmedRunTaskChoiceIds =
-    collectConfirmedRunTaskChoiceIds(currentInputs)
   const supplementalEvidenceSources = new Set<SupplementalEvidenceSource>()
   if (resultTaskIds.size > 0) supplementalEvidenceSources.add('task_result')
   return {
@@ -63,7 +59,6 @@ export const buildActionFeedbackContext = (params: {
     ),
     resultTaskIds,
     allowAskUserChoice,
-    confirmedRunTaskChoiceIds,
     wakeProfile,
     inputs: currentInputs,
     supplementalEvidenceSources,

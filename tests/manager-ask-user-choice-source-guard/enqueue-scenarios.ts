@@ -64,34 +64,5 @@ test('enqueue_task rejects missing task contract attrs', () => {
   expect(feedback[0]?.action).toBe('enqueue_task')
   expect(feedback[0]?.error).toBe('action_execution_rejected')
   expect(feedback[0]?.hint).toContain('每项一句即可')
-  expect(feedback[0]?.hint).toContain('worker_prompt=')
-  expect(feedback[0]?.hint).toContain('out_of_scope=')
-})
-
-test('enqueue_task high-cost payload requires user confirmation first', () => {
-  const feedback = collectManagerActionFeedback(
-    [
-      {
-        name: 'enqueue_task',
-        attrs: {
-          worker_prompt: 'x'.repeat(1300),
-          title: 'high-cost',
-          cwd: '/tmp/high-cost-task',
-          goal: 'Ship high-cost task',
-          in_scope: 'All modules',
-          done_when_1: 'A',
-          done_when_2: 'B',
-          done_when_3: 'C',
-        },
-      },
-    ],
-    {
-      confirmedRunTaskChoiceIds: new Set(),
-    },
-  )
-
-  expect(feedback).toHaveLength(1)
-  expect(feedback[0]?.action).toBe('enqueue_task')
-  expect(feedback[0]?.error).toBe('action_execution_rejected')
-  expect(feedback[0]?.hint).toContain('高成本长任务')
+  expect(feedback[0]?.hint).toContain('补齐 contract 后重试')
 })

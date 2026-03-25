@@ -60,8 +60,6 @@ test('buildManagerContextPacket latestResult falls back to status summary instea
     tasks: [task],
     plans: [],
     workingFocusIds: [],
-    includedSections: ['batch_results', 'tasks'],
-    prunedSections: [],
   })
 
   expect(packet.latestResult).toMatchObject({

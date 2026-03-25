@@ -11,8 +11,6 @@ export type LedgerExpectation = {
   statusCounts?: Record<string, number>
   minPromptBytesSum?: number
   minTotalUsage?: number
-  includedSections?: string[]
-  prunedSections?: string[]
 }
 
 export type LogExpectation = {
@@ -105,12 +103,6 @@ const asLedgerExpectation = (value: unknown): LedgerExpectation | undefined => {
       : {}),
     ...(typeof record.minTotalUsage === 'number'
       ? { minTotalUsage: record.minTotalUsage }
-      : {}),
-    ...(record.includedSections
-      ? { includedSections: asStringArray(record.includedSections) }
-      : {}),
-    ...(record.prunedSections
-      ? { prunedSections: asStringArray(record.prunedSections) }
       : {}),
   }
 }

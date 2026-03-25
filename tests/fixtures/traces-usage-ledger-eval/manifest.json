@@ -124,13 +124,7 @@
           "kindCounts": {
             "manager_round": 2
           },
-          "minPromptBytesSum": 7000,
-          "includedSections": [
-            "tasks"
-          ],
-          "prunedSections": [
-            "memory"
-          ]
+          "minPromptBytesSum": 7000
         }
       }
     },
@@ -156,10 +150,10 @@
       "expected": {
         "log": {
           "requireEvents": [
-            "manager_action_rejection_circuit_open"
+            "manager_correction_structured_clarify"
           ],
           "eventCountsAtLeast": {
-            "manager_action_rejection_circuit_open": 1
+            "manager_correction_structured_clarify": 1
           }
         }
       }
@@ -224,11 +218,7 @@
           "statusCounts": {
             "succeeded": 2
           },
-          "minTotalUsage": 3600,
-          "includedSections": [
-            "inputs",
-            "tasks"
-          ]
+          "minTotalUsage": 3600
         }
       }
     },

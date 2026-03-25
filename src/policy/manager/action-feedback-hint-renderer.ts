@@ -31,22 +31,8 @@ const actionFeedbackHintSchema = z
     ...mutateTaskGitHintSchemaShape,
     ask_user_choice_channel_unsupported: z.string().trim().min(1),
     ask_user_choice_invalid_options: z.string().trim().min(1),
-    enqueue_task_requires_confirmation: z.string().trim().min(1),
     enqueue_task_worktree_prepare_failed: z.string().trim().min(1),
     enqueue_task_contract_missing: z.string().trim().min(1),
-    enqueue_task_contract_missing_default_worker_prompt: z
-      .string()
-      .trim()
-      .min(1),
-    enqueue_task_contract_missing_default_title: z.string().trim().min(1),
-    enqueue_task_contract_missing_default_cwd: z.string().trim().min(1),
-    enqueue_task_contract_missing_default_goal: z.string().trim().min(1),
-    enqueue_task_contract_missing_default_in_scope: z.string().trim().min(1),
-    enqueue_task_contract_missing_default_out_of_scope: z
-      .string()
-      .trim()
-      .min(1),
-    enqueue_task_contract_missing_default_done_when_1: z.string().trim().min(1),
     plan_not_found: z.string().trim().min(1),
     update_plan_done_forbidden: z.string().trim().min(1),
     duplicate_action_generic: z.string().trim().min(1),

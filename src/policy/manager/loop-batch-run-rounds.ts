@@ -9,8 +9,6 @@ import { parseActions } from '../actions/protocol/parse.js'
 
 import {
   buildCorrectionFallbackReply,
-  findRepeatedRejectedAction,
-  resolveDominantRejectedClass,
   shouldRetrySelfRepairRound,
 } from './loop-batch-correction-reply.js'
 import { runManagerRoundWithRecovery } from './loop-batch-exec.js'
@@ -76,22 +74,12 @@ export const runManagerCorrectionRounds = async (params: {
         })
       } else {
         const fallbackReply = buildCorrectionFallbackReply(extra.actionFeedback)
-        const repeatedRejectedAction = findRepeatedRejectedAction(
-          extra.actionFeedback,
-        )
-        const dominantRejectedClass = resolveDominantRejectedClass(
-          extra.actionFeedback,
-        )
         await appendLog(runtime.paths.log, {
-          event: repeatedRejectedAction
-            ? 'manager_action_rejection_circuit_open'
-            : 'manager_correction_structured_clarify',
+          event: 'manager_correction_structured_clarify',
           round,
           feedbackCount: extra.actionFeedback.length,
-          ...(dominantRejectedClass
-            ? { rejectedClass: dominantRejectedClass }
-            : {}),
-          ...(repeatedRejectedAction ? { action: repeatedRejectedAction } : {}),
+          errors: extra.actionFeedback.map((item) => item.error),
+          names: extra.actionFeedback.map((item) => item.action),
         })
         return buildRoundLimitResult({
           text: fallbackReply,

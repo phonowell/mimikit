@@ -7,8 +7,6 @@ type LedgerRow = {
   kind?: string
   status?: string
   promptBytes?: number
-  includedSections?: string[]
-  prunedSections?: string[]
   usage?: {
     total?: number
   }
@@ -87,14 +85,6 @@ export const pushLedgerMismatches = (
   )
   if (expected.minTotalUsage !== undefined && totalUsage < expected.minTotalUsage)
     reasons.push(`ledger.totalUsage min=${expected.minTotalUsage} actual=${totalUsage}`)
-  const includedSections = new Set(rows.flatMap((row) => row.includedSections ?? []))
-  for (const section of expected.includedSections ?? []) {
-    if (!includedSections.has(section)) reasons.push(`ledger.includedSections missing=${section}`)
-  }
-  const prunedSections = new Set(rows.flatMap((row) => row.prunedSections ?? []))
-  for (const section of expected.prunedSections ?? []) {
-    if (!prunedSections.has(section)) reasons.push(`ledger.prunedSections missing=${section}`)
-  }
 }
 
 export const pushLogMismatches = (

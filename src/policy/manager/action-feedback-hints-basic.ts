@@ -72,9 +72,6 @@ export const formatAskUserChoiceChannelUnsupportedHint = (): string =>
 export const formatAskUserChoiceInvalidOptionsHint = (): string =>
   renderActionFeedbackHint('ask_user_choice_invalid_options')
 
-export const formatEnqueueTaskRequiresConfirmationHint = (): string =>
-  renderActionFeedbackHint('enqueue_task_requires_confirmation')
-
 export const formatEnqueueTaskWorktreePrepareFailedHint = (
   branch: string,
   reason: string,

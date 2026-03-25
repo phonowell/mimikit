@@ -19,16 +19,6 @@ export type ManagerPacketSection =
   | 'recent_history'
   | 'action_feedback'
 
-type ManagerSectionDigest = {
-  section: 'recent_history' | 'batch_results'
-  mode: 'digest'
-  sourceBytes: number
-  digestBytes: number
-  sourceItems: number
-  digestItems: number
-  sourceRefCount: number
-}
-
 export type ManagerContextPacket = {
   id: string
   createdAt: string
@@ -61,9 +51,6 @@ export type ManagerContextPacket = {
   activeTaskIds?: string[] | undefined
   activePlanIds?: string[] | undefined
   workingFocusIds?: FocusId[] | undefined
-  sectionDigests?: ManagerSectionDigest[] | undefined
-  includedSections: ManagerPacketSection[]
-  prunedSections: ManagerPacketSection[]
 }
 
 export type ManagerEnv = {

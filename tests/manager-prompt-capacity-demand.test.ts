@@ -80,8 +80,8 @@ test('buildManagerPromptPayload keeps working focus history for minimal capacity
 
   expect(readHistoryMock).toHaveBeenCalledTimes(1)
   expect(readMemoryEntriesMock).toHaveBeenCalledTimes(1)
-  expect(payload.contextPacket.includedSections).toContain('working_focuses')
-  expect(payload.contextPacket.prunedSections).not.toContain('working_focuses')
+  expect(payload.contextPacket.workingFocusIds).toEqual(['focus-capacity'])
+  expect(payload.prompt).toContain('working_focuses')
 })
 
 test('buildManagerPromptPayload keeps working focus context for expanded capacity packets', async () => {
@@ -95,5 +95,6 @@ test('buildManagerPromptPayload keeps working focus context for expanded capacit
 
   expect(readHistoryMock).toHaveBeenCalledTimes(1)
   expect(readMemoryEntriesMock).toHaveBeenCalledTimes(1)
-  expect(payload.contextPacket.includedSections).toContain('working_focuses')
+  expect(payload.contextPacket.workingFocusIds).toEqual(['focus-capacity'])
+  expect(payload.prompt).toContain('working_focuses')
 })

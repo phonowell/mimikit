@@ -55,14 +55,8 @@ export const selectPacketSections = (params: {
   sections: PacketSections
   mode: ManagerPacketMode
   wakeProfile: ManagerWakeProfile
-}): {
-  selectedSections: PacketSections
-  includedSections: ManagerPacketSection[]
-  prunedSections: ManagerPacketSection[]
-} => {
+}): PacketSections => {
   const selectedSections: PacketSections = { ...params.sections }
-  const includedSections: ManagerPacketSection[] = []
-  const prunedSections: ManagerPacketSection[] = []
   for (const section of SELECTABLE_PACKET_SECTIONS) {
     const value = params.sections[section]
     const hasContent = value.trim().length > 0
@@ -73,12 +67,9 @@ export const selectPacketSections = (params: {
         section,
         hasContent,
       })
-    ) {
-      includedSections.push(section)
+    )
       continue
-    }
-    if (hasContent) prunedSections.push(section)
     selectedSections[section] = ''
   }
-  return { selectedSections, includedSections, prunedSections }
+  return selectedSections
 }

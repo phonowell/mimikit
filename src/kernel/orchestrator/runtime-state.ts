@@ -6,7 +6,6 @@ import { setDefaultLogPath } from '../../persistence/log/safe.js'
 
 import type {
   FocusMeta,
-  ManagerContextPacket,
   PendingUserChoice,
   Task,
   TaskPlan,
@@ -73,7 +72,6 @@ export type RuntimeManagerState = {
   turn: number
   threadId?: string
   memoryRefresh: RuntimeMemoryRefreshState
-  lastContextPacket?: ManagerContextPacket
   lastUsage?: TokenUsage
   usageTotal?: TokenUsage
 }

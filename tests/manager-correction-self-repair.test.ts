@@ -130,8 +130,8 @@ test('runManagerCorrectionRounds summarizes repeated invalid create_plan feedbac
   })
 
   expect(result.roundLimitReached).toBe(true)
-  expect(result.parsed.text).toContain('create_plan 动作参数或格式仍有问题')
+  expect(result.parsed.text).toContain('当前 create_plan 动作无法继续执行')
   expect(result.parsed.text).toContain('Detected M:action markup')
   expect(result.parsed.text).toContain('schedule_type is required')
-  expect(result.parsed.text).not.toContain('继续执行前还缺 3 个最小信息')
+  expect(result.parsed.text).not.toContain('最终要我产出什么')
 })

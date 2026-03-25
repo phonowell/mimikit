@@ -72,10 +72,10 @@ test('runManagerCorrectionRounds explains missing execution boundary in user ter
   })
 
   expect(result.roundLimitReached).toBe(true)
-  expect(result.parsed.text).toContain('每项一句即可')
-  expect(result.parsed.text).toContain('最终要我产出什么')
-  expect(result.parsed.text).toContain('哪些不要动')
-  expect(result.parsed.text).toContain('最小可交付结果')
+  expect(result.parsed.text).toContain('enqueue_task 动作无法继续执行')
+  expect(result.parsed.text).toContain('goal')
+  expect(result.parsed.text).toContain('done_when_{n}')
+  expect(result.parsed.text).toContain('继续派发前还缺 3 个最小信息')
 })
 
 test('runManagerCorrectionRounds returns concrete invalid action args instead of generic scope clarification', async () => {
@@ -165,7 +165,7 @@ test('runManagerCorrectionRounds returns concrete invalid action args instead of
   })
 
   expect(result.roundLimitReached).toBe(true)
-  expect(result.parsed.text).toContain('当前动作无法继续执行')
+  expect(result.parsed.text).toContain('当前 enqueue_task 动作无法继续执行')
   expect(result.parsed.text).toContain('worker_prompt: Invalid input')
-  expect(result.parsed.text).not.toContain('继续执行前还缺 3 个最小信息')
+  expect(result.parsed.text).not.toContain('goal（最终要什么结果）')
 })

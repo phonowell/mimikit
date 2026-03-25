@@ -5,12 +5,10 @@ import {
   rememberMemorySchema,
   runTaskSchema,
 } from './action-apply-schema.js'
-import { buildTaskContractMissingHintFromAction } from './action-feedback-contract-hint.js'
 import {
   formatAskUserChoiceChannelUnsupportedHint,
   formatAskUserChoiceInvalidOptionsHint,
   formatEnqueueTaskContractMissingHint,
-  formatEnqueueTaskRequiresConfirmationHint,
   formatMutateTaskAlreadyCanceledHint,
   formatMutateTaskAlreadyDoneHint,
   formatMutateTaskAlreadyPausedHint,
@@ -29,7 +27,6 @@ import { validateMutateTaskGitOp } from './action-validation-mutate-task-git.js'
 import { validateRememberMemoryAction } from './action-validation-remember-memory.js'
 import { validateRestartRuntimeAction } from './action-validation-restart-runtime.js'
 import { validateTaskResultSummaryAction } from './action-validation-task-result-summary.js'
-import { resolveRunTaskConfirmationRequirement } from './run-task-confirmation.js'
 import {
   buildTaskContractFromAttrs,
   resolveWorkerPromptFromAttrs,
@@ -57,38 +54,15 @@ export const validateRunTask = (
   const contract = buildTaskContractFromAttrs(parsed)
   const workerPrompt = resolveWorkerPromptFromAttrs(parsed)
   if (!contract) {
-    return rejected(
-      buildTaskContractMissingHintFromAction(item) ??
-        formatEnqueueTaskContractMissingHint({
-          worker_prompt: parsed.worker_prompt,
-          title: parsed.title,
-          cwd: parsed.cwd,
-          goal: parsed.goal,
-          in_scope: parsed.in_scope,
-          out_of_scope: parsed.out_of_scope,
-          done_when_1: parsed.done_when_1,
-        }),
-      { code: 'task_contract_missing' },
-    )
+    return rejected(formatEnqueueTaskContractMissingHint(), {
+      code: 'task_contract_missing',
+    })
   }
   if (!workerPrompt) {
     return rejected(formatEnqueueTaskContractMissingHint(), {
       code: 'task_contract_missing',
     })
   }
-
-  const confirmation = resolveRunTaskConfirmationRequirement({
-    prompt: workerPrompt,
-    title: parsed.title,
-    goal: contract.goal,
-    scope: contract.scope,
-    acceptance: contract.acceptance,
-    ...(contract.outOfScope ? { outOfScope: contract.outOfScope } : {}),
-    ...(contract.contextRefs ? { contextRefs: contract.contextRefs } : {}),
-  })
-  if (context.confirmedRunTaskChoiceIds?.has(confirmation.choiceId)) return []
-  if (confirmation.required)
-    return rejected(formatEnqueueTaskRequiresConfirmationHint())
   return validateHighRiskActionIntentEvidence(item, context)
 }
 

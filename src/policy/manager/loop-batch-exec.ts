@@ -114,7 +114,6 @@ export const runManagerRoundWithRecovery = async (params: {
     packetMode,
     wakeProfile,
   })
-  params.runtime.manager.lastContextPacket = result.contextPacket
   if (result.usage) {
     params.runtime.manager.lastUsage = result.usage
     params.runtime.manager.usageTotal =

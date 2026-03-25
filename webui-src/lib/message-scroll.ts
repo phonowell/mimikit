@@ -29,9 +29,8 @@ export const scrollElementToBottom = (
       top: maxTop,
       behavior: 'smooth',
     })
-  } else {
-    element.scrollTop = maxTop
-  }
+  } else element.scrollTop = maxTop
+
   return readScrollState(element)
 }
 

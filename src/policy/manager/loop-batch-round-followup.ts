@@ -2,10 +2,6 @@ import { resolveScheduleNowIso } from '../../foundation/shared/time.js'
 import { appendLog } from '../../persistence/log/append.js'
 
 import { managerActionCliLogger } from './action-cli-log.js'
-import {
-  collectActionFeedbackHintBuckets,
-  collectActionFeedbackHints,
-} from './action-feedback-buckets.js'
 import { collectManagerActionFeedback } from './action-feedback-collect.js'
 import {
   buildActionFeedbackContext,
@@ -38,8 +34,7 @@ const appendRoundActionFeedback = async (params: {
     count: actionFeedback.length,
     errors: actionFeedback.map((item) => item.error),
     names: actionFeedback.map((item) => item.action),
-    hints: collectActionFeedbackHints(actionFeedback),
-    hintBuckets: collectActionFeedbackHintBuckets(actionFeedback),
+    codes: actionFeedback.flatMap((item) => (item.code ? [item.code] : [])),
   })
 }
 

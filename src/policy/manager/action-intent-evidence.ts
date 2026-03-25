@@ -20,7 +20,6 @@ export type SupplementalEvidenceSource = 'task_result'
 type IntentEvidenceContext = {
   inputs?: UserInput[]
   taskById?: Map<string, Task>
-  confirmedRunTaskChoiceIds?: Set<string>
   supplementalEvidenceSources?: Set<SupplementalEvidenceSource>
   currentActions?: Parsed[]
   defaultFocusId?: string
@@ -60,9 +59,6 @@ export const resolveIntentEvidenceRejectionHint = (
     return validateEnqueueTaskIntentEvidence({
       item,
       inputTexts,
-      ...(context.confirmedRunTaskChoiceIds
-        ? { confirmedRunTaskChoiceIds: context.confirmedRunTaskChoiceIds }
-        : {}),
       ...(context.supplementalEvidenceSources
         ? { supplementalEvidenceSources: context.supplementalEvidenceSources }
         : {}),

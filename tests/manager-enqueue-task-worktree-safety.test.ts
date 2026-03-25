@@ -25,7 +25,7 @@ const createRuntime = async () => {
 
 afterEach(cleanupGitRepos)
 
-test('enqueue_task does not create worktree before confirmation is granted', async () => {
+test('enqueue_task dispatches immediately and prepares worktree for branch tasks', async () => {
   const cwd = await createGitRepo()
   const runtime = await createRuntime()
   const expectedWorktree = resolveExpectedWorktreePath(cwd, 'feat/high-cost-task')
@@ -43,9 +43,9 @@ test('enqueue_task does not create worktree before confirmation is granted', asy
     },
   ])
 
-  expect(runtime.tasks).toHaveLength(0)
-  expect(runtime.ui.pendingUserChoices).toHaveLength(1)
-  await expect(access(expectedWorktree)).rejects.toThrow()
+  expect(runtime.tasks).toHaveLength(1)
+  expect(runtime.ui.pendingUserChoices).toHaveLength(0)
+  await expect(access(expectedWorktree)).resolves.toBeUndefined()
 })
 
 test('enqueue_task worktree prepare failure appends action feedback without throwing', async () => {

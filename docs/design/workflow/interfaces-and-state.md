@@ -25,7 +25,6 @@
 
 `GET /api/status` 当前除基础运行状态外，还会返回：
 
-- `managerLastContextPacket`：最近一次 manager 编排 packet 元数据（唤醒类型、packet 模式、纳入/裁剪 section）
 - `managerLastUsage`
 - `managerUsageTotal`
 - `workerUsageTotal`
@@ -171,7 +170,7 @@
 说明：
 
 - `memory/MEMORY.md` 由两条链路维护：后台 memory 刷新子进程（`>=20` 轮且 `signalVersion != lastProcessedSignalVersion` 时触发，单飞执行）+ manager `remember_memory` 即时写入。
-- `usage/ledger.jsonl` 追加写入 manager round 与 worker result 两类账本记录；manager 记录 `wakeProfile/packetMode/promptBytes/promptSegmentCount/includedSections/prunedSections`，worker 记录 `taskId/provider/status/usage`。
+- `usage/ledger.jsonl` 追加写入 manager round 与 worker result 两类账本记录；manager 记录 `wakeProfile/packetMode/promptBytes/promptSegmentCount`，worker 记录 `taskId/provider/status/usage`。
 - `log.jsonl` 中 manager 每轮会写 `manager_context_budget_resolved`，显式记录 `policy=fixed`、`wakeProfile` 与最终 `promptSectionLimits`；预算解释以这条日志为准，不再依赖隐式分档推导。每次启动还会先写入 `runtime_startup` 事件，至少包含 `runtimeId`、`startedAt`、`worktree`，并在可用时附带 `commit`、`dirty`。
 - 异常退出（如被 kill）时，reaper 依据 `runtime/lease.json + runtime/children.json` 回收残留子进程。
 
@@ -190,7 +189,7 @@ schema：`src/persistence/storage/runtime-snapshot-schema.ts`
 
 补充：
 
-- `channelTargets`、`managerLastContextPacket`、`managerLastUsage`、`managerUsageTotal` 都是进程内交互/观测态，不进入 snapshot。
+- `channelTargets`、`managerLastUsage`、`managerUsageTotal` 都是进程内交互/观测态，不进入 snapshot。
 - `channelTargets` 启动时会从最近 history 用户消息中的 chat id 恢复。
 - `runtime-snapshot` 运行期只接受当前 `schemaVersion`；旧版本/旧字段会被直接拒绝，不再提供仓内迁移脚本。
 - `workerUsageTotal` 不持久化到 snapshot；`GET /api/status` 会在返回时按 `tasks[*].result.usage ?? tasks[*].usage` 实时聚合。
@@ -219,7 +218,6 @@ schema：`src/persistence/storage/runtime-snapshot-schema.ts`
 - `pendingInputs`
 - `managerRunning`
 - `maxWorkers`
-- `managerLastContextPacket?`
 - `managerLastUsage?`
 - `managerUsageTotal?`
 - `workerUsageTotal?`

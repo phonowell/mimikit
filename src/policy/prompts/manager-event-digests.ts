@@ -5,7 +5,6 @@ import {
 
 import type {
   HistoryMessage,
-  ManagerContextPacket,
   Task,
   TaskResult,
 } from '../../foundation/types/index.js'
@@ -13,17 +12,16 @@ import type {
 type DigestSelection = {
   text: string
   payload?: unknown
-  stat?: NonNullable<ManagerContextPacket['sectionDigests']>[number]
 }
 
 const selectDigest = <
-  T extends { payload: Record<string, unknown>; text: string },
+  T extends {
+    payload: Record<string, unknown>
+    text: string
+    stat: { digestBytes: number; sourceBytes: number }
+  },
 >(
-  digest:
-    | (T & {
-        stat: NonNullable<ManagerContextPacket['sectionDigests']>[number]
-      })
-    | undefined,
+  digest: T | undefined,
   fallback: string,
 ): DigestSelection => {
   const trimmedFallback = fallback.trim()
@@ -46,7 +44,6 @@ const selectDigest = <
   return {
     text: digest.text,
     payload: digest.payload,
-    stat: digest.stat,
   }
 }
 
@@ -61,7 +58,6 @@ export const buildManagerEventDigests = (params: {
   batchResultsPayload?: unknown
   recentHistory: string
   recentHistoryPayload?: unknown
-  sectionDigests: NonNullable<ManagerContextPacket['sectionDigests']>
 } => {
   const recentHistoryDigest = params.recentHistorySource
     ? buildRecentHistoryDigest({
@@ -85,16 +81,11 @@ export const buildManagerEventDigests = (params: {
     recentHistoryDigest,
     params.recentHistorySource,
   )
-  const sectionDigests: NonNullable<ManagerContextPacket['sectionDigests']> = []
-  if (selectedBatchResults.stat) sectionDigests.push(selectedBatchResults.stat)
-  if (selectedRecentHistory.stat)
-    sectionDigests.push(selectedRecentHistory.stat)
 
   return {
     batchResults: selectedBatchResults.text,
     batchResultsPayload: selectedBatchResults.payload,
     recentHistory: selectedRecentHistory.text,
     recentHistoryPayload: selectedRecentHistory.payload,
-    sectionDigests,
   }
 }

@@ -18,12 +18,7 @@ export type RuntimeSnapshotHydrateTarget = Pick<
 > & {
   manager: Pick<
     RuntimeManagerState,
-    | 'turn'
-    | 'threadId'
-    | 'memoryRefresh'
-    | 'lastContextPacket'
-    | 'lastUsage'
-    | 'usageTotal'
+    'turn' | 'threadId' | 'memoryRefresh' | 'lastUsage' | 'usageTotal'
   >
 }
 
@@ -72,7 +67,6 @@ export const applyRuntimeSnapshotHydrateSlice = (
   if (slice.manager.threadId) runtime.manager.threadId = slice.manager.threadId
   else delete runtime.manager.threadId
   runtime.manager.memoryRefresh = slice.manager.memoryRefresh
-  delete runtime.manager.lastContextPacket
   delete runtime.manager.lastUsage
   delete runtime.manager.usageTotal
   runtime.ui.pendingUserChoices = slice.ui.pendingUserChoices

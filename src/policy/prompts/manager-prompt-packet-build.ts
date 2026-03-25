@@ -47,16 +47,11 @@ export const buildManagerPromptPackets = (params: {
       env: params.env,
       sectionPolicy: params.sectionPolicy,
     })
-  const { selectedSections, includedSections, prunedSections } =
-    selectPacketSections({
-      sections: sectionSources,
-      mode: params.packetMode,
-      wakeProfile: params.wakeProfile,
-    })
-  const includedSectionSet = new Set(includedSections)
-  const includedSectionDigests = digestSections.sectionDigests.filter((item) =>
-    includedSectionSet.has(item.section),
-  )
+  const selectedSections = selectPacketSections({
+    sections: sectionSources,
+    mode: params.packetMode,
+    wakeProfile: params.wakeProfile,
+  })
   const packetBundle = buildManagerContextPacket({
     wakeProfile: params.wakeProfile,
     mode: params.packetMode,
@@ -65,11 +60,6 @@ export const buildManagerPromptPackets = (params: {
     tasks: params.tasks,
     plans: params.plans ?? [],
     workingFocusIds: params.workingFocusIds ?? [],
-    includedSections,
-    prunedSections,
-    ...(includedSectionDigests.length > 0
-      ? { sectionDigests: includedSectionDigests }
-      : {}),
   })
   const sectionText = (value: string, maxBytes: number): string =>
     encodePromptTextSection(value, maxBytes)

@@ -11,11 +11,7 @@ import {
   TASK_RESULT_STATUS_VALUES,
 } from '../../foundation/types/runtime-domain.js'
 
-import {
-  managerPacketModeSchema,
-  managerPacketSectionSchema,
-  managerSectionDigestSchema,
-} from './manager-packet-schema.js'
+import { managerPacketModeSchema } from './manager-packet-schema.js'
 import { taskPlanSchema } from './runtime-snapshot-plan-schemas.js'
 import { taskSchema } from './runtime-snapshot-task-schemas.js'
 
@@ -73,9 +69,6 @@ export const managerContextPacketSchema = z
     activeTaskIds: z.array(z.string().trim().min(1)).optional(),
     activePlanIds: z.array(z.string().trim().min(1)).optional(),
     workingFocusIds: z.array(focusIdSchema).optional(),
-    sectionDigests: z.array(managerSectionDigestSchema).optional(),
-    includedSections: z.array(managerPacketSectionSchema),
-    prunedSections: z.array(managerPacketSectionSchema),
   })
   .strict()
 

@@ -1,7 +1,4 @@
-export {
-  managerPacketModeSchema,
-  managerPacketSectionSchema,
-} from './manager-packet-schema.js'
+export { managerPacketModeSchema } from './manager-packet-schema.js'
 export {
   taskPlanSchema,
   taskPlanTriggerSchema,

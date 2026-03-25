@@ -1,5 +1,4 @@
 import './manager-action-apply/enqueue-dedupe-scenarios.js'
-import './manager-action-apply/enqueue-confirmation-scenarios.js'
 import './manager-action-apply/mutate-choice-scenarios.js'
 import './manager-action-apply/plan-scenarios.js'
 import './manager-action-apply/focus-scenarios.js'

@@ -10,7 +10,6 @@ import {
 import { supportsReplacementCancelIntentEvidence } from './action-intent-evidence-replacement-cancel.js'
 import { hasResumeChoiceEffectTask } from './action-intent-evidence-resume-choice.js'
 import { parseActionAttrs } from './action-parse.js'
-import { resolveRunTaskConfirmationRequirement } from './run-task-confirmation.js'
 import {
   buildTaskContractFromAttrs,
   resolveWorkerPromptFromAttrs,
@@ -29,30 +28,14 @@ const resolveMutateTaskRef = (
 export const validateEnqueueTaskIntentEvidence = (params: {
   item: Parsed
   inputTexts: string[]
-  confirmedRunTaskChoiceIds?: Set<string>
   supplementalEvidenceSources?: Set<SupplementalEvidenceSource>
 }): string | undefined => {
-  const {
-    item,
-    inputTexts,
-    confirmedRunTaskChoiceIds,
-    supplementalEvidenceSources,
-  } = params
+  const { item, inputTexts, supplementalEvidenceSources } = params
   const parsed = parseActionAttrs(item, runTaskSchema)
   if (!parsed) return undefined
   const contract = buildTaskContractFromAttrs(parsed)
   const workerPrompt = resolveWorkerPromptFromAttrs(parsed)
   if (!contract || !workerPrompt) return undefined
-  const confirmation = resolveRunTaskConfirmationRequirement({
-    prompt: workerPrompt,
-    title: parsed.title,
-    goal: contract.goal,
-    scope: contract.scope,
-    acceptance: contract.acceptance,
-    ...(contract.outOfScope ? { outOfScope: contract.outOfScope } : {}),
-    ...(contract.contextRefs ? { contextRefs: contract.contextRefs } : {}),
-  })
-  if (confirmedRunTaskChoiceIds?.has(confirmation.choiceId)) return undefined
 
   const candidates = [parsed.title, contract.goal, contract.scope]
   const combinedCandidate = [

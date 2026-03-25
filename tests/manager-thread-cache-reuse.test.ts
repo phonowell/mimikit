@@ -153,14 +153,15 @@ test('runManagerCorrectionRounds opens rejection circuit after repeated rejected
   })
 
   expect(result.roundLimitReached).toBe(true)
-  expect(result.parsed.text).toContain('同类动作 mutate_task 已连续被拒绝')
+  expect(result.parsed.text).toContain('当前 mutate_task 动作无法继续执行')
+  expect(result.parsed.text).toContain('task already canceled')
   expect(runManagerRoundWithRecoveryMock).toHaveBeenCalledTimes(1)
   expect(appendLogMock).toHaveBeenCalledWith(
     expect.any(String),
     expect.objectContaining({
-      event: 'manager_action_rejection_circuit_open',
+      event: 'manager_correction_structured_clarify',
       round: 2,
-      action: 'mutate_task',
+      names: ['mutate_task', 'mutate_task'],
     }),
   )
 })

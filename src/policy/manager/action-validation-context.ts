@@ -14,7 +14,6 @@ export type FeedbackContext = {
   resultTaskIds?: Set<string>
   scheduleNowIso?: string
   allowAskUserChoice?: boolean
-  confirmedRunTaskChoiceIds?: Set<string>
   wakeProfile?: ManagerWakeProfile
   inputs?: UserInput[]
   supplementalEvidenceSources?: Set<'task_result'>

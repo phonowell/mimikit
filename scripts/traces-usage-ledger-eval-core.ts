@@ -18,8 +18,6 @@ type LedgerRow = {
   kind?: string
   status?: string
   promptBytes?: number
-  includedSections?: string[]
-  prunedSections?: string[]
   usage?: {
     total?: number
   }

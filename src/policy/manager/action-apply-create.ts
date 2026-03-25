@@ -18,7 +18,6 @@ import { markCreateAttempt } from './action-apply-guards.js'
 import { runTaskSchema } from './action-apply-schema.js'
 import { resolveActionFocusId } from './action-focus-id.js'
 import { linkTriggeredPlanToTask } from './plan-progress.js'
-import { ensureRunTaskConfirmation } from './run-task-confirmation-request.js'
 import { handleActiveSemanticTask } from './run-task-existing.js'
 import { resolveRunTaskTarget } from './run-task-target.js'
 import {
@@ -52,14 +51,6 @@ export const applyRunTask = async (
   if (!contract) return 'continue'
   const workerPrompt = resolveWorkerPromptFromAttrs(parsed.data)
   if (!workerPrompt) return 'continue'
-  const confirmationState = await ensureRunTaskConfirmation({
-    runtime,
-    prompt: workerPrompt,
-    title: parsed.data.title,
-    focusId,
-    contract,
-  })
-  if (confirmationState === 'stop') return 'stop'
   const target = await resolveRunTaskTarget({
     actionName: item.name,
     cwd: parsed.data.cwd,

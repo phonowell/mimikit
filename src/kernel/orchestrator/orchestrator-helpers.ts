@@ -1,10 +1,7 @@
 import { mergeUsageAdditive } from '../../execution/shared/token-usage.js'
 
 import type { RuntimeState, UserMeta } from './runtime-state.js'
-import type {
-  ManagerContextPacket,
-  TokenUsage,
-} from '../../foundation/types/index.js'
+import type { TokenUsage } from '../../foundation/types/index.js'
 
 export type OrchestratorStatus = {
   ok: boolean
@@ -15,7 +12,6 @@ export type OrchestratorStatus = {
   pendingInputs: number
   managerRunning: boolean
   maxWorkers: number
-  managerLastContextPacket?: ManagerContextPacket
   managerLastUsage?: TokenUsage
   managerUsageTotal?: TokenUsage
   workerUsageTotal?: TokenUsage
@@ -72,9 +68,6 @@ export const computeOrchestratorStatus = (
     pendingInputs: pendingInputsCount,
     managerRunning: runtime.manager.running,
     maxWorkers,
-    ...(runtime.manager.lastContextPacket
-      ? { managerLastContextPacket: runtime.manager.lastContextPacket }
-      : {}),
     ...(runtime.manager.lastUsage
       ? { managerLastUsage: runtime.manager.lastUsage }
       : {}),
