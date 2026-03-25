@@ -104,12 +104,17 @@ export const readResponseError = async (
   return detail || fallback
 }
 
-export const fetchStatusSnapshot = async (): Promise<StatusSnapshotMeta> => {
+export const fetchStatusSnapshot = (): Promise<StatusSnapshotMeta> =>
+  fetchStatusSnapshotWithTimeout(RESTART_REQUEST_TIMEOUT_MS)
+
+export const fetchStatusSnapshotWithTimeout = async (
+  timeoutMs: number,
+): Promise<StatusSnapshotMeta> => {
   try {
     const response = await fetchWithTimeout(
       '/api/status',
       STATUS_REQUEST_OPTIONS,
-      RESTART_REQUEST_TIMEOUT_MS,
+      timeoutMs,
     )
     if (!response.ok) {
       return {

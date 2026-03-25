@@ -1,5 +1,6 @@
 export const RESTART_REQUEST_TIMEOUT_MS = 12_000
-export const STATUS_POLL_TIMEOUT_MS = 60_000
+export const STATUS_POLL_TIMEOUT_MS = 20_000
+export const STATUS_POLL_REQUEST_TIMEOUT_MS = 2_000
 export const STATUS_POLL_INTERVAL_MS = 300
 export const STATUS_REQUEST_OPTIONS: RequestInit = { cache: 'no-store' }
 

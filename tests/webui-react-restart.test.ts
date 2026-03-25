@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
+import { STATUS_POLL_TIMEOUT_MS } from '../webui-src/lib/restart-config.js'
 import { requestRuntimeControl } from '../webui-src/lib/restart.js'
 
 const createJsonResponse = (ok: boolean, status: number, payload: unknown) => ({
@@ -13,14 +14,16 @@ describe('requestRuntimeControl', () => {
   const originalFetch = globalThis.fetch
 
   beforeEach(() => {
-    globalThis.window = {
+    const nextWindow: typeof window = {
       setTimeout,
       clearTimeout,
       location: { reload: vi.fn() },
-    } as typeof window
+    }
+    globalThis.window = nextWindow
   })
 
   afterEach(() => {
+    vi.useRealTimers()
     globalThis.window = originalWindow
     globalThis.fetch = originalFetch
     vi.restoreAllMocks()
@@ -92,6 +95,51 @@ describe('requestRuntimeControl', () => {
       },
       message:
         'restart blocked: restart requires clear slots: wait for manager to stop and pending/running tasks to clear (managerRunning=true, activeTasks=1, pendingTasks=2, pendingInputs=3)',
+    })
+    expect(window.location.reload).not.toHaveBeenCalled()
+  })
+
+  test('fails after the polling window if restart never exposes a new runtime', async () => {
+    vi.useFakeTimers()
+    const nextWindow: typeof window = {
+      setTimeout,
+      clearTimeout,
+      location: { reload: vi.fn() },
+    }
+    globalThis.window = nextWindow
+    globalThis.fetch = vi
+      .fn()
+      .mockResolvedValueOnce(
+        createJsonResponse(true, 200, {
+          runtimeId: 'runtime-1',
+          managerRunning: false,
+          activeTasks: 0,
+          pendingTasks: 0,
+        }),
+      )
+      .mockResolvedValueOnce(createJsonResponse(true, 200, { ok: true }))
+      .mockResolvedValue(
+        createJsonResponse(true, 200, {
+          runtimeId: 'runtime-1',
+          managerRunning: false,
+          activeTasks: 0,
+          pendingTasks: 0,
+        }),
+      ) as typeof fetch
+
+    const result = requestRuntimeControl('restart')
+    await vi.advanceTimersByTimeAsync(STATUS_POLL_TIMEOUT_MS + 1_000)
+
+    await expect(result).resolves.toEqual({
+      ok: false,
+      status: {
+        agentStatus: 'disconnected',
+        activeTasks: 0,
+        pendingTasks: 0,
+        pendingInputs: 0,
+        managerRunning: false,
+      },
+      message: 'restart failed',
     })
     expect(window.location.reload).not.toHaveBeenCalled()
   })

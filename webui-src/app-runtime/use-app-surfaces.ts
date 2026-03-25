@@ -60,7 +60,7 @@ export const useAppSurfaces = ({
     [scroll.syncAfterLayoutShift],
   )
   const scrollBottom = useCallback(
-    () => scroll.scrollToBottom(true),
+    () => scroll.scrollToBottom(false),
     [scroll.scrollToBottom],
   )
 

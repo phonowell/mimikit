@@ -5,14 +5,15 @@ import {
   MODE_FAILURE_LABEL,
   MODE_PROGRESS_LABEL,
   RESTART_REQUEST_TIMEOUT_MS,
+  STATUS_POLL_REQUEST_TIMEOUT_MS,
   STATUS_POLL_INTERVAL_MS,
   STATUS_POLL_TIMEOUT_MS,
 } from './restart-config.js'
 import {
   fetchStatusSnapshot,
+  fetchStatusSnapshotWithTimeout,
   formatBusyStats,
   readResponseError,
-  readRuntimeIdFromStatus,
 } from './restart-status.js'
 
 import type { StatusSnapshot } from '../types.js'
@@ -100,20 +101,12 @@ export const requestRuntimeControl = async (
   const deadline = Date.now() + STATUS_POLL_TIMEOUT_MS
   while (Date.now() < deadline) {
     try {
-      const response = await fetchWithTimeout(
-        '/api/status',
-        { cache: 'no-store' },
-        RESTART_REQUEST_TIMEOUT_MS,
+      const snapshot = await fetchStatusSnapshotWithTimeout(
+        STATUS_POLL_REQUEST_TIMEOUT_MS,
       )
-      if (response.ok) {
-        const payload = (await response.json()) as unknown
-        if (
-          readRuntimeIdFromStatus(payload) &&
-          readRuntimeIdFromStatus(payload) !== preflight.runtimeId
-        ) {
-          window.location.reload()
-          return { ok: true }
-        }
+      if (snapshot.runtimeId && snapshot.runtimeId !== preflight.runtimeId) {
+        window.location.reload()
+        return { ok: true }
       }
     } catch {}
     await delay(STATUS_POLL_INTERVAL_MS)
