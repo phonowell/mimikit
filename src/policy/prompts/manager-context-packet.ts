@@ -98,7 +98,7 @@ export const buildManagerContextPacket = (params: {
   tasks: Task[]
   plans: TaskPlan[]
   workingFocusIds: FocusId[]
-}): { packet: ManagerContextPacket } => {
+}): ManagerContextPacket => {
   const latestUserInput = [...params.inputs]
     .reverse()
     .find((item) => item.role === 'user')
@@ -139,5 +139,5 @@ export const buildManagerContextPacket = (params: {
       .slice(0, MAX_PACKET_IDS),
     workingFocusIds: params.workingFocusIds.slice(0, MAX_PACKET_IDS),
   }
-  return { packet }
+  return packet
 }

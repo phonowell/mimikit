@@ -52,7 +52,7 @@ export const buildManagerPromptPackets = (params: {
     mode: params.packetMode,
     wakeProfile: params.wakeProfile,
   })
-  const packetBundle = buildManagerContextPacket({
+  const contextPacket = buildManagerContextPacket({
     wakeProfile: params.wakeProfile,
     mode: params.packetMode,
     inputs: params.inputs,
@@ -85,7 +85,7 @@ export const buildManagerPromptPackets = (params: {
       batchResultsPayload: digestSections.batchResultsPayload,
       recentHistoryPayload: digestSections.recentHistoryPayload,
       actionFeedback: params.actionFeedback,
-      packet: packetBundle.packet,
+      packet: contextPacket,
     }),
     params.limits.environmentMaxBytes +
       params.limits.inputsMaxBytes +
@@ -95,7 +95,7 @@ export const buildManagerPromptPackets = (params: {
   )
 
   return {
-    packetBundle,
+    contextPacket,
     statePacket,
     eventPacket,
     selectedRememberedMemory: selectedSections.remembered_memory,

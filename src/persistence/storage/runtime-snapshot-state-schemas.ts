@@ -5,19 +5,12 @@ import {
   focusIdSchema,
   optionIdSchema,
 } from '../../foundation/shared/id-schema.js'
-import {
-  FOCUS_STATUS_VALUES,
-  MANAGER_WAKE_PROFILE_VALUES,
-  TASK_RESULT_STATUS_VALUES,
-} from '../../foundation/types/runtime-domain.js'
+import { FOCUS_STATUS_VALUES } from '../../foundation/types/runtime-domain.js'
 
-import { managerPacketModeSchema } from './manager-packet-schema.js'
 import { taskPlanSchema } from './runtime-snapshot-plan-schemas.js'
 import { taskSchema } from './runtime-snapshot-task-schemas.js'
 
 const focusStatusSchema = z.enum(FOCUS_STATUS_VALUES)
-const managerWakeProfileSchema = z.enum(MANAGER_WAKE_PROFILE_VALUES)
-const taskResultStatusSchema = z.enum(TASK_RESULT_STATUS_VALUES)
 
 export const focusMetaSchema = z
   .object({
@@ -29,46 +22,6 @@ export const focusMetaSchema = z
     lastActivityAt: z.string(),
     summary: z.string().trim().min(1).optional(),
     openItems: z.array(z.string().trim().min(1)).optional(),
-  })
-  .strict()
-
-export const managerContextPacketSchema = z
-  .object({
-    id: z.string().trim().min(1),
-    createdAt: z.string().trim().min(1),
-    wakeProfile: managerWakeProfileSchema,
-    mode: managerPacketModeSchema,
-    counts: z
-      .object({
-        inputs: z.number().int().nonnegative(),
-        results: z.number().int().nonnegative(),
-        tasks: z.number().int().nonnegative(),
-        plans: z.number().int().nonnegative(),
-        workingFocuses: z.number().int().nonnegative(),
-      })
-      .strict(),
-    latestUserInput: z
-      .object({
-        id: z.string().trim().min(1),
-        focusId: focusIdSchema,
-        text: z.string().trim().min(1),
-      })
-      .strict()
-      .optional(),
-    latestResult: z
-      .object({
-        taskId: z.string().trim().min(1),
-        status: taskResultStatusSchema,
-        focusId: focusIdSchema.optional(),
-        summary: z.string().trim().min(1).optional(),
-        stopReason: z.string().trim().min(1).optional(),
-        archivePath: z.string().trim().min(1).optional(),
-      })
-      .strict()
-      .optional(),
-    activeTaskIds: z.array(z.string().trim().min(1)).optional(),
-    activePlanIds: z.array(z.string().trim().min(1)).optional(),
-    workingFocusIds: z.array(focusIdSchema).optional(),
   })
   .strict()
 

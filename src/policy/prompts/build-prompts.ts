@@ -99,10 +99,6 @@ export const buildManagerPromptPayload = async (
     },
     contextSource.path,
   ).trim()
-  const suffix = [stableContext, volatileContext]
-    .filter((segment) => segment.length > 0)
-    .join('\n\n')
-    .trim()
   const promptSegments: ProviderPromptSegment[] = [
     { text: prefix },
     { text: stableContext },
@@ -111,12 +107,17 @@ export const buildManagerPromptPayload = async (
     (segment): segment is ProviderPromptSegment =>
       segment.text.trim().length > 0,
   )
-  if (promptSegments.length === 1) promptSegments.push({ text: suffix })
+  if (promptSegments.length === 1) {
+    promptSegments.push({
+      text: [stableContext, volatileContext]
+        .filter((segment) => segment.length > 0)
+        .join('\n\n')
+        .trim(),
+    })
+  }
 
   return {
-    prefix,
-    suffix,
-    contextPacket: packets.packetBundle.packet,
+    contextPacket: packets.contextPacket,
     prompt: [prefix, stableContext, volatileContext]
       .filter((segment) => segment.length > 0)
       .join('\n\n')

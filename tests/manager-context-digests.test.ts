@@ -52,7 +52,7 @@ test('buildManagerContextPacket latestResult falls back to status summary instea
     completedAt: '2026-03-24T10:00:00.000Z',
   }
 
-  const { packet } = buildManagerContextPacket({
+  const packet = buildManagerContextPacket({
     wakeProfile: 'task_result',
     mode: 'minimal',
     inputs: [],

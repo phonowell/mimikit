@@ -16,8 +16,6 @@ import type {
 export type PromptSectionLimits = AppConfig['manager']['promptSections']
 
 export type ManagerPromptPayload = {
-  prefix: string
-  suffix: string
   prompt: string
   promptSegments: ProviderPromptSegment[]
   contextPacket: ManagerContextPacket
@@ -40,7 +38,7 @@ export type BuildManagerPromptParams = {
 }
 
 export type ManagerPromptPacketBuildResult = {
-  packetBundle: { packet: ManagerContextPacket }
+  contextPacket: ManagerContextPacket
   statePacket: string
   eventPacket: string
   selectedRememberedMemory: string
