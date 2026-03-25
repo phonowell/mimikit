@@ -10,6 +10,7 @@ import {
   renderPromptTemplate,
 } from '../../foundation/prompting/format.js'
 import { loadPromptSource } from '../../foundation/prompting/prompt-loader.js'
+import { readTaskExecutionSpec } from '../../work/spec/store.js'
 
 import { prepareWorkerTaskPrompt } from './build-worker-task-prompt.js'
 
@@ -23,11 +24,15 @@ export const buildWorkerPrompt = async (params: {
   resumeInstruction?: string
 }): Promise<string> => {
   const systemSource = await loadPromptSource('worker/system.md')
+  const spec = await readTaskExecutionSpec(
+    params.stateDir,
+    params.task.executionSpecId,
+  )
   const taskPrompt = await prepareWorkerTaskPrompt({
     workDir: params.stateDir,
     taskId: params.task.id,
     taskCreatedAt: params.task.createdAt,
-    taskPrompt: params.task.prompt,
+    taskPrompt: spec.prompt,
   })
   const focusBrief = formatTaskFocusBrief(params.focusBrief)
   return renderPromptTemplate(

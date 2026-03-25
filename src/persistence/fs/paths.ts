@@ -11,6 +11,7 @@ export type StatePaths = {
   inputsDir: string
   resultsDir: string
   tasksDir: string
+  specsDir: string
   memoryDir: string
   runtimeDir: string
   usageDir: string
@@ -30,6 +31,7 @@ export const buildPaths = (stateDir: string): StatePaths => {
   const inputsDir = join(root, 'inputs')
   const resultsDir = join(root, 'results')
   const tasksDir = join(root, 'tasks')
+  const specsDir = join(root, 'specs')
   const memoryDir = join(root, 'memory')
   const runtimeDir = join(root, 'runtime')
   const usageDir = join(root, 'usage')
@@ -38,6 +40,7 @@ export const buildPaths = (stateDir: string): StatePaths => {
     inputsDir,
     resultsDir,
     tasksDir,
+    specsDir,
     memoryDir,
     runtimeDir,
     usageDir,

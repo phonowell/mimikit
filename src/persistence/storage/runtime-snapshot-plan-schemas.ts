@@ -3,8 +3,6 @@ import { z } from 'zod'
 import { TASK_PLAN_STATUS_VALUES } from '../../foundation/types/runtime-domain.js'
 
 import { taskPlanRuntimeSchema } from './runtime-snapshot-task-schema-parts.js'
-import { taskContractSchema } from './runtime-snapshot-task-schemas.js'
-
 const taskPlanStatusSchema = z.enum(TASK_PLAN_STATUS_VALUES)
 
 const planTriggerCronSchema = z
@@ -40,10 +38,11 @@ const taskPlanEnqueueTaskEffectSchema = z
     taskTemplate: z
       .object({
         title: z.string().trim().min(1),
-        prompt: z.string().trim().min(1),
+        executionSpecId: z.string().trim().min(1),
+        fingerprint: z.string().trim().min(1),
+        semanticKey: z.string().trim().min(1),
         cwd: z.string().trim().min(1),
         branch: z.string().trim().min(1).optional(),
-        contract: taskContractSchema,
       })
       .strict(),
   })

@@ -3,14 +3,17 @@ import { resolveSlotStatus } from '../../execution/worker/task-state-shared.js'
 import { persistRuntimeState } from '../../kernel/orchestrator/runtime-persistence.js'
 import { notifyWorkerLoop } from '../../kernel/orchestrator/signals.js'
 import { appendTaskSystemMessage } from '../../persistence/history/task-events.js'
-import { appendLog } from '../../persistence/log/append.js'
-import { bestEffort } from '../../persistence/log/safe.js'
 import { enqueueTask } from '../../work/orchestrator/task-lifecycle.js'
 import {
+  buildTaskFingerprint,
   buildTaskSemanticKey,
   findActiveTaskBySemanticKey,
 } from '../../work/orchestrator/task-state.js'
 
+import {
+  buildRunTaskBatchKey,
+  logRunTaskDispatch,
+} from './action-apply-create-shared.js'
 import { markCreateAttempt } from './action-apply-guards.js'
 import { runTaskSchema } from './action-apply-schema.js'
 import { resolveActionFocusId } from './action-focus-id.js'
@@ -36,35 +39,19 @@ export type ApplyTaskActionsOptions = {
   triggeredPlanIds: ReadonlySet<string> | undefined
 }
 
+const RUN_TASK_PROFILE: WorkerProfile = 'worker'
+const RUN_TASK_PROVIDER = 'codex' as const
+
 export const applyRunTask = async (
   runtime: ManagerRuntime,
   item: Parsed,
   seen: Set<string>,
   options?: ApplyTaskActionsOptions,
 ): Promise<'continue' | 'stop'> => {
-  const logRunTaskDispatch = async (params: {
-    taskId: string
-    mode: 'reuse_pending' | 'created'
-  }): Promise<void> => {
-    const slots = resolveSlotStatus(runtime)
-    await bestEffort('appendLog: run_task_dispatch', () =>
-      appendLog(runtime.paths.log, {
-        event: 'run_task_dispatch',
-        taskId: params.taskId,
-        mode: params.mode,
-        availableSlots: slots.available_slots,
-        occupiedSlots: slots.occupied_slots,
-        maxSlots: slots.max_slots,
-      }),
-    )
-  }
-
   if (options?.suppressRunTask) return 'continue'
   const parsed = runTaskSchema.safeParse(item.attrs)
   if (!parsed.success) return 'continue'
-  const profile: WorkerProfile = 'worker'
   const focusId = resolveActionFocusId(runtime, parsed.data.focus_id)
-  const provider = 'codex' as const
   const contract = buildTaskContractFromAttrs(parsed.data)
   if (!contract) return 'continue'
   const workerPrompt = resolveWorkerPromptFromAttrs(parsed.data)
@@ -103,8 +90,19 @@ export const applyRunTask = async (
     prompt: workerPrompt,
     title: parsed.data.title,
     cwd: target.cwd,
-    profile,
-    provider,
+    profile: RUN_TASK_PROFILE,
+    provider: RUN_TASK_PROVIDER,
+    focusId,
+    ...(target.repoKey ? { repoKey: target.repoKey } : {}),
+    ...(target.branch ? { branch: target.branch } : {}),
+    contract,
+  })
+  const fingerprint = buildTaskFingerprint({
+    prompt: workerPrompt,
+    title: parsed.data.title,
+    cwd: target.cwd,
+    profile: RUN_TASK_PROFILE,
+    provider: RUN_TASK_PROVIDER,
     focusId,
     ...(target.repoKey ? { repoKey: target.repoKey } : {}),
     ...(target.branch ? { branch: target.branch } : {}),
@@ -112,15 +110,17 @@ export const applyRunTask = async (
   })
   const debounce = markCreateAttempt(runtime, semanticKey)
   if (debounce.debounced) return 'continue'
-  const dedupeKey = `${workerPrompt}\n${parsed.data.title}\n${target.cwd}\n${profile}\n${provider}\n${focusId}\n${target.repoKey ?? ''}\n${target.branch ?? ''}`
-  const dedupeContractSuffix = [
-    contract.goal,
-    contract.scope,
-    ...contract.acceptance,
-    contract.outOfScope ?? '',
-    ...(contract.contextRefs ?? []),
-  ].join('\n')
-  const dedupeKeyWithContract = `${dedupeKey}\n${dedupeContractSuffix}`
+  const dedupeKeyWithContract = buildRunTaskBatchKey({
+    prompt: workerPrompt,
+    title: parsed.data.title,
+    cwd: target.cwd,
+    profile: RUN_TASK_PROFILE,
+    provider: RUN_TASK_PROVIDER,
+    focusId,
+    ...(target.repoKey ? { repoKey: target.repoKey } : {}),
+    ...(target.branch ? { branch: target.branch } : {}),
+    contract,
+  })
   if (seen.has(dedupeKeyWithContract)) return 'continue'
   seen.add(dedupeKeyWithContract)
 
@@ -133,33 +133,30 @@ export const applyRunTask = async (
       runtime,
       activeTask: activeSemanticTask,
       nextTask: {
-        prompt: workerPrompt,
+        fingerprint,
         title: parsed.data.title,
         cwd: target.cwd,
-        profile,
-        provider,
+        profile: RUN_TASK_PROFILE,
+        provider: RUN_TASK_PROVIDER,
         focusId,
         ...(target.repoKey ? { repoKey: target.repoKey } : {}),
         ...(target.branch ? { branch: target.branch } : {}),
-        contract,
       },
       triggeredPlanIds: options?.triggeredPlanIds,
       onReusePending: (taskId) =>
-        logRunTaskDispatch({
-          taskId,
-          mode: 'reuse_pending',
-        }),
+        logRunTaskDispatch(runtime, { taskId, mode: 'reuse_pending' }),
     })
     if (handled) return 'continue'
   }
 
-  const { task, created } = enqueueTask(
+  const { task, created } = await enqueueTask(
+    runtime.config.workDir,
     runtime.tasks,
     workerPrompt,
     parsed.data.title,
     target.cwd,
-    profile,
-    provider,
+    RUN_TASK_PROFILE,
+    RUN_TASK_PROVIDER,
     focusId,
     target.repoKey,
     target.branch,
@@ -173,7 +170,10 @@ export const applyRunTask = async (
     })
     if (linked) await persistRuntimeState(runtime)
     if (task.status !== 'pending') return 'continue'
-    await logRunTaskDispatch({ taskId: task.id, mode: 'reuse_pending' })
+    await logRunTaskDispatch(runtime, {
+      taskId: task.id,
+      mode: 'reuse_pending',
+    })
     enqueueWorkerTask(runtime, task)
     notifyWorkerLoop(runtime)
     return 'continue'
@@ -188,7 +188,7 @@ export const applyRunTask = async (
     createdAt: task.createdAt,
     slotStatus,
   })
-  await logRunTaskDispatch({ taskId: task.id, mode: 'created' })
+  await logRunTaskDispatch(runtime, { taskId: task.id, mode: 'created' })
   await persistRuntimeState(runtime)
   enqueueWorkerTask(runtime, task)
   notifyWorkerLoop(runtime)

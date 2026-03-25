@@ -8,6 +8,7 @@ import {
   buildPlanEffectPayload,
   buildPlanTriggerPayload,
 } from '../../work/shared/plan-payload.js'
+import { readTaskExecutionSpec } from '../../work/spec/store.js'
 
 import { linkTriggeredPlanToTask } from './plan-progress.js'
 import { resolveRunTaskTarget } from './run-task-target.js'
@@ -59,6 +60,10 @@ export const firePlan = async (params: {
   let lastTaskId: string | undefined
   let consumedWorkerSlot = false
   if (plan.effect.kind === 'enqueue_task') {
+    const spec = await readTaskExecutionSpec(
+      runtime.config.workDir,
+      plan.effect.taskTemplate.executionSpecId,
+    )
     const target = await resolveRunTaskTarget({
       actionName: 'create_plan',
       cwd: plan.effect.taskTemplate.cwd,
@@ -66,9 +71,10 @@ export const firePlan = async (params: {
         ? { branch: plan.effect.taskTemplate.branch }
         : {}),
     })
-    const { task, created } = enqueueTask(
+    const { task, created } = await enqueueTask(
+      runtime.config.workDir,
       runtime.tasks,
-      plan.effect.taskTemplate.prompt,
+      spec.prompt,
       plan.effect.taskTemplate.title,
       target.cwd,
       'worker',
@@ -76,7 +82,7 @@ export const firePlan = async (params: {
       plan.focusId,
       target.repoKey,
       target.branch,
-      plan.effect.taskTemplate.contract,
+      spec.contract,
     )
     linkTriggeredPlanToTask({
       runtime,

@@ -19,10 +19,21 @@ export type RuntimePendingUserChoices = RuntimeState['ui']['pendingUserChoices']
 export type RuntimeChannelTargets = RuntimeState['session']['channelTargets']
 export type RuntimePathsState = Pick<RuntimeState, 'paths'>
 export type RuntimeUserMeta = UserMeta
+export type RuntimeTaskStateSlice = Pick<RuntimeState, 'tasks'>
+export type RuntimeTaskFocusStateSlice = Pick<RuntimeState, 'tasks' | 'focuses'>
 
 export type RuntimeDomainState = Pick<
   RuntimeState,
   'tasks' | 'taskPlans' | 'focuses' | 'queues'
+> & {
+  manager: Pick<RuntimeManagerState, 'turn' | 'threadId' | 'memoryRefresh'>
+  session: Pick<RuntimeSessionState, 'channelTargets'>
+  ui: Pick<RuntimeUiState, 'pendingUserChoices'>
+}
+
+export type RuntimePersistState = Pick<
+  RuntimeState,
+  'config' | 'tasks' | 'taskPlans' | 'focuses' | 'queues'
 > & {
   manager: Pick<RuntimeManagerState, 'turn' | 'threadId' | 'memoryRefresh'>
   session: Pick<RuntimeSessionState, 'channelTargets'>

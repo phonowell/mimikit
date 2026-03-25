@@ -8,6 +8,7 @@ import type { RuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
 import { consumeWorkerResults } from '../src/kernel/streams/queues.js'
 import type { Task } from '../src/foundation/types/index.js'
 import { cancelTask } from '../src/execution/worker/cancel-task.js'
+import { materializeTaskFixture } from './helpers/execution-spec.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 const tempDirs: string[] = []
@@ -34,17 +35,25 @@ const createRuntime = async (): Promise<RuntimeState> => {
   return runtime
 }
 
-const createPendingTask = (id: string, overrides: Partial<Task> = {}): Task => ({
-  id,
-  fingerprint: `fp-${id}`,
-  prompt: 'cancel me',
-  title: 'Cancel me',
-  focusId: 'focus-global',
-  profile: 'worker',
-  status: 'pending',
-  createdAt: '2026-03-06T00:00:00.000Z',
-  ...overrides,
-})
+const createPendingTask = async (
+  stateDir: string,
+  id: string,
+  overrides: Partial<Task> = {},
+): Promise<Task> =>
+  materializeTaskFixture({
+    stateDir,
+    task: {
+      id,
+      prompt: 'cancel me',
+      title: 'Cancel me',
+      focusId: 'focus-global',
+      profile: 'worker',
+      provider: 'codex',
+      status: 'pending',
+      createdAt: '2026-03-06T00:00:00.000Z',
+      ...overrides,
+    },
+  })
 
 afterEach(async () => {
   for (const dir of tempDirs.splice(0, tempDirs.length))
@@ -53,7 +62,7 @@ afterEach(async () => {
 
 test('cancelTask keeps session reusable for deferred cancel source', async () => {
   const runtime = await createRuntime()
-  const task = createPendingTask('task-deferred-cancel', {
+  const task = await createPendingTask(runtime.config.workDir, 'task-deferred-cancel', {
     sessionId: 'session-keep',
     sessionState: 'reusable',
   })
@@ -87,7 +96,7 @@ test('cancelTask keeps session reusable for deferred cancel source', async () =>
 
 test('cancelTask discards session for user cancel source', async () => {
   const runtime = await createRuntime()
-  const task = createPendingTask('task-user-cancel', {
+  const task = await createPendingTask(runtime.config.workDir, 'task-user-cancel', {
     sessionId: 'session-discard',
     sessionState: 'reusable',
   })
@@ -121,7 +130,7 @@ test('cancelTask discards session for user cancel source', async () => {
 
 test('cancelTask keeps system source and returns trace fields', async () => {
   const runtime = await createRuntime()
-  const task = createPendingTask('task-system-cancel', {
+  const task = await createPendingTask(runtime.config.workDir, 'task-system-cancel', {
     sessionId: 'session-system',
     sessionState: 'reusable',
   })

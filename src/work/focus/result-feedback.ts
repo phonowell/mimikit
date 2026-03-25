@@ -1,28 +1,22 @@
 import { clipCompactText } from '../../foundation/shared/text.js'
-import {
-  formatTaskResultSummary,
-  pickTaskResultSummaryLine,
-  resolveTaskLabel,
-} from '../shared/task-state.js'
+import { resolveTaskResultSummary } from '../shared/task-state.js'
 
 import { ensureFocus, normalizeFocusSummary, touchFocus } from './state.js'
 
 import type { Task, TaskResult } from '../../foundation/types/index.js'
-import type { FocusRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
+import type { RuntimeFocusCollection } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 const MAX_RESULT_SUMMARY_CHARS = 280
 
 const clipText = (value: string, maxChars: number): string =>
   clipCompactText(value, maxChars)
 
-const formatSummary = (task: Task, result: TaskResult): string => {
-  const label = resolveTaskLabel(task)
-  const detail = pickTaskResultSummaryLine(
-    result.output,
-    MAX_RESULT_SUMMARY_CHARS,
-  )
-  return formatTaskResultSummary(label, result.status, detail)
-}
+const formatSummary = (task: Task, result: TaskResult): string =>
+  resolveTaskResultSummary({
+    task,
+    result,
+    maxChars: MAX_RESULT_SUMMARY_CHARS,
+  })
 
 const resolveHandoffSummary = (result: TaskResult): string | undefined => {
   const summary = result.handoff?.summary?.trim()
@@ -31,7 +25,7 @@ const resolveHandoffSummary = (result: TaskResult): string | undefined => {
 }
 
 export const syncFocusFromTaskResult = (
-  runtime: FocusRuntime,
+  runtime: { focuses: RuntimeFocusCollection },
   task: Task,
   result: TaskResult,
 ): void => {

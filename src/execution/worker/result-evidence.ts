@@ -2,6 +2,7 @@ import { truncateText } from '../../foundation/shared/text.js'
 
 import type {
   Task,
+  TaskContract,
   TaskEvidence,
   TaskResult,
 } from '../../foundation/types/index.js'
@@ -30,12 +31,12 @@ const resolveEvidenceStatus = (
 
 export const buildTaskEvidence = (params: {
   task: Task
+  contract?: TaskContract
   result: TaskResult
   previousStatus?: Task['status']
   archivePath?: string
 }): TaskEvidence | undefined => {
-  const { task, result, previousStatus, archivePath } = params
-  const { contract } = task
+  const { task, contract, result, previousStatus, archivePath } = params
   if (!contract) return undefined
   const note = summarizeOutput(result.output)
   const allMet = result.outcome === 'completed' || result.status === 'succeeded'
@@ -63,14 +64,15 @@ export const buildTaskEvidence = (params: {
 
 export const hasTaskEvidenceMismatch = (params: {
   task: Task
+  contract?: TaskContract
   result: TaskResult
 }): boolean => {
-  const { task, result } = params
-  if (!task.contract) return false
+  const { task, contract, result } = params
+  if (!contract) return false
   const { evidence } = result
   if (!evidence) return true
-  if (evidence.contractGoal.trim() !== task.contract.goal.trim()) return true
-  if (evidence.acceptanceChecks.length !== task.contract.acceptance.length)
+  if (evidence.contractGoal.trim() !== contract.goal.trim()) return true
+  if (evidence.acceptanceChecks.length !== contract.acceptance.length)
     return true
   const expectedTo = result.taskStatus ?? task.status
   if (evidence.stateDelta.taskStatusTo !== expectedTo) return true

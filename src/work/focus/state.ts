@@ -20,9 +20,16 @@ import type {
   FocusMeta,
   FocusStatus,
 } from '../../foundation/types/index.js'
-import type { FocusRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
+import type {
+  FocusRuntime,
+  RuntimeFocusCollection,
+} from '../../kernel/orchestrator/runtime-interfaces.js'
 
 export { normalizeFocusSummary } from './meta.js'
+
+type FocusCollectionRuntime = {
+  focuses: RuntimeFocusCollection
+}
 
 export const resolveDefaultFocusId = (runtime: FocusRuntime): FocusId => {
   const activeNonGlobal = runtime.focuses
@@ -49,12 +56,12 @@ export const resolveDefaultFocusId = (runtime: FocusRuntime): FocusId => {
 }
 
 export const findFocus = (
-  runtime: FocusRuntime,
+  runtime: FocusCollectionRuntime,
   focusId: FocusId,
 ): FocusMeta | undefined => runtime.focuses.find((item) => item.id === focusId)
 
 export const ensureFocus = (
-  runtime: FocusRuntime,
+  runtime: FocusCollectionRuntime,
   focusId: FocusId,
   title?: string,
 ): FocusMeta => {
@@ -97,13 +104,16 @@ export const ensureGlobalFocus = (runtime: FocusRuntime): void => {
   if (hadDetails) global.updatedAt = nowIso()
 }
 
-export const touchFocus = (runtime: FocusRuntime, focusId: FocusId): void => {
+export const touchFocus = (
+  runtime: FocusCollectionRuntime,
+  focusId: FocusId,
+): void => {
   const focus = findFocus(runtime, focusId) ?? ensureFocus(runtime, focusId)
   touchFocusMeta(focus)
 }
 
 export const setFocusStatus = (
-  runtime: FocusRuntime,
+  runtime: FocusCollectionRuntime,
   focusId: FocusId,
   status: FocusStatus,
 ): void => {
@@ -112,7 +122,7 @@ export const setFocusStatus = (
 }
 
 export const updateFocus = (
-  runtime: FocusRuntime,
+  runtime: FocusCollectionRuntime,
   params: {
     id: FocusId
     title?: string

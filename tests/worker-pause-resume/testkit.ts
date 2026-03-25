@@ -5,6 +5,10 @@ import { join } from 'node:path'
 import { afterEach, vi } from 'vitest'
 
 import { createTestRuntimeState } from '../helpers/runtime-state.js'
+import {
+  buildTaskFingerprint,
+  buildTaskSemanticKey,
+} from '../../src/work/orchestrator/task-state.js'
 
 import type { Task } from '../../src/foundation/types/index.js'
 import type { RuntimeState } from '../../src/kernel/orchestrator/runtime-state.js'
@@ -38,8 +42,23 @@ export const createRuntime = async (params?: {
 
 export const createTask = (id: string, overrides: Partial<Task> = {}): Task => ({
   id,
-  fingerprint: `fp-${id}`,
-  prompt: 'run task',
+  fingerprint: buildTaskFingerprint({
+    prompt: 'run task',
+    title: 'Run Task',
+    cwd: '/tmp/pause-resume-task',
+    profile: 'worker',
+    provider: 'codex',
+    focusId: 'focus-global',
+  }),
+  semanticKey: buildTaskSemanticKey({
+    prompt: 'run task',
+    title: 'Run Task',
+    cwd: '/tmp/pause-resume-task',
+    profile: 'worker',
+    provider: 'codex',
+    focusId: 'focus-global',
+  }),
+  executionSpecId: `spec-${id}`,
   title: 'Run Task',
   cwd: '/tmp/pause-resume-task',
   focusId: 'focus-global',

@@ -5,6 +5,7 @@ import {
   mergeTaskGitLifecycle,
   resolveTaskGitLifecycle,
 } from '../../work/shared/task-git-lifecycle.js'
+import { readTaskExecutionSpec } from '../../work/spec/store.js'
 
 import { stripWorkerProtocolTags } from './profiled-runner-prompt.js'
 import { resolveArchivePath, writeTaskArchive } from './result-archive.js'
@@ -53,6 +54,10 @@ export const finalizeResult = async (
   result.output = stripWorkerProtocolTags(result.output)
   applyTaskResultStateDefaults(result)
   const previousStatus = task.status
+  const spec = await readTaskExecutionSpec(
+    runtime.config.workDir,
+    task.executionSpecId,
+  )
   const candidateArchivePath = await resolveArchivePath(
     runtime,
     task,
@@ -70,9 +75,11 @@ export const finalizeResult = async (
     },
     previousStatus,
     ...(candidateArchivePath ? { archivePath: candidateArchivePath } : {}),
+    ...(spec.contract ? { contract: spec.contract } : {}),
   })
   const archivePath = candidateArchivePath
     ? await writeTaskArchive(
+        runtime.config.workDir,
         task,
         {
           ...result,
@@ -92,14 +99,21 @@ export const finalizeResult = async (
       task,
       result,
       previousStatus,
+      ...(spec.contract ? { contract: spec.contract } : {}),
     })
   }
-  if (hasTaskEvidenceMismatch({ task, result })) {
+  if (
+    hasTaskEvidenceMismatch({
+      task,
+      result,
+      ...(spec.contract ? { contract: spec.contract } : {}),
+    })
+  ) {
     await bestEffort('appendLog: task_evidence_mismatch', () =>
       appendLog(runtime.paths.log, {
         event: 'task_evidence_mismatch',
         taskId: task.id,
-        hasContract: Boolean(task.contract),
+        hasContract: true,
         status: result.status,
       }),
     )

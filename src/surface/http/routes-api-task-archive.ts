@@ -4,6 +4,7 @@ import { readErrorCode } from '../../foundation/shared/error-code.js'
 import { checkExistingPathBoundary } from '../../persistence/fs/path-safety.js'
 import { readTextFile } from '../../persistence/fs/read-text.js'
 import { buildArchiveDocument } from '../../persistence/storage/archive-format.js'
+import { readTaskExecutionSpec } from '../../work/spec/store.js'
 
 import { resolveRouteId } from './route-params.js'
 
@@ -27,7 +28,11 @@ const resolveTaskArchiveTarget = (
   return undefined
 }
 
-const buildLiveArchive = (task: Task): string => {
+const buildLiveArchive = async (
+  stateDir: string,
+  task: Task,
+): Promise<string> => {
+  const spec = await readTaskExecutionSpec(stateDir, task.executionSpecId)
   const usage = task.result?.usage ?? task.usage
   const cancel = task.result?.cancel ?? task.cancel
   const resultStatus = task.result?.status ?? task.status
@@ -63,15 +68,19 @@ const buildLiveArchive = (task: Task): string => {
     [
       {
         marker: '=== PROMPT ===',
-        content: task.prompt.trim() || '(empty prompt)',
+        content: spec.prompt.trim() || '(empty prompt)',
       },
       { marker: '=== RESULT ===', content: result },
     ],
   )
 }
 
-const sendLiveArchive = (reply: FastifyReply, task: Task): void => {
-  reply.type(MARKDOWN_CONTENT_TYPE).send(buildLiveArchive(task))
+const sendLiveArchive = async (
+  reply: FastifyReply,
+  stateDir: string,
+  task: Task,
+): Promise<void> => {
+  reply.type(MARKDOWN_CONTENT_TYPE).send(await buildLiveArchive(stateDir, task))
 }
 
 export const registerTaskArchiveRoute = (
@@ -90,7 +99,7 @@ export const registerTaskArchiveRoute = (
     const archivePath =
       resolved.task.archivePath ?? resolved.task.result?.archivePath
     if (!archivePath) {
-      sendLiveArchive(reply, resolved.task)
+      await sendLiveArchive(reply, config.workDir, resolved.task)
       return
     }
 
@@ -107,20 +116,20 @@ export const registerTaskArchiveRoute = (
     }
 
     if (boundary === 'missing') {
-      sendLiveArchive(reply, resolved.task)
+      await sendLiveArchive(reply, config.workDir, resolved.task)
       return
     }
 
     try {
       const content = await readTextFile(resolvedArchivePath)
       if (!content) {
-        sendLiveArchive(reply, resolved.task)
+        await sendLiveArchive(reply, config.workDir, resolved.task)
         return
       }
       reply.type(MARKDOWN_CONTENT_TYPE).send(content)
     } catch (error) {
       if (readErrorCode(error) === 'ENOENT') {
-        sendLiveArchive(reply, resolved.task)
+        await sendLiveArchive(reply, config.workDir, resolved.task)
         return
       }
       throw error

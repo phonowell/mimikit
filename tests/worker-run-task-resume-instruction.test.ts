@@ -1,6 +1,10 @@
 import { expect, test, vi, beforeEach } from 'vitest'
 
-import { createTestRuntimeState } from './helpers/runtime-state.js'
+import {
+  createRuntime,
+  createTask,
+  prepareTask,
+} from './worker-run-task-resume-instruction/testkit.js'
 
 import type { RuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
 import type { Task } from '../src/foundation/types/index.js'
@@ -35,34 +39,6 @@ vi.mock('../src/persistence/log/append.js', () => ({
 
 const { runTask } = await import('../src/execution/worker/run-task.js')
 
-const createTask = (id: string, overrides: Partial<Task> = {}): Task => ({
-  id,
-  fingerprint: `fp-${id}`,
-  prompt: 'run task',
-  title: 'run task',
-  cwd: '/tmp/run-task',
-  focusId: 'focus-global',
-  profile: 'worker',
-  provider: 'codex',
-  status: 'running',
-  createdAt: '2026-03-06T00:00:00.000Z',
-  ...overrides,
-})
-
-const createRuntime = async (): Promise<RuntimeState> => {
-  const runtime = await createTestRuntimeState({
-    runtimeId: 'runtime-run-task-resume-instruction-test',
-    withGlobalFocus: false,
-  })
-  runtime.worker.queue = {
-    add: vi.fn(),
-    clear: vi.fn(),
-    pause: vi.fn(),
-    sizeBy: vi.fn().mockReturnValue(0),
-  } as unknown as RuntimeState['worker']['queue']
-  return runtime
-}
-
 beforeEach(() => {
   runTaskWithRetryMock.mockReset()
   buildResultMock.mockReset()
@@ -72,9 +48,9 @@ beforeEach(() => {
 
 test('runTask consumes pending resume instruction after starting the resumed run', async () => {
   const runtime = await createRuntime()
-  const task = createTask('task-run-task-resume-instruction', {
+  const task = await prepareTask(runtime, createTask('task-run-task-resume-instruction', {
     resumeInstruction: '继续原任务，但先核对工作区和 partial 结果。',
-  })
+  }))
 
   buildResultMock.mockImplementation(
     (
@@ -107,9 +83,9 @@ test('runTask consumes pending resume instruction after starting the resumed run
 
 test('runTask keeps pending resume instruction when the resumed run fails before execution starts', async () => {
   const runtime = await createRuntime()
-  const task = createTask('task-run-task-resume-instruction-failure', {
+  const task = await prepareTask(runtime, createTask('task-run-task-resume-instruction-failure', {
     resumeInstruction: '继续原任务，但先核对工作区和 partial 结果。',
-  })
+  }))
 
   buildResultMock.mockImplementation(
     (
@@ -141,9 +117,9 @@ test('runTask keeps pending resume instruction when the resumed run fails before
 
 test('runTask clears pending resume instruction after the resumed turn has started and then fails', async () => {
   const runtime = await createRuntime()
-  const task = createTask('task-run-task-resume-instruction-started-failure', {
+  const task = await prepareTask(runtime, createTask('task-run-task-resume-instruction-started-failure', {
     resumeInstruction: '继续原任务，但先核对工作区和 partial 结果。',
-  })
+  }))
 
   buildResultMock.mockImplementation(
     (
@@ -178,9 +154,9 @@ test('runTask clears pending resume instruction after the resumed turn has start
 
 test('runTask clears pending resume instruction when the resumed turn has started before a pause', async () => {
   const runtime = await createRuntime()
-  const task = createTask('task-run-task-resume-instruction-paused', {
+  const task = await prepareTask(runtime, createTask('task-run-task-resume-instruction-paused', {
     resumeInstruction: '继续原任务，但先核对工作区和 partial 结果。',
-  })
+  }))
 
   runTaskWithRetryMock.mockImplementationOnce(
     async ({ onTurnStarted }: { onTurnStarted?: () => void }) => {

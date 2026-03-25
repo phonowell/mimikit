@@ -2,23 +2,28 @@ import { expect, test } from 'vitest'
 
 import { GLOBAL_FOCUS_ID } from '../../src/work/focus/constants.js'
 import { applyTaskActions } from '../../src/policy/manager/action-apply.js'
+import { materializeTaskFixture } from '../helpers/execution-spec.js'
 
 import { CONTRACT_ATTRS, createRuntime, TASK_CWD } from './testkit.js'
 
 test('mutate_task with op=pause marks pending task as paused', async () => {
   const runtime = await createRuntime()
-  runtime.tasks.push({
-    id: 'task-pause-target',
-    fingerprint: 'pause fp',
-    prompt: 'pause prompt',
-    title: 'pause title',
-    cwd: TASK_CWD,
-    focusId: GLOBAL_FOCUS_ID,
-    profile: 'worker',
-    provider: 'codex',
-    status: 'pending',
-    createdAt: '2026-02-13T00:00:00.000Z',
-  })
+  runtime.tasks.push(
+    await materializeTaskFixture({
+      stateDir: runtime.config.workDir,
+      task: {
+        id: 'task-pause-target',
+        prompt: 'pause prompt',
+        title: 'pause title',
+        cwd: TASK_CWD,
+        focusId: GLOBAL_FOCUS_ID,
+        profile: 'worker',
+        provider: 'codex',
+        status: 'pending',
+        createdAt: '2026-02-13T00:00:00.000Z',
+      },
+    }),
+  )
 
   await applyTaskActions(runtime, [
     {
@@ -36,19 +41,23 @@ test('mutate_task with op=pause marks pending task as paused', async () => {
 
 test('mutate_task with op=resume requeues paused task', async () => {
   const runtime = await createRuntime()
-  runtime.tasks.push({
-    id: 'task-resume-target',
-    fingerprint: 'resume fp',
-    prompt: 'resume prompt',
-    title: 'resume title',
-    cwd: TASK_CWD,
-    focusId: GLOBAL_FOCUS_ID,
-    profile: 'worker',
-    provider: 'codex',
-    status: 'paused',
-    createdAt: '2026-02-13T00:00:00.000Z',
-    pausedAt: '2026-02-13T00:10:00.000Z',
-  })
+  runtime.tasks.push(
+    await materializeTaskFixture({
+      stateDir: runtime.config.workDir,
+      task: {
+        id: 'task-resume-target',
+        prompt: 'resume prompt',
+        title: 'resume title',
+        cwd: TASK_CWD,
+        focusId: GLOBAL_FOCUS_ID,
+        profile: 'worker',
+        provider: 'codex',
+        status: 'paused',
+        createdAt: '2026-02-13T00:00:00.000Z',
+        pausedAt: '2026-02-13T00:10:00.000Z',
+      },
+    }),
+  )
 
   await applyTaskActions(runtime, [
     {
@@ -67,19 +76,23 @@ test('mutate_task with op=resume requeues paused task', async () => {
 
 test('mutate_task with op=cancel marks paused task as canceled', async () => {
   const runtime = await createRuntime()
-  runtime.tasks.push({
-    id: 'task-cancel-target',
-    fingerprint: 'cancel fp',
-    prompt: 'cancel prompt',
-    title: 'cancel title',
-    cwd: TASK_CWD,
-    focusId: GLOBAL_FOCUS_ID,
-    profile: 'worker',
-    provider: 'codex',
-    status: 'paused',
-    createdAt: '2026-02-13T00:00:00.000Z',
-    pausedAt: '2026-02-13T00:10:00.000Z',
-  })
+  runtime.tasks.push(
+    await materializeTaskFixture({
+      stateDir: runtime.config.workDir,
+      task: {
+        id: 'task-cancel-target',
+        prompt: 'cancel prompt',
+        title: 'cancel title',
+        cwd: TASK_CWD,
+        focusId: GLOBAL_FOCUS_ID,
+        profile: 'worker',
+        provider: 'codex',
+        status: 'paused',
+        createdAt: '2026-02-13T00:00:00.000Z',
+        pausedAt: '2026-02-13T00:10:00.000Z',
+      },
+    }),
+  )
 
   await applyTaskActions(runtime, [
     {

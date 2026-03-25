@@ -10,6 +10,7 @@ import {
 } from '../../work/orchestrator/task-lifecycle.js'
 import { requestTaskResumeChoice } from '../../work/orchestrator/task-resume-choice.js'
 import { updateTaskUsage } from '../../work/orchestrator/task-worker-run-write.js'
+import { readTaskExecutionSpec } from '../../work/spec/store.js'
 
 import { setTaskLiveOutput } from './live-output.js'
 import { isWorkerBudgetExceededError } from './profiled-runner-loop.js'
@@ -35,11 +36,15 @@ export const runTask = async (
     delete task.resumeInstruction
   }
   try {
+    const spec = await readTaskExecutionSpec(
+      runtime.config.workDir,
+      task.executionSpecId,
+    )
     await appendLog(runtime.paths.log, {
       event: 'worker_start',
       taskId: task.id,
       profile: task.profile,
-      promptChars: task.prompt.length,
+      promptChars: spec.prompt.length,
     })
     const llmResult = await runTaskWithRetry({
       runtime,

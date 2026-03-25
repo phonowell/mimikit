@@ -3,22 +3,12 @@ import { selectPersistedTasks } from '../../persistence/storage/runtime-snapshot
 import { canStoreFocusDetails } from '../../work/focus/reserved.js'
 
 import type {
-  RuntimeDomainState,
   RuntimeFocusCollection,
+  RuntimePersistState,
 } from './runtime-interfaces.js'
 import type { RuntimeSnapshot } from '../../persistence/storage/runtime-snapshot-schema.js'
 
-export type RuntimeSnapshotPersistSlice = Pick<
-  RuntimeDomainState & { config: { workDir: string } },
-  | 'config'
-  | 'tasks'
-  | 'taskPlans'
-  | 'focuses'
-  | 'queues'
-  | 'manager'
-  | 'session'
-  | 'ui'
->
+export type RuntimeSnapshotPersistSlice = RuntimePersistState
 
 export const normalizeChannelTargets = (
   value:

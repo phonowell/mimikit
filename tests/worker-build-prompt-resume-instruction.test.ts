@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { afterEach, expect, test } from 'vitest'
 
 import { buildWorkerPrompt } from '../src/execution/prompts/build-worker-prompt.js'
+import { persistTaskExecutionSpec } from '../src/work/spec/store.js'
 
 import type { Task } from '../src/foundation/types/index.js'
 
@@ -19,7 +20,8 @@ const createTmpDir = async (): Promise<string> => {
 const createTask = (id: string): Task => ({
   id,
   fingerprint: `fp-${id}`,
-  prompt: '修复当前测试失败。',
+  semanticKey: `sk-${id}`,
+  executionSpecId: `spec-${id}`,
   title: '修复测试',
   cwd: '/tmp/worker-prompt',
   focusId: 'focus-global',
@@ -36,6 +38,11 @@ afterEach(async () => {
 
 test('buildWorkerPrompt includes resume instruction block when provided', async () => {
   const stateDir = await createTmpDir()
+  await persistTaskExecutionSpec({
+    stateDir,
+    prompt: '修复当前测试失败。',
+    specId: 'spec-task-build-worker-prompt',
+  })
   const prompt = await buildWorkerPrompt({
     stateDir,
     workspaceDir: '/repo/mimikit',

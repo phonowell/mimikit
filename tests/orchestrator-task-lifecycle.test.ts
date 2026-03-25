@@ -1,4 +1,7 @@
 import { expect, test } from 'vitest'
+import { mkdtemp } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 
 import {
   enqueueTask,
@@ -17,8 +20,10 @@ const createTask = (overrides?: Partial<Task>): Task => ({
     cwd: '/tmp/write-report',
     profile: 'worker',
     provider: 'codex',
+    focusId: 'focus-global',
   }),
-  prompt: 'Write report',
+  semanticKey: 'sk-task-1',
+  executionSpecId: 'spec-task-1',
   title: 'Write report',
   cwd: '/tmp/write-report',
   focusId: 'focus-global',
@@ -29,11 +34,14 @@ const createTask = (overrides?: Partial<Task>): Task => ({
   ...overrides,
 })
 
-test('enqueueTask returns existing active task by fingerprint', () => {
+const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-task-lifecycle-'))
+
+test('enqueueTask returns existing active task by fingerprint', async () => {
   const existing = createTask()
   const tasks: Task[] = [existing]
 
-  const result = enqueueTask(
+  const result = await enqueueTask(
+    await createTmpDir(),
     tasks,
     'Write report',
     'Write report',
@@ -45,18 +53,14 @@ test('enqueueTask returns existing active task by fingerprint', () => {
   expect(result).toMatchObject({ created: false, task: { id: existing.id } })
 })
 
-test('enqueueTask does not dedupe when contract differs', () => {
+test('enqueueTask does not dedupe when contract differs', async () => {
   const tasks: Task[] = [
-    createTask({
-      contract: {
-        goal: 'Goal A',
-        scope: 'Scope A',
-        acceptance: ['A1'],
-      },
-    }),
+    createTask(),
   ]
 
-  const result = enqueueTask(
+  const stateDir = await createTmpDir()
+  const result = await enqueueTask(
+    stateDir,
     tasks,
     'Write report',
     'Write report',
@@ -75,7 +79,7 @@ test('enqueueTask does not dedupe when contract differs', () => {
 
   expect(result.created).toBe(true)
   expect(tasks).toHaveLength(2)
-  expect(result.task.contract?.goal).toBe('Goal B')
+  expect(result.task.executionSpecId).toBeTruthy()
 })
 
 test('task status transitions keep expected timestamps', () => {

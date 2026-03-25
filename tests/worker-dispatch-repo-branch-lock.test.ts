@@ -6,6 +6,7 @@ import PQueue from 'p-queue'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 
 import { enqueuePendingWorkerTasks } from '../src/execution/worker/dispatch.js'
+import { materializeTaskFixture } from './helpers/execution-spec.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 import type { RuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
@@ -44,20 +45,23 @@ const createRuntime = async (): Promise<RuntimeState> => {
   return runtime
 }
 
-const createTask = (id: string, branch: string): Task => ({
-  id,
-  fingerprint: id,
-  prompt: `prompt-${id}`,
-  title: `task ${id}`,
-  cwd: `/tmp/${id}`,
-  repoKey: '/tmp/shared-repo/.git',
-  branch,
-  focusId: 'focus-global',
-  profile: 'worker',
-  provider: 'codex',
-  status: 'pending',
-  createdAt: '2026-03-10T00:00:00.000Z',
-})
+const createTask = (stateDir: string, id: string, branch: string): Promise<Task> =>
+  materializeTaskFixture({
+    stateDir,
+    task: {
+      id,
+      prompt: `prompt-${id}`,
+      title: `task ${id}`,
+      cwd: `/tmp/${id}`,
+      repoKey: '/tmp/shared-repo/.git',
+      branch,
+      focusId: 'focus-global',
+      profile: 'worker',
+      provider: 'codex',
+      status: 'pending',
+      createdAt: '2026-03-10T00:00:00.000Z',
+    },
+  })
 
 beforeEach(() => {
   runTaskWithRetryMock.mockReset()
@@ -71,7 +75,10 @@ afterEach(async () => {
 
 test('worker dispatch serializes tasks on the same repo and branch', async () => {
   const runtime = await createRuntime()
-  runtime.tasks.push(createTask('task-main-a', 'main'), createTask('task-main-b', 'main'))
+  runtime.tasks.push(
+    await createTask(runtime.config.workDir, 'task-main-a', 'main'),
+    await createTask(runtime.config.workDir, 'task-main-b', 'main'),
+  )
 
   let running = 0
   let maxRunning = 0
@@ -101,8 +108,8 @@ test('worker dispatch serializes tasks on the same repo and branch', async () =>
 test('worker dispatch keeps different branches parallel when slots are free', async () => {
   const runtime = await createRuntime()
   runtime.tasks.push(
-    createTask('task-worktree-1', 'worktree-1'),
-    createTask('task-worktree-2', 'worktree-2'),
+    await createTask(runtime.config.workDir, 'task-worktree-1', 'worktree-1'),
+    await createTask(runtime.config.workDir, 'task-worktree-2', 'worktree-2'),
   )
 
   let running = 0

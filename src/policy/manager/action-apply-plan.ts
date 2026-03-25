@@ -33,8 +33,12 @@ export const applyCreatePlan = async (
     scheduledAt: parsed.scheduled_at,
     timeZone: parsed.time_zone,
   })
-  const effect = buildPlanEffect(parsed)
   const focusId = resolveActionFocusId(runtime, parsed.focus_id)
+  const effect = await buildPlanEffect({
+    stateDir: runtime.config.workDir,
+    attrs: parsed,
+    focusId,
+  })
   const key = normalizePlanKey({
     title: parsed.title,
     focusId,
@@ -102,7 +106,12 @@ export const applyUpdatePlan = async (
     scheduledAt: parsed.scheduled_at,
     timeZone: parsed.time_zone,
   })
-  const effect = resolveUpdatedEffect(current.effect, parsed)
+  const effect = await resolveUpdatedEffect({
+    stateDir: runtime.config.workDir,
+    current: current.effect,
+    update: parsed,
+    focusId: nextFocusId,
+  })
 
   const updatedAt = nowIso()
   const next: TaskPlan = {

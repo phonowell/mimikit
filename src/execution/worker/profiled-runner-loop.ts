@@ -1,5 +1,4 @@
 import { appendTraceArchiveResult } from '../../persistence/storage/traces-archive.js'
-import { assignTaskUsage } from '../../work/orchestrator/task-state-write.js'
 import { readProviderThreadId } from '../providers/thread-id.js'
 import {
   mergeUsageAdditive,
@@ -48,7 +47,7 @@ export const runWorkerLoop = async (
   elapsedMs: number
   usage?: TokenUsage
 }> => {
-  const { stateDir, prompt, task } = params
+  const { stateDir, prompt } = params
   const maxRounds = Math.max(1, params.budget?.maxRounds ?? MAX_RUN_ROUNDS)
   const maxDurationMs = Math.max(
     1,
@@ -81,7 +80,7 @@ export const runWorkerLoop = async (
           roundUsage = mergeUsageMonotonic(roundUsage, usage)
           const previewUsage = mergeUsageAdditive(totalUsage, roundUsage)
           if (!previewUsage) return
-          assignTaskUsage({ task, usage: previewUsage })
+          params.task.usage = previewUsage
           params.onUsage?.(previewUsage)
         },
         onPartialOutput: (output) => {
@@ -99,7 +98,7 @@ export const runWorkerLoop = async (
       roundUsage = mergeUsageMonotonic(roundUsage, result.usage)
       totalUsage = mergeUsageAdditive(totalUsage, roundUsage)
       if (totalUsage) {
-        assignTaskUsage({ task, usage: totalUsage })
+        params.task.usage = totalUsage
         params.onUsage?.(totalUsage)
       }
 

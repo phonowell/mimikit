@@ -4,14 +4,21 @@ import { appendLog } from '../../persistence/log/append.js'
 import { bestEffort } from '../../persistence/log/safe.js'
 import { appendTaskProgress } from '../../persistence/storage/task-progress.js'
 import { appendWorkerUsageLedgerEntry } from '../../persistence/storage/usage-ledger.js'
-import { syncFocusFromTaskResult } from '../focus/result-feedback.js'
 import {
   mergeTaskGitLifecycle,
   resolveTaskGitLifecycle,
 } from '../shared/task-git-lifecycle.js'
 
+import { applyRuntimeTaskResultDomainWrite } from './task-state-write.js'
+
 import type { Task, TaskResult } from '../../foundation/types/index.js'
-import type { OrchestratorRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
+import type {
+  RuntimeManagerState,
+  RuntimePathsState,
+  RuntimePersistState,
+  RuntimeUiState,
+  RuntimeWorkerState,
+} from '../../kernel/orchestrator/runtime-interfaces.js'
 
 export type ApplyTaskResultWriteOptions = {
   markTask: (tasks: Task[], taskId: string, patch?: Partial<Task>) => void
@@ -21,8 +28,17 @@ export type ApplyTaskResultWriteOptions = {
   persistCompletionFields?: boolean
 }
 
+type TaskResultWriteRuntime = RuntimePersistState & {
+  paths: RuntimePathsState['paths']
+  manager: RuntimePersistState['manager'] &
+    Pick<RuntimeManagerState, 'wakePending' | 'signalController'>
+  worker: Pick<RuntimeWorkerState, 'lastActivityAtMs'>
+  ui: RuntimePersistState['ui'] &
+    Pick<RuntimeUiState, 'wakeVersion' | 'wakeEvents' | 'signalControllers'>
+}
+
 export const applyTaskResultWrite = async (params: {
-  runtime: OrchestratorRuntime
+  runtime: TaskResultWriteRuntime
   task: Task
   result: TaskResult
   options: ApplyTaskResultWriteOptions
@@ -59,8 +75,13 @@ export const applyTaskResultWrite = async (params: {
   }
 
   runtime.worker.lastActivityAtMs = Date.now()
-  options.markTask(runtime.tasks, task.id, basePatch)
-  syncFocusFromTaskResult(runtime, task, result)
+  applyRuntimeTaskResultDomainWrite({
+    runtime,
+    taskId: task.id,
+    result,
+    markTask: options.markTask,
+    patch: basePatch,
+  })
 
   await bestEffort(`appendTaskProgress: ${progressType}`, () =>
     appendTaskProgress({

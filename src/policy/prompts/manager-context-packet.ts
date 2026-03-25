@@ -2,6 +2,11 @@ import { stringifyPromptJson } from '../../foundation/prompting/format-base.js'
 import { truncateText } from '../../foundation/shared/text.js'
 import { newId, nowIso } from '../../foundation/shared/utils.js'
 
+import {
+  PREVIEW_MAX_CHARS,
+  summarizeLatestResult,
+} from './manager-context-latest-result.js'
+
 import type {
   FocusId,
   ManagerContextPacket,
@@ -14,7 +19,6 @@ import type {
   UserInput,
 } from '../../foundation/types/index.js'
 
-const PREVIEW_MAX_CHARS = 140
 const MAX_PACKET_IDS = 5
 
 const MINIMAL_SECTIONS = new Set<ManagerPacketSection>([
@@ -93,41 +97,6 @@ export const shouldIncludePacketSection = (params: {
     return params.mode === 'expanded' || params.mode === 'standard'
   if (params.section === 'memory') return params.mode !== 'minimal'
   return wantsSectionByMode(params.mode, params.section)
-}
-
-const summarizeLatestResult = (
-  tasks: Task[],
-  results: TaskResult[],
-):
-  | {
-      taskId: string
-      status: TaskResult['status']
-      focusId?: FocusId
-      summary?: string
-      stopReason?: string
-      archivePath?: string
-    }
-  | undefined => {
-  const latest = results[0]
-  if (!latest) return undefined
-  const task = tasks.find((item) => item.id === latest.taskId)
-  const summarySource =
-    latest.handoff?.summary ?? latest.output.split(/\r?\n/, 1)[0] ?? ''
-  return {
-    taskId: latest.taskId,
-    status: latest.status,
-    ...(task?.focusId ? { focusId: task.focusId } : {}),
-    ...(summarySource
-      ? {
-          summary: truncateText(summarySource, PREVIEW_MAX_CHARS, {
-            normalizeWhitespace: true,
-            suffix: '…',
-          }),
-        }
-      : {}),
-    ...(latest.stopReason ? { stopReason: latest.stopReason } : {}),
-    ...(latest.archivePath ? { archivePath: latest.archivePath } : {}),
-  }
 }
 
 export const buildManagerContextPacket = (params: {
