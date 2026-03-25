@@ -13,6 +13,7 @@ import {
   isSupportedByInputs,
   validateMutateTaskGitIntentEvidence,
 } from './action-intent-evidence-match.js'
+import { supportsReplacementCancelIntentEvidence } from './action-intent-evidence-replacement-cancel.js'
 import { hasResumeChoiceEffectTask } from './action-intent-evidence-resume-choice.js'
 import { parseActionAttrs } from './action-parse.js'
 import { resolveRunTaskConfirmationRequirement } from './run-task-confirmation.js'
@@ -26,14 +27,8 @@ import type { SupplementalEvidenceSource } from './action-intent-evidence.js'
 import type { Task, UserInput } from '../../foundation/types/index.js'
 import type { Parsed } from '../actions/model/spec.js'
 
-const resolveMutateTaskRef = (
-  task: Task | undefined,
-  taskId: string,
-): string => {
-  const title = task?.title.trim()
-  if (title) return `${taskId} / ${title}`
-  return taskId
-}
+const resolveMutateTaskRef = (task: Task | undefined, taskId: string): string =>
+  task?.title.trim() ? `${taskId} / ${task.title.trim()}` : taskId
 
 export const validateEnqueueTaskIntentEvidence = (params: {
   item: Parsed
@@ -88,6 +83,8 @@ export const validateMutateTaskIntentEvidence = (params: {
   inputs?: UserInput[]
   taskById?: Map<string, Task>
   supplementalEvidenceSources?: Set<SupplementalEvidenceSource>
+  currentActions?: Parsed[]
+  defaultFocusId?: string
 }): string | undefined => {
   const { item, inputTexts, inputs, taskById, supplementalEvidenceSources } =
     params
@@ -127,6 +124,19 @@ export const validateMutateTaskIntentEvidence = (params: {
     if (hasResumeChoiceEffectTask(inputs, parsed.id, parsed.op))
       return undefined
   } else if (hasResumeChoiceEffectTask(inputs, parsed.id, parsed.op))
+    return undefined
+
+  if (
+    parsed.op === 'cancel' &&
+    supportsReplacementCancelIntentEvidence({
+      item,
+      actions: params.currentActions,
+      task,
+      tasks: taskById?.values() ?? [],
+      inputTexts,
+      defaultFocusId: params.defaultFocusId,
+    })
+  )
     return undefined
 
   if (isSupportedByInputs({ candidates, inputs: inputTexts })) return undefined

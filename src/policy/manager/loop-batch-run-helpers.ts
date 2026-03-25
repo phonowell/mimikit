@@ -1,4 +1,5 @@
 import { appendLog } from '../../persistence/log/append.js'
+import { resolveDefaultFocusId } from '../../work/focus/index.js'
 
 import { resolveManagerActionSurface } from './action-surface.js'
 import { canScheduleManagerRestart } from './restart-runtime.js'
@@ -45,6 +46,7 @@ export const buildActionFeedbackContext = (params: {
   restartRuntimeAvailable: boolean
   restartRuntimeScheduled: boolean
   restartRuntimeBusy: boolean
+  defaultFocusId: string
 } => {
   const { runtime, allowAskUserChoice, resultTaskIds, wakeProfile, inputs } =
     params
@@ -72,6 +74,7 @@ export const buildActionFeedbackContext = (params: {
     restartRuntimeAvailable: runtime.session.requestExit !== undefined,
     restartRuntimeScheduled: runtime.session.restartScheduled,
     restartRuntimeBusy: !canScheduleManagerRestart(runtime),
+    defaultFocusId: resolveDefaultFocusId(runtime),
   }
 }
 

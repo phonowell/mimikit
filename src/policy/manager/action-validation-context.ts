@@ -5,6 +5,7 @@ import type {
   TaskStatus,
   UserInput,
 } from '../../foundation/types/index.js'
+import type { Parsed } from '../actions/model/spec.js'
 
 export type FeedbackContext = {
   taskStatusById?: Map<string, TaskStatus>
@@ -21,4 +22,6 @@ export type FeedbackContext = {
   restartRuntimeAvailable?: boolean
   restartRuntimeScheduled?: boolean
   restartRuntimeBusy?: boolean
+  currentActions?: Parsed[]
+  defaultFocusId?: string
 }

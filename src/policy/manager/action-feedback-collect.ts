@@ -185,7 +185,10 @@ export const collectManagerActionFeedback = (
       continue
     }
 
-    const issues = validateRegisteredManagerAction(item, context)
+    const issues = validateRegisteredManagerAction(item, {
+      ...context,
+      currentActions: items,
+    })
     for (const issue of issues)
       pushFeedback(feedback, seen, item, issue.error, issue.hint)
   }

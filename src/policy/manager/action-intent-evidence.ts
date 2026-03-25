@@ -20,6 +20,8 @@ type IntentEvidenceContext = {
   taskById?: Map<string, Task>
   confirmedRunTaskChoiceIds?: Set<string>
   supplementalEvidenceSources?: Set<SupplementalEvidenceSource>
+  currentActions?: Parsed[]
+  defaultFocusId?: string
 }
 
 const INTENT_EVIDENCE_REQUIRED_ACTIONS = new Set([
@@ -70,6 +72,12 @@ export const resolveIntentEvidenceRejectionHint = (
       inputTexts,
       ...(context.inputs ? { inputs: context.inputs } : {}),
       ...(context.taskById ? { taskById: context.taskById } : {}),
+      ...(context.currentActions
+        ? { currentActions: context.currentActions }
+        : {}),
+      ...(context.defaultFocusId
+        ? { defaultFocusId: context.defaultFocusId }
+        : {}),
       ...(context.supplementalEvidenceSources
         ? { supplementalEvidenceSources: context.supplementalEvidenceSources }
         : {}),
