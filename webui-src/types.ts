@@ -53,6 +53,11 @@ export type TaskGitClosure = {
   cleaned?: boolean
 }
 
+export type TaskDispatchLockDetail = {
+  blockerTaskId: string
+  lockKey: string
+}
+
 export type TaskView = {
   id: string
   status: string
@@ -66,6 +71,7 @@ export type TaskView = {
   durationMs?: number
   usage?: MessageUsage
   pending_reason?: string
+  dispatchLock?: TaskDispatchLockDetail
   recoverable?: boolean
   stopReason?: string
   liveOutput?: string

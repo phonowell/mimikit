@@ -1,5 +1,4 @@
 import { compareIsoDesc } from '../../foundation/shared/time.js'
-import { buildTaskDispatchLockKey } from '../../work/shared/task-execution-target.js'
 import { resolveTaskResourceMode } from '../../work/shared/task-resource-mode.js'
 import {
   isBudgetRecoverableTask,
@@ -10,6 +9,10 @@ import {
   deriveTaskGitClosure,
   type TaskGitClosureView,
 } from './task-git-closure.js'
+import {
+  resolveDispatchLockDetail,
+  type TaskDispatchLockDetail,
+} from './task-view-dispatch-lock.js'
 
 import type {
   Task,
@@ -48,6 +51,7 @@ export type TaskView = {
   stopReason?: TaskResultStopReason
   recoverable?: boolean
   pending_reason?: TaskPendingReason
+  dispatchLock?: TaskDispatchLockDetail
   liveOutput?: string
 }
 
@@ -92,34 +96,14 @@ const resolveTaskViewStatus = (task: Task): TaskStatus => {
   return 'pending'
 }
 
-const resolveDispatchLockPendingReason = (
-  task: Task,
-  tasks: Task[],
-  taskStatus: TaskStatus,
-): TaskPendingReason | undefined => {
-  if (taskStatus !== 'pending') return undefined
-  const lockKey = buildTaskDispatchLockKey(task)
-  if (!lockKey) return undefined
-  for (const item of tasks) {
-    if (item.id === task.id || item.status !== 'running') continue
-    if (buildTaskDispatchLockKey(item) !== lockKey) continue
-    return 'waiting_dispatch_lock'
-  }
-  return undefined
-}
-
 const resolvePendingReason = (
   task: Task,
   tasks: Task[],
   snapshot?: TaskViewRuntimeSnapshot,
   taskStatus: TaskStatus = task.status,
 ): TaskPendingReason | undefined => {
-  const dispatchLockReason = resolveDispatchLockPendingReason(
-    task,
-    tasks,
-    taskStatus,
-  )
-  if (dispatchLockReason) return dispatchLockReason
+  if (resolveDispatchLockDetail(task, tasks, taskStatus))
+    return 'waiting_dispatch_lock'
   if (taskStatus !== 'pending') return undefined
   const maxConcurrentWorkers = toFiniteNumber(snapshot?.maxConcurrentWorkers)
   if (maxConcurrentWorkers === null || maxConcurrentWorkers <= 0)
@@ -136,6 +120,7 @@ const taskToView = (
   snapshot?: TaskViewRuntimeSnapshot,
 ): TaskView => {
   const status = resolveTaskViewStatus(task)
+  const dispatchLock = resolveDispatchLockDetail(task, tasks, status)
   const pendingReason = resolvePendingReason(task, tasks, snapshot, status)
   const liveOutput =
     status === 'running'
@@ -170,6 +155,7 @@ const taskToView = (
     ...(task.result?.stopReason ? { stopReason: task.result.stopReason } : {}),
     ...(isBudgetRecoverableTask(task) ? { recoverable: true } : {}),
     ...(pendingReason ? { pending_reason: pendingReason } : {}),
+    ...(dispatchLock ? { dispatchLock } : {}),
     ...(liveOutput ? { liveOutput } : {}),
   }
 }
