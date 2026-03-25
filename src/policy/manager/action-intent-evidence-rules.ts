@@ -1,12 +1,6 @@
 import { basename } from 'node:path'
 
-import {
-  askUserChoiceSchema,
-  mutateTaskSchema,
-  parseAskUserChoiceAttrs,
-  rememberMemorySchema,
-  runTaskSchema,
-} from './action-apply-schema.js'
+import { mutateTaskSchema, runTaskSchema } from './action-apply-schema.js'
 import {
   buildMissingIntentEvidenceHint,
   isMutateTaskGitOp,
@@ -149,54 +143,5 @@ export const validateMutateTaskIntentEvidence = (params: {
     actionName: item.name,
     evidenceSources: supplementalEvidenceSources,
     taskRef: resolveMutateTaskRef(task, parsed.id),
-  })
-}
-
-export const validateAskUserChoiceIntentEvidence = (params: {
-  item: Parsed
-  inputTexts: string[]
-  supplementalEvidenceSources?: Set<SupplementalEvidenceSource>
-}): string | undefined => {
-  const { item, inputTexts, supplementalEvidenceSources } = params
-  if (!askUserChoiceSchema.safeParse(item.attrs).success) return undefined
-  const parsed = parseAskUserChoiceAttrs(item.attrs)
-  if (!parsed) return undefined
-
-  const candidates = [
-    parsed.question,
-    ...parsed.options.map((option) => option.label),
-    ...parsed.options.map((option) => option.reason),
-  ]
-  const combinedCandidate = [parsed.question, ...candidates].join('\n')
-  if (
-    isSupportedByInputs({ candidates, combinedCandidate, inputs: inputTexts })
-  )
-    return undefined
-
-  return buildMissingIntentEvidenceHint({
-    actionName: item.name,
-    evidenceSources: supplementalEvidenceSources,
-  })
-}
-export const validateRememberMemoryIntentEvidence = (params: {
-  item: Parsed
-  inputTexts: string[]
-  supplementalEvidenceSources?: Set<SupplementalEvidenceSource>
-}): string | undefined => {
-  const { item, inputTexts, supplementalEvidenceSources } = params
-  const parsed = parseActionAttrs(item, rememberMemorySchema)
-  if (!parsed) return undefined
-  if (
-    isSupportedByInputs({
-      candidates: [parsed.content],
-      combinedCandidate: parsed.content,
-      inputs: inputTexts,
-    })
-  )
-    return undefined
-
-  return buildMissingIntentEvidenceHint({
-    actionName: item.name,
-    evidenceSources: supplementalEvidenceSources,
   })
 }

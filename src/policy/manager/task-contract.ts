@@ -1,7 +1,35 @@
+import { z } from 'zod'
+
+import {
+  createPromptTemplateRenderer,
+  loadYamlPromptTemplates,
+} from '../../foundation/prompting/prompt-template-loader.js'
+
 import type { TaskContract } from '../../foundation/types/index.js'
 
 export const TASK_CONTRACT_REQUIRED_HINT =
   'enqueue_task 执行失败：继续派发前还缺 3 个最小信息，每项一句即可：goal（最终要什么结果）、in_scope/out_of_scope（这次做什么、哪些不做）、至少一条 done_when_{n}（怎样算完成）。'
+
+const taskContractWorkerPromptTemplateSchema = z
+  .object({
+    body: z.string().trim().min(1),
+  })
+  .strict()
+
+const {
+  path: taskContractWorkerPromptPath,
+  templates: taskContractWorkerPromptTemplates,
+} = loadYamlPromptTemplates({
+  relativePath: 'manager/task-contract-worker-prompt.md',
+  schema: taskContractWorkerPromptTemplateSchema,
+})
+
+const renderTaskContractWorkerPrompt = createPromptTemplateRenderer({
+  path: taskContractWorkerPromptPath,
+  templates: {
+    body: taskContractWorkerPromptTemplates.body,
+  },
+})
 
 const normalizeLine = (value?: string): string | undefined => {
   const trimmed = value?.trim()
@@ -31,18 +59,24 @@ const buildGeneratedWorkerPrompt = (params: {
   outOfScope?: string | undefined
   contextRefs?: string[] | undefined
 }): string => {
-  const lines = [
-    params.title?.trim() ? `任务标题：${params.title.trim()}` : '',
-    `目标：${params.goal}`,
-    `执行范围：${params.inScope}`,
-    params.outOfScope?.trim() ? `不做：${params.outOfScope.trim()}` : '',
-    params.contextRefs && params.contextRefs.length > 0
-      ? `上下文引用：${params.contextRefs.join('；')}`
-      : '',
-    '完成标准：',
-    ...params.doneWhen.map((item, index) => `${index + 1}. ${item}`),
-  ].filter((item) => item.length > 0)
-  return lines.join('\n')
+  const title = params.title?.trim()
+  const outOfScope = params.outOfScope?.trim()
+  const contextRefs = params.contextRefs?.filter(
+    (item) => item.trim().length > 0,
+  )
+  return renderTaskContractWorkerPrompt('body', {
+    title_line: title ? `任务标题：${title}` : '',
+    goal: params.goal,
+    in_scope: params.inScope,
+    out_of_scope_line: outOfScope ? `不做：${outOfScope}` : '',
+    context_refs_line:
+      contextRefs && contextRefs.length > 0
+        ? `上下文引用：${contextRefs.join('；')}`
+        : '',
+    done_when_block: params.doneWhen
+      .map((item, index) => `${index + 1}. ${item}`)
+      .join('\n'),
+  })
 }
 
 export const buildTaskContractFromAttrs = (

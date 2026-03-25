@@ -5,7 +5,7 @@ import {
   parseAttributes,
 } from '../actions/protocol/meta-tag-attrs.js'
 
-import { isTaskContractMissingHint } from './action-feedback-contract-hint.js'
+import { isTaskContractMissingFeedback } from './action-feedback-contract-hint.js'
 
 import type { ManagerActionFeedback } from '../../foundation/types/index.js'
 
@@ -46,8 +46,9 @@ export const findRepeatedRejectedAction = (
   return undefined
 }
 
-const isIntentEvidenceHint = (hint: string): boolean =>
-  hint.includes('intent-evidence guard 未通过')
+const isIntentEvidenceFeedback = (
+  item: Pick<ManagerActionFeedback, 'code'>,
+): boolean => item.code === 'intent_evidence_missing'
 
 const parseAttemptedAttrs = (
   attempted: string | undefined,
@@ -80,7 +81,7 @@ const buildAttemptedFollowupLabel = (
 const buildIntentEvidenceReply = (
   feedback: ManagerActionFeedback[],
 ): string | undefined => {
-  const first = feedback.find((item) => isIntentEvidenceHint(item.hint))
+  const first = feedback.find((item) => isIntentEvidenceFeedback(item))
   if (!first) return undefined
   const followupLabel = buildAttemptedFollowupLabel(first)
   if (!followupLabel) return undefined
@@ -94,7 +95,7 @@ const classifyRejectedActionFeedback = (
   item: ManagerActionFeedback,
 ): RejectedActionClass => {
   if (item.error !== 'action_execution_rejected') return 'blocked_action'
-  if (isIntentEvidenceHint(item.hint)) return 'insufficient_evidence'
+  if (isIntentEvidenceFeedback(item)) return 'insufficient_evidence'
   if (item.action === 'mutate_task') return 'task_state_conflict'
   if (item.action === 'enqueue_task') return 'needs_scope_confirmation'
   if (item.action === 'ask_user_choice') return 'channel_choice_unsupported'
@@ -128,9 +129,9 @@ const buildDirectActionFeedbackReply = (
   if (!first) return undefined
   if (
     feedback.length === 1 &&
-    !isIntentEvidenceHint(first.hint) &&
+    !isIntentEvidenceFeedback(first) &&
     (first.error !== 'action_execution_rejected' ||
-      !isTaskContractMissingHint(first.hint))
+      !isTaskContractMissingFeedback(first))
   )
     return `当前动作无法继续执行，本轮先停止重试。${first.hint}`
   const allSameAction = feedback.every((item) => item.action === first.action)

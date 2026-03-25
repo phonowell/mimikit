@@ -1,12 +1,14 @@
 import {
+  validateAskUserChoiceIntentEvidence,
+  validateRememberMemoryIntentEvidence,
+} from './action-intent-evidence-dialog-memory.js'
+import {
   buildMissingIntentEvidenceHint,
   collectUserIntentTexts,
 } from './action-intent-evidence-match.js'
 import {
-  validateAskUserChoiceIntentEvidence,
   validateEnqueueTaskIntentEvidence,
   validateMutateTaskIntentEvidence,
-  validateRememberMemoryIntentEvidence,
   validateRestartRuntimeIntentEvidence,
 } from './action-intent-evidence-rules.js'
 

@@ -4,8 +4,8 @@ import {
   resolveRememberMemoryContentIssue,
 } from './action-apply-schema.js'
 import { formatRememberMemoryNotStableHint } from './action-feedback-hints.js'
+import { validateRememberMemoryIntentEvidence } from './action-intent-evidence-dialog-memory.js'
 import { collectUserIntentTexts } from './action-intent-evidence-match.js'
-import { validateRememberMemoryIntentEvidence } from './action-intent-evidence-rules.js'
 import { parseActionAttrs } from './action-parse.js'
 import { rejected, type ValidationIssue } from './action-validation-helpers.js'
 
@@ -51,5 +51,5 @@ export const validateRememberMemoryAction = (
       ? { supplementalEvidenceSources: context.supplementalEvidenceSources }
       : {}),
   })
-  return hint ? rejected(hint) : []
+  return hint ? rejected(hint, { code: 'intent_evidence_missing' }) : []
 }

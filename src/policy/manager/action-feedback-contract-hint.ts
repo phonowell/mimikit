@@ -1,8 +1,10 @@
 import { formatEnqueueTaskContractMissingHint } from './action-feedback-hints.js'
-import { TASK_CONTRACT_REQUIRED_HINT } from './task-contract.js'
 
-export const isTaskContractMissingHint = (hint: string): boolean =>
-  hint.includes(TASK_CONTRACT_REQUIRED_HINT)
+import type { ManagerActionFeedback } from '../../foundation/types/index.js'
+
+export const isTaskContractMissingFeedback = (
+  item: Pick<ManagerActionFeedback, 'code'>,
+): boolean => item.code === 'task_contract_missing'
 
 export const buildTaskContractMissingHintFromAction = (params: {
   name: string
