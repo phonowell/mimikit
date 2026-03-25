@@ -27,8 +27,10 @@ import type { SupplementalEvidenceSource } from './action-intent-evidence.js'
 import type { Task, UserInput } from '../../foundation/types/index.js'
 import type { Parsed } from '../actions/model/spec.js'
 
-const resolveMutateTaskRef = (task: Task | undefined, taskId: string): string =>
-  task?.title.trim() ? `${taskId} / ${task.title.trim()}` : taskId
+const resolveMutateTaskRef = (
+  task: Task | undefined,
+  taskId: string,
+): string => (task?.title.trim() ? `${taskId} / ${task.title.trim()}` : taskId)
 
 export const validateEnqueueTaskIntentEvidence = (params: {
   item: Parsed
@@ -134,7 +136,9 @@ export const validateMutateTaskIntentEvidence = (params: {
       task,
       tasks: taskById?.values() ?? [],
       inputTexts,
-      defaultFocusId: params.defaultFocusId,
+      ...(params.defaultFocusId
+        ? { defaultFocusId: params.defaultFocusId }
+        : {}),
     })
   )
     return undefined

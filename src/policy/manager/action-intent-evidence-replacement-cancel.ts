@@ -1,4 +1,8 @@
-import { buildTaskFingerprint, isActiveTask } from '../../work/orchestrator/task-state.js'
+import { scoreTextOverlap } from '../../foundation/shared/text-search.js'
+import {
+  buildTaskFingerprint,
+  isActiveTask,
+} from '../../work/orchestrator/task-state.js'
 
 import { mutateTaskSchema, runTaskSchema } from './action-apply-schema.js'
 import { isSupportedByInputs } from './action-intent-evidence-match.js'
@@ -60,6 +64,27 @@ const supportsReplacementTask = (params: {
   })
 }
 
+const matchesReplacementTask = (params: {
+  task: Task
+  enqueueAction: Parsed
+}): boolean => {
+  const parsedRunTask = parseActionAttrs(params.enqueueAction, runTaskSchema)
+  if (!parsedRunTask) return false
+  const contract = buildTaskContractFromAttrs(parsedRunTask)
+  if (!contract) return false
+  const currentTaskText = [params.task.title, params.task.branch?.trim() ?? '']
+    .filter((item) => item.trim().length > 0)
+    .join('\n')
+  const replacementText = [
+    parsedRunTask.title,
+    contract.goal,
+    contract.scope,
+    ...contract.acceptance,
+    ...(contract.outOfScope ? [contract.outOfScope] : []),
+  ].join('\n')
+  return scoreTextOverlap(currentTaskText, replacementText) >= 0.35
+}
+
 export const supportsReplacementCancelIntentEvidence = (params: {
   item: Parsed
   actions: Parsed[] | undefined
@@ -76,13 +101,17 @@ export const supportsReplacementCancelIntentEvidence = (params: {
     actions: params.actions,
   })
   if (!enqueueAction) return false
-  if (!supportsReplacementTask({ enqueueAction, inputTexts: params.inputTexts }))
+  if (
+    !supportsReplacementTask({ enqueueAction, inputTexts: params.inputTexts })
+  )
+    return false
+  if (!matchesReplacementTask({ task: params.task, enqueueAction }))
     return false
 
   const parsedRunTask = parseActionAttrs(enqueueAction, runTaskSchema)
   if (!parsedRunTask) return false
   const replacementFocusId =
-    parsedRunTask.focus_id?.trim() || params.defaultFocusId?.trim() || ''
+    parsedRunTask.focus_id?.trim() ?? params.defaultFocusId?.trim() ?? ''
   if (!replacementFocusId) return false
   if (params.task.focusId.trim() !== replacementFocusId) return false
   if (params.task.cwd.trim() !== parsedRunTask.cwd.trim()) return false

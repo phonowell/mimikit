@@ -2,6 +2,7 @@ import { expect, test } from 'vitest'
 
 import { collectManagerActionFeedback } from '../src/policy/manager/action-feedback-collect.js'
 import { buildTaskFingerprint } from '../src/work/orchestrator/task-state.js'
+
 import {
   createIntentEvidenceTask,
   createIntentEvidenceTaskContext,
@@ -57,7 +58,7 @@ test('mutate_task cancel stays allowed for same-focus replacement batch', () => 
   expect(feedback).toHaveLength(0)
 })
 
-test('mutate_task cancel stays blocked when accompanying enqueue task is unrelated', () => {
+test('mutate_task cancel stays blocked when accompanying enqueue task is unrelated even in same focus and cwd', () => {
   const task = createIntentEvidenceTask({
     title: '修复 WebUI restart 与 scroll-bottom',
     cwd: '/repo/mimikit',
@@ -72,7 +73,7 @@ test('mutate_task cancel stays blocked when accompanying enqueue task is unrelat
         name: 'enqueue_task',
         attrs: {
           title: '检查 Telegram 广播失败',
-          cwd: '/repo/telegram',
+          cwd: '/repo/mimikit',
           goal: '检查 Telegram 广播失败的原因',
           in_scope: '阅读相关代码与日志',
           done_when_1: '输出广播失败原因',
@@ -81,7 +82,9 @@ test('mutate_task cancel stays blocked when accompanying enqueue task is unrelat
     ],
     {
       ...createIntentEvidenceTaskContext(task, [
-        createIntentEvidenceUserInput('顺便看一下 Telegram 广播为什么失败。'),
+        createIntentEvidenceUserInput(
+          '请检查 Telegram 广播失败的原因，只阅读相关代码与日志，并输出广播失败原因。',
+        ),
       ]),
       defaultFocusId: 'focus-inbox',
     },
