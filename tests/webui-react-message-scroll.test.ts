@@ -1,6 +1,9 @@
-import { expect, test } from 'vitest'
+import { expect, test, vi } from 'vitest'
 
-import { isScrollStateNearBottom } from '../webui-src/lib/message-scroll.js'
+import {
+  isScrollStateNearBottom,
+  scrollElementToBottom,
+} from '../webui-src/lib/message-scroll.js'
 
 test('near-bottom detection keeps a small fixed threshold', () => {
   expect(
@@ -22,4 +25,20 @@ test('near-bottom detection keeps the follow zone tight', () => {
       scrollTop: 864,
     }),
   ).toBe(true)
+})
+
+test('programmatic auto scroll writes scrollTop directly and lands at bottom', () => {
+  const scrollTo = vi.fn()
+  const element = {
+    clientHeight: 400,
+    scrollHeight: 1_300,
+    scrollTop: 180,
+    scrollTo,
+  } as unknown as HTMLUListElement
+
+  const state = scrollElementToBottom(element, false)
+
+  expect(scrollTo).not.toHaveBeenCalled()
+  expect(element.scrollTop).toBe(900)
+  expect(isScrollStateNearBottom(state)).toBe(true)
 })

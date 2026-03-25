@@ -277,11 +277,6 @@ main[data-app] {
   min-height: 0;
 }
 
-.message {
-  content-visibility: auto;
-  contain-intrinsic-size: 84px;
-}
-
 .composer {
   background: var(--panel);
   border: 1px solid transparent;

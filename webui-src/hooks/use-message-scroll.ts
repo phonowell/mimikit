@@ -11,6 +11,7 @@ import {
 import {
   isScrollStateNearBottom,
   readScrollState,
+  scrollElementToBottom,
 } from '../lib/message-scroll.js'
 
 type ScrollMetrics = {
@@ -32,12 +33,20 @@ export const useMessageScroll = (deps: readonly unknown[]) => {
     )
   }, [])
 
+  const syncFromElement = useCallback(
+    (element: HTMLUListElement) => {
+      const state = readScrollState(element)
+      const nearBottom = isScrollStateNearBottom(state)
+      syncFollowState(nearBottom)
+      return nearBottom
+    },
+    [syncFollowState],
+  )
+
   const updateScrollButton = useEffectEvent(() => {
     const element = listRef.current
     if (!element) return
-    const state = readScrollState(element)
-    const nearBottom = isScrollStateNearBottom(state)
-    syncFollowState(nearBottom)
+    syncFromElement(element)
   })
 
   const captureLayoutShift = useCallback(() => {
@@ -55,12 +64,12 @@ export const useMessageScroll = (deps: readonly unknown[]) => {
     (smooth = false) => {
       const element = listRef.current
       if (!element) return
-      syncFollowState(true)
-      const maxTop = Math.max(0, element.scrollHeight - element.clientHeight)
-      element.scrollTo({
-        top: maxTop,
-        behavior: smooth ? 'smooth' : 'auto',
-      })
+      const nextState = scrollElementToBottom(element, smooth)
+      if (smooth) {
+        syncFollowState(true)
+        return
+      }
+      syncFollowState(isScrollStateNearBottom(nextState))
     },
     [syncFollowState],
   )
