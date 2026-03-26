@@ -1,4 +1,4 @@
-import { mkdir, readFile, rm } from 'node:fs/promises'
+import { mkdtemp, readFile, rename, rm } from 'node:fs/promises'
 import { dirname, extname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -7,6 +7,8 @@ import { build } from 'esbuild'
 
 const rootDir = dirname(dirname(fileURLToPath(import.meta.url)))
 const generatedDir = resolve(rootDir, 'webui', 'generated')
+const generatedBuildPrefix = resolve(rootDir, 'webui', '.generated-build-')
+const generatedBackupDir = resolve(rootDir, 'webui', '.generated-prev')
 const webuiSourceDir = resolve(rootDir, 'webui-src')
 
 const resolveLoader = (path) => {
@@ -46,8 +48,7 @@ const reactCompilerPlugin = {
   },
 }
 
-await rm(generatedDir, { force: true, recursive: true })
-await mkdir(generatedDir, { recursive: true })
+const nextGeneratedDir = await mkdtemp(generatedBuildPrefix)
 
 await build({
   bundle: true,
@@ -61,10 +62,29 @@ await build({
   jsx: 'automatic',
   legalComments: 'none',
   minify: true,
-  outdir: generatedDir,
+  outdir: nextGeneratedDir,
   platform: 'browser',
   plugins: [reactCompilerPlugin],
   splitting: true,
   target: ['es2022'],
   tsconfig: resolve(rootDir, 'tsconfig.webui.json'),
 })
+
+await rm(generatedBackupDir, { force: true, recursive: true })
+await rename(generatedDir, generatedBackupDir).catch(async (error) => {
+  const code =
+    error && typeof error === 'object' && 'code' in error ? error.code : null
+  if (code === 'ENOENT') return
+  await rm(nextGeneratedDir, { force: true, recursive: true })
+  throw error
+})
+
+try {
+  await rename(nextGeneratedDir, generatedDir)
+} catch (error) {
+  await rm(nextGeneratedDir, { force: true, recursive: true })
+  await rename(generatedBackupDir, generatedDir).catch(() => {})
+  throw error
+}
+
+await rm(generatedBackupDir, { force: true, recursive: true })

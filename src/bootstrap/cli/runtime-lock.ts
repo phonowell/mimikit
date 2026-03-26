@@ -1,8 +1,10 @@
-import { mkdir, readFile } from 'node:fs/promises'
+import { mkdir, readFile, stat } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { join } from 'node:path'
 
 import { readErrorCode } from '../../foundation/shared/error-code.js'
+import { sleep } from '../../foundation/shared/utils.js'
+import { isPidAlive } from '../../kernel/runtime/reaper-pid.js'
 import { bestEffort } from '../../persistence/log/safe.js'
 
 export type RuntimeLock = {
@@ -31,6 +33,8 @@ const LOCK_OPTIONS = {
     maxTimeout: 500,
   },
 } as const
+
+const LOCK_RETRY_GRACE_MS = 50
 
 type LeaseDiagnostics = {
   runtimeId: string
@@ -63,6 +67,71 @@ const readLeaseDiagnostics = async (
   }
 }
 
+const acquireLockOnce = (lockTargetPath: string): Promise<LockRelease> =>
+  lockfile.lock(lockTargetPath, LOCK_OPTIONS)
+
+const readLockHeld = async (
+  lockTargetPath: string,
+): Promise<boolean | undefined> => {
+  try {
+    return await lockfile.check(lockTargetPath, LOCK_OPTIONS)
+  } catch (error) {
+    if (readErrorCode(error) === 'ENOENT') return false
+    return undefined
+  }
+}
+
+const waitForStaleLockWindowIfNeeded = async (params: {
+  lease: LeaseDiagnostics | null
+  lockPath: string
+}): Promise<void> => {
+  if (!params.lease || isPidAlive(params.lease.ownerPid)) return
+  const stats = await stat(params.lockPath).catch(() => null)
+  if (!stats) return
+  const waitMs = Math.max(
+    0,
+    stats.mtimeMs + LOCK_OPTIONS.stale - Date.now() + LOCK_RETRY_GRACE_MS,
+  )
+  if (waitMs > 0) await sleep(waitMs)
+}
+
+const recoverFromLockedAcquire = async (params: {
+  workDir: string
+  lockTargetPath: string
+  lockPath: string
+}): Promise<LockRelease> => {
+  const lease = await readLeaseDiagnostics(params.workDir)
+  const lockHeld = await readLockHeld(params.lockTargetPath)
+  if (lockHeld === false) {
+    try {
+      return await acquireLockOnce(params.lockTargetPath)
+    } catch (error) {
+      if (readErrorCode(error) !== 'ELOCKED') throw error
+    }
+  }
+
+  await waitForStaleLockWindowIfNeeded({
+    lease,
+    lockPath: params.lockPath,
+  })
+
+  if (lease && !isPidAlive(lease.ownerPid)) {
+    try {
+      return await acquireLockOnce(params.lockTargetPath)
+    } catch (error) {
+      if (readErrorCode(error) !== 'ELOCKED') throw error
+    }
+  }
+
+  const diag =
+    lease === null
+      ? ''
+      : ` (ownerPid=${lease.ownerPid}, runtimeId=${lease.runtimeId}${
+          lease.updatedAt ? `, updatedAt=${lease.updatedAt}` : ''
+        })`
+  throw new Error(`[cli] instance lock exists at ${params.lockPath}${diag}`)
+}
+
 export const acquireRuntimeLock = async (
   workDir: string,
 ): Promise<RuntimeLock> => {
@@ -71,17 +140,14 @@ export const acquireRuntimeLock = async (
   const lockPath = `${lockTargetPath}${LOCK_SUFFIX}`
   let releaseLock: LockRelease
   try {
-    releaseLock = await lockfile.lock(lockTargetPath, LOCK_OPTIONS)
+    releaseLock = await acquireLockOnce(lockTargetPath)
   } catch (error) {
     if (readErrorCode(error) !== 'ELOCKED') throw error
-    const lease = await readLeaseDiagnostics(workDir)
-    const diag =
-      lease === null
-        ? ''
-        : ` (ownerPid=${lease.ownerPid}, runtimeId=${lease.runtimeId}${
-            lease.updatedAt ? `, updatedAt=${lease.updatedAt}` : ''
-          })`
-    throw new Error(`[cli] instance lock exists at ${lockPath}${diag}`)
+    releaseLock = await recoverFromLockedAcquire({
+      workDir,
+      lockTargetPath,
+      lockPath,
+    })
   }
 
   let released = false

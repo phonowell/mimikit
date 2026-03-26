@@ -99,16 +99,20 @@ export const requestRuntimeControl = async (
   }
 
   const deadline = Date.now() + STATUS_POLL_TIMEOUT_MS
+  let sawDisconnect = false
   while (Date.now() < deadline) {
-    try {
-      const snapshot = await fetchStatusSnapshotWithTimeout(
-        STATUS_POLL_REQUEST_TIMEOUT_MS,
-      )
-      if (snapshot.runtimeId && snapshot.runtimeId !== preflight.runtimeId) {
-        window.location.reload()
-        return { ok: true }
-      }
-    } catch {}
+    const snapshot = await fetchStatusSnapshotWithTimeout(
+      STATUS_POLL_REQUEST_TIMEOUT_MS,
+    )
+    if (!snapshot.runtimeId) {
+      sawDisconnect = true
+      await delay(STATUS_POLL_INTERVAL_MS)
+      continue
+    }
+    if (snapshot.runtimeId !== preflight.runtimeId || sawDisconnect) {
+      window.location.reload()
+      return { ok: true }
+    }
     await delay(STATUS_POLL_INTERVAL_MS)
   }
 

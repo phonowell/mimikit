@@ -1,7 +1,9 @@
+import { spawn } from 'node:child_process'
 import { resolve } from 'node:path'
 import { parseArgs } from 'node:util'
 
 import { loadCodexSettings } from '../../execution/providers/codex-settings.js'
+import { sleep } from '../../foundation/shared/utils.js'
 import { buildPaths } from '../../persistence/fs/paths.js'
 import { setDefaultLogPath } from '../../persistence/log/safe.js'
 import { configureManagerActionCliLogger } from '../../policy/manager/action-cli-log.js'
@@ -10,11 +12,10 @@ import { defaultConfig } from '../config.js'
 import { warnIgnoredUnknownConfigKeys } from './config-warning.js'
 import { applyCliEnvOverrides } from './env.js'
 import { parsePort, resolveHttpPort, waitForPortRelease } from './port.js'
-import {
-  runFreshProcessRestartLoop,
-  STARTED_BY_RESPAWN_CHILD,
-} from './restart-loop.js'
 import { runCliCycle } from './runtime-cycle.js'
+
+const RUNTIME_CHILD_ENV = 'MIMIKIT_RUNTIME_CHILD'
+const CRASH_RESTART_DELAY_MS = 500
 
 const parseBoolFlag = (
   flagName: string,
@@ -64,20 +65,41 @@ console.log('[cli] config loaded')
 const targetPort =
   typeof portValue === 'string' ? parsePort(portValue) : config.webui.port
 
-let requestShutdown: ((reason: string, code?: number) => void) | null = null
-let restartPort: number | null = null
+const stripPortArgs = (argv: readonly string[]): string[] => {
+  const nextArgs: string[] = []
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index]
+    if (!arg) continue
+    if (arg === '--port' || arg === '-p') {
+      index += 1
+      continue
+    }
+    if (arg.startsWith('--port=')) continue
+    nextArgs.push(arg)
+  }
+  return nextArgs
+}
 
-process.on('SIGINT', () => {
-  requestShutdown?.('shutting down...')
-})
-process.on('SIGTERM', () => {
-  requestShutdown?.('received SIGTERM, shutting down...')
-})
+const buildChildArgs = (port: number | null): string[] => {
+  const scriptPath = process.argv[1]
+  if (!scriptPath) throw new Error('[cli] missing script path for runtime child')
+  const cliArgs = stripPortArgs(process.argv.slice(2))
+  return port === null
+    ? [...process.execArgv, scriptPath, ...cliArgs]
+    : [...process.execArgv, scriptPath, ...cliArgs, '--port', String(port)]
+}
 
-for (;;) {
-  const listenPort: number | null =
-    restartPort ??
-    (config.webui.enabled ? await resolveHttpPort(targetPort) : null)
+const runRuntimeChild = async (): Promise<never> => {
+  let requestShutdown: ((reason: string, code?: number) => void) | null = null
+
+  process.on('SIGINT', () => {
+    requestShutdown?.('shutting down...')
+  })
+  process.on('SIGTERM', () => {
+    requestShutdown?.('received SIGTERM, shutting down...')
+  })
+
+  const listenPort: number | null = config.webui.enabled ? targetPort : null
   const exitCode = await runCliCycle({
     config,
     workDir,
@@ -86,14 +108,87 @@ for (;;) {
     onShutdownReady: (shutdown) => {
       requestShutdown = shutdown
     },
+    onReady: () => {
+      if (typeof process.send === 'function') process.send({ type: 'ready' })
+    },
   })
-  requestShutdown = null
-  if (exitCode !== 75) process.exit(exitCode)
-  if (STARTED_BY_RESPAWN_CHILD) process.exit(exitCode)
-  if (listenPort !== null) {
-    await waitForPortRelease(listenPort)
-    restartPort = listenPort
-  }
-  console.log('[cli] restarting...')
-  await runFreshProcessRestartLoop(restartPort)
+  process.exit(exitCode)
 }
+
+const runSupervisor = async (): Promise<never> => {
+  let activeChild: ReturnType<typeof spawn> | null = null
+  let shuttingDown = false
+  let restartPort: number | null = null
+
+  const forwardSignal = (signal: NodeJS.Signals): void => {
+    shuttingDown = true
+    activeChild?.kill(signal)
+  }
+
+  process.on('SIGINT', () => forwardSignal('SIGINT'))
+  process.on('SIGTERM', () => forwardSignal('SIGTERM'))
+
+  for (;;) {
+    const listenPort: number | null =
+      restartPort ??
+      (config.webui.enabled ? await resolveHttpPort(targetPort) : null)
+    const child = spawn(process.execPath, buildChildArgs(listenPort), {
+      cwd: process.cwd(),
+      stdio: ['inherit', 'inherit', 'inherit', 'ipc'],
+      env: {
+        ...process.env,
+        [RUNTIME_CHILD_ENV]: '1',
+      },
+    })
+    activeChild = child
+
+    let ready = false
+    child.on('message', (message) => {
+      if (
+        message &&
+        typeof message === 'object' &&
+        'type' in message &&
+        message.type === 'ready'
+      )
+        ready = true
+    })
+
+    const result = await new Promise<{
+      code: number
+      ready: boolean
+    }>((resolve, reject) => {
+      child.once('error', reject)
+      child.once('exit', (code, signal) => {
+        const exitCode =
+          typeof code === 'number'
+            ? code
+            : signal
+              ? 128
+              : 1
+        resolve({ code: exitCode, ready })
+      })
+    })
+    activeChild = null
+
+    if (shuttingDown) process.exit(result.code)
+    if (result.code === 75) {
+      if (listenPort !== null) {
+        await waitForPortRelease(listenPort)
+        restartPort = listenPort
+      }
+      console.log('[cli] restarting...')
+      continue
+    }
+    if (result.code === 0) process.exit(0)
+    if (!result.ready) process.exit(result.code)
+    if (listenPort !== null) {
+      await waitForPortRelease(listenPort)
+      restartPort = listenPort
+    }
+    console.log(`[cli] child exited unexpectedly (${result.code}), restarting...`)
+    await sleep(CRASH_RESTART_DELAY_MS)
+  }
+}
+
+if (process.env[RUNTIME_CHILD_ENV] === '1') await runRuntimeChild()
+await runSupervisor()

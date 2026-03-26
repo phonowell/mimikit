@@ -29,6 +29,7 @@ type RunCliCycleParams = {
   paths: StatePaths
   port: number | null
   onShutdownReady: (shutdown: ShutdownFn) => void
+  onReady?: () => void
 }
 
 const closeHttpServer = async (
@@ -151,6 +152,7 @@ export const runCliCycle = async (
         params.port,
       )
     }
+    params.onReady?.()
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     return shutdown(`startup failed: ${message}`, 1)

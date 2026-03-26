@@ -56,6 +56,34 @@ describe('requestRuntimeControl', () => {
     expect(window.location.reload).toHaveBeenCalledTimes(1)
   })
 
+  test('reloads when status disconnects and then reconnects', async () => {
+    globalThis.fetch = vi
+      .fn()
+      .mockResolvedValueOnce(
+        createJsonResponse(true, 200, {
+          runtimeId: 'runtime-1',
+          managerRunning: false,
+          activeTasks: 0,
+          pendingTasks: 0,
+        }),
+      )
+      .mockResolvedValueOnce(createJsonResponse(true, 200, { ok: true }))
+      .mockRejectedValueOnce(new TypeError('fetch failed'))
+      .mockResolvedValueOnce(
+        createJsonResponse(true, 200, {
+          runtimeId: 'runtime-2',
+          managerRunning: false,
+          activeTasks: 0,
+          pendingTasks: 0,
+        }),
+      ) as typeof fetch
+
+    await expect(requestRuntimeControl('restart')).resolves.toEqual({
+      ok: true,
+    })
+    expect(window.location.reload).toHaveBeenCalledTimes(1)
+  })
+
   test('returns blocked details when server rejects restart with busy stats', async () => {
     globalThis.fetch = vi
       .fn()

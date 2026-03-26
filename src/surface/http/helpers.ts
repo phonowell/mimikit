@@ -27,6 +27,7 @@ const RESETTABLE_STATE_ENTRY_NAMES = new Set([
 ])
 
 const REQUIRED_WEBUI_ENTRY_FILES = ['app.js', 'archive-viewer.js'] as const
+let activeWebUiBuild: Promise<void> | null = null
 
 type WebUiBuildPaths = {
   rootDir: string
@@ -102,10 +103,9 @@ export const shouldBuildWebUiGenerated = async (
   return generatedFloorMtimeMs < sourceCeilingMtimeMs
 }
 
-export const ensureWebUiGenerated = async (): Promise<void> => {
-  const roots = resolveRoots()
-  if (!(await shouldBuildWebUiGenerated(roots))) return
-
+const startWebUiBuild = async (
+  roots: Pick<WebUiBuildPaths, 'rootDir'>,
+): Promise<void> => {
   await new Promise<void>((resolveBuild, rejectBuild) => {
     const child = spawn(process.execPath, ['scripts/build-webui.mjs'], {
       cwd: roots.rootDir,
@@ -124,6 +124,23 @@ export const ensureWebUiGenerated = async (): Promise<void> => {
       )
     })
   })
+}
+
+const queueWebUiBuild = async (
+  roots: Pick<WebUiBuildPaths, 'rootDir'>,
+): Promise<void> => {
+  if (!activeWebUiBuild) {
+    activeWebUiBuild = startWebUiBuild(roots).finally(() => {
+      activeWebUiBuild = null
+    })
+  }
+  return activeWebUiBuild
+}
+
+export const ensureWebUiGenerated = async (): Promise<void> => {
+  const roots = resolveRoots()
+  if (!(await shouldBuildWebUiGenerated(roots))) return
+  await queueWebUiBuild(roots)
 }
 
 const isSafeStateDir = (stateDir: string): boolean => {
