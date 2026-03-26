@@ -6,6 +6,8 @@ import { join } from 'node:path'
 
 import getPort from 'get-port'
 
+import { RUNTIME_CHILD_ENV } from '../../src/bootstrap/cli/runtime-child.js'
+
 const CLI_STARTUP_TIMEOUT_MS = 25_000
 const RUNTIME_TRANSITION_TIMEOUT_MS = 25_000
 const POLL_INTERVAL_MS = 300
@@ -85,6 +87,7 @@ export const startCli = async (): Promise<StartedCli> => {
   const workDir = await mkdtemp(join(tmpdir(), 'mimikit-cli-supervisor-'))
   const port = await getPort()
   const logs: string[] = []
+  const { [RUNTIME_CHILD_ENV]: _runtimeChildEnv, ...spawnEnv } = process.env
   const child = spawn(
     process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm',
     [
@@ -100,6 +103,7 @@ export const startCli = async (): Promise<StartedCli> => {
       cwd: process.cwd(),
       detached: process.platform !== 'win32',
       stdio: ['ignore', 'pipe', 'pipe'],
+      env: spawnEnv,
     },
   )
 
