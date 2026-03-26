@@ -33,15 +33,6 @@ export const userChoiceOptionSchema = z
   })
   .strict()
 
-export const pendingUserChoiceEffectSchema = z
-  .object({
-    type: z.literal('resume_task'),
-    taskId: z.string().trim().min(1),
-    optionId: optionIdSchema,
-    reason: z.string().trim().min(1).optional(),
-  })
-  .strict()
-
 export const pendingUserChoiceSchema = z
   .object({
     id: choiceIdSchema,
@@ -51,7 +42,6 @@ export const pendingUserChoiceSchema = z
     createdAt: z.string().trim().min(1),
     expiresAt: z.string().trim().min(1).optional(),
     focusId: focusIdSchema,
-    effect: pendingUserChoiceEffectSchema.optional(),
   })
   .strict()
   .superRefine((value, context) => {

@@ -51,9 +51,9 @@ test('buildResultsPromptPayload keeps the latest result per task', () => {
 test('buildTasksPromptPayload omits result-only fallback and plan title still falls back to id', () => {
   const resultOnly: TaskResult = {
     taskId: 'task-result-only',
-    status: 'partial',
+    status: 'failed',
     ok: false,
-    output: 'partial output',
+    output: 'failed output',
     durationMs: 42,
     completedAt: '2026-03-20T12:00:00.000Z',
     provider: 'codex',

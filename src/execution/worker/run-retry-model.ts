@@ -74,6 +74,5 @@ export const runTaskModel = (params: {
     ...(params.onPartialOutput
       ? { onPartialOutput: params.onPartialOutput }
       : {}),
-    budget: worker.budget,
   })
 }

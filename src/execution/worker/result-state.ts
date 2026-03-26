@@ -5,21 +5,14 @@ type TaskResultState = Pick<TaskResult, 'taskStatus' | 'outcome' | 'stopReason'>
 export const buildDefaultTaskResultState = (
   status: TaskResult['status'],
 ): TaskResultState => ({
-  taskStatus: status === 'partial' ? 'paused' : status,
-  outcome:
-    status === 'succeeded'
-      ? 'completed'
-      : status === 'partial'
-        ? 'partial'
-        : 'blocked',
+  taskStatus: status,
+  outcome: status === 'succeeded' ? 'completed' : 'blocked',
   stopReason:
     status === 'succeeded'
       ? 'completed'
-      : status === 'partial'
-        ? 'budget_exhausted'
-        : status === 'failed'
-          ? 'failed'
-          : 'canceled',
+      : status === 'failed'
+        ? 'failed'
+        : 'canceled',
 })
 
 export const applyTaskResultStateDefaults = (result: TaskResult): void => {

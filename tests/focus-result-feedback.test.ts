@@ -54,20 +54,22 @@ test('syncFocusFromTaskResult updates summary but does not infer open items', as
   }
   const result: TaskResult = {
     taskId: task.id,
-    status: 'partial',
+    status: 'failed',
     ok: false,
     output: '- [ ] Resume after review',
     durationMs: 12,
     completedAt: '2026-02-26T10:00:13.000Z',
     handoff: {
-      summary: 'Task paused after review checkpoint.',
+      summary: 'Task blocked pending review checkpoint.',
       nextSteps: ['Resume after review'],
     },
   }
 
   syncFocusFromTaskResult(runtime, task, result)
 
-  expect(runtime.focuses[0]?.summary).toBe('Task paused after review checkpoint.')
+  expect(runtime.focuses[0]?.summary).toBe(
+    'Task blocked pending review checkpoint.',
+  )
   expect(runtime.focuses[0]?.openItems).toEqual(['Keep existing digest'])
 })
 

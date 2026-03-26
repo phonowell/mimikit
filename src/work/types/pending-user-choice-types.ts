@@ -6,13 +6,6 @@ export type UserChoiceOption = {
   reason: string
 }
 
-export type PendingUserChoiceEffect = {
-  type: 'resume_task'
-  taskId: string
-  optionId: string
-  reason?: string | undefined
-}
-
 export type PendingUserChoice = {
   id: string
   question: string
@@ -21,5 +14,4 @@ export type PendingUserChoice = {
   createdAt: ISODate
   expiresAt?: ISODate | undefined
   focusId: FocusId
-  effect?: PendingUserChoiceEffect | undefined
 }

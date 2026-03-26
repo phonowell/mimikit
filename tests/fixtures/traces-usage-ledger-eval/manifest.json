@@ -2,9 +2,9 @@
   "version": "v1",
   "samples": [
     {
-      "id": "sample-budget-01",
-      "scenario": "budget_pause_resume",
-      "description": "worker trace keeps budget-exhausted role contract",
+      "id": "sample-pause-01",
+      "scenario": "paused_resume_flow",
+      "description": "worker trace keeps resumed-run role contract",
       "tracePath": "budget-pause-resume/trace.txt",
       "referenceTests": [
         "tests/worker-pause-resume.test.ts",
@@ -13,15 +13,14 @@
       "expected": {
         "trace": {
           "header": {
-            "role": "worker",
-            "error_name": "WorkerBudgetExceededError"
+            "role": "worker"
           }
         }
       }
     },
     {
-      "id": "sample-budget-02",
-      "scenario": "budget_pause_resume",
+      "id": "sample-pause-02",
+      "scenario": "paused_resume_flow",
       "tracePath": "budget-pause-resume/trace.txt",
       "referenceTests": [
         "tests/worker-profiled-runner-loop.test.ts"
@@ -29,47 +28,45 @@
       "expected": {
         "trace": {
           "header": {
-            "ok": "false",
-            "attempt": "primary"
+            "ok": "true",
+            "attempt": "resume"
           }
         }
       }
     },
     {
-      "id": "sample-budget-03",
-      "scenario": "budget_pause_resume",
+      "id": "sample-pause-03",
+      "scenario": "paused_resume_flow",
       "tracePath": "budget-pause-resume/trace.txt",
       "expected": {
         "trace": {
           "sections": [
             "=== PROMPT ===",
-            "=== OUTPUT ===",
-            "=== ERROR ==="
+            "=== OUTPUT ==="
           ]
         }
       }
     },
     {
-      "id": "sample-budget-04",
-      "scenario": "budget_pause_resume",
+      "id": "sample-pause-04",
+      "scenario": "paused_resume_flow",
       "ledgerPath": "budget-pause-resume/ledger.jsonl",
       "expected": {
         "ledger": {
-          "totalEntries": 2,
+          "totalEntries": 1,
           "kindCounts": {
-            "worker_result": 2
+            "worker_result": 1
           },
           "statusCounts": {
-            "partial": 1,
             "succeeded": 1
           },
-          "minTotalUsage": 800
+          "minTotalUsage": 250
         }
       }
     },
     {
-      "id": "sample-budget-05",
-      "scenario": "budget_pause_resume",
+      "id": "sample-pause-05",
+      "scenario": "paused_resume_flow",
       "logPath": "budget-pause-resume/log.jsonl",
       "expected": {
         "log": {

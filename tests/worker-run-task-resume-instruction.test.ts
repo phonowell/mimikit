@@ -49,7 +49,7 @@ beforeEach(() => {
 test('runTask consumes pending resume instruction after starting the resumed run', async () => {
   const runtime = await createRuntime()
   const task = await prepareTask(runtime, createTask('task-run-task-resume-instruction', {
-    resumeInstruction: '继续原任务，但先核对工作区和 partial 结果。',
+    resumeInstruction: '继续原任务，但先核对工作区已有产物。',
   }))
 
   buildResultMock.mockImplementation(
@@ -84,7 +84,7 @@ test('runTask consumes pending resume instruction after starting the resumed run
 test('runTask keeps pending resume instruction when the resumed run fails before execution starts', async () => {
   const runtime = await createRuntime()
   const task = await prepareTask(runtime, createTask('task-run-task-resume-instruction-failure', {
-    resumeInstruction: '继续原任务，但先核对工作区和 partial 结果。',
+    resumeInstruction: '继续原任务，但先核对工作区已有产物。',
   }))
 
   buildResultMock.mockImplementation(
@@ -110,7 +110,7 @@ test('runTask keeps pending resume instruction when the resumed run fails before
 
   expect(runTaskWithRetryMock).toHaveBeenCalledTimes(1)
   expect(task.resumeInstruction).toBe(
-    '继续原任务，但先核对工作区和 partial 结果。',
+    '继续原任务，但先核对工作区已有产物。',
   )
   expect(finalizeResultMock).toHaveBeenCalledTimes(1)
 })
@@ -118,7 +118,7 @@ test('runTask keeps pending resume instruction when the resumed run fails before
 test('runTask clears pending resume instruction after the resumed turn has started and then fails', async () => {
   const runtime = await createRuntime()
   const task = await prepareTask(runtime, createTask('task-run-task-resume-instruction-started-failure', {
-    resumeInstruction: '继续原任务，但先核对工作区和 partial 结果。',
+    resumeInstruction: '继续原任务，但先核对工作区已有产物。',
   }))
 
   buildResultMock.mockImplementation(
@@ -155,7 +155,7 @@ test('runTask clears pending resume instruction after the resumed turn has start
 test('runTask clears pending resume instruction when the resumed turn has started before a pause', async () => {
   const runtime = await createRuntime()
   const task = await prepareTask(runtime, createTask('task-run-task-resume-instruction-paused', {
-    resumeInstruction: '继续原任务，但先核对工作区和 partial 结果。',
+    resumeInstruction: '继续原任务，但先核对工作区已有产物。',
   }))
 
   runTaskWithRetryMock.mockImplementationOnce(
@@ -171,4 +171,46 @@ test('runTask clears pending resume instruction when the resumed turn has starte
   expect(runTaskWithRetryMock).toHaveBeenCalledTimes(1)
   expect(task.resumeInstruction).toBeUndefined()
   expect(finalizeResultMock).not.toHaveBeenCalled()
+})
+
+test('runTask fails the task when the worker run ends without completion protocol', async () => {
+  const runtime = await createRuntime()
+  const task = await prepareTask(
+    runtime,
+    createTask('task-run-task-incomplete', {
+      usage: { input: 120, output: 40, total: 160 },
+    }),
+  )
+
+  buildResultMock.mockImplementation(
+    (
+      currentTask: Task,
+      status: string,
+      output: string,
+      durationMs: number,
+      usage?: unknown,
+    ) => ({
+      taskId: currentTask.id,
+      status,
+      ok: false,
+      output,
+      durationMs,
+      completedAt: '2026-03-06T00:00:10.000Z',
+      ...(usage ? { usage } : {}),
+    }),
+  )
+  runTaskWithRetryMock.mockRejectedValue(
+    new Error('missing completion protocol'),
+  )
+
+  await runTask(runtime, task, new AbortController())
+
+  expect(finalizeResultMock).toHaveBeenCalledTimes(1)
+  expect(buildResultMock).toHaveBeenLastCalledWith(
+    task,
+    'failed',
+    'missing completion protocol',
+    expect.any(Number),
+    { input: 120, output: 40, total: 160 },
+  )
 })

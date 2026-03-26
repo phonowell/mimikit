@@ -6,7 +6,6 @@ import {
   saveRuntimeSnapshot,
 } from '../../persistence/storage/runtime-snapshot.js'
 import { toPersistedMemoryRefreshState } from '../../policy/memory/refresh/state.js'
-import { restoreTaskResumeChoiceOnHydrate } from '../../work/orchestrator/task-resume-choice.js'
 
 import { reconcileRuntimeQueueState } from './runtime-queue-reconcile.js'
 import {
@@ -75,7 +74,6 @@ export const hydrateRuntimeState = async (
     }),
   )
   await reconcileRuntimeQueueState(runtime)
-  restoreTaskResumeChoiceOnHydrate(runtime)
 
   if (snapshot.tasks.length > 0) {
     await bestEffort('appendLog: runtime_hydrated', () =>

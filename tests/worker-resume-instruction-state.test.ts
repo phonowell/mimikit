@@ -47,19 +47,7 @@ const createTask = (id: string, overrides: Partial<Task> = {}): Task => ({
   status: 'paused',
   createdAt: '2026-03-06T00:00:00.000Z',
   pausedAt: '2026-03-06T00:00:03.000Z',
-  archivePath: '/tmp/task-partial.md',
-  result: {
-    taskId: id,
-    status: 'partial',
-    taskStatus: 'paused',
-    outcome: 'partial',
-    stopReason: 'budget_exhausted',
-    ok: false,
-    output: 'partial',
-    durationMs: 12,
-    completedAt: '2026-03-06T00:00:04.000Z',
-    archivePath: '/tmp/task-partial.md',
-  },
+  archivePath: '/tmp/task-paused.md',
   ...overrides,
 })
 

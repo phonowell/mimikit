@@ -42,13 +42,13 @@ test('requestMemoryRefresh excludes task outputs and plan titles from payload', 
           focusId: 'focus-a',
           profile: 'worker',
           provider: 'codex',
-          status: 'paused',
+          status: 'failed',
           createdAt: '2026-03-20T00:00:00.000Z',
           result: {
             taskId: 'task-1',
-            status: 'partial',
+            status: 'failed',
             ok: false,
-            output: 'Partial draft with rollout notes',
+            output: 'Failure details with rollout notes',
             durationMs: 10,
             completedAt: '2026-03-20T00:00:10.000Z',
           },
@@ -125,7 +125,7 @@ test('requestMemoryRefresh excludes task outputs and plan titles from payload', 
     ],
   })
   expect(JSON.stringify(capturedPayloads[0])).not.toContain(
-    'Partial draft with rollout notes',
+    'Failure details with rollout notes',
   )
   expect(JSON.stringify(capturedPayloads[0])).not.toContain('Nightly backlog sweep')
   expect(JSON.stringify(capturedPayloads[0])).toContain('entry_id=memory-release-policy')

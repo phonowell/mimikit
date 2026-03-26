@@ -10,10 +10,6 @@ vi.mock('../src/bootstrap/config-default-loader.js', () => ({
     worker: {
       maxConcurrent: 2,
       timeoutMs: 321000,
-      budget: {
-        maxDurationMs: 654000,
-        maxRounds: 7,
-      },
     },
     codex: {
       enabled: true,
@@ -44,14 +40,11 @@ vi.mock('../src/bootstrap/config-default-loader.js', () => ({
 
 import { defaultConfig } from '../src/bootstrap/config.js'
 
-test('defaultConfig keeps worker budget overrides from user config', () => {
+test('defaultConfig keeps worker timeout override from user config', () => {
   const config = defaultConfig({ workDir: '.mimikit' })
 
   expect(config.worker.timeoutMs).toBe(321000)
-  expect(config.worker.budget).toEqual({
-    maxDurationMs: 654000,
-    maxRounds: 7,
-  })
+  expect('budget' in config.worker).toBe(false)
 })
 
 test('defaultConfig keeps manager correction round override from user config', () => {

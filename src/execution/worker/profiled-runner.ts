@@ -1,4 +1,3 @@
-import { loadPromptSource } from '../../foundation/prompting/prompt-loader.js'
 import { appendTaskProgress } from '../../persistence/storage/task-progress.js'
 import { buildWorkerPrompt } from '../../policy/prompts/build-prompts.js'
 import { runWithProvider } from '../providers/registry.js'
@@ -64,10 +63,6 @@ type WorkerRunnerParams = {
   resumeInstruction?: string
   focusBrief?: TaskFocusBrief
   timeoutMs: number
-  budget?: {
-    maxDurationMs: number
-    maxRounds: number
-  }
   proxy?: string
   model?: string
   modelReasoningEffort?: ModelReasoningEffort
@@ -90,7 +85,6 @@ export const runWorker = async (
       : {}),
     ...(params.focusBrief ? { focusBrief: params.focusBrief } : {}),
   })
-  const continueSource = await loadPromptSource('worker/continue-until-done.md')
 
   await appendTaskProgress({
     stateDir: params.stateDir,
@@ -103,8 +97,6 @@ export const runWorker = async (
     task: params.task,
     prompt,
     ...(params.sessionId ? { initialThreadId: params.sessionId } : {}),
-    continueTemplate: continueSource.template,
-    continueTemplatePath: continueSource.path,
     archiveBase: {
       role: 'worker' as const,
       taskId: params.task.id,
@@ -118,6 +110,5 @@ export const runWorker = async (
       ? { onPartialOutput: params.onPartialOutput }
       : {}),
     ...(params.abortSignal ? { abortSignal: params.abortSignal } : {}),
-    ...(params.budget ? { budget: params.budget } : {}),
   })
 }

@@ -37,7 +37,7 @@ export type TaskEvidenceAcceptance = {
 }
 
 export type TaskEvidence = {
-  status: 'done' | 'partial' | 'failed'
+  status: 'done' | 'failed'
   contractGoal: string
   acceptanceChecks: TaskEvidenceAcceptance[]
   stateDelta: {

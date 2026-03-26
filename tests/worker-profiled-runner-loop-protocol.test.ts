@@ -5,10 +5,7 @@ import { join } from 'node:path'
 import { expect, test } from 'vitest'
 
 import {
-  buildContinuePrompt,
   hasWorkerCompletionMarker,
-  isWorkerBudgetExceededError,
-  MAX_CONTINUE_LATEST_OUTPUT_CHARS,
   runWorkerLoop,
   stripWorkerProtocolTags,
 } from '../src/execution/worker/profiled-runner-loop.js'
@@ -41,22 +38,7 @@ test('completion detection requires task_handoff and skill_usage done tags', () 
   expect(hasWorkerCompletionMarker(legacyOutput)).toBe(false)
 })
 
-test('continue prompt clips latest output and includes task_handoff pattern', () => {
-  const template =
-    '{{ latest_output }}\n{{ task_handoff_tag_pattern }}\n{{ done_tag_pattern }}'
-  const longOutput = `A${'b'.repeat(MAX_CONTINUE_LATEST_OUTPUT_CHARS + 300)}`
-  const prompt = buildContinuePrompt(template, 'inline-template', longOutput, 2)
-  const [latestLine] = prompt.split('\n')
-
-  expect(latestLine?.length).toBeLessThanOrEqual(
-    MAX_CONTINUE_LATEST_OUTPUT_CHARS,
-  )
-  expect(latestLine?.endsWith('...')).toBe(true)
-  expect(prompt).toContain('<M:task_handoff>')
-  expect(prompt).toContain('<M:skill_usage status="done">')
-})
-
-test('runWorkerLoop treats done marker without task_handoff as incomplete and hits budget path', async () => {
+test('runWorkerLoop treats done marker without task_handoff as incomplete and fails immediately', async () => {
   const stateDir = await createTmpDir()
   const task: Task = {
     id: 'task-missing-handoff',
@@ -70,34 +52,18 @@ test('runWorkerLoop treats done marker without task_handoff as incomplete and hi
   }
 
   try {
-    let capturedError: unknown
-    try {
-      await runWorkerLoop({
+    await expect(
+      runWorkerLoop({
         stateDir,
         task,
         prompt: '执行测试任务',
-        continueTemplate: '{{ latest_output }}',
-        continueTemplatePath: 'inline-template',
         archiveBase: { role: 'worker', taskId: task.id },
-        budget: {
-          maxRounds: 1,
-          maxDurationMs: 10_000,
-        },
         runModel: async () => ({
           output: '<M:skill_usage status="done">test</M:skill_usage>',
           elapsedMs: 12,
         }),
-      })
-    } catch (error) {
-      capturedError = error
-    }
-
-    expect(isWorkerBudgetExceededError(capturedError)).toBe(true)
-    if (!isWorkerBudgetExceededError(capturedError))
-      throw new Error('expected worker budget exceeded error')
-    expect(capturedError.latestOutput).toContain(
-      '<M:skill_usage status="done">test</M:skill_usage>',
-    )
+      }),
+    ).rejects.toThrow('missing completion protocol')
   } finally {
     await rm(stateDir, { recursive: true, force: true })
   }

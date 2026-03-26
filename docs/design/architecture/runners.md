@@ -44,7 +44,7 @@
 
 1. 构造 worker prompt。
 2. 调用 provider（外部执行运行时）执行。
-3. 按 `worker.budget.maxRounds/maxDurationMs` 执行多轮续跑；默认 3 轮，直到输出包含 `<M:skill_usage status="done">...</M:skill_usage>`。
+3. 单次 dispatch 只执行一次 provider 调用；若输出缺失完成协议则直接报错，由上层按失败处理。
 4. 记录进度并归档任务结果。
 
 ## Provider Runtime

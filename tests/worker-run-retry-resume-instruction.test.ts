@@ -69,7 +69,7 @@ test('runTaskWithRetry forwards resume instruction on resumed thread', async () 
   const task = createTask('task-resume-instruction', {
     sessionId: 'session-existing',
     sessionState: 'reusable',
-    resumeInstruction: '继续原任务，但先检查当前工作区和 partial 结果是否一致。',
+    resumeInstruction: '继续原任务，但先检查当前工作区和已有产物是否一致。',
   })
 
   runWorkerMock.mockResolvedValue({
@@ -86,7 +86,7 @@ test('runTaskWithRetry forwards resume instruction on resumed thread', async () 
   expect(runWorkerMock).toHaveBeenCalledTimes(1)
   expect(runWorkerMock.mock.calls[0]?.[0]?.sessionId).toBe('session-existing')
   expect(runWorkerMock.mock.calls[0]?.[0]?.resumeInstruction).toBe(
-    '继续原任务，但先检查当前工作区和 partial 结果是否一致。',
+    '继续原任务，但先检查当前工作区和已有产物是否一致。',
   )
 })
 

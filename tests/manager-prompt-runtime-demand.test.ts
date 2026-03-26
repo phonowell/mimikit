@@ -118,14 +118,6 @@ test('buildMemoryPromptScoreContext excludes task outputs and plan titles from m
         provider: 'codex',
         status: 'paused',
         createdAt: '2026-03-20T00:00:00.000Z',
-        result: {
-          taskId: 'task-1',
-          status: 'partial',
-          ok: false,
-          output: 'Temporary rollout checklist',
-          durationMs: 10,
-          completedAt: '2026-03-20T00:01:00.000Z',
-        },
       },
     ],
     focusPayload: {

@@ -33,8 +33,7 @@ const buildTaskText = (
   label: string,
   status?: TaskResultStatus,
   taskStatus?: TaskStatus,
-  outcome?: 'completed' | 'partial' | 'blocked',
-  stopReason?: string,
+  outcome?: 'completed' | 'blocked',
   cancel?: TaskCancelMeta,
   resumeInstructionPresent?: boolean,
 ): string => {
@@ -53,11 +52,6 @@ const buildTaskText = (
   }
 
   if (status === 'succeeded') return `Task ${taskLabel} completed successfully.`
-  if (status === 'partial') {
-    return stopReason === 'budget_exhausted'
-      ? `Task ${taskLabel} paused after hitting the run budget and returned a partial result. Use Continue in the task list to resume.`
-      : `Task ${taskLabel} paused with a partial result.`
-  }
   if (status === 'failed') return `Task ${taskLabel} failed.`
   if (taskStatus === 'paused' && outcome === 'blocked')
     return `Task ${taskLabel} paused.`
@@ -86,7 +80,7 @@ const buildTaskPayload = (
   label: string,
   status?: TaskResultStatus,
   taskStatus?: TaskStatus,
-  outcome?: 'completed' | 'partial' | 'blocked',
+  outcome?: 'completed' | 'blocked',
   stopReason?: string,
   cancel?: TaskCancelMeta,
   slotStatus?: WorkerSlotPayload,
@@ -119,7 +113,7 @@ export const appendTaskSystemMessage = (
   options?: {
     status?: TaskResultStatus
     taskStatus?: TaskStatus
-    outcome?: 'completed' | 'partial' | 'blocked'
+    outcome?: 'completed' | 'blocked'
     stopReason?: string
     createdAt?: string
     cancel?: TaskCancelMeta
@@ -135,7 +129,6 @@ export const appendTaskSystemMessage = (
       options?.status,
       options?.taskStatus,
       options?.outcome,
-      options?.stopReason,
       options?.cancel,
       options?.resumeInstructionPresent,
     ),

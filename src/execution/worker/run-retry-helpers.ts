@@ -7,7 +7,6 @@ import { incrementRuntimeTaskAttempts } from '../../work/orchestrator/task-state
 import { ProviderError } from '../providers/provider-error.js'
 
 import { isAbortLikeError } from './error-utils.js'
-import { isWorkerBudgetExceededError } from './profiled-runner-loop.js'
 import { shouldResetSessionAfterError } from './session-state.js'
 
 import type { Task } from '../../foundation/types/index.js'
@@ -24,8 +23,7 @@ const shouldRetryTaskRun = (
   error: unknown,
 ): boolean =>
   !shouldTreatAsTaskCancel(controller, error) &&
-  !(error instanceof ProviderError && !error.retryable) &&
-  !isWorkerBudgetExceededError(error)
+  !(error instanceof ProviderError && !error.retryable)
 
 export const toRetryError = (error: unknown): Error => {
   if (error instanceof Error) return error
@@ -63,7 +61,6 @@ export const buildRetryOptions = (params: {
     shouldRetry: ({ error }) => shouldRetryTaskRun(controller, error),
     onFailedAttempt: async (attemptError: RetryContext) => {
       if (!shouldRetryTaskRun(controller, attemptError.error)) return
-      if (isWorkerBudgetExceededError(attemptError.error)) return
       if (shouldResetSessionAfterError(attemptError.error))
         await onSessionDiscarded(attemptError.error)
       if (attemptError.retriesLeft <= 0) return

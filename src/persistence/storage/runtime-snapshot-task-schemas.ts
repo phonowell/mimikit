@@ -64,7 +64,7 @@ const taskEvidenceAcceptanceSchema = z
 
 export const taskEvidenceSchema = z
   .object({
-    status: z.enum(['done', 'partial', 'failed']),
+    status: z.enum(['done', 'failed']),
     contractGoal: z.string().trim().min(1),
     acceptanceChecks: z.array(taskEvidenceAcceptanceSchema).min(1),
     stateDelta: z

@@ -70,15 +70,6 @@ export const TaskListItem = ({
         <TaskMeta open={open} task={task} />
       </a>
       <div className="task-item-actions" data-task-actions="true">
-        {task.recoverable && canResume ? (
-          <button
-            className="task-inline-action"
-            type="button"
-            onClick={() => onTaskAction(task.id, 'resume')}
-          >
-            Continue
-          </button>
-        ) : null}
         <button
           className="btn btn--icon btn--icon-muted task-more-toggle"
           type="button"
@@ -99,11 +90,7 @@ export const TaskListItem = ({
               onTaskAction(task.id, canResume ? 'resume' : 'pause')
             }
           >
-            {task.recoverable && canResume
-              ? 'continue'
-              : canResume
-                ? 'resume'
-                : 'pause'}
+            {canResume ? 'resume' : 'pause'}
           </button>
           <button
             className="task-menu-item task-menu-item--cancel"

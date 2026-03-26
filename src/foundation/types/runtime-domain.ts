@@ -18,17 +18,14 @@ export const TASK_RESULT_STATUS_VALUES = [
   'succeeded',
   'failed',
   'canceled',
-  'partial',
 ] as const
 export const TASK_CANCEL_SOURCE_VALUES = ['user', 'deferred', 'system'] as const
 export const TASK_RESULT_OUTCOME_VALUES = [
   'completed',
-  'partial',
   'blocked',
 ] as const
 export const TASK_RESULT_STOP_REASON_VALUES = [
   'completed',
-  'budget_exhausted',
   'guard_rejected',
   'input_required',
   'failed',

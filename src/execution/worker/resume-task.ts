@@ -7,9 +7,7 @@ import {
 import { appendTaskSystemMessage } from '../../persistence/history/task-events.js'
 import { appendLog } from '../../persistence/log/append.js'
 import { bestEffort } from '../../persistence/log/safe.js'
-import { clearTaskResumeChoice } from '../../work/orchestrator/task-resume-choice.js'
 import { resumeRuntimeTask } from '../../work/orchestrator/task-state-write.js'
-import { isBudgetRecoverableTask } from '../../work/shared/task-state.js'
 
 import { enqueueWorkerTask } from './dispatch.js'
 import {
@@ -33,13 +31,6 @@ export type ResumeResult = {
   id: string
   status: 'pending' | 'not_found' | 'already_done' | 'not_paused' | 'invalid'
   changeAt?: string
-}
-
-export type ResumeRecoverableTasksResult = {
-  ok: true
-  resumedCount: number
-  skippedCount: number
-  items: ResumeResult[]
 }
 
 const normalizeResumeInstruction = (
@@ -78,7 +69,6 @@ export const resumeTask = async (
   const resumedAt = nowIso()
   const resumeInstruction = normalizeResumeInstruction(meta?.resumeInstruction)
   touchTaskMutation(runtime, task.id)
-  clearTaskResumeChoice(runtime, task.id)
   resumeRuntimeTask({
     runtime,
     taskId: task.id,
@@ -114,29 +104,5 @@ export const resumeTask = async (
     id: task.id,
     status: 'pending',
     changeAt: resumedAt,
-  }
-}
-
-export const resumeRecoverableTasks = async (
-  runtime: WorkerRuntime,
-): Promise<ResumeRecoverableTasksResult> => {
-  const recoverableTasks = runtime.tasks.filter(isBudgetRecoverableTask)
-  const items: ResumeResult[] = []
-  for (const task of recoverableTasks) {
-    items.push(
-      await resumeTask(runtime, task.id, {
-        source: 'user',
-        reason: 'resume_all_recoverable',
-      }),
-    )
-  }
-  const resumedCount = items.filter(
-    (item) => item.ok && item.status === 'pending',
-  ).length
-  return {
-    ok: true,
-    resumedCount,
-    skippedCount: items.length - resumedCount,
-    items,
   }
 }

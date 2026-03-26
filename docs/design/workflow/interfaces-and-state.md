@@ -14,7 +14,6 @@
 - `POST /api/input`
 - `DELETE /api/messages/:id`
 - `GET /api/tasks/:id/archive`
-- `POST /api/tasks/resume-recoverable`
 - `POST /api/tasks/:id/pause`
 - `POST /api/tasks/:id/resume`
 - `POST /api/tasks/:id/cancel`
@@ -33,11 +32,6 @@
 
 - 成功：`{ ok: true, id, status, changeAt? }`
 - 失败：`{ ok: false, id, status, changeAt?, error }`
-
-批量恢复接口返回：
-
-- `POST /api/tasks/resume-recoverable`
-- 成功：`{ ok: true, resumedCount, skippedCount, items[] }`
 
 任务变更失败状态码映射：
 
@@ -74,7 +68,7 @@
 
 - `tasks.tasks[*].liveOutput` 为运行中任务的流式输出片段（仅 WebUI 展示，运行态内存数据，不承诺持久化）。
 - `tasks.tasks[*].title` 只使用稳定 `Task.title`；若标题缺失则退回 `task.id`，不再从 `task.prompt` 派生展示标题。
-- `tasks.tasks[*]` 会暴露 `stopReason` 与 `recoverable`；其中 `recoverable=true` 表示该 `paused + partial + budget_exhausted` 任务可直接继续执行。
+- `tasks.tasks[*]` 会暴露 `stopReason`；当前不再产出预算暂停态或额外的 recoverable UI 标记。
 
 ## System 气泡可见性规则（WebUI 会话流）
 
@@ -110,7 +104,6 @@
 - 成功：`{ ok: true, choiceId, optionId, source }`
 - 失败：`not_found -> 404`，`invalid_option -> 400`，`expired -> 409`
 - 当前实现默认不为 choice 设置超时；choice 会保留到用户显式选择、被新的用户输入打断，或被超时逻辑按默认选项结算。
-- 预算暂停会生成带 `effect.type=resume_task` 的 `pendingUserChoices[*]` 项；当用户选择该 effect 对应 option 时，后端会直接调用 `resumeTask(taskId)`，HTTP 成功响应体结构不变。
 
 ## 消息删除协议
 
@@ -141,7 +134,6 @@
 - 若缺少 `config.toml`，请先运行 `pnpm run bootstrap` 从 `defaults/config.template.toml` 生成。
 - `manager`: `model`、`modelReasoningEffort`、`baseUrl?`、`apiKey?`、`proxy?`、`maxCorrectionRounds`
 - `worker`: `maxConcurrent`、`timeoutMs`
-- `worker.budget`: `maxDurationMs`、`maxRounds`
 - `codex`: `enabled`、`model`、`modelReasoningEffort`、`capability`、`billing`、`proxy?`
 - `webui`: `enabled`、`port`
 - `telegram`: `enabled`、`botToken`、`chatId`、`apiRoot`、`proxy`
@@ -184,7 +176,7 @@ schema：`src/persistence/storage/runtime-snapshot-schema.ts`
 - `managerTurn`
 - `managerThreadId`
 - `queues.inputsCursor`、`queues.resultsCursor`
-- `pendingUserChoices[]`（预算暂停恢复场景下可带 `effect={ type: "resume_task", taskId, optionId, reason? }`）
+- `pendingUserChoices[]`
 - `memoryRefresh`
 
 补充：
