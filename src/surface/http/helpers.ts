@@ -1,30 +1,13 @@
 import { spawn } from 'node:child_process'
 import { readdir, rm, stat } from 'node:fs/promises'
-import { join, parse, resolve } from 'node:path'
+import { basename, join, parse, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { z } from 'zod'
 
 import { ensureDir } from '../../persistence/fs/paths.js'
 
-const RESETTABLE_STATE_ENTRY_NAMES = new Set([
-  '.instance',
-  '.instance.lock',
-  'generated',
-  'history',
-  'history.lock',
-  'inputs',
-  'log.jsonl',
-  'memory',
-  'results',
-  'runtime',
-  'runtime-snapshot.json',
-  'runtime-snapshot.json.bak',
-  'task-progress',
-  'tasks',
-  'traces',
-  'usage',
-])
+const PRESERVED_STATE_ENTRY_NAMES = new Set(['.instance', '.instance.lock'])
 
 const REQUIRED_WEBUI_ENTRY_FILES = ['app.js', 'archive-viewer.js'] as const
 let activeWebUiBuild: Promise<void> | null = null
@@ -126,14 +109,12 @@ const startWebUiBuild = async (
   })
 }
 
-const queueWebUiBuild = async (
+const queueWebUiBuild = (
   roots: Pick<WebUiBuildPaths, 'rootDir'>,
 ): Promise<void> => {
-  if (!activeWebUiBuild) {
-    activeWebUiBuild = startWebUiBuild(roots).finally(() => {
-      activeWebUiBuild = null
-    })
-  }
+  activeWebUiBuild ??= startWebUiBuild(roots).finally(() => {
+    activeWebUiBuild = null
+  })
   return activeWebUiBuild
 }
 
@@ -149,7 +130,7 @@ const isSafeStateDir = (stateDir: string): boolean => {
   const resolved = resolve(stateDir)
   const { root } = parse(resolved)
   if (!root) return false
-  return resolved !== root
+  return resolved !== root && basename(resolved) === '.mimikit'
 }
 
 export const clearStateDir = async (stateDir: string): Promise<void> => {
@@ -159,16 +140,12 @@ export const clearStateDir = async (stateDir: string): Promise<void> => {
 
   await ensureDir(resolved)
   const entries = await readdir(resolved, { withFileTypes: true })
-  const hasUnexpectedEntry = entries.some(
-    (entry) => !RESETTABLE_STATE_ENTRY_NAMES.has(entry.name),
-  )
-  if (hasUnexpectedEntry)
-    throw new Error(`refusing to clear unsafe state dir: ${resolved}`)
-
   await Promise.all(
-    entries.map((entry) =>
-      rm(join(resolved, entry.name), { recursive: true, force: true }),
-    ),
+    entries
+      .filter((entry) => !PRESERVED_STATE_ENTRY_NAMES.has(entry.name))
+      .map((entry) =>
+        rm(join(resolved, entry.name), { recursive: true, force: true }),
+      ),
   )
 }
 

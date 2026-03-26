@@ -31,47 +31,43 @@ const runCommand = (
   return result.status ?? 1
 }
 
-// `start` must ensure dependencies before launching the CLI entrypoint.
-// Keep this block ahead of every runtime launch branch.
-const bootstrapExitCode =
-  process.platform === 'win32'
-    ? runCommand('cmd.exe', ['/d', '/s', '/c', 'node scripts/bootstrap.mjs'], {
-        cwd: rootDir,
-      })
-    : runCommand('node', ['scripts/bootstrap.mjs'], { cwd: rootDir })
+const main = (): void => {
+  // `start` must ensure dependencies before launching the CLI entrypoint.
+  // Keep this block ahead of every runtime launch branch.
+  const bootstrapExitCode =
+    process.platform === 'win32'
+      ? runCommand('cmd.exe', ['/d', '/s', '/c', 'node scripts/bootstrap.mjs'], {
+          cwd: rootDir,
+        })
+      : runCommand('node', ['scripts/bootstrap.mjs'], { cwd: rootDir })
 
-if (bootstrapExitCode !== 0) {
-  process.exit(bootstrapExitCode)
-}
+  if (bootstrapExitCode !== 0) {
+    process.exit(bootstrapExitCode)
+  }
 
-const installExitCode =
-  process.platform === 'win32'
-    ? runCommand('cmd.exe', ['/d', '/s', '/c', 'pnpm install'], { cwd: rootDir })
-    : runCommand('pnpm', ['install'], { cwd: rootDir })
+  const installExitCode =
+    process.platform === 'win32'
+      ? runCommand('cmd.exe', ['/d', '/s', '/c', 'pnpm install'], { cwd: rootDir })
+      : runCommand('pnpm', ['install'], { cwd: rootDir })
 
-if (installExitCode !== 0) {
-  process.exit(installExitCode)
-}
+  if (installExitCode !== 0) {
+    process.exit(installExitCode)
+  }
 
-if (process.platform === 'win32') {
-  const windowsScript = join(rootDir, 'bin', 'mimikit.cmd')
-  const exitCode = runCommand(
-    'cmd.exe',
-    ['/d', '/s', '/c', windowsScript, ...args],
-    { cwd: rootDir },
-  )
+  const launcher = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
+  const directArgs = [
+    'exec',
+    'tsx',
+    join(rootDir, 'src', 'bootstrap', 'cli', 'index.ts'),
+    ...args,
+  ]
+  const exitCode =
+    process.platform === 'darwin'
+      ? runCommand('caffeinate', ['-ism', launcher, ...directArgs], {
+          cwd: rootDir,
+        })
+      : runCommand(launcher, directArgs, { cwd: rootDir })
   process.exit(exitCode)
 }
 
-const unixScript = join(rootDir, 'bin', 'mimikit')
-if (process.platform === 'darwin') {
-  const exitCode = runCommand(
-    'caffeinate',
-    ['-ism', 'bash', unixScript, ...args],
-    { cwd: rootDir },
-  )
-  process.exit(exitCode)
-}
-
-const exitCode = runCommand('bash', [unixScript, ...args], { cwd: rootDir })
-process.exit(exitCode)
+if (process.argv[1] === fileURLToPath(import.meta.url)) main()

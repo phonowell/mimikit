@@ -13,9 +13,13 @@ import { warnIgnoredUnknownConfigKeys } from './config-warning.js'
 import { applyCliEnvOverrides } from './env.js'
 import { parsePort, resolveHttpPort, waitForPortRelease } from './port.js'
 import { runCliCycle } from './runtime-cycle.js'
+import { findActiveRuntimeOwner } from './runtime-lock.js'
+import { recoverUnhealthyRuntimeOwner } from './runtime-owner-health.js'
 
-const RUNTIME_CHILD_ENV = 'MIMIKIT_RUNTIME_CHILD'
+import type { ActiveRuntimeOwner } from './runtime-lock.js'
+
 const CRASH_RESTART_DELAY_MS = 500
+const RUNTIME_CHILD_ENV = 'MIMIKIT_RUNTIME_CHILD'
 
 const parseBoolFlag = (
   flagName: string,
@@ -31,6 +35,20 @@ const parseBoolFlag = (
   console.error(`[cli] invalid ${flagName}: ${value}`)
   process.exit(1)
 }
+
+const formatCliStartupFailure = (
+  scope: 'runtime' | 'supervisor',
+  error: unknown,
+): string => {
+  const message = error instanceof Error ? error.message : String(error)
+  return `[cli:${scope}] startup failed: ${message}`
+}
+
+const formatWorkDirInUseMessage = (params: {
+  workDir: string
+  owner: ActiveRuntimeOwner
+}): string =>
+  `[cli:supervisor] work-dir already in use: ${params.workDir} (ownerPid=${params.owner.ownerPid}, runtimeId=${params.owner.runtimeId}${params.owner.updatedAt ? `, updatedAt=${params.owner.updatedAt}` : ''}). Stop the existing instance or use --work-dir.`
 
 const { values } = parseArgs({
   options: {
@@ -60,7 +78,9 @@ applyCliEnvOverrides(config)
 if (logActionsFlag !== undefined)
   configureManagerActionCliLogger({ enabled: logActionsFlag })
 
-console.log('[cli] config loaded')
+const cliRoleLabel =
+  process.env[RUNTIME_CHILD_ENV] === '1' ? 'runtime' : 'supervisor'
+console.log(`[cli:${cliRoleLabel}] config loaded`)
 
 const targetPort =
   typeof portValue === 'string' ? parsePort(portValue) : config.webui.port
@@ -82,7 +102,8 @@ const stripPortArgs = (argv: readonly string[]): string[] => {
 
 const buildChildArgs = (port: number | null): string[] => {
   const scriptPath = process.argv[1]
-  if (!scriptPath) throw new Error('[cli] missing script path for runtime child')
+  if (!scriptPath)
+    throw new Error('[cli] missing script path for runtime child')
   const cliArgs = stripPortArgs(process.argv.slice(2))
   return port === null
     ? [...process.execArgv, scriptPath, ...cliArgs]
@@ -100,28 +121,33 @@ const runRuntimeChild = async (): Promise<never> => {
   })
 
   const listenPort: number | null = config.webui.enabled ? targetPort : null
-  const exitCode = await runCliCycle({
-    config,
-    workDir,
-    paths,
-    port: listenPort,
-    onShutdownReady: (shutdown) => {
-      requestShutdown = shutdown
-    },
-    onReady: () => {
-      if (typeof process.send === 'function') process.send({ type: 'ready' })
-    },
-  })
-  process.exit(exitCode)
+  try {
+    const exitCode = await runCliCycle({
+      config,
+      workDir,
+      paths,
+      port: listenPort,
+      onShutdownReady: (shutdown) => {
+        requestShutdown = shutdown
+      },
+      onReady: () => {
+        if (typeof process.send === 'function') process.send({ type: 'ready' })
+      },
+    })
+    process.exit(exitCode)
+  } catch (error) {
+    console.error(formatCliStartupFailure('runtime', error))
+    process.exit(1)
+  }
 }
 
 const runSupervisor = async (): Promise<never> => {
   let activeChild: ReturnType<typeof spawn> | null = null
-  let shuttingDown = false
+  const state = { shutdownSignal: null as NodeJS.Signals | null }
   let restartPort: number | null = null
 
   const forwardSignal = (signal: NodeJS.Signals): void => {
-    shuttingDown = true
+    state.shutdownSignal = signal
     activeChild?.kill(signal)
   }
 
@@ -159,18 +185,13 @@ const runSupervisor = async (): Promise<never> => {
     }>((resolve, reject) => {
       child.once('error', reject)
       child.once('exit', (code, signal) => {
-        const exitCode =
-          typeof code === 'number'
-            ? code
-            : signal
-              ? 128
-              : 1
+        const exitCode = typeof code === 'number' ? code : signal ? 128 : 1
         resolve({ code: exitCode, ready })
       })
     })
     activeChild = null
 
-    if (shuttingDown) process.exit(result.code)
+    if (state.shutdownSignal !== null) process.exit(result.code)
     if (result.code === 75) {
       if (listenPort !== null) {
         await waitForPortRelease(listenPort)
@@ -185,10 +206,35 @@ const runSupervisor = async (): Promise<never> => {
       await waitForPortRelease(listenPort)
       restartPort = listenPort
     }
-    console.log(`[cli] child exited unexpectedly (${result.code}), restarting...`)
+    console.log(
+      `[cli] child exited unexpectedly (${result.code}), restarting...`,
+    )
     await sleep(CRASH_RESTART_DELAY_MS)
   }
 }
 
 if (process.env[RUNTIME_CHILD_ENV] === '1') await runRuntimeChild()
+let existingRuntimeOwner = await findActiveRuntimeOwner(workDir)
+if (existingRuntimeOwner) {
+  const recovered = await recoverUnhealthyRuntimeOwner({
+    workDir,
+    owner: existingRuntimeOwner,
+    port: config.webui.enabled ? targetPort : null,
+  })
+  if (recovered) {
+    console.warn(
+      `[cli:supervisor] recovered unhealthy runtime owner: pid=${existingRuntimeOwner.ownerPid}`,
+    )
+    existingRuntimeOwner = await findActiveRuntimeOwner(workDir)
+  }
+}
+if (existingRuntimeOwner) {
+  console.error(
+    formatWorkDirInUseMessage({
+      workDir,
+      owner: existingRuntimeOwner,
+    }),
+  )
+  process.exit(1)
+}
 await runSupervisor()

@@ -86,6 +86,7 @@ export const createRuntimeReaperHandle = async (
     path: params.paths.runtimeLease,
     runtimeId: params.runtimeId,
     ownerPid,
+    ...(params.port !== undefined ? { port: params.port } : {}),
   })
 
   await ensureReaperStarted({
@@ -108,6 +109,7 @@ export const createRuntimeReaperHandle = async (
         path: params.paths.runtimeLease,
         runtimeId: params.runtimeId,
         ownerPid,
+        ...(params.port !== undefined ? { port: params.port } : {}),
       })
     } finally {
       heartbeatRunning = false

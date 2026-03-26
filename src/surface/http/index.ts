@@ -118,7 +118,9 @@ export const createHttpServer = async (
   config: AppConfig,
   port: number,
 ) => {
+  console.log('[http] ensureWebUiGenerated begin')
   await ensureWebUiGenerated()
+  console.log('[http] ensureWebUiGenerated done')
   const app = fastify({ bodyLimit: MAX_BODY_BYTES })
   await app.register(fastifyEtag)
   await app.register(FastifySSEPlugin, { retryDelay: 1500 })
@@ -128,8 +130,19 @@ export const createHttpServer = async (
   registerStaticAssets(app, config)
   registerNotFoundHandler(app)
 
+  console.log(`[http] app.listen begin: port=${port}`)
   const address = await app.listen({ port, host: '0.0.0.0' })
   console.log(`[http] listening on ${address}`)
 
   return app
+}
+
+export const closeHttpServer = async (
+  app: FastifyInstance | null,
+): Promise<void> => {
+  if (!app) return
+  const closePromise = app.close()
+  app.server.closeIdleConnections?.()
+  app.server.closeAllConnections?.()
+  await closePromise
 }

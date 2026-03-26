@@ -46,8 +46,11 @@ export const createFeishuChannelLifecycle = (params: {
       )
         return
       try {
+        console.log('[channel:feishu] start begin')
         await startPollingIfEnabled()
+        console.log('[channel:feishu] start done')
       } catch (error) {
+        console.log('[channel:feishu] start failed')
         await logSafeError('orchestrator:start_feishu_polling', error, {
           logPath: params.runtime.paths.log,
         })

@@ -6,6 +6,7 @@ export type WorkerKind = string
 export type LeaseRecord = {
   runtimeId: string
   ownerPid: number
+  port?: number
   updatedAtMs: number
   updatedAt: string
 }
@@ -40,5 +41,6 @@ export type CreateRuntimeReaperHandleParams = {
   runtimeId: string
   paths: StatePaths
   runtimeLock: RuntimeLock
+  port?: number | null
   logPath?: string
 }

@@ -100,10 +100,18 @@ export const registerApiRoutes = (
     afterPersist?: () => Promise<void>
     exitReason?: string
   }): void => {
+    console.log(
+      `[http] scheduleExit requested: reason=${params?.exitReason ?? 'http_api_restart'}`,
+    )
     setTimeout(() => {
       void (async () => {
+        console.log('[http] stopAndPersist begin')
         await orchestrator.stopAndPersist()
+        console.log('[http] stopAndPersist done')
         if (params?.afterPersist) await params.afterPersist()
+        console.log(
+          `[http] requestExit: reason=${params?.exitReason ?? 'http_api_restart'}`,
+        )
         orchestrator.requestExit(75, params?.exitReason ?? 'http_api_restart', {
           skipPersist: true,
         })
@@ -141,12 +149,14 @@ export const registerApiRoutes = (
 
   app.post('/api/restart', (_request, reply) => {
     if (rejectWhenBusy(reply, 'restart')) return
+    console.log('[http] POST /api/restart accepted')
     reply.send({ ok: true })
     scheduleExit()
   })
 
   app.post('/api/reset', (_request, reply) => {
     if (rejectWhenBusy(reply, 'reset')) return
+    console.log('[http] POST /api/reset accepted')
     reply.send({ ok: true })
     scheduleExit({
       exitReason: 'http_api_reset',

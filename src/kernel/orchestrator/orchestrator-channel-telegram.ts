@@ -71,8 +71,11 @@ export const createTelegramChannelLifecycle = (params: {
       )
         return
       try {
+        console.log('[channel:telegram] start begin')
         await startPollingIfEnabled()
+        console.log('[channel:telegram] start done')
       } catch (error) {
+        console.log('[channel:telegram] start failed')
         await logSafeError('orchestrator:start_telegram_polling', error, {
           logPath: params.runtime.paths.log,
           ...(isTelegramPollingConflictError(error)
@@ -80,6 +83,9 @@ export const createTelegramChannelLifecycle = (params: {
             : {}),
         })
         if (isTelegramPollingConflictError(error) && !retryTimer) {
+          console.log(
+            `[channel:telegram] retry scheduled in ${TELEGRAM_POLLING_RETRY_DELAY_MS}ms`,
+          )
           retryTimer = setTimeout(() => {
             retryTimer = null
             ensureStart()

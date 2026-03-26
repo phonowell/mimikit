@@ -1,4 +1,4 @@
-import { mkdtemp } from 'node:fs/promises'
+import { mkdir, mkdtemp, readdir, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -78,7 +78,19 @@ test('restart route allows paused-only tasks when no pending/running work remain
 })
 
 test('reset route requests orchestrator exit after persistence', async () => {
-  const workDir = await mkdtemp(join(tmpdir(), 'mimikit-reset-route-'))
+  const rootDir = await mkdtemp(join(tmpdir(), 'mimikit-reset-route-'))
+  const workDir = join(rootDir, '.mimikit')
+  await mkdir(workDir, { recursive: true })
+  await writeFile(join(workDir, '.instance'), '', 'utf8')
+  await mkdir(join(workDir, '.instance.lock'), { recursive: true })
+  await mkdir(join(workDir, 'specs'), { recursive: true })
+  await writeFile(join(workDir, 'specs', 'spec-1.json'), '{}', 'utf8')
+  await writeFile(join(workDir, 'log.jsonl.txt'), 'safe log fallback', 'utf8')
+  await writeFile(
+    join(workDir, '20260326-0000-01-log.jsonl.gz'),
+    'gzip-bytes',
+    'utf8',
+  )
   const { app, exitRequests, stopAndPersist } = createLifecycleRouteApp({
     workDir,
   })
@@ -90,6 +102,10 @@ test('reset route requests orchestrator exit after persistence', async () => {
     expectedExitReason: 'http_api_reset',
     settleMs: 180,
   })
+  await expect(readdir(workDir)).resolves.toEqual([
+    '.instance',
+    '.instance.lock',
+  ])
   await app.close()
 })
 

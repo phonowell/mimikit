@@ -36,7 +36,7 @@ pnpm start -- --port 8787 --work-dir .mimikit
 
 - `pnpm start` 实际运行 `scripts/start.ts`。
 - 启动前会先执行 `node scripts/bootstrap.mjs`，再执行一次 `pnpm install`。
-- 之后转到 `bin/mimikit` / `bin/mimikit.cmd`，并保留 restart 语义。
+- 之后直接启动 `src/bootstrap/cli/index.ts`；restart / crash recovery 由 CLI 内建 supervisor 负责。
 
 ### 日常内循环入口
 
@@ -83,10 +83,11 @@ MIMIKIT_ACTION_LOGS=false pnpm start -- --port 8787 --work-dir .mimikit
 - `pnpm run bootstrap`：生成缺失的 `config.toml`。
 - `pnpm run guard:file-length`：阻止新增超长文件与豁免债务继续膨胀。
 - `pnpm run lint`：运行 file-length guard、BOM/CRLF/JSDoc/prompt 处理与 ESLint `--fix`。
+- `pnpm run lint:changed-tests`：仅对当前工作区里改动过的 `tests/**` JS/TS 文件跑 ESLint；改到测试文件时必跑。
 - `pnpm run typecheck`：开发者友好别名，等价 `pnpm run type-check`。
 - `pnpm run test`：运行 `vitest run`。
 - `pnpm run build`：执行 `type-check + build:webui`，并生成 `webui/generated/app.js`。
-- `pnpm run review-code-changes`：合流前门禁，串联 `lint + type-check + test`。
+- `pnpm run review-code-changes`：合流前门禁，串联 `lint + lint:changed-tests + type-check + test`。
 - `pnpm run manual:eval:traces-usage-ledger`：手动离线评测，基于提交到仓库的 trace/ledger fixture。
 
 ## 4. 默认回归边界
@@ -151,6 +152,7 @@ pnpm run review-code-changes
 ```
 
 - 合流前统一跑 `pnpm run review-code-changes`。
+- 若本轮改到了 `tests/**`，至少额外跑一次 `pnpm run lint:changed-tests`，不要只依赖 `type-check`。
 - 文档入口收敛到本页；设计事实继续看 `docs/design/**`。
 
 ## 9. 延伸阅读

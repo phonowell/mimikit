@@ -5,12 +5,18 @@ import { join } from 'node:path'
 
 import { afterEach, expect, test, vi } from 'vitest'
 
-import { acquireRuntimeLock } from '../src/bootstrap/cli/runtime-lock.js'
+import {
+  acquireRuntimeLock,
+  findActiveRuntimeOwner,
+} from '../src/bootstrap/cli/runtime-lock.js'
 
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-runtime-lock-'))
 const require = createRequire(import.meta.url)
 const properLockfile = require('proper-lockfile') as {
-  lock: (path: string, options: Record<string, unknown>) => Promise<() => Promise<void>>
+  lock: (
+    path: string,
+    options: Record<string, unknown>,
+  ) => Promise<() => Promise<void>>
   check: (path: string, options: Record<string, unknown>) => Promise<boolean>
 }
 
@@ -48,7 +54,7 @@ test('acquireRuntimeLock preserves non-lock errors from workdir setup', async ()
 
 test('acquireRuntimeLock retries when ELOCKED is reported but lock is already gone', async () => {
   const workDir = await createTmpDir()
-  const release = vi.fn(async () => {})
+  const release = vi.fn(() => Promise.resolve())
   const lockSpy = vi
     .spyOn(properLockfile, 'lock')
     .mockRejectedValueOnce(
@@ -57,7 +63,9 @@ test('acquireRuntimeLock retries when ELOCKED is reported but lock is already go
       }),
     )
     .mockResolvedValueOnce(release)
-  const checkSpy = vi.spyOn(properLockfile, 'check').mockResolvedValueOnce(false)
+  const checkSpy = vi
+    .spyOn(properLockfile, 'check')
+    .mockResolvedValueOnce(false)
 
   const lock = await acquireRuntimeLock(workDir)
 
@@ -89,7 +97,7 @@ test('acquireRuntimeLock waits out a dead-owner stale window before retrying', a
     'utf8',
   )
 
-  const release = vi.fn(async () => {})
+  const release = vi.fn(() => Promise.resolve())
   const lockSpy = vi
     .spyOn(properLockfile, 'lock')
     .mockRejectedValueOnce(
@@ -109,4 +117,28 @@ test('acquireRuntimeLock waits out a dead-owner stale window before retrying', a
   expect(checkSpy).toHaveBeenCalledTimes(1)
   await lock.release()
   expect(release).toHaveBeenCalledTimes(1)
+})
+
+test('findActiveRuntimeOwner returns the live owner lease for an occupied workdir', async () => {
+  const workDir = await createTmpDir()
+  const runtimeDir = join(workDir, 'runtime')
+  const lockPath = join(workDir, '.instance.lock')
+  await mkdir(runtimeDir, { recursive: true })
+  await writeFile(
+    join(runtimeDir, 'lease.json'),
+    JSON.stringify({
+      runtimeId: 'runtime-live-owner',
+      ownerPid: process.pid,
+      updatedAt: '2026-03-26T03:50:00.000Z',
+    }),
+    'utf8',
+  )
+  vi.spyOn(properLockfile, 'check').mockResolvedValueOnce(true)
+
+  await expect(findActiveRuntimeOwner(workDir)).resolves.toEqual({
+    runtimeId: 'runtime-live-owner',
+    ownerPid: process.pid,
+    updatedAt: '2026-03-26T03:50:00.000Z',
+    lockPath,
+  })
 })

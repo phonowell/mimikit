@@ -1,6 +1,6 @@
-import { readFile } from 'node:fs/promises'
 import { spawn } from 'node:child_process'
-import { mkdtemp } from 'node:fs/promises'
+import { mkdtemp, readFile } from 'node:fs/promises'
+import { get as httpGet, type IncomingMessage } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -34,22 +34,25 @@ const waitForExit = async (
   signal: NodeJS.Signals = 'SIGTERM',
 ): Promise<void> => {
   if (child.exitCode !== null || child.signalCode !== null) return
+  const { pid } = child
+  if (pid === undefined) return
   await new Promise<void>((resolve) => {
     child.once('exit', () => resolve())
     try {
-      process.kill(-child.pid!, signal)
+      process.kill(-pid, signal)
     } catch {
       resolve()
     }
   })
 }
 
-const createRuntimeStatusFetcher = (port: number) => async (): Promise<RuntimeStatus> => {
-  const response = await fetch(`http://127.0.0.1:${port}/api/status`)
-  if (!response.ok)
-    throw new Error(`status request failed (${response.status})`)
-  return (await response.json()) as RuntimeStatus
-}
+const createRuntimeStatusFetcher =
+  (port: number) => async (): Promise<RuntimeStatus> => {
+    const response = await fetch(`http://127.0.0.1:${port}/api/status`)
+    if (!response.ok)
+      throw new Error(`status request failed (${response.status})`)
+    return (await response.json()) as RuntimeStatus
+  }
 
 const waitFor = async <T>(
   read: () => Promise<T>,
@@ -69,6 +72,15 @@ const waitFor = async <T>(
   }
   throw lastError instanceof Error ? lastError : new Error('timed out')
 }
+
+const requireRuntimeId = (status: RuntimeStatus): string => {
+  if (typeof status.runtimeId !== 'string')
+    throw new Error('runtimeId missing from status response')
+  return status.runtimeId
+}
+
+const isPositiveInteger = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isInteger(value) && value > 0
 
 const startCli = async (): Promise<StartedCli> => {
   const workDir = await mkdtemp(join(tmpdir(), 'mimikit-cli-supervisor-'))
@@ -92,10 +104,10 @@ const startCli = async (): Promise<StartedCli> => {
     },
   )
 
-  child.stdout?.setEncoding('utf8')
-  child.stderr?.setEncoding('utf8')
-  child.stdout?.on('data', (chunk: string) => logs.push(chunk))
-  child.stderr?.on('data', (chunk: string) => logs.push(chunk))
+  child.stdout.setEncoding('utf8')
+  child.stdout.on('data', (chunk: string) => logs.push(chunk))
+  child.stderr.setEncoding('utf8')
+  child.stderr.on('data', (chunk: string) => logs.push(chunk))
 
   const stop = async (): Promise<void> => {
     await waitForExit(child)
@@ -103,7 +115,11 @@ const startCli = async (): Promise<StartedCli> => {
   activeStops.push(stop)
 
   const fetchStatus = createRuntimeStatusFetcher(port)
-  await waitFor(fetchStatus, (status) => typeof status.runtimeId === 'string', CLI_STARTUP_TIMEOUT_MS)
+  await waitFor(
+    fetchStatus,
+    (status) => typeof status.runtimeId === 'string',
+    CLI_STARTUP_TIMEOUT_MS,
+  )
 
   return {
     logs,
@@ -130,10 +146,30 @@ const startCli = async (): Promise<StartedCli> => {
 const readLeaseOwnerPid = async (workDir: string): Promise<number> => {
   const raw = await readFile(join(workDir, 'runtime', 'lease.json'), 'utf8')
   const parsed = JSON.parse(raw) as { ownerPid?: unknown }
-  if (!Number.isInteger(parsed.ownerPid) || parsed.ownerPid <= 0)
+  const { ownerPid } = parsed
+  if (!isPositiveInteger(ownerPid))
     throw new Error(`invalid runtime lease ownerPid: ${raw}`)
-  return parsed.ownerPid
+  return ownerPid
 }
+
+const ignoreResponseError = (): void => {
+  /* stream is intentionally torn down by the test during restart */
+}
+
+const connectEventStream = (port: number): Promise<IncomingMessage> =>
+  new Promise<IncomingMessage>((resolve, reject) => {
+    const request = httpGet(
+      `http://127.0.0.1:${port}/api/events`,
+      {
+        headers: { accept: 'text/event-stream' },
+      },
+      (response) => {
+        response.once('error', ignoreResponseError)
+        resolve(response)
+      },
+    )
+    request.once('error', reject)
+  })
 
 afterEach(async () => {
   while (activeStops.length > 0) {
@@ -142,28 +178,56 @@ afterEach(async () => {
   }
 })
 
-test(
-  'CLI supervisor restarts a fresh runtime child after restart and crash',
-  async () => {
-    const cli = await startCli()
+test('CLI supervisor restarts a fresh runtime child after restart and crash', async () => {
+  const cli = await startCli()
 
-    const first = await cli.waitForStatus()
-    expect(first.runtimeId).toMatch(/^runtime-/)
+  const first = await cli.waitForStatus()
+  const firstRuntimeId = requireRuntimeId(first)
+  expect(firstRuntimeId).toMatch(/^runtime-/)
 
-    const restartResponse = await fetch(`http://127.0.0.1:${cli.port}/api/restart`, {
+  const restartResponse = await fetch(
+    `http://127.0.0.1:${cli.port}/api/restart`,
+    {
       method: 'POST',
-    })
+    },
+  )
+  expect(restartResponse.status).toBe(200)
+  await expect(restartResponse.json()).resolves.toEqual({ ok: true })
+
+  const second = await cli.waitForRuntimeChange(firstRuntimeId)
+  const secondRuntimeId = requireRuntimeId(second)
+  expect(secondRuntimeId).toMatch(/^runtime-/)
+
+  const childPid = await readLeaseOwnerPid(cli.workDir)
+  process.kill(childPid, 'SIGKILL')
+
+  const third = await cli.waitForRuntimeChange(secondRuntimeId)
+  expect(requireRuntimeId(third)).toMatch(/^runtime-/)
+}, 70_000)
+
+test('CLI supervisor restarts even when a webui event stream is connected', async () => {
+  const cli = await startCli()
+
+  const first = await cli.waitForStatus()
+  const firstRuntimeId = requireRuntimeId(first)
+  expect(firstRuntimeId).toMatch(/^runtime-/)
+
+  const eventsResponse = await connectEventStream(cli.port)
+  expect(eventsResponse.statusCode).toBe(200)
+
+  try {
+    const restartResponse = await fetch(
+      `http://127.0.0.1:${cli.port}/api/restart`,
+      {
+        method: 'POST',
+      },
+    )
     expect(restartResponse.status).toBe(200)
     await expect(restartResponse.json()).resolves.toEqual({ ok: true })
 
-    const second = await cli.waitForRuntimeChange(first.runtimeId!)
-    expect(second.runtimeId).toMatch(/^runtime-/)
-
-    const childPid = await readLeaseOwnerPid(cli.workDir)
-    process.kill(childPid, 'SIGKILL')
-
-    const third = await cli.waitForRuntimeChange(second.runtimeId!)
-    expect(third.runtimeId).toMatch(/^runtime-/)
-  },
-  70_000,
-)
+    const second = await cli.waitForRuntimeChange(firstRuntimeId)
+    expect(requireRuntimeId(second)).toMatch(/^runtime-/)
+  } finally {
+    eventsResponse.destroy()
+  }
+}, 70_000)

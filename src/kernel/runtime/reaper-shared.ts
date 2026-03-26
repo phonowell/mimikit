@@ -22,11 +22,15 @@ import type { StatePaths } from '../../persistence/fs/paths.js'
 const buildLeaseRecord = (params: {
   runtimeId: string
   ownerPid: number
+  port?: number | null
 }): LeaseRecord => {
   const updatedAtMs = Date.now()
   return {
     runtimeId: params.runtimeId,
     ownerPid: params.ownerPid,
+    ...(Number.isInteger(params.port) && (params.port ?? 0) > 0
+      ? { port: params.port as number }
+      : {}),
     updatedAtMs,
     updatedAt: nowIso(),
   }
@@ -36,12 +40,14 @@ export const refreshLease = async (params: {
   path: string
   runtimeId: string
   ownerPid: number
+  port?: number | null
 }): Promise<void> => {
   await writeLease({
     path: params.path,
     value: buildLeaseRecord({
       runtimeId: params.runtimeId,
       ownerPid: params.ownerPid,
+      ...(params.port !== undefined ? { port: params.port } : {}),
     }),
   })
 }

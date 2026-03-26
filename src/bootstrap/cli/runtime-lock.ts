@@ -39,7 +39,12 @@ const LOCK_RETRY_GRACE_MS = 50
 type LeaseDiagnostics = {
   runtimeId: string
   ownerPid: number
+  port?: number
   updatedAt?: string
+}
+
+export type ActiveRuntimeOwner = LeaseDiagnostics & {
+  lockPath: string
 }
 
 const readLeaseDiagnostics = async (
@@ -63,6 +68,9 @@ const readLeaseDiagnostics = async (
   return {
     runtimeId: obj.runtimeId,
     ownerPid: obj.ownerPid as number,
+    ...(Number.isInteger(obj.port) && (obj.port as number) > 0
+      ? { port: obj.port as number }
+      : {}),
     ...(typeof obj.updatedAt === 'string' ? { updatedAt: obj.updatedAt } : {}),
   }
 }
@@ -130,6 +138,22 @@ const recoverFromLockedAcquire = async (params: {
           lease.updatedAt ? `, updatedAt=${lease.updatedAt}` : ''
         })`
   throw new Error(`[cli] instance lock exists at ${params.lockPath}${diag}`)
+}
+
+export const findActiveRuntimeOwner = async (
+  workDir: string,
+): Promise<ActiveRuntimeOwner | null> => {
+  const lockTargetPath = join(workDir, LOCK_TARGET_NAME)
+  const lockPath = `${lockTargetPath}${LOCK_SUFFIX}`
+  const lease = await readLeaseDiagnostics(workDir)
+  if (!lease) return null
+  const lockHeld = await readLockHeld(lockTargetPath)
+  if (lockHeld !== true) return null
+  if (!isPidAlive(lease.ownerPid)) return null
+  return {
+    ...lease,
+    lockPath,
+  }
 }
 
 export const acquireRuntimeLock = async (

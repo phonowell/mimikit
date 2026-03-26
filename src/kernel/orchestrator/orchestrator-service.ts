@@ -79,12 +79,19 @@ export class Orchestrator {
   }
 
   async start() {
+    console.log(
+      `[orchestrator] start begin: runtimeId=${this.runtime.runtimeId}`,
+    )
+    console.log('[orchestrator] runtime lifecycle begin')
     await startRuntimeLifecycle(this.runtime)
+    console.log('[orchestrator] runtime lifecycle done')
+    console.log('[orchestrator] channel session start begin')
     this.stopChannelsAwait = startChannelSession({
       runtime: this.runtime,
       addUserInput: this.channelInput,
       requestRestart: this.channelRestart,
     })
+    console.log('[orchestrator] channel session start dispatched')
   }
 
   stop() {
