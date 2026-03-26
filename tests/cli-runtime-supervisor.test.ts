@@ -8,6 +8,15 @@ import {
   stopAllStartedClis,
 } from './helpers/cli-runtime-supervisor.js'
 
+const postJson = async (port: number, path: string): Promise<Response> => {
+  const response = await fetch(`http://127.0.0.1:${port}${path}`, {
+    method: 'POST',
+  })
+  if (!response.ok)
+    throw new Error(`request to ${path} failed (${response.status})`)
+  return response
+}
+
 afterEach(async () => {
   await stopAllStartedClis()
 })
@@ -19,13 +28,7 @@ test('CLI supervisor restarts a fresh runtime child after restart and crash', as
   const firstRuntimeId = requireRuntimeId(first)
   expect(firstRuntimeId).toMatch(/^runtime-/)
 
-  const restartResponse = await fetch(
-    `http://127.0.0.1:${cli.port}/api/restart`,
-    {
-      method: 'POST',
-    },
-  )
-  expect(restartResponse.status).toBe(200)
+  const restartResponse = await postJson(cli.port, '/api/restart')
   await expect(restartResponse.json()).resolves.toEqual({ ok: true })
 
   const second = await cli.waitForRuntimeChange(firstRuntimeId)
@@ -50,13 +53,7 @@ test('CLI supervisor restarts even when a webui event stream is connected', asyn
   expect(eventsResponse.statusCode).toBe(200)
 
   try {
-    const restartResponse = await fetch(
-      `http://127.0.0.1:${cli.port}/api/restart`,
-      {
-        method: 'POST',
-      },
-    )
-    expect(restartResponse.status).toBe(200)
+    const restartResponse = await postJson(cli.port, '/api/restart')
     await expect(restartResponse.json()).resolves.toEqual({ ok: true })
 
     const second = await cli.waitForRuntimeChange(firstRuntimeId)

@@ -72,6 +72,11 @@ const waitFor = async <T>(
   throw lastError instanceof Error ? lastError : new Error('timed out')
 }
 
+const waitForRequest = <T>(
+  read: () => Promise<T>,
+  timeoutMs: number,
+): Promise<T> => waitFor(read, () => true, timeoutMs)
+
 export const requireRuntimeId = (status: RuntimeStatus): string => {
   if (typeof status.runtimeId !== 'string')
     throw new Error('runtimeId missing from status response')
@@ -85,6 +90,8 @@ export const startCli = async (): Promise<StartedCli> => {
   const workDir = await mkdtemp(join(tmpdir(), 'mimikit-cli-supervisor-'))
   const port = await getPort()
   const logs: string[] = []
+  const env = { ...process.env }
+  delete env.MIMIKIT_RUNTIME_CHILD
   const child = spawn(
     process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm',
     [
@@ -98,6 +105,7 @@ export const startCli = async (): Promise<StartedCli> => {
     ],
     {
       cwd: process.cwd(),
+      env,
       detached: process.platform !== 'win32',
       stdio: ['ignore', 'pipe', 'pipe'],
     },
@@ -156,19 +164,23 @@ const ignoreResponseError = (): void => {
 }
 
 export const connectEventStream = (port: number): Promise<IncomingMessage> =>
-  new Promise<IncomingMessage>((resolve, reject) => {
-    const request = httpGet(
-      `http://127.0.0.1:${port}/api/events`,
-      {
-        headers: { accept: 'text/event-stream' },
-      },
-      (response) => {
-        response.once('error', ignoreResponseError)
-        resolve(response)
-      },
-    )
-    request.once('error', reject)
-  })
+  waitForRequest(
+    () =>
+      new Promise<IncomingMessage>((resolve, reject) => {
+        const request = httpGet(
+          `http://127.0.0.1:${port}/api/events`,
+          {
+            headers: { accept: 'text/event-stream' },
+          },
+          (response) => {
+            response.once('error', ignoreResponseError)
+            resolve(response)
+          },
+        )
+        request.once('error', reject)
+      }),
+    CLI_STARTUP_TIMEOUT_MS,
+  )
 
 export const stopAllStartedClis = async (): Promise<void> => {
   while (activeStops.length > 0) {
