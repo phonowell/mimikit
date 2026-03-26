@@ -1,10 +1,8 @@
 import { readProviderThreadId } from '../../execution/providers/thread-id.js'
 import { mergeUsageAdditive } from '../../execution/shared/token-usage.js'
 import { appendLog } from '../../persistence/log/append.js'
-import {
-  hasNoChoiceReturnChannelInput,
-  isNoChoiceReturnChannelSource,
-} from '../../surface/channels/feishu/source.js'
+import { hasUserInputFromSource } from '../../surface/channels/shared/passive-reply.js'
+import { isNoChoiceReturnChannelSource } from '../../surface/channels/shared/source.js'
 import { parseActions } from '../actions/protocol/parse.js'
 
 import {
@@ -61,7 +59,8 @@ export const runManagerCorrectionRounds = async (params: {
   let lastParsed = parseActions('')
   const resultTaskIds = new Set(results.map((item) => item.taskId))
   const allowAskUserChoice =
-    !hasNoChoiceReturnChannelInput(inputs) &&
+    !hasUserInputFromSource(inputs, 'telegram') &&
+    !hasUserInputFromSource(inputs, 'feishu') &&
     !isNoChoiceReturnChannelSource(runtime.session.lastUserMeta?.source)
   for (let round = 1; round <= maxCorrectionRounds; round++) {
     if (round >= 2 && extra.actionFeedback && extra.actionFeedback.length > 0) {

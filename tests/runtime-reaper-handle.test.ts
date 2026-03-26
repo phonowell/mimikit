@@ -4,17 +4,15 @@ import { join } from 'node:path'
 
 import { expect, test, vi } from 'vitest'
 
-import { buildPaths } from '../src/persistence/fs/paths.js'
 import { createRuntimeReaperHandle } from '../src/kernel/runtime/reaper-handle.js'
+import { buildPaths } from '../src/persistence/fs/paths.js'
 
-vi.mock('node:child_process', () => {
-  return {
-    spawn: vi.fn(() => ({
-      pid: 12345,
-      unref: vi.fn(),
-    })),
-  }
-})
+vi.mock('node:child_process', () => ({
+  spawn: vi.fn(() => ({
+    pid: 12345,
+    unref: vi.fn(),
+  })),
+}))
 
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-reaper-handle-'))
 
@@ -29,7 +27,7 @@ test('reaper handle registers and unregisters runtime child', async () => {
     paths,
     runtimeLock: {
       path: join(workDir, '.instance.lock'),
-      release: async () => undefined,
+      release: () => Promise.resolve(),
     },
   })
 
