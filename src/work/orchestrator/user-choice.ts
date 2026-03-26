@@ -15,10 +15,7 @@ export {
   selectPendingUserChoice,
   selectPendingUserChoiceFromUser,
 } from './user-choice-select.js'
-export type {
-  SelectPendingUserChoiceResult,
-  UserChoiceEffectResult,
-} from './user-choice-select.js'
+export type { SelectPendingUserChoiceResult } from './user-choice-select.js'
 
 export const cancelPendingUserChoiceByUserInput = async (params: {
   runtime: OrchestratorRuntime

@@ -23,15 +23,6 @@ const summarizeResultOutput = (
   })
 }
 
-const shouldIgnoreStaleResult = (
-  task: RuntimeTaskState,
-  result: TaskResult,
-): boolean => {
-  if (result.status !== 'partial') return false
-  if (task.status !== (result.taskStatus ?? 'paused')) return true
-  return Boolean(task.pausedAt && task.pausedAt !== result.completedAt)
-}
-
 export const appendConsumedInputsToHistory = async (
   historyPath: string,
   inputs: UserInput[],
@@ -62,10 +53,6 @@ export const appendConsumedResultsToHistory = async (
   for (const result of results) {
     const task = tasks.find((item) => item.id === result.taskId)
     if (!task || task.result) {
-      consumed += 1
-      continue
-    }
-    if (shouldIgnoreStaleResult(task, result)) {
       consumed += 1
       continue
     }

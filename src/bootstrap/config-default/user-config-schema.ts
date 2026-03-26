@@ -33,13 +33,6 @@ const workerInputSchema = z
   .object({
     maxConcurrent: z.number().int().positive().optional(),
     timeoutMs: z.number().int().positive().optional(),
-    budget: z
-      .object({
-        maxDurationMs: z.number().int().positive().optional(),
-        maxRounds: z.number().int().positive().optional(),
-      })
-      .strict()
-      .optional(),
   })
   .strict()
 

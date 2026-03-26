@@ -72,7 +72,6 @@ export type TaskView = {
   usage?: MessageUsage
   pending_reason?: string
   dispatchLock?: TaskDispatchLockDetail
-  recoverable?: boolean
   stopReason?: string
   liveOutput?: string
   gitClosure?: TaskGitClosure

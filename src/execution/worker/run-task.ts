@@ -1,19 +1,14 @@
-import { persistRuntimeState } from '../../kernel/orchestrator/runtime-persistence.js'
 import { notifyUiSignal } from '../../kernel/orchestrator/signals.js'
 import { appendLog } from '../../persistence/log/append.js'
-import { bestEffort } from '../../persistence/log/safe.js'
 import {
   markTaskCanceled,
   markTaskFailed,
-  markTaskPaused,
   markTaskSucceeded,
 } from '../../work/orchestrator/task-lifecycle.js'
-import { requestTaskResumeChoice } from '../../work/orchestrator/task-resume-choice.js'
 import { updateTaskUsage } from '../../work/orchestrator/task-worker-run-write.js'
 import { readTaskExecutionSpec } from '../../work/spec/store.js'
 
 import { setTaskLiveOutput } from './live-output.js'
-import { isWorkerBudgetExceededError } from './profiled-runner-loop.js'
 import { buildResult } from './result-build.js'
 import { finalizeResult } from './result-finalize.js'
 import { runTaskWithRetry } from './run-retry.js'
@@ -89,45 +84,6 @@ export const runTask = async (
       if (resumeTurnState.started) clearConsumedResumeInstruction()
       return
     }
-    if (isWorkerBudgetExceededError(error)) {
-      clearConsumedResumeInstruction()
-      const partialOutput = error.latestOutput.trim()
-      const result = buildResult(
-        task,
-        'partial',
-        partialOutput,
-        error.elapsedMs,
-        error.usage ?? task.usage,
-      )
-      result.handoff = {
-        ...(result.handoff ?? {}),
-        summary:
-          partialOutput.length > 0
-            ? `Task paused after hitting the run budget. ${partialOutput.split(/\r?\n/, 1)[0]?.trim() ?? ''}`.trim()
-            : 'Task paused after hitting the run budget.',
-        nextSteps: [
-          'Review the partial result and resume the task when you want to continue.',
-        ],
-        risks: [
-          'Task stopped at the run budget boundary and may need another resume cycle.',
-        ],
-      }
-      await finalizeResult(runtime, task, result, markTaskPaused, {
-        taskPatch: {
-          pausedAt: result.completedAt,
-        },
-        persistCompletionFields: false,
-      })
-      await bestEffort('requestTaskResumeChoice: budget_pause', async () => {
-        await requestTaskResumeChoice({
-          runtime,
-          task,
-          createdAt: result.completedAt,
-        })
-        await persistRuntimeState(runtime)
-      })
-      return
-    }
     if (task.status === 'canceled') {
       clearConsumedResumeInstruction()
       const { usage } = task
@@ -142,7 +98,13 @@ export const runTask = async (
       return
     }
     if (resumeTurnState.started) clearConsumedResumeInstruction()
-    const result = buildResult(task, 'failed', err.message, elapsed())
+    const result = buildResult(
+      task,
+      'failed',
+      err.message,
+      elapsed(),
+      task.usage,
+    )
     await finalizeResult(runtime, task, result, markTaskFailed)
   }
 }

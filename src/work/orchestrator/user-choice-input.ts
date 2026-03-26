@@ -13,11 +13,6 @@ import type {
 } from '../../foundation/types/index.js'
 import type { OrchestratorRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
-type PublishedChoiceEffectResult = {
-  ok: boolean
-  status: 'pending' | 'not_found' | 'already_done' | 'not_paused' | 'invalid'
-}
-
 const resolveTimeoutSummary = (
   choice: PendingUserChoice,
   option: UserChoiceOption,
@@ -69,7 +64,6 @@ export const publishChoiceSelectionInput = (params: {
   option: UserChoiceOption
   source: UserChoiceSelectionSource
   selectedAt: string
-  effectResult?: PublishedChoiceEffectResult
 }): Promise<string> =>
   publishSystemInput({
     runtime: params.runtime,
@@ -87,18 +81,6 @@ export const publishChoiceSelectionInput = (params: {
       selected_option_label: params.option.label,
       selected_option_reason: params.option.reason,
       default_option_id: params.choice.defaultOptionId,
-      ...(params.choice.effect
-        ? {
-            choice_effect_type: params.choice.effect.type,
-            choice_effect_task_id: params.choice.effect.taskId,
-          }
-        : {}),
-      ...(params.effectResult
-        ? {
-            choice_effect_ok: params.effectResult.ok,
-            choice_effect_status: params.effectResult.status,
-          }
-        : {}),
       source: params.source,
       selected_at: params.selectedAt,
     },
@@ -110,18 +92,6 @@ export const publishChoiceSelectionInput = (params: {
       inputId,
       choiceId: params.choice.id,
       optionId: params.option.id,
-      ...(params.choice.effect
-        ? {
-            effectType: params.choice.effect.type,
-            effectTaskId: params.choice.effect.taskId,
-          }
-        : {}),
-      ...(params.effectResult
-        ? {
-            effectOk: params.effectResult.ok,
-            effectStatus: params.effectResult.status,
-          }
-        : {}),
       source: params.source,
     }),
   })

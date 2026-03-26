@@ -21,8 +21,6 @@ export type RunLoopParams = {
   task: Task
   prompt: string
   initialThreadId?: string | null
-  continueTemplate: string
-  continueTemplatePath: string
   archiveBase: Omit<TraceArchiveEntry, 'prompt' | 'output' | 'ok'>
   runModel: (input: RunModelInput) => Promise<ProviderResult>
   onSessionId?: (sessionId: string) => Promise<void> | void
@@ -30,8 +28,4 @@ export type RunLoopParams = {
   onUsage?: (usage: TokenUsage) => void
   onPartialOutput?: (output: string) => void
   abortSignal?: AbortSignal
-  budget?: {
-    maxDurationMs?: number
-    maxRounds?: number
-  }
 }

@@ -67,14 +67,6 @@ export const TaskMeta = ({ open, task }: Props) => {
           {dispatchLockText}
         </span>
       ) : null}
-      {task.recoverable ? (
-        <span
-          className="task-pending-reason task-pending-reason--recoverable"
-          title={task.stopReason ?? 'budget_exhausted'}
-        >
-          Resume from partial
-        </span>
-      ) : null}
       {elapsed ? <span className="task-elapsed">{elapsed}</span> : null}
       {timeDisplay.displayText ? (
         <span

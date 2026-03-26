@@ -1,5 +1,5 @@
-import type { Task, UserInput } from '../../src/foundation/types/index.js'
 import type { ManagerActionFeedback } from '../../src/foundation/types/index.js'
+import type { Task, UserInput } from '../../src/foundation/types/index.js'
 
 export const createIntentEvidenceUserInput = (text: string): UserInput => ({
   id: 'input-user',
@@ -7,29 +7,6 @@ export const createIntentEvidenceUserInput = (text: string): UserInput => ({
   text,
   createdAt: '2026-03-20T08:00:00.000Z',
   focusId: 'focus-inbox',
-})
-
-export const createIntentEvidenceChoiceInput = (params: {
-  text: string
-  source: 'user' | 'timeout'
-  taskId?: string
-}): UserInput => ({
-  id: `input-choice-${params.source}`,
-  role: 'system',
-  visibility: 'all',
-  text: params.text,
-  createdAt: '2026-03-20T08:00:00.000Z',
-  focusId: 'focus-inbox',
-  systemEventName: 'user_choice',
-  systemEventPayload: {
-    source: params.source,
-    ...(params.taskId
-      ? {
-          choice_effect_type: 'resume_task',
-          choice_effect_task_id: params.taskId,
-        }
-      : {}),
-  },
 })
 
 export const createIntentEvidenceTask = (

@@ -1,9 +1,6 @@
 import { compareIsoDesc } from '../../foundation/shared/time.js'
 import { resolveTaskResourceMode } from '../../work/shared/task-resource-mode.js'
-import {
-  isBudgetRecoverableTask,
-  resolveTaskChangeAt,
-} from '../../work/shared/task-state.js'
+import { resolveTaskChangeAt } from '../../work/shared/task-state.js'
 
 import {
   deriveTaskGitClosure,
@@ -49,7 +46,6 @@ export type TaskView = {
   usage?: Task['usage']
   archivePath?: string
   stopReason?: TaskResultStopReason
-  recoverable?: boolean
   pending_reason?: TaskPendingReason
   dispatchLock?: TaskDispatchLockDetail
   liveOutput?: string
@@ -153,7 +149,6 @@ const taskToView = (
         ? { archivePath: task.result.archivePath }
         : {}),
     ...(task.result?.stopReason ? { stopReason: task.result.stopReason } : {}),
-    ...(isBudgetRecoverableTask(task) ? { recoverable: true } : {}),
     ...(pendingReason ? { pending_reason: pendingReason } : {}),
     ...(dispatchLock ? { dispatchLock } : {}),
     ...(liveOutput ? { liveOutput } : {}),

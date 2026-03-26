@@ -68,7 +68,7 @@ test('hydrateRuntimeState falls back to channel targets from history', async () 
   })
 })
 
-test('hydrateRuntimeState rebuilds budget resume choice from paused task state', async () => {
+test('hydrateRuntimeState does not rebuild a user choice from paused task state', async () => {
   const stateDir = await createTmpDir()
   const runtime = await createTestRuntimeState({
     workDir: stateDir,
@@ -76,28 +76,18 @@ test('hydrateRuntimeState rebuilds budget resume choice from paused task state',
     patch: {
       tasks: [
         {
-          id: 'task-budget-paused',
-          fingerprint: 'fp-task-budget-paused',
+          id: 'task-user-paused',
+          fingerprint: 'fp-task-user-paused',
           prompt: 'resume me',
-          title: 'Budget Paused',
-          cwd: '/tmp/task-budget-paused',
+          title: 'User Paused',
+          cwd: '/tmp/task-user-paused',
           focusId: GLOBAL_FOCUS_ID,
           profile: 'worker',
           provider: 'codex',
           status: 'paused',
           createdAt: SNAPSHOT_BASE_TIME,
           pausedAt: '2026-02-06T00:10:00.000Z',
-          result: {
-            taskId: 'task-budget-paused',
-            status: 'partial',
-            taskStatus: 'paused',
-            outcome: 'partial',
-            stopReason: 'budget_exhausted',
-            ok: false,
-            output: 'partial output',
-            durationMs: 42,
-            completedAt: '2026-02-06T00:10:00.000Z',
-          },
+          archivePath: '/tmp/task-user-paused.md',
         },
       ],
     },
@@ -111,8 +101,5 @@ test('hydrateRuntimeState rebuilds budget resume choice from paused task state',
   })
   await hydrateRuntimeState(restored)
 
-  expect(restored.ui.pendingUserChoices[0]?.effect).toMatchObject({
-    type: 'resume_task',
-    taskId: 'task-budget-paused',
-  })
+  expect(restored.ui.pendingUserChoices).toEqual([])
 })

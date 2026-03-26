@@ -91,10 +91,6 @@ export const registerApiRoutes = (
       orchestrator.mutateTask(route.action, taskId, { source: 'user' }),
     )
   }
-
-  app.post('/api/tasks/resume-recoverable', async (_request, reply) => {
-    reply.send(await orchestrator.resumeRecoverableTasks())
-  })
   registerChoiceSelectRoute(app, orchestrator)
 
   const scheduleExit = (params?: {

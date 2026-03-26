@@ -13,7 +13,6 @@ export const clonePendingUserChoice = (
     ? {
         ...value,
         options: value.options.map((item) => ({ ...item })),
-        ...(value.effect ? { effect: { ...value.effect } } : {}),
       }
     : null
 

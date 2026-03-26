@@ -11,7 +11,6 @@ import {
   buildTaskCancelMeta,
   resolveTaskElapsedDurationMs,
 } from '../../work/orchestrator/task-cancel-write.js'
-import { clearTaskResumeChoice } from '../../work/orchestrator/task-resume-choice.js'
 import {
   cancelRuntimeTask,
   patchRuntimeTask,
@@ -74,7 +73,6 @@ export const cancelTask = async (
 
   if (task.status === 'pending' || task.status === 'paused') {
     touchTaskMutation(runtime, task.id)
-    clearTaskResumeChoice(runtime, task.id)
     const cancelMeta = buildTaskCancelMeta(meta)
     const sessionPolicy = applyTaskCancelSessionPolicy({
       runtime,
@@ -141,7 +139,6 @@ export const cancelTask = async (
 
   const canceledAt = nowIso()
   touchTaskMutation(runtime, task.id)
-  clearTaskResumeChoice(runtime, task.id)
   const durationMs = resolveTaskElapsedDurationMs({
     task,
     completedAt: canceledAt,

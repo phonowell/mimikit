@@ -8,7 +8,6 @@ import {
   validateMutateTaskGitIntentEvidence,
 } from './action-intent-evidence-match.js'
 import { supportsReplacementCancelIntentEvidence } from './action-intent-evidence-replacement-cancel.js'
-import { hasResumeChoiceEffectTask } from './action-intent-evidence-resume-choice.js'
 import { parseActionAttrs } from './action-parse.js'
 import {
   buildTaskContractFromAttrs,
@@ -17,7 +16,7 @@ import {
 export { validateRestartRuntimeIntentEvidence } from './action-intent-evidence-restart-runtime.js'
 
 import type { SupplementalEvidenceSource } from './action-intent-evidence.js'
-import type { Task, UserInput } from '../../foundation/types/index.js'
+import type { Task } from '../../foundation/types/index.js'
 import type { Parsed } from '../actions/model/spec.js'
 
 const resolveMutateTaskRef = (
@@ -59,14 +58,12 @@ export const validateEnqueueTaskIntentEvidence = (params: {
 export const validateMutateTaskIntentEvidence = (params: {
   item: Parsed
   inputTexts: string[]
-  inputs?: UserInput[]
   taskById?: Map<string, Task>
   supplementalEvidenceSources?: Set<SupplementalEvidenceSource>
   currentActions?: Parsed[]
   defaultFocusId?: string
 }): string | undefined => {
-  const { item, inputTexts, inputs, taskById, supplementalEvidenceSources } =
-    params
+  const { item, inputTexts, taskById, supplementalEvidenceSources } = params
   const parsed = parseActionAttrs(item, mutateTaskSchema)
   if (!parsed) return undefined
   const resumeInstruction = parsed.resume_instruction?.trim()
@@ -100,10 +97,7 @@ export const validateMutateTaskIntentEvidence = (params: {
         taskRef: resolveMutateTaskRef(task, parsed.id),
       })
     }
-    if (hasResumeChoiceEffectTask(inputs, parsed.id, parsed.op))
-      return undefined
-  } else if (hasResumeChoiceEffectTask(inputs, parsed.id, parsed.op))
-    return undefined
+  }
 
   if (
     parsed.op === 'cancel' &&

@@ -11,7 +11,7 @@
 ## 生命周期
 
 - `pending`：manager 已派发，等待外部执行。
-- `paused`：任务被用户暂停，或命中预算边界后以 `partial` 结果暂停，等待恢复。
+- `paused`：任务被用户暂停，等待恢复。
 - `running`：worker 正在调度外部执行。
 - `succeeded | failed | canceled`：终态。
 
@@ -39,19 +39,17 @@
 
 1. `enqueueWorkerTask` 入 `p-queue`。
 2. `runTaskWithRetry` 调用外部执行运行时并收敛错误。
-3. worker 完成时必须同时满足 `M:task_handoff + M:skill_usage status="done"` 完成协议；未满足则继续轮转或命中预算暂停。
+3. worker 完成时必须同时满足 `M:task_handoff + M:skill_usage status="done"` 完成协议；未满足则直接按失败收敛。
 4. `finalizeResult` 更新任务状态并归档。
 5. 发布到 `results`，立即唤醒 manager 消费结果。
 6. `pending/paused` 快速取消：直接产出 `canceled` 结果并发布到 `results`。
 
 补充：
 
-- 长任务命中 `worker.budget.maxDurationMs/maxRounds` 时，本次执行不会落成 `failed`；而是写出 `TaskResult.status=partial`，同时把 `Task.status` 置为 `paused`。
-- 当前默认预算基线为 `30m / 3 rounds`；`pnpm run score:worker-budget` 的当前样本为 `25` 条结果、`p90=22.6m`、`budget_partial=0`，因此保持该默认值。
-- `partial` 结果会保留 `handoff`、`archivePath`、`sessionId` 线索，恢复时继续复用已有 session。
-- 预算暂停后会追加一个显式恢复 choice 到 `pendingUserChoices`；choice 通过 `effect.type=resume_task` 直接绑定恢复动作，不依赖文案判断。
+- 当前不再引入仓内 `worker.budget` 或多轮 `continue-until-done` 续跑；单次 worker dispatch 只执行一次 provider 调用。
+- 若本轮输出缺失完成协议，worker 直接按 `failed` 收敛；是否再次 `resume` 由通用任务控制决定，不再自动产出预算暂停态。
 - `succeeded` 结果的 handoff 只接受 `M:task_handoff` 结构化 JSON；不再从自由文本里启发式推导 `summary/decisions/nextSteps`。
-- `partial/failed/canceled` 等非成功结果，若缺失结构化协议块，仍允许退回到最小自由文本摘要/清单提取。
+- `failed/canceled` 等非成功结果，若缺失结构化协议块，仍允许退回到最小自由文本摘要/清单提取。
 - `M:task_handoff` 当前允许的核心字段是：`summary`、`decisions[]`、`next_steps[]`、`risks[]`、`artifacts[]`、`evidence[]`、`git_lifecycle`。
 
 ## 取消与恢复
@@ -67,12 +65,9 @@
 - `running -> paused`：触发 `AbortController` 终止当前执行；worker 收到 abort 后不写入 `failed/canceled` 终态结果。
 - `paused -> pending`：恢复入队并重新调度执行。
 - `mutate_task op="resume"` 可附带 `resume_instruction`；若存在，则只在恢复后的下一轮 worker prompt 中注入一次，并继续复用原 `sessionId/threadId`。
-- 从预算暂停恢复时，会先清理旧 `task.result`/`archivePath`，避免历史部分结果阻塞下一次结果消费。
-- 预算暂停会生成一个显式恢复 choice：默认项是 `Keep paused`；当前实现默认不自动超时，用户返回后选择 `Continue now` 会直接调用恢复链路。
-- 该 choice 会随 `pendingUserChoices` 一起持久化；若 snapshot 中缺失但任务态存在 `paused + partial + budget_exhausted`，启动时会按任务态补回同等恢复入口。
 - `runtime-snapshot` 不再对旧 choice/schema 做任何兼容；旧状态文件会被直接拒绝，需人工清理或重写后再启动。
 - `paused` 状态支持继续 `cancel`，行为与 `pending` 取消一致（直接产出 `canceled` 结果）。
-- WebUI 二级菜单提供 `pause/resume/cancel` 控制动作；对预算暂停的可恢复任务，还会在任务行直接暴露 inline `Continue` 入口；pause/resume 会写入系统事件消息。
+- WebUI 二级菜单提供 `pause/resume/cancel` 控制动作；pause/resume 会写入系统事件消息。
 
 状态返回约定：
 
@@ -98,7 +93,6 @@
 | provider 返回 resume/thread/session 无效类错误（not found/expired/invalid） | 丢弃旧 session，下一次尝试不带 `sessionId` | `src/execution/worker/session-state.ts` + `src/execution/worker/run-retry.ts` |
 | 用户主动取消（HTTP/显式用户来源） | 立即丢弃旧 session，后续必须新建 | `src/execution/worker/cancel-task.ts`（`source=user`） |
 | 系统取消或延后取消（`source=system/deferred`） | 保留旧 session 为可恢复 | `src/execution/worker/cancel-task.ts`（`source=system/deferred`） |
-| 预算暂停（`Task.status=paused` + `TaskResult.status=partial`） | 保留旧 session，等待显式 `resume` 后继续 | `src/execution/worker/profiled-runner-loop.ts` + `src/execution/worker/resume-task.ts` |
 | `mutate_task op="resume"` 附带 `resume_instruction` | 仍复用旧 session，但在恢复后的下一轮首个 prompt 追加一次性补充说明 | `src/execution/worker/resume-task.ts` + `src/execution/worker/run-retry.ts` + `prompts/worker/system.md` |
 
 `cancel.source` 归一化规则：`user|http -> user`，`deferred -> deferred`，其他来源统一视为 `system`。
@@ -107,7 +101,7 @@
 
 1. 异常中断/恢复复用旧 session：`pnpm vitest run tests/runtime-persistence-queue-reconcile.test.ts -t "persist+hydrate keeps reusable session on recovered pending task" && pnpm vitest run tests/worker-run-retry-session.test.ts -t "reuses persisted session id on next attempt"`
 2. 用户取消丢弃旧 session、系统延后取消保留旧 session：`pnpm vitest run tests/worker-cancel-session-policy.test.ts`
-3. 预算样本校准：`pnpm run score:worker-budget`
+3. worker 单次运行回归：`pnpm vitest run tests/worker-profiled-runner-loop-protocol.test.ts tests/worker-run-task-resume-instruction.test.ts`
 4. 全量门禁：`pnpm run review-code-changes`
 
 ## 常见问题排查（持久化状态清理）

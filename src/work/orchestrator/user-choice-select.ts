@@ -1,4 +1,3 @@
-import { resumeTask } from '../../execution/worker/resume-task.js'
 import { nowIso } from '../../foundation/shared/utils.js'
 import { persistRuntimeState } from '../../kernel/orchestrator/runtime-persistence.js'
 import {
@@ -21,51 +20,14 @@ import type {
 } from '../../foundation/types/index.js'
 import type { OrchestratorRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
-export type UserChoiceEffectResult =
-  | { type: 'resume_task'; taskId: string; ok: true; status: 'pending' }
-  | {
-      type: 'resume_task'
-      taskId: string
-      ok: false
-      status: 'not_found' | 'already_done' | 'not_paused' | 'invalid'
-    }
-
 export type SelectPendingUserChoiceResult =
   | {
       ok: true
       choiceId: string
       optionId: string
       source: UserChoiceSelectionSource
-      effect?: UserChoiceEffectResult
     }
   | { ok: false; reason: 'not_found' | 'invalid_option' | 'expired' }
-
-const applyChoiceEffect = async (params: {
-  runtime: OrchestratorRuntime
-  choice: PendingUserChoice
-  option: UserChoiceOption
-}): Promise<UserChoiceEffectResult | undefined> => {
-  const { effect } = params.choice
-  if (effect?.optionId !== params.option.id) return undefined
-  const result = await resumeTask(params.runtime, effect.taskId, {
-    source: 'user',
-    ...(effect.reason ? { reason: effect.reason } : {}),
-  })
-  if (result.status === 'pending') {
-    return {
-      type: effect.type,
-      taskId: effect.taskId,
-      ok: true,
-      status: 'pending',
-    }
-  }
-  return {
-    type: effect.type,
-    taskId: effect.taskId,
-    ok: false,
-    status: result.status,
-  }
-}
 
 const commitSelection = async (params: {
   runtime: OrchestratorRuntime
@@ -74,11 +36,7 @@ const commitSelection = async (params: {
   source: UserChoiceSelectionSource
   selectedAt: string
 }): Promise<SelectPendingUserChoiceResult> => {
-  const effectResult = await applyChoiceEffect(params)
-  await publishChoiceSelectionInput({
-    ...params,
-    ...(effectResult ? { effectResult } : {}),
-  })
+  await publishChoiceSelectionInput(params)
   removePendingUserChoice(params.runtime, params.choice.id)
   await persistRuntimeState(params.runtime)
   return {
@@ -86,7 +44,6 @@ const commitSelection = async (params: {
     choiceId: params.choice.id,
     optionId: params.option.id,
     source: params.source,
-    ...(effectResult ? { effect: effectResult } : {}),
   }
 }
 

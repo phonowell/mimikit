@@ -2,32 +2,11 @@ import { rm } from 'node:fs/promises'
 
 import { expect, test } from 'vitest'
 
-import {
-  buildContinuePrompt,
-  runWorkerLoop,
-} from '../../src/execution/worker/profiled-runner-loop.js'
+import { runWorkerLoop } from '../../src/execution/worker/profiled-runner-loop.js'
 
 import { createTask, createTmpDir } from './testkit.js'
 
 import type { TokenUsage } from '../../src/foundation/types/index.js'
-
-test('continue prompt can omit latest output when thread context is available', () => {
-  const template = [
-    '当前轮次：{{ next_round }}/{{ max_rounds }}',
-    '上一轮输出：',
-    '{{ latest_output }}',
-  ].join('\n')
-  const prompt = buildContinuePrompt(
-    template,
-    'inline-template',
-    'ROUND_ONE_SENTINEL',
-    2,
-    { includeLatestOutput: false },
-  )
-
-  expect(prompt).toContain('当前轮次：2/3')
-  expect(prompt).not.toContain('ROUND_ONE_SENTINEL')
-})
 
 test('runWorkerLoop does not double count when onUsage and result usage are identical', async () => {
   const stateDir = await createTmpDir()
@@ -39,8 +18,6 @@ test('runWorkerLoop does not double count when onUsage and result usage are iden
       stateDir,
       task,
       prompt: task.prompt,
-      continueTemplate: '{{ latest_output }}',
-      continueTemplatePath: 'inline-template',
       archiveBase: { role: 'worker', taskId: task.id },
       runModel: async ({ onUsage }) => {
         const usage = { input: 100, output: 50, total: 150 }
@@ -79,8 +56,6 @@ test('runWorkerLoop forwards partial output updates', async () => {
       stateDir,
       task,
       prompt: task.prompt,
-      continueTemplate: '{{ latest_output }}',
-      continueTemplatePath: 'inline-template',
       archiveBase: { role: 'worker', taskId: task.id },
       runModel: async ({ onPartialOutput }) => {
         onPartialOutput?.('step 1')

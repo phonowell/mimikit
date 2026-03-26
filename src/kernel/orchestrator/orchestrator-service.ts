@@ -1,5 +1,4 @@
 import { type AppConfig } from '../../bootstrap/config.js'
-import { resumeRecoverableTasks } from '../../execution/worker/resume-task.js'
 import {
   deleteChatHistoryMessage,
   type DeleteChatMessageResult,
@@ -178,10 +177,6 @@ export class Orchestrator {
     meta?: TaskMutationMeta,
   ) {
     return mutateTaskByAction(this.runtime, action, taskId, meta)
-  }
-
-  resumeRecoverableTasks() {
-    return resumeRecoverableTasks(this.runtime)
   }
 
   selectPendingUserChoice(

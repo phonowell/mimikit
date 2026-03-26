@@ -15,7 +15,7 @@ test('runTraceUsageLedgerEval passes on committed regression samples', async () 
   expect(report.requiredMatched).toBe(15)
   expect(report.requiredTotal).toBe(15)
   expect(report.scenarioCoverage).toEqual([
-    { scenario: 'budget_pause_resume', total: 5, matched: 5 },
+    { scenario: 'paused_resume_flow', total: 5, matched: 5 },
     { scenario: 'repeated_action_rejection', total: 5, matched: 5 },
     { scenario: 'usage_prompt_observation', total: 5, matched: 5 },
   ])
@@ -44,7 +44,7 @@ test('runTraceUsageLedgerEval reports sample id and artifact on mismatch', async
     await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8')
 
     const report = await runTraceUsageLedgerEval({ manifestPath })
-    const failure = report.details.find((detail) => detail.id === 'sample-budget-01')
+    const failure = report.details.find((detail) => detail.id === 'sample-pause-01')
 
     expect(report.passed).toBe(false)
     expect(failure?.matched).toBe(false)

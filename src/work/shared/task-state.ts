@@ -1,13 +1,12 @@
 /**
  * @file Shared task state helpers.
- * @description Provides reusable task timestamp, label, result-summary, and recoverable-state helpers across modules.
+ * @description Provides reusable task timestamp, label, and result-summary helpers across modules.
  *
  * Key exports:
  * - resolveTaskChangeAt() - Resolves latest effective task state-change timestamp
  * - resolveTaskLabel() - Resolves the user-facing task label
  * - pickTaskResultSummaryLine() - Extracts a compact user-facing result summary line
  * - formatTaskResultSummary() - Formats a stable task result summary sentence
- * - isBudgetRecoverableTask() - Detects paused partial tasks that can resume
  */
 
 import { clipCompactText } from '../../foundation/shared/text.js'
@@ -64,11 +63,6 @@ export const formatTaskResultSummary = (
       ? `Task "${label}" completed: ${detail}`
       : `Task "${label}" completed.`
   }
-  if (status === 'partial') {
-    return detail
-      ? `Task "${label}" paused with partial result: ${detail}`
-      : `Task "${label}" paused with partial result.`
-  }
   if (status === 'failed') {
     return detail
       ? `Task "${label}" failed: ${detail}`
@@ -99,9 +93,3 @@ export const resolveTaskResultSummary = (params: {
     maxChars,
   )
 }
-
-/** Detects whether a paused task has a resumable budget partial result. */
-export const isBudgetRecoverableTask = (task: Task): boolean =>
-  task.status === 'paused' &&
-  task.result?.status === 'partial' &&
-  task.result.stopReason === 'budget_exhausted'

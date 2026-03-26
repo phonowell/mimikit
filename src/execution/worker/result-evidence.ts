@@ -23,11 +23,7 @@ const summarizeOutput = (output: string): string => {
 const resolveEvidenceStatus = (
   resultStatus: TaskResult['status'],
 ): TaskEvidence['status'] =>
-  resultStatus === 'succeeded'
-    ? 'done'
-    : resultStatus === 'canceled'
-      ? 'partial'
-      : 'failed'
+  resultStatus === 'succeeded' ? 'done' : 'failed'
 
 export const buildTaskEvidence = (params: {
   task: Task

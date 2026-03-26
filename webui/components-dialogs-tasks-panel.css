@@ -46,28 +46,6 @@
   z-index: 3;
 }
 
-.task-inline-action {
-  min-height: 26px;
-  padding: 0 10px;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #f7fbff, #dce9ff);
-  color: #1f5fbf;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  box-shadow: var(--shadow-raised-soft);
-}
-
-.task-inline-action:hover {
-  transform: translateY(-1px);
-}
-
-.task-inline-action:active {
-  box-shadow: var(--shadow-inset-soft);
-  transform: none;
-}
-
 .task-more-toggle {
   --btn-size: 24px;
   --btn-icon-size: 14px;
@@ -95,11 +73,6 @@
 
 .task-meta {
   margin-top: 6px;
-}
-
-.task-pending-reason--recoverable {
-  background: rgba(217, 119, 6, 0.12);
-  color: #a16207;
 }
 
 .task-live-output {

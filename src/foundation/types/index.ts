@@ -47,7 +47,6 @@ export type {
 } from '../../work/types/task-runtime-types.js'
 export type {
   PendingUserChoice,
-  PendingUserChoiceEffect,
   UserChoiceOption,
 } from '../../work/types/pending-user-choice-types.js'
 export type {

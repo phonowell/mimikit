@@ -33,7 +33,7 @@
 - manager 回合使用 `maxCorrectionRounds` 硬上限，超过后写入 `manager_round_limit` 并返回 best-effort 文本。
 - 当补充检索没有新进展时，manager 直接降级为澄清答复，不再掉进 `manager_end status=error`。
 - 当同类 `action_execution_rejected` 在同一批次内重复出现时，manager 按动作类别给出替代路径并停止继续重试。
-- worker 同时保留长任务软阈值观测与最小预算治理：命中 `worker.budget.maxDurationMs/maxRounds` 时写出 `partial` 结果、归档 handoff、保留 session，并把任务落到 `paused`。
+- worker 不再维护仓内 run budget 或多轮续跑；单次 dispatch 只做一次 provider 调用，是否再次 `resume` 交由通用任务控制。
 
 ## 启动顺序
 
@@ -67,7 +67,7 @@
 明确收尾条件只有三类：
 
 - `task_completed status=succeeded`：任务完成并归档。
-- `task_completed status=partial task_status=paused stop_reason=budget_exhausted`：预算暂停，已有部分结果，可显式恢复。
+- `task_completed status=failed`：本轮执行失败或缺失完成协议，等待后续人工判断是否再次 `resume`。
 - manager best-effort 收敛：输入不足、守卫拒绝或检索无进展时直接给出下一步，不再空转。
 
 实时唤醒来源：`user_input`、`task_result`、`trigger_fire`、`worker_slot_freed`。

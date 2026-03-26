@@ -1,20 +1,20 @@
 import { expect, test } from 'vitest'
 
 import { finalizeResult } from '../../src/execution/worker/result-finalize.js'
-import { markTaskPaused } from '../../src/work/orchestrator/task-lifecycle.js'
 import { readTaskResultArchive } from '../../src/persistence/storage/task-results.js'
 import { createTestRuntimeState } from '../helpers/runtime-state.js'
 import { readTaskProgressForTest } from '../helpers/task-progress.js'
+import { markTaskFailed } from '../../src/work/orchestrator/task-lifecycle.js'
 
 import { createTmpDir, readWorkerEndLog } from './testkit.js'
 
 import type { Task, TaskResult } from '../../src/foundation/types/index.js'
 
-test('finalizeResult keeps paused task state for partial budget result', async () => {
+test('finalizeResult writes failed task state and archive for failed result', async () => {
   const stateDir = await createTmpDir()
   const task: Task = {
-    id: 'task-partial',
-    fingerprint: 'task-partial',
+    id: 'task-failed',
+    fingerprint: 'task-failed',
     prompt: 'continue long task',
     title: 'Continue Long Task',
     focusId: 'focus-local',
@@ -48,60 +48,52 @@ test('finalizeResult keeps paused task state for partial budget result', async (
   })
   const result: TaskResult = {
     taskId: task.id,
-    status: 'partial',
-    taskStatus: 'paused',
-    outcome: 'partial',
-    stopReason: 'budget_exhausted',
+    status: 'failed',
     ok: false,
-    output: 'partial draft',
+    output: 'validation failed after resumed run',
     durationMs: 33,
     completedAt: '2026-02-26T10:00:34.000Z',
     handoff: {
-      summary: 'Task paused after hitting the run budget.',
-      nextSteps: ['Resume the task after reviewing the partial draft.'],
+      summary: 'Task failed during final validation.',
+      nextSteps: ['Inspect failing validation and retry once fixed.'],
     },
   }
 
-  await finalizeResult(runtime, task, result, markTaskPaused, {
-    taskPatch: {
-      pausedAt: result.completedAt,
-    },
-    persistCompletionFields: false,
-  })
+  await finalizeResult(runtime, task, result, markTaskFailed)
 
-  expect(task.status).toBe('paused')
-  expect(task.completedAt).toBeUndefined()
-  expect(task.pausedAt).toBe(result.completedAt)
+  expect(task.status).toBe('failed')
+  expect(task.completedAt).toBe(result.completedAt)
+  expect(task.pausedAt).toBeUndefined()
 
   await expect
     .poll(() => readWorkerEndLog(runtime, task.id), { timeout: 1_000 })
     .toMatchObject({
-      status: 'partial',
-      taskStatus: 'paused',
-      outcome: 'partial',
-      stopReason: 'budget_exhausted',
+      status: 'failed',
+      taskStatus: 'failed',
+      outcome: 'blocked',
+      stopReason: 'failed',
     })
 
   const progress = await readTaskProgressForTest(stateDir, task.id)
   expect(progress[0]?.payload).toMatchObject({
-    status: 'partial',
-    taskStatus: 'paused',
-    outcome: 'partial',
-    stopReason: 'budget_exhausted',
+    status: 'failed',
+    taskStatus: 'failed',
+    outcome: 'blocked',
+    stopReason: 'failed',
   })
 
   const archived = await readTaskResultArchive(result.archivePath ?? '')
   expect(archived).toMatchObject({
-    status: 'partial',
-    taskStatus: 'paused',
-    outcome: 'partial',
-    stopReason: 'budget_exhausted',
+    status: 'failed',
+    taskStatus: 'failed',
+    outcome: 'blocked',
+    stopReason: 'failed',
   })
   expect(archived?.evidence).toMatchObject({
     contractGoal: 'Ship long task',
     stateDelta: {
-      taskStatusTo: 'paused',
+      taskStatusTo: 'failed',
     },
   })
-  expect(result.evidence?.stateDelta.taskStatusTo).toBe('paused')
+  expect(result.evidence?.stateDelta.taskStatusTo).toBe('failed')
 })
