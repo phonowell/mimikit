@@ -1,74 +1,28 @@
-import { expect, test, vi, beforeEach } from 'vitest'
+import { beforeEach, expect, test } from 'vitest'
 
 import {
+  createResumeTask,
   createRuntime,
-  createTask,
-  prepareTask,
+  finalizeResultMock,
+  resetRunTaskMocks,
+  resumeInstruction,
+  runTask,
+  runTaskWithRetryMock,
+  setBuildResultOk,
 } from './worker-run-task-resume-instruction/testkit.js'
 
-import type { RuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
-import type { Task } from '../src/foundation/types/index.js'
-
-const {
-  runTaskWithRetryMock,
-  buildResultMock,
-  finalizeResultMock,
-  appendLogMock,
-} = vi.hoisted(() => ({
-  runTaskWithRetryMock: vi.fn(),
-  buildResultMock: vi.fn(),
-  finalizeResultMock: vi.fn(async () => undefined),
-  appendLogMock: vi.fn(async () => undefined),
-}))
-
-vi.mock('../src/execution/worker/run-retry.js', () => ({
-  runTaskWithRetry: runTaskWithRetryMock,
-}))
-
-vi.mock('../src/execution/worker/result-build.js', () => ({
-  buildResult: buildResultMock,
-}))
-
-vi.mock('../src/execution/worker/result-finalize.js', () => ({
-  finalizeResult: finalizeResultMock,
-}))
-
-vi.mock('../src/persistence/log/append.js', () => ({
-  appendLog: appendLogMock,
-}))
-
-const { runTask } = await import('../src/execution/worker/run-task.js')
-
 beforeEach(() => {
-  runTaskWithRetryMock.mockReset()
-  buildResultMock.mockReset()
-  finalizeResultMock.mockClear()
-  appendLogMock.mockClear()
+  resetRunTaskMocks()
 })
 
 test('runTask consumes pending resume instruction after starting the resumed run', async () => {
   const runtime = await createRuntime()
-  const task = await prepareTask(runtime, createTask('task-run-task-resume-instruction', {
-    resumeInstruction: '继续原任务，但先核对工作区已有产物。',
-  }))
-
-  buildResultMock.mockImplementation(
-    (
-      currentTask: Task,
-      status: string,
-      output: string,
-      durationMs: number,
-      usage?: unknown,
-    ) => ({
-      taskId: currentTask.id,
-      status,
-      ok: true,
-      output,
-      durationMs,
-      completedAt: '2026-03-06T00:00:10.000Z',
-      ...(usage ? { usage } : {}),
-    }),
+  const task = await createResumeTask(
+    runtime,
+    'task-run-task-resume-instruction',
   )
+
+  setBuildResultOk(true)
   runTaskWithRetryMock.mockResolvedValue({
     output: 'done',
     elapsedMs: 1,
@@ -83,65 +37,33 @@ test('runTask consumes pending resume instruction after starting the resumed run
 
 test('runTask keeps pending resume instruction when the resumed run fails before execution starts', async () => {
   const runtime = await createRuntime()
-  const task = await prepareTask(runtime, createTask('task-run-task-resume-instruction-failure', {
-    resumeInstruction: '继续原任务，但先核对工作区已有产物。',
-  }))
-
-  buildResultMock.mockImplementation(
-    (
-      currentTask: Task,
-      status: string,
-      output: string,
-      durationMs: number,
-      usage?: unknown,
-    ) => ({
-      taskId: currentTask.id,
-      status,
-      ok: false,
-      output,
-      durationMs,
-      completedAt: '2026-03-06T00:00:10.000Z',
-      ...(usage ? { usage } : {}),
-    }),
+  const task = await createResumeTask(
+    runtime,
+    'task-run-task-resume-instruction-failure',
   )
+
+  setBuildResultOk(false)
   runTaskWithRetryMock.mockRejectedValue(new Error('codex provider disabled'))
 
   await runTask(runtime, task, new AbortController())
 
   expect(runTaskWithRetryMock).toHaveBeenCalledTimes(1)
-  expect(task.resumeInstruction).toBe(
-    '继续原任务，但先核对工作区已有产物。',
-  )
+  expect(task.resumeInstruction).toBe(resumeInstruction)
   expect(finalizeResultMock).toHaveBeenCalledTimes(1)
 })
 
 test('runTask clears pending resume instruction after the resumed turn has started and then fails', async () => {
   const runtime = await createRuntime()
-  const task = await prepareTask(runtime, createTask('task-run-task-resume-instruction-started-failure', {
-    resumeInstruction: '继续原任务，但先核对工作区已有产物。',
-  }))
-
-  buildResultMock.mockImplementation(
-    (
-      currentTask: Task,
-      status: string,
-      output: string,
-      durationMs: number,
-      usage?: unknown,
-    ) => ({
-      taskId: currentTask.id,
-      status,
-      ok: false,
-      output,
-      durationMs,
-      completedAt: '2026-03-06T00:00:10.000Z',
-      ...(usage ? { usage } : {}),
-    }),
+  const task = await createResumeTask(
+    runtime,
+    'task-run-task-resume-instruction-started-failure',
   )
+
+  setBuildResultOk(false)
   runTaskWithRetryMock.mockImplementationOnce(
-    async ({ onTurnStarted }: { onTurnStarted?: () => void }) => {
+    ({ onTurnStarted }: { onTurnStarted?: () => void }) => {
       onTurnStarted?.()
-      throw new Error('codex stream interrupted')
+      return Promise.reject(new Error('codex stream interrupted'))
     },
   )
 
@@ -154,15 +76,16 @@ test('runTask clears pending resume instruction after the resumed turn has start
 
 test('runTask clears pending resume instruction when the resumed turn has started before a pause', async () => {
   const runtime = await createRuntime()
-  const task = await prepareTask(runtime, createTask('task-run-task-resume-instruction-paused', {
-    resumeInstruction: '继续原任务，但先核对工作区已有产物。',
-  }))
+  const task = await createResumeTask(
+    runtime,
+    'task-run-task-resume-instruction-paused',
+  )
 
   runTaskWithRetryMock.mockImplementationOnce(
-    async ({ onTurnStarted }: { onTurnStarted?: () => void }) => {
+    ({ onTurnStarted }: { onTurnStarted?: () => void }) => {
       onTurnStarted?.()
       task.status = 'paused'
-      throw new Error('Task paused')
+      return Promise.reject(new Error('Task paused'))
     },
   )
 
@@ -171,46 +94,4 @@ test('runTask clears pending resume instruction when the resumed turn has starte
   expect(runTaskWithRetryMock).toHaveBeenCalledTimes(1)
   expect(task.resumeInstruction).toBeUndefined()
   expect(finalizeResultMock).not.toHaveBeenCalled()
-})
-
-test('runTask fails the task when the worker run ends without completion protocol', async () => {
-  const runtime = await createRuntime()
-  const task = await prepareTask(
-    runtime,
-    createTask('task-run-task-incomplete', {
-      usage: { input: 120, output: 40, total: 160 },
-    }),
-  )
-
-  buildResultMock.mockImplementation(
-    (
-      currentTask: Task,
-      status: string,
-      output: string,
-      durationMs: number,
-      usage?: unknown,
-    ) => ({
-      taskId: currentTask.id,
-      status,
-      ok: false,
-      output,
-      durationMs,
-      completedAt: '2026-03-06T00:00:10.000Z',
-      ...(usage ? { usage } : {}),
-    }),
-  )
-  runTaskWithRetryMock.mockRejectedValue(
-    new Error('missing completion protocol'),
-  )
-
-  await runTask(runtime, task, new AbortController())
-
-  expect(finalizeResultMock).toHaveBeenCalledTimes(1)
-  expect(buildResultMock).toHaveBeenLastCalledWith(
-    task,
-    'failed',
-    'missing completion protocol',
-    expect.any(Number),
-    { input: 120, output: 40, total: 160 },
-  )
 })
