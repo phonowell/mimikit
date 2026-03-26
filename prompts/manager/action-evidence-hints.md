@@ -6,5 +6,3 @@ restart_runtime_intent_evidence_missing: |
   restart_runtime 执行失败：intent-evidence guard 未通过。当前可见证据包含 {{ evidence_sources }} 等补充信息，但缺少来自当前用户输入的直接重启/生效意图证据。请先让用户明确要求“应用更新后重启生效”或等价目标，再决定是否重启 runtime。
 ask_user_choice_intent_evidence_missing: |
   ask_user_choice 执行失败：intent-evidence guard 未通过。当前可见证据包含 {{ evidence_sources }} 等补充信息，但缺少来自当前用户输入的直接决策意图证据。请先澄清用户真实目标，或直接说明当前不确定性边界，不要基于补充材料自行制造确认项。
-remember_memory_intent_evidence_missing: |
-  remember_memory 执行失败：intent-evidence guard 未通过。当前可见证据包含 {{ evidence_sources }} 等补充信息，但缺少来自当前用户输入的直接长期偏好/约束证据。请先让用户明确该规则需要跨轮继续生效，再写入长期记忆。

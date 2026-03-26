@@ -7,14 +7,18 @@ import { formatRememberMemoryNotStableHint } from './action-feedback-hints.js'
 import { validateRememberMemoryIntentEvidence } from './action-intent-evidence-dialog-memory.js'
 import { collectUserIntentTexts } from './action-intent-evidence-match.js'
 import { parseActionAttrs } from './action-parse.js'
-import { rejected, type ValidationIssue } from './action-validation-helpers.js'
+import {
+  rejected,
+  suppressed,
+  type ValidationIssue,
+} from './action-validation-helpers.js'
 
 import type { UserInput } from '../../foundation/types/index.js'
 import type { Parsed } from '../actions/model/spec.js'
 
 type RememberMemoryValidationContext = {
   inputs?: UserInput[]
-  supplementalEvidenceSources?: Set<'task_result'>
+  recentUserIntentTexts?: string[]
 }
 
 const formatRememberMemoryIssue = (
@@ -44,12 +48,12 @@ export const validateRememberMemoryAction = (
     )
   }
 
-  const hint = validateRememberMemoryIntentEvidence({
+  const result = validateRememberMemoryIntentEvidence({
     item,
     inputTexts: collectUserIntentTexts(context.inputs),
-    ...(context.supplementalEvidenceSources
-      ? { supplementalEvidenceSources: context.supplementalEvidenceSources }
+    ...(context.recentUserIntentTexts
+      ? { recentUserIntentTexts: context.recentUserIntentTexts }
       : {}),
   })
-  return hint ? rejected(hint, { code: 'intent_evidence_missing' }) : []
+  return result === 'suppressed' ? suppressed('remember_memory_guard') : []
 }

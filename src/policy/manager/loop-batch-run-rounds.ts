@@ -127,9 +127,13 @@ export const runManagerCorrectionRounds = async (params: {
       wakeProfile: runResult.wakeProfile,
       roundExtra: extra,
     })
+    const resolvedParsed =
+      followup.filteredActions !== undefined
+        ? { ...parsed, actions: followup.filteredActions }
+        : parsed
     if (followup.done) {
       return buildBatchSuccessResult({
-        parsed,
+        parsed: resolvedParsed,
         elapsedMs,
         ...(batchUsage ? { usage: batchUsage } : {}),
       })

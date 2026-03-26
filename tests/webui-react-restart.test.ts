@@ -6,23 +6,18 @@ import {
 } from '../webui-src/lib/restart-config.js'
 import { requestRuntimeControl } from '../webui-src/lib/restart.js'
 
-const createJsonResponse = (ok: boolean, status: number, payload: unknown) => ({
-  ok,
-  status,
-  json: vi.fn().mockResolvedValue(payload),
-})
+import {
+  createJsonResponse,
+  createStatusResponse,
+  installRestartWindow,
+} from './helpers/webui-restart.js'
 
 describe('requestRuntimeControl', () => {
   const originalWindow = globalThis.window
   const originalFetch = globalThis.fetch
 
   beforeEach(() => {
-    const nextWindow: typeof window = {
-      setTimeout,
-      clearTimeout,
-      location: { reload: vi.fn() },
-    }
-    globalThis.window = nextWindow
+    installRestartWindow()
   })
 
   afterEach(() => {
@@ -35,23 +30,9 @@ describe('requestRuntimeControl', () => {
   test('reloads when runtime id changes after restart request', async () => {
     globalThis.fetch = vi
       .fn()
-      .mockResolvedValueOnce(
-        createJsonResponse(true, 200, {
-          runtimeId: 'runtime-1',
-          managerRunning: false,
-          activeTasks: 0,
-          pendingTasks: 0,
-        }),
-      )
+      .mockResolvedValueOnce(createStatusResponse('runtime-1'))
       .mockResolvedValueOnce(createJsonResponse(true, 200, { ok: true }))
-      .mockResolvedValueOnce(
-        createJsonResponse(true, 200, {
-          runtimeId: 'runtime-2',
-          managerRunning: false,
-          activeTasks: 0,
-          pendingTasks: 0,
-        }),
-      ) as typeof fetch
+      .mockResolvedValueOnce(createStatusResponse('runtime-2')) as typeof fetch
 
     await expect(requestRuntimeControl('restart')).resolves.toEqual({
       ok: true,
@@ -62,24 +43,10 @@ describe('requestRuntimeControl', () => {
   test('reloads when status disconnects and then reconnects', async () => {
     globalThis.fetch = vi
       .fn()
-      .mockResolvedValueOnce(
-        createJsonResponse(true, 200, {
-          runtimeId: 'runtime-1',
-          managerRunning: false,
-          activeTasks: 0,
-          pendingTasks: 0,
-        }),
-      )
+      .mockResolvedValueOnce(createStatusResponse('runtime-1'))
       .mockResolvedValueOnce(createJsonResponse(true, 200, { ok: true }))
       .mockRejectedValueOnce(new TypeError('fetch failed'))
-      .mockResolvedValueOnce(
-        createJsonResponse(true, 200, {
-          runtimeId: 'runtime-2',
-          managerRunning: false,
-          activeTasks: 0,
-          pendingTasks: 0,
-        }),
-      ) as typeof fetch
+      .mockResolvedValueOnce(createStatusResponse('runtime-2')) as typeof fetch
 
     await expect(requestRuntimeControl('restart')).resolves.toEqual({
       ok: true,
@@ -89,40 +56,14 @@ describe('requestRuntimeControl', () => {
 
   test('does not reload on transient disconnect until a new runtime id appears', async () => {
     vi.useFakeTimers()
-    const nextWindow: typeof window = {
-      setTimeout,
-      clearTimeout,
-      location: { reload: vi.fn() },
-    }
-    globalThis.window = nextWindow
+    installRestartWindow()
     globalThis.fetch = vi
       .fn()
-      .mockResolvedValueOnce(
-        createJsonResponse(true, 200, {
-          runtimeId: 'runtime-1',
-          managerRunning: false,
-          activeTasks: 0,
-          pendingTasks: 0,
-        }),
-      )
+      .mockResolvedValueOnce(createStatusResponse('runtime-1'))
       .mockResolvedValueOnce(createJsonResponse(true, 200, { ok: true }))
       .mockRejectedValueOnce(new TypeError('fetch failed'))
-      .mockResolvedValueOnce(
-        createJsonResponse(true, 200, {
-          runtimeId: 'runtime-1',
-          managerRunning: false,
-          activeTasks: 0,
-          pendingTasks: 0,
-        }),
-      )
-      .mockResolvedValueOnce(
-        createJsonResponse(true, 200, {
-          runtimeId: 'runtime-2',
-          managerRunning: false,
-          activeTasks: 0,
-          pendingTasks: 0,
-        }),
-      ) as typeof fetch
+      .mockResolvedValueOnce(createStatusResponse('runtime-1'))
+      .mockResolvedValueOnce(createStatusResponse('runtime-2')) as typeof fetch
 
     const result = requestRuntimeControl('restart')
     await vi.advanceTimersByTimeAsync(STATUS_POLL_INTERVAL_MS * 4)
@@ -134,15 +75,7 @@ describe('requestRuntimeControl', () => {
   test('returns blocked details when server rejects restart with busy stats', async () => {
     globalThis.fetch = vi
       .fn()
-      .mockResolvedValueOnce(
-        createJsonResponse(true, 200, {
-          runtimeId: 'runtime-1',
-          managerRunning: false,
-          activeTasks: 0,
-          pendingTasks: 0,
-          pendingInputs: 0,
-        }),
-      )
+      .mockResolvedValueOnce(createStatusResponse('runtime-1'))
       .mockResolvedValueOnce(
         createJsonResponse(false, 409, {
           error:
@@ -150,8 +83,7 @@ describe('requestRuntimeControl', () => {
         }),
       )
       .mockResolvedValueOnce(
-        createJsonResponse(true, 200, {
-          runtimeId: 'runtime-1',
+        createStatusResponse('runtime-1', {
           managerRunning: true,
           activeTasks: 1,
           pendingTasks: 2,
@@ -176,31 +108,12 @@ describe('requestRuntimeControl', () => {
 
   test('fails after the polling window if restart never exposes a new runtime', async () => {
     vi.useFakeTimers()
-    const nextWindow: typeof window = {
-      setTimeout,
-      clearTimeout,
-      location: { reload: vi.fn() },
-    }
-    globalThis.window = nextWindow
+    installRestartWindow()
     globalThis.fetch = vi
       .fn()
-      .mockResolvedValueOnce(
-        createJsonResponse(true, 200, {
-          runtimeId: 'runtime-1',
-          managerRunning: false,
-          activeTasks: 0,
-          pendingTasks: 0,
-        }),
-      )
+      .mockResolvedValueOnce(createStatusResponse('runtime-1'))
       .mockResolvedValueOnce(createJsonResponse(true, 200, { ok: true }))
-      .mockResolvedValue(
-        createJsonResponse(true, 200, {
-          runtimeId: 'runtime-1',
-          managerRunning: false,
-          activeTasks: 0,
-          pendingTasks: 0,
-        }),
-      ) as typeof fetch
+      .mockResolvedValue(createStatusResponse('runtime-1')) as typeof fetch
 
     const result = requestRuntimeControl('restart')
     await vi.advanceTimersByTimeAsync(STATUS_POLL_TIMEOUT_MS + 1_000)

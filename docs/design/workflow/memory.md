@@ -39,6 +39,9 @@
 - 输入门禁：
   - `content` 必须是单行稳定 digest（`<=240 chars`）。
   - checklist、多行过程文本、协议标签与 `task-*/plan-*` 一类 runtime 引用会被拒绝，不进入长期 memory。
+  - 只有当 `content` 被当前用户输入直接支撑，或近期用户历史已重复表达同一稳定规则/偏好时，才允许立即写入。
+  - “当前阶段重点 / 当前项目 / 本轮安排”一类当前态信息应留在 `focus/state`，不进入长期 memory。
+  - 不满足上述证据时，`remember_memory` 会被静默 suppress；不会写入 memory，也不会触发用户侧澄清回合。
 - 回执：写入 `memory_remembered` system event（含 `entry_id/ref/operation`）。
 - 代码：
   - `src/work/memory/remember-entry.ts`

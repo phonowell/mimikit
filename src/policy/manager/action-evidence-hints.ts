@@ -13,7 +13,6 @@ const actionEvidenceHintSchema = z
     mutate_task_intent_evidence_missing: z.string().trim().min(1),
     restart_runtime_intent_evidence_missing: z.string().trim().min(1),
     ask_user_choice_intent_evidence_missing: z.string().trim().min(1),
-    remember_memory_intent_evidence_missing: z.string().trim().min(1),
   })
   .strict()
 
@@ -58,12 +57,5 @@ export const formatAskUserChoiceIntentEvidenceHint = (
   evidenceSources: string,
 ): string =>
   renderHint('ask_user_choice_intent_evidence_missing', {
-    evidence_sources: evidenceSources,
-  })
-
-export const formatRememberMemoryIntentEvidenceHint = (
-  evidenceSources: string,
-): string =>
-  renderHint('remember_memory_intent_evidence_missing', {
     evidence_sources: evidenceSources,
   })

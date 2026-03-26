@@ -9,15 +9,19 @@ import {
   formatAskUserChoiceIntentEvidenceHint,
   formatEnqueueTaskIntentEvidenceHint,
   formatMutateTaskIntentEvidenceHint,
-  formatRememberMemoryIntentEvidenceHint,
   formatRestartRuntimeIntentEvidenceHint,
 } from './action-evidence-hints.js'
 
 import type { SupplementalEvidenceSource } from './action-intent-evidence.js'
-import type { Task, UserInput } from '../../foundation/types/index.js'
+import type {
+  HistoryMessage,
+  Task,
+  UserInput,
+} from '../../foundation/types/index.js'
 import type { Parsed } from '../actions/model/spec.js'
 
 const toEvidenceLabel = (source: SupplementalEvidenceSource): string => source
+const MAX_RECENT_USER_INTENT_TEXTS = 24
 
 export const formatEvidenceSources = (
   sources: Set<SupplementalEvidenceSource> | undefined,
@@ -42,8 +46,6 @@ export const buildMissingIntentEvidenceHint = (params: {
     return formatRestartRuntimeIntentEvidenceHint(evidenceSources)
   if (params.actionName === 'ask_user_choice')
     return formatAskUserChoiceIntentEvidenceHint(evidenceSources)
-  if (params.actionName === 'remember_memory')
-    return formatRememberMemoryIntentEvidenceHint(evidenceSources)
   return formatEnqueueTaskIntentEvidenceHint(evidenceSources)
 }
 
@@ -64,6 +66,25 @@ export const collectUserIntentTexts = (
       texts.push(text)
   }
   return texts
+}
+
+export const collectHistoricalUserIntentTexts = (
+  history: HistoryMessage[] | undefined,
+): string[] => {
+  if (!history || history.length === 0) return []
+  const texts: string[] = []
+  for (const item of history) {
+    const text = normalizeInlineWhitespace(item.text)
+    if (!text) continue
+    if (item.role === 'user') {
+      texts.push(text)
+      continue
+    }
+    const event = resolveSystemEvent(item)
+    if (event.name === 'user_choice' && event.payload?.source === 'user')
+      texts.push(text)
+  }
+  return texts.slice(Math.max(0, texts.length - MAX_RECENT_USER_INTENT_TEXTS))
 }
 
 const hasDirectTextMatch = (candidate: string, haystack: string): boolean => {

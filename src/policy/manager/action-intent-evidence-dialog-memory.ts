@@ -44,11 +44,11 @@ export const validateAskUserChoiceIntentEvidence = (params: {
 export const validateRememberMemoryIntentEvidence = (params: {
   item: Parsed
   inputTexts: string[]
-  supplementalEvidenceSources?: Set<SupplementalEvidenceSource>
-}): string | undefined => {
-  const { item, inputTexts, supplementalEvidenceSources } = params
+  recentUserIntentTexts?: string[]
+}): 'allowed' | 'suppressed' => {
+  const { item, inputTexts, recentUserIntentTexts } = params
   const parsed = parseActionAttrs(item, rememberMemorySchema)
-  if (!parsed) return undefined
+  if (!parsed) return 'allowed'
   if (
     isSupportedByInputs({
       candidates: [parsed.content],
@@ -56,10 +56,19 @@ export const validateRememberMemoryIntentEvidence = (params: {
       inputs: inputTexts,
     })
   )
-    return undefined
+    return 'allowed'
 
-  return buildMissingIntentEvidenceHint({
-    actionName: item.name,
-    evidenceSources: supplementalEvidenceSources,
-  })
+  const repeatedSupportCount = (recentUserIntentTexts ?? []).reduce(
+    (count, text) =>
+      count +
+      (isSupportedByInputs({
+        candidates: [parsed.content],
+        combinedCandidate: parsed.content,
+        inputs: [text],
+      })
+        ? 1
+        : 0),
+    0,
+  )
+  return repeatedSupportCount >= 2 ? 'allowed' : 'suppressed'
 }

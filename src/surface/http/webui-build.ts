@@ -1,18 +1,12 @@
 import { spawn } from 'node:child_process'
-import { readdir, rm, stat } from 'node:fs/promises'
-import { basename, join, parse, resolve } from 'node:path'
+import { readdir, stat } from 'node:fs/promises'
+import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-
-import { z } from 'zod'
-
-import { ensureDir } from '../../persistence/fs/paths.js'
-
-const PRESERVED_STATE_ENTRY_NAMES = new Set(['.instance', '.instance.lock'])
 
 const REQUIRED_WEBUI_ENTRY_FILES = ['app.js', 'archive-viewer.js'] as const
 let activeWebUiBuild: Promise<void> | null = null
 
-type WebUiBuildPaths = {
+export type WebUiBuildPaths = {
   rootDir: string
   webDir: string
   generatedDir: string
@@ -122,100 +116,4 @@ export const ensureWebUiGenerated = async (): Promise<void> => {
   const roots = resolveRoots()
   if (!(await shouldBuildWebUiGenerated(roots))) return
   await queueWebUiBuild(roots)
-}
-
-const isSafeStateDir = (stateDir: string): boolean => {
-  const trimmed = stateDir.trim()
-  if (!trimmed) return false
-  const resolved = resolve(stateDir)
-  const { root } = parse(resolved)
-  if (!root) return false
-  return resolved !== root && basename(resolved) === '.mimikit'
-}
-
-export const clearStateDir = async (stateDir: string): Promise<void> => {
-  const resolved = resolve(stateDir)
-  if (!isSafeStateDir(resolved))
-    throw new Error(`refusing to clear unsafe state dir: ${resolved}`)
-
-  await ensureDir(resolved)
-  const entries = await readdir(resolved, { withFileTypes: true })
-  await Promise.all(
-    entries
-      .filter((entry) => !PRESERVED_STATE_ENTRY_NAMES.has(entry.name))
-      .map((entry) =>
-        rm(join(resolved, entry.name), { recursive: true, force: true }),
-      ),
-  )
-}
-
-const trimmedStringOrUndefinedSchema = z.preprocess((value) => {
-  if (typeof value !== 'string') return value
-  const trimmed = value.trim()
-  return trimmed.length > 0 ? trimmed : undefined
-}, z.string().optional())
-
-const inputBodySchema = z
-  .object({
-    text: z.preprocess(
-      (value) => (typeof value === 'string' ? value.trim() : value),
-      z.string().min(1),
-    ),
-    quote: trimmedStringOrUndefinedSchema.optional(),
-    language: trimmedStringOrUndefinedSchema.optional(),
-    clientLocale: trimmedStringOrUndefinedSchema.optional(),
-    clientTimeZone: trimmedStringOrUndefinedSchema.optional(),
-    clientOffsetMinutes: z.number().finite().optional(),
-    clientNowIso: trimmedStringOrUndefinedSchema.optional(),
-  })
-  .strict()
-
-export type InputMeta = {
-  source: string
-  platform?: string
-  remote?: string
-  userAgent?: string
-  language?: string
-  clientLocale?: string
-  clientTimeZone?: string
-  clientOffsetMinutes?: number
-  clientNowIso?: string
-}
-
-export const parseInputBody = (
-  body: unknown,
-  request: {
-    remoteAddress?: string | undefined
-    userAgent?: string | undefined
-    acceptLanguage?: string | undefined
-  },
-): { text: string; meta: InputMeta; quote?: string } | { error: string } => {
-  const parsed = inputBodySchema.safeParse(body)
-  if (!parsed.success) {
-    const hasTextIssue = parsed.error.issues.some(
-      (issue) => issue.path[0] === 'text',
-    )
-    return { error: hasTextIssue ? 'text is required' : 'invalid JSON' }
-  }
-  const {
-    text,
-    language: bodyLanguage,
-    clientLocale,
-    clientTimeZone,
-    clientOffsetMinutes,
-    clientNowIso,
-    quote,
-  } = parsed.data
-
-  const meta: InputMeta = { source: 'webui', platform: 'webui' }
-  if (request.remoteAddress) meta.remote = request.remoteAddress
-  if (request.userAgent) meta.userAgent = request.userAgent
-  const language = bodyLanguage ?? request.acceptLanguage
-  if (language) meta.language = language
-  if (clientLocale) meta.clientLocale = clientLocale
-  if (clientTimeZone) meta.clientTimeZone = clientTimeZone
-  if (clientOffsetMinutes !== undefined)
-    meta.clientOffsetMinutes = clientOffsetMinutes
-  if (clientNowIso) meta.clientNowIso = clientNowIso
-  return quote ? { text, meta, quote } : { text, meta }
 }

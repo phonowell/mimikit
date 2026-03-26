@@ -31,7 +31,7 @@ test('processManagerBatch directly delivers compact single task_result output', 
         status: 'succeeded',
         ok: true,
         output:
-          '结论是：remember_memory 不是写入存储失败，而是在校验阶段被 intent-evidence guard 拦下了。\n最小补充是让用户直接声明这条规则需要跨轮长期生效。',
+          '结论是：remember_memory 没有写入不是存储失败，而是被长期记忆 guard 静默 suppress 了。\n当前输入未直接支撑该稳定规则，近期用户历史也没有形成重复稳定偏好。',
         durationMs: 25,
         completedAt: '2026-03-25T06:08:56.942Z',
       },
@@ -43,7 +43,7 @@ test('processManagerBatch directly delivers compact single task_result output', 
   const history = await readHistory(runtime.paths.history)
   expect(history.at(-1)).toMatchObject({
     role: 'agent',
-    text: '结论是：remember_memory 不是写入存储失败，而是在校验阶段被 intent-evidence guard 拦下了。\n最小补充是让用户直接声明这条规则需要跨轮长期生效。\n[任务归档](.mimikit/tasks/2026-03-25/task-explain-reject.md)',
+    text: '结论是：remember_memory 没有写入不是存储失败，而是被长期记忆 guard 静默 suppress 了。\n当前输入未直接支撑该稳定规则，近期用户历史也没有形成重复稳定偏好。\n[任务归档](.mimikit/tasks/2026-03-25/task-explain-reject.md)',
   })
   expect(task.result?.output).toBe(`Task "${task.title}" completed.`)
   expect(runtime.queues.resultsCursor).toBe(1)

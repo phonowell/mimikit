@@ -22,4 +22,5 @@ export type FeedbackContext = {
   restartRuntimeBusy?: boolean
   currentActions?: Parsed[]
   defaultFocusId?: string
+  recentUserIntentTexts?: string[]
 }

@@ -19,6 +19,7 @@ export type ValidationIssue = {
   hint: string
   code?: ManagerActionFeedbackCode
   repair?: ManagerActionFeedbackRepair
+  disposition?: 'feedback' | 'suppress'
 }
 
 const INVALID_ACTION_ARGS = 'invalid_action_args'
@@ -107,6 +108,14 @@ export const rejected = (
     hint,
     ...(extras?.code ? { code: extras.code } : {}),
     ...(extras?.repair ? { repair: extras.repair } : {}),
+  },
+]
+
+export const suppressed = (reason = 'suppressed'): ValidationIssue[] => [
+  {
+    error: 'action_execution_suppressed',
+    hint: reason,
+    disposition: 'suppress',
   },
 ]
 

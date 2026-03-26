@@ -18,21 +18,17 @@ import {
 } from '../../work/orchestrator/orchestrator-task-actions.js'
 import { selectPendingUserChoiceFromUser } from '../../work/orchestrator/user-choice.js'
 
-import {
-  startChannelSession,
-  stopChannelSession,
-} from './orchestrator-channel-session.js'
+import { startChannelSession } from './orchestrator-channel-session.js'
 import {
   computeOrchestratorStatus,
   type OrchestratorStatus,
 } from './orchestrator-helpers.js'
 import { scheduleOrchestratorRestart } from './orchestrator-restart-policy.js'
+import { startRuntimeLifecycle } from './orchestrator-runtime-lifecycle.js'
 import {
-  persistRuntimeSnapshotOnStop,
-  prepareRuntimeStop,
-  startRuntimeLifecycle,
-  waitForRuntimeManagerDrain,
-} from './orchestrator-runtime-lifecycle.js'
+  stopOrchestratorAndPersist,
+  stopOrchestratorBestEffort,
+} from './orchestrator-stop.js'
 import { createRuntimeState } from './runtime-state.js'
 import { waitForUiSignal } from './signals.js'
 
@@ -95,28 +91,25 @@ export class Orchestrator {
   }
 
   stop() {
-    prepareRuntimeStop(this.runtime)
-    void stopChannelSession({
+    stopOrchestratorBestEffort({
       runtime: this.runtime,
-      addUserInput: this.channelInput,
-      requestRestart: this.channelRestart,
-      mode: 'best_effort',
-      ...(this.stopChannelsAwait ? { stopAwait: this.stopChannelsAwait } : {}),
+      channelInput: this.channelInput,
+      channelRestart: this.channelRestart,
+      ...(this.stopChannelsAwait
+        ? { stopChannelsAwait: this.stopChannelsAwait }
+        : {}),
     })
-    void persistRuntimeSnapshotOnStop(this.runtime)
   }
 
   async stopAndPersist(): Promise<void> {
-    prepareRuntimeStop(this.runtime)
-    await stopChannelSession({
+    await stopOrchestratorAndPersist({
       runtime: this.runtime,
-      addUserInput: this.channelInput,
-      requestRestart: this.channelRestart,
-      mode: 'await',
-      ...(this.stopChannelsAwait ? { stopAwait: this.stopChannelsAwait } : {}),
+      channelInput: this.channelInput,
+      channelRestart: this.channelRestart,
+      ...(this.stopChannelsAwait
+        ? { stopChannelsAwait: this.stopChannelsAwait }
+        : {}),
     })
-    await waitForRuntimeManagerDrain(this.runtime)
-    await persistRuntimeSnapshotOnStop(this.runtime)
   }
 
   addUserInput(text: string, meta?: UserMeta, quote?: string): Promise<string> {

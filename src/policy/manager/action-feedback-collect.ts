@@ -62,20 +62,24 @@ const pushRawFeedback = (
   feedback.push(item)
 }
 
-export const collectManagerActionFeedback = (
+export const collectManagerActionValidationOutcome = (
   items: Parsed[],
   context: FeedbackContext = {},
   output = '',
-): ManagerActionFeedback[] => {
+): {
+  feedback: ManagerActionFeedback[]
+  suppressedActionIndexes: number[]
+} => {
   const feedback: ManagerActionFeedback[] = []
   const seen = new Set<string>()
+  const suppressedActionIndexes: number[] = []
 
   if (output.trim().length > 0) {
     const syntaxIssue = detectUnparsedActionIssue(output, items.length > 0)
     if (syntaxIssue) pushRawFeedback(feedback, seen, syntaxIssue)
   }
 
-  for (const item of items) {
+  for (const [index, item] of items.entries()) {
     const isRegistered = REGISTERED_MANAGER_ACTIONS.has(item.name)
     if (!isRegistered) {
       pushFeedback(feedback, seen, item, {
@@ -89,7 +93,24 @@ export const collectManagerActionFeedback = (
       ...context,
       currentActions: items,
     })
-    for (const issue of issues) pushFeedback(feedback, seen, item, issue)
+    const visibleIssues = issues.filter(
+      (issue) => issue.disposition !== 'suppress',
+    )
+    if (
+      visibleIssues.length === 0 &&
+      issues.some((issue) => issue.disposition === 'suppress')
+    ) {
+      suppressedActionIndexes.push(index)
+      continue
+    }
+    for (const issue of visibleIssues) pushFeedback(feedback, seen, item, issue)
   }
-  return feedback
+  return { feedback, suppressedActionIndexes }
 }
+
+export const collectManagerActionFeedback = (
+  items: Parsed[],
+  context: FeedbackContext = {},
+  output = '',
+): ManagerActionFeedback[] =>
+  collectManagerActionValidationOutcome(items, context, output).feedback

@@ -1,10 +1,10 @@
-import { mkdtemp, mkdir, writeFile, utimes } from 'node:fs/promises'
+import { mkdir, mkdtemp, utimes, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 
 import { describe, expect, test } from 'vitest'
 
-import { shouldBuildWebUiGenerated } from '../src/surface/http/helpers.js'
+import { shouldBuildWebUiGenerated } from '../src/surface/http/webui-build.js'
 
 const createTmpRoot = () =>
   mkdtemp(join(tmpdir(), 'mimikit-webui-build-readiness-'))
@@ -59,11 +59,7 @@ const setupWebUiBuildFixture = async (params: {
     'export {}',
     params.sourceAt,
   )
-  await writeTimedFile(
-    buildScriptPath,
-    'export {}',
-    params.sourceAt,
-  )
+  await writeTimedFile(buildScriptPath, 'export {}', params.sourceAt)
   await writeTimedFile(tsconfigPath, '{}', params.sourceAt)
 
   return {

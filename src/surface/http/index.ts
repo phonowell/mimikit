@@ -8,8 +8,8 @@ import { FastifySSEPlugin } from 'fastify-sse-v2'
 
 import { logSafeError } from '../../persistence/log/safe.js'
 
-import { ensureWebUiGenerated, resolveRoots } from './helpers.js'
 import { registerApiRoutes, registerNotFoundHandler } from './routes-api.js'
+import { ensureWebUiGenerated, resolveRoots } from './webui-build.js'
 
 import type { AppConfig } from '../../bootstrap/config.js'
 import type { Orchestrator } from '../../kernel/orchestrator/orchestrator-service.js'
@@ -142,7 +142,7 @@ export const closeHttpServer = async (
 ): Promise<void> => {
   if (!app) return
   const closePromise = app.close()
-  app.server.closeIdleConnections?.()
-  app.server.closeAllConnections?.()
+  app.server.closeIdleConnections()
+  app.server.closeAllConnections()
   await closePromise
 }

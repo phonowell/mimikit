@@ -62,7 +62,7 @@ test('remember_memory is blocked for runtime object references', () => {
   expect(feedback[0]?.hint).toContain('运行时对象引用')
 })
 
-test('remember_memory is blocked without direct user evidence even when no supplemental evidence exists', () => {
+test('remember_memory no longer emits user-facing feedback without direct user evidence', () => {
   const feedback = collectManagerActionFeedback(
     [
       {
@@ -77,11 +77,7 @@ test('remember_memory is blocked without direct user evidence even when no suppl
     },
   )
 
-  expect(feedback).toHaveLength(1)
-  expect(feedback[0]?.action).toBe('remember_memory')
-  expect(feedback[0]?.error).toBe('action_execution_rejected')
-  expect(feedback[0]?.code).toBe('intent_evidence_missing')
-  expect(feedback[0]?.hint).toContain('intent-evidence guard 未通过')
+  expect(feedback).toHaveLength(0)
 })
 
 test('remember_memory stays allowed for direct stable preference evidence', () => {

@@ -1,8 +1,10 @@
 import { resolveScheduleNowIso } from '../../foundation/shared/time.js'
+import { readHistory } from '../../persistence/history/store.js'
 import { appendLog } from '../../persistence/log/append.js'
 
 import { managerActionCliLogger } from './action-cli-log.js'
-import { collectManagerActionFeedback } from './action-feedback-collect.js'
+import { collectManagerActionValidationOutcome } from './action-feedback-collect.js'
+import { collectHistoricalUserIntentTexts } from './action-intent-evidence-match.js'
 import {
   buildActionFeedbackContext,
   hasNoFollowupRequests,
@@ -39,10 +41,14 @@ const appendRoundActionFeedback = async (params: {
 }
 
 type RoundFollowupResult =
-  | { done: true }
+  | {
+      done: true
+      filteredActions?: Parsed[]
+    }
   | {
       done: false
       extra: ManagerRoundExtra
+      filteredActions?: Parsed[]
     }
 
 export const resolveRoundFollowup = async (params: {
@@ -54,7 +60,14 @@ export const resolveRoundFollowup = async (params: {
   wakeProfile: ManagerWakeProfile
   roundExtra?: ManagerRoundExtra
 }): Promise<RoundFollowupResult> => {
-  const actionFeedback = collectManagerActionFeedback(
+  const recentUserIntentTexts = params.parsed.some(
+    (item) => item.name === 'remember_memory',
+  )
+    ? collectHistoricalUserIntentTexts(
+        await readHistory(params.runtime.paths.history),
+      )
+    : []
+  const validation = collectManagerActionValidationOutcome(
     params.parsed,
     {
       ...buildActionFeedbackContext({
@@ -63,6 +76,7 @@ export const resolveRoundFollowup = async (params: {
         resultTaskIds: params.resultTaskIds,
         wakeProfile: params.wakeProfile,
         inputs: params.runtime.session.inflightInputs,
+        ...(recentUserIntentTexts.length > 0 ? { recentUserIntentTexts } : {}),
       }),
       scheduleNowIso: resolveScheduleNowIso(
         params.runtime.session.lastUserMeta,
@@ -70,8 +84,28 @@ export const resolveRoundFollowup = async (params: {
     },
     params.output,
   )
-  if (hasNoFollowupRequests({ feedbackCount: actionFeedback.length }))
-    return { done: true }
+  const actionFeedback = validation.feedback
+  const filteredActions =
+    validation.suppressedActionIndexes.length > 0
+      ? params.parsed.filter(
+          (_, index) => !validation.suppressedActionIndexes.includes(index),
+        )
+      : undefined
+  if (validation.suppressedActionIndexes.length > 0) {
+    await appendLog(params.runtime.paths.log, {
+      event: 'manager_action_suppressed',
+      count: validation.suppressedActionIndexes.length,
+      names: validation.suppressedActionIndexes.map(
+        (index) => params.parsed[index]?.name ?? 'unknown',
+      ),
+    })
+  }
+  if (hasNoFollowupRequests({ feedbackCount: actionFeedback.length })) {
+    return {
+      done: true,
+      ...(filteredActions ? { filteredActions } : {}),
+    }
+  }
 
   await appendRoundActionFeedback({
     runtime: params.runtime,
@@ -83,5 +117,6 @@ export const resolveRoundFollowup = async (params: {
     extra: {
       ...(actionFeedback.length > 0 ? { actionFeedback } : {}),
     },
+    ...(filteredActions ? { filteredActions } : {}),
   }
 }

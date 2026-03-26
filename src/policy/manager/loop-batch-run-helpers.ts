@@ -30,6 +30,7 @@ export const buildActionFeedbackContext = (params: {
   resultTaskIds: Set<string>
   wakeProfile: ManagerWakeProfile
   inputs?: UserInput[]
+  recentUserIntentTexts?: string[]
 }): {
   taskStatusById: Map<string, TaskStatus>
   taskById: Map<string, ManagerRuntime['tasks'][number]>
@@ -43,9 +44,16 @@ export const buildActionFeedbackContext = (params: {
   restartRuntimeScheduled: boolean
   restartRuntimeBusy: boolean
   defaultFocusId: string
+  recentUserIntentTexts?: string[]
 } => {
-  const { runtime, allowAskUserChoice, resultTaskIds, wakeProfile, inputs } =
-    params
+  const {
+    runtime,
+    allowAskUserChoice,
+    resultTaskIds,
+    wakeProfile,
+    inputs,
+    recentUserIntentTexts,
+  } = params
   const currentInputs = inputs ?? runtime.session.inflightInputs
   const supplementalEvidenceSources = new Set<SupplementalEvidenceSource>()
   if (resultTaskIds.size > 0) supplementalEvidenceSources.add('task_result')
@@ -66,6 +74,9 @@ export const buildActionFeedbackContext = (params: {
     restartRuntimeScheduled: runtime.session.restartScheduled,
     restartRuntimeBusy: !canScheduleManagerRestart(runtime),
     defaultFocusId: resolveDefaultFocusId(runtime),
+    ...(recentUserIntentTexts && recentUserIntentTexts.length > 0
+      ? { recentUserIntentTexts }
+      : {}),
   }
 }
 

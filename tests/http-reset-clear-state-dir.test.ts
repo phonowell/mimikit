@@ -4,7 +4,7 @@ import { join } from 'node:path'
 
 import { expect, test } from 'vitest'
 
-import { clearStateDir } from '../src/surface/http/helpers.js'
+import { clearStateDir } from '../src/surface/http/state-dir.js'
 
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-clear-state-dir-'))
 
