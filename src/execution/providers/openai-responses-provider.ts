@@ -100,7 +100,7 @@ const runOpenAiResponses = async (request: OpenAiResponsesProviderRequest) => {
 
     const requestBody = JSON.stringify({
       model,
-      stream: !request.outputSchema,
+      stream: true,
       input: buildResponsesInput(request),
       ...(buildStructuredOutputTextFormat(request.outputSchema)
         ? {
