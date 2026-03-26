@@ -5,6 +5,8 @@
   position: relative;
   background: var(--panel);
   box-shadow: var(--shadow-raised-soft);
+  content-visibility: visible;
+  contain-intrinsic-size: auto;
 }
 
 .task-link {
