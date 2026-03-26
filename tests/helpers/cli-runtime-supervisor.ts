@@ -74,6 +74,11 @@ const waitFor = async <T>(
   throw lastError instanceof Error ? lastError : new Error('timed out')
 }
 
+const waitForRequest = <T>(
+  read: () => Promise<T>,
+  timeoutMs: number,
+): Promise<T> => waitFor(read, () => true, timeoutMs)
+
 export const requireRuntimeId = (status: RuntimeStatus): string => {
   if (typeof status.runtimeId !== 'string')
     throw new Error('runtimeId missing from status response')
@@ -160,19 +165,23 @@ const ignoreResponseError = (): void => {
 }
 
 export const connectEventStream = (port: number): Promise<IncomingMessage> =>
-  new Promise<IncomingMessage>((resolve, reject) => {
-    const request = httpGet(
-      `http://127.0.0.1:${port}/api/events`,
-      {
-        headers: { accept: 'text/event-stream' },
-      },
-      (response) => {
-        response.once('error', ignoreResponseError)
-        resolve(response)
-      },
-    )
-    request.once('error', reject)
-  })
+  waitForRequest(
+    () =>
+      new Promise<IncomingMessage>((resolve, reject) => {
+        const request = httpGet(
+          `http://127.0.0.1:${port}/api/events`,
+          {
+            headers: { accept: 'text/event-stream' },
+          },
+          (response) => {
+            response.once('error', ignoreResponseError)
+            resolve(response)
+          },
+        )
+        request.once('error', reject)
+      }),
+    CLI_STARTUP_TIMEOUT_MS,
+  )
 
 export const stopAllStartedClis = async (): Promise<void> => {
   while (activeStops.length > 0) {

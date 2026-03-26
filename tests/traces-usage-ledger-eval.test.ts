@@ -24,7 +24,9 @@ test('runTraceUsageLedgerEval passes on committed regression samples', async () 
 test('runTraceUsageLedgerEval reports sample id and artifact on mismatch', async () => {
   const tempDir = await mkdtemp(join(tmpdir(), 'mimikit-traces-eval-'))
   try {
-    await cp('tests/fixtures/traces-usage-ledger-eval', tempDir, { recursive: true })
+    await cp('tests/fixtures/traces-usage-ledger-eval', tempDir, {
+      recursive: true,
+    })
     const manifestPath = join(tempDir, 'manifest.json')
     const raw = await readFile(manifestPath, 'utf8')
     const manifest = JSON.parse(raw) as {
@@ -32,8 +34,11 @@ test('runTraceUsageLedgerEval reports sample id and artifact on mismatch', async
       samples: Array<Record<string, unknown>>
     }
     const first = manifest.samples[0]
-    if (!first || typeof first !== 'object') throw new Error('missing first sample')
-    const expected = first.expected as { trace?: { header?: Record<string, string> } }
+    if (!first || typeof first !== 'object')
+      throw new Error('missing first sample')
+    const expected = first.expected as {
+      trace?: { header?: Record<string, string> }
+    }
     expected.trace = {
       ...expected.trace,
       header: {
@@ -41,15 +46,23 @@ test('runTraceUsageLedgerEval reports sample id and artifact on mismatch', async
         role: 'manager',
       },
     }
-    await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8')
+    await writeFile(
+      manifestPath,
+      `${JSON.stringify(manifest, null, 2)}\n`,
+      'utf8',
+    )
 
     const report = await runTraceUsageLedgerEval({ manifestPath })
-    const failure = report.details.find((detail) => detail.id === 'sample-pause-01')
+    const failure = report.details.find(
+      (detail) => detail.id === 'sample-pause-01',
+    )
 
     expect(report.passed).toBe(false)
     expect(failure?.matched).toBe(false)
     expect(failure?.reasons[0]).toContain('trace.header.role')
-    expect(failure?.artifacts.tracePath).toContain('budget-pause-resume/trace.txt')
+    expect(failure?.artifacts.tracePath).toContain(
+      'budget-pause-resume/trace.txt',
+    )
   } finally {
     await rm(tempDir, { recursive: true, force: true })
   }
