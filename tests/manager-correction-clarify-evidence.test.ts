@@ -29,6 +29,18 @@ test('runManagerCorrectionRounds explains insufficient evidence for risky action
   runManagerRoundWithRecoveryMock.mockResolvedValueOnce({
     output:
       '<M:enqueue_task title="task" cwd="/tmp/task" goal="ship" in_scope="guard only" done_when_1="tests pass" />',
+    actions: [
+      {
+        name: 'enqueue_task',
+        attrs: {
+          title: 'task',
+          cwd: '/tmp/task',
+          goal: 'ship',
+          in_scope: 'guard only',
+          done_when_1: 'tests pass',
+        },
+      },
+    ],
     elapsedMs: 3,
     wakeProfile: 'task_result',
     threadId: 'session-manager-evidence',

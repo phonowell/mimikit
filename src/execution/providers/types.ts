@@ -5,6 +5,7 @@ export type ProviderKind = 'codex-sdk' | 'openai-responses'
 
 export type ProviderResult = {
   output: string
+  outputJson?: unknown
   usage?: TokenUsage
   elapsedMs: number
   threadId?: string | null

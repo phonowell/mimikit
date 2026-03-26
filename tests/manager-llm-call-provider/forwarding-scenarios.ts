@@ -108,3 +108,44 @@ test('manager forwards provider call logging metadata', async () => {
     }),
   )
 })
+
+test('manager forwards structured output schema to openai-responses', async () => {
+  const outputSchema = {
+    type: 'json_schema',
+    name: 'manager_turn',
+    strict: true,
+    schema: {
+      type: 'object',
+      properties: {
+        reply_text: { type: 'string' },
+        actions: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              type: { type: 'string' },
+            },
+            required: ['type'],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ['reply_text', 'actions'],
+      additionalProperties: false,
+    },
+  }
+
+  await runManagerLlmCall({
+    prompt: 'ping',
+    workDir: '/tmp/mimikit',
+    outputSchema,
+  })
+
+  expect(runWithProviderMock).toHaveBeenCalledWith(
+    expect.objectContaining({
+      provider: 'openai-responses',
+      role: 'manager',
+      outputSchema,
+    }),
+  )
+})

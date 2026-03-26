@@ -15,6 +15,10 @@ import {
   resolveSessionId,
 } from './openai-responses-provider-parse.js'
 import {
+  buildStructuredOutputTextFormat,
+  parseStructuredOutputJson,
+} from './openai-responses-provider-structured.js'
+import {
   buildProviderAbortedError,
   buildProviderSdkError,
   buildProviderTimeoutError,
@@ -39,17 +43,12 @@ export {
   parseResponsesSse,
 } from './openai-responses-provider-parse.js'
 
-const PROVIDER_ID = OPENAI_RESPONSES_PROVIDER_ID
-
 const buildHttpErrorMessage = (status: number, raw: string): string => {
   const message = readResponsesErrorMessage(raw)
   if (message) return `responses_http_${status}:${message}`
   const preview = raw.trim().slice(0, 280)
   return `responses_http_${status}:${preview}`
 }
-
-const ensureError = (error: unknown): Error =>
-  error instanceof Error ? error : new Error(String(error))
 
 const runOpenAiResponses = async (request: OpenAiResponsesProviderRequest) => {
   const startedAt = Date.now()
@@ -101,8 +100,13 @@ const runOpenAiResponses = async (request: OpenAiResponsesProviderRequest) => {
 
     const requestBody = JSON.stringify({
       model,
-      stream: true,
+      stream: !request.outputSchema,
       input: buildResponsesInput(request),
+      ...(buildStructuredOutputTextFormat(request.outputSchema)
+        ? {
+            text: buildStructuredOutputTextFormat(request.outputSchema),
+          }
+        : {}),
       ...(request.modelReasoningEffort
         ? { reasoning: { effort: request.modelReasoningEffort } }
         : {}),
@@ -131,6 +135,9 @@ const runOpenAiResponses = async (request: OpenAiResponsesProviderRequest) => {
     if (!response.ok)
       throw new Error(buildHttpErrorMessage(response.status, raw))
     const { output, usage } = parseResponsesPayload(raw)
+    const outputJson = request.outputSchema
+      ? parseStructuredOutputJson(output)
+      : undefined
     if (usage) request.onUsage?.(usage)
     const elapsedMs = elapsedMsSince(startedAt)
     await appendOpenAiResponsesLog(request, {
@@ -142,27 +149,31 @@ const runOpenAiResponses = async (request: OpenAiResponsesProviderRequest) => {
     return buildProviderResult({
       startedAt,
       output,
+      ...(outputJson !== undefined ? { outputJson } : {}),
       ...(sessionId ? { threadId: sessionId } : {}),
       ...(usage ? { usage } : {}),
     })
   } catch (error) {
-    const err = ensureError(error)
+    const err = error instanceof Error ? error : new Error(String(error))
     let mapped: ProviderError
     if (err instanceof ProviderError) mapped = err
-    else if (lifecycle.timedOut)
-      mapped = buildProviderTimeoutError(PROVIDER_ID, request.timeoutMs)
-    else if (
+    else if (lifecycle.timedOut) {
+      mapped = buildProviderTimeoutError(
+        OPENAI_RESPONSES_PROVIDER_ID,
+        request.timeoutMs,
+      )
+    } else if (
       lifecycle.externallyAborted ||
       err.name === 'AbortError' ||
       /aborted|canceled|cancelled/i.test(err.message)
     )
-      mapped = buildProviderAbortedError(PROVIDER_ID)
+      mapped = buildProviderAbortedError(OPENAI_RESPONSES_PROVIDER_ID)
     else {
       const transient =
         /responses_http_(429|5\d\d):/i.test(err.message) ||
         isTransientProviderMessage(err.message)
       mapped = buildProviderSdkError({
-        providerId: PROVIDER_ID,
+        providerId: OPENAI_RESPONSES_PROVIDER_ID,
         message: err.message,
         transient,
       })
@@ -184,6 +195,6 @@ const runOpenAiResponses = async (request: OpenAiResponsesProviderRequest) => {
 
 export const openAiResponsesProvider: Provider<OpenAiResponsesProviderRequest> =
   {
-    id: PROVIDER_ID,
+    id: OPENAI_RESPONSES_PROVIDER_ID,
     run: runOpenAiResponses,
   }

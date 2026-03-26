@@ -14,7 +14,11 @@ import type {
   UserInput,
 } from '../../foundation/types/index.js'
 import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
-import type { parseActions } from '../actions/protocol/parse.js'
+
+type ManagerParsedTurn = {
+  text: string
+  actions: Array<{ name: string; attrs: Record<string, string> }>
+}
 
 const runRounds = (params: {
   runtime: ManagerRuntime
@@ -23,7 +27,7 @@ const runRounds = (params: {
   maxCorrectionRounds: number
   abortSignal?: AbortSignal
 }): Promise<{
-  parsed: ReturnType<typeof parseActions>
+  parsed: ManagerParsedTurn
   usage?: TokenUsage
   elapsedMs: number
   roundLimitReached?: boolean
@@ -65,7 +69,7 @@ export const runManagerBatch = async (params: {
   results: TaskResult[]
   abortSignal?: AbortSignal
 }): Promise<{
-  parsed: ReturnType<typeof parseActions>
+  parsed: ManagerParsedTurn
   usage?: TokenUsage
   elapsedMs: number
   roundLimitReached?: boolean

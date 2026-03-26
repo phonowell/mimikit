@@ -3,7 +3,6 @@ import { mergeUsageAdditive } from '../../execution/shared/token-usage.js'
 import { appendLog } from '../../persistence/log/append.js'
 import { hasUserInputFromSource } from '../../surface/channels/shared/passive-reply.js'
 import { isNoChoiceReturnChannelSource } from '../../surface/channels/shared/source.js'
-import { parseActions } from '../actions/protocol/parse.js'
 
 import {
   buildCorrectionFallbackReply,
@@ -38,7 +37,10 @@ export const runManagerCorrectionRounds = async (params: {
   maxCorrectionRounds: number
   abortSignal?: AbortSignal
 }): Promise<{
-  parsed: ReturnType<typeof parseActions>
+  parsed: {
+    text: string
+    actions: { name: string; attrs: Record<string, string> }[]
+  }
   usage?: TokenUsage
   elapsedMs: number
   roundLimitReached?: boolean
@@ -56,7 +58,10 @@ export const runManagerCorrectionRounds = async (params: {
   let batchUsage: TokenUsage | undefined
   let managerThreadId = runtime.manager.threadId
   let extra: ManagerRoundExtra = {}
-  let lastParsed = parseActions('')
+  let lastParsed: {
+    text: string
+    actions: { name: string; attrs: Record<string, string> }[]
+  } = { text: '', actions: [] }
   const resultTaskIds = new Set(results.map((item) => item.taskId))
   const allowAskUserChoice =
     !hasUserInputFromSource(inputs, 'telegram') &&
@@ -116,7 +121,10 @@ export const runManagerCorrectionRounds = async (params: {
     else delete runtime.manager.threadId
     elapsedMs += runResult.elapsedMs
     batchUsage = mergeUsageAdditive(batchUsage, runResult.usage)
-    const parsed = parseActions(runResult.output)
+    const parsed = {
+      text: runResult.output,
+      actions: runResult.actions,
+    }
     lastParsed = parsed
     const followup = await resolveRoundFollowup({
       runtime,

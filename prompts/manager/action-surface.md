@@ -1,13 +1,14 @@
 surface_intro: |
   - 默认仅注入简版 action 卡；未列出的 action 视为本轮不可用。
+  - 所有 action 都通过 `actions[]` 输出；每个对象必须包含 `type`，且字段名严格匹配下列契约。
 domain_heading: |
   ### {{ title }}
 domain_boundary: |
   - 边界：{{ summary }}
 action_summary: |
-  - `M:{{ name }}`：{{ summary }}{{ constraints_suffix }}
+  - `type="{{ name }}"`：{{ summary }}{{ constraints_suffix }}
 action_detail: |
-  - `M:{{ name }}`：{{ summary }}{{ constraints_suffix }}
+  - `type="{{ name }}"`：{{ summary }}{{ constraints_suffix }}
 detail_heading: |
   ### 详细参数契约（按需注入）
 detail_all: |
@@ -34,10 +35,10 @@ actions:
   enqueue_task:
     summary: 派发一个 worker 任务。
     brief_constraints:
-      - 必填 `title,cwd,goal,in_scope,done_when_1`
+      - 必填 `title,cwd,goal,in_scope,done_when[]`
     detail_constraints:
       - '`worker_prompt` 可省略并由系统按 contract 自动生成'
-      - 可选 `resource_mode,branch,out_of_scope,context_ref_{1..3},focus_id`
+      - 可选 `resource_mode,branch,out_of_scope,context_refs[],focus_id`
       - '`resource_mode="read"` 用于纯读取/排查/总结任务，不占 git 写锁，也不会自动分配新 worktree'
       - '`resource_mode="write"` 用于会改文件或需独立 git target 的任务；未显式给 `branch` 时，enqueue 阶段会自动分配 branch/worktree'
       - 提供 `branch` 后 enqueue 阶段会自动创建或复用对应 worktree，并把任务 `cwd` 切到该 worktree
@@ -81,8 +82,9 @@ actions:
   ask_user_choice:
     summary: 生成一个待用户返回后处理的有限选择。
     brief_constraints:
-      - 必填 `id,question,default_option_id` 与连续的 `option_n_{id,label,reason}`
+      - 必填 `id,question,default_option_id,options[]`
     detail_constraints:
+      - '`options[]` 中每项都必须包含 `id,label,reason`'
       - 仅在有限候选且确需用户决策时使用
       - '`telegram`/`feishu` 来源不可用'
   upsert_focus:
@@ -90,8 +92,7 @@ actions:
     brief_constraints:
       - 必填 `id`
     detail_constraints:
-      - 可选 `title,status,summary`
-      - '`open_item_n` 必须连续编号'
+      - '可选 `title,status,summary,open_items[]`'
   assign_focus:
     summary: 给 task、plan 或 history 绑定 focus。
     brief_constraints:

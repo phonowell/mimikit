@@ -15,12 +15,13 @@
 
 ## 协议
 
-协议与解析：`src/policy/actions/protocol/*`
+主协议实现：`src/policy/manager/manager-turn.ts`
 
-- Action 行格式：`<M:name key="value" />`
-- 解析链路：`remark-parse` + `unist-util-visit`（无正则主解析）
-- 仅解析回复尾部连续 action 区
-- 参数在传输层统一字符串，manager 侧 schema 校验后执行
+- manager 对外只接受单个结构化 turn 对象：`{ version, reply_text, actions }`
+- 当前协议版本固定为 `manager-turn/v1`
+- `reply_text` 是唯一用户可见文本字段；不得再在其中夹带 action 文本、XML 标签或编号参数
+- `actions` 是结构化 action 对象数组；对象字段由 `zod` schema 校验，再一跳归一化为内部 `Parsed` 形状供 validation/apply 复用
+- 归一化只用于 manager 内部执行链路，不构成外部兼容协议；外部协议不再解析 XML 尾巴，也不再接受 `*_1` 这类编号字段输入
 
 ## Manager 消费的编排 Action
 
@@ -63,9 +64,10 @@
 
 - `enqueue_task.cwd`：必填；若 `resource_mode="read"` 且未传 `branch`，则直接作为 worker 实际执行目录。若 `resource_mode="write"` 且位于 git 仓库内，未显式传 `branch` 时 enqueue 阶段会自动分配独立 branch/worktree；若同时传 `branch`，则 `cwd` 视为仓库内定位路径，enqueue 阶段会自动创建或复用对应 branch 的 worktree，并把任务实际执行目录切到该 worktree 的对应路径
 - `enqueue_task.resource_mode`：可选，`read|write`；纯读取/排查/总结用 `read`，会改文件或需要独立 git target 的任务用 `write`
+- `enqueue_task.done_when` / `enqueue_task.context_refs`：分别是验收数组与上下文引用数组；对外协议使用数组，不再暴露 `done_when_1` / `context_ref_1` 编号字段
 - `assign_focus`：`target_type(task|plan|history) + target_id + focus_id`
-- `upsert_focus.open_item_{n}`：按编号传递字符串待办项，`n` 必须从 `1` 连续递增且不能跳号
-- `ask_user_choice.option_{n}_id/label/reason`：选项三元组编号 `n` 必须从 `1` 连续递增且不能跳号
+- `upsert_focus.open_items[]`：按数组传递字符串待办项
+- `ask_user_choice.options[]`：每项必须包含 `id/label/reason`
 - 高成本 `enqueue_task`（长 prompt/大参数体量）必须先经 `ask_user_choice` 确认后才能派发；确认选项 ID 固定为 `option-confirm-dispatch`，默认选项为取消。
 
 ## Action 执行语义
@@ -90,9 +92,9 @@
 约束补充：
 
 - 未注册 action 会回写 `unregistered_action` 反馈，不会执行。
-- action 出现在代码块或尾部 action 区之外时，会回写 `invalid_action_syntax` 反馈。
 - `enqueue_task` / `mutate_task` / `restart_runtime` / `ask_user_choice` / `remember_memory` 属于高风险 action：只有当当前批次存在明确的用户请求/确认，且可信运行时状态支持该动作时才放行；`history` / `task_result` 的间接建议本身不能直接驱动这些动作。`remember_memory` 额外要求当前输入直接支撑，或近期用户历史重复支撑该稳定规则/偏好；不满足时静默 suppress。
-- 纠错回合在第二轮仍存在 action_feedback 时，manager 直接输出结构化澄清并提前收敛，不继续盲目重试。
+- 纠错回合在第二轮仍存在 `action_feedback` 时，manager 直接输出结构化澄清并提前收敛，不继续盲目重试。
+- 当前 correction self-repair 只针对结构化 `invalid_action_args` 做一次补救重试，不再存在 XML markup 纠错分支。
 
 ### manager 任务控制门禁（guardrail）
 

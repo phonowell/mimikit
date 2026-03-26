@@ -48,12 +48,14 @@ test('runManagerCorrectionRounds reuses and updates manager thread id across rou
   runManagerRoundWithRecoveryMock
     .mockResolvedValueOnce({
       output: 'first round output',
+      actions: [],
       elapsedMs: 3,
       wakeProfile: 'user_input',
       threadId: 'session-manager-1',
     })
     .mockResolvedValueOnce({
       output: 'final answer',
+      actions: [],
       elapsedMs: 4,
       wakeProfile: 'user_input',
       threadId: 'session-manager-1',
@@ -98,12 +100,30 @@ test('runManagerCorrectionRounds opens rejection circuit after repeated rejected
   runManagerRoundWithRecoveryMock
     .mockResolvedValueOnce({
       output: '<M:mutate_task id="task-1" op="cancel" />',
+      actions: [
+        {
+          name: 'mutate_task',
+          attrs: {
+            id: 'task-1',
+            op: 'cancel',
+          },
+        },
+      ],
       elapsedMs: 3,
       wakeProfile: 'user_input',
       threadId: 'session-manager-reject',
     })
     .mockResolvedValueOnce({
       output: '<M:mutate_task id="task-1" op="cancel" />',
+      actions: [
+        {
+          name: 'mutate_task',
+          attrs: {
+            id: 'task-1',
+            op: 'cancel',
+          },
+        },
+      ],
       elapsedMs: 4,
       wakeProfile: 'user_input',
       threadId: 'session-manager-reject',

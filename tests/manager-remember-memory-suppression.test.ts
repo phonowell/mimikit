@@ -14,8 +14,16 @@ beforeEach(() => {
 
 test('runManagerCorrectionRounds silently suppresses unsupported remember_memory actions', async () => {
   mockRememberMemoryRound(
-    `收到。\n<M:remember_memory content="${rememberMemoryContent}" />`,
+    '收到。',
     'session-remember-memory-suppressed',
+    [
+      {
+        name: 'remember_memory',
+        attrs: {
+          content: rememberMemoryContent,
+        },
+      },
+    ],
   )
 
   const runtime = await createRememberMemoryRuntime(
@@ -36,8 +44,16 @@ test('runManagerCorrectionRounds silently suppresses unsupported remember_memory
 
 test('runManagerCorrectionRounds does not claim remember_memory succeeded after suppression', async () => {
   mockRememberMemoryRound(
-    `我现在把这条规则写入长期记忆。\n<M:remember_memory content="${rememberMemoryContent}" />`,
+    '我现在把这条规则写入长期记忆。',
     'session-remember-memory-suppressed-claim',
+    [
+      {
+        name: 'remember_memory',
+        attrs: {
+          content: rememberMemoryContent,
+        },
+      },
+    ],
   )
 
   const runtime = await createRememberMemoryRuntime(
@@ -56,10 +72,18 @@ test('runManagerCorrectionRounds does not claim remember_memory succeeded after 
   expect(result.parsed.actions).toHaveLength(0)
 })
 
-test('runManagerCorrectionRounds does not keep remember_memory success claims when correction rounds stop on failure', async () => {
+test('runManagerCorrectionRounds does not keep remember_memory success claims after structured suppression', async () => {
   mockRememberMemoryRound(
-    `我现在把这条规则写入长期记忆。\n<M:remember_memory content="${rememberMemoryContent}">`,
+    '我现在把这条规则写入长期记忆。',
     'session-remember-memory-failed-claim',
+    [
+      {
+        name: 'remember_memory',
+        attrs: {
+          content: rememberMemoryContent,
+        },
+      },
+    ],
   )
 
   const runtime = await createRememberMemoryRuntime(
@@ -72,16 +96,36 @@ test('runManagerCorrectionRounds does not keep remember_memory success claims wh
     1,
   )
 
-  expect(result.roundLimitReached).toBe(true)
-  expect(result.parsed.text).toContain('remember_memory 动作无法继续执行')
+  expect(result.roundLimitReached).toBeUndefined()
+  expect(result.parsed.text).toBe(
+    '这条规则当前没有写入长期记忆，我不会把它当作已记住处理。',
+  )
   expect(result.parsed.text).not.toContain('我现在把这条规则写入长期记忆')
   expect(result.parsed.actions).toHaveLength(0)
 })
 
 test('runManagerCorrectionRounds preserves non-memory reply text when remember_memory is suppressed alongside another action', async () => {
   mockRememberMemoryRound(
-    `我会安排一个任务继续处理。\n<M:enqueue_task title="继续处理当前问题" cwd="/tmp/task" goal="继续处理当前问题" in_scope="只处理当前问题" done_when_1="给出结果" />\n<M:remember_memory content="${rememberMemoryContent}" />`,
+    '我会安排一个任务继续处理。',
     'session-remember-memory-suppressed-mixed',
+    [
+      {
+        name: 'enqueue_task',
+        attrs: {
+          title: '继续处理当前问题',
+          cwd: '/tmp/task',
+          goal: '继续处理当前问题',
+          in_scope: '只处理当前问题',
+          done_when_1: '给出结果',
+        },
+      },
+      {
+        name: 'remember_memory',
+        attrs: {
+          content: rememberMemoryContent,
+        },
+      },
+    ],
   )
 
   const runtime = await createRememberMemoryRuntime(

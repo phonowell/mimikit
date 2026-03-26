@@ -32,7 +32,7 @@ type ActionLogPersistPayload = ActionLogEntry & {
 }
 
 const MANAGER_ACTION_LOG_TAG = '[manager] action' as const
-const TASK_ID_RE = /\b(?:task_id|id|last_task_id)\s*=\s*"([^"]+)"/i
+const TASK_ID_RE = /"(?:task_id|id|last_task_id)"\s*:\s*"([^"]+)"/i
 
 const defaultSink: ActionLogSink = (tag, payload) => {
   console.info(tag, payload)
@@ -79,7 +79,15 @@ const readTaskId = (item: Parsed): string | undefined => {
 }
 
 const readTaskIdFromAttempted = (attempted?: string): string | undefined => {
-  const matched = attempted?.match(TASK_ID_RE)?.[1]?.trim()
+  if (!attempted) return undefined
+  try {
+    const parsed = JSON.parse(attempted) as Record<string, unknown>
+    for (const key of ['task_id', 'id', 'last_task_id']) {
+      const value = parsed[key]
+      if (typeof value === 'string' && value.startsWith('task-')) return value
+    }
+  } catch {}
+  const matched = attempted.match(TASK_ID_RE)?.[1]?.trim()
   return matched?.startsWith('task-') ? matched : undefined
 }
 

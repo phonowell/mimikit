@@ -43,7 +43,7 @@
   - 入参：`title`、`schedule_type`、`focus_id?`、`priority?`、`max_runs?`
   - 触发参数：`cron_expr? | scheduled_at? | time_zone?`
   - effect 参数：
-    - `effect_kind="enqueue_task"`：`task_title`、`task_worker_prompt`、`task_cwd`、`task_goal`、`task_in_scope`、`task_done_when_{n}`，可选 `task_branch` / `task_out_of_scope` / `task_context_ref_{n}`
+    - `effect_kind="enqueue_task"`：`task_title`、`task_worker_prompt`、`task_cwd`、`task_goal`、`task_in_scope`、`task_done_when[]`，可选 `task_branch` / `task_out_of_scope` / `task_context_refs[]`
     - `effect_kind="wake_manager"`：`effect_reason`
 - `update_plan`
   - 入参：`id` + 至少一个更新字段
@@ -88,6 +88,6 @@
 ## 示例
 
 - `on_worker_slot_freed`：
-  `<M:create_plan title="积压任务续跑" schedule_type="on_worker_slot_freed" max_runs="20" effect_kind="enqueue_task" task_title="继续处理积压任务" task_worker_prompt="阅读当前状态并处理下一批积压任务" task_cwd="/Users/mimiko/Projects/mimikit" task_goal="推进积压任务处理" task_in_scope="仅处理当前 focus 的积压项" task_done_when_1="输出本轮处理结果与下一步" />`
+  `{"type":"create_plan","title":"积压任务续跑","schedule_type":"on_worker_slot_freed","max_runs":20,"effect_kind":"enqueue_task","task_title":"继续处理积压任务","task_worker_prompt":"阅读当前状态并处理下一批积压任务","task_cwd":"/Users/mimiko/Projects/mimikit","task_goal":"推进积压任务处理","task_in_scope":"仅处理当前 focus 的积压项","task_done_when":["输出本轮处理结果与下一步"]}`
 - `scheduled_at`：
-  `<M:create_plan title="下午复盘" schedule_type="scheduled_at" scheduled_at="2026-03-21T16:00:00+08:00" effect_kind="wake_manager" effect_reason="scheduled_review" />`
+  `{"type":"create_plan","title":"下午复盘","schedule_type":"scheduled_at","scheduled_at":"2026-03-21T16:00:00+08:00","effect_kind":"wake_manager","effect_reason":"scheduled_review"}`

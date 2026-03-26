@@ -15,8 +15,16 @@ beforeEach(() => {
 
 test('runManagerCorrectionRounds keeps remember_memory when repeated user history supports it', async () => {
   mockRememberMemoryRound(
-    `收到。\n<M:remember_memory content="${rememberMemoryContent}" />`,
+    '收到。',
     'session-remember-memory-repeated',
+    [
+      {
+        name: 'remember_memory',
+        attrs: {
+          content: rememberMemoryContent,
+        },
+      },
+    ],
   )
 
   const runtime = await createRememberMemoryRuntime(

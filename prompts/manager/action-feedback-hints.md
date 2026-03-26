@@ -1,9 +1,5 @@
 unregistered_action: |
   Only registered actions are allowed: {{ registered_actions }}.
-invalid_action_syntax: |
-  Detected M:action markup but no executable action was parsed. Put valid XML actions at the end of the reply (not in code blocks), and make sure tags/quotes are closed correctly.
-action_in_code_block: |
-  Detected M:action inside a code block, so it cannot be executed. Place actions at the end of the reply without code fences.
 invalid_action_args_empty: |
   参数格式不符合要求。
 invalid_action_args_with_issues: |

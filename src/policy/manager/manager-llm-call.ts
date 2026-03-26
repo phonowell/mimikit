@@ -83,6 +83,7 @@ export const resolveManagerTimeoutMs = (prompt: string): number => {
 export const runManagerLlmCall = async (params: {
   prompt: string
   promptSegments?: ProviderPromptSegment[]
+  outputSchema?: unknown
   threadId?: string | null
   workDir: string
   model?: string
@@ -101,6 +102,7 @@ export const runManagerLlmCall = async (params: {
 }): Promise<{
   prompt: string
   output: string
+  outputJson?: unknown
   elapsedMs: number
   usage?: TokenUsage
   threadId?: string | null
@@ -124,6 +126,7 @@ export const runManagerLlmCall = async (params: {
           ...(params.promptSegments
             ? { promptSegments: params.promptSegments }
             : {}),
+          ...(params.outputSchema ? { outputSchema: params.outputSchema } : {}),
           ...(params.threadId ? { threadId: params.threadId } : {}),
           workDir: params.workDir,
           timeoutMs,

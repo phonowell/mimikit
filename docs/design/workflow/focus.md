@@ -80,12 +80,11 @@
 ### `upsert_focus`
 
 - 必填：`id`
-- 可选：`title/status/summary/open_item_{n}`
-- `summary/open_item_{n}` 都必须是单行 digest 文本；拒绝多行、checklist、步骤列表形态
-- 长度上限：`summary <= 140 chars`、`open_item_{n} <= 80 chars`
-- `open_item_{n}` 约束：
-- 值必须为非空字符串。
-- 索引必须从 `1` 连续递增，不可跳号。
+- 可选：`title/status/summary/open_items[]`
+- `summary/open_items[]` 都必须是单行 digest 文本；拒绝多行、checklist、步骤列表形态
+- 长度上限：`summary <= 140 chars`、`open_items[]` 中每项 `<= 80 chars`
+- `open_items[]` 约束：
+- 每项必须为非空字符串。
 - 行为：
 - 不存在则创建，存在则更新。
 - `status` 会应用保留 focus 归一化规则。

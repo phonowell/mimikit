@@ -12,8 +12,6 @@ const HINT_TEMPLATE_RELATIVE_PATH = 'manager/action-feedback-hints.md'
 const actionFeedbackHintSchema = z
   .object({
     unregistered_action: z.string().trim().min(1),
-    invalid_action_syntax: z.string().trim().min(1),
-    action_in_code_block: z.string().trim().min(1),
     invalid_action_args_empty: z.string().trim().min(1),
     invalid_action_args_with_issues: z.string().trim().min(1),
     invalid_iso_range_field: z.string().trim().min(1),

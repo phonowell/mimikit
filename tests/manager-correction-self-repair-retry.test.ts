@@ -38,12 +38,24 @@ test('runManagerCorrectionRounds gives invalid action feedback one self-repair r
     .mockResolvedValueOnce({
       output:
         '<M:create_plan prompt="daily" title="plan" cron_expr="*/15 * * * *" time_zone="Asia/Shanghai" />',
+      actions: [
+        {
+          name: 'create_plan',
+          attrs: {
+            prompt: 'daily',
+            title: 'plan',
+            cron_expr: '*/15 * * * *',
+            time_zone: 'Asia/Shanghai',
+          },
+        },
+      ],
       elapsedMs: 3,
       wakeProfile: 'user_input',
       threadId: 'session-manager-self-repair',
     })
     .mockResolvedValueOnce({
       output: 'repaired answer',
+      actions: [],
       elapsedMs: 4,
       wakeProfile: 'user_input',
       threadId: 'session-manager-self-repair',

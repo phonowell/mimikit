@@ -6,6 +6,10 @@ import {
 import { buildManagerPromptPayload } from '../prompts/build-prompts.js'
 
 import { runManagerLlmCall } from './manager-llm-call.js'
+import {
+  buildManagerTurnOutputSchema,
+  parseManagerTurn,
+} from './manager-turn.js'
 
 import type { AppConfig } from '../../bootstrap/config.js'
 import type {
@@ -55,6 +59,7 @@ export const runManager = async (params: {
   wakeProfile?: ManagerEnv['wakeProfile']
 }): Promise<{
   output: string
+  actions: Array<{ name: string; attrs: Record<string, string> }>
   elapsedMs: number
   usage?: TokenUsage
   threadId?: string | null
@@ -104,6 +109,7 @@ export const runManager = async (params: {
     const result = await runManagerLlmCall({
       prompt,
       ...(params.usePromptSegments === false ? {} : { promptSegments }),
+      outputSchema: buildManagerTurnOutputSchema(),
       workDir: params.workDir,
       ...(model ? { model } : {}),
       ...(params.baseUrl ? { baseUrl: params.baseUrl } : {}),
@@ -133,8 +139,10 @@ export const runManager = async (params: {
       { ...result, ok: true },
       result.prompt,
     )
+    const turn = parseManagerTurn(result.outputJson)
     return {
-      output: result.output,
+      output: turn.replyText,
+      actions: turn.actions,
       elapsedMs: result.elapsedMs,
       ...(result.usage ? { usage: result.usage } : {}),
       ...(result.threadId ? { threadId: result.threadId } : {}),

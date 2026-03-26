@@ -53,6 +53,7 @@ export const runManagerRoundWithRecovery = async (params: {
   abortSignal?: AbortSignal
 }): Promise<{
   output: string
+  actions: Array<{ name: string; attrs: Record<string, string> }>
   elapsedMs: number
   usage?: TokenUsage
   wakeProfile: ManagerWakeProfile
@@ -137,6 +138,7 @@ export const runManagerRoundWithRecovery = async (params: {
 
   return {
     output: result.output,
+    actions: result.actions,
     elapsedMs: result.elapsedMs,
     wakeProfile,
     ...(result.threadId !== undefined ? { threadId: result.threadId } : {}),

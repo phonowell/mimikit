@@ -37,12 +37,28 @@ test('runManagerCorrectionRounds summarizes repeated invalid create_plan feedbac
   runManagerRoundWithRecoveryMock
     .mockResolvedValueOnce({
       output: '<M:create_plan title="bad plan" />',
+      actions: [
+        {
+          name: 'create_plan',
+          attrs: {
+            title: 'bad plan',
+          },
+        },
+      ],
       elapsedMs: 3,
       wakeProfile: 'user_input',
       threadId: 'session-manager-invalid-plan',
     })
     .mockResolvedValueOnce({
       output: '<M:create_plan title="bad plan" />',
+      actions: [
+        {
+          name: 'create_plan',
+          attrs: {
+            title: 'bad plan',
+          },
+        },
+      ],
       elapsedMs: 4,
       wakeProfile: 'user_input',
       threadId: 'session-manager-invalid-plan',
@@ -52,14 +68,6 @@ test('runManagerCorrectionRounds summarizes repeated invalid create_plan feedbac
       done: false,
       extra: {
         actionFeedback: [
-          {
-            action: 'create_plan',
-            error: 'invalid_action_syntax',
-            hint:
-              'Detected M:action markup but no executable action was parsed. Put valid XML actions at the end of the reply.',
-            code: 'invalid_action_syntax',
-            repair: { kind: 'fix_action_markup' },
-          },
           {
             action: 'create_plan',
             error: 'invalid_action_args',
@@ -73,6 +81,19 @@ test('runManagerCorrectionRounds summarizes repeated invalid create_plan feedbac
               ],
             },
           },
+          {
+            action: 'create_plan',
+            error: 'invalid_action_args',
+            hint:
+              '参数校验失败：effect_kind: Invalid input: expected "enqueue_task" | "wake_manager", received undefined',
+            code: 'invalid_action_args',
+            repair: {
+              kind: 'fix_action_args',
+              issues: [
+                'effect_kind: Invalid input: expected "enqueue_task" | "wake_manager", received undefined',
+              ],
+            },
+          },
         ],
       },
     })
@@ -80,14 +101,6 @@ test('runManagerCorrectionRounds summarizes repeated invalid create_plan feedbac
       done: false,
       extra: {
         actionFeedback: [
-          {
-            action: 'create_plan',
-            error: 'invalid_action_syntax',
-            hint:
-              'Detected M:action markup but no executable action was parsed. Put valid XML actions at the end of the reply.',
-            code: 'invalid_action_syntax',
-            repair: { kind: 'fix_action_markup' },
-          },
           {
             action: 'create_plan',
             error: 'invalid_action_args',
@@ -98,6 +111,19 @@ test('runManagerCorrectionRounds summarizes repeated invalid create_plan feedbac
               kind: 'fix_action_args',
               issues: [
                 'schedule_type: schedule_type is required when cron_expr/scheduled_at/time_zone is provided',
+              ],
+            },
+          },
+          {
+            action: 'create_plan',
+            error: 'invalid_action_args',
+            hint:
+              '参数校验失败：effect_kind: Invalid input: expected "enqueue_task" | "wake_manager", received undefined',
+            code: 'invalid_action_args',
+            repair: {
+              kind: 'fix_action_args',
+              issues: [
+                'effect_kind: Invalid input: expected "enqueue_task" | "wake_manager", received undefined',
               ],
             },
           },
@@ -131,7 +157,7 @@ test('runManagerCorrectionRounds summarizes repeated invalid create_plan feedbac
 
   expect(result.roundLimitReached).toBe(true)
   expect(result.parsed.text).toContain('当前 create_plan 动作无法继续执行')
-  expect(result.parsed.text).toContain('Detected M:action markup')
   expect(result.parsed.text).toContain('schedule_type is required')
+  expect(result.parsed.text).toContain('effect_kind')
   expect(result.parsed.text).not.toContain('最终要我产出什么')
 })

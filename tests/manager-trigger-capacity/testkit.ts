@@ -31,6 +31,7 @@ beforeEach(() => {
   runManagerRoundWithRecoveryMock.mockReset()
   runManagerRoundWithRecoveryMock.mockResolvedValue({
     output: '',
+    actions: [],
     elapsedMs: 0,
     wakeProfile: 'capacity',
   })

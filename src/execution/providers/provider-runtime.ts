@@ -44,10 +44,12 @@ export const createTimeoutGuard = (params: {
 export const buildProviderResult = (params: {
   startedAt: number
   output: string
+  outputJson?: unknown
   usage?: TokenUsage
   threadId?: string | null
 }): ProviderResult => ({
   output: params.output,
+  ...(params.outputJson !== undefined ? { outputJson: params.outputJson } : {}),
   elapsedMs: elapsedMsSince(params.startedAt),
   ...(params.usage ? { usage: params.usage } : {}),
   ...(params.threadId !== undefined ? { threadId: params.threadId } : {}),

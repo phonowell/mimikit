@@ -12,7 +12,7 @@ const collectUniqueHints = (feedback: ManagerActionFeedback[]): string[] =>
   )
 
 const isSelfRepairableActionFeedback = (item: ManagerActionFeedback): boolean =>
-  item.error === 'invalid_action_args' || item.error === 'invalid_action_syntax'
+  item.error === 'invalid_action_args'
 
 export const shouldRetrySelfRepairRound = (
   round: number,

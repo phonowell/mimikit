@@ -7,12 +7,6 @@ export const formatUnregisteredActionHint = (
     registered_actions: registeredActions.join(', '),
   })
 
-export const formatInvalidActionSyntaxHint = (): string =>
-  renderActionFeedbackHint('invalid_action_syntax')
-
-export const formatActionInCodeBlockHint = (): string =>
-  renderActionFeedbackHint('action_in_code_block')
-
 export const formatInvalidActionArgsEmptyHint = (): string =>
   renderActionFeedbackHint('invalid_action_args_empty')
 

@@ -25,10 +25,56 @@ beforeEach(() => {
   resolveRoundFollowupMock.mockReset()
 })
 
+const buildInvalidArgsRunResult = (elapsedMs: number) => ({
+  output:
+    '<M:enqueue_task title="task" cwd="/tmp/task" goal="ship" in_scope="frontend only" done_when_1="tests pass" />',
+  actions: [
+    {
+      name: 'enqueue_task',
+      attrs: {
+        title: 'task',
+        cwd: '/tmp/task',
+        goal: 'ship',
+        in_scope: 'frontend only',
+        done_when_1: 'tests pass',
+      },
+    },
+  ],
+  elapsedMs,
+  wakeProfile: 'user_input' as const,
+  threadId: 'session-manager-invalid-args',
+})
+
+const invalidWorkerPromptFeedback = {
+  action: 'enqueue_task',
+  error: 'invalid_action_args',
+  hint:
+    '参数校验失败：worker_prompt: Invalid input: expected string, received undefined',
+  code: 'invalid_action_args' as const,
+  repair: {
+    kind: 'fix_action_args' as const,
+    issues: [
+      'worker_prompt: Invalid input: expected string, received undefined',
+    ],
+    missing_required_attr: 'worker_prompt',
+    missing_required_attrs: ['worker_prompt'],
+  },
+}
+
 test('runManagerCorrectionRounds explains missing execution boundary in user terms', async () => {
   runManagerRoundWithRecoveryMock.mockResolvedValueOnce({
     output:
       '<M:enqueue_task worker_prompt="do work" title="task" cwd="/tmp/task" />',
+    actions: [
+      {
+        name: 'enqueue_task',
+        attrs: {
+          worker_prompt: 'do work',
+          title: 'task',
+          cwd: '/tmp/task',
+        },
+      },
+    ],
     elapsedMs: 3,
     wakeProfile: 'user_input',
     threadId: 'session-manager-scope',
@@ -80,63 +126,19 @@ test('runManagerCorrectionRounds explains missing execution boundary in user ter
 
 test('runManagerCorrectionRounds returns concrete invalid action args instead of generic scope clarification', async () => {
   runManagerRoundWithRecoveryMock
-    .mockResolvedValueOnce({
-      output:
-        '<M:enqueue_task title="task" cwd="/tmp/task" goal="ship" in_scope="frontend only" done_when_1="tests pass" />',
-      elapsedMs: 3,
-      wakeProfile: 'user_input',
-      threadId: 'session-manager-invalid-args',
-    })
-    .mockResolvedValueOnce({
-      output:
-        '<M:enqueue_task title="task" cwd="/tmp/task" goal="ship" in_scope="frontend only" done_when_1="tests pass" />',
-      elapsedMs: 4,
-      wakeProfile: 'user_input',
-      threadId: 'session-manager-invalid-args',
-    })
+    .mockResolvedValueOnce(buildInvalidArgsRunResult(3))
+    .mockResolvedValueOnce(buildInvalidArgsRunResult(4))
   resolveRoundFollowupMock
     .mockResolvedValueOnce({
       done: false,
       extra: {
-        actionFeedback: [
-          {
-            action: 'enqueue_task',
-            error: 'invalid_action_args',
-            hint:
-              '参数校验失败：worker_prompt: Invalid input: expected string, received undefined',
-            code: 'invalid_action_args',
-            repair: {
-              kind: 'fix_action_args',
-              issues: [
-                'worker_prompt: Invalid input: expected string, received undefined',
-              ],
-              missing_required_attr: 'worker_prompt',
-              missing_required_attrs: ['worker_prompt'],
-            },
-          },
-        ],
+        actionFeedback: [invalidWorkerPromptFeedback],
       },
     })
     .mockResolvedValueOnce({
       done: false,
       extra: {
-        actionFeedback: [
-          {
-            action: 'enqueue_task',
-            error: 'invalid_action_args',
-            hint:
-              '参数校验失败：worker_prompt: Invalid input: expected string, received undefined',
-            code: 'invalid_action_args',
-            repair: {
-              kind: 'fix_action_args',
-              issues: [
-                'worker_prompt: Invalid input: expected string, received undefined',
-              ],
-              missing_required_attr: 'worker_prompt',
-              missing_required_attrs: ['worker_prompt'],
-            },
-          },
-        ],
+        actionFeedback: [invalidWorkerPromptFeedback],
       },
     })
 

@@ -1,5 +1,4 @@
 import { formatUnregisteredActionHint } from './action-feedback-hints.js'
-import { detectUnparsedActionIssue } from './action-feedback-unparsed.js'
 import {
   REGISTERED_MANAGER_ACTIONS,
   validateRegisteredManagerAction,
@@ -13,17 +12,11 @@ const UNREGISTERED_ACTION_HINT = formatUnregisteredActionHint(
   [...REGISTERED_MANAGER_ACTIONS].map((name) => `M:${name}`),
 )
 
-const escapeAttr = (value: string): string =>
-  value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
-
-const renderAttemptedAction = (item: Parsed): string => {
-  const attrs = Object.entries(item.attrs)
-  if (attrs.length === 0) return `<M:${item.name} />`
-  const attrsText = attrs
-    .map(([key, value]) => `${key}="${escapeAttr(value)}"`)
-    .join(' ')
-  return `<M:${item.name} ${attrsText} />`
-}
+const renderAttemptedAction = (item: Parsed): string =>
+  JSON.stringify({
+    type: item.name,
+    ...item.attrs,
+  })
 
 const pushFeedback = (
   feedback: ManagerActionFeedback[],
@@ -50,22 +43,10 @@ const pushFeedback = (
   })
 }
 
-const pushRawFeedback = (
-  feedback: ManagerActionFeedback[],
-  seen: Set<string>,
-  item: ManagerActionFeedback,
-): void => {
-  const attempted = item.attempted?.trim() ?? ''
-  const key = `${item.error}\n${attempted}`
-  if (seen.has(key)) return
-  seen.add(key)
-  feedback.push(item)
-}
-
 export const collectManagerActionValidationOutcome = (
   items: Parsed[],
   context: FeedbackContext = {},
-  output = '',
+  _output = '',
 ): {
   feedback: ManagerActionFeedback[]
   suppressedActionIndexes: number[]
@@ -73,11 +54,6 @@ export const collectManagerActionValidationOutcome = (
   const feedback: ManagerActionFeedback[] = []
   const seen = new Set<string>()
   const suppressedActionIndexes: number[] = []
-
-  if (output.trim().length > 0) {
-    const syntaxIssue = detectUnparsedActionIssue(output, items.length > 0)
-    if (syntaxIssue) pushRawFeedback(feedback, seen, syntaxIssue)
-  }
 
   for (const [index, item] of items.entries()) {
     const isRegistered = REGISTERED_MANAGER_ACTIONS.has(item.name)

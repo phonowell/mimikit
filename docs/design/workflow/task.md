@@ -17,8 +17,8 @@
 
 ## 派发与去重
 
-- 立即执行 Action：`<M:enqueue_task ... />`
-- 生命周期控制 Action：`<M:mutate_task id="task-..." op="pause|resume|cancel|review_passed|merged|cleaned" />`
+- 立即执行 Action：在 manager turn 的 `actions[]` 中追加 `type="enqueue_task"` 对象
+- 生命周期控制 Action：在 manager turn 的 `actions[]` 中追加 `type="mutate_task"` 对象，并传入 `id/op/reason?...`
 - worker 任务 profile 固定为 `worker`
 - `Task.resourceMode` 表达任务资源语义：`read` 只读，不占 git 写锁；`write` 可改文件/占写资源。未显式声明时默认按 `write` 处理
 - `Task.cwd` 是任务执行目录；若 `enqueue_task` 同时传入 `cwd + branch`，系统会在 enqueue 阶段自动创建或复用对应 worktree，并把 `Task.cwd` 写成真实 worktree 路径。git 仓库中的 `write` 任务若未显式传 `branch`，enqueue 阶段会按 task 指纹自动分配独立 branch/worktree。若最终 `cwd` 在 git 仓库内，会额外记录 `repoKey + branch`，并在 `Task.git` / `TaskResultHandoff.git` 中补充 `worktreePath + branch`

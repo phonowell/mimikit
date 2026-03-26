@@ -1,4 +1,3 @@
-import { parseActions } from '../../policy/actions/protocol/parse.js'
 import { isVisibleToUser } from '../shared/message-visibility.js'
 import { resolveSystemEvent } from '../shared/system-event.js'
 
@@ -13,7 +12,7 @@ const toUserVisibleSystemMessage = (message: {
   systemEventName?: string
   systemEventPayload?: Record<string, unknown>
 }) => {
-  const visibleText = parseActions(message.text).text
+  const visibleText = message.text
   if (!visibleText.trim()) return { text: '' }
   const parsedEvent = resolveSystemEvent(message)
   return {
