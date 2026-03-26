@@ -1,6 +1,6 @@
-import { useEffect, useEffectEvent } from 'react'
+import { useEffect, useEffectEvent, useRef } from 'react'
 
-import { applyIncomingSnapshot } from '../lib/messages.js'
+import { applyIncomingSnapshot, findNewAgentMessages } from '../lib/messages.js'
 
 import { useBranding } from './use-branding.js'
 import { useEventStream } from './use-event-stream.js'
@@ -12,6 +12,17 @@ const TOAST_HIDE_DELAY_MS = 2_800
 
 type ScrollController = {
   captureLayoutShift: () => void
+}
+
+const collectMessageIds = (
+  messages: ReadonlyArray<AppState['messages'][number]>,
+): ReadonlySet<string> => {
+  const ids = new Set<string>()
+  for (const message of messages) {
+    const id = typeof message.id === 'string' ? message.id.trim() : ''
+    if (id) ids.add(id)
+  }
+  return ids
 }
 
 type Params = {
@@ -41,16 +52,11 @@ export const useAppRuntimeEffects = ({
   setToolsMenuOpen,
   toast,
 }: Params): void => {
+  const previousMessageIdsRef = useRef(collectMessageIds(appState.messages))
   const handleSnapshot = useEffectEvent((snapshot: SnapshotEnvelope) => {
     scroll.captureLayoutShift()
     setStatusOverride(null)
-    let newAgentMessages: AppState['messages'] = []
-    setAppState((current) => {
-      const result = applyIncomingSnapshot(current, snapshot)
-      newAgentMessages = result.newAgentMessages
-      return result.next
-    })
-    if (newAgentMessages.length > 0) speakMessages(newAgentMessages)
+    setAppState((current) => applyIncomingSnapshot(current, snapshot).next)
   })
   const handleTasks = useEffectEvent((tasks: TasksSnapshot) =>
     setAppState((current) => ({ ...current, tasks: tasks.tasks })),
@@ -75,6 +81,16 @@ export const useAppRuntimeEffects = ({
     onTasks: handleTasks,
     onDisconnected: handleDisconnected,
   })
+
+  useEffect(() => {
+    const previousIds = previousMessageIdsRef.current
+    const newAgentMessages = findNewAgentMessages(
+      appState.messages,
+      previousIds,
+    )
+    previousMessageIdsRef.current = collectMessageIds(appState.messages)
+    if (newAgentMessages.length > 0) speakMessages(newAgentMessages)
+  }, [appState.messages, speakMessages])
 
   useEffect(() => {
     if (!toast) return
