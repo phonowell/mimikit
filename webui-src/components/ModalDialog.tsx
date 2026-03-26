@@ -1,6 +1,6 @@
 import { useEffect, useEffectEvent, useRef } from 'react'
 
-import type { PropsWithChildren, ReactNode } from 'react'
+import type { PropsWithChildren } from 'react'
 
 type Props = PropsWithChildren<{
   open: boolean
@@ -8,7 +8,6 @@ type Props = PropsWithChildren<{
   id: string
   labelledBy: string
   describedBy?: string
-  title: ReactNode
   onClose: () => void
 }>
 
@@ -19,7 +18,6 @@ export const ModalDialog = ({
   id,
   labelledBy,
   describedBy,
-  title,
   onClose,
 }: Props) => {
   const ref = useRef<HTMLDialogElement>(null)
@@ -66,7 +64,6 @@ export const ModalDialog = ({
       aria-labelledby={labelledBy}
       {...(describedBy ? { 'aria-describedby': describedBy } : {})}
     >
-      {title}
       {children}
     </dialog>
   )

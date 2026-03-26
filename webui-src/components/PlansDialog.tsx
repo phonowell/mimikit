@@ -18,7 +18,6 @@ export const PlansDialog = ({ open, plans, onClose }: Props) => (
     id="plans-dialog"
     labelledBy="plans-title"
     onClose={onClose}
-    title={null}
   >
     <section className="plans-panel">
       <header className="plans-header">

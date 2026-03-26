@@ -91,7 +91,6 @@ export const ConfirmDialogs = ({ dialog, busy, onClose, onConfirm }: Props) => {
       labelledBy={copy.titleId}
       describedBy={copy.descriptionId}
       onClose={onClose}
-      title={null}
     >
       <section className={copy.sectionClassName}>
         <header className={copy.headerClassName}>

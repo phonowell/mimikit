@@ -1,7 +1,7 @@
 import { shortId } from '../../foundation/shared/utils.js'
 import { Orchestrator } from '../../kernel/orchestrator/orchestrator-service.js'
 import { setRuntimeReaperBridge } from '../../kernel/runtime/reaper-bridge.js'
-import { createRuntimeReaperHandle } from '../../kernel/runtime/reaper.js'
+import { createRuntimeReaperHandle } from '../../kernel/runtime/reaper-handle.js'
 import { buildRuntimeStartupLogEntry } from '../../kernel/shared/runtime-startup.js'
 import { appendLog } from '../../persistence/log/append.js'
 import { bestEffort } from '../../persistence/log/safe.js'

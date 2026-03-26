@@ -44,14 +44,13 @@ export const useAppRuntimeEffects = ({
   const handleSnapshot = useEffectEvent((snapshot: SnapshotEnvelope) => {
     scroll.captureLayoutShift()
     setStatusOverride(null)
+    let newAgentMessages: AppState['messages'] = []
     setAppState((current) => {
-      const { next, newAgentMessages } = applyIncomingSnapshot(
-        current,
-        snapshot,
-      )
-      if (newAgentMessages.length > 0) speakMessages(newAgentMessages)
-      return next
+      const result = applyIncomingSnapshot(current, snapshot)
+      newAgentMessages = result.newAgentMessages
+      return result.next
     })
+    if (newAgentMessages.length > 0) speakMessages(newAgentMessages)
   })
   const handleTasks = useEffectEvent((tasks: TasksSnapshot) =>
     setAppState((current) => ({ ...current, tasks: tasks.tasks })),

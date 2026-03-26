@@ -18,7 +18,6 @@ export const FocusDialog = ({ open, focuses, onClose }: Props) => (
     id="focuses-dialog"
     labelledBy="focuses-title"
     onClose={onClose}
-    title={null}
   >
     <section className="focuses-panel">
       <header className="focuses-header">

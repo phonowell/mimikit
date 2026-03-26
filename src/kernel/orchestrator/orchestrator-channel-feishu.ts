@@ -17,7 +17,7 @@ export const createFeishuChannelLifecycle = (params: {
   const startPollingIfEnabled = async (): Promise<void> => {
     if (!params.runtime.config.feishu.enabled) return
     const { startFeishuPolling } =
-      await import('../../surface/channels/feishu/index.js')
+      await import('../../surface/channels/feishu/polling.js')
     await startFeishuPolling({
       config: params.runtime.config,
       logPath: params.runtime.paths.log,
@@ -30,7 +30,7 @@ export const createFeishuChannelLifecycle = (params: {
   const stopPollingIfEnabled = async (): Promise<void> => {
     if (!params.runtime.config.feishu.enabled) return
     const { stopFeishuPolling } =
-      await import('../../surface/channels/feishu/index.js')
+      await import('../../surface/channels/feishu/polling.js')
     await stopFeishuPolling({
       workDir: params.runtime.config.workDir,
       logPath: params.runtime.paths.log,

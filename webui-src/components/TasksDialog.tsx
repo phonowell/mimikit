@@ -33,7 +33,6 @@ export const TasksDialog = ({
     id="tasks-dialog"
     labelledBy="tasks-title"
     onClose={onClose}
-    title={null}
   >
     <section className="tasks-panel">
       <header className="tasks-header">

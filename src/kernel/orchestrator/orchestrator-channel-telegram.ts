@@ -41,7 +41,7 @@ export const createTelegramChannelLifecycle = (params: {
   const startPollingIfEnabled = async (): Promise<void> => {
     if (!params.runtime.config.telegram.enabled) return
     const { startTelegramPolling } =
-      await import('../../surface/channels/telegram/index.js')
+      await import('../../surface/channels/telegram/polling.js')
     await startTelegramPolling({
       config: params.runtime.config,
       logPath: params.runtime.paths.log,
@@ -55,7 +55,7 @@ export const createTelegramChannelLifecycle = (params: {
   const stopPollingIfEnabled = async (): Promise<void> => {
     if (!params.runtime.config.telegram.enabled) return
     const { stopTelegramPolling } =
-      await import('../../surface/channels/telegram/index.js')
+      await import('../../surface/channels/telegram/polling.js')
     await stopTelegramPolling({
       workDir: params.runtime.config.workDir,
       logPath: params.runtime.paths.log,
