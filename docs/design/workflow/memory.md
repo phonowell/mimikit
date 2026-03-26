@@ -42,6 +42,8 @@
   - 只有当 `content` 被当前用户输入直接支撑，或近期用户历史已重复表达同一稳定规则/偏好时，才允许立即写入。
   - “当前阶段重点 / 当前项目 / 本轮安排”一类当前态信息应留在 `focus/state`，不进入长期 memory。
   - 不满足上述证据时，`remember_memory` 会被静默 suppress；不会写入 memory，也不会触发用户侧澄清回合。
+  - 若 `remember_memory` 被 suppress，manager 不得继续沿用同轮文本里的“已记住/已写入长期记忆”断言；用户侧必须改为明确说明“当前未写入长期记忆”。
+  - 若 correction round 因 `remember_memory` 失败而提前收口或达到上限，最终回复必须优先使用 failure feedback / fallback，不得回退到仍声称写入成功的上一轮原文。
 - 回执：写入 `memory_remembered` system event（含 `entry_id/ref/operation`）。
 - 代码：
   - `src/work/memory/remember-entry.ts`

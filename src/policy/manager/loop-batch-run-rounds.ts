@@ -9,6 +9,7 @@ import { parseActions } from '../actions/protocol/parse.js'
 
 import {
   buildCorrectionFallbackReply,
+  buildRememberMemoryNotWrittenReply,
   shouldRetrySelfRepairRound,
 } from './loop-batch-correction-reply.js'
 import { runManagerRoundWithRecovery } from './loop-batch-exec.js'
@@ -127,13 +128,33 @@ export const runManagerCorrectionRounds = async (params: {
       wakeProfile: runResult.wakeProfile,
       roundExtra: extra,
     })
+    const suppressedActions =
+      followup.filteredActions !== undefined
+        ? parsed.actions.filter(
+            (item) => !followup.filteredActions?.includes(item),
+          )
+        : []
     const resolvedParsed =
       followup.filteredActions !== undefined
         ? { ...parsed, actions: followup.filteredActions }
         : parsed
+    const suppressedRememberMemory = suppressedActions.some(
+      (item) => item.name === 'remember_memory',
+    )
+    const pureRememberMemoryTurn =
+      parsed.actions.length > 0 &&
+      parsed.actions.every((item) => item.name === 'remember_memory') &&
+      resolvedParsed.actions.length === 0
+    const resolvedText =
+      suppressedRememberMemory && pureRememberMemoryTurn
+        ? buildRememberMemoryNotWrittenReply()
+        : resolvedParsed.text
     if (followup.done) {
       return buildBatchSuccessResult({
-        parsed: resolvedParsed,
+        parsed: {
+          ...resolvedParsed,
+          text: resolvedText,
+        },
         elapsedMs,
         ...(batchUsage ? { usage: batchUsage } : {}),
       })
@@ -147,7 +168,9 @@ export const runManagerCorrectionRounds = async (params: {
   if (managerThreadId) runtime.manager.threadId = managerThreadId
   else delete runtime.manager.threadId
   return buildRoundLimitResult({
-    text: lastParsed.text,
+    text: extra.actionFeedback?.length
+      ? buildCorrectionFallbackReply(extra.actionFeedback)
+      : lastParsed.text,
     elapsedMs,
     ...(batchUsage ? { usage: batchUsage } : {}),
   })
