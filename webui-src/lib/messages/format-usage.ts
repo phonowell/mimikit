@@ -45,11 +45,11 @@ export const formatUsage = (
   )
     return null
 
-  const inputTotal = hasInputSide
-    ? Math.round(input ?? 0) +
-      Math.round(inputCacheRead ?? 0) +
-      Math.round(inputCacheWrite ?? 0)
-    : null
+  const inputTotal = !hasInputSide
+    ? null
+    : input !== null
+      ? Math.round(input)
+      : Math.round(inputCacheRead ?? 0) + Math.round(inputCacheWrite ?? 0)
   const outputTotal = hasOutputSide
     ? Math.round(output ?? 0) + Math.round(outputCache ?? 0)
     : null
