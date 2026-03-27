@@ -6,10 +6,7 @@ import {
   resolveTaskLabel,
 } from '../../work/shared/task-state.js'
 
-import {
-  buildStructuredTaskHandoff,
-  stripTaskHandoffTag,
-} from './task-handoff-protocol.js'
+import { buildStructuredTaskHandoff } from './task-handoff-protocol.js'
 
 import type {
   Task,
@@ -93,20 +90,16 @@ const dedupeEvidence = (
 export const buildTaskResultHandoff = (
   task: Task,
   result: Pick<TaskResult, 'status' | 'output'>,
+  structuredHandoff?: TaskResultHandoff,
 ): TaskResultHandoff | undefined => {
-  const structured = buildStructuredTaskHandoff({
-    git: task.git,
-    output: result.output,
-  })
-  if (structured) return structured
+  if (structuredHandoff) return structuredHandoff
   if (result.status === 'succeeded') return undefined
 
-  const cleanedOutput = stripTaskHandoffTag(result.output)
   const taskLabel = resolveTaskLabel(task)
-  const detail = pickTaskResultSummaryLine(cleanedOutput, MAX_SUMMARY_CHARS)
+  const detail = pickTaskResultSummaryLine(result.output, MAX_SUMMARY_CHARS)
   const summary = formatTaskResultSummary(taskLabel, result.status, detail)
-  const decisions = collectChecklistItems(cleanedOutput, 'checked')
-  const nextSteps = collectChecklistItems(cleanedOutput, 'unchecked')
+  const decisions = collectChecklistItems(result.output, 'checked')
+  const nextSteps = collectChecklistItems(result.output, 'unchecked')
   const risks = buildRiskItems(result.status, taskLabel, summary)
   if (!summary && decisions.length === 0 && nextSteps.length === 0 && !risks)
     return undefined
@@ -127,6 +120,15 @@ export const buildTaskResultHandoff = (
     ...(git ? { git } : {}),
   }
 }
+
+export const normalizeWorkerStructuredHandoff = (params: {
+  task: Task
+  handoff: unknown
+}): TaskResultHandoff =>
+  buildStructuredTaskHandoff({
+    git: params.task.git,
+    handoff: params.handoff,
+  }) ?? {}
 
 export const withTaskArchiveEvidence = (
   handoff: TaskResultHandoff | undefined,

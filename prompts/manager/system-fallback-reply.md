@@ -1,1 +1,1 @@
-Service unavailable. Try again soon.
+服务暂时不可用，请稍后重试。

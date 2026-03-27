@@ -16,7 +16,7 @@ beforeEach(() => {
   resetRunTaskMocks()
 })
 
-test('runTask fails the task when the worker run ends without completion protocol', async () => {
+test('runTask fails the task when the worker run ends without structured output', async () => {
   const runtime = await createRuntime()
   const task = await prepareTask(
     runtime,
@@ -26,9 +26,7 @@ test('runTask fails the task when the worker run ends without completion protoco
   )
 
   setBuildResultOk(false)
-  runTaskWithRetryMock.mockRejectedValue(
-    new Error('missing completion protocol'),
-  )
+  runTaskWithRetryMock.mockRejectedValue(new Error('missing structured result'))
 
   await runTask(runtime, task, new AbortController())
 
@@ -36,8 +34,10 @@ test('runTask fails the task when the worker run ends without completion protoco
   expect(buildResultMock).toHaveBeenLastCalledWith(
     task,
     'failed',
-    'missing completion protocol',
+    'missing structured result',
     expect.any(Number),
     { input: 120, output: 40, total: 160 },
+    undefined,
+    undefined,
   )
 })

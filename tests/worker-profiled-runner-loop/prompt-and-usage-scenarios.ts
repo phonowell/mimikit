@@ -17,12 +17,18 @@ test('runWorkerLoop does not double count when onUsage and result usage are iden
     const result = await runWorkerLoop({
       stateDir,
       task,
-      prompt: task.prompt,
+      prompt: task.title,
       archiveBase: { role: 'worker', taskId: task.id },
       runModel: ({ onUsage }) =>
         Promise.resolve({
-          output:
-            'done\n<M:task_handoff>{"summary":"done"}</M:task_handoff>\n<M:skill_usage status="done">test</M:skill_usage>',
+          output: JSON.stringify({
+            reply: 'done',
+            handoff: { summary: 'done' },
+          }),
+          outputJson: {
+            reply: 'done',
+            handoff: { summary: 'done' },
+          },
           elapsedMs: 12,
           usage: ((usage) => {
             onUsage?.(usage)
@@ -58,14 +64,20 @@ test('runWorkerLoop forwards partial output updates', async () => {
     const result = await runWorkerLoop({
       stateDir,
       task,
-      prompt: task.prompt,
+      prompt: task.title,
       archiveBase: { role: 'worker', taskId: task.id },
       runModel: ({ onPartialOutput }) => {
         onPartialOutput?.('step 1')
         onPartialOutput?.('step 2')
         return Promise.resolve({
-          output:
-            'done\n<M:task_handoff>{"summary":"done"}</M:task_handoff>\n<M:skill_usage status="done">test</M:skill_usage>',
+          output: JSON.stringify({
+            reply: 'done',
+            handoff: { summary: 'done' },
+          }),
+          outputJson: {
+            reply: 'done',
+            handoff: { summary: 'done' },
+          },
           elapsedMs: 12,
         })
       },

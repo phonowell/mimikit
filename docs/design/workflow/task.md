@@ -36,6 +36,7 @@
 - `worker_prompt` 已删除
 - `branch` 已删除
 - `cwd` 必须指向现有目录；git 写任务只提交仓库内真实执行起点，不直接提交未来 worktree 路径。
+- worker prompt 中，任务合同优先于 `focus_brief` 与 `resume_instruction`；后两者只提供背景或一次性恢复补充，不改写合同本身。
 
 ## 去重与替换
 
@@ -74,5 +75,6 @@
 ## 结果约束
 
 - 成功结果必须通过结构化 handoff 协议收敛
+- worker 结束输出必须是单个结构化 JSON 对象：`{ reply, handoff }`
 - manager 只消费压缩结果：结论、证据路径、归档路径、git lifecycle 等
 - 不回灌 worker 原始长 prompt 或大段上下文

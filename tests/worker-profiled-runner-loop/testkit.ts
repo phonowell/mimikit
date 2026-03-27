@@ -10,10 +10,13 @@ export const createTmpDir = () =>
 export const createTask = (id: string, prompt = '执行测试任务'): Task => ({
   id,
   fingerprint: `fingerprint-${id}`,
-  prompt,
+  semanticKey: `semantic-${id}`,
+  executionSpecId: `spec-${id}`,
   title: prompt,
+  cwd: '/tmp/worker-loop',
   focusId: 'focus-global',
   profile: 'worker',
+  provider: 'codex',
   status: 'running',
   createdAt: '2026-03-04T00:00:00.000Z',
 })

@@ -17,18 +17,17 @@ test('runWorkerLoop captures provider thread id from error path for recovery', a
       runWorkerLoop({
         stateDir,
         task,
-        prompt: task.prompt,
-        continueTemplate: '{{ latest_output }}',
-        continueTemplatePath: 'inline-template',
+        prompt: task.title,
         archiveBase: { role: 'worker', taskId: task.id },
-        runModel: async () => {
+        runModel: () => {
           throw attachProviderThreadId(
             new Error('simulated provider failure'),
             'session-from-error',
           )
         },
-        onSessionId: async (sessionId) => {
+        onSessionId: (sessionId) => {
           sessionIds.push(sessionId)
+          return Promise.resolve()
         },
       }),
     ).rejects.toThrow('simulated provider failure')
@@ -49,20 +48,20 @@ test('runWorkerLoop makes a single provider call and fails when completion proto
       runWorkerLoop({
         stateDir,
         task,
-        prompt: task.prompt,
+        prompt: task.title,
         archiveBase: { role: 'worker', taskId: task.id },
-        runModel: async ({ prompt }) => {
+        runModel: ({ prompt }) => {
           prompts.push(prompt)
-          return {
+          return Promise.resolve({
             output: 'ROUND_ONE_SENTINEL',
             elapsedMs: 10,
             threadId: 'session-worker-1',
-          }
+          })
         },
       }),
-    ).rejects.toThrow('missing completion protocol')
+    ).rejects.toThrow('missing structured result')
 
-    expect(prompts).toEqual([task.prompt])
+    expect(prompts).toEqual([task.title])
   } finally {
     await rm(stateDir, { recursive: true, force: true })
   }

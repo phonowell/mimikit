@@ -50,7 +50,7 @@ test('buildManagerPromptPayload injects repo-bound project profile into stable c
   )
 })
 
-test('buildManagerPromptPayload tells manager to verify action legality before emitting actions', async () => {
+test('buildManagerPromptPayload anchors manager as the orchestration layer before emitting actions', async () => {
   const stateDir = await mkdtemp(join(tmpdir(), 'mimikit-manager-system-'))
   const startupWorktree = '/repo/mimikit'
   const config = defaultConfig({ workDir: stateDir })
@@ -67,6 +67,11 @@ test('buildManagerPromptPayload tells manager to verify action legality before e
     packetMode: 'standard',
   })
 
+  expect(payload.prompt).toContain('# MIMIKIT')
+  expect(payload.prompt).toContain('你是 MIMIKIT 的主 agent 编排层')
+  expect(payload.prompt).toContain('主线程只保留目标、计划、当前状态、验收门禁')
+  expect(payload.prompt).toContain('文件系统是真相源')
+  expect(payload.prompt).toContain('证据不足时停在 handoff 或待续跑')
   expect(payload.prompt).toContain('输出 action 前，先逐项核对')
   expect(payload.prompt).toContain('未列出的 action 视为本轮不可用')
   expect(payload.prompt).toContain('不要猜测隐藏字段、兼容别名或默认值')

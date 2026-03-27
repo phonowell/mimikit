@@ -1,11 +1,16 @@
 import { runWorker } from './profiled-runner.js'
 
 import type { TaskFocusBrief } from '../../foundation/prompting/format-task-focus-brief.js'
-import type { Task, TokenUsage } from '../../foundation/types/index.js'
+import type {
+  Task,
+  TaskResultHandoff,
+  TokenUsage,
+} from '../../foundation/types/index.js'
 import type { WorkerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 export type WorkerLlmResult = {
   output: string
+  handoff: TaskResultHandoff
   elapsedMs: number
   usage?: TokenUsage
   traceRef?: string

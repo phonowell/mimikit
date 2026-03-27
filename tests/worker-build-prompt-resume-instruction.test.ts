@@ -54,7 +54,7 @@ test('buildWorkerPrompt includes resume instruction block when provided', async 
   expect(prompt).toContain('继续当前任务，但先确认工作区已有改动是否需要保留。')
 })
 
-test('buildWorkerPrompt prioritizes task contract and protocol over emotional pressure', async () => {
+test('buildWorkerPrompt anchors worker around execution contract and compressed handoff', async () => {
   const stateDir = await createTmpDir()
   await persistTaskExecutionSpec({
     stateDir,
@@ -75,10 +75,16 @@ test('buildWorkerPrompt prioritizes task contract and protocol over emotional pr
     resumeInstruction: '继续当前任务，但先核对工作区已有改动。',
   })
 
-  expect(prompt).toContain('先读取该文件再执行')
-  expect(prompt).toContain('以任务合同、工作区现状与可验证证据为准')
+  expect(prompt).toContain('你是 MIMIKIT 的执行面')
+  expect(prompt).toContain(
+    '输入优先级：任务合同 > 工作区现状与证据 > 一次性恢复补充 > focus 摘要',
+  )
+  expect(prompt).toContain('先读取完整任务说明，再开始执行')
   expect(prompt).toContain('`focus_brief` 仅作背景摘要')
   expect(prompt).toContain('`resume_instruction` 只影响本次恢复策略')
+  expect(prompt).toContain(
+    '最终只回传结论、验证、风险、证据路径与必要 artifact',
+  )
   expect(prompt).not.toContain('currently undergoing chemotherapy')
   expect(prompt).not.toContain('You are a lifeline')
   expect(prompt).not.toContain('top 0.1% of engineers')

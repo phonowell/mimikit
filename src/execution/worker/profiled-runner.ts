@@ -3,13 +3,19 @@ import { buildWorkerPrompt } from '../../policy/prompts/build-prompts.js'
 import { runWithProvider } from '../providers/registry.js'
 
 import { runWorkerLoop } from './profiled-runner-loop.js'
+import { buildWorkerTurnOutputSchema } from './worker-turn.js'
 
 import type { TaskFocusBrief } from '../../foundation/prompting/format-task-focus-brief.js'
-import type { Task, TokenUsage } from '../../foundation/types/index.js'
+import type {
+  Task,
+  TaskResultHandoff,
+  TokenUsage,
+} from '../../foundation/types/index.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
 type LlmResult = {
   output: string
+  handoff: TaskResultHandoff
   elapsedMs: number
   usage?: TokenUsage
   traceRef?: string
@@ -47,6 +53,7 @@ const buildRunModel =
       ...(params.modelReasoningEffort
         ? { modelReasoningEffort: params.modelReasoningEffort }
         : {}),
+      outputSchema: buildWorkerTurnOutputSchema(),
       ...(input.threadId !== undefined ? { threadId: input.threadId } : {}),
       ...(input.onTurnStarted ? { onTurnStarted: input.onTurnStarted } : {}),
       ...(input.onUsage ? { onUsage: input.onUsage } : {}),

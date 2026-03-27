@@ -14,6 +14,7 @@
 - 导出：`runManager`
 - Prompt 组装：`buildManagerPromptPayload`（对外仍导出 `buildManagerPrompt` 便于纯字符串调用）
 - 模板：`prompts/manager/system.md`（`nunjucks` 渲染）
+- prompt 角色：顶层只定义“主 agent 编排层”的身份、action 门禁、输出协议与 packet 入口；具体执行默认委派给 worker
 - Provider：固定 `openai-responses`（direct responses）
 - Provider 配置来源：`loadCodexSettings()`，优先读取 `~/.codex/config.toml` 的 active provider（`base_url`、`api_key`、`env_key`/`api_key_env`），缺省回退 `OPENAI_API_KEY` 与 `~/.codex/auth.json`
 - 超时：按 prompt 字节动态计算（`60s~120s`）
@@ -34,10 +35,11 @@
 - 导出：`runWorker`
 - Prompt 组装：`buildWorkerPrompt` -> `prompts/worker/system.md`
 - Provider：固定 `codex-sdk`（外部执行运行时）
-- 输出：`{ output, elapsedMs, usage?, traceRef? }`
-- 上下文补充：注入当前任务 `focusId` 对应的 `focus summary/open_items`。
+- 输出：`{ output, handoff, elapsedMs, usage?, traceRef? }`
+- 上下文补充：注入当前任务 `focusId` 对应的 `focus brief`，仅作背景摘要。
 - 恢复补充：若 task 带 `resumeInstruction`，只在恢复后的下一轮首个 worker prompt 注入 `<M:resume_instruction>`，不改写原 task prompt。
-- 任务 prompt 过大时会外置到 `generated/worker-task-prompts/YYYY-MM-DD/{taskId}.md`，主 prompt 仅保留路径与预览。
+- 任务 prompt 过大时会外置到 `generated/worker-task-prompts/YYYY-MM-DD/{taskId}.md`；该文件保存的是外置任务说明，不是完整 worker runner prompt。
+- worker 系统 prompt 本身只保留执行合同、输入优先级与 handoff 要求；最终结果通过 `worker_turn` JSON schema 收敛为 `{ reply, handoff }`。
 - 异常回收：当前无 provider 级外部子进程生命周期上报
 
 主流程：

@@ -106,7 +106,7 @@ curl -sS -N http://127.0.0.1:8787/api/events | head -n 2
 - `.mimikit/runtime-snapshot.json`：当前 runtime 持久化快照。
 - `.mimikit/tasks/tasks.jsonl`：任务视图快照。
 - `.mimikit/results/packets.jsonl`：worker 回写结果。
-- `.mimikit/generated/worker-task-prompts/`：实际下发给 worker 的 prompt 快照。
+- `.mimikit/generated/worker-task-prompts/`：按需外置的任务说明快照；完整 worker runner prompt 仍由系统模板动态包裹。
 
 更完整的接口与状态字段说明见 `docs/design/workflow/interfaces-and-state.md`。
 
@@ -118,7 +118,7 @@ curl -sS -N http://127.0.0.1:8787/api/events | head -n 2
 - `task-progress/YYYY-MM-DD/{taskId}.jsonl`：任务进度事件流。
 - `tasks/YYYY-MM-DD/*.md`：任务归档。
 - `memory/MEMORY.md`：持久化 memory。
-- `generated/worker-task-prompts/YYYY-MM-DD/{taskId}.md`：worker prompt 快照。
+- `generated/worker-task-prompts/YYYY-MM-DD/{taskId}.md`：外置任务说明快照。
 - `usage/ledger.jsonl`：manager / worker 用量账本。
 - `runtime-snapshot.json`：启动恢复的核心快照。
 - `runtime/lease.json`、`runtime/children.json`、`runtime/reaper.json`：实例 lease、子进程注册与回收信息。

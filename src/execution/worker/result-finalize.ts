@@ -7,7 +7,6 @@ import {
 } from '../../work/shared/task-git-lifecycle.js'
 import { readTaskExecutionSpec } from '../../work/spec/store.js'
 
-import { stripWorkerProtocolTags } from './profiled-runner-prompt.js'
 import { resolveArchivePath, writeTaskArchive } from './result-archive.js'
 import {
   buildTaskEvidence,
@@ -51,7 +50,6 @@ export const finalizeResult = async (
       lifecycle: mergedGitLifecycle,
     }
   }
-  result.output = stripWorkerProtocolTags(result.output)
   applyTaskResultStateDefaults(result)
   const previousStatus = task.status
   const spec = await readTaskExecutionSpec(

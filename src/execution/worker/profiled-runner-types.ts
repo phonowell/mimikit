@@ -3,6 +3,7 @@ import type { TraceArchiveEntry } from '../../persistence/storage/traces-archive
 
 export type ProviderResult = {
   output: string
+  outputJson?: unknown
   elapsedMs: number
   usage?: TokenUsage
   threadId?: string | null

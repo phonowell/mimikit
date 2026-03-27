@@ -30,6 +30,9 @@
 - 在 `prompts/**/*.md` 中定义模板
 - 在 `src/**` 通过 `loadPromptTemplate` / `loadYamlPromptTemplates` 加载
 - 通过 `renderPromptTemplate` 或既有 builder 注入参数
+- manager prompt 只写编排身份、门禁与输出协议；不要把搜索、实现、细读职责偷渡回主线程
+- worker prompt 只写执行合同、证据优先级与 handoff 协议；不要堆历史实现说明或产品定位重复文案
+- 优先删减历史兼容说明、教程式注释与重复边界句；保留 parser 真的依赖的标签和键
 
 ## 豁免流程
 

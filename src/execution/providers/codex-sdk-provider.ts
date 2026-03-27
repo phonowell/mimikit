@@ -122,6 +122,17 @@ const runCodexProvider = async (request: CodexSdkProviderRequest) => {
       controller.signal,
       resetIdle,
     )
+    const outputJson = request.outputSchema
+      ? (() => {
+          const trimmed = output.trim()
+          if (!trimmed) throw new Error('codex_structured_output_empty')
+          try {
+            return JSON.parse(trimmed) as unknown
+          } catch {
+            throw new Error('codex_structured_output_invalid_json')
+          }
+        })()
+      : undefined
     const elapsedMs = elapsedMsSince(startedAt)
     await appendCodexLlmLog(request, {
       event: 'llm_call_finished',
@@ -133,6 +144,7 @@ const runCodexProvider = async (request: CodexSdkProviderRequest) => {
     return buildProviderResult({
       startedAt,
       output,
+      ...(outputJson !== undefined ? { outputJson } : {}),
       ...(usage ? { usage } : {}),
       threadId: thread.id ?? request.threadId ?? null,
     })

@@ -1,6 +1,7 @@
 import { relative } from 'node:path'
 
 import { appendTraceArchiveResult } from '../../persistence/storage/traces-archive.js'
+import { parseStructuredOutputJson } from '../providers/openai-responses-provider-structured.js'
 import { readProviderThreadId } from '../providers/thread-id.js'
 import {
   mergeUsageAdditive,
@@ -8,22 +9,18 @@ import {
 } from '../shared/token-usage.js'
 
 import { isAbortLikeError } from './error-utils.js'
-import {
-  hasWorkerCompletionMarker,
-  stripWorkerProtocolTags,
-} from './profiled-runner-prompt.js'
+import { normalizeWorkerStructuredHandoff } from './result-handoff.js'
+import { parseWorkerTurn } from './worker-turn.js'
 
 import type { RunLoopParams } from './profiled-runner-types.js'
-import type { TokenUsage } from '../../foundation/types/index.js'
+import type {
+  TaskResultHandoff,
+  TokenUsage,
+} from '../../foundation/types/index.js'
 import type {
   TraceArchiveEntry,
   TraceArchiveResult,
 } from '../../persistence/storage/traces-archive.js'
-export {
-  hasWorkerCompletionMarker,
-  stripWorkerProtocolTags,
-} from './profiled-runner-prompt.js'
-
 const normalizeThreadId = (
   value: string | null | undefined,
 ): string | undefined => {
@@ -55,6 +52,7 @@ export const runWorkerLoop = async (
   params: RunLoopParams,
 ): Promise<{
   output: string
+  handoff: TaskResultHandoff
   elapsedMs: number
   usage?: TokenUsage
   traceRef?: string
@@ -102,12 +100,24 @@ export const runWorkerLoop = async (
     }
 
     const output = result.output.trim()
-    if (!hasWorkerCompletionMarker(output)) {
+    let parsedTurn: ReturnType<typeof parseWorkerTurn> | undefined
+    try {
+      parsedTurn = parseWorkerTurn(
+        result.outputJson ?? parseStructuredOutputJson(output),
+      )
+    } catch {
+      parsedTurn = undefined
+    }
+    if (!parsedTurn) {
       throw new Error(
-        `[worker] task incomplete after single run: missing completion protocol (M:task_handoff + M:skill_usage status="done"); last_output=${JSON.stringify(output || 'empty_output')}`,
+        `[worker] task incomplete after single run: missing structured result {reply,handoff}; last_output=${JSON.stringify(output || 'empty_output')}`,
       )
     }
-    const finalOutput = stripWorkerProtocolTags(output)
+    const finalOutput = parsedTurn.reply.trim()
+    const handoff = normalizeWorkerStructuredHandoff({
+      task: params.task,
+      handoff: parsedTurn.handoff,
+    })
     const tracePath = await archiveResult(
       { ...params.archiveBase, threadId },
       {
@@ -120,6 +130,7 @@ export const runWorkerLoop = async (
     const traceRef = tracePath ? toTraceRef(stateDir, tracePath) : undefined
     return {
       output: finalOutput,
+      handoff,
       elapsedMs: result.elapsedMs,
       ...(totalUsage ? { usage: totalUsage } : {}),
       ...(traceRef ? { traceRef } : {}),

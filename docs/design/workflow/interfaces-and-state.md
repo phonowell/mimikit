@@ -140,7 +140,7 @@
 - `traces/YYYY-MM-DD/<ts36><ra>.txt`
 - `history/YYYY-MM-DD.jsonl`
 - `memory/MEMORY.md`
-- `generated/worker-task-prompts/YYYY-MM-DD/{taskId}.md`
+- `generated/worker-task-prompts/YYYY-MM-DD/{taskId}.md`（按需外置的任务说明快照）
 - `usage/ledger.jsonl`
 - `runtime-snapshot.json`
 - `runtime-snapshot.json.bak`

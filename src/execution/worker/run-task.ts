@@ -13,7 +13,7 @@ import { buildResult } from './result-build.js'
 import { finalizeResult } from './result-finalize.js'
 import { runTaskWithRetry } from './run-retry.js'
 
-import type { Task } from '../../foundation/types/index.js'
+import type { Task, TaskResultHandoff } from '../../foundation/types/index.js'
 import type { WorkerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 export const runTask = async (
@@ -42,10 +42,11 @@ export const runTask = async (
     durationMs: number,
     usage?: Task['usage'],
     traceRef?: string,
+    handoff?: TaskResultHandoff,
   ) =>
     traceRef
-      ? buildResult(task, status, output, durationMs, usage, traceRef)
-      : buildResult(task, status, output, durationMs, usage)
+      ? buildResult(task, status, output, durationMs, usage, traceRef, handoff)
+      : buildResult(task, status, output, durationMs, usage, undefined, handoff)
   try {
     const spec = await readTaskExecutionSpec(
       runtime.config.workDir,
@@ -96,6 +97,7 @@ export const runTask = async (
       elapsed(),
       llmResult.usage,
       llmResult.traceRef,
+      llmResult.handoff,
     )
     await finalizeResult(runtime, task, result, markTaskSucceeded)
   } catch (error) {

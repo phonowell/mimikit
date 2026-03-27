@@ -33,8 +33,7 @@ enqueue_task_cwd_invalid: |
 enqueue_task_worktree_prepare_failed: |
   enqueue_task 执行失败：无法为 branch={{ branch }} 准备 worktree。{{ reason }} 请先修正 `cwd` 或清理冲突目录后再重试。
 enqueue_task_contract_missing: |
-  enqueue_task 执行失败：继续派发前还缺最小任务合同：`goal`、至少一条 `in_scope[]`、至少一条 `done_when[]`，以及有效的 `cwd/mode`。
-  请补齐 `task` 后重试；`instructions[]` 只能作为短补充，不替代任务合同。
+  enqueue_task 执行失败：继续派发前还缺最小任务合同：`goal`、至少一条 `in_scope[]`、至少一条 `done_when[]`，以及有效的 `cwd/mode`。请补齐 `task` 后重试；`instructions[]` 只能作为短补充，不替代任务合同。
 plan_not_found: |
   {{ action }} 执行失败：未找到 plan ID。
 set_plan_done_forbidden: |

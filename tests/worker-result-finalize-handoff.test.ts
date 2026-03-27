@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { expect, test } from 'vitest'
 
 import { finalizeResult } from '../src/execution/worker/result-finalize.js'
+
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 import type { Task, TaskResult } from '../src/foundation/types/index.js'
@@ -23,7 +24,7 @@ const mergeTaskPatch = (
   Object.assign(task, patch)
 }
 
-test('finalizeResult prefers structured worker handoff and strips protocol tags', async () => {
+test('finalizeResult preserves structured worker handoff parsed by runner', async () => {
   const stateDir = await createTmpDir()
   const task: Task = {
     id: 'task-structured-handoff',
@@ -50,11 +51,21 @@ test('finalizeResult prefers structured worker handoff and strips protocol tags'
     taskId: task.id,
     status: 'succeeded',
     ok: true,
-    output: [
-      'Release completed.',
-      '<M:task_handoff>{"summary":"Release shipped","decisions":["Enabled feature flag"],"next_steps":["Monitor rollout"],"git_lifecycle":{"review":{"passed":true,"sha":"abc123"},"merged":true,"cleaned":false}}</M:task_handoff>',
-      '<M:skill_usage status="done">release-skill</M:skill_usage>',
-    ].join('\n'),
+    output: 'Release completed.',
+    handoff: {
+      summary: 'Release shipped',
+      decisions: ['Enabled feature flag'],
+      nextSteps: ['Monitor rollout'],
+      git: {
+        worktreePath: '/tmp/ship-release-worktree',
+        branch: 'feature/release',
+        lifecycle: {
+          review: { passed: true, sha: 'abc123' },
+          merged: true,
+          cleaned: false,
+        },
+      },
+    },
     durationMs: 15,
     completedAt: '2026-02-26T10:00:15.000Z',
   }
@@ -75,7 +86,7 @@ test('finalizeResult prefers structured worker handoff and strips protocol tags'
   })
 })
 
-test('finalizeResult does not infer success handoff fields from free text without task_handoff', async () => {
+test('finalizeResult does not infer success handoff fields from free text without structured handoff', async () => {
   const stateDir = await createTmpDir()
   const task: Task = {
     id: 'task-success-no-handoff',

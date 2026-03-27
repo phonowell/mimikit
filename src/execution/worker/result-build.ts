@@ -1,6 +1,5 @@
 import { nowIso } from '../../foundation/shared/utils.js'
 
-import { stripWorkerProtocolTags } from './profiled-runner-prompt.js'
 import { buildTaskResultHandoff } from './result-handoff.js'
 import { buildDefaultTaskResultState } from './result-state.js'
 
@@ -17,15 +16,15 @@ export const buildResult = (
   durationMs: number,
   usage?: TokenUsage,
   traceRef?: string,
+  handoff?: TaskResult['handoff'],
 ): TaskResult => {
-  const cleanedOutput = stripWorkerProtocolTags(output)
-  const handoff = buildTaskResultHandoff(task, { status, output })
+  const nextHandoff = buildTaskResultHandoff(task, { status, output }, handoff)
   const state = buildDefaultTaskResultState(status)
   return {
     taskId: task.id,
     status,
     ok: status === 'succeeded',
-    output: cleanedOutput,
+    output,
     durationMs,
     completedAt: nowIso(),
     ...state,
@@ -37,6 +36,6 @@ export const buildResult = (
     ...(status === 'canceled'
       ? { cancel: task.cancel ?? { source: 'system' } }
       : {}),
-    ...(handoff ? { handoff } : {}),
+    ...(nextHandoff ? { handoff: nextHandoff } : {}),
   }
 }

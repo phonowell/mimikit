@@ -134,6 +134,10 @@
 
 ## Prompt 注入标签
 
+- manager 系统 prompt 只定义编排身份、action 门禁、输出协议与上下文入口；不再承载历史实现演化备注。
+- manager 只保留四类高价值上下文：目标、计划、当前状态、验收门禁；具体执行默认外放给 worker 或外部运行时。
+- 文件系统是真相源；packet 标签只是注入给模型的状态投影，不能被当作新的状态层。
+
 - 稳定包：`M:state_packet`
 - 易变包：`M:event_packet`
 - 项目档案：`M:project_profile`
