@@ -29,10 +29,6 @@
 - `set_plan`
 - `delete_plan`
 
-### 交互类
-
-- `ask_user_choice`
-
 ### 归属与记忆类
 
 - `assign_focus`
@@ -88,11 +84,6 @@
 - 结构：`{ type: "delete_plan", plan_id }`
 - 语义：把计划关闭为 `done(canceled)`；实体保留用于审计
 
-### `ask_user_choice`
-
-- 结构：`{ type: "ask_user_choice", question, default_option_id, options }`
-- `options[]` 中每项必须包含 `id / label / reason`
-
 ### `assign_focus`
 
 - 结构：`{ type: "assign_focus", target_type, target_id, focus_id }`
@@ -122,14 +113,13 @@
 - `record_task_git`：调用 git lifecycle 写回链路，并同步 task / handoff / archive
 - `set_plan`：创建或整体替换计划
 - `delete_plan`：关闭计划
-- `ask_user_choice`：stop action；命中后当前批次停止后续 apply
 - `assign_focus`：仅修改 task / plan / history 的 `focusId`
 - `remember_memory`：立即写入 `memory/MEMORY.md`，并通过 `memory_remembered` system event 回执 `entry_id/ref/operation`
 - `remember_project_profile`：立即写入 repo 绑定的项目档案文件，并通过 `project_profile_remembered` system event 回执 `entry_id/ref/operation`
 
 ## Guardrail
 
-- `enqueue_task`、`task_control`、`record_task_git`、`set_plan`、`delete_plan`、`ask_user_choice`、`remember_memory`、`remember_project_profile` 都受 intent-evidence guard 约束
+- `enqueue_task`、`task_control`、`record_task_git`、`set_plan`、`delete_plan`、`remember_memory`、`remember_project_profile` 都受 intent-evidence guard 约束
 - 没有当前用户输入直接支撑时，`task_result` / `history` / `trigger` 只能作为补充证据，不能单独驱动高风险 action
 - `record_task_git` 必须同时命中“任务引用 + 闭环动作意图”
 - `task_control(cancel)` 支持“同 focus / 同 cwd 的唯一活跃任务被替代”这一例外，不要求额外显式取消措辞
@@ -137,7 +127,7 @@
 
 ## Action Surface
 
-- 当前 manager 只暴露统一 surface：`task + plan + dialog + focus + memory`
+- 当前 manager 只暴露统一 surface：`task + plan + focus + memory`
 - `query_context` / `read_file` 已删除；主线程默认不承担本地细读 / 检索
 - `restart_runtime` 已从 manager action surface 删除
 - prompt 中的 action 卡完全由代码生成，不再手写维护另一套文案

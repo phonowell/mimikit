@@ -10,13 +10,6 @@ export type ScrollController = {
   captureLayoutShift: () => void
 }
 
-export type ChoiceSubmissionState = {
-  choiceId: string
-  optionId: string
-  status: 'submitting' | 'submitted' | 'error'
-  message?: string
-} | null
-
 export type AppActionState = {
   composerValue: string
   confirmDialog: ConfirmDialogState | null
@@ -39,7 +32,6 @@ export type AppActionParams = {
   sendPending: boolean
   setAppState: Dispatch<SetStateAction<AppState>>
   setBusy: Dispatch<SetStateAction<boolean>>
-  setChoiceSubmission: Dispatch<SetStateAction<ChoiceSubmissionState>>
   setComposerValue: (value: string) => void
   setConfirmDialog: Dispatch<SetStateAction<ConfirmDialogState | null>>
   setDeleteMode: Dispatch<SetStateAction<boolean>>

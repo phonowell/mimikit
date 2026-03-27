@@ -51,7 +51,6 @@ const actionSurfaceTemplateSchema = z
         record_task_git: actionPromptSpecSchema,
         set_plan: actionPromptSpecSchema,
         delete_plan: actionPromptSpecSchema,
-        ask_user_choice: actionPromptSpecSchema,
         assign_focus: actionPromptSpecSchema,
         remember_memory: actionPromptSpecSchema,
         remember_project_profile: actionPromptSpecSchema,
@@ -99,7 +98,6 @@ export const ACTION_PROMPT_SPECS = {
   record_task_git: normalizePromptSpec(templates.actions.record_task_git),
   set_plan: normalizePromptSpec(templates.actions.set_plan),
   delete_plan: normalizePromptSpec(templates.actions.delete_plan),
-  ask_user_choice: normalizePromptSpec(templates.actions.ask_user_choice),
   assign_focus: normalizePromptSpec(templates.actions.assign_focus),
   remember_memory: normalizePromptSpec(templates.actions.remember_memory),
   remember_project_profile: normalizePromptSpec(

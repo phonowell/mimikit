@@ -26,7 +26,6 @@ export const AppRuntimeProvider = ({ children }: PropsWithChildren) => {
   const scroll = useMessageScroll([
     appState.messages,
     appState.awaitingReply,
-    appState.choices,
     ui.deleteMode,
   ])
 
@@ -52,7 +51,6 @@ export const AppRuntimeProvider = ({ children }: PropsWithChildren) => {
     sendPending: ui.sendPending,
     setAppState,
     setBusy: ui.setBusy,
-    setChoiceSubmission: ui.setChoiceSubmission,
     setComposerValue,
     setConfirmDialog: ui.setConfirmDialog,
     setDeleteMode: ui.setDeleteMode,

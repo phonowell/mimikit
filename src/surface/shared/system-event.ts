@@ -10,8 +10,6 @@ export type SystemEventName =
   | 'manager_error'
   | 'trigger_fire'
   | 'worker_slot_freed'
-  | 'user_choice'
-  | 'user_choice_skipped'
   | 'plan_created'
   | 'plan_updated'
   | 'plan_deleted'

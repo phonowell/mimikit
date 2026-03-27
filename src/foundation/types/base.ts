@@ -19,7 +19,6 @@ export type ProviderCapability = 'low' | 'medium' | 'high'
 export type ProviderBilling = 'free' | 'low' | 'medium' | 'high'
 export type PlanPriority = 'high' | 'normal' | 'low'
 export type PlanSource = 'user_request' | 'agent_auto' | 'retry_decision'
-export type UserChoiceSelectionSource = 'user' | 'timeout'
 
 export type JsonPacket<TPayload> = {
   id: string

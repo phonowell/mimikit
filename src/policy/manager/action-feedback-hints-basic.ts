@@ -44,9 +44,6 @@ export const formatTaskControlNotPausedHint = (): string =>
 export const formatTaskControlAlreadyCanceledHint = (): string =>
   renderActionFeedbackHint('task_control_already_canceled')
 
-export const formatAskUserChoiceChannelUnsupportedHint = (): string =>
-  renderActionFeedbackHint('ask_user_choice_channel_unsupported')
-
 export const formatEnqueueTaskCwdInvalidHint = (reason: string): string =>
   renderActionFeedbackHint('enqueue_task_cwd_invalid', {
     reason,

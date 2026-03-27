@@ -18,7 +18,6 @@
 - `POST /api/tasks/:id/resume`
 - `POST /api/tasks/:id/cancel`
 - `POST /api/tasks/:id/delete`
-- `POST /api/choices/:id/select`
 - `POST /api/restart`
 - `POST /api/reset`
 
@@ -52,7 +51,7 @@
 
 ## SSE 事件模型（`GET /api/events`）
 
-- `snapshot`：快照事件，包含 `status/messages/tasks/plans/focuses/choices`。
+- `snapshot`：快照事件，包含 `status/messages/tasks/plans/focuses`。
 - `tasks`：任务列表快照更新（由 worker 侧状态变化触发），载荷为任务视图快照对象。
 - `heartbeat`：SSE 保活心跳。
 - `error`：SSE 连接内错误反馈。
@@ -73,7 +72,7 @@
 ## System 气泡可见性规则（WebUI 会话流）
 
 - 判定入口：`src/surface/shared/system-message-visibility.ts`（由 `src/surface/shared/message-visibility.ts` 调用）。
-- 直接对用户有价值的 system 事件默认可见：`startup`、`task_created`、`task_paused`、`task_resumed`、`task_canceled`、`task_completed`、`manager_fallback_reply`、`user_choice`、`user_choice_skipped`。
+- 直接对用户有价值的 system 事件默认可见：`startup`、`task_created`、`task_paused`、`task_resumed`、`task_canceled`、`task_completed`、`manager_fallback_reply`。
 - 内部编排/调度/控制类事件默认不可见：`manager_round_limit`、`manager_error`、`trigger_fire`、`worker_slot_freed`、`plan_created`、`plan_updated`、`plan_deleted`。
 - 未识别 system_event 采用保守策略：`visibility=user` 保持可见，`visibility=all` 默认不展示给最终用户。
 - system 消息落盘/出站采用双轨字段：`text` 仅承载用户可读摘要，`systemEventName/systemEventPayload` 承载结构化事件元数据；WebUI/manager/log 不再从 `text` 反解析协议标签。
@@ -97,13 +96,6 @@
 
 - 缺少或空 `text` -> `400 { error: "text is required" }`
 - 非法 JSON 或 schema 不匹配 -> `400 { error: "invalid JSON" }`
-
-## 交互协议（Choice）
-
-- `POST /api/choices/:id/select` 请求体：`{ optionId: string }`
-- 成功：`{ ok: true, choiceId, optionId, source }`
-- 失败：`not_found -> 404`，`invalid_option -> 400`，`expired -> 409`
-- 当前实现默认不为 choice 设置超时；choice 会保留到用户显式选择、被新的用户输入打断，或被超时逻辑按默认选项结算。
 
 ## 消息删除协议
 
@@ -174,7 +166,6 @@ schema：`src/persistence/storage/runtime-snapshot-schema.ts`
 - `managerTurn`
 - `managerThreadId`
 - `queues.inputsCursor`、`queues.resultsCursor`
-- `pendingUserChoices[]`
 - `memoryRefresh`
 
 补充：

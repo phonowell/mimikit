@@ -15,7 +15,6 @@ import {
   type TaskMutationAction,
   type TaskMutationMeta,
 } from '../../work/orchestrator/orchestrator-task-actions.js'
-import { selectPendingUserChoiceFromUser } from '../../work/orchestrator/user-choice.js'
 
 import { startChannelSession } from './orchestrator-channel-session.js'
 import {
@@ -32,7 +31,6 @@ import { createRuntimeState } from './runtime-state.js'
 import { waitForUiSignal } from './signals.js'
 
 import type { RuntimeState, UiWakeKind, UserMeta } from './runtime-state.js'
-import type { SelectPendingUserChoiceResult } from '../../work/orchestrator/user-choice.js'
 
 export { isTelegramPollingConflictError } from './orchestrator-channel-lifecycle.js'
 export type { OrchestratorStatus } from './orchestrator-helpers.js'
@@ -177,13 +175,6 @@ export class Orchestrator {
     meta?: TaskMutationMeta,
   ) {
     return mutateTaskByAction(this.runtime, action, taskId, meta)
-  }
-
-  selectPendingUserChoice(
-    choiceId: string,
-    optionId: string,
-  ): Promise<SelectPendingUserChoiceResult> {
-    return selectPendingUserChoiceFromUser(this.runtime, choiceId, optionId)
   }
 
   getStatus(): OrchestratorStatus {

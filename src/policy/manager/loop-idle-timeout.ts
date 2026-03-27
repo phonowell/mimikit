@@ -42,12 +42,6 @@ export const resolveManagerIdleTimeoutMs = (
 ): number => {
   const nowMs = now.getTime()
   let nextWakeAtMs: number | undefined
-  for (const choice of runtime.ui.pendingUserChoices) {
-    nextWakeAtMs = pickEarlier(
-      nextWakeAtMs,
-      choice.expiresAt ? parseIsoMs(choice.expiresAt) : undefined,
-    )
-  }
 
   for (const plan of runtime.taskPlans)
     nextWakeAtMs = pickEarlier(nextWakeAtMs, resolvePlanWakeAtMs(plan, now))

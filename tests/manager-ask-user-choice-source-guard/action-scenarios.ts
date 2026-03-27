@@ -2,36 +2,12 @@ import { expect, test } from 'vitest'
 
 import { collectManagerActionFeedback } from '../../src/policy/manager/action-feedback-collect.js'
 
-test('ask_user_choice is rejected when telegram source does not support choice callback', () => {
-  const feedback = collectManagerActionFeedback(
-    [
-      {
-        type: 'ask_user_choice',
-        question: 'choose format',
-        default_option_id: 'option-a',
-        options: [
-          { id: 'option-a', label: 'A', reason: 'alpha' },
-          { id: 'option-b', label: 'B', reason: 'beta' },
-        ],
-      },
-    ],
-    {
-      allowAskUserChoice: false,
-    },
-  )
-
-  expect(feedback).toHaveLength(1)
-  expect(feedback[0]?.action).toBe('ask_user_choice')
-  expect(feedback[0]?.error).toBe('action_execution_rejected')
-  expect(feedback[0]?.hint).toContain('渠道输入（Telegram）')
-})
-
-test('ask_user_choice rejects default option ids outside options', () => {
+test('ask_user_choice is treated as an unregistered action', () => {
   const feedback = collectManagerActionFeedback([
     {
       type: 'ask_user_choice',
       question: 'choose format',
-      default_option_id: 'option-c',
+      default_option_id: 'option-a',
       options: [
         { id: 'option-a', label: 'A', reason: 'alpha' },
         { id: 'option-b', label: 'B', reason: 'beta' },
@@ -41,8 +17,7 @@ test('ask_user_choice rejects default option ids outside options', () => {
 
   expect(feedback).toHaveLength(1)
   expect(feedback[0]?.action).toBe('ask_user_choice')
-  expect(feedback[0]?.error).toBe('action_execution_rejected')
-  expect(feedback[0]?.hint).toContain('default_option_id')
+  expect(feedback[0]?.error).toBe('unregistered_action')
 })
 
 test('assign_focus requires explicit target_type', () => {

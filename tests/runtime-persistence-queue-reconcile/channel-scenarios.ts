@@ -64,39 +64,3 @@ test('hydrateRuntimeState falls back to channel targets from history', async () 
     telegramChatId: 'chat-1001',
   })
 })
-
-test('hydrateRuntimeState does not rebuild a user choice from paused task state', async () => {
-  const stateDir = await createTmpDir()
-  const runtime = await createTestRuntimeState({
-    workDir: stateDir,
-    withGlobalFocus: false,
-    patch: {
-      tasks: [
-        {
-          id: 'task-user-paused',
-          fingerprint: 'fp-task-user-paused',
-          prompt: 'resume me',
-          title: 'User Paused',
-          cwd: '/tmp/task-user-paused',
-          focusId: GLOBAL_FOCUS_ID,
-          profile: 'worker',
-          provider: 'codex',
-          status: 'paused',
-          createdAt: SNAPSHOT_BASE_TIME,
-          pausedAt: '2026-02-06T00:10:00.000Z',
-          archivePath: '/tmp/task-user-paused.md',
-        },
-      ],
-    },
-  })
-
-  await persistRuntimeState(runtime)
-
-  const restored = await createTestRuntimeState({
-    workDir: stateDir,
-    withGlobalFocus: false,
-  })
-  await hydrateRuntimeState(restored)
-
-  expect(restored.ui.pendingUserChoices).toEqual([])
-})

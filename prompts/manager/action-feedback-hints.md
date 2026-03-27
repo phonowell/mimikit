@@ -28,8 +28,6 @@ record_task_git_review_required: |
   record_task_git 执行失败：任务尚未记录 review passed，无法写入 merged。
 record_task_git_merge_required: |
   record_task_git 执行失败：任务尚未记录 merged，无法写入 cleaned。
-ask_user_choice_channel_unsupported: |
-  ask_user_choice 执行失败：当前批次来源包含不支持回传选项的渠道输入（Telegram），请改为纯文本提问并列出候选项。
 enqueue_task_cwd_invalid: |
   enqueue_task 执行失败：`task.cwd` 必须指向现有目录。{{ reason }} 请提交仓库内真实执行起点，不要填写未来 worktree 路径。
 enqueue_task_worktree_prepare_failed: |

@@ -1,5 +1,4 @@
 import {
-  validateAskUserChoiceIntentEvidence,
   validateRememberMemoryIntentEvidence,
   validateRememberProjectProfileIntentEvidence,
 } from './action-intent-evidence-dialog-memory.js'
@@ -33,7 +32,6 @@ const INTENT_EVIDENCE_REQUIRED_ACTIONS = new Set([
   'record_task_git',
   'set_plan',
   'delete_plan',
-  'ask_user_choice',
   'remember_memory',
   'remember_project_profile',
 ])
@@ -97,15 +95,6 @@ export const resolveIntentEvidenceRejectionHint = (
   }
   if (item.type === 'set_plan') {
     return validateSetPlanIntentEvidence({
-      item,
-      inputTexts,
-      ...(context.supplementalEvidenceSources
-        ? { supplementalEvidenceSources: context.supplementalEvidenceSources }
-        : {}),
-    })
-  }
-  if (item.type === 'ask_user_choice') {
-    return validateAskUserChoiceIntentEvidence({
       item,
       inputTexts,
       ...(context.supplementalEvidenceSources

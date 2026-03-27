@@ -55,9 +55,6 @@ export const buildRuntimeSnapshot = (
       : {}),
     queues: runtime.queues,
     ...(Object.keys(channelTargets).length > 0 ? { channelTargets } : {}),
-    ...(runtime.ui.pendingUserChoices.length > 0
-      ? { pendingUserChoices: runtime.ui.pendingUserChoices }
-      : {}),
     memoryRefresh,
   }
 }

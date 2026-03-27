@@ -119,20 +119,6 @@ export const useAppSurfaces = ({
       ui.deleteMode,
     ],
   )
-  const choicePanelSurface = useMemo(
-    () => ({
-      choices: appState.choices,
-      choiceSubmission: ui.choiceSubmission,
-      isDisconnected,
-      onSelect: actions.selectChoice,
-    }),
-    [
-      actions.selectChoice,
-      appState.choices,
-      isDisconnected,
-      ui.choiceSubmission,
-    ],
-  )
   const composerSurface = useMemo(
     () => ({
       deleteMode: ui.deleteMode,
@@ -176,7 +162,6 @@ export const useAppSurfaces = ({
   return {
     headerSurface,
     messageListSurface,
-    choicePanelSurface,
     composerSurface,
     ...dialogSurfaces,
   }

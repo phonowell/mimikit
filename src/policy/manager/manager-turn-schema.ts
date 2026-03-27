@@ -2,7 +2,6 @@ import { z } from 'zod'
 
 import {
   focusIdSchema,
-  optionIdSchema,
   planIdSchema,
   taskIdSchema,
 } from '../../foundation/shared/id-schema.js'
@@ -46,12 +45,6 @@ export const managerPlanDraftSchema = z.strictObject({
   max_runs: z.number().int().positive().nullable(),
 })
 
-const askUserChoiceOptionSchema = z.strictObject({
-  id: optionIdSchema,
-  label: s,
-  reason: s,
-})
-
 export const enqueueTaskActionSchema = z.strictObject({
   type: z.literal('enqueue_task'),
   task: managerTaskDraftSchema,
@@ -81,13 +74,6 @@ export const deletePlanActionSchema = z.strictObject({
   plan_id: planIdSchema,
 })
 
-export const askUserChoiceActionSchema = z.strictObject({
-  type: z.literal('ask_user_choice'),
-  question: s,
-  default_option_id: optionIdSchema,
-  options: z.array(askUserChoiceOptionSchema).min(2),
-})
-
 export const assignFocusActionSchema = z.strictObject({
   type: z.literal('assign_focus'),
   target_type: z.enum(['task', 'plan', 'history']),
@@ -115,7 +101,6 @@ export const managerActionSchema = z.discriminatedUnion('type', [
   recordTaskGitActionSchema,
   setPlanActionSchema,
   deletePlanActionSchema,
-  askUserChoiceActionSchema,
   assignFocusActionSchema,
   rememberMemoryActionSchema,
   rememberProjectProfileActionSchema,

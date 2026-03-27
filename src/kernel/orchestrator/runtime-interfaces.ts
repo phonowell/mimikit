@@ -15,7 +15,6 @@ export type RuntimeTaskState = RuntimeState['tasks'][number]
 export type RuntimePlanCollection = RuntimeState['taskPlans']
 export type RuntimeFocusCollection = RuntimeState['focuses']
 export type RuntimeQueueState = RuntimeState['queues']
-export type RuntimePendingUserChoices = RuntimeState['ui']['pendingUserChoices']
 export type RuntimeChannelTargets = RuntimeState['session']['channelTargets']
 export type RuntimePathsState = Pick<RuntimeState, 'paths'>
 export type RuntimeUserMeta = UserMeta
@@ -28,7 +27,7 @@ export type RuntimeDomainState = Pick<
 > & {
   manager: Pick<RuntimeManagerState, 'turn' | 'threadId' | 'memoryRefresh'>
   session: Pick<RuntimeSessionState, 'channelTargets'>
-  ui: Pick<RuntimeUiState, 'pendingUserChoices'>
+  ui: RuntimeUiState
 }
 
 export type RuntimePersistState = Pick<
@@ -37,14 +36,14 @@ export type RuntimePersistState = Pick<
 > & {
   manager: Pick<RuntimeManagerState, 'turn' | 'threadId' | 'memoryRefresh'>
   session: Pick<RuntimeSessionState, 'channelTargets'>
-  ui: Pick<RuntimeUiState, 'pendingUserChoices'>
+  ui: RuntimeUiState
 }
 
 export type RuntimeProcessState = {
   session: Omit<RuntimeSessionState, 'channelTargets'>
   manager: Omit<RuntimeManagerState, 'turn' | 'threadId' | 'memoryRefresh'>
   worker: RuntimeWorkerState
-  ui: Omit<RuntimeUiState, 'pendingUserChoices'>
+  ui: RuntimeUiState
 }
 
 export type ManagerRuntime = RuntimeEnvelopeState &

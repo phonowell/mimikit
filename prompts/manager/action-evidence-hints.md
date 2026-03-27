@@ -6,5 +6,3 @@ record_task_git_intent_evidence_missing: |
   record_task_git 执行失败：intent-evidence guard 未通过。当前可见证据包含 {{ evidence_sources }} 等补充信息，但缺少来自当前用户输入的直接 git 闭环写回证据。请先让用户明确引用 task id/title（当前目标：{{ task_ref }}）并确认要写回的状态（当前需要：{{ required_action }}）后再重试。
 set_plan_intent_evidence_missing: |
   set_plan 执行失败：intent-evidence guard 未通过。当前可见证据包含 {{ evidence_sources }} 等补充信息，但缺少来自当前用户输入的直接计划意图证据。请先让用户明确“何时触发、要派发什么任务”后再重试。
-ask_user_choice_intent_evidence_missing: |
-  ask_user_choice 执行失败：intent-evidence guard 未通过。当前可见证据包含 {{ evidence_sources }} 等补充信息，但缺少来自当前用户输入的直接决策意图证据。请先澄清用户真实目标，或直接说明当前不确定性边界，不要基于补充材料自行制造确认项。

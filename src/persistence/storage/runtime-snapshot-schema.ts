@@ -13,9 +13,6 @@ export {
 } from './runtime-snapshot-task-schemas.js'
 export {
   focusMetaSchema,
-  pendingUserChoiceSchema,
-  pendingUserChoicesSchema,
   runtimeSnapshotSchema,
   type RuntimeSnapshot,
-  userChoiceOptionSchema,
 } from './runtime-snapshot-state-schemas.js'

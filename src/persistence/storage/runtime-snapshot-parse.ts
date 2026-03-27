@@ -6,7 +6,6 @@ import {
 } from './runtime-schema-version.js'
 import {
   type focusMetaSchema,
-  type pendingUserChoicesSchema,
   type RuntimeSnapshot,
   runtimeSnapshotSchema,
   type taskPlanSchema,
@@ -23,7 +22,6 @@ const asRecord = (value: unknown): Record<string, unknown> | undefined =>
   value && typeof value === 'object'
     ? (value as Record<string, unknown>)
     : undefined
-type SnapshotPendingUserChoices = z.infer<typeof pendingUserChoicesSchema>
 
 const normalizeTask = (task: SnapshotTask): SnapshotTask =>
   stripUndefined({
@@ -91,15 +89,6 @@ const normalizeChannelTargets = (
     ? (stripUndefined({ ...value }) as RuntimeSnapshot['channelTargets'])
     : undefined
 
-const normalizePendingUserChoices = (
-  choices: SnapshotPendingUserChoices,
-): SnapshotPendingUserChoices =>
-  choices.map((choice) =>
-    stripUndefined({
-      ...choice,
-      options: choice.options.map((item) => stripUndefined({ ...item })),
-    }),
-  ) as SnapshotPendingUserChoices
 const normalizeRuntimeSnapshot = (value: RuntimeSnapshot): RuntimeSnapshot =>
   stripUndefined({
     schemaVersion: value.schemaVersion,
@@ -110,9 +99,6 @@ const normalizeRuntimeSnapshot = (value: RuntimeSnapshot): RuntimeSnapshot =>
     managerThreadId: value.managerThreadId,
     queues: value.queues,
     channelTargets: normalizeChannelTargets(value.channelTargets),
-    pendingUserChoices: value.pendingUserChoices
-      ? normalizePendingUserChoices(value.pendingUserChoices)
-      : undefined,
     memoryRefresh: value.memoryRefresh,
   }) as RuntimeSnapshot
 

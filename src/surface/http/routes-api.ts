@@ -2,7 +2,6 @@ import { logSafeError } from '../../persistence/log/safe.js'
 
 import { parseInputBody } from './input-body.js'
 import { resolveRouteId } from './route-params.js'
-import { registerChoiceSelectRoute } from './routes-api-choice-select.js'
 import { registerEventsRoute } from './routes-api-events.js'
 import { registerTaskArchiveRoute } from './routes-api-task-archive.js'
 import { registerTaskMutationRoute } from './routes-api-task-mutation.js'
@@ -91,7 +90,6 @@ export const registerApiRoutes = (
       orchestrator.mutateTask(route.action, taskId, { source: 'user' }),
     )
   }
-  registerChoiceSelectRoute(app, orchestrator)
 
   const scheduleExit = (params?: {
     afterPersist?: () => Promise<void>

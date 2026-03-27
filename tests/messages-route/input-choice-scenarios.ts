@@ -1,6 +1,5 @@
 import fastify from 'fastify'
-
-import { expect, test, vi } from 'vitest'
+import { expect, test } from 'vitest'
 
 import { defaultConfig } from '../../src/bootstrap/config.js'
 import { registerApiRoutes } from '../../src/surface/http/routes-api.js'
@@ -70,45 +69,13 @@ test('input route rejects invalid payload', async () => {
   await app.close()
 })
 
-test('choice select route forwards valid selection request', async () => {
+test('choice select route is not exposed', async () => {
   const app = fastify()
   const { orchestrator } = createOrchestratorStub()
-  const selectPendingUserChoice = vi.fn(async () => ({
-    ok: true as const,
-    choiceId: 'choice-demo',
-    optionId: 'option-a',
-    source: 'user' as const,
-  }))
-  ;(
-    orchestrator as unknown as {
-      selectPendingUserChoice: (
-        choiceId: string,
-        optionId: string,
-      ) => Promise<{
-        ok: true
-        choiceId: string
-        optionId: string
-        source: 'user'
-      }>
-    }
-  ).selectPendingUserChoice = selectPendingUserChoice
   const config = defaultConfig({ workDir: '.mimikit' })
   registerApiRoutes(app, orchestrator, config)
 
-  const response = await app.inject({
-    method: 'POST',
-    url: '/api/choices/choice-demo/select',
-    payload: { optionId: 'option-a' },
-  })
-
-  expect(response.statusCode).toBe(200)
-  expect(response.json()).toEqual({
-    ok: true,
-    choiceId: 'choice-demo',
-    optionId: 'option-a',
-    source: 'user',
-  })
-  expect(selectPendingUserChoice).toHaveBeenCalledWith('choice-demo', 'option-a')
+  expect(app.printRoutes()).not.toContain('/api/choices/')
   await app.close()
 })
 

@@ -1,8 +1,6 @@
 import { resolveSlotStatus } from '../../execution/worker/task-state-shared.js'
-import { notifyUiSignal } from '../../kernel/orchestrator/signals.js'
 import { appendLog } from '../../persistence/log/append.js'
 import { bestEffort } from '../../persistence/log/safe.js'
-import { resolvePendingUserChoiceTimeout } from '../../work/orchestrator/user-choice.js'
 
 import {
   checkScheduledPlans,
@@ -27,13 +25,8 @@ const processLoopTriggers = async (
 ): Promise<boolean> => {
   const now = new Date()
   const nowMs = now.getTime()
-  let stateChanged = false
-  if (await resolvePendingUserChoiceTimeout(runtime, nowMs)) {
-    stateChanged = true
-    notifyUiSignal(runtime)
-  }
   const scheduled = await checkScheduledPlans(runtime, now)
-  stateChanged = stateChanged || scheduled.stateChanged
+  let { stateChanged } = scheduled
   const slots = resolveSlotStatus(runtime)
   if (state.lastAvailableSlots === null) {
     state.lastAvailableSlots = slots.available_slots

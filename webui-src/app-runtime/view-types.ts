@@ -1,7 +1,5 @@
-import type { ChoiceSubmissionState } from '../hooks/use-app-actions-types.js'
 import type {
   ConfirmDialogState,
-  ChoiceView,
   FocusView,
   PlanView,
   QuoteState,
@@ -41,13 +39,6 @@ export type MessageListSurface = {
   onScrollBottom: () => void
   onQuote: (message: ChatMessage) => void
   onDelete: (message: ChatMessage) => void
-}
-
-export type ChoicePanelSurface = {
-  choices: ChoiceView[]
-  choiceSubmission: ChoiceSubmissionState
-  isDisconnected: boolean
-  onSelect: (choiceId: string, optionId: string) => void
 }
 
 export type ComposerSurface = {

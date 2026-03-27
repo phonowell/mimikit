@@ -65,14 +65,6 @@ actions:
     summary: 关闭一个已有计划，并保留审计记录。
     brief_constraints:
       - 必填 `plan_id`
-  ask_user_choice:
-    summary: 生成一个待用户返回后处理的有限选择。
-    brief_constraints:
-      - 必填 `question,default_option_id,options[]`
-    detail_constraints:
-      - '`options[]` 中每项都必须包含 `id,label,reason`'
-      - 仅在有限候选且确需用户决策时使用
-      - '`telegram` 来源不可用'
   assign_focus:
     summary: 给 task、plan 或 history 绑定 focus。
     brief_constraints:

@@ -1,5 +1,4 @@
 import {
-  ChoicePanelSurfaceContext,
   ComposerSurfaceContext,
   ConfirmDialogsSurfaceContext,
   FocusDialogSurfaceContext,
@@ -19,7 +18,6 @@ export const AppSurfaceProviders = ({
   children,
   headerSurface,
   messageListSurface,
-  choicePanelSurface,
   composerSurface,
   tasksDialogSurface,
   plansDialogSurface,
@@ -29,21 +27,19 @@ export const AppSurfaceProviders = ({
 }: SurfaceProps) => (
   <HeaderSurfaceContext value={headerSurface}>
     <MessageListSurfaceContext value={messageListSurface}>
-      <ChoicePanelSurfaceContext value={choicePanelSurface}>
-        <ComposerSurfaceContext value={composerSurface}>
-          <TasksDialogSurfaceContext value={tasksDialogSurface}>
-            <PlansDialogSurfaceContext value={plansDialogSurface}>
-              <FocusDialogSurfaceContext value={focusDialogSurface}>
-                <ConfirmDialogsSurfaceContext value={confirmDialogsSurface}>
-                  <ToastSurfaceContext value={toastSurface}>
-                    {children}
-                  </ToastSurfaceContext>
-                </ConfirmDialogsSurfaceContext>
-              </FocusDialogSurfaceContext>
-            </PlansDialogSurfaceContext>
-          </TasksDialogSurfaceContext>
-        </ComposerSurfaceContext>
-      </ChoicePanelSurfaceContext>
+      <ComposerSurfaceContext value={composerSurface}>
+        <TasksDialogSurfaceContext value={tasksDialogSurface}>
+          <PlansDialogSurfaceContext value={plansDialogSurface}>
+            <FocusDialogSurfaceContext value={focusDialogSurface}>
+              <ConfirmDialogsSurfaceContext value={confirmDialogsSurface}>
+                <ToastSurfaceContext value={toastSurface}>
+                  {children}
+                </ToastSurfaceContext>
+              </ConfirmDialogsSurfaceContext>
+            </FocusDialogSurfaceContext>
+          </PlansDialogSurfaceContext>
+        </TasksDialogSurfaceContext>
+      </ComposerSurfaceContext>
     </MessageListSurfaceContext>
   </HeaderSurfaceContext>
 )

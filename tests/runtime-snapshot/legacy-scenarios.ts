@@ -3,8 +3,8 @@ import { join } from 'node:path'
 
 import { expect, test } from 'vitest'
 
-import { loadRuntimeSnapshot } from '../../src/persistence/storage/runtime-snapshot.js'
 import { RUNTIME_SNAPSHOT_SCHEMA_VERSION } from '../../src/persistence/storage/runtime-schema-version.js'
+import { loadRuntimeSnapshot } from '../../src/persistence/storage/runtime-snapshot.js'
 import {
   GLOBAL_FOCUS_ID,
   SNAPSHOT_BASE_TIME,
@@ -31,6 +31,34 @@ test('runtime snapshot rejects legacy single pendingUserChoice field', async () 
         createdAt: SNAPSHOT_BASE_TIME,
         focusId: GLOBAL_FOCUS_ID,
       },
+    }),
+    'utf8',
+  )
+
+  await expect(loadRuntimeSnapshot(stateDir)).rejects.toThrow()
+})
+
+test('runtime snapshot rejects pendingUserChoices field after choice removal', async () => {
+  const stateDir = await createTmpDir()
+  await writeFile(
+    join(stateDir, 'runtime-snapshot.json'),
+    JSON.stringify({
+      schemaVersion: RUNTIME_SNAPSHOT_SCHEMA_VERSION,
+      tasks: [],
+      taskPlans: [],
+      pendingUserChoices: [
+        {
+          id: 'choice-legacy',
+          question: 'continue?',
+          options: [
+            { id: 'option-yes', label: 'Yes', reason: 'continue' },
+            { id: 'option-no', label: 'No', reason: 'stop' },
+          ],
+          defaultOptionId: 'option-no',
+          createdAt: SNAPSHOT_BASE_TIME,
+          focusId: GLOBAL_FOCUS_ID,
+        },
+      ],
     }),
     'utf8',
   )

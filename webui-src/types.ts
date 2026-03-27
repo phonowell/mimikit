@@ -116,27 +116,12 @@ export type FocusesSnapshot = {
   items: FocusView[]
 }
 
-export type ChoiceOption = {
-  id: string
-  label: string
-  reason: string
-}
-
-export type ChoiceView = {
-  id: string
-  question: string
-  defaultOptionId: string
-  expiresAt?: string
-  options: ChoiceOption[]
-}
-
 export type SnapshotEnvelope = {
   status?: StatusSnapshot
   messages?: MessageSnapshot
   tasks?: TasksSnapshot
   plans?: PlansSnapshot
   focuses?: FocusesSnapshot
-  choices?: unknown
 }
 
 export type QuoteState = {
@@ -163,6 +148,5 @@ export type AppState = {
   tasks: TaskView[]
   plans: PlanView[]
   focuses: FocusView[]
-  choices: ChoiceView[]
   awaitingReply: boolean
 }

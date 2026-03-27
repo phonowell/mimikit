@@ -49,7 +49,11 @@ export const buildRuntimeSnapshotHydrateSlice = (params: {
       memoryRefresh: hydrateMemoryRefreshState(snapshot),
     },
     session: { channelTargets },
-    ui: { pendingUserChoices: snapshot.pendingUserChoices ?? [] },
+    ui: {
+      wakeVersion: 0,
+      wakeEvents: new Map(),
+      signalControllers: new Set(),
+    },
   }
   const queues = selectRuntimeSnapshotQueues(snapshot)
   if (queues) slice.queues = queues
@@ -69,7 +73,6 @@ export const applyRuntimeSnapshotHydrateSlice = (
   runtime.manager.memoryRefresh = slice.manager.memoryRefresh
   delete runtime.manager.lastUsage
   delete runtime.manager.usageTotal
-  runtime.ui.pendingUserChoices = slice.ui.pendingUserChoices
   runtime.session.channelTargets = slice.session.channelTargets
   if (slice.queues) runtime.queues = slice.queues
 }

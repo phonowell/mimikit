@@ -1,9 +1,6 @@
 import { resolveTaskGitLifecycle } from '../../work/shared/task-git-lifecycle.js'
 
-import {
-  formatAskUserChoiceChannelUnsupportedHint,
-  formatEnqueueTaskContractMissingHint,
-} from './action-feedback-hints.js'
+import { formatEnqueueTaskContractMissingHint } from './action-feedback-hints.js'
 import { rejected, type ValidationIssue } from './action-validation-helpers.js'
 import {
   validateDeletePlan,
@@ -16,7 +13,6 @@ import {
   validateWithSchema,
 } from './action-validation-shared.js'
 import {
-  askUserChoiceActionSchema,
   enqueueTaskActionSchema,
   recordTaskGitActionSchema,
   rememberMemoryActionSchema,
@@ -124,23 +120,6 @@ export const validateRecordTaskGit = (
   if (item.state === 'cleaned' && !lifecycle?.merged) {
     return rejected(
       'record_task_git 执行失败：任务尚未记录 merged，无法写入 cleaned。',
-    )
-  }
-  return validateHighRiskActionIntentEvidence(item, context)
-}
-
-export const validateAskUserChoice = (
-  item: Parsed,
-  context: FeedbackContext,
-): ValidationIssue[] => {
-  if (context.allowAskUserChoice === false)
-    return rejected(formatAskUserChoiceChannelUnsupportedHint())
-  const schemaIssues = validateWithSchema(item, askUserChoiceActionSchema)
-  if (schemaIssues.length > 0) return schemaIssues
-  if (item.type !== 'ask_user_choice') return schemaIssues
-  if (!item.options.some((option) => option.id === item.default_option_id)) {
-    return rejected(
-      'ask_user_choice 执行失败：`default_option_id` 必须命中 `options[]` 中的某一项。',
     )
   }
   return validateHighRiskActionIntentEvidence(item, context)

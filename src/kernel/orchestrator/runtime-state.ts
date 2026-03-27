@@ -6,7 +6,6 @@ import { setDefaultLogPath } from '../../persistence/log/safe.js'
 
 import type {
   FocusMeta,
-  PendingUserChoice,
   Task,
   TaskPlan,
   TokenUsage,
@@ -84,7 +83,6 @@ export type RuntimeUiState = {
   wakeVersion: number
   wakeEvents: Map<number, UiWakeKind>
   signalControllers: Set<AbortController>
-  pendingUserChoices: PendingUserChoice[]
 }
 
 export type RuntimeState = {
@@ -160,7 +158,6 @@ export const createRuntimeState = (
       wakeVersion: 0,
       wakeEvents: new Map(),
       signalControllers: new Set(),
-      pendingUserChoices: [],
     },
     queues: { inputsCursor: 0, resultsCursor: 0 },
     tasks: [],

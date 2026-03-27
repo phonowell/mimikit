@@ -1,47 +1,12 @@
 import { normalizeInlineWhitespace } from '../../foundation/shared/text.js'
 
 import {
-  buildMissingIntentEvidenceHint,
-  isSupportedByInputs,
-} from './action-intent-evidence-match.js'
-import {
-  askUserChoiceActionSchema,
   rememberMemoryActionSchema,
   rememberProjectProfileActionSchema,
 } from './manager-turn-schema.js'
 
-import type { SupplementalEvidenceSource } from './action-intent-evidence.js'
 import type { UserInput } from '../../foundation/types/index.js'
 import type { Parsed } from '../actions/model/spec.js'
-
-export const validateAskUserChoiceIntentEvidence = (params: {
-  item: Parsed
-  inputTexts: string[]
-  supplementalEvidenceSources?: Set<SupplementalEvidenceSource>
-}): string | undefined => {
-  const { item, inputTexts, supplementalEvidenceSources } = params
-  if (item.type !== 'ask_user_choice') return undefined
-  const parsed = askUserChoiceActionSchema.safeParse(item)
-  if (!parsed.success) return undefined
-
-  const candidates = [
-    parsed.data.question,
-    ...parsed.data.options.flatMap((option) => [option.label, option.reason]),
-  ]
-  if (
-    isSupportedByInputs({
-      candidates,
-      combinedCandidate: candidates.join('\n'),
-      inputs: inputTexts,
-    })
-  )
-    return undefined
-
-  return buildMissingIntentEvidenceHint({
-    actionName: item.type,
-    evidenceSources: supplementalEvidenceSources,
-  })
-}
 
 export const validateRememberMemoryIntentEvidence = (params: {
   item: Parsed

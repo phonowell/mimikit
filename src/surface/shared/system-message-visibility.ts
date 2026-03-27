@@ -12,8 +12,6 @@ const USER_VALUE_EVENTS = new Set<SystemEventName>([
   'task_canceled',
   'task_completed',
   'manager_fallback_reply',
-  'user_choice',
-  'user_choice_skipped',
 ])
 
 const INTERNAL_EVENTS = new Set<SystemEventName>([

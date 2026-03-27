@@ -18,7 +18,6 @@ import {
   resolveFocusByQuote,
   touchFocus,
 } from '../../work/focus/index.js'
-import { cancelPendingUserChoiceByUserInput } from '../../work/orchestrator/user-choice.js'
 
 import type {
   RuntimeUserMeta,
@@ -72,11 +71,6 @@ export const appendUserInput = async (
     focusId,
     ...(quoteId ? { quote: quoteId } : {}),
     ...toUserInputLogMeta(meta),
-  })
-  await cancelPendingUserChoiceByUserInput({
-    runtime,
-    triggerInputId: id,
-    createdAt,
   })
   await bestEffort('broadcast:user_message', () =>
     broadcastUserMessage({

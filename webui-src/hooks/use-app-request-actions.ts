@@ -3,9 +3,7 @@ import { useCallback, useMemo } from 'react'
 import { appendClientError } from '../lib/client-error.js'
 import { runConfirmAction } from '../lib/confirm-action.js'
 import { readJsonError } from '../lib/controller-utils.js'
-import { fetchWithTimeout } from '../lib/fetch-with-timeout.js'
 import { submitMessage } from '../lib/submit-message.js'
-import { UI_TEXT } from '../lib/system-text.js'
 import { copyTaskIdToClipboard } from '../lib/tasks-copy-id.js'
 
 import type {
@@ -18,7 +16,6 @@ type Params = Pick<
   | 'scroll'
   | 'setAppState'
   | 'setBusy'
-  | 'setChoiceSubmission'
   | 'setComposerValue'
   | 'setConfirmDialog'
   | 'setOpenTaskMenuId'
@@ -35,7 +32,6 @@ export const useAppRequestActions = ({
   scroll,
   setAppState,
   setBusy,
-  setChoiceSubmission,
   setComposerValue,
   setConfirmDialog,
   setOpenTaskMenuId,
@@ -100,34 +96,6 @@ export const useAppRequestActions = ({
     ],
   )
 
-  const selectChoice = useCallback(
-    async (choiceId: string, optionId: string) => {
-      setChoiceSubmission({ choiceId, optionId, status: 'submitting' })
-      try {
-        const response = await fetchWithTimeout(
-          `/api/choices/${encodeURIComponent(choiceId)}/select`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ optionId }),
-          },
-          15_000,
-        )
-        if (!response.ok) {
-          throw new Error(
-            await readJsonError(response, UI_TEXT.choiceSelectFailed),
-          )
-        }
-
-        setChoiceSubmission({ choiceId, optionId, status: 'submitted' })
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error)
-        setChoiceSubmission({ choiceId, optionId, status: 'error', message })
-      }
-    },
-    [setChoiceSubmission],
-  )
-
   const triggerTaskAction = useCallback(
     async (
       taskId: string,
@@ -164,10 +132,9 @@ export const useAppRequestActions = ({
   return useMemo(
     () => ({
       confirmAction,
-      selectChoice,
       submitMessage: submitCurrentMessage,
       triggerTaskAction,
     }),
-    [confirmAction, selectChoice, submitCurrentMessage, triggerTaskAction],
+    [confirmAction, submitCurrentMessage, triggerTaskAction],
   )
 }

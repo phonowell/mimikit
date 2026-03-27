@@ -1,6 +1,5 @@
 import { Suspense } from 'react'
 
-import { ChoicePanel } from '../components/ChoicePanel.js'
 import { Composer } from '../components/Composer.js'
 import { ConfirmDialogs } from '../components/ConfirmDialogs.js'
 import { Header } from '../components/Header.js'
@@ -13,7 +12,6 @@ import { MessageList } from '../components/MessageList.js'
 import { Toast } from '../components/Toast.js'
 
 import {
-  useChoicePanelSurface,
   useComposerSurface,
   useConfirmDialogsSurface,
   useFocusDialogSurface,
@@ -26,7 +24,6 @@ import {
 
 const HeaderRoot = () => <Header {...useHeaderSurface()} />
 const MessageListRoot = () => <MessageList {...useMessageListSurface()} />
-const ChoicePanelRoot = () => <ChoicePanel {...useChoicePanelSurface()} />
 
 const ComposerRoot = () => {
   const composer = useComposerSurface()
@@ -87,7 +84,6 @@ export const AppSurfaceRoots = () => (
     <main data-app>
       <HeaderRoot />
       <MessageListRoot />
-      <ChoicePanelRoot />
       <ComposerRoot />
     </main>
     <DialogRoots />

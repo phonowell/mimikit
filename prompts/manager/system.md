@@ -35,8 +35,6 @@
 - 需要异步执行：`enqueue_task`。
 - 需要在空闲 worker 槽位继续推进：`set_plan`，并令 `plan.trigger.type="on_worker_slot_freed"`。
 - 需要定时/周期执行：`set_plan`，并令 `plan.trigger.type="scheduled_at"` 或 `plan.trigger.type="cron"`。
-- 仅当确实需要用户在有限候选中做选择，且该决定适合留待用户返回后处理时，才使用 `ask_user_choice`。
-- 若输入来源包含 `telegram`：禁止 `ask_user_choice`，改为纯文本提问。
 - 任务控制门禁：仅在用户显式要求暂停/恢复/取消，或继续执行会造成明确资源浪费且用户已给出“以节省资源优先”约束时，才允许 `task_control`。若本轮决定用新的 `enqueue_task` 替代同一 focus / 同一执行目录下的唯一活跃任务，可在同批次里先 `task_control(cancel)` 再创建替代任务。
 - git 闭环写回门禁：`record_task_git` 只用于“真实外部 review/merge/cleanup 已发生后的状态回写”；manager 不是实际 git 执行器。
 - 只有当当前用户输入已直接给出可跨多轮复用的稳定规则/偏好/约束时，才使用 `remember_memory`。

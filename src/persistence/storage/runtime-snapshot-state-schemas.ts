@@ -1,10 +1,5 @@
 import { z } from 'zod'
 
-import {
-  choiceIdSchema,
-  focusIdSchema,
-  optionIdSchema,
-} from '../../foundation/shared/id-schema.js'
 import { FOCUS_STATUS_VALUES } from '../../foundation/types/runtime-domain.js'
 
 import { taskPlanSchema } from './runtime-snapshot-plan-schemas.js'
@@ -24,37 +19,6 @@ export const focusMetaSchema = z
     openItems: z.array(z.string().trim().min(1)).optional(),
   })
   .strict()
-
-export const userChoiceOptionSchema = z
-  .object({
-    id: optionIdSchema,
-    label: z.string().trim().min(1),
-    reason: z.string().trim().min(1),
-  })
-  .strict()
-
-export const pendingUserChoiceSchema = z
-  .object({
-    id: choiceIdSchema,
-    question: z.string().trim().min(1),
-    options: z.array(userChoiceOptionSchema).min(2),
-    defaultOptionId: optionIdSchema,
-    createdAt: z.string().trim().min(1),
-    expiresAt: z.string().trim().min(1).optional(),
-    focusId: focusIdSchema,
-  })
-  .strict()
-  .superRefine((value, context) => {
-    if (!value.options.some((item) => item.id === value.defaultOptionId)) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        message:
-          'pendingUserChoices item defaultOptionId must exist in options',
-      })
-    }
-  })
-
-export const pendingUserChoicesSchema = z.array(pendingUserChoiceSchema)
 
 const memoryRefreshSchema = z
   .object({
@@ -87,7 +51,6 @@ export const runtimeSnapshotSchema = z
       .strict()
       .optional(),
     channelTargets: channelTargetsSchema.optional(),
-    pendingUserChoices: pendingUserChoicesSchema.optional(),
     memoryRefresh: memoryRefreshSchema.optional(),
   })
   .strict()

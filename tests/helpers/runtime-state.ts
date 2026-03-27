@@ -5,9 +5,10 @@ import { join } from 'node:path'
 import PQueue from 'p-queue'
 
 import { defaultConfig } from '../../src/bootstrap/config.js'
-import { GLOBAL_FOCUS_ID } from '../../src/work/focus/constants.js'
 import { buildPaths } from '../../src/persistence/fs/paths.js'
 import { createDefaultMemoryRefreshState } from '../../src/policy/memory/refresh/state.js'
+import { GLOBAL_FOCUS_ID } from '../../src/work/focus/constants.js'
+
 import {
   materializePlanFixture,
   materializeTaskFixture,
@@ -125,7 +126,6 @@ export const createTestRuntimeState = async (
       wakeVersion: 0,
       wakeEvents: new Map(),
       signalControllers: new Set(),
-      pendingUserChoices: [],
       ...options.patch?.ui,
     },
     queues: {

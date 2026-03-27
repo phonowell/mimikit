@@ -45,7 +45,6 @@ export const createOrchestratorStub = () => {
         tasks: { tasks: [], counts: {} },
         plans: { items: [] },
         focuses: { items: [] },
-        choices: [],
       }),
     getWebUiWakeVersion: () => 0,
     waitForWebUiSignal: () =>
@@ -66,7 +65,6 @@ export const createOrchestratorStub = () => {
         tasks: { tasks: [], counts: {} },
         plans: { items: [] },
         focuses: { items: [] },
-        choices: [],
         reviewStatus: { cards: [], highlights: [] },
       }),
     getTaskById: () => undefined,
@@ -78,11 +76,6 @@ export const createOrchestratorStub = () => {
         ok: false,
         id: taskId,
         status: 'not_found' as const,
-      }),
-    selectPendingUserChoice: () =>
-      Promise.resolve({
-        ok: false,
-        reason: 'not_found' as const,
       }),
     stopAndPersist: () => Promise.resolve(),
     requestExit: (

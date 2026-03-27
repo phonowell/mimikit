@@ -22,7 +22,6 @@ export type {
   ProviderCapability,
   Role,
   TokenUsage,
-  UserChoiceSelectionSource,
   WorkerProfile,
 } from './base.js'
 export type {
@@ -44,10 +43,6 @@ export type {
   TaskResourceMode,
   TaskResult,
 } from '../../work/types/task-runtime-types.js'
-export type {
-  PendingUserChoice,
-  UserChoiceOption,
-} from '../../work/types/pending-user-choice-types.js'
 export type {
   TaskGitExecution,
   TaskGitLifecycle,

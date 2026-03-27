@@ -3,10 +3,8 @@ import {
   tokenizeSearchText,
 } from '../../foundation/shared/text-search.js'
 import { normalizeInlineWhitespace } from '../../foundation/shared/text.js'
-import { resolveSystemEvent } from '../../surface/shared/system-event.js'
 
 import {
-  formatAskUserChoiceIntentEvidenceHint,
   formatEnqueueTaskIntentEvidenceHint,
   formatRecordTaskGitIntentEvidenceHint,
   formatSetPlanIntentEvidenceHint,
@@ -50,8 +48,6 @@ export const buildMissingIntentEvidenceHint = (params: {
       taskRef: params.taskRef ?? '当前目标 task',
     })
   }
-  if (params.actionName === 'ask_user_choice')
-    return formatAskUserChoiceIntentEvidenceHint(evidenceSources)
   if (params.actionName === 'set_plan' || params.actionName === 'delete_plan')
     return formatSetPlanIntentEvidenceHint(evidenceSources)
   return formatEnqueueTaskIntentEvidenceHint(evidenceSources)
@@ -69,9 +65,6 @@ export const collectUserIntentTexts = (
       texts.push(text)
       continue
     }
-    const event = resolveSystemEvent(input)
-    if (event.name === 'user_choice' && event.payload?.source === 'user')
-      texts.push(text)
   }
   return texts
 }
@@ -88,9 +81,6 @@ export const collectHistoricalUserIntentTexts = (
       texts.push(text)
       continue
     }
-    const event = resolveSystemEvent(item)
-    if (event.name === 'user_choice' && event.payload?.source === 'user')
-      texts.push(text)
   }
   return texts.slice(Math.max(0, texts.length - MAX_RECENT_USER_INTENT_TEXTS))
 }

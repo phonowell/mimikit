@@ -1,10 +1,8 @@
-import { normalizeChoicesPayload } from './choice-payload.js'
 import { mergeIncomingMessages } from './merge-incoming-messages.js'
 
 import type {
   AppState,
   ChatMessage,
-  ChoiceView,
   SnapshotEnvelope,
   StatusSnapshot,
 } from '../types.js'
@@ -47,7 +45,6 @@ export const createInitialAppState = (): AppState => ({
   tasks: [],
   plans: [],
   focuses: [],
-  choices: [],
   awaitingReply: false,
 })
 
@@ -91,9 +88,6 @@ export const applyIncomingSnapshot = (
       const id = typeof message.id === 'string' ? message.id.trim() : ''
       return id && !previousIds.has(id) && isManagerFallbackMessage(message)
     })
-  const normalizedChoices = normalizeChoicesPayload(
-    snapshot.choices,
-  ) as ChoiceView[]
 
   return {
     next: {
@@ -102,7 +96,6 @@ export const applyIncomingSnapshot = (
       tasks: snapshot.tasks?.tasks ?? previous.tasks,
       plans: snapshot.plans?.items ?? previous.plans,
       focuses: snapshot.focuses?.items ?? previous.focuses,
-      choices: normalizedChoices,
       awaitingReply: shouldStopWaiting ? false : previous.awaitingReply,
     },
     newAgentMessages,

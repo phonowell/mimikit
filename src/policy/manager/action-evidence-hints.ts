@@ -13,7 +13,6 @@ const actionEvidenceHintSchema = z
     task_control_intent_evidence_missing: z.string().trim().min(1),
     record_task_git_intent_evidence_missing: z.string().trim().min(1),
     set_plan_intent_evidence_missing: z.string().trim().min(1),
-    ask_user_choice_intent_evidence_missing: z.string().trim().min(1),
   })
   .strict()
 
@@ -62,12 +61,5 @@ export const formatSetPlanIntentEvidenceHint = (
   evidenceSources: string,
 ): string =>
   renderHint('set_plan_intent_evidence_missing', {
-    evidence_sources: evidenceSources,
-  })
-
-export const formatAskUserChoiceIntentEvidenceHint = (
-  evidenceSources: string,
-): string =>
-  renderHint('ask_user_choice_intent_evidence_missing', {
     evidence_sources: evidenceSources,
   })

@@ -1,7 +1,6 @@
 import { createContext, useContext } from 'react'
 
 import type {
-  ChoicePanelSurface,
   ComposerSurface,
   ConfirmDialogsSurface,
   FocusDialogSurface,
@@ -22,8 +21,6 @@ const useRequiredContext = <T>(context: Context<T | null>, name: string) => {
 export const HeaderSurfaceContext = createContext<HeaderSurface | null>(null)
 export const MessageListSurfaceContext =
   createContext<MessageListSurface | null>(null)
-export const ChoicePanelSurfaceContext =
-  createContext<ChoicePanelSurface | null>(null)
 export const ComposerSurfaceContext = createContext<ComposerSurface | null>(
   null,
 )
@@ -41,8 +38,6 @@ export const useHeaderSurface = () =>
   useRequiredContext(HeaderSurfaceContext, 'HeaderSurfaceContext')
 export const useMessageListSurface = () =>
   useRequiredContext(MessageListSurfaceContext, 'MessageListSurfaceContext')
-export const useChoicePanelSurface = () =>
-  useRequiredContext(ChoicePanelSurfaceContext, 'ChoicePanelSurfaceContext')
 export const useComposerSurface = () =>
   useRequiredContext(ComposerSurfaceContext, 'ComposerSurfaceContext')
 export const useTasksDialogSurface = () =>

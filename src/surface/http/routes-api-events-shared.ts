@@ -74,14 +74,12 @@ export const buildSnapshotHintKey = (snapshot: {
   tasks: unknown
   plans: unknown
   focuses: unknown
-  choices: unknown
 }): string =>
   JSON.stringify({
     status: snapshot.status,
     tasks: snapshot.tasks,
     plans: snapshot.plans,
     focuses: snapshot.focuses,
-    choices: snapshot.choices,
   })
 
 export const buildDeltaSnapshot = (
