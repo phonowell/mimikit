@@ -1,4 +1,5 @@
 import { buildTaskArchiveViewerUrl } from '../lib/archive-viewer-url.js'
+import { toArtifactUrl } from '../lib/artifact-url.js'
 import { resolveTaskStatusLabel } from '../lib/system-text.js'
 
 import { TaskMeta } from './TaskMeta.js'
@@ -34,6 +35,7 @@ export const TaskListItem = ({
     status === 'pending' || status === 'paused' || status === 'running'
   const canDelete = !canCancel
   const menuOpen = openMenuId === task.id
+  const traceUrl = toArtifactUrl(task.traceRef)
 
   return (
     <li className="task-item" data-status={status}>
@@ -81,6 +83,17 @@ export const TaskListItem = ({
           >
             copy id
           </button>
+          {traceUrl ? (
+            <a
+              className="task-menu-item task-menu-item--trace"
+              href={traceUrl}
+              role="menuitem"
+              target="_blank"
+              rel="noreferrer"
+            >
+              trace
+            </a>
+          ) : null}
           <button
             className={`task-menu-item task-menu-item--${canResume ? 'resume' : 'pause'}`}
             type="button"

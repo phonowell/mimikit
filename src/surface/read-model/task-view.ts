@@ -45,6 +45,7 @@ export type TaskView = {
   durationMs?: number
   usage?: Task['usage']
   archivePath?: string
+  traceRef?: string
   stopReason?: TaskResultStopReason
   pending_reason?: TaskPendingReason
   dispatchLock?: TaskDispatchLockDetail
@@ -148,6 +149,7 @@ const taskToView = (
       : task.result?.archivePath
         ? { archivePath: task.result.archivePath }
         : {}),
+    ...(task.result?.traceRef ? { traceRef: task.result.traceRef } : {}),
     ...(task.result?.stopReason ? { stopReason: task.result.stopReason } : {}),
     ...(pendingReason ? { pending_reason: pendingReason } : {}),
     ...(dispatchLock ? { dispatchLock } : {}),

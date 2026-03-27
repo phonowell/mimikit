@@ -45,3 +45,22 @@ test('task list item hides provider chip and shows copy id first in menu', () =>
   expect(copyIdIndex).toBeLessThan(cancelIndex)
   expect(copyIdIndex).toBeLessThan(deleteIndex)
 })
+
+test('task list item shows trace link when traceRef exists', () => {
+  Object.assign(globalThis, { React })
+  const markup = renderToStaticMarkup(
+    React.createElement(TaskListItem, {
+      open: true,
+      task: createTask({
+        traceRef: '.mimikit/traces/2026-03-27/worker-trace.txt',
+      }),
+      openMenuId: 'task-1',
+      onRequestDelete: noop,
+      onTaskAction: noop,
+      onToggleMenu: noop,
+    }),
+  )
+
+  expect(markup).toContain('>trace<')
+  expect(markup).toContain('/state-files/traces/2026-03-27/worker-trace.txt')
+})

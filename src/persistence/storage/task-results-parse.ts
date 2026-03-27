@@ -80,6 +80,7 @@ export const parseTaskResultArchive = (
   const durationMs = Number(parsed.header.duration_ms)
   const usage = parseTokenUsageJson(parsed.header.usage)
   const provider = parseWorkerProvider(parsed.header.provider)
+  const traceRef = parsed.header.trace_path?.trim()
   const taskStatus = parseTaskStatus(parsed.header.task_status)
   const outcome = parseTaskResultOutcome(parsed.header.outcome)
   const stopReason = parseTaskResultStopReason(parsed.header.stop_reason)
@@ -107,6 +108,7 @@ export const parseTaskResultArchive = (
     ...(stopReason ? { stopReason } : {}),
     ...(usage ? { usage } : {}),
     ...(provider ? { provider } : {}),
+    ...(traceRef ? { traceRef } : {}),
     ...(parsed.header.title ? { title: parsed.header.title } : {}),
     ...(archivePath ? { archivePath } : {}),
     ...(cancel ? { cancel } : {}),

@@ -1,8 +1,8 @@
-import fastify from 'fastify'
 import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
+import fastify from 'fastify'
 import { expect, test } from 'vitest'
 
 import { defaultConfig } from '../../src/bootstrap/config.js'
@@ -44,11 +44,14 @@ test('task archive route falls back to live snapshot when archive file is missin
       output: 'network timeout',
       durationMs: 10000,
       completedAt: '2026-02-10T00:00:10.000Z',
+      traceRef: '.mimikit/traces/2026-02-10/task-archive-live-2.txt',
       profile: 'worker',
     },
   }
   ;(
-    orchestrator as unknown as { getTaskById: (taskId: string) => Task | undefined }
+    orchestrator as unknown as {
+      getTaskById: (taskId: string) => Task | undefined
+    }
   ).getTaskById = (taskId) => (taskId === task.id ? task : undefined)
   const config = defaultConfig({ workDir })
   registerApiRoutes(app, orchestrator, config)
@@ -60,6 +63,7 @@ test('task archive route falls back to live snapshot when archive file is missin
 
   expectArchiveMarkdown(response, [
     'status: failed',
+    'trace_path: .mimikit/traces/2026-02-10/task-archive-live-2.txt',
     '=== RESULT ===',
     'network timeout',
   ])

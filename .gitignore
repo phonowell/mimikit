@@ -23,6 +23,7 @@ junit.xml
 # Runtime state
 /.mimikit
 /.mimikit-smoke
+/.worktrees
 /plans
 /reports/diagnostics
 /reports/smoke-live-*.json

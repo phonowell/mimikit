@@ -16,6 +16,7 @@ export const buildResult = (
   output: string,
   durationMs: number,
   usage?: TokenUsage,
+  traceRef?: string,
 ): TaskResult => {
   const cleanedOutput = stripWorkerProtocolTags(output)
   const handoff = buildTaskResultHandoff(task, { status, output })
@@ -29,6 +30,7 @@ export const buildResult = (
     completedAt: nowIso(),
     ...state,
     ...(usage ? { usage } : {}),
+    ...(traceRef ? { traceRef } : {}),
     ...(task.title ? { title: task.title } : {}),
     profile: task.profile,
     provider: task.provider,

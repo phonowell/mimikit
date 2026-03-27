@@ -19,16 +19,16 @@ test('runWorkerLoop does not double count when onUsage and result usage are iden
       task,
       prompt: task.prompt,
       archiveBase: { role: 'worker', taskId: task.id },
-      runModel: async ({ onUsage }) => {
-        const usage = { input: 100, output: 50, total: 150 }
-        onUsage?.(usage)
-        return {
+      runModel: ({ onUsage }) =>
+        Promise.resolve({
           output:
             'done\n<M:task_handoff>{"summary":"done"}</M:task_handoff>\n<M:skill_usage status="done">test</M:skill_usage>',
           elapsedMs: 12,
-          usage,
-        }
-      },
+          usage: ((usage) => {
+            onUsage?.(usage)
+            return usage
+          })({ input: 100, output: 50, total: 150 }),
+        }),
       onUsage: (usage) => {
         usageEvents.push(usage)
       },
@@ -41,6 +41,9 @@ test('runWorkerLoop does not double count when onUsage and result usage are iden
       output: 50,
       total: 150,
     })
+    expect(result.traceRef).toMatch(
+      /^\.mimikit\/traces\/\d{4}-\d{2}-\d{2}\/.+\.txt$/,
+    )
   } finally {
     await rm(stateDir, { recursive: true, force: true })
   }
@@ -57,14 +60,14 @@ test('runWorkerLoop forwards partial output updates', async () => {
       task,
       prompt: task.prompt,
       archiveBase: { role: 'worker', taskId: task.id },
-      runModel: async ({ onPartialOutput }) => {
+      runModel: ({ onPartialOutput }) => {
         onPartialOutput?.('step 1')
         onPartialOutput?.('step 2')
-        return {
+        return Promise.resolve({
           output:
             'done\n<M:task_handoff>{"summary":"done"}</M:task_handoff>\n<M:skill_usage status="done">test</M:skill_usage>',
           elapsedMs: 12,
-        }
+        })
       },
       onPartialOutput: (output) => {
         partialOutputs.push(output)

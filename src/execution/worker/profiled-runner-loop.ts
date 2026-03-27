@@ -1,3 +1,5 @@
+import { relative } from 'node:path'
+
 import { appendTraceArchiveResult } from '../../persistence/storage/traces-archive.js'
 import { readProviderThreadId } from '../providers/thread-id.js'
 import {
@@ -29,12 +31,33 @@ const normalizeThreadId = (
   return trimmed && trimmed.length > 0 ? trimmed : undefined
 }
 
+const toTraceRef = (
+  stateDir: string,
+  tracePath: string,
+): string | undefined => {
+  const trimmed = tracePath.trim()
+  if (!trimmed) return undefined
+  const stateRelative = relative(stateDir, trimmed).replace(/\\/g, '/')
+  if (!stateRelative || stateRelative.startsWith('..')) return undefined
+  return `.mimikit/${stateRelative}`
+}
+
+const attachTraceRef = (
+  error: unknown,
+  traceRef: string | undefined,
+): Error => {
+  const next = error instanceof Error ? error : new Error(String(error))
+  if (traceRef) Reflect.set(next, 'traceRef', traceRef)
+  return next
+}
+
 export const runWorkerLoop = async (
   params: RunLoopParams,
 ): Promise<{
   output: string
   elapsedMs: number
   usage?: TokenUsage
+  traceRef?: string
 }> => {
   const { stateDir, prompt } = params
   let threadId: string | null | undefined = params.initialThreadId
@@ -85,7 +108,7 @@ export const runWorkerLoop = async (
       )
     }
     const finalOutput = stripWorkerProtocolTags(output)
-    await archiveResult(
+    const tracePath = await archiveResult(
       { ...params.archiveBase, threadId },
       {
         output: finalOutput,
@@ -94,10 +117,12 @@ export const runWorkerLoop = async (
         ...(totalUsage ? { usage: totalUsage } : {}),
       },
     )
+    const traceRef = tracePath ? toTraceRef(stateDir, tracePath) : undefined
     return {
       output: finalOutput,
       elapsedMs: result.elapsedMs,
       ...(totalUsage ? { usage: totalUsage } : {}),
+      ...(traceRef ? { traceRef } : {}),
     }
   } catch (error) {
     const errorThreadId = readProviderThreadId(error)
@@ -111,7 +136,7 @@ export const runWorkerLoop = async (
     const err = error instanceof Error ? error : new Error(String(error))
     const canceled =
       Boolean(params.abortSignal?.aborted) && isAbortLikeError(err)
-    await archiveResult(
+    const tracePath = await archiveResult(
       {
         ...params.archiveBase,
         ...(threadId !== undefined ? { threadId } : {}),
@@ -123,6 +148,9 @@ export const runWorkerLoop = async (
         errorName: canceled ? 'TaskCanceledError' : err.name,
       },
     )
-    throw error
+    throw attachTraceRef(
+      error,
+      tracePath ? toTraceRef(stateDir, tracePath) : undefined,
+    )
   }
 }

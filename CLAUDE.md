@@ -156,6 +156,7 @@
 
 ## Worktree 工作流
 
+- 默认 worktree 根目录使用 `./.worktrees/`；若目录不存在，先创建并确保被 git ignore，再创建新 worktree，避免重复询问位置。
 - 使用标准 `git worktree` 流程，不再约定固定 `worktree-1/2/3` 槽位
 - 从 `main`/`origin/main` 创建 topic worktree；在各自 worktree 内独立开发、提交、rebase
 - 合流按常规 PR / merge 流程处理；本地清理使用 `git worktree remove`

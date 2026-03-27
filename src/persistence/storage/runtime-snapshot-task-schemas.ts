@@ -93,6 +93,7 @@ export const taskResultSchema = z
     usage: tokenUsageSchema.optional(),
     title: z.string().optional(),
     archivePath: z.string().optional(),
+    traceRef: z.string().trim().min(1).optional(),
     profile: z.enum(['worker']).optional(),
     provider: workerProviderSchema.optional(),
     cancel: taskCancelSchema.optional(),

@@ -73,6 +73,7 @@ export type TaskView = {
   pending_reason?: string
   dispatchLock?: TaskDispatchLockDetail
   stopReason?: string
+  traceRef?: string
   liveOutput?: string
   gitClosure?: TaskGitClosure
 }

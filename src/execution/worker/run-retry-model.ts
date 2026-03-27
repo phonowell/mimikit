@@ -8,6 +8,7 @@ export type WorkerLlmResult = {
   output: string
   elapsedMs: number
   usage?: TokenUsage
+  traceRef?: string
 }
 
 const buildTaskFocusBrief = (

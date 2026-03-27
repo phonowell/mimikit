@@ -80,12 +80,12 @@ const buildArchiveContent = (
     ],
   )
 
-export const appendTraceArchive = async (
+export const appendTraceArchive = (
   stateDir: string,
   entry: TraceArchiveEntry,
-): Promise<void> => {
+): Promise<string> => {
   const timestamp = nowIso()
-  await writeDatedArchiveFile({
+  return writeDatedArchiveFile({
     stateDir,
     archiveSubDir: 'traces',
     timestamp,
@@ -99,7 +99,7 @@ export const appendTraceArchiveResult = (
   base: Omit<TraceArchiveEntry, 'prompt' | 'output' | 'ok'>,
   prompt: string,
   result: TraceArchiveResult,
-): Promise<void> =>
+): Promise<string> =>
   appendTraceArchive(stateDir, {
     ...base,
     prompt,

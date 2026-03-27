@@ -30,6 +30,22 @@ export const runTask = async (
     if (task.resumeInstruction?.trim() !== resumeInstruction) return
     delete task.resumeInstruction
   }
+  const resolveErrorTraceRef = (error: unknown): string | undefined => {
+    if ((typeof error !== 'object' && typeof error !== 'function') || !error)
+      return undefined
+    const value = Reflect.get(error as object, 'traceRef')
+    return typeof value === 'string' && value.trim() ? value.trim() : undefined
+  }
+  const buildTaskResult = (
+    status: 'succeeded' | 'failed' | 'canceled',
+    output: string,
+    durationMs: number,
+    usage?: Task['usage'],
+    traceRef?: string,
+  ) =>
+    traceRef
+      ? buildResult(task, status, output, durationMs, usage, traceRef)
+      : buildResult(task, status, output, durationMs, usage)
   try {
     const spec = await readTaskExecutionSpec(
       runtime.config.workDir,
@@ -60,22 +76,26 @@ export const runTask = async (
     if (task.status === 'paused') return
     if (task.status === 'canceled') {
       const usage = llmResult.usage ?? task.usage
-      const result = buildResult(
+      await finalizeResult(
+        runtime,
         task,
-        'canceled',
-        'Task canceled',
-        elapsed(),
-        usage,
+        buildTaskResult(
+          'canceled',
+          'Task canceled',
+          elapsed(),
+          usage,
+          llmResult.traceRef,
+        ),
+        markTaskCanceled,
       )
-      await finalizeResult(runtime, task, result, markTaskCanceled)
       return
     }
-    const result = buildResult(
-      task,
+    const result = buildTaskResult(
       'succeeded',
       llmResult.output,
       elapsed(),
       llmResult.usage,
+      llmResult.traceRef,
     )
     await finalizeResult(runtime, task, result, markTaskSucceeded)
   } catch (error) {
@@ -87,23 +107,25 @@ export const runTask = async (
     if (task.status === 'canceled') {
       clearConsumedResumeInstruction()
       const { usage } = task
-      const result = buildResult(
-        task,
+      const traceRef = resolveErrorTraceRef(error)
+      const result = buildTaskResult(
         'canceled',
         err.message || 'Task canceled',
         elapsed(),
         usage,
+        traceRef,
       )
       await finalizeResult(runtime, task, result, markTaskCanceled)
       return
     }
     if (resumeTurnState.started) clearConsumedResumeInstruction()
-    const result = buildResult(
-      task,
+    const traceRef = resolveErrorTraceRef(error)
+    const result = buildTaskResult(
       'failed',
       err.message,
       elapsed(),
       task.usage,
+      traceRef,
     )
     await finalizeResult(runtime, task, result, markTaskFailed)
   }

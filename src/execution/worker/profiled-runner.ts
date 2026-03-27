@@ -12,6 +12,7 @@ type LlmResult = {
   output: string
   elapsedMs: number
   usage?: TokenUsage
+  traceRef?: string
 }
 
 type BuildRunModelParams = {

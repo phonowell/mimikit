@@ -42,11 +42,16 @@ test('readTaskResultArchive restores provider and handoff payload', async () => 
     taskStatus: 'succeeded',
     outcome: 'completed',
     stopReason: 'completed',
+    traceRef: '.mimikit/traces/2026-03-03/000worker.txt',
     cancel: { source: 'user', reason: 'requested' },
     handoff: {
       summary: 'Done',
-      artifacts: [{ path: 'tasks/2026-03-03/task-archive-1.md', kind: 'task_archive' }],
-      evidence: [{ type: 'task_archive', ref: 'tasks/2026-03-03/task-archive-1.md' }],
+      artifacts: [
+        { path: 'tasks/2026-03-03/task-archive-1.md', kind: 'task_archive' },
+      ],
+      evidence: [
+        { type: 'task_archive', ref: 'tasks/2026-03-03/task-archive-1.md' },
+      ],
     },
     evidence: {
       status: 'done',
@@ -62,6 +67,7 @@ test('readTaskResultArchive restores provider and handoff payload', async () => 
   expect(parsed?.taskStatus).toBe('succeeded')
   expect(parsed?.outcome).toBe('completed')
   expect(parsed?.stopReason).toBe('completed')
+  expect(parsed?.traceRef).toBe('.mimikit/traces/2026-03-03/000worker.txt')
   expect(parsed?.cancel).toMatchObject({ source: 'user', reason: 'requested' })
   expect(parsed?.handoff?.evidence?.[0]).toMatchObject({
     type: 'task_archive',
@@ -120,7 +126,9 @@ test('readTaskResultsForTasks keeps the newest archive for a task on same day', 
     completedAt: '2026-03-03T00:05:00.000Z',
   })
 
-  const [parsed] = await readTaskResultsForTasks(stateDir, [archiveEntry.taskId])
+  const [parsed] = await readTaskResultsForTasks(stateDir, [
+    archiveEntry.taskId,
+  ])
 
   expect(parsed?.output).toBe('new output')
   expect(parsed?.completedAt).toBe('2026-03-03T00:05:00.000Z')

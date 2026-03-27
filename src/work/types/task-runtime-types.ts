@@ -67,6 +67,7 @@ export type TaskResult = {
   usage?: TokenUsage | undefined
   title?: string | undefined
   archivePath?: string | undefined
+  traceRef?: string | undefined
   profile?: WorkerProfile | undefined
   provider?: WorkerProvider | undefined
   cancel?: TaskCancelMeta | undefined

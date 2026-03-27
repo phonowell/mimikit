@@ -34,7 +34,7 @@
 - 导出：`runWorker`
 - Prompt 组装：`buildWorkerPrompt` -> `prompts/worker/system.md`
 - Provider：固定 `codex-sdk`（外部执行运行时）
-- 输出：`{ output, elapsedMs, usage? }`
+- 输出：`{ output, elapsedMs, usage?, traceRef? }`
 - 上下文补充：注入当前任务 `focusId` 对应的 `focus summary/open_items`。
 - 恢复补充：若 task 带 `resumeInstruction`，只在恢复后的下一轮首个 worker prompt 注入 `<M:resume_instruction>`，不改写原 task prompt。
 - 任务 prompt 过大时会外置到 `generated/worker-task-prompts/YYYY-MM-DD/{taskId}.md`，主 prompt 仅保留路径与预览。
@@ -45,7 +45,8 @@
 1. 构造 worker prompt。
 2. 调用 provider（外部执行运行时）执行。
 3. 单次 dispatch 只执行一次 provider 调用；若输出缺失完成协议则直接报错，由上层按失败处理。
-4. 记录进度并归档任务结果。
+4. 每次 provider 调用都会先落 trace，再把 `.mimikit/...` 相对 `traceRef` 回传到 task result。
+5. 记录进度并归档任务结果。
 
 ## Provider Runtime
 

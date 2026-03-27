@@ -62,6 +62,7 @@ const buildLiveArchive = async (
       ['completed_at', task.result?.completedAt ?? task.completedAt],
       ['duration_ms', resultDuration],
       ['usage', usage ? JSON.stringify(usage) : undefined],
+      ['trace_path', task.result?.traceRef],
       ['cancel_source', cancel?.source],
       ['cancel_reason', cancel?.reason],
     ],
