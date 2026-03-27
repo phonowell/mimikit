@@ -49,3 +49,25 @@ test('buildManagerPromptPayload injects repo-bound project profile into stable c
     '后续统一用 pnpm + tsx 命令，不再补 npm 兼容脚本',
   )
 })
+
+test('buildManagerPromptPayload tells manager to verify action legality before emitting actions', async () => {
+  const stateDir = await mkdtemp(join(tmpdir(), 'mimikit-manager-system-'))
+  const startupWorktree = '/repo/mimikit'
+  const config = defaultConfig({ workDir: stateDir })
+
+  const payload = await buildManagerPromptPayload({
+    stateDir,
+    workDir: stateDir,
+    startupWorktree,
+    inputs: [],
+    results: [],
+    tasks: [],
+    promptSectionLimits: config.manager.promptSections,
+    wakeProfile: 'user_input',
+    packetMode: 'standard',
+  })
+
+  expect(payload.prompt).toContain('输出 action 前，先逐项核对')
+  expect(payload.prompt).toContain('未列出的 action 视为本轮不可用')
+  expect(payload.prompt).toContain('不要猜测隐藏字段、兼容别名或默认值')
+})
