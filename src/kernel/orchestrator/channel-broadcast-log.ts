@@ -4,7 +4,7 @@ import { bestEffort } from '../../persistence/log/safe.js'
 import type { RuntimeState } from './runtime-state.js'
 
 type BroadcastKind = 'user_message' | 'agent_reply'
-type ChannelSource = 'telegram' | 'feishu'
+type ChannelSource = 'telegram'
 
 export const logChannelBroadcastSkipped = (params: {
   runtime: RuntimeState

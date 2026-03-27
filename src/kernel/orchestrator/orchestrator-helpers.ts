@@ -31,10 +31,6 @@ const USER_META_STRING_KEYS = [
   'telegramMessageId',
   'telegramUpdateId',
   'telegramTimestamp',
-  'feishuChatId',
-  'feishuMessageId',
-  'feishuEventId',
-  'feishuTimestamp',
 ] as const
 
 export const computeOrchestratorStatus = (

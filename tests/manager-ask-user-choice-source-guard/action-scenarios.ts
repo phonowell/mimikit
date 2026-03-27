@@ -23,7 +23,7 @@ test('ask_user_choice is rejected when telegram source does not support choice c
   expect(feedback).toHaveLength(1)
   expect(feedback[0]?.action).toBe('ask_user_choice')
   expect(feedback[0]?.error).toBe('action_execution_rejected')
-  expect(feedback[0]?.hint).toContain('Telegram/Feishu')
+  expect(feedback[0]?.hint).toContain('渠道输入（Telegram）')
 })
 
 test('ask_user_choice rejects default option ids outside options', () => {

@@ -1,6 +1,5 @@
 import { z } from 'zod'
 
-import { feishuConfigSchema } from '../../surface/channels/feishu/config.js'
 import { telegramConfigSchema } from '../../surface/channels/telegram/config.js'
 
 export const modelReasoningEffortSchema = z.enum([
@@ -61,7 +60,6 @@ export const userConfigInputSchema = z
     codex: codexInputSchema.optional(),
     webui: webuiInputSchema.optional(),
     telegram: telegramConfigSchema.partial().strict().optional(),
-    feishu: feishuConfigSchema.partial().strict().optional(),
   })
   .strict()
 

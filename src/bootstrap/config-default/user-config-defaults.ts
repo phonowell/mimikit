@@ -4,7 +4,6 @@ import type {
   ProviderCapability,
   UserConfigInput,
 } from './user-config-schema.js'
-import type { FeishuConfig } from '../../surface/channels/feishu/config.js'
 import type { TelegramConfig } from '../../surface/channels/telegram/config.js'
 
 export type UserConfigDefaults = {
@@ -33,7 +32,6 @@ export type UserConfigDefaults = {
     port: number
   }
   telegram: TelegramConfig
-  feishu: FeishuConfig
 }
 
 const DEFAULT_USER_CONFIG: UserConfigDefaults = {
@@ -67,12 +65,6 @@ const DEFAULT_USER_CONFIG: UserConfigDefaults = {
     chatId: '',
     apiRoot: 'https://api.telegram.org',
     proxy: '',
-  },
-  feishu: {
-    enabled: false,
-    appId: '',
-    appSecret: '',
-    chatId: '',
   },
 }
 
@@ -141,18 +133,6 @@ export const buildUserConfigDefaults = (
       apiRoot: telegramApiRoot ?? DEFAULT_USER_CONFIG.telegram.apiRoot,
       proxy: trimOrEmpty(
         input.telegram?.proxy ?? DEFAULT_USER_CONFIG.telegram.proxy,
-      ),
-    },
-    feishu: {
-      enabled: input.feishu?.enabled ?? DEFAULT_USER_CONFIG.feishu.enabled,
-      appId: trimOrEmpty(
-        input.feishu?.appId ?? DEFAULT_USER_CONFIG.feishu.appId,
-      ),
-      appSecret: trimOrEmpty(
-        input.feishu?.appSecret ?? DEFAULT_USER_CONFIG.feishu.appSecret,
-      ),
-      chatId: trimOrEmpty(
-        input.feishu?.chatId ?? DEFAULT_USER_CONFIG.feishu.chatId,
       ),
     },
   }

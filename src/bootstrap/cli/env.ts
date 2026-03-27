@@ -1,5 +1,4 @@
 import { configureManagerActionCliLogger } from '../../policy/manager/action-cli-log.js'
-import { applyFeishuEnvOverrides } from '../../surface/channels/feishu/config.js'
 import { parseChannelEnabledEnv } from '../../surface/channels/shared/config-env.js'
 import { applyTelegramEnvOverrides } from '../../surface/channels/telegram/config.js'
 
@@ -126,5 +125,4 @@ export const applyCliEnvOverrides = (config: AppConfig): void => {
   if (actionLogsEnabled !== undefined)
     configureManagerActionCliLogger({ enabled: actionLogsEnabled })
   applyTelegramEnvOverrides(config.telegram)
-  applyFeishuEnvOverrides(config.feishu)
 }

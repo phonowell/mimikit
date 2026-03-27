@@ -65,7 +65,6 @@ export const runManagerCorrectionRounds = async (params: {
   const resultTaskIds = new Set(results.map((item) => item.taskId))
   const allowAskUserChoice =
     !hasUserInputFromSource(inputs, 'telegram') &&
-    !hasUserInputFromSource(inputs, 'feishu') &&
     !isNoChoiceReturnChannelSource(runtime.session.lastUserMeta?.source)
   for (let round = 1; round <= maxCorrectionRounds; round++) {
     if (round >= 2 && extra.actionFeedback && extra.actionFeedback.length > 0) {

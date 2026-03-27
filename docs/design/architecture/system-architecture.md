@@ -25,7 +25,7 @@
 - `worker`：把任务派发给外部执行运行时，并把结果回写到本地状态，同时在结果收尾时写 usage ledger。
 - `managerLoop`：统一处理计划触发、待确认 choice 生命周期、worker 槽位释放，不再保留独立 trigger loop。
 - `runtime reaper`：主进程异常退出后回收 worker 子进程。
-- `channel lifecycle`：启动并维护 Telegram/Feishu polling，把外部入站消息转成统一输入，并负责被动回发与跨通道广播。
+- `channel lifecycle`：启动并维护 Telegram polling，把外部入站消息转成统一输入，并负责被动回发与跨通道广播。
 - HTTP/WebUI：承担观察、复盘、显式续跑与控制面入口（消息删除、任务变更、choice 选择、restart/reset），不承载调度策略。
 
 约束：
@@ -54,12 +54,12 @@
 6. 写入 startup system message（`Session started.`）
 7. `enqueuePendingWorkerTasks` + `notifyWorkerLoop`
 8. 启动 `managerLoop` 与 `workerLoop`
-9. 启动 Telegram/Feishu channel lifecycle（若启用）
+9. 启动 Telegram channel lifecycle（若启用）
 10. 启动 HTTP 服务与 WebUI 静态资源（若启用）
 
 ## 主链路（信号驱动 + deadline 唤醒）
 
-1. 用户输入（WebUI/Telegram/Feishu）、计划触发、worker 结果先写入本地队列；写入后通过 `notifyManagerLoop` 立即唤醒 manager。
+1. 用户输入（WebUI/Telegram）、计划触发、worker 结果先写入本地队列；写入后通过 `notifyManagerLoop` 立即唤醒 manager。
 2. `managerLoop` 基于队列 checkpoint 增量消费这些输入并执行编排，不再每轮全量重读 `inputs/results` JSONL。
 3. 若产生任务，worker 调用外部运行时执行并写回 `results/packets.jsonl`。
 4. manager 再次被唤醒，直到本轮走到明确收尾条件；若当前无新队列事件，则只按最近 `pendingUserChoices[*].expiresAt` / `plan scheduled_at|cron` 的 deadline 休眠，不做固定频率空轮询。

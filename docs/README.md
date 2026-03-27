@@ -10,9 +10,8 @@
 6. WebUI 规范：`./design/ui/webui-design-language.md`
 7. Codex SDK 接入：`./reference/sdk/codex-sdk.md`
 8. Telegram 渠道接入：`./reference/integrations/telegram-channel.md`
-9. Feishu 渠道接入：`./reference/integrations/feishu-channel.md`
-10. 外部对比结论：`./reference/comparisons/known.md`
-11. 工程改进待办：`./todo/engineering-roi-backlog.md`
+9. 外部对比结论：`./reference/comparisons/known.md`
+10. 工程改进待办：`./todo/engineering-roi-backlog.md`
 
 ## 目录职责
 

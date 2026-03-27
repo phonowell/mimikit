@@ -1,6 +1,5 @@
 import { appendManagerFallbackReply } from '../../persistence/history/manager-events.js'
 import { bestEffort, safeOrUndefined } from '../../persistence/log/safe.js'
-import { dispatchFeishuPassiveReply } from '../../surface/channels/feishu/passive-reply.js'
 import { dispatchTelegramPassiveReply } from '../../surface/channels/telegram/passive-reply.js'
 
 import type { ManagerAutoRetryMeta } from './manager-llm-call.js'
@@ -37,13 +36,6 @@ export const appendAndDispatchManagerFailureReply = async (params: {
   if (!fallbackReplyText) return
   await bestEffort('telegram:dispatch_passive_reply_fallback', () =>
     dispatchTelegramPassiveReply({
-      runtime: params.runtime,
-      inputs: params.inputs,
-      replyText: fallbackReplyText,
-    }),
-  )
-  await bestEffort('feishu:dispatch_passive_reply_fallback', () =>
-    dispatchFeishuPassiveReply({
       runtime: params.runtime,
       inputs: params.inputs,
       replyText: fallbackReplyText,

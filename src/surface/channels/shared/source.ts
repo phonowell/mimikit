@@ -1,4 +1,4 @@
-export const NO_CHOICE_RETURN_SOURCES = ['telegram', 'feishu'] as const
+export const NO_CHOICE_RETURN_SOURCES = ['telegram'] as const
 
 export type NoChoiceReturnSource = (typeof NO_CHOICE_RETURN_SOURCES)[number]
 

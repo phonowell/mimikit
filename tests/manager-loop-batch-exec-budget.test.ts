@@ -1,10 +1,10 @@
 import { expect, test } from 'vitest'
 
+import { createRuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
 import {
   normalizePromptSectionLimits,
   resolveManagerContextBudgetDecision,
 } from '../src/policy/manager/context-budget.js'
-import { createRuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
 
 import type { AppConfig, PromptSectionLimits } from '../src/bootstrap/config.js'
 
@@ -53,12 +53,6 @@ const createRuntime = (limits: PromptSectionLimits) => {
       chatId: '',
       apiRoot: '',
       proxy: '',
-    },
-    feishu: {
-      enabled: false,
-      appId: '',
-      appSecret: '',
-      chatId: '',
     },
   }
   const runtime = createRuntimeState(config, {

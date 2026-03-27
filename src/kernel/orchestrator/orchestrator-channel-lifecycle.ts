@@ -1,4 +1,3 @@
-import { createFeishuChannelLifecycle } from './orchestrator-channel-feishu.js'
 import {
   createTelegramChannelLifecycle,
   isTelegramPollingConflictError,
@@ -22,16 +21,13 @@ const createChannelController = (params: {
   ) => ChannelRestartResult | Promise<ChannelRestartResult>
 }) => {
   const telegram = createTelegramChannelLifecycle(params)
-  const feishu = createFeishuChannelLifecycle(params)
 
   return {
     start() {
       telegram.start()
-      feishu.start()
     },
     async stop(mode: 'best_effort' | 'await'): Promise<void> {
       await telegram.stop(mode)
-      await feishu.stop(mode)
     },
   }
 }

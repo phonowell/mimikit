@@ -20,10 +20,13 @@ test('fills defaults when optional fields are omitted', async () => {
   expect(config.webui.port).toBe(8787)
   expect(config.telegram.enabled).toBe(false)
   expect(config.telegram.proxy).toBe('')
-  expect(config.feishu.enabled).toBe(false)
-  expect(config.feishu.appId).toBe('')
-  expect(config.feishu.appSecret).toBe('')
-  expect(config.feishu.chatId).toBe('')
+  expect(Object.keys(config).sort()).toEqual([
+    'codex',
+    'manager',
+    'telegram',
+    'webui',
+    'worker',
+  ])
 })
 
 test('supports explicit webui enabled switch', async () => {

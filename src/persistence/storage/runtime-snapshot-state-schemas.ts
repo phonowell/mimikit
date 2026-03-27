@@ -68,7 +68,6 @@ const memoryRefreshSchema = z
 const channelTargetsSchema = z
   .object({
     telegramChatId: z.string().trim().min(1).optional(),
-    feishuChatId: z.string().trim().min(1).optional(),
   })
   .strict()
 

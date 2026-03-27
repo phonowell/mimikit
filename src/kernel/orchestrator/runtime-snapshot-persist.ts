@@ -14,15 +14,12 @@ export const normalizeChannelTargets = (
   value:
     | {
         telegramChatId?: string | undefined
-        feishuChatId?: string | undefined
       }
     | undefined,
 ) => {
   const telegramChatId = value?.telegramChatId?.trim()
-  const feishuChatId = value?.feishuChatId?.trim()
   return {
     ...(telegramChatId ? { telegramChatId } : {}),
-    ...(feishuChatId ? { feishuChatId } : {}),
   }
 }
 

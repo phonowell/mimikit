@@ -4,31 +4,28 @@ import { join } from 'node:path'
 
 import { afterEach, expect, test, vi } from 'vitest'
 
-import { GLOBAL_FOCUS_ID } from '../src/work/focus/index.js'
-import { readHistory } from '../src/persistence/history/store.js'
-import { recoverManagerBatchFailure } from '../src/policy/manager/loop-batch-flow.js'
-import { createTask } from '../src/work/orchestrator/task-lifecycle.js'
 import { ProviderError } from '../src/execution/providers/provider-error.js'
 import {
   consumeWorkerResults,
   publishUserInput,
   publishWorkerResult,
 } from '../src/kernel/streams/queues.js'
-import { createTestRuntimeState } from './helpers/runtime-state.js'
-import type { RuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
-import type { TaskResult, UserInput } from '../src/foundation/types/index.js'
+import { readHistory } from '../src/persistence/history/store.js'
+import { recoverManagerBatchFailure } from '../src/policy/manager/loop-batch-flow.js'
+import { createTask } from '../src/work/orchestrator/task-lifecycle.js'
 
-const mockedSendTelegramTextMessage = vi.fn(async () => ({ messageId: 'tg-1' }))
-const mockedSendFeishuTextMessage = vi.fn(async () => ({ messageId: 'fs-1' }))
+import { createTestRuntimeState } from './helpers/runtime-state.js'
+
+import type { TaskResult, UserInput } from '../src/foundation/types/index.js'
+import type { RuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
+
+const mockedSendTelegramTextMessage = vi.fn(() =>
+  Promise.resolve({ messageId: 'tg-1' }),
+)
 
 vi.mock('../src/surface/channels/telegram/client.js', () => ({
   sendTelegramTextMessage: (...args: unknown[]) =>
     mockedSendTelegramTextMessage(...args),
-}))
-
-vi.mock('../src/surface/channels/feishu/client.js', () => ({
-  sendFeishuTextMessage: (...args: unknown[]) =>
-    mockedSendFeishuTextMessage(...args),
 }))
 
 const tempDirs: string[] = []
@@ -59,10 +56,8 @@ const createRuntime = async (): Promise<RuntimeState> => {
 }
 afterEach(async () => {
   mockedSendTelegramTextMessage.mockClear()
-  mockedSendFeishuTextMessage.mockClear()
-  for (const dir of tempDirs.splice(0, tempDirs.length)) {
+  for (const dir of tempDirs.splice(0, tempDirs.length))
     await rm(dir, { recursive: true, force: true })
-  }
 })
 test('recoverManagerBatchFailure keeps task results pending for replay after manager fetch failure', async () => {
   const runtime = await createRuntime()
@@ -170,7 +165,9 @@ test('recoverManagerBatchFailure dispatches fallback reply to telegram source in
 
   await recoverManagerBatchFailure({
     runtime,
-    error: new Error('[provider:openai-responses] sdk run failed: fetch failed'),
+    error: new Error(
+      '[provider:openai-responses] sdk run failed: fetch failed',
+    ),
     inputs: [input],
     results: [],
     nextInputsCursor: 1,
@@ -194,7 +191,6 @@ test('recoverManagerBatchFailure dispatches fallback reply to telegram source in
     chatId: 'telegram-from-input',
     text: fallbackReply,
   })
-  expect(mockedSendFeishuTextMessage).not.toHaveBeenCalled()
   expect(runtime.manager.resultReplayFailureCount).toBe(0)
   expect(runtime.manager.resultReplayReadyAtMs).toBe(0)
 })

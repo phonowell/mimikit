@@ -1,13 +1,14 @@
-import { appendHistory } from '../../src/persistence/history/store.js'
-import {
-  hydrateRuntimeState,
-  persistRuntimeState,
-} from '../../src/kernel/orchestrator/runtime-persistence.js'
-import { expect, test } from 'vitest'
 import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
+import { expect, test } from 'vitest'
+
+import {
+  hydrateRuntimeState,
+  persistRuntimeState,
+} from '../../src/kernel/orchestrator/runtime-persistence.js'
+import { appendHistory } from '../../src/persistence/history/store.js'
 import { createTestRuntimeState } from '../helpers/runtime-state.js'
 
 const GLOBAL_FOCUS_ID = 'focus-global'
@@ -23,7 +24,6 @@ test('hydrateRuntimeState restores channel targets from snapshot', async () => {
       session: {
         channelTargets: {
           telegramChatId: 'chat-1001',
-          feishuChatId: 'oc_chat_1',
         },
       },
     },
@@ -38,7 +38,6 @@ test('hydrateRuntimeState restores channel targets from snapshot', async () => {
 
   expect(restored.session.channelTargets).toEqual({
     telegramChatId: 'chat-1001',
-    feishuChatId: 'oc_chat_1',
   })
 })
 
@@ -52,7 +51,6 @@ test('hydrateRuntimeState falls back to channel targets from history', async () 
     createdAt: SNAPSHOT_BASE_TIME,
     focusId: GLOBAL_FOCUS_ID,
     telegramChatId: 'chat-1001',
-    feishuChatId: 'oc_chat_1',
   })
   await persistRuntimeState(runtime)
 
@@ -64,7 +62,6 @@ test('hydrateRuntimeState falls back to channel targets from history', async () 
 
   expect(restored.session.channelTargets).toEqual({
     telegramChatId: 'chat-1001',
-    feishuChatId: 'oc_chat_1',
   })
 })
 

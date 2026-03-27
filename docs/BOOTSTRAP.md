@@ -51,7 +51,7 @@ tsx src/bootstrap/cli/index.ts --port 8787 --work-dir .mimikit
 ### WebUI / agent / channel 说明
 
 - 没有单独的 agent 守护进程；`manager + worker + WebUI` 都由同一 CLI 启动。
-- Telegram / Feishu 只是额外输入通道，仍使用同一个启动命令。
+- Telegram 只是额外输入通道，仍使用同一个启动命令。
 
 Telegram:
 
@@ -59,16 +59,6 @@ Telegram:
 export TELEGRAM_CHANNEL_ENABLED=true
 export TELEGRAM_BOT_TOKEN=<your_bot_token>
 export TELEGRAM_CHAT_ID=<your_chat_id>
-pnpm start -- --port 8787 --work-dir .mimikit
-```
-
-Feishu:
-
-```bash
-export FEISHU_CHANNEL_ENABLED=true
-export FEISHU_APP_ID=<your_app_id>
-export FEISHU_APP_SECRET=<your_app_secret>
-export FEISHU_CHAT_ID=<your_chat_id>
 pnpm start -- --port 8787 --work-dir .mimikit
 ```
 
@@ -161,4 +151,3 @@ pnpm run review-code-changes
 - 系统架构：`docs/design/architecture/system-architecture.md`
 - 接口与状态：`docs/design/workflow/interfaces-and-state.md`
 - Telegram 接入：`docs/reference/integrations/telegram-channel.md`
-- Feishu 接入：`docs/reference/integrations/feishu-channel.md`

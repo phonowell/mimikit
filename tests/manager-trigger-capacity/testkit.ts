@@ -15,8 +15,7 @@ const hoistedMocks = vi.hoisted(() => ({
   runManagerRoundWithRecoveryMock: vi.fn(),
 }))
 
-export const runManagerRoundWithRecoveryMock =
-  hoistedMocks.runManagerRoundWithRecoveryMock
+export const { runManagerRoundWithRecoveryMock } = hoistedMocks
 
 vi.mock('../../src/policy/manager/loop-batch-exec.js', () => ({
   runManagerRoundWithRecovery: hoistedMocks.runManagerRoundWithRecoveryMock,
@@ -89,12 +88,6 @@ const createTestConfig = (
     apiRoot: 'https://api.telegram.org',
     proxy: '',
   },
-  feishu: {
-    enabled: false,
-    appId: '',
-    appSecret: '',
-    chatId: '',
-  },
 })
 
 export const countSystemEvent = async (
@@ -106,12 +99,9 @@ export const countSystemEvent = async (
       role?: string
       systemEventName?: string
     }
-  }>(
-    runtime.paths.inputsPackets,
-    { ensureFile: true },
-  )
+  }>(runtime.paths.inputsPackets, { ensureFile: true })
   return packets.filter((packet) => {
-    const payload = packet.payload
+    const { payload } = packet
     return payload?.role === 'system' && payload.systemEventName === name
   }).length
 }

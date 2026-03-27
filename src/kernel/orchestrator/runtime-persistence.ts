@@ -30,7 +30,6 @@ const restoreChannelTargetsFromHistory = async (
 ): Promise<RuntimeChannelTargets> => {
   const history = await readHistory(historyPath)
   let { telegramChatId } = currentTargets
-  let { feishuChatId } = currentTargets
   for (let index = history.length - 1; index >= 0; index -= 1) {
     const item = history[index]
     if (!item) break
@@ -40,17 +39,10 @@ const restoreChannelTargetsFromHistory = async (
       !telegramChatId
     )
       telegramChatId = item.telegramChatId.trim()
-    if (
-      'feishuChatId' in item &&
-      typeof item.feishuChatId === 'string' &&
-      !feishuChatId
-    )
-      feishuChatId = item.feishuChatId.trim()
-    if (telegramChatId && feishuChatId) break
+    if (telegramChatId) break
   }
   return normalizeChannelTargets({
     ...(telegramChatId ? { telegramChatId } : {}),
-    ...(feishuChatId ? { feishuChatId } : {}),
   })
 }
 

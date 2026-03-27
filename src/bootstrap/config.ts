@@ -2,7 +2,6 @@ import { resolve } from 'node:path'
 
 import { loadDefaultConfigFromToml } from './config-default-loader.js'
 
-import type { FeishuConfig } from '../surface/channels/feishu/config.js'
 import type { TelegramConfig } from '../surface/channels/telegram/config.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
@@ -67,7 +66,6 @@ export type AppConfig = {
     port: number
   }
   telegram: TelegramConfig
-  feishu: FeishuConfig
 }
 
 const INTERNAL_MANAGER_DEFAULTS = {
@@ -147,6 +145,5 @@ export const defaultConfig = (params: DefaultConfigParams): AppConfig => {
       port: userConfig.webui.port,
     },
     telegram: userConfig.telegram,
-    feishu: userConfig.feishu,
   }
 }

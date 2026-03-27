@@ -32,15 +32,10 @@ export type UserMeta = {
   telegramMessageId?: string
   telegramUpdateId?: string
   telegramTimestamp?: string
-  feishuChatId?: string
-  feishuMessageId?: string
-  feishuEventId?: string
-  feishuTimestamp?: string
 }
 
 export type ChannelTargets = {
   telegramChatId?: string
-  feishuChatId?: string
 }
 
 export type UiWakeKind = 'snapshot' | 'messages' | 'tasks'

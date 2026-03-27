@@ -3,16 +3,13 @@ import {
   logChannelBroadcastSent,
   logChannelBroadcastSkipped,
 } from './channel-broadcast-log.js'
-import {
-  sendFeishuChannelText,
-  sendTelegramChannelText,
-} from './channel-delivery.js'
+import { sendTelegramChannelText } from './channel-delivery.js'
 
 import type { RuntimeState, UserMeta } from './runtime-state.js'
 import type { UserInput } from '../../foundation/types/index.js'
 
 type BroadcastKind = 'user_message' | 'agent_reply'
-type ChannelSource = 'telegram' | 'feishu'
+type ChannelSource = 'telegram'
 type ChannelSpec = {
   source: ChannelSource
   enabled: (runtime: RuntimeState) => boolean
@@ -40,22 +37,6 @@ const CHANNEL_SPECS: ChannelSpec[] = [
         chatId:
           trimOrEmpty(runtime.session.channelTargets.telegramChatId) ||
           runtime.config.telegram.chatId.trim(),
-        text,
-      }),
-  },
-  {
-    source: 'feishu',
-    enabled: (runtime) => runtime.config.feishu.enabled,
-    resolveTargetId: (runtime) =>
-      trimOrEmpty(runtime.session.channelTargets.feishuChatId) ||
-      runtime.config.feishu.chatId.trim(),
-    send: (runtime, text) =>
-      sendFeishuChannelText({
-        appId: runtime.config.feishu.appId,
-        appSecret: runtime.config.feishu.appSecret,
-        chatId:
-          trimOrEmpty(runtime.session.channelTargets.feishuChatId) ||
-          runtime.config.feishu.chatId.trim(),
         text,
       }),
   },
@@ -120,9 +101,6 @@ export const rememberChannelTargets = (
   const telegramChatId = trimOrEmpty(meta?.telegramChatId)
   if (telegramChatId)
     runtime.session.channelTargets.telegramChatId = telegramChatId
-
-  const feishuChatId = trimOrEmpty(meta?.feishuChatId)
-  if (feishuChatId) runtime.session.channelTargets.feishuChatId = feishuChatId
 }
 
 export const broadcastUserMessage = async (params: {

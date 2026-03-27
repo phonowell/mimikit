@@ -59,14 +59,6 @@ const toInflightChatMessage = (input: UserInput): ChatMessage => {
     ...(input.telegramTimestamp
       ? { telegramTimestamp: input.telegramTimestamp }
       : {}),
-    ...(input.feishuChatId ? { feishuChatId: input.feishuChatId } : {}),
-    ...(input.feishuMessageId
-      ? { feishuMessageId: input.feishuMessageId }
-      : {}),
-    ...(input.feishuEventId ? { feishuEventId: input.feishuEventId } : {}),
-    ...(input.feishuTimestamp
-      ? { feishuTimestamp: input.feishuTimestamp }
-      : {}),
     ...(input.quote ? { quote: input.quote } : {}),
   }
 }

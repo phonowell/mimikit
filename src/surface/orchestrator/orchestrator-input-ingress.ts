@@ -45,10 +45,6 @@ export const appendUserInput = async (
   const telegramMessageId = meta?.telegramMessageId?.trim()
   const telegramUpdateId = meta?.telegramUpdateId?.trim()
   const telegramTimestamp = meta?.telegramTimestamp?.trim()
-  const feishuChatId = meta?.feishuChatId?.trim()
-  const feishuMessageId = meta?.feishuMessageId?.trim()
-  const feishuEventId = meta?.feishuEventId?.trim()
-  const feishuTimestamp = meta?.feishuTimestamp?.trim()
   const baseInput = {
     id,
     role: 'user' as const,
@@ -61,10 +57,6 @@ export const appendUserInput = async (
     ...(telegramMessageId ? { telegramMessageId } : {}),
     ...(telegramUpdateId ? { telegramUpdateId } : {}),
     ...(telegramTimestamp ? { telegramTimestamp } : {}),
-    ...(feishuChatId ? { feishuChatId } : {}),
-    ...(feishuMessageId ? { feishuMessageId } : {}),
-    ...(feishuEventId ? { feishuEventId } : {}),
-    ...(feishuTimestamp ? { feishuTimestamp } : {}),
   }
   const input = quoteId ? { ...baseInput, quote: quoteId } : baseInput
   await publishUserInput({ paths: runtime.paths, payload: input })

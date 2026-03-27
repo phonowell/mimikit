@@ -3,12 +3,12 @@ import { join } from 'node:path'
 
 import { expect, test, vi } from 'vitest'
 
+import { RUNTIME_SNAPSHOT_SCHEMA_VERSION } from '../../src/persistence/storage/runtime-schema-version.js'
 import {
   loadRuntimeSnapshot,
   saveRuntimeSnapshot,
   selectPersistedTasks,
 } from '../../src/persistence/storage/runtime-snapshot.js'
-import { RUNTIME_SNAPSHOT_SCHEMA_VERSION } from '../../src/persistence/storage/runtime-schema-version.js'
 import {
   createPlanFixture,
   createTaskFixture,
@@ -74,7 +74,6 @@ test('runtime snapshot accepts queue cursors', async () => {
     managerThreadId: 'session-manager-1',
     channelTargets: {
       telegramChatId: 'chat-1001',
-      feishuChatId: 'oc_chat_1',
     },
   })
 
@@ -85,7 +84,6 @@ test('runtime snapshot accepts queue cursors', async () => {
   expect(loaded.managerThreadId).toBe('session-manager-1')
   expect(loaded.channelTargets).toEqual({
     telegramChatId: 'chat-1001',
-    feishuChatId: 'oc_chat_1',
   })
   expect(loaded.tasks[0]?.result?.output).toBe('ok')
   expect(loaded.taskPlans[0]?.id).toBe('plan-1')
@@ -110,7 +108,9 @@ test('loadRuntimeSnapshot falls back to backup file when primary json is broken'
     'utf8',
   )
 
-  const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+  const consoleErrorSpy = vi
+    .spyOn(console, 'error')
+    .mockImplementation(() => undefined)
   try {
     const loaded = await loadRuntimeSnapshot(stateDir)
     expect(loaded.queues.inputsCursor).toBe(12)

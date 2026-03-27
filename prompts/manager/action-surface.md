@@ -72,7 +72,7 @@ actions:
     detail_constraints:
       - '`options[]` 中每项都必须包含 `id,label,reason`'
       - 仅在有限候选且确需用户决策时使用
-      - '`telegram`/`feishu` 来源不可用'
+      - '`telegram` 来源不可用'
   assign_focus:
     summary: 给 task、plan 或 history 绑定 focus。
     brief_constraints:

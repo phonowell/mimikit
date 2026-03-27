@@ -29,12 +29,6 @@ vi.mock('../src/bootstrap/config-default-loader.js', () => ({
       apiRoot: 'https://api.telegram.org',
       proxy: '',
     },
-    feishu: {
-      enabled: false,
-      appId: '',
-      appSecret: '',
-      chatId: '',
-    },
   }),
 }))
 
@@ -78,4 +72,17 @@ test('defaultConfig returns independent nested defaults per call', () => {
     maxCount: 20,
     minCount: 5,
   })
+})
+
+test('defaultConfig keeps the top-level config surface minimal', () => {
+  const config = defaultConfig({ workDir: '.mimikit' })
+
+  expect(Object.keys(config).sort()).toEqual([
+    'codex',
+    'manager',
+    'telegram',
+    'webui',
+    'workDir',
+    'worker',
+  ])
 })

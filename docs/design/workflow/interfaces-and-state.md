@@ -127,7 +127,6 @@
 - CLI action 日志：`MIMIKIT_ACTION_LOGS`
 - WebUI：`MIMIKIT_WEBUI_ENABLED`、`MIMIKIT_WEBUI_PORT`
 - Telegram：`TELEGRAM_CHANNEL_ENABLED`、`TELEGRAM_BOT_TOKEN`、`TELEGRAM_CHAT_ID`、`TELEGRAM_API_ROOT`、`TELEGRAM_PROXY`
-- Feishu：`FEISHU_CHANNEL_ENABLED`、`FEISHU_APP_ID`、`FEISHU_APP_SECRET`、`FEISHU_CHAT_ID`
 
 ## 配置结构（`config.toml`）
 
@@ -137,7 +136,6 @@
 - `codex`: `enabled`、`model`、`modelReasoningEffort`、`capability`、`billing`、`proxy?`
 - `webui`: `enabled`、`port`
 - `telegram`: `enabled`、`botToken`、`chatId`、`apiRoot`、`proxy`
-- `feishu`: `enabled`、`appId`、`appSecret`、`chatId`
 
 ## 状态目录（默认 `./.mimikit/`）
 
