@@ -4,6 +4,24 @@ import {
 } from './archive-viewer-url.js'
 
 const STATE_FILE_PREFIX = '/state-files/'
+const WORKSPACE_FILE_ROUTE = '/api/workspace-file'
+const SUPPORTED_WORKSPACE_FILE_EXTENSIONS = [
+  '.cjs',
+  '.css',
+  '.html',
+  '.js',
+  '.json',
+  '.markdown',
+  '.md',
+  '.mjs',
+  '.sh',
+  '.toml',
+  '.ts',
+  '.tsx',
+  '.txt',
+  '.yaml',
+  '.yml',
+] as const
 const STATE_ROOT_PREFIX = '.mimikit/'
 const STATE_ROOT_SEGMENT = '/.mimikit/'
 const STATE_TOP_LEVEL_DIRS = new Set([
@@ -69,10 +87,37 @@ const encodeRelativePath = (value: string): string =>
     .map((part) => encodeURIComponent(part))
     .join('/')
 
+const isMarkdownPath = (value: string): boolean =>
+  /\.(md|markdown)$/i.test(value.split(/[?#]/, 1)[0] ?? '')
+
+const isSupportedWorkspaceFilePath = (value: string): boolean => {
+  const pathname = value.split(/[?#]/, 1)[0]?.toLowerCase() ?? ''
+  return SUPPORTED_WORKSPACE_FILE_EXTENSIONS.some((extension) =>
+    pathname.endsWith(extension),
+  )
+}
+
+const buildWorkspaceFileUrl = (path: string): string =>
+  `${WORKSPACE_FILE_ROUTE}?path=${encodeURIComponent(path)}`
+
+const unwrapPseudoAnchorArtifactPath = (value: string): string => {
+  const raw = value.trim()
+  if (!raw.startsWith('#')) return raw
+  const candidate = raw.slice(1).trim()
+  if (!candidate) return raw
+  if (
+    candidate.startsWith(STATE_FILE_PREFIX) ||
+    candidate.startsWith('file:') ||
+    extractStateRelative(candidate)
+  )
+    return candidate
+  return raw
+}
+
 export const toArtifactUrl = (
   value: string | null | undefined,
 ): string | null => {
-  const raw = value?.trim()
+  const raw = value ? unwrapPseudoAnchorArtifactPath(value) : undefined
   if (!raw || raw.startsWith('#')) return null
   if (raw.startsWith(STATE_FILE_PREFIX)) {
     if (isArchiveMarkdownPath(raw)) return buildArchiveViewerUrlFromSource(raw)
@@ -98,13 +143,21 @@ export const toArtifactUrl = (
   }
 
   const stateRelative = extractStateRelative(path)
-  if (!stateRelative) return null
-  const normalizedState = normalizeRelativePath(stateRelative)
-  if (!normalizedState) return null
-  const artifactUrl = `${STATE_FILE_PREFIX}${encodeRelativePath(normalizedState)}${suffix}`
-  if (isArchiveMarkdownPath(normalizedState))
-    return buildArchiveViewerUrlFromSource(artifactUrl)
-  return artifactUrl
+  if (stateRelative) {
+    const normalizedState = normalizeRelativePath(stateRelative)
+    if (!normalizedState) return null
+    const artifactUrl = `${STATE_FILE_PREFIX}${encodeRelativePath(normalizedState)}${suffix}`
+    if (isArchiveMarkdownPath(normalizedState))
+      return buildArchiveViewerUrlFromSource(artifactUrl)
+    return artifactUrl
+  }
+
+  if (!isWindowsDrivePath(path) && !path.startsWith('/')) return null
+  if (!isSupportedWorkspaceFilePath(path)) return null
+  const workspaceUrl = buildWorkspaceFileUrl(path)
+  return isMarkdownPath(path)
+    ? buildArchiveViewerUrlFromSource(workspaceUrl)
+    : workspaceUrl
 }
 
 export const linkifyInlineCode = (fragment: ParentNode): void => {

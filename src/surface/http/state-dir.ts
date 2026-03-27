@@ -14,6 +14,14 @@ const isSafeStateDir = (stateDir: string): boolean => {
   return resolved !== root && basename(resolved) === '.mimikit'
 }
 
+export const resolveWorkspaceRootFromStateDir = (
+  stateDir: string,
+): string | undefined => {
+  const resolved = resolve(stateDir)
+  if (!isSafeStateDir(resolved)) return undefined
+  return resolve(resolved, '..')
+}
+
 export const clearStateDir = async (stateDir: string): Promise<void> => {
   const resolved = resolve(stateDir)
   if (!isSafeStateDir(resolved))

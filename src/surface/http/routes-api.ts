@@ -5,6 +5,7 @@ import { resolveRouteId } from './route-params.js'
 import { registerEventsRoute } from './routes-api-events.js'
 import { registerTaskArchiveRoute } from './routes-api-task-archive.js'
 import { registerTaskMutationRoute } from './routes-api-task-mutation.js'
+import { registerWorkspaceFileRoute } from './routes-api-workspace-file.js'
 import { clearStateDir } from './state-dir.js'
 
 import type { AppConfig } from '../../bootstrap/config.js'
@@ -67,6 +68,7 @@ export const registerApiRoutes = (
   })
 
   registerTaskArchiveRoute(app, orchestrator, config)
+  registerWorkspaceFileRoute(app, config)
   const taskMutationRoutes = [
     {
       path: '/api/tasks/:id/cancel',

@@ -3,6 +3,7 @@ import { renderMarkdownHtml } from './lib/markdown.js'
 
 const ROOT = window.location.origin
 const TASK_ARCHIVE_API_PATTERN = /^\/api\/tasks\/[^/]+\/archive$/
+const WORKSPACE_FILE_API_PATH = '/api/workspace-file'
 const NUMBER_FORMAT = new Intl.NumberFormat('en-US')
 const MARKDOWN_PATH_PATTERN = /\.(md|markdown)$/i
 const RAW_PARAM = 'raw'
@@ -72,7 +73,15 @@ const showError = (text: string) => {
 
 const isAllowedPath = (pathname: string) =>
   pathname.startsWith('/state-files/') ||
-  TASK_ARCHIVE_API_PATTERN.test(pathname)
+  TASK_ARCHIVE_API_PATTERN.test(pathname) ||
+  pathname === WORKSPACE_FILE_API_PATH
+
+const isMarkdownSourceUrl = (url: URL): boolean => {
+  if (MARKDOWN_PATH_PATTERN.test(url.pathname)) return true
+  if (url.pathname !== WORKSPACE_FILE_API_PATH) return false
+  const path = url.searchParams.get('path')?.trim() ?? ''
+  return MARKDOWN_PATH_PATTERN.test(path.split(/[?#]/, 1)[0] ?? '')
+}
 
 const withRawSourceParam = (sourceUrl: string) => {
   const base = new URL(sourceUrl, ROOT)
@@ -92,7 +101,7 @@ const toArchiveViewerMarkdownUrl = (
   const resolved = new URL(href, sourceBase)
   if (resolved.origin !== ROOT) return null
   if (!isAllowedPath(resolved.pathname)) return null
-  if (!MARKDOWN_PATH_PATTERN.test(resolved.pathname)) return null
+  if (!isMarkdownSourceUrl(resolved)) return null
   return buildArchiveViewerUrlFromSource(
     `${resolved.pathname}${resolved.search}${resolved.hash}`,
   )
