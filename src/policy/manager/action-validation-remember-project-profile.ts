@@ -1,6 +1,5 @@
 import {
   type RememberMemoryContentIssue,
-  rememberProjectProfileSchema,
   resolveRememberMemoryContentIssue,
 } from './action-apply-schema.js'
 import { formatRememberMemoryNotStableHint } from './action-feedback-hints.js'
@@ -10,6 +9,7 @@ import {
   suppressed,
   type ValidationIssue,
 } from './action-validation-helpers.js'
+import { rememberProjectProfileActionSchema } from './manager-turn-schema.js'
 
 import type { UserInput } from '../../foundation/types/index.js'
 import type { Parsed } from '../actions/model/spec.js'
@@ -34,7 +34,7 @@ export const validateRememberProjectProfileAction = (
   context: RememberProjectProfileValidationContext,
 ): ValidationIssue[] => {
   if (item.type !== 'remember_project_profile') return []
-  const result = rememberProjectProfileSchema.safeParse(item)
+  const result = rememberProjectProfileActionSchema.safeParse(item)
   if (!result.success) return []
 
   const contentIssue = resolveRememberMemoryContentIssue(result.data.content)

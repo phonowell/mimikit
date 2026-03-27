@@ -1,14 +1,14 @@
 import { normalizeInlineWhitespace } from '../../foundation/shared/text.js'
 
 import {
+  buildMissingIntentEvidenceHint,
+  isSupportedByInputs,
+} from './action-intent-evidence-match.js'
+import {
   askUserChoiceActionSchema,
   rememberMemoryActionSchema,
   rememberProjectProfileActionSchema,
 } from './manager-turn-schema.js'
-import {
-  buildMissingIntentEvidenceHint,
-  isSupportedByInputs,
-} from './action-intent-evidence-match.js'
 
 import type { SupplementalEvidenceSource } from './action-intent-evidence.js'
 import type { UserInput } from '../../foundation/types/index.js'

@@ -6,10 +6,10 @@ import {
 
 import {
   normalizeRememberMemoryContent,
-  rememberProjectProfileSchema,
   resolveRememberMemoryContentIssue,
 } from './action-apply-schema.js'
 import { resolveActionFocusId } from './action-focus-id.js'
+import { rememberProjectProfileActionSchema } from './manager-turn-schema.js'
 
 import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 import type { Parsed } from '../actions/model/spec.js'
@@ -19,7 +19,7 @@ export const applyRememberProjectProfileAction = async (
   item: Parsed,
 ): Promise<void> => {
   if (item.type !== 'remember_project_profile') return
-  const parsed = rememberProjectProfileSchema.safeParse(item)
+  const parsed = rememberProjectProfileActionSchema.safeParse(item)
   if (!parsed.success) return
   if (resolveRememberMemoryContentIssue(parsed.data.content)) return
   const remembered = await rememberProjectProfileEntry(

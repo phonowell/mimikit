@@ -1,6 +1,5 @@
 import {
   type RememberMemoryContentIssue,
-  rememberMemorySchema,
   resolveRememberMemoryContentIssue,
 } from './action-apply-schema.js'
 import { formatRememberMemoryNotStableHint } from './action-feedback-hints.js'
@@ -10,6 +9,7 @@ import {
   suppressed,
   type ValidationIssue,
 } from './action-validation-helpers.js'
+import { rememberMemoryActionSchema } from './manager-turn-schema.js'
 
 import type { UserInput } from '../../foundation/types/index.js'
 import type { Parsed } from '../actions/model/spec.js'
@@ -34,7 +34,7 @@ export const validateRememberMemoryAction = (
   context: RememberMemoryValidationContext,
 ): ValidationIssue[] => {
   if (item.type !== 'remember_memory') return []
-  const result = rememberMemorySchema.safeParse(item)
+  const result = rememberMemoryActionSchema.safeParse(item)
   if (!result.success) return []
 
   const contentIssue = resolveRememberMemoryContentIssue(result.data.content)

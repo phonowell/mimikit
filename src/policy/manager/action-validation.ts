@@ -160,7 +160,10 @@ export const validateRememberProjectProfile = (
   item: Parsed,
   context: FeedbackContext,
 ): ValidationIssue[] => {
-  const schemaIssues = validateWithSchema(item, rememberProjectProfileActionSchema)
+  const schemaIssues = validateWithSchema(
+    item,
+    rememberProjectProfileActionSchema,
+  )
   if (schemaIssues.length > 0) return schemaIssues
   if (item.type !== 'remember_project_profile') return schemaIssues
   return validateRememberProjectProfileAction(item, context)
