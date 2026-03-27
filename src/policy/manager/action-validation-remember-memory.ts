@@ -36,10 +36,10 @@ export const validateRememberMemoryAction = (
   context: RememberMemoryValidationContext,
 ): ValidationIssue[] => {
   if (item.type !== 'remember_memory') return []
-  const parsed = rememberMemorySchema.safeParse({ content: item.content })
-  if (!parsed.success) return []
+  const result = rememberMemorySchema.safeParse({ content: item.content })
+  if (!result.success) return []
 
-  const contentIssue = resolveRememberMemoryContentIssue(parsed.content)
+  const contentIssue = resolveRememberMemoryContentIssue(result.data.content)
   if (contentIssue) {
     return rejected(
       formatRememberMemoryNotStableHint(
@@ -48,12 +48,14 @@ export const validateRememberMemoryAction = (
     )
   }
 
-  const result = validateRememberMemoryIntentEvidence({
+  const evidenceResult = validateRememberMemoryIntentEvidence({
     item,
     inputTexts: collectUserIntentTexts(context.inputs),
     ...(context.recentUserIntentTexts
       ? { recentUserIntentTexts: context.recentUserIntentTexts }
       : {}),
   })
-  return result === 'suppressed' ? suppressed('remember_memory_guard') : []
+  return evidenceResult === 'suppressed'
+    ? suppressed('remember_memory_guard')
+    : []
 }

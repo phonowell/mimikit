@@ -12,9 +12,9 @@ import type { TaskPlan } from '../../foundation/types/index.js'
 import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 import type { Parsed } from '../actions/model/spec.js'
 
-const buildTrigger = (
-  trigger: Parsed & { type: 'set_plan' }['plan']['trigger'],
-) => {
+type SetPlanAction = Extract<Parsed, { type: 'set_plan' }>
+
+const buildTrigger = (trigger: SetPlanAction['plan']['trigger']) => {
   if (trigger.type === 'cron') {
     return {
       mode: 'cron' as const,

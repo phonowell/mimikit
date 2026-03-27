@@ -5,6 +5,10 @@ import {
   formatEnqueueTaskContractMissingHint,
 } from './action-feedback-hints.js'
 import { rejected, type ValidationIssue } from './action-validation-helpers.js'
+import {
+  validateDeletePlan,
+  validateSetPlan,
+} from './action-validation-plan.js'
 import { validateRememberMemoryAction } from './action-validation-remember-memory.js'
 import {
   validateHighRiskActionIntentEvidence,
@@ -27,6 +31,7 @@ import type { Parsed } from '../actions/model/spec.js'
 
 export type { FeedbackContext } from './action-validation-context.js'
 export type { ValidationIssue } from './action-validation-helpers.js'
+export { validateDeletePlan, validateSetPlan, validateWithSchema }
 
 export const validateRunTask = (
   item: Parsed,

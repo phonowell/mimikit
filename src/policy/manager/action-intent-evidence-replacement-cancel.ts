@@ -69,7 +69,11 @@ const matchesReplacementTask = (params: {
 }): boolean => {
   const contract = buildTaskContractFromDraft(params.enqueueAction.task)
   if (!contract) return false
-  const currentTaskText = [params.task.title, params.task.prompt]
+  const taskSemanticText =
+    typeof (params.task as { semanticKey?: unknown }).semanticKey === 'string'
+      ? params.task.semanticKey
+      : params.task.title
+  const currentTaskText = [params.task.title, taskSemanticText]
     .filter((item) => item.trim().length > 0)
     .join('\n')
   const replacementText = [
@@ -88,7 +92,7 @@ export const supportsReplacementCancelIntentEvidence = (params: {
   task: Task | undefined
   tasks: Iterable<Task>
   inputTexts: string[]
-  defaultFocusId?: string
+  defaultFocusId: string | undefined
 }): boolean => {
   if (
     params.item.action !== 'cancel' ||

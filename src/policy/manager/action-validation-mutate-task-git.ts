@@ -1,11 +1,10 @@
 import { resolveTaskGitLifecycle } from '../../work/shared/task-git-lifecycle.js'
 
 import {
-  formatMutateTaskGitReasonRequiredHint,
-  formatMutateTaskMergeRequiredHint,
-  formatMutateTaskNotDoneForGitHint,
-  formatMutateTaskNotGitHint,
-  formatMutateTaskReviewRequiredHint,
+  formatRecordTaskGitMergeRequiredHint,
+  formatRecordTaskGitNotDoneHint,
+  formatRecordTaskGitNotGitHint,
+  formatRecordTaskGitReviewRequiredHint,
 } from './action-feedback-hints.js'
 import { rejected, type ValidationIssue } from './action-validation-helpers.js'
 
@@ -21,18 +20,18 @@ export const validateMutateTaskGitOp = (params: {
 }): ValidationIssue[] => {
   const { op, taskStatus, task, reason } = params
   if (!reason?.trim())
-    return rejected(formatMutateTaskGitReasonRequiredHint(op))
+    return rejected('record_task_git 执行失败：必须提供变更原因。')
   if (
     taskStatus !== 'succeeded' &&
     taskStatus !== 'failed' &&
     taskStatus !== 'canceled'
   )
-    return rejected(formatMutateTaskNotDoneForGitHint(op))
-  if (task && !task.git) return rejected(formatMutateTaskNotGitHint(op))
+    return rejected(formatRecordTaskGitNotDoneHint(op))
+  if (task && !task.git) return rejected(formatRecordTaskGitNotGitHint(op))
   const lifecycle = task ? resolveTaskGitLifecycle(task) : undefined
   if (op === 'merged' && !lifecycle?.review.passed)
-    return rejected(formatMutateTaskReviewRequiredHint())
+    return rejected(formatRecordTaskGitReviewRequiredHint())
   if (op === 'cleaned' && !lifecycle?.merged)
-    return rejected(formatMutateTaskMergeRequiredHint())
+    return rejected(formatRecordTaskGitMergeRequiredHint())
   return []
 }
