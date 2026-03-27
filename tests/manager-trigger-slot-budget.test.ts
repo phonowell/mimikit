@@ -1,7 +1,11 @@
+import { mkdir } from 'node:fs/promises'
+import { join } from 'node:path'
+
 import { expect, test } from 'vitest'
 
-import { GLOBAL_FOCUS_ID } from '../src/work/focus/constants.js'
 import { triggerOnWorkerSlotFreedPlans } from '../src/policy/manager/loop-trigger-plans.js'
+import { GLOBAL_FOCUS_ID } from '../src/work/focus/constants.js'
+
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 const buildTaskDraft = (title: string, cwd: string) => ({
@@ -29,28 +33,30 @@ const createEnqueuePlan = async (
   runtime: Awaited<ReturnType<typeof createRuntime>>,
 ) => {
   const now = new Date().toISOString()
-  const task = buildTaskDraft(title, `/tmp/${title}`)
-  await import('../src/policy/manager/action-plan-effect-enqueue.js').then(async ({
-    buildPlanEnqueueTaskEffect,
-  }) => {
-    const effect = await buildPlanEnqueueTaskEffect({
-      stateDir: runtime.config.workDir,
-      focusId: GLOBAL_FOCUS_ID,
-      task,
-    })
-    runtime.taskPlans.push({
-      id,
-      title,
-      focusId: GLOBAL_FOCUS_ID,
-      priority,
-      status: 'active',
-      trigger: { mode: 'on_worker_slot_freed' },
-      effect,
-      createdAt: now,
-      updatedAt: now,
-      runtime: { runCount: 0 },
-    })
-  })
+  const taskCwd = join(runtime.config.workDir, title)
+  await mkdir(taskCwd, { recursive: true })
+  const task = buildTaskDraft(title, taskCwd)
+  await import('../src/policy/manager/action-plan-effect-enqueue.js').then(
+    async ({ buildPlanEnqueueTaskEffect }) => {
+      const effect = await buildPlanEnqueueTaskEffect({
+        stateDir: runtime.config.workDir,
+        focusId: GLOBAL_FOCUS_ID,
+        task,
+      })
+      runtime.taskPlans.push({
+        id,
+        title,
+        focusId: GLOBAL_FOCUS_ID,
+        priority,
+        status: 'active',
+        trigger: { mode: 'on_worker_slot_freed' },
+        effect,
+        createdAt: now,
+        updatedAt: now,
+        runtime: { runCount: 0 },
+      })
+    },
+  )
   return runtime.taskPlans[runtime.taskPlans.length - 1]
 }
 

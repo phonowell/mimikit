@@ -35,6 +35,7 @@
 - 运行时据此生成 worker prompt 与 `TaskContract`
 - `worker_prompt` 已删除
 - `branch` 已删除
+- `cwd` 必须指向现有目录；git 写任务只提交仓库内真实执行起点，不直接提交未来 worktree 路径。
 
 ## 去重与替换
 

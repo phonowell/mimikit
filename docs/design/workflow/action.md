@@ -56,6 +56,8 @@
   - `instructions[]`
 - `worker_prompt` 已删除；worker prompt 由任务合同自动生成。
 - `branch` 已删除；git worktree / branch 由运行时决定。
+- `cwd` 必须指向现有目录。
+- 对 git 写任务，`cwd` 只表示仓库内真实执行起点；worktree 路径由运行时 materialize，manager 不得直接填写未来 worktree 路径。
 
 ### `task_control`
 

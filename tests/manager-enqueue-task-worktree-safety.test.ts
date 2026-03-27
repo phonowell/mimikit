@@ -1,9 +1,11 @@
 import { execFileSync } from 'node:child_process'
 import { mkdir, writeFile } from 'node:fs/promises'
+import { basename, dirname, join } from 'node:path'
 
 import { afterEach, expect, test } from 'vitest'
 
 import { readHistory } from '../src/persistence/history/store.js'
+import { readJsonl } from '../src/persistence/storage/jsonl.js'
 import { applyTaskActions } from '../src/policy/manager/action-apply.js'
 import { resolveRunTaskTarget } from '../src/policy/manager/run-task-target.js'
 import {
@@ -40,6 +42,35 @@ const buildTaskDraft = (
 })
 
 afterEach(cleanupGitRepos)
+
+test('enqueue_task write mode rejects a nonexistent future worktree cwd', async () => {
+  const cwd = await createGitRepo()
+  const runtime = await createRuntime()
+  const futureWorktreeCwd = join(dirname(cwd), `${basename(cwd)}-future-wt`)
+
+  await expect(
+    applyTaskActions(runtime, [
+      {
+        type: 'enqueue_task',
+        task: buildTaskDraft(futureWorktreeCwd, {
+          title: 'future worktree task',
+        }),
+      },
+    ]),
+  ).resolves.toBeUndefined()
+
+  expect(runtime.tasks).toHaveLength(0)
+  const logs = await readJsonl<Record<string, unknown>>(runtime.paths.log, {
+    ensureFile: true,
+  })
+  const feedback = logs.find(
+    (entry) => entry.event === 'manager_action_apply_feedback',
+  )
+  expect(feedback).toMatchObject({
+    action: 'enqueue_task',
+    error: 'action_execution_rejected',
+  })
+})
 
 test('enqueue_task worktree prepare failure appends action feedback without throwing', async () => {
   const cwd = await createGitRepo()

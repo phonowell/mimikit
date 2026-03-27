@@ -24,6 +24,7 @@ const actionFeedbackHintSchema = z
     task_control_already_canceled: z.string().trim().min(1),
     ...recordTaskGitHintSchemaShape,
     ask_user_choice_channel_unsupported: z.string().trim().min(1),
+    enqueue_task_cwd_invalid: z.string().trim().min(1),
     enqueue_task_worktree_prepare_failed: z.string().trim().min(1),
     enqueue_task_contract_missing: z.string().trim().min(1),
     plan_not_found: z.string().trim().min(1),

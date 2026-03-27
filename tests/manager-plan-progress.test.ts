@@ -1,16 +1,17 @@
+import { mkdir } from 'node:fs/promises'
+
 import { expect, test } from 'vitest'
 
-import { GLOBAL_FOCUS_ID } from '../src/work/focus/constants.js'
 import { applyTaskActions } from '../src/policy/manager/action-apply.js'
+import { GLOBAL_FOCUS_ID } from '../src/work/focus/constants.js'
+
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 import type { RuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
 
-const TASK_CWD = '/tmp/manager-action-apply-task'
-
-const scheduledTask = {
+const buildScheduledTask = (cwd: string) => ({
   title: 'scheduled title',
-  cwd: TASK_CWD,
+  cwd,
   mode: 'write' as const,
   goal: 'Deliver requested outcome',
   in_scope: ['Single runnable worker task'],
@@ -18,7 +19,7 @@ const scheduledTask = {
   done_when: ['Return concrete output'],
   context_refs: [],
   instructions: ['deliver scheduled work'],
-}
+})
 
 const createRuntime = async (): Promise<RuntimeState> => {
   const runtime = await createTestRuntimeState({ pausedQueue: true })
@@ -28,6 +29,8 @@ const createRuntime = async (): Promise<RuntimeState> => {
 
 test('enqueue_task auto-links a triggered plan to the created task', async () => {
   const runtime = await createRuntime()
+  const taskCwd = `${runtime.config.workDir}/manager-plan-progress-task`
+  await mkdir(taskCwd, { recursive: true })
   runtime.taskPlans.push({
     id: 'plan-triggered',
     title: 'scheduled title',
@@ -45,7 +48,7 @@ test('enqueue_task auto-links a triggered plan to the created task', async () =>
         executionSpecId: 'spec-triggered',
         fingerprint: 'fp-triggered',
         semanticKey: 'sk-triggered',
-        cwd: TASK_CWD,
+        cwd: taskCwd,
         resourceMode: 'write',
       },
     },
@@ -61,7 +64,7 @@ test('enqueue_task auto-links a triggered plan to the created task', async () =>
     [
       {
         type: 'enqueue_task',
-        task: scheduledTask,
+        task: buildScheduledTask(taskCwd),
       },
     ],
     {

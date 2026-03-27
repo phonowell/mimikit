@@ -47,6 +47,11 @@ export const formatTaskControlAlreadyCanceledHint = (): string =>
 export const formatAskUserChoiceChannelUnsupportedHint = (): string =>
   renderActionFeedbackHint('ask_user_choice_channel_unsupported')
 
+export const formatEnqueueTaskCwdInvalidHint = (reason: string): string =>
+  renderActionFeedbackHint('enqueue_task_cwd_invalid', {
+    reason,
+  })
+
 export const formatEnqueueTaskWorktreePrepareFailedHint = (
   branch: string,
   reason: string,

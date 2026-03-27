@@ -1,7 +1,10 @@
 import { createHash } from 'node:crypto'
+import { stat } from 'node:fs/promises'
+import { resolve } from 'node:path'
 
 import { buildTaskFingerprint } from '../../work/orchestrator/task-state.js'
 import {
+  expandHomeDir,
   resolveTaskExecutionTarget,
   type TaskExecutionTarget,
 } from '../../work/shared/task-execution-target.js'
@@ -9,7 +12,10 @@ import { resolveTaskResourceMode } from '../../work/shared/task-resource-mode.js
 import { materializeTaskWorktreeCwd } from '../../work/shared/task-worktree-materialize.js'
 
 import { ActionApplyFeedbackError } from './action-apply-feedback-error.js'
-import { formatEnqueueTaskWorktreePrepareFailedHint } from './action-feedback-hints.js'
+import {
+  formatEnqueueTaskCwdInvalidHint,
+  formatEnqueueTaskWorktreePrepareFailedHint,
+} from './action-feedback-hints.js'
 
 import type {
   TaskContract,
@@ -53,6 +59,37 @@ const buildAutoTaskBranch = (params: {
   return `task/${slug}-${hash}`
 }
 
+const assertExistingTaskCwd = async (params: {
+  actionName: string
+  cwd: string
+}): Promise<void> => {
+  const resolvedCwd = resolve(expandHomeDir(params.cwd))
+  try {
+    const cwdStat = await stat(resolvedCwd)
+    if (cwdStat.isDirectory()) return
+    throw new ActionApplyFeedbackError({
+      action: params.actionName,
+      error: 'action_execution_rejected',
+      hint: formatEnqueueTaskCwdInvalidHint('`task.cwd` 当前不是目录。'),
+    })
+  } catch (error) {
+    if (error instanceof ActionApplyFeedbackError) throw error
+    const code =
+      typeof error === 'object' && error !== null && 'code' in error
+        ? String((error as { code?: unknown }).code ?? '')
+        : ''
+    throw new ActionApplyFeedbackError({
+      action: params.actionName,
+      error: 'action_execution_rejected',
+      hint: formatEnqueueTaskCwdInvalidHint(
+        code === 'ENOENT'
+          ? '`task.cwd` 当前不存在。'
+          : '`task.cwd` 当前不可访问。',
+      ),
+    })
+  }
+}
+
 const resolveEffectiveCwd = async (params: {
   actionName: string
   cwd: string
@@ -83,6 +120,12 @@ export const resolveRunTaskTarget = async (params: {
   branch?: string | undefined
 }): Promise<RunTaskTarget> => {
   const resourceMode = resolveTaskResourceMode(params.resourceMode)
+  if (resourceMode === 'write') {
+    await assertExistingTaskCwd({
+      actionName: params.actionName,
+      cwd: params.cwd,
+    })
+  }
   const explicitBranch = params.branch?.trim()
   if (explicitBranch) {
     const effectiveCwd = await resolveEffectiveCwd({

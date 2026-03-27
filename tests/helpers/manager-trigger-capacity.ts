@@ -1,3 +1,6 @@
+import { mkdir } from 'node:fs/promises'
+import { join } from 'node:path'
+
 import { buildPlanEnqueueTaskEffect } from '../../src/policy/manager/action-plan-effect-enqueue.js'
 
 import type { TaskPlan } from '../../src/foundation/types/index.js'
@@ -9,9 +12,8 @@ export const waitForCondition = async (
 ): Promise<void> => {
   const startedAt = Date.now()
   while (!(await check())) {
-    if (Date.now() - startedAt > timeoutMs) {
+    if (Date.now() - startedAt > timeoutMs)
       throw new Error(`wait_timeout_${timeoutMs}ms`)
-    }
     await new Promise<void>((resolve) => setTimeout(resolve, 25))
   }
 }
@@ -23,12 +25,14 @@ export const createCapacityPlan = async (
   focusId: string,
 ): Promise<TaskPlan> => {
   const now = new Date().toISOString()
+  const taskCwd = join(runtime.config.workDir, id)
+  await mkdir(taskCwd, { recursive: true })
   const effect = await buildPlanEnqueueTaskEffect({
     stateDir: runtime.config.workDir,
     focusId,
     task: {
       title: id,
-      cwd: `/tmp/${id}`,
+      cwd: taskCwd,
       mode: 'write',
       goal: `Deliver ${id}`,
       in_scope: [`Only handle ${id}`],

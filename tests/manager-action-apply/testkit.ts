@@ -1,8 +1,12 @@
+import { mkdir } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
 import { createTestRuntimeState } from '../helpers/runtime-state.js'
 
 import type { RuntimeState } from '../../src/kernel/orchestrator/runtime-state.js'
 
-export const TASK_CWD = '/tmp/manager-action-apply-task'
+export const TASK_CWD = join(tmpdir(), 'manager-action-apply-task')
 
 export const TASK_DRAFT_BASE = {
   title: 'manager action task',
@@ -26,5 +30,6 @@ export const buildTaskDraft = (
 export const createRuntime = async (): Promise<RuntimeState> => {
   const runtime = await createTestRuntimeState({ pausedQueue: true })
   runtime.config.codex.enabled = true
+  await mkdir(TASK_CWD, { recursive: true })
   return runtime
 }
