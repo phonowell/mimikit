@@ -11,6 +11,7 @@ import {
 import {
   isScrollStateNearBottom,
   readScrollState,
+  restoreExactBottomIfNeeded,
   scrollElementToBottom,
 } from '../lib/message-scroll.js'
 
@@ -24,6 +25,7 @@ export const useMessageScroll = (deps: readonly unknown[]) => {
   const listRef = useRef<HTMLUListElement | null>(null)
   const followBottomRef = useRef(true)
   const pendingMetricsRef = useRef<ScrollMetrics | null>(null)
+  const pendingBottomLockFrameRef = useRef<number | null>(null)
   const [isNearBottom, setIsNearBottom] = useState(true)
 
   const syncFollowState = useCallback((nearBottom: boolean) => {
@@ -60,6 +62,28 @@ export const useMessageScroll = (deps: readonly unknown[]) => {
     }
   }, [])
 
+  const cancelPendingBottomLock = useCallback(() => {
+    if (
+      pendingBottomLockFrameRef.current === null ||
+      typeof window === 'undefined'
+    )
+      return
+    window.cancelAnimationFrame(pendingBottomLockFrameRef.current)
+    pendingBottomLockFrameRef.current = null
+  }, [])
+
+  const scheduleExactBottomRestore = useCallback(() => {
+    if (typeof window === 'undefined') return
+    cancelPendingBottomLock()
+    pendingBottomLockFrameRef.current = window.requestAnimationFrame(() => {
+      pendingBottomLockFrameRef.current = null
+      const element = listRef.current
+      if (!element || !followBottomRef.current) return
+      const nextState = restoreExactBottomIfNeeded(element)
+      syncFollowState(isScrollStateNearBottom(nextState))
+    })
+  }, [cancelPendingBottomLock, syncFollowState])
+
   const scrollToBottom = useCallback(
     (smooth = false) => {
       const element = listRef.current
@@ -70,8 +94,9 @@ export const useMessageScroll = (deps: readonly unknown[]) => {
         return
       }
       syncFollowState(isScrollStateNearBottom(nextState))
+      scheduleExactBottomRestore()
     },
-    [syncFollowState],
+    [scheduleExactBottomRestore, syncFollowState],
   )
 
   const syncAfterLayoutShift = useCallback(
@@ -98,6 +123,8 @@ export const useMessageScroll = (deps: readonly unknown[]) => {
     element.addEventListener('scroll', updateScrollButton, { passive: true })
     return () => element.removeEventListener('scroll', updateScrollButton)
   }, [updateScrollButton])
+
+  useEffect(() => cancelPendingBottomLock, [cancelPendingBottomLock])
 
   useLayoutEffect(() => {
     const element = listRef.current

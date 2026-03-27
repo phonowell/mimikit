@@ -2,6 +2,7 @@ import { expect, test, vi } from 'vitest'
 
 import {
   isScrollStateNearBottom,
+  restoreExactBottomIfNeeded,
   scrollElementToBottom,
 } from '../webui-src/lib/message-scroll.js'
 
@@ -40,5 +41,23 @@ test('programmatic auto scroll writes scrollTop directly and lands at bottom', (
 
   expect(scrollTo).not.toHaveBeenCalled()
   expect(element.scrollTop).toBe(900)
+  expect(isScrollStateNearBottom(state)).toBe(true)
+})
+
+test('exact-bottom restore removes a small late layout gap while following bottom', () => {
+  const element = {
+    clientHeight: 400,
+    scrollHeight: 1_300,
+    scrollTop: 180,
+    scrollTo: vi.fn(),
+  } as unknown as HTMLUListElement
+
+  scrollElementToBottom(element, false)
+  element.scrollHeight = 1_308
+
+  const state = restoreExactBottomIfNeeded(element)
+
+  expect(element.scrollTop).toBe(908)
+  expect(state.distance).toBe(0)
   expect(isScrollStateNearBottom(state)).toBe(true)
 })

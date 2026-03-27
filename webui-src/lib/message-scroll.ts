@@ -34,6 +34,14 @@ export const scrollElementToBottom = (
   return readScrollState(element)
 }
 
+export const restoreExactBottomIfNeeded = (
+  element: HTMLUListElement,
+): ScrollState => {
+  const state = readScrollState(element)
+  if (state.distance <= 0) return state
+  return scrollElementToBottom(element, false)
+}
+
 export const isScrollStateNearBottom = (
   state: ScrollState,
   thresholdPx = BOTTOM_THRESHOLD_PX,
