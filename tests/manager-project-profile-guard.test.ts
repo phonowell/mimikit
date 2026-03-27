@@ -34,7 +34,7 @@ test('remember_project_profile stays allowed for repo-bound digest anchored by s
   expect(feedback).toHaveLength(0)
 })
 
-test('remember_project_profile is silently suppressed when source quote is not in the current user input', () => {
+test('remember_project_profile rejects source quote that is not anchored in the current user input', () => {
   const feedback = collectManagerActionFeedback(
     [
       {
@@ -49,15 +49,18 @@ test('remember_project_profile is silently suppressed when source quote is not i
     },
   )
 
-  expect(feedback).toHaveLength(0)
+  expect(feedback).toHaveLength(1)
+  expect(feedback[0]?.action).toBe('remember_project_profile')
+  expect(feedback[0]?.error).toBe('action_execution_rejected')
+  expect(feedback[0]?.hint).toContain('source_quote')
 })
 
-test('remember_project_profile is silently suppressed when content is not supported by the current user input', () => {
+test('remember_project_profile allows minimal summarization without requiring content overlap with the current user input', () => {
   const feedback = collectManagerActionFeedback(
     [
       {
         type: 'remember_project_profile',
-        content: '本仓库默认跳过所有测试并直接合并。',
+        content: '本仓库命令面统一使用 pnpm + tsx，不再补 npm 兼容脚本。',
         source_input_id: 'input-user',
         source_quote: '统一用 pnpm + tsx 命令',
       },

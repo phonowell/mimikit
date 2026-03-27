@@ -4,11 +4,7 @@ import {
 } from './action-apply-schema.js'
 import { formatRememberMemoryNotStableHint } from './action-feedback-hints.js'
 import { validateRememberProjectProfileIntentEvidence } from './action-intent-evidence-dialog-memory.js'
-import {
-  rejected,
-  suppressed,
-  type ValidationIssue,
-} from './action-validation-helpers.js'
+import { rejected, type ValidationIssue } from './action-validation-helpers.js'
 import { rememberProjectProfileActionSchema } from './manager-turn-schema.js'
 
 import type { UserInput } from '../../foundation/types/index.js'
@@ -50,7 +46,5 @@ export const validateRememberProjectProfileAction = (
     item,
     ...(context.inputs ? { inputs: context.inputs } : {}),
   })
-  return evidenceResult === 'suppressed'
-    ? suppressed('remember_project_profile_guard')
-    : []
+  return evidenceResult ? rejected(evidenceResult) : []
 }

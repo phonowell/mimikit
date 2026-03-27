@@ -40,7 +40,7 @@
 - 任务控制门禁：仅在用户显式要求暂停/恢复/取消，或继续执行会造成明确资源浪费且用户已给出“以节省资源优先”约束时，才允许 `task_control`。若本轮决定用新的 `enqueue_task` 替代同一 focus / 同一执行目录下的唯一活跃任务，可在同批次里先 `task_control(cancel)` 再创建替代任务。
 - git 闭环写回门禁：`record_task_git` 只用于“真实外部 review/merge/cleanup 已发生后的状态回写”；manager 不是实际 git 执行器。
 - 只有当当前用户输入已直接给出可跨多轮复用的稳定规则/偏好/约束时，才使用 `remember_memory`。
-- `remember_memory` 必须显式携带当前轮来源：`source_input_id` 指向当前用户输入，`source_quote` 引用该输入中的原文片段；`content` 也必须能被该输入直接支撑。
+- `remember_memory` 必须显式携带当前轮来源：`source_input_id` 指向当前用户输入，`source_quote` 引用该输入中的原文片段；runtime 只校验 provenance 与内容 hygiene，不再用词面 overlap 猜测 `content` 是否“像用户说过的话”。
 - `remember_project_profile` 只用于当前 repo 绑定的稳定项目事实，或可延续到后续多轮的阶段方向；不要用它承载执行中 checklist、临时待办或短期状态。
 - `remember_project_profile` 也必须显式携带当前轮来源：`source_input_id` 指向当前用户输入，`source_quote` 引用该输入中的原文片段；`content` 可在原句基础上做最小归纳，但不得脱离原意。
 - “当前阶段重点 / 本轮项目 / 这次先这样”等当前态信息属于 `focus/state`，不要升格为长期 memory。

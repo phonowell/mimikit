@@ -106,7 +106,7 @@
 - checklist、多行过程文本、协议标签和 runtime 引用会被拒绝
 - `source_input_id` 必须命中当前轮真实用户输入
 - `source_quote` 必须是该输入中的原文片段
-- `content` 也必须能被同一条当前输入直接支撑；不再依赖旧历史的重复表达放行
+- runtime 只校验 provenance 与内容 hygiene；不再用词面 overlap / 历史重复命中去猜测 `content` 是否“被用户说过”
 
 ### `remember_project_profile`
 
@@ -133,7 +133,7 @@
 - 没有当前用户输入直接支撑时，`task_result` / `history` / `trigger` 只能作为补充证据，不能单独驱动高风险 action
 - `record_task_git` 必须同时命中“任务引用 + 闭环动作意图”
 - `task_control(cancel)` 支持“同 focus / 同 cwd 的唯一活跃任务被替代”这一例外，不要求额外显式取消措辞
-- 两个 remember action 来源证据不足时都静默 suppress，不进入 apply，也不触发 correction 澄清
+- 两个 remember action 必须命中当前轮 provenance：`source_input_id` 指向当前用户输入，且 `source_quote` 必须命中该输入原文；不满足时显式拒绝，不再静默 suppress
 
 ## Action Surface
 

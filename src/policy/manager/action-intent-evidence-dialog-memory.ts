@@ -46,49 +46,47 @@ export const validateAskUserChoiceIntentEvidence = (params: {
 export const validateRememberMemoryIntentEvidence = (params: {
   item: Parsed
   inputs?: UserInput[]
-}): 'allowed' | 'suppressed' => {
+}): string | undefined => {
   const { item, inputs } = params
-  if (item.type !== 'remember_memory') return 'allowed'
+  if (item.type !== 'remember_memory') return undefined
   const parsed = rememberMemoryActionSchema.safeParse(item)
-  if (!parsed.success) return 'allowed'
+  if (!parsed.success) return undefined
   const sourceInput = inputs?.find(
     (input) =>
       input.role === 'user' &&
       input.id.trim() === parsed.data.source_input_id.trim(),
   )
-  if (!sourceInput) return 'suppressed'
+  if (!sourceInput)
+    return 'remember_memory 执行失败：source_input_id 必须命中当前轮真实用户输入。'
   const sourceText = normalizeInlineWhitespace(sourceInput.text)
-  const content = normalizeInlineWhitespace(parsed.data.content)
   const sourceQuote = normalizeInlineWhitespace(parsed.data.source_quote)
-  if (!sourceText || !content || !sourceQuote) return 'suppressed'
-  if (!sourceText.includes(sourceQuote)) return 'suppressed'
-  return sourceText.includes(content) ? 'allowed' : 'suppressed'
+  if (!sourceText || !sourceQuote)
+    return 'remember_memory 执行失败：source_quote 必须命中当前轮真实用户输入。'
+  if (!sourceText.includes(sourceQuote))
+    return 'remember_memory 执行失败：source_quote 必须是当前轮用户输入中的原文片段。'
+  return undefined
 }
 
 export const validateRememberProjectProfileIntentEvidence = (params: {
   item: Parsed
   inputs?: UserInput[]
-}): 'allowed' | 'suppressed' => {
+}): string | undefined => {
   const { item, inputs } = params
-  if (item.type !== 'remember_project_profile') return 'allowed'
+  if (item.type !== 'remember_project_profile') return undefined
   const parsed = rememberProjectProfileActionSchema.safeParse(item)
-  if (!parsed.success) return 'allowed'
+  if (!parsed.success) return undefined
   const sourceInput = inputs?.find(
     (input) =>
       input.role === 'user' &&
       input.id.trim() === parsed.data.source_input_id.trim(),
   )
-  if (!sourceInput) return 'suppressed'
+  if (!sourceInput)
+    return 'remember_project_profile 执行失败：source_input_id 必须命中当前轮真实用户输入。'
   const sourceText = normalizeInlineWhitespace(sourceInput.text)
-  const content = normalizeInlineWhitespace(parsed.data.content)
   const sourceQuote = normalizeInlineWhitespace(parsed.data.source_quote)
-  if (!sourceText || !content || !sourceQuote) return 'suppressed'
-  if (!sourceText.includes(sourceQuote)) return 'suppressed'
-  return isSupportedByInputs({
-    candidates: [content],
-    combinedCandidate: content,
-    inputs: [sourceText],
-  })
-    ? 'allowed'
-    : 'suppressed'
+  if (!sourceText || !sourceQuote)
+    return 'remember_project_profile 执行失败：source_quote 必须命中当前轮真实用户输入。'
+  if (!sourceText.includes(sourceQuote))
+    return 'remember_project_profile 执行失败：source_quote 必须是当前轮用户输入中的原文片段。'
+  return undefined
 }

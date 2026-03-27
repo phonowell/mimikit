@@ -13,9 +13,9 @@ beforeEach(() => {
   resetRememberMemoryMocks()
 })
 
-test('runManagerCorrectionRounds still suppresses remember_memory when only old history supports it', async () => {
+test('runManagerCorrectionRounds keeps remember_memory action when current input anchors the source quote even if old history also matches', async () => {
   mockRememberMemoryRound(
-    '收到。',
+    '我会记住这条规则。',
     'session-remember-memory-repeated',
     [
       {
@@ -36,6 +36,9 @@ test('runManagerCorrectionRounds still suppresses remember_memory when only old 
   const result = await runRememberMemoryRound(runtime, '继续。')
 
   expect(result.roundLimitReached).toBeUndefined()
-  expect(result.parsed.text).toBe('收到。')
-  expect(result.parsed.actions).toHaveLength(0)
+  expect(result.parsed.text).toBe('我会记住这条规则。')
+  expect(result.parsed.actions).toHaveLength(1)
+  expect(result.parsed.actions[0]).toMatchObject({
+    type: 'remember_memory',
+  })
 })

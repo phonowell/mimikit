@@ -10,7 +10,7 @@ import { createTestRuntimeState } from './helpers/runtime-state.js'
 test('processManagerBatch directly delivers compact single task_result output', async () => {
   const task = createTaskFixture({
     id: 'task-explain-reject',
-    title: '解释 remember_memory 被拒原因',
+    title: '解释 remember_memory provenance 校验被拒原因',
     status: 'running',
     archivePath:
       '/tmp/mimikit/.mimikit/tasks/2026-03-25/task-explain-reject.md',
@@ -31,7 +31,7 @@ test('processManagerBatch directly delivers compact single task_result output', 
         status: 'succeeded',
         ok: true,
         output:
-          '结论是：remember_memory 没有写入不是存储失败，而是被长期记忆 guard 静默 suppress 了。\n当前输入未直接支撑该稳定规则，近期用户历史也没有形成重复稳定偏好。',
+          '结论是：remember_memory 没有写入不是存储失败，而是 provenance 校验拒绝了该 action。\nsource_quote 没有命中当前用户输入原文，因此本轮不能写入长期记忆。',
         durationMs: 25,
         completedAt: '2026-03-25T06:08:56.942Z',
       },
@@ -43,7 +43,7 @@ test('processManagerBatch directly delivers compact single task_result output', 
   const history = await readHistory(runtime.paths.history)
   expect(history.at(-1)).toMatchObject({
     role: 'agent',
-    text: '结论是：remember_memory 没有写入不是存储失败，而是被长期记忆 guard 静默 suppress 了。\n当前输入未直接支撑该稳定规则，近期用户历史也没有形成重复稳定偏好。\n[任务归档](.mimikit/tasks/2026-03-25/task-explain-reject.md)',
+    text: '结论是：remember_memory 没有写入不是存储失败，而是 provenance 校验拒绝了该 action。\nsource_quote 没有命中当前用户输入原文，因此本轮不能写入长期记忆。\n[任务归档](.mimikit/tasks/2026-03-25/task-explain-reject.md)',
   })
   expect(task.result?.output).toBe(`Task "${task.title}" completed.`)
   expect(runtime.queues.resultsCursor).toBe(1)

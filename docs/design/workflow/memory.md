@@ -45,9 +45,7 @@
   - 只有当当前轮用户输入直接给出可跨多轮复用的稳定规则/偏好/约束时，才允许立即写入。
   - repo 绑定的项目事实、阶段方向不要挤进长期 memory，应改走 `remember_project_profile`。
   - 执行中 checklist、当前待办、即时状态仍留在 `focus/state`。
-  - 不满足上述证据时，`remember_memory` 会被静默 suppress；不会写入 memory，也不会触发用户侧澄清回合。
-  - `remember_memory` 被 suppress 时，只丢弃该 action；不得因此覆写同轮其他正常 reply。
-  - 若整轮只包含被 suppress 的 `remember_memory`，可回退为中性确认，不得对用户声称“已写入长期记忆”。
+  - provenance 不满足时显式拒绝该 action；不再静默 suppress，也不再用中性 `收到。` 覆写原 reply。
 - 回执：写入 `memory_remembered` system event（含 `entry_id/ref/operation`）。
 - 代码：
   - `src/work/memory/remember-entry.ts`
@@ -62,6 +60,7 @@
   - `content` 仍要求单行稳定 digest（`<=240 chars`），并复用与 `remember_memory` 相同的 hygiene guard：拒绝 checklist、多行过程文本、协议标签与 runtime 引用。
   - `source_input_id` 必须命中当前轮真实用户输入；`source_quote` 必须是该输入中的原文片段。
   - 与 `remember_memory` 不同，`content` 可在 `source_quote` 基础上做最小归纳，不要求字面子串命中；来源锚点会随条目一起持久化。
+  - provenance 不满足时显式拒绝该 action；不再静默 suppress。
   - repo 绑定的阶段方向可以进入 `project_profile`；执行中的待办、恢复步骤、当前状态仍不得进入。
 - 存储：
   - 文件路径按 `runtime.startup.worktree` 绑定：`.mimikit/memory/project-profiles/project-profile-<worktree-hash>.md`

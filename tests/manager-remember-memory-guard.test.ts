@@ -63,7 +63,7 @@ test('remember_memory is blocked for runtime object references', () => {
   expect(feedback[0]?.hint).toContain('运行时对象引用')
 })
 
-test('remember_memory is silently suppressed when source quote is not in the current user input', () => {
+test('remember_memory rejects source quote that is not anchored in the current user input', () => {
   const feedback = collectManagerActionFeedback(
     [
       {
@@ -78,7 +78,10 @@ test('remember_memory is silently suppressed when source quote is not in the cur
     },
   )
 
-  expect(feedback).toHaveLength(0)
+  expect(feedback).toHaveLength(1)
+  expect(feedback[0]?.action).toBe('remember_memory')
+  expect(feedback[0]?.error).toBe('action_execution_rejected')
+  expect(feedback[0]?.hint).toContain('source_quote')
 })
 
 test('remember_memory requires current user input provenance fields', () => {
@@ -120,6 +123,22 @@ test('remember_memory stays allowed for direct stable preference evidence', () =
         ),
       ],
     },
+  )
+
+  expect(feedback).toHaveLength(0)
+})
+
+test('remember_memory allows normalized stable digest when source quote is anchored in the current user input', () => {
+  const feedback = collectManagerActionFeedback(
+    [
+      {
+        type: 'remember_memory',
+        content: 'Always keep replies concise.',
+        source_input_id: 'input-user',
+        source_quote: '后续都请保持回复简洁',
+      },
+    ],
+    { inputs: [createUserInput('后续都请保持回复简洁，不要展开成长篇大论。')] },
   )
 
   expect(feedback).toHaveLength(0)
