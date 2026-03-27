@@ -57,6 +57,23 @@ test('worker structured output schema requires a single reply + handoff object',
     },
   })
 
+  expect(
+    parseWorkerTurn({
+      reply: '结论：已完成',
+      handoff: {
+        summary: '已完成',
+        decisions: null,
+        artifacts: [{ path: '/tmp/report.md', kind: null, note: null }],
+      },
+    }),
+  ).toEqual({
+    reply: '结论：已完成',
+    handoff: {
+      summary: '已完成',
+      artifacts: [{ path: '/tmp/report.md' }],
+    },
+  })
+
   expect(() =>
     parseWorkerTurn({
       reply: 'legacy',

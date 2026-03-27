@@ -17,12 +17,53 @@ export const approvalPolicy = 'never' as const
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
 
+const normalizeCodexSchemaNode = (value: unknown): unknown => {
+  if (Array.isArray(value)) return value.map(normalizeCodexSchemaNode)
+  if (!isRecord(value)) return value
+
+  if (value.oneOf !== undefined) {
+    const { oneOf, ...rest } = value
+    return normalizeCodexSchemaNode({ ...rest, anyOf: oneOf })
+  }
+
+  const normalized: Record<string, unknown> = {}
+  for (const [key, child] of Object.entries(value)) {
+    if (key === '$schema') continue
+    normalized[key] = normalizeCodexSchemaNode(child)
+  }
+
+  const { properties } = normalized
+  if (!isRecord(properties)) return normalized
+
+  const propertyKeys = Object.keys(properties)
+  const requiredSet = new Set(
+    Array.isArray(normalized.required)
+      ? normalized.required.filter(
+          (item): item is string => typeof item === 'string',
+        )
+      : [],
+  )
+
+  for (const key of propertyKeys) {
+    if (requiredSet.has(key)) continue
+    properties[key] = {
+      anyOf: [normalizeCodexSchemaNode(properties[key]), { type: 'null' }],
+    }
+  }
+  normalized.required = propertyKeys
+  return normalized
+}
+
 export const normalizeCodexOutputSchema = (
   outputSchema: unknown,
 ): unknown | undefined => {
-  if (!isRecord(outputSchema)) return outputSchema
-  if (outputSchema.type !== 'json_schema') return outputSchema
-  return isRecord(outputSchema.schema) ? outputSchema.schema : outputSchema
+  const source =
+    isRecord(outputSchema) &&
+    outputSchema.type === 'json_schema' &&
+    isRecord(outputSchema.schema)
+      ? outputSchema.schema
+      : outputSchema
+  return normalizeCodexSchemaNode(source)
 }
 
 export const sandboxModeFor = (

@@ -42,6 +42,23 @@ describe('runCodexStream output schema forwarding', () => {
             type: 'object',
             properties: {
               summary: { type: 'string' },
+              decisions: {
+                type: 'array',
+                items: { type: 'string' },
+              },
+              artifacts: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    path: { type: 'string' },
+                    kind: { type: 'string' },
+                    note: { type: 'string' },
+                  },
+                  required: ['path'],
+                  additionalProperties: false,
+                },
+              },
             },
             required: ['summary'],
             additionalProperties: false,
@@ -59,25 +76,35 @@ describe('runCodexStream output schema forwarding', () => {
       () => undefined,
     )
 
-    expect(runStreamed).toHaveBeenCalledWith(
-      'ping',
+    expect(runStreamed.mock.calls[0]?.[0]).toBe('ping')
+    const forwardedSchema = runStreamed.mock.calls[0]?.[1]?.outputSchema as {
+      properties?: Record<string, unknown>
+      required?: string[]
+    }
+    expect(forwardedSchema.required).toEqual(['reply', 'handoff'])
+    expect(forwardedSchema.properties?.reply).toEqual({ type: 'string' })
+    expect(forwardedSchema.properties?.handoff).toEqual(
       expect.objectContaining({
-        outputSchema: {
-          type: 'object',
-          properties: {
-            reply: { type: 'string' },
-            handoff: {
-              type: 'object',
-              properties: {
-                summary: { type: 'string' },
-              },
-              required: ['summary'],
-              additionalProperties: false,
-            },
-          },
-          required: ['reply', 'handoff'],
-          additionalProperties: false,
-        },
+        type: 'object',
+        required: ['summary', 'decisions', 'artifacts'],
+        additionalProperties: false,
+      }),
+    )
+    expect(
+      (
+        forwardedSchema.properties?.handoff as {
+          properties?: Record<string, unknown>
+        }
+      ).properties?.artifacts,
+    ).toEqual(
+      expect.objectContaining({
+        anyOf: expect.arrayContaining([
+          expect.objectContaining({
+            items: expect.objectContaining({
+              required: ['path', 'kind', 'note'],
+            }),
+          }),
+        ]),
       }),
     )
     expect(result.output).toBe('{"reply":"ok","handoff":{"summary":"done"}}')
