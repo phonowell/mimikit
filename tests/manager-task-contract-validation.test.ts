@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+
 import { expect, test } from 'vitest'
 
 import { collectManagerActionFeedback } from '../src/policy/manager/action-feedback-collect.js'
@@ -54,6 +57,27 @@ test('enqueue_task builds fallback worker prompt from task draft', () => {
   expect(prompt).toContain('2. Tests pass')
 })
 
+test('task contract prompt labels live in prompt template instead of source code', () => {
+  const source = readFileSync(
+    resolve(process.cwd(), 'src/policy/manager/task-contract.ts'),
+    'utf8',
+  )
+  const template = readFileSync(
+    resolve(process.cwd(), 'prompts/manager/task-contract-worker-prompt.md'),
+    'utf8',
+  )
+
+  expect(source).not.toContain('任务标题：')
+  expect(source).not.toContain('不做：')
+  expect(source).not.toContain('上下文引用：')
+  expect(source).not.toContain('补充说明：')
+
+  expect(template).toContain('{{ title_label }}')
+  expect(template).toContain('{{ out_of_scope_label }}')
+  expect(template).toContain('{{ context_refs_label }}')
+  expect(template).toContain('{{ extra_instructions_heading }}')
+})
+
 test('enqueue_task accepts complete task draft', () => {
   const feedback = collectManagerActionFeedback(
     [
@@ -81,7 +105,9 @@ test('enqueue_task rejects legacy flattened task fields', () => {
           scope: 'Single deliverable',
           acceptance_1: 'Output exists',
         },
-      } as unknown as Parameters<typeof collectManagerActionFeedback>[0][number],
+      } as unknown as Parameters<
+        typeof collectManagerActionFeedback
+      >[0][number],
     ],
     {},
   )

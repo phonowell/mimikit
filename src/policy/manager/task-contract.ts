@@ -14,6 +14,10 @@ export const TASK_CONTRACT_REQUIRED_HINT =
 const taskContractWorkerPromptTemplateSchema = z
   .object({
     body: z.string().trim().min(1),
+    title_label: z.string().trim().min(1),
+    out_of_scope_label: z.string().trim().min(1),
+    context_refs_label: z.string().trim().min(1),
+    extra_instructions_heading: z.string().trim().min(1),
   })
   .strict()
 
@@ -52,22 +56,27 @@ const buildGeneratedWorkerPrompt = (params: {
   doneWhen: string[]
   outOfScope?: string | undefined
   contextRefs?: string[] | undefined
+  extraInstructions?: string[] | undefined
 }): string => {
   const title = params.title?.trim()
   const outOfScope = params.outOfScope?.trim()
-  const contextRefs = params.contextRefs?.filter(
-    (item) => item.trim().length > 0,
-  )
+  const contextRefs = normalizeList(params.contextRefs ?? [])
+  const extraInstructions = normalizeList(params.extraInstructions ?? [])
   return renderTaskContractWorkerPrompt('body', {
-    title_line: title ? `任务标题：${title}` : '',
+    title: title ?? '',
     goal: params.goal,
     in_scope: params.inScope,
-    out_of_scope_line: outOfScope ? `不做：${outOfScope}` : '',
-    context_refs_line:
-      contextRefs && contextRefs.length > 0
-        ? `上下文引用：${contextRefs.join('；')}`
-        : '',
+    title_label: taskContractWorkerPromptTemplates.title_label,
+    out_of_scope: outOfScope ?? '',
+    out_of_scope_label: taskContractWorkerPromptTemplates.out_of_scope_label,
+    context_refs: contextRefs.join('；'),
+    context_refs_label: taskContractWorkerPromptTemplates.context_refs_label,
     done_when_block: params.doneWhen
+      .map((item, index) => `${index + 1}. ${item}`)
+      .join('\n'),
+    extra_instructions_heading:
+      taskContractWorkerPromptTemplates.extra_instructions_heading,
+    extra_instructions_block: extraInstructions
       .map((item, index) => `${index + 1}. ${item}`)
       .join('\n'),
   })
@@ -97,17 +106,13 @@ export const resolveWorkerPromptFromDraft = (
 ): string | undefined => {
   const contract = buildTaskContractFromDraft(draft)
   if (!contract) return undefined
-  const extraInstructions = normalizeList(draft.instructions)
-  const base = buildGeneratedWorkerPrompt({
+  return buildGeneratedWorkerPrompt({
     title: normalizeLine(draft.title),
     goal: contract.goal,
     inScope: contract.scope,
     doneWhen: contract.acceptance,
     ...(contract.outOfScope ? { outOfScope: contract.outOfScope } : {}),
     ...(contract.contextRefs ? { contextRefs: contract.contextRefs } : {}),
+    extraInstructions: draft.instructions,
   })
-  if (extraInstructions.length === 0) return base
-  return `${base}\n\n补充说明：\n${extraInstructions
-    .map((item, index) => `${index + 1}. ${item}`)
-    .join('\n')}`
 }

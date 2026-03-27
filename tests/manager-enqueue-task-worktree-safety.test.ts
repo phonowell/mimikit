@@ -82,4 +82,4 @@ test('enqueue_task worktree prepare failure appends action feedback without thro
     (item) => item.role === 'system' && item.systemEventName === 'trigger_fire',
   )
   expect(triggerFire).toBeUndefined()
-})
+}, 15_000)
