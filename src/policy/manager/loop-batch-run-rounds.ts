@@ -6,7 +6,7 @@ import { isNoChoiceReturnChannelSource } from '../../surface/channels/shared/sou
 
 import {
   buildCorrectionFallbackReply,
-  buildRememberMemoryNotWrittenReply,
+  buildSuppressedRememberMemoryNeutralReply,
   shouldRetrySelfRepairRound,
 } from './loop-batch-correction-reply.js'
 import { runManagerRoundWithRecovery } from './loop-batch-exec.js'
@@ -27,6 +27,11 @@ import type {
 } from '../../foundation/types/index.js'
 import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 import type { Parsed } from '../actions/model/spec.js'
+
+const PURE_SUPPRESSED_NEUTRAL_ACTIONS = new Set([
+  'remember_memory',
+  'remember_project_profile',
+])
 
 export const runManagerCorrectionRounds = async (params: {
   runtime: ManagerRuntime
@@ -137,33 +142,31 @@ export const runManagerCorrectionRounds = async (params: {
       wakeProfile: runResult.wakeProfile,
       roundExtra: extra,
     })
+    const resolvedParsed =
+      followup.filteredActions !== undefined
+        ? { ...parsed, actions: followup.filteredActions }
+        : parsed
     const suppressedActions =
       followup.filteredActions !== undefined
         ? parsed.actions.filter(
             (item) => !followup.filteredActions?.includes(item),
           )
         : []
-    const resolvedParsed =
-      followup.filteredActions !== undefined
-        ? { ...parsed, actions: followup.filteredActions }
-        : parsed
-    const suppressedRememberMemory = suppressedActions.some(
-      (item) => item.type === 'remember_memory',
-    )
-    const pureRememberMemoryTurn =
+    const pureSuppressedNeutralTurn =
       parsed.actions.length > 0 &&
-      parsed.actions.every((item) => item.type === 'remember_memory') &&
+      parsed.actions.every((item) =>
+        PURE_SUPPRESSED_NEUTRAL_ACTIONS.has(item.type),
+      ) &&
+      suppressedActions.length === parsed.actions.length &&
       resolvedParsed.actions.length === 0
-    const resolvedText =
-      suppressedRememberMemory && pureRememberMemoryTurn
-        ? buildRememberMemoryNotWrittenReply()
-        : resolvedParsed.text
     if (followup.done) {
       return buildBatchSuccessResult({
-        parsed: {
-          ...resolvedParsed,
-          text: resolvedText,
-        },
+        parsed: pureSuppressedNeutralTurn
+          ? {
+              ...resolvedParsed,
+              text: buildSuppressedRememberMemoryNeutralReply(),
+            }
+          : resolvedParsed,
         elapsedMs,
         ...(batchUsage ? { usage: batchUsage } : {}),
       })

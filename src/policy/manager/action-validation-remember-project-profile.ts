@@ -1,10 +1,10 @@
 import {
   type RememberMemoryContentIssue,
-  rememberMemorySchema,
+  rememberProjectProfileSchema,
   resolveRememberMemoryContentIssue,
 } from './action-apply-schema.js'
 import { formatRememberMemoryNotStableHint } from './action-feedback-hints.js'
-import { validateRememberMemoryIntentEvidence } from './action-intent-evidence-dialog-memory.js'
+import { validateRememberProjectProfileIntentEvidence } from './action-intent-evidence-dialog-memory.js'
 import {
   rejected,
   suppressed,
@@ -14,11 +14,11 @@ import {
 import type { UserInput } from '../../foundation/types/index.js'
 import type { Parsed } from '../actions/model/spec.js'
 
-type RememberMemoryValidationContext = {
+type RememberProjectProfileValidationContext = {
   inputs?: UserInput[]
 }
 
-const formatRememberMemoryIssue = (
+const formatRememberProjectProfileIssue = (
   issue: RememberMemoryContentIssue,
 ): string => {
   if (issue === 'multiline') return '包含多行文本；请收敛为单行 digest。'
@@ -29,28 +29,28 @@ const formatRememberMemoryIssue = (
   return '超过 240 字符上限。'
 }
 
-export const validateRememberMemoryAction = (
+export const validateRememberProjectProfileAction = (
   item: Parsed,
-  context: RememberMemoryValidationContext,
+  context: RememberProjectProfileValidationContext,
 ): ValidationIssue[] => {
-  if (item.type !== 'remember_memory') return []
-  const result = rememberMemorySchema.safeParse(item)
+  if (item.type !== 'remember_project_profile') return []
+  const result = rememberProjectProfileSchema.safeParse(item)
   if (!result.success) return []
 
   const contentIssue = resolveRememberMemoryContentIssue(result.data.content)
   if (contentIssue) {
     return rejected(
       formatRememberMemoryNotStableHint(
-        formatRememberMemoryIssue(contentIssue),
+        formatRememberProjectProfileIssue(contentIssue),
       ),
     )
   }
 
-  const evidenceResult = validateRememberMemoryIntentEvidence({
+  const evidenceResult = validateRememberProjectProfileIntentEvidence({
     item,
     ...(context.inputs ? { inputs: context.inputs } : {}),
   })
   return evidenceResult === 'suppressed'
-    ? suppressed('remember_memory_guard')
+    ? suppressed('remember_project_profile_guard')
     : []
 }

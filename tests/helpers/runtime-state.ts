@@ -87,6 +87,10 @@ export const createTestRuntimeState = async (
     : []
   return {
     runtimeId: options.runtimeId ?? 'runtime-test',
+    startup: {
+      startedAt: now,
+      worktree: workDir,
+    },
     config,
     paths: buildPaths(workDir),
     session: {

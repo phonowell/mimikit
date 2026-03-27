@@ -31,13 +31,17 @@ test('runManagerCorrectionRounds explains insufficient evidence for risky action
       '<M:enqueue_task title="task" cwd="/tmp/task" goal="ship" in_scope="guard only" done_when_1="tests pass" />',
     actions: [
       {
-        name: 'enqueue_task',
-        attrs: {
+        type: 'enqueue_task',
+        task: {
           title: 'task',
           cwd: '/tmp/task',
+          mode: 'write',
           goal: 'ship',
-          in_scope: 'guard only',
-          done_when_1: 'tests pass',
+          in_scope: ['guard only'],
+          out_of_scope: [],
+          done_when: ['tests pass'],
+          context_refs: [],
+          instructions: [],
         },
       },
     ],

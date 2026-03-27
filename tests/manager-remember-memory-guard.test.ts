@@ -19,6 +19,9 @@ test('remember_memory is blocked for unstable multiline process text', () => {
         type: 'remember_memory',
         content:
           'Keep this for later:\n- finish task-refactor-auth\n- rerun review-code-changes',
+        source_input_id: 'input-user',
+        source_quote:
+          'Keep this for later:\n- finish task-refactor-auth\n- rerun review-code-changes',
       },
     ],
     {
@@ -42,6 +45,8 @@ test('remember_memory is blocked for runtime object references', () => {
       {
         type: 'remember_memory',
         content: 'Keep task-refactor-auth paused until review finishes.',
+        source_input_id: 'input-user',
+        source_quote: 'Keep task-refactor-auth paused until review finishes.',
       },
     ],
     {
@@ -58,12 +63,14 @@ test('remember_memory is blocked for runtime object references', () => {
   expect(feedback[0]?.hint).toContain('运行时对象引用')
 })
 
-test('remember_memory no longer emits user-facing feedback without direct user evidence', () => {
+test('remember_memory is silently suppressed when source quote is not in the current user input', () => {
   const feedback = collectManagerActionFeedback(
     [
       {
         type: 'remember_memory',
         content: 'Always keep replies concise and in Chinese.',
+        source_input_id: 'input-user',
+        source_quote: '后续都请保持中文且简洁回复。',
       },
     ],
     {
@@ -74,12 +81,36 @@ test('remember_memory no longer emits user-facing feedback without direct user e
   expect(feedback).toHaveLength(0)
 })
 
+test('remember_memory requires current user input provenance fields', () => {
+  const feedback = collectManagerActionFeedback(
+    [
+      {
+        type: 'remember_memory',
+        content: 'Always keep replies concise and in Chinese.',
+      },
+    ],
+    {
+      inputs: [
+        createUserInput(
+          '后续都请保持中文且简洁回复。Always keep replies concise and in Chinese.',
+        ),
+      ],
+    },
+  )
+
+  expect(feedback).toHaveLength(1)
+  expect(feedback[0]?.action).toBe('remember_memory')
+  expect(feedback[0]?.error).toBe('invalid_action_args')
+})
+
 test('remember_memory stays allowed for direct stable preference evidence', () => {
   const feedback = collectManagerActionFeedback(
     [
       {
         type: 'remember_memory',
         content: 'Always keep replies concise and in Chinese.',
+        source_input_id: 'input-user',
+        source_quote: '后续都请保持中文且简洁回复',
       },
     ],
     {

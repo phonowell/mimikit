@@ -1,10 +1,8 @@
 import { resolveScheduleNowIso } from '../../foundation/shared/time.js'
-import { readHistory } from '../../persistence/history/store.js'
 import { appendLog } from '../../persistence/log/append.js'
 
 import { managerActionCliLogger } from './action-cli-log.js'
 import { collectManagerActionValidationOutcome } from './action-feedback-collect.js'
-import { collectHistoricalUserIntentTexts } from './action-intent-evidence-match.js'
 import {
   buildActionFeedbackContext,
   hasNoFollowupRequests,
@@ -61,13 +59,6 @@ export const resolveRoundFollowup = async (params: {
   wakeProfile: ManagerWakeProfile
   roundExtra?: ManagerRoundExtra
 }): Promise<RoundFollowupResult> => {
-  const recentUserIntentTexts = params.parsed.some(
-    (item) => item.type === 'remember_memory',
-  )
-    ? collectHistoricalUserIntentTexts(
-        await readHistory(params.runtime.paths.history),
-      )
-    : []
   const validation = collectManagerActionValidationOutcome(
     params.parsed,
     {
@@ -77,7 +68,6 @@ export const resolveRoundFollowup = async (params: {
         resultTaskIds: params.resultTaskIds,
         wakeProfile: params.wakeProfile,
         ...(params.inputs ? { inputs: params.inputs } : {}),
-        ...(recentUserIntentTexts.length > 0 ? { recentUserIntentTexts } : {}),
       }),
       scheduleNowIso: resolveScheduleNowIso(
         params.runtime.session.lastUserMeta,

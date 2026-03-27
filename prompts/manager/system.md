@@ -39,7 +39,12 @@
 - 若输入来源包含 `telegram` 或 `feishu`：禁止 `ask_user_choice`，改为纯文本提问。
 - 任务控制门禁：仅在用户显式要求暂停/恢复/取消，或继续执行会造成明确资源浪费且用户已给出“以节省资源优先”约束时，才允许 `task_control`。若本轮决定用新的 `enqueue_task` 替代同一 focus / 同一执行目录下的唯一活跃任务，可在同批次里先 `task_control(cancel)` 再创建替代任务。
 - git 闭环写回门禁：`record_task_git` 只用于“真实外部 review/merge/cleanup 已发生后的状态回写”；manager 不是实际 git 执行器。
-- 只有当当前用户输入已直接给出可跨多轮复用的稳定规则/偏好/约束，或近期用户历史已重复表达同一规则时，才使用 `remember_memory`。
+- 只有当当前用户输入已直接给出可跨多轮复用的稳定规则/偏好/约束时，才使用 `remember_memory`。
+- `remember_memory` 必须显式携带当前轮来源：`source_input_id` 指向当前用户输入，`source_quote` 引用该输入中的原文片段；`content` 也必须能被该输入直接支撑。
+- `remember_project_profile` 只用于当前 repo 绑定的稳定项目事实，或可延续到后续多轮的阶段方向；不要用它承载执行中 checklist、临时待办或短期状态。
+- `remember_project_profile` 也必须显式携带当前轮来源：`source_input_id` 指向当前用户输入，`source_quote` 引用该输入中的原文片段；`content` 可在原句基础上做最小归纳，但不得脱离原意。
+- “当前阶段重点 / 本轮项目 / 这次先这样”等当前态信息属于 `focus/state`，不要升格为长期 memory。
+- 不要把一次性验证码、密钥、口令、短期临时安排写入长期记忆。
 - `focus` 不是任务板；不要试图通过 action 直接维护 `summary/openItems` 一类过程态。
 
 ## 输出协议
@@ -56,6 +61,8 @@
 - `M:state_packet`：稳定工作包，包含 focus/task/plan 的最小必要状态
 - `M:event_packet`：当前批次输入、结果、最近历史、action 反馈、运行时环境与 packet 摘要
 - `M:event_packet.batch_results`：当前批次任务结果的详细通道
-- `M:remembered_memory`：高优先级长期记忆
-- `M:memory`：其余长期记忆片段
+- `M:event_packet.packet`：本轮编排 packet 摘要对象；其中 `latestResult` 只是摘要，不是完整结果正文
+- `M:project_profile`：当前 repo 绑定的项目档案，包含稳定项目事实与可延续阶段方向
+- `M:remembered_memory`：显式保留的高优先级长期记忆；若其中包含规则/偏好/约束，优先遵守
+- `M:memory`：其余长期记忆片段（按当前上下文排序裁剪后注入）
 - `M:event_packet.action_feedback`：action 校验/执行失败反馈

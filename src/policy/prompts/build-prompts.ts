@@ -27,6 +27,7 @@ const CONTEXT_EMPTY_VALUES: Record<string, string> = {
   action_surface: '',
   state_packet: '',
   event_packet: '',
+  project_profile: '',
   remembered_memory: '',
   memory: '',
 }
@@ -43,6 +44,7 @@ export const buildManagerPromptPayload = async (
   const runtime = await prepareManagerPromptRuntimeData(params, {
     includeTasks: sectionPolicy.tasks,
     includeInputs: sectionPolicy.inputs,
+    includeProjectProfile: sectionPolicy.project_profile,
     includeRememberedMemory: sectionPolicy.remembered_memory,
     includeMemory: sectionPolicy.memory,
     includeWorkingFocuses: sectionPolicy.working_focuses,
@@ -86,6 +88,7 @@ export const buildManagerPromptPayload = async (
     {
       ...CONTEXT_EMPTY_VALUES,
       state_packet: packets.statePacket,
+      project_profile: packets.selectedProjectProfile,
       remembered_memory: packets.selectedRememberedMemory,
     },
     contextSource.path,

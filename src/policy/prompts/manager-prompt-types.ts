@@ -24,6 +24,7 @@ export type ManagerPromptPayload = {
 export type BuildManagerPromptParams = {
   stateDir: string
   workDir: string
+  startupWorktree?: string
   inputs: UserInput[]
   results: TaskResult[]
   tasks: Task[]
@@ -41,6 +42,7 @@ export type ManagerPromptPacketBuildResult = {
   contextPacket: ManagerContextPacket
   statePacket: string
   eventPacket: string
+  selectedProjectProfile: string
   selectedRememberedMemory: string
   selectedMemory: string
 }

@@ -54,6 +54,7 @@ const actionSurfaceTemplateSchema = z
         ask_user_choice: actionPromptSpecSchema,
         assign_focus: actionPromptSpecSchema,
         remember_memory: actionPromptSpecSchema,
+        remember_project_profile: actionPromptSpecSchema,
       })
       .strict(),
   })
@@ -101,6 +102,9 @@ export const ACTION_PROMPT_SPECS = {
   ask_user_choice: normalizePromptSpec(templates.actions.ask_user_choice),
   assign_focus: normalizePromptSpec(templates.actions.assign_focus),
   remember_memory: normalizePromptSpec(templates.actions.remember_memory),
+  remember_project_profile: normalizePromptSpec(
+    templates.actions.remember_project_profile,
+  ),
 } as const
 
 export const ACTION_DOMAIN_SPECS: Record<

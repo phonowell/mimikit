@@ -98,6 +98,15 @@ export const assignFocusActionSchema = z.strictObject({
 export const rememberMemoryActionSchema = z.strictObject({
   type: z.literal('remember_memory'),
   content: s,
+  source_input_id: s,
+  source_quote: s,
+})
+
+export const rememberProjectProfileActionSchema = z.strictObject({
+  type: z.literal('remember_project_profile'),
+  content: s,
+  source_input_id: s,
+  source_quote: s,
 })
 
 export const managerActionSchema = z.discriminatedUnion('type', [
@@ -109,6 +118,7 @@ export const managerActionSchema = z.discriminatedUnion('type', [
   askUserChoiceActionSchema,
   assignFocusActionSchema,
   rememberMemoryActionSchema,
+  rememberProjectProfileActionSchema,
 ])
 
 export const managerTurnSchema = z.strictObject({

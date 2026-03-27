@@ -24,6 +24,7 @@ const MINIMAL_SECTIONS = new Set<ManagerPacketSection>([
   'environment',
   'focus_list',
   'working_focuses',
+  'project_profile',
   'remembered_memory',
   'tasks',
   'plans',

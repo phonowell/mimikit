@@ -92,6 +92,7 @@ export const runManagerRoundWithRecovery = async (params: {
     results: params.results,
     tasks: params.tasks,
     promptSectionLimits,
+    startupWorktree: params.runtime.startup.worktree,
     plans: params.plans,
     focuses: params.runtime.focuses,
     workingFocusIds: params.workingFocusIds,

@@ -29,8 +29,8 @@ domains:
     title: Focus 归属
     summary: 维护 focus 状态与对象归属。
   memory:
-    title: 长期记忆
-    summary: 仅保存跨轮稳定生效的偏好或约束。
+    title: 记忆与项目档案
+    summary: 保存跨轮稳定记忆，或 repo 绑定的项目档案事实。
 actions:
   enqueue_task:
     summary: 派发一个 worker 任务。
@@ -80,8 +80,21 @@ actions:
   remember_memory:
     summary: 写入长期记忆。
     brief_constraints:
-      - 仅支持 `content`
+      - 必填 `content,source_input_id,source_quote`
     detail_constraints:
       - 只保存稳定偏好或长期约束
       - '`content` 必须是单行 digest，且 `<=240 chars`'
+      - '`source_input_id` 必须引用当前轮用户输入'
+      - '`source_quote` 必须是该输入中的原文片段'
+      - '禁止 checklist、多行过程文本、协议标签与 `task-*/plan-*` 一类 runtime 引用'
+  remember_project_profile:
+    summary: 写入 repo 绑定的项目档案。
+    brief_constraints:
+      - 必填 `content,source_input_id,source_quote`
+    detail_constraints:
+      - 只保存当前仓库可跨后续多轮复用的稳定事实或阶段方向
+      - '`content` 必须是单行 digest，且 `<=240 chars`'
+      - '`source_input_id` 必须引用当前轮用户输入'
+      - '`source_quote` 必须是该输入中的原文片段'
+      - '`content` 可在 `source_quote` 基础上做最小归纳，但不得脱离原意扩写'
       - '禁止 checklist、多行过程文本、协议标签与 `task-*/plan-*` 一类 runtime 引用'

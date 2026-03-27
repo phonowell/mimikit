@@ -124,3 +124,26 @@ test('parseManagerTurn rejects legacy top-level fields', () => {
     }),
   ).toThrow()
 })
+
+test('parseManagerTurn keeps structured remember_project_profile action as-is', () => {
+  const parsed = parseManagerTurn({
+    reply: '收到。',
+    actions: [
+      {
+        type: 'remember_project_profile',
+        content: '本仓库命令面统一使用 pnpm + tsx，不再补 npm 兼容脚本。',
+        source_input_id: 'input-user',
+        source_quote: '后续统一用 pnpm + tsx 命令，不再补 npm 兼容脚本',
+      },
+    ],
+  })
+
+  expect(parsed.actions).toEqual([
+    {
+      type: 'remember_project_profile',
+      content: '本仓库命令面统一使用 pnpm + tsx，不再补 npm 兼容脚本。',
+      source_input_id: 'input-user',
+      source_quote: '后续统一用 pnpm + tsx 命令，不再补 npm 兼容脚本',
+    },
+  ])
+})

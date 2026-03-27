@@ -1,6 +1,7 @@
 import {
   validateAskUserChoiceIntentEvidence,
   validateRememberMemoryIntentEvidence,
+  validateRememberProjectProfileIntentEvidence,
 } from './action-intent-evidence-dialog-memory.js'
 import {
   buildMissingIntentEvidenceHint,
@@ -34,6 +35,7 @@ const INTENT_EVIDENCE_REQUIRED_ACTIONS = new Set([
   'delete_plan',
   'ask_user_choice',
   'remember_memory',
+  'remember_project_profile',
 ])
 
 const requiresDirectUserEvidence = (actionName: Parsed['type']): boolean =>
@@ -114,10 +116,13 @@ export const resolveIntentEvidenceRejectionHint = (
   if (item.type === 'remember_memory') {
     return validateRememberMemoryIntentEvidence({
       item,
-      inputTexts,
-      ...(context.supplementalEvidenceSources
-        ? { supplementalEvidenceSources: context.supplementalEvidenceSources }
-        : {}),
+      ...(context.inputs ? { inputs: context.inputs } : {}),
+    })
+  }
+  if (item.type === 'remember_project_profile') {
+    return validateRememberProjectProfileIntentEvidence({
+      item,
+      ...(context.inputs ? { inputs: context.inputs } : {}),
     })
   }
   return undefined

@@ -89,6 +89,12 @@ export const buildManagerPacketSectionSource = (params: {
             params.limits.workingFocusesMaxBytes,
           )
         : '',
+      project_profile: params.sectionPolicy.project_profile
+        ? sectionText(
+            params.runtime.projectProfilePrompt,
+            params.limits.memoryMaxBytes,
+          )
+        : '',
       remembered_memory: params.sectionPolicy.remembered_memory
         ? sectionText(
             params.runtime.memoryPrompts.rememberedMemory,

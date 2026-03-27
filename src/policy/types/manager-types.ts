@@ -10,6 +10,7 @@ export type ManagerPacketSection =
   | 'environment'
   | 'focus_list'
   | 'working_focuses'
+  | 'project_profile'
   | 'remembered_memory'
   | 'memory'
   | 'tasks'

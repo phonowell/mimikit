@@ -3,8 +3,7 @@ import type { ManagerActionFeedback } from '../../foundation/types/index.js'
 const GENERIC_CORRECTION_REPLY =
   '继续执行前还缺 3 个最小信息，每项一句即可：1) 目标：最终要我产出什么；2) 范围与不做项：这次只处理哪里、哪些不要动；3) 验收标准：怎样算完成，至少一条。若一时说不全，请先缩成一个最小可交付结果。'
 
-const REMEMBER_MEMORY_NOT_WRITTEN_REPLY =
-  '这条规则当前没有写入长期记忆，我不会把它当作已记住处理。'
+const SUPPRESSED_REMEMBER_MEMORY_NEUTRAL_REPLY = '收到。'
 
 const collectUniqueHints = (feedback: ManagerActionFeedback[]): string[] =>
   [...new Set(feedback.map((item) => item.hint.trim()))].filter(
@@ -35,5 +34,5 @@ export const buildCorrectionFallbackReply = (
   return `当前动作无法继续执行，本轮先停止重试。${uniqueHints.join('；')}`
 }
 
-export const buildRememberMemoryNotWrittenReply = (): string =>
-  REMEMBER_MEMORY_NOT_WRITTEN_REPLY
+export const buildSuppressedRememberMemoryNeutralReply = (): string =>
+  SUPPRESSED_REMEMBER_MEMORY_NEUTRAL_REPLY

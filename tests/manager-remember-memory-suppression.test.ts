@@ -13,12 +13,18 @@ beforeEach(() => {
 })
 
 test('runManagerCorrectionRounds silently suppresses unsupported remember_memory actions', async () => {
-  mockRememberMemoryRound('收到。', 'session-remember-memory-suppressed', [
-    {
-      type: 'remember_memory',
-      content: rememberMemoryContent,
-    },
-  ])
+  mockRememberMemoryRound(
+    '收到。',
+    'session-remember-memory-suppressed',
+    [
+      {
+        type: 'remember_memory',
+        content: rememberMemoryContent,
+        source_input_id: 'input-user',
+        source_quote: '后续都请保持中文且简洁回复',
+      },
+    ],
+  )
 
   const runtime = await createRememberMemoryRuntime(
     '/tmp/mimikit-remember-memory-suppressed-test',
@@ -30,9 +36,7 @@ test('runManagerCorrectionRounds silently suppresses unsupported remember_memory
   )
 
   expect(result.roundLimitReached).toBeUndefined()
-  expect(result.parsed.text).toBe(
-    '这条规则当前没有写入长期记忆，我不会把它当作已记住处理。',
-  )
+  expect(result.parsed.text).toBe('收到。')
   expect(result.parsed.actions).toHaveLength(0)
 })
 
@@ -44,6 +48,8 @@ test('runManagerCorrectionRounds does not claim remember_memory succeeded after 
       {
         type: 'remember_memory',
         content: rememberMemoryContent,
+        source_input_id: 'input-user',
+        source_quote: '后续都请保持中文且简洁回复',
       },
     ],
   )
@@ -58,9 +64,7 @@ test('runManagerCorrectionRounds does not claim remember_memory succeeded after 
   )
 
   expect(result.roundLimitReached).toBeUndefined()
-  expect(result.parsed.text).toBe(
-    '这条规则当前没有写入长期记忆，我不会把它当作已记住处理。',
-  )
+  expect(result.parsed.text).toBe('收到。')
   expect(result.parsed.actions).toHaveLength(0)
 })
 
@@ -72,6 +76,8 @@ test('runManagerCorrectionRounds does not keep remember_memory success claims af
       {
         type: 'remember_memory',
         content: rememberMemoryContent,
+        source_input_id: 'input-user',
+        source_quote: '后续都按这个规则执行',
       },
     ],
   )
@@ -87,10 +93,7 @@ test('runManagerCorrectionRounds does not keep remember_memory success claims af
   )
 
   expect(result.roundLimitReached).toBeUndefined()
-  expect(result.parsed.text).toBe(
-    '这条规则当前没有写入长期记忆，我不会把它当作已记住处理。',
-  )
-  expect(result.parsed.text).not.toContain('我现在把这条规则写入长期记忆')
+  expect(result.parsed.text).toBe('收到。')
   expect(result.parsed.actions).toHaveLength(0)
 })
 
@@ -116,6 +119,8 @@ test('runManagerCorrectionRounds preserves non-memory reply text when remember_m
       {
         type: 'remember_memory',
         content: rememberMemoryContent,
+        source_input_id: 'input-user',
+        source_quote: '后续都请保持中文且简洁回复',
       },
     ],
   )
@@ -132,4 +137,32 @@ test('runManagerCorrectionRounds preserves non-memory reply text when remember_m
   expect(result.parsed.actions[0]).toMatchObject({
     type: 'enqueue_task',
   })
+})
+
+test('runManagerCorrectionRounds uses neutral reply when remember_project_profile is fully suppressed', async () => {
+  mockRememberMemoryRound(
+    '我现在把这条仓库规则写入项目档案。',
+    'session-project-profile-suppressed-claim',
+    [
+      {
+        type: 'remember_project_profile',
+        content: '当前阶段先只收敛 manager，不动 worker。',
+        source_input_id: 'input-user',
+        source_quote: '先只收敛 manager，不动 worker',
+      },
+    ],
+  )
+
+  const runtime = await createRememberMemoryRuntime(
+    '/tmp/mimikit-project-profile-suppressed-claim-test',
+  )
+
+  const result = await runRememberMemoryRound(
+    runtime,
+    '先总结一下当前实现状态。',
+  )
+
+  expect(result.roundLimitReached).toBeUndefined()
+  expect(result.parsed.text).toBe('收到。')
+  expect(result.parsed.actions).toHaveLength(0)
 })

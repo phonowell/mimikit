@@ -38,6 +38,7 @@ export const runManager = async (params: {
   results: TaskResult[]
   tasks: Task[]
   promptSectionLimits: AppConfig['manager']['promptSections']
+  startupWorktree?: string
   plans?: TaskPlan[]
   actionFeedback?: ManagerActionFeedback[]
   env?: ManagerEnv
@@ -75,6 +76,9 @@ export const runManager = async (params: {
     results: params.results,
     tasks: params.tasks,
     promptSectionLimits: params.promptSectionLimits,
+    ...(params.startupWorktree
+      ? { startupWorktree: params.startupWorktree }
+      : {}),
     ...(params.plans ? { plans: params.plans } : {}),
     ...(params.actionFeedback ? { actionFeedback: params.actionFeedback } : {}),
     ...(params.env ? { env: params.env } : {}),

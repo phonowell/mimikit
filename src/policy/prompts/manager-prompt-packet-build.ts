@@ -98,6 +98,7 @@ export const buildManagerPromptPackets = (params: {
     contextPacket,
     statePacket,
     eventPacket,
+    selectedProjectProfile: selectedSections.project_profile,
     selectedRememberedMemory: selectedSections.remembered_memory,
     selectedMemory: selectedSections.memory,
   }

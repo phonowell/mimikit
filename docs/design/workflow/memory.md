@@ -11,6 +11,7 @@
 ## 核心结论
 
 - `memory/MEMORY.md` 持久化仍是 Markdown，但内部读写按结构化条目（entry）处理。
+- 当前分三层承载：`remember_memory` 负责跨项目长期记忆，`project_profile` 负责 repo 绑定项目档案，`focus/state` 负责执行中状态。
 - `remember_memory` 仅负责立即写入，不新增 `forget_memory` action。
 - “遗忘”通过记住一条指令（如“xxx 信息应遗忘”）进入 memory refresh，由 LLM 在刷新输出 `delete_entry_ids` 执行删除。
 - prompt 注入 `M:memory` 不再按文件原顺序，改为本地评分排序后按 budget 选择。
@@ -31,24 +32,49 @@
 
 ## 立即记忆（remember）
 
-- 入口：`remember_memory(content)`。
+- 入口：`remember_memory(content, source_input_id, source_quote)`。
 - 行为：
   - 生成稳定 `dedupeKey`
   - 命中同 key 时合并段落（`merged`）或无变化（`noop`）
   - 新条目为 `created`
 - 输入门禁：
   - `content` 必须是单行稳定 digest（`<=240 chars`）。
+  - `source_input_id` 必须指向当前轮真实用户输入；不接受历史输入、task result 或系统事件作为来源。
+  - `source_quote` 必须是该输入中的原文片段；runtime 只校验来源可追溯性，不再用词面 overlap / 历史重复命中来猜测是否“被用户说过”。
   - checklist、多行过程文本、协议标签与 `task-*/plan-*` 一类 runtime 引用会被拒绝，不进入长期 memory。
-  - 只有当 `content` 被当前用户输入直接支撑，或近期用户历史已重复表达同一稳定规则/偏好时，才允许立即写入。
-  - “当前阶段重点 / 当前项目 / 本轮安排”一类当前态信息应留在 `focus/state`，不进入长期 memory。
+  - 只有当当前轮用户输入直接给出可跨多轮复用的稳定规则/偏好/约束时，才允许立即写入。
+  - repo 绑定的项目事实、阶段方向不要挤进长期 memory，应改走 `remember_project_profile`。
+  - 执行中 checklist、当前待办、即时状态仍留在 `focus/state`。
   - 不满足上述证据时，`remember_memory` 会被静默 suppress；不会写入 memory，也不会触发用户侧澄清回合。
-  - 若 `remember_memory` 被 suppress，manager 不得继续沿用同轮文本里的“已记住/已写入长期记忆”断言；用户侧必须改为明确说明“当前未写入长期记忆”。
-  - 若 correction round 因 `remember_memory` 失败而提前收口或达到上限，最终回复必须优先使用 failure feedback / fallback，不得回退到仍声称写入成功的上一轮原文。
+  - `remember_memory` 被 suppress 时，只丢弃该 action；不得因此覆写同轮其他正常 reply。
+  - 若整轮只包含被 suppress 的 `remember_memory`，可回退为中性确认，不得对用户声称“已写入长期记忆”。
 - 回执：写入 `memory_remembered` system event（含 `entry_id/ref/operation`）。
 - 代码：
   - `src/work/memory/remember-entry.ts`
   - `src/policy/manager/action-apply-memory.ts`
   - `src/persistence/history/memory-events.ts`
+
+## 项目档案（project profile）
+
+- 入口：`remember_project_profile(content, source_input_id, source_quote)`。
+- 归属边界：
+  - 只保存当前 repo 可跨后续多轮复用的稳定项目事实，或可延续的阶段方向。
+  - `content` 仍要求单行稳定 digest（`<=240 chars`），并复用与 `remember_memory` 相同的 hygiene guard：拒绝 checklist、多行过程文本、协议标签与 runtime 引用。
+  - `source_input_id` 必须命中当前轮真实用户输入；`source_quote` 必须是该输入中的原文片段。
+  - 与 `remember_memory` 不同，`content` 可在 `source_quote` 基础上做最小归纳，不要求字面子串命中；来源锚点会随条目一起持久化。
+  - repo 绑定的阶段方向可以进入 `project_profile`；执行中的待办、恢复步骤、当前状态仍不得进入。
+- 存储：
+  - 文件路径按 `runtime.startup.worktree` 绑定：`.mimikit/memory/project-profiles/project-profile-<worktree-hash>.md`
+  - 每条记录保存 `id/content/source_input_id/source_quote/updated_at`
+- prompt 注入：
+  - manager 稳定上下文新增 `M:project_profile`
+  - 注入内容直接展示 digest 与对应 `source_quote`，用于可追溯的 repo 档案提示
+- 回执：
+  - 写入 `project_profile_remembered` system event（含 `entry_id/ref/operation`）
+- 代码：
+  - `src/work/project-profile/store.ts`
+  - `src/policy/manager/action-apply-project-profile.ts`
+  - `src/persistence/history/project-profile-events.ts`
 
 ## 刷新（refresh）与遗忘
 
