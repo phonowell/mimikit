@@ -69,12 +69,11 @@ const normalize = (value: unknown): string =>
     .trim()
 
 const readTaskId = (item: Parsed): string | undefined => {
-  const taskId = item.attrs.task_id?.trim()
-  if (taskId) return taskId
-  const id = item.attrs.id?.trim()
-  if (id?.startsWith('task-')) return id
-  const lastTaskId = item.attrs.last_task_id?.trim()
-  if (lastTaskId?.startsWith('task-')) return lastTaskId
+  if ('task_id' in item && typeof item.task_id === 'string') return item.task_id
+  if ('target_type' in item && item.target_type === 'task') {
+    const targetId = item.target_id.trim()
+    if (targetId.startsWith('task-')) return targetId
+  }
   return undefined
 }
 
@@ -131,7 +130,7 @@ export const createManagerActionCliLogger = (options?: {
     const taskId = readTaskId(params.item)
     const payload: ActionLogEntry = {
       stage: params.stage,
-      action: params.item.name,
+      action: params.item.type,
       ...(taskId ? { taskId } : {}),
       index: params.index,
       total: params.total,

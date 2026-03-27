@@ -12,13 +12,17 @@ test('enqueue_task is blocked when only supplemental evidence suggests new work'
   const feedback = collectManagerActionFeedback(
     [
       {
-        name: 'enqueue_task',
-        attrs: {
+        type: 'enqueue_task',
+        task: {
           title: 'Implement intent evidence guard',
           cwd: '/repo/mimikit',
+          mode: 'write',
           goal: 'Add an intent-evidence guard for manager high-risk actions',
-          in_scope: 'Validation and feedback flow only',
-          done_when_1: 'Guard blocks unsupported risky actions',
+          in_scope: ['Validation and feedback flow only'],
+          out_of_scope: [],
+          done_when: ['Guard blocks unsupported risky actions'],
+          context_refs: [],
+          instructions: [],
         },
       },
     ],
@@ -40,13 +44,17 @@ test('enqueue_task stays allowed when current user input directly supports it', 
   const feedback = collectManagerActionFeedback(
     [
       {
-        name: 'enqueue_task',
-        attrs: {
+        type: 'enqueue_task',
+        task: {
           title: 'Implement intent evidence guard',
           cwd: '/repo/mimikit',
+          mode: 'write',
           goal: 'Implement intent evidence guard for manager high-risk actions',
-          in_scope: 'Touch validation and feedback flow only',
-          done_when_1: 'Guard blocks unsupported risky actions',
+          in_scope: ['Touch validation and feedback flow only'],
+          out_of_scope: [],
+          done_when: ['Guard blocks unsupported risky actions'],
+          context_refs: [],
+          instructions: [],
         },
       },
     ],
@@ -63,38 +71,36 @@ test('enqueue_task stays allowed when current user input directly supports it', 
   expect(feedback).toHaveLength(0)
 })
 
-test('mutate_task is blocked when user input does not identify the task', () => {
+test('task_control is blocked when user input does not identify the task', () => {
   const task = createTask()
   const feedback = collectManagerActionFeedback(
     [
       {
-        name: 'mutate_task',
-        attrs: {
-          id: task.id,
-          op: 'cancel',
-        },
+        type: 'task_control',
+        task_id: task.id,
+        action: 'cancel',
+        instructions: [],
       },
     ],
     createIntentEvidenceTaskContext(task, [createUserInput('先看看文档里怎么说。')]),
   )
 
   expectSingleRejectedFeedback(feedback, {
-    action: 'mutate_task',
+    action: 'task_control',
     error: 'action_execution_rejected',
     hintIncludes: ['intent-evidence guard 未通过', task.id],
   })
 })
 
-test('mutate_task stays allowed when user explicitly references the task', () => {
+test('task_control stays allowed when user explicitly references the task', () => {
   const task = createTask()
   const feedback = collectManagerActionFeedback(
     [
       {
-        name: 'mutate_task',
-        attrs: {
-          id: task.id,
-          op: 'cancel',
-        },
+        type: 'task_control',
+        task_id: task.id,
+        action: 'cancel',
+        instructions: [],
       },
     ],
     {

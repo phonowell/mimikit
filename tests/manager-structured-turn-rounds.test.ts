@@ -29,11 +29,10 @@ test('runManagerCorrectionRounds uses structured round actions instead of repars
     output: '结构化答复',
     actions: [
       {
-        name: 'upsert_focus',
-        attrs: {
-          id: 'focus-json-turn',
-          title: 'JSON turn',
-        },
+        type: 'assign_focus',
+        target_type: 'task',
+        target_id: 'task-json-turn',
+        focus_id: 'focus-json-turn',
       },
     ],
     elapsedMs: 3,
@@ -72,11 +71,10 @@ test('runManagerCorrectionRounds uses structured round actions instead of repars
     expect.objectContaining({
       parsed: [
         {
-          name: 'upsert_focus',
-          attrs: {
-            id: 'focus-json-turn',
-            title: 'JSON turn',
-          },
+          type: 'assign_focus',
+          target_type: 'task',
+          target_id: 'task-json-turn',
+          focus_id: 'focus-json-turn',
         },
       ],
     }),
@@ -84,11 +82,10 @@ test('runManagerCorrectionRounds uses structured round actions instead of repars
   expect(result.parsed.text).toBe('结构化答复')
   expect(result.parsed.actions).toEqual([
     {
-      name: 'upsert_focus',
-      attrs: {
-        id: 'focus-json-turn',
-        title: 'JSON turn',
-      },
+      type: 'assign_focus',
+      target_type: 'task',
+      target_id: 'task-json-turn',
+      focus_id: 'focus-json-turn',
     },
   ])
 })

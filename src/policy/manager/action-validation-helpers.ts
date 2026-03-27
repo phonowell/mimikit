@@ -92,7 +92,7 @@ export const validateItemWithSchema = (
   item: Parsed,
   schema: ZodSchema,
 ): ValidationIssue[] => {
-  const parsed = schema.safeParse(item.attrs)
+  const parsed = schema.safeParse(item)
   return parsed.success ? [] : [invalidArgsIssue(parsed.error)]
 }
 
@@ -120,7 +120,7 @@ export const suppressed = (reason = 'suppressed'): ValidationIssue[] => [
 ]
 
 export const validateScheduledAtNotPast = (params: {
-  action: 'create_plan' | 'update_plan'
+  action: 'set_plan'
   scheduledAt: string
   scheduleNowIso?: string
 }): ValidationIssue[] => {

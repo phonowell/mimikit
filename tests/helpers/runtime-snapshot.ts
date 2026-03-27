@@ -52,8 +52,15 @@ export const createPlanFixture = (
     mode: 'on_worker_slot_freed',
   },
   effect: {
-    kind: 'wake_manager',
-    reason: 'follow_up',
+    kind: 'enqueue_task',
+    taskTemplate: {
+      title: 'plan task',
+      executionSpecId: 'spec-plan-1',
+      fingerprint: 'fp-plan-1',
+      semanticKey: 'sk-plan-1',
+      cwd: '/tmp/runtime-snapshot-plan-task',
+      resourceMode: 'write',
+    },
   },
   createdAt: SNAPSHOT_BASE_TIME,
   updatedAt: SNAPSHOT_BASE_TIME,

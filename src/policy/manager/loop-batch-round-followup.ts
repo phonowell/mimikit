@@ -61,7 +61,7 @@ export const resolveRoundFollowup = async (params: {
   roundExtra?: ManagerRoundExtra
 }): Promise<RoundFollowupResult> => {
   const recentUserIntentTexts = params.parsed.some(
-    (item) => item.name === 'remember_memory',
+    (item) => item.type === 'remember_memory',
   )
     ? collectHistoricalUserIntentTexts(
         await readHistory(params.runtime.paths.history),
@@ -96,7 +96,7 @@ export const resolveRoundFollowup = async (params: {
       event: 'manager_action_suppressed',
       count: validation.suppressedActionIndexes.length,
       names: validation.suppressedActionIndexes.map(
-        (index) => params.parsed[index]?.name ?? 'unknown',
+        (index) => params.parsed[index]?.type ?? 'unknown',
       ),
     })
   }

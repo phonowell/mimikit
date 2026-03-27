@@ -1,10 +1,6 @@
 import { applyAskUserChoiceAction } from './action-apply-choice.js'
-import {
-  applyAssignFocusAction,
-  applyUpsertFocusAction,
-} from './action-apply-focus.js'
+import { applyAssignFocusAction } from './action-apply-focus.js'
 import { applyRememberMemoryAction } from './action-apply-memory.js'
-import { assignFocusSchema, upsertFocusSchema } from './action-apply-schema.js'
 import { ACTION_PROMPT_SPECS } from './action-prompt-spec.js'
 import {
   createContinueAction,
@@ -16,6 +12,7 @@ import {
   validateRememberMemory,
   validateWithSchema,
 } from './action-validation.js'
+import { assignFocusActionSchema } from './manager-turn-schema.js'
 
 export const DIALOG_ACTION_DEFINITIONS = [
   createStopAction(
@@ -32,20 +29,11 @@ export const DIALOG_ACTION_DEFINITIONS = [
 export const FOCUS_ACTION_DEFINITIONS = [
   createContinueAction(
     {
-      name: 'upsert_focus',
-      domain: 'focus',
-      prompt: ACTION_PROMPT_SPECS.upsert_focus,
-    },
-    (item) => validateWithSchema(item, upsertFocusSchema),
-    applyUpsertFocusAction,
-  ),
-  createContinueAction(
-    {
       name: 'assign_focus',
       domain: 'focus',
       prompt: ACTION_PROMPT_SPECS.assign_focus,
     },
-    (item) => validateWithSchema(item, assignFocusSchema),
+    (item) => validateWithSchema(item, assignFocusActionSchema),
     applyAssignFocusAction,
   ),
 ] satisfies ManagerActionDefinition[]

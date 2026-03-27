@@ -15,14 +15,13 @@ import {
   logRunTaskDispatch,
 } from './action-apply-create-shared.js'
 import { markCreateAttempt } from './action-apply-guards.js'
-import { runTaskSchema } from './action-apply-schema.js'
 import { resolveActionFocusId } from './action-focus-id.js'
 import { linkTriggeredPlanToTask } from './plan-progress.js'
 import { handleActiveSemanticTask } from './run-task-existing.js'
 import { resolveRunTaskTarget } from './run-task-target.js'
 import {
-  buildTaskContractFromAttrs,
-  resolveWorkerPromptFromAttrs,
+  buildTaskContractFromDraft,
+  resolveWorkerPromptFromDraft,
 } from './task-contract.js'
 
 import type { WorkerProfile } from '../../foundation/types/index.js'
@@ -44,26 +43,24 @@ export const applyRunTask = async (
   options?: ApplyTaskActionsOptions,
 ): Promise<'continue' | 'stop'> => {
   if (options?.suppressRunTask) return 'continue'
-  const parsed = runTaskSchema.safeParse(item.attrs)
-  if (!parsed.success) return 'continue'
-  const focusId = resolveActionFocusId(runtime, parsed.data.focus_id)
-  const contract = buildTaskContractFromAttrs(parsed.data)
+  if (item.type !== 'enqueue_task') return 'continue'
+  const focusId = resolveActionFocusId(runtime)
+  const contract = buildTaskContractFromDraft(item.task)
   if (!contract) return 'continue'
-  const workerPrompt = resolveWorkerPromptFromAttrs(parsed.data)
+  const workerPrompt = resolveWorkerPromptFromDraft(item.task)
   if (!workerPrompt) return 'continue'
   const target = await resolveRunTaskTarget({
-    actionName: item.name,
-    cwd: parsed.data.cwd,
-    resourceMode: parsed.data.resource_mode,
+    actionName: item.type,
+    cwd: item.task.cwd,
+    resourceMode: item.task.mode,
     prompt: workerPrompt,
-    title: parsed.data.title,
+    title: item.task.title,
     focusId,
     contract,
-    ...(parsed.data.branch ? { branch: parsed.data.branch } : {}),
   })
   const semanticKey = buildTaskSemanticKey({
     prompt: workerPrompt,
-    title: parsed.data.title,
+    title: item.task.title,
     cwd: target.cwd,
     profile: RUN_TASK_PROFILE,
     provider: RUN_TASK_PROVIDER,
@@ -74,7 +71,7 @@ export const applyRunTask = async (
   })
   const fingerprint = buildTaskFingerprint({
     prompt: workerPrompt,
-    title: parsed.data.title,
+    title: item.task.title,
     cwd: target.cwd,
     profile: RUN_TASK_PROFILE,
     provider: RUN_TASK_PROVIDER,
@@ -87,7 +84,7 @@ export const applyRunTask = async (
   if (debounce.debounced) return 'continue'
   const dedupeKeyWithContract = buildRunTaskBatchKey({
     prompt: workerPrompt,
-    title: parsed.data.title,
+    title: item.task.title,
     cwd: target.cwd,
     profile: RUN_TASK_PROFILE,
     provider: RUN_TASK_PROVIDER,
@@ -109,7 +106,7 @@ export const applyRunTask = async (
       activeTask: activeSemanticTask,
       nextTask: {
         fingerprint,
-        title: parsed.data.title,
+        title: item.task.title,
         cwd: target.cwd,
         profile: RUN_TASK_PROFILE,
         provider: RUN_TASK_PROVIDER,
@@ -128,7 +125,7 @@ export const applyRunTask = async (
     runtime.config.workDir,
     runtime.tasks,
     workerPrompt,
-    parsed.data.title,
+    item.task.title,
     target.cwd,
     RUN_TASK_PROFILE,
     RUN_TASK_PROVIDER,

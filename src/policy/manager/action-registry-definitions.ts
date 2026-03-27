@@ -30,7 +30,7 @@ export const REGISTERED_MANAGER_ACTIONS = new Set(
 )
 
 const resolveActionDefinition = (
-  actionName: Parsed['name'],
+  actionName: Parsed['type'],
 ): ManagerActionDefinition | undefined =>
   MANAGER_ACTION_REGISTRY.get(actionName)
 
@@ -38,7 +38,7 @@ export const validateRegisteredManagerAction = (
   item: Parsed,
   context: FeedbackContext = {},
 ): ValidationIssue[] => {
-  const definition = resolveActionDefinition(item.name)
+  const definition = resolveActionDefinition(item.type)
   if (!definition) return []
   return definition.validate(item, context)
 }
@@ -48,7 +48,7 @@ export const applyRegisteredManagerAction = (
   item: Parsed,
   context: ApplyContext,
 ): Promise<'continue' | 'stop'> => {
-  const definition = resolveActionDefinition(item.name)
+  const definition = resolveActionDefinition(item.type)
   if (!definition) return Promise.resolve('continue')
   return definition.apply(runtime, item, context)
 }

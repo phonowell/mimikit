@@ -20,7 +20,8 @@ test(
   async () => {
     const runtime = await createRuntime({ maxConcurrent: 1 })
     runtime.taskPlans.push(
-      createCapacityPlan(
+      await createCapacityPlan(
+        runtime,
         'plan-capacity',
         { mode: 'on_worker_slot_freed' },
         GLOBAL_FOCUS_ID,
@@ -135,7 +136,8 @@ test(
   async () => {
     const runtime = await createRuntime({ maxConcurrent: 1 })
     runtime.taskPlans.push(
-      createCapacityPlan(
+      await createCapacityPlan(
+        runtime,
         'plan-capacity',
         { mode: 'on_worker_slot_freed' },
         GLOBAL_FOCUS_ID,

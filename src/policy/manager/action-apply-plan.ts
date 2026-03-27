@@ -1,160 +1,121 @@
 import { newId, nowIso } from '../../foundation/shared/utils.js'
 import { persistRuntimeState } from '../../kernel/orchestrator/runtime-persistence.js'
 
-import {
-  createPlanSchema,
-  deletePlanSchema,
-  updatePlanSchema,
-} from './action-apply-schema.js'
 import { resolveActionFocusId } from './action-focus-id.js'
-import { parseActionAttrs } from './action-parse.js'
-import { buildPlanEffect, resolveUpdatedEffect } from './action-plan-effect.js'
+import { buildPlanEffectFromTaskDraft } from './action-plan-effect.js'
 import {
   appendPlanSystemMessage,
-  buildTrigger,
   normalizePlanKey,
-  resolveUpdatedTrigger,
 } from './action-plan-helpers.js'
 
-import type { PlanPriority, TaskPlan } from '../../foundation/types/index.js'
+import type { TaskPlan } from '../../foundation/types/index.js'
 import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 import type { Parsed } from '../actions/model/spec.js'
 
-export const applyCreatePlan = async (
-  runtime: ManagerRuntime,
-  item: Parsed,
-): Promise<void> => {
-  const parsed = parseActionAttrs(item, createPlanSchema)
-  if (!parsed) return
-
-  const trigger = buildTrigger({
-    scheduleType: parsed.schedule_type,
-    cronExpr: parsed.cron_expr,
-    scheduledAt: parsed.scheduled_at,
-    timeZone: parsed.time_zone,
-  })
-  const focusId = resolveActionFocusId(runtime, parsed.focus_id)
-  const effect = await buildPlanEffect({
-    stateDir: runtime.config.workDir,
-    attrs: parsed,
-    focusId,
-  })
-  const key = normalizePlanKey({
-    title: parsed.title,
-    focusId,
-    trigger,
-    effect,
-  })
-
-  const exists = runtime.taskPlans.some(
-    (plan) =>
-      plan.status !== 'done' &&
-      normalizePlanKey({
-        title: plan.title,
-        focusId: plan.focusId,
-        trigger: plan.trigger,
-        effect: plan.effect,
-      }) === key,
-  )
-  if (exists) return
-
-  const timestamp = nowIso()
-  const maxRuns = parsed.max_runs
-
-  const plan: TaskPlan = {
-    id: `plan-${newId()}`,
-    title: parsed.title,
-    focusId,
-    priority: (parsed.priority ?? 'normal') as PlanPriority,
-    status: 'active',
-    trigger,
-    effect,
-    createdAt: timestamp,
-    updatedAt: timestamp,
-    ...(maxRuns !== undefined ? { maxRuns } : {}),
-    runtime: {
-      runCount: 0,
-    },
+const buildTrigger = (
+  trigger: Parsed & { type: 'set_plan' }['plan']['trigger'],
+) => {
+  if (trigger.type === 'cron') {
+    return {
+      mode: 'cron' as const,
+      cron: trigger.cron,
+      timeZone: trigger.time_zone,
+    }
   }
-
-  runtime.taskPlans.push(plan)
-  await persistRuntimeState(runtime)
-  await appendPlanSystemMessage(runtime, 'plan_created', plan)
+  if (trigger.type === 'scheduled_at') {
+    return {
+      mode: 'scheduled_at' as const,
+      scheduledAt: trigger.scheduled_at,
+    }
+  }
+  return { mode: 'on_worker_slot_freed' as const }
 }
 
-export const applyUpdatePlan = async (
+export const applySetPlan = async (
   runtime: ManagerRuntime,
   item: Parsed,
 ): Promise<void> => {
-  const parsed = parseActionAttrs(item, updatePlanSchema)
-  if (!parsed) return
+  if (item.type !== 'set_plan') return
 
-  const index = runtime.taskPlans.findIndex((plan) => plan.id === parsed.id)
-  if (index < 0) return
-  const current = runtime.taskPlans[index]
-  if (!current) return
-  if (current.status === 'done') return
-
-  const nextFocusId =
-    parsed.focus_id !== undefined
-      ? resolveActionFocusId(runtime, parsed.focus_id)
-      : current.focusId
-
-  const trigger = resolveUpdatedTrigger(current.trigger, {
-    scheduleType: parsed.schedule_type,
-    cronExpr: parsed.cron_expr,
-    scheduledAt: parsed.scheduled_at,
-    timeZone: parsed.time_zone,
-  })
-  const effect = await resolveUpdatedEffect({
+  const focusId = resolveActionFocusId(runtime)
+  const trigger = buildTrigger(item.plan.trigger)
+  const effect = await buildPlanEffectFromTaskDraft({
     stateDir: runtime.config.workDir,
-    current: current.effect,
-    update: parsed,
-    focusId: nextFocusId,
+    task: item.plan.task,
+    focusId,
   })
-
-  const updatedAt = nowIso()
-  const next: TaskPlan = {
-    ...current,
-    ...(parsed.title !== undefined ? { title: parsed.title } : {}),
-    ...(parsed.priority !== undefined ? { priority: parsed.priority } : {}),
-    ...(parsed.status !== undefined ? { status: parsed.status } : {}),
-    ...(parsed.max_runs !== undefined ? { maxRuns: parsed.max_runs } : {}),
+  const nextKey = normalizePlanKey({
+    title: item.plan.title,
+    focusId,
     trigger,
     effect,
-    focusId: nextFocusId,
-    updatedAt,
-  }
+  })
+  const updatedAt = nowIso()
 
-  if (next.status !== 'done') {
-    const key = normalizePlanKey({
-      title: next.title,
-      focusId: next.focusId,
-      trigger: next.trigger,
-      effect: next.effect,
-    })
-    const collides = runtime.taskPlans.some(
+  if (item.plan_id === null) {
+    const exists = runtime.taskPlans.some(
       (plan) =>
-        plan.id !== current.id &&
         plan.status !== 'done' &&
         normalizePlanKey({
           title: plan.title,
           focusId: plan.focusId,
           trigger: plan.trigger,
           effect: plan.effect,
-        }) === key,
+        }) === nextKey,
     )
-    if (collides) return
-  }
+    if (exists) return
 
-  if (next.status === 'done') {
-    next.runtime = {
-      ...next.runtime,
-      closedAt: updatedAt,
-      doneReason: 'canceled',
+    const createdAt = updatedAt
+    const plan: TaskPlan = {
+      id: `plan-${newId()}`,
+      title: item.plan.title,
+      focusId,
+      priority: item.plan.priority,
+      status: 'active',
+      trigger,
+      effect,
+      createdAt,
+      updatedAt,
+      ...(item.plan.max_runs !== null ? { maxRuns: item.plan.max_runs } : {}),
+      runtime: {
+        runCount: 0,
+      },
     }
+    runtime.taskPlans.push(plan)
+    await persistRuntimeState(runtime)
+    await appendPlanSystemMessage(runtime, 'plan_created', plan)
+    return
   }
 
+  const index = runtime.taskPlans.findIndex((plan) => plan.id === item.plan_id)
+  if (index < 0) return
+  const current = runtime.taskPlans[index]
+  if (!current || current.status === 'done') return
+
+  const collides = runtime.taskPlans.some(
+    (plan) =>
+      plan.id !== current.id &&
+      plan.status !== 'done' &&
+      normalizePlanKey({
+        title: plan.title,
+        focusId: plan.focusId,
+        trigger: plan.trigger,
+        effect: plan.effect,
+      }) === nextKey,
+  )
+  if (collides) return
+
+  const next: TaskPlan = {
+    ...current,
+    title: item.plan.title,
+    focusId,
+    priority: item.plan.priority,
+    trigger,
+    effect,
+    updatedAt,
+    ...(item.plan.max_runs !== null ? { maxRuns: item.plan.max_runs } : {}),
+  }
+  if (item.plan.max_runs === null) delete next.maxRuns
   runtime.taskPlans[index] = next
   await persistRuntimeState(runtime)
   await appendPlanSystemMessage(runtime, 'plan_updated', next)
@@ -164,10 +125,9 @@ export const applyDeletePlan = async (
   runtime: ManagerRuntime,
   item: Parsed,
 ): Promise<void> => {
-  const parsed = parseActionAttrs(item, deletePlanSchema)
-  if (!parsed) return
+  if (item.type !== 'delete_plan') return
 
-  const index = runtime.taskPlans.findIndex((plan) => plan.id === parsed.id)
+  const index = runtime.taskPlans.findIndex((plan) => plan.id === item.plan_id)
   if (index < 0) return
 
   const current = runtime.taskPlans[index]

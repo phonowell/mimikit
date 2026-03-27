@@ -1,124 +1,153 @@
 import { basename } from 'node:path'
 
-import { mutateTaskSchema, runTaskSchema } from './action-apply-schema.js'
 import {
   buildMissingIntentEvidenceHint,
-  isMutateTaskGitOp,
   isSupportedByInputs,
-  validateMutateTaskGitIntentEvidence,
+  validateTaskGitIntentEvidence,
 } from './action-intent-evidence-match.js'
 import { supportsReplacementCancelIntentEvidence } from './action-intent-evidence-replacement-cancel.js'
-import { parseActionAttrs } from './action-parse.js'
 import {
-  buildTaskContractFromAttrs,
-  resolveWorkerPromptFromAttrs,
+  buildTaskContractFromDraft,
+  resolveWorkerPromptFromDraft,
 } from './task-contract.js'
-export { validateRestartRuntimeIntentEvidence } from './action-intent-evidence-restart-runtime.js'
 
 import type { SupplementalEvidenceSource } from './action-intent-evidence.js'
 import type { Task } from '../../foundation/types/index.js'
 import type { Parsed } from '../actions/model/spec.js'
 
-const resolveMutateTaskRef = (
-  task: Task | undefined,
-  taskId: string,
-): string => (task?.title.trim() ? `${taskId} / ${task.title.trim()}` : taskId)
+const resolveTaskRef = (task: Task | undefined, taskId: string): string =>
+  task?.title.trim() ? `${taskId} / ${task.title.trim()}` : taskId
 
 export const validateEnqueueTaskIntentEvidence = (params: {
-  item: Parsed
+  item: Extract<Parsed, { type: 'enqueue_task' }>
   inputTexts: string[]
   supplementalEvidenceSources?: Set<SupplementalEvidenceSource>
 }): string | undefined => {
-  const { item, inputTexts, supplementalEvidenceSources } = params
-  const parsed = parseActionAttrs(item, runTaskSchema)
-  if (!parsed) return undefined
-  const contract = buildTaskContractFromAttrs(parsed)
-  const workerPrompt = resolveWorkerPromptFromAttrs(parsed)
+  const contract = buildTaskContractFromDraft(params.item.task)
+  const workerPrompt = resolveWorkerPromptFromDraft(params.item.task)
   if (!contract || !workerPrompt) return undefined
 
-  const candidates = [parsed.title, contract.goal, contract.scope]
+  const candidates = [params.item.task.title, contract.goal, contract.scope]
   const combinedCandidate = [
-    parsed.title,
+    params.item.task.title,
     contract.goal,
     contract.scope,
     ...contract.acceptance,
     ...(contract.outOfScope ? [contract.outOfScope] : []),
   ].join('\n')
   if (
-    isSupportedByInputs({ candidates, combinedCandidate, inputs: inputTexts })
+    isSupportedByInputs({
+      candidates,
+      combinedCandidate,
+      inputs: params.inputTexts,
+    })
   )
     return undefined
 
   return buildMissingIntentEvidenceHint({
-    actionName: item.name,
-    evidenceSources: supplementalEvidenceSources,
+    actionName: params.item.type,
+    evidenceSources: params.supplementalEvidenceSources,
   })
 }
 
-export const validateMutateTaskIntentEvidence = (params: {
-  item: Parsed
+export const validateTaskControlIntentEvidence = (params: {
+  item: Extract<Parsed, { type: 'task_control' }>
   inputTexts: string[]
   taskById?: Map<string, Task>
   supplementalEvidenceSources?: Set<SupplementalEvidenceSource>
   currentActions?: Parsed[]
   defaultFocusId?: string
 }): string | undefined => {
-  const { item, inputTexts, taskById, supplementalEvidenceSources } = params
-  const parsed = parseActionAttrs(item, mutateTaskSchema)
-  if (!parsed) return undefined
-  const resumeInstruction = parsed.resume_instruction?.trim()
-  const task = taskById?.get(parsed.id)
-  if (isMutateTaskGitOp(parsed.op)) {
-    return validateMutateTaskGitIntentEvidence({
-      op: parsed.op,
-      reason: parsed.reason,
-      task,
-      taskId: parsed.id,
-      inputTexts,
-      ...(supplementalEvidenceSources ? { supplementalEvidenceSources } : {}),
-    })
-  }
-  const candidates = [parsed.id]
+  const task = params.taskById?.get(params.item.task_id)
+  const candidates = [params.item.task_id]
   if (task?.title.trim()) candidates.push(task.title)
   if (task?.branch?.trim()) candidates.push(task.branch)
   const cwdBase = task?.cwd.trim() ? basename(task.cwd.trim()) : ''
   if (cwdBase) candidates.push(cwdBase)
-  if (parsed.op === 'resume' && resumeInstruction) {
-    if (
-      !isSupportedByInputs({
-        candidates: [resumeInstruction],
-        combinedCandidate: resumeInstruction,
-        inputs: inputTexts,
-      })
-    ) {
-      return buildMissingIntentEvidenceHint({
-        actionName: item.name,
-        evidenceSources: supplementalEvidenceSources,
-        taskRef: resolveMutateTaskRef(task, parsed.id),
-      })
-    }
-  }
 
   if (
-    parsed.op === 'cancel' &&
+    params.item.action === 'resume' &&
+    params.item.instructions.length > 0 &&
+    !isSupportedByInputs({
+      candidates: params.item.instructions,
+      combinedCandidate: params.item.instructions.join('\n'),
+      inputs: params.inputTexts,
+    })
+  ) {
+    return buildMissingIntentEvidenceHint({
+      actionName: params.item.type,
+      evidenceSources: params.supplementalEvidenceSources,
+      taskRef: resolveTaskRef(task, params.item.task_id),
+    })
+  }
+
+  if (isSupportedByInputs({ candidates, inputs: params.inputTexts }))
+    return undefined
+
+  if (
     supportsReplacementCancelIntentEvidence({
-      item,
+      item: params.item,
       actions: params.currentActions,
       task,
-      tasks: taskById?.values() ?? [],
-      inputTexts,
-      ...(params.defaultFocusId
-        ? { defaultFocusId: params.defaultFocusId }
-        : {}),
+      tasks: params.taskById?.values() ?? [],
+      inputTexts: params.inputTexts,
+      defaultFocusId: params.defaultFocusId,
     })
   )
     return undefined
 
-  if (isSupportedByInputs({ candidates, inputs: inputTexts })) return undefined
-
   return buildMissingIntentEvidenceHint({
-    actionName: item.name,
-    evidenceSources: supplementalEvidenceSources,
-    taskRef: resolveMutateTaskRef(task, parsed.id),
+    actionName: params.item.type,
+    evidenceSources: params.supplementalEvidenceSources,
+    taskRef: resolveTaskRef(task, params.item.task_id),
+  })
+}
+
+export const validateRecordTaskGitIntentEvidence = (params: {
+  item: Extract<Parsed, { type: 'record_task_git' }>
+  inputTexts: string[]
+  taskById?: Map<string, Task>
+  supplementalEvidenceSources?: Set<SupplementalEvidenceSource>
+}): string | undefined =>
+  validateTaskGitIntentEvidence({
+    state: params.item.state,
+    task: params.taskById?.get(params.item.task_id),
+    taskId: params.item.task_id,
+    inputTexts: params.inputTexts,
+    ...(params.supplementalEvidenceSources
+      ? { supplementalEvidenceSources: params.supplementalEvidenceSources }
+      : {}),
+  })
+
+export const validateSetPlanIntentEvidence = (params: {
+  item: Extract<Parsed, { type: 'set_plan' }>
+  inputTexts: string[]
+  supplementalEvidenceSources?: Set<SupplementalEvidenceSource>
+}): string | undefined => {
+  const { task } = params.item.plan
+  const candidates = [
+    params.item.plan.title,
+    task.title,
+    task.goal,
+    ...task.in_scope,
+  ]
+  const combinedCandidate = [
+    params.item.plan.title,
+    task.title,
+    task.goal,
+    ...task.in_scope,
+    ...task.done_when,
+  ].join('\n')
+  if (
+    isSupportedByInputs({
+      candidates,
+      combinedCandidate,
+      inputs: params.inputTexts,
+    })
+  )
+    return undefined
+  return buildMissingIntentEvidenceHint({
+    actionName: params.item.type,
+    evidenceSources: params.supplementalEvidenceSources,
   })
 }

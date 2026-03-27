@@ -1,7 +1,5 @@
 import { beforeEach, expect, test, vi } from 'vitest'
 
-import { defaultConfig } from '../src/bootstrap/config.js'
-import { buildPaths } from '../src/persistence/fs/paths.js'
 import { runManagerCorrectionRounds } from '../src/policy/manager/loop-batch-run-rounds.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
@@ -82,7 +80,6 @@ test('runManagerCorrectionRounds reuses and updates manager thread id across rou
     plans: [],
     workingFocusIds: ['focus-global'],
     maxCorrectionRounds: 3,
-    resolveFocusId: () => 'focus-global',
   })
 
   expect(result.parsed.text).toBe('final answer')
@@ -99,14 +96,13 @@ test('runManagerCorrectionRounds reuses and updates manager thread id across rou
 test('runManagerCorrectionRounds opens rejection circuit after repeated rejected actions', async () => {
   runManagerRoundWithRecoveryMock
     .mockResolvedValueOnce({
-      output: '<M:mutate_task id="task-1" op="cancel" />',
+      output: 'cancel task',
       actions: [
         {
-          name: 'mutate_task',
-          attrs: {
-            id: 'task-1',
-            op: 'cancel',
-          },
+          type: 'task_control',
+          task_id: 'task-1',
+          action: 'cancel',
+          instructions: [],
         },
       ],
       elapsedMs: 3,
@@ -114,14 +110,13 @@ test('runManagerCorrectionRounds opens rejection circuit after repeated rejected
       threadId: 'session-manager-reject',
     })
     .mockResolvedValueOnce({
-      output: '<M:mutate_task id="task-1" op="cancel" />',
+      output: 'cancel task',
       actions: [
         {
-          name: 'mutate_task',
-          attrs: {
-            id: 'task-1',
-            op: 'cancel',
-          },
+          type: 'task_control',
+          task_id: 'task-1',
+          action: 'cancel',
+          instructions: [],
         },
       ],
       elapsedMs: 4,
@@ -129,24 +124,23 @@ test('runManagerCorrectionRounds opens rejection circuit after repeated rejected
       threadId: 'session-manager-reject',
     })
   resolveRoundFollowupMock.mockReset()
-  resolveRoundFollowupMock
-    .mockResolvedValueOnce({
-      done: false,
-      extra: {
-        actionFeedback: [
-          {
-            action: 'mutate_task',
-            error: 'action_execution_rejected',
-            hint: 'task already canceled',
-          },
-          {
-            action: 'mutate_task',
-            error: 'action_execution_rejected',
-            hint: 'task already canceled',
-          },
-        ],
-      },
-    })
+  resolveRoundFollowupMock.mockResolvedValueOnce({
+    done: false,
+    extra: {
+      actionFeedback: [
+        {
+          action: 'task_control',
+          error: 'action_execution_rejected',
+          hint: 'task already canceled',
+        },
+        {
+          action: 'task_control',
+          error: 'action_execution_rejected',
+          hint: 'task already canceled',
+        },
+      ],
+    },
+  })
 
   const runtime = await createTestRuntimeState({
     workDir: '/tmp/mimikit-manager-thread-cache-reject-test',
@@ -169,11 +163,10 @@ test('runManagerCorrectionRounds opens rejection circuit after repeated rejected
     plans: [],
     workingFocusIds: ['focus-global'],
     maxCorrectionRounds: 3,
-    resolveFocusId: () => 'focus-global',
   })
 
   expect(result.roundLimitReached).toBe(true)
-  expect(result.parsed.text).toContain('当前 mutate_task 动作无法继续执行')
+  expect(result.parsed.text).toContain('当前 task_control 动作无法继续执行')
   expect(result.parsed.text).toContain('task already canceled')
   expect(runManagerRoundWithRecoveryMock).toHaveBeenCalledTimes(1)
   expect(appendLogMock).toHaveBeenCalledWith(
@@ -181,7 +174,7 @@ test('runManagerCorrectionRounds opens rejection circuit after repeated rejected
     expect.objectContaining({
       event: 'manager_correction_structured_clarify',
       round: 2,
-      names: ['mutate_task', 'mutate_task'],
+      names: ['task_control', 'task_control'],
     }),
   )
 })

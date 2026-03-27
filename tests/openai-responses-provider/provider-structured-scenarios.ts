@@ -19,7 +19,7 @@ describe('openAiResponsesProvider structured output', () => {
           `data: ${JSON.stringify({
             type: 'response.output_text.done',
             text: JSON.stringify({
-              reply_text: 'structured-ok',
+              reply: 'structured-ok',
               actions: [],
             }),
           })}`,
@@ -35,7 +35,7 @@ describe('openAiResponsesProvider structured output', () => {
                     {
                       type: 'output_text',
                       text: JSON.stringify({
-                        reply_text: 'structured-ok',
+                        reply: 'structured-ok',
                         actions: [],
                       }),
                     },
@@ -63,7 +63,7 @@ describe('openAiResponsesProvider structured output', () => {
       schema: {
         type: 'object',
         properties: {
-          reply_text: { type: 'string' },
+          reply: { type: 'string' },
           actions: {
             type: 'array',
             items: {
@@ -88,7 +88,7 @@ describe('openAiResponsesProvider structured output', () => {
             },
           },
         },
-        required: ['reply_text', 'actions'],
+        required: ['reply', 'actions'],
         additionalProperties: false,
       },
     }
@@ -115,7 +115,7 @@ describe('openAiResponsesProvider structured output', () => {
       firstBody.text.format.schema.properties.actions.items,
     ).not.toHaveProperty('oneOf')
     expect(result.outputJson).toEqual({
-      reply_text: 'structured-ok',
+      reply: 'structured-ok',
       actions: [],
     })
   })

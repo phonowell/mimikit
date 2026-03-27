@@ -16,7 +16,7 @@ import { createTestRuntimeState } from './helpers/runtime-state.js'
 const TASK_CWD = '/tmp/manager-action-apply-task-git'
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-task-git-review-'))
 
-test('mutate_task can explicitly record review_passed -> merged -> cleaned on done git task', async () => {
+test('record_task_git can explicitly record review_passed -> merged -> cleaned on done git task', async () => {
   const runtime = await createTestRuntimeState({ pausedQueue: true })
   runtime.tasks.push(
     await materializeTaskFixture({
@@ -42,19 +42,16 @@ test('mutate_task can explicitly record review_passed -> merged -> cleaned on do
 
   await applyTaskActions(runtime, [
     {
-      name: 'mutate_task',
-      attrs: {
-        id: 'task-git-close',
-        op: 'review_passed',
-        sha: 'abc123',
-      },
+      type: 'record_task_git',
+      task_id: 'task-git-close',
+      state: 'review_passed',
     },
-    { name: 'mutate_task', attrs: { id: 'task-git-close', op: 'merged' } },
-    { name: 'mutate_task', attrs: { id: 'task-git-close', op: 'cleaned' } },
+    { type: 'record_task_git', task_id: 'task-git-close', state: 'merged' },
+    { type: 'record_task_git', task_id: 'task-git-close', state: 'cleaned' },
   ])
 
   expect(runtime.tasks[0]?.git?.lifecycle).toMatchObject({
-    review: { passed: true, sha: 'abc123' },
+    review: { passed: true },
     merged: true,
     cleaned: true,
   })
@@ -63,7 +60,7 @@ test('mutate_task can explicitly record review_passed -> merged -> cleaned on do
   expect(runtime.tasks[0]?.git?.lifecycle?.cleanedAt).toBeTypeOf('string')
 })
 
-test('mutate_task git lifecycle syncs task.result handoff and archive frontmatter', async () => {
+test('record_task_git syncs task.result handoff and archive frontmatter', async () => {
   const stateDir = await createTmpDir()
   const archivePath = await appendTaskResultArchive(stateDir, {
     taskId: 'task-git-sync',
@@ -118,22 +115,18 @@ test('mutate_task git lifecycle syncs task.result handoff and archive frontmatte
 
   await applyTaskActions(runtime, [
     {
-      name: 'mutate_task',
-      attrs: {
-        id: 'task-git-sync',
-        op: 'review_passed',
-        sha: 'abc123',
-        reason: '把这条任务标记为 review 已通过',
-      },
+      type: 'record_task_git',
+      task_id: 'task-git-sync',
+      state: 'review_passed',
     },
   ])
 
   expect(runtime.tasks[0]?.result?.handoff?.git?.lifecycle).toMatchObject({
-    review: { passed: true, sha: 'abc123' },
+    review: { passed: true },
   })
   const archived = await readTaskResultArchive(archivePath)
   expect(archived?.handoff?.git?.lifecycle).toMatchObject({
-    review: { passed: true, sha: 'abc123' },
+    review: { passed: true },
   })
   expect(archived?.output).toBe('final output')
 })

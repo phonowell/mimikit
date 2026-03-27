@@ -1,148 +1,121 @@
 import { z } from 'zod'
 
-const s = z.string().trim().min(1)
-const nullableString = s.nullable()
-const nullableInt = z.number().int().positive().nullable()
-const nullablePriority = z.enum(['high', 'normal', 'low']).nullable()
-const nullablePlanStatus = z.enum(['active', 'blocked', 'done']).nullable()
-const doneWhenSchema = z.array(s).min(1).max(5)
-const contextRefsSchema = z.array(s).max(3)
-const wakeReasonSchema = z
-  .enum(['scheduled_review', 'capacity_retry', 'follow_up'])
-  .nullable()
+import {
+  focusIdSchema,
+  optionIdSchema,
+  planIdSchema,
+  taskIdSchema,
+} from '../../foundation/shared/id-schema.js'
 
-const enqueueTaskSchema = z.strictObject({
-  type: z.literal('enqueue_task'),
+const s = z.string().trim().min(1)
+const list = (max: number, min = 0) => z.array(s).min(min).max(max)
+const instructionsSchema = z.array(s).max(3)
+
+export const managerTaskDraftSchema = z.strictObject({
   title: s,
   cwd: s,
-  resource_mode: z.enum(['read', 'write']).nullable(),
-  branch: nullableString,
-  focus_id: nullableString,
-  worker_prompt: nullableString,
+  mode: z.enum(['read', 'write']),
   goal: s,
-  in_scope: s,
-  out_of_scope: nullableString,
-  done_when: doneWhenSchema,
-  context_refs: contextRefsSchema,
+  in_scope: list(5, 1),
+  out_of_scope: list(5),
+  done_when: list(5, 1),
+  context_refs: z.array(s).max(5),
+  instructions: instructionsSchema,
 })
 
-const mutateTaskSchema = z.strictObject({
-  type: z.literal('mutate_task'),
-  id: s,
-  op: z.enum([
-    'pause',
-    'resume',
-    'cancel',
-    'review_passed',
-    'merged',
-    'cleaned',
-  ]),
-  reason: nullableString,
-  sha: nullableString,
-  resume_instruction: nullableString,
-})
+export const managerPlanTriggerSchema = z.discriminatedUnion('type', [
+  z.strictObject({
+    type: z.literal('cron'),
+    cron: s,
+    time_zone: s,
+  }),
+  z.strictObject({
+    type: z.literal('scheduled_at'),
+    scheduled_at: s,
+  }),
+  z.strictObject({
+    type: z.literal('on_worker_slot_freed'),
+  }),
+])
 
-const createPlanSchema = z.strictObject({
-  type: z.literal('create_plan'),
+export const managerPlanDraftSchema = z.strictObject({
   title: s,
-  schedule_type: z.enum(['cron', 'scheduled_at', 'on_worker_slot_freed']),
-  cron_expr: nullableString,
-  scheduled_at: nullableString,
-  time_zone: nullableString,
-  max_runs: nullableInt,
-  priority: nullablePriority,
-  focus_id: nullableString,
-  effect_kind: z.enum(['enqueue_task', 'wake_manager']),
-  effect_reason: wakeReasonSchema,
-  task_title: nullableString,
-  task_worker_prompt: nullableString,
-  task_cwd: nullableString,
-  task_resource_mode: z.enum(['read', 'write']).nullable(),
-  task_branch: nullableString,
-  task_goal: nullableString,
-  task_in_scope: nullableString,
-  task_out_of_scope: nullableString,
-  task_done_when: z.array(s).max(5),
-  task_context_refs: contextRefsSchema,
+  trigger: managerPlanTriggerSchema,
+  task: managerTaskDraftSchema,
+  priority: z.enum(['high', 'normal', 'low']),
+  max_runs: z.number().int().positive().nullable(),
 })
 
-const updatePlanSchema = z.strictObject({
-  type: z.literal('update_plan'),
-  id: s,
-  title: nullableString,
-  schedule_type: z
-    .enum(['cron', 'scheduled_at', 'on_worker_slot_freed'])
-    .nullable(),
-  cron_expr: nullableString,
-  scheduled_at: nullableString,
-  time_zone: nullableString,
-  max_runs: nullableInt,
-  priority: nullablePriority,
-  status: nullablePlanStatus,
-  focus_id: nullableString,
-  effect_kind: z.enum(['enqueue_task', 'wake_manager']).nullable(),
-  effect_reason: wakeReasonSchema,
-  task_title: nullableString,
-  task_worker_prompt: nullableString,
-  task_cwd: nullableString,
-  task_resource_mode: z.enum(['read', 'write']).nullable(),
-  task_branch: nullableString,
-  task_goal: nullableString,
-  task_in_scope: nullableString,
-  task_out_of_scope: nullableString,
-  task_done_when: z.array(s).max(5),
-  task_context_refs: contextRefsSchema,
+const askUserChoiceOptionSchema = z.strictObject({
+  id: optionIdSchema,
+  label: s,
+  reason: s,
+})
+
+export const enqueueTaskActionSchema = z.strictObject({
+  type: z.literal('enqueue_task'),
+  task: managerTaskDraftSchema,
+})
+
+export const taskControlActionSchema = z.strictObject({
+  type: z.literal('task_control'),
+  task_id: taskIdSchema,
+  action: z.enum(['pause', 'resume', 'cancel']),
+  instructions: instructionsSchema,
+})
+
+export const recordTaskGitActionSchema = z.strictObject({
+  type: z.literal('record_task_git'),
+  task_id: taskIdSchema,
+  state: z.enum(['review_passed', 'merged', 'cleaned']),
+})
+
+export const setPlanActionSchema = z.strictObject({
+  type: z.literal('set_plan'),
+  plan_id: planIdSchema.nullable(),
+  plan: managerPlanDraftSchema,
+})
+
+export const deletePlanActionSchema = z.strictObject({
+  type: z.literal('delete_plan'),
+  plan_id: planIdSchema,
+})
+
+export const askUserChoiceActionSchema = z.strictObject({
+  type: z.literal('ask_user_choice'),
+  question: s,
+  default_option_id: optionIdSchema,
+  options: z.array(askUserChoiceOptionSchema).min(2),
+})
+
+export const assignFocusActionSchema = z.strictObject({
+  type: z.literal('assign_focus'),
+  target_type: z.enum(['task', 'plan', 'history']),
+  target_id: s,
+  focus_id: focusIdSchema,
+})
+
+export const rememberMemoryActionSchema = z.strictObject({
+  type: z.literal('remember_memory'),
+  content: s,
 })
 
 export const managerActionSchema = z.discriminatedUnion('type', [
-  enqueueTaskSchema,
-  mutateTaskSchema,
-  z.strictObject({ type: z.literal('restart_runtime'), reason: s }),
-  z.strictObject({
-    type: z.literal('set_task_result_summary'),
-    task_id: s,
-    summary: s,
-  }),
-  createPlanSchema,
-  updatePlanSchema,
-  z.strictObject({ type: z.literal('delete_plan'), id: s }),
-  z.strictObject({
-    type: z.literal('ask_user_choice'),
-    id: s,
-    question: s,
-    default_option_id: s,
-    focus_id: nullableString,
-    options: z
-      .array(
-        z.strictObject({
-          id: s,
-          label: s,
-          reason: s,
-        }),
-      )
-      .min(2),
-  }),
-  z.strictObject({
-    type: z.literal('upsert_focus'),
-    id: s,
-    title: nullableString,
-    status: z.enum(['active', 'idle', 'done', 'archived']).nullable(),
-    summary: nullableString,
-    open_items: z.array(s),
-  }),
-  z.strictObject({
-    type: z.literal('assign_focus'),
-    target_type: z.enum(['task', 'plan', 'history']),
-    target_id: s,
-    focus_id: s,
-  }),
-  z.strictObject({ type: z.literal('remember_memory'), content: s }),
+  enqueueTaskActionSchema,
+  taskControlActionSchema,
+  recordTaskGitActionSchema,
+  setPlanActionSchema,
+  deletePlanActionSchema,
+  askUserChoiceActionSchema,
+  assignFocusActionSchema,
+  rememberMemoryActionSchema,
 ])
 
 export const managerTurnSchema = z.strictObject({
-  version: z.literal('manager-turn/v1'),
-  reply_text: z.string(),
+  reply: z.string(),
   actions: z.array(managerActionSchema),
 })
 
 export type ManagerTurnAction = z.infer<typeof managerActionSchema>
+export type ManagerTaskDraft = z.infer<typeof managerTaskDraftSchema>
+export type ManagerPlanDraft = z.infer<typeof managerPlanDraftSchema>

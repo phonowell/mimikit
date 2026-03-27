@@ -4,36 +4,32 @@ import {
   isActiveTask,
 } from '../../work/orchestrator/task-state.js'
 
-import { mutateTaskSchema, runTaskSchema } from './action-apply-schema.js'
 import { isSupportedByInputs } from './action-intent-evidence-match.js'
-import { parseActionAttrs } from './action-parse.js'
 import {
-  buildTaskContractFromAttrs,
-  resolveWorkerPromptFromAttrs,
+  buildTaskContractFromDraft,
+  resolveWorkerPromptFromDraft,
 } from './task-contract.js'
 
 import type { Task } from '../../foundation/types/index.js'
 import type { Parsed } from '../actions/model/spec.js'
 
 const resolveReplacementEnqueueAction = (params: {
-  item: Parsed
+  item: Extract<Parsed, { type: 'task_control' }>
   actions: Parsed[]
-}): Parsed | undefined => {
+}): Extract<Parsed, { type: 'enqueue_task' }> | undefined => {
   let cancelCount = 0
   let currentIsOnlyCancel = false
-  let enqueueAction: Parsed | undefined
+  let enqueueAction: Extract<Parsed, { type: 'enqueue_task' }> | undefined
 
   for (const action of params.actions) {
-    if (action.name === 'mutate_task') {
-      const parsedMutate = parseActionAttrs(action, mutateTaskSchema)
-      if (parsedMutate?.op === 'cancel') {
+    if (action.type === 'task_control') {
+      if (action.action === 'cancel') {
         cancelCount += 1
         if (action === params.item) currentIsOnlyCancel = true
       }
       continue
     }
-    if (action.name !== 'enqueue_task') continue
-    if (!parseActionAttrs(action, runTaskSchema)) return undefined
+    if (action.type !== 'enqueue_task') continue
     if (enqueueAction) return undefined
     enqueueAction = action
   }
@@ -43,18 +39,21 @@ const resolveReplacementEnqueueAction = (params: {
 }
 
 const supportsReplacementTask = (params: {
-  enqueueAction: Parsed
+  enqueueAction: Extract<Parsed, { type: 'enqueue_task' }>
   inputTexts: string[]
 }): boolean => {
-  const parsedRunTask = parseActionAttrs(params.enqueueAction, runTaskSchema)
-  if (!parsedRunTask) return false
-  const contract = buildTaskContractFromAttrs(parsedRunTask)
-  const workerPrompt = resolveWorkerPromptFromAttrs(parsedRunTask)
+  const contract = buildTaskContractFromDraft(params.enqueueAction.task)
+  const workerPrompt = resolveWorkerPromptFromDraft(params.enqueueAction.task)
   if (!contract || !workerPrompt) return false
   return isSupportedByInputs({
-    candidates: [parsedRunTask.title, contract.goal, contract.scope],
+    candidates: [
+      params.enqueueAction.task.title,
+      contract.goal,
+      contract.scope,
+      ...params.enqueueAction.task.in_scope,
+    ],
     combinedCandidate: [
-      parsedRunTask.title,
+      params.enqueueAction.task.title,
       contract.goal,
       contract.scope,
       ...contract.acceptance,
@@ -66,17 +65,15 @@ const supportsReplacementTask = (params: {
 
 const matchesReplacementTask = (params: {
   task: Task
-  enqueueAction: Parsed
+  enqueueAction: Extract<Parsed, { type: 'enqueue_task' }>
 }): boolean => {
-  const parsedRunTask = parseActionAttrs(params.enqueueAction, runTaskSchema)
-  if (!parsedRunTask) return false
-  const contract = buildTaskContractFromAttrs(parsedRunTask)
+  const contract = buildTaskContractFromDraft(params.enqueueAction.task)
   if (!contract) return false
-  const currentTaskText = [params.task.title, params.task.branch?.trim() ?? '']
+  const currentTaskText = [params.task.title, params.task.prompt]
     .filter((item) => item.trim().length > 0)
     .join('\n')
   const replacementText = [
-    parsedRunTask.title,
+    params.enqueueAction.task.title,
     contract.goal,
     contract.scope,
     ...contract.acceptance,
@@ -86,14 +83,19 @@ const matchesReplacementTask = (params: {
 }
 
 export const supportsReplacementCancelIntentEvidence = (params: {
-  item: Parsed
+  item: Extract<Parsed, { type: 'task_control' }>
   actions: Parsed[] | undefined
   task: Task | undefined
   tasks: Iterable<Task>
   inputTexts: string[]
   defaultFocusId?: string
 }): boolean => {
-  if (!params.task || !params.actions || params.inputTexts.length === 0)
+  if (
+    params.item.action !== 'cancel' ||
+    !params.task ||
+    !params.actions ||
+    params.inputTexts.length === 0
+  )
     return false
 
   const enqueueAction = resolveReplacementEnqueueAction({
@@ -108,39 +110,31 @@ export const supportsReplacementCancelIntentEvidence = (params: {
   if (!matchesReplacementTask({ task: params.task, enqueueAction }))
     return false
 
-  const parsedRunTask = parseActionAttrs(enqueueAction, runTaskSchema)
-  if (!parsedRunTask) return false
-  const replacementFocusId =
-    parsedRunTask.focus_id?.trim() ?? params.defaultFocusId?.trim() ?? ''
+  const replacementFocusId = params.defaultFocusId?.trim() ?? ''
   if (!replacementFocusId) return false
   if (params.task.focusId.trim() !== replacementFocusId) return false
-  if (params.task.cwd.trim() !== parsedRunTask.cwd.trim()) return false
+  if (params.task.cwd.trim() !== enqueueAction.task.cwd.trim()) return false
 
   const activeTasks = [...params.tasks].filter(
     (task) =>
       isActiveTask(task) &&
       task.focusId.trim() === replacementFocusId &&
-      task.cwd.trim() === parsedRunTask.cwd.trim(),
+      task.cwd.trim() === enqueueAction.task.cwd.trim(),
   )
   if (activeTasks.length !== 1 || activeTasks[0]?.id !== params.task.id)
     return false
 
-  const contract = buildTaskContractFromAttrs(parsedRunTask)
-  const workerPrompt = resolveWorkerPromptFromAttrs(parsedRunTask)
+  const contract = buildTaskContractFromDraft(enqueueAction.task)
+  const workerPrompt = resolveWorkerPromptFromDraft(enqueueAction.task)
   if (!contract || !workerPrompt) return false
   const replacementFingerprint = buildTaskFingerprint({
     prompt: workerPrompt,
-    title: parsedRunTask.title,
-    cwd: parsedRunTask.cwd,
+    title: enqueueAction.task.title,
+    cwd: enqueueAction.task.cwd,
     profile: params.task.profile,
     provider: params.task.provider,
     focusId: replacementFocusId,
     ...(params.task.repoKey ? { repoKey: params.task.repoKey } : {}),
-    ...(parsedRunTask.branch
-      ? { branch: parsedRunTask.branch }
-      : params.task.branch
-        ? { branch: params.task.branch }
-        : {}),
     contract,
   })
   if (replacementFingerprint === params.task.fingerprint) return false

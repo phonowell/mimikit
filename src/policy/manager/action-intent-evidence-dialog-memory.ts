@@ -1,13 +1,8 @@
-import {
-  askUserChoiceSchema,
-  parseAskUserChoiceAttrs,
-  rememberMemorySchema,
-} from './action-apply-schema.js'
+import { rememberMemorySchema } from './action-apply-schema.js'
 import {
   buildMissingIntentEvidenceHint,
   isSupportedByInputs,
 } from './action-intent-evidence-match.js'
-import { parseActionAttrs } from './action-parse.js'
 
 import type { SupplementalEvidenceSource } from './action-intent-evidence.js'
 import type { Parsed } from '../actions/model/spec.js'
@@ -18,13 +13,11 @@ export const validateAskUserChoiceIntentEvidence = (params: {
   supplementalEvidenceSources?: Set<SupplementalEvidenceSource>
 }): string | undefined => {
   const { item, inputTexts, supplementalEvidenceSources } = params
-  if (!askUserChoiceSchema.safeParse(item.attrs).success) return undefined
-  const parsed = parseAskUserChoiceAttrs(item.attrs)
-  if (!parsed) return undefined
+  if (item.type !== 'ask_user_choice') return undefined
 
   const candidates = [
-    parsed.question,
-    ...parsed.options.flatMap((option) => [option.label, option.reason]),
+    item.question,
+    ...item.options.flatMap((option) => [option.label, option.reason]),
   ]
   if (
     isSupportedByInputs({
@@ -36,7 +29,7 @@ export const validateAskUserChoiceIntentEvidence = (params: {
     return undefined
 
   return buildMissingIntentEvidenceHint({
-    actionName: item.name,
+    actionName: item.type,
     evidenceSources: supplementalEvidenceSources,
   })
 }
@@ -47,12 +40,13 @@ export const validateRememberMemoryIntentEvidence = (params: {
   recentUserIntentTexts?: string[]
 }): 'allowed' | 'suppressed' => {
   const { item, inputTexts, recentUserIntentTexts } = params
-  const parsed = parseActionAttrs(item, rememberMemorySchema)
-  if (!parsed) return 'allowed'
+  if (item.type !== 'remember_memory') return 'allowed'
+  const parsed = rememberMemorySchema.safeParse({ content: item.content })
+  if (!parsed.success) return 'allowed'
   if (
     isSupportedByInputs({
-      candidates: [parsed.content],
-      combinedCandidate: parsed.content,
+      candidates: [parsed.data.content],
+      combinedCandidate: parsed.data.content,
       inputs: inputTexts,
     })
   )
@@ -62,8 +56,8 @@ export const validateRememberMemoryIntentEvidence = (params: {
     (count, text) =>
       count +
       (isSupportedByInputs({
-        candidates: [parsed.content],
-        combinedCandidate: parsed.content,
+        candidates: [parsed.data.content],
+        combinedCandidate: parsed.data.content,
         inputs: [text],
       })
         ? 1

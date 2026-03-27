@@ -11,9 +11,7 @@ test('buildActionFeedbackPromptPayload keeps structured repair metadata without 
       code: 'invalid_action_args',
       repair: {
         kind: 'fix_action_args',
-        issues: ['worker_prompt: Invalid input: expected string, received undefined'],
-        missing_required_attr: 'worker_prompt',
-        missing_required_attrs: ['worker_prompt'],
+        issues: ['task: Unrecognized key: "provider"'],
       },
     },
   ])
@@ -27,11 +25,7 @@ test('buildActionFeedbackPromptPayload keeps structured repair metadata without 
         code: 'invalid_action_args',
         repair: {
           kind: 'fix_action_args',
-          issues: [
-            'worker_prompt: Invalid input: expected string, received undefined',
-          ],
-          missing_required_attr: 'worker_prompt',
-          missing_required_attrs: ['worker_prompt'],
+          issues: ['task: Unrecognized key: "provider"'],
         },
       },
     ],

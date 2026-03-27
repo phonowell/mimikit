@@ -36,16 +36,31 @@ beforeEach(() => {
 test('runManagerCorrectionRounds gives invalid action feedback one self-repair retry before degrading', async () => {
   runManagerRoundWithRecoveryMock
     .mockResolvedValueOnce({
-      output:
-        '<M:create_plan prompt="daily" title="plan" cron_expr="*/15 * * * *" time_zone="Asia/Shanghai" />',
+      output: 'bad plan',
       actions: [
         {
-          name: 'create_plan',
-          attrs: {
-            prompt: 'daily',
+          type: 'set_plan',
+          plan_id: null,
+          plan: {
             title: 'plan',
-            cron_expr: '*/15 * * * *',
-            time_zone: 'Asia/Shanghai',
+            trigger: {
+              type: 'cron',
+              cron: '*/15 * * * *',
+              time_zone: 'Asia/Shanghai',
+            },
+            task: {
+              title: 'daily',
+              cwd: '/tmp/task',
+              mode: 'read',
+              goal: 'summarize',
+              in_scope: ['daily summary'],
+              out_of_scope: [],
+              done_when: ['summary written'],
+              context_refs: [],
+              instructions: [],
+            },
+            priority: 'normal',
+            max_runs: 1,
           },
         },
       ],
@@ -66,16 +81,13 @@ test('runManagerCorrectionRounds gives invalid action feedback one self-repair r
       extra: {
         actionFeedback: [
           {
-            action: 'create_plan',
+            action: 'set_plan',
             error: 'invalid_action_args',
-            hint:
-              '参数校验失败：schedule_type: schedule_type is required when cron_expr/scheduled_at/time_zone is provided',
+            hint: '参数校验失败：plan.trigger.cron: Invalid cron expression',
             code: 'invalid_action_args',
             repair: {
               kind: 'fix_action_args',
-              issues: [
-                'schedule_type: schedule_type is required when cron_expr/scheduled_at/time_zone is provided',
-              ],
+              issues: ['plan.trigger.cron: Invalid cron expression'],
             },
           },
         ],
@@ -106,7 +118,6 @@ test('runManagerCorrectionRounds gives invalid action feedback one self-repair r
     plans: [],
     workingFocusIds: ['focus-global'],
     maxCorrectionRounds: 3,
-    resolveFocusId: () => 'focus-global',
   })
 
   expect(result.roundLimitReached).toBeUndefined()

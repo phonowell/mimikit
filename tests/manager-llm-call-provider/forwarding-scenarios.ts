@@ -114,23 +114,23 @@ test('manager forwards structured output schema to openai-responses', async () =
     type: 'json_schema',
     name: 'manager_turn',
     strict: true,
-    schema: {
-      type: 'object',
-      properties: {
-        reply_text: { type: 'string' },
-        actions: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
+      schema: {
+        type: 'object',
+        properties: {
+          reply: { type: 'string' },
+          actions: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
               type: { type: 'string' },
             },
             required: ['type'],
             additionalProperties: false,
           },
         },
-      },
-      required: ['reply_text', 'actions'],
+        },
+      required: ['reply', 'actions'],
       additionalProperties: false,
     },
   }

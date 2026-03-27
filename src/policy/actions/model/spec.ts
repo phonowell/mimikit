@@ -1,5 +1,3 @@
-export type Parsed = {
-  name: string
-  attrs: Record<string, string>
-  content?: string | undefined
-}
+import type { ManagerTurnAction } from '../../manager/manager-turn-schema.js'
+
+export type Parsed = ManagerTurnAction

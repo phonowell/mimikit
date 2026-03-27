@@ -12,11 +12,7 @@ const UNREGISTERED_ACTION_HINT = formatUnregisteredActionHint(
   [...REGISTERED_MANAGER_ACTIONS].map((name) => `M:${name}`),
 )
 
-const renderAttemptedAction = (item: Parsed): string =>
-  JSON.stringify({
-    type: item.name,
-    ...item.attrs,
-  })
+const renderAttemptedAction = (item: Parsed): string => JSON.stringify(item)
 
 const pushFeedback = (
   feedback: ManagerActionFeedback[],
@@ -34,7 +30,7 @@ const pushFeedback = (
   if (seen.has(key)) return
   seen.add(key)
   feedback.push({
-    action: item.name,
+    action: item.type,
     error: issue.error,
     hint: issue.hint,
     attempted,
@@ -56,7 +52,7 @@ export const collectManagerActionValidationOutcome = (
   const suppressedActionIndexes: number[] = []
 
   for (const [index, item] of items.entries()) {
-    const isRegistered = REGISTERED_MANAGER_ACTIONS.has(item.name)
+    const isRegistered = REGISTERED_MANAGER_ACTIONS.has(item.type)
     if (!isRegistered) {
       pushFeedback(feedback, seen, item, {
         error: 'unregistered_action',

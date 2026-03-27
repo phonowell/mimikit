@@ -5,10 +5,11 @@ import {
   loadYamlPromptTemplates,
 } from '../../foundation/prompting/prompt-template-loader.js'
 
+import type { ManagerTaskDraft } from './manager-turn-schema.js'
 import type { TaskContract } from '../../foundation/types/index.js'
 
 export const TASK_CONTRACT_REQUIRED_HINT =
-  'enqueue_task 执行失败：继续派发前还缺 3 个最小信息，每项一句即可：goal（最终要什么结果）、in_scope/out_of_scope（这次做什么、哪些不做）、至少一条 done_when_{n}（怎样算完成）。'
+  'enqueue_task 执行失败：`task` 合同不完整。至少需要明确 goal、in_scope、至少一条 done_when，以及有效的 cwd/mode。'
 
 const taskContractWorkerPromptTemplateSchema = z
   .object({
@@ -36,19 +37,12 @@ const normalizeLine = (value?: string): string | undefined => {
   return trimmed && trimmed.length > 0 ? trimmed : undefined
 }
 
-const collectSequentialValues = (
-  attrs: Record<string, string | undefined>,
-  prefix: 'done_when' | 'context_ref',
-  max: number,
-): string[] => {
-  const values: string[] = []
-  for (let index = 1; index <= max; index += 1) {
-    const key = `${prefix}_${index}`
-    const value = normalizeLine(attrs[key])
-    if (!value) continue
-    values.push(value)
-  }
-  return values
+const normalizeList = (values: readonly string[]): string[] =>
+  values.map((item) => item.trim()).filter((item) => item.length > 0)
+
+const joinList = (values: readonly string[]): string | undefined => {
+  const normalized = normalizeList(values)
+  return normalized.length > 0 ? normalized.join('；') : undefined
 }
 
 const buildGeneratedWorkerPrompt = (params: {
@@ -79,15 +73,16 @@ const buildGeneratedWorkerPrompt = (params: {
   })
 }
 
-export const buildTaskContractFromAttrs = (
-  attrs: Record<string, string | undefined>,
+export const buildTaskContractFromDraft = (
+  draft: ManagerTaskDraft,
 ): TaskContract | undefined => {
-  const goal = normalizeLine(attrs.goal)
-  const scope = normalizeLine(attrs.in_scope)
-  const acceptance = collectSequentialValues(attrs, 'done_when', 5)
-  if (!goal || !scope || acceptance.length === 0) return undefined
-  const contextRefs = collectSequentialValues(attrs, 'context_ref', 3)
-  const outOfScope = normalizeLine(attrs.out_of_scope)
+  const goal = normalizeLine(draft.goal)
+  const scope = joinList(draft.in_scope)
+  if (!goal || !scope || draft.done_when.length === 0) return undefined
+  const outOfScope = joinList(draft.out_of_scope)
+  const contextRefs = normalizeList(draft.context_refs)
+  const acceptance = normalizeList(draft.done_when)
+  if (acceptance.length === 0) return undefined
   return {
     goal,
     scope,
@@ -97,19 +92,22 @@ export const buildTaskContractFromAttrs = (
   }
 }
 
-export const resolveWorkerPromptFromAttrs = (
-  attrs: Record<string, string | undefined>,
+export const resolveWorkerPromptFromDraft = (
+  draft: ManagerTaskDraft,
 ): string | undefined => {
-  const workerPrompt = normalizeLine(attrs.worker_prompt)
-  if (workerPrompt) return workerPrompt
-  const contract = buildTaskContractFromAttrs(attrs)
+  const contract = buildTaskContractFromDraft(draft)
   if (!contract) return undefined
-  return buildGeneratedWorkerPrompt({
-    title: normalizeLine(attrs.title),
+  const extraInstructions = normalizeList(draft.instructions)
+  const base = buildGeneratedWorkerPrompt({
+    title: normalizeLine(draft.title),
     goal: contract.goal,
     inScope: contract.scope,
     doneWhen: contract.acceptance,
     ...(contract.outOfScope ? { outOfScope: contract.outOfScope } : {}),
     ...(contract.contextRefs ? { contextRefs: contract.contextRefs } : {}),
   })
+  if (extraInstructions.length === 0) return base
+  return `${base}\n\n补充说明：\n${extraInstructions
+    .map((item, index) => `${index + 1}. ${item}`)
+    .join('\n')}`
 }

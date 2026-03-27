@@ -1,26 +1,8 @@
 import { z } from 'zod'
 
-import { focusIdSchema } from '../../foundation/shared/id-schema.js'
 import { normalizeInlineWhitespace } from '../../foundation/shared/text.js'
-import { TASK_RESOURCE_MODE_VALUES } from '../../work/types/task-runtime-types.js'
-
-import {
-  askUserChoiceSchema,
-  parseAskUserChoiceAttrs,
-} from './action-apply-choice-attrs.js'
-import {
-  parseUpsertFocusAttrs,
-  upsertFocusSchema,
-} from './action-apply-focus-attrs.js'
-import {
-  createPlanSchema,
-  deletePlanSchema,
-  updatePlanSchema,
-} from './action-plan-schema.js'
 
 const nonEmptyString = z.string().trim().min(1)
-const taskResourceModeSchema = z.enum(TASK_RESOURCE_MODE_VALUES)
-const resumeInstructionString = z.string().trim().min(1).max(600)
 const REMEMBER_MEMORY_PROTOCOL_TAG_RE = /<M:[^>]+>/i
 const REMEMBER_MEMORY_CODE_FENCE_RE = /```|~~~/
 const REMEMBER_MEMORY_LIST_RE = /^\s*(?:[-*+]|\d+[.)])\s+/m
@@ -35,66 +17,6 @@ export type RememberMemoryContentIssue =
   | 'protocol'
   | 'runtime_ref'
   | 'too_long'
-
-export {
-  askUserChoiceSchema,
-  parseAskUserChoiceAttrs,
-  parseUpsertFocusAttrs,
-  upsertFocusSchema,
-}
-export { createPlanSchema, deletePlanSchema, updatePlanSchema }
-
-export const runTaskSchema = z
-  .object({
-    worker_prompt: nonEmptyString.optional(),
-    title: nonEmptyString,
-    cwd: nonEmptyString,
-    resource_mode: taskResourceModeSchema.optional(),
-    branch: nonEmptyString.optional(),
-    goal: nonEmptyString.optional(),
-    in_scope: nonEmptyString.optional(),
-    done_when_1: nonEmptyString.optional(),
-    done_when_2: nonEmptyString.optional(),
-    done_when_3: nonEmptyString.optional(),
-    done_when_4: nonEmptyString.optional(),
-    done_when_5: nonEmptyString.optional(),
-    out_of_scope: nonEmptyString.optional(),
-    context_ref_1: nonEmptyString.optional(),
-    context_ref_2: nonEmptyString.optional(),
-    context_ref_3: nonEmptyString.optional(),
-    focus_id: focusIdSchema.optional(),
-  })
-  .strict()
-
-export const summarizeSchema = z
-  .object({
-    task_id: nonEmptyString,
-    summary: nonEmptyString,
-  })
-  .strict()
-
-export const mutateTaskSchema = z
-  .object({
-    id: nonEmptyString,
-    op: z.enum([
-      'pause',
-      'resume',
-      'cancel',
-      'review_passed',
-      'merged',
-      'cleaned',
-    ]),
-    reason: nonEmptyString.optional(),
-    sha: nonEmptyString.optional(),
-    resume_instruction: resumeInstructionString.optional(),
-  })
-  .strict()
-
-export const restartRuntimeSchema = z
-  .object({
-    reason: nonEmptyString,
-  })
-  .strict()
 
 export const rememberMemorySchema = z
   .object({
@@ -124,11 +46,3 @@ export const resolveRememberMemoryContentIssue = (
     return 'too_long'
   return undefined
 }
-
-export const assignFocusSchema = z
-  .object({
-    target_type: z.enum(['task', 'plan', 'history']),
-    target_id: nonEmptyString,
-    focus_id: focusIdSchema,
-  })
-  .strict()

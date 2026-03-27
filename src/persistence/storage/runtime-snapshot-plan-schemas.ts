@@ -34,7 +34,7 @@ export const taskPlanTriggerSchema = z.discriminatedUnion('mode', [
   planTriggerOnWorkerSlotFreedSchema,
 ])
 
-const taskPlanEnqueueTaskEffectSchema = z
+const taskPlanEffectSchema = z
   .object({
     kind: z.literal('enqueue_task'),
     taskTemplate: z
@@ -50,18 +50,6 @@ const taskPlanEnqueueTaskEffectSchema = z
       .strict(),
   })
   .strict()
-
-const taskPlanWakeManagerEffectSchema = z
-  .object({
-    kind: z.literal('wake_manager'),
-    reason: z.enum(['scheduled_review', 'capacity_retry', 'follow_up']),
-  })
-  .strict()
-
-const taskPlanEffectSchema = z.discriminatedUnion('kind', [
-  taskPlanEnqueueTaskEffectSchema,
-  taskPlanWakeManagerEffectSchema,
-])
 
 export const taskPlanSchema = z
   .object({

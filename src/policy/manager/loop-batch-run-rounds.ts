@@ -26,6 +26,7 @@ import type {
   UserInput,
 } from '../../foundation/types/index.js'
 import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
+import type { Parsed } from '../actions/model/spec.js'
 
 export const runManagerCorrectionRounds = async (params: {
   runtime: ManagerRuntime
@@ -39,7 +40,7 @@ export const runManagerCorrectionRounds = async (params: {
 }): Promise<{
   parsed: {
     text: string
-    actions: { name: string; attrs: Record<string, string> }[]
+    actions: Parsed[]
   }
   usage?: TokenUsage
   elapsedMs: number
@@ -60,7 +61,7 @@ export const runManagerCorrectionRounds = async (params: {
   let extra: ManagerRoundExtra = {}
   let lastParsed: {
     text: string
-    actions: { name: string; attrs: Record<string, string> }[]
+    actions: Parsed[]
   } = { text: '', actions: [] }
   const resultTaskIds = new Set(results.map((item) => item.taskId))
   const allowAskUserChoice =
@@ -146,11 +147,11 @@ export const runManagerCorrectionRounds = async (params: {
         ? { ...parsed, actions: followup.filteredActions }
         : parsed
     const suppressedRememberMemory = suppressedActions.some(
-      (item) => item.name === 'remember_memory',
+      (item) => item.type === 'remember_memory',
     )
     const pureRememberMemoryTurn =
       parsed.actions.length > 0 &&
-      parsed.actions.every((item) => item.name === 'remember_memory') &&
+      parsed.actions.every((item) => item.type === 'remember_memory') &&
       resolvedParsed.actions.length === 0
     const resolvedText =
       suppressedRememberMemory && pureRememberMemoryTurn

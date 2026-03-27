@@ -7,7 +7,6 @@ import {
   resolveRememberMemoryContentIssue,
 } from './action-apply-schema.js'
 import { resolveActionFocusId } from './action-focus-id.js'
-import { parseActionAttrs } from './action-parse.js'
 
 import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 import type { Parsed } from '../actions/model/spec.js'
@@ -16,11 +15,12 @@ export const applyRememberMemoryAction = async (
   runtime: ManagerRuntime,
   item: Parsed,
 ): Promise<void> => {
-  const parsed = parseActionAttrs(item, rememberMemorySchema)
-  if (!parsed) return
-  if (resolveRememberMemoryContentIssue(parsed.content)) return
+  if (item.type !== 'remember_memory') return
+  const parsed = rememberMemorySchema.safeParse({ content: item.content })
+  if (!parsed.success) return
+  if (resolveRememberMemoryContentIssue(parsed.data.content)) return
   const remembered = await rememberMemoryEntry(runtime.paths.memoryFile, {
-    content: normalizeRememberMemoryContent(parsed.content),
+    content: normalizeRememberMemoryContent(parsed.data.content),
   })
   const focusId = resolveActionFocusId(runtime)
   const appended = await appendMemoryRememberedSystemMessage(

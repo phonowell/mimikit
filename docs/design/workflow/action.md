@@ -4,131 +4,128 @@
 
 ## 文档定位
 
-- Action 的代码主源是 `src/policy/manager/action-registry-definitions.ts`、`src/policy/manager/action-surface.ts`、`src/policy/manager/action-validation.ts`。
-- 本文档是面向人的实现说明，覆盖协议、域边界、动态 surface、执行语义与关键参数约束。
-- 涉及 Action 的设计记录、提案、简化说明仅作背景参考，不构成并行规范；若与实现冲突，以代码为准。
+- Action 实现主源：`src/policy/manager/manager-turn-schema.ts`、`src/policy/manager/action-registry-definitions.ts`、`src/policy/manager/action-validation.ts`、`src/policy/manager/action-apply.ts`
+- 本文只描述当前唯一有效的 manager action 协议；旧 XML / `name+attrs` / `*_1` 编号参数均已删除，不构成兼容协议。
 
-## 领域边界
+## Turn 协议
 
-- 本文档只定义 manager 可消费 action 协议与执行语义。
-- Task 生命周期细节以 `./task.md` 为准；Plan 触发与生命周期以 `./plan.md` 为准；Focus 归属与容量以 `./focus.md` 为准；Memory 刷新策略以 `./memory.md` 为准。
+- manager 对外只接受单个结构化对象：`{ reply, actions }`
+- `reply`：用户可见文本
+- `actions`：结构化 action 数组
+- 不存在 `version`
+- 不存在 `reply_text`
+- 不存在 XML 尾巴、`Parsed.attrs` 或外部/内部双语法
 
-## 协议
-
-主协议实现：`src/policy/manager/manager-turn.ts`
-
-- manager 对外只接受单个结构化 turn 对象：`{ version, reply_text, actions }`
-- 当前协议版本固定为 `manager-turn/v1`
-- `reply_text` 是唯一用户可见文本字段；不得再在其中夹带 action 文本、XML 标签或编号参数
-- `actions` 是结构化 action 对象数组；对象字段由 `zod` schema 校验，再一跳归一化为内部 `Parsed` 形状供 validation/apply 复用
-- 归一化只用于 manager 内部执行链路，不构成外部兼容协议；外部协议不再解析 XML 尾巴，也不再接受 `*_1` 这类编号字段输入
-
-## Manager 消费的编排 Action
-
-实现：`src/policy/manager/action-registry-definitions.ts`、`src/policy/manager/action-validation.ts`、`src/policy/manager/action-apply.ts`
+## Action Catalog
 
 ### 任务类
 
 - `enqueue_task`
-- `mutate_task`
-- `restart_runtime`
-- `set_task_result_summary`
+- `task_control`
+- `record_task_git`
 
 ### 计划类
 
-- `create_plan`
-- `update_plan`
+- `set_plan`
 - `delete_plan`
 
 ### 交互类
 
 - `ask_user_choice`
 
-### 状态归属与记忆类
+### 归属与记忆类
 
-- `upsert_focus`
 - `assign_focus`
 - `remember_memory`
 
+## 关键合同
+
+### `enqueue_task`
+
+- 结构：`{ type: "enqueue_task", task }`
+- `task` 必须包含：
+  - `title`
+  - `cwd`
+  - `mode`
+  - `goal`
+  - `in_scope[]`
+  - `out_of_scope[]`
+  - `done_when[]`
+  - `context_refs[]`
+  - `instructions[]`
+- `worker_prompt` 已删除；worker prompt 由任务合同自动生成。
+- `branch` 已删除；git worktree / branch 由运行时决定。
+
+### `task_control`
+
+- 结构：`{ type: "task_control", task_id, action, instructions }`
+- `action = pause | resume | cancel`
+- `instructions[]` 仅在 `action="resume"` 时作为下一轮恢复补充说明，其余情况必须为空数组。
+
+### `record_task_git`
+
+- 结构：`{ type: "record_task_git", task_id, state }`
+- `state = review_passed | merged | cleaned`
+- 只记录外部已发生的 git 闭环状态，不执行 review / merge / cleanup 本身。
+
+### `set_plan`
+
+- 结构：`{ type: "set_plan", plan_id, plan }`
+- `plan_id = null` 表示创建；非空表示按该 ID 整体替换
+- `plan` 必须包含：
+  - `title`
+  - `trigger`
+  - `task`
+  - `priority`
+  - `max_runs`
+- `plan.task` 与 `enqueue_task.task` 使用同一合同
+- 不存在 `create_plan / update_plan` 双动作
+- 不存在 `wake_manager` effect；plan 只负责后续派发 `enqueue_task`
+
+### `delete_plan`
+
+- 结构：`{ type: "delete_plan", plan_id }`
+- 语义：把计划关闭为 `done(canceled)`；实体保留用于审计
+
+### `ask_user_choice`
+
+- 结构：`{ type: "ask_user_choice", question, default_option_id, options }`
+- `options[]` 中每项必须包含 `id / label / reason`
+- choice 自身 ID 由运行时生成，不再由 manager 提供
+
+### `assign_focus`
+
+- 结构：`{ type: "assign_focus", target_type, target_id, focus_id }`
+- `target_type = task | plan | history`
+- 这是唯一保留的 focus action；不再允许 manager 直接写 `summary/openItems`
+
+### `remember_memory`
+
+- 结构：`{ type: "remember_memory", content }`
+- `content` 必须是单行稳定 digest，且 `<= 240 chars`
+- checklist、多行过程文本、协议标签和 runtime 引用会被拒绝
+
+## 执行语义
+
+- `enqueue_task`：创建或复用 worker task；命中同语义旧任务时，按语义冲突规则处理
+- `task_control`：调用 pause / resume / cancel 执行链路
+- `record_task_git`：调用 git lifecycle 写回链路，并同步 task / handoff / archive
+- `set_plan`：创建或整体替换计划
+- `delete_plan`：关闭计划
+- `ask_user_choice`：stop action；命中后当前批次停止后续 apply
+- `assign_focus`：仅修改 task / plan / history 的 `focusId`
+- `remember_memory`：立即写入 `memory/MEMORY.md`
+
+## Guardrail
+
+- `enqueue_task`、`task_control`、`record_task_git`、`set_plan`、`delete_plan`、`ask_user_choice`、`remember_memory` 都受 intent-evidence guard 约束
+- 没有当前用户输入直接支撑时，`task_result` / `history` / `trigger` 只能作为补充证据，不能单独驱动高风险 action
+- `record_task_git` 必须同时命中“任务引用 + 闭环动作意图”
+- `task_control(cancel)` 支持“同 focus / 同 cwd 的唯一活跃任务被替代”这一例外，不要求额外显式取消措辞
+
 ## Action Surface
 
-实现：`src/policy/manager/action-surface.ts`、`src/policy/manager/loop-batch-run-helpers.ts`、`src/policy/manager/action-feedback-collect.ts`
-
-- 当前 manager 使用统一 action surface：`task + plan + dialog + focus + memory`
-- `query_context` / `read_file` 已从 manager 代码协议中删除；主线程默认不承担本地细读/检索
-- 需要局部搜索、实现、排查时，优先走执行面 task，而不是把 lookup 堆回 manager prompt
-- 高风险动作是否放行由 validation / intent-evidence / runtime guard 决定，而不是再按 `wakeProfile` 额外裁一层 action 名单
-- prompt 中展示的 action 面由代码统一生成，不再按 `wake_profile` 分档，也不再由 prompt 文案手写维护
-
-参数约定（关键字段）：
-
-- `enqueue_task.cwd`：必填；若 `resource_mode="read"` 且未传 `branch`，则直接作为 worker 实际执行目录。若 `resource_mode="write"` 且位于 git 仓库内，未显式传 `branch` 时 enqueue 阶段会自动分配独立 branch/worktree；若同时传 `branch`，则 `cwd` 视为仓库内定位路径，enqueue 阶段会自动创建或复用对应 branch 的 worktree，并把任务实际执行目录切到该 worktree 的对应路径
-- `enqueue_task.resource_mode`：可选，`read|write`；纯读取/排查/总结用 `read`，会改文件或需要独立 git target 的任务用 `write`
-- `enqueue_task.done_when` / `enqueue_task.context_refs`：分别是验收数组与上下文引用数组；对外协议使用数组，不再暴露 `done_when_1` / `context_ref_1` 编号字段
-- `assign_focus`：`target_type(task|plan|history) + target_id + focus_id`
-- `upsert_focus.open_items[]`：按数组传递字符串待办项
-- `ask_user_choice.options[]`：每项必须包含 `id/label/reason`
-- 高成本 `enqueue_task`（长 prompt/大参数体量）必须先经 `ask_user_choice` 确认后才能派发；确认选项 ID 固定为 `option-confirm-dispatch`，默认选项为取消。
-
-## Action 执行语义
-
-- `set_task_result_summary`：仅用于当前批次 `task_result` 的摘要覆写（不直接执行 action 状态写入）。
-- `mutate_task`：统一 task 生命周期与 git 闭环状态控制。
-- `restart_runtime`：登记 deferred restart；仅当没有 pending/running worker task 时允许调度，并在当前 manager batch 完成持久化后触发退出码 `75` 重启。
-- `op=pause|resume|cancel`：分发到 `worker/pause-task.ts`、`worker/resume-task.ts`、`worker/cancel-task.ts`。
-- `op="resume"` 可选 `resume_instruction`：仅作为“下一轮恢复执行”的一次性补充说明，不能改写原 task contract，也不支持对运行中的 turn 热插指令。
-- `op=review_passed|merged|cleaned`：分发到 `worker/record-task-git-lifecycle.ts`，用于显式写回“外部 review / merge / cleanup 已完成”的 task git 生命周期状态；`review_passed` 可附带 `sha`。
-- `op=review_passed|merged|cleaned` 还必须附带 `reason`，并且 `reason` 要能被当前用户输入直接支撑；仅靠 task 引用或历史/结果间接证据不足以推进 git 闭环写回。
-- `mutate_task` 所有分支统一产出可追踪结构（`id`、`status`、`changeAt`）。
-- `ask_user_choice` 是 stop action：命中后当前 action 批次停止后续 apply。
-- `restart_runtime` 是 stop action：命中后当前 action 批次停止后续 apply，避免继续派发后续动作又立刻重启。
-- `enqueue_task` 高成本确认闸门在 apply 与 validation 两侧同时生效：未确认时不入队，直接生成确认 choice。
-- `enqueue_task` 创建时会先解析 `cwd` 与 `resource_mode`；git 仓库中的 `write` 任务若未显式传 `branch`，会在 enqueue 阶段按 task 指纹自动分配 branch/worktree；显式 `branch` 仍优先。最终任务按真实 `repoKey + branch` 参与当前 runtime 内的写资源 dispatch guard。
-- 这里的 dispatch guard 只约束当前 runtime 内的 worker 派发顺序：同一写资源 `repoKey + branch` 串行，不同 branch/worktree 仍可并发；`read` 任务不占该写锁。它不是跨进程、跨 session 或仓库级强一致锁。
-- `remember_memory`：立即写入 `memory/MEMORY.md`，仅接受 `content` 参数，并通过 `memory_remembered` system event 回执 `entry_id/ref/operation`。
-- `remember_memory.content` 必须是单行稳定 digest（`<=240 chars`）；checklist、多行过程文本、协议标签与 `task-*/plan-*` 一类 runtime 引用会在 validation 阶段被拒绝。
-- `remember_memory` 只在两类证据下放行：当前用户输入可直接支撑该稳定规则/偏好 digest，或近期用户历史已重复表达同一稳定规则；其余尝试会被静默 suppress，不进入 apply，也不触发 correction 澄清。
-
-约束补充：
-
-- 未注册 action 会回写 `unregistered_action` 反馈，不会执行。
-- `enqueue_task` / `mutate_task` / `restart_runtime` / `ask_user_choice` / `remember_memory` 属于高风险 action：只有当当前批次存在明确的用户请求/确认，且可信运行时状态支持该动作时才放行；`history` / `task_result` 的间接建议本身不能直接驱动这些动作。`remember_memory` 额外要求当前输入直接支撑，或近期用户历史重复支撑该稳定规则/偏好；不满足时静默 suppress。
-- 纠错回合在第二轮仍存在 `action_feedback` 时，manager 直接输出结构化澄清并提前收敛，不继续盲目重试。
-- 当前 correction self-repair 只针对结构化 `invalid_action_args` 做一次补救重试，不再存在 XML markup 纠错分支。
-
-### manager 任务控制门禁（guardrail）
-
-- “收敛范围/只改某层/不要扩散”等指令默认只约束后续动作范围，不等价于取消已有任务。
-- 默认并行推进：用户未要求串行且无硬依赖时，不应通过 `mutate_task op="cancel"` 清空其它任务线。
-- 冲突先用非破坏策略（复用现有 task/plan、等待 running 收敛）；仅在明确满足取消条件时再取消。
-- 取消条件：用户显式取消，或用户已明确“节省资源优先”且继续执行会造成明确资源浪费；`pause/resume` 也需与用户目标一致，避免无依据状态抖动。
-- `review_passed/merged/cleaned` 只能用于“真实外部动作已完成后的状态回写”，不能把 manager 当成实际 review/merge/cleanup 执行器。
-- git 闭环状态一旦写回，必须同步到 `task.git.lifecycle`、`task.result.handoff.git.lifecycle` 与归档 frontmatter，避免 task 与 archive 漂移。
-
-## Prompt 注入标签
-
-- 稳定包：`M:state_packet`
-- 易变包：`M:event_packet`
-- 长期高优先级记忆：`M:remembered_memory`
-- 其余长期记忆：`M:memory`
-
-当前实现中的主要子字段：
-
-- `M:state_packet.focus_list`
-- `M:state_packet.working_focuses`
-- `M:state_packet.tasks`
-- `M:state_packet.plans`
-- `M:event_packet.environment`
-- `M:event_packet.inputs`
-- `M:event_packet.batch_results`
-- `M:event_packet.recent_history`
-- `M:event_packet.action_feedback`
-- `M:event_packet.packet`
-
-约束补充：
-
-- `M:state_packet.tasks` 只承载稳定任务状态与归档路径，不再重复展开详细 task result。
-- `M:state_packet.tasks` / `M:state_packet.plans` 不再承载 worker prompt、task contract、scope/acceptance 等执行载荷。
-- `M:event_packet.batch_results` 是当前批次 task result 的唯一详细结果通道。
-- `M:event_packet.batch_results` 只接收压缩后的 result/handoff/evidence，不再回灌 worker `task.prompt` 或 `handoff.goal` 一类执行载荷。
-- `M:event_packet.packet.latestResult` 只保留摘要指针，用于快速判断本轮结果重心。
+- 当前 manager 只暴露统一 surface：`task + plan + dialog + focus + memory`
+- `query_context` / `read_file` 已删除
+- `restart_runtime` 已从 manager action surface 删除
+- prompt 中的 action 卡完全由代码生成，不再手写维护另一套文案

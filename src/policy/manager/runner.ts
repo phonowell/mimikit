@@ -11,6 +11,7 @@ import {
   parseManagerTurn,
 } from './manager-turn.js'
 
+import type { ManagerTurnAction } from './manager-turn-schema.js'
 import type { AppConfig } from '../../bootstrap/config.js'
 import type {
   FocusId,
@@ -59,7 +60,7 @@ export const runManager = async (params: {
   wakeProfile?: ManagerEnv['wakeProfile']
 }): Promise<{
   output: string
-  actions: Array<{ name: string; attrs: Record<string, string> }>
+  actions: ManagerTurnAction[]
   elapsedMs: number
   usage?: TokenUsage
   threadId?: string | null
@@ -141,7 +142,7 @@ export const runManager = async (params: {
     )
     const turn = parseManagerTurn(result.outputJson)
     return {
-      output: turn.replyText,
+      output: turn.reply,
       actions: turn.actions,
       elapsedMs: result.elapsedMs,
       ...(result.usage ? { usage: result.usage } : {}),

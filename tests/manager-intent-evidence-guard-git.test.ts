@@ -8,7 +8,7 @@ import {
   expectSingleRejectedFeedback,
 } from './helpers/manager-intent-evidence.js'
 
-test('mutate_task git closure stays blocked when user only references task without explicit closure action', () => {
+test('record_task_git stays blocked when user only references task without explicit closure action', () => {
   const task = createTask({
     status: 'succeeded',
     git: {
@@ -24,19 +24,25 @@ test('mutate_task git closure stays blocked when user only references task witho
     },
   })
   const feedback = collectManagerActionFeedback(
-    [{ name: 'mutate_task', attrs: { id: task.id, op: 'merged', reason: 'mark this task as merged to main' } }],
+    [
+      {
+        type: 'record_task_git',
+        task_id: task.id,
+        state: 'merged',
+      },
+    ],
     createIntentEvidenceTaskContext(task, [
       createUserInput(`请看一下 ${task.id}，也就是 ${task.title}。`),
     ]),
   )
 
   expectSingleRejectedFeedback(feedback, {
-    action: 'mutate_task',
+    action: 'record_task_git',
     hintIncludes: ['当前需要：merged'],
   })
 })
 
-test('mutate_task git closure stays allowed when user explicitly requests the closure action', () => {
+test('record_task_git stays allowed when user explicitly requests the closure action', () => {
   const task = createTask({
     status: 'succeeded',
     git: {
@@ -52,7 +58,13 @@ test('mutate_task git closure stays allowed when user explicitly requests the cl
     },
   })
   const feedback = collectManagerActionFeedback(
-    [{ name: 'mutate_task', attrs: { id: task.id, op: 'merged', reason: '把这个任务标记为已合并到 main' } }],
+    [
+      {
+        type: 'record_task_git',
+        task_id: task.id,
+        state: 'merged',
+      },
+    ],
     {
       inputs: [
         createUserInput(

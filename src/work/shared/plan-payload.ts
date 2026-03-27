@@ -33,20 +33,14 @@ export const buildPlanProgressPayload = (
 
 export const buildPlanEffectPayload = (
   effect: TaskPlanEffect,
-): Record<string, unknown> =>
-  effect.kind === 'enqueue_task'
-    ? {
-        effect_kind: effect.kind,
-        task_title: effect.taskTemplate.title,
-        task_cwd: effect.taskTemplate.cwd,
-        ...(effect.taskTemplate.resourceMode
-          ? { task_resource_mode: effect.taskTemplate.resourceMode }
-          : {}),
-        ...(effect.taskTemplate.branch
-          ? { task_branch: effect.taskTemplate.branch }
-          : {}),
-      }
-    : {
-        effect_kind: effect.kind,
-        effect_reason: effect.reason,
-      }
+): Record<string, unknown> => ({
+  effect_kind: effect.kind,
+  task_title: effect.taskTemplate.title,
+  task_cwd: effect.taskTemplate.cwd,
+  ...(effect.taskTemplate.resourceMode
+    ? { task_resource_mode: effect.taskTemplate.resourceMode }
+    : {}),
+  ...(effect.taskTemplate.branch
+    ? { task_branch: effect.taskTemplate.branch }
+    : {}),
+})

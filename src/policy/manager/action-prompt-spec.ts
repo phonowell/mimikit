@@ -47,14 +47,11 @@ const actionSurfaceTemplateSchema = z
     actions: z
       .object({
         enqueue_task: actionPromptSpecSchema,
-        mutate_task: actionPromptSpecSchema,
-        restart_runtime: actionPromptSpecSchema,
-        set_task_result_summary: actionPromptSpecSchema,
-        create_plan: actionPromptSpecSchema,
-        update_plan: actionPromptSpecSchema,
+        task_control: actionPromptSpecSchema,
+        record_task_git: actionPromptSpecSchema,
+        set_plan: actionPromptSpecSchema,
         delete_plan: actionPromptSpecSchema,
         ask_user_choice: actionPromptSpecSchema,
-        upsert_focus: actionPromptSpecSchema,
         assign_focus: actionPromptSpecSchema,
         remember_memory: actionPromptSpecSchema,
       })
@@ -97,16 +94,11 @@ const normalizePromptSpec = (
 
 export const ACTION_PROMPT_SPECS = {
   enqueue_task: normalizePromptSpec(templates.actions.enqueue_task),
-  mutate_task: normalizePromptSpec(templates.actions.mutate_task),
-  restart_runtime: normalizePromptSpec(templates.actions.restart_runtime),
-  set_task_result_summary: normalizePromptSpec(
-    templates.actions.set_task_result_summary,
-  ),
-  create_plan: normalizePromptSpec(templates.actions.create_plan),
-  update_plan: normalizePromptSpec(templates.actions.update_plan),
+  task_control: normalizePromptSpec(templates.actions.task_control),
+  record_task_git: normalizePromptSpec(templates.actions.record_task_git),
+  set_plan: normalizePromptSpec(templates.actions.set_plan),
   delete_plan: normalizePromptSpec(templates.actions.delete_plan),
   ask_user_choice: normalizePromptSpec(templates.actions.ask_user_choice),
-  upsert_focus: normalizePromptSpec(templates.actions.upsert_focus),
   assign_focus: normalizePromptSpec(templates.actions.assign_focus),
   remember_memory: normalizePromptSpec(templates.actions.remember_memory),
 } as const

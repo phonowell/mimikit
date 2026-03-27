@@ -33,32 +33,42 @@ beforeEach(() => {
   resolveRoundFollowupMock.mockReset()
 })
 
-test('runManagerCorrectionRounds summarizes repeated invalid create_plan feedback instead of asking for scope details', async () => {
+const invalidPlanAction = {
+  type: 'set_plan' as const,
+  plan_id: null,
+  plan: {
+    title: 'bad plan',
+    trigger: {
+      type: 'on_worker_slot_freed' as const,
+    },
+    task: {
+      title: 'bad task',
+      cwd: '/tmp/task',
+      mode: 'write' as const,
+      goal: 'ship',
+      in_scope: ['frontend only'],
+      out_of_scope: [],
+      done_when: ['tests pass'],
+      context_refs: [],
+      instructions: [],
+    },
+    priority: 'normal' as const,
+    max_runs: 1,
+  },
+}
+
+test('runManagerCorrectionRounds summarizes repeated invalid set_plan feedback instead of asking for scope details', async () => {
   runManagerRoundWithRecoveryMock
     .mockResolvedValueOnce({
-      output: '<M:create_plan title="bad plan" />',
-      actions: [
-        {
-          name: 'create_plan',
-          attrs: {
-            title: 'bad plan',
-          },
-        },
-      ],
+      output: 'bad plan',
+      actions: [invalidPlanAction],
       elapsedMs: 3,
       wakeProfile: 'user_input',
       threadId: 'session-manager-invalid-plan',
     })
     .mockResolvedValueOnce({
-      output: '<M:create_plan title="bad plan" />',
-      actions: [
-        {
-          name: 'create_plan',
-          attrs: {
-            title: 'bad plan',
-          },
-        },
-      ],
+      output: 'bad plan',
+      actions: [invalidPlanAction],
       elapsedMs: 4,
       wakeProfile: 'user_input',
       threadId: 'session-manager-invalid-plan',
@@ -69,29 +79,23 @@ test('runManagerCorrectionRounds summarizes repeated invalid create_plan feedbac
       extra: {
         actionFeedback: [
           {
-            action: 'create_plan',
+            action: 'set_plan',
             error: 'invalid_action_args',
-            hint:
-              '参数校验失败：schedule_type: schedule_type is required when cron_expr/scheduled_at/time_zone is provided',
+            hint: '参数校验失败：plan.trigger: Invalid input',
             code: 'invalid_action_args',
             repair: {
               kind: 'fix_action_args',
-              issues: [
-                'schedule_type: schedule_type is required when cron_expr/scheduled_at/time_zone is provided',
-              ],
+              issues: ['plan.trigger: Invalid input'],
             },
           },
           {
-            action: 'create_plan',
+            action: 'set_plan',
             error: 'invalid_action_args',
-            hint:
-              '参数校验失败：effect_kind: Invalid input: expected "enqueue_task" | "wake_manager", received undefined',
+            hint: '参数校验失败：plan.task.done_when: Too small',
             code: 'invalid_action_args',
             repair: {
               kind: 'fix_action_args',
-              issues: [
-                'effect_kind: Invalid input: expected "enqueue_task" | "wake_manager", received undefined',
-              ],
+              issues: ['plan.task.done_when: Too small'],
             },
           },
         ],
@@ -102,29 +106,23 @@ test('runManagerCorrectionRounds summarizes repeated invalid create_plan feedbac
       extra: {
         actionFeedback: [
           {
-            action: 'create_plan',
+            action: 'set_plan',
             error: 'invalid_action_args',
-            hint:
-              '参数校验失败：schedule_type: schedule_type is required when cron_expr/scheduled_at/time_zone is provided',
+            hint: '参数校验失败：plan.trigger: Invalid input',
             code: 'invalid_action_args',
             repair: {
               kind: 'fix_action_args',
-              issues: [
-                'schedule_type: schedule_type is required when cron_expr/scheduled_at/time_zone is provided',
-              ],
+              issues: ['plan.trigger: Invalid input'],
             },
           },
           {
-            action: 'create_plan',
+            action: 'set_plan',
             error: 'invalid_action_args',
-            hint:
-              '参数校验失败：effect_kind: Invalid input: expected "enqueue_task" | "wake_manager", received undefined',
+            hint: '参数校验失败：plan.task.done_when: Too small',
             code: 'invalid_action_args',
             repair: {
               kind: 'fix_action_args',
-              issues: [
-                'effect_kind: Invalid input: expected "enqueue_task" | "wake_manager", received undefined',
-              ],
+              issues: ['plan.task.done_when: Too small'],
             },
           },
         ],
@@ -152,12 +150,11 @@ test('runManagerCorrectionRounds summarizes repeated invalid create_plan feedbac
     plans: [],
     workingFocusIds: ['focus-global'],
     maxCorrectionRounds: 3,
-    resolveFocusId: () => 'focus-global',
   })
 
   expect(result.roundLimitReached).toBe(true)
-  expect(result.parsed.text).toContain('当前 create_plan 动作无法继续执行')
-  expect(result.parsed.text).toContain('schedule_type is required')
-  expect(result.parsed.text).toContain('effect_kind')
+  expect(result.parsed.text).toContain('当前 set_plan 动作无法继续执行')
+  expect(result.parsed.text).toContain('plan.trigger')
+  expect(result.parsed.text).toContain('plan.task.done_when')
   expect(result.parsed.text).not.toContain('最终要我产出什么')
 })

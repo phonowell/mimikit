@@ -6,79 +6,108 @@ import { resumeTask } from '../../execution/worker/resume-task.js'
 import { applyRunTask } from './action-apply-create.js'
 import { ActionApplyFeedbackError } from './action-apply-feedback-error.js'
 import {
-  mutateTaskSchema,
-  restartRuntimeSchema,
-} from './action-apply-schema.js'
-import {
-  formatRestartRuntimeAlreadyScheduledHint,
-  formatRestartRuntimeBusyHint,
-  formatRestartRuntimeUnavailableHint,
+  formatRecordTaskGitMergeRequiredHint,
+  formatRecordTaskGitNotDoneHint,
+  formatRecordTaskGitNotGitHint,
+  formatRecordTaskGitReviewRequiredHint,
+  formatTaskControlAlreadyCanceledHint,
+  formatTaskControlAlreadyDoneHint,
+  formatTaskControlAlreadyPausedHint,
+  formatTaskControlNotFoundHint,
+  formatTaskControlNotPausedHint,
 } from './action-feedback-hints.js'
-import { parseActionAttrs } from './action-parse.js'
 import { ACTION_PROMPT_SPECS } from './action-prompt-spec.js'
 import {
   createContinueAction,
-  createNoopAction,
-  createStopAction,
   type ManagerActionDefinition,
 } from './action-registry-shared.js'
 import {
-  validateMutateTask,
-  validateRestartRuntime,
+  validateRecordTaskGit,
   validateRunTask,
-  validateSummarizeTaskResult,
+  validateTaskControl,
 } from './action-validation.js'
-import { scheduleManagerRestart } from './restart-runtime.js'
 
 import type { Parsed } from '../actions/model/spec.js'
 
-const applyMutateTaskAction = async (
-  runtime: Parameters<ManagerActionDefinition['apply']>[0],
-  item: Parsed,
-): Promise<void> => {
-  const parsed = parseActionAttrs(item, mutateTaskSchema)
-  if (!parsed) return
-  const { id, op, reason, sha, resume_instruction: resumeInstruction } = parsed
-  const meta = {
-    source: 'deferred',
-    ...(reason ? { reason } : {}),
-    ...(sha ? { sha } : {}),
-    ...(resumeInstruction ? { resumeInstruction } : {}),
-  }
-  if (op === 'pause') {
-    await pauseTask(runtime, id, meta)
-    return
-  }
-  if (op === 'resume') {
-    await resumeTask(runtime, id, meta)
-    return
-  }
-  if (op === 'review_passed' || op === 'merged' || op === 'cleaned') {
-    await recordTaskGitLifecycle(runtime, id, op, meta)
-    return
-  }
-  await cancelTask(runtime, id, meta)
-}
-
-const applyRestartRuntimeAction = (
-  runtime: Parameters<ManagerActionDefinition['apply']>[0],
-  item: Parsed,
-): Promise<void> => {
-  const parsed = parseActionAttrs(item, restartRuntimeSchema)
-  if (!parsed) return Promise.resolve()
-  const result = scheduleManagerRestart(runtime, parsed.reason)
-  if (result === 'scheduled') return Promise.resolve()
-  const hint =
-    result === 'busy'
-      ? formatRestartRuntimeBusyHint()
-      : result === 'already_scheduled'
-        ? formatRestartRuntimeAlreadyScheduledHint()
-        : formatRestartRuntimeUnavailableHint()
+const rejectApply = (
+  action: 'task_control' | 'record_task_git',
+  hint: string,
+): never => {
   throw new ActionApplyFeedbackError({
-    action: 'restart_runtime',
+    action,
     error: 'action_execution_rejected',
     hint,
   })
+}
+
+const applyTaskControlAction = async (
+  runtime: Parameters<ManagerActionDefinition['apply']>[0],
+  item: Parsed,
+): Promise<void> => {
+  if (item.type !== 'task_control') return
+
+  if (item.action === 'pause') {
+    const result = await pauseTask(runtime, item.task_id, {
+      source: 'deferred',
+    })
+    if (result.ok) return
+    if (result.status === 'not_found')
+      rejectApply('task_control', formatTaskControlNotFoundHint())
+    if (result.status === 'already_paused')
+      rejectApply('task_control', formatTaskControlAlreadyPausedHint())
+    rejectApply('task_control', formatTaskControlAlreadyDoneHint('pause'))
+  }
+
+  if (item.action === 'resume') {
+    const result = await resumeTask(runtime, item.task_id, {
+      source: 'deferred',
+      ...(item.instructions[0]
+        ? { resumeInstruction: item.instructions.join('\n') }
+        : {}),
+    })
+    if (result.ok) return
+    if (result.status === 'not_found')
+      rejectApply('task_control', formatTaskControlNotFoundHint())
+    if (result.status === 'not_paused')
+      rejectApply('task_control', formatTaskControlNotPausedHint())
+    rejectApply('task_control', formatTaskControlAlreadyDoneHint('resume'))
+  }
+
+  const result = await cancelTask(runtime, item.task_id, {
+    source: 'deferred',
+  })
+  if (result.ok) return
+  if (result.status === 'not_found')
+    rejectApply('task_control', formatTaskControlNotFoundHint())
+  if (result.status === 'already_canceled')
+    rejectApply('task_control', formatTaskControlAlreadyCanceledHint())
+  rejectApply('task_control', formatTaskControlAlreadyDoneHint('cancel'))
+}
+
+const applyRecordTaskGitAction = async (
+  runtime: Parameters<ManagerActionDefinition['apply']>[0],
+  item: Parsed,
+): Promise<void> => {
+  if (item.type !== 'record_task_git') return
+
+  const result = await recordTaskGitLifecycle(
+    runtime,
+    item.task_id,
+    item.state,
+    {
+      source: 'deferred',
+    },
+  )
+  if (result.ok) return
+  if (result.status === 'not_found')
+    rejectApply('record_task_git', formatTaskControlNotFoundHint())
+  if (result.status === 'not_done')
+    rejectApply('record_task_git', formatRecordTaskGitNotDoneHint(item.state))
+  if (result.status === 'not_git')
+    rejectApply('record_task_git', formatRecordTaskGitNotGitHint(item.state))
+  if (result.status === 'review_required')
+    rejectApply('record_task_git', formatRecordTaskGitReviewRequiredHint())
+  rejectApply('record_task_git', formatRecordTaskGitMergeRequiredHint())
 }
 
 export const TASK_ACTION_DEFINITIONS = [
@@ -92,28 +121,20 @@ export const TASK_ACTION_DEFINITIONS = [
   } satisfies ManagerActionDefinition,
   createContinueAction(
     {
-      name: 'mutate_task',
+      name: 'task_control',
       domain: 'task',
-      prompt: ACTION_PROMPT_SPECS.mutate_task,
+      prompt: ACTION_PROMPT_SPECS.task_control,
     },
-    (item, context) => validateMutateTask(item, context),
-    applyMutateTaskAction,
+    (item, context) => validateTaskControl(item, context),
+    applyTaskControlAction,
   ),
-  createStopAction(
+  createContinueAction(
     {
-      name: 'restart_runtime',
+      name: 'record_task_git',
       domain: 'task',
-      prompt: ACTION_PROMPT_SPECS.restart_runtime,
+      prompt: ACTION_PROMPT_SPECS.record_task_git,
     },
-    (item, context) => validateRestartRuntime(item, context),
-    applyRestartRuntimeAction,
-  ),
-  createNoopAction(
-    {
-      name: 'set_task_result_summary',
-      domain: 'task',
-      prompt: ACTION_PROMPT_SPECS.set_task_result_summary,
-    },
-    (item, context) => validateSummarizeTaskResult(item, context),
+    (item, context) => validateRecordTaskGit(item, context),
+    applyRecordTaskGitAction,
   ),
 ] satisfies ManagerActionDefinition[]

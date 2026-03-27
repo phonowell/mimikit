@@ -57,57 +57,52 @@ export const firePlan = async (params: {
   reason: 'cron' | 'scheduled_at' | 'on_worker_slot_freed'
 }): Promise<{ consumedWorkerSlot: boolean }> => {
   const { runtime, plan, nowIso } = params
-  let lastTaskId: string | undefined
-  let consumedWorkerSlot = false
-  if (plan.effect.kind === 'enqueue_task') {
-    const spec = await readTaskExecutionSpec(
-      runtime.config.workDir,
-      plan.effect.taskTemplate.executionSpecId,
-    )
-    const target = await resolveRunTaskTarget({
-      actionName: 'create_plan',
-      cwd: plan.effect.taskTemplate.cwd,
-      resourceMode: plan.effect.taskTemplate.resourceMode,
-      prompt: spec.prompt,
-      title: plan.effect.taskTemplate.title,
-      focusId: plan.focusId,
-      contract: spec.contract,
-      ...(plan.effect.taskTemplate.branch
-        ? { branch: plan.effect.taskTemplate.branch }
-        : {}),
+  const spec = await readTaskExecutionSpec(
+    runtime.config.workDir,
+    plan.effect.taskTemplate.executionSpecId,
+  )
+  const target = await resolveRunTaskTarget({
+    actionName: 'set_plan',
+    cwd: plan.effect.taskTemplate.cwd,
+    resourceMode: plan.effect.taskTemplate.resourceMode,
+    prompt: spec.prompt,
+    title: plan.effect.taskTemplate.title,
+    focusId: plan.focusId,
+    contract: spec.contract,
+    ...(plan.effect.taskTemplate.branch
+      ? { branch: plan.effect.taskTemplate.branch }
+      : {}),
+  })
+  const { task, created } = await enqueueTask(
+    runtime.config.workDir,
+    runtime.tasks,
+    spec.prompt,
+    plan.effect.taskTemplate.title,
+    target.cwd,
+    'worker',
+    'codex',
+    plan.focusId,
+    target.repoKey,
+    target.branch,
+    target.resourceMode,
+    spec.contract,
+  )
+  linkTriggeredPlanToTask({
+    runtime,
+    triggeredPlanIds: new Set([plan.id]),
+    task,
+    linkedAt: nowIso,
+  })
+  const lastTaskId = task.id
+  if (created) {
+    await appendTaskSystemMessage(runtime.paths.history, 'created', task, {
+      createdAt: task.createdAt,
+      slotStatus: resolveSlotStatus(runtime),
     })
-    const { task, created } = await enqueueTask(
-      runtime.config.workDir,
-      runtime.tasks,
-      spec.prompt,
-      plan.effect.taskTemplate.title,
-      target.cwd,
-      'worker',
-      'codex',
-      plan.focusId,
-      target.repoKey,
-      target.branch,
-      target.resourceMode,
-      spec.contract,
-    )
-    linkTriggeredPlanToTask({
-      runtime,
-      triggeredPlanIds: new Set([plan.id]),
-      task,
-      linkedAt: nowIso,
-    })
-    consumedWorkerSlot = created
-    lastTaskId = task.id
-    if (created) {
-      await appendTaskSystemMessage(runtime.paths.history, 'created', task, {
-        createdAt: task.createdAt,
-        slotStatus: resolveSlotStatus(runtime),
-      })
-    }
-    if (task.status === 'pending') {
-      enqueueWorkerTask(runtime, task)
-      notifyWorkerLoop(runtime)
-    }
+  }
+  if (task.status === 'pending') {
+    enqueueWorkerTask(runtime, task)
+    notifyWorkerLoop(runtime)
   }
 
   plan.runtime = {
@@ -148,7 +143,7 @@ export const firePlan = async (params: {
       ...(lastTaskId ? { lastTaskId } : {}),
     },
   })
-  return { consumedWorkerSlot }
+  return { consumedWorkerSlot: created }
 }
 
 export const markTriggeredPlanDone = (plan: TaskPlan, nowIso: string): void => {

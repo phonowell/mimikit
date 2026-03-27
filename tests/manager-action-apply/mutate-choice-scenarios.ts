@@ -4,9 +4,9 @@ import { GLOBAL_FOCUS_ID } from '../../src/work/focus/constants.js'
 import { applyTaskActions } from '../../src/policy/manager/action-apply.js'
 import { materializeTaskFixture } from '../helpers/execution-spec.js'
 
-import { CONTRACT_ATTRS, createRuntime, TASK_CWD } from './testkit.js'
+import { TASK_CWD, buildTaskDraft, createRuntime } from './testkit.js'
 
-test('mutate_task with op=pause marks pending task as paused', async () => {
+test('task_control pause marks pending task as paused', async () => {
   const runtime = await createRuntime()
   runtime.tasks.push(
     await materializeTaskFixture({
@@ -27,11 +27,10 @@ test('mutate_task with op=pause marks pending task as paused', async () => {
 
   await applyTaskActions(runtime, [
     {
-      name: 'mutate_task',
-      attrs: {
-        id: 'task-pause-target',
-        op: 'pause',
-      },
+      type: 'task_control',
+      task_id: 'task-pause-target',
+      action: 'pause',
+      instructions: [],
     },
   ])
 
@@ -39,7 +38,7 @@ test('mutate_task with op=pause marks pending task as paused', async () => {
   expect(runtime.tasks[0]?.pausedAt).toBeTypeOf('string')
 })
 
-test('mutate_task with op=resume requeues paused task', async () => {
+test('task_control resume requeues paused task', async () => {
   const runtime = await createRuntime()
   runtime.tasks.push(
     await materializeTaskFixture({
@@ -61,11 +60,10 @@ test('mutate_task with op=resume requeues paused task', async () => {
 
   await applyTaskActions(runtime, [
     {
-      name: 'mutate_task',
-      attrs: {
-        id: 'task-resume-target',
-        op: 'resume',
-      },
+      type: 'task_control',
+      task_id: 'task-resume-target',
+      action: 'resume',
+      instructions: ['继续执行并产出最终结果'],
     },
   ])
 
@@ -74,7 +72,7 @@ test('mutate_task with op=resume requeues paused task', async () => {
   expect(runtime.worker.queue.size).toBe(1)
 })
 
-test('mutate_task with op=cancel marks paused task as canceled', async () => {
+test('task_control cancel marks paused task as canceled', async () => {
   const runtime = await createRuntime()
   runtime.tasks.push(
     await materializeTaskFixture({
@@ -96,11 +94,10 @@ test('mutate_task with op=cancel marks paused task as canceled', async () => {
 
   await applyTaskActions(runtime, [
     {
-      name: 'mutate_task',
-      attrs: {
-        id: 'task-cancel-target',
-        op: 'cancel',
-      },
+      type: 'task_control',
+      task_id: 'task-cancel-target',
+      action: 'cancel',
+      instructions: [],
     },
   ])
 
@@ -112,32 +109,33 @@ test('ask_user_choice stores pending choice and stops later actions in same batc
   const runtime = await createRuntime()
   await applyTaskActions(runtime, [
     {
-      name: 'ask_user_choice',
-      attrs: {
-        id: 'choice-delivery',
-        question: 'Choose output format',
-        option_1_id: 'option-report',
-        option_1_label: 'Report',
-        option_1_reason: 'Need full context',
-        option_2_id: 'option-checklist',
-        option_2_label: 'Checklist',
-        option_2_reason: 'Need quick execution',
-        default_option_id: 'option-report',
-      },
+      type: 'ask_user_choice',
+      question: 'Choose output format',
+      default_option_id: 'option-report',
+      options: [
+        {
+          id: 'option-report',
+          label: 'Report',
+          reason: 'Need full context',
+        },
+        {
+          id: 'option-checklist',
+          label: 'Checklist',
+          reason: 'Need quick execution',
+        },
+      ],
     },
     {
-      name: 'enqueue_task',
-      attrs: {
-        worker_prompt: 'this should not run before user picks',
+      type: 'enqueue_task',
+      task: buildTaskDraft({
         title: 'blocked by pending choice',
-        cwd: TASK_CWD,
-        ...CONTRACT_ATTRS,
-      },
+        instructions: ['this should not run before user picks'],
+      }),
     },
   ])
 
   expect(runtime.ui.pendingUserChoices).toHaveLength(1)
-  expect(runtime.ui.pendingUserChoices[0]?.id).toBe('choice-delivery')
+  expect(runtime.ui.pendingUserChoices[0]?.id).toMatch(/^choice-/)
   expect(runtime.ui.pendingUserChoices[0]?.options).toHaveLength(2)
   expect(runtime.ui.pendingUserChoices[0]?.options[0]?.reason).toBe(
     'Need full context',
@@ -163,23 +161,25 @@ test('ask_user_choice appends a new pending choice instead of overwriting existi
 
   await applyTaskActions(runtime, [
     {
-      name: 'ask_user_choice',
-      attrs: {
-        id: 'choice-delivery',
-        question: 'Choose output format',
-        option_1_id: 'option-report',
-        option_1_label: 'Report',
-        option_1_reason: 'Need full context',
-        option_2_id: 'option-checklist',
-        option_2_label: 'Checklist',
-        option_2_reason: 'Need quick execution',
-        default_option_id: 'option-report',
-      },
+      type: 'ask_user_choice',
+      question: 'Choose output format',
+      default_option_id: 'option-report',
+      options: [
+        {
+          id: 'option-report',
+          label: 'Report',
+          reason: 'Need full context',
+        },
+        {
+          id: 'option-checklist',
+          label: 'Checklist',
+          reason: 'Need quick execution',
+        },
+      ],
     },
   ])
 
-  expect(runtime.ui.pendingUserChoices.map((item) => item.id)).toEqual([
-    'choice-existing',
-    'choice-delivery',
-  ])
+  expect(runtime.ui.pendingUserChoices).toHaveLength(2)
+  expect(runtime.ui.pendingUserChoices[0]?.id).toBe('choice-existing')
+  expect(runtime.ui.pendingUserChoices[1]?.id).toMatch(/^choice-/)
 })

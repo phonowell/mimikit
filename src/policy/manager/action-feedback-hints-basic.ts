@@ -16,12 +16,11 @@ export const formatInvalidActionArgsWithIssuesHint = (issues: string): string =>
 export const formatInvalidIsoRangeFieldHint = (field: 'from' | 'to'): string =>
   renderActionFeedbackHint('invalid_iso_range_field', { field })
 
-export const formatScheduledAtInvalidHint = (
-  action: 'create_plan' | 'update_plan',
-): string => renderActionFeedbackHint('scheduled_at_invalid', { action })
+export const formatScheduledAtInvalidHint = (action: 'set_plan'): string =>
+  renderActionFeedbackHint('scheduled_at_invalid', { action })
 
 export const formatScheduledAtNotFutureHint = (
-  action: 'create_plan' | 'update_plan',
+  action: 'set_plan',
   nowIso: string,
 ): string =>
   renderActionFeedbackHint('scheduled_at_not_future', {
@@ -29,42 +28,24 @@ export const formatScheduledAtNotFutureHint = (
     now_iso: nowIso,
   })
 
-export const formatMutateTaskNotFoundHint = (): string =>
-  renderActionFeedbackHint('mutate_task_not_found')
+export const formatTaskControlNotFoundHint = (): string =>
+  renderActionFeedbackHint('task_control_not_found')
 
-export const formatMutateTaskAlreadyDoneHint = (
-  op: 'pause' | 'resume' | 'cancel',
-): string =>
-  renderActionFeedbackHint('mutate_task_already_done', {
-    op,
-  })
+export const formatTaskControlAlreadyDoneHint = (
+  action: 'pause' | 'resume' | 'cancel',
+): string => renderActionFeedbackHint('task_control_already_done', { action })
 
-export const formatMutateTaskAlreadyPausedHint = (): string =>
-  renderActionFeedbackHint('mutate_task_already_paused')
+export const formatTaskControlAlreadyPausedHint = (): string =>
+  renderActionFeedbackHint('task_control_already_paused')
 
-export const formatMutateTaskNotPausedHint = (): string =>
-  renderActionFeedbackHint('mutate_task_not_paused')
+export const formatTaskControlNotPausedHint = (): string =>
+  renderActionFeedbackHint('task_control_not_paused')
 
-export const formatMutateTaskResumeInstructionInvalidHint = (): string =>
-  renderActionFeedbackHint('mutate_task_resume_instruction_invalid')
-
-export const formatMutateTaskAlreadyCanceledHint = (): string =>
-  renderActionFeedbackHint('mutate_task_already_canceled')
-
-export const formatRestartRuntimeUnavailableHint = (): string =>
-  renderActionFeedbackHint('restart_runtime_unavailable')
-
-export const formatRestartRuntimeBusyHint = (): string =>
-  renderActionFeedbackHint('restart_runtime_busy')
-
-export const formatRestartRuntimeAlreadyScheduledHint = (): string =>
-  renderActionFeedbackHint('restart_runtime_already_scheduled')
+export const formatTaskControlAlreadyCanceledHint = (): string =>
+  renderActionFeedbackHint('task_control_already_canceled')
 
 export const formatAskUserChoiceChannelUnsupportedHint = (): string =>
   renderActionFeedbackHint('ask_user_choice_channel_unsupported')
-
-export const formatAskUserChoiceInvalidOptionsHint = (): string =>
-  renderActionFeedbackHint('ask_user_choice_invalid_options')
 
 export const formatEnqueueTaskWorktreePrepareFailedHint = (
   branch: string,
@@ -76,21 +57,14 @@ export const formatEnqueueTaskWorktreePrepareFailedHint = (
   })
 
 export const formatPlanNotFoundHint = (
-  action: 'update_plan' | 'delete_plan',
+  action: 'set_plan' | 'delete_plan',
 ): string => renderActionFeedbackHint('plan_not_found', { action })
 
-export const formatUpdatePlanDoneForbiddenHint = (): string =>
-  renderActionFeedbackHint('update_plan_done_forbidden')
+export const formatSetPlanDoneForbiddenHint = (): string =>
+  renderActionFeedbackHint('set_plan_done_forbidden')
 
 export const formatDuplicateActionGenericHint = (): string =>
   renderActionFeedbackHint('duplicate_action_generic')
 
 export const formatRememberMemoryNotStableHint = (reason: string): string =>
   renderActionFeedbackHint('remember_memory_not_stable', { reason })
-
-export const formatSetTaskResultSummaryTaskNotInBatchHint = (
-  availableHint: string,
-): string =>
-  renderActionFeedbackHint('set_task_result_summary_task_not_in_batch', {
-    available_hint: availableHint,
-  })

@@ -8,8 +8,9 @@ import {
 } from './action-intent-evidence-match.js'
 import {
   validateEnqueueTaskIntentEvidence,
-  validateMutateTaskIntentEvidence,
-  validateRestartRuntimeIntentEvidence,
+  validateRecordTaskGitIntentEvidence,
+  validateSetPlanIntentEvidence,
+  validateTaskControlIntentEvidence,
 } from './action-intent-evidence-rules.js'
 
 import type { Task, UserInput } from '../../foundation/types/index.js'
@@ -27,22 +28,24 @@ type IntentEvidenceContext = {
 
 const INTENT_EVIDENCE_REQUIRED_ACTIONS = new Set([
   'enqueue_task',
-  'mutate_task',
-  'restart_runtime',
+  'task_control',
+  'record_task_git',
+  'set_plan',
+  'delete_plan',
   'ask_user_choice',
   'remember_memory',
 ])
 
-const requiresDirectUserEvidence = (actionName: Parsed['name']): boolean =>
-  actionName === 'restart_runtime'
+const requiresDirectUserEvidence = (actionName: Parsed['type']): boolean =>
+  actionName === 'delete_plan'
 
 export const resolveIntentEvidenceRejectionHint = (
   item: Parsed,
   context: IntentEvidenceContext,
 ): string | undefined => {
-  if (!INTENT_EVIDENCE_REQUIRED_ACTIONS.has(item.name)) return undefined
+  if (!INTENT_EVIDENCE_REQUIRED_ACTIONS.has(item.type)) return undefined
   if (
-    !requiresDirectUserEvidence(item.name) &&
+    !requiresDirectUserEvidence(item.type) &&
     !context.supplementalEvidenceSources?.size
   )
     return undefined
@@ -50,12 +53,12 @@ export const resolveIntentEvidenceRejectionHint = (
   const inputTexts = collectUserIntentTexts(context.inputs)
   if (inputTexts.length === 0) {
     return buildMissingIntentEvidenceHint({
-      actionName: item.name,
+      actionName: item.type,
       evidenceSources: context.supplementalEvidenceSources,
     })
   }
 
-  if (item.name === 'enqueue_task') {
+  if (item.type === 'enqueue_task') {
     return validateEnqueueTaskIntentEvidence({
       item,
       inputTexts,
@@ -64,11 +67,10 @@ export const resolveIntentEvidenceRejectionHint = (
         : {}),
     })
   }
-  if (item.name === 'mutate_task') {
-    return validateMutateTaskIntentEvidence({
+  if (item.type === 'task_control') {
+    return validateTaskControlIntentEvidence({
       item,
       inputTexts,
-      ...(context.inputs ? { inputs: context.inputs } : {}),
       ...(context.taskById ? { taskById: context.taskById } : {}),
       ...(context.currentActions
         ? { currentActions: context.currentActions }
@@ -81,8 +83,18 @@ export const resolveIntentEvidenceRejectionHint = (
         : {}),
     })
   }
-  if (item.name === 'restart_runtime') {
-    return validateRestartRuntimeIntentEvidence({
+  if (item.type === 'record_task_git') {
+    return validateRecordTaskGitIntentEvidence({
+      item,
+      inputTexts,
+      ...(context.taskById ? { taskById: context.taskById } : {}),
+      ...(context.supplementalEvidenceSources
+        ? { supplementalEvidenceSources: context.supplementalEvidenceSources }
+        : {}),
+    })
+  }
+  if (item.type === 'set_plan') {
+    return validateSetPlanIntentEvidence({
       item,
       inputTexts,
       ...(context.supplementalEvidenceSources
@@ -90,7 +102,7 @@ export const resolveIntentEvidenceRejectionHint = (
         : {}),
     })
   }
-  if (item.name === 'ask_user_choice') {
+  if (item.type === 'ask_user_choice') {
     return validateAskUserChoiceIntentEvidence({
       item,
       inputTexts,
@@ -99,7 +111,7 @@ export const resolveIntentEvidenceRejectionHint = (
         : {}),
     })
   }
-  if (item.name === 'remember_memory') {
+  if (item.type === 'remember_memory') {
     return validateRememberMemoryIntentEvidence({
       item,
       inputTexts,

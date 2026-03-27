@@ -10,8 +10,9 @@ const EVIDENCE_HINT_TEMPLATE_RELATIVE_PATH = 'manager/action-evidence-hints.md'
 const actionEvidenceHintSchema = z
   .object({
     enqueue_task_intent_evidence_missing: z.string().trim().min(1),
-    mutate_task_intent_evidence_missing: z.string().trim().min(1),
-    restart_runtime_intent_evidence_missing: z.string().trim().min(1),
+    task_control_intent_evidence_missing: z.string().trim().min(1),
+    record_task_git_intent_evidence_missing: z.string().trim().min(1),
+    set_plan_intent_evidence_missing: z.string().trim().min(1),
     ask_user_choice_intent_evidence_missing: z.string().trim().min(1),
   })
   .strict()
@@ -35,21 +36,32 @@ export const formatEnqueueTaskIntentEvidenceHint = (
     evidence_sources: evidenceSources,
   })
 
-export const formatMutateTaskIntentEvidenceHint = (params: {
+export const formatTaskControlIntentEvidenceHint = (params: {
   evidenceSources: string
   taskRef: string
   requiredAction?: string
 }): string =>
-  renderHint('mutate_task_intent_evidence_missing', {
+  renderHint('task_control_intent_evidence_missing', {
     evidence_sources: params.evidenceSources,
     task_ref: params.taskRef,
     required_action: params.requiredAction ?? '目标控制动作',
   })
 
-export const formatRestartRuntimeIntentEvidenceHint = (
+export const formatRecordTaskGitIntentEvidenceHint = (params: {
+  evidenceSources: string
+  taskRef: string
+  requiredAction?: string
+}): string =>
+  renderHint('record_task_git_intent_evidence_missing', {
+    evidence_sources: params.evidenceSources,
+    task_ref: params.taskRef,
+    required_action: params.requiredAction ?? '目标 git 状态写回动作',
+  })
+
+export const formatSetPlanIntentEvidenceHint = (
   evidenceSources: string,
 ): string =>
-  renderHint('restart_runtime_intent_evidence_missing', {
+  renderHint('set_plan_intent_evidence_missing', {
     evidence_sources: evidenceSources,
   })
 

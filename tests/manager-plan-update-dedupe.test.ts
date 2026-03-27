@@ -1,11 +1,23 @@
 import { expect, test } from 'vitest'
 
-import { GLOBAL_FOCUS_ID } from '../src/work/focus/constants.js'
 import { readHistory } from '../src/persistence/history/store.js'
 import { applyTaskActions } from '../src/policy/manager/action-apply.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 import type { RuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
+import type { ManagerPlanDraft } from '../src/policy/manager/manager-turn-schema.js'
+
+const buildTaskDraft = (title: string, cwd: string) => ({
+  title,
+  cwd,
+  mode: 'write' as const,
+  goal: `Deliver ${title}`,
+  in_scope: [`Only handle ${title}`],
+  out_of_scope: [],
+  done_when: [`${title} finished`],
+  context_refs: [],
+  instructions: [],
+})
 
 const createRuntime = async (): Promise<RuntimeState> => {
   const runtime = await createTestRuntimeState({ pausedQueue: true })
@@ -13,74 +25,61 @@ const createRuntime = async (): Promise<RuntimeState> => {
   return runtime
 }
 
-test('update_plan rejects sibling collision for active plan key', async () => {
+test('set_plan rejects sibling collision for active plan key', async () => {
   const runtime = await createRuntime()
-  runtime.taskPlans.push(
-    {
-      id: 'plan-existing',
-      title: 'scheduled',
-      focusId: GLOBAL_FOCUS_ID,
-      priority: 'normal',
-      status: 'active',
-      trigger: {
-        mode: 'cron',
-        cron: '0 0 9 * * *',
-        timeZone: 'Asia/Shanghai',
-      },
-      effect: {
-        kind: 'wake_manager',
-        reason: 'scheduled_review',
-      },
-      createdAt: '2026-02-13T00:00:00.000Z',
-      updatedAt: '2026-02-13T00:00:00.000Z',
-      runtime: { runCount: 0 },
+  const existingPlan: ManagerPlanDraft = {
+    title: 'scheduled',
+    trigger: {
+      type: 'cron',
+      cron: '0 0 9 * * *',
+      time_zone: 'Asia/Shanghai',
     },
-    {
-      id: 'plan-update-target',
-      title: 'follow up',
-      focusId: GLOBAL_FOCUS_ID,
-      priority: 'high',
-      status: 'active',
-      trigger: {
-        mode: 'scheduled_at',
-        scheduledAt: '2026-02-14T00:00:00.000Z',
-      },
-      effect: {
-        kind: 'wake_manager',
-        reason: 'follow_up',
-      },
-      createdAt: '2026-02-13T00:00:00.000Z',
-      updatedAt: '2026-02-13T00:00:00.000Z',
-      runtime: { runCount: 0 },
+    task: buildTaskDraft('scheduled task', '/tmp/scheduled-task'),
+    priority: 'normal',
+    max_runs: 5,
+  }
+  const targetPlan: ManagerPlanDraft = {
+    title: 'follow up',
+    trigger: {
+      type: 'scheduled_at',
+      scheduled_at: '2026-02-14T00:00:00.000Z',
     },
-  )
+    task: buildTaskDraft('follow task', '/tmp/follow-task'),
+    priority: 'high',
+    max_runs: null,
+  }
 
   await applyTaskActions(runtime, [
     {
-      name: 'update_plan',
-      attrs: {
-        id: 'plan-update-target',
-        title: 'scheduled',
-        schedule_type: 'cron',
-        cron_expr: '0 0 9 * * *',
-        time_zone: 'Asia/Shanghai',
-        effect_kind: 'wake_manager',
-        effect_reason: 'scheduled_review',
-      },
+      type: 'set_plan',
+      plan_id: null,
+      plan: existingPlan,
+    },
+    {
+      type: 'set_plan',
+      plan_id: null,
+      plan: targetPlan,
+    },
+  ])
+
+  const targetId = runtime.taskPlans[1]?.id
+  expect(targetId).toBeTruthy()
+
+  await applyTaskActions(runtime, [
+    {
+      type: 'set_plan',
+      plan_id: targetId ?? null,
+      plan: existingPlan,
     },
   ])
 
   expect(runtime.taskPlans).toHaveLength(2)
   expect(runtime.taskPlans[1]).toMatchObject({
-    id: 'plan-update-target',
+    id: targetId,
     title: 'follow up',
     trigger: {
       mode: 'scheduled_at',
       scheduledAt: '2026-02-14T00:00:00.000Z',
-    },
-    effect: {
-      kind: 'wake_manager',
-      reason: 'follow_up',
     },
   })
 

@@ -8,8 +8,9 @@ import { resolveSystemEvent } from '../../surface/shared/system-event.js'
 import {
   formatAskUserChoiceIntentEvidenceHint,
   formatEnqueueTaskIntentEvidenceHint,
-  formatMutateTaskIntentEvidenceHint,
-  formatRestartRuntimeIntentEvidenceHint,
+  formatRecordTaskGitIntentEvidenceHint,
+  formatSetPlanIntentEvidenceHint,
+  formatTaskControlIntentEvidenceHint,
 } from './action-evidence-hints.js'
 
 import type { SupplementalEvidenceSource } from './action-intent-evidence.js'
@@ -31,21 +32,28 @@ export const formatEvidenceSources = (
 }
 
 export const buildMissingIntentEvidenceHint = (params: {
-  actionName: Parsed['name']
+  actionName: Parsed['type']
   evidenceSources: Set<SupplementalEvidenceSource> | undefined
   taskRef?: string
 }): string => {
   const evidenceSources = formatEvidenceSources(params.evidenceSources)
-  if (params.actionName === 'mutate_task') {
-    return formatMutateTaskIntentEvidenceHint({
+  if (
+    params.actionName === 'task_control' ||
+    params.actionName === 'record_task_git'
+  ) {
+    const renderHint =
+      params.actionName === 'task_control'
+        ? formatTaskControlIntentEvidenceHint
+        : formatRecordTaskGitIntentEvidenceHint
+    return renderHint({
       evidenceSources,
       taskRef: params.taskRef ?? '当前目标 task',
     })
   }
-  if (params.actionName === 'restart_runtime')
-    return formatRestartRuntimeIntentEvidenceHint(evidenceSources)
   if (params.actionName === 'ask_user_choice')
     return formatAskUserChoiceIntentEvidenceHint(evidenceSources)
+  if (params.actionName === 'set_plan' || params.actionName === 'delete_plan')
+    return formatSetPlanIntentEvidenceHint(evidenceSources)
   return formatEnqueueTaskIntentEvidenceHint(evidenceSources)
 }
 
@@ -120,7 +128,7 @@ export const isSupportedByInputs = (params: {
   return scoreTextOverlap(combinedCandidate, inputText) >= 0.35
 }
 
-type MutateTaskGitOp = 'review_passed' | 'merged' | 'cleaned'
+type TaskGitState = 'review_passed' | 'merged' | 'cleaned'
 
 const resolveTaskRef = (task: Task | undefined, taskId: string): string => {
   const title = task?.title.trim()
@@ -128,44 +136,43 @@ const resolveTaskRef = (task: Task | undefined, taskId: string): string => {
   return taskId
 }
 
-const resolveGitOpLabel = (op: MutateTaskGitOp): string => {
+const resolveGitOpLabel = (op: TaskGitState): string => {
   if (op === 'review_passed') return 'review passed'
   if (op === 'merged') return 'merged'
   return 'cleaned'
 }
 
-export const isMutateTaskGitOp = (op: string): op is MutateTaskGitOp =>
+const resolveGitOpCandidates = (op: TaskGitState): string[] => {
+  if (op === 'review_passed')
+    return ['review passed', 'review_passed', 'review 通过']
+  if (op === 'merged') return ['merged', 'merge', '已合并', '合并到 main']
+  return ['cleaned', 'cleanup', '已清理', '清理 worktree']
+}
+
+export const isTaskGitState = (op: string): op is TaskGitState =>
   op === 'review_passed' || op === 'merged' || op === 'cleaned'
 
-export const validateMutateTaskGitIntentEvidence = (params: {
-  op: MutateTaskGitOp
-  reason?: string | undefined
+export const validateTaskGitIntentEvidence = (params: {
+  state: TaskGitState
   task: Task | undefined
   taskId: string
   inputTexts: string[]
   supplementalEvidenceSources?: Set<SupplementalEvidenceSource>
 }): string | undefined => {
-  const reason = params.reason?.trim()
-  if (!reason) {
-    return formatMutateTaskIntentEvidenceHint({
-      evidenceSources: formatEvidenceSources(
-        params.supplementalEvidenceSources,
-      ),
-      taskRef: resolveTaskRef(params.task, params.taskId),
-      requiredAction: resolveGitOpLabel(params.op),
-    })
-  }
-  if (
-    isSupportedByInputs({
-      candidates: [reason],
-      combinedCandidate: reason,
-      inputs: params.inputTexts,
-    })
-  )
-    return undefined
-  return formatMutateTaskIntentEvidenceHint({
+  const taskSupported = isSupportedByInputs({
+    candidates: [params.task?.title ?? '', params.taskId],
+    combinedCandidate: resolveTaskRef(params.task, params.taskId),
+    inputs: params.inputTexts,
+  })
+  const actionSupported = isSupportedByInputs({
+    candidates: resolveGitOpCandidates(params.state),
+    combinedCandidate: resolveGitOpCandidates(params.state).join('\n'),
+    inputs: params.inputTexts,
+  })
+  if (taskSupported && actionSupported) return undefined
+  return formatRecordTaskGitIntentEvidenceHint({
     evidenceSources: formatEvidenceSources(params.supplementalEvidenceSources),
     taskRef: resolveTaskRef(params.task, params.taskId),
-    requiredAction: resolveGitOpLabel(params.op),
+    requiredAction: resolveGitOpLabel(params.state),
   })
 }

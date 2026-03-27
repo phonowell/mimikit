@@ -19,6 +19,7 @@ import type {
   UserInput,
 } from '../../foundation/types/index.js'
 import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
+import type { Parsed } from '../actions/model/spec.js'
 
 const buildManagerEnv = (
   runtime: ManagerRuntime,
@@ -53,7 +54,7 @@ export const runManagerRoundWithRecovery = async (params: {
   abortSignal?: AbortSignal
 }): Promise<{
   output: string
-  actions: Array<{ name: string; attrs: Record<string, string> }>
+  actions: Parsed[]
   elapsedMs: number
   usage?: TokenUsage
   wakeProfile: ManagerWakeProfile

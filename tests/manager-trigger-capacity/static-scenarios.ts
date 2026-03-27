@@ -88,12 +88,14 @@ test('managerLoop suppresses worker_slot_freed when no queue work exists', async
 test('on_worker_slot_freed plans trigger without touching non-capacity plans', async () => {
   const runtime = await createRuntime({ maxConcurrent: 2 })
   runtime.taskPlans.push(
-    createCapacityPlan(
+    await createCapacityPlan(
+      runtime,
       'plan-capacity',
       { mode: 'on_worker_slot_freed' },
       GLOBAL_FOCUS_ID,
     ),
-    createCapacityPlan(
+    await createCapacityPlan(
+      runtime,
       'plan-cron',
       { mode: 'cron', cron: '* * * * *' },
       GLOBAL_FOCUS_ID,
@@ -113,7 +115,8 @@ test('on_worker_slot_freed plans trigger without touching non-capacity plans', a
 
 test('trigger_fire system event uses global focus even when plan has local focus', async () => {
   const runtime = await createRuntime({ maxConcurrent: 1 })
-  const plan = createCapacityPlan(
+  const plan = await createCapacityPlan(
+    runtime,
     'plan-local-focus',
     { mode: 'on_worker_slot_freed' },
     GLOBAL_FOCUS_ID,

@@ -42,7 +42,6 @@ export type {
   TaskPlanRuntime,
   TaskPlanTrigger,
   TaskResourceMode,
-  TaskPlanWakeManagerEffect,
   TaskResult,
 } from '../../work/types/task-runtime-types.js'
 export type {

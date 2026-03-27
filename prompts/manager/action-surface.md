@@ -35,64 +35,44 @@ actions:
   enqueue_task:
     summary: 派发一个 worker 任务。
     brief_constraints:
-      - 必填 `title,cwd,goal,in_scope,done_when[]`
+      - 必填 `task`
     detail_constraints:
-      - '`worker_prompt` 可省略并由系统按 contract 自动生成'
-      - 可选 `resource_mode,branch,out_of_scope,context_refs[],focus_id`
-      - '`resource_mode="read"` 用于纯读取/排查/总结任务，不占 git 写锁，也不会自动分配新 worktree'
-      - '`resource_mode="write"` 用于会改文件或需独立 git target 的任务；未显式给 `branch` 时，enqueue 阶段会自动分配 branch/worktree'
-      - 提供 `branch` 后 enqueue 阶段会自动创建或复用对应 worktree，并把任务 `cwd` 切到该 worktree
-      - 默认一个目标只创建一个任务
-  mutate_task:
-    summary: 暂停、恢复、取消任务，或写回 git 闭环状态。
+      - '`task` 必须包含 `title,cwd,mode,goal,in_scope,out_of_scope,done_when[],context_refs[],instructions[]`'
+      - '`instructions[]` 仅用于短补充，不替代任务合同'
+  task_control:
+    summary: 暂停、恢复或取消已有任务。
     brief_constraints:
-      - 必填 `id,op`
+      - 必填 `task_id,action,instructions[]`
     detail_constraints:
-      - '`op=pause|resume|cancel|review_passed|merged|cleaned`'
-      - '`op="resume"` 时可选 `resume_instruction`，仅用于本次恢复的一次性补充说明'
-      - '`review_passed` 可选 `sha`'
-  restart_runtime:
-    summary: 在当前 batch 收尾后请求运行时自重启。
+      - '`action=pause|resume|cancel`'
+      - '`instructions[]` 仅在 `action="resume"` 时用于下一轮恢复补充说明；其它情况传空数组'
+  record_task_git:
+    summary: 显式写回任务的 git 闭环状态。
     brief_constraints:
-      - 必填 `reason`
+      - 必填 `task_id,state`
     detail_constraints:
-      - 仅在没有 pending/running worker task 时可用
-      - 命中后当前 action 批次停止后续 apply
-      - '`reason` 必须直接对应当前用户请求的更新/重启意图'
-  set_task_result_summary:
-    summary: 为当前批次 `task_result` 写摘要。
+      - '`state=review_passed|merged|cleaned`'
+      - 仅用于“外部 review/merge/cleanup 已完成”的状态回写
+  set_plan:
+    summary: 创建或整体替换一个持续触发计划。
     brief_constraints:
-      - 必填 `task_id,summary`
+      - 必填 `plan_id,plan`
     detail_constraints:
-      - 仅能引用当前批次可见结果
-  create_plan:
-    summary: 创建一个持续触发的计划。
-    brief_constraints:
-      - 必填 `title,schedule_type,effect_kind`
-    detail_constraints:
-      - 可选 `focus_id,priority,max_runs`
-  update_plan:
-    summary: 更新已有计划的触发器或 effect。
-    brief_constraints:
-      - 必填 `id`
+      - '`plan_id=null` 表示创建；非空表示按该 ID 整体替换'
+      - '`plan` 必须包含 `title,trigger,task,priority,max_runs`'
+      - '`plan.task` 与 `enqueue_task.task` 使用同一合同'
   delete_plan:
     summary: 关闭一个已有计划，并保留审计记录。
     brief_constraints:
-      - 必填 `id`
+      - 必填 `plan_id`
   ask_user_choice:
     summary: 生成一个待用户返回后处理的有限选择。
     brief_constraints:
-      - 必填 `id,question,default_option_id,options[]`
+      - 必填 `question,default_option_id,options[]`
     detail_constraints:
       - '`options[]` 中每项都必须包含 `id,label,reason`'
       - 仅在有限候选且确需用户决策时使用
       - '`telegram`/`feishu` 来源不可用'
-  upsert_focus:
-    summary: 创建或更新 focus 状态。
-    brief_constraints:
-      - 必填 `id`
-    detail_constraints:
-      - '可选 `title,status,summary,open_items[]`'
   assign_focus:
     summary: 给 task、plan 或 history 绑定 focus。
     brief_constraints:

@@ -138,14 +138,7 @@ export type TaskPlanEnqueueTaskEffect = {
   }
 }
 
-export type TaskPlanWakeManagerEffect = {
-  kind: 'wake_manager'
-  reason: 'scheduled_review' | 'capacity_retry' | 'follow_up'
-}
-
-export type TaskPlanEffect =
-  | TaskPlanEnqueueTaskEffect
-  | TaskPlanWakeManagerEffect
+export type TaskPlanEffect = TaskPlanEnqueueTaskEffect
 
 export type TaskPlanRuntime = {
   runCount: number

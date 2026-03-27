@@ -14,10 +14,11 @@ import type {
   UserInput,
 } from '../../foundation/types/index.js'
 import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
+import type { Parsed } from '../actions/model/spec.js'
 
 type ManagerParsedTurn = {
   text: string
-  actions: Array<{ name: string; attrs: Record<string, string> }>
+  actions: Parsed[]
 }
 
 const runRounds = (params: {

@@ -6,7 +6,6 @@ import {
 import { formatRememberMemoryNotStableHint } from './action-feedback-hints.js'
 import { validateRememberMemoryIntentEvidence } from './action-intent-evidence-dialog-memory.js'
 import { collectUserIntentTexts } from './action-intent-evidence-match.js'
-import { parseActionAttrs } from './action-parse.js'
 import {
   rejected,
   suppressed,
@@ -36,8 +35,9 @@ export const validateRememberMemoryAction = (
   item: Parsed,
   context: RememberMemoryValidationContext,
 ): ValidationIssue[] => {
-  const parsed = parseActionAttrs(item, rememberMemorySchema)
-  if (!parsed) return []
+  if (item.type !== 'remember_memory') return []
+  const parsed = rememberMemorySchema.safeParse({ content: item.content })
+  if (!parsed.success) return []
 
   const contentIssue = resolveRememberMemoryContentIssue(parsed.content)
   if (contentIssue) {

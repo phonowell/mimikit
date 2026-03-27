@@ -1,96 +1,150 @@
-import { createPlanSchema, updatePlanSchema } from './action-apply-schema.js'
+import { resolveTaskGitLifecycle } from '../../work/shared/task-git-lifecycle.js'
+
 import {
-  formatPlanNotFoundHint,
-  formatUpdatePlanDoneForbiddenHint,
+  formatAskUserChoiceChannelUnsupportedHint,
+  formatEnqueueTaskContractMissingHint,
 } from './action-feedback-hints.js'
-import { parseActionAttrs } from './action-parse.js'
+import { rejected, type ValidationIssue } from './action-validation-helpers.js'
+import { validateRememberMemoryAction } from './action-validation-remember-memory.js'
 import {
-  invalidArgsIssue,
-  rejected,
-  validateItemWithSchema,
-  validateScheduledAtNotPast,
-  type ValidationIssue,
-} from './action-validation-helpers.js'
+  validateHighRiskActionIntentEvidence,
+  validateWithSchema,
+} from './action-validation-shared.js'
 import {
-  validateAskUserChoice,
-  validateMutateTask,
-  validateRememberMemory,
-  validateRestartRuntime,
-  validateRunTask,
-  validateSummarizeTaskResult,
-} from './action-validation-risk.js'
+  askUserChoiceActionSchema,
+  enqueueTaskActionSchema,
+  recordTaskGitActionSchema,
+  rememberMemoryActionSchema,
+  taskControlActionSchema,
+} from './manager-turn-schema.js'
+import {
+  buildTaskContractFromDraft,
+  resolveWorkerPromptFromDraft,
+} from './task-contract.js'
 
 import type { FeedbackContext } from './action-validation-context.js'
 import type { Parsed } from '../actions/model/spec.js'
-import type { ZodSchema } from 'zod'
 
 export type { FeedbackContext } from './action-validation-context.js'
 export type { ValidationIssue } from './action-validation-helpers.js'
 
-const resolveScheduleNowOption = (
-  context: Pick<FeedbackContext, 'scheduleNowIso'>,
-): { scheduleNowIso?: string } =>
-  context.scheduleNowIso !== undefined
-    ? { scheduleNowIso: context.scheduleNowIso }
-    : {}
-
-export const validateWithSchema = (
-  item: Parsed,
-  schema: ZodSchema,
-): ValidationIssue[] => validateItemWithSchema(item, schema)
-
-export { validateRunTask }
-export { validateRestartRuntime }
-
-export const validateCreatePlan = (
+export const validateRunTask = (
   item: Parsed,
   context: FeedbackContext,
 ): ValidationIssue[] => {
-  const parsed = parseActionAttrs(item, createPlanSchema)
-  if (!parsed) return validateWithSchema(item, createPlanSchema)
-  if (parsed.schedule_type !== 'scheduled_at' || !parsed.scheduled_at?.trim())
-    return []
-  return validateScheduledAtNotPast({
-    action: 'create_plan',
-    scheduledAt: parsed.scheduled_at,
-    ...resolveScheduleNowOption(context),
-  })
+  const schemaIssues = validateWithSchema(item, enqueueTaskActionSchema)
+  if (schemaIssues.length > 0) return schemaIssues
+  if (item.type !== 'enqueue_task') return schemaIssues
+  const contract = buildTaskContractFromDraft(item.task)
+  const workerPrompt = resolveWorkerPromptFromDraft(item.task)
+  if (!contract || !workerPrompt) {
+    return rejected(formatEnqueueTaskContractMissingHint(), {
+      code: 'task_contract_missing',
+    })
+  }
+  return validateHighRiskActionIntentEvidence(item, context)
 }
 
-export { validateMutateTask }
-
-export {
-  validateRememberMemory,
-  validateSummarizeTaskResult,
-  validateAskUserChoice,
-}
-
-export const validatePlanById = (
-  action: 'update_plan' | 'delete_plan',
-  item: Parsed,
-  schema: ZodSchema<{ id: string }>,
-  context: FeedbackContext,
-): ValidationIssue[] => {
-  const parsed = schema.safeParse(item.attrs)
-  if (!parsed.success) return [invalidArgsIssue(parsed.error)]
-  const status = context.planStatusById?.get(parsed.data.id)
-  if (!status) return rejected(formatPlanNotFoundHint(action))
-  if (action === 'update_plan' && status === 'done')
-    return rejected(formatUpdatePlanDoneForbiddenHint())
-  return []
-}
-
-export const validateUpdatePlan = (
+export const validateTaskControl = (
   item: Parsed,
   context: FeedbackContext,
 ): ValidationIssue[] => {
-  const parsed = parseActionAttrs(item, updatePlanSchema)
-  if (!parsed) return validateWithSchema(item, updatePlanSchema)
-  const scheduledAt = parsed.scheduled_at?.trim()
-  if (parsed.schedule_type !== 'scheduled_at' || !scheduledAt) return []
-  return validateScheduledAtNotPast({
-    action: 'update_plan',
-    scheduledAt,
-    ...resolveScheduleNowOption(context),
-  })
+  const schemaIssues = validateWithSchema(item, taskControlActionSchema)
+  if (schemaIssues.length > 0) return schemaIssues
+  if (item.type !== 'task_control') return schemaIssues
+  const taskStatus = context.taskStatusById?.get(item.task_id)
+  if (!taskStatus) return rejected('task_control 执行失败：未找到 task ID。')
+  if (item.action !== 'resume' && item.instructions.length > 0) {
+    return rejected(
+      'task_control 执行失败：只有 `action="resume"` 才允许附带 `instructions[]`。',
+    )
+  }
+  if (item.action === 'pause') {
+    if (taskStatus === 'paused')
+      return rejected('task_control 执行失败：任务已是 paused 状态。')
+    if (taskStatus !== 'pending' && taskStatus !== 'running')
+      return rejected('task_control 执行失败：任务已完成，无法 pause。')
+  }
+  if (item.action === 'resume') {
+    if (taskStatus === 'pending' || taskStatus === 'running') {
+      return rejected(
+        'task_control 执行失败：任务当前不是 paused 状态，无法 resume。',
+      )
+    }
+    if (taskStatus !== 'paused')
+      return rejected('task_control 执行失败：任务已完成，无法 resume。')
+  }
+  if (item.action === 'cancel') {
+    if (taskStatus === 'canceled')
+      return rejected('task_control 执行失败：任务已是 canceled 状态。')
+    if (
+      taskStatus !== 'pending' &&
+      taskStatus !== 'paused' &&
+      taskStatus !== 'running'
+    )
+      return rejected('task_control 执行失败：任务已完成，无法 cancel。')
+  }
+  return validateHighRiskActionIntentEvidence(item, context)
+}
+
+export const validateRecordTaskGit = (
+  item: Parsed,
+  context: FeedbackContext,
+): ValidationIssue[] => {
+  const schemaIssues = validateWithSchema(item, recordTaskGitActionSchema)
+  if (schemaIssues.length > 0) return schemaIssues
+  if (item.type !== 'record_task_git') return schemaIssues
+  const taskStatus = context.taskStatusById?.get(item.task_id)
+  if (!taskStatus) return rejected('record_task_git 执行失败：未找到 task ID。')
+  const task = context.taskById?.get(item.task_id)
+  if (
+    taskStatus !== 'succeeded' &&
+    taskStatus !== 'failed' &&
+    taskStatus !== 'canceled'
+  ) {
+    return rejected(
+      `record_task_git 执行失败：任务尚未完成，无法写入 ${item.state}。`,
+    )
+  }
+  if (task && !task.git)
+    return rejected('record_task_git 执行失败：任务没有 git 执行上下文。')
+  const lifecycle = task ? resolveTaskGitLifecycle(task) : undefined
+  if (item.state === 'merged' && !lifecycle?.review.passed) {
+    return rejected(
+      'record_task_git 执行失败：任务尚未记录 review passed，无法写入 merged。',
+    )
+  }
+  if (item.state === 'cleaned' && !lifecycle?.merged) {
+    return rejected(
+      'record_task_git 执行失败：任务尚未记录 merged，无法写入 cleaned。',
+    )
+  }
+  return validateHighRiskActionIntentEvidence(item, context)
+}
+
+export const validateAskUserChoice = (
+  item: Parsed,
+  context: FeedbackContext,
+): ValidationIssue[] => {
+  if (context.allowAskUserChoice === false)
+    return rejected(formatAskUserChoiceChannelUnsupportedHint())
+  const schemaIssues = validateWithSchema(item, askUserChoiceActionSchema)
+  if (schemaIssues.length > 0) return schemaIssues
+  if (item.type !== 'ask_user_choice') return schemaIssues
+  if (!item.options.some((option) => option.id === item.default_option_id)) {
+    return rejected(
+      'ask_user_choice 执行失败：`default_option_id` 必须命中 `options[]` 中的某一项。',
+    )
+  }
+  return validateHighRiskActionIntentEvidence(item, context)
+}
+
+export const validateRememberMemory = (
+  item: Parsed,
+  context: FeedbackContext,
+): ValidationIssue[] => {
+  const schemaIssues = validateWithSchema(item, rememberMemoryActionSchema)
+  if (schemaIssues.length > 0) return schemaIssues
+  if (item.type !== 'remember_memory') return schemaIssues
+  return validateRememberMemoryAction(item, context)
 }

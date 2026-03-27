@@ -10,7 +10,7 @@ import {
   expectSingleRejectedFeedback,
 } from './helpers/manager-intent-evidence.js'
 
-test('mutate_task cancel stays allowed for same-focus replacement batch', () => {
+test('task_control cancel stays allowed for same-focus replacement batch', () => {
   const task = createIntentEvidenceTask({
     title: '修复 WebUI restart 与 scroll-bottom',
     cwd: '/repo/mimikit',
@@ -31,17 +31,23 @@ test('mutate_task cancel stays allowed for same-focus replacement batch', () => 
   const feedback = collectManagerActionFeedback(
     [
       {
-        name: 'mutate_task',
-        attrs: { id: task.id, op: 'cancel' },
+        type: 'task_control',
+        task_id: task.id,
+        action: 'cancel',
+        instructions: [],
       },
       {
-        name: 'enqueue_task',
-        attrs: {
+        type: 'enqueue_task',
+        task: {
           title: '仅做 WebUI restart 与 scroll-bottom 的代码审查',
           cwd: '/repo/mimikit',
+          mode: 'read',
           goal: '只对 WebUI restart 与 scroll-bottom 做代码审查',
-          in_scope: '阅读相关代码并给出审查结论',
-          done_when_1: '输出代码审查结论，不做修复',
+          in_scope: ['阅读相关代码并给出审查结论'],
+          out_of_scope: [],
+          done_when: ['输出代码审查结论，不做修复'],
+          context_refs: [],
+          instructions: [],
         },
       },
     ],
@@ -58,7 +64,7 @@ test('mutate_task cancel stays allowed for same-focus replacement batch', () => 
   expect(feedback).toHaveLength(0)
 })
 
-test('mutate_task cancel stays blocked when accompanying enqueue task is unrelated even in same focus and cwd', () => {
+test('task_control cancel stays blocked when accompanying enqueue task is unrelated even in same focus and cwd', () => {
   const task = createIntentEvidenceTask({
     title: '修复 WebUI restart 与 scroll-bottom',
     cwd: '/repo/mimikit',
@@ -66,17 +72,23 @@ test('mutate_task cancel stays blocked when accompanying enqueue task is unrelat
   const feedback = collectManagerActionFeedback(
     [
       {
-        name: 'mutate_task',
-        attrs: { id: task.id, op: 'cancel' },
+        type: 'task_control',
+        task_id: task.id,
+        action: 'cancel',
+        instructions: [],
       },
       {
-        name: 'enqueue_task',
-        attrs: {
+        type: 'enqueue_task',
+        task: {
           title: '检查 Telegram 广播失败',
           cwd: '/repo/mimikit',
+          mode: 'read',
           goal: '检查 Telegram 广播失败的原因',
-          in_scope: '阅读相关代码与日志',
-          done_when_1: '输出广播失败原因',
+          in_scope: ['阅读相关代码与日志'],
+          out_of_scope: [],
+          done_when: ['输出广播失败原因'],
+          context_refs: [],
+          instructions: [],
         },
       },
     ],
@@ -91,7 +103,7 @@ test('mutate_task cancel stays blocked when accompanying enqueue task is unrelat
   )
 
   expectSingleRejectedFeedback(feedback, {
-    action: 'mutate_task',
+    action: 'task_control',
     error: 'action_execution_rejected',
     hintIncludes: ['intent-evidence guard 未通过', task.id],
   })

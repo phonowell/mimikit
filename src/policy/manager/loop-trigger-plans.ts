@@ -47,12 +47,7 @@ const triggerPlans = async (params: {
   let triggeredCount = 0
   let stateChanged = false
   for (const plan of sortTriggerPlans(params.plans)) {
-    if (
-      remainingSlots !== undefined &&
-      remainingSlots <= 0 &&
-      plan.effect.kind === 'enqueue_task'
-    )
-      continue
+    if (remainingSlots !== undefined && remainingSlots <= 0) continue
     const result = await firePlan({
       runtime: params.runtime,
       plan,

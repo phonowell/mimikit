@@ -26,17 +26,21 @@ beforeEach(() => {
 })
 
 const buildInvalidArgsRunResult = (elapsedMs: number) => ({
-  output:
-    '<M:enqueue_task title="task" cwd="/tmp/task" goal="ship" in_scope="frontend only" done_when_1="tests pass" />',
+  output: 'invalid enqueue task',
   actions: [
     {
-      name: 'enqueue_task',
-      attrs: {
+      type: 'enqueue_task',
+      task: {
         title: 'task',
         cwd: '/tmp/task',
+        mode: 'write',
         goal: 'ship',
-        in_scope: 'frontend only',
-        done_when_1: 'tests pass',
+        in_scope: ['frontend only'],
+        out_of_scope: [],
+        done_when: ['tests pass'],
+        context_refs: [],
+        instructions: [],
+        provider: 'codex',
       },
     },
   ],
@@ -45,33 +49,33 @@ const buildInvalidArgsRunResult = (elapsedMs: number) => ({
   threadId: 'session-manager-invalid-args',
 })
 
-const invalidWorkerPromptFeedback = {
+const invalidProviderFeedback = {
   action: 'enqueue_task',
   error: 'invalid_action_args',
-  hint:
-    '参数校验失败：worker_prompt: Invalid input: expected string, received undefined',
+  hint: '参数校验失败：task: Unrecognized key: "provider"',
   code: 'invalid_action_args' as const,
   repair: {
     kind: 'fix_action_args' as const,
-    issues: [
-      'worker_prompt: Invalid input: expected string, received undefined',
-    ],
-    missing_required_attr: 'worker_prompt',
-    missing_required_attrs: ['worker_prompt'],
+    issues: ['task: Unrecognized key: "provider"'],
   },
 }
 
 test('runManagerCorrectionRounds explains missing execution boundary in user terms', async () => {
   runManagerRoundWithRecoveryMock.mockResolvedValueOnce({
-    output:
-      '<M:enqueue_task worker_prompt="do work" title="task" cwd="/tmp/task" />',
+    output: 'missing task contract',
     actions: [
       {
-        name: 'enqueue_task',
-        attrs: {
-          worker_prompt: 'do work',
+        type: 'enqueue_task',
+        task: {
           title: 'task',
           cwd: '/tmp/task',
+          mode: 'write',
+          goal: 'ship',
+          in_scope: ['frontend only'],
+          out_of_scope: [],
+          done_when: ['tests pass'],
+          context_refs: [],
+          instructions: [],
         },
       },
     ],
@@ -114,14 +118,14 @@ test('runManagerCorrectionRounds explains missing execution boundary in user ter
     plans: [],
     workingFocusIds: ['focus-global'],
     maxCorrectionRounds: 3,
-    resolveFocusId: () => 'focus-global',
   })
 
   expect(result.roundLimitReached).toBe(true)
   expect(result.parsed.text).toContain('enqueue_task 动作无法继续执行')
   expect(result.parsed.text).toContain('goal')
-  expect(result.parsed.text).toContain('done_when_{n}')
-  expect(result.parsed.text).toContain('继续派发前还缺 3 个最小信息')
+  expect(result.parsed.text).toContain('in_scope')
+  expect(result.parsed.text).toContain('done_when')
+  expect(result.parsed.text).toContain('cwd/mode')
 })
 
 test('runManagerCorrectionRounds returns concrete invalid action args instead of generic scope clarification', async () => {
@@ -132,13 +136,13 @@ test('runManagerCorrectionRounds returns concrete invalid action args instead of
     .mockResolvedValueOnce({
       done: false,
       extra: {
-        actionFeedback: [invalidWorkerPromptFeedback],
+        actionFeedback: [invalidProviderFeedback],
       },
     })
     .mockResolvedValueOnce({
       done: false,
       extra: {
-        actionFeedback: [invalidWorkerPromptFeedback],
+        actionFeedback: [invalidProviderFeedback],
       },
     })
 
@@ -163,11 +167,10 @@ test('runManagerCorrectionRounds returns concrete invalid action args instead of
     plans: [],
     workingFocusIds: ['focus-global'],
     maxCorrectionRounds: 3,
-    resolveFocusId: () => 'focus-global',
   })
 
   expect(result.roundLimitReached).toBe(true)
   expect(result.parsed.text).toContain('当前 enqueue_task 动作无法继续执行')
-  expect(result.parsed.text).toContain('worker_prompt: Invalid input')
+  expect(result.parsed.text).toContain('provider')
   expect(result.parsed.text).not.toContain('goal（最终要什么结果）')
 })

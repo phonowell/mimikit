@@ -11,10 +11,8 @@ test('remember_memory writes MEMORY.md immediately and emits system event payloa
   const runtime = await createRuntime()
   await applyTaskActions(runtime, [
     {
-      name: 'remember_memory',
-      attrs: {
-        content: 'User insists on always using strict ESM imports.',
-      },
+      type: 'remember_memory',
+      content: 'User insists on always using strict ESM imports.',
     },
   ])
 
