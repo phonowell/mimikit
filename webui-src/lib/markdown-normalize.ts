@@ -30,16 +30,23 @@ const splitTrailingPunctuation = (
   return { path: value.slice(0, -match[0].length), trailing: match[0] }
 }
 
+const isMarkdownLinkDestination = (
+  source: string,
+  prefixOffset: number,
+  prefixLength: number,
+): boolean => {
+  let cursor = prefixOffset + prefixLength
+  while (cursor > 0 && /\s/u.test(source.slice(cursor - 1, cursor))) cursor -= 1
+  if (source.slice(cursor - 1, cursor) !== '(') return false
+  return source.slice(cursor - 2, cursor - 1) === ']'
+}
+
 const linkifyPathSegment = (segment: string): string =>
   segment.replace(PATH_TOKEN, (full, prefix, token, offset, source) => {
     const normalizedPrefix = prefix ?? ''
     const rawToken = token ?? ''
     if (!rawToken) return full
-    if (
-      normalizedPrefix === '(' &&
-      offset > 0 &&
-      source.slice(offset - 1, offset) === ']'
-    )
+    if (isMarkdownLinkDestination(source, offset, normalizedPrefix.length))
       return full
     const { path, trailing } = splitTrailingPunctuation(rawToken)
     const href = toArtifactUrl(path)
