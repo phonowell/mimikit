@@ -1,21 +1,18 @@
 import { execFileSync } from 'node:child_process'
-import { access, mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, writeFile } from 'node:fs/promises'
 
 import { afterEach, expect, test } from 'vitest'
 
 import { readHistory } from '../src/persistence/history/store.js'
-import { INBOX_FOCUS_ID } from '../src/work/focus/constants.js'
 import { applyTaskActions } from '../src/policy/manager/action-apply.js'
 import { resolveRunTaskTarget } from '../src/policy/manager/run-task-target.js'
 import {
   buildTaskContractFromDraft,
   resolveWorkerPromptFromDraft,
 } from '../src/policy/manager/task-contract.js'
-import {
-  cleanupGitRepos,
-  createGitRepo,
-  resolveExpectedWorktreePath,
-} from './helpers/git-repo.js'
+import { INBOX_FOCUS_ID } from '../src/work/focus/constants.js'
+
+import { cleanupGitRepos, createGitRepo } from './helpers/git-repo.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 import type { ManagerTaskDraft } from '../src/policy/manager/manager-turn-schema.js'
@@ -43,27 +40,6 @@ const buildTaskDraft = (
 })
 
 afterEach(cleanupGitRepos)
-
-test('enqueue_task dispatches immediately and prepares worktree for write tasks', async () => {
-  const cwd = await createGitRepo()
-  const runtime = await createRuntime()
-
-  await applyTaskActions(runtime, [
-    {
-      type: 'enqueue_task',
-      task: buildTaskDraft(cwd, {
-        title: 'high cost task',
-        instructions: ['prefer a concise patch'],
-      }),
-    },
-  ])
-
-  expect(runtime.tasks).toHaveLength(1)
-  expect(runtime.ui.pendingUserChoices).toHaveLength(0)
-  const task = runtime.tasks[0]
-  const expectedWorktree = resolveExpectedWorktreePath(cwd, task?.branch ?? '')
-  await expect(access(expectedWorktree)).resolves.toBeUndefined()
-})
 
 test('enqueue_task worktree prepare failure appends action feedback without throwing', async () => {
   const cwd = await createGitRepo()

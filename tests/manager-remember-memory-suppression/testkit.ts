@@ -24,7 +24,7 @@ export const resetRememberMemoryMocks = (): void => {
 export const mockRememberMemoryRound = (
   output: string,
   threadId: string,
-  actions: Array<{ name: string; attrs: Record<string, string> }> = [],
+  actions: Array<Record<string, unknown>> = [],
 ): void => {
   runManagerRoundWithRecoveryMock.mockResolvedValueOnce({
     output,

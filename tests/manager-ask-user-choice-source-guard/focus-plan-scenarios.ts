@@ -37,7 +37,7 @@ test('set_plan rejects past scheduled_at values', () => {
 
   expect(feedback).toHaveLength(1)
   expect(feedback[0]?.action).toBe('set_plan')
-  expect(feedback[0]?.error).toBe('invalid_action_args')
+  expect(feedback[0]?.error).toBe('action_execution_rejected')
   expect(feedback[0]?.hint).toContain('scheduled_at')
 })
 

@@ -13,18 +13,12 @@ beforeEach(() => {
 })
 
 test('runManagerCorrectionRounds silently suppresses unsupported remember_memory actions', async () => {
-  mockRememberMemoryRound(
-    '收到。',
-    'session-remember-memory-suppressed',
-    [
-      {
-        name: 'remember_memory',
-        attrs: {
-          content: rememberMemoryContent,
-        },
-      },
-    ],
-  )
+  mockRememberMemoryRound('收到。', 'session-remember-memory-suppressed', [
+    {
+      type: 'remember_memory',
+      content: rememberMemoryContent,
+    },
+  ])
 
   const runtime = await createRememberMemoryRuntime(
     '/tmp/mimikit-remember-memory-suppressed-test',
@@ -48,10 +42,8 @@ test('runManagerCorrectionRounds does not claim remember_memory succeeded after 
     'session-remember-memory-suppressed-claim',
     [
       {
-        name: 'remember_memory',
-        attrs: {
-          content: rememberMemoryContent,
-        },
+        type: 'remember_memory',
+        content: rememberMemoryContent,
       },
     ],
   )
@@ -78,10 +70,8 @@ test('runManagerCorrectionRounds does not keep remember_memory success claims af
     'session-remember-memory-failed-claim',
     [
       {
-        name: 'remember_memory',
-        attrs: {
-          content: rememberMemoryContent,
-        },
+        type: 'remember_memory',
+        content: rememberMemoryContent,
       },
     ],
   )
@@ -110,20 +100,22 @@ test('runManagerCorrectionRounds preserves non-memory reply text when remember_m
     'session-remember-memory-suppressed-mixed',
     [
       {
-        name: 'enqueue_task',
-        attrs: {
+        type: 'enqueue_task',
+        task: {
           title: '继续处理当前问题',
           cwd: '/tmp/task',
+          mode: 'write',
           goal: '继续处理当前问题',
-          in_scope: '只处理当前问题',
-          done_when_1: '给出结果',
+          in_scope: ['只处理当前问题'],
+          out_of_scope: [],
+          done_when: ['给出结果'],
+          context_refs: [],
+          instructions: [],
         },
       },
       {
-        name: 'remember_memory',
-        attrs: {
-          content: rememberMemoryContent,
-        },
+        type: 'remember_memory',
+        content: rememberMemoryContent,
       },
     ],
   )
@@ -138,6 +130,6 @@ test('runManagerCorrectionRounds preserves non-memory reply text when remember_m
   expect(result.parsed.text).toBe('我会安排一个任务继续处理。')
   expect(result.parsed.actions).toHaveLength(1)
   expect(result.parsed.actions[0]).toMatchObject({
-    name: 'enqueue_task',
+    type: 'enqueue_task',
   })
 })

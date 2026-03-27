@@ -16,11 +16,9 @@ test('remember_memory is blocked for unstable multiline process text', () => {
   const feedback = collectManagerActionFeedback(
     [
       {
-        name: 'remember_memory',
-        attrs: {
-          content:
-            'Keep this for later:\n- finish task-refactor-auth\n- rerun review-code-changes',
-        },
+        type: 'remember_memory',
+        content:
+          'Keep this for later:\n- finish task-refactor-auth\n- rerun review-code-changes',
       },
     ],
     {
@@ -42,10 +40,8 @@ test('remember_memory is blocked for runtime object references', () => {
   const feedback = collectManagerActionFeedback(
     [
       {
-        name: 'remember_memory',
-        attrs: {
-          content: 'Keep task-refactor-auth paused until review finishes.',
-        },
+        type: 'remember_memory',
+        content: 'Keep task-refactor-auth paused until review finishes.',
       },
     ],
     {
@@ -66,10 +62,8 @@ test('remember_memory no longer emits user-facing feedback without direct user e
   const feedback = collectManagerActionFeedback(
     [
       {
-        name: 'remember_memory',
-        attrs: {
-          content: 'Always keep replies concise and in Chinese.',
-        },
+        type: 'remember_memory',
+        content: 'Always keep replies concise and in Chinese.',
       },
     ],
     {
@@ -84,10 +78,8 @@ test('remember_memory stays allowed for direct stable preference evidence', () =
   const feedback = collectManagerActionFeedback(
     [
       {
-        name: 'remember_memory',
-        attrs: {
-          content: 'Always keep replies concise and in Chinese.',
-        },
+        type: 'remember_memory',
+        content: 'Always keep replies concise and in Chinese.',
       },
     ],
     {

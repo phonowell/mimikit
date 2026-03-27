@@ -5,31 +5,23 @@ import { describe, expect, test } from 'vitest'
 
 const tsxCliPath = resolve(process.cwd(), 'node_modules/tsx/dist/cli.mjs')
 
-const importWithTsx = (specifier: string): string =>
-  execFileSync(
-    process.execPath,
-    [
-      tsxCliPath,
-      '--eval',
-      `import('${specifier}').then(() => console.log('ok'))`,
-    ],
-    {
-      cwd: process.cwd(),
-      encoding: 'utf8',
-    },
-  )
-
 describe('action-validation barrel exports load registry modules in tsx runtime', () => {
-  test('plan action registry loads', () => {
+  test('plan and support action registries load', () => {
     expect(
-      importWithTsx('./src/policy/manager/action-registry-plan-definitions.ts'),
-    ).toContain('ok')
-  })
-
-  test('support action registry loads', () => {
-    expect(
-      importWithTsx(
-        './src/policy/manager/action-registry-support-definitions.ts',
+      execFileSync(
+        process.execPath,
+        [
+          tsxCliPath,
+          '--eval',
+          `Promise.all([
+            import('./src/policy/manager/action-registry-plan-definitions.ts'),
+            import('./src/policy/manager/action-registry-support-definitions.ts'),
+          ]).then(() => console.log('ok'))`,
+        ],
+        {
+          cwd: process.cwd(),
+          encoding: 'utf8',
+        },
       ),
     ).toContain('ok')
   })

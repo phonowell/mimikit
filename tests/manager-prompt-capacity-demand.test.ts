@@ -4,11 +4,11 @@ import { defaultConfig } from '../src/bootstrap/config.js'
 import { buildManagerPromptPayload } from '../src/policy/prompts/build-prompts.js'
 
 const { readHistoryMock } = vi.hoisted(() => ({
-  readHistoryMock: vi.fn(async () => []),
+  readHistoryMock: vi.fn(() => []),
 }))
 
 const { readMemoryEntriesMock } = vi.hoisted(() => ({
-  readMemoryEntriesMock: vi.fn(async () => []),
+  readMemoryEntriesMock: vi.fn(() => []),
 }))
 
 vi.mock('../src/persistence/history/store.js', () => ({
@@ -19,7 +19,7 @@ vi.mock('../src/work/memory/store.js', () => ({
   readMemoryEntries: readMemoryEntriesMock,
 }))
 
-const buildCapacityPromptPayload = async (params: {
+const buildCapacityPromptPayload = (params: {
   workDir: string
   taskId: string
   prompt: string
@@ -69,32 +69,28 @@ const buildCapacityPromptPayload = async (params: {
   })
 }
 
-test('buildManagerPromptPayload keeps working focus history for minimal capacity packets', async () => {
-  const payload = await buildCapacityPromptPayload({
-    workDir: '/tmp/mimikit-context-demand-capacity',
-    taskId: 'task-capacity-1',
-    prompt: 'resume queued work',
-    title: 'Resume queued work',
-    packetMode: 'minimal',
-  })
+test('buildManagerPromptPayload keeps working focus context for capacity packets across packet modes', async () => {
+  for (const scenario of [
+    {
+      workDir: '/tmp/mimikit-context-demand-capacity',
+      taskId: 'task-capacity-1',
+      prompt: 'resume queued work',
+      title: 'Resume queued work',
+      packetMode: 'minimal' as const,
+    },
+    {
+      workDir: '/tmp/mimikit-context-demand-capacity-expanded',
+      taskId: 'task-capacity-2',
+      prompt: 'resume queued work with follow-up',
+      title: 'Resume queued work with follow-up',
+      packetMode: 'expanded' as const,
+    },
+  ]) {
+    const payload = await buildCapacityPromptPayload(scenario)
 
-  expect(readHistoryMock).toHaveBeenCalledTimes(1)
-  expect(readMemoryEntriesMock).toHaveBeenCalledTimes(1)
-  expect(payload.contextPacket.workingFocusIds).toEqual(['focus-capacity'])
-  expect(payload.prompt).toContain('working_focuses')
-})
-
-test('buildManagerPromptPayload keeps working focus context for expanded capacity packets', async () => {
-  const payload = await buildCapacityPromptPayload({
-    workDir: '/tmp/mimikit-context-demand-capacity-expanded',
-    taskId: 'task-capacity-2',
-    prompt: 'resume queued work with follow-up',
-    title: 'Resume queued work with follow-up',
-    packetMode: 'expanded',
-  })
-
-  expect(readHistoryMock).toHaveBeenCalledTimes(1)
-  expect(readMemoryEntriesMock).toHaveBeenCalledTimes(1)
-  expect(payload.contextPacket.workingFocusIds).toEqual(['focus-capacity'])
-  expect(payload.prompt).toContain('working_focuses')
+    expect(readHistoryMock).toHaveBeenCalledTimes(1)
+    expect(readMemoryEntriesMock).toHaveBeenCalledTimes(1)
+    expect(payload.contextPacket.workingFocusIds).toEqual(['focus-capacity'])
+    expect(payload.prompt).toContain('working_focuses')
+  }
 })

@@ -14,18 +14,12 @@ beforeEach(() => {
 })
 
 test('runManagerCorrectionRounds keeps remember_memory when repeated user history supports it', async () => {
-  mockRememberMemoryRound(
-    '收到。',
-    'session-remember-memory-repeated',
-    [
-      {
-        name: 'remember_memory',
-        attrs: {
-          content: rememberMemoryContent,
-        },
-      },
-    ],
-  )
+  mockRememberMemoryRound('收到。', 'session-remember-memory-repeated', [
+    {
+      type: 'remember_memory',
+      content: rememberMemoryContent,
+    },
+  ])
 
   const runtime = await createRememberMemoryRuntime(
     '/tmp/mimikit-remember-memory-repeated-test',
@@ -39,9 +33,7 @@ test('runManagerCorrectionRounds keeps remember_memory when repeated user histor
   expect(result.parsed.text).toBe('收到。')
   expect(result.parsed.actions).toHaveLength(1)
   expect(result.parsed.actions[0]).toMatchObject({
-    name: 'remember_memory',
-    attrs: {
-      content: rememberMemoryContent,
-    },
+    type: 'remember_memory',
+    content: rememberMemoryContent,
   })
 })

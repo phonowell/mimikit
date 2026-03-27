@@ -129,6 +129,7 @@ export const runManagerCorrectionRounds = async (params: {
     lastParsed = parsed
     const followup = await resolveRoundFollowup({
       runtime,
+      inputs,
       parsed: parsed.actions,
       output: runResult.output,
       allowAskUserChoice,

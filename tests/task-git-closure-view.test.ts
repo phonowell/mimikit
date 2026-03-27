@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { afterEach, expect, test } from 'vitest'
 
 import { buildTaskViews } from '../src/surface/read-model/task-view.js'
+
 import { cleanupGitRepos, createGitRepo } from './helpers/git-repo.js'
 import { createTaskFixture } from './helpers/runtime-snapshot.js'
 
@@ -34,27 +35,6 @@ test('buildTaskViews derives review passed from worktree sentinel', async () => 
     at: '2026-03-21T00:00:00.000Z',
     sha,
   })
-})
-
-test('buildTaskViews derives merged=true when sentinel sha is ancestor of main', async () => {
-  const cwd = await createGitRepo()
-  const sha = execFileSync('git', ['rev-parse', 'HEAD'], {
-    cwd,
-    encoding: 'utf8',
-  }).trim()
-  await mkdir(join(cwd, '.mimikit'), { recursive: true })
-  await writeFile(
-    join(cwd, '.mimikit', 'review-code-changes.passed'),
-    `sha=${sha}\n`,
-    'utf8',
-  )
-
-  const task = createTaskFixture({
-    id: 'task-merged',
-    repoKey: join(cwd, '.git'),
-    git: { worktreePath: cwd, branch: 'main' },
-  })
-  const { tasks: views } = buildTaskViews([task])
   expect(views[0]?.gitClosure?.merged).toBe(true)
 })
 

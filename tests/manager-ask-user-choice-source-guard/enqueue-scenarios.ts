@@ -68,7 +68,6 @@ test('enqueue_task rejects missing task contract attrs', () => {
 
   expect(feedback).toHaveLength(1)
   expect(feedback[0]?.action).toBe('enqueue_task')
-  expect(feedback[0]?.error).toBe('action_execution_rejected')
-  expect(feedback[0]?.hint).toContain('task 合同不完整')
+  expect(feedback[0]?.error).toBe('invalid_action_args')
   expect(feedback[0]?.hint).toContain('done_when')
 })

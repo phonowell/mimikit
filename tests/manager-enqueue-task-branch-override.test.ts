@@ -4,13 +4,14 @@ import { join } from 'node:path'
 
 import { afterEach, expect, test } from 'vitest'
 
-import { INBOX_FOCUS_ID } from '../src/work/focus/constants.js'
 import { applyTaskActions } from '../src/policy/manager/action-apply.js'
 import { resolveRunTaskTarget } from '../src/policy/manager/run-task-target.js'
 import {
   buildTaskContractFromDraft,
   resolveWorkerPromptFromDraft,
 } from '../src/policy/manager/task-contract.js'
+import { INBOX_FOCUS_ID } from '../src/work/focus/constants.js'
+
 import {
   cleanupGitRepos,
   createGitRepo,
@@ -43,7 +44,7 @@ const buildTaskDraft = (
   ...overrides,
 })
 
-const enqueueTask = async (
+const enqueueTask = (
   runtime: RuntimeState,
   task: ManagerTaskDraft,
 ): Promise<void> =>
@@ -56,14 +57,23 @@ const enqueueTask = async (
 
 afterEach(cleanupGitRepos)
 
-test('enqueue_task write mode auto-materializes worktree cwd', async () => {
+test('enqueue_task write mode materializes worktrees and keeps same-batch drafts distinct', async () => {
   const cwd = await createGitRepo()
   const runtime = await createRuntime()
   const repoKey = join(await realpath(cwd), '.git')
 
-  await enqueueTask(runtime, buildTaskDraft(cwd, { title: 'auto worktree task' }))
+  await applyTaskActions(runtime, [
+    {
+      type: 'enqueue_task',
+      task: buildTaskDraft(cwd, { title: 'same title a' }),
+    },
+    {
+      type: 'enqueue_task',
+      task: buildTaskDraft(cwd, { title: 'same title b' }),
+    },
+  ])
 
-  expect(runtime.tasks).toHaveLength(1)
+  expect(runtime.tasks).toHaveLength(2)
   const task = runtime.tasks[0]
   expect(task?.repoKey).toBe(repoKey)
   expect(task?.resourceMode).toBe('write')
@@ -76,13 +86,18 @@ test('enqueue_task write mode auto-materializes worktree cwd', async () => {
       encoding: 'utf8',
     }).trim(),
   ).toBe(task?.branch)
+  expect(runtime.tasks[0]?.branch).not.toBe(runtime.tasks[1]?.branch)
+  expect(runtime.tasks[0]?.cwd).not.toBe(runtime.tasks[1]?.cwd)
 }, 15_000)
 
 test('enqueue_task read mode keeps repo cwd without creating a worktree', async () => {
   const cwd = await createGitRepo()
   const runtime = await createRuntime()
 
-  await enqueueTask(runtime, buildTaskDraft(cwd, { title: 'read task', mode: 'read' }))
+  await enqueueTask(
+    runtime,
+    buildTaskDraft(cwd, { title: 'read task', mode: 'read' }),
+  )
 
   expect(runtime.tasks).toHaveLength(1)
   expect(runtime.tasks[0]?.resourceMode).toBe('read')
@@ -95,7 +110,10 @@ test('enqueue_task maps repo subdirectory into auto-generated worktree cwd', asy
   const nestedCwd = join(cwd, 'src')
   const runtime = await createRuntime()
 
-  await enqueueTask(runtime, buildTaskDraft(nestedCwd, { title: 'nested task' }))
+  await enqueueTask(
+    runtime,
+    buildTaskDraft(nestedCwd, { title: 'nested task' }),
+  )
 
   expect(runtime.tasks).toHaveLength(1)
   const task = runtime.tasks[0]
@@ -128,24 +146,4 @@ test('enqueue_task reuses existing auto-generated worktree for the same semantic
   expect(runtime.tasks).toHaveLength(1)
   expect(runtime.tasks[0]?.cwd).toBe(await realpath(target.cwd))
   expect(runtime.tasks[0]?.branch).toBe(target.branch)
-})
-
-test('enqueue_task keeps same-batch tasks distinct across unique task drafts', async () => {
-  const cwd = await createGitRepo()
-  const runtime = await createRuntime()
-
-  await applyTaskActions(runtime, [
-    {
-      type: 'enqueue_task',
-      task: buildTaskDraft(cwd, { title: 'same title a' }),
-    },
-    {
-      type: 'enqueue_task',
-      task: buildTaskDraft(cwd, { title: 'same title b' }),
-    },
-  ])
-
-  expect(runtime.tasks).toHaveLength(2)
-  expect(runtime.tasks[0]?.branch).not.toBe(runtime.tasks[1]?.branch)
-  expect(runtime.tasks[0]?.cwd).not.toBe(runtime.tasks[1]?.cwd)
 })

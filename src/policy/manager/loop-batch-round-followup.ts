@@ -53,6 +53,7 @@ type RoundFollowupResult =
 
 export const resolveRoundFollowup = async (params: {
   runtime: ManagerRuntime
+  inputs?: Parameters<typeof buildActionFeedbackContext>[0]['inputs']
   parsed: Parsed[]
   output: string
   allowAskUserChoice: boolean
@@ -75,7 +76,7 @@ export const resolveRoundFollowup = async (params: {
         allowAskUserChoice: params.allowAskUserChoice,
         resultTaskIds: params.resultTaskIds,
         wakeProfile: params.wakeProfile,
-        inputs: params.runtime.session.inflightInputs,
+        ...(params.inputs ? { inputs: params.inputs } : {}),
         ...(recentUserIntentTexts.length > 0 ? { recentUserIntentTexts } : {}),
       }),
       scheduleNowIso: resolveScheduleNowIso(
