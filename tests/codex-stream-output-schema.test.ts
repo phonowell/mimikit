@@ -115,4 +115,66 @@ describe('runCodexStream output schema forwarding', () => {
       total: 3,
     })
   })
+
+  test('emits command execution activity as partial output before final agent message', async () => {
+    const partialOutputs: string[] = []
+    const runStreamed = vi.fn().mockResolvedValue({
+      events: (async function* () {
+        yield {
+          type: 'item.completed',
+          item: {
+            id: 'cmd-1',
+            type: 'command_execution',
+            command: 'sleep 2 && echo done',
+            aggregated_output: 'done\n',
+            status: 'completed',
+            exit_code: 0,
+          },
+        }
+        yield {
+          type: 'item.completed',
+          item: {
+            type: 'agent_message',
+            id: 'agent-1',
+            text: '{"reply":"ok","handoff":{"summary":"done"}}',
+          },
+        }
+        yield {
+          type: 'turn.completed',
+          usage: { input_tokens: 2, output_tokens: 1, cached_input_tokens: 0 },
+        }
+      })(),
+    })
+    const request = createRequest({
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        reply: { type: 'string' },
+        handoff: {
+          type: 'object',
+          additionalProperties: false,
+          properties: { summary: { type: 'string' } },
+          required: ['summary'],
+        },
+      },
+      required: ['reply', 'handoff'],
+    })
+
+    const result = await runCodexStream(
+      { runStreamed },
+      {
+        ...request,
+        onPartialOutput: (output) => {
+          partialOutputs.push(output)
+        },
+      },
+      new AbortController().signal,
+      () => undefined,
+    )
+
+    expect(partialOutputs).toEqual(
+      expect.arrayContaining([expect.stringContaining('sleep 2 && echo done')]),
+    )
+    expect(result.output).toBe('{"reply":"ok","handoff":{"summary":"done"}}')
+  })
 })

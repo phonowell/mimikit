@@ -4,6 +4,7 @@ import { readErrorCode } from '../../foundation/shared/error-code.js'
 import { checkExistingPathBoundary } from '../../persistence/fs/path-safety.js'
 import { readTextFile } from '../../persistence/fs/read-text.js'
 import { buildArchiveDocument } from '../../persistence/storage/archive-format.js'
+import { readTaskProgress } from '../../persistence/storage/task-progress.js'
 import { readTaskExecutionSpec } from '../../work/spec/store.js'
 
 import { resolveRouteId } from './route-params.js'
@@ -33,21 +34,33 @@ const buildLiveArchive = async (
   task: Task,
 ): Promise<string> => {
   const spec = await readTaskExecutionSpec(stateDir, task.executionSpecId)
+  const progress = await readTaskProgress(stateDir, task.id)
   const usage = task.result?.usage ?? task.usage
   const cancel = task.result?.cancel ?? task.cancel
   const resultStatus = task.result?.status ?? task.status
   const resultDuration = task.result?.durationMs ?? task.durationMs
   const resultOutput = task.result?.output.trim()
+  const activityTimeline = progress
+    .filter((event) => event.type === 'worker_activity')
+    .map((event) => {
+      const text =
+        typeof event.payload.text === 'string' ? event.payload.text : ''
+      return text.trim()
+    })
+    .filter(Boolean)
+    .join('\n\n')
   const result =
     resultOutput && resultOutput.length > 0
       ? resultOutput
-      : task.status === 'pending'
-        ? 'Task is queued. Final archive is not available yet.'
-        : task.status === 'paused'
-          ? 'Task is paused. Final archive is not available yet.'
-          : task.status === 'running'
-            ? 'Task is running. Final archive is not available yet.'
-            : 'Task archive file is missing. Showing live snapshot.'
+      : activityTimeline
+        ? activityTimeline
+        : task.status === 'pending'
+          ? 'Task is queued. Final archive is not available yet.'
+          : task.status === 'paused'
+            ? 'Task is paused. Final archive is not available yet.'
+            : task.status === 'running'
+              ? 'Task is running. Final archive is not available yet.'
+              : 'Task archive file is missing. Showing live snapshot.'
 
   return buildArchiveDocument(
     [

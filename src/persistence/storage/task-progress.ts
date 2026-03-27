@@ -3,10 +3,10 @@ import { join } from 'node:path'
 import { z } from 'zod'
 
 import { nowIso } from '../../foundation/shared/utils.js'
-import { ensureDir } from '../fs/paths.js'
+import { ensureDir, listFiles } from '../fs/paths.js'
 
 import { dateStamp } from './archive-format.js'
-import { appendJsonl } from './jsonl.js'
+import { appendJsonl, readJsonl } from './jsonl.js'
 
 type JsonObject = Record<string, unknown>
 
@@ -22,6 +22,8 @@ const taskProgressEventSchema = z
   .strict()
 
 const TASK_PROGRESS_DIR = 'task-progress'
+
+export type TaskProgressEvent = z.infer<typeof taskProgressEventSchema>
 
 const taskProgressDateDir = (stateDir: string, timestamp: string): string =>
   join(stateDir, TASK_PROGRESS_DIR, dateStamp(timestamp))
@@ -49,4 +51,39 @@ export const appendTaskProgress = async (params: {
   })
   await appendJsonl(path, [event])
   return path
+}
+
+const sortTaskProgress = (
+  left: TaskProgressEvent,
+  right: TaskProgressEvent,
+): number => {
+  const timeDiff = left.createdAt.localeCompare(right.createdAt)
+  if (timeDiff !== 0) return timeDiff
+  return left.type.localeCompare(right.type)
+}
+
+export const readTaskProgress = async (
+  stateDir: string,
+  taskId: string,
+): Promise<TaskProgressEvent[]> => {
+  const entries = await listFiles(join(stateDir, TASK_PROGRESS_DIR))
+  const dateDirs = entries
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort()
+  if (dateDirs.length === 0) return []
+  const chunks = await Promise.all(
+    dateDirs.map((dateDir) =>
+      readJsonl<TaskProgressEvent>(
+        join(stateDir, TASK_PROGRESS_DIR, dateDir, `${taskId}.jsonl`),
+        {
+          validate: (value) => {
+            const parsed = taskProgressEventSchema.safeParse(value)
+            return parsed.success ? parsed.data : undefined
+          },
+        },
+      ),
+    ),
+  )
+  return chunks.flat().sort(sortTaskProgress)
 }
