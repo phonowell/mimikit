@@ -14,6 +14,17 @@ import type { Codex } from '@openai/codex-sdk'
 
 export const approvalPolicy = 'never' as const
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+
+export const normalizeCodexOutputSchema = (
+  outputSchema: unknown,
+): unknown | undefined => {
+  if (!isRecord(outputSchema)) return outputSchema
+  if (outputSchema.type !== 'json_schema') return outputSchema
+  return isRecord(outputSchema.schema) ? outputSchema.schema : outputSchema
+}
+
 export const sandboxModeFor = (
   role: CodexSdkProviderRequest['role'],
 ): 'danger-full-access' | 'read-only' =>

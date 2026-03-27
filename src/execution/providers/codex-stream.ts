@@ -1,5 +1,6 @@
 import { normalizeUsage } from '../../foundation/shared/utils.js'
 
+import { normalizeCodexOutputSchema } from './codex-sdk-provider-helpers.js'
 import { asRecord, asString } from './provider-payload.js'
 
 import type { CodexSdkProviderRequest } from './types.js'
@@ -25,8 +26,9 @@ export const runCodexStream = async (
   signal: AbortSignal,
   resetIdle: () => void,
 ): Promise<StreamResult> => {
+  const outputSchema = normalizeCodexOutputSchema(request.outputSchema)
   const stream = await thread.runStreamed(request.prompt, {
-    ...(request.outputSchema ? { outputSchema: request.outputSchema } : {}),
+    ...(outputSchema ? { outputSchema } : {}),
     signal,
   })
   request.onTurnStarted?.()
