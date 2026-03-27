@@ -8,6 +8,7 @@ import { ActionApplyFeedbackError } from './action-apply-feedback-error.js'
 import {
   formatRecordTaskGitMergeRequiredHint,
   formatRecordTaskGitNotDoneHint,
+  formatRecordTaskGitNotFoundHint,
   formatRecordTaskGitNotGitHint,
   formatRecordTaskGitReviewRequiredHint,
   formatTaskControlAlreadyCanceledHint,
@@ -100,7 +101,7 @@ const applyRecordTaskGitAction = async (
   )
   if (result.ok) return
   if (result.status === 'not_found')
-    rejectApply('record_task_git', formatTaskControlNotFoundHint())
+    rejectApply('record_task_git', formatRecordTaskGitNotFoundHint())
   if (result.status === 'not_done')
     rejectApply('record_task_git', formatRecordTaskGitNotDoneHint(item.state))
   if (result.status === 'not_git')

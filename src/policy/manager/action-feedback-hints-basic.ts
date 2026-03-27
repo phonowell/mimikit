@@ -31,6 +31,9 @@ export const formatScheduledAtNotFutureHint = (
 export const formatTaskControlNotFoundHint = (): string =>
   renderActionFeedbackHint('task_control_not_found')
 
+export const formatTaskControlResumeInstructionsOnlyHint = (): string =>
+  renderActionFeedbackHint('task_control_resume_instructions_only')
+
 export const formatTaskControlAlreadyDoneHint = (
   action: 'pause' | 'resume' | 'cancel',
 ): string => renderActionFeedbackHint('task_control_already_done', { action })
@@ -43,6 +46,12 @@ export const formatTaskControlNotPausedHint = (): string =>
 
 export const formatTaskControlAlreadyCanceledHint = (): string =>
   renderActionFeedbackHint('task_control_already_canceled')
+
+export const formatRecordTaskGitNotFoundHint = (): string =>
+  renderActionFeedbackHint('record_task_git_not_found')
+
+export const formatRecordTaskGitReasonRequiredHint = (): string =>
+  renderActionFeedbackHint('record_task_git_reason_required')
 
 export const formatEnqueueTaskCwdInvalidHint = (reason: string): string =>
   renderActionFeedbackHint('enqueue_task_cwd_invalid', {
@@ -67,6 +76,10 @@ export const formatSetPlanDoneForbiddenHint = (): string =>
 
 export const formatDuplicateActionGenericHint = (): string =>
   renderActionFeedbackHint('duplicate_action_generic')
+
+export const formatStableDigestIssueHint = (
+  issue: 'multiline' | 'checklist' | 'protocol' | 'runtime_ref' | 'too_long',
+): string => renderActionFeedbackHint(`stable_digest_issue_${issue}` as const)
 
 export const formatRememberMemoryNotStableHint = (reason: string): string =>
   renderActionFeedbackHint('remember_memory_not_stable', { reason })

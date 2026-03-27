@@ -12,11 +12,7 @@ import {
 } from './action-evidence-hints.js'
 
 import type { SupplementalEvidenceSource } from './action-intent-evidence.js'
-import type {
-  HistoryMessage,
-  Task,
-  UserInput,
-} from '../../foundation/types/index.js'
+import type { HistoryMessage, UserInput } from '../../foundation/types/index.js'
 import type { Parsed } from '../actions/model/spec.js'
 
 const toEvidenceLabel = (source: SupplementalEvidenceSource): string => source
@@ -116,53 +112,4 @@ export const isSupportedByInputs = (params: {
   )
   if (!combinedCandidate) return false
   return scoreTextOverlap(combinedCandidate, inputText) >= 0.35
-}
-
-type TaskGitState = 'review_passed' | 'merged' | 'cleaned'
-
-const resolveTaskRef = (task: Task | undefined, taskId: string): string => {
-  const title = task?.title.trim()
-  if (title) return `${taskId} / ${title}`
-  return taskId
-}
-
-const resolveGitOpLabel = (op: TaskGitState): string => {
-  if (op === 'review_passed') return 'review passed'
-  if (op === 'merged') return 'merged'
-  return 'cleaned'
-}
-
-const resolveGitOpCandidates = (op: TaskGitState): string[] => {
-  if (op === 'review_passed')
-    return ['review passed', 'review_passed', 'review 通过']
-  if (op === 'merged') return ['merged', 'merge', '已合并', '合并到 main']
-  return ['cleaned', 'cleanup', '已清理', '清理 worktree']
-}
-
-export const isTaskGitState = (op: string): op is TaskGitState =>
-  op === 'review_passed' || op === 'merged' || op === 'cleaned'
-
-export const validateTaskGitIntentEvidence = (params: {
-  state: TaskGitState
-  task: Task | undefined
-  taskId: string
-  inputTexts: string[]
-  supplementalEvidenceSources?: Set<SupplementalEvidenceSource>
-}): string | undefined => {
-  const taskSupported = isSupportedByInputs({
-    candidates: [params.task?.title ?? '', params.taskId],
-    combinedCandidate: resolveTaskRef(params.task, params.taskId),
-    inputs: params.inputTexts,
-  })
-  const actionSupported = isSupportedByInputs({
-    candidates: resolveGitOpCandidates(params.state),
-    combinedCandidate: resolveGitOpCandidates(params.state).join('\n'),
-    inputs: params.inputTexts,
-  })
-  if (taskSupported && actionSupported) return undefined
-  return formatRecordTaskGitIntentEvidenceHint({
-    evidenceSources: formatEvidenceSources(params.supplementalEvidenceSources),
-    taskRef: resolveTaskRef(params.task, params.taskId),
-    requiredAction: resolveGitOpLabel(params.state),
-  })
 }

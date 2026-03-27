@@ -3,7 +3,6 @@ import { basename } from 'node:path'
 import {
   buildMissingIntentEvidenceHint,
   isSupportedByInputs,
-  validateTaskGitIntentEvidence,
 } from './action-intent-evidence-match.js'
 import { supportsReplacementCancelIntentEvidence } from './action-intent-evidence-replacement-cancel.js'
 import {
@@ -102,22 +101,6 @@ export const validateTaskControlIntentEvidence = (params: {
     taskRef: resolveTaskRef(task, params.item.task_id),
   })
 }
-
-export const validateRecordTaskGitIntentEvidence = (params: {
-  item: Extract<Parsed, { type: 'record_task_git' }>
-  inputTexts: string[]
-  taskById?: Map<string, Task>
-  supplementalEvidenceSources?: Set<SupplementalEvidenceSource>
-}): string | undefined =>
-  validateTaskGitIntentEvidence({
-    state: params.item.state,
-    task: params.taskById?.get(params.item.task_id),
-    taskId: params.item.task_id,
-    inputTexts: params.inputTexts,
-    ...(params.supplementalEvidenceSources
-      ? { supplementalEvidenceSources: params.supplementalEvidenceSources }
-      : {}),
-  })
 
 export const validateSetPlanIntentEvidence = (params: {
   item: Extract<Parsed, { type: 'set_plan' }>

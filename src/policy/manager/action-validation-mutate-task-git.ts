@@ -4,6 +4,7 @@ import {
   formatRecordTaskGitMergeRequiredHint,
   formatRecordTaskGitNotDoneHint,
   formatRecordTaskGitNotGitHint,
+  formatRecordTaskGitReasonRequiredHint,
   formatRecordTaskGitReviewRequiredHint,
 } from './action-feedback-hints.js'
 import { rejected, type ValidationIssue } from './action-validation-helpers.js'
@@ -19,8 +20,7 @@ export const validateMutateTaskGitOp = (params: {
   reason?: string | undefined
 }): ValidationIssue[] => {
   const { op, taskStatus, task, reason } = params
-  if (!reason?.trim())
-    return rejected('record_task_git 执行失败：必须提供变更原因。')
+  if (!reason?.trim()) return rejected(formatRecordTaskGitReasonRequiredHint())
   if (
     taskStatus !== 'succeeded' &&
     taskStatus !== 'failed' &&

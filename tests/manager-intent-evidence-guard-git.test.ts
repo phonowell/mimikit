@@ -1,6 +1,7 @@
 import { expect, test } from 'vitest'
 
 import { collectManagerActionFeedback } from '../src/policy/manager/action-feedback-collect.js'
+
 import {
   createIntentEvidenceTaskContext,
   createIntentEvidenceTask as createTask,
@@ -29,6 +30,8 @@ test('record_task_git stays blocked when user only references task without expli
         type: 'record_task_git',
         task_id: task.id,
         state: 'merged',
+        source_input_id: 'input-user',
+        source_quote: task.title,
       },
     ],
     createIntentEvidenceTaskContext(task, [
@@ -38,11 +41,11 @@ test('record_task_git stays blocked when user only references task without expli
 
   expectSingleRejectedFeedback(feedback, {
     action: 'record_task_git',
-    hintIncludes: ['当前需要：merged'],
+    hintIncludes: ['source_quote', '已合并到 main'],
   })
 })
 
-test('record_task_git stays allowed when user explicitly requests the closure action', () => {
+test('record_task_git requires current user input provenance fields', () => {
   const task = createTask({
     status: 'succeeded',
     git: {
@@ -65,6 +68,43 @@ test('record_task_git stays allowed when user explicitly requests the closure ac
         state: 'merged',
       },
     ],
+    createIntentEvidenceTaskContext(task, [
+      createUserInput(`请把 ${task.id} 标记为已合并到 main。`),
+    ]),
+  )
+
+  expectSingleRejectedFeedback(feedback, {
+    action: 'record_task_git',
+    error: 'invalid_action_args',
+    hintIncludes: ['source_input_id', 'source_quote'],
+  })
+})
+
+test('record_task_git stays allowed when current user input quote is anchored', () => {
+  const task = createTask({
+    status: 'succeeded',
+    git: {
+      worktreePath: '/repo/auth-guard',
+      branch: 'feature/auth-guard',
+      lifecycle: {
+        review: {
+          passed: true,
+        },
+        merged: false,
+        cleaned: false,
+      },
+    },
+  })
+  const feedback = collectManagerActionFeedback(
+    [
+      {
+        type: 'record_task_git',
+        task_id: task.id,
+        state: 'merged',
+        source_input_id: 'input-user',
+        source_quote: '已合并到 main',
+      },
+    ],
     {
       inputs: [
         createUserInput(
@@ -78,4 +118,40 @@ test('record_task_git stays allowed when user explicitly requests the closure ac
   )
 
   expect(feedback).toHaveLength(0)
+})
+
+test('record_task_git stays blocked when current user input only mentions closure action without task ref', () => {
+  const task = createTask({
+    status: 'succeeded',
+    git: {
+      worktreePath: '/repo/auth-guard',
+      branch: 'feature/auth-guard',
+      lifecycle: {
+        review: {
+          passed: true,
+        },
+        merged: false,
+        cleaned: false,
+      },
+    },
+  })
+  const feedback = collectManagerActionFeedback(
+    [
+      {
+        type: 'record_task_git',
+        task_id: task.id,
+        state: 'merged',
+        source_input_id: 'input-user',
+        source_quote: '已合并到 main',
+      },
+    ],
+    createIntentEvidenceTaskContext(task, [
+      createUserInput('请标记为已合并到 main。'),
+    ]),
+  )
+
+  expectSingleRejectedFeedback(feedback, {
+    action: 'record_task_git',
+    hintIncludes: [task.id],
+  })
 })

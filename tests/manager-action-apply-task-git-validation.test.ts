@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest'
 
-import { GLOBAL_FOCUS_ID } from '../src/work/focus/constants.js'
 import { validateRecordTaskGit } from '../src/policy/manager/action-validation.js'
+import { GLOBAL_FOCUS_ID } from '../src/work/focus/constants.js'
 
 const TASK_CWD = '/tmp/manager-action-apply-task-git'
 
@@ -29,8 +29,19 @@ test('validateRecordTaskGit rejects merged without review_passed', () => {
       type: 'record_task_git',
       task_id: task.id,
       state: 'merged',
+      source_input_id: 'input-user',
+      source_quote: '已合并到 main',
     },
     {
+      inputs: [
+        {
+          id: 'input-user',
+          role: 'user',
+          text: '请把这个任务标记为已合并到 main。',
+          createdAt: '2026-03-23T00:12:00.000Z',
+          focusId: GLOBAL_FOCUS_ID,
+        },
+      ],
       taskStatusById: new Map([[task.id, task.status]]),
       taskById: new Map([[task.id, task]]),
     },
@@ -59,8 +70,19 @@ test('validateRecordTaskGit rejects review_passed on non-git task', () => {
       type: 'record_task_git',
       task_id: task.id,
       state: 'review_passed',
+      source_input_id: 'input-user',
+      source_quote: 'review passed',
     },
     {
+      inputs: [
+        {
+          id: 'input-user',
+          role: 'user',
+          text: '请记录 review passed。',
+          createdAt: '2026-03-23T00:12:00.000Z',
+          focusId: GLOBAL_FOCUS_ID,
+        },
+      ],
       taskStatusById: new Map([[task.id, task.status]]),
       taskById: new Map([[task.id, task]]),
     },

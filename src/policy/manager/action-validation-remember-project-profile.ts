@@ -2,7 +2,10 @@ import {
   type RememberMemoryContentIssue,
   resolveRememberMemoryContentIssue,
 } from './action-apply-schema.js'
-import { formatRememberMemoryNotStableHint } from './action-feedback-hints.js'
+import {
+  formatRememberMemoryNotStableHint,
+  formatStableDigestIssueHint,
+} from './action-feedback-hints.js'
 import { validateRememberProjectProfileIntentEvidence } from './action-intent-evidence-dialog-memory.js'
 import { rejected, type ValidationIssue } from './action-validation-helpers.js'
 import { rememberProjectProfileActionSchema } from './manager-turn-schema.js'
@@ -16,14 +19,7 @@ type RememberProjectProfileValidationContext = {
 
 const formatRememberProjectProfileIssue = (
   issue: RememberMemoryContentIssue,
-): string => {
-  if (issue === 'multiline') return '包含多行文本；请收敛为单行 digest。'
-  if (issue === 'checklist') return '包含 checklist 或步骤列表。'
-  if (issue === 'protocol') return '包含协议标签或代码块。'
-  if (issue === 'runtime_ref')
-    return '包含 task-/plan-/focus- 等运行时对象引用。'
-  return '超过 240 字符上限。'
-}
+): string => formatStableDigestIssueHint(issue)
 
 export const validateRememberProjectProfileAction = (
   item: Parsed,

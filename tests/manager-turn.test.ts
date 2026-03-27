@@ -147,3 +147,28 @@ test('parseManagerTurn keeps structured remember_project_profile action as-is', 
     },
   ])
 })
+
+test('parseManagerTurn keeps structured record_task_git provenance as-is', () => {
+  const parsed = parseManagerTurn({
+    reply: '收到。',
+    actions: [
+      {
+        type: 'record_task_git',
+        task_id: 'task-auth-guard',
+        state: 'merged',
+        source_input_id: 'input-user',
+        source_quote: '已合并到 main',
+      },
+    ],
+  })
+
+  expect(parsed.actions).toEqual([
+    {
+      type: 'record_task_git',
+      task_id: 'task-auth-guard',
+      state: 'merged',
+      source_input_id: 'input-user',
+      source_quote: '已合并到 main',
+    },
+  ])
+})

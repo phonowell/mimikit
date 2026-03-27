@@ -61,6 +61,8 @@ export const recordTaskGitActionSchema = z.strictObject({
   type: z.literal('record_task_git'),
   task_id: taskIdSchema,
   state: z.enum(['review_passed', 'merged', 'cleaned']),
+  source_input_id: s,
+  source_quote: s,
 })
 
 export const setPlanActionSchema = z.strictObject({

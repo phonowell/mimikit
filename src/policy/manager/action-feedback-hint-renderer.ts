@@ -18,11 +18,14 @@ const actionFeedbackHintSchema = z
     scheduled_at_invalid: z.string().trim().min(1),
     scheduled_at_not_future: z.string().trim().min(1),
     task_control_not_found: z.string().trim().min(1),
+    task_control_resume_instructions_only: z.string().trim().min(1),
     task_control_already_done: z.string().trim().min(1),
     task_control_already_paused: z.string().trim().min(1),
     task_control_not_paused: z.string().trim().min(1),
     task_control_already_canceled: z.string().trim().min(1),
+    record_task_git_not_found: z.string().trim().min(1),
     ...recordTaskGitHintSchemaShape,
+    record_task_git_reason_required: z.string().trim().min(1),
     enqueue_task_cwd_invalid: z.string().trim().min(1),
     enqueue_task_worktree_prepare_failed: z.string().trim().min(1),
     enqueue_task_contract_missing: z.string().trim().min(1),
@@ -30,6 +33,11 @@ const actionFeedbackHintSchema = z
     set_plan_done_forbidden: z.string().trim().min(1),
     duplicate_action_generic: z.string().trim().min(1),
     remember_memory_not_stable: z.string().trim().min(1),
+    stable_digest_issue_multiline: z.string().trim().min(1),
+    stable_digest_issue_checklist: z.string().trim().min(1),
+    stable_digest_issue_protocol: z.string().trim().min(1),
+    stable_digest_issue_runtime_ref: z.string().trim().min(1),
+    stable_digest_issue_too_long: z.string().trim().min(1),
   })
   .strict()
 

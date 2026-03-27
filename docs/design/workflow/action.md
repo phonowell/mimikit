@@ -63,9 +63,11 @@
 
 ### `record_task_git`
 
-- 结构：`{ type: "record_task_git", task_id, state }`
+- 结构：`{ type: "record_task_git", task_id, state, source_input_id, source_quote }`
 - `state = review_passed | merged | cleaned`
 - 只记录外部已发生的 git 闭环状态，不执行 review / merge / cleanup 本身。
+- `source_input_id` 必须命中当前轮真实用户输入
+- `source_quote` 必须是该输入中的原文片段
 
 ### `set_plan`
 
@@ -121,7 +123,7 @@
 
 - `enqueue_task`、`task_control`、`record_task_git`、`set_plan`、`delete_plan`、`remember_memory`、`remember_project_profile` 都受 intent-evidence guard 约束
 - 没有当前用户输入直接支撑时，`task_result` / `history` / `trigger` 只能作为补充证据，不能单独驱动高风险 action
-- `record_task_git` 必须同时命中“任务引用 + 闭环动作意图”
+- `record_task_git` 必须命中当前轮 provenance：`source_input_id` 指向当前用户输入，且 `source_quote` 必须命中该输入原文；不再靠动作词表猜测闭环意图
 - `task_control(cancel)` 支持“同 focus / 同 cwd 的唯一活跃任务被替代”这一例外，不要求额外显式取消措辞
 - 两个 remember action 必须命中当前轮 provenance：`source_input_id` 指向当前用户输入，且 `source_quote` 必须命中该输入原文；不满足时显式拒绝，不再静默 suppress
 

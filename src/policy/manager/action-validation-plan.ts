@@ -1,4 +1,8 @@
-import { formatEnqueueTaskContractMissingHint } from './action-feedback-hints.js'
+import {
+  formatEnqueueTaskContractMissingHint,
+  formatPlanNotFoundHint,
+  formatSetPlanDoneForbiddenHint,
+} from './action-feedback-hints.js'
 import {
   rejected,
   validateScheduledAtNotPast,
@@ -48,9 +52,8 @@ export const validateSetPlan = (
   }
   if (item.plan_id !== null) {
     const status = context.planStatusById?.get(item.plan_id)
-    if (!status) return rejected('set_plan 执行失败：未找到 plan ID。')
-    if (status === 'done')
-      return rejected('set_plan 执行失败：done plan 不可整体替换。')
+    if (!status) return rejected(formatPlanNotFoundHint('set_plan'))
+    if (status === 'done') return rejected(formatSetPlanDoneForbiddenHint())
   }
   return validateHighRiskActionIntentEvidence(item, context)
 }
@@ -63,6 +66,6 @@ export const validateDeletePlan = (
   if (schemaIssues.length > 0) return schemaIssues
   if (item.type !== 'delete_plan') return schemaIssues
   const status = context.planStatusById?.get(item.plan_id)
-  if (!status) return rejected('delete_plan 执行失败：未找到 plan ID。')
+  if (!status) return rejected(formatPlanNotFoundHint('delete_plan'))
   return validateHighRiskActionIntentEvidence(item, context)
 }

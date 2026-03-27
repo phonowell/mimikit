@@ -13,15 +13,34 @@ const actionEvidenceHintSchema = z
     task_control_intent_evidence_missing: z.string().trim().min(1),
     record_task_git_intent_evidence_missing: z.string().trim().min(1),
     set_plan_intent_evidence_missing: z.string().trim().min(1),
+    dialog_action_source_input_missing: z.string().trim().min(1),
+    dialog_action_source_quote_missing: z.string().trim().min(1),
+    dialog_action_source_quote_unanchored: z.string().trim().min(1),
+    record_task_git_source_quote_action_missing: z.string().trim().min(1),
+    record_task_git_required_actions: z
+      .object({
+        review_passed: z.string().trim().min(1),
+        merged: z.string().trim().min(1),
+        cleaned: z.string().trim().min(1),
+      })
+      .strict(),
   })
   .strict()
 
-type ActionEvidenceHintKey = keyof z.infer<typeof actionEvidenceHintSchema>
+type ActionEvidenceTemplates = z.infer<typeof actionEvidenceHintSchema>
+type ActionEvidenceHintKey = Exclude<
+  keyof ActionEvidenceTemplates,
+  'record_task_git_required_actions'
+>
 
-const { path: evidenceHintTemplatePath, templates } = loadYamlPromptTemplates({
-  relativePath: EVIDENCE_HINT_TEMPLATE_RELATIVE_PATH,
-  schema: actionEvidenceHintSchema,
-})
+const {
+  path: evidenceHintTemplatePath,
+  templates,
+}: { path: string; templates: ActionEvidenceTemplates } =
+  loadYamlPromptTemplates({
+    relativePath: EVIDENCE_HINT_TEMPLATE_RELATIVE_PATH,
+    schema: actionEvidenceHintSchema,
+  })
 
 const renderHint = createPromptTemplateRenderer<ActionEvidenceHintKey>({
   path: evidenceHintTemplatePath,
@@ -62,4 +81,50 @@ export const formatSetPlanIntentEvidenceHint = (
 ): string =>
   renderHint('set_plan_intent_evidence_missing', {
     evidence_sources: evidenceSources,
+  })
+
+export const formatDialogActionSourceInputMissingHint = (
+  actionName:
+    | 'remember_memory'
+    | 'remember_project_profile'
+    | 'record_task_git',
+): string =>
+  renderHint('dialog_action_source_input_missing', {
+    action_name: actionName,
+  })
+
+export const formatDialogActionSourceQuoteMissingHint = (
+  actionName:
+    | 'remember_memory'
+    | 'remember_project_profile'
+    | 'record_task_git',
+): string =>
+  renderHint('dialog_action_source_quote_missing', {
+    action_name: actionName,
+  })
+
+export const formatDialogActionSourceQuoteUnanchoredHint = (
+  actionName:
+    | 'remember_memory'
+    | 'remember_project_profile'
+    | 'record_task_git',
+): string =>
+  renderHint('dialog_action_source_quote_unanchored', {
+    action_name: actionName,
+  })
+
+export type RecordTaskGitState = 'review_passed' | 'merged' | 'cleaned'
+
+const RECORD_TASK_GIT_REQUIRED_ACTIONS =
+  templates.record_task_git_required_actions
+
+export const resolveRecordTaskGitRequiredActionLabel = (
+  state: RecordTaskGitState,
+): string => RECORD_TASK_GIT_REQUIRED_ACTIONS[state]
+
+export const formatRecordTaskGitSourceQuoteActionMissingHint = (
+  state: RecordTaskGitState,
+): string =>
+  renderHint('record_task_git_source_quote_action_missing', {
+    required_action: resolveRecordTaskGitRequiredActionLabel(state),
   })

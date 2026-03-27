@@ -1,4 +1,5 @@
 import {
+  validateRecordTaskGitIntentEvidence,
   validateRememberMemoryIntentEvidence,
   validateRememberProjectProfileIntentEvidence,
 } from './action-intent-evidence-dialog-memory.js'
@@ -8,7 +9,6 @@ import {
 } from './action-intent-evidence-match.js'
 import {
   validateEnqueueTaskIntentEvidence,
-  validateRecordTaskGitIntentEvidence,
   validateSetPlanIntentEvidence,
   validateTaskControlIntentEvidence,
 } from './action-intent-evidence-rules.js'
@@ -86,7 +86,7 @@ export const resolveIntentEvidenceRejectionHint = (
   if (item.type === 'record_task_git') {
     return validateRecordTaskGitIntentEvidence({
       item,
-      inputTexts,
+      ...(context.inputs ? { inputs: context.inputs } : {}),
       ...(context.taskById ? { taskById: context.taskById } : {}),
       ...(context.supplementalEvidenceSources
         ? { supplementalEvidenceSources: context.supplementalEvidenceSources }

@@ -1,6 +1,20 @@
 import { resolveTaskGitLifecycle } from '../../work/shared/task-git-lifecycle.js'
 
-import { formatEnqueueTaskContractMissingHint } from './action-feedback-hints.js'
+import {
+  formatEnqueueTaskContractMissingHint,
+  formatRecordTaskGitMergeRequiredHint,
+  formatRecordTaskGitNotDoneHint,
+  formatRecordTaskGitNotFoundHint,
+  formatRecordTaskGitNotGitHint,
+  formatRecordTaskGitReviewRequiredHint,
+  formatTaskControlAlreadyCanceledHint,
+  formatTaskControlAlreadyDoneHint,
+  formatTaskControlAlreadyPausedHint,
+  formatTaskControlNotFoundHint,
+  formatTaskControlNotPausedHint,
+  formatTaskControlResumeInstructionsOnlyHint,
+} from './action-feedback-hints.js'
+import { validateRecordTaskGitIntentEvidence } from './action-intent-evidence-dialog-memory.js'
 import { rejected, type ValidationIssue } from './action-validation-helpers.js'
 import {
   validateDeletePlan,
@@ -56,36 +70,32 @@ export const validateTaskControl = (
   if (schemaIssues.length > 0) return schemaIssues
   if (item.type !== 'task_control') return schemaIssues
   const taskStatus = context.taskStatusById?.get(item.task_id)
-  if (!taskStatus) return rejected('task_control 执行失败：未找到 task ID。')
-  if (item.action !== 'resume' && item.instructions.length > 0) {
-    return rejected(
-      'task_control 执行失败：只有 `action="resume"` 才允许附带 `instructions[]`。',
-    )
-  }
+  if (!taskStatus) return rejected(formatTaskControlNotFoundHint())
+  if (item.action !== 'resume' && item.instructions.length > 0)
+    return rejected(formatTaskControlResumeInstructionsOnlyHint())
+
   if (item.action === 'pause') {
     if (taskStatus === 'paused')
-      return rejected('task_control 执行失败：任务已是 paused 状态。')
+      return rejected(formatTaskControlAlreadyPausedHint())
     if (taskStatus !== 'pending' && taskStatus !== 'running')
-      return rejected('task_control 执行失败：任务已完成，无法 pause。')
+      return rejected(formatTaskControlAlreadyDoneHint('pause'))
   }
   if (item.action === 'resume') {
-    if (taskStatus === 'pending' || taskStatus === 'running') {
-      return rejected(
-        'task_control 执行失败：任务当前不是 paused 状态，无法 resume。',
-      )
-    }
+    if (taskStatus === 'pending' || taskStatus === 'running')
+      return rejected(formatTaskControlNotPausedHint())
+
     if (taskStatus !== 'paused')
-      return rejected('task_control 执行失败：任务已完成，无法 resume。')
+      return rejected(formatTaskControlAlreadyDoneHint('resume'))
   }
   if (item.action === 'cancel') {
     if (taskStatus === 'canceled')
-      return rejected('task_control 执行失败：任务已是 canceled 状态。')
+      return rejected(formatTaskControlAlreadyCanceledHint())
     if (
       taskStatus !== 'pending' &&
       taskStatus !== 'paused' &&
       taskStatus !== 'running'
     )
-      return rejected('task_control 执行失败：任务已完成，无法 cancel。')
+      return rejected(formatTaskControlAlreadyDoneHint('cancel'))
   }
   return validateHighRiskActionIntentEvidence(item, context)
 }
@@ -98,29 +108,33 @@ export const validateRecordTaskGit = (
   if (schemaIssues.length > 0) return schemaIssues
   if (item.type !== 'record_task_git') return schemaIssues
   const taskStatus = context.taskStatusById?.get(item.task_id)
-  if (!taskStatus) return rejected('record_task_git 执行失败：未找到 task ID。')
+  if (!taskStatus) return rejected(formatRecordTaskGitNotFoundHint())
   const task = context.taskById?.get(item.task_id)
   if (
     taskStatus !== 'succeeded' &&
     taskStatus !== 'failed' &&
     taskStatus !== 'canceled'
-  ) {
-    return rejected(
-      `record_task_git 执行失败：任务尚未完成，无法写入 ${item.state}。`,
-    )
-  }
+  )
+    return rejected(formatRecordTaskGitNotDoneHint(item.state))
+
   if (task && !task.git)
-    return rejected('record_task_git 执行失败：任务没有 git 执行上下文。')
+    return rejected(formatRecordTaskGitNotGitHint(item.state))
   const lifecycle = task ? resolveTaskGitLifecycle(task) : undefined
-  if (item.state === 'merged' && !lifecycle?.review.passed) {
-    return rejected(
-      'record_task_git 执行失败：任务尚未记录 review passed，无法写入 merged。',
-    )
-  }
-  if (item.state === 'cleaned' && !lifecycle?.merged) {
-    return rejected(
-      'record_task_git 执行失败：任务尚未记录 merged，无法写入 cleaned。',
-    )
+  if (item.state === 'merged' && !lifecycle?.review.passed)
+    return rejected(formatRecordTaskGitReviewRequiredHint())
+
+  if (item.state === 'cleaned' && !lifecycle?.merged)
+    return rejected(formatRecordTaskGitMergeRequiredHint())
+
+  const evidenceHint = validateRecordTaskGitIntentEvidence({
+    item,
+    ...(context.inputs ? { inputs: context.inputs } : {}),
+    ...(context.taskById ? { taskById: context.taskById } : {}),
+  })
+  if (evidenceHint) {
+    return rejected(evidenceHint, {
+      code: 'intent_evidence_missing',
+    })
   }
   return validateHighRiskActionIntentEvidence(item, context)
 }

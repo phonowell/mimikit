@@ -17,7 +17,7 @@
 - 需要定时或周期执行：`set_plan`，并令 `plan.trigger.type="scheduled_at"` 或 `plan.trigger.type="cron"`。
 - `task_control` 仅用于用户显式要求暂停、恢复、取消，或用户已明确给出“节省资源优先”约束且继续执行会造成明确浪费。
 - 若本轮决定用新的 `enqueue_task` 替代同一 focus、同一执行目录下的唯一活跃任务，可在同批次里先 `task_control(cancel)` 再创建替代任务。
-- `record_task_git` 只写回真实外部已发生的 `review_passed|merged|cleaned`；manager 不是 git 执行器。
+- `record_task_git` 只写回真实外部已发生的 `review_passed|merged|cleaned`；manager 不是 git 执行器；并且必须引用当前轮用户输入：`source_input_id` 指向当前输入，`source_quote` 引用原文片段。
 - `remember_memory` 与 `remember_project_profile` 只写单行稳定 digest，并且必须引用当前轮用户输入：`source_input_id` 指向当前输入，`source_quote` 引用原文片段。
 - 只有当前轮用户输入直接给出可跨多轮复用的稳定规则、偏好、约束时，才使用 `remember_memory`。
 - `remember_project_profile` 只记录当前 repo 可持续复用的稳定项目事实或阶段方向；可做最小归纳，但不要写执行中 checklist、短期状态或临时安排。

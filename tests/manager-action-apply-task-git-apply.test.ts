@@ -4,12 +4,13 @@ import { join } from 'node:path'
 
 import { expect, test } from 'vitest'
 
-import { GLOBAL_FOCUS_ID } from '../src/work/focus/constants.js'
-import { applyTaskActions } from '../src/policy/manager/action-apply.js'
 import {
   appendTaskResultArchive,
   readTaskResultArchive,
 } from '../src/persistence/storage/task-results.js'
+import { applyTaskActions } from '../src/policy/manager/action-apply.js'
+import { GLOBAL_FOCUS_ID } from '../src/work/focus/constants.js'
+
 import { materializeTaskFixture } from './helpers/execution-spec.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
@@ -45,9 +46,23 @@ test('record_task_git can explicitly record review_passed -> merged -> cleaned o
       type: 'record_task_git',
       task_id: 'task-git-close',
       state: 'review_passed',
+      source_input_id: 'input-user',
+      source_quote: 'review passed',
     },
-    { type: 'record_task_git', task_id: 'task-git-close', state: 'merged' },
-    { type: 'record_task_git', task_id: 'task-git-close', state: 'cleaned' },
+    {
+      type: 'record_task_git',
+      task_id: 'task-git-close',
+      state: 'merged',
+      source_input_id: 'input-user',
+      source_quote: 'merged',
+    },
+    {
+      type: 'record_task_git',
+      task_id: 'task-git-close',
+      state: 'cleaned',
+      source_input_id: 'input-user',
+      source_quote: 'cleaned',
+    },
   ])
 
   expect(runtime.tasks[0]?.git?.lifecycle).toMatchObject({
@@ -118,6 +133,8 @@ test('record_task_git syncs task.result handoff and archive frontmatter', async 
       type: 'record_task_git',
       task_id: 'task-git-sync',
       state: 'review_passed',
+      source_input_id: 'input-user',
+      source_quote: 'review passed',
     },
   ])
 

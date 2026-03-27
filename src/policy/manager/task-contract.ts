@@ -5,11 +5,13 @@ import {
   loadYamlPromptTemplates,
 } from '../../foundation/prompting/prompt-template-loader.js'
 
+import { formatEnqueueTaskContractMissingHint } from './action-feedback-hints.js'
+
 import type { ManagerTaskDraft } from './manager-turn-schema.js'
 import type { TaskContract } from '../../foundation/types/index.js'
 
 export const TASK_CONTRACT_REQUIRED_HINT =
-  'enqueue_task 执行失败：`task` 合同不完整。至少需要明确 goal、in_scope、至少一条 done_when，以及有效的 cwd/mode。'
+  formatEnqueueTaskContractMissingHint()
 
 const taskContractWorkerPromptTemplateSchema = z
   .object({
