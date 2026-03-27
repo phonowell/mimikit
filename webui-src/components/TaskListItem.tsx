@@ -53,14 +53,6 @@ export const TaskListItem = ({
             title={status}
           ></span>
           <span className="task-title">{title}</span>
-          {task.provider ? (
-            <span
-              className="task-provider"
-              title={`provider: ${task.provider}`}
-            >
-              {task.provider}
-            </span>
-          ) : null}
         </div>
         {status === 'running' && task.liveOutput ? (
           <p className="task-live-output" title={task.liveOutput}>
@@ -81,6 +73,14 @@ export const TaskListItem = ({
           ⋯
         </button>
         <div className="task-more-menu" role="menu" hidden={!menuOpen}>
+          <button
+            className="task-menu-item task-menu-item--copy-id"
+            type="button"
+            role="menuitem"
+            onClick={() => onTaskAction(task.id, 'copy-id')}
+          >
+            copy id
+          </button>
           <button
             className={`task-menu-item task-menu-item--${canResume ? 'resume' : 'pause'}`}
             type="button"
@@ -109,14 +109,6 @@ export const TaskListItem = ({
             onClick={() => onRequestDelete(task.id, title)}
           >
             delete
-          </button>
-          <button
-            className="task-menu-item task-menu-item--copy-id"
-            type="button"
-            role="menuitem"
-            onClick={() => onTaskAction(task.id, 'copy-id')}
-          >
-            copy id
           </button>
         </div>
       </div>
