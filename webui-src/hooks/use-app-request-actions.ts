@@ -4,7 +4,10 @@ import { appendClientError } from '../lib/client-error.js'
 import { runConfirmAction } from '../lib/confirm-action.js'
 import { readJsonError } from '../lib/controller-utils.js'
 import { submitMessage } from '../lib/submit-message.js'
-import { copyTaskIdToClipboard } from '../lib/tasks-copy-id.js'
+import {
+  copyPlanIdToClipboard,
+  copyTaskIdToClipboard,
+} from '../lib/tasks-copy-id.js'
 
 import type {
   AppActionParams,
@@ -18,6 +21,7 @@ type Params = Pick<
   | 'setBusy'
   | 'setComposerValue'
   | 'setConfirmDialog'
+  | 'setOpenPlanMenuId'
   | 'setOpenTaskMenuId'
   | 'setQuote'
   | 'setSendPending'
@@ -34,6 +38,7 @@ export const useAppRequestActions = ({
   setBusy,
   setComposerValue,
   setConfirmDialog,
+  setOpenPlanMenuId,
   setOpenTaskMenuId,
   setQuote,
   setSendPending,
@@ -129,12 +134,31 @@ export const useAppRequestActions = ({
     [appendError, setOpenTaskMenuId, setToast, setToolsMenuOpen],
   )
 
+  const triggerPlanAction = useCallback(
+    async (planId: string, action: 'copy-id') => {
+      setToolsMenuOpen(false)
+      setOpenPlanMenuId('')
+      try {
+        if (action !== 'copy-id') return
+        const result = await copyPlanIdToClipboard(planId)
+        setToast({
+          message: result.message,
+          state: result.ok ? 'success' : 'error',
+        })
+      } catch (error) {
+        appendError(error)
+      }
+    },
+    [appendError, setOpenPlanMenuId, setToast, setToolsMenuOpen],
+  )
+
   return useMemo(
     () => ({
       confirmAction,
       submitMessage: submitCurrentMessage,
+      triggerPlanAction,
       triggerTaskAction,
     }),
-    [confirmAction, submitCurrentMessage, triggerTaskAction],
+    [confirmAction, submitCurrentMessage, triggerPlanAction, triggerTaskAction],
   )
 }

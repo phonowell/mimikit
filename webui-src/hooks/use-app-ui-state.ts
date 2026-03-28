@@ -11,6 +11,7 @@ export const useAppUiState = () => {
   const [plansOpen, setPlansOpen] = useState(false)
   const [focusesOpen, setFocusesOpen] = useState(false)
   const [openTaskMenuId, setOpenTaskMenuId] = useState('')
+  const [openPlanMenuId, setOpenPlanMenuId] = useState('')
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState | null>(
     null,
   )
@@ -26,6 +27,7 @@ export const useAppUiState = () => {
     confirmDialog,
     deleteMode,
     focusesOpen,
+    openPlanMenuId,
     openTaskMenuId,
     plansOpen,
     quote,
@@ -38,6 +40,7 @@ export const useAppUiState = () => {
     setConfirmDialog,
     setDeleteMode,
     setFocusesOpen,
+    setOpenPlanMenuId,
     setOpenTaskMenuId,
     setPlansOpen,
     setQuote,

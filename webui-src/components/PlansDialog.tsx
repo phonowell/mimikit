@@ -7,11 +7,21 @@ import type { PlanView } from '../types.js'
 
 type Props = {
   open: boolean
+  openMenuId: string
   plans: PlanView[]
   onClose: () => void
+  onPlanAction: (planId: string, action: 'copy-id') => void
+  onToggleMenu: (planId: string) => void
 }
 
-export const PlansDialog = ({ open, plans, onClose }: Props) => (
+export const PlansDialog = ({
+  open,
+  openMenuId,
+  plans,
+  onClose,
+  onPlanAction,
+  onToggleMenu,
+}: Props) => (
   <ModalDialog
     open={open}
     className="plans-dialog"
@@ -42,6 +52,9 @@ export const PlansDialog = ({ open, plans, onClose }: Props) => (
           <PlanListItem
             key={plan.id ?? `plan-${index}`}
             open={open}
+            openMenuId={openMenuId}
+            onPlanAction={onPlanAction}
+            onToggleMenu={onToggleMenu}
             plan={plan}
           />
         ))}

@@ -19,6 +19,7 @@ type Params = Pick<
   | 'setConfirmDialog'
   | 'setDeleteMode'
   | 'setFocusesOpen'
+  | 'setOpenPlanMenuId'
   | 'setOpenTaskMenuId'
   | 'setPlansOpen'
   | 'setQuote'
@@ -35,6 +36,7 @@ export const useAppLocalActions = ({
   setConfirmDialog,
   setDeleteMode,
   setFocusesOpen,
+  setOpenPlanMenuId,
   setOpenTaskMenuId,
   setPlansOpen,
   setQuote,
@@ -49,6 +51,7 @@ export const useAppLocalActions = ({
       const transition = resolveDeleteModeTransition(
         {
           deleteMode: current.deleteMode,
+          openPlanMenuId: current.openPlanMenuId,
           openTaskMenuId: current.openTaskMenuId,
           quote: current.quote,
           toolsMenuOpen: current.toolsMenuOpen,
@@ -59,6 +62,7 @@ export const useAppLocalActions = ({
       scroll.captureLayoutShift()
       setDeleteMode(transition.deleteMode)
       setToolsMenuOpen(transition.toolsMenuOpen)
+      setOpenPlanMenuId(transition.openPlanMenuId)
       setOpenTaskMenuId(transition.openTaskMenuId)
       setQuote(transition.quote)
       focusElementById(transition.focusTargetId)
@@ -66,6 +70,7 @@ export const useAppLocalActions = ({
     [
       scroll.captureLayoutShift,
       setDeleteMode,
+      setOpenPlanMenuId,
       setOpenTaskMenuId,
       setQuote,
       setToolsMenuOpen,
@@ -132,6 +137,11 @@ export const useAppLocalActions = ({
       setOpenTaskMenuId((current) => (current === taskId ? '' : taskId)),
     [setOpenTaskMenuId],
   )
+  const togglePlanMenu = useCallback(
+    (planId: string) =>
+      setOpenPlanMenuId((current) => (current === planId ? '' : planId)),
+    [setOpenPlanMenuId],
+  )
   const toggleToolsMenu = useCallback(
     () => setToolsMenuOpen((current) => !current),
     [setToolsMenuOpen],
@@ -155,6 +165,7 @@ export const useAppLocalActions = ({
       requestDeleteTask,
       selectQuote,
       setTtsEnabled,
+      togglePlanMenu,
       toggleDeleteMode,
       toggleTaskMenu,
       toggleToolsMenu,
@@ -176,6 +187,7 @@ export const useAppLocalActions = ({
       requestDeleteTask,
       selectQuote,
       setTtsEnabled,
+      togglePlanMenu,
       toggleDeleteMode,
       toggleTaskMenu,
       toggleToolsMenu,

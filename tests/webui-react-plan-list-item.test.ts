@@ -1,0 +1,59 @@
+import * as React from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { expect, test } from 'vitest'
+
+import { PlanListItem } from '../webui-src/components/PlanListItem.js'
+
+import type { PlanView } from '../webui-src/types.js'
+
+const createPlan = (overrides: Partial<PlanView> = {}): PlanView => ({
+  id: 'plan-1',
+  title: 'Alpha plan',
+  status: 'active',
+  updatedAt: '2026-03-28T07:05:00.000Z',
+  lastTaskId: 'task-1',
+  trigger: { mode: 'cron', cron: '0 * * * *' },
+  ...overrides,
+})
+
+const noop = (): void => undefined
+
+test('plan list item shows copy id inside the opened overflow menu', () => {
+  Object.assign(globalThis, { React })
+  const markup = renderToStaticMarkup(
+    React.createElement(PlanListItem, {
+      open: true,
+      plan: createPlan(),
+      openMenuId: 'plan-1',
+      onPlanAction: noop,
+      onToggleMenu: noop,
+    }),
+  )
+
+  expect(markup).toContain('plan-more-toggle')
+  expect(markup).toContain('aria-haspopup="menu"')
+
+  const actionsIndex = markup.indexOf('data-plan-actions="true"')
+  const menuIndex = markup.indexOf('>copy id<')
+
+  expect(actionsIndex).toBeGreaterThan(-1)
+  expect(menuIndex).toBeGreaterThan(actionsIndex)
+  expect(markup).not.toContain('class="plan-item-menu-slot"')
+})
+
+test('plan list item keeps static body when lastTaskId is missing and still renders menu', () => {
+  Object.assign(globalThis, { React })
+  const markup = renderToStaticMarkup(
+    React.createElement(PlanListItem, {
+      open: true,
+      plan: createPlan({ id: 'plan-2', lastTaskId: undefined }),
+      openMenuId: 'plan-2',
+      onPlanAction: noop,
+      onToggleMenu: noop,
+    }),
+  )
+
+  expect(markup).not.toContain('href=')
+  expect(markup).toContain('class="plan-link"')
+  expect(markup).toContain('>copy id<')
+})

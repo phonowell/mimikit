@@ -2,17 +2,34 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  position: relative;
+  background: var(--panel);
   box-shadow: var(--shadow-raised-soft);
+}
+
+.plan-item-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  position: relative;
+  min-width: 0;
 }
 
 .plan-link {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  flex: 1;
+  min-width: 0;
   text-decoration: none;
   color: inherit;
   border-radius: 10px;
   transition: box-shadow 0.14s ease-out, transform 0.14s ease-out;
+}
+
+.plan-item .plan-title-row {
+  min-height: 24px;
+  padding-right: 34px;
 }
 
 .plan-link:focus-visible {
@@ -23,6 +40,41 @@
 .plan-link:active {
   box-shadow: none;
   transform: none;
+}
+
+.plan-item-actions {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  z-index: 3;
+}
+
+.plan-more-toggle {
+  --btn-size: 24px;
+  --btn-icon-size: 14px;
+  --btn-radius: 50%;
+  --btn-bg: transparent;
+  --btn-color: rgba(127, 142, 163, 0.68);
+  --btn-border: transparent;
+  --btn-hover-bg: var(--panel-soft);
+  --btn-hover-color: #5f7088;
+  --btn-hover-border: transparent;
+  --btn-shadow: none;
+  --btn-shadow-hover: var(--shadow-raised-soft);
+  --btn-shadow-press: var(--shadow-inset-soft);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0;
+  text-align: center;
+}
+
+.plan-item-actions > .task-more-menu {
+  width: min(100%, 180px);
+  min-width: min(100%, 150px);
 }
 
 .focus-link {

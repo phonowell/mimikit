@@ -14,6 +14,7 @@ export type AppActionState = {
   composerValue: string
   confirmDialog: ConfirmDialogState | null
   deleteMode: boolean
+  openPlanMenuId: string
   openTaskMenuId: string
   quote: QuoteState | null
   sendPending: boolean
@@ -26,6 +27,7 @@ export type AppActionParams = {
   composerValue: string
   confirmDialog: ConfirmDialogState | null
   deleteMode: boolean
+  openPlanMenuId: string
   openTaskMenuId: string
   quote: QuoteState | null
   scroll: ScrollController
@@ -36,6 +38,7 @@ export type AppActionParams = {
   setConfirmDialog: Dispatch<SetStateAction<ConfirmDialogState | null>>
   setDeleteMode: Dispatch<SetStateAction<boolean>>
   setFocusesOpen: Dispatch<SetStateAction<boolean>>
+  setOpenPlanMenuId: Dispatch<SetStateAction<string>>
   setOpenTaskMenuId: Dispatch<SetStateAction<string>>
   setPlansOpen: Dispatch<SetStateAction<boolean>>
   setQuote: Dispatch<SetStateAction<QuoteState | null>>

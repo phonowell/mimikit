@@ -152,6 +152,7 @@ export const useAppSurfaces = ({
     deferredPlans,
     deferredTasks,
     focusesOpen: ui.focusesOpen,
+    openPlanMenuId: ui.openPlanMenuId,
     openTaskMenuId: ui.openTaskMenuId,
     plansOpen: ui.plansOpen,
     tasksOpen: ui.tasksOpen,

@@ -6,6 +6,7 @@ test('entering delete mode clears quote and closes menus', () => {
   const transition = resolveDeleteModeTransition(
     {
       deleteMode: false,
+      openPlanMenuId: 'plan-1',
       openTaskMenuId: 'task-1',
       quote: { id: 'msg-1', label: 'User', text: 'hello', role: 'user' },
       toolsMenuOpen: true,
@@ -15,6 +16,7 @@ test('entering delete mode clears quote and closes menus', () => {
 
   expect(transition).toEqual({
     deleteMode: true,
+    openPlanMenuId: '',
     openTaskMenuId: '',
     quote: null,
     toolsMenuOpen: false,
@@ -26,6 +28,7 @@ test('exiting delete mode restores composer focus target', () => {
   const transition = resolveDeleteModeTransition(
     {
       deleteMode: true,
+      openPlanMenuId: '',
       openTaskMenuId: '',
       quote: null,
       toolsMenuOpen: false,

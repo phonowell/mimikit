@@ -11,6 +11,7 @@ export const useDialogSurfaces = ({
   deferredPlans,
   deferredTasks,
   focusesOpen,
+  openPlanMenuId,
   openTaskMenuId,
   plansOpen,
   tasksOpen,
@@ -23,6 +24,7 @@ export const useDialogSurfaces = ({
   deferredPlans: PlanView[]
   deferredTasks: TaskView[]
   focusesOpen: boolean
+  openPlanMenuId: string
   openTaskMenuId: string
   plansOpen: boolean
   tasksOpen: boolean
@@ -58,10 +60,20 @@ export const useDialogSurfaces = ({
     plansDialogSurface: useMemo(
       () => ({
         open: plansOpen,
+        openMenuId: openPlanMenuId,
         plans: deferredPlans,
         onClose: actions.closePlans,
+        onPlanAction: actions.triggerPlanAction,
+        onToggleMenu: actions.togglePlanMenu,
       }),
-      [actions.closePlans, deferredPlans, plansOpen],
+      [
+        actions.closePlans,
+        actions.togglePlanMenu,
+        actions.triggerPlanAction,
+        deferredPlans,
+        openPlanMenuId,
+        plansOpen,
+      ],
     ),
     focusDialogSurface: useMemo(
       () => ({

@@ -30,6 +30,7 @@ type Params = {
   scroll: ScrollController
   speakMessages: (messages: AppState['messages']) => void
   setAppState: Dispatch<SetStateAction<AppState>>
+  setOpenPlanMenuId: Dispatch<SetStateAction<string>>
   setOpenTaskMenuId: Dispatch<SetStateAction<string>>
   setStatusOverride: Dispatch<
     SetStateAction<{ state: string; text: string } | null>
@@ -46,6 +47,7 @@ export const useAppRuntimeEffects = ({
   scroll,
   speakMessages,
   setAppState,
+  setOpenPlanMenuId,
   setOpenTaskMenuId,
   setStatusOverride,
   setToast,
@@ -72,6 +74,7 @@ export const useAppRuntimeEffects = ({
     const target = event.target
     if (!(target instanceof Element)) return
     if (!target.closest('.tools-menu-wrap')) setToolsMenuOpen(false)
+    if (!target.closest('[data-plan-actions="true"]')) setOpenPlanMenuId('')
     if (!target.closest('[data-task-actions="true"]')) setOpenTaskMenuId('')
   })
 

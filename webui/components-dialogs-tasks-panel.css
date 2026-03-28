@@ -78,7 +78,7 @@
   min-width: min(100%, 150px);
 }
 
-.task-more-menu[data-task-menu-mode='portal'] {
+.task-more-menu[data-action-menu-mode='portal'] {
   overflow-y: auto;
 }
 

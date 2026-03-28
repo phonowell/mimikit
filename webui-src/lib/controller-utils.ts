@@ -43,6 +43,7 @@ export const focusElementById = (elementId: string | null): void => {
 
 export type DeleteModeState = {
   deleteMode: boolean
+  openPlanMenuId: string
   openTaskMenuId: string
   quote: QuoteState | null
   toolsMenuOpen: boolean
@@ -62,6 +63,7 @@ export const resolveDeleteModeTransition = (
   if (nextDeleteMode) {
     return {
       deleteMode: true,
+      openPlanMenuId: '',
       openTaskMenuId: '',
       quote: null,
       toolsMenuOpen: false,

@@ -69,8 +69,11 @@ export type TasksDialogSurface = {
 
 export type PlansDialogSurface = {
   open: boolean
+  openMenuId: string
   plans: PlanView[]
   onClose: () => void
+  onPlanAction: (planId: string, action: 'copy-id') => void
+  onToggleMenu: (planId: string) => void
 }
 
 export type FocusDialogSurface = {
