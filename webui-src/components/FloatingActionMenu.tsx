@@ -1,4 +1,10 @@
-import { useEffect, useEffectEvent, useLayoutEffect, useState } from 'react'
+import {
+  useEffect,
+  useEffectEvent,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react'
 import { createPortal } from 'react-dom'
 
 import type { CSSProperties, PropsWithChildren, RefObject } from 'react'
@@ -26,6 +32,7 @@ export const FloatingActionMenu = ({
   menuOpen,
   toggleRef,
 }: Props) => {
+  const menuRef = useRef<HTMLDivElement>(null)
   const [portalHost, setPortalHost] = useState<HTMLElement | null>(null)
   const [menuStyle, setMenuStyle] = useState<CSSProperties | null>(null)
   const menuMode =
@@ -34,6 +41,9 @@ export const FloatingActionMenu = ({
     const toggle = toggleRef.current
     if (!toggle || typeof window === 'undefined') return
     const rect = toggle.getBoundingClientRect()
+    const menuHeight =
+      menuRef.current?.getBoundingClientRect().height ??
+      ACTION_MENU_ESTIMATED_HEIGHT
     const width = clamp(
       window.innerWidth - ACTION_MENU_MARGIN * 2,
       ACTION_MENU_MIN_WIDTH,
@@ -45,14 +55,10 @@ export const FloatingActionMenu = ({
       window.innerWidth - width - ACTION_MENU_MARGIN,
     )
     const openUpward =
-      window.innerHeight - rect.bottom <
-        ACTION_MENU_ESTIMATED_HEIGHT + ACTION_MENU_OFFSET &&
-      rect.top > ACTION_MENU_ESTIMATED_HEIGHT
+      window.innerHeight - rect.bottom < menuHeight + ACTION_MENU_OFFSET &&
+      rect.top > menuHeight
     const top = openUpward
-      ? Math.max(
-          ACTION_MENU_MARGIN,
-          rect.top - ACTION_MENU_ESTIMATED_HEIGHT - ACTION_MENU_OFFSET,
-        )
+      ? Math.max(ACTION_MENU_MARGIN, rect.top - menuHeight - ACTION_MENU_OFFSET)
       : Math.min(
           rect.bottom + ACTION_MENU_OFFSET,
           window.innerHeight - ACTION_MENU_MARGIN,
@@ -104,6 +110,7 @@ export const FloatingActionMenu = ({
       className={className}
       data-action-menu-mode={menuMode}
       id={`${menuId}-menu`}
+      ref={menuRef}
       role="menu"
       style={menuMode === 'portal' ? (menuStyle ?? undefined) : undefined}
     >
