@@ -4,6 +4,7 @@ import {
   applyIncomingSnapshot,
   createInitialAppState,
   shouldDisplayMessageTime,
+  shouldHydrateMessageBaselineWithoutTts,
 } from '../webui-src/lib/messages.js'
 
 test('applyIncomingSnapshot clears awaitingReply when agent message arrives', () => {
@@ -22,7 +23,10 @@ test('applyIncomingSnapshot clears awaitingReply when agent message arrives', ()
 
   expect(next.awaitingReply).toBe(false)
   expect(newAgentMessages).toHaveLength(1)
-  expect(next.messages.map((message) => message.id)).toEqual(['user-1', 'agent-1'])
+  expect(next.messages.map((message) => message.id)).toEqual([
+    'user-1',
+    'agent-1',
+  ])
 })
 
 test('applyIncomingSnapshot clears awaitingReply for manager fallback reply', () => {
@@ -58,4 +62,51 @@ test('system messages do not display a message time', () => {
       text: 'hello',
     }),
   ).toBe(true)
+})
+
+test('initial non-empty full snapshot should hydrate the message baseline without triggering TTS', () => {
+  expect(
+    shouldHydrateMessageBaselineWithoutTts({
+      currentMessages: [],
+      snapshot: {
+        messages: {
+          mode: 'full',
+          messages: [{ id: 'agent-1', role: 'agent', text: 'hello again' }],
+        },
+      },
+    }),
+  ).toBe(true)
+  expect(
+    shouldHydrateMessageBaselineWithoutTts({
+      currentMessages: [],
+      snapshot: {
+        messages: {
+          mode: 'full',
+          messages: [],
+        },
+      },
+    }),
+  ).toBe(false)
+  expect(
+    shouldHydrateMessageBaselineWithoutTts({
+      currentMessages: [],
+      snapshot: {
+        messages: {
+          mode: 'delta',
+          messages: [{ id: 'agent-2', role: 'agent', text: 'new reply' }],
+        },
+      },
+    }),
+  ).toBe(false)
+  expect(
+    shouldHydrateMessageBaselineWithoutTts({
+      currentMessages: [{ id: 'agent-0', role: 'agent', text: 'existing' }],
+      snapshot: {
+        messages: {
+          mode: 'full',
+          messages: [{ id: 'agent-1', role: 'agent', text: 'hello again' }],
+        },
+      },
+    }),
+  ).toBe(false)
 })

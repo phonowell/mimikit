@@ -1,6 +1,10 @@
 import { useEffect, useEffectEvent, useRef } from 'react'
 
-import { applyIncomingSnapshot, findNewAgentMessages } from '../lib/messages.js'
+import {
+  applyIncomingSnapshot,
+  findNewAgentMessages,
+  shouldHydrateMessageBaselineWithoutTts,
+} from '../lib/messages.js'
 
 import { useBranding } from './use-branding.js'
 import { useEventStream } from './use-event-stream.js'
@@ -58,6 +62,18 @@ export const useAppRuntimeEffects = ({
   const handleSnapshot = useEffectEvent((snapshot: SnapshotEnvelope) => {
     scroll.captureLayoutShift()
     setStatusOverride(null)
+    if (
+      shouldHydrateMessageBaselineWithoutTts({
+        currentMessages: appState.messages,
+        snapshot,
+      })
+    ) {
+      previousMessageIdsRef.current = collectMessageIds(
+        Array.isArray(snapshot.messages?.messages)
+          ? snapshot.messages.messages
+          : [],
+      )
+    }
     setAppState((current) => applyIncomingSnapshot(current, snapshot).next)
   })
   const handleTasks = useEffectEvent((tasks: TasksSnapshot) =>

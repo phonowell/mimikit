@@ -68,6 +68,18 @@ export const findNewAgentMessages = (
   return next
 }
 
+export const shouldHydrateMessageBaselineWithoutTts = ({
+  currentMessages,
+  snapshot,
+}: {
+  currentMessages: readonly ChatMessage[]
+  snapshot: SnapshotEnvelope
+}): boolean => {
+  if (currentMessages.length > 0) return false
+  if (normalizeMode(snapshot.messages) !== 'full') return false
+  return normalizeMessages(snapshot.messages).length > 0
+}
+
 export const applyIncomingSnapshot = (
   previous: AppState,
   snapshot: SnapshotEnvelope,
