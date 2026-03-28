@@ -132,6 +132,7 @@ test('enqueue_task rejects repo-internal cwd when mapped worktree subpath is mis
         type: 'enqueue_task',
         task: buildTaskDraft(stateDirCwd, {
           title: 'state dir task',
+          use_worktree: true,
         }),
       },
     ]),
