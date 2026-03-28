@@ -14,14 +14,12 @@ export type HeaderSurface = {
   workerStates: string[]
   hasPlans: boolean
   toolsMenuOpen: boolean
-  ttsLabel: string
   toolsDisabled: boolean
   onOpenPlans: () => void
   onOpenTasks: () => void
   onPreloadPlans: () => void
   onPreloadTasks: () => void
   onToggleTools: () => void
-  onToggleTts: () => void
   onToggleDeleteMode: () => void
   onOpenRestart: () => void
   onOpenReset: () => void

@@ -55,7 +55,7 @@ export const isManagerFallbackMessage = (message: ChatMessage): boolean =>
 export const shouldDisplayMessageTime = (message: ChatMessage): boolean =>
   message.role !== 'system'
 
-export const findNewAgentMessages = (
+const findNewAgentMessages = (
   messages: readonly ChatMessage[],
   previousIds: ReadonlySet<string>,
 ): ChatMessage[] => {
@@ -66,18 +66,6 @@ export const findNewAgentMessages = (
     if (message.role === 'agent') next.push(message)
   }
   return next
-}
-
-export const shouldHydrateMessageBaselineWithoutTts = ({
-  currentMessages,
-  snapshot,
-}: {
-  currentMessages: readonly ChatMessage[]
-  snapshot: SnapshotEnvelope
-}): boolean => {
-  if (currentMessages.length > 0) return false
-  if (normalizeMode(snapshot.messages) !== 'full') return false
-  return normalizeMessages(snapshot.messages).length > 0
 }
 
 export const applyIncomingSnapshot = (

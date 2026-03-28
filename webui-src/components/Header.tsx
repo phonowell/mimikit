@@ -4,14 +4,12 @@ type Props = {
   workerStates: string[]
   hasPlans: boolean
   toolsMenuOpen: boolean
-  ttsLabel: string
   toolsDisabled: boolean
   onOpenPlans: () => void
   onOpenTasks: () => void
   onPreloadPlans: () => void
   onPreloadTasks: () => void
   onToggleTools: () => void
-  onToggleTts: () => void
   onToggleDeleteMode: () => void
   onOpenRestart: () => void
   onOpenReset: () => void
@@ -23,14 +21,12 @@ export const Header = ({
   workerStates,
   hasPlans,
   toolsMenuOpen,
-  ttsLabel,
   toolsDisabled,
   onOpenPlans,
   onOpenTasks,
   onPreloadPlans,
   onPreloadTasks,
   onToggleTools,
-  onToggleTts,
   onToggleDeleteMode,
   onOpenRestart,
   onOpenReset,
@@ -102,15 +98,6 @@ export const Header = ({
             role="menu"
             hidden={!toolsMenuOpen}
           >
-            <button
-              className="tools-menu-item"
-              type="button"
-              role="menuitemcheckbox"
-              aria-checked={ttsLabel.endsWith('on') ? 'true' : 'false'}
-              onClick={onToggleTts}
-            >
-              {ttsLabel}
-            </button>
             <button
               className="tools-menu-item"
               type="button"

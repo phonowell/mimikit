@@ -28,7 +28,6 @@ export const useAppActions = ({
   setTasksOpen,
   setToast,
   setToolsMenuOpen,
-  setTtsEnabled,
   toolsMenuOpen,
 }: AppActionParams) => {
   const stateRef = useRef({
@@ -62,7 +61,6 @@ export const useAppActions = ({
     setQuote,
     setTasksOpen,
     setToolsMenuOpen,
-    setTtsEnabled,
     stateRef,
   })
   const requestActions = useAppRequestActions({

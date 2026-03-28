@@ -19,16 +19,12 @@ export const useAppSurfaces = ({
   appState,
   composerValue,
   scroll,
-  ttsEnabled,
-  ttsSupported,
   ui,
 }: {
   actions: ReturnType<typeof useAppActions>
   appState: AppState
   composerValue: string
   scroll: ReturnType<typeof useMessageScroll>
-  ttsEnabled: boolean
-  ttsSupported: boolean
   ui: ReturnType<typeof useAppUiState>
 }) => {
   const deferredTasks = useDeferredValue(appState.tasks)
@@ -43,15 +39,6 @@ export const useAppSurfaces = ({
     appState.status.maxWorkers ?? 1,
     appState.status.activeTasks ?? 0,
     isDisconnected,
-  )
-  const ttsLabel = !ttsSupported
-    ? 'Voice replies: unavailable'
-    : ttsEnabled
-      ? 'Voice replies: on'
-      : 'Voice replies: off'
-  const toggleTts = useCallback(
-    () => actions.setTtsEnabled(!ttsEnabled),
-    [actions, ttsEnabled],
   )
   const syncComposerLayoutShift = useCallback(
     (stickToBottom: boolean) => scroll.syncAfterLayoutShift({ stickToBottom }),
@@ -69,14 +56,12 @@ export const useAppSurfaces = ({
       workerStates,
       hasPlans: appState.plans.length > 0,
       toolsMenuOpen: ui.toolsMenuOpen,
-      ttsLabel,
       toolsDisabled: ui.busy,
       onOpenPlans: actions.openPlans,
       onOpenTasks: actions.openTasks,
       onPreloadPlans: preloadPlansDialog,
       onPreloadTasks: preloadTasksDialog,
       onToggleTools: actions.toggleToolsMenu,
-      onToggleTts: toggleTts,
       onToggleDeleteMode: actions.toggleDeleteMode,
       onOpenRestart: actions.openRestartDialog,
       onOpenReset: actions.openResetDialog,
@@ -86,8 +71,6 @@ export const useAppSurfaces = ({
       appState.plans.length,
       displayState,
       displayText,
-      toggleTts,
-      ttsLabel,
       ui.busy,
       ui.toolsMenuOpen,
       workerStates,

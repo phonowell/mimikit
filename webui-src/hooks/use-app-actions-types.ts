@@ -48,6 +48,5 @@ export type AppActionParams = {
   setTasksOpen: Dispatch<SetStateAction<boolean>>
   setToast: Dispatch<SetStateAction<ToastState | null>>
   setToolsMenuOpen: Dispatch<SetStateAction<boolean>>
-  setTtsEnabled: (enabled: boolean) => void
   toolsMenuOpen: boolean
 }

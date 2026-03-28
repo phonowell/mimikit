@@ -1,10 +1,6 @@
-import { useEffect, useEffectEvent, useRef } from 'react'
+import { useEffect, useEffectEvent } from 'react'
 
-import {
-  applyIncomingSnapshot,
-  findNewAgentMessages,
-  shouldHydrateMessageBaselineWithoutTts,
-} from '../lib/messages.js'
+import { applyIncomingSnapshot } from '../lib/messages.js'
 
 import { useBranding } from './use-branding.js'
 import { useEventStream } from './use-event-stream.js'
@@ -23,23 +19,11 @@ type ScrollController = {
   captureLayoutShift: () => void
 }
 
-const collectMessageIds = (
-  messages: ReadonlyArray<AppState['messages'][number]>,
-): ReadonlySet<string> => {
-  const ids = new Set<string>()
-  for (const message of messages) {
-    const id = typeof message.id === 'string' ? message.id.trim() : ''
-    if (id) ids.add(id)
-  }
-  return ids
-}
-
 type Params = {
   appState: AppState
   confirmDialog: ConfirmDialogState | null
   plansOpen: boolean
   scroll: ScrollController
-  speakMessages: (messages: AppState['messages']) => void
   setAppState: Dispatch<SetStateAction<AppState>>
   setOpenPlanMenuId: Dispatch<SetStateAction<string>>
   setOpenTaskMenuId: Dispatch<SetStateAction<string>>
@@ -59,7 +43,6 @@ export const useAppRuntimeEffects = ({
   confirmDialog,
   plansOpen,
   scroll,
-  speakMessages,
   setAppState,
   setOpenPlanMenuId,
   setOpenTaskMenuId,
@@ -69,22 +52,9 @@ export const useAppRuntimeEffects = ({
   tasksOpen,
   toast,
 }: Params): void => {
-  const previousMessageIdsRef = useRef(collectMessageIds(appState.messages))
   const handleSnapshot = useEffectEvent((snapshot: SnapshotEnvelope) => {
     scroll.captureLayoutShift()
     setStatusOverride(null)
-    if (
-      shouldHydrateMessageBaselineWithoutTts({
-        currentMessages: appState.messages,
-        snapshot,
-      })
-    ) {
-      previousMessageIdsRef.current = collectMessageIds(
-        Array.isArray(snapshot.messages?.messages)
-          ? snapshot.messages.messages
-          : [],
-      )
-    }
     setAppState((current) => applyIncomingSnapshot(current, snapshot).next)
   })
   const handleTasks = useEffectEvent((tasks: TasksSnapshot) =>
@@ -117,16 +87,6 @@ export const useAppRuntimeEffects = ({
     onTasks: handleTasks,
     onDisconnected: handleDisconnected,
   })
-
-  useEffect(() => {
-    const previousIds = previousMessageIdsRef.current
-    const newAgentMessages = findNewAgentMessages(
-      appState.messages,
-      previousIds,
-    )
-    previousMessageIdsRef.current = collectMessageIds(appState.messages)
-    if (newAgentMessages.length > 0) speakMessages(newAgentMessages)
-  }, [appState.messages, speakMessages])
 
   useEffect(() => {
     if (!toast) return

@@ -24,7 +24,6 @@ type Params = Pick<
   | 'setQuote'
   | 'setTasksOpen'
   | 'setToolsMenuOpen'
-  | 'setTtsEnabled'
 > & {
   stateRef: AppActionStateRef
 }
@@ -40,7 +39,6 @@ export const useAppLocalActions = ({
   setQuote,
   setTasksOpen,
   setToolsMenuOpen,
-  setTtsEnabled,
   stateRef,
 }: Params) => {
   const applyDeleteMode = useCallback(
@@ -155,7 +153,6 @@ export const useAppLocalActions = ({
       requestDeleteMessage,
       requestDeleteTask,
       selectQuote,
-      setTtsEnabled,
       togglePlanMenu,
       toggleDeleteMode,
       toggleTaskMenu,
@@ -175,7 +172,6 @@ export const useAppLocalActions = ({
       requestDeleteMessage,
       requestDeleteTask,
       selectQuote,
-      setTtsEnabled,
       togglePlanMenu,
       toggleDeleteMode,
       toggleTaskMenu,
