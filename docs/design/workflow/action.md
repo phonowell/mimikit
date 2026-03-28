@@ -133,6 +133,7 @@
 - `query_context` / `read_file` 已删除；主线程默认不承担本地细读 / 检索
 - `restart_runtime` 已从 manager action surface 删除
 - prompt 中的 action 卡完全由代码生成，不再手写维护另一套文案
+- 简版 action 卡也必须直接暴露会改变动作语义的关键分叉；例如 `set_plan` 必须明写 `plan_id=null` 表示创建，避免首轮把新建计划误写成更新既有 plan
 
 ## Prompt 注入标签
 

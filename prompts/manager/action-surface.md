@@ -59,8 +59,8 @@ actions:
     summary: 创建或整体替换一个持续触发计划。
     brief_constraints:
       - 必填 `plan_id,plan`
-    detail_constraints:
       - '`plan_id=null` 表示创建；非空表示按该 ID 整体替换'
+    detail_constraints:
       - '`plan` 必须包含 `title,trigger,task,priority,max_runs`'
       - '`plan.task` 与 `enqueue_task.task` 使用同一合同'
   delete_plan:

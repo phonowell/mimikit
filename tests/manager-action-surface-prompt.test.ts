@@ -22,6 +22,7 @@ test('prompt surface no longer varies by wake profile', () => {
   expect(prompt).toContain('type="enqueue_task"')
   expect(prompt).toContain('type="task_control"')
   expect(prompt).toContain('type="set_plan"')
+  expect(prompt).toContain('`plan_id=null` 表示创建')
   expect(prompt).not.toContain('type="query_context"')
   expect(prompt).not.toContain('type="read_file"')
   expect(prompt).not.toContain('type="mutate_task"')
