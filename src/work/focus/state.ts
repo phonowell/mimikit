@@ -1,5 +1,6 @@
 import { compareIsoDesc } from '../../foundation/shared/time.js'
 import { nowIso } from '../../foundation/shared/utils.js'
+import { notifyUiSignal } from '../../kernel/orchestrator/signals.js'
 
 import { GLOBAL_FOCUS_ID, INBOX_FOCUS_ID } from './constants.js'
 import {
@@ -23,12 +24,19 @@ import type {
 import type {
   FocusRuntime,
   RuntimeFocusCollection,
+  RuntimeUiState,
 } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 export { normalizeFocusSummary } from './meta.js'
 
 type FocusCollectionRuntime = {
   focuses: RuntimeFocusCollection
+  ui?: Pick<RuntimeUiState, 'wakeVersion' | 'wakeEvents' | 'signalControllers'>
+}
+
+const notifyFocusesChanged = (runtime: FocusCollectionRuntime): void => {
+  if (!runtime.ui) return
+  notifyUiSignal({ ui: runtime.ui }, 'focuses')
 }
 
 export const resolveDefaultFocusId = (runtime: FocusRuntime): FocusId => {
@@ -86,6 +94,7 @@ export const ensureFocus = (
     lastActivityAt: timestamp,
   }
   runtime.focuses.push(next)
+  notifyFocusesChanged(runtime)
   return next
 }
 
@@ -99,9 +108,13 @@ export const ensureGlobalFocus = (runtime: FocusRuntime): void => {
   }
   if (global.status !== 'active') {
     applyFocusMetaStatus(global, GLOBAL_FOCUS_ID, 'active')
+    notifyFocusesChanged(runtime)
     return
   }
-  if (hadDetails) global.updatedAt = nowIso()
+  if (hadDetails) {
+    global.updatedAt = nowIso()
+    notifyFocusesChanged(runtime)
+  }
 }
 
 export const touchFocus = (
@@ -110,6 +123,7 @@ export const touchFocus = (
 ): void => {
   const focus = findFocus(runtime, focusId) ?? ensureFocus(runtime, focusId)
   touchFocusMeta(focus)
+  notifyFocusesChanged(runtime)
 }
 
 export const setFocusStatus = (
@@ -119,6 +133,7 @@ export const setFocusStatus = (
 ): void => {
   const focus = findFocus(runtime, focusId) ?? ensureFocus(runtime, focusId)
   applyFocusMetaStatus(focus, focusId, status)
+  notifyFocusesChanged(runtime)
 }
 
 export const updateFocus = (
@@ -133,4 +148,5 @@ export const updateFocus = (
 ): void => {
   const focus = findFocus(runtime, params.id) ?? ensureFocus(runtime, params.id)
   updateFocusMeta(focus, params, params.id, nowIso())
+  notifyFocusesChanged(runtime)
 }

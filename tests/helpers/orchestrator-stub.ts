@@ -28,6 +28,8 @@ export const createOrchestratorStub = () => {
     getChatMessages: () =>
       Promise.resolve({ messages: [], mode: 'full' as const }),
     getTasks: () => ({ tasks: [], counts: {} }),
+    getPlans: () => ({ items: [] }),
+    getFocuses: () => ({ items: [] }),
     getReviewStatus: () => Promise.resolve({ cards: [], highlights: [] }),
     getWebUiDeltaSnapshot: () =>
       Promise.resolve({

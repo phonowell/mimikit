@@ -6,6 +6,8 @@ import {
 } from '../../surface/orchestrator/orchestrator-chat-history.js'
 import { appendUserInput } from '../../surface/orchestrator/orchestrator-input-ingress.js'
 import {
+  buildOrchestratorFocusViews,
+  buildOrchestratorPlanViews,
   buildOrchestratorTaskViews,
   buildOrchestratorWebUiDeltaSnapshot,
   buildOrchestratorWebUiSnapshot,
@@ -41,6 +43,14 @@ type OrchestratorOptions = Parameters<typeof createRuntimeState>[1]
 export class Orchestrator {
   private runtime: RuntimeState
   private stopChannelsAwait?: () => Promise<void>
+  private readonly resolveStopOptions = () => ({
+    runtime: this.runtime,
+    channelInput: this.channelInput,
+    channelRestart: this.channelRestart,
+    ...(this.stopChannelsAwait
+      ? { stopChannelsAwait: this.stopChannelsAwait }
+      : {}),
+  })
   private readonly channelInput = (
     text: string,
     meta?: UserMeta,
@@ -89,25 +99,11 @@ export class Orchestrator {
   }
 
   stop() {
-    stopOrchestratorBestEffort({
-      runtime: this.runtime,
-      channelInput: this.channelInput,
-      channelRestart: this.channelRestart,
-      ...(this.stopChannelsAwait
-        ? { stopChannelsAwait: this.stopChannelsAwait }
-        : {}),
-    })
+    stopOrchestratorBestEffort(this.resolveStopOptions())
   }
 
   async stopAndPersist(): Promise<void> {
-    await stopOrchestratorAndPersist({
-      runtime: this.runtime,
-      channelInput: this.channelInput,
-      channelRestart: this.channelRestart,
-      ...(this.stopChannelsAwait
-        ? { stopChannelsAwait: this.stopChannelsAwait }
-        : {}),
-    })
+    await stopOrchestratorAndPersist(this.resolveStopOptions())
   }
 
   addUserInput(text: string, meta?: UserMeta, quote?: string): Promise<string> {
@@ -120,6 +116,14 @@ export class Orchestrator {
 
   getTasks(limit = 200) {
     return buildOrchestratorTaskViews(this.runtime, limit)
+  }
+
+  getPlans(limit = 200) {
+    return buildOrchestratorPlanViews(this.runtime, limit)
+  }
+
+  getFocuses(limit = 200) {
+    return buildOrchestratorFocusViews(this.runtime, limit)
   }
 
   getWebUiDeltaSnapshot(messageLimit = 50, afterId?: string) {

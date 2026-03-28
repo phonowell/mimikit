@@ -37,7 +37,7 @@ export type ChannelTargets = {
   telegramChatId?: string
 }
 
-export type UiWakeKind = 'snapshot' | 'messages' | 'tasks'
+export type UiWakeKind = 'snapshot' | 'messages' | 'tasks' | 'plans' | 'focuses'
 
 export type ExitRequest = {
   code: number

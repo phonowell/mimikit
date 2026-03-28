@@ -1,6 +1,8 @@
 import { expect, test } from 'vitest'
 
 import {
+  applyIncomingFocuses,
+  applyIncomingPlans,
   applyIncomingSnapshot,
   createInitialAppState,
   shouldDisplayMessageTime,
@@ -46,6 +48,78 @@ test('applyIncomingSnapshot clears awaitingReply for manager fallback reply', ()
   })
 
   expect(next.awaitingReply).toBe(false)
+})
+
+test('applyIncomingPlans only replaces plans', () => {
+  const current = {
+    ...createInitialAppState(),
+    tasks: [
+      {
+        id: 'task-1',
+        status: 'running',
+        title: 'Task',
+        createdAt: '2026-03-28T00:00:00.000Z',
+        changeAt: '2026-03-28T00:00:00.000Z',
+      },
+    ],
+    focuses: [
+      {
+        id: 'focus-1',
+        title: 'Inbox',
+        status: 'active',
+        updatedAt: '2026-03-28T00:00:00.000Z',
+        lastActivityAt: '2026-03-28T00:00:00.000Z',
+      },
+    ],
+  }
+
+  const next = applyIncomingPlans(current, {
+    items: [{ id: 'plan-1', title: 'Split streams' }],
+  })
+
+  expect(next.plans).toEqual([{ id: 'plan-1', title: 'Split streams' }])
+  expect(next.tasks).toEqual(current.tasks)
+  expect(next.focuses).toEqual(current.focuses)
+})
+
+test('applyIncomingFocuses only replaces focuses', () => {
+  const current = {
+    ...createInitialAppState(),
+    plans: [{ id: 'plan-1', title: 'Split streams' }],
+    tasks: [
+      {
+        id: 'task-1',
+        status: 'running',
+        title: 'Task',
+        createdAt: '2026-03-28T00:00:00.000Z',
+        changeAt: '2026-03-28T00:00:00.000Z',
+      },
+    ],
+  }
+
+  const next = applyIncomingFocuses(current, {
+    items: [
+      {
+        id: 'focus-1',
+        title: 'Inbox',
+        status: 'active',
+        updatedAt: '2026-03-28T00:00:00.000Z',
+        lastActivityAt: '2026-03-28T00:00:00.000Z',
+      },
+    ],
+  })
+
+  expect(next.focuses).toEqual([
+    {
+      id: 'focus-1',
+      title: 'Inbox',
+      status: 'active',
+      updatedAt: '2026-03-28T00:00:00.000Z',
+      lastActivityAt: '2026-03-28T00:00:00.000Z',
+    },
+  ])
+  expect(next.tasks).toEqual(current.tasks)
+  expect(next.plans).toEqual(current.plans)
 })
 
 test('system messages do not display a message time', () => {

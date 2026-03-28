@@ -1,11 +1,6 @@
 import { UI_TEXT } from './system-text.js'
 
-import type {
-  ConfirmDialogState,
-  FocusView,
-  StatusSnapshot,
-  TaskView,
-} from '../types.js'
+import type { ConfirmDialogState, StatusSnapshot, TaskView } from '../types.js'
 
 const FAVICON_COLOR_BY_STATE: Record<string, string> = {
   disconnected: '#94a3b8',
@@ -28,42 +23,10 @@ const composeDocumentTitle = (primary: string): string => {
   return `${normalizedPrimary} · ${productName}`
 }
 
-const resolveFocusActivityAtMs = (focus: FocusView): number => {
-  const source = focus.lastActivityAt || focus.updatedAt
-  const parsed = Date.parse(source)
-  return Number.isFinite(parsed) ? parsed : Number.NEGATIVE_INFINITY
-}
-
 const resolveTaskActivityAtMs = (task: TaskView): number => {
   const source = task.startedAt || task.changeAt || task.createdAt
   const parsed = Date.parse(source)
   return Number.isFinite(parsed) ? parsed : Number.NEGATIVE_INFINITY
-}
-
-const resolveFocusTitle = (focuses: readonly FocusView[]): string => {
-  let bestActive: FocusView | null = null
-  let bestFallback: FocusView | null = null
-
-  for (const focus of focuses) {
-    const currentTarget = focus.status === 'active' ? bestActive : bestFallback
-    if (!currentTarget) {
-      if (focus.status === 'active') bestActive = focus
-      else bestFallback = focus
-      continue
-    }
-    const focusActivity = resolveFocusActivityAtMs(focus)
-    const targetActivity = resolveFocusActivityAtMs(currentTarget)
-    if (
-      focusActivity > targetActivity ||
-      (focusActivity === targetActivity &&
-        focus.id.localeCompare(currentTarget.id) > 0)
-    ) {
-      if (focus.status === 'active') bestActive = focus
-      else bestFallback = focus
-    }
-  }
-
-  return normalizeTitle((bestActive ?? bestFallback)?.title)
 }
 
 const resolveRunningTaskTitle = (tasks: readonly TaskView[]): string => {
@@ -97,7 +60,6 @@ const resolveDialogTitle = (dialog: ConfirmDialogState | null): string => {
 
 export type DocumentTitleContext = {
   confirmDialog: ConfirmDialogState | null
-  focuses: readonly FocusView[]
   plansOpen: boolean
   tasks: readonly TaskView[]
   tasksOpen: boolean
@@ -105,7 +67,6 @@ export type DocumentTitleContext = {
 
 export const resolveDocumentTitle = ({
   confirmDialog,
-  focuses,
   plansOpen,
   tasks,
   tasksOpen,
@@ -118,7 +79,7 @@ export const resolveDocumentTitle = ({
   const runningTaskTitle = resolveRunningTaskTitle(tasks)
   if (runningTaskTitle) return composeDocumentTitle(runningTaskTitle)
 
-  return composeDocumentTitle(resolveFocusTitle(focuses))
+  return composeDocumentTitle('')
 }
 
 const resolveFaviconHref = (color: string): string => {

@@ -5,7 +5,7 @@ import {
   syncDocumentBranding,
 } from '../webui-src/lib/branding.js'
 
-import type { FocusView, StatusSnapshot } from '../webui-src/types.js'
+import type { StatusSnapshot } from '../webui-src/types.js'
 
 class FakeLinkElement {
   rel = ''
@@ -81,33 +81,17 @@ test('syncDocumentBranding skips redundant favicon writes for identical branding
   globalThis.document = documentMock
 
   const status: StatusSnapshot = { agentStatus: 'idle' }
-  const focuses: FocusView[] = [
-    {
-      id: 'focus-1',
-      title: 'Inbox triage',
-      status: 'active',
-      updatedAt: '2026-03-25T09:00:00.000Z',
-      lastActivityAt: '2026-03-25T09:05:00.000Z',
-    },
-  ]
   const context: DocumentTitleContext = {
     confirmDialog: null,
-    focuses,
     plansOpen: false,
     tasks: [],
     tasksOpen: false,
   }
 
   syncDocumentBranding(status, context)
-  syncDocumentBranding(
-    { ...status },
-    {
-      ...context,
-      focuses: focuses.map((focus) => ({ ...focus })),
-    },
-  )
+  syncDocumentBranding({ ...status }, { ...context })
 
-  expect(titleValue).toBe('Inbox triage · Mimikit')
+  expect(titleValue).toBe('Mimikit')
   expect(titleSetCount).toBe(1)
   expect(appended).toHaveLength(1)
   expect(existingLink?.hrefSetCount).toBe(1)

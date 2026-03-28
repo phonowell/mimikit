@@ -1,6 +1,11 @@
 import { useEffect, useEffectEvent } from 'react'
 
-import { applyIncomingSnapshot } from '../lib/messages.js'
+import {
+  applyIncomingFocuses,
+  applyIncomingPlans,
+  applyIncomingSnapshot,
+  applyIncomingTasks,
+} from '../lib/messages.js'
 
 import { useBranding } from './use-branding.js'
 import { useEventStream } from './use-event-stream.js'
@@ -8,6 +13,8 @@ import { useEventStream } from './use-event-stream.js'
 import type {
   AppState,
   ConfirmDialogState,
+  FocusesSnapshot,
+  PlansSnapshot,
   SnapshotEnvelope,
   TasksSnapshot,
 } from '../types.js'
@@ -50,7 +57,13 @@ export const useAppRuntimeEffects = ({
     setAppState((current) => applyIncomingSnapshot(current, snapshot).next)
   })
   const handleTasks = useEffectEvent((tasks: TasksSnapshot) =>
-    setAppState((current) => ({ ...current, tasks: tasks.tasks })),
+    setAppState((current) => applyIncomingTasks(current, tasks)),
+  )
+  const handlePlans = useEffectEvent((plans: PlansSnapshot) =>
+    setAppState((current) => applyIncomingPlans(current, plans)),
+  )
+  const handleFocuses = useEffectEvent((focuses: FocusesSnapshot) =>
+    setAppState((current) => applyIncomingFocuses(current, focuses)),
   )
   const handleDisconnected = useEffectEvent(() => {
     setAppState((current) => ({
@@ -69,7 +82,6 @@ export const useAppRuntimeEffects = ({
 
   useBranding(appState.status, {
     confirmDialog,
-    focuses: appState.focuses,
     plansOpen,
     tasks: appState.tasks,
     tasksOpen,
@@ -77,6 +89,8 @@ export const useAppRuntimeEffects = ({
   useEventStream({
     onSnapshot: handleSnapshot,
     onTasks: handleTasks,
+    onPlans: handlePlans,
+    onFocuses: handleFocuses,
     onDisconnected: handleDisconnected,
   })
 

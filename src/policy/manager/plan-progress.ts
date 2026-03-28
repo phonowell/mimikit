@@ -1,4 +1,5 @@
 import { nowIso } from '../../foundation/shared/utils.js'
+import { notifyUiSignal } from '../../kernel/orchestrator/signals.js'
 
 import type {
   Task,
@@ -51,6 +52,7 @@ export const linkTriggeredPlanToTask = (params: {
     lastTaskId: nextTaskId,
   }
   matchedPlan.updatedAt = params.linkedAt ?? nowIso()
+  notifyUiSignal(runtime, 'plans')
   return true
 }
 
@@ -70,11 +72,15 @@ export const applyPlanCompletionState = (
       latestByTaskId.set(result.taskId, result)
   }
 
+  let changed = false
   for (const plan of runtime.taskPlans) {
     const taskId = plan.runtime.lastTaskId?.trim()
     if (!taskId) continue
     const matched = latestByTaskId.get(taskId)
     if (!matched) continue
+    if (plan.updatedAt === matched.completedAt) continue
     plan.updatedAt = matched.completedAt
+    changed = true
   }
+  if (changed) notifyUiSignal(runtime, 'plans')
 }

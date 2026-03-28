@@ -5,16 +5,7 @@ import {
   resolveDocumentTitle,
 } from '../webui-src/lib/branding.js'
 
-import type { FocusView, TaskView } from '../webui-src/types.js'
-
-const createFocus = (overrides: Partial<FocusView> = {}): FocusView => ({
-  id: 'focus-1',
-  title: 'Inbox',
-  status: 'active',
-  updatedAt: '2026-03-28T09:00:00.000Z',
-  lastActivityAt: '2026-03-28T09:05:00.000Z',
-  ...overrides,
-})
+import type { TaskView } from '../webui-src/types.js'
 
 const createTask = (overrides: Partial<TaskView> = {}): TaskView => ({
   id: 'task-1',
@@ -29,7 +20,6 @@ const createTask = (overrides: Partial<TaskView> = {}): TaskView => ({
 const createContext = (
   overrides: Partial<DocumentTitleContext> = {},
 ): DocumentTitleContext => ({
-  focuses: [createFocus()],
   tasks: [createTask()],
   plansOpen: false,
   tasksOpen: false,
@@ -66,11 +56,6 @@ test('resolveDocumentTitle falls back to the running task when no stronger page 
   )
 })
 
-test('resolveDocumentTitle only falls back to focus or product name when nothing stronger exists', () => {
-  expect(resolveDocumentTitle(createContext({ tasks: [] }))).toBe(
-    'Inbox · Mimikit',
-  )
-  expect(resolveDocumentTitle(createContext({ tasks: [], focuses: [] }))).toBe(
-    'Mimikit',
-  )
+test('resolveDocumentTitle falls back to the product name when no dialog or running task is active', () => {
+  expect(resolveDocumentTitle(createContext({ tasks: [] }))).toBe('Mimikit')
 })

@@ -1,5 +1,6 @@
 import { newId, nowIso } from '../../foundation/shared/utils.js'
 import { persistRuntimeState } from '../../kernel/orchestrator/runtime-persistence.js'
+import { notifyUiSignal } from '../../kernel/orchestrator/signals.js'
 
 import { resolveActionFocusId } from './action-focus-id.js'
 import { buildPlanEffectFromTaskDraft } from './action-plan-effect.js'
@@ -84,6 +85,7 @@ export const applySetPlan = async (
     runtime.taskPlans.push(plan)
     await persistRuntimeState(runtime)
     await appendPlanSystemMessage(runtime, 'plan_created', plan)
+    notifyUiSignal(runtime, 'plans')
     return
   }
 
@@ -119,6 +121,7 @@ export const applySetPlan = async (
   runtime.taskPlans[index] = next
   await persistRuntimeState(runtime)
   await appendPlanSystemMessage(runtime, 'plan_updated', next)
+  notifyUiSignal(runtime, 'plans')
 }
 
 export const applyDeletePlan = async (
@@ -150,4 +153,5 @@ export const applyDeletePlan = async (
 
   await persistRuntimeState(runtime)
   await appendPlanSystemMessage(runtime, 'plan_deleted', next)
+  notifyUiSignal(runtime, 'plans')
 }

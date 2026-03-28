@@ -3,8 +3,11 @@ import { mergeIncomingMessages } from './merge-incoming-messages.js'
 import type {
   AppState,
   ChatMessage,
+  FocusesSnapshot,
+  PlansSnapshot,
   SnapshotEnvelope,
   StatusSnapshot,
+  TasksSnapshot,
 } from '../types.js'
 
 const MESSAGE_LIMIT = 50
@@ -51,6 +54,30 @@ export const createInitialAppState = (): AppState => ({
 export const isManagerFallbackMessage = (message: ChatMessage): boolean =>
   message.role === 'system' &&
   message.systemEventName === 'manager_fallback_reply'
+
+export const applyIncomingTasks = (
+  previous: AppState,
+  tasks: TasksSnapshot,
+): AppState => ({
+  ...previous,
+  tasks: tasks.tasks,
+})
+
+export const applyIncomingPlans = (
+  previous: AppState,
+  plans: PlansSnapshot,
+): AppState => ({
+  ...previous,
+  plans: plans.items,
+})
+
+export const applyIncomingFocuses = (
+  previous: AppState,
+  focuses: FocusesSnapshot,
+): AppState => ({
+  ...previous,
+  focuses: focuses.items,
+})
 
 export const shouldDisplayMessageTime = (message: ChatMessage): boolean =>
   message.role !== 'system'
