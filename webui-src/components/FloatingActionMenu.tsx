@@ -84,7 +84,7 @@ export const FloatingActionMenu = ({
     }
     setPortalHost(nextPortalHost)
     updateMenuLayout()
-  }, [menuOpen, toggleRef, updateMenuLayout])
+  }, [menuOpen, toggleRef])
 
   useEffect(() => {
     if (!menuOpen || !portalHost) return
@@ -94,7 +94,7 @@ export const FloatingActionMenu = ({
       window.removeEventListener('resize', updateMenuLayout)
       window.removeEventListener('scroll', updateMenuLayout, true)
     }
-  }, [menuOpen, portalHost, updateMenuLayout])
+  }, [menuOpen, portalHost])
 
   if (!menuOpen) return null
 
