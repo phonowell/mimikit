@@ -6,7 +6,6 @@ import fastify from 'fastify'
 import { expect, test } from 'vitest'
 
 import { defaultConfig } from '../../src/bootstrap/config.js'
-import { appendTaskProgress } from '../../src/persistence/storage/task-progress.js'
 import { registerApiRoutes } from '../../src/surface/http/routes-api.js'
 import { persistTaskExecutionSpec } from '../../src/work/spec/store.js'
 import { createOrchestratorStub } from '../helpers/orchestrator-stub.js'
@@ -68,71 +67,6 @@ test('task archive route falls back to live snapshot when archive file is missin
     '=== RESULT ===',
     'network timeout',
   ])
-
-  await app.close()
-})
-
-test('task archive route shows full running activity timeline while final archive is unavailable', async () => {
-  const workDir = await mkdtemp(join(tmpdir(), 'mimikit-archive-running-'))
-  const app = fastify()
-  const { orchestrator } = createOrchestratorStub()
-  await persistTaskExecutionSpec({
-    stateDir: workDir,
-    prompt: 'track worker progress',
-    specId: 'spec-task-archive-running',
-  })
-  const task: Task = {
-    id: 'task-archive-running',
-    fingerprint: 'fp-running',
-    semanticKey: 'sk-running',
-    executionSpecId: 'spec-task-archive-running',
-    title: 'Running Task',
-    cwd: '/tmp/archive-running',
-    focusId: 'focus-global',
-    profile: 'worker',
-    provider: 'codex',
-    status: 'running',
-    createdAt: '2026-02-10T00:00:00.000Z',
-    startedAt: '2026-02-10T00:00:01.000Z',
-    usage: { input: 12, output: 8, total: 20 },
-  }
-  await appendTaskProgress({
-    stateDir: workDir,
-    taskId: task.id,
-    type: 'worker_activity',
-    payload: {
-      text: '$ rg -n "task-progress" src\nsrc/persistence/storage/task-progress.ts:1:import { join } from \'node:path\'',
-    },
-  })
-  await appendTaskProgress({
-    stateDir: workDir,
-    taskId: task.id,
-    type: 'worker_activity',
-    payload: { text: 'tool completed: fs/read_file' },
-  })
-  ;(
-    orchestrator as unknown as {
-      getTaskById: (taskId: string) => Task | undefined
-    }
-  ).getTaskById = (taskId) => (taskId === task.id ? task : undefined)
-  const config = defaultConfig({ workDir })
-  registerApiRoutes(app, orchestrator, config)
-
-  const response = await app.inject({
-    method: 'GET',
-    url: `/api/tasks/${task.id}/archive`,
-  })
-
-  expectArchiveMarkdown(response, [
-    'status: running',
-    '=== RESULT ===',
-    '$ rg -n "task-progress" src',
-    "src/persistence/storage/task-progress.ts:1:import { join } from 'node:path'",
-    'tool completed: fs/read_file',
-  ])
-  expect(response.body).not.toContain(
-    'Task is running. Final archive is not available yet.',
-  )
 
   await app.close()
 })

@@ -68,6 +68,7 @@ export const createOrchestratorStub = () => {
         reviewStatus: { cards: [], highlights: [] },
       }),
     getTaskById: () => undefined,
+    getTaskLiveOutput: () => undefined,
     mutateTask: (
       _action: 'cancel' | 'delete' | 'pause' | 'resume',
       taskId: string,

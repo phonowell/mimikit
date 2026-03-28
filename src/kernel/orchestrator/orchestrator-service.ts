@@ -1,4 +1,5 @@
 import { type AppConfig } from '../../bootstrap/config.js'
+import { getTaskLiveOutputById } from '../../execution/worker/live-output.js'
 import {
   deleteChatHistoryMessage,
   type DeleteChatMessageResult,
@@ -167,6 +168,10 @@ export class Orchestrator {
 
   getTaskById(taskId: string) {
     return resolveTaskById(this.runtime, taskId)
+  }
+
+  getTaskLiveOutput(taskId: string): string | undefined {
+    return getTaskLiveOutputById(this.runtime)?.get(taskId)?.trim() ?? undefined
   }
 
   mutateTask(

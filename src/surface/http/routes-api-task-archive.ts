@@ -4,7 +4,6 @@ import { readErrorCode } from '../../foundation/shared/error-code.js'
 import { checkExistingPathBoundary } from '../../persistence/fs/path-safety.js'
 import { readTextFile } from '../../persistence/fs/read-text.js'
 import { buildArchiveDocument } from '../../persistence/storage/archive-format.js'
-import { readTaskProgress } from '../../persistence/storage/task-progress.js'
 import { readTaskExecutionSpec } from '../../work/spec/store.js'
 
 import { resolveRouteId } from './route-params.js'
@@ -32,28 +31,20 @@ const resolveTaskArchiveTarget = (
 const buildLiveArchive = async (
   stateDir: string,
   task: Task,
+  liveOutput?: string,
 ): Promise<string> => {
   const spec = await readTaskExecutionSpec(stateDir, task.executionSpecId)
-  const progress = await readTaskProgress(stateDir, task.id)
   const usage = task.result?.usage ?? task.usage
   const cancel = task.result?.cancel ?? task.cancel
   const resultStatus = task.result?.status ?? task.status
   const resultDuration = task.result?.durationMs ?? task.durationMs
   const resultOutput = task.result?.output.trim()
-  const activityTimeline = progress
-    .filter((event) => event.type === 'worker_activity')
-    .map((event) => {
-      const text =
-        typeof event.payload.text === 'string' ? event.payload.text : ''
-      return text.trim()
-    })
-    .filter(Boolean)
-    .join('\n\n')
+  const liveSnapshot = liveOutput?.trim()
   const result =
     resultOutput && resultOutput.length > 0
       ? resultOutput
-      : activityTimeline
-        ? activityTimeline
+      : liveSnapshot && liveSnapshot.length > 0
+        ? liveSnapshot
         : task.status === 'pending'
           ? 'Task is queued. Final archive is not available yet.'
           : task.status === 'paused'
@@ -93,8 +84,11 @@ const sendLiveArchive = async (
   reply: FastifyReply,
   stateDir: string,
   task: Task,
+  liveOutput?: string,
 ): Promise<void> => {
-  reply.type(MARKDOWN_CONTENT_TYPE).send(await buildLiveArchive(stateDir, task))
+  reply
+    .type(MARKDOWN_CONTENT_TYPE)
+    .send(await buildLiveArchive(stateDir, task, liveOutput))
 }
 
 export const registerTaskArchiveRoute = (
@@ -110,10 +104,11 @@ export const registerTaskArchiveRoute = (
     )
     if (!resolved) return
 
+    const liveOutput = orchestrator.getTaskLiveOutput(resolved.task.id)
     const archivePath =
       resolved.task.archivePath ?? resolved.task.result?.archivePath
     if (!archivePath) {
-      await sendLiveArchive(reply, config.workDir, resolved.task)
+      await sendLiveArchive(reply, config.workDir, resolved.task, liveOutput)
       return
     }
 
@@ -130,20 +125,20 @@ export const registerTaskArchiveRoute = (
     }
 
     if (boundary === 'missing') {
-      await sendLiveArchive(reply, config.workDir, resolved.task)
+      await sendLiveArchive(reply, config.workDir, resolved.task, liveOutput)
       return
     }
 
     try {
       const content = await readTextFile(resolvedArchivePath)
       if (!content) {
-        await sendLiveArchive(reply, config.workDir, resolved.task)
+        await sendLiveArchive(reply, config.workDir, resolved.task, liveOutput)
         return
       }
       reply.type(MARKDOWN_CONTENT_TYPE).send(content)
     } catch (error) {
       if (readErrorCode(error) === 'ENOENT') {
-        await sendLiveArchive(reply, config.workDir, resolved.task)
+        await sendLiveArchive(reply, config.workDir, resolved.task, liveOutput)
         return
       }
       throw error
