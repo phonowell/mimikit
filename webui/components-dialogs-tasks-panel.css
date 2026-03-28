@@ -1,12 +1,19 @@
 .task-item {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  position: relative;
+  flex-direction: column;
+  gap: 8px;
   background: var(--panel);
   box-shadow: var(--shadow-raised-soft);
   content-visibility: visible;
   contain-intrinsic-size: auto;
+}
+
+.task-item-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  position: relative;
+  min-width: 0;
 }
 
 .task-link {
@@ -46,6 +53,12 @@
   z-index: 3;
 }
 
+.task-item-menu-slot {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+}
+
 .task-more-toggle {
   --btn-size: 24px;
   --btn-icon-size: 14px;
@@ -64,6 +77,12 @@
   line-height: 1;
   letter-spacing: 0;
   text-align: center;
+}
+
+.task-item-menu-slot .task-more-menu {
+  position: static;
+  width: min(100%, 180px);
+  min-width: min(100%, 150px);
 }
 
 .task-menu-item:disabled {

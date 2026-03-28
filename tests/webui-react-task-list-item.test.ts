@@ -64,3 +64,23 @@ test('task list item shows trace link when traceRef exists', () => {
   expect(markup).toContain('>trace<')
   expect(markup).toContain('/state-files/traces/2026-03-27/worker-trace.txt')
 })
+
+test('task list item renders the opened menu in a flow slot below the card body', () => {
+  Object.assign(globalThis, { React })
+  const markup = renderToStaticMarkup(
+    React.createElement(TaskListItem, {
+      open: true,
+      task: createTask(),
+      openMenuId: 'task-1',
+      onRequestDelete: noop,
+      onTaskAction: noop,
+      onToggleMenu: noop,
+    }),
+  )
+
+  const mainIndex = markup.indexOf('class="task-item-main"')
+  const slotIndex = markup.indexOf('class="task-item-menu-slot"')
+
+  expect(mainIndex).toBeGreaterThan(-1)
+  expect(slotIndex).toBeGreaterThan(mainIndex)
+})

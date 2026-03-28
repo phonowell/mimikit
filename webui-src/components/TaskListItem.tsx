@@ -36,95 +36,98 @@ export const TaskListItem = ({
   const canDelete = !canCancel
   const menuOpen = openMenuId === task.id
   const traceUrl = toArtifactUrl(task.traceRef)
+  const menu = (
+    <div className="task-more-menu" role="menu">
+      <button
+        className="task-menu-item task-menu-item--copy-id"
+        type="button"
+        role="menuitem"
+        onClick={() => onTaskAction(task.id, 'copy-id')}
+      >
+        copy id
+      </button>
+      {traceUrl ? (
+        <a
+          className="task-menu-item task-menu-item--trace"
+          href={traceUrl}
+          role="menuitem"
+          target="_blank"
+          rel="noreferrer"
+        >
+          trace
+        </a>
+      ) : null}
+      <button
+        className={`task-menu-item task-menu-item--${canResume ? 'resume' : 'pause'}`}
+        type="button"
+        role="menuitem"
+        disabled={!(canPause || canResume)}
+        onClick={() => onTaskAction(task.id, canResume ? 'resume' : 'pause')}
+      >
+        {canResume ? 'resume' : 'pause'}
+      </button>
+      <button
+        className="task-menu-item task-menu-item--cancel"
+        type="button"
+        role="menuitem"
+        disabled={!canCancel}
+        onClick={() => onTaskAction(task.id, 'cancel')}
+      >
+        cancel
+      </button>
+      <button
+        className="task-menu-item task-menu-item--delete"
+        type="button"
+        role="menuitem"
+        disabled={!canDelete}
+        onClick={() => onRequestDelete(task.id, title)}
+      >
+        delete
+      </button>
+    </div>
+  )
 
   return (
     <li className="task-item" data-status={status}>
-      <a
-        className="task-link"
-        data-status={status}
-        href={buildTaskArchiveViewerUrl(task.id)}
-        target="_blank"
-        rel="noreferrer"
-      >
-        <div className="task-title-row">
-          <span
-            className="task-status"
-            data-status={status}
-            role="img"
-            aria-label={resolveTaskStatusLabel(status)}
-            title={status}
-          ></span>
-          <span className="task-title">{title}</span>
-        </div>
-        {status === 'running' && task.liveOutput ? (
-          <p className="task-live-output" title={task.liveOutput}>
-            {task.liveOutput}
-          </p>
-        ) : null}
-        <TaskMeta open={open} task={task} />
-      </a>
-      <div className="task-item-actions" data-task-actions="true">
-        <button
-          className="btn btn--icon btn--icon-muted task-more-toggle"
-          type="button"
-          aria-haspopup="menu"
-          aria-expanded={menuOpen}
-          title={`More actions for ${title}`}
-          onClick={() => onToggleMenu(task.id)}
+      <div className="task-item-main">
+        <a
+          className="task-link"
+          data-status={status}
+          href={buildTaskArchiveViewerUrl(task.id)}
+          target="_blank"
+          rel="noreferrer"
         >
-          ⋯
-        </button>
-        <div className="task-more-menu" role="menu" hidden={!menuOpen}>
-          <button
-            className="task-menu-item task-menu-item--copy-id"
-            type="button"
-            role="menuitem"
-            onClick={() => onTaskAction(task.id, 'copy-id')}
-          >
-            copy id
-          </button>
-          {traceUrl ? (
-            <a
-              className="task-menu-item task-menu-item--trace"
-              href={traceUrl}
-              role="menuitem"
-              target="_blank"
-              rel="noreferrer"
-            >
-              trace
-            </a>
+          <div className="task-title-row">
+            <span
+              className="task-status"
+              data-status={status}
+              role="img"
+              aria-label={resolveTaskStatusLabel(status)}
+              title={status}
+            ></span>
+            <span className="task-title">{title}</span>
+          </div>
+          {status === 'running' && task.liveOutput ? (
+            <p className="task-live-output" title={task.liveOutput}>
+              {task.liveOutput}
+            </p>
           ) : null}
+          <TaskMeta open={open} task={task} />
+        </a>
+        <div className="task-item-actions" data-task-actions="true">
           <button
-            className={`task-menu-item task-menu-item--${canResume ? 'resume' : 'pause'}`}
+            className="btn btn--icon btn--icon-muted task-more-toggle"
             type="button"
-            role="menuitem"
-            disabled={!(canPause || canResume)}
-            onClick={() =>
-              onTaskAction(task.id, canResume ? 'resume' : 'pause')
-            }
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            title={`More actions for ${title}`}
+            onClick={() => onToggleMenu(task.id)}
           >
-            {canResume ? 'resume' : 'pause'}
-          </button>
-          <button
-            className="task-menu-item task-menu-item--cancel"
-            type="button"
-            role="menuitem"
-            disabled={!canCancel}
-            onClick={() => onTaskAction(task.id, 'cancel')}
-          >
-            cancel
-          </button>
-          <button
-            className="task-menu-item task-menu-item--delete"
-            type="button"
-            role="menuitem"
-            disabled={!canDelete}
-            onClick={() => onRequestDelete(task.id, title)}
-          >
-            delete
+            ⋯
           </button>
         </div>
       </div>
+      {menuOpen ? <div className="task-item-menu-slot">{menu}</div> : null}
     </li>
   )
 }
