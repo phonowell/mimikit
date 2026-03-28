@@ -15,7 +15,7 @@ export const managerTaskDraftSchema = z
     title: s,
     cwd: s,
     mode: z.enum(['read', 'write']),
-    use_worktree: z.boolean().optional(),
+    use_worktree: z.boolean().default(false),
     goal: s,
     in_scope: list(5, 1),
     out_of_scope: list(5),

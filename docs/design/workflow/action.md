@@ -53,7 +53,7 @@
 - `worker_prompt` 已删除；worker prompt 由任务合同自动生成。
 - `branch` 已删除；git worktree / branch 由运行时决定。
 - `cwd` 必须指向现有目录。
-- `use_worktree` 可选，默认不传且视为 `false`。
+- `use_worktree` 必填；不需要独立 worktree 时显式传 `false`。
 - 仅当 `task.use_worktree=true` 且 `mode="write"` 时，运行时才会为仓库任务 materialize git worktree；否则直接在给定 `cwd` 执行。
 - 对 `use_worktree=true` 的仓库写任务，`cwd` 只表示仓库内真实执行起点；worktree 路径由运行时 materialize，manager 不得直接填写未来 worktree 路径。
 - 若 `cwd` 是 repo 内子路径，运行时会把该子路径映射到目标 worktree；若映射后的目录不存在、不是目录或不可访问，`enqueue_task` 会直接拒绝，不会创建 task。

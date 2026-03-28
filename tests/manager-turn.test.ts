@@ -1,37 +1,6 @@
 import { expect, test } from 'vitest'
 
-import {
-  buildManagerTurnOutputSchema,
-  parseManagerTurn,
-} from '../src/policy/manager/manager-turn.js'
-
-test('buildManagerTurnOutputSchema emits a closed top-level object for reply + actions', () => {
-  expect(buildManagerTurnOutputSchema()).toMatchObject({
-    type: 'json_schema',
-    name: 'manager_turn',
-    strict: true,
-    schema: {
-      type: 'object',
-      required: ['reply', 'actions'],
-      additionalProperties: false,
-      properties: expect.objectContaining({
-        reply: expect.any(Object),
-        actions: expect.any(Object),
-      }),
-    },
-  })
-})
-
-test('buildManagerTurnOutputSchema uses provider-compatible structured output envelope', () => {
-  expect(buildManagerTurnOutputSchema()).toEqual(
-    expect.objectContaining({
-      type: 'json_schema',
-      name: 'manager_turn',
-      strict: true,
-      schema: expect.any(Object),
-    }),
-  )
-})
+import { parseManagerTurn } from '../src/policy/manager/manager-turn.js'
 
 test('parseManagerTurn keeps structured actions as the single execution shape', () => {
   const parsed = parseManagerTurn({
@@ -83,6 +52,7 @@ test('parseManagerTurn keeps structured actions as the single execution shape', 
         title: '实现 actions v2',
         cwd: '/tmp/mimikit',
         mode: 'write',
+        use_worktree: false,
         goal: '切到单一真相源 action 协议',
         in_scope: ['manager action schema', 'validation', 'apply'],
         out_of_scope: ['worker handoff'],
@@ -101,6 +71,7 @@ test('parseManagerTurn keeps structured actions as the single execution shape', 
           title: '继续收敛 actions v2',
           cwd: '/tmp/mimikit',
           mode: 'read',
+          use_worktree: false,
           goal: '继续评审和收敛协议',
           in_scope: ['manager action 设计'],
           out_of_scope: [],

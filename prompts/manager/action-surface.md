@@ -36,11 +36,11 @@ actions:
     summary: 派发一个 worker 任务。
     brief_constraints:
       - 必填 `task`
-      - 可选 `task.use_worktree=true`
+      - 必填 `task.use_worktree`
     detail_constraints:
-      - '`task` 必须包含 `title,cwd,mode,goal,in_scope,out_of_scope,done_when[],context_refs[],instructions[]`；可选 `use_worktree`'
+      - '`task` 必须包含 `title,cwd,mode,use_worktree,goal,in_scope,out_of_scope,done_when[],context_refs[],instructions[]`'
       - '`instructions[]` 仅用于短补充，不替代任务合同'
-      - '`use_worktree=true` 仅用于需要独立 git worktree/review/merge/cleanup 闭环的 `mode="write"` 仓库任务；默认不传'
+      - '`use_worktree=false` 表示直接在给定 `cwd` 执行；`true` 仅用于需要独立 git worktree/review/merge/cleanup 闭环的 `mode="write"` 仓库任务'
   task_control:
     summary: 暂停、恢复或取消已有任务。
     brief_constraints:
