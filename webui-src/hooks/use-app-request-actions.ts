@@ -23,10 +23,11 @@ type Params = Pick<
   | 'setConfirmDialog'
   | 'setOpenPlanMenuId'
   | 'setOpenTaskMenuId'
+  | 'setPlanCopyFeedback'
   | 'setQuote'
   | 'setSendPending'
   | 'setStatusOverride'
-  | 'setToast'
+  | 'setTaskCopyFeedback'
   | 'setToolsMenuOpen'
 > & {
   stateRef: AppActionStateRef
@@ -40,10 +41,11 @@ export const useAppRequestActions = ({
   setConfirmDialog,
   setOpenPlanMenuId,
   setOpenTaskMenuId,
+  setPlanCopyFeedback,
   setQuote,
   setSendPending,
   setStatusOverride,
-  setToast,
+  setTaskCopyFeedback,
   setToolsMenuOpen,
   stateRef,
 }: Params) => {
@@ -111,7 +113,7 @@ export const useAppRequestActions = ({
       try {
         if (action === 'copy-id') {
           const result = await copyTaskIdToClipboard(taskId)
-          setToast({
+          setTaskCopyFeedback({
             message: result.message,
             state: result.ok ? 'success' : 'error',
           })
@@ -131,7 +133,7 @@ export const useAppRequestActions = ({
         appendError(error)
       }
     },
-    [appendError, setOpenTaskMenuId, setToast, setToolsMenuOpen],
+    [appendError, setOpenTaskMenuId, setTaskCopyFeedback, setToolsMenuOpen],
   )
 
   const triggerPlanAction = useCallback(
@@ -141,7 +143,7 @@ export const useAppRequestActions = ({
       try {
         if (action !== 'copy-id') return
         const result = await copyPlanIdToClipboard(planId)
-        setToast({
+        setPlanCopyFeedback({
           message: result.message,
           state: result.ok ? 'success' : 'error',
         })
@@ -149,7 +151,7 @@ export const useAppRequestActions = ({
         appendError(error)
       }
     },
-    [appendError, setOpenPlanMenuId, setToast, setToolsMenuOpen],
+    [appendError, setOpenPlanMenuId, setPlanCopyFeedback, setToolsMenuOpen],
   )
 
   return useMemo(

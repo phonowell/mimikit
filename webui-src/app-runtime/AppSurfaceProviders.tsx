@@ -5,7 +5,6 @@ import {
   MessageListSurfaceContext,
   PlansDialogSurfaceContext,
   TasksDialogSurfaceContext,
-  ToastSurfaceContext,
 } from './surface-contexts.js'
 
 import type { useAppSurfaces } from './use-app-surfaces.js'
@@ -21,7 +20,6 @@ export const AppSurfaceProviders = ({
   tasksDialogSurface,
   plansDialogSurface,
   confirmDialogsSurface,
-  toastSurface,
 }: SurfaceProps) => (
   <HeaderSurfaceContext value={headerSurface}>
     <MessageListSurfaceContext value={messageListSurface}>
@@ -29,9 +27,7 @@ export const AppSurfaceProviders = ({
         <TasksDialogSurfaceContext value={tasksDialogSurface}>
           <PlansDialogSurfaceContext value={plansDialogSurface}>
             <ConfirmDialogsSurfaceContext value={confirmDialogsSurface}>
-              <ToastSurfaceContext value={toastSurface}>
-                {children}
-              </ToastSurfaceContext>
+              {children}
             </ConfirmDialogsSurfaceContext>
           </PlansDialogSurfaceContext>
         </TasksDialogSurfaceContext>

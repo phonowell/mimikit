@@ -31,10 +31,8 @@ export const AppRuntimeProvider = ({ children }: PropsWithChildren) => {
     setOpenPlanMenuId: ui.setOpenPlanMenuId,
     setOpenTaskMenuId: ui.setOpenTaskMenuId,
     setStatusOverride: ui.setStatusOverride,
-    setToast: ui.setToast,
     setToolsMenuOpen: ui.setToolsMenuOpen,
     tasksOpen: ui.tasksOpen,
-    toast: ui.toast,
   })
 
   const actions = useAppActions({
@@ -53,12 +51,13 @@ export const AppRuntimeProvider = ({ children }: PropsWithChildren) => {
     setDeleteMode: ui.setDeleteMode,
     setOpenPlanMenuId: ui.setOpenPlanMenuId,
     setOpenTaskMenuId: ui.setOpenTaskMenuId,
+    setPlanCopyFeedback: ui.setPlanCopyFeedback,
     setPlansOpen: ui.setPlansOpen,
     setQuote: ui.setQuote,
     setSendPending: ui.setSendPending,
     setStatusOverride: ui.setStatusOverride,
+    setTaskCopyFeedback: ui.setTaskCopyFeedback,
     setTasksOpen: ui.setTasksOpen,
-    setToast: ui.setToast,
     setToolsMenuOpen: ui.setToolsMenuOpen,
     toolsMenuOpen: ui.toolsMenuOpen,
   })

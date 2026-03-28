@@ -7,7 +7,6 @@ import type {
   MessageListSurface,
   PlansDialogSurface,
   TasksDialogSurface,
-  ToastSurface,
 } from './view-types.js'
 import type { Context } from 'react'
 
@@ -29,7 +28,6 @@ export const PlansDialogSurfaceContext =
   createContext<PlansDialogSurface | null>(null)
 export const ConfirmDialogsSurfaceContext =
   createContext<ConfirmDialogsSurface | null>(null)
-export const ToastSurfaceContext = createContext<ToastSurface | null>(null)
 
 export const useHeaderSurface = () =>
   useRequiredContext(HeaderSurfaceContext, 'HeaderSurfaceContext')
@@ -46,5 +44,3 @@ export const useConfirmDialogsSurface = () =>
     ConfirmDialogsSurfaceContext,
     'ConfirmDialogsSurfaceContext',
   )
-export const useToastSurface = () =>
-  useRequiredContext(ToastSurfaceContext, 'ToastSurfaceContext')

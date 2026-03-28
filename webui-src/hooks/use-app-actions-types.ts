@@ -1,8 +1,8 @@
 import type {
   AppState,
   ConfirmDialogState,
+  CopyFeedbackState,
   QuoteState,
-  ToastState,
 } from '../types.js'
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react'
 
@@ -39,14 +39,15 @@ export type AppActionParams = {
   setDeleteMode: Dispatch<SetStateAction<boolean>>
   setOpenPlanMenuId: Dispatch<SetStateAction<string>>
   setOpenTaskMenuId: Dispatch<SetStateAction<string>>
+  setPlanCopyFeedback: Dispatch<SetStateAction<CopyFeedbackState | null>>
   setPlansOpen: Dispatch<SetStateAction<boolean>>
   setQuote: Dispatch<SetStateAction<QuoteState | null>>
   setSendPending: Dispatch<SetStateAction<boolean>>
   setStatusOverride: Dispatch<
     SetStateAction<{ state: string; text: string } | null>
   >
+  setTaskCopyFeedback: Dispatch<SetStateAction<CopyFeedbackState | null>>
   setTasksOpen: Dispatch<SetStateAction<boolean>>
-  setToast: Dispatch<SetStateAction<ToastState | null>>
   setToolsMenuOpen: Dispatch<SetStateAction<boolean>>
   toolsMenuOpen: boolean
 }

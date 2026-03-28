@@ -1,26 +1,31 @@
 import { UI_TEXT } from '../lib/system-text.js'
 
+import { CopyFeedbackNotice } from './CopyFeedbackNotice.js'
 import { ModalDialog } from './ModalDialog.js'
 import { PlanListItem } from './PlanListItem.js'
 
-import type { PlanView } from '../types.js'
+import type { CopyFeedbackState, PlanView } from '../types.js'
 
 type Props = {
+  copyFeedback: CopyFeedbackState | null
   open: boolean
   openMenuId: string
-  plans: PlanView[]
+  onClearCopyFeedback: () => void
   onClose: () => void
   onPlanAction: (planId: string, action: 'copy-id') => void
   onToggleMenu: (planId: string) => void
+  plans: PlanView[]
 }
 
 export const PlansDialog = ({
+  copyFeedback,
   open,
   openMenuId,
-  plans,
+  onClearCopyFeedback,
   onClose,
   onPlanAction,
   onToggleMenu,
+  plans,
 }: Props) => (
   <ModalDialog
     open={open}
@@ -44,6 +49,11 @@ export const PlansDialog = ({
           </button>
         </div>
       </header>
+      <CopyFeedbackNotice
+        feedback={copyFeedback}
+        label="Plan copy feedback"
+        onClear={onClearCopyFeedback}
+      />
       <ul className="plans-list scrollable">
         {plans.length === 0 ? (
           <li className="list-empty plans-empty">{UI_TEXT.noPlans}</li>

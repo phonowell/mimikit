@@ -219,28 +219,19 @@ main[data-app] {
   color: var(--danger);
 }
 
-.app-toast {
-  position: fixed;
-  right: 16px;
-  bottom: 16px;
-  max-width: min(320px, calc(100vw - 24px));
-  min-height: 36px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid transparent;
-  background: var(--panel);
-  box-shadow: var(--shadow-dialog);
+.dialog-copy-feedback {
+  margin: 0;
+  padding: 0 16px 12px;
   color: var(--muted-contrast, var(--muted));
   font-size: 12px;
   line-height: 1.4;
-  z-index: 40;
 }
 
-.app-toast[data-state='success'] {
+.dialog-copy-feedback[data-state='success'] {
   color: var(--status-success);
 }
 
-.app-toast[data-state='error'] {
+.dialog-copy-feedback[data-state='error'] {
   color: var(--danger);
 }
 
