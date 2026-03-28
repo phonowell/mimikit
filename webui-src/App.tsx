@@ -1,8 +1,3 @@
-import { AppRuntimeProvider } from './app-runtime/AppRuntimeProvider.js'
-import { AppSurfaceRoots } from './app-runtime/AppSurfaceRoots.js'
+import { AppRuntime } from './app-runtime/AppRuntime.js'
 
-export const App = () => (
-  <AppRuntimeProvider>
-    <AppSurfaceRoots />
-  </AppRuntimeProvider>
-)
+export const App = () => <AppRuntime />
