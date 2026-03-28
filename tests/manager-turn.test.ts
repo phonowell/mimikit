@@ -143,3 +143,24 @@ test('parseManagerTurn keeps structured record_task_git provenance as-is', () =>
     },
   ])
 })
+
+test('parseManagerTurn accepts task_control cancel without instructions', () => {
+  const parsed = parseManagerTurn({
+    reply: '收到。',
+    actions: [
+      {
+        type: 'task_control',
+        task_id: 'task-cancel-target',
+        action: 'cancel',
+      },
+    ],
+  })
+
+  expect(parsed.actions).toEqual([
+    {
+      type: 'task_control',
+      task_id: 'task-cancel-target',
+      action: 'cancel',
+    },
+  ])
+})

@@ -70,8 +70,9 @@ export const validateTaskControl = (
   if (schemaIssues.length > 0) return schemaIssues
   if (item.type !== 'task_control') return schemaIssues
   const taskStatus = context.taskStatusById?.get(item.task_id)
+  const instructions = item.instructions ?? []
   if (!taskStatus) return rejected(formatTaskControlNotFoundHint())
-  if (item.action !== 'resume' && item.instructions.length > 0)
+  if (item.action !== 'resume' && instructions.length > 0)
     return rejected(formatTaskControlResumeInstructionsOnlyHint())
 
   if (item.action === 'pause') {
