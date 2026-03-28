@@ -1,6 +1,5 @@
 import type {
   ConfirmDialogState,
-  FocusView,
   PlanView,
   QuoteState,
   TaskView,
@@ -17,10 +16,8 @@ export type HeaderSurface = {
   toolsMenuOpen: boolean
   ttsLabel: string
   toolsDisabled: boolean
-  onOpenFocuses: () => void
   onOpenPlans: () => void
   onOpenTasks: () => void
-  onPreloadFocuses: () => void
   onPreloadPlans: () => void
   onPreloadTasks: () => void
   onToggleTools: () => void
@@ -74,12 +71,6 @@ export type PlansDialogSurface = {
   onClose: () => void
   onPlanAction: (planId: string, action: 'copy-id') => void
   onToggleMenu: (planId: string) => void
-}
-
-export type FocusDialogSurface = {
-  open: boolean
-  focuses: FocusView[]
-  onClose: () => void
 }
 
 export type ConfirmDialogsSurface = {

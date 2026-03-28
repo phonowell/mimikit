@@ -6,10 +6,8 @@ type Props = {
   toolsMenuOpen: boolean
   ttsLabel: string
   toolsDisabled: boolean
-  onOpenFocuses: () => void
   onOpenPlans: () => void
   onOpenTasks: () => void
-  onPreloadFocuses: () => void
   onPreloadPlans: () => void
   onPreloadTasks: () => void
   onToggleTools: () => void
@@ -27,10 +25,8 @@ export const Header = ({
   toolsMenuOpen,
   ttsLabel,
   toolsDisabled,
-  onOpenFocuses,
   onOpenPlans,
   onOpenTasks,
-  onPreloadFocuses,
   onPreloadPlans,
   onPreloadTasks,
   onToggleTools,
@@ -50,19 +46,6 @@ export const Header = ({
         </p>
       </div>
       <div className="app-actions" role="toolbar" aria-label="Controls">
-        <button
-          className="btn btn--sm focuses-open"
-          type="button"
-          title="Focus"
-          aria-label="Focus"
-          aria-haspopup="dialog"
-          aria-controls="focuses-dialog"
-          onFocus={onPreloadFocuses}
-          onMouseEnter={onPreloadFocuses}
-          onClick={onOpenFocuses}
-        >
-          <span className="focuses-label">Focus</span>
-        </button>
         <button
           className="btn btn--sm plans-open"
           hidden={!hasPlans}

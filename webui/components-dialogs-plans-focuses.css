@@ -76,32 +76,6 @@
   width: min(100%, 180px);
   min-width: min(100%, 150px);
 }
-
-.focus-link {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  text-decoration: none;
-  color: inherit;
-  border-radius: 10px;
-  min-width: 0;
-  transition: box-shadow 0.14s ease-out, transform 0.14s ease-out;
-}
-
-.focus-link[data-archive-openable='true'] {
-  cursor: pointer;
-}
-
-.focus-link:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: 2px;
-}
-
-.focus-link:active {
-  box-shadow: none;
-  transform: none;
-}
-
 .plan-status {
   background: var(--plan-dot, var(--status-pending));
 }
@@ -116,62 +90,4 @@
 
 .plan-item[data-status='done'] {
   --plan-dot: var(--status-success);
-}
-
-.focus-item {
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  background: var(--panel);
-  box-shadow: var(--shadow-raised-soft);
-}
-
-.focus-status {
-  background: var(--focus-dot, var(--status-pending));
-}
-
-.focus-item[data-status='active'] {
-  --focus-dot: var(--status-running);
-}
-
-.focus-item[data-status='idle'] {
-  --focus-dot: var(--status-pending);
-}
-
-.focus-item[data-status='done'] {
-  --focus-dot: var(--status-success);
-}
-
-.focus-item[data-status='archived'] {
-  --focus-dot: var(--status-cancel);
-}
-
-.focus-summary {
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.4;
-  color: var(--text);
-}
-
-.focus-open-items-title {
-  margin: 0;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--muted-contrast, var(--muted));
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-}
-
-.focus-open-items {
-  margin: 0;
-  padding-left: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.focus-open-item {
-  color: var(--muted-contrast, var(--muted));
-  font-size: 12px;
-  line-height: 1.35;
 }

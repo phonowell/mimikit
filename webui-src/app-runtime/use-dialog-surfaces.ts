@@ -2,15 +2,13 @@ import { useCallback, useMemo } from 'react'
 
 import type { useAppActions } from '../hooks/use-app-actions.js'
 import type { useAppUiState } from '../hooks/use-app-ui-state.js'
-import type { FocusView, PlanView, TaskView } from '../types.js'
+import type { PlanView, TaskView } from '../types.js'
 
 export const useDialogSurfaces = ({
   actions,
   confirmDialog,
-  deferredFocuses,
   deferredPlans,
   deferredTasks,
-  focusesOpen,
   openPlanMenuId,
   openTaskMenuId,
   plansOpen,
@@ -20,10 +18,8 @@ export const useDialogSurfaces = ({
 }: {
   actions: ReturnType<typeof useAppActions>
   confirmDialog: ReturnType<typeof useAppUiState>['confirmDialog']
-  deferredFocuses: FocusView[]
   deferredPlans: PlanView[]
   deferredTasks: TaskView[]
-  focusesOpen: boolean
   openPlanMenuId: string
   openTaskMenuId: string
   plansOpen: boolean
@@ -74,14 +70,6 @@ export const useDialogSurfaces = ({
         openPlanMenuId,
         plansOpen,
       ],
-    ),
-    focusDialogSurface: useMemo(
-      () => ({
-        open: focusesOpen,
-        focuses: deferredFocuses,
-        onClose: actions.closeFocuses,
-      }),
-      [actions.closeFocuses, deferredFocuses, focusesOpen],
     ),
     confirmDialogsSurface: useMemo(
       () => ({

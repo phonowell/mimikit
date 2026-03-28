@@ -56,7 +56,6 @@ export const AppRuntimeProvider = ({ children }: PropsWithChildren) => {
     setComposerValue,
     setConfirmDialog: ui.setConfirmDialog,
     setDeleteMode: ui.setDeleteMode,
-    setFocusesOpen: ui.setFocusesOpen,
     setOpenPlanMenuId: ui.setOpenPlanMenuId,
     setOpenTaskMenuId: ui.setOpenTaskMenuId,
     setPlansOpen: ui.setPlansOpen,

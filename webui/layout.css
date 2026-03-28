@@ -25,7 +25,6 @@ main[data-app] {
 
 .tasks-dialog,
 .plans-dialog,
-.focuses-dialog,
 .restart-dialog,
 .reset-dialog,
 .message-delete-dialog,
@@ -45,7 +44,6 @@ main[data-app] {
 
 .tasks-dialog[open],
 .plans-dialog[open],
-.focuses-dialog[open],
 .restart-dialog[open],
 .reset-dialog[open],
 .message-delete-dialog[open],
@@ -55,7 +53,6 @@ main[data-app] {
 
 .tasks-dialog.is-closing,
 .plans-dialog.is-closing,
-.focuses-dialog.is-closing,
 .restart-dialog.is-closing,
 .reset-dialog.is-closing,
 .message-delete-dialog.is-closing,
@@ -66,7 +63,6 @@ main[data-app] {
 
 .tasks-dialog:not([open]),
 .plans-dialog:not([open]),
-.focuses-dialog:not([open]),
 .restart-dialog:not([open]),
 .reset-dialog:not([open]),
 .message-delete-dialog:not([open]),
@@ -76,7 +72,6 @@ main[data-app] {
 
 .tasks-dialog::backdrop,
 .plans-dialog::backdrop,
-.focuses-dialog::backdrop,
 .restart-dialog::backdrop,
 .reset-dialog::backdrop,
 .message-delete-dialog::backdrop,
@@ -93,7 +88,6 @@ main[data-app] {
 
 .tasks-dialog.is-closing::backdrop,
 .plans-dialog.is-closing::backdrop,
-.focuses-dialog.is-closing::backdrop,
 .restart-dialog.is-closing::backdrop,
 .reset-dialog.is-closing::backdrop,
 .message-delete-dialog.is-closing::backdrop,
@@ -102,8 +96,7 @@ main[data-app] {
 }
 
 .tasks-panel,
-.plans-panel,
-.focuses-panel {
+.plans-panel {
   background: var(--panel);
   border: 1px solid transparent;
   border-radius: var(--radius);
@@ -367,28 +360,24 @@ main[data-app] {
 @media (prefers-reduced-motion: reduce) {
   .tasks-dialog[open],
   .plans-dialog[open],
-  .focuses-dialog[open],
   .restart-dialog[open],
   .reset-dialog[open],
   .message-delete-dialog[open],
   .task-delete-dialog[open],
   .tasks-dialog.is-closing,
   .plans-dialog.is-closing,
-  .focuses-dialog.is-closing,
   .restart-dialog.is-closing,
   .reset-dialog.is-closing,
   .message-delete-dialog.is-closing,
   .task-delete-dialog.is-closing,
   .tasks-dialog::backdrop,
   .plans-dialog::backdrop,
-  .focuses-dialog::backdrop,
   .restart-dialog::backdrop,
   .reset-dialog::backdrop,
   .message-delete-dialog::backdrop,
   .task-delete-dialog::backdrop,
   .tasks-dialog.is-closing::backdrop,
   .plans-dialog.is-closing::backdrop,
-  .focuses-dialog.is-closing::backdrop,
   .restart-dialog.is-closing::backdrop,
   .reset-dialog.is-closing::backdrop,
   .message-delete-dialog.is-closing::backdrop,
@@ -403,10 +392,6 @@ main[data-app] {
   }
 
   .plans-dialog {
-    width: min(560px, 90vw);
-  }
-
-  .focuses-dialog {
     width: min(560px, 90vw);
   }
 

@@ -1,7 +1,6 @@
 import { useCallback, useDeferredValue, useMemo } from 'react'
 
 import {
-  preloadFocusDialog,
   preloadPlansDialog,
   preloadTasksDialog,
 } from '../components/lazy-dialogs.js'
@@ -34,7 +33,6 @@ export const useAppSurfaces = ({
 }) => {
   const deferredTasks = useDeferredValue(appState.tasks)
   const deferredPlans = useDeferredValue(appState.plans)
-  const deferredFocuses = useDeferredValue(appState.focuses)
   const isDisconnected =
     appState.status.agentStatus.trim().toLowerCase() === 'disconnected'
   const displayState = ui.statusOverride?.state ?? appState.status.agentStatus
@@ -73,10 +71,8 @@ export const useAppSurfaces = ({
       toolsMenuOpen: ui.toolsMenuOpen,
       ttsLabel,
       toolsDisabled: ui.busy,
-      onOpenFocuses: actions.openFocuses,
       onOpenPlans: actions.openPlans,
       onOpenTasks: actions.openTasks,
-      onPreloadFocuses: preloadFocusDialog,
       onPreloadPlans: preloadPlansDialog,
       onPreloadTasks: preloadTasksDialog,
       onToggleTools: actions.toggleToolsMenu,
@@ -148,10 +144,8 @@ export const useAppSurfaces = ({
   const dialogSurfaces = useDialogSurfaces({
     actions,
     confirmDialog: ui.confirmDialog,
-    deferredFocuses,
     deferredPlans,
     deferredTasks,
-    focusesOpen: ui.focusesOpen,
     openPlanMenuId: ui.openPlanMenuId,
     openTaskMenuId: ui.openTaskMenuId,
     plansOpen: ui.plansOpen,

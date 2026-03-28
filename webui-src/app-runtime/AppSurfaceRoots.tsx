@@ -3,18 +3,13 @@ import { Suspense } from 'react'
 import { Composer } from '../components/Composer.js'
 import { ConfirmDialogs } from '../components/ConfirmDialogs.js'
 import { Header } from '../components/Header.js'
-import {
-  LazyFocusDialog,
-  LazyPlansDialog,
-  LazyTasksDialog,
-} from '../components/lazy-dialogs.js'
+import { LazyPlansDialog, LazyTasksDialog } from '../components/lazy-dialogs.js'
 import { MessageList } from '../components/MessageList.js'
 import { Toast } from '../components/Toast.js'
 
 import {
   useComposerSurface,
   useConfirmDialogsSurface,
-  useFocusDialogSurface,
   useHeaderSurface,
   useMessageListSurface,
   usePlansDialogSurface,
@@ -62,7 +57,6 @@ const ComposerRoot = () => {
 const DialogRoots = () => {
   const tasks = useTasksDialogSurface()
   const plans = usePlansDialogSurface()
-  const focuses = useFocusDialogSurface()
   const confirm = useConfirmDialogsSurface()
 
   return (
@@ -70,7 +64,6 @@ const DialogRoots = () => {
       <Suspense fallback={null}>
         {tasks.open ? <LazyTasksDialog {...tasks} /> : null}
         {plans.open ? <LazyPlansDialog {...plans} /> : null}
-        {focuses.open ? <LazyFocusDialog {...focuses} /> : null}
       </Suspense>
       <ConfirmDialogs {...confirm} />
     </>

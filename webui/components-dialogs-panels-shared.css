@@ -1,6 +1,5 @@
 .tasks-header,
-.plans-header,
-.focuses-header {
+.plans-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -11,24 +10,21 @@
 }
 
 .tasks-actions,
-.plans-actions,
-.focuses-actions {
+.plans-actions {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
 .tasks-title,
-.plans-title,
-.focuses-title {
+.plans-title {
   margin: 0;
   font-size: 14px;
   font-weight: 600;
 }
 
 .tasks-list,
-.plans-list,
-.focuses-list {
+.plans-list {
   margin: 0;
   padding: 12px;
   list-style: none;
@@ -45,9 +41,7 @@
 .task-item,
 .tasks-empty,
 .plan-item,
-.plans-empty,
-.focus-item,
-.focuses-empty {
+.plans-empty {
   padding: 10px 12px;
   border-radius: 12px;
   border: 1px solid transparent;
@@ -57,8 +51,7 @@
 }
 
 .task-title-row,
-.plan-title-row,
-.focus-title-row {
+.plan-title-row {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -66,8 +59,7 @@
 }
 
 .task-status,
-.plan-status,
-.focus-status {
+.plan-status {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -78,8 +70,7 @@
 }
 
 .task-title,
-.plan-title,
-.focus-title {
+.plan-title {
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -90,8 +81,7 @@
 }
 
 .task-meta,
-.plan-meta,
-.focus-meta {
+.plan-meta {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -144,7 +134,6 @@
 }
 
 .task-meta .task-time,
-.plan-time,
-.focus-time {
+.plan-time {
   margin-left: auto;
 }

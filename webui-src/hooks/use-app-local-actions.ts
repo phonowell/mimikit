@@ -18,7 +18,6 @@ type Params = Pick<
   | 'setComposerValue'
   | 'setConfirmDialog'
   | 'setDeleteMode'
-  | 'setFocusesOpen'
   | 'setOpenPlanMenuId'
   | 'setOpenTaskMenuId'
   | 'setPlansOpen'
@@ -35,7 +34,6 @@ export const useAppLocalActions = ({
   setComposerValue,
   setConfirmDialog,
   setDeleteMode,
-  setFocusesOpen,
   setOpenPlanMenuId,
   setOpenTaskMenuId,
   setPlansOpen,
@@ -86,10 +84,6 @@ export const useAppLocalActions = ({
     () => setConfirmDialog(null),
     [setConfirmDialog],
   )
-  const closeFocuses = useCallback(
-    () => setFocusesOpen(false),
-    [setFocusesOpen],
-  )
   const closePlans = useCallback(() => setPlansOpen(false), [setPlansOpen])
   const closeTasks = useCallback(() => setTasksOpen(false), [setTasksOpen])
   const exitDeleteMode = useCallback(
@@ -100,7 +94,6 @@ export const useAppLocalActions = ({
     (value: string) => setComposerValue(value),
     [setComposerValue],
   )
-  const openFocuses = useCallback(() => setFocusesOpen(true), [setFocusesOpen])
   const openPlans = useCallback(() => setPlansOpen(true), [setPlansOpen])
   const openRestartDialog = useCallback(
     () => setConfirmDialog({ kind: 'restart' }),
@@ -151,12 +144,10 @@ export const useAppLocalActions = ({
     () => ({
       clearQuote,
       closeConfirmDialog,
-      closeFocuses,
       closePlans,
       closeTasks,
       exitDeleteMode,
       onComposerInput,
-      openFocuses,
       openPlans,
       openRestartDialog,
       openResetDialog,
@@ -173,12 +164,10 @@ export const useAppLocalActions = ({
     [
       clearQuote,
       closeConfirmDialog,
-      closeFocuses,
       closePlans,
       closeTasks,
       exitDeleteMode,
       onComposerInput,
-      openFocuses,
       openPlans,
       openRestartDialog,
       openResetDialog,

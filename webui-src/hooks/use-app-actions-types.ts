@@ -37,7 +37,6 @@ export type AppActionParams = {
   setComposerValue: (value: string) => void
   setConfirmDialog: Dispatch<SetStateAction<ConfirmDialogState | null>>
   setDeleteMode: Dispatch<SetStateAction<boolean>>
-  setFocusesOpen: Dispatch<SetStateAction<boolean>>
   setOpenPlanMenuId: Dispatch<SetStateAction<string>>
   setOpenTaskMenuId: Dispatch<SetStateAction<string>>
   setPlansOpen: Dispatch<SetStateAction<boolean>>

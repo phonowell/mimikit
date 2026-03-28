@@ -3,7 +3,6 @@ import { createContext, useContext } from 'react'
 import type {
   ComposerSurface,
   ConfirmDialogsSurface,
-  FocusDialogSurface,
   HeaderSurface,
   MessageListSurface,
   PlansDialogSurface,
@@ -28,8 +27,6 @@ export const TasksDialogSurfaceContext =
   createContext<TasksDialogSurface | null>(null)
 export const PlansDialogSurfaceContext =
   createContext<PlansDialogSurface | null>(null)
-export const FocusDialogSurfaceContext =
-  createContext<FocusDialogSurface | null>(null)
 export const ConfirmDialogsSurfaceContext =
   createContext<ConfirmDialogsSurface | null>(null)
 export const ToastSurfaceContext = createContext<ToastSurface | null>(null)
@@ -44,8 +41,6 @@ export const useTasksDialogSurface = () =>
   useRequiredContext(TasksDialogSurfaceContext, 'TasksDialogSurfaceContext')
 export const usePlansDialogSurface = () =>
   useRequiredContext(PlansDialogSurfaceContext, 'PlansDialogSurfaceContext')
-export const useFocusDialogSurface = () =>
-  useRequiredContext(FocusDialogSurfaceContext, 'FocusDialogSurfaceContext')
 export const useConfirmDialogsSurface = () =>
   useRequiredContext(
     ConfirmDialogsSurfaceContext,
