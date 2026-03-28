@@ -1,9 +1,9 @@
 import type {
   ConfirmDialogState,
+  CopyFeedbackState,
   PlanView,
   QuoteState,
   TaskView,
-  ToastState,
   ChatMessage,
 } from '../types.js'
 import type { RefObject } from 'react'
@@ -52,9 +52,10 @@ export type ComposerSurface = {
 }
 
 export type TasksDialogSurface = {
+  copyFeedback: CopyFeedbackState | null
   open: boolean
-  tasks: TaskView[]
   openMenuId: string
+  onClearCopyFeedback: () => void
   onClose: () => void
   onToggleMenu: (taskId: string) => void
   onTaskAction: (
@@ -62,15 +63,18 @@ export type TasksDialogSurface = {
     action: 'cancel' | 'pause' | 'resume' | 'copy-id',
   ) => void
   onRequestDelete: (taskId: string, title: string) => void
+  tasks: TaskView[]
 }
 
 export type PlansDialogSurface = {
+  copyFeedback: CopyFeedbackState | null
   open: boolean
   openMenuId: string
-  plans: PlanView[]
+  onClearCopyFeedback: () => void
   onClose: () => void
   onPlanAction: (planId: string, action: 'copy-id') => void
   onToggleMenu: (planId: string) => void
+  plans: PlanView[]
 }
 
 export type ConfirmDialogsSurface = {
@@ -78,8 +82,4 @@ export type ConfirmDialogsSurface = {
   busy: boolean
   onClose: () => void
   onConfirm: () => void
-}
-
-export type ToastSurface = {
-  toast: ToastState | null
 }

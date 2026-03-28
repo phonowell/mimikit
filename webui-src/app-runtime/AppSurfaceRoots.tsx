@@ -5,7 +5,6 @@ import { ConfirmDialogs } from '../components/ConfirmDialogs.js'
 import { Header } from '../components/Header.js'
 import { LazyPlansDialog, LazyTasksDialog } from '../components/lazy-dialogs.js'
 import { MessageList } from '../components/MessageList.js'
-import { Toast } from '../components/Toast.js'
 
 import {
   useComposerSurface,
@@ -14,7 +13,6 @@ import {
   useMessageListSurface,
   usePlansDialogSurface,
   useTasksDialogSurface,
-  useToastSurface,
 } from './surface-contexts.js'
 
 const HeaderRoot = () => <Header {...useHeaderSurface()} />
@@ -70,8 +68,6 @@ const DialogRoots = () => {
   )
 }
 
-const ToastRoot = () => <Toast {...useToastSurface()} />
-
 export const AppSurfaceRoots = () => (
   <>
     <main data-app>
@@ -80,6 +76,5 @@ export const AppSurfaceRoots = () => (
       <ComposerRoot />
     </main>
     <DialogRoots />
-    <ToastRoot />
   </>
 )

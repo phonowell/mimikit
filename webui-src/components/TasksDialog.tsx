@@ -1,9 +1,10 @@
 import { UI_TEXT } from '../lib/system-text.js'
 
+import { CopyFeedbackNotice } from './CopyFeedbackNotice.js'
 import { ModalDialog } from './ModalDialog.js'
 import { TaskListItem } from './TaskListItem.js'
 
-import type { TaskView } from '../types.js'
+import type { CopyFeedbackState, TaskView } from '../types.js'
 
 const isOpenTask = (task: TaskView): boolean =>
   task.status === 'running' ||
@@ -11,9 +12,10 @@ const isOpenTask = (task: TaskView): boolean =>
   task.status === 'pending'
 
 type Props = {
+  copyFeedback: CopyFeedbackState | null
   open: boolean
-  tasks: TaskView[]
   openMenuId: string
+  onClearCopyFeedback: () => void
   onClose: () => void
   onToggleMenu: (taskId: string) => void
   onTaskAction: (
@@ -21,16 +23,19 @@ type Props = {
     action: 'cancel' | 'pause' | 'resume' | 'copy-id',
   ) => void
   onRequestDelete: (taskId: string, title: string) => void
+  tasks: TaskView[]
 }
 
 export const TasksDialog = ({
+  copyFeedback,
   open,
-  tasks,
   openMenuId,
+  onClearCopyFeedback,
   onClose,
   onToggleMenu,
   onTaskAction,
   onRequestDelete,
+  tasks,
 }: Props) => {
   const openTasks = tasks.filter(isOpenTask)
   const closedTasks = tasks.filter((task) => !isOpenTask(task))
@@ -59,6 +64,11 @@ export const TasksDialog = ({
             </button>
           </div>
         </header>
+        <CopyFeedbackNotice
+          feedback={copyFeedback}
+          label="Task copy feedback"
+          onClear={onClearCopyFeedback}
+        />
         <div className="tasks-list scrollable">
           {tasks.length === 0 ? (
             <div className="list-empty tasks-empty">{UI_TEXT.noTasks}</div>

@@ -138,9 +138,9 @@ export type ConfirmDialogState =
   | { kind: 'restart' }
   | { kind: 'reset' }
 
-export type ToastState = {
+export type CopyFeedbackState = {
   message: string
-  state: '' | 'success' | 'error'
+  state: 'success' | 'error'
 }
 
 export type AppState = {

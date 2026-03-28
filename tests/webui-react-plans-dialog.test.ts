@@ -22,9 +22,11 @@ test('plans dialog forwards the opened menu state to the selected plan item', ()
   Object.assign(globalThis, { React })
   const markup = renderToStaticMarkup(
     React.createElement(PlansDialog, {
+      copyFeedback: null,
       open: true,
       plans: [createPlan()],
       openMenuId: 'plan-1',
+      onClearCopyFeedback: noop,
       onClose: noop,
       onPlanAction: noop,
       onToggleMenu: noop,
@@ -33,4 +35,28 @@ test('plans dialog forwards the opened menu state to the selected plan item', ()
 
   expect(markup).toContain('plan-more-toggle')
   expect(markup).toContain('>copy id<')
+})
+
+test('plans dialog renders copy feedback inline instead of a global toast slot', () => {
+  Object.assign(globalThis, { React })
+  const markup = renderToStaticMarkup(
+    React.createElement(PlansDialog, {
+      copyFeedback: {
+        message: 'Plan id copied',
+        state: 'success',
+      },
+      open: true,
+      plans: [createPlan()],
+      openMenuId: 'plan-1',
+      onClearCopyFeedback: noop,
+      onClose: noop,
+      onPlanAction: noop,
+      onToggleMenu: noop,
+    }),
+  )
+
+  expect(markup).toContain('class="dialog-copy-feedback"')
+  expect(markup).toContain('Plan id copied')
+  expect(markup).toContain('data-state="success"')
+  expect(markup).not.toContain('class="app-toast"')
 })
