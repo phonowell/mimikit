@@ -13,6 +13,7 @@ import { loadPromptSource } from '../../foundation/prompting/prompt-loader.js'
 import { readTaskExecutionSpec } from '../../work/spec/store.js'
 
 import { prepareWorkerTaskPrompt } from './build-worker-task-prompt.js'
+import { formatWorkerRuntimeContract } from './worker-runtime-contract.js'
 
 import type { Task } from '../../foundation/types/index.js'
 
@@ -35,6 +36,10 @@ export const buildWorkerPrompt = async (params: {
     taskPrompt: spec.prompt,
   })
   const focusBrief = formatTaskFocusBrief(params.focusBrief)
+  const runtimeContract = formatWorkerRuntimeContract({
+    task: params.task,
+    workspaceDir: params.workspaceDir,
+  })
   return renderPromptTemplate(
     systemSource.template,
     {
@@ -46,6 +51,7 @@ export const buildWorkerPrompt = async (params: {
         }),
       ),
       prompt: escapeCdata(taskPrompt),
+      runtime_contract: runtimeContract ? escapeCdata(runtimeContract) : '',
       focus_brief: focusBrief ? escapeCdata(focusBrief) : '',
       resume_instruction: params.resumeInstruction
         ? escapeCdata(params.resumeInstruction)

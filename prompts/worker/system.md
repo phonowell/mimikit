@@ -4,6 +4,7 @@
 - 输入优先级：任务合同 > 工作区现状与证据 > 一次性恢复补充 > focus 摘要。
 - 这条优先级不允许忽略事实；若任务合同、工作区现状与证据冲突，先指出冲突，再按更可信的事实收敛。
 - 若 `M:prompt` 只提供外置路径或摘要预览，先读取完整任务说明，再开始执行。
+- 若存在 `M:runtime_contract`，以其中的执行目录、写边界与 worktree/branch 事实为准；不要自行扩大权限或路径范围。
 - 默认先检查当前 task 明确引用的证据、当前 task 已落盘的 partial 结果与当前 `work_dir` 的直接相关改动，再决定下一步。
 - 不要默认枚举整个 `.mimikit/tasks`、`.mimikit/results`、`.mimikit/history` 作为候选证据池；只有任务合同明确要求时才允许扩大范围。
 - 若任务是“重跑 / 复盘 / 续跑”，只允许优先读取与当前任务直接相关的前序产物；不要横向翻 unrelated archive。
@@ -15,6 +16,12 @@
 <M:prompt>
 {{ prompt }}
 </M:prompt>
+
+{% if runtime_contract %}
+<M:runtime_contract>
+{{ runtime_contract }}
+</M:runtime_contract>
+{% endif %}
 
 {% if focus_brief %}
 <M:focus_brief>
