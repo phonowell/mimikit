@@ -23,6 +23,7 @@
 - `buildPlanEffectKey()` 不再依赖 `taskTemplate.fingerprint`，而是直接使用 `effect.taskKey`。
 - `buildPlanEffectPayload()` 改为从 `effect.taskContract` 输出 `task_contract`，避免把合同语义继续塞进 `taskTemplate`。
 - 测试 helper 已同步适配压缩后的 effect 结构，且允许缺省 `effect` 的 runtime fixture 继续工作。
+- runtime snapshot 读取链路现在会把旧的 `taskTemplate.contract/fingerprint/semanticKey` 迁移成新的 `taskContract/taskKey` 根字段，避免升级后直接炸旧状态。
 
 ## 验证
 
@@ -30,7 +31,7 @@
   - 4 files / 9 tests passed
 - `pnpm review-code-changes`
   - lint、lint:changed-tests、type-check、build:webui、全量 vitest 均通过
-  - 全量测试结果：133 files / 407 tests passed
+  - 全量测试结果：133 files / 408 tests passed
 
 ## 代码复盘
 

@@ -49,11 +49,11 @@
 - ✓ 已回读路线图、前两轮整改归档与当前实现。
 - ✓ 已用 TDD 固定 `taskTemplate` 最小契约、plan 去重稳定性与 prompt contract digest 输出。
 - ✓ 已完成 effect 压缩：`taskTemplate` 仅保留 enqueue 运行字段；稳定 digest 上提为 `effect.taskKey`，contract digest 上提为 `effect.taskContract`。
-- ✓ `pnpm review-code-changes` 已通过；全量验证为 133 files / 407 tests passed。
+- ✓ `pnpm review-code-changes` 已通过；全量验证为 133 files / 408 tests passed。
 - → 待提交、merge back 到 `main`、清理 worktree/branch。
 
 ## 风险
 
 - 若 plan 去重改成依赖 `executionSpecId`，重复 `set_plan` 可能因 spec 每次新建而失效。
 - 若完全移除 plan 侧 contract digest，manager packet 可能丢失触发前可见的计划合同摘要。
-- 旧 runtime snapshot 若仍持有压缩前的 plan effect 结构，将需要通过本次全量更新后的新写回状态覆盖；本轮未额外增加兼容层。
+- 旧 runtime snapshot 若仍持有压缩前的 `taskTemplate.contract/fingerprint/semanticKey`，必须在加载时迁移到新结构；本轮已补最小读兼容守卫并用 version test 锁定。

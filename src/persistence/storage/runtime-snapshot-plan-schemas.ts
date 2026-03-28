@@ -35,6 +35,22 @@ export const taskPlanTriggerSchema = z.discriminatedUnion('mode', [
   planTriggerOnWorkerSlotFreedSchema,
 ])
 
+const taskPlanEffectOutputSchema = z
+  .object({
+    kind: z.literal('enqueue_task'),
+    taskKey: z.string().trim().min(1),
+    taskContract: taskContractSchema.optional(),
+    taskTemplate: z.object({
+      title: z.string().trim().min(1),
+      executionSpecId: z.string().trim().min(1),
+      cwd: z.string().trim().min(1),
+      resourceMode: taskResourceModeSchema.optional(),
+      useWorktree: z.boolean().optional(),
+      branch: z.string().trim().min(1).optional(),
+    }),
+  })
+  .strict()
+
 const taskPlanEffectSchema = z
   .object({
     kind: z.literal('enqueue_task'),
@@ -52,41 +68,37 @@ const taskPlanEffectSchema = z
         useWorktree: z.boolean().optional(),
         branch: z.string().trim().min(1).optional(),
       })
-      .strict()
-      .transform(
-        ({
-          contract,
-          fingerprint,
-          semanticKey: _semanticKey,
-          ...rest
-        }) => ({
-          ...rest,
-          ...(contract ? { contract } : {}),
-          ...(fingerprint ? { fingerprint } : {}),
-        }),
-      ),
+      .strict(),
   })
-  .transform(({ taskKey, taskContract, taskTemplate, ...rest }) => ({
-    ...rest,
-    kind: 'enqueue_task' as const,
-    taskKey: taskKey ?? taskTemplate.fingerprint,
-    ...(taskContract
-      ? { taskContract }
-      : taskTemplate.contract
-        ? { taskContract: taskTemplate.contract }
-        : {}),
-    taskTemplate: {
-      title: taskTemplate.title,
-      executionSpecId: taskTemplate.executionSpecId,
-      cwd: taskTemplate.cwd,
-      ...(taskTemplate.resourceMode
-        ? { resourceMode: taskTemplate.resourceMode }
-        : {}),
-      ...(taskTemplate.useWorktree ? { useWorktree: true } : {}),
-      ...(taskTemplate.branch ? { branch: taskTemplate.branch } : {}),
-    },
-  }))
   .strict()
+  .transform(({ taskKey, taskContract, taskTemplate, ...rest }, ctx) => {
+    const parsed = taskPlanEffectOutputSchema.safeParse({
+      ...rest,
+      kind: 'enqueue_task' as const,
+      taskKey: taskKey ?? taskTemplate.fingerprint,
+      ...(taskContract
+        ? { taskContract }
+        : taskTemplate.contract
+          ? { taskContract: taskTemplate.contract }
+          : {}),
+      taskTemplate: {
+        title: taskTemplate.title,
+        executionSpecId: taskTemplate.executionSpecId,
+        cwd: taskTemplate.cwd,
+        ...(taskTemplate.resourceMode
+          ? { resourceMode: taskTemplate.resourceMode }
+          : {}),
+        ...(taskTemplate.useWorktree ? { useWorktree: true } : {}),
+        ...(taskTemplate.branch ? { branch: taskTemplate.branch } : {}),
+      },
+    })
+    if (parsed.success) return parsed.data
+    ctx.addIssue({
+      code: 'custom',
+      message: parsed.error.issues.map((issue) => issue.message).join('; '),
+    })
+    return z.NEVER
+  })
 
 export const taskPlanSchema = z
   .object({
