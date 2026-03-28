@@ -6,6 +6,7 @@ import PQueue from 'p-queue'
 import { beforeEach, vi } from 'vitest'
 
 import { notifyManagerLoop } from '../../src/kernel/orchestrator/signals.js'
+import { readHistory } from '../../src/persistence/history/store.js'
 import { readJsonl } from '../../src/persistence/storage/jsonl.js'
 import { createTestRuntimeState } from '../helpers/runtime-state.js'
 
@@ -103,6 +104,18 @@ export const countSystemEvent = async (
   return packets.filter((packet) => {
     const { payload } = packet
     return payload?.role === 'system' && payload.systemEventName === name
+  }).length
+}
+
+export const countAgentReplies = async (
+  runtime: RuntimeState,
+  text?: string,
+): Promise<number> => {
+  const history = await readHistory(runtime.paths.history)
+  return history.filter((item) => {
+    if (item.role !== 'agent') return false
+    if (text === undefined) return true
+    return item.text === text
   }).length
 }
 

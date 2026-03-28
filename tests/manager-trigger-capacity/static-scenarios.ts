@@ -1,15 +1,16 @@
 import { expect, test } from 'vitest'
 
-import { GLOBAL_FOCUS_ID } from '../../src/work/focus/constants.js'
 import { hasFreeWorkerSlot } from '../../src/execution/worker/task-state-shared.js'
-import { managerLoop } from '../../src/policy/manager/loop.js'
 import { triggerOnWorkerSlotFreedPlans } from '../../src/policy/manager/loop-trigger-plans.js'
+import { managerLoop } from '../../src/policy/manager/loop.js'
+import { GLOBAL_FOCUS_ID } from '../../src/work/focus/constants.js'
 import {
   createCapacityPlan,
   waitForCondition,
 } from '../helpers/manager-trigger-capacity.js'
 
 import {
+  countAgentReplies,
   countSystemEvent,
   createRuntime,
   settle,
@@ -73,6 +74,33 @@ test('managerLoop emits worker_slot_freed once on startup when slot is already f
   }
 })
 
+test('managerLoop does not append fallback agent reply for worker_slot_freed-only wakeups', async () => {
+  const runtime = await createRuntime({ maxConcurrent: 2 })
+  runtime.tasks.push({
+    id: 'task-pending-worker-slot-only',
+    fingerprint: 'fp-task-pending-worker-slot-only',
+    prompt: 'seed prompt',
+    title: 'seed task',
+    focusId: GLOBAL_FOCUS_ID,
+    profile: 'worker',
+    status: 'pending',
+    createdAt: new Date().toISOString(),
+  })
+
+  const loopPromise = managerLoop(runtime)
+  try {
+    await waitForCondition(
+      async () => (await countSystemEvent(runtime, 'worker_slot_freed')) >= 1,
+      4_000,
+    )
+    await settle()
+
+    expect(await countAgentReplies(runtime, '继续处理。')).toBe(0)
+  } finally {
+    await stopLoop(runtime, loopPromise)
+  }
+})
+
 test('managerLoop suppresses worker_slot_freed when no queue work exists', async () => {
   const runtime = await createRuntime({ maxConcurrent: 2 })
 
@@ -113,6 +141,32 @@ test('on_worker_slot_freed plans trigger without touching non-capacity plans', a
   expect(await countSystemEvent(runtime, 'trigger_fire')).toBe(1)
 })
 
+test('trigger_fire wakeups do not append fallback agent reply when manager output is empty', async () => {
+  const runtime = await createRuntime({ maxConcurrent: 2 })
+  runtime.taskPlans.push(
+    await createCapacityPlan(
+      runtime,
+      'plan-capacity-trigger-only',
+      { mode: 'on_worker_slot_freed' },
+      GLOBAL_FOCUS_ID,
+    ),
+  )
+
+  const loopPromise = managerLoop(runtime)
+  try {
+    await waitForCondition(
+      () => (runtime.taskPlans[0]?.runtime.runCount ?? 0) >= 1,
+      4_000,
+    )
+    await settle()
+
+    expect(await countSystemEvent(runtime, 'trigger_fire')).toBe(1)
+    expect(await countAgentReplies(runtime, '继续处理。')).toBe(0)
+  } finally {
+    await stopLoop(runtime, loopPromise)
+  }
+})
+
 test('trigger_fire system event uses global focus even when plan has local focus', async () => {
   const runtime = await createRuntime({ maxConcurrent: 1 })
   const plan = await createCapacityPlan(
@@ -131,7 +185,8 @@ test('trigger_fire system event uses global focus even when plan has local focus
   )
   expect(triggered.triggeredCount).toBe(1)
   const triggerInput = runtime.session.inflightInputs.find(
-    (input) => input.role === 'system' && input.systemEventName === 'trigger_fire',
+    (input) =>
+      input.role === 'system' && input.systemEventName === 'trigger_fire',
   )
   expect(triggerInput?.focusId).toBe(GLOBAL_FOCUS_ID)
 })

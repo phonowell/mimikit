@@ -15,16 +15,12 @@ import {
 } from './direct-task-result-reply.js'
 import { collectTriggeredPlanIds } from './loop-batch-context.js'
 import {
-  appendManagerReply,
   finishBatchWithoutAgentReply,
   recoverManagerBatchFailure,
 } from './loop-batch-flow.js'
+import { appendManagerBatchReply } from './loop-batch-reply.js'
 import { runManagerBatch } from './loop-batch-run-manager.js'
-import {
-  buildFallbackReply,
-  consumeBatchHistory,
-  finalizeBatchProgress,
-} from './loop-helpers.js'
+import { consumeBatchHistory, finalizeBatchProgress } from './loop-helpers.js'
 import { applyPlanCompletionState } from './plan-progress.js'
 import { normalizeManagerReplyText } from './reply-normalize.js'
 import { flushPendingManagerRestart } from './restart-runtime.js'
@@ -36,6 +32,7 @@ import type {
   UserInput,
 } from '../../foundation/types/index.js'
 import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
+
 export const processManagerBatch = async (params: {
   runtime: ManagerRuntime
   inputs: UserInput[]
@@ -125,23 +122,15 @@ export const processManagerBatch = async (params: {
       triggeredPlanIds: collectTriggeredPlanIds(inputs),
     })
     const normalizedReplyText = normalizeManagerReplyText(parsed.text)
-    const responseText =
-      normalizedReplyText ||
-      normalizeManagerReplyText(
-        await buildFallbackReply({
-          results,
-          tasks: runtime.tasks,
-          workDir: runtime.config.workDir,
-        }),
-      )
-    await appendManagerReply({
+    agentAppended = await appendManagerBatchReply({
       runtime,
-      text: responseText,
+      agentInputs,
+      results,
+      normalizedReplyText,
       nextInputsCursor,
       ...(resolvedUsage ? { usage: resolvedUsage } : {}),
       ...(managerRun.elapsedMs >= 0 ? { elapsedMs: managerRun.elapsedMs } : {}),
     })
-    agentAppended = true
     await finalizeBatchProgress({
       runtime,
       nextInputsCursor,
