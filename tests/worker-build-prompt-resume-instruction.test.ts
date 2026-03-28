@@ -17,7 +17,7 @@ const createTmpDir = async (): Promise<string> => {
   return dir
 }
 
-const createTask = (id: string): Task => ({
+const createTask = (id: string, overrides?: Partial<Task>): Task => ({
   id,
   fingerprint: `fp-${id}`,
   semanticKey: `sk-${id}`,
@@ -29,6 +29,7 @@ const createTask = (id: string): Task => ({
   provider: 'codex',
   status: 'running',
   createdAt: '2026-03-06T00:00:00.000Z',
+  ...overrides,
 })
 
 afterEach(async () => {
@@ -108,4 +109,61 @@ test('buildWorkerPrompt narrows default evidence collection to current task scop
     '不要默认枚举整个 `.mimikit/tasks`、`.mimikit/results`、`.mimikit/history`',
   )
   expect(prompt).toContain('若任务是“重跑 / 复盘 / 续跑”')
+})
+
+test('buildWorkerPrompt exposes read-only runtime contract to the worker', async () => {
+  const stateDir = await createTmpDir()
+  await persistTaskExecutionSpec({
+    stateDir,
+    prompt: '只读检查当前仓库状态。',
+    specId: 'spec-task-build-worker-prompt-runtime-read',
+  })
+  const prompt = await buildWorkerPrompt({
+    stateDir,
+    workspaceDir: '/repo/mimikit',
+    task: createTask('task-build-worker-prompt-runtime-read', {
+      resourceMode: 'read',
+    }),
+  })
+
+  expect(prompt).toContain('<M:runtime_contract>')
+  expect(prompt).toContain('resource_mode: read')
+  expect(prompt).toContain('write_policy: forbidden')
+  expect(prompt).toContain('working_directory: /repo/mimikit')
+})
+
+test('buildWorkerPrompt exposes worktree runtime contract to the worker', async () => {
+  const stateDir = await createTmpDir()
+  await persistTaskExecutionSpec({
+    stateDir,
+    prompt: '在隔离 worktree 中完成最小改动。',
+    specId: 'spec-task-build-worker-prompt-runtime-worktree',
+  })
+  const prompt = await buildWorkerPrompt({
+    stateDir,
+    workspaceDir: '/repo/mimikit/.worktrees/task-runtime-contract',
+    task: createTask('task-build-worker-prompt-runtime-worktree', {
+      resourceMode: 'write',
+      cwd: '/repo/mimikit/.worktrees/task-runtime-contract/src',
+      branch: 'task/runtime-contract',
+      git: {
+        worktreePath: '/repo/mimikit/.worktrees/task-runtime-contract',
+        branch: 'task/runtime-contract',
+      },
+    }),
+  })
+
+  expect(prompt).toContain('<M:runtime_contract>')
+  expect(prompt).toContain('resource_mode: write')
+  expect(prompt).toContain('write_policy: allowed_within_work_dir')
+  expect(prompt).toContain(
+    'working_directory: /repo/mimikit/.worktrees/task-runtime-contract',
+  )
+  expect(prompt).toContain(
+    'task_cwd: /repo/mimikit/.worktrees/task-runtime-contract/src',
+  )
+  expect(prompt).toContain(
+    'worktree_root: /repo/mimikit/.worktrees/task-runtime-contract',
+  )
+  expect(prompt).toContain('branch: task/runtime-contract')
 })
