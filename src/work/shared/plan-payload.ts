@@ -50,8 +50,8 @@ export const buildPlanEffectPayload = (
 ): Record<string, unknown> => ({
   effect_kind: effect.kind,
   task_title: effect.taskTemplate.title,
-  ...(buildTaskContractPayload(effect.taskTemplate.contract)
-    ? { task_contract: buildTaskContractPayload(effect.taskTemplate.contract) }
+  ...(buildTaskContractPayload(effect.taskContract)
+    ? { task_contract: buildTaskContractPayload(effect.taskContract) }
     : {}),
   task_cwd: effect.taskTemplate.cwd,
   ...(effect.taskTemplate.resourceMode

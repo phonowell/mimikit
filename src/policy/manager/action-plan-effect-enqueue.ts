@@ -33,7 +33,7 @@ export const buildPlanEnqueueTaskEffect = async (params: {
     prompt,
     contract,
   })
-  const fingerprint = buildTaskFingerprint({
+  const taskKey = buildTaskFingerprint({
     prompt,
     title: params.task.title,
     cwd: params.task.cwd,
@@ -46,11 +46,11 @@ export const buildPlanEnqueueTaskEffect = async (params: {
   })
   return {
     kind: 'enqueue_task',
+    taskKey,
+    taskContract: contract,
     taskTemplate: {
       title: params.task.title,
       executionSpecId: spec.id,
-      contract,
-      fingerprint,
       cwd: params.task.cwd,
       resourceMode,
       ...(params.task.use_worktree ? { useWorktree: true } : {}),

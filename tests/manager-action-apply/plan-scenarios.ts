@@ -44,12 +44,20 @@ test('set_plan creates cron plan with enqueue_task effect', async () => {
       title: 'scheduled task',
       cwd: TASK_CWD,
     },
+    taskContract: {
+      goal: 'Summarize daily build status',
+      scope: 'Review the latest build state and produce a summary',
+      acceptance: ['A concise build status summary is ready'],
+    },
   })
   const effect = runtime.taskPlans[0]?.effect
   expect(effect?.kind).toBe('enqueue_task')
   if (effect?.kind !== 'enqueue_task')
     throw new Error('expected enqueue effect')
+  expect(effect.taskTemplate).not.toHaveProperty('contract')
+  expect(effect.taskTemplate).not.toHaveProperty('fingerprint')
   expect(effect.taskTemplate).not.toHaveProperty('semanticKey')
+  expect(effect.taskKey).toBeTruthy()
   const spec = await readTaskExecutionSpec(
     runtime.config.workDir,
     effect.taskTemplate.executionSpecId,
@@ -95,10 +103,10 @@ test('delete_plan keeps plan entity and records canceled closure', async () => {
     },
     effect: {
       kind: 'enqueue_task',
+      taskKey: 'task-key-delete',
       taskTemplate: {
         title: 'capacity task',
         executionSpecId: 'spec-delete',
-        fingerprint: 'fp-delete',
         cwd: TASK_CWD,
         resourceMode: 'write',
       },
@@ -136,10 +144,10 @@ test('set_plan replaces active plan in place', async () => {
     },
     effect: {
       kind: 'enqueue_task',
+      taskKey: 'task-key-old',
       taskTemplate: {
         title: 'old scheduled task',
         executionSpecId: 'spec-old',
-        fingerprint: 'fp-old',
         cwd: TASK_CWD,
         resourceMode: 'write',
       },

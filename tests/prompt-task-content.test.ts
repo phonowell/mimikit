@@ -164,19 +164,19 @@ test('buildPlansPromptPayload exposes task contract digest without reviving lega
     id: 'plan-contract-1',
     effect: {
       kind: 'enqueue_task',
+      taskContract: {
+        goal: 'Expose plan task contract to manager',
+        scope: 'Only include digest fields needed for orchestration',
+        acceptance: ['Manager can inspect plan goal before triggering'],
+        outOfScope: 'Do not expose full worker prompt',
+        contextRefs: ['docs/design/workflow/plan.md'],
+      },
+      taskKey: 'task-key-plan-contract-1',
       taskTemplate: {
         title: 'Refresh manager contract view',
         executionSpecId: 'spec-plan-contract-1',
-        fingerprint: 'fp-plan-contract-1',
         cwd: '/tmp/runtime-snapshot-plan-task',
         resourceMode: 'write',
-        contract: {
-          goal: 'Expose plan task contract to manager',
-          scope: 'Only include digest fields needed for orchestration',
-          acceptance: ['Manager can inspect plan goal before triggering'],
-          outOfScope: 'Do not expose full worker prompt',
-          contextRefs: ['docs/design/workflow/plan.md'],
-        },
       },
     },
   })

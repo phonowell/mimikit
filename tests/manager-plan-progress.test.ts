@@ -43,10 +43,10 @@ test('enqueue_task auto-links a triggered plan to the created task', async () =>
     },
     effect: {
       kind: 'enqueue_task',
+      taskKey: 'task-key-triggered',
       taskTemplate: {
         title: 'scheduled title',
         executionSpecId: 'spec-triggered',
-        fingerprint: 'fp-triggered',
         cwd: taskCwd,
         resourceMode: 'write',
       },

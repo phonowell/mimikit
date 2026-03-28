@@ -129,11 +129,11 @@ export type TaskPlanTrigger =
 
 export type TaskPlanEnqueueTaskEffect = {
   kind: 'enqueue_task'
+  taskKey: string
+  taskContract?: TaskContract | undefined
   taskTemplate: {
     title: string
     executionSpecId: string
-    contract?: TaskContract | undefined
-    fingerprint: string
     cwd: string
     resourceMode?: TaskResourceMode | undefined
     useWorktree?: boolean | undefined

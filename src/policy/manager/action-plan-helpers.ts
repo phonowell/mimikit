@@ -63,7 +63,6 @@ export const normalizePlanKey = (params: {
   const base = `${params.title.trim().replace(/\s+/g, ' ').toLowerCase()}\n${params.focusId}`
   const effectKey = buildPlanEffectKey({
     effect: params.effect,
-    focusId: params.focusId,
   })
 
   if (params.trigger.mode === 'cron')

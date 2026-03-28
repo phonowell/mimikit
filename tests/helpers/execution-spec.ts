@@ -4,7 +4,11 @@ import {
 } from '../../src/work/orchestrator/task-state.js'
 import { persistTaskExecutionSpec } from '../../src/work/spec/store.js'
 
-import type { Task, TaskContract, TaskPlan } from '../../src/foundation/types/index.js'
+import type {
+  Task,
+  TaskContract,
+  TaskPlan,
+} from '../../src/foundation/types/index.js'
 
 type LegacyTask = Partial<Task> & {
   id: string
@@ -14,13 +18,20 @@ type LegacyTask = Partial<Task> & {
 
 type LegacyEnqueueTaskTemplate = {
   prompt?: string
-  contract?: TaskContract
   title?: string
   cwd?: string
   resourceMode?: Task['resourceMode']
   branch?: string
   executionSpecId?: string
   fingerprint?: string
+  contract?: TaskContract
+}
+
+type LegacyPlan = Partial<TaskPlan> & {
+  id: string
+  title: string
+  focusId: TaskPlan['focusId']
+  effect?: Partial<Extract<TaskPlan['effect'], { kind: 'enqueue_task' }>>
 }
 
 const stripLegacyTask = (
@@ -35,14 +46,28 @@ export const materializeTaskFixture = async (params: {
   task: LegacyTask
 }): Promise<Task> => {
   const { task } = params
-  const contract = task.contract
-  const title = task.title?.trim() || task.prompt?.trim() || task.id
-  const cwd = task.cwd?.trim() || '/tmp/test-task'
-  const focusId = task.focusId?.trim() || 'focus-global'
+  const {
+    branch,
+    contract,
+    cwd: taskCwd,
+    executionSpecId,
+    fingerprint: taskFingerprint,
+    focusId: taskFocusId,
+    profile: taskProfile,
+    provider: taskProvider,
+    prompt: taskPrompt,
+    repoKey,
+    resourceMode,
+    semanticKey: taskSemanticKey,
+    title: taskTitle,
+  } = task
+  const title = taskTitle?.trim() ?? taskPrompt?.trim() ?? task.id
+  const cwd = taskCwd?.trim() ?? '/tmp/test-task'
+  const focusId = taskFocusId?.trim() ?? 'focus-global'
   const profile = task.profile ?? 'worker'
   const provider = task.provider ?? 'codex'
-  const prompt = task.prompt?.trim() || title
-  const specId = task.executionSpecId?.trim() || `spec-${task.id}`
+  const prompt = taskPrompt?.trim() ?? title
+  const specId = executionSpecId?.trim() ?? `spec-${task.id}`
   const spec = await persistTaskExecutionSpec({
     stateDir: params.stateDir,
     prompt,
@@ -54,40 +79,40 @@ export const materializeTaskFixture = async (params: {
     ...stripLegacyTask(task),
     id: task.id,
     fingerprint:
-      task.fingerprint ||
+      taskFingerprint ??
       buildTaskFingerprint({
         prompt,
         title,
         cwd,
-        ...(task.resourceMode ? { resourceMode: task.resourceMode } : {}),
+        ...(resourceMode ? { resourceMode } : {}),
         profile,
         provider,
         focusId,
-        ...(task.repoKey ? { repoKey: task.repoKey } : {}),
-        ...(task.branch ? { branch: task.branch } : {}),
+        ...(repoKey ? { repoKey } : {}),
+        ...(branch ? { branch } : {}),
         ...(contract ? { contract } : {}),
       }),
     semanticKey:
-      task.semanticKey ||
+      taskSemanticKey ??
       buildTaskSemanticKey({
         prompt,
         title,
         cwd,
-        ...(task.resourceMode ? { resourceMode: task.resourceMode } : {}),
+        ...(resourceMode ? { resourceMode } : {}),
         profile,
         provider,
         focusId,
-        ...(task.repoKey ? { repoKey: task.repoKey } : {}),
-        ...(task.branch ? { branch: task.branch } : {}),
+        ...(repoKey ? { repoKey } : {}),
+        ...(branch ? { branch } : {}),
         ...(contract ? { contract } : {}),
       }),
     executionSpecId: spec.id,
     title,
     cwd,
-    ...(task.resourceMode ? { resourceMode: task.resourceMode } : {}),
+    ...(resourceMode ? { resourceMode } : {}),
     focusId,
-    profile,
-    provider,
+    profile: taskProfile ?? 'worker',
+    provider: taskProvider ?? 'codex',
     status: task.status ?? 'pending',
     createdAt: task.createdAt ?? '2026-02-01T00:00:00.000Z',
   }
@@ -99,17 +124,17 @@ export const materializeTaskFixture = async (params: {
 
 export const materializePlanFixture = async (params: {
   stateDir: string
-  plan: TaskPlan
+  plan: LegacyPlan
 }): Promise<TaskPlan> => {
-  const effect = params.plan.effect
-  if (!effect || effect.kind !== 'enqueue_task') return params.plan
+  const { effect } = params.plan
+  if (!effect?.taskTemplate) return params.plan as TaskPlan
 
   const template = effect.taskTemplate as LegacyEnqueueTaskTemplate
-  const contract = template.contract
-  const title = template.title?.trim() || params.plan.title.trim() || params.plan.id
-  const cwd = template.cwd?.trim() || '/tmp/test-plan-task'
-  const prompt = template.prompt?.trim() || title
-  const specId = template.executionSpecId?.trim() || `spec-${params.plan.id}`
+  const contract = effect.taskContract ?? template.contract
+  const title = template.title?.trim() ?? params.plan.title.trim()
+  const cwd = template.cwd?.trim() ?? '/tmp/test-plan-task'
+  const prompt = template.prompt?.trim() ?? title
+  const specId = template.executionSpecId?.trim() ?? `spec-${params.plan.id}`
   const spec = await persistTaskExecutionSpec({
     stateDir: params.stateDir,
     prompt,
@@ -121,25 +146,27 @@ export const materializePlanFixture = async (params: {
     ...params.plan,
     effect: {
       kind: 'enqueue_task',
+      taskKey:
+        (effect.taskKey as string | undefined) ??
+        template.fingerprint ??
+        buildTaskFingerprint({
+          prompt,
+          title,
+          cwd,
+          ...(template.resourceMode
+            ? { resourceMode: template.resourceMode }
+            : {}),
+          profile: 'worker',
+          provider: 'codex',
+          focusId: params.plan.focusId,
+          ...(template.branch ? { branch: template.branch } : {}),
+          ...(contract ? { contract } : {}),
+        }),
+      ...(contract ? { taskContract: contract } : {}),
       taskTemplate: {
         title,
         cwd,
         executionSpecId: spec.id,
-        fingerprint:
-          template.fingerprint ||
-          buildTaskFingerprint({
-            prompt,
-            title,
-            cwd,
-            ...(template.resourceMode
-              ? { resourceMode: template.resourceMode }
-              : {}),
-            profile: 'worker',
-            provider: 'codex',
-            focusId: params.plan.focusId,
-            ...(template.branch ? { branch: template.branch } : {}),
-            ...(contract ? { contract } : {}),
-          }),
         ...(template.resourceMode
           ? { resourceMode: template.resourceMode }
           : {}),
@@ -149,6 +176,5 @@ export const materializePlanFixture = async (params: {
   }
 
   delete template.prompt
-  delete template.contract
   return materialized
 }

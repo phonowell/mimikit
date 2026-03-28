@@ -127,9 +127,12 @@ test('loadRuntimeSnapshot rejects legacy worker-slot trigger mode', async () => 
   await expect(loadRuntimeSnapshot(stateDir)).rejects.toThrow()
 })
 
-test('loadRuntimeSnapshot tolerates legacy plan semanticKey and drops it', async () => {
+test('loadRuntimeSnapshot migrates legacy plan template fields into root effect fields', async () => {
   const stateDir = await createTmpDir()
   const snapshotPath = join(stateDir, 'runtime-snapshot.json')
+  const legacyPlan = createPlanFixture({
+    id: 'plan-legacy-semantic',
+  })
   await writeFile(
     snapshotPath,
     JSON.stringify({
@@ -137,15 +140,17 @@ test('loadRuntimeSnapshot tolerates legacy plan semanticKey and drops it', async
       tasks: [],
       taskPlans: [
         {
-          ...createPlanFixture({
-            id: 'plan-legacy-semantic',
-          }),
+          ...legacyPlan,
           effect: {
             kind: 'enqueue_task',
             taskTemplate: {
-              ...createPlanFixture({
-                id: 'plan-legacy-semantic',
-              }).effect.taskTemplate,
+              ...legacyPlan.effect.taskTemplate,
+              contract: {
+                goal: 'Legacy contract goal',
+                scope: 'Legacy contract scope',
+                acceptance: ['Legacy acceptance'],
+              },
+              fingerprint: 'legacy-plan-task-key',
               semanticKey: 'legacy-plan-semantic-key',
             },
           },
@@ -160,7 +165,19 @@ test('loadRuntimeSnapshot tolerates legacy plan semanticKey and drops it', async
   )
 
   const loaded = await loadRuntimeSnapshot(stateDir)
+  expect(loaded.taskPlans[0]?.effect.taskKey).toBe('legacy-plan-task-key')
+  expect(loaded.taskPlans[0]?.effect.taskContract).toMatchObject({
+    goal: 'Legacy contract goal',
+    scope: 'Legacy contract scope',
+    acceptance: ['Legacy acceptance'],
+  })
   expect(loaded.taskPlans[0]?.effect.taskTemplate).not.toHaveProperty(
     'semanticKey',
+  )
+  expect(loaded.taskPlans[0]?.effect.taskTemplate).not.toHaveProperty(
+    'contract',
+  )
+  expect(loaded.taskPlans[0]?.effect.taskTemplate).not.toHaveProperty(
+    'fingerprint',
   )
 })

@@ -2,6 +2,7 @@ import { expect, test } from 'vitest'
 
 import { readHistory } from '../src/persistence/history/store.js'
 import { applyTaskActions } from '../src/policy/manager/action-apply.js'
+
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 import type { RuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
@@ -88,4 +89,48 @@ test('set_plan rejects sibling collision for active plan key', async () => {
     (item) => item.role === 'system' && item.systemEventName === 'plan_updated',
   )
   expect(planUpdatedEvents).toHaveLength(0)
+})
+
+test('set_plan skips duplicate active plan even when execution spec ids differ', async () => {
+  const runtime = await createRuntime()
+  const duplicatePlan: ManagerPlanDraft = {
+    title: 'scheduled',
+    trigger: {
+      type: 'cron',
+      cron: '0 0 9 * * *',
+      time_zone: 'Asia/Shanghai',
+    },
+    task: buildTaskDraft('scheduled task', '/tmp/scheduled-task'),
+    priority: 'normal',
+    max_runs: 5,
+  }
+
+  await applyTaskActions(runtime, [
+    {
+      type: 'set_plan',
+      plan_id: null,
+      plan: duplicatePlan,
+    },
+  ])
+
+  const firstSpecId =
+    runtime.taskPlans[0]?.effect.kind === 'enqueue_task'
+      ? runtime.taskPlans[0].effect.taskTemplate.executionSpecId
+      : null
+
+  await applyTaskActions(runtime, [
+    {
+      type: 'set_plan',
+      plan_id: null,
+      plan: duplicatePlan,
+    },
+  ])
+
+  expect(runtime.taskPlans).toHaveLength(1)
+  expect(runtime.taskPlans[0]?.effect.kind).toBe('enqueue_task')
+  if (runtime.taskPlans[0]?.effect.kind !== 'enqueue_task')
+    throw new Error('expected enqueue effect')
+  expect(runtime.taskPlans[0].effect.taskTemplate.executionSpecId).toBe(
+    firstSpecId,
+  )
 })

@@ -38,12 +38,14 @@ export const taskPlanTriggerSchema = z.discriminatedUnion('mode', [
 const taskPlanEffectSchema = z
   .object({
     kind: z.literal('enqueue_task'),
+    taskKey: z.string().trim().min(1).optional(),
+    taskContract: taskContractSchema.optional(),
     taskTemplate: z
       .object({
         title: z.string().trim().min(1),
         executionSpecId: z.string().trim().min(1),
         contract: taskContractSchema.optional(),
-        fingerprint: z.string().trim().min(1),
+        fingerprint: z.string().trim().min(1).optional(),
         semanticKey: z.string().trim().min(1).optional(),
         cwd: z.string().trim().min(1),
         resourceMode: taskResourceModeSchema.optional(),
@@ -51,8 +53,39 @@ const taskPlanEffectSchema = z
         branch: z.string().trim().min(1).optional(),
       })
       .strict()
-      .transform(({ semanticKey: _semanticKey, ...rest }) => rest),
+      .transform(
+        ({
+          contract,
+          fingerprint,
+          semanticKey: _semanticKey,
+          ...rest
+        }) => ({
+          ...rest,
+          ...(contract ? { contract } : {}),
+          ...(fingerprint ? { fingerprint } : {}),
+        }),
+      ),
   })
+  .transform(({ taskKey, taskContract, taskTemplate, ...rest }) => ({
+    ...rest,
+    kind: 'enqueue_task' as const,
+    taskKey: taskKey ?? taskTemplate.fingerprint,
+    ...(taskContract
+      ? { taskContract }
+      : taskTemplate.contract
+        ? { taskContract: taskTemplate.contract }
+        : {}),
+    taskTemplate: {
+      title: taskTemplate.title,
+      executionSpecId: taskTemplate.executionSpecId,
+      cwd: taskTemplate.cwd,
+      ...(taskTemplate.resourceMode
+        ? { resourceMode: taskTemplate.resourceMode }
+        : {}),
+      ...(taskTemplate.useWorktree ? { useWorktree: true } : {}),
+      ...(taskTemplate.branch ? { branch: taskTemplate.branch } : {}),
+    },
+  }))
   .strict()
 
 export const taskPlanSchema = z

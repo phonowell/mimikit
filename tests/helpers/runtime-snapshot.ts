@@ -53,10 +53,10 @@ export const createPlanFixture = (
   },
   effect: {
     kind: 'enqueue_task',
+    taskKey: 'plan-task-key-1',
     taskTemplate: {
       title: 'plan task',
       executionSpecId: 'spec-plan-1',
-      fingerprint: 'fp-plan-1',
       cwd: '/tmp/runtime-snapshot-plan-task',
       resourceMode: 'write',
     },
