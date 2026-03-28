@@ -9,7 +9,12 @@ import {
 import { useBranding } from './use-branding.js'
 import { useEventStream } from './use-event-stream.js'
 
-import type { AppState, SnapshotEnvelope, TasksSnapshot } from '../types.js'
+import type {
+  AppState,
+  ConfirmDialogState,
+  SnapshotEnvelope,
+  TasksSnapshot,
+} from '../types.js'
 import type { Dispatch, SetStateAction } from 'react'
 
 const TOAST_HIDE_DELAY_MS = 2_800
@@ -31,6 +36,8 @@ const collectMessageIds = (
 
 type Params = {
   appState: AppState
+  confirmDialog: ConfirmDialogState | null
+  plansOpen: boolean
   scroll: ScrollController
   speakMessages: (messages: AppState['messages']) => void
   setAppState: Dispatch<SetStateAction<AppState>>
@@ -43,11 +50,14 @@ type Params = {
     SetStateAction<{ message: string; state: '' | 'success' | 'error' } | null>
   >
   setToolsMenuOpen: Dispatch<SetStateAction<boolean>>
+  tasksOpen: boolean
   toast: { message: string; state: '' | 'success' | 'error' } | null
 }
 
 export const useAppRuntimeEffects = ({
   appState,
+  confirmDialog,
+  plansOpen,
   scroll,
   speakMessages,
   setAppState,
@@ -56,6 +66,7 @@ export const useAppRuntimeEffects = ({
   setStatusOverride,
   setToast,
   setToolsMenuOpen,
+  tasksOpen,
   toast,
 }: Params): void => {
   const previousMessageIdsRef = useRef(collectMessageIds(appState.messages))
@@ -94,7 +105,13 @@ export const useAppRuntimeEffects = ({
     if (!target.closest('[data-task-actions="true"]')) setOpenTaskMenuId('')
   })
 
-  useBranding(appState.status, appState.focuses)
+  useBranding(appState.status, {
+    confirmDialog,
+    focuses: appState.focuses,
+    plansOpen,
+    tasks: appState.tasks,
+    tasksOpen,
+  })
   useEventStream({
     onSnapshot: handleSnapshot,
     onTasks: handleTasks,

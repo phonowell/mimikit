@@ -1,6 +1,9 @@
 import { afterEach, expect, test } from 'vitest'
 
-import { syncDocumentBranding } from '../webui-src/lib/branding.js'
+import {
+  type DocumentTitleContext,
+  syncDocumentBranding,
+} from '../webui-src/lib/branding.js'
 
 import type { FocusView, StatusSnapshot } from '../webui-src/types.js'
 
@@ -87,14 +90,24 @@ test('syncDocumentBranding skips redundant favicon writes for identical branding
       lastActivityAt: '2026-03-25T09:05:00.000Z',
     },
   ]
+  const context: DocumentTitleContext = {
+    confirmDialog: null,
+    focuses,
+    plansOpen: false,
+    tasks: [],
+    tasksOpen: false,
+  }
 
-  syncDocumentBranding(status, focuses)
+  syncDocumentBranding(status, context)
   syncDocumentBranding(
     { ...status },
-    focuses.map((focus) => ({ ...focus })),
+    {
+      ...context,
+      focuses: focuses.map((focus) => ({ ...focus })),
+    },
   )
 
-  expect(titleValue).toBe('Inbox triage')
+  expect(titleValue).toBe('Inbox triage · Mimikit')
   expect(titleSetCount).toBe(1)
   expect(appended).toHaveLength(1)
   expect(existingLink?.hrefSetCount).toBe(1)

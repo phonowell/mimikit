@@ -31,6 +31,8 @@ export const AppRuntimeProvider = ({ children }: PropsWithChildren) => {
 
   useAppRuntimeEffects({
     appState,
+    confirmDialog: ui.confirmDialog,
+    plansOpen: ui.plansOpen,
     scroll,
     speakMessages,
     setAppState,
@@ -39,6 +41,7 @@ export const AppRuntimeProvider = ({ children }: PropsWithChildren) => {
     setStatusOverride: ui.setStatusOverride,
     setToast: ui.setToast,
     setToolsMenuOpen: ui.setToolsMenuOpen,
+    tasksOpen: ui.tasksOpen,
     toast: ui.toast,
   })
 
