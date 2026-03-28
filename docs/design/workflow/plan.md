@@ -37,6 +37,7 @@
   - `priority`
   - `max_runs`
 - `plan.task` 与 `enqueue_task.task` 使用同一份任务合同
+- 运行时会把这份任务合同的稳定 digest 固化到 `plan.effect.taskTemplate.contract`，供 manager 在 `state_packet.plans` 中做触发前判断
 
 ## `delete_plan` 合同
 
@@ -49,6 +50,7 @@
 - `scheduled_at`：一次性触发
 - `on_worker_slot_freed`：有空闲 worker 槽位时触发
 - plan 触发后统一派发 `enqueue_task` effect，不再存在“只唤醒 manager”的 plan effect
+- `plan.effect` 对 manager 暴露的是调度外壳 + 任务合同 digest，不暴露完整 worker prompt
 
 ## 运行态回写
 

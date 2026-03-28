@@ -80,6 +80,7 @@ export type Task = {
   fingerprint: string
   semanticKey: string
   executionSpecId: string
+  contract?: TaskContract | undefined
   title: string
   cwd: string
   resourceMode?: TaskResourceMode | undefined
@@ -131,6 +132,7 @@ export type TaskPlanEnqueueTaskEffect = {
   taskTemplate: {
     title: string
     executionSpecId: string
+    contract?: TaskContract | undefined
     fingerprint: string
     semanticKey: string
     cwd: string

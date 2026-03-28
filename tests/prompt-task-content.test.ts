@@ -5,8 +5,13 @@ import {
   buildResultsPromptPayload,
   buildTasksPromptPayload,
 } from '../src/foundation/prompting/format.js'
+
+import {
+  createPlanFixture,
+  createTaskFixture,
+} from './helpers/runtime-snapshot.js'
+
 import type { TaskResult } from '../src/foundation/types/index.js'
-import { createPlanFixture, createTaskFixture } from './helpers/runtime-snapshot.js'
 
 test('buildResultsPromptPayload keeps the latest result per task', () => {
   const task = createTaskFixture({
@@ -88,11 +93,22 @@ test('buildTasksPromptPayload omits result-only fallback and plan title still fa
 })
 
 test('buildTasksPromptPayload keeps archive path but does not duplicate detailed result', () => {
+  const contract = {
+    goal: 'Keep manager aligned to the real task contract',
+    scope: 'Only expose contract digest in state payload',
+    acceptance: [
+      'Task payload includes goal, scope, and acceptance',
+      'Task payload does not inline worker prompt',
+    ],
+    outOfScope: 'Do not include raw execution transcript',
+    contextRefs: ['docs/design/workflow/task.md'],
+  }
   const task = createTaskFixture({
     id: 'task-collapse-state-1',
     title: 'State only task',
     archivePath: '/tmp/task-collapse-state-1.md',
-  })
+  }) as ReturnType<typeof createTaskFixture> & { contract: typeof contract }
+  task.contract = contract
   const result: TaskResult = {
     taskId: task.id,
     status: 'succeeded',
@@ -108,6 +124,13 @@ test('buildTasksPromptPayload keeps archive path but does not duplicate detailed
   expect(payload?.tasks[0]).toMatchObject({
     id: task.id,
     archive_path: 'task-collapse-state-1.md',
+    contract: {
+      goal: contract.goal,
+      scope: contract.scope,
+      acceptance: contract.acceptance,
+      out_of_scope: contract.outOfScope,
+      context_refs: contract.contextRefs,
+    },
   })
   expect(payload?.tasks[0]).not.toHaveProperty('prompt')
   expect(payload?.tasks[0]).not.toHaveProperty('result')
@@ -134,4 +157,44 @@ test('buildTasksPromptPayload exposes only truthful git execution fields', () =>
   expect(payload?.tasks[0]).not.toHaveProperty('git.review_status')
   expect(payload?.tasks[0]).not.toHaveProperty('git.merge_status')
   expect(payload?.tasks[0]).not.toHaveProperty('git.cleanup_status')
+})
+
+test('buildPlansPromptPayload exposes task contract digest without reviving legacy aliases', () => {
+  const plan = createPlanFixture({
+    id: 'plan-contract-1',
+    effect: {
+      kind: 'enqueue_task',
+      taskTemplate: {
+        title: 'Refresh manager contract view',
+        executionSpecId: 'spec-plan-contract-1',
+        fingerprint: 'fp-plan-contract-1',
+        semanticKey: 'sk-plan-contract-1',
+        cwd: '/tmp/runtime-snapshot-plan-task',
+        resourceMode: 'write',
+        contract: {
+          goal: 'Expose plan task contract to manager',
+          scope: 'Only include digest fields needed for orchestration',
+          acceptance: ['Manager can inspect plan goal before triggering'],
+          outOfScope: 'Do not expose full worker prompt',
+          contextRefs: ['docs/design/workflow/plan.md'],
+        },
+      },
+    },
+  })
+
+  const payload = buildPlansPromptPayload([plan])
+
+  expect(payload?.plans[0]).toMatchObject({
+    id: 'plan-contract-1',
+    task_contract: {
+      goal: 'Expose plan task contract to manager',
+      scope: 'Only include digest fields needed for orchestration',
+      acceptance: ['Manager can inspect plan goal before triggering'],
+      out_of_scope: 'Do not expose full worker prompt',
+      context_refs: ['docs/design/workflow/plan.md'],
+    },
+  })
+  expect(payload?.plans[0]).not.toHaveProperty('task_goal')
+  expect(payload?.plans[0]).not.toHaveProperty('task_scope')
+  expect(payload?.plans[0]).not.toHaveProperty('task_acceptance')
 })
