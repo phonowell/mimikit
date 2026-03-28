@@ -57,7 +57,6 @@ export const createPlanFixture = (
       title: 'plan task',
       executionSpecId: 'spec-plan-1',
       fingerprint: 'fp-plan-1',
-      semanticKey: 'sk-plan-1',
       cwd: '/tmp/runtime-snapshot-plan-task',
       resourceMode: 'write',
     },

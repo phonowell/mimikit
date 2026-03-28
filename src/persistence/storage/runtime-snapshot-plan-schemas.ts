@@ -44,13 +44,14 @@ const taskPlanEffectSchema = z
         executionSpecId: z.string().trim().min(1),
         contract: taskContractSchema.optional(),
         fingerprint: z.string().trim().min(1),
-        semanticKey: z.string().trim().min(1),
+        semanticKey: z.string().trim().min(1).optional(),
         cwd: z.string().trim().min(1),
         resourceMode: taskResourceModeSchema.optional(),
         useWorktree: z.boolean().optional(),
         branch: z.string().trim().min(1).optional(),
       })
-      .strict(),
+      .strict()
+      .transform(({ semanticKey: _semanticKey, ...rest }) => rest),
   })
   .strict()
 

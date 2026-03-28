@@ -49,6 +49,7 @@ test('set_plan creates cron plan with enqueue_task effect', async () => {
   expect(effect?.kind).toBe('enqueue_task')
   if (effect?.kind !== 'enqueue_task')
     throw new Error('expected enqueue effect')
+  expect(effect.taskTemplate).not.toHaveProperty('semanticKey')
   const spec = await readTaskExecutionSpec(
     runtime.config.workDir,
     effect.taskTemplate.executionSpecId,
@@ -98,7 +99,6 @@ test('delete_plan keeps plan entity and records canceled closure', async () => {
         title: 'capacity task',
         executionSpecId: 'spec-delete',
         fingerprint: 'fp-delete',
-        semanticKey: 'sk-delete',
         cwd: TASK_CWD,
         resourceMode: 'write',
       },
@@ -140,7 +140,6 @@ test('set_plan replaces active plan in place', async () => {
         title: 'old scheduled task',
         executionSpecId: 'spec-old',
         fingerprint: 'fp-old',
-        semanticKey: 'sk-old',
         cwd: TASK_CWD,
         resourceMode: 'write',
       },
@@ -177,6 +176,7 @@ test('set_plan replaces active plan in place', async () => {
   expect(effect?.kind).toBe('enqueue_task')
   if (effect?.kind !== 'enqueue_task')
     throw new Error('expected enqueue effect')
+  expect(effect.taskTemplate).not.toHaveProperty('semanticKey')
   const spec = await readTaskExecutionSpec(
     runtime.config.workDir,
     effect.taskTemplate.executionSpecId,

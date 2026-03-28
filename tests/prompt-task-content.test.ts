@@ -168,7 +168,6 @@ test('buildPlansPromptPayload exposes task contract digest without reviving lega
         title: 'Refresh manager contract view',
         executionSpecId: 'spec-plan-contract-1',
         fingerprint: 'fp-plan-contract-1',
-        semanticKey: 'sk-plan-contract-1',
         cwd: '/tmp/runtime-snapshot-plan-task',
         resourceMode: 'write',
         contract: {

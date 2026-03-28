@@ -21,7 +21,6 @@ type LegacyEnqueueTaskTemplate = {
   branch?: string
   executionSpecId?: string
   fingerprint?: string
-  semanticKey?: string
 }
 
 const stripLegacyTask = (
@@ -129,21 +128,6 @@ export const materializePlanFixture = async (params: {
         fingerprint:
           template.fingerprint ||
           buildTaskFingerprint({
-            prompt,
-            title,
-            cwd,
-            ...(template.resourceMode
-              ? { resourceMode: template.resourceMode }
-              : {}),
-            profile: 'worker',
-            provider: 'codex',
-            focusId: params.plan.focusId,
-            ...(template.branch ? { branch: template.branch } : {}),
-            ...(contract ? { contract } : {}),
-          }),
-        semanticKey:
-          template.semanticKey ||
-          buildTaskSemanticKey({
             prompt,
             title,
             cwd,

@@ -3,11 +3,11 @@ import { join } from 'node:path'
 
 import { expect, test } from 'vitest'
 
+import { RUNTIME_SNAPSHOT_SCHEMA_VERSION } from '../../src/persistence/storage/runtime-schema-version.js'
 import {
   loadRuntimeSnapshot,
   saveRuntimeSnapshot,
 } from '../../src/persistence/storage/runtime-snapshot.js'
-import { RUNTIME_SNAPSHOT_SCHEMA_VERSION } from '../../src/persistence/storage/runtime-schema-version.js'
 import {
   createPlanFixture,
   GLOBAL_FOCUS_ID,
@@ -125,4 +125,42 @@ test('loadRuntimeSnapshot rejects legacy worker-slot trigger mode', async () => 
   )
 
   await expect(loadRuntimeSnapshot(stateDir)).rejects.toThrow()
+})
+
+test('loadRuntimeSnapshot tolerates legacy plan semanticKey and drops it', async () => {
+  const stateDir = await createTmpDir()
+  const snapshotPath = join(stateDir, 'runtime-snapshot.json')
+  await writeFile(
+    snapshotPath,
+    JSON.stringify({
+      schemaVersion: RUNTIME_SNAPSHOT_SCHEMA_VERSION,
+      tasks: [],
+      taskPlans: [
+        {
+          ...createPlanFixture({
+            id: 'plan-legacy-semantic',
+          }),
+          effect: {
+            kind: 'enqueue_task',
+            taskTemplate: {
+              ...createPlanFixture({
+                id: 'plan-legacy-semantic',
+              }).effect.taskTemplate,
+              semanticKey: 'legacy-plan-semantic-key',
+            },
+          },
+        },
+      ],
+      queues: {
+        inputsCursor: 1,
+        resultsCursor: 2,
+      },
+    }),
+    'utf8',
+  )
+
+  const loaded = await loadRuntimeSnapshot(stateDir)
+  expect(loaded.taskPlans[0]?.effect.taskTemplate).not.toHaveProperty(
+    'semanticKey',
+  )
 })

@@ -47,7 +47,6 @@ test('enqueue_task auto-links a triggered plan to the created task', async () =>
         title: 'scheduled title',
         executionSpecId: 'spec-triggered',
         fingerprint: 'fp-triggered',
-        semanticKey: 'sk-triggered',
         cwd: taskCwd,
         resourceMode: 'write',
       },

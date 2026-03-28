@@ -1,7 +1,4 @@
-import {
-  buildTaskFingerprint,
-  buildTaskSemanticKey,
-} from '../../work/orchestrator/task-state.js'
+import { buildTaskFingerprint } from '../../work/orchestrator/task-state.js'
 import { resolveTaskResourceMode } from '../../work/shared/task-resource-mode.js'
 import { persistTaskExecutionSpec } from '../../work/spec/store.js'
 
@@ -47,17 +44,6 @@ export const buildPlanEnqueueTaskEffect = async (params: {
     ...(params.task.use_worktree ? { useWorktree: true } : {}),
     contract,
   })
-  const semanticKey = buildTaskSemanticKey({
-    prompt,
-    title: params.task.title,
-    cwd: params.task.cwd,
-    resourceMode,
-    profile: 'worker',
-    provider: 'codex',
-    focusId: params.focusId,
-    ...(params.task.use_worktree ? { useWorktree: true } : {}),
-    contract,
-  })
   return {
     kind: 'enqueue_task',
     taskTemplate: {
@@ -65,7 +51,6 @@ export const buildPlanEnqueueTaskEffect = async (params: {
       executionSpecId: spec.id,
       contract,
       fingerprint,
-      semanticKey,
       cwd: params.task.cwd,
       resourceMode,
       ...(params.task.use_worktree ? { useWorktree: true } : {}),

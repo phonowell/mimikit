@@ -134,7 +134,6 @@ export type TaskPlanEnqueueTaskEffect = {
     executionSpecId: string
     contract?: TaskContract | undefined
     fingerprint: string
-    semanticKey: string
     cwd: string
     resourceMode?: TaskResourceMode | undefined
     useWorktree?: boolean | undefined
