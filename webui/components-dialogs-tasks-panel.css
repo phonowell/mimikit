@@ -53,12 +53,6 @@
   z-index: 3;
 }
 
-.task-item-menu-slot {
-  display: flex;
-  justify-content: flex-end;
-  width: 100%;
-}
-
 .task-more-toggle {
   --btn-size: 24px;
   --btn-icon-size: 14px;
@@ -79,10 +73,13 @@
   text-align: center;
 }
 
-.task-item-menu-slot .task-more-menu {
-  position: static;
+.task-item-actions > .task-more-menu {
   width: min(100%, 180px);
   min-width: min(100%, 150px);
+}
+
+.task-more-menu[data-task-menu-mode='portal'] {
+  overflow-y: auto;
 }
 
 .task-menu-item:disabled {

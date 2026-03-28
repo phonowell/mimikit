@@ -1,7 +1,10 @@
+import { useId, useRef } from 'react'
+
 import { buildTaskArchiveViewerUrl } from '../lib/archive-viewer-url.js'
 import { toArtifactUrl } from '../lib/artifact-url.js'
 import { resolveTaskStatusLabel } from '../lib/system-text.js'
 
+import { TaskActionMenu } from './TaskActionMenu.js'
 import { TaskMeta } from './TaskMeta.js'
 
 import type { TaskView } from '../types.js'
@@ -26,6 +29,7 @@ export const TaskListItem = ({
   openMenuId,
   task,
 }: Props) => {
+  const toggleRef = useRef<HTMLButtonElement>(null)
   const status = task.status || 'pending'
   const title =
     task.title?.trim() && task.title !== task.id ? task.title : 'Untitled task'
@@ -35,57 +39,8 @@ export const TaskListItem = ({
     status === 'pending' || status === 'paused' || status === 'running'
   const canDelete = !canCancel
   const menuOpen = openMenuId === task.id
+  const menuId = useId()
   const traceUrl = toArtifactUrl(task.traceRef)
-  const menu = (
-    <div className="task-more-menu" role="menu">
-      <button
-        className="task-menu-item task-menu-item--copy-id"
-        type="button"
-        role="menuitem"
-        onClick={() => onTaskAction(task.id, 'copy-id')}
-      >
-        copy id
-      </button>
-      {traceUrl ? (
-        <a
-          className="task-menu-item task-menu-item--trace"
-          href={traceUrl}
-          role="menuitem"
-          target="_blank"
-          rel="noreferrer"
-        >
-          trace
-        </a>
-      ) : null}
-      <button
-        className={`task-menu-item task-menu-item--${canResume ? 'resume' : 'pause'}`}
-        type="button"
-        role="menuitem"
-        disabled={!(canPause || canResume)}
-        onClick={() => onTaskAction(task.id, canResume ? 'resume' : 'pause')}
-      >
-        {canResume ? 'resume' : 'pause'}
-      </button>
-      <button
-        className="task-menu-item task-menu-item--cancel"
-        type="button"
-        role="menuitem"
-        disabled={!canCancel}
-        onClick={() => onTaskAction(task.id, 'cancel')}
-      >
-        cancel
-      </button>
-      <button
-        className="task-menu-item task-menu-item--delete"
-        type="button"
-        role="menuitem"
-        disabled={!canDelete}
-        onClick={() => onRequestDelete(task.id, title)}
-      >
-        delete
-      </button>
-    </div>
-  )
 
   return (
     <li className="task-item" data-status={status}>
@@ -116,8 +71,11 @@ export const TaskListItem = ({
         </a>
         <div className="task-item-actions" data-task-actions="true">
           <button
+            ref={toggleRef}
             className="btn btn--icon btn--icon-muted task-more-toggle"
             type="button"
+            id={menuId}
+            aria-controls={menuOpen ? `${menuId}-menu` : undefined}
             aria-haspopup="menu"
             aria-expanded={menuOpen}
             title={`More actions for ${title}`}
@@ -125,9 +83,22 @@ export const TaskListItem = ({
           >
             ⋯
           </button>
+          <TaskActionMenu
+            canCancel={canCancel}
+            canDelete={canDelete}
+            canPause={canPause}
+            canResume={canResume}
+            menuId={menuId}
+            menuOpen={menuOpen}
+            onRequestDelete={onRequestDelete}
+            onTaskAction={onTaskAction}
+            taskId={task.id}
+            title={title}
+            toggleRef={toggleRef}
+            traceUrl={traceUrl}
+          />
         </div>
       </div>
-      {menuOpen ? <div className="task-item-menu-slot">{menu}</div> : null}
     </li>
   )
 }
