@@ -1,11 +1,9 @@
 import { persistRuntimeState } from '../../kernel/orchestrator/runtime-persistence.js'
-import { appendLog } from '../../persistence/log/append.js'
 import { toDisplayPath } from '../../surface/shared/path-display.js'
-import { requestMemoryRefresh } from '../memory/refresh/singleflight.js'
 
+import { completeSuccessfulManagerBatch } from './batch-success-finalize.js'
 import { appendManagerReply } from './loop-batch-flow.js'
-import { consumeBatchHistory, finalizeBatchProgress } from './loop-helpers.js'
-import { clearResultReplayBackoff } from './result-replay-backoff.js'
+import { consumeBatchHistory } from './loop-helpers.js'
 
 import type { TaskResult, UserInput } from '../../foundation/types/index.js'
 import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
@@ -76,19 +74,13 @@ export const finishBatchWithDirectTaskResultReply = async (params: {
     text: replyText,
     nextInputsCursor: params.nextInputsCursor,
   })
-  await finalizeBatchProgress({
+  await completeSuccessfulManagerBatch({
     runtime: params.runtime,
     nextInputsCursor: params.nextInputsCursor,
     nextResultsCursor: params.nextResultsCursor,
     consumedInputIds: consumed.consumedInputIds,
     persistRuntime: persistRuntimeState,
-  })
-  clearResultReplayBackoff(params.runtime)
-  await appendLog(params.runtime.paths.log, {
-    event: 'manager_end',
-    status: 'ok',
-    elapsedMs: Math.max(0, Date.now() - params.startedAt),
+    startedAt: params.startedAt,
     skippedReason: 'direct_task_result_reply',
   })
-  requestMemoryRefresh(params.runtime)
 }

@@ -60,6 +60,7 @@
 |---|---|---|
 | `managerLoop()` | `src/policy/manager/loop.ts:12` | Main manager processing loop |
 | `processManagerBatch()` | `src/policy/manager/loop-batch.ts:32` | Runs one manager batch cycle |
+| `completeSuccessfulManagerBatch()` | `src/policy/manager/batch-success-finalize.ts:10` | Finalizes successful manager/direct-reply batches and runs shared post-commit side effects |
 | `runManagerBatch()` | `src/policy/manager/loop-batch-run-manager.ts:55` | Executes manager model call + apply actions |
 | `runManagerCorrectionRounds()` | `src/policy/manager/loop-batch-run-rounds.ts:39` | Runs correction rounds when output invalid |
 | `runManagerLlmCall()` | `src/policy/manager/manager-llm-call.ts:23` | Calls manager provider with timeout policy |

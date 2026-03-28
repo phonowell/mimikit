@@ -2,13 +2,12 @@ import { readProviderErrorCode } from '../../execution/providers/provider-error.
 import { persistRuntimeState } from '../../kernel/orchestrator/runtime-persistence.js'
 import { notifyUiSignal } from '../../kernel/orchestrator/signals.js'
 import { appendManagerCorrectionLimitSystemMessage } from '../../persistence/history/manager-events.js'
-import { appendLog } from '../../persistence/log/append.js'
 import { bestEffort } from '../../persistence/log/safe.js'
 import { isVisibleToAgent } from '../../surface/shared/message-visibility.js'
 import { resolveDefaultFocusId } from '../../work/focus/index.js'
-import { requestMemoryRefresh } from '../memory/refresh/singleflight.js'
 
 import { applyTaskActions, collectTaskResultSummaries } from './action-apply.js'
+import { completeSuccessfulManagerBatch } from './batch-success-finalize.js'
 import {
   finishBatchWithDirectTaskResultReply,
   resolveDirectTaskResultReply,
@@ -20,11 +19,9 @@ import {
 } from './loop-batch-flow.js'
 import { appendManagerBatchReply } from './loop-batch-reply.js'
 import { runManagerBatch } from './loop-batch-run-manager.js'
-import { consumeBatchHistory, finalizeBatchProgress } from './loop-helpers.js'
+import { consumeBatchHistory } from './loop-helpers.js'
 import { applyPlanCompletionState } from './plan-progress.js'
 import { normalizeManagerReplyText } from './reply-normalize.js'
-import { flushPendingManagerRestart } from './restart-runtime.js'
-import { clearResultReplayBackoff } from './result-replay-backoff.js'
 
 import type {
   TaskResult,
@@ -131,22 +128,15 @@ export const processManagerBatch = async (params: {
       ...(resolvedUsage ? { usage: resolvedUsage } : {}),
       ...(managerRun.elapsedMs >= 0 ? { elapsedMs: managerRun.elapsedMs } : {}),
     })
-    await finalizeBatchProgress({
+    await completeSuccessfulManagerBatch({
       runtime,
       nextInputsCursor,
       nextResultsCursor,
       consumedInputIds: consumed.consumedInputIds,
       persistRuntime: persistRuntimeState,
-    })
-    clearResultReplayBackoff(runtime)
-    await appendLog(runtime.paths.log, {
-      event: 'manager_end',
-      status: 'ok',
-      elapsedMs: Math.max(0, Date.now() - startedAt),
+      startedAt,
       ...(resolvedUsage ? { usage: resolvedUsage } : {}),
     })
-    if (flushPendingManagerRestart(runtime)) return
-    requestMemoryRefresh(runtime)
   } catch (error) {
     if (
       runtime.session.stopped &&

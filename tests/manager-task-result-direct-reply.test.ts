@@ -1,4 +1,12 @@
-import { expect, test } from 'vitest'
+import { beforeEach, expect, test, vi } from 'vitest'
+
+const { requestMemoryRefreshMock } = vi.hoisted(() => ({
+  requestMemoryRefreshMock: vi.fn(),
+}))
+
+vi.mock('../src/policy/memory/refresh/singleflight.js', () => ({
+  requestMemoryRefresh: requestMemoryRefreshMock,
+}))
 
 import { readHistory } from '../src/persistence/history/store.js'
 import { resolveDirectTaskResultReply } from '../src/policy/manager/direct-task-result-reply.js'
@@ -6,6 +14,10 @@ import { processManagerBatch } from '../src/policy/manager/loop-batch.js'
 
 import { createTaskFixture } from './helpers/runtime-snapshot.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
+
+beforeEach(() => {
+  requestMemoryRefreshMock.mockClear()
+})
 
 test('processManagerBatch directly delivers compact single task_result output', async () => {
   const task = createTaskFixture({
@@ -91,4 +103,47 @@ test('resolveDirectTaskResultReply rejects mixed wake batches', () => {
       ],
     }),
   ).toBeUndefined()
+})
+
+test('processManagerBatch flushes pending restart before memory refresh on direct task_result reply', async () => {
+  const requestExitMock = vi.fn()
+  const task = createTaskFixture({
+    id: 'task-direct-restart',
+    title: '直接回复后触发 manager restart',
+    status: 'running',
+  })
+  const runtime = await createTestRuntimeState({
+    workDir: '/tmp/mimikit-direct-restart',
+    patch: {
+      tasks: [task],
+      session: {
+        pendingRestartReason: 'manager_restart_requested',
+        requestExit: requestExitMock,
+      },
+    },
+  })
+
+  await processManagerBatch({
+    runtime,
+    inputs: [],
+    results: [
+      {
+        taskId: task.id,
+        status: 'succeeded',
+        ok: true,
+        output: '直接回复正文',
+        durationMs: 10,
+        completedAt: '2026-03-28T08:00:00.000Z',
+      },
+    ],
+    nextInputsCursor: 0,
+    nextResultsCursor: 1,
+  })
+
+  expect(requestExitMock).toHaveBeenCalledWith({
+    code: 75,
+    reason: 'manager_restart_requested',
+    skipPersist: true,
+  })
+  expect(requestMemoryRefreshMock).not.toHaveBeenCalled()
 })
