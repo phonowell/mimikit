@@ -55,6 +55,7 @@ const buildLiveArchive = async (
 
   return buildArchiveDocument(
     [
+      ['archive_kind', 'live_fallback'],
       ['task_id', task.id],
       ['title', task.title],
       ['status', resultStatus],

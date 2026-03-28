@@ -19,6 +19,7 @@ import type { Parsed } from '../actions/model/spec.js'
 export type SupplementalEvidenceSource = 'task_result'
 
 type IntentEvidenceContext = {
+  stateDir?: string
   inputs?: UserInput[]
   taskById?: Map<string, Task>
   supplementalEvidenceSources?: Set<SupplementalEvidenceSource>
@@ -71,6 +72,7 @@ export const resolveIntentEvidenceRejectionHint = (
     return validateTaskControlIntentEvidence({
       item,
       inputTexts,
+      ...(context.stateDir ? { stateDir: context.stateDir } : {}),
       ...(context.taskById ? { taskById: context.taskById } : {}),
       ...(context.currentActions
         ? { currentActions: context.currentActions }

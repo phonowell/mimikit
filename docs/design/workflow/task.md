@@ -42,6 +42,7 @@
 - 对 `use_worktree=true` 的仓库写任务，若 `cwd` 位于 repo 内子路径，运行时只接受能在目标 worktree 中解析到真实目录的路径；映射后的目录不存在时，任务会停在 enqueue 阶段并返回明确错误，不会继续派发到 worker。
 - worker prompt 中，任务合同优先于 `focus_brief` 与 `resume_instruction`；后两者只提供背景或一次性恢复补充，不改写合同本身。
 - worker prompt 会额外注入显式 `runtime_contract`，只复用运行时现有事实：`resource_mode`、实际 `working_directory`、可选 `task_cwd`、`worktree_root`、`branch`；其目的仅是收紧执行边界表达，不新增第二套任务协议。
+- worker prompt 渲染 `context_refs` 时，会把 `tasks/...`、`generated/...`、`traces/...` 一类状态目录相对引用收紧为基于当前 `stateDir` 的稳定路径，避免执行面在 worktree 根目录下拿到不可解析的裸相对路径。
 
 ## 去重与替换
 

@@ -1,5 +1,8 @@
-import type { ManagerActionFeedback } from '../../src/foundation/types/index.js'
-import type { Task, UserInput } from '../../src/foundation/types/index.js'
+import type {
+  ManagerActionFeedback,
+  Task,
+  UserInput,
+} from '../../src/foundation/types/index.js'
 
 export const createIntentEvidenceUserInput = (text: string): UserInput => ({
   id: 'input-user',
@@ -29,6 +32,7 @@ export const createIntentEvidenceTaskContext = (
   task: Task,
   inputs: UserInput[],
 ): {
+  stateDir?: string
   inputs: UserInput[]
   taskStatusById: Map<string, Task['status']>
   taskById: Map<string, Task>
@@ -48,12 +52,16 @@ export const expectSingleRejectedFeedback = (
     hintIncludes: string[]
   },
 ): void => {
-  if (feedback.length !== 1) throw new Error(`expected 1 feedback item, got ${feedback.length}`)
-  if (feedback[0]?.action !== params.action)
-    throw new Error(`expected action ${params.action}, got ${feedback[0]?.action ?? 'undefined'}`)
-  if (params.error !== undefined && feedback[0]?.error !== params.error)
-    throw new Error(`expected error ${params.error}, got ${feedback[0]?.error ?? 'undefined'}`)
-  for (const fragment of params.hintIncludes)
-    if (!feedback[0]?.hint?.includes(fragment))
+  if (feedback.length !== 1)
+    throw new Error(`expected 1 feedback item, got ${feedback.length}`)
+  const item = feedback[0]
+  if (!item) throw new Error('expected feedback item')
+  if (item.action !== params.action)
+    throw new Error(`expected action ${params.action}, got ${item.action}`)
+  if (params.error !== undefined && item.error !== params.error)
+    throw new Error(`expected error ${params.error}, got ${item.error}`)
+  for (const fragment of params.hintIncludes) {
+    if (!item.hint.includes(fragment))
       throw new Error(`expected hint to include ${fragment}`)
+  }
 }

@@ -1,4 +1,4 @@
-import { access, mkdtemp, writeFile } from 'node:fs/promises'
+import { access, mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -77,6 +77,13 @@ test('readTaskResultArchive restores provider and handoff payload', async () => 
     contractGoal: 'Archive task outcome',
     stateDelta: { taskStatusFrom: 'running', taskStatusTo: 'succeeded' },
   })
+})
+
+test('appendTaskResultArchive writes explicit final archive semantics', async () => {
+  const stateDir = await createTmpDir()
+  const path = await appendTaskResultArchive(stateDir, archiveEntry)
+
+  expect(await readFile(path, 'utf8')).toContain('archive_kind: final')
 })
 
 test('readTaskResultArchive ignores empty handoff payload', async () => {

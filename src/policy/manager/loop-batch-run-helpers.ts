@@ -32,6 +32,7 @@ export const buildActionFeedbackContext = (params: {
   inputs?: UserInput[]
   recentUserIntentTexts?: string[]
 }): {
+  stateDir: string
   taskStatusById: Map<string, TaskStatus>
   taskById: Map<string, ManagerRuntime['tasks'][number]>
   planStatusById: Map<string, TaskPlanStatus>
@@ -58,6 +59,7 @@ export const buildActionFeedbackContext = (params: {
   const supplementalEvidenceSources = new Set<SupplementalEvidenceSource>()
   if (resultTaskIds.size > 0) supplementalEvidenceSources.add('task_result')
   return {
+    stateDir: runtime.config.workDir,
     taskStatusById: new Map(
       runtime.tasks.map((task) => [task.id, task.status]),
     ),

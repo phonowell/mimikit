@@ -57,6 +57,24 @@ test('enqueue_task builds fallback worker prompt from task draft', () => {
   expect(prompt).toContain('2. Tests pass')
 })
 
+test('enqueue_task normalizes state-relative context refs in worker prompt output', () => {
+  const prompt = resolveWorkerPromptFromDraft(
+    {
+      ...validTask,
+      context_refs: [
+        'tasks/2026-03-28/task-example.md',
+        'generated/worker-task-prompts/2026-03-28/task-example.md',
+        'docs/design/workflow/interfaces-and-state.md',
+      ],
+    },
+    { stateDir: '/tmp/mimikit/.mimikit' },
+  )
+
+  expect(prompt).toContain(
+    '上下文引用：/tmp/mimikit/.mimikit/tasks/2026-03-28/task-example.md；/tmp/mimikit/.mimikit/generated/worker-task-prompts/2026-03-28/task-example.md；docs/design/workflow/interfaces-and-state.md',
+  )
+})
+
 test('task contract prompt labels live in prompt template instead of source code', () => {
   const source = readFileSync(
     resolve(process.cwd(), 'src/policy/manager/task-contract.ts'),

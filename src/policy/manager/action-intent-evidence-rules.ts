@@ -52,6 +52,7 @@ export const validateEnqueueTaskIntentEvidence = (params: {
 export const validateTaskControlIntentEvidence = (params: {
   item: Extract<Parsed, { type: 'task_control' }>
   inputTexts: string[]
+  stateDir?: string
   taskById?: Map<string, Task>
   supplementalEvidenceSources?: Set<SupplementalEvidenceSource>
   currentActions?: Parsed[]
@@ -90,6 +91,7 @@ export const validateTaskControlIntentEvidence = (params: {
       task,
       tasks: params.taskById?.values() ?? [],
       inputTexts: params.inputTexts,
+      ...(params.stateDir ? { stateDir: params.stateDir } : {}),
       defaultFocusId: params.defaultFocusId,
     })
   )

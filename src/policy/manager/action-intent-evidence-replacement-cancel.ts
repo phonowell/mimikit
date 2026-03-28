@@ -41,9 +41,12 @@ const resolveReplacementEnqueueAction = (params: {
 const supportsReplacementTask = (params: {
   enqueueAction: Extract<Parsed, { type: 'enqueue_task' }>
   inputTexts: string[]
+  stateDir?: string
 }): boolean => {
   const contract = buildTaskContractFromDraft(params.enqueueAction.task)
-  const workerPrompt = resolveWorkerPromptFromDraft(params.enqueueAction.task)
+  const workerPrompt = resolveWorkerPromptFromDraft(params.enqueueAction.task, {
+    ...(params.stateDir ? { stateDir: params.stateDir } : {}),
+  })
   if (!contract || !workerPrompt) return false
   return isSupportedByInputs({
     candidates: [
@@ -92,6 +95,7 @@ export const supportsReplacementCancelIntentEvidence = (params: {
   task: Task | undefined
   tasks: Iterable<Task>
   inputTexts: string[]
+  stateDir?: string
   defaultFocusId: string | undefined
 }): boolean => {
   if (
@@ -108,7 +112,11 @@ export const supportsReplacementCancelIntentEvidence = (params: {
   })
   if (!enqueueAction) return false
   if (
-    !supportsReplacementTask({ enqueueAction, inputTexts: params.inputTexts })
+    !supportsReplacementTask({
+      enqueueAction,
+      inputTexts: params.inputTexts,
+      ...(params.stateDir ? { stateDir: params.stateDir } : {}),
+    })
   )
     return false
   if (!matchesReplacementTask({ task: params.task, enqueueAction }))
@@ -129,7 +137,9 @@ export const supportsReplacementCancelIntentEvidence = (params: {
     return false
 
   const contract = buildTaskContractFromDraft(enqueueAction.task)
-  const workerPrompt = resolveWorkerPromptFromDraft(enqueueAction.task)
+  const workerPrompt = resolveWorkerPromptFromDraft(enqueueAction.task, {
+    ...(params.stateDir ? { stateDir: params.stateDir } : {}),
+  })
   if (!contract || !workerPrompt) return false
   const replacementFingerprint = buildTaskFingerprint({
     prompt: workerPrompt,

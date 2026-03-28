@@ -1,3 +1,5 @@
+import { resolve } from 'node:path'
+
 import { z } from 'zod'
 
 import {
@@ -46,6 +48,41 @@ const normalizeLine = (value?: string): string | undefined => {
 const normalizeList = (values: readonly string[]): string[] =>
   values.map((item) => item.trim()).filter((item) => item.length > 0)
 
+const STATE_RELATIVE_REF_PREFIXES = [
+  'tasks/',
+  'generated/',
+  'traces/',
+  'results/',
+  'history/',
+  'memory/',
+  'usage/',
+  'specs/',
+  'runtime/',
+] as const
+
+const STATE_RELATIVE_REF_FILES = [
+  'runtime-snapshot.json',
+  'runtime-snapshot.json.bak',
+  'log.jsonl',
+] as const
+
+const isStateRelativeContextRef = (value: string): boolean =>
+  STATE_RELATIVE_REF_PREFIXES.some((prefix) => value.startsWith(prefix)) ||
+  STATE_RELATIVE_REF_FILES.includes(
+    value as (typeof STATE_RELATIVE_REF_FILES)[number],
+  )
+
+const normalizeContextRefs = (
+  values: readonly string[],
+  stateDir?: string,
+): string[] => {
+  const normalized = normalizeList(values)
+  if (!stateDir) return normalized
+  return normalized.map((value) =>
+    isStateRelativeContextRef(value) ? resolve(stateDir, value) : value,
+  )
+}
+
 const joinList = (values: readonly string[]): string | undefined => {
   const normalized = normalizeList(values)
   return normalized.length > 0 ? normalized.join('；') : undefined
@@ -59,10 +96,14 @@ const buildGeneratedWorkerPrompt = (params: {
   outOfScope?: string | undefined
   contextRefs?: string[] | undefined
   extraInstructions?: string[] | undefined
+  stateDir?: string | undefined
 }): string => {
   const title = params.title?.trim()
   const outOfScope = params.outOfScope?.trim()
-  const contextRefs = normalizeList(params.contextRefs ?? [])
+  const contextRefs = normalizeContextRefs(
+    params.contextRefs ?? [],
+    params.stateDir,
+  )
   const extraInstructions = normalizeList(params.extraInstructions ?? [])
   return renderTaskContractWorkerPrompt('body', {
     title: title ?? '',
@@ -105,6 +146,9 @@ export const buildTaskContractFromDraft = (
 
 export const resolveWorkerPromptFromDraft = (
   draft: ManagerTaskDraft,
+  options?: {
+    stateDir?: string
+  },
 ): string | undefined => {
   const contract = buildTaskContractFromDraft(draft)
   if (!contract) return undefined
@@ -116,5 +160,6 @@ export const resolveWorkerPromptFromDraft = (
     ...(contract.outOfScope ? { outOfScope: contract.outOfScope } : {}),
     ...(contract.contextRefs ? { contextRefs: contract.contextRefs } : {}),
     extraInstructions: draft.instructions,
+    stateDir: options?.stateDir,
   })
 }

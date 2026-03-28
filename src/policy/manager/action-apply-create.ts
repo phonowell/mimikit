@@ -47,7 +47,9 @@ export const applyRunTask = async (
   const focusId = resolveActionFocusId(runtime)
   const contract = buildTaskContractFromDraft(item.task)
   if (!contract) return 'continue'
-  const workerPrompt = resolveWorkerPromptFromDraft(item.task)
+  const workerPrompt = resolveWorkerPromptFromDraft(item.task, {
+    stateDir: runtime.config.workDir,
+  })
   if (!workerPrompt) return 'continue'
   const target = await resolveRunTaskTarget({
     actionName: item.type,

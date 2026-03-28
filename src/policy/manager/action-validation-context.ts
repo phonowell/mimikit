@@ -8,6 +8,7 @@ import type {
 import type { Parsed } from '../actions/model/spec.js'
 
 export type FeedbackContext = {
+  stateDir?: string
   taskStatusById?: Map<string, TaskStatus>
   taskById?: Map<string, Task>
   planStatusById?: Map<string, TaskPlanStatus>

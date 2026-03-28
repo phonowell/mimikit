@@ -22,7 +22,9 @@ export const buildPlanEnqueueTaskEffect = async (params: {
   task: ManagerTaskDraft
 }): Promise<TaskPlanEffect> => {
   const contract = buildTaskContractFromDraft(params.task)
-  const prompt = resolveWorkerPromptFromDraft(params.task)
+  const prompt = resolveWorkerPromptFromDraft(params.task, {
+    stateDir: params.stateDir,
+  })
   if (!contract || !prompt)
     throw new Error('invalid_plan_effect: enqueue_task contract missing')
 

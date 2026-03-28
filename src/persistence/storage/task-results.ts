@@ -87,6 +87,7 @@ const ensureUniquePath = async (basePath: string): Promise<string> => {
 const buildArchiveContent = (entry: TaskArchiveEntry): string =>
   buildArchiveDocument(
     [
+      ['archive_kind', 'final'],
       ['task_id', entry.taskId],
       ['focus_id', entry.focusId ?? ''],
       ['title', entry.title],
