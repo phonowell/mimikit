@@ -1,36 +1,16 @@
-import { beforeEach, expect, test, vi } from 'vitest'
+import { beforeEach, expect, test } from 'vitest'
 
-import { runManagerCorrectionRounds } from '../src/policy/manager/loop-batch-run-rounds.js'
-import { createTestRuntimeState } from './helpers/runtime-state.js'
-
-const { runManagerRoundWithRecoveryMock } = vi.hoisted(() => ({
-  runManagerRoundWithRecoveryMock: vi.fn(),
-}))
-
-const { resolveRoundFollowupMock } = vi.hoisted(() => ({
-  resolveRoundFollowupMock: vi.fn(),
-}))
-
-const { appendLogMock } = vi.hoisted(() => ({
-  appendLogMock: vi.fn(async () => undefined),
-}))
-
-vi.mock('../src/policy/manager/loop-batch-exec.js', () => ({
-  runManagerRoundWithRecovery: runManagerRoundWithRecoveryMock,
-}))
-
-vi.mock('../src/persistence/log/append.js', () => ({
-  appendLog: appendLogMock,
-}))
-
-vi.mock('../src/policy/manager/loop-batch-round-followup.js', () => ({
-  resolveRoundFollowup: resolveRoundFollowupMock,
-}))
+import {
+  appendLogMock,
+  buildCorrectionInput,
+  buildRoundResult,
+  createCorrectionRuntime,
+  resolveRoundFollowupMock,
+  runCorrectionRounds,
+  runManagerRoundWithRecoveryMock,
+} from './manager-correction-rounds/testkit.js'
 
 beforeEach(() => {
-  runManagerRoundWithRecoveryMock.mockReset()
-  appendLogMock.mockClear()
-  resolveRoundFollowupMock.mockReset()
   resolveRoundFollowupMock
     .mockResolvedValueOnce({
       done: false,
@@ -44,42 +24,25 @@ beforeEach(() => {
 
 test('runManagerCorrectionRounds reuses and updates manager thread id across rounds', async () => {
   runManagerRoundWithRecoveryMock
-    .mockResolvedValueOnce({
-      output: 'first round output',
-      actions: [],
-      elapsedMs: 3,
-      wakeProfile: 'user_input',
-      threadId: 'session-manager-1',
-    })
-    .mockResolvedValueOnce({
-      output: 'final answer',
-      actions: [],
-      elapsedMs: 4,
-      wakeProfile: 'user_input',
-      threadId: 'session-manager-1',
-    })
+    .mockResolvedValueOnce(
+      buildRoundResult({
+        output: 'first round output',
+        threadId: 'session-manager-1',
+      }),
+    )
+    .mockResolvedValueOnce(
+      buildRoundResult({
+        output: 'final answer',
+        elapsedMs: 4,
+        threadId: 'session-manager-1',
+      }),
+    )
 
-  const runtime = await createTestRuntimeState({
-    workDir: '/tmp/mimikit-manager-thread-cache-test',
-    withGlobalFocus: false,
-  })
+  const runtime = await createCorrectionRuntime('thread-cache')
 
-  const result = await runManagerCorrectionRounds({
+  const result = await runCorrectionRounds({
     runtime,
-    inputs: [
-      {
-        id: 'input-1',
-        role: 'user',
-        text: '继续',
-        createdAt: '2026-03-08T00:00:00.000Z',
-        focusId: 'focus-global',
-      },
-    ],
-    results: [],
-    tasks: [],
-    plans: [],
-    workingFocusIds: ['focus-global'],
-    maxCorrectionRounds: 3,
+    inputs: [buildCorrectionInput({ id: 'input-1', text: '继续' })],
   })
 
   expect(result.parsed.text).toBe('final answer')
@@ -95,34 +58,35 @@ test('runManagerCorrectionRounds reuses and updates manager thread id across rou
 
 test('runManagerCorrectionRounds opens rejection circuit after repeated rejected actions', async () => {
   runManagerRoundWithRecoveryMock
-    .mockResolvedValueOnce({
-      output: 'cancel task',
-      actions: [
-        {
-          type: 'task_control',
-          task_id: 'task-1',
-          action: 'cancel',
-          instructions: [],
-        },
-      ],
-      elapsedMs: 3,
-      wakeProfile: 'user_input',
-      threadId: 'session-manager-reject',
-    })
-    .mockResolvedValueOnce({
-      output: 'cancel task',
-      actions: [
-        {
-          type: 'task_control',
-          task_id: 'task-1',
-          action: 'cancel',
-          instructions: [],
-        },
-      ],
-      elapsedMs: 4,
-      wakeProfile: 'user_input',
-      threadId: 'session-manager-reject',
-    })
+    .mockResolvedValueOnce(
+      buildRoundResult({
+        output: 'cancel task',
+        actions: [
+          {
+            type: 'task_control',
+            task_id: 'task-1',
+            action: 'cancel',
+            instructions: [],
+          },
+        ],
+        threadId: 'session-manager-reject',
+      }),
+    )
+    .mockResolvedValueOnce(
+      buildRoundResult({
+        output: 'cancel task',
+        actions: [
+          {
+            type: 'task_control',
+            task_id: 'task-1',
+            action: 'cancel',
+            instructions: [],
+          },
+        ],
+        elapsedMs: 4,
+        threadId: 'session-manager-reject',
+      }),
+    )
   resolveRoundFollowupMock.mockReset()
   resolveRoundFollowupMock.mockResolvedValueOnce({
     done: false,
@@ -142,27 +106,16 @@ test('runManagerCorrectionRounds opens rejection circuit after repeated rejected
     },
   })
 
-  const runtime = await createTestRuntimeState({
-    workDir: '/tmp/mimikit-manager-thread-cache-reject-test',
-    withGlobalFocus: false,
-  })
+  const runtime = await createCorrectionRuntime('thread-cache-reject')
 
-  const result = await runManagerCorrectionRounds({
+  const result = await runCorrectionRounds({
     runtime,
     inputs: [
-      {
+      buildCorrectionInput({
         id: 'input-reject-1',
-        role: 'user',
         text: '取消已经取消的任务',
-        createdAt: '2026-03-08T00:00:00.000Z',
-        focusId: 'focus-global',
-      },
+      }),
     ],
-    results: [],
-    tasks: [],
-    plans: [],
-    workingFocusIds: ['focus-global'],
-    maxCorrectionRounds: 3,
   })
 
   expect(result.roundLimitReached).toBe(true)

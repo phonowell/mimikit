@@ -1,55 +1,36 @@
-import { beforeEach, expect, test, vi } from 'vitest'
+import { expect, test } from 'vitest'
 
-import { runManagerCorrectionRounds } from '../src/policy/manager/loop-batch-run-rounds.js'
-import { createTestRuntimeState } from './helpers/runtime-state.js'
-
-const { runManagerRoundWithRecoveryMock } = vi.hoisted(() => ({
-  runManagerRoundWithRecoveryMock: vi.fn(),
-}))
-
-const { resolveRoundFollowupMock } = vi.hoisted(() => ({
-  resolveRoundFollowupMock: vi.fn(),
-}))
-
-vi.mock('../src/policy/manager/loop-batch-exec.js', () => ({
-  runManagerRoundWithRecovery: runManagerRoundWithRecoveryMock,
-}))
-
-vi.mock('../src/policy/manager/loop-batch-round-followup.js', () => ({
-  resolveRoundFollowup: resolveRoundFollowupMock,
-}))
-
-beforeEach(() => {
-  runManagerRoundWithRecoveryMock.mockReset()
-  resolveRoundFollowupMock.mockReset()
-})
+import {
+  buildRoundResult,
+  createCorrectionRuntime,
+  resolveRoundFollowupMock,
+  runCorrectionRounds,
+  runManagerRoundWithRecoveryMock,
+} from './manager-correction-rounds/testkit.js'
 
 test('runManagerCorrectionRounds uses structured round actions instead of reparsing output text', async () => {
-  runManagerRoundWithRecoveryMock.mockResolvedValueOnce({
-    output: '结构化答复',
-    actions: [
-      {
-        type: 'assign_focus',
-        target_type: 'task',
-        target_id: 'task-json-turn',
-        focus_id: 'focus-json-turn',
-      },
-    ],
-    elapsedMs: 3,
-    wakeProfile: 'user_input',
-    threadId: 'session-manager-json-turn',
-  })
+  runManagerRoundWithRecoveryMock.mockResolvedValueOnce(
+    buildRoundResult({
+      output: '结构化答复',
+      actions: [
+        {
+          type: 'assign_focus',
+          target_type: 'task',
+          target_id: 'task-json-turn',
+          focus_id: 'focus-json-turn',
+        },
+      ],
+      threadId: 'session-manager-json-turn',
+    }),
+  )
 
   resolveRoundFollowupMock.mockResolvedValueOnce({
     done: true,
   })
 
-  const runtime = await createTestRuntimeState({
-    workDir: '/tmp/mimikit-manager-json-turn-rounds-test',
-    withGlobalFocus: false,
-  })
+  const runtime = await createCorrectionRuntime('json-turn')
 
-  const result = await runManagerCorrectionRounds({
+  const result = await runCorrectionRounds({
     runtime,
     inputs: [
       {
@@ -60,10 +41,6 @@ test('runManagerCorrectionRounds uses structured round actions instead of repars
         focusId: 'focus-global',
       },
     ],
-    results: [],
-    tasks: [],
-    plans: [],
-    workingFocusIds: ['focus-global'],
     maxCorrectionRounds: 2,
   })
 

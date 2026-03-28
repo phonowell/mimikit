@@ -1,54 +1,40 @@
-import { beforeEach, expect, test, vi } from 'vitest'
+import { expect, test } from 'vitest'
 
 import { formatEnqueueTaskIntentEvidenceHint } from '../src/policy/manager/action-evidence-hints.js'
-import { runManagerCorrectionRounds } from '../src/policy/manager/loop-batch-run-rounds.js'
-import { createTestRuntimeState } from './helpers/runtime-state.js'
 
-const { runManagerRoundWithRecoveryMock } = vi.hoisted(() => ({
-  runManagerRoundWithRecoveryMock: vi.fn(),
-}))
-
-const { resolveRoundFollowupMock } = vi.hoisted(() => ({
-  resolveRoundFollowupMock: vi.fn(),
-}))
-
-vi.mock('../src/policy/manager/loop-batch-exec.js', () => ({
-  runManagerRoundWithRecovery: runManagerRoundWithRecoveryMock,
-}))
-
-vi.mock('../src/policy/manager/loop-batch-round-followup.js', () => ({
-  resolveRoundFollowup: resolveRoundFollowupMock,
-}))
-
-beforeEach(() => {
-  runManagerRoundWithRecoveryMock.mockReset()
-  resolveRoundFollowupMock.mockReset()
-})
+import {
+  buildRoundResult,
+  createCorrectionRuntime,
+  resolveRoundFollowupMock,
+  runCorrectionRounds,
+  runManagerRoundWithRecoveryMock,
+} from './manager-correction-rounds/testkit.js'
 
 test('runManagerCorrectionRounds explains insufficient evidence for risky actions', async () => {
-  runManagerRoundWithRecoveryMock.mockResolvedValueOnce({
-    output:
-      '<M:enqueue_task title="task" cwd="/tmp/task" goal="ship" in_scope="guard only" done_when_1="tests pass" />',
-    actions: [
-      {
-        type: 'enqueue_task',
-        task: {
-          title: 'task',
-          cwd: '/tmp/task',
-          mode: 'write',
-          goal: 'ship',
-          in_scope: ['guard only'],
-          out_of_scope: [],
-          done_when: ['tests pass'],
-          context_refs: [],
-          instructions: [],
+  runManagerRoundWithRecoveryMock.mockResolvedValueOnce(
+    buildRoundResult({
+      output:
+        '<M:enqueue_task title="task" cwd="/tmp/task" goal="ship" in_scope="guard only" done_when_1="tests pass" />',
+      actions: [
+        {
+          type: 'enqueue_task',
+          task: {
+            title: 'task',
+            cwd: '/tmp/task',
+            mode: 'write',
+            goal: 'ship',
+            in_scope: ['guard only'],
+            out_of_scope: [],
+            done_when: ['tests pass'],
+            context_refs: [],
+            instructions: [],
+          },
         },
-      },
-    ],
-    elapsedMs: 3,
-    wakeProfile: 'task_result',
-    threadId: 'session-manager-evidence',
-  })
+      ],
+      wakeProfile: 'task_result',
+      threadId: 'session-manager-evidence',
+    }),
+  )
   resolveRoundFollowupMock.mockResolvedValueOnce({
     done: false,
     extra: {
@@ -63,20 +49,11 @@ test('runManagerCorrectionRounds explains insufficient evidence for risky action
     },
   })
 
-  const runtime = await createTestRuntimeState({
-    workDir: '/tmp/mimikit-manager-thread-cache-evidence-test',
-    withGlobalFocus: false,
-  })
+  const runtime = await createCorrectionRuntime('evidence')
 
-  const result = await runManagerCorrectionRounds({
+  const result = await runCorrectionRounds({
     runtime,
     inputs: [],
-    results: [],
-    tasks: [],
-    plans: [],
-    workingFocusIds: ['focus-global'],
-    maxCorrectionRounds: 3,
-    resolveFocusId: () => 'focus-global',
   })
 
   expect(result.roundLimitReached).toBe(true)

@@ -1,80 +1,56 @@
-import { beforeEach, expect, test, vi } from 'vitest'
+import { expect, test } from 'vitest'
 
-import { runManagerCorrectionRounds } from '../src/policy/manager/loop-batch-run-rounds.js'
-import { createTestRuntimeState } from './helpers/runtime-state.js'
-
-const { runManagerRoundWithRecoveryMock } = vi.hoisted(() => ({
-  runManagerRoundWithRecoveryMock: vi.fn(),
-}))
-
-const { resolveRoundFollowupMock } = vi.hoisted(() => ({
-  resolveRoundFollowupMock: vi.fn(),
-}))
-
-const { appendLogMock } = vi.hoisted(() => ({
-  appendLogMock: vi.fn(async () => undefined),
-}))
-
-vi.mock('../src/policy/manager/loop-batch-exec.js', () => ({
-  runManagerRoundWithRecovery: runManagerRoundWithRecoveryMock,
-}))
-
-vi.mock('../src/persistence/log/append.js', () => ({
-  appendLog: appendLogMock,
-}))
-
-vi.mock('../src/policy/manager/loop-batch-round-followup.js', () => ({
-  resolveRoundFollowup: resolveRoundFollowupMock,
-}))
-
-beforeEach(() => {
-  runManagerRoundWithRecoveryMock.mockReset()
-  appendLogMock.mockClear()
-  resolveRoundFollowupMock.mockReset()
-})
+import {
+  appendLogMock,
+  buildRoundResult,
+  createCorrectionRuntime,
+  resolveRoundFollowupMock,
+  runCorrectionRounds,
+  runManagerRoundWithRecoveryMock,
+} from './manager-correction-rounds/testkit.js'
 
 test('runManagerCorrectionRounds gives invalid action feedback one self-repair retry before degrading', async () => {
   runManagerRoundWithRecoveryMock
-    .mockResolvedValueOnce({
-      output: 'bad plan',
-      actions: [
-        {
-          type: 'set_plan',
-          plan_id: null,
-          plan: {
-            title: 'plan',
-            trigger: {
-              type: 'cron',
-              cron: '*/15 * * * *',
-              time_zone: 'Asia/Shanghai',
+    .mockResolvedValueOnce(
+      buildRoundResult({
+        output: 'bad plan',
+        actions: [
+          {
+            type: 'set_plan',
+            plan_id: null,
+            plan: {
+              title: 'plan',
+              trigger: {
+                type: 'cron',
+                cron: '*/15 * * * *',
+                time_zone: 'Asia/Shanghai',
+              },
+              task: {
+                title: 'daily',
+                cwd: '/tmp/task',
+                mode: 'read',
+                goal: 'summarize',
+                in_scope: ['daily summary'],
+                out_of_scope: [],
+                done_when: ['summary written'],
+                context_refs: [],
+                instructions: [],
+              },
+              priority: 'normal',
+              max_runs: 1,
             },
-            task: {
-              title: 'daily',
-              cwd: '/tmp/task',
-              mode: 'read',
-              goal: 'summarize',
-              in_scope: ['daily summary'],
-              out_of_scope: [],
-              done_when: ['summary written'],
-              context_refs: [],
-              instructions: [],
-            },
-            priority: 'normal',
-            max_runs: 1,
           },
-        },
-      ],
-      elapsedMs: 3,
-      wakeProfile: 'user_input',
-      threadId: 'session-manager-self-repair',
-    })
-    .mockResolvedValueOnce({
-      output: 'repaired answer',
-      actions: [],
-      elapsedMs: 4,
-      wakeProfile: 'user_input',
-      threadId: 'session-manager-self-repair',
-    })
+        ],
+        threadId: 'session-manager-self-repair',
+      }),
+    )
+    .mockResolvedValueOnce(
+      buildRoundResult({
+        output: 'repaired answer',
+        elapsedMs: 4,
+        threadId: 'session-manager-self-repair',
+      }),
+    )
   resolveRoundFollowupMock
     .mockResolvedValueOnce({
       done: false,
@@ -97,28 +73,9 @@ test('runManagerCorrectionRounds gives invalid action feedback one self-repair r
       done: true,
     })
 
-  const runtime = await createTestRuntimeState({
-    workDir: '/tmp/mimikit-manager-thread-cache-self-repair-test',
-    withGlobalFocus: false,
-  })
+  const runtime = await createCorrectionRuntime('self-repair')
 
-  const result = await runManagerCorrectionRounds({
-    runtime,
-    inputs: [
-      {
-        id: 'input-self-repair-1',
-        role: 'user',
-        text: '继续处理',
-        createdAt: '2026-03-08T00:00:00.000Z',
-        focusId: 'focus-global',
-      },
-    ],
-    results: [],
-    tasks: [],
-    plans: [],
-    workingFocusIds: ['focus-global'],
-    maxCorrectionRounds: 3,
-  })
+  const result = await runCorrectionRounds({ runtime })
 
   expect(result.roundLimitReached).toBeUndefined()
   expect(result.parsed.text).toBe('repaired answer')

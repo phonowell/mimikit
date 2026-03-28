@@ -1,37 +1,13 @@
-import { beforeEach, expect, test, vi } from 'vitest'
+import { expect, test } from 'vitest'
 
-import { runManagerCorrectionRounds } from '../src/policy/manager/loop-batch-run-rounds.js'
-import { createTestRuntimeState } from './helpers/runtime-state.js'
-
-const { runManagerRoundWithRecoveryMock } = vi.hoisted(() => ({
-  runManagerRoundWithRecoveryMock: vi.fn(),
-}))
-
-const { resolveRoundFollowupMock } = vi.hoisted(() => ({
-  resolveRoundFollowupMock: vi.fn(),
-}))
-
-const { appendLogMock } = vi.hoisted(() => ({
-  appendLogMock: vi.fn(async () => undefined),
-}))
-
-vi.mock('../src/policy/manager/loop-batch-exec.js', () => ({
-  runManagerRoundWithRecovery: runManagerRoundWithRecoveryMock,
-}))
-
-vi.mock('../src/persistence/log/append.js', () => ({
-  appendLog: appendLogMock,
-}))
-
-vi.mock('../src/policy/manager/loop-batch-round-followup.js', () => ({
-  resolveRoundFollowup: resolveRoundFollowupMock,
-}))
-
-beforeEach(() => {
-  runManagerRoundWithRecoveryMock.mockReset()
-  appendLogMock.mockClear()
-  resolveRoundFollowupMock.mockReset()
-})
+import {
+  buildCorrectionInput,
+  buildRoundResult,
+  createCorrectionRuntime,
+  resolveRoundFollowupMock,
+  runCorrectionRounds,
+  runManagerRoundWithRecoveryMock,
+} from './manager-correction-rounds/testkit.js'
 
 const invalidPlanAction = {
   type: 'set_plan' as const,
@@ -59,20 +35,21 @@ const invalidPlanAction = {
 
 test('runManagerCorrectionRounds summarizes repeated invalid set_plan feedback instead of asking for scope details', async () => {
   runManagerRoundWithRecoveryMock
-    .mockResolvedValueOnce({
-      output: 'bad plan',
-      actions: [invalidPlanAction],
-      elapsedMs: 3,
-      wakeProfile: 'user_input',
-      threadId: 'session-manager-invalid-plan',
-    })
-    .mockResolvedValueOnce({
-      output: 'bad plan',
-      actions: [invalidPlanAction],
-      elapsedMs: 4,
-      wakeProfile: 'user_input',
-      threadId: 'session-manager-invalid-plan',
-    })
+    .mockResolvedValueOnce(
+      buildRoundResult({
+        output: 'bad plan',
+        actions: [invalidPlanAction],
+        threadId: 'session-manager-invalid-plan',
+      }),
+    )
+    .mockResolvedValueOnce(
+      buildRoundResult({
+        output: 'bad plan',
+        actions: [invalidPlanAction],
+        elapsedMs: 4,
+        threadId: 'session-manager-invalid-plan',
+      }),
+    )
   resolveRoundFollowupMock
     .mockResolvedValueOnce({
       done: false,
@@ -129,27 +106,11 @@ test('runManagerCorrectionRounds summarizes repeated invalid set_plan feedback i
       },
     })
 
-  const runtime = await createTestRuntimeState({
-    workDir: '/tmp/mimikit-manager-thread-cache-invalid-plan-test',
-    withGlobalFocus: false,
-  })
+  const runtime = await createCorrectionRuntime('invalid-plan')
 
-  const result = await runManagerCorrectionRounds({
+  const result = await runCorrectionRounds({
     runtime,
-    inputs: [
-      {
-        id: 'input-invalid-plan-1',
-        role: 'user',
-        text: '继续处理',
-        createdAt: '2026-03-08T00:00:00.000Z',
-        focusId: 'focus-global',
-      },
-    ],
-    results: [],
-    tasks: [],
-    plans: [],
-    workingFocusIds: ['focus-global'],
-    maxCorrectionRounds: 3,
+    inputs: [buildCorrectionInput({ id: 'input-invalid-plan-1' })],
   })
 
   expect(result.roundLimitReached).toBe(true)
