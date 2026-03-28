@@ -24,6 +24,7 @@ import type {
 
 export type RunTaskTarget = TaskExecutionTarget & {
   resourceMode: TaskResourceMode
+  useWorktree: boolean
 }
 
 const normalizeBranchSlug = (value: string): string => {
@@ -42,6 +43,7 @@ const buildAutoTaskBranch = (params: {
   title: string
   cwd: string
   focusId: string
+  useWorktree?: boolean
   contract?: TaskContract
 }): string => {
   const seed = buildTaskFingerprint({
@@ -52,6 +54,7 @@ const buildAutoTaskBranch = (params: {
     profile: 'worker',
     provider: 'codex',
     focusId: params.focusId,
+    ...(params.useWorktree ? { useWorktree: true } : {}),
     ...(params.contract ? { contract: params.contract } : {}),
   })
   const slug = normalizeBranchSlug(params.title).slice(0, 24)
@@ -113,6 +116,7 @@ export const resolveRunTaskTarget = async (params: {
   actionName: string
   cwd: string
   resourceMode?: TaskResourceMode | undefined
+  useWorktree?: boolean | undefined
   prompt: string
   title: string
   focusId: string
@@ -136,19 +140,21 @@ export const resolveRunTaskTarget = async (params: {
     return {
       ...(await resolveTaskExecutionTarget(effectiveCwd)),
       resourceMode,
+      useWorktree: true,
     }
   }
   if (resourceMode === 'read') {
     return {
       ...(await resolveTaskExecutionTarget(params.cwd)),
       resourceMode,
+      useWorktree: false,
     }
   }
-  const baseTarget = await resolveTaskExecutionTarget(params.cwd)
-  if (!baseTarget.repoKey) {
+  if (params.useWorktree !== true) {
     return {
-      ...baseTarget,
+      ...(await resolveTaskExecutionTarget(params.cwd)),
       resourceMode,
+      useWorktree: false,
     }
   }
   const branch = buildAutoTaskBranch({
@@ -156,6 +162,7 @@ export const resolveRunTaskTarget = async (params: {
     title: params.title,
     cwd: params.cwd,
     focusId: params.focusId,
+    useWorktree: params.useWorktree,
     ...(params.contract ? { contract: params.contract } : {}),
   })
   const effectiveCwd = await resolveEffectiveCwd({
@@ -166,5 +173,6 @@ export const resolveRunTaskTarget = async (params: {
   return {
     ...(await resolveTaskExecutionTarget(effectiveCwd, branch)),
     resourceMode,
+    useWorktree: true,
   }
 }

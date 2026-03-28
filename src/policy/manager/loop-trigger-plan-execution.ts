@@ -65,6 +65,7 @@ export const firePlan = async (params: {
     actionName: 'set_plan',
     cwd: plan.effect.taskTemplate.cwd,
     resourceMode: plan.effect.taskTemplate.resourceMode,
+    useWorktree: plan.effect.taskTemplate.useWorktree,
     prompt: spec.prompt,
     title: plan.effect.taskTemplate.title,
     focusId: plan.focusId,
@@ -86,6 +87,7 @@ export const firePlan = async (params: {
     target.branch,
     target.resourceMode,
     spec.contract,
+    target.useWorktree,
   )
   linkTriggeredPlanToTask({
     runtime,

@@ -5,13 +5,15 @@ import { join } from 'node:path'
 import { createTestRuntimeState } from '../helpers/runtime-state.js'
 
 import type { RuntimeState } from '../../src/kernel/orchestrator/runtime-state.js'
+import type { ManagerTaskDraft } from '../../src/policy/manager/manager-turn-schema.js'
 
 export const TASK_CWD = join(tmpdir(), 'manager-action-apply-task')
 
-export const TASK_DRAFT_BASE = {
+export const TASK_DRAFT_BASE: ManagerTaskDraft = {
   title: 'manager action task',
   cwd: TASK_CWD,
   mode: 'write' as const,
+  use_worktree: false,
   goal: 'Deliver requested outcome',
   in_scope: ['Single runnable worker task'],
   out_of_scope: [],
@@ -21,8 +23,8 @@ export const TASK_DRAFT_BASE = {
 }
 
 export const buildTaskDraft = (
-  overrides: Partial<typeof TASK_DRAFT_BASE> = {},
-): typeof TASK_DRAFT_BASE => ({
+  overrides: Partial<ManagerTaskDraft> = {},
+): ManagerTaskDraft => ({
   ...TASK_DRAFT_BASE,
   ...overrides,
 })

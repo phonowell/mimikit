@@ -57,6 +57,7 @@ export const buildPlanEffectPayload = (
   ...(effect.taskTemplate.resourceMode
     ? { task_resource_mode: effect.taskTemplate.resourceMode }
     : {}),
+  ...(effect.taskTemplate.useWorktree ? { task_use_worktree: true } : {}),
   ...(effect.taskTemplate.branch
     ? { task_branch: effect.taskTemplate.branch }
     : {}),

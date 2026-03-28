@@ -42,6 +42,7 @@ export const buildPlanEnqueueTaskEffect = async (params: {
     profile: 'worker',
     provider: 'codex',
     focusId: params.focusId,
+    ...(params.task.use_worktree ? { useWorktree: true } : {}),
     contract,
   })
   const semanticKey = buildTaskSemanticKey({
@@ -52,6 +53,7 @@ export const buildPlanEnqueueTaskEffect = async (params: {
     profile: 'worker',
     provider: 'codex',
     focusId: params.focusId,
+    ...(params.task.use_worktree ? { useWorktree: true } : {}),
     contract,
   })
   return {
@@ -64,6 +66,7 @@ export const buildPlanEnqueueTaskEffect = async (params: {
       semanticKey,
       cwd: params.task.cwd,
       resourceMode,
+      ...(params.task.use_worktree ? { useWorktree: true } : {}),
     },
   }
 }

@@ -1,10 +1,10 @@
 import { expect, test } from 'vitest'
 
-import { GLOBAL_FOCUS_ID } from '../../src/work/focus/constants.js'
 import { applyTaskActions } from '../../src/policy/manager/action-apply.js'
+import { GLOBAL_FOCUS_ID } from '../../src/work/focus/constants.js'
 import { readTaskExecutionSpec } from '../../src/work/spec/store.js'
 
-import { TASK_CWD, buildTaskDraft, createRuntime } from './testkit.js'
+import { buildTaskDraft, createRuntime, TASK_CWD } from './testkit.js'
 
 import type { TaskPlan } from '../../src/foundation/types/index.js'
 
@@ -47,7 +47,8 @@ test('set_plan creates cron plan with enqueue_task effect', async () => {
   })
   const effect = runtime.taskPlans[0]?.effect
   expect(effect?.kind).toBe('enqueue_task')
-  if (effect?.kind !== 'enqueue_task') throw new Error('expected enqueue effect')
+  if (effect?.kind !== 'enqueue_task')
+    throw new Error('expected enqueue effect')
   const spec = await readTaskExecutionSpec(
     runtime.config.workDir,
     effect.taskTemplate.executionSpecId,
@@ -174,7 +175,8 @@ test('set_plan replaces active plan in place', async () => {
 
   const effect = runtime.taskPlans[0]?.effect
   expect(effect?.kind).toBe('enqueue_task')
-  if (effect?.kind !== 'enqueue_task') throw new Error('expected enqueue effect')
+  if (effect?.kind !== 'enqueue_task')
+    throw new Error('expected enqueue effect')
   const spec = await readTaskExecutionSpec(
     runtime.config.workDir,
     effect.taskTemplate.executionSpecId,

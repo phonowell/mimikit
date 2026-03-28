@@ -48,12 +48,13 @@ export const createTask = (
   branch?: string,
   resourceMode?: TaskResourceMode,
   contract?: TaskContract,
+  useWorktree?: boolean,
 ): Promise<Task> => {
   const id = `task-${newId()}`
   const resolvedTitle = resolveTitle(id, prompt, title)
   if (!cwd?.trim()) throw new Error('task cwd is required')
   const normalizedResourceMode = resolveTaskResourceMode(resourceMode)
-  const git = buildTaskGitExecution(cwd, branch)
+  const git = buildTaskGitExecution(cwd, branch, useWorktree)
   const fingerprint = buildTaskFingerprint({
     prompt,
     title: resolvedTitle,
@@ -115,6 +116,7 @@ export const enqueueTask = (
   branch?: string,
   resourceMode?: TaskResourceMode,
   contract?: TaskContract,
+  useWorktree?: boolean,
 ): Promise<EnqueueTaskResult> => {
   if (!cwd?.trim()) throw new Error('task cwd is required')
   const normalizedResourceMode = resolveTaskResourceMode(resourceMode)
@@ -146,6 +148,7 @@ export const enqueueTask = (
     branch,
     normalizedResourceMode,
     contract,
+    useWorktree,
   ).then((task) => {
     tasks.push(task)
     return { task, created: true }

@@ -38,6 +38,7 @@ const buildTaskDraft = (
   done_when: ['Return concrete output'],
   context_refs: [],
   instructions: [],
+  use_worktree: false,
   ...overrides,
 })
 
@@ -88,6 +89,7 @@ test('enqueue_task worktree prepare failure appends action feedback without thro
     title: task.title,
     focusId: INBOX_FOCUS_ID,
     contract,
+    useWorktree: true,
   })
 
   if (!target.branch) throw new Error('expected auto-generated branch')
@@ -102,7 +104,10 @@ test('enqueue_task worktree prepare failure appends action feedback without thro
     applyTaskActions(runtime, [
       {
         type: 'enqueue_task',
-        task,
+        task: {
+          ...task,
+          use_worktree: true,
+        },
       },
     ]),
   ).resolves.toBeUndefined()

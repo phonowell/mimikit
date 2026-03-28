@@ -41,6 +41,7 @@ const buildTaskDraft = (
   done_when: ['Return concrete output'],
   context_refs: [],
   instructions: [],
+  use_worktree: false,
   ...overrides,
 })
 
@@ -57,37 +58,23 @@ const enqueueTask = (
 
 afterEach(cleanupGitRepos)
 
-test('enqueue_task write mode materializes worktrees and keeps same-batch drafts distinct', async () => {
+test('enqueue_task write mode keeps repo cwd and skips git metadata by default', async () => {
   const cwd = await createGitRepo()
   const runtime = await createRuntime()
   const repoKey = join(await realpath(cwd), '.git')
 
-  await applyTaskActions(runtime, [
-    {
-      type: 'enqueue_task',
-      task: buildTaskDraft(cwd, { title: 'same title a' }),
-    },
-    {
-      type: 'enqueue_task',
-      task: buildTaskDraft(cwd, { title: 'same title b' }),
-    },
-  ])
+  await enqueueTask(
+    runtime,
+    buildTaskDraft(cwd, { title: 'default write task' }),
+  )
 
-  expect(runtime.tasks).toHaveLength(2)
+  expect(runtime.tasks).toHaveLength(1)
   const task = runtime.tasks[0]
   expect(task?.repoKey).toBe(repoKey)
   expect(task?.resourceMode).toBe('write')
-  expect(task?.branch).toMatch(/^task\//)
-  const expectedWorktree = resolveExpectedWorktreePath(cwd, task?.branch ?? '')
-  expect(task?.cwd).toBe(await realpath(expectedWorktree))
-  expect(
-    execFileSync('git', ['branch', '--show-current'], {
-      cwd: task?.cwd,
-      encoding: 'utf8',
-    }).trim(),
-  ).toBe(task?.branch)
-  expect(runtime.tasks[0]?.branch).not.toBe(runtime.tasks[1]?.branch)
-  expect(runtime.tasks[0]?.cwd).not.toBe(runtime.tasks[1]?.cwd)
+  expect(task?.cwd).toBe(await realpath(cwd))
+  expect(task?.branch).toBe('main')
+  expect(task?.git).toBeUndefined()
 }, 15_000)
 
 test('enqueue_task read mode keeps repo cwd without creating a worktree', async () => {
@@ -105,14 +92,52 @@ test('enqueue_task read mode keeps repo cwd without creating a worktree', async 
   expect(runtime.tasks[0]?.branch).toBe('main')
 })
 
-test('enqueue_task maps repo subdirectory into auto-generated worktree cwd', async () => {
+test('enqueue_task write mode materializes worktrees only when use_worktree=true', async () => {
+  const cwd = await createGitRepo()
+  const runtime = await createRuntime()
+
+  await applyTaskActions(runtime, [
+    {
+      type: 'enqueue_task',
+      task: buildTaskDraft(cwd, {
+        title: 'same title a',
+        use_worktree: true,
+      }),
+    },
+    {
+      type: 'enqueue_task',
+      task: buildTaskDraft(cwd, {
+        title: 'same title b',
+        use_worktree: true,
+      }),
+    },
+  ])
+
+  expect(runtime.tasks).toHaveLength(2)
+  const task = runtime.tasks[0]
+  expect(task?.resourceMode).toBe('write')
+  expect(task?.branch).toMatch(/^task\//)
+  const expectedWorktree = resolveExpectedWorktreePath(cwd, task?.branch ?? '')
+  expect(task?.cwd).toBe(await realpath(expectedWorktree))
+  expect(task?.git?.worktreePath).toBe(await realpath(expectedWorktree))
+  expect(
+    execFileSync('git', ['branch', '--show-current'], {
+      cwd: task?.cwd,
+      encoding: 'utf8',
+    }).trim(),
+  ).toBe(task?.branch)
+  expect(runtime.tasks[0]?.branch).not.toBe(runtime.tasks[1]?.branch)
+  expect(runtime.tasks[0]?.cwd).not.toBe(runtime.tasks[1]?.cwd)
+}, 15_000)
+
+test('enqueue_task maps repo subdirectory into worktree cwd only when use_worktree=true', async () => {
   const cwd = await createGitRepo()
   const nestedCwd = join(cwd, 'src')
   const runtime = await createRuntime()
 
   await enqueueTask(
     runtime,
-    buildTaskDraft(nestedCwd, { title: 'nested task' }),
+    buildTaskDraft(nestedCwd, { title: 'nested task', use_worktree: true }),
   )
 
   expect(runtime.tasks).toHaveLength(1)
@@ -125,7 +150,10 @@ test('enqueue_task maps repo subdirectory into auto-generated worktree cwd', asy
 test('enqueue_task reuses existing auto-generated worktree for the same semantic task', async () => {
   const cwd = await createGitRepo()
   const runtime = await createRuntime()
-  const task = buildTaskDraft(cwd, { title: 'reuse task' })
+  const task = buildTaskDraft(cwd, {
+    title: 'reuse task',
+    use_worktree: true,
+  })
   const contract = buildTaskContractFromDraft(task)
   const prompt = resolveWorkerPromptFromDraft(task)
   if (!contract || !prompt) throw new Error('expected task contract and prompt')
@@ -134,6 +162,7 @@ test('enqueue_task reuses existing auto-generated worktree for the same semantic
     actionName: 'enqueue_task',
     cwd: task.cwd,
     resourceMode: task.mode,
+    useWorktree: task.use_worktree,
     prompt,
     title: task.title,
     focusId: INBOX_FOCUS_ID,

@@ -164,7 +164,7 @@
 
 schema：`src/persistence/storage/runtime-snapshot-schema.ts`
 
-- `tasks`（含 `tasks[*].provider`、可选 `tasks[*].git={ worktreePath, branch }`）
+- `tasks`（含 `tasks[*].provider`、可选 `tasks[*].git={ worktreePath, branch }`；仅 `use_worktree=true` 的任务会带该字段）
 - `tasks[*].result.traceRef?`
 - `taskPlans`
 - `tasks[*].contract?` / `taskPlans[*].effect.taskTemplate.contract?`：稳定任务合同摘要；用于 manager 编排与验收，不承载执行原文
@@ -181,6 +181,7 @@ schema：`src/persistence/storage/runtime-snapshot-schema.ts`
 - `runtime-snapshot` 运行期只接受当前 `schemaVersion`；旧版本/旧字段会被直接拒绝，不再提供仓内迁移脚本。
 - `workerUsageTotal` 不持久化到 snapshot；`GET /api/status` 会在返回时按 `tasks[*].result.usage ?? tasks[*].usage` 实时聚合。
 - `taskPlans[*]` 当前使用 `trigger + effect` 结构，不再持久化顶层 `prompt/profile/source` 旧字段。
+- `taskPlans[*].effect.taskTemplate.useWorktree?` 用于显式记录计划任务是否要求独立 worktree；默认缺省视为 `false`。
 
 恢复一致性规则（启动阶段）：
 

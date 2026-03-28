@@ -53,6 +53,7 @@ export const applyRunTask = async (
     actionName: item.type,
     cwd: item.task.cwd,
     resourceMode: item.task.mode,
+    useWorktree: item.task.use_worktree,
     prompt: workerPrompt,
     title: item.task.title,
     focusId,
@@ -134,6 +135,7 @@ export const applyRunTask = async (
     target.branch,
     target.resourceMode,
     contract,
+    target.useWorktree,
   )
   if (!created) {
     const linked = linkTriggeredPlanToTask({

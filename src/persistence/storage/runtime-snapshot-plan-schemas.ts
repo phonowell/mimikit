@@ -47,6 +47,7 @@ const taskPlanEffectSchema = z
         semanticKey: z.string().trim().min(1),
         cwd: z.string().trim().min(1),
         resourceMode: taskResourceModeSchema.optional(),
+        useWorktree: z.boolean().optional(),
         branch: z.string().trim().min(1).optional(),
       })
       .strict(),

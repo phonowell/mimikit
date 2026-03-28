@@ -13,6 +13,7 @@ export type TaskFingerprintInput = {
   title: string
   cwd: string
   resourceMode?: TaskResourceMode
+  useWorktree?: boolean
   profile: WorkerProfile
   provider: WorkerProvider
   focusId?: string
@@ -63,6 +64,7 @@ export const buildTaskSemanticKey = (input: TaskFingerprintInput): string => {
   const resourceMode = normalizeSemanticPart(
     resolveTaskResourceMode(input.resourceMode),
   )
+  const useWorktree = input.useWorktree ? 'worktree' : 'direct'
   const focusId = normalizeSemanticPart(input.focusId ?? '')
   const repoKey = normalizeSemanticPart(input.repoKey ?? '')
   const branch = normalizeSemanticPart(input.branch ?? '')
@@ -70,6 +72,7 @@ export const buildTaskSemanticKey = (input: TaskFingerprintInput): string => {
     input.profile,
     input.provider,
     resourceMode,
+    useWorktree,
     focusId,
     title,
     prompt,
@@ -87,6 +90,7 @@ export const buildTaskFingerprint = (input: TaskFingerprintInput): string =>
       normalizeFingerprintPart(input.title),
       normalizeFingerprintPart(input.cwd),
       resolveTaskResourceMode(input.resourceMode),
+      input.useWorktree ? 'worktree' : 'direct',
       input.profile,
       input.provider,
       normalizeFingerprintPart(input.focusId ?? ''),

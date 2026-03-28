@@ -137,6 +137,7 @@ export type TaskPlanEnqueueTaskEffect = {
     semanticKey: string
     cwd: string
     resourceMode?: TaskResourceMode | undefined
+    useWorktree?: boolean | undefined
     branch?: string | undefined
   }
 }
