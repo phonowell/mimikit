@@ -122,3 +122,51 @@
 .task-item[data-status='canceled'] {
   --task-dot: var(--status-cancel);
 }
+
+.tasks-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tasks-group-title,
+.tasks-group-summary {
+  margin: 0;
+  padding: 0 2px;
+  color: var(--muted-contrast, var(--muted));
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.tasks-group-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.tasks-group-summary::-webkit-details-marker {
+  display: none;
+}
+
+.tasks-group-summary::before {
+  content: '▸';
+  font-size: 10px;
+  transition: transform 0.14s ease-out;
+}
+
+.tasks-group--closed[open] > .tasks-group-summary::before {
+  transform: rotate(90deg);
+}
+
+.tasks-group-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
