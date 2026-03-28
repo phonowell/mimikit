@@ -16,6 +16,7 @@
 - 引用块：保留左侧竖线；竖线与正文的间距已加宽（消息内与输入预览一致）。
 - 输入框：无边框，仅保留轻微凹陷（micro inset）。
 - 任务弹窗：`tasks-list` 为平面浅色层，不使用凹陷阴影。
+- 任务弹窗分组：默认把 `running/paused/pending` 放在 `Open`，把 `succeeded/failed/canceled` 放在 `Closed`；`Closed` 默认折叠，仅在没有 open task 时自动展开。
 - 任务指示器：仅保留一个 `status dot`；颜色表达 status，形状固定。
 - 弹窗遮罩：使用偏冷灰白半透明底（非黑灰）并叠加密集斜向条纹，保持较低透过度。
 - 按钮：全局不可文本选中/复制（`user-select: none`）。
