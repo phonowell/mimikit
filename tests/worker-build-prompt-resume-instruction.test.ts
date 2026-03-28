@@ -89,3 +89,23 @@ test('buildWorkerPrompt anchors worker around execution contract and compressed 
   expect(prompt).not.toContain('You are a lifeline')
   expect(prompt).not.toContain('top 0.1% of engineers')
 })
+
+test('buildWorkerPrompt narrows default evidence collection to current task scope', async () => {
+  const stateDir = await createTmpDir()
+  await persistTaskExecutionSpec({
+    stateDir,
+    prompt: '重跑当前调研任务。',
+    specId: 'spec-task-build-worker-prompt-evidence-boundary',
+  })
+  const prompt = await buildWorkerPrompt({
+    stateDir,
+    workspaceDir: '/repo/mimikit',
+    task: createTask('task-build-worker-prompt-evidence-boundary'),
+  })
+
+  expect(prompt).toContain('默认先检查当前 task 明确引用的证据')
+  expect(prompt).toContain(
+    '不要默认枚举整个 `.mimikit/tasks`、`.mimikit/results`、`.mimikit/history`',
+  )
+  expect(prompt).toContain('若任务是“重跑 / 复盘 / 续跑”')
+})
