@@ -72,6 +72,7 @@ const processLoopTriggers = async (
         })
       }
     }
+    state.lastAvailableSlots = resolveSlotStatus(runtime).available_slots
     state.workerSlotEventPending = false
     state.lastWorkerSlotEventAtMs = nowMs
   }
