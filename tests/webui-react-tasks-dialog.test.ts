@@ -22,7 +22,6 @@ test('tasks dialog splits open and closed tasks into separate sections', () => {
   Object.assign(globalThis, { React })
   const markup = renderToStaticMarkup(
     React.createElement(TasksDialog, {
-      copyFeedback: null,
       open: true,
       tasks: [
         createTask({ id: 'task-running', status: 'running', title: 'Running' }),
@@ -41,7 +40,6 @@ test('tasks dialog splits open and closed tasks into separate sections', () => {
         }),
       ],
       openMenuId: '',
-      onClearCopyFeedback: noop,
       onClose: noop,
       onToggleMenu: noop,
       onTaskAction: noop,
@@ -63,7 +61,6 @@ test('tasks dialog expands closed tasks when no open tasks remain', () => {
   Object.assign(globalThis, { React })
   const markup = renderToStaticMarkup(
     React.createElement(TasksDialog, {
-      copyFeedback: null,
       open: true,
       tasks: [
         createTask({
@@ -74,7 +71,6 @@ test('tasks dialog expands closed tasks when no open tasks remain', () => {
         }),
       ],
       openMenuId: '',
-      onClearCopyFeedback: noop,
       onClose: noop,
       onToggleMenu: noop,
       onTaskAction: noop,
@@ -87,18 +83,13 @@ test('tasks dialog expands closed tasks when no open tasks remain', () => {
   expect(markup).not.toContain('>Open')
 })
 
-test('tasks dialog renders copy feedback inline instead of a global toast slot', () => {
+test('tasks dialog does not render copy feedback inline after copy id', () => {
   Object.assign(globalThis, { React })
   const markup = renderToStaticMarkup(
     React.createElement(TasksDialog, {
-      copyFeedback: {
-        message: 'Task id copied',
-        state: 'success',
-      },
       open: true,
       tasks: [createTask()],
       openMenuId: '',
-      onClearCopyFeedback: noop,
       onClose: noop,
       onToggleMenu: noop,
       onTaskAction: noop,
@@ -106,8 +97,7 @@ test('tasks dialog renders copy feedback inline instead of a global toast slot',
     }),
   )
 
-  expect(markup).toContain('class="dialog-copy-feedback"')
-  expect(markup).toContain('Task id copied')
-  expect(markup).toContain('data-state="success"')
+  expect(markup).not.toContain('class="dialog-copy-feedback"')
+  expect(markup).not.toContain('Task id copied')
   expect(markup).not.toContain('class="app-toast"')
 })

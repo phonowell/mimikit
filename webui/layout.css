@@ -219,22 +219,6 @@ main[data-app] {
   color: var(--danger);
 }
 
-.dialog-copy-feedback {
-  margin: 0;
-  padding: 0 16px 12px;
-  color: var(--muted-contrast, var(--muted));
-  font-size: 12px;
-  line-height: 1.4;
-}
-
-.dialog-copy-feedback[data-state='success'] {
-  color: var(--status-success);
-}
-
-.dialog-copy-feedback[data-state='error'] {
-  color: var(--danger);
-}
-
 .messages-section {
   flex: 1;
   display: flex;

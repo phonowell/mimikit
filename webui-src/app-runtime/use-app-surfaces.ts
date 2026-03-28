@@ -131,11 +131,7 @@ export const useAppSurfaces = ({
     deferredTasks,
     openPlanMenuId: ui.openPlanMenuId,
     openTaskMenuId: ui.openTaskMenuId,
-    planCopyFeedback: ui.planCopyFeedback,
     plansOpen: ui.plansOpen,
-    setPlanCopyFeedback: ui.setPlanCopyFeedback,
-    setTaskCopyFeedback: ui.setTaskCopyFeedback,
-    taskCopyFeedback: ui.taskCopyFeedback,
     tasksOpen: ui.tasksOpen,
     uiBusy: ui.busy,
   })

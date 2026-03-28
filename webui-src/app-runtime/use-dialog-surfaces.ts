@@ -11,11 +11,7 @@ export const useDialogSurfaces = ({
   deferredTasks,
   openPlanMenuId,
   openTaskMenuId,
-  planCopyFeedback,
   plansOpen,
-  setPlanCopyFeedback,
-  setTaskCopyFeedback,
-  taskCopyFeedback,
   tasksOpen,
   uiBusy,
 }: {
@@ -25,11 +21,7 @@ export const useDialogSurfaces = ({
   deferredTasks: TaskView[]
   openPlanMenuId: string
   openTaskMenuId: string
-  planCopyFeedback: ReturnType<typeof useAppUiState>['planCopyFeedback']
   plansOpen: boolean
-  setPlanCopyFeedback: ReturnType<typeof useAppUiState>['setPlanCopyFeedback']
-  setTaskCopyFeedback: ReturnType<typeof useAppUiState>['setTaskCopyFeedback']
-  taskCopyFeedback: ReturnType<typeof useAppUiState>['taskCopyFeedback']
   tasksOpen: boolean
   uiBusy: boolean
 }) => {
@@ -37,30 +29,14 @@ export const useDialogSurfaces = ({
     () => void actions.confirmAction(),
     [actions],
   )
-  const clearTaskCopyFeedback = useCallback(
-    () => setTaskCopyFeedback(null),
-    [setTaskCopyFeedback],
-  )
-  const clearPlanCopyFeedback = useCallback(
-    () => setPlanCopyFeedback(null),
-    [setPlanCopyFeedback],
-  )
-  const closeTasksDialog = useCallback(() => {
-    clearTaskCopyFeedback()
-    actions.closeTasks()
-  }, [actions, clearTaskCopyFeedback])
-  const closePlansDialog = useCallback(() => {
-    clearPlanCopyFeedback()
-    actions.closePlans()
-  }, [actions, clearPlanCopyFeedback])
+  const closeTasksDialog = useCallback(() => actions.closeTasks(), [actions])
+  const closePlansDialog = useCallback(() => actions.closePlans(), [actions])
 
   return {
     tasksDialogSurface: useMemo(
       () => ({
-        copyFeedback: taskCopyFeedback,
         open: tasksOpen,
         openMenuId: openTaskMenuId,
-        onClearCopyFeedback: clearTaskCopyFeedback,
         onClose: closeTasksDialog,
         onToggleMenu: actions.toggleTaskMenu,
         onTaskAction: actions.triggerTaskAction,
@@ -71,20 +47,16 @@ export const useDialogSurfaces = ({
         actions.requestDeleteTask,
         actions.toggleTaskMenu,
         actions.triggerTaskAction,
-        clearTaskCopyFeedback,
         closeTasksDialog,
         deferredTasks,
         openTaskMenuId,
-        taskCopyFeedback,
         tasksOpen,
       ],
     ),
     plansDialogSurface: useMemo(
       () => ({
-        copyFeedback: planCopyFeedback,
         open: plansOpen,
         openMenuId: openPlanMenuId,
-        onClearCopyFeedback: clearPlanCopyFeedback,
         onClose: closePlansDialog,
         onPlanAction: actions.triggerPlanAction,
         onToggleMenu: actions.togglePlanMenu,
@@ -93,11 +65,9 @@ export const useDialogSurfaces = ({
       [
         actions.togglePlanMenu,
         actions.triggerPlanAction,
-        clearPlanCopyFeedback,
         closePlansDialog,
         deferredPlans,
         openPlanMenuId,
-        planCopyFeedback,
         plansOpen,
       ],
     ),

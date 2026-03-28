@@ -138,11 +138,6 @@ export type ConfirmDialogState =
   | { kind: 'restart' }
   | { kind: 'reset' }
 
-export type CopyFeedbackState = {
-  message: string
-  state: 'success' | 'error'
-}
-
 export type AppState = {
   status: StatusSnapshot
   messages: ChatMessage[]

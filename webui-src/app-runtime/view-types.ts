@@ -1,6 +1,5 @@
 import type {
   ConfirmDialogState,
-  CopyFeedbackState,
   PlanView,
   QuoteState,
   TaskView,
@@ -50,10 +49,8 @@ export type ComposerSurface = {
 }
 
 export type TasksDialogSurface = {
-  copyFeedback: CopyFeedbackState | null
   open: boolean
   openMenuId: string
-  onClearCopyFeedback: () => void
   onClose: () => void
   onToggleMenu: (taskId: string) => void
   onTaskAction: (
@@ -65,10 +62,8 @@ export type TasksDialogSurface = {
 }
 
 export type PlansDialogSurface = {
-  copyFeedback: CopyFeedbackState | null
   open: boolean
   openMenuId: string
-  onClearCopyFeedback: () => void
   onClose: () => void
   onPlanAction: (planId: string, action: 'copy-id') => void
   onToggleMenu: (planId: string) => void
