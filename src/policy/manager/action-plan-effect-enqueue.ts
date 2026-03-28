@@ -59,6 +59,7 @@ export const buildPlanEnqueueTaskEffect = async (params: {
     taskTemplate: {
       title: params.task.title,
       executionSpecId: spec.id,
+      contract,
       fingerprint,
       semanticKey,
       cwd: params.task.cwd,

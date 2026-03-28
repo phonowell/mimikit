@@ -1,8 +1,22 @@
 import type {
+  TaskContract,
   TaskPlan,
   TaskPlanEffect,
   TaskPlanTrigger,
 } from '../../foundation/types/index.js'
+
+const buildTaskContractPayload = (
+  contract?: TaskContract,
+): Record<string, unknown> | undefined => {
+  if (!contract) return undefined
+  return {
+    goal: contract.goal,
+    scope: contract.scope,
+    acceptance: contract.acceptance,
+    ...(contract.outOfScope ? { out_of_scope: contract.outOfScope } : {}),
+    ...(contract.contextRefs ? { context_refs: contract.contextRefs } : {}),
+  }
+}
 
 export const buildPlanTriggerPayload = (
   trigger: TaskPlanTrigger,
@@ -36,6 +50,9 @@ export const buildPlanEffectPayload = (
 ): Record<string, unknown> => ({
   effect_kind: effect.kind,
   task_title: effect.taskTemplate.title,
+  ...(buildTaskContractPayload(effect.taskTemplate.contract)
+    ? { task_contract: buildTaskContractPayload(effect.taskTemplate.contract) }
+    : {}),
   task_cwd: effect.taskTemplate.cwd,
   ...(effect.taskTemplate.resourceMode
     ? { task_resource_mode: effect.taskTemplate.resourceMode }

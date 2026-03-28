@@ -167,6 +167,7 @@ schema：`src/persistence/storage/runtime-snapshot-schema.ts`
 - `tasks`（含 `tasks[*].provider`、可选 `tasks[*].git={ worktreePath, branch }`）
 - `tasks[*].result.traceRef?`
 - `taskPlans`
+- `tasks[*].contract?` / `taskPlans[*].effect.taskTemplate.contract?`：稳定任务合同摘要；用于 manager 编排与验收，不承载执行原文
 - `focuses`
 - `managerTurn`
 - `managerThreadId`

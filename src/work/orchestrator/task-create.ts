@@ -87,6 +87,7 @@ export const createTask = (
     fingerprint,
     semanticKey,
     executionSpecId: spec.id,
+    ...(contract ? { contract } : {}),
     title: resolvedTitle,
     cwd,
     resourceMode: normalizedResourceMode,

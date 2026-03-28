@@ -108,6 +108,7 @@ export const taskSchema = z
     fingerprint: z.string().trim().min(1),
     semanticKey: z.string().trim().min(1),
     executionSpecId: z.string().trim().min(1),
+    contract: taskContractSchema.optional(),
     title: z.string(),
     cwd: z.string().trim().min(1),
     resourceMode: taskResourceModeSchema.optional(),

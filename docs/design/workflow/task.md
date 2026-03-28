@@ -33,6 +33,7 @@
   - `context_refs[]`
   - `instructions[]`
 - 运行时据此生成 worker prompt 与 `TaskContract`
+- 运行时会把稳定 `TaskContract` 摘要保存在 task 上，供 manager 在 `state_packet.tasks` 中查看合同级细节
 - `worker_prompt` 已删除
 - `branch` 已删除
 - `cwd` 必须指向现有目录；git 写任务只提交仓库内真实执行起点，不直接提交未来 worktree 路径。
@@ -77,4 +78,5 @@
 - 成功结果必须通过结构化 handoff 协议收敛
 - worker 结束输出必须是单个结构化 JSON 对象：`{ reply, handoff }`
 - manager 只消费压缩结果：结论、证据路径、归档路径、git lifecycle 等
+- manager 查看的是 task 上的合同 digest，不是完整 worker prompt
 - 不回灌 worker 原始长 prompt 或大段上下文

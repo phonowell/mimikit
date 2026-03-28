@@ -15,6 +15,7 @@
 - Prompt 组装：`buildManagerPromptPayload`（对外仍导出 `buildManagerPrompt` 便于纯字符串调用）
 - 模板：`prompts/manager/system.md`（`nunjucks` 渲染）
 - prompt 角色：顶层只定义“主 agent 编排层”的身份、action 门禁、输出协议与 packet 入口；具体执行默认委派给 worker
+- `state_packet.tasks` / `state_packet.plans` 会携带稳定合同 digest，供 manager 做去重、替换、续跑与验收门禁判断；不会注入完整 worker prompt 或执行原文
 - Provider：固定 `openai-responses`（direct responses）
 - Provider 配置来源：`loadCodexSettings()`，优先读取 `~/.codex/config.toml` 的 active provider（`base_url`、`api_key`、`env_key`/`api_key_env`），缺省回退 `OPENAI_API_KEY` 与 `~/.codex/auth.json`
 - 超时：按 prompt 字节动态计算（`60s~120s`）
