@@ -259,7 +259,7 @@ main[data-app] {
 .messages {
   flex: 1;
   margin: 0;
-  padding: 16px 18px 18px;
+  padding: 16px 18px 8px;
   list-style: none;
   display: flex;
   flex-direction: column;
