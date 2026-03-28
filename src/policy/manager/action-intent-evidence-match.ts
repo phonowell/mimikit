@@ -1,4 +1,5 @@
 import {
+  normalizeSearchText,
   scoreTextOverlap,
   tokenizeSearchText,
 } from '../../foundation/shared/text-search.js'
@@ -82,8 +83,8 @@ export const collectHistoricalUserIntentTexts = (
 }
 
 const hasDirectTextMatch = (candidate: string, haystack: string): boolean => {
-  const left = normalizeInlineWhitespace(candidate).toLowerCase()
-  const right = normalizeInlineWhitespace(haystack).toLowerCase()
+  const left = normalizeSearchText(candidate)
+  const right = normalizeSearchText(haystack)
   if (!left || !right) return false
   return right.includes(left)
 }
