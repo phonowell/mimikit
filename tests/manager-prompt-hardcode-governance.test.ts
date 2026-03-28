@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 
 import { expect, test } from 'vitest'
 
@@ -9,7 +9,6 @@ test('manager validation and intent-evidence modules do not keep inline prompt-l
   const files = [
     'src/policy/manager/action-validation.ts',
     'src/policy/manager/action-validation-plan.ts',
-    'src/policy/manager/action-validation-mutate-task-git.ts',
     'src/policy/manager/action-validation-remember-memory.ts',
     'src/policy/manager/action-validation-remember-project-profile.ts',
     'src/policy/manager/action-intent-evidence-dialog-memory.ts',
@@ -22,4 +21,15 @@ test('manager validation and intent-evidence modules do not keep inline prompt-l
       /['"`][^'"`\n]*[\u4e00-\u9fff][^'"`\n]*['"`]/u,
     )
   }
+})
+
+test('stale mutate_task git validator module is removed', () => {
+  expect(
+    existsSync(
+      new URL(
+        '../src/policy/manager/action-validation-mutate-task-git.ts',
+        import.meta.url,
+      ),
+    ),
+  ).toBe(false)
 })
