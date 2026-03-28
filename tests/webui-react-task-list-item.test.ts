@@ -46,7 +46,7 @@ test('task list item hides provider chip and shows copy id first in menu', () =>
   expect(copyIdIndex).toBeLessThan(deleteIndex)
 })
 
-test('task list item shows trace link when traceRef exists', () => {
+test('task list item does not show trace link even when traceRef exists', () => {
   Object.assign(globalThis, { React })
   const markup = renderToStaticMarkup(
     React.createElement(TaskListItem, {
@@ -61,8 +61,10 @@ test('task list item shows trace link when traceRef exists', () => {
     }),
   )
 
-  expect(markup).toContain('>trace<')
-  expect(markup).toContain('/state-files/traces/2026-03-27/worker-trace.txt')
+  expect(markup).not.toContain('>trace<')
+  expect(markup).not.toContain(
+    '/state-files/traces/2026-03-27/worker-trace.txt',
+  )
 })
 
 test('task list item keeps the opened menu out of the card flow slot', () => {

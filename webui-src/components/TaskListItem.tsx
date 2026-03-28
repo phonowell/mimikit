@@ -1,7 +1,6 @@
 import { useId, useRef } from 'react'
 
 import { buildTaskArchiveViewerUrl } from '../lib/archive-viewer-url.js'
-import { toArtifactUrl } from '../lib/artifact-url.js'
 import { resolveTaskStatusLabel } from '../lib/system-text.js'
 
 import { TaskActionMenu } from './TaskActionMenu.js'
@@ -40,7 +39,6 @@ export const TaskListItem = ({
   const canDelete = !canCancel
   const menuOpen = openMenuId === task.id
   const menuId = useId()
-  const traceUrl = toArtifactUrl(task.traceRef)
 
   return (
     <li className="task-item" data-status={status}>
@@ -95,7 +93,6 @@ export const TaskListItem = ({
             taskId={task.id}
             title={title}
             toggleRef={toggleRef}
-            traceUrl={traceUrl}
           />
         </div>
       </div>

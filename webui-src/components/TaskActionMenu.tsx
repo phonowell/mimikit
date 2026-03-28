@@ -26,7 +26,6 @@ type Props = {
   ) => void
   title: string
   toggleRef: RefObject<HTMLButtonElement | null>
-  traceUrl: string | null
   taskId: string
 }
 
@@ -41,7 +40,6 @@ export const TaskActionMenu = ({
   onTaskAction,
   title,
   toggleRef,
-  traceUrl,
   taskId,
 }: Props) => {
   const [portalHost, setPortalHost] = useState<HTMLElement | null>(null)
@@ -133,17 +131,6 @@ export const TaskActionMenu = ({
       >
         copy id
       </button>
-      {traceUrl ? (
-        <a
-          className="task-menu-item task-menu-item--trace"
-          href={traceUrl}
-          role="menuitem"
-          target="_blank"
-          rel="noreferrer"
-        >
-          trace
-        </a>
-      ) : null}
       <button
         className={`task-menu-item task-menu-item--${canResume ? 'resume' : 'pause'}`}
         type="button"
