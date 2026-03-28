@@ -37,6 +37,7 @@
 - `worker_prompt` 已删除
 - `branch` 已删除
 - `cwd` 必须指向现有目录；git 写任务只提交仓库内真实执行起点，不直接提交未来 worktree 路径。
+- 对 git 写任务，若 `cwd` 位于 repo 内子路径，运行时只接受能在目标 worktree 中解析到真实目录的路径；映射后的目录不存在时，任务会停在 enqueue 阶段并返回明确错误，不会继续派发到 worker。
 - worker prompt 中，任务合同优先于 `focus_brief` 与 `resume_instruction`；后两者只提供背景或一次性恢复补充，不改写合同本身。
 
 ## 去重与替换
