@@ -11,6 +11,7 @@ import {
   runGitCapture,
   tryResolveRealpath,
 } from './task-execution-target.js'
+import { validateMappedWorktreeCwd } from './task-worktree-mapped-cwd.js'
 
 const execFileAsync = promisify(execFile)
 
@@ -167,5 +168,17 @@ export const materializeTaskWorktreeCwd = async (
   }
   const resolvedWorktreeRoot = await tryResolveRealpath(worktreeRoot)
   if (nestedPath.length === 0) return { ok: true, cwd: resolvedWorktreeRoot }
-  return { ok: true, cwd: join(resolvedWorktreeRoot, nestedPath) }
+  const mappedCwd = join(resolvedWorktreeRoot, nestedPath)
+  const mappedValidation = await validateMappedWorktreeCwd({
+    originalCwd: normalizedCwd,
+    nestedPath,
+    mappedCwd,
+  })
+  if (!mappedValidation.ok) {
+    return {
+      ok: false,
+      detail: mappedValidation.detail,
+    }
+  }
+  return { ok: true, cwd: mappedCwd }
 }

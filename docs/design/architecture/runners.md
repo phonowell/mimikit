@@ -51,6 +51,11 @@
 4. 每次 provider 调用都会先落 trace，再把 `.mimikit/...` 相对 `traceRef` 回传到 task result。
 5. 记录进度并归档任务结果。
 
+补充约束：
+
+- 对 git `write` 任务，manager 会先把仓库内真实 `cwd` materialize 到目标 worktree，再把解析后的 `cwd` 写入 task。
+- 若原始 `cwd` 是 repo 内子路径，但该子路径在目标 worktree 中不存在或不可访问，任务会在 enqueue 阶段直接失败，并通过 action feedback 返回原始 `cwd`、映射后的 `cwd` 与缺失路径信息；不会继续把坏路径交给 worker/provider。
+
 ## Provider Runtime
 
 实现：`src/execution/providers/registry.ts`

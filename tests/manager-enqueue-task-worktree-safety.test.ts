@@ -114,3 +114,32 @@ test('enqueue_task worktree prepare failure appends action feedback without thro
   )
   expect(triggerFire).toBeUndefined()
 }, 15_000)
+
+test('enqueue_task rejects repo-internal cwd when mapped worktree subpath is missing', async () => {
+  const cwd = await createGitRepo()
+  const runtime = await createRuntime()
+  const stateDirCwd = join(cwd, '.mimikit')
+  await mkdir(stateDirCwd, { recursive: true })
+
+  await expect(
+    applyTaskActions(runtime, [
+      {
+        type: 'enqueue_task',
+        task: buildTaskDraft(stateDirCwd, {
+          title: 'state dir task',
+        }),
+      },
+    ]),
+  ).resolves.toBeUndefined()
+
+  expect(runtime.tasks).toHaveLength(0)
+  const logs = await readJsonl<Record<string, unknown>>(runtime.paths.log, {
+    ensureFile: true,
+  })
+  const feedback = logs.find(
+    (entry) => entry.event === 'manager_action_apply_feedback',
+  ) as { hint?: string } | undefined
+  expect(feedback?.hint).toContain('映射后的 cwd')
+  expect(feedback?.hint).toContain('.mimikit')
+  expect(feedback?.hint).toContain('不存在')
+})
