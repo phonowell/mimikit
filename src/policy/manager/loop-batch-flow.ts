@@ -14,6 +14,7 @@ import {
   finalizeBatchProgress,
 } from './loop-helpers.js'
 import { readManagerAutoRetryMeta } from './manager-llm-call.js'
+import { flushPendingManagerRestart } from './restart-runtime.js'
 import { scheduleResultReplayBackoff } from './result-replay-backoff.js'
 
 import type {
@@ -50,6 +51,7 @@ export const finishBatchWithoutAgentReply = async (params: {
     elapsedMs: Math.max(0, Date.now() - params.startedAt),
     skippedReason: 'no_agent_visible_inputs',
   })
+  flushPendingManagerRestart(params.runtime)
 }
 
 export const appendManagerReply = async (params: {
