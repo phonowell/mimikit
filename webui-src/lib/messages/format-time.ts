@@ -12,6 +12,7 @@ const numericPattern = /^-?\d+(?:\.\d+)?$/u
 const localDateTimePattern =
   /^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2})(?::(\d{2}))?)?$/u
 const trailingTimeZonePattern = /(?:Z|[+-]\d{2}:?\d{2})$/iu
+const RELATIVE_MINUTE_THRESHOLD_MS = 5 * 60 * 1000
 
 type TimeInput = string | number | Date | null | undefined
 
@@ -135,7 +136,7 @@ export const formatDisplayTime = (
   const diffMs = now.getTime() - target.getTime()
   if (relative && diffMs >= 0) {
     if (diffMs < 60 * 1000) return ''
-    if (diffMs < 60 * 60 * 1000) {
+    if (diffMs > RELATIVE_MINUTE_THRESHOLD_MS && diffMs < 60 * 60 * 1000) {
       const minutes = Math.floor(diffMs / (60 * 1000))
       return `${minutes} min ago`
     }
