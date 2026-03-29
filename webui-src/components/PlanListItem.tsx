@@ -67,6 +67,14 @@ export const PlanListItem = ({
   const taskContract = plan.taskContract
   const acceptance = taskContract?.acceptance ?? []
   const contextRefs = taskContract?.contextRefs ?? []
+  const runCount =
+    typeof plan.runCount === 'number' && Number.isFinite(plan.runCount)
+      ? plan.runCount
+      : null
+  const lastTriggeredDisplay = plan.lastTriggeredAt
+    ? formatDisplayTimeWithFull(plan.lastTriggeredAt, { now })
+    : undefined
+  const doneReason = plan.doneReason?.trim()
 
   return (
     <li className="plan-item" data-status={plan.status ?? 'active'}>
@@ -110,6 +118,33 @@ export const PlanListItem = ({
           />
         </div>
       </div>
+      {runCount !== null || lastTriggeredDisplay?.displayText || doneReason ? (
+        <section className="plan-progress" aria-label="Plan progress">
+          {runCount !== null ? (
+            <div className="plan-progress-row">
+              <span className="plan-progress-label">Runs</span>
+              <span className="plan-progress-value">{String(runCount)}</span>
+            </div>
+          ) : null}
+          {lastTriggeredDisplay?.displayText ? (
+            <div className="plan-progress-row">
+              <span className="plan-progress-label">Last trigger</span>
+              <span
+                className="plan-progress-value"
+                title={lastTriggeredDisplay.fullText || plan.lastTriggeredAt}
+              >
+                {lastTriggeredDisplay.displayText}
+              </span>
+            </div>
+          ) : null}
+          {doneReason ? (
+            <div className="plan-progress-row">
+              <span className="plan-progress-label">State</span>
+              <span className="plan-progress-value">{doneReason}</span>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
       {taskContract ? (
         <section className="plan-contract" aria-label="Plan contract">
           <div className="plan-contract-row">

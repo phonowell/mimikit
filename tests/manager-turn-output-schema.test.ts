@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest'
 
+import { buildStructuredOutputTextFormat } from '../src/execution/providers/openai-responses-provider-structured.js'
 import {
   buildManagerTurnOutputSchema,
   parseManagerTurn,
@@ -63,4 +64,34 @@ test('buildManagerTurnOutputSchema exposes optional action fields as required nu
       anyOf: expect.arrayContaining([{ type: 'null' }]),
     }),
   )
+})
+
+test('provider structured output formatting keeps manager action branches closed and fully required', () => {
+  const formatted = buildStructuredOutputTextFormat(
+    buildManagerTurnOutputSchema(),
+  ) as {
+    format?: {
+      schema?: {
+        properties?: {
+          actions?: {
+            items?: {
+              anyOf?: Array<{
+                properties?: Record<string, unknown>
+                required?: string[]
+              }>
+            }
+          }
+        }
+      }
+    }
+  }
+
+  const branches =
+    formatted.format?.schema?.properties?.actions?.items?.anyOf ?? []
+
+  expect(branches.length).toBeGreaterThan(0)
+  for (const branch of branches) {
+    const props = Object.keys(branch.properties ?? {})
+    expect(branch.required).toEqual(props)
+  }
 })

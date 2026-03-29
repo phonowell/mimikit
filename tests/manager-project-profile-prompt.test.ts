@@ -73,6 +73,7 @@ test('buildManagerPromptPayload anchors manager as the orchestration layer befor
   expect(payload.prompt).toContain('文件系统是真相源')
   expect(payload.prompt).toContain('证据不足时停在 handoff 或待续跑')
   expect(payload.prompt).toContain('证据充分时默认推进')
+  expect(payload.prompt).toContain('不要停在“如果要/可以继续”一类可能性话术')
   expect(payload.prompt).not.toContain(
     '当前仓库写任务默认走 `use_worktree=true`',
   )

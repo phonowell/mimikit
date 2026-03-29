@@ -19,8 +19,11 @@ export type PlanView = {
   title: string
   status: TaskPlan['status']
   updatedAt: string
+  runCount: number
   archivedAt?: string
+  lastTriggeredAt?: string
   lastTaskId?: string
+  doneReason?: TaskPlan['runtime']['doneReason']
   trigger: TaskPlanTrigger
   taskContract?: PlanTaskContractView
 }
@@ -67,8 +70,13 @@ const planToView = (plan: TaskPlan): PlanView => {
     title: resolvePlanViewTitle(plan),
     status: plan.status,
     updatedAt: plan.updatedAt,
+    runCount: plan.runtime.runCount,
     ...(plan.runtime.closedAt ? { archivedAt: plan.runtime.closedAt } : {}),
+    ...(plan.runtime.lastTriggeredAt
+      ? { lastTriggeredAt: plan.runtime.lastTriggeredAt }
+      : {}),
     ...(plan.runtime.lastTaskId ? { lastTaskId: plan.runtime.lastTaskId } : {}),
+    ...(plan.runtime.doneReason ? { doneReason: plan.runtime.doneReason } : {}),
     trigger: clonePlanTrigger(plan.trigger),
     ...(taskContract ? { taskContract } : {}),
   }

@@ -23,6 +23,31 @@ const resolvePlanGoal = (plan: TaskPlan | undefined): string | undefined => {
   return normalized ?? undefined
 }
 
+const resolvePlanScope = (plan: TaskPlan | undefined): string | undefined => {
+  if (!plan) return undefined
+  const scope = plan.effect.taskContract?.scope
+  const normalized = scope?.trim()
+  return normalized ?? undefined
+}
+
+const resolvePlanAcceptance = (
+  plan: TaskPlan | undefined,
+): string[] | undefined => {
+  if (!plan) return undefined
+  const acceptance = plan.effect.taskContract?.acceptance
+  if (!acceptance || acceptance.length === 0) return undefined
+  return acceptance.map((item) => item.trim()).filter(Boolean)
+}
+
+const resolvePlanOutOfScope = (
+  plan: TaskPlan | undefined,
+): string | undefined => {
+  if (!plan) return undefined
+  const outOfScope = plan.effect.taskContract?.outOfScope
+  const normalized = outOfScope?.trim()
+  return normalized ?? undefined
+}
+
 const resolveRuntimeTriggerText = (
   trigger: TaskPlan['trigger'] | undefined,
 ): string | undefined => {
@@ -57,6 +82,9 @@ export const collectSetPlanChangedCandidates = (
       item.plan.title,
       item.plan.task.title,
       item.plan.task.goal,
+      ...item.plan.task.in_scope,
+      ...item.plan.task.done_when,
+      ...item.plan.task.out_of_scope,
       nextTrigger,
     ]
   }
@@ -79,6 +107,44 @@ export const collectSetPlanChangedCandidates = (
     normalizeInlineWhitespace(item.plan.task.goal)
   )
     changed.push(item.plan.task.goal)
+
+  const nextScope = item.plan.task.in_scope
+    .map((item) => normalizeInlineWhitespace(item))
+    .filter(Boolean)
+  const currentScope = normalizeInlineWhitespace(
+    resolvePlanScope(currentPlan) ?? '',
+  )
+  if (
+    nextScope.length > 0 &&
+    nextScope.some((item) => item && item !== currentScope)
+  )
+    changed.push(...item.plan.task.in_scope)
+
+  const nextAcceptance = item.plan.task.done_when
+    .map((item) => normalizeInlineWhitespace(item))
+    .filter(Boolean)
+  const currentAcceptance = new Set(
+    (resolvePlanAcceptance(currentPlan) ?? [])
+      .map((item) => normalizeInlineWhitespace(item))
+      .filter(Boolean),
+  )
+  if (
+    nextAcceptance.length > 0 &&
+    nextAcceptance.some((item) => item && !currentAcceptance.has(item))
+  )
+    changed.push(...item.plan.task.done_when)
+
+  const nextOutOfScope = item.plan.task.out_of_scope
+    .map((item) => normalizeInlineWhitespace(item))
+    .filter(Boolean)
+  const currentOutOfScope = normalizeInlineWhitespace(
+    resolvePlanOutOfScope(currentPlan) ?? '',
+  )
+  if (
+    nextOutOfScope.length > 0 &&
+    nextOutOfScope.some((item) => item && item !== currentOutOfScope)
+  )
+    changed.push(...item.plan.task.out_of_scope)
 
   if (resolveRuntimeTriggerText(currentPlan.trigger) !== nextTrigger)
     changed.push(nextTrigger)

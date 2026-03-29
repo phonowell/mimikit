@@ -101,6 +101,26 @@
   background: var(--panel-soft);
 }
 
+.plan-progress {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.plan-progress-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.plan-progress-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted-contrast, var(--muted));
+}
+
 .plan-contract-row {
   display: flex;
   flex-direction: column;

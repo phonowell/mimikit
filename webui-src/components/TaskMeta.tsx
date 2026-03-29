@@ -51,12 +51,26 @@ export const TaskMeta = ({ open, task }: Props) => {
   const dispatchLockText = dispatchLockDetail
     ? `${dispatchLockDetail.blockerTaskId} · ${dispatchLockDetail.lockKey}`
     : ''
+  const gitClosureItems: Array<{ key: string; text: string }> = []
+  if (task.gitClosure?.reviewPassed)
+    gitClosureItems.push({ key: 'review', text: 'review' })
+  if (task.gitClosure?.merged)
+    gitClosureItems.push({ key: 'merged', text: 'merged' })
+  if (task.gitClosure && task.gitClosure.cleaned === false)
+    gitClosureItems.push({ key: 'cleanup-pending', text: 'cleanup pending' })
+  if (task.gitClosure?.cleaned)
+    gitClosureItems.push({ key: 'cleaned', text: 'cleaned' })
 
   return (
     <small className="task-meta">
       <span className="task-tokens" title={usage?.title ?? ''}>
         {usage?.text ?? '-'}
       </span>
+      {gitClosureItems.map((item) => (
+        <span key={item.key} className="task-git-closure">
+          {item.text}
+        </span>
+      ))}
       {pendingReason ? (
         <span className="task-pending-reason" title={task.pending_reason}>
           {pendingReason}

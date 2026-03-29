@@ -101,8 +101,11 @@ export type PlanView = {
   title?: string
   status?: string
   updatedAt?: string
+  runCount?: number
   archivedAt?: string
+  lastTriggeredAt?: string
   lastTaskId?: string
+  doneReason?: string
   trigger?: PlanTrigger
   taskContract?: PlanTaskContractView
 }

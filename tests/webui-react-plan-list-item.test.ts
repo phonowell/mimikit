@@ -93,3 +93,25 @@ test('plan list item renders task contract details inline when available', () =>
   expect(markup).toContain('Do not expose the raw worker prompt')
   expect(markup).toContain('docs/design/workflow/plan.md')
 })
+
+test('plan list item renders runtime progress inline when available', () => {
+  Object.assign(globalThis, { React })
+  const markup = renderToStaticMarkup(
+    React.createElement(PlanListItem, {
+      open: true,
+      plan: createPlan({
+        id: 'plan-progress-ui',
+        lastTaskId: 'task-progress-ui',
+        runCount: 7,
+        lastTriggeredAt: '2026-03-29T11:57:56.768Z',
+      } as PlanView),
+      openMenuId: 'plan-progress-ui',
+      onPlanAction: noop,
+      onToggleMenu: noop,
+    }),
+  )
+
+  expect(markup).toContain('Runs')
+  expect(markup).toContain('7')
+  expect(markup).toContain('Last trigger')
+})

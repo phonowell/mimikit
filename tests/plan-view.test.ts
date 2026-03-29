@@ -58,3 +58,34 @@ test('buildOrchestratorPlanViews projects task contract for WebUI without leakin
   })
   expect(result.items[0]).not.toHaveProperty('effect')
 })
+
+test('buildOrchestratorPlanViews projects runtime progress for WebUI plans', () => {
+  const runtime: Pick<
+    Parameters<typeof buildOrchestratorPlanViews>[0],
+    'taskPlans'
+  > = {
+    taskPlans: [
+      createPlanFixture({
+        id: 'plan-progress-1',
+        title: 'Progress visible plan',
+        updatedAt: '2026-03-29T11:58:00.000Z',
+        runtime: {
+          runCount: 4,
+          lastTriggeredAt: '2026-03-29T11:57:56.768Z',
+          lastTaskId: 'task-progress-1',
+        },
+      }),
+    ],
+  }
+
+  const result = buildOrchestratorPlanViews(
+    runtime as Parameters<typeof buildOrchestratorPlanViews>[0],
+  )
+
+  expect(result.items[0]).toMatchObject({
+    id: 'plan-progress-1',
+    runCount: 4,
+    lastTriggeredAt: '2026-03-29T11:57:56.768Z',
+    lastTaskId: 'task-progress-1',
+  })
+})

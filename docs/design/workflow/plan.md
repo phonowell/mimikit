@@ -62,6 +62,20 @@
 
 这些字段只允许触发执行链路维护，manager action 不直接写入。
 
+## WebUI / Read Model 投影
+
+- WebUI 中的 plan 不只展示标题与 trigger，还应直接暴露最小必要运行态：
+  - `runtime.runCount`
+  - `runtime.lastTriggeredAt`
+  - `runtime.lastTaskId`
+  - `runtime.doneReason`
+- 这些字段的目标不是把 plan 做成任务板，而是让用户能直接判断：
+  - 计划是否仍在推进
+  - 最近一次何时触发
+  - 最近关联到哪个 task
+  - 已关闭时为何关闭
+- Plan 的展示仍以合同摘要 + 运行态摘要为边界；不得把完整 worker prompt 或过程态噪声重新灌进 WebUI。
+
 ## 校验边界
 
 - `scheduled_at` 必须晚于当前时间
