@@ -37,7 +37,7 @@
   - `priority`
   - `max_runs`
 - `plan.task` 与 `enqueue_task.task` 使用同一份任务合同
-- 运行时会把这份任务合同的稳定 digest 固化到 `plan.effect.taskTemplate.contract`，供 manager 在 `state_packet.plans` 中做触发前判断
+- 运行时会把这份任务合同的稳定摘要固化到 `plan.effect.taskContract`，供 manager 在 `state_packet.plans` 中做触发前判断；`taskTemplate` 只保留 enqueue 所需运行字段
 
 ## `delete_plan` 合同
 
@@ -48,7 +48,7 @@
 
 - `cron`：按 cron 触发
 - `scheduled_at`：一次性触发
-- `on_worker_slot_freed`：有空闲 worker 槽位时触发
+- `on_worker_slot_freed`：worker 可用容量出现边沿时触发；启动时若一开始就有空闲容量，会视为一次初始可用边沿，之后只有 `available_slots` 相比上轮增加时才再次触发，不会在持续空闲期间重复触发
 - plan 触发后统一派发 `enqueue_task` effect，不再存在“只唤醒 manager”的 plan effect
 - `plan.effect` 对 manager 暴露的是调度外壳 + 任务合同 digest，不暴露完整 worker prompt
 

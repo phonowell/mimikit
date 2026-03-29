@@ -28,12 +28,19 @@ const processLoopTriggers = async (
   const scheduled = await checkScheduledPlans(runtime, now)
   let { stateChanged } = scheduled
   const slots = resolveSlotStatus(runtime)
+  let workerSlotEventKind: 'initial_capacity_available' | 'slot_freed' | null =
+    null
   if (state.lastAvailableSlots === null) {
     state.lastAvailableSlots = slots.available_slots
-    if (slots.available_slots > 0) state.workerSlotEventPending = true
-  } else {
-    if (slots.available_slots > state.lastAvailableSlots)
+    if (slots.available_slots > 0) {
       state.workerSlotEventPending = true
+      workerSlotEventKind = 'initial_capacity_available'
+    }
+  } else {
+    if (slots.available_slots > state.lastAvailableSlots) {
+      state.workerSlotEventPending = true
+      workerSlotEventKind = 'slot_freed'
+    }
     state.lastAvailableSlots = slots.available_slots
   }
 
@@ -55,7 +62,10 @@ const processLoopTriggers = async (
       if (hasRunnableWorkerSlotPlan(runtime) || hasPendingOrRunningTask) {
         await publishManagerSystemEventInput({
           runtime,
-          summary: 'A worker slot was freed for new tasks.',
+          summary:
+            workerSlotEventKind === 'initial_capacity_available'
+              ? 'Worker capacity is available for new tasks.'
+              : 'A worker slot was freed for new tasks.',
           event: 'worker_slot_freed',
           visibility: 'all',
           payload: {

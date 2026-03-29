@@ -1,6 +1,7 @@
 import { expect, test } from 'vitest'
 
 import { notifyManagerLoop } from '../../src/kernel/orchestrator/signals.js'
+import { readJsonl } from '../../src/persistence/storage/jsonl.js'
 import { managerLoop } from '../../src/policy/manager/loop.js'
 import { GLOBAL_FOCUS_ID } from '../../src/work/focus/constants.js'
 import {
@@ -9,6 +10,27 @@ import {
 } from '../helpers/manager-trigger-capacity.js'
 
 import { countSystemEvent, createRuntime, settle, stopLoop } from './testkit.js'
+
+const readWorkerSlotFreedSummaries = async (
+  runtime: Awaited<ReturnType<typeof createRuntime>>,
+): Promise<string[]> => {
+  const packets = await readJsonl<{
+    payload?: {
+      role?: string
+      systemEventName?: string
+      text?: string
+    }
+  }>(runtime.paths.inputsPackets, { ensureFile: true })
+  return packets
+    .map((packet) => packet.payload)
+    .filter(
+      (payload) =>
+        payload?.role === 'system' &&
+        payload.systemEventName === 'worker_slot_freed' &&
+        typeof payload.text === 'string',
+    )
+    .map((payload) => payload.text as string)
+}
 
 test('managerLoop fires on_worker_slot_freed once on full-to-free transition', async () => {
   const runtime = await createRuntime({ maxConcurrent: 1 })
@@ -71,6 +93,39 @@ test('managerLoop emits worker_slot_freed on full-to-free transition only once',
       async () => (await countSystemEvent(runtime, 'worker_slot_freed')) >= 1,
       4_000,
     )
+    await settle()
+    expect(await countSystemEvent(runtime, 'worker_slot_freed')).toBe(1)
+  } finally {
+    await stopLoop(runtime, loopPromise)
+  }
+})
+
+test('managerLoop reports initial idle capacity without claiming a slot was freed', async () => {
+  const runtime = await createRuntime({ maxConcurrent: 1 })
+  runtime.tasks.push({
+    id: 'task-pending-initial-idle',
+    fingerprint: 'fp-task-pending-initial-idle',
+    prompt: 'initial idle prompt',
+    title: 'initial idle task',
+    focusId: GLOBAL_FOCUS_ID,
+    profile: 'worker',
+    status: 'pending',
+    createdAt: new Date().toISOString(),
+  })
+
+  const loopPromise = managerLoop(runtime)
+  try {
+    await waitForCondition(
+      async () => (await countSystemEvent(runtime, 'worker_slot_freed')) >= 1,
+      4_000,
+    )
+    await settle()
+
+    expect(await readWorkerSlotFreedSummaries(runtime)).toContain(
+      'Worker capacity is available for new tasks.',
+    )
+
+    notifyManagerLoop(runtime)
     await settle()
     expect(await countSystemEvent(runtime, 'worker_slot_freed')).toBe(1)
   } finally {
