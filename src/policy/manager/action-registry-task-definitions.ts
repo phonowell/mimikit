@@ -46,6 +46,7 @@ const applyTaskControlAction = async (
   item: Parsed,
 ): Promise<void> => {
   if (item.type !== 'task_control') return
+  const instructions = item.instructions ?? []
 
   if (item.action === 'pause') {
     const result = await pauseTask(runtime, item.task_id, {
@@ -62,8 +63,8 @@ const applyTaskControlAction = async (
   if (item.action === 'resume') {
     const result = await resumeTask(runtime, item.task_id, {
       source: 'deferred',
-      ...(item.instructions[0]
-        ? { resumeInstruction: item.instructions.join('\n') }
+      ...(instructions[0]
+        ? { resumeInstruction: instructions.join('\n') }
         : {}),
     })
     if (result.ok) return

@@ -59,6 +59,7 @@ export const validateTaskControlIntentEvidence = (params: {
   defaultFocusId?: string
 }): string | undefined => {
   const task = params.taskById?.get(params.item.task_id)
+  const instructions = params.item.instructions ?? []
   const candidates = [params.item.task_id]
   if (task?.title.trim()) candidates.push(task.title)
   if (task?.branch?.trim()) candidates.push(task.branch)
@@ -67,10 +68,10 @@ export const validateTaskControlIntentEvidence = (params: {
 
   if (
     params.item.action === 'resume' &&
-    params.item.instructions.length > 0 &&
+    instructions.length > 0 &&
     !isSupportedByInputs({
-      candidates: params.item.instructions,
-      combinedCandidate: params.item.instructions.join('\n'),
+      candidates: instructions,
+      combinedCandidate: instructions.join('\n'),
       inputs: params.inputTexts,
     })
   ) {

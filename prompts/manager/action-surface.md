@@ -44,10 +44,10 @@ actions:
   task_control:
     summary: 暂停、恢复或取消已有任务。
     brief_constraints:
-      - 必填 `task_id,action,instructions[]`
+      - 必填 `task_id,action`
     detail_constraints:
       - '`action=pause|resume|cancel`'
-      - '`instructions[]` 仅在 `action="resume"` 时用于下一轮恢复补充说明；其它情况传空数组'
+      - '`instructions[]` 仅在 `action="resume"` 时可选附带，用于下一轮恢复补充说明'
   record_task_git:
     summary: 显式写回任务的 git 闭环状态。
     brief_constraints:

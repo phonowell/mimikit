@@ -60,7 +60,7 @@ export const taskControlActionSchema = z.strictObject({
   type: z.literal('task_control'),
   task_id: taskIdSchema,
   action: z.enum(['pause', 'resume', 'cancel']),
-  instructions: instructionsSchema,
+  instructions: instructionsSchema.optional(),
 })
 
 export const recordTaskGitActionSchema = z.strictObject({

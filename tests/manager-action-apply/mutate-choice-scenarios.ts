@@ -1,6 +1,7 @@
 import { expect, test } from 'vitest'
 
 import { applyTaskActions } from '../../src/policy/manager/action-apply.js'
+import { parseManagerTurn } from '../../src/policy/manager/manager-turn.js'
 import { GLOBAL_FOCUS_ID } from '../../src/work/focus/constants.js'
 import { materializeTaskFixture } from '../helpers/execution-spec.js'
 
@@ -92,14 +93,18 @@ test('task_control cancel marks paused task as canceled', async () => {
     }),
   )
 
-  await applyTaskActions(runtime, [
-    {
-      type: 'task_control',
-      task_id: 'task-cancel-target',
-      action: 'cancel',
-      instructions: [],
-    },
-  ])
+  const turn = parseManagerTurn({
+    reply: '取消该任务。',
+    actions: [
+      {
+        type: 'task_control',
+        task_id: 'task-cancel-target',
+        action: 'cancel',
+      },
+    ],
+  })
+
+  await applyTaskActions(runtime, turn.actions)
 
   expect(runtime.tasks[0]?.status).toBe('canceled')
   expect(runtime.tasks[0]?.completedAt).toBeTypeOf('string')
