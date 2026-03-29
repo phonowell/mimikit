@@ -1,3 +1,5 @@
+import { resolveTaskResourceMode } from '../../work/shared/task-resource-mode.js'
+
 import { runWorker } from './profiled-runner.js'
 
 import type { TaskFocusBrief } from '../../foundation/prompting/format-task-focus-brief.js'
@@ -34,6 +36,15 @@ const buildTaskFocusBrief = (
   }
 }
 
+const resolveWorkerModelReasoningEffort = (
+  task: Task,
+  configuredEffort: WorkerRuntime['config']['codex']['modelReasoningEffort'],
+) =>
+  resolveTaskResourceMode(task.resourceMode) === 'read' &&
+  configuredEffort === 'high'
+    ? 'medium'
+    : configuredEffort
+
 export const runTaskModel = (params: {
   runtime: WorkerRuntime
   task: Task
@@ -50,7 +61,10 @@ export const runTaskModel = (params: {
     enabled: codex.enabled,
     model: codex.model,
     proxy: codex.proxy,
-    modelReasoningEffort: codex.modelReasoningEffort,
+    modelReasoningEffort: resolveWorkerModelReasoningEffort(
+      params.task,
+      codex.modelReasoningEffort,
+    ),
   }
   if (!providerConfig.enabled) {
     throw new Error(
