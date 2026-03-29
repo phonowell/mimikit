@@ -57,3 +57,39 @@ test('plan list item keeps static body when lastTaskId is missing and still rend
   expect(markup).toContain('class="plan-link"')
   expect(markup).toContain('>copy id<')
 })
+
+test('plan list item renders task contract details inline when available', () => {
+  Object.assign(globalThis, { React })
+  const plan = createPlan({ id: 'plan-3' }) as PlanView & {
+    taskContract: {
+      goal: string
+      scope: string
+      acceptance: string[]
+      outOfScope: string
+      contextRefs: string[]
+    }
+  }
+  plan.taskContract = {
+    goal: 'Expose contract goal',
+    scope: 'Render contract scope in the plans dialog',
+    acceptance: ['Acceptance item one', 'Acceptance item two'],
+    outOfScope: 'Do not expose the raw worker prompt',
+    contextRefs: ['docs/design/workflow/plan.md'],
+  }
+
+  const markup = renderToStaticMarkup(
+    React.createElement(PlanListItem, {
+      open: true,
+      plan,
+      openMenuId: 'plan-3',
+      onPlanAction: noop,
+      onToggleMenu: noop,
+    }),
+  )
+
+  expect(markup).toContain('Expose contract goal')
+  expect(markup).toContain('Render contract scope in the plans dialog')
+  expect(markup).toContain('Acceptance item one')
+  expect(markup).toContain('Do not expose the raw worker prompt')
+  expect(markup).toContain('docs/design/workflow/plan.md')
+})

@@ -64,6 +64,9 @@ export const PlanListItem = ({
       </small>
     </>
   )
+  const taskContract = plan.taskContract
+  const acceptance = taskContract?.acceptance ?? []
+  const contextRefs = taskContract?.contextRefs ?? []
 
   return (
     <li className="plan-item" data-status={plan.status ?? 'active'}>
@@ -107,6 +110,44 @@ export const PlanListItem = ({
           />
         </div>
       </div>
+      {taskContract ? (
+        <section className="plan-contract" aria-label="Plan contract">
+          <div className="plan-contract-row">
+            <span className="plan-contract-label">Goal</span>
+            <p className="plan-contract-text">{taskContract.goal}</p>
+          </div>
+          <div className="plan-contract-row">
+            <span className="plan-contract-label">Scope</span>
+            <p className="plan-contract-text">{taskContract.scope}</p>
+          </div>
+          {acceptance.length > 0 ? (
+            <div className="plan-contract-row">
+              <span className="plan-contract-label">Acceptance</span>
+              <ul className="plan-contract-list">
+                {acceptance.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          {taskContract.outOfScope ? (
+            <div className="plan-contract-row">
+              <span className="plan-contract-label">Out of scope</span>
+              <p className="plan-contract-text">{taskContract.outOfScope}</p>
+            </div>
+          ) : null}
+          {contextRefs.length > 0 ? (
+            <div className="plan-contract-row">
+              <span className="plan-contract-label">Context refs</span>
+              <ul className="plan-contract-list plan-contract-list--refs">
+                {contextRefs.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
     </li>
   )
 }

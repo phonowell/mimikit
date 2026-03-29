@@ -1,5 +1,5 @@
 import { getTaskLiveOutputById } from '../../execution/worker/live-output.js'
-import { sortTaskPlansForView } from '../read-model/plan-select.js'
+import { buildPlanViews } from '../read-model/plan-view.js'
 import { buildTaskViews } from '../read-model/task-view.js'
 
 import { getChatMessagesSnapshot } from './orchestrator-chat-history.js'
@@ -22,12 +22,7 @@ export const buildOrchestratorTaskViews = (
 export const buildOrchestratorPlanViews = (
   runtime: SurfaceRuntime,
   limit = 200,
-) => {
-  const items = sortTaskPlansForView(runtime.taskPlans)
-    .slice(0, Math.max(0, limit))
-    .map((item) => ({ ...item }))
-  return { items }
-}
+) => buildPlanViews(runtime.taskPlans, limit)
 
 export const buildOrchestratorWebUiSnapshot = async (params: {
   runtime: SurfaceRuntime

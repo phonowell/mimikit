@@ -88,6 +88,14 @@ export type PlanTrigger = {
   scheduledAt?: string
 }
 
+export type PlanTaskContractView = {
+  goal: string
+  scope: string
+  acceptance: string[]
+  outOfScope?: string
+  contextRefs?: string[]
+}
+
 export type PlanView = {
   id?: string
   title?: string
@@ -96,6 +104,7 @@ export type PlanView = {
   archivedAt?: string
   lastTaskId?: string
   trigger?: PlanTrigger
+  taskContract?: PlanTaskContractView
 }
 
 export type PlansSnapshot = {
