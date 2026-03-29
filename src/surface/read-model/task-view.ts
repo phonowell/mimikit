@@ -75,22 +75,9 @@ const initCounts = (): TaskCounts => ({
 const toFiniteNumber = (value: unknown): number | null =>
   typeof value === 'number' && Number.isFinite(value) ? value : null
 
-const hasNonEmptyText = (value: unknown): boolean =>
-  typeof value === 'string' && value.trim().length > 0
-
 const resolveTaskViewTitle = (task: Task): string => {
   const title = task.title.trim()
   return title || task.id
-}
-
-const resolveTaskViewStatus = (task: Task): TaskStatus => {
-  if (task.status !== 'succeeded') return task.status
-  const hasCompletedAt = hasNonEmptyText(task.completedAt)
-  const hasConsistentResult = !task.result || task.result.status === 'succeeded'
-  if (hasCompletedAt && hasConsistentResult) return 'succeeded'
-  if (hasNonEmptyText(task.pausedAt)) return 'paused'
-  if (hasNonEmptyText(task.startedAt)) return 'running'
-  return 'pending'
 }
 
 const resolvePendingReason = (
@@ -116,7 +103,7 @@ const taskToView = (
   tasks: Task[],
   snapshot?: TaskViewRuntimeSnapshot,
 ): TaskView => {
-  const status = resolveTaskViewStatus(task)
+  const { status } = task
   const dispatchLock = resolveDispatchLockDetail(task, tasks, status)
   const pendingReason = resolvePendingReason(task, tasks, snapshot, status)
   const liveOutput =

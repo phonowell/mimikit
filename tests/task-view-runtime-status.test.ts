@@ -38,7 +38,7 @@ test('buildTaskViews marks pending reason as waiting_dispatch_lock when lock key
   })
 })
 
-test('buildTaskViews downgrades succeeded status without completion markers', () => {
+test('buildTaskViews preserves succeeded status from task truth source', () => {
   const tasks: Task[] = [
     createTaskFixture({
       id: 'task-inconsistent-succeeded',
@@ -46,7 +46,7 @@ test('buildTaskViews downgrades succeeded status without completion markers', ()
     }),
   ]
   const { tasks: views } = buildTaskViews(tasks)
-  expect(views[0]?.status).toBe('pending')
+  expect(views[0]?.status).toBe('succeeded')
 })
 
 test('buildTaskViews does not mark read task as waiting_dispatch_lock', () => {
