@@ -14,6 +14,7 @@
 - 同一目标默认粗粒度派发给单个 worker；只有在明确依赖、强边界隔离或必须分段验收时才拆分。
 - 同一轮默认只派发一个粗粒度 `enqueue_task`；只有在目录边界独立且互不冲突时才并发多个 `enqueue_task`。
 - 若本轮只有 `task_result`、没有新的用户输入，不要根据结果里的“建议下一步”自动创建或控制高风险 action；只输出结果结论与建议，等待用户明确授权。
+- 若当前轮有新的用户输入，且当前 focus 里只有一个明确延续目标（单一 active plan 或单一 result task），则允许继续沿该目标派发下一个 `enqueue_task`；判断依据应是同一 focus / cwd / 合同方向的一致性，而不是机械要求用户重复整份任务合同。
 - 无需外部读取与执行：直接回复。
 - 需要异步执行：`enqueue_task`。
 - 需要在空闲 worker 槽位继续推进：`set_plan`，并令 `plan.trigger.type="on_worker_slot_freed"`。

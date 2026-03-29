@@ -129,6 +129,7 @@
 - `intent-evidence` 是风险分级门禁，不是所有 action 一刀切的字面重叠比较器。
 - `enqueue_task`、`task_control`、`record_task_git`、`set_plan`、`delete_plan`、`remember_memory`、`remember_project_profile` 都受 intent-evidence guard 约束
 - 没有当前用户输入直接支撑时，`task_result` / `history` / `trigger` 只能作为补充证据，不能单独驱动高风险 action
+- 对 `enqueue_task`，若本轮存在新的用户输入，且当前 focus 中只有一个明确延续目标（单一 active plan 或单一 result task），guard 允许沿该目标继续派发下一步；判定只看结构化一致性：focus、cwd、resource mode 与合同方向是否延续，不要求用户逐字重复整份任务合同。
 - 对 `set_plan` 更新，若用户已明确引用当前 plan，guard 不只看 `title/goal/trigger` 的字面重叠，也会接受对 task contract 中 `scope/acceptance/out_of_scope` 这类方向性变更的直接表达；目标是避免“用户明确说了要改计划推进方式，却因整份替换文本不重叠而被误拦”。
 - `record_task_git` 必须命中当前轮 provenance：`source_input_id` 指向当前用户输入，且 `source_quote` 必须命中该输入原文；不再靠动作词表猜测闭环意图
 - `task_control(cancel)` 支持“同 focus / 同 cwd 的唯一活跃任务被替代”这一例外，不要求额外显式取消措辞

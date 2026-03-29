@@ -23,6 +23,7 @@ type IntentEvidenceContext = {
   inputs?: UserInput[]
   taskById?: Map<string, Task>
   planById?: Map<string, TaskPlan>
+  resultTaskIds?: Set<string>
   supplementalEvidenceSources?: Set<SupplementalEvidenceSource>
   currentActions?: Parsed[]
   defaultFocusId?: string
@@ -64,6 +65,14 @@ export const resolveIntentEvidenceRejectionHint = (
     return validateEnqueueTaskIntentEvidence({
       item,
       inputTexts,
+      ...(context.taskById ? { taskById: context.taskById } : {}),
+      ...(context.planById ? { planById: context.planById } : {}),
+      ...(context.resultTaskIds
+        ? { resultTaskIds: context.resultTaskIds }
+        : {}),
+      ...(context.defaultFocusId
+        ? { defaultFocusId: context.defaultFocusId }
+        : {}),
       ...(context.supplementalEvidenceSources
         ? { supplementalEvidenceSources: context.supplementalEvidenceSources }
         : {}),

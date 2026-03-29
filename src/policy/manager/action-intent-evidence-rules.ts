@@ -1,5 +1,6 @@
 import { basename } from 'node:path'
 
+import { supportsEnqueueContinuationIntentEvidence } from './action-intent-evidence-enqueue-continuation.js'
 import {
   buildMissingIntentEvidenceHint,
   isSupportedByInputs,
@@ -26,6 +27,10 @@ const resolveTaskRef = (task: Task | undefined, taskId: string): string =>
 export const validateEnqueueTaskIntentEvidence = (params: {
   item: Extract<Parsed, { type: 'enqueue_task' }>
   inputTexts: string[]
+  taskById?: Map<string, Task>
+  planById?: Map<string, TaskPlan>
+  resultTaskIds?: Set<string>
+  defaultFocusId?: string
   supplementalEvidenceSources?: Set<SupplementalEvidenceSource>
 }): string | undefined => {
   const contract = buildTaskContractFromDraft(params.item.task)
@@ -45,6 +50,19 @@ export const validateEnqueueTaskIntentEvidence = (params: {
       candidates,
       combinedCandidate,
       inputs: params.inputTexts,
+    })
+  )
+    return undefined
+
+  if (
+    supportsEnqueueContinuationIntentEvidence({
+      item: params.item,
+      ...(params.taskById ? { taskById: params.taskById } : {}),
+      ...(params.planById ? { planById: params.planById } : {}),
+      ...(params.resultTaskIds ? { resultTaskIds: params.resultTaskIds } : {}),
+      ...(params.defaultFocusId
+        ? { defaultFocusId: params.defaultFocusId }
+        : {}),
     })
   )
     return undefined
