@@ -1,5 +1,4 @@
 import { getTaskLiveOutputById } from '../../execution/worker/live-output.js'
-import { buildFocusViews } from '../read-model/focus-view.js'
 import { sortTaskPlansForView } from '../read-model/plan-select.js'
 import { buildTaskViews } from '../read-model/task-view.js'
 
@@ -30,11 +29,6 @@ export const buildOrchestratorPlanViews = (
   return { items }
 }
 
-export const buildOrchestratorFocusViews = (
-  runtime: SurfaceRuntime,
-  limit = 200,
-) => buildFocusViews(runtime.focuses, limit, runtime.tasks)
-
 export const buildOrchestratorWebUiSnapshot = async (params: {
   runtime: SurfaceRuntime
   status: OrchestratorStatus
@@ -45,7 +39,6 @@ export const buildOrchestratorWebUiSnapshot = async (params: {
   messages: await getChatMessagesSnapshot(params.runtime, params.messageLimit),
   tasks: buildOrchestratorTaskViews(params.runtime, params.taskLimit),
   plans: buildOrchestratorPlanViews(params.runtime, params.taskLimit),
-  focuses: buildOrchestratorFocusViews(params.runtime, params.taskLimit),
 })
 
 export const buildOrchestratorWebUiDeltaSnapshot = async (params: {
@@ -62,5 +55,4 @@ export const buildOrchestratorWebUiDeltaSnapshot = async (params: {
   ),
   tasks: buildOrchestratorTaskViews(params.runtime),
   plans: buildOrchestratorPlanViews(params.runtime),
-  focuses: buildOrchestratorFocusViews(params.runtime),
 })

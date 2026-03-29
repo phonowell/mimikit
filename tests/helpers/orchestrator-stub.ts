@@ -29,7 +29,6 @@ export const createOrchestratorStub = () => {
       Promise.resolve({ messages: [], mode: 'full' as const }),
     getTasks: () => ({ tasks: [], counts: {} }),
     getPlans: () => ({ items: [] }),
-    getFocuses: () => ({ items: [] }),
     getReviewStatus: () => Promise.resolve({ cards: [], highlights: [] }),
     getWebUiDeltaSnapshot: () =>
       Promise.resolve({
@@ -46,7 +45,6 @@ export const createOrchestratorStub = () => {
         messages: { messages: [], mode: 'full' as const },
         tasks: { tasks: [], counts: {} },
         plans: { items: [] },
-        focuses: { items: [] },
       }),
     getWebUiWakeVersion: () => 0,
     waitForWebUiSignal: () =>
@@ -66,7 +64,6 @@ export const createOrchestratorStub = () => {
         messages: [],
         tasks: { tasks: [], counts: {} },
         plans: { items: [] },
-        focuses: { items: [] },
         reviewStatus: { cards: [], highlights: [] },
       }),
     getTaskById: () => undefined,

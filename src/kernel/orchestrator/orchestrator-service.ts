@@ -6,7 +6,6 @@ import {
 } from '../../surface/orchestrator/orchestrator-chat-history.js'
 import { appendUserInput } from '../../surface/orchestrator/orchestrator-input-ingress.js'
 import {
-  buildOrchestratorFocusViews,
   buildOrchestratorPlanViews,
   buildOrchestratorTaskViews,
   buildOrchestratorWebUiDeltaSnapshot,
@@ -120,10 +119,6 @@ export class Orchestrator {
 
   getPlans(limit = 200) {
     return buildOrchestratorPlanViews(this.runtime, limit)
-  }
-
-  getFocuses(limit = 200) {
-    return buildOrchestratorFocusViews(this.runtime, limit)
   }
 
   getWebUiDeltaSnapshot(messageLimit = 50, afterId?: string) {

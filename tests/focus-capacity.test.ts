@@ -1,28 +1,16 @@
 import { expect, test } from 'vitest'
 
+import { appendHistory } from '../src/persistence/history/store.js'
 import {
   enforceActiveFocusLimit,
   pruneArchivedFocuses,
 } from '../src/work/focus/capacity.js'
-import { GLOBAL_FOCUS_ID } from '../src/work/focus/constants.js'
-import { appendHistory } from '../src/persistence/history/store.js'
+
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 import type { RuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
 
-const createRuntime = async (): Promise<RuntimeState> => {
-  const runtime = await createTestRuntimeState()
-  runtime.worker.queue = {
-    size: 0,
-    pending: 0,
-    sizeBy: () => 0,
-    add: async () => undefined,
-    pause: () => undefined,
-    clear: () => undefined,
-    onIdle: async () => undefined,
-  } as RuntimeState['worker']['queue']
-  return runtime
-}
+const createRuntime = (): Promise<RuntimeState> => createTestRuntimeState()
 
 test('enforceActiveFocusLimit does not count global focus against worker maxConcurrent', async () => {
   const runtime = await createRuntime()
@@ -85,7 +73,25 @@ test('pruneArchivedFocuses keeps archived focus referenced by history', async ()
     .filter((item) => item.status === 'archived')
     .map((item) => item.id)
   expect(archivedIds).toHaveLength(3)
-  expect(
-    ids.has('focus-archived-2') || ids.has('focus-archived-drop'),
-  ).toBe(true)
+  expect(ids.has('focus-archived-2') || ids.has('focus-archived-drop')).toBe(
+    true,
+  )
+})
+
+test('focus capacity maintenance no longer emits webui wake signals', async () => {
+  const runtime = await createRuntime()
+  runtime.config.worker.maxConcurrent = 1
+  runtime.focuses.push({
+    id: 'focus-a',
+    title: 'A',
+    status: 'active',
+    createdAt: '2026-03-05T00:00:01.000Z',
+    updatedAt: '2026-03-05T00:00:01.000Z',
+    lastActivityAt: '2026-03-05T00:00:01.000Z',
+  })
+
+  enforceActiveFocusLimit(runtime)
+
+  expect(runtime.ui.wakeVersion).toBe(0)
+  expect(runtime.ui.wakeEvents.size).toBe(0)
 })

@@ -11,7 +11,7 @@ import {
   FakeEventSource,
 } from './helpers/webui-event-source.js'
 
-import type { FocusesSnapshot, PlansSnapshot } from '../webui-src/types.js'
+import type { PlansSnapshot } from '../webui-src/types.js'
 
 describe('createEventStreamConnection', () => {
   const originalWindow = globalThis.window
@@ -64,7 +64,6 @@ describe('createEventStreamConnection', () => {
       onSnapshot: vi.fn(),
       onTasks: vi.fn(),
       onPlans: vi.fn(),
-      onFocuses: vi.fn(),
       onDisconnected: vi.fn(),
     })
 
@@ -87,7 +86,6 @@ describe('createEventStreamConnection', () => {
       onSnapshot: vi.fn(),
       onTasks: vi.fn(),
       onPlans: vi.fn(),
-      onFocuses: vi.fn(),
       onDisconnected,
     })
 
@@ -118,14 +116,12 @@ describe('createEventStreamConnection', () => {
     connection.stop()
   })
 
-  test('plans and focuses events dispatch their domain payloads', () => {
+  test('plans events dispatch while stray focuses events are ignored', () => {
     const onPlans = vi.fn<(plans: PlansSnapshot) => void>()
-    const onFocuses = vi.fn<(focuses: FocusesSnapshot) => void>()
     const connection = createEventStreamConnection({
       onSnapshot: vi.fn(),
       onTasks: vi.fn(),
       onPlans,
-      onFocuses,
       onDisconnected: vi.fn(),
     })
 
@@ -135,7 +131,6 @@ describe('createEventStreamConnection', () => {
     source?.emit('focuses', JSON.stringify({ items: [{ id: 'focus-1' }] }))
 
     expect(onPlans).toHaveBeenCalledWith({ items: [{ id: 'plan-1' }] })
-    expect(onFocuses).toHaveBeenCalledWith({ items: [{ id: 'focus-1' }] })
 
     connection.stop()
   })

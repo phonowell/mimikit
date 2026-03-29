@@ -69,13 +69,9 @@ export const hasMessagePayloadChanged = (
   )
 }
 
-export const buildSnapshotHintKey = (snapshot: {
-  status: unknown
-  tasks: unknown
-}): string =>
+export const buildSnapshotHintKey = (snapshot: { status: unknown }): string =>
   JSON.stringify({
     status: snapshot.status,
-    tasks: snapshot.tasks,
   })
 
 export const buildDeltaSnapshot = (

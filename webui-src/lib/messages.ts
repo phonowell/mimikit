@@ -3,7 +3,6 @@ import { mergeIncomingMessages } from './merge-incoming-messages.js'
 import type {
   AppState,
   ChatMessage,
-  FocusesSnapshot,
   PlansSnapshot,
   SnapshotEnvelope,
   StatusSnapshot,
@@ -47,7 +46,6 @@ export const createInitialAppState = (): AppState => ({
   messages: [],
   tasks: [],
   plans: [],
-  focuses: [],
   awaitingReply: false,
 })
 
@@ -69,14 +67,6 @@ export const applyIncomingPlans = (
 ): AppState => ({
   ...previous,
   plans: plans.items,
-})
-
-export const applyIncomingFocuses = (
-  previous: AppState,
-  focuses: FocusesSnapshot,
-): AppState => ({
-  ...previous,
-  focuses: focuses.items,
 })
 
 export const shouldDisplayMessageTime = (message: ChatMessage): boolean =>
@@ -122,7 +112,6 @@ export const applyIncomingSnapshot = (
       messages,
       tasks: snapshot.tasks?.tasks ?? previous.tasks,
       plans: snapshot.plans?.items ?? previous.plans,
-      focuses: snapshot.focuses?.items ?? previous.focuses,
       awaitingReply: shouldStopWaiting ? false : previous.awaitingReply,
     },
     newAgentMessages,
