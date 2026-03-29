@@ -2,59 +2,24 @@ import { expect, test } from 'vitest'
 
 import { collectManagerActionFeedback } from '../src/policy/manager/action-feedback-collect.js'
 
-test('enqueue_task rejects in-repo write tasks that bypass worktree closure', () => {
-  const feedback = collectManagerActionFeedback(
-    [
-      {
-        type: 'enqueue_task',
-        task: {
-          title: 'Tighten manager rules',
-          cwd: '/repo/mimikit/src/policy/manager',
-          mode: 'write',
-          use_worktree: false,
-          goal: '固化 manager 执行规则',
-          in_scope: ['只改 manager prompt 与 guard'],
-          out_of_scope: [],
-          done_when: ['仓库内规则固化完成'],
-          context_refs: [],
-          instructions: [],
-        },
-      },
-    ],
+test('enqueue_task does not treat repo worktree closure as a generic manager guard', () => {
+  const feedback = collectManagerActionFeedback([
     {
-      startupWorktree: '/repo/mimikit',
-    },
-  )
-
-  expect(feedback).toHaveLength(1)
-  expect(feedback[0]?.action).toBe('enqueue_task')
-  expect(feedback[0]?.hint).toContain('use_worktree=true')
-  expect(feedback[0]?.hint).toContain('review/merge/cleanup')
-})
-
-test('enqueue_task allows in-repo write tasks when worktree closure is enabled', () => {
-  const feedback = collectManagerActionFeedback(
-    [
-      {
-        type: 'enqueue_task',
-        task: {
-          title: 'Tighten manager rules',
-          cwd: '/repo/mimikit/src/policy/manager',
-          mode: 'write',
-          use_worktree: true,
-          goal: '固化 manager 执行规则',
-          in_scope: ['只改 manager prompt 与 guard'],
-          out_of_scope: [],
-          done_when: ['仓库内规则固化完成'],
-          context_refs: [],
-          instructions: [],
-        },
+      type: 'enqueue_task',
+      task: {
+        title: 'Tighten manager rules',
+        cwd: '/repo/mimikit/src/policy/manager',
+        mode: 'write',
+        use_worktree: false,
+        goal: '固化 manager 执行规则',
+        in_scope: ['只改 manager prompt 与 guard'],
+        out_of_scope: [],
+        done_when: ['仓库内规则固化完成'],
+        context_refs: [],
+        instructions: [],
       },
-    ],
-    {
-      startupWorktree: '/repo/mimikit',
     },
-  )
+  ])
 
   expect(feedback).toHaveLength(0)
 })

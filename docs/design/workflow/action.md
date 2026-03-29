@@ -55,7 +55,6 @@
 - `cwd` 必须指向现有目录。
 - `use_worktree` 必填；不需要独立 worktree 时显式传 `false`。
 - 仅当 `task.use_worktree=true` 且 `mode="write"` 时，运行时才会为仓库任务 materialize git worktree；否则直接在给定 `cwd` 执行。
-- 若 `task.cwd` 落在当前 startup worktree 内且 `mode="write"`，则必须 `use_worktree=true`，统一进入 review / merge / cleanup 闭环；manager 不得对当前仓库写任务走直写旁路。
 - 对 `use_worktree=true` 的仓库写任务，`cwd` 只表示仓库内真实执行起点；worktree 路径由运行时 materialize，manager 不得直接填写未来 worktree 路径。
 - 若 `cwd` 是 repo 内子路径，运行时会把该子路径映射到目标 worktree；若映射后的目录不存在、不是目录或不可访问，`enqueue_task` 会直接拒绝，不会创建 task。
 - 同一轮默认只派发一个粗粒度 `enqueue_task`；只有当多个任务的目录边界独立且互不冲突时，才允许并发 fan-out。当前校验层会直接拒绝同批次重叠目录的多个 `enqueue_task`。

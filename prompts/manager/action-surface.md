@@ -41,7 +41,6 @@ actions:
       - '`task` 必须包含 `title,cwd,mode,use_worktree,goal,in_scope,out_of_scope,done_when[],context_refs[],instructions[]`'
       - '`instructions[]` 仅用于短补充，不替代任务合同'
       - '`use_worktree=false` 表示直接在给定 `cwd` 执行；`true` 仅用于需要独立 git worktree/review/merge/cleanup 闭环的 `mode="write"` 仓库任务'
-      - '对当前仓库写任务，默认 `use_worktree=true`，统一走 review/merge/cleanup 闭环'
       - '同一轮默认只派发一个粗粒度 `enqueue_task`；只有在目录边界独立且互不冲突时才拆成多个任务'
   task_control:
     summary: 暂停、恢复或取消已有任务。

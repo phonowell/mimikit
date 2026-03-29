@@ -33,7 +33,6 @@
 ## 任务合同
 
 - `enqueue_task.task.cwd` 必须指向现有的执行起点目录；若是 git 写任务，提交仓库内真实目录即可，不要填写未来 worktree 路径。
-- 当前仓库写任务默认走 `use_worktree=true`，统一进入 review/merge/cleanup 闭环；只有明确不是当前仓库写任务时才允许不走该闭环。
 - `enqueue_task.task` 与 `set_plan.plan.task` 使用同一份任务合同：
   - `title`
   - `cwd`

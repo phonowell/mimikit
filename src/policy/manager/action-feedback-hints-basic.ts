@@ -67,9 +67,6 @@ export const formatEnqueueTaskWorktreePrepareFailedHint = (
     reason,
   })
 
-export const formatEnqueueTaskWorktreeRequiredHint = (): string =>
-  renderActionFeedbackHint('enqueue_task_worktree_required')
-
 export const formatEnqueueTaskBatchConflictHint = (
   conflictPaths: string,
 ): string =>

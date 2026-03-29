@@ -1,9 +1,6 @@
 import { isAbsolute, relative, resolve } from 'node:path'
 
-import {
-  formatEnqueueTaskBatchConflictHint,
-  formatEnqueueTaskWorktreeRequiredHint,
-} from './action-feedback-hints.js'
+import { formatEnqueueTaskBatchConflictHint } from './action-feedback-hints.js'
 import { rejected, type ValidationIssue } from './action-validation-helpers.js'
 
 import type { FeedbackContext } from './action-validation-context.js'
@@ -37,36 +34,10 @@ const collectConflictingEnqueuePaths = (params: {
   return [...conflicts]
 }
 
-const targetsStartupWorktreeWrite = (params: {
-  startupWorktree?: string | undefined
-  cwd: string
-  mode: 'read' | 'write'
-  useWorktree: boolean
-}): boolean => {
-  const startupWorktree = params.startupWorktree?.trim()
-  if (!startupWorktree || params.mode !== 'write' || params.useWorktree)
-    return false
-
-  return isSameOrNestedPath(
-    normalizePath(startupWorktree),
-    normalizePath(params.cwd),
-  )
-}
-
 export const validateEnqueueTaskManagerRules = (
   item: Extract<Parsed, { type: 'enqueue_task' }>,
-  context: Pick<FeedbackContext, 'currentActions' | 'startupWorktree'>,
+  context: Pick<FeedbackContext, 'currentActions'>,
 ): ValidationIssue[] => {
-  if (
-    targetsStartupWorktreeWrite({
-      startupWorktree: context.startupWorktree,
-      cwd: item.task.cwd,
-      mode: item.task.mode,
-      useWorktree: item.task.use_worktree,
-    })
-  )
-    return rejected(formatEnqueueTaskWorktreeRequiredHint())
-
   const conflictingPaths = collectConflictingEnqueuePaths({
     item,
     currentActions: context.currentActions,
