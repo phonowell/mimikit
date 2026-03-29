@@ -1,16 +1,4 @@
-const normalizeStructuredOutputSchema = (value: unknown): unknown => {
-  if (Array.isArray(value)) return value.map(normalizeStructuredOutputSchema)
-  if (!value || typeof value !== 'object') return value
-
-  const input = value as Record<string, unknown>
-  const normalized: Record<string, unknown> = {}
-  for (const [key, child] of Object.entries(input)) {
-    if (key === 'oneOf')
-      normalized.anyOf = normalizeStructuredOutputSchema(child)
-    else normalized[key] = normalizeStructuredOutputSchema(child)
-  }
-  return normalized
-}
+import { normalizeStrictOutputSchema } from '../../foundation/shared/strict-output-schema.js'
 
 export const parseStructuredOutputJson = (output: string): unknown => {
   const trimmed = output.trim()
@@ -27,6 +15,6 @@ export const buildStructuredOutputTextFormat = (
 ): { format: unknown } | undefined =>
   outputSchema
     ? {
-        format: normalizeStructuredOutputSchema(outputSchema),
+        format: normalizeStrictOutputSchema(outputSchema),
       }
     : undefined

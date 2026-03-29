@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { normalizeStrictOutputSchema } from '../../foundation/shared/strict-output-schema.js'
+
 import { type WorkerTurn, workerTurnSchema } from './worker-turn-schema.js'
 
 const stripNullFields = (value: unknown): unknown => {
@@ -18,7 +20,7 @@ export const buildWorkerTurnOutputSchema = (): Record<string, unknown> => ({
   type: 'json_schema',
   name: 'worker_turn',
   strict: true,
-  schema: z.toJSONSchema(workerTurnSchema),
+  schema: normalizeStrictOutputSchema(z.toJSONSchema(workerTurnSchema)),
 })
 
 export const parseWorkerTurn = (value: unknown): WorkerTurn =>
