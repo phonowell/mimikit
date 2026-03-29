@@ -58,11 +58,8 @@ export const finishBatchWithDirectTaskResultReply = async (params: {
   nextResultsCursor: number
   startedAt: number
 }): Promise<void> => {
-  const replyText = appendArchiveLine(
-    params.runtime,
-    params.results[0],
-    params.text,
-  )
+  const result = params.results[0]
+  const replyText = appendArchiveLine(params.runtime, result, params.text)
   const consumed = await consumeBatchHistory({
     runtime: params.runtime,
     inputs: params.inputs,
@@ -73,6 +70,10 @@ export const finishBatchWithDirectTaskResultReply = async (params: {
     runtime: params.runtime,
     text: replyText,
     nextInputsCursor: params.nextInputsCursor,
+    ...(result?.usage ? { usage: result.usage } : {}),
+    ...(result && result.durationMs >= 0
+      ? { elapsedMs: result.durationMs }
+      : {}),
   })
   await completeSuccessfulManagerBatch({
     runtime: params.runtime,

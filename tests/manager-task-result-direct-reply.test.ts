@@ -45,6 +45,11 @@ test('processManagerBatch directly delivers compact single task_result output', 
         output:
           '结论是：remember_memory 没有写入不是存储失败，而是 provenance 校验拒绝了该 action。\nsource_quote 没有命中当前用户输入原文，因此本轮不能写入长期记忆。',
         durationMs: 25,
+        usage: {
+          input: 13,
+          output: 8,
+          total: 21,
+        },
         completedAt: '2026-03-25T06:08:56.942Z',
       },
     ],
@@ -56,6 +61,12 @@ test('processManagerBatch directly delivers compact single task_result output', 
   expect(history.at(-1)).toMatchObject({
     role: 'agent',
     text: '结论是：remember_memory 没有写入不是存储失败，而是 provenance 校验拒绝了该 action。\nsource_quote 没有命中当前用户输入原文，因此本轮不能写入长期记忆。\n[任务归档](.mimikit/tasks/2026-03-25/task-explain-reject.md)',
+    usage: {
+      input: 13,
+      output: 8,
+      total: 21,
+    },
+    elapsedMs: 25,
   })
   expect(task.result?.output).toBe(`Task "${task.title}" completed.`)
   expect(runtime.queues.resultsCursor).toBe(1)
