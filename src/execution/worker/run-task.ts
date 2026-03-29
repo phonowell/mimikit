@@ -15,8 +15,27 @@ import { buildResult } from './result-build.js'
 import { finalizeResult } from './result-finalize.js'
 import { runTaskWithRetry } from './run-retry.js'
 
-import type { Task, TaskResultHandoff } from '../../foundation/types/index.js'
+import type {
+  Task,
+  TaskResult,
+  TaskResultHandoff,
+} from '../../foundation/types/index.js'
 import type { WorkerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
+
+const parseIsoMs = (value: string | undefined): number | undefined => {
+  const parsed = Date.parse(value ?? '')
+  return Number.isFinite(parsed) ? parsed : undefined
+}
+
+const resolveQueueWaitMs = (
+  task: Task,
+  fallbackStartedAtMs: number,
+): number | undefined => {
+  const createdAtMs = parseIsoMs(task.createdAt)
+  if (createdAtMs === undefined) return undefined
+  const startedAtMs = parseIsoMs(task.startedAt) ?? fallbackStartedAtMs
+  return Math.max(0, startedAtMs - createdAtMs)
+}
 
 export const runTask = async (
   runtime: WorkerRuntime,
@@ -66,16 +85,34 @@ export const runTask = async (
     traceRef
       ? buildResult(task, status, output, durationMs, usage, traceRef, handoff)
       : buildResult(task, status, output, durationMs, usage, undefined, handoff)
+  const finalizeTaskResult = async (
+    result: TaskResult,
+    markFn: (tasks: Task[], taskId: string, patch?: Partial<Task>) => void,
+  ): Promise<void> => {
+    const finalizeStartedAt = Date.now()
+    await finalizeResult(runtime, task, result, markFn)
+    await bestEffort('appendLog: worker_finalize', () =>
+      appendLog(runtime.paths.log, {
+        event: 'worker_finalize',
+        taskId: task.id,
+        status: result.status,
+        elapsedMs: Math.max(0, Date.now() - finalizeStartedAt),
+        totalElapsedMs: elapsed(),
+      }),
+    )
+  }
   try {
     const spec = await readTaskExecutionSpec(
       runtime.config.workDir,
       task.executionSpecId,
     )
+    const queueWaitMs = resolveQueueWaitMs(task, startedAt)
     await appendLog(runtime.paths.log, {
       event: 'worker_start',
       taskId: task.id,
       profile: task.profile,
       promptChars: spec.prompt.length,
+      ...(queueWaitMs !== undefined ? { queueWaitMs } : {}),
     })
     const llmResult = await runTaskWithRetry({
       runtime,
@@ -98,9 +135,7 @@ export const runTask = async (
     if (task.status === 'paused') return
     if (task.status === 'canceled') {
       const usage = llmResult.usage ?? task.usage
-      await finalizeResult(
-        runtime,
-        task,
+      await finalizeTaskResult(
         buildTaskResult(
           'canceled',
           'Task canceled',
@@ -120,7 +155,7 @@ export const runTask = async (
       llmResult.traceRef,
       llmResult.handoff,
     )
-    await finalizeResult(runtime, task, result, markTaskSucceeded)
+    await finalizeTaskResult(result, markTaskSucceeded)
   } catch (error) {
     await flushProgressWrites()
     const err = error instanceof Error ? error : new Error(String(error))
@@ -139,7 +174,7 @@ export const runTask = async (
         usage,
         traceRef,
       )
-      await finalizeResult(runtime, task, result, markTaskCanceled)
+      await finalizeTaskResult(result, markTaskCanceled)
       return
     }
     if (resumeTurnState.started) clearConsumedResumeInstruction()
@@ -151,6 +186,6 @@ export const runTask = async (
       task.usage,
       traceRef,
     )
-    await finalizeResult(runtime, task, result, markTaskFailed)
+    await finalizeTaskResult(result, markTaskFailed)
   }
 }
