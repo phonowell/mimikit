@@ -1,5 +1,4 @@
 import type {
-  FocusesSnapshot,
   PlansSnapshot,
   SnapshotEnvelope,
   TasksSnapshot,
@@ -9,7 +8,6 @@ type EventStreamCallbacks = {
   onSnapshot: (snapshot: SnapshotEnvelope) => void
   onTasks: (tasks: TasksSnapshot) => void
   onPlans: (plans: PlansSnapshot) => void
-  onFocuses: (focuses: FocusesSnapshot) => void
   onDisconnected: () => void
 }
 
@@ -40,7 +38,6 @@ export const createEventStreamConnection = ({
   onSnapshot,
   onTasks,
   onPlans,
-  onFocuses,
   onDisconnected,
 }: EventStreamCallbacks): EventStreamConnection => {
   let eventSource: EventSource | null = null
@@ -132,12 +129,6 @@ export const createEventStreamConnection = ({
       markActivity()
       const plans = parseJsonRecord<PlansSnapshot>(event.data)
       if (plans) onPlans(plans)
-    })
-    source.addEventListener('focuses', (event) => {
-      if (eventSource !== source) return
-      markActivity()
-      const focuses = parseJsonRecord<FocusesSnapshot>(event.data)
-      if (focuses) onFocuses(focuses)
     })
     source.addEventListener('heartbeat', () => {
       if (eventSource !== source) return

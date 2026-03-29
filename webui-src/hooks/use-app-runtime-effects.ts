@@ -1,7 +1,6 @@
 import { useEffect, useEffectEvent } from 'react'
 
 import {
-  applyIncomingFocuses,
   applyIncomingPlans,
   applyIncomingSnapshot,
   applyIncomingTasks,
@@ -13,7 +12,6 @@ import { useEventStream } from './use-event-stream.js'
 import type {
   AppState,
   ConfirmDialogState,
-  FocusesSnapshot,
   PlansSnapshot,
   SnapshotEnvelope,
   TasksSnapshot,
@@ -62,9 +60,6 @@ export const useAppRuntimeEffects = ({
   const handlePlans = useEffectEvent((plans: PlansSnapshot) =>
     setAppState((current) => applyIncomingPlans(current, plans)),
   )
-  const handleFocuses = useEffectEvent((focuses: FocusesSnapshot) =>
-    setAppState((current) => applyIncomingFocuses(current, focuses)),
-  )
   const handleDisconnected = useEffectEvent(() => {
     setAppState((current) => ({
       ...current,
@@ -90,7 +85,6 @@ export const useAppRuntimeEffects = ({
     onSnapshot: handleSnapshot,
     onTasks: handleTasks,
     onPlans: handlePlans,
-    onFocuses: handleFocuses,
     onDisconnected: handleDisconnected,
   })
 

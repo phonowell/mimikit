@@ -102,27 +102,11 @@ export type PlansSnapshot = {
   items: PlanView[]
 }
 
-export type FocusView = {
-  id: string
-  title: string
-  status: string
-  updatedAt: string
-  lastActivityAt: string
-  lastTaskId?: string
-  summary?: string
-  openItems?: string[]
-}
-
-export type FocusesSnapshot = {
-  items: FocusView[]
-}
-
 export type SnapshotEnvelope = {
   status?: StatusSnapshot
   messages?: MessageSnapshot
   tasks?: TasksSnapshot
   plans?: PlansSnapshot
-  focuses?: FocusesSnapshot
 }
 
 export type QuoteState = {
@@ -143,6 +127,5 @@ export type AppState = {
   messages: ChatMessage[]
   tasks: TaskView[]
   plans: PlanView[]
-  focuses: FocusView[]
   awaitingReply: boolean
 }

@@ -70,11 +70,6 @@ export const registerEventsRoute = (
           if (!sendSseEvent(reply, 'plans', plans)) break
           continue
         }
-        if (signal.kind === 'focuses') {
-          const focuses = orchestrator.getFocuses()
-          if (!sendSseEvent(reply, 'focuses', focuses)) break
-          continue
-        }
 
         const forceFullMessagesSnapshot = signal.kind === 'messages'
         const snapshot = forceFullMessagesSnapshot
