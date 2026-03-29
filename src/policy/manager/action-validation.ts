@@ -15,6 +15,7 @@ import {
   formatTaskControlResumeInstructionsOnlyHint,
 } from './action-feedback-hints.js'
 import { validateRecordTaskGitIntentEvidence } from './action-intent-evidence-dialog-memory.js'
+import { validateEnqueueTaskManagerRules } from './action-validation-enqueue-task.js'
 import { rejected, type ValidationIssue } from './action-validation-helpers.js'
 import {
   validateDeletePlan,
@@ -59,6 +60,8 @@ export const validateRunTask = (
       code: 'task_contract_missing',
     })
   }
+  const managerRuleIssues = validateEnqueueTaskManagerRules(item, context)
+  if (managerRuleIssues.length > 0) return managerRuleIssues
   return validateHighRiskActionIntentEvidence(item, context)
 }
 

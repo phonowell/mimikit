@@ -67,6 +67,16 @@ export const formatEnqueueTaskWorktreePrepareFailedHint = (
     reason,
   })
 
+export const formatEnqueueTaskWorktreeRequiredHint = (): string =>
+  renderActionFeedbackHint('enqueue_task_worktree_required')
+
+export const formatEnqueueTaskBatchConflictHint = (
+  conflictPaths: string,
+): string =>
+  renderActionFeedbackHint('enqueue_task_batch_conflict', {
+    conflict_paths: conflictPaths,
+  })
+
 export const formatPlanNotFoundHint = (
   action: 'set_plan' | 'delete_plan',
 ): string => renderActionFeedbackHint('plan_not_found', { action })

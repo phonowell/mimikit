@@ -28,6 +28,8 @@ const actionFeedbackHintSchema = z
     record_task_git_reason_required: z.string().trim().min(1),
     enqueue_task_cwd_invalid: z.string().trim().min(1),
     enqueue_task_worktree_prepare_failed: z.string().trim().min(1),
+    enqueue_task_worktree_required: z.string().trim().min(1),
+    enqueue_task_batch_conflict: z.string().trim().min(1),
     enqueue_task_contract_missing: z.string().trim().min(1),
     plan_not_found: z.string().trim().min(1),
     set_plan_done_forbidden: z.string().trim().min(1),

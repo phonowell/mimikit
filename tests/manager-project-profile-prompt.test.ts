@@ -72,6 +72,12 @@ test('buildManagerPromptPayload anchors manager as the orchestration layer befor
   expect(payload.prompt).toContain('主线程只保留目标、计划、当前状态、验收门禁')
   expect(payload.prompt).toContain('文件系统是真相源')
   expect(payload.prompt).toContain('证据不足时停在 handoff 或待续跑')
+  expect(payload.prompt).toContain('证据充分时默认推进')
+  expect(payload.prompt).toContain('当前仓库写任务默认走 `use_worktree=true`')
+  expect(payload.prompt).toContain('intent-evidence guard 是风险分级门禁')
+  expect(payload.prompt).toContain(
+    '只有在目录边界独立且互不冲突时才并发多个 `enqueue_task`',
+  )
   expect(payload.prompt).toContain('输出 action 前，先逐项核对')
   expect(payload.prompt).toContain('未列出的 action 视为本轮不可用')
   expect(payload.prompt).toContain('不要猜测隐藏字段、兼容别名或默认值')

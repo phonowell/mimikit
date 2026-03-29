@@ -38,6 +38,10 @@ enqueue_task_cwd_invalid: |
   enqueue_task 执行失败：`task.cwd` 必须指向现有目录。{{ reason }} 请提交仓库内真实执行起点，不要填写未来 worktree 路径。
 enqueue_task_worktree_prepare_failed: |
   enqueue_task 执行失败：无法为 branch={{ branch }} 准备 worktree。{{ reason }} 请先修正 `cwd` 或清理冲突目录后再重试。
+enqueue_task_worktree_required: |
+  enqueue_task 执行失败：当前写任务落在 MIMIKIT 当前仓库内，必须 `use_worktree=true`，以走 review/merge/cleanup 闭环；若只是读取，请改成 `mode="read"`。
+enqueue_task_batch_conflict: |
+  enqueue_task 执行失败：默认按粗粒度派单；同一批次里多个任务命中了重叠目录：{{ conflict_paths }}。请先收敛为一个 worker 任务；只有当目录边界独立且不会互相改动时，才拆成多个 `enqueue_task`。
 enqueue_task_contract_missing: |
   enqueue_task 执行失败：继续派发前还缺最小任务合同：`goal`、至少一条 `in_scope[]`、至少一条 `done_when[]`，以及有效的 `cwd/mode`。请补齐 `task` 后重试；`instructions[]` 只能作为短补充，不替代任务合同。
 plan_not_found: |

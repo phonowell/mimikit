@@ -55,8 +55,10 @@
 - `cwd` 必须指向现有目录。
 - `use_worktree` 必填；不需要独立 worktree 时显式传 `false`。
 - 仅当 `task.use_worktree=true` 且 `mode="write"` 时，运行时才会为仓库任务 materialize git worktree；否则直接在给定 `cwd` 执行。
+- 若 `task.cwd` 落在当前 startup worktree 内且 `mode="write"`，则必须 `use_worktree=true`，统一进入 review / merge / cleanup 闭环；manager 不得对当前仓库写任务走直写旁路。
 - 对 `use_worktree=true` 的仓库写任务，`cwd` 只表示仓库内真实执行起点；worktree 路径由运行时 materialize，manager 不得直接填写未来 worktree 路径。
 - 若 `cwd` 是 repo 内子路径，运行时会把该子路径映射到目标 worktree；若映射后的目录不存在、不是目录或不可访问，`enqueue_task` 会直接拒绝，不会创建 task。
+- 同一轮默认只派发一个粗粒度 `enqueue_task`；只有当多个任务的目录边界独立且互不冲突时，才允许并发 fan-out。当前校验层会直接拒绝同批次重叠目录的多个 `enqueue_task`。
 
 ### `task_control`
 
@@ -124,6 +126,8 @@
 
 ## Guardrail
 
+- 证据充分时默认推进；不要因“更稳妥”把已可执行事项退回成多余追问。
+- `intent-evidence` 是风险分级门禁，不是所有 action 一刀切的字面重叠比较器。
 - `enqueue_task`、`task_control`、`record_task_git`、`set_plan`、`delete_plan`、`remember_memory`、`remember_project_profile` 都受 intent-evidence guard 约束
 - 没有当前用户输入直接支撑时，`task_result` / `history` / `trigger` 只能作为补充证据，不能单独驱动高风险 action
 - `record_task_git` 必须命中当前轮 provenance：`source_input_id` 指向当前用户输入，且 `source_quote` 必须命中该输入原文；不再靠动作词表猜测闭环意图
