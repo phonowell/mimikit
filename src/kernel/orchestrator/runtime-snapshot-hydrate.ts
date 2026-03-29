@@ -6,6 +6,7 @@ import type {
   RuntimeManagerState,
   RuntimeQueueState,
 } from './runtime-interfaces.js'
+import type { Task } from '../../foundation/types/index.js'
 import type { RuntimeSnapshot } from '../../persistence/storage/runtime-snapshot-schema.js'
 
 export type RuntimeSnapshotHydrateSlice = Omit<RuntimeDomainState, 'queues'> & {
@@ -32,13 +33,34 @@ const selectRuntimeSnapshotQueues = (
   }
 }
 
+const toRecoveredPendingTask = (task: Task): Task => {
+  const {
+    startedAt: _startedAt,
+    completedAt: _completedAt,
+    durationMs: _durationMs,
+    result: _result,
+    usage: _usage,
+    attempts: _attempts,
+    ...rest
+  } = task
+  return {
+    ...rest,
+    status: 'pending',
+  }
+}
+
+const recoverSnapshotTasks = (tasks: RuntimeSnapshot['tasks']): Task[] =>
+  tasks.map((task) =>
+    task.status === 'running' ? toRecoveredPendingTask(task) : { ...task },
+  )
+
 export const buildRuntimeSnapshotHydrateSlice = (params: {
   snapshot: RuntimeSnapshot
   channelTargets: RuntimeChannelTargets
 }): RuntimeSnapshotHydrateSlice => {
   const { snapshot, channelTargets } = params
   const slice: RuntimeSnapshotHydrateSlice = {
-    tasks: snapshot.tasks,
+    tasks: recoverSnapshotTasks(snapshot.tasks),
     taskPlans: snapshot.taskPlans,
     focuses: snapshot.focuses ?? [],
     manager: {

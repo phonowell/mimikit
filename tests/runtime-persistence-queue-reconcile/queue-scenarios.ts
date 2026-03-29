@@ -1,17 +1,20 @@
-import { mkdtemp } from 'node:fs/promises'
+import { mkdtemp, readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { expect, test } from 'vitest'
 
-import { createDefaultMemoryRefreshState } from '../../src/policy/memory/refresh/state.js'
 import {
   hydrateRuntimeState,
   persistRuntimeState,
 } from '../../src/kernel/orchestrator/runtime-persistence.js'
+import {
+  publishUserInput,
+  publishWorkerResult,
+} from '../../src/kernel/streams/queues.js'
 import { buildPaths } from '../../src/persistence/fs/paths.js'
-import { publishUserInput, publishWorkerResult } from '../../src/kernel/streams/queues.js'
 import { saveRuntimeSnapshot } from '../../src/persistence/storage/runtime-snapshot.js'
+import { createDefaultMemoryRefreshState } from '../../src/policy/memory/refresh/state.js'
 import { createTestRuntimeState } from '../helpers/runtime-state.js'
 
 const GLOBAL_FOCUS_ID = 'focus-global'
@@ -101,6 +104,20 @@ test('persist+hydrate keeps reusable session on recovered pending task', async (
   })
 
   await persistRuntimeState(runtime)
+  const persistedSnapshot = JSON.parse(
+    await readFile(join(stateDir, 'runtime-snapshot.json'), 'utf8'),
+  ) as {
+    tasks?: Array<{
+      status?: string
+      startedAt?: string
+    }>
+  }
+
+  expect(persistedSnapshot.tasks).toHaveLength(1)
+  expect(persistedSnapshot.tasks?.[0]?.status).toBe('running')
+  expect(persistedSnapshot.tasks?.[0]?.startedAt).toBe(
+    '2026-02-06T00:01:00.000Z',
+  )
 
   const restored = await createTestRuntimeState({
     workDir: stateDir,

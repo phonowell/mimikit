@@ -106,24 +106,5 @@ export const saveRuntimeSnapshot = async (
   })
 }
 
-const toRecoveredPendingTask = (task: Task): Task => {
-  const {
-    startedAt: _startedAt,
-    completedAt: _completedAt,
-    durationMs: _durationMs,
-    result: _result,
-    usage: _usage,
-    attempts: _attempts,
-    ...rest
-  } = task
-  return {
-    ...rest,
-    status: 'pending',
-  }
-}
-
 export const selectPersistedTasks = (tasks: Task[]): Task[] =>
-  tasks.map((task) => {
-    if (task.status === 'running') return toRecoveredPendingTask(task)
-    return { ...task }
-  })
+  tasks.map((task) => ({ ...task }))

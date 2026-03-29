@@ -19,7 +19,7 @@ import { createTmpDir } from './testkit.js'
 
 import type { Task } from '../../src/foundation/types/index.js'
 
-test('selectPersistedTasks recovers running task to pending', () => {
+test('selectPersistedTasks preserves running task details for live snapshot', () => {
   const tasks: Task[] = [
     {
       id: 'b',
@@ -42,9 +42,8 @@ test('selectPersistedTasks recovers running task to pending', () => {
   const persisted = selectPersistedTasks(tasks)
   expect(persisted).toHaveLength(1)
   expect(persisted[0]?.id).toBe('b')
-  expect(persisted[0]?.status).toBe('pending')
-  expect(persisted[0]?.startedAt).toBeUndefined()
-  expect(persisted[0]?.result).toBeUndefined()
+  expect(persisted[0]?.status).toBe('running')
+  expect(persisted[0]?.startedAt).toBe('2026-02-06T00:01:00.000Z')
   expect(persisted[0]?.sessionId).toBe('session-restore-me')
   expect(persisted[0]?.sessionState).toBe('reusable')
   expect(persisted[0]?.sessionUpdatedAt).toBe('2026-02-06T00:01:10.000Z')

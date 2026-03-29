@@ -4,7 +4,6 @@ import { join } from 'node:path'
 
 import { expect, test } from 'vitest'
 
-import { createTestRuntimeState } from './helpers/runtime-state.js'
 import { loadRuntimeSnapshot } from '../src/persistence/storage/runtime-snapshot.js'
 import {
   buildTaskFingerprint,
@@ -15,6 +14,8 @@ import {
   startTaskWorkerRun,
   updateTaskUsage,
 } from '../src/work/orchestrator/task-worker-run-write.js'
+
+import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 import type { Task } from '../src/foundation/types/index.js'
 
@@ -73,7 +74,7 @@ test('startTaskWorkerRun and finishTaskWorkerRun own worker run state writes', a
 
   const snapshot = await loadRuntimeSnapshot(workDir)
   expect(snapshot.tasks[0]?.id).toBe(task.id)
-  expect(snapshot.tasks[0]?.status).toBe('pending')
+  expect(snapshot.tasks[0]?.status).toBe('running')
 
   await finishTaskWorkerRun({
     runtime,
