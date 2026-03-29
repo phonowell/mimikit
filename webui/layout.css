@@ -245,6 +245,10 @@ main[data-app] {
   min-height: 0;
 }
 
+.messages > :first-child {
+  margin-top: auto;
+}
+
 .composer {
   background: var(--panel);
   border: 1px solid transparent;
