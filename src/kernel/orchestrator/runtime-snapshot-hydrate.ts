@@ -1,4 +1,5 @@
 import { hydrateMemoryRefreshState } from '../../policy/memory/refresh/state.js'
+import { reconcileTaskGitState } from '../../work/shared/task-git-lifecycle.js'
 
 import type {
   RuntimeChannelTargets,
@@ -51,7 +52,9 @@ const toRecoveredPendingTask = (task: Task): Task => {
 
 const recoverSnapshotTasks = (tasks: RuntimeSnapshot['tasks']): Task[] =>
   tasks.map((task) =>
-    task.status === 'running' ? toRecoveredPendingTask(task) : { ...task },
+    reconcileTaskGitState(
+      task.status === 'running' ? toRecoveredPendingTask(task) : { ...task },
+    ),
   )
 
 export const buildRuntimeSnapshotHydrateSlice = (params: {

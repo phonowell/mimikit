@@ -19,6 +19,8 @@ export const appendAndDispatchManagerFailureReply = async (params: {
   runtime: ManagerRuntime
   inputs: UserInput[]
   focusId: string
+  inputRetained: boolean
+  pendingResultCount: number
   autoRetryMeta: ManagerAutoRetryMeta
 }): Promise<void> => {
   const sourceInputId = resolveLatestUserInputId(params.inputs)
@@ -27,6 +29,8 @@ export const appendAndDispatchManagerFailureReply = async (params: {
     () =>
       appendManagerFallbackReply(params.runtime.paths, params.focusId, {
         ...(sourceInputId ? { sourceInputId } : {}),
+        inputRetained: params.inputRetained,
+        pendingResultCount: params.pendingResultCount,
         autoRetryAttempts: params.autoRetryMeta.autoRetryAttempts,
         autoRetryMaxAttempts: params.autoRetryMeta.autoRetryMaxAttempts,
         autoRetryState: params.autoRetryMeta.autoRetryState,

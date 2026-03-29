@@ -142,6 +142,8 @@ export const recoverManagerBatchFailure = async (params: {
       runtime: params.runtime,
       inputs: params.inputs,
       focusId: errorFocusId,
+      inputRetained: true,
+      pendingResultCount: params.results.length,
       autoRetryMeta: fallbackAutoRetryMeta,
     })
   }

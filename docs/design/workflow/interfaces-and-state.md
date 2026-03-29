@@ -81,7 +81,8 @@
 
 `manager_fallback_reply` 事件补充：
 
-- payload 可能包含 `source_input_id`、`auto_retry_attempts`、`auto_retry_max_attempts`、`auto_retry_state`、`auto_retry_strategy`。
+- payload 可能包含 `source_input_id`、`input_retained`、`pending_result_count`、`auto_retry_attempts`、`auto_retry_max_attempts`、`auto_retry_state`、`auto_retry_strategy`。
+- 用户可见文案不再固定为“服务暂时不可用”；至少会说明输入已保留，并在有待回放结果时说明会继续收口。
 - WebUI 通过 `systemEventName/systemEventPayload` 识别事件，不依赖文案关键词。
 - `startup` payload 包含 `runtime_id`、`started_at`，并在可用时附带 `commit`、`dirty`、`worktree`。
 
@@ -184,6 +185,7 @@ schema：`src/persistence/storage/runtime-snapshot-schema.ts`
 - `taskPlans[*]` 当前使用 `trigger + effect` 结构，不再持久化顶层 `prompt/profile/source` 旧字段。
 - `taskPlans[*].trigger.mode = "on_worker_slot_freed"` 是边沿触发而不是电平触发；启动时若已有空闲容量会记一次初始可用边沿，随后只有容量增加才再次触发。
 - `taskPlans[*].effect.taskTemplate.useWorktree?` 用于显式记录计划任务是否要求独立 worktree；默认缺省视为 `false`。
+- hydrate / persist 阶段会用文件系统现状对账 git closure：若 worktree 已缺失或 review sentinel / merge 关系可推断，则会把结果写回 `tasks[*].git.lifecycle`，并同步到已有的 `tasks[*].result.handoff.git.lifecycle`；git closure 不再只停留在 WebUI 读时派生。
 
 恢复一致性规则（启动阶段）：
 

@@ -78,6 +78,11 @@
   - `task.git.lifecycle`
   - `task.result.handoff.git.lifecycle`
   - 任务归档 frontmatter / handoff
+- 启动 hydrate 与 snapshot persist 也会用文件系统现状补做一次 git closure 对账：
+  - 缺失 worktree 会收敛为 `cleaned=true`
+  - review sentinel / merge 祖先关系会收敛为最新 lifecycle
+  - 对账结果会回写到 `task.git.lifecycle` 与已有 `task.result.handoff.git.lifecycle`
+- 因此 git closure 的真相源不再只是 UI badge；runtime task 本体与 snapshot 会保持一致。
 
 ## 结果约束
 

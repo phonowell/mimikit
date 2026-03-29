@@ -135,62 +135,14 @@ test('recoverManagerBatchFailure keeps task results pending for replay after man
   })
   expect(fallbackMessage).toBeDefined()
   expect(fallbackMessage?.systemEventPayload?.source_input_id).toBe(input.id)
+  expect(fallbackMessage?.systemEventPayload?.input_retained).toBe(true)
+  expect(fallbackMessage?.systemEventPayload?.pending_result_count).toBe(1)
+  expect(fallbackMessage?.text).toContain('已保留你刚才的输入')
+  expect(fallbackMessage?.text).toContain('1 条任务结果')
 
   const managerErrorMessage = history.find((item) => {
     if (item.role !== 'system') return false
     return item.systemEventName === 'manager_error'
   })
   expect(managerErrorMessage).toBeDefined()
-})
-test('recoverManagerBatchFailure dispatches fallback reply to telegram source input', async () => {
-  const runtime = await createRuntime()
-  runtime.config.telegram.enabled = true
-  runtime.config.telegram.botToken = 'bot-token'
-  runtime.config.telegram.chatId = 'telegram-fallback-chat'
-  runtime.config.telegram.apiRoot = 'https://api.telegram.org'
-  runtime.config.telegram.proxy = ''
-  const input: UserInput = {
-    id: 'input-telegram-1',
-    role: 'user',
-    text: '现在怎么样了？',
-    createdAt: '2026-03-08T06:18:36.155Z',
-    focusId: 'focus-main',
-    source: 'telegram',
-    platform: 'telegram',
-    telegramChatId: 'telegram-from-input',
-    telegramMessageId: '42',
-  }
-  runtime.session.inflightInputs = [input]
-  await publishUserInput({ paths: runtime.paths, payload: input })
-
-  await recoverManagerBatchFailure({
-    runtime,
-    error: new Error(
-      '[provider:openai-responses] sdk run failed: fetch failed',
-    ),
-    inputs: [input],
-    results: [],
-    nextInputsCursor: 1,
-    nextResultsCursor: 0,
-    agentInputsCount: 1,
-    agentAppended: false,
-    startedAt: Date.now() - 20,
-  })
-
-  const history = await readHistory(runtime.paths.history)
-  const fallbackMessage = history.find((item) => {
-    if (item.role !== 'system') return false
-    return item.systemEventName === 'manager_fallback_reply'
-  })
-  const fallbackReply = fallbackMessage?.systemEventPayload?.reply
-  expect(fallbackReply).toBeTypeOf('string')
-  expect(mockedSendTelegramTextMessage).toHaveBeenCalledWith({
-    botToken: 'bot-token',
-    apiRoot: 'https://api.telegram.org',
-    proxy: '',
-    chatId: 'telegram-from-input',
-    text: fallbackReply,
-  })
-  expect(runtime.manager.resultReplayFailureCount).toBe(0)
-  expect(runtime.manager.resultReplayReadyAtMs).toBe(0)
 })

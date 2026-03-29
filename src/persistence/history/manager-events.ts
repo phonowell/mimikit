@@ -1,3 +1,4 @@
+import { renderPromptTemplate } from '../../foundation/prompting/format.js'
 import { loadPromptTemplate } from '../../foundation/prompting/prompt-loader.js'
 import { nowIso } from '../../foundation/shared/utils.js'
 import { createSystemEventRecord } from '../../surface/shared/system-event.js'
@@ -10,6 +11,8 @@ import type { RuntimePathsState } from '../../kernel/orchestrator/runtime-interf
 
 type ManagerFallbackMeta = {
   sourceInputId?: string
+  inputRetained?: boolean
+  pendingResultCount?: number
   autoRetryAttempts: number
   autoRetryMaxAttempts: number
   autoRetryState: 'exhausted' | 'not_retryable'
@@ -21,8 +24,21 @@ export const appendManagerFallbackReply = async (
   focusId: FocusId = GLOBAL_FOCUS_ID,
   fallbackMeta?: ManagerFallbackMeta,
 ): Promise<string> => {
-  const fallback = (
-    await loadPromptTemplate('manager/system-fallback-reply.md')
+  const fallbackTemplate = await loadPromptTemplate(
+    'manager/system-fallback-reply.md',
+  )
+  const fallback = renderPromptTemplate(
+    fallbackTemplate,
+    {
+      auto_retry_attempts: String(fallbackMeta?.autoRetryAttempts ?? 0),
+      auto_retry_max_attempts: String(fallbackMeta?.autoRetryMaxAttempts ?? 0),
+      auto_retry_state: fallbackMeta?.autoRetryState ?? 'not_retryable',
+      auto_retry_strategy:
+        fallbackMeta?.autoRetryStrategy ?? 'reuse_worker_retry_config',
+      input_retained: fallbackMeta?.inputRetained ? 'true' : 'false',
+      pending_result_count: String(fallbackMeta?.pendingResultCount ?? 0),
+    },
+    'manager/system-fallback-reply.md',
   ).trim()
   if (!fallback)
     throw new Error('missing_prompt_template:manager/system-fallback-reply.md')
@@ -34,6 +50,12 @@ export const appendManagerFallbackReply = async (
       reply: fallback,
       ...(fallbackMeta?.sourceInputId
         ? { source_input_id: fallbackMeta.sourceInputId }
+        : {}),
+      ...(fallbackMeta?.inputRetained !== undefined
+        ? { input_retained: fallbackMeta.inputRetained }
+        : {}),
+      ...(fallbackMeta?.pendingResultCount !== undefined
+        ? { pending_result_count: fallbackMeta.pendingResultCount }
         : {}),
       ...(fallbackMeta
         ? {

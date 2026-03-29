@@ -3,6 +3,7 @@ import { join } from 'node:path'
 
 import { readErrorCode } from '../../foundation/shared/error-code.js'
 import { toPrettyJsonText } from '../../foundation/shared/json.js'
+import { reconcileTaskGitState } from '../../work/shared/task-git-lifecycle.js'
 import { readJson, writeJson } from '../fs/json.js'
 import { ensureFile } from '../fs/paths.js'
 import { logSafeError } from '../log/safe.js'
@@ -107,4 +108,4 @@ export const saveRuntimeSnapshot = async (
 }
 
 export const selectPersistedTasks = (tasks: Task[]): Task[] =>
-  tasks.map((task) => ({ ...task }))
+  tasks.map((task) => reconcileTaskGitState(task))

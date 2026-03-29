@@ -136,3 +136,32 @@ export const resolveTaskGitLifecycle = (
     current: deriveTaskGitLifecycle(task),
     patch: task.git?.lifecycle,
   })
+
+export const reconcileTaskGitState = (task: Task): Task => {
+  if (!task.git) return task
+  const lifecycle = mergeTaskGitLifecycle({
+    current: resolveTaskGitLifecycle(task),
+    patch: task.result?.handoff?.git?.lifecycle,
+  })
+  if (!lifecycle) return task
+  const git = {
+    ...task.git,
+    lifecycle,
+  } satisfies NonNullable<Task['git']>
+  if (!task.result?.handoff?.git) return { ...task, git }
+  return {
+    ...task,
+    git,
+    result: {
+      ...task.result,
+      handoff: {
+        ...task.result.handoff,
+        git: {
+          ...task.result.handoff.git,
+          ...git,
+          lifecycle,
+        },
+      },
+    },
+  }
+}
