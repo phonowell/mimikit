@@ -13,7 +13,7 @@ import {
   validateTaskControlIntentEvidence,
 } from './action-intent-evidence-rules.js'
 
-import type { Task, UserInput } from '../../foundation/types/index.js'
+import type { Task, TaskPlan, UserInput } from '../../foundation/types/index.js'
 import type { Parsed } from '../actions/model/spec.js'
 
 export type SupplementalEvidenceSource = 'task_result'
@@ -22,6 +22,7 @@ type IntentEvidenceContext = {
   stateDir?: string
   inputs?: UserInput[]
   taskById?: Map<string, Task>
+  planById?: Map<string, TaskPlan>
   supplementalEvidenceSources?: Set<SupplementalEvidenceSource>
   currentActions?: Parsed[]
   defaultFocusId?: string
@@ -99,6 +100,7 @@ export const resolveIntentEvidenceRejectionHint = (
     return validateSetPlanIntentEvidence({
       item,
       inputTexts,
+      ...(context.planById ? { planById: context.planById } : {}),
       ...(context.supplementalEvidenceSources
         ? { supplementalEvidenceSources: context.supplementalEvidenceSources }
         : {}),

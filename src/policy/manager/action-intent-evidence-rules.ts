@@ -6,12 +6,18 @@ import {
 } from './action-intent-evidence-match.js'
 import { supportsReplacementCancelIntentEvidence } from './action-intent-evidence-replacement-cancel.js'
 import {
+  collectSetPlanCandidates,
+  collectSetPlanChangedCandidates,
+  hasLooseSetPlanSupport,
+  resolveSetPlanReferenceCandidates,
+} from './action-intent-evidence-set-plan.js'
+import {
   buildTaskContractFromDraft,
   resolveWorkerPromptFromDraft,
 } from './task-contract.js'
 
 import type { SupplementalEvidenceSource } from './action-intent-evidence.js'
-import type { Task } from '../../foundation/types/index.js'
+import type { Task, TaskPlan } from '../../foundation/types/index.js'
 import type { Parsed } from '../actions/model/spec.js'
 
 const resolveTaskRef = (task: Task | undefined, taskId: string): string =>
@@ -108,21 +114,16 @@ export const validateTaskControlIntentEvidence = (params: {
 export const validateSetPlanIntentEvidence = (params: {
   item: Extract<Parsed, { type: 'set_plan' }>
   inputTexts: string[]
+  planById?: Map<string, TaskPlan>
   supplementalEvidenceSources?: Set<SupplementalEvidenceSource>
 }): string | undefined => {
-  const { task } = params.item.plan
-  const candidates = [
-    params.item.plan.title,
-    task.title,
-    task.goal,
-    ...task.in_scope,
-  ]
+  const candidates = collectSetPlanCandidates(params.item)
   const combinedCandidate = [
     params.item.plan.title,
-    task.title,
-    task.goal,
-    ...task.in_scope,
-    ...task.done_when,
+    params.item.plan.task.title,
+    params.item.plan.task.goal,
+    ...params.item.plan.task.in_scope,
+    ...params.item.plan.task.done_when,
   ].join('\n')
   if (
     isSupportedByInputs({
@@ -132,6 +133,27 @@ export const validateSetPlanIntentEvidence = (params: {
     })
   )
     return undefined
+
+  if (params.item.plan_id !== null) {
+    const currentPlan = params.planById?.get(params.item.plan_id)
+    const planReferenceCandidates = resolveSetPlanReferenceCandidates(
+      params.item,
+      currentPlan,
+    )
+    if (
+      planReferenceCandidates.length > 0 &&
+      isSupportedByInputs({
+        candidates: planReferenceCandidates,
+        inputs: params.inputTexts,
+      }) &&
+      hasLooseSetPlanSupport({
+        candidates: collectSetPlanChangedCandidates(params.item, currentPlan),
+        inputTexts: params.inputTexts,
+      })
+    )
+      return undefined
+  }
+
   return buildMissingIntentEvidenceHint({
     actionName: params.item.type,
     evidenceSources: params.supplementalEvidenceSources,

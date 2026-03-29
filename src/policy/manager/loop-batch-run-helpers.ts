@@ -35,6 +35,7 @@ export const buildActionFeedbackContext = (params: {
   stateDir: string
   taskStatusById: Map<string, TaskStatus>
   taskById: Map<string, ManagerRuntime['tasks'][number]>
+  planById: Map<string, ManagerRuntime['taskPlans'][number]>
   planStatusById: Map<string, TaskPlanStatus>
   resultTaskIds: Set<string>
   allowAskUserChoice: boolean
@@ -64,6 +65,7 @@ export const buildActionFeedbackContext = (params: {
       runtime.tasks.map((task) => [task.id, task.status]),
     ),
     taskById: new Map(runtime.tasks.map((task) => [task.id, task])),
+    planById: new Map(runtime.taskPlans.map((plan) => [plan.id, plan])),
     planStatusById: new Map(
       runtime.taskPlans.map((plan) => [plan.id, plan.status]),
     ),

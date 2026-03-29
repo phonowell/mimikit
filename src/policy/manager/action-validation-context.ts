@@ -1,6 +1,7 @@
 import type {
   ManagerWakeProfile,
   Task,
+  TaskPlan,
   TaskPlanStatus,
   TaskStatus,
   UserInput,
@@ -11,6 +12,7 @@ export type FeedbackContext = {
   stateDir?: string
   taskStatusById?: Map<string, TaskStatus>
   taskById?: Map<string, Task>
+  planById?: Map<string, TaskPlan>
   planStatusById?: Map<string, TaskPlanStatus>
   resultTaskIds?: Set<string>
   scheduleNowIso?: string
