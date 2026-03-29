@@ -1,5 +1,4 @@
 import { compareIsoAsc } from '../../foundation/shared/time.js'
-import { notifyUiSignal } from '../../kernel/orchestrator/signals.js'
 import { readHistory } from '../../persistence/history/store.js'
 
 import { isDefaultActiveFocusCandidate } from './reserved.js'
@@ -68,7 +67,6 @@ export const pruneArchivedFocuses = async (
     .filter((item) => item.status === 'archived')
     .sort(compareByActivityAsc)
   const referencedFocusIds = await collectReferencedFocusIds(runtime)
-  let changed = false
   for (let index = 0; archived.length > maxArchivedFocuses(runtime); ) {
     const candidate = archived[index]
     if (!candidate) break
@@ -79,7 +77,5 @@ export const pruneArchivedFocuses = async (
     }
     archived.splice(index, 1)
     runtime.focuses = runtime.focuses.filter((item) => item.id !== candidate.id)
-    changed = true
   }
-  if (changed) notifyUiSignal(runtime, 'focuses')
 }
