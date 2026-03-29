@@ -1,3 +1,4 @@
+import { buildPaths } from '../../persistence/fs/paths.js'
 import { appendTaskProgress } from '../../persistence/storage/task-progress.js'
 import { buildWorkerPrompt } from '../../policy/prompts/build-prompts.js'
 import { runWithProvider } from '../providers/registry.js'
@@ -23,13 +24,26 @@ type LlmResult = {
 
 type BuildRunModelParams = {
   runtimeId: string
+  stateDir: string
   cwd: string
+  task: Task
   timeoutMs: number
   proxy?: string
   model?: string
   modelReasoningEffort?: ModelReasoningEffort
   abortSignal?: AbortSignal
 }
+
+const buildWorkerLogContext = (
+  params: BuildRunModelParams,
+): Record<string, unknown> => ({
+  event: 'llm_call',
+  role: 'worker',
+  taskId: params.task.id,
+  focusId: params.task.focusId,
+  executionSpecId: params.task.executionSpecId,
+  taskProfile: params.task.profile,
+})
 
 const buildRunModel =
   (params: BuildRunModelParams) =>
@@ -47,6 +61,8 @@ const buildRunModel =
       runtimeId: params.runtimeId,
       workDir: params.cwd,
       timeoutMs: params.timeoutMs,
+      logPath: buildPaths(params.stateDir).log,
+      logContext: buildWorkerLogContext(params),
       ...(params.proxy ? { proxy: params.proxy } : {}),
       ...(params.abortSignal ? { abortSignal: params.abortSignal } : {}),
       ...(params.model ? { model: params.model } : {}),
