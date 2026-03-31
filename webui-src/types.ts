@@ -48,9 +48,18 @@ export type MessageSnapshot = {
 }
 
 export type TaskGitClosure = {
-  reviewPassed?: boolean
+  review?: {
+    passed: boolean
+    at?: string
+    sha?: string
+  }
   merged?: boolean
   cleaned?: boolean
+}
+
+export type TaskGitExecution = {
+  worktreePath: string
+  branch: string
 }
 
 export type TaskDispatchLockDetail = {
@@ -63,6 +72,8 @@ export type TaskView = {
   status: string
   provider?: string
   title: string
+  resourceMode: string
+  git?: TaskGitExecution
   createdAt: string
   changeAt: string
   startedAt?: string

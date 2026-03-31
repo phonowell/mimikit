@@ -13,6 +13,7 @@ const createTask = (overrides: Partial<TaskView> = {}): TaskView => ({
   status: 'pending',
   provider: 'codex',
   title: 'Alpha task',
+  resourceMode: 'write',
   createdAt: '2026-03-27T07:00:00.000Z',
   changeAt: '2026-03-27T07:05:00.000Z',
   ...overrides,
