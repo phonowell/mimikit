@@ -59,6 +59,28 @@ test('buildFallbackReply summarizes latest result instead of echoing raw output'
       workDir: '/tmp/mimikit',
     }),
   ).resolves.toBe(
-    'Release branch is ready for review.\n[任务归档](.mimikit/tasks/2026-03-23/task-1_ship-release.md)',
+    '任务 Ship release（task-1）：已完成。\nRelease branch is ready for review.\n[任务归档](.mimikit/tasks/2026-03-23/task-1_ship-release.md)',
+  )
+})
+
+test('buildFallbackReply surfaces stop reason when result stops without summary', async () => {
+  const task = createTask({
+    status: 'failed',
+  })
+  const result = createResult({
+    status: 'failed',
+    ok: false,
+    stopReason: 'input_required',
+    archivePath: undefined,
+  })
+
+  await expect(
+    buildFallbackReply({
+      results: [result],
+      tasks: [task],
+      workDir: '/tmp/mimikit',
+    }),
+  ).resolves.toBe(
+    '任务 Ship release（task-1）：已失败。\n停下原因：input_required（需要补充输入）\n任务归档: 未生成',
   )
 })

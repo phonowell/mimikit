@@ -81,6 +81,8 @@
 
 - 成功结果必须通过结构化 handoff 协议收敛
 - worker 结束输出必须是单个结构化 JSON 对象：`{ reply, handoff }`
-- manager 只消费压缩结果：结论、证据路径、归档路径等
+- manager 只消费压缩结果：结论、证据路径、归档路径、git lifecycle 等
+- manager 对用户表达 task result 时，至少要让 `task title / id` 可定位；若存在 `stopReason`，失败 / 取消 / 停下说明里必须显式带出
+- manager 对用户表达 task result 时，必须附任务归档链接；若无归档则明确写 `任务归档: 未生成`
 - manager 查看的是 task 上的合同 digest，不是完整 worker prompt
 - 不回灌 worker 原始长 prompt 或大段上下文

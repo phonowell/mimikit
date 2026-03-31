@@ -1,9 +1,9 @@
 import { persistRuntimeState } from '../../kernel/orchestrator/runtime-persistence.js'
-import { toDisplayPath } from '../../surface/shared/path-display.js'
 
 import { completeSuccessfulManagerBatch } from './batch-success-finalize.js'
 import { appendManagerReply } from './loop-batch-flow.js'
 import { consumeBatchHistory } from './loop-helpers.js'
+import { formatManagerVisibleTaskResultReply } from './task-result-visible-reply.js'
 
 import type { TaskResult, UserInput } from '../../foundation/types/index.js'
 import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
@@ -29,26 +29,6 @@ export const resolveDirectTaskResultReply = (params: {
   return output
 }
 
-const appendArchiveLine = (
-  runtime: ManagerRuntime,
-  result: TaskResult | undefined,
-  text: string,
-): string => {
-  if (!result) return text
-  const task = runtime.tasks.find((item) => item.id === result.taskId)
-  const rawArchivePath = [
-    result.archivePath,
-    task?.archivePath,
-    task?.result?.archivePath,
-  ].find((value) => typeof value === 'string' && value.trim().length > 0)
-  const archivePath = rawArchivePath
-    ? toDisplayPath(rawArchivePath, runtime.config.workDir).trim()
-    : ''
-  return archivePath
-    ? `${text}\n[任务归档](${archivePath})`
-    : `${text}\n任务归档: 未生成`
-}
-
 export const finishBatchWithDirectTaskResultReply = async (params: {
   runtime: ManagerRuntime
   text: string
@@ -59,7 +39,17 @@ export const finishBatchWithDirectTaskResultReply = async (params: {
   startedAt: number
 }): Promise<void> => {
   const result = params.results[0]
-  const replyText = appendArchiveLine(params.runtime, result, params.text)
+  const task = result
+    ? params.runtime.tasks.find((item) => item.id === result.taskId)
+    : undefined
+  const replyText = result
+    ? formatManagerVisibleTaskResultReply({
+        result,
+        workDir: params.runtime.config.workDir,
+        ...(task ? { task } : {}),
+        ...(params.text ? { detail: params.text } : {}),
+      })
+    : params.text
   const consumed = await consumeBatchHistory({
     runtime: params.runtime,
     inputs: params.inputs,
