@@ -10,7 +10,9 @@ import {
 } from '../src/persistence/storage/usage-ledger.js'
 
 test('appendManagerUsageLedgerEntry writes manager round packet with token usage', async () => {
-  const stateDir = await mkdtemp(join(tmpdir(), 'mimikit-usage-ledger-manager-'))
+  const stateDir = await mkdtemp(
+    join(tmpdir(), 'mimikit-usage-ledger-manager-'),
+  )
 
   await appendManagerUsageLedgerEntry({
     stateDir,
@@ -41,6 +43,19 @@ test('appendManagerUsageLedgerEntry writes manager round packet with token usage
     model: 'gpt-5',
     promptBytes: 2048,
     promptSegmentCount: 3,
+    promptSections: {
+      system: 512,
+      action_surface: 128,
+      state_packet: 768,
+      event_packet: 512,
+      project_profile: 64,
+      remembered_memory: 32,
+      memory: 32,
+    },
+    promptSelection: {
+      tasks: { selected: 3, full: 2, card: 1 },
+      plans: { selected: 2, full: 1, card: 1 },
+    },
   })
 
   const raw = await readFile(join(stateDir, 'usage', 'ledger.jsonl'), 'utf8')
@@ -55,6 +70,19 @@ test('appendManagerUsageLedgerEntry writes manager round packet with token usage
   expect(entry?.promptBytes).toBe(2048)
   expect(entry?.promptSegmentCount).toBe(3)
   expect(entry?.packetMode).toBe('standard')
+  expect(entry?.promptSections).toEqual({
+    system: 512,
+    action_surface: 128,
+    state_packet: 768,
+    event_packet: 512,
+    project_profile: 64,
+    remembered_memory: 32,
+    memory: 32,
+  })
+  expect(entry?.promptSelection).toEqual({
+    tasks: { selected: 3, full: 2, card: 1 },
+    plans: { selected: 2, full: 1, card: 1 },
+  })
 })
 
 test('appendWorkerUsageLedgerEntry writes worker result packet with provider and task scope', async () => {

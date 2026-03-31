@@ -32,6 +32,8 @@ const CONTEXT_EMPTY_VALUES: Record<string, string> = {
   memory: '',
 }
 
+const byteLength = (value: string): number => Buffer.byteLength(value, 'utf8')
+
 export const buildManagerPromptPayload = async (
   params: BuildManagerPromptParams,
 ): Promise<ManagerPromptPayload> => {
@@ -121,6 +123,25 @@ export const buildManagerPromptPayload = async (
 
   return {
     contextPacket: packets.contextPacket,
+    promptSections: {
+      system: byteLength(
+        renderPromptTemplate(
+          systemSource.template,
+          {
+            ...CONTEXT_EMPTY_VALUES,
+            action_surface: '',
+          },
+          systemSource.path,
+        ).trim(),
+      ),
+      action_surface: byteLength(actionSurface),
+      state_packet: byteLength(packets.statePacket),
+      event_packet: byteLength(packets.eventPacket),
+      project_profile: byteLength(packets.selectedProjectProfile),
+      remembered_memory: byteLength(packets.selectedRememberedMemory),
+      memory: byteLength(packets.selectedMemory),
+    },
+    promptSelection: packets.promptSelection,
     prompt: [prefix, stableContext, volatileContext]
       .filter((segment) => segment.length > 0)
       .join('\n\n')

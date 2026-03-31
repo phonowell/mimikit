@@ -63,14 +63,19 @@ export const buildManagerPromptPackets = (params: {
   })
   const sectionText = (value: string, maxBytes: number): string =>
     encodePromptTextSection(value, maxBytes)
+  const statePacketPayload = buildStatePacketPayload({
+    selectedSections,
+    focusPayload: params.runtime.focusPayload,
+    tasks: params.tasks,
+    workDir: params.workDir,
+    plans: params.plans,
+    workingFocusIds: params.workingFocusIds ?? [],
+    ...(contextPacket.latestResult?.taskId
+      ? { latestResultTaskId: contextPacket.latestResult.taskId }
+      : {}),
+  })
   const statePacket = sectionText(
-    buildStatePacketPayload({
-      selectedSections,
-      focusPayload: params.runtime.focusPayload,
-      tasks: params.tasks,
-      workDir: params.workDir,
-      plans: params.plans,
-    }),
+    statePacketPayload.payload,
     params.limits.focusListMaxBytes +
       params.limits.workingFocusesMaxBytes +
       params.limits.tasksMaxBytes +
@@ -101,5 +106,6 @@ export const buildManagerPromptPackets = (params: {
     selectedProjectProfile: selectedSections.project_profile,
     selectedRememberedMemory: selectedSections.remembered_memory,
     selectedMemory: selectedSections.memory,
+    promptSelection: statePacketPayload.selection,
   }
 }

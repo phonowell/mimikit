@@ -28,6 +28,27 @@ type UsageLedgerEntry = {
   threadId?: string
   promptBytes?: number
   promptSegmentCount?: number
+  promptSections?: {
+    system: number
+    action_surface: number
+    state_packet: number
+    event_packet: number
+    project_profile: number
+    remembered_memory: number
+    memory: number
+  }
+  promptSelection?: {
+    tasks: {
+      selected: number
+      full: number
+      card: number
+    }
+    plans: {
+      selected: number
+      full: number
+      card: number
+    }
+  }
   status?: string
 }
 
@@ -56,6 +77,8 @@ export const appendManagerUsageLedgerEntry = (params: {
   model?: string
   promptBytes: number
   promptSegmentCount: number
+  promptSections?: UsageLedgerEntry['promptSections']
+  promptSelection?: UsageLedgerEntry['promptSelection']
 }): Promise<void> =>
   appendUsageLedgerEntry(params.stateDir, {
     kind: 'manager_round',
@@ -71,6 +94,10 @@ export const appendManagerUsageLedgerEntry = (params: {
     ...(params.threadId?.trim() ? { threadId: params.threadId.trim() } : {}),
     promptBytes: params.promptBytes,
     promptSegmentCount: params.promptSegmentCount,
+    ...(params.promptSections ? { promptSections: params.promptSections } : {}),
+    ...(params.promptSelection
+      ? { promptSelection: params.promptSelection }
+      : {}),
   })
 
 export const appendWorkerUsageLedgerEntry = (params: {

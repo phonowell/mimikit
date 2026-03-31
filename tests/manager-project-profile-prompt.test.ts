@@ -82,9 +82,13 @@ test('buildManagerPromptPayload anchors manager as the orchestration layer befor
     '只有在目录边界独立且互不冲突时才并发多个 `enqueue_task`',
   )
   expect(payload.prompt).toContain('只有一个明确延续目标')
+  expect(payload.prompt).toContain('字段与数组约束以当前 action surface 为准')
   expect(payload.prompt).toContain('输出 action 前，先逐项核对')
   expect(payload.prompt).toContain('未列出的 action 视为本轮不可用')
   expect(payload.prompt).toContain('不要猜测隐藏字段、兼容别名或默认值')
+  expect(payload.prompt).not.toContain(
+    '`enqueue_task.task` 与 `set_plan.plan.task` 使用同一份任务合同：',
+  )
 })
 
 test('buildManagerPromptPayload constrains stable preference alignment to style and pacing boundaries', async () => {

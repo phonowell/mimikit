@@ -34,9 +34,16 @@ const runRounds = (params: {
   roundLimitReached?: boolean
 }> => {
   const { runtime, inputs, results, maxCorrectionRounds } = params
+  const workingFocusIds = resolveBatchWorkingFocusIds({
+    runtime,
+    inputs,
+    results,
+  })
   const tasks = selectRecentTasks(runtime.tasks, {
     minCount: runtime.config.manager.taskWindow.minCount,
     maxCount: runtime.config.manager.taskWindow.maxCount,
+    workingFocusIds,
+    latestResultTaskId: results[0]?.taskId,
   })
   const triggeredPlanIds = collectTriggeredPlanIds(inputs)
   const plansSource = runtime.taskPlans.filter(
@@ -45,11 +52,8 @@ const runRounds = (params: {
   const plans = selectRecentPlans(plansSource, {
     minCount: runtime.config.manager.planWindow.minCount,
     maxCount: runtime.config.manager.planWindow.maxCount,
-  })
-  const workingFocusIds = resolveBatchWorkingFocusIds({
-    runtime,
-    inputs,
-    results,
+    workingFocusIds,
+    latestResultTaskId: results[0]?.taskId,
   })
 
   return runManagerCorrectionRounds({

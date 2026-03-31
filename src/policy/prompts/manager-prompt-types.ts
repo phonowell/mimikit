@@ -15,10 +15,35 @@ import type {
 
 export type PromptSectionLimits = AppConfig['manager']['promptSections']
 
+export type PromptSectionUsage = {
+  system: number
+  action_surface: number
+  state_packet: number
+  event_packet: number
+  project_profile: number
+  remembered_memory: number
+  memory: number
+}
+
+export type PromptSelectionSummary = {
+  tasks: {
+    selected: number
+    full: number
+    card: number
+  }
+  plans: {
+    selected: number
+    full: number
+    card: number
+  }
+}
+
 export type ManagerPromptPayload = {
   prompt: string
   promptSegments: ProviderPromptSegment[]
   contextPacket: ManagerContextPacket
+  promptSections: PromptSectionUsage
+  promptSelection: PromptSelectionSummary
 }
 
 export type BuildManagerPromptParams = {
@@ -45,4 +70,5 @@ export type ManagerPromptPacketBuildResult = {
   selectedProjectProfile: string
   selectedRememberedMemory: string
   selectedMemory: string
+  promptSelection: PromptSelectionSummary
 }

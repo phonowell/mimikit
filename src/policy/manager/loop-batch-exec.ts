@@ -135,6 +135,8 @@ export const runManagerRoundWithRecovery = async (params: {
       model: params.runtime.config.manager.model,
       promptBytes: result.promptBytes,
       promptSegmentCount: result.promptSegmentCount,
+      promptSections: result.promptSections,
+      promptSelection: result.promptSelection,
     }),
   )
 

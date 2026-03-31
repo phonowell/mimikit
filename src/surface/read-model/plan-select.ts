@@ -13,6 +13,8 @@ import type {
 export type WindowSelectParams = {
   minCount: number
   maxCount: number
+  workingFocusIds?: string[] | undefined
+  latestResultTaskId?: string | undefined
 }
 
 const normalizeWindowParams = (
@@ -95,8 +97,34 @@ export const selectRecentPlans = (
   params: WindowSelectParams,
 ): TaskPlan[] => {
   if (plans.length === 0) return []
-  const sorted = sortTaskPlans(plans)
-  return selectByWindow(sorted, params)
+  const maxCount = Math.max(params.minCount, params.maxCount)
+  const selected: TaskPlan[] = []
+  const seen = new Set<string>()
+  const focusIds = new Set(
+    (params.workingFocusIds ?? []).map((item) => item.trim()),
+  )
+  const add = (plan: TaskPlan): void => {
+    if (seen.has(plan.id) || selected.length >= maxCount) return
+    seen.add(plan.id)
+    selected.push(plan)
+  }
+
+  for (const plan of sortTaskPlans(plans))
+    if (plan.status === 'active' || plan.status === 'blocked') add(plan)
+
+  if (params.latestResultTaskId) {
+    for (const plan of sortTaskPlans(plans))
+      if (plan.runtime.lastTaskId === params.latestResultTaskId) add(plan)
+  }
+  for (const plan of sortTaskPlansForView(plans)) {
+    if (selected.length >= params.minCount) break
+    if (focusIds.has(plan.focusId)) add(plan)
+  }
+  for (const plan of sortTaskPlansForView(plans)) {
+    if (selected.length >= params.minCount) break
+    add(plan)
+  }
+  return selected
 }
 
 export const selectRecentTasks = (
@@ -104,6 +132,40 @@ export const selectRecentTasks = (
   params: WindowSelectParams,
 ): Task[] => {
   if (tasks.length === 0) return []
-  const sorted = sortTasksByChangedAt(tasks)
-  return selectByWindow(sorted, params)
+  const maxCount = Math.max(params.minCount, params.maxCount)
+  const selected: Task[] = []
+  const seen = new Set<string>()
+  const focusIds = new Set(
+    (params.workingFocusIds ?? []).map((item) => item.trim()),
+  )
+  const ordered = sortTasksByChangedAt(tasks)
+  const add = (task: Task): void => {
+    if (seen.has(task.id) || selected.length >= maxCount) return
+    seen.add(task.id)
+    selected.push(task)
+  }
+
+  for (const task of ordered) {
+    if (
+      task.status === 'pending' ||
+      task.status === 'running' ||
+      task.status === 'paused'
+    )
+      add(task)
+  }
+  if (params.latestResultTaskId) {
+    const latestTask = ordered.find(
+      (task) => task.id === params.latestResultTaskId,
+    )
+    if (latestTask) add(latestTask)
+  }
+  for (const task of ordered) {
+    if (selected.length >= params.minCount) break
+    if (focusIds.has(task.focusId)) add(task)
+  }
+  for (const task of ordered) {
+    if (selected.length >= params.minCount) break
+    add(task)
+  }
+  return selected
 }

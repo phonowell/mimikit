@@ -26,10 +26,32 @@ import type {
   TokenUsage,
   UserInput,
 } from '../../foundation/types/index.js'
+import type {
+  PromptSectionUsage,
+  PromptSelectionSummary,
+} from '../prompts/manager-prompt-types.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
 const toError = (error: unknown): Error =>
   error instanceof Error ? error : new Error(String(error))
+
+type ManagerRetryPolicy = {
+  maxAttempts: number
+  backoffMs: number
+}
+
+type RunManagerResult = {
+  output: string
+  actions: ManagerTurnAction[]
+  elapsedMs: number
+  usage?: TokenUsage
+  threadId?: string | null
+  contextPacket: ManagerContextPacket
+  promptBytes: number
+  promptSegmentCount: number
+  promptSections: PromptSectionUsage
+  promptSelection: PromptSelectionSummary
+}
 
 export const runManager = async (params: {
   stateDir: string
@@ -50,25 +72,13 @@ export const runManager = async (params: {
   proxy?: string | undefined
   threadId?: string | null
   modelReasoningEffort?: ModelReasoningEffort | undefined
-  retry?: {
-    maxAttempts: number
-    backoffMs: number
-  }
+  retry?: ManagerRetryPolicy
   abortSignal?: AbortSignal
   onUsage?: (usage: TokenUsage) => void
   usePromptSegments?: boolean
   packetMode?: ManagerPacketMode
   wakeProfile?: ManagerEnv['wakeProfile']
-}): Promise<{
-  output: string
-  actions: ManagerTurnAction[]
-  elapsedMs: number
-  usage?: TokenUsage
-  threadId?: string | null
-  contextPacket: ManagerContextPacket
-  promptBytes: number
-  promptSegmentCount: number
-}> => {
+}): Promise<RunManagerResult> => {
   const promptPayload = await buildManagerPromptPayload({
     stateDir: params.stateDir,
     workDir: params.workDir,
@@ -89,7 +99,13 @@ export const runManager = async (params: {
     ...(params.packetMode ? { packetMode: params.packetMode } : {}),
     ...(params.wakeProfile ? { wakeProfile: params.wakeProfile } : {}),
   })
-  const { prompt, promptSegments, contextPacket } = promptPayload
+  const {
+    prompt,
+    promptSegments,
+    contextPacket,
+    promptSections,
+    promptSelection,
+  } = promptPayload
   const paths = buildPaths(params.stateDir)
 
   const model = params.model?.trim()
@@ -155,6 +171,8 @@ export const runManager = async (params: {
       promptBytes: Buffer.byteLength(prompt, 'utf8'),
       promptSegmentCount:
         params.usePromptSegments === false ? 1 : promptSegments.length,
+      promptSections,
+      promptSelection,
     }
   } catch (error) {
     const err = toError(error)
