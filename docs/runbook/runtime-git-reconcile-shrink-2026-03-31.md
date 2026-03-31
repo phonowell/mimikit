@@ -51,7 +51,7 @@
   - Manual `code-reviewer` pass on current diff found one real regression risk: archive projection stopped updating after external git changes. Fixed by syncing archive projection during hydrate/persist reconcile.
 - Gate status:
   - `pnpm run review-code-changes`: passed
-  - Branch merge / cleanup: pending
+  - Branch merge / cleanup: completed locally
 
 ## Risks And Limits
 
@@ -61,7 +61,7 @@
 
 ## Git Lifecycle Status
 
-- Worktree branch: `task/wt-runtime-git-dc21db49ec`
+- Worktree branch: `task/wt-runtime-git-dc21db49ec` (cleaned)
 - Review gate: passed via `pnpm run review-code-changes`
-- Merge back to `main`: pending
-- Worktree cleanup: pending
+- Merge back to `main`: completed at `ff5680dec42cce532da89df221b241c82380d64f`
+- Worktree cleanup: completed
