@@ -11,6 +11,7 @@ import {
 import { buildRetryOptions, toAbortRetryError } from './run-retry-helpers.js'
 import { runTaskModel, type WorkerLlmResult } from './run-retry-model.js'
 import { selectReusableSessionId } from './session-state.js'
+import { assertTaskCwdAvailableForAttempt } from './task-cwd-preflight.js'
 
 import type { Task, TokenUsage } from '../../foundation/types/index.js'
 import type { WorkerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
@@ -73,6 +74,12 @@ export const runTaskWithRetry = (params: {
     attempt += 1
     if (controller.signal.aborted)
       throw new AbortError(controller.signal.reason ?? 'Task canceled')
+    assertTaskCwdAvailableForAttempt({
+      taskId: task.id,
+      cwd: task.cwd,
+      attempt,
+      providerId: 'codex-sdk',
+    })
     const sessionId = selectReusableSessionId(task)
     if (sessionId) {
       await bestEffort('appendLog: worker_session_reuse_attempt', () =>
