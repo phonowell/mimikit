@@ -16,9 +16,11 @@ type Props = {
   onDelete: (message: ChatMessage) => void
 }
 
-const indexMessagesById = (
+export const buildQuotedMessagesIndex = (
   messages: readonly ChatMessage[],
-): ReadonlyMap<string, ChatMessage> => {
+): ReadonlyMap<string, ChatMessage> | null => {
+  if (!messages.some((message) => Boolean(message.quote))) return null
+
   const index = new Map<string, ChatMessage>()
   for (const message of messages) if (message.id) index.set(message.id, message)
 
@@ -35,7 +37,7 @@ export const MessageList = ({
   onQuote,
   onDelete,
 }: Props) => {
-  const messagesById = indexMessagesById(messages)
+  const messagesById = buildQuotedMessagesIndex(messages)
 
   return (
     <section className="messages-section" aria-label="Chat">
@@ -57,7 +59,9 @@ export const MessageList = ({
             onDelete={onDelete}
             onQuote={onQuote}
             quotedMessage={
-              message.quote ? messagesById.get(message.quote) : undefined
+              message.quote && messagesById
+                ? messagesById.get(message.quote)
+                : undefined
             }
           />
         ))}

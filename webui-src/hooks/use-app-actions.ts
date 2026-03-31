@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react'
+import { useRef } from 'react'
 
 import { useAppLocalActions } from './use-app-local-actions.js'
 import { useAppRequestActions } from './use-app-request-actions.js'
@@ -77,8 +77,5 @@ export const useAppActions = ({
     stateRef,
   })
 
-  return useMemo(
-    () => ({ ...localActions, ...requestActions }),
-    [localActions, requestActions],
-  )
+  return { ...localActions, ...requestActions }
 }

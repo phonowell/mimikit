@@ -10,6 +10,21 @@ const isOpenTask = (task: TaskView): boolean =>
   task.status === 'paused' ||
   task.status === 'pending'
 
+export const partitionTasksByStatus = (tasks: readonly TaskView[]) => {
+  const openTasks: TaskView[] = []
+  const closedTasks: TaskView[] = []
+
+  for (const task of tasks) {
+    if (isOpenTask(task)) {
+      openTasks.push(task)
+      continue
+    }
+    closedTasks.push(task)
+  }
+
+  return { closedTasks, openTasks }
+}
+
 type Props = {
   open: boolean
   openMenuId: string
@@ -32,8 +47,7 @@ export const TasksDialog = ({
   onRequestDelete,
   tasks,
 }: Props) => {
-  const openTasks = tasks.filter(isOpenTask)
-  const closedTasks = tasks.filter((task) => !isOpenTask(task))
+  const { closedTasks, openTasks } = partitionTasksByStatus(tasks)
   const shouldExpandClosed = openTasks.length === 0
 
   return (
