@@ -5,8 +5,6 @@ import {
   loadYamlPromptTemplates,
 } from '../../foundation/prompting/prompt-template-loader.js'
 
-import { recordTaskGitHintSchemaShape } from './action-feedback-mutate-task-git-hints.js'
-
 const HINT_TEMPLATE_RELATIVE_PATH = 'manager/action-feedback-hints.md'
 
 const actionFeedbackHintSchema = z
@@ -23,9 +21,6 @@ const actionFeedbackHintSchema = z
     task_control_already_paused: z.string().trim().min(1),
     task_control_not_paused: z.string().trim().min(1),
     task_control_already_canceled: z.string().trim().min(1),
-    record_task_git_not_found: z.string().trim().min(1),
-    ...recordTaskGitHintSchemaShape,
-    record_task_git_reason_required: z.string().trim().min(1),
     enqueue_task_cwd_invalid: z.string().trim().min(1),
     enqueue_task_worktree_prepare_failed: z.string().trim().min(1),
     enqueue_task_batch_conflict: z.string().trim().min(1),

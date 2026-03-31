@@ -49,15 +49,6 @@ actions:
     detail_constraints:
       - '`action=pause|resume|cancel`'
       - '`instructions[]` 仅在 `action="resume"` 时可选附带，用于下一轮恢复补充说明'
-  record_task_git:
-    summary: 显式写回任务的 git 闭环状态。
-    brief_constraints:
-      - 必填 `task_id,state,source_input_id,source_quote`
-    detail_constraints:
-      - '`state=review_passed|merged|cleaned`'
-      - 仅用于“外部 review/merge/cleanup 已完成”的状态回写
-      - '`source_input_id` 必须引用当前轮用户输入'
-      - '`source_quote` 必须是该输入中的原文片段'
   set_plan:
     summary: 创建或整体替换一个持续触发计划。
     brief_constraints:

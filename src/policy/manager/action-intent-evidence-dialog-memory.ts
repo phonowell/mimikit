@@ -4,40 +4,21 @@ import {
   formatDialogActionSourceInputMissingHint,
   formatDialogActionSourceQuoteMissingHint,
   formatDialogActionSourceQuoteUnanchoredHint,
-  formatRecordTaskGitIntentEvidenceHint,
-  formatRecordTaskGitSourceQuoteActionMissingHint,
-  resolveRecordTaskGitRequiredActionLabel,
 } from './action-evidence-hints.js'
 import {
-  formatEvidenceSources,
-  isSupportedByInputs,
-} from './action-intent-evidence-match.js'
-import {
-  recordTaskGitActionSchema,
   rememberMemoryActionSchema,
   rememberProjectProfileActionSchema,
 } from './manager-turn-schema.js'
 
-import type { SupplementalEvidenceSource } from './action-intent-evidence.js'
-import type { Task, UserInput } from '../../foundation/types/index.js'
+import type { UserInput } from '../../foundation/types/index.js'
 import type { Parsed } from '../actions/model/spec.js'
 
-type DialogEvidenceActionName =
-  | 'remember_memory'
-  | 'remember_project_profile'
-  | 'record_task_git'
+type DialogEvidenceActionName = 'remember_memory' | 'remember_project_profile'
 
 type DialogActionWithProvenance = {
   source_input_id: string
   source_quote: string
 }
-
-const normalizeQuoteToken = (value: string): string =>
-  normalizeInlineWhitespace(value).toLowerCase()
-
-const resolveRecordTaskGitStateToken = (
-  state: 'review_passed' | 'merged' | 'cleaned',
-): string => state.replace(/_/g, ' ')
 
 const validateDialogActionIntentEvidence = <
   T extends DialogActionWithProvenance,
@@ -89,66 +70,4 @@ export const validateRememberProjectProfileIntentEvidence = (params: {
     ...(params.inputs ? { inputs: params.inputs } : {}),
     parse: (item) => rememberProjectProfileActionSchema.safeParse(item),
   })
-}
-
-export const validateRecordTaskGitIntentEvidence = (params: {
-  item: Parsed
-  inputs?: UserInput[]
-  taskById?: Map<string, Task>
-  supplementalEvidenceSources?: Set<SupplementalEvidenceSource>
-}): string | undefined => {
-  if (params.item.type !== 'record_task_git') return undefined
-  const hint = validateDialogActionIntentEvidence({
-    actionName: 'record_task_git',
-    item: params.item,
-    ...(params.inputs ? { inputs: params.inputs } : {}),
-    parse: (item) => recordTaskGitActionSchema.safeParse(item),
-  })
-  if (hint) return hint
-
-  const parsed = recordTaskGitActionSchema.safeParse(params.item)
-  if (!parsed.success) return undefined
-  const task = params.taskById?.get(parsed.data.task_id)
-  const candidates = [parsed.data.task_id]
-  if (task?.title.trim()) candidates.push(task.title)
-  const inputTexts = params.inputs
-    ?.filter((input) => input.role === 'user')
-    .map((input) => normalizeInlineWhitespace(input.text))
-    .filter((text) => text.length > 0)
-  if (
-    !inputTexts?.length ||
-    !isSupportedByInputs({
-      candidates,
-      combinedCandidate: task?.title.trim()
-        ? `${parsed.data.task_id} / ${task.title.trim()}`
-        : parsed.data.task_id,
-      inputs: inputTexts,
-    })
-  ) {
-    return formatRecordTaskGitIntentEvidenceHint({
-      evidenceSources: formatEvidenceSources(
-        params.supplementalEvidenceSources,
-      ),
-      taskRef: task?.title.trim()
-        ? `${parsed.data.task_id} / ${task.title.trim()}`
-        : parsed.data.task_id,
-      requiredAction: resolveRecordTaskGitRequiredActionLabel(
-        parsed.data.state,
-      ),
-    })
-  }
-  const normalizedQuote = normalizeQuoteToken(parsed.data.source_quote)
-  const requiredAction = resolveRecordTaskGitRequiredActionLabel(
-    parsed.data.state,
-  )
-  const normalizedRequiredAction = normalizeQuoteToken(requiredAction)
-  const normalizedStateToken = normalizeQuoteToken(
-    resolveRecordTaskGitStateToken(parsed.data.state),
-  )
-  if (
-    !normalizedQuote.includes(normalizedRequiredAction) &&
-    !normalizedQuote.includes(normalizedStateToken)
-  )
-    return formatRecordTaskGitSourceQuoteActionMissingHint(parsed.data.state)
-  return undefined
 }

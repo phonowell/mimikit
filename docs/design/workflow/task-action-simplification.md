@@ -4,9 +4,7 @@
 
 ## 当前结论
 
-- `mutate_task` 已拆分为：
-  - `task_control`
-  - `record_task_git`
+- `mutate_task` 已收敛为 `task_control`
 - `create_plan / update_plan` 已合并为 `set_plan`
 - `upsert_focus`、`restart_runtime`、`set_task_result_summary` 已从 manager action surface 删除
 - `worker_prompt`、`branch`、`*_1` 编号参数已删除

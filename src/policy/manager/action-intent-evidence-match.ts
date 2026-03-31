@@ -7,7 +7,6 @@ import { normalizeInlineWhitespace } from '../../foundation/shared/text.js'
 
 import {
   formatEnqueueTaskIntentEvidenceHint,
-  formatRecordTaskGitIntentEvidenceHint,
   formatSetPlanIntentEvidenceHint,
   formatTaskControlIntentEvidenceHint,
 } from './action-evidence-hints.js'
@@ -32,15 +31,8 @@ export const buildMissingIntentEvidenceHint = (params: {
   taskRef?: string
 }): string => {
   const evidenceSources = formatEvidenceSources(params.evidenceSources)
-  if (
-    params.actionName === 'task_control' ||
-    params.actionName === 'record_task_git'
-  ) {
-    const renderHint =
-      params.actionName === 'task_control'
-        ? formatTaskControlIntentEvidenceHint
-        : formatRecordTaskGitIntentEvidenceHint
-    return renderHint({
+  if (params.actionName === 'task_control') {
+    return formatTaskControlIntentEvidenceHint({
       evidenceSources,
       taskRef: params.taskRef ?? '当前目标 task',
     })

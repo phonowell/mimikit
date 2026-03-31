@@ -1,7 +1,5 @@
 import { z } from 'zod'
 
-import { mergeTaskGitLifecycle } from '../../work/shared/task-git-lifecycle.js'
-
 import type {
   TaskGitExecution,
   TaskResultHandoff,
@@ -58,15 +56,10 @@ export const buildStructuredTaskHandoff = (params: {
   handoff: unknown
 }): TaskResultHandoff | undefined => {
   const parsed = workerTaskHandoffSchema.parse(params.handoff)
-  const lifecycle = mergeTaskGitLifecycle({
-    current: params.git?.lifecycle,
-    patch: parsed.git_lifecycle,
-  })
   const git =
     params.git &&
     ({
       ...params.git,
-      ...(lifecycle ? { lifecycle } : {}),
     } satisfies TaskGitExecution)
   return {
     summary: parsed.summary,

@@ -1,16 +1,10 @@
 import { cancelTask } from '../../execution/worker/cancel-task.js'
 import { pauseTask } from '../../execution/worker/pause-task.js'
-import { recordTaskGitLifecycle } from '../../execution/worker/record-task-git-lifecycle.js'
 import { resumeTask } from '../../execution/worker/resume-task.js'
 
 import { applyRunTask } from './action-apply-create.js'
 import { ActionApplyFeedbackError } from './action-apply-feedback-error.js'
 import {
-  formatRecordTaskGitMergeRequiredHint,
-  formatRecordTaskGitNotDoneHint,
-  formatRecordTaskGitNotFoundHint,
-  formatRecordTaskGitNotGitHint,
-  formatRecordTaskGitReviewRequiredHint,
   formatTaskControlAlreadyCanceledHint,
   formatTaskControlAlreadyDoneHint,
   formatTaskControlAlreadyPausedHint,
@@ -22,18 +16,11 @@ import {
   createContinueAction,
   type ManagerActionDefinition,
 } from './action-registry-shared.js'
-import {
-  validateRecordTaskGit,
-  validateRunTask,
-  validateTaskControl,
-} from './action-validation.js'
+import { validateRunTask, validateTaskControl } from './action-validation.js'
 
 import type { Parsed } from '../actions/model/spec.js'
 
-const rejectApply = (
-  action: 'task_control' | 'record_task_git',
-  hint: string,
-): never => {
+const rejectApply = (action: 'task_control', hint: string): never => {
   throw new ActionApplyFeedbackError({
     action,
     error: 'action_execution_rejected',
@@ -86,32 +73,6 @@ const applyTaskControlAction = async (
   rejectApply('task_control', formatTaskControlAlreadyDoneHint('cancel'))
 }
 
-const applyRecordTaskGitAction = async (
-  runtime: Parameters<ManagerActionDefinition['apply']>[0],
-  item: Parsed,
-): Promise<void> => {
-  if (item.type !== 'record_task_git') return
-
-  const result = await recordTaskGitLifecycle(
-    runtime,
-    item.task_id,
-    item.state,
-    {
-      source: 'deferred',
-    },
-  )
-  if (result.ok) return
-  if (result.status === 'not_found')
-    rejectApply('record_task_git', formatRecordTaskGitNotFoundHint())
-  if (result.status === 'not_done')
-    rejectApply('record_task_git', formatRecordTaskGitNotDoneHint(item.state))
-  if (result.status === 'not_git')
-    rejectApply('record_task_git', formatRecordTaskGitNotGitHint(item.state))
-  if (result.status === 'review_required')
-    rejectApply('record_task_git', formatRecordTaskGitReviewRequiredHint())
-  rejectApply('record_task_git', formatRecordTaskGitMergeRequiredHint())
-}
-
 export const TASK_ACTION_DEFINITIONS = [
   {
     name: 'enqueue_task',
@@ -129,14 +90,5 @@ export const TASK_ACTION_DEFINITIONS = [
     },
     (item, context) => validateTaskControl(item, context),
     applyTaskControlAction,
-  ),
-  createContinueAction(
-    {
-      name: 'record_task_git',
-      domain: 'task',
-      prompt: ACTION_PROMPT_SPECS.record_task_git,
-    },
-    (item, context) => validateRecordTaskGit(item, context),
-    applyRecordTaskGitAction,
   ),
 ] satisfies ManagerActionDefinition[]
