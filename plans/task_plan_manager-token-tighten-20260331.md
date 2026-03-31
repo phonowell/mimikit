@@ -1,7 +1,7 @@
 # Task Plan: manager-token-tighten-20260331
 
 类型：implementation + tdd
-当前状态：进行中
+当前状态：已完成
 
 ## 目标
 
@@ -39,3 +39,10 @@
 - 若 full/card 规则过度收缩，会先伤到多 active continuation、set_plan update 与普通消息对象判别。
 - 若 section 记账只记总量不记 full/card 命中数，后续无法区分“真的省 token”还是“误删语义”。
 - merge/cleanup 可能受当前 worker 写边界或已有 worktree 占用影响，需要最后以 git 事实确认。
+
+## 结果
+
+- ✓ relevance window、task/plan full-card、usage ledger section 记账、系统提示去重已完成。
+- ✓ 定向验证、`pnpm lint`、`pnpm type-check`、`pnpm review-code-changes` 已通过。
+- ✓ 代码提交 `975a231059503d16cf064600eb1083ceecf66608` 已 fast-forward merge 到 `main`。
+- → 剩余动作仅为归档提交同步到 `main` 与 worktree/branch 清理。
