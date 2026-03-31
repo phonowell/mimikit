@@ -33,6 +33,11 @@ const applyTaskControlAction = async (
   item: Parsed,
 ): Promise<void> => {
   if (item.type !== 'task_control') return
+  const task = runtime.tasks.find((candidate) => candidate.id === item.task_id)
+  const taskTarget = {
+    taskId: item.task_id,
+    ...(task?.title ? { taskTitle: task.title } : {}),
+  }
   const instructions = item.instructions ?? []
 
   if (item.action === 'pause') {
@@ -41,10 +46,17 @@ const applyTaskControlAction = async (
     })
     if (result.ok) return
     if (result.status === 'not_found')
-      rejectApply('task_control', formatTaskControlNotFoundHint())
-    if (result.status === 'already_paused')
-      rejectApply('task_control', formatTaskControlAlreadyPausedHint())
-    rejectApply('task_control', formatTaskControlAlreadyDoneHint('pause'))
+      rejectApply('task_control', formatTaskControlNotFoundHint(taskTarget))
+    if (result.status === 'already_paused') {
+      rejectApply(
+        'task_control',
+        formatTaskControlAlreadyPausedHint(taskTarget),
+      )
+    }
+    rejectApply(
+      'task_control',
+      formatTaskControlAlreadyDoneHint('pause', taskTarget),
+    )
   }
 
   if (item.action === 'resume') {
@@ -56,10 +68,13 @@ const applyTaskControlAction = async (
     })
     if (result.ok) return
     if (result.status === 'not_found')
-      rejectApply('task_control', formatTaskControlNotFoundHint())
+      rejectApply('task_control', formatTaskControlNotFoundHint(taskTarget))
     if (result.status === 'not_paused')
-      rejectApply('task_control', formatTaskControlNotPausedHint())
-    rejectApply('task_control', formatTaskControlAlreadyDoneHint('resume'))
+      rejectApply('task_control', formatTaskControlNotPausedHint(taskTarget))
+    rejectApply(
+      'task_control',
+      formatTaskControlAlreadyDoneHint('resume', taskTarget),
+    )
   }
 
   const result = await cancelTask(runtime, item.task_id, {
@@ -67,10 +82,17 @@ const applyTaskControlAction = async (
   })
   if (result.ok) return
   if (result.status === 'not_found')
-    rejectApply('task_control', formatTaskControlNotFoundHint())
-  if (result.status === 'already_canceled')
-    rejectApply('task_control', formatTaskControlAlreadyCanceledHint())
-  rejectApply('task_control', formatTaskControlAlreadyDoneHint('cancel'))
+    rejectApply('task_control', formatTaskControlNotFoundHint(taskTarget))
+  if (result.status === 'already_canceled') {
+    rejectApply(
+      'task_control',
+      formatTaskControlAlreadyCanceledHint(taskTarget),
+    )
+  }
+  rejectApply(
+    'task_control',
+    formatTaskControlAlreadyDoneHint('cancel', taskTarget),
+  )
 }
 
 export const TASK_ACTION_DEFINITIONS = [

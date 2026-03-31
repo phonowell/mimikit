@@ -11,17 +11,17 @@ scheduled_at_invalid: |
 scheduled_at_not_future: |
   {{ action }} 执行失败：`scheduled_at` 必须晚于当前时间（now={{ now_iso }}）。
 task_control_not_found: |
-  task_control 执行失败：未找到 task ID。
+  task_control 执行失败{{ task_ref_suffix }}：未找到 task ID。
 task_control_resume_instructions_only: |
-  task_control 执行失败：只有 `action="resume"` 才允许附带 `instructions[]`。
+  task_control 执行失败{{ task_ref_suffix }}：只有 `action="resume"` 才允许附带 `instructions[]`。
 task_control_already_done: |
-  task_control 执行失败：任务已完成，无法执行 {{ action }}。
+  task_control 执行失败{{ task_ref_suffix }}：任务已完成，无法执行 {{ action }}。
 task_control_already_paused: |
-  task_control 执行失败：任务已是 paused 状态。
+  task_control 执行失败{{ task_ref_suffix }}：任务已是 paused 状态。
 task_control_not_paused: |
-  task_control 执行失败：任务当前不是 paused 状态，无法 resume。
+  task_control 执行失败{{ task_ref_suffix }}：任务当前不是 paused 状态，无法 resume。
 task_control_already_canceled: |
-  task_control 执行失败：任务已是 canceled 状态。
+  task_control 执行失败{{ task_ref_suffix }}：任务已是 canceled 状态。
 enqueue_task_cwd_invalid: |
   enqueue_task 执行失败：`task.cwd` 必须指向现有目录。{{ reason }} 请提交仓库内真实执行起点，不要填写未来 worktree 路径。
 enqueue_task_worktree_prepare_failed: |

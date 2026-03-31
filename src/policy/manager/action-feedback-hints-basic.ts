@@ -1,5 +1,20 @@
 import { renderActionFeedbackHint } from './action-feedback-hint-renderer.js'
 
+type TaskControlTarget = {
+  taskId?: string
+  taskTitle?: string
+}
+
+const formatTaskControlTargetSuffix = (target?: TaskControlTarget): string => {
+  const taskTitle = target?.taskTitle?.trim()
+  const taskId = target?.taskId?.trim()
+  const parts = [
+    ...(taskTitle ? [`title="${taskTitle}"`] : []),
+    ...(taskId ? [`task_id=${taskId}`] : []),
+  ]
+  return parts.length > 0 ? `（${parts.join('，')}）` : ''
+}
+
 export const formatUnregisteredActionHint = (
   registeredActions: string[],
 ): string =>
@@ -28,24 +43,49 @@ export const formatScheduledAtNotFutureHint = (
     now_iso: nowIso,
   })
 
-export const formatTaskControlNotFoundHint = (): string =>
-  renderActionFeedbackHint('task_control_not_found')
+export const formatTaskControlNotFoundHint = (
+  target?: TaskControlTarget,
+): string =>
+  renderActionFeedbackHint('task_control_not_found', {
+    task_ref_suffix: formatTaskControlTargetSuffix(target),
+  })
 
-export const formatTaskControlResumeInstructionsOnlyHint = (): string =>
-  renderActionFeedbackHint('task_control_resume_instructions_only')
+export const formatTaskControlResumeInstructionsOnlyHint = (
+  target?: TaskControlTarget,
+): string =>
+  renderActionFeedbackHint('task_control_resume_instructions_only', {
+    task_ref_suffix: formatTaskControlTargetSuffix(target),
+  })
 
 export const formatTaskControlAlreadyDoneHint = (
   action: 'pause' | 'resume' | 'cancel',
-): string => renderActionFeedbackHint('task_control_already_done', { action })
+  target?: TaskControlTarget,
+): string =>
+  renderActionFeedbackHint('task_control_already_done', {
+    action,
+    task_ref_suffix: formatTaskControlTargetSuffix(target),
+  })
 
-export const formatTaskControlAlreadyPausedHint = (): string =>
-  renderActionFeedbackHint('task_control_already_paused')
+export const formatTaskControlAlreadyPausedHint = (
+  target?: TaskControlTarget,
+): string =>
+  renderActionFeedbackHint('task_control_already_paused', {
+    task_ref_suffix: formatTaskControlTargetSuffix(target),
+  })
 
-export const formatTaskControlNotPausedHint = (): string =>
-  renderActionFeedbackHint('task_control_not_paused')
+export const formatTaskControlNotPausedHint = (
+  target?: TaskControlTarget,
+): string =>
+  renderActionFeedbackHint('task_control_not_paused', {
+    task_ref_suffix: formatTaskControlTargetSuffix(target),
+  })
 
-export const formatTaskControlAlreadyCanceledHint = (): string =>
-  renderActionFeedbackHint('task_control_already_canceled')
+export const formatTaskControlAlreadyCanceledHint = (
+  target?: TaskControlTarget,
+): string =>
+  renderActionFeedbackHint('task_control_already_canceled', {
+    task_ref_suffix: formatTaskControlTargetSuffix(target),
+  })
 
 export const formatEnqueueTaskCwdInvalidHint = (reason: string): string =>
   renderActionFeedbackHint('enqueue_task_cwd_invalid', {

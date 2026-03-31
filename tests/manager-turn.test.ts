@@ -156,3 +156,19 @@ test('parseManagerTurn accepts task_control cancel without instructions', () => 
     },
   ])
 })
+
+test('parseManagerTurn rejects task_control cancel with instructions', () => {
+  expect(() =>
+    parseManagerTurn({
+      reply: '收到。',
+      actions: [
+        {
+          type: 'task_control',
+          task_id: 'task-cancel-target',
+          action: 'cancel',
+          instructions: ['stop this task'],
+        },
+      ],
+    }),
+  ).toThrow(/instructions/i)
+})
