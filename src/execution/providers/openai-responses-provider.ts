@@ -7,11 +7,14 @@ import {
   resolveProxyDispatcher,
   trimNonEmptyString,
 } from './openai-responses-provider-config.js'
+import {
+  buildHttpErrorMessage,
+  isRetryableInvalidApiKey401,
+} from './openai-responses-provider-http.js'
 import { appendOpenAiResponsesLog } from './openai-responses-provider-log.js'
 import {
   buildResponsesInput,
   parseResponsesPayload,
-  readResponsesErrorMessage,
   resolveSessionId,
 } from './openai-responses-provider-parse.js'
 import {
@@ -42,13 +45,6 @@ export {
   parseResponsesPayload,
   parseResponsesSse,
 } from './openai-responses-provider-parse.js'
-
-const buildHttpErrorMessage = (status: number, raw: string): string => {
-  const message = readResponsesErrorMessage(raw)
-  if (message) return `responses_http_${status}:${message}`
-  const preview = raw.trim().slice(0, 280)
-  return `responses_http_${status}:${preview}`
-}
 
 const runOpenAiResponses = async (request: OpenAiResponsesProviderRequest) => {
   const startedAt = Date.now()
@@ -171,6 +167,7 @@ const runOpenAiResponses = async (request: OpenAiResponsesProviderRequest) => {
     else {
       const transient =
         /responses_http_(429|5\d\d):/i.test(err.message) ||
+        isRetryableInvalidApiKey401(err.message) ||
         isTransientProviderMessage(err.message)
       mapped = buildProviderSdkError({
         providerId: OPENAI_RESPONSES_PROVIDER_ID,
