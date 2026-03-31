@@ -12,7 +12,6 @@ import {
   formatTaskControlAlreadyPausedHint,
   formatTaskControlNotFoundHint,
   formatTaskControlNotPausedHint,
-  formatTaskControlResumeInstructionsOnlyHint,
 } from './action-feedback-hints.js'
 import { validateRecordTaskGitIntentEvidence } from './action-intent-evidence-dialog-memory.js'
 import { validateEnqueueTaskManagerRules } from './action-validation-enqueue-task.js'
@@ -72,34 +71,36 @@ export const validateTaskControl = (
   const schemaIssues = validateWithSchema(item, taskControlActionSchema)
   if (schemaIssues.length > 0) return schemaIssues
   if (item.type !== 'task_control') return schemaIssues
-  const taskStatus = context.taskStatusById?.get(item.task_id)
-  const instructions = item.instructions ?? []
-  if (!taskStatus) return rejected(formatTaskControlNotFoundHint())
-  if (item.action !== 'resume' && instructions.length > 0)
-    return rejected(formatTaskControlResumeInstructionsOnlyHint())
+  const task = context.taskById?.get(item.task_id)
+  const taskStatus = task?.status ?? context.taskStatusById?.get(item.task_id)
+  const taskTarget = {
+    taskId: item.task_id,
+    ...(task?.title ? { taskTitle: task.title } : {}),
+  }
+  if (!taskStatus) return rejected(formatTaskControlNotFoundHint(taskTarget))
 
   if (item.action === 'pause') {
     if (taskStatus === 'paused')
-      return rejected(formatTaskControlAlreadyPausedHint())
+      return rejected(formatTaskControlAlreadyPausedHint(taskTarget))
     if (taskStatus !== 'pending' && taskStatus !== 'running')
-      return rejected(formatTaskControlAlreadyDoneHint('pause'))
+      return rejected(formatTaskControlAlreadyDoneHint('pause', taskTarget))
   }
   if (item.action === 'resume') {
     if (taskStatus === 'pending' || taskStatus === 'running')
-      return rejected(formatTaskControlNotPausedHint())
+      return rejected(formatTaskControlNotPausedHint(taskTarget))
 
     if (taskStatus !== 'paused')
-      return rejected(formatTaskControlAlreadyDoneHint('resume'))
+      return rejected(formatTaskControlAlreadyDoneHint('resume', taskTarget))
   }
   if (item.action === 'cancel') {
     if (taskStatus === 'canceled')
-      return rejected(formatTaskControlAlreadyCanceledHint())
+      return rejected(formatTaskControlAlreadyCanceledHint(taskTarget))
     if (
       taskStatus !== 'pending' &&
       taskStatus !== 'paused' &&
       taskStatus !== 'running'
     )
-      return rejected(formatTaskControlAlreadyDoneHint('cancel'))
+      return rejected(formatTaskControlAlreadyDoneHint('cancel', taskTarget))
   }
   return validateHighRiskActionIntentEvidence(item, context)
 }

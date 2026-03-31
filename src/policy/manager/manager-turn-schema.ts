@@ -56,12 +56,22 @@ export const enqueueTaskActionSchema = z.strictObject({
   task: managerTaskDraftSchema,
 })
 
-export const taskControlActionSchema = z.strictObject({
-  type: z.literal('task_control'),
-  task_id: taskIdSchema,
-  action: z.enum(['pause', 'resume', 'cancel']),
-  instructions: instructionsSchema.optional(),
-})
+export const taskControlActionSchema = z
+  .strictObject({
+    type: z.literal('task_control'),
+    task_id: taskIdSchema,
+    action: z.enum(['pause', 'resume', 'cancel']),
+    instructions: instructionsSchema.optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.action === 'resume') return
+    if (!value.instructions || value.instructions.length === 0) return
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['instructions'],
+      message: `只有 action="resume" 才允许附带 instructions[]（task_id=${value.task_id}）`,
+    })
+  })
 
 export const recordTaskGitActionSchema = z.strictObject({
   type: z.literal('record_task_git'),
