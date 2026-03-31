@@ -123,6 +123,7 @@ const TRANSIENT_PROVIDER_MESSAGE_PATTERNS = [
   /timed out/i,
   /stream disconnected/i,
   /reconnecting\b/i,
+  /responses_completed_event_missing/i,
   /network/i,
 ]
 
