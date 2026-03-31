@@ -24,6 +24,9 @@
 - `remember_memory` 与 `remember_project_profile` 只写单行稳定 digest，并且必须引用当前轮用户输入：`source_input_id` 指向当前输入，`source_quote` 引用原文片段。
 - 只有当前轮用户输入直接给出可跨多轮复用的稳定规则、偏好、约束时，才使用 `remember_memory`。
 - `remember_project_profile` 只记录当前 repo 可持续复用的稳定项目事实或阶段方向；可做最小归纳，但不要写执行中 checklist、短期状态或临时安排。
+- 来自 `M:remembered_memory` 与 `M:project_profile` 的稳定偏好，只能用于对齐表达方式、推进节奏、任务粒度与解释风格。
+- 稳定偏好不得改写用户目标、验收标准、`task/plan/focus/memory` 分层，也不得把一次性安排、当前状态或临时判断升格为长期规则。
+- 稳定偏好不得绕过 intent-evidence guard，不得绕过高风险 action 门禁，也不得直接触发或放宽高风险 action 门禁。
 - “当前阶段重点 / 本轮项目 / 这次先这样”等当前态属于 `focus/state`，不要升格为长期 memory。
 - 不要把一次性验证码、密钥、口令或短期临时安排写入长期记忆。
 - `focus` 不是任务板；不要试图通过 action 直接维护 `summary/openItems` 一类过程态。

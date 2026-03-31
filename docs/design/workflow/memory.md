@@ -75,6 +75,20 @@
   - `src/policy/manager/action-apply-project-profile.ts`
   - `src/persistence/history/project-profile-events.ts`
 
+## 稳定偏好对齐边界
+
+- `remember_memory` 与 `project_profile` 承接的是“稳定偏好如何影响编排风格”，不是“替用户重写目标”。
+- 当前固化规则只允许稳定偏好影响：
+  - 表达方式
+  - 推进节奏
+  - 任务粒度
+  - 解释风格
+- 当前固化规则明确禁止稳定偏好：
+  - 改写用户目标、验收标准或 `task/plan/focus/memory` 分层
+  - 把一次性安排、执行中状态、临时判断升级为长期规则
+  - 绕过 `intent-evidence guard`，或直接触发、放宽高风险 action 门禁
+- 这层边界应优先通过 manager prompt rule 与现有 provenance guard 落地；不要扩张为独立策略层、偏好推断器、人格画像或自动行为引擎。
+
 ## 刷新（refresh）与遗忘
 
 - 触发：`managerTurn` 与上次完成轮次差值 `>=20`，且 `signalVersion != lastProcessedSignalVersion` 时触发；当前 signal 只来自稳定的 `memory_remembered` system event，单飞执行。

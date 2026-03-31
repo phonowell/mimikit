@@ -86,3 +86,28 @@ test('buildManagerPromptPayload anchors manager as the orchestration layer befor
   expect(payload.prompt).toContain('未列出的 action 视为本轮不可用')
   expect(payload.prompt).toContain('不要猜测隐藏字段、兼容别名或默认值')
 })
+
+test('buildManagerPromptPayload constrains stable preference alignment to style and pacing boundaries', async () => {
+  const stateDir = await mkdtemp(
+    join(tmpdir(), 'mimikit-manager-preference-alignment-'),
+  )
+  const startupWorktree = '/repo/mimikit'
+  const config = defaultConfig({ workDir: stateDir })
+
+  const payload = await buildManagerPromptPayload({
+    stateDir,
+    workDir: stateDir,
+    startupWorktree,
+    inputs: [],
+    results: [],
+    tasks: [],
+    promptSectionLimits: config.manager.promptSections,
+    wakeProfile: 'user_input',
+    packetMode: 'standard',
+  })
+
+  expect(payload.prompt).toContain('稳定偏好')
+  expect(payload.prompt).toContain('表达方式、推进节奏、任务粒度')
+  expect(payload.prompt).toContain('不得改写用户目标、验收标准')
+  expect(payload.prompt).toContain('不得绕过高风险 action 门禁')
+})
