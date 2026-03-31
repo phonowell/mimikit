@@ -10,6 +10,7 @@ import {
 
 import {
   isScrollStateNearBottom,
+  observeElementContentResize,
   readScrollState,
   restoreExactBottomIfNeeded,
   scrollElementToBottom,
@@ -24,6 +25,7 @@ type ScrollMetrics = {
 export const useMessageScroll = (deps: readonly unknown[]) => {
   const listRef = useRef<HTMLUListElement | null>(null)
   const followBottomRef = useRef(true)
+  const observedScrollHeightRef = useRef(0)
   const pendingMetricsRef = useRef<ScrollMetrics | null>(null)
   const pendingBottomLockFrameRef = useRef<number | null>(null)
   const [isNearBottom, setIsNearBottom] = useState(true)
@@ -89,6 +91,7 @@ export const useMessageScroll = (deps: readonly unknown[]) => {
       const element = listRef.current
       if (!element) return
       const nextState = scrollElementToBottom(element, smooth)
+      observedScrollHeightRef.current = nextState.scrollHeight
       if (smooth) {
         syncFollowState(true)
         return
@@ -119,10 +122,23 @@ export const useMessageScroll = (deps: readonly unknown[]) => {
   useEffect(() => {
     const element = listRef.current
     if (!element) return
+    observedScrollHeightRef.current = element.scrollHeight
     updateScrollButton()
     element.addEventListener('scroll', updateScrollButton, { passive: true })
-    return () => element.removeEventListener('scroll', updateScrollButton)
-  }, [updateScrollButton])
+    const cleanupContentResize = observeElementContentResize(element, () => {
+      const current = listRef.current
+      if (!current) return
+      const nextHeight = current.scrollHeight
+      if (nextHeight === observedScrollHeightRef.current) return
+      observedScrollHeightRef.current = nextHeight
+      if (!followBottomRef.current) return
+      scrollToBottom(false)
+    })
+    return () => {
+      cleanupContentResize()
+      element.removeEventListener('scroll', updateScrollButton)
+    }
+  }, [scrollToBottom, updateScrollButton])
 
   useEffect(() => cancelPendingBottomLock, [cancelPendingBottomLock])
 
@@ -140,6 +156,7 @@ export const useMessageScroll = (deps: readonly unknown[]) => {
     }
     const delta = element.scrollHeight - metrics.previousHeight
     element.scrollTop = Math.max(0, metrics.previousTop + delta)
+    observedScrollHeightRef.current = element.scrollHeight
     syncFollowState(false)
   }, deps)
 

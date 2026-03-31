@@ -7,6 +7,14 @@ export type ScrollState = {
   scrollTop: number
 }
 
+const ELEMENT_NODE = 1
+
+const isElementNode = (value: unknown): value is Element =>
+  typeof value === 'object' &&
+  value !== null &&
+  'nodeType' in value &&
+  value.nodeType === ELEMENT_NODE
+
 export const getBottomThreshold = (
   _clientHeight: number,
   thresholdPx = BOTTOM_THRESHOLD_PX,
@@ -40,6 +48,53 @@ export const restoreExactBottomIfNeeded = (
   const state = readScrollState(element)
   if (state.distance <= 0) return state
   return scrollElementToBottom(element, false)
+}
+
+export const observeElementContentResize = (
+  element: HTMLUListElement,
+  onContentResize: () => void,
+): (() => void) => {
+  if (typeof globalThis.ResizeObserver !== 'function') return () => undefined
+
+  const observedChildren = new Set<Element>()
+  const resizeObserver = new globalThis.ResizeObserver(() => onContentResize())
+
+  const observeChild = (value: unknown) => {
+    if (!isElementNode(value) || observedChildren.has(value)) return
+    observedChildren.add(value)
+    resizeObserver.observe(value)
+  }
+
+  const unobserveChild = (value: unknown) => {
+    if (!isElementNode(value) || !observedChildren.delete(value)) return
+    resizeObserver.unobserve(value)
+  }
+
+  for (const child of Array.from(element.children)) observeChild(child)
+
+  let mutationObserver: MutationObserver | null = null
+  if (typeof globalThis.MutationObserver === 'function') {
+    mutationObserver = new globalThis.MutationObserver((records) => {
+      let childListChanged = false
+      for (const record of records) {
+        for (const node of record.addedNodes) {
+          observeChild(node)
+          childListChanged = true
+        }
+        for (const node of record.removedNodes) {
+          unobserveChild(node)
+          childListChanged = true
+        }
+      }
+      if (childListChanged) onContentResize()
+    })
+    mutationObserver.observe(element, { childList: true })
+  }
+
+  return () => {
+    mutationObserver?.disconnect()
+    resizeObserver.disconnect()
+  }
 }
 
 export const isScrollStateNearBottom = (
