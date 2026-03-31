@@ -38,7 +38,7 @@ test('task meta renders git closure badges when available', () => {
   expect(markup).toContain('cleanup pending')
 })
 
-test('task meta surfaces access mode and write branch when available', () => {
+test('task meta keeps write branch without rendering access mode badges', () => {
   Object.assign(globalThis, { React })
   const writeMarkup = renderToStaticMarkup(
     React.createElement(TaskMeta, {
@@ -52,16 +52,9 @@ test('task meta surfaces access mode and write branch when available', () => {
       }),
     }),
   )
-  const readMarkup = renderToStaticMarkup(
-    React.createElement(TaskMeta, {
-      open: true,
-      task: createTask({
-        resourceMode: 'read',
-      }),
-    }),
-  )
 
-  expect(writeMarkup).toContain('writable')
   expect(writeMarkup).toContain('task/webui-tasks-panel')
-  expect(readMarkup).toContain('read-only')
+  expect(writeMarkup).not.toContain('writable')
+  expect(writeMarkup).not.toContain('read-only')
+  expect(writeMarkup).not.toContain('task-access-mode')
 })

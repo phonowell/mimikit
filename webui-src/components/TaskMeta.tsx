@@ -15,15 +15,8 @@ type Props = {
   task: TaskView
 }
 
-const resolveTaskAccessMode = (
-  value: string | undefined,
-): { chipText?: string; mode: 'read' | 'write' | 'unknown' } => {
-  const normalized = value?.trim().toLowerCase()
-  if (normalized === 'read') return { chipText: 'read-only', mode: 'read' }
-  if (normalized === 'write') return { chipText: 'writable', mode: 'write' }
-  if (!normalized) return { mode: 'unknown' }
-  return { chipText: normalized, mode: 'unknown' }
-}
+const isWriteTaskAccessMode = (value: string | undefined): boolean =>
+  value?.trim().toLowerCase() === 'write'
 
 const toMs = (value: string | undefined): number | null => {
   const parsed = parseTimeInput(value)
@@ -31,7 +24,6 @@ const toMs = (value: string | undefined): number | null => {
 }
 
 export const TaskMeta = ({ open, task }: Props) => {
-  const accessMode = resolveTaskAccessMode(task.resourceMode)
   const status = task.status || 'pending'
   const hasRunningClock = status === 'running'
   const now = useNowTick(hasRunningClock ? 1_000 : 60_000, open)
@@ -77,15 +69,7 @@ export const TaskMeta = ({ open, task }: Props) => {
       <span className="task-tokens" title={usage?.title ?? ''}>
         {usage?.text ?? '-'}
       </span>
-      {accessMode.chipText ? (
-        <span
-          className="task-git-closure task-access-mode"
-          data-access-mode={accessMode.mode}
-        >
-          {accessMode.chipText}
-        </span>
-      ) : null}
-      {accessMode.mode === 'write' && task.git?.branch ? (
+      {isWriteTaskAccessMode(task.resourceMode) && task.git?.branch ? (
         <span
           className="task-git-closure task-git-target"
           title={task.git.branch}

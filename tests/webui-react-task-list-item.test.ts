@@ -88,3 +88,24 @@ test('task list item keeps the opened menu out of the card flow slot', () => {
   expect(menuIndex).toBeGreaterThan(actionsIndex)
   expect(markup).not.toContain('class="task-item-menu-slot"')
 })
+
+test('task list item encodes resource mode on the status dot instead of a text badge', () => {
+  Object.assign(globalThis, { React })
+  const markup = renderToStaticMarkup(
+    React.createElement(TaskListItem, {
+      open: true,
+      task: createTask({
+        resourceMode: 'read',
+      }),
+      openMenuId: '',
+      onRequestDelete: noop,
+      onTaskAction: noop,
+      onToggleMenu: noop,
+    }),
+  )
+
+  expect(markup).toContain('class="task-status"')
+  expect(markup).toContain('data-access-mode="read"')
+  expect(markup).not.toContain('read-only')
+  expect(markup).not.toContain('writable')
+})
