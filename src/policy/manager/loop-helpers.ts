@@ -9,11 +9,8 @@ import {
   appendConsumedResultsToHistory,
 } from '../../persistence/history/result-events.js'
 import { updateJsonl } from '../../persistence/storage/jsonl.js'
-import { toDisplayPath } from '../../surface/shared/path-display.js'
-import {
-  formatTaskResultSummary,
-  resolveTaskLabel,
-} from '../../work/shared/task-state.js'
+
+import { formatManagerVisibleTaskResultReply } from './task-result-visible-reply.js'
 
 import type { TaskResult, UserInput } from '../../foundation/types/index.js'
 import type {
@@ -43,24 +40,12 @@ const buildFallbackResultReply = (params: {
   if (!latestResult) return undefined
   const task = params.tasks.find((item) => item.id === latestResult.taskId)
   const handoffSummary = latestResult.handoff?.summary?.trim()
-  const summary =
-    handoffSummary && handoffSummary.length > 0
-      ? handoffSummary
-      : formatTaskResultSummary(
-          task ? resolveTaskLabel(task) : latestResult.taskId,
-          latestResult.status,
-        )
-  const rawArchivePath = [
-    latestResult.archivePath,
-    task?.archivePath,
-    task?.result?.archivePath,
-  ].find((value) => typeof value === 'string' && value.trim().length > 0)
-  const archivePath = rawArchivePath
-    ? toDisplayPath(rawArchivePath, params.workDir).trim()
-    : ''
-  return archivePath
-    ? `${summary}\n[任务归档](${archivePath})`
-    : `${summary}\n任务归档: 未生成`
+  return formatManagerVisibleTaskResultReply({
+    result: latestResult,
+    workDir: params.workDir,
+    ...(task ? { task } : {}),
+    ...(handoffSummary ? { detail: handoffSummary } : {}),
+  })
 }
 
 export const buildFallbackReply = async (params: {
