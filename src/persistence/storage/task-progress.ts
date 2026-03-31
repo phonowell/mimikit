@@ -22,6 +22,7 @@ const taskProgressEventSchema = z
   .strict()
 
 const TASK_PROGRESS_DIR = 'task-progress'
+export const TASK_PROGRESS_WORKER_LIVE_OUTPUT_TYPE = 'worker_live_output'
 
 export type TaskProgressEvent = z.infer<typeof taskProgressEventSchema>
 
@@ -86,4 +87,24 @@ export const readTaskProgress = async (
     ),
   )
   return chunks.flat().sort(sortTaskProgress)
+}
+
+export const readLatestTaskLiveOutput = async (
+  stateDir: string,
+  taskId: string,
+  options?: { since?: string },
+): Promise<string | undefined> => {
+  const entries = await readTaskProgress(stateDir, taskId)
+  const since = options?.since?.trim()
+  for (let index = entries.length - 1; index >= 0; index -= 1) {
+    const event = entries[index]
+    if (!event) continue
+    if (since && event.createdAt < since) break
+    if (event.type !== TASK_PROGRESS_WORKER_LIVE_OUTPUT_TYPE) continue
+    const { text } = event.payload
+    if (typeof text !== 'string') continue
+    const normalized = text.trim()
+    if (normalized) return normalized
+  }
+  return undefined
 }

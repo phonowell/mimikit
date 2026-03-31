@@ -60,43 +60,61 @@ const registerRunningTask = (params: {
   return orchestrator
 }
 
-test('task archive route shows running live output instead of task-progress activity', async () => {
+const requestArchive = async (params: {
+  taskId: string
+  specId: string
+  title: string
+  progress?: Array<{ type: string; text: string }>
+  liveOutput?: string
+}) => {
   const workDir = await mkdtemp(join(tmpdir(), 'mimikit-archive-running-'))
   const app = fastify()
   await persistTaskExecutionSpec({
     stateDir: workDir,
     prompt: 'track worker progress',
-    specId: 'spec-task-archive-running',
+    specId: params.specId,
   })
   const task = createRunningTask({
-    id: 'task-archive-running',
-    executionSpecId: 'spec-task-archive-running',
-    title: 'Running Task',
+    id: params.taskId,
+    executionSpecId: params.specId,
+    title: params.title,
   })
-  await appendTaskProgress({
-    stateDir: workDir,
-    taskId: task.id,
-    type: 'worker_activity',
-    payload: { text: workerActivityText },
-  })
-  await appendTaskProgress({
-    stateDir: workDir,
-    taskId: task.id,
-    type: 'worker_activity',
-    payload: { text: 'tool completed: fs/read_file' },
-  })
+  for (const event of params.progress ?? []) {
+    await appendTaskProgress({
+      stateDir: workDir,
+      taskId: task.id,
+      type: event.type,
+      payload: { text: event.text },
+    })
+  }
   const orchestrator = registerRunningTask({
     task,
-    getTaskLiveOutput: (taskId) =>
-      taskId === task.id
-        ? 'streaming summary: indexing task-progress'
-        : undefined,
+    ...(params.liveOutput
+      ? {
+          getTaskLiveOutput: (taskId: string) =>
+            taskId === task.id ? params.liveOutput : undefined,
+        }
+      : {}),
   })
   registerApiRoutes(app, orchestrator, defaultConfig({ workDir }))
-
   const response = await app.inject({
     method: 'GET',
     url: `/api/tasks/${task.id}/archive`,
+  })
+  await app.close()
+  return response
+}
+
+test('task archive route shows running live output instead of task-progress activity', async () => {
+  const response = await requestArchive({
+    taskId: 'task-archive-running',
+    specId: 'spec-task-archive-running',
+    title: 'Running Task',
+    progress: [
+      { type: 'worker_activity', text: workerActivityText },
+      { type: 'worker_activity', text: 'tool completed: fs/read_file' },
+    ],
+    liveOutput: 'streaming summary: indexing task-progress',
   })
 
   expectArchiveMarkdown(response, [
@@ -112,35 +130,14 @@ test('task archive route shows running live output instead of task-progress acti
   expect(response.body).not.toContain(
     'Task is running. Final archive is not available yet.',
   )
-
-  await app.close()
 })
 
 test('task archive route does not leak worker activity when live output is unavailable', async () => {
-  const workDir = await mkdtemp(join(tmpdir(), 'mimikit-archive-running-'))
-  const app = fastify()
-  await persistTaskExecutionSpec({
-    stateDir: workDir,
-    prompt: 'track worker progress',
+  const response = await requestArchive({
+    taskId: 'task-archive-running-no-live-output',
     specId: 'spec-task-archive-running-no-live-output',
-  })
-  const task = createRunningTask({
-    id: 'task-archive-running-no-live-output',
-    executionSpecId: 'spec-task-archive-running-no-live-output',
     title: 'Running Task Without Live Output',
-  })
-  await appendTaskProgress({
-    stateDir: workDir,
-    taskId: task.id,
-    type: 'worker_activity',
-    payload: { text: workerActivityText },
-  })
-  const orchestrator = registerRunningTask({ task })
-  registerApiRoutes(app, orchestrator, defaultConfig({ workDir }))
-
-  const response = await app.inject({
-    method: 'GET',
-    url: `/api/tasks/${task.id}/archive`,
+    progress: [{ type: 'worker_activity', text: workerActivityText }],
   })
 
   expectArchiveMarkdown(response, [
@@ -152,6 +149,32 @@ test('task archive route does not leak worker activity when live output is unava
   expect(response.body).not.toContain(
     "src/persistence/storage/task-progress.ts:1:import { join } from 'node:path'",
   )
+})
 
-  await app.close()
+test('task archive route falls back to persisted live output summary when runtime live output is unavailable', async () => {
+  const response = await requestArchive({
+    taskId: 'task-archive-running-persisted-live-output',
+    specId: 'spec-task-archive-running-persisted-live-output',
+    title: 'Running Task With Persisted Live Output',
+    progress: [
+      { type: 'worker_activity', text: workerActivityText },
+      {
+        type: 'worker_live_output',
+        text: 'persisted summary: indexing task-progress',
+      },
+    ],
+  })
+
+  expectArchiveMarkdown(response, [
+    'status: running',
+    '=== RESULT ===',
+    'persisted summary: indexing task-progress',
+  ])
+  expect(response.body).not.toContain('$ rg -n "task-progress" src')
+  expect(response.body).not.toContain(
+    "src/persistence/storage/task-progress.ts:1:import { join } from 'node:path'",
+  )
+  expect(response.body).not.toContain(
+    'Task is running. Final archive is not available yet.',
+  )
 })

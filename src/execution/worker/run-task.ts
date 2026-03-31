@@ -1,7 +1,6 @@
 import { notifyUiSignal } from '../../kernel/orchestrator/signals.js'
 import { appendLog } from '../../persistence/log/append.js'
 import { bestEffort } from '../../persistence/log/safe.js'
-import { appendTaskProgress } from '../../persistence/storage/task-progress.js'
 import {
   markTaskCanceled,
   markTaskFailed,
@@ -14,6 +13,7 @@ import { setTaskLiveOutput } from './live-output.js'
 import { buildResult } from './result-build.js'
 import { finalizeResult } from './result-finalize.js'
 import { runTaskWithRetry } from './run-retry.js'
+import { createTaskProgressWriteQueue } from './task-progress-write.js'
 
 import type {
   Task,
@@ -44,25 +44,12 @@ export const runTask = async (
 ): Promise<void> => {
   const startedAt = Date.now()
   const elapsed = () => Math.max(0, Date.now() - startedAt)
-  const pendingProgressWrites: Promise<unknown>[] = []
+  const progressWrites = createTaskProgressWriteQueue({
+    stateDir: runtime.config.workDir,
+    taskId: task.id,
+  })
   const resumeInstruction = task.resumeInstruction?.trim() ?? undefined
   const resumeTurnState = { started: false }
-  const queueProgressWrite = (output: string): void => {
-    pendingProgressWrites.push(
-      bestEffort('appendTaskProgress: worker_activity', () =>
-        appendTaskProgress({
-          stateDir: runtime.config.workDir,
-          taskId: task.id,
-          type: 'worker_activity',
-          payload: { text: output },
-        }),
-      ),
-    )
-  }
-  const flushProgressWrites = async (): Promise<void> => {
-    if (pendingProgressWrites.length === 0) return
-    await Promise.allSettled(pendingProgressWrites.splice(0))
-  }
   const clearConsumedResumeInstruction = (): void => {
     if (!resumeInstruction) return
     if (task.resumeInstruction?.trim() !== resumeInstruction) return
@@ -123,14 +110,14 @@ export const runTask = async (
       },
       onPartialOutput: (output) => {
         if (!setTaskLiveOutput(runtime, task.id, output)) return
-        queueProgressWrite(output)
+        progressWrites.pushLiveOutput(output)
         notifyUiSignal(runtime, 'tasks')
       },
       onTurnStarted: () => {
         resumeTurnState.started = true
       },
     })
-    await flushProgressWrites()
+    await progressWrites.flush()
     clearConsumedResumeInstruction()
     if (task.status === 'paused') return
     if (task.status === 'canceled') {
@@ -157,7 +144,7 @@ export const runTask = async (
     )
     await finalizeTaskResult(result, markTaskSucceeded)
   } catch (error) {
-    await flushProgressWrites()
+    await progressWrites.flush()
     const err = error instanceof Error ? error : new Error(String(error))
     if (task.status === 'paused') {
       if (resumeTurnState.started) clearConsumedResumeInstruction()

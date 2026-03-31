@@ -4,6 +4,7 @@ import { readErrorCode } from '../../foundation/shared/error-code.js'
 import { checkExistingPathBoundary } from '../../persistence/fs/path-safety.js'
 import { readTextFile } from '../../persistence/fs/read-text.js'
 import { buildArchiveDocument } from '../../persistence/storage/archive-format.js'
+import { readLatestTaskLiveOutput } from '../../persistence/storage/task-progress.js'
 import { readTaskExecutionSpec } from '../../work/spec/store.js'
 
 import { resolveRouteId } from './route-params.js'
@@ -40,18 +41,27 @@ const buildLiveArchive = async (
   const resultDuration = task.result?.durationMs ?? task.durationMs
   const resultOutput = task.result?.output.trim()
   const liveSnapshot = liveOutput?.trim()
+  const startedAt = task.startedAt?.trim()
+  const persistedLiveOutput =
+    task.status === 'running'
+      ? await readLatestTaskLiveOutput(stateDir, task.id, {
+          ...(startedAt ? { since: startedAt } : {}),
+        })
+      : undefined
   const result =
     resultOutput && resultOutput.length > 0
       ? resultOutput
       : liveSnapshot && liveSnapshot.length > 0
         ? liveSnapshot
-        : task.status === 'pending'
-          ? 'Task is queued. Final archive is not available yet.'
-          : task.status === 'paused'
-            ? 'Task is paused. Final archive is not available yet.'
-            : task.status === 'running'
-              ? 'Task is running. Final archive is not available yet.'
-              : 'Task archive file is missing. Showing live snapshot.'
+        : persistedLiveOutput && persistedLiveOutput.length > 0
+          ? persistedLiveOutput
+          : task.status === 'pending'
+            ? 'Task is queued. Final archive is not available yet.'
+            : task.status === 'paused'
+              ? 'Task is paused. Final archive is not available yet.'
+              : task.status === 'running'
+                ? 'Task is running. Final archive is not available yet.'
+                : 'Task archive file is missing. Showing live snapshot.'
 
   return buildArchiveDocument(
     [

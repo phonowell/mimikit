@@ -65,11 +65,11 @@
 
 补充：
 
-- `tasks.tasks[*].liveOutput` 为运行中任务的流式输出片段（仅 WebUI 展示，运行态内存数据，不承诺持久化）。
+- `tasks.tasks[*].liveOutput` 为运行中任务的流式输出片段；WebUI 主路径仍读取运行态内存数据，但 archive live fallback 会在内存缺失时回退到当前运行轮次最近一次落盘的 `worker_live_output` 摘要。
 - `tasks.tasks[*].title` 只使用稳定 `Task.title`；若标题缺失则退回 `task.id`，不再从 `task.prompt` 派生展示标题。
 - `tasks.tasks[*]` 会暴露 `stopReason`；当前不再产出预算暂停态或额外的 recoverable UI 标记。
 - `tasks.tasks[*].traceRef` 会在 task result 已归档 trace 时暴露 `.mimikit/traces/...` 相对路径，供 WebUI 直接跳转。
-- `GET /api/tasks/:id/archive` 在最终 archive 尚不可用时，会回退到运行态快照；临时 `=== RESULT ===` 只使用 `task.result.output` 或当前进程内 `liveOutput` 摘要，不再拼接 `task-progress.worker_activity` 原始活动文本。返回体 frontmatter 现会显式标记 `archive_kind: live_fallback|final`，避免调用方把运行态兜底误认成最终 archive。
+- `GET /api/tasks/:id/archive` 在最终 archive 尚不可用时，会回退到运行态快照；临时 `=== RESULT ===` 只使用 `task.result.output`、当前进程内 `liveOutput` 摘要，或当前运行轮次最近一次落盘的 `task-progress.worker_live_output` 摘要，不再拼接 `task-progress.worker_activity` 原始活动文本。返回体 frontmatter 现会显式标记 `archive_kind: live_fallback|final`，避免调用方把运行态兜底误认成最终 archive。
 
 ## System 气泡可见性规则（WebUI 会话流）
 
@@ -156,7 +156,7 @@
 
 - `memory/MEMORY.md` 由两条链路维护：后台 memory 刷新子进程（`>=20` 轮且 `signalVersion != lastProcessedSignalVersion` 时触发，单飞执行）+ manager `remember_memory` 即时写入。
 - `usage/ledger.jsonl` 追加写入 manager round 与 worker result 两类账本记录；manager 记录 `wakeProfile/packetMode/promptBytes/promptSegmentCount`，worker 记录 `taskId/provider/status/usage`。
-- `task-progress/YYYY-MM-DD/{taskId}.jsonl` 当前会记录 `worker_start`、运行中的 `worker_activity` 以及结束态事件；这些事件属于运行态进度记录，不构成最终 archive 协议。
+- `task-progress/YYYY-MM-DD/{taskId}.jsonl` 当前会记录 `worker_start`、运行中的 `worker_activity`、脱敏后的 `worker_live_output` 摘要以及结束态事件；这些事件属于运行态进度记录，不构成最终 archive 协议。
 - worker task archive frontmatter 当前会额外写入 `trace_path`，用于从 archive 稳定反链回对应 trace 文件。
 - worker task archive frontmatter 当前会显式写入 `archive_kind: final`；`/api/tasks/:id/archive` 的运行态兜底文档会写 `archive_kind: live_fallback`。
 - `log.jsonl` 中 manager 每轮会写 `manager_context_budget_resolved`，显式记录 `policy=fixed`、`wakeProfile` 与最终 `promptSectionLimits`；预算解释以这条日志为准，不再依赖隐式分档推导。每次启动还会先写入 `runtime_startup` 事件，至少包含 `runtimeId`、`startedAt`、`worktree`，并在可用时附带 `commit`、`dirty`。

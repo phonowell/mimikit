@@ -82,6 +82,16 @@ test('runTask persists partial worker activity into task-progress', async () => 
         type: 'worker_activity',
         payload: { text: 'tool completed: fs/read_file' },
       }),
+      expect.objectContaining({
+        taskId: task.id,
+        type: 'worker_live_output',
+        payload: { text: '$ rg -n "worker_activity" src' },
+      }),
+      expect.objectContaining({
+        taskId: task.id,
+        type: 'worker_live_output',
+        payload: { text: 'tool completed: fs/read_file' },
+      }),
     ]),
   )
 })
