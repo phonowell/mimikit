@@ -58,7 +58,7 @@ test('plan list item keeps static body when lastTaskId is missing and still rend
   expect(markup).toContain('>copy id<')
 })
 
-test('plan list item renders task contract details inline when available', () => {
+test('plan list item keeps task contract behind a collapsed disclosure by default', () => {
   Object.assign(globalThis, { React })
   const plan = createPlan({ id: 'plan-3' }) as PlanView & {
     taskContract: {
@@ -87,6 +87,10 @@ test('plan list item renders task contract details inline when available', () =>
     }),
   )
 
+  expect(markup).toContain('class="plan-contract"')
+  expect(markup).toContain('class="plan-contract-summary"')
+  expect(markup).toContain('>View contract<')
+  expect(markup).not.toContain('class="plan-contract" open=""')
   expect(markup).toContain('Expose contract goal')
   expect(markup).toContain('Render contract scope in the plans dialog')
   expect(markup).toContain('Acceptance item one')
