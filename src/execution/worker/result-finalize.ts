@@ -1,10 +1,7 @@
 import { appendLog } from '../../persistence/log/append.js'
 import { bestEffort } from '../../persistence/log/safe.js'
 import { applyTaskResultWrite } from '../../work/orchestrator/task-result-write.js'
-import {
-  mergeTaskGitLifecycle,
-  resolveTaskGitLifecycle,
-} from '../../work/shared/task-git-lifecycle.js'
+import { resolveTaskGitLifecycle } from '../../work/shared/task-git-lifecycle.js'
 import { readTaskExecutionSpec } from '../../work/spec/store.js'
 
 import { resolveArchivePath, writeTaskArchive } from './result-archive.js'
@@ -38,16 +35,11 @@ export const finalizeResult = async (
   const logEvent = options?.logEvent ?? 'worker_end'
   const archiveSource = options?.archiveSource ?? 'worker'
   result.handoff ??= buildTaskResultHandoff(task, result)
-  const mergedGitLifecycle = task.git
-    ? mergeTaskGitLifecycle({
-        current: resolveTaskGitLifecycle(task),
-        patch: result.handoff?.git?.lifecycle,
-      })
-    : undefined
-  if (task.git && result.handoff?.git && mergedGitLifecycle) {
+  const gitLifecycle = task.git ? resolveTaskGitLifecycle(task) : undefined
+  if (task.git && result.handoff?.git && gitLifecycle) {
     result.handoff.git = {
       ...result.handoff.git,
-      lifecycle: mergedGitLifecycle,
+      lifecycle: gitLifecycle,
     }
   }
   applyTaskResultStateDefaults(result)

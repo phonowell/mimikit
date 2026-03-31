@@ -4,10 +4,7 @@ import { appendLog } from '../../persistence/log/append.js'
 import { bestEffort } from '../../persistence/log/safe.js'
 import { appendTaskProgress } from '../../persistence/storage/task-progress.js'
 import { appendWorkerUsageLedgerEntry } from '../../persistence/storage/usage-ledger.js'
-import {
-  mergeTaskGitLifecycle,
-  resolveTaskGitLifecycle,
-} from '../shared/task-git-lifecycle.js'
+import { resolveTaskGitLifecycle } from '../shared/task-git-lifecycle.js'
 
 import { applyRuntimeTaskResultDomainWrite } from './task-state-write.js'
 
@@ -49,17 +46,12 @@ export const applyTaskResultWrite = async (params: {
   const rawArchivePath = result.archivePath?.trim()
   const archivePath =
     rawArchivePath && rawArchivePath.length > 0 ? rawArchivePath : undefined
-  const mergedGitLifecycle = task.git
-    ? mergeTaskGitLifecycle({
-        current: resolveTaskGitLifecycle(task),
-        patch: result.handoff?.git?.lifecycle,
-      })
-    : undefined
+  const gitLifecycle = task.git ? resolveTaskGitLifecycle(task) : undefined
   const nextGit =
     task.git &&
     ({
       ...task.git,
-      ...(mergedGitLifecycle ? { lifecycle: mergedGitLifecycle } : {}),
+      ...(gitLifecycle ? { lifecycle: gitLifecycle } : {}),
     } satisfies NonNullable<Task['git']>)
   const basePatch: Partial<Task> = {
     ...(options.persistCompletionFields === false

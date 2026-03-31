@@ -43,7 +43,6 @@
 - 未完成时继续执行，不要提前收尾。
 - 已完成时，只输出单个 JSON 对象，不要输出代码块、标签或额外说明。
 - JSON 结构必须是 `{ "reply": string, "handoff": object }`。
-- `handoff.summary` 必填；可选字段：`decisions[]`、`next_steps[]`、`risks[]`、`artifacts[]`、`evidence[]`、`git_lifecycle`。
+- `handoff.summary` 必填；可选字段：`decisions[]`、`next_steps[]`、`risks[]`、`artifacts[]`、`evidence[]`。
 - `artifacts[]` 项格式：`{ "path": "...", "kind"?: "...", "note"?: "..." }`
 - `evidence[]` 项格式：`{ "type": "file|history|task_archive", "ref": "...", "note"?: "..." }`
-- `git_lifecycle` 可选字段：`review{passed,at?,sha?}`、`merged`、`cleaned`

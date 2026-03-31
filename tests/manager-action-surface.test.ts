@@ -16,7 +16,7 @@ test('manager action surface is unified across rounds', () => {
   expect(surface.actionNames.has('read_file')).toBe(false)
   expect(surface.actionNames.has('enqueue_task')).toBe(true)
   expect(surface.actionNames.has('task_control')).toBe(true)
-  expect(surface.actionNames.has('record_task_git')).toBe(true)
+  expect(surface.actionNames.has('record_task_git')).toBe(false)
   expect(surface.actionNames.has('set_plan')).toBe(true)
   expect(surface.actionNames.has('mutate_task')).toBe(false)
   expect(surface.actionNames.has('create_plan')).toBe(false)

@@ -18,7 +18,6 @@
 
 - 创建任务：`enqueue_task`
 - 控制任务：`task_control`
-- git 闭环写回：`record_task_git`
 
 ## 任务合同
 
@@ -68,26 +67,20 @@
 4. 结果归档并发布到 `results`
 5. manager 消费压缩后的结果与归档路径
 
-## Git 闭环
+## Git 对账
 
-- `record_task_git(state="review_passed")`
-- `record_task_git(state="merged")`
-- `record_task_git(state="cleaned")`
-- 只允许对已完成且带 `Task.git` 的任务写回；默认直跑任务不会生成 `Task.git`
-- 写回会同步更新：
-  - `task.git.lifecycle`
-  - `task.result.handoff.git.lifecycle`
-  - 任务归档 frontmatter / handoff
-- 启动 hydrate 与 snapshot persist 也会用文件系统现状补做一次 git closure 对账：
+- `Task.git` 只保留 repo-local 执行事实与 lifecycle 投影；默认直跑任务不会生成 `Task.git`
+- runtime 不再暴露 `record_task_git` 一类显式 git 状态写回 action，也不会采信 worker 主动上报的 `git_lifecycle`
+- 启动 hydrate 与 snapshot persist 会基于文件系统 / git 真相源补做 repo-local reconcile：
   - 缺失 worktree 会收敛为 `cleaned=true`
   - review sentinel / merge 祖先关系会收敛为最新 lifecycle
   - 对账结果会回写到 `task.git.lifecycle` 与已有 `task.result.handoff.git.lifecycle`
-- 因此 git closure 的真相源不再只是 UI badge；runtime task 本体与 snapshot 会保持一致。
+- 因此 git closure 的真相源是 repo-local 文件系统与 git 状态；task / handoff / snapshot 只保留对账后的投影。
 
 ## 结果约束
 
 - 成功结果必须通过结构化 handoff 协议收敛
 - worker 结束输出必须是单个结构化 JSON 对象：`{ reply, handoff }`
-- manager 只消费压缩结果：结论、证据路径、归档路径、git lifecycle 等
+- manager 只消费压缩结果：结论、证据路径、归档路径等
 - manager 查看的是 task 上的合同 digest，不是完整 worker prompt
 - 不回灌 worker 原始长 prompt 或大段上下文

@@ -48,7 +48,6 @@ const actionSurfaceTemplateSchema = z
       .object({
         enqueue_task: actionPromptSpecSchema,
         task_control: actionPromptSpecSchema,
-        record_task_git: actionPromptSpecSchema,
         set_plan: actionPromptSpecSchema,
         delete_plan: actionPromptSpecSchema,
         assign_focus: actionPromptSpecSchema,
@@ -95,7 +94,6 @@ const normalizePromptSpec = (
 export const ACTION_PROMPT_SPECS = {
   enqueue_task: normalizePromptSpec(templates.actions.enqueue_task),
   task_control: normalizePromptSpec(templates.actions.task_control),
-  record_task_git: normalizePromptSpec(templates.actions.record_task_git),
   set_plan: normalizePromptSpec(templates.actions.set_plan),
   delete_plan: normalizePromptSpec(templates.actions.delete_plan),
   assign_focus: normalizePromptSpec(templates.actions.assign_focus),

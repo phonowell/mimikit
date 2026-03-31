@@ -47,12 +47,6 @@ export const formatTaskControlNotPausedHint = (): string =>
 export const formatTaskControlAlreadyCanceledHint = (): string =>
   renderActionFeedbackHint('task_control_already_canceled')
 
-export const formatRecordTaskGitNotFoundHint = (): string =>
-  renderActionFeedbackHint('record_task_git_not_found')
-
-export const formatRecordTaskGitReasonRequiredHint = (): string =>
-  renderActionFeedbackHint('record_task_git_reason_required')
-
 export const formatEnqueueTaskCwdInvalidHint = (reason: string): string =>
   renderActionFeedbackHint('enqueue_task_cwd_invalid', {
     reason,

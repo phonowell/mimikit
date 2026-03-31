@@ -22,18 +22,6 @@ task_control_not_paused: |
   task_control 执行失败：任务当前不是 paused 状态，无法 resume。
 task_control_already_canceled: |
   task_control 执行失败：任务已是 canceled 状态。
-record_task_git_not_found: |
-  record_task_git 执行失败：未找到 task ID。
-record_task_git_not_done: |
-  record_task_git 执行失败：任务尚未完成，无法写入 {{ state }}。
-record_task_git_not_git: |
-  record_task_git 执行失败：任务没有 git 执行上下文，无法写入 {{ state }}。
-record_task_git_review_required: |
-  record_task_git 执行失败：任务尚未记录 review passed，无法写入 merged。
-record_task_git_merge_required: |
-  record_task_git 执行失败：任务尚未记录 merged，无法写入 cleaned。
-record_task_git_reason_required: |
-  record_task_git 执行失败：必须提供变更原因。
 enqueue_task_cwd_invalid: |
   enqueue_task 执行失败：`task.cwd` 必须指向现有目录。{{ reason }} 请提交仓库内真实执行起点，不要填写未来 worktree 路径。
 enqueue_task_worktree_prepare_failed: |

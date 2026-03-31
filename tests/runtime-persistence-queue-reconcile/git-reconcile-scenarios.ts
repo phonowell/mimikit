@@ -9,6 +9,11 @@ import {
   persistRuntimeState,
 } from '../../src/kernel/orchestrator/runtime-persistence.js'
 import { saveRuntimeSnapshot } from '../../src/persistence/storage/runtime-snapshot.js'
+import {
+  appendTaskResultArchive,
+  readTaskResultArchive,
+} from '../../src/persistence/storage/task-results.js'
+import { materializeTaskFixture } from '../helpers/execution-spec.js'
 import { createTaskFixture } from '../helpers/runtime-snapshot.js'
 import { createTestRuntimeState } from '../helpers/runtime-state.js'
 
@@ -18,9 +23,34 @@ const createTmpDir = () =>
 test('hydrateRuntimeState reconciles derived git closure into task truth source and persisted snapshot', async () => {
   const stateDir = await createTmpDir()
   const missingWorktreePath = join(stateDir, 'missing-worktree')
-  await saveRuntimeSnapshot(stateDir, {
-    tasks: [
-      createTaskFixture({
+  const archivePath = await appendTaskResultArchive(stateDir, {
+    taskId: 'task-git-reconcile',
+    focusId: 'focus-global',
+    title: 'Task Git Reconcile',
+    status: 'succeeded',
+    taskStatus: 'succeeded',
+    prompt: 'reconcile git lifecycle',
+    output: 'done',
+    createdAt: '2026-02-06T00:00:00.000Z',
+    completedAt: '2026-02-06T00:02:00.000Z',
+    durationMs: 1,
+    handoff: {
+      summary: 'done',
+      git: {
+        worktreePath: missingWorktreePath,
+        branch: 'feature/task-git-reconcile',
+        lifecycle: {
+          review: { passed: false },
+          merged: false,
+          cleaned: false,
+        },
+      },
+    },
+  })
+  const task = await materializeTaskFixture({
+    stateDir,
+    task: {
+      ...createTaskFixture({
         id: 'task-git-reconcile',
         status: 'succeeded',
         completedAt: '2026-02-06T00:02:00.000Z',
@@ -40,6 +70,7 @@ test('hydrateRuntimeState reconciles derived git closure into task truth source 
           output: 'done',
           durationMs: 1,
           completedAt: '2026-02-06T00:02:00.000Z',
+          archivePath,
           handoff: {
             summary: 'done',
             git: {
@@ -54,7 +85,11 @@ test('hydrateRuntimeState reconciles derived git closure into task truth source 
           },
         },
       }),
-    ],
+      prompt: 'reconcile git lifecycle',
+    },
+  })
+  await saveRuntimeSnapshot(stateDir, {
+    tasks: [task],
     taskPlans: [],
   })
 
@@ -67,6 +102,10 @@ test('hydrateRuntimeState reconciles derived git closure into task truth source 
 
   expect(runtime.tasks[0]?.git?.lifecycle?.cleaned).toBe(true)
   expect(runtime.tasks[0]?.result?.handoff?.git?.lifecycle?.cleaned).toBe(true)
+  expect(
+    (await readTaskResultArchive(archivePath))?.handoff?.git?.lifecycle
+      ?.cleaned,
+  ).toBe(true)
 
   await persistRuntimeState(runtime)
 
@@ -82,5 +121,9 @@ test('hydrateRuntimeState reconciles derived git closure into task truth source 
   expect(persistedSnapshot.tasks?.[0]?.git?.lifecycle?.cleaned).toBe(true)
   expect(
     persistedSnapshot.tasks?.[0]?.result?.handoff?.git?.lifecycle?.cleaned,
+  ).toBe(true)
+  expect(
+    (await readTaskResultArchive(archivePath))?.handoff?.git?.lifecycle
+      ?.cleaned,
   ).toBe(true)
 })

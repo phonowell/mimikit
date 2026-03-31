@@ -24,8 +24,9 @@ const mergeTaskPatch = (
   Object.assign(task, patch)
 }
 
-test('finalizeResult preserves structured worker handoff parsed by runner', async () => {
+test('finalizeResult keeps repo-local git reconcile as the handoff truth source', async () => {
   const stateDir = await createTmpDir()
+  const missingWorktreePath = join(stateDir, 'missing-worktree')
   const task: Task = {
     id: 'task-structured-handoff',
     fingerprint: 'task-structured-handoff',
@@ -38,7 +39,7 @@ test('finalizeResult preserves structured worker handoff parsed by runner', asyn
     status: 'running',
     createdAt: '2026-02-26T10:00:00.000Z',
     git: {
-      worktreePath: '/tmp/ship-release-worktree',
+      worktreePath: missingWorktreePath,
       branch: 'feature/release',
     },
   }
@@ -57,7 +58,7 @@ test('finalizeResult preserves structured worker handoff parsed by runner', asyn
       decisions: ['Enabled feature flag'],
       nextSteps: ['Monitor rollout'],
       git: {
-        worktreePath: '/tmp/ship-release-worktree',
+        worktreePath: missingWorktreePath,
         branch: 'feature/release',
         lifecycle: {
           review: { passed: true, sha: 'abc123' },
@@ -77,11 +78,8 @@ test('finalizeResult preserves structured worker handoff parsed by runner', asyn
   expect(result.handoff?.decisions).toEqual(['Enabled feature flag'])
   expect(result.handoff?.nextSteps).toEqual(['Monitor rollout'])
   expect(result.handoff?.git?.lifecycle).toMatchObject({
-    review: {
-      passed: true,
-      sha: 'abc123',
-    },
-    merged: true,
+    review: { passed: false },
+    merged: false,
     cleaned: true,
   })
 })

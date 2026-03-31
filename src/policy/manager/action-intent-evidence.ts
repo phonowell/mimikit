@@ -1,5 +1,4 @@
 import {
-  validateRecordTaskGitIntentEvidence,
   validateRememberMemoryIntentEvidence,
   validateRememberProjectProfileIntentEvidence,
 } from './action-intent-evidence-dialog-memory.js'
@@ -32,7 +31,6 @@ type IntentEvidenceContext = {
 const INTENT_EVIDENCE_REQUIRED_ACTIONS = new Set([
   'enqueue_task',
   'task_control',
-  'record_task_git',
   'set_plan',
   'delete_plan',
   'remember_memory',
@@ -90,16 +88,6 @@ export const resolveIntentEvidenceRejectionHint = (
       ...(context.defaultFocusId
         ? { defaultFocusId: context.defaultFocusId }
         : {}),
-      ...(context.supplementalEvidenceSources
-        ? { supplementalEvidenceSources: context.supplementalEvidenceSources }
-        : {}),
-    })
-  }
-  if (item.type === 'record_task_git') {
-    return validateRecordTaskGitIntentEvidence({
-      item,
-      ...(context.inputs ? { inputs: context.inputs } : {}),
-      ...(context.taskById ? { taskById: context.taskById } : {}),
       ...(context.supplementalEvidenceSources
         ? { supplementalEvidenceSources: context.supplementalEvidenceSources }
         : {}),

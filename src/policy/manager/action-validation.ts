@@ -1,12 +1,5 @@
-import { resolveTaskGitLifecycle } from '../../work/shared/task-git-lifecycle.js'
-
 import {
   formatEnqueueTaskContractMissingHint,
-  formatRecordTaskGitMergeRequiredHint,
-  formatRecordTaskGitNotDoneHint,
-  formatRecordTaskGitNotFoundHint,
-  formatRecordTaskGitNotGitHint,
-  formatRecordTaskGitReviewRequiredHint,
   formatTaskControlAlreadyCanceledHint,
   formatTaskControlAlreadyDoneHint,
   formatTaskControlAlreadyPausedHint,
@@ -14,7 +7,6 @@ import {
   formatTaskControlNotPausedHint,
   formatTaskControlResumeInstructionsOnlyHint,
 } from './action-feedback-hints.js'
-import { validateRecordTaskGitIntentEvidence } from './action-intent-evidence-dialog-memory.js'
 import { validateEnqueueTaskManagerRules } from './action-validation-enqueue-task.js'
 import { rejected, type ValidationIssue } from './action-validation-helpers.js'
 import {
@@ -29,7 +21,6 @@ import {
 } from './action-validation-shared.js'
 import {
   enqueueTaskActionSchema,
-  recordTaskGitActionSchema,
   rememberMemoryActionSchema,
   rememberProjectProfileActionSchema,
   taskControlActionSchema,
@@ -100,45 +91,6 @@ export const validateTaskControl = (
       taskStatus !== 'running'
     )
       return rejected(formatTaskControlAlreadyDoneHint('cancel'))
-  }
-  return validateHighRiskActionIntentEvidence(item, context)
-}
-
-export const validateRecordTaskGit = (
-  item: Parsed,
-  context: FeedbackContext,
-): ValidationIssue[] => {
-  const schemaIssues = validateWithSchema(item, recordTaskGitActionSchema)
-  if (schemaIssues.length > 0) return schemaIssues
-  if (item.type !== 'record_task_git') return schemaIssues
-  const taskStatus = context.taskStatusById?.get(item.task_id)
-  if (!taskStatus) return rejected(formatRecordTaskGitNotFoundHint())
-  const task = context.taskById?.get(item.task_id)
-  if (
-    taskStatus !== 'succeeded' &&
-    taskStatus !== 'failed' &&
-    taskStatus !== 'canceled'
-  )
-    return rejected(formatRecordTaskGitNotDoneHint(item.state))
-
-  if (task && !task.git)
-    return rejected(formatRecordTaskGitNotGitHint(item.state))
-  const lifecycle = task ? resolveTaskGitLifecycle(task) : undefined
-  if (item.state === 'merged' && !lifecycle?.review.passed)
-    return rejected(formatRecordTaskGitReviewRequiredHint())
-
-  if (item.state === 'cleaned' && !lifecycle?.merged)
-    return rejected(formatRecordTaskGitMergeRequiredHint())
-
-  const evidenceHint = validateRecordTaskGitIntentEvidence({
-    item,
-    ...(context.inputs ? { inputs: context.inputs } : {}),
-    ...(context.taskById ? { taskById: context.taskById } : {}),
-  })
-  if (evidenceHint) {
-    return rejected(evidenceHint, {
-      code: 'intent_evidence_missing',
-    })
   }
   return validateHighRiskActionIntentEvidence(item, context)
 }
