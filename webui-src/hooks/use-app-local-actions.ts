@@ -1,5 +1,3 @@
-import { useCallback, useMemo } from 'react'
-
 import {
   focusElementById,
   resolveDeleteModeTransition,
@@ -41,141 +39,73 @@ export const useAppLocalActions = ({
   setToolsMenuOpen,
   stateRef,
 }: Params) => {
-  const applyDeleteMode = useCallback(
-    (nextDeleteMode: boolean) => {
-      const current = stateRef.current
-      const transition = resolveDeleteModeTransition(
-        {
-          deleteMode: current.deleteMode,
-          openPlanMenuId: current.openPlanMenuId,
-          openTaskMenuId: current.openTaskMenuId,
-          quote: current.quote,
-          toolsMenuOpen: current.toolsMenuOpen,
-        },
-        nextDeleteMode,
-      )
-      if (transition.deleteMode === current.deleteMode) return
-      scroll.captureLayoutShift()
-      setDeleteMode(transition.deleteMode)
-      setToolsMenuOpen(transition.toolsMenuOpen)
-      setOpenPlanMenuId(transition.openPlanMenuId)
-      setOpenTaskMenuId(transition.openTaskMenuId)
-      setQuote(transition.quote)
-      focusElementById(transition.focusTargetId)
-    },
-    [
-      scroll.captureLayoutShift,
-      setDeleteMode,
-      setOpenPlanMenuId,
-      setOpenTaskMenuId,
-      setQuote,
-      setToolsMenuOpen,
-      stateRef,
-    ],
-  )
+  const applyDeleteMode = (nextDeleteMode: boolean) => {
+    const current = stateRef.current
+    const transition = resolveDeleteModeTransition(
+      {
+        deleteMode: current.deleteMode,
+        openPlanMenuId: current.openPlanMenuId,
+        openTaskMenuId: current.openTaskMenuId,
+        quote: current.quote,
+        toolsMenuOpen: current.toolsMenuOpen,
+      },
+      nextDeleteMode,
+    )
+    if (transition.deleteMode === current.deleteMode) return
+    scroll.captureLayoutShift()
+    setDeleteMode(transition.deleteMode)
+    setToolsMenuOpen(transition.toolsMenuOpen)
+    setOpenPlanMenuId(transition.openPlanMenuId)
+    setOpenTaskMenuId(transition.openTaskMenuId)
+    setQuote(transition.quote)
+    focusElementById(transition.focusTargetId)
+  }
 
-  const clearQuote = useCallback(() => {
+  const clearQuote = () => {
     scroll.captureLayoutShift()
     setQuote(null)
-  }, [scroll.captureLayoutShift, setQuote])
-  const closeConfirmDialog = useCallback(
-    () => setConfirmDialog(null),
-    [setConfirmDialog],
-  )
-  const closePlans = useCallback(() => setPlansOpen(false), [setPlansOpen])
-  const closeTasks = useCallback(() => setTasksOpen(false), [setTasksOpen])
-  const exitDeleteMode = useCallback(
-    () => applyDeleteMode(false),
-    [applyDeleteMode],
-  )
-  const onComposerInput = useCallback(
-    (value: string) => setComposerValue(value),
-    [setComposerValue],
-  )
-  const openPlans = useCallback(() => setPlansOpen(true), [setPlansOpen])
-  const openRestartDialog = useCallback(
-    () => setConfirmDialog({ kind: 'restart' }),
-    [setConfirmDialog],
-  )
-  const openResetDialog = useCallback(
-    () => setConfirmDialog({ kind: 'reset' }),
-    [setConfirmDialog],
-  )
-  const openTasks = useCallback(() => setTasksOpen(true), [setTasksOpen])
-  const requestDeleteMessage = useCallback(
-    (message: ChatMessage) =>
-      setConfirmDialog({ kind: 'message', id: message.id ?? '' }),
-    [setConfirmDialog],
-  )
-  const requestDeleteTask = useCallback(
-    (id: string, title: string) =>
-      setConfirmDialog({ kind: 'task', id, title }),
-    [setConfirmDialog],
-  )
-  const selectQuote = useCallback(
-    (message: ChatMessage) => {
-      scroll.captureLayoutShift()
-      setQuote(toQuoteState(message))
-    },
-    [scroll.captureLayoutShift, setQuote],
-  )
-  const toggleDeleteMode = useCallback(
-    () => applyDeleteMode(!stateRef.current.deleteMode),
-    [applyDeleteMode, stateRef],
-  )
-  const toggleTaskMenu = useCallback(
-    (taskId: string) =>
-      setOpenTaskMenuId((current) => (current === taskId ? '' : taskId)),
-    [setOpenTaskMenuId],
-  )
-  const togglePlanMenu = useCallback(
-    (planId: string) =>
-      setOpenPlanMenuId((current) => (current === planId ? '' : planId)),
-    [setOpenPlanMenuId],
-  )
-  const toggleToolsMenu = useCallback(
-    () => setToolsMenuOpen((current) => !current),
-    [setToolsMenuOpen],
-  )
+  }
+  const closeConfirmDialog = () => setConfirmDialog(null)
+  const closePlans = () => setPlansOpen(false)
+  const closeTasks = () => setTasksOpen(false)
+  const exitDeleteMode = () => applyDeleteMode(false)
+  const onComposerInput = (value: string) => setComposerValue(value)
+  const openPlans = () => setPlansOpen(true)
+  const openRestartDialog = () => setConfirmDialog({ kind: 'restart' })
+  const openResetDialog = () => setConfirmDialog({ kind: 'reset' })
+  const openTasks = () => setTasksOpen(true)
+  const requestDeleteMessage = (message: ChatMessage) =>
+    setConfirmDialog({ kind: 'message', id: message.id ?? '' })
+  const requestDeleteTask = (id: string, title: string) =>
+    setConfirmDialog({ kind: 'task', id, title })
+  const selectQuote = (message: ChatMessage) => {
+    scroll.captureLayoutShift()
+    setQuote(toQuoteState(message))
+  }
+  const toggleDeleteMode = () => applyDeleteMode(!stateRef.current.deleteMode)
+  const toggleTaskMenu = (taskId: string) =>
+    setOpenTaskMenuId((current) => (current === taskId ? '' : taskId))
+  const togglePlanMenu = (planId: string) =>
+    setOpenPlanMenuId((current) => (current === planId ? '' : planId))
+  const toggleToolsMenu = () => setToolsMenuOpen((current) => !current)
 
-  return useMemo(
-    () => ({
-      clearQuote,
-      closeConfirmDialog,
-      closePlans,
-      closeTasks,
-      exitDeleteMode,
-      onComposerInput,
-      openPlans,
-      openRestartDialog,
-      openResetDialog,
-      openTasks,
-      requestDeleteMessage,
-      requestDeleteTask,
-      selectQuote,
-      togglePlanMenu,
-      toggleDeleteMode,
-      toggleTaskMenu,
-      toggleToolsMenu,
-    }),
-    [
-      clearQuote,
-      closeConfirmDialog,
-      closePlans,
-      closeTasks,
-      exitDeleteMode,
-      onComposerInput,
-      openPlans,
-      openRestartDialog,
-      openResetDialog,
-      openTasks,
-      requestDeleteMessage,
-      requestDeleteTask,
-      selectQuote,
-      togglePlanMenu,
-      toggleDeleteMode,
-      toggleTaskMenu,
-      toggleToolsMenu,
-    ],
-  )
+  return {
+    clearQuote,
+    closeConfirmDialog,
+    closePlans,
+    closeTasks,
+    exitDeleteMode,
+    onComposerInput,
+    openPlans,
+    openRestartDialog,
+    openResetDialog,
+    openTasks,
+    requestDeleteMessage,
+    requestDeleteTask,
+    selectQuote,
+    togglePlanMenu,
+    toggleDeleteMode,
+    toggleTaskMenu,
+    toggleToolsMenu,
+  }
 }

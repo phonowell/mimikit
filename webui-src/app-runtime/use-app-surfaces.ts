@@ -1,4 +1,4 @@
-import { useCallback, useDeferredValue, useMemo } from 'react'
+import { useDeferredValue } from 'react'
 
 import {
   preloadPlansDialog,
@@ -40,90 +40,48 @@ export const useAppSurfaces = ({
     appState.status.activeTasks ?? 0,
     isDisconnected,
   )
-  const syncComposerLayoutShift = useCallback(
-    (stickToBottom: boolean) => scroll.syncAfterLayoutShift({ stickToBottom }),
-    [scroll.syncAfterLayoutShift],
-  )
-  const scrollBottom = useCallback(
-    () => scroll.scrollToBottom(false),
-    [scroll.scrollToBottom],
-  )
+  const syncComposerLayoutShift = (stickToBottom: boolean) =>
+    scroll.syncAfterLayoutShift({ stickToBottom })
+  const scrollBottom = () => scroll.scrollToBottom(false)
 
-  const headerSurface = useMemo(
-    () => ({
-      statusText: displayText,
-      statusState: displayState,
-      workerStates,
-      hasPlans: appState.plans.length > 0,
-      toolsMenuOpen: ui.toolsMenuOpen,
-      toolsDisabled: ui.busy,
-      onOpenPlans: actions.openPlans,
-      onOpenTasks: actions.openTasks,
-      onPreloadPlans: preloadPlansDialog,
-      onPreloadTasks: preloadTasksDialog,
-      onToggleTools: actions.toggleToolsMenu,
-      onToggleDeleteMode: actions.toggleDeleteMode,
-      onOpenRestart: actions.openRestartDialog,
-      onOpenReset: actions.openResetDialog,
-    }),
-    [
-      actions,
-      appState.plans.length,
-      displayState,
-      displayText,
-      ui.busy,
-      ui.toolsMenuOpen,
-      workerStates,
-    ],
-  )
-  const messageListSurface = useMemo(
-    () => ({
-      messages: appState.messages,
-      loading: appState.awaitingReply,
-      deleteMode: ui.deleteMode,
-      listRef: scroll.listRef,
-      scrollButtonVisible: scroll.scrollButtonVisible,
-      onScrollBottom: scrollBottom,
-      onQuote: actions.selectQuote,
-      onDelete: actions.requestDeleteMessage,
-    }),
-    [
-      actions.requestDeleteMessage,
-      actions.selectQuote,
-      appState.awaitingReply,
-      appState.messages,
-      scroll.listRef,
-      scroll.scrollButtonVisible,
-      scrollBottom,
-      ui.deleteMode,
-    ],
-  )
-  const composerSurface = useMemo(
-    () => ({
-      deleteMode: ui.deleteMode,
-      value: composerValue,
-      sendPending: ui.sendPending,
-      quote: ui.quote,
-      isNearBottom: scroll.isNearBottom,
-      onChange: actions.onComposerInput,
-      onClearQuote: actions.clearQuote,
-      onLayoutShift: syncComposerLayoutShift,
-      onSubmit: actions.submitMessage,
-      onExitDeleteMode: actions.exitDeleteMode,
-    }),
-    [
-      actions.clearQuote,
-      actions.exitDeleteMode,
-      actions.onComposerInput,
-      actions.submitMessage,
-      composerValue,
-      scroll.isNearBottom,
-      syncComposerLayoutShift,
-      ui.deleteMode,
-      ui.quote,
-      ui.sendPending,
-    ],
-  )
+  const headerSurface = {
+    statusText: displayText,
+    statusState: displayState,
+    workerStates,
+    hasPlans: appState.plans.length > 0,
+    toolsMenuOpen: ui.toolsMenuOpen,
+    toolsDisabled: ui.busy,
+    onOpenPlans: actions.openPlans,
+    onOpenTasks: actions.openTasks,
+    onPreloadPlans: preloadPlansDialog,
+    onPreloadTasks: preloadTasksDialog,
+    onToggleTools: actions.toggleToolsMenu,
+    onToggleDeleteMode: actions.toggleDeleteMode,
+    onOpenRestart: actions.openRestartDialog,
+    onOpenReset: actions.openResetDialog,
+  }
+  const messageListSurface = {
+    messages: appState.messages,
+    loading: appState.awaitingReply,
+    deleteMode: ui.deleteMode,
+    listRef: scroll.listRef,
+    scrollButtonVisible: scroll.scrollButtonVisible,
+    onScrollBottom: scrollBottom,
+    onQuote: actions.selectQuote,
+    onDelete: actions.requestDeleteMessage,
+  }
+  const composerSurface = {
+    deleteMode: ui.deleteMode,
+    value: composerValue,
+    sendPending: ui.sendPending,
+    quote: ui.quote,
+    isNearBottom: scroll.isNearBottom,
+    onChange: actions.onComposerInput,
+    onClearQuote: actions.clearQuote,
+    onLayoutShift: syncComposerLayoutShift,
+    onSubmit: actions.submitMessage,
+    onExitDeleteMode: actions.exitDeleteMode,
+  }
   const dialogSurfaces = useDialogSurfaces({
     actions,
     confirmDialog: ui.confirmDialog,
