@@ -51,4 +51,6 @@
 ## Git lifecycle
 
 - Worktree branch: `task/wt-e7871efffc`
-- Review status: pending commit / merge
+- Feature commit: `940e1018` (`feat: align stable preference boundaries`)
+- Merge-back: fast-forwarded into `main`
+- Cleanup: worktree / branch cleanup handled after merge
