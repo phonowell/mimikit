@@ -39,10 +39,12 @@
 ### `enqueue_task`
 
 - 结构：`{ type: "enqueue_task", task }`
+- 只接受这一份结构化合同；旧 XML / `name+attrs` / `*_1` 编号参数 / 兼容别名都无效。
 - `task` 必须包含：
   - `title`
   - `cwd`
   - `mode`
+  - `use_worktree`
   - `goal`
   - `in_scope[]`
   - `out_of_scope[]`
@@ -51,6 +53,8 @@
   - `instructions[]`
 - `worker_prompt` 已删除；worker prompt 由任务合同自动生成。
 - `branch` 已删除；git worktree / branch 由运行时决定。
+- manager turn 解析流程固定为“结构校验 -> 任务合同规范化 -> 严格校验”；不会为超长合同补兼容字段或保留旧协议入口。
+- 规范化会优先压缩单条字段中的 `；` 分句，并裁剪列表数量；当前覆盖 `goal/in_scope/out_of_scope/done_when/context_refs/instructions`。
 - `cwd` 必须指向现有目录。
 - `use_worktree` 必填；不需要独立 worktree 时显式传 `false`。
 - 仅当 `task.use_worktree=true` 且 `mode="write"` 时，运行时才会为仓库任务 materialize git worktree；否则直接在给定 `cwd` 执行。
@@ -160,7 +164,7 @@
 约束补充：
 
 - `M:state_packet.tasks` 只承载稳定任务状态与归档路径，不再重复展开详细 task result
-- `M:state_packet.tasks` / `M:state_packet.plans` 不再承载完整 worker prompt 或执行原文，但仍保留稳定合同 digest（如 `goal/scope/acceptance`）供 manager 做编排与验收门禁判断
+- `M:state_packet.tasks` / `M:state_packet.plans` 不再承载完整 worker prompt 或执行原文，但仍保留稳定合同 digest（如 `goal/scope/acceptance`）供 manager 做编排与验收门禁判断；这里的 digest 是收敛后的当前协议视图，不是任何旧合同别名或兼容载荷
 - `M:event_packet.batch_results` 是当前批次 task result 的唯一详细结果通道；仅当当前用户输入显式点名历史 `task_id` / `archive_path` 且本批次缺少对应详细结果时，允许只读 hydrate 既有 archive，并复用该通道回补必要正文/证据
 - `M:event_packet.batch_results` 只接收压缩后的 result / handoff / evidence，不再回灌执行载荷
 - `M:event_packet.packet.latestResult` 只保留摘要指针，用于快速判断本轮结果重心

@@ -40,8 +40,10 @@ actions:
     detail_constraints:
       - '`task` 必须包含 `title,cwd,mode,use_worktree,goal,in_scope,out_of_scope,done_when[],context_refs[],instructions[]`'
       - '`goal/in_scope/out_of_scope/done_when/instructions` 默认 1-3 条高密度短句，避免同义重复、客套和多段解释'
+      - '若单条 `goal/in_scope/out_of_scope/done_when/context_refs/instructions` 因 `；` 分句过长，优先删减末尾次要 clause，不要拆出兼容别名或额外字段'
       - '`task` 整体预算应控制在 `<=900 chars` / `UTF-8 <=2700 bytes`；优先删减重复 scope/acceptance，再删减次要 `context_refs` 与 `instructions`'
       - '不要镜像历史 task/plan 的完整 verbose contract；只保留当前任务最小可执行合同'
+      - '系统只接受当前结构化合同；旧别名、隐藏默认值和兼容字段都无效'
       - '`instructions[]` 仅用于短补充，不替代任务合同'
       - '能沿用同一 paused task 时，优先改用 `task_control` 的 `resume`，不要重复输出整份新合同'
       - '`use_worktree=false` 表示直接在给定 `cwd` 执行；`true` 仅用于需要独立 git worktree/review/merge/cleanup 闭环的 `mode="write"` 仓库任务'
