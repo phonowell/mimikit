@@ -4,6 +4,8 @@ import {
   TASK_PROGRESS_WORKER_LIVE_OUTPUT_TYPE,
 } from '../../persistence/storage/task-progress.js'
 
+import { summarizeTaskLiveOutput } from './live-output.js'
+
 export const createTaskProgressWriteQueue = (params: {
   stateDir: string
   taskId: string
@@ -12,6 +14,7 @@ export const createTaskProgressWriteQueue = (params: {
 
   return {
     pushLiveOutput(output: string): void {
+      const summary = summarizeTaskLiveOutput(output)
       pendingWrites.push(
         bestEffort('appendTaskProgress: worker_activity', () =>
           appendTaskProgress({
@@ -22,6 +25,7 @@ export const createTaskProgressWriteQueue = (params: {
           }),
         ),
       )
+      if (!summary) return
       pendingWrites.push(
         bestEffort(
           `appendTaskProgress: ${TASK_PROGRESS_WORKER_LIVE_OUTPUT_TYPE}`,
@@ -30,7 +34,7 @@ export const createTaskProgressWriteQueue = (params: {
               stateDir: params.stateDir,
               taskId: params.taskId,
               type: TASK_PROGRESS_WORKER_LIVE_OUTPUT_TYPE,
-              payload: { text: output },
+              payload: { text: summary },
             }),
         ),
       )

@@ -63,6 +63,9 @@ const buildRunModel =
     runWithProvider({
       provider: 'codex-sdk',
       role: 'worker',
+      ...(params.task.resourceMode
+        ? { resourceMode: params.task.resourceMode }
+        : {}),
       prompt: input.prompt,
       runtimeId: params.runtimeId,
       workDir: params.cwd,

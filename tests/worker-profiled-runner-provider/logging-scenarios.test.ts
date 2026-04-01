@@ -33,7 +33,7 @@ vi.mock('../../src/execution/worker/profiled-runner-loop.js', () => ({
 const { runWorker } =
   await import('../../src/execution/worker/profiled-runner.js')
 
-const createTask = (): Task => ({
+const createTask = (resourceMode?: Task['resourceMode']): Task => ({
   id: 'task-worker-log',
   fingerprint: 'fp-task-worker-log',
   semanticKey: 'sk-task-worker-log',
@@ -45,6 +45,7 @@ const createTask = (): Task => ({
   provider: 'codex',
   status: 'running',
   createdAt: '2026-03-29T08:00:00.000Z',
+  ...(resourceMode ? { resourceMode } : {}),
 })
 
 beforeEach(() => {
@@ -91,6 +92,24 @@ test('runWorker forwards worker llm log path and task context to provider', asyn
         executionSpecId: 'spec-task-worker-log',
         taskProfile: 'worker',
       }),
+    }),
+  )
+})
+
+test('runWorker forwards task resource mode to provider requests', async () => {
+  await runWorker({
+    runtimeId: 'runtime-worker-log',
+    stateDir: '/tmp/mimikit-state',
+    cwd: '/tmp/task-worker-log',
+    task: createTask('read'),
+    timeoutMs: 30_000,
+  })
+
+  expect(hoistedMocks.runWithProviderMock).toHaveBeenCalledWith(
+    expect.objectContaining({
+      provider: 'codex-sdk',
+      role: 'worker',
+      resourceMode: 'read',
     }),
   )
 })

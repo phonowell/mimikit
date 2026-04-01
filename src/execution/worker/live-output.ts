@@ -1,14 +1,26 @@
+import { clipCompactText } from '../../foundation/shared/text.js'
+
 import type { WorkerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 const MAX_LIVE_OUTPUT_CHARS = 800
 const taskLiveOutputStore = new WeakMap<WorkerRuntime, Map<string, string>>()
 
-const normalizeLiveOutput = (value: string): string => {
+export const summarizeTaskLiveOutput = (value: string): string => {
   const normalized = value.replace(/\r\n?/g, '\n').trim()
   if (!normalized) return ''
-  if (normalized.length <= MAX_LIVE_OUTPUT_CHARS) return normalized
-  const clipped = normalized.slice(-MAX_LIVE_OUTPUT_CHARS).trimStart()
-  return `...${clipped}`
+  const [firstLine = ''] = normalized
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+  if (!firstLine) return ''
+  if (firstLine.startsWith('$ ')) {
+    const command = firstLine.slice(2).trim()
+    return clipCompactText(
+      command ? `running command: ${command}` : 'running command',
+      MAX_LIVE_OUTPUT_CHARS,
+    )
+  }
+  return clipCompactText(firstLine, MAX_LIVE_OUTPUT_CHARS)
 }
 
 const ensureOutputMap = (runtime: WorkerRuntime): Map<string, string> => {
@@ -30,7 +42,7 @@ export const setTaskLiveOutput = (
 ): boolean => {
   const id = taskId.trim()
   if (!id) return false
-  const next = normalizeLiveOutput(output)
+  const next = summarizeTaskLiveOutput(output)
   const map = taskLiveOutputStore.get(runtime)
   if (!next) {
     if (!map?.has(id)) return false

@@ -68,9 +68,11 @@ export const normalizeCodexOutputSchema = (
 }
 
 export const sandboxModeFor = (
-  role: CodexSdkProviderRequest['role'],
+  request: Pick<CodexSdkProviderRequest, 'role' | 'resourceMode'>,
 ): 'danger-full-access' | 'read-only' =>
-  role === 'worker' ? 'danger-full-access' : 'read-only'
+  request.role === 'worker' && request.resourceMode !== 'read'
+    ? 'danger-full-access'
+    : 'read-only'
 
 const toLogContext = (
   request: CodexSdkProviderRequest,
@@ -83,8 +85,9 @@ const toLogContext = (
   promptLines: request.prompt.split(/\r?\n/).length,
   outputSchema: Boolean(request.outputSchema),
   workingDirectory: request.workDir,
-  sandboxMode: sandboxModeFor(request.role),
+  sandboxMode: sandboxModeFor(request),
   approvalPolicy,
+  ...(request.resourceMode ? { resourceMode: request.resourceMode } : {}),
   ...(request.model ? { model: request.model } : {}),
   ...(request.logContext ?? {}),
 })
@@ -131,7 +134,7 @@ export const createCodexThread = (
     workingDirectory: request.workDir,
     ...(request.model ? { model: request.model } : {}),
     modelReasoningEffort,
-    sandboxMode: sandboxModeFor(request.role),
+    sandboxMode: sandboxModeFor(request),
     approvalPolicy,
   }
   const thread = request.threadId

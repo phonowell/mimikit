@@ -121,7 +121,7 @@ test('runTask persists partial worker activity into task-progress', async () => 
       expect.objectContaining({
         taskId: task.id,
         type: 'worker_live_output',
-        payload: { text: '$ rg -n "worker_activity" src' },
+        payload: { text: 'running command: rg -n "worker_activity" src' },
       }),
       expect.objectContaining({
         taskId: task.id,
