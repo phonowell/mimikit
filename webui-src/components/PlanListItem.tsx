@@ -9,6 +9,7 @@ import {
 import { UI_TEXT } from '../lib/system-text.js'
 
 import { PlanActionMenu } from './PlanActionMenu.js'
+import { PlanListItemProgress } from './PlanListItemProgress.js'
 
 import type { PlanView } from '../types.js'
 
@@ -128,33 +129,12 @@ export const PlanListItem = ({
           />
         </div>
       </div>
-      {runCount !== null || lastTriggeredDisplay?.displayText || doneReason ? (
-        <section className="plan-progress" aria-label="Plan progress">
-          {runCount !== null ? (
-            <div className="plan-progress-row">
-              <span className="plan-progress-label">Runs</span>
-              <span className="plan-progress-value">{String(runCount)}</span>
-            </div>
-          ) : null}
-          {lastTriggeredDisplay?.displayText ? (
-            <div className="plan-progress-row">
-              <span className="plan-progress-label">Last trigger</span>
-              <span
-                className="plan-progress-value"
-                title={lastTriggeredDisplay.fullText || plan.lastTriggeredAt}
-              >
-                {lastTriggeredDisplay.displayText}
-              </span>
-            </div>
-          ) : null}
-          {doneReason ? (
-            <div className="plan-progress-row">
-              <span className="plan-progress-label">State</span>
-              <span className="plan-progress-value">{doneReason}</span>
-            </div>
-          ) : null}
-        </section>
-      ) : null}
+      <PlanListItemProgress
+        doneReason={doneReason}
+        lastTriggeredAt={plan.lastTriggeredAt}
+        lastTriggeredDisplay={lastTriggeredDisplay}
+        runCount={runCount}
+      />
       {taskContract ? (
         <details className="plan-contract" aria-label="Plan contract">
           <summary className="plan-contract-summary">View contract</summary>
