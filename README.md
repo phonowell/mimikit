@@ -71,12 +71,12 @@ curl -sS http://127.0.0.1:8787/api/status
 - `pnpm run typecheck`：开发者友好别名，等价 `pnpm run type-check`。
 - `pnpm run test`：运行 Vitest。
 - `pnpm run build`：执行 `type-check + build:webui`，并生成 `webui/generated/app.js`。
-- `pnpm run review-code-changes`：合流前门禁，串联 `lint + type-check + test`。
+- `pnpm run review-code-changes`：合流前门禁，串联 `lint + lint:changed-tests + type-check + build:webui + test`。
 - `pnpm run manual:eval:traces-usage-ledger`：手动离线评测，读取仓库内 fixture；不属于默认回归。
 
 ### 5) 默认回归边界
 
-- 默认门禁只有 `pnpm run review-code-changes`，也就是 `lint + type-check + test`。
+- 默认门禁只有 `pnpm run review-code-changes`，也就是 `lint + lint:changed-tests + type-check + build:webui + test`。
 - 手动 `eval:*`、`score:*` 与 `scripts/rearchitecture/*` 只用于离线分析或专项排查，不接入默认 CI。
 - 仓库已移除会真实调用 manager provider 的 cache benchmark，避免把付费且高波动脚本误当成本地回归。
 

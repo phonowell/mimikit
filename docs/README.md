@@ -11,14 +11,15 @@
 7. Codex SDK 接入：`./reference/sdk/codex-sdk.md`
 8. Telegram 渠道接入：`./reference/integrations/telegram-channel.md`
 9. 外部对比结论：`./reference/comparisons/known.md`
-10. 工程改进待办：`./todo/engineering-roi-backlog.md`
+10. 实施归档与复盘：`./runbook/`
 
 ## 目录职责
 
 - `BOOTSTRAP.md`：本地安装、启动、调试、状态目录与排障的单页手册。
 - `design/`：当前实现事实源（架构、协议、接口、UI）。
 - `reference/`：外部能力接入与调研结论。
-- `todo/`：仅保留未完成且可执行的 backlog。
+- `runbook/`：保留已落地改动的证据化归档、边界说明与后续建议。
+- `reviews/`：保留专题评审结论与复盘记录。
 
 ## 维护规则
 

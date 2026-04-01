@@ -4,7 +4,7 @@
 
 ## 文档定位
 
-- Focus 是编排域里的归属单元，用于把 `input / history / task / plan / choice` 挂到同一主题
+- Focus 是编排域里的归属单元，用于把 `input / history / task / plan` 挂到同一主题
 - 对应实现主源：`src/work/focus/*`、`src/policy/manager/action-apply-focus.ts`
 
 ## 核心原则

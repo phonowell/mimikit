@@ -16,22 +16,22 @@
 - manager prompt 收敛为双 packet：`state_packet` 负责稳定状态（focus/task/plan），其中 task 与 plan 只暴露合同级 digest（`goal/scope/acceptance` 等）与调度外壳，不回灌完整 worker prompt；`event_packet` 负责当前批次事件（input/result/history/action_feedback/environment/packet）；详细 task result 只留在 `event_packet.batch_results`，`state_packet.tasks` 不再重复展开结果正文；section 字节预算固定取自 `manager.promptSections`，`wakeProfile` 只影响 packet section 选择，不再动态改写 bytes，也不再分档 action surface。
 - worker 执行通道固定为 codex，不再进行 provider 候选注入、自动打分或按任务显式切换。
 - manager/worker 每轮 usage 统一写入 `usage/ledger.jsonl`，直接暴露 prompt 字节、packet 裁剪与执行侧 token 消耗，不再额外引入成本推导层。
-- HTTP 输入校验与参数归一化集中在 `src/surface/http/helpers.ts`。
+- HTTP 输入校验集中在 `src/surface/http/input-body.ts`，HTTP 路由装配在 `src/surface/http/routes-api.ts`。
 - 本地持久化采用进程内串行 + 文件锁（`proper-lockfile`）。
 
 ## 组件职责
 
 - `manager`：消费 `inputs/results`，决定回复、任务、计划与收尾策略，记录每轮 context packet 与 usage ledger，并在批次收尾后触发 memory refresh。
 - `worker`：把任务派发给外部执行运行时，并把结果回写到本地状态，同时在结果收尾时写 usage ledger。
-- `managerLoop`：统一处理计划触发、待确认 choice 生命周期、worker 槽位释放，不再保留独立 trigger loop。
+- `managerLoop`：统一处理计划触发、worker 槽位释放与批次收尾，不再保留独立 trigger loop。
 - `runtime reaper`：主进程异常退出后回收 worker 子进程。
 - `channel lifecycle`：启动并维护 Telegram polling，把外部入站消息转成统一输入，并负责被动回发与跨通道广播。
-- HTTP/WebUI：承担观察、复盘、显式续跑与控制面入口（消息删除、任务变更、choice 选择、restart/reset），不承载调度策略。
+- HTTP/WebUI：承担观察、复盘、显式续跑与控制面入口（消息删除、任务变更、restart/reset），不承载调度策略。
 
 约束：
 
 - manager 回合使用 `maxCorrectionRounds` 硬上限，超过后写入 `manager_round_limit` 并返回 best-effort 文本。
-- 当补充检索没有新进展时，manager 直接降级为澄清答复，不再掉进 `manager_end status=error`。
+- 当补充证据不足以继续推进时，manager 直接降级为澄清答复，不再掉进 `manager_end status=error`。
 - 当同类 `action_execution_rejected` 在同一批次内重复出现时，manager 按动作类别给出替代路径并停止继续重试。
 - worker 不再维护仓内 run budget 或多轮续跑；单次 dispatch 只做一次 provider 调用，是否再次 `resume` 交由通用任务控制。
 
@@ -68,14 +68,14 @@
 
 - `task_completed status=succeeded`：任务完成并归档。
 - `task_completed status=failed`：本轮执行失败或缺失完成协议，等待后续人工判断是否再次 `resume`。
-- manager best-effort 收敛：输入不足、守卫拒绝或检索无进展时直接给出下一步，不再空转。
+- manager best-effort 收敛：输入不足、守卫拒绝或证据不足时直接给出下一步，不再空转。
 
 实时唤醒来源：`user_input`、`task_result`、`trigger_fire`、`worker_slot_freed`。
 
 说明：
 
 - `worker_slot_freed` 不依赖独立轮询器；它由 worker 生命周期信号驱动 manager 重新评估可用槽位。
-- `cron` / `scheduled_at` / `choice timeout` 仍属于时间触发，但只在最近 deadline 到达时唤醒，不再以 1 秒间隔扫全局状态。
+- `cron` / `scheduled_at` 仍属于时间触发，但只在最近 deadline 到达时唤醒，不再以 1 秒间隔扫全局状态。
 - system event 在 `inputs/history` 中以 `text(summary) + systemEventName + systemEventPayload` 持久化；控制面判断不再依赖 `text` 中的协议标签。
 
 ## 一致性与恢复
