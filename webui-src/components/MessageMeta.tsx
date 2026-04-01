@@ -1,5 +1,8 @@
 import { useNowTick } from '../hooks/use-now-tick.js'
-import { formatDisplayTimeWithFull } from '../lib/messages/format-time.js'
+import {
+  formatDisplayTimeWithFull,
+  getDisplayTimeTickMs,
+} from '../lib/messages/format-time.js'
 import {
   formatElapsedLabel,
   formatUsage,
@@ -17,7 +20,7 @@ const isAgentMessage = (message: ChatMessage): boolean =>
 
 export const MessageMeta = ({ message }: Props) => {
   const shouldTick = shouldDisplayMessageTime(message)
-  const now = useNowTick(60_000, shouldTick)
+  const now = useNowTick(getDisplayTimeTickMs(message.createdAt), shouldTick)
   const usage = isAgentMessage(message) ? formatUsage(message.usage) : null
   const elapsed = isAgentMessage(message)
     ? formatElapsedLabel(message.elapsedMs)
