@@ -34,7 +34,7 @@ export const buildTaskEvidence = (params: {
   const { task, contract, result, previousStatus, archivePath } = params
   if (!contract) return undefined
   const note = summarizeOutput(result.output)
-  const allMet = result.outcome === 'completed' || result.status === 'succeeded'
+  const allMet = result.outcome === 'completed'
   const nextTaskStatus = result.taskStatus ?? task.status
   const acceptanceChecks = contract.acceptance.map((criterion) => ({
     criterion,

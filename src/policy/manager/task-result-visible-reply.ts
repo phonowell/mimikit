@@ -1,4 +1,7 @@
-import { toDisplayPath } from '../../surface/shared/path-display.js'
+import {
+  toDisplayPath,
+  toStateDisplayPath,
+} from '../../surface/shared/path-display.js'
 import { resolveTaskLabel } from '../../work/shared/task-state.js'
 
 import type {
@@ -16,8 +19,16 @@ const TASK_RESULT_STATUS_TEXT: Record<TaskResult['status'], string> = {
 const TASK_RESULT_STOP_REASON_HINT: Partial<
   Record<TaskResultStopReason, string>
 > = {
+  closure_pending: '待执行 merge/cleanup 收尾',
   guard_rejected: '命中门禁',
   input_required: '需要补充输入',
+}
+
+const resolveTaskResultStatusText = (result: TaskResult): string => {
+  if (result.taskStatus === 'paused' && result.outcome === 'blocked')
+    return result.stopReason === 'closure_pending' ? '待收尾' : '已暂停'
+
+  return TASK_RESULT_STATUS_TEXT[result.status]
 }
 
 const resolveTaskResultLabel = (
@@ -50,7 +61,10 @@ const resolveTaskArchiveLine = (params: {
     params.task?.result?.archivePath,
   ].find((value) => typeof value === 'string' && value.trim().length > 0)
   const archivePath = rawArchivePath
-    ? toDisplayPath(rawArchivePath, params.workDir).trim()
+    ? (
+        toStateDisplayPath(rawArchivePath) ??
+        toDisplayPath(rawArchivePath, params.workDir)
+      ).trim()
     : ''
   return archivePath ? `[任务归档](${archivePath})` : '任务归档: 未生成'
 }
@@ -72,7 +86,7 @@ export const formatManagerVisibleTaskResultReply = (params: {
 }): string => {
   const detail = params.detail?.trim()
   const lines = [
-    `任务 ${resolveTaskResultRef(params.task, params.result)}：${TASK_RESULT_STATUS_TEXT[params.result.status]}。`,
+    `任务 ${resolveTaskResultRef(params.task, params.result)}：${resolveTaskResultStatusText(params.result)}。`,
   ]
   if (detail) lines.push(detail)
   const stopReasonLine = resolveStopReasonLine(params.result.stopReason)

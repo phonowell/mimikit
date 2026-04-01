@@ -48,6 +48,7 @@ test('task meta keeps write branch without rendering access mode badges', () => 
         git: {
           worktreePath: '/tmp/mimikit-task-webui',
           branch: 'task/webui-tasks-panel',
+          closureRequired: true,
         },
       }),
     }),

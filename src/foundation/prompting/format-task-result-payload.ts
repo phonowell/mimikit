@@ -1,4 +1,7 @@
-import { toDisplayPath } from '../../surface/shared/path-display.js'
+import {
+  toDisplayPath,
+  toStateDisplayPath,
+} from '../../surface/shared/path-display.js'
 import { truncateText } from '../shared/text.js'
 
 import { normalizePromptUsage } from './format-base.js'
@@ -78,9 +81,11 @@ export const pickArchivePath = (
   workDir?: string,
 ): string | undefined => {
   const resultPath = resultArchivePath?.trim()
-  if (resultPath) return toDisplayPath(resultPath, workDir)
+  if (resultPath)
+    return toStateDisplayPath(resultPath) ?? toDisplayPath(resultPath, workDir)
   const taskPath = taskArchivePath?.trim()
-  if (taskPath) return toDisplayPath(taskPath, workDir)
+  if (taskPath)
+    return toStateDisplayPath(taskPath) ?? toDisplayPath(taskPath, workDir)
   return undefined
 }
 

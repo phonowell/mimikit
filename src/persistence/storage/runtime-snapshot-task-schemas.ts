@@ -143,3 +143,11 @@ export const taskSchema = z
       (data.repoKey !== undefined && data.branch !== undefined),
     { message: 'task repoKey and branch must be provided together' },
   )
+  .refine(
+    (data) =>
+      !data.git || (data.repoKey !== undefined && data.branch !== undefined),
+    { message: 'task git requires repoKey and branch' },
+  )
+  .refine((data) => !data.git || data.branch === data.git.branch, {
+    message: 'task branch must match task.git.branch',
+  })

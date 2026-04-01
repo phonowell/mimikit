@@ -7,9 +7,12 @@ import { createTaskFixture } from './helpers/runtime-snapshot.js'
 test('reconcileTaskGitState preserves richer handoff lifecycle evidence', () => {
   const task = createTaskFixture({
     id: 'task-git-handoff-richer',
+    repoKey: '/tmp/task-git-handoff-richer/.git',
+    branch: 'feature/task-git-handoff-richer',
     git: {
       worktreePath: '/tmp/task-git-handoff-richer',
       branch: 'feature/task-git-handoff-richer',
+      closureRequired: true,
       lifecycle: {
         review: { passed: false },
         merged: false,
@@ -28,6 +31,7 @@ test('reconcileTaskGitState preserves richer handoff lifecycle evidence', () => 
         git: {
           worktreePath: '/tmp/task-git-handoff-richer',
           branch: 'feature/task-git-handoff-richer',
+          closureRequired: true,
           lifecycle: {
             review: {
               passed: true,

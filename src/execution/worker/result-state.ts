@@ -16,6 +16,12 @@ export const buildDefaultTaskResultState = (
 })
 
 export const applyTaskResultStateDefaults = (result: TaskResult): void => {
+  if (
+    result.taskStatus !== undefined &&
+    result.outcome !== undefined &&
+    result.stopReason !== undefined
+  )
+    return
   const defaults = buildDefaultTaskResultState(result.status)
   result.taskStatus ??= defaults.taskStatus
   result.outcome ??= defaults.outcome

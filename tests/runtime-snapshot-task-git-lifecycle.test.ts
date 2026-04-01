@@ -8,6 +8,7 @@ import {
   loadRuntimeSnapshot,
   saveRuntimeSnapshot,
 } from '../src/persistence/storage/runtime-snapshot.js'
+
 import { createTaskFixture } from './helpers/runtime-snapshot.js'
 
 const createTmpDir = () =>
@@ -21,9 +22,12 @@ test('runtime snapshot preserves explicit task git lifecycle timestamps', async 
         id: 'task-git-runtime',
         status: 'succeeded',
         completedAt: '2026-03-23T00:30:00.000Z',
+        repoKey: '/tmp/task-git-runtime/.git',
+        branch: 'feature/task-git-runtime',
         git: {
           worktreePath: '/tmp/task-git-runtime',
           branch: 'feature/task-git-runtime',
+          closureRequired: true,
           lifecycle: {
             review: {
               passed: true,

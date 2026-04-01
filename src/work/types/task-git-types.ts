@@ -15,5 +15,6 @@ export type TaskGitLifecycle = {
 export type TaskGitExecution = {
   worktreePath: string
   branch: string
+  closureRequired: boolean
   lifecycle?: TaskGitLifecycle | undefined
 }

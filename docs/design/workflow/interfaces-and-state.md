@@ -169,7 +169,7 @@
 
 schema：`src/persistence/storage/runtime-snapshot-schema.ts`
 
-- `tasks`（含 `tasks[*].provider`、可选 `tasks[*].git={ worktreePath, branch }`；仅 `use_worktree=true` 的任务会带该字段）
+- `tasks`（含 `tasks[*].provider`、可选 `tasks[*].git={ worktreePath, branch, closureRequired, lifecycle? }`；仅 `use_worktree=true` 的任务会带该字段，且带 `git` 时必须同时持久化根级 `repoKey + branch`）
 - `tasks[*].result.traceRef?`
 - `taskPlans`
 - `tasks[*].contract?` / `taskPlans[*].effect.taskContract?`：稳定任务合同摘要；用于 manager 编排与验收，不承载执行原文
@@ -184,6 +184,9 @@ schema：`src/persistence/storage/runtime-snapshot-schema.ts`
 - `channelTargets`、`managerLastUsage`、`managerUsageTotal` 都是进程内交互/观测态，不进入 snapshot。
 - `channelTargets` 启动时会从最近 history 用户消息中的 chat id 恢复。
 - `runtime-snapshot` 运行期只接受当前 `schemaVersion`；旧版本/旧字段会被直接拒绝，不再提供仓内迁移脚本。
+- 旧 `task.git` 形状同样直接拒绝：缺少 `closureRequired`，或缺少与之匹配的根级 `repoKey + branch`，都视为非法 snapshot。
+- git closure 派生任务不会从 `worktreePath` 兜底推断 repoKey；缺少根级 `repoKey` 视为非法状态并直接报错。
+- worktree materialize 只接受 repo-local `./.worktrees/*` 作为同 branch 复用目标；仓外旧路径不会再被透明复用。
 - `workerUsageTotal` 不持久化到 snapshot；`GET /api/status` 会在返回时按 `tasks[*].result.usage ?? tasks[*].usage` 实时聚合。
 - `taskPlans[*]` 当前使用 `trigger + effect` 结构，不再持久化顶层 `prompt/profile/source` 旧字段。
 - `taskPlans[*].trigger.mode = "on_worker_slot_freed"` 是边沿触发而不是电平触发；启动时若已有空闲容量会记一次初始可用边沿，随后只有容量增加才再次触发。

@@ -145,10 +145,12 @@ test('buildWorkerPrompt exposes worktree runtime contract to the worker', async 
     task: createTask('task-build-worker-prompt-runtime-worktree', {
       resourceMode: 'write',
       cwd: '/repo/mimikit/.worktrees/task-runtime-contract/src',
+      repoKey: '/repo/mimikit/.git',
       branch: 'task/runtime-contract',
       git: {
         worktreePath: '/repo/mimikit/.worktrees/task-runtime-contract',
         branch: 'task/runtime-contract',
+        closureRequired: true,
       },
     }),
   })

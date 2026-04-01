@@ -1,7 +1,8 @@
-import { expect, test } from 'vitest'
 import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+
+import { expect, test } from 'vitest'
 
 import {
   enqueueTask,
@@ -10,6 +11,7 @@ import {
   markTaskRunning,
 } from '../src/work/orchestrator/task-lifecycle.js'
 import { buildTaskFingerprint } from '../src/work/orchestrator/task-state.js'
+
 import type { Task } from '../src/foundation/types/index.js'
 
 const createTask = (overrides?: Partial<Task>): Task => ({
@@ -56,9 +58,7 @@ test('enqueueTask returns existing active task by fingerprint', async () => {
 })
 
 test('enqueueTask does not dedupe when contract differs', async () => {
-  const tasks: Task[] = [
-    createTask(),
-  ]
+  const tasks: Task[] = [createTask()]
 
   const stateDir = await createTmpDir()
   const result = await enqueueTask(
@@ -83,6 +83,52 @@ test('enqueueTask does not dedupe when contract differs', async () => {
   expect(result.created).toBe(true)
   expect(tasks).toHaveLength(2)
   expect(result.task.executionSpecId).toBeTruthy()
+})
+
+test('enqueueTask rejects worktree task without repoKey', async () => {
+  const stateDir = await createTmpDir()
+  expect(() =>
+    enqueueTask(
+      stateDir,
+      [],
+      'Write report',
+      'Write report',
+      '/tmp/write-report',
+      'worker',
+      'codex',
+      'focus-global',
+      undefined,
+      'task/report',
+      'write',
+      undefined,
+      true,
+    ),
+  ).toThrow('task repoKey is required when useWorktree=true')
+})
+
+test('enqueueTask marks worktree task as closureRequired', async () => {
+  const stateDir = await createTmpDir()
+  const result = await enqueueTask(
+    stateDir,
+    [],
+    'Write report',
+    'Write report',
+    '/tmp/write-report',
+    'worker',
+    'codex',
+    'focus-global',
+    '/tmp/repo/.git',
+    'task/report',
+    'write',
+    undefined,
+    true,
+  )
+
+  expect(result.task.git).toMatchObject({
+    worktreePath: '/tmp/write-report',
+    branch: 'task/report',
+    closureRequired: true,
+  })
 })
 
 test('task status transitions keep expected timestamps', () => {

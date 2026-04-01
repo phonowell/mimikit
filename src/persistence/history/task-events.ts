@@ -34,6 +34,7 @@ const buildTaskText = (
   status?: TaskResultStatus,
   taskStatus?: TaskStatus,
   outcome?: 'completed' | 'blocked',
+  stopReason?: string,
   cancel?: TaskCancelMeta,
   resumeInstructionPresent?: boolean,
 ): string => {
@@ -51,10 +52,13 @@ const buildTaskText = (
       : `Canceled task ${taskLabel}.`
   }
 
+  if (taskStatus === 'paused' && outcome === 'blocked') {
+    return stopReason === 'closure_pending'
+      ? `Task ${taskLabel} is pending closure.`
+      : `Task ${taskLabel} paused.`
+  }
   if (status === 'succeeded') return `Task ${taskLabel} completed successfully.`
   if (status === 'failed') return `Task ${taskLabel} failed.`
-  if (taskStatus === 'paused' && outcome === 'blocked')
-    return `Task ${taskLabel} paused.`
   if (status === 'canceled') return `Task ${taskLabel} was canceled.`
   return `Task ${taskLabel} completed.`
 }
@@ -129,6 +133,7 @@ export const appendTaskSystemMessage = (
       options?.status,
       options?.taskStatus,
       options?.outcome,
+      options?.stopReason,
       options?.cancel,
       options?.resumeInstructionPresent,
     ),

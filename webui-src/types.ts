@@ -60,6 +60,7 @@ export type TaskGitClosure = {
 export type TaskGitExecution = {
   worktreePath: string
   branch: string
+  closureRequired: boolean
 }
 
 export type TaskDispatchLockDetail = {

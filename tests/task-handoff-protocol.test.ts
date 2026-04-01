@@ -7,6 +7,7 @@ test('buildStructuredTaskHandoff ignores worker-provided git lifecycle writes', 
     git: {
       worktreePath: '/tmp/task-git-handoff',
       branch: 'feature/task-git-handoff',
+      closureRequired: true,
       lifecycle: {
         review: { passed: false },
         merged: false,
