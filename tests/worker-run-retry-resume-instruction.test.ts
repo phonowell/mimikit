@@ -1,16 +1,16 @@
-import { expect, test, vi, beforeEach } from 'vitest'
+import { beforeEach, expect, test, vi } from 'vitest'
 
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
-import type { RuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
-import type { Task } from '../src/foundation/types/index.js'
 import type { WorkerLlmResult } from '../src/execution/worker/run-retry.js'
+import type { Task } from '../src/foundation/types/index.js'
+import type { RuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
 
 const { runWorkerMock, appendLogMock, persistRuntimeStateMock } = vi.hoisted(
   () => ({
     runWorkerMock: vi.fn(),
-    appendLogMock: vi.fn(async () => undefined),
-    persistRuntimeStateMock: vi.fn(async () => undefined),
+    appendLogMock: vi.fn(() => Promise.resolve(undefined)),
+    persistRuntimeStateMock: vi.fn(() => Promise.resolve(undefined)),
   }),
 )
 
@@ -26,7 +26,8 @@ vi.mock('../src/kernel/orchestrator/runtime-persistence.js', () => ({
   persistRuntimeState: persistRuntimeStateMock,
 }))
 
-const { runTaskWithRetry } = await import('../src/execution/worker/run-retry.js')
+const { runTaskWithRetry } =
+  await import('../src/execution/worker/run-retry.js')
 
 const createRuntime = async (): Promise<RuntimeState> => {
   const runtime = await createTestRuntimeState({
@@ -49,7 +50,7 @@ const createTask = (id: string, overrides: Partial<Task> = {}): Task => ({
   fingerprint: `fp-${id}`,
   prompt: 'run task',
   title: 'run task',
-  cwd: '/tmp/run-retry-task',
+  cwd: process.cwd(),
   focusId: 'focus-global',
   profile: 'worker',
   provider: 'codex',
@@ -96,7 +97,7 @@ test('runTaskWithRetry forwards turn-start callback to worker runner', async () 
   const onTurnStarted = vi.fn()
 
   runWorkerMock.mockImplementationOnce(
-    async ({ onTurnStarted: notifyStarted }: { onTurnStarted?: () => void }) => {
+    ({ onTurnStarted: notifyStarted }: { onTurnStarted?: () => void }) => {
       notifyStarted?.()
       return {
         output: 'done',

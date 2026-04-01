@@ -1,3 +1,6 @@
+import { mkdir, rm } from 'node:fs/promises'
+import { join } from 'node:path'
+
 import { expect, test } from 'vitest'
 
 import { ProviderError } from '../../src/execution/providers/provider-error.js'
@@ -75,6 +78,41 @@ test('runTaskWithRetry retries transient reconnect provider errors', async () =>
   expect(
     appendLogMock.mock.calls.some((call) => call[1]?.event === 'worker_retry'),
   ).toBe(true)
+  expect(task.attempts ?? 0).toBe(1)
+})
+
+test('runTaskWithRetry stops retrying when task cwd disappears after a transient failure', async () => {
+  const runtime = await createRuntime()
+  runtime.config.worker.retry.maxAttempts = 1
+  const taskCwd = join(runtime.config.workDir, 'ephemeral-worktree')
+  await mkdir(taskCwd)
+  const task = createTask('task-missing-cwd-after-transient', {
+    cwd: taskCwd,
+  })
+
+  runWorkerMock.mockImplementationOnce(async () => {
+    await rm(taskCwd, { recursive: true, force: true })
+    throw new ProviderError({
+      code: 'provider_transient_network',
+      message:
+        '[provider:codex-sdk] sdk run failed: Reconnecting... 1/5 (stream disconnected before completion)',
+      retryable: true,
+    })
+  })
+  runWorkerMock.mockResolvedValueOnce({
+    output: 'unexpected retry success',
+    elapsedMs: 2,
+  } satisfies WorkerLlmResult)
+
+  await expect(
+    runTaskWithRetry({
+      runtime,
+      task,
+      controller: new AbortController(),
+    }),
+  ).rejects.toThrow(/working directory is missing before retry attempt 2/i)
+
+  expect(runWorkerMock).toHaveBeenCalledTimes(1)
   expect(task.attempts ?? 0).toBe(1)
 })
 

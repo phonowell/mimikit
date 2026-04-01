@@ -11,13 +11,12 @@ import type { RuntimeState } from '../../src/kernel/orchestrator/runtime-state.j
 
 const hoistedMocks = vi.hoisted(() => ({
   runWorkerMock: vi.fn(),
-  appendLogMock: vi.fn(async () => undefined),
-  persistRuntimeStateMock: vi.fn(async () => undefined),
+  appendLogMock: vi.fn(() => Promise.resolve(undefined)),
+  persistRuntimeStateMock: vi.fn(() => Promise.resolve(undefined)),
 }))
 
-export const runWorkerMock = hoistedMocks.runWorkerMock
-export const appendLogMock = hoistedMocks.appendLogMock
-export const persistRuntimeStateMock = hoistedMocks.persistRuntimeStateMock
+export const { runWorkerMock, appendLogMock, persistRuntimeStateMock } =
+  hoistedMocks
 
 vi.mock('../../src/execution/worker/profiled-runner.js', () => ({
   runWorker: hoistedMocks.runWorkerMock,
@@ -57,12 +56,15 @@ export const createRuntime = async (): Promise<RuntimeState> => {
   return runtime
 }
 
-export const createTask = (id: string, overrides: Partial<Task> = {}): Task => ({
+export const createTask = (
+  id: string,
+  overrides: Partial<Task> = {},
+): Task => ({
   id,
   fingerprint: `fp-${id}`,
   prompt: 'run task',
   title: 'run task',
-  cwd: '/tmp/run-retry-task',
+  cwd: process.cwd(),
   focusId: 'focus-global',
   profile: 'worker',
   provider: 'codex',
@@ -78,9 +80,8 @@ beforeEach(() => {
 })
 
 afterEach(async () => {
-  for (const dir of tempDirs.splice(0, tempDirs.length)) {
+  for (const dir of tempDirs.splice(0, tempDirs.length))
     await rm(dir, { recursive: true, force: true })
-  }
 })
 
 export const expectDiscardedSession = (params: {
@@ -88,7 +89,9 @@ export const expectDiscardedSession = (params: {
   firstSessionId: string
 }) => {
   expect(runWorkerMock).toHaveBeenCalledTimes(2)
-  expect(runWorkerMock.mock.calls[0]?.[0]?.sessionId).toBe(params.firstSessionId)
+  expect(runWorkerMock.mock.calls[0]?.[0]?.sessionId).toBe(
+    params.firstSessionId,
+  )
   expect(runWorkerMock.mock.calls[1]?.[0]?.sessionId).toBeUndefined()
   expect(params.task.sessionId).toBeUndefined()
   expect(params.task.sessionState).toBe('discarded')
