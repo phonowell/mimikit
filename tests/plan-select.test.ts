@@ -11,7 +11,7 @@ import {
   GLOBAL_FOCUS_ID,
 } from './helpers/runtime-snapshot.js'
 
-test('selectRecentTasks keeps active and latest-result tasks while shrinking the window to min fill', () => {
+test('selectRecentTasks restores the full max window instead of shrinking to a min-fill subset', () => {
   const tasks = [
     createTaskFixture({
       id: 'task-active-focus',
@@ -45,19 +45,20 @@ test('selectRecentTasks keeps active and latest-result tasks while shrinking the
 
   const selected = selectRecentTasks(tasks, {
     minCount: 3,
-    maxCount: 6,
+    maxCount: 4,
     workingFocusIds: [GLOBAL_FOCUS_ID],
     latestResultTaskId: 'task-latest-result',
   })
 
   expect(selected.map((task) => task.id)).toEqual([
-    'task-active-focus',
+    'task-unrelated-newer',
     'task-latest-result',
     'task-focus-recent',
+    'task-active-focus',
   ])
 })
 
-test('selectRecentPlans keeps active and latest-result-linked plans before unrelated recents', () => {
+test('selectRecentPlans restores the full max window instead of shrinking to a min-fill subset', () => {
   const plans = [
     createPlanFixture({
       id: 'plan-active-focus',
@@ -103,13 +104,14 @@ test('selectRecentPlans keeps active and latest-result-linked plans before unrel
 
   const selected = selectRecentPlans(plans, {
     minCount: 3,
-    maxCount: 6,
+    maxCount: 4,
     workingFocusIds: [GLOBAL_FOCUS_ID],
     latestResultTaskId: 'task-latest-result',
   })
 
   expect(selected.map((plan) => plan.id)).toEqual([
     'plan-active-focus',
+    'plan-unrelated-newer',
     'plan-latest-result',
     'plan-focus-recent',
   ])

@@ -36,7 +36,17 @@
 ## 任务合同
 
 - `enqueue_task.task.cwd` 必须指向现有的执行起点目录；若是 git 写任务，提交仓库内真实目录即可，不要填写未来 worktree 路径。
-- `enqueue_task.task` 与 `set_plan.plan.task` 使用同一份任务合同；字段与数组约束以当前 action surface 为准。
+- `enqueue_task.task` 与 `set_plan.plan.task` 使用同一份任务合同：
+  - `title`
+  - `cwd`
+  - `mode`：`read | write`
+  - `goal`
+  - `in_scope[]`
+  - `out_of_scope[]`
+  - `done_when[]`
+  - `context_refs[]`
+  - `instructions[]`
+- `instructions[]` 只允许短补充，不替代任务合同。
 
 ## 回复与输出
 

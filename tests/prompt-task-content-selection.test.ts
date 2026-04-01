@@ -10,7 +10,7 @@ import {
   createTaskFixture,
 } from './helpers/runtime-snapshot.js'
 
-test('buildTasksPromptPayload cards unrelated closed tasks but keeps focused tasks expanded', () => {
+test('buildTasksPromptPayload keeps unrelated closed tasks expanded after input-side rollback', () => {
   const activeTask = createTaskFixture({
     id: 'task-focus-active',
     focusId: 'focus-current',
@@ -42,22 +42,27 @@ test('buildTasksPromptPayload cards unrelated closed tasks but keeps focused tas
     },
   )
 
-  expect(payload?.tasks[0]).toMatchObject({
+  const taskById = Object.fromEntries(
+    (payload?.tasks ?? []).map((task) => [String(task.id), task]),
+  )
+
+  expect(taskById['task-focus-active']).toMatchObject({
     id: 'task-focus-active',
     contract: {
       goal: 'Keep current focus task expanded',
     },
   })
-  expect(payload?.tasks[1]).toMatchObject({
+  expect(taskById['task-closed-other']).toMatchObject({
     id: 'task-closed-other',
     status: 'succeeded',
     title: 'Check',
+    contract: {
+      goal: 'Legacy closed task',
+    },
   })
-  expect(payload?.tasks[1]).not.toHaveProperty('contract')
-  expect(payload?.tasks[1]).not.toHaveProperty('git')
 })
 
-test('buildPlansPromptPayload cards unrelated done plans but keeps focused plans expanded', () => {
+test('buildPlansPromptPayload keeps unrelated done plans expanded after input-side rollback', () => {
   const activePlan = createPlanFixture({
     id: 'plan-focus-active',
     focusId: 'focus-current',
@@ -118,7 +123,8 @@ test('buildPlansPromptPayload cards unrelated done plans but keeps focused plans
     id: 'plan-done-other',
     status: 'done',
     done_reason: 'completed',
+    task_contract: {
+      goal: 'Closed plan task contract',
+    },
   })
-  expect(payload?.plans[1]).not.toHaveProperty('task_contract')
-  expect(payload?.plans[1]).not.toHaveProperty('task_title')
 })
