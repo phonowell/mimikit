@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 import { normalizeStrictOutputSchema } from '../../foundation/shared/strict-output-schema.js'
-import { canonicalizeTaskDraft } from '../../foundation/shared/task-contract-compact.js'
+import { canonicalizeTaskDraft } from '../../foundation/shared/task-draft-canonicalize.js'
 
 import {
   type ManagerTurnAction,

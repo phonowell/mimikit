@@ -2,6 +2,9 @@ import { expect, test } from 'vitest'
 
 import { parseManagerTurn } from '../src/policy/manager/manager-turn.js'
 
+const repeatClause = (label: string, count: number): string[] =>
+  Array.from({ length: count }, (_, index) => `${label}-${index + 1}`)
+
 const draftTotalChars = (task: {
   title: string
   goal: string
@@ -100,4 +103,91 @@ test('parseManagerTurn canonicalizes oversized enqueue_task drafts into compact 
   if (parsed.actions[0]?.type !== 'enqueue_task')
     throw new Error('expected task')
   expect(draftTotalChars(parsed.actions[0].task)).toBeLessThanOrEqual(900)
+})
+
+test('parseManagerTurn accepts over-limit enqueue_task list counts and compacts them before strict validation', () => {
+  const parsed = parseManagerTurn({
+    reply: '收到。',
+    actions: [
+      {
+        type: 'enqueue_task',
+        task: {
+          title: '继续收敛 enqueue_task 合同',
+          cwd: '/tmp/mimikit',
+          mode: 'read',
+          use_worktree: false,
+          goal: '收敛 parse 层前置失败，确保 verbose draft 先进入 canonicalize。',
+          in_scope: repeatClause('scope', 6),
+          out_of_scope: repeatClause('out', 3),
+          done_when: repeatClause('done', 6),
+          context_refs: repeatClause('tasks/ref', 6),
+          instructions: repeatClause('instruction', 4),
+        },
+      },
+    ],
+  })
+
+  if (parsed.actions[0]?.type !== 'enqueue_task')
+    throw new Error('expected task')
+  expect(parsed.actions[0].task.in_scope).toEqual([
+    'scope-1',
+    'scope-2',
+    'scope-3',
+  ])
+  expect(parsed.actions[0].task.out_of_scope).toEqual(['out-1', 'out-2'])
+  expect(parsed.actions[0].task.done_when).toEqual([
+    'done-1',
+    'done-2',
+    'done-3',
+  ])
+  expect(parsed.actions[0].task.context_refs).toEqual([
+    'tasks/ref-1',
+    'tasks/ref-2',
+    'tasks/ref-3',
+  ])
+  expect(parsed.actions[0].task.instructions).toEqual([
+    'instruction-1',
+    'instruction-2',
+  ])
+})
+
+test('parseManagerTurn accepts clause-heavy set_plan task fields and compacts them before strict validation', () => {
+  const parsed = parseManagerTurn({
+    reply: '收到。',
+    actions: [
+      {
+        type: 'set_plan',
+        plan_id: null,
+        plan: {
+          title: 'Compact plan task draft',
+          trigger: { type: 'on_worker_slot_freed' },
+          priority: 'normal',
+          max_runs: 1,
+          task: {
+            title: '继续压缩 manager 合同回灌',
+            cwd: '/tmp/mimikit',
+            mode: 'read',
+            use_worktree: false,
+            goal: [
+              '第一段目标说明'.repeat(20),
+              '第二段目标说明'.repeat(20),
+              '第三段目标说明'.repeat(20),
+            ].join('；'),
+            in_scope: [`${'范围一'.repeat(40)}；${'范围二'.repeat(40)}`],
+            out_of_scope: [],
+            done_when: ['完成一'.repeat(12), '完成二'.repeat(12)],
+            context_refs: [],
+            instructions: [`${'补充一'.repeat(24)}；${'补充二'.repeat(24)}`],
+          },
+        },
+      },
+    ],
+  })
+
+  if (parsed.actions[0]?.type !== 'set_plan') throw new Error('expected plan')
+  expect(parsed.actions[0].plan.task.goal).toBe('第一段目标说明'.repeat(20))
+  expect(parsed.actions[0].plan.task.in_scope).toEqual(['范围一'.repeat(40)])
+  expect(parsed.actions[0].plan.task.instructions).toEqual([
+    '补充一'.repeat(24),
+  ])
 })

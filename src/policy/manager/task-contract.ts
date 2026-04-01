@@ -6,7 +6,7 @@ import {
   createPromptTemplateRenderer,
   loadYamlPromptTemplates,
 } from '../../foundation/prompting/prompt-template-loader.js'
-import { canonicalizeTaskDraft } from '../../foundation/shared/task-contract-compact.js'
+import { canonicalizeTaskDraft } from '../../foundation/shared/task-draft-canonicalize.js'
 
 import { formatEnqueueTaskContractMissingHint } from './action-feedback-hints.js'
 

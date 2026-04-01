@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 const s = z.string().trim().min(1)
 const byteLength = (value: string): number => Buffer.byteLength(value, 'utf8')
+const looseString = z.string().trim().min(1)
 
 const MAX_TASK_TITLE_CHARS = 120
 const MAX_TASK_TITLE_BYTES = 360
@@ -43,6 +44,9 @@ const compactList = (params: {
     .array(params.itemSchema ?? s)
     .min(params.min ?? 0)
     .max(params.max)
+
+const looseList = (params: { min?: number }) =>
+  z.array(looseString).min(params.min ?? 0)
 
 const titleSchema = compactString({
   maxChars: MAX_TASK_TITLE_CHARS,
@@ -106,7 +110,24 @@ const taskDraftObjectSchema = z.strictObject({
   instructions: managerTaskDraftInstructionsSchema,
 })
 
-export const managerTaskDraftParseSchema = taskDraftObjectSchema.refine(
+const taskDraftParseObjectSchema = z.strictObject({
+  title: looseString,
+  cwd: s,
+  mode: z.enum(['read', 'write']),
+  use_worktree: z.boolean().default(false),
+  goal: looseString,
+  in_scope: looseList({
+    min: 1,
+  }),
+  out_of_scope: looseList({}),
+  done_when: looseList({
+    min: 1,
+  }),
+  context_refs: looseList({}),
+  instructions: looseList({}),
+})
+
+export const managerTaskDraftParseSchema = taskDraftParseObjectSchema.refine(
   (draft) => draft.mode === 'write' || draft.use_worktree !== true,
   {
     message: '`task.use_worktree` 仅允许用于 `mode="write"` 的任务。',
@@ -114,7 +135,15 @@ export const managerTaskDraftParseSchema = taskDraftObjectSchema.refine(
   },
 )
 
-export const managerTaskDraftSchema = managerTaskDraftParseSchema.superRefine(
+const strictTaskDraftSchema = taskDraftObjectSchema.refine(
+  (draft) => draft.mode === 'write' || draft.use_worktree !== true,
+  {
+    message: '`task.use_worktree` 仅允许用于 `mode="write"` 的任务。',
+    path: ['use_worktree'],
+  },
+)
+
+export const managerTaskDraftSchema = strictTaskDraftSchema.superRefine(
   (draft, ctx) => {
     const parts = [
       draft.title,
