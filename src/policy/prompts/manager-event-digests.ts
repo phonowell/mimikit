@@ -23,9 +23,18 @@ const selectDigest = <
 >(
   digest: T | undefined,
   fallback: string,
+  forceSource = false,
 ): DigestSelection => {
   const trimmedFallback = fallback.trim()
   if (!digest) {
+    return {
+      text: fallback,
+      payload: trimmedFallback
+        ? (JSON.parse(trimmedFallback) as unknown)
+        : undefined,
+    }
+  }
+  if (forceSource) {
     return {
       text: fallback,
       payload: trimmedFallback
@@ -53,6 +62,7 @@ export const buildManagerEventDigests = (params: {
   tasks: Task[]
   pendingResults: TaskResult[]
   batchResultsSource: string
+  forceSourceBatchResults?: boolean
 }): {
   batchResults: string
   batchResultsPayload?: unknown
@@ -76,6 +86,7 @@ export const buildManagerEventDigests = (params: {
   const selectedBatchResults = selectDigest(
     batchResultsDigest,
     params.batchResultsSource,
+    params.forceSourceBatchResults,
   )
   const selectedRecentHistory = selectDigest(
     recentHistoryDigest,

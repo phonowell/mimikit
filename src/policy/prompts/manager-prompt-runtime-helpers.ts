@@ -134,6 +134,7 @@ export const summarizeRecentHistory = (
 
 export type ManagerPromptRuntimeData = {
   pendingResults: BuildManagerPromptParams['results']
+  historyHydratedTaskIds: string[]
   focusPayload: ReturnType<typeof buildFocusPromptPayload>
   quoteLookup: ReturnType<typeof buildQuoteReferenceLookup>
   projectProfilePrompt: string

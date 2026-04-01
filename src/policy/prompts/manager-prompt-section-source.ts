@@ -67,6 +67,7 @@ export const buildManagerPacketSectionSource = (params: {
     tasks: params.tasks,
     pendingResults: params.runtime.pendingResults,
     batchResultsSource: batchResults,
+    forceSourceBatchResults: params.runtime.historyHydratedTaskIds.length > 0,
   })
 
   return {
