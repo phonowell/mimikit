@@ -6,27 +6,12 @@ import {
   taskIdSchema,
 } from '../../foundation/shared/id-schema.js'
 
-const s = z.string().trim().min(1)
-const list = (max: number, min = 0) => z.array(s).min(min).max(max)
-const instructionsSchema = z.array(s).max(3)
+import {
+  managerTaskDraftInstructionsSchema,
+  managerTaskDraftSchema,
+} from './task-draft-schema.js'
 
-export const managerTaskDraftSchema = z
-  .strictObject({
-    title: s,
-    cwd: s,
-    mode: z.enum(['read', 'write']),
-    use_worktree: z.boolean().default(false),
-    goal: s,
-    in_scope: list(5, 1),
-    out_of_scope: list(5),
-    done_when: list(5, 1),
-    context_refs: z.array(s).max(5),
-    instructions: instructionsSchema,
-  })
-  .refine((draft) => draft.mode === 'write' || draft.use_worktree !== true, {
-    message: '`task.use_worktree` 仅允许用于 `mode="write"` 的任务。',
-    path: ['use_worktree'],
-  })
+const s = z.string().trim().min(1)
 
 export const managerPlanTriggerSchema = z.discriminatedUnion('type', [
   z.strictObject({
@@ -61,7 +46,7 @@ export const taskControlActionSchema = z
     type: z.literal('task_control'),
     task_id: taskIdSchema,
     action: z.enum(['pause', 'resume', 'cancel']),
-    instructions: instructionsSchema.optional(),
+    instructions: managerTaskDraftInstructionsSchema.optional(),
   })
   .superRefine((value, ctx) => {
     if (value.action === 'resume') return

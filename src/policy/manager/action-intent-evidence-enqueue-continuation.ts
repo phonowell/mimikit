@@ -9,6 +9,7 @@ import type { Parsed } from '../actions/model/spec.js'
 
 const PLAN_CONTINUATION_OVERLAP_THRESHOLD = 0.35
 const RESULT_TASK_CONTINUATION_OVERLAP_THRESHOLD = 0.2
+const PAUSED_TASK_CONTINUATION_OVERLAP_THRESHOLD = 0.35
 
 const buildEnqueueContractText = (params: {
   title: string
@@ -72,6 +73,36 @@ const buildDraftContinuationText = (
   })
 }
 
+const matchesDraftTaskMode = (params: {
+  task: Task
+  item: Extract<Parsed, { type: 'enqueue_task' }>
+}): boolean =>
+  resolveTaskResourceMode(params.task.resourceMode) === params.item.task.mode &&
+  Boolean(params.task.git) === (params.item.task.use_worktree === true)
+
+export const resolvePausedTaskContinuationMatch = (params: {
+  item: Extract<Parsed, { type: 'enqueue_task' }>
+  taskById?: Map<string, Task>
+  defaultFocusId?: string
+}): Task | undefined => {
+  const focusId = params.defaultFocusId?.trim()
+  if (!focusId || !params.taskById) return undefined
+  const taskText = buildDraftContinuationText(params.item)
+  if (!taskText) return undefined
+  const pausedMatches = [...params.taskById.values()].filter((task) => {
+    if (task.status !== 'paused') return false
+    if (task.focusId.trim() !== focusId) return false
+    if (task.cwd.trim() !== params.item.task.cwd.trim()) return false
+    if (!matchesDraftTaskMode({ task, item: params.item })) return false
+    return hasContinuationMatch(
+      buildTaskContinuationText(task),
+      taskText,
+      PAUSED_TASK_CONTINUATION_OVERLAP_THRESHOLD,
+    )
+  })
+  return pausedMatches.length === 1 ? pausedMatches[0] : undefined
+}
+
 const supportsPlanContinuation = (params: {
   item: Extract<Parsed, { type: 'enqueue_task' }>
   planById?: Map<string, TaskPlan>
@@ -123,8 +154,7 @@ const supportsResultTaskContinuation = (params: {
   const [task] = resultTasks
   if (!task) return false
   if (task.cwd.trim() !== params.item.task.cwd.trim()) return false
-  if (resolveTaskResourceMode(task.resourceMode) !== params.item.task.mode)
-    return false
+  if (!matchesDraftTaskMode({ task, item: params.item })) return false
 
   const taskText = buildDraftContinuationText(params.item)
   if (!taskText) return false

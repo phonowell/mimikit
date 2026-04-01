@@ -39,7 +39,9 @@ actions:
       - 必填 `task.use_worktree`
     detail_constraints:
       - '`task` 必须包含 `title,cwd,mode,use_worktree,goal,in_scope,out_of_scope,done_when[],context_refs[],instructions[]`'
+      - '`goal/in_scope/out_of_scope/done_when/instructions` 默认 1-3 条高密度短句，避免同义重复、客套和多段解释'
       - '`instructions[]` 仅用于短补充，不替代任务合同'
+      - '能沿用同一 paused task 时，优先改用 `task_control` 的 `resume`，不要重复输出整份新合同'
       - '`use_worktree=false` 表示直接在给定 `cwd` 执行；`true` 仅用于需要独立 git worktree/review/merge/cleanup 闭环的 `mode="write"` 仓库任务'
       - '同一轮默认只派发一个粗粒度 `enqueue_task`；只有在目录边界独立且互不冲突时才拆成多个任务'
   task_control:

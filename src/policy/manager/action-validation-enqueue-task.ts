@@ -1,6 +1,10 @@
 import { isAbsolute, relative, resolve } from 'node:path'
 
-import { formatEnqueueTaskBatchConflictHint } from './action-feedback-hints.js'
+import {
+  formatEnqueueTaskBatchConflictHint,
+  formatEnqueueTaskResumeExistingHint,
+} from './action-feedback-hints.js'
+import { resolvePausedTaskContinuationMatch } from './action-intent-evidence-enqueue-continuation.js'
 import { rejected, type ValidationIssue } from './action-validation-helpers.js'
 
 import type { FeedbackContext } from './action-validation-context.js'
@@ -36,8 +40,26 @@ const collectConflictingEnqueuePaths = (params: {
 
 export const validateEnqueueTaskManagerRules = (
   item: Extract<Parsed, { type: 'enqueue_task' }>,
-  context: Pick<FeedbackContext, 'currentActions'>,
+  context: Pick<
+    FeedbackContext,
+    'currentActions' | 'taskById' | 'defaultFocusId'
+  >,
 ): ValidationIssue[] => {
+  const pausedContinuationTask = resolvePausedTaskContinuationMatch({
+    item,
+    ...(context.taskById ? { taskById: context.taskById } : {}),
+    ...(context.defaultFocusId
+      ? { defaultFocusId: context.defaultFocusId }
+      : {}),
+  })
+  if (pausedContinuationTask) {
+    return rejected(
+      formatEnqueueTaskResumeExistingHint({
+        taskId: pausedContinuationTask.id,
+        taskTitle: pausedContinuationTask.title,
+      }),
+    )
+  }
   const conflictingPaths = collectConflictingEnqueuePaths({
     item,
     currentActions: context.currentActions,
