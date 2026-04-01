@@ -38,6 +38,8 @@ export type TaskArchiveEntry = {
   provider?: WorkerProvider
   usage?: TokenUsage
   traceRef?: string
+  providerCallId?: string
+  attempt?: number
   cancel?: TaskCancelMeta
   handoff?: TaskResultHandoff
   evidence?: Record<string, unknown>
@@ -101,6 +103,8 @@ const buildArchiveContent = (entry: TaskArchiveEntry): string =>
       ['duration_ms', entry.durationMs],
       ['usage', entry.usage ? JSON.stringify(entry.usage) : undefined],
       ['trace_path', entry.traceRef],
+      ['provider_call_id', entry.providerCallId],
+      ['attempt', entry.attempt],
       ['cancel_source', entry.cancel?.source],
       ['cancel_reason', entry.cancel?.reason],
       ['handoff', entry.handoff ? JSON.stringify(entry.handoff) : undefined],

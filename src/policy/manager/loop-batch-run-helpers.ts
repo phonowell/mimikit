@@ -86,11 +86,13 @@ export const buildActionFeedbackContext = (params: {
 
 export const logManagerBatchStart = (
   runtime: ManagerRuntime,
+  batchId: string,
   inputIds: string[],
   resultIds: string[],
 ): Promise<void> =>
   appendLog(runtime.paths.log, {
     event: 'manager_start',
+    batchId,
     inputCount: inputIds.length,
     resultCount: resultIds.length,
     inputIds,
@@ -101,11 +103,27 @@ export const buildRoundLimitResult = (params: {
   text: string
   elapsedMs: number
   usage?: TokenUsage
+  diagnostics: {
+    batchId: string
+    roundCount: number
+    roundId?: string
+    providerCallId?: string
+    traceRef?: string
+    threadId?: string
+  }
 }): {
   parsed: { text: string; actions: [] }
   elapsedMs: number
   usage?: TokenUsage
   roundLimitReached: true
+  diagnostics: {
+    batchId: string
+    roundCount: number
+    roundId?: string
+    providerCallId?: string
+    traceRef?: string
+    threadId?: string
+  }
 } => ({
   parsed: {
     text: params.text,
@@ -114,6 +132,7 @@ export const buildRoundLimitResult = (params: {
   elapsedMs: params.elapsedMs,
   ...(params.usage ? { usage: params.usage } : {}),
   roundLimitReached: true,
+  diagnostics: params.diagnostics,
 })
 
 export const buildBatchSuccessResult = <
@@ -125,12 +144,29 @@ export const buildBatchSuccessResult = <
   parsed: TParsed
   elapsedMs: number
   usage?: TokenUsage
+  diagnostics: {
+    batchId: string
+    roundCount: number
+    roundId?: string
+    providerCallId?: string
+    traceRef?: string
+    threadId?: string
+  }
 }): {
   parsed: TParsed
   elapsedMs: number
   usage?: TokenUsage
+  diagnostics: {
+    batchId: string
+    roundCount: number
+    roundId?: string
+    providerCallId?: string
+    traceRef?: string
+    threadId?: string
+  }
 } => ({
   parsed: params.parsed,
   elapsedMs: params.elapsedMs,
   ...(params.usage ? { usage: params.usage } : {}),
+  diagnostics: params.diagnostics,
 })

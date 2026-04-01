@@ -17,6 +17,10 @@ export const buildResult = (
   usage?: TokenUsage,
   traceRef?: string,
   handoff?: TaskResult['handoff'],
+  diagnostics?: {
+    providerCallId?: string
+    attempt?: number
+  },
 ): TaskResult => {
   const nextHandoff = buildTaskResultHandoff(task, { status, output }, handoff)
   const state = buildDefaultTaskResultState(status)
@@ -30,6 +34,12 @@ export const buildResult = (
     ...state,
     ...(usage ? { usage } : {}),
     ...(traceRef ? { traceRef } : {}),
+    ...(diagnostics?.providerCallId
+      ? { providerCallId: diagnostics.providerCallId }
+      : {}),
+    ...(typeof diagnostics?.attempt === 'number'
+      ? { attempt: diagnostics.attempt }
+      : {}),
     ...(task.title ? { title: task.title } : {}),
     profile: task.profile,
     provider: task.provider,

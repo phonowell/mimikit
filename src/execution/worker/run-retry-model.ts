@@ -16,6 +16,8 @@ export type WorkerLlmResult = {
   elapsedMs: number
   usage?: TokenUsage
   traceRef?: string
+  providerCallId?: string
+  attempt?: number
 }
 
 const buildTaskFocusBrief = (
@@ -50,6 +52,8 @@ export const runTaskModel = (params: {
   task: Task
   controller: AbortController
   sessionId?: string
+  attempt?: number
+  providerCallId?: string
   resumeInstruction?: string
   onSessionId?: (sessionId: string) => Promise<void>
   onTurnStarted?: () => void
@@ -80,6 +84,8 @@ export const runTaskModel = (params: {
     task: params.task,
     ...(focusBrief ? { focusBrief } : {}),
     timeoutMs: worker.timeoutMs,
+    ...(params.attempt ? { attempt: params.attempt } : {}),
+    ...(params.providerCallId ? { providerCallId: params.providerCallId } : {}),
     ...(providerConfig.proxy ? { proxy: providerConfig.proxy } : {}),
     model: providerConfig.model,
     modelReasoningEffort: providerConfig.modelReasoningEffort,

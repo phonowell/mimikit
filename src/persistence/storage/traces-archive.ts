@@ -1,5 +1,6 @@
 import { parseIsoMs } from '../../foundation/shared/time.js'
 import { nowIso } from '../../foundation/shared/utils.js'
+import { toTraceRef } from '../log/diagnostics.js'
 
 import { buildArchiveDocument } from './archive-format.js'
 import { writeDatedArchiveFile } from './archive-write.js'
@@ -20,6 +21,10 @@ export type TraceArchiveEntry = {
   error?: string
   errorName?: string
   taskId?: string
+  batchId?: string
+  roundId?: string
+  providerCallId?: string
+  attemptNumber?: number
   threadId?: string | null
 }
 
@@ -30,6 +35,8 @@ export type TraceArchiveResult = {
   usage?: TokenUsage
   error?: string
   errorName?: string
+  providerCallId?: string
+  attempt?: number
 }
 
 const compactTimestamp36 = (iso: string): string => {
@@ -64,6 +71,10 @@ const buildArchiveContent = (
       ['model', entry.model],
       ['seed', entry.seed],
       ['temperature', entry.temperature],
+      ['batch_id', entry.batchId],
+      ['round_id', entry.roundId],
+      ['provider_call_id', entry.providerCallId],
+      ['attempt_number', entry.attemptNumber],
       ['task_id', entry.taskId],
       ['thread_id', entry.threadId ?? undefined],
       ['ok', entry.ok ? 'true' : 'false'],
@@ -110,3 +121,5 @@ export const appendTraceArchiveResult = (
     ...(result.error ? { error: result.error } : {}),
     ...(result.errorName ? { errorName: result.errorName } : {}),
   })
+
+export { toTraceRef }

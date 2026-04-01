@@ -68,9 +68,23 @@ const normalizeStringList = (value: unknown): string | undefined => {
 }
 
 const deriveTraceSeed = (entry: Record<string, unknown>): string => {
-  const { traceId: explicit, taskId, inputIds, resultIds } = entry
+  const {
+    traceId: explicit,
+    providerCallId,
+    roundId,
+    batchId,
+    taskId,
+    inputIds,
+    resultIds,
+  } = entry
   if (typeof explicit === 'string' && explicit.trim().length > 0)
     return explicit.trim()
+  if (typeof providerCallId === 'string' && providerCallId.trim().length > 0)
+    return `call:${providerCallId.trim()}`
+  if (typeof roundId === 'string' && roundId.trim().length > 0)
+    return `round:${roundId.trim()}`
+  if (typeof batchId === 'string' && batchId.trim().length > 0)
+    return `batch:${batchId.trim()}`
   if (typeof taskId === 'string' && taskId.trim().length > 0)
     return `task:${taskId.trim()}`
   const normalizedInputIds = normalizeStringList(inputIds)

@@ -1,3 +1,4 @@
+import { createBatchId } from '../../persistence/log/diagnostics.js'
 import {
   selectRecentPlans,
   selectRecentTasks,
@@ -23,6 +24,7 @@ type ManagerParsedTurn = {
 
 const runRounds = (params: {
   runtime: ManagerRuntime
+  batchId: string
   inputs: UserInput[]
   results: TaskResult[]
   maxCorrectionRounds: number
@@ -32,6 +34,14 @@ const runRounds = (params: {
   usage?: TokenUsage
   elapsedMs: number
   roundLimitReached?: boolean
+  diagnostics: {
+    batchId: string
+    roundCount: number
+    roundId?: string
+    providerCallId?: string
+    traceRef?: string
+    threadId?: string
+  }
 }> => {
   const { runtime, inputs, results, maxCorrectionRounds } = params
   const workingFocusIds = resolveBatchWorkingFocusIds({
@@ -58,6 +68,7 @@ const runRounds = (params: {
 
   return runManagerCorrectionRounds({
     runtime,
+    batchId: params.batchId,
     inputs,
     results,
     tasks,
@@ -78,10 +89,20 @@ export const runManagerBatch = async (params: {
   usage?: TokenUsage
   elapsedMs: number
   roundLimitReached?: boolean
+  diagnostics: {
+    batchId: string
+    roundCount: number
+    roundId?: string
+    providerCallId?: string
+    traceRef?: string
+    threadId?: string
+  }
 }> => {
   const { runtime, inputs, results } = params
+  const batchId = createBatchId()
   await logManagerBatchStart(
     runtime,
+    batchId,
     inputs.map((item) => item.id),
     results.map((item) => item.taskId),
   )
@@ -92,6 +113,7 @@ export const runManagerBatch = async (params: {
   )
   return runRounds({
     runtime,
+    batchId,
     inputs,
     results,
     maxCorrectionRounds,

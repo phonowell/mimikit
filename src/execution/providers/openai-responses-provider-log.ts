@@ -1,4 +1,5 @@
-import { appendLog } from './log.js'
+import { appendLog } from '../../persistence/log/append.js'
+
 import { OPENAI_RESPONSES_PROVIDER_ID } from './openai-responses-provider-config.js'
 import { bestEffort } from './safe.js'
 
@@ -11,7 +12,7 @@ export const appendOpenAiResponsesLog = async (
   if (!request.logPath) return
   await bestEffort('appendLog: llm_call', () =>
     appendLog(request.logPath as string, {
-      ...entry,
+      ...(request.logContext ?? {}),
       provider: OPENAI_RESPONSES_PROVIDER_ID,
       role: request.role,
       timeoutMs: request.timeoutMs,
@@ -23,7 +24,7 @@ export const appendOpenAiResponsesLog = async (
       ...(request.modelReasoningEffort
         ? { modelReasoningEffort: request.modelReasoningEffort }
         : {}),
-      ...(request.logContext ?? {}),
+      ...entry,
     }),
   )
 }

@@ -2,6 +2,7 @@ import pRetry, { AbortError } from 'p-retry'
 
 import { persistRuntimeState } from '../../kernel/orchestrator/runtime-persistence.js'
 import { appendLog } from '../../persistence/log/append.js'
+import { createProviderCallId } from '../../persistence/log/diagnostics.js'
 import { bestEffort } from '../../persistence/log/safe.js'
 import {
   bindRuntimeTaskSession,
@@ -72,6 +73,7 @@ export const runTaskWithRetry = (params: {
   let attempt = 0
   return pRetry(async () => {
     attempt += 1
+    const providerCallId = createProviderCallId()
     if (controller.signal.aborted)
       throw new AbortError(controller.signal.reason ?? 'Task canceled')
     assertTaskCwdAvailableForAttempt({
@@ -87,6 +89,7 @@ export const runTaskWithRetry = (params: {
           event: 'worker_session_reuse_attempt',
           taskId: task.id,
           attempt,
+          providerCallId,
           sessionId,
         }),
       )
@@ -96,6 +99,8 @@ export const runTaskWithRetry = (params: {
         runtime,
         task,
         controller,
+        attempt,
+        providerCallId,
         ...(sessionId ? { sessionId } : {}),
         ...(resumeInstruction ? { resumeInstruction } : {}),
         onSessionId,

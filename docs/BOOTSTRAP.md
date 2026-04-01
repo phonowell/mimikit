@@ -102,7 +102,7 @@ curl -sS -N http://127.0.0.1:8787/api/events | head -n 2
 
 建议优先查看：
 
-- `.mimikit/log.jsonl`：CLI action、runtime startup、manager budget 与恢复事件。
+- `.mimikit/log.jsonl`：统一 JSONL 日志；manager / worker / provider 共用同一 schema。排障优先看 `batchId/roundId/providerCallId/taskId/traceRef`；manager action / followup / suppressed / failure 收口也都挂在同一组键上。
 - `.mimikit/runtime-snapshot.json`：当前 runtime 持久化快照。
 - `.mimikit/tasks/tasks.jsonl`：任务视图快照。
 - `.mimikit/results/packets.jsonl`：worker 回写结果。
@@ -119,7 +119,8 @@ curl -sS -N http://127.0.0.1:8787/api/events | head -n 2
 - `tasks/YYYY-MM-DD/*.md`：任务归档。
 - `memory/MEMORY.md`：持久化 memory。
 - `generated/worker-task-prompts/YYYY-MM-DD/{taskId}.md`：外置任务说明快照。
-- `usage/ledger.jsonl`：manager / worker 用量账本。
+- `usage/ledger.jsonl`：manager / worker 用量账本；关键记录会附带 `batchId/roundId/providerCallId/traceRef/attempt` 诊断字段。
+- `traces/YYYY-MM-DD/*.txt`：manager / worker trace；frontmatter 会补 `batch_id/round_id/provider_call_id/attempt_number/thread_id`，失败 trace 也保留这组关联键。
 - `runtime-snapshot.json`：启动恢复的核心快照。
 - `runtime/lease.json`、`runtime/children.json`、`runtime/reaper.json`：实例 lease、子进程注册与回收信息。
 - `.instance.lock`：实例锁目录；同一 `--work-dir` 只能被一个进程占用。

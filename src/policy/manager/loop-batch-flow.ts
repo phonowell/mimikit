@@ -4,6 +4,7 @@ import { persistRuntimeState } from '../../kernel/orchestrator/runtime-persisten
 import { appendManagerErrorSystemMessage } from '../../persistence/history/manager-events.js'
 import { appendHistory } from '../../persistence/history/store.js'
 import { appendLog } from '../../persistence/log/append.js'
+import { readLogDiagnostics } from '../../persistence/log/diagnostics.js'
 import { bestEffort, logSafeError } from '../../persistence/log/safe.js'
 import { resolveDefaultFocusId, touchFocus } from '../../work/focus/index.js'
 
@@ -26,6 +27,7 @@ import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interface
 
 export const finishBatchWithoutAgentReply = async (params: {
   runtime: ManagerRuntime
+  batchId: string
   inputs: UserInput[]
   results: TaskResult[]
   nextInputsCursor: number
@@ -47,6 +49,7 @@ export const finishBatchWithoutAgentReply = async (params: {
   })
   await appendLog(params.runtime.paths.log, {
     event: 'manager_end',
+    batchId: params.batchId,
     status: 'ok',
     elapsedMs: Math.max(0, Date.now() - params.startedAt),
     skippedReason: 'no_agent_visible_inputs',
@@ -86,6 +89,7 @@ export const appendManagerReply = async (params: {
 
 export const recoverManagerBatchFailure = async (params: {
   runtime: ManagerRuntime
+  batchId: string
   error: unknown
   inputs: UserInput[]
   results: TaskResult[]
@@ -97,6 +101,7 @@ export const recoverManagerBatchFailure = async (params: {
 }): Promise<void> => {
   const errorMessage =
     params.error instanceof Error ? params.error.message : String(params.error)
+  const diagnostics = readLogDiagnostics(params.error)
   const autoRetryMeta = readManagerAutoRetryMeta(params.error)
   const fallbackAutoRetryMeta = {
     autoRetryAttempts: autoRetryMeta?.autoRetryAttempts ?? 0,
@@ -157,8 +162,15 @@ export const recoverManagerBatchFailure = async (params: {
   await bestEffort('appendLog: manager_end_error', () =>
     appendLog(params.runtime.paths.log, {
       event: 'manager_end',
+      batchId: params.batchId,
       status: 'error',
       error: errorMessage,
+      ...(params.error instanceof Error
+        ? { errorName: params.error.name }
+        : {}),
+      ...(params.error instanceof Error && params.error.stack
+        ? { errorStack: params.error.stack }
+        : {}),
       elapsedMs: Math.max(0, Date.now() - params.startedAt),
       drainedOnError: inputsDrainedOnError,
       agentAppended: params.agentAppended,
@@ -166,6 +178,13 @@ export const recoverManagerBatchFailure = async (params: {
       autoRetryMaxAttempts: fallbackAutoRetryMeta.autoRetryMaxAttempts,
       autoRetryState: fallbackAutoRetryMeta.autoRetryState,
       autoRetryStrategy: fallbackAutoRetryMeta.autoRetryStrategy,
+      ...(diagnostics.roundId ? { roundId: diagnostics.roundId } : {}),
+      ...(diagnostics.providerCallId
+        ? { providerCallId: diagnostics.providerCallId }
+        : {}),
+      ...(diagnostics.traceRef ? { traceRef: diagnostics.traceRef } : {}),
+      ...(diagnostics.threadId ? { threadId: diagnostics.threadId } : {}),
+      ...(diagnostics.attempt ? { attempt: diagnostics.attempt } : {}),
       ...(resultReplayBackoffMs !== undefined ? { resultReplayBackoffMs } : {}),
     }),
   )

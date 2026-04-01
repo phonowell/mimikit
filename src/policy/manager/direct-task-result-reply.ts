@@ -31,6 +31,7 @@ export const resolveDirectTaskResultReply = (params: {
 
 export const finishBatchWithDirectTaskResultReply = async (params: {
   runtime: ManagerRuntime
+  batchId: string
   text: string
   inputs: UserInput[]
   results: TaskResult[]
@@ -67,6 +68,7 @@ export const finishBatchWithDirectTaskResultReply = async (params: {
   })
   await completeSuccessfulManagerBatch({
     runtime: params.runtime,
+    batchId: params.batchId,
     nextInputsCursor: params.nextInputsCursor,
     nextResultsCursor: params.nextResultsCursor,
     consumedInputIds: consumed.consumedInputIds,

@@ -1,5 +1,6 @@
+import { appendLog } from '../../persistence/log/append.js'
+
 import { DEFAULT_MODEL_REASONING_EFFORT } from './codex-settings.js'
-import { appendLog } from './log.js'
 import {
   buildProviderAbortedError,
   buildProviderSdkError,
@@ -95,7 +96,7 @@ export const appendCodexLlmLog = async (
   if (!request.logPath) return
   const context = toLogContext(request)
   await bestEffort('appendLog: llm_call', () =>
-    appendLog(request.logPath as string, { ...entry, ...context }),
+    appendLog(request.logPath as string, { ...context, ...entry }),
   )
 }
 

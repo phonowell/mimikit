@@ -38,6 +38,8 @@ export const applyTaskActions = async (
       item,
       index: order,
       total,
+      ...(options?.batchId ? { batchId: options.batchId } : {}),
+      ...(options?.roundId ? { roundId: options.roundId } : {}),
       ...(runtime.manager.threadId
         ? { traceId: runtime.manager.threadId }
         : {}),
@@ -47,6 +49,8 @@ export const applyTaskActions = async (
       item,
       index: order,
       total,
+      ...(options?.batchId ? { batchId: options.batchId } : {}),
+      ...(options?.roundId ? { roundId: options.roundId } : {}),
       ...(runtime.manager.threadId
         ? { traceId: runtime.manager.threadId }
         : {}),
@@ -62,6 +66,8 @@ export const applyTaskActions = async (
         total,
         error,
         elapsedMs: Math.max(0, Date.now() - startedAt),
+        ...(options?.batchId ? { batchId: options.batchId } : {}),
+        ...(options?.roundId ? { roundId: options.roundId } : {}),
         ...(runtime.manager.threadId
           ? { traceId: runtime.manager.threadId }
           : {}),
@@ -72,6 +78,11 @@ export const applyTaskActions = async (
           action: error.feedback.action,
           error: error.feedback.error,
           hint: error.feedback.hint,
+          ...(runtime.manager.threadId
+            ? { traceId: runtime.manager.threadId }
+            : {}),
+          ...(options?.batchId ? { batchId: options.batchId } : {}),
+          ...(options?.roundId ? { roundId: options.roundId } : {}),
         })
         continue
       }
@@ -84,6 +95,8 @@ export const applyTaskActions = async (
       total,
       result,
       elapsedMs: Math.max(0, Date.now() - startedAt),
+      ...(options?.batchId ? { batchId: options.batchId } : {}),
+      ...(options?.roundId ? { roundId: options.roundId } : {}),
       ...(runtime.manager.threadId
         ? { traceId: runtime.manager.threadId }
         : {}),

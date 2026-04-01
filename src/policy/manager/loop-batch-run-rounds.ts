@@ -1,13 +1,9 @@
 import { readProviderThreadId } from '../../execution/providers/thread-id.js'
 import { mergeUsageAdditive } from '../../execution/shared/token-usage.js'
-import { appendLog } from '../../persistence/log/append.js'
 import { hasUserInputFromSource } from '../../surface/channels/shared/passive-reply.js'
 import { isNoChoiceReturnChannelSource } from '../../surface/channels/shared/source.js'
 
-import {
-  buildCorrectionFallbackReply,
-  shouldRetrySelfRepairRound,
-} from './loop-batch-correction-reply.js'
+import { buildCorrectionFallbackReply } from './loop-batch-correction-reply.js'
 import { runManagerRoundWithRecovery } from './loop-batch-exec.js'
 import { resolveRoundFollowup } from './loop-batch-round-followup.js'
 import {
@@ -15,6 +11,12 @@ import {
   buildRoundLimitResult,
   type ManagerRoundExtra,
 } from './loop-batch-run-helpers.js'
+import {
+  appendManagerCorrectionRoundLimitReached,
+  type ManagerRoundDiagnostics,
+  resolveSelfRepairRoundContinuation,
+  updateManagerRoundDiagnostics,
+} from './loop-batch-run-rounds-diagnostics.js'
 
 import type {
   FocusId,
@@ -29,6 +31,7 @@ import type { Parsed } from '../actions/model/spec.js'
 
 export const runManagerCorrectionRounds = async (params: {
   runtime: ManagerRuntime
+  batchId: string
   inputs: UserInput[]
   results: TaskResult[]
   tasks: Task[]
@@ -44,6 +47,7 @@ export const runManagerCorrectionRounds = async (params: {
   usage?: TokenUsage
   elapsedMs: number
   roundLimitReached?: boolean
+  diagnostics: ManagerRoundDiagnostics
 }> => {
   const {
     runtime,
@@ -57,6 +61,10 @@ export const runManagerCorrectionRounds = async (params: {
   let elapsedMs = 0
   let batchUsage: TokenUsage | undefined
   let managerThreadId = runtime.manager.threadId
+  let lastDiagnostics: ManagerRoundDiagnostics = {
+    batchId: params.batchId,
+    roundCount: 0,
+  }
   let extra: ManagerRoundExtra = {}
   let lastParsed: {
     text: string
@@ -68,34 +76,23 @@ export const runManagerCorrectionRounds = async (params: {
     !isNoChoiceReturnChannelSource(runtime.session.lastUserMeta?.source)
   for (let round = 1; round <= maxCorrectionRounds; round++) {
     if (round >= 2 && extra.actionFeedback && extra.actionFeedback.length > 0) {
-      if (shouldRetrySelfRepairRound(round, extra.actionFeedback)) {
-        await appendLog(runtime.paths.log, {
-          event: 'manager_action_feedback_self_repair_retry',
-          round,
-          feedbackCount: extra.actionFeedback.length,
-          errors: extra.actionFeedback.map((item) => item.error),
-          names: extra.actionFeedback.map((item) => item.action),
-        })
-      } else {
-        const fallbackReply = buildCorrectionFallbackReply(extra.actionFeedback)
-        await appendLog(runtime.paths.log, {
-          event: 'manager_correction_structured_clarify',
-          round,
-          feedbackCount: extra.actionFeedback.length,
-          errors: extra.actionFeedback.map((item) => item.error),
-          names: extra.actionFeedback.map((item) => item.action),
-        })
-        return buildRoundLimitResult({
-          text: fallbackReply,
-          elapsedMs,
-          ...(batchUsage ? { usage: batchUsage } : {}),
-        })
-      }
+      const continuation = await resolveSelfRepairRoundContinuation({
+        runtime,
+        batchId: params.batchId,
+        round,
+        actionFeedback: extra.actionFeedback,
+        elapsedMs,
+        diagnostics: lastDiagnostics,
+        ...(batchUsage ? { usage: batchUsage } : {}),
+        ...(managerThreadId ? { threadId: managerThreadId } : {}),
+      })
+      if (!('continueRound' in continuation)) return continuation
     }
     const runResult = await (async () => {
       try {
         return await runManagerRoundWithRecovery({
           runtime,
+          batchId: params.batchId,
           round,
           inputs,
           results,
@@ -116,6 +113,12 @@ export const runManagerCorrectionRounds = async (params: {
       }
     })()
     managerThreadId = runResult.threadId ?? managerThreadId
+    lastDiagnostics = updateManagerRoundDiagnostics({
+      batchId: params.batchId,
+      round,
+      runResult,
+      ...(managerThreadId ? { threadId: managerThreadId } : {}),
+    })
     if (managerThreadId) runtime.manager.threadId = managerThreadId
     else delete runtime.manager.threadId
     elapsedMs += runResult.elapsedMs
@@ -127,6 +130,8 @@ export const runManagerCorrectionRounds = async (params: {
     lastParsed = parsed
     const followup = await resolveRoundFollowup({
       runtime,
+      batchId: params.batchId,
+      roundId: runResult.roundId,
       inputs,
       parsed: parsed.actions,
       output: runResult.output,
@@ -143,14 +148,17 @@ export const runManagerCorrectionRounds = async (params: {
       return buildBatchSuccessResult({
         parsed: resolvedParsed,
         elapsedMs,
+        diagnostics: lastDiagnostics,
         ...(batchUsage ? { usage: batchUsage } : {}),
       })
     }
     extra = { ...followup.extra }
   }
-  await appendLog(runtime.paths.log, {
-    event: 'manager_correction_round_limit_reached',
+  await appendManagerCorrectionRoundLimitReached(runtime, {
     maxCorrectionRounds,
+    batchId: params.batchId,
+    diagnostics: lastDiagnostics,
+    ...(managerThreadId ? { threadId: managerThreadId } : {}),
   })
   if (managerThreadId) runtime.manager.threadId = managerThreadId
   else delete runtime.manager.threadId
@@ -159,6 +167,7 @@ export const runManagerCorrectionRounds = async (params: {
       ? buildCorrectionFallbackReply(extra.actionFeedback)
       : lastParsed.text,
     elapsedMs,
+    diagnostics: lastDiagnostics,
     ...(batchUsage ? { usage: batchUsage } : {}),
   })
 }

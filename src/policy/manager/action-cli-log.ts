@@ -17,6 +17,8 @@ type ActionLogEntry = {
   action: string
   taskId?: string
   traceId?: string
+  batchId?: string
+  roundId?: string
   index?: number
   total?: number
   result?: ApplyResult
@@ -107,12 +109,16 @@ export const createManagerActionCliLogger = (options?: {
     error?: unknown
     elapsedMs?: number
     traceId?: string
+    batchId?: string
+    roundId?: string
   }) => Promise<void>
   logFeedback: (params: {
     item: ManagerActionFeedback
     index: number
     total: number
     traceId?: string
+    batchId?: string
+    roundId?: string
   }) => Promise<void>
 } => {
   const sink = options?.sink ?? defaultSink
@@ -126,12 +132,16 @@ export const createManagerActionCliLogger = (options?: {
     error?: unknown
     elapsedMs?: number
     traceId?: string
+    batchId?: string
+    roundId?: string
   }): Promise<void> => {
     const taskId = readTaskId(params.item)
     const payload: ActionLogEntry = {
       stage: params.stage,
       action: params.item.type,
       ...(taskId ? { taskId } : {}),
+      ...(params.batchId ? { batchId: params.batchId } : {}),
+      ...(params.roundId ? { roundId: params.roundId } : {}),
       index: params.index,
       total: params.total,
       ...(params.result ? { result: params.result } : {}),
@@ -156,6 +166,8 @@ export const createManagerActionCliLogger = (options?: {
     index: number
     total: number
     traceId?: string
+    batchId?: string
+    roundId?: string
   }): Promise<void> => {
     const taskId = readTaskIdFromAttempted(params.item.attempted)
     const payload: ActionLogEntry = {
@@ -165,6 +177,8 @@ export const createManagerActionCliLogger = (options?: {
           : 'invalid',
       action: params.item.action,
       ...(taskId ? { taskId } : {}),
+      ...(params.batchId ? { batchId: params.batchId } : {}),
+      ...(params.roundId ? { roundId: params.roundId } : {}),
       index: params.index,
       total: params.total,
       error: normalize(params.item.error),

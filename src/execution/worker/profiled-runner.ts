@@ -20,6 +20,8 @@ type LlmResult = {
   elapsedMs: number
   usage?: TokenUsage
   traceRef?: string
+  providerCallId?: string
+  attempt?: number
 }
 
 type BuildRunModelParams = {
@@ -31,6 +33,8 @@ type BuildRunModelParams = {
   proxy?: string
   model?: string
   modelReasoningEffort?: ModelReasoningEffort
+  attempt?: number
+  providerCallId?: string
   abortSignal?: AbortSignal
 }
 
@@ -43,6 +47,8 @@ const buildWorkerLogContext = (
   focusId: params.task.focusId,
   executionSpecId: params.task.executionSpecId,
   taskProfile: params.task.profile,
+  ...(params.attempt ? { attempt: params.attempt } : {}),
+  ...(params.providerCallId ? { providerCallId: params.providerCallId } : {}),
 })
 
 const buildRunModel =
@@ -90,6 +96,8 @@ type WorkerRunnerParams = {
   proxy?: string
   model?: string
   modelReasoningEffort?: ModelReasoningEffort
+  attempt?: number
+  providerCallId?: string
   abortSignal?: AbortSignal
   onSessionId?: (sessionId: string) => Promise<void> | void
   onTurnStarted?: () => void
@@ -124,6 +132,11 @@ export const runWorker = async (
     archiveBase: {
       role: 'worker' as const,
       taskId: params.task.id,
+      attempt: params.attempt === 1 ? 'primary' : 'fallback',
+      ...(params.providerCallId
+        ? { providerCallId: params.providerCallId }
+        : {}),
+      ...(params.attempt ? { attemptNumber: params.attempt } : {}),
       ...(params.model ? { model: params.model } : {}),
     },
     runModel: buildRunModel(params),

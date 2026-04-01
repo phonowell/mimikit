@@ -31,6 +31,8 @@ import type { Parsed } from '../actions/model/spec.js'
 export type ApplyTaskActionsOptions = {
   suppressRunTask?: boolean
   triggeredPlanIds: ReadonlySet<string> | undefined
+  batchId?: string
+  roundId?: string
 }
 
 const RUN_TASK_PROFILE: WorkerProfile = 'worker'

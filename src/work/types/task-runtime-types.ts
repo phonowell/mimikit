@@ -68,6 +68,8 @@ export type TaskResult = {
   title?: string | undefined
   archivePath?: string | undefined
   traceRef?: string | undefined
+  providerCallId?: string | undefined
+  attempt?: number | undefined
   profile?: WorkerProfile | undefined
   provider?: WorkerProvider | undefined
   cancel?: TaskCancelMeta | undefined

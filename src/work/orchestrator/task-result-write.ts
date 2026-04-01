@@ -125,6 +125,13 @@ export const applyTaskResultWrite = async (params: {
       ...(task.sessionId ? { threadId: task.sessionId } : {}),
       model: runtime.config.codex.model,
       status: result.status,
+      ...(result.providerCallId
+        ? { providerCallId: result.providerCallId }
+        : {}),
+      ...(result.traceRef ? { traceRef: result.traceRef } : {}),
+      ...(typeof result.attempt === 'number'
+        ? { attempt: result.attempt }
+        : {}),
     }),
   )
 }
