@@ -110,6 +110,12 @@
   background: var(--task-dot, var(--status-pending));
 }
 
+.task-status[data-access-mode='read'] {
+  box-sizing: border-box;
+  border: 2px solid var(--task-dot, var(--status-pending));
+  background: transparent;
+}
+
 .task-elapsed,
 .task-tokens {
   font-variant-numeric: tabular-nums;

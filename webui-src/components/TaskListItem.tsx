@@ -30,6 +30,11 @@ export const TaskListItem = ({
 }: Props) => {
   const toggleRef = useRef<HTMLButtonElement>(null)
   const status = task.status || 'pending'
+  const normalizedAccessMode = task.resourceMode?.trim().toLowerCase()
+  const accessMode =
+    normalizedAccessMode === 'read' || normalizedAccessMode === 'write'
+      ? normalizedAccessMode
+      : undefined
   const title =
     task.title?.trim() && task.title !== task.id ? task.title : 'Untitled task'
   const canPause = status === 'pending' || status === 'running'
@@ -53,6 +58,7 @@ export const TaskListItem = ({
           <div className="task-title-row">
             <span
               className="task-status"
+              data-access-mode={accessMode}
               data-status={status}
               role="img"
               aria-label={resolveTaskStatusLabel(status)}

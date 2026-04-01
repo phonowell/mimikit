@@ -133,14 +133,6 @@
   letter-spacing: 0.01em;
 }
 
-.task-access-mode[data-access-mode='read'] {
-  background: color-mix(in srgb, var(--panel-strong) 74%, #7d91aa 26%);
-}
-
-.task-access-mode[data-access-mode='write'] {
-  background: color-mix(in srgb, var(--panel-strong) 72%, #7ba97d 28%);
-}
-
 .task-git-target {
   max-width: min(100%, 24ch);
   min-width: 0;
