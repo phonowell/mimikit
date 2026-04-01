@@ -24,6 +24,7 @@ const actionFeedbackHintSchema = z
     enqueue_task_cwd_invalid: z.string().trim().min(1),
     enqueue_task_worktree_prepare_failed: z.string().trim().min(1),
     enqueue_task_batch_conflict: z.string().trim().min(1),
+    enqueue_task_resume_existing: z.string().trim().min(1),
     enqueue_task_contract_missing: z.string().trim().min(1),
     plan_not_found: z.string().trim().min(1),
     set_plan_done_forbidden: z.string().trim().min(1),
