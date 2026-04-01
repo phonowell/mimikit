@@ -11,6 +11,7 @@ import {
 } from '../../work/project-profile/store.js'
 import { buildMemoryPromptSections } from '../memory/prompt-sections.js'
 
+import { hydratePromptHistoryResults } from './manager-prompt-history-hydrate.js'
 import {
   buildMemoryPromptScoreContext,
   hasQuotedInputs,
@@ -28,7 +29,17 @@ export const prepareManagerPromptRuntimeData = async (
 ): Promise<ManagerPromptRuntimeData> => {
   const demand = normalizeRuntimeDemand(demandInput)
   const workingFocusIds = params.workingFocusIds ?? []
-  const pendingResults = mergeTaskResults(params.results, [])
+  const hydratedHistory = await hydratePromptHistoryResults({
+    stateDir: params.stateDir,
+    workDir: params.workDir,
+    inputs: params.inputs,
+    results: params.results,
+    tasks: params.tasks,
+  })
+  const pendingResults = mergeTaskResults(
+    params.results,
+    hydratedHistory.results,
+  )
   const statePaths = buildPaths(params.stateDir)
 
   const requiresFocusHistory =
@@ -82,6 +93,7 @@ export const prepareManagerPromptRuntimeData = async (
     : { rememberedMemory: '', memory: '' }
   return {
     pendingResults,
+    historyHydratedTaskIds: hydratedHistory.hydratedTaskIds,
     focusPayload,
     quoteLookup,
     projectProfilePrompt: shouldLoadProjectProfile
