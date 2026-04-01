@@ -77,7 +77,7 @@ MIMIKIT_ACTION_LOGS=false pnpm start -- --port 8787 --work-dir .mimikit
 - `pnpm run typecheck`：开发者友好别名，等价 `pnpm run type-check`。
 - `pnpm run test`：运行 `vitest run`。
 - `pnpm run build`：执行 `type-check + build:webui`，并生成 `webui/generated/app.js`。
-- `pnpm run review-code-changes`：合流前门禁，串联 `lint + lint:changed-tests + type-check + test`。
+- `pnpm run review-code-changes`：合流前门禁，串联 `lint + lint:changed-tests + type-check + build:webui + test`。
 - `pnpm run manual:eval:traces-usage-ledger`：手动离线评测，基于提交到仓库的 trace/ledger fixture。
 
 ## 4. 默认回归边界

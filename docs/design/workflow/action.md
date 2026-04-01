@@ -160,7 +160,7 @@
 约束补充：
 
 - `M:state_packet.tasks` 只承载稳定任务状态与归档路径，不再重复展开详细 task result
-- `M:state_packet.tasks` / `M:state_packet.plans` 不再承载 worker prompt、task contract、scope/acceptance 等执行载荷
+- `M:state_packet.tasks` / `M:state_packet.plans` 不再承载完整 worker prompt 或执行原文，但仍保留稳定合同 digest（如 `goal/scope/acceptance`）供 manager 做编排与验收门禁判断
 - `M:event_packet.batch_results` 是当前批次 task result 的唯一详细结果通道
 - `M:event_packet.batch_results` 只接收压缩后的 result / handoff / evidence，不再回灌执行载荷
 - `M:event_packet.packet.latestResult` 只保留摘要指针，用于快速判断本轮结果重心
