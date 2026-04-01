@@ -115,7 +115,7 @@ curl -sS -N http://127.0.0.1:8787/api/events | head -n 2
 - `inputs/packets.jsonl`：用户输入、触发器与系统输入包。
 - `results/packets.jsonl`：worker 结果回流队列。
 - `tasks/tasks.jsonl`：最近任务视图快照。
-- `task-progress/YYYY-MM-DD/{taskId}.jsonl`：任务进度事件流；包含 `worker_start`、运行中的 `worker_activity` 和结束态事件。运行中打开 task archive 时，会用这些 `worker_activity` 临时拼出 `=== RESULT ===`。
+- `task-progress/YYYY-MM-DD/{taskId}.jsonl`：任务进度事件流；包含 `worker_start`、运行中的 `worker_activity`、脱敏后的 `worker_live_output` 摘要，以及结束态事件。运行中打开 task archive 时，会优先回读当前进程内 `liveOutput`，缺失时再回退到当前运行轮次最近一次落盘的 `worker_live_output` 摘要。
 - `tasks/YYYY-MM-DD/*.md`：任务归档。
 - `memory/MEMORY.md`：持久化 memory。
 - `generated/worker-task-prompts/YYYY-MM-DD/{taskId}.md`：外置任务说明快照。
