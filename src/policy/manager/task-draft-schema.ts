@@ -79,38 +79,43 @@ export const managerTaskDraftInstructionsSchema = compactList({
   itemSchema: instructionSchema,
 })
 
-export const managerTaskDraftSchema = z
-  .strictObject({
-    title: titleSchema,
-    cwd: s,
-    mode: z.enum(['read', 'write']),
-    use_worktree: z.boolean().default(false),
-    goal: goalSchema,
-    in_scope: compactList({
-      max: 5,
-      min: 1,
-      itemSchema: taskListItemSchema,
-    }),
-    out_of_scope: compactList({
-      max: 5,
-      itemSchema: taskListItemSchema,
-    }),
-    done_when: compactList({
-      max: 5,
-      min: 1,
-      itemSchema: taskListItemSchema,
-    }),
-    context_refs: compactList({
-      max: 5,
-      itemSchema: contextRefSchema,
-    }),
-    instructions: managerTaskDraftInstructionsSchema,
-  })
-  .refine((draft) => draft.mode === 'write' || draft.use_worktree !== true, {
+const taskDraftObjectSchema = z.strictObject({
+  title: titleSchema,
+  cwd: s,
+  mode: z.enum(['read', 'write']),
+  use_worktree: z.boolean().default(false),
+  goal: goalSchema,
+  in_scope: compactList({
+    max: 5,
+    min: 1,
+    itemSchema: taskListItemSchema,
+  }),
+  out_of_scope: compactList({
+    max: 5,
+    itemSchema: taskListItemSchema,
+  }),
+  done_when: compactList({
+    max: 5,
+    min: 1,
+    itemSchema: taskListItemSchema,
+  }),
+  context_refs: compactList({
+    max: 5,
+    itemSchema: contextRefSchema,
+  }),
+  instructions: managerTaskDraftInstructionsSchema,
+})
+
+export const managerTaskDraftParseSchema = taskDraftObjectSchema.refine(
+  (draft) => draft.mode === 'write' || draft.use_worktree !== true,
+  {
     message: '`task.use_worktree` 仅允许用于 `mode="write"` 的任务。',
     path: ['use_worktree'],
-  })
-  .superRefine((draft, ctx) => {
+  },
+)
+
+export const managerTaskDraftSchema = managerTaskDraftParseSchema.superRefine(
+  (draft, ctx) => {
     const parts = [
       draft.title,
       draft.goal,
@@ -133,4 +138,5 @@ export const managerTaskDraftSchema = z
         '任务合同整体过长；请优先保留 goal、1-3 条 in_scope/done_when 与最必要 context_refs，避免重复解释' +
         `（<=${MAX_TASK_DRAFT_TOTAL_CHARS} chars，UTF-8 <=${MAX_TASK_DRAFT_TOTAL_BYTES} bytes）`,
     })
-  })
+  },
+)

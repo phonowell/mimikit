@@ -8,6 +8,7 @@ import {
 
 import {
   managerTaskDraftInstructionsSchema,
+  managerTaskDraftParseSchema,
   managerTaskDraftSchema,
 } from './task-draft-schema.js'
 
@@ -36,9 +37,22 @@ export const managerPlanDraftSchema = z.strictObject({
   max_runs: z.number().int().positive().nullable(),
 })
 
+export const managerPlanDraftParseSchema = z.strictObject({
+  title: s,
+  trigger: managerPlanTriggerSchema,
+  task: managerTaskDraftParseSchema,
+  priority: z.enum(['high', 'normal', 'low']),
+  max_runs: z.number().int().positive().nullable(),
+})
+
 export const enqueueTaskActionSchema = z.strictObject({
   type: z.literal('enqueue_task'),
   task: managerTaskDraftSchema,
+})
+
+export const enqueueTaskActionParseSchema = z.strictObject({
+  type: z.literal('enqueue_task'),
+  task: managerTaskDraftParseSchema,
 })
 
 export const taskControlActionSchema = z
@@ -62,6 +76,12 @@ export const setPlanActionSchema = z.strictObject({
   type: z.literal('set_plan'),
   plan_id: planIdSchema.nullable(),
   plan: managerPlanDraftSchema,
+})
+
+export const setPlanActionParseSchema = z.strictObject({
+  type: z.literal('set_plan'),
+  plan_id: planIdSchema.nullable(),
+  plan: managerPlanDraftParseSchema,
 })
 
 export const deletePlanActionSchema = z.strictObject({
@@ -103,6 +123,21 @@ export const managerActionSchema = z.discriminatedUnion('type', [
 export const managerTurnSchema = z.strictObject({
   reply: z.string(),
   actions: z.array(managerActionSchema),
+})
+
+export const managerActionParseSchema = z.discriminatedUnion('type', [
+  enqueueTaskActionParseSchema,
+  taskControlActionSchema,
+  setPlanActionParseSchema,
+  deletePlanActionSchema,
+  assignFocusActionSchema,
+  rememberMemoryActionSchema,
+  rememberProjectProfileActionSchema,
+])
+
+export const managerTurnParseSchema = z.strictObject({
+  reply: z.string(),
+  actions: z.array(managerActionParseSchema),
 })
 
 export type ManagerTurnAction = z.infer<typeof managerActionSchema>

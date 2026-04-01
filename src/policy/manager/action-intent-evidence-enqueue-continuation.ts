@@ -1,3 +1,4 @@
+import { compactTaskContractForMatching } from '../../foundation/shared/task-contract-compact.js'
 import { scoreTextOverlap } from '../../foundation/shared/text-search.js'
 import { isActiveTask } from '../../work/orchestrator/task-state.js'
 import { resolveTaskResourceMode } from '../../work/shared/task-resource-mode.js'
@@ -30,26 +31,28 @@ const buildEnqueueContractText = (params: {
     .join('\n')
 
 const buildTaskContinuationText = (task: Task): string =>
-  buildEnqueueContractText({
-    title: task.title,
-    goal: task.contract?.goal ?? task.title,
-    scope: task.contract?.scope ?? task.title,
-    acceptance: task.contract?.acceptance ?? [],
-    ...(task.contract?.outOfScope
-      ? { outOfScope: task.contract.outOfScope }
-      : {}),
-  })
+  (() => {
+    const contract = compactTaskContractForMatching(task.contract)
+    return buildEnqueueContractText({
+      title: task.title,
+      goal: contract?.goal ?? task.title,
+      scope: contract?.scope ?? task.title,
+      acceptance: contract?.acceptance ?? [],
+      ...(contract?.outOfScope ? { outOfScope: contract.outOfScope } : {}),
+    })
+  })()
 
 const buildPlanContinuationText = (plan: TaskPlan): string =>
-  buildEnqueueContractText({
-    title: plan.effect.taskTemplate.title,
-    goal: plan.effect.taskContract?.goal ?? plan.title,
-    scope: plan.effect.taskContract?.scope ?? plan.title,
-    acceptance: plan.effect.taskContract?.acceptance ?? [],
-    ...(plan.effect.taskContract?.outOfScope
-      ? { outOfScope: plan.effect.taskContract.outOfScope }
-      : {}),
-  })
+  (() => {
+    const contract = compactTaskContractForMatching(plan.effect.taskContract)
+    return buildEnqueueContractText({
+      title: plan.effect.taskTemplate.title,
+      goal: contract?.goal ?? plan.title,
+      scope: contract?.scope ?? plan.title,
+      acceptance: contract?.acceptance ?? [],
+      ...(contract?.outOfScope ? { outOfScope: contract.outOfScope } : {}),
+    })
+  })()
 
 const hasContinuationMatch = (
   left: string,

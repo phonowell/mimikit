@@ -12,13 +12,9 @@ import {
   buildResultPromptPayload,
   pickArchivePath,
 } from './format-task-result-payload.js'
+import { buildTaskContractPromptPayload } from './task-contract-prompt-payload.js'
 
-import type {
-  Task,
-  TaskCancelMeta,
-  TaskContract,
-  TaskResult,
-} from '../types/index.js'
+import type { Task, TaskCancelMeta, TaskResult } from '../types/index.js'
 
 export type TaskPromptPayloadOptions = {
   workingFocusIds?: string[] | undefined
@@ -44,19 +40,6 @@ const toCancelMeta = (
       }
     : undefined
 
-const toContractPayload = (
-  contract?: TaskContract,
-): Record<string, unknown> | undefined => {
-  if (!contract) return undefined
-  return {
-    goal: contract.goal,
-    scope: contract.scope,
-    acceptance: contract.acceptance,
-    ...(contract.outOfScope ? { out_of_scope: contract.outOfScope } : {}),
-    ...(contract.contextRefs ? { context_refs: contract.contextRefs } : {}),
-  }
-}
-
 const formatTaskEntry = (
   task: Task,
   result: TaskResult | undefined,
@@ -71,8 +54,8 @@ const formatTaskEntry = (
     ...(archivePath ? { archive_path: archivePath } : {}),
     id: task.id,
     status: task.status,
-    ...(toContractPayload(task.contract)
-      ? { contract: toContractPayload(task.contract) }
+    ...(buildTaskContractPromptPayload(task.contract)
+      ? { contract: buildTaskContractPromptPayload(task.contract) }
       : {}),
     resource_mode: task.resourceMode ?? 'write',
     provider: task.provider,

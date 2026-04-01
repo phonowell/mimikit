@@ -1,3 +1,5 @@
+import { compactTaskContractForPrompt } from '../../foundation/shared/task-contract-compact.js'
+
 import type {
   TaskContract,
   TaskPlan,
@@ -8,13 +10,18 @@ import type {
 const buildTaskContractPayload = (
   contract?: TaskContract,
 ): Record<string, unknown> | undefined => {
-  if (!contract) return undefined
+  const compactContract = compactTaskContractForPrompt(contract)
+  if (!compactContract) return undefined
   return {
-    goal: contract.goal,
-    scope: contract.scope,
-    acceptance: contract.acceptance,
-    ...(contract.outOfScope ? { out_of_scope: contract.outOfScope } : {}),
-    ...(contract.contextRefs ? { context_refs: contract.contextRefs } : {}),
+    goal: compactContract.goal,
+    scope: compactContract.scope,
+    acceptance: compactContract.acceptance,
+    ...(compactContract.outOfScope
+      ? { out_of_scope: compactContract.outOfScope }
+      : {}),
+    ...(compactContract.contextRefs
+      ? { context_refs: compactContract.contextRefs }
+      : {}),
   }
 }
 

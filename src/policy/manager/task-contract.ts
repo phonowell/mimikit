@@ -6,6 +6,7 @@ import {
   createPromptTemplateRenderer,
   loadYamlPromptTemplates,
 } from '../../foundation/prompting/prompt-template-loader.js'
+import { canonicalizeTaskDraft } from '../../foundation/shared/task-contract-compact.js'
 
 import { formatEnqueueTaskContractMissingHint } from './action-feedback-hints.js'
 
@@ -128,12 +129,13 @@ const buildGeneratedWorkerPrompt = (params: {
 export const buildTaskContractFromDraft = (
   draft: ManagerTaskDraft,
 ): TaskContract | undefined => {
-  const goal = normalizeLine(draft.goal)
-  const scope = joinList(draft.in_scope)
-  if (!goal || !scope || draft.done_when.length === 0) return undefined
-  const outOfScope = joinList(draft.out_of_scope)
-  const contextRefs = normalizeList(draft.context_refs)
-  const acceptance = normalizeList(draft.done_when)
+  const compactDraft = canonicalizeTaskDraft(draft)
+  const goal = normalizeLine(compactDraft.goal)
+  const scope = joinList(compactDraft.in_scope)
+  if (!goal || !scope || compactDraft.done_when.length === 0) return undefined
+  const outOfScope = joinList(compactDraft.out_of_scope)
+  const contextRefs = normalizeList(compactDraft.context_refs)
+  const acceptance = normalizeList(compactDraft.done_when)
   if (acceptance.length === 0) return undefined
   return {
     goal,
@@ -150,16 +152,17 @@ export const resolveWorkerPromptFromDraft = (
     stateDir?: string
   },
 ): string | undefined => {
-  const contract = buildTaskContractFromDraft(draft)
+  const compactDraft = canonicalizeTaskDraft(draft)
+  const contract = buildTaskContractFromDraft(compactDraft)
   if (!contract) return undefined
   return buildGeneratedWorkerPrompt({
-    title: normalizeLine(draft.title),
+    title: normalizeLine(compactDraft.title),
     goal: contract.goal,
     inScope: contract.scope,
     doneWhen: contract.acceptance,
     ...(contract.outOfScope ? { outOfScope: contract.outOfScope } : {}),
     ...(contract.contextRefs ? { contextRefs: contract.contextRefs } : {}),
-    extraInstructions: draft.instructions,
+    extraInstructions: compactDraft.instructions,
     stateDir: options?.stateDir,
   })
 }
