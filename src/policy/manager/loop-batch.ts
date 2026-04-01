@@ -49,6 +49,7 @@ export const processManagerBatch = async (params: {
   const agentInputs = inputs.filter((item) => isVisibleToAgent(item))
   const startedAt = Date.now()
   let agentAppended = false
+  let managerBatchId: string | undefined
   try {
     if (
       runtime.session.stopped ||
@@ -56,6 +57,7 @@ export const processManagerBatch = async (params: {
     ) {
       await finishBatchWithoutAgentReply({
         runtime,
+        batchId: `batch-noop-${runtime.manager.turn + 1}`,
         inputs,
         results,
         nextInputsCursor,
@@ -74,6 +76,7 @@ export const processManagerBatch = async (params: {
     if (directTaskResultReply) {
       await finishBatchWithDirectTaskResultReply({
         runtime,
+        batchId: `batch-direct-${runtime.manager.turn + 1}`,
         text: directTaskResultReply,
         inputs,
         results,
@@ -91,6 +94,7 @@ export const processManagerBatch = async (params: {
       results,
       abortSignal: runAbortController.signal,
     })
+    managerBatchId = managerRun.diagnostics.batchId
     if (managerRun.roundLimitReached) {
       await bestEffort('appendHistory: manager_round_limit', () =>
         appendManagerCorrectionLimitSystemMessage(
@@ -117,6 +121,10 @@ export const processManagerBatch = async (params: {
     await applyTaskActions(runtime, parsed.actions, {
       suppressRunTask: hasManualCanceledResult && agentInputs.length === 0,
       triggeredPlanIds: collectTriggeredPlanIds(inputs),
+      batchId: managerRun.diagnostics.batchId,
+      ...(managerRun.diagnostics.roundId
+        ? { roundId: managerRun.diagnostics.roundId }
+        : {}),
     })
     const normalizedReplyText = normalizeManagerReplyText(parsed.text)
     agentAppended = await appendManagerBatchReply({
@@ -135,6 +143,8 @@ export const processManagerBatch = async (params: {
       consumedInputIds: consumed.consumedInputIds,
       persistRuntime: persistRuntimeState,
       startedAt,
+      batchId: managerRun.diagnostics.batchId,
+      diagnostics: managerRun.diagnostics,
       ...(resolvedUsage ? { usage: resolvedUsage } : {}),
     })
   } catch (error) {
@@ -144,6 +154,7 @@ export const processManagerBatch = async (params: {
     ) {
       await finishBatchWithoutAgentReply({
         runtime,
+        batchId: managerBatchId ?? `batch-aborted-${runtime.manager.turn}`,
         inputs,
         results,
         nextInputsCursor,
@@ -154,6 +165,7 @@ export const processManagerBatch = async (params: {
     }
     await recoverManagerBatchFailure({
       runtime,
+      batchId: managerBatchId ?? `batch-failed-${runtime.manager.turn}`,
       error,
       inputs,
       results,

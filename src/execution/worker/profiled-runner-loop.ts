@@ -1,6 +1,8 @@
-import { relative } from 'node:path'
-
-import { appendTraceArchiveResult } from '../../persistence/storage/traces-archive.js'
+import { attachLogDiagnostics } from '../../persistence/log/diagnostics.js'
+import {
+  appendTraceArchiveResult,
+  toTraceRef,
+} from '../../persistence/storage/traces-archive.js'
 import { parseStructuredOutputJson } from '../providers/openai-responses-provider-structured.js'
 import { readProviderThreadId } from '../providers/thread-id.js'
 import {
@@ -28,24 +30,16 @@ const normalizeThreadId = (
   return trimmed && trimmed.length > 0 ? trimmed : undefined
 }
 
-const toTraceRef = (
-  stateDir: string,
-  tracePath: string,
-): string | undefined => {
-  const trimmed = tracePath.trim()
-  if (!trimmed) return undefined
-  const stateRelative = relative(stateDir, trimmed).replace(/\\/g, '/')
-  if (!stateRelative || stateRelative.startsWith('..')) return undefined
-  return `.mimikit/${stateRelative}`
-}
-
-const attachTraceRef = (
+const attachWorkerDiagnostics = (
   error: unknown,
-  traceRef: string | undefined,
+  diagnostics: {
+    traceRef?: string
+    providerCallId?: string
+    attempt?: number
+  },
 ): Error => {
   const next = error instanceof Error ? error : new Error(String(error))
-  if (traceRef) Reflect.set(next, 'traceRef', traceRef)
-  return next
+  return attachLogDiagnostics(next, diagnostics)
 }
 
 export const runWorkerLoop = async (
@@ -56,6 +50,8 @@ export const runWorkerLoop = async (
   elapsedMs: number
   usage?: TokenUsage
   traceRef?: string
+  providerCallId?: string
+  attempt?: number
 }> => {
   const { stateDir, prompt } = params
   let threadId: string | null | undefined = params.initialThreadId
@@ -134,6 +130,12 @@ export const runWorkerLoop = async (
       elapsedMs: result.elapsedMs,
       ...(totalUsage ? { usage: totalUsage } : {}),
       ...(traceRef ? { traceRef } : {}),
+      ...(params.archiveBase.providerCallId
+        ? { providerCallId: params.archiveBase.providerCallId }
+        : {}),
+      ...(params.archiveBase.attemptNumber
+        ? { attempt: params.archiveBase.attemptNumber }
+        : {}),
     }
   } catch (error) {
     const errorThreadId = readProviderThreadId(error)
@@ -159,9 +161,15 @@ export const runWorkerLoop = async (
         errorName: canceled ? 'TaskCanceledError' : err.name,
       },
     )
-    throw attachTraceRef(
-      error,
-      tracePath ? toTraceRef(stateDir, tracePath) : undefined,
-    )
+    const traceRef = tracePath ? toTraceRef(stateDir, tracePath) : undefined
+    throw attachWorkerDiagnostics(error, {
+      ...(traceRef ? { traceRef } : {}),
+      ...(params.archiveBase.providerCallId
+        ? { providerCallId: params.archiveBase.providerCallId }
+        : {}),
+      ...(params.archiveBase.attemptNumber
+        ? { attempt: params.archiveBase.attemptNumber }
+        : {}),
+    })
   }
 }

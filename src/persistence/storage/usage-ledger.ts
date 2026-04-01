@@ -16,6 +16,11 @@ type UsageLedgerEntry = {
   id: string
   createdAt: string
   kind: 'manager_round' | 'worker_result'
+  batchId?: string
+  roundId?: string
+  providerCallId?: string
+  traceRef?: string
+  attempt?: number
   focusId?: FocusId
   focusIds?: FocusId[]
   taskId?: string
@@ -77,11 +82,23 @@ export const appendManagerUsageLedgerEntry = (params: {
   model?: string
   promptBytes: number
   promptSegmentCount: number
+  batchId?: string
+  roundId?: string
+  providerCallId?: string
+  traceRef?: string
+  attempt?: number
   promptSections?: UsageLedgerEntry['promptSections']
   promptSelection?: UsageLedgerEntry['promptSelection']
 }): Promise<void> =>
   appendUsageLedgerEntry(params.stateDir, {
     kind: 'manager_round',
+    ...(params.batchId?.trim() ? { batchId: params.batchId.trim() } : {}),
+    ...(params.roundId?.trim() ? { roundId: params.roundId.trim() } : {}),
+    ...(params.providerCallId?.trim()
+      ? { providerCallId: params.providerCallId.trim() }
+      : {}),
+    ...(params.traceRef?.trim() ? { traceRef: params.traceRef.trim() } : {}),
+    ...(typeof params.attempt === 'number' ? { attempt: params.attempt } : {}),
     ...(params.contextPacket.workingFocusIds
       ? { focusIds: params.contextPacket.workingFocusIds }
       : {}),
@@ -110,6 +127,9 @@ export const appendWorkerUsageLedgerEntry = (params: {
   threadId?: string | null
   model?: string
   status: string
+  providerCallId?: string
+  traceRef?: string
+  attempt?: number
 }): Promise<void> =>
   appendUsageLedgerEntry(params.stateDir, {
     kind: 'worker_result',
@@ -121,4 +141,9 @@ export const appendWorkerUsageLedgerEntry = (params: {
     elapsedMs: params.elapsedMs,
     ...(params.threadId?.trim() ? { threadId: params.threadId.trim() } : {}),
     status: params.status,
+    ...(params.providerCallId?.trim()
+      ? { providerCallId: params.providerCallId.trim() }
+      : {}),
+    ...(params.traceRef?.trim() ? { traceRef: params.traceRef.trim() } : {}),
+    ...(typeof params.attempt === 'number' ? { attempt: params.attempt } : {}),
   })

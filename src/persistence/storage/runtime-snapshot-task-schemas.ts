@@ -94,6 +94,8 @@ export const taskResultSchema = z
     title: z.string().optional(),
     archivePath: z.string().optional(),
     traceRef: z.string().trim().min(1).optional(),
+    providerCallId: z.string().trim().min(1).optional(),
+    attempt: z.number().int().positive().optional(),
     profile: z.enum(['worker']).optional(),
     provider: workerProviderSchema.optional(),
     cancel: taskCancelSchema.optional(),

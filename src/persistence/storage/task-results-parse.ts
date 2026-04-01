@@ -81,6 +81,10 @@ export const parseTaskResultArchive = (
   const usage = parseTokenUsageJson(parsed.header.usage)
   const provider = parseWorkerProvider(parsed.header.provider)
   const traceRef = parsed.header.trace_path?.trim()
+  const providerCallId = parsed.header.provider_call_id?.trim()
+  const attemptRaw = parsed.header.attempt?.trim()
+  const attempt =
+    attemptRaw && /^\d+$/.test(attemptRaw) ? Number(attemptRaw) : undefined
   const taskStatus = parseTaskStatus(parsed.header.task_status)
   const outcome = parseTaskResultOutcome(parsed.header.outcome)
   const stopReason = parseTaskResultStopReason(parsed.header.stop_reason)
@@ -109,6 +113,8 @@ export const parseTaskResultArchive = (
     ...(usage ? { usage } : {}),
     ...(provider ? { provider } : {}),
     ...(traceRef ? { traceRef } : {}),
+    ...(providerCallId ? { providerCallId } : {}),
+    ...(typeof attempt === 'number' ? { attempt } : {}),
     ...(parsed.header.title ? { title: parsed.header.title } : {}),
     ...(archivePath ? { archivePath } : {}),
     ...(cancel ? { cancel } : {}),

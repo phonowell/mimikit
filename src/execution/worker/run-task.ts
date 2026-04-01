@@ -10,32 +10,17 @@ import { updateTaskUsage } from '../../work/orchestrator/task-worker-run-write.j
 import { readTaskExecutionSpec } from '../../work/spec/store.js'
 
 import { setTaskLiveOutput } from './live-output.js'
-import { buildResult } from './result-build.js'
 import { finalizeResult } from './result-finalize.js'
 import { runTaskWithRetry } from './run-retry.js'
+import {
+  buildTaskRunResult,
+  resolveQueueWaitMs,
+  resolveTaskRunErrorDiagnostics,
+} from './run-task-results.js'
 import { createTaskProgressWriteQueue } from './task-progress-write.js'
 
-import type {
-  Task,
-  TaskResult,
-  TaskResultHandoff,
-} from '../../foundation/types/index.js'
+import type { Task, TaskResult } from '../../foundation/types/index.js'
 import type { WorkerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
-
-const parseIsoMs = (value: string | undefined): number | undefined => {
-  const parsed = Date.parse(value ?? '')
-  return Number.isFinite(parsed) ? parsed : undefined
-}
-
-const resolveQueueWaitMs = (
-  task: Task,
-  fallbackStartedAtMs: number,
-): number | undefined => {
-  const createdAtMs = parseIsoMs(task.createdAt)
-  if (createdAtMs === undefined) return undefined
-  const startedAtMs = parseIsoMs(task.startedAt) ?? fallbackStartedAtMs
-  return Math.max(0, startedAtMs - createdAtMs)
-}
 
 export const runTask = async (
   runtime: WorkerRuntime,
@@ -55,23 +40,6 @@ export const runTask = async (
     if (task.resumeInstruction?.trim() !== resumeInstruction) return
     delete task.resumeInstruction
   }
-  const resolveErrorTraceRef = (error: unknown): string | undefined => {
-    if ((typeof error !== 'object' && typeof error !== 'function') || !error)
-      return undefined
-    const value = Reflect.get(error as object, 'traceRef')
-    return typeof value === 'string' && value.trim() ? value.trim() : undefined
-  }
-  const buildTaskResult = (
-    status: 'succeeded' | 'failed' | 'canceled',
-    output: string,
-    durationMs: number,
-    usage?: Task['usage'],
-    traceRef?: string,
-    handoff?: TaskResultHandoff,
-  ) =>
-    traceRef
-      ? buildResult(task, status, output, durationMs, usage, traceRef, handoff)
-      : buildResult(task, status, output, durationMs, usage, undefined, handoff)
   const finalizeTaskResult = async (
     result: TaskResult,
     markFn: (tasks: Task[], taskId: string, patch?: Partial<Task>) => void,
@@ -123,24 +91,43 @@ export const runTask = async (
     if (task.status === 'canceled') {
       const usage = llmResult.usage ?? task.usage
       await finalizeTaskResult(
-        buildTaskResult(
+        buildTaskRunResult(
+          task,
           'canceled',
           'Task canceled',
           elapsed(),
           usage,
           llmResult.traceRef,
+          undefined,
+          {
+            ...(llmResult.providerCallId
+              ? { providerCallId: llmResult.providerCallId }
+              : {}),
+            ...(typeof llmResult.attempt === 'number'
+              ? { attempt: llmResult.attempt }
+              : {}),
+          },
         ),
         markTaskCanceled,
       )
       return
     }
-    const result = buildTaskResult(
+    const result = buildTaskRunResult(
+      task,
       'succeeded',
       llmResult.output,
       elapsed(),
       llmResult.usage,
       llmResult.traceRef,
       llmResult.handoff,
+      {
+        ...(llmResult.providerCallId
+          ? { providerCallId: llmResult.providerCallId }
+          : {}),
+        ...(typeof llmResult.attempt === 'number'
+          ? { attempt: llmResult.attempt }
+          : {}),
+      },
     )
     await finalizeTaskResult(result, markTaskSucceeded)
   } catch (error) {
@@ -153,25 +140,45 @@ export const runTask = async (
     if (task.status === 'canceled') {
       clearConsumedResumeInstruction()
       const { usage } = task
-      const traceRef = resolveErrorTraceRef(error)
-      const result = buildTaskResult(
+      const diagnostics = resolveTaskRunErrorDiagnostics(task, error)
+      const result = buildTaskRunResult(
+        task,
         'canceled',
         err.message || 'Task canceled',
         elapsed(),
         usage,
-        traceRef,
+        diagnostics.traceRef,
+        undefined,
+        {
+          ...(diagnostics.providerCallId
+            ? { providerCallId: diagnostics.providerCallId }
+            : {}),
+          ...(typeof diagnostics.attempt === 'number'
+            ? { attempt: diagnostics.attempt }
+            : {}),
+        },
       )
       await finalizeTaskResult(result, markTaskCanceled)
       return
     }
     if (resumeTurnState.started) clearConsumedResumeInstruction()
-    const traceRef = resolveErrorTraceRef(error)
-    const result = buildTaskResult(
+    const diagnostics = resolveTaskRunErrorDiagnostics(task, error)
+    const result = buildTaskRunResult(
+      task,
       'failed',
       err.message,
       elapsed(),
       task.usage,
-      traceRef,
+      diagnostics.traceRef,
+      undefined,
+      {
+        ...(diagnostics.providerCallId
+          ? { providerCallId: diagnostics.providerCallId }
+          : {}),
+        ...(typeof diagnostics.attempt === 'number'
+          ? { attempt: diagnostics.attempt }
+          : {}),
+      },
     )
     await finalizeTaskResult(result, markTaskFailed)
   }

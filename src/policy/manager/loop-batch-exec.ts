@@ -1,6 +1,7 @@
 import { mergeUsageAdditive } from '../../execution/shared/token-usage.js'
 import { resolveSlotStatus } from '../../execution/worker/task-state-shared.js'
 import { appendLog } from '../../persistence/log/append.js'
+import { createRoundId } from '../../persistence/log/diagnostics.js'
 import { bestEffort } from '../../persistence/log/safe.js'
 import { appendManagerUsageLedgerEntry } from '../../persistence/storage/usage-ledger.js'
 import { resolveManagerPacketMode } from '../prompts/manager-context-packet.js'
@@ -42,6 +43,7 @@ const buildManagerEnv = (
 export const runManagerRoundWithRecovery = async (params: {
   runtime: ManagerRuntime
   round: number
+  batchId: string
   inputs: UserInput[]
   results: TaskResult[]
   tasks: Task[]
@@ -59,6 +61,11 @@ export const runManagerRoundWithRecovery = async (params: {
   usage?: TokenUsage
   wakeProfile: ManagerWakeProfile
   threadId?: string | null
+  traceRef?: string
+  providerCallId?: string
+  attempt?: number
+  batchId: string
+  roundId: string
 }> => {
   const budgetDecision = resolveManagerContextBudgetDecision({
     runtime: params.runtime,
@@ -74,9 +81,12 @@ export const runManagerRoundWithRecovery = async (params: {
       params.extra.actionFeedback && params.extra.actionFeedback.length > 0,
     ),
   })
+  const roundId = createRoundId()
   const { promptSectionLimits } = budgetDecision
   void appendLog(params.runtime.paths.log, {
     event: 'manager_context_budget_resolved',
+    batchId: params.batchId,
+    roundId,
     policy: budgetDecision.policy,
     wakeProfile,
     packetMode,
@@ -116,6 +126,8 @@ export const runManagerRoundWithRecovery = async (params: {
     ...(params.managerThreadId ? { threadId: params.managerThreadId } : {}),
     packetMode,
     wakeProfile,
+    batchId: params.batchId,
+    roundId,
   })
   if (result.usage) {
     params.runtime.manager.lastUsage = result.usage
@@ -133,6 +145,13 @@ export const runManagerRoundWithRecovery = async (params: {
       elapsedMs: result.elapsedMs,
       ...(result.threadId !== undefined ? { threadId: result.threadId } : {}),
       model: params.runtime.config.manager.model,
+      batchId: params.batchId,
+      roundId,
+      ...(result.providerCallId
+        ? { providerCallId: result.providerCallId }
+        : {}),
+      ...(result.traceRef ? { traceRef: result.traceRef } : {}),
+      ...(result.attempt ? { attempt: result.attempt } : {}),
       promptBytes: result.promptBytes,
       promptSegmentCount: result.promptSegmentCount,
       promptSections: result.promptSections,
@@ -145,7 +164,12 @@ export const runManagerRoundWithRecovery = async (params: {
     actions: result.actions,
     elapsedMs: result.elapsedMs,
     wakeProfile,
+    batchId: params.batchId,
+    roundId,
     ...(result.threadId !== undefined ? { threadId: result.threadId } : {}),
+    ...(result.traceRef ? { traceRef: result.traceRef } : {}),
+    ...(result.providerCallId ? { providerCallId: result.providerCallId } : {}),
+    ...(result.attempt ? { attempt: result.attempt } : {}),
     ...(result.usage ? { usage: result.usage } : {}),
   }
 }

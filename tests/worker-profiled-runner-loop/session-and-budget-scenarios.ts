@@ -38,6 +38,44 @@ test('runWorkerLoop captures provider thread id from error path for recovery', a
   }
 })
 
+test('runWorkerLoop attaches provider diagnostics to archived failure errors', async () => {
+  const stateDir = await createTmpDir()
+  const task = createTask('test-provider-diagnostics-error')
+
+  try {
+    let caught: unknown
+    try {
+      await runWorkerLoop({
+        stateDir,
+        task,
+        prompt: task.title,
+        archiveBase: {
+          role: 'worker',
+          taskId: task.id,
+          providerCallId: 'call-worker-loop-1',
+          attemptNumber: 2,
+        },
+        runModel: () => {
+          throw new Error('simulated provider failure')
+        },
+      })
+    } catch (error) {
+      caught = error
+    }
+
+    expect(caught).toBeInstanceOf(Error)
+    expect(Reflect.get(caught as object, 'providerCallId')).toBe(
+      'call-worker-loop-1',
+    )
+    expect(Reflect.get(caught as object, 'attempt')).toBe(2)
+    expect(Reflect.get(caught as object, 'traceRef')).toMatch(
+      /^\.mimikit\/traces\/\d{4}-\d{2}-\d{2}\/.+\.txt$/,
+    )
+  } finally {
+    await rm(stateDir, { recursive: true, force: true })
+  }
+})
+
 test('runWorkerLoop makes a single provider call and fails when completion protocol is missing', async () => {
   const stateDir = await createTmpDir()
   const prompts: string[] = []

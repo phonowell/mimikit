@@ -15,6 +15,8 @@ import type { Parsed } from '../actions/model/spec.js'
 
 const appendRoundActionFeedback = async (params: {
   runtime: ManagerRuntime
+  batchId?: string
+  roundId?: string
   actionFeedback: ManagerRoundExtra['actionFeedback']
 }): Promise<void> => {
   const { actionFeedback } = params
@@ -24,6 +26,8 @@ const appendRoundActionFeedback = async (params: {
       item,
       index: index + 1,
       total: actionFeedback.length,
+      ...(params.batchId ? { batchId: params.batchId } : {}),
+      ...(params.roundId ? { roundId: params.roundId } : {}),
       ...(params.runtime.manager.threadId
         ? { traceId: params.runtime.manager.threadId }
         : {}),
@@ -31,6 +35,11 @@ const appendRoundActionFeedback = async (params: {
   }
   await appendLog(params.runtime.paths.log, {
     event: 'manager_action_feedback',
+    ...(params.runtime.manager.threadId
+      ? { traceId: params.runtime.manager.threadId }
+      : {}),
+    ...(params.batchId ? { batchId: params.batchId } : {}),
+    ...(params.roundId ? { roundId: params.roundId } : {}),
     count: actionFeedback.length,
     errors: actionFeedback.map((item) => item.error),
     names: actionFeedback.map((item) => item.action),
@@ -51,6 +60,8 @@ type RoundFollowupResult =
 
 export const resolveRoundFollowup = async (params: {
   runtime: ManagerRuntime
+  batchId?: string
+  roundId?: string
   inputs?: Parameters<typeof buildActionFeedbackContext>[0]['inputs']
   parsed: Parsed[]
   output: string
@@ -85,6 +96,11 @@ export const resolveRoundFollowup = async (params: {
   if (validation.suppressedActionIndexes.length > 0) {
     await appendLog(params.runtime.paths.log, {
       event: 'manager_action_suppressed',
+      ...(params.runtime.manager.threadId
+        ? { traceId: params.runtime.manager.threadId }
+        : {}),
+      ...(params.batchId ? { batchId: params.batchId } : {}),
+      ...(params.roundId ? { roundId: params.roundId } : {}),
       count: validation.suppressedActionIndexes.length,
       names: validation.suppressedActionIndexes.map(
         (index) => params.parsed[index]?.type ?? 'unknown',
@@ -100,6 +116,8 @@ export const resolveRoundFollowup = async (params: {
 
   await appendRoundActionFeedback({
     runtime: params.runtime,
+    ...(params.batchId ? { batchId: params.batchId } : {}),
+    ...(params.roundId ? { roundId: params.roundId } : {}),
     actionFeedback,
   })
 

@@ -10,6 +10,7 @@ import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interface
 
 export const completeSuccessfulManagerBatch = async (params: {
   runtime: ManagerRuntime
+  batchId: string
   nextInputsCursor: number
   nextResultsCursor: number
   consumedInputIds: Set<string>
@@ -17,6 +18,13 @@ export const completeSuccessfulManagerBatch = async (params: {
   startedAt: number
   usage?: TokenUsage
   skippedReason?: string
+  diagnostics?: {
+    roundCount: number
+    roundId?: string
+    providerCallId?: string
+    traceRef?: string
+    threadId?: string
+  }
 }): Promise<void> => {
   await finalizeBatchProgress({
     runtime: params.runtime,
@@ -28,8 +36,24 @@ export const completeSuccessfulManagerBatch = async (params: {
   clearResultReplayBackoff(params.runtime)
   await appendLog(params.runtime.paths.log, {
     event: 'manager_end',
+    batchId: params.batchId,
     status: 'ok',
     elapsedMs: Math.max(0, Date.now() - params.startedAt),
+    ...(params.diagnostics?.roundId
+      ? { roundId: params.diagnostics.roundId }
+      : {}),
+    ...(params.diagnostics?.providerCallId
+      ? { providerCallId: params.diagnostics.providerCallId }
+      : {}),
+    ...(params.diagnostics?.traceRef
+      ? { traceRef: params.diagnostics.traceRef }
+      : {}),
+    ...(params.diagnostics?.threadId
+      ? { threadId: params.diagnostics.threadId }
+      : {}),
+    ...(typeof params.diagnostics?.roundCount === 'number'
+      ? { roundCount: params.diagnostics.roundCount }
+      : {}),
     ...(params.usage ? { usage: params.usage } : {}),
     ...(params.skippedReason ? { skippedReason: params.skippedReason } : {}),
   })

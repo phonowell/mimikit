@@ -1,5 +1,7 @@
 import { beforeEach, expect, test } from 'vitest'
 
+import { attachLogDiagnostics } from '../src/persistence/log/diagnostics.js'
+
 import { readTaskProgressForTest } from './helpers/task-progress.js'
 import {
   buildResultMock,
@@ -40,6 +42,40 @@ test('runTask fails the task when the worker run ends without structured output'
     { input: 120, output: 40, total: 160 },
     undefined,
     undefined,
+    {},
+  )
+})
+
+test('runTask carries provider diagnostics from thrown worker errors into failed result', async () => {
+  const runtime = await createRuntime()
+  const task = await prepareTask(
+    runtime,
+    createTask('task-run-task-provider-diagnostics'),
+  )
+
+  setBuildResultOk(false)
+  runTaskWithRetryMock.mockRejectedValue(
+    attachLogDiagnostics(new Error('provider exploded'), {
+      traceRef: '.mimikit/traces/2026-04-01/worker-failed.txt',
+      providerCallId: 'call-worker-failed',
+      attempt: 2,
+    }),
+  )
+
+  await runTask(runtime, task, new AbortController())
+
+  expect(buildResultMock).toHaveBeenLastCalledWith(
+    task,
+    'failed',
+    'provider exploded',
+    expect.any(Number),
+    undefined,
+    '.mimikit/traces/2026-04-01/worker-failed.txt',
+    undefined,
+    {
+      providerCallId: 'call-worker-failed',
+      attempt: 2,
+    },
   )
 })
 

@@ -1,84 +1,28 @@
 import pRetry from 'p-retry'
 
-import { ProviderError } from '../../execution/providers/provider-error.js'
 import { runWithProvider } from '../../execution/providers/registry.js'
+import { readProviderThreadId } from '../../execution/providers/thread-id.js'
+import { stripUndefined } from '../../foundation/shared/utils.js'
+import {
+  attachLogDiagnostics,
+  createProviderCallId,
+} from '../../persistence/log/diagnostics.js'
+
+import {
+  attachManagerAutoRetryMeta,
+  isManagerRetryableError,
+  MANAGER_PROVIDER,
+  type ManagerAutoRetryMeta,
+  readManagerAutoRetryMeta,
+  resolveManagerTimeoutMs,
+} from './manager-llm-call-shared.js'
 
 import type { ProviderPromptSegment } from '../../execution/providers/types.js'
 import type { TokenUsage } from '../../foundation/types/index.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
-const BYTE_STEP = 1_024
-const TIMEOUT_STEP_MS = 2_500
-
-export const MIN_MANAGER_TIMEOUT_MS = 60_000
-export const MAX_MANAGER_TIMEOUT_MS = 120_000
-const MANAGER_PROVIDER = 'openai-responses' as const
-const MANAGER_AUTO_RETRY_META_SYMBOL = Symbol.for(
-  'mimikit.manager_auto_retry_meta',
-)
-
-export type ManagerAutoRetryMeta = {
-  autoRetryAttempts: number
-  autoRetryMaxAttempts: number
-  autoRetryState: 'exhausted' | 'not_retryable'
-  autoRetryStrategy: string
-}
-
-const isManagerRetryableError = (error: unknown): boolean =>
-  error instanceof ProviderError && error.retryable
-
-const attachManagerAutoRetryMeta = <TError extends Error>(
-  error: TError,
-  meta: ManagerAutoRetryMeta,
-): TError => {
-  Object.defineProperty(error, MANAGER_AUTO_RETRY_META_SYMBOL, {
-    value: meta,
-    configurable: true,
-    enumerable: false,
-    writable: false,
-  })
-  return error
-}
-
-export const readManagerAutoRetryMeta = (
-  error: unknown,
-): ManagerAutoRetryMeta | undefined => {
-  if (!error || typeof error !== 'object') return undefined
-  const meta = (error as Record<PropertyKey, unknown>)[
-    MANAGER_AUTO_RETRY_META_SYMBOL
-  ]
-  if (!meta || typeof meta !== 'object') return undefined
-  const record = meta as Record<string, unknown>
-  const {
-    autoRetryAttempts,
-    autoRetryMaxAttempts,
-    autoRetryState,
-    autoRetryStrategy,
-  } = record
-  if (
-    typeof autoRetryAttempts !== 'number' ||
-    typeof autoRetryMaxAttempts !== 'number' ||
-    (autoRetryState !== 'exhausted' && autoRetryState !== 'not_retryable') ||
-    typeof autoRetryStrategy !== 'string'
-  )
-    return undefined
-  return {
-    autoRetryAttempts,
-    autoRetryMaxAttempts,
-    autoRetryState,
-    autoRetryStrategy,
-  }
-}
-
-export const resolveManagerTimeoutMs = (prompt: string): number => {
-  const promptBytes = Buffer.byteLength(prompt, 'utf8')
-  const stepCount = Math.ceil(promptBytes / BYTE_STEP)
-  const computed = MIN_MANAGER_TIMEOUT_MS + stepCount * TIMEOUT_STEP_MS
-  return Math.max(
-    MIN_MANAGER_TIMEOUT_MS,
-    Math.min(MAX_MANAGER_TIMEOUT_MS, computed),
-  )
-}
+export { readManagerAutoRetryMeta }
+export type { ManagerAutoRetryMeta }
 
 export const runManagerLlmCall = async (params: {
   prompt: string
@@ -106,6 +50,8 @@ export const runManagerLlmCall = async (params: {
   elapsedMs: number
   usage?: TokenUsage
   threadId?: string | null
+  providerCallId?: string
+  attempt?: number
 }> => {
   const managerBaseUrl = params.baseUrl?.trim()
   const managerApiKey = params.apiKey?.trim()
@@ -115,11 +61,15 @@ export const runManagerLlmCall = async (params: {
   const maxAttempts = Math.max(0, params.retry?.maxAttempts ?? 0)
   const backoffMs = Math.max(0, params.retry?.backoffMs ?? 0)
   let autoRetryAttempts = 0
+  let lastProviderCallId: string | undefined
+  let lastAttempt = 0
 
   try {
     const result = await pRetry(
-      () =>
-        runWithProvider({
+      () => {
+        lastAttempt += 1
+        lastProviderCallId = createProviderCallId()
+        return runWithProvider({
           provider: MANAGER_PROVIDER,
           role: 'manager',
           prompt: params.prompt,
@@ -140,8 +90,13 @@ export const runManagerLlmCall = async (params: {
           ...(params.abortSignal ? { abortSignal: params.abortSignal } : {}),
           ...(params.onUsage ? { onUsage: params.onUsage } : {}),
           ...(params.logPath ? { logPath: params.logPath } : {}),
-          ...(params.logContext ? { logContext: params.logContext } : {}),
-        }),
+          logContext: stripUndefined({
+            ...(params.logContext ?? {}),
+            providerCallId: lastProviderCallId,
+            attempt: lastAttempt,
+          }),
+        })
+      },
       {
         retries: maxAttempts,
         factor: 1,
@@ -161,16 +116,27 @@ export const runManagerLlmCall = async (params: {
     return {
       ...result,
       prompt: params.prompt,
+      ...(lastProviderCallId ? { providerCallId: lastProviderCallId } : {}),
+      ...(lastAttempt > 0 ? { attempt: lastAttempt } : {}),
     }
   } catch (error) {
     const baseError = error instanceof Error ? error : new Error(String(error))
-    throw attachManagerAutoRetryMeta(baseError, {
-      autoRetryAttempts,
-      autoRetryMaxAttempts: maxAttempts,
-      autoRetryState: isManagerRetryableError(error)
-        ? 'exhausted'
-        : 'not_retryable',
-      autoRetryStrategy: 'reuse_worker_retry_config',
-    })
+    throw attachManagerAutoRetryMeta(
+      attachLogDiagnostics(baseError, {
+        ...(lastProviderCallId ? { providerCallId: lastProviderCallId } : {}),
+        ...(lastAttempt > 0 ? { attempt: lastAttempt } : {}),
+        ...(readProviderThreadId(error)
+          ? { threadId: readProviderThreadId(error) as string }
+          : {}),
+      }),
+      {
+        autoRetryAttempts,
+        autoRetryMaxAttempts: maxAttempts,
+        autoRetryState: isManagerRetryableError(error)
+          ? 'exhausted'
+          : 'not_retryable',
+        autoRetryStrategy: 'reuse_worker_retry_config',
+      },
+    )
   }
 }

@@ -155,11 +155,14 @@
 说明：
 
 - `memory/MEMORY.md` 由两条链路维护：后台 memory 刷新子进程（`>=20` 轮且 `signalVersion != lastProcessedSignalVersion` 时触发，单飞执行）+ manager `remember_memory` 即时写入。
-- `usage/ledger.jsonl` 追加写入 manager round 与 worker result 两类账本记录；manager 记录 `wakeProfile/packetMode/promptBytes/promptSegmentCount`，worker 记录 `taskId/provider/status/usage`。
+- `usage/ledger.jsonl` 追加写入 manager round 与 worker result 两类账本记录；manager 记录 `wakeProfile/packetMode/promptBytes/promptSegmentCount`，worker 记录 `taskId/provider/status/usage`。两类记录现在都会按需附带 `batchId/roundId/providerCallId/traceRef/attempt` 诊断字段，便于反向定位到具体 provider 调用与 trace。
 - `task-progress/YYYY-MM-DD/{taskId}.jsonl` 当前会记录 `worker_start`、运行中的 `worker_activity`、脱敏后的 `worker_live_output` 摘要以及结束态事件；这些事件属于运行态进度记录，不构成最终 archive 协议。
-- worker task archive frontmatter 当前会额外写入 `trace_path`，用于从 archive 稳定反链回对应 trace 文件。
+- worker task archive frontmatter 当前会额外写入 `trace_path`，并补充 `provider_call_id/attempt`，用于从 archive 稳定反链回对应 trace 与最终 provider 调用；失败或取消收口也会优先继承异常上携带的同组诊断字段。
 - worker task archive frontmatter 当前会显式写入 `archive_kind: final`；`/api/tasks/:id/archive` 的运行态兜底文档会写 `archive_kind: live_fallback`。
-- `log.jsonl` 中 manager 每轮会写 `manager_context_budget_resolved`，显式记录 `policy=fixed`、`wakeProfile` 与最终 `promptSectionLimits`；预算解释以这条日志为准，不再依赖隐式分档推导。每次启动还会先写入 `runtime_startup` 事件，至少包含 `runtimeId`、`startedAt`、`worktree`，并在可用时附带 `commit`、`dirty`。
+- `log.jsonl` 现在由 manager / worker / provider 共用同一 logger 与 schema。关键事件默认带 `traceId`，并在适用时附带 `batchId`、`roundId`、`providerCallId`、`taskId`、`traceRef`。manager 的 `manager_action`、`manager_action_feedback`、`manager_action_suppressed`、`manager_action_apply_feedback` 现在也统一挂这组 round 诊断键。
+- `log.jsonl` 中 manager 每轮会写 `manager_context_budget_resolved`，显式记录 `policy=fixed`、`wakeProfile` 与最终 `promptSectionLimits`；这条日志现在也会携带 `batchId/roundId`。每次启动还会先写入 `runtime_startup` 事件，至少包含 `runtimeId`、`startedAt`、`worktree`，并在可用时附带 `commit`、`dirty`。
+- `manager_end` 在成功和失败路径都会尽量带回 `batchId`，并在可用时带 `roundId/providerCallId/traceRef/threadId`，用于从批次收口日志直接跳回具体 manager trace。
+- `traces/YYYY-MM-DD/*.txt` frontmatter 现在会补充 `batch_id/round_id/provider_call_id/attempt_number/thread_id` 一类诊断字段。
 - 异常退出（如被 kill）时，reaper 依据 `runtime/lease.json + runtime/children.json` 回收残留子进程。
 
 ## Runtime Snapshot 关键字段

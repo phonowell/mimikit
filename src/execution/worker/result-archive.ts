@@ -30,6 +30,8 @@ const buildArchiveEntry = async (
     ...(result.stopReason ? { stopReason: result.stopReason } : {}),
     ...(result.usage ? { usage: result.usage } : {}),
     ...(result.traceRef ? { traceRef: result.traceRef } : {}),
+    ...(result.providerCallId ? { providerCallId: result.providerCallId } : {}),
+    ...(typeof result.attempt === 'number' ? { attempt: result.attempt } : {}),
     ...(result.cancel ? { cancel: result.cancel } : {}),
     ...(result.handoff ? { handoff: result.handoff } : {}),
     ...(result.evidence ? { evidence: result.evidence } : {}),

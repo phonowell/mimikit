@@ -1,8 +1,4 @@
 import { buildPaths } from '../../persistence/fs/paths.js'
-import {
-  appendTraceArchiveResult,
-  type TraceArchiveResult,
-} from '../../persistence/storage/traces-archive.js'
 import { buildManagerPromptPayload } from '../prompts/build-prompts.js'
 
 import { runManagerLlmCall } from './manager-llm-call.js'
@@ -10,14 +6,22 @@ import {
   buildManagerTurnOutputSchema,
   parseManagerTurn,
 } from './manager-turn.js'
+import {
+  archiveManagerTrace,
+  attachManagerErrorDiagnostics,
+  readManagerErrorDiagnostics,
+  toManagerTraceRef,
+} from './runner-trace.js'
+import {
+  type ManagerRetryPolicy,
+  type RunManagerResult,
+} from './runner-types.js'
 
-import type { ManagerTurnAction } from './manager-turn-schema.js'
 import type { AppConfig } from '../../bootstrap/config.js'
 import type {
   FocusId,
   FocusMeta,
   ManagerActionFeedback,
-  ManagerContextPacket,
   ManagerEnv,
   ManagerPacketMode,
   Task,
@@ -26,32 +30,7 @@ import type {
   TokenUsage,
   UserInput,
 } from '../../foundation/types/index.js'
-import type {
-  PromptSectionUsage,
-  PromptSelectionSummary,
-} from '../prompts/manager-prompt-types.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
-
-const toError = (error: unknown): Error =>
-  error instanceof Error ? error : new Error(String(error))
-
-type ManagerRetryPolicy = {
-  maxAttempts: number
-  backoffMs: number
-}
-
-type RunManagerResult = {
-  output: string
-  actions: ManagerTurnAction[]
-  elapsedMs: number
-  usage?: TokenUsage
-  threadId?: string | null
-  contextPacket: ManagerContextPacket
-  promptBytes: number
-  promptSegmentCount: number
-  promptSections: PromptSectionUsage
-  promptSelection: PromptSelectionSummary
-}
 
 export const runManager = async (params: {
   stateDir: string
@@ -78,6 +57,8 @@ export const runManager = async (params: {
   usePromptSegments?: boolean
   packetMode?: ManagerPacketMode
   wakeProfile?: ManagerEnv['wakeProfile']
+  batchId?: string
+  roundId?: string
 }): Promise<RunManagerResult> => {
   const promptPayload = await buildManagerPromptPayload({
     stateDir: params.stateDir,
@@ -109,22 +90,6 @@ export const runManager = async (params: {
   const paths = buildPaths(params.stateDir)
 
   const model = params.model?.trim()
-  const archive = (
-    threadId: string | null | undefined,
-    data: TraceArchiveResult,
-    promptText: string,
-  ) =>
-    appendTraceArchiveResult(
-      params.stateDir,
-      {
-        role: 'manager',
-        ...(model ? { model } : {}),
-        ...(threadId ? { threadId } : {}),
-        attempt: 'primary',
-      },
-      promptText,
-      data,
-    )
 
   try {
     const result = await runManagerLlmCall({
@@ -147,6 +112,8 @@ export const runManager = async (params: {
       logContext: {
         event: 'llm_call',
         role: 'manager',
+        ...(params.batchId ? { batchId: params.batchId } : {}),
+        ...(params.roundId ? { roundId: params.roundId } : {}),
         promptSegmentCount:
           params.usePromptSegments === false ? 1 : promptSegments.length,
         promptSegmentCacheControl:
@@ -155,11 +122,16 @@ export const runManager = async (params: {
             : promptSegments.map((segment) => segment.cacheControl ?? 'none'),
       },
     })
-    await archive(
-      result.threadId ?? undefined,
-      { ...result, ok: true },
-      result.prompt,
-    )
+    const tracePath = await archiveManagerTrace({
+      stateDir: params.stateDir,
+      prompt: result.prompt,
+      ...(model ? { model } : {}),
+      ...(params.batchId ? { batchId: params.batchId } : {}),
+      ...(params.roundId ? { roundId: params.roundId } : {}),
+      ...(result.threadId ? { threadId: result.threadId } : {}),
+      result: { ...result, ok: true },
+    })
+    const traceRef = toManagerTraceRef(params.stateDir, tracePath)
     const turn = parseManagerTurn(result.outputJson)
     return {
       output: turn.reply,
@@ -173,19 +145,41 @@ export const runManager = async (params: {
         params.usePromptSegments === false ? 1 : promptSegments.length,
       promptSections,
       promptSelection,
+      ...(traceRef ? { traceRef } : {}),
+      ...(result.providerCallId
+        ? { providerCallId: result.providerCallId }
+        : {}),
+      ...(result.attempt ? { attempt: result.attempt } : {}),
+      ...(params.batchId ? { batchId: params.batchId } : {}),
+      ...(params.roundId ? { roundId: params.roundId } : {}),
     }
   } catch (error) {
-    const err = toError(error)
-    await archive(
-      undefined,
-      {
+    const err = error instanceof Error ? error : new Error(String(error))
+    const diagnostics = readManagerErrorDiagnostics(error)
+    const tracePath = await archiveManagerTrace({
+      stateDir: params.stateDir,
+      prompt,
+      ...(model ? { model } : {}),
+      ...(params.batchId ? { batchId: params.batchId } : {}),
+      ...(params.roundId ? { roundId: params.roundId } : {}),
+      result: {
         output: '',
         ok: false,
         error: err.message,
         errorName: err.name,
+        ...(diagnostics.providerCallId
+          ? { providerCallId: diagnostics.providerCallId }
+          : {}),
+        ...(diagnostics.attempt ? { attempt: diagnostics.attempt } : {}),
       },
-      prompt,
-    )
-    throw error
+      ...(diagnostics.threadId ? { threadId: diagnostics.threadId } : {}),
+    })
+    throw attachManagerErrorDiagnostics({
+      error,
+      stateDir: params.stateDir,
+      tracePath,
+      ...(params.batchId ? { batchId: params.batchId } : {}),
+      ...(params.roundId ? { roundId: params.roundId } : {}),
+    })
   }
 }
