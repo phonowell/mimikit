@@ -1,7 +1,7 @@
 import { useNowTick } from '../hooks/use-now-tick.js'
 import {
-  formatDateTimeFull,
   formatDisplayTimeWithFull,
+  getDisplayTimeTickMs,
   parseTimeInput,
 } from '../lib/messages/format-time.js'
 import { formatUsage } from '../lib/messages/format-usage.js'
@@ -26,7 +26,10 @@ const toMs = (value: string | undefined): number | null => {
 export const TaskMeta = ({ open, task }: Props) => {
   const status = task.status || 'pending'
   const hasRunningClock = status === 'running'
-  const now = useNowTick(hasRunningClock ? 1_000 : 60_000, open)
+  const now = useNowTick(
+    hasRunningClock ? 1_000 : getDisplayTimeTickMs(task.changeAt),
+    open,
+  )
   const usage = formatUsage(task.usage)
   const hasUsage = Boolean(usage?.text)
   const startMs = toMs(task.startedAt) ?? toMs(task.createdAt)
@@ -96,7 +99,7 @@ export const TaskMeta = ({ open, task }: Props) => {
       {timeDisplay.displayText ? (
         <span
           className="task-time"
-          title={formatDateTimeFull(task.changeAt) || task.changeAt}
+          title={timeDisplay.fullText || task.changeAt}
         >
           {timeDisplay.displayText}
         </span>

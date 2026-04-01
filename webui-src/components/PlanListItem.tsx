@@ -2,7 +2,10 @@ import { useId, useRef } from 'react'
 
 import { useNowTick } from '../hooks/use-now-tick.js'
 import { buildTaskArchiveViewerUrl } from '../lib/archive-viewer-url.js'
-import { formatDisplayTimeWithFull } from '../lib/messages/format-time.js'
+import {
+  formatDisplayTimeWithFull,
+  getDisplayTimeTickMs,
+} from '../lib/messages/format-time.js'
 import { UI_TEXT } from '../lib/system-text.js'
 
 import { PlanActionMenu } from './PlanActionMenu.js'
@@ -25,11 +28,18 @@ export const PlanListItem = ({
   plan,
 }: Props) => {
   const toggleRef = useRef<HTMLButtonElement>(null)
-  const now = useNowTick(60_000, open)
   const menuId = useId()
   const planId = plan.id?.trim() || ''
   const menuOpen = Boolean(planId) && openMenuId === planId
   const changedAt = plan.archivedAt || plan.updatedAt || ''
+  const tickMs = Math.min(
+    getDisplayTimeTickMs(changedAt),
+    getDisplayTimeTickMs(plan.lastTriggeredAt),
+    plan.trigger?.mode === 'scheduled_at'
+      ? getDisplayTimeTickMs(plan.trigger.scheduledAt, { relative: false })
+      : 60_000,
+  )
+  const now = useNowTick(tickMs, open)
   const timeDisplay = formatDisplayTimeWithFull(changedAt, { now })
   const trigger =
     plan.trigger?.mode === 'cron'

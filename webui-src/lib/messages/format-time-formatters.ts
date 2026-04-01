@@ -1,6 +1,14 @@
 const DEFAULT_LOCALE = 'en-US'
 const DAY_MS = 24 * 60 * 60 * 1000
 
+const resolvedLocale = (() => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().locale || DEFAULT_LOCALE
+  } catch {
+    return DEFAULT_LOCALE
+  }
+})()
+
 const resolvedTimeZone = (() => {
   try {
     return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
@@ -94,7 +102,7 @@ export const getFullDateTimeFormatter = (
 }
 
 export const resolveLocale = (locale: string | undefined): string =>
-  typeof locale === 'string' && locale.trim() ? locale.trim() : DEFAULT_LOCALE
+  typeof locale === 'string' && locale.trim() ? locale.trim() : resolvedLocale
 
 export const resolveTimeZone = (timeZone: string | undefined): string =>
   typeof timeZone === 'string' && timeZone.trim()
