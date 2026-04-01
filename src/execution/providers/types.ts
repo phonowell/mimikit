@@ -1,4 +1,5 @@
 import type { TokenUsage } from './token-usage.js'
+import type { TaskResourceMode } from '../../work/types/task-runtime-types.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
 export type ProviderKind = 'codex-sdk' | 'openai-responses'
@@ -22,6 +23,7 @@ export type TurnStartedListener = () => void
 
 type ProviderRequestBase = {
   role: 'manager' | 'worker'
+  resourceMode?: TaskResourceMode
   runtimeId?: string
   prompt: string
   promptSegments?: ProviderPromptSegment[]
