@@ -14,6 +14,8 @@ const MAX_TASK_GOAL_CHARS = 240
 const MAX_TASK_GOAL_BYTES = 720
 const MAX_TASK_LIST_ITEM_CHARS = 160
 const MAX_TASK_LIST_ITEM_BYTES = 480
+const MAX_TASK_CONTEXT_REF_CHARS = 200
+const MAX_TASK_CONTEXT_REF_BYTES = 600
 const MAX_TASK_INSTRUCTION_CHARS = 120
 const MAX_TASK_INSTRUCTION_BYTES = 360
 const TASK_DRAFT_MAX_TOTAL_CHARS = 900
@@ -125,14 +127,24 @@ export const canonicalizeTaskDraft = <TDraft extends TaskDraftLike>(
       maxChars: MAX_TASK_LIST_ITEM_CHARS,
       maxBytes: MAX_TASK_LIST_ITEM_BYTES,
     }),
-    out_of_scope: clampList(draft.out_of_scope, 2),
+    out_of_scope: compactClauseHeavyList({
+      values: draft.out_of_scope,
+      maxItems: 2,
+      maxChars: MAX_TASK_LIST_ITEM_CHARS,
+      maxBytes: MAX_TASK_LIST_ITEM_BYTES,
+    }),
     done_when: compactClauseHeavyList({
       values: draft.done_when,
       maxItems: 3,
       maxChars: MAX_TASK_LIST_ITEM_CHARS,
       maxBytes: MAX_TASK_LIST_ITEM_BYTES,
     }),
-    context_refs: clampList(draft.context_refs, 3),
+    context_refs: compactClauseHeavyList({
+      values: draft.context_refs,
+      maxItems: 3,
+      maxChars: MAX_TASK_CONTEXT_REF_CHARS,
+      maxBytes: MAX_TASK_CONTEXT_REF_BYTES,
+    }),
     instructions: compactClauseHeavyList({
       values: draft.instructions,
       maxItems: 2,
