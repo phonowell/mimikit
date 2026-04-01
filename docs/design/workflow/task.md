@@ -70,12 +70,20 @@
 ## Git 对账
 
 - `Task.git` 只保留 repo-local 执行事实与 lifecycle 投影；默认直跑任务不会生成 `Task.git`
+- `Task.git` 一旦存在，就必须同时满足：
+  - 根级 `task.repoKey` 与 `task.branch` 也存在
+  - `task.branch === task.git.branch`
+  - `task.git.closureRequired` 明确声明该 task 是否进入 merge/cleanup 收尾闭环
+- runtime 只允许复用 repo-local `./.worktrees/<branch-hash>` 下的既有 worktree；命中仓外旧路径会直接拒绝，不再沿用旧布局。
+- git 收尾派生 closure task 时只信任根级 `task.repoKey` 作为主仓真相源；不会再从 `worktreePath` 反推 repoKey 或 repo root。
+- git 收尾派生 closure task 会显式绑定主分支（当前协议为 `main`，若仓内不存在 `main` 才退回主仓当前分支），不再跟随主仓当下检出分支漂移。
 - runtime 不再暴露 `record_task_git` 一类显式 git 状态写回 action，也不会采信 worker 主动上报的 `git_lifecycle`
 - 启动 hydrate 与 snapshot persist 会基于文件系统 / git 真相源补做 repo-local reconcile：
   - 缺失 worktree 会收敛为 `cleaned=true`
   - review sentinel / merge 祖先关系会收敛为最新 lifecycle
   - 对账结果会回写到 `task.git.lifecycle` 与已有 `task.result.handoff.git.lifecycle`
 - 因此 git closure 的真相源是 repo-local 文件系统与 git 状态；task / handoff / snapshot 只保留对账后的投影。
+- 不再接受旧快照里的模糊 git task：缺少 `closureRequired`，或只有 `task.git` 没有根级 `repoKey + branch`，都会在 snapshot load 阶段直接拒绝。
 
 ## 结果约束
 

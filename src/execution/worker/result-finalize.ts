@@ -1,10 +1,15 @@
 import { appendLog } from '../../persistence/log/append.js'
 import { bestEffort } from '../../persistence/log/safe.js'
+import { markTaskPaused } from '../../work/orchestrator/task-lifecycle.js'
 import { applyTaskResultWrite } from '../../work/orchestrator/task-result-write.js'
 import { resolveTaskGitLifecycle } from '../../work/shared/task-git-lifecycle.js'
 import { readTaskExecutionSpec } from '../../work/spec/store.js'
 
 import { resolveArchivePath, writeTaskArchive } from './result-archive.js'
+import {
+  applyClosurePendingResultState,
+  enqueueClosureTaskIfNeeded,
+} from './result-closure.js'
 import {
   buildTaskEvidence,
   hasTaskEvidenceMismatch,
@@ -42,12 +47,13 @@ export const finalizeResult = async (
       lifecycle: gitLifecycle,
     }
   }
-  applyTaskResultStateDefaults(result)
   const previousStatus = task.status
   const spec = await readTaskExecutionSpec(
     runtime.config.workDir,
     task.executionSpecId,
   )
+  applyClosurePendingResultState({ task, result })
+  applyTaskResultStateDefaults(result)
   const candidateArchivePath = await resolveArchivePath(
     runtime,
     task,
@@ -113,7 +119,7 @@ export const finalizeResult = async (
     task,
     result,
     options: {
-      markTask: markFn,
+      markTask: result.taskStatus === 'paused' ? markTaskPaused : markFn,
       progressType,
       logEvent,
       ...(options?.taskPatch ? { taskPatch: options.taskPatch } : {}),
@@ -122,4 +128,5 @@ export const finalizeResult = async (
         : {}),
     },
   })
+  await enqueueClosureTaskIfNeeded({ runtime, task, result })
 }

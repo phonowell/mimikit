@@ -1,5 +1,13 @@
 import { isAbsolute, relative, resolve } from 'node:path'
 
+export const toStateDisplayPath = (path: string): string | undefined => {
+  const normalized = path.trim().replace(/\\/g, '/')
+  if (!normalized) return undefined
+  if (normalized.startsWith('.mimikit/')) return normalized
+  const match = normalized.match(/(?:^|\/)(\.mimikit\/.+)$/)
+  return match?.[1]
+}
+
 export const toDisplayPath = (path: string, workDir?: string): string => {
   const trimmedPath = path.trim()
   if (!workDir) return trimmedPath

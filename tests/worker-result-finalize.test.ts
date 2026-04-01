@@ -1,2 +1,5 @@
 import './worker-result-finalize/canceled-scenarios.js'
+import './worker-result-finalize/closure-main-target.js'
+import './worker-result-finalize/closure-repo-key-required.js'
+import './worker-result-finalize/closure-scenarios.js'
 import './worker-result-finalize/failed-scenarios.js'

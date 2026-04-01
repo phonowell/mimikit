@@ -27,7 +27,8 @@ test('buildTaskViews derives review passed from worktree sentinel', async () => 
   const task = createTaskFixture({
     id: 'task-review',
     repoKey: join(cwd, '.git'),
-    git: { worktreePath: cwd, branch: 'main' },
+    branch: 'main',
+    git: { worktreePath: cwd, branch: 'main', closureRequired: true },
   })
   const { tasks: views } = buildTaskViews([task])
   expect(views[0]?.gitClosure?.review).toMatchObject({
@@ -41,7 +42,13 @@ test('buildTaskViews derives review passed from worktree sentinel', async () => 
 test('buildTaskViews derives cleaned=true when worktreePath is missing', () => {
   const task = createTaskFixture({
     id: 'task-cleaned',
-    git: { worktreePath: '/tmp/mimikit-missing-worktree', branch: 'main' },
+    repoKey: '/tmp/mimikit-missing-worktree/.git',
+    branch: 'main',
+    git: {
+      worktreePath: '/tmp/mimikit-missing-worktree',
+      branch: 'main',
+      closureRequired: true,
+    },
   })
   const { tasks: views } = buildTaskViews([task])
   expect(views[0]?.gitClosure?.cleaned).toBe(true)
@@ -50,9 +57,12 @@ test('buildTaskViews derives cleaned=true when worktreePath is missing', () => {
 test('buildTaskViews keeps explicit lifecycle fields while merging derived closure', () => {
   const task = createTaskFixture({
     id: 'task-explicit-git-closure',
+    repoKey: '/tmp/mimikit-missing-worktree/.git',
+    branch: 'main',
     git: {
       worktreePath: '/tmp/mimikit-missing-worktree',
       branch: 'main',
+      closureRequired: true,
       lifecycle: {
         review: {
           passed: true,

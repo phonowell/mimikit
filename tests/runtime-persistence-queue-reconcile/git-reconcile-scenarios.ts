@@ -39,6 +39,7 @@ test('hydrateRuntimeState reconciles derived git closure into task truth source 
       git: {
         worktreePath: missingWorktreePath,
         branch: 'feature/task-git-reconcile',
+        closureRequired: true,
         lifecycle: {
           review: { passed: false },
           merged: false,
@@ -54,9 +55,12 @@ test('hydrateRuntimeState reconciles derived git closure into task truth source 
         id: 'task-git-reconcile',
         status: 'succeeded',
         completedAt: '2026-02-06T00:02:00.000Z',
+        repoKey: '/tmp/task-git-reconcile/.git',
+        branch: 'feature/task-git-reconcile',
         git: {
           worktreePath: missingWorktreePath,
           branch: 'feature/task-git-reconcile',
+          closureRequired: true,
           lifecycle: {
             review: { passed: false },
             merged: false,
@@ -76,6 +80,7 @@ test('hydrateRuntimeState reconciles derived git closure into task truth source 
             git: {
               worktreePath: missingWorktreePath,
               branch: 'feature/task-git-reconcile',
+              closureRequired: true,
               lifecycle: {
                 review: { passed: false },
                 merged: false,

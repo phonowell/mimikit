@@ -86,10 +86,13 @@ test('buildTasksPromptPayload omits result-only fallback and plan title still fa
     title: 'plan-collapse-1',
     done_reason: 'completed',
   })
-  expect(planPayload?.plans[0]).not.toHaveProperty('task_prompt')
-  expect(planPayload?.plans[0]).not.toHaveProperty('task_goal')
-  expect(planPayload?.plans[0]).not.toHaveProperty('task_scope')
-  expect(planPayload?.plans[0]).not.toHaveProperty('task_acceptance')
+  for (const field of [
+    'task_prompt',
+    'task_goal',
+    'task_scope',
+    'task_acceptance',
+  ])
+    expect(planPayload?.plans[0]).not.toHaveProperty(field)
 })
 
 test('buildTasksPromptPayload keeps archive path but does not duplicate detailed result', () => {
@@ -107,8 +110,8 @@ test('buildTasksPromptPayload keeps archive path but does not duplicate detailed
     id: 'task-collapse-state-1',
     title: 'State only task',
     archivePath: '/tmp/task-collapse-state-1.md',
-  }) as ReturnType<typeof createTaskFixture> & { contract: typeof contract }
-  task.contract = contract
+    contract,
+  })
   const result: TaskResult = {
     taskId: task.id,
     status: 'succeeded',
@@ -134,29 +137,6 @@ test('buildTasksPromptPayload keeps archive path but does not duplicate detailed
   })
   expect(payload?.tasks[0]).not.toHaveProperty('prompt')
   expect(payload?.tasks[0]).not.toHaveProperty('result')
-})
-
-test('buildTasksPromptPayload exposes only truthful git execution fields', () => {
-  const task = createTaskFixture({
-    id: 'task-git-1',
-    git: {
-      worktreePath: '/tmp/task-git-1',
-      branch: 'hotfix/task-git-1',
-    },
-  })
-
-  const payload = buildTasksPromptPayload([task], [], '/tmp')
-
-  expect(payload?.tasks[0]).toMatchObject({
-    id: 'task-git-1',
-    git: {
-      worktree_path: 'task-git-1',
-      branch: 'hotfix/task-git-1',
-    },
-  })
-  expect(payload?.tasks[0]).not.toHaveProperty('git.review_status')
-  expect(payload?.tasks[0]).not.toHaveProperty('git.merge_status')
-  expect(payload?.tasks[0]).not.toHaveProperty('git.cleanup_status')
 })
 
 test('buildPlansPromptPayload exposes task contract digest without reviving legacy aliases', () => {
@@ -193,7 +173,6 @@ test('buildPlansPromptPayload exposes task contract digest without reviving lega
       context_refs: ['docs/design/workflow/plan.md'],
     },
   })
-  expect(payload?.plans[0]).not.toHaveProperty('task_goal')
-  expect(payload?.plans[0]).not.toHaveProperty('task_scope')
-  expect(payload?.plans[0]).not.toHaveProperty('task_acceptance')
+  for (const field of ['task_goal', 'task_scope', 'task_acceptance'])
+    expect(payload?.plans[0]).not.toHaveProperty(field)
 })

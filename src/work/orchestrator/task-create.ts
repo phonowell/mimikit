@@ -54,7 +54,7 @@ export const createTask = (
   const resolvedTitle = resolveTitle(id, prompt, title)
   if (!cwd?.trim()) throw new Error('task cwd is required')
   const normalizedResourceMode = resolveTaskResourceMode(resourceMode)
-  const git = buildTaskGitExecution(cwd, branch, useWorktree)
+  const git = buildTaskGitExecution(cwd, branch, repoKey, useWorktree)
   const fingerprint = buildTaskFingerprint({
     prompt,
     title: resolvedTitle,

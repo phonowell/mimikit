@@ -36,6 +36,7 @@ export const taskGitExecutionSchema = z
   .object({
     worktreePath: z.string().trim().min(1),
     branch: z.string().trim().min(1),
+    closureRequired: z.boolean(),
     lifecycle: taskGitLifecycleSchema.optional(),
   })
   .strict()

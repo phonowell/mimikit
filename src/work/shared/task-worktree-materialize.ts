@@ -1,6 +1,7 @@
 import { execFile } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { basename, dirname, join, relative, resolve } from 'node:path'
+import { mkdir } from 'node:fs/promises'
+import { join, relative, resolve } from 'node:path'
 import { promisify } from 'node:util'
 
 import {
@@ -81,11 +82,12 @@ const sanitizeBranchForPath = (branch: string): string => {
 }
 
 const resolveAutoWorktreePath = (repoKey: string, branch: string): string => {
-  const repoRoot = dirname(repoKey)
+  const repoRoot = repoKey.replace(/\/?\.git$/, '')
   const branchKey = createHash('sha1').update(branch).digest('hex').slice(0, 8)
   return join(
-    dirname(repoRoot),
-    `${basename(repoRoot)}-${sanitizeBranchForPath(branch)}-${branchKey}`,
+    repoRoot,
+    '.worktrees',
+    `${sanitizeBranchForPath(branch)}-${branchKey}`,
   )
 }
 
@@ -126,12 +128,22 @@ export const materializeTaskWorktreeCwd = async (
   if (currentBranch === branch) return { ok: true, cwd: normalizedCwd }
 
   const nestedPath = relative(repoRoot, normalizedCwd)
+  const autoWorktreeRoot = resolveAutoWorktreePath(repoKey, branch)
   const existingWorktree = (await listGitWorktrees(normalizedCwd)).find(
     (item) => item.branch === branch,
   )
-  const worktreeRoot =
-    existingWorktree?.path ?? resolveAutoWorktreePath(repoKey, branch)
+  if (
+    existingWorktree &&
+    resolve(existingWorktree.path) !== resolve(autoWorktreeRoot)
+  ) {
+    return {
+      ok: false,
+      detail: `branch "${branch}" 已绑定旧 worktree ${existingWorktree.path}；当前只接受 repo-local .worktrees 路径 ${autoWorktreeRoot}。请先清理旧 worktree 后重试。`,
+    }
+  }
+  const worktreeRoot = existingWorktree?.path ?? autoWorktreeRoot
   if (!existingWorktree) {
+    await mkdir(join(repoRoot, '.worktrees'), { recursive: true })
     const normalizedBranch = await runGitCapture(normalizedCwd, [
       'check-ref-format',
       '--branch',

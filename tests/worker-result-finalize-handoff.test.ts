@@ -33,6 +33,8 @@ test('finalizeResult keeps repo-local git reconcile as the handoff truth source'
     prompt: 'ship release',
     title: 'Ship Release',
     cwd: '/tmp/ship-release',
+    repoKey: join(stateDir, '.git'),
+    branch: 'feature/release',
     focusId: 'focus-local',
     profile: 'worker',
     provider: 'codex',
@@ -41,6 +43,7 @@ test('finalizeResult keeps repo-local git reconcile as the handoff truth source'
     git: {
       worktreePath: missingWorktreePath,
       branch: 'feature/release',
+      closureRequired: true,
     },
   }
   const runtime = await createTestRuntimeState({
@@ -60,6 +63,7 @@ test('finalizeResult keeps repo-local git reconcile as the handoff truth source'
       git: {
         worktreePath: missingWorktreePath,
         branch: 'feature/release',
+        closureRequired: true,
         lifecycle: {
           review: { passed: true, sha: 'abc123' },
           merged: true,
@@ -76,7 +80,11 @@ test('finalizeResult keeps repo-local git reconcile as the handoff truth source'
   expect(result.output).toBe('Release completed.')
   expect(result.handoff?.summary).toBe('Release shipped')
   expect(result.handoff?.decisions).toEqual(['Enabled feature flag'])
-  expect(result.handoff?.nextSteps).toEqual(['Monitor rollout'])
+  expect(result.handoff?.nextSteps).toEqual([
+    'Monitor rollout',
+    '在主仓完成 feature/release 的 merge/cleanup 收尾',
+    '收尾后回写 git closure 真相并复核归档',
+  ])
   expect(result.handoff?.git?.lifecycle).toMatchObject({
     review: { passed: false },
     merged: false,
