@@ -3,6 +3,7 @@ import { sortTaskPlansForView } from './plan-select.js'
 import type {
   TaskContract,
   TaskPlan,
+  TaskPlanStageDigest,
   TaskPlanTrigger,
 } from '../../foundation/types/index.js'
 
@@ -12,6 +13,14 @@ export type PlanTaskContractView = {
   acceptance: string[]
   outOfScope?: string
   contextRefs?: string[]
+}
+
+export type PlanStageView = {
+  summary: string
+  risk?: string
+  needsDecision: boolean
+  sourceTaskId: string
+  updatedAt: string
 }
 
 export type PlanView = {
@@ -26,6 +35,7 @@ export type PlanView = {
   doneReason?: TaskPlan['runtime']['doneReason']
   trigger: TaskPlanTrigger
   taskContract?: PlanTaskContractView
+  stage?: PlanStageView
 }
 
 const resolvePlanViewTitle = (plan: TaskPlan): string => {
@@ -63,8 +73,22 @@ const clonePlanTaskContract = (
   }
 }
 
+const clonePlanStage = (
+  stage?: TaskPlanStageDigest,
+): PlanStageView | undefined => {
+  if (!stage) return undefined
+  return {
+    summary: stage.summary,
+    ...(stage.risk ? { risk: stage.risk } : {}),
+    needsDecision: stage.needsDecision,
+    sourceTaskId: stage.sourceTaskId,
+    updatedAt: stage.updatedAt,
+  }
+}
+
 const planToView = (plan: TaskPlan): PlanView => {
   const taskContract = clonePlanTaskContract(plan.effect.taskContract)
+  const stage = clonePlanStage(plan.runtime.stage)
   return {
     id: plan.id,
     title: resolvePlanViewTitle(plan),
@@ -79,6 +103,7 @@ const planToView = (plan: TaskPlan): PlanView => {
     ...(plan.runtime.doneReason ? { doneReason: plan.runtime.doneReason } : {}),
     trigger: clonePlanTrigger(plan.trigger),
     ...(taskContract ? { taskContract } : {}),
+    ...(stage ? { stage } : {}),
   }
 }
 

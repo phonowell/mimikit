@@ -14,6 +14,7 @@
 - manager 使用 `openai-responses`；worker 使用 `codex-sdk`。
 - 运行时状态采用显式 `domain + process` 分层：`runtime.domain` 只保留 `queues / tasks / taskPlans / focuses` 这类可持久化编排真相，`runtime.process` 只保留 `session / manager / worker / ui` 这类进程内过程态；不再保留 root-level 兼容入口。
 - manager prompt 收敛为双 packet：`state_packet` 负责稳定状态（focus/task/plan），其中 task 与 plan 只暴露合同级 digest（`goal/scope/acceptance` 等）与调度外壳，不回灌完整 worker prompt；`event_packet` 负责当前批次事件（input/result/history/action_feedback/environment/packet）；详细 task result 只留在 `event_packet.batch_results`，`state_packet.tasks` 不再重复展开结果正文；section 字节预算固定取自 `manager.promptSections`，`wakeProfile` 只影响 packet section 选择，不再动态改写 bytes，也不再分档 action surface。
+- manager 的默认续跑判断现在优先使用结构化锚点与运行态关系（如 `continuation_of`、`plan.runtime.lastTaskId`、当前 result task 对齐），文本匹配只退为兜底，不再作为主判。
 - worker 执行通道固定为 codex，不再进行 provider 候选注入、自动打分或按任务显式切换。
 - manager/worker 每轮 usage 统一写入 `usage/ledger.jsonl`，直接暴露 prompt 字节、packet 裁剪与执行侧 token 消耗，不再额外引入成本推导层。
 - HTTP 输入校验集中在 `src/surface/http/input-body.ts`，HTTP 路由装配在 `src/surface/http/routes-api.ts`。

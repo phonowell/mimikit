@@ -145,10 +145,19 @@ export type TaskPlanEnqueueTaskEffect = {
 
 export type TaskPlanEffect = TaskPlanEnqueueTaskEffect
 
+export type TaskPlanStageDigest = {
+  summary: string
+  risk?: string | undefined
+  needsDecision: boolean
+  sourceTaskId: string
+  updatedAt: ISODate
+}
+
 export type TaskPlanRuntime = {
   runCount: number
   lastTriggeredAt?: ISODate | undefined
   lastTaskId?: string | undefined
+  stage?: TaskPlanStageDigest | undefined
   closedAt?: ISODate | undefined
   doneReason?: 'canceled' | 'completed' | 'exhausted' | undefined
 }

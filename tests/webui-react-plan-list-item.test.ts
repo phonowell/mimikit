@@ -119,3 +119,30 @@ test('plan list item renders runtime progress inline when available', () => {
   expect(markup).toContain('7')
   expect(markup).toContain('Last trigger')
 })
+
+test('plan list item renders stage digest when available', () => {
+  Object.assign(globalThis, { React })
+  const markup = renderToStaticMarkup(
+    React.createElement(PlanListItem, {
+      open: true,
+      plan: createPlan({
+        id: 'plan-stage-ui',
+        stage: {
+          summary: '当前阶段已收敛到可执行下一步。',
+          risk: '还有一条回归验证未完成。',
+          needsDecision: true,
+          sourceTaskId: 'task-stage-ui',
+          updatedAt: '2026-04-02T00:11:00.000Z',
+        },
+      } as PlanView),
+      openMenuId: 'plan-stage-ui',
+      onPlanAction: noop,
+      onToggleMenu: noop,
+    }),
+  )
+
+  expect(markup).toContain('Current stage')
+  expect(markup).toContain('当前阶段已收敛到可执行下一步。')
+  expect(markup).toContain('还有一条回归验证未完成。')
+  expect(markup).toContain('Decision pending')
+})

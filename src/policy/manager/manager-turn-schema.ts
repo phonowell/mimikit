@@ -13,6 +13,16 @@ import {
 } from './task-draft-schema.js'
 
 const s = z.string().trim().min(1)
+const managerContinuationAnchorSchema = z.discriminatedUnion('type', [
+  z.strictObject({
+    type: z.literal('task'),
+    id: taskIdSchema,
+  }),
+  z.strictObject({
+    type: z.literal('plan'),
+    id: planIdSchema,
+  }),
+])
 const managerDecisionReasonSchema = z.enum([
   'high_risk',
   'goal_change',
@@ -70,11 +80,13 @@ export const managerPlanDraftParseSchema = z.strictObject({
 
 export const enqueueTaskActionSchema = z.strictObject({
   type: z.literal('enqueue_task'),
+  continuation_of: managerContinuationAnchorSchema.optional(),
   task: managerTaskDraftSchema,
 })
 
 export const enqueueTaskActionParseSchema = z.strictObject({
   type: z.literal('enqueue_task'),
+  continuation_of: managerContinuationAnchorSchema.optional(),
   task: managerTaskDraftParseSchema,
 })
 
@@ -98,12 +110,14 @@ export const taskControlActionSchema = z
 export const setPlanActionSchema = z.strictObject({
   type: z.literal('set_plan'),
   plan_id: planIdSchema.nullable(),
+  continuation_of: managerContinuationAnchorSchema.optional(),
   plan: managerPlanDraftSchema,
 })
 
 export const setPlanActionParseSchema = z.strictObject({
   type: z.literal('set_plan'),
   plan_id: planIdSchema.nullable(),
+  continuation_of: managerContinuationAnchorSchema.optional(),
   plan: managerPlanDraftParseSchema,
 })
 

@@ -37,7 +37,9 @@ actions:
     brief_constraints:
       - 必填 `task`
       - 必填 `task.use_worktree`
+      - '`continuation_of` 仅在明确延续当前单一锚点时可选'
     detail_constraints:
+      - '`continuation_of` 可选；仅在明确延续当前单一 active plan 或当前 result task 时使用，结构为 `{ type:"plan"|"task", id }`'
       - '`task` 必须包含 `title,cwd,mode,use_worktree,goal,in_scope,out_of_scope,done_when[],context_refs[],instructions[]`'
       - '`goal/in_scope/out_of_scope/done_when/instructions` 默认 1-3 条高密度短句，避免同义重复、客套和多段解释'
       - '若单条 `goal/in_scope/out_of_scope/done_when/context_refs/instructions` 因 `；` 分句过长，优先删减末尾次要 clause，不要拆出兼容别名或额外字段'
@@ -62,7 +64,9 @@ actions:
     brief_constraints:
       - 必填 `plan_id,plan`
       - '`plan_id=null` 表示创建；非空表示按该 ID 整体替换'
+      - '`continuation_of` 仅在明确延续当前单一锚点时可选'
     detail_constraints:
+      - '`continuation_of` 可选；仅在当前 plan 只是承接同一续跑锚点时使用，结构为 `{ type:"plan"|"task", id }`'
       - '`plan` 必须包含 `title,trigger,task,priority,max_runs`'
       - '`plan.task` 与 `enqueue_task.task` 使用同一合同'
       - '当后续推进只是在同一目标上等待容量或定时续跑时，优先用 `set_plan` 承接，而不是把续跑责任退回给用户'

@@ -69,6 +69,7 @@
 - `tasks.tasks[*].title` 只使用稳定 `Task.title`；若标题缺失则退回 `task.id`，不再从 `task.prompt` 派生展示标题。
 - `tasks.tasks[*]` 会暴露 `stopReason`；当前不再产出预算暂停态或额外的 recoverable UI 标记。
 - `tasks.tasks[*].traceRef` 会在 task result 已归档 trace 时暴露 `.mimikit/traces/...` 相对路径，供 WebUI 直接跳转。
+- `plans.items[*].stage` 会暴露当前 plan 的极简推进态：`summary`、可选 `risk`、`needsDecision`、`sourceTaskId`、`updatedAt`；它只服务复盘和在线控制，不是第二块任务板。
 - `GET /api/tasks/:id/archive` 在最终 archive 尚不可用时，会回退到运行态快照；临时 `=== RESULT ===` 只使用 `task.result.output`、当前进程内 `liveOutput` 摘要，或当前运行轮次最近一次落盘的 `task-progress.worker_live_output` 摘要，不再拼接 `task-progress.worker_activity` 原始活动文本。返回体 frontmatter 现会显式标记 `archive_kind: live_fallback|final`，避免调用方把运行态兜底误认成最终 archive。
 
 ## System 气泡可见性规则（WebUI 会话流）
@@ -194,6 +195,7 @@ schema：`src/persistence/storage/runtime-snapshot-schema.ts`
 - `taskPlans[*]` 当前使用 `trigger + effect` 结构，不再持久化顶层 `prompt/profile/source` 旧字段。
 - `taskPlans[*].trigger.mode = "on_worker_slot_freed"` 是边沿触发而不是电平触发；启动时若已有空闲容量会记一次初始可用边沿，随后只有容量增加才再次触发。
 - `taskPlans[*].effect.taskTemplate.useWorktree?` 用于显式记录计划任务是否要求独立 worktree；默认缺省视为 `false`。
+- `taskPlans[*].runtime.stage? = { summary, risk?, needsDecision, sourceTaskId, updatedAt }`：当前计划的阶段结论 digest。它来自最近一次与 `runtime.lastTaskId` 对齐的结果收口，用于 manager/read-model/WebUI 展示当前推进态，不承载执行步骤。
 - hydrate / persist 阶段会用文件系统现状对账 git closure：若 worktree 已缺失或 review sentinel / merge 关系可推断，则会把结果写回 `tasks[*].git.lifecycle`，并同步到已有的 `tasks[*].result.handoff.git.lifecycle`；git closure 不再只停留在 WebUI 读时派生。
 
 恢复一致性规则（启动阶段）：

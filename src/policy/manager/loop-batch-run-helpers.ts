@@ -3,7 +3,7 @@ import { resolveDefaultFocusId } from '../../work/focus/index.js'
 
 import { canScheduleManagerRestart } from './restart-runtime.js'
 
-import type { SupplementalEvidenceSource } from './action-intent-evidence.js'
+import type { SupplementalEvidenceSource } from './action-intent-evidence-source.js'
 import type {
   ManagerActionFeedback,
   ManagerWakeProfile,

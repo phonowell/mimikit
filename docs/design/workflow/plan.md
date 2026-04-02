@@ -30,6 +30,7 @@
 - 结构：`{ type: "set_plan", plan_id, plan }`
 - `plan_id = null` 表示创建
 - `plan_id != null` 表示整体替换该计划
+- `continuation_of? = { type:"plan"|"task", id }` 仅在该计划明确承接当前单一续跑锚点时可选；用于让 guard 先按结构化锚点判定续跑合法性，而不是要求用户重复整份合同文本
 - `plan` 必须包含：
   - `title`
   - `trigger`
@@ -57,6 +58,7 @@
 - `runtime.runCount`
 - `runtime.lastTriggeredAt`
 - `runtime.lastTaskId`
+- `runtime.stage = { summary, risk?, needsDecision, sourceTaskId, updatedAt }`
 - `runtime.closedAt`
 - `runtime.doneReason`
 
@@ -68,11 +70,13 @@
   - `runtime.runCount`
   - `runtime.lastTriggeredAt`
   - `runtime.lastTaskId`
+  - `runtime.stage`
   - `runtime.doneReason`
 - 这些字段的目标不是把 plan 做成任务板，而是让用户能直接判断：
   - 计划是否仍在推进
   - 最近一次何时触发
   - 最近关联到哪个 task
+  - 当前阶段结论 / 当前风险 / 是否待用户拍板
   - 已关闭时为何关闭
 - Plan 的展示仍以合同摘要 + 运行态摘要为边界；不得把完整 worker prompt 或过程态噪声重新灌进 WebUI。
 

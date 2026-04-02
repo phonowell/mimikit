@@ -108,6 +108,14 @@ export type PlanTaskContractView = {
   contextRefs?: string[]
 }
 
+export type PlanStageView = {
+  summary: string
+  risk?: string
+  needsDecision: boolean
+  sourceTaskId: string
+  updatedAt: string
+}
+
 export type PlanView = {
   id?: string
   title?: string
@@ -120,6 +128,7 @@ export type PlanView = {
   doneReason?: string
   trigger?: PlanTrigger
   taskContract?: PlanTaskContractView
+  stage?: PlanStageView
 }
 
 export type PlansSnapshot = {

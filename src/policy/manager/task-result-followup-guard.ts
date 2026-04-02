@@ -4,6 +4,7 @@ import { resolveDefaultFocusId } from '../../work/focus/index.js'
 import { resolveTaskResourceMode } from '../../work/shared/task-resource-mode.js'
 
 import { formatMissingResultFollowupActionHint } from './action-feedback-hints.js'
+import { resolveStructuredAnchoredPlan } from './task-result-followup-plan-anchor.js'
 import { hasSupportedStopDecision } from './task-result-stop-decision.js'
 
 import type { ManagerTurnDecision } from './manager-turn-schema.js'
@@ -119,8 +120,13 @@ export const resolveResultFollowupFeedback = (params: {
   const activePlans = params.runtime.domain.taskPlans.filter(
     (plan) => plan.status === 'active' && plan.focusId.trim() === focusId,
   )
-  if (activePlans.length === 1) {
-    const [plan] = activePlans
+  const structuredAnchoredPlan = resolveStructuredAnchoredPlan({
+    activePlans,
+    task,
+    result,
+  })
+  if (structuredAnchoredPlan || activePlans.length === 1) {
+    const plan = structuredAnchoredPlan ?? activePlans[0]
     if (!plan) return undefined
     if (plan.effect.taskTemplate.cwd.trim() !== task.cwd.trim())
       return undefined
@@ -130,6 +136,7 @@ export const resolveResultFollowupFeedback = (params: {
     )
       return undefined
     if (
+      !structuredAnchoredPlan &&
       !hasContinuationMatch(
         buildTaskContinuationText(task),
         buildPlanContinuationText(plan),

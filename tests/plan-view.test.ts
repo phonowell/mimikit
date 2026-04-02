@@ -93,3 +93,45 @@ test('buildOrchestratorPlanViews projects runtime progress for WebUI plans', () 
     lastTaskId: 'task-progress-1',
   })
 })
+
+test('buildOrchestratorPlanViews projects stage digest for WebUI plans', () => {
+  const runtime: Pick<
+    Parameters<typeof buildOrchestratorPlanViews>[0],
+    'domain'
+  > = {
+    domain: {
+      taskPlans: [
+        createPlanFixture({
+          id: 'plan-stage-view-1',
+          title: 'Stage visible plan',
+          runtime: {
+            runCount: 2,
+            lastTaskId: 'task-stage-view-1',
+            stage: {
+              summary: '当前阶段已收敛到可执行下一步。',
+              risk: '还有一条回归验证未完成。',
+              needsDecision: true,
+              sourceTaskId: 'task-stage-view-1',
+              updatedAt: '2026-04-02T00:11:00.000Z',
+            },
+          },
+        }),
+      ],
+    },
+  }
+
+  const result = buildOrchestratorPlanViews(
+    runtime as Parameters<typeof buildOrchestratorPlanViews>[0],
+  )
+
+  expect(result.items[0]).toMatchObject({
+    id: 'plan-stage-view-1',
+    stage: {
+      summary: '当前阶段已收敛到可执行下一步。',
+      risk: '还有一条回归验证未完成。',
+      needsDecision: true,
+      sourceTaskId: 'task-stage-view-1',
+      updatedAt: '2026-04-02T00:11:00.000Z',
+    },
+  })
+})

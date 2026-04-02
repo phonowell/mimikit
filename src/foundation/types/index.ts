@@ -38,6 +38,7 @@ export type {
   TaskPlan,
   TaskPlanEffect,
   TaskPlanEnqueueTaskEffect,
+  TaskPlanStageDigest,
   TaskPlanRuntime,
   TaskPlanTrigger,
   TaskResourceMode,

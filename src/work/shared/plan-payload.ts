@@ -48,6 +48,17 @@ export const buildPlanProgressPayload = (
     ? { last_triggered_at: plan.runtime.lastTriggeredAt }
     : {}),
   ...(plan.runtime.lastTaskId ? { last_task_id: plan.runtime.lastTaskId } : {}),
+  ...(plan.runtime.stage
+    ? {
+        stage: {
+          summary: plan.runtime.stage.summary,
+          ...(plan.runtime.stage.risk ? { risk: plan.runtime.stage.risk } : {}),
+          needs_decision: plan.runtime.stage.needsDecision,
+          source_task_id: plan.runtime.stage.sourceTaskId,
+          updated_at: plan.runtime.stage.updatedAt,
+        },
+      }
+    : {}),
   ...(plan.runtime.closedAt ? { closed_at: plan.runtime.closedAt } : {}),
   ...(plan.runtime.doneReason ? { done_reason: plan.runtime.doneReason } : {}),
 })

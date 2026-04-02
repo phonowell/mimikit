@@ -10,6 +10,7 @@ import { UI_TEXT } from '../lib/system-text.js'
 
 import { PlanActionMenu } from './PlanActionMenu.js'
 import { PlanListItemProgress } from './PlanListItemProgress.js'
+import { PlanListItemStage } from './PlanListItemStage.js'
 
 import type { PlanView } from '../types.js'
 
@@ -86,6 +87,7 @@ export const PlanListItem = ({
     ? formatDisplayTimeWithFull(plan.lastTriggeredAt, { now })
     : undefined
   const doneReason = plan.doneReason?.trim()
+  const stage = plan.stage
 
   return (
     <li className="plan-item" data-status={plan.status ?? 'active'}>
@@ -135,6 +137,7 @@ export const PlanListItem = ({
         lastTriggeredDisplay={lastTriggeredDisplay}
         runCount={runCount}
       />
+      {stage ? <PlanListItemStage stage={stage} /> : null}
       {taskContract ? (
         <details className="plan-contract" aria-label="Plan contract">
           <summary className="plan-contract-summary">View contract</summary>

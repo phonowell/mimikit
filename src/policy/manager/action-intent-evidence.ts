@@ -2,20 +2,17 @@ import {
   validateRememberMemoryIntentEvidence,
   validateRememberProjectProfileIntentEvidence,
 } from './action-intent-evidence-dialog-memory.js'
+import { validateEnqueueTaskIntentEvidence } from './action-intent-evidence-enqueue.js'
 import {
   buildMissingIntentEvidenceHint,
   collectUserIntentTexts,
 } from './action-intent-evidence-match.js'
-import {
-  validateEnqueueTaskIntentEvidence,
-  validateSetPlanIntentEvidence,
-  validateTaskControlIntentEvidence,
-} from './action-intent-evidence-rules.js'
+import { validateSetPlanIntentEvidence } from './action-intent-evidence-set-plan-validation.js'
+import { validateTaskControlIntentEvidence } from './action-intent-evidence-task-control.js'
 
+import type { SupplementalEvidenceSource } from './action-intent-evidence-source.js'
 import type { Task, TaskPlan, UserInput } from '../../foundation/types/index.js'
 import type { Parsed } from '../actions/model/spec.js'
-
-export type SupplementalEvidenceSource = 'task_result'
 
 type IntentEvidenceContext = {
   stateDir?: string
@@ -97,7 +94,14 @@ export const resolveIntentEvidenceRejectionHint = (
     return validateSetPlanIntentEvidence({
       item,
       inputTexts,
+      ...(context.taskById ? { taskById: context.taskById } : {}),
       ...(context.planById ? { planById: context.planById } : {}),
+      ...(context.resultTaskIds
+        ? { resultTaskIds: context.resultTaskIds }
+        : {}),
+      ...(context.defaultFocusId
+        ? { defaultFocusId: context.defaultFocusId }
+        : {}),
       ...(context.supplementalEvidenceSources
         ? { supplementalEvidenceSources: context.supplementalEvidenceSources }
         : {}),

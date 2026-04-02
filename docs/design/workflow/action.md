@@ -129,6 +129,7 @@
 - 没有当前用户输入直接支撑时，`task_result` / `history` / `trigger` 只能作为补充证据，不能单独驱动高风险 action
 - 没有新的用户输入时，`task_result` 仍可驱动同一目标内的低风险续跑、常规纠偏、补证据或停在 handoff；不能据此越过高风险门禁。
 - 当本轮是 `task_result`-only 且运行时能确认单一清晰续跑锚点（当前 active plan 与本轮 result task 一致，或本轮 result task 自身带有单条结构化 `handoff.nextSteps[]`）时，manager 若只返回 advisory text、未给任何具体推进 action，会被 follow-up guard 打回 correction；必须改成具体 action，或输出受当前结构化结果/反馈支撑的 `decision` 来明确停在 handoff / 上提。
+- 当 `enqueue_task` / `set_plan` 明确是在延续当前单一锚点时，应优先填写结构化 `continuation_of={ type:"plan"|"task", id }`；guard 先按该锚点判定是否允许续跑，再退回文本证据兜底。
 - 对 `enqueue_task`，若本轮存在新的用户输入，且当前 focus 中只有一个明确延续目标（单一 active plan 或单一 result task），guard 允许沿该目标继续派发下一步；判定只看结构化一致性：focus、cwd、resource mode 与合同方向是否延续，不要求用户逐字重复整份任务合同。
 - 对 `set_plan` 更新，若用户已明确引用当前 plan，guard 不只看 `title/goal/trigger` 的字面重叠，也会接受对 task contract 中 `scope/acceptance/out_of_scope` 这类方向性变更的直接表达；目标是避免“用户明确说了要改计划推进方式，却因整份替换文本不重叠而被误拦”。
 - `task_control(cancel)` 支持“同 focus / 同 cwd 的唯一活跃任务被替代”这一例外，不要求额外显式取消措辞

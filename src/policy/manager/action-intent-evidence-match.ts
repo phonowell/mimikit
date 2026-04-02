@@ -11,7 +11,7 @@ import {
   formatTaskControlIntentEvidenceHint,
 } from './action-evidence-hints.js'
 
-import type { SupplementalEvidenceSource } from './action-intent-evidence.js'
+import type { SupplementalEvidenceSource } from './action-intent-evidence-source.js'
 import type { HistoryMessage, UserInput } from '../../foundation/types/index.js'
 import type { Parsed } from '../actions/model/spec.js'
 

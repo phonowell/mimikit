@@ -1,6 +1,8 @@
+import { clipCompactText } from '../../foundation/shared/text.js'
 import { nowIso } from '../../foundation/shared/utils.js'
 import { notifyUiSignal } from '../../kernel/orchestrator/signals.js'
 import { updateRuntimePlan } from '../../work/orchestrator/runtime-domain-write.js'
+import { resolveTaskResultSummary } from '../../work/shared/task-state.js'
 
 import type {
   Task,
@@ -26,6 +28,22 @@ const resolveTriggeredPlanMatch = (
   if (titleMatches.length === 1) return titleMatches[0]
   return undefined
 }
+
+const resolvePlanStageSummary = (result: TaskResult): string | undefined => {
+  const summary = resolveTaskResultSummary({ result, maxChars: 280 }).trim()
+  return summary ? clipCompactText(summary, 280) : undefined
+}
+
+const resolvePlanStageRisk = (result: TaskResult): string | undefined => {
+  const risk = result.handoff?.risks?.find(
+    (item) => typeof item === 'string' && item.trim().length > 0,
+  )
+  if (risk) return clipCompactText(risk.trim(), 280)
+  return undefined
+}
+
+const resolvePlanStageNeedsDecision = (result: TaskResult): boolean =>
+  result.stopReason === 'input_required'
 
 export const linkTriggeredPlanToTask = (params: {
   runtime: ManagerRuntime
@@ -87,12 +105,30 @@ export const applyPlanCompletionState = (
     const matched = latestByTaskId.get(taskId)
     if (!matched) continue
     if (plan.updatedAt === matched.completedAt) continue
+    const stageSummary = resolvePlanStageSummary(matched)
+    const stageRisk = resolvePlanStageRisk(matched)
     updateRuntimePlan({
       runtime,
       planId: plan.id,
       update: (current) => ({
         ...current,
         updatedAt: matched.completedAt,
+        runtime: {
+          ...current.runtime,
+          ...(stageSummary ||
+          stageRisk ||
+          resolvePlanStageNeedsDecision(matched)
+            ? {
+                stage: {
+                  summary: stageSummary ?? `Task ${matched.taskId} updated.`,
+                  ...(stageRisk ? { risk: stageRisk } : {}),
+                  needsDecision: resolvePlanStageNeedsDecision(matched),
+                  sourceTaskId: matched.taskId,
+                  updatedAt: matched.completedAt,
+                },
+              }
+            : {}),
+        },
       }),
     })
     changed = true
